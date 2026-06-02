@@ -82,6 +82,8 @@ export function useConversationAgentFileView(
     staticFileBasePath,
     /** 选中文件后打开右侧预览面板 */
     onFileSelectOpenPreview,
+    /** 文件重命名成功后回调 */
+    onFileRenamed,
   } = props;
   const headerClassName = undefined;
   const isImportProjectTrigger = undefined;
@@ -100,8 +102,6 @@ export function useConversationAgentFileView(
   const showRefreshButton = true;
   const isDynamicTheme = false;
   const isProjectSkill = false;
-  const initViewFileType = undefined;
-
   // 文件树数据
   const [files, setFiles] = useState<FileNode[]>([]);
   // 当前选中的文件ID
@@ -147,11 +147,6 @@ export function useConversationAgentFileView(
   // 是否正在上传文件
   const [isUploadingFiles, setIsUploadingFiles] = useState<boolean>(false);
 
-  /** 当前文件查看类型：预览、代码 */
-  const [viewFileType, setViewFileType] = useState<'preview' | 'code'>(
-    'preview',
-  );
-
   // 文件树是否可见（默认隐藏，但如果已固定则显示）
   const [internalFileTreeVisible, setInternalFileTreeVisible] =
     useState<boolean>(isFileTreePinned || false);
@@ -188,12 +183,6 @@ export function useConversationAgentFileView(
       setIsFullscreen(true);
     }
   }, [isFullscreenPreview]);
-
-  useEffect(() => {
-    if (initViewFileType) {
-      setViewFileType(initViewFileType);
-    }
-  }, [initViewFileType]);
 
   // 获取文件内容并更新文件树
   const fetchFileContentUpdateFiles = useCallback(
@@ -348,9 +337,6 @@ export function useConversationAgentFileView(
         if (!fileProxyUrl || fileNode?.isLink) {
           onFileSelectOpenPreview?.(fileNode?.id || fileId);
           setSelectedFileId(fileNode?.id || fileId);
-          if (!initViewFileType) {
-            setViewFileType('preview');
-          }
           setSelectedFileNode(fileNode);
           return;
         }
@@ -390,10 +376,6 @@ export function useConversationAgentFileView(
         setFileRefreshTimestamp(Date.now());
 
         setSelectedFileId(fileNode?.id || fileId);
-
-        if (!initViewFileType) {
-          setViewFileType('preview');
-        }
 
         // 图片、视频、音频、office 等通过 FilePreview 渲染
         if (
@@ -438,7 +420,7 @@ export function useConversationAgentFileView(
         setSelectedFileId('');
       }
     },
-    [files, isRenamingFile, initViewFileType, onFileSelectOpenPreview],
+    [files, isRenamingFile, onFileSelectOpenPreview],
   );
 
   // 文件选择（对外接口，用于用户主动选择）
@@ -753,22 +735,24 @@ export function useConversationAgentFileView(
         const isChangeSuccess = await onRenameFile?.(fileNode, newName);
         setIsRenamingFile(false);
         if (isChangeSuccess) {
+          const trimmedName = newName.trim();
+          const newNodeId = fileNode.parentPath
+            ? `${fileNode.parentPath}/${trimmedName}`
+            : trimmedName;
+
+          onFileRenamed?.(fileNode.id, newNodeId);
+
           // 如果当前选中的文件节点是被重命名的节点，则同步更新名称
           if (
             selectedFileNode &&
             (selectedFileNode.id === fileNode.id ||
               selectedFileNode.name === fileNode.name)
           ) {
-            // 计算新的文件ID: 如果存在父路径，则使用父路径 + 新文件名；否则使用新文件名,
-            const newNodeId = fileNode.parentPath
-              ? `${fileNode.parentPath}/${newName}`
-              : newName;
-
             // 根据新的文件名，替换 fileProxyUrl 中的文件名部分
             const newFileProxyUrl = fileNode?.fileProxyUrl
               ? updateFileProxyUrl(
                   fileNode.fileProxyUrl,
-                  newName,
+                  trimmedName,
                   fileNode.parentPath || undefined,
                 )
               : fileNode?.fileProxyUrl;
@@ -777,7 +761,7 @@ export function useConversationAgentFileView(
               prevNode
                 ? {
                     ...prevNode,
-                    name: newName,
+                    name: trimmedName,
                     id: newNodeId,
                     path: newNodeId,
                     fullPath: newNodeId,
@@ -1127,73 +1111,6 @@ export function useConversationAgentFileView(
     setChangeFiles([]);
   };
 
-  // 处理文件内容刷新
-  const handleRefreshFileContent = async () => {
-    const fileProxyUrl = selectedFileNode?.fileProxyUrl || '';
-
-    // 仅在存在 fileProxyUrl 时才尝试重新获取内容
-    if (fileProxyUrl) {
-      const fileName = selectedFileNode?.name || '';
-
-      // 判断文件是否支持预览（白名单方案）
-      const previewable = isPreviewableFile(fileName, true);
-
-      // 以下情况不需要重新获取内容，直接使用当前选中文件节点：
-      // 1）文件不支持预览
-      // 2）软连接文件
-      // 3）office 文档、视频、音频、图片（这些在上方点击文件时已特殊处理）
-      // 是否重新获取文件内容
-      const isNeedRefreshFileContent =
-        !previewable ||
-        selectedFileNode?.isLink ||
-        isOfficeDocument ||
-        isVideo ||
-        isAudio ||
-        isImage;
-
-      if (!isNeedRefreshFileContent) {
-        try {
-          // 获取文件内容并更新文件树
-          const newFileContent = await fetchFileContentUpdateFiles(
-            fileProxyUrl,
-            selectedFileNode?.id || selectedFileId,
-          );
-
-          // 更新选中文件节点的内容
-          setSelectedFileNode((prevNode) =>
-            prevNode
-              ? {
-                  ...prevNode,
-                  content: newFileContent || '',
-                }
-              : prevNode,
-          );
-        } catch (error) {
-          console.error(
-            'Failed to refresh file content when switching preview mode: ',
-            error,
-          );
-        }
-      }
-    }
-  };
-
-  /**
-   * 处理视图文件类型切换
-   * - 切换到 preview：
-   *   如果当前已选中文件满足以下条件，则重新通过 fileProxyUrl 更新文件内容：
-   *     1）存在 fileProxyUrl
-   *     2）不是 office 文档、视频、音频、图片、软连接文件
-   *     3）文件类型支持预览（白名单）
-   */
-  const handleViewFileTypeChange = async (type: 'preview' | 'code') => {
-    setViewFileType(type);
-    if (type === 'code' && selectedFileNode) {
-      // 刷新当前选中的文件内容
-      handleRefreshFileContent();
-    }
-  };
-
   /**
    * 处理文件树展开/折叠（点击图标）
    * 隐藏状态时点击展开文件树，展开时点击收起文件树
@@ -1430,8 +1347,6 @@ export function useConversationAgentFileView(
       isFullscreen,
       showFullscreenIcon,
       showMoreActions,
-      viewFileType,
-      onViewFileTypeChange: handleViewFileTypeChange,
       onDownloadFileByUrl: handleDownloadFileByUrl,
       isDownloadingFile:
         isDownloadingFile &&
@@ -1456,8 +1371,6 @@ export function useConversationAgentFileView(
       isFullscreen,
       showFullscreenIcon,
       showMoreActions,
-      viewFileType,
-      handleViewFileTypeChange,
       handleDownloadFileByUrl,
       isDownloadingFile,
       selectedFileId,
@@ -1532,7 +1445,6 @@ export function useConversationAgentFileView(
     preview: {
       selectedFileNode,
       selectedFileId,
-      viewFileType,
       isFullscreen,
       hideDesktop,
       changeFiles,
@@ -1542,7 +1454,6 @@ export function useConversationAgentFileView(
       renderPreviewContent,
       filePathHeaderProps,
       handleFullscreen,
-      handleViewFileTypeChange,
       handleFileTreeToggle,
       saveFiles,
       cancelSaveFiles,

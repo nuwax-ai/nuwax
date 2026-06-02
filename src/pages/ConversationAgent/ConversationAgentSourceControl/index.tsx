@@ -1,11 +1,13 @@
 import type { ChangeFileInfo } from '@/components/FileTreeView/type';
 import { dict } from '@/services/i18nRuntime';
+import { modalConfirm } from '@/utils/ant-custom';
 import { getFileIcon } from '@/utils/fileTree';
-import { DownOutlined, UpOutlined } from '@ant-design/icons';
+import { RightOutlined } from '@ant-design/icons';
 import { Button, Input } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import ChangeFileContextMenu from './ChangeFileContextMenu';
+import { resolveChangeFileStatus } from './changeFileStatus';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -76,14 +78,17 @@ const ConversationAgentSourceControl: React.FC<
         const fileName = segments[segments.length - 1] || item.fileId;
         const parentPath =
           segments.length > 1 ? segments.slice(0, -1).join('/') : '';
+        const isStaged = stagedFileIds.has(item.fileId);
+        const statusMeta = resolveChangeFileStatus(item, isStaged);
 
         return {
           ...item,
           fileName,
           parentPath,
+          statusMeta,
         };
       }),
-    [changeFiles],
+    [changeFiles, stagedFileIds],
   );
 
   const contextMenuTarget = useMemo(
@@ -112,6 +117,23 @@ const ConversationAgentSourceControl: React.FC<
     },
     [],
   );
+
+  /** 放弃更改（二次确认） */
+  const handleDiscardChangeWithConfirm = useCallback(() => {
+    if (!contextMenuTarget) {
+      return;
+    }
+
+    const { fileId, fileName } = contextMenuTarget;
+    closeContextMenu();
+    modalConfirm(
+      dict(
+        'PC.Pages.ConversationAgentSourceControl.discardChangesConfirmTitle',
+      ),
+      fileName,
+      () => onDiscardChange?.(fileId),
+    );
+  }, [closeContextMenu, contextMenuTarget, onDiscardChange]);
 
   /** 提交修改 */
   const handleCommit = async () => {
@@ -158,11 +180,14 @@ const ConversationAgentSourceControl: React.FC<
           onClick={() => setChangesExpanded((prev) => !prev)}
         >
           <div className={cx(styles['changes-title'])}>
-            {changesExpanded ? (
-              <DownOutlined style={{ fontSize: 10 }} />
-            ) : (
-              <UpOutlined style={{ fontSize: 10 }} />
-            )}
+            <span
+              className={cx(styles['changes-expand-icon'], {
+                [styles['changes-expand-icon-expanded']]: changesExpanded,
+              })}
+              aria-hidden
+            >
+              <RightOutlined />
+            </span>
             <span>
               {dict('PC.Pages.ConversationAgentSourceControl.changes')}
             </span>
@@ -199,7 +224,18 @@ const ConversationAgentSourceControl: React.FC<
                       </span>
                     )}
                   </div>
-                  <span className={cx(styles['status-badge'])}>M</span>
+                  <span
+                    className={cx(
+                      styles['status-badge'],
+                      styles[`status-badge--${item.statusMeta.kind}`],
+                      {
+                        [styles['status-badge--staged']]:
+                          item.statusMeta.isStaged,
+                      },
+                    )}
+                  >
+                    {item.statusMeta.label}
+                  </span>
                 </div>
               ))
             ) : (
@@ -211,6 +247,7 @@ const ConversationAgentSourceControl: React.FC<
         )}
       </div>
 
+      {/* 源代码管理 */}
       <ChangeFileContextMenu
         visible={contextMenuVisible}
         position={contextMenuPosition}
@@ -222,9 +259,7 @@ const ConversationAgentSourceControl: React.FC<
         onOpenFile={() =>
           contextMenuTarget && onOpenFile?.(contextMenuTarget.fileId)
         }
-        onDiscardChange={() =>
-          contextMenuTarget && onDiscardChange?.(contextMenuTarget.fileId)
-        }
+        onDiscardChange={handleDiscardChangeWithConfirm}
         onStageChange={() =>
           contextMenuTarget && onStageChange?.(contextMenuTarget.fileId)
         }

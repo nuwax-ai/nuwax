@@ -1,5 +1,9 @@
-@import '@/styles/color';
 @import '@/styles/token';
+
+@chat-panel-content-max-width: 800px;
+@chat-panel-content-padding-bottom: 30px;
+@chat-opening-msg-line-height: 26px;
+@chat-status-bar-slide-offset: 10px;
 
 .container {
   display: flex;
@@ -8,24 +12,24 @@
   min-width: 0;
 
   .loading {
-    color: @BLUE08;
+    color: @colorPrimary;
   }
 
   .main-content {
-    padding: 20px;
+    padding: @paddingMd;
     min-height: 0;
 
     .opening-chat-msg {
-      line-height: 26px;
-      font-size: 14px;
+      line-height: @chat-opening-msg-line-height;
+      font-size: @fontSize;
       text-align: center;
     }
 
     .chat-wrapper {
       margin: 0 auto;
       width: 100%;
-      max-width: 800px;
-      padding-bottom: 30px;
+      max-width: @chat-panel-content-max-width;
+      padding-bottom: @chat-panel-content-padding-bottom;
 
       .load-more-container {
         display: flex;
@@ -33,11 +37,11 @@
         align-items: center;
         padding: @padding 0;
         margin-bottom: @paddingSm;
-        color: #999;
+        color: @colorTextTertiary;
       }
 
       .task-executing-container {
-        height: 32px;
+        height: @controlHeight;
         color: @colorTextSecondary;
         font-size: @fontSizeSm;
         gap: @paddingSm;
@@ -45,7 +49,7 @@
     }
 
     .conversation-status-bar {
-      max-width: 800px;
+      max-width: @chat-panel-content-max-width;
       width: 100%;
       margin: 0 auto !important;
       animation: slide-in-up 0.3s ease-out;
@@ -56,7 +60,7 @@
 @keyframes slide-in-up {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(@chat-status-bar-slide-offset);
   }
 
   to {

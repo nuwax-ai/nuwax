@@ -58,6 +58,8 @@ export interface ConversationAgentFileViewProps {
   staticFileBasePath?: string;
   /** 选中文件后打开右侧预览面板（隐藏编排区域） */
   onFileSelectOpenPreview?: (fileId?: string) => void;
+  /** 文件重命名成功后回调，用于同步预览区标签页 */
+  onFileRenamed?: (oldFileId: string, newFileId: string) => void;
 }
 
 /** ConversationAgent 预览头部 props（不含更多操作相关回调） */
@@ -108,7 +110,6 @@ export interface ConversationAgentFileViewTree {
 export interface ConversationAgentFileViewPreview {
   selectedFileNode: FileNode | null;
   selectedFileId: string;
-  viewFileType: 'preview' | 'code';
   isFullscreen: boolean;
   hideDesktop: HideDesktopEnum;
   changeFiles: ChangeFileInfo[];
@@ -120,7 +121,6 @@ export interface ConversationAgentFileViewPreview {
   /** FilePathHeader 组件所需的 props（不含更多操作） */
   filePathHeaderProps: ConversationAgentFilePathHeaderProps;
   handleFullscreen: () => void;
-  handleViewFileTypeChange: (type: 'preview' | 'code') => void;
   handleFileTreeToggle: () => void;
   saveFiles: () => Promise<void>;
   cancelSaveFiles: () => void;

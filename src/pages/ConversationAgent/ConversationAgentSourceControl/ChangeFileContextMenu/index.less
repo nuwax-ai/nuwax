@@ -1,18 +1,20 @@
-@import '@/styles/color.less';
-@import '@/styles/token.less';
+@import '@/styles/token';
+
+@context-menu-min-width: 160px;
+@context-menu-item-padding-block: 6px;
 
 .context-menu {
   background: @colorBgElevated;
   border: @lineWidth solid @colorBorder;
-  border-radius: 6px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 15%);
-  padding: 4px 0;
-  min-width: 160px;
-  z-index: 1000;
+  border-radius: @borderRadiusOuter;
+  box-shadow: @boxShadowSecondary;
+  padding: @marginXxs 0;
+  min-width: @context-menu-min-width;
+  z-index: @zIndexPopupBase;
 }
 
 .context-menu-item {
-  padding: 6px 12px;
+  padding: @context-menu-item-padding-block @paddingSm;
   cursor: pointer;
   font-size: @fontSizeSm;
   color: @colorText;

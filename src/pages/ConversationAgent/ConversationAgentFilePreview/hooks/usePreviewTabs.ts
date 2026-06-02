@@ -194,6 +194,51 @@ export function usePreviewTabs(options: UsePreviewTabsOptions = {}) {
     setActiveTabId(null);
   }, []);
 
+  /**
+   * 文件重命名后同步更新已打开的文件标签（含 diff 标签）
+   * @param oldFileId 重命名前的文件 ID
+   * @param newFileId 重命名后的文件 ID
+   */
+  const renameFileTab = useCallback((oldFileId: string, newFileId: string) => {
+    if (!oldFileId || !newFileId || oldFileId === newFileId) {
+      return;
+    }
+
+    const newLabel = getFileNameFromPath(newFileId);
+    const oldFileTabId = getFileTabId(oldFileId, false);
+    const oldDiffTabId = getFileTabId(oldFileId, true);
+    const newFileTabId = getFileTabId(newFileId, false);
+    const newDiffTabId = getFileTabId(newFileId, true);
+
+    setTabs((prev) => {
+      let hasChange = false;
+      const nextTabs = prev.map((tab) => {
+        if (tab.type !== 'file' || tab.fileId !== oldFileId) {
+          return tab;
+        }
+        hasChange = true;
+        const isDiff = tab.isDiff ?? false;
+        return {
+          ...tab,
+          id: getFileTabId(newFileId, isDiff),
+          fileId: newFileId,
+          label: newLabel,
+        };
+      });
+      return hasChange ? nextTabs : prev;
+    });
+
+    setActiveTabId((currentActiveId) => {
+      if (currentActiveId === oldFileTabId) {
+        return newFileTabId;
+      }
+      if (currentActiveId === oldDiffTabId) {
+        return newDiffTabId;
+      }
+      return currentActiveId;
+    });
+  }, []);
+
   const activeTab = tabs.find((tab) => tab.id === activeTabId) || null;
 
   return {
@@ -205,6 +250,7 @@ export function usePreviewTabs(options: UsePreviewTabsOptions = {}) {
     selectTab,
     closeTab,
     clearTabs,
+    renameFileTab,
   };
 }
 

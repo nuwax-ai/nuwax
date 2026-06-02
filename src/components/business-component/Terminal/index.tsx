@@ -1,15 +1,10 @@
 import {
-  ClearOutlined,
   CloseOutlined,
   CodeOutlined,
-  DownloadOutlined,
   DownOutlined,
-  FullscreenExitOutlined,
-  FullscreenOutlined,
-  SearchOutlined,
   UpOutlined,
 } from '@ant-design/icons';
-import { Alert, Button, Input, Space, Spin, Tag, Tooltip } from 'antd';
+import { Alert, Button, Input, Spin, Tooltip } from 'antd';
 import classNames from 'classnames';
 import {
   forwardRef,
@@ -26,14 +21,23 @@ import '@xterm/xterm/css/xterm.css';
 
 import { createLogger } from '@/utils/logger';
 
+import type { Terminal } from '@xterm/xterm';
 import styles from './index.less';
-import type {
-  ConnectionStatus,
-  ReconnectConfig,
-  SearchOptions,
-  TerminalTheme,
-  XtermTerminalProps,
-  XtermTerminalRef,
+import {
+  DEFAULT_TERMINAL_SEARCH_OPTIONS,
+  type ConnectionStatus,
+  type ReconnectConfig,
+  type SearchOptions,
+  type TerminalAddonsMap,
+  type TerminalOnConnect,
+  type TerminalOnData,
+  type TerminalOnDisconnect,
+  type TerminalOnError,
+  type TerminalOnInput,
+  type TerminalSearchOptionsState,
+  type TerminalTheme,
+  type XtermTerminalProps,
+  type XtermTerminalRef,
 } from './type';
 
 const terminalLogger = createLogger('[XtermTerminal]');
@@ -95,16 +99,93 @@ const resolveTheme = (theme: TerminalTheme = 'dark') => {
   return theme;
 };
 
-const isLightTheme = (theme: TerminalTheme = 'dark') => theme === 'light';
+/** 根据背景色亮度判断是否为浅色主题（含自定义 ITheme） */
+const isLightTerminalTheme = (theme: TerminalTheme = 'dark'): boolean => {
+  if (theme === 'light') return true;
+  if (theme === 'dark') return false;
+  const bg = theme.background;
+  if (!bg || typeof bg !== 'string') return false;
+  const hex = bg.replace('#', '').slice(0, 6);
+  if (hex.length < 6) return false;
+  const r = parseInt(hex.slice(0, 2), 16);
+  const g = parseInt(hex.slice(2, 4), 16);
+  const b = parseInt(hex.slice(4, 6), 16);
+  if ([r, g, b].some((v) => Number.isNaN(v))) return false;
+  return (r * 299 + g * 587 + b * 114) / 1000 > 180;
+};
+
+/** 延迟执行 fit，确保容器已完成布局 */
+const scheduleTerminalFit = (
+  getFit: () => (() => void) | undefined,
+  afterFit?: () => void,
+) => {
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      try {
+        getFit()?.();
+      } catch {
+        /* fit 可能在容器尺寸为 0 时失败 */
+      }
+      afterFit?.();
+    });
+  });
+};
+
+/** 保证终端有效行列（fit 失败时的兜底） */
+const ensureTerminalDimensions = (
+  term: import('@xterm/xterm').Terminal,
+): { cols: number; rows: number } => {
+  let cols = term.cols;
+  let rows = term.rows;
+  if (cols <= 0 || rows <= 0) {
+    cols = 80;
+    rows = 24;
+    term.resize(cols, rows);
+  }
+  return { cols, rows };
+};
+
+const TTYD_CMD_INPUT = 0x30;
+const TTYD_CMD_OUTPUT = 0x30;
+
+/** ttyd 首包：以 '{' 开头的 JSON，触发 fork shell */
+const encodeTtydInit = (cols: number, rows: number): string =>
+  JSON.stringify({ columns: cols, rows });
+
+/** ttyd：'0' + 原始输入字节 */
+const encodeTtydInput = (data: string): Uint8Array => {
+  const bytes = new TextEncoder().encode(data);
+  const out = new Uint8Array(bytes.length + 1);
+  out[0] = TTYD_CMD_INPUT;
+  out.set(bytes, 1);
+  return out;
+};
+
+/** ttyd：'1' + { columns, rows } */
+const encodeTtydResize = (cols: number, rows: number): string =>
+  '1' + JSON.stringify({ columns: cols, rows });
+
+/** 解析 ttyd 二进制下行帧，仅提取 OUTPUT(0x30) 写入 xterm */
+const decodeTtydMessage = (raw: ArrayBuffer | string): string => {
+  const buf =
+    typeof raw === 'string'
+      ? new TextEncoder().encode(raw)
+      : new Uint8Array(raw);
+  if (buf.length === 0 || buf[0] !== TTYD_CMD_OUTPUT) {
+    return '';
+  }
+  return new TextDecoder().decode(buf.subarray(1));
+};
 
 // ─── 组件实现 ────────────────────────────────────────────────────
 const XtermTerminal = forwardRef<XtermTerminalRef, XtermTerminalProps>(
   (
     {
       wsUrl,
+      wsSubprotocols,
+      wireProtocol = 'plain',
       autoConnect = false,
       reconnect,
-      title,
       readOnly = false,
       theme = 'dark',
       fontSize = 14,
@@ -115,6 +196,7 @@ const XtermTerminal = forwardRef<XtermTerminalRef, XtermTerminalProps>(
       ligatures = false,
       enableWebgl = true,
       enableImages = false,
+      embedded = false,
       className,
       style,
       onConnect,
@@ -127,35 +209,97 @@ const XtermTerminal = forwardRef<XtermTerminalRef, XtermTerminalProps>(
   ) => {
     // ─── 状态 ────────────────────────────────────────────────
     const [status, setStatus] = useState<ConnectionStatus>('disconnected');
-    const [errorMessage, setErrorMessage] = useState('');
-    const [searchVisible, setSearchVisible] = useState(false);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [searchOptions, setSearchOptions] = useState<SearchOptions>({
-      caseSensitive: false,
-      wholeWord: false,
-      regex: false,
-    });
-    const [isFullscreen, setIsFullscreen] = useState(false);
+    const [errorMessage, setErrorMessage] = useState<string>('');
+    const [searchVisible, setSearchVisible] = useState<boolean>(false);
+    const [searchTerm, setSearchTerm] = useState<string>('');
+    const [searchOptions, setSearchOptions] =
+      useState<TerminalSearchOptionsState>(DEFAULT_TERMINAL_SEARCH_OPTIONS);
+    const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+    /** xterm 是否已完成 open + addon 加载 */
+    const [terminalReady, setTerminalReady] = useState<boolean>(false);
 
     // ─── Refs ────────────────────────────────────────────────
     const wrapperRef = useRef<HTMLDivElement>(null);
     const viewportRef = useRef<HTMLDivElement>(null);
-    const terminalRef = useRef<import('@xterm/xterm').Terminal | null>(null);
+    const terminalRef = useRef<Terminal | null>(null);
     const wsRef = useRef<WebSocket | null>(null);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const addonsRef = useRef<Map<string, any>>(new Map());
+    const addonsRef = useRef<TerminalAddonsMap>(new Map());
     const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
       null,
     );
-    const reconnectCountRef = useRef(0);
-    const isManualDisconnectRef = useRef(false);
+    const reconnectCountRef = useRef<number>(0);
+    const isManualDisconnectRef = useRef<boolean>(false);
+    /** WS 早于 xterm 就绪时暂存待写入内容 */
+    const pendingWritesRef = useRef<string[]>([]);
+    const ttydInitSentRef = useRef<boolean>(false);
 
-    // 回调 ref 化，避免闭包陈旧值
-    const onConnectRef = useRef(onConnect);
-    const onDisconnectRef = useRef(onDisconnect);
-    const onErrorRef = useRef(onError);
-    const onDataRef = useRef(onData);
-    const onInputRef = useRef(onInput);
+    // 回调 ref 化，避免闭包陈旧值（须在 handleWsOpen 之前定义）
+    const onConnectRef = useRef<TerminalOnConnect | undefined>(onConnect);
+    const onDisconnectRef = useRef<TerminalOnDisconnect | undefined>(
+      onDisconnect,
+    );
+    const onErrorRef = useRef<TerminalOnError | undefined>(onError);
+    const onDataRef = useRef<TerminalOnData | undefined>(onData);
+    const onInputRef = useRef<TerminalOnInput | undefined>(onInput);
+
+    const flushPendingWrites = useCallback(() => {
+      const term = terminalRef.current;
+      if (!term || pendingWritesRef.current.length === 0) return;
+      for (const chunk of pendingWritesRef.current) {
+        term.write(chunk);
+      }
+      pendingWritesRef.current = [];
+    }, []);
+
+    const writeToTerminal = useCallback((data: string) => {
+      if (!data) return;
+      const term = terminalRef.current;
+      if (!term) {
+        pendingWritesRef.current.push(data);
+        return;
+      }
+      term.write(data);
+    }, []);
+
+    /** fit 后向后端同步尺寸；ttyd 首连发 JSON init，之后发 resize */
+    const syncBackendTerminalSize = useCallback(
+      (ws: WebSocket, options?: { sendTtydInit?: boolean }) => {
+        const term = terminalRef.current;
+        if (!term || ws.readyState !== WebSocket.OPEN) return;
+
+        const { cols, rows } = ensureTerminalDimensions(term);
+
+        if (wireProtocol === 'ttyd') {
+          if (options?.sendTtydInit && !ttydInitSentRef.current) {
+            ws.send(encodeTtydInit(cols, rows));
+            ttydInitSentRef.current = true;
+          } else if (ttydInitSentRef.current) {
+            ws.send(encodeTtydResize(cols, rows));
+          }
+        } else {
+          ws.send(JSON.stringify({ type: 'resize', cols, rows }));
+        }
+      },
+      [wireProtocol],
+    );
+
+    const handleWsOpen = useCallback(
+      (ws: WebSocket) => {
+        setStatus('connected');
+        reconnectCountRef.current = 0;
+        terminalLogger.log('WebSocket connected');
+
+        scheduleTerminalFit(
+          () => addonsRef.current.get('fit')?.fit,
+          () => {
+            syncBackendTerminalSize(ws, { sendTtydInit: true });
+            flushPendingWrites();
+            onConnectRef.current?.();
+          },
+        );
+      },
+      [flushPendingWrites, syncBackendTerminalSize],
+    );
 
     useEffect(() => {
       onConnectRef.current = onConnect;
@@ -184,11 +328,9 @@ const XtermTerminal = forwardRef<XtermTerminalRef, XtermTerminalProps>(
     );
 
     // ─── 加载 Addons ─────────────────────────────────────────
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const loadAddons = useCallback(
-      async (terminal: any) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const addons = new Map<string, any>();
+      async (terminal: Terminal): Promise<TerminalAddonsMap> => {
+        const addons: TerminalAddonsMap = new Map();
 
         // 1. FitAddon
         try {
@@ -362,17 +504,25 @@ const XtermTerminal = forwardRef<XtermTerminalRef, XtermTerminalProps>(
         // 挂载到 DOM
         term.open(viewportRef.current);
 
-        // 初始 fit
-        try {
-          addons.get('fit')?.fit();
-        } catch {
-          // fit 可能在 DOM 未完全就绪时失败
+        // 初始 fit（嵌入式面板需延迟等待父级布局）
+        if (embedded) {
+          scheduleTerminalFit(() => addons.get('fit')?.fit);
+        } else {
+          try {
+            addons.get('fit')?.fit?.();
+          } catch {
+            /* fit 可能在 DOM 未完全就绪时失败 */
+          }
         }
 
         // 监听用户输入 → 发送到 WebSocket + 触发回调
         term.onData((data: string) => {
           if (wsRef.current?.readyState === WebSocket.OPEN) {
-            wsRef.current.send(data);
+            if (wireProtocol === 'ttyd') {
+              wsRef.current.send(encodeTtydInput(data));
+            } else {
+              wsRef.current.send(data);
+            }
           }
           onInputRef.current?.(data);
         });
@@ -380,7 +530,13 @@ const XtermTerminal = forwardRef<XtermTerminalRef, XtermTerminalProps>(
         // 终端 resize → 通知后端
         term.onResize(({ cols, rows }: { cols: number; rows: number }) => {
           if (wsRef.current?.readyState === WebSocket.OPEN) {
-            wsRef.current.send(JSON.stringify({ type: 'resize', cols, rows }));
+            if (wireProtocol === 'ttyd') {
+              wsRef.current.send(encodeTtydResize(cols, rows));
+            } else {
+              wsRef.current.send(
+                JSON.stringify({ type: 'resize', cols, rows }),
+              );
+            }
           }
         });
 
@@ -399,6 +555,18 @@ const XtermTerminal = forwardRef<XtermTerminalRef, XtermTerminalProps>(
         });
 
         terminalLogger.log('Terminal initialized');
+        setTerminalReady(true);
+
+        // 若 WS 已先连上（竞态），补发 ttyd init 并刷新缓冲
+        if (wsRef.current?.readyState === WebSocket.OPEN) {
+          scheduleTerminalFit(
+            () => addons.get('fit')?.fit,
+            () => {
+              syncBackendTerminalSize(wsRef.current!, { sendTtydInit: true });
+              flushPendingWrites();
+            },
+          );
+        }
       };
 
       initTerminal();
@@ -406,6 +574,9 @@ const XtermTerminal = forwardRef<XtermTerminalRef, XtermTerminalProps>(
       // 清理
       return () => {
         disposed = true;
+        setTerminalReady(false);
+        pendingWritesRef.current = [];
+        ttydInitSentRef.current = false;
 
         // 关闭 WebSocket
         if (wsRef.current) {
@@ -454,7 +625,7 @@ const XtermTerminal = forwardRef<XtermTerminalRef, XtermTerminalProps>(
         if (resizeTimer) clearTimeout(resizeTimer);
         resizeTimer = setTimeout(() => {
           try {
-            addonsRef.current.get('fit')?.fit();
+            addonsRef.current.get('fit')?.fit?.();
           } catch {
             // fit 可能在终端未就绪时抛出
           }
@@ -497,7 +668,7 @@ const XtermTerminal = forwardRef<XtermTerminalRef, XtermTerminalProps>(
       if (!terminalRef.current) return;
       terminalRef.current.options.fontSize = fontSize;
       try {
-        addonsRef.current.get('fit')?.fit();
+        addonsRef.current.get('fit')?.fit?.();
       } catch {
         /* ignore */
       }
@@ -543,39 +714,30 @@ const XtermTerminal = forwardRef<XtermTerminalRef, XtermTerminalProps>(
         isManualDisconnectRef.current = false;
 
         try {
-          const ws = new WebSocket(targetUrl);
+          const ws = wsSubprotocols
+            ? new WebSocket(targetUrl, wsSubprotocols)
+            : new WebSocket(targetUrl);
           ws.binaryType = 'arraybuffer';
           wsRef.current = ws;
 
           ws.onopen = () => {
-            setStatus('connected');
-            reconnectCountRef.current = 0;
-            onConnectRef.current?.();
-            terminalLogger.log('WebSocket connected:', targetUrl);
-
-            // 连接后立即发送终端尺寸
-            if (terminalRef.current) {
-              ws.send(
-                JSON.stringify({
-                  type: 'resize',
-                  cols: terminalRef.current.cols,
-                  rows: terminalRef.current.rows,
-                }),
-              );
-            }
+            handleWsOpen(ws);
           };
 
           ws.onmessage = (event: MessageEvent) => {
             const data =
-              typeof event.data === 'string'
+              wireProtocol === 'ttyd'
+                ? decodeTtydMessage(event.data)
+                : typeof event.data === 'string'
                 ? event.data
                 : new TextDecoder().decode(event.data);
-            terminalRef.current?.write(data);
+            writeToTerminal(data);
             onDataRef.current?.(data);
           };
 
           ws.onclose = (event: CloseEvent) => {
             terminalLogger.log('WebSocket closed:', event.code, event.reason);
+            ttydInitSentRef.current = false;
             setStatus('disconnected');
             onDisconnectRef.current?.(event);
 
@@ -621,11 +783,43 @@ const XtermTerminal = forwardRef<XtermTerminalRef, XtermTerminalProps>(
           );
         }
       },
-      [wsUrl, reconnectConfig],
+      [
+        wsUrl,
+        wsSubprotocols,
+        wireProtocol,
+        reconnectConfig,
+        handleWsOpen,
+        writeToTerminal,
+      ],
     );
+
+    /** 嵌入式面板：布局稳定后再次 fit 并同步 ttyd 尺寸 */
+    useEffect(() => {
+      if (!embedded || status !== 'connected' || !terminalReady) return;
+      const timer = window.setTimeout(() => {
+        scheduleTerminalFit(
+          () => addonsRef.current.get('fit')?.fit,
+          () => {
+            const ws = wsRef.current;
+            if (ws?.readyState === WebSocket.OPEN) {
+              syncBackendTerminalSize(ws);
+            }
+            flushPendingWrites();
+          },
+        );
+      }, 200);
+      return () => window.clearTimeout(timer);
+    }, [
+      embedded,
+      status,
+      terminalReady,
+      flushPendingWrites,
+      syncBackendTerminalSize,
+    ]);
 
     const disconnect = useCallback(() => {
       isManualDisconnectRef.current = true;
+      ttydInitSentRef.current = false;
 
       if (reconnectTimerRef.current) {
         clearTimeout(reconnectTimerRef.current);
@@ -646,7 +840,7 @@ const XtermTerminal = forwardRef<XtermTerminalRef, XtermTerminalProps>(
     }, []);
 
     // ─── wsUrl 变化时重连 ─────────────────────────────────────
-    const prevWsUrlRef = useRef(wsUrl);
+    const prevWsUrlRef = useRef<string | undefined>(wsUrl);
     useEffect(() => {
       if (
         wsUrl &&
@@ -659,20 +853,19 @@ const XtermTerminal = forwardRef<XtermTerminalRef, XtermTerminalProps>(
       prevWsUrlRef.current = wsUrl;
     }, [wsUrl, status, connect, disconnect]);
 
-    // ─── 自动连接 ────────────────────────────────────────────
+    // ─── 自动连接（须等 xterm 就绪，避免首包输出丢失）────────────────
     useEffect(() => {
-      if (autoConnect && wsUrl && status === 'disconnected') {
+      if (autoConnect && wsUrl && terminalReady && status === 'disconnected') {
         connect();
       }
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [autoConnect]);
+    }, [autoConnect, wsUrl, terminalReady, status, connect]);
 
     // ─── 搜索功能 ────────────────────────────────────────────
     const handleFindNext = useCallback(() => {
       if (!searchTerm) return;
-      const searchAddon = addonsRef.current.get('search');
-      if (!searchAddon) return;
-      searchAddon.findNext(searchTerm, {
+      const findNext = addonsRef.current.get('search')?.findNext;
+      if (!findNext) return;
+      findNext(searchTerm, {
         caseSensitive: searchOptions.caseSensitive,
         wholeWord: searchOptions.wholeWord,
         regex: searchOptions.regex,
@@ -682,18 +875,21 @@ const XtermTerminal = forwardRef<XtermTerminalRef, XtermTerminalProps>(
 
     const handleFindPrevious = useCallback(() => {
       if (!searchTerm) return;
-      const searchAddon = addonsRef.current.get('search');
-      if (!searchAddon) return;
-      searchAddon.findPrevious(searchTerm, {
+      const findPrevious = addonsRef.current.get('search')?.findPrevious;
+      if (!findPrevious) return;
+      findPrevious(searchTerm, {
         caseSensitive: searchOptions.caseSensitive,
         wholeWord: searchOptions.wholeWord,
         regex: searchOptions.regex,
       });
     }, [searchTerm, searchOptions]);
 
-    const toggleSearchOption = useCallback((key: keyof SearchOptions) => {
-      setSearchOptions((prev) => ({ ...prev, [key]: !prev[key] }));
-    }, []);
+    const toggleSearchOption = useCallback(
+      (key: keyof TerminalSearchOptionsState) => {
+        setSearchOptions((prev) => ({ ...prev, [key]: !prev[key] }));
+      },
+      [],
+    );
 
     // 搜索项变化时自动搜索
     useEffect(() => {
@@ -708,7 +904,8 @@ const XtermTerminal = forwardRef<XtermTerminalRef, XtermTerminalProps>(
       const serializeAddon = addonsRef.current.get('serialize');
       if (!serializeAddon) return;
 
-      const content = serializeAddon.serialize();
+      const content = serializeAddon.serialize?.();
+      if (!content) return;
       const blob = new Blob([content], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -737,28 +934,63 @@ const XtermTerminal = forwardRef<XtermTerminalRef, XtermTerminalProps>(
       }
     }, []);
 
-    // ─── 清屏 ────────────────────────────────────────────────
-    const handleClear = useCallback(() => {
-      terminalRef.current?.clear();
+    const clearSearchDecorations = useCallback(() => {
+      try {
+        addonsRef.current.get('search')?.clearDecorations?.();
+      } catch {
+        /* ignore */
+      }
     }, []);
 
-    // ─── 状态标签渲染 ────────────────────────────────────────
-    const renderStatusTag = useCallback(() => {
-      switch (status) {
-        case 'connected':
-          return <Tag color="#52c41a">Connected</Tag>;
-        case 'connecting':
-          return <Tag color="#1890ff">Connecting</Tag>;
-        case 'disconnected':
-          return <Tag>Disconnected</Tag>;
-        case 'error':
-          return <Tag color="#ff4d4f">Error</Tag>;
-        default:
-          return null;
-      }
-    }, [status]);
+    const closeSearchPanel = useCallback(() => {
+      setSearchVisible(false);
+      clearSearchDecorations();
+    }, [clearSearchDecorations]);
 
-    // ─── 命令式 API ──────────────────────────────────────────
+    const openSearchPanel = useCallback(() => {
+      setSearchVisible(true);
+    }, []);
+
+    const toggleSearchPanel = useCallback(() => {
+      setSearchVisible((v) => {
+        if (v) {
+          clearSearchDecorations();
+        }
+        return !v;
+      });
+    }, [clearSearchDecorations]);
+
+    const runFindNext = useCallback(
+      (term?: string, options?: SearchOptions) => {
+        const query = term ?? searchTerm;
+        if (!query) return false;
+        const sa = addonsRef.current.get('search');
+        if (!sa) return false;
+        return (
+          sa.findNext?.(query, {
+            ...searchOptions,
+            ...options,
+            incremental: true,
+          }) ?? false
+        );
+      },
+      [searchTerm, searchOptions],
+    );
+
+    const runFindPrevious = useCallback(
+      (term?: string, options?: SearchOptions) => {
+        const query = term ?? searchTerm;
+        if (!query) return false;
+        const sa = addonsRef.current.get('search');
+        if (!sa) return false;
+        return (
+          sa.findPrevious?.(query, { ...searchOptions, ...options }) ?? false
+        );
+      },
+      [searchTerm, searchOptions],
+    );
+
+    // ─── 命令式 API（原工具栏能力均通过 ref 暴露）────────────────
     useImperativeHandle(
       ref,
       () => ({
@@ -769,87 +1001,56 @@ const XtermTerminal = forwardRef<XtermTerminalRef, XtermTerminalProps>(
         clear: () => terminalRef.current?.clear(),
         focus: () => terminalRef.current?.focus(),
         blur: () => terminalRef.current?.blur(),
-        search: () => setSearchVisible(true),
-        findNext: (term: string, options?: SearchOptions) => {
-          const sa = addonsRef.current.get('search');
-          return sa ? sa.findNext(term, options) : false;
+        search: openSearchPanel,
+        toggleSearch: toggleSearchPanel,
+        closeSearch: closeSearchPanel,
+        isSearchVisible: () => searchVisible,
+        setSearchTerm,
+        getSearchTerm: () => searchTerm,
+        setSearchOptions: (options: Partial<SearchOptions>) => {
+          setSearchOptions((prev) => ({ ...prev, ...options }));
         },
-        findPrevious: (term: string, options?: SearchOptions) => {
-          const sa = addonsRef.current.get('search');
-          return sa ? sa.findPrevious(term, options) : false;
-        },
-        closeSearch: () => setSearchVisible(false),
+        findNext: runFindNext,
+        findPrevious: runFindPrevious,
+        clearSearchDecorations,
+        toggleFullscreen,
+        isFullscreen: () => isFullscreen,
         getTerminal: () => terminalRef.current,
         getStatus: () => status,
         downloadBuffer: (filename?: string) => handleDownloadBuffer(filename),
       }),
-      [connect, disconnect, status, handleDownloadBuffer],
+      [
+        connect,
+        disconnect,
+        status,
+        searchVisible,
+        searchTerm,
+        handleDownloadBuffer,
+        openSearchPanel,
+        toggleSearchPanel,
+        closeSearchPanel,
+        clearSearchDecorations,
+        runFindNext,
+        runFindPrevious,
+        toggleFullscreen,
+        isFullscreen,
+      ],
     );
 
     // ─── 渲染 ────────────────────────────────────────────────
-    const isLight = isLightTheme(theme);
+    const isLight = isLightTerminalTheme(theme);
 
     return (
       <div
         ref={wrapperRef}
         className={classNames(
           styles.terminalWrapper,
-          { [styles.lightTheme]: isLight },
+          { [styles.lightTheme]: isLight, [styles.embedded]: embedded },
           className,
         )}
         style={style}
       >
-        {/* 工具栏 */}
-        <div className={styles.controlsBar}>
-          <div className={styles.statusArea}>
-            <CodeOutlined className={styles.terminalIcon} />
-            {title && <span className={styles.title}>{title}</span>}
-            {renderStatusTag()}
-          </div>
-
-          <Space size={4} className={styles.actionsArea}>
-            <Tooltip title="Search (Ctrl+Shift+F)">
-              <Button
-                type="text"
-                size="small"
-                icon={<SearchOutlined />}
-                onClick={() => setSearchVisible((v) => !v)}
-              />
-            </Tooltip>
-            <Tooltip title="Clear screen">
-              <Button
-                type="text"
-                size="small"
-                icon={<ClearOutlined />}
-                onClick={handleClear}
-              />
-            </Tooltip>
-            <Tooltip title="Download buffer">
-              <Button
-                type="text"
-                size="small"
-                icon={<DownloadOutlined />}
-                onClick={() => handleDownloadBuffer()}
-              />
-            </Tooltip>
-            <Tooltip title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}>
-              <Button
-                type="text"
-                size="small"
-                icon={
-                  isFullscreen ? (
-                    <FullscreenExitOutlined />
-                  ) : (
-                    <FullscreenOutlined />
-                  )
-                }
-                onClick={toggleFullscreen}
-              />
-            </Tooltip>
-          </Space>
-        </div>
-
-        {/* 搜索面板 */}
+        {/* 搜索面板（通过 ref.search / ref.toggleSearch 打开） */}
         {searchVisible && (
           <div className={styles.searchPanel}>
             <Input
@@ -860,12 +1061,7 @@ const XtermTerminal = forwardRef<XtermTerminalRef, XtermTerminalProps>(
               onPressEnter={handleFindNext}
               onKeyDown={(e) => {
                 if (e.key === 'Escape') {
-                  setSearchVisible(false);
-                  try {
-                    addonsRef.current.get('search')?.clearDecorations?.();
-                  } catch {
-                    /* ignore */
-                  }
+                  closeSearchPanel();
                 }
                 if (e.key === 'Enter' && e.shiftKey) {
                   e.preventDefault();
@@ -936,14 +1132,7 @@ const XtermTerminal = forwardRef<XtermTerminalRef, XtermTerminalProps>(
                 size="small"
                 type="text"
                 icon={<CloseOutlined />}
-                onClick={() => {
-                  setSearchVisible(false);
-                  try {
-                    addonsRef.current.get('search')?.clearDecorations?.();
-                  } catch {
-                    /* ignore */
-                  }
-                }}
+                onClick={closeSearchPanel}
               />
             </Tooltip>
           </div>

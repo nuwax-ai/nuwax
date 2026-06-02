@@ -1,5 +1,9 @@
-@import '@/styles/color';
 @import '@/styles/token';
+
+@source-control-compact-gap: 6px;
+@source-control-count-badge-size: 18px;
+@source-control-count-font-size: 11px;
+@source-control-status-font-size: 11px;
 
 .source-control {
   display: flex;
@@ -13,7 +17,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 12px 4px;
+  padding: @paddingXs @paddingSm @marginXxs;
   flex-shrink: 0;
 
   .title {
@@ -24,12 +28,12 @@
 }
 
 .commit-box {
-  padding: 0 12px 12px;
+  padding: 0 @paddingSm @paddingSm;
   flex-shrink: 0;
   border-bottom: @lineWidth solid @colorSplit;
 
   .message-input {
-    margin-bottom: 8px;
+    margin-bottom: @marginXs;
     resize: none;
   }
 
@@ -51,7 +55,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 12px;
+  padding: @paddingXs @paddingSm;
   flex-shrink: 0;
   cursor: pointer;
   user-select: none;
@@ -59,20 +63,34 @@
   .changes-title {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: @source-control-compact-gap;
     font-size: @fontSizeSm;
     font-weight: @fontWeightStrong;
     color: @colorText;
+
+    .changes-expand-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      color: @colorTextSecondary;
+      transform: rotate(0deg);
+      transition: transform 0.2s ease;
+
+      &.changes-expand-icon-expanded {
+        transform: rotate(90deg);
+      }
+    }
   }
 
   .changes-count {
-    min-width: 18px;
-    height: 18px;
-    padding: 0 6px;
-    border-radius: 9px;
-    background-color: rgba(0, 0, 0, 6%);
-    font-size: 11px;
-    line-height: 18px;
+    min-width: @source-control-count-badge-size;
+    height: @source-control-count-badge-size;
+    padding: 0 @source-control-compact-gap;
+    border-radius: (@source-control-count-badge-size / 2);
+    background-color: @colorBgTextActive;
+    font-size: @source-control-count-font-size;
+    line-height: @source-control-count-badge-size;
     text-align: center;
     color: @colorTextSecondary;
   }
@@ -87,20 +105,20 @@
 .change-item {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 12px;
+  gap: @source-control-compact-gap;
+  padding: @marginXxs @paddingSm;
   cursor: pointer;
   transition: background-color 0.2s ease;
 
   &:hover {
-    background-color: rgba(0, 0, 0, 4%);
+    background-color: @colorBgTextHover;
   }
 
   &.change-item-active {
-    background-color: rgba(0, 0, 0, 8%);
+    background-color: @colorFillTertiary;
 
     &:hover {
-      background-color: rgba(0, 0, 0, 10%);
+      background-color: @colorFillSecondary;
     }
   }
 
@@ -108,7 +126,7 @@
     flex-shrink: 0;
     display: inline-flex;
     align-items: center;
-    font-size: 16px;
+    font-size: @fontSizeLg;
   }
 
   .file-info {
@@ -116,7 +134,7 @@
     min-width: 0;
     display: flex;
     align-items: baseline;
-    gap: 4px;
+    gap: @marginXxs;
   }
 
   .file-name {
@@ -137,14 +155,37 @@
 
   .status-badge {
     flex-shrink: 0;
-    font-size: 11px;
+    min-width: 14px;
+    font-size: @source-control-status-font-size;
     font-weight: @fontWeightStrong;
-    color: #c4a000;
+    text-align: center;
+    line-height: 1.2;
+
+    // 未暂存：修改（VS Code 黄）
+    &--modified {
+      color: @gold7;
+    }
+
+    // 新增 / 未跟踪（VS Code 绿）
+    &--added,
+    &--untracked {
+      color: @green7;
+    }
+
+    // 删除（VS Code 红）
+    &--deleted {
+      color: @red5;
+    }
+
+    // 已暂存：修改态在 VS Code 中为绿色 M
+    &--staged&--modified {
+      color: @green7;
+    }
   }
 }
 
 .empty-state {
-  padding: 24px 12px;
+  padding: @paddingLg @paddingSm;
   text-align: center;
   font-size: @fontSizeSm;
   color: @colorTextTertiary;

@@ -1,4 +1,3 @@
-import { ConnectionStatus } from '@/components/business-component/VncPreview/type';
 import { FileNode } from '@/types/interfaces/appDev';
 
 export interface FilePathHeaderProps {
@@ -7,10 +6,6 @@ export interface FilePathHeaderProps {
   className?: string;
   /** 文件节点 */
   targetNode: FileNode | null;
-  /** 当前视图模式 */
-  viewMode?: 'preview' | 'desktop';
-  /** 用户选择的智能体电脑名称 */
-  agentSandboxName?: string;
   /** 重启服务器回调 */
   onRestartServer?: () => void;
   /** 重启智能体回调 */
@@ -31,10 +26,6 @@ export interface FilePathHeaderProps {
   isDownloadingFile?: boolean;
   /** 是否显示更多操作菜单 */
   showMoreActions?: boolean;
-  /** 文件类型 */
-  viewFileType?: 'preview' | 'code';
-  /** 针对html、md文件，切换预览和代码视图 */
-  onViewFileTypeChange?: (type: 'preview' | 'code') => void;
   /** 通过URL下载文件回调 */
   onDownloadFileByUrl?: (node: FileNode) => void;
   /** 分享回调 */
@@ -51,8 +42,6 @@ export interface FilePathHeaderProps {
   isExportingPdf?: boolean;
   // 关闭整个面板
   onClose?: () => void;
-  /** VNC 预览连接状态 */
-  vncConnectStatus?: ConnectionStatus | null;
   /** 文件树是否可见 */
   isFileTreeVisible?: boolean;
   /** 文件树是否固定（用户点击后固定） */

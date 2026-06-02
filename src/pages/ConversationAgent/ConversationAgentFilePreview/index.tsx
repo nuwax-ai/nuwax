@@ -1,9 +1,9 @@
-import MonacoDiffEditor from '@/components/CodeViewer/MonacoDiffEditor';
 import fileTreeViewStyles from '@/components/FileTreeView/index.less';
 import type { ChangeFileInfo } from '@/components/FileTreeView/type';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
 import type { ConversationAgentFileViewPreview } from '../hooks/types';
+import ChangeFileGitDiffView from './ChangeFileGitDiffView';
 import type { PreviewTab, PreviewToolId } from './hooks/usePreviewTabs';
 import styles from './index.less';
 import PreviewTabBar from './PreviewTabBar';
@@ -107,12 +107,12 @@ const ConversationAgentFilePreview: React.FC<
       <div className={fileTreeCx('content-container', 'flex', 'flex-1')}>
         <div className={cx('flex-1', 'overflow-hide', styles['preview-body'])}>
           {showDiff && diffFile ? (
-            <MonacoDiffEditor
+            <ChangeFileGitDiffView
               fileId={diffFile.fileId}
               fileName={diffFileName}
               originalContent={diffFile.originalFileContent}
               modifiedContent={diffFile.fileContent}
-              className={styles['diff-editor']}
+              className={styles['diff-view']}
             />
           ) : showFilePreview ? (
             renderPreviewContent()

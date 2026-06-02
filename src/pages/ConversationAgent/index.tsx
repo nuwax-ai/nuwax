@@ -201,7 +201,6 @@ const ConversationAgent: React.FC = () => {
     closePreviewView,
     fileTreeData,
     fileTreeDataLoading,
-    viewMode,
     handleRefreshFileList,
     refreshFileListImmediately,
     openPreviewView,
@@ -233,16 +232,20 @@ const ConversationAgent: React.FC = () => {
   }, [currentSelectedComputerId, conversationInfo]);
 
   /**
-   * 终端 WebSocket 连接地址
-   * 根据沙箱 ID 自动构造 ws/wss 协议地址，用于底部终端组件实时通信
+   * 终端 WebSocket 连接地址（本地 ttyd 联调）
+   * http://localhost:7681/ → ws://localhost:7681/ws
    */
   const terminalWsUrl = useMemo(() => {
-    if (!finalSelectedComputerId) return '';
-    const baseUrl = process.env.BASE_URL || window.location.origin;
-    const wsProtocol = baseUrl.startsWith('https') ? 'wss' : 'ws';
-    const host = baseUrl.replace(/^https?:\/\//, '');
-    return `${wsProtocol}://${host}/api/computer/terminal/${finalSelectedComputerId}/ws`;
-  }, [finalSelectedComputerId]);
+    const httpBase = 'http://localhost:7681/';
+    try {
+      const u = new URL(httpBase);
+      const wsScheme = u.protocol === 'https:' ? 'wss:' : 'ws:';
+      const path = u.pathname === '/' || u.pathname === '' ? '/ws' : u.pathname;
+      return `${wsScheme}//${u.host}${path}`;
+    } catch {
+      return 'ws://localhost:7681/ws';
+    }
+  }, []);
 
   // ==================== 数据请求 ====================
   /** 加载空间下可用的聊天模型列表 */
@@ -465,11 +468,7 @@ const ConversationAgent: React.FC = () => {
       if (attr === 'expandPageArea') {
         runUpdateAgent(agentId);
       }
-      if (
-        attr === 'hideDesktop' &&
-        value === HideDesktopEnum.Yes &&
-        viewMode === 'desktop'
-      ) {
+      if (attr === 'hideDesktop' && value === HideDesktopEnum.Yes) {
         closePreviewView();
       }
 
@@ -529,7 +528,7 @@ const ConversationAgent: React.FC = () => {
         }
       }
     },
-    [agentConfigInfo, agentId, messageList?.length, viewMode],
+    [agentConfigInfo, agentId, messageList?.length, closePreviewView],
   );
 
   /**
@@ -837,7 +836,7 @@ const ConversationAgent: React.FC = () => {
   };
 
   /**
-   * 切换中间文件树栏显隐（仅由 header 图标控制，不受 viewMode / 预览状态影响）
+   * 切换中间文件树栏显隐（仅由 header 图标控制，不受预览面板状态影响）
    */
   const handleToggleFileTreeSidebar = useCallback(() => {
     setCanShowFileView((prev) => {
@@ -914,6 +913,13 @@ const ConversationAgent: React.FC = () => {
         if (devConversationId) {
           openPreviewView(devConversationId);
         }
+      },
+      /** 文件重命名后同步更新预览区标签页标题与 fileId */
+      onFileRenamed: (oldFileId, newFileId) => {
+        previewTabsRef.current?.renameFileTab(oldFileId, newFileId);
+        setSelectedDiffFileId((current) =>
+          current === oldFileId ? newFileId : current,
+        );
       },
     };
   }, [
@@ -1237,12 +1243,15 @@ const ConversationAgent: React.FC = () => {
             className={cx(styles['file-preview-panel'], 'w-full', 'h-full')}
           />
         ) : (
+          // 渲染编排面板
           renderArrangePanel()
         )}
       </div>
       <ConversationAgentBottomConsole
         visible={showDevConsole}
         wsUrl={terminalWsUrl}
+        wireProtocol="ttyd"
+        wsSubprotocols={['tty']}
       />
     </div>
   );
