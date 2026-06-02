@@ -8,9 +8,14 @@ import {
   PLUGIN_CREATE_TOOL,
 } from '@/constants/library.constants';
 import { dict } from '@/services/i18nRuntime';
+import {
+  apiAddResourceToGroup,
+  apiResourceGroupList,
+} from '@/services/library';
 import { apiPluginAdd, apiPluginHttpUpdate } from '@/services/plugin';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import { PluginTypeEnum } from '@/types/enums/plugin';
+import { ComponentTypeEnum } from '@/types/enums/space';
 import type { CreateNewPluginProps } from '@/types/interfaces/library';
 import type {
   PluginAddParams,
@@ -18,7 +23,7 @@ import type {
 } from '@/types/interfaces/plugin';
 import { customizeRequiredMark } from '@/utils/form';
 import type { FormProps, RadioChangeEvent } from 'antd';
-import { Form, Input, message, Radio } from 'antd';
+import { Form, Input, message, Radio, Select } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { history, useRequest } from 'umi';
@@ -64,11 +69,40 @@ const CreateNewPlugin: React.FC<CreateNewPluginProps> = ({
     }
   };
 
+  const [groupOptions, setGroupOptions] = useState<any[]>([]);
+
+  // 拉取资源分组列表
+  useEffect(() => {
+    if (open && mode === CreateUpdateModeEnum.Create && spaceId) {
+      apiResourceGroupList({
+        spaceId,
+        types: [ComponentTypeEnum.Plugin],
+      })
+        .then((res) => {
+          if (res.success && res.data) {
+            setGroupOptions(res.data || []);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [open, mode, spaceId]);
+
   // 新增插件接口
   const { run: runCreate } = useRequest(apiPluginAdd, {
     manual: true,
     debounceInterval: 300,
-    onSuccess: (result: number, params: PluginAddParams[]) => {
+    onSuccess: async (result: number, params: PluginAddParams[]) => {
+      // 校验如果用户选择了分组，则先执行移入分组操作
+      const targetGroupId = form.getFieldValue('groupId');
+      if (targetGroupId) {
+        try {
+          await apiAddResourceToGroup(targetGroupId, {
+            targetType: ComponentTypeEnum.Plugin,
+            targetId: result,
+          });
+        } catch (e) {}
+      }
+
       setImageUrl('');
       // 关闭弹窗
       onCancel();
@@ -99,7 +133,9 @@ const CreateNewPlugin: React.FC<CreateNewPluginProps> = ({
     },
   });
 
-  const onFinish: FormProps<PluginAddParams>['onFinish'] = (values) => {
+  const onFinish: FormProps<
+    PluginAddParams & { groupId?: number }
+  >['onFinish'] = (values) => {
     setLoading(true);
     if (mode === CreateUpdateModeEnum.Create) {
       runCreate({
@@ -251,6 +287,21 @@ const CreateNewPlugin: React.FC<CreateNewPluginProps> = ({
                 <SelectList options={CLOUD_BASE_CODE_OPTIONS} />
               </Form.Item>
             </ConditionRender>
+            <Form.Item
+              name="groupId"
+              label={dict('PC.Pages.SpaceResource.LeftGroupList.selectGroup')}
+            >
+              <Select
+                placeholder={dict(
+                  'PC.Pages.SpaceResource.LeftGroupList.selectGroupPlaceholder',
+                )}
+                allowClear
+                options={groupOptions.map((g) => ({
+                  value: g.id,
+                  label: g.name,
+                }))}
+              />
+            </Form.Item>
           </ConditionRender>
         </Form>
       </div>
