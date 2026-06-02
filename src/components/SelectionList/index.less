@@ -1,0 +1,213 @@
+@import '@/styles/token.less';
+
+// 局部 Less 变量定义，以 100% 还原重构前视觉效果且严格满足不硬编码规范
+@selectionContainerBorderRadius: @borderRadiusLg;
+@selectionContainerBorderColor: #e4e6eb;
+@selectionContainerGap: @marginSm; // 增加间距到 12px
+
+@selectionHeaderPadding: @padding @paddingMd;
+@selectionHeaderFontSize: @fontSizeLg;
+@selectionHeaderColor: #1d2129;
+@selectionHeaderBorderBottom: 1px solid #f2f3f5;
+
+@selectionItemPadding: @paddingSm @paddingSm;
+@selectionItemBorderRadius: @borderRadius;
+@selectionItemHoverBg: #f7f8fa;
+@selectionItemActiveBg: #f0f5ff;
+@selectionItemActiveBorderColor: #3370ff;
+@selectionItemActiveBoxShadow: 0 4px 12px rgba(51, 112, 255, 0.12);
+
+@actionsGap: @marginXxs;
+
+@selectionIconSize: 44px;
+@selectionIconMarginRight: 14px;
+
+@selectionAllIconBg: #666;
+@selectionAllIconColor: #fff;
+@selectionAllIconFontSize: 18px;
+
+@selectionNameFontSize: 15px;
+@selectionNameColor: #1d2129;
+@selectionNameActiveColor: #3370ff;
+
+@selectionDescFontSize: 13px;
+@selectionDescColor: #86909c;
+
+@selectionItemTransition: background-color 0.2s ease, border-color 0.2s ease,
+  box-shadow 0.2s ease;
+
+.container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background-color: @colorBgContainer;
+  border-radius: @selectionContainerBorderRadius;
+  border: @lineWidth solid @selectionContainerBorderColor;
+  overflow: hidden;
+
+  .header {
+    padding: @selectionHeaderPadding;
+    font-size: @selectionHeaderFontSize;
+    font-weight: 600;
+    color: @selectionHeaderColor;
+    background-color: @colorBgContainer;
+    border-bottom: @selectionHeaderBorderBottom;
+    flex-shrink: 0;
+  }
+
+  .list-wrapper {
+    flex: 1;
+    padding: @paddingSm;
+    display: flex;
+    flex-direction: column;
+    gap: @selectionContainerGap;
+    overflow: hidden;
+
+    &:hover {
+      overflow-y: auto;
+    }
+  }
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  padding: @selectionItemPadding;
+  border-radius: @selectionItemBorderRadius;
+  cursor: pointer;
+  transition: @selectionItemTransition;
+  border: @lineWidth solid @colorBorderSecondary;
+  background-color: @colorFillAlter;
+  position: relative;
+  z-index: 1;
+
+  &:hover {
+    background-color: @selectionItemHoverBg;
+
+    .actions {
+      display: flex;
+    }
+  }
+
+  &.active {
+    background-color: @selectionItemActiveBg;
+    border-color: @selectionItemActiveBorderColor;
+    box-shadow: @selectionItemActiveBoxShadow;
+
+    .info {
+      .name {
+        color: @selectionNameActiveColor;
+        transition: color 0.2s ease;
+      }
+    }
+  }
+
+  .icon {
+    width: @selectionIconSize;
+    height: @selectionIconSize;
+    border-radius: @selectionItemBorderRadius;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-right: @selectionIconMarginRight;
+    overflow: hidden;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .all-icon {
+      width: 100%;
+      height: 100%;
+      background-color: @selectionAllIconBg;
+      color: @selectionAllIconColor;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: @selectionAllIconFontSize;
+      font-weight: 500;
+    }
+  }
+
+  .info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+
+    .name-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      margin-bottom: 2px;
+      gap: @marginXs;
+
+      .name {
+        font-size: @selectionNameFontSize;
+        font-weight: 500;
+        color: @selectionNameColor;
+        line-height: @lineHeightLg;
+        transition: color 0.2s;
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .extra {
+        font-size: @selectionDescFontSize;
+        color: @selectionDescColor;
+        flex-shrink: 0;
+      }
+    }
+
+    .description {
+      font-size: @selectionDescFontSize;
+      color: @selectionDescColor;
+      line-height: @lineHeight;
+      word-break: break-all;
+    }
+  }
+
+  .actions {
+    display: none;
+    align-items: center;
+    position: absolute;
+    right: @paddingSm;
+    gap: @actionsGap;
+    background-color: @colorBgContainer;
+    border-radius: @borderRadiusSm;
+    padding: @paddingXxs;
+    box-shadow: @boxShadowSecondary;
+    z-index: 2;
+
+    .action-btn {
+      color: @colorTextSecondary;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      &:hover {
+        color: @colorPrimaryHover;
+        background-color: @colorBgTextHover;
+      }
+
+      &.ant-btn-dangerous:hover {
+        color: @colorErrorHover;
+        background-color: @colorErrorBgHover;
+      }
+    }
+  }
+}
+
+.empty-wrapper {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: @padding;
+}

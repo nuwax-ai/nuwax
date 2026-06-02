@@ -1,53 +1,36 @@
-@import '@/styles/color';
-@import '@/styles/token';
+@import '@/styles/token.less';
 
 .container {
-  padding: 16px 16px 16px 24px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: @padding @padding @padding @paddingLg;
+  overflow: hidden; // 禁止外层容器自身发生滚动，保持整页大屏的稳定度
 
-  .title {
-    line-height: 32px;
-    font-size: @fontSizeLg;
-    font-weight: 600;
-    color: @BLANK04;
-    margin-right: 20px;
-  }
-
-  .header-area {
+  .content-body {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 12px;
-    margin-bottom: 5px;
+    flex: 1;
+    min-height: 0; // 核心防爆线：限制子元素在父容器剩余物理高度内，阻止无限向下撑大
+    margin-top: 0; // 顶栏 HeaderArea 自身带有 margin-bottom: 5px 属性
+    overflow: hidden;
 
-    .header-left {
-      display: flex;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 12px;
+    .sidebar {
+      width: 300px;
+      margin-right: @margin-lg;
+      flex-shrink: 0;
+      height: calc(
+        100% - 10px
+      ); // 精确计算高度：扣除 10px 顶部外边距带来的偏移，防止高度溢出挤爆底边框！
+
+      margin-top: 10px; // 对齐 ComponentList 内部 main-container 的 margin-top: 10px 属性，实现物理高度完全顶对齐！
+    }
+
+    .list-area {
       flex: 1;
       min-width: 0;
-    }
-
-    .header-right {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-  }
-
-  .main-container {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 16px;
-    align-content: start;
-    margin-top: 10px;
-  }
-
-  @media (min-width: 1440px) {
-    .main-container {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      height: 100%;
+      overflow-y: auto; // 开启纵向局域滚动，配合全局隐藏滚动条样式实现隐形滚动
+      padding-bottom: @padding-lg; // 预留底部缓冲防线以确保呼吸感
     }
   }
 }

@@ -104,6 +104,16 @@ export const COMPONENT_MORE_ACTION: CustomPopoverItem[] = [
     type: ComponentTypeEnum.Workflow,
   },
   {
+    action: ApplicationMoreActionEnum.Add_To_Group,
+    label: dict('PC.Pages.SpaceResource.LeftGroupList.moveToGroup'),
+    type: ComponentTypeEnum.Workflow,
+  },
+  {
+    action: ApplicationMoreActionEnum.Remove_From_Group,
+    label: dict('PC.Pages.SpaceResource.LeftGroupList.removeFromGroup'),
+    type: ComponentTypeEnum.Workflow,
+  },
+  {
     action: ApplicationMoreActionEnum.Del,
     label: dict('PC.Common.Global.delete'),
     isDel: true,
@@ -123,6 +133,16 @@ export const COMPONENT_MORE_ACTION: CustomPopoverItem[] = [
   {
     action: ApplicationMoreActionEnum.Log,
     label: dict('PC.Common.Global.log'),
+    type: ComponentTypeEnum.Plugin,
+  },
+  {
+    action: ApplicationMoreActionEnum.Add_To_Group,
+    label: dict('PC.Pages.SpaceResource.LeftGroupList.moveToGroup'),
+    type: ComponentTypeEnum.Plugin,
+  },
+  {
+    action: ApplicationMoreActionEnum.Remove_From_Group,
+    label: dict('PC.Pages.SpaceResource.LeftGroupList.removeFromGroup'),
     type: ComponentTypeEnum.Plugin,
   },
   {

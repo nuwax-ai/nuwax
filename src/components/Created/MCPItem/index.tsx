@@ -1,3 +1,4 @@
+import { EllipsisTooltip } from '@/components/custom/EllipsisTooltip';
 import { t } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
@@ -48,15 +49,11 @@ const MCPItem: React.FC<MCPItemProps> = ({
         />
         <div className={cx('flex-1', styles['content-font'])}>
           <p className={cx(styles['label-font-style'])}>{item.name}</p>
-          <p
-            className={cx(
-              styles['created-description-style'],
-              'text-ellipsis-2',
-            )}
-            title={item.description}
-          >
-            {item.description}
-          </p>
+          <EllipsisTooltip
+            className={cx(styles['created-description-style'])}
+            text={item.description}
+            maxLines={2}
+          />
           <div className={cx('dis-sb', styles['count-div-style'])}>
             <div className={'dis-left'}>
               <img
