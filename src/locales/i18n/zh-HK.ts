@@ -3486,6 +3486,8 @@ export const ZH_HK: SystemLangMap = {
   "PC.Pages.SpaceResourcePricing.description": "描述",
   "PC.Pages.SpaceResourcePricing.searchToolPlaceholder": "搜索工具名稱...",
   "PC.Pages.SpaceResourcePricing.periodOnce": "次",
+  "PC.Pages.SpaceResourcePricing.periodSecond": "秒",
+  "PC.Pages.SpaceResourcePricing.periodMillionToken": "百萬Token",
   "PC.Pages.SpaceResourcePricing.tierContextLengthInvalid":
     "每個檔位的上下文長度不能為空且須大於 0",
   "PC.Pages.SpaceResourcePricing.tierContextLengthDuplicate":

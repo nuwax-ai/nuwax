@@ -10,6 +10,7 @@ import {
 import type { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
 import { modalConfirm } from '@/utils/ant-custom';
+import { getToolPricingPeriodLabel } from '@/utils/resourcePricing';
 import { PlusOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import { Button, Switch, message } from 'antd';
@@ -277,8 +278,8 @@ const ToolPricingTab: React.FC<ToolPricingTabProps> = ({
       width: 220,
       search: false,
       render: (_, record) => {
-        const unitSuffix = ` / ${dict(
-          'PC.Pages.SpaceResourcePricing.periodOnce',
+        const unitSuffix = ` / ${getToolPricingPeriodLabel(
+          record.pricingType,
         )}`;
 
         return (
