@@ -65,6 +65,8 @@
     "@dnd-kit/modifiers": "^6.0.0",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
+    "@git-diff-view/file": "^0.1.5",
+    "@git-diff-view/react": "^0.1.5",
     "@js-preview/docx": "^1.6.4",
     "@js-preview/excel": "^1.7.14",
     "@js-preview/pdf": "^2.0.10",
