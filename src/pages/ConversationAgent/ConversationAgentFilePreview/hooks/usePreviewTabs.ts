@@ -1,5 +1,5 @@
 import { dict } from '@/services/i18nRuntime';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 /** 工具类标签 ID */
 export type PreviewToolId =
@@ -14,7 +14,10 @@ export type PreviewToolId =
   | 'object-storage';
 
 /** 预览标签类型 */
-export type PreviewTabType = 'file' | 'tool';
+export type PreviewTabType = 'file' | 'tool' | 'picker';
+
+/** 新建页签（工具选择面板）固定 ID */
+export const PREVIEW_TAB_PICKER_ID = 'picker:new';
 
 /** 预览标签数据 */
 export interface PreviewTab {
@@ -24,6 +27,8 @@ export interface PreviewTab {
   isDiff?: boolean;
   toolId?: PreviewToolId;
   label: string;
+  /** 是否固定在标签栏左侧 */
+  pinned?: boolean;
 }
 
 export interface OpenFileTabOptions {
@@ -39,8 +44,8 @@ export interface UsePreviewTabsOptions {
   ) => void | Promise<void>;
   /** 激活工具标签时的回调 */
   onToolTabActivate?: (toolId: PreviewToolId) => void;
-  /** 所有标签关闭时的回调 */
-  onAllTabsClosed?: () => void;
+  /** 打开「新建页签」选择面板时的回调 */
+  onPickerTabActivate?: () => void;
 }
 
 const TOOL_I18N_MAP: Record<PreviewToolId, string> = {
@@ -68,14 +73,60 @@ export const getFileTabId = (fileId: string, isDiff = false): string =>
 /** 生成工具标签 ID */
 export const getToolTabId = (toolId: PreviewToolId): string => `tool:${toolId}`;
 
+/** 构建默认「预览」工具页签 */
+const buildPreviewTab = (): PreviewTab => ({
+  id: getToolTabId('preview'),
+  type: 'tool',
+  toolId: 'preview',
+  label: dict(TOOL_I18N_MAP.preview),
+});
+
 /**
  * 预览区标签页状态管理
  * 支持文件标签与工具标签的增删改查
  */
 export function usePreviewTabs(options: UsePreviewTabsOptions = {}) {
-  const { onFileTabActivate, onToolTabActivate, onAllTabsClosed } = options;
-  const [tabs, setTabs] = useState<PreviewTab[]>([]);
-  const [activeTabId, setActiveTabId] = useState<string | null>(null);
+  const { onFileTabActivate, onToolTabActivate, onPickerTabActivate } = options;
+  const [tabs, setTabs] = useState<PreviewTab[]>(() => [buildPreviewTab()]);
+  const [activeTabId, setActiveTabId] = useState<string | null>(() =>
+    getToolTabId('preview'),
+  );
+  const onToolTabActivateRef = useRef(onToolTabActivate);
+  onToolTabActivateRef.current = onToolTabActivate;
+
+  /** 首次挂载：同步预览页签对应的编排面板状态 */
+  useEffect(() => {
+    onToolTabActivateRef.current?.('preview');
+  }, []);
+
+  /** 激活指定标签并触发对应回调 */
+  const activateTab = useCallback(
+    (tab: PreviewTab) => {
+      setActiveTabId(tab.id);
+      if (tab.type === 'file' && tab.fileId) {
+        onFileTabActivate?.(tab.fileId, tab.isDiff);
+      } else if (tab.type === 'tool' && tab.toolId) {
+        onToolTabActivate?.(tab.toolId);
+      } else if (tab.type === 'picker') {
+        onPickerTabActivate?.();
+      }
+    },
+    [onFileTabActivate, onToolTabActivate, onPickerTabActivate],
+  );
+
+  const sortTabsWithPinnedFirst = (list: PreviewTab[]): PreviewTab[] => {
+    const pinned = list.filter((tab) => tab.pinned);
+    const unpinned = list.filter((tab) => !tab.pinned);
+    return [...pinned, ...unpinned];
+  };
+
+  /** 重置为仅保留默认「预览」页签 */
+  const openDefaultPreviewTab = useCallback(() => {
+    const previewTab = buildPreviewTab();
+    setTabs([previewTab]);
+    setActiveTabId(previewTab.id);
+    onToolTabActivate?.('preview');
+  }, [onToolTabActivate]);
 
   /** 打开或激活文件标签 */
   const openFileTab = useCallback(
@@ -107,6 +158,29 @@ export function usePreviewTabs(options: UsePreviewTabsOptions = {}) {
     },
     [onFileTabActivate],
   );
+
+  /** 打开或激活「新建页签」选择面板标签 */
+  const openPickerTab = useCallback(() => {
+    const label = dict('PC.Pages.ConversationAgentPreviewTabBar.addTab');
+
+    setTabs((prev) => {
+      const existing = prev.find((tab) => tab.id === PREVIEW_TAB_PICKER_ID);
+      if (existing) {
+        return prev;
+      }
+      return [
+        ...prev,
+        {
+          id: PREVIEW_TAB_PICKER_ID,
+          type: 'picker',
+          label,
+        },
+      ];
+    });
+
+    setActiveTabId(PREVIEW_TAB_PICKER_ID);
+    onPickerTabActivate?.();
+  }, [onPickerTabActivate]);
 
   /** 打开或激活工具标签 */
   const openToolTab = useCallback(
@@ -146,11 +220,13 @@ export function usePreviewTabs(options: UsePreviewTabsOptions = {}) {
           onFileTabActivate?.(tab.fileId, tab.isDiff);
         } else if (tab?.type === 'tool' && tab.toolId) {
           onToolTabActivate?.(tab.toolId);
+        } else if (tab?.type === 'picker') {
+          onPickerTabActivate?.();
         }
         return prev;
       });
     },
-    [onFileTabActivate, onToolTabActivate],
+    [onFileTabActivate, onToolTabActivate, onPickerTabActivate],
   );
 
   /** 关闭标签 */
@@ -164,29 +240,58 @@ export function usePreviewTabs(options: UsePreviewTabsOptions = {}) {
 
         const nextTabs = prev.filter((tab) => tab.id !== tabId);
 
+        if (nextTabs.length === 0) {
+          const previewTab = buildPreviewTab();
+          setActiveTabId(previewTab.id);
+          onToolTabActivate?.('preview');
+          return [previewTab];
+        }
+
         setActiveTabId((currentActiveId) => {
           if (currentActiveId !== tabId) {
             return currentActiveId;
           }
-          if (nextTabs.length === 0) {
-            onAllTabsClosed?.();
-            return null;
-          }
           const nextIndex = Math.min(index, nextTabs.length - 1);
           const nextTab = nextTabs[nextIndex];
-          if (nextTab.type === 'file' && nextTab.fileId) {
-            onFileTabActivate?.(nextTab.fileId, nextTab.isDiff);
-          } else if (nextTab.type === 'tool' && nextTab.toolId) {
-            onToolTabActivate?.(nextTab.toolId);
-          }
+          activateTab(nextTab);
           return nextTab.id;
         });
 
         return nextTabs;
       });
     },
-    [onAllTabsClosed, onFileTabActivate, onToolTabActivate],
+    [activateTab, onToolTabActivate],
   );
+
+  /** 关闭除指定标签外的所有标签 */
+  const closeOtherTabs = useCallback(
+    (tabId: string) => {
+      setTabs((prev) => {
+        const target = prev.find((tab) => tab.id === tabId);
+        if (!target) {
+          return prev;
+        }
+        activateTab(target);
+        return [target];
+      });
+    },
+    [activateTab],
+  );
+
+  /** 关闭所有标签后默认展示「预览」页签（编排面板） */
+  const closeAllTabs = useCallback(() => {
+    openDefaultPreviewTab();
+  }, [openDefaultPreviewTab]);
+
+  /** 切换标签固定状态（固定项排在最前） */
+  const togglePinTab = useCallback((tabId: string) => {
+    setTabs((prev) => {
+      const next = prev.map((tab) =>
+        tab.id === tabId ? { ...tab, pinned: !tab.pinned } : tab,
+      );
+      return sortTabsWithPinnedFirst(next);
+    });
+  }, []);
 
   /** 清空所有标签 */
   const clearTabs = useCallback(() => {
@@ -246,9 +351,13 @@ export function usePreviewTabs(options: UsePreviewTabsOptions = {}) {
     activeTabId,
     activeTab,
     openFileTab,
+    openPickerTab,
     openToolTab,
     selectTab,
     closeTab,
+    closeOtherTabs,
+    closeAllTabs,
+    togglePinTab,
     clearTabs,
     renameFileTab,
   };

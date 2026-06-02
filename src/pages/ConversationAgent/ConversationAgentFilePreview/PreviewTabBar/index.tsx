@@ -9,16 +9,17 @@ import {
   ExportOutlined,
   FullscreenExitOutlined,
   PlusOutlined,
+  PushpinFilled,
   SunOutlined,
   ThunderboltOutlined,
 } from '@ant-design/icons';
-import { Button, Popover, Tooltip } from 'antd';
+import { Button, Tooltip } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import MoreActionsMenu from '../FilePathHeader/MoreActionsMenu';
 import type { FilePathHeaderProps } from '../FilePathHeader/type';
 import type { PreviewTab, PreviewToolId } from '../hooks/usePreviewTabs';
-import TabPickerPanel from '../TabPickerPanel';
+import PreviewTabContextMenu from './PreviewTabContextMenu';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -26,11 +27,16 @@ const cx = classNames.bind(styles);
 export interface PreviewTabBarProps {
   tabs: PreviewTab[];
   activeTabId: string | null;
-  tabPickerOpen: boolean;
   onTabSelect: (tabId: string) => void;
   onTabClose: (tabId: string) => void;
-  onTabPickerOpenChange: (open: boolean) => void;
-  onSelectTool: (toolId: PreviewToolId) => void;
+  /** 关闭除指定标签外的所有标签 */
+  onCloseOtherTabs: (tabId: string) => void;
+  /** 关闭所有标签 */
+  onCloseAllTabs: () => void;
+  /** 切换标签固定状态 */
+  onTogglePinTab: (tabId: string) => void;
+  /** 点击 + 打开「新建页签」内容标签 */
+  onAddTab: () => void;
   /** 右侧文件操作区 props（复用原 FilePathHeader 能力） */
   headerActions?: FilePathHeaderProps;
 }
@@ -50,11 +56,12 @@ const TOOL_ICON_MAP: Partial<Record<PreviewToolId, React.ReactNode>> = {
 const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
   tabs,
   activeTabId,
-  tabPickerOpen,
   onTabSelect,
   onTabClose,
-  onTabPickerOpenChange,
-  onSelectTool,
+  onCloseOtherTabs,
+  onCloseAllTabs,
+  onTogglePinTab,
+  onAddTab,
   headerActions,
 }) => {
   const targetNode = headerActions?.targetNode;
@@ -62,6 +69,80 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
   const tabTrackRef = useRef<HTMLDivElement>(null);
   const tabGutterRef = useRef<HTMLDivElement>(null);
   const [trackScrollWidth, setTrackScrollWidth] = useState(0);
+  const [contextMenu, setContextMenu] = useState<{
+    visible: boolean;
+    x: number;
+    y: number;
+    tabId: string | null;
+  }>({ visible: false, x: 0, y: 0, tabId: null });
+
+  const contextTab = tabs.find((tab) => tab.id === contextMenu.tabId) ?? null;
+
+  const closeContextMenu = useCallback(() => {
+    setContextMenu((prev) => ({ ...prev, visible: false, tabId: null }));
+  }, []);
+
+  const handleTabContextMenu = useCallback(
+    (e: React.MouseEvent, tabId: string) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setContextMenu({
+        visible: true,
+        x: e.clientX,
+        y: e.clientY,
+        tabId,
+      });
+    },
+    [],
+  );
+
+  /** 标签栏快捷键（与右键菜单一致） */
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!activeTabId) {
+        return;
+      }
+      const target = e.target as HTMLElement;
+      if (
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.isContentEditable
+      ) {
+        return;
+      }
+
+      const isMod = e.metaKey || e.ctrlKey;
+
+      if (e.altKey && !isMod && e.key.toLowerCase() === 'w' && !e.shiftKey) {
+        e.preventDefault();
+        onTabClose(activeTabId);
+        return;
+      }
+      if (isMod && e.altKey && e.key.toLowerCase() === 't') {
+        e.preventDefault();
+        onCloseOtherTabs(activeTabId);
+        return;
+      }
+      if (e.altKey && !isMod && e.key.toLowerCase() === 'w' && e.shiftKey) {
+        e.preventDefault();
+        onCloseAllTabs();
+        return;
+      }
+      if (e.altKey && !isMod && e.key.toLowerCase() === 'p') {
+        e.preventDefault();
+        onTogglePinTab(activeTabId);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [
+    activeTabId,
+    onTabClose,
+    onCloseOtherTabs,
+    onCloseAllTabs,
+    onTogglePinTab,
+  ]);
 
   /** 同步 tabs 轨道宽度，供底部滚动条槽位使用 */
   useEffect(() => {
@@ -147,16 +228,10 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
     };
   }, [tabs.length, trackScrollWidth]);
 
-  const tabPickerContent = (
-    <TabPickerPanel
-      onSelectTool={(toolId) => {
-        onSelectTool(toolId);
-        onTabPickerOpenChange(false);
-      }}
-    />
-  );
-
   const renderTabIcon = (tab: PreviewTab) => {
+    if (tab.type === 'picker') {
+      return <PlusOutlined style={{ fontSize: 14 }} />;
+    }
     if (tab.type === 'file' && tab.fileId) {
       return getFileIcon(tab.label);
     }
@@ -177,10 +252,18 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
                   key={tab.id}
                   className={cx(styles['tab-item'], {
                     [styles['tab-item-active']]: tab.id === activeTabId,
+                    [styles['tab-item-pinned']]: tab.pinned,
                   })}
                   onClick={() => onTabSelect(tab.id)}
+                  onContextMenu={(e) => handleTabContextMenu(e, tab.id)}
                   title={tab.label}
                 >
+                  {tab.pinned && (
+                    <PushpinFilled
+                      className={cx(styles['tab-pin-icon'])}
+                      style={{ fontSize: 10 }}
+                    />
+                  )}
                   <span className={cx(styles['tab-icon'])}>
                     {renderTabIcon(tab)}
                   </span>
@@ -210,23 +293,14 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
           </div>
         </div>
 
-        <Popover
-          open={tabPickerOpen}
-          onOpenChange={onTabPickerOpenChange}
-          trigger="click"
-          placement="bottomLeft"
-          content={tabPickerContent}
-          arrow={false}
-          styles={{ body: { padding: 0 } }}
+        <button
+          type="button"
+          className={cx(styles['add-tab-btn'])}
+          aria-label={dict('PC.Pages.ConversationAgentPreviewTabBar.addTab')}
+          onClick={onAddTab}
         >
-          <button
-            type="button"
-            className={cx(styles['add-tab-btn'])}
-            aria-label={dict('PC.Pages.ConversationAgentPreviewTabBar.addTab')}
-          >
-            <PlusOutlined style={{ fontSize: 14 }} />
-          </button>
-        </Popover>
+          <PlusOutlined style={{ fontSize: 14 }} />
+        </button>
       </div>
 
       <div className={cx(styles['right-actions'])}>
@@ -335,6 +409,27 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
           {dict('PC.Pages.ConversationAgentPreviewTabBar.deploy')}
         </Button>
       </div>
+
+      <PreviewTabContextMenu
+        visible={contextMenu.visible}
+        position={{ x: contextMenu.x, y: contextMenu.y }}
+        isPinned={!!contextTab?.pinned}
+        onClose={closeContextMenu}
+        onCloseTab={
+          contextMenu.tabId ? () => onTabClose(contextMenu.tabId!) : undefined
+        }
+        onCloseOtherTabs={
+          contextMenu.tabId
+            ? () => onCloseOtherTabs(contextMenu.tabId!)
+            : undefined
+        }
+        onCloseAllTabs={onCloseAllTabs}
+        onTogglePin={
+          contextMenu.tabId
+            ? () => onTogglePinTab(contextMenu.tabId!)
+            : undefined
+        }
+      />
     </div>
   );
 };

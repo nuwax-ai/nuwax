@@ -87,13 +87,18 @@ const INTEGRATED_SERVICES: TabPickerItem[] = [
 
 export interface TabPickerPanelProps {
   onSelectTool: (toolId: PreviewToolId) => void;
+  /** 作为页签内容区展示时占满容器 */
+  embedded?: boolean;
 }
 
 /**
  * 标签页选择面板
- * 点击 + 号展开，展示开发工具与集成服务卡片
+ * 展示开发工具与集成服务卡片，选中后打开对应工具页签
  */
-const TabPickerPanel: React.FC<TabPickerPanelProps> = ({ onSelectTool }) => {
+const TabPickerPanel: React.FC<TabPickerPanelProps> = ({
+  onSelectTool,
+  embedded = false,
+}) => {
   const renderSection = (
     titleKey: string,
     descKey: string,
@@ -131,7 +136,11 @@ const TabPickerPanel: React.FC<TabPickerPanelProps> = ({ onSelectTool }) => {
   );
 
   return (
-    <div className={cx(styles['tab-picker'])}>
+    <div
+      className={cx(styles['tab-picker'], {
+        [styles['tab-picker-embedded']]: embedded,
+      })}
+    >
       {renderSection(
         'PC.Pages.ConversationAgentTabPicker.devTools',
         'PC.Pages.ConversationAgentTabPicker.devToolsDesc',

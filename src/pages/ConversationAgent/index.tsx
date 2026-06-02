@@ -72,9 +72,11 @@ import ConversationAgentBottomConsole from './ConversationAgentBottomConsole';
 import ConversationAgentFilePreview from './ConversationAgentFilePreview';
 import {
   getFileTabId,
+  PREVIEW_TAB_PICKER_ID,
   usePreviewTabs,
   type PreviewToolId,
 } from './ConversationAgentFilePreview/hooks/usePreviewTabs';
+import PreviewTabBar from './ConversationAgentFilePreview/PreviewTabBar';
 import ConversationAgentMiddlePanel from './ConversationAgentMiddlePanel';
 import type { ConversationAgentFileViewProps } from './hooks/types';
 import { useConversationAgentFileView } from './hooks/useConversationAgentFileView';
@@ -152,7 +154,6 @@ const ConversationAgent: React.FC = () => {
     () => new Set(),
   );
   /** 标签选择面板是否展开 */
-  const [tabPickerOpen, setTabPickerOpen] = useState(false);
   /** 预览标签页操作 ref（供 fileViewProviderProps 回调使用） */
   const previewTabsRef = useRef<ReturnType<typeof usePreviewTabs> | null>(null);
   /** 统一主题样式（导航栏风格等） */
@@ -860,7 +861,6 @@ const ConversationAgent: React.FC = () => {
     setIsFileTreePinned(false);
     setSelectedDiffFileId(null);
     previewTabsRef.current?.clearTabs();
-    setTabPickerOpen(false);
   }, [closePreviewView, setIsFileTreePinned]);
 
   // ==================== 文件视图 & 编排面板 ====================
@@ -962,19 +962,36 @@ const ConversationAgent: React.FC = () => {
         openPreviewView(devConversationId);
       }
     },
-    onToolTabActivate: (toolId: PreviewToolId) => {
-      if (toolId === 'version-control') {
-        setTabPickerOpen(false);
+    onPickerTabActivate: () => {
+      if (devConversationId) {
+        openPreviewView(devConversationId);
       }
     },
-    onAllTabsClosed: () => {
-      setSelectedDiffFileId(null);
-      closePreviewView();
-      setTabPickerOpen(false);
+    onToolTabActivate: (toolId: PreviewToolId) => {
+      // 「预览」对应智能体编排面板，不进入文件预览区
+      if (toolId === 'preview') {
+        setSelectedDiffFileId(null);
+        closePreviewView();
+        return;
+      }
+      if (devConversationId) {
+        openPreviewView(devConversationId);
+      }
     },
   });
 
   previewTabsRef.current = previewTabs;
+
+  /** 当前是否为「预览」工具页签（内容区展示编排面板） */
+  const isPreviewTabActive = useMemo(
+    () =>
+      previewTabs.activeTab?.type === 'tool' &&
+      previewTabs.activeTab.toolId === 'preview',
+    [previewTabs.activeTab],
+  );
+
+  /** 是否展示文件预览内容区（预览页签激活时改为编排面板） */
+  const showFilePreviewPanel = isFileTreeVisible && !isPreviewTabActive;
 
   /** 当前选中查看 diff 的文件数据 */
   const selectedDiffFile = useMemo(
@@ -1250,34 +1267,46 @@ const ConversationAgent: React.FC = () => {
   );
   /**
    * 渲染右侧面板
-   * 布局：上方为编排面板或文件预览（互斥切换），下方为终端控制台（始终显示）
+   * 布局：顶部 PreviewTabBar（始终）+ 编排/预览内容区 + 底部终端
    *
-   * 显示逻辑：
-   * - 当 isFileTreeVisible（选中文件或主动打开预览）→ 显示文件预览
-   * - 否则 → 显示编排面板
+   * 内容区：
+   * - showFilePreviewPanel → 文件预览（diff / 编辑器 / 工具页）
+   * - 否则 → 编排面板（含「预览」页签）
    */
   const renderRightPanel = () => (
     <div className={cx(styles['right-panel'])}>
       <div className={cx(styles['right-panel-body'])}>
-        {isFileTreeVisible ? (
-          <ConversationAgentFilePreview
-            preview={fileView.preview}
-            diffFile={selectedDiffFile}
-            tabs={previewTabs.tabs}
-            activeTabId={previewTabs.activeTabId}
-            activeTab={previewTabs.activeTab}
-            tabPickerOpen={tabPickerOpen}
-            onTabSelect={previewTabs.selectTab}
-            onTabClose={previewTabs.closeTab}
-            onTabPickerOpenChange={setTabPickerOpen}
-            onSelectTool={previewTabs.openToolTab}
-            providerClassName={fileView.className}
-            className={cx(styles['file-preview-panel'], 'w-full', 'h-full')}
-          />
-        ) : (
-          // 渲染编排面板
-          renderArrangePanel()
-        )}
+        <PreviewTabBar
+          tabs={previewTabs.tabs}
+          activeTabId={previewTabs.activeTabId}
+          onTabSelect={previewTabs.selectTab}
+          onTabClose={previewTabs.closeTab}
+          onCloseOtherTabs={previewTabs.closeOtherTabs}
+          onCloseAllTabs={previewTabs.closeAllTabs}
+          onTogglePinTab={previewTabs.togglePinTab}
+          onAddTab={previewTabs.openPickerTab}
+          headerActions={fileView.preview.filePathHeaderProps}
+        />
+        <div className={cx(styles['right-panel-content'])}>
+          {showFilePreviewPanel ? (
+            <ConversationAgentFilePreview
+              preview={fileView.preview}
+              diffFile={selectedDiffFile}
+              activeTab={previewTabs.activeTab}
+              onSelectTool={(toolId) => {
+                previewTabs.closeTab(PREVIEW_TAB_PICKER_ID);
+                if (toolId === 'preview') {
+                  setSelectedDiffFileId(null);
+                }
+                previewTabs.openToolTab(toolId);
+              }}
+              providerClassName={fileView.className}
+              className={cx(styles['file-preview-panel'], 'w-full', 'h-full')}
+            />
+          ) : (
+            renderArrangePanel()
+          )}
+        </div>
       </div>
       <ConversationAgentBottomConsole
         visible={showDevConsole}
