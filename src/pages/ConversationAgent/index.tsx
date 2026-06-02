@@ -1243,6 +1243,7 @@ const ConversationAgent: React.FC = () => {
             className={cx(styles['file-preview-panel'], 'w-full', 'h-full')}
           />
         ) : (
+          // 渲染编排面板
           renderArrangePanel()
         )}
       </div>

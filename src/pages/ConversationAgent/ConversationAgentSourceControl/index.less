@@ -67,6 +67,20 @@
     font-size: @fontSizeSm;
     font-weight: @fontWeightStrong;
     color: @colorText;
+
+    .changes-expand-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      color: @colorTextSecondary;
+      transform: rotate(0deg);
+      transition: transform 0.2s ease;
+
+      &.changes-expand-icon-expanded {
+        transform: rotate(90deg);
+      }
+    }
   }
 
   .changes-count {

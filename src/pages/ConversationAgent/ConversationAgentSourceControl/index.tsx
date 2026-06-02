@@ -2,7 +2,7 @@ import type { ChangeFileInfo } from '@/components/FileTreeView/type';
 import { dict } from '@/services/i18nRuntime';
 import { modalConfirm } from '@/utils/ant-custom';
 import { getFileIcon } from '@/utils/fileTree';
-import { DownOutlined, UpOutlined } from '@ant-design/icons';
+import { RightOutlined } from '@ant-design/icons';
 import { Button, Input } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
@@ -176,11 +176,14 @@ const ConversationAgentSourceControl: React.FC<
           onClick={() => setChangesExpanded((prev) => !prev)}
         >
           <div className={cx(styles['changes-title'])}>
-            {changesExpanded ? (
-              <DownOutlined style={{ fontSize: 10 }} />
-            ) : (
-              <UpOutlined style={{ fontSize: 10 }} />
-            )}
+            <span
+              className={cx(styles['changes-expand-icon'], {
+                [styles['changes-expand-icon-expanded']]: changesExpanded,
+              })}
+              aria-hidden
+            >
+              <RightOutlined />
+            </span>
             <span>
               {dict('PC.Pages.ConversationAgentSourceControl.changes')}
             </span>
