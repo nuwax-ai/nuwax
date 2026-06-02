@@ -10,9 +10,10 @@ import {
 import type { ComponentInfo } from '@/types/interfaces/library';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
-import { history, useModel, useParams, useRequest } from 'umi';
+import { useLocation, useModel, useParams, useRequest } from 'umi';
 import ComponentList from './components/ComponentList';
 import HeaderArea from './components/HeaderArea';
+import LeftGroupList from './components/LeftGroupList';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -26,6 +27,7 @@ const SpacePluginWorkflow: React.FC = () => {
   const params = useParams();
   const spaceId = Number(params.spaceId);
   const { userInfo } = useModel('userInfo');
+  const location = useLocation();
 
   const [componentList, setComponentList] = useState<ComponentInfo[]>([]);
   const componentAllRef = useRef<ComponentInfo[]>([]);
@@ -33,11 +35,15 @@ const SpacePluginWorkflow: React.FC = () => {
   const [openWorkflow, setOpenWorkflow] = useState(false);
   const [openPlugin, setOpenPlugin] = useState(false);
 
+  // 资源分组状态，0 表示全部
+  const [groupId, setGroupId] = useState<number>(0);
+
   const filterParamsRef = useRef({
     type: ComponentTypeEnum.All_Type,
     status: FilterStatusEnum.All,
     create: CreateListEnum.All_Person,
     keyword: '',
+    groupId: 0,
   });
 
   const handleFilterList = (
@@ -45,6 +51,7 @@ const SpacePluginWorkflow: React.FC = () => {
     filterStatus: FilterStatusEnum,
     filterCreate: CreateListEnum,
     filterKeyword: string,
+    filterGroupId = groupId,
     list = componentAllRef.current,
   ) => {
     filterParamsRef.current = {
@@ -52,6 +59,7 @@ const SpacePluginWorkflow: React.FC = () => {
       status: filterStatus,
       create: filterCreate,
       keyword: filterKeyword,
+      groupId: filterGroupId,
     };
 
     let _list = list.filter((item) =>
@@ -71,7 +79,16 @@ const SpacePluginWorkflow: React.FC = () => {
     if (filterKeyword) {
       _list = _list.filter((item) => item.name.includes(filterKeyword));
     }
+    if (filterGroupId && filterGroupId !== 0) {
+      _list = _list.filter((item) => item.groupId === filterGroupId);
+    }
     setComponentList(_list);
+  };
+
+  const handleGroupChange = (id: number) => {
+    setGroupId(id);
+    const { type, status, create, keyword } = filterParamsRef.current;
+    handleFilterList(type, status, create, keyword, id);
   };
 
   const { run: runComponent } = useRequest(apiComponentList, {
@@ -79,25 +96,31 @@ const SpacePluginWorkflow: React.FC = () => {
     debounceInterval: 300,
     onSuccess: (result: ComponentInfo[]) => {
       componentAllRef.current = result;
-      const { type, status, create, keyword } = filterParamsRef.current;
-      handleFilterList(type, status, create, keyword, result);
+      const {
+        type,
+        status,
+        create,
+        keyword,
+        groupId: currentGId,
+      } = filterParamsRef.current;
+      handleFilterList(type, status, create, keyword, currentGId, result);
       setLoading(false);
     },
     onError: () => setLoading(false),
   });
 
   useEffect(() => {
-    if (history.location.state) return;
+    if (location.state) return;
     setLoading(true);
     runComponent(spaceId);
   }, [spaceId]);
 
   useEffect(() => {
-    if (history.location.state) {
+    if (location.state) {
       setLoading(true);
       runComponent(spaceId);
     }
-  }, [history.location.state]);
+  }, [location.state]);
 
   const handleDel = (id: number) => {
     setComponentList((prev) => prev.filter((item) => item.id !== id));
@@ -107,7 +130,7 @@ const SpacePluginWorkflow: React.FC = () => {
   };
 
   return (
-    <div className={cx(styles.container, 'flex', 'flex-col', 'h-full')}>
+    <div className={cx(styles.container)}>
       <HeaderArea
         spaceId={spaceId}
         onFilterChange={handleFilterList}
@@ -115,12 +138,23 @@ const SpacePluginWorkflow: React.FC = () => {
         onOpenWorkflow={() => setOpenWorkflow(true)}
         onOpenPlugin={() => setOpenPlugin(true)}
       />
-      <ComponentList
-        loading={loading}
-        componentList={componentList}
-        spaceId={spaceId}
-        onDelete={handleDel}
-      />
+      <div className={cx(styles['content-body'])}>
+        <LeftGroupList
+          className={cx(styles.sidebar)}
+          spaceId={spaceId}
+          value={groupId}
+          onChange={handleGroupChange}
+          componentList={componentAllRef.current}
+        />
+        <div className={cx(styles['list-area'], 'scroll-container-hide')}>
+          <ComponentList
+            loading={loading}
+            componentList={componentList}
+            spaceId={spaceId}
+            onDelete={handleDel}
+          />
+        </div>
+      </div>
 
       <CreateNewPlugin
         spaceId={spaceId}

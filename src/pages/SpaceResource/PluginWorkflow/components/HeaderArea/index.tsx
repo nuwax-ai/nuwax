@@ -19,7 +19,7 @@ import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Input } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
-import { history, useSearchParams } from 'umi';
+import { useLocation, useSearchParams } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -44,6 +44,7 @@ const HeaderArea: React.FC<HeaderAreaProps> = ({
   onOpenWorkflow,
   onOpenPlugin,
 }) => {
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [type, setType] = useState<ComponentTypeEnum>(
@@ -69,10 +70,10 @@ const HeaderArea: React.FC<HeaderAreaProps> = ({
   };
 
   useEffect(() => {
-    if (history.location.state) {
+    if (location.state) {
       setSearchParams(new URLSearchParams());
     }
-  }, [history.location.state]);
+  }, [location.state]);
 
   useEffect(() => {
     const t =
