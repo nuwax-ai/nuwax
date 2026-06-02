@@ -1,17 +1,17 @@
 @import '@/styles/token.less';
 
 // 局部 Less 变量定义，以 100% 还原重构前视觉效果且严格满足不硬编码规范
-@selectionContainerBorderRadius: 12px;
+@selectionContainerBorderRadius: @borderRadiusLg;
 @selectionContainerBorderColor: #e4e6eb;
-@selectionContainerGap: 8px;
+@selectionContainerGap: @marginSm; // 增加间距到 12px
 
-@selectionHeaderPadding: 16px 20px;
-@selectionHeaderFontSize: 16px;
+@selectionHeaderPadding: @padding @paddingMd;
+@selectionHeaderFontSize: @fontSizeLg;
 @selectionHeaderColor: #1d2129;
 @selectionHeaderBorderBottom: 1px solid #f2f3f5;
 
-@selectionItemPadding: 12px 16px;
-@selectionItemBorderRadius: 8px;
+@selectionItemPadding: @paddingSm @padding;
+@selectionItemBorderRadius: @borderRadius;
 @selectionItemHoverBg: #f7f8fa;
 @selectionItemActiveBg: #f0f5ff;
 @selectionItemActiveBorderColor: #3370ff;
