@@ -2,9 +2,7 @@ import MoveCopyComponent from '@/components/MoveCopyComponent';
 import Loading from '@/components/custom/Loading';
 import { dict } from '@/services/i18nRuntime';
 import {
-  apiAddResourceToGroup,
   apiRemoveResourceFromGroup,
-  apiResourceGroupList,
   apiWorkflowCopyToSpace,
   apiWorkflowDelete,
 } from '@/services/library';
@@ -25,11 +23,12 @@ import {
   jumpToPluginCloudTool,
   jumpToWorkflow,
 } from '@/utils/router';
-import { Empty, message, Modal, Select } from 'antd';
+import { Empty, message } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
 import { history, useRequest } from 'umi';
 import ComponentItem from '../../../../SpaceLibrary/ComponentItem';
+import MoveToGroupModal from './components/MoveToGroupModal';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -55,13 +54,8 @@ const ComponentList: React.FC<ComponentListProps> = ({
   const [loadingWorkflow, setLoadingWorkflow] = useState(false);
   const [loadingPlugin, setLoadingPlugin] = useState(false);
 
-  // 移入分组相关局部状态
+  // 移入分组弹窗展示状态
   const [openMoveGroup, setOpenMoveGroup] = useState(false);
-  const [targetGroupId, setTargetGroupId] = useState<number | undefined>(
-    undefined,
-  );
-  const [groupOptions, setGroupOptions] = useState<any[]>([]);
-  const [moveGroupLoading, setMoveGroupLoading] = useState(false);
 
   const { run: runPluginDel } = useRequest(apiPluginDelete, {
     manual: true,
@@ -174,18 +168,7 @@ const ComponentList: React.FC<ComponentListProps> = ({
       setCurrentComponentInfo(info);
     } else if (action === ApplicationMoreActionEnum.Add_To_Group) {
       setCurrentComponentInfo(info);
-      setTargetGroupId(undefined);
       setOpenMoveGroup(true);
-      apiResourceGroupList({
-        spaceId,
-        types: [info.type],
-      })
-        .then((res) => {
-          if (res.success && res.data) {
-            setGroupOptions(res.data || []);
-          }
-        })
-        .catch(() => {});
     } else if (action === ApplicationMoreActionEnum.Remove_From_Group) {
       const { id, name, groupId } = info;
       if (!groupId) return;
@@ -272,60 +255,16 @@ const ComponentList: React.FC<ComponentListProps> = ({
         onConfirm={handlerConfirmCopyToSpace}
       />
 
-      <Modal
-        title={dict('PC.Pages.SpaceResource.LeftGroupList.selectGroup')}
+      <MoveToGroupModal
         open={openMoveGroup}
-        confirmLoading={moveGroupLoading}
+        currentComponentInfo={currentComponentInfo}
+        spaceId={spaceId}
         onCancel={() => setOpenMoveGroup(false)}
-        okButtonProps={{ disabled: !targetGroupId }}
-        onOk={() => {
-          if (!targetGroupId || !currentComponentInfo) return;
-          setMoveGroupLoading(true);
-          apiAddResourceToGroup(targetGroupId, {
-            targetType: currentComponentInfo.type,
-            targetId: currentComponentInfo.id,
-          })
-            .then((res) => {
-              if (res.success) {
-                message.success(
-                  dict('PC.Pages.SpaceResource.LeftGroupList.moveSuccess'),
-                );
-                setOpenMoveGroup(false);
-                onRefresh?.();
-              }
-            })
-            .catch(() => {})
-            .finally(() => {
-              setMoveGroupLoading(false);
-            });
+        onSuccess={() => {
+          setOpenMoveGroup(false);
+          onRefresh?.();
         }}
-        okText={dict('PC.Common.Global.confirm')}
-        cancelText={dict('PC.Common.Global.cancel')}
-      >
-        <div style={{ padding: '24px 0' }}>
-          <div style={{ marginBottom: 8, fontWeight: 500 }}>
-            {dict('PC.Pages.SpaceResource.LeftGroupList.selectGroup')}
-          </div>
-          <Select
-            style={{ width: '100%' }}
-            placeholder={dict(
-              'PC.Pages.SpaceResource.LeftGroupList.selectGroupPlaceholder',
-            )}
-            value={targetGroupId}
-            onChange={(val) => setTargetGroupId(val)}
-            options={groupOptions
-              .filter(
-                (g) =>
-                  !currentComponentInfo?.groupId ||
-                  Number(g.id) !== Number(currentComponentInfo.groupId),
-              )
-              .map((g) => ({
-                value: g.id,
-                label: g.name,
-              }))}
-          />
-        </div>
-      </Modal>
+      />
     </>
   );
 };
