@@ -58,6 +58,11 @@ export interface AgentConversationChatPanelProps {
   isFileTreeSidebarVisible?: boolean;
   /** 切换文件树侧边栏显隐 */
   onToggleFileTreeSidebar?: () => void;
+  /**
+   * 是否隐藏顶部 Header（嵌入编排面板「调试」Tab 时使用）
+   * @default false
+   */
+  hideHeader?: boolean;
 }
 
 /**
@@ -106,6 +111,7 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
   onEditAgent,
   isFileTreeSidebarVisible,
   onToggleFileTreeSidebar,
+  hideHeader = false,
 }) => {
   // ==================== Refs ====================
   /**
@@ -537,16 +543,17 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
   // ==================== 主渲染 ====================
   return (
     <div className={cx(styles.container, className, 'flex', 'h-full')}>
-      {/* 顶部导航栏：智能体名称/图标、编辑按钮、文件树切换 */}
-      <ConversationAgentHeader
-        agentConfigInfo={agentConfigInfo}
-        onEditAgent={onEditAgent}
-        showFilePanel={isShowFilePanel}
-        isFileTreeSidebarVisible={isFileTreeSidebarVisible}
-        onToggleFileTreeSidebar={onToggleFileTreeSidebar}
-        isFileTreeVisible={isFileTreeVisible}
-        onOpenPreviewPanel={handleOpenPreviewPanel}
-      />
+      {!hideHeader && (
+        <ConversationAgentHeader
+          agentConfigInfo={agentConfigInfo}
+          onEditAgent={onEditAgent}
+          showFilePanel={isShowFilePanel}
+          isFileTreeSidebarVisible={isFileTreeSidebarVisible}
+          onToggleFileTreeSidebar={onToggleFileTreeSidebar}
+          isFileTreeVisible={isFileTreeVisible}
+          onOpenPreviewPanel={handleOpenPreviewPanel}
+        />
+      )}
 
       {/* 主内容区域：消息列表 + 状态栏 + 输入框 */}
       <div

@@ -1185,6 +1185,31 @@ const ConversationAgent: React.FC = () => {
    * - 工具选择（插件/工作流/MCP/技能/子智能体）
    * - 模型切换
    */
+  /** 编排面板「调试」Tab 内嵌的智能体对话（布局参考 AgentDetails / Chat） */
+  const arrangeDebugChatPanel = useMemo(
+    () => (
+      <AgentConversationChatPanel
+        agentId={agentId}
+        agentConfigInfo={agentConfigInfo}
+        hideHeader
+        className={cx(styles['arrange-debug-chat'])}
+        onAgentConfigInfo={setAgentConfigInfo}
+        onChangeSelectedComputerId={setCurrentSelectedComputerId}
+        onEditAgent={() => setOpenEditAgent(true)}
+        isFileTreeSidebarVisible={canShowFileView}
+        onToggleFileTreeSidebar={handleToggleFileTreeSidebar}
+      />
+    ),
+    [
+      agentId,
+      agentConfigInfo,
+      canShowFileView,
+      handleToggleFileTreeSidebar,
+      setAgentConfigInfo,
+      setCurrentSelectedComputerId,
+    ],
+  );
+
   const renderArrangePanel = () => (
     <AgentArrangePanel
       agentId={agentId}
@@ -1193,6 +1218,13 @@ const ConversationAgent: React.FC = () => {
       systemUserTipsWordRef={systemUserTipsWordRef}
       promptVariables={promptVariables}
       promptTools={promptTools}
+      debugPanel={arrangeDebugChatPanel}
+      devConversationId={agentConfigInfo?.devConversationId}
+      onCommitRollbackSuccess={() => {
+        if (devConversationId) {
+          handleRefreshFileList(devConversationId);
+        }
+      }}
       onChangeAgent={handleChangeAgent}
       onInsertSystemPrompt={handleInsertSystemPrompt}
       onVariablesChange={handleVariablesChange}
