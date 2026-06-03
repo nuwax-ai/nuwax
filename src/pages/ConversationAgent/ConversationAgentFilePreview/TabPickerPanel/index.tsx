@@ -11,6 +11,7 @@ import {
 } from '@ant-design/icons';
 import classNames from 'classnames';
 import React from 'react';
+import { useModel } from 'umi';
 import type { PreviewToolId } from '../hooks/usePreviewTabs';
 import styles from './index.less';
 
@@ -130,25 +131,33 @@ const TabPickerSection: React.FC<TabPickerSectionProps> = ({
 const TabPickerPanel: React.FC<TabPickerPanelProps> = ({
   onSelectTool,
   embedded = false,
-}) => (
-  <div
-    className={cx(styles['tab-picker'], {
-      [styles['tab-picker-embedded']]: embedded,
-    })}
-  >
-    <TabPickerSection
-      titleKey="PC.Pages.ConversationAgentTabPicker.devTools"
-      descKey="PC.Pages.ConversationAgentTabPicker.devToolsDesc"
-      items={DEV_TOOLS}
-      onSelectTool={onSelectTool}
-    />
-    <TabPickerSection
-      titleKey="PC.Pages.ConversationAgentTabPicker.subscription"
-      descKey="PC.Pages.ConversationAgentTabPicker.subscriptionDesc"
-      items={SUBSCRIPTION_TOOLS}
-      onSelectTool={onSelectTool}
-    />
-  </div>
-);
+}) => {
+  const { tenantConfigInfo } = useModel('tenantConfigInfo');
+  /** 与 EditAgent AgentHeader 一致：租户未开启订阅时不展示订阅分区 */
+  const showSubscriptionSection = tenantConfigInfo?.enableSubscription !== 0;
+
+  return (
+    <div
+      className={cx(styles['tab-picker'], {
+        [styles['tab-picker-embedded']]: embedded,
+      })}
+    >
+      <TabPickerSection
+        titleKey="PC.Pages.ConversationAgentTabPicker.devTools"
+        descKey="PC.Pages.ConversationAgentTabPicker.devToolsDesc"
+        items={DEV_TOOLS}
+        onSelectTool={onSelectTool}
+      />
+      {showSubscriptionSection && (
+        <TabPickerSection
+          titleKey="PC.Pages.ConversationAgentTabPicker.subscription"
+          descKey="PC.Pages.ConversationAgentTabPicker.subscriptionDesc"
+          items={SUBSCRIPTION_TOOLS}
+          onSelectTool={onSelectTool}
+        />
+      )}
+    </div>
+  );
+};
 
 export default TabPickerPanel;

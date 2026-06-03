@@ -215,8 +215,9 @@ const ConversationAgent: React.FC = () => {
     taskAgentSelectTrigger,
     setIsLoadingOtherInterface,
   } = useModel('conversationAgent');
-  /** tenantConfigInfo model：租户配置（页面标题等） */
-  const { setTitle } = useModel('tenantConfigInfo');
+  /** tenantConfigInfo model：租户配置（页面标题、订阅开关等） */
+  const { setTitle, tenantConfigInfo } = useModel('tenantConfigInfo');
+  const showSubscriptionTabs = tenantConfigInfo?.enableSubscription !== 0;
   /** spaceAgent model：当前空间下的智能体组件列表（变量、插件、工具等） */
   const { agentComponentList } = useModel('spaceAgent');
 
@@ -1273,19 +1274,22 @@ const ConversationAgent: React.FC = () => {
     ],
   );
 
-  /** 「订阅设置」页签 */
+  /** 「订阅设置」页签（租户未开启订阅时不渲染） */
   const subscriptionSettingPanel = useMemo(
     () =>
-      agentId ? (
+      showSubscriptionTabs && agentId ? (
         <SubscriptionSetting agentId={agentId} spaceId={spaceId} visible />
       ) : null,
-    [agentId, spaceId],
+    [showSubscriptionTabs, agentId, spaceId],
   );
 
-  /** 「订阅统计」页签 */
+  /** 「订阅统计」页签（租户未开启订阅时不渲染） */
   const subscriptionStatsPanel = useMemo(
-    () => (agentId ? <SubscriptionStats agentId={agentId} visible /> : null),
-    [agentId],
+    () =>
+      showSubscriptionTabs && agentId ? (
+        <SubscriptionStats agentId={agentId} visible />
+      ) : null,
+    [showSubscriptionTabs, agentId],
   );
 
   /** 「版本控制」页签：Git 提交记录 */
