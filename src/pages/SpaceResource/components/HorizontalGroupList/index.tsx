@@ -196,23 +196,7 @@ const HorizontalGroupList: React.FC<HorizontalGroupListProps> = ({
                     >
                       {group.name}
                     </Typography.Text>
-                    <span className={cx(styles['count-text'])}>
-                      {dict(
-                        'PC.Pages.SpaceResource.LeftGroupList.unitCount',
-                      ).replace('{0}', String(group.toolCount || 0))}
-                    </span>
-                  </div>
-                  {(group.description || menuItems.length > 0) && (
-                    <div className={cx(styles['desc-wrap'])}>
-                      <Typography.Paragraph
-                        className={cx(styles.description)}
-                        ellipsis={{
-                          rows: 1,
-                          tooltip: group.description,
-                        }}
-                      >
-                        {group.description || ' '}
-                      </Typography.Paragraph>
+                    {menuItems.length > 0 && (
                       <Dropdown
                         menu={{ items: menuItems }}
                         trigger={['hover']}
@@ -227,8 +211,8 @@ const HorizontalGroupList: React.FC<HorizontalGroupListProps> = ({
                           />
                         </div>
                       </Dropdown>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               </div>
             );
