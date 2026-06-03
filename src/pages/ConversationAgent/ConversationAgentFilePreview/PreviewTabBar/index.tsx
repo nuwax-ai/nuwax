@@ -1,6 +1,7 @@
 import { dict } from '@/services/i18nRuntime';
 import { getFileIcon } from '@/utils/fileTree';
 import {
+  BarChartOutlined,
   BranchesOutlined,
   CloseOutlined,
   CodeOutlined,
@@ -8,6 +9,7 @@ import {
   FormOutlined,
   PlusOutlined,
   PushpinFilled,
+  SettingOutlined,
   ThunderboltOutlined,
 } from '@ant-design/icons';
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
@@ -214,6 +216,8 @@ const TOOL_ICON_MAP: Partial<Record<PreviewToolId, React.ReactNode>> = {
   editor: <CodeOutlined style={{ fontSize: 14 }} />,
   terminal: <ThunderboltOutlined style={{ fontSize: 14 }} />,
   'version-control': <BranchesOutlined style={{ fontSize: 14 }} />,
+  'subscription-setting': <SettingOutlined style={{ fontSize: 14 }} />,
+  'subscription-stats': <BarChartOutlined style={{ fontSize: 14 }} />,
 };
 
 /**

@@ -32,6 +32,10 @@ export interface ConversationAgentFilePreviewProps {
   arrangeConfigPanel?: React.ReactNode;
   /** 「版本控制」页签：Git 提交记录 */
   versionPanel?: React.ReactNode;
+  /** 「订阅设置」页签 */
+  subscriptionSettingPanel?: React.ReactNode;
+  /** 「订阅统计」页签 */
+  subscriptionStatsPanel?: React.ReactNode;
   /** 外层容器类名（来自 useConversationAgentFileView） */
   providerClassName?: string;
   className?: string;
@@ -51,6 +55,8 @@ const ConversationAgentFilePreview: React.FC<
   debugPanel,
   arrangeConfigPanel,
   versionPanel,
+  subscriptionSettingPanel,
+  subscriptionStatsPanel,
   providerClassName,
   className,
 }) => {
@@ -126,7 +132,20 @@ const ConversationAgentFilePreview: React.FC<
               {arrangeConfigPanel}
             </div>
           ) : activeWorkspaceToolId === 'version-control' && versionPanel ? (
+            // 显示「版本控制」页签内容
             <div className={cx(styles['workspace-panel'])}>{versionPanel}</div>
+          ) : activeWorkspaceToolId === 'subscription-setting' &&
+            // 显示「订阅设置」页签内容
+            subscriptionSettingPanel ? (
+            <div className={cx(styles['workspace-panel'])}>
+              {subscriptionSettingPanel}
+            </div>
+          ) : activeWorkspaceToolId === 'subscription-stats' &&
+            // 显示「订阅统计」页签内容
+            subscriptionStatsPanel ? (
+            <div className={cx(styles['workspace-panel'])}>
+              {subscriptionStatsPanel}
+            </div>
           ) : showOtherToolContent && activeTab?.toolId ? (
             // 工具类标签页占位内容
             <ToolTabContent toolId={activeTab.toolId} />

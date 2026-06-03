@@ -7,6 +7,8 @@ import { SUCCESS_CODE } from '@/constants/codes.constants';
 import useUnifiedTheme from '@/hooks/useUnifiedTheme';
 import AgentModelSetting from '@/pages/EditAgent/AgentModelSetting';
 import DebugDetails from '@/pages/EditAgent/DebugDetails';
+import SubscriptionSetting from '@/pages/EditAgent/SubscriptionSetting';
+import SubscriptionStats from '@/pages/EditAgent/SubscriptionStats';
 import { SystemUserTipsWordRef } from '@/pages/EditAgent/SystemTipsWord';
 import {
   apiAgentComponentModelUpdate,
@@ -1271,6 +1273,21 @@ const ConversationAgent: React.FC = () => {
     ],
   );
 
+  /** 「订阅设置」页签 */
+  const subscriptionSettingPanel = useMemo(
+    () =>
+      agentId ? (
+        <SubscriptionSetting agentId={agentId} spaceId={spaceId} visible />
+      ) : null,
+    [agentId, spaceId],
+  );
+
+  /** 「订阅统计」页签 */
+  const subscriptionStatsPanel = useMemo(
+    () => (agentId ? <SubscriptionStats agentId={agentId} visible /> : null),
+    [agentId],
+  );
+
   /** 「版本控制」页签：Git 提交记录 */
   const arrangeVersionPanel = useMemo(
     () => (
@@ -1321,6 +1338,8 @@ const ConversationAgent: React.FC = () => {
               arrangeConfigPanel={arrangeConfigPanel}
               // 版本控制面板（Git 提交记录）
               versionPanel={arrangeVersionPanel}
+              subscriptionSettingPanel={subscriptionSettingPanel}
+              subscriptionStatsPanel={subscriptionStatsPanel}
               onSelectTool={(toolId) => {
                 previewTabs.closeTab(PREVIEW_TAB_PICKER_ID);
                 previewTabs.openToolTab(toolId);

@@ -1,14 +1,11 @@
 import { dict } from '@/services/i18nRuntime';
 import {
-  ApiOutlined,
-  AppstoreOutlined,
+  BarChartOutlined,
   BranchesOutlined,
   CodeOutlined,
-  DatabaseOutlined,
   DesktopOutlined,
   FormOutlined,
   PlusOutlined,
-  SafetyCertificateOutlined,
   SettingOutlined,
   ThunderboltOutlined,
 } from '@ant-design/icons';
@@ -60,36 +57,19 @@ const DEV_TOOLS: TabPickerItem[] = [
   },
 ];
 
-const INTEGRATED_SERVICES: TabPickerItem[] = [
+/** 订阅 */
+const SUBSCRIPTION_TOOLS: TabPickerItem[] = [
   {
-    id: 'integration-mgmt',
-    icon: <ApiOutlined />,
-    titleKey: 'PC.Pages.ConversationAgentTabPicker.integrationMgmt',
-    descKey: 'PC.Pages.ConversationAgentTabPicker.integrationMgmtDesc',
-  },
-  {
-    id: 'env-vars',
+    id: 'subscription-setting',
     icon: <SettingOutlined />,
-    titleKey: 'PC.Pages.ConversationAgentTabPicker.envVars',
-    descKey: 'PC.Pages.ConversationAgentTabPicker.envVarsDesc',
+    titleKey: 'PC.Pages.ConversationAgentTabPicker.subscriptionSetting',
+    descKey: 'PC.Pages.ConversationAgentTabPicker.subscriptionSettingDesc',
   },
   {
-    id: 'database',
-    icon: <DatabaseOutlined />,
-    titleKey: 'PC.Pages.ConversationAgentTabPicker.database',
-    descKey: 'PC.Pages.ConversationAgentTabPicker.databaseDesc',
-  },
-  {
-    id: 'auth',
-    icon: <SafetyCertificateOutlined />,
-    titleKey: 'PC.Pages.ConversationAgentTabPicker.auth',
-    descKey: 'PC.Pages.ConversationAgentTabPicker.authDesc',
-  },
-  {
-    id: 'object-storage',
-    icon: <AppstoreOutlined />,
-    titleKey: 'PC.Pages.ConversationAgentTabPicker.objectStorage',
-    descKey: 'PC.Pages.ConversationAgentTabPicker.objectStorageDesc',
+    id: 'subscription-stats',
+    icon: <BarChartOutlined />,
+    titleKey: 'PC.Pages.ConversationAgentTabPicker.subscriptionStats',
+    descKey: 'PC.Pages.ConversationAgentTabPicker.subscriptionStatsDesc',
   },
 ];
 
@@ -99,76 +79,76 @@ export interface TabPickerPanelProps {
   embedded?: boolean;
 }
 
+interface TabPickerSectionProps {
+  titleKey: string;
+  descKey: string;
+  items: TabPickerItem[];
+  onSelectTool: (toolId: PreviewToolId) => void;
+}
+
+/** 单个分区：标题 + 说明 + 卡片网格 */
+const TabPickerSection: React.FC<TabPickerSectionProps> = ({
+  titleKey,
+  descKey,
+  items,
+  onSelectTool,
+}) => (
+  <div className={cx(styles.section)}>
+    <h4 className={cx(styles['section-title'])}>{dict(titleKey)}</h4>
+    <p className={cx(styles['section-desc'])}>{dict(descKey)}</p>
+    <div className={cx(styles['card-grid'])}>
+      {items.map((item) => (
+        <div
+          key={item.id}
+          className={cx(styles.card)}
+          onClick={() => onSelectTool(item.id)}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              onSelectTool(item.id);
+            }
+          }}
+        >
+          <span className={cx(styles['card-icon'])}>{item.icon}</span>
+          <div className={cx(styles['card-body'])}>
+            <p className={cx(styles['card-title'])}>{dict(item.titleKey)}</p>
+            <p className={cx(styles['card-desc'])}>{dict(item.descKey)}</p>
+          </div>
+          <span className={cx(styles['card-add'])} aria-hidden>
+            <PlusOutlined />
+          </span>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
 /**
- * 标签页选择面板
- * 展示开发工具与集成服务卡片，选中后打开对应工具页签
+ * 标签页选择面板：展示开发工具、订阅卡片，选中后打开对应工具页签
  */
 const TabPickerPanel: React.FC<TabPickerPanelProps> = ({
   onSelectTool,
   embedded = false,
-}) => {
-  const renderSection = (
-    titleKey: string,
-    descKey: string,
-    items: TabPickerItem[],
-  ) => (
-    <div className={cx(styles.section)}>
-      <h4 className={cx(styles['section-title'])}>{dict(titleKey)}</h4>
-      <p className={cx(styles['section-desc'])}>{dict(descKey)}</p>
-      <div className={cx(styles['card-grid'])}>
-        {items.map((item) => (
-          <div
-            key={item.id}
-            className={cx(styles.card)}
-            onClick={() => onSelectTool(item.id)}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                onSelectTool(item.id);
-              }
-            }}
-          >
-            <span className={cx(styles['card-icon'])}>{item.icon}</span>
-            <div className={cx(styles['card-body'])}>
-              <p className={cx(styles['card-title'])}>{dict(item.titleKey)}</p>
-              <p className={cx(styles['card-desc'])}>{dict(item.descKey)}</p>
-            </div>
-            <span className={cx(styles['card-add'])} aria-hidden>
-              <PlusOutlined />
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-
-  return (
-    <div
-      className={cx(styles['tab-picker'], {
-        [styles['tab-picker-embedded']]: embedded,
-      })}
-    >
-      {renderSection(
-        'PC.Pages.ConversationAgentTabPicker.devTools',
-        'PC.Pages.ConversationAgentTabPicker.devToolsDesc',
-        DEV_TOOLS,
-      )}
-      {renderSection(
-        'PC.Pages.ConversationAgentTabPicker.integratedServices',
-        'PC.Pages.ConversationAgentTabPicker.integratedServicesDesc',
-        INTEGRATED_SERVICES,
-      )}
-      <div className={cx(styles.section)}>
-        <h4 className={cx(styles['section-title'])}>
-          {dict('PC.Pages.ConversationAgentTabPicker.hosting')}
-        </h4>
-        <p className={cx(styles['section-desc'])}>
-          {dict('PC.Pages.ConversationAgentTabPicker.hostingDesc')}
-        </p>
-      </div>
-    </div>
-  );
-};
+}) => (
+  <div
+    className={cx(styles['tab-picker'], {
+      [styles['tab-picker-embedded']]: embedded,
+    })}
+  >
+    <TabPickerSection
+      titleKey="PC.Pages.ConversationAgentTabPicker.devTools"
+      descKey="PC.Pages.ConversationAgentTabPicker.devToolsDesc"
+      items={DEV_TOOLS}
+      onSelectTool={onSelectTool}
+    />
+    <TabPickerSection
+      titleKey="PC.Pages.ConversationAgentTabPicker.subscription"
+      descKey="PC.Pages.ConversationAgentTabPicker.subscriptionDesc"
+      items={SUBSCRIPTION_TOOLS}
+      onSelectTool={onSelectTool}
+    />
+  </div>
+);
 
 export default TabPickerPanel;

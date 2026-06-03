@@ -9,11 +9,8 @@ export type PreviewToolId =
   | 'editor'
   | 'terminal'
   | 'version-control'
-  | 'integration-mgmt'
-  | 'env-vars'
-  | 'database'
-  | 'auth'
-  | 'object-storage';
+  | 'subscription-setting'
+  | 'subscription-stats';
 
 /** 预览标签类型 */
 export type PreviewTabType = 'file' | 'tool' | 'picker';
@@ -55,6 +52,8 @@ export const WORKSPACE_PREVIEW_TOOL_IDS: PreviewToolId[] = [
   'preview',
   'arrange',
   'version-control',
+  'subscription-setting',
+  'subscription-stats',
 ];
 
 const TOOL_I18N_MAP: Record<PreviewToolId, string> = {
@@ -63,11 +62,9 @@ const TOOL_I18N_MAP: Record<PreviewToolId, string> = {
   editor: 'PC.Pages.ConversationAgentTabPicker.editor',
   terminal: 'PC.Pages.ConversationAgentTabPicker.terminal',
   'version-control': 'PC.Pages.ConversationAgentTabPicker.versionControl',
-  'integration-mgmt': 'PC.Pages.ConversationAgentTabPicker.integrationMgmt',
-  'env-vars': 'PC.Pages.ConversationAgentTabPicker.envVars',
-  database: 'PC.Pages.ConversationAgentTabPicker.database',
-  auth: 'PC.Pages.ConversationAgentTabPicker.auth',
-  'object-storage': 'PC.Pages.ConversationAgentTabPicker.objectStorage',
+  'subscription-setting':
+    'PC.Pages.ConversationAgentTabPicker.subscriptionSetting',
+  'subscription-stats': 'PC.Pages.ConversationAgentTabPicker.subscriptionStats',
 };
 
 /** 从文件路径提取文件名 */
