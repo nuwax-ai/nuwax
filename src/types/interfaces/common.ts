@@ -1,5 +1,6 @@
 import type { AgentMode } from '@/components/business-component/AgentIntervention';
 import { MentionItem } from '@/components/ChatInputHome/MentionPopup/types';
+import type { ResourcePricingType } from '@/pages/SpaceResource/types/resource';
 import type {
   AgentComponentTypeEnum,
   AllowCopyEnum,
@@ -340,6 +341,8 @@ export interface CreatedNodeItem {
   paymentRequired?: boolean;
   subscribed?: boolean;
   price?: number;
+  /** 计价周期，与工具定价配置一致：ONE_TIME / SECOND / MILLION_TOKEN 等 */
+  pricingType?: ResourcePricingType;
 }
 
 export interface MCPNodeItem {

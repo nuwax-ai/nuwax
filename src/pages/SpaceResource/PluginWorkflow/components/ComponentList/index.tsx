@@ -1,7 +1,11 @@
 import MoveCopyComponent from '@/components/MoveCopyComponent';
 import Loading from '@/components/custom/Loading';
 import { dict } from '@/services/i18nRuntime';
-import { apiWorkflowCopyToSpace, apiWorkflowDelete } from '@/services/library';
+import {
+  apiRemoveResourceFromGroup,
+  apiWorkflowCopyToSpace,
+  apiWorkflowDelete,
+} from '@/services/library';
 import { apiPluginCopyToSpace, apiPluginDelete } from '@/services/plugin';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { PluginTypeEnum } from '@/types/enums/plugin';
@@ -24,6 +28,7 @@ import classNames from 'classnames';
 import React, { useState } from 'react';
 import { history, useRequest } from 'umi';
 import ComponentItem from '../../../../SpaceLibrary/ComponentItem';
+import MoveToGroupModal from './components/MoveToGroupModal';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -33,6 +38,7 @@ interface ComponentListProps {
   componentList: ComponentInfo[];
   spaceId: number;
   onDelete: (id: number) => void;
+  onRefresh?: () => void;
 }
 
 const ComponentList: React.FC<ComponentListProps> = ({
@@ -40,12 +46,16 @@ const ComponentList: React.FC<ComponentListProps> = ({
   componentList,
   spaceId,
   onDelete,
+  onRefresh,
 }) => {
   const [currentComponentInfo, setCurrentComponentInfo] =
     useState<ComponentInfo | null>(null);
   const [openMove, setOpenMove] = useState(false);
   const [loadingWorkflow, setLoadingWorkflow] = useState(false);
   const [loadingPlugin, setLoadingPlugin] = useState(false);
+
+  // 移入分组弹窗展示状态
+  const [openMoveGroup, setOpenMoveGroup] = useState(false);
 
   const { run: runPluginDel } = useRequest(apiPluginDelete, {
     manual: true,
@@ -156,6 +166,34 @@ const ComponentList: React.FC<ComponentListProps> = ({
     } else if (action === ApplicationMoreActionEnum.Copy_To_Space) {
       setOpenMove(true);
       setCurrentComponentInfo(info);
+    } else if (action === ApplicationMoreActionEnum.Add_To_Group) {
+      setCurrentComponentInfo(info);
+      setOpenMoveGroup(true);
+    } else if (action === ApplicationMoreActionEnum.Remove_From_Group) {
+      const { id, name, groupId } = info;
+      if (!groupId) return;
+      modalConfirm(
+        dict('PC.Pages.SpaceResource.LeftGroupList.confirmRemoveFromGroup'),
+        dict('PC.Pages.SpaceResource.LeftGroupList.confirmRemoveDesc').replace(
+          '{0}',
+          name,
+        ),
+        () => {
+          return apiRemoveResourceFromGroup(groupId, {
+            targetType: info.type,
+            targetId: id,
+          })
+            .then((res) => {
+              if (res.success) {
+                message.success(
+                  dict('PC.Pages.SpaceResource.LeftGroupList.removeSuccess'),
+                );
+                onRefresh?.();
+              }
+            })
+            .catch(() => {});
+        },
+      );
     } else if (action === ApplicationMoreActionEnum.Export_Config) {
       if (type === ComponentTypeEnum.Plugin) {
         exportConfigFile(info.id, AgentComponentTypeEnum.Plugin);
@@ -215,6 +253,17 @@ const ComponentList: React.FC<ComponentListProps> = ({
         title={currentComponentInfo?.name}
         onCancel={() => setOpenMove(false)}
         onConfirm={handlerConfirmCopyToSpace}
+      />
+
+      <MoveToGroupModal
+        open={openMoveGroup}
+        currentComponentInfo={currentComponentInfo}
+        spaceId={spaceId}
+        onCancel={() => setOpenMoveGroup(false)}
+        onSuccess={() => {
+          setOpenMoveGroup(false);
+          onRefresh?.();
+        }}
       />
     </>
   );

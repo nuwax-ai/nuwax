@@ -18,6 +18,7 @@ const cx = classNames.bind(styles);
 interface AgentTypeProps {
   type: AgentComponentTypeEnum;
   className?: string;
+  showTitle?: boolean;
 }
 
 // 智能体类型组件映射
@@ -72,7 +73,11 @@ const AgentTypeMap: Record<
  * @param type - 智能体类型
  * @returns
  */
-const AgentType: React.FC<AgentTypeProps> = ({ type, className }) => {
+const AgentType: React.FC<AgentTypeProps> = ({
+  type,
+  className,
+  showTitle = true,
+}) => {
   const { icon, title, styleClassName } = AgentTypeMap?.[type] || {};
 
   return (
@@ -85,7 +90,7 @@ const AgentType: React.FC<AgentTypeProps> = ({ type, className }) => {
       )}
     >
       {icon}
-      <span>{title}</span>
+      {showTitle && <span>{title}</span>}
     </div>
   );
 };
