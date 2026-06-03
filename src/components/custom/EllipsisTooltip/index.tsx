@@ -25,7 +25,7 @@ export const EllipsisTooltip: React.FC<EllipsisTooltipProps> = ({
 }) => {
   const textRef = useRef<HTMLDivElement>(null);
   const [isOverflowed, setIsOverflowed] = useState<boolean>(false);
-  const displayText = String(text);
+  const displayText = text ? String(text) : '';
 
   const checkOverflow = useCallback(() => {
     if (!textRef.current) {
@@ -55,6 +55,10 @@ export const EllipsisTooltip: React.FC<EllipsisTooltipProps> = ({
 
     return () => resizeObserver.disconnect();
   }, [checkOverflow]);
+
+  if (!displayText) {
+    return null;
+  }
 
   return (
     <TooltipIcon

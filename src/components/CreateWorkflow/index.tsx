@@ -1,10 +1,17 @@
 import workflowIcon from '@/assets/images/workflow_image.png';
+import ConditionRender from '@/components/ConditionRender';
 import CustomFormModal from '@/components/CustomFormModal';
 import OverrideTextArea from '@/components/OverrideTextArea';
 import UploadAvatar from '@/components/UploadAvatar';
 import { dict } from '@/services/i18nRuntime';
-import { apiAddWorkflow, apiUpdateWorkflow } from '@/services/library';
+import {
+  apiAddResourceToGroup,
+  apiAddWorkflow,
+  apiResourceGroupList,
+  apiUpdateWorkflow,
+} from '@/services/library';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
+import { ComponentTypeEnum } from '@/types/enums/space';
 import type {
   CreateWorkflowProps,
   UpdateWorkflowParams,
@@ -12,7 +19,7 @@ import type {
 } from '@/types/interfaces/library';
 import { customizeRequiredMark } from '@/utils/form';
 import type { FormProps } from 'antd';
-import { Form, Input, message } from 'antd';
+import { Form, Input, message, Select } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { history, useRequest } from 'umi';
@@ -34,15 +41,44 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
   onCancel,
   onConfirm,
   onUpdate,
+  defaultGroupId,
 }) => {
   const [form] = Form.useForm();
   const [imageUrl, setImageUrl] = useState<string>('');
+  const [groupOptions, setGroupOptions] = useState<any[]>([]);
+
+  // 拉取资源分组列表
+  useEffect(() => {
+    if (open && type === CreateUpdateModeEnum.Create && spaceId) {
+      apiResourceGroupList({
+        spaceId,
+        types: [ComponentTypeEnum.Workflow],
+      })
+        .then((res) => {
+          if (res.success && res.data) {
+            setGroupOptions(res.data || []);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [open, type, spaceId]);
 
   // 新增工作流
   const { run } = useRequest(apiAddWorkflow, {
     manual: true,
     debounceInterval: 300,
-    onSuccess: (result: number) => {
+    onSuccess: async (result: number) => {
+      // 校验如果用户选择了分组，则先执行移入分组操作
+      const targetGroupId = form.getFieldValue('groupId');
+      if (targetGroupId) {
+        try {
+          await apiAddResourceToGroup(targetGroupId, {
+            targetType: ComponentTypeEnum.Workflow,
+            targetId: result,
+          });
+        } catch (e) {}
+      }
+
       message.success(dict('PC.Components.CreateWorkflow.workflowCreated'));
       onCancel();
       history.push(`/space/${spaceId}/workflow/${result}`);
@@ -67,19 +103,25 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
       form.setFieldsValue({
         name,
         description,
+        groupId:
+          type === CreateUpdateModeEnum.Create
+            ? defaultGroupId || undefined
+            : undefined,
       });
     }
-  }, [open, icon, name, description]);
+  }, [open, icon, name, description, defaultGroupId, type]);
 
   const onFinish: FormProps<{
     name: string;
     description: string;
+    groupId?: number;
   }>['onFinish'] = async (values) => {
     const baseParams = {
       name: values?.name,
       description: values?.description,
       icon: imageUrl,
     };
+
     if (type === CreateUpdateModeEnum.Create) {
       run({
         spaceId,
@@ -199,6 +241,23 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
             svgIconName="icons-workspace-workflow"
           />
         </Form.Item>
+        <ConditionRender condition={type === CreateUpdateModeEnum.Create}>
+          <Form.Item
+            name="groupId"
+            label={dict('PC.Pages.SpaceResource.LeftGroupList.selectGroup')}
+          >
+            <Select
+              placeholder={dict(
+                'PC.Pages.SpaceResource.LeftGroupList.selectGroupPlaceholder',
+              )}
+              allowClear
+              options={groupOptions.map((g) => ({
+                value: g.id,
+                label: g.name,
+              }))}
+            />
+          </Form.Item>
+        </ConditionRender>
       </Form>
     </CustomFormModal>
   );

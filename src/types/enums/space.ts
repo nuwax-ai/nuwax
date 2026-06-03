@@ -77,6 +77,10 @@ export enum ApplicationMoreActionEnum {
   Del = 'Del',
   // 插件、工作流、MCP日志
   Library_Log = 'Library_Log',
+  // 移入分组
+  Add_To_Group = 'Add_To_Group',
+  // 移出分组
+  Remove_From_Group = 'Remove_From_Group',
 }
 
 // 工作空间应用列表枚举
