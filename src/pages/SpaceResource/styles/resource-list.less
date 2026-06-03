@@ -1,15 +1,18 @@
-@import '@/styles/color';
-@import '@/styles/token';
+@import '@/styles/color.less';
+@import '@/styles/token.less';
+
+@margin-five: 5px;
+@margin-ten: 10px;
 
 .container {
-  padding: 16px 16px 16px 24px;
+  padding: @padding @padding @padding @paddingLg;
 
   .title {
-    line-height: 32px;
+    line-height: @controlHeight;
     font-size: @fontSizeLg;
     font-weight: 600;
     color: @BLANK04;
-    margin-right: 20px;
+    margin-right: @marginMd;
   }
 
   .header-area {
@@ -17,14 +20,14 @@
     justify-content: space-between;
     align-items: center;
     flex-wrap: wrap;
-    gap: 12px;
-    margin-bottom: 5px;
+    gap: @marginSm;
+    margin-bottom: @margin-five;
 
     .header-left {
       display: flex;
       align-items: center;
       flex-wrap: wrap;
-      gap: 12px;
+      gap: @marginSm;
       flex: 1;
       min-width: 0;
     }
@@ -32,7 +35,7 @@
     .header-right {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: @margin-ten;
       flex-wrap: wrap;
     }
   }
@@ -40,9 +43,9 @@
   .main-container {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 16px;
+    gap: @padding;
     align-content: start;
-    margin-top: 10px;
+    margin-top: @margin-ten;
   }
 
   @media (min-width: 1440px) {

@@ -1,5 +1,8 @@
 @import '@/styles/token.less';
 
+@default-max-lines: 1;
+@margin-name-bottom: 2px;
+
 // 局部 Less 变量定义，以 100% 还原重构前视觉效果且严格满足不硬编码规范
 @selectionContainerBorderRadius: @borderRadiusLg;
 @selectionContainerBorderColor: #e4e6eb;
@@ -143,7 +146,7 @@
       align-items: center;
       justify-content: space-between;
       width: 100%;
-      margin-bottom: 2px;
+      margin-bottom: @margin-name-bottom;
       gap: @marginXs;
 
       .name {
@@ -170,6 +173,11 @@
       color: @selectionDescColor;
       line-height: @lineHeight;
       word-break: break-all;
+      display: box;
+      -webkit-line-clamp: var(--max-lines, @default-max-lines);
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
   }
 

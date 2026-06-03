@@ -73,10 +73,6 @@ const routes = [
       { path: '/space/:spaceId/library', component: '@/pages/SpaceLibrary' },
       // 组件资源子页面
       {
-        path: '/space/:spaceId/plugin-workflow',
-        component: '@/pages/SpaceResource/PluginWorkflow',
-      },
-      {
         path: '/space/:spaceId/plugin',
         component: '@/pages/SpaceResource/Plugin',
       },
@@ -85,8 +81,12 @@ const routes = [
         component: '@/pages/SpaceResource/Workflow',
       },
       {
-        path: '/space/:spaceId/knowledge-storage',
-        component: '@/pages/SpaceResource/KnowledgeStorage',
+        path: '/space/:spaceId/knowledge',
+        component: '@/pages/SpaceResource/Knowledge',
+      },
+      {
+        path: '/space/:spaceId/storage',
+        component: '@/pages/SpaceResource/Storage',
       },
       {
         path: '/space/:spaceId/model-manage',
