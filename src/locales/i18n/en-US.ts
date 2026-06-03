@@ -2400,7 +2400,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.ConversationAgentSourceControl.changes": "Changes",
   "PC.Pages.ConversationAgentSourceControl.commit": "Commit",
   "PC.Pages.ConversationAgentSourceControl.commitAndPush": "Push",
-  "PC.Pages.ConversationAgentSourceControl.commitMessage": "Message (optional)",
+  "PC.Pages.ConversationAgentSourceControl.commitMessage": "Commit message",
   "PC.Pages.ConversationAgentSourceControl.gitPushTooltip": "Git commit and push to remote repository",
   "PC.Pages.ConversationAgentSourceControl.noChanges": "No modified files",
   "PC.Pages.ConversationAgentSourceControl.save": "Save",

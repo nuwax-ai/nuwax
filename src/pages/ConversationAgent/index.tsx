@@ -242,7 +242,7 @@ const ConversationAgent: React.FC = () => {
    */
   const terminalWsUrl = useMemo(() => {
     // const httpBase = 'http://localhost:7681/';
-    const httpBase = 'ws://192.168.1.34:8088/computer/ttyd/4/1551949/ws';
+    const httpBase = 'ws://192.168.1.34:8088/computer/ttyd/6/1548510/ws';
     try {
       const u = new URL(httpBase);
       const wsScheme = u.protocol === 'https:' ? 'wss:' : 'ws:';

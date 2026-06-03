@@ -2362,6 +2362,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.ChatTemp.startConversation": "会話を開始する",
   "PC.Pages.ChatTemp.startConversationWithName": "{0} と会話を開始します",
   "PC.Pages.ChatTemp.welcomeText": "{0} へようこそ",
+  "PC.Pages.ConversationAgentSourceControl.commitMessage": "コミットメッセージ",
   "PC.Pages.ConversationAgentPreviewTabBar.addTab": "新しいタブ",
   "PC.Pages.ConversationAgentPreviewTabBar.contextMenu.close": "閉じる",
   "PC.Pages.ConversationAgentPreviewTabBar.contextMenu.closeOthers": "その他を閉じる",

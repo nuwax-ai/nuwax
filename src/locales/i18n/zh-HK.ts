@@ -2342,6 +2342,7 @@ export const ZH_HK: SystemLangMap = {
   "PC.Pages.ChatTemp.startConversation": "開始會話",
   "PC.Pages.ChatTemp.startConversationWithName": "與 {0} 開始會話",
   "PC.Pages.ChatTemp.welcomeText": "歡迎來到 {0}",
+  "PC.Pages.ConversationAgentSourceControl.commitMessage": "提交資訊",
   "PC.Pages.ConversationAgentPreviewTabBar.addTab": "新標籤頁",
   "PC.Pages.ConversationAgentPreviewTabBar.contextMenu.close": "關閉",
   "PC.Pages.ConversationAgentPreviewTabBar.contextMenu.closeOthers": "關閉其他",

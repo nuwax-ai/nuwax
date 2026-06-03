@@ -1,7 +1,6 @@
 import FileContextMenu from '@/components/FileTreeView/FileContextMenu';
 import FileTree from '@/components/FileTreeView/FileTree';
 import SearchView from '@/components/FileTreeView/SearchView';
-import fileTreeViewStyles from '@/components/FileTreeView/index.less';
 import TipsBox from '@/components/TipsBox';
 import { dict } from '@/services/i18nRuntime';
 import { ReloadOutlined } from '@ant-design/icons';
@@ -10,9 +9,6 @@ import classNames from 'classnames';
 import React from 'react';
 import type { ConversationAgentFileViewTree } from '../hooks/types';
 import styles from './index.less';
-
-const cx = classNames.bind(styles);
-const fileTreeCx = classNames.bind(fileTreeViewStyles);
 
 export interface ConversationAgentFileTreeProps {
   /** 文件树状态与交互处理器 */
@@ -68,20 +64,17 @@ const ConversationAgentFileTree: React.FC<ConversationAgentFileTreeProps> = ({
   return (
     <div
       ref={fileTreeContainerRef}
-      className={cx(
-        fileTreeCx(
-          'file-tree-view',
-          'h-full',
-          'flex',
-          'flex-col',
-          'overflow-hide',
-        ),
-        {
-          [fileTreeCx('file-tree-view-visible')]: isFileTreeVisible,
-          [fileTreeCx('file-tree-view-hidden')]: !isFileTreeVisible,
-        },
-        className,
+      className={classNames(
+        styles['file-tree-view'],
         styles['tree-panel'],
+        isFileTreeVisible
+          ? styles['file-tree-view-visible']
+          : styles['file-tree-view-hidden'],
+        'h-full',
+        'flex',
+        'flex-col',
+        'overflow-hide',
+        className,
       )}
     >
       <FileContextMenu
@@ -112,11 +105,11 @@ const ConversationAgentFileTree: React.FC<ConversationAgentFileTreeProps> = ({
       />
 
       <div
-        className={fileTreeCx(
+        className={classNames(
           'flex',
           'content-between',
           'items-center',
-          'file-tree-header',
+          styles['file-tree-header'],
         )}
       >
         <span>{dict('PC.Components.FileTreeView.files')}</span>
@@ -131,9 +124,9 @@ const ConversationAgentFileTree: React.FC<ConversationAgentFileTreeProps> = ({
             <Button
               type="text"
               size="small"
-              icon={<ReloadOutlined style={{ fontSize: 16 }} />}
+              icon={<ReloadOutlined style={{ fontSize: 14 }} />}
               onClick={handleRefreshFileList}
-              className={fileTreeCx('actionButton')}
+              className={styles['file-tree-header-action']}
               loading={isRefreshingFileTree}
             />
           </Tooltip>

@@ -2397,7 +2397,7 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.ConversationAgentSourceControl.changes": "更改",
   "PC.Pages.ConversationAgentSourceControl.commit": "提交",
   "PC.Pages.ConversationAgentSourceControl.commitAndPush": "推送",
-  "PC.Pages.ConversationAgentSourceControl.commitMessage": "提交訊息（可選）",
+  "PC.Pages.ConversationAgentSourceControl.commitMessage": "提交訊息",
   "PC.Pages.ConversationAgentSourceControl.gitPushTooltip": "Git 提交並推送到遠端倉庫",
   "PC.Pages.ConversationAgentSourceControl.noChanges": "暫無修改的檔案",
   "PC.Pages.ConversationAgentSourceControl.save": "儲存",
