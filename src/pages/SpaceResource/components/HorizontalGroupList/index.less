@@ -8,7 +8,7 @@
 @groupItemActiveBoxShadow: 0 4px 12px
   color-mix(in srgb, @colorPrimary 12%, transparent);
 
-@groupIconSize: 44px;
+@groupIconSize: 24px;
 @groupIconMarginRight: @marginSm;
 
 @groupNameFontSize: @fontSize;
@@ -97,7 +97,6 @@
       align-items: center;
       justify-content: space-between;
       width: 100%;
-      margin-bottom: calc(@marginXs / 4);
       gap: @marginXs;
 
       .name {
@@ -110,30 +109,6 @@
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
-      }
-
-      .count-text {
-        font-size: @groupDescFontSize;
-        color: @groupDescColor;
-        flex-shrink: 0;
-      }
-    }
-
-    .desc-wrap {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      width: 100%;
-      gap: @marginSm;
-
-      .description {
-        font-size: @groupDescFontSize;
-        color: @groupDescColor;
-        line-height: @lineHeight;
-        word-break: break-all;
-        margin-bottom: 0 !important;
-        flex: 1;
-        min-width: 0;
       }
 
       .more-action-wrap {
