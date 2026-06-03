@@ -24,6 +24,12 @@ const ALLOWED_TYPES = new Set([
   ComponentTypeEnum.Plugin,
 ]);
 
+// 模块级内存缓存：刷新页面时自动重置，SPA 路由跳转时保持选中状态
+const pluginGroupMemoryCache: Record<
+  number,
+  { groupId: number; groupType?: string }
+> = {};
+
 const SpacePlugin: React.FC = () => {
   const params = useParams();
   const spaceId = Number(params.spaceId);
@@ -44,17 +50,21 @@ const SpacePlugin: React.FC = () => {
   const [type, setType] = useState<ComponentTypeEnum>(ComponentTypeEnum.Plugin);
 
   // 资源分组状态，0 表示全部
-  const [groupId, setGroupId] = useState<number>(0);
+  const [groupId, setGroupId] = useState<number>(() => {
+    return pluginGroupMemoryCache[spaceId]?.groupId || 0;
+  });
   const [selectedGroupType, setSelectedGroupType] = useState<
     string | undefined
-  >(undefined);
+  >(() => {
+    return pluginGroupMemoryCache[spaceId]?.groupType;
+  });
 
   const filterParamsRef = useRef({
     type: ComponentTypeEnum.Plugin,
     status: FilterStatusEnum.All,
     create: CreateListEnum.All_Person,
     keyword: '',
-    groupId: 0,
+    groupId: pluginGroupMemoryCache[spaceId]?.groupId || 0,
   });
 
   const handleFilterList = (
@@ -109,6 +119,7 @@ const SpacePlugin: React.FC = () => {
   };
 
   const handleGroupChange = (id: number, groupType?: string) => {
+    pluginGroupMemoryCache[spaceId] = { groupId: id, groupType };
     setGroupId(id);
     setSelectedGroupType(groupType);
     const {
@@ -155,12 +166,18 @@ const SpacePlugin: React.FC = () => {
 
   useEffect(() => {
     if (location.state) return;
+    const cachedGroupId = pluginGroupMemoryCache[spaceId]?.groupId || 0;
+    const cachedGroupType = pluginGroupMemoryCache[spaceId]?.groupType;
+    setGroupId(cachedGroupId);
+    setSelectedGroupType(cachedGroupType);
+    filterParamsRef.current.groupId = cachedGroupId;
     setLoading(true);
     runComponent(spaceId);
   }, [spaceId]);
 
   useEffect(() => {
     if (location.state) {
+      pluginGroupMemoryCache[spaceId] = { groupId: 0 };
       setGroupId(0);
       setSelectedGroupType(undefined);
       filterParamsRef.current.groupId = 0;
