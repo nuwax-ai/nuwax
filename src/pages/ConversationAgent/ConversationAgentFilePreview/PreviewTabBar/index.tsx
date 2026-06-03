@@ -112,6 +112,9 @@ const getHorizontalSortableStyle = (
   };
 };
 
+/** 标签滚入视口时的左右留白（与 @paddingXs 一致） */
+const TAB_SCROLL_INTO_VIEW_PADDING = 8;
+
 interface SortableTabItemProps {
   tab: PreviewTab;
   isActive: boolean;
@@ -119,6 +122,7 @@ interface SortableTabItemProps {
   onClose: () => void;
   onContextMenu: (e: React.MouseEvent) => void;
   renderTabIcon: (tab: PreviewTab) => React.ReactNode;
+  registerTabEl: (tabId: string, el: HTMLDivElement | null) => void;
 }
 
 /** 可拖拽排序的单个标签项（拖拽中由 DragOverlay 展示，原位占位透明） */
@@ -129,6 +133,7 @@ const SortableTabItem: React.FC<SortableTabItemProps> = ({
   onClose,
   onContextMenu,
   renderTabIcon,
+  registerTabEl,
 }) => {
   const {
     attributes,
@@ -139,9 +144,18 @@ const SortableTabItem: React.FC<SortableTabItemProps> = ({
     isDragging,
   } = useSortable({ id: tab.id });
 
+  const setTabNodeRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      setNodeRef(node);
+      registerTabEl(tab.id, node);
+    },
+    [setNodeRef, registerTabEl, tab.id],
+  );
+
   return (
     <div
-      ref={setNodeRef}
+      ref={setTabNodeRef}
+      data-preview-tab-id={tab.id}
       style={getHorizontalSortableStyle(transform, transition, isDragging)}
       className={cx(styles['tab-item'], {
         [styles['tab-item-active']]: isActive,
@@ -192,6 +206,45 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
   const tabViewportRef = useRef<HTMLDivElement>(null);
   const tabTrackRef = useRef<HTMLDivElement>(null);
   const tabGutterRef = useRef<HTMLDivElement>(null);
+  const tabElMapRef = useRef<Map<string, HTMLDivElement>>(new Map());
+
+  const registerTabEl = useCallback(
+    (tabId: string, el: HTMLDivElement | null) => {
+      if (el) {
+        tabElMapRef.current.set(tabId, el);
+      } else {
+        tabElMapRef.current.delete(tabId);
+      }
+    },
+    [],
+  );
+
+  /** 将已激活但可能被横向滚动隐藏的标签滚入可见区域 */
+  const scrollActiveTabIntoView = useCallback((tabId: string) => {
+    const viewport = tabViewportRef.current;
+    const tabEl = tabElMapRef.current.get(tabId);
+    if (!viewport || !tabEl) {
+      return;
+    }
+
+    if (viewport.scrollWidth <= viewport.clientWidth) {
+      return;
+    }
+
+    const viewportRect = viewport.getBoundingClientRect();
+    const tabRect = tabEl.getBoundingClientRect();
+    const pad = TAB_SCROLL_INTO_VIEW_PADDING;
+
+    if (tabRect.left < viewportRect.left + pad) {
+      viewport.scrollLeft -= viewportRect.left - tabRect.left + pad;
+    } else if (tabRect.right > viewportRect.right - pad) {
+      viewport.scrollLeft += tabRect.right - viewportRect.right + pad;
+    }
+
+    if (tabGutterRef.current) {
+      tabGutterRef.current.scrollLeft = viewport.scrollLeft;
+    }
+  }, []);
   const [trackScrollWidth, setTrackScrollWidth] = useState(0);
   const [contextMenu, setContextMenu] = useState<{
     visible: boolean;
@@ -286,6 +339,23 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
       resizeObserver.disconnect();
     };
   }, [tabs]);
+
+  /** 激活标签变化或列表变更后，确保当前标签在横向滚动视口内可见 */
+  useEffect(() => {
+    if (!activeTabId || activeDragTabId) {
+      return;
+    }
+
+    let raf2 = 0;
+    const raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => scrollActiveTabIntoView(activeTabId));
+    });
+
+    return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+    };
+  }, [activeTabId, tabs, activeDragTabId, scrollActiveTabIntoView]);
 
   /** 同步 tabs 视口与底部滚动条槽位的横向滚动位置 */
   useEffect(() => {
@@ -412,6 +482,7 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
                       onClose={() => onTabClose(tab.id)}
                       onContextMenu={(e) => handleTabContextMenu(e, tab.id)}
                       renderTabIcon={renderTabIcon}
+                      registerTabEl={registerTabEl}
                     />
                   ))}
                 </SortableContext>
