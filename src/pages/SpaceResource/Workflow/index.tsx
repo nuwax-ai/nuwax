@@ -12,16 +12,12 @@ import {
 import type { ComponentInfo } from '@/types/interfaces/library';
 import { PlusOutlined } from '@ant-design/icons';
 import { Button } from 'antd';
-import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
 import { useLocation, useModel, useParams, useRequest } from 'umi';
 import ComponentList from '../components/ComponentList';
+import GroupEditModal from '../components/GroupEditModal';
 import HorizontalGroupList from '../components/HorizontalGroupList';
-import GroupEditModal from '../components/LeftGroupList/components/GroupEditModal';
 import HeaderArea from './components/HeaderArea';
-import styles from './index.less';
-
-const cx = classNames.bind(styles);
 
 const ALLOWED_TYPES = new Set([
   ComponentTypeEnum.Workflow,
@@ -214,59 +210,55 @@ const SpaceWorkflow: React.FC = () => {
       }
       hideScroll
     >
-      <div className={cx(styles.container)}>
-        <HorizontalGroupList
-          spaceId={spaceId}
-          value={groupId}
-          onChange={handleGroupChange}
-          filterType={type}
-          refreshTrigger={refreshGroupTrigger}
-          onEdit={(group) => {
-            setGroupModalMode('edit');
-            setEditingGroup(group);
-            setIsGroupModalOpen(true);
-          }}
-          onDeleteSuccess={() => {
-            runComponent(spaceId);
-          }}
-        />
+      <HorizontalGroupList
+        spaceId={spaceId}
+        value={groupId}
+        onChange={handleGroupChange}
+        filterType={type}
+        refreshTrigger={refreshGroupTrigger}
+        onEdit={(group) => {
+          setGroupModalMode('edit');
+          setEditingGroup(group);
+          setIsGroupModalOpen(true);
+        }}
+        onDeleteSuccess={() => {
+          runComponent(spaceId);
+        }}
+      />
 
-        <HeaderArea
-          spaceId={spaceId}
-          selectedGroupType={selectedGroupType}
-          onFilterChange={handleFilterList}
-        />
+      <HeaderArea
+        spaceId={spaceId}
+        selectedGroupType={selectedGroupType}
+        onFilterChange={handleFilterList}
+      />
 
-        <div className={cx(styles['list-area'], 'scroll-container-hide')}>
-          <ComponentList
-            loading={loading}
-            componentList={componentList}
-            spaceId={spaceId}
-            onDelete={handleDel}
-            onRefresh={() => runComponent(spaceId)}
-          />
-        </div>
+      <ComponentList
+        loading={loading}
+        componentList={componentList}
+        spaceId={spaceId}
+        onDelete={handleDel}
+        onRefresh={() => runComponent(spaceId)}
+      />
 
-        <CreateWorkflow
-          spaceId={spaceId}
-          open={openWorkflow}
-          onCancel={() => setOpenWorkflow(false)}
-          defaultGroupId={groupId !== 0 ? groupId : undefined}
-        />
+      <CreateWorkflow
+        spaceId={spaceId}
+        open={openWorkflow}
+        onCancel={() => setOpenWorkflow(false)}
+        defaultGroupId={groupId !== 0 ? groupId : undefined}
+      />
 
-        <GroupEditModal
-          open={isGroupModalOpen}
-          mode={groupModalMode}
-          editingGroup={editingGroup}
-          spaceId={spaceId}
-          filterType={type}
-          onCancel={() => setIsGroupModalOpen(false)}
-          onSuccess={() => {
-            setIsGroupModalOpen(false);
-            setRefreshGroupTrigger((prev) => prev + 1);
-          }}
-        />
-      </div>
+      <GroupEditModal
+        open={isGroupModalOpen}
+        mode={groupModalMode}
+        editingGroup={editingGroup}
+        spaceId={spaceId}
+        filterType={type}
+        onCancel={() => setIsGroupModalOpen(false)}
+        onSuccess={() => {
+          setIsGroupModalOpen(false);
+          setRefreshGroupTrigger((prev) => prev + 1);
+        }}
+      />
     </WorkspaceLayout>
   );
 };
