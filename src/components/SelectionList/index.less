@@ -99,7 +99,7 @@
 
     .info {
       .name {
-        color: @selectionNameActiveColor;
+        color: @selectionNameActiveColor !important;
         transition: color 0.2s ease;
       }
     }
@@ -152,7 +152,7 @@
       .name {
         font-size: @selectionNameFontSize;
         font-weight: 500;
-        color: @selectionNameColor;
+        color: @selectionNameColor !important;
         line-height: @lineHeightLg;
         transition: color 0.2s;
         flex: 1;
@@ -173,11 +173,7 @@
       color: @selectionDescColor;
       line-height: @lineHeight;
       word-break: break-all;
-      display: box;
-      -webkit-line-clamp: var(--max-lines, @default-max-lines);
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      margin-bottom: 0 !important;
     }
   }
 

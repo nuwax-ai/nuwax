@@ -1,5 +1,5 @@
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
-import { Button, Empty } from 'antd';
+import { Button, Empty, Typography } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import styles from './index.less';
@@ -64,22 +64,28 @@ const SelectionList: React.FC<SelectionListProps> = ({
                 </div>
                 <div className={cx(styles.info)}>
                   <div className={cx(styles['name-wrap'])}>
-                    <div className={cx(styles.name)}>{item.label}</div>
+                    <Typography.Text
+                      className={cx(styles.name)}
+                      ellipsis={{
+                        tooltip: item.label,
+                      }}
+                    >
+                      {item.label}
+                    </Typography.Text>
                     {item.extra && (
                       <div className={cx(styles.extra)}>{item.extra}</div>
                     )}
                   </div>
                   {item.description && (
-                    <div
+                    <Typography.Paragraph
                       className={cx(styles.description)}
-                      style={
-                        {
-                          '--max-lines': maxDescriptionLines,
-                        } as React.CSSProperties
-                      }
+                      ellipsis={{
+                        rows: maxDescriptionLines,
+                        tooltip: item.description,
+                      }}
                     >
                       {item.description}
-                    </div>
+                    </Typography.Paragraph>
                   )}
                 </div>
                 {showActions && (
