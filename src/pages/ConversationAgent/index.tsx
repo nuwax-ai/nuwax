@@ -241,14 +241,15 @@ const ConversationAgent: React.FC = () => {
    * http://localhost:7681/ → ws://localhost:7681/ws
    */
   const terminalWsUrl = useMemo(() => {
-    const httpBase = 'http://localhost:7681/';
+    // const httpBase = 'http://localhost:7681/';
+    const httpBase = 'ws://192.168.1.34:8088/computer/ttyd/4/1551949/ws';
     try {
       const u = new URL(httpBase);
       const wsScheme = u.protocol === 'https:' ? 'wss:' : 'ws:';
       const path = u.pathname === '/' || u.pathname === '' ? '/ws' : u.pathname;
       return `${wsScheme}//${u.host}${path}`;
     } catch {
-      return 'ws://localhost:7681/ws';
+      return httpBase || 'ws://localhost:7681/ws';
     }
   }, []);
 

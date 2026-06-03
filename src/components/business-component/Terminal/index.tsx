@@ -25,6 +25,7 @@ import type { Terminal } from '@xterm/xterm';
 import styles from './index.less';
 import {
   DEFAULT_TERMINAL_SEARCH_OPTIONS,
+  DEFAULT_TTYD_FLOW_CONTROL,
   type ConnectionStatus,
   type ReconnectConfig,
   type SearchOptions,
@@ -145,8 +146,25 @@ const ensureTerminalDimensions = (
   return { cols, rows };
 };
 
+/**
+ * ttyd WebSocket 帧首字节（与官方 Command 枚举一致）
+ *
+ * 服务端 → 客户端：'0' OUTPUT | '1' SET_WINDOW_TITLE | '2' SET_PREFERENCES
+ * 客户端 → 服务端：'0' INPUT | '1' RESIZE | '2' PAUSE | '3' RESUME
+ */
 const TTYD_CMD_INPUT = 0x30;
 const TTYD_CMD_OUTPUT = 0x30;
+/** 客户端 → 服务端：pty_pause()，在 xterm 渲染积压时暂停下行 */
+const TTYD_CMD_PAUSE = 0x32;
+/** 客户端 → 服务端：pty_resume()，渲染队列消化后恢复下行 */
+const TTYD_CMD_RESUME = 0x33;
+
+/** 向 ttyd 发送单字节流控命令（PAUSE / RESUME），无 payload */
+const sendTtydFlowControl = (ws: WebSocket | null | undefined, cmd: number) => {
+  if (ws?.readyState === WebSocket.OPEN) {
+    ws.send(new Uint8Array([cmd]));
+  }
+};
 
 /** ttyd 首包：以 '{' 开头的 JSON，触发 fork shell */
 const encodeTtydInit = (cols: number, rows: number): string =>
@@ -184,6 +202,7 @@ const XtermTerminal = forwardRef<XtermTerminalRef, XtermTerminalProps>(
       wsUrl,
       wsSubprotocols,
       wireProtocol = 'plain',
+      ttydFlowControl,
       autoConnect = false,
       reconnect,
       readOnly = false,
@@ -233,6 +252,25 @@ const XtermTerminal = forwardRef<XtermTerminalRef, XtermTerminalProps>(
     const pendingWritesRef = useRef<string[]>([]);
     const ttydInitSentRef = useRef<boolean>(false);
 
+    // ─── ttyd 下行背压（PAUSE / RESUME）────────────────────────
+    /** 自上次重置以来写入 xterm 的累计字节数，用于触发「带回调」写入 */
+    const ttydWrittenRef = useRef(0);
+    /** 尚未执行完的 term.write 回调数量，反映前端渲染队列深度 */
+    const ttydPendingRef = useRef(0);
+
+    /** 合并 props 与 DEFAULT_TTYD_FLOW_CONTROL，与 ttyd 官方 html 客户端默认值一致 */
+    const ttydFlowControlConfig = useMemo(
+      () => ({
+        enabled: ttydFlowControl?.enabled !== false,
+        limit: ttydFlowControl?.limit ?? DEFAULT_TTYD_FLOW_CONTROL.limit,
+        highWater:
+          ttydFlowControl?.highWater ?? DEFAULT_TTYD_FLOW_CONTROL.highWater,
+        lowWater:
+          ttydFlowControl?.lowWater ?? DEFAULT_TTYD_FLOW_CONTROL.lowWater,
+      }),
+      [ttydFlowControl],
+    );
+
     // 回调 ref 化，避免闭包陈旧值（须在 handleWsOpen 之前定义）
     const onConnectRef = useRef<TerminalOnConnect | undefined>(onConnect);
     const onDisconnectRef = useRef<TerminalOnDisconnect | undefined>(
@@ -242,24 +280,102 @@ const XtermTerminal = forwardRef<XtermTerminalRef, XtermTerminalProps>(
     const onDataRef = useRef<TerminalOnData | undefined>(onData);
     const onInputRef = useRef<TerminalOnInput | undefined>(onInput);
 
+    /** 重置本地背压计数（重连 / 断开后使用） */
+    const resetTtydFlowControlState = useCallback(() => {
+      ttydWrittenRef.current = 0;
+      ttydPendingRef.current = 0;
+    }, []);
+
+    /**
+     * 释放 ttyd 服务端 pty：先发 RESUME 再清零计数。
+     * 防止客户端断开后服务端仍停留在 pause 状态。
+     */
+    const releaseTtydFlowControl = useCallback(() => {
+      if (wireProtocol === 'ttyd') {
+        sendTtydFlowControl(wsRef.current, TTYD_CMD_RESUME);
+      }
+      resetTtydFlowControlState();
+    }, [wireProtocol, resetTtydFlowControlState]);
+
+    /**
+     * ttyd 下行写入：按官方 writeData 做背压。
+     *
+     * 1. 累计写入未超 limit：同步 write，低开销。
+     * 2. 超过 limit：改用 write(data, callback) 统计 pending。
+     * 3. pending > highWater：向服务端发 PAUSE，减缓 WebSocket 下行。
+     * 4. 某次回调后 pending < lowWater：发 RESUME，恢复 pty 输出。
+     *
+     * 适用于 cat 大文件、npm install 等海量终端输出，避免 xterm/浏览器内存溢出。
+     */
+    const writeTtydOutputWithFlowControl = useCallback(
+      (data: string) => {
+        if (!data) return;
+        const term = terminalRef.current;
+        if (!term) {
+          pendingWritesRef.current.push(data);
+          return;
+        }
+
+        const { enabled, limit, highWater, lowWater } = ttydFlowControlConfig;
+        if (!enabled) {
+          term.write(data);
+          return;
+        }
+
+        const ws = wsRef.current;
+        ttydWrittenRef.current += data.length;
+
+        if (ttydWrittenRef.current > limit) {
+          // 带回调写入：pending 反映 xterm 尚未渲染完的块数
+          term.write(data, () => {
+            ttydPendingRef.current = Math.max(ttydPendingRef.current - 1, 0);
+            if (ttydPendingRef.current < lowWater) {
+              sendTtydFlowControl(ws, TTYD_CMD_RESUME);
+            }
+          });
+          ttydPendingRef.current += 1;
+          ttydWrittenRef.current = 0;
+          if (ttydPendingRef.current > highWater) {
+            sendTtydFlowControl(ws, TTYD_CMD_PAUSE);
+          }
+        } else {
+          term.write(data);
+        }
+      },
+      [ttydFlowControlConfig],
+    );
+
+    /** WS 下行 / 外部写入统一入口；ttyd 协议走背压写入 */
+    const writeToTerminal = useCallback(
+      (data: string) => {
+        if (!data) return;
+        if (wireProtocol === 'ttyd') {
+          writeTtydOutputWithFlowControl(data);
+          return;
+        }
+        const term = terminalRef.current;
+        if (!term) {
+          pendingWritesRef.current.push(data);
+          return;
+        }
+        term.write(data);
+      },
+      [wireProtocol, writeTtydOutputWithFlowControl],
+    );
+
+    /** xterm 就绪后刷掉 WS 早到的输出；ttyd 须走同一背压路径 */
     const flushPendingWrites = useCallback(() => {
       const term = terminalRef.current;
       if (!term || pendingWritesRef.current.length === 0) return;
-      for (const chunk of pendingWritesRef.current) {
-        term.write(chunk);
+      const chunks = pendingWritesRef.current.splice(0);
+      for (const chunk of chunks) {
+        if (wireProtocol === 'ttyd') {
+          writeTtydOutputWithFlowControl(chunk);
+        } else {
+          term.write(chunk);
+        }
       }
-      pendingWritesRef.current = [];
-    }, []);
-
-    const writeToTerminal = useCallback((data: string) => {
-      if (!data) return;
-      const term = terminalRef.current;
-      if (!term) {
-        pendingWritesRef.current.push(data);
-        return;
-      }
-      term.write(data);
-    }, []);
+    }, [wireProtocol, writeTtydOutputWithFlowControl]);
 
     /** fit 后向后端同步尺寸；ttyd 首连发 JSON init，之后发 resize */
     const syncBackendTerminalSize = useCallback(
@@ -287,6 +403,8 @@ const XtermTerminal = forwardRef<XtermTerminalRef, XtermTerminalProps>(
       (ws: WebSocket) => {
         setStatus('connected');
         reconnectCountRef.current = 0;
+        // 新连接重置背压计数，避免沿用上次的 pending
+        resetTtydFlowControlState();
         terminalLogger.log('WebSocket connected');
 
         scheduleTerminalFit(
@@ -298,7 +416,7 @@ const XtermTerminal = forwardRef<XtermTerminalRef, XtermTerminalProps>(
           },
         );
       },
-      [flushPendingWrites, syncBackendTerminalSize],
+      [flushPendingWrites, resetTtydFlowControlState, syncBackendTerminalSize],
     );
 
     useEffect(() => {
@@ -577,6 +695,8 @@ const XtermTerminal = forwardRef<XtermTerminalRef, XtermTerminalProps>(
         setTerminalReady(false);
         pendingWritesRef.current = [];
         ttydInitSentRef.current = false;
+        // 卸载时释放 ttyd 背压，避免服务端 pty 残留 pause
+        releaseTtydFlowControl();
 
         // 关闭 WebSocket
         if (wsRef.current) {
@@ -725,6 +845,7 @@ const XtermTerminal = forwardRef<XtermTerminalRef, XtermTerminalProps>(
           };
 
           ws.onmessage = (event: MessageEvent) => {
+            // ttyd：解析 OUTPUT 帧；写入时 wireProtocol=ttyd 会自动 PAUSE/RESUME
             const data =
               wireProtocol === 'ttyd'
                 ? decodeTtydMessage(event.data)
@@ -738,6 +859,8 @@ const XtermTerminal = forwardRef<XtermTerminalRef, XtermTerminalProps>(
           ws.onclose = (event: CloseEvent) => {
             terminalLogger.log('WebSocket closed:', event.code, event.reason);
             ttydInitSentRef.current = false;
+            // 连接关闭时尽量 RESUME，避免 ttyd 服务端 pty 挂起
+            releaseTtydFlowControl();
             setStatus('disconnected');
             onDisconnectRef.current?.(event);
 
@@ -790,6 +913,7 @@ const XtermTerminal = forwardRef<XtermTerminalRef, XtermTerminalProps>(
         reconnectConfig,
         handleWsOpen,
         writeToTerminal,
+        releaseTtydFlowControl,
       ],
     );
 
@@ -826,6 +950,8 @@ const XtermTerminal = forwardRef<XtermTerminalRef, XtermTerminalProps>(
         reconnectTimerRef.current = null;
       }
 
+      // 主动断开前先 RESUME，再 close
+      releaseTtydFlowControl();
       if (wsRef.current) {
         wsRef.current.close();
         wsRef.current = null;
@@ -837,7 +963,7 @@ const XtermTerminal = forwardRef<XtermTerminalRef, XtermTerminalProps>(
       setTimeout(() => {
         isManualDisconnectRef.current = false;
       }, 0);
-    }, []);
+    }, [releaseTtydFlowControl]);
 
     // ─── wsUrl 变化时重连 ─────────────────────────────────────
     const prevWsUrlRef = useRef<string | undefined>(wsUrl);
@@ -1018,6 +1144,10 @@ const XtermTerminal = forwardRef<XtermTerminalRef, XtermTerminalProps>(
         getTerminal: () => terminalRef.current,
         getStatus: () => status,
         downloadBuffer: (filename?: string) => handleDownloadBuffer(filename),
+        /** 手动 PAUSE（一般无需调用，大量输出时组件会自动背压） */
+        ttydPause: () => sendTtydFlowControl(wsRef.current, TTYD_CMD_PAUSE),
+        /** 手动 RESUME */
+        ttydResume: () => sendTtydFlowControl(wsRef.current, TTYD_CMD_RESUME),
       }),
       [
         connect,
