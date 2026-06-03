@@ -147,7 +147,7 @@ const ConversationAgent: React.FC = () => {
   const [showDevConsole] = useState<boolean>(true);
   /** 切换预览标签/文件时递增，用于终端从 expanded 恢复 default */
   const [devConsoleLayoutResetSignal, setDevConsoleLayoutResetSignal] =
-    useState(0);
+    useState<number>(0);
   /** 是否正在 Git 提交推送 */
   const [isGitPushing, setIsGitPushing] = useState<boolean>(false);
   /** 源代码管理中选中查看 diff 的文件 ID */
@@ -1303,7 +1303,6 @@ const ConversationAgent: React.FC = () => {
           onCloseAllTabs={previewTabs.closeAllTabs}
           onTogglePinTab={previewTabs.togglePinTab}
           onAddTab={previewTabs.openPickerTab}
-          headerActions={fileView.preview.filePathHeaderProps}
         />
         {/* Tab 栏下方：预览内容 + 底部终端（终端放大时仅覆盖此区域） */}
         <div className={cx(styles['right-panel-main'])}>

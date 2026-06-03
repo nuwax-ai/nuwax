@@ -1,4 +1,3 @@
-import SvgIcon from '@/components/base/SvgIcon';
 import { dict } from '@/services/i18nRuntime';
 import { getFileIcon } from '@/utils/fileTree';
 import {
@@ -6,19 +5,14 @@ import {
   CloseOutlined,
   CodeOutlined,
   DesktopOutlined,
-  ExportOutlined,
   FormOutlined,
-  FullscreenExitOutlined,
   PlusOutlined,
   PushpinFilled,
-  SunOutlined,
   ThunderboltOutlined,
 } from '@ant-design/icons';
-import { Button, Tooltip } from 'antd';
+import { Button } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import MoreActionsMenu from '../FilePathHeader/MoreActionsMenu';
-import type { FilePathHeaderProps } from '../FilePathHeader/type';
 import type { PreviewTab, PreviewToolId } from '../hooks/usePreviewTabs';
 import PreviewTabContextMenu from './PreviewTabContextMenu';
 import styles from './index.less';
@@ -38,8 +32,6 @@ export interface PreviewTabBarProps {
   onTogglePinTab: (tabId: string) => void;
   /** 点击 + 打开「新建页签」内容标签 */
   onAddTab: () => void;
-  /** 右侧文件操作区 props（复用原 FilePathHeader 能力） */
-  headerActions?: FilePathHeaderProps;
 }
 
 /** 工具标签图标映射 */
@@ -64,9 +56,7 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
   onCloseAllTabs,
   onTogglePinTab,
   onAddTab,
-  headerActions,
 }) => {
-  const targetNode = headerActions?.targetNode;
   const tabViewportRef = useRef<HTMLDivElement>(null);
   const tabTrackRef = useRef<HTMLDivElement>(null);
   const tabGutterRef = useRef<HTMLDivElement>(null);
@@ -307,102 +297,8 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
         </button>
       </div>
 
+      {/* 右侧功能操作按钮区域 */}
       <div className={cx(styles['right-actions'])}>
-        <Tooltip title={dict('PC.Pages.ConversationAgentPreviewTabBar.theme')}>
-          <button type="button" className={cx(styles['icon-btn'])}>
-            <SunOutlined style={{ fontSize: 16 }} />
-          </button>
-        </Tooltip>
-
-        <div className={cx(styles['icon-group'])}>
-          <Tooltip
-            title={dict(
-              'PC.Pages.ConversationAgentPreviewTabBar.sourceControl',
-            )}
-          >
-            <button type="button" className={cx(styles['icon-btn'])}>
-              <BranchesOutlined style={{ fontSize: 16 }} />
-            </button>
-          </Tooltip>
-          <Tooltip
-            title={dict('PC.Pages.ConversationAgentPreviewTabBar.splitView')}
-          >
-            <button type="button" className={cx(styles['icon-btn'])}>
-              <SvgIcon name="icons-common-copy" style={{ fontSize: 16 }} />
-            </button>
-          </Tooltip>
-          <Tooltip
-            title={dict('PC.Pages.ConversationAgentPreviewTabBar.openExternal')}
-          >
-            <button type="button" className={cx(styles['icon-btn'])}>
-              <ExportOutlined style={{ fontSize: 16 }} />
-            </button>
-          </Tooltip>
-        </div>
-
-        {headerActions && (
-          <div className={cx(styles['header-actions'])}>
-            <div className={cx(styles['action-buttons'])}>
-              {headerActions.isShowShare && targetNode?.fileProxyUrl && (
-                <Tooltip
-                  title={dict('PC.Components.FilePathHeader.share')}
-                  placement="bottom"
-                >
-                  <Button
-                    type="text"
-                    size="small"
-                    icon={
-                      <SvgIcon
-                        name="icons-chat-share"
-                        style={{ fontSize: 16 }}
-                      />
-                    }
-                    className={styles['action-button']}
-                  />
-                </Tooltip>
-              )}
-
-              {(headerActions.showFullscreenIcon ||
-                headerActions.isFullscreen) && (
-                <Tooltip
-                  title={
-                    headerActions.isFullscreen
-                      ? dict('PC.Components.FilePathHeader.exitFullscreen')
-                      : dict('PC.Components.FilePathHeader.fullscreen')
-                  }
-                >
-                  <Button
-                    type="text"
-                    size="small"
-                    icon={
-                      headerActions.isFullscreen ? (
-                        <FullscreenExitOutlined style={{ fontSize: 16 }} />
-                      ) : (
-                        <SvgIcon
-                          name="icons-common-fullscreen"
-                          style={{ fontSize: 16 }}
-                        />
-                      )
-                    }
-                    onClick={headerActions.onFullscreen}
-                    className={styles.actionButton}
-                  />
-                </Tooltip>
-              )}
-
-              {headerActions.showMoreActions && (
-                <MoreActionsMenu
-                  onImportProject={headerActions.onImportProject}
-                  onRestartServer={headerActions.onRestartServer}
-                  onRestartAgent={headerActions.onRestartAgent}
-                  onExportProject={headerActions.onExportProject}
-                  isCloudComputer={headerActions.isCloudComputer}
-                />
-              )}
-            </div>
-          </div>
-        )}
-
         <Button className={cx(styles['action-btn'], styles['collaborate-btn'])}>
           {dict('PC.Pages.ConversationAgentPreviewTabBar.collaborate')}
         </Button>
@@ -414,6 +310,7 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
         </Button>
       </div>
 
+      {/* 预览区标签页右键菜单（带淡入缩放过渡） */}
       <PreviewTabContextMenu
         visible={contextMenu.visible}
         position={{ x: contextMenu.x, y: contextMenu.y }}

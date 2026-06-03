@@ -84,11 +84,12 @@ export function useConversationAgentFileView(
     onFileSelectOpenPreview,
     /** 文件重命名成功后回调 */
     onFileRenamed,
+    agentSandboxId,
   } = props;
   const headerClassName = undefined;
   const isImportProjectTrigger = undefined;
-  /** ConversationAgent 拆分组件不展示 FilePathHeader 更多操作菜单 */
-  const showMoreActions = false;
+  const showMoreActions = true;
+  const isCloudComputer = agentSandboxId === '-1';
   const isFullscreenPreview = false;
   const onFullscreenPreview = undefined as
     | ((isFullscreen: boolean) => void)
@@ -1362,6 +1363,7 @@ export function useConversationAgentFileView(
       isFileTreeVisible,
       isFileTreePinned,
       onFileTreeToggle: handleFileTreeToggle,
+      isCloudComputer,
     }),
     [
       targetId,
@@ -1384,6 +1386,7 @@ export function useConversationAgentFileView(
       isFileTreeVisible,
       isFileTreePinned,
       handleFileTreeToggle,
+      isCloudComputer,
     ],
   );
 
