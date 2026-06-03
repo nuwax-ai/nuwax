@@ -181,11 +181,8 @@ export interface ConversationChatParams {
   skillIds?: number[];
   // 模型ID
   modelId?: number;
-  agent_config?: {
-    agent_server?: {
-      agent_mode?: AgentMode;
-    };
-  };
+  // Agent mode, 默认 yolo
+  agentMode?: AgentMode;
 }
 
 // 临时会话参数

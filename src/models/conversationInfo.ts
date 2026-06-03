@@ -1387,11 +1387,7 @@ export default () => {
       skillIds,
       // 模型ID
       modelId,
-      agent_config: {
-        agent_server: {
-          agent_mode: agentMode,
-        },
-      },
+      agentMode,
     };
 
     // 处理会话

@@ -17,19 +17,33 @@ export function applyAcpPermissionSseEvent(
 ): MessageInfo | null {
   const envelope = parseSseEventEnvelope(res);
   const subType = envelope.subType ?? envelope.sub_type;
+  const eventData = extractEventData(envelope, res);
+  const processingResult = eventData.result as
+    | Record<string, unknown>
+    | undefined;
+  const processingInput = processingResult?.input as
+    | Record<string, unknown>
+    | undefined;
 
   const isAcpPermissionEvent =
     res.eventType === ConversationEventTypeEnum.ACP_REQUEST_PERMISSION ||
     ((envelope.message_type === 'acpRequestPermission' ||
       envelope.messageType === 'acpRequestPermission') &&
-      (subType === 'AcpRequestPermission' || subType === 'request_permission'));
+      (subType === 'AcpRequestPermission' ||
+        subType === 'request_permission')) ||
+    (res.eventType === ConversationEventTypeEnum.PROCESSING &&
+      (eventData.subEventType === 'REQUEST_PERMISSION' ||
+        !!processingInput?.request_permission_request));
 
   if (!isAcpPermissionEvent) {
     return null;
   }
 
-  const eventData = extractEventData(envelope, res);
-  const reqPerm = eventData.request_permission_request as
+  const reqPerm = (eventData.request_permission_request ??
+    processingInput?.request_permission_request) as
+    | Record<string, unknown>
+    | undefined;
+  const requestMeta = (processingInput?._meta ?? eventData._meta) as
     | Record<string, unknown>
     | undefined;
   const intervention = (eventData._intervention ??
@@ -50,6 +64,7 @@ export function applyAcpPermissionSseEvent(
     | undefined;
   const toolCallId =
     (eventData.tool_call_id as string) ||
+    (processingInput?.tool_call_id as string) ||
     (toolCall?.tool_call_id as string) ||
     (toolCall?.toolCallId as string);
 
@@ -57,7 +72,10 @@ export function applyAcpPermissionSseEvent(
     return null;
   }
 
-  const interventionId = intervention?.id || `itv_${sessionId}_${toolCallId}`;
+  const interventionId =
+    intervention?.id ||
+    (requestMeta?.nuwaclaw_intervention_id as string) ||
+    `itv_${sessionId}_${toolCallId}`;
   const interactions = currentMessage.acpPermissionInteractions || [];
   if (interactions.some((item) => item.intervention.id === interventionId)) {
     return null;
@@ -66,7 +84,7 @@ export function applyAcpPermissionSseEvent(
   const normalizedIntervention: AcpPermissionInterventionRequest =
     intervention || {
       id: interventionId,
-      revision: 1,
+      revision: (requestMeta?.nuwaclaw_revision as number) || 1,
       kind: 'approval',
       status: 'pending',
       sessionId: sessionId,
@@ -93,7 +111,7 @@ export function applyAcpPermissionSseEvent(
           })),
         },
       },
-      createdAt: Date.now(),
+      createdAt: (processingResult?.startTime as number) || Date.now(),
     };
 
   return {

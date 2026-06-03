@@ -301,15 +301,29 @@ export async function apiAgentConversationChatStop(
 export function apiAgentInterventionRespond(
   data: AgentInterventionRespondRequest,
 ): Promise<RequestResponse<unknown>> {
-  return request(
-    `/api/agent-interventions/${encodeURIComponent(
-      data.interventionId,
-    )}/respond`,
-    {
-      method: 'POST',
-      data,
+  const permissionRequest = data.permission_resolve_request;
+  const selected = permissionRequest?.request_permission_response.outcome
+    ? 'Selected' in permissionRequest.request_permission_response.outcome
+      ? permissionRequest.request_permission_response.outcome.Selected
+      : null
+    : null;
+  const fallbackOptionId =
+    permissionRequest?.request_permission_response.outcome &&
+    'Cancelled' in permissionRequest.request_permission_response.outcome
+      ? 'reject'
+      : undefined;
+
+  return request('/api/agent/conversation/chat/permission-request/response', {
+    method: 'POST',
+    data: {
+      conversationId: data.conversation_id,
+      toolId: permissionRequest?.tool_call_id,
+      option: {
+        optionId: selected?.option_id || fallbackOptionId,
+        outcome: selected ? 'selected' : 'cancelled',
+      },
     },
-  );
+  });
 }
 
 // 停止临时会话

@@ -129,4 +129,82 @@ describe('applyAcpPermissionSseEvent', () => {
         .toolCallId,
     ).toBe('tool-call-2');
   });
+
+  it('accepts PROCESSING request permission component events', () => {
+    const patched = applyAcpPermissionSseEvent(
+      {
+        requestId: 'request-1',
+        eventType: ConversationEventTypeEnum.PROCESSING,
+        data: {
+          targetId: -1,
+          name: 'Backend.Sandbox.Event.RequestPermission',
+          type: 'Event',
+          status: 'FINISHED',
+          result: {
+            id: -1,
+            name: 'Backend.Sandbox.Event.RequestPermission',
+            type: 'Event',
+            startTime: 1780479903686,
+            endTime: 1780479903686,
+            input: {
+              request_permission_request: {
+                session_id: 'session-processing',
+                tool_call: {
+                  tool_call_id: 'tool-call-processing',
+                  kind: 'other',
+                  status: 'pending',
+                  title: 'external_directory',
+                  raw_input: {
+                    filepath: '/Users/apple/Desktop/acp-verify-test.txt',
+                    parentDir: '/Users/apple/Desktop',
+                  },
+                },
+                options: [
+                  {
+                    option_id: 'once',
+                    name: 'Allow once',
+                    kind: 'allow_once',
+                  },
+                  {
+                    option_id: 'reject',
+                    name: 'Reject',
+                    kind: 'reject_once',
+                  },
+                ],
+              },
+              tool_call_id: 'tool-call-processing',
+              _meta: {
+                nuwaclaw_intervention_id: 'itv-processing',
+                nuwaclaw_revision: 2,
+              },
+            },
+            executeId: 'tool-call-processing',
+          },
+          subEventType: 'REQUEST_PERMISSION',
+        },
+        completed: false,
+      } as any,
+      { id: 'msg-1' } as any,
+    );
+
+    const interaction = patched?.acpPermissionInteractions?.[0];
+    expect(interaction?.intervention.id).toBe('itv-processing');
+    expect(interaction?.intervention.revision).toBe(2);
+    expect(interaction?.intervention.createdAt).toBe(1780479903686);
+    expect(interaction?.intervention.acp.request.sessionId).toBe(
+      'session-processing',
+    );
+    expect(interaction?.intervention.acp.request.toolCall.toolCallId).toBe(
+      'tool-call-processing',
+    );
+    expect(interaction?.intervention.acp.request.toolCall.rawInput).toEqual({
+      filepath: '/Users/apple/Desktop/acp-verify-test.txt',
+      parentDir: '/Users/apple/Desktop',
+    });
+    expect(
+      interaction?.intervention.acp.request.options.map(
+        (option) => option.optionId,
+      ),
+    ).toEqual(['once', 'reject']);
+  });
 });
