@@ -26,7 +26,7 @@ const cx = classNames.bind(styles);
 interface LeftGroupListProps {
   spaceId: number;
   value: number;
-  onChange: (groupId: number) => void;
+  onChange: (groupId: number, groupType?: string) => void;
   componentList?: ComponentInfo[];
   className?: string;
   filterType?: ComponentTypeEnum;
@@ -224,7 +224,7 @@ const LeftGroupList: React.FC<LeftGroupListProps> = ({
               if (res.success) {
                 fetchGroupList(undefined, true);
                 if (value === item.value) {
-                  onChange(0);
+                  onChange(0, undefined);
                 }
               }
             })
@@ -264,9 +264,10 @@ const LeftGroupList: React.FC<LeftGroupListProps> = ({
           value={value}
           onChange={(val) => {
             if (val === value) {
-              onChange(0);
+              onChange(0, undefined);
             } else {
-              onChange(val);
+              const selectedGroup = groupList.find((g) => g.id === val);
+              onChange(val, selectedGroup?.type);
             }
           }}
           onEdit={handleOpenEdit}

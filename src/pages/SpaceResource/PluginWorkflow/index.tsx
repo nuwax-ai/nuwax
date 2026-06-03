@@ -42,6 +42,9 @@ const SpacePluginWorkflow: React.FC = () => {
 
   // 资源分组状态，0 表示全部
   const [groupId, setGroupId] = useState<number>(0);
+  const [selectedGroupType, setSelectedGroupType] = useState<
+    string | undefined
+  >(undefined);
 
   const filterParamsRef = useRef({
     type: ComponentTypeEnum.All_Type,
@@ -61,10 +64,11 @@ const SpacePluginWorkflow: React.FC = () => {
   ) => {
     setType(filterType);
 
-    // 只要是非左侧分组点击触发的操作（即来自顶层 HeaderArea 的任何切换、查询搜索等动作），无条件重置当前选中的 groupId 为 0，取消选中状态
+    // 只要是非左侧分组点击触发的操作（即来自顶层 HeaderArea 的逆时切换、查询搜索等动作），无条件重置当前选中的 groupId 为 0，取消选中状态
     let currentGId = filterGroupId !== undefined ? filterGroupId : 0;
     if (filterGroupId === undefined) {
       setGroupId(0);
+      setSelectedGroupType(undefined);
     }
 
     filterParamsRef.current = {
@@ -100,8 +104,9 @@ const SpacePluginWorkflow: React.FC = () => {
     setComponentList(_list);
   };
 
-  const handleGroupChange = (id: number) => {
+  const handleGroupChange = (id: number, groupType?: string) => {
     setGroupId(id);
+    setSelectedGroupType(groupType);
     const {
       type: currentType,
       status,
@@ -152,6 +157,7 @@ const SpacePluginWorkflow: React.FC = () => {
   // 用户点击侧边栏页面菜单路由发生切换时，无条件将选中的分组状态重置为 0，取消高亮选中
   useEffect(() => {
     setGroupId(0);
+    setSelectedGroupType(undefined);
     filterParamsRef.current.groupId = 0;
     const {
       type: currentType,
@@ -173,6 +179,7 @@ const SpacePluginWorkflow: React.FC = () => {
     <div className={cx(styles.container)}>
       <HeaderArea
         spaceId={spaceId}
+        selectedGroupType={selectedGroupType}
         onFilterChange={handleFilterList}
         onUploadSuccess={() => runComponent(spaceId)}
         onOpenWorkflow={() => setOpenWorkflow(true)}

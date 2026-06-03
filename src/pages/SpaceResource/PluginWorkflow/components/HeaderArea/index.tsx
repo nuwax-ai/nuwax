@@ -26,6 +26,7 @@ const cx = classNames.bind(styles);
 
 interface HeaderAreaProps {
   spaceId: number;
+  selectedGroupType?: string;
   onFilterChange: (
     type: ComponentTypeEnum,
     status: FilterStatusEnum,
@@ -39,6 +40,7 @@ interface HeaderAreaProps {
 
 const HeaderArea: React.FC<HeaderAreaProps> = ({
   spaceId,
+  selectedGroupType,
   onFilterChange,
   onUploadSuccess,
   onOpenWorkflow,
@@ -93,6 +95,28 @@ const HeaderArea: React.FC<HeaderAreaProps> = ({
     if (item.value === ComponentTypeEnum.Workflow) onOpenWorkflow();
     else if (item.value === ComponentTypeEnum.Plugin) onOpenPlugin();
   };
+
+  const popoverList = React.useMemo(() => {
+    return PLUGIN_WORKFLOW_RESOURCE.map((item) => {
+      let disabled = false;
+      if (
+        selectedGroupType === ComponentTypeEnum.Workflow &&
+        item.value === ComponentTypeEnum.Plugin
+      ) {
+        disabled = true;
+      }
+      if (
+        selectedGroupType === ComponentTypeEnum.Plugin &&
+        item.value === ComponentTypeEnum.Workflow
+      ) {
+        disabled = true;
+      }
+      return {
+        ...item,
+        disabled,
+      };
+    });
+  }, [selectedGroupType]);
 
   return (
     <div className={cx(styles['header-area'])}>
@@ -155,10 +179,7 @@ const HeaderArea: React.FC<HeaderAreaProps> = ({
           spaceId={spaceId}
           onUploadSuccess={onUploadSuccess}
         />
-        <CustomPopover
-          list={PLUGIN_WORKFLOW_RESOURCE}
-          onClick={handleClickPopoverItem}
-        >
+        <CustomPopover list={popoverList} onClick={handleClickPopoverItem}>
           <Button type="primary" icon={<PlusOutlined />}>
             {dict('PC.Pages.SpaceLibrary.Index.addComponent')}
           </Button>
