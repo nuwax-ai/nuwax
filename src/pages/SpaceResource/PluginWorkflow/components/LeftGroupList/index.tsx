@@ -182,6 +182,7 @@ const LeftGroupList: React.FC<LeftGroupListProps> = ({
                 ? AgentComponentTypeEnum.Workflow
                 : AgentComponentTypeEnum.Plugin
             }
+            showTitle={false}
           />
         </span>
       ),
