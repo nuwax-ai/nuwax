@@ -1,3 +1,4 @@
+import type { ResourcePricingType } from '@/pages/SpaceResource/types/resource';
 import { AgentComponentTypeEnum, AllowCopyEnum } from '@/types/enums/agent';
 import { PluginTypeEnum } from '@/types/enums/plugin';
 import type { SquareAgentTypeEnum } from '@/types/enums/square';
@@ -84,6 +85,8 @@ export interface SquarePublishedItemInfo {
   subscribed: boolean;
   // 价格
   price?: number;
+  /** 计价周期，与工具定价配置一致：ONE_TIME / SECOND / MILLION_TOKEN 等 */
+  pricingType?: ResourcePricingType;
 }
 
 // 广场智能体与插件分类信息
