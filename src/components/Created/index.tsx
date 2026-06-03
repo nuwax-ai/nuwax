@@ -17,6 +17,7 @@ import { AgentAddComponentBaseInfo } from '@/types/interfaces/agentConfig';
 import { CreatedNodeItem } from '@/types/interfaces/common';
 import { CustomPageDto } from '@/types/interfaces/pageDev';
 import { getTime } from '@/utils';
+import { getToolPricingPeriodLabel } from '@/utils/resourcePricing';
 import { jumpToMcpCreate, jumpToPageDevelop } from '@/utils/router';
 import { getImg } from '@/utils/workflow';
 import {
@@ -806,9 +807,9 @@ const Created: React.FC<CreatedProp> = ({
                   {item.subscribed
                     ? t('PC.Pages.Square.SingleAgent.subscribed')
                     : item.price
-                    ? `${t('PC.Common.Global.currencySymbol')}${item.price}/${t(
-                        'PC.Common.Global.times',
-                      )}`
+                    ? `${t('PC.Common.Global.currencySymbol')}${
+                        item.price
+                      }/${getToolPricingPeriodLabel(item.pricingType)}`
                     : t('PC.Pages.Square.SingleAgent.paid')}
                 </Tag>
               )}
