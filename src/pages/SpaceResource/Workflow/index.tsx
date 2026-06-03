@@ -1,4 +1,6 @@
 import CreateWorkflow from '@/components/CreateWorkflow';
+import UploadImportConfig from '@/components/UploadImportConfig';
+import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { dict } from '@/services/i18nRuntime';
 import { apiComponentList } from '@/services/library';
 import { PublishStatusEnum } from '@/types/enums/common';
@@ -8,11 +10,14 @@ import {
   FilterStatusEnum,
 } from '@/types/enums/space';
 import type { ComponentInfo } from '@/types/interfaces/library';
+import { PlusOutlined } from '@ant-design/icons';
+import { Button } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
 import { useLocation, useModel, useParams, useRequest } from 'umi';
 import ComponentList from '../components/ComponentList';
-import LeftGroupList from '../components/LeftGroupList';
+import HorizontalGroupList from '../components/HorizontalGroupList';
+import GroupEditModal from '../components/LeftGroupList/components/GroupEditModal';
 import HeaderArea from './components/HeaderArea';
 import styles from './index.less';
 
@@ -34,6 +39,11 @@ const SpaceWorkflow: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [openWorkflow, setOpenWorkflow] = useState(false);
 
+  // 分组管理弹窗状态
+  const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
+  const [groupModalMode, setGroupModalMode] = useState<'add' | 'edit'>('add');
+  const [editingGroup, setEditingGroup] = useState<any>(null);
+
   // 顶部筛选类型状态，默认为工作流
   const [type, setType] = useState<ComponentTypeEnum>(
     ComponentTypeEnum.Workflow,
@@ -52,6 +62,8 @@ const SpaceWorkflow: React.FC = () => {
     keyword: '',
     groupId: 0,
   });
+
+  const isFirstLoadRef = useRef(true);
 
   const handleFilterList = (
     filterType: ComponentTypeEnum,
@@ -138,7 +150,11 @@ const SpaceWorkflow: React.FC = () => {
         currentGId,
         result,
       );
-      setRefreshGroupTrigger((prev) => prev + 1);
+      if (isFirstLoadRef.current) {
+        isFirstLoadRef.current = false;
+      } else {
+        setRefreshGroupTrigger((prev) => prev + 1);
+      }
       setLoading(false);
     },
     onError: () => setLoading(false),
@@ -169,45 +185,89 @@ const SpaceWorkflow: React.FC = () => {
   };
 
   return (
-    <div className={cx(styles.container)}>
-      <div className={cx(styles['content-body'])}>
-        <LeftGroupList
-          className={cx(styles.sidebar)}
+    <WorkspaceLayout
+      title={dict('PC.Pages.SpacePluginWorkflow.workflowPageTitle')}
+      rightSlot={
+        <>
+          <UploadImportConfig
+            spaceId={spaceId}
+            onUploadSuccess={() => runComponent(spaceId)}
+          />
+          <Button
+            icon={<PlusOutlined />}
+            onClick={() => {
+              setGroupModalMode('add');
+              setEditingGroup(null);
+              setIsGroupModalOpen(true);
+            }}
+          >
+            {dict('PC.Pages.AntvX6NodeItem.addGroup')}
+          </Button>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => setOpenWorkflow(true)}
+          >
+            {dict('PC.Pages.AgentArrangeConfig.addWorkflow')}
+          </Button>
+        </>
+      }
+      hideScroll
+    >
+      <div className={cx(styles.container)}>
+        <HorizontalGroupList
           spaceId={spaceId}
           value={groupId}
           onChange={handleGroupChange}
-          componentList={componentAllRef.current}
           filterType={type}
           refreshTrigger={refreshGroupTrigger}
-          title={dict('PC.Pages.SpacePluginWorkflow.workflowPageTitle')}
+          onEdit={(group) => {
+            setGroupModalMode('edit');
+            setEditingGroup(group);
+            setIsGroupModalOpen(true);
+          }}
+          onDeleteSuccess={() => {
+            runComponent(spaceId);
+          }}
         />
-        <div className={cx(styles['right-content'])}>
-          <HeaderArea
-            spaceId={spaceId}
-            selectedGroupType={selectedGroupType}
-            onFilterChange={handleFilterList}
-            onUploadSuccess={() => runComponent(spaceId)}
-            onOpenWorkflow={() => setOpenWorkflow(true)}
-          />
-          <div className={cx(styles['list-area'], 'scroll-container-hide')}>
-            <ComponentList
-              loading={loading}
-              componentList={componentList}
-              spaceId={spaceId}
-              onDelete={handleDel}
-              onRefresh={() => runComponent(spaceId)}
-            />
-          </div>
-        </div>
-      </div>
 
-      <CreateWorkflow
-        spaceId={spaceId}
-        open={openWorkflow}
-        onCancel={() => setOpenWorkflow(false)}
-        defaultGroupId={groupId !== 0 ? groupId : undefined}
-      />
-    </div>
+        <HeaderArea
+          spaceId={spaceId}
+          selectedGroupType={selectedGroupType}
+          onFilterChange={handleFilterList}
+        />
+
+        <div className={cx(styles['list-area'], 'scroll-container-hide')}>
+          <ComponentList
+            loading={loading}
+            componentList={componentList}
+            spaceId={spaceId}
+            onDelete={handleDel}
+            onRefresh={() => runComponent(spaceId)}
+          />
+        </div>
+
+        <CreateWorkflow
+          spaceId={spaceId}
+          open={openWorkflow}
+          onCancel={() => setOpenWorkflow(false)}
+          defaultGroupId={groupId !== 0 ? groupId : undefined}
+        />
+
+        <GroupEditModal
+          open={isGroupModalOpen}
+          mode={groupModalMode}
+          editingGroup={editingGroup}
+          spaceId={spaceId}
+          filterType={type}
+          onCancel={() => setIsGroupModalOpen(false)}
+          onSuccess={() => {
+            setIsGroupModalOpen(false);
+            setRefreshGroupTrigger((prev) => prev + 1);
+          }}
+        />
+      </div>
+    </WorkspaceLayout>
   );
 };
 
