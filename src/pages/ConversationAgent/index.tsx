@@ -145,6 +145,9 @@ const ConversationAgent: React.FC = () => {
   const [openAgentModel, setOpenAgentModel] = useState<boolean>(false);
   /** 底部开发者控制台（终端）是否显示 */
   const [showDevConsole] = useState<boolean>(true);
+  /** 切换预览标签/文件时递增，用于终端从 expanded 恢复 default */
+  const [devConsoleLayoutResetSignal, setDevConsoleLayoutResetSignal] =
+    useState(0);
   /** 是否正在 Git 提交推送 */
   const [isGitPushing, setIsGitPushing] = useState<boolean>(false);
   /** 源代码管理中选中查看 diff 的文件 ID */
@@ -864,6 +867,11 @@ const ConversationAgent: React.FC = () => {
     previewTabsRef.current?.clearTabs();
   }, [closePreviewView, setIsFileTreePinned]);
 
+  /** 切换预览标签/文件时，底部终端若处于 expanded 则恢复 default */
+  const resetDevConsoleExpandedLayout = useCallback(() => {
+    setDevConsoleLayoutResetSignal((n) => n + 1);
+  }, []);
+
   // ==================== 文件视图 & 编排面板 ====================
   /**
    * 文件视图 Hook 的完整配置属性
@@ -907,6 +915,7 @@ const ConversationAgent: React.FC = () => {
       onFileSelectOpenPreview: (fileId?: string) => {
         setSelectedDiffFileId(null);
         if (fileId) {
+          resetDevConsoleExpandedLayout();
           previewTabsRef.current?.openFileTab(fileId, false, {
             skipActivate: true,
           });
@@ -943,6 +952,7 @@ const ConversationAgent: React.FC = () => {
     agentConfigInfo?.type,
     agentConfigInfo?.hideDesktop,
     openPreviewView,
+    resetDevConsoleExpandedLayout,
   ]);
 
   /** 初始化文件视图 Hook，获取文件树和预览的渲染组件 */
@@ -951,6 +961,7 @@ const ConversationAgent: React.FC = () => {
   /** 预览区标签页管理 */
   const previewTabs = usePreviewTabs({
     onFileTabActivate: async (fileId, isDiff) => {
+      resetDevConsoleExpandedLayout();
       if (isDiff) {
         setSelectedDiffFileId(fileId);
       } else {
@@ -964,11 +975,13 @@ const ConversationAgent: React.FC = () => {
       }
     },
     onPickerTabActivate: () => {
+      resetDevConsoleExpandedLayout();
       if (devConversationId) {
         openPreviewView(devConversationId);
       }
     },
     onToolTabActivate: (toolId: PreviewToolId) => {
+      resetDevConsoleExpandedLayout();
       setSelectedDiffFileId(null);
       // 预览 / 编排 / 版本控制：工作区页签，收起文件预览侧栏
       if (WORKSPACE_PREVIEW_TOOL_IDS.includes(toolId)) {
@@ -1292,30 +1305,33 @@ const ConversationAgent: React.FC = () => {
           onAddTab={previewTabs.openPickerTab}
           headerActions={fileView.preview.filePathHeaderProps}
         />
-        <div className={cx(styles['right-panel-content'])}>
-          <ConversationAgentFilePreview
-            preview={fileView.preview}
-            diffFile={selectedDiffFile}
-            activeTab={previewTabs.activeTab}
-            debugPanel={arrangeDebugChatPanel}
-            arrangeConfigPanel={arrangeConfigPanel}
-            versionPanel={arrangeVersionPanel}
-            onSelectTool={(toolId) => {
-              previewTabs.closeTab(PREVIEW_TAB_PICKER_ID);
-              previewTabs.openToolTab(toolId);
-            }}
-            providerClassName={fileView.className}
-            className={cx(styles['file-preview-panel'], 'w-full', 'h-full')}
+        {/* Tab 栏下方：预览内容 + 底部终端（终端放大时仅覆盖此区域） */}
+        <div className={cx(styles['right-panel-main'])}>
+          <div className={cx(styles['right-panel-content'])}>
+            <ConversationAgentFilePreview
+              preview={fileView.preview}
+              diffFile={selectedDiffFile}
+              activeTab={previewTabs.activeTab}
+              debugPanel={arrangeDebugChatPanel}
+              arrangeConfigPanel={arrangeConfigPanel}
+              versionPanel={arrangeVersionPanel}
+              onSelectTool={(toolId) => {
+                previewTabs.closeTab(PREVIEW_TAB_PICKER_ID);
+                previewTabs.openToolTab(toolId);
+              }}
+              providerClassName={fileView.className}
+              className={cx(styles['file-preview-panel'], 'w-full', 'h-full')}
+            />
+          </div>
+          <ConversationAgentBottomConsole
+            visible={showDevConsole}
+            wsUrl={terminalWsUrl}
+            wireProtocol="ttyd"
+            wsSubprotocols={['tty']}
+            layoutResetSignal={devConsoleLayoutResetSignal}
           />
         </div>
       </div>
-      {/* 底部终端 */}
-      <ConversationAgentBottomConsole
-        visible={showDevConsole}
-        wsUrl={terminalWsUrl}
-        wireProtocol="ttyd"
-        wsSubprotocols={['tty']}
-      />
     </div>
   );
 

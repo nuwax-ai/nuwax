@@ -64,7 +64,6 @@
   }
 
   .right-panel {
-    position: relative;
     flex: 1;
     min-width: 0;
     display: flex;
@@ -87,7 +86,20 @@
     overflow: hidden;
   }
 
-  /** Tab 栏下方：编排面板或文件预览 */
+  /**
+   * Tab 栏下方主区域：预览内容 + 底部终端
+   * position: relative 供终端 expanded 时 absolute 定位，不遮挡 PreviewTabBar
+   */
+  .right-panel-main {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /** 编排面板或文件预览 */
   .right-panel-content {
     flex: 1;
     min-height: 0;
