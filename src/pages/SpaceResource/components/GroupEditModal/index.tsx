@@ -33,17 +33,22 @@ const GroupEditModal: React.FC<GroupEditModalProps> = ({
   const [form] = Form.useForm();
   const [imageUrl, setImageUrl] = useState<string>('');
   const [modalLoading, setModalLoading] = useState(false);
-  const selectedType = Form.useWatch('type', form);
+  const [groupType, setGroupType] = useState<ComponentTypeEnum>(
+    ComponentTypeEnum.Plugin,
+  );
 
   useEffect(() => {
     if (open) {
       if (mode === 'edit' && editingGroup) {
         setImageUrl(editingGroup.icon || '');
+        const currentType =
+          (editingGroup.type as ComponentTypeEnum) || ComponentTypeEnum.Plugin;
+        setGroupType(currentType);
         form.setFieldsValue({
           name: editingGroup.name,
           description: editingGroup.description || '',
           icon: editingGroup.icon || '',
-          type: editingGroup.type,
+          type: currentType,
         });
       } else {
         setImageUrl('');
@@ -53,6 +58,7 @@ const GroupEditModal: React.FC<GroupEditModalProps> = ({
           filterType === ComponentTypeEnum.Workflow
             ? ComponentTypeEnum.Workflow
             : ComponentTypeEnum.Plugin;
+        setGroupType(defaultType);
         form.setFieldsValue({
           type: defaultType,
         });
@@ -156,7 +162,7 @@ const GroupEditModal: React.FC<GroupEditModalProps> = ({
                 form.setFieldValue('icon', url);
               }}
               defaultImage={
-                selectedType === ComponentTypeEnum.Workflow
+                groupType === ComponentTypeEnum.Workflow
                   ? workflowIcon
                   : pluginIcon
               }
