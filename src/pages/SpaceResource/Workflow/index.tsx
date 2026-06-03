@@ -24,6 +24,12 @@ const ALLOWED_TYPES = new Set([
   ComponentTypeEnum.Plugin,
 ]);
 
+// 模块级内存缓存：刷新页面时自动重置，SPA 路由跳转时保持选中状态
+const workflowGroupMemoryCache: Record<
+  number,
+  { groupId: number; groupType?: string }
+> = {};
+
 const SpaceWorkflow: React.FC = () => {
   const params = useParams();
   const spaceId = Number(params.spaceId);
@@ -46,17 +52,21 @@ const SpaceWorkflow: React.FC = () => {
   );
 
   // 资源分组状态，0 表示全部
-  const [groupId, setGroupId] = useState<number>(0);
+  const [groupId, setGroupId] = useState<number>(() => {
+    return workflowGroupMemoryCache[spaceId]?.groupId || 0;
+  });
   const [selectedGroupType, setSelectedGroupType] = useState<
     string | undefined
-  >(undefined);
+  >(() => {
+    return workflowGroupMemoryCache[spaceId]?.groupType;
+  });
 
   const filterParamsRef = useRef({
     type: ComponentTypeEnum.Workflow,
     status: FilterStatusEnum.All,
     create: CreateListEnum.All_Person,
     keyword: '',
-    groupId: 0,
+    groupId: workflowGroupMemoryCache[spaceId]?.groupId || 0,
   });
 
   const isFirstLoadRef = useRef(true);
@@ -113,6 +123,7 @@ const SpaceWorkflow: React.FC = () => {
   };
 
   const handleGroupChange = (id: number, groupType?: string) => {
+    workflowGroupMemoryCache[spaceId] = { groupId: id, groupType };
     setGroupId(id);
     setSelectedGroupType(groupType);
     const {
@@ -158,12 +169,18 @@ const SpaceWorkflow: React.FC = () => {
 
   useEffect(() => {
     if (location.state) return;
+    const cachedGroupId = workflowGroupMemoryCache[spaceId]?.groupId || 0;
+    const cachedGroupType = workflowGroupMemoryCache[spaceId]?.groupType;
+    setGroupId(cachedGroupId);
+    setSelectedGroupType(cachedGroupType);
+    filterParamsRef.current.groupId = cachedGroupId;
     setLoading(true);
     runComponent(spaceId);
   }, [spaceId]);
 
   useEffect(() => {
     if (location.state) {
+      workflowGroupMemoryCache[spaceId] = { groupId: 0 };
       setGroupId(0);
       setSelectedGroupType(undefined);
       filterParamsRef.current.groupId = 0;
