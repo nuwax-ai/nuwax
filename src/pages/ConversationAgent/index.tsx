@@ -1310,11 +1310,16 @@ const ConversationAgent: React.FC = () => {
         <div className={cx(styles['right-panel-main'])}>
           <div className={cx(styles['right-panel-content'])}>
             <ConversationAgentFilePreview
+              // 预览文件
               preview={fileView.preview}
+              // 差异文件
               diffFile={selectedDiffFile}
               activeTab={previewTabs.activeTab}
+              // 调试对话面板
               debugPanel={arrangeDebugChatPanel}
+              // 编排配置面板
               arrangeConfigPanel={arrangeConfigPanel}
+              // 版本控制面板（Git 提交记录）
               versionPanel={arrangeVersionPanel}
               onSelectTool={(toolId) => {
                 previewTabs.closeTab(PREVIEW_TAB_PICKER_ID);

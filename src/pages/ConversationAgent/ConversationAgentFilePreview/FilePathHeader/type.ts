@@ -50,4 +50,10 @@ export interface FilePathHeaderProps {
   onFileTreeToggle?: () => void;
   /** 是否是云电脑 */
   isCloudComputer?: boolean;
+  /** 当前视图模式（预览页签固定为 preview） */
+  viewMode?: 'preview' | 'desktop';
+  /** html / md 文件的查看方式：预览或代码 */
+  viewFileType?: 'preview' | 'code';
+  /** 切换预览 / 代码视图 */
+  onViewFileTypeChange?: (type: 'preview' | 'code') => void;
 }

@@ -2,6 +2,18 @@
 
 @tab-list-scrollbar-size: 8px;
 
+// 标签栏 Tooltip：置于标签之上、可选中文本，避免事件穿透触发拖拽
+:global(.preview-tab-label-tooltip) {
+  pointer-events: auto !important;
+  z-index: @zIndexPopupBase;
+
+  .ant-tooltip-inner {
+    pointer-events: auto;
+    user-select: text;
+    cursor: text;
+  }
+}
+
 .tab-bar {
   display: flex;
   align-items: center;
@@ -160,13 +172,16 @@
   font-size: @fontSize;
 }
 
-.tab-label {
+.tab-label-wrap {
   flex: 1;
   min-width: 0;
-  font-size: @fontSizeSm;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+}
+
+.tab-label {
+  display: block;
+  max-width: 100%;
+  font-size: @fontSizeSm;
 }
 
 .tab-close {

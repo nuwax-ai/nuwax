@@ -30,6 +30,12 @@ import classNames from 'classnames';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import type { PreviewTab, PreviewToolId } from '../hooks/usePreviewTabs';
 import PreviewTabContextMenu from './PreviewTabContextMenu';
+import PreviewTabLabel from './PreviewTabLabel';
+import {
+  PreviewTabTooltipDragProvider,
+  useIsPointerOverPreviewTabTooltip,
+  useTabSortableListeners,
+} from './PreviewTabTooltipDrag';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -73,7 +79,9 @@ const TabItemFace: React.FC<TabItemFaceProps> = ({
       />
     )}
     <span className={cx(styles['tab-icon'])}>{renderTabIcon(tab)}</span>
-    <span className={cx(styles['tab-label'])}>{tab.label}</span>
+    <span className={cx(styles['tab-label-wrap'])}>
+      <PreviewTabLabel className={cx(styles['tab-label'])} text={tab.label} />
+    </span>
     {!overlay && onClose && (
       <button
         type="button"
@@ -135,6 +143,7 @@ const SortableTabItem: React.FC<SortableTabItemProps> = ({
   renderTabIcon,
   registerTabEl,
 }) => {
+  const isPointerOverTabTooltip = useIsPointerOverPreviewTabTooltip();
   const {
     attributes,
     listeners,
@@ -142,7 +151,8 @@ const SortableTabItem: React.FC<SortableTabItemProps> = ({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: tab.id });
+  } = useSortable({ id: tab.id, disabled: isPointerOverTabTooltip });
+  const tabDragListeners = useTabSortableListeners(listeners);
 
   const setTabNodeRef = useCallback(
     (node: HTMLDivElement | null) => {
@@ -163,9 +173,8 @@ const SortableTabItem: React.FC<SortableTabItemProps> = ({
       })}
       onClick={onSelect}
       onContextMenu={onContextMenu}
-      title={tab.label}
       {...attributes}
-      {...listeners}
+      {...tabDragListeners}
     >
       <TabItemFace tab={tab} renderTabIcon={renderTabIcon} onClose={onClose} />
     </div>
@@ -462,53 +471,54 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
           <div ref={tabViewportRef} className={cx(styles['tab-list-viewport'])}>
             {/* 标签页列表 */}
             <div ref={tabTrackRef} className={cx(styles['tab-list-track'])}>
-              <DndContext
-                sensors={tabSortSensors}
-                collisionDetection={closestCenter}
-                onDragStart={handleTabDragStart}
-                onDragEnd={handleTabDragEnd}
-                onDragCancel={handleTabDragCancel}
-              >
-                <SortableContext
-                  items={tabs.map((tab) => tab.id)}
-                  strategy={horizontalListSortingStrategy}
+              <PreviewTabTooltipDragProvider onDragCancel={handleTabDragCancel}>
+                <DndContext
+                  sensors={tabSortSensors}
+                  collisionDetection={closestCenter}
+                  onDragStart={handleTabDragStart}
+                  onDragEnd={handleTabDragEnd}
+                  onDragCancel={handleTabDragCancel}
                 >
-                  {tabs.map((tab) => (
-                    <SortableTabItem
-                      key={tab.id}
-                      tab={tab}
-                      isActive={tab.id === activeTabId}
-                      onSelect={() => onTabSelect(tab.id)}
-                      onClose={() => onTabClose(tab.id)}
-                      onContextMenu={(e) => handleTabContextMenu(e, tab.id)}
-                      renderTabIcon={renderTabIcon}
-                      registerTabEl={registerTabEl}
-                    />
-                  ))}
-                </SortableContext>
-                <DragOverlay dropAnimation={null} adjustScale={false}>
-                  {activeDragTab ? (
-                    <div
-                      className={cx(
-                        styles['tab-item'],
-                        styles['tab-item-overlay'],
-                        {
-                          [styles['tab-item-active']]:
-                            activeDragTab.id === activeTabId,
-                          [styles['tab-item-pinned']]: activeDragTab.pinned,
-                        },
-                      )}
-                      title={activeDragTab.label}
-                    >
-                      <TabItemFace
-                        tab={activeDragTab}
+                  <SortableContext
+                    items={tabs.map((tab) => tab.id)}
+                    strategy={horizontalListSortingStrategy}
+                  >
+                    {tabs.map((tab) => (
+                      <SortableTabItem
+                        key={tab.id}
+                        tab={tab}
+                        isActive={tab.id === activeTabId}
+                        onSelect={() => onTabSelect(tab.id)}
+                        onClose={() => onTabClose(tab.id)}
+                        onContextMenu={(e) => handleTabContextMenu(e, tab.id)}
                         renderTabIcon={renderTabIcon}
-                        overlay
+                        registerTabEl={registerTabEl}
                       />
-                    </div>
-                  ) : null}
-                </DragOverlay>
-              </DndContext>
+                    ))}
+                  </SortableContext>
+                  <DragOverlay dropAnimation={null} adjustScale={false}>
+                    {activeDragTab ? (
+                      <div
+                        className={cx(
+                          styles['tab-item'],
+                          styles['tab-item-overlay'],
+                          {
+                            [styles['tab-item-active']]:
+                              activeDragTab.id === activeTabId,
+                            [styles['tab-item-pinned']]: activeDragTab.pinned,
+                          },
+                        )}
+                      >
+                        <TabItemFace
+                          tab={activeDragTab}
+                          renderTabIcon={renderTabIcon}
+                          overlay
+                        />
+                      </div>
+                    ) : null}
+                  </DragOverlay>
+                </DndContext>
+              </PreviewTabTooltipDragProvider>
             </div>
           </div>
           <div ref={tabGutterRef} className={cx(styles['tab-list-gutter'])}>
