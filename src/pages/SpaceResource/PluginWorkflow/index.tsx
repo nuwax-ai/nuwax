@@ -209,11 +209,13 @@ const SpacePluginWorkflow: React.FC = () => {
         spaceId={spaceId}
         open={openPlugin}
         onCancel={() => setOpenPlugin(false)}
+        defaultGroupId={groupId !== 0 ? groupId : undefined}
       />
       <CreateWorkflow
         spaceId={spaceId}
         open={openWorkflow}
         onCancel={() => setOpenWorkflow(false)}
+        defaultGroupId={groupId !== 0 ? groupId : undefined}
       />
     </div>
   );
