@@ -1,4 +1,10 @@
 import type {
+  AcpPermissionInteraction,
+  AcpRequestPermissionResponse,
+  AgentMode,
+  McpAskInteraction,
+} from '@/components/business-component/AgentIntervention';
+import type {
   AssistantRoleEnum,
   ConversationEventTypeEnum,
   ExpandPageAreaEnum,
@@ -152,6 +158,8 @@ export interface SendMessageParams {
   skillIds?: number[];
   // 模型ID
   modelId?: number;
+  // Agent mode, 默认 yolo
+  agentMode?: AgentMode;
 }
 
 // 会话参数
@@ -173,6 +181,8 @@ export interface ConversationChatParams {
   skillIds?: number[];
   // 模型ID
   modelId?: number;
+  // Agent mode, 默认 yolo
+  agentMode?: AgentMode;
 }
 
 // 临时会话参数
@@ -285,6 +295,10 @@ export interface MessageInfo extends ChatMessageDto {
   finalResult?: ConversationFinalResult;
   // 消息查询过程信息
   processingList?: ProcessingInfo[];
+  /** ACP permission approval 交互 */
+  acpPermissionInteractions?: AcpPermissionInteraction[];
+  /** MCP ask/question 交互（nuwax_ask_question / legacy ask_user） */
+  mcpAskInteractions?: McpAskInteraction[];
 }
 
 // 查询会话信息
@@ -444,6 +458,10 @@ export interface ChatViewProps {
   conversationId?: string | number;
   // 是否显示状态描述
   showStatusDesc?: boolean;
+  onAcpPermissionRespond?: (
+    interaction: AcpPermissionInteraction,
+    acpResponse: AcpRequestPermissionResponse,
+  ) => void;
 }
 
 // 卡片信息

@@ -22,7 +22,7 @@ import type {
 } from '@/types/interfaces/common';
 import { AffixRef, App, message as antdMessage } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { history, useModel, useRequest } from 'umi';
 import DraggableHomeContent from './DraggableHomeContent';
 import styles from './index.less';
@@ -60,18 +60,22 @@ const Home: React.FC = () => {
   // const RECOMMEND_HEIGHT = 360; // 推荐部分固定高度
 
   // 主页智能体分类列表
-  const { run: runCategoryList } = useRequest(apiHomeCategoryList, {
-    manual: true,
-    debounceInterval: 300,
-    onSuccess: (result: HomeAgentCategoryInfo) => {
-      setHomeCategoryInfo(result);
-      setActiveTab(result?.categories?.[0]?.type);
+  const runCategoryList = useCallback(async () => {
+    try {
+      const result = await apiHomeCategoryList({ skipErrorHandler: true });
+      if (result?.success === false) {
+        antdMessage.warning(result.message);
+        setLoading(false);
+        return;
+      }
+      const { data } = result;
+      setHomeCategoryInfo(data);
+      setActiveTab(data?.categories?.[0]?.type);
       setLoading(false);
-    },
-    onError: () => {
+    } catch {
       setLoading(false);
-    },
-  });
+    }
+  }, []);
 
   // 智能体收藏
   const { run: runCollectAgent } = useRequest(apiCollectAgent, {
@@ -92,13 +96,14 @@ const Home: React.FC = () => {
   });
 
   // 已发布的智能体详情接口
-  const { run: runDetail } = useRequest(apiPublishedAgentInfo, {
-    manual: true,
-    debounceInterval: 300,
-    onSuccess: (result: AgentDetailDto) => {
-      setAgentDetail(result);
-    },
-  });
+  const runDetail = useCallback(async (agentId: number) => {
+    try {
+      const { data } = await apiPublishedAgentInfo(agentId);
+      setAgentDetail(data);
+    } catch {
+      // 全局 request errorHandler 已展示用户提示，这里只消费 Promise，避免 dev overlay。
+    }
+  }, []);
 
   useEffect(() => {
     setLoading(true);

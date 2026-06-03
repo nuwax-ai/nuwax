@@ -1,0 +1,49 @@
+import type { McpAskUserToolInput } from '../types/mcpAskIntervention';
+import {
+  INTERACTION_UI_SCHEMA_VERSION,
+  INTERACTION_UI_SCHEMA_VERSION_ALIASES,
+  MCP_ASK_SCHEMA_VERSION,
+  MCP_ASK_SCHEMA_VERSION_ALIASES,
+} from '../types/mcpAskIntervention';
+
+const acceptedAskSchemaVersions = new Set([
+  MCP_ASK_SCHEMA_VERSION,
+  ...MCP_ASK_SCHEMA_VERSION_ALIASES,
+]);
+
+const acceptedUiSchemaVersions = new Set([
+  INTERACTION_UI_SCHEMA_VERSION,
+  ...INTERACTION_UI_SCHEMA_VERSION_ALIASES,
+]);
+
+export function parseMcpAskToolInput(raw: unknown): McpAskUserToolInput | null {
+  if (!raw || typeof raw !== 'object') {
+    return null;
+  }
+  const record = raw as Record<string, unknown>;
+  if (
+    typeof record.schemaVersion !== 'string' ||
+    !acceptedAskSchemaVersions.has(record.schemaVersion)
+  ) {
+    return null;
+  }
+  const toolName = record.toolName ?? 'nuwax_ask_question';
+  if (
+    toolName !== 'nuwax_ask_question' &&
+    toolName !== 'nuwax_ask_user' &&
+    toolName !== 'nuwaclaw_ask_user'
+  ) {
+    return null;
+  }
+  if (typeof record.requestId !== 'string' || !record.ui) {
+    return null;
+  }
+  const ui = record.ui as Record<string, unknown>;
+  if (
+    typeof ui.version !== 'string' ||
+    !acceptedUiSchemaVersions.has(ui.version)
+  ) {
+    return null;
+  }
+  return { ...record, toolName } as unknown as McpAskUserToolInput;
+}

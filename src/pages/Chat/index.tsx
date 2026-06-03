@@ -5,6 +5,11 @@ import {
   CopyToSpaceComponent,
   PagePreviewIframe,
 } from '@/components/business-component';
+import {
+  AgentInterventionChatLayer,
+  type AgentMode,
+  useAgentInterventionLayer,
+} from '@/components/business-component/AgentIntervention';
 import PaymentSubscriptionModal from '@/components/business-component/PaymentSubscriptionModal';
 import ChatInputHome from '@/components/ChatInputHome';
 import ChatView from '@/components/ChatView';
@@ -106,7 +111,6 @@ const Chat: React.FC = () => {
   const [selectedModelId, setSelectedModelId] = useState<number>(
     location.state?.modelId,
   );
-
   const [form] = Form.useForm();
   // 变量参数
   const [variableParams, setVariableParams] = useState<Record<
@@ -116,6 +120,7 @@ const Chat: React.FC = () => {
   const [clearLoading, setClearLoading] = useState<boolean>(false);
   // 是否发送过消息,如果是,则禁用变量参数
   const isSendMessageRef = useRef<boolean>(false);
+  const agentModeRef = useRef<AgentMode>('yolo');
 
   const [isSidebarVisible, setIsSidebarVisible] = useState<boolean>(true);
   const sidebarRef = useRef<AgentSidebarRef>(null);
@@ -574,6 +579,7 @@ const Chat: React.FC = () => {
             data,
             skillIds,
             modelId: selectedModelId,
+            agentMode: agentModeRef.current,
           };
 
           onMessageSend(sendParams);
@@ -733,7 +739,11 @@ const Chat: React.FC = () => {
         );
       }
     } catch (error: any) {
-      message.error(error.message || t('PC.Pages.Chat.clearAndCreateFailed'));
+      const errorMsg =
+        error?.message ||
+        (typeof error === 'string' ? error : null) ||
+        t('PC.Pages.Chat.clearAndCreateFailed');
+      message.error(errorMsg);
       setClearLoading(false);
       setIsLoadingOtherInterface(false);
     }
@@ -745,6 +755,7 @@ const Chat: React.FC = () => {
     files: UploadFileInfo[] = [],
     skillIds: number[] = [],
     modelId?: number,
+    selectedAgentMode?: AgentMode,
   ) => {
     // 变量参数为空，不发送消息
     if (wholeDisabled) {
@@ -768,11 +779,19 @@ const Chat: React.FC = () => {
       sandboxId: effectiveSandboxId,
       skillIds,
       modelId: modelId || selectedModelId,
+      agentMode: selectedAgentMode || agentModeRef.current,
     };
 
     incrementCalledTrialCount();
     onMessageSend(sendParams);
   };
+
+  const interventionLayer = useAgentInterventionLayer({
+    conversationId: id,
+    messageList,
+    onSendMessage: (msg) => handleMessageSend(msg),
+  });
+  agentModeRef.current = interventionLayer.agentMode;
 
   // 修改 handleScrollBottom 函数，添加自动滚动控制
   const onScrollBottom = () => {
@@ -1249,7 +1268,8 @@ const Chat: React.FC = () => {
                   {/* 智能体电脑视图 */}
                   <ConditionRender
                     condition={
-                      conversationInfo?.agent.hideDesktop === HideDesktopEnum.No
+                      conversationInfo?.agent?.hideDesktop ===
+                      HideDesktopEnum.No
                     }
                   >
                     <TooltipIcon
@@ -1373,6 +1393,12 @@ const Chat: React.FC = () => {
               </div>
             </div>
 
+            {/* Agent Intervention：固定在输入框（会话框）上方，消息滚动时保持可见 */}
+            <AgentInterventionChatLayer
+              {...interventionLayer.chatLayerProps}
+              className={styles['intervention-dock']}
+            />
+
             {/* 会话状态显示 - 有消息时就显示 */}
             {messageList?.length > 0 &&
               conversationInfo &&
@@ -1433,6 +1459,7 @@ const Chat: React.FC = () => {
               selectedModelId={selectedModelId}
               onModelSelect={setSelectedModelId}
               agentType={effectiveAgent?.type}
+              {...interventionLayer.agentModeInputProps}
               // 通用性智能体才有技能，所以技能信息存在时才显示提及项，其他类型智能体不显示提及项
             />
           </div>
