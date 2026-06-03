@@ -44,6 +44,7 @@ const CreateNewPlugin: React.FC<CreateNewPluginProps> = ({
   open,
   onCancel,
   onConfirm,
+  defaultGroupId,
 }) => {
   const [form] = Form.useForm();
   const [imageUrl, setImageUrl] = useState<string>('');
@@ -56,9 +57,13 @@ const CreateNewPlugin: React.FC<CreateNewPluginProps> = ({
       form.setFieldsValue({
         name,
         description,
+        groupId:
+          mode === CreateUpdateModeEnum.Create
+            ? defaultGroupId || undefined
+            : undefined,
       });
     }
-  }, [open, icon, name, description]);
+  }, [open, icon, name, description, defaultGroupId, mode]);
 
   // 根据type类型，判断插件跳转路径
   const handlePluginUrl = (id: number, type: PluginTypeEnum) => {
