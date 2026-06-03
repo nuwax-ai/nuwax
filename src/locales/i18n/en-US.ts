@@ -3228,7 +3228,6 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.SpaceKnowledge.UploadFile.fileSizeLimit100MB": "File size must not exceed 100MB.",
   "PC.Pages.SpaceKnowledge.UploadFile.supportedFileTypes": "Please upload files in the following formats: PDF, TXT, DOC, DOCX, MD, JSON, JPG, PNG, GIF, WEBP, SVG, HEIC, MP4, MKV, MOV, WEBM, MP3, AAC, WAV, FLAC, OGG, OPUS.",
   "PC.Pages.SpaceKnowledge.UploadFile.uploadHint": "Supported formats: PDF, TXT, DOC, DOCX, MD, JSON, JPG, PNG, GIF, WEBP, SVG, HEIC, MP4, MKV, MOV, WEBM, MP3, AAC, WAV, FLAC, OGG, OPUS. Up to 300 files, each not exceeding 100MB. PDFs up to 500 pages.",
-  "PC.Pages.SpaceKnowledgeStorage.pageTitle": "Knowledge & Data Storage",
   "PC.Pages.SpaceLibrary.availableScope": "Available Scope",
   "PC.Pages.SpaceLibrary.ComponentItem.disabled": "Disabled",
   "PC.Pages.SpaceLibrary.ComponentItem.enabled": "Enabled",
@@ -3595,7 +3594,6 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.SpacePluginTool.selectRequestContentFormat": "Select request content format",
   "PC.Pages.SpacePluginTool.selectRequestMethod": "Select request method",
 
-  "PC.Pages.SpacePluginWorkflow.pageTitle": "Plugins & Workflows",
   "PC.Pages.SpacePluginWorkflow.pluginPageTitle": "Plugins",
   "PC.Pages.SpacePluginWorkflow.workflowPageTitle": "Workflows",
 
