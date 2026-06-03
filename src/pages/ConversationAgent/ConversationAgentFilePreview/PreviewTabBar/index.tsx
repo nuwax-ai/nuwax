@@ -32,8 +32,10 @@ import type { PreviewTab, PreviewToolId } from '../hooks/usePreviewTabs';
 import PreviewTabContextMenu from './PreviewTabContextMenu';
 import PreviewTabLabel from './PreviewTabLabel';
 import {
+  isPointerOverPreviewTabTooltip,
   PreviewTabTooltipDragProvider,
-  useIsPointerOverPreviewTabTooltip,
+  shouldIgnoreTabClickForTooltipSelection,
+  usePreviewTabTooltipDrag,
   useTabSortableListeners,
 } from './PreviewTabTooltipDrag';
 import styles from './index.less';
@@ -143,7 +145,8 @@ const SortableTabItem: React.FC<SortableTabItemProps> = ({
   renderTabIcon,
   registerTabEl,
 }) => {
-  const isPointerOverTabTooltip = useIsPointerOverPreviewTabTooltip();
+  const { isOverTooltip: isPointerOverTabTooltip, consumeSuppressTabClick } =
+    usePreviewTabTooltipDrag();
   const {
     attributes,
     listeners,
@@ -151,8 +154,31 @@ const SortableTabItem: React.FC<SortableTabItemProps> = ({
     transform,
     transition,
     isDragging,
+    // 指针在 Tooltip 上时禁用 Sortable，避免与气泡内选字冲突
   } = useSortable({ id: tab.id, disabled: isPointerOverTabTooltip });
   const tabDragListeners = useTabSortableListeners(listeners);
+
+  /**
+   * 切换标签前排除 Tooltip 相关误触（逻辑见 PreviewTabTooltipDrag）：
+   * 1. 点击落在 Tooltip 气泡内 → 不切换；
+   * 2. 刚在 Tooltip 选字后合成到「本标签」的 click → 不切换；
+   * 3. 选区仍在 Tooltip 且点的是所属标签 → 不切换；点其它标签会清选区并切换。
+   */
+  const handleTabClick = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      if (isPointerOverPreviewTabTooltip(e.clientX, e.clientY)) {
+        return;
+      }
+      if (consumeSuppressTabClick(tab.id)) {
+        return;
+      }
+      if (shouldIgnoreTabClickForTooltipSelection(tab.id)) {
+        return;
+      }
+      onSelect();
+    },
+    [consumeSuppressTabClick, onSelect, tab.id],
+  );
 
   const setTabNodeRef = useCallback(
     (node: HTMLDivElement | null) => {
@@ -171,7 +197,7 @@ const SortableTabItem: React.FC<SortableTabItemProps> = ({
         [styles['tab-item-active']]: isActive,
         [styles['tab-item-pinned']]: tab.pinned,
       })}
-      onClick={onSelect}
+      onClick={handleTabClick}
       onContextMenu={onContextMenu}
       {...attributes}
       {...tabDragListeners}
@@ -471,6 +497,7 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
           <div ref={tabViewportRef} className={cx(styles['tab-list-viewport'])}>
             {/* 标签页列表 */}
             <div ref={tabTrackRef} className={cx(styles['tab-list-track'])}>
+              {/* Tooltip 选字 / 拖拽排序协同，见 PreviewTabTooltipDrag.tsx */}
               <PreviewTabTooltipDragProvider onDragCancel={handleTabDragCancel}>
                 <DndContext
                   sensors={tabSortSensors}
