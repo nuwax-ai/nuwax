@@ -7,6 +7,7 @@ import {
   CodeOutlined,
   DesktopOutlined,
   ExportOutlined,
+  FormOutlined,
   FullscreenExitOutlined,
   PlusOutlined,
   PushpinFilled,
@@ -44,6 +45,7 @@ export interface PreviewTabBarProps {
 /** 工具标签图标映射 */
 const TOOL_ICON_MAP: Partial<Record<PreviewToolId, React.ReactNode>> = {
   preview: <DesktopOutlined style={{ fontSize: 14 }} />,
+  arrange: <FormOutlined style={{ fontSize: 14 }} />,
   editor: <CodeOutlined style={{ fontSize: 14 }} />,
   terminal: <ThunderboltOutlined style={{ fontSize: 14 }} />,
   'version-control': <BranchesOutlined style={{ fontSize: 14 }} />,
@@ -246,6 +248,7 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
       <div className={cx(styles['tab-bar-left'])}>
         <div className={cx(styles['tab-list-shell'])}>
           <div ref={tabViewportRef} className={cx(styles['tab-list-viewport'])}>
+            {/* 标签页列表 */}
             <div ref={tabTrackRef} className={cx(styles['tab-list-track'])}>
               {tabs.map((tab) => (
                 <div
@@ -293,6 +296,7 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
           </div>
         </div>
 
+        {/* 「+」号按钮，点击打开「新建页签」面板 */}
         <button
           type="button"
           className={cx(styles['add-tab-btn'])}

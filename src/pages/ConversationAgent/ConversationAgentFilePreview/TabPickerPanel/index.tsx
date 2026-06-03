@@ -6,6 +6,7 @@ import {
   CodeOutlined,
   DatabaseOutlined,
   DesktopOutlined,
+  FormOutlined,
   PlusOutlined,
   SafetyCertificateOutlined,
   SettingOutlined,
@@ -25,12 +26,19 @@ interface TabPickerItem {
   descKey: string;
 }
 
+/** 开发工具 */
 const DEV_TOOLS: TabPickerItem[] = [
   {
     id: 'preview',
     icon: <DesktopOutlined />,
     titleKey: 'PC.Pages.ConversationAgentTabPicker.preview',
     descKey: 'PC.Pages.ConversationAgentTabPicker.previewDesc',
+  },
+  {
+    id: 'arrange',
+    icon: <FormOutlined />,
+    titleKey: 'PC.Pages.ConversationAgentTabPicker.arrange',
+    descKey: 'PC.Pages.ConversationAgentTabPicker.arrangeDesc',
   },
   {
     id: 'editor',

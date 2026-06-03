@@ -66,14 +66,16 @@ import React, {
   useState,
 } from 'react';
 import { useLocation, useModel, useParams } from 'umi';
-import AgentArrangePanel from './AgentArrangePanel';
+import AgentArrangeConfigSection from './AgentArrangePanel/AgentArrangeConfigSection';
 import AgentConversationChatPanel from './AgentConversationChatPanel';
+import AgentGitVersionRecordPanel from './AgentGitVersionRecordPanel';
 import ConversationAgentBottomConsole from './ConversationAgentBottomConsole';
 import ConversationAgentFilePreview from './ConversationAgentFilePreview';
 import {
   getFileTabId,
   PREVIEW_TAB_PICKER_ID,
   usePreviewTabs,
+  WORKSPACE_PREVIEW_TOOL_IDS,
   type PreviewToolId,
 } from './ConversationAgentFilePreview/hooks/usePreviewTabs';
 import PreviewTabBar from './ConversationAgentFilePreview/PreviewTabBar';
@@ -196,7 +198,6 @@ const ConversationAgent: React.FC = () => {
     setIsLoadingConversation,
     runQueryConversation,
     conversationInfo,
-    isFileTreeVisible,
     isFileTreePinned,
     setIsFileTreePinned,
     closePreviewView,
@@ -968,9 +969,9 @@ const ConversationAgent: React.FC = () => {
       }
     },
     onToolTabActivate: (toolId: PreviewToolId) => {
-      // 「预览」对应智能体编排面板，不进入文件预览区
-      if (toolId === 'preview') {
-        setSelectedDiffFileId(null);
+      setSelectedDiffFileId(null);
+      // 预览 / 编排 / 版本控制：工作区页签，收起文件预览侧栏
+      if (WORKSPACE_PREVIEW_TOOL_IDS.includes(toolId)) {
         closePreviewView();
         return;
       }
@@ -981,17 +982,6 @@ const ConversationAgent: React.FC = () => {
   });
 
   previewTabsRef.current = previewTabs;
-
-  /** 当前是否为「预览」工具页签（内容区展示编排面板） */
-  const isPreviewTabActive = useMemo(
-    () =>
-      previewTabs.activeTab?.type === 'tool' &&
-      previewTabs.activeTab.toolId === 'preview',
-    [previewTabs.activeTab],
-  );
-
-  /** 是否展示文件预览内容区（预览页签激活时改为编排面板） */
-  const showFilePreviewPanel = isFileTreeVisible && !isPreviewTabActive;
 
   /** 当前选中查看 diff 的文件数据 */
   const selectedDiffFile = useMemo(
@@ -1191,18 +1181,7 @@ const ConversationAgent: React.FC = () => {
 
   // ==================== 渲染函数 ====================
 
-  /**
-   * 渲染编排面板（Agent 配置编辑区域）
-   * - 有 agentId 且配置已加载时：显示 AgentArrangePanel（系统提示词、变量、工具、模型等配置）
-   * - 否则：显示空状态占位符
-   *
-   * 编排面板包含：
-   * - 系统提示词编辑器（支持插入变量/工具标签）
-   * - 变量管理
-   * - 工具选择（插件/工作流/MCP/技能/子智能体）
-   * - 模型切换
-   */
-  /** 编排面板「调试」Tab 内嵌的智能体对话（布局参考 AgentDetails / Chat） */
+  /** 「预览」页签：调试对话（原编排面板「调试」Tab） */
   const arrangeDebugChatPanel = useMemo(
     () => (
       <AgentConversationChatPanel
@@ -1227,55 +1206,81 @@ const ConversationAgent: React.FC = () => {
     ],
   );
 
-  const renderArrangePanel = () => (
-    <AgentArrangePanel
-      agentId={agentId}
-      agentConfigInfo={agentConfigInfo}
-      originalModelConfigList={originalModelConfigList}
-      systemUserTipsWordRef={systemUserTipsWordRef}
-      promptVariables={promptVariables}
-      promptTools={promptTools}
-      debugPanel={arrangeDebugChatPanel}
-      devConversationId={agentConfigInfo?.devConversationId}
-      onCommitRollbackSuccess={() => {
-        if (devConversationId) {
-          handleRefreshFileList(devConversationId);
-        }
-      }}
-      onChangeAgent={handleChangeAgent}
-      onInsertSystemPrompt={handleInsertSystemPrompt}
-      onVariablesChange={handleVariablesChange}
-      onToolsChange={handleToolsChange}
-      onOpenAgentModel={() => setOpenAgentModel(true)}
-      onModelChange={async (modelId, name) => {
-        // 内联模型切换：直接调用 API 更新模型组件绑定，然后同步本地状态
-        const componentId = agentConfigInfo?.modelComponentConfig?.id;
-        if (!componentId) return;
-        const bindConfig = agentConfigInfo?.modelComponentConfig
-          ?.bindConfig as ComponentModelBindConfig;
-        await apiAgentComponentModelUpdate({
-          id: componentId,
-          targetId: modelId,
-          bindConfig,
-        });
-        const _agentConfigInfo = cloneDeep(agentConfigInfo) as AgentConfigInfo;
-        _agentConfigInfo.modelComponentConfig.targetId = modelId;
-        _agentConfigInfo.modelComponentConfig.name = name;
-        setAgentConfigInfo(_agentConfigInfo);
-      }}
-    />
+  const handleArrangeModelChange = useCallback(
+    async (modelId: number, name: string) => {
+      const componentId = agentConfigInfo?.modelComponentConfig?.id;
+      if (!componentId) return;
+      const bindConfig = agentConfigInfo?.modelComponentConfig
+        ?.bindConfig as ComponentModelBindConfig;
+      await apiAgentComponentModelUpdate({
+        id: componentId,
+        targetId: modelId,
+        bindConfig,
+      });
+      const _agentConfigInfo = cloneDeep(agentConfigInfo) as AgentConfigInfo;
+      _agentConfigInfo.modelComponentConfig.targetId = modelId;
+      _agentConfigInfo.modelComponentConfig.name = name;
+      setAgentConfigInfo(_agentConfigInfo);
+    },
+    [agentConfigInfo, setAgentConfigInfo],
   );
+
+  /** 「编排」页签：模型、提示词、变量与工具配置 */
+  const arrangeConfigPanel = useMemo(
+    () => (
+      <AgentArrangeConfigSection
+        agentId={agentId}
+        agentConfigInfo={agentConfigInfo}
+        originalModelConfigList={originalModelConfigList}
+        systemUserTipsWordRef={systemUserTipsWordRef}
+        promptVariables={promptVariables}
+        promptTools={promptTools}
+        onChangeAgent={handleChangeAgent}
+        onInsertSystemPrompt={handleInsertSystemPrompt}
+        onVariablesChange={handleVariablesChange}
+        onToolsChange={handleToolsChange}
+        onOpenAgentModel={() => setOpenAgentModel(true)}
+        onModelChange={handleArrangeModelChange}
+      />
+    ),
+    [
+      agentId,
+      agentConfigInfo,
+      originalModelConfigList,
+      promptVariables,
+      promptTools,
+      handleChangeAgent,
+      handleInsertSystemPrompt,
+      handleVariablesChange,
+      handleToolsChange,
+      handleArrangeModelChange,
+    ],
+  );
+
+  /** 「版本控制」页签：Git 提交记录 */
+  const arrangeVersionPanel = useMemo(
+    () => (
+      <AgentGitVersionRecordPanel
+        conversationId={devConversationId}
+        defaultAuthor={agentConfigInfo?.name}
+        onRollbackSuccess={() => {
+          if (devConversationId) {
+            handleRefreshFileList(devConversationId);
+          }
+        }}
+      />
+    ),
+    [devConversationId, agentConfigInfo?.name, handleRefreshFileList],
+  );
+
   /**
    * 渲染右侧面板
-   * 布局：顶部 PreviewTabBar（始终）+ 编排/预览内容区 + 底部终端
-   *
-   * 内容区：
-   * - showFilePreviewPanel → 文件预览（diff / 编辑器 / 工具页）
-   * - 否则 → 编排面板（含「预览」页签）
+   * 布局：顶部 PreviewTabBar（始终）+ 内容区（文件 / 工作区工具页）+ 底部终端
    */
   const renderRightPanel = () => (
     <div className={cx(styles['right-panel'])}>
       <div className={cx(styles['right-panel-body'])}>
+        {/* 顶部标签栏 */}
         <PreviewTabBar
           tabs={previewTabs.tabs}
           activeTabId={previewTabs.activeTabId}
@@ -1288,26 +1293,23 @@ const ConversationAgent: React.FC = () => {
           headerActions={fileView.preview.filePathHeaderProps}
         />
         <div className={cx(styles['right-panel-content'])}>
-          {showFilePreviewPanel ? (
-            <ConversationAgentFilePreview
-              preview={fileView.preview}
-              diffFile={selectedDiffFile}
-              activeTab={previewTabs.activeTab}
-              onSelectTool={(toolId) => {
-                previewTabs.closeTab(PREVIEW_TAB_PICKER_ID);
-                if (toolId === 'preview') {
-                  setSelectedDiffFileId(null);
-                }
-                previewTabs.openToolTab(toolId);
-              }}
-              providerClassName={fileView.className}
-              className={cx(styles['file-preview-panel'], 'w-full', 'h-full')}
-            />
-          ) : (
-            renderArrangePanel()
-          )}
+          <ConversationAgentFilePreview
+            preview={fileView.preview}
+            diffFile={selectedDiffFile}
+            activeTab={previewTabs.activeTab}
+            debugPanel={arrangeDebugChatPanel}
+            arrangeConfigPanel={arrangeConfigPanel}
+            versionPanel={arrangeVersionPanel}
+            onSelectTool={(toolId) => {
+              previewTabs.closeTab(PREVIEW_TAB_PICKER_ID);
+              previewTabs.openToolTab(toolId);
+            }}
+            providerClassName={fileView.className}
+            className={cx(styles['file-preview-panel'], 'w-full', 'h-full')}
+          />
         </div>
       </div>
+      {/* 底部终端 */}
       <ConversationAgentBottomConsole
         visible={showDevConsole}
         wsUrl={terminalWsUrl}

@@ -2408,6 +2408,8 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.ConversationAgentTabPicker.hostingDesc": "一鍵部署應用到生產環境，提供即時資料監控和日誌排查服務。",
   "PC.Pages.ConversationAgentTabPicker.preview": "預覽",
   "PC.Pages.ConversationAgentTabPicker.previewDesc": "即時預覽執行效果，進行程式碼偵錯。",
+  "PC.Pages.ConversationAgentTabPicker.arrange": "編排",
+  "PC.Pages.ConversationAgentTabPicker.arrangeDesc": "配置模型、提示詞、變數與工具等智能體編排能力。",
   "PC.Pages.ConversationAgentTabPicker.editor": "編輯器",
   "PC.Pages.ConversationAgentTabPicker.editorDesc": "瀏覽、編寫和修改專案的原始碼檔案。",
   "PC.Pages.ConversationAgentTabPicker.terminal": "終端",

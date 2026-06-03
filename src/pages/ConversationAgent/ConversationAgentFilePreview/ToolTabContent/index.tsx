@@ -9,6 +9,7 @@ const cx = classNames.bind(styles);
 
 const TOOL_DESC_MAP: Record<PreviewToolId, string> = {
   preview: 'PC.Pages.ConversationAgentTabPicker.previewDesc',
+  arrange: 'PC.Pages.ConversationAgentTabPicker.arrangeDesc',
   editor: 'PC.Pages.ConversationAgentTabPicker.editorDesc',
   terminal: 'PC.Pages.ConversationAgentTabPicker.terminalDesc',
   'version-control': 'PC.Pages.ConversationAgentTabPicker.versionControlDesc',
