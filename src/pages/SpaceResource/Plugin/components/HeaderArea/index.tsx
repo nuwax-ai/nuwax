@@ -1,5 +1,4 @@
 import ButtonToggle from '@/components/ButtonToggle';
-import UploadImportConfig from '@/components/UploadImportConfig';
 import { CREATE_LIST, FILTER_STATUS } from '@/constants/space.constants';
 import { dict } from '@/services/i18nRuntime';
 import {
@@ -7,8 +6,8 @@ import {
   CreateListEnum,
   FilterStatusEnum,
 } from '@/types/enums/space';
-import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
-import { Button, Input } from 'antd';
+import { SearchOutlined } from '@ant-design/icons';
+import { Input } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useLocation, useSearchParams } from 'umi';
@@ -25,16 +24,10 @@ interface HeaderAreaProps {
     create: CreateListEnum,
     keyword: string,
   ) => void;
-  onUploadSuccess: () => void;
-  onOpenPlugin: () => void;
+  onUploadSuccess?: () => void;
 }
 
-const HeaderArea: React.FC<HeaderAreaProps> = ({
-  spaceId,
-  onFilterChange,
-  onUploadSuccess,
-  onOpenPlugin,
-}) => {
+const HeaderArea: React.FC<HeaderAreaProps> = ({ onFilterChange }) => {
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -119,13 +112,6 @@ const HeaderArea: React.FC<HeaderAreaProps> = ({
           }}
           style={{ width: 214 }}
         />
-        <UploadImportConfig
-          spaceId={spaceId}
-          onUploadSuccess={onUploadSuccess}
-        />
-        <Button type="primary" icon={<PlusOutlined />} onClick={onOpenPlugin}>
-          {dict('PC.Pages.AgentArrangeConfig.addPlugin')}
-        </Button>
       </div>
     </div>
   );

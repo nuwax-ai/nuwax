@@ -3228,7 +3228,6 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.SpaceKnowledge.UploadFile.fileSizeLimit100MB": "文件大小不能超过100MB!",
   "PC.Pages.SpaceKnowledge.UploadFile.supportedFileTypes": "请上传 PDF、TXT、DOC、DOCX、MD、JSON、JPG、PNG、GIF、WEBP、SVG、HEIC、MP4、MKV、MOV、WEBM、MP3、AAC、WAV、FLAC、OGG、OPUS 类型文件!",
   "PC.Pages.SpaceKnowledge.UploadFile.uploadHint": "支持 PDF、TXT、DOC、DOCX、MD、JSON、JPG、PNG、GIF、WEBP、SVG、HEIC、MP4、MKV、MOV、WEBM、MP3、AAC、WAV、FLAC、OGG、OPUS，最多可上传 300 个文件，每个文件不超过 100MB， PDF 最多 500 页",
-  "PC.Pages.SpaceKnowledgeStorage.pageTitle": "知识与数据存储",
   "PC.Pages.SpaceLibrary.availableScope": "可用范围",
   "PC.Pages.SpaceLibrary.ComponentItem.disabled": "已禁用",
   "PC.Pages.SpaceLibrary.ComponentItem.enabled": "已启用",
@@ -3595,7 +3594,6 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.SpacePluginTool.selectRequestContentFormat": "请选择请求内容格式",
   "PC.Pages.SpacePluginTool.selectRequestMethod": "请选择请求方法",
 
-  "PC.Pages.SpacePluginWorkflow.pageTitle": "插件与工作流",
   "PC.Pages.SpacePluginWorkflow.pluginPageTitle": "插件",
   "PC.Pages.SpacePluginWorkflow.workflowPageTitle": "工作流",
 

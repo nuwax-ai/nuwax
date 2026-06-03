@@ -4,35 +4,12 @@
   display: flex;
   flex-direction: column;
   height: 100%;
-  padding: @padding @padding @padding @paddingLg;
   overflow: hidden; // 禁止外层容器自身发生滚动，保持整页大屏的稳定度
 
-  .content-body {
-    display: flex;
+  .list-area {
     flex: 1;
-    min-height: 0; // 核心防爆线：限制子元素在父容器剩余物理高度内，阻止无限向下撑大
-    overflow: hidden;
-
-    .sidebar {
-      width: 300px;
-      margin-right: @margin-lg;
-      flex-shrink: 0;
-      height: 100%;
-    }
-
-    .right-content {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      min-width: 0;
-      height: 100%;
-
-      .list-area {
-        flex: 1;
-        min-height: 0;
-        overflow-y: auto; // 开启纵向局域滚动，配合全局隐藏滚动条样式实现隐形滚动
-        padding-bottom: @padding-lg; // 预留底部缓冲防线以确保呼吸感
-      }
-    }
+    min-height: 0;
+    overflow-y: auto;
+    padding-bottom: @paddingLg;
   }
 }

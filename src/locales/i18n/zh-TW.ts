@@ -3095,7 +3095,6 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.SpaceKnowledge.UploadFile.fileSizeLimit100MB": "檔案大小不能超過100MB!",
   "PC.Pages.SpaceKnowledge.UploadFile.supportedFileTypes": "請上傳 PDF、TXT、DOC、DOCX、MD、JSON、JPG、PNG、GIF、WEBP、SVG、HEIC、MP4、MKV、MOV、WEBM、MP3、AAC、WAV、FLAC、OGG、OPUS 型別檔案!",
   "PC.Pages.SpaceKnowledge.UploadFile.uploadHint": "支援 PDF、TXT、DOC、DOCX、MD、JSON、JPG、PNG、GIF、WEBP、SVG、HEIC、MP4、MKV、MOV、WEBM、MP3、AAC、WAV、FLAC、OGG、OPUS，最多可上傳 300 個檔案，每個檔案不超過 100MB， PDF 最多 500 頁",
-  "PC.Pages.SpaceKnowledgeStorage.pageTitle": "知識與資料儲存",
   "PC.Pages.SpaceLibrary.availableScope": "可用範圍",
   "PC.Pages.SpaceLibrary.ComponentItem.disabled": "已禁用",
   "PC.Pages.SpaceLibrary.ComponentItem.enabled": "已啟用",
@@ -3462,7 +3461,6 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.SpacePluginTool.selectRequestContentFormat": "請選擇請求內容格式",
   "PC.Pages.SpacePluginTool.selectRequestMethod": "請選擇請求方法",
 
-  "PC.Pages.SpacePluginWorkflow.pageTitle": "套件與工作流",
   "PC.Pages.SpacePluginWorkflow.pluginPageTitle": "套件",
   "PC.Pages.SpacePluginWorkflow.workflowPageTitle": "工作流",
 
