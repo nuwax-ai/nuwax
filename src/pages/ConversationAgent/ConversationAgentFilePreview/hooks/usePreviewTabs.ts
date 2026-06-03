@@ -1,4 +1,5 @@
 import { dict } from '@/services/i18nRuntime';
+import { arrayMove } from '@dnd-kit/sortable';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 /** 工具类标签 ID */
@@ -302,6 +303,21 @@ export function usePreviewTabs(options: UsePreviewTabsOptions = {}) {
     });
   }, []);
 
+  /** 拖拽调整标签顺序（不改变固定状态，仅更新排列） */
+  const reorderTabs = useCallback((activeId: string, overId: string) => {
+    if (!activeId || !overId || activeId === overId) {
+      return;
+    }
+    setTabs((prev) => {
+      const oldIndex = prev.findIndex((tab) => tab.id === activeId);
+      const newIndex = prev.findIndex((tab) => tab.id === overId);
+      if (oldIndex === -1 || newIndex === -1) {
+        return prev;
+      }
+      return arrayMove(prev, oldIndex, newIndex);
+    });
+  }, []);
+
   /** 清空所有标签 */
   const clearTabs = useCallback(() => {
     setTabs([]);
@@ -367,6 +383,7 @@ export function usePreviewTabs(options: UsePreviewTabsOptions = {}) {
     closeOtherTabs,
     closeAllTabs,
     togglePinTab,
+    reorderTabs,
     clearTabs,
     renameFileTab,
   };

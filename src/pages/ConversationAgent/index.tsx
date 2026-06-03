@@ -1303,6 +1303,7 @@ const ConversationAgent: React.FC = () => {
           onCloseOtherTabs={previewTabs.closeOtherTabs}
           onCloseAllTabs={previewTabs.closeAllTabs}
           onTogglePinTab={previewTabs.togglePinTab}
+          onTabReorder={previewTabs.reorderTabs}
           onAddTab={previewTabs.openPickerTab}
         />
         {/* Tab 栏下方：预览内容 + 底部终端（终端放大时仅覆盖此区域） */}

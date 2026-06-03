@@ -10,6 +10,21 @@ import {
   PushpinFilled,
   ThunderboltOutlined,
 } from '@ant-design/icons';
+import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
+import {
+  closestCenter,
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  horizontalListSortingStrategy,
+  SortableContext,
+  useSortable,
+} from '@dnd-kit/sortable';
+import type { Transform } from '@dnd-kit/utilities';
 import { Button } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -30,9 +45,118 @@ export interface PreviewTabBarProps {
   onCloseAllTabs: () => void;
   /** 切换标签固定状态 */
   onTogglePinTab: (tabId: string) => void;
+  /** 拖拽结束后更新标签顺序 */
+  onTabReorder: (activeId: string, overId: string) => void;
   /** 点击 + 打开「新建页签」内容标签 */
   onAddTab: () => void;
 }
+
+interface TabItemFaceProps {
+  tab: PreviewTab;
+  renderTabIcon: (tab: PreviewTab) => React.ReactNode;
+  onClose?: () => void;
+  overlay?: boolean;
+}
+
+/** 标签外观（列表项与 DragOverlay 共用；激活态由外层 .tab-item-active 控制） */
+const TabItemFace: React.FC<TabItemFaceProps> = ({
+  tab,
+  renderTabIcon,
+  onClose,
+  overlay = false,
+}) => (
+  <>
+    {tab.pinned && (
+      <PushpinFilled
+        className={cx(styles['tab-pin-icon'])}
+        style={{ fontSize: 10 }}
+      />
+    )}
+    <span className={cx(styles['tab-icon'])}>{renderTabIcon(tab)}</span>
+    <span className={cx(styles['tab-label'])}>{tab.label}</span>
+    {!overlay && onClose && (
+      <button
+        type="button"
+        className={cx(styles['tab-close'])}
+        aria-label={dict('PC.Pages.ConversationAgentPreviewTabBar.closeTab')}
+        onPointerDown={(e) => e.stopPropagation()}
+        onClick={(e) => {
+          e.stopPropagation();
+          onClose();
+        }}
+      >
+        <CloseOutlined style={{ fontSize: 10 }} />
+      </button>
+    )}
+  </>
+);
+
+/**
+ * 排序动画仅保留横向位移。
+ * sortable 默认 transform 含 Y 分量，在 overflow-y:hidden 的视口内会把其他标签挤出可见区域。
+ */
+const getHorizontalSortableStyle = (
+  transform: Transform | null,
+  transition: string | undefined,
+  isDragging: boolean,
+): React.CSSProperties => {
+  if (isDragging) {
+    return { opacity: 0 };
+  }
+  if (!transform) {
+    return { transition };
+  }
+  return {
+    transform: `translate3d(${Math.round(transform.x)}px, 0, 0)`,
+    transition,
+  };
+};
+
+interface SortableTabItemProps {
+  tab: PreviewTab;
+  isActive: boolean;
+  onSelect: () => void;
+  onClose: () => void;
+  onContextMenu: (e: React.MouseEvent) => void;
+  renderTabIcon: (tab: PreviewTab) => React.ReactNode;
+}
+
+/** 可拖拽排序的单个标签项（拖拽中由 DragOverlay 展示，原位占位透明） */
+const SortableTabItem: React.FC<SortableTabItemProps> = ({
+  tab,
+  isActive,
+  onSelect,
+  onClose,
+  onContextMenu,
+  renderTabIcon,
+}) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: tab.id });
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={getHorizontalSortableStyle(transform, transition, isDragging)}
+      className={cx(styles['tab-item'], {
+        [styles['tab-item-active']]: isActive,
+        [styles['tab-item-pinned']]: tab.pinned,
+      })}
+      onClick={onSelect}
+      onContextMenu={onContextMenu}
+      title={tab.label}
+      {...attributes}
+      {...listeners}
+    >
+      <TabItemFace tab={tab} renderTabIcon={renderTabIcon} onClose={onClose} />
+    </div>
+  );
+};
 
 /** 工具标签图标映射 */
 const TOOL_ICON_MAP: Partial<Record<PreviewToolId, React.ReactNode>> = {
@@ -55,8 +179,16 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
   onCloseOtherTabs,
   onCloseAllTabs,
   onTogglePinTab,
+  onTabReorder,
   onAddTab,
 }) => {
+  const [activeDragTabId, setActiveDragTabId] = useState<string | null>(null);
+  const tabSortSensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 6 },
+    }),
+  );
+  const activeDragTab = tabs.find((tab) => tab.id === activeDragTabId) ?? null;
   const tabViewportRef = useRef<HTMLDivElement>(null);
   const tabTrackRef = useRef<HTMLDivElement>(null);
   const tabGutterRef = useRef<HTMLDivElement>(null);
@@ -220,6 +352,26 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
     };
   }, [tabs.length, trackScrollWidth]);
 
+  const handleTabDragStart = useCallback((event: DragStartEvent) => {
+    setActiveDragTabId(String(event.active.id));
+  }, []);
+
+  const handleTabDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      setActiveDragTabId(null);
+      const { active, over } = event;
+      if (!over || active.id === over.id) {
+        return;
+      }
+      onTabReorder(String(active.id), String(over.id));
+    },
+    [onTabReorder],
+  );
+
+  const handleTabDragCancel = useCallback(() => {
+    setActiveDragTabId(null);
+  }, []);
+
   const renderTabIcon = (tab: PreviewTab) => {
     if (tab.type === 'picker') {
       return <PlusOutlined style={{ fontSize: 14 }} />;
@@ -240,42 +392,52 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
           <div ref={tabViewportRef} className={cx(styles['tab-list-viewport'])}>
             {/* 标签页列表 */}
             <div ref={tabTrackRef} className={cx(styles['tab-list-track'])}>
-              {tabs.map((tab) => (
-                <div
-                  key={tab.id}
-                  className={cx(styles['tab-item'], {
-                    [styles['tab-item-active']]: tab.id === activeTabId,
-                    [styles['tab-item-pinned']]: tab.pinned,
-                  })}
-                  onClick={() => onTabSelect(tab.id)}
-                  onContextMenu={(e) => handleTabContextMenu(e, tab.id)}
-                  title={tab.label}
+              <DndContext
+                sensors={tabSortSensors}
+                collisionDetection={closestCenter}
+                onDragStart={handleTabDragStart}
+                onDragEnd={handleTabDragEnd}
+                onDragCancel={handleTabDragCancel}
+              >
+                <SortableContext
+                  items={tabs.map((tab) => tab.id)}
+                  strategy={horizontalListSortingStrategy}
                 >
-                  {tab.pinned && (
-                    <PushpinFilled
-                      className={cx(styles['tab-pin-icon'])}
-                      style={{ fontSize: 10 }}
+                  {tabs.map((tab) => (
+                    <SortableTabItem
+                      key={tab.id}
+                      tab={tab}
+                      isActive={tab.id === activeTabId}
+                      onSelect={() => onTabSelect(tab.id)}
+                      onClose={() => onTabClose(tab.id)}
+                      onContextMenu={(e) => handleTabContextMenu(e, tab.id)}
+                      renderTabIcon={renderTabIcon}
                     />
-                  )}
-                  <span className={cx(styles['tab-icon'])}>
-                    {renderTabIcon(tab)}
-                  </span>
-                  <span className={cx(styles['tab-label'])}>{tab.label}</span>
-                  <button
-                    type="button"
-                    className={cx(styles['tab-close'])}
-                    aria-label={dict(
-                      'PC.Pages.ConversationAgentPreviewTabBar.closeTab',
-                    )}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onTabClose(tab.id);
-                    }}
-                  >
-                    <CloseOutlined style={{ fontSize: 10 }} />
-                  </button>
-                </div>
-              ))}
+                  ))}
+                </SortableContext>
+                <DragOverlay dropAnimation={null} adjustScale={false}>
+                  {activeDragTab ? (
+                    <div
+                      className={cx(
+                        styles['tab-item'],
+                        styles['tab-item-overlay'],
+                        {
+                          [styles['tab-item-active']]:
+                            activeDragTab.id === activeTabId,
+                          [styles['tab-item-pinned']]: activeDragTab.pinned,
+                        },
+                      )}
+                      title={activeDragTab.label}
+                    >
+                      <TabItemFace
+                        tab={activeDragTab}
+                        renderTabIcon={renderTabIcon}
+                        overlay
+                      />
+                    </div>
+                  ) : null}
+                </DragOverlay>
+              </DndContext>
             </div>
           </div>
           <div ref={tabGutterRef} className={cx(styles['tab-list-gutter'])}>
