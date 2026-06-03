@@ -1,6 +1,7 @@
 import { dict } from '@/services/i18nRuntime';
 import {
   apiAddResourceToGroup,
+  apiRemoveResourceFromGroup,
   apiResourceGroupList,
 } from '@/services/library';
 import type { ComponentInfo } from '@/types/interfaces/library';
@@ -47,10 +48,25 @@ const MoveToGroupModal: React.FC<MoveToGroupModalProps> = ({
   const handleConfirm = () => {
     if (!targetGroupId || !currentComponentInfo) return;
     setMoveGroupLoading(true);
-    apiAddResourceToGroup(targetGroupId, {
-      targetType: currentComponentInfo.type,
-      targetId: currentComponentInfo.id,
-    })
+
+    const targetType = currentComponentInfo.type;
+    const targetId = currentComponentInfo.id;
+    const currentGroupId = currentComponentInfo.groupId;
+
+    const moveAction = async () => {
+      if (currentGroupId && Number(currentGroupId) !== 0) {
+        await apiRemoveResourceFromGroup(currentGroupId, {
+          targetType,
+          targetId,
+        });
+      }
+      return apiAddResourceToGroup(targetGroupId, {
+        targetType,
+        targetId,
+      });
+    };
+
+    moveAction()
       .then((res) => {
         if (res.success) {
           message.success(

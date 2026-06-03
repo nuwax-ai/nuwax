@@ -68,6 +68,7 @@ export interface CreateWorkflowProps {
    * 返回 Promise<boolean>，true 表示更新成功
    */
   onUpdate?: (info: WorkflowBaseInfo) => Promise<boolean>;
+  defaultGroupId?: number;
 }
 
 // 新建、更新插件组件
@@ -82,6 +83,7 @@ export interface CreateNewPluginProps {
   open: boolean;
   onCancel: () => void;
   onConfirm?: (info: PluginHttpUpdateParams) => void;
+  defaultGroupId?: number;
 }
 
 // table头部header带*号标题
