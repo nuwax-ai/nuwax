@@ -15,8 +15,8 @@ import { Button } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
 import { useLocation, useModel, useParams, useRequest } from 'umi';
 import ComponentList from '../components/ComponentList';
+import GroupEditModal from '../components/GroupEditModal';
 import HorizontalGroupList from '../components/HorizontalGroupList';
-import GroupEditModal from '../components/LeftGroupList/components/GroupEditModal';
 import HeaderArea from './components/HeaderArea';
 
 const ALLOWED_TYPES = new Set([
