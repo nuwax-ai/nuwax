@@ -211,7 +211,7 @@ const SpacePlugin: React.FC = () => {
       }
       hideScroll
     >
-      <div className={cx(styles.container)}>
+      <div className={cx(styles.container, 'scroll-container-hide')}>
         <HorizontalGroupList
           spaceId={spaceId}
           value={groupId}
@@ -234,7 +234,7 @@ const SpacePlugin: React.FC = () => {
           onFilterChange={handleFilterList}
         />
 
-        <div className={cx(styles['list-area'], 'scroll-container-hide')}>
+        <div className={cx(styles['list-area'])}>
           <ComponentList
             loading={loading}
             componentList={componentList}
