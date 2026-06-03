@@ -41,6 +41,7 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
   onCancel,
   onConfirm,
   onUpdate,
+  defaultGroupId,
 }) => {
   const [form] = Form.useForm();
   const [imageUrl, setImageUrl] = useState<string>('');
@@ -102,9 +103,13 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
       form.setFieldsValue({
         name,
         description,
+        groupId:
+          type === CreateUpdateModeEnum.Create
+            ? defaultGroupId || undefined
+            : undefined,
       });
     }
-  }, [open, icon, name, description]);
+  }, [open, icon, name, description, defaultGroupId, type]);
 
   const onFinish: FormProps<{
     name: string;
