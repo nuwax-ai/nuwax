@@ -8,7 +8,7 @@ import {
 } from '@/services/library';
 import { ComponentTypeEnum } from '@/types/enums/space';
 import type { ResourceGroupInfo } from '@/types/interfaces/library';
-import { Form, Input, message, Modal, Select } from 'antd';
+import { Form, Input, message, Modal } from 'antd';
 import React, { useEffect, useState } from 'react';
 
 interface GroupEditModalProps {
@@ -48,13 +48,11 @@ const GroupEditModal: React.FC<GroupEditModalProps> = ({
       } else {
         setImageUrl('');
         form.resetFields();
-        // 新建时，如果 filterType 明确是 Workflow 或 Plugin，自动帮用户默认选中该类型，若为 All_Type，则不设默认值以强校验
-        let defaultType = undefined;
-        if (filterType === ComponentTypeEnum.Workflow) {
-          defaultType = ComponentTypeEnum.Workflow;
-        } else if (filterType === ComponentTypeEnum.Plugin) {
-          defaultType = ComponentTypeEnum.Plugin;
-        }
+        // 新建时，直接根据传入的 filterType 自动决定类型
+        const defaultType =
+          filterType === ComponentTypeEnum.Workflow
+            ? ComponentTypeEnum.Workflow
+            : ComponentTypeEnum.Plugin;
         form.setFieldsValue({
           type: defaultType,
         });
@@ -67,7 +65,11 @@ const GroupEditModal: React.FC<GroupEditModalProps> = ({
       const name = values.name.trim();
       const description = (values.description || '').trim();
       const icon = values.icon || '';
-      const type = values.type;
+      const type =
+        values.type ||
+        (filterType === ComponentTypeEnum.Workflow
+          ? ComponentTypeEnum.Workflow
+          : ComponentTypeEnum.Plugin);
 
       if (!name) return;
 
@@ -191,35 +193,6 @@ const GroupEditModal: React.FC<GroupEditModalProps> = ({
             )}
             maxLength={30}
             showCount
-          />
-        </Form.Item>
-        <Form.Item
-          name="type"
-          label={dict('PC.Pages.SpaceResource.LeftGroupList.groupTypeLabel')}
-          rules={[
-            {
-              required: true,
-              message: dict(
-                'PC.Pages.SpaceResource.LeftGroupList.groupTypeRequired',
-              ),
-            },
-          ]}
-        >
-          <Select
-            placeholder={dict(
-              'PC.Pages.SpaceResource.LeftGroupList.groupTypeRequired',
-            )}
-            disabled={mode === 'edit'}
-            options={[
-              {
-                value: ComponentTypeEnum.Workflow,
-                label: dict('PC.Common.Global.workflow'),
-              },
-              {
-                value: ComponentTypeEnum.Plugin,
-                label: dict('PC.Common.Global.plugin'),
-              },
-            ]}
           />
         </Form.Item>
         <Form.Item

@@ -1,5 +1,10 @@
-import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
-import { Button, Empty } from 'antd';
+import { dict } from '@/services/i18nRuntime';
+import {
+  DeleteOutlined,
+  EditOutlined,
+  EllipsisOutlined,
+} from '@ant-design/icons';
+import { Dropdown, Empty, Typography } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import styles from './index.less';
@@ -46,8 +51,31 @@ const SelectionList: React.FC<SelectionListProps> = ({
         {list.length > 0 ? (
           list.map((item) => {
             const isActive = value === item.value;
-            const showActions =
-              (item.allowEdit && onEdit) || (item.allowDelete && onDelete);
+            const menuItems = [];
+            if (item.allowEdit && onEdit) {
+              menuItems.push({
+                key: 'edit',
+                label: dict('PC.Common.Global.edit'),
+                icon: <EditOutlined />,
+                onClick: (info: any) => {
+                  info.domEvent.stopPropagation();
+                  onEdit(item, info.domEvent);
+                },
+              });
+            }
+            if (item.allowDelete && onDelete) {
+              menuItems.push({
+                key: 'delete',
+                label: dict('PC.Common.Global.delete'),
+                danger: true,
+                icon: <DeleteOutlined />,
+                onClick: (info: any) => {
+                  info.domEvent.stopPropagation();
+                  onDelete(item, info.domEvent);
+                },
+              });
+            }
+
             return (
               <div
                 key={String(item.value)}
@@ -64,50 +92,48 @@ const SelectionList: React.FC<SelectionListProps> = ({
                 </div>
                 <div className={cx(styles.info)}>
                   <div className={cx(styles['name-wrap'])}>
-                    <div className={cx(styles.name)}>{item.label}</div>
+                    <Typography.Text
+                      className={cx(styles.name)}
+                      ellipsis={{
+                        tooltip: item.label,
+                      }}
+                    >
+                      {item.label}
+                    </Typography.Text>
                     {item.extra && (
                       <div className={cx(styles.extra)}>{item.extra}</div>
                     )}
                   </div>
-                  {item.description && (
-                    <div
-                      className={cx(styles.description)}
-                      style={
-                        {
-                          '--max-lines': maxDescriptionLines,
-                        } as React.CSSProperties
-                      }
-                    >
-                      {item.description}
+                  {(item.description || menuItems.length > 0) && (
+                    <div className={cx(styles['desc-wrap'])}>
+                      <Typography.Paragraph
+                        className={cx(styles.description)}
+                        ellipsis={{
+                          rows: maxDescriptionLines,
+                          tooltip: item.description,
+                        }}
+                      >
+                        {item.description || ' '}
+                      </Typography.Paragraph>
+                      {menuItems.length > 0 && (
+                        <Dropdown
+                          menu={{ items: menuItems }}
+                          trigger={['hover']}
+                          placement="bottom"
+                        >
+                          <div
+                            className={cx(styles['more-action-wrap'])}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <EllipsisOutlined
+                              className={cx(styles['more-icon'])}
+                            />
+                          </div>
+                        </Dropdown>
+                      )}
                     </div>
                   )}
                 </div>
-                {showActions && (
-                  <div
-                    className={cx(styles.actions)}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    {item.allowEdit && onEdit && (
-                      <Button
-                        type="text"
-                        size="small"
-                        icon={<EditOutlined />}
-                        className={cx(styles['action-btn'])}
-                        onClick={(e) => onEdit(item, e)}
-                      />
-                    )}
-                    {item.allowDelete && onDelete && (
-                      <Button
-                        type="text"
-                        size="small"
-                        danger
-                        icon={<DeleteOutlined />}
-                        className={cx(styles['action-btn'])}
-                        onClick={(e) => onDelete(item, e)}
-                      />
-                    )}
-                  </div>
-                )}
               </div>
             );
           })

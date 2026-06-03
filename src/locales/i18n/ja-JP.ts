@@ -3082,7 +3082,6 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.SpaceKnowledge.UploadFile.fileSizeLimit100MB": "ファイルサイズは 100MB を超えてはなりません。",
   "PC.Pages.SpaceKnowledge.UploadFile.supportedFileTypes": "次の形式でファイルをアップロードしてください: PDF、TXT、DOC、DOCX、MD、JSON、JPG、PNG、GIF、WEBP、SVG、HEIC、 MP4、MKV、MOV、WEBM、MP3、AAC、WAV、FLAC、OGG、OPUS。",
   "PC.Pages.SpaceKnowledge.UploadFile.uploadHint": "サポートされている形式: PDF、TXT、DOC、DOCX、MD、JSON、JPG、PNG、GIF、WEBP、SVG、HEIC、 MP4、MKV、MOV、WEBM、MP3、AAC、WAV、FLAC、OGG、OPUS。最大 300 ファイル、各ファイルは 100MB を超えません。 PDFは最大500ページまで。",
-  "PC.Pages.SpaceKnowledgeStorage.pageTitle": "ナレッジとデータストレージ",
   "PC.Pages.SpaceLibrary.availableScope": "利用可能範囲",
   "PC.Pages.SpaceLibrary.ComponentItem.disabled": "無効",
   "PC.Pages.SpaceLibrary.ComponentItem.enabled": "有効",
@@ -3449,7 +3448,6 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.SpacePluginTool.selectRequestContentFormat": "リクエストのコンテンツ形式を選択してください",
   "PC.Pages.SpacePluginTool.selectRequestMethod": "リクエスト方法を選択してください",
 
-  "PC.Pages.SpacePluginWorkflow.pageTitle": "プラグインとワークフロー",
 
   "PC.Pages.SpaceResourcePricing.pageTitle": "リソース価格設定",
   "PC.Pages.SpaceResourcePricing.pageSubtitle": "ツール価格と請求の管理",
