@@ -89,6 +89,14 @@ const routes = [
         component: '@/pages/SpaceResource/KnowledgeStorage',
       },
       {
+        path: '/space/:spaceId/knowledge',
+        component: '@/pages/SpaceResource/Knowledge',
+      },
+      {
+        path: '/space/:spaceId/storage',
+        component: '@/pages/SpaceResource/Storage',
+      },
+      {
         path: '/space/:spaceId/model-manage',
         component: '@/pages/SpaceResource/ModelManage',
       },

@@ -32,6 +32,7 @@ interface LeftGroupListProps {
   componentList?: ComponentInfo[];
   className?: string;
   filterType?: ComponentTypeEnum;
+  maxDescriptionLines?: number;
 }
 
 const LeftGroupList: React.FC<LeftGroupListProps> = ({
@@ -41,6 +42,7 @@ const LeftGroupList: React.FC<LeftGroupListProps> = ({
   componentList = [],
   className,
   filterType = ComponentTypeEnum.All_Type,
+  maxDescriptionLines,
 }) => {
   const location = useLocation();
   const lastParamsRef = useRef<{ spaceId: number; types: string[] } | null>(
@@ -289,6 +291,7 @@ const LeftGroupList: React.FC<LeftGroupListProps> = ({
           onEdit={handleOpenEdit}
           onDelete={handleDelete}
           emptyText={dict('PC.Common.Global.noData')}
+          maxDescriptionLines={maxDescriptionLines}
         />
       </Spin>
       <GroupEditModal

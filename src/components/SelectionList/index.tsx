@@ -25,6 +25,7 @@ export interface SelectionListProps<T = any> {
   onEdit?: (item: SelectionListItem<T>, e: React.MouseEvent) => void;
   onDelete?: (item: SelectionListItem<T>, e: React.MouseEvent) => void;
   emptyText?: React.ReactNode;
+  maxDescriptionLines?: number;
 }
 
 const SelectionList: React.FC<SelectionListProps> = ({
@@ -36,6 +37,7 @@ const SelectionList: React.FC<SelectionListProps> = ({
   onEdit,
   onDelete,
   emptyText,
+  maxDescriptionLines = 1,
 }) => {
   return (
     <div className={cx(styles.container, className)}>
@@ -68,7 +70,14 @@ const SelectionList: React.FC<SelectionListProps> = ({
                     )}
                   </div>
                   {item.description && (
-                    <div className={cx(styles.description)}>
+                    <div
+                      className={cx(styles.description)}
+                      style={
+                        {
+                          '--max-lines': maxDescriptionLines,
+                        } as React.CSSProperties
+                      }
+                    >
                       {item.description}
                     </div>
                   )}
