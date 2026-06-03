@@ -3685,6 +3685,8 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.SpacePluginTool.selectRequestMethod": "请选择请求方法",
 
   "PC.Pages.SpacePluginWorkflow.pageTitle": "插件与工作流",
+  "PC.Pages.SpacePluginWorkflow.pluginPageTitle": "插件",
+  "PC.Pages.SpacePluginWorkflow.workflowPageTitle": "工作流",
 
   "PC.Pages.SpaceResourcePricing.pageTitle": "资源定价",
   "PC.Pages.SpaceResourcePricing.pageSubtitle": "管理工具定价与计费开关",

@@ -3685,6 +3685,8 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.SpacePluginTool.selectRequestMethod": "Select request method",
 
   "PC.Pages.SpacePluginWorkflow.pageTitle": "Plugins & Workflows",
+  "PC.Pages.SpacePluginWorkflow.pluginPageTitle": "Plugins",
+  "PC.Pages.SpacePluginWorkflow.workflowPageTitle": "Workflows",
 
   "PC.Pages.SpaceResourcePricing.pageTitle": "Resource Pricing",
   "PC.Pages.SpaceResourcePricing.pageSubtitle": "Manage Tool Pricing & Billing",
