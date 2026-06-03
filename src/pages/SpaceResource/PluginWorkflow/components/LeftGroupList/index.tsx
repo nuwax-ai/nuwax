@@ -1,5 +1,6 @@
 import pluginIcon from '@/assets/images/plugin_image.png';
 import workflowIcon from '@/assets/images/workflow_image.png';
+import AgentType from '@/components/base/AgentType';
 import type { SelectionListItem } from '@/components/SelectionList';
 import SelectionList from '@/components/SelectionList';
 import { dict } from '@/services/i18nRuntime';
@@ -8,6 +9,7 @@ import {
   apiGetResourceGroup,
   apiResourceGroupList,
 } from '@/services/library';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { ComponentTypeEnum } from '@/types/enums/space';
 import type {
   ComponentInfo,
@@ -166,9 +168,22 @@ const LeftGroupList: React.FC<LeftGroupListProps> = ({
         group.icon ||
         (group.type === ComponentTypeEnum.Workflow ? workflowIcon : pluginIcon),
       description: group.description || '',
-      extra: dict('PC.Pages.SpaceResource.LeftGroupList.unitCount').replace(
-        '{0}',
-        String(group.toolCount || 0),
+      extra: (
+        <span className={cx(styles['extra-wrap'])}>
+          <span className={cx(styles['count-text'])}>
+            {dict('PC.Pages.SpaceResource.LeftGroupList.unitCount').replace(
+              '{0}',
+              String(group.toolCount || 0),
+            )}
+          </span>
+          <AgentType
+            type={
+              group.type === ComponentTypeEnum.Workflow
+                ? AgentComponentTypeEnum.Workflow
+                : AgentComponentTypeEnum.Plugin
+            }
+          />
+        </span>
       ),
       allowEdit: true,
       allowDelete: true,
