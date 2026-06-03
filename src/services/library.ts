@@ -191,10 +191,71 @@ export function apiCopyTable(
 
 // 查询资源分组列表
 export async function apiResourceGroupList(
-  params: ResourceGroupListParams,
+  data: ResourceGroupListParams,
 ): Promise<RequestResponse<ResourceGroupInfo[]>> {
   return request('/api/resource/group/list', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 添加资源分组
+export async function apiAddResourceGroup(
+  data: ResourceGroupInfo,
+): Promise<RequestResponse<number>> {
+  return request('/api/resource/group/add', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 更新资源分组
+export async function apiUpdateResourceGroup(
+  id: number,
+  data: ResourceGroupInfo,
+): Promise<RequestResponse<any>> {
+  return request(`/api/resource/group/update/${id}`, {
+    method: 'POST',
+    data,
+  });
+}
+
+// 查询资源分组详情
+export async function apiGetResourceGroup(
+  id: number,
+): Promise<RequestResponse<ResourceGroupInfo>> {
+  return request(`/api/resource/group/${id}`, {
     method: 'GET',
-    params,
+  });
+}
+
+// 删除资源分组
+export async function apiDeleteResourceGroup(
+  id: number,
+): Promise<RequestResponse<any>> {
+  return request(`/api/resource/group/delete/${id}`, {
+    method: 'POST',
+  });
+}
+
+// 添加资源到分组
+export async function apiAddResourceToGroup(
+  groupId: number,
+  data: { targetType: string; targetId: number },
+): Promise<RequestResponse<any>> {
+  return request(`/api/resource/group/${groupId}/resource/add`, {
+    method: 'POST',
+    data,
+  });
+}
+
+// 从分组移除资源
+export async function apiRemoveResourceFromGroup(
+  groupId: number,
+  data: { targetType: string; targetId: number },
+): Promise<RequestResponse<any>> {
+  return request(`/api/resource/group/${groupId}/resource/remove`, {
+    method: 'POST',
+    data,
   });
 }
