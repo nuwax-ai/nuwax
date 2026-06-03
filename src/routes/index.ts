@@ -77,6 +77,14 @@ const routes = [
         component: '@/pages/SpaceResource/PluginWorkflow',
       },
       {
+        path: '/space/:spaceId/plugin',
+        component: '@/pages/SpaceResource/Plugin',
+      },
+      {
+        path: '/space/:spaceId/workflow',
+        component: '@/pages/SpaceResource/Workflow',
+      },
+      {
         path: '/space/:spaceId/knowledge-storage',
         component: '@/pages/SpaceResource/KnowledgeStorage',
       },
