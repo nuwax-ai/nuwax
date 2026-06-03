@@ -1,11 +1,10 @@
-@import '@/styles/color';
 @import '@/styles/token';
 
 .tab-picker {
   width: 420px;
   max-height: 520px;
   overflow-y: auto;
-  padding: 16px;
+  padding: @padding;
   background: @colorBgContainer;
 }
 
@@ -15,48 +14,60 @@
   max-height: none;
   height: 100%;
   box-sizing: border-box;
+  padding: @paddingLg 60px;
 }
 
 .section {
   &:not(:last-child) {
-    margin-bottom: 20px;
+    margin-bottom: @marginLg;
   }
 }
 
 .section-title {
-  margin: 0 0 4px;
+  margin: 0 0 @marginXxs;
   font-size: @fontSize;
   font-weight: @fontWeightStrong;
+  line-height: @lineHeightLg;
   color: @colorText;
 }
 
 .section-desc {
-  margin: 0 0 12px;
+  margin: 0 0 @margin;
   font-size: @fontSizeSm;
-  line-height: 1.5;
+  line-height: @lineHeight;
   color: @colorTextTertiary;
 }
 
 .card-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  gap: @margin;
 }
 
 .card {
   display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 12px;
-  border: @lineWidth solid @colorBorder;
-  // border-radius: @borderRadiusLG;
+  align-items: center;
+  gap: @margin;
+  min-height: 72px;
+  padding: @paddingSm @padding;
+  border: @lineWidth solid @colorBorderSecondary;
+  border-radius: @borderRadius;
   background: @colorBgContainer;
   cursor: pointer;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
 
-  &:hover {
-    border-color: @colorPrimaryBorder;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 6%);
+  &:hover,
+  &:focus-visible {
+    background: @colorFillTertiary;
+    border-color: @colorBorder;
+    outline: none;
+  }
+
+  &:hover .card-add,
+  &:focus-visible .card-add {
+    background: @colorText;
+    border-color: @colorText;
+    color: @colorBgContainer;
   }
 }
 
@@ -65,11 +76,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
-  margin-top: 2px;
-  font-size: 16px;
-  color: @colorTextSecondary;
+  width: 24px;
+  height: 24px;
+  font-size: @fontSizeLg;
+  color: @colorText;
 }
 
 .card-body {
@@ -78,16 +88,17 @@
 }
 
 .card-title {
-  margin: 0 0 4px;
-  font-size: @fontSizeSm;
+  margin: 0 0 @marginXxs;
+  font-size: @fontSize;
   font-weight: @fontWeightStrong;
+  line-height: @lineHeight;
   color: @colorText;
 }
 
 .card-desc {
   margin: 0;
-  font-size: 12px;
-  line-height: 1.4;
+  font-size: @fontSizeSm;
+  line-height: @lineHeight;
   color: @colorTextTertiary;
 }
 
@@ -96,10 +107,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   border: @lineWidth solid @colorBorder;
   border-radius: @borderRadius;
-  color: @colorTextSecondary;
-  font-size: 14px;
+  background: @colorBgContainer;
+  color: @colorText;
+  font-size: @fontSize;
+  transition: background-color 0.2s ease, border-color 0.2s ease,
+    color 0.2s ease;
 }

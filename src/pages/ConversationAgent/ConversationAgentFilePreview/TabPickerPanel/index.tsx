@@ -134,7 +134,7 @@ const TabPickerPanel: React.FC<TabPickerPanelProps> = ({
               <p className={cx(styles['card-title'])}>{dict(item.titleKey)}</p>
               <p className={cx(styles['card-desc'])}>{dict(item.descKey)}</p>
             </div>
-            <span className={cx(styles['card-add'])}>
+            <span className={cx(styles['card-add'])} aria-hidden>
               <PlusOutlined />
             </span>
           </div>
