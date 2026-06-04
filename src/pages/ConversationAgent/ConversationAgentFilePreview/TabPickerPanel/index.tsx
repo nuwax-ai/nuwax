@@ -142,12 +142,15 @@ const TabPickerPanel: React.FC<TabPickerPanelProps> = ({
         [styles['tab-picker-embedded']]: embedded,
       })}
     >
+      {/* 开发工具分区 */}
       <TabPickerSection
         titleKey="PC.Pages.ConversationAgentTabPicker.devTools"
         descKey="PC.Pages.ConversationAgentTabPicker.devToolsDesc"
         items={DEV_TOOLS}
         onSelectTool={onSelectTool}
       />
+
+      {/* 订阅工具分区（租户未开启订阅时不渲染） */}
       {showSubscriptionSection && (
         <TabPickerSection
           titleKey="PC.Pages.ConversationAgentTabPicker.subscription"
