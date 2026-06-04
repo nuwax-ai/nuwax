@@ -1,6 +1,8 @@
 import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
 import CodeViewer from '@/components/CodeViewer';
+import type { ChangeFileInfo } from '@/components/FileTreeView/type';
 import { VERSION_CONSTANTS } from '@/constants/appDevConstants';
+import ChangeFileGitDiffView from '@/pages/ConversationAgent/ConversationAgentFilePreview/ChangeFileGitDiffView';
 import { t } from '@/services/i18nRuntime';
 import { FileNode, ProjectDetailData } from '@/types/interfaces/appDev';
 import {
@@ -95,6 +97,8 @@ interface ContentViewerProps {
     preserveExpandedState?: boolean,
     forceUpdate?: boolean,
   ) => void;
+  /** Git 源代码管理选中的 diff 文件 */
+  gitDiffFile?: ChangeFileInfo | null;
 }
 
 /**
@@ -135,6 +139,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
   onRestartDev,
   onWhiteScreenOrIframeError,
   onRefreshFileTree,
+  gitDiffFile = null,
 }) => {
   // 使用 useMemo 缓存 Preview 组件，避免重新创建
   const previewComponent = useMemo(
@@ -184,6 +189,31 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
 
   // 使用 useMemo 缓存代码编辑器组件
   const codeEditorComponent = useMemo(() => {
+    if (gitDiffFile) {
+      const fileName =
+        gitDiffFile.fileId.split('/').pop() || gitDiffFile.fileId;
+      return (
+        <div className={styles.codeEditorContainer}>
+          <FilePathHeader
+            filePath={gitDiffFile.fileId}
+            isModified
+            isLoading={false}
+            isSaving={false}
+            readOnly
+            onRefresh={onRefreshFile}
+          />
+          <div className={styles.fileContentPreview}>
+            <ChangeFileGitDiffView
+              fileId={gitDiffFile.fileId}
+              fileName={fileName}
+              originalContent={gitDiffFile.originalFileContent}
+              modifiedContent={gitDiffFile.fileContent}
+            />
+          </div>
+        </div>
+      );
+    }
+
     if (isLoadingFileContent) {
       return (
         <AppDevEmptyState
@@ -303,6 +333,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
       </div>
     );
   }, [
+    gitDiffFile,
     isLoadingFileContent,
     fileContentError,
     selectedFileId,

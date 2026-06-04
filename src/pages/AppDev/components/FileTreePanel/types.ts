@@ -1,3 +1,4 @@
+import type { ChangeFileInfo } from '@/components/FileTreeView/type';
 import type { FileNode } from '@/types/interfaces/appDev';
 
 /**
@@ -46,4 +47,27 @@ export interface FileTreePanelProps {
 
   /** 文件树初始化 loading 状态 */
   isFileTreeInitializing?: boolean;
+
+  /** 已修改文件列表（源代码管理） */
+  changeFiles?: ChangeFileInfo[];
+  /** 已暂存的文件 ID 集合 */
+  stagedFileIds?: Set<string>;
+  /** 当前选中查看 diff 的文件 ID */
+  selectedDiffFileId?: string | null;
+  /** 是否正在提交 */
+  isCommitting?: boolean;
+  /** 选中修改文件，在右侧预览区展示 diff */
+  onDiffFileSelect?: (fileId: string) => void;
+  /** 打开文件（选中并预览，非 diff） */
+  onOpenChangeFile?: (fileId: string) => void;
+  /** 放弃单个文件的更改 */
+  onDiscardChange?: (fileId: string) => void;
+  /** 暂存更改 */
+  onStageChange?: (fileId: string) => void;
+  /** 取消暂存 */
+  onUnstageChange?: (fileId: string) => void;
+  /** 添加到 .gitignore */
+  onAddToGitignore?: (fileId: string) => void;
+  /** 提交修改（保存并推送） */
+  onCommit?: (message: string) => Promise<void>;
 }

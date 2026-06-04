@@ -12,6 +12,7 @@ import { useAppDevModelSelector } from '@/hooks/useAppDevModelSelector';
 import { useAppDevProjectId } from '@/hooks/useAppDevProjectId';
 import { useAppDevProjectInfo } from '@/hooks/useAppDevProjectInfo';
 import { useAppDevServer } from '@/hooks/useAppDevServer';
+import { useAppDevSourceControl } from '@/hooks/useAppDevSourceControl';
 import { useAppDevVersionCompare } from '@/hooks/useAppDevVersionCompare';
 import { useAutoErrorHandling } from '@/hooks/useAutoErrorHandling';
 import { useDataResourceManagement } from '@/hooks/useDataResourceManagement';
@@ -236,6 +237,14 @@ const AppDev: React.FC = () => {
     onFileContentChange: updateFileContent,
     isChatLoading: false, // 临时设为false，稍后更新
     hasPermission: projectInfo.hasPermission, // 传递权限状态
+  });
+
+  const sourceControl = useAppDevSourceControl({
+    projectId,
+    fileManagement,
+    updateWorkspaceFileContent: updateFileContent,
+    onSwitchToCodeTab: () => setActiveTab('code'),
+    onRefreshProjectInfo: () => projectInfo.refreshProjectInfo(),
   });
 
   // 模型选择器
@@ -1235,16 +1244,6 @@ const AppDev: React.FC = () => {
     setNodeToDelete(null);
   }, []);
 
-  /**
-   * 处理取消编辑
-   */
-  const handleCancelEdit = useCallback(
-    (silent: boolean = false) => {
-      fileManagement.cancelEdit(silent);
-    },
-    [fileManagement],
-  );
-
   // 页面退出时的资源清理
   useEffect(() => {
     return () => {
@@ -1548,6 +1547,7 @@ const AppDev: React.FC = () => {
                         fileManagement.fileTreeState.expandedFolders
                       }
                       onFileSelect={(fileId) => {
+                        sourceControl.clearSelectedDiff();
                         if (versionCompare.isComparing) {
                           updateWorkspace({ activeFile: fileId });
                         } else {
@@ -1574,6 +1574,17 @@ const AppDev: React.FC = () => {
                       isFileTreeInitializing={
                         fileManagement.isFileTreeInitializing
                       }
+                      changeFiles={sourceControl.changeFiles}
+                      stagedFileIds={sourceControl.stagedFileIds}
+                      selectedDiffFileId={sourceControl.selectedDiffFileId}
+                      isCommitting={sourceControl.isCommitting}
+                      onDiffFileSelect={sourceControl.handleDiffFileSelect}
+                      onOpenChangeFile={sourceControl.handleOpenChangeFile}
+                      onDiscardChange={sourceControl.handleDiscardChange}
+                      onStageChange={sourceControl.handleStageChange}
+                      onUnstageChange={sourceControl.handleUnstageChange}
+                      onAddToGitignore={sourceControl.handleAddToGitignore}
+                      onCommit={sourceControl.handleCommit}
                     />
                   )}
 
@@ -1651,11 +1662,20 @@ const AppDev: React.FC = () => {
                             ) {
                               fileManagement.updateFileContent(fileId, content);
                               updateFileContent(fileId, content);
+                              sourceControl.syncChangeFiles(fileId, content);
                             }
                           }}
+                          gitDiffFile={sourceControl.selectedDiffFile}
                           onSaveFile={() => {
+                            const selectedFileId =
+                              fileManagement.fileContentState.selectedFile;
                             fileManagement.saveFile().then((success) => {
                               if (success) {
+                                if (selectedFileId) {
+                                  sourceControl.clearChangeForFile(
+                                    selectedFileId,
+                                  );
+                                }
                                 // 刷新项目详情(刷新版本列表)
                                 projectInfo.refreshProjectInfo();
                                 return true;
@@ -1663,7 +1683,7 @@ const AppDev: React.FC = () => {
                               return false;
                             });
                           }}
-                          onCancelEdit={handleCancelEdit}
+                          onCancelEdit={sourceControl.handleCancelEdit}
                           onRefreshFile={() => {
                             // 关闭设计模式
                             setIframeDesignMode(false);
@@ -1675,7 +1695,7 @@ const AppDev: React.FC = () => {
                                 fileManagement.fileContentState.selectedFile,
                               );
                               // 取消编辑
-                              handleCancelEdit(true);
+                              sourceControl.handleCancelEdit(true);
                             }
                           }}
                           onRefreshFileTree={fileManagement.loadFileTree}

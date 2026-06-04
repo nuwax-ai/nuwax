@@ -5,6 +5,11 @@ import type { PromptVariable } from '@/components/TiptapVariableInput/types';
 import { transformToPromptVariables } from '@/components/TiptapVariableInput/utils/variableTransform';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import useUnifiedTheme from '@/hooks/useUnifiedTheme';
+import {
+  apiGitCommit,
+  apiGitStash,
+  apiGitStashPop,
+} from '@/pages/ConversationAgent/services/git-version-management';
 import AgentModelSetting from '@/pages/EditAgent/AgentModelSetting';
 import DebugDetails from '@/pages/EditAgent/DebugDetails';
 import SubscriptionSetting from '@/pages/EditAgent/SubscriptionSetting';
@@ -17,13 +22,7 @@ import {
 } from '@/services/agentConfig';
 import { dict } from '@/services/i18nRuntime';
 import { apiModelList } from '@/services/modelConfig';
-import {
-  apiGitCommitPush,
-  apiGitStash,
-  apiGitStashPop,
-  apiUpdateStaticFile,
-  apiUploadFiles,
-} from '@/services/vncDesktop';
+import { apiUpdateStaticFile, apiUploadFiles } from '@/services/vncDesktop';
 import { AgentComponentTypeEnum, HideDesktopEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum, PublishStatusEnum } from '@/types/enums/common';
 import { ModelTypeEnum } from '@/types/enums/modelConfig';
@@ -797,8 +796,9 @@ const ConversationAgent: React.FC = () => {
         }
 
         // 2. 执行 git commit + push
-        const { code } = await apiGitCommitPush({
-          cId: devConversationId,
+        const { code } = await apiGitCommit({
+          workspaceType: 'taskAgent',
+          cid: devConversationId,
           message:
             commitMessage ||
             dict('PC.Pages.ConversationAgent.gitPush.defaultMessage'),
@@ -1096,8 +1096,8 @@ const ConversationAgent: React.FC = () => {
       }
       try {
         const { code } = await apiGitStash({
-          cId: devConversationId,
-          files: [fileId],
+          workspaceType: 'taskAgent',
+          cid: devConversationId,
         });
         if (code !== SUCCESS_CODE) {
           message.warning(
@@ -1123,8 +1123,8 @@ const ConversationAgent: React.FC = () => {
       }
       try {
         const { code } = await apiGitStashPop({
-          cId: devConversationId,
-          files: [fileId],
+          workspaceType: 'taskAgent',
+          cid: devConversationId,
         });
         if (code !== SUCCESS_CODE) {
           message.warning(

@@ -1,11 +1,10 @@
 import Loading from '@/components/custom/Loading';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import {
+  apiGitLogList,
+  apiGitRollback,
+} from '@/pages/ConversationAgent/services/git-version-management';
 import { dict } from '@/services/i18nRuntime';
-import { apiGitCommitLog, apiGitRollback } from '@/services/vncDesktop';
-import type {
-  GitCommitRecordItem,
-  GitCommitRecordTag,
-} from '@/types/interfaces/vncDesktop';
 import { modalConfirm } from '@/utils/ant-custom';
 import { formatTimeAgo } from '@/utils/common';
 import { EyeOutlined, UndoOutlined } from '@ant-design/icons';
@@ -23,13 +22,13 @@ export interface AgentGitVersionRecordPanelProps {
   /** 无 author 时的默认展示名 */
   defaultAuthor?: string;
   /** 查看某次提交的变更 */
-  onViewChanges?: (commit: GitCommitRecordItem) => void;
+  onViewChanges?: (commit: any) => void;
   /** 回滚成功后的回调（如刷新文件树） */
   onRollbackSuccess?: () => void;
   className?: string;
 }
 
-const getShortHash = (commit: GitCommitRecordItem): string =>
+const getShortHash = (commit: any): string =>
   commit.shortHash || commit.commitHash?.slice(0, 7) || '';
 
 /**
@@ -52,33 +51,40 @@ const AgentGitVersionRecordPanel: React.FC<AgentGitVersionRecordPanelProps> = ({
     data: logResponse,
     loading,
     run: fetchLog,
-  } = useRequest(apiGitCommitLog, {
-    manual: true,
-    onSuccess: (res) => {
-      if (res?.code !== SUCCESS_CODE) {
+  } = useRequest(
+    (cid: number) =>
+      apiGitLogList({
+        workspaceType: 'taskAgent',
+        cid,
+      }),
+    {
+      manual: true,
+      onSuccess: (res) => {
+        if (res?.code !== SUCCESS_CODE) {
+          message.error(
+            res?.message ||
+              dict(
+                'PC.Pages.ConversationAgent.AgentGitVersionRecord.loadFailed',
+              ),
+          );
+        }
+      },
+      onError: () => {
         message.error(
-          res?.message ||
-            dict('PC.Pages.ConversationAgent.AgentGitVersionRecord.loadFailed'),
+          dict('PC.Pages.ConversationAgent.AgentGitVersionRecord.loadFailed'),
         );
-      }
+      },
     },
-    onError: () => {
-      message.error(
-        dict('PC.Pages.ConversationAgent.AgentGitVersionRecord.loadFailed'),
-      );
-    },
-  });
+  );
 
-  const logData =
+  const logData: any =
     logResponse?.code === SUCCESS_CODE ? logResponse.data : undefined;
 
   const commits = useMemo(() => {
     const list = logData?.commits ?? [];
-    return list.map((item, index) => ({
+    return list.map((item: any, index: number) => ({
       ...item,
-      tag:
-        item.tag ??
-        (index === 0 ? ('latest' as GitCommitRecordTag) : undefined),
+      tag: item.tag ?? (index === 0 ? ('latest' as any) : undefined),
     }));
   }, [logData?.commits]);
 
@@ -100,7 +106,7 @@ const AgentGitVersionRecordPanel: React.FC<AgentGitVersionRecordPanelProps> = ({
   }, [commits]);
 
   const handleViewChanges = useCallback(
-    (commit: GitCommitRecordItem) => {
+    (commit: any) => {
       setSelectedHash(commit.commitHash);
       if (onViewChanges) {
         onViewChanges(commit);
@@ -114,7 +120,7 @@ const AgentGitVersionRecordPanel: React.FC<AgentGitVersionRecordPanelProps> = ({
   );
 
   const handleRollback = useCallback(
-    (commit: GitCommitRecordItem) => {
+    (commit: any) => {
       if (!conversationId) {
         return;
       }
@@ -130,8 +136,9 @@ const AgentGitVersionRecordPanel: React.FC<AgentGitVersionRecordPanelProps> = ({
           setRollbackLoadingHash(commit.commitHash);
           try {
             const { code, message: msg } = await apiGitRollback({
-              cId: conversationId,
-              commitHash: commit.commitHash,
+              workspaceType: 'taskAgent',
+              cid: conversationId,
+              target: commit.commitHash,
             });
             if (code === SUCCESS_CODE) {
               message.success(
@@ -164,7 +171,7 @@ const AgentGitVersionRecordPanel: React.FC<AgentGitVersionRecordPanelProps> = ({
     [conversationId, fetchLog, onRollbackSuccess],
   );
 
-  const renderTag = (tag?: GitCommitRecordTag) => {
+  const renderTag = (tag?: any) => {
     if (!tag) {
       return null;
     }
@@ -218,7 +225,7 @@ const AgentGitVersionRecordPanel: React.FC<AgentGitVersionRecordPanelProps> = ({
             />
           </div>
         ) : (
-          commits.map((commit) => {
+          commits.map((commit: any) => {
             const isActive = selectedHash === commit.commitHash;
             const isRollbackLoading = rollbackLoadingHash === commit.commitHash;
             return (
