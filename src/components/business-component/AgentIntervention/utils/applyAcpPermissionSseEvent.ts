@@ -61,11 +61,14 @@ export function applyAcpPermissionSseEvent(
     | AcpPermissionInterventionRequest
     | undefined;
 
+  // Support both camelCase (ACP standard) and snake_case (legacy) field names
   const sessionId =
+    (reqPerm?.sessionId as string) ||
     (reqPerm?.session_id as string) ||
     intervention?.sessionId ||
     (eventData.session_id as string);
-  const toolCall = (reqPerm?.tool_call ??
+  const toolCall = (reqPerm?.toolCall ??
+    reqPerm?.tool_call ??
     intervention?.acp?.request?.toolCall) as
     | Record<string, unknown>
     | undefined;
@@ -75,8 +78,8 @@ export function applyAcpPermissionSseEvent(
   const toolCallId =
     (eventData.tool_call_id as string) ||
     (processingInput?.tool_call_id as string) ||
-    (toolCall?.tool_call_id as string) ||
-    (toolCall?.toolCallId as string);
+    (toolCall?.toolCallId as string) ||
+    (toolCall?.tool_call_id as string);
 
   if ((!intervention?.id && !sessionId) || !toolCall) {
     return null;
@@ -111,11 +114,15 @@ export function applyAcpPermissionSseEvent(
             toolCallId: toolCallId,
             kind: toolCall?.kind as string,
             title: toolCall?.title as string,
-            rawInput: toolCall?.raw_input ?? toolCall?.rawInput,
+            rawInput: (toolCall?.rawInput ?? toolCall?.raw_input) as unknown,
             status: toolCall?.status as string,
+            locations: toolCall?.locations as Array<{
+              path: string;
+              line?: number | null;
+            }> | null,
           },
           options: (options || []).map((o) => ({
-            optionId: (o.option_id ?? o.optionId) as string,
+            optionId: (o.optionId ?? o.option_id) as string,
             kind: o.kind as string,
             name: o.name as string,
           })),
