@@ -1,6 +1,9 @@
 import Loading from '@/components/custom/Loading';
 import { PATH_URL } from '@/constants/home.constants';
-import { updatePathUrlToLocalStorage } from '@/layouts/DynamicMenusLayout/utils';
+import {
+  removePathUrlFromLocalStorage,
+  updatePathUrlToLocalStorage,
+} from '@/layouts/DynamicMenusLayout/utils';
 import { RoleEnum } from '@/types/enums/common';
 import { AllowDevelopEnum } from '@/types/enums/space';
 import { MenuItemDto } from '@/types/interfaces/menu';
@@ -18,6 +21,8 @@ const Space: React.FC = () => {
   } = useModel('spaceModel');
 
   const { getSecondLevelMenus } = useModel('menuModel');
+  // 判断指定一级菜单及其所有子菜单中，是否存在与传入路径匹配的菜单
+  const { hasPathUnderFirstLevelMenu } = useModel('menuModel');
 
   useEffect(() => {
     asyncSpaceListFun();
@@ -41,29 +46,38 @@ const Space: React.FC = () => {
       if (pathUrl) {
         const pathUrlObj = JSON.parse(pathUrl);
         let pathUrlValue = pathUrlObj['workspace'];
-        if (
-          pathUrlValue &&
-          !pathUrlValue.includes(':') &&
-          pathUrlValue.includes('/space')
-        ) {
-          // 如果pathUrlValue中包含spaceId，则替换为spaceList中的spaceId
-          // pathUrlValue：/space/42/develop
-          // 提取pathSpaceId：42
-          const pathSpaceId = pathUrlValue.split('/').filter(Boolean)[1];
-          if (pathSpaceId) {
-            const spaceInfo = spaceList?.find(
-              (item: SpaceInfo) => item.id === Number(pathSpaceId),
-            );
-            // 如果pathSpaceId不存在于spaceList中，则替换为当前空间id
-            if (!spaceInfo) {
-              pathUrlValue = pathUrlValue.replace(pathSpaceId, spaceId);
 
-              // 更新缓存
-              updatePathUrlToLocalStorage('workspace', pathUrlValue);
+        // 判断指定一级菜单及其所有子菜单中，是否存在与传入路径匹配的菜单
+        const hasPath = hasPathUnderFirstLevelMenu('workspace', pathUrlValue);
+        if (hasPath) {
+          if (
+            pathUrlValue &&
+            !pathUrlValue.includes(':') &&
+            pathUrlValue.startsWith('/space')
+          ) {
+            // 如果pathUrlValue中包含spaceId，则替换为spaceList中的spaceId
+            // pathUrlValue：/space/42/develop
+            // 提取pathSpaceId：42
+            const pathSpaceId = pathUrlValue.split('/').filter(Boolean)[1];
+
+            if (pathSpaceId) {
+              const spaceInfo = spaceList?.find(
+                (item: SpaceInfo) => item.id === Number(pathSpaceId),
+              );
+              // 如果pathSpaceId不存在于spaceList中，则替换为当前空间id
+              if (!spaceInfo) {
+                pathUrlValue = pathUrlValue.replace(pathSpaceId, spaceId);
+
+                // 更新缓存
+                updatePathUrlToLocalStorage('workspace', pathUrlValue);
+              }
             }
+            history.push(pathUrlValue);
+            return;
           }
-          history.push(pathUrlValue);
-          return;
+        } else {
+          // 缓存路径已不在当前菜单树中，清除无效的 workspace 记录
+          removePathUrlFromLocalStorage('workspace');
         }
       }
     } catch {}
