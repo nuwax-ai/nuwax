@@ -1578,6 +1578,8 @@ const AppDev: React.FC = () => {
                       stagedFileIds={sourceControl.stagedFileIds}
                       selectedDiffFileId={sourceControl.selectedDiffFileId}
                       isCommitting={sourceControl.isCommitting}
+                      isRefreshingGitList={sourceControl.isRefreshingGitList}
+                      onRefreshGitList={sourceControl.refreshGitList}
                       onDiffFileSelect={sourceControl.handleDiffFileSelect}
                       onOpenChangeFile={sourceControl.handleOpenChangeFile}
                       onDiscardChange={sourceControl.handleDiscardChange}

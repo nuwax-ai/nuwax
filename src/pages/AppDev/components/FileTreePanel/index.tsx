@@ -47,6 +47,8 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
   stagedFileIds = new Set<string>(),
   selectedDiffFileId = null,
   isCommitting = false,
+  isRefreshingGitList = false,
+  onRefreshGitList,
   onDiffFileSelect,
   onOpenChangeFile,
   onDiscardChange,
@@ -277,7 +279,9 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
                       changeFiles={changeFiles}
                       stagedFileIds={stagedFileIds}
                       isCommitting={isCommitting}
+                      isRefreshing={isRefreshingGitList}
                       selectedDiffFileId={selectedDiffFileId}
+                      onRefresh={onRefreshGitList}
                       onCommit={onCommit}
                       onFileClick={handleModifiedFileClick}
                       onOpenChanges={onDiffFileSelect}

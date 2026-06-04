@@ -9,6 +9,7 @@ import {
   apiGitCommit,
   apiGitStash,
   apiGitStashPop,
+  apiGitStatus,
 } from '@/pages/ConversationAgent/services/git-version-management';
 import { getProjectContent, submitFilesUpdate } from '@/services/appDev';
 import { dict } from '@/services/i18nRuntime';
@@ -57,6 +58,8 @@ export interface UseAppDevSourceControlReturn {
   selectedDiffFile: ChangeFileInfo | null;
   /** 是否正在提交 */
   isCommitting: boolean;
+  /** 是否正在刷新 Git 列表 */
+  isRefreshingGitList: boolean;
   /** 同步修改文件列表（编辑器内容变更时调用） */
   syncChangeFiles: (fileId: string, content: string) => void;
   /** 清除 diff 选中状态 */
@@ -75,6 +78,8 @@ export interface UseAppDevSourceControlReturn {
   handleAddToGitignore: (fileId: string) => Promise<void>;
   /** 提交修改（保存并推送） */
   handleCommit: (message: string) => Promise<void>;
+  /** 刷新 Git 变更列表 */
+  refreshGitList: () => Promise<void>;
   /** 取消编辑并同步清理 Git 状态 */
   handleCancelEdit: (silent?: boolean) => void;
   /** 清除指定文件的修改记录（单文件保存成功后调用） */
@@ -106,6 +111,8 @@ export const useAppDevSourceControl = ({
   );
   /** Git 提交推送进行中 */
   const [isCommitting, setIsCommitting] = useState(false);
+  /** Git 列表刷新进行中 */
+  const [isRefreshingGitList, setIsRefreshingGitList] = useState(false);
 
   /** 根据 selectedDiffFileId 派生完整的 diff 文件数据 */
   const selectedDiffFile = useMemo(
@@ -560,12 +567,39 @@ export const useAppDevSourceControl = ({
     [fileManagement, clearChangeForFile],
   );
 
+  /**
+   * 刷新 Git 变更列表
+   * 拉取服务端 Git 状态并重新加载文件树
+   */
+  const refreshGitList = useCallback(async () => {
+    if (!projectId || isRefreshingGitList) {
+      return;
+    }
+
+    setIsRefreshingGitList(true);
+    try {
+      await apiGitStatus({
+        workspaceType: 'pageApp',
+        projectId: Number(projectId),
+      });
+      await fileManagement.loadFileTree(true, true);
+    } catch (error) {
+      console.error('Refresh git list failed:', error);
+      message.error(
+        dict('PC.Pages.ConversationAgentSourceControl.refreshFailed'),
+      );
+    } finally {
+      setIsRefreshingGitList(false);
+    }
+  }, [projectId, isRefreshingGitList, fileManagement]);
+
   return {
     changeFiles,
     stagedFileIds,
     selectedDiffFileId,
     selectedDiffFile,
     isCommitting,
+    isRefreshingGitList,
     syncChangeFiles,
     clearSelectedDiff,
     handleDiffFileSelect,
@@ -575,6 +609,7 @@ export const useAppDevSourceControl = ({
     handleUnstageChange,
     handleAddToGitignore,
     handleCommit,
+    refreshGitList,
     handleCancelEdit,
     clearChangeForFile,
   };

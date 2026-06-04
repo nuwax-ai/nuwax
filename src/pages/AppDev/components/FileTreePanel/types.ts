@@ -56,6 +56,10 @@ export interface FileTreePanelProps {
   selectedDiffFileId?: string | null;
   /** 是否正在提交 */
   isCommitting?: boolean;
+  /** 是否正在刷新 Git 列表 */
+  isRefreshingGitList?: boolean;
+  /** 刷新 Git 变更列表 */
+  onRefreshGitList?: () => void | Promise<void>;
   /** 选中修改文件，在右侧预览区展示 diff */
   onDiffFileSelect?: (fileId: string) => void;
   /** 打开文件（选中并预览，非 diff） */
