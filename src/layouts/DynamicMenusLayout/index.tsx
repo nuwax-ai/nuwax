@@ -47,7 +47,11 @@ import HomeSection from './HomeSection';
 import styles from './index.less';
 import SpaceSection from './SpaceSection';
 import SquareSection from './SquareSection';
-import { handleOpenUrl, normalizeMenuPathname } from './utils';
+import {
+  handleOpenUrl,
+  normalizeMenuPathname,
+  removePathUrlFromLocalStorage,
+} from './utils';
 
 const cx = classNames.bind(styles);
 
@@ -69,13 +73,12 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
   const params = useParams();
   const { token } = theme.useToken();
   const { navigationStyle, layoutStyle } = useUnifiedTheme();
-  const {
-    // showHoverMenu,
-    isSecondMenuCollapsed,
-    setOpenMessage,
-    handleCloseMobileMenu,
-  } = useModel('layout');
-  const { firstLevelMenus, otherMenus } = useModel('menuModel');
+  const { isSecondMenuCollapsed, setOpenMessage, handleCloseMobileMenu } =
+    useModel('layout');
+
+  // 判断指定一级菜单及其所有子菜单中，是否存在与传入路径匹配的菜单
+  const { firstLevelMenus, otherMenus, hasPathUnderFirstLevelMenu } =
+    useModel('menuModel');
 
   const { refreshUserInfo } = useModel('userInfo');
 
@@ -484,9 +487,20 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
         if (pathUrl && menu.code) {
           const pathUrlObj = JSON.parse(pathUrl);
           const pathUrlValue = pathUrlObj[menu.code];
-          if (pathUrlValue && !pathUrlValue.includes(':')) {
-            history.push(pathUrlValue, { _t: Date.now(), menuCode: menu.code });
-            return;
+
+          // 判断指定一级菜单及其所有子菜单中，是否存在与传入路径匹配的菜单
+          const hasPath = hasPathUnderFirstLevelMenu(menu.code, pathUrlValue);
+          if (hasPath) {
+            if (pathUrlValue && !pathUrlValue.includes(':')) {
+              history.push(pathUrlValue, {
+                _t: Date.now(),
+                menuCode: menu.code,
+              });
+              return;
+            }
+          } else {
+            // 缓存路径已不在当前菜单树中，清除无效的 workspace 记录
+            removePathUrlFromLocalStorage(menu.code);
           }
         }
       } catch {}
