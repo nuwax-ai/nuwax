@@ -32,6 +32,23 @@ export const updatePathUrlToLocalStorage = (
 };
 
 /**
+ * 从本地缓存中删除指定一级菜单的路径记录
+ * @param parentCode 父级菜单的 code
+ */
+export const removePathUrlFromLocalStorage = (parentCode: string) => {
+  try {
+    const pathUrl = localStorage.getItem(PATH_URL);
+    if (!pathUrl) return;
+
+    const pathUrlObj = JSON.parse(pathUrl);
+    if (!(parentCode in pathUrlObj)) return;
+
+    delete pathUrlObj[parentCode];
+    localStorage.setItem(PATH_URL, JSON.stringify(pathUrlObj));
+  } catch {}
+};
+
+/**
  * 打开URL
  * @param path 路径
  * @param openType 打开方式
