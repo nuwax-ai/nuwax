@@ -63,7 +63,7 @@
 
 **源码位置：**
 
-`src/examples/AgentInterventionDemo/`
+`src/examples/AgentInterventionDemo/`（页面 `index.tsx`，Mock 数据 `mockData.ts`）
 
 **模块文档：**
 
