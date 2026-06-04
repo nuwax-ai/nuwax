@@ -2,6 +2,17 @@
 
 AI Agent 运行时干预模块，支持两种暂停-恢复流程：**ACP 权限审批** 和 **MCP Ask 结构化提问**。
 
+## 示例页面
+
+本地开发时可通过以下地址预览干预卡片 UI（Mock 数据，免登录）：
+
+| 说明 | 路由 | 本地地址（默认端口 8000） |
+| --- | --- | --- |
+| 干预卡片 UI Demo（ACP + MCP Ask） | `/examples/agent-intervention-demo` | http://localhost:8000/examples/agent-intervention-demo |
+| 全部示例索引 | `/examples` | http://localhost:8000/examples |
+
+示例源码：`src/examples/AgentInterventionDemo/index.tsx`
+
 ## 模块结构
 
 ```

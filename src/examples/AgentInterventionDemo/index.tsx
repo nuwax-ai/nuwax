@@ -1,3 +1,10 @@
+/**
+ * AgentIntervention 组件示例页
+ *
+ * 功能：独立展示 ACP 权限审批卡片与 MCP Ask 结构化提问卡片的 UI 与交互（Mock 数据，不依赖后端）。
+ * 访问：/examples/agent-intervention-demo
+ * 模块文档：src/components/business-component/AgentIntervention/README.md
+ */
 import AcpPermissionCard from '@/components/business-component/AgentIntervention/components/AcpPermissionCard';
 import McpAskQuestionCard from '@/components/business-component/AgentIntervention/components/McpAskQuestionCard';
 import type {
@@ -10,6 +17,7 @@ import type {
 } from '@/components/business-component/AgentIntervention/types/mcpAskIntervention';
 import { Button, Card, Divider, message, Space, Typography } from 'antd';
 import React, { useState } from 'react';
+import { Link } from 'umi';
 
 const { Title, Paragraph } = Typography;
 
@@ -17,6 +25,7 @@ const { Title, Paragraph } = Typography;
 // Mock Data Factories
 // ============================================================
 
+/** 创建 ACP 权限审批 Mock 交互数据 */
 function createAcpInteraction(
   overrides: Partial<AcpPermissionInteraction> = {},
 ): AcpPermissionInteraction {
@@ -56,6 +65,7 @@ function createAcpInteraction(
   };
 }
 
+/** 创建 MCP Ask 结构化提问 Mock 交互数据 */
 function createMcpInteraction(
   title: string,
   schema: Record<string, unknown>,
@@ -95,7 +105,7 @@ function createMcpInteraction(
 // Demo Page
 // ============================================================
 
-const InterventionDemoPage: React.FC = () => {
+const AgentInterventionDemoPage: React.FC = () => {
   const [acpList, setAcpList] = useState<AcpPermissionInteraction[]>([
     createAcpInteraction(),
     createAcpInteraction({
@@ -122,7 +132,6 @@ const InterventionDemoPage: React.FC = () => {
   ]);
 
   const [mcpList, setMcpList] = useState<McpAskInteraction[]>([
-    // 基本表单: radio + text + textarea
     createMcpInteraction(
       '请选择继续方式',
       {
@@ -151,7 +160,6 @@ const InterventionDemoPage: React.FC = () => {
       },
       'Agent 需要你确认下一步操作。',
     ),
-    // 单选列表 (list widget)
     createMcpInteraction(
       '选择技术栈',
       {
@@ -207,7 +215,6 @@ const InterventionDemoPage: React.FC = () => {
       },
       '请选择项目使用的主要技术栈。',
     ),
-    // 文件上传
     createMcpInteraction(
       '提交问题截图',
       {
@@ -229,7 +236,6 @@ const InterventionDemoPage: React.FC = () => {
       },
       '请上传问题的截图或相关文件，帮助 Agent 更好地理解问题。',
     ),
-    // Select 下拉
     createMcpInteraction(
       '部署配置',
       {
@@ -256,7 +262,6 @@ const InterventionDemoPage: React.FC = () => {
       },
       '请选择部署目标环境和区域。',
     ),
-    // Wizard 分步表单
     {
       toolCallId: `tc-ask-wizard-${Date.now()}`,
       responseStatus: 'pending',
@@ -368,7 +373,6 @@ const InterventionDemoPage: React.FC = () => {
     console.log('[ACP Respond]', interaction.intervention.id, response);
     const id = interaction.intervention.id;
 
-    // Update to submitting
     setAcpList((prev) =>
       prev.map((item) =>
         item.intervention.id === id
@@ -377,7 +381,6 @@ const InterventionDemoPage: React.FC = () => {
       ),
     );
 
-    // Simulate API delay
     setTimeout(() => {
       setAcpList((prev) =>
         prev.map((item) =>
@@ -449,10 +452,13 @@ const InterventionDemoPage: React.FC = () => {
 
   return (
     <div style={{ maxWidth: 960, margin: '0 auto', padding: '24px' }}>
+      <Paragraph type="secondary" style={{ marginBottom: 8 }}>
+        <Link to="/examples">← 返回示例中心</Link>
+      </Paragraph>
       <Title level={2}>干预交互卡片 Demo</Title>
       <Paragraph type="secondary">
         此页面用于展示 ACP Permission 权限审批和 MCP Ask
-        结构化提问卡片的渲染效果。
+        结构化提问卡片的渲染效果。路由：/examples/agent-intervention-demo
       </Paragraph>
 
       <Space style={{ marginBottom: 24 }}>
@@ -499,4 +505,4 @@ const InterventionDemoPage: React.FC = () => {
   );
 };
 
-export default InterventionDemoPage;
+export default AgentInterventionDemoPage;

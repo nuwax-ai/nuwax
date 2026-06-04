@@ -36,7 +36,7 @@ const AuthWithLoading: React.FC = () => {
     '/verify-code',
     '/set-password',
     '/chat-temp',
-    '/intervention-demo',
+    '/examples/agent-intervention-demo',
   ];
 
   const isExcludedPath = excludedPaths.some((path) =>

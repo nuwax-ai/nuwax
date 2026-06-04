@@ -29,11 +29,6 @@ const routes = [
     layout: false,
   },
   {
-    path: '/intervention-demo',
-    component: '@/pages/InterventionDemo',
-    layout: false,
-  },
-  {
     path: '/',
     component: '@/layouts',
     wrappers: ['@/wrappers/authWithLoading'],
@@ -657,6 +652,11 @@ const routes = [
   {
     path: '/examples/menu-permission-demo',
     component: '@/examples/MenuPermissionDemo',
+    layout: false,
+  },
+  {
+    path: '/examples/agent-intervention-demo',
+    component: '@/examples/AgentInterventionDemo',
     layout: false,
   },
 ];

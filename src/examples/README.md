@@ -53,7 +53,23 @@
 - 支持不同主题和语言下的样式效果
 - 包括按钮、表格、表单、导航等各类组件
 
-### 3. 主题功能演示 (`/examples/theme-demo`)
+### 3. Agent 干预交互卡片 (`/examples/agent-intervention-demo`)
+
+**功能描述：**
+
+- 展示 `AgentIntervention` 模块中的 ACP 权限审批卡片与 MCP Ask 结构化提问卡片
+- 使用 Mock 数据，无需登录后端即可预览 UI 与交互
+- 覆盖 inline / wizard 表单、radio、checkbox、select、文件上传等 widget
+
+**源码位置：**
+
+`src/examples/AgentInterventionDemo/`
+
+**模块文档：**
+
+`src/components/business-component/AgentIntervention/README.md`
+
+### 4. 主题功能演示 (`/examples/theme-demo`)
 
 **功能描述：**
 
