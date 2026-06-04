@@ -1,4 +1,6 @@
 import CreateNewPlugin from '@/components/CreateNewPlugin';
+import UploadImportConfig from '@/components/UploadImportConfig';
+import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { dict } from '@/services/i18nRuntime';
 import { apiComponentList } from '@/services/library';
 import { PublishStatusEnum } from '@/types/enums/common';
@@ -8,20 +10,25 @@ import {
   FilterStatusEnum,
 } from '@/types/enums/space';
 import type { ComponentInfo } from '@/types/interfaces/library';
-import classNames from 'classnames';
+import { PlusOutlined } from '@ant-design/icons';
+import { Button } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
 import { useLocation, useModel, useParams, useRequest } from 'umi';
 import ComponentList from '../components/ComponentList';
-import LeftGroupList from '../components/LeftGroupList';
+import GroupEditModal from '../components/GroupEditModal';
+import HorizontalGroupList from '../components/HorizontalGroupList';
 import HeaderArea from './components/HeaderArea';
-import styles from './index.less';
-
-const cx = classNames.bind(styles);
 
 const ALLOWED_TYPES = new Set([
   ComponentTypeEnum.Workflow,
   ComponentTypeEnum.Plugin,
 ]);
+
+// 模块级内存缓存：刷新页面时自动重置，SPA 路由跳转时保持选中状态
+const pluginGroupMemoryCache: Record<
+  number,
+  { groupId: number; groupType?: string }
+> = {};
 
 const SpacePlugin: React.FC = () => {
   const params = useParams();
@@ -34,21 +41,30 @@ const SpacePlugin: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [openPlugin, setOpenPlugin] = useState(false);
 
+  // 分组管理弹窗状态
+  const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
+  const [groupModalMode, setGroupModalMode] = useState<'add' | 'edit'>('add');
+  const [editingGroup, setEditingGroup] = useState<any>(null);
+
   // 顶部筛选类型状态，默认为插件
   const [type, setType] = useState<ComponentTypeEnum>(ComponentTypeEnum.Plugin);
 
   // 资源分组状态，0 表示全部
-  const [groupId, setGroupId] = useState<number>(0);
+  const [groupId, setGroupId] = useState<number>(() => {
+    return pluginGroupMemoryCache[spaceId]?.groupId || 0;
+  });
   const [selectedGroupType, setSelectedGroupType] = useState<
     string | undefined
-  >(undefined);
+  >(() => {
+    return pluginGroupMemoryCache[spaceId]?.groupType;
+  });
 
   const filterParamsRef = useRef({
     type: ComponentTypeEnum.Plugin,
     status: FilterStatusEnum.All,
     create: CreateListEnum.All_Person,
     keyword: '',
-    groupId: 0,
+    groupId: pluginGroupMemoryCache[spaceId]?.groupId || 0,
   });
 
   const handleFilterList = (
@@ -103,6 +119,7 @@ const SpacePlugin: React.FC = () => {
   };
 
   const handleGroupChange = (id: number, groupType?: string) => {
+    pluginGroupMemoryCache[spaceId] = { groupId: id, groupType };
     setGroupId(id);
     setSelectedGroupType(groupType);
     const {
@@ -115,6 +132,7 @@ const SpacePlugin: React.FC = () => {
   };
 
   const [refreshGroupTrigger, setRefreshGroupTrigger] = useState(0);
+  const isFirstLoadRef = useRef(true);
 
   const { run: runComponent } = useRequest(apiComponentList, {
     manual: true,
@@ -136,7 +154,11 @@ const SpacePlugin: React.FC = () => {
         currentGId,
         result,
       );
-      setRefreshGroupTrigger((prev) => prev + 1);
+      if (isFirstLoadRef.current) {
+        isFirstLoadRef.current = false;
+      } else {
+        setRefreshGroupTrigger((prev) => prev + 1);
+      }
       setLoading(false);
     },
     onError: () => setLoading(false),
@@ -144,12 +166,18 @@ const SpacePlugin: React.FC = () => {
 
   useEffect(() => {
     if (location.state) return;
+    const cachedGroupId = pluginGroupMemoryCache[spaceId]?.groupId || 0;
+    const cachedGroupType = pluginGroupMemoryCache[spaceId]?.groupType;
+    setGroupId(cachedGroupId);
+    setSelectedGroupType(cachedGroupType);
+    filterParamsRef.current.groupId = cachedGroupId;
     setLoading(true);
     runComponent(spaceId);
   }, [spaceId]);
 
   useEffect(() => {
     if (location.state) {
+      pluginGroupMemoryCache[spaceId] = { groupId: 0 };
       setGroupId(0);
       setSelectedGroupType(undefined);
       filterParamsRef.current.groupId = 0;
@@ -167,37 +195,64 @@ const SpacePlugin: React.FC = () => {
   };
 
   return (
-    <div className={cx(styles.container)}>
-      <div className={cx(styles['content-body'])}>
-        <LeftGroupList
-          className={cx(styles.sidebar)}
-          spaceId={spaceId}
-          value={groupId}
-          onChange={handleGroupChange}
-          componentList={componentAllRef.current}
-          filterType={type}
-          refreshTrigger={refreshGroupTrigger}
-          title={dict('PC.Pages.SpacePluginWorkflow.pluginPageTitle')}
-        />
-        <div className={cx(styles['right-content'])}>
-          <HeaderArea
+    <WorkspaceLayout
+      title={dict('PC.Pages.SpacePluginWorkflow.pluginPageTitle')}
+      rightSlot={
+        <>
+          <UploadImportConfig
             spaceId={spaceId}
-            selectedGroupType={selectedGroupType}
-            onFilterChange={handleFilterList}
             onUploadSuccess={() => runComponent(spaceId)}
-            onOpenPlugin={() => setOpenPlugin(true)}
           />
-          <div className={cx(styles['list-area'], 'scroll-container-hide')}>
-            <ComponentList
-              loading={loading}
-              componentList={componentList}
-              spaceId={spaceId}
-              onDelete={handleDel}
-              onRefresh={() => runComponent(spaceId)}
-            />
-          </div>
-        </div>
-      </div>
+          <Button
+            icon={<PlusOutlined />}
+            onClick={() => {
+              setGroupModalMode('add');
+              setEditingGroup(null);
+              setIsGroupModalOpen(true);
+            }}
+          >
+            {dict('PC.Pages.AntvX6NodeItem.addGroup')}
+          </Button>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => setOpenPlugin(true)}
+          >
+            {dict('PC.Pages.AgentArrangeConfig.addPlugin')}
+          </Button>
+        </>
+      }
+      hideScroll
+    >
+      <HorizontalGroupList
+        spaceId={spaceId}
+        value={groupId}
+        onChange={handleGroupChange}
+        filterType={type}
+        refreshTrigger={refreshGroupTrigger}
+        onEdit={(group) => {
+          setGroupModalMode('edit');
+          setEditingGroup(group);
+          setIsGroupModalOpen(true);
+        }}
+        onDeleteSuccess={() => {
+          runComponent(spaceId);
+        }}
+      />
+
+      <HeaderArea
+        spaceId={spaceId}
+        selectedGroupType={selectedGroupType}
+        onFilterChange={handleFilterList}
+      />
+
+      <ComponentList
+        loading={loading}
+        componentList={componentList}
+        spaceId={spaceId}
+        onDelete={handleDel}
+        onRefresh={() => runComponent(spaceId)}
+      />
 
       <CreateNewPlugin
         spaceId={spaceId}
@@ -205,7 +260,20 @@ const SpacePlugin: React.FC = () => {
         onCancel={() => setOpenPlugin(false)}
         defaultGroupId={groupId !== 0 ? groupId : undefined}
       />
-    </div>
+
+      <GroupEditModal
+        open={isGroupModalOpen}
+        mode={groupModalMode}
+        editingGroup={editingGroup}
+        spaceId={spaceId}
+        filterType={type}
+        onCancel={() => setIsGroupModalOpen(false)}
+        onSuccess={() => {
+          setIsGroupModalOpen(false);
+          setRefreshGroupTrigger((prev) => prev + 1);
+        }}
+      />
+    </WorkspaceLayout>
   );
 };
 

@@ -39,6 +39,7 @@ pnpm-lock.yaml
 .agent
 .kilo
 .temp
+.hermes
 # /deploy_test.sh
 
 # 微信公众/小程序域名校验文件：仅在生产 Nginx/网关/Volume 部署，勿放入 public/

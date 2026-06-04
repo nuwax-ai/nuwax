@@ -3089,7 +3089,6 @@ export const ZH_HK: SystemLangMap = {
   "PC.Pages.SpaceKnowledge.UploadFile.fileSizeLimit100MB": "文件大小不能超過100MB!",
   "PC.Pages.SpaceKnowledge.UploadFile.supportedFileTypes": "請上傳 PDF、TXT、DOC、DOCX、MD、JSON、JPG、PNG、GIF、WEBP、SVG、HEIC、MP4、MKV、MOV、WEBM、MP3、AAC、WAV、FLAC、OGG、OPUS 類型文件!",
   "PC.Pages.SpaceKnowledge.UploadFile.uploadHint": "支持 PDF、TXT、DOC、DOCX、MD、JSON、JPG、PNG、GIF、WEBP、SVG、HEIC、MP4、MKV、MOV、WEBM、MP3、AAC、WAV、FLAC、OGG、OPUS，最多可上傳 300 個文件，每個文件不超過 100MB， PDF 最多 500 頁",
-  "PC.Pages.SpaceKnowledgeStorage.pageTitle": "知識與數據存儲",
   "PC.Pages.SpaceLibrary.availableScope": "可用範圍",
   "PC.Pages.SpaceLibrary.ComponentItem.disabled": "已禁用",
   "PC.Pages.SpaceLibrary.ComponentItem.enabled": "已啓用",
@@ -3456,7 +3455,6 @@ export const ZH_HK: SystemLangMap = {
   "PC.Pages.SpacePluginTool.selectRequestContentFormat": "請選擇請求內容格式",
   "PC.Pages.SpacePluginTool.selectRequestMethod": "請選擇請求方法",
 
-  "PC.Pages.SpacePluginWorkflow.pageTitle": "插件與工作流",
 
   "PC.Pages.SpaceResourcePricing.pageTitle": "資源定價",
   "PC.Pages.SpaceResourcePricing.pageSubtitle": "管理工具定價與計費開關",

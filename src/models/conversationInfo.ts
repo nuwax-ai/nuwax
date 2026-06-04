@@ -1,3 +1,8 @@
+import {
+  hydrateMcpAskInteractionsInMessageList,
+  processInterventionSsePatch,
+  useAgentInterventionHandlers,
+} from '@/components/business-component/AgentIntervention';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
   CONVERSATION_CONNECTION_URL,
@@ -82,6 +87,7 @@ import { throttle } from 'lodash';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
+import { appendOutgoingConversationMessages } from './conversationInfoMessageList';
 
 export default () => {
   // 历史记录
@@ -117,6 +123,11 @@ export default () => {
   const [loadingMore, setLoadingMore] = useState<boolean>(false);
   // 会话信息
   const [messageList, setMessageList] = useState<MessageInfo[]>([]);
+
+  const { respondAcpPermission, respondMcpAsk } = useAgentInterventionHandlers({
+    setMessageList,
+    conversationId: currentConversationId,
+  });
   // 缓存消息列表，用于消息会话错误时，修改消息状态（将当前会话的loading状态的消息改为Error状态）
   const messageListRef = useRef<MessageInfo[]>([]);
   // 会话问题建议
@@ -623,7 +634,10 @@ export default () => {
         if (!!data?.length) {
           // 将新消息追加到消息列表前面
           setMessageList((messageList: MessageInfo[]) => {
-            return [...data, ...messageList];
+            return [
+              ...hydrateMcpAskInteractionsInMessageList(data),
+              ...messageList,
+            ];
           });
 
           // 如果查询到的消息数量小于20，则表示没有更多消息
@@ -686,7 +700,9 @@ export default () => {
       // 用户填写的变量参数
       setUserFillVariables(data?.variables || null);
       // 消息列表
-      const _messageList = data?.messageList || [];
+      const _messageList = hydrateMcpAskInteractionsInMessageList(
+        data?.messageList || [],
+      );
       const len = _messageList?.length || 0;
       if (len) {
         setMessageList(() => {
@@ -801,10 +817,25 @@ export default () => {
 
       let newMessage: any = null;
 
+      const interventionPatch = processInterventionSsePatch(
+        res,
+        currentMessage,
+      );
+      if (interventionPatch) {
+        list.splice(index, arraySpliceAction, interventionPatch);
+        checkConversationActive(list);
+        return list;
+      }
+
       // 更新UI状态...
       if (eventType === ConversationEventTypeEnum.PROCESSING) {
         const processingResult = data.result || {};
-        data.executeId = processingResult.executeId;
+        // 后端可能仅在 data.result.executeId 提供执行 ID；缺失时提升到顶层，
+        // 否则 getCustomBlock / processingList 去重会因 executeId 为 undefined 而失效，
+        // 导致流式处理块不展示。
+        if (!data.executeId && processingResult.executeId) {
+          data.executeId = processingResult.executeId;
+        }
         const processingList = [
           ...(currentMessage?.processingList || []),
         ] as ProcessingInfo[];
@@ -1111,8 +1142,6 @@ export default () => {
         perfLifecycle.onSseConnect();
       },
       onMessage: (res: ConversationChatResponse) => {
-        // 将 chunk 的实际载荷也传给 perfTracker，避免只依赖 eventType 误判“首包”
-        // 传入整个响应对象：若其中存在 subType（例如 unified 会话流），perfTracker 可据此判断“真正消息块”。
         perfLifecycle.onFirstChunk(res?.eventType, res);
         // 第一次收到消息后更新主题（仅调用一次）
         updateTopicOnce(params, conversationInfo ?? data, isSync);
@@ -1280,6 +1309,7 @@ export default () => {
       data = null,
       skillIds,
       modelId,
+      agentMode = 'yolo',
     } = sendParams;
     // 清除副作用
     handleClearSideEffect();
@@ -1324,27 +1354,19 @@ export default () => {
       status: MessageStatusEnum.Loading,
     } as MessageInfo;
 
-    // 将Incomplete状态的消息改为Complete状态
-    const completeMessageList =
-      messageList?.map((item: MessageInfo) => {
-        if (item.status === MessageStatusEnum.Incomplete) {
-          item.status = MessageStatusEnum.Complete;
-        }
-        return item;
-      }) || [];
+    setMessageList((prevList) => {
+      // 使用最新 state 追加消息，避免覆盖同一事件周期内刚更新的干预响应状态。
+      const newMessageList = appendOutgoingConversationMessages(
+        prevList,
+        chatMessage,
+        currentMessage,
+      );
 
-    const newMessageList = [
-      ...completeMessageList,
-      chatMessage,
-      currentMessage,
-    ] as MessageInfo[];
-
-    setMessageList(() => {
       checkConversationActive(newMessageList);
+      // 缓存消息列表
+      messageListRef.current = newMessageList;
       return newMessageList;
     });
-    // 缓存消息列表
-    messageListRef.current = newMessageList;
 
     // 允许滚动
     allowAutoScrollRef.current = true;
@@ -1365,6 +1387,7 @@ export default () => {
       skillIds,
       // 模型ID
       modelId,
+      agentMode,
     };
 
     // 处理会话
@@ -1438,6 +1461,8 @@ export default () => {
     handleVariables,
     runStopConversation,
     loadingStopConversation,
+    respondAcpPermission,
+    respondMcpAsk,
     isConversationActive,
     checkConversationActive,
     disabledConversationActive,
