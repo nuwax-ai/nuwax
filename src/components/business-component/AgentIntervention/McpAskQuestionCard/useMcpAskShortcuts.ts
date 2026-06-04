@@ -1,4 +1,4 @@
-import { useInterventionEscapeKey } from '../../hooks/useInterventionEscapeKey';
+import { useInterventionEscapeKey } from '../hooks/useInterventionEscapeKey';
 
 interface UseMcpAskShortcutsOptions {
   enabled: boolean;

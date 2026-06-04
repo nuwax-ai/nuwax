@@ -6,14 +6,14 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type {
   McpAskInteraction,
   McpAskRespondPayload,
-} from '../../types/mcpAskIntervention';
+} from '../types/mcpAskIntervention';
 import {
   getInteractionSteps,
   getSkipLabel,
   isSkipAllowed,
   isWizardPresentation,
   parseInteractionFields,
-} from '../../utils/parseMcpAskSchema';
+} from '../utils/parseMcpAskSchema';
 import styles from './index.less';
 import McpAskFormField from './McpAskFormField';
 import { useMcpAskShortcuts } from './useMcpAskShortcuts';

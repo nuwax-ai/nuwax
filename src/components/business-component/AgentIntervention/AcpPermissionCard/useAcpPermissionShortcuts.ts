@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
-import { useInterventionEscapeKey } from '../../hooks/useInterventionEscapeKey';
-import type { AcpPermissionOption } from '../../types/acpIntervention';
+import { useInterventionEscapeKey } from '../hooks/useInterventionEscapeKey';
+import type { AcpPermissionOption } from '../types/acpIntervention';
 
 const KIND_DIGIT_KEY: Partial<Record<string, string>> = {
   allow_once: '1',

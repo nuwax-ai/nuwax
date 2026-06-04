@@ -5,8 +5,8 @@
  * 访问：/examples/agent-intervention-demo
  * 模块文档：src/components/business-component/AgentIntervention/README.md
  */
-import AcpPermissionCard from '@/components/business-component/AgentIntervention/components/AcpPermissionCard';
-import McpAskQuestionCard from '@/components/business-component/AgentIntervention/components/McpAskQuestionCard';
+import AcpPermissionCard from '@/components/business-component/AgentIntervention/AcpPermissionCard';
+import McpAskQuestionCard from '@/components/business-component/AgentIntervention/McpAskQuestionCard';
 import type {
   AcpPermissionInteraction,
   AcpRequestPermissionResponse,

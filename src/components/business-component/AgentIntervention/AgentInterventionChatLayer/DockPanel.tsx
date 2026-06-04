@@ -1,22 +1,22 @@
 import classNames from 'classnames';
 import React, { useCallback } from 'react';
-import type { InterventionQueueItem } from '../../hooks/useActiveInterventionQueue';
+import AcpPermissionCard from '../AcpPermissionCard';
+import type { InterventionQueueItem } from '../hooks/useActiveInterventionQueue';
+import McpAskQuestionCard from '../McpAskQuestionCard';
 import type {
   AcpPermissionInteraction,
   AcpRequestPermissionResponse,
-} from '../../types/acpIntervention';
+} from '../types/acpIntervention';
 import type {
   McpAskInteraction,
   McpAskRespondPayload,
-} from '../../types/mcpAskIntervention';
-import AcpPermissionCard from '../AcpPermissionCard';
-import McpAskQuestionCard from '../McpAskQuestionCard';
+} from '../types/mcpAskIntervention';
+import styles from './DockPanel.less';
 import dockCardStyles from './intervention-dock-card.module.less';
-import styles from './InterventionDockPanel.less';
 
 const STACK_OFFSET_PX = 5;
 
-export interface InterventionDockPanelProps {
+interface InterventionDockPanelProps {
   items: InterventionQueueItem[];
   onRespondAcpPermission: (
     interaction: AcpPermissionInteraction,
@@ -35,7 +35,7 @@ function getItemKey(item: InterventionQueueItem): string {
   return `ask-${item.interaction.input.requestId}`;
 }
 
-const InterventionDockPanel: React.FC<InterventionDockPanelProps> = ({
+const DockPanel: React.FC<InterventionDockPanelProps> = ({
   items,
   onRespondAcpPermission,
   onRespondMcpAsk,
@@ -132,4 +132,4 @@ const InterventionDockPanel: React.FC<InterventionDockPanelProps> = ({
   );
 };
 
-export default InterventionDockPanel;
+export default DockPanel;

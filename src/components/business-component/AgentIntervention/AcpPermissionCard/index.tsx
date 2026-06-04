@@ -11,8 +11,7 @@ import type {
   AcpPermissionInteraction,
   AcpPermissionOption,
   AcpRequestPermissionResponse,
-} from '../../types/acpIntervention';
-import AllowAlwaysIcon from './AllowAlwaysIcon';
+} from '../types/acpIntervention';
 import styles from './index.less';
 import {
   getAcpPermissionShortcutHint,
@@ -29,6 +28,16 @@ interface AcpPermissionCardProps {
   dockShellClassName?: string;
   keyboardShortcutsEnabled?: boolean;
   onRespond?: (response: AcpRequestPermissionResponse) => void;
+}
+
+function AllowAlwaysIcon() {
+  return (
+    <span className={styles.multiCheck} aria-hidden>
+      <CheckOutlined className={styles.multiCheckItem} />
+      <CheckOutlined className={styles.multiCheckItem} />
+      <CheckOutlined className={styles.multiCheckItem} />
+    </span>
+  );
 }
 
 function renderOptionIcon(option: AcpPermissionOption): React.ReactNode {

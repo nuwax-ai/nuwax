@@ -6,7 +6,7 @@ import { InboxOutlined } from '@ant-design/icons';
 import { Checkbox, Form, Input, Radio, Select, Upload } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
-import type { ParsedMcpAskField } from '../../utils/parseMcpAskSchema';
+import type { ParsedMcpAskField } from '../utils/parseMcpAskSchema';
 import styles from './McpAskFormField.less';
 
 interface McpAskFormFieldProps {

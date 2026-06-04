@@ -1,17 +1,17 @@
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useActiveInterventionQueue } from '../../hooks/useActiveInterventionQueue';
+import { useActiveInterventionQueue } from '../hooks/useActiveInterventionQueue';
 import type {
   AcpPermissionInteraction,
   AcpRequestPermissionResponse,
-} from '../../types/acpIntervention';
+} from '../types/acpIntervention';
 import type {
   McpAskInteraction,
   McpAskRespondPayload,
-} from '../../types/mcpAskIntervention';
-import InterventionDockPanel from '../InterventionDockPanel';
+} from '../types/mcpAskIntervention';
 import styles from './AgentInterventionChatLayer.less';
+import DockPanel from './DockPanel';
 
 export interface AgentInterventionChatLayerProps {
   className?: string;
@@ -91,7 +91,7 @@ const AgentInterventionChatLayer: React.FC<AgentInterventionChatLayerProps> = ({
       className={classNames(styles.host, className)}
       data-agent-intervention-dock
     >
-      <InterventionDockPanel
+      <DockPanel
         items={queueItems}
         onRespondAcpPermission={onRespondAcpPermission}
         onRespondMcpAsk={handleRespondMcpAsk}
