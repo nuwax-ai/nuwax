@@ -3,6 +3,7 @@ import { QuestionCircleOutlined } from '@ant-design/icons';
 import { Button, Form, Space, Steps, Tag, Typography } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useInterventionEscapeKey } from '../hooks/useInterventionEscapeKey';
 import type {
   McpAskInteraction,
   McpAskRespondPayload,
@@ -16,7 +17,6 @@ import {
 } from '../utils/parseMcpAskSchema';
 import styles from './index.less';
 import McpAskFormField from './McpAskFormField';
-import { useMcpAskShortcuts } from './useMcpAskShortcuts';
 
 const { Text } = Typography;
 
@@ -120,24 +120,30 @@ const McpAskQuestionCard: React.FC<McpAskQuestionCardProps> = ({
   };
 
   const handleCancel = useCallback(() => {
-    onRespond?.(buildPayload('cancel'));
+    onRespond?.({
+      interventionId: input.requestId,
+      toolCallId,
+      revision: input.revision,
+      source: 'mcp_ask',
+      protocol: 'mcp',
+      action: 'cancel',
+      answeredAt: Date.now(),
+      answeredBy: { kind: 'web' },
+    });
   }, [onRespond, input.requestId, input.revision, toolCallId]);
 
-  useMcpAskShortcuts({
+  useInterventionEscapeKey({
     enabled: !disabled && keyboardShortcutsEnabled,
-    onCancel: handleCancel,
+    onEscape: handleCancel,
+    respectFormFieldFocus: false,
   });
 
   const handleSkip = () => {
     onRespond?.(buildPayload('skip'));
   };
 
-  const stepItems = steps.map((step, index) => ({
+  const stepItems = steps.map((step) => ({
     title: step.title,
-    description:
-      isWizard && steps.length > 1 && index === currentStep
-        ? undefined
-        : undefined,
   }));
 
   const renderStatusTag = () => {

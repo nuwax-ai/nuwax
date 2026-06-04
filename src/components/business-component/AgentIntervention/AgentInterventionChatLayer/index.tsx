@@ -62,7 +62,7 @@ const AgentInterventionChatLayer: React.FC<AgentInterventionChatLayerProps> = ({
       );
       return next.size === prev.size ? prev : next;
     });
-  }, [activeQueueItems]);
+  }, [activeQueueItems, dismissedMcpAskRequestIds.size]);
 
   const handleRespondMcpAsk = useCallback(
     async (interaction: McpAskInteraction, payload: McpAskRespondPayload) => {

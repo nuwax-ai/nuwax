@@ -105,7 +105,7 @@ interface MessageInfo {
 | `status` | 固定 `'pending'` |
 | `sessionId` | 会话 ID |
 | `source` | 固定 `'acp_permission'` |
-| `engine` | `'claude-code' \| 'nuwaxcode' \| 'codex'`（解析缺省可为 `codex-cli`） |
+| `engine` | `'claude-code' \| 'nuwaxcode' \| 'codex'`（SSE 若带 `codex-cli` 等别名会规范为 `codex`） |
 | `protocol` | 固定 `'acp'` |
 | `callbackTarget` | `{ kind: 'electron' \| 'rcoder', targetId: string }` |
 | `schemaRef` | 模式引用字符串 |

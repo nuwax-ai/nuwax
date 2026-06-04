@@ -6,7 +6,8 @@ export interface UseInterventionEscapeKeyOptions {
   respectFormFieldFocus?: boolean;
 }
 
-function isFormFieldTarget(target: EventTarget | null): boolean {
+/** 判断键盘事件是否发生在表单控件内（供快捷键 hook 复用） */
+export function isFormFieldTarget(target: EventTarget | null): boolean {
   if (!target || !(target instanceof HTMLElement)) {
     return false;
   }
