@@ -150,6 +150,11 @@ const ConversationAgent: React.FC = () => {
   /** 切换预览标签/文件时递增，用于终端从 expanded 恢复 default */
   const [devConsoleLayoutResetSignal, setDevConsoleLayoutResetSignal] =
     useState<number>(0);
+  /** 递增后触发底部终端全屏展开（开发工具「终端」入口） */
+  const [devConsoleExpandSignal, setDevConsoleExpandSignal] =
+    useState<number>(0);
+  /** 从开发工具打开终端时跳过 onToolTabActivate 中的布局重置 */
+  const skipDevConsoleResetRef = useRef<boolean>(false);
   /** 是否正在 Git 提交推送 */
   const [isGitPushing, setIsGitPushing] = useState<boolean>(false);
   /** 源代码管理中选中查看 diff 的文件 ID */
@@ -995,6 +1000,26 @@ const ConversationAgent: React.FC = () => {
     },
     // 打开工具标签
     onToolTabActivate: (toolId: PreviewToolId) => {
+      // 终端全屏展开
+      if (toolId === 'terminal') {
+        setDevConsoleExpandSignal((n) => n + 1);
+        setSelectedDiffFileId(null);
+        // 打开预览视图
+        if (devConversationId) {
+          openPreviewView(devConversationId);
+        }
+        return;
+      }
+      // 从开发工具打开终端时跳过 onToolTabActivate 中的布局重置
+      if (skipDevConsoleResetRef.current) {
+        skipDevConsoleResetRef.current = false;
+        setSelectedDiffFileId(null);
+        // 打开预览视图
+        if (devConversationId) {
+          openPreviewView(devConversationId);
+        }
+        return;
+      }
       // 重置终端布局
       resetDevConsoleExpandedLayout();
       // 选中差异文件
@@ -1375,6 +1400,12 @@ const ConversationAgent: React.FC = () => {
               subscriptionStatsPanel={subscriptionStatsPanel}
               // 选择工具
               onSelectTool={(toolId) => {
+                if (toolId === 'terminal') {
+                  skipDevConsoleResetRef.current = true;
+                  setDevConsoleExpandSignal((n) => n + 1);
+                  previewTabs.closeTab(PREVIEW_TAB_PICKER_ID);
+                  return;
+                }
                 previewTabs.closeTab(PREVIEW_TAB_PICKER_ID);
                 previewTabs.openToolTab(toolId);
               }}
@@ -1395,6 +1426,8 @@ const ConversationAgent: React.FC = () => {
             wsSubprotocols={['tty']}
             // 终端布局重置信号
             layoutResetSignal={devConsoleLayoutResetSignal}
+            // 终端全屏展开信号
+            expandSignal={devConsoleExpandSignal}
           />
         </div>
       </div>

@@ -189,9 +189,12 @@ export function usePreviewTabs(options: UsePreviewTabsOptions = {}) {
     onPickerTabActivate?.();
   }, [onPickerTabActivate]);
 
-  /** 打开或激活工具标签 */
+  /** 打开或激活工具标签（terminal 由底部控制台承载，不创建页签） */
   const openToolTab = useCallback(
     (toolId: PreviewToolId) => {
+      if (toolId === 'terminal') {
+        return;
+      }
       const tabId = getToolTabId(toolId);
       const label = dict(TOOL_I18N_MAP[toolId]);
 
