@@ -5,7 +5,6 @@ import { dict, t } from '@/services/i18nRuntime';
 import SvgIcon from '@/components/base/SvgIcon';
 import { MESSAGE_PAGE_SIZE } from '@/constants/common.constants';
 import { useIntersectionObserver } from '@/hooks/useIntersectionObserver';
-import DataResourceList from '@/pages/AppDev/components/FileTreePanel/DataResourceList';
 import type {
   AppDevChatMessage,
   Attachment,
@@ -37,6 +36,7 @@ import AppDevMarkdownCMDWrapper from './components/AppDevMarkdownCMDWrapper';
 import AssistantThinkingCollapsible from './components/AssistantThinkingCollapsible';
 import ChatAreaTabs from './components/ChatAreaTabs';
 import ChatInputHome, { MentionItem } from './components/ChatInputHome';
+import DataResourceList from './components/DataResourceList';
 import MessageAttachment from './components/MessageAttachment';
 import ReactScrollToBottomContainer, {
   ReactScrollToBottomContainerRef,
