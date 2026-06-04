@@ -72,20 +72,27 @@ const TabItemFace: React.FC<TabItemFaceProps> = ({
   tab,
   renderTabIcon,
   onClose,
+  /** 是否为 DragOverlay 模式 */
   overlay = false,
 }) => (
   <>
+    {/* 固定标签图标 */}
     {tab.pinned && (
       <PushpinFilled
         className={cx(styles['tab-pin-icon'])}
         style={{ fontSize: 10 }}
       />
     )}
+    {/* 标签图标 */}
     <span className={cx(styles['tab-icon'])}>{renderTabIcon(tab)}</span>
+    {/* 标签标签 */}
     <span className={cx(styles['tab-label-wrap'])}>
+      {/* 标签标签内容 */}
       <PreviewTabLabel className={cx(styles['tab-label'])} text={tab.label} />
     </span>
+    {/* 非 DragOverlay 模式时显示关闭按钮（DragOverlay 模式下由 DragOverlay 展示） */}
     {!overlay && onClose && (
+      /** 关闭按钮 */
       <button
         type="button"
         className={cx(styles['tab-close'])}
@@ -139,11 +146,17 @@ interface SortableTabItemProps {
 /** 可拖拽排序的单个标签项（拖拽中由 DragOverlay 展示，原位占位透明） */
 const SortableTabItem: React.FC<SortableTabItemProps> = ({
   tab,
+  /** 是否激活 */
   isActive,
+  /** 切换标签 */
   onSelect,
+  /** 关闭标签 */
   onClose,
+  /** 标签栏右键菜单 */
   onContextMenu,
+  /** 渲染标签图标 */
   renderTabIcon,
+  /** 注册标签元素 */
   registerTabEl,
 }) => {
   const { isOverTooltip: isPointerOverTabTooltip, consumeSuppressTabClick } =
@@ -190,12 +203,17 @@ const SortableTabItem: React.FC<SortableTabItemProps> = ({
     [setNodeRef, registerTabEl, tab.id],
   );
 
+  /** 渲染标签项 */
   return (
     <div
       ref={setTabNodeRef}
+      /** 标签 ID */
       data-preview-tab-id={tab.id}
+      /** 排序样式 */
       style={getHorizontalSortableStyle(transform, transition, isDragging)}
+      /** 标签项类名 */
       className={cx(styles['tab-item'], {
+        /** 是否激活 */
         [styles['tab-item-active']]: isActive,
         [styles['tab-item-pinned']]: tab.pinned,
       })}
