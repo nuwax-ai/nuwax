@@ -1317,14 +1317,23 @@ const ConversationAgent: React.FC = () => {
       <div className={cx(styles['right-panel-body'])}>
         {/* 顶部标签栏 */}
         <PreviewTabBar
+          // 标签列表
           tabs={previewTabs.tabs}
+          // 选中标签 ID
           activeTabId={previewTabs.activeTabId}
+          // 选中标签
           onTabSelect={previewTabs.selectTab}
+          // 关闭标签
           onTabClose={previewTabs.closeTab}
+          // 关闭其他标签
           onCloseOtherTabs={previewTabs.closeOtherTabs}
+          // 关闭所有标签
           onCloseAllTabs={previewTabs.closeAllTabs}
+          // 切换标签固定状态
           onTogglePinTab={previewTabs.togglePinTab}
+          // 重新排序标签
           onTabReorder={previewTabs.reorderTabs}
+          // 打开标签选择器
           onAddTab={previewTabs.openPickerTab}
         />
         {/* Tab 栏下方：预览内容 + 底部终端（终端放大时仅覆盖此区域） */}
@@ -1342,8 +1351,11 @@ const ConversationAgent: React.FC = () => {
               arrangeConfigPanel={arrangeConfigPanel}
               // 版本控制面板（Git 提交记录）
               versionPanel={arrangeVersionPanel}
+              // 订阅设置面板
               subscriptionSettingPanel={subscriptionSettingPanel}
+              // 订阅统计面板
               subscriptionStatsPanel={subscriptionStatsPanel}
+              // 选择工具
               onSelectTool={(toolId) => {
                 previewTabs.closeTab(PREVIEW_TAB_PICKER_ID);
                 previewTabs.openToolTab(toolId);
@@ -1416,20 +1428,31 @@ const ConversationAgent: React.FC = () => {
               [styles['middle-panel-hidden']]: !canShowFileView,
             })}
           >
+            {/* ConversationAgent 中间面板 */}
             <ConversationAgentMiddlePanel
+              // 文件视图数据
               fileView={fileView}
               className={cx(styles['file-tree-sidebar'], 'w-full')}
+              // 当前选中查看 diff 的文件 ID
               selectedDiffFileId={selectedDiffFileId}
+              // 已暂存的文件 ID 集合
               stagedFileIds={stagedFileIds}
+              // 选中修改文件，在右侧预览区展示 diff
               onDiffFileSelect={(fileId) => {
                 previewTabs.openFileTab(fileId, true);
               }}
+              // 打开文件
               onOpenChangeFile={handleOpenChangeFile}
+              // 放弃单个文件的更改
               onDiscardChange={handleDiscardChange}
+              // 暂存更改
               onStageChange={handleStageChange}
+              // 取消暂存
               onUnstageChange={handleUnstageChange}
               onAddToGitignore={handleAddToGitignore}
+              // 是否正在提交
               isCommitting={isGitPushing || fileView.preview.isSavingFiles}
+              // 提交修改（保存并推送）
               onCommit={async (message: string) => {
                 const isSuccess = await handleGitCommitPush(
                   message,
