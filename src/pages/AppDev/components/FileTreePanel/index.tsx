@@ -5,7 +5,6 @@ import { ImportOutlined, LeftOutlined, RightOutlined } from '@ant-design/icons';
 import { Button, Card, Tooltip } from 'antd';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import AppDevFileTree from './AppDevFileTree';
-// import DataResourceList from './DataResourceList';
 import FileContextMenu from './FileContextMenu';
 import styles from './index.less';
 import type { FileTreePanelProps } from './types';
@@ -19,24 +18,15 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
   isComparing,
   selectedFileId,
   expandedFolders,
-
-  // dataResources,
-  // dataResourcesLoading,
   onFileSelect,
   onToggleFolder,
   onDeleteFile,
   onRenameFile,
-  // onUploadToFolder, // 暂时注释掉，后续可能需要
   onUploadProject,
   onUploadSingleFile,
-  // onAddDataResource,
-  // onDeleteDataResource,
-  // selectedDataResourceIds,
-  // onDataResourceSelectionChange,
   workspace,
   fileManagement,
   isChatLoading = false,
-  // projectId,
   // 新增：文件树初始化 loading 状态
   isFileTreeInitializing = false,
 }) => {
@@ -197,64 +187,60 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
       >
         <Card className={styles.fileTreeCard} variant="borderless">
           {!isFileTreeCollapsed && (
-            <>
-              {/* 文件树容器 */}
-              <div
-                className={styles.fileTreeContainer}
-                ref={fileTreeScrollRef}
-                onScroll={saveScrollPosition}
-                // 处理空白区域右键菜单显示
-                onContextMenu={(e) => handleContextMenu(e, null)}
-              >
-                {/* 文件树结构 */}
-                {isFileTreeInitializing ? (
-                  <AppDevEmptyState
-                    type="loading"
-                    title={t('PC.Pages.AppDevFileTreePanel.loadingTitle')}
-                    description={t(
-                      'PC.Pages.AppDevFileTreePanel.loadingDescription',
-                    )}
-                  />
-                ) : files.length === 0 ? (
-                  <AppDevEmptyState
-                    type="no-file" // 使用新的无文件状态
-                    buttons={
-                      !isComparing
-                        ? [
-                            {
-                              text: t(
-                                'PC.Pages.AppDevFileTreePanel.importProject',
-                              ),
-                              icon: <ImportOutlined />,
-                              onClick: onUploadProject,
-                              disabled: isChatLoading,
-                            },
-                          ]
-                        : undefined
-                    }
-                  />
-                ) : (
-                  // 文件树组件
-                  <AppDevFileTree
-                    files={files}
-                    isComparing={isComparing}
-                    selectedFileId={selectedFileId}
-                    expandedFolders={expandedFolders}
-                    renamingNode={renamingNode}
-                    onCancelRename={cancelRename}
-                    onContextMenu={handleContextMenu}
-                    onFileSelect={onFileSelect}
-                    onToggleFolder={onToggleFolder}
-                    onRenameFile={onRenameFile}
-                    workspace={workspace}
-                    fileManagement={fileManagement}
-                    isChatLoading={isChatLoading}
-                  />
-                )}
-              </div>
-
-              {/* 数据资源管理 - 固定在底部，仅在非版本对比模式显示 */}
-            </>
+            // 文件树容器
+            <div
+              className={styles.fileTreeContainer}
+              ref={fileTreeScrollRef}
+              onScroll={saveScrollPosition}
+              // 处理空白区域右键菜单显示
+              onContextMenu={(e) => handleContextMenu(e, null)}
+            >
+              {/* 文件树结构 */}
+              {isFileTreeInitializing ? (
+                <AppDevEmptyState
+                  type="loading"
+                  title={t('PC.Pages.AppDevFileTreePanel.loadingTitle')}
+                  description={t(
+                    'PC.Pages.AppDevFileTreePanel.loadingDescription',
+                  )}
+                />
+              ) : files.length === 0 ? (
+                <AppDevEmptyState
+                  type="no-file" // 使用新的无文件状态
+                  buttons={
+                    !isComparing
+                      ? [
+                          {
+                            text: t(
+                              'PC.Pages.AppDevFileTreePanel.importProject',
+                            ),
+                            icon: <ImportOutlined />,
+                            onClick: onUploadProject,
+                            disabled: isChatLoading,
+                          },
+                        ]
+                      : undefined
+                  }
+                />
+              ) : (
+                // 文件树组件
+                <AppDevFileTree
+                  files={files}
+                  isComparing={isComparing}
+                  selectedFileId={selectedFileId}
+                  expandedFolders={expandedFolders}
+                  renamingNode={renamingNode}
+                  onCancelRename={cancelRename}
+                  onContextMenu={handleContextMenu}
+                  onFileSelect={onFileSelect}
+                  onToggleFolder={onToggleFolder}
+                  onRenameFile={onRenameFile}
+                  workspace={workspace}
+                  fileManagement={fileManagement}
+                  isChatLoading={isChatLoading}
+                />
+              )}
+            </div>
           )}
         </Card>
       </div>

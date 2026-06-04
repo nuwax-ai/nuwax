@@ -1,5 +1,4 @@
 import type { FileNode } from '@/types/interfaces/appDev';
-import type { DataResource } from '@/types/interfaces/dataResource';
 
 /**
  * FileTreePanel 组件属性接口
@@ -29,22 +28,11 @@ export interface FileTreePanelProps {
   /** 重命名文件回调 */
   onRenameFile?: (node: any, newName: string) => Promise<boolean>;
 
-  /** 上传文件到指定路径回调 */
-  onUploadToFolder?: (targetPath: string, file: File) => Promise<boolean>;
-
   /** 上传项目回调 */
   onUploadProject: () => void;
 
   /** 上传单个文件回调 */
   onUploadSingleFile: (node: FileNode | null) => void;
-
-  /** 选中的数据源列表 */
-  selectedDataResources?: DataResource[];
-
-  /** 数据源选择变化回调 */
-  onDataResourceSelectionChange?: (
-    selectedDataResources: DataResource[],
-  ) => void;
 
   /** 工作空间信息（用于版本模式判断） */
   workspace?: { activeFile: string };

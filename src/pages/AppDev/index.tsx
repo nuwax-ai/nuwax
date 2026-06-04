@@ -1190,59 +1190,6 @@ const AppDev: React.FC = () => {
   );
 
   /**
-   * 处理上传文件到指定路径
-   */
-  const handleUploadToFolder = useCallback(
-    async (targetPath: string, file: File): Promise<boolean> => {
-      if (!hasValidProjectId) {
-        message.error(ERROR_MESSAGES.NO_PROJECT_ID);
-        return false;
-      }
-
-      if (!targetPath.trim()) {
-        message.error(t('PC.Pages.AppDevIndex.targetPathRequired'));
-        return false;
-      }
-
-      try {
-        // 构建完整文件路径
-        const fileName = file.name;
-        const fullPath = targetPath.endsWith('/')
-          ? `${targetPath}${fileName}`
-          : `${targetPath}/${fileName}`;
-
-        const success = await fileManagement.uploadSingleFileToServer(
-          file,
-          fullPath,
-        );
-        if (success) {
-          message.success(
-            t('PC.Pages.AppDevIndex.fileUploadSuccess', fileName),
-          );
-          handleRestartDevServer();
-          // 刷新项目详情(刷新版本列表)
-          projectInfo.refreshProjectInfo();
-          return true;
-        } else {
-          message.error(t('PC.Pages.AppDevIndex.fileUploadFailed'));
-          return false;
-        }
-      } catch (error) {
-        message.error(
-          t(
-            'PC.Pages.AppDevIndex.fileUploadFailedWithError',
-            error instanceof Error
-              ? error.message
-              : t('PC.Pages.AppDevIndex.unknownError'),
-          ),
-        );
-        return false;
-      }
-    },
-    [hasValidProjectId, fileManagement, projectInfo, handleRestartDevServer],
-  );
-
-  /**
    * 确认删除
    */
   const handleDeleteConfirm = useCallback(async () => {
@@ -1330,7 +1277,6 @@ const AppDev: React.FC = () => {
       // ⭐ 重置自动错误处理 Model 的所有状态
       autoErrorHandlingModelInstance.resetAll();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // 空依赖数组，只在组件卸载时执行清理
 
   // 如果缺少 projectId，显示提示信息
@@ -1614,9 +1560,6 @@ const AppDev: React.FC = () => {
                       onRenameFile={
                         isFileOperating ? asyncNoopFalse : handleRenameFile
                       }
-                      onUploadToFolder={
-                        isFileOperating ? asyncNoopFalse : handleUploadToFolder
-                      }
                       onUploadProject={
                         isFileOperating
                           ? noop
@@ -1625,11 +1568,9 @@ const AppDev: React.FC = () => {
                       onUploadSingleFile={
                         isFileOperating ? asyncNoop : handleRightClickUpload
                       }
-                      selectedDataResources={selectedDataResources}
                       workspace={workspace}
                       fileManagement={fileManagement}
                       isChatLoading={chat.isChatLoading}
-                      // projectId={projectId ? Number(projectId) : undefined}
                       isFileTreeInitializing={
                         fileManagement.isFileTreeInitializing
                       }
