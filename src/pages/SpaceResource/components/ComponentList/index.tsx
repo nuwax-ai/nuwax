@@ -27,7 +27,7 @@ import { Empty, message } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
 import { history, useRequest } from 'umi';
-import ComponentItem from '../../../../SpaceLibrary/ComponentItem';
+import ComponentItem from '../../../SpaceLibrary/ComponentItem';
 import MoveToGroupModal from './components/MoveToGroupModal';
 import styles from './index.less';
 

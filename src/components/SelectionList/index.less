@@ -1,5 +1,8 @@
 @import '@/styles/token.less';
 
+@default-max-lines: 1;
+@margin-name-bottom: 2px;
+
 // 局部 Less 变量定义，以 100% 还原重构前视觉效果且严格满足不硬编码规范
 @selectionContainerBorderRadius: @borderRadiusLg;
 @selectionContainerBorderColor: #e4e6eb;
@@ -83,10 +86,6 @@
 
   &:hover {
     background-color: @selectionItemHoverBg;
-
-    .actions {
-      display: flex;
-    }
   }
 
   &.active {
@@ -96,7 +95,7 @@
 
     .info {
       .name {
-        color: @selectionNameActiveColor;
+        color: @selectionNameActiveColor !important;
         transition: color 0.2s ease;
       }
     }
@@ -143,13 +142,13 @@
       align-items: center;
       justify-content: space-between;
       width: 100%;
-      margin-bottom: 2px;
+      margin-bottom: @margin-name-bottom;
       gap: @marginXs;
 
       .name {
         font-size: @selectionNameFontSize;
         font-weight: 500;
-        color: @selectionNameColor;
+        color: @selectionNameColor !important;
         line-height: @lineHeightLg;
         transition: color 0.2s;
         flex: 1;
@@ -165,40 +164,46 @@
       }
     }
 
-    .description {
-      font-size: @selectionDescFontSize;
-      color: @selectionDescColor;
-      line-height: @lineHeight;
-      word-break: break-all;
-    }
-  }
-
-  .actions {
-    display: none;
-    align-items: center;
-    position: absolute;
-    right: @paddingSm;
-    gap: @actionsGap;
-    background-color: @colorBgContainer;
-    border-radius: @borderRadiusSm;
-    padding: @paddingXxs;
-    box-shadow: @boxShadowSecondary;
-    z-index: 2;
-
-    .action-btn {
-      color: @colorTextSecondary;
+    .desc-wrap {
       display: flex;
       align-items: center;
-      justify-content: center;
+      justify-content: space-between;
+      width: 100%;
+      gap: @marginSm;
 
-      &:hover {
-        color: @colorPrimaryHover;
-        background-color: @colorBgTextHover;
+      .description {
+        font-size: @selectionDescFontSize;
+        color: @selectionDescColor;
+        line-height: @lineHeight;
+        word-break: break-all;
+        margin-bottom: 0 !important;
+        flex: 1;
+        min-width: 0;
       }
 
-      &.ant-btn-dangerous:hover {
-        color: @colorErrorHover;
-        background-color: @colorErrorBgHover;
+      .more-action-wrap {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        flex-shrink: 0;
+        padding: 2px 4px;
+        border-radius: @borderRadiusSm;
+        transition: background-color 0.2s;
+
+        &:hover {
+          background-color: @colorFillAlter;
+
+          .more-icon {
+            color: @colorPrimaryHover;
+          }
+        }
+
+        .more-icon {
+          font-size: 16px;
+          color: @selectionDescColor;
+          transition: color 0.2s;
+        }
       }
     }
   }
