@@ -294,10 +294,7 @@ export const useAppDevSourceControl = ({
           message:
             commitMessage ||
             dict('PC.Pages.ConversationAgent.gitPush.defaultMessage'),
-          files: changeFilesList.map((file) => ({
-            path: file.fileId,
-            content: file.fileContent,
-          })),
+          files: changeFilesList.map((file) => file.fileId),
         });
 
         if (code === SUCCESS_CODE) {

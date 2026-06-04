@@ -97,7 +97,7 @@ export interface GitCommitParams extends GitTagsParams {
   message?: string;
 
   /*提交文件列表 */
-  files?: Record<string, unknown>[];
+  files?: string[];
 
   /*提交者名称 */
   authorName?: string;

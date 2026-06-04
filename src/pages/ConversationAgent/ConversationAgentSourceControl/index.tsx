@@ -59,13 +59,13 @@ const ConversationAgentSourceControl: React.FC<
   onUnstageChange,
   onAddToGitignore,
 }) => {
-  const [commitMessage, setCommitMessage] = useState('');
-  const [changesExpanded, setChangesExpanded] = useState(true);
-  const [contextMenuVisible, setContextMenuVisible] = useState(false);
-  const [contextMenuPosition, setContextMenuPosition] = useState({
-    x: 0,
-    y: 0,
-  });
+  const [commitMessage, setCommitMessage] = useState<string>('');
+  const [changesExpanded, setChangesExpanded] = useState<boolean>(true);
+  const [contextMenuVisible, setContextMenuVisible] = useState<boolean>(false);
+  const [contextMenuPosition, setContextMenuPosition] = useState<{
+    x: number;
+    y: number;
+  }>({ x: 0, y: 0 });
   const [contextMenuFileId, setContextMenuFileId] = useState<string | null>(
     null,
   );
