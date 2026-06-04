@@ -65,7 +65,7 @@
 
 `src/examples/AgentInterventionDemo/`（页面 `index.tsx`，Mock 数据 `mockData.ts`）
 
-**模块文档：**
+**模块文档（SSE 字段、MessageInfo 挂载、回执 API 以该文档为准）：**
 
 `src/components/business-component/AgentIntervention/README.md`
 
