@@ -1,15 +1,26 @@
-@import '@/styles/color';
 @import '@/styles/token';
 
-@tab-list-scrollbar-size: 6px;
+@tab-list-scrollbar-size: 8px;
+
+// 标签栏 Tooltip：置于标签之上、可选中文本，避免事件穿透触发拖拽
+:global(.preview-tab-label-tooltip) {
+  pointer-events: auto !important;
+  z-index: @zIndexPopupBase;
+
+  .ant-tooltip-inner {
+    pointer-events: auto;
+    user-select: text;
+    cursor: text;
+  }
+}
 
 .tab-bar {
   display: flex;
   align-items: center;
   height: 40px;
   min-height: 40px;
-  padding: 0 8px 0 0;
-  border-bottom: @lineWidth solid rgba(5, 5, 5, 6%);
+  padding: 0 @paddingXs 0 0;
+  border-bottom: @lineWidth solid @colorSplit;
   background: @colorBgContainer;
   flex-shrink: 0;
 }
@@ -27,8 +38,8 @@
   flex-direction: column;
   flex: 1;
   min-width: 0;
-  height: 40px;
-  padding-top: 4px;
+  height: 46px;
+  padding-top: 6px;
 
   &:hover .tab-list-gutter {
     scrollbar-color: rgba(0, 0, 0, 20%) transparent;
@@ -97,13 +108,14 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 4px;
   max-width: 160px;
   height: 28px;
-  padding: 0 8px;
+  padding: 0 @paddingXs;
   border-radius: @borderRadius;
-  cursor: pointer;
+  cursor: grab;
   flex-shrink: 0;
+  touch-action: none;
   color: @colorTextSecondary;
   transition: background-color 0.2s ease, color 0.2s ease,
     border-color 0.2s ease, box-shadow 0.2s ease;
@@ -132,22 +144,44 @@
       background: rgba(0, 0, 0, 8%);
     }
   }
+
+  &.tab-item-pinned {
+    .tab-pin-icon {
+      color: @colorPrimary;
+    }
+  }
+}
+
+/** 拖拽浮层：跟随指针，不参与 flex 布局，避免挤压/错位其他标签 */
+.tab-item-overlay {
+  cursor: grabbing;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 12%);
+  pointer-events: none;
+  max-width: 160px;
+}
+
+.tab-pin-icon {
+  flex-shrink: 0;
+  color: @colorTextTertiary;
 }
 
 .tab-icon {
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
-  font-size: 14px;
+  font-size: @fontSize;
+}
+
+.tab-label-wrap {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .tab-label {
-  flex: 1;
-  min-width: 0;
+  display: block;
+  max-width: 100%;
   font-size: @fontSizeSm;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .tab-close {
@@ -158,7 +192,7 @@
   width: 16px;
   height: 16px;
   border: none;
-  border-radius: 4px;
+  border-radius: @borderRadiusSm;
   padding: 0;
   background: transparent;
   color: @colorTextTertiary;
@@ -183,7 +217,7 @@
   justify-content: center;
   width: 28px;
   height: 28px;
-  margin-left: 4px;
+  margin-left: @paddingXxs;
   border: @lineWidth solid transparent;
   border-radius: @borderRadius;
   background: transparent;
@@ -204,7 +238,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-left: 8px;
+  margin-left: @paddingXs;
   flex-shrink: 0;
 }
 
@@ -212,7 +246,7 @@
   display: flex;
   align-items: center;
   height: 32px;
-  padding: 0 4px;
+  padding: 0 @paddingXxs;
   border: @lineWidth solid @colorBorder;
   border-radius: @borderRadius;
   background: @colorBgContainer;
@@ -225,7 +259,7 @@
   width: 32px;
   height: 28px;
   border: none;
-  border-radius: 4px;
+  border-radius: @borderRadiusSm;
   background: transparent;
   color: @colorTextSecondary;
   cursor: pointer;
@@ -238,7 +272,7 @@
 
 .action-btn {
   height: 28px;
-  padding: 0 12px;
+  padding: 0 @paddingSm;
   font-size: @fontSizeSm;
   border-radius: @borderRadius;
 }
@@ -258,39 +292,4 @@
     border-color: #333 !important;
     color: #fff !important;
   }
-}
-
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.action-buttons {
-  display: flex;
-  align-items: center;
-  height: 32px;
-  background: @WHITE;
-  border-radius: @borderRadius;
-
-  .action-button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 36px;
-    height: 32px;
-    color: @colorTextTertiary;
-
-    &:hover {
-      color: @colorText;
-      background: transparent;
-    }
-  }
-}
-
-.divider {
-  width: 1px;
-  height: 14px;
-  margin: 0 4px;
-  background: @colorBorder;
 }

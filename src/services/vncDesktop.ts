@@ -2,8 +2,10 @@ import { t } from '@/services/i18nRuntime';
 import { RequestResponse } from '@/types/interfaces/request';
 import type {
   EnsurePodResponse,
+  GitCommitLogResponse,
   GitCommitPushResponse,
   IGitCommitPushParams,
+  IGitRollbackParams,
   IGitStashParams,
   IGitStashPopParams,
   ISkillUploadFileParams,
@@ -220,6 +222,32 @@ export async function apiGitStashPop(
   data: IGitStashPopParams,
 ): Promise<RequestResponse<null>> {
   return request('/api/computer/static/git-stash-pop', {
+    method: 'POST',
+    data,
+  });
+}
+
+/**
+ * 查询 Git 提交记录列表
+ * @param cId 开发会话 ID（沙箱容器 ID）
+ */
+export async function apiGitCommitLog(
+  cId: number,
+): Promise<RequestResponse<GitCommitLogResponse>> {
+  return request('/api/computer/static/git-commit-log', {
+    method: 'GET',
+    params: { cId },
+  });
+}
+
+/**
+ * 回滚到指定 Git 提交
+ * @param data 会话 ID 与目标 commit hash
+ */
+export async function apiGitRollback(
+  data: IGitRollbackParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/computer/static/git-rollback', {
     method: 'POST',
     data,
   });

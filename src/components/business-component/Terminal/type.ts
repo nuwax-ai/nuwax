@@ -48,8 +48,45 @@ export interface TerminalAddonInstance {
 export type TerminalAddonsMap = Map<string, TerminalAddonInstance>;
 
 // ─── WebSocket 线缆协议 ──────────────────────────────────────────
-/** plain：纯文本输入 + JSON resize；ttyd：0x30 输入帧 + '1' resize */
+/** plain：纯文本输入 + JSON resize；ttyd：0x30 输入帧 + '1' resize + '2'/'3' 流控 */
 export type TerminalWireProtocol = 'plain' | 'ttyd';
+
+/**
+ * ttyd 下行背压配置（与官方 html 客户端 writeData 一致）。
+ *
+ * xterm 在大量输出时渲染变慢；通过 WebSocket 向 ttyd 发送 PAUSE/RESUME，
+ * 让服务端暂时停止 pty 写入，从而控制下行流量，避免浏览器/xterm 缓冲溢出。
+ *
+ * @see https://github.com/tsl0922/ttyd/blob/master/html/src/components/terminal/xterm/index.ts
+ */
+export interface TtydFlowControlConfig {
+  /** 是否启用自动 PAUSE/RESUME @default true */
+  enabled?: boolean;
+  /**
+   * 累计写入 xterm 的字节阈值；超过后改用 term.write(data, callback) 统计 pending
+   * @default 100000
+   */
+  limit?: number;
+  /**
+   * pending（未完成 write 回调数）超过该值时发送 PAUSE ('2')
+   * @default 10
+   */
+  highWater?: number;
+  /**
+   * 某次 write 回调执行后 pending 低于该值时发送 RESUME ('3')
+   * @default 4
+   */
+  lowWater?: number;
+}
+
+/** ttyd 流控默认值（与 ttyd 官方 FlowControl 一致） */
+export const DEFAULT_TTYD_FLOW_CONTROL: Required<
+  Pick<TtydFlowControlConfig, 'limit' | 'highWater' | 'lowWater'>
+> = {
+  limit: 100000,
+  highWater: 10,
+  lowWater: 4,
+};
 
 // ─── 重连配置 ────────────────────────────────────────────────────
 export interface ReconnectConfig {
@@ -69,6 +106,11 @@ export interface XtermTerminalProps {
   wsSubprotocols?: string | string[];
   /** 与后端约定的消息格式 @default 'plain' */
   wireProtocol?: TerminalWireProtocol;
+  /**
+   * ttyd 下行背压：通过 WebSocket 发送 PAUSE/RESUME 控制服务端 pty 输出，
+   * 避免大量输出导致 xterm 缓冲溢出（仅 wireProtocol='ttyd' 生效）
+   */
+  ttydFlowControl?: TtydFlowControlConfig;
   /** 挂载时是否自动连接（需要 wsUrl） @default false */
   autoConnect?: boolean;
   /** 重连配置 */
@@ -185,4 +227,12 @@ export interface XtermTerminalRef {
 
   /** 将当前缓冲区内容下载为 .txt 文件 */
   downloadBuffer: (filename?: string) => void;
+
+  /**
+   * 手动 PAUSE（'2'），暂停 ttyd 服务端 pty 输出。
+   * 常规场景由组件根据 pending 自动背压，仅调试或特殊需求时使用。
+   */
+  ttydPause?: () => void;
+  /** 手动 RESUME（'3'），恢复 pty 输出 */
+  ttydResume?: () => void;
 }

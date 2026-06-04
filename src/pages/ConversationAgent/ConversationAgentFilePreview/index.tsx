@@ -4,9 +4,14 @@ import classNames from 'classnames';
 import React, { useMemo } from 'react';
 import type { ConversationAgentFileViewPreview } from '../hooks/types';
 import ChangeFileGitDiffView from './ChangeFileGitDiffView';
-import type { PreviewTab, PreviewToolId } from './hooks/usePreviewTabs';
+import FilePathHeader from './FilePathHeader';
+import {
+  WORKSPACE_PREVIEW_TOOL_IDS,
+  type PreviewTab,
+  type PreviewToolId,
+} from './hooks/usePreviewTabs';
 import styles from './index.less';
-import PreviewTabBar from './PreviewTabBar';
+import TabPickerPanel from './TabPickerPanel';
 import ToolTabContent from './ToolTabContent';
 
 const cx = classNames.bind(styles);
@@ -17,48 +22,45 @@ export interface ConversationAgentFilePreviewProps {
   preview: ConversationAgentFileViewPreview;
   /** 源代码管理选中的 diff 文件（优先于普通预览） */
   diffFile?: ChangeFileInfo;
-  /** 已打开的标签页列表 */
-  tabs: PreviewTab[];
-  /** 当前激活的标签 ID */
-  activeTabId: string | null;
-  /** 当前激活的标签 */
+  /** 当前激活的标签（由外层 PreviewTabBar 控制） */
   activeTab: PreviewTab | null;
-  /** 标签选择面板是否展开 */
-  tabPickerOpen: boolean;
-  /** 切换标签 */
-  onTabSelect: (tabId: string) => void;
-  /** 关闭标签 */
-  onTabClose: (tabId: string) => void;
-  /** 标签选择面板显隐 */
-  onTabPickerOpenChange: (open: boolean) => void;
-  /** 从选择面板添加工具标签 */
-  onSelectTool: (toolId: PreviewToolId) => void;
+  /** 在「新建页签」面板中选择工具 */
+  onSelectTool?: (toolId: PreviewToolId) => void;
+  /** 「预览」页签：调试对话面板 */
+  debugPanel?: React.ReactNode;
+  /** 「编排」页签：智能体配置编辑区 */
+  arrangeConfigPanel?: React.ReactNode;
+  /** 「版本控制」页签：Git 提交记录 */
+  versionPanel?: React.ReactNode;
+  /** 「订阅设置」页签 */
+  subscriptionSettingPanel?: React.ReactNode;
+  /** 「订阅统计」页签 */
+  subscriptionStatsPanel?: React.ReactNode;
   /** 外层容器类名（来自 useConversationAgentFileView） */
   providerClassName?: string;
   className?: string;
 }
 
 /**
- * ConversationAgent 文件预览组件
- * 顶部标签栏 + 多种文件预览、代码编辑器与 diff 对比展示
+ * ConversationAgent 文件预览内容区
+ * 顶部 PreviewTabBar 由右侧面板父级统一渲染；本组件负责 diff / 编辑器 / 工具页
  */
 const ConversationAgentFilePreview: React.FC<
   ConversationAgentFilePreviewProps
 > = ({
   preview,
   diffFile,
-  tabs,
-  activeTabId,
   activeTab,
-  tabPickerOpen,
-  onTabSelect,
-  onTabClose,
-  onTabPickerOpenChange,
   onSelectTool,
+  debugPanel,
+  arrangeConfigPanel,
+  versionPanel,
+  subscriptionSettingPanel,
+  subscriptionStatsPanel,
   providerClassName,
   className,
 }) => {
-  const { renderPreviewContent, filePathHeaderProps, isFullscreen } = preview;
+  const { renderPreviewContent, isFullscreen, filePathHeaderProps } = preview;
 
   const diffFileName = useMemo(() => {
     if (!diffFile) {
@@ -75,7 +77,15 @@ const ConversationAgentFilePreview: React.FC<
     diffFile.fileId === activeTab.fileId;
 
   const showFilePreview = activeTab?.type === 'file' && !showDiff;
-  const showToolContent = activeTab?.type === 'tool' && !!activeTab.toolId;
+  const showPicker = activeTab?.type === 'picker' && !!onSelectTool;
+  const activeWorkspaceToolId =
+    activeTab?.type === 'tool' &&
+    activeTab.toolId &&
+    WORKSPACE_PREVIEW_TOOL_IDS.includes(activeTab.toolId)
+      ? activeTab.toolId
+      : null;
+  const showOtherToolContent =
+    activeTab?.type === 'tool' && !!activeTab.toolId && !activeWorkspaceToolId;
 
   return (
     <div
@@ -93,19 +103,11 @@ const ConversationAgentFilePreview: React.FC<
         className,
       )}
     >
-      <PreviewTabBar
-        tabs={tabs}
-        activeTabId={activeTabId}
-        tabPickerOpen={tabPickerOpen}
-        onTabSelect={onTabSelect}
-        onTabClose={onTabClose}
-        onTabPickerOpenChange={onTabPickerOpenChange}
-        onSelectTool={onSelectTool}
-        headerActions={filePathHeaderProps}
-      />
-
-      <div className={fileTreeCx('content-container', 'flex', 'flex-1')}>
+      <div
+        className={fileTreeCx('content-container', 'flex', 'flex-1', 'h-full')}
+      >
         <div className={cx('flex-1', 'overflow-hide', styles['preview-body'])}>
+          {/* 显示修改文件diff */}
           {showDiff && diffFile ? (
             <ChangeFileGitDiffView
               fileId={diffFile.fileId}
@@ -115,9 +117,41 @@ const ConversationAgentFilePreview: React.FC<
               className={styles['diff-view']}
             />
           ) : showFilePreview ? (
-            renderPreviewContent()
-          ) : showToolContent && activeTab.toolId ? (
+            <div className={cx(styles['file-preview-layout'])}>
+              <FilePathHeader {...filePathHeaderProps} hideClose />
+              <div className={cx(styles['file-preview-scroll'])}>
+                {renderPreviewContent()}
+              </div>
+            </div>
+          ) : activeWorkspaceToolId === 'preview' && debugPanel ? (
+            // 显示「预览」页签内容
+            <div className={cx(styles['workspace-panel'])}>{debugPanel}</div>
+          ) : activeWorkspaceToolId === 'arrange' && arrangeConfigPanel ? (
+            // 显示「编排」页签内容
+            <div className={cx(styles['workspace-panel'])}>
+              {arrangeConfigPanel}
+            </div>
+          ) : activeWorkspaceToolId === 'version-control' && versionPanel ? (
+            // 显示「版本控制」页签内容
+            <div className={cx(styles['workspace-panel'])}>{versionPanel}</div>
+          ) : activeWorkspaceToolId === 'subscription-setting' &&
+            // 显示「订阅设置」页签内容
+            subscriptionSettingPanel ? (
+            <div className={cx(styles['workspace-panel'])}>
+              {subscriptionSettingPanel}
+            </div>
+          ) : activeWorkspaceToolId === 'subscription-stats' &&
+            // 显示「订阅统计」页签内容
+            subscriptionStatsPanel ? (
+            <div className={cx(styles['workspace-panel'])}>
+              {subscriptionStatsPanel}
+            </div>
+          ) : showOtherToolContent && activeTab?.toolId ? (
+            // 工具类标签页占位内容
             <ToolTabContent toolId={activeTab.toolId} />
+          ) : showPicker ? (
+            // 显示「新建页签」面板
+            <TabPickerPanel embedded onSelectTool={onSelectTool} />
           ) : (
             <div className={cx(styles['empty-preview'])} />
           )}

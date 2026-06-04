@@ -62,11 +62,8 @@ export interface ConversationAgentFileViewProps {
   onFileRenamed?: (oldFileId: string, newFileId: string) => void;
 }
 
-/** ConversationAgent 预览头部 props（不含更多操作相关回调） */
-export type ConversationAgentFilePathHeaderProps = Omit<
-  FilePathHeaderProps,
-  'onRestartServer' | 'onRestartAgent' | 'onExportProject' | 'onImportProject'
->;
+/** ConversationAgent 预览 Tab 栏右侧文件操作区 props */
+export type ConversationAgentFilePathHeaderProps = FilePathHeaderProps;
 
 /** 文件树 UI 所需的状态与处理器 */
 export interface ConversationAgentFileViewTree {

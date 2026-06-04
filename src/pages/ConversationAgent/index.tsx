@@ -7,6 +7,8 @@ import { SUCCESS_CODE } from '@/constants/codes.constants';
 import useUnifiedTheme from '@/hooks/useUnifiedTheme';
 import AgentModelSetting from '@/pages/EditAgent/AgentModelSetting';
 import DebugDetails from '@/pages/EditAgent/DebugDetails';
+import SubscriptionSetting from '@/pages/EditAgent/SubscriptionSetting';
+import SubscriptionStats from '@/pages/EditAgent/SubscriptionStats';
 import { SystemUserTipsWordRef } from '@/pages/EditAgent/SystemTipsWord';
 import {
   apiAgentComponentModelUpdate,
@@ -66,15 +68,19 @@ import React, {
   useState,
 } from 'react';
 import { useLocation, useModel, useParams } from 'umi';
-import AgentArrangePanel from './AgentArrangePanel';
+import AgentArrangeConfigSection from './AgentArrangePanel/AgentArrangeConfigSection';
 import AgentConversationChatPanel from './AgentConversationChatPanel';
+import AgentGitVersionRecordPanel from './AgentGitVersionRecordPanel';
 import ConversationAgentBottomConsole from './ConversationAgentBottomConsole';
 import ConversationAgentFilePreview from './ConversationAgentFilePreview';
 import {
   getFileTabId,
+  PREVIEW_TAB_PICKER_ID,
   usePreviewTabs,
+  WORKSPACE_PREVIEW_TOOL_IDS,
   type PreviewToolId,
 } from './ConversationAgentFilePreview/hooks/usePreviewTabs';
+import PreviewTabBar from './ConversationAgentFilePreview/PreviewTabBar';
 import ConversationAgentMiddlePanel from './ConversationAgentMiddlePanel';
 import type { ConversationAgentFileViewProps } from './hooks/types';
 import { useConversationAgentFileView } from './hooks/useConversationAgentFileView';
@@ -141,6 +147,14 @@ const ConversationAgent: React.FC = () => {
   const [openAgentModel, setOpenAgentModel] = useState<boolean>(false);
   /** 底部开发者控制台（终端）是否显示 */
   const [showDevConsole] = useState<boolean>(true);
+  /** 切换预览标签/文件时递增，用于终端从 expanded 恢复 default */
+  const [devConsoleLayoutResetSignal, setDevConsoleLayoutResetSignal] =
+    useState<number>(0);
+  /** 递增后触发底部终端全屏展开（开发工具「终端」入口） */
+  const [devConsoleExpandSignal, setDevConsoleExpandSignal] =
+    useState<number>(0);
+  /** 从开发工具打开终端时跳过 onToolTabActivate 中的布局重置 */
+  const skipDevConsoleResetRef = useRef<boolean>(false);
   /** 是否正在 Git 提交推送 */
   const [isGitPushing, setIsGitPushing] = useState<boolean>(false);
   /** 源代码管理中选中查看 diff 的文件 ID */
@@ -152,7 +166,6 @@ const ConversationAgent: React.FC = () => {
     () => new Set(),
   );
   /** 标签选择面板是否展开 */
-  const [tabPickerOpen, setTabPickerOpen] = useState(false);
   /** 预览标签页操作 ref（供 fileViewProviderProps 回调使用） */
   const previewTabsRef = useRef<ReturnType<typeof usePreviewTabs> | null>(null);
   /** 统一主题样式（导航栏风格等） */
@@ -195,7 +208,6 @@ const ConversationAgent: React.FC = () => {
     setIsLoadingConversation,
     runQueryConversation,
     conversationInfo,
-    isFileTreeVisible,
     isFileTreePinned,
     setIsFileTreePinned,
     closePreviewView,
@@ -208,8 +220,9 @@ const ConversationAgent: React.FC = () => {
     taskAgentSelectTrigger,
     setIsLoadingOtherInterface,
   } = useModel('conversationAgent');
-  /** tenantConfigInfo model：租户配置（页面标题等） */
-  const { setTitle } = useModel('tenantConfigInfo');
+  /** tenantConfigInfo model：租户配置（页面标题、订阅开关等） */
+  const { setTitle, tenantConfigInfo } = useModel('tenantConfigInfo');
+  const showSubscriptionTabs = tenantConfigInfo?.enableSubscription !== 0;
   /** spaceAgent model：当前空间下的智能体组件列表（变量、插件、工具等） */
   const { agentComponentList } = useModel('spaceAgent');
 
@@ -236,14 +249,15 @@ const ConversationAgent: React.FC = () => {
    * http://localhost:7681/ → ws://localhost:7681/ws
    */
   const terminalWsUrl = useMemo(() => {
-    const httpBase = 'http://localhost:7681/';
+    // const httpBase = 'http://localhost:7681/';
+    const httpBase = 'ws://192.168.1.34:8088/computer/ttyd/6/1548510/ws';
     try {
       const u = new URL(httpBase);
       const wsScheme = u.protocol === 'https:' ? 'wss:' : 'ws:';
       const path = u.pathname === '/' || u.pathname === '' ? '/ws' : u.pathname;
       return `${wsScheme}//${u.host}${path}`;
     } catch {
-      return 'ws://localhost:7681/ws';
+      return httpBase || 'ws://localhost:7681/ws';
     }
   }, []);
 
@@ -586,7 +600,7 @@ const ConversationAgent: React.FC = () => {
     setAgentConfigInfo(_agentConfigInfo);
   };
 
-  // ==================== 文件操作处理函数 ====================
+  // ==================================== 文件操作处理函数 ====================================
   // 以下函数封装了文件树 CRUD 操作，统一通过 apiUpdateStaticFile 接口提交变更
 
   /**
@@ -860,10 +874,14 @@ const ConversationAgent: React.FC = () => {
     setIsFileTreePinned(false);
     setSelectedDiffFileId(null);
     previewTabsRef.current?.clearTabs();
-    setTabPickerOpen(false);
   }, [closePreviewView, setIsFileTreePinned]);
 
-  // ==================== 文件视图 & 编排面板 ====================
+  /** 切换预览标签/文件时，底部终端若处于 expanded 则恢复 default */
+  const resetDevConsoleExpandedLayout = useCallback(() => {
+    setDevConsoleLayoutResetSignal((n) => n + 1);
+  }, []);
+
+  // ==================================== 文件视图 & 编排面板 ====================================
   /**
    * 文件视图 Hook 的完整配置属性
    * 聚合文件树、文件操作回调、沙箱信息、空闲检测等配置，
@@ -906,6 +924,7 @@ const ConversationAgent: React.FC = () => {
       onFileSelectOpenPreview: (fileId?: string) => {
         setSelectedDiffFileId(null);
         if (fileId) {
+          resetDevConsoleExpandedLayout();
           previewTabsRef.current?.openFileTab(fileId, false, {
             skipActivate: true,
           });
@@ -942,6 +961,7 @@ const ConversationAgent: React.FC = () => {
     agentConfigInfo?.type,
     agentConfigInfo?.hideDesktop,
     openPreviewView,
+    resetDevConsoleExpandedLayout,
   ]);
 
   /** 初始化文件视图 Hook，获取文件树和预览的渲染组件 */
@@ -949,32 +969,77 @@ const ConversationAgent: React.FC = () => {
 
   /** 预览区标签页管理 */
   const previewTabs = usePreviewTabs({
+    // 打开文件标签
     onFileTabActivate: async (fileId, isDiff) => {
+      // 重置终端布局
+      resetDevConsoleExpandedLayout();
+      // 选中差异文件
       if (isDiff) {
         setSelectedDiffFileId(fileId);
       } else {
+        // 选中普通文件
         setSelectedDiffFileId(null);
+        // 选中文件
         if (fileView.preview.selectedFileId !== fileId) {
           await fileView.tree.handleFileSelect(fileId);
         }
       }
+      // 打开预览视图
       if (devConversationId) {
         openPreviewView(devConversationId);
       }
     },
-    onToolTabActivate: (toolId: PreviewToolId) => {
-      if (toolId === 'version-control') {
-        setTabPickerOpen(false);
+    // 打开标签选择器
+    onPickerTabActivate: async () => {
+      // 重置终端布局
+      resetDevConsoleExpandedLayout();
+      // 打开预览视图
+      if (devConversationId) {
+        await openPreviewView(devConversationId);
       }
     },
-    onAllTabsClosed: () => {
+    // 打开工具标签
+    onToolTabActivate: (toolId: PreviewToolId) => {
+      // 终端全屏展开
+      if (toolId === 'terminal') {
+        setDevConsoleExpandSignal((n) => n + 1);
+        setSelectedDiffFileId(null);
+        // 打开预览视图
+        if (devConversationId) {
+          openPreviewView(devConversationId);
+        }
+        return;
+      }
+      // 从开发工具打开终端时跳过 onToolTabActivate 中的布局重置
+      if (skipDevConsoleResetRef.current) {
+        skipDevConsoleResetRef.current = false;
+        setSelectedDiffFileId(null);
+        // 打开预览视图
+        if (devConversationId) {
+          openPreviewView(devConversationId);
+        }
+        return;
+      }
+      // 重置终端布局
+      resetDevConsoleExpandedLayout();
+      // 选中差异文件
       setSelectedDiffFileId(null);
-      closePreviewView();
-      setTabPickerOpen(false);
+      // 预览 / 编排 / 版本控制：工作区页签，收起文件预览侧栏
+      if (WORKSPACE_PREVIEW_TOOL_IDS.includes(toolId)) {
+        closePreviewView();
+        return;
+      }
+
+      // 打开预览视图
+      if (devConversationId) {
+        openPreviewView(devConversationId);
+      }
     },
   });
 
   previewTabsRef.current = previewTabs;
+
+  // ==================================== git 版本控制 ====================================
 
   /** 当前选中查看 diff 的文件数据 */
   const selectedDiffFile = useMemo(
@@ -1172,87 +1237,200 @@ const ConversationAgent: React.FC = () => {
     [devConversationId, fileTreeData, handleRefreshFileList],
   );
 
-  // ==================== 渲染函数 ====================
+  /** 通用智能体直接切换模型，无需弹窗 */
+  const handleArrangeModelChange = useCallback(
+    async (modelId: number, name: string) => {
+      const componentId = agentConfigInfo?.modelComponentConfig?.id;
+      if (!componentId) return;
+      const bindConfig = agentConfigInfo?.modelComponentConfig
+        ?.bindConfig as ComponentModelBindConfig;
+      await apiAgentComponentModelUpdate({
+        id: componentId,
+        targetId: modelId,
+        bindConfig,
+      });
+      const _agentConfigInfo = cloneDeep(agentConfigInfo) as AgentConfigInfo;
+      _agentConfigInfo.modelComponentConfig.targetId = modelId;
+      _agentConfigInfo.modelComponentConfig.name = name;
+      setAgentConfigInfo(_agentConfigInfo);
+    },
+    [agentConfigInfo, setAgentConfigInfo],
+  );
+
+  // ==================================== 渲染组件元素 ====================================
+
+  /** 「预览」页签：调试对话（原编排面板「调试」Tab） */
+  const arrangeDebugChatPanel = useMemo(
+    () => (
+      <AgentConversationChatPanel
+        agentId={agentId}
+        agentConfigInfo={agentConfigInfo}
+        hideHeader
+        className={cx(styles['arrange-debug-chat'])}
+        onAgentConfigInfo={setAgentConfigInfo}
+        onChangeSelectedComputerId={setCurrentSelectedComputerId}
+        onEditAgent={() => setOpenEditAgent(true)}
+        isFileTreeSidebarVisible={canShowFileView}
+        onToggleFileTreeSidebar={handleToggleFileTreeSidebar}
+      />
+    ),
+    [
+      agentId,
+      agentConfigInfo,
+      canShowFileView,
+      handleToggleFileTreeSidebar,
+      setAgentConfigInfo,
+      setCurrentSelectedComputerId,
+    ],
+  );
+
+  /** 「编排」页签：模型、提示词、变量与工具配置 */
+  const arrangeConfigPanel = useMemo(
+    () => (
+      <AgentArrangeConfigSection
+        agentId={agentId}
+        agentConfigInfo={agentConfigInfo}
+        originalModelConfigList={originalModelConfigList}
+        systemUserTipsWordRef={systemUserTipsWordRef}
+        promptVariables={promptVariables}
+        promptTools={promptTools}
+        onChangeAgent={handleChangeAgent}
+        onInsertSystemPrompt={handleInsertSystemPrompt}
+        onVariablesChange={handleVariablesChange}
+        onToolsChange={handleToolsChange}
+        onOpenAgentModel={() => setOpenAgentModel(true)}
+        onModelChange={handleArrangeModelChange}
+      />
+    ),
+    [
+      agentId,
+      agentConfigInfo,
+      originalModelConfigList,
+      promptVariables,
+      promptTools,
+      handleChangeAgent,
+      handleInsertSystemPrompt,
+      handleVariablesChange,
+      handleToolsChange,
+      handleArrangeModelChange,
+    ],
+  );
+
+  /** 「订阅设置」页签（租户未开启订阅时不渲染） */
+  const subscriptionSettingPanel = useMemo(
+    () =>
+      showSubscriptionTabs && agentId ? (
+        <SubscriptionSetting agentId={agentId} spaceId={spaceId} visible />
+      ) : null,
+    [showSubscriptionTabs, agentId, spaceId],
+  );
+
+  /** 「订阅统计」页签（租户未开启订阅时不渲染） */
+  const subscriptionStatsPanel = useMemo(
+    () =>
+      showSubscriptionTabs && agentId ? (
+        <SubscriptionStats agentId={agentId} visible />
+      ) : null,
+    [showSubscriptionTabs, agentId],
+  );
+
+  /** 「版本控制」页签：Git 提交记录 */
+  const arrangeVersionPanel = useMemo(
+    () => (
+      <AgentGitVersionRecordPanel
+        conversationId={devConversationId}
+        defaultAuthor={agentConfigInfo?.name}
+        onRollbackSuccess={() => {
+          if (devConversationId) {
+            handleRefreshFileList(devConversationId);
+          }
+        }}
+      />
+    ),
+    [devConversationId, agentConfigInfo?.name, handleRefreshFileList],
+  );
 
   /**
-   * 渲染编排面板（Agent 配置编辑区域）
-   * - 有 agentId 且配置已加载时：显示 AgentArrangePanel（系统提示词、变量、工具、模型等配置）
-   * - 否则：显示空状态占位符
-   *
-   * 编排面板包含：
-   * - 系统提示词编辑器（支持插入变量/工具标签）
-   * - 变量管理
-   * - 工具选择（插件/工作流/MCP/技能/子智能体）
-   * - 模型切换
-   */
-  const renderArrangePanel = () => (
-    <AgentArrangePanel
-      agentId={agentId}
-      agentConfigInfo={agentConfigInfo}
-      originalModelConfigList={originalModelConfigList}
-      systemUserTipsWordRef={systemUserTipsWordRef}
-      promptVariables={promptVariables}
-      promptTools={promptTools}
-      onChangeAgent={handleChangeAgent}
-      onInsertSystemPrompt={handleInsertSystemPrompt}
-      onVariablesChange={handleVariablesChange}
-      onToolsChange={handleToolsChange}
-      onOpenAgentModel={() => setOpenAgentModel(true)}
-      onModelChange={async (modelId, name) => {
-        // 内联模型切换：直接调用 API 更新模型组件绑定，然后同步本地状态
-        const componentId = agentConfigInfo?.modelComponentConfig?.id;
-        if (!componentId) return;
-        const bindConfig = agentConfigInfo?.modelComponentConfig
-          ?.bindConfig as ComponentModelBindConfig;
-        await apiAgentComponentModelUpdate({
-          id: componentId,
-          targetId: modelId,
-          bindConfig,
-        });
-        const _agentConfigInfo = cloneDeep(agentConfigInfo) as AgentConfigInfo;
-        _agentConfigInfo.modelComponentConfig.targetId = modelId;
-        _agentConfigInfo.modelComponentConfig.name = name;
-        setAgentConfigInfo(_agentConfigInfo);
-      }}
-    />
-  );
-  /**
    * 渲染右侧面板
-   * 布局：上方为编排面板或文件预览（互斥切换），下方为终端控制台（始终显示）
-   *
-   * 显示逻辑：
-   * - 当 isFileTreeVisible（选中文件或主动打开预览）→ 显示文件预览
-   * - 否则 → 显示编排面板
+   * 布局：顶部 PreviewTabBar（始终）+ 内容区（文件 / 工作区工具页）+ 底部终端
    */
   const renderRightPanel = () => (
     <div className={cx(styles['right-panel'])}>
       <div className={cx(styles['right-panel-body'])}>
-        {isFileTreeVisible ? (
-          <ConversationAgentFilePreview
-            preview={fileView.preview}
-            diffFile={selectedDiffFile}
-            tabs={previewTabs.tabs}
-            activeTabId={previewTabs.activeTabId}
-            activeTab={previewTabs.activeTab}
-            tabPickerOpen={tabPickerOpen}
-            onTabSelect={previewTabs.selectTab}
-            onTabClose={previewTabs.closeTab}
-            onTabPickerOpenChange={setTabPickerOpen}
-            onSelectTool={previewTabs.openToolTab}
-            providerClassName={fileView.className}
-            className={cx(styles['file-preview-panel'], 'w-full', 'h-full')}
+        {/* 顶部标签栏 */}
+        <PreviewTabBar
+          // 标签列表
+          tabs={previewTabs.tabs}
+          // 选中标签 ID
+          activeTabId={previewTabs.activeTabId}
+          // 选中标签
+          onTabSelect={previewTabs.selectTab}
+          // 关闭标签
+          onTabClose={previewTabs.closeTab}
+          // 关闭其他标签
+          onCloseOtherTabs={previewTabs.closeOtherTabs}
+          // 关闭所有标签
+          onCloseAllTabs={previewTabs.closeAllTabs}
+          // 切换标签固定状态
+          onTogglePinTab={previewTabs.togglePinTab}
+          // 重新排序标签
+          onTabReorder={previewTabs.reorderTabs}
+          // 打开标签选择器
+          onAddTab={previewTabs.openPickerTab}
+        />
+        {/* Tab 栏下方：预览内容 + 底部终端（终端放大时仅覆盖此区域） */}
+        <div className={cx(styles['right-panel-main'])}>
+          <div className={cx(styles['right-panel-content'])}>
+            <ConversationAgentFilePreview
+              // 预览文件
+              preview={fileView.preview}
+              // 差异文件
+              diffFile={selectedDiffFile}
+              // 选中标签
+              activeTab={previewTabs.activeTab}
+              // 调试对话面板
+              debugPanel={arrangeDebugChatPanel}
+              // 编排配置面板
+              arrangeConfigPanel={arrangeConfigPanel}
+              // 版本控制面板（Git 提交记录）
+              versionPanel={arrangeVersionPanel}
+              // 订阅设置面板
+              subscriptionSettingPanel={subscriptionSettingPanel}
+              // 订阅统计面板
+              subscriptionStatsPanel={subscriptionStatsPanel}
+              // 选择工具
+              onSelectTool={(toolId) => {
+                if (toolId === 'terminal') {
+                  skipDevConsoleResetRef.current = true;
+                  setDevConsoleExpandSignal((n) => n + 1);
+                  previewTabs.closeTab(PREVIEW_TAB_PICKER_ID);
+                  return;
+                }
+                previewTabs.closeTab(PREVIEW_TAB_PICKER_ID);
+                previewTabs.openToolTab(toolId);
+              }}
+              providerClassName={fileView.className}
+              className={cx(styles['file-preview-panel'], 'w-full', 'h-full')}
+            />
+          </div>
+
+          {/* 底部终端 */}
+          <ConversationAgentBottomConsole
+            // 是否显示终端
+            visible={showDevConsole}
+            // 终端 WebSocket URL
+            wsUrl={terminalWsUrl}
+            // 终端协议
+            wireProtocol="ttyd"
+            // 终端 WebSocket 子协议
+            wsSubprotocols={['tty']}
+            // 终端布局重置信号
+            layoutResetSignal={devConsoleLayoutResetSignal}
+            // 终端全屏展开信号
+            expandSignal={devConsoleExpandSignal}
           />
-        ) : (
-          // 渲染编排面板
-          renderArrangePanel()
-        )}
+        </div>
       </div>
-      <ConversationAgentBottomConsole
-        visible={showDevConsole}
-        wsUrl={terminalWsUrl}
-        wireProtocol="ttyd"
-        wsSubprotocols={['tty']}
-      />
     </div>
   );
 
@@ -1308,20 +1486,32 @@ const ConversationAgent: React.FC = () => {
               [styles['middle-panel-hidden']]: !canShowFileView,
             })}
           >
+            {/* ConversationAgent 中间面板 */}
             <ConversationAgentMiddlePanel
+              // 文件视图数据
               fileView={fileView}
               className={cx(styles['file-tree-sidebar'], 'w-full')}
+              // 当前选中查看 diff 的文件 ID
               selectedDiffFileId={selectedDiffFileId}
+              // 已暂存的文件 ID 集合
               stagedFileIds={stagedFileIds}
+              // 选中修改文件，在右侧预览区展示 diff
               onDiffFileSelect={(fileId) => {
                 previewTabs.openFileTab(fileId, true);
               }}
+              // 打开文件
               onOpenChangeFile={handleOpenChangeFile}
+              // 放弃单个文件的更改
               onDiscardChange={handleDiscardChange}
+              // 暂存更改
               onStageChange={handleStageChange}
+              // 取消暂存
               onUnstageChange={handleUnstageChange}
+              // 添加到 gitignore
               onAddToGitignore={handleAddToGitignore}
+              // 是否正在提交
               isCommitting={isGitPushing || fileView.preview.isSavingFiles}
+              // 提交修改（保存并推送）
               onCommit={async (message: string) => {
                 const isSuccess = await handleGitCommitPush(
                   message,

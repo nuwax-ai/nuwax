@@ -28,7 +28,7 @@ export type { TerminalAppearanceMode } from './terminalTheme';
 const cx = classNames.bind(styles);
 
 /** 底部控制台布局模式 */
-type ConsoleLayoutMode = 'default' | 'expanded' | 'collapsed';
+export type ConsoleLayoutMode = 'default' | 'expanded' | 'collapsed';
 
 interface ConversationAgentBottomConsoleProps {
   /** 是否显示控制台 */
@@ -54,6 +54,14 @@ interface ConversationAgentBottomConsoleProps {
   onTerminalAppearanceChange?: (mode: TerminalAppearanceMode) => void;
   /** 是否显示深浅色切换按钮 @default true */
   showTerminalAppearanceToggle?: boolean;
+  /**
+   * 父组件在切换预览标签/文件时递增，用于将 expanded 恢复为 default
+   */
+  layoutResetSignal?: number;
+  /**
+   * 父组件递增后，将布局设为 expanded（如从开发工具入口打开终端）
+   */
+  expandSignal?: number;
 }
 
 /**
@@ -76,6 +84,8 @@ const ConversationAgentBottomConsole: React.FC<
   defaultTerminalAppearance = DEFAULT_TERMINAL_APPEARANCE,
   onTerminalAppearanceChange,
   showTerminalAppearanceToggle = true,
+  layoutResetSignal,
+  expandSignal,
 }) => {
   const [activeTab, setActiveTab] = useState<'terminal' | 'logs'>('terminal');
   const [layoutMode, setLayoutMode] = useState<ConsoleLayoutMode>('default');
@@ -114,7 +124,24 @@ const ConversationAgentBottomConsole: React.FC<
     return () => window.clearTimeout(timer);
   }, [activeTab, layoutMode, wsUrl, terminalAppearance]);
 
-  /** 放大：占满父级右侧面板高度；再次点击恢复默认高度 */
+  /** 切换预览标签/文件时，若处于放大态则恢复默认高度 */
+  useEffect(() => {
+    if (!layoutResetSignal) {
+      return;
+    }
+    setLayoutMode((prev) => (prev === 'expanded' ? 'default' : prev));
+  }, [layoutResetSignal]);
+
+  /** 外部触发全屏展开终端（开发工具「终端」入口） */
+  useEffect(() => {
+    if (!expandSignal) {
+      return;
+    }
+    setActiveTab('terminal');
+    setLayoutMode('expanded');
+  }, [expandSignal]);
+
+  /** 放大：占满 Tab 栏下方主区域；再次点击恢复默认高度 */
   const handleToggleExpand = () => {
     setLayoutMode((prev) => (prev === 'expanded' ? 'default' : 'expanded'));
   };

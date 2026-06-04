@@ -1,19 +1,10 @@
 import ButtonToggle from '@/components/ButtonToggle';
-import CreateKnowledge from '@/components/CreateKnowledge';
 import CreatedItem from '@/components/CreatedItem';
-import CustomPopover from '@/components/CustomPopover';
 import UploadImportConfig from '@/components/UploadImportConfig';
 import Loading from '@/components/custom/Loading';
-import SelectList from '@/components/custom/SelectList';
-import {
-  CREATE_LIST,
-  FILTER_STATUS,
-  KNOWLEDGE_STORAGE_RESOURCE,
-  KNOWLEDGE_STORAGE_TYPE,
-} from '@/constants/space.constants';
+import { CREATE_LIST, FILTER_STATUS } from '@/constants/space.constants';
 import { apiTableAdd, apiTableDelete } from '@/services/dataTable';
 import { dict } from '@/services/i18nRuntime';
-import { apiKnowledgeConfigDelete } from '@/services/knowledge';
 import { apiComponentList, apiCopyTable } from '@/services/library';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { PublishStatusEnum } from '@/types/enums/common';
@@ -35,16 +26,13 @@ import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
 import { history, useModel, useParams, useRequest, useSearchParams } from 'umi';
 import ComponentItem from '../../SpaceLibrary/ComponentItem';
-import styles from './index.less';
+import styles from '../styles/resource-list.less';
 
 const cx = classNames.bind(styles);
 
-const ALLOWED_TYPES = new Set([
-  ComponentTypeEnum.Knowledge,
-  ComponentTypeEnum.Table,
-]);
+const ALLOWED_TYPES = new Set([ComponentTypeEnum.Table]);
 
-const SpaceKnowledgeStorage: React.FC = () => {
+const SpaceStorage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const params = useParams();
   const spaceId = Number(params.spaceId);
@@ -52,14 +40,9 @@ const SpaceKnowledgeStorage: React.FC = () => {
 
   const [componentList, setComponentList] = useState<ComponentInfo[]>([]);
   const componentAllRef = useRef<ComponentInfo[]>([]);
-  const [openKnowledge, setOpenKnowledge] = useState(false);
   const [openDatabase, setOpenDatabase] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const [type, setType] = useState<ComponentTypeEnum>(
-    (searchParams.get('type') as ComponentTypeEnum) ||
-      ComponentTypeEnum.All_Type,
-  );
   const [status, setStatus] = useState<FilterStatusEnum>(
     Number(searchParams.get('status')) || FilterStatusEnum.All,
   );
@@ -76,7 +59,6 @@ const SpaceKnowledgeStorage: React.FC = () => {
   };
 
   const handleFilterList = (
-    filterType: ComponentTypeEnum,
     filterStatus: FilterStatusEnum,
     filterCreate: CreateListEnum,
     filterKeyword: string,
@@ -85,9 +67,6 @@ const SpaceKnowledgeStorage: React.FC = () => {
     let _list = list.filter((item) =>
       ALLOWED_TYPES.has(item.type as ComponentTypeEnum),
     );
-    if (filterType !== ComponentTypeEnum.All_Type) {
-      _list = _list.filter((item) => item.type === filterType);
-    }
     if (filterStatus === FilterStatusEnum.Published) {
       _list = _list.filter(
         (item) => item.publishStatus === PublishStatusEnum.Published,
@@ -103,17 +82,13 @@ const SpaceKnowledgeStorage: React.FC = () => {
   };
 
   useEffect(() => {
-    const t =
-      (searchParams.get('type') as ComponentTypeEnum) ||
-      ComponentTypeEnum.All_Type;
     const s = Number(searchParams.get('status')) || FilterStatusEnum.All;
     const c = Number(searchParams.get('create')) || CreateListEnum.All_Person;
     const k = searchParams.get('keyword') || '';
-    setType(t);
     setStatus(s);
     setCreate(c);
     setKeyword(k);
-    handleFilterList(t, s, c, k);
+    handleFilterList(s, c, k);
   }, [searchParams]);
 
   const { run: runComponent } = useRequest(apiComponentList, {
@@ -121,7 +96,7 @@ const SpaceKnowledgeStorage: React.FC = () => {
     debounceInterval: 300,
     onSuccess: (result: ComponentInfo[]) => {
       componentAllRef.current = result;
-      handleFilterList(type, status, create, keyword, result);
+      handleFilterList(status, create, keyword, result);
       setLoading(false);
     },
     onError: () => setLoading(false),
@@ -148,16 +123,6 @@ const SpaceKnowledgeStorage: React.FC = () => {
     );
   };
 
-  const { run: runKnowledgeDel } = useRequest(apiKnowledgeConfigDelete, {
-    manual: true,
-    onSuccess: (_: null, p: number[]) => {
-      message.success(
-        dict('PC.Pages.SpaceLibrary.Index.knowledgeDeleteSuccess'),
-      );
-      handleDel(p[0]);
-    },
-  });
-
   const { run: runTableDel } = useRequest(apiTableDelete, {
     manual: true,
     onSuccess: (_: null, p: number[]) => {
@@ -176,9 +141,7 @@ const SpaceKnowledgeStorage: React.FC = () => {
 
   const handleClickComponent = (item: ComponentInfo) => {
     const { type, id, spaceId } = item;
-    if (type === ComponentTypeEnum.Knowledge) {
-      jumpTo(`/space/${spaceId}/knowledge/${id}`);
-    } else if (type === ComponentTypeEnum.Table) {
+    if (type === ComponentTypeEnum.Table) {
       jumpTo(`/space/${spaceId}/table/${id}`);
     }
   };
@@ -194,8 +157,7 @@ const SpaceKnowledgeStorage: React.FC = () => {
         dict('PC.Pages.SpaceLibrary.Index.confirmDeleteComponent'),
         name,
         () => {
-          if (type === ComponentTypeEnum.Knowledge) runKnowledgeDel(id);
-          else if (type === ComponentTypeEnum.Table) runTableDel(id);
+          if (type === ComponentTypeEnum.Table) runTableDel(id);
           new Promise((resolve) => {
             setTimeout(resolve, 1000);
           });
@@ -222,11 +184,6 @@ const SpaceKnowledgeStorage: React.FC = () => {
     }
   };
 
-  const handleClickPopoverItem = (item: CustomPopoverItem) => {
-    if (item.value === ComponentTypeEnum.Knowledge) setOpenKnowledge(true);
-    else if (item.value === ComponentTypeEnum.Table) setOpenDatabase(true);
-  };
-
   const handleConfirmCreateTable = async (value: AnyObject) => {
     const { name: tableName, description: tableDescription, icon } = value;
     const { data } = await apiTableAdd({
@@ -243,25 +200,15 @@ const SpaceKnowledgeStorage: React.FC = () => {
       <div className={cx(styles['header-area'])}>
         <div className={cx(styles['header-left'])}>
           <h3 className={cx(styles.title)}>
-            {dict('PC.Pages.SpaceKnowledgeStorage.pageTitle')}
+            {dict('PC.Common.Global.dataTable')}
           </h3>
-          <SelectList
-            value={type}
-            options={KNOWLEDGE_STORAGE_TYPE}
-            onChange={(v) => {
-              const _v = v as ComponentTypeEnum;
-              setType(_v);
-              handleFilterList(_v, status, create, keyword);
-              handleChange('type', _v);
-            }}
-          />
           <ButtonToggle
             options={CREATE_LIST}
             value={create}
             onChange={(v) => {
               const _v = v as CreateListEnum;
               setCreate(_v);
-              handleFilterList(type, status, _v, keyword);
+              handleFilterList(status, _v, keyword);
               handleChange('create', _v.toString());
             }}
           />
@@ -271,7 +218,7 @@ const SpaceKnowledgeStorage: React.FC = () => {
             onChange={(v) => {
               const _v = v as FilterStatusEnum;
               setStatus(_v);
-              handleFilterList(type, _v, create, keyword);
+              handleFilterList(_v, create, keyword);
               handleChange('status', _v.toString());
             }}
           />
@@ -284,14 +231,14 @@ const SpaceKnowledgeStorage: React.FC = () => {
             onChange={(e) => {
               const k = e.target.value;
               setKeyword(k);
-              handleFilterList(type, status, create, k);
+              handleFilterList(status, create, k);
               handleChange('keyword', k);
             }}
             prefix={<SearchOutlined />}
             allowClear
             onClear={() => {
               setKeyword('');
-              handleFilterList(type, status, create, '');
+              handleFilterList(status, create, '');
             }}
             style={{ width: 214 }}
           />
@@ -299,14 +246,13 @@ const SpaceKnowledgeStorage: React.FC = () => {
             spaceId={spaceId}
             onUploadSuccess={() => runComponent(spaceId)}
           />
-          <CustomPopover
-            list={KNOWLEDGE_STORAGE_RESOURCE}
-            onClick={handleClickPopoverItem}
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => setOpenDatabase(true)}
           >
-            <Button type="primary" icon={<PlusOutlined />}>
-              {dict('PC.Pages.SpaceLibrary.Index.addComponent')}
-            </Button>
-          </CustomPopover>
+            {dict('PC.Pages.AgentArrangeConfig.addTable')}
+          </Button>
         </div>
       </div>
 
@@ -335,11 +281,6 @@ const SpaceKnowledgeStorage: React.FC = () => {
         </div>
       )}
 
-      <CreateKnowledge
-        spaceId={spaceId}
-        open={openKnowledge}
-        onCancel={() => setOpenKnowledge(false)}
-      />
       <CreatedItem
         spaceId={spaceId}
         open={openDatabase}
@@ -351,4 +292,4 @@ const SpaceKnowledgeStorage: React.FC = () => {
   );
 };
 
-export default SpaceKnowledgeStorage;
+export default SpaceStorage;

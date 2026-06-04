@@ -1,22 +1,13 @@
 import ButtonToggle from '@/components/ButtonToggle';
-import CustomPopover from '@/components/CustomPopover';
-import UploadImportConfig from '@/components/UploadImportConfig';
-import SelectList from '@/components/custom/SelectList';
-import {
-  CREATE_LIST,
-  FILTER_STATUS,
-  PLUGIN_WORKFLOW_RESOURCE,
-  PLUGIN_WORKFLOW_TYPE,
-} from '@/constants/space.constants';
+import { CREATE_LIST, FILTER_STATUS } from '@/constants/space.constants';
 import { dict } from '@/services/i18nRuntime';
 import {
   ComponentTypeEnum,
   CreateListEnum,
   FilterStatusEnum,
 } from '@/types/enums/space';
-import type { CustomPopoverItem } from '@/types/interfaces/common';
-import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
-import { Button, Input } from 'antd';
+import { SearchOutlined } from '@ant-design/icons';
+import { Input } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useLocation, useSearchParams } from 'umi';
@@ -33,26 +24,14 @@ interface HeaderAreaProps {
     create: CreateListEnum,
     keyword: string,
   ) => void;
-  onUploadSuccess: () => void;
-  onOpenWorkflow: () => void;
-  onOpenPlugin: () => void;
+  onUploadSuccess?: () => void;
 }
 
-const HeaderArea: React.FC<HeaderAreaProps> = ({
-  spaceId,
-  selectedGroupType,
-  onFilterChange,
-  onUploadSuccess,
-  onOpenWorkflow,
-  onOpenPlugin,
-}) => {
+const HeaderArea: React.FC<HeaderAreaProps> = ({ onFilterChange }) => {
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const [type, setType] = useState<ComponentTypeEnum>(
-    (searchParams.get('type') as ComponentTypeEnum) ||
-      ComponentTypeEnum.All_Type,
-  );
+  const [type, setType] = useState<ComponentTypeEnum>(ComponentTypeEnum.Plugin);
   const [status, setStatus] = useState<FilterStatusEnum>(
     Number(searchParams.get('status')) || FilterStatusEnum.All,
   );
@@ -78,9 +57,7 @@ const HeaderArea: React.FC<HeaderAreaProps> = ({
   }, [location.state]);
 
   useEffect(() => {
-    const t =
-      (searchParams.get('type') as ComponentTypeEnum) ||
-      ComponentTypeEnum.All_Type;
+    const t = ComponentTypeEnum.Plugin;
     const s = Number(searchParams.get('status')) || FilterStatusEnum.All;
     const c = Number(searchParams.get('create')) || CreateListEnum.All_Person;
     const k = searchParams.get('keyword') || '';
@@ -91,49 +68,9 @@ const HeaderArea: React.FC<HeaderAreaProps> = ({
     onFilterChange(t, s, c, k);
   }, [searchParams]);
 
-  const handleClickPopoverItem = (item: CustomPopoverItem) => {
-    if (item.value === ComponentTypeEnum.Workflow) onOpenWorkflow();
-    else if (item.value === ComponentTypeEnum.Plugin) onOpenPlugin();
-  };
-
-  const popoverList = React.useMemo(() => {
-    return PLUGIN_WORKFLOW_RESOURCE.map((item) => {
-      let disabled = false;
-      if (
-        selectedGroupType === ComponentTypeEnum.Workflow &&
-        item.value === ComponentTypeEnum.Plugin
-      ) {
-        disabled = true;
-      }
-      if (
-        selectedGroupType === ComponentTypeEnum.Plugin &&
-        item.value === ComponentTypeEnum.Workflow
-      ) {
-        disabled = true;
-      }
-      return {
-        ...item,
-        disabled,
-      };
-    });
-  }, [selectedGroupType]);
-
   return (
     <div className={cx(styles['header-area'])}>
       <div className={cx(styles['header-left'])}>
-        <h3 className={cx(styles.title)}>
-          {dict('PC.Pages.SpacePluginWorkflow.pageTitle')}
-        </h3>
-        <SelectList
-          value={type}
-          options={PLUGIN_WORKFLOW_TYPE}
-          onChange={(v) => {
-            const _v = v as ComponentTypeEnum;
-            setType(_v);
-            onFilterChange(_v, status, create, keyword);
-            handleChange('type', _v);
-          }}
-        />
         <ButtonToggle
           options={CREATE_LIST}
           value={create}
@@ -175,15 +112,6 @@ const HeaderArea: React.FC<HeaderAreaProps> = ({
           }}
           style={{ width: 214 }}
         />
-        <UploadImportConfig
-          spaceId={spaceId}
-          onUploadSuccess={onUploadSuccess}
-        />
-        <CustomPopover list={popoverList} onClick={handleClickPopoverItem}>
-          <Button type="primary" icon={<PlusOutlined />}>
-            {dict('PC.Pages.SpaceLibrary.Index.addComponent')}
-          </Button>
-        </CustomPopover>
       </div>
     </div>
   );

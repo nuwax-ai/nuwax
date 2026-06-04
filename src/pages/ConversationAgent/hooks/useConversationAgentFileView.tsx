@@ -20,6 +20,7 @@ import {
   processImageContent,
   transformFlatListToTree,
 } from '@/utils/appDevUtils';
+import { isMarkdownFile } from '@/utils/common';
 import {
   downloadFileByUrl,
   updateFileProxyUrl,
@@ -84,11 +85,12 @@ export function useConversationAgentFileView(
     onFileSelectOpenPreview,
     /** 文件重命名成功后回调 */
     onFileRenamed,
+    agentSandboxId,
   } = props;
   const headerClassName = undefined;
   const isImportProjectTrigger = undefined;
-  /** ConversationAgent 拆分组件不展示 FilePathHeader 更多操作菜单 */
-  const showMoreActions = false;
+  const showMoreActions = true;
+  const isCloudComputer = agentSandboxId === '-1';
   const isFullscreenPreview = false;
   const onFullscreenPreview = undefined as
     | ((isFullscreen: boolean) => void)
@@ -176,6 +178,14 @@ export function useConversationAgentFileView(
   const [fileRefreshTimestamp, setFileRefreshTimestamp] = useState<number>(
     Date.now(),
   );
+  /** html / md：预览或代码视图 */
+  const [viewFileType, setViewFileType] = useState<'preview' | 'code'>(
+    'preview',
+  );
+
+  useEffect(() => {
+    setViewFileType('preview');
+  }, [selectedFileId]);
 
   useEffect(() => {
     // 如果通过父组件全屏预览模式打开，则设置全屏状态
@@ -1151,6 +1161,63 @@ export function useConversationAgentFileView(
     }
   };
 
+  /** 切换为代码视图时重新拉取文件内容（与 FileTreeView 一致） */
+  const handleRefreshFileContent = useCallback(async () => {
+    const fileProxyUrl = selectedFileNode?.fileProxyUrl || '';
+    if (!fileProxyUrl || !selectedFileId) {
+      return;
+    }
+
+    const fileName = selectedFileNode?.name || '';
+    const previewable = isPreviewableFile(fileName, true);
+    const isNeedRefreshFileContent =
+      !previewable ||
+      selectedFileNode?.isLink ||
+      isOfficeDocument ||
+      isVideo ||
+      isAudio ||
+      isImage;
+
+    if (isNeedRefreshFileContent) {
+      return;
+    }
+
+    try {
+      const newFileContent = await fetchFileContentUpdateFiles(
+        fileProxyUrl,
+        selectedFileId,
+      );
+      setSelectedFileNode((prevNode) =>
+        prevNode
+          ? {
+              ...prevNode,
+              content: newFileContent || '',
+            }
+          : prevNode,
+      );
+    } catch (error) {
+      console.error('Failed to refresh file content:', error);
+    }
+  }, [
+    selectedFileNode,
+    selectedFileId,
+    isOfficeDocument,
+    isVideo,
+    isAudio,
+    isImage,
+    fetchFileContentUpdateFiles,
+  ]);
+
+  const handleViewFileTypeChange = useCallback(
+    async (type: 'preview' | 'code') => {
+      setViewFileType(type);
+      if (type === 'code' && selectedFileNode) {
+        await handleRefreshFileContent();
+      }
+    },
+    [selectedFileNode, handleRefreshFileContent],
+  );
+
   // 处理导出 PDF 操作
   const handleExportPdf = async (node: FileNode) => {
     setIsExportingPdf(true);
@@ -1320,8 +1387,30 @@ export function useConversationAgentFileView(
       );
     }
 
-    // 其余文件类型（含 html、md、json、代码文件等）统一使用 CodeViewer 展示并支持编辑
     const fileName = selectedFileId?.split('/')?.pop() || '';
+    const fileNameLower = fileName?.toLowerCase() || '';
+    const isHtmlInCondition = /\.html?($|\?)/i.test(fileNameLower);
+
+    if (
+      (isHtmlInCondition || isMarkdownFile(fileNameLower)) &&
+      viewFileType === 'preview' &&
+      (fileProxyUrl || selectedFileNode?.content)
+    ) {
+      const fileTypeForPreview = isHtmlInCondition ? 'html' : 'markdown';
+      const { key: filePreviewKey, url: filePreviewUrl } =
+        buildFilePreviewProps(fileTypeForPreview, fileProxyUrl, selectedFileId);
+
+      return (
+        <FilePreview
+          key={filePreviewKey}
+          src={filePreviewUrl}
+          content={selectedFileNode?.content}
+          fileType={fileTypeForPreview}
+          staticFileBasePath={staticFileBasePath}
+        />
+      );
+    }
+
     const fileContent = String(selectedFileNode?.content ?? '');
 
     return (
@@ -1362,6 +1451,10 @@ export function useConversationAgentFileView(
       isFileTreeVisible,
       isFileTreePinned,
       onFileTreeToggle: handleFileTreeToggle,
+      isCloudComputer,
+      viewMode: 'preview' as const,
+      viewFileType,
+      onViewFileTypeChange: handleViewFileTypeChange,
     }),
     [
       targetId,
@@ -1384,6 +1477,9 @@ export function useConversationAgentFileView(
       isFileTreeVisible,
       isFileTreePinned,
       handleFileTreeToggle,
+      isCloudComputer,
+      viewFileType,
+      handleViewFileTypeChange,
     ],
   );
 
@@ -1406,6 +1502,8 @@ export function useConversationAgentFileView(
       isDynamicTheme,
       onFullscreenPreview,
       handleContentChange,
+      viewFileType,
+      staticFileBasePath,
     ],
   );
 

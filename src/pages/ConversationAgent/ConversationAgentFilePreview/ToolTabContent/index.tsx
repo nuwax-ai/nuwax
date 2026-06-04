@@ -9,14 +9,14 @@ const cx = classNames.bind(styles);
 
 const TOOL_DESC_MAP: Record<PreviewToolId, string> = {
   preview: 'PC.Pages.ConversationAgentTabPicker.previewDesc',
+  arrange: 'PC.Pages.ConversationAgentTabPicker.arrangeDesc',
   editor: 'PC.Pages.ConversationAgentTabPicker.editorDesc',
   terminal: 'PC.Pages.ConversationAgentTabPicker.terminalDesc',
   'version-control': 'PC.Pages.ConversationAgentTabPicker.versionControlDesc',
-  'integration-mgmt': 'PC.Pages.ConversationAgentTabPicker.integrationMgmtDesc',
-  'env-vars': 'PC.Pages.ConversationAgentTabPicker.envVarsDesc',
-  database: 'PC.Pages.ConversationAgentTabPicker.databaseDesc',
-  auth: 'PC.Pages.ConversationAgentTabPicker.authDesc',
-  'object-storage': 'PC.Pages.ConversationAgentTabPicker.objectStorageDesc',
+  'subscription-setting':
+    'PC.Pages.ConversationAgentTabPicker.subscriptionSettingDesc',
+  'subscription-stats':
+    'PC.Pages.ConversationAgentTabPicker.subscriptionStatsDesc',
 };
 
 export interface ToolTabContentProps {

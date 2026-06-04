@@ -155,3 +155,40 @@ export interface IGitStashPopParams {
   /** 取消暂存的文件路径列表（可选） */
   files?: string[];
 }
+
+/** Git 提交记录标签 */
+export type GitCommitRecordTag = 'latest' | 'stable';
+
+/** 单条 Git 提交记录 */
+export interface GitCommitRecordItem {
+  /** 完整 commit hash */
+  commitHash: string;
+  /** 短 hash（可选，前端亦可截取前 7 位） */
+  shortHash?: string;
+  /** 提交说明 */
+  message: string;
+  /** 提交者 */
+  author?: string;
+  /** 提交时间（ISO 字符串） */
+  committedAt: string;
+  /** 展示标签：最新 / 稳定版 */
+  tag?: GitCommitRecordTag;
+}
+
+/** Git 提交记录列表响应 */
+export interface GitCommitLogResponse {
+  /** 当前分支名 */
+  branch: string;
+  /** 提交列表（按时间倒序） */
+  commits: GitCommitRecordItem[];
+  /** 提交总数（可选，默认取 commits.length） */
+  total?: number;
+}
+
+/** Git 回滚到指定提交参数 */
+export interface IGitRollbackParams {
+  /** 会话 ID */
+  cId: number;
+  /** 目标 commit hash */
+  commitHash: string;
+}
