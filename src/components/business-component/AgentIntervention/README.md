@@ -150,7 +150,7 @@ interface MessageInfo {
 | 字段 | 约束 |
 | --- | --- |
 | `schemaVersion` | `nuwaclaw.mcp_ask.v1` 或别名 `nuwax.mcp_ask.v1` |
-| `toolName` | `nuwax_ask_question` \| `nuwax_ask_user` \| `nuwaclaw_ask_user`（缺省按 `nuwax_ask_question`） |
+| `toolName` | `nuwax_ask_question`（缺省同值；其它工具名拒绝） |
 | `requestId` | 去重键；**同时作为** `McpAskRespondPayload.interventionId` |
 | `revision` | 数字 |
 | `sessionId` | 字符串 |

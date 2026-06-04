@@ -96,7 +96,7 @@ describe('applyMcpAskToolCallSseEvent', () => {
             rawInput: {
               ...baseAskInput,
               requestId: 'ask-4',
-              toolName: 'nuwaclaw_ask_user',
+              toolName: 'nuwax_ask_question',
             },
           },
         },
@@ -116,7 +116,7 @@ describe('applyMcpAskToolCallSseEvent', () => {
           input: {
             ...baseAskInput,
             requestId: 'ask-5',
-            toolName: 'nuwaclaw_ask_user',
+            toolName: 'nuwax_ask_question',
           },
           toolCallId: 'tool-call-5',
           responseStatus: 'pending',
@@ -136,7 +136,7 @@ describe('applyMcpAskToolCallSseEvent', () => {
             rawInput: {
               ...baseAskInput,
               requestId: 'ask-5',
-              toolName: 'nuwaclaw_ask_user',
+              toolName: 'nuwax_ask_question',
             },
           },
         },
@@ -160,7 +160,7 @@ describe('applyMcpAskToolCallSseEvent', () => {
             rawInput: {
               ...baseAskInput,
               requestId: 'ask-6',
-              toolName: 'nuwaclaw_ask_user',
+              toolName: 'nuwax_ask_question',
             },
           },
         },

@@ -297,7 +297,7 @@ export interface MessageInfo extends ChatMessageDto {
   processingList?: ProcessingInfo[];
   /** ACP permission approval 交互 */
   acpPermissionInteractions?: AcpPermissionInteraction[];
-  /** MCP ask/question 交互（nuwax_ask_question / legacy ask_user） */
+  /** MCP ask/question 交互（toolName: nuwax_ask_question） */
   mcpAskInteractions?: McpAskInteraction[];
 }
 
