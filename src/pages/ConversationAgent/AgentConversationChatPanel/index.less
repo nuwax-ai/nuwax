@@ -1,15 +1,12 @@
 @import '@/styles/token';
 
-@chat-panel-content-max-width: 800px;
-@chat-panel-content-padding-bottom: 30px;
-@chat-opening-msg-line-height: 26px;
-@chat-status-bar-slide-offset: 10px;
+@zero-value: 0;
 
 .container {
   display: flex;
   flex-direction: column;
   height: 100%;
-  min-width: 0;
+  min-width: @zero-value;
 
   .loading {
     color: @colorPrimary;
@@ -17,54 +14,6 @@
 
   .main-content {
     padding: @paddingMd;
-    min-height: 0;
-
-    .opening-chat-msg {
-      line-height: @chat-opening-msg-line-height;
-      font-size: @fontSize;
-      text-align: center;
-    }
-
-    .chat-wrapper {
-      margin: 0 auto;
-      width: 100%;
-      max-width: @chat-panel-content-max-width;
-      padding-bottom: @chat-panel-content-padding-bottom;
-
-      .load-more-container {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        padding: @padding 0;
-        margin-bottom: @paddingSm;
-        color: @colorTextTertiary;
-      }
-
-      .task-executing-container {
-        height: @controlHeight;
-        color: @colorTextSecondary;
-        font-size: @fontSizeSm;
-        gap: @paddingSm;
-      }
-    }
-
-    .conversation-status-bar {
-      max-width: @chat-panel-content-max-width;
-      width: 100%;
-      margin: 0 auto !important;
-      animation: slide-in-up 0.3s ease-out;
-    }
-  }
-}
-
-@keyframes slide-in-up {
-  from {
-    opacity: 0;
-    transform: translateY(@chat-status-bar-slide-offset);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
+    min-height: @zero-value;
   }
 }

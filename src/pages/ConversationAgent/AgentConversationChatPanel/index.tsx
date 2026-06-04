@@ -1,15 +1,8 @@
-import AgentChatEmpty from '@/components/AgentChatEmpty';
-import ChatInputHome from '@/components/ChatInputHome';
-import ChatView from '@/components/ChatView';
-import RecommendList from '@/components/RecommendList';
-import { MESSAGE_PAGE_SIZE } from '@/constants/common.constants';
+import { UnifiedChatSession } from '@/components/business-component';
 import { EVENT_TYPE } from '@/constants/event.constants';
 import useConversation from '@/hooks/useConversation';
-import { useConversationScrollDetection } from '@/hooks/useConversationScrollDetection';
-import { useIntersectionObserver } from '@/hooks/useIntersectionObserver';
 import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
-import ConversationStatus from '@/pages/Chat/components/ConversationStatus';
 import { dict } from '@/services/i18nRuntime';
 import { ExpandPageAreaEnum, TaskStatus } from '@/types/enums/agent';
 import { AgentTypeEnum, EditAgentShowType } from '@/types/enums/space';
@@ -21,7 +14,7 @@ import {
   SendMessageParams,
 } from '@/types/interfaces/conversationInfo';
 import eventBus from '@/utils/eventBus';
-import { LoadingOutlined } from '@ant-design/icons';
+
 import { message } from 'antd';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
@@ -126,8 +119,6 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
   const [selectedComputerId, setSelectedComputerId] = useState<string>('');
   /** 用户是否已发送过消息（用于控制沙箱选择器的固定状态，防止发送后切换） */
   const [hasUserSentMessage, setHasUserSentMessage] = useState<boolean>(false);
-  /** 鼠标是否悬停在聊天区域（控制滚动到底部按钮的显隐） */
-  const [isHoveringChat, setIsHoveringChat] = useState<boolean>(false);
 
   // ==================== 全局状态模型 ====================
   /**
@@ -146,17 +137,14 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
     chatSuggestList,
     loadingConversation,
     runQueryConversation,
-    isLoadingConversation,
     setIsLoadingConversation,
     loadingSuggest,
     onMessageSend,
     messageViewRef,
     messageViewScrollToBottom,
     allowAutoScrollRef,
-    scrollTimeoutRef,
     handleClearSideEffect,
     showScrollBtn,
-    setShowScrollBtn,
     manualComponents,
     showType,
     setShowType,
@@ -214,55 +202,6 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
       },
     };
   }, [agentConfigInfo]);
-
-  /**
-   * 滚动检测 Hook
-   * 检测用户是否手动滚动离开底部，用于控制"滚动到底部"按钮的显隐
-   * 以及是否自动滚动到最新消息
-   */
-  useConversationScrollDetection(
-    messageViewRef,
-    allowAutoScrollRef,
-    scrollTimeoutRef,
-    setShowScrollBtn,
-  );
-
-  /**
-   * 加载更多消息的交叉观察器
-   * 当加载更多指示器进入视口时，自动触发历史消息加载
-   * rootMargin: '10px 0px 0px 0px' 提前 10px 触发
-   */
-  const { ref: loadMoreRef, inView: loadMoreInView } = useIntersectionObserver({
-    rootMargin: '10px 0px 0px 0px',
-    threshold: 0,
-  });
-
-  /**
-   * 加载更多触发逻辑
-   * 使用 prevLoadMoreInViewRef 检测"从不可见变为可见"的进入事件，
-   * 避免持续在视口内时重复触发加载
-   */
-  const prevLoadMoreInViewRef = useRef(false);
-  useEffect(() => {
-    const isEntering = loadMoreInView && !prevLoadMoreInViewRef.current;
-    prevLoadMoreInViewRef.current = loadMoreInView;
-
-    if (
-      isEntering &&
-      isMoreMessage &&
-      !loadingMore &&
-      messageList?.length > 0 &&
-      devConversationIdRef.current
-    ) {
-      handleLoadMoreMessage(devConversationIdRef.current);
-    }
-  }, [
-    loadMoreInView,
-    isMoreMessage,
-    loadingMore,
-    messageList?.length,
-    handleLoadMoreMessage,
-  ]);
 
   /** manualComponents 变化时，同步初始化已选组件列表 */
   useEffect(() => {
@@ -488,16 +427,6 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
   };
 
   /**
-   * 滚动到底部按钮点击处理
-   * 恢复自动滚动 → 滚动到底部 → 隐藏按钮
-   */
-  const onScrollBottom = () => {
-    allowAutoScrollRef.current = true;
-    messageViewScrollToBottom();
-    setShowScrollBtn(false);
-  };
-
-  /**
    * 消息事件委托 Hook
    * 将消息中的交互事件（如按钮点击、链接跳转）委托给配置的事件处理器
    */
@@ -554,7 +483,6 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
           onOpenPreviewPanel={handleOpenPreviewPanel}
         />
       )}
-
       {/* 主内容区域：消息列表 + 状态栏 + 输入框 */}
       <div
         className={cx(
@@ -565,147 +493,53 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
           'overflow-hide',
         )}
       >
-        {/* 消息滚动容器 */}
-        <div
-          className={cx(styles['chat-wrapper'], 'scroll-container', 'flex-1')}
-          ref={messageViewRef}
-          onMouseEnter={() => setIsHoveringChat(true)}
-          onMouseLeave={() => setIsHoveringChat(false)}
-        >
-          {loadingConversation ? (
-            // 会话加载中状态
-            <div
-              className={cx('flex', 'items-center', 'content-center', 'h-full')}
-            >
-              <LoadingOutlined className={cx(styles.loading)} />
-            </div>
-          ) : messageList?.length > 0 ? (
-            <>
-              {/* 加载更多指示器（滚动到顶部时自动触发加载历史消息） */}
-              {isMoreMessage &&
-                (messageList?.length || 0) >= MESSAGE_PAGE_SIZE && (
-                  <div
-                    ref={loadMoreRef}
-                    className={cx(styles['load-more-container'])}
-                  >
-                    {loadingMore ? (
-                      <span>
-                        <LoadingOutlined style={{ marginRight: 8 }} />
-                        {dict('PC.Pages.Chat.loadingHistoryConversation')}
-                      </span>
-                    ) : null}
-                  </div>
-                )}
-
-              {/* 消息列表：每条消息渲染为 ChatView 组件 */}
-              {messageList?.map((item: MessageInfo) => (
-                <ChatView
-                  key={`${item.id}-${item?.index}`}
-                  messageInfo={item}
-                  roleInfo={roleInfo}
-                  mode="chat"
-                  showStatusDesc={
-                    // TaskAgent 类型不显示状态描述（由 ConversationStatus 组件统一管理）
-                    agentConfigInfo?.type !== AgentTypeEnum.TaskAgent
-                  }
-                />
-              ))}
-
-              {/* 推荐问题列表（AI 建议的后续问题） */}
-              <RecommendList
-                loading={loadingSuggest}
-                chatSuggestList={chatSuggestList}
-                onClick={handleMessageSend}
-              />
-
-              {/* 任务执行中提示（仅 TaskAgent 类型在任务执行时显示） */}
-              {conversationInfo?.taskStatus === TaskStatus.EXECUTING && (
-                <div
-                  className={cx(
-                    styles['task-executing-container'],
-                    'flex',
-                    'items-center',
-                  )}
-                >
-                  <LoadingOutlined />
-                  <span>{dict('PC.Pages.Chat.agentExecutingWait')}</span>
-                </div>
-              )}
-            </>
-          ) : (
-            // 空状态：无消息时显示智能体信息 + 开场白 + 引导问题
-            isLoadingConversation && (
-              <AgentChatEmpty
-                className="h-full"
-                icon={agentConfigInfo?.icon}
-                name={agentConfigInfo?.name as string}
-                extra={
-                  <div className="flex flex-col items-center content-center">
-                    <div className={cx(styles['opening-chat-msg'])}>
-                      {agentConfigInfo?.openingChatMsg}
-                    </div>
-                    <RecommendList
-                      className="mt-16"
-                      chatSuggestList={agentConfigInfo?.guidQuestionDtos || []}
-                      onClick={handleMessageSend}
-                    />
-                  </div>
-                }
-              />
-            )
-          )}
-        </div>
-
-        {/* 任务状态栏（仅 TaskAgent 类型 + 有消息时显示，展示当前任务进度） */}
-        {messageList?.length > 0 &&
-          conversationInfo &&
-          agentConfigInfo?.type === AgentTypeEnum.TaskAgent && (
-            <ConversationStatus
-              messageList={messageList}
-              className={cx(styles['conversation-status-bar'])}
-            />
-          )}
-
-        {/* 底部输入框区域
-            - 支持文本输入、文件上传、@提及工具
-            - 沙箱电脑选择（TaskAgent 类型）
-            - 清空会话、滚动到底部按钮
-            - 权限控制（无权限时显示遮罩） */}
-        <ChatInputHome
-          key={`agent-conversation-chat-${agentId}`}
-          clearDisabled={!messageList?.length}
-          onEnter={handleMessageSend}
+        <UnifiedChatSession
+          conversationId={devConversationIdRef.current}
+          messageList={messageList}
+          roleInfo={roleInfo}
+          isLoading={loadingConversation}
+          loadingMore={loadingMore}
+          isMoreMessage={isMoreMessage}
+          isConversationActive={
+            conversationInfo?.taskStatus === TaskStatus.EXECUTING
+          }
+          loadingSuggest={loadingSuggest}
+          chatSuggestList={chatSuggestList}
+          agentInfo={{
+            id: agentId,
+            name: agentConfigInfo?.name,
+            icon: agentConfigInfo?.icon,
+            type: agentConfigInfo?.type,
+            openingChatMsg: agentConfigInfo?.openingChatMsg,
+            guidQuestionDtos: agentConfigInfo?.guidQuestionDtos,
+            eventBindConfig: agentConfigInfo?.eventBindConfig,
+            hasPermission: conversationInfo?.agent?.hasPermission,
+            sandboxId: conversationInfo?.agent?.sandboxId,
+          }}
+          onSendMessage={handleMessageSend}
           onClear={handleClear}
-          visible={showScrollBtn && isHoveringChat}
+          onLoadMoreMessage={handleLoadMoreMessage}
           manualComponents={manualComponents}
           selectedComponentList={selectedComponentList}
           onSelectComponent={handleSelectComponent}
-          onScrollBottom={onScrollBottom}
-          isTaskAgentActive={agentConfigInfo?.type === AgentTypeEnum.TaskAgent}
           selectedComputerId={selectedComputerId}
           onComputerSelect={(id) => {
             setSelectedComputerId(id);
             onChangeSelectedComputerId?.(id);
           }}
-          agentId={agentId}
-          agentSandboxId={conversationInfo?.agent?.sandboxId}
-          hasPermission={conversationInfo?.agent?.hasPermission}
-          maskText={
-            conversationInfo?.agent?.hasPermission
-              ? ''
-              : dict('PC.Components.ChatInputHome.noAgentPermission')
-          }
-          fixedSelection={
-            // 沙箱选择器固定条件：已有 agent 沙箱 / 有服务器沙箱 / 用户已发送消息
-            !!conversationInfo?.agent?.sandboxId ||
-            !!conversationInfo?.sandboxServerId ||
-            hasUserSentMessage
-          }
-          isPersonalComputer={!!conversationInfo?.agent?.sandboxId}
+          showScrollBtn={showScrollBtn}
+          messageViewRef={messageViewRef}
           enableMention={false}
           placeholder={dict(
             'PC.Components.ChatInputHomeMentionEditor.placeholderWithoutMention',
           )}
+          chatInputProps={{
+            fixedSelection:
+              !!conversationInfo?.agent?.sandboxId ||
+              !!conversationInfo?.sandboxServerId ||
+              hasUserSentMessage,
+            agentSandboxId: conversationInfo?.agent?.sandboxId,
+          }}
         />
       </div>
     </div>

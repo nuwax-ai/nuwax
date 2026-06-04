@@ -4,3 +4,4 @@ export { default as CopyToSpaceComponent } from './CopyToSpaceComponent';
 export { default as FilePreview } from './FilePreview';
 export { default as PagePreviewIframe } from './PagePreviewIframe';
 export { default as XtermTerminal } from './Terminal';
+export { default as UnifiedChatSession } from './UnifiedChatSession';
