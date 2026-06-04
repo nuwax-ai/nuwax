@@ -5,6 +5,7 @@ interface SseEventEnvelope {
   message_type?: string;
   subType?: string;
   sub_type?: string;
+  subEventType?: string;
   data?: Record<string, unknown>;
   [key: string]: unknown;
 }
@@ -27,7 +28,8 @@ export function parseSseEventEnvelope(
     (nested.messageType ||
       nested.message_type ||
       nested.subType ||
-      nested.sub_type)
+      nested.sub_type ||
+      nested.subEventType)
   ) {
     return nested;
   }

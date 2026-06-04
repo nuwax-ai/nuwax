@@ -69,16 +69,22 @@ const ConversationAgentSourceControl: React.FC<
   const [contextMenuFileId, setContextMenuFileId] = useState<string | null>(
     null,
   );
+  /** 修改文件列表引用 */
   const changesListRef = useRef<HTMLDivElement>(null);
 
+  /** 修改文件列表 */
   const changeItems = useMemo(
     () =>
       changeFiles.map((item) => {
+        console.log('item', item);
         const segments = item.fileId.split('/');
+        /** 文件名 */
         const fileName = segments[segments.length - 1] || item.fileId;
-        const parentPath =
-          segments.length > 1 ? segments.slice(0, -1).join('/') : '';
+        /** 文件路径 */
+        const parentPath = item.fileId;
+        /** 是否暂存 */
         const isStaged = stagedFileIds.has(item.fileId);
+        /** 文件状态 */
         const statusMeta = resolveChangeFileStatus(item, isStaged);
 
         return {
@@ -146,12 +152,14 @@ const ConversationAgentSourceControl: React.FC<
 
   return (
     <div className={cx(styles['source-control'])}>
+      {/* 源代码管理标题 */}
       <div className={cx(styles.header)}>
         <span className={cx(styles.title)}>
           {dict('PC.Pages.ConversationAgentSourceControl.title')}
         </span>
       </div>
 
+      {/* 提交框 */}
       <div className={cx(styles['commit-box'])}>
         <Input.TextArea
           className={cx(styles['message-input'])}
@@ -174,6 +182,7 @@ const ConversationAgentSourceControl: React.FC<
         </Button>
       </div>
 
+      {/* 修改文件列表 */}
       <div className={cx(styles['changes-section'])}>
         <div
           className={cx(styles['changes-header'])}
@@ -192,11 +201,13 @@ const ConversationAgentSourceControl: React.FC<
               {dict('PC.Pages.ConversationAgentSourceControl.changes')}
             </span>
           </div>
+          {/* 修改文件数量 */}
           <span className={cx(styles['changes-count'])}>
             {changeFiles.length}
           </span>
         </div>
 
+        {/* 修改文件列表 */}
         {changesExpanded && (
           <div ref={changesListRef} className={cx(styles['changes-list'])}>
             {changeItems.length ? (
@@ -211,19 +222,24 @@ const ConversationAgentSourceControl: React.FC<
                   onContextMenu={(e) => handleContextMenu(e, item.fileId)}
                   title={item.fileId}
                 >
+                  {/* 文件图标 */}
                   <span className={cx(styles['file-icon'])}>
                     {getFileIcon(item.fileName)}
                   </span>
                   <div className={cx(styles['file-info'])}>
+                    {/* 文件名 */}
                     <span className={cx(styles['file-name'])}>
                       {item.fileName}
                     </span>
+
+                    {/* 文件路径 */}
                     {item.parentPath && (
                       <span className={cx(styles['file-path'])}>
                         {item.parentPath}
                       </span>
                     )}
                   </div>
+                  {/* 文件状态 */}
                   <span
                     className={cx(
                       styles['status-badge'],
@@ -239,6 +255,7 @@ const ConversationAgentSourceControl: React.FC<
                 </div>
               ))
             ) : (
+              // 空状态
               <div className={cx(styles['empty-state'])}>
                 {dict('PC.Pages.ConversationAgentSourceControl.noChanges')}
               </div>
@@ -247,25 +264,35 @@ const ConversationAgentSourceControl: React.FC<
         )}
       </div>
 
-      {/* 源代码管理 */}
+      {/* 源代码管理菜单 */}
       <ChangeFileContextMenu
+        /** 是否显示菜单 */
         visible={contextMenuVisible}
+        /** 菜单位置 */
         position={contextMenuPosition}
+        /** 是否暂存 */
         isStaged={isContextMenuStaged}
+        /** 关闭菜单 */
         onClose={closeContextMenu}
+        /** 打开更改（diff） */
         onOpenChanges={() =>
           contextMenuTarget && onOpenChanges?.(contextMenuTarget.fileId)
         }
+        /** 打开文件 */
         onOpenFile={() =>
           contextMenuTarget && onOpenFile?.(contextMenuTarget.fileId)
         }
+        /** 放弃更改 */
         onDiscardChange={handleDiscardChangeWithConfirm}
+        /** 暂存更改 */
         onStageChange={() =>
           contextMenuTarget && onStageChange?.(contextMenuTarget.fileId)
         }
+        /** 取消暂存 */
         onUnstageChange={() =>
           contextMenuTarget && onUnstageChange?.(contextMenuTarget.fileId)
         }
+        /** 添加到 .gitignore */
         onAddToGitignore={() =>
           contextMenuTarget && onAddToGitignore?.(contextMenuTarget.fileId)
         }

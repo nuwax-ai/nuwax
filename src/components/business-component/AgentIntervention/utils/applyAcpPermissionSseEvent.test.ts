@@ -208,6 +208,78 @@ describe('applyAcpPermissionSseEvent', () => {
     ).toEqual(['once', 'reject']);
   });
 
+  it('accepts camelCase ACP request_permission events (ACP standard)', () => {
+    const patched = applyAcpPermissionSseEvent(
+      {
+        requestId: 'req-camel',
+        eventType: ConversationEventTypeEnum.PROCESSING,
+        data: {
+          targetId: -1,
+          name: 'Backend.Sandbox.Event.RequestPermission',
+          type: 'Event',
+          status: 'FINISHED',
+          result: {
+            id: -1,
+            name: 'Backend.Sandbox.Event.RequestPermission',
+            type: 'Event',
+            startTime: 1780574185241,
+            endTime: 1780574185241,
+            input: {
+              request_permission_request: {
+                sessionId: 'session-camel',
+                toolCall: {
+                  toolCallId: 'tool-call-camel',
+                  title: 'Read /etc/hosts',
+                  kind: 'read',
+                  status: 'pending',
+                  rawInput: { file_path: '/etc/hosts' },
+                  locations: [{ path: '/etc/hosts', line: 1 }],
+                  content: [],
+                },
+                options: [
+                  {
+                    optionId: 'allow_always',
+                    kind: 'allow_always',
+                    name: 'Always Allow Read(//etc/**)',
+                  },
+                  {
+                    optionId: 'allow',
+                    kind: 'allow_once',
+                    name: 'Allow',
+                  },
+                  {
+                    optionId: 'reject',
+                    kind: 'reject_once',
+                    name: 'Reject',
+                  },
+                ],
+              },
+              tool_call_id: 'tool-call-camel',
+            },
+            executeId: 'tool-call-camel',
+          },
+          subEventType: 'REQUEST_PERMISSION',
+        },
+        completed: false,
+      } as any,
+      { id: 'msg-camel' } as any,
+    );
+
+    const request =
+      patched?.acpPermissionInteractions?.[0]?.intervention.acp.request;
+    expect(request?.sessionId).toBe('session-camel');
+    expect(request?.toolCall.toolCallId).toBe('tool-call-camel');
+    expect(request?.toolCall.rawInput).toEqual({ file_path: '/etc/hosts' });
+    expect(request?.toolCall.locations).toEqual([
+      { path: '/etc/hosts', line: 1 },
+    ]);
+    expect(request?.options.map((o) => o.optionId)).toEqual([
+      'allow_always',
+      'allow',
+      'reject',
+    ]);
+  });
+
   it('normalizes codex-cli engine aliases to codex', () => {
     const patched = applyAcpPermissionSseEvent(
       {
