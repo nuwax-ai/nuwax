@@ -36,7 +36,7 @@ export async function getInitialState(): Promise<InitialStateType> {
     await initI18n();
 
     // 如果不是登录页面，执行获取用户信息和菜单数据
-    const publicPaths = ['/login', '/intervention-demo'];
+    const publicPaths = ['/login', '/examples/agent-intervention-demo'];
     if (!publicPaths.some((path) => history.location.pathname.includes(path))) {
       const userInfo = await UserService.getUserInfo();
       await syncLangFromUserInfo(userInfo);

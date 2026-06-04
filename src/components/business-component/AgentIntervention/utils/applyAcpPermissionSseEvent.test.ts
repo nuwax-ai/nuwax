@@ -207,4 +207,32 @@ describe('applyAcpPermissionSseEvent', () => {
       ),
     ).toEqual(['once', 'reject']);
   });
+
+  it('normalizes codex-cli engine aliases to codex', () => {
+    const patched = applyAcpPermissionSseEvent(
+      {
+        messageType: 'acpRequestPermission',
+        subType: 'request_permission',
+        data: {
+          request_permission_request: {
+            session_id: 'session-engine',
+            tool_call: {
+              tool_call_id: 'tool-call-engine',
+              title: 'Run',
+              kind: 'execute',
+              status: 'pending',
+            },
+            options: [],
+          },
+          tool_call_id: 'tool-call-engine',
+          _engine: 'codex-cli',
+        },
+      } as any,
+      { id: 'msg-1' } as any,
+    );
+
+    expect(patched?.acpPermissionInteractions?.[0]?.intervention.engine).toBe(
+      'codex',
+    );
+  });
 });

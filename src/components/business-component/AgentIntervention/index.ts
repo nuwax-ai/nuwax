@@ -1,5 +1,5 @@
 // Components
-export { default as AgentInterventionChatLayer } from './components/AgentInterventionChatLayer';
+export { default as AgentInterventionChatLayer } from './AgentInterventionChatLayer';
 
 // Hooks
 export { useAgentInterventionHandlers } from './hooks/useAgentInterventionHandlers';

@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import type { AcpPermissionInteraction } from '../../types/acpIntervention';
+import type { AcpPermissionInteraction } from '../types/acpIntervention';
 import AcpPermissionCard from './index';
 
 vi.mock('@/services/i18nRuntime', () => ({

@@ -27,12 +27,7 @@ export function parseMcpAskToolInput(raw: unknown): McpAskUserToolInput | null {
   ) {
     return null;
   }
-  const toolName = record.toolName ?? 'nuwax_ask_question';
-  if (
-    toolName !== 'nuwax_ask_question' &&
-    toolName !== 'nuwax_ask_user' &&
-    toolName !== 'nuwaclaw_ask_user'
-  ) {
+  if ((record.toolName ?? 'nuwax_ask_question') !== 'nuwax_ask_question') {
     return null;
   }
   if (typeof record.requestId !== 'string' || !record.ui) {
@@ -45,5 +40,8 @@ export function parseMcpAskToolInput(raw: unknown): McpAskUserToolInput | null {
   ) {
     return null;
   }
-  return { ...record, toolName } as unknown as McpAskUserToolInput;
+  return {
+    ...record,
+    toolName: 'nuwax_ask_question',
+  } as unknown as McpAskUserToolInput;
 }

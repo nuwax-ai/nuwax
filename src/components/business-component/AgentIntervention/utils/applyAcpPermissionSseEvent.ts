@@ -11,6 +11,16 @@ import {
   parseSseEventEnvelope,
 } from './parseSseEventEnvelope';
 
+function normalizeAcpEngine(
+  raw: unknown,
+): AcpPermissionInterventionRequest['engine'] {
+  const value = typeof raw === 'string' ? raw : '';
+  if (value === 'claude-code' || value === 'nuwaxcode' || value === 'codex') {
+    return value;
+  }
+  return 'codex';
+}
+
 export function applyAcpPermissionSseEvent(
   res: ConversationChatResponse,
   currentMessage: MessageInfo,
@@ -89,7 +99,7 @@ export function applyAcpPermissionSseEvent(
       status: 'pending',
       sessionId: sessionId,
       source: 'acp_permission',
-      engine: (eventData._engine as string) || 'codex-cli',
+      engine: normalizeAcpEngine(eventData._engine),
       protocol: 'acp',
       callbackTarget: { kind: 'electron', targetId: '' },
       schemaRef: '',

@@ -1,6 +1,9 @@
 import { useEffect } from 'react';
-import { useInterventionEscapeKey } from '../../hooks/useInterventionEscapeKey';
-import type { AcpPermissionOption } from '../../types/acpIntervention';
+import {
+  isFormFieldTarget,
+  useInterventionEscapeKey,
+} from '../hooks/useInterventionEscapeKey';
+import type { AcpPermissionOption } from '../types/acpIntervention';
 
 const KIND_DIGIT_KEY: Partial<Record<string, string>> = {
   allow_once: '1',
@@ -36,14 +39,7 @@ export function useAcpPermissionShortcuts({
       options.find((o) => o.kind === kind)?.optionId;
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      const target = event.target as HTMLElement | null;
-      if (
-        target &&
-        (target.isContentEditable ||
-          target.tagName === 'INPUT' ||
-          target.tagName === 'TEXTAREA' ||
-          target.tagName === 'SELECT')
-      ) {
+      if (isFormFieldTarget(event.target)) {
         return;
       }
 
@@ -81,7 +77,7 @@ export function useAcpPermissionShortcuts({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [enabled, options, onSelect]);
+  }, [enabled, onSelect, options]);
 }
 
 export function getAcpPermissionShortcutHint(kind: string): string | undefined {

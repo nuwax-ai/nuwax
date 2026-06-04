@@ -2,38 +2,54 @@
 
 AI Agent 运行时干预模块，支持两种暂停-恢复流程：**ACP 权限审批** 和 **MCP Ask 结构化提问**。
 
+## 示例页面
+
+本地开发时可通过以下地址预览干预卡片 UI（Mock 数据，免登录，仅用于开发预览）：
+
+| 说明 | 路由 | 本地地址（默认端口 8000） |
+| --- | --- | --- |
+| 干预卡片 UI Demo（ACP + MCP Ask） | `/examples/agent-intervention-demo` | http://localhost:8000/examples/agent-intervention-demo |
+| 全部示例索引 | `/examples` | http://localhost:8000/examples |
+
+示例源码：`src/examples/AgentInterventionDemo/`（`index.tsx` + `mockData.ts`）。Mock 使用模块内 **camelCase** 字段；真实 SSE 入参多为 **snake_case**，由 `applyAcpPermissionSseEvent` / `parseMcpAskToolInput` 归一化。
+
 ## 模块结构
 
 ```
 AgentIntervention/
-  index.ts                          # barrel export
-  types/
-    acpIntervention.ts              # ACP 权限类型定义
-    mcpAskIntervention.ts           # MCP Ask 类型定义
-  components/
-    AgentInterventionChatLayer/     # 顶层集成组件（挂载到 Chat 页面）
-    InterventionDockPanel/          # 干预卡片停靠面板
-    AcpPermissionCard/              # ACP 权限审批卡片
-    McpAskQuestionCard/             # MCP Ask 表单卡片
+  index.ts
+  AgentInterventionChatLayer/   # 对外入口（DockPanel.tsx 堆叠渲染卡片）
+  AcpPermissionCard/            # 业务卡片；示例页直连
+  McpAskQuestionCard/
   hooks/
-    useAgentInterventionLayer.ts    # 页面接入 hook（推荐）
-    useActiveInterventionQueue.ts   # 扫描 messageList 中活跃的干预队列
-    useAgentInterventionHandlers.ts # 响应处理器（底层）
-    useInterventionEscapeKey.ts     # Esc 快捷键
+  types/
   utils/
-    processInterventionSsePatch.ts  # SSE 事件拦截入口
-    applyAcpPermissionSseEvent.ts   # ACP SSE 事件解析
-    applyMcpAskToolCallSseEvent.ts  # MCP Ask SSE 事件解析
-    parseMcpAskToolInput.ts         # MCP Ask 工具输入解析
-    mcpAskHydrateMessage.ts         # 历史消息 MCP Ask 状态重建
-    mcpAskResumeMessage.ts          # MCP Ask 回复消息构建
-    parseMcpAskSchema.ts            # JSON Schema → 表单字段解析
-    interventionTrigger.ts          # triggeredAt 单调递增生成器
 ```
 
-## 快速接入
+## 对外导出（`index.ts`）
 
-使用 `useAgentInterventionLayer` hook，4 行完成接入：
+| 导出 | 说明 |
+| --- | --- |
+| `AgentInterventionChatLayer` | 聊天页干预层（队列 + 停靠卡片） |
+| `useAgentInterventionLayer` | 页面接入（含 `agentMode`、Chat 层 props） |
+| `useAgentInterventionHandlers` | model 内 ACP/MCP 响应（写 `messageList`） |
+| `processInterventionSsePatch` | SSE 拦截，挂载 interaction 到当前消息 |
+| `hydrateMcpAskInteractionsInMessageList` | 历史消息 MCP Ask 状态重建 |
+| 类型 | `AcpPermissionInteraction`、`McpAskInteraction`、`AgentMode` 等 |
+
+卡片组件（`AcpPermissionCard`、`McpAskQuestionCard`）**未**从 barrel 导出；示例页或调试可 deep import。
+
+## 已接入位置
+
+| 文件 | 职责 |
+| --- | --- |
+| `src/models/conversationInfo.ts` | `processInterventionSsePatch`、`hydrateMcpAskInteractionsInMessageList`、`useAgentInterventionHandlers` |
+| `src/pages/Chat/index.tsx` | `useAgentInterventionLayer` + `AgentInterventionChatLayer` |
+| `src/pages/EditAgent/PreviewAndDebug/index.tsx` | 同上（预览调试） |
+| `src/services/agentConfig.ts` | `apiAgentInterventionRespond`（ACP 回执 HTTP） |
+| `src/types/interfaces/conversationInfo.ts` | `MessageInfo.acpPermissionInteractions` / `mcpAskInteractions` |
+
+## 快速接入
 
 ```tsx
 import {
@@ -41,242 +57,335 @@ import {
   useAgentInterventionLayer,
 } from '@/components/business-component/AgentIntervention';
 
-// 在组件内：
 const { agentMode, chatLayerProps, agentModeInputProps } = useAgentInterventionLayer({
   conversationId: id,
   messageList,
   onSendMessage: handleMessageSend,
 });
 
-// sendParams 中加 agentMode
 <AgentInterventionChatLayer {...chatLayerProps} />
-<ChatInputHome {...agentModeInputProps} ... />
+<ChatInputHome {...agentModeInputProps} agentMode={agentMode} ... />
 ```
 
-hook 返回：
+发送消息时在参数中带上 `agentMode: 'ask' | 'yolo'`（见 `AgentMode`）。
 
-- `agentMode` — 当前模式（`'ask'` | `'yolo'`），用于发送消息参数
-- `chatLayerProps` — `AgentInterventionChatLayer` 所需的全部 props
-- `agentModeInputProps` — `ChatInputHome` 模式切换所需 props（含 `agentMode`, `onAgentModeChange`, `showAgentModeSelector`）
+**model 侧（`conversationInfo`）必须同时完成：**
 
-## 数据层接入（conversationInfo model）
+1. SSE 循环中优先调用 `processInterventionSsePatch`，命中则替换当前消息并 `return`。
+2. 拉取历史消息后调用 `hydrateMcpAskInteractionsInMessageList`。
 
-`useAgentInterventionLayer` 内部依赖 model 中的 `respondAcpPermission` 和 `respondMcpAsk`。model 中需要完成两处接入：
+## `MessageInfo` 挂载字段
 
-**SSE 事件拦截** — 在 SSE 消息处理循环中，`processInterventionSsePatch` 必须在普通消息处理之前调用：
+归一化后挂在**当前流式消息**上（与 `processingList` 同级）：
 
 ```typescript
-const interventionPatch = processInterventionSsePatch(res, currentMessage);
-if (interventionPatch) {
-  list.splice(index, 1, interventionPatch);
-  return; // 跳过普通消息处理
+interface MessageInfo {
+  acpPermissionInteractions?: AcpPermissionInteraction[];
+  mcpAskInteractions?: McpAskInteraction[];
 }
 ```
 
-**历史消息 hydration** — 加载历史消息列表时：
+### `AcpPermissionInteraction`（内存模型，camelCase）
 
-```typescript
-const _messageList = hydrateMcpAskInteractionsInMessageList(
-  data?.messageList || [],
-);
-```
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `intervention` | `AcpPermissionInterventionRequest` | 审批元数据 + `acp.request` |
+| `responseStatus` | `'pending' \| 'submitting' \| 'submitted' \| 'failed'` | 前端响应状态 |
+| `selectedOptionId` | `string?` | 用户选中的 `optionId` |
+| `errorMessage` | `string?` | 回执失败文案 |
+| `triggeredAt` | `number?` | 入队时间戳（`createInterventionTriggeredAt`） |
 
-## SSE 事件数据格式
+`intervention` 主要字段：
 
-### ACP 权限审批
+| 字段 | 说明 |
+| --- | --- |
+| `id` | 干预 ID；无后端 `_intervention` 时为 `itv_{sessionId}_{toolCallId}` |
+| `revision` | 修订号；可从 `_meta.nuwaclaw_revision` 补齐 |
+| `kind` | 固定 `'approval'` |
+| `status` | 固定 `'pending'` |
+| `sessionId` | 会话 ID |
+| `source` | 固定 `'acp_permission'` |
+| `engine` | `'claude-code' \| 'nuwaxcode' \| 'codex'`（SSE 若带 `codex-cli` 等别名会规范为 `codex`） |
+| `protocol` | 固定 `'acp'` |
+| `callbackTarget` | `{ kind: 'electron' \| 'rcoder', targetId: string }` |
+| `schemaRef` | 模式引用字符串 |
+| `acp.method` | 固定 `'session/request_permission'` |
+| `acp.request.sessionId` | 同 `sessionId` |
+| `acp.request.toolCall` | `toolCallId`, `title`, `kind`, `rawInput`, `status` 等 |
+| `acp.request.options[]` | `{ optionId, kind, name }`，`kind` 见 `AcpPermissionOptionKind` |
+| `createdAt` | 时间戳；PROCESSING 事件可取 `result.startTime` |
 
-字段格式以 NuwaClaw `docs/permission-request-handler-design.md` 为唯一来源。前端兼容后端包裹后的事件，但业务字段必须保持下面的 RCoder snake_case 格式。
+`AcpPermissionOptionKind`：`allow_once` | `allow_always` | `reject_once` | `reject_always`。卡片 UI **隐藏** `reject_always`。
+
+### `McpAskInteraction`（内存模型，camelCase）
+
+| 字段 | 类型 | 说明 |
+| --- | --- | --- |
+| `input` | `McpAskUserToolInput` | 工具 rawInput 归一化结果 |
+| `toolCallId` | `string` | 与 SSE `tool_call_id` / `executeId` 对齐 |
+| `responseStatus` | `'pending' \| 'submitting' \| 'submitted' \| 'cancelled' \| 'skipped' \| 'failed'` |  |
+| `formData` | `Record<string, unknown>?` | 用户提交值 |
+| `errorMessage` | `string?` |  |
+| `triggeredAt` | `number?` |  |
+
+`McpAskUserToolInput` 必填（`parseMcpAskToolInput`）：
+
+| 字段 | 约束 |
+| --- | --- |
+| `schemaVersion` | `nuwaclaw.mcp_ask.v1` 或别名 `nuwax.mcp_ask.v1` |
+| `toolName` | `nuwax_ask_question`（缺省同值；其它工具名拒绝） |
+| `requestId` | 去重键；**同时作为** `McpAskRespondPayload.interventionId` |
+| `revision` | 数字 |
+| `sessionId` | 字符串 |
+| `title` | 字符串 |
+| `description` | 可选 |
+| `ui.version` | `nuwaclaw.interaction.v1` 或 `nuwax.interaction.v1` |
+| `ui.presentation` | 类型含 `modal \| inline \| wizard \| table`；**实际 UI** 仅区分 wizard / 非 wizard |
+| `ui.schema` | JSON Schema 对象 |
+| `ui.uiSchema` | 可选，含 `ui:widget`、`ui:options` |
+| `ui.steps` | wizard 步骤 |
+| `timeoutMs` | 可选 |
+
+## SSE 识别与归一化
+
+`parseSseEventEnvelope` 兼容多层包裹：`res.data.{messageType,subType,data}` 或扁平字段（含 `message_type` / `sub_type`）。
+
+### ACP：何时命中 `applyAcpPermissionSseEvent`
+
+满足其一即可：
+
+- `res.eventType === 'ACP_REQUEST_PERMISSION'`
+- `message_type` / `messageType === 'acpRequestPermission'` 且 `sub_type` / `subType` 为 `request_permission` 或 `AcpRequestPermission`
+- `res.eventType === 'PROCESSING'` 且（`subEventType === 'REQUEST_PERMISSION'` 或 `result.input.request_permission_request` 存在）
+
+从 `eventData` 读取（snake_case 优先）：
+
+- `request_permission_request`（或 PROCESSING `result.input.request_permission_request`）
+- `tool_call_id`、`session_id`
+- 可选 `_intervention` / `interventionRequest`（完整 camelCase 干预体）
+- 可选 `_meta.nuwaclaw_intervention_id`、`nuwaclaw_revision`
+
+**入参示例（snake_case，与单测一致）：**
 
 ```json
 {
-  "session_id": "sess_xxx",
   "message_type": "acpRequestPermission",
   "sub_type": "request_permission",
   "data": {
     "request_permission_request": {
-      "session_id": "sess_xxx",
+      "session_id": "session-snake",
       "tool_call": {
-        "tool_call_id": "tc_xxx",
-        "kind": "execute",
+        "tool_call_id": "tool-call-snake",
+        "title": "Write file",
+        "kind": "edit",
         "status": "pending",
-        "title": "bash",
-        "content": [],
-        "raw_input": {
-          "command": "touch approval-test.txt"
-        },
-        "_meta": {}
+        "raw_input": { "command": "touch approval-test.txt" }
       },
       "options": [
         {
-          "option_id": "once",
+          "option_id": "allow-once",
           "kind": "allow_once",
-          "name": "Allow once",
-          "_meta": {}
+          "name": "Allow once"
         },
-        {
-          "option_id": "always",
-          "kind": "allow_always",
-          "name": "Always allow",
-          "_meta": {}
-        },
-        {
-          "option_id": "reject",
-          "kind": "reject_once",
-          "name": "Reject",
-          "_meta": {}
-        }
-      ],
-      "_meta": {}
+        { "option_id": "reject-once", "kind": "reject_once", "name": "Reject" }
+      ]
     },
-    "tool_call_id": "tc_xxx"
-  },
-  "timestamp": "2026-05-26T07:47:46.175Z"
+    "tool_call_id": "tool-call-snake"
+  }
 }
 ```
 
-用户点击 `Reject` 时也回传对应 reject option 的 `option_id`。权限卡片不提供单独的 `Cancelled` 操作，也不使用 Esc 生成 `Cancelled`；只有会话取消或 pending 清理时才回传 `Cancelled`。
+同一 `intervention.id` 不会重复挂载。
 
-审批回执经 `apiAgentInterventionRespond` 发送到 Backend，再转发给 NuwaClaw `/computer/notify-resolved`：
+### MCP Ask：何时命中 `applyMcpAskToolCallSseEvent`
 
-```json
-{
-  "permission_resolve_request": {
-    "request_permission_response": {
-      "outcome": {
-        "Selected": {
-          "option_id": "once"
-        }
-      }
-    },
-    "session_id": "sess_xxx",
-    "tool_call_id": "tc_xxx",
-    "save_rule": false
-  },
-  "conversation_id": 43
-}
-```
+- `message_type` / `messageType` 为 `tool_call` 或 `sub_type` / `subType` 为 `tool_call` / `tool_call_update`，且存在 `tool_call_id` / `toolCallId` / `raw_input` / `rawInput`（或 `ext` 内 rawInput）
+- `messageType === 'agentSessionUpdate'` + `tool_call` 子类型（同上）
+- `res.eventType === 'PROCESSING'` 且存在 `executeId` 或 `result.executeId` / `result.input`
 
-### MCP Ask 结构化提问
+`raw_input` / `rawInput` / `result.input` 经 `parseMcpAskToolInput` 校验通过后写入 `mcpAskInteractions`。同一 `input.requestId` 不重复挂载。
 
-Ask/question 不走 ACP `request_permission`，也不调用 `/computer/notify-resolved`。它由 MCP 工具调用产生普通 `agentSessionUpdate/tool_call` 与 `agentSessionUpdate/tool_call_update` 事件，工具名匹配 `nuwax_ask_question` / `nuwax_ask_user` / `nuwaclaw_ask_user`。
+**入参示例（PROCESSING + executeId）：**
 
 ```json
 {
+  "eventType": "PROCESSING",
   "data": {
-    "messageType": "agentSessionUpdate",
-    "subType": "tool_call",
-    "data": {
-      "sessionUpdate": "tool_call",
-      "toolCallId": "tc_xxx",
-      "rawInput": {
+    "executeId": "tool-call-1",
+    "result": {
+      "executeId": "tool-call-1",
+      "input": {
         "toolName": "nuwax_ask_question",
         "schemaVersion": "nuwaclaw.mcp_ask.v1",
-        "requestId": "req_xxx",
+        "requestId": "ask-1",
         "revision": 1,
-        "sessionId": "sess_xxx",
-        "title": "请选择继续方式",
-        "description": "单选",
+        "sessionId": "session-1",
+        "title": "Need input",
         "ui": {
           "version": "nuwaclaw.interaction.v1",
           "presentation": "inline",
-          "title": "请选择继续方式",
-          "schema": {
-            "type": "object",
-            "properties": {
-              "choice": {
-                "type": "string",
-                "enum": ["deploy", "test", "cancel"],
-                "title": "选项"
-              }
-            },
-            "required": ["choice"]
-          },
-          "uiSchema": {
-            "choice": {
-              "ui:widget": "radio",
-              "ui:options": {
-                "enumNames": ["直接部署", "先跑测试", "取消任务"]
-              }
-            },
-            "ui:options": { "allowSkip": true, "skipLabel": "跳过" }
-          },
-          "submitLabel": "提交",
-          "cancelLabel": "取消"
-        },
-        "timeoutMs": 1800000
+          "title": "Need input",
+          "schema": { "type": "object", "properties": {} }
+        }
       }
     }
   }
 }
 ```
 
-### uiSchema 支持的 widget 类型
+**入参示例（agentSessionUpdate / snake_case）：**
 
-| widget              | 说明              | 渲染组件       |
-| ------------------- | ----------------- | -------------- |
-| `radio`             | 单选              | Radio.Group    |
-| `checkboxes`        | 多选              | Checkbox.Group |
-| `select`            | 下拉选择          | Select         |
-| `text`              | 单行文本          | Input          |
-| `textarea`          | 多行文本          | Input.TextArea |
-| `radio-with-custom` | 单选 + 自定义输入 | Radio + Input  |
+```json
+{
+  "messageType": "agentSessionUpdate",
+  "subType": "tool_call",
+  "data": {
+    "tool_call_id": "tool-call-3",
+    "raw_input": {
+      "schemaVersion": "nuwaclaw.mcp_ask.v1",
+      "requestId": "ask-3",
+      "revision": 1,
+      "sessionId": "session-1",
+      "title": "请选择继续方式",
+      "ui": {
+        "version": "nuwaclaw.interaction.v1",
+        "presentation": "inline",
+        "title": "请选择继续方式",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "choice": {
+              "type": "string",
+              "enum": ["deploy", "test"],
+              "title": "选项"
+            }
+          },
+          "required": ["choice"]
+        },
+        "uiSchema": {
+          "choice": {
+            "ui:widget": "radio",
+            "ui:options": { "enumNames": ["部署", "测试"] }
+          }
+        }
+      }
+    }
+  }
+}
+```
 
-### presentation 模式
+## 用户操作与回执
 
-| 模式     | 说明                       |
-| -------- | -------------------------- |
-| `inline` | 内联表单（默认）           |
-| `wizard` | 多步向导（需配置 `steps`） |
+### ACP 卡片 → `AcpRequestPermissionResponse` → HTTP
+
+卡片 `onRespond` 传出（camelCase）：
+
+```typescript
+// 选中某项
+{ outcome: { outcome: 'selected', optionId: 'allow-once' } }
+// 取消（卡片取消按钮，非 Esc 伪造 Cancelled）
+{ outcome: { outcome: 'cancelled' } }
+```
+
+`useAgentInterventionHandlers.respondAcpPermission` 组装 `AgentInterventionRespondRequest` 后调用 **`apiAgentInterventionRespond`**。
+
+**实际请求（`src/services/agentConfig.ts`）：**
+
+```
+POST /api/agent/conversation/chat/permission-request/response
+```
+
+```json
+{
+  "conversationId": 43,
+  "toolId": "tool-call-snake",
+  "option": {
+    "optionId": "allow-once",
+    "outcome": "selected"
+  }
+}
+```
+
+取消时 `outcome` 为 `"cancelled"`，`optionId` 回退为 `"reject"`（见 service 内 fallback）。
+
+类型层 `permission_resolve_request` 仍保留 NuwaClaw 形状（`Selected.option_id` / `Cancelled`），由 service 映射为上述 body。
+
+### MCP Ask → 普通聊天消息（无单独干预 API）
+
+`McpAskQuestionCard` 构建的 `McpAskRespondPayload`：
+
+| 字段             | 来源                                               |
+| ---------------- | -------------------------------------------------- |
+| `interventionId` | **`input.requestId`**（非后端 intervention 表 ID） |
+| `toolCallId`     | interaction.`toolCallId`                           |
+| `revision`       | `input.revision`                                   |
+| `source`         | `'mcp_ask'`                                        |
+| `protocol`       | `'mcp'`                                            |
+| `action`         | `'submit' \| 'cancel' \| 'skip' \| 'timeout'`      |
+| `formData`       | 提交时表单值                                       |
+| `answeredBy`     | `{ kind: 'web' }`                                  |
+| `answeredAt`     | `Date.now()`                                       |
+
+`respondMcpAsk` 更新 `mcpAskInteractions` 状态后，返回 `buildMcpAskResumeMessage` 字符串，由 `useAgentInterventionLayer` 调用 `onSendMessage` 发回会话。
+
+**resume 文案规则（`mcpAskResumeMessage.ts`）：**
+
+```text
+我已填写「{title}」，表单内容如下：
+
+{字段 title}：{展示值}
+```
+
+- `cancel` → `我取消了「{title}」。`
+- `skip` → `我跳过了「{title}」。`
+- `timeout` → `「{title}」已超时，没有收到表单答案。`
+- 枚举展示优先 `uiSchema[field].ui:options.enumNames`；布尔为 `是/否`；空为 `未填写`。
+
+### `uiSchema` 已落地 widget
+
+| `ui:widget`         | 渲染                                              |
+| ------------------- | ------------------------------------------------- |
+| `radio`             | Radio.Group                                       |
+| `checkboxes`        | Checkbox.Group（含 items.enum）                   |
+| `select`            | Select                                            |
+| `text`              | Input                                             |
+| `textarea`          | Input.TextArea                                    |
+| `radio-with-custom` | Radio + 自定义输入（`otherValue` / `otherField`） |
+| `list`              | 纵向单选列表                                      |
+| `file`              | 上传（`ui:options.accept`、`multiple`）           |
+
+未写 `ui:widget` 时按 schema 推断（如 `enum` → `radio`，`items.enum` → `checkboxes`）。
+
+### `presentation` 实际行为
+
+| 条件 | UI |
+| --- | --- |
+| `presentation === 'wizard'` 或 `steps.length > 1` | 分步 Steps + 上一步/下一步 |
+| 其他（含 `inline`、`modal`、`table`） | 单页表单 |
+
+根级 `uiSchema['ui:options'].allowSkip === true` 时显示跳过；文案来自 `ui.skipLabel` 或字段 `skipLabel`。
 
 ## 数据流
 
 ```
-SSE Event
-  → processInterventionSsePatch (拦截)
-    → applyAcpPermissionSseEvent / applyMcpAskToolCallSseEvent
-      → 挂载 interaction 到 message.acpPermissionInteractions / mcpAskInteractions
-        → useActiveInterventionQueue 扫描 pending/submitting/failed
-          → AgentInterventionChatLayer → InterventionDockPanel
+SSE (ConversationChatResponse)
+  → processInterventionSsePatch
+    → applyAcpPermissionSseEvent → message.acpPermissionInteractions[]
+    → applyMcpAskToolCallSseEvent  → message.mcpAskInteractions[]
+      → useActiveInterventionQueue（pending / submitting / failed）
+        → AgentInterventionChatLayer → DockPanel
             → AcpPermissionCard / McpAskQuestionCard
-              → 用户操作 → respondAcpPermission / respondMcpAsk
+            → respondAcpPermission → POST .../permission-request/response
+            → respondMcpAsk → buildMcpAskResumeMessage → onSendMessage
 ```
 
-## 后端 API
+历史加载：`hydrateMcpAskInteractionsInMessageList` 根据已有用户消息推断 MCP 是否已回复。
 
-ACP 权限审批通过 `src/services/agentConfig.ts` 中的 `apiAgentInterventionRespond` 发送：
+## 测试
 
-```
-POST /api/agent-interventions/{interventionId}/respond
-Body: AgentInterventionRespondRequest.permission_resolve_request
-```
+关键单测与上述字段对齐：
 
-MCP Ask 不走单独 API。用户提交、取消、跳过或超时后，前端用 `buildMcpAskResumeMessage` 生成普通聊天消息发回 Agent，下一轮 Agent 从用户消息中读取答案继续执行。
-
-消息内容按表单 label 输出，避免把面向用户的答案写成 JSON：
-
-```text
-我已填写「请选择继续方式」，表单内容如下：
-
-选项：先跑测试
-补充说明：先跑关键链路
-检查项：代码检查、单元测试
-```
-
-格式规则：
-
-- 标题优先使用 MCP input `title`，其次使用 `ui.title`。
-- 字段 label 使用 JSON Schema `properties[field].title`，缺失时使用字段 key。
-- 枚举值优先显示 `uiSchema[field]["ui:options"].enumNames`。
-- 数组值使用 `、` 连接。
-- 布尔值显示为 `是` / `否`。
-- 空值显示为 `未填写`。
-- 未在 schema 中声明的字段仍保留为可读的 `key：value` 行。
-- 不发送 JSON 代码块，除非用户自己明确填写了 JSON。
-
-取消、跳过、超时也都是普通聊天消息：
-
-```text
-我取消了「请选择继续方式」。
-我跳过了「请选择继续方式」。
-「请选择继续方式」已超时，没有收到表单答案。
-```
+- `utils/applyAcpPermissionSseEvent.test.ts` — ACP snake_case / PROCESSING / `_meta`
+- `utils/applyMcpAskToolCallSseEvent.test.ts` — MCP tool_call / PROCESSING
+- `utils/parseMcpAskSchema.test.ts` — widget 解析
+- `hooks/useAgentInterventionHandlers.test.ts` — ACP 回执与 MCP resume

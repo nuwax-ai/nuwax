@@ -26,16 +26,9 @@ export type InterventionQueueItem =
   | AcpInterventionQueueItem
   | McpAskInterventionQueueItem;
 
-function isActiveAcpInteraction(
-  interaction: AcpPermissionInteraction,
-): boolean {
-  const status = interaction.responseStatus ?? 'pending';
-  return status === 'pending' || status === 'submitting' || status === 'failed';
-}
-
-function isActiveMcpAskInteraction(interaction: McpAskInteraction): boolean {
-  const status = interaction.responseStatus ?? 'pending';
-  return status === 'pending' || status === 'submitting' || status === 'failed';
+function isActiveResponseStatus(status: string | undefined): boolean {
+  const value = status ?? 'pending';
+  return value === 'pending' || value === 'submitting' || value === 'failed';
 }
 
 export function useActiveInterventionQueue(
@@ -54,7 +47,7 @@ export function useActiveInterventionQueue(
       const messageIndex = message.index ?? 0;
 
       message.acpPermissionInteractions?.forEach((interaction) => {
-        if (!isActiveAcpInteraction(interaction)) {
+        if (!isActiveResponseStatus(interaction.responseStatus)) {
           return;
         }
         const sortKey =
@@ -71,7 +64,7 @@ export function useActiveInterventionQueue(
       });
 
       message.mcpAskInteractions?.forEach((interaction) => {
-        if (!isActiveMcpAskInteraction(interaction)) {
+        if (!isActiveResponseStatus(interaction.responseStatus)) {
           return;
         }
         if (hasMcpAskResumeMessage(messages, interaction)) {

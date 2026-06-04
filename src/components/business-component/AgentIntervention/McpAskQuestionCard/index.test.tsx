@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import type { McpAskInteraction } from '../../types/mcpAskIntervention';
+import type { McpAskInteraction } from '../types/mcpAskIntervention';
 import McpAskQuestionCard from './index';
 
 vi.mock('@/services/i18nRuntime', () => ({

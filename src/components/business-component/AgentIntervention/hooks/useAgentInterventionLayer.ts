@@ -1,7 +1,7 @@
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import { useCallback, useState } from 'react';
 import { useModel } from 'umi';
-import type { AgentInterventionChatLayerProps } from '../components/AgentInterventionChatLayer';
+import type { AgentInterventionChatLayerProps } from '../AgentInterventionChatLayer';
 import type { AgentMode } from '../types/acpIntervention';
 import type {
   McpAskInteraction,
