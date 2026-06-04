@@ -77,7 +77,7 @@ export function applyMcpAskToolCallSseEvent(
     (eventData.toolCallId as string) ||
     (eventData.executeId as string) ||
     (result?.executeId as string);
-  const rawInput = readRawInput(eventData) ?? result?.input;
+  const rawInput = readRawInput(eventData, result);
   const mcpAskInput = parseMcpAskToolInput(rawInput);
 
   if (!mcpAskInput || !toolCallId) {
