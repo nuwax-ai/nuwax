@@ -4,7 +4,6 @@ import {
   BarChartOutlined,
   BranchesOutlined,
   CloseOutlined,
-  CodeOutlined,
   DesktopOutlined,
   FormOutlined,
   PlusOutlined,
@@ -182,6 +181,7 @@ const SortableTabItem: React.FC<SortableTabItemProps> = ({
     [consumeSuppressTabClick, onSelect, tab.id],
   );
 
+  /** 设置标签节点引用 */
   const setTabNodeRef = useCallback(
     (node: HTMLDivElement | null) => {
       setNodeRef(node);
@@ -200,10 +200,12 @@ const SortableTabItem: React.FC<SortableTabItemProps> = ({
         [styles['tab-item-pinned']]: tab.pinned,
       })}
       onClick={handleTabClick}
+      /** 标签栏右键菜单 */
       onContextMenu={onContextMenu}
       {...attributes}
       {...tabDragListeners}
     >
+      {/* 标签项外观 */}
       <TabItemFace tab={tab} renderTabIcon={renderTabIcon} onClose={onClose} />
     </div>
   );
@@ -213,7 +215,6 @@ const SortableTabItem: React.FC<SortableTabItemProps> = ({
 const TOOL_ICON_MAP: Partial<Record<PreviewToolId, React.ReactNode>> = {
   preview: <DesktopOutlined style={{ fontSize: 14 }} />,
   arrange: <FormOutlined style={{ fontSize: 14 }} />,
-  editor: <CodeOutlined style={{ fontSize: 14 }} />,
   terminal: <ThunderboltOutlined style={{ fontSize: 14 }} />,
   'version-control': <BranchesOutlined style={{ fontSize: 14 }} />,
   'subscription-setting': <SettingOutlined style={{ fontSize: 14 }} />,

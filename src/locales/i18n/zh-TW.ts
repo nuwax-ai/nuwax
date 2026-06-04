@@ -2430,8 +2430,6 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.ConversationAgentTabPicker.previewDesc": "即時預覽執行效果，進行程式碼偵錯。",
   "PC.Pages.ConversationAgentTabPicker.arrange": "編排",
   "PC.Pages.ConversationAgentTabPicker.arrangeDesc": "配置模型、提示詞、變數與工具等智能體編排能力。",
-  "PC.Pages.ConversationAgentTabPicker.editor": "編輯器",
-  "PC.Pages.ConversationAgentTabPicker.editorDesc": "瀏覽、編寫和修改專案的原始碼檔案。",
   "PC.Pages.ConversationAgentTabPicker.terminal": "終端",
   "PC.Pages.ConversationAgentTabPicker.terminalDesc": "存取系統命令列，執行腳本或安裝依賴。",
   "PC.Pages.ConversationAgentTabPicker.versionControl": "版本控制",

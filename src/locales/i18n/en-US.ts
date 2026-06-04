@@ -2477,8 +2477,6 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.ConversationAgentTabPicker.previewDesc": "Preview running results and debug code in real time.",
   "PC.Pages.ConversationAgentTabPicker.arrange": "Arrange",
   "PC.Pages.ConversationAgentTabPicker.arrangeDesc": "Configure model, prompts, variables, tools and other agent settings.",
-  "PC.Pages.ConversationAgentTabPicker.editor": "Editor",
-  "PC.Pages.ConversationAgentTabPicker.editorDesc": "Browse, write and modify project source files.",
   "PC.Pages.ConversationAgentTabPicker.terminal": "Terminal",
   "PC.Pages.ConversationAgentTabPicker.terminalDesc": "Access the system shell to run scripts or install dependencies.",
   "PC.Pages.ConversationAgentTabPicker.versionControl": "Version Control",

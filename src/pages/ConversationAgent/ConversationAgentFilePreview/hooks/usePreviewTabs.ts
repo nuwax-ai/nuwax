@@ -6,7 +6,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 export type PreviewToolId =
   | 'preview'
   | 'arrange'
-  | 'editor'
   | 'terminal'
   | 'version-control'
   | 'subscription-setting'
@@ -59,7 +58,6 @@ export const WORKSPACE_PREVIEW_TOOL_IDS: PreviewToolId[] = [
 const TOOL_I18N_MAP: Record<PreviewToolId, string> = {
   preview: 'PC.Pages.ConversationAgentTabPicker.preview',
   arrange: 'PC.Pages.ConversationAgentTabPicker.arrange',
-  editor: 'PC.Pages.ConversationAgentTabPicker.editor',
   terminal: 'PC.Pages.ConversationAgentTabPicker.terminal',
   'version-control': 'PC.Pages.ConversationAgentTabPicker.versionControl',
   'subscription-setting':

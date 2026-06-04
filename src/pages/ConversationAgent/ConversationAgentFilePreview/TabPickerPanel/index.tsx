@@ -2,7 +2,6 @@ import { dict } from '@/services/i18nRuntime';
 import {
   BarChartOutlined,
   BranchesOutlined,
-  CodeOutlined,
   DesktopOutlined,
   FormOutlined,
   PlusOutlined,
@@ -37,12 +36,6 @@ const DEV_TOOLS: TabPickerItem[] = [
     icon: <FormOutlined />,
     titleKey: 'PC.Pages.ConversationAgentTabPicker.arrange',
     descKey: 'PC.Pages.ConversationAgentTabPicker.arrangeDesc',
-  },
-  {
-    id: 'editor',
-    icon: <CodeOutlined />,
-    titleKey: 'PC.Pages.ConversationAgentTabPicker.editor',
-    descKey: 'PC.Pages.ConversationAgentTabPicker.editorDesc',
   },
   {
     id: 'terminal',

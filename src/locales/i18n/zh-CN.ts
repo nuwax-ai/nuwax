@@ -2477,8 +2477,6 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.ConversationAgentTabPicker.previewDesc": "实时预览运行效果，进行代码调试。",
   "PC.Pages.ConversationAgentTabPicker.arrange": "编排",
   "PC.Pages.ConversationAgentTabPicker.arrangeDesc": "配置模型、提示词、变量与工具等智能体编排能力。",
-  "PC.Pages.ConversationAgentTabPicker.editor": "编辑器",
-  "PC.Pages.ConversationAgentTabPicker.editorDesc": "浏览、编写和修改项目的源代码文件。",
   "PC.Pages.ConversationAgentTabPicker.terminal": "终端",
   "PC.Pages.ConversationAgentTabPicker.terminalDesc": "访问系统命令行，执行脚本或安装依赖。",
   "PC.Pages.ConversationAgentTabPicker.versionControl": "版本控制",

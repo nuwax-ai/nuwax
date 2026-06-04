@@ -10,7 +10,6 @@ const cx = classNames.bind(styles);
 const TOOL_DESC_MAP: Record<PreviewToolId, string> = {
   preview: 'PC.Pages.ConversationAgentTabPicker.previewDesc',
   arrange: 'PC.Pages.ConversationAgentTabPicker.arrangeDesc',
-  editor: 'PC.Pages.ConversationAgentTabPicker.editorDesc',
   terminal: 'PC.Pages.ConversationAgentTabPicker.terminalDesc',
   'version-control': 'PC.Pages.ConversationAgentTabPicker.versionControlDesc',
   'subscription-setting':
@@ -20,6 +19,7 @@ const TOOL_DESC_MAP: Record<PreviewToolId, string> = {
 };
 
 export interface ToolTabContentProps {
+  /** 工具 ID */
   toolId: PreviewToolId;
 }
 
@@ -29,8 +29,11 @@ export interface ToolTabContentProps {
  */
 const ToolTabContent: React.FC<ToolTabContentProps> = ({ toolId }) => (
   <div className={cx(styles.container)}>
+    {/* 空状态 */}
     <Empty
+      /** 空状态描述 */
       description={dict(TOOL_DESC_MAP[toolId])}
+      /** 空状态图片 */
       image={Empty.PRESENTED_IMAGE_SIMPLE}
     />
   </div>
