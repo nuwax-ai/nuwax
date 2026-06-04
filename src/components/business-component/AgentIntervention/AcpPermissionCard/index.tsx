@@ -76,14 +76,6 @@ const AcpPermissionCard: React.FC<AcpPermissionCardProps> = ({
     [onRespond],
   );
 
-  const handleCancel = useCallback(() => {
-    onRespond?.({
-      outcome: {
-        outcome: 'cancelled',
-      },
-    });
-  }, [onRespond]);
-
   const title =
     toolCall.title?.trim() || t('PC.Components.AcpPermissionCard.defaultTitle');
 
@@ -99,7 +91,7 @@ const AcpPermissionCard: React.FC<AcpPermissionCardProps> = ({
     enabled: !disabled && keyboardShortcutsEnabled,
     options: visibleOptions,
     onSelect: handleSelect,
-    onCancel: handleCancel,
+    onCancel: () => {},
   });
 
   return (
@@ -184,19 +176,6 @@ const AcpPermissionCard: React.FC<AcpPermissionCardProps> = ({
                 </Button>
               );
             })}
-            {!isSubmitted && (
-              <Button
-                size="small"
-                disabled={disabled}
-                onClick={handleCancel}
-                title={t('PC.Components.AcpPermissionCard.cancelShortcutHint')}
-              >
-                <span className={styles.buttonLabel}>
-                  {t('PC.Common.Global.cancel')}
-                  <kbd className={styles.shortcut}>Esc</kbd>
-                </span>
-              </Button>
-            )}
           </Space>
         </div>
       </div>
