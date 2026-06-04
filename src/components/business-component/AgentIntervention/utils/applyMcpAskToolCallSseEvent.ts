@@ -11,13 +11,29 @@ import {
   parseSseEventEnvelope,
 } from './parseSseEventEnvelope';
 
-function readRawInput(eventData: Record<string, unknown>) {
+function readRawInput(
+  eventData: Record<string, unknown>,
+  result?: Record<string, unknown>,
+) {
   const ext =
     eventData.ext && typeof eventData.ext === 'object'
       ? (eventData.ext as Record<string, unknown>)
       : {};
+  // 优先选择非空对象，避免后端把 `result.input` 设为 `{}` 时误匹配空对象，
+  // 导致 `parseMcpAskToolInput` 解析失败。
+  const nonEmpty = (value: unknown): Record<string, unknown> | undefined =>
+    value && typeof value === 'object' && Object.keys(value).length > 0
+      ? (value as Record<string, unknown>)
+      : undefined;
   return (
-    eventData.raw_input ?? eventData.rawInput ?? ext.raw_input ?? ext.rawInput
+    nonEmpty(eventData.raw_input) ??
+    nonEmpty(eventData.rawInput) ??
+    nonEmpty(ext.raw_input) ??
+    nonEmpty(ext.rawInput) ??
+    nonEmpty(result?.input) ??
+    nonEmpty((result?.ext as Record<string, unknown> | undefined)?.raw_input) ??
+    nonEmpty((result?.ext as Record<string, unknown> | undefined)?.rawInput) ??
+    (result?.input as Record<string, unknown> | undefined)
   );
 }
 
