@@ -1,3 +1,4 @@
+import { EllipsisTooltip } from '@/components/custom/EllipsisTooltip';
 import { t } from '@/services/i18nRuntime';
 import {
   CheckOutlined,
@@ -152,18 +153,12 @@ const AcpPermissionCard: React.FC<AcpPermissionCardProps> = ({
                   }
                   disabled={disabled}
                   onClick={() => handleSelect(option.optionId)}
-                  title={
-                    shortcut
-                      ? t(
-                          'PC.Components.AcpPermissionCard.shortcutHint',
-                          option.name || option.optionId,
-                          shortcut,
-                        )
-                      : undefined
-                  }
                 >
                   <span className={styles.buttonLabel}>
-                    {option.name || option.optionId}
+                    <EllipsisTooltip
+                      text={option.name || option.optionId}
+                      className={styles['button-text']}
+                    />
                     {shortcut && !isSubmitted && (
                       <span className={styles.shortcutGroup}>
                         <kbd className={styles.shortcut}>{shortcut}</kbd>
