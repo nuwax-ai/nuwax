@@ -1,6 +1,8 @@
 @import '@/styles/color.less';
 @import '@/styles/token.less';
 
+@button-max-width: 140px;
+
 .card {
   display: flex;
   flex-direction: column;
@@ -152,6 +154,13 @@
   align-items: center;
   gap: 5px;
   font-size: 12px;
+}
+
+.button-text {
+  display: inline-block;
+  max-width: @button-max-width;
+  vertical-align: middle;
+  color: inherit !important;
 }
 
 .shortcutGroup {

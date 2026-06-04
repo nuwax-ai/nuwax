@@ -227,6 +227,77 @@ export default function useMenuModel() {
   );
 
   /**
+   * 判断菜单路径是否与目标路径匹配
+   * @description 按路径段逐一比对，动态参数（如 :spaceId）匹配任意值，段数必须一致
+   */
+  const isMenuPathMatch = (menuPath: string, targetPath: string): boolean => {
+    if (!menuPath || !targetPath) return false;
+
+    const [menuPathname, menuQuery = ''] = menuPath.split('?');
+    const [targetPathname, targetQuery = ''] = targetPath.split('?');
+
+    const menuSegments = menuPathname.split('/').filter(Boolean);
+    const targetSegments = targetPathname.split('/').filter(Boolean);
+
+    // 判断路径段数是否一致
+    if (menuSegments.length !== targetSegments.length) {
+      return false;
+    }
+
+    // 判断路径段是否匹配
+    const isPathSegmentsMatch = menuSegments.every((segment, index) => {
+      const targetSegment = targetSegments[index];
+      if (segment.startsWith(':')) {
+        return Boolean(targetSegment);
+      }
+      return segment === targetSegment;
+    });
+
+    if (!isPathSegmentsMatch) {
+      return false;
+    }
+
+    // 菜单配置了查询参数时，要求目标路径的查询参数也一致
+    if (menuQuery) {
+      return menuQuery === targetQuery;
+    }
+
+    return true;
+  };
+
+  /**
+   * 判断指定一级菜单及其所有子菜单中，是否存在与传入路径匹配的菜单
+   * @param firstLevelMenuCode 一级菜单 code
+   * @param targetPath 待匹配的跳转路径
+   * @returns 存在匹配路径返回 true，否则返回 false
+   */
+  const hasPathUnderFirstLevelMenu = useCallback(
+    (firstLevelMenuCode: string, targetPath: string): boolean => {
+      if (!firstLevelMenuCode || !targetPath || !menuTree?.length) {
+        return false;
+      }
+
+      const firstLevelMenu = menuTree.find(
+        (menu) => menu.code === firstLevelMenuCode,
+      );
+      if (!firstLevelMenu) {
+        return false;
+      }
+
+      // 递归检查子菜单
+      const checkMenuSubtree = (menu: MenuItemDto): boolean => {
+        if (menu.path && isMenuPathMatch(menu.path, targetPath)) {
+          return true;
+        }
+        return menu.children?.some((child) => checkMenuSubtree(child)) ?? false;
+      };
+
+      return checkMenuSubtree(firstLevelMenu);
+    },
+    [menuTree],
+  );
+
+  /**
    * 根据路径查找对应的菜单项
    */
   const findMenuByPath = useCallback(
@@ -331,6 +402,7 @@ export default function useMenuModel() {
     firstLevelMenus,
     otherMenus,
     getSecondLevelMenus,
+    hasPathUnderFirstLevelMenu,
     findMenuByPath,
     clearMenuInfo,
     // 权限检查
