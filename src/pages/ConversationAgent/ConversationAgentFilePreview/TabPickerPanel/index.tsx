@@ -95,9 +95,13 @@ const TabPickerSection: React.FC<TabPickerSectionProps> = ({
   onSelectTool,
 }) => (
   <div className={cx(styles.section)}>
+    {/* 分区标题 */}
     <h4 className={cx(styles['section-title'])}>{dict(titleKey)}</h4>
+    {/* 分区描述 */}
     <p className={cx(styles['section-desc'])}>{dict(descKey)}</p>
+    {/* 卡片网格 */}
     <div className={cx(styles['card-grid'])}>
+      {/* 卡片列表（卡片网格中的卡片） */}
       {items.map((item) => (
         <div
           key={item.id}
@@ -105,17 +109,23 @@ const TabPickerSection: React.FC<TabPickerSectionProps> = ({
           onClick={() => onSelectTool(item.id)}
           role="button"
           tabIndex={0}
+          /** 按下回车或空格键时选中卡片 */
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
               onSelectTool(item.id);
             }
           }}
         >
+          {/* 卡片图标 */}
           <span className={cx(styles['card-icon'])}>{item.icon}</span>
+          {/* 卡片内容 */}
           <div className={cx(styles['card-body'])}>
+            {/* 卡片标题 */}
             <p className={cx(styles['card-title'])}>{dict(item.titleKey)}</p>
+            {/* 卡片描述 */}
             <p className={cx(styles['card-desc'])}>{dict(item.descKey)}</p>
           </div>
+          {/* 卡片添加按钮 */}
           <span className={cx(styles['card-add'])} aria-hidden>
             <PlusOutlined />
           </span>
@@ -130,12 +140,14 @@ const TabPickerSection: React.FC<TabPickerSectionProps> = ({
  */
 const TabPickerPanel: React.FC<TabPickerPanelProps> = ({
   onSelectTool,
+  // 作为页签内容区展示时占满容器
   embedded = false,
 }) => {
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
   /** 与 EditAgent AgentHeader 一致：租户未开启订阅时不展示订阅分区 */
   const showSubscriptionSection = tenantConfigInfo?.enableSubscription !== 0;
 
+  /** 渲染「新建页签」面板 */
   return (
     <div
       className={cx(styles['tab-picker'], {

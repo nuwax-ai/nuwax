@@ -62,6 +62,7 @@ const ConversationAgentFilePreview: React.FC<
 }) => {
   const { renderPreviewContent, isFullscreen, filePathHeaderProps } = preview;
 
+  /** 修改文件名称 */
   const diffFileName = useMemo(() => {
     if (!diffFile) {
       return '';
@@ -70,20 +71,25 @@ const ConversationAgentFilePreview: React.FC<
     return segments[segments.length - 1] || diffFile.fileId;
   }, [diffFile]);
 
+  /** 是否显示修改文件diff */
   const showDiff =
     activeTab?.type === 'file' &&
     activeTab.isDiff &&
     !!diffFile &&
     diffFile.fileId === activeTab.fileId;
 
+  /** 是否显示文件预览内容 */
   const showFilePreview = activeTab?.type === 'file' && !showDiff;
+  /** 是否显示「新建页签」面板 */
   const showPicker = activeTab?.type === 'picker' && !!onSelectTool;
+  /** 当前激活的工作区工具 ID */
   const activeWorkspaceToolId =
     activeTab?.type === 'tool' &&
     activeTab.toolId &&
     WORKSPACE_PREVIEW_TOOL_IDS.includes(activeTab.toolId)
       ? activeTab.toolId
       : null;
+  /** 是否显示其他工具内容 */
   const showOtherToolContent =
     activeTab?.type === 'tool' && !!activeTab.toolId && !activeWorkspaceToolId;
 
@@ -117,8 +123,11 @@ const ConversationAgentFilePreview: React.FC<
               className={styles['diff-view']}
             />
           ) : showFilePreview ? (
+            // 显示文件预览内容
             <div className={cx(styles['file-preview-layout'])}>
+              {/* 文件路径头 */}
               <FilePathHeader {...filePathHeaderProps} hideClose />
+              {/* 文件预览内容 */}
               <div className={cx(styles['file-preview-scroll'])}>
                 {renderPreviewContent()}
               </div>

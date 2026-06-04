@@ -235,18 +235,27 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
   onTabReorder,
   onAddTab,
 }) => {
+  /** 拖拽中的标签 ID */
   const [activeDragTabId, setActiveDragTabId] = useState<string | null>(null);
+  /** 标签栏视口引用 */
+  const tabViewportRef = useRef<HTMLDivElement>(null);
+  /** 标签栏轨道引用 */
+  const tabTrackRef = useRef<HTMLDivElement>(null);
+  /** 标签栏底部滚动条槽位引用 */
+  const tabGutterRef = useRef<HTMLDivElement>(null);
+  /** 标签元素映射引用 */
+  const tabElMapRef = useRef<Map<string, HTMLDivElement>>(new Map());
+
+  /** 拖拽传感器 */
   const tabSortSensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 6 },
     }),
   );
+  /** 拖拽中的标签 */
   const activeDragTab = tabs.find((tab) => tab.id === activeDragTabId) ?? null;
-  const tabViewportRef = useRef<HTMLDivElement>(null);
-  const tabTrackRef = useRef<HTMLDivElement>(null);
-  const tabGutterRef = useRef<HTMLDivElement>(null);
-  const tabElMapRef = useRef<Map<string, HTMLDivElement>>(new Map());
 
+  /** 注册标签元素 */
   const registerTabEl = useCallback(
     (tabId: string, el: HTMLDivElement | null) => {
       if (el) {
@@ -274,17 +283,21 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
     const tabRect = tabEl.getBoundingClientRect();
     const pad = TAB_SCROLL_INTO_VIEW_PADDING;
 
+    /** 将标签滚入可见区域 */
     if (tabRect.left < viewportRect.left + pad) {
       viewport.scrollLeft -= viewportRect.left - tabRect.left + pad;
     } else if (tabRect.right > viewportRect.right - pad) {
       viewport.scrollLeft += tabRect.right - viewportRect.right + pad;
     }
 
+    /** 同步底部滚动条槽位滚动位置 */
     if (tabGutterRef.current) {
       tabGutterRef.current.scrollLeft = viewport.scrollLeft;
     }
   }, []);
-  const [trackScrollWidth, setTrackScrollWidth] = useState(0);
+  /** 标签栏轨道宽度 */
+  const [trackScrollWidth, setTrackScrollWidth] = useState<number>(0);
+  /** 标签栏右键菜单状态 */
   const [contextMenu, setContextMenu] = useState<{
     visible: boolean;
     x: number;
@@ -292,12 +305,15 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
     tabId: string | null;
   }>({ visible: false, x: 0, y: 0, tabId: null });
 
+  /** 标签栏右键菜单对应的标签 */
   const contextTab = tabs.find((tab) => tab.id === contextMenu.tabId) ?? null;
 
+  /** 关闭标签栏右键菜单 */
   const closeContextMenu = useCallback(() => {
     setContextMenu((prev) => ({ ...prev, visible: false, tabId: null }));
   }, []);
 
+  /** 处理标签栏右键菜单 */
   const handleTabContextMenu = useCallback(
     (e: React.MouseEvent, tabId: string) => {
       e.preventDefault();
@@ -314,6 +330,7 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
 
   /** 标签栏快捷键（与右键菜单一致） */
   useEffect(() => {
+    /** 处理标签栏快捷键 */
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!activeTabId) {
         return;
@@ -367,11 +384,14 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
       return;
     }
 
+    /** 更新标签栏轨道宽度 */
     const updateTrackWidth = () => {
       setTrackScrollWidth(trackEl.scrollWidth);
     };
 
     updateTrackWidth();
+
+    /** 创建 ResizeObserver 监听标签栏轨道宽度变化 */
     const resizeObserver = new ResizeObserver(updateTrackWidth);
     resizeObserver.observe(trackEl);
     return () => {
@@ -406,6 +426,7 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
 
     let syncing = false;
 
+    /** 同步滚动位置 */
     const syncScrollLeft = (from: HTMLDivElement, to: HTMLDivElement) => {
       if (syncing) {
         return;
@@ -415,9 +436,12 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
       syncing = false;
     };
 
+    /** 处理视口滚动 */
     const handleViewportScroll = () => {
       syncScrollLeft(viewportEl, gutterEl);
     };
+
+    /** 处理底部滚动条槽位滚动 */
     const handleGutterScroll = () => {
       syncScrollLeft(gutterEl, viewportEl);
     };
@@ -437,6 +461,7 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
       return;
     }
 
+    /** 处理鼠标滚轮纵向滑动时，转为 tabs 横向滚动 */
     const handleWheel = (event: WheelEvent) => {
       if (viewportEl.scrollWidth <= viewportEl.clientWidth) {
         return;
@@ -461,10 +486,12 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
     };
   }, [tabs.length, trackScrollWidth]);
 
+  /** 拖拽开始 */
   const handleTabDragStart = useCallback((event: DragStartEvent) => {
     setActiveDragTabId(String(event.active.id));
   }, []);
 
+  /** 拖拽结束 */
   const handleTabDragEnd = useCallback(
     (event: DragEndEvent) => {
       setActiveDragTabId(null);
@@ -477,20 +504,30 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
     [onTabReorder],
   );
 
+  /** 拖拽取消 */
   const handleTabDragCancel = useCallback(() => {
     setActiveDragTabId(null);
   }, []);
 
+  /**
+   * 渲染标签图标
+   * @param tab 预览标签类型
+   * @returns 标签图标
+   */
   const renderTabIcon = (tab: PreviewTab) => {
+    /** 渲染「新建页签」标签图标 */
     if (tab.type === 'picker') {
       return <PlusOutlined style={{ fontSize: 14 }} />;
     }
+    /** 渲染文件标签图标 */
     if (tab.type === 'file' && tab.fileId) {
       return getFileIcon(tab.label);
     }
+    /** 渲染工具标签图标 */
     if (tab.type === 'tool' && tab.toolId) {
       return TOOL_ICON_MAP[tab.toolId] || null;
     }
+    /** 渲染默认标签图标 */
     return null;
   };
 
@@ -514,6 +551,7 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
                     items={tabs.map((tab) => tab.id)}
                     strategy={horizontalListSortingStrategy}
                   >
+                    {/* 可拖拽排序的标签项 */}
                     {tabs.map((tab) => (
                       <SortableTabItem
                         key={tab.id}
@@ -528,6 +566,7 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
                     ))}
                   </SortableContext>
                   <DragOverlay dropAnimation={null} adjustScale={false}>
+                    {/* 拖拽中的标签项（原位占位透明） */}
                     {activeDragTab ? (
                       <div
                         className={cx(
@@ -540,6 +579,7 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
                           },
                         )}
                       >
+                        {/* 拖拽中的标签项 */}
                         <TabItemFace
                           tab={activeDragTab}
                           renderTabIcon={renderTabIcon}
@@ -552,6 +592,8 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
               </PreviewTabTooltipDragProvider>
             </div>
           </div>
+
+          {/* 标签栏底部滚动条槽位（用于同步滚动位置） */}
           <div ref={tabGutterRef} className={cx(styles['tab-list-gutter'])}>
             <div
               className={cx(styles['tab-list-gutter-spacer'])}
@@ -587,18 +629,25 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
       {/* 预览区标签页右键菜单（带淡入缩放过渡） */}
       <PreviewTabContextMenu
         visible={contextMenu.visible}
+        /** 标签位置 */
         position={{ x: contextMenu.x, y: contextMenu.y }}
+        /** 标签是否固定 */
         isPinned={!!contextTab?.pinned}
+        /** 关闭标签栏右键菜单 */
         onClose={closeContextMenu}
+        /** 关闭指定标签 */
         onCloseTab={
           contextMenu.tabId ? () => onTabClose(contextMenu.tabId!) : undefined
         }
+        /** 关闭除指定标签外的所有标签 */
         onCloseOtherTabs={
           contextMenu.tabId
             ? () => onCloseOtherTabs(contextMenu.tabId!)
             : undefined
         }
+        /** 关闭所有标签 */
         onCloseAllTabs={onCloseAllTabs}
+        /** 切换标签固定状态 */
         onTogglePin={
           contextMenu.tabId
             ? () => onTogglePinTab(contextMenu.tabId!)
