@@ -19,7 +19,7 @@ import type {
   GitTagDeleteParams,
   GitTagsParams,
   GitUnstageParams,
-} from '../types/git-version';
+} from '../types/git-version-management';
 
 // Git unstage
 export function apiGitUnstage(

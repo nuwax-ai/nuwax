@@ -1,6 +1,6 @@
+import TooltipIcon from '@/components/custom/TooltipIcon';
 import { dict } from '@/services/i18nRuntime';
 import { BranchesOutlined, FolderOutlined } from '@ant-design/icons';
-import { Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useState } from 'react';
 import ConversationAgentFileTree from '../ConversationAgentFileTree';
@@ -75,41 +75,39 @@ const ConversationAgentMiddlePanel: React.FC<
     <div className={cx(styles['middle-panel'], className)}>
       <div className={cx(styles['icon-bar'])}>
         <div className={cx(styles['icon-bar-item'])}>
-          <Tooltip title={dict('PC.Pages.ConversationAgentMiddlePanel.files')}>
-            <button
-              type="button"
-              className={cx(styles['icon-btn'], {
-                [styles.active]: activeView === 'files',
-              })}
-              onClick={() => setActiveView('files')}
-              aria-label={dict('PC.Pages.ConversationAgentMiddlePanel.files')}
-            >
-              <FolderOutlined style={{ fontSize: 16 }} />
-            </button>
-          </Tooltip>
+          <TooltipIcon
+            title={dict('PC.Pages.ConversationAgentMiddlePanel.files')}
+            ariaLabel={dict('PC.Pages.ConversationAgentMiddlePanel.files')}
+            placement="bottom"
+            className={cx(styles['icon-btn'], {
+              [styles.active]: activeView === 'files',
+            })}
+            icon={<FolderOutlined style={{ fontSize: 16 }} />}
+            onClick={() => setActiveView('files')}
+          />
         </div>
         <div className={cx(styles['icon-bar-item'])}>
-          <Tooltip
+          <TooltipIcon
             title={dict('PC.Pages.ConversationAgentMiddlePanel.sourceControl')}
-          >
-            <button
-              type="button"
-              className={cx(styles['icon-btn'], {
-                [styles.active]: activeView === 'sourceControl',
-              })}
-              onClick={() => setActiveView('sourceControl')}
-              aria-label={dict(
-                'PC.Pages.ConversationAgentMiddlePanel.sourceControl',
-              )}
-            >
-              <BranchesOutlined style={{ fontSize: 16 }} />
-              {modifiedCount > 0 && (
-                <span className={cx(styles['icon-badge'])}>
-                  {modifiedCount > 99 ? '99+' : modifiedCount}
-                </span>
-              )}
-            </button>
-          </Tooltip>
+            ariaLabel={dict(
+              'PC.Pages.ConversationAgentMiddlePanel.sourceControl',
+            )}
+            placement="bottom"
+            className={cx(styles['icon-btn'], {
+              [styles.active]: activeView === 'sourceControl',
+            })}
+            icon={
+              <>
+                <BranchesOutlined style={{ fontSize: 16 }} />
+                {modifiedCount > 0 && (
+                  <span className={cx(styles['icon-badge'])}>
+                    {modifiedCount > 99 ? '99+' : modifiedCount}
+                  </span>
+                )}
+              </>
+            }
+            onClick={() => setActiveView('sourceControl')}
+          />
         </div>
       </div>
 
