@@ -1556,15 +1556,19 @@ const AppDev: React.FC = () => {
                   {activeTab !== 'preview' && (
                     <FileTreePanel
                       files={currentDisplayFiles}
+                      // 是否处于版本对比模式
                       isComparing={versionCompare.isComparing}
+                      // 当前选中的文件ID
                       selectedFileId={
                         versionCompare.isComparing
                           ? workspace.activeFile
                           : fileManagement.fileContentState.selectedFile
                       }
+                      // 已展开的文件夹ID集合
                       expandedFolders={
                         fileManagement.fileTreeState.expandedFolders
                       }
+                      // 文件选择回调
                       onFileSelect={(fileId) => {
                         sourceControl.clearSelectedDiff();
                         if (versionCompare.isComparing) {
@@ -1574,37 +1578,60 @@ const AppDev: React.FC = () => {
                           setActiveTab('code');
                         }
                       }}
+                      // 文件夹展开/折叠回调
                       onToggleFolder={fileManagement.toggleFolder}
+                      // 删除文件回调
                       onDeleteFile={isFileOperating ? noop : handleDeleteClick}
+                      // 重命名文件回调
                       onRenameFile={
                         isFileOperating ? asyncNoopFalse : handleRenameFile
                       }
+                      // 上传项目回调
                       onUploadProject={
                         isFileOperating
                           ? noop
                           : () => setIsUploadModalVisible(true)
                       }
+                      // 上传单个文件回调
                       onUploadSingleFile={
                         isFileOperating ? asyncNoop : handleRightClickUpload
                       }
+                      // 工作空间信息（用于版本模式判断）
                       workspace={workspace}
+                      // 文件管理方法
                       fileManagement={fileManagement}
+                      // 是否正在AI聊天加载中
                       isChatLoading={chat.isChatLoading}
+                      // 文件树初始化 loading 状态
                       isFileTreeInitializing={
                         fileManagement.isFileTreeInitializing
                       }
+                      // =================源代码管理相关=================
+                      // 已修改文件列表
                       changeFiles={sourceControl.changeFiles}
+                      // 已暂存的文件 ID 集合
                       stagedFileIds={sourceControl.stagedFileIds}
+                      // 当前选中查看 diff 的文件 ID
                       selectedDiffFileId={sourceControl.selectedDiffFileId}
+                      // 是否正在提交
                       isCommitting={sourceControl.isCommitting}
+                      // 是否正在刷新 Git 列表
                       isRefreshingGitList={sourceControl.isRefreshingGitList}
+                      // 刷新 Git 变更列表
                       onRefreshGitList={sourceControl.refreshGitList}
+                      // 选中修改文件，在右侧预览区展示 diff
                       onDiffFileSelect={sourceControl.handleDiffFileSelect}
+                      // 打开文件（选中并预览，非 diff）
                       onOpenChangeFile={sourceControl.handleOpenChangeFile}
+                      // 放弃单个文件的更改
                       onDiscardChange={sourceControl.handleDiscardChange}
+                      // 暂存更改
                       onStageChange={sourceControl.handleStageChange}
+                      // 取消暂存
                       onUnstageChange={sourceControl.handleUnstageChange}
+                      // 添加到 .gitignore
                       onAddToGitignore={sourceControl.handleAddToGitignore}
+                      // 提交修改
                       onCommit={sourceControl.handleCommit}
                     />
                   )}

@@ -2464,7 +2464,6 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.ConversationAgentSourceControl.refresh": "Refresh",
   "PC.Pages.ConversationAgentSourceControl.viewAsList": "View as list",
   "PC.Pages.ConversationAgentSourceControl.viewAsTree": "View as tree",
-  "PC.Pages.ConversationAgentSourceControl.refreshFailed": "Refresh failed, please try again",
   "PC.Pages.ConversationAgentPreviewTabBar.addTab": "New Tab",
   "PC.Pages.ConversationAgentPreviewTabBar.contextMenu.close": "Close",
   "PC.Pages.ConversationAgentPreviewTabBar.contextMenu.closeOthers": "Close Others",

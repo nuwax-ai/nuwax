@@ -2347,7 +2347,6 @@ export const ZH_HK: SystemLangMap = {
   "PC.Pages.ConversationAgentSourceControl.refresh": "重新整理",
   "PC.Pages.ConversationAgentSourceControl.viewAsList": "以列表形式查看",
   "PC.Pages.ConversationAgentSourceControl.viewAsTree": "以樹形結構查看",
-  "PC.Pages.ConversationAgentSourceControl.refreshFailed": "重新整理失敗，請稍後重試",
   "PC.Pages.ConversationAgentPreviewTabBar.addTab": "新標籤頁",
   "PC.Pages.ConversationAgentPreviewTabBar.contextMenu.close": "關閉",
   "PC.Pages.ConversationAgentPreviewTabBar.contextMenu.closeOthers": "關閉其他",

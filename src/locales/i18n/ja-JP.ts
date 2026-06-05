@@ -2367,7 +2367,6 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.ConversationAgentSourceControl.refresh": "更新",
   "PC.Pages.ConversationAgentSourceControl.viewAsList": "リスト表示",
   "PC.Pages.ConversationAgentSourceControl.viewAsTree": "ツリー表示",
-  "PC.Pages.ConversationAgentSourceControl.refreshFailed": "更新に失敗しました。後でもう一度お試しください",
   "PC.Pages.ConversationAgentPreviewTabBar.addTab": "新しいタブ",
   "PC.Pages.ConversationAgentPreviewTabBar.contextMenu.close": "閉じる",
   "PC.Pages.ConversationAgentPreviewTabBar.contextMenu.closeOthers": "その他を閉じる",

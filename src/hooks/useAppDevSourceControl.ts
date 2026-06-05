@@ -550,12 +550,8 @@ export const useAppDevSourceControl = ({
         workspaceType: 'pageApp',
         projectId: Number(projectId),
       });
-      await fileManagement.loadFileTree(true, true);
     } catch (error) {
       console.error('Refresh git list failed:', error);
-      message.error(
-        dict('PC.Pages.ConversationAgentSourceControl.refreshFailed'),
-      );
     } finally {
       setIsRefreshingGitList(false);
     }
