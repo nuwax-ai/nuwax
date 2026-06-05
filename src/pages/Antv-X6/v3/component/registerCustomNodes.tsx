@@ -395,14 +395,14 @@ export const GeneralNode: React.FC<NodeProps> = (props) => {
         {/* AgentFlow 旧徽章：被 chip 浮层取代。仅当不是 AgentFlow 时保留原徽章逻辑。
             当前所有使用徽章的 type 都是 AgentFlow 类型，因此整体退役，未来如要回退可恢复。 */}
 
+        {/* AgentFlow 端口 chip 浮层（type guard 内部处理，非 AgentFlow 节点不渲染） */}
+        <AgentFlowPortChips data={data} />
+
         {/* 异常处理 */}
         {showException && (
           <ExceptionHandle data={data.nodeConfig.exceptionHandleConfig} />
         )}
       </div>
-      {/* AgentFlow 端口 chip 浮层：必须挂在 .general-node 之外，避免被父容器的
-          overflow:hidden 裁剪（chip 设计为悬浮在节点右侧外部） */}
-      {isAgentFlow && <AgentFlowPortChips data={data} />}
       {/* 运行结果 */}
       {showRunResult && <NodeRunResult data={runResults} />}
     </>

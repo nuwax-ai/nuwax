@@ -265,7 +265,10 @@
   text-overflow: ellipsis;
 }
 
-/* AgentFlow 节点：允许 header wrap 让 desc 换行 */
+/* AgentFlow 节点：允许 header wrap 让 desc 换行 + 允许 chip 溢出节点边界 */
+.general-node--agent-flow {
+  overflow: visible;
+}
 .general-node--agent-flow .general-node-header {
   flex-wrap: wrap;
   padding-bottom: 4px;
