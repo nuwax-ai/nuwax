@@ -6,6 +6,7 @@ import {
 import {
   AnswerTypeEnum,
   ExceptionHandleTypeEnum,
+  HitlModeEnum,
   NodeTypeEnum,
 } from '@/types/enums/common';
 import { PortGroupEnum } from '@/types/enums/node';
@@ -128,20 +129,17 @@ function parseEdgeBranch(
   }
   // 路由决策的 route-{uuid} 端口（排除 default 兜底）
   if (sourcePort.includes('-route-') && !sourcePort.includes('-route-default-')) {
-    let label = '';
-    if (edge) {
-      try {
-        const sourceData: any = edge.getSourceNode?.()?.getData?.() || {};
-        const routes: any[] = sourceData?.nodeConfig?.routes || [];
-        // 从 portId 末尾提取 uuid：<nodeId>-route-<uuid>-out
-        const m = sourcePort.match(/-route-([^-]+(?:-[^-]+)*)-out$/);
-        const uuid = m?.[1] || '';
-        const found = routes.find((r) => r.uuid === uuid);
-        label = found?.routeName || found?.name || (uuid ? `Route ${uuid.slice(0, 4)}` : '');
-      } catch {
-        // 防御性：getData 失败时不影响默认色
-      }
+    if (!edge) {
+      return { stroke: BRANCH_PALETTE.route.stroke, label: '' };
     }
+    // 从 portId 末尾提取 uuid：<nodeId>-route-<uuid>-out
+    const m = sourcePort.match(/-route-([^-]+(?:-[^-]+)*)-out$/);
+    const uuid = m?.[1] || '';
+    if (!uuid) return null; // 端口 id 形如异常, 走默认色
+    const sourceData = edge.getSourceNode()?.getData() || {};
+    const routes: any[] = (sourceData as any)?.nodeConfig?.routes || [];
+    const found = routes.find((r) => r.uuid === uuid);
+    const label = found?.routeName || found?.name || `Route ${uuid.slice(0, 4)}`;
     return { stroke: BRANCH_PALETTE.route.stroke, label };
   }
   return null;
@@ -165,7 +163,7 @@ export function setEdgeAttributes(edge: Edge) {
     },
   });
 
-  if (branch) {
+  if (branch && branch.label) {
     edge.setLabels([
       {
         attrs: {
@@ -940,7 +938,7 @@ const handleAgentFlowEdges = (
 
   if (
     node.type === NodeTypeEnum.HumanInteraction &&
-    nc.hitlMode === 'approve'
+    nc.hitlMode === HitlModeEnum.Approve
   ) {
     const approveIds: number[] = nc.approveNextNodeIds || [];
     approveIds.forEach((id) => {
@@ -1048,7 +1046,7 @@ export const getEdges = (
       } else if (
         node.type === NodeTypeEnum.EvalGate ||
         (node.type === NodeTypeEnum.HumanInteraction &&
-          (node.nodeConfig as any)?.hitlMode === 'approve')
+          (node.nodeConfig as any)?.hitlMode === HitlModeEnum.Approve)
       ) {
         return handleAgentFlowEdges(node, isLoopNode);
       } else if (node.nextNodeIds && node.nextNodeIds.length > 0) {

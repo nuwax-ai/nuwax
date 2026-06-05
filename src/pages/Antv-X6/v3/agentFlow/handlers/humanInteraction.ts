@@ -15,7 +15,7 @@
  * 端口 y 由 `branchPortY(i)` 计算（baseY=42, itemHeight=24, step=12）。
  */
 
-import { NodeTypeEnum } from '@/types/enums/common';
+import { NodeTypeEnum, HitlModeEnum } from '@/types/enums/common';
 import { PortGroupEnum } from '@/types/enums/node';
 import type { ChildNode } from '@/types/interfaces/graph';
 import type {
@@ -30,13 +30,13 @@ export const humanInteractionHandler: BranchNodeHandler = {
   nodeType: NodeTypeEnum.HumanInteraction,
 
   generatePorts(data: ChildNode, ctx: PortGeneratorContext) {
-    const hitlMode = (data.nodeConfig as any)?.hitlMode || 'ask';
+    const hitlMode = (data.nodeConfig as any)?.hitlMode || HitlModeEnum.Ask;
 
     const inputPorts = [
       ctx.generatePortConfig({ group: PortGroupEnum.in, idSuffix: 'in' }),
     ];
 
-    if (hitlMode === 'approve') {
+    if (hitlMode === HitlModeEnum.Approve) {
       const approveY = branchPortY(0);
       const rejectY = branchPortY(1);
       return {
@@ -129,7 +129,7 @@ export const humanInteractionHandler: BranchNodeHandler = {
 
   initBranchMap(node: ChildNode): Map<string, number[]> | null {
     const nc = node.nodeConfig as any;
-    if (nc?.hitlMode !== 'approve') return null;
+    if (nc?.hitlMode !== HitlModeEnum.Approve) return null;
 
     const branchMap = new Map<string, number[]>();
     branchMap.set('hitl-approve', []);
@@ -150,7 +150,7 @@ export const humanInteractionHandler: BranchNodeHandler = {
   },
 
   isSpecialBranchNode(node: ChildNode): boolean {
-    return (node.nodeConfig as any)?.hitlMode === 'approve';
+    return (node.nodeConfig as any)?.hitlMode === HitlModeEnum.Approve;
   },
 
   handleSpecialNextIndex(

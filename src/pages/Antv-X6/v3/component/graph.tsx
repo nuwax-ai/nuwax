@@ -26,8 +26,6 @@ import {
   Shape,
   Snapline,
 } from '@antv/x6';
-// TODO: 待安装 @antv/x6-plugin-minimap 后恢复
-// import { MiniMap } from '@antv/x6-plugin-minimap';
 import { message, Modal } from 'antd';
 import StencilContent from '../components/layout/Sidebar';
 import {
@@ -475,15 +473,6 @@ const initGraph = ({
         pointerEvents: 'none',
       }),
     );
-  // TODO: 待安装 @antv/x6-plugin-minimap 后恢复
-  // .use(
-  //   new MiniMap({
-  //     container: document.getElementById('minimap-container') || undefined,
-  //     width: 200,
-  //     height: 140,
-  //     padding: 10,
-  //   }),
-  // );
 
   /**
    *

@@ -42,16 +42,21 @@ export interface ChipDescriptor {
   label: string;
   /** chip 色调 */
   tone: ChipTone;
+  /**
+   * chip 对应的端口数组下标（用于和 handler 生成的 outputPorts 数组对齐）
+   * - EvalGate / HITL approve: 0..N-1（与 chip 数组下标一致，可省略）
+   * - RouteDecision: default 占位 0，routes 从 1 开始，所以 chip[0] 的 portIndex=1
+   * 未设置时默认使用 chip 数组下标
+   */
+  portIndex?: number;
 }
-
-const tooltipTitle = t('PC.Pages.AgentFlow.dragToConnect', '拖拽连线');
 
 /**
  * 根据节点 type + nodeConfig 枚举 chip 列表
  * 列表顺序与 handler 生成的端口顺序一致：
- * - EvalGate: [pass, fail_1, fail_2, ...]
- * - RouteDecision: [default(跳过), route_1, route_2, ...]
- * - HITL approve: [approve, reject]
+ * - EvalGate: [pass(portIdx=0), fail_1(portIdx=1), fail_2(portIdx=2), ...]
+ * - RouteDecision: [default 跳过, route_1(portIdx=1), route_2(portIdx=2), ...]
+ * - HITL approve: [approve(portIdx=0), reject(portIdx=1)]
  */
 function buildChips(data: ChildNode): ChipDescriptor[] {
   const nc: any = data.nodeConfig || {};
@@ -62,23 +67,22 @@ function buildChips(data: ChildNode): ChipDescriptor[] {
       const chips: ChipDescriptor[] = [
         { label: t('PC.Pages.AgentFlow.chipPass', '通过'), tone: 'pass' },
       ];
-      validators.forEach((v, i) => {
+      validators.forEach((v) => {
         chips.push({
           label: t('PC.Pages.AgentFlow.chipFail', '不达标'),
           tone: 'fail',
         });
-        // i 仅为占位，保持与 handler 的 validators 顺序一致
-        void i;
       });
       return chips;
     }
 
     case NodeTypeEnum.RouteDecision: {
       const routes: any[] = nc.routes || [];
-      // 第 0 个位置是 default 端口，不渲染 chip
+      // default 端口不渲染 chip；第 1 个 route 实际是 outputPorts 数组下标 1
       return routes.map((r, i) => ({
         label: r.routeName || r.name || `Route ${i + 1}`,
         tone: 'route',
+        portIndex: i + 1,
       }));
     }
 
@@ -101,13 +105,13 @@ function buildChips(data: ChildNode): ChipDescriptor[] {
 /**
  * 计算第 i 个 chip 的 top 值（px）
  *
- * 对齐公式：与 handler 端口 y 坐标一致 —— `baseY + (i+1)*itemHeight - step`
- * 其中 i=0 表示该节点第一个 chip（在 default 后/第一个分支端口）
+ * 对齐公式：与 handler 端口 y 坐标一致 —— `baseY + (portIndex+1)*itemHeight - step`
+ * portIndex = chip 数组下标 i（默认）或 ChipDescriptor.portIndex（覆盖）
  */
-function chipTop(index: number): number {
+function chipTop(portIndex: number): number {
   return (
     BRANCH_PORT_BASE_Y +
-    (index + 1) * BRANCH_PORT_ITEM_HEIGHT -
+    (portIndex + 1) * BRANCH_PORT_ITEM_HEIGHT -
     BRANCH_PORT_STEP +
     CHIP_TOP_OFFSET
   );
@@ -121,16 +125,24 @@ const AgentFlowPortChips: React.FC<AgentFlowPortChipsProps> = ({ data }) => {
 
   return (
     <div className="agent-flow-port-chip-layer">
-      {chips.map((chip, i) => (
-        <Tooltip key={`${data.id}-${i}`} title={tooltipTitle} placement="top">
-          <div
-            className={`agent-flow-port-chip ${chip.tone}`}
-            style={{ top: chipTop(i), right: CHIP_RIGHT_OFFSET }}
+      {chips.map((chip, i) => {
+        // portIndex 显式 > 数组下标，handler 端口布局不连续时使用 (RouteDecision)
+        const portIdx = chip.portIndex ?? i;
+        return (
+          <Tooltip
+            key={`${data.id}-${portIdx}`}
+            title={t('PC.Pages.AgentFlow.dragToConnect', '拖拽连线')}
+            placement="top"
           >
-            {chip.label}
-          </div>
-        </Tooltip>
-      ))}
+            <div
+              className={`agent-flow-port-chip ${chip.tone}`}
+              style={{ top: chipTop(portIdx), right: CHIP_RIGHT_OFFSET }}
+            >
+              {chip.label}
+            </div>
+          </Tooltip>
+        );
+      })}
     </div>
   );
 };
