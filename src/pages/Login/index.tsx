@@ -24,6 +24,7 @@ import {
   Input,
   Modal,
   Segmented,
+  Space,
   theme,
   Tooltip,
   Typography,
@@ -543,25 +544,54 @@ const Login: React.FC = () => {
                     )}
                   </Title>
                 </Form.Item>
-                <Form.Item name="phoneOrEmail" rules={getPhoneOrEmailRules()}>
+                <Form.Item>
                   {tenantConfigInfo?.authType === 3 ? (
-                    <Input
-                      rootClassName={cx(styles.input)}
-                      placeholder={dict('PC.Pages.Login.inputEmailPlaceholder')}
-                    />
+                    <Form.Item
+                      name="phoneOrEmail"
+                      noStyle
+                      rules={getPhoneOrEmailRules()}
+                    >
+                      <Input
+                        rootClassName={cx(styles.input)}
+                        placeholder={dict(
+                          'PC.Pages.Login.inputEmailPlaceholder',
+                        )}
+                      />
+                    </Form.Item>
                   ) : (
-                    <Input
-                      placeholder={dict('PC.Pages.Login.inputPhonePlaceholder')}
-                      rootClassName={cx(styles.input, styles['current-input'])}
-                      addonBefore={
-                        <div className={cx(styles.icon, 'flex', 'flex-col')}>
-                          +86
-                          <DownOutlined
-                            style={{ marginLeft: 15, fontSize: '14px' }}
-                          />
-                        </div>
-                      }
-                    />
+                    <Space.Compact
+                      block
+                      className={cx(styles['phone-input-compact'])}
+                    >
+                      <div
+                        className={cx(
+                          styles.icon,
+                          'flex',
+                          'flex-row',
+                          'items-center',
+                        )}
+                      >
+                        +86
+                        <DownOutlined
+                          style={{ marginLeft: 6, fontSize: '14px' }}
+                        />
+                      </div>
+                      <Form.Item
+                        name="phoneOrEmail"
+                        noStyle
+                        rules={getPhoneOrEmailRules()}
+                      >
+                        <Input
+                          placeholder={dict(
+                            'PC.Pages.Login.inputPhonePlaceholder',
+                          )}
+                          rootClassName={cx(
+                            styles.input,
+                            styles['current-input'],
+                          )}
+                        />
+                      </Form.Item>
+                    </Space.Compact>
                   )}
                 </Form.Item>
                 {loginType === LoginTypeEnum.Password && (

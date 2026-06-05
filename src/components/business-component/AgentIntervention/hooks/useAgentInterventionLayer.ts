@@ -32,19 +32,32 @@ export interface UseAgentInterventionLayerResult {
 export function useAgentInterventionLayer(
   options: UseAgentInterventionLayerOptions,
 ): UseAgentInterventionLayerResult {
-  const { messageList, onSendMessage } = options;
+  const { conversationId, messageList, onSendMessage } = options;
   const [agentMode, setAgentMode] = useState<AgentMode>('yolo');
 
-  const { respondAcpPermission, respondMcpAsk } = useModel('conversationInfo');
+  const {
+    isConversationActive,
+    respondAcpPermission,
+    respondMcpAsk,
+    runStopConversation,
+  } = useModel('conversationInfo');
+
+  const cancelActiveConversation = useCallback(async () => {
+    if (!isConversationActive || !conversationId) {
+      return;
+    }
+    await runStopConversation(String(conversationId));
+  }, [conversationId, isConversationActive, runStopConversation]);
 
   const handleRespondMcpAsk = useCallback(
     async (interaction: McpAskInteraction, payload: McpAskRespondPayload) => {
+      await cancelActiveConversation();
       const resumeMessage = await respondMcpAsk(interaction, payload);
       if (resumeMessage) {
         onSendMessage(resumeMessage);
       }
     },
-    [respondMcpAsk, onSendMessage],
+    [cancelActiveConversation, respondMcpAsk, onSendMessage],
   );
 
   return {

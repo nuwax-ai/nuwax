@@ -137,9 +137,9 @@ const DebugDetails: React.FC<DebugDetailsProps> = ({ visible, onClose }) => {
             </h5>
             {finalResult?.componentExecuteResults?.map(
               (info: ExecuteResultInfo, index: number) => (
-                // 模型可能不存在id，所以使用index作为key
+                // 即使存在 id 也可能重复（例如 -1），所以结合 index 作为唯一 key
                 <div
-                  key={info?.id || index}
+                  key={`${info?.id ?? 'comp'}-${index}`}
                   className={cx(styles['execute-box'], 'flex', 'items-center')}
                 >
                   <img
