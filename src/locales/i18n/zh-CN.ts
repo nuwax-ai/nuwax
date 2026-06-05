@@ -5126,6 +5126,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.SystemSubscriptionBasicConfig.sectionExchange": "积分兑换配置",
   "PC.Pages.SystemSubscriptionBasicConfig.creditExchangeRate": "兑换比例",
   "PC.Pages.SystemSubscriptionBasicConfig.creditExchangeDesc": "换算描述",
+  "PC.Pages.SystemSubscriptionBasicConfig.creditExchangeDescPlaceholder": "请输入面向用户的积分换算说明，例如兑换比例、可抵扣范围等，将展示在积分余额旁",
   "PC.Pages.SystemSubscriptionBasicConfig.creditsUnit": "积分",
   "PC.Pages.SystemSubscriptionBasicConfig.currentExchange": "当前换算",
   "PC.Pages.SystemSubscriptionBasicConfig.sectionRegisterGift": "新用户注册赠送",

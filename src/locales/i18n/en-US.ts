@@ -5144,6 +5144,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.SystemSubscriptionBasicConfig.sectionExchange": "Exchange Config",
   "PC.Pages.SystemSubscriptionBasicConfig.creditExchangeRate": "Exchange Ratio",
   "PC.Pages.SystemSubscriptionBasicConfig.creditExchangeDesc": "Conversion description",
+  "PC.Pages.SystemSubscriptionBasicConfig.creditExchangeDescPlaceholder": "Enter a user-facing credit conversion note, e.g. exchange ratio and eligible usage. Shown next to the credit balance.",
   "PC.Pages.SystemSubscriptionBasicConfig.creditsUnit": "Credits",
   "PC.Pages.SystemSubscriptionBasicConfig.currentExchange": "Current Exchange",
   "PC.Pages.SystemSubscriptionBasicConfig.sectionRegisterGift": "New User Gift",

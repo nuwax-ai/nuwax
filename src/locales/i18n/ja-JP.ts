@@ -5457,6 +5457,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.SystemRunningLogTable.targetTypeModel": "Model",
   "PC.Pages.SystemSubscriptionBasicConfig.creditExchangeRate": "Exchange Ratio",
   "PC.Pages.SystemSubscriptionBasicConfig.creditExchangeDesc": "換算説明",
+  "PC.Pages.SystemSubscriptionBasicConfig.creditExchangeDescPlaceholder": "ユーザー向けのクレジット換算説明を入力してください（交換レート、利用範囲など）。クレジット残高の横に表示されます",
   "PC.Pages.SystemSubscriptionBasicConfig.creditsExchangeRate": "Credits Exchange Rate (Credits/CNY)",
   "PC.Pages.SystemSubscriptionBasicConfig.creditsUnit": "Credits",
   "PC.Pages.SystemSubscriptionBasicConfig.currentExchange": "Current Exchange",

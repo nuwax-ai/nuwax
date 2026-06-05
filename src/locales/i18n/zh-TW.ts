@@ -5538,6 +5538,7 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.SystemRunningLogTable.targetTypeModel": "模型",
   "PC.Pages.SystemSubscriptionBasicConfig.creditExchangeRate": "兌換比例",
   "PC.Pages.SystemSubscriptionBasicConfig.creditExchangeDesc": "換算描述",
+  "PC.Pages.SystemSubscriptionBasicConfig.creditExchangeDescPlaceholder": "請輸入面向使用者的積分換算說明，例如兌換比例、可抵扣範圍等，將展示在積分餘額旁",
   "PC.Pages.SystemSubscriptionBasicConfig.creditsExchangeRate": "積分汇率（積分/元）",
   "PC.Pages.SystemSubscriptionBasicConfig.creditsUnit": "積分",
   "PC.Pages.SystemSubscriptionBasicConfig.currentExchange": "目前换算",
