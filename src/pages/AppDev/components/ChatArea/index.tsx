@@ -485,8 +485,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         allAttachments = message.attachments || [];
       }
 
-      console.log('传统附件（图片、文件等）allAttachments：', allAttachments);
-
       return (
         <div
           key={message.id}

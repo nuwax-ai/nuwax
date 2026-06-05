@@ -38,10 +38,6 @@ export interface UseAppDevSourceControlParams {
   projectId: string | null;
   /** 文件管理实例 */
   fileManagement: AppDevSourceControlFileManagement;
-  /** 同步工作区文件内容（Umi model） */
-  updateWorkspaceFileContent: (fileId: string, content: string) => void;
-  /** 切换到代码标签页 */
-  onSwitchToCodeTab?: () => void;
   /** 提交成功后刷新项目详情 */
   onRefreshProjectInfo?: () => void;
 }
@@ -94,8 +90,6 @@ export interface UseAppDevSourceControlReturn {
 export const useAppDevSourceControl = ({
   projectId,
   fileManagement,
-  updateWorkspaceFileContent,
-  onSwitchToCodeTab,
   onRefreshProjectInfo,
 }: UseAppDevSourceControlParams): UseAppDevSourceControlReturn => {
   /** 本地未提交的修改文件列表 */
@@ -326,13 +320,9 @@ export const useAppDevSourceControl = ({
    * 仅触发 diff 预览，不走文件树普通选中逻辑
    * @param fileId 文件 ID
    */
-  const handleDiffFileSelect = useCallback(
-    (fileId: string) => {
-      setSelectedDiffFileId(fileId);
-      onSwitchToCodeTab?.();
-    },
-    [onSwitchToCodeTab],
-  );
+  const handleDiffFileSelect = useCallback((fileId: string) => {
+    setSelectedDiffFileId(fileId);
+  }, []);
 
   /**
    * 打开更改文件（选中并进入代码编辑，非 diff 模式）
@@ -342,9 +332,8 @@ export const useAppDevSourceControl = ({
     (fileId: string) => {
       setSelectedDiffFileId(null);
       fileManagement.switchToFile(fileId);
-      onSwitchToCodeTab?.();
     },
-    [fileManagement, onSwitchToCodeTab],
+    [fileManagement],
   );
 
   /**
@@ -360,7 +349,6 @@ export const useAppDevSourceControl = ({
 
       // 还原文件树与工作区中的内容
       fileManagement.updateFileContent(fileId, changeFile.originalFileContent);
-      updateWorkspaceFileContent(fileId, changeFile.originalFileContent);
 
       if (fileManagement.fileContentState.selectedFile === fileId) {
         fileManagement.cancelEdit(true);
@@ -368,12 +356,7 @@ export const useAppDevSourceControl = ({
 
       clearChangeForFile(fileId);
     },
-    [
-      changeFiles,
-      fileManagement,
-      updateWorkspaceFileContent,
-      clearChangeForFile,
-    ],
+    [changeFiles, fileManagement, clearChangeForFile],
   );
 
   /**

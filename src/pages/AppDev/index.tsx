@@ -158,9 +158,6 @@ const AppDev: React.FC = () => {
   // 项目导入状态
   const [isProjectUploading, setIsProjectUploading] = useState(false);
 
-  // 聊天模式状态
-  // const [chatMode, setChatMode] = useState<'chat' | 'code'>('chat');
-
   // 数据资源相关状态
   const [isAddDataResourceModalVisible, setIsAddDataResourceModalVisible] =
     useState(false);
@@ -235,15 +232,13 @@ const AppDev: React.FC = () => {
     projectId: projectId || '',
     onFileSelect: setActiveFile,
     onFileContentChange: updateFileContent,
-    isChatLoading: false, // 临时设为false，稍后更新
     hasPermission: projectInfo.hasPermission, // 传递权限状态
   });
 
+  // 源代码管理
   const sourceControl = useAppDevSourceControl({
     projectId,
     fileManagement,
-    updateWorkspaceFileContent: updateFileContent,
-    onSwitchToCodeTab: () => setActiveTab('code'),
     onRefreshProjectInfo: () => projectInfo.refreshProjectInfo(),
   });
 
@@ -591,6 +586,30 @@ const AppDev: React.FC = () => {
       projectInfo.refreshProjectInfo();
     },
   });
+
+  /** 编辑器内容变更：同步本地状态并防抖自动保存 */
+  const handleEditorContentChange = useCallback(
+    (fileId: string, content: string) => {
+      if (versionCompare.isComparing || chat.isChatLoading) {
+        return;
+      }
+
+      // 同步更新文件内容到文件管理器
+      fileManagement.updateFileContent(fileId, content);
+
+      // 同步git变更文件列表
+      sourceControl.syncChangeFiles(fileId, content);
+
+      // 保存文件到服务端
+      fileManagement.saveFile({ fileId, content });
+    },
+    [
+      versionCompare.isComparing,
+      chat.isChatLoading,
+      fileManagement,
+      sourceControl,
+    ],
+  );
 
   // 获取当前显示的文件树（版本模式或正常模式）
   const currentDisplayFiles = useMemo(() => {
@@ -1630,9 +1649,6 @@ const AppDev: React.FC = () => {
                           isFileModified={
                             fileManagement.fileContentState.isFileModified
                           }
-                          isSavingFile={
-                            fileManagement.fileContentState.isSavingFile
-                          }
                           devServerUrl={
                             projectInfo.hasPermission
                               ? workspace.devServerUrl
@@ -1657,35 +1673,8 @@ const AppDev: React.FC = () => {
                           onWhiteScreenOrIframeError={
                             handleWhiteScreenOrIframeError
                           }
-                          onContentChange={(fileId, content) => {
-                            if (
-                              !versionCompare.isComparing &&
-                              !chat.isChatLoading
-                            ) {
-                              fileManagement.updateFileContent(fileId, content);
-                              updateFileContent(fileId, content);
-                              sourceControl.syncChangeFiles(fileId, content);
-                            }
-                          }}
+                          onContentChange={handleEditorContentChange}
                           gitDiffFile={sourceControl.selectedDiffFile}
-                          onSaveFile={() => {
-                            const selectedFileId =
-                              fileManagement.fileContentState.selectedFile;
-                            fileManagement.saveFile().then((success) => {
-                              if (success) {
-                                if (selectedFileId) {
-                                  sourceControl.clearChangeForFile(
-                                    selectedFileId,
-                                  );
-                                }
-                                // 刷新项目详情(刷新版本列表)
-                                projectInfo.refreshProjectInfo();
-                                return true;
-                              }
-                              return false;
-                            });
-                          }}
-                          onCancelEdit={sourceControl.handleCancelEdit}
                           onRefreshFile={() => {
                             // 关闭设计模式
                             setIframeDesignMode(false);
@@ -1696,8 +1685,6 @@ const AppDev: React.FC = () => {
                               fileManagement.switchToFile(
                                 fileManagement.fileContentState.selectedFile,
                               );
-                              // 取消编辑
-                              sourceControl.handleCancelEdit(true);
                             }
                           }}
                           onRefreshFileTree={fileManagement.loadFileTree}

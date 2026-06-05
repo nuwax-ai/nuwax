@@ -40,8 +40,6 @@ interface ContentViewerProps {
   fileContentError: string | null;
   /** 文件是否被修改 */
   isFileModified: boolean;
-  /** 是否正在保存文件 */
-  isSavingFile: boolean;
   /** 开发服务器URL */
   devServerUrl: string | null;
   /** 是否正在启动 */
@@ -62,10 +60,6 @@ interface ContentViewerProps {
   designViewerRef?: React.RefObject<DesignViewerRef>;
   /** 内容变化回调 */
   onContentChange: (fileId: string, content: string) => void;
-  /** 保存文件回调 */
-  onSaveFile: () => void;
-  /** 取消编辑回调 */
-  onCancelEdit: () => void;
   /** 刷新文件回调 */
   onRefreshFile: () => void;
   /** 查找文件节点方法 */
@@ -118,7 +112,6 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
   isLoadingFileContent,
   fileContentError,
   isFileModified,
-  isSavingFile,
   devServerUrl,
   isStarting,
   isRestarting, // 新增
@@ -129,8 +122,6 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
   previewRef,
   designViewerRef, // 新增
   onContentChange,
-  onSaveFile,
-  onCancelEdit,
   onRefreshFile,
   findFileNode,
   isChatLoading = false,
@@ -198,11 +189,11 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
             filePath={gitDiffFile.fileId}
             isModified
             isLoading={false}
-            isSaving={false}
             readOnly
             onRefresh={onRefreshFile}
           />
           <div className={styles.fileContentPreview}>
+            {/* 文件修改diff */}
             <ChangeFileGitDiffView
               fileId={gitDiffFile.fileId}
               fileName={fileName}
@@ -267,10 +258,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
           filePath={currentFileNode?.path || selectedFileId}
           isModified={isFileModified}
           isLoading={isLoadingFileContent}
-          isSaving={isSavingFile}
           readOnly={isComparing || isChatLoading}
-          onSave={onSaveFile}
-          onCancel={onCancelEdit}
           onRefresh={onRefreshFile}
         />
 
@@ -339,14 +327,11 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
     selectedFileId,
     findFileNode,
     isFileModified,
-    isSavingFile,
     isComparing,
     isChatLoading,
     devServerUrl,
     fileContent,
     onContentChange,
-    onSaveFile,
-    onCancelEdit,
     onRefreshFile,
     previewRef,
   ]);
@@ -377,10 +362,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
           filePath={fileNode?.path || selectedFileId}
           isModified={false}
           isLoading={false}
-          isSaving={false}
           readOnly={true}
-          onSave={() => {}}
-          onCancel={() => {}}
           onRefresh={() => {}}
         />
 

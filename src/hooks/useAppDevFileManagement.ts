@@ -2,16 +2,13 @@
  * AppDev 文件管理相关 Hook
  */
 
-import {
-  ERROR_MESSAGES,
-  SUCCESS_MESSAGES,
-  UI_CONSTANTS,
-} from '@/constants/appDevConstants';
+import { ERROR_MESSAGES, UI_CONSTANTS } from '@/constants/appDevConstants';
 import {
   getFileContent,
   getProjectContent,
   keepAlive,
   submitFilesUpdate,
+  submitSpecifiedFilesUpdate,
   uploadSingleFile,
 } from '@/services/appDev';
 import { dict } from '@/services/i18nRuntime';
@@ -21,7 +18,6 @@ import type {
   FileTreeState,
 } from '@/types/interfaces/appDev';
 import {
-  debounce,
   findFileNode,
   isFileModified as isContentModified,
   isPreviewableFile,
@@ -29,13 +25,13 @@ import {
   treeToFlatList,
 } from '@/utils/appDevUtils';
 import { message } from 'antd';
+import debounce from 'lodash/debounce';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface UseAppDevFileManagementProps {
   projectId: string;
   onFileSelect?: (fileId: string) => void;
   onFileContentChange?: (fileId: string, content: string) => void;
-  isChatLoading?: boolean; // 新增：是否正在AI聊天加载中
   hasPermission?: boolean; // 新增：是否有权限访问项目
 }
 
@@ -50,8 +46,6 @@ export const useAppDevFileManagement = ({
   projectId,
   onFileSelect,
   onFileContentChange,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  isChatLoading = false,
   hasPermission = true,
 }: UseAppDevFileManagementProps) => {
   // 文件树状态
@@ -394,81 +388,48 @@ export const useAppDevFileManagement = ({
   );
 
   /**
-   * 保存文件
+   * 保存文件（防抖，仅提交指定文件）
+   * @param options.fileId 文件路径 ID
+   * @param options.content 文件内容
    */
-  const saveFile = useCallback(async (): Promise<boolean> => {
-    const { selectedFile, fileContent } = fileContentState;
+  const saveFile = useCallback(
+    debounce(async (options: { fileId: string; content: string }) => {
+      const { fileId: selectedFile, content: fileContent } = options;
 
-    if (!selectedFile || !projectId) return false;
+      if (!selectedFile || !projectId) return;
 
-    try {
-      setFileContentState((prev) => ({ ...prev, isSavingFile: true }));
+      try {
+        setFileContentState((prev) => ({ ...prev, isSavingFile: true }));
 
-      // 首先获取最新的项目内容
-      const projectResponse = await getProjectContent(projectId);
-
-      if (
-        !projectResponse ||
-        projectResponse.code !== '0000' ||
-        !projectResponse.data
-      ) {
-        return false;
-      }
-
-      // 将项目数据转换为扁平列表格式
-      let filesList: any[] = [];
-      const files = projectResponse.data.files;
-
-      if (Array.isArray(files) && files.length > 0 && files[0].name) {
-        // 如果是扁平格式，直接使用
-        filesList = [...files];
-      } else if (Array.isArray(files)) {
-        // 如果是树形格式，转换为扁平列表
-        filesList = treeToFlatList(files as FileNode[]);
-      }
-
-      // 更新要保存的文件内容
-      const updatedFilesList = filesList.map((file) => {
-        if (file.name === selectedFile) {
-          return {
-            ...file,
+        const response = await submitSpecifiedFilesUpdate(projectId, [
+          {
+            name: selectedFile,
             contents: fileContent,
             binary: false,
             sizeExceeded: false,
-          };
+            operation: 'modify',
+          },
+        ]);
+
+        if (response.success && response.code === '0000') {
+          keepAlive(projectId);
+          setFileContentState((prev) => ({
+            ...prev,
+            originalFileContent: fileContent,
+            isFileModified: false,
+            isSavingFile: false,
+          }));
+          return;
         }
-        return file;
-      });
 
-      // 保存文件
-      const response = await submitFilesUpdate(projectId, updatedFilesList);
-
-      if (response.success && response.code === '0000') {
-        keepAlive(projectId);
-        // 保存成功后更新状态
-        setFileContentState((prev) => ({
-          ...prev,
-          originalFileContent: fileContent,
-          isFileModified: false,
-          isSavingFile: false,
-        }));
-
-        message.success(SUCCESS_MESSAGES.FILE_SAVED);
-        // 文件保存成功
-        return true;
-      } else {
-        return false;
+        setFileContentState((prev) => ({ ...prev, isSavingFile: false }));
+      } catch (error) {
+        console.error('Failed to save file', error);
+        setFileContentState((prev) => ({ ...prev, isSavingFile: false }));
       }
-    } catch (error) {
-      // 保存文件失败
-      // message.error(
-      //   `Failed to save file: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      // );
-      console.error('Failed to save file', error);
-      setFileContentState((prev) => ({ ...prev, isSavingFile: false }));
-      return false;
-    }
-  }, [fileContentState, projectId]);
+    }, 500),
+    [projectId],
+  );
 
   /**
    * 取消编辑
@@ -861,7 +822,6 @@ export const useAppDevFileManagement = ({
     switchToFile,
     saveFile,
     cancelEdit,
-    // updateFileClassName,
 
     // 文件上传相关
     uploadSingleFileToServer,
