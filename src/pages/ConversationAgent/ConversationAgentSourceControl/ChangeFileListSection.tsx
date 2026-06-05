@@ -29,8 +29,10 @@ export interface ChangeFileListSectionProps {
   emptyText?: string;
   /** 点击文件项 */
   onFileClick?: (fileId: string) => void;
-  /** 右键菜单 */
+  /** 文件右键菜单 */
   onContextMenu?: (e: React.MouseEvent, fileId: string) => void;
+  /** 树形视图文件夹右键菜单 */
+  onFolderContextMenu?: (e: React.MouseEvent, folderId: string) => void;
 }
 
 /**
@@ -45,6 +47,7 @@ const ChangeFileListSection: React.FC<ChangeFileListSectionProps> = ({
   emptyText,
   onFileClick,
   onContextMenu,
+  onFolderContextMenu,
 }) => {
   const [expanded, setExpanded] = useState(true);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(
@@ -173,6 +176,14 @@ const ChangeFileListSection: React.FC<ChangeFileListSectionProps> = ({
           <div
             className={fileTreeCx(fileTreeStyles.folderHeader)}
             onClick={() => toggleFolder(node.id)}
+            onContextMenu={(e) => {
+              if (viewMode !== 'tree') {
+                return;
+              }
+              e.preventDefault();
+              e.stopPropagation();
+              onFolderContextMenu?.(e, node.id);
+            }}
           >
             <SvgIcon
               name="icons-common-caret_right"

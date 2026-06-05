@@ -1098,6 +1098,7 @@ const ConversationAgent: React.FC = () => {
         await apiGitStash({
           workspaceType: 'taskAgent',
           cid: devConversationId,
+          files: [fileId],
         });
       } catch (error) {
         console.error('Git stash failed:', error);
@@ -1117,6 +1118,7 @@ const ConversationAgent: React.FC = () => {
         await apiGitStashPop({
           workspaceType: 'taskAgent',
           cid: devConversationId,
+          files: [fileId],
         });
       } catch (error) {
         console.error('Git stash pop failed:', error);

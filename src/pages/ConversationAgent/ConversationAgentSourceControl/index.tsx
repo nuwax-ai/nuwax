@@ -6,6 +6,7 @@ import { ReloadOutlined, UnorderedListOutlined } from '@ant-design/icons';
 import { Button, Input } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useMemo, useState } from 'react';
+import { collectFilesUnderFolder } from './buildChangeFileTree';
 import ChangeFileContextMenu from './ChangeFileContextMenu';
 import ChangeFileListSection, {
   type ChangeListViewMode,
@@ -14,6 +15,11 @@ import { resolveChangeFileStatus } from './changeFileStatus';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
+
+/** 右键菜单目标 */
+type ContextMenuTarget =
+  | { kind: 'file'; fileId: string }
+  | { kind: 'folder'; folderId: string; isStagedSection: boolean };
 
 export interface ConversationAgentSourceControlProps {
   /** 已修改文件列表 */
@@ -75,9 +81,8 @@ const ConversationAgentSourceControl: React.FC<
     x: 0,
     y: 0,
   });
-  const [contextMenuFileId, setContextMenuFileId] = useState<string | null>(
-    null,
-  );
+  const [contextMenuTarget, setContextMenuTarget] =
+    useState<ContextMenuTarget | null>(null);
 
   /** 变更项（含文件名、路径、状态角标） */
   const changeItems = useMemo(
@@ -113,27 +118,62 @@ const ConversationAgentSourceControl: React.FC<
   /** 是否存在任意变更（暂存或未暂存） */
   const hasAnyChanges = changeItems.length > 0;
 
-  const contextMenuTarget = useMemo(
-    () => changeItems.find((item) => item.fileId === contextMenuFileId),
-    [changeItems, contextMenuFileId],
-  );
+  const contextMenuFile = useMemo(() => {
+    if (contextMenuTarget?.kind !== 'file') {
+      return undefined;
+    }
+    return changeItems.find((item) => item.fileId === contextMenuTarget.fileId);
+  }, [changeItems, contextMenuTarget]);
 
-  const isContextMenuStaged = contextMenuFileId
-    ? stagedFileIds.has(contextMenuFileId)
-    : false;
+  /** 文件夹右键时，当前区块内该目录下的所有变更文件 */
+  const contextMenuFolderFiles = useMemo(() => {
+    if (contextMenuTarget?.kind !== 'folder') {
+      return [];
+    }
+    const sectionItems = contextMenuTarget.isStagedSection
+      ? stagedItems
+      : unstagedItems;
+    return collectFilesUnderFolder(sectionItems, contextMenuTarget.folderId);
+  }, [contextMenuTarget, stagedItems, unstagedItems]);
+
+  const isContextMenuStaged =
+    contextMenuTarget?.kind === 'folder'
+      ? contextMenuTarget.isStagedSection
+      : contextMenuTarget?.kind === 'file'
+      ? stagedFileIds.has(contextMenuTarget.fileId)
+      : false;
+
+  const contextMenuTargetType =
+    contextMenuTarget?.kind === 'folder' ? 'folder' : 'file';
 
   /** 关闭右键菜单 */
   const closeContextMenu = useCallback(() => {
     setContextMenuVisible(false);
-    setContextMenuFileId(null);
+    setContextMenuTarget(null);
   }, []);
 
-  /** 右键打开菜单 */
+  /** 文件右键打开菜单 */
   const handleContextMenu = useCallback(
     (e: React.MouseEvent, fileId: string) => {
       e.preventDefault();
       e.stopPropagation();
-      setContextMenuFileId(fileId);
+      setContextMenuTarget({ kind: 'file', fileId });
+      setContextMenuPosition({ x: e.clientX, y: e.clientY });
+      setContextMenuVisible(true);
+    },
+    [],
+  );
+
+  /** 树形视图文件夹右键打开菜单 */
+  const handleFolderContextMenu = useCallback(
+    (isStagedSection: boolean) => (e: React.MouseEvent, folderId: string) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setContextMenuTarget({
+        kind: 'folder',
+        folderId,
+        isStagedSection,
+      });
       setContextMenuPosition({ x: e.clientX, y: e.clientY });
       setContextMenuVisible(true);
     },
@@ -142,20 +182,53 @@ const ConversationAgentSourceControl: React.FC<
 
   /** 放弃更改（二次确认） */
   const handleDiscardChangeWithConfirm = useCallback(() => {
-    if (!contextMenuTarget) {
+    if (contextMenuTarget?.kind === 'file' && contextMenuFile) {
+      const { fileId, fileName } = contextMenuFile;
+      closeContextMenu();
+      modalConfirm(
+        dict(
+          'PC.Pages.ConversationAgentSourceControl.discardChangesConfirmTitle',
+        ),
+        fileName,
+        () => onDiscardChange?.(fileId),
+      );
       return;
     }
 
-    const { fileId, fileName } = contextMenuTarget;
-    closeContextMenu();
-    modalConfirm(
-      dict(
-        'PC.Pages.ConversationAgentSourceControl.discardChangesConfirmTitle',
-      ),
-      fileName,
-      () => onDiscardChange?.(fileId),
-    );
-  }, [closeContextMenu, contextMenuTarget, onDiscardChange]);
+    if (contextMenuTarget?.kind === 'folder' && contextMenuFolderFiles.length) {
+      const { folderId } = contextMenuTarget;
+      const fileIds = contextMenuFolderFiles.map((item) => item.fileId);
+      closeContextMenu();
+      modalConfirm(
+        dict(
+          'PC.Pages.ConversationAgentSourceControl.discardChangesConfirmTitle',
+        ),
+        folderId,
+        () => fileIds.forEach((fileId) => onDiscardChange?.(fileId)),
+      );
+    }
+  }, [
+    closeContextMenu,
+    contextMenuFile,
+    contextMenuFolderFiles,
+    contextMenuTarget,
+    onDiscardChange,
+  ]);
+
+  /** 暂存文件夹下所有更改 */
+  const handleStageFolderChanges = useCallback(() => {
+    contextMenuFolderFiles.forEach((item) => onStageChange?.(item.fileId));
+  }, [contextMenuFolderFiles, onStageChange]);
+
+  /** 取消暂存文件夹下所有更改 */
+  const handleUnstageFolderChanges = useCallback(() => {
+    contextMenuFolderFiles.forEach((item) => onUnstageChange?.(item.fileId));
+  }, [contextMenuFolderFiles, onUnstageChange]);
+
+  /** 将文件夹下所有文件添加到 .gitignore */
+  const handleAddFolderToGitignore = useCallback(() => {
+    contextMenuFolderFiles.forEach((item) => onAddToGitignore?.(item.fileId));
+  }, [contextMenuFolderFiles, onAddToGitignore]);
 
   /** 提交修改 */
   const handleCommit = async () => {
@@ -242,6 +315,7 @@ const ConversationAgentSourceControl: React.FC<
             selectedDiffFileId={selectedDiffFileId}
             onFileClick={onFileClick}
             onContextMenu={handleContextMenu}
+            onFolderContextMenu={handleFolderContextMenu(true)}
           />
         )}
         <ChangeFileListSection
@@ -252,6 +326,7 @@ const ConversationAgentSourceControl: React.FC<
           emptyText={dict('PC.Pages.ConversationAgentSourceControl.noChanges')}
           onFileClick={onFileClick}
           onContextMenu={handleContextMenu}
+          onFolderContextMenu={handleFolderContextMenu(false)}
         />
       </div>
 
@@ -261,32 +336,46 @@ const ConversationAgentSourceControl: React.FC<
         visible={contextMenuVisible}
         /** 菜单位置 */
         position={contextMenuPosition}
+        /** 右键目标类型 */
+        targetType={contextMenuTargetType}
         /** 是否暂存 */
         isStaged={isContextMenuStaged}
         /** 关闭菜单 */
         onClose={closeContextMenu}
         /** 打开更改（diff） */
         onOpenChanges={() =>
-          contextMenuTarget && onOpenChanges?.(contextMenuTarget.fileId)
+          contextMenuFile && onOpenChanges?.(contextMenuFile.fileId)
         }
         /** 打开文件 */
         onOpenFile={() =>
-          contextMenuTarget && onOpenFile?.(contextMenuTarget.fileId)
+          contextMenuFile && onOpenFile?.(contextMenuFile.fileId)
         }
         /** 放弃更改 */
         onDiscardChange={handleDiscardChangeWithConfirm}
         /** 暂存更改 */
-        onStageChange={() =>
-          contextMenuTarget && onStageChange?.(contextMenuTarget.fileId)
-        }
+        onStageChange={() => {
+          if (contextMenuTarget?.kind === 'file' && contextMenuFile) {
+            onStageChange?.(contextMenuFile.fileId);
+            return;
+          }
+          handleStageFolderChanges();
+        }}
         /** 取消暂存 */
-        onUnstageChange={() =>
-          contextMenuTarget && onUnstageChange?.(contextMenuTarget.fileId)
-        }
+        onUnstageChange={() => {
+          if (contextMenuTarget?.kind === 'file' && contextMenuFile) {
+            onUnstageChange?.(contextMenuFile.fileId);
+            return;
+          }
+          handleUnstageFolderChanges();
+        }}
         /** 添加到 .gitignore */
-        onAddToGitignore={() =>
-          contextMenuTarget && onAddToGitignore?.(contextMenuTarget.fileId)
-        }
+        onAddToGitignore={() => {
+          if (contextMenuTarget?.kind === 'file' && contextMenuFile) {
+            onAddToGitignore?.(contextMenuFile.fileId);
+            return;
+          }
+          handleAddFolderToGitignore();
+        }}
       />
     </div>
   );

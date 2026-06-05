@@ -389,6 +389,7 @@ export const useAppDevSourceControl = ({
         await apiGitStash({
           workspaceType: 'pageApp',
           projectId: Number(projectId),
+          files: [fileId],
         });
       } catch (error) {
         console.error('Git stash failed:', error);
@@ -411,6 +412,7 @@ export const useAppDevSourceControl = ({
         await apiGitStashPop({
           workspaceType: 'pageApp',
           projectId: Number(projectId),
+          files: [fileId],
         });
       } catch (error) {
         console.error('Git stash pop failed:', error);

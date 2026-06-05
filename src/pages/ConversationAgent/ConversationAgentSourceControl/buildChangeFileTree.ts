@@ -77,3 +77,16 @@ export const buildChangeFileTree = (
   sortTreeNodes(root);
   return root;
 };
+
+/**
+ * 收集文件夹下（含子目录）的所有变更文件
+ * @param items 当前区块的变更列表
+ * @param folderId 文件夹路径 ID
+ */
+export const collectFilesUnderFolder = (
+  items: ChangeListItem[],
+  folderId: string,
+): ChangeListItem[] => {
+  const prefix = `${folderId}/`;
+  return items.filter((item) => item.fileId.startsWith(prefix));
+};
