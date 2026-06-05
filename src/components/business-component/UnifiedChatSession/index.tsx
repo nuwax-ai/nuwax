@@ -199,94 +199,100 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
             <div className={cx(styles['loading-wrapper'])}>
               <LoadingOutlined className={cx(styles['loading-icon'])} />
             </div>
-          ) : messageList?.length > 0 ? (
-            <>
-              {/* 加载历史消息的触发探测节点 */}
-              {isMoreMessage &&
-                (messageList?.length || 0) >= MESSAGE_PAGE_SIZE && (
-                  <div
-                    ref={loadMoreRef}
-                    className={cx(styles['load-more-container'])}
-                  >
-                    {loadingMore ? (
-                      <span>
-                        <LoadingOutlined style={{ marginRight: 8 }} />
-                        {dict('PC.Pages.Chat.loadingHistoryConversation')}
-                      </span>
-                    ) : null}
-                  </div>
-                )}
-
-              {/* 消息渲染列表 */}
-              {messageList.map((item: MessageInfo, idx: number) => {
-                const isLastMessage = idx === messageList.length - 1;
-                if (renderMessageItem) {
-                  return renderMessageItem(item, isLastMessage);
-                }
-                return (
-                  <ChatView
-                    key={`${item.id}-${item?.index || idx}`}
-                    messageInfo={item}
-                    roleInfo={roleInfo}
-                    mode="chat"
-                    showStatusDesc={agentInfo?.type !== AgentTypeEnum.TaskAgent}
-                  />
-                );
-              })}
-
-              {/* 开场推荐提问建议列表 */}
-              <RecommendList
-                className={cx(styles['recommend-list-box'])}
-                loading={loadingSuggest}
-                chatSuggestList={chatSuggestList}
-                onClick={handleMessageSend}
-              />
-
-              {/* 通用型智能体执行中状态提示 */}
-              {isConversationActive &&
-                agentInfo?.type === AgentTypeEnum.TaskAgent && (
-                  <div className={cx(styles['task-executing-container'])}>
-                    <LoadingOutlined />
-                    <span>{dict('PC.Pages.Chat.agentExecutingWait')}</span>
-                  </div>
-                )}
-            </>
-          ) : // 空状态展现
-          renderEmptyState ? (
-            renderEmptyState()
           ) : (
-            <AgentChatEmpty
-              className="h-full"
-              icon={agentInfo?.icon}
-              name={agentInfo?.name as string}
-              extra={
-                <div className="flex flex-col items-center content-center">
-                  <div className={cx(styles['opening-chat-msg'])}>
-                    {agentInfo?.openingChatMsg}
-                  </div>
+            <>
+              {/* 变量参数配置表单 */}
+              {form && (
+                <NewConversationSet
+                  className="mb-16"
+                  form={form}
+                  variables={variables || agentInfo?.guidQuestionDtos || []}
+                  userFillVariables={userFillVariables}
+                  isFilled={isVariablesFilled ?? !!variableParams}
+                  disabled={isVariablesDisabled}
+                />
+              )}
+
+              {messageList?.length > 0 ? (
+                <>
+                  {/* 加载历史消息的触发探测节点 */}
+                  {isMoreMessage &&
+                    (messageList?.length || 0) >= MESSAGE_PAGE_SIZE && (
+                      <div
+                        ref={loadMoreRef}
+                        className={cx(styles['load-more-container'])}
+                      >
+                        {loadingMore ? (
+                          <span>
+                            <LoadingOutlined style={{ marginRight: 8 }} />
+                            {dict('PC.Pages.Chat.loadingHistoryConversation')}
+                          </span>
+                        ) : null}
+                      </div>
+                    )}
+
+                  {/* 消息渲染列表 */}
+                  {messageList.map((item: MessageInfo, idx: number) => {
+                    const isLastMessage = idx === messageList.length - 1;
+                    if (renderMessageItem) {
+                      return renderMessageItem(item, isLastMessage);
+                    }
+                    return (
+                      <ChatView
+                        key={`${item.id}-${item?.index || idx}`}
+                        messageInfo={item}
+                        roleInfo={roleInfo}
+                        mode="chat"
+                        showStatusDesc={
+                          agentInfo?.type !== AgentTypeEnum.TaskAgent
+                        }
+                      />
+                    );
+                  })}
+
+                  {/* 开场推荐提问建议列表 */}
                   <RecommendList
-                    className="mt-16"
-                    chatSuggestList={agentInfo?.guidQuestionDtos || []}
+                    className={cx(styles['recommend-list-box'])}
+                    loading={loadingSuggest}
+                    chatSuggestList={chatSuggestList}
                     onClick={handleMessageSend}
                   />
-                </div>
-              }
-            />
+
+                  {/* 通用型智能体执行中状态提示 */}
+                  {isConversationActive &&
+                    agentInfo?.type === AgentTypeEnum.TaskAgent && (
+                      <div className={cx(styles['task-executing-container'])}>
+                        <LoadingOutlined />
+                        <span>{dict('PC.Pages.Chat.agentExecutingWait')}</span>
+                      </div>
+                    )}
+                </>
+              ) : // 空状态展现
+              renderEmptyState ? (
+                renderEmptyState()
+              ) : (
+                <AgentChatEmpty
+                  className="h-full"
+                  icon={agentInfo?.icon}
+                  name={agentInfo?.name as string}
+                  extra={
+                    <div className="flex flex-col items-center content-center">
+                      <div className={cx(styles['opening-chat-msg'])}>
+                        {agentInfo?.openingChatMsg}
+                      </div>
+                      <RecommendList
+                        className="mt-16"
+                        chatSuggestList={agentInfo?.guidQuestionDtos || []}
+                        onClick={handleMessageSend}
+                      />
+                    </div>
+                  }
+                />
+              )}
+            </>
           )}
         </div>
       </div>
-
-      {/* 变量参数配置表单 */}
-      {form && (
-        <NewConversationSet
-          className="mb-16"
-          form={form}
-          variables={variables || agentInfo?.guidQuestionDtos || []}
-          userFillVariables={userFillVariables}
-          isFilled={isVariablesFilled ?? !!variableParams}
-          disabled={isVariablesDisabled}
-        />
-      )}
 
       {/* 会话执行状态栏 */}
       {messageList?.length > 0 &&
