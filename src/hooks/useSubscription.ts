@@ -14,7 +14,7 @@ import { apiGetMySubscription } from '@/services/subscriptionService';
 import { BizTypeEnum } from '@/types/interfaces/subscription';
 import { message } from 'antd';
 import { useCallback, useState } from 'react';
-import { useRequest } from 'umi';
+import useRequestPromiseBridge from './useRequestPromiseBridge';
 
 /**
  * 智能体订阅（套餐列表、「我的订阅」当前智能体数据）
@@ -33,22 +33,20 @@ const useSubscription = () => {
   >([]);
 
   // 查询目标对象定价配置
-  const { run: loadTargetPricing, loading: loadingTargetPricing } = useRequest(
-    apiQueryToolPricing,
-    {
+  const { runWithPromise: loadTargetPricing, loading: loadingTargetPricing } =
+    useRequestPromiseBridge(apiQueryToolPricing, {
       manual: true,
       loadingDelay: 300,
       onSuccess: (data: ResourcePricingConfigInfo) => {
         setTargetSubscriptionPlans(data?.plans || []);
       },
-    },
-  );
+    });
 
   // 查询订阅计划列表
   const {
-    run: loadAgentSubscriptionPlans,
+    runWithPromise: loadAgentSubscriptionPlans,
     loading: loadingAgentSubscriptionPlans,
-  } = useRequest(apiGetAgentSubscriptionPlanList, {
+  } = useRequestPromiseBridge(apiGetAgentSubscriptionPlanList, {
     manual: true,
     loadingDelay: 500,
     onSuccess: (data: SubscriptionPlanInfo[]) =>
@@ -58,12 +56,16 @@ const useSubscription = () => {
   /** 当前智能体、技能套餐维度「我的订阅」 */
   const {
     data: mySubscriptionInfo,
-    run: loadMySubscription,
+    runWithPromise: loadMySubscription,
     loading: loadingMySubscription,
-  } = useRequest(apiGetMySubscription, {
+  } = useRequestPromiseBridge(apiGetMySubscription, {
     manual: true,
     loadingDelay: 500,
   });
+
+  const ignoreRequestError = useCallback(() => {
+    // Global request errorHandler already shows the user-facing message.
+  }, []);
 
   /**
    * 创建智能体订阅订单
@@ -85,34 +87,40 @@ const useSubscription = () => {
   };
 
   // 查询智能体订阅计划列表以及当前智能体我的订阅信息
-  const queryAgentSubscriptionPlans = useCallback((agentId: number) => {
-    // 查询智能体订阅计划列表
-    loadAgentSubscriptionPlans({
-      agentId,
-      status: SubscriptionPlanStatusEnum.Online,
-    });
+  const queryAgentSubscriptionPlans = useCallback(
+    (agentId: number) => {
+      // 查询智能体订阅计划列表
+      loadAgentSubscriptionPlans({
+        agentId,
+        status: SubscriptionPlanStatusEnum.Online,
+      }).catch(ignoreRequestError);
 
-    // 查询当前智能体维度「我的订阅」接口数据
-    loadMySubscription({
-      bizType: BizTypeEnum.Agent,
-      bizId: agentId,
-    });
-  }, []);
+      // 查询当前智能体维度「我的订阅」接口数据
+      loadMySubscription({
+        bizType: BizTypeEnum.Agent,
+        bizId: agentId,
+      }).catch(ignoreRequestError);
+    },
+    [ignoreRequestError, loadAgentSubscriptionPlans, loadMySubscription],
+  );
 
   // 查询智能体订阅计划列表以及当前智能体我的订阅信息
-  const querySkillSubscriptionPlans = useCallback((skillId: number) => {
-    // 查询技能定价配置
-    loadTargetPricing({
-      targetType: ToolPricingTargetType.SKILL,
-      targetId: String(skillId),
-    });
+  const querySkillSubscriptionPlans = useCallback(
+    (skillId: number) => {
+      // 查询技能定价配置
+      loadTargetPricing({
+        targetType: ToolPricingTargetType.SKILL,
+        targetId: String(skillId),
+      }).catch(ignoreRequestError);
 
-    // 查询当前技能维度「我的订阅」接口数据
-    loadMySubscription({
-      bizType: BizTypeEnum.Skill,
-      bizId: skillId,
-    });
-  }, []);
+      // 查询当前技能维度「我的订阅」接口数据
+      loadMySubscription({
+        bizType: BizTypeEnum.Skill,
+        bizId: skillId,
+      }).catch(ignoreRequestError);
+    },
+    [ignoreRequestError, loadMySubscription, loadTargetPricing],
+  );
 
   return {
     // 智能体订阅计划列表

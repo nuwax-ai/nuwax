@@ -519,6 +519,8 @@ export interface AgentConfigInfo {
   hasPermission?: boolean;
   /** 会话关联的智能体电脑是否不可用 */
   isSandboxUnavailable?: boolean;
+  /** 智能体绑定的事件配置 */
+  eventBindConfig?: any;
 }
 
 // 智能体历史配置信息

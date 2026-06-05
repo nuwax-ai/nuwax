@@ -14,6 +14,7 @@ import {
 import { SquareAgentTypeEnum } from '@/types/enums/square';
 import { Page } from '@/types/interfaces/request';
 import { SquarePublishedItemInfo } from '@/types/interfaces/square';
+import { getToolPricingPeriodLabel } from '@/utils/resourcePricing';
 import { ExclamationCircleFilled } from '@ant-design/icons';
 import { Button, Empty, Modal, Segmented, Space, Tag } from 'antd';
 import classNames from 'classnames';
@@ -267,15 +268,15 @@ const SpaceSection: React.FC = () => {
     info: SquarePublishedItemInfo,
     isPluginAndWorkflow: boolean = false,
   ) => {
-    const { name, paymentRequired, subscribed, price } = info;
+    const { name, paymentRequired, subscribed, price, pricingType } = info;
     /** 需付费时在卡片角标展示「付费 / 已订阅」 */
     const paymentExtra =
       isEnableSubscription && paymentRequired === true ? (
         isPluginAndWorkflow && price ? (
           <span className={cx(styles['price-title'])}>
-            {`${dict('PC.Common.Global.currencySymbol')}${price}/${dict(
-              'PC.Common.Global.times',
-            )}`}
+            {`${dict(
+              'PC.Common.Global.currencySymbol',
+            )}${price}/${getToolPricingPeriodLabel(pricingType)}`}
           </span>
         ) : (
           getSubscribedLabel(subscribed)

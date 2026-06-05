@@ -1,3 +1,4 @@
+import type { AgentInterventionRespondRequest } from '@/components/business-component/AgentIntervention';
 import { AgentTypeEnum } from '@/types/enums/space';
 import type {
   RcoderNotifyResolvedRequest,
@@ -373,6 +374,34 @@ export function apiResolveAcpPermission(
   return request('/api/computer/notify-resolved', {
     method: 'POST',
     data,
+  });
+}
+
+export function apiAgentInterventionRespond(
+  data: AgentInterventionRespondRequest,
+): Promise<RequestResponse<unknown>> {
+  const permissionRequest = data.permission_resolve_request;
+  const selected = permissionRequest?.request_permission_response.outcome
+    ? 'Selected' in permissionRequest.request_permission_response.outcome
+      ? permissionRequest.request_permission_response.outcome.Selected
+      : null
+    : null;
+  const fallbackOptionId =
+    permissionRequest?.request_permission_response.outcome &&
+    'Cancelled' in permissionRequest.request_permission_response.outcome
+      ? 'reject'
+      : undefined;
+
+  return request('/api/agent/conversation/chat/permission-request/response', {
+    method: 'POST',
+    data: {
+      conversationId: data.conversation_id,
+      toolId: permissionRequest?.tool_call_id,
+      option: {
+        optionId: selected?.option_id || fallbackOptionId,
+        outcome: selected ? 'selected' : 'cancelled',
+      },
+    },
   });
 }
 

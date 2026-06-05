@@ -72,6 +72,7 @@ export interface CreateWorkflowProps {
    * 返回 Promise<boolean>，true 表示更新成功
    */
   onUpdate?: (info: WorkflowBaseInfo) => Promise<boolean>;
+  defaultGroupId?: number;
 }
 
 // 新建、更新插件组件
@@ -86,6 +87,7 @@ export interface CreateNewPluginProps {
   open: boolean;
   onCancel: () => void;
   onConfirm?: (info: PluginHttpUpdateParams) => void;
+  defaultGroupId?: number;
 }
 
 // table头部header带*号标题
@@ -265,6 +267,8 @@ export interface ComponentInfo {
   permissions?: PermissionsEnum[];
   // 流类型：Workflow / AgentFlow
   workflowType?: string;
+  // 分组 ID
+  groupId?: number;
 }
 
 // 任务创建者信息
@@ -405,4 +409,21 @@ export interface BoxInfoProps {
 // 复制参数
 export interface CopyTableParams {
   tableId: number;
+}
+
+export interface ResourceGroupInfo {
+  id: number;
+  spaceId: number;
+  name: string;
+  description: string;
+  icon: string;
+  toolCount: number;
+  type: string;
+  created: string;
+  modified: string;
+}
+
+export interface ResourceGroupListParams {
+  spaceId: number | string;
+  types: string[];
 }

@@ -1,4 +1,6 @@
+import type { AgentMode } from '@/components/business-component/AgentIntervention';
 import { MentionItem } from '@/components/ChatInputHome/MentionPopup/types';
+import type { ResourcePricingType } from '@/pages/SpaceResource/types/resource';
 import type {
   AgentComponentTypeEnum,
   AllowCopyEnum,
@@ -340,6 +342,8 @@ export interface CreatedNodeItem {
   paymentRequired?: boolean;
   subscribed?: boolean;
   price?: number;
+  /** 计价周期，与工具定价配置一致：ONE_TIME / SECOND / MILLION_TOKEN 等 */
+  pricingType?: ResourcePricingType;
 }
 
 export interface MCPNodeItem {
@@ -536,6 +540,7 @@ export interface ChatInputProps extends ManualComponentItemProps {
     files: UploadFileInfo[],
     skillIds?: number[],
     modelId?: number,
+    agentMode?: AgentMode,
   ) => void;
   /** 是否启用 @ 提及功能，默认启用 */
   enableMention?: boolean;
@@ -580,10 +585,18 @@ export interface ChatInputProps extends ManualComponentItemProps {
   onModelSelect?: (modelId: number) => void;
   /** 智能体类型 */
   agentType?: string;
+  /** 当前 Agent mode */
+  agentMode?: AgentMode;
+  /** Agent mode 变化回调 */
+  onAgentModeChange?: (mode: AgentMode) => void;
+  /** 是否展示 Agent mode 选择器 */
+  showAgentModeSelector?: boolean;
   /** 占位符文本 */
   placeholder?: string;
   /** 默认提及项列表（需同时传入 value 文本） */
   defaultMentions?: MentionItem[];
+  /** 插槽：用于完美嵌入和合并头部 Tab 选择组件 */
+  tabsSlot?: React.ReactNode;
 }
 
 // 聊天框底部更多操作组件
@@ -606,6 +619,12 @@ export interface EllipsisTooltipProps {
   className?: string;
   text: string | number;
   onClick?: () => void;
+  /** 最大展示行数，超出时显示 Tooltip，默认 1 行 */
+  maxLines?: 1 | 2;
+  /** Tooltip 内容最大宽度，避免长文本撑开导致定位偏移 */
+  maxWidth?: number;
+  /** Tooltip 内容最大高度，超出后内部滚动 */
+  maxHeight?: number;
   // 气泡框位置，可选
   placement?:
     | 'top'

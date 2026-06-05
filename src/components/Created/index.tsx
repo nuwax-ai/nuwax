@@ -1,5 +1,6 @@
 import PaymentSubscriptionModal from '@/components/business-component/PaymentSubscriptionModal';
 import ConditionRender from '@/components/ConditionRender';
+import { EllipsisTooltip } from '@/components/custom/EllipsisTooltip';
 import Constant, { SUCCESS_CODE } from '@/constants/codes.constants';
 import { CREATED_TABS } from '@/constants/common.constants';
 import useSubscription from '@/hooks/useSubscription';
@@ -16,6 +17,7 @@ import { AgentAddComponentBaseInfo } from '@/types/interfaces/agentConfig';
 import { CreatedNodeItem } from '@/types/interfaces/common';
 import { CustomPageDto } from '@/types/interfaces/pageDev';
 import { getTime } from '@/utils';
+import { getToolPricingPeriodLabel } from '@/utils/resourcePricing';
 import { jumpToMcpCreate, jumpToPageDevelop } from '@/utils/router';
 import { getImg } from '@/utils/workflow';
 import {
@@ -785,9 +787,11 @@ const Created: React.FC<CreatedProp> = ({
         />
         <div className={cx('flex-1', styles['content-font'])}>
           <div className={cx(styles['label-row'])}>
-            <p className={cx(styles['label-font-style'], 'text-ellipsis-2')}>
-              {item.name}
-            </p>
+            <EllipsisTooltip
+              className={cx(styles['label-font-style'])}
+              text={item.name}
+              maxLines={2}
+            />
             {/* 仅插件/工作流类型需要展示付费标签 */}
             {/* 订阅能力开启且为付费时展示「已订阅/付费」标签，与右侧按钮状态对应 */}
             {isEnableSubscription &&
@@ -803,18 +807,17 @@ const Created: React.FC<CreatedProp> = ({
                   {item.subscribed
                     ? t('PC.Pages.Square.SingleAgent.subscribed')
                     : item.price
-                    ? `${t('PC.Common.Global.currencySymbol')}${item.price}/${t(
-                        'PC.Common.Global.times',
-                      )}`
+                    ? `${t('PC.Common.Global.currencySymbol')}${
+                        item.price
+                      }/${getToolPricingPeriodLabel(item.pricingType)}`
                     : t('PC.Pages.Square.SingleAgent.paid')}
                 </Tag>
               )}
           </div>
-          <p
-            className={cx(styles['created-description-style'], 'text-ellipsis')}
-          >
-            {item.description}
-          </p>
+          <EllipsisTooltip
+            className={cx(styles['created-description-style'])}
+            text={item.description}
+          />
           <div className={cx('dis-sb', styles['count-div-style'])}>
             <div className={'dis-left'}>
               <img

@@ -1,0 +1,298 @@
+@import '@/styles/token';
+
+@tab-list-scrollbar-size: 8px;
+
+// 标签栏 Tooltip：置于标签之上、可选中文本，避免事件穿透触发拖拽
+:global(.preview-tab-label-tooltip) {
+  pointer-events: auto !important;
+  z-index: @zIndexPopupBase;
+
+  .ant-tooltip-inner {
+    pointer-events: auto;
+    user-select: text;
+    cursor: text;
+  }
+}
+
+.tab-bar {
+  display: flex;
+  align-items: center;
+  height: 40px;
+  min-height: 40px;
+  padding: 0 @paddingXs 0 0;
+  border-bottom: @lineWidth solid @colorSplit;
+  background: @colorBgContainer;
+  flex-shrink: 0;
+}
+
+.tab-bar-left {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  align-self: stretch;
+}
+
+.tab-list-shell {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  height: 46px;
+  padding-top: 6px;
+
+  &:hover .tab-list-gutter {
+    scrollbar-color: rgba(0, 0, 0, 20%) transparent;
+
+    &::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 20%);
+    }
+  }
+}
+
+// tabs 滚动区：隐藏原生滚动条，高度固定，避免滚动条挤压 tabs
+.tab-list-viewport {
+  flex: 1;
+  min-height: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+// 底部固定 6px 槽位：仅此处显示水平滚动条
+.tab-list-gutter {
+  flex: 0 0 @tab-list-scrollbar-size;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+
+  &::-webkit-scrollbar {
+    height: @tab-list-scrollbar-size;
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 3px;
+    transition: background 0.2s ease;
+  }
+}
+
+.tab-list-gutter-spacer {
+  height: 1px;
+}
+
+.tab-list-track {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  width: max-content;
+  min-width: 100%;
+  height: 100%;
+  padding: 0 2px;
+  box-sizing: border-box;
+}
+
+.tab-item {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  max-width: 160px;
+  height: 28px;
+  padding: 0 @paddingXs;
+  border-radius: @borderRadius;
+  cursor: grab;
+  flex-shrink: 0;
+  touch-action: none;
+  color: @colorTextSecondary;
+  transition: background-color 0.2s ease, color 0.2s ease,
+    border-color 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    background: rgba(0, 0, 0, 4%);
+    color: @colorText;
+
+    .tab-close {
+      opacity: 1;
+    }
+  }
+
+  &.tab-item-active {
+    background: rgba(0, 0, 0, 6%);
+    border-color: rgba(0, 0, 0, 8%);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 4%);
+    color: @colorText;
+    font-weight: @fontWeightStrong;
+
+    .tab-close {
+      opacity: 1;
+    }
+
+    &:hover {
+      background: rgba(0, 0, 0, 8%);
+    }
+  }
+
+  &.tab-item-pinned {
+    .tab-pin-icon {
+      color: @colorPrimary;
+    }
+  }
+}
+
+/** 拖拽浮层：跟随指针，不参与 flex 布局，避免挤压/错位其他标签 */
+.tab-item-overlay {
+  cursor: grabbing;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 12%);
+  pointer-events: none;
+  max-width: 160px;
+}
+
+.tab-pin-icon {
+  flex-shrink: 0;
+  color: @colorTextTertiary;
+}
+
+.tab-icon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  font-size: @fontSize;
+}
+
+.tab-label-wrap {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.tab-label {
+  display: block;
+  max-width: 100%;
+  color: @colorText;
+  font-size: @fontSizeSm;
+  font-weight: 600;
+  user-select: none; // 禁止选中文字
+}
+
+.tab-close {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border: none;
+  border-radius: @borderRadiusSm;
+  padding: 0;
+  background: transparent;
+  color: @colorTextTertiary;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+
+  .tab-item-active &,
+  .tab-item:hover & {
+    opacity: 1;
+  }
+
+  &:hover {
+    background: rgba(0, 0, 0, 8%);
+    color: @colorText;
+  }
+}
+
+.add-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin-left: @paddingXxs;
+  border: @lineWidth solid transparent;
+  border-radius: @borderRadius;
+  background: transparent;
+  color: @colorTextSecondary;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background-color 0.2s ease, color 0.2s ease,
+    border-color 0.2s ease;
+
+  &:hover {
+    background: rgba(0, 0, 0, 4%);
+    border-color: rgba(0, 0, 0, 6%);
+    color: @colorText;
+  }
+}
+
+.right-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: @paddingXs;
+  flex-shrink: 0;
+}
+
+.icon-group {
+  display: flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 @paddingXxs;
+  border: @lineWidth solid @colorBorder;
+  border-radius: @borderRadius;
+  background: @colorBgContainer;
+}
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 28px;
+  border: none;
+  border-radius: @borderRadiusSm;
+  background: transparent;
+  color: @colorTextSecondary;
+  cursor: pointer;
+
+  &:hover {
+    background: rgba(0, 0, 0, 4%);
+    color: @colorText;
+  }
+}
+
+.action-btn {
+  height: 28px;
+  padding: 0 @paddingSm;
+  font-size: @fontSizeSm;
+  border-radius: @borderRadius;
+}
+
+.collaborate-btn {
+  border-color: @colorBorder;
+  color: @colorText;
+}
+
+.deploy-btn {
+  background: #151515;
+  border-color: #151515;
+  color: #fff;
+
+  &:hover {
+    background: #333 !important;
+    border-color: #333 !important;
+    color: #fff !important;
+  }
+}

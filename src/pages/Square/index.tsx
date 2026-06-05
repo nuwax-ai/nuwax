@@ -31,6 +31,7 @@ import {
   SquarePublishedListParams,
   SquareSearchParams,
 } from '@/types/interfaces/square';
+import { getToolPricingPeriodLabel } from '@/utils/resourcePricing';
 import { Empty, Input, message, Select, Tag } from 'antd';
 import { SearchProps } from 'antd/es/input';
 import classNames from 'classnames';
@@ -455,9 +456,9 @@ const Square: React.FC = () => {
       isEnableSubscription && paymentRequired === true ? (
         isPluginAndWorkflow && price ? (
           <span className={cx(styles['price-title'])}>
-            {`${dict('PC.Common.Global.currencySymbol')}${price}/${dict(
-              'PC.Common.Global.times',
-            )}`}
+            {`${dict(
+              'PC.Common.Global.currencySymbol',
+            )}${price}/${getToolPricingPeriodLabel(info.pricingType)}`}
           </span>
         ) : (
           getSubscribedLabel(subscribed)

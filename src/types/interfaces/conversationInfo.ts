@@ -1,4 +1,10 @@
 import type {
+  AcpPermissionInteraction,
+  AcpRequestPermissionResponse,
+  AgentMode,
+  McpAskInteraction,
+} from '@/components/business-component/AgentIntervention';
+import type {
   AssistantRoleEnum,
   ConversationEventTypeEnum,
   ExpandPageAreaEnum,
@@ -156,6 +162,8 @@ export interface SendMessageParams {
   skillIds?: number[];
   // 模型ID
   modelId?: number;
+  // Agent mode, 默认 yolo
+  agentMode?: AgentMode;
 }
 
 // 会话参数
@@ -177,6 +185,8 @@ export interface ConversationChatParams {
   skillIds?: number[];
   // 模型ID
   modelId?: number;
+  // Agent mode, 默认 yolo
+  agentMode?: AgentMode;
 }
 
 // 临时会话参数
@@ -291,6 +301,8 @@ export interface MessageInfo extends ChatMessageDto {
   processingList?: ProcessingInfo[];
   // ACP 权限审批交互
   acpPermissionInteractions?: RcoderAcpPermissionInteraction[];
+  /** MCP ask/question 交互（toolName: nuwax_ask_question） */
+  mcpAskInteractions?: McpAskInteraction[];
 }
 
 // 查询会话信息

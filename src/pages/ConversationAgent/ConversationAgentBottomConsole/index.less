@@ -1,0 +1,226 @@
+@import '@/styles/token';
+
+@console-content-height: 240px;
+
+/** 终端面板固定配色（与 terminalTheme.ts 一致，不受应用主题影响） */
+@terminal-console-bg-light: #ffffff;
+@terminal-console-fg-light: #1a1a1a;
+@terminal-console-bg-dark: #000000;
+@terminal-console-fg-dark: #d4d4d4;
+
+.console {
+  display: flex;
+  flex-direction: column;
+  border-top: @lineWidth solid @colorSplit;
+  background-color: @colorBgContainer;
+  flex-shrink: 0;
+
+  .console-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: @paddingXs @paddingSm;
+    border-bottom: @lineWidth solid @colorSplit;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 2;
+    background-color: @colorBgContainer;
+  }
+
+  .console-tabs {
+    display: flex;
+    gap: @margin;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .console-tab {
+    font-size: @fontSizeSm;
+    color: @colorTextSecondary;
+    cursor: pointer;
+    padding: 2px 0;
+
+    &.active {
+      color: @colorPrimary;
+      font-weight: 600;
+    }
+  }
+
+  .console-actions {
+    display: flex;
+    align-items: center;
+    gap: @marginXxs;
+    flex-shrink: 0;
+    margin-left: @marginSm;
+  }
+
+  .console-action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    color: @colorTextSecondary;
+    border-radius: @borderRadius;
+
+    &:hover {
+      color: @colorPrimary;
+      background-color: @colorPrimaryBg;
+    }
+  }
+
+  /** 放大：占满 Tab 栏下方主区域（right-panel-main），不遮挡 PreviewTabBar */
+  &.console-expanded {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    flex-shrink: 0;
+    min-height: 0;
+
+    .console-content {
+      flex: 1;
+      height: auto;
+      min-height: 0;
+    }
+  }
+
+  /** 折叠：仅保留底部标签栏 */
+  &.console-collapsed {
+    .console-content {
+      display: none;
+    }
+  }
+
+  /** 终端 / 日志内容区 */
+  .console-content {
+    position: relative;
+    height: @console-content-height;
+    flex-shrink: 0;
+    overflow: hidden;
+    background-color: @terminal-console-bg-light;
+    transition: background-color 0.2s ease;
+  }
+
+  &.console-terminal-dark .console-content {
+    background-color: @terminal-console-bg-dark;
+  }
+
+  /** 双 tab 叠放：隐藏项仍保留 DOM，避免 xterm 卸载丢内容 */
+  .tab-pane {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    visibility: hidden;
+    pointer-events: none;
+    z-index: 0;
+
+    &.tab-pane-active {
+      visibility: visible;
+      pointer-events: auto;
+      z-index: 1;
+    }
+  }
+
+  .console-body {
+    height: 100%;
+    overflow: auto;
+    padding: @paddingSm;
+    color: @terminal-console-fg-light;
+    font-family: Menlo, Monaco, Consolas, monospace;
+    font-size: @fontSizeSm;
+    line-height: @lineHeightLg;
+    white-space: pre-wrap;
+    word-break: break-all;
+    background-color: @terminal-console-bg-light;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  &.console-terminal-dark .console-body {
+    color: @terminal-console-fg-dark;
+    background-color: @terminal-console-bg-dark;
+  }
+
+  .console-empty {
+    color: @colorTextTertiary;
+    font-size: @fontSizeSm;
+    text-align: center;
+    padding: @paddingLg 0;
+  }
+
+  .xterm-container {
+    height: 100%;
+    overflow: hidden;
+    background-color: transparent;
+  }
+
+  /** 嵌入式终端：无边框，背景与主题一致 */
+  .terminal-embedded {
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    outline: none !important;
+
+    :global(.xterm) {
+      height: 100%;
+      padding: @marginXxs @paddingSm @marginXxs;
+    }
+
+    :global(.xterm .xterm-viewport) {
+      background-color: transparent !important;
+    }
+
+    :global(.xterm-decoration-overview-ruler) {
+      opacity: 0.4;
+    }
+  }
+
+  .terminal-embedded-light {
+    background-color: @terminal-console-bg-light !important;
+
+    :global(.xterm .xterm-viewport) {
+      background-color: @terminal-console-bg-light !important;
+
+      &::-webkit-scrollbar {
+        width: @marginXs;
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background: @colorFill;
+        border-radius: @borderRadiusSm;
+
+        &:hover {
+          background: @colorPrimary;
+        }
+      }
+
+      &::-webkit-scrollbar-track {
+        background: @colorFillTertiary;
+      }
+    }
+  }
+
+  .terminal-embedded-dark {
+    background-color: @terminal-console-bg-dark !important;
+
+    :global(.xterm .xterm-viewport) {
+      background-color: @terminal-console-bg-dark !important;
+
+      &::-webkit-scrollbar {
+        width: @marginXs;
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background: @colorFillSecondary;
+        border-radius: @borderRadiusSm;
+
+        &:hover {
+          background: @cyan;
+        }
+      }
+
+      &::-webkit-scrollbar-track {
+        background: @colorFillQuaternary;
+      }
+    }
+  }
+}

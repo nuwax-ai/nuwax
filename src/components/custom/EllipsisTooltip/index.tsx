@@ -1,7 +1,14 @@
+import TooltipIcon from '@/components/custom/TooltipIcon';
+import { TooltipTitleTypeEnum } from '@/types/enums/common';
 import type { EllipsisTooltipProps } from '@/types/interfaces/common';
-import { Tooltip } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
 
 /**
  * 溢出检测 Tooltip 组件
@@ -11,39 +18,73 @@ export const EllipsisTooltip: React.FC<EllipsisTooltipProps> = ({
   className,
   text,
   onClick,
+  maxLines = 1,
+  maxWidth = 400,
+  maxHeight = 280,
   placement = 'top',
 }) => {
   const textRef = useRef<HTMLDivElement>(null);
   const [isOverflowed, setIsOverflowed] = useState<boolean>(false);
+  const displayText = text ? String(text) : '';
+
+  const checkOverflow = useCallback(() => {
+    if (!textRef.current) {
+      return;
+    }
+
+    const element = textRef.current;
+    const isOverflow =
+      maxLines === 1
+        ? element.scrollWidth > element.clientWidth
+        : element.scrollHeight > element.clientHeight + 1;
+    setIsOverflowed(isOverflow);
+  }, [maxLines]);
+
+  useLayoutEffect(() => {
+    checkOverflow();
+  }, [displayText, checkOverflow]);
 
   useEffect(() => {
-    const checkOverflow = () => {
-      // 检测文本是否溢出（单行）
-      if (textRef.current) {
-        // 为 element 指定 HTMLElement 类型，解决类型“never”上不存在属性的问题
-        const element = textRef.current as HTMLElement;
-        const isOverflow = element.scrollWidth > element.clientWidth;
-        setIsOverflowed(isOverflow);
-      }
-    };
+    const element = textRef.current;
+    if (!element || typeof ResizeObserver === 'undefined') {
+      return () => {};
+    }
 
-    // 使用 requestAnimationFrame 确保在渲染完成后进行计算
-    const frameId = requestAnimationFrame(checkOverflow);
+    const resizeObserver = new ResizeObserver(() => checkOverflow());
+    resizeObserver.observe(element);
 
-    return () => {
-      cancelAnimationFrame(frameId);
-    };
-  }, [text]); // 当文本变化时重新检测
+    return () => resizeObserver.disconnect();
+  }, [checkOverflow]);
+
+  if (!displayText) {
+    return null;
+  }
 
   return (
-    <div
-      className={classNames('text-ellipsis', className)}
-      ref={textRef}
-      onClick={onClick}
+    <TooltipIcon
+      type={TooltipTitleTypeEnum.Blank}
+      placement={placement}
+      title={isOverflowed ? displayText : null}
+      tooltipStyles={{
+        body: {
+          maxWidth,
+          maxHeight,
+          overflowY: 'auto',
+          whiteSpace: 'pre-wrap',
+          wordBreak: 'break-word',
+        },
+      }}
     >
-      <Tooltip title={isOverflowed ? text : ''} placement={placement}>
-        {text}
-      </Tooltip>
-    </div>
+      <div
+        className={classNames(
+          maxLines === 2 ? 'text-ellipsis-2' : 'text-ellipsis',
+          className,
+        )}
+        ref={textRef}
+        onClick={onClick}
+      >
+        {displayText}
+      </div>
+    </TooltipIcon>
   );
 };

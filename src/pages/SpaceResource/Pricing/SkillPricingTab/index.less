@@ -1,10 +1,16 @@
-.skill-pricing-bold-value {
-  font-weight: 600;
+@import '@/styles/color';
+@import '@/styles/token';
+
+.tool-price-amount {
+  font-size: @fontSize;
+  font-weight: @fontWeightStrong;
+  color: @colorText;
+  margin-right: @marginXxs;
 }
 
-.skill-pricing-muted {
-  color: #999;
-  margin-left: 4px;
+.tool-price-unit {
+  font-size: @fontSizeSm;
+  color: @colorTextTertiary;
 }
 
 /* 技能名称：在表格横向滚动 + 自定义 render 下列宽需约束，否则省略号不生效 */

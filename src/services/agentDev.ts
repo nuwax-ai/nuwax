@@ -118,11 +118,12 @@ export async function apiUserCollectAgentList(
 }
 
 // 主页智能体列表接口 - 数据列表查询
-export async function apiHomeCategoryList(): Promise<
-  RequestResponse<HomeAgentCategoryInfo>
-> {
+export async function apiHomeCategoryList(options?: {
+  skipErrorHandler?: boolean;
+}): Promise<RequestResponse<HomeAgentCategoryInfo>> {
   return request('/api/home/list', {
     method: 'GET',
+    skipErrorHandler: options?.skipErrorHandler,
   });
 }
 

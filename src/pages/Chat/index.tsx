@@ -1,26 +1,21 @@
-import AgentChatEmpty from '@/components/AgentChatEmpty';
 import AgentSidebar, { AgentSidebarRef } from '@/components/AgentSidebar';
 import SvgIcon from '@/components/base/SvgIcon';
 import {
   CopyToSpaceComponent,
   PagePreviewIframe,
+  UnifiedChatSession,
 } from '@/components/business-component';
+import { type AgentMode } from '@/components/business-component/AgentIntervention';
 import PaymentSubscriptionModal from '@/components/business-component/PaymentSubscriptionModal';
-import ChatInputHome from '@/components/ChatInputHome';
-import ChatView from '@/components/ChatView';
 import ConditionRender from '@/components/ConditionRender';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import FileTreeView from '@/components/FileTreeView';
-import NewConversationSet from '@/components/NewConversationSet';
-import RecommendList from '@/components/RecommendList';
 import ResizableSplit from '@/components/ResizableSplit';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
-import { MESSAGE_PAGE_SIZE } from '@/constants/common.constants';
 import { EVENT_TYPE } from '@/constants/event.constants';
 import useAgentDetails from '@/hooks/useAgentDetails';
 import { useConversationScrollDetection } from '@/hooks/useConversationScrollDetection';
 import useExclusivePanels from '@/hooks/useExclusivePanels';
-import { useIntersectionObserver } from '@/hooks/useIntersectionObserver';
 import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
 import { useNavigationGuard } from '@/hooks/useNavigationGuard';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
@@ -72,7 +67,6 @@ import { Form, message as messageAntd } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { history, useLocation, useModel, useParams } from 'umi';
-import ConversationStatus from './components/ConversationStatus';
 import DropdownChangeName from './DropdownChangeName';
 import { useAutoPreviewFile } from './hooks/useAutoPreviewFile';
 import styles from './index.less';
@@ -106,7 +100,6 @@ const Chat: React.FC = () => {
   const [selectedModelId, setSelectedModelId] = useState<number>(
     location.state?.modelId,
   );
-
   const [form] = Form.useForm();
   // 变量参数
   const [variableParams, setVariableParams] = useState<Record<
@@ -218,7 +211,6 @@ const Chat: React.FC = () => {
     loadingSuggest,
     onMessageSend,
     messageViewRef,
-    messageViewScrollToBottom,
     allowAutoScrollRef,
     scrollTimeoutRef,
     showScrollBtn,
@@ -253,6 +245,7 @@ const Chat: React.FC = () => {
     restartAgent,
     // 通用型智能体会话中点击选中的文件ID
     taskAgentSelectedFileId,
+    setTaskAgentSelectedFileId,
     // 通用型智能体文件选择触发标志
     taskAgentSelectTrigger,
     // 会话是否正在进行中（有消息正在处理）
@@ -268,8 +261,6 @@ const Chat: React.FC = () => {
   // 页面预览相关状态
   const { pagePreviewData, showPagePreview, hidePagePreview } =
     useModel('chat');
-
-  const [isHoveringChat, setIsHoveringChat] = useState(false);
 
   const { isMobile } = useModel('layout');
   // 会话记录
@@ -498,38 +489,6 @@ const Chat: React.FC = () => {
     setShowScrollBtn,
   );
 
-  // 到顶自动加载更多的侦测 Hook (提前 10px 触发，防止用户觉得过早)
-  const { ref: loadMoreRef, inView: loadMoreInView } = useIntersectionObserver({
-    rootMargin: '10px 0px 0px 0px',
-    threshold: 0,
-  });
-
-  // 监听进入视口事件，自动触发加载更多
-  // 使用 useRef 记录上一次的 inView 状态，严格保证只有在【刚进入视口】的那一瞬间才触发请求
-  // 避免消息列表刚加载完时，由于 IntersectionObserver 的异步性导致 inView 还没变 false 就被 React 重渲染再次触发
-  const prevLoadMoreInViewRef = useRef<boolean>(false);
-  useEffect(() => {
-    const isEntering = loadMoreInView && !prevLoadMoreInViewRef.current;
-    prevLoadMoreInViewRef.current = loadMoreInView;
-
-    if (
-      isEntering &&
-      isMoreMessage &&
-      !loadingMore &&
-      messageList?.length > 0 &&
-      id
-    ) {
-      handleLoadMoreMessage(id);
-    }
-  }, [
-    loadMoreInView,
-    isMoreMessage,
-    loadingMore,
-    messageList?.length,
-    id,
-    handleLoadMoreMessage,
-  ]);
-
   // 异步查询会话加载状态
   const [loadingAsync, setLoadingAsync] = useState<boolean>(true);
 
@@ -541,23 +500,11 @@ const Chat: React.FC = () => {
 
       const asyncFun = async () => {
         // 同步查询会话, 此处必须先同步查询会话信息，因为成功后会设置消息列表，如果是异步查询，会导致发送消息时，清空消息列表的bug
-        // const { data } = await runAsync(id);
         let data = null;
         try {
           setLoadingAsync(true);
-          const result = await runAsync(id);
-          // 检查请求是否成功（处理会话不存在等情况）
-          if (result.success && result.code === SUCCESS_CODE) {
-            data = result.data;
-          } else {
-            // 会话不存在或其他错误，跳转到智能体首页（接口层统一拦截提示）
-            history.replace(`/agent/${agentId}`);
-            return;
-          }
-        } catch (error) {
-          // 网络错误或其他异常
-          history.replace(`/agent/${agentId}`);
-          return;
+          const { data: _data } = await runAsync(id);
+          data = _data;
         } finally {
           setLoadingAsync(false);
         }
@@ -586,6 +533,7 @@ const Chat: React.FC = () => {
             data,
             skillIds,
             modelId: selectedModelId,
+            agentMode: 'yolo',
           };
 
           onMessageSend(sendParams);
@@ -745,7 +693,11 @@ const Chat: React.FC = () => {
         );
       }
     } catch (error: any) {
-      message.error(error.message || t('PC.Pages.Chat.clearAndCreateFailed'));
+      const errorMsg =
+        error?.message ||
+        (typeof error === 'string' ? error : null) ||
+        t('PC.Pages.Chat.clearAndCreateFailed');
+      message.error(errorMsg);
       setClearLoading(false);
       setIsLoadingOtherInterface(false);
     }
@@ -757,6 +709,7 @@ const Chat: React.FC = () => {
     files: UploadFileInfo[] = [],
     skillIds: number[] = [],
     modelId?: number,
+    selectedAgentMode?: AgentMode,
   ) => {
     // 变量参数为空，不发送消息
     if (wholeDisabled) {
@@ -780,18 +733,11 @@ const Chat: React.FC = () => {
       sandboxId: effectiveSandboxId,
       skillIds,
       modelId: modelId || selectedModelId,
+      agentMode: selectedAgentMode || 'yolo',
     };
 
     incrementCalledTrialCount();
     onMessageSend(sendParams);
-  };
-
-  // 修改 handleScrollBottom 函数，添加自动滚动控制
-  const onScrollBottom = () => {
-    allowAutoScrollRef.current = true;
-    // 滚动到底部
-    messageViewScrollToBottom();
-    setShowScrollBtn(false);
   };
 
   // 计算最终选中的沙盒ID
@@ -1261,7 +1207,8 @@ const Chat: React.FC = () => {
                   {/* 智能体电脑视图 */}
                   <ConditionRender
                     condition={
-                      conversationInfo?.agent.hideDesktop === HideDesktopEnum.No
+                      conversationInfo?.agent?.hideDesktop ===
+                      HideDesktopEnum.No
                     }
                   >
                     <TooltipIcon
@@ -1297,156 +1244,62 @@ const Chat: React.FC = () => {
               [styles['file-tree-visible']]: isFileTreeVisible,
             })}
           >
-            <div
-              className={cx(styles['chat-wrapper-content'])}
-              ref={messageViewRef}
-              onMouseEnter={() => setIsHoveringChat(true)}
-              onMouseLeave={() => setIsHoveringChat(false)}
-            >
-              <div className={cx(styles['chat-wrapper'], 'flex-1')}>
-                {/* 新对话设置 */}
-                <NewConversationSet
-                  className="mb-16"
-                  form={form}
-                  variables={variables}
-                  userFillVariables={firstVariableParams}
-                  // 是否已填写表单
-                  isFilled={!!variableParams}
-                  disabled={!!firstVariableParams || isSendMessageRef.current}
-                />
-                {/* 自动加载更多的触发探测元素 */}
-                {isMoreMessage &&
-                  (messageList?.length || 0) >= MESSAGE_PAGE_SIZE && (
-                    <div
-                      ref={loadMoreRef}
-                      className={cx(styles['load-more-container'])}
-                    >
-                      {loadingMore ? (
-                        <span>
-                          <LoadingOutlined style={{ marginRight: 8 }} />
-                          {t('PC.Pages.Chat.loadingHistoryConversation')}
-                        </span>
-                      ) : null}
-                    </div>
-                  )}
-                {messageList?.length > 0 ? (
-                  <>
-                    {messageList?.map((item: MessageInfo) => (
-                      <ChatView
-                        // 后端接口返回的消息列表id存在相同的情况，所以需要使用id和index来唯一标识
-                        key={`${item.id}-${item?.index}`}
-                        messageInfo={item}
-                        roleInfo={roleInfo}
-                        contentClassName={styles['chat-inner']}
-                        mode={'home'}
-                        conversationId={id}
-                        onAcpPermissionRespond={respondAcpPermission}
-                        showStatusDesc={
-                          effectiveAgent?.type !== AgentTypeEnum.TaskAgent
-                        }
-                      />
-                    ))}
-                    {/*会话建议*/}
-                    <RecommendList
-                      itemClassName={styles['suggest-item']}
-                      loading={loadingSuggest}
-                      chatSuggestList={chatSuggestList}
-                      onClick={handleMessageSend}
-                    />
-                    {/* 任务执行中容器 */}
-                    {conversationInfo?.taskStatus === TaskStatus.EXECUTING && (
-                      <div
-                        className={cx(
-                          styles['task-executing-container'],
-                          'flex',
-                          'items-center',
-                        )}
-                      >
-                        <LoadingOutlined />
-                        <span>{t('PC.Pages.Chat.agentExecutingWait')}</span>
-                      </div>
-                    )}
-                  </>
-                ) : !message ? (
-                  // Chat记录为空
-                  <AgentChatEmpty
-                    className={cx({ 'h-full': !variables?.length })}
-                    icon={effectiveAgent?.icon}
-                    name={effectiveAgent?.name || ''}
-                    extra={
-                      <RecommendList
-                        className="mt-16"
-                        itemClassName={cx(styles['suggest-item'])}
-                        chatSuggestList={chatSuggestList}
-                        onClick={handleMessageSend}
-                      />
-                    }
-                  />
-                ) : null}
-              </div>
-            </div>
-
-            {/* 会话状态显示 - 有消息时就显示 */}
-            {messageList?.length > 0 &&
-              conversationInfo &&
-              effectiveAgent?.type === AgentTypeEnum.TaskAgent && (
-                <ConversationStatus
-                  messageList={messageList}
-                  className={cx(styles['conversation-status-bar'])}
-                />
-              )}
-
-            {/* 聊天输入框 */}
-            <ChatInputHome
-              key={`agent-details-${agentId}`}
-              className={cx(styles['chat-input-container'])}
-              onEnter={handleMessageSend}
-              visible={showScrollBtn && isHoveringChat}
-              wholeDisabled={wholeDisabled}
-              clearLoading={clearLoading}
+            <UnifiedChatSession
+              conversationId={id}
+              messageList={messageList}
+              roleInfo={roleInfo}
+              isLoading={loadingConversation}
+              loadingMore={loadingMore}
+              isMoreMessage={isMoreMessage}
+              isConversationActive={isConversationActive}
+              loadingSuggest={loadingSuggest}
+              chatSuggestList={chatSuggestList}
+              agentInfo={{
+                id: agentId,
+                name: effectiveAgent?.name,
+                icon: effectiveAgent?.icon,
+                type: effectiveAgent?.type,
+                openingChatMsg: effectiveAgent?.openingChatMsg,
+                guidQuestionDtos: effectiveAgent?.guidQuestionDtos,
+                eventBindConfig: effectiveAgent?.eventBindConfig,
+                hasPermission: effectiveAgent?.hasPermission,
+                sandboxId: effectiveAgent?.sandboxId,
+                hideDesktop: effectiveAgent?.hideDesktop,
+                expandPageArea: effectiveAgent?.expandPageArea,
+              }}
+              onSendMessage={handleMessageSend}
               onClear={handleClear}
+              onLoadMoreMessage={handleLoadMoreMessage}
+              selectedModelId={selectedModelId}
+              onModelSelect={setSelectedModelId}
+              allowOtherModel={effectiveAgent?.allowOtherModel}
               manualComponents={manualComponents}
               selectedComponentList={selectedComponentList}
               onSelectComponent={handleSelectComponent}
-              onScrollBottom={onScrollBottom}
-              showAnnouncement={true}
-              isTaskAgentActive={
-                effectiveAgent?.type === AgentTypeEnum.TaskAgent
+              requiredNameList={requiredNameList}
+              variableParams={variableParams}
+              form={form}
+              variables={variables}
+              userFillVariables={firstVariableParams}
+              isVariablesDisabled={
+                !!firstVariableParams || isSendMessageRef.current
               }
+              clearLoading={clearLoading}
+              isSelectionLocked={isSelectionLocked}
+              hasUserSentMessage={hasUserSentMessage}
               selectedComputerId={finalSelectedId}
               onComputerSelect={setSelectedComputerId}
-              agentId={agentId}
-              agentSandboxId={
-                conversationInfo?.agent?.sandboxId ||
-                finalSelectedId ||
-                selectedComputerId ||
-                conversationInfo?.sandboxServerId
-              }
-              // 计算蒙层可见性与文案
-              hasPermission={effectiveAgent?.hasPermission}
-              maskText={t('PC.Pages.Chat.noAgentPermission')}
-              fixedSelection={
-                !!conversationInfo?.agent?.sandboxId ||
-                !!conversationInfo?.sandboxServerId ||
-                isSelectionLocked ||
-                hasUserSentMessage
-              }
-              isPersonalComputer={!!conversationInfo?.agent?.sandboxId}
-              mentionPlacement="up"
+              showScrollBtn={showScrollBtn}
               readonly={
                 effectiveAgent?.allowPrivateSandbox === DefaultSelectedEnum.No
               }
-              /** 是否启用 @ 提及功能，默认启用 */
               enableMention={
                 effectiveAgent?.type === AgentTypeEnum.TaskAgent &&
                 effectiveAgent?.allowAtSkill === DefaultSelectedEnum.Yes
               }
-              // 模型选择相关
-              allowOtherModel={effectiveAgent?.allowOtherModel}
-              selectedModelId={selectedModelId}
-              onModelSelect={setSelectedModelId}
-              agentType={effectiveAgent?.type}
-              // 通用性智能体才有技能，所以技能信息存在时才显示提及项，其他类型智能体不显示提及项
+              showAnnouncement={true}
+              mentionPlacement="up"
+              messageViewRef={messageViewRef}
             />
           </div>
 
@@ -1467,6 +1320,9 @@ const Chat: React.FC = () => {
                 <FileTreeView
                   className={cx(styles['file-tree-container'])}
                   taskAgentSelectedFileId={taskAgentSelectedFileId}
+                  clearTaskAgentSelectedFileId={() =>
+                    setTaskAgentSelectedFileId('')
+                  }
                   taskAgentSelectTrigger={taskAgentSelectTrigger}
                   originalFiles={fileTreeData}
                   fileTreeDataLoading={fileTreeDataLoading}
@@ -1521,10 +1377,7 @@ const Chat: React.FC = () => {
     );
   };
 
-  return clearLoading ||
-    loadingConversation ||
-    loadingAsync ||
-    !conversationInfo ? (
+  return clearLoading || loadingConversation || loadingAsync ? (
     <div
       className={cx(
         'flex',

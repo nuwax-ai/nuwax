@@ -50,6 +50,11 @@ const routes = [
         path: '/space/:spaceId/page-develop',
         component: '@/pages/SpacePageDevelop',
       },
+      // 新建项目
+      {
+        path: '/space/:spaceId/create-project',
+        component: '@/pages/SpaceCreateProject',
+      },
       // 技能管理
       {
         path: '/space/:spaceId/skill-manage',
@@ -73,12 +78,20 @@ const routes = [
       { path: '/space/:spaceId/library', component: '@/pages/SpaceLibrary' },
       // 组件资源子页面
       {
-        path: '/space/:spaceId/plugin-workflow',
-        component: '@/pages/SpaceResource/PluginWorkflow',
+        path: '/space/:spaceId/plugin',
+        component: '@/pages/SpaceResource/Plugin',
       },
       {
-        path: '/space/:spaceId/knowledge-storage',
-        component: '@/pages/SpaceResource/KnowledgeStorage',
+        path: '/space/:spaceId/workflow',
+        component: '@/pages/SpaceResource/Workflow',
+      },
+      {
+        path: '/space/:spaceId/knowledge',
+        component: '@/pages/SpaceResource/Knowledge',
+      },
+      {
+        path: '/space/:spaceId/storage',
+        component: '@/pages/SpaceResource/Storage',
       },
       {
         path: '/space/:spaceId/model-manage',
@@ -653,6 +666,11 @@ const routes = [
   {
     path: '/examples/menu-permission-demo',
     component: '@/examples/MenuPermissionDemo',
+    layout: false,
+  },
+  {
+    path: '/examples/agent-intervention-demo',
+    component: '@/examples/AgentInterventionDemo',
     layout: false,
   },
 ];
