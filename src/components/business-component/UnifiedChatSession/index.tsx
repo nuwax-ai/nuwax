@@ -11,7 +11,7 @@ import RecommendList from '@/components/RecommendList';
 import ConversationStatus from '@/pages/Chat/components/ConversationStatus';
 import { LoadingOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import { MESSAGE_PAGE_SIZE } from '@/constants/common.constants';
 import { useConversationScrollDetection } from '@/hooks/useConversationScrollDetection';
@@ -185,6 +185,28 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
       }
     }
   }, [messageList, isConversationActive, chatSuggestList]);
+
+  // 向上滚动加载更多历史消息时的滚动锁定机制
+  const lastScrollHeightRef = useRef<number>(0);
+  const lastScrollTopRef = useRef<number>(0);
+  const prevLoadingMoreRef = useRef<boolean>(false);
+
+  useLayoutEffect(() => {
+    const element = messageViewRef.current;
+    if (!element) return;
+
+    if (prevLoadingMoreRef.current && !loadingMore) {
+      const heightDifference =
+        element.scrollHeight - lastScrollHeightRef.current;
+      if (heightDifference > 0) {
+        element.scrollTop = lastScrollTopRef.current + heightDifference;
+      }
+    }
+
+    lastScrollHeightRef.current = element.scrollHeight;
+    lastScrollTopRef.current = element.scrollTop;
+    prevLoadingMoreRef.current = loadingMore;
+  }, [messageList, loadingMore]);
 
   return (
     <div className={cx(styles['session-container'], className)} style={style}>
