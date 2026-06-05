@@ -1,6 +1,7 @@
 import EditableTitle from '@/components/editableTitle';
 import { ICON_WORKFLOW_LOOP } from '@/constants/images.constants';
 import useNodeSelection from '@/hooks/useNodeSelection';
+import { isAgentFlowType } from '@/pages/Antv-X6/v3/agentFlow/types';
 import {
   answerTypeMap,
   branchTypeMap,
@@ -28,6 +29,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import '../indexV3.less';
 import { showExceptionHandle } from '../utils/graphV3';
 import './registerCustomNodes.less';
+import AgentFlowPortChips from './agentFlowPortChips';
 import RunResult from './runResult';
 // 定义那些节点有试运行
 
@@ -317,6 +319,8 @@ export const GeneralNode: React.FC<NodeProps> = (props) => {
     NodeTypeEnum.IntentRecognition,
   ].includes(data.type);
   const marginBottom = isSpecialNode ? '10px' : '0';
+  // AgentFlow 节点走白卡片 + 端口 chip；其他节点保留原渐变 + 徽章
+  const isAgentFlow = isAgentFlowType(data.type);
 
   const handleEditingStatusChange = (val: boolean) => {
     // 编辑中不能移动节点
@@ -349,15 +353,17 @@ export const GeneralNode: React.FC<NodeProps> = (props) => {
   return (
     <>
       <div
-        className={`general-node ${selected ? 'selected-general-node' : ''}`} // 根据选中状态应用类名
+        className={`general-node ${selected ? 'selected-general-node' : ''} ${
+          isAgentFlow ? 'general-node--agent-flow' : ''
+        }`} // 根据选中状态应用类名
       >
         {/* 节点头部，包含标题、图像和操作菜单 */}
         <div
           className="general-node-header"
           style={{
-            background: gradientBackground,
+            background: isAgentFlow ? '#ffffff' : gradientBackground,
             marginBottom,
-          }} // 应用渐变背景
+          }} // AgentFlow 节点走白卡片；其他保留原渐变
         >
           <div className="dis-left general-node-header-image">
             {returnImg(data.type)}
@@ -370,6 +376,12 @@ export const GeneralNode: React.FC<NodeProps> = (props) => {
             disabled={canNotEditNode}
             onEditingStatusChange={handleEditingStatusChange}
           />
+          {/* AgentFlow 节点描述行（小字灰色，节点原型 header 风格） */}
+          {isAgentFlow && (data as any).description && (
+            <div className="general-node-header-desc">
+              {(data as any).description}
+            </div>
+          )}
         </div>
 
         {data.type === NodeTypeEnum.Condition && <ConditionNode data={data} />}
@@ -380,37 +392,12 @@ export const GeneralNode: React.FC<NodeProps> = (props) => {
           <IntentRecognitionNode data={data} />
         )}
 
-        {data.type === NodeTypeEnum.Agent && (
-          <div className="agent-flow-node-preview">
-            <span className="agent-flow-node-badge agent-badge">
-              {data.nodeConfig?.agentMode === 'subflow' ? 'SubFlow' : 'Agent'}
-            </span>
-          </div>
-        )}
+        {/* AgentFlow 旧徽章：被 chip 浮层取代。仅当不是 AgentFlow 时保留原徽章逻辑。
+            当前所有使用徽章的 type 都是 AgentFlow 类型，因此整体退役，未来如要回退可恢复。 */}
 
-        {data.type === NodeTypeEnum.EvalGate && (
-          <div className="agent-flow-node-preview">
-            <span className="agent-flow-node-badge eval-badge">
-              {(data.nodeConfig?.evalValidators?.length || 0) + ' validators'}
-            </span>
-          </div>
-        )}
+        {/* AgentFlow 端口 chip 浮层（type guard 内部处理，非 AgentFlow 节点不渲染） */}
+        <AgentFlowPortChips data={data} />
 
-        {data.type === NodeTypeEnum.HumanInteraction && (
-          <div className="agent-flow-node-preview">
-            <span className="agent-flow-node-badge hitl-badge">
-              {data.nodeConfig?.hitlMode === 'approve' ? 'Approve' : 'Ask'}
-            </span>
-          </div>
-        )}
-
-        {data.type === NodeTypeEnum.ExternalConnector && (
-          <div className="agent-flow-node-preview">
-            <span className="agent-flow-node-badge connector-badge">
-              {data.nodeConfig?.connectorProvider?.toUpperCase() || 'External'}
-            </span>
-          </div>
-        )}
         {/* 异常处理 */}
         {showException && (
           <ExceptionHandle data={data.nodeConfig.exceptionHandleConfig} />

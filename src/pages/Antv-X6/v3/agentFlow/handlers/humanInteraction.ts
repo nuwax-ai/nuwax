@@ -2,19 +2,28 @@
  * HumanInteraction 节点分支处理器
  *
  * 端口格式：
- * - ask 模式: {nodeId}-out（普通输出端口，走 normal nextNodeIds）
+ * - ask 模式: {nodeId}-out（普通输出端口 group='out'，走 normal nextNodeIds）
  * - approve 模式:
- *   - 审批通过: {nodeId}-hitl-approve-out
- *   - 审批拒绝: {nodeId}-hitl-reject-out
+ *   - 审批通过: {nodeId}-hitl-approve-out（group='special'）
+ *   - 审批拒绝: {nodeId}-hitl-reject-out（group='special'）
+ *
+ * 数据语义：
+ * - `approveNextNodeIds` / `rejectNextNodeIds` 均为 number[]（多目标数组）
+ *   与 `RouteDecision` 端口的"允许多出边"语义一致
+ * - ask 模式走普通 `nextNodeIds`，handler 不参与数据管理
+ *
+ * 端口 y 由 `branchPortY(i)` 计算（baseY=42, itemHeight=24, step=12）。
  */
 
 import { NodeTypeEnum } from '@/types/enums/common';
+import { PortGroupEnum } from '@/types/enums/node';
 import type { ChildNode } from '@/types/interfaces/graph';
 import type {
   BranchNodeHandler,
   ParsedPort,
   PortGeneratorContext,
 } from '../../extensions/types';
+import { branchPortY } from './portLayout';
 import { SpecialPortType } from '../../types/enums';
 
 export const humanInteractionHandler: BranchNodeHandler = {
@@ -22,29 +31,28 @@ export const humanInteractionHandler: BranchNodeHandler = {
 
   generatePorts(data: ChildNode, ctx: PortGeneratorContext) {
     const hitlMode = (data.nodeConfig as any)?.hitlMode || 'ask';
-    const itemHeight = 24;
-    const step = 12;
-    const baseY = 32; // DEFAULT_NODE_CONFIG_MAP.default.defaultHeight
 
     const inputPorts = [
-      ctx.generatePortConfig({ group: 'in' as any, idSuffix: 'in' }),
+      ctx.generatePortConfig({ group: PortGroupEnum.in, idSuffix: 'in' }),
     ];
 
     if (hitlMode === 'approve') {
+      const approveY = branchPortY(0);
+      const rejectY = branchPortY(1);
       return {
         inputPorts,
         outputPorts: [
           ctx.generatePortConfig({
-            group: 'special' as any,
+            group: PortGroupEnum.special,
             idSuffix: 'hitl-approve-out',
-            yHeight: baseY + itemHeight - step,
-            offsetY: baseY + itemHeight,
+            yHeight: approveY.yHeight,
+            offsetY: approveY.offsetY,
           }),
           ctx.generatePortConfig({
-            group: 'special' as any,
+            group: PortGroupEnum.special,
             idSuffix: 'hitl-reject-out',
-            yHeight: baseY + 2 * itemHeight - step,
-            offsetY: baseY + 2 * itemHeight,
+            yHeight: rejectY.yHeight,
+            offsetY: rejectY.offsetY,
           }),
         ],
       };
@@ -53,7 +61,7 @@ export const humanInteractionHandler: BranchNodeHandler = {
     return {
       inputPorts,
       outputPorts: [
-        ctx.generatePortConfig({ group: 'out' as any, idSuffix: 'out' }),
+        ctx.generatePortConfig({ group: PortGroupEnum.out, idSuffix: 'out' }),
       ],
     };
   },

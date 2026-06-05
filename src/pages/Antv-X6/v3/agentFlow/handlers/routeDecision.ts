@@ -6,63 +6,60 @@
  * 端口格式：
  * - 默认端口（无匹配路由时的 fallback）: {nodeId}-route-default-out
  * - 路由端口: {nodeId}-route-{routeUuid}-out（每条路由规则一个）
+ *
+ * 视觉对齐：default 端口圆点用 `ROUTE_DEFAULT_PORT_COLOR`（灰色），React 层
+ * 不渲染 chip；route 端口由 `agentFlowPortChips` 渲染橙色 chip 显示 routeName。
+ *
+ * 端口 y 由 `branchPortY(i)` 计算。
  */
 
 import { NodeTypeEnum } from '@/types/enums/common';
+import { PortGroupEnum } from '@/types/enums/node';
 import type { ChildNode } from '@/types/interfaces/graph';
 import type {
   BranchNodeHandler,
   ParsedPort,
   PortGeneratorContext,
 } from '../../extensions/types';
+import {
+  branchPortY,
+  extractPortSuffix,
+  ROUTE_DEFAULT_PORT_COLOR,
+} from './portLayout';
 import { SpecialPortType } from '../../types/enums';
-
-/** 从完整 portId 中提取后缀（去掉 nodeId 前缀和 -out 后缀） */
-function extractPortSuffix(node: ChildNode, portId: string): string {
-  const nodeIdStr = String(node.id);
-  let suffix = portId;
-  if (portId.startsWith(nodeIdStr + '-')) {
-    suffix = portId.substring(nodeIdStr.length + 1);
-  }
-  if (suffix.endsWith('-out')) {
-    suffix = suffix.substring(0, suffix.length - 4);
-  }
-  return suffix;
-}
 
 export const routeDecisionHandler: BranchNodeHandler = {
   nodeType: NodeTypeEnum.RouteDecision,
 
   generatePorts(data: ChildNode, ctx: PortGeneratorContext) {
     const routes = (data.nodeConfig as any)?.routes || [];
-    const itemHeight = 24;
-    const step = 12;
-    // baseY 留空间给 extraPrompt 等配置项
-    const baseY = 42;
 
     const inputPorts = [
-      ctx.generatePortConfig({ group: 'in' as any, idSuffix: 'in' }),
+      ctx.generatePortConfig({ group: PortGroupEnum.in, idSuffix: 'in' }),
     ];
 
-    // 默认端口（fallback，无路由匹配时走此端口）
+    // 第 0 个 = default 兜底端口（灰色，无 chip）
+    const defaultY = branchPortY(0);
     const outputPorts = [
       ctx.generatePortConfig({
-        group: 'special' as any,
+        group: PortGroupEnum.special,
         idSuffix: 'route-default-out',
-        yHeight: baseY,
-        offsetY: baseY + itemHeight - step,
+        color: ROUTE_DEFAULT_PORT_COLOR,
+        yHeight: defaultY.yHeight,
+        offsetY: defaultY.offsetY,
       }),
     ];
 
-    // 每条路由规则一个输出端口
+    // 第 1..n = 各路由
     routes.forEach((item: any, index: number) => {
       const uuid = item.uuid || `r${index}`;
+      const y = branchPortY(index + 1);
       outputPorts.push(
         ctx.generatePortConfig({
-          group: 'special' as any,
+          group: PortGroupEnum.special,
           idSuffix: `route-${uuid}-out`,
-          yHeight: baseY + (index + 1) * itemHeight - step,
-          offsetY: baseY + (index + 1) * itemHeight,
+          yHeight: y.yHeight,
+          offsetY: y.offsetY,
         }),
       );
     });

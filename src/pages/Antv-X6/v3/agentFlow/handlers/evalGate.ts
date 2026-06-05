@@ -4,61 +4,60 @@
  * 端口格式：
  * - 通过端口: {nodeId}-eval-pass-out
  * - 失败端口: {nodeId}-eval-fail-{validatorUuid}-out（每个 validator 一个）
+ *
+ * 端口 y 公式与 `BRANCH_PORT_BASE_Y` / `BRANCH_PORT_ITEM_HEIGHT` 联动，
+ * 改 `portLayout.ts` 的常量即可全 handler 同步更新。
+ *
+ * 数据语义：
+ * - `onFail.targetNodeId` 为 scalar（单值），由 `updateConnection` 覆盖式写入；
+ * - `mergeBranchData` 从 `branchMap.get('eval-fail-{uuid}')` 取 `[0]`。
+ *   多个 fail 目标仅保留第一个，与文档"fail 单跳"语义一致。
  */
 
 import { NodeTypeEnum } from '@/types/enums/common';
+import { PortGroupEnum } from '@/types/enums/node';
 import type { ChildNode } from '@/types/interfaces/graph';
 import type {
   BranchNodeHandler,
   ParsedPort,
   PortGeneratorContext,
 } from '../../extensions/types';
+import {
+  branchPortY,
+  extractPortSuffix,
+} from './portLayout';
 import { SpecialPortType } from '../../types/enums';
-
-/** 从完整 portId 中提取后缀（去掉 nodeId 前缀和 -out 后缀） */
-function extractPortSuffix(node: ChildNode, portId: string): string {
-  const nodeIdStr = String(node.id);
-  let suffix = portId;
-  if (portId.startsWith(nodeIdStr + '-')) {
-    suffix = portId.substring(nodeIdStr.length + 1);
-  }
-  if (suffix.endsWith('-out')) {
-    suffix = suffix.substring(0, suffix.length - 4);
-  }
-  return suffix;
-}
 
 export const evalGateHandler: BranchNodeHandler = {
   nodeType: NodeTypeEnum.EvalGate,
 
   generatePorts(data: ChildNode, ctx: PortGeneratorContext) {
     const validators = (data.nodeConfig as any)?.evalValidators || [];
-    const itemHeight = 24;
-    const step = 12;
-    // baseY 略大于节点头部高度，给 evalMaxRetry / evalOnMaxRetry 留空间
-    const baseY = 42; // DEFAULT_NODE_CONFIG_MAP.default.defaultHeight + 10
-
     const inputPorts = [
-      ctx.generatePortConfig({ group: 'in' as any, idSuffix: 'in' }),
+      ctx.generatePortConfig({ group: PortGroupEnum.in, idSuffix: 'in' }),
     ];
 
+    // 第 0 个 = pass
+    const passY = branchPortY(0);
     const outputPorts = [
       ctx.generatePortConfig({
-        group: 'special' as any,
+        group: PortGroupEnum.special,
         idSuffix: 'eval-pass-out',
-        yHeight: baseY,
-        offsetY: baseY + itemHeight - step,
+        yHeight: passY.yHeight,
+        offsetY: passY.offsetY,
       }),
     ];
 
+    // 第 1..n = validators
     validators.forEach((item: any, index: number) => {
       const uuid = item.uuid || `v${index}`;
+      const y = branchPortY(index + 1);
       outputPorts.push(
         ctx.generatePortConfig({
-          group: 'special' as any,
+          group: PortGroupEnum.special,
           idSuffix: `eval-fail-${uuid}-out`,
-          yHeight: baseY + (index + 1) * itemHeight - step,
-          offsetY: baseY + (index + 1) * itemHeight,
+          yHeight: y.yHeight,
+          offsetY: y.offsetY,
         }),
       );
     });

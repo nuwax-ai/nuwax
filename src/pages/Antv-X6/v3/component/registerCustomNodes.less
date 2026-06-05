@@ -26,6 +26,7 @@
     line-height: 22px;
     padding: 10px 16px 0;
     width: 100%;
+    box-sizing: border-box;
 
     .general-node-header-image {
       font-size: 14px;
@@ -203,4 +204,69 @@
     background: #f3e5f5;
     color: #7b1fa2;
   }
+}
+
+/* AgentFlow 分支端口 chip 浮层 --------------------------------------------------
+ * 挂在节点 React 容器内（absolute），不参与 X6 节点 bbox。
+ * 容器 pointer-events: none 避免遮挡 X6 hover 感应圈；chip 自身开启点击。
+ */
+.agent-flow-port-chip-layer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.agent-flow-port-chip {
+  position: absolute;
+  white-space: nowrap;
+  max-width: 96px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 10px;
+  line-height: 16px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  pointer-events: auto;
+  cursor: default;
+  transform: translate(100%, -50%);
+
+  &.pass {
+    background: #f6ffed;
+    color: #389e0d;
+    border: 1px solid #b7eb8f;
+  }
+  &.fail {
+    background: #fff1f0;
+    color: #cf1322;
+    border: 1px solid #ffa39e;
+  }
+  &.route {
+    background: #fff7e6;
+    color: #d46b08;
+    border: 1px solid #ffd591;
+  }
+}
+
+/* AgentFlow 节点 header 描述行（原型风格：icon + name + 小字灰色 desc） */
+.general-node-header-desc {
+  flex-basis: 100%;
+  font-size: 11px;
+  color: #8c8c8c;
+  padding: 2px 0 0 0;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* AgentFlow 节点：允许 header wrap 让 desc 换行 */
+.general-node--agent-flow .general-node-header {
+  flex-wrap: wrap;
+  padding-bottom: 4px;
 }

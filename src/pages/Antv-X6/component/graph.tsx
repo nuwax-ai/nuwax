@@ -25,12 +25,18 @@ import {
   updateEdgeArrows,
   validateConnect,
 } from '@/utils/graph';
-import { Cell, Edge, Graph, Node, Shape } from '@antv/x6';
-import { Clipboard } from '@antv/x6-plugin-clipboard';
-import { History } from '@antv/x6-plugin-history';
-import { Keyboard } from '@antv/x6-plugin-keyboard';
-import { Selection } from '@antv/x6-plugin-selection';
-import { Snapline } from '@antv/x6-plugin-snapline';
+import {
+  Cell,
+  Clipboard,
+  Edge,
+  Graph,
+  History,
+  Keyboard,
+  Node,
+  Selection,
+  Shape,
+  Snapline,
+} from '@antv/x6';
 import { message, Modal } from 'antd';
 import { createCurvePath } from './registerCustomNodes';
 import StencilContent from './stencil';

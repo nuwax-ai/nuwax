@@ -14,14 +14,20 @@ import {
 } from '@/types/interfaces/graph';
 import { ExceptionHandleConfig } from '@/types/interfaces/node';
 import { cloneDeep } from '@/utils/common';
-import { Cell, Edge, Graph, Node, Shape } from '@antv/x6';
-import { Clipboard } from '@antv/x6-plugin-clipboard';
-import { History } from '@antv/x6-plugin-history';
-import { Keyboard } from '@antv/x6-plugin-keyboard';
+import {
+  Cell,
+  Clipboard,
+  Edge,
+  Graph,
+  History,
+  Keyboard,
+  Node,
+  Selection,
+  Shape,
+  Snapline,
+} from '@antv/x6';
 // TODO: 待安装 @antv/x6-plugin-minimap 后恢复
 // import { MiniMap } from '@antv/x6-plugin-minimap';
-import { Selection } from '@antv/x6-plugin-selection';
-import { Snapline } from '@antv/x6-plugin-snapline';
 import { message, Modal } from 'antd';
 import StencilContent from '../components/layout/Sidebar';
 import {

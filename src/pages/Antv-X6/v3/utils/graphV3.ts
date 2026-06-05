@@ -91,14 +91,32 @@ export const adjustParentSize = (parentNode: Node | Cell) => {
   );
 };
 
-const BRANCH_COLORS: Record<string, { stroke: string; label: string }> = {
-  eval_pass: { stroke: '#52c41a', label: 'Pass' },
-  eval_fail: { stroke: '#ff4d4f', label: 'Fail' },
+/** AgentFlow 分支端口边色 + label 集中配置 */
+const BRANCH_PALETTE = {
+  pass: { stroke: '#52c41a', label: 'Pass' },
+  fail: { stroke: '#ff4d4f', label: 'Fail' },
   hitl_approve: { stroke: '#52c41a', label: 'Approve' },
   hitl_reject: { stroke: '#ff4d4f', label: 'Reject' },
+  route: { stroke: '#fa8c16', label: '' }, // label 由 routeName 动态填
+} as const;
+
+const BRANCH_COLORS: Record<string, { stroke: string; label: string }> = {
+  eval_pass: BRANCH_PALETTE.pass,
+  eval_fail: BRANCH_PALETTE.fail,
+  hitl_approve: BRANCH_PALETTE.hitl_approve,
+  hitl_reject: BRANCH_PALETTE.hitl_reject,
 };
 
-function parseEdgeBranch(sourcePort: string | undefined): {
+/**
+ * 解析 source port 对应的分支样式。
+ * - `eval-*` / `hitl-*` / `route-*` 走 BRANCH_PALETTE
+ * - `route-{uuid}-out` 需要从 source node 的 `nodeConfig.routes` 拿 routeName 作 label
+ * - `route-default-out` 显式返回 null（落默认紫色）
+ */
+function parseEdgeBranch(
+  sourcePort: string | undefined,
+  edge?: Edge,
+): {
   stroke: string;
   label: string;
 } | null {
@@ -108,12 +126,30 @@ function parseEdgeBranch(sourcePort: string | undefined): {
       return cfg;
     }
   }
+  // 路由决策的 route-{uuid} 端口（排除 default 兜底）
+  if (sourcePort.includes('-route-') && !sourcePort.includes('-route-default-')) {
+    let label = '';
+    if (edge) {
+      try {
+        const sourceData: any = edge.getSourceNode?.()?.getData?.() || {};
+        const routes: any[] = sourceData?.nodeConfig?.routes || [];
+        // 从 portId 末尾提取 uuid：<nodeId>-route-<uuid>-out
+        const m = sourcePort.match(/-route-([^-]+(?:-[^-]+)*)-out$/);
+        const uuid = m?.[1] || '';
+        const found = routes.find((r) => r.uuid === uuid);
+        label = found?.routeName || found?.name || (uuid ? `Route ${uuid.slice(0, 4)}` : '');
+      } catch {
+        // 防御性：getData 失败时不影响默认色
+      }
+    }
+    return { stroke: BRANCH_PALETTE.route.stroke, label };
+  }
   return null;
 }
 
 export function setEdgeAttributes(edge: Edge) {
   const sourcePort = edge.getSourcePortId();
-  const branch = parseEdgeBranch(sourcePort);
+  const branch = parseEdgeBranch(sourcePort, edge);
 
   edge.attr({
     line: {
@@ -314,7 +350,7 @@ export const updateEdgeArrows = (graph: Graph) => {
         return edge.attr('line/targetMarker', null);
       }
 
-      const branch = parseEdgeBranch(edge.getSourcePortId());
+      const branch = parseEdgeBranch(edge.getSourcePortId(), edge);
       const arrowCfg = branch
         ? {
             name: 'classic' as const,
@@ -1062,7 +1098,7 @@ const activeAnimations = new WeakMap<Edge, Animation>();
 
 export const startEdgeFlowAnimation = (edge: Edge) => {
   if (activeAnimations.get(edge)) return;
-  const branch = parseEdgeBranch(edge.getSourcePortId());
+  const branch = parseEdgeBranch(edge.getSourcePortId(), edge);
   const color = branch?.stroke || '#5147FF';
   edge.attr('line/strokeDasharray', FLOW_DASH);
   edge.attr('line/stroke', color);
@@ -1087,7 +1123,7 @@ export const stopEdgeFlowAnimation = (edge: Edge) => {
     anim.cancel();
     activeAnimations.delete(edge);
   }
-  const branch = parseEdgeBranch(edge.getSourcePortId());
+  const branch = parseEdgeBranch(edge.getSourcePortId(), edge);
   edge.attr({
     line: {
       strokeDasharray: '',

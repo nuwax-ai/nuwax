@@ -363,6 +363,30 @@ describe('EvalGate Handler', () => {
         (node.nodeConfig as any).evalValidators[1].onFail.targetNodeId,
       ).toBeUndefined();
     });
+
+    /**
+     * 负面 / 边界：fail 端口语义为 scalar 单值（文档约定）
+     * 即使 branchMap 里 eval-fail-* key 推入了多个 id，merge 时也只取 [0]
+     * 与 updateConnection 的覆盖式写入行为保持一致
+     */
+    it('should only keep first id for fail branchMap (scalar targetNodeId)', () => {
+      const node = createEvalGateNode();
+      const branchMap = new Map<string, number[]>();
+      branchMap.set('eval-pass', []);
+      branchMap.set('eval-fail-v1-uuid', [5, 7, 9]);
+
+      evalGateHandler.mergeBranchData!(node, branchMap);
+
+      expect(
+        (node.nodeConfig as any).evalValidators[0].onFail.targetNodeId,
+      ).toBe(5);
+      // 防御性：明确 targetNodeId 仍是 scalar，不是 array
+      expect(
+        Array.isArray(
+          (node.nodeConfig as any).evalValidators[0].onFail.targetNodeId,
+        ),
+      ).toBe(false);
+    });
   });
 
   describe('isSpecialBranchNode', () => {
