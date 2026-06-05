@@ -709,7 +709,7 @@ const CreateModel: React.FC<CreateModelProps> = ({
             )}
             className="dispose-textarea-count"
             showCount
-            maxLength={100}
+            maxLength={2000}
             autoSize={{ minRows: 3, maxRows: 5 }}
           />
         </Form.Item>
