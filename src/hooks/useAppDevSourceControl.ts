@@ -2,7 +2,6 @@
  * AppDev 源代码管理（Git）Hook
  * 管理修改文件列表、暂存、提交推送及 diff 预览相关逻辑
  */
-
 import type { ChangeFileInfo } from '@/components/FileTreeView/type';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
