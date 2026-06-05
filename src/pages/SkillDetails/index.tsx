@@ -1,3 +1,4 @@
+import { UnifiedChatSession } from '@/components/business-component';
 import FileTreeView from '@/components/FileTreeView';
 import type { FileTreeViewRef } from '@/components/FileTreeView/type';
 import PublishComponentModal from '@/components/PublishComponentModal';
@@ -14,6 +15,7 @@ import {
 } from '@/services/skill';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum, PublishStatusEnum } from '@/types/enums/common';
+import { AgentTypeEnum } from '@/types/enums/space';
 import type { FileNode } from '@/types/interfaces/appDev';
 import { SkillInfo } from '@/types/interfaces/library';
 import {
@@ -48,6 +50,7 @@ const SkillDetails: React.FC = () => {
   const skillId = Number(params.skillId);
   // 技能信息
   const [skillInfo, setSkillInfo] = useState<SkillDetailInfo | null>(null);
+
   // 文件树数据加载状态
   const [fileTreeDataLoading, setFileTreeDataLoading] =
     useState<boolean>(false);
@@ -499,9 +502,7 @@ const SkillDetails: React.FC = () => {
   };
 
   return (
-    <div
-      className={cx('flex', 'h-full', 'flex-col', 'overflow-hide', 'relative')}
-    >
+    <div className={cx(styles['page-container'])}>
       {/* 技能头部 */}
       <SkillHeader
         spaceId={spaceId}
@@ -529,99 +530,154 @@ const SkillDetails: React.FC = () => {
         text={t('PC.Pages.SkillDetails.exporting')}
       />
 
-      <div className={cx('flex', 'flex-1', 'overflow-y')}>
-        {/* 文件树视图 */}
-        <FileTreeView
-          // 通用型智能体会话中点击选中的文件ID
-          taskAgentSelectedFileId={'SKILL.md'}
-          // 初始化视图类型
-          initViewFileType={'code'}
-          // 重新导入项目触发标志，用于强制触发文件选择 （用于重新导入项目后，强制触发文件选择）
-          isImportProjectTrigger={importProjectTrigger}
-          // 是否为项目技能模式
-          isProjectSkill={true}
-          ref={fileTreeViewRef}
-          // 文件树数据加载状态
-          fileTreeDataLoading={fileTreeDataLoading}
-          // 技能文件列表
-          originalFiles={skillInfo?.files || []}
-          // 上传文件
-          onUploadFiles={handleUploadMultipleFiles}
-          // 导出项目
-          onExportProject={handleExportProject}
-          // 重命名文件
-          onRenameFile={handleConfirmRenameFile}
-          // 新建文件
-          onCreateFileNode={handleCreateFileNode}
-          // 保存文件
-          onSaveFiles={handleSaveFiles}
-          // 删除文件
-          onDeleteFile={handleDeleteFile}
-          // 导入项目
-          onImportProject={handleImportProject}
-          // 是否正在导入项目
-          isImportingProject={isImportingProject}
-          // 是否显示更多操作菜单
-          showMoreActions={false}
-          // 是否显示全屏预览
-          isFullscreenPreview={isFullscreenPreview}
-          // 全屏预览
-          onFullscreenPreview={setIsFullscreenPreview}
-          // 是否显示全屏图标
-          showFullscreenIcon={false}
-          // 文件树是否固定（用户点击后固定）
-          isFileTreePinned={true}
-          // 技能不显示刷新按钮
-          showRefreshButton={false}
-          // 技能不显示分享按钮
-          isShowShare={false}
-          // 技能不显示下载按钮
-          isShowDownloadButton={false}
-          // 是否显示导出 PDF 按钮, 默认显示
-          isShowExportPdfButton={false}
-        />
+      <div className={cx(styles['layout-wrapper'])}>
+        {/* 左侧：调试聊天会话区域 */}
+        <div className={cx(styles['chat-section'])}>
+          <UnifiedChatSession
+            conversationId={0}
+            messageList={[]}
+            roleInfo={{
+              assistant: {
+                name: '调试智能体',
+                avatar: 'https://img.yzcdn.cn/vant/cat.jpeg',
+              },
+              system: {
+                name: '调试智能体',
+                avatar: 'https://img.yzcdn.cn/vant/cat.jpeg',
+              },
+            }}
+            isLoading={false}
+            loadingMore={false}
+            isMoreMessage={false}
+            isConversationActive={false}
+            messageBottomMode="chat"
+            loadingSuggest={false}
+            chatSuggestList={[]}
+            agentInfo={{
+              id: undefined,
+              name: '调试智能体',
+              icon: 'https://img.yzcdn.cn/vant/cat.jpeg',
+              type: AgentTypeEnum.ChatBot,
+            }}
+            onSendMessage={() => {}}
+            onClear={async () => {}}
+            onLoadMoreMessage={() => {}}
+            readonly={false}
+            enableMention={false}
+            placeholder={t(
+              'PC.Components.ChatInputHomeMentionEditor.placeholderWithoutMention',
+            )}
+            messageViewRef={undefined}
+          />
+        </div>
 
-        {/*版本历史*/}
-        <VersionHistory
-          headerClassName={cx(styles['version-history-header'])}
-          targetId={skillId}
-          targetName={skillInfo?.name}
-          targetType={AgentComponentTypeEnum.Skill}
-          permissions={skillInfo?.permissions || []}
-          visible={versionHistoryModal}
-          onClose={() => setVersionHistoryModal(false)}
-        />
+        {/* 右侧：原有的详情内容区域 */}
+        <div className={cx(styles['detail-section'])}>
+          <div
+            className={cx(
+              'flex',
+              'h-full',
+              'flex-col',
+              'overflow-hide',
+              'relative',
+            )}
+          >
+            <div className={cx('flex', 'flex-1', 'overflow-y')}>
+              {/* 文件树视图 */}
+              <FileTreeView
+                // 通用型智能体会话中点击选中的文件ID
+                taskAgentSelectedFileId={'SKILL.md'}
+                // 初始化视图类型
+                initViewFileType={'code'}
+                // 重新导入项目触发标志，用于强制触发文件选择 （用于重新导入项目后，强制触发文件选择）
+                isImportProjectTrigger={importProjectTrigger}
+                // 是否为项目技能模式
+                isProjectSkill={true}
+                ref={fileTreeViewRef}
+                // 文件树数据加载状态
+                fileTreeDataLoading={fileTreeDataLoading}
+                // 技能文件列表
+                originalFiles={skillInfo?.files || []}
+                // 上传文件
+                onUploadFiles={handleUploadMultipleFiles}
+                // 导出项目
+                onExportProject={handleExportProject}
+                // 重命名文件
+                onRenameFile={handleConfirmRenameFile}
+                // 新建文件
+                onCreateFileNode={handleCreateFileNode}
+                // 保存文件
+                onSaveFiles={handleSaveFiles}
+                // 删除文件
+                onDeleteFile={handleDeleteFile}
+                // 导入项目
+                onImportProject={handleImportProject}
+                // 是否正在导入项目
+                isImportingProject={isImportingProject}
+                // 是否显示更多操作菜单
+                showMoreActions={false}
+                // 是否显示全屏预览
+                isFullscreenPreview={isFullscreenPreview}
+                // 全屏预览
+                onFullscreenPreview={setIsFullscreenPreview}
+                // 是否显示全屏图标
+                showFullscreenIcon={false}
+                // 文件树是否固定（用户点击后固定）
+                isFileTreePinned={true}
+                // 技能不显示刷新按钮
+                showRefreshButton={false}
+                // 技能不显示分享按钮
+                isShowShare={false}
+                // 技能不显示下载按钮
+                isShowDownloadButton={false}
+                // 是否显示导出 PDF 按钮, 默认显示
+                isShowExportPdfButton={false}
+              />
+
+              {/*版本历史*/}
+              <VersionHistory
+                headerClassName={cx(styles['version-history-header'])}
+                targetId={skillId}
+                targetName={skillInfo?.name}
+                targetType={AgentComponentTypeEnum.Skill}
+                permissions={skillInfo?.permissions || []}
+                visible={versionHistoryModal}
+                onClose={() => setVersionHistoryModal(false)}
+              />
+            </div>
+
+            {/*发布技能弹窗*/}
+            <PublishComponentModal
+              mode={AgentComponentTypeEnum.Skill}
+              targetId={skillId}
+              open={open}
+              spaceId={spaceId}
+              category={skillInfo?.category}
+              // 取消发布
+              onCancel={() => setOpen(false)}
+              onConfirm={handleConfirmPublish}
+            />
+
+            {/* 创建技能弹窗 */}
+            <CreateSkill
+              spaceId={spaceId}
+              open={editSkillModalOpen}
+              type={CreateUpdateModeEnum.Update}
+              skillInfo={skillInfo as SkillInfo}
+              onCancel={() => setEditSkillModalOpen(false)}
+              onConfirm={handleEditSkillConfirm}
+            />
+
+            {/* 导入技能项目弹窗 */}
+            <ImportSkillProjectModal
+              open={openImportSkillProject}
+              isCreate={false}
+              onCancel={() => setOpenImportSkillProject(false)}
+              onConfirm={handleImportSkillProjectConfirm}
+            />
+          </div>
+        </div>
       </div>
-
-      {/*发布技能弹窗*/}
-      <PublishComponentModal
-        mode={AgentComponentTypeEnum.Skill}
-        targetId={skillId}
-        open={open}
-        spaceId={spaceId}
-        category={skillInfo?.category}
-        // 取消发布
-        onCancel={() => setOpen(false)}
-        onConfirm={handleConfirmPublish}
-      />
-
-      {/* 创建技能弹窗 */}
-      <CreateSkill
-        spaceId={spaceId}
-        open={editSkillModalOpen}
-        type={CreateUpdateModeEnum.Update}
-        skillInfo={skillInfo as SkillInfo}
-        onCancel={() => setEditSkillModalOpen(false)}
-        onConfirm={handleEditSkillConfirm}
-      />
-
-      {/* 导入技能项目弹窗 */}
-      <ImportSkillProjectModal
-        open={openImportSkillProject}
-        isCreate={false}
-        onCancel={() => setOpenImportSkillProject(false)}
-        onConfirm={handleImportSkillProjectConfirm}
-      />
     </div>
   );
 };
