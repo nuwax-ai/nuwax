@@ -2413,8 +2413,6 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.ConversationAgentSourceControl.alreadyInGitignore": "該檔案已在 .gitignore 中",
   "PC.Pages.ConversationAgentSourceControl.gitignoreSuccess": "已新增到 .gitignore",
   "PC.Pages.ConversationAgentSourceControl.gitignoreFailed": "新增到 .gitignore 失敗",
-  "PC.Pages.ConversationAgentSourceControl.stageFailed": "暫存更改失敗，請稍後重試",
-  "PC.Pages.ConversationAgentSourceControl.unstageFailed": "取消暫存失敗，請稍後重試",
   "PC.Pages.ConversationAgentSourceControl.stagedChanges": "暫存的更改",
   "PC.Pages.ConversationAgentSourceControl.refresh": "重新整理",
   "PC.Pages.ConversationAgentSourceControl.viewAsList": "以列表形式查看",

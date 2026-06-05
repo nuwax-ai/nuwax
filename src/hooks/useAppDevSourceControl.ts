@@ -386,20 +386,12 @@ export const useAppDevSourceControl = ({
         return;
       }
       try {
-        const { code } = await apiGitStash({
+        await apiGitStash({
           workspaceType: 'pageApp',
           projectId: Number(projectId),
         });
-        if (code !== SUCCESS_CODE) {
-          message.warning(
-            dict('PC.Pages.ConversationAgentSourceControl.stageFailed'),
-          );
-        }
       } catch (error) {
         console.error('Git stash failed:', error);
-        message.warning(
-          dict('PC.Pages.ConversationAgentSourceControl.stageFailed'),
-        );
       }
       setStagedFileIds((prev) => new Set(prev).add(fileId));
     },
@@ -416,20 +408,12 @@ export const useAppDevSourceControl = ({
         return;
       }
       try {
-        const { code } = await apiGitStashPop({
+        await apiGitStashPop({
           workspaceType: 'pageApp',
           projectId: Number(projectId),
         });
-        if (code !== SUCCESS_CODE) {
-          message.warning(
-            dict('PC.Pages.ConversationAgentSourceControl.unstageFailed'),
-          );
-        }
       } catch (error) {
         console.error('Git stash pop failed:', error);
-        message.warning(
-          dict('PC.Pages.ConversationAgentSourceControl.unstageFailed'),
-        );
       }
       setStagedFileIds((prev) => {
         const next = new Set(prev);

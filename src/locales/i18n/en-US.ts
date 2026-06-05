@@ -2460,8 +2460,6 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.ConversationAgentSourceControl.alreadyInGitignore": "File is already in .gitignore",
   "PC.Pages.ConversationAgentSourceControl.gitignoreSuccess": "Added to .gitignore",
   "PC.Pages.ConversationAgentSourceControl.gitignoreFailed": "Failed to add to .gitignore",
-  "PC.Pages.ConversationAgentSourceControl.stageFailed": "Failed to stage changes, please try again",
-  "PC.Pages.ConversationAgentSourceControl.unstageFailed": "Failed to unstage changes, please try again",
   "PC.Pages.ConversationAgentSourceControl.stagedChanges": "Staged Changes",
   "PC.Pages.ConversationAgentSourceControl.refresh": "Refresh",
   "PC.Pages.ConversationAgentSourceControl.viewAsList": "View as list",
