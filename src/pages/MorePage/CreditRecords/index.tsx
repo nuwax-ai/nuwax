@@ -25,6 +25,7 @@ const CreditRecords: React.FC<CreditRecordsProps> = ({ onClickBack }) => {
   const loadingRef = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const formRef = useRef<FormInstance>();
+  const lastCheckedLengthRef = useRef(0);
 
   // 获取数据
   const fetchData = useCallback(
@@ -39,6 +40,7 @@ const CreditRecords: React.FC<CreditRecordsProps> = ({ onClickBack }) => {
           setDataSource([]);
           setHasMore(true);
           lastIdRef.current = undefined;
+          lastCheckedLengthRef.current = 0;
         }
 
         const queryParams =
@@ -98,6 +100,34 @@ const CreditRecords: React.FC<CreditRecordsProps> = ({ onClickBack }) => {
     tableBody.addEventListener('scroll', onScroll);
     return () => tableBody.removeEventListener('scroll', onScroll);
   }, [fetchData]);
+
+  // 检查是否显示滚动条，若未显示且还有数据，则自动加载下一页
+  useEffect(() => {
+    if (loading || !hasMore || dataSource.length === 0) return;
+
+    // 如果数据长度没有变，说明上一次请求未成功新增数据，不重复检查以防止死循环
+    if (dataSource.length === lastCheckedLengthRef.current) return;
+
+    const timer = setTimeout(() => {
+      const tableBody = containerRef.current?.querySelector(
+        '.ant-table-body',
+      ) as HTMLDivElement;
+      if (!tableBody) return;
+
+      // 如果 clientHeight 为 0，说明可能容器还未分配高度或者隐藏，此时不进行检查
+      if (tableBody.clientHeight === 0) return;
+
+      const hasScrollbar = tableBody.scrollHeight > tableBody.clientHeight;
+      if (!hasScrollbar) {
+        lastCheckedLengthRef.current = dataSource.length;
+        fetchData();
+      } else {
+        lastCheckedLengthRef.current = dataSource.length;
+      }
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [dataSource, loading, hasMore, fetchData]);
 
   const columns: ProColumns<CreditRecordInfo>[] = [
     {
