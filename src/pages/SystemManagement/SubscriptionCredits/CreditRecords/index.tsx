@@ -55,8 +55,12 @@ const CreditRecords: React.FC = () => {
     [userIdFromUrl],
   );
 
-  /** 当前表格是否有数据：无数据时不展示底部分页 */
+  /**
+   * 是否展示底部分页：首页且无数据时隐藏；已到最后一页（data 为空）时仍保留分页，便于向上翻页
+   */
   const [showPagination, setShowPagination] = useState<boolean>(false);
+  /** 游标分页：接口 data 非空表示仍可翻下一页，为空则无下一页 */
+  const [hasNextPage, setHasNextPage] = useState<boolean>(false);
   /**
    * 与通用表格对齐的每页条数；单独受控可避免 ProTable 内部默认 pageSize（如 20）
    * 与 defaultPageSize 不一致，从而导致首请求与下拉展示错位。
@@ -308,7 +312,9 @@ const CreditRecords: React.FC = () => {
       const res = await apiGetCreditFlowList(payload);
       if (res?.code === SUCCESS_CODE) {
         const list = res.data || [];
-        setShowPagination(list.length > 0);
+        const nextPageAvailable = list.length > 0;
+        setShowPagination(current > 1 || nextPageAvailable);
+        setHasNextPage(nextPageAvailable);
         const nextPageLastId = list.length
           ? list[list.length - 1]?.id
           : undefined;
@@ -316,13 +322,14 @@ const CreditRecords: React.FC = () => {
 
         return {
           data: list,
-          // 游标分页接口无 total，给 ProTable 一个可翻页总量。
-          total: current * pageSize + (list.length === pageSize ? 1 : 0),
+          // 游标分页无 total：data 非空表示还有下一页，为空则禁用下一页
+          total: current * pageSize + (nextPageAvailable ? 1 : 0),
           success: true,
         };
       }
     } catch {}
-    setShowPagination(false);
+    setShowPagination(current > 1);
+    setHasNextPage(false);
     return {
       data: [],
       total: 0,
@@ -352,10 +359,17 @@ const CreditRecords: React.FC = () => {
         if (type === 'page' || type === 'jump-prev' || type === 'jump-next') {
           return null;
         }
+        if (
+          type === 'next' &&
+          React.isValidElement(originalElement) &&
+          !hasNextPage
+        ) {
+          return React.cloneElement(originalElement, { disabled: true });
+        }
         return originalElement;
       },
     }),
-    [tablePageSize],
+    [hasNextPage, tablePageSize],
   );
 
   return (
