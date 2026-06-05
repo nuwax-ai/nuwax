@@ -79,8 +79,10 @@ export function apiGitStatus(
   });
 }
 
-// Git stash - 暂存当前更改
-// 将工作区和暂存区的修改临时保存到 stash 栈（git stash push），工作区恢复到干净状态。适合切换分支前临时保存未完成的改动。
+/**
+ * Git stash - 暂存当前更改
+ * 将工作区和暂存区的修改临时保存到 stash 栈（git stash push），工作区恢复到干净状态。适合切换分支前临时保存未完成的改动。
+ */
 export function apiGitStash(
   data: GitStashParams,
 ): Promise<RequestResponse<null>> {

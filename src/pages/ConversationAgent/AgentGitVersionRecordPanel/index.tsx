@@ -2,7 +2,7 @@ import Loading from '@/components/custom/Loading';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
   apiGitLogList,
-  apiGitRollback,
+  apiGitRevert,
 } from '@/pages/ConversationAgent/services/git-version-management';
 import { dict } from '@/services/i18nRuntime';
 import { modalConfirm } from '@/utils/ant-custom';
@@ -135,7 +135,7 @@ const AgentGitVersionRecordPanel: React.FC<AgentGitVersionRecordPanelProps> = ({
         async () => {
           setRollbackLoadingHash(commit.commitHash);
           try {
-            const { code, message: msg } = await apiGitRollback({
+            const { code, message: msg } = await apiGitRevert({
               workspaceType: 'taskAgent',
               cid: conversationId,
               target: commit.commitHash,
