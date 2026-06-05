@@ -55,7 +55,9 @@ const CreditRecords: React.FC = () => {
     [userIdFromUrl],
   );
 
-  /** 当前表格是否有数据：无数据时不展示底部分页 */
+  /**
+   * 是否展示底部分页：首页且无数据时隐藏；已到最后一页（data 为空）时仍保留分页，便于向上翻页
+   */
   const [showPagination, setShowPagination] = useState<boolean>(false);
   /** 游标分页：接口 data 非空表示仍可翻下一页，为空则无下一页 */
   const [hasNextPage, setHasNextPage] = useState<boolean>(false);
@@ -82,7 +84,6 @@ const CreditRecords: React.FC = () => {
     });
     queryKeyRef.current = '';
     lastIdMapRef.current = { 1: undefined };
-    setHasNextPage(false);
     actionRef.current?.setPageInfo?.({
       current: 1,
       pageSize: tablePageSize,
@@ -312,7 +313,7 @@ const CreditRecords: React.FC = () => {
       if (res?.code === SUCCESS_CODE) {
         const list = res.data || [];
         const nextPageAvailable = list.length > 0;
-        setShowPagination(nextPageAvailable);
+        setShowPagination(current > 1 || nextPageAvailable);
         setHasNextPage(nextPageAvailable);
         const nextPageLastId = list.length
           ? list[list.length - 1]?.id
@@ -327,7 +328,7 @@ const CreditRecords: React.FC = () => {
         };
       }
     } catch {}
-    setShowPagination(false);
+    setShowPagination(current > 1);
     setHasNextPage(false);
     return {
       data: [],
