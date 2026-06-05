@@ -1,5 +1,14 @@
 @import '@/styles/token';
 
+@zero-value: 0;
+@icon-padding-top: 5px;
+@icon-padding-bottom: 5px;
+@icon-padding-right: 15px;
+@icon-border-color: rgba(12, 20, 102, 12%);
+@icon-text-color: rgba(0, 0, 0, 70%);
+@divider-height: 20px;
+@divider-width: 1px;
+
 .login-form-box {
   // width: 100%; /* 宽度自适应 */
   width: 470px;
@@ -14,8 +23,49 @@
   backdrop-filter: blur(12px);
   overflow: auto;
 
+  .phone-input-compact {
+    border-radius: @borderRadius;
+    background-color: @colorFillTertiary;
+    display: flex;
+    align-items: center;
+
+    .icon {
+      position: relative;
+      padding: @icon-padding-top @icon-padding-right @icon-padding-bottom
+        @padding;
+      color: @icon-text-color;
+      border-right: @zero-value !important;
+
+      &::after {
+        content: '';
+        position: absolute;
+        right: @zero-value;
+        top: 50%;
+        transform: translateY(-50%);
+        width: @divider-width;
+        height: @divider-height;
+        background-color: @icon-border-color;
+      }
+    }
+
+    .current-input {
+      flex: 1;
+      border: none !important;
+      background-color: transparent !important;
+      padding: @paddingXs @padding !important;
+      border-radius: 0 @borderRadius @borderRadius 0 !important;
+      box-shadow: none !important;
+
+      :global {
+        .ant-input {
+          background-color: transparent !important;
+        }
+      }
+    }
+  }
+
   .current-input {
-    padding: 0 !important;
+    padding: @zero-value !important;
   }
 
   :global {
@@ -73,7 +123,7 @@
 
     .icon {
       display: inline-block;
-      padding: 5px 15px 5px 5px;
+      padding: 5px 15px;
       border-right: 1px solid rgba(12, 20, 102, 12%);
       color: rgba(0, 0, 0, 70%);
     }
