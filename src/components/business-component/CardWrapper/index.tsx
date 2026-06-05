@@ -1,4 +1,5 @@
 import AuthorInfo from '@/components/base/AuthorInfo';
+import { EllipsisTooltip } from '@/components/custom/EllipsisTooltip';
 import { Skeleton } from 'antd';
 import classNames from 'classnames';
 import React, { PropsWithChildren } from 'react';
@@ -178,7 +179,11 @@ const CardWrapper: React.FC<PropsWithChildren<CardWrapperProps>> = ({
           </div>
         </div>
       </header>
-      <p className={cx('text-ellipsis-2', styles.content)}>{content}</p>
+      <EllipsisTooltip
+        text={content}
+        maxLines={2}
+        className={cx(styles.content)}
+      />
       {footer}
     </div>
   );
