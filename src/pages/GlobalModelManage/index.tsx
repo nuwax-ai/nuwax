@@ -303,13 +303,17 @@ const GlobalModelManage: React.FC = () => {
     {
       title: dict('PC.Pages.GlobalModelManage.columnDescription'),
       dataIndex: 'description',
+      width: 380,
       hideInSearch: true,
+      /** 需配合 tableLayout="fixed" 与数值型 scroll.x，否则 max-content 会撑开列宽导致省略失效 */
+      ellipsis: { showTitle: true },
     },
     {
       // 状态列：检索为 select，筛选逻辑见 request（仅前端）
       title: dict('PC.Pages.GlobalModelManage.columnStatus'),
       dataIndex: 'enabled',
       width: 150,
+      align: 'center',
       valueType: 'select',
       valueEnum: {
         [ModelComponentStatusEnum.Enabled]: {
@@ -334,6 +338,7 @@ const GlobalModelManage: React.FC = () => {
       width: 200,
       hideInSearch: true,
       valueType: 'dateTime',
+      align: 'center',
     },
     {
       title: dict('PC.Pages.GlobalModelManage.columnAccessControl'),
@@ -448,7 +453,8 @@ const GlobalModelManage: React.FC = () => {
             showIndex={false}
             onReset={handleReset}
             showQueryButtons={hasPermission('model_manage_query_list')}
-            scroll={{ x: 'max-content' }}
+            tableLayout="fixed"
+            scroll={{ x: 2000 }}
             components={{
               body: {
                 row: Row,
