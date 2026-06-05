@@ -110,6 +110,9 @@ const ConversationAgentSourceControl: React.FC<
     [changeItems, stagedFileIds],
   );
 
+  /** 是否存在任意变更（暂存或未暂存） */
+  const hasAnyChanges = changeItems.length > 0;
+
   const contextMenuTarget = useMemo(
     () => changeItems.find((item) => item.fileId === contextMenuFileId),
     [changeItems, contextMenuFileId],
@@ -164,8 +167,11 @@ const ConversationAgentSourceControl: React.FC<
   };
 
   const handleToggleViewMode = useCallback(() => {
+    if (!hasAnyChanges) {
+      return;
+    }
     setViewMode((prev) => (prev === 'tree' ? 'list' : 'tree'));
-  }, []);
+  }, [hasAnyChanges]);
 
   const viewToggleTitle =
     viewMode === 'tree'
@@ -195,9 +201,10 @@ const ConversationAgentSourceControl: React.FC<
             placement="bottom"
             className={cx(styles['header-action-btn'], {
               [styles.active]: viewMode === 'list',
+              [styles['header-action-btn-disabled']]: !hasAnyChanges,
             })}
             icon={<UnorderedListOutlined />}
-            onClick={handleToggleViewMode}
+            onClick={hasAnyChanges ? handleToggleViewMode : undefined}
           />
         </div>
       </div>
@@ -225,14 +232,18 @@ const ConversationAgentSourceControl: React.FC<
       </div>
 
       <div className={cx(styles['changes-scroll'])}>
-        <ChangeFileListSection
-          title={dict('PC.Pages.ConversationAgentSourceControl.stagedChanges')}
-          items={stagedItems}
-          viewMode={viewMode}
-          selectedDiffFileId={selectedDiffFileId}
-          onFileClick={onFileClick}
-          onContextMenu={handleContextMenu}
-        />
+        {stagedItems.length > 0 && (
+          <ChangeFileListSection
+            title={dict(
+              'PC.Pages.ConversationAgentSourceControl.stagedChanges',
+            )}
+            items={stagedItems}
+            viewMode={viewMode}
+            selectedDiffFileId={selectedDiffFileId}
+            onFileClick={onFileClick}
+            onContextMenu={handleContextMenu}
+          />
+        )}
         <ChangeFileListSection
           title={dict('PC.Pages.ConversationAgentSourceControl.changes')}
           items={unstagedItems}
