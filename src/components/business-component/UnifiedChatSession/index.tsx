@@ -17,6 +17,7 @@ import { MESSAGE_PAGE_SIZE } from '@/constants/common.constants';
 import { useConversationScrollDetection } from '@/hooks/useConversationScrollDetection';
 import { useIntersectionObserver } from '@/hooks/useIntersectionObserver';
 import { dict } from '@/services/i18nRuntime';
+import { MessageStatusEnum } from '@/types/enums/common';
 import { AgentTypeEnum } from '@/types/enums/space';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
@@ -173,6 +174,16 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
     return false;
   }, [requiredNameList, variableParams]);
 
+  // 是否有活跃的流式消息（即最后一条消息正在加载或未完成）
+  const hasActiveStreamingMessage = useMemo(() => {
+    if (!messageList || messageList.length === 0) return false;
+    const lastMessage = messageList[messageList.length - 1];
+    return (
+      lastMessage.status === MessageStatusEnum.Loading ||
+      lastMessage.status === MessageStatusEnum.Incomplete
+    );
+  }, [messageList]);
+
   // 大模型流式输出或更新时自动平滑滚动置底
   useEffect(() => {
     if (allowAutoScrollRef.current) {
@@ -281,13 +292,12 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
                   />
 
                   {/* 通用型智能体执行中状态提示 */}
-                  {isConversationActive &&
-                    agentInfo?.type === AgentTypeEnum.TaskAgent && (
-                      <div className={cx(styles['task-executing-container'])}>
-                        <LoadingOutlined />
-                        <span>{dict('PC.Pages.Chat.agentExecutingWait')}</span>
-                      </div>
-                    )}
+                  {isConversationActive && !hasActiveStreamingMessage && (
+                    <div className={cx(styles['task-executing-container'])}>
+                      <LoadingOutlined />
+                      <span>{dict('PC.Pages.Chat.agentExecutingWait')}</span>
+                    </div>
+                  )}
                 </>
               ) : // 空状态展现
               renderEmptyState ? (
