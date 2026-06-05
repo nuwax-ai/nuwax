@@ -179,11 +179,16 @@ const CardWrapper: React.FC<PropsWithChildren<CardWrapperProps>> = ({
           </div>
         </div>
       </header>
-      <EllipsisTooltip
-        text={content}
-        maxLines={2}
-        className={cx(styles.content)}
-      />
+      {content?.length > 0 ? (
+        <EllipsisTooltip
+          text={content}
+          maxLines={2}
+          className={cx(styles.content)}
+        />
+      ) : (
+        // 此卡片此处需要占位
+        <div className={cx(styles.content)} />
+      )}
       {footer}
     </div>
   );
