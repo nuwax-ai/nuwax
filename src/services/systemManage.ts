@@ -138,7 +138,7 @@ export async function apiSystemModelList(
   });
 }
 
-// 查询模型列表
+// 更新模型排序
 export async function apiSystemModelSortUpdate(
   data: {
     id: number;
