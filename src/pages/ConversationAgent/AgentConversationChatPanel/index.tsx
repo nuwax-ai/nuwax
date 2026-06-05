@@ -503,7 +503,7 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
           isConversationActive={
             conversationInfo?.taskStatus === TaskStatus.EXECUTING
           }
-          mode="chat"
+          messageBottomMode="chat"
           loadingSuggest={loadingSuggest}
           chatSuggestList={chatSuggestList}
           agentInfo={{

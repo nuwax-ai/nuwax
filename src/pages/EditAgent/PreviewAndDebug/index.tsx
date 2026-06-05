@@ -503,7 +503,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
               isConversationActive={
                 conversationInfo?.taskStatus === TaskStatus.EXECUTING
               }
-              mode="chat"
+              messageBottomMode="chat"
               loadingSuggest={loadingSuggest}
               chatSuggestList={chatSuggestList}
               agentInfo={{

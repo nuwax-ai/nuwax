@@ -29,7 +29,7 @@ export interface UnifiedChatSessionProps {
   loadingMore: boolean; // 是否正在向上拉取历史消息
   isMoreMessage: boolean; // 是否还有历史消息可拉取
   isConversationActive: boolean; // 会话是否活跃（大模型正流式交互中）
-  mode?: 'none' | 'home' | 'chat'; // 聊天框模式：none | home | chat
+  messageBottomMode?: 'none' | 'home' | 'chat'; // 消息底部操作栏模式：none | home | chat
   loadingSuggest?: boolean; // 会话建议加载状态
   chatSuggestList?: string[]; // 页面会话建议（开场白问题推荐）
 

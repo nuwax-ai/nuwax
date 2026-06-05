@@ -35,7 +35,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
   loadingMore,
   isMoreMessage,
   isConversationActive,
-  mode = 'home',
+  messageBottomMode = 'home',
   loadingSuggest = false,
   chatSuggestList = [],
   agentInfo,
@@ -276,7 +276,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
                         key={`${item.id}-${item?.index || idx}`}
                         messageInfo={item}
                         roleInfo={roleInfo}
-                        mode={mode}
+                        mode={messageBottomMode}
                         showStatusDesc={
                           agentInfo?.type !== AgentTypeEnum.TaskAgent
                         }
