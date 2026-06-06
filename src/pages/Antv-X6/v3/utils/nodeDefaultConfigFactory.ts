@@ -418,6 +418,8 @@ export function createDefaultNodeConfig(
       return {
         ...baseConfig,
         agentMode: AgentNodeModeEnum.Platform,
+        contextPassMode: 'auto',
+        systemPrompt: '',
         inputArgs: [],
         outputArgs: [
           createDefaultArg({
@@ -434,10 +436,18 @@ export function createDefaultNodeConfig(
     case NodeTypeEnum.EvalGate:
       return {
         ...baseConfig,
+        // v1 保留（向后兼容）
         evalValidators: [],
-        evalMaxRetry: 2,
-        evalOnMaxRetry: 'fail',
         passNextNodeIds: [],
+        // v2 新增
+        evalItems: [],
+        passThreshold: 80,
+        evalOutput: true,
+        evalFailMsg: '',
+        branches: [
+          { uuid: 'auto-pass', name: '通过', desc: '', nextNodeIds: [] },
+        ],
+        evalMaxRetry: 3,
         inputArgs: [],
         outputArgs: [],
       };
@@ -446,11 +456,16 @@ export function createDefaultNodeConfig(
       return {
         ...baseConfig,
         hitlMode: HitlModeEnum.Ask,
+        // v1 ask 保留
         askConfig: {
           question: '',
           answerType: AnswerTypeEnum.TEXT,
           answerKey: 'userAnswer',
         },
+        // v2 ask 新增
+        replyMode: 'text',
+        formFields: [],
+        // v1 approve 保留
         approveConfig: {
           actions: [
             HitlApprovalActionEnum.Approve,
@@ -462,6 +477,14 @@ export function createDefaultNodeConfig(
         },
         approveNextNodeIds: [],
         rejectNextNodeIds: [],
+        // v2 approve 新增
+        confirmRole: 'user',
+        approvalMode: 'approve_reject',
+        instruction: '',
+        channels: [],
+        channelTimeout: 300,
+        escalation: 'skip',
+        channelRetry: 3,
         inputArgs: [],
         outputArgs: [],
       };
@@ -485,6 +508,7 @@ export function createDefaultNodeConfig(
         ...baseConfig,
         routes: [],
         extraPrompt: '',
+        modelId: undefined,
         inputArgs: [],
         outputArgs: [],
       };

@@ -16,7 +16,6 @@ import {
   AgentNodeModeEnum,
   AnswerTypeEnum,
   DataTypeEnum,
-  EvalValidatorTypeEnum,
   FlowKindEnum,
   HitlApprovalActionEnum,
   HitlModeEnum,
@@ -103,6 +102,7 @@ export function buildMockAgentFlowDetails({
     nextNodeIds: [MOCK_AGENT_NODE_ID, MOCK_CONNECTOR_NODE_ID],
     nodeConfig: {
       extension: { x: 300, y: 200 },
+      modelId: undefined,
       extraPrompt: '根据用户意图，选择智能体处理或外部平台处理。',
       routes: [
         {
@@ -130,10 +130,10 @@ export function buildMockAgentFlowDetails({
       extension: { x: 540, y: 120 },
       agentMode: AgentNodeModeEnum.Platform,
       agentId: 1,
-      agentInputs: [{ key: 'question', value: 'context.userQuestion' }],
+      contextPassMode: 'auto',
+      systemPrompt: '',
       contextReads: ['context.userQuestion'],
       contextWrites: ['context.agentAnswer'],
-      autoWirePrevOutput: true,
     },
   });
 
@@ -144,22 +144,29 @@ export function buildMockAgentFlowDetails({
     nextNodeIds: [MOCK_HITL_APPROVE_NODE_ID],
     nodeConfig: {
       extension: { x: 760, y: 120 },
-      passNextNodeIds: [MOCK_HITL_APPROVE_NODE_ID],
-      evalValidators: [
+      evalItems: [
         {
-          uuid: 'validator_1',
+          uuid: 'eval_1',
           name: '答案完整性',
-          type: EvalValidatorTypeEnum.Rule,
-          config: { rule: '必须包含明确结论' },
-          onFail: {
-            targetNodeId: MOCK_AGENT_NODE_ID,
-            appendPrompt: '请补充明确结论后重新回答。',
-            reason: '答案不完整',
-          },
+          weight: 100,
+          description: '必须包含明确结论',
         },
       ],
-      evalMaxRetry: 2,
-      evalOnMaxRetry: 'human',
+      passThreshold: 80,
+      evalOutput: true,
+      evalMaxRetry: 3,
+      evalFailMsg: '智能体输出结果评估未通过，请仔细甄别',
+      branches: [
+        {
+          uuid: 'auto-pass',
+          name: '通过',
+          desc: '',
+          nextNodeIds: [MOCK_HITL_APPROVE_NODE_ID],
+        },
+      ],
+      // v1 保留
+      evalValidators: [],
+      passNextNodeIds: [MOCK_HITL_APPROVE_NODE_ID],
     },
   });
 
@@ -171,18 +178,26 @@ export function buildMockAgentFlowDetails({
     nodeConfig: {
       extension: { x: 1000, y: 120 },
       hitlMode: HitlModeEnum.Approve,
+      confirmRole: 'user',
+      approvalMode: 'approve_reject',
+      instruction: '请确认智能体输出是否可发送给用户。',
+      branches: [
+        {
+          uuid: 'approve',
+          name: '通过',
+          desc: '',
+          nextNodeIds: [MOCK_HITL_ASK_NODE_ID],
+        },
+        {
+          uuid: 'reject',
+          name: '拒绝',
+          desc: '',
+          nextNodeIds: [MOCK_AGENT_NODE_ID],
+        },
+      ],
+      // v1 保留
       approveNextNodeIds: [MOCK_HITL_ASK_NODE_ID],
       rejectNextNodeIds: [MOCK_AGENT_NODE_ID],
-      approveConfig: {
-        actions: [
-          HitlApprovalActionEnum.Approve,
-          HitlApprovalActionEnum.Edit,
-          HitlApprovalActionEnum.Reject,
-        ],
-        promptToReviewer: '请确认智能体输出是否可发送给用户。',
-        draftSource: 'context.agentAnswer',
-        onReject: { targetNodeId: MOCK_AGENT_NODE_ID },
-      },
     },
   });
 
@@ -194,12 +209,23 @@ export function buildMockAgentFlowDetails({
     nodeConfig: {
       extension: { x: 1240, y: 200 },
       hitlMode: HitlModeEnum.Ask,
+      replyMode: 'options',
       askConfig: {
         question: '您是否需要额外的帮助？',
         answerType: AnswerTypeEnum.SELECT,
         options: [
-          { label: '是', value: 'yes' },
-          { label: '否', value: 'no' },
+          {
+            index: 0,
+            content: '是',
+            uuid: 'opt_yes',
+            nextNodeIds: [MOCK_END_NODE_ID],
+          },
+          {
+            index: 1,
+            content: '否',
+            uuid: 'opt_no',
+            nextNodeIds: [MOCK_END_NODE_ID],
+          },
         ],
         answerKey: 'needMoreHelp',
         required: true,

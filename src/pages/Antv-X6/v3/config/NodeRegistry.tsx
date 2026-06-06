@@ -3,7 +3,7 @@ import { NodeTypeEnum } from '@/types/enums/common';
 import { ChildNode } from '@/types/interfaces/graph';
 import { FormInstance } from 'antd';
 import React from 'react';
-import AgentFlowNodes from '../component/agentFlowNodes';
+import AgentFlowNodes from '../component/agentFlow';
 import ComplexNode from '../component/complexNode';
 import ConditionNode from '../component/condition';
 import Database from '../component/database';

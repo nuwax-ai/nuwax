@@ -63,11 +63,30 @@ function buildChips(data: ChildNode): ChipDescriptor[] {
 
   switch (data.type) {
     case NodeTypeEnum.EvalGate: {
+      // v2: 从 branches[] 构建 chips
+      const branches: any[] = nc.branches || [];
+      if (branches.length > 0) {
+        const chips: ChipDescriptor[] = [
+          {
+            label:
+              branches[0]?.name || t('PC.Pages.AgentFlow.chipPass', '通过'),
+            tone: 'pass',
+          },
+        ];
+        for (let i = 1; i < branches.length; i++) {
+          chips.push({
+            label: branches[i].name || `Branch ${i}`,
+            tone: 'fail',
+          });
+        }
+        return chips;
+      }
+      // v1 回退：从 evalValidators[] 构建
       const validators: any[] = nc.evalValidators || [];
       const chips: ChipDescriptor[] = [
         { label: t('PC.Pages.AgentFlow.chipPass', '通过'), tone: 'pass' },
       ];
-      validators.forEach((v) => {
+      validators.forEach(() => {
         chips.push({
           label: t('PC.Pages.AgentFlow.chipFail', '不达标'),
           tone: 'fail',
@@ -88,12 +107,29 @@ function buildChips(data: ChildNode): ChipDescriptor[] {
 
     case NodeTypeEnum.HumanInteraction: {
       if (nc.hitlMode === HitlModeEnum.Approve) {
+        // v2: 从 branches[] 构建
+        const branches: any[] = nc.branches || [];
+        if (branches.length > 0) {
+          return branches.map((b: any, i: number) => ({
+            label: b.name || `Branch ${i + 1}`,
+            tone: i === 0 ? 'pass' : 'fail',
+          }));
+        }
+        // v1 回退
         return [
           { label: t('PC.Pages.AgentFlow.chipApprove', '通过'), tone: 'pass' },
           { label: t('PC.Pages.AgentFlow.chipReject', '拒绝'), tone: 'fail' },
         ];
       }
-      // ask 模式：无 chip
+      // ask options 模式
+      if (nc.replyMode === 'options' || nc.askConfig?.answerType === 'SELECT') {
+        const options: any[] = nc.askConfig?.options || [];
+        return options.map((o: any, i: number) => ({
+          label: o.content || `Option ${i + 1}`,
+          tone: 'route' as ChipTone,
+        }));
+      }
+      // ask text/form 模式：无 chip
       return [];
     }
 

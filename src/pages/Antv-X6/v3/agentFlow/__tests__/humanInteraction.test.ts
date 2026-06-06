@@ -90,7 +90,8 @@ describe('HumanInteraction Handler', () => {
       );
 
       expect(result).not.toBeNull();
-      expect(result!.type).toBe(SpecialPortType.HitlApprove);
+      expect(result!.type).toBe(SpecialPortType.HitlBranch);
+      expect(result!.uuid).toBe('approve');
     });
 
     it('should detect hitl-reject port', () => {
@@ -101,7 +102,8 @@ describe('HumanInteraction Handler', () => {
       );
 
       expect(result).not.toBeNull();
-      expect(result!.type).toBe(SpecialPortType.HitlReject);
+      expect(result!.type).toBe(SpecialPortType.HitlBranch);
+      expect(result!.uuid).toBe('reject');
     });
 
     it('should return null for normal port', () => {

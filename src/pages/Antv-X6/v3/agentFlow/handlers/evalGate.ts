@@ -1,43 +1,59 @@
 /**
  * EvalGate 节点分支处理器
  *
- * 端口格式：
- * - 通过端口: {nodeId}-eval-pass-out
- * - 失败端口: {nodeId}-eval-fail-{validatorUuid}-out（每个 validator 一个）
+ * v2 端口格式（branches[] 驱动）：
+ * - 通过端口: {nodeId}-eval-pass-out  （branches[0]，固定）
+ * - 分支端口: {nodeId}-eval-fail-{branchUuid}-out  （branches[1..N]，动态）
  *
- * 端口 y 公式与 `BRANCH_PORT_BASE_Y` / `BRANCH_PORT_ITEM_HEIGHT` 联动，
- * 改 `portLayout.ts` 的常量即可全 handler 同步更新。
- *
- * 数据语义：
- * - `onFail.targetNodeId` 为 scalar（单值），由 `updateConnection` 覆盖式写入；
- * - `mergeBranchData` 从 `branchMap.get('eval-fail-{uuid}')` 取 `[0]`。
- *   多个 fail 目标仅保留第一个，与文档"fail 单跳"语义一致。
+ * 向后兼容：branches[] 为空时回退到 evalValidators[] + passNextNodeIds[]
  */
 
 import { NodeTypeEnum } from '@/types/enums/common';
 import { PortGroupEnum } from '@/types/enums/node';
 import type { ChildNode } from '@/types/interfaces/graph';
+import type { BranchConfig } from '@/types/interfaces/node';
 import type {
   BranchNodeHandler,
   ParsedPort,
   PortGeneratorContext,
 } from '../../extensions/types';
-import {
-  branchPortY,
-  extractPortSuffix,
-} from './portLayout';
 import { SpecialPortType } from '../../types/enums';
+import { branchPortY, extractPortSuffix } from './portLayout';
+
+/** 从 nodeConfig 读取 branches[]，为空时从旧字段构建兼容结构 */
+function getBranches(nc: any): BranchConfig[] {
+  if (nc?.branches?.length) return nc.branches;
+  // v1 回退：从 evalValidators + passNextNodeIds 构建
+  const branches: BranchConfig[] = [];
+  branches.push({
+    uuid: 'pass',
+    name: '通过',
+    desc: '',
+    nextNodeIds: nc?.passNextNodeIds || [],
+  });
+  const validators: any[] = nc?.evalValidators || [];
+  validators.forEach((v, i) => {
+    branches.push({
+      uuid: v.uuid || `v${i}`,
+      name: v.name || `Validator ${i + 1}`,
+      desc: '',
+      nextNodeIds: v.onFail?.targetNodeId ? [v.onFail.targetNodeId] : [],
+    });
+  });
+  return branches;
+}
 
 export const evalGateHandler: BranchNodeHandler = {
   nodeType: NodeTypeEnum.EvalGate,
 
   generatePorts(data: ChildNode, ctx: PortGeneratorContext) {
-    const validators = (data.nodeConfig as any)?.evalValidators || [];
+    const nc = data.nodeConfig as any;
+    const branches = getBranches(nc);
     const inputPorts = [
       ctx.generatePortConfig({ group: PortGroupEnum.in, idSuffix: 'in' }),
     ];
 
-    // 第 0 个 = pass
+    // 第 0 个 = pass（固定）
     const passY = branchPortY(0);
     const outputPorts = [
       ctx.generatePortConfig({
@@ -48,19 +64,18 @@ export const evalGateHandler: BranchNodeHandler = {
       }),
     ];
 
-    // 第 1..n = validators
-    validators.forEach((item: any, index: number) => {
-      const uuid = item.uuid || `v${index}`;
-      const y = branchPortY(index + 1);
+    // 第 1..N = fail 分支（动态）
+    for (let i = 1; i < branches.length; i++) {
+      const y = branchPortY(i);
       outputPorts.push(
         ctx.generatePortConfig({
           group: PortGroupEnum.special,
-          idSuffix: `eval-fail-${uuid}-out`,
+          idSuffix: `eval-fail-${branches[i].uuid}-out`,
           yHeight: y.yHeight,
           offsetY: y.offsetY,
         }),
       );
-    });
+    }
 
     return { inputPorts, outputPorts };
   },
@@ -79,7 +94,8 @@ export const evalGateHandler: BranchNodeHandler = {
         uuid = uuid.substring(nodeIdStr.length + 1);
       }
       uuid = uuid.replace(/^eval-fail-/, '').replace(/-out$/, '');
-      return { type: SpecialPortType.EvalGateFail, uuid };
+      // v2 使用 EvalGateBranch，回退识别 EvalGateFail
+      return { type: SpecialPortType.EvalGateBranch, uuid };
     }
     return null;
   },
@@ -91,55 +107,73 @@ export const evalGateHandler: BranchNodeHandler = {
     action: 'add' | 'remove',
   ): boolean {
     if (!sourceNode.nodeConfig) return false;
+    const nc = sourceNode.nodeConfig as any;
 
-    switch (portInfo.type) {
-      case SpecialPortType.EvalGatePass: {
-        let passIds: number[] =
-          (sourceNode.nodeConfig as any).passNextNodeIds || [];
-        if (action === 'add') {
-          if (!passIds.includes(targetNodeId)) {
-            passIds.push(targetNodeId);
-          }
-        } else {
-          passIds = passIds.filter((id: number) => id !== targetNodeId);
-        }
-        (sourceNode.nodeConfig as any).passNextNodeIds = passIds;
-        return true;
+    if (portInfo.type === SpecialPortType.EvalGatePass) {
+      // branches[0] = pass
+      if (!nc.branches) nc.branches = getBranches(nc);
+      let ids: number[] = nc.branches[0]?.nextNodeIds || [];
+      if (action === 'add') {
+        if (!ids.includes(targetNodeId)) ids.push(targetNodeId);
+      } else {
+        ids = ids.filter((id: number) => id !== targetNodeId);
       }
-
-      case SpecialPortType.EvalGateFail: {
-        if (!portInfo.uuid) return false;
-        const validators = (sourceNode.nodeConfig as any).evalValidators;
-        const validator = validators?.find(
-          (v: any) => v.uuid === portInfo.uuid,
-        );
-        if (!validator) return false;
-        if (action === 'add') {
-          validator.onFail = {
-            ...validator.onFail,
-            targetNodeId: targetNodeId,
-          };
-        } else {
-          validator.onFail = { ...validator.onFail, targetNodeId: undefined };
-        }
-        return true;
-      }
-
-      default:
-        return false;
+      nc.branches[0] = { ...nc.branches[0], nextNodeIds: ids };
+      // 同步旧字段
+      (nc as any).passNextNodeIds = ids;
+      return true;
     }
+
+    if (
+      (portInfo.type === SpecialPortType.EvalGateBranch ||
+        portInfo.type === SpecialPortType.EvalGateFail) &&
+      portInfo.uuid
+    ) {
+      // fail 分支：branches[1..N]
+      if (!nc.branches) nc.branches = getBranches(nc);
+      const branchIdx = nc.branches.findIndex(
+        (b: BranchConfig, i: number) => i > 0 && b.uuid === portInfo.uuid,
+      );
+      if (branchIdx < 0) return false;
+      let ids: number[] = nc.branches[branchIdx].nextNodeIds || [];
+      if (action === 'add') {
+        if (!ids.includes(targetNodeId)) ids.push(targetNodeId);
+      } else {
+        ids = ids.filter((id: number) => id !== targetNodeId);
+      }
+      nc.branches[branchIdx] = { ...nc.branches[branchIdx], nextNodeIds: ids };
+      // 同步旧字段
+      const validatorIdx = branchIdx - 1;
+      if (nc.evalValidators?.[validatorIdx]) {
+        nc.evalValidators[validatorIdx].onFail = {
+          ...nc.evalValidators[validatorIdx].onFail,
+          targetNodeId: ids[0],
+        };
+      }
+      return true;
+    }
+
+    return false;
   },
 
   cleanupNodeReferences(node: ChildNode, deletedNodeId: number): void {
     const nc = node.nodeConfig as any;
     if (!nc) return;
 
+    // v2: branches
+    if (nc.branches) {
+      nc.branches = nc.branches.map((b: BranchConfig) => ({
+        ...b,
+        nextNodeIds:
+          b.nextNodeIds?.filter((id: number) => id !== deletedNodeId) || [],
+      }));
+    }
+    // v1 回退
     if (nc.passNextNodeIds?.includes(deletedNodeId)) {
       nc.passNextNodeIds = nc.passNextNodeIds.filter(
         (id: number) => id !== deletedNodeId,
       );
     }
-
     if (nc.evalValidators) {
       nc.evalValidators.forEach((v: any) => {
         if (v.onFail?.targetNodeId === deletedNodeId) {
@@ -153,23 +187,43 @@ export const evalGateHandler: BranchNodeHandler = {
     const nc = node.nodeConfig as any;
     if (!nc) return;
 
+    // v2: branches
+    if (nc.branches) {
+      nc.branches = nc.branches.map((b: BranchConfig) => ({
+        ...b,
+        nextNodeIds: [],
+      }));
+    }
+    // v1 回退
     nc.passNextNodeIds = [];
-    const validators = nc.evalValidators || [];
-    validators.forEach((v: any) => {
-      v.onFail = { ...v.onFail, targetNodeId: undefined };
-    });
+    if (nc.evalValidators) {
+      nc.evalValidators.forEach((v: any) => {
+        v.onFail = { ...v.onFail, targetNodeId: undefined };
+      });
+    }
   },
 
   initBranchMap(node: ChildNode): Map<string, number[]> | null {
-    const branchMap = new Map<string, number[]>();
     const nc = node.nodeConfig as any;
+    const branchMap = new Map<string, number[]>();
 
+    // v2: branches 存在时读取实际 nextNodeIds
+    if (nc?.branches?.length) {
+      for (const b of nc.branches) {
+        if (b === nc.branches[0]) {
+          branchMap.set('eval-pass', b.nextNodeIds || []);
+        } else {
+          branchMap.set(`eval-fail-${b.uuid}`, b.nextNodeIds || []);
+        }
+      }
+      return branchMap;
+    }
+
+    // v1 回退：只建 key，初始为空（syncFromGraph 会重填）
     branchMap.set('eval-pass', []);
-
     const validators = nc?.evalValidators || [];
     validators.forEach((v: any) => {
-      const key = `eval-fail-${v.uuid}`;
-      branchMap.set(key, []);
+      branchMap.set(`eval-fail-${v.uuid}`, []);
     });
 
     return branchMap;
@@ -179,7 +233,11 @@ export const evalGateHandler: BranchNodeHandler = {
     if (portInfo.type === SpecialPortType.EvalGatePass) {
       return 'eval-pass';
     }
-    if (portInfo.type === SpecialPortType.EvalGateFail && portInfo.uuid) {
+    if (
+      (portInfo.type === SpecialPortType.EvalGateBranch ||
+        portInfo.type === SpecialPortType.EvalGateFail) &&
+      portInfo.uuid
+    ) {
       return `eval-fail-${portInfo.uuid}`;
     }
     return undefined;
@@ -187,13 +245,27 @@ export const evalGateHandler: BranchNodeHandler = {
 
   mergeBranchData(node: ChildNode, branchMap: Map<string, number[]>): void {
     const nc = node.nodeConfig as any;
-    nc.passNextNodeIds = branchMap.get('eval-pass') || [];
+    if (!nc.branches) nc.branches = getBranches(nc);
 
-    const validators = nc.evalValidators || [];
-    validators.forEach((v: any) => {
-      const failIds = branchMap.get(`eval-fail-${v.uuid}`) || [];
-      v.onFail = { ...v.onFail, targetNodeId: failIds[0] };
-    });
+    // pass
+    const passIds = branchMap.get('eval-pass') || [];
+    nc.branches[0] = { ...nc.branches[0], nextNodeIds: passIds };
+    (nc as any).passNextNodeIds = passIds;
+
+    // fail branches
+    for (let i = 1; i < nc.branches.length; i++) {
+      const key = `eval-fail-${nc.branches[i].uuid}`;
+      const ids = branchMap.get(key) || [];
+      nc.branches[i] = { ...nc.branches[i], nextNodeIds: ids };
+      // 同步旧字段
+      const validatorIdx = i - 1;
+      if (nc.evalValidators?.[validatorIdx]) {
+        nc.evalValidators[validatorIdx].onFail = {
+          ...nc.evalValidators[validatorIdx].onFail,
+          targetNodeId: ids[0],
+        };
+      }
+    }
   },
 
   isSpecialBranchNode(): boolean {
@@ -208,36 +280,54 @@ export const evalGateHandler: BranchNodeHandler = {
   ): ChildNode | null {
     const suffix = extractPortSuffix(node, portId);
     const nodeConfig = { ...node.nodeConfig } as any;
+    if (!nodeConfig.branches) nodeConfig.branches = getBranches(nodeConfig);
 
     if (suffix.startsWith('eval-fail-')) {
-      const validatorUuid = suffix.substring('eval-fail-'.length);
-      const validators = nodeConfig.evalValidators || [];
-      nodeConfig.evalValidators = validators.map((v: any) => {
-        if (v.uuid === validatorUuid) {
-          if (targetNode) {
-            return {
-              ...v,
-              onFail: {
-                ...v.onFail,
-                targetNodeId:
-                  targetNode.id === newNodeId ? undefined : newNodeId,
-              },
-            };
+      const branchUuid = suffix.substring('eval-fail-'.length);
+      nodeConfig.branches = nodeConfig.branches.map(
+        (b: BranchConfig, i: number) => {
+          if (i > 0 && b.uuid === branchUuid) {
+            let ids: number[] = b.nextNodeIds || [];
+            if (targetNode) {
+              // 替换旧节点；若目标就是自己则清除
+              if (targetNode.id === newNodeId) {
+                ids = ids.filter((item: number) => item !== targetNode.id);
+              } else {
+                ids = ids.map((item: number) =>
+                  item === targetNode.id ? newNodeId : item,
+                );
+              }
+            } else if (!ids.includes(newNodeId)) {
+              ids = [...ids, newNodeId];
+            }
+            return { ...b, nextNodeIds: ids };
           }
-          return { ...v, onFail: { ...v.onFail, targetNodeId: newNodeId } };
-        }
-        return v;
-      });
+          return b;
+        },
+      );
+      // 同步旧字段
+      const validatorIdx =
+        nodeConfig.branches.findIndex(
+          (b: BranchConfig, i: number) => i > 0 && b.uuid === branchUuid,
+        ) - 1;
+      if (validatorIdx >= 0 && nodeConfig.evalValidators?.[validatorIdx]) {
+        const ids = nodeConfig.branches[validatorIdx + 1].nextNodeIds;
+        nodeConfig.evalValidators[validatorIdx].onFail = {
+          ...nodeConfig.evalValidators[validatorIdx].onFail,
+          targetNodeId: ids?.[0],
+        };
+      }
     } else if (suffix === 'eval-pass') {
-      let passIds: number[] = nodeConfig.passNextNodeIds || [];
+      let ids: number[] = nodeConfig.branches[0]?.nextNodeIds || [];
       if (targetNode) {
-        passIds = passIds.map((item: number) =>
+        ids = ids.map((item: number) =>
           item === targetNode.id ? newNodeId : item,
         );
-      } else if (!passIds.includes(newNodeId)) {
-        passIds = [...passIds, newNodeId];
+      } else if (!ids.includes(newNodeId)) {
+        ids = [...ids, newNodeId];
       }
-      nodeConfig.passNextNodeIds = passIds;
+      nodeConfig.branches[0] = { ...nodeConfig.branches[0], nextNodeIds: ids };
+      (nodeConfig as any).passNextNodeIds = ids;
     }
 
     return { ...node, nodeConfig };

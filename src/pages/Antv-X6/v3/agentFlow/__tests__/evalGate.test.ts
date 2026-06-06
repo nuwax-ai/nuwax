@@ -113,7 +113,7 @@ describe('EvalGate Handler', () => {
       );
 
       expect(result).not.toBeNull();
-      expect(result!.type).toBe(SpecialPortType.EvalGateFail);
+      expect(result!.type).toBe(SpecialPortType.EvalGateBranch);
       expect(result!.uuid).toBe('v1-uuid');
     });
 
