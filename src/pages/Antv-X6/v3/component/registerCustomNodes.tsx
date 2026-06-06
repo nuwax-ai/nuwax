@@ -29,7 +29,8 @@ import React, { useCallback, useEffect, useState } from 'react';
 import '../indexV3.less';
 import { showExceptionHandle } from '../utils/graphV3';
 import './registerCustomNodes.less';
-import AgentFlowPortChips from './agentFlowPortChips';
+// AgentFlowPortChips 已移除 — 对齐 workflow v3 样式
+// import AgentFlowPortChips from './agentFlowPortChips';
 import RunResult from './runResult';
 // 定义那些节点有试运行
 
@@ -78,6 +79,28 @@ const ConditionNode: React.FC<{ data: ChildNode }> = ({ data }) => {
           </div>
         );
       })}
+    </div>
+  );
+};
+
+// 路由决策节点（显示路由列表）
+const RouteDecisionNode: React.FC<{ data: ChildNode }> = ({ data }) => {
+  const nc = data.nodeConfig as any;
+  const routes: any[] = nc?.routes || [];
+
+  return (
+    <div className="route-decision-node-content">
+      {routes.map((route, i) => (
+        <div key={route.uuid || i} className="dis-left route-decision-item">
+          <span
+            className="route-decision-dot"
+            style={{ backgroundColor: '#fa8c16' }}
+          />
+          <span className="route-decision-name">
+            {route.routeName || route.name || `Route ${i + 1}`}
+          </span>
+        </div>
+      ))}
     </div>
   );
 };
@@ -354,16 +377,16 @@ export const GeneralNode: React.FC<NodeProps> = (props) => {
     <>
       <div
         className={`general-node ${selected ? 'selected-general-node' : ''} ${
-          isAgentFlow ? 'general-node--agent-flow' : ''
+          isAgentFlow ? 'general-node-agent-flow' : ''
         }`} // 根据选中状态应用类名
       >
         {/* 节点头部，包含标题、图像和操作菜单 */}
         <div
           className="general-node-header"
           style={{
-            background: isAgentFlow ? '#ffffff' : gradientBackground,
+            background: gradientBackground,
             marginBottom,
-          }} // AgentFlow 节点走白卡片；其他保留原渐变
+          }}
         >
           <div className="dis-left general-node-header-image">
             {returnImg(data.type)}
@@ -386,6 +409,10 @@ export const GeneralNode: React.FC<NodeProps> = (props) => {
 
         {data.type === NodeTypeEnum.Condition && <ConditionNode data={data} />}
 
+        {data.type === NodeTypeEnum.RouteDecision && (
+          <RouteDecisionNode data={data} />
+        )}
+
         {data.type === NodeTypeEnum.QA && <QANode data={data} />}
 
         {data.type === NodeTypeEnum.IntentRecognition && (
@@ -395,8 +422,7 @@ export const GeneralNode: React.FC<NodeProps> = (props) => {
         {/* AgentFlow 旧徽章：被 chip 浮层取代。仅当不是 AgentFlow 时保留原徽章逻辑。
             当前所有使用徽章的 type 都是 AgentFlow 类型，因此整体退役，未来如要回退可恢复。 */}
 
-        {/* AgentFlow 端口 chip 浮层（type guard 内部处理，非 AgentFlow 节点不渲染） */}
-        <AgentFlowPortChips data={data} />
+        {/* AgentFlow 端口 chip 已移除 — 对齐 workflow v3 样式，仅保留端口圆点 */}
 
         {/* 异常处理 */}
         {showException && (

@@ -1,3 +1,4 @@
+import { isAgentFlowType } from '@/pages/Antv-X6/v3/agentFlow/types';
 import {
   DEFAULT_NODE_CONFIG,
   DEFAULT_NODE_CONFIG_MAP,
@@ -128,7 +129,10 @@ function parseEdgeBranch(
     }
   }
   // 路由决策的 route-{uuid} 端口（排除 default 兜底）
-  if (sourcePort.includes('-route-') && !sourcePort.includes('-route-default-')) {
+  if (
+    sourcePort.includes('-route-') &&
+    !sourcePort.includes('-route-default-')
+  ) {
     if (!edge) {
       return { stroke: BRANCH_PALETTE.route.stroke, label: '' };
     }
@@ -139,7 +143,8 @@ function parseEdgeBranch(
     const sourceData = edge.getSourceNode()?.getData() || {};
     const routes: any[] = (sourceData as any)?.nodeConfig?.routes || [];
     const found = routes.find((r) => r.uuid === uuid);
-    const label = found?.routeName || found?.name || `Route ${uuid.slice(0, 4)}`;
+    const label =
+      found?.routeName || found?.name || `Route ${uuid.slice(0, 4)}`;
     return { stroke: BRANCH_PALETTE.route.stroke, label };
   }
   return null;
@@ -164,30 +169,37 @@ export function setEdgeAttributes(edge: Edge) {
   });
 
   if (branch && branch.label) {
-    edge.setLabels([
-      {
-        attrs: {
-          label: {
-            text: branch.label,
-            fill: branch.stroke,
-            fontSize: 11,
-            fontWeight: 600,
-            textAnchor: 'middle',
-            textVerticalAnchor: 'middle',
+    // AgentFlow 分支连线不显示文字标签，仅保留颜色区分
+    const sourceNode = edge.getSourceNode();
+    const sourceData = sourceNode?.getData();
+    if (sourceData && isAgentFlowType(sourceData.type)) {
+      // 不设置 label，仅颜色已在上面 attr 中设置
+    } else {
+      edge.setLabels([
+        {
+          attrs: {
+            label: {
+              text: branch.label,
+              fill: branch.stroke,
+              fontSize: 11,
+              fontWeight: 600,
+              textAnchor: 'middle',
+              textVerticalAnchor: 'middle',
+            },
+            rect: {
+              fill: '#ffffff',
+              stroke: branch.stroke,
+              strokeWidth: 1,
+              rx: 4,
+              ry: 4,
+            },
           },
-          rect: {
-            fill: '#ffffff',
-            stroke: branch.stroke,
-            strokeWidth: 1,
-            rx: 4,
-            ry: 4,
+          position: {
+            distance: 0.5,
           },
         },
-        position: {
-          distance: 0.5,
-        },
-      },
-    ]);
+      ]);
+    }
   }
 }
 
@@ -647,7 +659,16 @@ export const showExceptionHandle = (node: ChildNode): boolean => {
 };
 
 export const needUpdateNodes = (node: ChildNode): boolean => {
-  return [...EXCEPTION_NODES_TYPE, NodeTypeEnum.Condition].includes(node.type); // 需要更新端口配置的节点 异常节点包括之前
+  return (
+    [
+      ...EXCEPTION_NODES_TYPE,
+      NodeTypeEnum.Condition,
+      NodeTypeEnum.RouteDecision,
+    ].includes(node.type) ||
+    // HITL-Approve 的 branches 在更新后端口数可能变化
+    (node.type === NodeTypeEnum.HumanInteraction &&
+      (node.nodeConfig as any)?.hitlMode === 'approve')
+  ); // 需要更新端口配置的节点：异常节点 + 条件 + 路由决策 + HITL 审批
 };
 
 export const showExceptionPort = (
@@ -915,24 +936,75 @@ const handleAgentFlowEdges = (
   const z = isLoopNode ? 5 : 1;
 
   if (node.type === NodeTypeEnum.EvalGate) {
-    const passIds: number[] = nc.passNextNodeIds || [];
-    passIds.forEach((id) => {
+    // v2: branches[] 驱动；v1 回退: passNextNodeIds + evalValidators
+    const branches: any[] = nc.branches || [];
+    if (branches.length > 0) {
+      // pass 分支（branches[0]）
+      const passIds: number[] = branches[0]?.nextNodeIds || [];
+      passIds.forEach((id) => {
+        edges.push({
+          source: `${node.id}-eval-pass`,
+          target: id.toString(),
+          zIndex: z,
+        });
+      });
+      // fail 分支（branches[1..N]）
+      for (let i = 1; i < branches.length; i++) {
+        const failIds: number[] = branches[i]?.nextNodeIds || [];
+        failIds.forEach((id) => {
+          edges.push({
+            source: `${node.id}-eval-fail-${branches[i].uuid}`,
+            target: id.toString(),
+            zIndex: z,
+          });
+        });
+      }
+    } else {
+      // v1 回退
+      const passIds: number[] = nc.passNextNodeIds || [];
+      passIds.forEach((id) => {
+        edges.push({
+          source: `${node.id}-eval-pass`,
+          target: id.toString(),
+          zIndex: z,
+        });
+      });
+      const validators = nc.evalValidators || [];
+      validators.forEach((v: any) => {
+        const failId = v.onFail?.targetNodeId;
+        if (failId) {
+          edges.push({
+            source: `${node.id}-eval-fail-${v.uuid}`,
+            target: failId.toString(),
+            zIndex: z,
+          });
+        }
+      });
+    }
+  }
+
+  if (node.type === NodeTypeEnum.RouteDecision) {
+    const routes: any[] = nc.routes || [];
+    // default 兜底端口（注意：source 须带 -out 后缀，因为 "route"
+    // 包含 "out" 子串，parseEndpoint 会误判 isLoop=true 导致不加 -out）
+    const defaultIds: number[] = nc.defaultNextNodeIds || [];
+    defaultIds.forEach((id) => {
       edges.push({
-        source: `${node.id}-eval-pass`,
+        source: `${node.id}-route-default-out`,
         target: id.toString(),
         zIndex: z,
       });
     });
-    const validators = nc.evalValidators || [];
-    validators.forEach((v: any) => {
-      const failId = v.onFail?.targetNodeId;
-      if (failId) {
+    // 各路由端口
+    routes.forEach((route) => {
+      const routeIds: number[] = route.nextNodeIds || [];
+      routeIds.forEach((id) => {
         edges.push({
-          source: `${node.id}-eval-fail-${v.uuid}`,
-          target: failId.toString(),
+          source: `${node.id}-route-${route.uuid}-out`,
+          target: id.toString(),
           zIndex: z,
         });
-      }
+      });
     });
   }
 
@@ -940,22 +1012,39 @@ const handleAgentFlowEdges = (
     node.type === NodeTypeEnum.HumanInteraction &&
     nc.hitlMode === HitlModeEnum.Approve
   ) {
-    const approveIds: number[] = nc.approveNextNodeIds || [];
-    approveIds.forEach((id) => {
-      edges.push({
-        source: `${node.id}-hitl-approve`,
-        target: id.toString(),
-        zIndex: z,
+    // v2: branches[] 驱动；v1 回退: approveNextNodeIds + rejectNextNodeIds
+    const branches: any[] = nc.branches || [];
+    if (branches.length > 0) {
+      branches.forEach((branch, i) => {
+        const ids: number[] = branch.nextNodeIds || [];
+        ids.forEach((id) => {
+          edges.push({
+            source:
+              i === 0 ? `${node.id}-hitl-approve` : `${node.id}-hitl-reject`,
+            target: id.toString(),
+            zIndex: z,
+          });
+        });
       });
-    });
-    const rejectIds: number[] = nc.rejectNextNodeIds || [];
-    rejectIds.forEach((id) => {
-      edges.push({
-        source: `${node.id}-hitl-reject`,
-        target: id.toString(),
-        zIndex: z,
+    } else {
+      // v1 回退
+      const approveIds: number[] = nc.approveNextNodeIds || [];
+      approveIds.forEach((id) => {
+        edges.push({
+          source: `${node.id}-hitl-approve`,
+          target: id.toString(),
+          zIndex: z,
+        });
       });
-    });
+      const rejectIds: number[] = nc.rejectNextNodeIds || [];
+      rejectIds.forEach((id) => {
+        edges.push({
+          source: `${node.id}-hitl-reject`,
+          target: id.toString(),
+          zIndex: z,
+        });
+      });
+    }
   }
 
   return edges;
@@ -1045,6 +1134,7 @@ export const getEdges = (
         return handleLoopEdges(node);
       } else if (
         node.type === NodeTypeEnum.EvalGate ||
+        node.type === NodeTypeEnum.RouteDecision ||
         (node.type === NodeTypeEnum.HumanInteraction &&
           (node.nodeConfig as any)?.hitlMode === HitlModeEnum.Approve)
       ) {

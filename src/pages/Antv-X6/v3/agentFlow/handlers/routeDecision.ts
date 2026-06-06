@@ -21,39 +21,45 @@ import type {
   ParsedPort,
   PortGeneratorContext,
 } from '../../extensions/types';
+import { SpecialPortType } from '../../types/enums';
 import {
   branchPortY,
   extractPortSuffix,
   ROUTE_DEFAULT_PORT_COLOR,
 } from './portLayout';
-import { SpecialPortType } from '../../types/enums';
 
 export const routeDecisionHandler: BranchNodeHandler = {
   nodeType: NodeTypeEnum.RouteDecision,
 
   generatePorts(data: ChildNode, ctx: PortGeneratorContext) {
-    const routes = (data.nodeConfig as any)?.routes || [];
+    const nc = data.nodeConfig as any;
+    const routes: any[] = nc?.routes || [];
+    const defaultIds: number[] = nc?.defaultNextNodeIds || [];
 
     const inputPorts = [
       ctx.generatePortConfig({ group: PortGroupEnum.in, idSuffix: 'in' }),
     ];
 
-    // 第 0 个 = default 兜底端口（灰色，无 chip）
-    const defaultY = branchPortY(0);
-    const outputPorts = [
-      ctx.generatePortConfig({
-        group: PortGroupEnum.special,
-        idSuffix: 'route-default-out',
-        color: ROUTE_DEFAULT_PORT_COLOR,
-        yHeight: defaultY.yHeight,
-        offsetY: defaultY.offsetY,
-      }),
-    ];
+    const outputPorts = [];
 
-    // 第 1..n = 各路由
-    routes.forEach((item: any, index: number) => {
-      const uuid = item.uuid || `r${index}`;
-      const y = branchPortY(index + 1);
+    // 默认兜底端口：仅当 defaultNextNodeIds 有值时才生成
+    if (defaultIds.length > 0) {
+      const defaultY = branchPortY(outputPorts.length);
+      outputPorts.push(
+        ctx.generatePortConfig({
+          group: PortGroupEnum.special,
+          idSuffix: 'route-default-out',
+          color: ROUTE_DEFAULT_PORT_COLOR,
+          yHeight: defaultY.yHeight,
+          offsetY: defaultY.offsetY,
+        }),
+      );
+    }
+
+    // 各路由端口
+    routes.forEach((item: any) => {
+      const uuid = item.uuid || `r${outputPorts.length}`;
+      const y = branchPortY(outputPorts.length);
       outputPorts.push(
         ctx.generatePortConfig({
           group: PortGroupEnum.special,

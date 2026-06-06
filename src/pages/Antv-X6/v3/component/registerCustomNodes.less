@@ -241,11 +241,13 @@
     color: #389e0d;
     border: 1px solid #b7eb8f;
   }
+
   &.fail {
     background: #fff1f0;
     color: #cf1322;
     border: 1px solid #ffa39e;
   }
+
   &.route {
     background: #fff7e6;
     color: #d46b08;
@@ -258,7 +260,7 @@
   flex-basis: 100%;
   font-size: 11px;
   color: #8c8c8c;
-  padding: 2px 0 0 0;
+  padding: 2px 0 0;
   line-height: 1.4;
   white-space: nowrap;
   overflow: hidden;
@@ -266,10 +268,40 @@
 }
 
 /* AgentFlow 节点：允许 header wrap 让 desc 换行 + 允许 chip 溢出节点边界 */
-.general-node--agent-flow {
+.general-node-agent-flow {
   overflow: visible;
 }
-.general-node--agent-flow .general-node-header {
+
+.general-node-agent-flow .general-node-header {
   flex-wrap: wrap;
   padding-bottom: 4px;
+}
+
+/* RouteDecision 路由列表 */
+.route-decision-node-content {
+  padding: 4px 16px 0;
+}
+
+.route-decision-item {
+  display: flex;
+  align-items: center;
+  height: 24px;
+  line-height: 24px;
+}
+
+.route-decision-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-right: 6px;
+  flex-shrink: 0;
+}
+
+.route-decision-name {
+  font-size: 12px;
+  color: #595959;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }

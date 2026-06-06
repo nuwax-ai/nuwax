@@ -44,7 +44,6 @@ import {
   createEdge,
   generatePorts,
   getNodeSize,
-  getWidthAndHeight,
 } from '../../utils/workflowV3';
 
 const GRAPH_CONTAINER_ID = 'graph-container';
@@ -190,7 +189,13 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         ? graphRef.current.clientToGraph(e.x, e.y)
         : { x: e.x, y: e.y }; // 已经是图坐标，直接使用
 
-      const { width, height } = getWidthAndHeight(child);
+      // 先生成端口，再基于端口 offsetY 计算节点高度（AgentFlow 分支节点高度由端口决定）
+      const ports = generatePorts(child);
+      const { width, height } = getNodeSize({
+        data: child,
+        ports: ports.items,
+        type: NodeSizeGetTypeEnum.create,
+      });
 
       // 如果坐标是视口中心（非客户端坐标），需要将节点中心对齐到该点
       // 即节点位置 = 中心点 - 节点宽高的一半
@@ -210,7 +215,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         },
         resizable: true,
         zIndex: 99,
-        ports: generatePorts(child),
+        ports: ports,
       });
       // 添加节点 (注释掉，因为上面的 addNode 已经添加了)
       // graphRef.current.addNode(newNode);
@@ -293,18 +298,13 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         if (needUpdateNodes(newData)) {
           // 需要更新端口配置的节点
           const newPorts = generatePorts(newData);
-          if (
-            newData.type === NodeTypeEnum.QA ||
-            newData.type === NodeTypeEnum.Condition
-          ) {
-            // 问答节点
-            const { width, height } = getNodeSize({
-              data: newData,
-              ports: newPorts.items,
-              type: NodeSizeGetTypeEnum.update,
-            });
-            node.setSize(width, height);
-          }
+          // 端口数量动态变化的节点都需要重新计算高度
+          const { width: newWidth, height: newHeight } = getNodeSize({
+            data: newData,
+            ports: newPorts.items,
+            type: NodeSizeGetTypeEnum.update,
+          });
+          node.setSize(newWidth, newHeight);
           node.prop('ports', newPorts);
         }
 
