@@ -229,11 +229,19 @@ const AppDev: React.FC = () => {
   // 使用项目详情 Hook
   const projectInfo = useAppDevProjectInfo(projectId);
 
+  /** 保存成功后刷新 Git 列表（sourceControl 初始化后注入） */
+  const refreshGitListAfterSaveRef = useRef<() => Promise<void>>(
+    async () => {},
+  );
+
   // 权限校验通过后才初始化其他 hooks
   const fileManagement = useAppDevFileManagement({
     projectId: projectId || '',
     onFileSelect: setActiveFile,
     onFileContentChange: updateFileContent,
+    onSaveSuccess: async () => {
+      await refreshGitListAfterSaveRef.current();
+    },
     hasPermission: projectInfo.hasPermission, // 传递权限状态
   });
 
@@ -243,6 +251,10 @@ const AppDev: React.FC = () => {
     fileManagement,
     onRefreshProjectInfo: () => projectInfo.refreshProjectInfo(),
   });
+
+  useEffect(() => {
+    refreshGitListAfterSaveRef.current = sourceControl.refreshGitList;
+  }, [sourceControl.refreshGitList]);
 
   // 模型选择器
   const modelSelector = useAppDevModelSelector(

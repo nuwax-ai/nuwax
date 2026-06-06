@@ -1363,7 +1363,9 @@ const ConversationAgent: React.FC = () => {
                 onRefreshGitList: fileView.refreshGitList,
                 onDiffFileSelect: gitSourceControl.handleDiffFileSelect,
                 onOpenChangeFile: gitSourceControl.handleOpenChangeFile,
-                onAfterDiscardChange: gitSourceControl.handleAfterDiscardChange,
+                onAfterDiscardChange: (fileId) => {
+                  void gitSourceControl.handleDiscardChange([fileId]);
+                },
                 onAddToGitignore: (fileId) => {
                   void gitSourceControl.handleAddToGitignore(fileId);
                 },

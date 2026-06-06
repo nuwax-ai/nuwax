@@ -32,6 +32,8 @@ interface UseAppDevFileManagementProps {
   projectId: string;
   onFileSelect?: (fileId: string) => void;
   onFileContentChange?: (fileId: string, content: string) => void;
+  /** 文件保存到服务端成功后的回调（如刷新 Git status 列表） */
+  onSaveSuccess?: (fileId: string) => void | Promise<void>;
   hasPermission?: boolean; // 新增：是否有权限访问项目
 }
 
@@ -46,6 +48,7 @@ export const useAppDevFileManagement = ({
   projectId,
   onFileSelect,
   onFileContentChange,
+  onSaveSuccess,
   hasPermission = true,
 }: UseAppDevFileManagementProps) => {
   // 文件树状态
@@ -419,6 +422,7 @@ export const useAppDevFileManagement = ({
             isFileModified: false,
             isSavingFile: false,
           }));
+          await onSaveSuccess?.(selectedFile);
           return;
         }
 
@@ -428,7 +432,7 @@ export const useAppDevFileManagement = ({
         setFileContentState((prev) => ({ ...prev, isSavingFile: false }));
       }
     }, 500),
-    [projectId],
+    [projectId, onSaveSuccess],
   );
 
   /**
