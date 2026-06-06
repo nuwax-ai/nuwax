@@ -11,35 +11,38 @@ import ChangeFileContextMenu from './ChangeFileContextMenu';
 import ChangeFileListSection, {
   type ChangeListViewMode,
 } from './ChangeFileListSection';
-import { resolveChangeFileStatus } from './changeFileStatus';
+import {
+  type ChangeListSection,
+  resolveStagedStatusMeta,
+  resolveUnstagedStatusMeta,
+  type SelectedChangeFile,
+} from './changeFileStatus';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
 /** 右键菜单目标 */
 type ContextMenuTarget =
-  | { kind: 'file'; fileId: string }
+  | { kind: 'file'; fileId: string; isStagedSection: boolean }
   | { kind: 'folder'; folderId: string; isStagedSection: boolean };
 
 export interface ConversationAgentSourceControlProps {
   /** 已修改文件列表 */
   changeFiles: ChangeFileInfo[];
-  /** 已暂存的文件 ID 集合 */
-  stagedFileIds?: Set<string>;
   /** 是否正在提交 */
   isCommitting?: boolean;
   /** 是否正在刷新 Git 列表 */
   isRefreshing?: boolean;
-  /** 当前选中查看 diff 的文件 ID */
-  selectedDiffFileId?: string | null;
+  /** 当前选中的变更文件（含区块） */
+  selectedChangeFile?: SelectedChangeFile | null;
   /** 提交修改（保存并推送） */
   onCommit?: (message: string) => Promise<void>;
   /** 刷新 Git 变更列表 */
   onRefresh?: () => void | Promise<void>;
   /** 点击修改项查看 diff */
-  onFileClick?: (fileId: string) => void;
+  onFileClick?: (fileId: string, section: ChangeListSection) => void;
   /** 打开更改（diff） */
-  onOpenChanges?: (fileId: string) => void;
+  onOpenChanges?: (fileId: string, section: ChangeListSection) => void;
   /** 打开文件 */
   onOpenFile?: (fileId: string) => void;
   /** 放弃更改 */
@@ -60,10 +63,9 @@ const ConversationAgentSourceControl: React.FC<
   ConversationAgentSourceControlProps
 > = ({
   changeFiles,
-  stagedFileIds = new Set<string>(),
   isCommitting = false,
   isRefreshing = false,
-  selectedDiffFileId,
+  selectedChangeFile,
   onCommit,
   onRefresh,
   onFileClick,
@@ -75,55 +77,79 @@ const ConversationAgentSourceControl: React.FC<
   onAddToGitignore,
 }) => {
   const [commitMessage, setCommitMessage] = useState<string>('');
+  // 视图模式：tree / list
   const [viewMode, setViewMode] = useState<ChangeListViewMode>('tree');
+  // 提交消息
   const [contextMenuVisible, setContextMenuVisible] = useState<boolean>(false);
+  // 右键菜单位置
   const [contextMenuPosition, setContextMenuPosition] = useState({
     x: 0,
     y: 0,
   });
+  // 右键菜单目标
   const [contextMenuTarget, setContextMenuTarget] =
     useState<ContextMenuTarget | null>(null);
 
-  /** 变更项（含文件名、路径、状态角标） */
-  const changeItems = useMemo(
+  /** 变更项基础信息（文件名、路径） */
+  const baseChangeItems = useMemo(
     () =>
       changeFiles.map((item) => {
         const segments = item.fileId.split('/');
-        /** 文件名 */
         const fileName = segments[segments.length - 1] || item.fileId;
-        const isStaged = stagedFileIds.has(item.fileId);
-        /** 文件状态 */
-        const statusMeta = resolveChangeFileStatus(item, isStaged);
-
         return {
           ...item,
           fileName,
           parentPath: item.fileId,
-          statusMeta,
         };
       }),
-    [changeFiles, stagedFileIds],
+    [changeFiles],
   );
 
+  /** 暂存的更改：status.staged / created 等 */
   const stagedItems = useMemo(
-    () => changeItems.filter((item) => stagedFileIds.has(item.fileId)),
-    [changeItems, stagedFileIds],
+    () =>
+      baseChangeItems
+        .map((item) => {
+          const statusMeta = resolveStagedStatusMeta(item);
+          return statusMeta ? { ...item, statusMeta } : null;
+        })
+        .filter((item): item is NonNullable<typeof item> => item !== null),
+    [baseChangeItems],
   );
 
+  /** 更改：modified / deleted / untracked / conflict 等未暂存文件 */
   const unstagedItems = useMemo(
-    () => changeItems.filter((item) => !stagedFileIds.has(item.fileId)),
-    [changeItems, stagedFileIds],
+    () =>
+      baseChangeItems
+        .map((item) => {
+          const statusMeta = resolveUnstagedStatusMeta(item);
+          return statusMeta ? { ...item, statusMeta } : null;
+        })
+        .filter((item): item is NonNullable<typeof item> => item !== null),
+    [baseChangeItems],
+  );
+
+  // 变更项列表
+  const changeItems = useMemo(
+    () => [...stagedItems, ...unstagedItems],
+    [stagedItems, unstagedItems],
   );
 
   /** 是否存在任意变更（暂存或未暂存） */
   const hasAnyChanges = changeItems.length > 0;
 
+  /** 文件右键时，当前文件的变更信息 */
   const contextMenuFile = useMemo(() => {
     if (contextMenuTarget?.kind !== 'file') {
       return undefined;
     }
-    return changeItems.find((item) => item.fileId === contextMenuTarget.fileId);
-  }, [changeItems, contextMenuTarget]);
+    const sectionItems = contextMenuTarget.isStagedSection
+      ? stagedItems
+      : unstagedItems;
+    return sectionItems.find(
+      (item) => item.fileId === contextMenuTarget.fileId,
+    );
+  }, [contextMenuTarget, stagedItems, unstagedItems]);
 
   /** 文件夹右键时，当前区块内该目录下的所有变更文件 */
   const contextMenuFolderFiles = useMemo(() => {
@@ -140,9 +166,10 @@ const ConversationAgentSourceControl: React.FC<
     contextMenuTarget?.kind === 'folder'
       ? contextMenuTarget.isStagedSection
       : contextMenuTarget?.kind === 'file'
-      ? stagedFileIds.has(contextMenuTarget.fileId)
+      ? contextMenuTarget.isStagedSection
       : false;
 
+  /** 右键目标类型 */
   const contextMenuTargetType =
     contextMenuTarget?.kind === 'folder' ? 'folder' : 'file';
 
@@ -154,10 +181,10 @@ const ConversationAgentSourceControl: React.FC<
 
   /** 文件右键打开菜单 */
   const handleContextMenu = useCallback(
-    (e: React.MouseEvent, fileId: string) => {
+    (isStagedSection: boolean) => (e: React.MouseEvent, fileId: string) => {
       e.preventDefault();
       e.stopPropagation();
-      setContextMenuTarget({ kind: 'file', fileId });
+      setContextMenuTarget({ kind: 'file', fileId, isStagedSection });
       setContextMenuPosition({ x: e.clientX, y: e.clientY });
       setContextMenuVisible(true);
     },
@@ -239,6 +266,7 @@ const ConversationAgentSourceControl: React.FC<
     setCommitMessage('');
   };
 
+  /** 切换视图模式 */
   const handleToggleViewMode = useCallback(() => {
     if (!hasAnyChanges) {
       return;
@@ -246,6 +274,7 @@ const ConversationAgentSourceControl: React.FC<
     setViewMode((prev) => (prev === 'tree' ? 'list' : 'tree'));
   }, [hasAnyChanges]);
 
+  /** 视图模式切换标题 */
   const viewToggleTitle =
     viewMode === 'tree'
       ? dict('PC.Pages.ConversationAgentSourceControl.viewAsList')
@@ -305,6 +334,7 @@ const ConversationAgentSourceControl: React.FC<
       </div>
 
       <div className={cx(styles['changes-scroll'])}>
+        {/* 暂存的变更 */}
         {stagedItems.length > 0 && (
           <ChangeFileListSection
             title={dict(
@@ -312,20 +342,23 @@ const ConversationAgentSourceControl: React.FC<
             )}
             items={stagedItems}
             viewMode={viewMode}
-            selectedDiffFileId={selectedDiffFileId}
+            section="staged"
+            selectedChangeFile={selectedChangeFile}
             onFileClick={onFileClick}
-            onContextMenu={handleContextMenu}
+            onContextMenu={handleContextMenu(true)}
             onFolderContextMenu={handleFolderContextMenu(true)}
           />
         )}
+        {/* 未暂存的变更 */}
         <ChangeFileListSection
           title={dict('PC.Pages.ConversationAgentSourceControl.changes')}
           items={unstagedItems}
           viewMode={viewMode}
-          selectedDiffFileId={selectedDiffFileId}
+          section="unstaged"
+          selectedChangeFile={selectedChangeFile}
           emptyText={dict('PC.Pages.ConversationAgentSourceControl.noChanges')}
           onFileClick={onFileClick}
-          onContextMenu={handleContextMenu}
+          onContextMenu={handleContextMenu(false)}
           onFolderContextMenu={handleFolderContextMenu(false)}
         />
       </div>
@@ -343,9 +376,15 @@ const ConversationAgentSourceControl: React.FC<
         /** 关闭菜单 */
         onClose={closeContextMenu}
         /** 打开更改（diff） */
-        onOpenChanges={() =>
-          contextMenuFile && onOpenChanges?.(contextMenuFile.fileId)
-        }
+        onOpenChanges={() => {
+          if (!contextMenuFile || contextMenuTarget?.kind !== 'file') {
+            return;
+          }
+          onOpenChanges?.(
+            contextMenuFile.fileId,
+            contextMenuTarget.isStagedSection ? 'staged' : 'unstaged',
+          );
+        }}
         /** 打开文件 */
         onOpenFile={() =>
           contextMenuFile && onOpenFile?.(contextMenuFile.fileId)

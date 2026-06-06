@@ -1,6 +1,7 @@
 import type { RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
 import type {
+  GitAddParams,
   GitBranchCreateParams,
   GitBranchDeleteParams,
   GitBranchesParams,
@@ -14,9 +15,11 @@ import type {
   GitResetParams,
   GitRevertParams,
   GitStashListParams,
+  GitStashListResponse,
   GitStashParams,
   GitStashPopParams,
   GitStatusParams,
+  GitStatusResponse,
   GitTagCreateParams,
   GitTagDeleteParams,
   GitTagsParams,
@@ -72,7 +75,7 @@ export function apiGitTagCreate(
  */
 export function apiGitStatus(
   data: GitStatusParams,
-): Promise<RequestResponse<null>> {
+): Promise<RequestResponse<GitStatusResponse>> {
   return request('/api/git/status', {
     method: 'POST',
     data,
@@ -111,7 +114,7 @@ export function apiGitStashPop(
  */
 export function apiGitStashList(
   data: GitStashListParams,
-): Promise<RequestResponse<null>> {
+): Promise<RequestResponse<GitStashListResponse>> {
   return request('/api/git/stash-list', {
     method: 'POST',
     data,
@@ -273,6 +276,17 @@ export function apiGitBranchCreate(
   data: GitBranchCreateParams,
 ): Promise<RequestResponse<null>> {
   return request('/api/git/branch-create', {
+    method: 'POST',
+    data,
+  });
+}
+
+/**
+ * Git branch add - 暂存文件
+ * 将文件加入暂存区（git add）。files 为空时暂存全部变更。文件写入/创建后可调用此接口让 Git 跟踪变更。
+ */
+export function apiGitAdd(data: GitAddParams): Promise<RequestResponse<null>> {
+  return request('/api/git/add', {
     method: 'POST',
     data,
   });

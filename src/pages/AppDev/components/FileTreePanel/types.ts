@@ -1,4 +1,8 @@
 import type { ChangeFileInfo } from '@/components/FileTreeView/type';
+import type {
+  ChangeListSection,
+  SelectedChangeFile,
+} from '@/pages/ConversationAgent/ConversationAgentSourceControl/changeFileStatus';
 import type { FileNode } from '@/types/interfaces/appDev';
 
 /**
@@ -50,10 +54,8 @@ export interface FileTreePanelProps {
 
   /** 已修改文件列表（源代码管理） */
   changeFiles?: ChangeFileInfo[];
-  /** 已暂存的文件 ID 集合 */
-  stagedFileIds?: Set<string>;
-  /** 当前选中查看 diff 的文件 ID */
-  selectedDiffFileId?: string | null;
+  /** 当前选中的变更文件（含区块） */
+  selectedChangeFile?: SelectedChangeFile | null;
   /** 是否正在提交 */
   isCommitting?: boolean;
   /** 是否正在刷新 Git 列表 */
@@ -61,7 +63,7 @@ export interface FileTreePanelProps {
   /** 刷新 Git 变更列表 */
   onRefreshGitList?: () => void | Promise<void>;
   /** 选中修改文件，在右侧预览区展示 diff */
-  onDiffFileSelect?: (fileId: string) => void;
+  onDiffFileSelect?: (fileId: string, section: ChangeListSection) => void;
   /** 打开文件（选中并预览，非 diff） */
   onOpenChangeFile?: (fileId: string) => void;
   /** 放弃单个文件的更改 */

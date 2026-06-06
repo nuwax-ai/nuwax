@@ -2,20 +2,28 @@
  * AppDev 源代码管理（Git）Hook
  * 管理修改文件列表、暂存、提交推送及 diff 预览相关逻辑
  */
-import type { ChangeFileInfo } from '@/components/FileTreeView/type';
+import type {
+  ChangeFileGitStatusKind,
+  ChangeFileInfo,
+} from '@/components/FileTreeView/type';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import type {
+  ChangeListSection,
+  SelectedChangeFile,
+} from '@/pages/ConversationAgent/ConversationAgentSourceControl/changeFileStatus';
 import {
+  apiGitAdd,
   apiGitCommit,
-  apiGitStash,
-  apiGitStashPop,
   apiGitStatus,
+  apiGitUnstage,
 } from '@/pages/ConversationAgent/services/git-version-management';
+import type { GitStatusResponse } from '@/pages/ConversationAgent/types/git-version-management';
 import { getProjectContent, submitFilesUpdate } from '@/services/appDev';
 import { dict } from '@/services/i18nRuntime';
 import type { FileNode } from '@/types/interfaces/appDev';
 import { treeToFlatList } from '@/utils/appDevUtils';
 import { message } from 'antd';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 /** 文件管理依赖（Hook 所需的最小接口） */
 export interface AppDevSourceControlFileManagement {
@@ -47,8 +55,8 @@ export interface UseAppDevSourceControlReturn {
   changeFiles: ChangeFileInfo[];
   /** 已暂存的文件 ID 集合 */
   stagedFileIds: Set<string>;
-  /** 当前选中查看 diff 的文件 ID */
-  selectedDiffFileId: string | null;
+  /** 当前选中的变更文件（含区块） */
+  selectedChangeFile: SelectedChangeFile | null;
   /** 当前选中查看 diff 的文件数据 */
   selectedDiffFile: ChangeFileInfo | null;
   /** 是否正在提交 */
@@ -60,7 +68,7 @@ export interface UseAppDevSourceControlReturn {
   /** 清除 diff 选中状态 */
   clearSelectedDiff: () => void;
   /** 选中修改文件并展示 diff */
-  handleDiffFileSelect: (fileId: string) => void;
+  handleDiffFileSelect: (fileId: string, section: ChangeListSection) => void;
   /** 打开文件（非 diff 预览） */
   handleOpenChangeFile: (fileId: string) => void;
   /** 放弃单个文件的更改 */
@@ -81,6 +89,113 @@ export interface UseAppDevSourceControlReturn {
   clearChangeForFile: (fileId: string) => void;
 }
 
+/** 合并 Git status 中的全部变更文件路径（去重） */
+const mergeGitStatusFileIds = (status: GitStatusResponse): string[] =>
+  Array.from(
+    new Set([
+      ...status.staged,
+      ...status.created,
+      ...status.modified,
+      ...status.deleted,
+      ...(status.untracked ?? []),
+      ...(status.renamed ?? []),
+      ...status.conflicted,
+    ]),
+  );
+
+/** 解析暂存区文件状态（staged / created / renamed） */
+const resolveStagedStatus = (
+  fileId: string,
+  status: GitStatusResponse,
+): ChangeFileGitStatusKind | undefined => {
+  if (status.created.includes(fileId)) {
+    return 'added';
+  }
+  if (status.renamed?.includes(fileId)) {
+    return 'renamed';
+  }
+  if (status.staged.includes(fileId)) {
+    return 'modified';
+  }
+  return undefined;
+};
+
+/** 解析工作区未暂存文件状态（modified / deleted / untracked / conflict） */
+const resolveUnstagedStatus = (
+  fileId: string,
+  status: GitStatusResponse,
+): ChangeFileGitStatusKind | undefined => {
+  if (status.untracked?.includes(fileId)) {
+    return 'untracked';
+  }
+  if (status.conflicted.includes(fileId)) {
+    return 'conflict';
+  }
+  if (status.modified.includes(fileId)) {
+    return 'modified';
+  }
+  if (status.deleted.includes(fileId)) {
+    return 'deleted';
+  }
+  if (status.renamed?.includes(fileId)) {
+    return 'renamed';
+  }
+  return undefined;
+};
+
+/**
+ * 将 Git status 转为变更文件列表
+ * 优先保留本地已有变更记录，避免丢失 diff 基准内容
+ */
+const buildChangeFilesFromGitStatus = (
+  status: GitStatusResponse,
+  fileIds: string[],
+  prevChangeFiles: ChangeFileInfo[],
+  findFileNode: (fileId: string) => FileNode | null,
+): ChangeFileInfo[] => {
+  const prevMap = new Map(prevChangeFiles.map((item) => [item.fileId, item]));
+  const deletedSet = new Set(status.deleted);
+
+  return fileIds.map((fileId) => {
+    const existing = prevMap.get(fileId);
+    const stagedStatus = resolveStagedStatus(fileId, status);
+    const unstagedStatus = resolveUnstagedStatus(fileId, status);
+
+    if (existing) {
+      return {
+        ...existing,
+        stagedStatus,
+        unstagedStatus,
+      };
+    }
+
+    const fileNode = findFileNode(fileId);
+    const nodeContent = fileNode?.content ?? '';
+
+    if (deletedSet.has(fileId)) {
+      return {
+        fileId,
+        fileContent: '',
+        originalFileContent: nodeContent,
+        stagedStatus,
+        unstagedStatus,
+      };
+    }
+
+    return {
+      fileId,
+      fileContent: nodeContent,
+      originalFileContent: nodeContent,
+      stagedStatus,
+      unstagedStatus,
+    };
+  });
+};
+
+/** 从变更列表派生暂存区文件 ID（供右键菜单等逻辑使用） */
+const deriveStagedFileIds = (files: ChangeFileInfo[]): Set<string> =>
+  new Set(files.filter((item) => item.stagedStatus).map((item) => item.fileId));
+
 /**
  * AppDev 源代码管理 Hook
  * 封装修改文件追踪、暂存、提交推送、diff 预览及 .gitignore 等 Git 相关逻辑
@@ -94,24 +209,27 @@ export const useAppDevSourceControl = ({
 }: UseAppDevSourceControlParams): UseAppDevSourceControlReturn => {
   /** 本地未提交的修改文件列表 */
   const [changeFiles, setChangeFiles] = useState<ChangeFileInfo[]>([]);
-  /** 已通过 git stash 暂存的文件 ID 集合 */
+  /** 已暂存（git add）的文件 ID 集合，由 status 接口派生 */
   const [stagedFileIds, setStagedFileIds] = useState<Set<string>>(
     () => new Set<string>(),
   );
-  /** 当前在右侧预览区展示 diff 的文件 ID */
-  const [selectedDiffFileId, setSelectedDiffFileId] = useState<string | null>(
-    null,
-  );
+  /** 当前在右侧预览区展示的变更文件（含区块） */
+  const [selectedChangeFile, setSelectedChangeFile] =
+    useState<SelectedChangeFile | null>(null);
   /** Git 提交推送进行中 */
   const [isCommitting, setIsCommitting] = useState(false);
   /** Git 列表刷新进行中 */
   const [isRefreshingGitList, setIsRefreshingGitList] = useState(false);
 
-  /** 根据 selectedDiffFileId 派生完整的 diff 文件数据 */
+  /** 根据选中项派生完整的 diff 文件数据 */
   const selectedDiffFile = useMemo(
     () =>
-      changeFiles.find((item) => item.fileId === selectedDiffFileId) ?? null,
-    [changeFiles, selectedDiffFileId],
+      selectedChangeFile
+        ? changeFiles.find(
+            (item) => item.fileId === selectedChangeFile.fileId,
+          ) ?? null
+        : null,
+    [changeFiles, selectedChangeFile],
   );
 
   /**
@@ -126,12 +244,14 @@ export const useAppDevSourceControl = ({
       next.delete(fileId);
       return next;
     });
-    setSelectedDiffFileId((current) => (current === fileId ? null : current));
+    setSelectedChangeFile((current) =>
+      current?.fileId === fileId ? null : current,
+    );
   }, []);
 
   /** 清除 diff 预览选中状态（切换文件树选中项时调用） */
   const clearSelectedDiff = useCallback(() => {
-    setSelectedDiffFileId(null);
+    setSelectedChangeFile(null);
   }, []);
 
   /**
@@ -190,20 +310,6 @@ export const useAppDevSourceControl = ({
     },
     [fileManagement],
   );
-
-  /** 更改列表变化时，清理已不在列表中的暂存标记，避免 stagedFileIds 与 changeFiles 不一致 */
-  useEffect(() => {
-    setStagedFileIds((prev) => {
-      const changeIds = new Set(changeFiles.map((file) => file.fileId));
-      const next = new Set<string>();
-      prev.forEach((id) => {
-        if (changeIds.has(id)) {
-          next.add(id);
-        }
-      });
-      return next.size === prev.size ? prev : next;
-    });
-  }, [changeFiles]);
 
   /**
    * 批量保存修改的文件到服务端
@@ -320,9 +426,12 @@ export const useAppDevSourceControl = ({
    * 仅触发 diff 预览，不走文件树普通选中逻辑
    * @param fileId 文件 ID
    */
-  const handleDiffFileSelect = useCallback((fileId: string) => {
-    setSelectedDiffFileId(fileId);
-  }, []);
+  const handleDiffFileSelect = useCallback(
+    (fileId: string, section: ChangeListSection) => {
+      setSelectedChangeFile({ fileId, section });
+    },
+    [],
+  );
 
   /**
    * 打开更改文件（选中并进入代码编辑，非 diff 模式）
@@ -330,7 +439,7 @@ export const useAppDevSourceControl = ({
    */
   const handleOpenChangeFile = useCallback(
     (fileId: string) => {
-      setSelectedDiffFileId(null);
+      setSelectedChangeFile(null);
       fileManagement.switchToFile(fileId);
     },
     [fileManagement],
@@ -360,7 +469,49 @@ export const useAppDevSourceControl = ({
   );
 
   /**
-   * 暂存更改（git stash）
+   * 刷新 Git 变更列表（仅 status 接口）
+   * - 暂存的更改：status.staged + status.created
+   * - 更改：status.modified + deleted + untracked + conflicted
+   */
+  const refreshGitList = useCallback(async () => {
+    if (!projectId || isRefreshingGitList) {
+      return;
+    }
+
+    setIsRefreshingGitList(true);
+    try {
+      await fileManagement.loadFileTree(true, true);
+
+      const statusResponse = await apiGitStatus({
+        workspaceType: 'pageApp',
+        projectId: Number(projectId),
+      });
+
+      if (statusResponse.code !== SUCCESS_CODE || !statusResponse.data) {
+        return;
+      }
+
+      const statusFileIds = mergeGitStatusFileIds(statusResponse.data);
+
+      setChangeFiles((prev) => {
+        const nextChangeFiles = buildChangeFilesFromGitStatus(
+          statusResponse.data!,
+          statusFileIds,
+          prev,
+          fileManagement.findFileNode,
+        );
+        setStagedFileIds(deriveStagedFileIds(nextChangeFiles));
+        return nextChangeFiles;
+      });
+    } catch (error) {
+      console.error('Refresh git list failed:', error);
+    } finally {
+      setIsRefreshingGitList(false);
+    }
+  }, [projectId, isRefreshingGitList, fileManagement]);
+
+  /**
+   * 暂存更改（git add）
    * @param fileId 文件 ID
    */
   const handleStageChange = useCallback(
@@ -369,21 +520,23 @@ export const useAppDevSourceControl = ({
         return;
       }
       try {
-        await apiGitStash({
+        const { code } = await apiGitAdd({
           workspaceType: 'pageApp',
           projectId: Number(projectId),
           files: [fileId],
         });
+        if (code === SUCCESS_CODE) {
+          await refreshGitList();
+        }
       } catch (error) {
-        console.error('Git stash failed:', error);
+        console.error('Git stage failed:', error);
       }
-      setStagedFileIds((prev) => new Set(prev).add(fileId));
     },
-    [projectId],
+    [projectId, refreshGitList],
   );
 
   /**
-   * 取消暂存（git stash pop）
+   * 取消暂存（git restore --staged）
    * @param fileId 文件 ID
    */
   const handleUnstageChange = useCallback(
@@ -392,21 +545,19 @@ export const useAppDevSourceControl = ({
         return;
       }
       try {
-        await apiGitStashPop({
+        const { code } = await apiGitUnstage({
           workspaceType: 'pageApp',
           projectId: Number(projectId),
           files: [fileId],
         });
+        if (code === SUCCESS_CODE) {
+          await refreshGitList();
+        }
       } catch (error) {
-        console.error('Git stash pop failed:', error);
+        console.error('Git unstage failed:', error);
       }
-      setStagedFileIds((prev) => {
-        const next = new Set(prev);
-        next.delete(fileId);
-        return next;
-      });
     },
-    [projectId],
+    [projectId, refreshGitList],
   );
 
   /**
@@ -512,7 +663,7 @@ export const useAppDevSourceControl = ({
       if (isSuccess) {
         setChangeFiles([]);
         setStagedFileIds(new Set());
-        setSelectedDiffFileId(null);
+        setSelectedChangeFile(null);
         await fileManagement.loadFileTree(true, true);
         onRefreshProjectInfo?.();
       }
@@ -535,32 +686,10 @@ export const useAppDevSourceControl = ({
     [fileManagement, clearChangeForFile],
   );
 
-  /**
-   * 刷新 Git 变更列表
-   * 拉取服务端 Git 状态并重新加载文件树
-   */
-  const refreshGitList = useCallback(async () => {
-    if (!projectId || isRefreshingGitList) {
-      return;
-    }
-
-    setIsRefreshingGitList(true);
-    try {
-      await apiGitStatus({
-        workspaceType: 'pageApp',
-        projectId: Number(projectId),
-      });
-    } catch (error) {
-      console.error('Refresh git list failed:', error);
-    } finally {
-      setIsRefreshingGitList(false);
-    }
-  }, [projectId, isRefreshingGitList, fileManagement]);
-
   return {
     changeFiles,
     stagedFileIds,
-    selectedDiffFileId,
+    selectedChangeFile,
     selectedDiffFile,
     isCommitting,
     isRefreshingGitList,

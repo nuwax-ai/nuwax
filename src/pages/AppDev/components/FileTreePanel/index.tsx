@@ -44,8 +44,7 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
   // 新增：文件树初始化 loading 状态
   isFileTreeInitializing = false,
   changeFiles = [],
-  stagedFileIds = new Set<string>(),
-  selectedDiffFileId = null,
+  selectedChangeFile = null,
   isCommitting = false,
   isRefreshingGitList = false,
   onRefreshGitList,
@@ -63,8 +62,8 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
 
   /** 点击修改文件：仅触发 diff 预览，不走文件树选中逻辑 */
   const handleModifiedFileClick = useCallback(
-    (fileId: string) => {
-      onDiffFileSelect?.(fileId);
+    (fileId: string, section: 'staged' | 'unstaged') => {
+      onDiffFileSelect?.(fileId, section);
     },
     [onDiffFileSelect],
   );
@@ -277,14 +276,15 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
                   <div className={cx(styles.sourceControlContainer)}>
                     <ConversationAgentSourceControl
                       changeFiles={changeFiles}
-                      stagedFileIds={stagedFileIds}
                       isCommitting={isCommitting}
                       isRefreshing={isRefreshingGitList}
-                      selectedDiffFileId={selectedDiffFileId}
+                      selectedChangeFile={selectedChangeFile}
                       onRefresh={onRefreshGitList}
                       onCommit={onCommit}
                       onFileClick={handleModifiedFileClick}
-                      onOpenChanges={onDiffFileSelect}
+                      onOpenChanges={(fileId, section) =>
+                        onDiffFileSelect?.(fileId, section)
+                      }
                       onOpenFile={onOpenChangeFile}
                       onDiscardChange={onDiscardChange}
                       onStageChange={onStageChange}

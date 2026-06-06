@@ -9,6 +9,11 @@ import {
   buildChangeFileTree,
   type ChangeTreeNode,
 } from './buildChangeFileTree';
+import {
+  type ChangeListSection,
+  isChangeFileSelected,
+  type SelectedChangeFile,
+} from './changeFileStatus';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -23,12 +28,14 @@ export interface ChangeFileListSectionProps {
   items: ChangeListItem[];
   /** 展示模式：平铺列表 / 目录树 */
   viewMode: ChangeListViewMode;
-  /** 当前选中 diff 的文件 ID */
-  selectedDiffFileId?: string | null;
+  /** 当前列表所属区块 */
+  section: ChangeListSection;
+  /** 当前选中的变更文件（含区块，避免跨区块重复高亮） */
+  selectedChangeFile?: SelectedChangeFile | null;
   /** 空状态文案 */
   emptyText?: string;
   /** 点击文件项 */
-  onFileClick?: (fileId: string) => void;
+  onFileClick?: (fileId: string, section: ChangeListSection) => void;
   /** 文件右键菜单 */
   onContextMenu?: (e: React.MouseEvent, fileId: string) => void;
   /** 树形视图文件夹右键菜单 */
@@ -43,7 +50,8 @@ const ChangeFileListSection: React.FC<ChangeFileListSectionProps> = ({
   title,
   items,
   viewMode,
-  selectedDiffFileId,
+  section,
+  selectedChangeFile,
   emptyText,
   onFileClick,
   onContextMenu,
@@ -113,11 +121,15 @@ const ChangeFileListSection: React.FC<ChangeFileListSectionProps> = ({
   /** 列表视图：平铺展示文件名与路径 */
   const renderListFileRow = (item: ChangeListItem) => (
     <div
-      key={item.fileId}
+      key={`${section}-${item.fileId}`}
       className={cx(styles['change-item'], {
-        [styles['change-item-active']]: selectedDiffFileId === item.fileId,
+        [styles['change-item-active']]: isChangeFileSelected(
+          item.fileId,
+          section,
+          selectedChangeFile,
+        ),
       })}
-      onClick={() => onFileClick?.(item.fileId)}
+      onClick={() => onFileClick?.(item.fileId, section)}
       onContextMenu={(e) => onContextMenu?.(e, item.fileId)}
       title={item.fileId}
     >
@@ -138,16 +150,20 @@ const ChangeFileListSection: React.FC<ChangeFileListSectionProps> = ({
    * 树形视图：对齐 FileTree 的文件夹/文件行样式与 caret 展开交互
    */
   const renderTreeFileRow = (item: ChangeListItem, level: number) => {
-    const isSelected = selectedDiffFileId === item.fileId;
+    const isSelected = isChangeFileSelected(
+      item.fileId,
+      section,
+      selectedChangeFile,
+    );
 
     return (
       <div
-        key={item.fileId}
+        key={`${section}-${item.fileId}`}
         className={fileTreeCx(fileTreeStyles.fileItem, {
           [fileTreeStyles.activeFile]: isSelected,
         })}
         style={{ marginLeft: level * 8 }}
-        onClick={() => onFileClick?.(item.fileId)}
+        onClick={() => onFileClick?.(item.fileId, section)}
         onContextMenu={(e) => onContextMenu?.(e, item.fileId)}
         title={item.fileId}
       >

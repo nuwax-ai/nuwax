@@ -1609,10 +1609,8 @@ const AppDev: React.FC = () => {
                       // =================源代码管理相关=================
                       // 已修改文件列表
                       changeFiles={sourceControl.changeFiles}
-                      // 已暂存的文件 ID 集合
-                      stagedFileIds={sourceControl.stagedFileIds}
                       // 当前选中查看 diff 的文件 ID
-                      selectedDiffFileId={sourceControl.selectedDiffFileId}
+                      selectedChangeFile={sourceControl.selectedChangeFile}
                       // 是否正在提交
                       isCommitting={sourceControl.isCommitting}
                       // 是否正在刷新 Git 列表

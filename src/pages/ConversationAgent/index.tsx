@@ -5,6 +5,7 @@ import type { PromptVariable } from '@/components/TiptapVariableInput/types';
 import { transformToPromptVariables } from '@/components/TiptapVariableInput/utils/variableTransform';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import useUnifiedTheme from '@/hooks/useUnifiedTheme';
+import type { SelectedChangeFile } from '@/pages/ConversationAgent/ConversationAgentSourceControl/changeFileStatus';
 import {
   apiGitCommit,
   apiGitStash,
@@ -156,14 +157,9 @@ const ConversationAgent: React.FC = () => {
   const skipDevConsoleResetRef = useRef<boolean>(false);
   /** 是否正在 Git 提交推送 */
   const [isGitPushing, setIsGitPushing] = useState<boolean>(false);
-  /** 源代码管理中选中查看 diff 的文件 ID */
-  const [selectedDiffFileId, setSelectedDiffFileId] = useState<string | null>(
-    null,
-  );
-  /** 源代码管理中已暂存（git stash）的文件 ID 集合 */
-  const [stagedFileIds, setStagedFileIds] = useState<Set<string>>(
-    () => new Set(),
-  );
+  /** 源代码管理中选中的变更文件（含区块） */
+  const [selectedChangeFile, setSelectedChangeFile] =
+    useState<SelectedChangeFile | null>(null);
   /** 标签选择面板是否展开 */
   /** 预览标签页操作 ref（供 fileViewProviderProps 回调使用） */
   const previewTabsRef = useRef<ReturnType<typeof usePreviewTabs> | null>(null);
@@ -802,10 +798,7 @@ const ConversationAgent: React.FC = () => {
           message:
             commitMessage ||
             dict('PC.Pages.ConversationAgent.gitPush.defaultMessage'),
-          files: changeFilesList.map((f) => ({
-            path: f.fileId,
-            content: f.fileContent,
-          })),
+          files: changeFilesList.map((f) => f.fileId),
         });
 
         if (code === SUCCESS_CODE) {
@@ -872,7 +865,7 @@ const ConversationAgent: React.FC = () => {
   const handleClosePreviewPanel = useCallback(() => {
     closePreviewView();
     setIsFileTreePinned(false);
-    setSelectedDiffFileId(null);
+    setSelectedChangeFile(null);
     previewTabsRef.current?.clearTabs();
   }, [closePreviewView, setIsFileTreePinned]);
 
@@ -922,7 +915,7 @@ const ConversationAgent: React.FC = () => {
         : undefined,
       /** 文件树选中文件时，切换右侧面板为文件预览并打开标签 */
       onFileSelectOpenPreview: (fileId?: string) => {
-        setSelectedDiffFileId(null);
+        setSelectedChangeFile(null);
         if (fileId) {
           resetDevConsoleExpandedLayout();
           previewTabsRef.current?.openFileTab(fileId, false, {
@@ -936,8 +929,10 @@ const ConversationAgent: React.FC = () => {
       /** 文件重命名后同步更新预览区标签页标题与 fileId */
       onFileRenamed: (oldFileId, newFileId) => {
         previewTabsRef.current?.renameFileTab(oldFileId, newFileId);
-        setSelectedDiffFileId((current) =>
-          current === oldFileId ? newFileId : current,
+        setSelectedChangeFile((current) =>
+          current?.fileId === oldFileId
+            ? { ...current, fileId: newFileId }
+            : current,
         );
       },
     };
@@ -975,10 +970,12 @@ const ConversationAgent: React.FC = () => {
       resetDevConsoleExpandedLayout();
       // 选中差异文件
       if (isDiff) {
-        setSelectedDiffFileId(fileId);
+        setSelectedChangeFile((prev) =>
+          prev?.fileId === fileId ? prev : { fileId, section: 'unstaged' },
+        );
       } else {
         // 选中普通文件
-        setSelectedDiffFileId(null);
+        setSelectedChangeFile(null);
         // 选中文件
         if (fileView.preview.selectedFileId !== fileId) {
           await fileView.tree.handleFileSelect(fileId);
@@ -1003,7 +1000,7 @@ const ConversationAgent: React.FC = () => {
       // 终端全屏展开
       if (toolId === 'terminal') {
         setDevConsoleExpandSignal((n) => n + 1);
-        setSelectedDiffFileId(null);
+        setSelectedChangeFile(null);
         // 打开预览视图
         if (devConversationId) {
           openPreviewView(devConversationId);
@@ -1013,7 +1010,7 @@ const ConversationAgent: React.FC = () => {
       // 从开发工具打开终端时跳过 onToolTabActivate 中的布局重置
       if (skipDevConsoleResetRef.current) {
         skipDevConsoleResetRef.current = false;
-        setSelectedDiffFileId(null);
+        setSelectedChangeFile(null);
         // 打开预览视图
         if (devConversationId) {
           openPreviewView(devConversationId);
@@ -1023,7 +1020,7 @@ const ConversationAgent: React.FC = () => {
       // 重置终端布局
       resetDevConsoleExpandedLayout();
       // 选中差异文件
-      setSelectedDiffFileId(null);
+      setSelectedChangeFile(null);
       // 预览 / 编排 / 版本控制：工作区页签，收起文件预览侧栏
       if (WORKSPACE_PREVIEW_TOOL_IDS.includes(toolId)) {
         closePreviewView();
@@ -1044,23 +1041,13 @@ const ConversationAgent: React.FC = () => {
   /** 当前选中查看 diff 的文件数据 */
   const selectedDiffFile = useMemo(
     () =>
-      fileView.changeFiles.find((item) => item.fileId === selectedDiffFileId),
-    [fileView.changeFiles, selectedDiffFileId],
+      selectedChangeFile
+        ? fileView.changeFiles.find(
+            (item) => item.fileId === selectedChangeFile.fileId,
+          ) ?? null
+        : null,
+    [fileView.changeFiles, selectedChangeFile],
   );
-
-  /** 更改列表变化时，清理已不存在的暂存标记 */
-  useEffect(() => {
-    setStagedFileIds((prev) => {
-      const changeIds = new Set(fileView.changeFiles.map((f) => f.fileId));
-      const next = new Set<string>();
-      prev.forEach((id) => {
-        if (changeIds.has(id)) {
-          next.add(id);
-        }
-      });
-      return next.size === prev.size ? prev : next;
-    });
-  }, [fileView.changeFiles]);
 
   /** 打开更改文件（选中文件并预览，非 diff） */
   const handleOpenChangeFile = useCallback(
@@ -1074,18 +1061,13 @@ const ConversationAgent: React.FC = () => {
   const handleDiscardChange = useCallback(
     (fileId: string) => {
       fileView.preview.discardChangeFile(fileId);
-      setStagedFileIds((prev) => {
-        const next = new Set(prev);
-        next.delete(fileId);
-        return next;
-      });
       previewTabs.closeTab(getFileTabId(fileId, true));
       previewTabs.closeTab(getFileTabId(fileId, false));
-      if (selectedDiffFileId === fileId) {
-        setSelectedDiffFileId(null);
+      if (selectedChangeFile?.fileId === fileId) {
+        setSelectedChangeFile(null);
       }
     },
-    [fileView.preview, previewTabs, selectedDiffFileId],
+    [fileView.preview, previewTabs, selectedChangeFile],
   );
 
   /** 暂存更改（git stash） */
@@ -1103,7 +1085,6 @@ const ConversationAgent: React.FC = () => {
       } catch (error) {
         console.error('Git stash failed:', error);
       }
-      setStagedFileIds((prev) => new Set(prev).add(fileId));
     },
     [devConversationId],
   );
@@ -1123,11 +1104,6 @@ const ConversationAgent: React.FC = () => {
       } catch (error) {
         console.error('Git stash pop failed:', error);
       }
-      setStagedFileIds((prev) => {
-        const next = new Set(prev);
-        next.delete(fileId);
-        return next;
-      });
     },
     [devConversationId],
   );
@@ -1371,7 +1347,7 @@ const ConversationAgent: React.FC = () => {
               // 预览文件
               preview={fileView.preview}
               // 差异文件
-              diffFile={selectedDiffFile}
+              diffFile={selectedDiffFile ?? undefined}
               // 选中标签
               activeTab={previewTabs.activeTab}
               // 调试对话面板
@@ -1478,11 +1454,10 @@ const ConversationAgent: React.FC = () => {
               fileView={fileView}
               className={cx(styles['file-tree-sidebar'], 'w-full')}
               // 当前选中查看 diff 的文件 ID
-              selectedDiffFileId={selectedDiffFileId}
-              // 已暂存的文件 ID 集合
-              stagedFileIds={stagedFileIds}
+              selectedChangeFile={selectedChangeFile}
               // 选中修改文件，在右侧预览区展示 diff
-              onDiffFileSelect={(fileId) => {
+              onDiffFileSelect={(fileId, section) => {
+                setSelectedChangeFile({ fileId, section });
                 previewTabs.openFileTab(fileId, true);
               }}
               // 打开文件
@@ -1505,8 +1480,7 @@ const ConversationAgent: React.FC = () => {
                 );
                 if (isSuccess) {
                   await fileView.preview.saveFiles();
-                  setSelectedDiffFileId(null);
-                  setStagedFileIds(new Set());
+                  setSelectedChangeFile(null);
                   previewTabs.clearTabs();
                 }
               }}
