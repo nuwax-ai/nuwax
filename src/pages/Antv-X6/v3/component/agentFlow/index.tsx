@@ -13,6 +13,8 @@ import { NodeDisposeProps } from '@/types/interfaces/workflow';
 import { Form, Radio } from 'antd';
 import React from 'react';
 
+import './agentFlowPanel.less';
+
 import AgentNodeForm from './AgentNodeForm';
 import EvalGateForm from './EvalGateForm';
 import HumanInteractionApproveForm from './HumanInteractionApproveForm';
@@ -31,12 +33,12 @@ const HumanInteractionNode: React.FC<NodeDisposeProps> = ({ form }) => {
     Form.useWatch('hitlMode', { form, preserve: true }) || HitlModeEnum.Ask;
 
   return (
-    <div className="model-node-style">
+    <div className="af-panel">
       <Form.Item
         name="hitlMode"
         label={t('PC.Pages.AgentFlowNode.hitlModeLabel', '交互模式')}
         initialValue={HitlModeEnum.Ask}
-        style={{ marginBottom: 8 }}
+        className="af-field"
       >
         <Radio.Group>
           <Radio.Button value={HitlModeEnum.Ask}>
