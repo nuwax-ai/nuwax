@@ -1088,10 +1088,10 @@ const ConversationAgent: React.FC = () => {
         await fileView.preview.saveFiles();
         previewTabs.clearTabs();
       },
-      // 刷新 Git 变更列表
+      // 刷新 Git 变更列表（git status + 文件树）
       refreshFileList: devConversationId
         ? async () => {
-            await handleRefreshFileList(devConversationId);
+            await fileView.refreshGitList();
           }
         : undefined,
     },
@@ -1358,6 +1358,10 @@ const ConversationAgent: React.FC = () => {
                 isCommitting:
                   gitSourceControl.isCommitting ||
                   fileView.preview.isSavingFiles,
+                // 是否正在刷新 Git 列表
+                isRefreshingGitList: fileView.isRefreshingGitList,
+                // 刷新 Git 变更列表
+                onRefreshGitList: fileView.refreshGitList,
                 // 选中修改文件，在右侧预览区展示 diff
                 onDiffFileSelect: gitSourceControl.handleDiffFileSelect,
                 // 打开文件

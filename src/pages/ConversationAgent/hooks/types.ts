@@ -97,6 +97,10 @@ export interface ConversationAgentFileViewPreview {
 export interface ConversationAgentFileViewValue {
   className?: string;
   changeFiles: ChangeFileInfo[];
+  /** 是否正在刷新 Git 变更列表 */
+  isRefreshingGitList: boolean;
+  /** 刷新 Git 变更列表（git status） */
+  refreshGitList: () => Promise<void>;
   tree: TaskAgentFileViewTree;
   preview: ConversationAgentFileViewPreview;
 }

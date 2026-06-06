@@ -23,7 +23,7 @@ import { dict } from '@/services/i18nRuntime';
 import type { FileNode } from '@/types/interfaces/appDev';
 import { treeToFlatList } from '@/utils/appDevUtils';
 import { message } from 'antd';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 /** 文件管理依赖（Hook 所需的最小接口） */
 export interface AppDevSourceControlFileManagement {
@@ -582,6 +582,16 @@ export const useSourceControl = ({
     },
     [fileManagement, clearChangeForFile],
   );
+
+  /** 进入页面或切换项目时拉取 Git status */
+  useEffect(() => {
+    if (!projectId) {
+      return;
+    }
+    void refreshGitList();
+    // 仅在 projectId 就绪时触发，避免与 refreshGitList 引用变化重复请求
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId]);
 
   return {
     changeFiles,

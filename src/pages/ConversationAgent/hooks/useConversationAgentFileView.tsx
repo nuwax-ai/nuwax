@@ -2,8 +2,14 @@ import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
 import FilePreview, {
   FileType,
 } from '@/components/business-component/FilePreview';
+import {
+  buildChangeFilesFromGitStatus,
+  mergeGitStatusFileIds,
+} from '@/components/business-component/FileTreePanel/hooks/gitStatusUtils';
+import { apiGitStatus } from '@/components/business-component/FileTreePanel/services/git-version-management';
 import CodeViewer from '@/components/CodeViewer';
 import { ChangeFileInfo } from '@/components/FileTreeView/type';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { ImageViewer } from '@/pages/AppDev/components';
 import { dict } from '@/services/i18nRuntime';
 import { fetchContentFromUrl } from '@/services/skill';
@@ -129,6 +135,9 @@ export function useConversationAgentFileView(
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   // 修改的文件列表
   const [changeFiles, setChangeFiles] = useState<ChangeFileInfo[]>([]);
+  // Git 列表刷新进行中
+  const [isRefreshingGitList, setIsRefreshingGitList] = useState(false);
+  const isRefreshingGitListRef = useRef(false);
 
   // 是否正在保存文件
   const [isSavingFiles, setIsSavingFiles] = useState<boolean>(false);
@@ -312,6 +321,59 @@ export function useConversationAgentFileView(
     isOfficeDocument,
     isImage,
   ]);
+
+  /**
+   * 刷新 Git 变更列表（git status）
+   * 进入页面或暂存/取消暂存后调用，与 AppDev 源代码管理保持一致
+   */
+  const refreshGitList = useCallback(async () => {
+    const cid = Number(targetId);
+    if (!cid || isRefreshingGitListRef.current) {
+      return;
+    }
+
+    isRefreshingGitListRef.current = true;
+    setIsRefreshingGitList(true);
+
+    try {
+      await onRefreshFileTree?.();
+
+      const statusResponse = await apiGitStatus({
+        workspaceType: 'taskAgent',
+        cid,
+      });
+
+      if (statusResponse.code !== SUCCESS_CODE || !statusResponse.data) {
+        return;
+      }
+
+      const statusFileIds = mergeGitStatusFileIds(statusResponse.data);
+
+      setChangeFiles((prev) =>
+        buildChangeFilesFromGitStatus(
+          statusResponse.data!,
+          statusFileIds,
+          prev,
+          (fileId) => findFileNode(fileId, filesRef.current),
+        ),
+      );
+    } catch (error) {
+      console.error('Refresh git list failed:', error);
+    } finally {
+      isRefreshingGitListRef.current = false;
+      setIsRefreshingGitList(false);
+    }
+  }, [targetId, onRefreshFileTree]);
+
+  /** 进入页面或切换会话时拉取 Git status */
+  useEffect(() => {
+    if (!targetId) {
+      return;
+    }
+    void refreshGitList();
+    // 仅在 targetId 就绪时触发，避免与 refreshGitList 引用变化重复请求
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [targetId]);
 
   // 文件选择（内部函数，执行实际的选择逻辑）
   const handleFileSelectInternal = useCallback(
@@ -1510,6 +1572,8 @@ export function useConversationAgentFileView(
   return {
     className,
     changeFiles,
+    isRefreshingGitList,
+    refreshGitList,
     tree: {
       files,
       selectedFileId,
