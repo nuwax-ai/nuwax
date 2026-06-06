@@ -12,6 +12,7 @@ import { useAppDevModelSelector } from '@/hooks/useAppDevModelSelector';
 import { useAppDevProjectId } from '@/hooks/useAppDevProjectId';
 import { useAppDevProjectInfo } from '@/hooks/useAppDevProjectInfo';
 import { useAppDevServer } from '@/hooks/useAppDevServer';
+import { useAppDevSourceControl } from '@/hooks/useAppDevSourceControl';
 import { useAppDevVersionCompare } from '@/hooks/useAppDevVersionCompare';
 import { useAutoErrorHandling } from '@/hooks/useAutoErrorHandling';
 import { useDataResourceManagement } from '@/hooks/useDataResourceManagement';
@@ -157,9 +158,6 @@ const AppDev: React.FC = () => {
   // 项目导入状态
   const [isProjectUploading, setIsProjectUploading] = useState(false);
 
-  // 聊天模式状态
-  // const [chatMode, setChatMode] = useState<'chat' | 'code'>('chat');
-
   // 数据资源相关状态
   const [isAddDataResourceModalVisible, setIsAddDataResourceModalVisible] =
     useState(false);
@@ -234,8 +232,14 @@ const AppDev: React.FC = () => {
     projectId: projectId || '',
     onFileSelect: setActiveFile,
     onFileContentChange: updateFileContent,
-    isChatLoading: false, // 临时设为false，稍后更新
     hasPermission: projectInfo.hasPermission, // 传递权限状态
+  });
+
+  // 源代码管理
+  const sourceControl = useAppDevSourceControl({
+    projectId,
+    fileManagement,
+    onRefreshProjectInfo: () => projectInfo.refreshProjectInfo(),
   });
 
   // 模型选择器
@@ -582,6 +586,30 @@ const AppDev: React.FC = () => {
       projectInfo.refreshProjectInfo();
     },
   });
+
+  /** 编辑器内容变更：同步本地状态并防抖自动保存 */
+  const handleEditorContentChange = useCallback(
+    (fileId: string, content: string) => {
+      if (versionCompare.isComparing || chat.isChatLoading) {
+        return;
+      }
+
+      // 同步更新文件内容到文件管理器
+      fileManagement.updateFileContent(fileId, content);
+
+      // 同步git变更文件列表
+      sourceControl.syncChangeFiles(fileId, content);
+
+      // 保存文件到服务端
+      fileManagement.saveFile({ fileId, content });
+    },
+    [
+      versionCompare.isComparing,
+      chat.isChatLoading,
+      fileManagement,
+      sourceControl,
+    ],
+  );
 
   // 获取当前显示的文件树（版本模式或正常模式）
   const currentDisplayFiles = useMemo(() => {
@@ -1190,59 +1218,6 @@ const AppDev: React.FC = () => {
   );
 
   /**
-   * 处理上传文件到指定路径
-   */
-  const handleUploadToFolder = useCallback(
-    async (targetPath: string, file: File): Promise<boolean> => {
-      if (!hasValidProjectId) {
-        message.error(ERROR_MESSAGES.NO_PROJECT_ID);
-        return false;
-      }
-
-      if (!targetPath.trim()) {
-        message.error(t('PC.Pages.AppDevIndex.targetPathRequired'));
-        return false;
-      }
-
-      try {
-        // 构建完整文件路径
-        const fileName = file.name;
-        const fullPath = targetPath.endsWith('/')
-          ? `${targetPath}${fileName}`
-          : `${targetPath}/${fileName}`;
-
-        const success = await fileManagement.uploadSingleFileToServer(
-          file,
-          fullPath,
-        );
-        if (success) {
-          message.success(
-            t('PC.Pages.AppDevIndex.fileUploadSuccess', fileName),
-          );
-          handleRestartDevServer();
-          // 刷新项目详情(刷新版本列表)
-          projectInfo.refreshProjectInfo();
-          return true;
-        } else {
-          message.error(t('PC.Pages.AppDevIndex.fileUploadFailed'));
-          return false;
-        }
-      } catch (error) {
-        message.error(
-          t(
-            'PC.Pages.AppDevIndex.fileUploadFailedWithError',
-            error instanceof Error
-              ? error.message
-              : t('PC.Pages.AppDevIndex.unknownError'),
-          ),
-        );
-        return false;
-      }
-    },
-    [hasValidProjectId, fileManagement, projectInfo, handleRestartDevServer],
-  );
-
-  /**
    * 确认删除
    */
   const handleDeleteConfirm = useCallback(async () => {
@@ -1288,16 +1263,6 @@ const AppDev: React.FC = () => {
     setNodeToDelete(null);
   }, []);
 
-  /**
-   * 处理取消编辑
-   */
-  const handleCancelEdit = useCallback(
-    (silent: boolean = false) => {
-      fileManagement.cancelEdit(silent);
-    },
-    [fileManagement],
-  );
-
   // 页面退出时的资源清理
   useEffect(() => {
     return () => {
@@ -1330,7 +1295,6 @@ const AppDev: React.FC = () => {
       // ⭐ 重置自动错误处理 Model 的所有状态
       autoErrorHandlingModelInstance.resetAll();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // 空依赖数组，只在组件卸载时执行清理
 
   // 如果缺少 projectId，显示提示信息
@@ -1592,16 +1556,21 @@ const AppDev: React.FC = () => {
                   {activeTab !== 'preview' && (
                     <FileTreePanel
                       files={currentDisplayFiles}
+                      // 是否处于版本对比模式
                       isComparing={versionCompare.isComparing}
+                      // 当前选中的文件ID
                       selectedFileId={
                         versionCompare.isComparing
                           ? workspace.activeFile
                           : fileManagement.fileContentState.selectedFile
                       }
+                      // 已展开的文件夹ID集合
                       expandedFolders={
                         fileManagement.fileTreeState.expandedFolders
                       }
+                      // 文件选择回调
                       onFileSelect={(fileId) => {
+                        sourceControl.clearSelectedDiff();
                         if (versionCompare.isComparing) {
                           updateWorkspace({ activeFile: fileId });
                         } else {
@@ -1609,30 +1578,59 @@ const AppDev: React.FC = () => {
                           setActiveTab('code');
                         }
                       }}
+                      // 文件夹展开/折叠回调
                       onToggleFolder={fileManagement.toggleFolder}
+                      // 删除文件回调
                       onDeleteFile={isFileOperating ? noop : handleDeleteClick}
+                      // 重命名文件回调
                       onRenameFile={
                         isFileOperating ? asyncNoopFalse : handleRenameFile
                       }
-                      onUploadToFolder={
-                        isFileOperating ? asyncNoopFalse : handleUploadToFolder
-                      }
+                      // 上传项目回调
                       onUploadProject={
                         isFileOperating
                           ? noop
                           : () => setIsUploadModalVisible(true)
                       }
+                      // 上传单个文件回调
                       onUploadSingleFile={
                         isFileOperating ? asyncNoop : handleRightClickUpload
                       }
-                      selectedDataResources={selectedDataResources}
+                      // 工作空间信息（用于版本模式判断）
                       workspace={workspace}
+                      // 文件管理方法
                       fileManagement={fileManagement}
+                      // 是否正在AI聊天加载中
                       isChatLoading={chat.isChatLoading}
-                      // projectId={projectId ? Number(projectId) : undefined}
+                      // 文件树初始化 loading 状态
                       isFileTreeInitializing={
                         fileManagement.isFileTreeInitializing
                       }
+                      // =================源代码管理相关=================
+                      // 已修改文件列表
+                      changeFiles={sourceControl.changeFiles}
+                      // 当前选中查看 diff 的文件 ID
+                      selectedChangeFile={sourceControl.selectedChangeFile}
+                      // 是否正在提交
+                      isCommitting={sourceControl.isCommitting}
+                      // 是否正在刷新 Git 列表
+                      isRefreshingGitList={sourceControl.isRefreshingGitList}
+                      // 刷新 Git 变更列表
+                      onRefreshGitList={sourceControl.refreshGitList}
+                      // 选中修改文件，在右侧预览区展示 diff
+                      onDiffFileSelect={sourceControl.handleDiffFileSelect}
+                      // 打开文件（选中并预览，非 diff）
+                      onOpenChangeFile={sourceControl.handleOpenChangeFile}
+                      // 放弃单个文件的更改
+                      onDiscardChange={sourceControl.handleDiscardChange}
+                      // 暂存更改
+                      onStageChange={sourceControl.handleStageChange}
+                      // 取消暂存
+                      onUnstageChange={sourceControl.handleUnstageChange}
+                      // 添加到 .gitignore
+                      onAddToGitignore={sourceControl.handleAddToGitignore}
+                      // 提交修改
+                      onCommit={sourceControl.handleCommit}
                     />
                   )}
 
@@ -1676,9 +1674,6 @@ const AppDev: React.FC = () => {
                           isFileModified={
                             fileManagement.fileContentState.isFileModified
                           }
-                          isSavingFile={
-                            fileManagement.fileContentState.isSavingFile
-                          }
                           devServerUrl={
                             projectInfo.hasPermission
                               ? workspace.devServerUrl
@@ -1703,26 +1698,8 @@ const AppDev: React.FC = () => {
                           onWhiteScreenOrIframeError={
                             handleWhiteScreenOrIframeError
                           }
-                          onContentChange={(fileId, content) => {
-                            if (
-                              !versionCompare.isComparing &&
-                              !chat.isChatLoading
-                            ) {
-                              fileManagement.updateFileContent(fileId, content);
-                              updateFileContent(fileId, content);
-                            }
-                          }}
-                          onSaveFile={() => {
-                            fileManagement.saveFile().then((success) => {
-                              if (success) {
-                                // 刷新项目详情(刷新版本列表)
-                                projectInfo.refreshProjectInfo();
-                                return true;
-                              }
-                              return false;
-                            });
-                          }}
-                          onCancelEdit={handleCancelEdit}
+                          onContentChange={handleEditorContentChange}
+                          gitDiffFile={sourceControl.selectedDiffFile}
                           onRefreshFile={() => {
                             // 关闭设计模式
                             setIframeDesignMode(false);
@@ -1733,8 +1710,6 @@ const AppDev: React.FC = () => {
                               fileManagement.switchToFile(
                                 fileManagement.fileContentState.selectedFile,
                               );
-                              // 取消编辑
-                              handleCancelEdit(true);
                             }
                           }}
                           onRefreshFileTree={fileManagement.loadFileTree}

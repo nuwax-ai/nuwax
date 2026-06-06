@@ -15,6 +15,7 @@ import { DeleteOutlined, LoadingOutlined } from '@ant-design/icons';
 import { message, Modal } from 'antd';
 import React, { useState } from 'react';
 import styles from './index.less';
+
 /**
  * 获取资源类型的默认描述
  * @param type 资源类型
@@ -69,16 +70,12 @@ const convertToAgentComponentInfo = (
  * @returns 图标路径
  */
 const getDefaultImage = (type: string): string => {
-  // console.log('getDefaultImage called with type:', type); // 调试日志
-  // console.log('pluginImage:', pluginImage); // 调试日志
-  // console.log('workflowImage:', workflowImage); // 调试日志
   switch (type.toLowerCase()) {
     case 'plugin':
       return pluginImage;
     case 'workflow':
       return workflowImage;
     default:
-      // console.log('Using default plugin image for type:', type); // 已被注释的调试日志
       return pluginImage;
   }
 };
@@ -89,16 +86,8 @@ const getDefaultImage = (type: string): string => {
 interface DataResourceListProps {
   /** 数据资源列表 */
   resources: DataResource[];
-  /** 加载状态 */
-  loading?: boolean;
   /** 删除资源回调 */
   onDelete?: (resourceId: number) => Promise<void>;
-  // /** 选中的数据源列表 */
-  // selectedResourceIds?: DataSourceSelection[];
-  // /** 选择变化回调 */
-  // onSelectionChange?: (selectedDataSources: DataSourceSelection[]) => void;
-  /** 是否正在AI聊天加载中或版本对比模式 */
-  // isChatLoading?: boolean;
   /** 项目ID，用于解绑数据源 */
   projectId?: number;
 }
@@ -110,33 +99,11 @@ interface DataResourceListProps {
 const DataResourceList: React.FC<DataResourceListProps> = ({
   resources,
   onDelete,
-  // selectedResourceIds = [],
-  // onSelectionChange,
-  // isChatLoading = false,
   projectId,
 }) => {
   const [actionLoading, setActionLoading] = useState<Record<string, boolean>>(
     {},
   );
-
-  /**
-   * 处理复选框变化
-   */
-  // const handleCheckboxChange = (resource: DataResource, checked: boolean) => {
-  //   const resourceSelection: DataSourceSelection = {
-  //     dataSourceId: parseInt(resource.id),
-  //     type: resource.type === 'plugin' ? 'plugin' : 'workflow',
-  //     name: resource.name, // 添加数据源名称
-  //   };
-
-  //   const newSelectedDataSources = checked
-  //     ? [...selectedResourceIds, resourceSelection]
-  //     : selectedResourceIds.filter(
-  //         (item) => item.dataSourceId !== resourceSelection.dataSourceId,
-  //       );
-
-  //   onSelectionChange?.(newSelectedDataSources);
-  // };
 
   /**
    * 处理删除资源
@@ -174,8 +141,6 @@ const DataResourceList: React.FC<DataResourceListProps> = ({
             });
 
             if (result?.code === '0000') {
-              // 先取消勾选
-              // handleCheckboxChange(resource, false);
               // 调用原有的删除回调
               await onDelete?.(resourceId);
             }
@@ -214,20 +179,12 @@ const DataResourceList: React.FC<DataResourceListProps> = ({
     const agentComponentInfo = convertToAgentComponentInfo(resource);
     const defaultImage = getDefaultImage(resource.type);
 
-    // console.log('Rendering resource:', { // 已被注释的调试日志
-    //   id: resource.id,
-    //   name: resource.name,
-    //   type: resource.type,
-    //   defaultImage,
-    //   agentComponentInfoIcon: agentComponentInfo.icon,
-    // }); // 调试日志
-
     return (
       <div key={resource.id} onClick={() => handleResourceClick(resource)}>
         <CollapseComponentItem
           agentComponentInfo={agentComponentInfo}
           defaultImage={defaultImage}
-          className={styles['dataResourceItem']}
+          className={styles['cursor-pointer']}
           showImage={true}
           extra={
             <TooltipIcon

@@ -1,5 +1,9 @@
+import type { ChangeFileInfo } from '@/components/FileTreeView/type';
+import type {
+  ChangeListSection,
+  SelectedChangeFile,
+} from '@/pages/ConversationAgent/ConversationAgentSourceControl/changeFileStatus';
 import type { FileNode } from '@/types/interfaces/appDev';
-import type { DataResource } from '@/types/interfaces/dataResource';
 
 /**
  * FileTreePanel 组件属性接口
@@ -29,22 +33,11 @@ export interface FileTreePanelProps {
   /** 重命名文件回调 */
   onRenameFile?: (node: any, newName: string) => Promise<boolean>;
 
-  /** 上传文件到指定路径回调 */
-  onUploadToFolder?: (targetPath: string, file: File) => Promise<boolean>;
-
   /** 上传项目回调 */
   onUploadProject: () => void;
 
   /** 上传单个文件回调 */
   onUploadSingleFile: (node: FileNode | null) => void;
-
-  /** 选中的数据源列表 */
-  selectedDataResources?: DataResource[];
-
-  /** 数据源选择变化回调 */
-  onDataResourceSelectionChange?: (
-    selectedDataResources: DataResource[],
-  ) => void;
 
   /** 工作空间信息（用于版本模式判断） */
   workspace?: { activeFile: string };
@@ -58,4 +51,29 @@ export interface FileTreePanelProps {
 
   /** 文件树初始化 loading 状态 */
   isFileTreeInitializing?: boolean;
+
+  /** 已修改文件列表（源代码管理） */
+  changeFiles?: ChangeFileInfo[];
+  /** 当前选中的变更文件（含区块） */
+  selectedChangeFile?: SelectedChangeFile | null;
+  /** 是否正在提交 */
+  isCommitting?: boolean;
+  /** 是否正在刷新 Git 列表 */
+  isRefreshingGitList?: boolean;
+  /** 刷新 Git 变更列表 */
+  onRefreshGitList?: () => void | Promise<void>;
+  /** 选中修改文件，在右侧预览区展示 diff */
+  onDiffFileSelect?: (fileId: string, section: ChangeListSection) => void;
+  /** 打开文件（选中并预览，非 diff） */
+  onOpenChangeFile?: (fileId: string) => void;
+  /** 放弃单个文件的更改 */
+  onDiscardChange?: (fileId: string) => void;
+  /** 暂存更改 */
+  onStageChange?: (fileId: string) => void;
+  /** 取消暂存 */
+  onUnstageChange?: (fileId: string) => void;
+  /** 添加到 .gitignore */
+  onAddToGitignore?: (fileId: string) => void;
+  /** 提交修改（保存并推送） */
+  onCommit?: (message: string) => Promise<void>;
 }

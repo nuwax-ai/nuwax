@@ -1,6 +1,8 @@
 import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
 import CodeViewer from '@/components/CodeViewer';
+import type { ChangeFileInfo } from '@/components/FileTreeView/type';
 import { VERSION_CONSTANTS } from '@/constants/appDevConstants';
+import ChangeFileGitDiffView from '@/pages/ConversationAgent/ConversationAgentFilePreview/ChangeFileGitDiffView';
 import { t } from '@/services/i18nRuntime';
 import { FileNode, ProjectDetailData } from '@/types/interfaces/appDev';
 import {
@@ -38,8 +40,6 @@ interface ContentViewerProps {
   fileContentError: string | null;
   /** 文件是否被修改 */
   isFileModified: boolean;
-  /** 是否正在保存文件 */
-  isSavingFile: boolean;
   /** 开发服务器URL */
   devServerUrl: string | null;
   /** 是否正在启动 */
@@ -60,10 +60,6 @@ interface ContentViewerProps {
   designViewerRef?: React.RefObject<DesignViewerRef>;
   /** 内容变化回调 */
   onContentChange: (fileId: string, content: string) => void;
-  /** 保存文件回调 */
-  onSaveFile: () => void;
-  /** 取消编辑回调 */
-  onCancelEdit: () => void;
   /** 刷新文件回调 */
   onRefreshFile: () => void;
   /** 查找文件节点方法 */
@@ -95,6 +91,8 @@ interface ContentViewerProps {
     preserveExpandedState?: boolean,
     forceUpdate?: boolean,
   ) => void;
+  /** Git 源代码管理选中的 diff 文件 */
+  gitDiffFile?: ChangeFileInfo | null;
 }
 
 /**
@@ -114,7 +112,6 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
   isLoadingFileContent,
   fileContentError,
   isFileModified,
-  isSavingFile,
   devServerUrl,
   isStarting,
   isRestarting, // 新增
@@ -125,8 +122,6 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
   previewRef,
   designViewerRef, // 新增
   onContentChange,
-  onSaveFile,
-  onCancelEdit,
   onRefreshFile,
   findFileNode,
   isChatLoading = false,
@@ -135,6 +130,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
   onRestartDev,
   onWhiteScreenOrIframeError,
   onRefreshFileTree,
+  gitDiffFile = null,
 }) => {
   // 使用 useMemo 缓存 Preview 组件，避免重新创建
   const previewComponent = useMemo(
@@ -184,6 +180,31 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
 
   // 使用 useMemo 缓存代码编辑器组件
   const codeEditorComponent = useMemo(() => {
+    if (gitDiffFile) {
+      const fileName =
+        gitDiffFile.fileId.split('/').pop() || gitDiffFile.fileId;
+      return (
+        <div className={styles.codeEditorContainer}>
+          <FilePathHeader
+            filePath={gitDiffFile.fileId}
+            isModified
+            isLoading={false}
+            readOnly
+            onRefresh={onRefreshFile}
+          />
+          <div className={styles.fileContentPreview}>
+            {/* 文件修改diff */}
+            <ChangeFileGitDiffView
+              fileId={gitDiffFile.fileId}
+              fileName={fileName}
+              originalContent={gitDiffFile.originalFileContent}
+              modifiedContent={gitDiffFile.fileContent}
+            />
+          </div>
+        </div>
+      );
+    }
+
     if (isLoadingFileContent) {
       return (
         <AppDevEmptyState
@@ -237,10 +258,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
           filePath={currentFileNode?.path || selectedFileId}
           isModified={isFileModified}
           isLoading={isLoadingFileContent}
-          isSaving={isSavingFile}
           readOnly={isComparing || isChatLoading}
-          onSave={onSaveFile}
-          onCancel={onCancelEdit}
           onRefresh={onRefreshFile}
         />
 
@@ -303,19 +321,17 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
       </div>
     );
   }, [
+    gitDiffFile,
     isLoadingFileContent,
     fileContentError,
     selectedFileId,
     findFileNode,
     isFileModified,
-    isSavingFile,
     isComparing,
     isChatLoading,
     devServerUrl,
     fileContent,
     onContentChange,
-    onSaveFile,
-    onCancelEdit,
     onRefreshFile,
     previewRef,
   ]);
@@ -346,10 +362,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
           filePath={fileNode?.path || selectedFileId}
           isModified={false}
           isLoading={false}
-          isSaving={false}
           readOnly={true}
-          onSave={() => {}}
-          onCancel={() => {}}
           onRefresh={() => {}}
         />
 

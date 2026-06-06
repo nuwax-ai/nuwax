@@ -5,6 +5,10 @@ import classNames from 'classnames';
 import React, { useCallback, useState } from 'react';
 import ConversationAgentFileTree from '../ConversationAgentFileTree';
 import ConversationAgentSourceControl from '../ConversationAgentSourceControl';
+import type {
+  ChangeListSection,
+  SelectedChangeFile,
+} from '../ConversationAgentSourceControl/changeFileStatus';
 import type { ConversationAgentFileViewValue } from '../hooks/types';
 import styles from './index.less';
 
@@ -17,12 +21,10 @@ export interface ConversationAgentMiddlePanelProps {
   /** 文件视图数据 */
   fileView: ConversationAgentFileViewValue;
   className?: string;
-  /** 当前选中查看 diff 的文件 ID */
-  selectedDiffFileId?: string | null;
-  /** 已暂存的文件 ID 集合 */
-  stagedFileIds?: Set<string>;
+  /** 当前选中的变更文件（含区块） */
+  selectedChangeFile?: SelectedChangeFile | null;
   /** 选中修改文件，在右侧预览区展示 diff */
-  onDiffFileSelect?: (fileId: string) => void;
+  onDiffFileSelect?: (fileId: string, section: ChangeListSection) => void;
   /** 打开文件（选中并预览，非 diff） */
   onOpenChangeFile?: (fileId: string) => void;
   /** 放弃单个文件的更改 */
@@ -48,8 +50,7 @@ const ConversationAgentMiddlePanel: React.FC<
 > = ({
   fileView,
   className,
-  selectedDiffFileId = null,
-  stagedFileIds = new Set<string>(),
+  selectedChangeFile = null,
   onDiffFileSelect,
   onOpenChangeFile,
   onDiscardChange,
@@ -65,8 +66,8 @@ const ConversationAgentMiddlePanel: React.FC<
 
   /** 点击修改文件：仅触发 diff 预览，不走文件树选中逻辑 */
   const handleModifiedFileClick = useCallback(
-    (fileId: string) => {
-      onDiffFileSelect?.(fileId);
+    (fileId: string, section: ChangeListSection) => {
+      onDiffFileSelect?.(fileId, section);
     },
     [onDiffFileSelect],
   );
@@ -117,9 +118,8 @@ const ConversationAgentMiddlePanel: React.FC<
         ) : (
           <ConversationAgentSourceControl
             changeFiles={changeFiles}
-            stagedFileIds={stagedFileIds}
             isCommitting={isCommitting}
-            selectedDiffFileId={selectedDiffFileId}
+            selectedChangeFile={selectedChangeFile}
             onCommit={onCommit}
             onFileClick={handleModifiedFileClick}
             onOpenChanges={onDiffFileSelect}

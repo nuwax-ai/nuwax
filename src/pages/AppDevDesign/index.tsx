@@ -74,6 +74,7 @@ import { useModel, useParams, useRequest } from 'umi';
 
 import PageEditModal from '@/pages/AppDev/components/PageEditModal';
 
+import { useAppDevSourceControl } from '@/hooks/useAppDevSourceControl';
 import { type PreviewRef } from '@/pages/AppDev/components/Preview';
 import { useDevLogs } from '@/pages/AppDev/hooks/useDevLogs';
 import { checkFileSizeExceedLimit } from '@/utils';
@@ -252,8 +253,14 @@ const AppDevDesign: React.FC = () => {
     projectId: projectId || '',
     onFileSelect: setActiveFile,
     onFileContentChange: updateFileContent,
-    isChatLoading: false, // 临时设为false，稍后更新
     hasPermission: projectInfo.hasPermission, // 传递权限状态
+  });
+
+  // 源代码管理
+  const sourceControl = useAppDevSourceControl({
+    projectId,
+    fileManagement,
+    onRefreshProjectInfo: () => projectInfo.refreshProjectInfo(),
   });
 
   // 模型选择器
@@ -598,6 +605,30 @@ const AppDevDesign: React.FC = () => {
       projectInfo.refreshProjectInfo();
     },
   });
+
+  /** 编辑器内容变更：同步本地状态并防抖自动保存 */
+  const handleEditorContentChange = useCallback(
+    (fileId: string, content: string) => {
+      if (versionCompare.isComparing || chat.isChatLoading) {
+        return;
+      }
+
+      // 同步更新文件内容到文件管理器
+      fileManagement.updateFileContent(fileId, content);
+
+      // 同步git变更文件列表
+      sourceControl.syncChangeFiles(fileId, content);
+
+      // 保存文件到服务端
+      fileManagement.saveFile({ fileId, content });
+    },
+    [
+      versionCompare.isComparing,
+      chat.isChatLoading,
+      fileManagement,
+      sourceControl,
+    ],
+  );
 
   // 获取当前显示的文件树（版本模式或正常模式）
   const currentDisplayFiles = useMemo(() => {
@@ -1203,59 +1234,6 @@ const AppDevDesign: React.FC = () => {
   );
 
   /**
-   * 处理上传文件到指定路径
-   */
-  const handleUploadToFolder = useCallback(
-    async (targetPath: string, file: File): Promise<boolean> => {
-      if (!hasValidProjectId) {
-        message.error(ERROR_MESSAGES.NO_PROJECT_ID);
-        return false;
-      }
-
-      if (!targetPath.trim()) {
-        message.error(t('PC.Pages.AppDevIndex.targetPathRequired'));
-        return false;
-      }
-
-      try {
-        // 构建完整文件路径
-        const fileName = file.name;
-        const fullPath = targetPath.endsWith('/')
-          ? `${targetPath}${fileName}`
-          : `${targetPath}/${fileName}`;
-
-        const success = await fileManagement.uploadSingleFileToServer(
-          file,
-          fullPath,
-        );
-        if (success) {
-          message.success(
-            t('PC.Pages.AppDevIndex.fileUploadSuccess', fileName),
-          );
-          handleRestartDevServer();
-          // 刷新项目详情(刷新版本列表)
-          projectInfo.refreshProjectInfo();
-          return true;
-        } else {
-          message.error(t('PC.Pages.AppDevIndex.fileUploadFailed'));
-          return false;
-        }
-      } catch (error) {
-        message.error(
-          t(
-            'PC.Pages.AppDevIndex.fileUploadFailedWithError',
-            error instanceof Error
-              ? error.message
-              : t('PC.Pages.AppDevIndex.unknownError'),
-          ),
-        );
-        return false;
-      }
-    },
-    [hasValidProjectId, fileManagement, projectInfo, handleRestartDevServer],
-  );
-
-  /**
    * 确认删除
    */
   const handleDeleteConfirm = useCallback(async () => {
@@ -1590,9 +1568,6 @@ const AppDevDesign: React.FC = () => {
                       onRenameFile={
                         isFileOperating ? asyncNoopFalse : handleRenameFile
                       }
-                      onUploadToFolder={
-                        isFileOperating ? asyncNoopFalse : handleUploadToFolder
-                      }
                       onUploadProject={
                         isFileOperating
                           ? noop
@@ -1601,11 +1576,9 @@ const AppDevDesign: React.FC = () => {
                       onUploadSingleFile={
                         isFileOperating ? asyncNoop : handleRightClickUpload
                       }
-                      selectedDataResources={selectedDataResources}
                       workspace={workspace}
                       fileManagement={fileManagement}
                       isChatLoading={chat.isChatLoading}
-                      // projectId={projectId ? Number(projectId) : undefined}
                       isFileTreeInitializing={
                         fileManagement.isFileTreeInitializing
                       }
@@ -1652,9 +1625,6 @@ const AppDevDesign: React.FC = () => {
                           isFileModified={
                             fileManagement.fileContentState.isFileModified
                           }
-                          isSavingFile={
-                            fileManagement.fileContentState.isSavingFile
-                          }
                           devServerUrl={
                             projectInfo.hasPermission
                               ? workspace.devServerUrl
@@ -1679,26 +1649,8 @@ const AppDevDesign: React.FC = () => {
                           onWhiteScreenOrIframeError={
                             handleWhiteScreenOrIframeError
                           }
-                          onContentChange={(fileId, content) => {
-                            if (
-                              !versionCompare.isComparing &&
-                              !chat.isChatLoading
-                            ) {
-                              fileManagement.updateFileContent(fileId, content);
-                              updateFileContent(fileId, content);
-                            }
-                          }}
-                          onSaveFile={() => {
-                            fileManagement.saveFile().then((success) => {
-                              if (success) {
-                                // 刷新项目详情(刷新版本列表)
-                                projectInfo.refreshProjectInfo();
-                                return true;
-                              }
-                              return false;
-                            });
-                          }}
-                          onCancelEdit={handleCancelEdit}
+                          onContentChange={handleEditorContentChange}
+                          gitDiffFile={sourceControl.selectedDiffFile}
                           onRefreshFile={() => {
                             // 关闭设计模式
                             setIframeDesignMode(false);

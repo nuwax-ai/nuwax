@@ -139,7 +139,7 @@ const errorHandler = (error: any, opts: any) => {
 
       // 已经有后台Agent服务正在运行
       if (code === AGENT_SERVICE_RUNNING) {
-        return Promise.reject(error);
+        return Promise.reject();
       }
 
       // 根据错误码处理不同情况
@@ -162,7 +162,7 @@ const errorHandler = (error: any, opts: any) => {
           if (shouldShowErrorMessage(errorMessage)) {
             message.warning(errorMessage);
           }
-          return Promise.reject(error);
+          return Promise.reject();
 
         // 沙箱测试异常
         case SANDBOX_TEST_ERROR:
@@ -175,7 +175,7 @@ const errorHandler = (error: any, opts: any) => {
             });
           }
 
-          return Promise.reject(error);
+          return Promise.reject();
 
         // 默认错误处理
         default:
@@ -185,7 +185,7 @@ const errorHandler = (error: any, opts: any) => {
             message.warning(errorMessage);
           }
           // 透传原始错误，确保上层能够拿到 code/message/tid 等完整上下文。
-          return Promise.reject(error);
+          return Promise.reject();
       }
 
       /**
@@ -201,21 +201,21 @@ const errorHandler = (error: any, opts: any) => {
     if (shouldShowErrorMessage(networkErrorMsg)) {
       message.error(networkErrorMsg);
     }
-    return Promise.reject(error);
+    return Promise.reject();
   } else if (error.request) {
     // 处理请求超时
     const timeoutErrorMsg = dict('PC.Toast.Global.serverTimeout');
     if (shouldShowErrorMessage(timeoutErrorMsg)) {
       message.error(timeoutErrorMsg);
     }
-    return Promise.reject(error);
+    return Promise.reject();
   } else {
     // 处理网络错误
     const networkErrorMsg = dict('PC.Toast.Global.serverUnreachable');
     if (shouldShowErrorMessage(networkErrorMsg)) {
       message.error(networkErrorMsg);
     }
-    return Promise.reject(error);
+    return Promise.reject();
   }
 };
 
