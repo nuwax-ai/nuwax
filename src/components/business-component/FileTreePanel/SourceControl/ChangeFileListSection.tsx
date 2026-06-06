@@ -104,6 +104,10 @@ const ChangeFileListSection: React.FC<ChangeFileListSectionProps> = ({
     });
   }, []);
 
+  /** 是否为已删除文件（展示删除横线） */
+  const isDeletedFile = (item: ChangeListItem) =>
+    item.statusMeta.kind === 'deleted';
+
   const renderStatusBadge = (item: ChangeListItem) => (
     <span
       className={cx(
@@ -128,6 +132,7 @@ const ChangeFileListSection: React.FC<ChangeFileListSectionProps> = ({
           section,
           selectedChangeFile,
         ),
+        [styles['change-item-deleted']]: isDeletedFile(item),
       })}
       onClick={() => onFileClick?.(item.fileId, section)}
       onContextMenu={(e) => onContextMenu?.(e, item.fileId)}
@@ -168,7 +173,11 @@ const ChangeFileListSection: React.FC<ChangeFileListSectionProps> = ({
         title={item.fileId}
       >
         {getFileIcon(item.fileName)}
-        <span className={fileTreeCx(fileTreeStyles.fileName)}>
+        <span
+          className={fileTreeCx(fileTreeStyles.fileName, {
+            [styles['file-name-deleted']]: isDeletedFile(item),
+          })}
+        >
           {item.fileName}
         </span>
         {renderStatusBadge(item)}
