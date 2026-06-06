@@ -129,15 +129,15 @@ export const humanInteractionHandler: BranchNodeHandler = {
     if (sourcePort.includes('-hitl-reject-out')) {
       return { type: SpecialPortType.HitlBranch, uuid: 'reject' };
     }
-    // v2: hitl-{branchUuid}-out（排除 option 前缀）
-    const hitlMatch = sourcePort.match(/-hitl-(?!option-)([^-]+)-out$/);
-    if (hitlMatch) {
-      return { type: SpecialPortType.HitlBranch, uuid: hitlMatch[1] };
-    }
-    // v2: hitl-option-{optionUuid}-out
-    const optionMatch = sourcePort.match(/-hitl-option-([^-]+)-out$/);
+    // v2: hitl-option-{optionUuid}-out（option 前缀需先匹配，避免被分支正则吞掉）
+    const optionMatch = sourcePort.match(/-hitl-option-(.+)-out$/);
     if (optionMatch) {
       return { type: SpecialPortType.HitlOption, uuid: optionMatch[1] };
+    }
+    // v2: hitl-{branchUuid}-out（排除 option 前缀已由上面处理）
+    const hitlMatch = sourcePort.match(/-hitl-(.+)-out$/);
+    if (hitlMatch) {
+      return { type: SpecialPortType.HitlBranch, uuid: hitlMatch[1] };
     }
     return null;
   },
@@ -405,7 +405,7 @@ export const humanInteractionHandler: BranchNodeHandler = {
 
     // ask options
     if (hitlMode === HitlModeEnum.Ask) {
-      const optionMatch = suffix.match(/^hitl-option-([^-]+)(?:-out)?$/);
+      const optionMatch = suffix.match(/^hitl-option-(.+?)(?:-out)?$/);
       if (optionMatch) {
         const optionUuid = optionMatch[1];
         const options = [...(nodeConfig.askConfig?.options || [])];

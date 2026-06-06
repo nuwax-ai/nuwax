@@ -537,7 +537,7 @@ export function startMockAgentFlowRun(
           runId,
           type: 'node_started',
           actor: NodeTypeEnum.HumanInteraction,
-          payload: { nodeId: String(MOCK_HITL_NODE_ID), round: 1 },
+          payload: { nodeId: String(MOCK_HITL_ASK_NODE_ID), round: 1 },
         });
         emit({
           at: now(),
@@ -545,7 +545,7 @@ export function startMockAgentFlowRun(
           type: 'human_required',
           actor: 'system',
           payload: {
-            nodeId: String(MOCK_HITL_NODE_ID),
+            nodeId: String(MOCK_HITL_ASK_NODE_ID),
             mode: HitlModeEnum.Ask,
             question: 'Confirm your action',
             answerType: AnswerTypeEnum.SELECT,
@@ -564,7 +564,7 @@ export function startMockAgentFlowRun(
             runId,
             type: 'human_signal_applied',
             actor: 'human',
-            payload: { nodeId: String(MOCK_HITL_NODE_ID), signal },
+            payload: { nodeId: String(MOCK_HITL_ASK_NODE_ID), signal },
           }),
         );
         emitRunCompleted(t + step, 'mock final answer with user choice');
@@ -584,7 +584,7 @@ export function startMockAgentFlowRun(
           runId,
           type: 'node_started',
           actor: NodeTypeEnum.HumanInteraction,
-          payload: { nodeId: String(MOCK_HITL_NODE_ID) },
+          payload: { nodeId: String(MOCK_HITL_APPROVE_NODE_ID) },
         });
         emit({
           at: now(),
@@ -592,7 +592,7 @@ export function startMockAgentFlowRun(
           type: 'human_required',
           actor: 'system',
           payload: {
-            nodeId: String(MOCK_HITL_NODE_ID),
+            nodeId: String(MOCK_HITL_APPROVE_NODE_ID),
             mode: HitlModeEnum.Approve,
             draft: 'draft reply for review',
             actions: ['approve', 'edit', 'reject'],
@@ -607,7 +607,7 @@ export function startMockAgentFlowRun(
             runId,
             type: 'human_signal_applied',
             actor: 'human',
-            payload: { nodeId: String(MOCK_HITL_NODE_ID), signal },
+            payload: { nodeId: String(MOCK_HITL_APPROVE_NODE_ID), signal },
           }),
         );
         if (signal.action === HitlApprovalActionEnum.Reject) {

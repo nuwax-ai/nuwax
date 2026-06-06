@@ -1165,8 +1165,11 @@ class WorkflowProxyV3 {
           case SpecialPortType.QAOption:
           case SpecialPortType.EvalGatePass:
           case SpecialPortType.EvalGateFail:
+          case SpecialPortType.EvalGateBranch:
           case SpecialPortType.HitlApprove:
-          case SpecialPortType.HitlReject: {
+          case SpecialPortType.HitlReject:
+          case SpecialPortType.HitlBranch:
+          case SpecialPortType.HitlOption: {
             // Condition/Intent/QA 用 uuid，AgentFlow 用 handler.getBranchKey
             const bkHandler = extensionRegistry.get(sourceNode.type);
             const branchKey =

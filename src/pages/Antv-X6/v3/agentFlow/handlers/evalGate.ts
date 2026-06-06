@@ -320,9 +320,14 @@ export const evalGateHandler: BranchNodeHandler = {
     } else if (suffix === 'eval-pass') {
       let ids: number[] = nodeConfig.branches[0]?.nextNodeIds || [];
       if (targetNode) {
-        ids = ids.map((item: number) =>
-          item === targetNode.id ? newNodeId : item,
-        );
+        // 替换旧节点；若目标就是自己则清除（与 eval-fail 一致）
+        if (targetNode.id === newNodeId) {
+          ids = ids.filter((item: number) => item !== targetNode.id);
+        } else {
+          ids = ids.map((item: number) =>
+            item === targetNode.id ? newNodeId : item,
+          );
+        }
       } else if (!ids.includes(newNodeId)) {
         ids = [...ids, newNodeId];
       }

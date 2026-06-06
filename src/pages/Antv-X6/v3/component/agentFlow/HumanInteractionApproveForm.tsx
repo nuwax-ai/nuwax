@@ -132,13 +132,15 @@ const HumanInteractionApproveForm: React.FC<NodeDisposeProps> = ({ form }) => {
                     style={{ width: 160 }}
                   />
                 </Form.Item>
-                <Button
-                  type="text"
-                  size="small"
-                  danger
-                  icon={<DeleteOutlined />}
-                  onClick={() => remove(name)}
-                />
+                {name > 0 && (
+                  <Button
+                    type="text"
+                    size="small"
+                    danger
+                    icon={<DeleteOutlined />}
+                    onClick={() => remove(name)}
+                  />
+                )}
               </Space>
             ))}
             <Button

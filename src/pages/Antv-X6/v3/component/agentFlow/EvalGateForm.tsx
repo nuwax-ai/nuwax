@@ -20,24 +20,6 @@ const { TextArea } = Input;
 const EvalGateForm: React.FC<NodeDisposeProps> = ({ form }) => {
   const evalItems = Form.useWatch('evalItems', { form, preserve: true }) || [];
 
-  // 权重校验 — 用于 Form.List 级别自定义 validator
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const validateWeight = (_: any, _value: number) => {
-    const items = form.getFieldValue('evalItems') || [];
-    const total = items.reduce(
-      (sum: number, item: any) => sum + (Number(item?.weight) || 0),
-      0,
-    );
-    if (total !== 100) {
-      return Promise.reject(
-        new Error(
-          t('PC.Pages.AgentFlowNode.evalWeightError', '权重合计需等于 100%'),
-        ),
-      );
-    }
-    return Promise.resolve();
-  };
-
   return (
     <div className="model-node-style">
       <Form.Item

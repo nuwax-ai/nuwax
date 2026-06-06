@@ -7,9 +7,10 @@
  * HumanInteraction 特殊处理：根据 hitlMode 分派到 approve 或 ask 子表单。
  */
 
+import { t } from '@/services/i18nRuntime';
 import { HitlModeEnum } from '@/types/enums/common';
 import { NodeDisposeProps } from '@/types/interfaces/workflow';
-import { Form } from 'antd';
+import { Form, Radio } from 'antd';
 import React from 'react';
 
 import AgentNodeForm from './AgentNodeForm';
@@ -29,10 +30,31 @@ const HumanInteractionNode: React.FC<NodeDisposeProps> = ({ form }) => {
   const hitlMode =
     Form.useWatch('hitlMode', { form, preserve: true }) || HitlModeEnum.Ask;
 
-  if (hitlMode === HitlModeEnum.Approve) {
-    return <HumanInteractionApproveForm form={form} />;
-  }
-  return <HumanInteractionAskForm form={form} />;
+  return (
+    <div className="model-node-style">
+      <Form.Item
+        name="hitlMode"
+        label={t('PC.Pages.AgentFlowNode.hitlModeLabel', '交互模式')}
+        initialValue={HitlModeEnum.Ask}
+        style={{ marginBottom: 8 }}
+      >
+        <Radio.Group>
+          <Radio.Button value={HitlModeEnum.Ask}>
+            {t('PC.Pages.AgentFlowNode.hitlModeAsk', '询问')}
+          </Radio.Button>
+          <Radio.Button value={HitlModeEnum.Approve}>
+            {t('PC.Pages.AgentFlowNode.hitlModeApprove', '审批')}
+          </Radio.Button>
+        </Radio.Group>
+      </Form.Item>
+
+      {hitlMode === HitlModeEnum.Approve ? (
+        <HumanInteractionApproveForm form={form} />
+      ) : (
+        <HumanInteractionAskForm form={form} />
+      )}
+    </div>
+  );
 };
 
 export default {
