@@ -1,4 +1,8 @@
 import { SvgIcon } from '@/components/base';
+import {
+  AppDevFileTreePanel,
+  useSourceControl,
+} from '@/components/business-component/FileTreePanel';
 import ConditionRender from '@/components/ConditionRender';
 import Created from '@/components/Created';
 import PublishComponentModal from '@/components/PublishComponentModal';
@@ -25,7 +29,6 @@ import { type DesignViewerRef } from '@/pages/AppDev/components/DesignViewer';
 import DevLogConsole from '@/pages/AppDev/components/DevLogConsole';
 import EditorHeaderRight from '@/pages/AppDev/components/EditorHeaderRight';
 import FileOperatingMask from '@/pages/AppDev/components/FileOperatingMask';
-import FileTreePanel from '@/pages/AppDev/components/FileTreePanel';
 import { apiAgentConfigInfo } from '@/services/agentConfig';
 import {
   bindDataSource,
@@ -74,7 +77,6 @@ import { useModel, useParams, useRequest } from 'umi';
 
 import PageEditModal from '@/pages/AppDev/components/PageEditModal';
 
-import { useAppDevSourceControl } from '@/hooks/useAppDevSourceControl';
 import { type PreviewRef } from '@/pages/AppDev/components/Preview';
 import { useDevLogs } from '@/pages/AppDev/hooks/useDevLogs';
 import { checkFileSizeExceedLimit } from '@/utils';
@@ -257,7 +259,7 @@ const AppDevDesign: React.FC = () => {
   });
 
   // 源代码管理
-  const sourceControl = useAppDevSourceControl({
+  const sourceControl = useSourceControl({
     projectId,
     fileManagement,
     onRefreshProjectInfo: () => projectInfo.refreshProjectInfo(),
@@ -1544,7 +1546,7 @@ const AppDevDesign: React.FC = () => {
                 <div className={styles.contentRow}>
                   {/* FileTreePanel 组件 */}
                   {activeTab !== 'preview' && (
-                    <FileTreePanel
+                    <AppDevFileTreePanel
                       files={currentDisplayFiles}
                       isComparing={versionCompare.isComparing}
                       selectedFileId={
@@ -1556,6 +1558,7 @@ const AppDevDesign: React.FC = () => {
                         fileManagement.fileTreeState.expandedFolders
                       }
                       onFileSelect={(fileId) => {
+                        sourceControl.clearSelectedDiff();
                         if (versionCompare.isComparing) {
                           updateWorkspace({ activeFile: fileId });
                         } else {
@@ -1582,6 +1585,20 @@ const AppDevDesign: React.FC = () => {
                       isFileTreeInitializing={
                         fileManagement.isFileTreeInitializing
                       }
+                      sourceControl={{
+                        changeFiles: sourceControl.changeFiles,
+                        selectedChangeFile: sourceControl.selectedChangeFile,
+                        isCommitting: sourceControl.isCommitting,
+                        isRefreshingGitList: sourceControl.isRefreshingGitList,
+                        onRefreshGitList: sourceControl.refreshGitList,
+                        onDiffFileSelect: sourceControl.handleDiffFileSelect,
+                        onOpenChangeFile: sourceControl.handleOpenChangeFile,
+                        onDiscardChange: sourceControl.handleDiscardChange,
+                        onStageChange: sourceControl.handleStageChange,
+                        onUnstageChange: sourceControl.handleUnstageChange,
+                        onAddToGitignore: sourceControl.handleAddToGitignore,
+                        onCommit: sourceControl.handleCommit,
+                      }}
                     />
                   )}
 

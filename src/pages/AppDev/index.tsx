@@ -1,4 +1,8 @@
 import { SvgIcon } from '@/components/base';
+import {
+  AppDevFileTreePanel,
+  useSourceControl,
+} from '@/components/business-component/FileTreePanel';
 import ConditionRender from '@/components/ConditionRender';
 import Created from '@/components/Created';
 import PublishComponentModal from '@/components/PublishComponentModal';
@@ -12,7 +16,6 @@ import { useAppDevModelSelector } from '@/hooks/useAppDevModelSelector';
 import { useAppDevProjectId } from '@/hooks/useAppDevProjectId';
 import { useAppDevProjectInfo } from '@/hooks/useAppDevProjectInfo';
 import { useAppDevServer } from '@/hooks/useAppDevServer';
-import { useAppDevSourceControl } from '@/hooks/useAppDevSourceControl';
 import { useAppDevVersionCompare } from '@/hooks/useAppDevVersionCompare';
 import { useAutoErrorHandling } from '@/hooks/useAutoErrorHandling';
 import { useDataResourceManagement } from '@/hooks/useDataResourceManagement';
@@ -71,7 +74,6 @@ import { type DesignViewerRef } from './components/DesignViewer';
 import DevLogConsole from './components/DevLogConsole';
 import EditorHeaderRight from './components/EditorHeaderRight';
 import FileOperatingMask from './components/FileOperatingMask';
-import FileTreePanel from './components/FileTreePanel';
 
 import PageEditModal from './components/PageEditModal';
 
@@ -236,7 +238,7 @@ const AppDev: React.FC = () => {
   });
 
   // 源代码管理
-  const sourceControl = useAppDevSourceControl({
+  const sourceControl = useSourceControl({
     projectId,
     fileManagement,
     onRefreshProjectInfo: () => projectInfo.refreshProjectInfo(),
@@ -1554,7 +1556,7 @@ const AppDev: React.FC = () => {
                 <div className={styles.contentRow}>
                   {/* FileTreePanel 组件 */}
                   {activeTab !== 'preview' && (
-                    <FileTreePanel
+                    <AppDevFileTreePanel
                       files={currentDisplayFiles}
                       // 是否处于版本对比模式
                       isComparing={versionCompare.isComparing}
@@ -1607,30 +1609,32 @@ const AppDev: React.FC = () => {
                         fileManagement.isFileTreeInitializing
                       }
                       // =================源代码管理相关=================
-                      // 已修改文件列表
-                      changeFiles={sourceControl.changeFiles}
-                      // 当前选中查看 diff 的文件 ID
-                      selectedChangeFile={sourceControl.selectedChangeFile}
-                      // 是否正在提交
-                      isCommitting={sourceControl.isCommitting}
-                      // 是否正在刷新 Git 列表
-                      isRefreshingGitList={sourceControl.isRefreshingGitList}
-                      // 刷新 Git 变更列表
-                      onRefreshGitList={sourceControl.refreshGitList}
-                      // 选中修改文件，在右侧预览区展示 diff
-                      onDiffFileSelect={sourceControl.handleDiffFileSelect}
-                      // 打开文件（选中并预览，非 diff）
-                      onOpenChangeFile={sourceControl.handleOpenChangeFile}
-                      // 放弃单个文件的更改
-                      onDiscardChange={sourceControl.handleDiscardChange}
-                      // 暂存更改
-                      onStageChange={sourceControl.handleStageChange}
-                      // 取消暂存
-                      onUnstageChange={sourceControl.handleUnstageChange}
-                      // 添加到 .gitignore
-                      onAddToGitignore={sourceControl.handleAddToGitignore}
-                      // 提交修改
-                      onCommit={sourceControl.handleCommit}
+                      sourceControl={{
+                        // 已修改文件列表
+                        changeFiles: sourceControl.changeFiles,
+                        // 当前选中查看 diff 的文件 ID
+                        selectedChangeFile: sourceControl.selectedChangeFile,
+                        // 是否正在提交
+                        isCommitting: sourceControl.isCommitting,
+                        // 是否正在刷新 Git 列表
+                        isRefreshingGitList: sourceControl.isRefreshingGitList,
+                        // 刷新 Git 变更列表
+                        onRefreshGitList: sourceControl.refreshGitList,
+                        // 选中修改文件，在右侧预览区展示 diff
+                        onDiffFileSelect: sourceControl.handleDiffFileSelect,
+                        // 打开文件（选中并预览，非 diff）
+                        onOpenChangeFile: sourceControl.handleOpenChangeFile,
+                        // 放弃单个文件的更改
+                        onDiscardChange: sourceControl.handleDiscardChange,
+                        // 暂存更改
+                        onStageChange: sourceControl.handleStageChange,
+                        // 取消暂存
+                        onUnstageChange: sourceControl.handleUnstageChange,
+                        // 添加到 .gitignore
+                        onAddToGitignore: sourceControl.handleAddToGitignore,
+                        // 提交修改
+                        onCommit: sourceControl.handleCommit,
+                      }}
                     />
                   )}
 

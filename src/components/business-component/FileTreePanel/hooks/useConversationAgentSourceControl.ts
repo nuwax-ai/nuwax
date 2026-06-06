@@ -1,0 +1,262 @@
+/**
+ * ConversationAgent 源代码管理 Hook
+ * 变更列表由外部 fileView 维护，本 Hook 统一 Git 操作与选中状态
+ */
+import {
+  buildGitWorkspaceParams,
+  isGitWorkspaceReady,
+} from '@/components/business-component/FileTreePanel/hooks/buildGitWorkspaceParams';
+import {
+  apiGitAdd,
+  apiGitCommit,
+  apiGitUnstage,
+} from '@/components/business-component/FileTreePanel/services/git-version-management';
+import type {
+  ChangeListSection,
+  SelectedChangeFile,
+} from '@/components/business-component/FileTreePanel/SourceControl/changeFileStatus';
+import type { ChangeFileInfo } from '@/components/FileTreeView/type';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { dict } from '@/services/i18nRuntime';
+import { message } from 'antd';
+import React, { useCallback, useMemo, useState } from 'react';
+
+/** ConversationAgent 场景外部适配器 */
+export interface ConversationAgentSourceControlAdapters {
+  /** 保存变更文件到沙箱 */
+  saveChangeFiles: (files: ChangeFileInfo[]) => Promise<boolean>;
+  /** 放弃单个文件更改（还原编辑器内容） */
+  discardChangeFile: (fileId: string) => void;
+  /** 打开文件（非 diff） */
+  openChangeFile: (fileId: string) => void;
+  /** 将文件添加到 .gitignore（由页面实现具体读写逻辑） */
+  addFileToGitignore: (fileId: string) => Promise<void>;
+  /** diff 选中后的额外操作（如打开预览 Tab） */
+  onDiffFileSelect?: (fileId: string, section: ChangeListSection) => void;
+  /** 放弃更改后的额外操作（如关闭 Tab） */
+  onAfterDiscardChange?: (fileId: string) => void;
+  /** 提交成功后的额外操作 */
+  onCommitSuccess?: () => Promise<void>;
+  /** 刷新文件列表 */
+  refreshFileList?: () => Promise<void>;
+}
+
+export interface UseConversationAgentSourceControlParams {
+  /** 会话 ID */
+  cid: number | null;
+  /** 外部维护的变更文件列表 */
+  changeFiles: ChangeFileInfo[];
+  /** 当前选中的变更文件（由页面维护，便于与预览 Tab 联动） */
+  selectedChangeFile: SelectedChangeFile | null;
+  setSelectedChangeFile: React.Dispatch<
+    React.SetStateAction<SelectedChangeFile | null>
+  >;
+  /** 场景适配器 */
+  adapters: ConversationAgentSourceControlAdapters;
+}
+
+export interface UseConversationAgentSourceControlReturn {
+  /** 已修改文件列表 */
+  changeFiles: ChangeFileInfo[];
+  /** 当前选中的变更文件（含区块） */
+  selectedChangeFile: SelectedChangeFile | null;
+  /** 当前选中查看 diff 的文件数据 */
+  selectedDiffFile: ChangeFileInfo | null;
+  /** 是否正在提交 */
+  isCommitting: boolean;
+  setSelectedChangeFile: React.Dispatch<
+    React.SetStateAction<SelectedChangeFile | null>
+  >;
+  handleDiffFileSelect: (fileId: string, section: ChangeListSection) => void;
+  handleOpenChangeFile: (fileId: string) => void;
+  handleDiscardChange: (fileId: string) => void;
+  handleStageChange: (fileId: string) => Promise<void>;
+  handleUnstageChange: (fileId: string) => Promise<void>;
+  handleAddToGitignore: (fileId: string) => Promise<void>;
+  handleCommit: (message: string) => Promise<void>;
+}
+
+/**
+ * ConversationAgent 源代码管理 Hook
+ */
+export const useConversationAgentSourceControl = ({
+  cid,
+  changeFiles,
+  selectedChangeFile,
+  setSelectedChangeFile,
+  adapters,
+}: UseConversationAgentSourceControlParams): UseConversationAgentSourceControlReturn => {
+  const workspace = useMemo(
+    () => ({ workspaceType: 'taskAgent' as const, cid }),
+    [cid],
+  );
+
+  const [isCommitting, setIsCommitting] = useState(false);
+
+  /** 当前选中查看 diff 的文件数据 */
+  const selectedDiffFile = useMemo(
+    () =>
+      selectedChangeFile
+        ? changeFiles.find(
+            (item) => item.fileId === selectedChangeFile.fileId,
+          ) ?? null
+        : null,
+    [changeFiles, selectedChangeFile],
+  );
+
+  /** 选中修改文件并在右侧展示 diff 预览 */
+  const handleDiffFileSelect = useCallback(
+    (fileId: string, section: ChangeListSection) => {
+      setSelectedChangeFile({ fileId, section });
+      adapters.onDiffFileSelect?.(fileId, section);
+    },
+    [adapters],
+  );
+
+  /** 打开更改文件（选中文件并预览，非 diff） */
+  const handleOpenChangeFile = useCallback(
+    (fileId: string) => {
+      setSelectedChangeFile(null);
+      adapters.openChangeFile(fileId);
+    },
+    [adapters],
+  );
+
+  /** 放弃单个文件的更改 */
+  const handleDiscardChange = useCallback(
+    (fileId: string) => {
+      adapters.discardChangeFile(fileId);
+      adapters.onAfterDiscardChange?.(fileId);
+      if (selectedChangeFile?.fileId === fileId) {
+        setSelectedChangeFile(null);
+      }
+    },
+    [adapters, selectedChangeFile],
+  );
+
+  /** 暂存更改（git add） */
+  const handleStageChange = useCallback(
+    async (fileId: string) => {
+      if (!isGitWorkspaceReady(workspace)) {
+        return;
+      }
+      try {
+        const { code } = await apiGitAdd({
+          ...buildGitWorkspaceParams(workspace),
+          files: [fileId],
+        });
+        if (code === SUCCESS_CODE) {
+          await adapters.refreshFileList?.();
+        }
+      } catch (error) {
+        console.error('Git stage failed:', error);
+      }
+    },
+    [workspace, adapters],
+  );
+
+  /** 取消暂存（git restore --staged） */
+  const handleUnstageChange = useCallback(
+    async (fileId: string) => {
+      if (!isGitWorkspaceReady(workspace)) {
+        return;
+      }
+      try {
+        const { code } = await apiGitUnstage({
+          ...buildGitWorkspaceParams(workspace),
+          files: [fileId],
+        });
+        if (code === SUCCESS_CODE) {
+          await adapters.refreshFileList?.();
+        }
+      } catch (error) {
+        console.error('Git unstage failed:', error);
+      }
+    },
+    [workspace, adapters],
+  );
+
+  /** 将文件路径添加到 .gitignore */
+  const handleAddToGitignore = useCallback(
+    async (fileId: string) => {
+      if (!isGitWorkspaceReady(workspace)) {
+        return;
+      }
+      try {
+        await adapters.addFileToGitignore(fileId);
+      } catch (error) {
+        console.error('Add to gitignore failed:', error);
+        message.error(
+          dict('PC.Pages.ConversationAgentSourceControl.gitignoreFailed'),
+        );
+      }
+    },
+    [workspace, adapters],
+  );
+
+  /**
+   * Git 提交并推送到远程仓库
+   * 先保存文件到沙箱，再执行 git commit + push
+   */
+  const handleCommit = useCallback(
+    async (commitMessage: string) => {
+      if (!isGitWorkspaceReady(workspace)) {
+        message.error(
+          dict('PC.Pages.ConversationAgent.gitPush.noConversation'),
+        );
+        return;
+      }
+
+      setIsCommitting(true);
+      try {
+        if (changeFiles.length > 0) {
+          const saveSuccess = await adapters.saveChangeFiles(changeFiles);
+          if (!saveSuccess) {
+            message.error(
+              dict('PC.Pages.ConversationAgent.gitPush.saveFailed'),
+            );
+            return;
+          }
+        }
+
+        const { code } = await apiGitCommit({
+          ...buildGitWorkspaceParams(workspace),
+          message:
+            commitMessage ||
+            dict('PC.Pages.ConversationAgent.gitPush.defaultMessage'),
+          files: changeFiles.map((file) => file.fileId),
+        });
+
+        if (code !== SUCCESS_CODE) {
+          message.error(dict('PC.Pages.ConversationAgent.gitPush.failed'));
+          return;
+        }
+
+        message.success(dict('PC.Pages.ConversationAgent.gitPush.success'));
+        setSelectedChangeFile(null);
+        await adapters.onCommitSuccess?.();
+      } catch (error) {
+        console.error('Git commit push failed:', error);
+        message.error(dict('PC.Pages.ConversationAgent.gitPush.failed'));
+      } finally {
+        setIsCommitting(false);
+      }
+    },
+    [workspace, changeFiles, adapters],
+  );
+
+  return {
+    changeFiles,
+    selectedChangeFile,
+    selectedDiffFile,
+    isCommitting,
+    setSelectedChangeFile,
+    handleDiffFileSelect,
+    handleOpenChangeFile,
+    handleDiscardChange,
+    handleStageChange,
+    handleUnstageChange,
+    handleAddToGitignore,
+    handleCommit,
+  };
+};

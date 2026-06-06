@@ -1,9 +1,9 @@
-import Loading from '@/components/custom/Loading';
-import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
   apiGitLogList,
   apiGitRevert,
-} from '@/pages/ConversationAgent/services/git-version-management';
+} from '@/components/business-component/FileTreePanel';
+import Loading from '@/components/custom/Loading';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
 import { modalConfirm } from '@/utils/ant-custom';
 import { formatTimeAgo } from '@/utils/common';

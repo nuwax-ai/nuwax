@@ -1,16 +1,16 @@
+import FileTreePanel, {
+  TaskAgentFileTree,
+  useConversationAgentSourceControl,
+  type SelectedChangeFile,
+} from '@/components/business-component/FileTreePanel';
 import CreateAgent from '@/components/CreateAgent';
 import Loading from '@/components/custom/Loading';
+import type { ChangeFileInfo } from '@/components/FileTreeView/type';
 import PublishComponentModal from '@/components/PublishComponentModal';
 import type { PromptVariable } from '@/components/TiptapVariableInput/types';
 import { transformToPromptVariables } from '@/components/TiptapVariableInput/utils/variableTransform';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import useUnifiedTheme from '@/hooks/useUnifiedTheme';
-import type { SelectedChangeFile } from '@/pages/ConversationAgent/ConversationAgentSourceControl/changeFileStatus';
-import {
-  apiGitCommit,
-  apiGitStash,
-  apiGitStashPop,
-} from '@/pages/ConversationAgent/services/git-version-management';
 import AgentModelSetting from '@/pages/EditAgent/AgentModelSetting';
 import DebugDetails from '@/pages/EditAgent/DebugDetails';
 import SubscriptionSetting from '@/pages/EditAgent/SubscriptionSetting';
@@ -81,7 +81,6 @@ import {
   type PreviewToolId,
 } from './ConversationAgentFilePreview/hooks/usePreviewTabs';
 import PreviewTabBar from './ConversationAgentFilePreview/PreviewTabBar';
-import ConversationAgentMiddlePanel from './ConversationAgentMiddlePanel';
 import type { ConversationAgentFileViewProps } from './hooks/types';
 import { useConversationAgentFileView } from './hooks/useConversationAgentFileView';
 import styles from './index.less';
@@ -155,8 +154,6 @@ const ConversationAgent: React.FC = () => {
     useState<number>(0);
   /** 从开发工具打开终端时跳过 onToolTabActivate 中的布局重置 */
   const skipDevConsoleResetRef = useRef<boolean>(false);
-  /** 是否正在 Git 提交推送 */
-  const [isGitPushing, setIsGitPushing] = useState<boolean>(false);
   /** 源代码管理中选中的变更文件（含区块） */
   const [selectedChangeFile, setSelectedChangeFile] =
     useState<SelectedChangeFile | null>(null);
@@ -749,77 +746,6 @@ const ConversationAgent: React.FC = () => {
   };
 
   /**
-   * Git 提交并推送到远程仓库
-   * 先保存文件到沙箱，再执行 git commit + push
-   * @param commitMessage 提交信息
-   * @param changeFilesList 当前修改的文件列表
-   */
-  const handleGitCommitPush = useCallback(
-    async (
-      commitMessage: string,
-      changeFilesList: Array<{
-        fileId: string;
-        fileContent: string;
-        originalFileContent: string;
-      }>,
-    ) => {
-      if (!devConversationId) {
-        message.error(
-          dict('PC.Pages.ConversationAgent.gitPush.noConversation'),
-        );
-        return false;
-      }
-
-      setIsGitPushing(true);
-      try {
-        // 1. 先保存文件到沙箱
-        if (changeFilesList.length > 0) {
-          const updatedFilesList = updateFilesListContent(
-            fileTreeData || [],
-            changeFilesList,
-            'modify',
-          );
-          const saveResult = await apiUpdateStaticFile({
-            cId: devConversationId,
-            files: updatedFilesList as VncDesktopUpdateFileInfo[],
-          });
-          if (saveResult.code !== SUCCESS_CODE) {
-            message.error(
-              dict('PC.Pages.ConversationAgent.gitPush.saveFailed'),
-            );
-            return false;
-          }
-        }
-
-        // 2. 执行 git commit + push
-        const { code } = await apiGitCommit({
-          workspaceType: 'taskAgent',
-          cid: devConversationId,
-          message:
-            commitMessage ||
-            dict('PC.Pages.ConversationAgent.gitPush.defaultMessage'),
-          files: changeFilesList.map((f) => f.fileId),
-        });
-
-        if (code === SUCCESS_CODE) {
-          message.success(dict('PC.Pages.ConversationAgent.gitPush.success'));
-          return true;
-        } else {
-          message.error(dict('PC.Pages.ConversationAgent.gitPush.failed'));
-          return false;
-        }
-      } catch (error) {
-        console.error('Git commit push failed:', error);
-        message.error(dict('PC.Pages.ConversationAgent.gitPush.failed'));
-        return false;
-      } finally {
-        setIsGitPushing(false);
-      }
-    },
-    [devConversationId, fileTreeData],
-  );
-
-  /**
    * 批量上传文件
    * 先校验文件大小是否超限，通过后调用上传接口并刷新文件树
    */
@@ -1038,76 +964,6 @@ const ConversationAgent: React.FC = () => {
 
   // ==================================== git 版本控制 ====================================
 
-  /** 当前选中查看 diff 的文件数据 */
-  const selectedDiffFile = useMemo(
-    () =>
-      selectedChangeFile
-        ? fileView.changeFiles.find(
-            (item) => item.fileId === selectedChangeFile.fileId,
-          ) ?? null
-        : null,
-    [fileView.changeFiles, selectedChangeFile],
-  );
-
-  /** 打开更改文件（选中文件并预览，非 diff） */
-  const handleOpenChangeFile = useCallback(
-    async (fileId: string) => {
-      previewTabs.openFileTab(fileId, false);
-    },
-    [previewTabs],
-  );
-
-  /** 放弃单个文件的更改 */
-  const handleDiscardChange = useCallback(
-    (fileId: string) => {
-      fileView.preview.discardChangeFile(fileId);
-      previewTabs.closeTab(getFileTabId(fileId, true));
-      previewTabs.closeTab(getFileTabId(fileId, false));
-      if (selectedChangeFile?.fileId === fileId) {
-        setSelectedChangeFile(null);
-      }
-    },
-    [fileView.preview, previewTabs, selectedChangeFile],
-  );
-
-  /** 暂存更改（git stash） */
-  const handleStageChange = useCallback(
-    async (fileId: string) => {
-      if (!devConversationId) {
-        return;
-      }
-      try {
-        await apiGitStash({
-          workspaceType: 'taskAgent',
-          cid: devConversationId,
-          files: [fileId],
-        });
-      } catch (error) {
-        console.error('Git stash failed:', error);
-      }
-    },
-    [devConversationId],
-  );
-
-  /** 取消暂存（git stash pop） */
-  const handleUnstageChange = useCallback(
-    async (fileId: string) => {
-      if (!devConversationId) {
-        return;
-      }
-      try {
-        await apiGitStashPop({
-          workspaceType: 'taskAgent',
-          cid: devConversationId,
-          files: [fileId],
-        });
-      } catch (error) {
-        console.error('Git stash pop failed:', error);
-      }
-    },
-    [devConversationId],
-  );
-
   /** 将文件路径添加到 .gitignore */
   const handleAddToGitignore = useCallback(
     async (fileId: string) => {
@@ -1198,6 +1054,48 @@ const ConversationAgent: React.FC = () => {
     },
     [devConversationId, fileTreeData, handleRefreshFileList],
   );
+
+  /**
+   * 源代码管理（Git）统一 Hook
+   * 封装暂存/取消暂存/提交推送等 Git 操作，差异逻辑通过 adapters 由页面注入
+   */
+  const gitSourceControl = useConversationAgentSourceControl({
+    cid: devConversationId ?? null,
+    changeFiles: fileView.changeFiles,
+    selectedChangeFile,
+    setSelectedChangeFile,
+    adapters: {
+      // 保存变更文件到沙箱
+      saveChangeFiles: (files: ChangeFileInfo[]) => handleSaveFiles(files),
+      // 放弃单个文件的更改
+      discardChangeFile: (fileId: string) =>
+        fileView.preview.discardChangeFile(fileId),
+      // 打开更改文件（选中文件并预览，非 diff）
+      openChangeFile: (fileId: string) =>
+        previewTabs.openFileTab(fileId, false),
+      // 将文件路径添加到 .gitignore
+      addFileToGitignore: handleAddToGitignore,
+      // 选中修改文件，在右侧预览区展示 diff
+      onDiffFileSelect: (fileId: string) =>
+        previewTabs.openFileTab(fileId, true),
+      // 放弃更改后关闭预览 Tab
+      onAfterDiscardChange: (fileId: string) => {
+        previewTabs.closeTab(getFileTabId(fileId, true));
+        previewTabs.closeTab(getFileTabId(fileId, false));
+      },
+      // 提交成功后清空本地修改并关闭 Tab
+      onCommitSuccess: async () => {
+        await fileView.preview.saveFiles();
+        previewTabs.clearTabs();
+      },
+      // 刷新 Git 变更列表
+      refreshFileList: devConversationId
+        ? async () => {
+            await handleRefreshFileList(devConversationId);
+          }
+        : undefined,
+    },
+  });
 
   /** 通用智能体直接切换模型，无需弹窗 */
   const handleArrangeModelChange = useCallback(
@@ -1347,7 +1245,7 @@ const ConversationAgent: React.FC = () => {
               // 预览文件
               preview={fileView.preview}
               // 差异文件
-              diffFile={selectedDiffFile ?? undefined}
+              diffFile={gitSourceControl.selectedDiffFile ?? undefined}
               // 选中标签
               activeTab={previewTabs.activeTab}
               // 调试对话面板
@@ -1448,43 +1346,45 @@ const ConversationAgent: React.FC = () => {
               [styles['middle-panel-hidden']]: !canShowFileView,
             })}
           >
-            {/* ConversationAgent 中间面板 */}
-            <ConversationAgentMiddlePanel
-              // 文件视图数据
-              fileView={fileView}
+            {/* ConversationAgent 中间面板（公共 FileTreePanel） */}
+            <FileTreePanel
               className={cx(styles['file-tree-sidebar'], 'w-full')}
-              // 当前选中查看 diff 的文件 ID
-              selectedChangeFile={selectedChangeFile}
-              // 选中修改文件，在右侧预览区展示 diff
-              onDiffFileSelect={(fileId, section) => {
-                setSelectedChangeFile({ fileId, section });
-                previewTabs.openFileTab(fileId, true);
+              sourceControl={{
+                // 已修改文件列表
+                changeFiles: fileView.changeFiles,
+                // 当前选中查看 diff 的文件（含区块）
+                selectedChangeFile: gitSourceControl.selectedChangeFile,
+                // 是否正在提交
+                isCommitting:
+                  gitSourceControl.isCommitting ||
+                  fileView.preview.isSavingFiles,
+                // 选中修改文件，在右侧预览区展示 diff
+                onDiffFileSelect: gitSourceControl.handleDiffFileSelect,
+                // 打开文件
+                onOpenChangeFile: gitSourceControl.handleOpenChangeFile,
+                // 放弃单个文件的更改
+                onDiscardChange: gitSourceControl.handleDiscardChange,
+                // 暂存更改（git add）
+                onStageChange: (fileId) => {
+                  void gitSourceControl.handleStageChange(fileId);
+                },
+                // 取消暂存
+                onUnstageChange: (fileId) => {
+                  void gitSourceControl.handleUnstageChange(fileId);
+                },
+                // 添加到 gitignore
+                onAddToGitignore: (fileId) => {
+                  void gitSourceControl.handleAddToGitignore(fileId);
+                },
+                // 提交修改（保存并推送）
+                onCommit: gitSourceControl.handleCommit,
               }}
-              // 打开文件
-              onOpenChangeFile={handleOpenChangeFile}
-              // 放弃单个文件的更改
-              onDiscardChange={handleDiscardChange}
-              // 暂存更改
-              onStageChange={handleStageChange}
-              // 取消暂存
-              onUnstageChange={handleUnstageChange}
-              // 添加到 gitignore
-              onAddToGitignore={handleAddToGitignore}
-              // 是否正在提交
-              isCommitting={isGitPushing || fileView.preview.isSavingFiles}
-              // 提交修改（保存并推送）
-              onCommit={async (message: string) => {
-                const isSuccess = await handleGitCommitPush(
-                  message,
-                  fileView.changeFiles,
-                );
-                if (isSuccess) {
-                  await fileView.preview.saveFiles();
-                  setSelectedChangeFile(null);
-                  previewTabs.clearTabs();
-                }
-              }}
-            />
+            >
+              <TaskAgentFileTree
+                tree={fileView.tree}
+                className="w-full h-full"
+              />
+            </FileTreePanel>
           </div>
           {/* 右侧面板：编排配置 / 文件预览 + 终端 */}
           {renderRightPanel()}

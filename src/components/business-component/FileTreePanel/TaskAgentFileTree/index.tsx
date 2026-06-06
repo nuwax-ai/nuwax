@@ -2,26 +2,26 @@ import FileContextMenu from '@/components/FileTreeView/FileContextMenu';
 import FileTree from '@/components/FileTreeView/FileTree';
 import SearchView from '@/components/FileTreeView/SearchView';
 import TipsBox from '@/components/TipsBox';
+import type { TaskAgentFileViewTree } from '@/components/business-component/FileTreePanel/types/taskAgentFileTree';
 import { dict } from '@/services/i18nRuntime';
 import { ReloadOutlined } from '@ant-design/icons';
 import { Button, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
-import type { ConversationAgentFileViewTree } from '../hooks/types';
 import styles from './index.less';
 
-export interface ConversationAgentFileTreeProps {
+export interface TaskAgentFileTreeProps {
   /** 文件树状态与交互处理器 */
-  tree: ConversationAgentFileViewTree;
+  tree: TaskAgentFileViewTree;
   className?: string;
   headerClassName?: string;
 }
 
 /**
- * ConversationAgent 文件树组件
+ * 任务智能体文件树组件
  * 负责文件树渲染、搜索、右键菜单、选中与重命名等交互
  */
-const ConversationAgentFileTree: React.FC<ConversationAgentFileTreeProps> = ({
+const TaskAgentFileTree: React.FC<TaskAgentFileTreeProps> = ({
   tree,
   className,
   headerClassName,
@@ -154,4 +154,4 @@ const ConversationAgentFileTree: React.FC<ConversationAgentFileTreeProps> = ({
   );
 };
 
-export default ConversationAgentFileTree;
+export default TaskAgentFileTree;

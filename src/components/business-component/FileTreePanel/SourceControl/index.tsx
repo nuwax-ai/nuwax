@@ -26,7 +26,7 @@ type ContextMenuTarget =
   | { kind: 'file'; fileId: string; isStagedSection: boolean }
   | { kind: 'folder'; folderId: string; isStagedSection: boolean };
 
-export interface ConversationAgentSourceControlProps {
+export interface SourceControlPanelProps {
   /** 已修改文件列表 */
   changeFiles: ChangeFileInfo[];
   /** 是否正在提交 */
@@ -59,9 +59,7 @@ export interface ConversationAgentSourceControlProps {
  * ConversationAgent 源代码管理面板
  * 展示暂存/未暂存变更，支持刷新、列表/树形切换、提交与 diff 预览
  */
-const ConversationAgentSourceControl: React.FC<
-  ConversationAgentSourceControlProps
-> = ({
+const SourceControlPanel: React.FC<SourceControlPanelProps> = ({
   changeFiles,
   isCommitting = false,
   isRefreshing = false,
@@ -420,4 +418,7 @@ const ConversationAgentSourceControl: React.FC<
   );
 };
 
-export default ConversationAgentSourceControl;
+export default SourceControlPanel;
+
+/** @deprecated 使用 SourceControlPanel */
+export type ConversationAgentSourceControlProps = SourceControlPanelProps;
