@@ -1350,37 +1350,23 @@ const ConversationAgent: React.FC = () => {
             <FileTreePanel
               className={cx(styles['file-tree-sidebar'], 'w-full')}
               sourceControl={{
-                // 已修改文件列表
+                gitWorkspace: {
+                  workspaceType: 'taskAgent',
+                  cid: devConversationId ?? null,
+                },
                 changeFiles: fileView.changeFiles,
-                // 当前选中查看 diff 的文件（含区块）
                 selectedChangeFile: gitSourceControl.selectedChangeFile,
-                // 是否正在提交
                 isCommitting:
                   gitSourceControl.isCommitting ||
                   fileView.preview.isSavingFiles,
-                // 是否正在刷新 Git 列表
                 isRefreshingGitList: fileView.isRefreshingGitList,
-                // 刷新 Git 变更列表
                 onRefreshGitList: fileView.refreshGitList,
-                // 选中修改文件，在右侧预览区展示 diff
                 onDiffFileSelect: gitSourceControl.handleDiffFileSelect,
-                // 打开文件
                 onOpenChangeFile: gitSourceControl.handleOpenChangeFile,
-                // 放弃单个文件的更改
-                onDiscardChange: gitSourceControl.handleDiscardChange,
-                // 暂存更改（git add）
-                onStageChange: (fileId) => {
-                  void gitSourceControl.handleStageChange(fileId);
-                },
-                // 取消暂存
-                onUnstageChange: (fileId) => {
-                  void gitSourceControl.handleUnstageChange(fileId);
-                },
-                // 添加到 gitignore
+                onAfterDiscardChange: gitSourceControl.handleAfterDiscardChange,
                 onAddToGitignore: (fileId) => {
                   void gitSourceControl.handleAddToGitignore(fileId);
                 },
-                // 提交修改（保存并推送）
                 onCommit: gitSourceControl.handleCommit,
               }}
             >

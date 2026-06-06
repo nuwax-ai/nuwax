@@ -1610,29 +1610,21 @@ const AppDev: React.FC = () => {
                       }
                       // =================源代码管理相关=================
                       sourceControl={{
-                        // 已修改文件列表
+                        gitWorkspace: {
+                          workspaceType: 'pageApp',
+                          projectId,
+                        },
                         changeFiles: sourceControl.changeFiles,
-                        // 当前选中查看 diff 的文件 ID
                         selectedChangeFile: sourceControl.selectedChangeFile,
-                        // 是否正在提交
                         isCommitting: sourceControl.isCommitting,
-                        // 是否正在刷新 Git 列表
                         isRefreshingGitList: sourceControl.isRefreshingGitList,
-                        // 刷新 Git 变更列表
                         onRefreshGitList: sourceControl.refreshGitList,
-                        // 选中修改文件，在右侧预览区展示 diff
                         onDiffFileSelect: sourceControl.handleDiffFileSelect,
-                        // 打开文件（选中并预览，非 diff）
                         onOpenChangeFile: sourceControl.handleOpenChangeFile,
-                        // 放弃单个文件的更改
-                        onDiscardChange: sourceControl.handleDiscardChange,
-                        // 暂存更改
-                        onStageChange: sourceControl.handleStageChange,
-                        // 取消暂存
-                        onUnstageChange: sourceControl.handleUnstageChange,
-                        // 添加到 .gitignore
+                        onAfterDiscardChange: (fileId) => {
+                          void sourceControl.handleDiscardChange([fileId]);
+                        },
                         onAddToGitignore: sourceControl.handleAddToGitignore,
-                        // 提交修改
                         onCommit: sourceControl.handleCommit,
                       }}
                     />

@@ -2411,7 +2411,6 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.ChatTemp.welcomeText": "Welcome to {0}",
   "PC.Pages.ConversationAgent.devServerReady": "Dev server ready",
   "PC.Pages.ConversationAgent.gitPush.defaultMessage": "Update files",
-  "PC.Pages.ConversationAgent.gitPush.failed": "Git push failed, please check the configuration and try again",
   "PC.Pages.ConversationAgent.gitPush.noConversation": "No active conversation, cannot perform Git push",
   "PC.Pages.ConversationAgent.gitPush.saveFailed": "File save failed, cannot perform Git push",
   "PC.Pages.ConversationAgent.gitPush.success": "Git commit and push successful",

@@ -7,15 +7,14 @@ import {
   mergeGitStatusFileIds,
 } from '@/components/business-component/FileTreePanel/hooks/gitStatusUtils';
 import {
-  apiGitAdd,
   apiGitCommit,
   apiGitStatus,
-  apiGitUnstage,
 } from '@/components/business-component/FileTreePanel/services/git-version-management';
 import type {
   ChangeListSection,
   SelectedChangeFile,
 } from '@/components/business-component/FileTreePanel/SourceControl/changeFileStatus';
+import { runGitDiscard } from '@/components/business-component/FileTreePanel/SourceControl/sourceControlGitActions';
 import type { ChangeFileInfo } from '@/components/FileTreeView/type';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { getProjectContent, submitFilesUpdate } from '@/services/appDev';
@@ -71,12 +70,8 @@ export interface UseAppDevSourceControlReturn {
   handleDiffFileSelect: (fileId: string, section: ChangeListSection) => void;
   /** 打开文件（非 diff 预览） */
   handleOpenChangeFile: (fileId: string) => void;
-  /** 放弃单个文件的更改 */
-  handleDiscardChange: (fileId: string) => void;
-  /** 暂存更改 */
-  handleStageChange: (fileId: string) => Promise<void>;
-  /** 取消暂存 */
-  handleUnstageChange: (fileId: string) => Promise<void>;
+  /** 放弃更改（支持单文件或文件夹下多文件，含 Git discard + UI 同步） */
+  handleDiscardChange: (fileIds: string[]) => Promise<void>;
   /** 添加到 .gitignore */
   handleAddToGitignore: (fileId: string) => Promise<void>;
   /** 提交修改（保存并推送） */
@@ -280,15 +275,15 @@ export const useSourceControl = ({
       setIsCommitting(true);
       try {
         // 1. 先保存文件到沙箱
-        if (changeFilesList.length > 0) {
-          const saveSuccess = await saveChangeFiles(changeFilesList);
-          if (!saveSuccess) {
-            message.error(
-              dict('PC.Pages.ConversationAgent.gitPush.saveFailed'),
-            );
-            return false;
-          }
-        }
+        // if (changeFilesList.length > 0) {
+        //   const saveSuccess = await saveChangeFiles(changeFilesList);
+        //   if (!saveSuccess) {
+        //     message.error(
+        //       dict('PC.Pages.ConversationAgent.gitPush.saveFailed'),
+        //     );
+        //     return false;
+        //   }
+        // }
 
         // 2. 执行 git commit + push
         const { code } = await apiGitCommit({
@@ -304,12 +299,9 @@ export const useSourceControl = ({
           message.success(dict('PC.Pages.ConversationAgent.gitPush.success'));
           return true;
         }
-
-        message.error(dict('PC.Pages.ConversationAgent.gitPush.failed'));
         return false;
       } catch (error) {
         console.error('Git commit push failed:', error);
-        message.error(dict('PC.Pages.ConversationAgent.gitPush.failed'));
         return false;
       } finally {
         setIsCommitting(false);
@@ -343,17 +335,16 @@ export const useSourceControl = ({
   );
 
   /**
-   * 放弃单个文件的更改，还原为原始内容
-   * @param fileId 文件 ID
+   * 同步单个文件放弃更改后的 UI 状态
    */
-  const handleDiscardChange = useCallback(
+  const syncAfterDiscardChange = useCallback(
     (fileId: string) => {
       const changeFile = changeFiles.find((item) => item.fileId === fileId);
       if (!changeFile) {
+        clearChangeForFile(fileId);
         return;
       }
 
-      // 还原文件树与工作区中的内容
       fileManagement.updateFileContent(fileId, changeFile.originalFileContent);
 
       if (fileManagement.fileContentState.selectedFile === fileId) {
@@ -408,53 +399,32 @@ export const useSourceControl = ({
   }, [projectId, isRefreshingGitList, fileManagement]);
 
   /**
-   * 暂存更改（git add）
-   * @param fileId 文件 ID
+   * 放弃更改：先 Git discard，再批量同步 UI 并刷新列表
+   * @param fileIds 文件 ID 列表（单文件或同一文件夹下多文件）
    */
-  const handleStageChange = useCallback(
-    async (fileId: string) => {
-      if (!projectId) {
+  const handleDiscardChange = useCallback(
+    async (fileIds: string[]) => {
+      if (!projectId || !fileIds.length) {
         return;
       }
-      try {
-        const { code } = await apiGitAdd({
-          workspaceType: 'pageApp',
-          projectId: Number(projectId),
-          files: [fileId],
-        });
-        if (code === SUCCESS_CODE) {
-          await refreshGitList();
-        }
-      } catch (error) {
-        console.error('Git stage failed:', error);
-      }
-    },
-    [projectId, refreshGitList],
-  );
 
-  /**
-   * 取消暂存（git restore --staged）
-   * @param fileId 文件 ID
-   */
-  const handleUnstageChange = useCallback(
-    async (fileId: string) => {
-      if (!projectId) {
+      const isSuccess = await runGitDiscard(
+        { workspaceType: 'pageApp', projectId },
+        fileIds,
+      );
+      if (!isSuccess) {
         return;
       }
-      try {
-        const { code } = await apiGitUnstage({
-          workspaceType: 'pageApp',
-          projectId: Number(projectId),
-          files: [fileId],
-        });
-        if (code === SUCCESS_CODE) {
-          await refreshGitList();
-        }
-      } catch (error) {
-        console.error('Git unstage failed:', error);
-      }
+
+      fileIds.forEach((fileId) => syncAfterDiscardChange(fileId));
+
+      setSelectedChangeFile((current) =>
+        current && fileIds.includes(current.fileId) ? null : current,
+      );
+
+      await refreshGitList();
     },
-    [projectId, refreshGitList],
+    [projectId, syncAfterDiscardChange, refreshGitList],
   );
 
   /**
@@ -561,8 +531,8 @@ export const useSourceControl = ({
         setChangeFiles([]);
         setStagedFileIds(new Set());
         setSelectedChangeFile(null);
-        await fileManagement.loadFileTree(true, true);
-        onRefreshProjectInfo?.();
+        // await fileManagement.loadFileTree(true, true);
+        // onRefreshProjectInfo?.();
       }
     },
     [changeFiles, commitAndPush, fileManagement, onRefreshProjectInfo],
@@ -605,8 +575,6 @@ export const useSourceControl = ({
     handleDiffFileSelect,
     handleOpenChangeFile,
     handleDiscardChange,
-    handleStageChange,
-    handleUnstageChange,
     handleAddToGitignore,
     handleCommit,
     refreshGitList,

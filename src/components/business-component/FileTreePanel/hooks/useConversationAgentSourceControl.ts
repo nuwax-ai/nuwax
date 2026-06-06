@@ -6,15 +6,12 @@ import {
   buildGitWorkspaceParams,
   isGitWorkspaceReady,
 } from '@/components/business-component/FileTreePanel/hooks/buildGitWorkspaceParams';
-import {
-  apiGitAdd,
-  apiGitCommit,
-  apiGitUnstage,
-} from '@/components/business-component/FileTreePanel/services/git-version-management';
+import { apiGitCommit } from '@/components/business-component/FileTreePanel/services/git-version-management';
 import type {
   ChangeListSection,
   SelectedChangeFile,
 } from '@/components/business-component/FileTreePanel/SourceControl/changeFileStatus';
+import { runGitDiscard } from '@/components/business-component/FileTreePanel/SourceControl/sourceControlGitActions';
 import type { ChangeFileInfo } from '@/components/FileTreeView/type';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
@@ -69,9 +66,8 @@ export interface UseConversationAgentSourceControlReturn {
   >;
   handleDiffFileSelect: (fileId: string, section: ChangeListSection) => void;
   handleOpenChangeFile: (fileId: string) => void;
-  handleDiscardChange: (fileId: string) => void;
-  handleStageChange: (fileId: string) => Promise<void>;
-  handleUnstageChange: (fileId: string) => Promise<void>;
+  /** 放弃更改（支持单文件或文件夹下多文件，含 Git discard + UI 同步） */
+  handleDiscardChange: (fileIds: string[]) => Promise<void>;
   handleAddToGitignore: (fileId: string) => Promise<void>;
   handleCommit: (message: string) => Promise<void>;
 }
@@ -122,58 +118,41 @@ export const useConversationAgentSourceControl = ({
     [adapters],
   );
 
-  /** 放弃单个文件的更改 */
-  const handleDiscardChange = useCallback(
+  /**
+   * 同步单个文件放弃更改后的 UI 状态
+   */
+  const syncAfterDiscardChange = useCallback(
     (fileId: string) => {
       adapters.discardChangeFile(fileId);
       adapters.onAfterDiscardChange?.(fileId);
-      if (selectedChangeFile?.fileId === fileId) {
-        setSelectedChangeFile(null);
-      }
     },
-    [adapters, selectedChangeFile],
+    [adapters],
   );
 
-  /** 暂存更改（git add） */
-  const handleStageChange = useCallback(
-    async (fileId: string) => {
-      if (!isGitWorkspaceReady(workspace)) {
+  /**
+   * 放弃更改：先 Git discard，再批量同步 UI 并刷新列表
+   * @param fileIds 文件 ID 列表（单文件或同一文件夹下多文件）
+   */
+  const handleDiscardChange = useCallback(
+    async (fileIds: string[]) => {
+      if (!isGitWorkspaceReady(workspace) || !fileIds.length) {
         return;
       }
-      try {
-        const { code } = await apiGitAdd({
-          ...buildGitWorkspaceParams(workspace),
-          files: [fileId],
-        });
-        if (code === SUCCESS_CODE) {
-          await adapters.refreshFileList?.();
-        }
-      } catch (error) {
-        console.error('Git stage failed:', error);
-      }
-    },
-    [workspace, adapters],
-  );
 
-  /** 取消暂存（git restore --staged） */
-  const handleUnstageChange = useCallback(
-    async (fileId: string) => {
-      if (!isGitWorkspaceReady(workspace)) {
+      const isSuccess = await runGitDiscard(workspace, fileIds);
+      if (!isSuccess) {
         return;
       }
-      try {
-        const { code } = await apiGitUnstage({
-          ...buildGitWorkspaceParams(workspace),
-          files: [fileId],
-        });
-        if (code === SUCCESS_CODE) {
-          await adapters.refreshFileList?.();
-        }
-      } catch (error) {
-        console.error('Git unstage failed:', error);
-      }
+
+      fileIds.forEach((fileId) => syncAfterDiscardChange(fileId));
+
+      setSelectedChangeFile((current) =>
+        current && fileIds.includes(current.fileId) ? null : current,
+      );
+
+      await adapters.refreshFileList?.();
     },
-    [workspace, adapters],
+    [workspace, syncAfterDiscardChange, adapters],
   );
 
   /** 将文件路径添加到 .gitignore */
@@ -209,15 +188,15 @@ export const useConversationAgentSourceControl = ({
 
       setIsCommitting(true);
       try {
-        if (changeFiles.length > 0) {
-          const saveSuccess = await adapters.saveChangeFiles(changeFiles);
-          if (!saveSuccess) {
-            message.error(
-              dict('PC.Pages.ConversationAgent.gitPush.saveFailed'),
-            );
-            return;
-          }
-        }
+        // if (changeFiles.length > 0) {
+        //   const saveSuccess = await adapters.saveChangeFiles(changeFiles);
+        //   if (!saveSuccess) {
+        //     message.error(
+        //       dict('PC.Pages.ConversationAgent.gitPush.saveFailed'),
+        //     );
+        //     return;
+        //   }
+        // }
 
         const { code } = await apiGitCommit({
           ...buildGitWorkspaceParams(workspace),
@@ -228,7 +207,6 @@ export const useConversationAgentSourceControl = ({
         });
 
         if (code !== SUCCESS_CODE) {
-          message.error(dict('PC.Pages.ConversationAgent.gitPush.failed'));
           return;
         }
 
@@ -237,7 +215,6 @@ export const useConversationAgentSourceControl = ({
         await adapters.onCommitSuccess?.();
       } catch (error) {
         console.error('Git commit push failed:', error);
-        message.error(dict('PC.Pages.ConversationAgent.gitPush.failed'));
       } finally {
         setIsCommitting(false);
       }
@@ -254,8 +231,6 @@ export const useConversationAgentSourceControl = ({
     handleDiffFileSelect,
     handleOpenChangeFile,
     handleDiscardChange,
-    handleStageChange,
-    handleUnstageChange,
     handleAddToGitignore,
     handleCommit,
   };

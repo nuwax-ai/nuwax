@@ -36,6 +36,7 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
 
   const {
     changeFiles,
+    gitWorkspace,
     selectedChangeFile = null,
     isCommitting = false,
     isRefreshingGitList = false,
@@ -43,9 +44,7 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
     onCommit,
     onDiffFileSelect,
     onOpenChangeFile,
-    onDiscardChange,
-    onStageChange,
-    onUnstageChange,
+    onAfterDiscardChange,
     onAddToGitignore,
   } = sourceControl;
 
@@ -110,6 +109,7 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
             {/* 源代码管理面板 */}
             <SourceControlPanel
               changeFiles={changeFiles}
+              gitWorkspace={gitWorkspace}
               isCommitting={isCommitting}
               isRefreshing={isRefreshingGitList}
               selectedChangeFile={selectedChangeFile}
@@ -118,9 +118,7 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
               onFileClick={handleModifiedFileClick}
               onOpenChanges={onDiffFileSelect}
               onOpenFile={onOpenChangeFile}
-              onDiscardChange={onDiscardChange}
-              onStageChange={onStageChange}
-              onUnstageChange={onUnstageChange}
+              onAfterDiscardChange={onAfterDiscardChange}
               onAddToGitignore={onAddToGitignore}
             />
           </div>

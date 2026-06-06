@@ -161,7 +161,7 @@ const AppDevFileTreePanel: React.FC<AppDevFileTreePanelProps> = ({
           onScroll={saveScrollPosition}
           // 处理空白区域右键菜单显示
           onContextMenu={(e) => handleContextMenu(e, null)}
-          style={{ height: '100%' }}
+          className="h-full"
         >
           {/* 文件树结构 */}
           {isFileTreeInitializing ? (

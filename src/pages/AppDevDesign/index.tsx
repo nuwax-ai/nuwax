@@ -1586,6 +1586,10 @@ const AppDevDesign: React.FC = () => {
                         fileManagement.isFileTreeInitializing
                       }
                       sourceControl={{
+                        gitWorkspace: {
+                          workspaceType: 'pageApp',
+                          projectId,
+                        },
                         changeFiles: sourceControl.changeFiles,
                         selectedChangeFile: sourceControl.selectedChangeFile,
                         isCommitting: sourceControl.isCommitting,
@@ -1593,9 +1597,9 @@ const AppDevDesign: React.FC = () => {
                         onRefreshGitList: sourceControl.refreshGitList,
                         onDiffFileSelect: sourceControl.handleDiffFileSelect,
                         onOpenChangeFile: sourceControl.handleOpenChangeFile,
-                        onDiscardChange: sourceControl.handleDiscardChange,
-                        onStageChange: sourceControl.handleStageChange,
-                        onUnstageChange: sourceControl.handleUnstageChange,
+                        onAfterDiscardChange: (fileId) => {
+                          void sourceControl.handleDiscardChange([fileId]);
+                        },
                         onAddToGitignore: sourceControl.handleAddToGitignore,
                         onCommit: sourceControl.handleCommit,
                       }}

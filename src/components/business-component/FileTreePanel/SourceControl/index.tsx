@@ -1,3 +1,4 @@
+import type { GitWorkspaceConfig } from '@/components/business-component/FileTreePanel/hooks/buildGitWorkspaceParams';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import type { ChangeFileInfo } from '@/components/FileTreeView/type';
 import { dict } from '@/services/i18nRuntime';
@@ -18,6 +19,11 @@ import {
   type SelectedChangeFile,
 } from './changeFileStatus';
 import styles from './index.less';
+import {
+  runGitDiscard,
+  runGitStage,
+  runGitUnstage,
+} from './sourceControlGitActions';
 
 const cx = classNames.bind(styles);
 
@@ -29,6 +35,8 @@ type ContextMenuTarget =
 export interface SourceControlPanelProps {
   /** 已修改文件列表 */
   changeFiles: ChangeFileInfo[];
+  /** Git 工作空间 */
+  gitWorkspace?: GitWorkspaceConfig;
   /** 是否正在提交 */
   isCommitting?: boolean;
   /** 是否正在刷新 Git 列表 */
@@ -45,12 +53,8 @@ export interface SourceControlPanelProps {
   onOpenChanges?: (fileId: string, section: ChangeListSection) => void;
   /** 打开文件 */
   onOpenFile?: (fileId: string) => void;
-  /** 放弃更改 */
-  onDiscardChange?: (fileId: string) => void;
-  /** 暂存更改 */
-  onStageChange?: (fileId: string) => void;
-  /** 取消暂存 */
-  onUnstageChange?: (fileId: string) => void;
+  /** Git discard 成功后的 UI 同步 */
+  onAfterDiscardChange?: (fileId: string) => void | Promise<void>;
   /** 添加到 .gitignore */
   onAddToGitignore?: (fileId: string) => void;
 }
@@ -61,6 +65,7 @@ export interface SourceControlPanelProps {
  */
 const SourceControlPanel: React.FC<SourceControlPanelProps> = ({
   changeFiles,
+  gitWorkspace,
   isCommitting = false,
   isRefreshing = false,
   selectedChangeFile,
@@ -69,9 +74,7 @@ const SourceControlPanel: React.FC<SourceControlPanelProps> = ({
   onFileClick,
   onOpenChanges,
   onOpenFile,
-  onDiscardChange,
-  onStageChange,
-  onUnstageChange,
+  onAfterDiscardChange,
   onAddToGitignore,
 }) => {
   const [commitMessage, setCommitMessage] = useState<string>('');
@@ -205,6 +208,58 @@ const SourceControlPanel: React.FC<SourceControlPanelProps> = ({
     [],
   );
 
+  /**
+   * 放弃更改：先调用 Git discard，再执行 UI 同步并刷新列表
+   */
+  const discardChanges = useCallback(
+    async (fileIds: string[]) => {
+      if (!gitWorkspace || !fileIds.length) {
+        return;
+      }
+
+      const isSuccess = await runGitDiscard(gitWorkspace, fileIds);
+      if (!isSuccess) {
+        return;
+      }
+
+      for (const fileId of fileIds) {
+        await onAfterDiscardChange?.(fileId);
+      }
+      await onRefresh?.();
+    },
+    [gitWorkspace, onAfterDiscardChange, onRefresh],
+  );
+
+  /** 暂存更改（git add） */
+  const stageChanges = useCallback(
+    async (fileIds: string[]) => {
+      if (!gitWorkspace || !fileIds.length) {
+        return;
+      }
+
+      const isSuccess = await runGitStage(gitWorkspace, fileIds);
+      if (isSuccess) {
+        await onRefresh?.();
+      }
+    },
+    [gitWorkspace, onRefresh],
+  );
+
+  /** 取消暂存（git restore --staged） */
+  const unstageChanges = useCallback(
+    async (fileIds: string[]) => {
+      if (!gitWorkspace || !fileIds.length) {
+        return;
+      }
+
+      const isSuccess = await runGitUnstage(gitWorkspace, fileIds);
+      if (isSuccess) {
+        await onRefresh?.();
+      }
+    },
+    [gitWorkspace, onRefresh],
+  );
+
   /** 放弃更改（二次确认） */
   const handleDiscardChangeWithConfirm = useCallback(() => {
     if (contextMenuTarget?.kind === 'file' && contextMenuFile) {
@@ -215,7 +270,7 @@ const SourceControlPanel: React.FC<SourceControlPanelProps> = ({
           'PC.Pages.ConversationAgentSourceControl.discardChangesConfirmTitle',
         ),
         fileName,
-        () => onDiscardChange?.(fileId),
+        () => discardChanges([fileId]),
       );
       return;
     }
@@ -229,7 +284,7 @@ const SourceControlPanel: React.FC<SourceControlPanelProps> = ({
           'PC.Pages.ConversationAgentSourceControl.discardChangesConfirmTitle',
         ),
         folderId,
-        () => fileIds.forEach((fileId) => onDiscardChange?.(fileId)),
+        () => discardChanges(fileIds),
       );
     }
   }, [
@@ -237,18 +292,18 @@ const SourceControlPanel: React.FC<SourceControlPanelProps> = ({
     contextMenuFile,
     contextMenuFolderFiles,
     contextMenuTarget,
-    onDiscardChange,
+    discardChanges,
   ]);
 
   /** 暂存文件夹下所有更改 */
   const handleStageFolderChanges = useCallback(() => {
-    contextMenuFolderFiles.forEach((item) => onStageChange?.(item.fileId));
-  }, [contextMenuFolderFiles, onStageChange]);
+    void stageChanges(contextMenuFolderFiles.map((item) => item.fileId));
+  }, [contextMenuFolderFiles, stageChanges]);
 
   /** 取消暂存文件夹下所有更改 */
   const handleUnstageFolderChanges = useCallback(() => {
-    contextMenuFolderFiles.forEach((item) => onUnstageChange?.(item.fileId));
-  }, [contextMenuFolderFiles, onUnstageChange]);
+    void unstageChanges(contextMenuFolderFiles.map((item) => item.fileId));
+  }, [contextMenuFolderFiles, unstageChanges]);
 
   /** 将文件夹下所有文件添加到 .gitignore */
   const handleAddFolderToGitignore = useCallback(() => {
@@ -392,7 +447,7 @@ const SourceControlPanel: React.FC<SourceControlPanelProps> = ({
         /** 暂存更改 */
         onStageChange={() => {
           if (contextMenuTarget?.kind === 'file' && contextMenuFile) {
-            onStageChange?.(contextMenuFile.fileId);
+            void stageChanges([contextMenuFile.fileId]);
             return;
           }
           handleStageFolderChanges();
@@ -400,7 +455,7 @@ const SourceControlPanel: React.FC<SourceControlPanelProps> = ({
         /** 取消暂存 */
         onUnstageChange={() => {
           if (contextMenuTarget?.kind === 'file' && contextMenuFile) {
-            onUnstageChange?.(contextMenuFile.fileId);
+            void unstageChanges([contextMenuFile.fileId]);
             return;
           }
           handleUnstageFolderChanges();
