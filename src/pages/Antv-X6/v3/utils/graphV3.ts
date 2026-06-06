@@ -659,6 +659,11 @@ export const showExceptionHandle = (node: ChildNode): boolean => {
 };
 
 export const needUpdateNodes = (node: ChildNode): boolean => {
+  const isHitlWithOptions =
+    node.type === NodeTypeEnum.HumanInteraction &&
+    (node.nodeConfig as any)?.hitlMode !== 'approve' &&
+    ((node.nodeConfig as any)?.askConfig?.options?.length > 0 ||
+      (node.nodeConfig as any)?.askConfig?.answerType === 'SELECT');
   return (
     [
       ...EXCEPTION_NODES_TYPE,
@@ -667,8 +672,10 @@ export const needUpdateNodes = (node: ChildNode): boolean => {
     ].includes(node.type) ||
     // HITL-Approve 的 branches 在更新后端口数可能变化
     (node.type === NodeTypeEnum.HumanInteraction &&
-      (node.nodeConfig as any)?.hitlMode === 'approve')
-  ); // 需要更新端口配置的节点：异常节点 + 条件 + 路由决策 + HITL 审批
+      (node.nodeConfig as any)?.hitlMode === 'approve') ||
+    // HITL-Ask options 模式端口数可能变化
+    isHitlWithOptions
+  ); // 需要更新端口配置的节点：异常节点 + 条件 + 路由决策 + HITL 审批/询问选项
 };
 
 export const showExceptionPort = (
