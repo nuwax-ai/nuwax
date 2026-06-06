@@ -1,3 +1,4 @@
+import { UnifiedChatSession } from '@/components/business-component';
 import CreateNewPlugin from '@/components/CreateNewPlugin';
 import LabelStar from '@/components/LabelStar';
 import PluginAutoAnalysis from '@/components/PluginAutoAnalysis';
@@ -22,6 +23,7 @@ import {
   HttpContentTypeEnum,
   HttpMethodEnum,
 } from '@/types/enums/common';
+import { AgentTypeEnum } from '@/types/enums/space';
 import type { BindConfigWithSub } from '@/types/interfaces/common';
 import type { PluginInfo } from '@/types/interfaces/plugin';
 import { CascaderChange, CascaderValue } from '@/utils';
@@ -56,6 +58,7 @@ const SpacePluginTool: React.FC = () => {
   const spaceId = Number(params.spaceId);
 
   const [form] = Form.useForm();
+
   const {
     isModalOpen,
     setIsModalOpen,
@@ -423,196 +426,257 @@ const SpacePluginTool: React.FC = () => {
   };
 
   return (
-    <div className={cx('flex', 'h-full')}>
-      <div
-        className={cx(styles.container, 'flex', 'flex-col', 'flex-1', 'h-full')}
-      >
-        <PluginHeader
-          pluginInfo={pluginInfo as PluginInfo}
-          onEdit={() => setOpenPlugin(true)}
-          onToggleHistory={() => setVisible(!visible)}
-          onSave={handleSaveConfig}
-          onTryRun={handleTryRun}
-          onPublish={handlePublish}
-        />
-        <div className={cx(styles['main-container'], 'scroll-container')}>
-          <h3 className={cx(styles.title, 'mb-12')}>
-            {dict('PC.Pages.SpacePluginTool.requestConfig')}
-          </h3>
-          <Form
-            form={form}
-            initialValues={{
-              method: HttpMethodEnum.GET,
-              contentType: HttpContentTypeEnum.OTHER,
-              timeout: 10,
+    <div className={cx(styles['page-container'])}>
+      <PluginHeader
+        pluginInfo={pluginInfo as PluginInfo}
+        onEdit={() => setOpenPlugin(true)}
+        onToggleHistory={() => setVisible(!visible)}
+        onSave={handleSaveConfig}
+        onTryRun={handleTryRun}
+        onPublish={handlePublish}
+      />
+      <div className={cx(styles['layout-wrapper'])}>
+        {/* 左侧：调试聊天会话区域 */}
+        <div className={cx(styles['chat-section'])}>
+          <UnifiedChatSession
+            conversationId={0}
+            messageList={[]}
+            roleInfo={{
+              assistant: {
+                name: '调试智能体',
+                avatar: 'https://img.yzcdn.cn/vant/cat.jpeg',
+              },
+              system: {
+                name: '调试智能体',
+                avatar: 'https://img.yzcdn.cn/vant/cat.jpeg',
+              },
             }}
-            layout="vertical"
-            requiredMark={customizeRequiredMark}
-          >
-            <Form.Item
-              label={
-                <LabelStar
-                  label={dict('PC.Pages.SpacePluginTool.requestMethodAndPath')}
-                />
-              }
-            >
-              <div className={cx('flex')}>
-                <Form.Item name="method" noStyle>
-                  <Select
-                    rootClassName={cx(styles['request-select'])}
-                    options={REQUEST_METHOD}
-                    placeholder={dict(
-                      'PC.Pages.SpacePluginTool.selectRequestMethod',
-                    )}
-                  />
-                </Form.Item>
-                <Form.Item
-                  name="url"
-                  rules={[
-                    {
-                      required: true,
-                      message: dict(
-                        'PC.Pages.SpacePluginTool.inputRequestPath',
-                      ),
-                    },
-                  ]}
-                  noStyle
-                >
-                  <Input
-                    placeholder={dict(
-                      'PC.Pages.SpacePluginTool.inputRequestPath',
-                    )}
-                  />
-                </Form.Item>
-              </div>
-            </Form.Item>
-            <Form.Item
-              name="contentType"
-              label={dict('PC.Pages.SpacePluginTool.requestContentFormat')}
-              rules={[
-                {
-                  required: true,
-                  message: dict(
-                    'PC.Pages.SpacePluginTool.selectRequestContentFormat',
-                  ),
-                },
-              ]}
-            >
-              <Radio.Group options={REQUEST_CONTENT_FORMAT} />
-            </Form.Item>
-            <Form.Item
-              name="timeout"
-              label={dict('PC.Pages.SpacePluginTool.requestTimeoutConfig')}
-              rules={[
-                {
-                  required: true,
-                  message: dict('PC.Pages.SpacePluginTool.inputTimeoutConfig'),
-                },
-              ]}
-            >
-              <Input
-                placeholder={dict(
-                  'PC.Pages.SpacePluginTool.requestTimeoutPlaceholder',
-                )}
-              />
-            </Form.Item>
-          </Form>
-          <PluginConfigTitle
-            title={dict('PC.Pages.SpacePluginTool.inputConfig')}
-            onClick={handleInputConfigAdd}
-          />
-          <Table<BindConfigWithSub>
-            className={cx(
-              styles['table-wrap'],
-              styles['mb-24'],
-              'overflow-hide',
+            isLoading={false}
+            loadingMore={false}
+            isMoreMessage={false}
+            isConversationActive={false}
+            messageBottomMode="chat"
+            loadingSuggest={false}
+            chatSuggestList={[]}
+            agentInfo={{
+              id: undefined,
+              name: '调试智能体',
+              icon: 'https://img.yzcdn.cn/vant/cat.jpeg',
+              type: AgentTypeEnum.ChatBot,
+            }}
+            onSendMessage={() => {}}
+            onClear={async () => {}}
+            onLoadMoreMessage={() => {}}
+            readonly={false}
+            enableMention={false}
+            placeholder={dict(
+              'PC.Components.ChatInputHomeMentionEditor.placeholderWithoutMention',
             )}
-            columns={inputColumns}
-            dataSource={inputConfigArgs}
-            pagination={false}
-            expandable={{
-              childrenColumnName: 'subArgs',
-              defaultExpandAllRows: true,
-              expandedRowKeys: expandedRowKeys,
-              expandIcon: () => null,
-            }}
-          />
-          <PluginConfigTitle
-            title={dict('PC.Pages.SpacePluginTool.outputConfig')}
-            onClick={handleOutputConfigAdd}
-            extra={
-              <Button onClick={handleAutoResolve}>
-                {dict('PC.Pages.SpacePluginTool.autoAnalysis')}
-              </Button>
-            }
-          />
-          <Table<BindConfigWithSub>
-            className={cx(styles['table-wrap'], 'overflow-hide')}
-            columns={outputColumns}
-            dataSource={outputConfigArgs}
-            pagination={false}
-            expandable={{
-              childrenColumnName: 'subArgs',
-              // 初始时，是否展开所有行
-              defaultExpandAllRows: true,
-              expandedRowKeys: outputExpandedRowKeys,
-              expandIcon: () => null,
-            }}
-          />
-          {/*试运行弹窗*/}
-          <PluginTryRunModal
-            inputConfigArgs={inputConfigArgs}
-            inputExpandedRowKeys={expandedRowKeys}
-            pluginId={pluginId}
-            pluginName={pluginInfo?.name as string}
-            open={isModalOpen}
-            onCancel={() => setIsModalOpen(false)}
-          />
-          {/*自动解析弹窗组件*/}
-          <PluginAutoAnalysis
-            inputConfigArgs={inputConfigArgs}
-            inputExpandedRowKeys={expandedRowKeys}
-            pluginId={pluginId}
-            pluginName={pluginInfo?.name as string}
-            open={autoAnalysisOpen}
-            onCancel={() => setAutoAnalysisOpen(false)}
-            onConfirm={handleOutputConfigArgs}
+            messageViewRef={undefined}
           />
         </div>
+
+        {/* 右侧：原有的插件详情和配置表单内容区域 */}
+        <div className={cx(styles['detail-section'])}>
+          <div className={cx('flex', 'h-full')}>
+            <div
+              className={cx(
+                styles.container,
+                'flex',
+                'flex-col',
+                'flex-1',
+                'h-full',
+              )}
+            >
+              <div className={cx(styles['main-container'], 'scroll-container')}>
+                <h3 className={cx(styles.title, 'mb-12')}>
+                  {dict('PC.Pages.SpacePluginTool.requestConfig')}
+                </h3>
+                <Form
+                  form={form}
+                  initialValues={{
+                    method: HttpMethodEnum.GET,
+                    contentType: HttpContentTypeEnum.OTHER,
+                    timeout: 10,
+                  }}
+                  layout="vertical"
+                  requiredMark={customizeRequiredMark}
+                >
+                  <Form.Item
+                    label={
+                      <LabelStar
+                        label={dict(
+                          'PC.Pages.SpacePluginTool.requestMethodAndPath',
+                        )}
+                      />
+                    }
+                  >
+                    <div className={cx('flex')}>
+                      <Form.Item name="method" noStyle>
+                        <Select
+                          rootClassName={cx(styles['request-select'])}
+                          options={REQUEST_METHOD}
+                          placeholder={dict(
+                            'PC.Pages.SpacePluginTool.selectRequestMethod',
+                          )}
+                        />
+                      </Form.Item>
+                      <Form.Item
+                        name="url"
+                        rules={[
+                          {
+                            required: true,
+                            message: dict(
+                              'PC.Pages.SpacePluginTool.inputRequestPath',
+                            ),
+                          },
+                        ]}
+                        noStyle
+                      >
+                        <Input
+                          placeholder={dict(
+                            'PC.Pages.SpacePluginTool.inputRequestPath',
+                          )}
+                        />
+                      </Form.Item>
+                    </div>
+                  </Form.Item>
+                  <Form.Item
+                    name="contentType"
+                    label={dict(
+                      'PC.Pages.SpacePluginTool.requestContentFormat',
+                    )}
+                    rules={[
+                      {
+                        required: true,
+                        message: dict(
+                          'PC.Pages.SpacePluginTool.selectRequestContentFormat',
+                        ),
+                      },
+                    ]}
+                  >
+                    <Radio.Group options={REQUEST_CONTENT_FORMAT} />
+                  </Form.Item>
+                  <Form.Item
+                    name="timeout"
+                    label={dict(
+                      'PC.Pages.SpacePluginTool.requestTimeoutConfig',
+                    )}
+                    rules={[
+                      {
+                        required: true,
+                        message: dict(
+                          'PC.Pages.SpacePluginTool.inputTimeoutConfig',
+                        ),
+                      },
+                    ]}
+                  >
+                    <Input
+                      placeholder={dict(
+                        'PC.Pages.SpacePluginTool.requestTimeoutPlaceholder',
+                      )}
+                    />
+                  </Form.Item>
+                </Form>
+                <PluginConfigTitle
+                  title={dict('PC.Pages.SpacePluginTool.inputConfig')}
+                  onClick={handleInputConfigAdd}
+                />
+                <Table<BindConfigWithSub>
+                  className={cx(
+                    styles['table-wrap'],
+                    styles['mb-24'],
+                    'overflow-hide',
+                  )}
+                  columns={inputColumns}
+                  dataSource={inputConfigArgs}
+                  pagination={false}
+                  expandable={{
+                    childrenColumnName: 'subArgs',
+                    defaultExpandAllRows: true,
+                    expandedRowKeys: expandedRowKeys,
+                    expandIcon: () => null,
+                  }}
+                />
+                <PluginConfigTitle
+                  title={dict('PC.Pages.SpacePluginTool.outputConfig')}
+                  onClick={handleOutputConfigAdd}
+                  extra={
+                    <Button onClick={handleAutoResolve}>
+                      {dict('PC.Pages.SpacePluginTool.autoAnalysis')}
+                    </Button>
+                  }
+                />
+                <Table<BindConfigWithSub>
+                  className={cx(styles['table-wrap'], 'overflow-hide')}
+                  columns={outputColumns}
+                  dataSource={outputConfigArgs}
+                  pagination={false}
+                  expandable={{
+                    childrenColumnName: 'subArgs',
+                    // 初始时，是否展开所有行
+                    defaultExpandAllRows: true,
+                    expandedRowKeys: outputExpandedRowKeys,
+                    expandIcon: () => null,
+                  }}
+                />
+                {/*试运行弹窗*/}
+                <PluginTryRunModal
+                  inputConfigArgs={inputConfigArgs}
+                  inputExpandedRowKeys={expandedRowKeys}
+                  pluginId={pluginId}
+                  pluginName={pluginInfo?.name as string}
+                  open={isModalOpen}
+                  onCancel={() => setIsModalOpen(false)}
+                />
+                {/*自动解析弹窗组件*/}
+                <PluginAutoAnalysis
+                  inputConfigArgs={inputConfigArgs}
+                  inputExpandedRowKeys={expandedRowKeys}
+                  pluginId={pluginId}
+                  pluginName={pluginInfo?.name as string}
+                  open={autoAnalysisOpen}
+                  onCancel={() => setAutoAnalysisOpen(false)}
+                  onConfirm={handleOutputConfigArgs}
+                />
+              </div>
+            </div>
+            {/*插件发布弹窗*/}
+            <PublishComponentModal
+              mode={AgentComponentTypeEnum.Plugin}
+              targetId={pluginId}
+              spaceId={spaceId}
+              category={pluginInfo?.category}
+              open={openModal}
+              onlyShowTemplate={false}
+              // 取消发布
+              onCancel={() => setOpenModal(false)}
+              onConfirm={handleConfirmPublishPlugin}
+            />
+            {/*版本历史*/}
+            <VersionHistory
+              headerClassName={cx(styles['version-history-header'])}
+              targetId={pluginId}
+              targetName={pluginInfo?.name}
+              targetType={AgentComponentTypeEnum.Plugin}
+              permissions={pluginInfo?.permissions || []}
+              visible={visible}
+              onClose={() => setVisible(false)}
+            />
+            {/*修改插件弹窗*/}
+            <CreateNewPlugin
+              open={openPlugin}
+              id={pluginInfo?.id}
+              icon={pluginInfo?.icon}
+              name={pluginInfo?.name}
+              description={pluginInfo?.description}
+              mode={CreateUpdateModeEnum.Update}
+              onCancel={() => setOpenPlugin(false)}
+              onConfirm={handleConfirmUpdate}
+            />
+          </div>
+        </div>
       </div>
-      {/*插件发布弹窗*/}
-      <PublishComponentModal
-        mode={AgentComponentTypeEnum.Plugin}
-        targetId={pluginId}
-        spaceId={spaceId}
-        category={pluginInfo?.category}
-        open={openModal}
-        onlyShowTemplate={false}
-        // 取消发布
-        onCancel={() => setOpenModal(false)}
-        onConfirm={handleConfirmPublishPlugin}
-      />
-      {/*版本历史*/}
-      <VersionHistory
-        headerClassName={cx(styles['version-history-header'])}
-        targetId={pluginId}
-        targetName={pluginInfo?.name}
-        targetType={AgentComponentTypeEnum.Plugin}
-        permissions={pluginInfo?.permissions || []}
-        visible={visible}
-        onClose={() => setVisible(false)}
-      />
-      {/*修改插件弹窗*/}
-      <CreateNewPlugin
-        open={openPlugin}
-        id={pluginInfo?.id}
-        icon={pluginInfo?.icon}
-        name={pluginInfo?.name}
-        description={pluginInfo?.description}
-        mode={CreateUpdateModeEnum.Update}
-        onCancel={() => setOpenPlugin(false)}
-        onConfirm={handleConfirmUpdate}
-      />
     </div>
   );
 };
