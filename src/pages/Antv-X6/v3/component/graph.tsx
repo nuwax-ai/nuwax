@@ -98,6 +98,7 @@ const initGraph = ({
   createNodeByPortOrEdge,
   onSaveNode,
   onClickBlank,
+  flowKind,
 }: GraphProp): Graph => {
   const graphContainer = document.getElementById(containerId);
   if (!graphContainer) throw new Error('Container not found');
@@ -177,6 +178,7 @@ const initGraph = ({
             Modal.destroyAll();
           }}
           isLoop={isInLoop}
+          flowKind={flowKind}
         />
       </div>
     );

@@ -159,6 +159,8 @@ export interface GraphContainerProps {
   onClickBlank: () => void;
   onRefresh: () => void;
   onInit: () => void;
+  /** 当前流程类型，传递给 port/edge 快捷添加面板 */
+  flowKind?: import('@/types/enums/common').FlowKindEnum;
 }
 
 export interface GraphRect {
@@ -256,6 +258,8 @@ export interface GraphProp {
   // 通过连接桩或者边创建节点
   createNodeByPortOrEdge: (config: CreateNodeByPortOrEdgeProps) => void;
   onClickBlank: () => void;
+  /** 当前流程类型，用于 port/edge 快捷添加面板的节点过滤 */
+  flowKind?: import('@/types/enums/common').FlowKindEnum;
 }
 
 export interface ExceptionItemProps extends ExceptionHandleConfig {

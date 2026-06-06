@@ -1,6 +1,6 @@
 import { useFlowKind } from '@/contexts/FlowKindContext';
 import { t } from '@/services/i18nRuntime';
-import { NodeTypeEnum } from '@/types/enums/common';
+import { FlowKindEnum, NodeTypeEnum } from '@/types/enums/common';
 import { StencilChildNode } from '@/types/interfaces/graph';
 import { SearchOutlined } from '@ant-design/icons';
 import { Input } from 'antd';
@@ -15,6 +15,7 @@ interface Prop {
   ) => void;
   isLoop?: boolean;
   portName?: string;
+  flowKind?: FlowKindEnum;
 }
 
 const renderIcon = (url: string) => {
@@ -33,8 +34,13 @@ const renderIcon = (url: string) => {
   );
 };
 
-const StencilContent = ({ dragChild, isLoop = false }: Prop) => {
-  const flowKind = useFlowKind();
+const StencilContent = ({
+  dragChild,
+  isLoop = false,
+  flowKind: flowKindProp,
+}: Prop) => {
+  const flowKindFromCtx = useFlowKind();
+  const flowKind = flowKindProp ?? flowKindFromCtx;
   const [searchText, setSearchText] = useState('');
 
   const matchesFlowKind = (child: StencilChildNode) =>

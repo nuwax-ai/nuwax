@@ -62,6 +62,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       onClickBlank,
       onInit,
       onRefresh,
+      flowKind,
     },
     ref,
   ) => {
@@ -676,6 +677,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         createNodeByPortOrEdge,
         onSaveNode: onSaveNode,
         onClickBlank: onClickBlank,
+        flowKind,
       });
 
       const cleanup = EventHandlers({

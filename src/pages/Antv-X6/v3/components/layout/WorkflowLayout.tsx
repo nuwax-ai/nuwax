@@ -5,6 +5,7 @@ import OtherOperations from '@/components/OtherAction';
 import PublishComponentModal from '@/components/PublishComponentModal';
 import TestRun from '@/components/TestRun';
 import VersionHistory from '@/components/VersionHistory';
+import { useFlowKind } from '@/contexts/FlowKindContext';
 import { testRunList } from '@/pages/Antv-X6/v3/constants/node.constants';
 import {
   AgentAddComponentStatusEnum,
@@ -204,6 +205,7 @@ const WorkflowLayout: React.FC<WorkflowLayoutProps> = ({
   flowControlModel,
   onFlowControlModelChange,
 }) => {
+  const flowKind = useFlowKind();
   return (
     <div id="container">
       <Header
@@ -257,6 +259,7 @@ const WorkflowLayout: React.FC<WorkflowLayoutProps> = ({
               onClickBlank={handleClickBlank}
               onInit={handleInitLoading}
               onRefresh={handleRefreshGraph}
+              flowKind={flowKind}
             />
           </Spin>
 
