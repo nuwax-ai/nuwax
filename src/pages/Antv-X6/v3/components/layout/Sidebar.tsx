@@ -41,6 +41,7 @@ const StencilContent = ({
 }: Prop) => {
   const flowKindFromCtx = useFlowKind();
   const flowKind = flowKindProp ?? flowKindFromCtx;
+  const isAgentFlow = flowKind === FlowKindEnum.AgentFlow;
   const [searchText, setSearchText] = useState('');
 
   const matchesFlowKind = (child: StencilChildNode) =>
@@ -77,48 +78,81 @@ const StencilContent = ({
       .filter((item) => item.children.length > 0);
   }, [asideList, flowKind, isLoop, searchText]);
 
-  return (
-    <div className="stencil-panel">
-      <div className="stencil-panel-header">
-        <Input
-          placeholder={
-            t('PC.Pages.AntvX6Stencil.searchPlaceholder') || 'Search nodes...'
-          }
-          prefix={<SearchOutlined />}
-          size="small"
-          allowClear
-          value={searchText}
-          onChange={(e) => setSearchText(e.target.value)}
-          className="stencil-search"
-        />
+  // AgentFlow: vertical list sidebar style
+  if (isAgentFlow) {
+    return (
+      <div className="stencil-panel">
+        <div className="stencil-panel-header">
+          <Input
+            placeholder={
+              t('PC.Pages.AntvX6Stencil.searchPlaceholder') || 'Search nodes...'
+            }
+            prefix={<SearchOutlined />}
+            size="small"
+            allowClear
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            className="stencil-search"
+          />
+        </div>
+        <div className="stencil-panel-body">
+          {filteredGroups.map((item) => (
+            <div className="stencil-group" key={item.key}>
+              {item.name && (
+                <div className="stencil-group-title">{item.name}</div>
+              )}
+              <div className="stencil-group-content">
+                {item.children.map((child, childIndex) => (
+                  <div
+                    className="stencil-node-item"
+                    draggable="true"
+                    key={`${child.type}-${childIndex}`}
+                    onDragEnd={(e) => handleDragStart(child, e)}
+                    onClick={() => handleDragStart(child)}
+                  >
+                    {renderIcon(child.bgIcon || '')}
+                    <span className="stencil-node-label">{child.name}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+          {filteredGroups.length === 0 && (
+            <div className="stencil-empty">
+              {t('PC.Pages.AntvX6Stencil.noMatches') || 'No matches found'}
+            </div>
+          )}
+        </div>
       </div>
-      <div className="stencil-panel-body">
+    );
+  }
+
+  // Workflow v3: original two-column grid Popover stencil
+  return (
+    <div className="stencil-content">
+      <p className="stencil-title">
+        {t('PC.Pages.AntvX6Stencil.nodeSelectorTitle')}
+      </p>
+      <div className="stencil-list-style">
         {filteredGroups.map((item) => (
-          <div className="stencil-group" key={item.key}>
-            {item.name && (
-              <div className="stencil-group-title">{item.name}</div>
-            )}
-            <div className="stencil-group-content">
+          <div className="stencil-list-item" key={item.key}>
+            {item.name && <p className="stencil-list-title">{item.name}</p>}
+            <div className="stencil-list-content">
               {item.children.map((child, childIndex) => (
                 <div
-                  className="stencil-node-item"
+                  className="child-content dis-left"
                   draggable="true"
                   key={`${child.type}-${childIndex}`}
                   onDragEnd={(e) => handleDragStart(child, e)}
                   onClick={() => handleDragStart(child)}
                 >
                   {renderIcon(child.bgIcon || '')}
-                  <span className="stencil-node-label">{child.name}</span>
+                  <span>{child.name}</span>
                 </div>
               ))}
             </div>
           </div>
         ))}
-        {filteredGroups.length === 0 && (
-          <div className="stencil-empty">
-            {t('PC.Pages.AntvX6Stencil.noMatches') || 'No matches found'}
-          </div>
-        )}
       </div>
     </div>
   );
