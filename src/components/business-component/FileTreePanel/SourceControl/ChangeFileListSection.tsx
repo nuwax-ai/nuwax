@@ -108,6 +108,10 @@ const ChangeFileListSection: React.FC<ChangeFileListSectionProps> = ({
   const isDeletedFile = (item: ChangeListItem) =>
     item.statusMeta.kind === 'deleted';
 
+  /** 是否为合并冲突文件（大红加粗展示） */
+  const isConflictFile = (item: ChangeListItem) =>
+    item.statusMeta.kind === 'conflict';
+
   const renderStatusBadge = (item: ChangeListItem) => (
     <span
       className={cx(
@@ -133,6 +137,7 @@ const ChangeFileListSection: React.FC<ChangeFileListSectionProps> = ({
           selectedChangeFile,
         ),
         [styles['change-item-deleted']]: isDeletedFile(item),
+        [styles['change-item-conflict']]: isConflictFile(item),
       })}
       onClick={() => onFileClick?.(item.fileId, section)}
       onContextMenu={(e) => onContextMenu?.(e, item.fileId)}
@@ -176,6 +181,7 @@ const ChangeFileListSection: React.FC<ChangeFileListSectionProps> = ({
         <span
           className={fileTreeCx(fileTreeStyles.fileName, {
             [styles['file-name-deleted']]: isDeletedFile(item),
+            [styles['file-name-conflict']]: isConflictFile(item),
           })}
         >
           {item.fileName}

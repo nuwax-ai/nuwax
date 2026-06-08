@@ -319,6 +319,34 @@ const SourceControlPanel: React.FC<SourceControlPanelProps> = ({
     setCommitMessage('');
   };
 
+  /** 是否为合并冲突文件 */
+  const isConflictFile = useCallback(
+    (fileId: string, section: ChangeListSection) => {
+      const item = changeFiles.find((file) => file.fileId === fileId);
+      if (!item) {
+        return false;
+      }
+      return section === 'staged'
+        ? item.stagedStatus === 'conflict'
+        : item.unstagedStatus === 'conflict';
+    },
+    [changeFiles],
+  );
+
+  /**
+   * 点击变更文件：冲突文件打开代码编辑器，其余文件打开 diff 对比
+   */
+  const handleFileClick = useCallback(
+    (fileId: string, section: ChangeListSection) => {
+      if (isConflictFile(fileId, section)) {
+        onOpenFile?.(fileId);
+        return;
+      }
+      onFileClick?.(fileId, section);
+    },
+    [isConflictFile, onFileClick, onOpenFile],
+  );
+
   /** 切换视图模式 */
   const handleToggleViewMode = useCallback(() => {
     if (!hasAnyChanges) {
@@ -397,7 +425,7 @@ const SourceControlPanel: React.FC<SourceControlPanelProps> = ({
             viewMode={viewMode}
             section="staged"
             selectedChangeFile={selectedChangeFile}
-            onFileClick={onFileClick}
+            onFileClick={handleFileClick}
             onContextMenu={handleContextMenu(true)}
             onFolderContextMenu={handleFolderContextMenu(true)}
           />
@@ -410,7 +438,7 @@ const SourceControlPanel: React.FC<SourceControlPanelProps> = ({
           section="unstaged"
           selectedChangeFile={selectedChangeFile}
           emptyText={dict('PC.Pages.ConversationAgentSourceControl.noChanges')}
-          onFileClick={onFileClick}
+          onFileClick={handleFileClick}
           onContextMenu={handleContextMenu(false)}
           onFolderContextMenu={handleFolderContextMenu(false)}
         />

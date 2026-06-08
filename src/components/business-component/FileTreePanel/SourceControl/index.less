@@ -6,6 +6,8 @@
 @source-control-status-font-size: 11px;
 // 已删除文件：文件名、删除横线、D 角标统一颜色
 @source-control-deleted-color: @red3;
+// 合并冲突文件：文件名、C 角标统一大红色
+@source-control-conflict-color: @red6;
 
 .source-control {
   display: flex;
@@ -231,6 +233,20 @@
       color: @source-control-deleted-color;
     }
   }
+
+  // 合并冲突文件：大红加粗
+  &-conflict {
+    .file-name,
+    .file-path {
+      color: @source-control-conflict-color;
+      font-weight: @fontWeightStrong;
+    }
+  }
+}
+
+.file-name-conflict {
+  color: @source-control-conflict-color;
+  font-weight: @fontWeightStrong;
 }
 
 .status-badge {
@@ -258,9 +274,10 @@
     color: @source-control-deleted-color;
   }
 
-  // 冲突（VS Code 红/紫）
+  // 冲突：大红色加粗
   &--conflict {
-    color: @red5;
+    color: @source-control-conflict-color;
+    font-weight: @fontWeightStrong;
   }
 
   // 重命名
