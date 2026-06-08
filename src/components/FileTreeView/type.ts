@@ -16,9 +16,9 @@ export interface ChangeFileInfo {
   fileId: string;
   fileContent: string;
   originalFileContent: string;
-  /** 暂存区状态（存在于 status.staged / created 等时） */
+  /** 暂存区状态（存在于 status.staged 等时） */
   stagedStatus?: ChangeFileGitStatusKind;
-  /** 工作区未暂存状态（modified / deleted / untracked / conflict 等） */
+  /** 工作区未暂存状态（created / modified / deleted / untracked / conflict 等） */
   unstagedStatus?: ChangeFileGitStatusKind;
 }
 

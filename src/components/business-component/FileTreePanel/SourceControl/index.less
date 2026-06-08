@@ -177,8 +177,10 @@
 .change-item {
   display: flex;
   align-items: center;
-  gap: @source-control-compact-gap;
-  padding: @marginXxs @paddingSm;
+  gap: 4px;
+  padding: 4px @paddingSm;
+  font-size: 13px;
+  color: #5e5e5b;
   cursor: pointer;
   transition: background-color 0.2s ease;
 
@@ -211,15 +213,19 @@
 
   .file-name {
     flex-shrink: 0;
-    font-size: @fontSizeSm;
-    color: @colorText;
+    height: 22px;
+    font-size: @fontSize;
+    font-family: @fontFamilyCode;
+    color: #5e5e5b;
   }
 
   .file-path {
     flex: 1;
     min-width: 0;
-    font-size: @fontSizeSm;
-    color: @colorTextTertiary;
+    height: 22px;
+    font-size: @fontSize;
+    font-family: @fontFamilyCode;
+    color: #5e5e5b;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;

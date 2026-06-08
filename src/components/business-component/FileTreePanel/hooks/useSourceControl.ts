@@ -423,8 +423,8 @@ export const useSourceControl = ({
 
   /**
    * 刷新 Git 变更列表（仅 status 接口）
-   * - 暂存的更改：status.staged + status.created
-   * - 更改：status.modified + deleted + untracked + conflicted
+   * - 暂存的更改：status.staged
+   * - 更改：status.created + modified + deleted + untracked + conflicted
    */
   const refreshGitList = useCallback(async () => {
     if (!projectId || isRefreshingGitList) {
@@ -449,12 +449,14 @@ export const useSourceControl = ({
       const statusFileIds = mergeGitStatusFileIds(statusResponse.data);
 
       setChangeFiles((prev) => {
+        // 将 Git status 转为变更文件列表
         const nextChangeFiles = buildChangeFilesFromGitStatus(
           statusResponse.data!,
           statusFileIds,
           prev,
           fileManagement.findFileNode,
         );
+        // 派生暂存区文件 ID 集合
         setStagedFileIds(deriveStagedFileIds(nextChangeFiles));
         return nextChangeFiles;
       });

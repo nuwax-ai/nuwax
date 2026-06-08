@@ -106,7 +106,7 @@ const SourceControlPanel: React.FC<SourceControlPanelProps> = ({
     [changeFiles],
   );
 
-  /** 暂存的更改：status.staged / created 等 */
+  /** 暂存的更改：status.staged 等 */
   const stagedItems = useMemo(
     () =>
       baseChangeItems

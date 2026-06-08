@@ -32,6 +32,7 @@ export async function commitUncommittedChangesIfAny(
       };
     }
 
+    /** 合并 Git status 中的全部变更文件路径（去重） */
     const fileIds = mergeGitStatusFileIds(statusResponse.data);
     if (fileIds.length === 0) {
       return { committed: false, success: true };

@@ -67,7 +67,7 @@ export interface GitStatusResponse {
   /** 本地落后远程的 commit 数 */
   behind: number;
   /** 当前分支跟踪的远程分支（如 origin/main），未跟踪则为 null */
-  tracking?: string[] | null;
+  tracking?: string | null;
 }
 
 /** Git stash 请求参数 */

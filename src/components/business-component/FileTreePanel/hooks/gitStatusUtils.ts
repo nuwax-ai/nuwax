@@ -9,48 +9,48 @@ import type { FileNode } from '@/types/interfaces/appDev';
 export const mergeGitStatusFileIds = (status: GitStatusResponse): string[] =>
   Array.from(
     new Set([
-      ...status.staged,
-      ...status.created,
-      ...status.modified,
-      ...status.deleted,
+      ...(status.staged ?? []),
+      ...(status.created ?? []),
+      ...(status.modified ?? []),
+      ...(status.deleted ?? []),
       ...(status.untracked ?? []),
       ...(status.renamed ?? []),
-      ...status.conflicted,
+      ...(status.conflicted ?? []),
     ]),
   );
 
-/** 解析暂存区文件状态（staged / created / renamed） */
+/** 解析暂存区文件状态（staged / renamed） */
 export const resolveStagedStatus = (
   fileId: string,
   status: GitStatusResponse,
 ): ChangeFileGitStatusKind | undefined => {
-  if (status.created.includes(fileId)) {
-    return 'added';
-  }
   if (status.renamed?.includes(fileId)) {
     return 'renamed';
   }
-  if (status.staged.includes(fileId)) {
+  if (status.staged?.includes(fileId)) {
     return 'modified';
   }
   return undefined;
 };
 
-/** 解析工作区未暂存文件状态（modified / deleted / untracked / conflict） */
+/** 解析工作区未暂存文件状态（created / modified / deleted / untracked / conflict） */
 export const resolveUnstagedStatus = (
   fileId: string,
   status: GitStatusResponse,
 ): ChangeFileGitStatusKind | undefined => {
+  if (status.created?.includes(fileId)) {
+    return 'added';
+  }
   if (status.untracked?.includes(fileId)) {
     return 'untracked';
   }
-  if (status.conflicted.includes(fileId)) {
+  if (status.conflicted?.includes(fileId)) {
     return 'conflict';
   }
-  if (status.modified.includes(fileId)) {
+  if (status.modified?.includes(fileId)) {
     return 'modified';
   }
-  if (status.deleted.includes(fileId)) {
+  if (status.deleted?.includes(fileId)) {
     return 'deleted';
   }
   if (status.renamed?.includes(fileId)) {
@@ -70,7 +70,7 @@ export const buildChangeFilesFromGitStatus = (
   findFileNode: (fileId: string) => FileNode | null,
 ): ChangeFileInfo[] => {
   const prevMap = new Map(prevChangeFiles.map((item) => [item.fileId, item]));
-  const deletedSet = new Set(status.deleted);
+  const deletedSet = new Set(status.deleted ?? []);
 
   return fileIds.map((fileId) => {
     const existing = prevMap.get(fileId);
