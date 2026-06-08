@@ -1,6 +1,7 @@
 import { SvgIcon } from '@/components/base';
 import {
   AppDevFileTreePanel,
+  GitVersionRecordPanel,
   useSourceControl,
 } from '@/components/business-component/FileTreePanel';
 import ConditionRender from '@/components/ConditionRender';
@@ -179,6 +180,9 @@ const AppDev: React.FC = () => {
 
   // 版本历史弹窗状态
   const [openVersionHistory, setOpenVersionHistory] = useState(false);
+
+  // Git 版本记录面板（主内容区展示）
+  const [gitVersionPanelOpen, setGitVersionPanelOpen] = useState(false);
 
   // 发布智能体弹窗状态
   const [openPublishComponentModal, setOpenPublishComponentModal] =
@@ -1559,6 +1563,11 @@ const AppDev: React.FC = () => {
                     },
                     onExportProject: handleExportProject,
                   }}
+                  // 版本记录相关
+                  gitVersionRecordData={{
+                    onOpen: () => setGitVersionPanelOpen((prev) => !prev),
+                    disabled: !hasValidProjectId,
+                  }}
                   // 通用状态
                   isChatLoading={chat.isChatLoading}
                 />
@@ -1566,170 +1575,199 @@ const AppDev: React.FC = () => {
               {/* 主内容区域 */}
               <div className={styles.contentArea}>
                 <div className={styles.contentRow}>
-                  {/* FileTreePanel 组件 */}
-                  {activeTab !== 'preview' && (
-                    <AppDevFileTreePanel
-                      files={currentDisplayFiles}
-                      // 是否处于版本对比模式
-                      isComparing={versionCompare.isComparing}
-                      // 当前选中的文件ID
-                      selectedFileId={
-                        versionCompare.isComparing
-                          ? workspace.activeFile
-                          : fileManagement.fileContentState.selectedFile
-                      }
-                      // 已展开的文件夹ID集合
-                      expandedFolders={
-                        fileManagement.fileTreeState.expandedFolders
-                      }
-                      // 文件选择回调
-                      onFileSelect={(fileId) => {
-                        sourceControl.clearSelectedDiff();
-                        if (versionCompare.isComparing) {
-                          updateWorkspace({ activeFile: fileId });
-                        } else {
-                          fileManagement.switchToFile(fileId);
-                          setActiveTab('code');
-                        }
-                      }}
-                      // 文件夹展开/折叠回调
-                      onToggleFolder={fileManagement.toggleFolder}
-                      // 删除文件回调
-                      onDeleteFile={isFileOperating ? noop : handleDeleteClick}
-                      // 重命名文件回调
-                      onRenameFile={
-                        isFileOperating ? asyncNoopFalse : handleRenameFile
-                      }
-                      // 上传项目回调
-                      onUploadProject={
-                        isFileOperating
-                          ? noop
-                          : () => setIsUploadModalVisible(true)
-                      }
-                      // 上传单个文件回调
-                      onUploadSingleFile={
-                        isFileOperating ? asyncNoop : handleRightClickUpload
-                      }
-                      // 工作空间信息（用于版本模式判断）
-                      workspace={workspace}
-                      // 文件管理方法
-                      fileManagement={fileManagement}
-                      // 是否正在AI聊天加载中
-                      isChatLoading={chat.isChatLoading}
-                      // 文件树初始化 loading 状态
-                      isFileTreeInitializing={
-                        fileManagement.isFileTreeInitializing
-                      }
-                      // =================源代码管理相关=================
-                      sourceControl={{
-                        gitWorkspace: {
+                  {gitVersionPanelOpen ? (
+                    <div className={styles.gitVersionPanelCol}>
+                      <GitVersionRecordPanel
+                        workspace={{
                           workspaceType: 'pageApp',
-                          projectId,
-                        },
-                        changeFiles: sourceControl.changeFiles,
-                        selectedChangeFile: sourceControl.selectedChangeFile,
-                        isCommitting: sourceControl.isCommitting,
-                        isRefreshingGitList: sourceControl.isRefreshingGitList,
-                        onRefreshGitList: sourceControl.refreshGitList,
-                        onDiffFileSelect: sourceControl.handleDiffFileSelect,
-                        onOpenChangeFile: sourceControl.handleOpenChangeFile,
-                        onAfterDiscardChange: (fileId) => {
-                          void sourceControl.handleDiscardChange([fileId]);
-                        },
-                        onAddToGitignore: sourceControl.handleAddToGitignore,
-                        onCommit: sourceControl.handleCommit,
-                      }}
-                    />
-                  )}
-
-                  {/* 编辑器区域 */}
-                  <div className={styles.editorCol}>
-                    <div className={styles.editorContainer}>
-                      {/* 内容区域 */}
-                      <div className={styles.editorContent}>
-                        <ContentViewer
+                          projectId: projectId ?? null,
+                        }}
+                        onRollbackSuccess={() => {
+                          fileManagement.loadFileTree(true, true);
+                          sourceControl.refreshGitList();
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <>
+                      {/* FileTreePanel 组件 */}
+                      {activeTab !== 'preview' && (
+                        <AppDevFileTreePanel
                           files={currentDisplayFiles}
-                          projectInfo={
-                            projectInfo.projectInfoState?.projectInfo
-                          }
-                          refreshProjectInfo={() => {
-                            // 刷新项目详情(刷新版本列表)
-                            projectInfo.refreshProjectInfo();
-                          }}
-                          mode={activeTab}
+                          // 是否处于版本对比模式
                           isComparing={versionCompare.isComparing}
+                          // 当前选中的文件ID
                           selectedFileId={
                             versionCompare.isComparing
                               ? workspace.activeFile
                               : fileManagement.fileContentState.selectedFile
                           }
-                          fileNode={
-                            versionCompare.isComparing
-                              ? findVersionFileNode(workspace.activeFile)
-                              : fileManagement.findFileNode(
-                                  fileManagement.fileContentState.selectedFile,
-                                )
+                          // 已展开的文件夹ID集合
+                          expandedFolders={
+                            fileManagement.fileTreeState.expandedFolders
                           }
-                          fileContent={
-                            fileManagement.fileContentState.fileContent
-                          }
-                          isLoadingFileContent={
-                            fileManagement.fileContentState.isLoadingFileContent
-                          }
-                          fileContentError={
-                            fileManagement.fileContentState.fileContentError
-                          }
-                          isFileModified={
-                            fileManagement.fileContentState.isFileModified
-                          }
-                          devServerUrl={
-                            projectInfo.hasPermission
-                              ? workspace.devServerUrl
-                              : null
-                          }
-                          isStarting={server.isStarting}
-                          isRestarting={server.isRestarting}
-                          isProjectUploading={isProjectUploading}
-                          serverMessage={server.serverMessage}
-                          serverErrorCode={server.serverErrorCode}
-                          previewRef={previewRef}
-                          designViewerRef={designViewerRef}
-                          onStartDev={server.startServer}
-                          onRestartDev={async () => {
-                            // 使用重启开发服务器 Hook，不切换标签页
-                            await restartDevServer({
-                              shouldSwitchTab: false, // 不切换标签页
-                              delayBeforeRefresh: 500,
-                              showMessage: false,
-                            });
-                          }}
-                          onWhiteScreenOrIframeError={
-                            handleWhiteScreenOrIframeError
-                          }
-                          onContentChange={handleEditorContentChange}
-                          gitDiffFile={sourceControl.selectedDiffFile}
-                          onRefreshFile={() => {
-                            // 关闭设计模式
-                            setIframeDesignMode(false);
-                            // 刷新整个文件树（保持状态，强制刷新）
-                            fileManagement.loadFileTree(true, true);
-                            // 重新加载当前文件内容
-                            if (fileManagement.fileContentState.selectedFile) {
-                              fileManagement.switchToFile(
-                                fileManagement.fileContentState.selectedFile,
-                              );
+                          // 文件选择回调
+                          onFileSelect={(fileId) => {
+                            sourceControl.clearSelectedDiff();
+                            if (versionCompare.isComparing) {
+                              updateWorkspace({ activeFile: fileId });
+                            } else {
+                              fileManagement.switchToFile(fileId);
+                              setActiveTab('code');
                             }
                           }}
-                          onRefreshFileTree={fileManagement.loadFileTree}
-                          findFileNode={fileManagement.findFileNode}
-                          isChatLoading={chat.isChatLoading}
-                          showDevelopingOverlayDuringAgent={
-                            developingOverlayControl.valueForContentViewer
+                          // 文件夹展开/折叠回调
+                          onToggleFolder={fileManagement.toggleFolder}
+                          // 删除文件回调
+                          onDeleteFile={
+                            isFileOperating ? noop : handleDeleteClick
                           }
+                          // 重命名文件回调
+                          onRenameFile={
+                            isFileOperating ? asyncNoopFalse : handleRenameFile
+                          }
+                          // 上传项目回调
+                          onUploadProject={
+                            isFileOperating
+                              ? noop
+                              : () => setIsUploadModalVisible(true)
+                          }
+                          // 上传单个文件回调
+                          onUploadSingleFile={
+                            isFileOperating ? asyncNoop : handleRightClickUpload
+                          }
+                          // 工作空间信息（用于版本模式判断）
+                          workspace={workspace}
+                          // 文件管理方法
+                          fileManagement={fileManagement}
+                          // 是否正在AI聊天加载中
+                          isChatLoading={chat.isChatLoading}
+                          // 文件树初始化 loading 状态
+                          isFileTreeInitializing={
+                            fileManagement.isFileTreeInitializing
+                          }
+                          // =================源代码管理相关=================
+                          sourceControl={{
+                            gitWorkspace: {
+                              workspaceType: 'pageApp',
+                              projectId,
+                            },
+                            changeFiles: sourceControl.changeFiles,
+                            selectedChangeFile:
+                              sourceControl.selectedChangeFile,
+                            isCommitting: sourceControl.isCommitting,
+                            isRefreshingGitList:
+                              sourceControl.isRefreshingGitList,
+                            onRefreshGitList: sourceControl.refreshGitList,
+                            onDiffFileSelect:
+                              sourceControl.handleDiffFileSelect,
+                            onOpenChangeFile:
+                              sourceControl.handleOpenChangeFile,
+                            onAfterDiscardChange: (fileId) => {
+                              void sourceControl.handleDiscardChange([fileId]);
+                            },
+                            onAddToGitignore:
+                              sourceControl.handleAddToGitignore,
+                            onCommit: sourceControl.handleCommit,
+                          }}
                         />
+                      )}
+
+                      {/* 编辑器区域 */}
+                      <div className={styles.editorCol}>
+                        <div className={styles.editorContainer}>
+                          {/* 内容区域 */}
+                          <div className={styles.editorContent}>
+                            <ContentViewer
+                              files={currentDisplayFiles}
+                              projectInfo={
+                                projectInfo.projectInfoState?.projectInfo
+                              }
+                              refreshProjectInfo={() => {
+                                // 刷新项目详情(刷新版本列表)
+                                projectInfo.refreshProjectInfo();
+                              }}
+                              mode={activeTab}
+                              isComparing={versionCompare.isComparing}
+                              selectedFileId={
+                                versionCompare.isComparing
+                                  ? workspace.activeFile
+                                  : fileManagement.fileContentState.selectedFile
+                              }
+                              fileNode={
+                                versionCompare.isComparing
+                                  ? findVersionFileNode(workspace.activeFile)
+                                  : fileManagement.findFileNode(
+                                      fileManagement.fileContentState
+                                        .selectedFile,
+                                    )
+                              }
+                              fileContent={
+                                fileManagement.fileContentState.fileContent
+                              }
+                              isLoadingFileContent={
+                                fileManagement.fileContentState
+                                  .isLoadingFileContent
+                              }
+                              fileContentError={
+                                fileManagement.fileContentState.fileContentError
+                              }
+                              isFileModified={
+                                fileManagement.fileContentState.isFileModified
+                              }
+                              devServerUrl={
+                                projectInfo.hasPermission
+                                  ? workspace.devServerUrl
+                                  : null
+                              }
+                              isStarting={server.isStarting}
+                              isRestarting={server.isRestarting}
+                              isProjectUploading={isProjectUploading}
+                              serverMessage={server.serverMessage}
+                              serverErrorCode={server.serverErrorCode}
+                              previewRef={previewRef}
+                              designViewerRef={designViewerRef}
+                              onStartDev={server.startServer}
+                              onRestartDev={async () => {
+                                // 使用重启开发服务器 Hook，不切换标签页
+                                await restartDevServer({
+                                  shouldSwitchTab: false, // 不切换标签页
+                                  delayBeforeRefresh: 500,
+                                  showMessage: false,
+                                });
+                              }}
+                              onWhiteScreenOrIframeError={
+                                handleWhiteScreenOrIframeError
+                              }
+                              onContentChange={handleEditorContentChange}
+                              gitDiffFile={sourceControl.selectedDiffFile}
+                              onRefreshFile={() => {
+                                // 关闭设计模式
+                                setIframeDesignMode(false);
+                                // 刷新整个文件树（保持状态，强制刷新）
+                                fileManagement.loadFileTree(true, true);
+                                // 重新加载当前文件内容
+                                if (
+                                  fileManagement.fileContentState.selectedFile
+                                ) {
+                                  fileManagement.switchToFile(
+                                    fileManagement.fileContentState
+                                      .selectedFile,
+                                  );
+                                }
+                              }}
+                              onRefreshFileTree={fileManagement.loadFileTree}
+                              findFileNode={fileManagement.findFileNode}
+                              isChatLoading={chat.isChatLoading}
+                              showDevelopingOverlayDuringAgent={
+                                developingOverlayControl.valueForContentViewer
+                              }
+                            />
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
+                    </>
+                  )}
                 </div>
               </div>
               {/* 开发日志查看器 */}

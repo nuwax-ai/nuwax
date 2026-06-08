@@ -2126,6 +2126,8 @@ export const ZH_HK: SystemLangMap = {
   "PC.Pages.AppDevEditorHeaderRight.starting": "啓動中...",
   "PC.Pages.AppDevEditorHeaderRight.switchVersionButton": "切換到 v{0} 版本",
   "PC.Pages.AppDevEditorHeaderRight.viewLog": "查看日誌",
+  "PC.Pages.AppDevEditorHeaderRight.gitVersionHistory": "版本記錄",
+  "PC.Components.FileTreePanel.GitVersionRecord.noProject": "請先選擇項目後再查看版本記錄",
   "PC.Pages.AppDevEditorHeaderRight.openDesignMode": "開啟設計模式",
   "PC.Pages.AppDevEditorHeaderRight.closeDesignMode": "關閉設計模式",
   "PC.Pages.AppDevFileOperatingMask.defaultTip": "文件操作進行中，請稍候...",

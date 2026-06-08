@@ -1,7 +1,7 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import { VERSION_CONSTANTS } from '@/constants/appDevConstants';
 import { t } from '@/services/i18nRuntime';
-import { SyncOutlined } from '@ant-design/icons';
+import { BranchesOutlined, SyncOutlined } from '@ant-design/icons';
 import { Alert, Badge, Button, Dropdown, Tag, Tooltip } from 'antd';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useModel } from 'umi';
@@ -41,6 +41,12 @@ interface ConsoleButtonProps {
   showDevLogConsole: boolean;
   hasErrorInLatestBlock: boolean;
   onToggleDevLogConsole: () => void;
+}
+
+// Git 版本记录相关接口
+interface GitVersionRecordButtonProps {
+  onOpen: () => void;
+  disabled?: boolean;
 }
 
 // 更多操作相关接口
@@ -101,6 +107,12 @@ interface EditorHeaderRightProps {
     onRestartServer: () => void;
     onFullscreenPreview: () => void;
     onExportProject: () => void;
+  };
+
+  // Git 版本记录（可选）
+  gitVersionRecordData?: {
+    onOpen: () => void;
+    disabled?: boolean;
   };
 
   // 通用状态
@@ -363,6 +375,25 @@ const VersionSelector: React.FC<VersionSelectorProps> = ({
 };
 
 /**
+ * Git 版本记录按钮
+ * 打开 Git 提交历史面板
+ */
+const GitVersionRecordButton: React.FC<GitVersionRecordButtonProps> = ({
+  onOpen,
+  disabled = false,
+}) => (
+  <Tooltip title={t('PC.Pages.AppDevEditorHeaderRight.gitVersionHistory')}>
+    <Button
+      type="text"
+      className={styles.consoleButton}
+      icon={<BranchesOutlined style={{ fontSize: 16 }} />}
+      onClick={onOpen}
+      disabled={disabled}
+    />
+  </Tooltip>
+);
+
+/**
  * 控制台按钮组件
  * 负责控制台相关的所有交互逻辑和状态管理
  */
@@ -523,6 +554,9 @@ const EditorHeaderRight: React.FC<EditorHeaderRightProps> = ({
   // 更多操作相关
   actionsData,
 
+  // Git 版本记录
+  gitVersionRecordData,
+
   // 通用状态
   isChatLoading,
 }) => {
@@ -566,6 +600,13 @@ const EditorHeaderRight: React.FC<EditorHeaderRightProps> = ({
             getActionText={versionData.getActionText}
             isChatLoading={isChatLoading}
           />
+
+          {gitVersionRecordData && (
+            <GitVersionRecordButton
+              onOpen={gitVersionRecordData.onOpen}
+              disabled={gitVersionRecordData.disabled || isChatLoading}
+            />
+          )}
 
           {/* 控制台按钮 - 保持现有样式 */}
           <ConsoleButton

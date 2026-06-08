@@ -144,6 +144,26 @@ export interface GitLogParams extends GitTagsParams {
   branch?: string;
 }
 
+/** 单条 Git 提交记录 */
+export interface GitCommitLogItem {
+  commitHash: string;
+  shortHash?: string;
+  message: string;
+  author?: string;
+  committedAt: string;
+  tag?: 'latest' | 'stable';
+}
+
+/**
+ * Git log 响应 data 字段
+ * 对应接口 `/api/git/log` 返回体中的 `data`
+ */
+export interface GitLogResponseData {
+  commits: GitCommitLogItem[];
+  branch: string;
+  total: number;
+}
+
 /** Git init 请求参数 */
 export type GitInitParams = GitTagsParams;
 

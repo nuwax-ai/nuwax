@@ -10,6 +10,7 @@ import type {
   GitDiscardParams,
   GitInitParams,
   GitLogParams,
+  GitLogResponseData,
   GitResetParams,
   GitRevertParams,
   GitStashListParams,
@@ -155,7 +156,7 @@ export function apiGitReset(
  */
 export function apiGitLogList(
   data: GitLogParams,
-): Promise<RequestResponse<null>> {
+): Promise<RequestResponse<GitLogResponseData>> {
   return request('/api/git/log', {
     method: 'POST',
     data,

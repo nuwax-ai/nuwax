@@ -1,4 +1,5 @@
 import FileTreePanel, {
+  GitVersionRecordPanel,
   TaskAgentFileTree,
   useConversationAgentSourceControl,
   type SelectedChangeFile,
@@ -70,7 +71,6 @@ import React, {
 import { useLocation, useModel, useParams } from 'umi';
 import AgentArrangeConfigSection from './AgentArrangePanel/AgentArrangeConfigSection';
 import AgentConversationChatPanel from './AgentConversationChatPanel';
-import AgentGitVersionRecordPanel from './AgentGitVersionRecordPanel';
 import ConversationAgentBottomConsole from './ConversationAgentBottomConsole';
 import ConversationAgentFilePreview from './ConversationAgentFilePreview';
 import {
@@ -1197,8 +1197,11 @@ const ConversationAgent: React.FC = () => {
   /** 「版本控制」页签：Git 提交记录 */
   const arrangeVersionPanel = useMemo(
     () => (
-      <AgentGitVersionRecordPanel
-        conversationId={devConversationId}
+      <GitVersionRecordPanel
+        workspace={{
+          workspaceType: 'taskAgent',
+          cid: devConversationId ?? null,
+        }}
         defaultAuthor={agentConfigInfo?.name}
         onRollbackSuccess={() => {
           if (devConversationId) {

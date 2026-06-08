@@ -5,6 +5,7 @@ export { default as FilePreview } from './FilePreview';
 export {
   AppDevFileTreePanel,
   default as FileTreePanel,
+  GitVersionRecordPanel,
   SourceControlPanel,
   TaskAgentFileTree,
   apiGitAdd,

@@ -1,5 +1,7 @@
 export { default as AppDevFileTreePanel } from './AppDevFileTreePanel';
 export type { AppDevFileTreePanelProps } from './AppDevFileTreePanel/types';
+export { default as GitVersionRecordPanel } from './GitVersionRecordPanel';
+export type { GitVersionRecordPanelProps } from './GitVersionRecordPanel';
 export { useConversationAgentSourceControl } from './hooks/useConversationAgentSourceControl';
 export type {
   ConversationAgentSourceControlAdapters,
