@@ -1,4 +1,6 @@
 import { t } from '@/services/i18nRuntime';
+import { NodeTypeEnum } from '@/types/enums/common';
+import { ChildNode, StencilChildNode } from '@/types/interfaces/graph';
 import {
   CaretRightOutlined,
   CompressOutlined,
@@ -7,12 +9,25 @@ import {
   ToolOutlined,
 } from '@ant-design/icons';
 import { Button, Popover, Select } from 'antd';
-import React from 'react';
+import React, { useState } from 'react';
 
+import StencilContent from './Sidebar';
 interface ControlPanelProps {
+  // 拖拽节点到画布
+  dragChild?: (
+    child: StencilChildNode,
+    position?: React.DragEvent<HTMLDivElement>,
+    continueDragCount?: number,
+  ) => void;
+  //   试运行
   handleTestRun: () => void;
+  // 切换画布大小
   changeGraph: (val: number | string) => void;
+  // 当前画布的缩放比例
   zoomSize?: number;
+  // 当前正在展示的节点
+  foldWrapItem?: ChildNode;
+  // 试运行loading
   testRunLoading: boolean;
 }
 const options = [
@@ -47,10 +62,22 @@ const options = [
 
 const ControlPanel: React.FC<ControlPanelProps> = ({
   zoomSize = 1,
+  dragChild,
   handleTestRun,
   changeGraph,
+  foldWrapItem,
   testRunLoading,
 }) => {
+  const [open, setOpen] = useState(false);
+  const [continueDragCount, setContinueDragCount] = useState(0);
+  const handleOpenChange = (newOpen: boolean) => {
+    setOpen(newOpen);
+    setContinueDragCount(0);
+  };
+
+  // AgentFlow 模式：不渲染 StencilContent Popover（侧边栏已包含）
+  const showStencil = dragChild && foldWrapItem;
+
   return (
     <div className="absolute-box">
       <div className="action-section">
@@ -102,6 +129,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
             changeGraph(Number(newVal));
           }}
         />
+        {/* 添加缩放到适配画布 */}
         <Popover
           content={t('PC.Pages.AntvX6ControlPanel.fitCanvas')}
           trigger={['hover']}
@@ -114,6 +142,34 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
             onClick={() => changeGraph(-1)}
           />
         </Popover>
+        {showStencil && (
+          <Popover
+            content={
+              <StencilContent
+                isLoop={foldWrapItem.type === NodeTypeEnum.Loop}
+                dragChild={(
+                  child: StencilChildNode,
+                  position?: React.DragEvent<HTMLDivElement>,
+                ) => {
+                  setContinueDragCount(continueDragCount + 1);
+                  dragChild(child, position, continueDragCount);
+                }}
+              />
+            }
+            trigger={['click']}
+            open={open}
+            onOpenChange={handleOpenChange}
+          >
+            <Button
+              onMouseEnter={() => setOpen(true)}
+              icon={<PlusOutlined />}
+              type="primary"
+              onClick={() => setOpen(true)}
+            >
+              {t('PC.Pages.AntvX6ControlPanel.addNode')}
+            </Button>
+          </Popover>
+        )}
       </div>
       <div className="action-section" style={{ marginLeft: 18 }}>
         <ToolOutlined

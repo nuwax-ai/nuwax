@@ -11,7 +11,11 @@ import {
   AgentAddComponentStatusEnum,
   AgentComponentTypeEnum,
 } from '@/types/enums/agent';
-import { CreateUpdateModeEnum, NodeTypeEnum } from '@/types/enums/common';
+import {
+  CreateUpdateModeEnum,
+  FlowKindEnum,
+  NodeTypeEnum,
+} from '@/types/enums/common';
 import { CreatedNodeItem, DefaultObjectType } from '@/types/interfaces/common';
 import {
   ChildNode,
@@ -129,7 +133,6 @@ export interface WorkflowLayoutProps {
   // AgentFlow Header extensions
   onAutoArrange?: () => void;
   handleTestRun?: () => void;
-  testRunLoading?: boolean;
   flowControlModel?: string;
   onFlowControlModelChange?: (model: string) => void;
 }
@@ -201,11 +204,12 @@ const WorkflowLayout: React.FC<WorkflowLayoutProps> = ({
   // AgentFlow Header extensions
   onAutoArrange,
   handleTestRun: handleTestRunProp,
-  testRunLoading: testRunLoadingProp,
   flowControlModel,
   onFlowControlModelChange,
 }) => {
   const flowKind = useFlowKind();
+  const isAgentFlow = flowKind === FlowKindEnum.AgentFlow;
+
   return (
     <div id="container">
       <Header
@@ -223,23 +227,57 @@ const WorkflowLayout: React.FC<WorkflowLayoutProps> = ({
         onBack={onBack}
         onAutoArrange={onAutoArrange}
         handleTestRun={handleTestRunProp}
-        testRunLoading={testRunLoadingProp}
+        testRunLoading={testRunLoading}
         flowControlModel={flowControlModel}
         onFlowControlModelChange={onFlowControlModelChange}
       />
 
-      <div className="workflow-body">
-        <div className="workflow-sidebar">
-          <StencilContent
-            isLoop={foldWrapItem.type === NodeTypeEnum.Loop}
-            dragChild={(child, position) => {
-              dragChild(child, position);
-            }}
-          />
-          <div className="workflow-minimap" id="minimap-container" />
-        </div>
+      {isAgentFlow ? (
+        <div className="workflow-body">
+          <div className="workflow-sidebar">
+            <StencilContent
+              isLoop={foldWrapItem.type === NodeTypeEnum.Loop}
+              dragChild={(child, position) => {
+                dragChild(child, position);
+              }}
+            />
+            <div className="workflow-minimap" id="minimap-container" />
+          </div>
 
-        <div className="workflow-canvas">
+          <div className="workflow-canvas">
+            <Spin
+              spinning={globalLoadingTime > 0}
+              indicator={<LoadingOutlined spin />}
+              wrapperClassName="spin-workflow-global-style"
+            >
+              <GraphContainer
+                graphParams={graphParams}
+                ref={graphRef}
+                changeDrawer={handleNodeClick}
+                changeEdge={nodeChangeEdge}
+                changeCondition={changeNode}
+                removeNode={deleteNode}
+                copyNode={copyNode}
+                changeZoom={changeZoom}
+                createNodeByPortOrEdge={createNodeByPortOrEdge}
+                onSaveNode={handleSaveNode}
+                onClickBlank={handleClickBlank}
+                onInit={handleInitLoading}
+                onRefresh={handleRefreshGraph}
+                flowKind={flowKind}
+              />
+            </Spin>
+
+            <ControlPanel
+              changeGraph={changeGraph}
+              handleTestRun={testRunAll}
+              testRunLoading={testRunLoading}
+              zoomSize={(info?.extension?.size as number) ?? 1}
+            />
+          </div>
+        </div>
+      ) : (
+        <>
           <Spin
             spinning={globalLoadingTime > 0}
             indicator={<LoadingOutlined spin />}
@@ -259,18 +297,19 @@ const WorkflowLayout: React.FC<WorkflowLayoutProps> = ({
               onClickBlank={handleClickBlank}
               onInit={handleInitLoading}
               onRefresh={handleRefreshGraph}
-              flowKind={flowKind}
             />
           </Spin>
 
           <ControlPanel
+            dragChild={dragChild}
+            foldWrapItem={foldWrapItem}
             changeGraph={changeGraph}
             handleTestRun={testRunAll}
             testRunLoading={testRunLoading}
             zoomSize={(info?.extension?.size as number) ?? 1}
           />
-        </div>
-      </div>
+        </>
+      )}
 
       <FoldWrap
         className="fold-wrap-style"
