@@ -2165,6 +2165,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Components.FileTreePanel.GitVersionRecord.statusDeleted": "削除",
   "PC.Components.FileTreePanel.GitVersionRecord.statusRenamed": "名前変更",
   "PC.Components.FileTreePanel.GitVersionRecord.noChangedFiles": "このコミットに変更ファイルはありません",
+  "PC.Components.FileTreePanel.GitVersionRecord.autoSaveBeforeRestoreMessage": "復元前に変更を自動保存しました",
   "PC.Pages.AppDevEditorHeaderRight.openDesignMode": "デザインモードをオンにする",
   "PC.Pages.AppDevEditorHeaderRight.closeDesignMode": "デザインモードをオフにする",
   "PC.Pages.AppDevFileOperatingMask.defaultTip": "ファイル操作が進行中です。お待ちください...",

@@ -2145,6 +2145,7 @@ export const ZH_HK: SystemLangMap = {
   "PC.Components.FileTreePanel.GitVersionRecord.statusDeleted": "刪除",
   "PC.Components.FileTreePanel.GitVersionRecord.statusRenamed": "重命名",
   "PC.Components.FileTreePanel.GitVersionRecord.noChangedFiles": "該提交暫無變更文件",
+  "PC.Components.FileTreePanel.GitVersionRecord.autoSaveBeforeRestoreMessage": "回滾前自動保存您的更改",
   "PC.Pages.AppDevEditorHeaderRight.openDesignMode": "開啟設計模式",
   "PC.Pages.AppDevEditorHeaderRight.closeDesignMode": "關閉設計模式",
   "PC.Pages.AppDevFileOperatingMask.defaultTip": "文件操作進行中，請稍候...",

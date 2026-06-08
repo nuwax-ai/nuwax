@@ -19,6 +19,7 @@ import { Button, Empty, message } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import GitVersionCommitChangesPanel from './GitVersionCommitChangesPanel';
+import { commitUncommittedChangesIfAny } from './gitRollbackUtils';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -274,7 +275,20 @@ const GitVersionRecordPanel: React.FC<GitVersionRecordPanelProps> = ({
         async () => {
           setRollbackLoadingHash(commit.hash);
           try {
-            const { code, message: msg } = await apiGitRevert({
+            const commitResult = await commitUncommittedChangesIfAny(
+              workspaceParams,
+            );
+            if (!commitResult.success) {
+              message.error(
+                commitResult.errorMessage ||
+                  dict(
+                    'PC.Pages.ConversationAgent.AgentGitVersionRecord.rollbackFailed',
+                  ),
+              );
+              return;
+            }
+
+            const { code, message: revertMsg } = await apiGitRevert({
               ...workspaceParams,
               target: commit.hash,
             });
@@ -288,7 +302,7 @@ const GitVersionRecordPanel: React.FC<GitVersionRecordPanelProps> = ({
               onRollbackSuccess?.();
             } else {
               message.error(
-                msg ||
+                revertMsg ||
                   dict(
                     'PC.Pages.ConversationAgent.AgentGitVersionRecord.rollbackFailed',
                   ),

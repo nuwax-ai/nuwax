@@ -25,6 +25,7 @@ import {
   fetchGitCommitDiffFiles,
   getLineDiffStats,
 } from '../gitCommitDiffUtils';
+import { commitUncommittedChangesIfAny } from '../gitRollbackUtils';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -198,6 +199,7 @@ const GitVersionCommitChangesPanel: React.FC<
     [ensureFileContent],
   );
 
+  // 回滚到指定提交，需二次确认
   const handleRollback = useCallback(() => {
     const shortHash = getShortHash(commit);
     modalConfirm(
@@ -210,7 +212,20 @@ const GitVersionCommitChangesPanel: React.FC<
       async () => {
         setRollbackLoading(true);
         try {
-          const { code, message: msg } = await apiGitRevert({
+          const commitResult = await commitUncommittedChangesIfAny(
+            workspaceParams,
+          );
+          if (!commitResult.success) {
+            message.error(
+              commitResult.errorMessage ||
+                dict(
+                  'PC.Pages.ConversationAgent.AgentGitVersionRecord.rollbackFailed',
+                ),
+            );
+            return;
+          }
+
+          const { code, message: revertMsg } = await apiGitRevert({
             ...workspaceParams,
             target: commit.hash,
           });
@@ -223,7 +238,7 @@ const GitVersionCommitChangesPanel: React.FC<
             onRollbackSuccess?.();
           } else {
             message.error(
-              msg ||
+              revertMsg ||
                 dict(
                   'PC.Pages.ConversationAgent.AgentGitVersionRecord.rollbackFailed',
                 ),
