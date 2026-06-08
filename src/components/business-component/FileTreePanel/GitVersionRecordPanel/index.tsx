@@ -42,11 +42,16 @@ export interface GitVersionRecordPanelProps {
   className?: string;
 }
 
+/** 列表项展示标签（首条默认 latest，非接口字段） */
+type CommitListTag = 'latest' | 'stable';
+
+type CommitListItem = GitCommitLogItem & { tag?: CommitListTag };
+
 /**
- * 获取提交的短 hash（优先 shortHash，否则取 commitHash 前 7 位）
+ * 获取提交的短 hash（取 hash 前 7 位）
  */
 const getShortHash = (commit: GitCommitLogItem): string =>
-  commit.shortHash || commit.commitHash?.slice(0, 7) || '';
+  commit.hash?.slice(0, 7) || '';
 
 /**
  * 根据工作空间类型返回空状态文案
@@ -107,11 +112,11 @@ const GitVersionRecordPanel: React.FC<GitVersionRecordPanelProps> = ({
   const hasMore = commits.length < total;
 
   /** 为列表项补充展示标签（首条默认标记为 latest） */
-  const commitsWithTags = useMemo(
+  const commitsWithTags = useMemo<CommitListItem[]>(
     () =>
       commits.map((item, index) => ({
         ...item,
-        tag: item.tag ?? (index === 0 ? ('latest' as const) : undefined),
+        tag: index === 0 ? ('latest' as const) : undefined,
       })),
     [commits],
   );
@@ -215,7 +220,7 @@ const GitVersionRecordPanel: React.FC<GitVersionRecordPanelProps> = ({
   /** 打开某次提交的变更文件列表 */
   const openCommitChanges = useCallback(
     (commit: GitCommitLogItem) => {
-      setSelectedHash(commit.commitHash);
+      setSelectedHash(commit.hash);
       if (onViewChanges) {
         onViewChanges(commit);
         return;
@@ -255,7 +260,7 @@ const GitVersionRecordPanel: React.FC<GitVersionRecordPanelProps> = ({
   // 首屏加载完成后默认选中第一条提交
   useEffect(() => {
     if (commits.length > 0 && !selectedHash) {
-      setSelectedHash(commits[0].commitHash);
+      setSelectedHash(commits[0].hash);
     } else if (commits.length === 0) {
       setSelectedHash(null);
     }
@@ -284,11 +289,11 @@ const GitVersionRecordPanel: React.FC<GitVersionRecordPanelProps> = ({
           'PC.Pages.ConversationAgent.AgentGitVersionRecord.rollbackConfirmContent',
         ).replace('{0}', shortHash),
         async () => {
-          setRollbackLoadingHash(commit.commitHash);
+          setRollbackLoadingHash(commit.hash);
           try {
             const { code, message: msg } = await apiGitRevert({
               ...workspaceParams,
-              target: commit.commitHash,
+              target: commit.hash,
             });
             if (code === SUCCESS_CODE) {
               message.success(
@@ -322,7 +327,7 @@ const GitVersionRecordPanel: React.FC<GitVersionRecordPanelProps> = ({
   );
 
   /** 渲染 latest / stable 标签 */
-  const renderTag = (tag?: GitCommitLogItem['tag']) => {
+  const renderTag = (tag?: CommitListTag) => {
     if (!tag) {
       return null;
     }
@@ -406,13 +411,12 @@ const GitVersionRecordPanel: React.FC<GitVersionRecordPanelProps> = ({
             showLoader={loadingMore}
           >
             {commitsWithTags.map((commit) => {
-              const isActive = selectedHash === commit.commitHash;
-              const isRollbackLoading =
-                rollbackLoadingHash === commit.commitHash;
+              const isActive = selectedHash === commit.hash;
+              const isRollbackLoading = rollbackLoadingHash === commit.hash;
               return (
                 // 单条提交：hash、消息、作者、查看变更、回滚
                 <div
-                  key={commit.commitHash}
+                  key={commit.hash}
                   className={cx(styles.item, {
                     [styles['item-active']]: isActive,
                   })}
@@ -433,12 +437,12 @@ const GitVersionRecordPanel: React.FC<GitVersionRecordPanelProps> = ({
                       {renderTag(commit.tag)}
                     </div>
                     <span className={cx(styles.time)}>
-                      {formatTimeAgo(commit.committedAt)}
+                      {formatTimeAgo(commit.date)}
                     </span>
                   </div>
                   <p className={cx(styles.message)}>{commit.message}</p>
                   <span className={cx(styles.author)}>
-                    {commit.author || defaultAuthor}
+                    {commit.author_name || defaultAuthor}
                   </span>
                   <div className={cx(styles.actions)}>
                     <Button

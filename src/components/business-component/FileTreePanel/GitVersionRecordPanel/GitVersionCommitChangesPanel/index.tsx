@@ -45,7 +45,7 @@ export interface GitVersionCommitChangesPanelProps {
 }
 
 const getShortHash = (commit: GitCommitLogItem): string =>
-  commit.shortHash || commit.commitHash?.slice(0, 7) || '';
+  commit.hash?.slice(0, 7) || '';
 
 const getFileName = (path: string): string => {
   const segments = path.split('/');
@@ -93,13 +93,11 @@ const GitVersionCommitChangesPanel: React.FC<
   );
   const [searchKeyword, setSearchKeyword] = useState('');
 
+  // 加载提交的变更文件列表
   const loadCommitFiles = useCallback(async () => {
     setLoading(true);
     try {
-      const list = await fetchGitCommitDiffFiles(
-        workspaceParams,
-        commit.commitHash,
-      );
+      const list = await fetchGitCommitDiffFiles(workspaceParams, commit.hash);
       setFiles(list);
       const contentMap: Record<string, GitCommitDiffFileItem> = {};
       list.forEach((item) => {
@@ -109,15 +107,12 @@ const GitVersionCommitChangesPanel: React.FC<
       });
       setFileContentMap(contentMap);
     } catch {
-      message.error(
-        dict('PC.Components.FileTreePanel.GitVersionRecord.loadDiffFailed'),
-      );
       setFiles([]);
       setFileContentMap({});
     } finally {
       setLoading(false);
     }
-  }, [workspaceParams, commit.commitHash]);
+  }, [workspaceParams, commit.hash]);
 
   useEffect(() => {
     setExpandedPaths(new Set());
@@ -135,6 +130,7 @@ const GitVersionCommitChangesPanel: React.FC<
     return files.filter((file) => file.path.toLowerCase().includes(keyword));
   }, [files, searchKeyword]);
 
+  /** 确保文件内容已加载 */
   const ensureFileContent = useCallback(
     async (path: string) => {
       if (fileContentMap[path]) {
@@ -144,17 +140,13 @@ const GitVersionCommitChangesPanel: React.FC<
       try {
         const list = await fetchGitCommitDiffFiles(
           workspaceParams,
-          commit.commitHash,
+          commit.hash,
           [path],
         );
         const target = list.find((item) => item.path === path) ?? list[0];
         if (target) {
           setFileContentMap((prev) => ({ ...prev, [path]: target }));
         }
-      } catch {
-        message.error(
-          dict('PC.Components.FileTreePanel.GitVersionRecord.loadDiffFailed'),
-        );
       } finally {
         setLoadingPaths((prev) => {
           const next = new Set(prev);
@@ -163,7 +155,7 @@ const GitVersionCommitChangesPanel: React.FC<
         });
       }
     },
-    [fileContentMap, workspaceParams, commit.commitHash],
+    [fileContentMap, workspaceParams, commit.hash],
   );
 
   const toggleFileExpand = useCallback(
@@ -196,7 +188,7 @@ const GitVersionCommitChangesPanel: React.FC<
         try {
           const { code, message: msg } = await apiGitRevert({
             ...workspaceParams,
-            target: commit.commitHash,
+            target: commit.hash,
           });
           if (code === SUCCESS_CODE) {
             message.success(
@@ -273,8 +265,7 @@ const GitVersionCommitChangesPanel: React.FC<
             {getShortHash(commit)}
           </div>
           <div className={cx(styles['commit-meta'])}>
-            {commit.author || defaultAuthor} ·{' '}
-            {formatTimeAgo(commit.committedAt)}
+            {commit.author_name || defaultAuthor} · {formatTimeAgo(commit.date)}
           </div>
         </div>
         <p className={cx(styles['commit-message'])}>{commit.message}</p>

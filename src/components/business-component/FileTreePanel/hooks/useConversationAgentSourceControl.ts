@@ -2,6 +2,7 @@
  * ConversationAgent 源代码管理 Hook
  * 变更列表由外部 fileView 维护，本 Hook 统一 Git 操作与选中状态
  */
+import { fetchGitChangeFileContent } from '@/components/business-component/FileTreePanel/GitVersionRecordPanel/gitCommitDiffUtils';
 import {
   buildGitWorkspaceParams,
   isGitWorkspaceReady,
@@ -16,7 +17,7 @@ import type { ChangeFileInfo } from '@/components/FileTreeView/type';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
 import { message } from 'antd';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 /** ConversationAgent 场景外部适配器 */
 export interface ConversationAgentSourceControlAdapters {
@@ -88,25 +89,90 @@ export const useConversationAgentSourceControl = ({
   );
 
   const [isCommitting, setIsCommitting] = useState(false);
+  /** 通过 apiGitFileContent 拉取的 diff 内容 */
+  const [diffFileContent, setDiffFileContent] = useState<{
+    fileId: string;
+    section: ChangeListSection;
+    originalFileContent: string;
+    fileContent: string;
+  } | null>(null);
 
-  /** 当前选中查看 diff 的文件数据 */
-  const selectedDiffFile = useMemo(
-    () =>
-      selectedChangeFile
-        ? changeFiles.find(
-            (item) => item.fileId === selectedChangeFile.fileId,
-          ) ?? null
-        : null,
-    [changeFiles, selectedChangeFile],
-  );
+  useEffect(() => {
+    if (!selectedChangeFile) {
+      setDiffFileContent(null);
+    }
+  }, [selectedChangeFile]);
 
-  /** 选中修改文件并在右侧展示 diff 预览 */
+  /** 当前选中查看 diff 的文件数据（优先使用 apiGitFileContent 返回内容） */
+  const selectedDiffFile = useMemo(() => {
+    if (!selectedChangeFile) {
+      return null;
+    }
+
+    const base =
+      changeFiles.find((item) => item.fileId === selectedChangeFile.fileId) ??
+      null;
+
+    const apiDiff =
+      diffFileContent &&
+      diffFileContent.fileId === selectedChangeFile.fileId &&
+      diffFileContent.section === selectedChangeFile.section
+        ? diffFileContent
+        : null;
+
+    if (base && apiDiff) {
+      return {
+        ...base,
+        originalFileContent: apiDiff.originalFileContent,
+        fileContent: apiDiff.fileContent,
+      };
+    }
+
+    if (base) {
+      return base;
+    }
+
+    if (apiDiff) {
+      return {
+        fileId: apiDiff.fileId,
+        fileContent: apiDiff.fileContent,
+        originalFileContent: apiDiff.originalFileContent,
+      };
+    }
+
+    return null;
+  }, [changeFiles, selectedChangeFile, diffFileContent]);
+
+  /** 选中修改文件并在右侧展示 diff 预览，并调用 apiGitFileContent 拉取变更内容 */
   const handleDiffFileSelect = useCallback(
     (fileId: string, section: ChangeListSection) => {
       setSelectedChangeFile({ fileId, section });
+      setDiffFileContent(null);
       adapters.onDiffFileSelect?.(fileId, section);
+
+      if (!isGitWorkspaceReady(workspace)) {
+        return;
+      }
+
+      void (async () => {
+        try {
+          const content = await fetchGitChangeFileContent(
+            buildGitWorkspaceParams(workspace),
+            fileId,
+            section,
+          );
+          setDiffFileContent({
+            fileId,
+            section,
+            originalFileContent: content.originalFileContent,
+            fileContent: content.fileContent,
+          });
+        } catch (error) {
+          console.error('Git file content failed:', error);
+        }
+      })();
     },
-    [adapters],
+    [adapters, workspace],
   );
 
   /** 打开更改文件（选中文件并预览，非 diff） */

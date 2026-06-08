@@ -9,6 +9,8 @@ import type {
   GitDiffParams,
   GitDiffResponseData,
   GitDiscardParams,
+  GitFileContentParams,
+  GitFileContentResponseData,
   GitInitParams,
   GitLogParams,
   GitLogResponseData,
@@ -199,6 +201,19 @@ export function apiGitDiff(
   data: GitDiffParams,
 ): Promise<RequestResponse<GitDiffResponseData>> {
   return request('/api/git/diff', {
+    method: 'POST',
+    data,
+  });
+}
+
+/**
+ * Git file content - 获取指定版本的文件内容
+ * 对比两个版本间的文件内容差异。from / to 为 commit hash，paths 指定文件范围，均可为空。
+ */
+export function apiGitFileContent(
+  data: GitFileContentParams,
+): Promise<RequestResponse<GitFileContentResponseData>> {
+  return request('/api/git/file-content', {
     method: 'POST',
     data,
   });

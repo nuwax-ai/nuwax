@@ -2164,7 +2164,6 @@ export const JA_JP: SystemLangMap = {
   "PC.Components.FileTreePanel.GitVersionRecord.statusAdded": "追加",
   "PC.Components.FileTreePanel.GitVersionRecord.statusDeleted": "削除",
   "PC.Components.FileTreePanel.GitVersionRecord.statusRenamed": "名前変更",
-  "PC.Components.FileTreePanel.GitVersionRecord.loadDiffFailed": "変更ファイルの読み込みに失敗しました",
   "PC.Components.FileTreePanel.GitVersionRecord.noChangedFiles": "このコミットに変更ファイルはありません",
   "PC.Pages.AppDevEditorHeaderRight.openDesignMode": "デザインモードをオンにする",
   "PC.Pages.AppDevEditorHeaderRight.closeDesignMode": "デザインモードをオフにする",

@@ -2449,7 +2449,6 @@ export const ZH_CN: SystemLangMap = {
   "PC.Components.FileTreePanel.GitVersionRecord.statusAdded": "新增",
   "PC.Components.FileTreePanel.GitVersionRecord.statusDeleted": "删除",
   "PC.Components.FileTreePanel.GitVersionRecord.statusRenamed": "重命名",
-  "PC.Components.FileTreePanel.GitVersionRecord.loadDiffFailed": "加载变更文件失败",
   "PC.Components.FileTreePanel.GitVersionRecord.noChangedFiles": "该提交暂无变更文件",
   "PC.Pages.ConversationAgent.prototypeTitle": "Agent开发原型",
   "PC.Pages.ConversationAgent.toggleTerminal": "终端",

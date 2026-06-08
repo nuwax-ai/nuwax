@@ -2402,7 +2402,6 @@ export const ZH_TW: SystemLangMap = {
   "PC.Components.FileTreePanel.GitVersionRecord.statusAdded": "新增",
   "PC.Components.FileTreePanel.GitVersionRecord.statusDeleted": "刪除",
   "PC.Components.FileTreePanel.GitVersionRecord.statusRenamed": "重新命名",
-  "PC.Components.FileTreePanel.GitVersionRecord.loadDiffFailed": "載入變更檔案失敗",
   "PC.Components.FileTreePanel.GitVersionRecord.noChangedFiles": "該提交暫無變更檔案",
   "PC.Pages.ConversationAgent.prototypeTitle": "Agent開發原型",
   "PC.Pages.ConversationAgent.toggleTerminal": "終端",

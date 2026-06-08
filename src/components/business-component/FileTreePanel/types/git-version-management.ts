@@ -144,14 +144,13 @@ export interface GitLogParams extends GitTagsParams {
   branch?: string;
 }
 
-/** 单条 Git 提交记录 */
+/** 单条 Git 提交记录（对应 `/api/git/log` commits 单项） */
 export interface GitCommitLogItem {
-  commitHash: string;
-  shortHash?: string;
+  hash: string;
   message: string;
-  author?: string;
-  committedAt: string;
-  tag?: 'latest' | 'stable';
+  author_name: string;
+  author_email: string;
+  date: string;
 }
 
 /**
@@ -160,7 +159,8 @@ export interface GitCommitLogItem {
  */
 export interface GitLogResponseData {
   commits: GitCommitLogItem[];
-  branch: string;
+  logId: string;
+  success: string;
   total: number;
 }
 
@@ -181,8 +181,32 @@ export interface GitDiffParams extends GitTagsParams {
   /*目标提交/引用 */
   to?: string;
 
+  /*对比来源: worktree(工作区vs HEAD), staged(暂存区vs HEAD), commit(两个commit之间) */
+  source?: 'worktree' | 'staged' | 'commit';
+
   /*文件路径列表 */
   paths?: string[];
+}
+
+/** Git file content 请求参数 */
+export interface GitFileContentParams extends GitTagsParams {
+  /*git 引用（commit hash / 分支名 / HEAD / HEAD~1 / worktree / staged） */
+  ref?: string;
+
+  /*文件相对路径 */
+  filePath?: string;
+}
+
+/**
+ * Git file content 响应 data 字段
+ * 对应接口 `/api/git/file-content` 返回体中的 `data`
+ */
+export interface GitFileContentResponseData {
+  success?: boolean;
+  logId?: string;
+  ref?: string;
+  filePath?: string;
+  content: string;
 }
 
 /** 提交 diff 中单文件变更状态 */
@@ -192,7 +216,7 @@ export type GitCommitDiffFileStatus =
   | 'deleted'
   | 'renamed';
 
-/** 提交 diff 中单文件条目 */
+/** 提交 diff 中单文件条目（UI 层归一化结构） */
 export interface GitCommitDiffFileItem {
   path: string;
   status: GitCommitDiffFileStatus;
@@ -202,6 +226,29 @@ export interface GitCommitDiffFileItem {
   newContent: string;
   /** 重命名前的路径 */
   oldPath?: string;
+  /** 单文件原始 unified diff 文本 */
+  unifiedDiff?: string;
+}
+
+/** Git diff summary 中单文件统计 */
+export interface GitDiffSummaryFileItem {
+  /** 文件路径 */
+  file: string;
+  /** 总变更行数 */
+  changes: number;
+  /** 新增行数 */
+  insertions: number;
+  /** 删除行数 */
+  deletions: number;
+  /** 是否二进制文件 */
+  binary: boolean;
+}
+
+/** Git diff summary */
+export interface GitDiffSummary {
+  files: GitDiffSummaryFileItem[];
+  insertions: number;
+  deletions: number;
 }
 
 /**
@@ -209,7 +256,13 @@ export interface GitCommitDiffFileItem {
  * 对应接口 `/api/git/diff` 返回体中的 `data`
  */
 export interface GitDiffResponseData {
-  files: GitCommitDiffFileItem[];
+  success: boolean;
+  logId: string;
+  /** 对比来源: worktree / staged / commit */
+  source: 'worktree' | 'staged' | 'commit';
+  /** 原始 unified diff 文本 */
+  diff: string;
+  summary: GitDiffSummary;
 }
 
 /** Git commit 请求参数 */

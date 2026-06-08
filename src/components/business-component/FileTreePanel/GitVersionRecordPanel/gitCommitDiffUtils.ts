@@ -1,8 +1,14 @@
-import { apiGitDiff } from '@/components/business-component/FileTreePanel/services/git-version-management';
+import {
+  apiGitDiff,
+  apiGitFileContent,
+} from '@/components/business-component/FileTreePanel/services/git-version-management';
+import type { ChangeListSection } from '@/components/business-component/FileTreePanel/SourceControl/changeFileStatus';
 import type {
   GitCommitDiffFileItem,
   GitCommitDiffFileStatus,
   GitDiffResponseData,
+  GitDiffSummaryFileItem,
+  GitFileContentResponseData,
 } from '@/components/business-component/FileTreePanel/types/git-version-management';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 
@@ -12,16 +18,14 @@ type WorkspaceParams = {
   cid?: number;
 };
 
-const STATUS_MAP: Record<string, GitCommitDiffFileStatus> = {
-  M: 'modified',
-  A: 'added',
-  D: 'deleted',
-  R: 'renamed',
-  modified: 'modified',
-  added: 'added',
-  deleted: 'deleted',
-  renamed: 'renamed',
-};
+interface ParsedDiffFile {
+  path: string;
+  oldContent: string;
+  newContent: string;
+  additions: number;
+  deletions: number;
+  rawChunk: string;
+}
 
 /** 行级 diff 统计（用于接口未返回 additions/deletions 时兜底） */
 export const getLineDiffStats = (
@@ -48,67 +52,239 @@ export const getLineDiffStats = (
   return { additions: n - lcs, deletions: m - lcs };
 };
 
-const mapDiffStatus = (raw: unknown): GitCommitDiffFileStatus => {
-  const key = String(raw ?? 'modified');
-  return STATUS_MAP[key] ?? 'modified';
+const normalizeDiffPath = (rawPath: string): string =>
+  rawPath.replace(/^a\//, '').replace(/^b\//, '').trim();
+
+const inferDiffFileStatus = (
+  insertions: number,
+  deletions: number,
+  rawChunk: string,
+): GitCommitDiffFileStatus => {
+  if (rawChunk.includes('--- /dev/null')) {
+    return 'added';
+  }
+  if (rawChunk.includes('+++ /dev/null')) {
+    return 'deleted';
+  }
+  if (rawChunk.includes('rename from') || rawChunk.includes('rename to')) {
+    return 'renamed';
+  }
+  if (insertions > 0 && deletions === 0) {
+    return 'added';
+  }
+  if (insertions === 0 && deletions > 0) {
+    return 'deleted';
+  }
+  return 'modified';
 };
 
-const normalizeDiffFile = (
-  item: Record<string, unknown>,
+/** 从 unified diff 文本块还原旧/新文件内容 */
+const parseDiffChunkContent = (
+  chunk: string,
+): {
+  oldContent: string;
+  newContent: string;
+  additions: number;
+  deletions: number;
+} => {
+  const oldLines: string[] = [];
+  const newLines: string[] = [];
+  let additions = 0;
+  let deletions = 0;
+
+  chunk.split('\n').forEach((line) => {
+    if (
+      line.startsWith('diff --git') ||
+      line.startsWith('index ') ||
+      line.startsWith('--- ') ||
+      line.startsWith('+++ ') ||
+      line.startsWith('@@') ||
+      line.startsWith('new file mode') ||
+      line.startsWith('deleted file mode') ||
+      line.startsWith('similarity index') ||
+      line.startsWith('rename from') ||
+      line.startsWith('rename to')
+    ) {
+      return;
+    }
+
+    if (line.startsWith('+')) {
+      additions += 1;
+      newLines.push(line.slice(1));
+      return;
+    }
+
+    if (line.startsWith('-')) {
+      deletions += 1;
+      oldLines.push(line.slice(1));
+      return;
+    }
+
+    const content = line.startsWith(' ') ? line.slice(1) : line;
+    oldLines.push(content);
+    newLines.push(content);
+  });
+
+  return {
+    oldContent: oldLines.join('\n'),
+    newContent: newLines.join('\n'),
+    additions,
+    deletions,
+  };
+};
+
+/** 将 unified diff 文本按文件拆分并解析 */
+const parseUnifiedDiffToFileContents = (
+  diffText: string,
+): Map<string, ParsedDiffFile> => {
+  const result = new Map<string, ParsedDiffFile>();
+  if (!diffText.trim()) {
+    return result;
+  }
+
+  const chunks = diffText.split(/(?=^diff --git )/m);
+  const fileChunks =
+    chunks.length > 1
+      ? chunks.filter(Boolean)
+      : diffText.split(/(?=^--- )/m).filter((chunk) => chunk.trim());
+
+  fileChunks.forEach((chunk) => {
+    const gitPathMatch = chunk.match(/^diff --git a\/(.+?) b\/(.+?)$/m);
+    const oldPathMatch = chunk.match(/^--- a\/(.+?)(?:\t|$)/m);
+    const newPathMatch = chunk.match(/^\+\+\+ b\/(.+?)(?:\t|$)/m);
+    const rawPath =
+      newPathMatch?.[1] ??
+      oldPathMatch?.[1] ??
+      gitPathMatch?.[2] ??
+      gitPathMatch?.[1] ??
+      '';
+
+    const path = normalizeDiffPath(rawPath);
+    if (!path) {
+      return;
+    }
+
+    const parsed = parseDiffChunkContent(chunk);
+    result.set(path, {
+      path,
+      oldContent: parsed.oldContent,
+      newContent: parsed.newContent,
+      additions: parsed.additions,
+      deletions: parsed.deletions,
+      rawChunk: chunk,
+    });
+  });
+
+  return result;
+};
+
+const buildDiffFileItem = (
+  summaryItem: GitDiffSummaryFileItem,
+  parsed?: ParsedDiffFile,
 ): GitCommitDiffFileItem => {
-  const path = String(item.path ?? item.file ?? item.filePath ?? '');
-  const oldContent = String(
-    item.oldContent ??
-      item.oldText ??
-      item.before ??
-      item.originalContent ??
-      '',
-  );
-  const newContent = String(
-    item.newContent ?? item.newText ?? item.after ?? item.modifiedContent ?? '',
-  );
-  const stats =
-    item.additions !== undefined || item.deletions !== undefined
-      ? {
-          additions: Number(item.additions ?? item.added ?? 0),
-          deletions: Number(
-            item.deletions ?? item.deleted ?? item.removed ?? 0,
-          ),
-        }
-      : getLineDiffStats(oldContent, newContent);
+  const path = summaryItem.file;
+  const oldContent = parsed?.oldContent ?? '';
+  const newContent = parsed?.newContent ?? '';
+  const additions = summaryItem.insertions ?? parsed?.additions ?? 0;
+  const deletions = summaryItem.deletions ?? parsed?.deletions ?? 0;
 
   return {
     path,
-    status: mapDiffStatus(item.status ?? item.changeType),
-    additions: stats.additions,
-    deletions: stats.deletions,
+    status: inferDiffFileStatus(additions, deletions, parsed?.rawChunk ?? ''),
+    additions,
+    deletions,
     oldContent,
     newContent,
-    oldPath: item.oldPath ? String(item.oldPath) : undefined,
+    unifiedDiff: parsed?.rawChunk,
   };
 };
 
 /** 将接口 data 规范为统一的 diff 文件列表 */
 export const normalizeGitDiffResponse = (
-  data: GitDiffResponseData | Record<string, unknown> | null | undefined,
+  data: GitDiffResponseData | null | undefined,
 ): GitCommitDiffFileItem[] => {
   if (!data) {
     return [];
   }
 
-  const rawFiles =
-    (data as GitDiffResponseData).files ??
-    (data as Record<string, unknown>).diffs ??
-    (data as Record<string, unknown>).changes ??
-    [];
+  const parsedByPath = parseUnifiedDiffToFileContents(data.diff ?? '');
+  const summaryFiles = data.summary?.files ?? [];
 
-  if (!Array.isArray(rawFiles)) {
-    return [];
+  if (summaryFiles.length > 0) {
+    return summaryFiles.map((item) =>
+      buildDiffFileItem(item, parsedByPath.get(item.file)),
+    );
   }
 
-  return rawFiles
-    .map((item) => normalizeDiffFile(item as Record<string, unknown>))
-    .filter((item) => Boolean(item.path));
+  return Array.from(parsedByPath.values()).map((parsed) =>
+    buildDiffFileItem(
+      {
+        file: parsed.path,
+        changes: parsed.additions + parsed.deletions,
+        insertions: parsed.additions,
+        deletions: parsed.deletions,
+        binary: false,
+      },
+      parsed,
+    ),
+  );
+};
+
+/** 源代码管理 diff 双端文件内容 */
+export interface GitChangeFileContent {
+  originalFileContent: string;
+  fileContent: string;
+}
+
+/** 将接口 data 规范为字符串文件内容 */
+const normalizeGitFileContent = (
+  data: GitFileContentResponseData | null | undefined,
+): string => String(data?.content ?? '');
+
+/**
+ * 拉取指定 ref 下的单文件内容
+ */
+const fetchSingleGitFileContent = async (
+  workspaceParams: WorkspaceParams,
+  ref: string,
+  filePath: string,
+): Promise<string> => {
+  const res = await apiGitFileContent({
+    ...workspaceParams,
+    ref,
+    filePath,
+  });
+
+  if (res?.code !== SUCCESS_CODE) {
+    // 新文件在 HEAD 下可能不存在，返回空内容用于 diff 左侧
+    if (ref === 'HEAD') {
+      return '';
+    }
+    throw new Error(res?.message || 'Git file content failed');
+  }
+
+  return normalizeGitFileContent(res.data);
+};
+
+/**
+ * 拉取工作区或暂存区中单个文件的变更内容（HEAD vs worktree/staged）
+ * @param fileId 文件路径
+ * @param section unstaged 对比 worktree，staged 对比 staged
+ */
+export const fetchGitChangeFileContent = async (
+  workspaceParams: WorkspaceParams,
+  fileId: string,
+  section: ChangeListSection,
+): Promise<GitChangeFileContent> => {
+  const modifiedRef = section === 'staged' ? 'staged' : 'worktree';
+
+  // 拉取 HEAD 和 worktree/staged 的文件内容
+  const [originalFileContent, fileContent] = await Promise.all([
+    fetchSingleGitFileContent(workspaceParams, 'HEAD', fileId),
+    fetchSingleGitFileContent(workspaceParams, modifiedRef, fileId),
+  ]);
+
+  return { originalFileContent, fileContent };
 };
 
 /**
@@ -122,8 +298,8 @@ export const fetchGitCommitDiffFiles = async (
 ): Promise<GitCommitDiffFileItem[]> => {
   const res = await apiGitDiff({
     ...workspaceParams,
-    from: `${commitHash}^`,
-    to: commitHash,
+    from: commitHash,
+    source: 'commit',
     paths,
   });
 

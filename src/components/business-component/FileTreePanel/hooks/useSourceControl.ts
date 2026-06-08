@@ -2,6 +2,7 @@
  * AppDev 源代码管理（Git）Hook
  * 管理修改文件列表、暂存、提交推送及 diff 预览相关逻辑
  */
+import { fetchGitChangeFileContent } from '@/components/business-component/FileTreePanel/GitVersionRecordPanel/gitCommitDiffUtils';
 import {
   buildChangeFilesFromGitStatus,
   mergeGitStatusFileIds,
@@ -108,21 +109,57 @@ export const useSourceControl = ({
   /** 当前在右侧预览区展示的变更文件（含区块） */
   const [selectedChangeFile, setSelectedChangeFile] =
     useState<SelectedChangeFile | null>(null);
+  /** 通过 apiGitFileContent 拉取的 diff 内容 */
+  const [diffFileContent, setDiffFileContent] = useState<{
+    fileId: string;
+    section: ChangeListSection;
+    originalFileContent: string;
+    fileContent: string;
+  } | null>(null);
   /** Git 提交推送进行中 */
   const [isCommitting, setIsCommitting] = useState(false);
   /** Git 列表刷新进行中 */
   const [isRefreshingGitList, setIsRefreshingGitList] = useState(false);
 
-  /** 根据选中项派生完整的 diff 文件数据 */
-  const selectedDiffFile = useMemo(
-    () =>
-      selectedChangeFile
-        ? changeFiles.find(
-            (item) => item.fileId === selectedChangeFile.fileId,
-          ) ?? null
-        : null,
-    [changeFiles, selectedChangeFile],
-  );
+  /** 根据选中项派生完整的 diff 文件数据（优先使用 apiGitDiff 返回内容） */
+  const selectedDiffFile = useMemo(() => {
+    if (!selectedChangeFile) {
+      return null;
+    }
+
+    const base =
+      changeFiles.find((item) => item.fileId === selectedChangeFile.fileId) ??
+      null;
+
+    const apiDiff =
+      diffFileContent &&
+      diffFileContent.fileId === selectedChangeFile.fileId &&
+      diffFileContent.section === selectedChangeFile.section
+        ? diffFileContent
+        : null;
+
+    if (base && apiDiff) {
+      return {
+        ...base,
+        originalFileContent: apiDiff.originalFileContent,
+        fileContent: apiDiff.fileContent,
+      };
+    }
+
+    if (base) {
+      return base;
+    }
+
+    if (apiDiff) {
+      return {
+        fileId: apiDiff.fileId,
+        fileContent: apiDiff.fileContent,
+        originalFileContent: apiDiff.originalFileContent,
+      };
+    }
+
+    return null;
+  }, [changeFiles, selectedChangeFile, diffFileContent]);
 
   /**
    * 清除指定文件的修改与暂存记录
@@ -144,6 +181,7 @@ export const useSourceControl = ({
   /** 清除 diff 预览选中状态（切换文件树选中项时调用） */
   const clearSelectedDiff = useCallback(() => {
     setSelectedChangeFile(null);
+    setDiffFileContent(null);
   }, []);
 
   /**
@@ -312,14 +350,36 @@ export const useSourceControl = ({
 
   /**
    * 选中修改文件并在右侧展示 diff 预览
-   * 仅触发 diff 预览，不走文件树普通选中逻辑
-   * @param fileId 文件 ID
+   * 调用 apiGitFileContent 拉取 HEAD 与 worktree/staged 文件内容
    */
   const handleDiffFileSelect = useCallback(
     (fileId: string, section: ChangeListSection) => {
       setSelectedChangeFile({ fileId, section });
+      setDiffFileContent(null);
+
+      if (!projectId) {
+        return;
+      }
+
+      void (async () => {
+        try {
+          const content = await fetchGitChangeFileContent(
+            { workspaceType: 'pageApp', projectId: Number(projectId) },
+            fileId,
+            section,
+          );
+          setDiffFileContent({
+            fileId,
+            section,
+            originalFileContent: content.originalFileContent,
+            fileContent: content.fileContent,
+          });
+        } catch (error) {
+          console.error('Git file content failed:', error);
+        }
+      })();
     },
-    [],
+    [projectId],
   );
 
   /**
@@ -329,6 +389,7 @@ export const useSourceControl = ({
   const handleOpenChangeFile = useCallback(
     (fileId: string) => {
       setSelectedChangeFile(null);
+      setDiffFileContent(null);
       fileManagement.switchToFile(fileId);
     },
     [fileManagement],
@@ -531,6 +592,7 @@ export const useSourceControl = ({
         setChangeFiles([]);
         setStagedFileIds(new Set());
         setSelectedChangeFile(null);
+        setDiffFileContent(null);
         // await fileManagement.loadFileTree(true, true);
         // onRefreshProjectInfo?.();
       }

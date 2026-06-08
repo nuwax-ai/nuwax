@@ -2449,7 +2449,6 @@ export const EN_US: SystemLangMap = {
   "PC.Components.FileTreePanel.GitVersionRecord.statusAdded": "Added",
   "PC.Components.FileTreePanel.GitVersionRecord.statusDeleted": "Deleted",
   "PC.Components.FileTreePanel.GitVersionRecord.statusRenamed": "Renamed",
-  "PC.Components.FileTreePanel.GitVersionRecord.loadDiffFailed": "Failed to load changed files",
   "PC.Components.FileTreePanel.GitVersionRecord.noChangedFiles": "No changed files in this commit",
   "PC.Pages.ConversationAgent.prototypeTitle": "Agent Dev Prototype",
   "PC.Pages.ConversationAgent.toggleTerminal": "Terminal",
