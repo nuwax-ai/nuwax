@@ -1636,6 +1636,10 @@ const AppDev: React.FC = () => {
                           onUploadSingleFile={
                             isFileOperating ? asyncNoop : handleRightClickUpload
                           }
+                          onExportProject={
+                            isFileOperating ? undefined : handleExportProject
+                          }
+                          onCollapseAll={fileManagement.collapseAllFolders}
                           // 工作空间信息（用于版本模式判断）
                           workspace={workspace}
                           // 文件管理方法

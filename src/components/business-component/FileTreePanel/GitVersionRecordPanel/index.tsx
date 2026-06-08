@@ -18,6 +18,7 @@ import { EyeOutlined, UndoOutlined } from '@ant-design/icons';
 import { Button, Empty, message } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import GitVersionCommitChangesPanel from './GitVersionCommitChangesPanel';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -95,6 +96,10 @@ const GitVersionRecordPanel: React.FC<GitVersionRecordPanelProps> = ({
   const [loading, setLoading] = useState(false);
   /** 滚动加载下一页中 */
   const [loadingMore, setLoadingMore] = useState(false);
+  /** 当前查看变更详情的提交（非空时展示变更文件列表） */
+  const [activeCommit, setActiveCommit] = useState<GitCommitLogItem | null>(
+    null,
+  );
 
   const workspaceReady = workspace ? isGitWorkspaceReady(workspace) : false;
 
@@ -200,11 +205,25 @@ const GitVersionRecordPanel: React.FC<GitVersionRecordPanelProps> = ({
   /** 重置列表并重新从第 1 页加载（回滚成功后调用） */
   const refreshLog = useCallback(() => {
     setSelectedHash(null);
+    setActiveCommit(null);
     setCommits([]);
     setTotal(0);
     setCurrentPage(0);
     void fetchLogPage(1, false);
   }, [fetchLogPage]);
+
+  /** 打开某次提交的变更文件列表 */
+  const openCommitChanges = useCallback(
+    (commit: GitCommitLogItem) => {
+      setSelectedHash(commit.commitHash);
+      if (onViewChanges) {
+        onViewChanges(commit);
+        return;
+      }
+      setActiveCommit(commit);
+    },
+    [onViewChanges],
+  );
 
   /** 滚动触底时加载下一页 */
   const loadMore = useCallback(() => {
@@ -220,6 +239,7 @@ const GitVersionRecordPanel: React.FC<GitVersionRecordPanelProps> = ({
       return;
     }
     setSelectedHash(null);
+    setActiveCommit(null);
     setCommits([]);
     setTotal(0);
     setCurrentPage(0);
@@ -241,19 +261,12 @@ const GitVersionRecordPanel: React.FC<GitVersionRecordPanelProps> = ({
     }
   }, [commits, selectedHash]);
 
-  /** 查看某次提交的变更，未传入 onViewChanges 时展示提示 */
+  /** 查看某次提交的变更（与点击列表项行为一致） */
   const handleViewChanges = useCallback(
     (commit: GitCommitLogItem) => {
-      setSelectedHash(commit.commitHash);
-      if (onViewChanges) {
-        onViewChanges(commit);
-        return;
-      }
-      message.info(
-        dict('PC.Pages.ConversationAgent.AgentGitVersionRecord.viewChangesTip'),
-      );
+      openCommitChanges(commit);
     },
-    [onViewChanges],
+    [openCommitChanges],
   );
 
   /** 回滚到指定提交，需二次确认 */
@@ -331,6 +344,23 @@ const GitVersionRecordPanel: React.FC<GitVersionRecordPanelProps> = ({
     );
   }
 
+  if (activeCommit && workspaceParams) {
+    return (
+      <GitVersionCommitChangesPanel
+        className={className}
+        commit={activeCommit}
+        branch={branch}
+        workspaceParams={workspaceParams}
+        defaultAuthor={defaultAuthor}
+        onBack={() => setActiveCommit(null)}
+        onRollbackSuccess={() => {
+          refreshLog();
+          onRollbackSuccess?.();
+        }}
+      />
+    );
+  }
+
   return (
     <div className={cx(styles.panel, className)}>
       {/* 标题区：总提交数 + 分支名 */}
@@ -386,10 +416,10 @@ const GitVersionRecordPanel: React.FC<GitVersionRecordPanelProps> = ({
                   className={cx(styles.item, {
                     [styles['item-active']]: isActive,
                   })}
-                  onClick={() => setSelectedHash(commit.commitHash)}
+                  onClick={() => openCommitChanges(commit)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
-                      setSelectedHash(commit.commitHash);
+                      openCommitChanges(commit);
                     }
                   }}
                   role="button"

@@ -7,6 +7,7 @@ import type {
   GitCheckoutParams,
   GitCommitParams,
   GitDiffParams,
+  GitDiffResponseData,
   GitDiscardParams,
   GitInitParams,
   GitLogParams,
@@ -196,7 +197,7 @@ export function apiGitDiscard(
  */
 export function apiGitDiff(
   data: GitDiffParams,
-): Promise<RequestResponse<null>> {
+): Promise<RequestResponse<GitDiffResponseData>> {
   return request('/api/git/diff', {
     method: 'POST',
     data,

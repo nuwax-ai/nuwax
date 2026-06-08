@@ -1,12 +1,18 @@
+import SearchView from '@/components/FileTreeView/SearchView';
 import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
+import FileTreeToolbar from '@/components/business-component/FileTreePanel/FileTreeToolbar';
 import { t } from '@/services/i18nRuntime';
 import { FileNode } from '@/types/interfaces/appDev';
 import { ImportOutlined } from '@ant-design/icons';
+import classNames from 'classnames';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import FileTreePanel from '../PanelCore';
 import AppDevFileTree from './AppDevFileTree';
 import FileContextMenu from './FileContextMenu';
+import styles from './index.less';
 import type { AppDevFileTreePanelProps } from './types';
+
+const cx = classNames.bind(styles);
 
 /**
  * FileTreePanel 组件
@@ -24,6 +30,10 @@ const AppDevFileTreePanel: React.FC<AppDevFileTreePanelProps> = ({
   onRenameFile,
   onUploadProject,
   onUploadSingleFile,
+  onExportProject,
+  onCreateFile,
+  onCreateFolder,
+  onCollapseAll,
   workspace,
   fileManagement,
   isChatLoading = false,
@@ -155,55 +165,72 @@ const AppDevFileTreePanel: React.FC<AppDevFileTreePanelProps> = ({
         showSourceControl={!isComparing && Boolean(sourceControl.onCommit)}
         sourceControl={sourceControl}
       >
-        {/* 文件树容器 */}
-        <div
-          ref={fileTreeScrollRef}
-          onScroll={saveScrollPosition}
-          // 处理空白区域右键菜单显示
-          onContextMenu={(e) => handleContextMenu(e, null)}
-          className="h-full"
-        >
-          {/* 文件树结构 */}
-          {isFileTreeInitializing ? (
-            <AppDevEmptyState
-              type="loading"
-              title={t('PC.Pages.AppDevFileTreePanel.loadingTitle')}
-              description={t('PC.Pages.AppDevFileTreePanel.loadingDescription')}
-            />
-          ) : files.length === 0 ? (
-            <AppDevEmptyState
-              type="no-file" // 使用新的无文件状态
-              buttons={
-                !isComparing
-                  ? [
-                      {
-                        text: t('PC.Pages.AppDevFileTreePanel.importProject'),
-                        icon: <ImportOutlined />,
-                        onClick: onUploadProject,
-                        disabled: isChatLoading,
-                      },
-                    ]
-                  : undefined
-              }
-            />
-          ) : (
-            // 文件树组件
-            <AppDevFileTree
-              files={files}
-              isComparing={isComparing}
-              selectedFileId={selectedFileId}
-              expandedFolders={expandedFolders}
-              renamingNode={renamingNode}
-              onCancelRename={cancelRename}
-              onContextMenu={handleContextMenu}
-              onFileSelect={onFileSelect}
-              onToggleFolder={onToggleFolder}
-              onRenameFile={onRenameFile}
-              workspace={workspace}
-              fileManagement={fileManagement}
-              isChatLoading={isChatLoading}
-            />
-          )}
+        <div className={cx(styles['file-tree-panel'])}>
+          <SearchView files={files} onFileSelect={onFileSelect} />
+
+          <FileTreeToolbar
+            disabled={isChatLoading || isComparing}
+            onExportProject={
+              onExportProject ? () => void onExportProject() : undefined
+            }
+            onCreateFile={onCreateFile}
+            onCreateFolder={onCreateFolder}
+            onUpload={() => handleUploadFromMenu(null)}
+            onCollapseAll={onCollapseAll}
+          />
+
+          {/* 文件树容器 */}
+          <div
+            ref={fileTreeScrollRef}
+            onScroll={saveScrollPosition}
+            // 处理空白区域右键菜单显示
+            onContextMenu={(e) => handleContextMenu(e, null)}
+            className={cx(styles['file-tree-scroll'])}
+          >
+            {/* 文件树结构 */}
+            {isFileTreeInitializing ? (
+              <AppDevEmptyState
+                type="loading"
+                title={t('PC.Pages.AppDevFileTreePanel.loadingTitle')}
+                description={t(
+                  'PC.Pages.AppDevFileTreePanel.loadingDescription',
+                )}
+              />
+            ) : files.length === 0 ? (
+              <AppDevEmptyState
+                type="no-file" // 使用新的无文件状态
+                buttons={
+                  !isComparing
+                    ? [
+                        {
+                          text: t('PC.Pages.AppDevFileTreePanel.importProject'),
+                          icon: <ImportOutlined />,
+                          onClick: onUploadProject,
+                          disabled: isChatLoading,
+                        },
+                      ]
+                    : undefined
+                }
+              />
+            ) : (
+              // 文件树组件
+              <AppDevFileTree
+                files={files}
+                isComparing={isComparing}
+                selectedFileId={selectedFileId}
+                expandedFolders={expandedFolders}
+                renamingNode={renamingNode}
+                onCancelRename={cancelRename}
+                onContextMenu={handleContextMenu}
+                onFileSelect={onFileSelect}
+                onToggleFolder={onToggleFolder}
+                onRenameFile={onRenameFile}
+                workspace={workspace}
+                fileManagement={fileManagement}
+                isChatLoading={isChatLoading}
+              />
+            )}
+          </div>
         </div>
       </FileTreePanel>
     </>

@@ -145,7 +145,8 @@ export const useAppDevFileManagement = ({
 
           // 检查是否是新的扁平格式
           if (Array.isArray(files) && files.length > 0 && files[0].name) {
-            treeData = transformFlatListToTree(files);
+            // 不做前端过滤，按后端返回的完整文件列表构建树（含 .gitignore 等点文件）
+            treeData = transformFlatListToTree(files, false);
           } else if (Array.isArray(files)) {
             // 如果是原有的树形格式，直接使用
             treeData = files as FileNode[];
@@ -520,6 +521,16 @@ export const useAppDevFileManagement = ({
   }, []);
 
   /**
+   * 折叠全部文件夹
+   */
+  const collapseAllFolders = useCallback(() => {
+    setFileTreeState((prev) => ({
+      ...prev,
+      expandedFolders: new Set(),
+    }));
+  }, []);
+
+  /**
    * 切换文件树折叠状态
    */
   const toggleFileTreeCollapse = useCallback(() => {
@@ -817,6 +828,7 @@ export const useAppDevFileManagement = ({
     fileTreeState,
     loadFileTree,
     toggleFolder,
+    collapseAllFolders,
     toggleFileTreeCollapse,
 
     // 文件内容相关

@@ -35,6 +35,18 @@ export interface AppDevFileTreePanelProps {
   /** 上传单个文件回调 */
   onUploadSingleFile: (node: FileNode | null) => void;
 
+  /** 导出项目回调 */
+  onExportProject?: () => void | Promise<void>;
+
+  /** 新建文件回调 */
+  onCreateFile?: () => void;
+
+  /** 新建文件夹回调 */
+  onCreateFolder?: () => void;
+
+  /** 折叠全部文件夹回调 */
+  onCollapseAll?: () => void;
+
   /** 工作空间信息（用于版本模式判断） */
   workspace?: { activeFile: string };
 

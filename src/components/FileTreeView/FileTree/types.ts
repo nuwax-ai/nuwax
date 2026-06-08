@@ -36,3 +36,9 @@ export interface FileTreeProps {
   /** 重命名文件回调 */
   onConfirmRenameFile: (node: FileNode, newName: string) => void;
 }
+
+/** FileTree 组件对外暴露的方法 */
+export interface FileTreeRef {
+  /** 折叠全部文件夹 */
+  collapseAll: () => void;
+}

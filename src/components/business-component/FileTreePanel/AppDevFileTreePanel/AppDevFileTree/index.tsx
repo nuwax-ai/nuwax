@@ -172,8 +172,8 @@ const AppDevFileTree: React.FC<AppDevFileTreeProps> = ({
               isSelected ? styles.activeFile : ''
             }`}
             onClick={() => {
-              // 跳过以"."为前缀的隐藏文件和重命名模式
-              if (node.name.startsWith('.') || isRenaming) {
+              // 重命名模式
+              if (isRenaming) {
                 return;
               }
 
@@ -203,13 +203,7 @@ const AppDevFileTree: React.FC<AppDevFileTreeProps> = ({
               />
             ) : (
               // 文件名
-              <span
-                className={`${styles.fileName} ${
-                  node.name.startsWith('.') ? styles.hiddenFile : ''
-                }`}
-              >
-                {node.name}
-              </span>
+              <span className={styles.fileName}>{node.name}</span>
             )}
 
             {/* 正常模式：显示文件状态 */}

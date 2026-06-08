@@ -27,6 +27,8 @@ export interface ConversationAgentFileViewProps {
   readOnly?: boolean;
   /** 上传多个文件回调 */
   onUploadFiles?: (files: File[], filePaths: string[]) => Promise<void>;
+  /** 导出项目回调 */
+  onExportProject?: () => Promise<void>;
   /** 重命名文件回调 */
   onRenameFile?: (node: FileNode, newName: string) => Promise<boolean>;
   /** 创建文件回调 */

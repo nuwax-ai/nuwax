@@ -24,7 +24,11 @@ import {
 } from '@/services/agentConfig';
 import { dict } from '@/services/i18nRuntime';
 import { apiModelList } from '@/services/modelConfig';
-import { apiUpdateStaticFile, apiUploadFiles } from '@/services/vncDesktop';
+import {
+  apiDownloadAllFiles,
+  apiUpdateStaticFile,
+  apiUploadFiles,
+} from '@/services/vncDesktop';
 import { AgentComponentTypeEnum, HideDesktopEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum, PublishStatusEnum } from '@/types/enums/common';
 import { ModelTypeEnum } from '@/types/enums/modelConfig';
@@ -817,6 +821,11 @@ const ConversationAgent: React.FC = () => {
       readOnly: false, // 文件是否只读
       onUploadFiles: async (files, filePaths) => {
         await handleUploadMultipleFiles(files, filePaths);
+      },
+      onExportProject: async () => {
+        if (devConversationId) {
+          await apiDownloadAllFiles(devConversationId);
+        }
       },
       onRenameFile: handleConfirmRenameFile,
       onCreateFileNode: handleCreateFileNode,

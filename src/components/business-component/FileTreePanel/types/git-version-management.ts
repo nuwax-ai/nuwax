@@ -185,6 +185,33 @@ export interface GitDiffParams extends GitTagsParams {
   paths?: string[];
 }
 
+/** 提交 diff 中单文件变更状态 */
+export type GitCommitDiffFileStatus =
+  | 'modified'
+  | 'added'
+  | 'deleted'
+  | 'renamed';
+
+/** 提交 diff 中单文件条目 */
+export interface GitCommitDiffFileItem {
+  path: string;
+  status: GitCommitDiffFileStatus;
+  additions: number;
+  deletions: number;
+  oldContent: string;
+  newContent: string;
+  /** 重命名前的路径 */
+  oldPath?: string;
+}
+
+/**
+ * Git diff 响应 data 字段
+ * 对应接口 `/api/git/diff` 返回体中的 `data`
+ */
+export interface GitDiffResponseData {
+  files: GitCommitDiffFileItem[];
+}
+
 /** Git commit 请求参数 */
 export interface GitCommitParams extends GitTagsParams {
   /*提交信息 */

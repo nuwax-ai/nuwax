@@ -1616,6 +1616,10 @@ const AppDevDesign: React.FC = () => {
                           onUploadSingleFile={
                             isFileOperating ? asyncNoop : handleRightClickUpload
                           }
+                          onExportProject={
+                            isFileOperating ? undefined : handleExportProject
+                          }
+                          onCollapseAll={fileManagement.collapseAllFolders}
                           workspace={workspace}
                           fileManagement={fileManagement}
                           isChatLoading={chat.isChatLoading}

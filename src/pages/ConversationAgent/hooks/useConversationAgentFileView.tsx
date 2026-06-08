@@ -63,6 +63,7 @@ export function useConversationAgentFileView(
     readOnly = false,
     targetId,
     onUploadFiles,
+    onExportProject,
     onRenameFile,
     // 创建文件回调
     onCreateFileNode,
@@ -1012,8 +1013,14 @@ export function useConversationAgentFileView(
   };
 
   /**
-   * 处理新建文件操作
+   * 处理项目导出
    */
+  const handleExportProject = useCallback(async () => {
+    if (onExportProject) {
+      await onExportProject();
+    }
+  }, [onExportProject]);
+
   const handleCreateFile = (parentNode: FileNode | null) => {
     // if (changeFiles?.length > 0) {
     //   message.warning(
@@ -1603,6 +1610,8 @@ export function useConversationAgentFileView(
       handleCreateFile,
       handleCreateFolder,
       handleDownloadFileByUrl,
+      handleExportProject: onExportProject ? handleExportProject : undefined,
+      toolbarDisabled: fileTreeDataLoading || isUploadingFiles,
     },
     preview: {
       selectedFileNode,

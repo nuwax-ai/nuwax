@@ -37,4 +37,10 @@ export interface TaskAgentFileViewTree {
     node: FileNode,
     exportAsPdf?: boolean,
   ) => Promise<void>;
+  /** 导出项目 */
+  handleExportProject?: () => Promise<void>;
+  /** 是否正在导出项目 */
+  isExportingProject?: boolean;
+  /** 工具栏是否禁用（如对比模式、聊天加载中） */
+  toolbarDisabled?: boolean;
 }

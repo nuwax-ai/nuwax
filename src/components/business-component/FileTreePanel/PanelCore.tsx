@@ -63,6 +63,7 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
     <>
       {enableSourceControl && (
         <div className={cx(styles.iconBar)}>
+          {/* 文件 */}
           <div className={cx(styles.iconBarItem)}>
             <TooltipIcon
               title={dict('PC.Pages.ConversationAgentMiddlePanel.files')}
@@ -75,6 +76,7 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
               onClick={() => setActiveView('files')}
             />
           </div>
+          {/* 源代码管理 */}
           <div className={cx(styles.iconBarItem)}>
             <TooltipIcon
               title={dict(

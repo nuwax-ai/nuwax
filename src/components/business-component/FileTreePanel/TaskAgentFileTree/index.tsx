@@ -1,13 +1,13 @@
 import FileContextMenu from '@/components/FileTreeView/FileContextMenu';
 import FileTree from '@/components/FileTreeView/FileTree';
+import type { FileTreeRef } from '@/components/FileTreeView/FileTree/types';
 import SearchView from '@/components/FileTreeView/SearchView';
 import TipsBox from '@/components/TipsBox';
+import FileTreeToolbar from '@/components/business-component/FileTreePanel/FileTreeToolbar';
 import type { TaskAgentFileViewTree } from '@/components/business-component/FileTreePanel/types/taskAgentFileTree';
 import { dict } from '@/services/i18nRuntime';
-import { ReloadOutlined } from '@ant-design/icons';
-import { Button, Tooltip } from 'antd';
 import classNames from 'classnames';
-import React from 'react';
+import React, { useRef } from 'react';
 import styles from './index.less';
 
 export interface TaskAgentFileTreeProps {
@@ -55,7 +55,12 @@ const TaskAgentFileTree: React.FC<TaskAgentFileTreeProps> = ({
     handleCreateFile,
     handleCreateFolder,
     handleDownloadFileByUrl,
+    handleExportProject,
+    isExportingProject = false,
+    toolbarDisabled = false,
   } = tree;
+
+  const fileTreeRef = useRef<FileTreeRef>(null);
 
   if (hideFileTree) {
     return null;
@@ -104,42 +109,30 @@ const TaskAgentFileTree: React.FC<TaskAgentFileTreeProps> = ({
         text={dict('PC.Components.FileTreeView.uploading')}
       />
 
-      <div
-        className={classNames(
-          'flex',
-          'content-between',
-          'items-center',
-          styles['file-tree-header'],
-        )}
-      >
-        <span>{dict('PC.Components.FileTreeView.files')}</span>
-        {showRefreshButton && (
-          <Tooltip
-            title={
-              isRefreshingFileTree
-                ? dict('PC.Components.FileTreeView.refreshing')
-                : dict('PC.Components.FileTreeView.refreshFileTree')
-            }
-          >
-            <Button
-              type="text"
-              size="small"
-              icon={<ReloadOutlined style={{ fontSize: 14 }} />}
-              onClick={handleRefreshFileList}
-              className={styles['file-tree-header-action']}
-              loading={isRefreshingFileTree}
-            />
-          </Tooltip>
-        )}
-      </div>
-
       <SearchView
         className={headerClassName}
         files={files}
         onFileSelect={handleFileSelect}
       />
 
+      <FileTreeToolbar
+        disabled={toolbarDisabled}
+        exportLoading={isExportingProject}
+        onExportProject={
+          handleExportProject ? () => void handleExportProject() : undefined
+        }
+        onCreateFile={() => handleCreateFile(null)}
+        onCreateFolder={() => handleCreateFolder(null)}
+        onUpload={() => void handleUploadFromMenu(null)}
+        onCollapseAll={() => fileTreeRef.current?.collapseAll()}
+        onRefresh={
+          showRefreshButton ? () => void handleRefreshFileList() : undefined
+        }
+        refreshLoading={isRefreshingFileTree}
+      />
+
       <FileTree
+        ref={fileTreeRef}
         fileTreeDataLoading={fileTreeDataLoading}
         files={files}
         taskAgentSelectedFileId={taskAgentSelectedFileId}
