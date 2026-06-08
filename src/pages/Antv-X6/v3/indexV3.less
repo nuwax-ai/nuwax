@@ -128,7 +128,63 @@
   min-height: 140px;
 }
 
-// Main layout: header + body (sidebar + canvas)
+// ── Workflow v3: stencil popover styles ────────────────────
+.stencil-content {
+  width: 240px;
+  max-height: calc(100vh - 100px);
+  overflow-y: auto;
+
+  .stencil-title {
+    color: @GRAY07;
+  }
+
+  .stencil-list-style {
+    width: 100%;
+
+    .stencil-list-item {
+      margin: 12px 0;
+
+      .stencil-list-title {
+        margin-bottom: 6px;
+        font-size: 14px;
+        font-weight: normal;
+        line-height: 22px;
+        letter-spacing: 0;
+        color: @GRAY07;
+      }
+
+      .stencil-list-content {
+        display: flex;
+        justify-content: left;
+        flex-wrap: wrap;
+
+        .child-content {
+          width: 50%;
+          cursor: pointer;
+          letter-spacing: 0;
+          line-height: 1.2;
+          margin: 8px 0;
+          display: flex;
+          align-items: center;
+
+          .icon-box-style {
+            flex-shrink: 0;
+            width: 20px;
+            height: 20px;
+            margin-right: 8px;
+          }
+
+          span {
+            word-break: break-word;
+            overflow-wrap: break-word;
+          }
+        }
+      }
+    }
+  }
+}
+
+// ── Main layout container ─────────────────────────────────
 #container {
   display: flex;
   flex-direction: column;
@@ -137,7 +193,8 @@
   height: 100%;
   top: 0;
   left: 0;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   min-height: 600px;
   min-width: 1200px;
 }
@@ -197,7 +254,7 @@
 
 .fold-wrap-style {
   position: absolute;
-  top: 0;
+  top: 76px;
   right: 12px;
   bottom: 12px;
   width: 370px;
