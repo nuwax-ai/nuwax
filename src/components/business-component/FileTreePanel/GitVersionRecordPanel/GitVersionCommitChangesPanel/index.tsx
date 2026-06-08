@@ -15,9 +15,10 @@ import {
   BranchesOutlined,
   DownOutlined,
   LeftOutlined,
+  SearchOutlined,
 } from '@ant-design/icons';
 import { DiffModeEnum } from '@git-diff-view/react';
-import { Button, Empty, Input, Segmented, message } from 'antd';
+import { Button, Empty, Input, message } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
@@ -38,7 +39,6 @@ export interface GitVersionCommitChangesPanelProps {
   commit: GitCommitLogItem;
   branch: string;
   workspaceParams: WorkspaceParams;
-  defaultAuthor?: string;
   onBack: () => void;
   onRollbackSuccess?: () => void;
   className?: string;
@@ -71,7 +71,6 @@ const GitVersionCommitChangesPanel: React.FC<
   commit,
   branch,
   workspaceParams,
-  defaultAuthor = 'NuwaPilot',
   onBack,
   onRollbackSuccess,
   className,
@@ -122,13 +121,38 @@ const GitVersionCommitChangesPanel: React.FC<
     void loadCommitFiles();
   }, [loadCommitFiles]);
 
+  /** 判断文件是否匹配搜索关键词（路径或变更内容） */
+  const matchesSearchKeyword = useCallback(
+    (file: GitCommitDiffFileItem, keyword: string) => {
+      if (file.path.toLowerCase().includes(keyword)) {
+        return true;
+      }
+
+      const cached = fileContentMap[file.path];
+      const oldContent = (
+        cached?.oldContent ??
+        file.oldContent ??
+        ''
+      ).toLowerCase();
+      const newContent = (
+        cached?.newContent ??
+        file.newContent ??
+        ''
+      ).toLowerCase();
+
+      return oldContent.includes(keyword) || newContent.includes(keyword);
+    },
+    [fileContentMap],
+  );
+
+  // 搜索过滤文件列表（按路径或文件内容）
   const filteredFiles = useMemo(() => {
     const keyword = searchKeyword.trim().toLowerCase();
     if (!keyword) {
       return files;
     }
-    return files.filter((file) => file.path.toLowerCase().includes(keyword));
-  }, [files, searchKeyword]);
+    return files.filter((file) => matchesSearchKeyword(file, keyword));
+  }, [files, searchKeyword, matchesSearchKeyword]);
 
   /** 确保文件内容已加载 */
   const ensureFileContent = useCallback(
@@ -244,6 +268,7 @@ const GitVersionCommitChangesPanel: React.FC<
 
   return (
     <div className={cx(styles.panel, className)}>
+      {/* 顶部栏 */}
       <div className={cx(styles['top-bar'])}>
         <Button
           type="text"
@@ -259,13 +284,14 @@ const GitVersionCommitChangesPanel: React.FC<
         </div>
       </div>
 
+      {/* 提交卡片 */}
       <div className={cx(styles['commit-card'])}>
         <div className={cx(styles['commit-card-top'])}>
           <div className={cx(styles['commit-hash'])}>
             {getShortHash(commit)}
           </div>
           <div className={cx(styles['commit-meta'])}>
-            {commit.author_name || defaultAuthor} · {formatTimeAgo(commit.date)}
+            {commit.author_name} · {formatTimeAgo(commit.date)}
           </div>
         </div>
         <p className={cx(styles['commit-message'])}>{commit.message}</p>
@@ -279,6 +305,7 @@ const GitVersionCommitChangesPanel: React.FC<
         </Button>
       </div>
 
+      {/* 工具栏 */}
       <div className={cx(styles.toolbar)}>
         <span className={cx(styles['file-count'])}>
           {dict(
@@ -286,30 +313,37 @@ const GitVersionCommitChangesPanel: React.FC<
           ).replace('{0}', String(files.length))}
         </span>
         <div className={cx(styles['toolbar-right'])}>
-          <Segmented
-            className={cx(styles['diff-mode-segmented'])}
-            size="small"
-            value={diffViewMode}
-            onChange={(value) => setDiffViewMode(value as DiffModeEnum)}
-            options={[
-              {
-                label: dict(
-                  'PC.Components.FileTreePanel.GitVersionRecord.diffUnified',
-                ),
-                value: DiffModeEnum.Unified,
-              },
-              {
-                label: dict(
-                  'PC.Components.FileTreePanel.GitVersionRecord.diffSplit',
-                ),
-                value: DiffModeEnum.Split,
-              },
-            ]}
-          />
+          {/* 对比模式切换 */}
+          <div className={cx(styles['diff-mode-toggle'])} role="group">
+            <button
+              type="button"
+              className={cx(styles['diff-mode-option'], {
+                [styles['diff-mode-option-active']]:
+                  diffViewMode === DiffModeEnum.Unified,
+              })}
+              aria-pressed={diffViewMode === DiffModeEnum.Unified}
+              onClick={() => setDiffViewMode(DiffModeEnum.Unified)}
+            >
+              {dict('PC.Components.FileTreePanel.GitVersionRecord.diffUnified')}
+            </button>
+            <button
+              type="button"
+              className={cx(styles['diff-mode-option'], {
+                [styles['diff-mode-option-active']]:
+                  diffViewMode === DiffModeEnum.Split,
+              })}
+              aria-pressed={diffViewMode === DiffModeEnum.Split}
+              onClick={() => setDiffViewMode(DiffModeEnum.Split)}
+            >
+              {dict('PC.Components.FileTreePanel.GitVersionRecord.diffSplit')}
+            </button>
+          </div>
+
+          {/* 搜索输入框 */}
           <Input
             allowClear
-            size="small"
             className={cx(styles['search-input'])}
+            prefix={<SearchOutlined className={cx(styles['search-icon'])} />}
             placeholder={dict(
               'PC.Components.FileTreePanel.GitVersionRecord.searchPlaceholder',
             )}
@@ -319,7 +353,8 @@ const GitVersionCommitChangesPanel: React.FC<
         </div>
       </div>
 
-      <div className={cx(styles['file-list'], 'scroll-container')}>
+      {/* 文件列表 */}
+      <div className={cx(styles['file-list'])}>
         {loading ? (
           <div className={cx(styles['list-loading'])}>
             <Loading />
@@ -356,25 +391,31 @@ const GitVersionCommitChangesPanel: React.FC<
                   role="button"
                   tabIndex={0}
                 >
+                  {/* 文件名 */}
                   <div className={cx(styles['file-row-left'])}>
-                    <span className={cx(styles['file-icon'])}>
-                      {getFileIcon(getFileName(file.path))}
-                    </span>
+                    {getFileIcon(getFileName(file.path))}
                     <span className={cx(styles['file-path'])} title={file.path}>
                       {file.path}
                     </span>
                   </div>
+
+                  {/* 文件状态 */}
                   <div className={cx(styles['file-row-right'])}>
+                    {/* 新增行数 */}
                     {stats.additions > 0 && (
                       <span className={cx(styles['diff-stats-added'])}>
                         +{stats.additions}
                       </span>
                     )}
+
+                    {/* 删除行数 */}
                     {stats.deletions > 0 && (
                       <span className={cx(styles['diff-stats-deleted'])}>
                         -{stats.deletions}
                       </span>
                     )}
+
+                    {/* 文件状态 */}
                     <span
                       className={cx(
                         styles['status-tag'],
@@ -383,6 +424,8 @@ const GitVersionCommitChangesPanel: React.FC<
                     >
                       {getStatusLabel(file.status)}
                     </span>
+
+                    {/* 展开图标 */}
                     <DownOutlined
                       className={cx(styles['expand-icon'], {
                         [styles.expanded]: isExpanded,
@@ -390,6 +433,8 @@ const GitVersionCommitChangesPanel: React.FC<
                     />
                   </div>
                 </div>
+
+                {/* 文件差异 */}
                 {isExpanded && renderFileDiff(file)}
               </div>
             );

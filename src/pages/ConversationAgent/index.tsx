@@ -1211,7 +1211,7 @@ const ConversationAgent: React.FC = () => {
           workspaceType: 'taskAgent',
           cid: devConversationId ?? null,
         }}
-        defaultAuthor={agentConfigInfo?.name}
+        branch={fileView.gitBranch}
         onRollbackSuccess={() => {
           if (devConversationId) {
             handleRefreshFileList(devConversationId);
@@ -1219,7 +1219,7 @@ const ConversationAgent: React.FC = () => {
         }}
       />
     ),
-    [devConversationId, agentConfigInfo?.name, handleRefreshFileList],
+    [devConversationId, fileView.gitBranch, handleRefreshFileList],
   );
 
   /**

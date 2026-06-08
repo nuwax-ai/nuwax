@@ -138,6 +138,7 @@ export function useConversationAgentFileView(
   const [changeFiles, setChangeFiles] = useState<ChangeFileInfo[]>([]);
   // Git 列表刷新进行中
   const [isRefreshingGitList, setIsRefreshingGitList] = useState(false);
+  const [gitBranch, setGitBranch] = useState('main');
   const isRefreshingGitListRef = useRef(false);
 
   // 是否正在保存文件
@@ -347,6 +348,8 @@ export function useConversationAgentFileView(
       if (statusResponse.code !== SUCCESS_CODE || !statusResponse.data) {
         return;
       }
+
+      setGitBranch(statusResponse.data.current || 'main');
 
       const statusFileIds = mergeGitStatusFileIds(statusResponse.data);
 
@@ -1580,6 +1583,7 @@ export function useConversationAgentFileView(
     className,
     changeFiles,
     isRefreshingGitList,
+    gitBranch,
     refreshGitList,
     tree: {
       files,

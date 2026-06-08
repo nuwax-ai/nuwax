@@ -63,6 +63,8 @@ export interface UseAppDevSourceControlReturn {
   isCommitting: boolean;
   /** 是否正在刷新 Git 列表 */
   isRefreshingGitList: boolean;
+  /** 当前 Git 分支名（来自 git status 的 current） */
+  gitBranch: string;
   /** 同步修改文件列表（编辑器内容变更时调用） */
   syncChangeFiles: (fileId: string, content: string) => void;
   /** 清除 diff 选中状态 */
@@ -120,6 +122,8 @@ export const useSourceControl = ({
   const [isCommitting, setIsCommitting] = useState(false);
   /** Git 列表刷新进行中 */
   const [isRefreshingGitList, setIsRefreshingGitList] = useState(false);
+  /** 当前 Git 分支名 */
+  const [gitBranch, setGitBranch] = useState('main');
 
   /** 根据选中项派生完整的 diff 文件数据（优先使用 apiGitDiff 返回内容） */
   const selectedDiffFile = useMemo(() => {
@@ -440,6 +444,8 @@ export const useSourceControl = ({
         return;
       }
 
+      setGitBranch(statusResponse.data.current || 'main');
+
       const statusFileIds = mergeGitStatusFileIds(statusResponse.data);
 
       setChangeFiles((prev) => {
@@ -632,6 +638,7 @@ export const useSourceControl = ({
     selectedDiffFile,
     isCommitting,
     isRefreshingGitList,
+    gitBranch,
     syncChangeFiles,
     clearSelectedDiff,
     handleDiffFileSelect,

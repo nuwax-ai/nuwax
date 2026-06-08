@@ -32,8 +32,8 @@ const GIT_VERSION_LIST_SCROLL_ID = 'gitVersionRecordList';
 export interface GitVersionRecordPanelProps {
   /** Git 工作空间（pageApp / taskAgent） */
   workspace?: GitWorkspaceConfig;
-  /** 无 author 时的默认展示名 */
-  defaultAuthor?: string;
+  /** 当前分支名（通常来自 git status 的 current，默认 main） */
+  branch?: string;
   /** 查看某次提交的变更 */
   onViewChanges?: (commit: GitCommitLogItem) => void;
   /** 回滚成功后的回调（如刷新文件树） */
@@ -77,7 +77,7 @@ const getWorkspaceEmptyDescription = (workspace?: GitWorkspaceConfig) => {
  */
 const GitVersionRecordPanel: React.FC<GitVersionRecordPanelProps> = ({
   workspace,
-  defaultAuthor = 'NuwaPilot',
+  branch = 'main',
   onViewChanges,
   onRollbackSuccess,
   className,
@@ -91,8 +91,6 @@ const GitVersionRecordPanel: React.FC<GitVersionRecordPanelProps> = ({
   );
   /** 已加载的提交列表（多页累加） */
   const [commits, setCommits] = useState<GitCommitLogItem[]>([]);
-  /** 当前分支名 */
-  const [branch, setBranch] = useState('main');
   /** 提交总数（接口返回，用于判断是否还有更多） */
   const [total, setTotal] = useState(0);
   /** 当前已加载到的页码 */
@@ -178,27 +176,12 @@ const GitVersionRecordPanel: React.FC<GitVersionRecordPanelProps> = ({
           pageSize: GIT_LOG_PAGE_SIZE,
         });
 
-        if (res?.code !== SUCCESS_CODE) {
-          message.error(
-            res?.message ||
-              dict(
-                'PC.Pages.ConversationAgent.AgentGitVersionRecord.loadFailed',
-              ),
-          );
-          return;
-        }
-
         const data = res.data;
         const newCommits = data?.commits ?? [];
 
-        setBranch(data?.branch ?? 'main');
         setTotal(data?.total ?? newCommits.length);
         setCurrentPage(page);
         setCommits((prev) => (append ? [...prev, ...newCommits] : newCommits));
-      } catch {
-        message.error(
-          dict('PC.Pages.ConversationAgent.AgentGitVersionRecord.loadFailed'),
-        );
       } finally {
         setLoading(false);
         setLoadingMore(false);
@@ -356,7 +339,6 @@ const GitVersionRecordPanel: React.FC<GitVersionRecordPanelProps> = ({
         commit={activeCommit}
         branch={branch}
         workspaceParams={workspaceParams}
-        defaultAuthor={defaultAuthor}
         onBack={() => setActiveCommit(null)}
         onRollbackSuccess={() => {
           refreshLog();
@@ -442,7 +424,7 @@ const GitVersionRecordPanel: React.FC<GitVersionRecordPanelProps> = ({
                   </div>
                   <p className={cx(styles.message)}>{commit.message}</p>
                   <span className={cx(styles.author)}>
-                    {commit.author_name || defaultAuthor}
+                    {commit.author_name}
                   </span>
                   <div className={cx(styles.actions)}>
                     <Button

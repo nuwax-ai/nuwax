@@ -1582,6 +1582,7 @@ const AppDev: React.FC = () => {
                           workspaceType: 'pageApp',
                           projectId: projectId ?? null,
                         }}
+                        branch={sourceControl.gitBranch}
                         onRollbackSuccess={() => {
                           fileManagement.loadFileTree(true, true);
                           sourceControl.refreshGitList();

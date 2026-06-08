@@ -101,6 +101,8 @@ export interface ConversationAgentFileViewValue {
   changeFiles: ChangeFileInfo[];
   /** 是否正在刷新 Git 变更列表 */
   isRefreshingGitList: boolean;
+  /** 当前 Git 分支名（来自 git status 的 current） */
+  gitBranch: string;
   /** 刷新 Git 变更列表（git status） */
   refreshGitList: () => Promise<void>;
   tree: TaskAgentFileViewTree;

@@ -15,7 +15,6 @@
   gap: @marginXs;
   padding: @paddingSm @paddingMd;
   flex-shrink: 0;
-  border-bottom: @lineWidth solid @colorSplit;
 }
 
 .back-btn {
@@ -32,7 +31,7 @@
 }
 
 .commit-card {
-  margin: @marginSm @paddingMd 0;
+  margin: 0 @paddingMd;
   padding: @paddingSm @paddingMd;
   border: @lineWidth solid @colorBorder;
   border-radius: @borderRadiusLg;
@@ -79,7 +78,7 @@
 }
 
 .file-count {
-  font-size: @fontSizeSm;
+  font-size: @fontSize;
   color: @colorText;
   white-space: nowrap;
 }
@@ -93,12 +92,77 @@
   justify-content: flex-end;
 }
 
-.diff-mode-segmented {
+.diff-mode-toggle {
+  display: inline-flex;
+  align-items: center;
   flex-shrink: 0;
+  padding: 2px;
+  border-radius: 20px;
+  background-color: @colorFillQuaternary;
+}
+
+.diff-mode-option {
+  padding: 4px 14px;
+  border: none;
+  border-radius: 18px;
+  background: transparent;
+  color: @colorTextSecondary;
+  font-size: @fontSizeSm;
+  line-height: 20px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
+
+  &:hover:not(.diff-mode-option-active) {
+    color: @colorText;
+  }
+}
+
+.diff-mode-option-active {
+  background-color: @colorBgContainer;
+  color: @colorText;
+  font-weight: @fontWeightStrong;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 8%);
 }
 
 .search-input {
-  max-width: 180px;
+  width: 148px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  background-color: @colorBgContainer;
+  border-color: @colorBorder;
+  box-shadow: none;
+  transition: border-color 0.2s ease;
+
+  :global(.ant-input) {
+    font-size: @fontSizeSm;
+    background: transparent;
+  }
+
+  :global(.ant-input-prefix) {
+    margin-inline-end: @marginXxs;
+  }
+
+  :global(.ant-input-clear-icon) {
+    font-size: @fontSizeSm;
+    color: @colorTextQuaternary;
+  }
+
+  &:hover {
+    border-color: @colorBorder;
+    background-color: @colorBgContainer;
+  }
+
+  &:global(.ant-input-affix-wrapper-focused) {
+    border-color: @colorPrimary;
+    box-shadow: none;
+    background-color: @colorBgContainer;
+  }
+}
+
+.search-icon {
+  color: @colorTextTertiary;
+  font-size: 14px;
 }
 
 .file-list {
@@ -144,11 +208,6 @@
   gap: @marginXs;
   min-width: 0;
   flex: 1;
-}
-
-.file-icon {
-  flex-shrink: 0;
-  font-size: 16px;
 }
 
 .file-path {
