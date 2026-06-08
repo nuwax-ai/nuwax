@@ -103,7 +103,7 @@ const ChangeFileGitDiffView: React.FC<ChangeFileGitDiffViewProps> = ({
   ]);
 
   return (
-    <div className={cx('diff-view-root', className)}>
+    <div className={cx(styles['diff-view-root'], className)}>
       <DiffView
         key={`${fileId}-${resolvedTheme}-${diffViewMode}`}
         diffFile={diffFile}
