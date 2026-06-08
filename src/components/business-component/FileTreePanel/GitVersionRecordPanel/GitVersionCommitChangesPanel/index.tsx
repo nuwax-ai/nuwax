@@ -216,16 +216,10 @@ const GitVersionCommitChangesPanel: React.FC<
             workspaceParams,
           );
           if (!commitResult.success) {
-            message.error(
-              commitResult.errorMessage ||
-                dict(
-                  'PC.Pages.ConversationAgent.AgentGitVersionRecord.rollbackFailed',
-                ),
-            );
             return;
           }
 
-          const { code, message: revertMsg } = await apiGitRevert({
+          const { code } = await apiGitRevert({
             ...workspaceParams,
             target: commit.hash,
           });
@@ -236,20 +230,7 @@ const GitVersionCommitChangesPanel: React.FC<
               ),
             );
             onRollbackSuccess?.();
-          } else {
-            message.error(
-              revertMsg ||
-                dict(
-                  'PC.Pages.ConversationAgent.AgentGitVersionRecord.rollbackFailed',
-                ),
-            );
           }
-        } catch {
-          message.error(
-            dict(
-              'PC.Pages.ConversationAgent.AgentGitVersionRecord.rollbackFailed',
-            ),
-          );
         } finally {
           setRollbackLoading(false);
         }
