@@ -1,14 +1,27 @@
 import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
-import { t } from '@/services/i18nRuntime';
+import TooltipIcon from '@/components/custom/TooltipIcon';
+import ConversationAgentSourceControl from '@/pages/ConversationAgent/ConversationAgentSourceControl';
+import { dict, t } from '@/services/i18nRuntime';
 import { FileNode } from '@/types/interfaces/appDev';
-import { ImportOutlined, LeftOutlined, RightOutlined } from '@ant-design/icons';
+import {
+  BranchesOutlined,
+  FolderOutlined,
+  ImportOutlined,
+  LeftOutlined,
+  RightOutlined,
+} from '@ant-design/icons';
 import { Button, Card, Tooltip } from 'antd';
+import classNames from 'classnames';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import AppDevFileTree from './AppDevFileTree';
-// import DataResourceList from './DataResourceList';
 import FileContextMenu from './FileContextMenu';
 import styles from './index.less';
 import type { FileTreePanelProps } from './types';
+
+const cx = classNames.bind(styles);
+
+/** 侧边栏视图类型 */
+type PanelView = 'files' | 'sourceControl';
 
 /**
  * FileTreePanel 组件
@@ -19,27 +32,41 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
   isComparing,
   selectedFileId,
   expandedFolders,
-
-  // dataResources,
-  // dataResourcesLoading,
   onFileSelect,
   onToggleFolder,
   onDeleteFile,
   onRenameFile,
-  // onUploadToFolder, // 暂时注释掉，后续可能需要
   onUploadProject,
   onUploadSingleFile,
-  // onAddDataResource,
-  // onDeleteDataResource,
-  // selectedDataResourceIds,
-  // onDataResourceSelectionChange,
   workspace,
   fileManagement,
   isChatLoading = false,
-  // projectId,
   // 新增：文件树初始化 loading 状态
   isFileTreeInitializing = false,
+  changeFiles = [],
+  selectedChangeFile = null,
+  isCommitting = false,
+  isRefreshingGitList = false,
+  onRefreshGitList,
+  onDiffFileSelect,
+  onOpenChangeFile,
+  onDiscardChange,
+  onStageChange,
+  onUnstageChange,
+  onAddToGitignore,
+  onCommit,
 }) => {
+  const [activeView, setActiveView] = useState<PanelView>('files');
+  const modifiedCount = changeFiles.length;
+  const showSourceControl = !isComparing && Boolean(onCommit);
+
+  /** 点击修改文件：仅触发 diff 预览，不走文件树选中逻辑 */
+  const handleModifiedFileClick = useCallback(
+    (fileId: string, section: 'staged' | 'unstaged') => {
+      onDiffFileSelect?.(fileId, section);
+    },
+    [onDiffFileSelect],
+  );
   // 文件树折叠状态
   const [isFileTreeCollapsed, setIsFileTreeCollapsed] =
     useState<boolean>(false);
@@ -198,62 +225,130 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
         <Card className={styles.fileTreeCard} variant="borderless">
           {!isFileTreeCollapsed && (
             <>
-              {/* 文件树容器 */}
-              <div
-                className={styles.fileTreeContainer}
-                ref={fileTreeScrollRef}
-                onScroll={saveScrollPosition}
-                // 处理空白区域右键菜单显示
-                onContextMenu={(e) => handleContextMenu(e, null)}
-              >
-                {/* 文件树结构 */}
-                {isFileTreeInitializing ? (
-                  <AppDevEmptyState
-                    type="loading"
-                    title={t('PC.Pages.AppDevFileTreePanel.loadingTitle')}
-                    description={t(
-                      'PC.Pages.AppDevFileTreePanel.loadingDescription',
-                    )}
-                  />
-                ) : files.length === 0 ? (
-                  <AppDevEmptyState
-                    type="no-file" // 使用新的无文件状态
-                    buttons={
-                      !isComparing
-                        ? [
-                            {
-                              text: t(
-                                'PC.Pages.AppDevFileTreePanel.importProject',
-                              ),
-                              icon: <ImportOutlined />,
-                              onClick: onUploadProject,
-                              disabled: isChatLoading,
-                            },
-                          ]
-                        : undefined
-                    }
-                  />
+              {showSourceControl && (
+                <div className={cx(styles.iconBar)}>
+                  <div className={cx(styles.iconBarItem)}>
+                    <TooltipIcon
+                      title={dict(
+                        'PC.Pages.ConversationAgentMiddlePanel.files',
+                      )}
+                      ariaLabel={dict(
+                        'PC.Pages.ConversationAgentMiddlePanel.files',
+                      )}
+                      placement="bottom"
+                      className={cx(styles.iconBtn, {
+                        [styles.active]: activeView === 'files',
+                      })}
+                      icon={<FolderOutlined style={{ fontSize: 16 }} />}
+                      onClick={() => setActiveView('files')}
+                    />
+                  </div>
+                  <div className={cx(styles.iconBarItem)}>
+                    <TooltipIcon
+                      title={dict(
+                        'PC.Pages.ConversationAgentMiddlePanel.sourceControl',
+                      )}
+                      ariaLabel={dict(
+                        'PC.Pages.ConversationAgentMiddlePanel.sourceControl',
+                      )}
+                      placement="bottom"
+                      className={cx(styles.iconBtn, {
+                        [styles.active]: activeView === 'sourceControl',
+                      })}
+                      icon={
+                        <>
+                          <BranchesOutlined style={{ fontSize: 16 }} />
+                          {modifiedCount > 0 && (
+                            <span className={cx(styles.iconBadge)}>
+                              {modifiedCount > 99 ? '99+' : modifiedCount}
+                            </span>
+                          )}
+                        </>
+                      }
+                      onClick={() => setActiveView('sourceControl')}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className={cx(styles.panelContent)}>
+                {activeView === 'sourceControl' && showSourceControl ? (
+                  <div className={cx(styles.sourceControlContainer)}>
+                    <ConversationAgentSourceControl
+                      changeFiles={changeFiles}
+                      isCommitting={isCommitting}
+                      isRefreshing={isRefreshingGitList}
+                      selectedChangeFile={selectedChangeFile}
+                      onRefresh={onRefreshGitList}
+                      onCommit={onCommit}
+                      onFileClick={handleModifiedFileClick}
+                      onOpenChanges={(fileId, section) =>
+                        onDiffFileSelect?.(fileId, section)
+                      }
+                      onOpenFile={onOpenChangeFile}
+                      onDiscardChange={onDiscardChange}
+                      onStageChange={onStageChange}
+                      onUnstageChange={onUnstageChange}
+                      onAddToGitignore={onAddToGitignore}
+                    />
+                  </div>
                 ) : (
-                  // 文件树组件
-                  <AppDevFileTree
-                    files={files}
-                    isComparing={isComparing}
-                    selectedFileId={selectedFileId}
-                    expandedFolders={expandedFolders}
-                    renamingNode={renamingNode}
-                    onCancelRename={cancelRename}
-                    onContextMenu={handleContextMenu}
-                    onFileSelect={onFileSelect}
-                    onToggleFolder={onToggleFolder}
-                    onRenameFile={onRenameFile}
-                    workspace={workspace}
-                    fileManagement={fileManagement}
-                    isChatLoading={isChatLoading}
-                  />
+                  // 文件树容器
+                  <div
+                    className={styles.fileTreeContainer}
+                    ref={fileTreeScrollRef}
+                    onScroll={saveScrollPosition}
+                    // 处理空白区域右键菜单显示
+                    onContextMenu={(e) => handleContextMenu(e, null)}
+                  >
+                    {/* 文件树结构 */}
+                    {isFileTreeInitializing ? (
+                      <AppDevEmptyState
+                        type="loading"
+                        title={t('PC.Pages.AppDevFileTreePanel.loadingTitle')}
+                        description={t(
+                          'PC.Pages.AppDevFileTreePanel.loadingDescription',
+                        )}
+                      />
+                    ) : files.length === 0 ? (
+                      <AppDevEmptyState
+                        type="no-file" // 使用新的无文件状态
+                        buttons={
+                          !isComparing
+                            ? [
+                                {
+                                  text: t(
+                                    'PC.Pages.AppDevFileTreePanel.importProject',
+                                  ),
+                                  icon: <ImportOutlined />,
+                                  onClick: onUploadProject,
+                                  disabled: isChatLoading,
+                                },
+                              ]
+                            : undefined
+                        }
+                      />
+                    ) : (
+                      // 文件树组件
+                      <AppDevFileTree
+                        files={files}
+                        isComparing={isComparing}
+                        selectedFileId={selectedFileId}
+                        expandedFolders={expandedFolders}
+                        renamingNode={renamingNode}
+                        onCancelRename={cancelRename}
+                        onContextMenu={handleContextMenu}
+                        onFileSelect={onFileSelect}
+                        onToggleFolder={onToggleFolder}
+                        onRenameFile={onRenameFile}
+                        workspace={workspace}
+                        fileManagement={fileManagement}
+                        isChatLoading={isChatLoading}
+                      />
+                    )}
+                  </div>
                 )}
               </div>
-
-              {/* 数据资源管理 - 固定在底部，仅在非版本对比模式显示 */}
             </>
           )}
         </Card>

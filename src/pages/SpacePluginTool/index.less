@@ -2,6 +2,40 @@
 @import '@/styles/token';
 @import '@/styles/custom-variate';
 
+.page-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+.layout-wrapper {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  overflow: hidden;
+
+  .chat-section {
+    width: 33%;
+    height: 100%;
+    border-right: 1px solid @colorBorderSecondary;
+    background-color: @colorBgContainer;
+    display: flex;
+    flex-direction: column;
+    padding: @paddingSm @paddingMd;
+  }
+
+  .detail-section {
+    width: 67%;
+    height: 100%;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+}
+
 .container {
   padding: 0 5px;
 

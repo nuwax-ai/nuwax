@@ -1,10 +1,30 @@
 @import '@/styles/token.less';
 
+@zero-value: 0;
+
 .page {
   display: flex;
   flex-direction: column;
   height: 100%;
   min-height: 0;
+
+  .price-addon {
+    display: inline-flex;
+    align-items: center;
+    background-color: @colorFillAlter;
+    border: 1px solid @colorBorder;
+    border-right: @zero-value;
+    padding: @zero-value @paddingSm;
+    border-radius: @borderRadius 0 0 @borderRadius;
+    color: @colorText;
+    height: @controlHeight;
+    box-sizing: border-box;
+  }
+
+  .price-number-input {
+    border-top-left-radius: @zero-value !important;
+    border-bottom-left-radius: @zero-value !important;
+  }
 
   .scrollBody {
     flex: 1;

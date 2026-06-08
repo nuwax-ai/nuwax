@@ -27,6 +27,49 @@
   }
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: @marginXxs;
+}
+
+.header-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: @borderRadius;
+  color: @colorTextSecondary;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+
+  &:hover {
+    color: @colorText;
+    background-color: @colorBgTextHover;
+  }
+
+  &.active {
+    color: @colorText;
+    background-color: @colorBgTextActive;
+  }
+
+  &.header-action-btn-loading {
+    pointer-events: none;
+  }
+
+  &.header-action-btn-disabled {
+    color: @colorTextQuaternary;
+    cursor: not-allowed;
+    pointer-events: none;
+
+    &:hover {
+      color: @colorTextQuaternary;
+      background-color: transparent;
+    }
+  }
+}
+
 .commit-box {
   padding: 0 @paddingSm @paddingSm;
   flex-shrink: 0;
@@ -44,11 +87,30 @@
 }
 
 .changes-section {
-  flex: 1;
-  min-height: 0;
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+
+  &.changes-section-nested {
+    flex: none;
+  }
+}
+
+.changes-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.changes-list-nested {
+  flex: none;
+  min-height: auto;
+  overflow: visible;
+}
+
+.change-file-tree {
+  padding: 0 @paddingSm;
 }
 
 .changes-header {
@@ -152,35 +214,46 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+}
 
-  .status-badge {
-    flex-shrink: 0;
-    min-width: 14px;
-    font-size: @source-control-status-font-size;
-    font-weight: @fontWeightStrong;
-    text-align: center;
-    line-height: 1.2;
+.status-badge {
+  flex-shrink: 0;
+  min-width: 14px;
+  font-size: @source-control-status-font-size;
+  font-weight: @fontWeightStrong;
+  text-align: center;
+  line-height: 1.2;
+  margin-left: auto;
 
-    // 未暂存：修改（VS Code 黄）
-    &--modified {
-      color: @gold7;
-    }
+  // 未暂存：修改（VS Code 黄）
+  &--modified {
+    color: @gold7;
+  }
 
-    // 新增 / 未跟踪（VS Code 绿）
-    &--added,
-    &--untracked {
-      color: @green7;
-    }
+  // 新增 / 未跟踪（VS Code 绿）
+  &--added,
+  &--untracked {
+    color: @green7;
+  }
 
-    // 删除（VS Code 红）
-    &--deleted {
-      color: @red5;
-    }
+  // 删除（VS Code 红）
+  &--deleted {
+    color: @red5;
+  }
 
-    // 已暂存：修改态在 VS Code 中为绿色 M
-    &--staged&--modified {
-      color: @green7;
-    }
+  // 冲突（VS Code 红/紫）
+  &--conflict {
+    color: @red5;
+  }
+
+  // 重命名
+  &--renamed {
+    color: @blue7;
+  }
+
+  // 已暂存：修改态在 VS Code 中为绿色 M
+  &--staged&--modified {
+    color: @green7;
   }
 }
 

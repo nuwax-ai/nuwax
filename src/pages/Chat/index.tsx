@@ -1251,7 +1251,9 @@ const Chat: React.FC = () => {
               isLoading={loadingConversation}
               loadingMore={loadingMore}
               isMoreMessage={isMoreMessage}
-              isConversationActive={isConversationActive}
+              isConversationActive={
+                conversationInfo?.taskStatus === TaskStatus.EXECUTING
+              }
               loadingSuggest={loadingSuggest}
               chatSuggestList={chatSuggestList}
               agentInfo={{

@@ -29,7 +29,7 @@
 .chat-wrapper-content {
   overflow: auto;
   margin-bottom: @margin-bottom-gap;
-  margin-left: 6px;
+  padding-left: 8px;
   display: flex;
   flex-direction: column;
   flex: 1;
@@ -44,10 +44,17 @@
     flex-direction: column;
     flex: 1;
     min-height: @zero-value;
-    padding-bottom: @paddingLg;
     max-width: @chat-max-width;
     width: 100%;
     margin: @zero-value auto;
+
+    // 使用伪元素优雅解决 flex 子容器下 padding-bottom 在滚动高度中坍塌的 bug
+    &::after {
+      content: '';
+      display: block;
+      height: @paddingLg;
+      flex-shrink: 0;
+    }
 
     .loading-wrapper {
       display: flex;

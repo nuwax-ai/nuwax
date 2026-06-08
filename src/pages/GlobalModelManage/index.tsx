@@ -1,3 +1,4 @@
+import { DragHandle, Row } from '@/components/base/DraggableTableRow';
 import {
   ActionItem,
   TableActions,
@@ -12,6 +13,7 @@ import {
   apiSystemModelDelete,
   apiSystemModelList,
   apiSystemModelSave,
+  apiSystemModelSortUpdate,
 } from '@/services/systemManage';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import { ModelCapabilityTypeEnum } from '@/types/enums/modelConfig';
@@ -24,6 +26,14 @@ import type {
   FormInstance,
   ProColumns,
 } from '@ant-design/pro-components';
+import type { DragEndEvent } from '@dnd-kit/core';
+import { closestCenter, DndContext } from '@dnd-kit/core';
+import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
+import {
+  arrayMove,
+  SortableContext,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
 import { Button, message, Switch } from 'antd';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useModel } from 'umi';
@@ -50,6 +60,9 @@ const GlobalModelManage: React.FC = () => {
   const [accessControlLoadingMap, setAccessControlLoadingMap] = useState<
     Record<number, boolean>
   >({});
+  const [draggableData, setDraggableData] = useState<ModelConfigDto[]>([]);
+  const isDraggingRef = useRef<boolean>(false);
+  const originalDataRef = useRef<ModelConfigDto[] | null>(null);
 
   /** 能力类型 value → 展示文案，供列 render Tag 使用 */
   const capabilityTypeLabelMap = Object.fromEntries(
@@ -195,7 +208,67 @@ const GlobalModelManage: React.FC = () => {
     [hasPermission],
   );
 
+  const onDragEnd = async ({ active, over }: DragEndEvent) => {
+    if (!over || active.id === over.id) {
+      isDraggingRef.current = false;
+      return;
+    }
+
+    const activeId = Number(active.id);
+    const overId = Number(over.id);
+    const activeIndex = draggableData.findIndex((item) => item.id === activeId);
+    const overIndex = draggableData.findIndex((item) => item.id === overId);
+
+    if (activeIndex === -1 || overIndex === -1) {
+      isDraggingRef.current = false;
+      return;
+    }
+
+    isDraggingRef.current = true;
+    originalDataRef.current = [...draggableData];
+
+    const newData = arrayMove(draggableData, activeIndex, overIndex);
+    setDraggableData(newData);
+
+    const sortPayload = newData.map((item, index) => ({
+      id: item.id,
+      sort: index + 1,
+    }));
+
+    if (sortPayload.length === 0) {
+      isDraggingRef.current = false;
+      return;
+    }
+
+    try {
+      const response = await apiSystemModelSortUpdate(sortPayload);
+      if (response?.code !== SUCCESS_CODE) {
+        throw new Error('update model sort failed');
+      }
+      message.success(dict('PC.Common.Global.saveSuccess'));
+      originalDataRef.current = null;
+    } catch {
+      if (originalDataRef.current) {
+        setDraggableData(originalDataRef.current);
+        originalDataRef.current = null;
+      } else {
+        actionRef.current?.reload();
+      }
+    } finally {
+      isDraggingRef.current = false;
+    }
+  };
+
   const columns: ProColumns<ModelConfigDto>[] = [
+    {
+      title: dict('PC.Pages.SystemRoleManage.columnSort'),
+      key: 'sort',
+      align: 'center',
+      width: 72,
+      fixed: 'left',
+      hideInSearch: true,
+      render: () => <DragHandle />,
+    },
     {
       title: dict('PC.Pages.GlobalModelManage.columnModelName'),
       dataIndex: 'name',
@@ -230,13 +303,17 @@ const GlobalModelManage: React.FC = () => {
     {
       title: dict('PC.Pages.GlobalModelManage.columnDescription'),
       dataIndex: 'description',
+      width: 380,
       hideInSearch: true,
+      /** 需配合 tableLayout="fixed" 与数值型 scroll.x，否则 max-content 会撑开列宽导致省略失效 */
+      ellipsis: { showTitle: true },
     },
     {
       // 状态列：检索为 select，筛选逻辑见 request（仅前端）
       title: dict('PC.Pages.GlobalModelManage.columnStatus'),
       dataIndex: 'enabled',
       width: 150,
+      align: 'center',
       valueType: 'select',
       valueEnum: {
         [ModelComponentStatusEnum.Enabled]: {
@@ -261,6 +338,7 @@ const GlobalModelManage: React.FC = () => {
       width: 200,
       hideInSearch: true,
       valueType: 'dateTime',
+      align: 'center',
     },
     {
       title: dict('PC.Pages.GlobalModelManage.columnAccessControl'),
@@ -355,16 +433,42 @@ const GlobalModelManage: React.FC = () => {
         )
       }
     >
-      <XProTable<ModelConfigDto>
-        actionRef={actionRef}
-        formRef={formRef}
-        rowKey="id"
-        columns={columns}
-        request={request}
-        onReset={handleReset}
-        showQueryButtons={hasPermission('model_manage_query_list')}
-        scroll={{ x: 'max-content' }}
-      />
+      <DndContext
+        collisionDetection={closestCenter}
+        modifiers={[restrictToVerticalAxis]}
+        onDragEnd={onDragEnd}
+      >
+        <SortableContext
+          items={draggableData.map((item) => String(item.id))}
+          strategy={verticalListSortingStrategy}
+        >
+          <XProTable<ModelConfigDto>
+            actionRef={actionRef}
+            formRef={formRef}
+            rowKey="id"
+            columns={columns}
+            request={request}
+            dataSource={draggableData}
+            pagination={false}
+            showIndex={false}
+            onReset={handleReset}
+            showQueryButtons={hasPermission('model_manage_query_list')}
+            tableLayout="fixed"
+            scroll={{ x: 2000 }}
+            components={{
+              body: {
+                row: Row,
+              },
+            }}
+            postData={(data: ModelConfigDto[]) => {
+              if (!isDraggingRef.current) {
+                setDraggableData(data || []);
+              }
+              return data;
+            }}
+          />
+        </SortableContext>
+      </DndContext>
 
       {/* 添加模型 */}
       {visible && (
@@ -382,6 +486,8 @@ const GlobalModelManage: React.FC = () => {
           }}
         />
       )}
+
+      {/* 授权模型 */}
       <TargetAuthModal
         open={authModalOpen}
         targetId={currentAuthModelId || 0}

@@ -137,6 +137,20 @@ export async function apiSystemModelList(
     },
   });
 }
+
+// 更新模型排序
+export async function apiSystemModelSortUpdate(
+  data: {
+    id: number;
+    sort: number;
+  }[],
+): Promise<RequestResponse<null>> {
+  return request('/api/system/model/sort/update', {
+    method: 'POST',
+    data,
+  });
+}
+
 // 添加或更新模型配置接口
 export async function apiSystemModelSave(
   data: ModelSaveParams,

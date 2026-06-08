@@ -106,9 +106,30 @@
   margin-bottom: 0;
 
   :global {
+    .ant-steps-item-container {
+      display: flex !important;
+      align-items: center !important;
+    }
+
+    .ant-steps-item-icon {
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      margin-top: 0 !important;
+      margin-bottom: 0 !important;
+    }
+
+    .ant-steps-item-content {
+      display: inline-flex !important;
+      align-items: center !important;
+    }
+
     .ant-steps-item-title {
       font-size: 12px !important;
-      line-height: 1.3 !important;
+      line-height: 1 !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      height: 24px !important;
     }
 
     .ant-steps-item-description {

@@ -14,8 +14,8 @@ import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React from 'react';
 import { history } from 'umi';
+import MoreActionsMenu from '../MoreActionsMenu';
 import styles from './index.less';
-import MoreActionsMenu from './MoreActionsMenu';
 
 const cx = classNames.bind(styles);
 
@@ -51,7 +51,9 @@ const SkillHeader: React.FC<SkillHeaderProps> = ({
   isExportingProject,
 }) => {
   return (
-    <header className={cx('flex', 'items-center', 'relative', styles.header)}>
+    <header
+      className={cx('flex', 'items-center', 'relative', styles['header'])}
+    >
       <Button
         type="text"
         icon={<LeftOutlined />}
@@ -60,7 +62,7 @@ const SkillHeader: React.FC<SkillHeaderProps> = ({
         }}
       />
       <img
-        className={cx(styles.avatar)}
+        className={cx(styles['avatar'])}
         src={skillInfo?.icon || (agentImage as string)}
         alt=""
       />
@@ -83,7 +85,7 @@ const SkillHeader: React.FC<SkillHeaderProps> = ({
         {skillInfo?.publishStatus === PublishStatusEnum.Published && (
           <TooltipIcon
             title={t('PC.Pages.SkillDetailsHeader.published')}
-            icon={<CheckCircleFilled className={cx(styles.circle)} />}
+            icon={<CheckCircleFilled className={cx(styles['circle'])} />}
           />
         )}
       </div>

@@ -16,7 +16,9 @@ export interface ChangeFileContextMenuProps {
   visible: boolean;
   /** 菜单坐标（相对容器） */
   position: { x: number; y: number };
-  /** 目标文件是否已暂存 */
+  /** 右键目标类型：文件 / 文件夹 */
+  targetType?: 'file' | 'folder';
+  /** 目标文件是否已暂存（文件）或是否来自暂存区块（文件夹） */
   isStaged?: boolean;
   /** 关闭菜单 */
   onClose: () => void;
@@ -41,6 +43,7 @@ export interface ChangeFileContextMenuProps {
 const ChangeFileContextMenu: React.FC<ChangeFileContextMenuProps> = ({
   visible,
   position,
+  targetType = 'file',
   isStaged = false,
   onClose,
   onOpenChanges,
@@ -147,7 +150,40 @@ const ChangeFileContextMenu: React.FC<ChangeFileContextMenuProps> = ({
     },
   ];
 
-  const menuItems = isStaged ? stagedItems : unstagedItems;
+  const unstagedFolderItems = [
+    {
+      key: 'discard',
+      label: dict('PC.Pages.ConversationAgentSourceControl.discardChanges'),
+      onClick: onDiscardChange,
+    },
+    {
+      key: 'stage',
+      label: dict('PC.Pages.ConversationAgentSourceControl.stageChanges'),
+      onClick: onStageChange,
+    },
+    {
+      key: 'gitignore',
+      label: dict('PC.Pages.ConversationAgentSourceControl.addToGitignore'),
+      onClick: onAddToGitignore,
+    },
+  ];
+
+  const stagedFolderItems = [
+    {
+      key: 'unstage',
+      label: dict('PC.Pages.ConversationAgentSourceControl.unstageChanges'),
+      onClick: onUnstageChange,
+    },
+  ];
+
+  const menuItems =
+    targetType === 'folder'
+      ? isStaged
+        ? stagedFolderItems
+        : unstagedFolderItems
+      : isStaged
+      ? stagedItems
+      : unstagedItems;
 
   return (
     <div
