@@ -2,7 +2,6 @@
  * ConversationAgent 源代码管理 Hook
  * 变更列表由外部 fileView 维护，本 Hook 统一 Git 操作与选中状态
  */
-import { fetchGitChangeFileContent } from '@/components/business-component/FileTreePanel/GitVersionRecordPanel/gitCommitDiffUtils';
 import {
   buildGitWorkspaceParams,
   isGitWorkspaceReady,
@@ -13,6 +12,7 @@ import type {
   SelectedChangeFile,
 } from '@/components/business-component/FileTreePanel/SourceControl/changeFileStatus';
 import { runGitDiscard } from '@/components/business-component/FileTreePanel/SourceControl/sourceControlGitActions';
+import { fetchGitChangeFileContent } from '@/components/business-component/GitVersionRecordPanel/gitCommitDiffUtils';
 import type { ChangeFileInfo } from '@/components/FileTreeView/type';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';

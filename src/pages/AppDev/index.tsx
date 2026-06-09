@@ -1,7 +1,7 @@
 import { SvgIcon } from '@/components/base';
+import { GitVersionRecordPanel } from '@/components/business-component';
 import {
   AppDevFileTreePanel,
-  GitVersionRecordPanel,
   useSourceControl,
 } from '@/components/business-component/FileTreePanel';
 import ConditionRender from '@/components/ConditionRender';

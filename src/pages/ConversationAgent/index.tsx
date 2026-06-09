@@ -1,5 +1,5 @@
+import { GitVersionRecordPanel } from '@/components/business-component';
 import FileTreePanel, {
-  GitVersionRecordPanel,
   TaskAgentFileTree,
   useConversationAgentSourceControl,
   type SelectedChangeFile,

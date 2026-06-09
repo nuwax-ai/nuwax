@@ -5,7 +5,6 @@ export { default as FilePreview } from './FilePreview';
 export {
   AppDevFileTreePanel,
   default as FileTreePanel,
-  GitVersionRecordPanel,
   SourceControlPanel,
   TaskAgentFileTree,
   apiGitAdd,
@@ -17,6 +16,10 @@ export {
   useConversationAgentSourceControl,
   useSourceControl,
 } from './FileTreePanel';
+export {
+  default as GitVersionRecordPanel,
+  type GitVersionRecordPanelProps,
+} from './GitVersionRecordPanel';
 export { default as PagePreviewIframe } from './PagePreviewIframe';
 export { default as XtermTerminal } from './Terminal';
 export { default as UnifiedChatSession } from './UnifiedChatSession';

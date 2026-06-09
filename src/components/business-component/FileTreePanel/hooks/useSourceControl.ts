@@ -2,7 +2,6 @@
  * AppDev 源代码管理（Git）Hook
  * 管理修改文件列表、暂存、提交推送及 diff 预览相关逻辑
  */
-import { fetchGitChangeFileContent } from '@/components/business-component/FileTreePanel/GitVersionRecordPanel/gitCommitDiffUtils';
 import {
   buildChangeFilesFromGitStatus,
   mergeGitStatusFileIds,
@@ -16,6 +15,7 @@ import type {
   SelectedChangeFile,
 } from '@/components/business-component/FileTreePanel/SourceControl/changeFileStatus';
 import { runGitDiscard } from '@/components/business-component/FileTreePanel/SourceControl/sourceControlGitActions';
+import { fetchGitChangeFileContent } from '@/components/business-component/GitVersionRecordPanel/gitCommitDiffUtils';
 import type { ChangeFileInfo } from '@/components/FileTreeView/type';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { getProjectContent, submitFilesUpdate } from '@/services/appDev';
