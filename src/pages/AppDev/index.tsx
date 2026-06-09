@@ -25,6 +25,7 @@ import { useDataResourceManagement } from '@/hooks/useDataResourceManagement';
 import useDrawerScroll from '@/hooks/useDrawerScroll';
 import { useMergedAppDevAgentDevelopingOverlay } from '@/hooks/useMergedAppDevAgentDevelopingOverlay';
 import { useRestartDevServer } from '@/hooks/useRestartDevServer';
+import { useTerminalWsUrl } from '@/hooks/useTerminalWsUrl';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { apiAgentConfigInfo } from '@/services/agentConfig';
 import {
@@ -80,6 +81,10 @@ import FileOperatingMask from './components/FileOperatingMask';
 import PageEditModal from './components/PageEditModal';
 
 import { checkFileSizeExceedLimit } from '@/utils';
+import {
+  TTYD_TERMINAL_WIRE_PROTOCOL,
+  TTYD_TERMINAL_WS_SUBPROTOCOLS,
+} from '@/utils/terminalWsUrl';
 import { type PreviewRef } from './components/Preview';
 import { useDevLogs } from './hooks/useDevLogs';
 import styles from './index.less';
@@ -232,6 +237,10 @@ const AppDev: React.FC = () => {
 
   // 使用项目详情 Hook
   const projectInfo = useAppDevProjectInfo(projectId);
+  const terminalWsUrl = useTerminalWsUrl(
+    projectInfo.projectInfoState.projectInfo?.tenantId,
+    projectId,
+  );
 
   /** 保存成功后刷新 Git 列表（sourceControl 初始化后注入） */
   const refreshGitListAfterSaveRef = useRef<() => Promise<void>>(
@@ -1671,10 +1680,15 @@ const AppDev: React.FC = () => {
                     )}
                   </div>
                 </div>
+
+                {/* 底部终端、开发日志合集面板 */}
                 <ConversationBottomConsole
                   visible={showDevLogConsole}
                   defaultActiveTab="logs"
                   onClose={() => setShowDevLogConsole(false)}
+                  wsUrl={terminalWsUrl}
+                  wireProtocol={TTYD_TERMINAL_WIRE_PROTOCOL}
+                  wsSubprotocols={[...TTYD_TERMINAL_WS_SUBPROTOCOLS]}
                   devLog={{
                     logs: devLogs.logs,
                     hasErrorInLatestBlock: devLogs.hasErrorInLatestBlock,
