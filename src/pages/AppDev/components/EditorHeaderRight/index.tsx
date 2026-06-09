@@ -1,20 +1,10 @@
 import SvgIcon from '@/components/base/SvgIcon';
-import { VERSION_CONSTANTS } from '@/constants/appDevConstants';
 import { t } from '@/services/i18nRuntime';
 import { BranchesOutlined, SyncOutlined } from '@ant-design/icons';
-import { Alert, Badge, Button, Dropdown, Tooltip } from 'antd';
+import { Badge, Button, Dropdown, Tooltip } from 'antd';
 import React, { useEffect, useMemo } from 'react';
 import { useModel } from 'umi';
 import styles from './index.less';
-
-// 版本对比模式相关接口
-interface VersionCompareProps {
-  isSwitching: boolean;
-  targetVersion?: number;
-  onCancelCompare: () => void;
-  onConfirmVersionSwitch: () => void;
-  isChatLoading: boolean;
-}
 
 // 预览状态相关接口
 interface PreviewStatusProps {
@@ -53,15 +43,6 @@ interface MoreActionsProps {
 
 // 主组件接口 - 简化后的接口
 interface EditorHeaderRightProps {
-  // 版本对比模式相关
-  isComparing: boolean;
-  versionCompareData: {
-    isSwitching: boolean;
-    targetVersion?: number;
-    onCancelCompare: () => void;
-    onConfirmVersionSwitch: () => void;
-  };
-
   // 预览模式相关
   activeTab: 'preview' | 'code';
   previewData: {
@@ -99,58 +80,6 @@ interface EditorHeaderRightProps {
   // 通用状态
   isChatLoading: boolean;
 }
-
-/**
- * 版本对比模式组件
- * 负责版本对比相关的所有交互逻辑和状态管理
- */
-const VersionCompareMode: React.FC<VersionCompareProps> = ({
-  isSwitching,
-  targetVersion,
-  onCancelCompare,
-  onConfirmVersionSwitch,
-  isChatLoading,
-}) => {
-  // 版本切换按钮的加载状态
-  const switchButtonLoading = useMemo(() => isSwitching, [isSwitching]);
-
-  // 按钮禁用状态
-  const buttonsDisabled = useMemo(
-    () => isSwitching || isChatLoading,
-    [isSwitching, isChatLoading],
-  );
-
-  // 版本切换按钮文本
-  const switchButtonText = useMemo(
-    () =>
-      t(
-        'PC.Pages.AppDevEditorHeaderRight.switchVersionButton',
-        String(targetVersion ?? '-'),
-      ),
-    [targetVersion],
-  );
-
-  return (
-    <>
-      <Alert
-        message={VERSION_CONSTANTS.READ_ONLY_MESSAGE}
-        showIcon
-        className={styles.versionDropdownButton}
-      />
-      <Button onClick={onCancelCompare} disabled={buttonsDisabled}>
-        {t('PC.Pages.AppDevEditorHeaderRight.cancel')}
-      </Button>
-      <Button
-        type="primary"
-        onClick={onConfirmVersionSwitch}
-        loading={switchButtonLoading}
-        disabled={buttonsDisabled}
-      >
-        {switchButtonText}
-      </Button>
-    </>
-  );
-};
 
 /**
  * 预览状态信息组件
@@ -396,24 +325,11 @@ const MoreActionsMenu: React.FC<MoreActionsProps> = ({
  * 负责整体布局和条件渲染逻辑，使用数据分组的方式传递 props
  */
 const EditorHeaderRight: React.FC<EditorHeaderRightProps> = ({
-  // 版本对比模式相关
-  isComparing,
-  versionCompareData,
-
-  // 预览模式相关
   activeTab,
   previewData,
-
-  // 控制台相关
   consoleData,
-
-  // 更多操作相关
   actionsData,
-
-  // Git 版本记录
   gitVersionRecordData,
-
-  // 通用状态
   isChatLoading,
 }) => {
   // 是否显示预览状态信息
@@ -424,76 +340,58 @@ const EditorHeaderRight: React.FC<EditorHeaderRightProps> = ({
 
   return (
     <div className={styles.editorHeaderRight}>
-      {/* 版本对比模式下显示的按钮 */}
-      {isComparing ? (
-        <VersionCompareMode
-          isSwitching={versionCompareData.isSwitching}
-          targetVersion={versionCompareData.targetVersion}
-          onCancelCompare={versionCompareData.onCancelCompare}
-          onConfirmVersionSwitch={versionCompareData.onConfirmVersionSwitch}
-          isChatLoading={isChatLoading}
+      {/* 预览状态信息 - 仅在预览模式下显示 */}
+      {shouldShowPreviewStatus && (
+        <PreviewStatusInfo
+          devServerUrl={previewData.devServerUrl}
+          isStarting={previewData.isStarting}
+          isRestarting={previewData.isRestarting}
+          isProjectUploading={previewData.isProjectUploading}
+          isLoading={previewData.isLoading}
+          lastRefreshed={previewData.lastRefreshed}
         />
-      ) : (
-        <>
-          {/* 预览状态信息 - 仅在预览模式下显示 */}
-          {shouldShowPreviewStatus && (
-            <PreviewStatusInfo
-              devServerUrl={previewData.devServerUrl}
-              isStarting={previewData.isStarting}
-              isRestarting={previewData.isRestarting}
-              isProjectUploading={previewData.isProjectUploading}
-              isLoading={previewData.isLoading}
-              lastRefreshed={previewData.lastRefreshed}
-            />
-          )}
-
-          {/* Git 版本记录按钮 */}
-          {gitVersionRecordData && (
-            <GitVersionRecordButton
-              onOpen={gitVersionRecordData.onOpen}
-              disabled={gitVersionRecordData.disabled || isChatLoading}
-            />
-          )}
-
-          {/* 控制台按钮 - 保持现有样式 */}
-          <ConsoleButton
-            showDevLogConsole={consoleData.showDevLogConsole}
-            hasErrorInLatestBlock={consoleData.hasErrorInLatestBlock}
-            onToggleDevLogConsole={consoleData.onToggleDevLogConsole}
-          />
-
-          {/* 刷新按钮 */}
-          {shouldShowPreviewStatus && (
-            <Tooltip
-              title={t('PC.Pages.AppDevEditorHeaderRight.refreshPreview')}
-            >
-              <Button
-                type="text"
-                className={styles.refreshButton}
-                icon={
-                  <SvgIcon
-                    name="icons-common-refresh"
-                    style={{ fontSize: 16 }}
-                  />
-                }
-                onClick={actionsData.onRefreshPreview}
-              />
-            </Tooltip>
-          )}
-
-          {/* 更多操作菜单 */}
-          <MoreActionsMenu
-            onImportProject={actionsData.onImportProject}
-            onUploadSingleFile={actionsData.onUploadSingleFile}
-            onRefreshPreview={actionsData.onRefreshPreview}
-            onRestartServer={actionsData.onRestartServer}
-            onFullscreenPreview={actionsData.onFullscreenPreview}
-            onExportProject={actionsData.onExportProject}
-            isChatLoading={isChatLoading}
-            devServerUrl={previewData.devServerUrl}
-          />
-        </>
       )}
+
+      {/* Git 版本记录按钮 */}
+      {gitVersionRecordData && (
+        <GitVersionRecordButton
+          onOpen={gitVersionRecordData.onOpen}
+          disabled={gitVersionRecordData.disabled || isChatLoading}
+        />
+      )}
+
+      {/* 控制台按钮 - 保持现有样式 */}
+      <ConsoleButton
+        showDevLogConsole={consoleData.showDevLogConsole}
+        hasErrorInLatestBlock={consoleData.hasErrorInLatestBlock}
+        onToggleDevLogConsole={consoleData.onToggleDevLogConsole}
+      />
+
+      {/* 刷新按钮 */}
+      {shouldShowPreviewStatus && (
+        <Tooltip title={t('PC.Pages.AppDevEditorHeaderRight.refreshPreview')}>
+          <Button
+            type="text"
+            className={styles.refreshButton}
+            icon={
+              <SvgIcon name="icons-common-refresh" style={{ fontSize: 16 }} />
+            }
+            onClick={actionsData.onRefreshPreview}
+          />
+        </Tooltip>
+      )}
+
+      {/* 更多操作菜单 */}
+      <MoreActionsMenu
+        onImportProject={actionsData.onImportProject}
+        onUploadSingleFile={actionsData.onUploadSingleFile}
+        onRefreshPreview={actionsData.onRefreshPreview}
+        onRestartServer={actionsData.onRestartServer}
+        onFullscreenPreview={actionsData.onFullscreenPreview}
+        onExportProject={actionsData.onExportProject}
+        isChatLoading={isChatLoading}
+        devServerUrl={previewData.devServerUrl}
+      />
     </div>
   );
 };

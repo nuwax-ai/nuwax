@@ -30,8 +30,6 @@ export interface FileContextMenuProps {
   targetNode: FileNode | null;
   /** 是否正在聊天加载中 */
   isChatLoading?: boolean;
-  /** 是否处于版本对比模式 */
-  isComparing?: boolean;
   /** 关闭菜单回调 */
   onClose: () => void;
   /** 删除文件回调 */

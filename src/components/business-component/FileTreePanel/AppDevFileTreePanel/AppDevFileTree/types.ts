@@ -7,9 +7,6 @@ export interface AppDevFileTreeProps {
   /** 文件树数据 */
   files: FileNode[];
 
-  /** 是否处于版本对比模式 */
-  isComparing: boolean;
-
   /** 当前选中的文件ID */
   selectedFileId: string;
 
@@ -39,9 +36,6 @@ export interface AppDevFileTreeProps {
 
   /** 重命名文件回调 */
   onRenameFile?: (node: FileNode, newName: string) => Promise<boolean>;
-
-  /** 工作空间信息（用于版本模式判断） */
-  workspace?: { activeFile: string };
 
   /** 文件管理方法 */
   fileManagement: {

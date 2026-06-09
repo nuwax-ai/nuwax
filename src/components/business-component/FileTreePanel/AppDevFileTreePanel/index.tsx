@@ -21,7 +21,6 @@ const cx = classNames.bind(styles);
  */
 const AppDevFileTreePanel: React.FC<AppDevFileTreePanelProps> = ({
   files,
-  isComparing,
   selectedFileId,
   expandedFolders,
   onFileSelect,
@@ -34,7 +33,6 @@ const AppDevFileTreePanel: React.FC<AppDevFileTreePanelProps> = ({
   onCreateFile,
   onCreateFolder,
   onCollapseAll,
-  workspace,
   fileManagement,
   isChatLoading = false,
   // 新增：文件树初始化 loading 状态
@@ -86,8 +84,8 @@ const AppDevFileTreePanel: React.FC<AppDevFileTreePanelProps> = ({
       e.preventDefault();
       e.stopPropagation();
 
-      // 如果正在聊天加载或版本对比模式，禁用右键菜单
-      if (isChatLoading || isComparing) {
+      // 如果正在聊天加载，禁用右键菜单
+      if (isChatLoading) {
         return;
       }
 
@@ -95,7 +93,7 @@ const AppDevFileTreePanel: React.FC<AppDevFileTreePanelProps> = ({
       setContextMenuPosition({ x: e.clientX, y: e.clientY });
       setContextMenuVisible(true);
     },
-    [isChatLoading, isComparing],
+    [isChatLoading],
   );
 
   /**
@@ -138,7 +136,7 @@ const AppDevFileTreePanel: React.FC<AppDevFileTreePanelProps> = ({
   /** 新建文件（可在指定文件夹下创建） */
   const handleCreateFile = useCallback(
     (parentNode: FileNode | null = null) => {
-      if (isComparing || !fileManagement.insertTempNodeForCreate) {
+      if (!fileManagement.insertTempNodeForCreate) {
         return;
       }
       const newNode = fileManagement.insertTempNodeForCreate(
@@ -147,13 +145,13 @@ const AppDevFileTreePanel: React.FC<AppDevFileTreePanelProps> = ({
       );
       setRenamingNode(newNode);
     },
-    [isComparing, fileManagement],
+    [fileManagement],
   );
 
   /** 新建文件夹（可在指定文件夹下创建） */
   const handleCreateFolder = useCallback(
     (parentNode: FileNode | null = null) => {
-      if (isComparing || !fileManagement.insertTempNodeForCreate) {
+      if (!fileManagement.insertTempNodeForCreate) {
         return;
       }
       const newNode = fileManagement.insertTempNodeForCreate(
@@ -162,7 +160,7 @@ const AppDevFileTreePanel: React.FC<AppDevFileTreePanelProps> = ({
       );
       setRenamingNode(newNode);
     },
-    [isComparing, fileManagement],
+    [fileManagement],
   );
 
   /**
@@ -191,40 +189,31 @@ const AppDevFileTreePanel: React.FC<AppDevFileTreePanelProps> = ({
         position={contextMenuPosition}
         targetNode={contextMenuTarget}
         isChatLoading={isChatLoading}
-        isComparing={isComparing}
         onClose={closeContextMenu}
         onDelete={onDeleteFile}
         onRename={onRenameFile ? handleRenameFromMenu : undefined}
         onUploadSingleFile={handleUploadFromMenu}
         onUploadProject={onUploadProject}
-        onCreateFile={isComparing ? undefined : handleCreateFile}
-        onCreateFolder={isComparing ? undefined : handleCreateFolder}
+        onCreateFile={handleCreateFile}
+        onCreateFolder={handleCreateFolder}
       />
 
       <FileTreePanel
         layout="sidebar"
         collapsible
-        showSourceControl={!isComparing && Boolean(sourceControl.onCommit)}
+        showSourceControl={Boolean(sourceControl.onCommit)}
         sourceControl={sourceControl}
       >
         <div className={cx(styles['file-tree-panel'])}>
           <SearchView files={files} onFileSelect={onFileSelect} />
 
           <FileTreeToolbar
-            disabled={isChatLoading || isComparing}
+            disabled={isChatLoading}
             onExportProject={
               onExportProject ? () => void onExportProject() : undefined
             }
-            onCreateFile={
-              isComparing
-                ? undefined
-                : onCreateFile ?? (() => handleCreateFile(null))
-            }
-            onCreateFolder={
-              isComparing
-                ? undefined
-                : onCreateFolder ?? (() => handleCreateFolder(null))
-            }
+            onCreateFile={onCreateFile ?? (() => handleCreateFile(null))}
+            onCreateFolder={onCreateFolder ?? (() => handleCreateFolder(null))}
             onUpload={() => handleUploadFromMenu(null)}
             onCollapseAll={onCollapseAll}
           />
@@ -249,24 +238,19 @@ const AppDevFileTreePanel: React.FC<AppDevFileTreePanelProps> = ({
             ) : files.length === 0 ? (
               <AppDevEmptyState
                 type="no-file" // 使用新的无文件状态
-                buttons={
-                  !isComparing
-                    ? [
-                        {
-                          text: t('PC.Pages.AppDevFileTreePanel.importProject'),
-                          icon: <ImportOutlined />,
-                          onClick: onUploadProject,
-                          disabled: isChatLoading,
-                        },
-                      ]
-                    : undefined
-                }
+                buttons={[
+                  {
+                    text: t('PC.Pages.AppDevFileTreePanel.importProject'),
+                    icon: <ImportOutlined />,
+                    onClick: onUploadProject,
+                    disabled: isChatLoading,
+                  },
+                ]}
               />
             ) : (
               // 文件树组件
               <AppDevFileTree
                 files={files}
-                isComparing={isComparing}
                 selectedFileId={selectedFileId}
                 expandedFolders={expandedFolders}
                 renamingNode={renamingNode}
@@ -275,7 +259,6 @@ const AppDevFileTreePanel: React.FC<AppDevFileTreePanelProps> = ({
                 onFileSelect={onFileSelect}
                 onToggleFolder={onToggleFolder}
                 onRenameFile={onRenameFile}
-                workspace={workspace}
                 fileManagement={fileManagement}
                 isChatLoading={isChatLoading}
               />

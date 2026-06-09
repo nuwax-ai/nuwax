@@ -8,9 +8,6 @@ export interface AppDevFileTreePanelProps {
   /** 文件树数据 */
   files: FileNode[];
 
-  /** 是否处于版本对比模式 */
-  isComparing: boolean;
-
   /** 当前选中的文件ID */
   selectedFileId: string;
 
@@ -46,9 +43,6 @@ export interface AppDevFileTreePanelProps {
 
   /** 折叠全部文件夹回调 */
   onCollapseAll?: () => void;
-
-  /** 工作空间信息（用于版本模式判断） */
-  workspace?: { activeFile: string };
 
   /** 文件管理方法 */
   fileManagement: {

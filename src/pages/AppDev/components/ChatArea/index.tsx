@@ -53,7 +53,6 @@ interface ChatAreaProps {
   fileContentState: any;
   isSupportDesignMode: boolean;
   modelSelector: any;
-  isComparing?: boolean;
   onUserManualSendMessage?: () => void;
   onUserCancelAgentTask?: () => void;
   files?: FileNode[];
@@ -76,7 +75,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   fileContentState,
   isSupportDesignMode,
   modelSelector,
-  isComparing = false, // Default false
   onUserManualSendMessage,
   onUserCancelAgentTask,
   files = [],
@@ -690,7 +688,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                       />
                     }
                     onClick={onAddDataResource}
-                    disabled={chat.isChatLoading || isComparing}
+                    disabled={chat.isChatLoading}
                   />
                 </Tooltip>
               </div>

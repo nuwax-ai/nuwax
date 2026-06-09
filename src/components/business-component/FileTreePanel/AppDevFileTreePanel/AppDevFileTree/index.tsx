@@ -13,7 +13,6 @@ import type { AppDevFileTreeProps } from './types';
  */
 const AppDevFileTree: React.FC<AppDevFileTreeProps> = ({
   files,
-  isComparing,
   selectedFileId,
   expandedFolders,
   renamingNode,
@@ -22,7 +21,6 @@ const AppDevFileTree: React.FC<AppDevFileTreeProps> = ({
   onToggleFolder,
   onRenameFile,
   onContextMenu,
-  workspace,
   fileManagement,
   isChatLoading = false,
 }) => {
@@ -131,13 +129,10 @@ const AppDevFileTree: React.FC<AppDevFileTreeProps> = ({
   const renderFileTreeNode = useCallback(
     (node: FileNode, level: number = 0) => {
       const isExpanded = expandedFolders.has(node.id);
-      const isSelected = isComparing
-        ? workspace?.activeFile === node.id
-        : selectedFileId === node.id;
+      const isSelected = selectedFileId === node.id;
       const isRenaming = renamingNode?.id === node.id;
 
-      // 为版本模式添加特殊的前缀，避免 key 冲突
-      const nodeKey = isComparing ? `version-${node.id}` : node.id;
+      const nodeKey = node.id;
 
       if (node.type === 'folder') {
         return (
@@ -203,11 +198,7 @@ const AppDevFileTree: React.FC<AppDevFileTreeProps> = ({
                 return;
               }
 
-              if (!isComparing) {
-                // 正常模式下，使用文件管理逻辑并自动切换到代码查看模式
-                fileManagement.switchToFile(node.id);
-              }
-              // 版本模式下，直接设置选中的文件到 workspace.activeFile
+              fileManagement.switchToFile(node.id);
               onFileSelect(node.id);
             }}
             onContextMenu={(e) => onContextMenu(e, node)}
@@ -232,8 +223,8 @@ const AppDevFileTree: React.FC<AppDevFileTreeProps> = ({
               <span className={styles.fileName}>{node.name}</span>
             )}
 
-            {/* 正常模式：显示文件状态 */}
-            {!isComparing && !isChatLoading && !isRenaming && (
+            {/* 文件状态 */}
+            {!isChatLoading && !isRenaming && (
               <>
                 {node.status && (
                   <span className={styles.fileStatus}>{node.status}</span>
@@ -246,8 +237,6 @@ const AppDevFileTree: React.FC<AppDevFileTreeProps> = ({
     },
     [
       expandedFolders,
-      isComparing,
-      workspace?.activeFile,
       selectedFileId,
       renamingNode,
       renameValue,

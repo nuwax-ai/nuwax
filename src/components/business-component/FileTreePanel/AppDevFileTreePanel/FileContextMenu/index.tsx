@@ -20,7 +20,6 @@ const FileContextMenu: React.FC<FileContextMenuProps> = ({
   position,
   targetNode,
   isChatLoading = false,
-  isComparing = false,
   onClose,
   onDelete,
   onRename,
@@ -139,8 +138,8 @@ const FileContextMenu: React.FC<FileContextMenuProps> = ({
     return null;
   }
 
-  // 如果正在聊天加载或版本对比模式，禁用菜单
-  if (isChatLoading || isComparing) {
+  // 如果正在聊天加载，禁用菜单
+  if (isChatLoading) {
     return null;
   }
 

@@ -17,7 +17,6 @@ import { useAppDevModelSelector } from '@/hooks/useAppDevModelSelector';
 import { useAppDevProjectId } from '@/hooks/useAppDevProjectId';
 import { useAppDevProjectInfo } from '@/hooks/useAppDevProjectInfo';
 import { useAppDevServer } from '@/hooks/useAppDevServer';
-import { useAppDevVersionCompare } from '@/hooks/useAppDevVersionCompare';
 import { useAutoErrorHandling } from '@/hooks/useAutoErrorHandling';
 import { useDataResourceManagement } from '@/hooks/useDataResourceManagement';
 import useDrawerScroll from '@/hooks/useDrawerScroll';
@@ -127,7 +126,6 @@ const AppDevDesign: React.FC = () => {
     setActiveFile,
     updateFileContent,
     updateDevServerUrl,
-    updateWorkspace,
   } = appDevModel;
 
   // 使用简化的 AppDev projectId hook
@@ -613,21 +611,10 @@ const AppDevDesign: React.FC = () => {
     return fileManagement.fileTreeState.data;
   }, [fileManagement.fileTreeState.data]);
 
-  // 版本对比管理
-  const versionCompare = useAppDevVersionCompare({
-    projectId: projectId || '',
-    onVersionSwitchSuccess: () => {
-      // 刷新文件树（不保持状态，因为切换版本是全新内容）
-      fileManagement.loadFileTree(false);
-      // 刷新项目详情
-      projectInfo.refreshProjectInfo();
-    },
-  });
-
   /** 编辑器内容变更：同步本地状态并防抖自动保存 */
   const handleEditorContentChange = useCallback(
     (fileId: string, content: string) => {
-      if (versionCompare.isComparing || chat.isChatLoading) {
+      if (chat.isChatLoading) {
         return;
       }
 
@@ -640,46 +627,7 @@ const AppDevDesign: React.FC = () => {
       // 保存文件到服务端
       fileManagement.saveFile({ fileId, content });
     },
-    [
-      versionCompare.isComparing,
-      chat.isChatLoading,
-      fileManagement,
-      sourceControl,
-    ],
-  );
-
-  // 获取当前显示的文件树（版本模式或正常模式）
-  const currentDisplayFiles = useMemo(() => {
-    return versionCompare.isComparing
-      ? versionCompare.versionFiles
-      : stableCurrentFiles;
-  }, [
-    versionCompare.isComparing,
-    versionCompare.versionFiles,
-    stableCurrentFiles,
-  ]);
-
-  /**
-   * 在版本模式下查找文件节点
-   */
-  const findVersionFileNode = useCallback(
-    (fileId: string): any => {
-      const findInNodes = (nodes: any[]): any => {
-        for (const node of nodes) {
-          if (node.id === fileId) {
-            return node;
-          }
-          if (node.children) {
-            const found = findInNodes(node.children);
-            if (found) return found;
-          }
-        }
-        return null;
-      };
-
-      return findInNodes(versionCompare.versionFiles);
-    },
-    [versionCompare.versionFiles],
+    [chat.isChatLoading, fileManagement, sourceControl],
   );
 
   /**
@@ -1454,7 +1402,6 @@ const AppDevDesign: React.FC = () => {
                     onChange={(value) =>
                       setActiveTab(value as 'preview' | 'code')
                     }
-                    disabled={versionCompare.isComparing}
                     options={[
                       {
                         label: (
@@ -1483,14 +1430,6 @@ const AppDevDesign: React.FC = () => {
                   />
                 </div>
                 <EditorHeaderRight
-                  // 版本对比模式相关
-                  isComparing={versionCompare.isComparing}
-                  versionCompareData={{
-                    isSwitching: versionCompare.isSwitching,
-                    targetVersion: versionCompare.targetVersion || undefined,
-                    onCancelCompare: versionCompare.cancelCompare,
-                    onConfirmVersionSwitch: versionCompare.confirmVersionSwitch,
-                  }}
                   // 预览模式相关
                   activeTab={activeTab}
                   previewData={{
@@ -1557,24 +1496,17 @@ const AppDevDesign: React.FC = () => {
                       {/* FileTreePanel 组件 */}
                       {activeTab !== 'preview' && (
                         <AppDevFileTreePanel
-                          files={currentDisplayFiles}
-                          isComparing={versionCompare.isComparing}
+                          files={stableCurrentFiles}
                           selectedFileId={
-                            versionCompare.isComparing
-                              ? workspace.activeFile
-                              : fileManagement.fileContentState.selectedFile
+                            fileManagement.fileContentState.selectedFile
                           }
                           expandedFolders={
                             fileManagement.fileTreeState.expandedFolders
                           }
                           onFileSelect={(fileId) => {
                             sourceControl.clearSelectedDiff();
-                            if (versionCompare.isComparing) {
-                              updateWorkspace({ activeFile: fileId });
-                            } else {
-                              fileManagement.switchToFile(fileId);
-                              setActiveTab('code');
-                            }
+                            fileManagement.switchToFile(fileId);
+                            setActiveTab('code');
                           }}
                           onToggleFolder={fileManagement.toggleFolder}
                           onDeleteFile={
@@ -1595,7 +1527,6 @@ const AppDevDesign: React.FC = () => {
                             isFileOperating ? undefined : handleExportProject
                           }
                           onCollapseAll={fileManagement.collapseAllFolders}
-                          workspace={workspace}
                           fileManagement={fileManagement}
                           isChatLoading={chat.isChatLoading}
                           isFileTreeInitializing={
@@ -1633,28 +1564,16 @@ const AppDevDesign: React.FC = () => {
                           {/* 内容区域 */}
                           <div className={styles.editorContent}>
                             <ContentViewer
-                              files={currentDisplayFiles}
+                              files={stableCurrentFiles}
                               projectInfo={
                                 projectInfo.projectInfoState?.projectInfo
                               }
                               refreshProjectInfo={() => {
-                                // 刷新项目详情(刷新版本列表)
                                 projectInfo.refreshProjectInfo();
                               }}
                               mode={activeTab}
-                              isComparing={versionCompare.isComparing}
                               selectedFileId={
-                                versionCompare.isComparing
-                                  ? workspace.activeFile
-                                  : fileManagement.fileContentState.selectedFile
-                              }
-                              fileNode={
-                                versionCompare.isComparing
-                                  ? findVersionFileNode(workspace.activeFile)
-                                  : fileManagement.findFileNode(
-                                      fileManagement.fileContentState
-                                        .selectedFile,
-                                    )
+                                fileManagement.fileContentState.selectedFile
                               }
                               fileContent={
                                 fileManagement.fileContentState.fileContent
@@ -1754,7 +1673,7 @@ const AppDevDesign: React.FC = () => {
                 fileContentState={fileManagement.fileContentState}
                 isSupportDesignMode={fileManagement.isSupportDesignMode}
                 modelSelector={modelSelector}
-                files={currentDisplayFiles}
+                files={stableCurrentFiles}
                 designViewerRef={designViewerRef}
                 onDeleteDataResource={handleDeleteDataResource}
                 onAddDataResource={() => setIsAddDataResourceModalVisible(true)}
@@ -1766,7 +1685,6 @@ const AppDevDesign: React.FC = () => {
                 onUserCancelAgentTask={() => {
                   autoErrorHandling.handleUserCancelAuto();
                 }}
-                isComparing={versionCompare.isComparing}
                 defaultActiveTab={'design'}
                 hiddenTabs={['chat', 'data']}
                 onDesignModeUnreachable={handleDesignModeUnreachable}
