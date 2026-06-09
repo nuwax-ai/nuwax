@@ -664,23 +664,6 @@ const AppDev: React.FC = () => {
   );
 
   /**
-   * 处理版本选择，直接在页面中显示版本对比
-   */
-  const handleVersionSelect = useCallback(
-    async (version: number) => {
-      try {
-        // 先切换到代码查看模式
-        setActiveTab('code');
-        // 然后启动版本对比
-        await versionCompare.startVersionCompare(version);
-      } catch (error) {
-        // 版本对比启动失败
-      }
-    },
-    [versionCompare],
-  );
-
-  /**
    * 检查 projectId 状态
    */
   useEffect(() => {
@@ -1439,15 +1422,12 @@ const AppDev: React.FC = () => {
             <div className={styles.leftPanel}>
               {/* 对话 Tab */}
               <ChatArea
-                // chatMode={chatMode}
-                // setChatMode={setChatMode}
                 chat={chat}
                 projectId={projectId || ''}
                 selectedDataSources={selectedDataResources} // 新增：选中的数据源
                 onUpdateDataSources={handleUpdateDataSources} // 新增：更新数据源回调
                 fileContentState={fileManagement.fileContentState} // 新增：文件内容状态
                 isSupportDesignMode={fileManagement.isSupportDesignMode}
-                // onSetSelectedFile={fileManagement.switchToFile} // 删除选择的文件
                 modelSelector={modelSelector} // 模型选择器状态
                 files={currentDisplayFiles} // 新增：文件树数据
                 designViewerRef={designViewerRef} // 新增：DesignViewer ref
@@ -1526,15 +1506,6 @@ const AppDev: React.FC = () => {
                     isProjectUploading: isProjectUploading,
                     isLoading: previewIsLoading,
                     lastRefreshed: previewLastRefreshed,
-                  }}
-                  // 版本选择相关
-                  versionData={{
-                    versionList: projectInfo.versionList,
-                    currentVersion:
-                      projectInfo.projectInfoState.projectInfo?.codeVersion,
-                    onVersionSelect: handleVersionSelect,
-                    getActionColor: projectInfo.getActionColor,
-                    getActionText: projectInfo.getActionText,
                   }}
                   // 控制台相关
                   consoleData={{

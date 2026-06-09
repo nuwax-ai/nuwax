@@ -2,8 +2,8 @@ import SvgIcon from '@/components/base/SvgIcon';
 import { VERSION_CONSTANTS } from '@/constants/appDevConstants';
 import { t } from '@/services/i18nRuntime';
 import { BranchesOutlined, SyncOutlined } from '@ant-design/icons';
-import { Alert, Badge, Button, Dropdown, Tag, Tooltip } from 'antd';
-import React, { useEffect, useMemo, useState } from 'react';
+import { Alert, Badge, Button, Dropdown, Tooltip } from 'antd';
+import React, { useEffect, useMemo } from 'react';
 import { useModel } from 'umi';
 import styles from './index.less';
 
@@ -24,16 +24,6 @@ interface PreviewStatusProps {
   isProjectUploading: boolean;
   isLoading?: boolean;
   lastRefreshed?: Date | null;
-}
-
-// 版本选择相关接口
-interface VersionSelectorProps {
-  versionList: any[];
-  currentVersion?: number;
-  onVersionSelect: (version: number) => void;
-  getActionColor: (action: string) => string;
-  getActionText: (action: string) => string;
-  isChatLoading: boolean;
 }
 
 // 控制台相关接口
@@ -81,15 +71,6 @@ interface EditorHeaderRightProps {
     isProjectUploading: boolean;
     isLoading?: boolean;
     lastRefreshed?: Date | null;
-  };
-
-  // 版本选择相关
-  versionData: {
-    versionList: any[];
-    currentVersion?: number;
-    onVersionSelect: (version: number) => void;
-    getActionColor: (action: string) => string;
-    getActionText: (action: string) => string;
   };
 
   // 控制台相关
@@ -266,115 +247,6 @@ const PreviewStatusInfo: React.FC<PreviewStatusProps> = ({
 };
 
 /**
- * 版本选择器组件
- * 负责版本选择相关的所有交互逻辑和状态管理
- */
-const VersionSelector: React.FC<VersionSelectorProps> = ({
-  versionList,
-  currentVersion,
-  onVersionSelect,
-  getActionColor,
-  getActionText,
-  isChatLoading,
-}) => {
-  const [expanded, setExpanded] = useState(false);
-  // 版本选择器是否禁用
-  const isDisabled = useMemo(
-    () => versionList.length === 0 || isChatLoading,
-    [versionList.length, isChatLoading],
-  );
-
-  // 当前版本显示文本
-  const currentVersionText = useMemo(
-    () => `v${currentVersion || '-'}`,
-    [currentVersion],
-  );
-
-  // 版本菜单项
-  const menuItems = useMemo(
-    () =>
-      versionList.map((version: any) => {
-        const isCurrentVersion = parseInt(version.version) === currentVersion;
-        return {
-          key: version.version.toString(),
-          disabled: isCurrentVersion, // 当前版本不可选择
-          label: (
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-              }}
-            >
-              <span>v{version.version}</span>
-              <span style={{ fontSize: '10px', color: '#999', marginLeft: 8 }}>
-                {version.time}
-              </span>
-              <Tag
-                color={
-                  isCurrentVersion ? 'default' : getActionColor(version.action)
-                }
-                style={{ marginLeft: 8, fontSize: '10px' }}
-              >
-                {isCurrentVersion
-                  ? t('PC.Pages.AppDevEditorHeaderRight.currentTag')
-                  : getActionText(version.action)}
-              </Tag>
-            </div>
-          ),
-          onClick: isCurrentVersion
-            ? undefined
-            : () => onVersionSelect(parseInt(version.version)),
-        };
-      }),
-    [
-      versionList,
-      currentVersion,
-      getActionColor,
-      getActionText,
-      onVersionSelect,
-    ],
-  );
-
-  // 选中的版本
-  const selectedKeys = useMemo(
-    () => [currentVersion?.toString() || ''],
-    [currentVersion],
-  );
-
-  return (
-    <Dropdown
-      menu={{
-        items: menuItems,
-        selectedKeys,
-      }}
-      disabled={isDisabled}
-      trigger={['click']}
-      placement="bottomRight"
-      overlayClassName={styles.versionSelectorDropdown}
-      onOpenChange={(open) => {
-        setExpanded(open);
-      }}
-    >
-      <Button
-        type="text"
-        className={styles.versionSelectorButton}
-        disabled={isDisabled}
-      >
-        {currentVersionText}
-        <SvgIcon
-          name="icons-common-caret_down"
-          className={`${styles.caretDownIcon} ${
-            expanded ? styles.expanded : ''
-          }`}
-          style={{ fontSize: 16 }}
-        />
-      </Button>
-    </Dropdown>
-  );
-};
-
-/**
  * Git 版本记录按钮
  * 打开 Git 提交历史面板
  */
@@ -446,9 +318,6 @@ const MoreActionsMenu: React.FC<MoreActionsProps> = ({
   isChatLoading,
   devServerUrl,
 }) => {
-  // 权限检查
-  // const { hasPermission } = useModel('menuModel');
-
   // 刷新预览是否禁用
   const isRefreshDisabled = useMemo(
     () => isChatLoading || !devServerUrl,
@@ -463,16 +332,8 @@ const MoreActionsMenu: React.FC<MoreActionsProps> = ({
         icon: <SvgIcon name="icons-common-import" style={{ fontSize: 16 }} />,
         label: t('PC.Pages.AppDevEditorHeaderRight.menuImportProject'),
         onClick: onImportProject,
-        // disabled: isChatLoading || !hasPermission('page_app_import'),
         disabled: isChatLoading,
       },
-      // {
-      //   key: 'upload',
-      //   icon: <PlusOutlined />,
-      //   label: 'Upload single file',
-      //   onClick: onUploadSingleFile,
-      //   disabled: isChatLoading,
-      // },
       {
         type: 'divider' as const,
       },
@@ -481,7 +342,6 @@ const MoreActionsMenu: React.FC<MoreActionsProps> = ({
         icon: <SvgIcon name="icons-common-restart" style={{ fontSize: 16 }} />,
         label: t('PC.Pages.AppDevEditorHeaderRight.menuRestartServer'),
         onClick: onRestartServer,
-        // disabled: isChatLoading || !hasPermission('page_app_restart_server'),
         disabled: isChatLoading,
       },
       {
@@ -501,7 +361,6 @@ const MoreActionsMenu: React.FC<MoreActionsProps> = ({
         icon: <SvgIcon name="icons-common-download" style={{ fontSize: 16 }} />,
         label: t('PC.Pages.AppDevEditorHeaderRight.menuExportProject'),
         onClick: onExportProject,
-        // disabled: isChatLoading || !hasPermission('page_app_export'),
         disabled: isChatLoading,
       },
     ],
@@ -544,9 +403,6 @@ const EditorHeaderRight: React.FC<EditorHeaderRightProps> = ({
   // 预览模式相关
   activeTab,
   previewData,
-
-  // 版本选择相关
-  versionData,
 
   // 控制台相关
   consoleData,
@@ -591,16 +447,7 @@ const EditorHeaderRight: React.FC<EditorHeaderRightProps> = ({
             />
           )}
 
-          {/* 版本选择器 - 紧凑按钮形式 */}
-          <VersionSelector
-            versionList={versionData.versionList}
-            currentVersion={versionData.currentVersion}
-            onVersionSelect={versionData.onVersionSelect}
-            getActionColor={versionData.getActionColor}
-            getActionText={versionData.getActionText}
-            isChatLoading={isChatLoading}
-          />
-
+          {/* Git 版本记录按钮 */}
           {gitVersionRecordData && (
             <GitVersionRecordButton
               onOpen={gitVersionRecordData.onOpen}
