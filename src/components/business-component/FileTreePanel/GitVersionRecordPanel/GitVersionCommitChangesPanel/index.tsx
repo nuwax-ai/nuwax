@@ -1,14 +1,11 @@
-import { apiGitReset } from '@/components/business-component/FileTreePanel/services/git-version-management';
 import type {
   GitCommitDiffFileItem,
   GitCommitDiffFileStatus,
   GitCommitLogItem,
 } from '@/components/business-component/FileTreePanel/types/git-version-management';
 import Loading from '@/components/custom/Loading';
-import { SUCCESS_CODE } from '@/constants/codes.constants';
 import ChangeFileGitDiffView from '@/pages/ConversationAgent/ConversationAgentFilePreview/ChangeFileGitDiffView';
 import { dict } from '@/services/i18nRuntime';
-import { modalConfirm } from '@/utils/ant-custom';
 import { formatTimeAgo } from '@/utils/common';
 import { getFileIcon } from '@/utils/fileTree';
 import {
@@ -18,14 +15,16 @@ import {
   SearchOutlined,
 } from '@ant-design/icons';
 import { DiffModeEnum } from '@git-diff-view/react';
-import { Button, Empty, Input, message } from 'antd';
+import { Button, Empty, Input } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { getDisplayHash } from '../commitListUtils';
 import {
   fetchGitCommitDiffFiles,
   getLineDiffStats,
 } from '../gitCommitDiffUtils';
-import { commitUncommittedChangesIfAny } from '../gitRollbackUtils';
+import GitVersionRollbackConfirmModal from '../GitVersionRollbackConfirmModal';
+import { useGitVersionRollback } from '../useGitVersionRollback';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -75,7 +74,17 @@ const GitVersionCommitChangesPanel: React.FC<
 }) => {
   const [files, setFiles] = useState<GitCommitDiffFileItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const [rollbackLoading, setRollbackLoading] = useState(false);
+  const {
+    rollbackCommit,
+    rollbackModalOpen,
+    rollbackLoading,
+    openRollbackConfirm,
+    closeRollbackConfirm,
+    confirmRollback,
+  } = useGitVersionRollback({
+    workspaceParams,
+    onSuccess: onRollbackSuccess,
+  });
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(
     () => new Set(),
   );
@@ -196,44 +205,10 @@ const GitVersionCommitChangesPanel: React.FC<
     [ensureFileContent],
   );
 
-  // 回滚到指定提交，需二次确认
+  // 打开回滚确认弹窗
   const handleRollback = useCallback(() => {
-    modalConfirm(
-      dict(
-        'PC.Pages.ConversationAgent.AgentGitVersionRecord.rollbackConfirmTitle',
-      ),
-      dict(
-        'PC.Pages.ConversationAgent.AgentGitVersionRecord.rollbackConfirmContent',
-      ).replace('{0}', commit.hash),
-      async () => {
-        setRollbackLoading(true);
-        try {
-          const commitResult = await commitUncommittedChangesIfAny(
-            workspaceParams,
-          );
-          if (!commitResult.success) {
-            return;
-          }
-
-          const { code } = await apiGitReset({
-            ...workspaceParams,
-            target: commit.hash,
-            mode: 'mixed',
-          });
-          if (code === SUCCESS_CODE) {
-            message.success(
-              dict(
-                'PC.Pages.ConversationAgent.AgentGitVersionRecord.rollbackSuccess',
-              ),
-            );
-            onRollbackSuccess?.();
-          }
-        } finally {
-          setRollbackLoading(false);
-        }
-      },
-    );
-  }, [commit, workspaceParams, onRollbackSuccess]);
+    openRollbackConfirm(commit);
+  }, [commit, openRollbackConfirm]);
 
   const renderFileDiff = (file: GitCommitDiffFileItem) => {
     const cached = fileContentMap[file.path] ?? file;
@@ -280,14 +255,16 @@ const GitVersionCommitChangesPanel: React.FC<
       {/* 提交卡片 */}
       <div className={cx(styles['commit-card'])}>
         <div className={cx(styles['commit-card-top'])}>
-          <div className={cx(styles['commit-hash'])}>{commit.hash}</div>
+          <div className={cx(styles['commit-hash'])}>
+            {getDisplayHash(commit.hash)}
+          </div>
           <div className={cx(styles['commit-meta'])}>
             {commit.author_name} · {formatTimeAgo(commit.date)}
           </div>
         </div>
         <p className={cx(styles['commit-message'])}>{commit.message}</p>
         <Button
-          size="small"
+          type="primary"
           loading={rollbackLoading}
           onClick={handleRollback}
           style={{ marginTop: 8 }}
@@ -432,6 +409,15 @@ const GitVersionCommitChangesPanel: React.FC<
           })
         )}
       </div>
+
+      {/* 回滚确认弹窗 */}
+      <GitVersionRollbackConfirmModal
+        open={rollbackModalOpen}
+        commit={rollbackCommit}
+        loading={rollbackLoading}
+        onCancel={closeRollbackConfirm}
+        onConfirm={confirmRollback}
+      />
     </div>
   );
 };

@@ -2,6 +2,10 @@ import type { GitCommitLogItem } from '@/components/business-component/FileTreeP
 import dayjs from 'dayjs';
 import type { CommitDateGroup } from './types';
 
+/** 获取用于 UI 展示的 hash（取前 10 位） */
+export const getDisplayHash = (hash?: string): string =>
+  hash?.slice(0, 10) || '';
+
 /** 格式化提交日期（用于分组标题，如 06/06/2026） */
 export const formatCommitDateLabel = (date: string): string =>
   date ? dayjs(date).format('DD/MM/YYYY') : '';

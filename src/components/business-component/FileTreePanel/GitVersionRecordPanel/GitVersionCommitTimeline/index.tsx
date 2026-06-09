@@ -5,7 +5,7 @@ import { UndoOutlined } from '@ant-design/icons';
 import { Button } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
-import { formatCommitTime } from '../commitListUtils';
+import { formatCommitTime, getDisplayHash } from '../commitListUtils';
 import type { CommitDateGroup } from '../types';
 import styles from './index.less';
 
@@ -51,7 +51,9 @@ const GitVersionCommitTimeline: React.FC<GitVersionCommitTimelineProps> = ({
         >
           <p className={cx(styles.message)}>{commit.message}</p>
           <div className={cx(styles.meta)}>
-            <span className={cx(styles.hash)}>{commit.hash}</span>
+            <span className={cx(styles.hash)}>
+              {getDisplayHash(commit.hash)}
+            </span>
             <span className={cx(styles.divider)}>|</span>
             <span className={cx(styles.author)}>
               <span className={cx(styles['author-avatar'])}>
@@ -72,8 +74,8 @@ const GitVersionCommitTimeline: React.FC<GitVersionCommitTimelineProps> = ({
         >
           <Button
             size="small"
+            type="primary"
             icon={<UndoOutlined />}
-            className={cx(styles['btn-rollback'])}
             loading={isRollbackLoading}
             onClick={(e) => {
               e.stopPropagation();

@@ -3,24 +3,20 @@ import {
   isGitWorkspaceReady,
   type GitWorkspaceConfig,
 } from '@/components/business-component/FileTreePanel/hooks/buildGitWorkspaceParams';
-import {
-  apiGitLogList,
-  apiGitReset,
-} from '@/components/business-component/FileTreePanel/services/git-version-management';
+import { apiGitLogList } from '@/components/business-component/FileTreePanel/services/git-version-management';
 import type { GitCommitLogItem } from '@/components/business-component/FileTreePanel/types/git-version-management';
 import InfiniteScrollDiv from '@/components/custom/InfiniteScrollDiv';
 import Loading from '@/components/custom/Loading';
-import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
-import { modalConfirm } from '@/utils/ant-custom';
-import { Empty, message } from 'antd';
+import { Empty } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { groupCommitsByDate } from './commitListUtils';
-import { commitUncommittedChangesIfAny } from './gitRollbackUtils';
 import GitVersionCommitChangesPanel from './GitVersionCommitChangesPanel';
 import GitVersionCommitTimeline from './GitVersionCommitTimeline';
+import GitVersionRollbackConfirmModal from './GitVersionRollbackConfirmModal';
 import styles from './index.less';
+import { useGitVersionRollback } from './useGitVersionRollback';
 
 const cx = classNames.bind(styles);
 
@@ -73,10 +69,6 @@ const GitVersionRecordPanel: React.FC<GitVersionRecordPanelProps> = ({
   className,
 }) => {
   // ---------- 列表与交互状态 ----------
-  /** 正在执行回滚的提交 hash（用于按钮 loading） */
-  const [rollbackLoadingHash, setRollbackLoadingHash] = useState<string | null>(
-    null,
-  );
   /** 已加载的提交列表（多页累加） */
   const [commits, setCommits] = useState<GitCommitLogItem[]>([]);
   /** 提交总数（接口返回，用于判断是否还有更多） */
@@ -183,6 +175,22 @@ const GitVersionRecordPanel: React.FC<GitVersionRecordPanelProps> = ({
     void fetchLogPage(1, false);
   }, [fetchLogPage]);
 
+  const {
+    rollbackCommit,
+    rollbackModalOpen,
+    rollbackLoading,
+    rollbackLoadingHash,
+    openRollbackConfirm,
+    closeRollbackConfirm,
+    confirmRollback,
+  } = useGitVersionRollback({
+    workspaceParams,
+    onSuccess: () => {
+      refreshLog();
+      onRollbackSuccess?.();
+    },
+  });
+
   /** 打开某次提交的变更文件列表 */
   const openCommitChanges = useCallback(
     (commit: GitCommitLogItem) => {
@@ -220,52 +228,6 @@ const GitVersionRecordPanel: React.FC<GitVersionRecordPanelProps> = ({
     workspaceParams,
     fetchLogPage,
   ]);
-
-  /** 回滚到指定提交，需二次确认 */
-  const handleRollback = useCallback(
-    (commit: GitCommitLogItem) => {
-      if (!workspaceParams) {
-        return;
-      }
-      modalConfirm(
-        dict(
-          'PC.Pages.ConversationAgent.AgentGitVersionRecord.rollbackConfirmTitle',
-        ),
-        dict(
-          'PC.Pages.ConversationAgent.AgentGitVersionRecord.rollbackConfirmContent',
-        ).replace('{0}', commit.hash),
-        async () => {
-          setRollbackLoadingHash(commit.hash);
-          try {
-            const commitResult = await commitUncommittedChangesIfAny(
-              workspaceParams,
-            );
-            if (!commitResult.success) {
-              return;
-            }
-
-            const { code } = await apiGitReset({
-              ...workspaceParams,
-              target: commit.hash,
-              mode: 'mixed',
-            });
-            if (code === SUCCESS_CODE) {
-              message.success(
-                dict(
-                  'PC.Pages.ConversationAgent.AgentGitVersionRecord.rollbackSuccess',
-                ),
-              );
-              refreshLog();
-              onRollbackSuccess?.();
-            }
-          } finally {
-            setRollbackLoadingHash(null);
-          }
-        },
-      );
-    },
-    [workspaceParams, refreshLog, onRollbackSuccess],
-  );
 
   // 工作空间 ID 未就绪时展示空状态
   if (!workspaceReady) {
@@ -340,11 +302,20 @@ const GitVersionRecordPanel: React.FC<GitVersionRecordPanelProps> = ({
               groups={commitDateGroups}
               rollbackLoadingHash={rollbackLoadingHash}
               onOpenCommitChanges={openCommitChanges}
-              onRollback={handleRollback}
+              onRollback={openRollbackConfirm}
             />
           </InfiniteScrollDiv>
         )}
       </div>
+
+      {/* 回滚确认弹窗 */}
+      <GitVersionRollbackConfirmModal
+        open={rollbackModalOpen}
+        commit={rollbackCommit}
+        loading={rollbackLoading}
+        onCancel={closeRollbackConfirm}
+        onConfirm={confirmRollback}
+      />
     </div>
   );
 };
