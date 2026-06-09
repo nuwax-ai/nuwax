@@ -5,6 +5,7 @@ import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
 import type { CreatedNodeItem } from '@/types/interfaces/common';
 import { customizeRequiredMark } from '@/utils/form';
+import { createPriceInputNumberProps } from '@/utils/priceInput';
 import { TOOL_PRICING_TYPE_OPTIONS } from '@/utils/resourcePricing';
 import { Form, Input, InputNumber, Select, Switch, message } from 'antd';
 import React, { useEffect, useState } from 'react';
@@ -18,6 +19,9 @@ import {
   ToolPricingTargetType,
 } from '../../../types/resource';
 import styles from './index.less';
+
+/** 插件定价价格输入框共用配置（最多 4 位小数）。 */
+const priceInputProps = createPriceInputNumberProps({ decimals: 4 });
 
 /** 表单弹窗 z-index（嵌套的 Created 需高于此值，否则列表弹层会被压住） */
 const TOOL_PRICING_FORM_MODAL_Z = 1000;
@@ -220,13 +224,7 @@ const ToolPricingFormModal: React.FC<ToolPricingFormModalProps> = ({
               label={dict('PC.Pages.SpaceResourcePricing.price')}
               rules={[{ required: true }]}
             >
-              <InputNumber
-                min={0}
-                precision={2}
-                step={0.01}
-                max={100000000}
-                className="w-full"
-              />
+              <InputNumber {...priceInputProps} className="w-full" />
             </Form.Item>
             <Form.Item
               name="pricingType"
