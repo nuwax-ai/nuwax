@@ -4,7 +4,7 @@ import { ProcessingEnum } from '@/types/enums/common';
 // import { copyTextToClipboard } from '@/utils/clipboard';
 import ChangeFileGitDiffView, {
   DiffModeEnum,
-} from '@/components/base/ChangeFileGitDiffView';
+} from '@/components/business-component/ChangeFileGitDiffView';
 import { cloneDeep } from '@/utils/common';
 import {
   BorderOutlined,

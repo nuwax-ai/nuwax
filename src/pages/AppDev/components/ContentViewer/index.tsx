@@ -1,5 +1,5 @@
-import { ChangeFileGitDiffView } from '@/components/business-component';
 import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
+import ChangeFileGitDiffView from '@/components/business-component/ChangeFileGitDiffView';
 import CodeViewer from '@/components/CodeViewer';
 import type { ChangeFileInfo } from '@/components/FileTreeView/type';
 import { t } from '@/services/i18nRuntime';
