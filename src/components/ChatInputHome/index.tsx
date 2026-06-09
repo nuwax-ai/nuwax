@@ -100,6 +100,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   agentMode = 'yolo',
   onAgentModeChange,
   showAgentModeSelector = false,
+  usageScenarios,
 }) => {
   // 获取停止会话相关的方法和状态
   const {
@@ -656,6 +657,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
             defaultMentions={defaultMentions}
             enableSubscription={isEnableSubscription}
             onUnsubscribedSkillSelect={handleUnsubscribedSkillSelect}
+            usageScenarios={usageScenarios}
           />
           <footer className={cx('flex', 'flex-1', styles.footer)}>
             {/* 清空会话记录 */}
@@ -698,6 +700,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
               mentionPlacement={mentionPlacement}
               enableSubscription={isEnableSubscription}
               onSelectMention={handleInsertAtMention}
+              usageScenarios={usageScenarios}
             />
 
             {/*上传按钮*/}

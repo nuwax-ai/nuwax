@@ -596,6 +596,8 @@ export interface ChatInputProps extends ManualComponentItemProps {
   defaultMentions?: MentionItem[];
   /** 插槽：用于完美嵌入和合并头部 Tab 选择组件 */
   tabsSlot?: React.ReactNode;
+  /** 可用值:PageApp,TaskAgent */
+  usageScenarios?: AgentTypeEnum[];
 }
 
 // 聊天框底部更多操作组件

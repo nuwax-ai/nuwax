@@ -233,6 +233,8 @@ export interface MentionEditorProps {
   minRows?: number;
   /** 最大行数（影响最大高度） */
   maxRows?: number;
+  /** 可用值:PageApp,TaskAgent */
+  usageScenarios?: AgentTypeEnum[];
 }
 
 /**

@@ -1,8 +1,9 @@
 import ChatInputHome from '@/components/ChatInputHome';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import { AgentTypeEnum } from '@/types/enums/space';
 import { message } from 'antd';
 import classNames from 'classnames';
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import TabsList from './components/TabsList';
 import styles from './index.less';
 
@@ -54,6 +55,12 @@ const PromptBox: React.FC<PromptBoxProps> = ({ onSubmit }) => {
 
   const currentTab = tabs.find((t) => t.key === activeTab) || tabs[0];
 
+  const usageScenarios = useMemo(() => {
+    return activeTab === AgentComponentTypeEnum.PageApp
+      ? [AgentTypeEnum.PageApp]
+      : [AgentTypeEnum.TaskAgent];
+  }, [activeTab]);
+
   const handleSend = useCallback(
     (msg: string) => {
       if (!msg?.trim()) {
@@ -71,6 +78,7 @@ const PromptBox: React.FC<PromptBoxProps> = ({ onSubmit }) => {
         key={currentTab.key}
         onEnter={handleSend}
         placeholder={currentTab.placeholder}
+        usageScenarios={usageScenarios}
         tabsSlot={
           <TabsList tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
         }

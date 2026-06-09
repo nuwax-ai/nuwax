@@ -345,6 +345,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
       defaultMentions,
       minRows = 2,
       maxRows = 6,
+      usageScenarios,
     },
     ref,
   ) => {
@@ -1403,6 +1404,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
             searchText={mentionSearchText}
             maxHeight={mentionPopupMaxHeight}
             onHeightChange={handlePopupHeightChange}
+            usageScenarios={usageScenarios}
           />
         </div>
       </div>
