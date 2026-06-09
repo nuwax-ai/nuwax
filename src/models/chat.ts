@@ -82,7 +82,7 @@ export default () => {
     const processedMap = new Map<string, ProcessingInfo>();
 
     processingList.forEach((item) => {
-      const key = item.executeId || '';
+      const key = `${item.executeId || ''}_${item.type || ''}`;
       const existing = processedMap.get(key);
 
       if (!existing) {
@@ -101,9 +101,10 @@ export default () => {
     setProcessingList(newProcessingList);
   };
   const getProcessingById = useCallback(
-    (executeId: string) => {
+    (executeId: string, type?: string) => {
       return processingList.find(
-        (item: ProcessingInfo) => item?.executeId === executeId,
+        (item: ProcessingInfo) =>
+          item?.executeId === executeId && (!type || item?.type === type),
       );
     },
     [processingList],
