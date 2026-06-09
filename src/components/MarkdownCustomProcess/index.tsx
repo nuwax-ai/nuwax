@@ -76,7 +76,10 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
     //   // 如果状态不是执行中，则不更新
     //   return;
     // }
-    const processing = getProcessingById(innerProcessing.executeId);
+    const processing = getProcessingById(
+      innerProcessing.executeId,
+      innerProcessing.type,
+    );
     if (
       processing &&
       (processing?.status !== innerProcessing.status ||
