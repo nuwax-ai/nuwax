@@ -30,8 +30,8 @@ export interface FileTreeProps {
   /** 右键菜单回调 */
   onContextMenu: (e: React.MouseEvent, node: FileNode | null) => void;
 
-  /** 文件选择回调 */
-  onFileSelect: (fileId: string) => void;
+  /** 文件选择回调；selectFolder 为 true 时直接选中文件夹（不自动进入子文件） */
+  onFileSelect: (fileId: string, options?: { selectFolder?: boolean }) => void;
 
   /** 重命名文件回调 */
   onConfirmRenameFile: (node: FileNode, newName: string) => void;

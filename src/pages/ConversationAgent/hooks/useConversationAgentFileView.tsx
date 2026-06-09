@@ -381,7 +381,7 @@ export function useConversationAgentFileView(
 
   // 文件选择（内部函数，执行实际的选择逻辑）
   const handleFileSelectInternal = useCallback(
-    async (fileId: string) => {
+    async (fileId: string, options?: { selectFolder?: boolean }) => {
       // 根据文件ID查找文件节点（精确匹配）
       let fileNode = findFileNode(fileId, files);
 
@@ -391,6 +391,13 @@ export function useConversationAgentFileView(
       }
 
       if (fileNode) {
+        // 文件树中点击文件夹：直接选中文件夹并高亮
+        if (fileNode.type === 'folder' && options?.selectFolder) {
+          setSelectedFileId(fileNode.id);
+          setSelectedFileNode(fileNode);
+          return;
+        }
+
         // 如果文件节点是文件夹(folder)，则选择第一个子节点(点击会话中文件名时，如果文件名是文件夹，则选择第一个子节点)
         if (fileNode.type === 'folder') {
           // 如果文件节点是文件夹，且有子节点，则选择第一个子节点
@@ -501,11 +508,11 @@ export function useConversationAgentFileView(
 
   // 文件选择（对外接口，用于用户主动选择）
   const handleFileSelect = useCallback(
-    async (fileId: string) => {
+    async (fileId: string, options?: { selectFolder?: boolean }) => {
       // 记录用户主动选择的文件ID
       userSelectedFileRef.current = fileId;
       // 调用内部选择函数
-      await handleFileSelectInternal(fileId);
+      await handleFileSelectInternal(fileId, options);
     },
     [handleFileSelectInternal],
   );

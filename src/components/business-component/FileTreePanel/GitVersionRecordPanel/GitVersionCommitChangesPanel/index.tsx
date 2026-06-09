@@ -1,4 +1,4 @@
-import { apiGitRevert } from '@/components/business-component/FileTreePanel/services/git-version-management';
+import { apiGitReset } from '@/components/business-component/FileTreePanel/services/git-version-management';
 import type {
   GitCommitDiffFileItem,
   GitCommitDiffFileStatus,
@@ -219,9 +219,10 @@ const GitVersionCommitChangesPanel: React.FC<
             return;
           }
 
-          const { code } = await apiGitRevert({
+          const { code } = await apiGitReset({
             ...workspaceParams,
             target: commit.hash,
+            mode: 'mixed',
           });
           if (code === SUCCESS_CODE) {
             message.success(

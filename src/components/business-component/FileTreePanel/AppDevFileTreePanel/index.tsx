@@ -119,11 +119,51 @@ const AppDevFileTreePanel: React.FC<AppDevFileTreePanelProps> = ({
   }, [closeContextMenu]);
 
   /**
-   * 取消重命名
+   * 取消重命名；新建节点未输入名称时移除临时占位
    */
-  const cancelRename = useCallback(() => {
-    setRenamingNode(null);
-  }, []);
+  const cancelRename = useCallback(
+    (options?: { removeIfNew?: boolean; node?: FileNode | null }) => {
+      if (
+        options?.removeIfNew &&
+        options.node &&
+        fileManagement.removeTempNode
+      ) {
+        fileManagement.removeTempNode(options.node.id);
+      }
+      setRenamingNode(null);
+    },
+    [fileManagement],
+  );
+
+  /** 新建文件（可在指定文件夹下创建） */
+  const handleCreateFile = useCallback(
+    (parentNode: FileNode | null = null) => {
+      if (isComparing || !fileManagement.insertTempNodeForCreate) {
+        return;
+      }
+      const newNode = fileManagement.insertTempNodeForCreate(
+        parentNode,
+        'file',
+      );
+      setRenamingNode(newNode);
+    },
+    [isComparing, fileManagement],
+  );
+
+  /** 新建文件夹（可在指定文件夹下创建） */
+  const handleCreateFolder = useCallback(
+    (parentNode: FileNode | null = null) => {
+      if (isComparing || !fileManagement.insertTempNodeForCreate) {
+        return;
+      }
+      const newNode = fileManagement.insertTempNodeForCreate(
+        parentNode,
+        'folder',
+      );
+      setRenamingNode(newNode);
+    },
+    [isComparing, fileManagement],
+  );
 
   /**
    * 处理重命名操作（从右键菜单触发）
@@ -157,6 +197,8 @@ const AppDevFileTreePanel: React.FC<AppDevFileTreePanelProps> = ({
         onRename={onRenameFile ? handleRenameFromMenu : undefined}
         onUploadSingleFile={handleUploadFromMenu}
         onUploadProject={onUploadProject}
+        onCreateFile={isComparing ? undefined : handleCreateFile}
+        onCreateFolder={isComparing ? undefined : handleCreateFolder}
       />
 
       <FileTreePanel
@@ -173,8 +215,16 @@ const AppDevFileTreePanel: React.FC<AppDevFileTreePanelProps> = ({
             onExportProject={
               onExportProject ? () => void onExportProject() : undefined
             }
-            onCreateFile={onCreateFile}
-            onCreateFolder={onCreateFolder}
+            onCreateFile={
+              isComparing
+                ? undefined
+                : onCreateFile ?? (() => handleCreateFile(null))
+            }
+            onCreateFolder={
+              isComparing
+                ? undefined
+                : onCreateFolder ?? (() => handleCreateFolder(null))
+            }
             onUpload={() => handleUploadFromMenu(null)}
             onCollapseAll={onCollapseAll}
           />

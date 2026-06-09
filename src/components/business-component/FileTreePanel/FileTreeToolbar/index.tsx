@@ -55,6 +55,8 @@ const FileTreeToolbar: React.FC<FileTreeToolbarProps> = ({
   className,
 }) => {
   const actionDisabled = (handler?: () => void) => disabled || !handler;
+  /** 新建文件/文件夹：仅在没有回调时禁用，不受全局 disabled 影响 */
+  const createActionDisabled = (handler?: () => void) => !handler;
 
   return (
     <div className={cx(styles.toolbar, className)}>
@@ -85,7 +87,7 @@ const FileTreeToolbar: React.FC<FileTreeToolbarProps> = ({
             size="small"
             className={cx(styles['action-btn'])}
             icon={<FileAddOutlined style={{ fontSize: 16 }} />}
-            disabled={actionDisabled(onCreateFile)}
+            disabled={createActionDisabled(onCreateFile)}
             onClick={onCreateFile}
           />
         </Tooltip>
@@ -97,7 +99,7 @@ const FileTreeToolbar: React.FC<FileTreeToolbarProps> = ({
             size="small"
             className={cx(styles['action-btn'])}
             icon={<FolderAddOutlined style={{ fontSize: 16 }} />}
-            disabled={actionDisabled(onCreateFolder)}
+            disabled={createActionDisabled(onCreateFolder)}
             onClick={onCreateFolder}
           />
         </Tooltip>

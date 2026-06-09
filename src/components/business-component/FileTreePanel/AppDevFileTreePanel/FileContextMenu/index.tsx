@@ -2,6 +2,8 @@ import { t } from '@/services/i18nRuntime';
 import {
   DeleteOutlined,
   EditOutlined,
+  FileAddOutlined,
+  FolderAddOutlined,
   ImportOutlined,
   UploadOutlined,
 } from '@ant-design/icons';
@@ -24,6 +26,8 @@ const FileContextMenu: React.FC<FileContextMenuProps> = ({
   onRename,
   onUploadSingleFile,
   onUploadProject,
+  onCreateFile,
+  onCreateFolder,
 }) => {
   /**
    * 处理菜单项点击
@@ -83,6 +87,30 @@ const FileContextMenu: React.FC<FileContextMenuProps> = ({
   }, [targetNode, onUploadSingleFile, handleMenuItemClick]);
 
   /**
+   * 处理新建文件操作
+   */
+  const handleCreateFile = useCallback(() => {
+    if (!onCreateFile) return;
+    handleMenuItemClick(() => {
+      const parentNode =
+        targetNode && targetNode.type === 'folder' ? targetNode : null;
+      onCreateFile(parentNode);
+    });
+  }, [targetNode, onCreateFile, handleMenuItemClick]);
+
+  /**
+   * 处理新建文件夹操作
+   */
+  const handleCreateFolder = useCallback(() => {
+    if (!onCreateFolder) return;
+    handleMenuItemClick(() => {
+      const parentNode =
+        targetNode && targetNode.type === 'folder' ? targetNode : null;
+      onCreateFolder(parentNode);
+    });
+  }, [targetNode, onCreateFolder, handleMenuItemClick]);
+
+  /**
    * 处理上传项目操作（空白区域菜单）
    */
   const handleUploadProject = useCallback(() => {
@@ -118,36 +146,98 @@ const FileContextMenu: React.FC<FileContextMenuProps> = ({
 
   // 构建菜单项 - 根据是否有目标节点显示不同菜单
   const menuItems = targetNode
-    ? [
-        // 文件/文件夹菜单项
+    ? targetNode.type === 'folder'
+      ? [
+          {
+            key: 'createFile',
+            label: t('PC.Components.FileContextMenu.newFile'),
+            icon: <FileAddOutlined />,
+            onClick: handleCreateFile,
+            disabled: !onCreateFile,
+          },
+          {
+            key: 'createFolder',
+            label: t('PC.Components.FileContextMenu.newFolder'),
+            icon: <FolderAddOutlined />,
+            onClick: handleCreateFolder,
+            disabled: !onCreateFolder,
+          },
+          {
+            key: 'divider1',
+            type: 'divider' as const,
+          },
+          {
+            key: 'rename',
+            label: t('PC.Pages.AppDevFileTreeContextMenu.rename'),
+            icon: <EditOutlined />,
+            onClick: handleRename,
+            disabled: !onRename,
+          },
+          {
+            key: 'upload',
+            label: t('PC.Pages.AppDevFileTreeContextMenu.uploadFile'),
+            icon: <UploadOutlined />,
+            onClick: handleUpload,
+            disabled: !onUploadSingleFile || targetNode.name.startsWith('.'),
+          },
+          {
+            key: 'divider2',
+            type: 'divider' as const,
+          },
+          {
+            key: 'delete',
+            label: t('PC.Pages.AppDevFileTreeContextMenu.delete'),
+            icon: <DeleteOutlined />,
+            onClick: handleDelete,
+            danger: true,
+          },
+        ]
+      : [
+          {
+            key: 'rename',
+            label: t('PC.Pages.AppDevFileTreeContextMenu.rename'),
+            icon: <EditOutlined />,
+            onClick: handleRename,
+            disabled: !onRename,
+          },
+          {
+            key: 'upload',
+            label: t('PC.Pages.AppDevFileTreeContextMenu.uploadFile'),
+            icon: <UploadOutlined />,
+            onClick: handleUpload,
+            disabled: !onUploadSingleFile || targetNode.name.startsWith('.'),
+          },
+          {
+            key: 'divider',
+            type: 'divider' as const,
+          },
+          {
+            key: 'delete',
+            label: t('PC.Pages.AppDevFileTreeContextMenu.delete'),
+            icon: <DeleteOutlined />,
+            onClick: handleDelete,
+            danger: true,
+          },
+        ]
+    : [
         {
-          key: 'rename',
-          label: t('PC.Pages.AppDevFileTreeContextMenu.rename'),
-          icon: <EditOutlined />,
-          onClick: handleRename,
-          disabled: !onRename,
+          key: 'createFile',
+          label: t('PC.Components.FileContextMenu.newFile'),
+          icon: <FileAddOutlined />,
+          onClick: handleCreateFile,
+          disabled: !onCreateFile,
         },
         {
-          key: 'upload',
-          label: t('PC.Pages.AppDevFileTreeContextMenu.uploadFile'),
-          icon: <UploadOutlined />,
-          onClick: handleUpload,
-          disabled: !onUploadSingleFile || targetNode.name.startsWith('.'),
+          key: 'createFolder',
+          label: t('PC.Components.FileContextMenu.newFolder'),
+          icon: <FolderAddOutlined />,
+          onClick: handleCreateFolder,
+          disabled: !onCreateFolder,
         },
         {
-          key: 'divider',
+          key: 'divider1',
           type: 'divider' as const,
         },
-        {
-          key: 'delete',
-          label: t('PC.Pages.AppDevFileTreeContextMenu.delete'),
-          icon: <DeleteOutlined />,
-          onClick: handleDelete,
-          danger: true,
-        },
-      ]
-    : [
-        // 空白区域菜单项
         {
           key: 'uploadProject',
           label: t('PC.Pages.AppDevFileTreeContextMenu.importProject'),

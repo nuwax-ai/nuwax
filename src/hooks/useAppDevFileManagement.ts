@@ -248,6 +248,16 @@ export const useAppDevFileManagement = ({
       // 检查文件是否已经有content数据，如果有则不需要调用API
       const fileNode = findFileNode(fileId, fileTreeState.data);
 
+      // 选中文件夹时仅更新选中态，不加载文件内容
+      if (fileNode?.type === 'folder') {
+        setFileContentState((prev) => ({
+          ...prev,
+          isLoadingFileContent: false,
+          fileContentError: null,
+        }));
+        return;
+      }
+
       // 检查文件是否已经有内容数据
       const hasContent =
         fileNode &&
@@ -667,6 +677,156 @@ export const useAppDevFileManagement = ({
   );
 
   /**
+   * 在文件树中插入临时节点并进入重命名（新建文件/文件夹）
+   */
+  const insertTempNodeForCreate = useCallback(
+    (parentNode: FileNode | null, type: 'file' | 'folder'): FileNode => {
+      const parentPath = parentNode?.path || null;
+      const tempIdSuffix = `__new__${Date.now()}`;
+      const fullPath = parentPath
+        ? `${parentPath}/${tempIdSuffix}`
+        : tempIdSuffix;
+
+      const newNode: FileNode = {
+        id: fullPath,
+        name: '',
+        type,
+        path: fullPath,
+        children: type === 'folder' ? [] : undefined,
+        parentPath,
+        content: type === 'file' ? '' : undefined,
+        lastModified: Date.now(),
+        status: 'create',
+      };
+
+      const insertNodeAtTop = (
+        nodes: FileNode[],
+        targetParentId: string | null,
+      ): FileNode[] => {
+        if (!targetParentId) {
+          return [newNode, ...nodes];
+        }
+
+        return nodes.map((node) => {
+          if (node.id === targetParentId) {
+            const children = node.children || [];
+            return {
+              ...node,
+              children: [newNode, ...children],
+            };
+          }
+
+          if (node.children?.length) {
+            return {
+              ...node,
+              children: insertNodeAtTop(node.children, targetParentId),
+            };
+          }
+
+          return node;
+        });
+      };
+
+      setFileTreeState((prev) => {
+        const nextExpandedFolders = new Set(prev.expandedFolders);
+        if (parentNode?.id) {
+          nextExpandedFolders.add(parentNode.id);
+        }
+
+        return {
+          ...prev,
+          data: insertNodeAtTop(prev.data, parentNode?.id || null),
+          expandedFolders: nextExpandedFolders,
+        };
+      });
+
+      return newNode;
+    },
+    [],
+  );
+
+  /**
+   * 移除新建流程中的临时节点（取消重命名时）
+   */
+  const removeTempNode = useCallback((nodeId: string) => {
+    if (!nodeId.includes('__new__')) {
+      return;
+    }
+
+    const removeNodeFromTree = (
+      nodes: FileNode[],
+      targetId: string,
+    ): FileNode[] =>
+      nodes
+        .filter((node) => node.id !== targetId)
+        .map((node) =>
+          node.children?.length
+            ? { ...node, children: removeNodeFromTree(node.children, targetId) }
+            : node,
+        );
+
+    setFileTreeState((prev) => ({
+      ...prev,
+      data: removeNodeFromTree(prev.data, nodeId),
+    }));
+  }, []);
+
+  /**
+   * 创建文件或文件夹（确认临时节点名称后，通过 specified-files-update 提交）
+   */
+  const createFileItem = useCallback(
+    async (node: FileNode, newName: string): Promise<boolean> => {
+      if (!projectId) {
+        return false;
+      }
+
+      const trimmedName = newName.trim();
+      if (!trimmedName) {
+        removeTempNode(node.id);
+        return false;
+      }
+
+      const parentPath = node.parentPath || '';
+      const newPath = parentPath ? `${parentPath}/${trimmedName}` : trimmedName;
+
+      try {
+        const response = await submitSpecifiedFilesUpdate(projectId, [
+          {
+            name: newPath,
+            contents: node.type === 'file' ? node.content || '' : '',
+            binary: false,
+            sizeExceeded: false,
+            operation: 'create',
+            isDir: node.type === 'folder',
+          },
+        ]);
+
+        if (response.success && response.code === '0000') {
+          await loadFileTree(true, true);
+          keepAlive(projectId);
+          return true;
+        }
+
+        removeTempNode(node.id);
+        message.error(dict('PC.Hooks.UseAppDevFileManagement.createFailed'));
+        return false;
+      } catch (error) {
+        removeTempNode(node.id);
+        message.error(
+          dict(
+            'PC.Hooks.UseAppDevFileManagement.createFailedWithError',
+            error instanceof Error
+              ? error.message
+              : dict('PC.Common.Global.unknownError'),
+          ),
+        );
+        return false;
+      }
+    },
+    [projectId, loadFileTree, removeTempNode],
+  );
+
+  /**
    * 重命名文件或文件夹
    */
   const renameFileItem = useCallback(
@@ -845,6 +1005,9 @@ export const useAppDevFileManagement = ({
     // 文件操作相关
     deleteFileItem,
     renameFileItem,
+    insertTempNodeForCreate,
+    removeTempNode,
+    createFileItem,
 
     // 文件树初始化 loading 状态
     isFileTreeInitializing,

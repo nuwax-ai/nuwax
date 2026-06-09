@@ -53,6 +53,11 @@ export interface AppDevFileTreePanelProps {
   /** 文件管理方法 */
   fileManagement: {
     switchToFile: (fileId: string) => void;
+    insertTempNodeForCreate?: (
+      parentNode: FileNode | null,
+      type: 'file' | 'folder',
+    ) => FileNode;
+    removeTempNode?: (nodeId: string) => void;
   };
   /** 是否正在AI聊天加载中 */
   isChatLoading?: boolean;

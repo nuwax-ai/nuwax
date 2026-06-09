@@ -1188,11 +1188,11 @@ const AppDev: React.FC = () => {
       }
       setIsFileOperating(true);
       try {
-        // 这里建议调用前先关闭前端弹窗
-        const success = await fileManagement.renameFileItem(
-          node.id,
-          newName.trim(),
-        );
+        const isCreateNode =
+          node.id?.includes('__new__') || node.status === 'create';
+        const success = isCreateNode
+          ? await fileManagement.createFileItem(node, newName.trim())
+          : await fileManagement.renameFileItem(node.id, newName.trim());
         if (success) {
           projectInfo.refreshProjectInfo();
           return true;

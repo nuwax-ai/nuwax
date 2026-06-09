@@ -42,4 +42,8 @@ export interface FileContextMenuProps {
   onUploadSingleFile?: (node: FileNode | null) => void;
   /** 上传项目回调（空白区域菜单） */
   onUploadProject?: () => void;
+  /** 新建文件回调 */
+  onCreateFile?: (parentNode: FileNode | null) => void;
+  /** 新建文件夹回调 */
+  onCreateFolder?: (parentNode: FileNode | null) => void;
 }

@@ -171,6 +171,8 @@ export interface PageFileInfo {
   /** 重命名之前的文件名（仅在重命名场景下使用） */
   renameFrom?: string;
   operation?: 'create' | 'delete' | 'rename' | 'modify';
+  /*Whether entry is a directory */
+  isDir?: boolean;
 }
 
 /**

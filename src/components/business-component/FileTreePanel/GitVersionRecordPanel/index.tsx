@@ -5,7 +5,7 @@ import {
 } from '@/components/business-component/FileTreePanel/hooks/buildGitWorkspaceParams';
 import {
   apiGitLogList,
-  apiGitRevert,
+  apiGitReset,
 } from '@/components/business-component/FileTreePanel/services/git-version-management';
 import type { GitCommitLogItem } from '@/components/business-component/FileTreePanel/types/git-version-management';
 import InfiniteScrollDiv from '@/components/custom/InfiniteScrollDiv';
@@ -282,9 +282,10 @@ const GitVersionRecordPanel: React.FC<GitVersionRecordPanelProps> = ({
               return;
             }
 
-            const { code } = await apiGitRevert({
+            const { code } = await apiGitReset({
               ...workspaceParams,
               target: commit.hash,
+              mode: 'mixed',
             });
             if (code === SUCCESS_CODE) {
               message.success(

@@ -321,8 +321,16 @@ const FileTree = forwardRef<FileTreeRef, FileTreeProps>(
               style={{ marginLeft: level * 8 }}
             >
               <div
-                className={styles.folderHeader}
-                onClick={() => !isRenaming && onToggleFolder(node.id)}
+                className={cx(styles.folderHeader, {
+                  [styles.activeFolder]: isSelected,
+                })}
+                onClick={() => {
+                  if (isRenaming) {
+                    return;
+                  }
+                  onToggleFolder(node.id);
+                  onFileSelect(node.id, { selectFolder: true });
+                }}
                 onContextMenu={(e) => onContextMenu(e, node)}
               >
                 <SvgIcon

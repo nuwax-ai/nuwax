@@ -19,8 +19,14 @@ export interface AppDevFileTreeProps {
   /** 正在重命名的节点 */
   renamingNode?: FileNode | null;
 
-  /** 取消重命名回调 */
-  onCancelRename: () => void;
+  /**
+   * 取消重命名回调
+   * removeIfNew 为 true 且 node.status === 'create' 时，父组件应删除临时节点
+   */
+  onCancelRename: (options?: {
+    removeIfNew?: boolean;
+    node?: FileNode | null;
+  }) => void;
 
   /** 右键菜单回调 */
   onContextMenu: (e: React.MouseEvent, node: FileNode) => void;

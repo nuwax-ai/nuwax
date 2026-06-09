@@ -33,9 +33,15 @@ const AppDevFileTree: React.FC<AppDevFileTreeProps> = ({
    * 取消重命名
    */
   const cancelRename = useCallback(() => {
-    onCancelRename();
+    const trimmedValue = renameValue.trim();
+    const shouldRemove = renamingNode?.status === 'create' && !trimmedValue;
+
+    onCancelRename({
+      removeIfNew: shouldRemove,
+      node: renamingNode || null,
+    });
     setRenameValue('');
-  }, []);
+  }, [renameValue, renamingNode, onCancelRename]);
 
   /**
    * 确认重命名
@@ -89,11 +95,23 @@ const AppDevFileTree: React.FC<AppDevFileTreeProps> = ({
   const handleRenameBlur = useCallback(() => {
     // 延迟执行，避免与点击事件冲突
     setTimeout(() => {
-      if (renamingNode) {
-        confirmRename();
+      if (!renamingNode) {
+        return;
       }
+
+      // 新建节点：有名称则创建，无名称则取消并移除占位
+      if (renamingNode.status === 'create') {
+        if (renameValue.trim()) {
+          confirmRename();
+        } else {
+          cancelRename();
+        }
+        return;
+      }
+
+      confirmRename();
     }, 100);
-  }, [renamingNode, confirmRename]);
+  }, [renamingNode, renameValue, confirmRename, cancelRename]);
 
   // 重命名输入框自动聚焦
   useEffect(() => {
@@ -129,8 +147,16 @@ const AppDevFileTree: React.FC<AppDevFileTreeProps> = ({
             style={{ marginLeft: level * 8 }}
           >
             <div
-              className={styles.folderHeader}
-              onClick={() => !isRenaming && onToggleFolder(node.id)}
+              className={`${styles.folderHeader} ${
+                isSelected ? styles.activeFolder : ''
+              }`}
+              onClick={() => {
+                if (isRenaming) {
+                  return;
+                }
+                onToggleFolder(node.id);
+                onFileSelect(node.id);
+              }}
               onContextMenu={(e) => onContextMenu(e, node)}
             >
               <SvgIcon
