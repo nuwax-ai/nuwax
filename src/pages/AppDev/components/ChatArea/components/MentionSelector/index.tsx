@@ -95,8 +95,11 @@ const MentionSelector = React.forwardRef<
     }, [searchText, visible, viewType, onSelectedIndexChange]);
 
     // 获取最近使用的文件和数据源（按 projectId 区分）
-    const [recentFiles] = useState(() => getRecentFiles(projectId));
-    const [recentDataSources] = useState(() => getRecentDataSources(projectId));
+    const recentFiles = useMemo(() => getRecentFiles(projectId), [projectId]);
+    const recentDataSources = useMemo(
+      () => getRecentDataSources(projectId),
+      [projectId],
+    );
 
     // 扁平化文件列表
     const flattenedFiles = useMemo(() => {
