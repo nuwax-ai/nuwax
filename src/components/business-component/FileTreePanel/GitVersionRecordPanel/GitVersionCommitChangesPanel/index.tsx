@@ -1,10 +1,10 @@
+import ChangeFileGitDiffView from '@/components/base/ChangeFileGitDiffView';
 import type {
   GitCommitDiffFileItem,
   GitCommitDiffFileStatus,
   GitCommitLogItem,
 } from '@/components/business-component/FileTreePanel/types/git-version-management';
 import Loading from '@/components/custom/Loading';
-import ChangeFileGitDiffView from '@/pages/ConversationAgent/ConversationAgentFilePreview/ChangeFileGitDiffView';
 import { dict } from '@/services/i18nRuntime';
 import { formatTimeAgo } from '@/utils/common';
 import { getFileIcon } from '@/utils/fileTree';

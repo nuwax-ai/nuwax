@@ -1,9 +1,9 @@
+import ChangeFileGitDiffView from '@/components/base/ChangeFileGitDiffView';
 import fileTreeViewStyles from '@/components/FileTreeView/index.less';
 import type { ChangeFileInfo } from '@/components/FileTreeView/type';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
 import type { ConversationAgentFileViewPreview } from '../hooks/types';
-import ChangeFileGitDiffView from './ChangeFileGitDiffView';
 import FilePathHeader from './FilePathHeader';
 import {
   WORKSPACE_PREVIEW_TOOL_IDS,

@@ -1,8 +1,8 @@
+import ChangeFileGitDiffView from '@/components/base/ChangeFileGitDiffView';
 import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
 import CodeViewer from '@/components/CodeViewer';
 import type { ChangeFileInfo } from '@/components/FileTreeView/type';
 import { VERSION_CONSTANTS } from '@/constants/appDevConstants';
-import ChangeFileGitDiffView from '@/pages/ConversationAgent/ConversationAgentFilePreview/ChangeFileGitDiffView';
 import { t } from '@/services/i18nRuntime';
 import { FileNode, ProjectDetailData } from '@/types/interfaces/appDev';
 import {
