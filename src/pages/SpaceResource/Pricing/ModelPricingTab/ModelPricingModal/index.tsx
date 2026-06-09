@@ -95,6 +95,7 @@ const ModelPricingModal: React.FC<ModelPricingModalProps> = ({
     if (!open || isEdit) {
       return;
     }
+    // 排除已配置定价的模型
     const excludedIds = new Set(existingModelIds);
 
     /** 仅在新增模式下加载可选模型，并排除已配置定价的模型。 */
