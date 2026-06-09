@@ -1,4 +1,4 @@
-import ChangeFileGitDiffView from '@/components/base/ChangeFileGitDiffView';
+import { ChangeFileGitDiffView } from '@/components/business-component';
 import type {
   GitCommitDiffFileItem,
   GitCommitDiffFileStatus,

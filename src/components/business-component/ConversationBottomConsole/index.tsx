@@ -1,20 +1,23 @@
 import { SvgIcon } from '@/components/base';
-import { XtermTerminal } from '@/components/business-component';
-import type {
-  TerminalWireProtocol,
-  XtermTerminalRef,
-} from '@/components/business-component/Terminal/type';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import { dict } from '@/services/i18nRuntime';
+import type { DevLogEntry } from '@/types/interfaces/appDev';
 import {
+  ClearOutlined,
+  CloseOutlined,
   DownOutlined,
   FullscreenExitOutlined,
   MoonOutlined,
+  ReloadOutlined,
   SunOutlined,
   UpOutlined,
 } from '@ant-design/icons';
+import { Badge, Button, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import XtermTerminal from '../Terminal';
+import type { TerminalWireProtocol, XtermTerminalRef } from '../Terminal/type';
+import DevLogPanel from './DevLogPanel';
 import styles from './index.less';
 import {
   CONSOLE_TERMINAL_FONT_FAMILY,
@@ -30,53 +33,53 @@ const cx = classNames.bind(styles);
 /** 底部控制台布局模式 */
 export type ConsoleLayoutMode = 'default' | 'expanded' | 'collapsed';
 
-interface ConversationAgentBottomConsoleProps {
-  /** 是否显示控制台 */
+/** 开发服务器日志相关配置（网页应用） */
+export interface ConversationBottomConsoleDevLogProps {
+  logs: DevLogEntry[];
+  hasErrorInLatestBlock?: boolean;
+  latestErrorLogs?: string;
+  isLoading?: boolean;
+  lastLine?: number;
+  onClear?: () => void;
+  onRefresh?: () => void;
+  onAddToChat?: (content: string, isAuto?: boolean) => void;
+  isChatLoading?: boolean;
+  onResetAutoRetry?: () => void;
+}
+
+export interface ConversationBottomConsoleProps {
   visible?: boolean;
-  /** 终端日志内容（纯文本模式，wsUrl 不存在时使用） */
+  onClose?: () => void;
+  /** 终端纯文本回退内容（无 wsUrl 时） */
   terminalLogs?: string;
-  /** 运行日志内容 */
+  /** 运行日志纯文本（会话智能体） */
   runtimeLogs?: string;
-  /** 终端 WebSocket 连接地址，传入后启用交互式终端 */
+  /** 开发服务器结构化日志；传入后日志 Tab 使用 DevLogPanel */
+  devLog?: ConversationBottomConsoleDevLogProps;
   wsUrl?: string;
-  /** WebSocket 子协议（连接 ttyd 时需 ['tty']） */
   wsSubprotocols?: string | string[];
-  /** 与后端约定的消息格式 */
   wireProtocol?: TerminalWireProtocol;
-  /**
-   * 终端外观（受控）
-   * 与 onTerminalAppearanceChange 配合由父组件管理；不传则走非受控逻辑
-   */
   terminalAppearance?: TerminalAppearanceMode;
-  /** 非受控时的默认外观 @default 'light' */
   defaultTerminalAppearance?: TerminalAppearanceMode;
-  /** 外观切换回调 */
   onTerminalAppearanceChange?: (mode: TerminalAppearanceMode) => void;
-  /** 是否显示深浅色切换按钮 @default true */
   showTerminalAppearanceToggle?: boolean;
-  /**
-   * 父组件在切换预览标签/文件时递增，用于将 expanded 恢复为 default
-   */
   layoutResetSignal?: number;
-  /**
-   * 父组件递增后，将布局设为 expanded（如从开发工具入口打开终端）
-   */
   expandSignal?: number;
+  /** 打开控制台时的默认 Tab @default 'terminal' */
+  defaultActiveTab?: 'terminal' | 'logs';
 }
 
 /**
- * ConversationAgent 底部终端/日志面板
- *
- * - 「终端」标签页：优先使用 XtermTerminal（传入 wsUrl 时启用交互式终端），
- *   否则回退到纯文本显示 terminalLogs
- * - 「日志」标签页：纯文本显示 runtimeLogs
+ * 底部终端 + 日志合集面板
+ * - 终端 Tab：XtermTerminal（wsUrl）或纯文本回退
+ * - 日志 Tab：DevLogPanel（devLog）或 runtimeLogs 纯文本
  */
-const ConversationAgentBottomConsole: React.FC<
-  ConversationAgentBottomConsoleProps
-> = ({
+const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
   visible = true,
+  onClose,
   terminalLogs = '',
   runtimeLogs = '',
+  devLog,
   wsUrl,
   wsSubprotocols,
   wireProtocol,
@@ -86,20 +89,31 @@ const ConversationAgentBottomConsole: React.FC<
   showTerminalAppearanceToggle = true,
   layoutResetSignal,
   expandSignal,
+  defaultActiveTab = 'terminal',
 }) => {
-  const [activeTab, setActiveTab] = useState<'terminal' | 'logs'>('terminal');
+  const [activeTab, setActiveTab] = useState<'terminal' | 'logs'>(
+    defaultActiveTab,
+  );
   const [layoutMode, setLayoutMode] = useState<ConsoleLayoutMode>('default');
   const [internalAppearance, setInternalAppearance] =
     useState<TerminalAppearanceMode>(defaultTerminalAppearance);
   const terminalRef = useRef<XtermTerminalRef>(null);
+  const prevVisibleRef = useRef(visible);
 
+  const useDevLogPanel = Boolean(devLog);
   const isControlled = terminalAppearanceProp !== undefined;
   const terminalAppearance = isControlled
     ? terminalAppearanceProp
     : internalAppearance;
   const isLightTerminal = terminalAppearance === 'light';
 
-  /** 切换终端深色 / 浅色外观 */
+  useEffect(() => {
+    if (visible && !prevVisibleRef.current) {
+      setActiveTab(defaultActiveTab);
+    }
+    prevVisibleRef.current = visible;
+  }, [visible, defaultActiveTab]);
+
   const handleToggleTerminalAppearance = useCallback(() => {
     const next: TerminalAppearanceMode =
       terminalAppearance === 'dark' ? 'light' : 'dark';
@@ -109,7 +123,6 @@ const ConversationAgentBottomConsole: React.FC<
     onTerminalAppearanceChange?.(next);
   }, [isControlled, onTerminalAppearanceChange, terminalAppearance]);
 
-  /** 切换回终端 tab 或布局变化后，触发 xterm 重新 fit */
   useEffect(() => {
     if (activeTab !== 'terminal' || !wsUrl) return;
     const timer = window.setTimeout(() => {
@@ -124,34 +137,39 @@ const ConversationAgentBottomConsole: React.FC<
     return () => window.clearTimeout(timer);
   }, [activeTab, layoutMode, wsUrl, terminalAppearance]);
 
-  /** 切换预览标签/文件时，若处于放大态则恢复默认高度 */
   useEffect(() => {
-    if (!layoutResetSignal) {
-      return;
-    }
+    if (!layoutResetSignal) return;
     setLayoutMode((prev) => (prev === 'expanded' ? 'default' : prev));
   }, [layoutResetSignal]);
 
-  /** 外部触发全屏展开终端（开发工具「终端」入口） */
   useEffect(() => {
-    if (!expandSignal) {
-      return;
-    }
+    if (!expandSignal) return;
     setActiveTab('terminal');
     setLayoutMode('expanded');
   }, [expandSignal]);
 
-  /** 放大：占满 Tab 栏下方主区域；再次点击恢复默认高度 */
+  const handleFindLatestErrorLogs = useCallback(() => {
+    if (
+      !devLog?.onAddToChat ||
+      devLog.isChatLoading ||
+      !devLog.onResetAutoRetry
+    ) {
+      return;
+    }
+    devLog.onResetAutoRetry();
+    if (devLog.latestErrorLogs) {
+      devLog.onAddToChat(devLog.latestErrorLogs, true);
+    }
+  }, [devLog]);
+
   const handleToggleExpand = () => {
     setLayoutMode((prev) => (prev === 'expanded' ? 'default' : 'expanded'));
   };
 
-  /** 折叠：仅保留底部标签栏；再次点击恢复默认高度 */
   const handleToggleCollapse = () => {
     setLayoutMode((prev) => (prev === 'collapsed' ? 'default' : 'collapsed'));
   };
 
-  /** 切换标签；折叠状态下点击任意标签则展开控制台 */
   const handleTabClick = (tab: 'terminal' | 'logs') => {
     setActiveTab(tab);
     if (layoutMode === 'collapsed') {
@@ -164,7 +182,6 @@ const ConversationAgentBottomConsole: React.FC<
   }
 
   const renderTerminalTab = () => {
-    // 有 wsUrl → 渲染交互式 xterm.js 终端
     if (wsUrl) {
       return (
         <div className={cx(styles['xterm-container'])}>
@@ -201,27 +218,63 @@ const ConversationAgentBottomConsole: React.FC<
       );
     }
 
-    // 无 wsUrl → 回退到纯文本终端日志显示
     return (
       <div className={cx(styles['console-body'])}>
         {terminalLogs ? (
           terminalLogs
         ) : (
-          <div className={cx(styles['console-empty'])}>暂无日志输出</div>
+          <div
+            className={cx(
+              styles['console-empty'],
+              'flex',
+              'items-center',
+              'content-center',
+              'h-full',
+            )}
+          >
+            {dict('PC.Components.ConversationBottomConsole.terminalEmpty')}
+          </div>
         )}
       </div>
     );
   };
 
-  const renderLogsTab = () => (
-    <div className={cx(styles['console-body'])}>
-      {runtimeLogs ? (
-        runtimeLogs
-      ) : (
-        <div className={cx(styles['console-empty'])}>暂无日志输出</div>
-      )}
-    </div>
-  );
+  const renderLogsTab = () => {
+    if (useDevLogPanel && devLog) {
+      return (
+        <div className={cx(styles['dev-log-pane'])}>
+          <DevLogPanel
+            logs={devLog.logs}
+            isLoading={devLog.isLoading}
+            lastLine={devLog.lastLine}
+            onAddToChat={devLog.onAddToChat}
+            isChatLoading={devLog.isChatLoading}
+            latestErrorLogs={devLog.latestErrorLogs}
+          />
+        </div>
+      );
+    }
+
+    return (
+      <div className={cx(styles['console-body'])}>
+        {runtimeLogs ? (
+          runtimeLogs
+        ) : (
+          <div
+            className={cx(
+              styles['console-empty'],
+              'flex',
+              'items-center',
+              'content-center',
+              'h-full',
+            )}
+          >
+            {dict('PC.Components.ConversationBottomConsole.logsEmpty')}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div
@@ -240,7 +293,7 @@ const ConversationAgentBottomConsole: React.FC<
             })}
             onClick={() => handleTabClick('terminal')}
           >
-            终端
+            {dict('PC.Components.ConversationBottomConsole.tabTerminal')}
           </span>
           <span
             className={cx(styles['console-tab'], {
@@ -248,19 +301,65 @@ const ConversationAgentBottomConsole: React.FC<
             })}
             onClick={() => handleTabClick('logs')}
           >
-            日志
+            {dict('PC.Components.ConversationBottomConsole.tabLogs')}
           </span>
         </div>
         <div className={cx(styles['console-actions'])}>
+          {useDevLogPanel && devLog && (
+            <div className={cx(styles['console-log-actions'])}>
+              {devLog.hasErrorInLatestBlock && devLog.onAddToChat && (
+                <>
+                  <Tooltip
+                    title={dict(
+                      'PC.Pages.AppDevDevLogConsole.latestLogsContainErrors',
+                    )}
+                  >
+                    <Badge status="error" />
+                  </Tooltip>
+                  <Button
+                    size="small"
+                    danger
+                    className={cx(styles['console-quick-fix-btn'])}
+                    disabled={devLog.isChatLoading}
+                    icon={
+                      <SvgIcon
+                        name="icons-common-stars"
+                        style={{ fontSize: 12 }}
+                      />
+                    }
+                    onClick={handleFindLatestErrorLogs}
+                  >
+                    {dict('PC.Pages.AppDevDevLogConsole.quickIssueFix')}
+                  </Button>
+                </>
+              )}
+              <Tooltip title={dict('PC.Pages.AppDevDevLogConsole.refreshLogs')}>
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<ReloadOutlined />}
+                  onClick={devLog.onRefresh}
+                />
+              </Tooltip>
+              <Tooltip title={dict('PC.Pages.AppDevDevLogConsole.clearLogs')}>
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<ClearOutlined />}
+                  onClick={devLog.onClear}
+                />
+              </Tooltip>
+            </div>
+          )}
           {showTerminalAppearanceToggle && (
             <TooltipIcon
               title={
                 isLightTerminal
                   ? dict(
-                      'PC.Pages.ConversationAgentBottomConsole.terminalThemeDark',
+                      'PC.Components.ConversationBottomConsole.terminalThemeDark',
                     )
                   : dict(
-                      'PC.Pages.ConversationAgentBottomConsole.terminalThemeLight',
+                      'PC.Components.ConversationBottomConsole.terminalThemeLight',
                     )
               }
               placement="top"
@@ -278,8 +377,8 @@ const ConversationAgentBottomConsole: React.FC<
           <TooltipIcon
             title={
               layoutMode === 'expanded'
-                ? dict('PC.Pages.ConversationAgentBottomConsole.restoreHeight')
-                : dict('PC.Pages.ConversationAgentBottomConsole.expandHeight')
+                ? dict('PC.Components.ConversationBottomConsole.restoreHeight')
+                : dict('PC.Components.ConversationBottomConsole.expandHeight')
             }
             placement="top"
             className={cx(styles['console-action-btn'])}
@@ -298,8 +397,8 @@ const ConversationAgentBottomConsole: React.FC<
           <TooltipIcon
             title={
               layoutMode === 'collapsed'
-                ? dict('PC.Pages.ConversationAgentBottomConsole.restoreHeight')
-                : dict('PC.Pages.ConversationAgentBottomConsole.collapsePanel')
+                ? dict('PC.Components.ConversationBottomConsole.restoreHeight')
+                : dict('PC.Components.ConversationBottomConsole.collapsePanel')
             }
             placement="top"
             className={cx(styles['console-action-btn'])}
@@ -312,10 +411,22 @@ const ConversationAgentBottomConsole: React.FC<
             }
             onClick={handleToggleCollapse}
           />
+          {onClose && (
+            <Tooltip
+              title={dict('PC.Pages.AppDevDevLogConsole.closeLogConsole')}
+            >
+              <Button
+                type="text"
+                size="small"
+                className={cx(styles['console-action-btn'])}
+                icon={<CloseOutlined />}
+                onClick={onClose}
+              />
+            </Tooltip>
+          )}
         </div>
       </div>
       <div className={cx(styles['console-content'])}>
-        {/* 两栏同时挂载，避免切换 tab 时卸载 xterm 导致内容与连接丢失 */}
         <div
           className={cx(styles['tab-pane'], {
             [styles['tab-pane-active']]: activeTab === 'terminal',
@@ -337,4 +448,4 @@ const ConversationAgentBottomConsole: React.FC<
   );
 };
 
-export default ConversationAgentBottomConsole;
+export default ConversationBottomConsole;

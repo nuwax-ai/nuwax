@@ -1,5 +1,20 @@
 export { default as AppDevEmptyState } from './AppDevEmptyState';
 export { default as CardWrapper } from './CardWrapper';
+export {
+  default as ChangeFileGitDiffView,
+  DiffModeEnum,
+} from './ChangeFileGitDiffView';
+export type {
+  ChangeFileGitDiffViewProps,
+  GitDiffViewTheme,
+} from './ChangeFileGitDiffView';
+export {
+  default as ConversationBottomConsole,
+  type ConsoleLayoutMode,
+  type ConversationBottomConsoleDevLogProps,
+  type ConversationBottomConsoleProps,
+  type TerminalAppearanceMode,
+} from './ConversationBottomConsole';
 export { default as CopyToSpaceComponent } from './CopyToSpaceComponent';
 export { default as FilePreview } from './FilePreview';
 export {

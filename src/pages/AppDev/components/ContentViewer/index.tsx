@@ -1,4 +1,4 @@
-import ChangeFileGitDiffView from '@/components/base/ChangeFileGitDiffView';
+import { ChangeFileGitDiffView } from '@/components/business-component';
 import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
 import CodeViewer from '@/components/CodeViewer';
 import type { ChangeFileInfo } from '@/components/FileTreeView/type';

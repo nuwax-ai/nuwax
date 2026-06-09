@@ -1,4 +1,4 @@
-import ChangeFileGitDiffView from '@/components/base/ChangeFileGitDiffView';
+import { ChangeFileGitDiffView } from '@/components/business-component';
 import fileTreeViewStyles from '@/components/FileTreeView/index.less';
 import type { ChangeFileInfo } from '@/components/FileTreeView/type';
 import classNames from 'classnames';

@@ -1,4 +1,7 @@
-import { GitVersionRecordPanel } from '@/components/business-component';
+import {
+  ConversationBottomConsole,
+  GitVersionRecordPanel,
+} from '@/components/business-component';
 import FileTreePanel, {
   TaskAgentFileTree,
   useConversationAgentSourceControl,
@@ -75,7 +78,6 @@ import React, {
 import { useLocation, useModel, useParams } from 'umi';
 import AgentArrangeConfigSection from './AgentArrangePanel/AgentArrangeConfigSection';
 import AgentConversationChatPanel from './AgentConversationChatPanel';
-import ConversationAgentBottomConsole from './ConversationAgentBottomConsole';
 import ConversationAgentFilePreview from './ConversationAgentFilePreview';
 import {
   getFileTabId,
@@ -1287,18 +1289,12 @@ const ConversationAgent: React.FC = () => {
           </div>
 
           {/* 底部终端 */}
-          <ConversationAgentBottomConsole
-            // 是否显示终端
+          <ConversationBottomConsole
             visible={showDevConsole}
-            // 终端 WebSocket URL
             wsUrl={terminalWsUrl}
-            // 终端协议
             wireProtocol="ttyd"
-            // 终端 WebSocket 子协议
             wsSubprotocols={['tty']}
-            // 终端布局重置信号
             layoutResetSignal={devConsoleLayoutResetSignal}
-            // 终端全屏展开信号
             expandSignal={devConsoleExpandSignal}
           />
         </div>
