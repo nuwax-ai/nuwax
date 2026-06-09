@@ -2,6 +2,7 @@ import CustomFormModal from '@/components/CustomFormModal';
 import { dict } from '@/services/i18nRuntime';
 import { apiModelListSpace } from '@/services/modelConfig';
 import { customizeRequiredMark } from '@/utils/form';
+import { createPriceInputNumberProps } from '@/utils/priceInput';
 import type { FormInstance } from 'antd';
 import { Button, Form, Input, InputNumber, Select, message } from 'antd';
 import React, { useEffect, useMemo, useState } from 'react';
@@ -12,6 +13,9 @@ import {
 } from '../../../services/resource';
 import type { ResourcePricingConfigInfo } from '../../../types/resource';
 import styles from './index.less';
+
+/** 模型定价价格输入框共用配置（最多 4 位小数）。 */
+const priceInputProps = createPriceInputNumberProps();
 
 interface ModelOption {
   id: number;
@@ -91,6 +95,7 @@ const ModelPricingModal: React.FC<ModelPricingModalProps> = ({
     if (!open || isEdit) {
       return;
     }
+    // 排除已配置定价的模型
     const excludedIds = new Set(existingModelIds);
 
     /** 仅在新增模式下加载可选模型，并排除已配置定价的模型。 */
@@ -363,12 +368,9 @@ const ModelPricingModal: React.FC<ModelPricingModalProps> = ({
                   {dict('PC.Pages.SpaceResourcePricing.inputPriceLabel')}
                 </span>
                 <InputNumber
-                  value={tier.inputPrice}
-                  min={0}
-                  max={100000000}
-                  step={0.01}
-                  precision={2}
+                  {...priceInputProps}
                   size="small"
+                  value={tier.inputPrice}
                   className={styles['model-price-input']}
                   onChange={(v) => updateTier(index, 'inputPrice', v || 0)}
                 />
@@ -378,12 +380,9 @@ const ModelPricingModal: React.FC<ModelPricingModalProps> = ({
                   {dict('PC.Pages.SpaceResourcePricing.outputPriceLabel')}
                 </span>
                 <InputNumber
-                  value={tier.outputPrice}
-                  min={0}
-                  max={100000000}
-                  step={0.01}
-                  precision={2}
+                  {...priceInputProps}
                   size="small"
+                  value={tier.outputPrice}
                   className={styles['model-price-input']}
                   onChange={(v) => updateTier(index, 'outputPrice', v || 0)}
                 />
@@ -393,12 +392,9 @@ const ModelPricingModal: React.FC<ModelPricingModalProps> = ({
                   {dict('PC.Pages.SpaceResourcePricing.cachePriceLabel')}
                 </span>
                 <InputNumber
-                  value={tier.cachePrice}
-                  min={0}
-                  max={100000000}
-                  step={0.01}
-                  precision={2}
+                  {...priceInputProps}
                   size="small"
+                  value={tier.cachePrice}
                   className={styles['model-price-input']}
                   onChange={(v) => updateTier(index, 'cachePrice', v || 0)}
                 />
