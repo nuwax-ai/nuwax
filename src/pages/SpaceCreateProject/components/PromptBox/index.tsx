@@ -1,4 +1,5 @@
 import ChatInputHome from '@/components/ChatInputHome';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { message } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useRef, useState } from 'react';
@@ -20,32 +21,34 @@ interface TabItem {
 const PromptBox: React.FC<PromptBoxProps> = ({ onSubmit }) => {
   const tabs: TabItem[] = [
     {
-      key: 'agent',
+      key: AgentComponentTypeEnum.Agent,
       label: '智能体',
       placeholder:
         '描述你想要的智能体，例如：帮我创建一个代码审查助手，能自动检测代码问题并给出优化建议',
     },
     {
-      key: 'web',
+      key: AgentComponentTypeEnum.PageApp,
       label: '网页应用',
       placeholder:
         '描述你想要的网页应用，例如：帮我开发一个颜值管理网站，支持上传照片智能评估颜值与肤质',
     },
     {
-      key: 'skill',
+      key: AgentComponentTypeEnum.Skill,
       label: '技能',
       placeholder:
         '描述你想要的自定义技能，例如：帮我写一个根据经纬度查询当前天气状况的API接口',
     },
     {
-      key: 'plugin',
+      key: AgentComponentTypeEnum.Plugin,
       label: '插件',
       placeholder:
         '描述你想要的插件工具，例如：帮我对接第三方图片转换的HTTP接口插件',
     },
   ];
 
-  const [activeTab, setActiveTab] = useState<string>('agent');
+  const [activeTab, setActiveTab] = useState<string>(
+    AgentComponentTypeEnum.Agent,
+  );
   const activeTabRef = useRef(activeTab);
   activeTabRef.current = activeTab;
 
@@ -67,10 +70,7 @@ const PromptBox: React.FC<PromptBoxProps> = ({ onSubmit }) => {
       <ChatInputHome
         key={currentTab.key}
         onEnter={handleSend}
-        isClearInput={true}
         placeholder={currentTab.placeholder}
-        isTaskAgentActive={true}
-        allowOtherModel={1}
         tabsSlot={
           <TabsList tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
         }

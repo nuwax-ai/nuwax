@@ -1,3 +1,4 @@
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import {
   BarChartOutlined,
   CompassOutlined,
@@ -16,7 +17,7 @@ interface ProjectItem {
   title: string;
   desc: string;
   tag: string;
-  tagType: 'agent' | 'web';
+  tagType: AgentComponentTypeEnum.Agent | AgentComponentTypeEnum.PageApp;
   icon: React.ReactNode;
   iconBgClass: string;
 }
@@ -35,7 +36,7 @@ const RecentProjects: React.FC<RecentProjectsProps> = ({ onProjectClick }) => {
       title: '爆款小红书Agent',
       desc: '小红书爆款模仿智能体，自动分析爆款逻辑，生成高流量笔记...',
       tag: '智能体',
-      tagType: 'agent',
+      tagType: AgentComponentTypeEnum.Agent,
       icon: <CompassOutlined />,
       iconBgClass: 'icon-agent',
     },
@@ -44,16 +45,16 @@ const RecentProjects: React.FC<RecentProjectsProps> = ({ onProjectClick }) => {
       title: '颜值管理网站',
       desc: '颜值焕新平台，打造个性美学体验，提升视觉品味。',
       tag: '网页应用',
-      tagType: 'web',
+      tagType: AgentComponentTypeEnum.PageApp,
       icon: <SmileOutlined />,
       iconBgClass: 'icon-web',
     },
     {
       id: '4',
       title: '智能客服机器人',
-      desc: '基于大模型的智能客服Agent，支持多轮对话和知识库检索',
+      desc: '基于大模型的智能客服Agent，支持多轮对话 and 知识库检索',
       tag: '智能体',
-      tagType: 'agent',
+      tagType: AgentComponentTypeEnum.Agent,
       icon: <RobotOutlined />,
       iconBgClass: 'icon-agent-bot',
     },
@@ -62,7 +63,7 @@ const RecentProjects: React.FC<RecentProjectsProps> = ({ onProjectClick }) => {
       title: '电商数据分析平台',
       desc: '实时销售数据看板，支持多维度分析、用户画像 and 趋势预测',
       tag: '网页应用',
-      tagType: 'web',
+      tagType: AgentComponentTypeEnum.PageApp,
       icon: <BarChartOutlined />,
       iconBgClass: 'icon-web-chart',
     },
@@ -90,8 +91,10 @@ const RecentProjects: React.FC<RecentProjectsProps> = ({ onProjectClick }) => {
                 <p className={cx(styles['project-desc'])}>{project.desc}</p>
                 <div
                   className={cx(styles['tag-badge'], {
-                    [styles['tag-agent']]: project.tagType === 'agent',
-                    [styles['tag-web']]: project.tagType === 'web',
+                    [styles['tag-agent']]:
+                      project.tagType === AgentComponentTypeEnum.Agent,
+                    [styles['tag-web']]:
+                      project.tagType === AgentComponentTypeEnum.PageApp,
                   })}
                 >
                   {project.tag}

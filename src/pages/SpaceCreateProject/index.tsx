@@ -1,4 +1,5 @@
 import WorkspaceLayout from '@/components/WorkspaceLayout';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { message } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
@@ -17,11 +18,11 @@ const SpaceCreateProject: React.FC = () => {
   const handleCreateSubmit = (type: string, prompt: string) => {
     message.loading({
       content: `正在为您使用 AI 引擎构建 ${
-        type === 'agent'
+        type === AgentComponentTypeEnum.Agent
           ? '智能体'
-          : type === 'web'
+          : type === AgentComponentTypeEnum.PageApp
           ? '网页应用'
-          : type === 'skill'
+          : type === AgentComponentTypeEnum.Skill
           ? '技能'
           : '插件'
       } 模版...`,
