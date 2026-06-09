@@ -12,6 +12,7 @@ import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
 import type { CreatedNodeItem } from '@/types/interfaces/common';
 import { customizeRequiredMark } from '@/utils/form';
+import { createPriceInputNumberProps } from '@/utils/priceInput';
 import { Form, Input, InputNumber, Radio, Switch, message } from 'antd';
 import React, { useEffect, useState } from 'react';
 import styles from './index.less';
@@ -25,6 +26,9 @@ interface SkillPricingFormModalProps {
   onCancel: () => void;
   onSaved: () => void;
 }
+
+/** 技能定价价格输入框共用配置（最多 4 位小数）。 */
+const priceInputProps = createPriceInputNumberProps();
 
 // 技能定价模式选项
 const SKILL_PRICING_MODE_OPTIONS = [
@@ -216,10 +220,7 @@ const SkillPricingFormModal: React.FC<SkillPricingFormModalProps> = ({
             rules={[{ required: true }]}
           >
             <InputNumber
-              min={0}
-              max={100000000}
-              step={0.01}
-              precision={2}
+              {...priceInputProps}
               className="w-full"
               prefix="¥"
               placeholder={dict(
