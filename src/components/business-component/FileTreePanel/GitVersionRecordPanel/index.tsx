@@ -13,13 +13,13 @@ import Loading from '@/components/custom/Loading';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
 import { modalConfirm } from '@/utils/ant-custom';
-import { formatTimeAgo } from '@/utils/common';
-import { EyeOutlined, UndoOutlined } from '@ant-design/icons';
-import { Button, Empty, message } from 'antd';
+import { Empty, message } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import GitVersionCommitChangesPanel from './GitVersionCommitChangesPanel';
+import { groupCommitsByDate } from './commitListUtils';
 import { commitUncommittedChangesIfAny } from './gitRollbackUtils';
+import GitVersionCommitChangesPanel from './GitVersionCommitChangesPanel';
+import GitVersionCommitTimeline from './GitVersionCommitTimeline';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -42,17 +42,6 @@ export interface GitVersionRecordPanelProps {
   /** 自定义根节点类名 */
   className?: string;
 }
-
-/** 列表项展示标签（首条默认 latest，非接口字段） */
-type CommitListTag = 'latest' | 'stable';
-
-type CommitListItem = GitCommitLogItem & { tag?: CommitListTag };
-
-/**
- * 获取提交的短 hash（取 hash 前 7 位）
- */
-const getShortHash = (commit: GitCommitLogItem): string =>
-  commit.hash?.slice(0, 7) || '';
 
 /**
  * 根据工作空间类型返回空状态文案
@@ -84,8 +73,6 @@ const GitVersionRecordPanel: React.FC<GitVersionRecordPanelProps> = ({
   className,
 }) => {
   // ---------- 列表与交互状态 ----------
-  /** 当前高亮选中的提交 hash */
-  const [selectedHash, setSelectedHash] = useState<string | null>(null);
   /** 正在执行回滚的提交 hash（用于按钮 loading） */
   const [rollbackLoadingHash, setRollbackLoadingHash] = useState<string | null>(
     null,
@@ -110,13 +97,9 @@ const GitVersionRecordPanel: React.FC<GitVersionRecordPanelProps> = ({
   /** 是否还有未加载的提交 */
   const hasMore = commits.length < total;
 
-  /** 为列表项补充展示标签（首条默认标记为 latest） */
-  const commitsWithTags = useMemo<CommitListItem[]>(
-    () =>
-      commits.map((item, index) => ({
-        ...item,
-        tag: index === 0 ? ('latest' as const) : undefined,
-      })),
+  /** 按日期分组后的提交列表 */
+  const commitDateGroups = useMemo(
+    () => groupCommitsByDate(commits),
     [commits],
   );
 
@@ -193,7 +176,6 @@ const GitVersionRecordPanel: React.FC<GitVersionRecordPanelProps> = ({
 
   /** 重置列表并重新从第 1 页加载（回滚成功后调用） */
   const refreshLog = useCallback(() => {
-    setSelectedHash(null);
     setActiveCommit(null);
     setCommits([]);
     setTotal(0);
@@ -204,7 +186,6 @@ const GitVersionRecordPanel: React.FC<GitVersionRecordPanelProps> = ({
   /** 打开某次提交的变更文件列表 */
   const openCommitChanges = useCallback(
     (commit: GitCommitLogItem) => {
-      setSelectedHash(commit.hash);
       if (onViewChanges) {
         onViewChanges(commit);
         return;
@@ -227,7 +208,6 @@ const GitVersionRecordPanel: React.FC<GitVersionRecordPanelProps> = ({
     if (!workspaceReady || !workspaceParams) {
       return;
     }
-    setSelectedHash(null);
     setActiveCommit(null);
     setCommits([]);
     setTotal(0);
@@ -241,37 +221,19 @@ const GitVersionRecordPanel: React.FC<GitVersionRecordPanelProps> = ({
     fetchLogPage,
   ]);
 
-  // 首屏加载完成后默认选中第一条提交
-  useEffect(() => {
-    if (commits.length > 0 && !selectedHash) {
-      setSelectedHash(commits[0].hash);
-    } else if (commits.length === 0) {
-      setSelectedHash(null);
-    }
-  }, [commits, selectedHash]);
-
-  /** 查看某次提交的变更（与点击列表项行为一致） */
-  const handleViewChanges = useCallback(
-    (commit: GitCommitLogItem) => {
-      openCommitChanges(commit);
-    },
-    [openCommitChanges],
-  );
-
   /** 回滚到指定提交，需二次确认 */
   const handleRollback = useCallback(
     (commit: GitCommitLogItem) => {
       if (!workspaceParams) {
         return;
       }
-      const shortHash = getShortHash(commit);
       modalConfirm(
         dict(
           'PC.Pages.ConversationAgent.AgentGitVersionRecord.rollbackConfirmTitle',
         ),
         dict(
           'PC.Pages.ConversationAgent.AgentGitVersionRecord.rollbackConfirmContent',
-        ).replace('{0}', shortHash),
+        ).replace('{0}', commit.hash),
         async () => {
           setRollbackLoadingHash(commit.hash);
           try {
@@ -304,20 +266,6 @@ const GitVersionRecordPanel: React.FC<GitVersionRecordPanelProps> = ({
     },
     [workspaceParams, refreshLog, onRollbackSuccess],
   );
-
-  /** 渲染 latest / stable 标签 */
-  const renderTag = (tag?: CommitListTag) => {
-    if (!tag) {
-      return null;
-    }
-    const label =
-      tag === 'latest'
-        ? dict('PC.Pages.ConversationAgent.AgentGitVersionRecord.tagLatest')
-        : dict('PC.Pages.ConversationAgent.AgentGitVersionRecord.tagStable');
-    return (
-      <span className={cx(styles.tag, styles[`tag-${tag}`])}>{label}</span>
-    );
-  };
 
   // 工作空间 ID 未就绪时展示空状态
   if (!workspaceReady) {
@@ -388,72 +336,12 @@ const GitVersionRecordPanel: React.FC<GitVersionRecordPanelProps> = ({
             onScroll={loadMore}
             showLoader={loadingMore}
           >
-            {commitsWithTags.map((commit) => {
-              const isActive = selectedHash === commit.hash;
-              const isRollbackLoading = rollbackLoadingHash === commit.hash;
-              return (
-                // 单条提交：hash、消息、作者、查看变更、回滚
-                <div
-                  key={commit.hash}
-                  className={cx(styles.item, {
-                    [styles['item-active']]: isActive,
-                  })}
-                  onClick={() => openCommitChanges(commit)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      openCommitChanges(commit);
-                    }
-                  }}
-                  role="button"
-                  tabIndex={0}
-                >
-                  <div className={cx(styles['item-top'])}>
-                    <div className={cx(styles['item-hash-row'])}>
-                      <span className={cx(styles.hash)}>
-                        {getShortHash(commit)}
-                      </span>
-                      {renderTag(commit.tag)}
-                    </div>
-                    <span className={cx(styles.time)}>
-                      {formatTimeAgo(commit.date)}
-                    </span>
-                  </div>
-                  <p className={cx(styles.message)}>{commit.message}</p>
-                  <span className={cx(styles.author)}>
-                    {commit.author_name}
-                  </span>
-                  <div className={cx(styles.actions)}>
-                    <Button
-                      size="small"
-                      icon={<EyeOutlined />}
-                      className={cx(styles['btn-view'])}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleViewChanges(commit);
-                      }}
-                    >
-                      {dict(
-                        'PC.Pages.ConversationAgent.AgentGitVersionRecord.viewChanges',
-                      )}
-                    </Button>
-                    <Button
-                      size="small"
-                      icon={<UndoOutlined />}
-                      className={cx(styles['btn-rollback'])}
-                      loading={isRollbackLoading}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleRollback(commit);
-                      }}
-                    >
-                      {dict(
-                        'PC.Pages.ConversationAgent.AgentGitVersionRecord.rollback',
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              );
-            })}
+            <GitVersionCommitTimeline
+              groups={commitDateGroups}
+              rollbackLoadingHash={rollbackLoadingHash}
+              onOpenCommitChanges={openCommitChanges}
+              onRollback={handleRollback}
+            />
           </InfiniteScrollDiv>
         )}
       </div>

@@ -45,9 +45,6 @@ export interface GitVersionCommitChangesPanelProps {
   className?: string;
 }
 
-const getShortHash = (commit: GitCommitLogItem): string =>
-  commit.hash?.slice(0, 7) || '';
-
 const getFileName = (path: string): string => {
   const segments = path.split('/');
   return segments[segments.length - 1] || path;
@@ -201,14 +198,13 @@ const GitVersionCommitChangesPanel: React.FC<
 
   // 回滚到指定提交，需二次确认
   const handleRollback = useCallback(() => {
-    const shortHash = getShortHash(commit);
     modalConfirm(
       dict(
         'PC.Pages.ConversationAgent.AgentGitVersionRecord.rollbackConfirmTitle',
       ),
       dict(
         'PC.Pages.ConversationAgent.AgentGitVersionRecord.rollbackConfirmContent',
-      ).replace('{0}', shortHash),
+      ).replace('{0}', commit.hash),
       async () => {
         setRollbackLoading(true);
         try {
@@ -284,9 +280,7 @@ const GitVersionCommitChangesPanel: React.FC<
       {/* 提交卡片 */}
       <div className={cx(styles['commit-card'])}>
         <div className={cx(styles['commit-card-top'])}>
-          <div className={cx(styles['commit-hash'])}>
-            {getShortHash(commit)}
-          </div>
+          <div className={cx(styles['commit-hash'])}>{commit.hash}</div>
           <div className={cx(styles['commit-meta'])}>
             {commit.author_name} · {formatTimeAgo(commit.date)}
           </div>

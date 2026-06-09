@@ -2428,6 +2428,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.ConversationAgent.AgentGitVersionRecord.rollbackConfirmTitle": "确认回滚？",
   "PC.Pages.ConversationAgent.AgentGitVersionRecord.rollbackConfirmContent": "将代码回滚到提交 {0}，此操作可能覆盖当前未提交的修改。",
   "PC.Pages.ConversationAgent.AgentGitVersionRecord.rollbackSuccess": "回滚成功",
+  "PC.Pages.ConversationAgent.AgentGitVersionRecord.commitsOn": "提交于 {0}",
   "PC.Pages.ConversationAgent.AgentGitVersionRecord.empty": "暂无提交记录",
   "PC.Pages.ConversationAgent.AgentGitVersionRecord.noConversation": "请先开始开发会话后再查看版本记录",
   "PC.Components.FileTreePanel.FileTreeToolbar.projects": "项目",

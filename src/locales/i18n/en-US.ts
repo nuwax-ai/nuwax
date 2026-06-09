@@ -2428,6 +2428,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.ConversationAgent.AgentGitVersionRecord.rollbackConfirmTitle": "Confirm rollback?",
   "PC.Pages.ConversationAgent.AgentGitVersionRecord.rollbackConfirmContent": "Roll back to commit {0}. This may overwrite uncommitted changes.",
   "PC.Pages.ConversationAgent.AgentGitVersionRecord.rollbackSuccess": "Rollback successful",
+  "PC.Pages.ConversationAgent.AgentGitVersionRecord.commitsOn": "Commits on {0}",
   "PC.Pages.ConversationAgent.AgentGitVersionRecord.empty": "No commits yet",
   "PC.Pages.ConversationAgent.AgentGitVersionRecord.noConversation": "Start a dev session to view version history",
   "PC.Components.FileTreePanel.FileTreeToolbar.projects": "Projects",
