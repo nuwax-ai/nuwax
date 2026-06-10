@@ -1425,9 +1425,13 @@ const AppDev: React.FC = () => {
                 <div className={styles.editorHeaderLeft}>
                   <Segmented
                     value={activeTab}
-                    onChange={(value) =>
-                      setActiveTab(value as 'preview' | 'code')
-                    }
+                    onChange={(value) => {
+                      // 切换到预览时关闭版本记录面板
+                      if (value === 'preview') {
+                        setGitVersionPanelOpen(false);
+                      }
+                      setActiveTab(value as 'preview' | 'code');
+                    }}
                     options={[
                       {
                         label: (
@@ -1506,109 +1510,106 @@ const AppDev: React.FC = () => {
               <div className={styles.rightPanelMain}>
                 <div className={styles.contentArea}>
                   <div className={styles.contentRow}>
-                    {gitVersionPanelOpen ? (
-                      <div className={styles.gitVersionPanelCol}>
-                        <GitVersionRecordPanel
-                          workspace={{
-                            workspaceType: 'pageApp',
-                            projectId: projectId ?? null,
+                    <>
+                      {/* FileTreePanel 组件（版本记录面板打开时仍显示） */}
+                      {activeTab !== 'preview' && (
+                        <AppDevFileTreePanel
+                          files={stableCurrentFiles}
+                          selectedFileId={
+                            fileManagement.fileContentState.selectedFile
+                          }
+                          // 已展开的文件夹ID集合
+                          expandedFolders={
+                            fileManagement.fileTreeState.expandedFolders
+                          }
+                          // 文件选择回调
+                          onFileSelect={(fileId) => {
+                            // 关闭版本记录面板，恢复显示文件内容
+                            setGitVersionPanelOpen(false);
+                            sourceControl.clearSelectedDiff();
+                            fileManagement.switchToFile(fileId);
+                            setActiveTab('code');
                           }}
-                          branch={sourceControl.gitBranch}
-                          onRollbackSuccess={() => {
-                            fileManagement.loadFileTree(true, true);
-                            sourceControl.refreshGitList();
+                          // 文件夹展开/折叠回调
+                          onToggleFolder={fileManagement.toggleFolder}
+                          // 删除文件回调
+                          onDeleteFile={
+                            isFileOperating ? noop : handleDeleteClick
+                          }
+                          // 重命名文件回调
+                          onRenameFile={
+                            isFileOperating ? asyncNoopFalse : handleRenameFile
+                          }
+                          // 上传项目回调
+                          onUploadProject={
+                            isFileOperating
+                              ? noop
+                              : () => setIsUploadModalVisible(true)
+                          }
+                          // 上传单个文件回调
+                          onUploadSingleFile={
+                            isFileOperating ? asyncNoop : handleRightClickUpload
+                          }
+                          onExportProject={
+                            isFileOperating ? undefined : handleExportProject
+                          }
+                          onCollapseAll={fileManagement.collapseAllFolders}
+                          // 刷新文件树回调
+                          onRefresh={() =>
+                            fileManagement.loadFileTree(true, true)
+                          }
+                          // 文件管理方法
+                          fileManagement={fileManagement}
+                          // 是否正在AI聊天加载中
+                          isChatLoading={chat.isChatLoading}
+                          // 文件树初始化 loading 状态
+                          isFileTreeInitializing={
+                            fileManagement.isFileTreeInitializing
+                          }
+                          // =================源代码管理相关=================
+                          sourceControl={{
+                            gitWorkspace: {
+                              workspaceType: 'pageApp',
+                              projectId,
+                            },
+                            changeFiles: sourceControl.changeFiles,
+                            selectedChangeFile:
+                              sourceControl.selectedChangeFile,
+                            isCommitting: sourceControl.isCommitting,
+                            isRefreshingGitList:
+                              sourceControl.isRefreshingGitList,
+                            onRefreshGitList: sourceControl.refreshGitList,
+                            onDiffFileSelect:
+                              sourceControl.handleDiffFileSelect,
+                            onOpenChangeFile:
+                              sourceControl.handleOpenChangeFile,
+                            onAfterDiscardChange: (fileId) => {
+                              void sourceControl.handleDiscardChange([fileId]);
+                            },
+                            onAddToGitignore:
+                              sourceControl.handleAddToGitignore,
+                            onCommit: sourceControl.handleCommit,
                           }}
                         />
-                      </div>
-                    ) : (
-                      <>
-                        {/* FileTreePanel 组件 */}
-                        {activeTab !== 'preview' && (
-                          <AppDevFileTreePanel
-                            files={stableCurrentFiles}
-                            selectedFileId={
-                              fileManagement.fileContentState.selectedFile
-                            }
-                            // 已展开的文件夹ID集合
-                            expandedFolders={
-                              fileManagement.fileTreeState.expandedFolders
-                            }
-                            // 文件选择回调
-                            onFileSelect={(fileId) => {
-                              sourceControl.clearSelectedDiff();
-                              fileManagement.switchToFile(fileId);
-                              setActiveTab('code');
+                      )}
+
+                      {/* 版本记录面板：打开时占据文件树右侧的内容区域 */}
+                      {gitVersionPanelOpen ? (
+                        <div className={styles.gitVersionPanelCol}>
+                          <GitVersionRecordPanel
+                            workspace={{
+                              workspaceType: 'pageApp',
+                              projectId: projectId ?? null,
                             }}
-                            // 文件夹展开/折叠回调
-                            onToggleFolder={fileManagement.toggleFolder}
-                            // 删除文件回调
-                            onDeleteFile={
-                              isFileOperating ? noop : handleDeleteClick
-                            }
-                            // 重命名文件回调
-                            onRenameFile={
-                              isFileOperating
-                                ? asyncNoopFalse
-                                : handleRenameFile
-                            }
-                            // 上传项目回调
-                            onUploadProject={
-                              isFileOperating
-                                ? noop
-                                : () => setIsUploadModalVisible(true)
-                            }
-                            // 上传单个文件回调
-                            onUploadSingleFile={
-                              isFileOperating
-                                ? asyncNoop
-                                : handleRightClickUpload
-                            }
-                            onExportProject={
-                              isFileOperating ? undefined : handleExportProject
-                            }
-                            onCollapseAll={fileManagement.collapseAllFolders}
-                            // 刷新文件树回调
-                            onRefresh={() =>
-                              fileManagement.loadFileTree(true, true)
-                            }
-                            // 文件管理方法
-                            fileManagement={fileManagement}
-                            // 是否正在AI聊天加载中
-                            isChatLoading={chat.isChatLoading}
-                            // 文件树初始化 loading 状态
-                            isFileTreeInitializing={
-                              fileManagement.isFileTreeInitializing
-                            }
-                            // =================源代码管理相关=================
-                            sourceControl={{
-                              gitWorkspace: {
-                                workspaceType: 'pageApp',
-                                projectId,
-                              },
-                              changeFiles: sourceControl.changeFiles,
-                              selectedChangeFile:
-                                sourceControl.selectedChangeFile,
-                              isCommitting: sourceControl.isCommitting,
-                              isRefreshingGitList:
-                                sourceControl.isRefreshingGitList,
-                              onRefreshGitList: sourceControl.refreshGitList,
-                              onDiffFileSelect:
-                                sourceControl.handleDiffFileSelect,
-                              onOpenChangeFile:
-                                sourceControl.handleOpenChangeFile,
-                              onAfterDiscardChange: (fileId) => {
-                                void sourceControl.handleDiscardChange([
-                                  fileId,
-                                ]);
-                              },
-                              onAddToGitignore:
-                                sourceControl.handleAddToGitignore,
-                              onCommit: sourceControl.handleCommit,
+                            branch={sourceControl.gitBranch}
+                            onRollbackSuccess={() => {
+                              fileManagement.loadFileTree(true, true);
+                              sourceControl.refreshGitList();
                             }}
                           />
-                        )}
-
-                        {/* 编辑器区域 */}
+                        </div>
+                      ) : (
+                        /* 编辑器区域 */
                         <div className={styles.editorCol}>
                           <div className={styles.editorContainer}>
                             {/* 内容区域 */}
@@ -1690,8 +1691,8 @@ const AppDev: React.FC = () => {
                             </div>
                           </div>
                         </div>
-                      </>
-                    )}
+                      )}
+                    </>
                   </div>
                 </div>
 
