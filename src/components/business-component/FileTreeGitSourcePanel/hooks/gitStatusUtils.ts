@@ -2,8 +2,8 @@ import type {
   ChangeFileGitStatusKind,
   ChangeFileInfo,
 } from '@/components/FileTreeView/type';
-import type { GitStatusResponse } from '@/components/business-component/FileTreeGitSourcePanel/types/git-version-management';
 import type { FileNode } from '@/types/interfaces/appDev';
+import type { GitStatusResponse } from '../types/git-version-management';
 
 /** 合并 Git status 中的全部变更文件路径（去重） */
 export const mergeGitStatusFileIds = (status: GitStatusResponse): string[] =>

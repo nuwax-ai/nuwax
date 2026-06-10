@@ -2,22 +2,22 @@
  * ConversationAgent 源代码管理 Hook
  * 变更列表由外部 fileView 维护，本 Hook 统一 Git 操作与选中状态
  */
-import {
-  buildGitWorkspaceParams,
-  isGitWorkspaceReady,
-} from '@/components/business-component/FileTreeGitSourcePanel/hooks/buildGitWorkspaceParams';
-import { apiGitCommit } from '@/components/business-component/FileTreeGitSourcePanel/services/git-version-management';
-import type {
-  ChangeListSection,
-  SelectedChangeFile,
-} from '@/components/business-component/FileTreeGitSourcePanel/SourceControlPanel/changeFileStatus';
-import { runGitDiscard } from '@/components/business-component/FileTreeGitSourcePanel/SourceControlPanel/sourceControlGitActions';
-import { fetchGitChangeFileContent } from '@/components/business-component/GitVersionRecordPanel/gitCommitDiffUtils';
 import type { ChangeFileInfo } from '@/components/FileTreeView/type';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
 import { message } from 'antd';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { fetchGitChangeFileContent } from '../../GitVersionRecordPanel/gitCommitDiffUtils';
+import {
+  buildGitWorkspaceParams,
+  isGitWorkspaceReady,
+} from '../hooks/buildGitWorkspaceParams';
+import { apiGitCommit } from '../services/git-version-management';
+import type {
+  ChangeListSection,
+  SelectedChangeFile,
+} from '../SourceControlPanel/changeFileStatus';
+import { runGitDiscard } from '../SourceControlPanel/sourceControlGitActions';
 
 /** ConversationAgent 场景外部适配器 */
 export interface ConversationAgentSourceControlAdapters {

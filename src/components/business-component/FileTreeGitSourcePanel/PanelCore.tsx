@@ -12,7 +12,7 @@ import React, { useCallback, useState } from 'react';
 import FileTreePanel from './FileTreePanel';
 import styles from './index.less';
 import SourceControlPanel from './SourceControlPanel';
-import type { FileTreeGitSourcePanelProps } from './types';
+import type { FileTreeGitSourcePanelProps } from './types/file-tree-git-source';
 
 const cx = classNames.bind(styles);
 

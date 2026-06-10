@@ -4,17 +4,17 @@ import type { FileTreeRef } from '@/components/FileTreeView/FileTree/types';
 import SearchView from '@/components/FileTreeView/SearchView';
 import TipsBox from '@/components/TipsBox';
 import FileTreeToolbar from '@/components/business-component/FileTreeGitSourcePanel/FileTreeToolbar';
-import type { TaskAgentFileViewTree } from '@/components/business-component/FileTreeGitSourcePanel/types/taskAgentFileTree';
 import { dict } from '@/services/i18nRuntime';
 import type { FileNode } from '@/types/interfaces/appDev';
 import { findFileNode } from '@/utils/appDevUtils';
 import classNames from 'classnames';
 import React, { useRef } from 'react';
+import type { FileTreeState } from '../types/file-tree-git-source';
 import styles from './index.less';
 
 export interface FileTreePanelProps {
   /** 文件树状态与交互处理器 */
-  tree: TaskAgentFileViewTree;
+  tree: FileTreeState;
   className?: string;
   headerClassName?: string;
   /** 文件列表为空（且非加载中）时的自定义空态内容，不传则使用 FileTree 默认空态 */

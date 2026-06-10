@@ -26,6 +26,9 @@ export type {
   ChangeListSection,
   SelectedChangeFile,
 } from './SourceControlPanel/changeFileStatus';
-export type { FileTreeGitSourcePanelProps, SourceControlProps } from './types';
+export type {
+  FileTreeGitSourcePanelProps,
+  FileTreeState,
+  SourceControlProps,
+} from './types/file-tree-git-source';
 export type * from './types/git-version-management';
-export type { TaskAgentFileViewTree } from './types/taskAgentFileTree';

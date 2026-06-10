@@ -1,3 +1,5 @@
+import type { RequestResponse } from '@/types/interfaces/request';
+import { request } from 'umi';
 import type {
   GitAddParams,
   GitBranchCreateParams,
@@ -26,9 +28,7 @@ import type {
   GitTagDeleteParams,
   GitTagsParams,
   GitUnstageParams,
-} from '@/components/business-component/FileTreeGitSourcePanel/types/git-version-management';
-import type { RequestResponse } from '@/types/interfaces/request';
-import { request } from 'umi';
+} from '../types/git-version-management';
 
 /**
  * Git unstage - 取消暂存
