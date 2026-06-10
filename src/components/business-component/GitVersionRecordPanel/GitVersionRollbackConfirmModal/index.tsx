@@ -1,9 +1,9 @@
-import type { GitCommitLogItem } from '@/components/business-component/FileTreeGitSourcePanel/types/git-version-management';
 import { dict } from '@/services/i18nRuntime';
 import { formatTimeAgo } from '@/utils/common';
 import { Button, Modal } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
+import type { GitCommitLogItem } from '../../FileTreeGitSourcePanel/types/git-version-management';
 import { getDisplayHash } from '../commitListUtils';
 import styles from './index.less';
 

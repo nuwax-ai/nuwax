@@ -23,12 +23,12 @@ export { default as FileTreeGitSourcePanel, default } from './PanelCore';
 export * from './services/git-version-management';
 export { default as SourceControlPanel } from './SourceControlPanel';
 export type {
-  ChangeListSection,
-  SelectedChangeFile,
-} from './SourceControlPanel/changeFileStatus';
-export type {
   FileTreeGitSourcePanelProps,
   FileTreeState,
   SourceControlProps,
 } from './types/file-tree-git-source';
 export type * from './types/git-version-management';
+export type {
+  ChangeListSection,
+  SelectedChangeFile,
+} from './utils/changeFileStatus';

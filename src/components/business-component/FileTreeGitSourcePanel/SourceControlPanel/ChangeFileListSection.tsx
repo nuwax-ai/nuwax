@@ -4,16 +4,16 @@ import { getFileIcon } from '@/utils/fileTree';
 import { RightOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import type { ChangeListItem } from './buildChangeFileTree';
+import type { ChangeListItem } from '../utils/buildChangeFileTree';
 import {
   buildChangeFileTree,
   type ChangeTreeNode,
-} from './buildChangeFileTree';
+} from '../utils/buildChangeFileTree';
 import {
   type ChangeListSection,
   isChangeFileSelected,
   type SelectedChangeFile,
-} from './changeFileStatus';
+} from '../utils/changeFileStatus';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);

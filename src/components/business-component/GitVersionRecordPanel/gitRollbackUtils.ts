@@ -1,11 +1,11 @@
-import { mergeGitStatusFileIds } from '@/components/business-component/FileTreeGitSourcePanel/hooks/gitStatusUtils';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { dict } from '@/services/i18nRuntime';
 import {
   apiGitCommit,
   apiGitStatus,
-} from '@/components/business-component/FileTreeGitSourcePanel/services/git-version-management';
-import type { GitTagsParams } from '@/components/business-component/FileTreeGitSourcePanel/types/git-version-management';
-import { SUCCESS_CODE } from '@/constants/codes.constants';
-import { dict } from '@/services/i18nRuntime';
+} from '../FileTreeGitSourcePanel/services/git-version-management';
+import type { GitTagsParams } from '../FileTreeGitSourcePanel/types/git-version-management';
+import { mergeGitStatusFileIds } from '../FileTreeGitSourcePanel/utils/gitStatusUtils';
 
 export type CommitUncommittedResult = {
   /** 是否执行了 commit（存在未提交文件并已尝试提交） */

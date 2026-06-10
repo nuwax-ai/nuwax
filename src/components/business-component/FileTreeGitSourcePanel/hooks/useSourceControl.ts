@@ -15,12 +15,12 @@ import { apiGitCommit, apiGitStatus } from '../services/git-version-management';
 import type {
   ChangeListSection,
   SelectedChangeFile,
-} from '../SourceControlPanel/changeFileStatus';
-import { runGitDiscard } from '../SourceControlPanel/sourceControlGitActions';
+} from '../utils/changeFileStatus';
 import {
   buildChangeFilesFromGitStatus,
   mergeGitStatusFileIds,
-} from './gitStatusUtils';
+} from '../utils/gitStatusUtils';
+import { runGitDiscard } from '../utils/sourceControlGitActions';
 
 /** 文件管理依赖（Hook 所需的最小接口） */
 export interface AppDevSourceControlFileManagement {

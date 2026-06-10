@@ -6,24 +6,24 @@ import { ReloadOutlined, UnorderedListOutlined } from '@ant-design/icons';
 import { Button, Input } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useMemo, useState } from 'react';
-import type { GitWorkspaceConfig } from '../hooks/buildGitWorkspaceParams';
-import { collectFilesUnderFolder } from './buildChangeFileTree';
-import ChangeFileContextMenu from './ChangeFileContextMenu';
-import ChangeFileListSection, {
-  type ChangeListViewMode,
-} from './ChangeFileListSection';
+import { collectFilesUnderFolder } from '../utils/buildChangeFileTree';
+import type { GitWorkspaceConfig } from '../utils/buildGitWorkspaceParams';
 import {
   type ChangeListSection,
   resolveStagedStatusMeta,
   resolveUnstagedStatusMeta,
   type SelectedChangeFile,
-} from './changeFileStatus';
-import styles from './index.less';
+} from '../utils/changeFileStatus';
 import {
   runGitDiscard,
   runGitStage,
   runGitUnstage,
-} from './sourceControlGitActions';
+} from '../utils/sourceControlGitActions';
+import ChangeFileContextMenu from './ChangeFileContextMenu';
+import ChangeFileListSection, {
+  type ChangeListViewMode,
+} from './ChangeFileListSection';
+import styles from './index.less';
 
 const cx = classNames.bind(styles);
 

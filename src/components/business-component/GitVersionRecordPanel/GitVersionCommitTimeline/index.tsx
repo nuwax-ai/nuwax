@@ -1,10 +1,10 @@
 import avatarImage from '@/assets/images/avatar.png';
-import type { GitCommitLogItem } from '@/components/business-component/FileTreeGitSourcePanel/types/git-version-management';
 import { dict } from '@/services/i18nRuntime';
 import { UndoOutlined } from '@ant-design/icons';
 import { Button } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
+import type { GitCommitLogItem } from '../../FileTreeGitSourcePanel/types/git-version-management';
 import { formatCommitTime, getDisplayHash } from '../commitListUtils';
 import type { CommitDateGroup } from '../types';
 import styles from './index.less';

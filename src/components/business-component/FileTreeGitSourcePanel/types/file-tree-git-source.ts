@@ -1,11 +1,11 @@
 import type { ChangeFileInfo } from '@/components/FileTreeView/type';
 import type { FileNode } from '@/types/interfaces/appDev';
 import type { ReactNode } from 'react';
-import type { GitWorkspaceConfig } from '../hooks/buildGitWorkspaceParams';
+import type { GitWorkspaceConfig } from '../utils/buildGitWorkspaceParams';
 import type {
   ChangeListSection,
   SelectedChangeFile,
-} from '../SourceControlPanel/changeFileStatus';
+} from '../utils/changeFileStatus';
 
 /** 源代码管理绑定（Git API 在 SourceControlPanel 内统一调用） */
 export interface SourceControlProps {

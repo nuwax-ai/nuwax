@@ -8,16 +8,16 @@ import { dict } from '@/services/i18nRuntime';
 import { message } from 'antd';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { fetchGitChangeFileContent } from '../../GitVersionRecordPanel/gitCommitDiffUtils';
+import { apiGitCommit } from '../services/git-version-management';
 import {
   buildGitWorkspaceParams,
   isGitWorkspaceReady,
-} from '../hooks/buildGitWorkspaceParams';
-import { apiGitCommit } from '../services/git-version-management';
+} from '../utils/buildGitWorkspaceParams';
 import type {
   ChangeListSection,
   SelectedChangeFile,
-} from '../SourceControlPanel/changeFileStatus';
-import { runGitDiscard } from '../SourceControlPanel/sourceControlGitActions';
+} from '../utils/changeFileStatus';
+import { runGitDiscard } from '../utils/sourceControlGitActions';
 
 /** ConversationAgent 场景外部适配器 */
 export interface ConversationAgentSourceControlAdapters {

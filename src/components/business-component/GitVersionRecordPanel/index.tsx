@@ -1,16 +1,16 @@
-import {
-  buildGitWorkspaceParams,
-  isGitWorkspaceReady,
-  type GitWorkspaceConfig,
-} from '@/components/business-component/FileTreeGitSourcePanel/hooks/buildGitWorkspaceParams';
-import { apiGitLogList } from '@/components/business-component/FileTreeGitSourcePanel/services/git-version-management';
-import type { GitCommitLogItem } from '@/components/business-component/FileTreeGitSourcePanel/types/git-version-management';
 import InfiniteScrollDiv from '@/components/custom/InfiniteScrollDiv';
 import Loading from '@/components/custom/Loading';
 import { dict } from '@/services/i18nRuntime';
 import { Empty } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { apiGitLogList } from '../FileTreeGitSourcePanel/services/git-version-management';
+import type { GitCommitLogItem } from '../FileTreeGitSourcePanel/types/git-version-management';
+import {
+  buildGitWorkspaceParams,
+  isGitWorkspaceReady,
+  type GitWorkspaceConfig,
+} from '../FileTreeGitSourcePanel/utils/buildGitWorkspaceParams';
 import { groupCommitsByDate } from './commitListUtils';
 import GitVersionCommitChangesPanel from './GitVersionCommitChangesPanel';
 import GitVersionCommitTimeline from './GitVersionCommitTimeline';

@@ -1,16 +1,16 @@
+import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
   apiGitDiff,
   apiGitFileContent,
-} from '@/components/business-component/FileTreeGitSourcePanel/services/git-version-management';
-import type { ChangeListSection } from '@/components/business-component/FileTreeGitSourcePanel/SourceControlPanel/changeFileStatus';
+} from '../FileTreeGitSourcePanel/services/git-version-management';
 import type {
   GitCommitDiffFileItem,
   GitCommitDiffFileStatus,
   GitDiffResponseData,
   GitDiffSummaryFileItem,
   GitFileContentResponseData,
-} from '@/components/business-component/FileTreeGitSourcePanel/types/git-version-management';
-import { SUCCESS_CODE } from '@/constants/codes.constants';
+} from '../FileTreeGitSourcePanel/types/git-version-management';
+import type { ChangeListSection } from '../FileTreeGitSourcePanel/utils/changeFileStatus';
 
 type WorkspaceParams = {
   workspaceType: 'pageApp' | 'taskAgent';

@@ -1,14 +1,14 @@
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
-  buildGitWorkspaceParams,
-  type GitWorkspaceConfig,
-  isGitWorkspaceReady,
-} from '../hooks/buildGitWorkspaceParams';
-import {
   apiGitAdd,
   apiGitDiscard,
   apiGitUnstage,
 } from '../services/git-version-management';
+import {
+  buildGitWorkspaceParams,
+  type GitWorkspaceConfig,
+  isGitWorkspaceReady,
+} from './buildGitWorkspaceParams';
 
 /** 在源代码管理面板内执行 Git discard */
 export const runGitDiscard = async (

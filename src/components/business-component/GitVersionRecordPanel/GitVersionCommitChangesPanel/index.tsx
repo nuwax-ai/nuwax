@@ -1,9 +1,4 @@
 import ChangeFileGitDiffView from '@/components/business-component/ChangeFileGitDiffView';
-import type {
-  GitCommitDiffFileItem,
-  GitCommitDiffFileStatus,
-  GitCommitLogItem,
-} from '@/components/business-component/FileTreeGitSourcePanel/types/git-version-management';
 import Loading from '@/components/custom/Loading';
 import { dict } from '@/services/i18nRuntime';
 import { formatTimeAgo } from '@/utils/common';
@@ -18,6 +13,11 @@ import { DiffModeEnum } from '@git-diff-view/react';
 import { Button, Empty, Input } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import type {
+  GitCommitDiffFileItem,
+  GitCommitDiffFileStatus,
+  GitCommitLogItem,
+} from '../../FileTreeGitSourcePanel/types/git-version-management';
 import { getDisplayHash } from '../commitListUtils';
 import {
   fetchGitCommitDiffFiles,
