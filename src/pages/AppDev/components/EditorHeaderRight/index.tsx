@@ -1,6 +1,10 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import { t } from '@/services/i18nRuntime';
-import { BranchesOutlined, SyncOutlined } from '@ant-design/icons';
+import {
+  BranchesOutlined,
+  CodeOutlined,
+  SyncOutlined,
+} from '@ant-design/icons';
 import { Badge, Button, Dropdown, Tooltip } from 'antd';
 import React, { useEffect, useMemo } from 'react';
 import { useModel } from 'umi';
@@ -21,6 +25,11 @@ interface ConsoleButtonProps {
   showDevLogConsole: boolean;
   hasErrorInLatestBlock: boolean;
   onToggleDevLogConsole: () => void;
+}
+
+// 终端相关接口
+interface TerminalButtonProps {
+  onOpenTerminal: () => void;
 }
 
 // Git 版本记录相关接口
@@ -59,6 +68,11 @@ interface EditorHeaderRightProps {
     showDevLogConsole: boolean;
     hasErrorInLatestBlock: boolean;
     onToggleDevLogConsole: () => void;
+  };
+
+  // 终端相关（可选）
+  terminalData?: {
+    onOpenTerminal: () => void;
   };
 
   // 更多操作相关
@@ -190,6 +204,21 @@ const GitVersionRecordButton: React.FC<GitVersionRecordButtonProps> = ({
       icon={<BranchesOutlined style={{ fontSize: 16 }} />}
       onClick={onOpen}
       disabled={disabled}
+    />
+  </Tooltip>
+);
+
+/**
+ * 终端按钮组件
+ * 点击后打开底部控制台并切换到终端 Tab
+ */
+const TerminalButton: React.FC<TerminalButtonProps> = ({ onOpenTerminal }) => (
+  <Tooltip title={t('PC.Pages.AppDevEditorHeaderRight.viewTerminal')}>
+    <Button
+      type="text"
+      className={styles.consoleButton}
+      icon={<CodeOutlined style={{ fontSize: 16 }} />}
+      onClick={onOpenTerminal}
     />
   </Tooltip>
 );
@@ -328,6 +357,7 @@ const EditorHeaderRight: React.FC<EditorHeaderRightProps> = ({
   activeTab,
   previewData,
   consoleData,
+  terminalData,
   actionsData,
   gitVersionRecordData,
   isChatLoading,
@@ -358,6 +388,11 @@ const EditorHeaderRight: React.FC<EditorHeaderRightProps> = ({
           onOpen={gitVersionRecordData.onOpen}
           disabled={gitVersionRecordData.disabled || isChatLoading}
         />
+      )}
+
+      {/* 终端按钮 - 打开底部控制台并切换到终端 Tab */}
+      {terminalData && (
+        <TerminalButton onOpenTerminal={terminalData.onOpenTerminal} />
       )}
 
       {/* 控制台按钮 - 保持现有样式 */}

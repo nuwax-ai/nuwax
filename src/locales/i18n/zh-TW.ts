@@ -2135,6 +2135,7 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.AppDevEditorHeaderRight.restarting": "重啟中...",
   "PC.Pages.AppDevEditorHeaderRight.starting": "啟動中...",
   "PC.Pages.AppDevEditorHeaderRight.viewLog": "檢視日誌",
+  "PC.Pages.AppDevEditorHeaderRight.viewTerminal": "檢視終端機",
   "PC.Pages.AppDevEditorHeaderRight.gitVersionHistory": "版本記錄",
   "PC.Pages.AppDevEditorHeaderRight.openDesignMode": "開啟設計模式",
   "PC.Pages.AppDevEditorHeaderRight.closeDesignMode": "關閉設計模式",

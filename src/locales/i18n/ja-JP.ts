@@ -2135,6 +2135,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.AppDevEditorHeaderRight.restarting": "再起動中...",
   "PC.Pages.AppDevEditorHeaderRight.starting": "起動...",
   "PC.Pages.AppDevEditorHeaderRight.viewLog": "ログを表示する",
+  "PC.Pages.AppDevEditorHeaderRight.viewTerminal": "ターミナルを表示する",
   "PC.Pages.AppDevEditorHeaderRight.gitVersionHistory": "バージョン履歴",
   "PC.Pages.ConversationAgent.AgentGitVersionRecord.title": "バージョン履歴",
   "PC.Pages.ConversationAgent.AgentGitVersionRecord.subtitle": "{0} 件のコミット · {1} ブランチ",

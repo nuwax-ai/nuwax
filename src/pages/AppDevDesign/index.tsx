@@ -3,6 +3,7 @@ import {
   ConversationBottomConsole,
   DevLogActions,
   GitVersionRecordPanel,
+  type ConsoleLayoutMode,
 } from '@/components/business-component';
 import {
   AppDevFileTreePanel,
@@ -148,6 +149,12 @@ const AppDevDesign: React.FC = () => {
   const [isUploadModalVisible, setIsUploadModalVisible] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [showDevLogConsole, setShowDevLogConsole] = useState(false);
+  // 底部控制台布局模式（用于判断折叠状态）
+  const devConsoleLayoutModeRef = useRef<ConsoleLayoutMode>('default');
+  // 控制台恢复默认高度信号
+  const [devConsoleRestoreSignal, setDevConsoleRestoreSignal] = useState(0);
+  // 控制台切换到终端 Tab 信号
+  const [devConsoleTerminalSignal, setDevConsoleTerminalSignal] = useState(0);
 
   // 空操作函数常量，避免每次渲染创建新函数实例
   const noop = useCallback(() => {}, []);
@@ -1464,8 +1471,25 @@ const AppDevDesign: React.FC = () => {
                   consoleData={{
                     showDevLogConsole: showDevLogConsole,
                     hasErrorInLatestBlock: devLogs.hasErrorInLatestBlock,
-                    onToggleDevLogConsole: () =>
-                      setShowDevLogConsole(!showDevLogConsole),
+                    onToggleDevLogConsole: () => {
+                      // 折叠状态下点击：恢复默认高度而非关闭
+                      if (
+                        showDevLogConsole &&
+                        devConsoleLayoutModeRef.current === 'collapsed'
+                      ) {
+                        setDevConsoleRestoreSignal((prev) => prev + 1);
+                        return;
+                      }
+                      setShowDevLogConsole(!showDevLogConsole);
+                    },
+                  }}
+                  // 终端相关
+                  terminalData={{
+                    onOpenTerminal: () => {
+                      // 打开底部控制台并切换到终端 Tab
+                      setShowDevLogConsole(true);
+                      setDevConsoleTerminalSignal((prev) => prev + 1);
+                    },
                   }}
                   // 更多操作相关
                   actionsData={{
@@ -1682,6 +1706,11 @@ const AppDevDesign: React.FC = () => {
                 <ConversationBottomConsole
                   visible={showDevLogConsole}
                   defaultActiveTab="logs"
+                  restoreSignal={devConsoleRestoreSignal}
+                  terminalSignal={devConsoleTerminalSignal}
+                  onLayoutModeChange={(mode) => {
+                    devConsoleLayoutModeRef.current = mode;
+                  }}
                   onClose={() => setShowDevLogConsole(false)}
                   wsUrl={terminalWsUrl}
                   wireProtocol={TTYD_TERMINAL_WIRE_PROTOCOL}

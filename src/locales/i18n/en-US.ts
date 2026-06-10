@@ -2184,6 +2184,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.AppDevEditorHeaderRight.restarting": "Restarting...",
   "PC.Pages.AppDevEditorHeaderRight.starting": "Starting...",
   "PC.Pages.AppDevEditorHeaderRight.viewLog": "View log",
+  "PC.Pages.AppDevEditorHeaderRight.viewTerminal": "View terminal",
   "PC.Pages.AppDevEditorHeaderRight.gitVersionHistory": "Version history",
   "PC.Pages.AppDevFileOperatingMask.defaultTip": "File operation in progress. Please wait...",
   "PC.Pages.AppDevFilePathHeader.modified": "Modified",

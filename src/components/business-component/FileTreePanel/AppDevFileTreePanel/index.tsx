@@ -128,10 +128,8 @@ const AppDevFileTreePanel: React.FC<AppDevFileTreePanelProps> = ({
       closeContextMenu();
     };
 
-    // if (contextMenuVisible) {
     document.addEventListener('click', handleClickOutside);
     return () => document.removeEventListener('click', handleClickOutside);
-    // }
   }, [closeContextMenu]);
 
   /**
@@ -260,6 +258,7 @@ const AppDevFileTreePanel: React.FC<AppDevFileTreePanelProps> = ({
         <div className={cx(styles['file-tree-panel'])}>
           <SearchView files={files} onFileSelect={onFileSelect} />
 
+          {/* 文件树工具栏 */}
           <FileTreeToolbar
             disabled={isChatLoading}
             onExportProject={

@@ -67,6 +67,12 @@ export interface ConversationBottomConsoleProps {
   layoutResetSignal?: number;
   /** 信号值变化时切到终端 Tab 并全屏展开（如点击「终端」入口） */
   expandSignal?: number;
+  /** 信号值变化时恢复默认高度（如折叠状态下再次点击入口图标） */
+  restoreSignal?: number;
+  /** 信号值变化时切到终端 Tab（折叠时恢复默认高度，如点击「终端」图标） */
+  terminalSignal?: number;
+  /** 布局模式变化回调（供外部感知折叠/展开状态） */
+  onLayoutModeChange?: (mode: ConsoleLayoutMode) => void;
   /** 打开控制台时的默认 Tab @default 'terminal' */
   defaultActiveTab?: 'terminal' | 'logs';
   /** 头部操作区额外内容（渲染在内置按钮之前），仅日志 Tab 激活时显示 */
@@ -92,6 +98,9 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
   showTerminalAppearanceToggle = true,
   layoutResetSignal,
   expandSignal,
+  restoreSignal,
+  terminalSignal,
+  onLayoutModeChange,
   defaultActiveTab = 'terminal',
   logsExtra,
 }) => {
@@ -118,10 +127,11 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
     : internalAppearance;
   const isLightTerminal = terminalAppearance === 'light';
 
-  /** 面板重新打开时恢复默认 Tab */
+  /** 面板重新打开时恢复默认 Tab；若上次处于折叠状态则恢复默认高度 */
   useEffect(() => {
     if (visible && !prevVisibleRef.current) {
       setActiveTab(defaultActiveTab);
+      setLayoutMode((prev) => (prev === 'collapsed' ? 'default' : prev));
     }
     prevVisibleRef.current = visible;
   }, [visible, defaultActiveTab]);
@@ -166,6 +176,24 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
     setActiveTab('terminal');
     setLayoutMode('expanded');
   }, [expandSignal]);
+
+  /** 外部信号：恢复默认高度（如折叠状态下再次点击入口图标） */
+  useEffect(() => {
+    if (!restoreSignal) return;
+    setLayoutMode('default');
+  }, [restoreSignal]);
+
+  /** 外部信号：切到终端 Tab（折叠时恢复默认高度） */
+  useEffect(() => {
+    if (!terminalSignal) return;
+    setActiveTab('terminal');
+    setLayoutMode((prev) => (prev === 'collapsed' ? 'default' : prev));
+  }, [terminalSignal]);
+
+  /** 布局模式变化时通知外部 */
+  useEffect(() => {
+    onLayoutModeChange?.(layoutMode);
+  }, [layoutMode, onLayoutModeChange]);
 
   /** 全屏展开 / 恢复默认高度 */
   const handleToggleExpand = () => {
