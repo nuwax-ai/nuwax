@@ -91,12 +91,15 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
     [agentType],
   );
 
-  // 挂载时加载数据
+  // 监听 agentId 的变化，当 agentId 改变时，重新加载数据并重置 initialized 状态与模型列表
   useEffect(() => {
-    if (agentId && !initialized) {
-      fetchModelOptions(agentId);
+    if (agentId) {
+      setInitialized(false);
+      initializedRef.current = false;
+      setModelList([]);
+      fetchModelOptions(agentId, true);
     }
-  }, [agentId, initialized, fetchModelOptions]);
+  }, [agentId, fetchModelOptions]);
 
   // 监听数据加载完成，自动应用默认选择
   useEffect(() => {
