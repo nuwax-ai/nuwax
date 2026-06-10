@@ -20,25 +20,33 @@ import { dict } from '@/services/i18nRuntime';
 import { MessageStatusEnum } from '@/types/enums/common';
 import { AgentTypeEnum } from '@/types/enums/space';
 import type { UploadFileInfo } from '@/types/interfaces/common';
-import type { MessageInfo } from '@/types/interfaces/conversationInfo';
+import type {
+  MessageInfo,
+  RoleInfo,
+} from '@/types/interfaces/conversationInfo';
 
 import styles from './index.less';
 import type { UnifiedChatSessionProps } from './types';
 
 const cx = classNames.bind(styles);
 
+const DEFAULT_ROLE_INFO: RoleInfo = {
+  assistant: { name: 'Assistant', avatar: '' },
+  system: { name: 'System', avatar: '' },
+};
+
 const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
   conversationId,
-  messageList,
-  roleInfo,
-  isLoading,
-  loadingMore,
-  isMoreMessage,
-  isConversationActive,
+  messageList = [],
+  roleInfo = DEFAULT_ROLE_INFO,
+  isLoading = false,
+  loadingMore = false,
+  isMoreMessage = false,
+  isConversationActive = false,
   messageBottomMode = 'home',
   loadingSuggest = false,
   chatSuggestList = [],
-  agentInfo,
+  agentInfo = {},
   onSendMessage,
   onClear,
   onLoadMoreMessage,
@@ -111,7 +119,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
       messageList?.length > 0 &&
       conversationId
     ) {
-      onLoadMoreMessage(conversationId);
+      onLoadMoreMessage?.(conversationId);
     }
   }, [
     loadMoreInView,
@@ -130,7 +138,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
     modelId?: number,
     selectedAgentMode?: AgentMode,
   ) => {
-    onSendMessage(
+    onSendMessage?.(
       messageInfo,
       files,
       skillIds,
@@ -217,7 +225,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
 
     lastScrollHeightRef.current = element.scrollHeight;
     lastScrollTopRef.current = element.scrollTop;
-    prevLoadingMoreRef.current = loadingMore;
+    prevLoadingMoreRef.current = loadingMore || false;
   }, [messageList, loadingMore]);
 
   return (
@@ -266,7 +274,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
                     )}
 
                   {/* 消息渲染列表 */}
-                  {messageList.map((item: MessageInfo, idx: number) => {
+                  {messageList?.map((item: MessageInfo, idx: number) => {
                     const isLastMessage = idx === messageList.length - 1;
                     if (renderMessageItem) {
                       return renderMessageItem(item, isLastMessage);
