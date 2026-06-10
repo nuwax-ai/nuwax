@@ -1,5 +1,5 @@
 import type { ChangeFileInfo } from '@/components/FileTreeView/type';
-import type { TaskAgentFileViewTree } from '@/components/business-component/FileTreePanel/types/taskAgentFileTree';
+import type { TaskAgentFileViewTree } from '@/components/business-component/FileTreeGitSourcePanel/types/taskAgentFileTree';
 import type { HideDesktopEnum } from '@/types/enums/agent';
 import type { FileNode } from '@/types/interfaces/appDev';
 import type React from 'react';

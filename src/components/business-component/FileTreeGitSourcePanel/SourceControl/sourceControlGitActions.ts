@@ -2,12 +2,12 @@ import {
   buildGitWorkspaceParams,
   type GitWorkspaceConfig,
   isGitWorkspaceReady,
-} from '@/components/business-component/FileTreePanel/hooks/buildGitWorkspaceParams';
+} from '@/components/business-component/FileTreeGitSourcePanel/hooks/buildGitWorkspaceParams';
 import {
   apiGitAdd,
   apiGitDiscard,
   apiGitUnstage,
-} from '@/components/business-component/FileTreePanel/services/git-version-management';
+} from '@/components/business-component/FileTreeGitSourcePanel/services/git-version-management';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 
 /** 在源代码管理面板内执行 Git discard */

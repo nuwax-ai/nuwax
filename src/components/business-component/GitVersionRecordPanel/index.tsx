@@ -2,9 +2,9 @@ import {
   buildGitWorkspaceParams,
   isGitWorkspaceReady,
   type GitWorkspaceConfig,
-} from '@/components/business-component/FileTreePanel/hooks/buildGitWorkspaceParams';
-import { apiGitLogList } from '@/components/business-component/FileTreePanel/services/git-version-management';
-import type { GitCommitLogItem } from '@/components/business-component/FileTreePanel/types/git-version-management';
+} from '@/components/business-component/FileTreeGitSourcePanel/hooks/buildGitWorkspaceParams';
+import { apiGitLogList } from '@/components/business-component/FileTreeGitSourcePanel/services/git-version-management';
+import type { GitCommitLogItem } from '@/components/business-component/FileTreeGitSourcePanel/types/git-version-management';
 import InfiniteScrollDiv from '@/components/custom/InfiniteScrollDiv';
 import Loading from '@/components/custom/Loading';
 import { dict } from '@/services/i18nRuntime';

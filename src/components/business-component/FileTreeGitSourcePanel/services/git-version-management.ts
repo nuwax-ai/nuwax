@@ -26,7 +26,7 @@ import type {
   GitTagDeleteParams,
   GitTagsParams,
   GitUnstageParams,
-} from '@/components/business-component/FileTreePanel/types/git-version-management';
+} from '@/components/business-component/FileTreeGitSourcePanel/types/git-version-management';
 import type { RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
 

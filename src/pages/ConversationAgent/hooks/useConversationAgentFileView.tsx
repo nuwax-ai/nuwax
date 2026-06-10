@@ -5,8 +5,8 @@ import FilePreview, {
 import {
   buildChangeFilesFromGitStatus,
   mergeGitStatusFileIds,
-} from '@/components/business-component/FileTreePanel/hooks/gitStatusUtils';
-import { apiGitStatus } from '@/components/business-component/FileTreePanel/services/git-version-management';
+} from '@/components/business-component/FileTreeGitSourcePanel/hooks/gitStatusUtils';
+import { apiGitStatus } from '@/components/business-component/FileTreeGitSourcePanel/services/git-version-management';
 import CodeViewer from '@/components/CodeViewer';
 import { ChangeFileInfo } from '@/components/FileTreeView/type';
 import { SUCCESS_CODE } from '@/constants/codes.constants';

@@ -9,7 +9,7 @@ import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
 import FileTreeGitSourcePanel, {
   useAppDevFileTree,
   useSourceControl,
-} from '@/components/business-component/FileTreePanel';
+} from '@/components/business-component/FileTreeGitSourcePanel';
 import ConditionRender from '@/components/ConditionRender';
 import Created from '@/components/Created';
 import PublishComponentModal from '@/components/PublishComponentModal';

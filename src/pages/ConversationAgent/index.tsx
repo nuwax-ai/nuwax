@@ -5,7 +5,7 @@ import {
 import FileTreeGitSourcePanel, {
   useConversationAgentSourceControl,
   type SelectedChangeFile,
-} from '@/components/business-component/FileTreePanel';
+} from '@/components/business-component/FileTreeGitSourcePanel';
 import CreateAgent from '@/components/CreateAgent';
 import Loading from '@/components/custom/Loading';
 import type { ChangeFileInfo } from '@/components/FileTreeView/type';

@@ -1,4 +1,4 @@
-import type { GitWorkspaceType } from '@/components/business-component/FileTreePanel/types/git-version-management';
+import type { GitWorkspaceType } from '@/components/business-component/FileTreeGitSourcePanel/types/git-version-management';
 
 /** Git 工作空间配置 */
 export type GitWorkspaceConfig =

@@ -34,7 +34,7 @@ export {
   useAppDevFileTree,
   useConversationAgentSourceControl,
   useSourceControl,
-} from './FileTreePanel';
+} from './FileTreeGitSourcePanel';
 export {
   default as GitVersionRecordPanel,
   type GitVersionRecordPanelProps,

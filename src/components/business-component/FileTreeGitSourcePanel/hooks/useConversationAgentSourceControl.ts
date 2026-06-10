@@ -5,13 +5,13 @@
 import {
   buildGitWorkspaceParams,
   isGitWorkspaceReady,
-} from '@/components/business-component/FileTreePanel/hooks/buildGitWorkspaceParams';
-import { apiGitCommit } from '@/components/business-component/FileTreePanel/services/git-version-management';
+} from '@/components/business-component/FileTreeGitSourcePanel/hooks/buildGitWorkspaceParams';
+import { apiGitCommit } from '@/components/business-component/FileTreeGitSourcePanel/services/git-version-management';
 import type {
   ChangeListSection,
   SelectedChangeFile,
-} from '@/components/business-component/FileTreePanel/SourceControl/changeFileStatus';
-import { runGitDiscard } from '@/components/business-component/FileTreePanel/SourceControl/sourceControlGitActions';
+} from '@/components/business-component/FileTreeGitSourcePanel/SourceControl/changeFileStatus';
+import { runGitDiscard } from '@/components/business-component/FileTreeGitSourcePanel/SourceControl/sourceControlGitActions';
 import { fetchGitChangeFileContent } from '@/components/business-component/GitVersionRecordPanel/gitCommitDiffUtils';
 import type { ChangeFileInfo } from '@/components/FileTreeView/type';
 import { SUCCESS_CODE } from '@/constants/codes.constants';

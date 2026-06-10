@@ -1,15 +1,15 @@
 import {
   apiGitDiff,
   apiGitFileContent,
-} from '@/components/business-component/FileTreePanel/services/git-version-management';
-import type { ChangeListSection } from '@/components/business-component/FileTreePanel/SourceControl/changeFileStatus';
+} from '@/components/business-component/FileTreeGitSourcePanel/services/git-version-management';
+import type { ChangeListSection } from '@/components/business-component/FileTreeGitSourcePanel/SourceControl/changeFileStatus';
 import type {
   GitCommitDiffFileItem,
   GitCommitDiffFileStatus,
   GitDiffResponseData,
   GitDiffSummaryFileItem,
   GitFileContentResponseData,
-} from '@/components/business-component/FileTreePanel/types/git-version-management';
+} from '@/components/business-component/FileTreeGitSourcePanel/types/git-version-management';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 
 type WorkspaceParams = {

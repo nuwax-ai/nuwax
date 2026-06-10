@@ -1,4 +1,4 @@
-import type { GitWorkspaceConfig } from '@/components/business-component/FileTreePanel/hooks/buildGitWorkspaceParams';
+import type { GitWorkspaceConfig } from '@/components/business-component/FileTreeGitSourcePanel/hooks/buildGitWorkspaceParams';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import type { ChangeFileInfo } from '@/components/FileTreeView/type';
 import { dict } from '@/services/i18nRuntime';
