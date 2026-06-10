@@ -151,10 +151,12 @@ const AppDev: React.FC = () => {
   const [showDevLogConsole, setShowDevLogConsole] = useState(false);
   // 底部控制台布局模式（用于判断折叠状态）
   const devConsoleLayoutModeRef = useRef<ConsoleLayoutMode>('default');
-  // 控制台恢复默认高度信号
-  const [devConsoleRestoreSignal, setDevConsoleRestoreSignal] = useState(0);
+  // 底部控制台当前激活 Tab（用于判断显示终端还是日志）
+  const devConsoleActiveTabRef = useRef<'terminal' | 'logs'>('logs');
   // 控制台切换到终端 Tab 信号
   const [devConsoleTerminalSignal, setDevConsoleTerminalSignal] = useState(0);
+  // 控制台切换到日志 Tab 信号
+  const [devConsoleLogsSignal, setDevConsoleLogsSignal] = useState(0);
 
   // 空操作函数常量，避免每次渲染创建新函数实例
   const noop = useCallback(() => {}, []);
@@ -1482,23 +1484,43 @@ const AppDev: React.FC = () => {
                     showDevLogConsole: showDevLogConsole,
                     hasErrorInLatestBlock: devLogs.hasErrorInLatestBlock,
                     onToggleDevLogConsole: () => {
-                      // 折叠状态下点击：恢复默认高度而非关闭
-                      if (
-                        showDevLogConsole &&
-                        devConsoleLayoutModeRef.current === 'collapsed'
-                      ) {
-                        setDevConsoleRestoreSignal((prev) => prev + 1);
+                      // 未打开：打开并显示日志 Tab
+                      if (!showDevLogConsole) {
+                        setShowDevLogConsole(true);
+                        setDevConsoleLogsSignal((prev) => prev + 1);
                         return;
                       }
-                      setShowDevLogConsole(!showDevLogConsole);
+                      // 已打开但显示终端 Tab 或处于折叠状态：切到日志/恢复高度，而非隐藏
+                      if (
+                        devConsoleActiveTabRef.current === 'terminal' ||
+                        devConsoleLayoutModeRef.current === 'collapsed'
+                      ) {
+                        setDevConsoleLogsSignal((prev) => prev + 1);
+                        return;
+                      }
+                      // 已打开且显示日志 Tab：关闭
+                      setShowDevLogConsole(false);
                     },
                   }}
                   // 终端相关
                   terminalData={{
                     onOpenTerminal: () => {
-                      // 打开底部控制台并切换到终端 Tab
-                      setShowDevLogConsole(true);
-                      setDevConsoleTerminalSignal((prev) => prev + 1);
+                      // 未打开：打开并显示终端 Tab
+                      if (!showDevLogConsole) {
+                        setShowDevLogConsole(true);
+                        setDevConsoleTerminalSignal((prev) => prev + 1);
+                        return;
+                      }
+                      // 已打开但显示日志 Tab 或处于折叠状态：切到终端/恢复高度，而非隐藏
+                      if (
+                        devConsoleActiveTabRef.current === 'logs' ||
+                        devConsoleLayoutModeRef.current === 'collapsed'
+                      ) {
+                        setDevConsoleTerminalSignal((prev) => prev + 1);
+                        return;
+                      }
+                      // 已打开且显示终端 Tab：关闭
+                      setShowDevLogConsole(false);
                     },
                   }}
                   // 更多操作相关
@@ -1725,10 +1747,13 @@ const AppDev: React.FC = () => {
                 <ConversationBottomConsole
                   visible={showDevLogConsole}
                   defaultActiveTab="logs"
-                  restoreSignal={devConsoleRestoreSignal}
                   terminalSignal={devConsoleTerminalSignal}
+                  logsSignal={devConsoleLogsSignal}
                   onLayoutModeChange={(mode) => {
                     devConsoleLayoutModeRef.current = mode;
+                  }}
+                  onActiveTabChange={(tab) => {
+                    devConsoleActiveTabRef.current = tab;
                   }}
                   onClose={() => setShowDevLogConsole(false)}
                   wsUrl={terminalWsUrl}
