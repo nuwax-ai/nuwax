@@ -234,7 +234,7 @@ const ConversationAgent: React.FC = () => {
     setIsLoadingOtherInterface,
   } = useModel('conversationAgent');
   /** tenantConfigInfo model：租户配置（页面标题、订阅开关等） */
-  const { setTitle, tenantConfigInfo } = useModel('tenantConfigInfo');
+  const { tenantConfigInfo } = useModel('tenantConfigInfo');
   const showSubscriptionTabs = tenantConfigInfo?.enableSubscription !== 0;
   /** spaceAgent model：当前空间下的智能体组件列表（变量、插件、工具等） */
   const { agentComponentList } = useModel('spaceAgent');
@@ -317,7 +317,9 @@ const ConversationAgent: React.FC = () => {
    * 智能体配置加载请求（带防抖）
    * 用于首次加载或 agentId 切换时获取完整配置
    */
-  const { run } = useRequest(apiAgentConfigInfo, {
+  const {
+    /* run */
+  } = useRequest(apiAgentConfigInfo, {
     manual: true,
     debounceWait: 300,
     onSuccess: (result: RequestResponse<AgentConfigInfo>) => {
@@ -361,9 +363,9 @@ const ConversationAgent: React.FC = () => {
       setLoadingAgentConfigInfo(false);
       return;
     }
-    setLoadingAgentConfigInfo(true);
-    run(agentId);
-    setTitle();
+    // setLoadingAgentConfigInfo(true);
+    // run(agentId);
+    // setTitle();
   }, [agentId]);
 
   /** 初始化页面基础配置：为页面中所有链接添加 target 属性 */
