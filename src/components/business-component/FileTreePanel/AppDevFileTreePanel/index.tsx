@@ -146,7 +146,11 @@ const AppDevFileTreePanel: React.FC<AppDevFileTreePanelProps> = ({
       ) {
         fileManagement.removeTempNode(options.node.id);
       }
-      setRenamingNode(null);
+      // 仅当取消的是当前重命名节点时才清空状态，
+      // 避免上一个输入框的延迟 blur 误清掉新一轮新建的重命名状态
+      setRenamingNode((prev) =>
+        options?.node && prev && prev.id !== options.node.id ? prev : null,
+      );
     },
     [fileManagement],
   );
@@ -157,13 +161,17 @@ const AppDevFileTreePanel: React.FC<AppDevFileTreePanelProps> = ({
       if (!fileManagement.insertTempNodeForCreate) {
         return;
       }
+      // 连续点击新建时，先移除上一个尚未命名的临时节点，避免残留空占位
+      if (renamingNode?.status === 'create') {
+        fileManagement.removeTempNode?.(renamingNode.id);
+      }
       const newNode = fileManagement.insertTempNodeForCreate(
         parentNode,
         'file',
       );
       setRenamingNode(newNode);
     },
-    [fileManagement],
+    [fileManagement, renamingNode],
   );
 
   /** 新建文件夹（可在指定文件夹下创建） */
@@ -172,13 +180,17 @@ const AppDevFileTreePanel: React.FC<AppDevFileTreePanelProps> = ({
       if (!fileManagement.insertTempNodeForCreate) {
         return;
       }
+      // 连续点击新建时，先移除上一个尚未命名的临时节点，避免残留空占位
+      if (renamingNode?.status === 'create') {
+        fileManagement.removeTempNode?.(renamingNode.id);
+      }
       const newNode = fileManagement.insertTempNodeForCreate(
         parentNode,
         'folder',
       );
       setRenamingNode(newNode);
     },
-    [fileManagement],
+    [fileManagement, renamingNode],
   );
 
   /**

@@ -748,7 +748,11 @@ export function useConversationAgentFileView(
       }
     }
 
-    setRenamingNode(null);
+    // 仅当取消的是当前重命名节点时才清空状态，
+    // 避免上一个输入框的延迟 blur 误清掉新一轮新建的重命名状态
+    setRenamingNode((prev) =>
+      options?.node && prev && prev.id !== options.node.id ? prev : null,
+    );
   };
 
   /**
@@ -961,6 +965,20 @@ export function useConversationAgentFileView(
     parentNode: FileNode | null,
     type: 'file' | 'folder',
   ) => {
+    // 连续点击新建时，先移除上一个尚未命名的临时节点，避免残留空占位
+    if (renamingNode?.status === 'create') {
+      const prevTempId = renamingNode.id;
+      const removeNodeById = (nodes: FileNode[]): FileNode[] =>
+        nodes
+          .filter((node) => node.id !== prevTempId)
+          .map((node) =>
+            node.children && node.children.length > 0
+              ? { ...node, children: removeNodeById(node.children) }
+              : node,
+          );
+      setFiles((prevFiles) => removeNodeById(prevFiles));
+    }
+
     const parentPath = parentNode?.path || null;
     const tempIdSuffix = `__new__${Date.now()}`;
     const fullPath = parentPath
