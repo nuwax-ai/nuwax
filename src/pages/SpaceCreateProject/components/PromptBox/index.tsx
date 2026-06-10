@@ -1,16 +1,36 @@
 import ChatInputHome from '@/components/ChatInputHome';
-import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import useSelectedComponent from '@/hooks/useSelectedComponent';
+import { apiPublishedAgentInfo } from '@/services/agentDev';
+import {
+  AgentComponentTypeEnum,
+  DefaultSelectedEnum,
+} from '@/types/enums/agent';
 import { AgentTypeEnum } from '@/types/enums/space';
+import { AgentDetailDto } from '@/types/interfaces/agent';
 import { message } from 'antd';
 import classNames from 'classnames';
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import { useModel } from 'umi';
 import TabsList from './components/TabsList';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
 interface PromptBoxProps {
-  onSubmit: (type: string, prompt: string) => void;
+  onSubmit: (
+    type: string,
+    prompt: string,
+    files?: any[],
+    skillIds?: number[],
+    modelId?: number,
+    tools?: any[],
+  ) => void;
 }
 
 interface TabItem {
@@ -50,6 +70,72 @@ const PromptBox: React.FC<PromptBoxProps> = ({ onSubmit }) => {
   const [activeTab, setActiveTab] = useState<string>(
     AgentComponentTypeEnum.Agent,
   );
+
+  // 获取租户配置信息
+  const { tenantConfigInfo } = useModel('tenantConfigInfo');
+
+  // 根据不同的 Tab 场景选择对应的智能体 ID
+  const currentAgentId = useMemo(() => {
+    if (!tenantConfigInfo) return undefined;
+
+    switch (activeTab) {
+      case AgentComponentTypeEnum.Agent:
+        return tenantConfigInfo.agentDevAgentId;
+      case AgentComponentTypeEnum.PageApp:
+        return undefined; // 网页应用不依赖智能体 ID，不请求详情
+      case AgentComponentTypeEnum.Skill:
+        return tenantConfigInfo.skillDevAgentId;
+      case AgentComponentTypeEnum.Plugin:
+        return tenantConfigInfo.pluginDevAgentId;
+      default:
+        return undefined;
+    }
+  }, [activeTab, tenantConfigInfo]);
+
+  // 选中的模型 ID
+  const [selectedModelId, setSelectedModelId] = useState<number>();
+
+  // 默认智能体配置详情
+  const [agentDetail, setAgentDetail] = useState<AgentDetailDto>();
+
+  // 会话输入框已选择组件
+  const {
+    selectedComponentList,
+    handleSelectComponent,
+    initSelectedComponentList,
+  } = useSelectedComponent();
+
+  // 已发布的智能体详情接口
+  const runDetail = useCallback(async (agentId: number) => {
+    try {
+      const { data } = await apiPublishedAgentInfo(agentId);
+      setAgentDetail(data);
+    } catch {
+      // 消费 Promise，避免 dev overlay
+    }
+  }, []);
+
+  useEffect(() => {
+    // 切换 Tab 时立刻清空旧的详情数据，防止 pending 期间或接口失败时展示旧的快捷标签和模型
+    setAgentDetail(undefined);
+    if (currentAgentId) {
+      runDetail(currentAgentId);
+    }
+  }, [currentAgentId, runDetail]);
+
+  // 过滤出与当前 Tab 匹配的详情数据，防止切换 Tab 的瞬间渲染旧的详情数据，导致组件卸载重装时误触发旧 ID 的接口请求
+  const matchingAgentDetail = useMemo(() => {
+    if (agentDetail && agentDetail.agentId === currentAgentId) {
+      return agentDetail;
+    }
+    return undefined;
+  }, [agentDetail, currentAgentId]);
+
+  // 初始化选中的组件列表
+  useEffect(() => {
+    initSelectedComponentList(matchingAgentDetail?.manualComponents);
+  }, [matchingAgentDetail?.manualComponents]);
+
   const activeTabRef = useRef(activeTab);
   activeTabRef.current = activeTab;
 
@@ -62,14 +148,21 @@ const PromptBox: React.FC<PromptBoxProps> = ({ onSubmit }) => {
   }, [activeTab]);
 
   const handleSend = useCallback(
-    (msg: string) => {
-      if (!msg?.trim()) {
+    (msg: string, files?: any[], skillIds?: number[], modelId?: number) => {
+      if (!msg?.trim() && !files?.length) {
         message.warning('请输入您的任务描述！');
         return;
       }
-      onSubmit(activeTabRef.current, msg);
+      onSubmit(
+        activeTabRef.current,
+        msg,
+        files,
+        skillIds,
+        modelId,
+        selectedComponentList,
+      );
     },
-    [onSubmit],
+    [onSubmit, selectedComponentList],
   );
 
   return (
@@ -79,6 +172,22 @@ const PromptBox: React.FC<PromptBoxProps> = ({ onSubmit }) => {
         onEnter={handleSend}
         placeholder={currentTab.placeholder}
         usageScenarios={usageScenarios}
+        manualComponents={matchingAgentDetail?.manualComponents || []}
+        selectedComponentList={selectedComponentList}
+        onSelectComponent={handleSelectComponent}
+        enableMention={
+          !matchingAgentDetail ||
+          matchingAgentDetail.allowAtSkill === DefaultSelectedEnum.Yes
+        }
+        allowOtherModel={
+          activeTab === AgentComponentTypeEnum.PageApp
+            ? undefined
+            : DefaultSelectedEnum.Yes
+        }
+        selectedModelId={selectedModelId}
+        onModelSelect={setSelectedModelId}
+        agentType={matchingAgentDetail?.type}
+        agentId={matchingAgentDetail?.agentId}
         tabsSlot={
           <TabsList tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
         }

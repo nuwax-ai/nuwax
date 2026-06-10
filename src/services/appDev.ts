@@ -1,5 +1,6 @@
 import { parseLogEntry } from '@/pages/AppDev/utils/devLogParser';
 import { t } from '@/services/i18nRuntime';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { PageDevelopPublishTypeEnum } from '@/types/enums/pageDev';
 import type {
   BuildResponse,
@@ -610,4 +611,17 @@ export const getDevLogs = async (
         (response?.data?.totalLines || 0),
     },
   };
+};
+
+/**
+ * 创建项目接口
+ * @param data targetType
+ */
+export const apiProjectCreate = async (data: {
+  targetType: AgentComponentTypeEnum;
+}): Promise<any> => {
+  return request('/api/project/create', {
+    method: 'POST',
+    data,
+  });
 };

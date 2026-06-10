@@ -1195,7 +1195,4 @@ export interface GetDevLogResponse {
   startIndex: number;
 }
 
-/**
- * 获取开发服务器日志API响应类型
- */
 export type GetDevLogApiResponse = RequestResponse<GetDevLogResponse>;
