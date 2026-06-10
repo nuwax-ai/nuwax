@@ -1,10 +1,9 @@
-import { dict } from '@/services/i18nRuntime';
-import { AgentComponentTypeEnum } from '@/types/enums/agent';
-import { ProcessingEnum } from '@/types/enums/common';
-// import { copyTextToClipboard } from '@/utils/clipboard';
 import ChangeFileGitDiffView, {
   DiffModeEnum,
 } from '@/components/business-component/ChangeFileGitDiffView';
+import { dict } from '@/services/i18nRuntime';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import { ProcessingEnum } from '@/types/enums/common';
 import { cloneDeep } from '@/utils/common';
 import {
   BorderOutlined,

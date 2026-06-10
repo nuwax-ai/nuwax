@@ -14,6 +14,7 @@ import PublishComponentModal from '@/components/PublishComponentModal';
 import type { PromptVariable } from '@/components/TiptapVariableInput/types';
 import { transformToPromptVariables } from '@/components/TiptapVariableInput/utils/variableTransform';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { useTerminalWsUrl } from '@/hooks/useTerminalWsUrl';
 import useUnifiedTheme from '@/hooks/useUnifiedTheme';
 import AgentModelSetting from '@/pages/EditAgent/AgentModelSetting';
 import DebugDetails from '@/pages/EditAgent/DebugDetails';
@@ -63,6 +64,10 @@ import { checkFileSizeExceedLimit } from '@/utils';
 import { modalConfirm } from '@/utils/ant-custom';
 import { addBaseTarget } from '@/utils/common';
 import { updateFilesListContent, updateFilesListName } from '@/utils/fileTree';
+import {
+  TTYD_TERMINAL_WIRE_PROTOCOL,
+  TTYD_TERMINAL_WS_SUBPROTOCOLS,
+} from '@/utils/terminalWsUrl';
 import { useRequest } from 'ahooks';
 import { message } from 'antd';
 import classNames from 'classnames';
@@ -243,21 +248,12 @@ const ConversationAgent: React.FC = () => {
   }, [currentSelectedComputerId, conversationInfo]);
 
   /**
-   * 终端 WebSocket 连接地址（本地 ttyd 联调）
-   * http://localhost:7681/ → ws://localhost:7681/ws
+   * 终端 WebSocket 连接地址（ttyd）
    */
-  const terminalWsUrl = useMemo(() => {
-    // const httpBase = 'http://localhost:7681/';
-    const httpBase = 'ws://192.168.1.34:8088/computer/ttyd/6/1548510/ws';
-    try {
-      const u = new URL(httpBase);
-      const wsScheme = u.protocol === 'https:' ? 'wss:' : 'ws:';
-      const path = u.pathname === '/' || u.pathname === '' ? '/ws' : u.pathname;
-      return `${wsScheme}//${u.host}${path}`;
-    } catch {
-      return httpBase || 'ws://localhost:7681/ws';
-    }
-  }, []);
+  const terminalWsUrl = useTerminalWsUrl(
+    agentConfigInfo?.tenantId,
+    finalSelectedComputerId,
+  );
 
   // ==================== 数据请求 ====================
   /** 加载空间下可用的聊天模型列表 */
@@ -1288,12 +1284,12 @@ const ConversationAgent: React.FC = () => {
             />
           </div>
 
-          {/* 底部终端 */}
+          {/* 底部终端、开发日志合集面板 */}
           <ConversationBottomConsole
             visible={showDevConsole}
             wsUrl={terminalWsUrl}
-            wireProtocol="ttyd"
-            wsSubprotocols={['tty']}
+            wireProtocol={TTYD_TERMINAL_WIRE_PROTOCOL}
+            wsSubprotocols={[...TTYD_TERMINAL_WS_SUBPROTOCOLS]}
             layoutResetSignal={devConsoleLayoutResetSignal}
             expandSignal={devConsoleExpandSignal}
           />

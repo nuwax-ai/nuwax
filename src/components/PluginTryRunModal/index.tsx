@@ -126,7 +126,7 @@ const PluginTryRunModal: React.FC<PluginTryRunModalProps> = ({
     {
       title: dict('PC.Common.Global.operation'),
       key: 'action',
-      width: 60,
+      width: 80,
       align: 'center',
       render: (_: null, record: BindConfigWithSub, index: number) => (
         <Space size="middle">
@@ -287,16 +287,6 @@ const PluginTryRunModal: React.FC<PluginTryRunModalProps> = ({
               </div>
             </div>
           </section>
-          {/*footer*/}
-          {/*<div*/}
-          {/*  className={cx('flex', 'items-center', 'content-end', styles.footer)}*/}
-          {/*>*/}
-          {/*  <Checkbox>保存调试结果为工具使用示例</Checkbox>*/}
-          {/*  <div className={cx(styles['divider-vertical'])} />*/}
-          {/*  <Button type="primary" onClick={onCancel}>*/}
-          {/*    完成*/}
-          {/*  </Button>*/}
-          {/*</div>*/}
         </div>
       )}
     ></Modal>
