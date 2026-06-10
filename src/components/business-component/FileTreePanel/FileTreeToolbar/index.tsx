@@ -72,7 +72,7 @@ const FileTreeToolbar: React.FC<FileTreeToolbarProps> = ({
             size="small"
             className={cx(styles['action-btn'])}
             icon={
-              <SvgIcon name="icons-common-download" style={{ fontSize: 16 }} />
+              <SvgIcon name="icons-common-download" style={{ fontSize: 14 }} />
             }
             disabled={actionDisabled(onExportProject)}
             loading={exportLoading}
@@ -86,7 +86,7 @@ const FileTreeToolbar: React.FC<FileTreeToolbarProps> = ({
             type="text"
             size="small"
             className={cx(styles['action-btn'])}
-            icon={<FileAddOutlined style={{ fontSize: 16 }} />}
+            icon={<FileAddOutlined style={{ fontSize: 14 }} />}
             disabled={createActionDisabled(onCreateFile)}
             onClick={onCreateFile}
           />
@@ -98,7 +98,7 @@ const FileTreeToolbar: React.FC<FileTreeToolbarProps> = ({
             type="text"
             size="small"
             className={cx(styles['action-btn'])}
-            icon={<FolderAddOutlined style={{ fontSize: 16 }} />}
+            icon={<FolderAddOutlined style={{ fontSize: 14 }} />}
             disabled={createActionDisabled(onCreateFolder)}
             onClick={onCreateFolder}
           />
@@ -111,7 +111,7 @@ const FileTreeToolbar: React.FC<FileTreeToolbarProps> = ({
             size="small"
             className={cx(styles['action-btn'])}
             icon={
-              <SvgIcon name="icons-common-upload" style={{ fontSize: 16 }} />
+              <SvgIcon name="icons-common-upload" style={{ fontSize: 14 }} />
             }
             disabled={actionDisabled(onUpload)}
             onClick={onUpload}
@@ -130,7 +130,7 @@ const FileTreeToolbar: React.FC<FileTreeToolbarProps> = ({
               type="text"
               size="small"
               className={cx(styles['action-btn'])}
-              icon={<ReloadOutlined style={{ fontSize: 16 }} />}
+              icon={<ReloadOutlined style={{ fontSize: 14 }} />}
               disabled={disabled}
               loading={refreshLoading}
               onClick={onRefresh}
@@ -147,7 +147,7 @@ const FileTreeToolbar: React.FC<FileTreeToolbarProps> = ({
             type="text"
             size="small"
             className={cx(styles['action-btn'])}
-            icon={<MenuFoldOutlined style={{ fontSize: 16 }} />}
+            icon={<MenuFoldOutlined style={{ fontSize: 14 }} />}
             disabled={actionDisabled(onCollapseAll)}
             onClick={onCollapseAll}
           />

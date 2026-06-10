@@ -15,6 +15,10 @@ export {
   type ConversationBottomConsoleProps,
   type TerminalAppearanceMode,
 } from './ConversationBottomConsole';
+export {
+  default as DevLogActions,
+  type DevLogActionsProps,
+} from './ConversationBottomConsole/DevLogActions';
 export { default as CopyToSpaceComponent } from './CopyToSpaceComponent';
 export { default as FilePreview } from './FilePreview';
 export {

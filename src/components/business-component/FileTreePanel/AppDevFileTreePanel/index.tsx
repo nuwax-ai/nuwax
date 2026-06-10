@@ -3,6 +3,7 @@ import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
 import FileTreeToolbar from '@/components/business-component/FileTreePanel/FileTreeToolbar';
 import { t } from '@/services/i18nRuntime';
 import { FileNode } from '@/types/interfaces/appDev';
+import { findFileNode } from '@/utils/appDevUtils';
 import { ImportOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -33,6 +34,7 @@ const AppDevFileTreePanel: React.FC<AppDevFileTreePanelProps> = ({
   onCreateFile,
   onCreateFolder,
   onCollapseAll,
+  onRefresh,
   fileManagement,
   isChatLoading = false,
   // 新增：文件树初始化 loading 状态
@@ -55,6 +57,22 @@ const AppDevFileTreePanel: React.FC<AppDevFileTreePanelProps> = ({
 
   // 内联重命名状态
   const [renamingNode, setRenamingNode] = useState<FileNode | null>(null);
+
+  // 文件树刷新 loading 状态
+  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
+
+  /** 刷新文件树：内部维护 loading 状态，避免重复触发 */
+  const handleRefresh = useCallback(async () => {
+    if (!onRefresh || isRefreshing) {
+      return;
+    }
+    setIsRefreshing(true);
+    try {
+      await onRefresh();
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [onRefresh, isRefreshing]);
 
   /**
    * 保存滚动位置
@@ -110,10 +128,8 @@ const AppDevFileTreePanel: React.FC<AppDevFileTreePanelProps> = ({
       closeContextMenu();
     };
 
-    // if (contextMenuVisible) {
     document.addEventListener('click', handleClickOutside);
     return () => document.removeEventListener('click', handleClickOutside);
-    // }
   }, [closeContextMenu]);
 
   /**
@@ -128,7 +144,11 @@ const AppDevFileTreePanel: React.FC<AppDevFileTreePanelProps> = ({
       ) {
         fileManagement.removeTempNode(options.node.id);
       }
-      setRenamingNode(null);
+      // 仅当取消的是当前重命名节点时才清空状态，
+      // 避免上一个输入框的延迟 blur 误清掉新一轮新建的重命名状态
+      setRenamingNode((prev) =>
+        options?.node && prev && prev.id !== options.node.id ? prev : null,
+      );
     },
     [fileManagement],
   );
@@ -139,13 +159,17 @@ const AppDevFileTreePanel: React.FC<AppDevFileTreePanelProps> = ({
       if (!fileManagement.insertTempNodeForCreate) {
         return;
       }
+      // 连续点击新建时，先移除上一个尚未命名的临时节点，避免残留空占位
+      if (renamingNode?.status === 'create') {
+        fileManagement.removeTempNode?.(renamingNode.id);
+      }
       const newNode = fileManagement.insertTempNodeForCreate(
         parentNode,
         'file',
       );
       setRenamingNode(newNode);
     },
-    [fileManagement],
+    [fileManagement, renamingNode],
   );
 
   /** 新建文件夹（可在指定文件夹下创建） */
@@ -154,14 +178,41 @@ const AppDevFileTreePanel: React.FC<AppDevFileTreePanelProps> = ({
       if (!fileManagement.insertTempNodeForCreate) {
         return;
       }
+      // 连续点击新建时，先移除上一个尚未命名的临时节点，避免残留空占位
+      if (renamingNode?.status === 'create') {
+        fileManagement.removeTempNode?.(renamingNode.id);
+      }
       const newNode = fileManagement.insertTempNodeForCreate(
         parentNode,
         'folder',
       );
       setRenamingNode(newNode);
     },
-    [fileManagement],
+    [fileManagement, renamingNode],
   );
+
+  /**
+   * 计算工具栏新建文件/文件夹的目标父级节点
+   * - 选中文件夹：在该文件夹下创建
+   * - 选中文件：在该文件所在层级（其父文件夹）下创建
+   * - 未选中或找不到节点：在根目录创建
+   */
+  const resolveCreateParentNode = useCallback((): FileNode | null => {
+    if (!selectedFileId) {
+      return null;
+    }
+    const selectedNode = findFileNode(selectedFileId, files);
+    if (!selectedNode) {
+      return null;
+    }
+    if (selectedNode.type === 'folder') {
+      return selectedNode;
+    }
+    // 文件节点：在其父文件夹下创建（与选中文件同级）；无父级则为根目录
+    return selectedNode.parentPath
+      ? findFileNode(selectedNode.parentPath, files)
+      : null;
+  }, [selectedFileId, files]);
 
   /**
    * 处理重命名操作（从右键菜单触发）
@@ -207,15 +258,24 @@ const AppDevFileTreePanel: React.FC<AppDevFileTreePanelProps> = ({
         <div className={cx(styles['file-tree-panel'])}>
           <SearchView files={files} onFileSelect={onFileSelect} />
 
+          {/* 文件树工具栏 */}
           <FileTreeToolbar
             disabled={isChatLoading}
             onExportProject={
               onExportProject ? () => void onExportProject() : undefined
             }
-            onCreateFile={onCreateFile ?? (() => handleCreateFile(null))}
-            onCreateFolder={onCreateFolder ?? (() => handleCreateFolder(null))}
+            onCreateFile={
+              onCreateFile ??
+              (() => handleCreateFile(resolveCreateParentNode()))
+            }
+            onCreateFolder={
+              onCreateFolder ??
+              (() => handleCreateFolder(resolveCreateParentNode()))
+            }
             onUpload={() => handleUploadFromMenu(null)}
             onCollapseAll={onCollapseAll}
+            onRefresh={onRefresh ? () => void handleRefresh() : undefined}
+            refreshLoading={isRefreshing}
           />
 
           {/* 文件树容器 */}
@@ -260,7 +320,6 @@ const AppDevFileTreePanel: React.FC<AppDevFileTreePanelProps> = ({
                 onToggleFolder={onToggleFolder}
                 onRenameFile={onRenameFile}
                 fileManagement={fileManagement}
-                isChatLoading={isChatLoading}
               />
             )}
           </div>

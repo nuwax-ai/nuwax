@@ -275,7 +275,15 @@ const GitVersionRecordPanel: React.FC<GitVersionRecordPanelProps> = ({
       >
         {loading && commits.length === 0 ? (
           // 首屏加载
-          <div className={cx(styles['list-loading'])}>
+          <div
+            className={cx(
+              styles['list-loading'],
+              'h-full',
+              'flex',
+              'items-center',
+              'content-center',
+            )}
+          >
             <Loading />
           </div>
         ) : commits.length === 0 ? (

@@ -557,7 +557,7 @@ export const useAppDevFileManagement = ({
   );
 
   /**
-   * 删除文件或文件夹（通过全量更新方式）
+   * 删除文件或文件夹（通过指定文件修改方式，只提交被删除的文件）
    */
   const deleteFileItem = useCallback(
     async (fileId: string): Promise<boolean> => {
@@ -573,31 +573,16 @@ export const useAppDevFileManagement = ({
           return false;
         }
 
-        // 删除文件
-
-        // 获取当前完整文件列表
-        const flatFileList = treeToFlatList(fileTreeState.data);
-
-        // 过滤掉要删除的文件及其所有子文件（如果是文件夹）
-        const filteredList = flatFileList.filter((file) => {
-          // 如果是文件本身，直接删除
-          if (file.name === fileId) {
-            // 从列表中移除文件
-            return false;
-          }
-          // 如果是文件夹，删除其所有子文件
-          if (fileNode.type === 'folder') {
-            const shouldRemove = file.name.startsWith(fileNode.path + '/');
-            if (shouldRemove) {
-              // 从列表中移除子文件
-            }
-            return !shouldRemove;
-          }
-          return true;
-        });
-
-        // 提交更新后的文件列表
-        const result = await submitFilesUpdate(projectId, filteredList);
+        // 只提交被删除的文件/文件夹本身
+        const result = await submitSpecifiedFilesUpdate(projectId, [
+          {
+            name: fileNode.path,
+            binary: false,
+            sizeExceeded: false,
+            operation: 'delete',
+            isDir: fileNode.type === 'folder',
+          },
+        ]);
 
         if (result?.success) {
           // 文件删除成功

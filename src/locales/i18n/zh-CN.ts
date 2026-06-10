@@ -2184,6 +2184,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.AppDevEditorHeaderRight.restarting": "重启中...",
   "PC.Pages.AppDevEditorHeaderRight.starting": "启动中...",
   "PC.Pages.AppDevEditorHeaderRight.viewLog": "查看日志",
+  "PC.Pages.AppDevEditorHeaderRight.viewTerminal": "查看终端",
   "PC.Pages.AppDevEditorHeaderRight.gitVersionHistory": "版本记录",
   "PC.Pages.AppDevFileOperatingMask.defaultTip": "文件操作进行中，请稍候...",
   "PC.Pages.AppDevFilePathHeader.modified": "已修改",

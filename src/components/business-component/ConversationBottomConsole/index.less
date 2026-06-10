@@ -34,14 +34,18 @@
   }
 
   .console-tab {
-    font-size: @fontSizeSm;
+    font-size: @fontSize;
     color: @colorTextSecondary;
     cursor: pointer;
     padding: 2px 0;
+    transition: color 0.2s ease;
+
+    &:hover {
+      color: @colorPrimary;
+    }
 
     &.active {
       color: @colorPrimary;
-      font-weight: 600;
     }
   }
 

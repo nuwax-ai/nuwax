@@ -2115,6 +2115,7 @@ export const ZH_HK: SystemLangMap = {
   "PC.Pages.AppDevEditorHeaderRight.restarting": "重啓中...",
   "PC.Pages.AppDevEditorHeaderRight.starting": "啓動中...",
   "PC.Pages.AppDevEditorHeaderRight.viewLog": "查看日誌",
+  "PC.Pages.AppDevEditorHeaderRight.viewTerminal": "查看終端",
   "PC.Pages.AppDevEditorHeaderRight.gitVersionHistory": "版本記錄",
   "PC.Pages.ConversationAgent.AgentGitVersionRecord.title": "版本記錄",
   "PC.Pages.ConversationAgent.AgentGitVersionRecord.subtitle": "共 {0} 次提交 · {1} 分支",
