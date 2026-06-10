@@ -27,6 +27,7 @@ import {
 } from '@/services/agentConfig';
 import { dict } from '@/services/i18nRuntime';
 import { apiModelList } from '@/services/modelConfig';
+import { apiSaveSelectedSandbox } from '@/services/systemManage';
 import {
   apiDownloadAllFiles,
   apiUpdateStaticFile,
@@ -189,6 +190,9 @@ const ConversationAgent: React.FC = () => {
   const [promptVariables, setPromptVariables] = useState<PromptVariable[]>([]);
   /** 当前可用的工具列表（插件、工作流、MCP、技能、子智能体） */
   const [promptTools, setPromptTools] = useState<AgentComponentInfo[]>([]);
+  /** 当前用户手动选择的沙箱电脑 ID（优先于自动分配） */
+  const [currentSelectedComputerId, setCurrentSelectedComputerId] =
+    useState<string>('');
   /** 智能体配置加载中状态 */
   const [loadingAgentConfigInfo, setLoadingAgentConfigInfo] = useState<boolean>(
     !!agentId,
@@ -231,6 +235,9 @@ const ConversationAgent: React.FC = () => {
     onMessageSend,
   } = useModel('conversationAgent');
   const hasAutoSentRef = useRef<boolean>(false);
+  const hasBoundRef = useRef<boolean>(false);
+  const pendingBindComputerIdRef = useRef<string>('');
+  const hasInitComputerIdRef = useRef<boolean>(false);
   /** tenantConfigInfo model：租户配置（页面标题、订阅开关等） */
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
   const showSubscriptionTabs = tenantConfigInfo?.enableSubscription !== 0;
@@ -248,11 +255,12 @@ const ConversationAgent: React.FC = () => {
    */
   const finalSelectedComputerId = useMemo(() => {
     return (
+      currentSelectedComputerId ||
       conversationInfo?.agent?.sandboxId ||
       conversationInfo?.sandboxServerId ||
       ''
     );
-  }, [conversationInfo]);
+  }, [currentSelectedComputerId, conversationInfo]);
 
   /**
    * 终端 WebSocket 连接地址（ttyd）
@@ -271,6 +279,29 @@ const ConversationAgent: React.FC = () => {
 
   // ==================== 副作用 (Effects) ====================
 
+  // 监听路由 state 以便在页面加载时立刻同步选中的电脑
+  useEffect(() => {
+    if (hasInitComputerIdRef.current) return;
+    const state = (location.state || history.location.state) as any;
+    if (state?.computerId) {
+      hasInitComputerIdRef.current = true;
+      setCurrentSelectedComputerId(state.computerId);
+      pendingBindComputerIdRef.current = state.computerId;
+    }
+  }, [location.state, history.location.state]);
+
+  // 当 agentId 变为有效值且有待绑定的电脑时，自动将该智能体和云电脑绑定
+  useEffect(() => {
+    if (agentId && pendingBindComputerIdRef.current && !hasBoundRef.current) {
+      hasBoundRef.current = true;
+      apiSaveSelectedSandbox(agentId, pendingBindComputerIdRef.current).catch(
+        (err) => {
+          console.error('Failed to bind agent and computer:', err);
+        },
+      );
+    }
+  }, [agentId]);
+
   /**
    * 当页面加载结束且携带了初始消息状态时，自动触发消息发送
    */
@@ -286,8 +317,10 @@ const ConversationAgent: React.FC = () => {
 
         // 确定沙箱 ID
         const effectiveSandboxId = String(
-          conversationInfo?.agent?.sandboxId ||
+          currentSelectedComputerId ||
+            conversationInfo?.agent?.sandboxId ||
             conversationInfo?.sandboxServerId ||
+            state.computerId ||
             '',
         );
 
@@ -302,11 +335,22 @@ const ConversationAgent: React.FC = () => {
           skillIds: state.skillIds,
         });
 
-        // 消费完毕后立即清空路由中的 state，防止用户刷新页面时重复触发发信接口
-        history.replace(location.pathname + location.search, undefined);
+        // 消费完毕后清除发信所需的参数，但保留 computerId 供后续回显与绑定使用
+        const nextState = {
+          ...(location.state || history.location.state || {}),
+          prompt: undefined,
+          files: undefined,
+          skillIds: undefined,
+        };
+        history.replace(location.pathname + location.search, nextState);
       }
     }
-  }, [conversationInfo, location.state, history.location.state]);
+  }, [
+    conversationInfo,
+    location.state,
+    history.location.state,
+    currentSelectedComputerId,
+  ]);
 
   /** 空间变化时重新加载模型列表 */
   useEffect(() => {
@@ -1376,6 +1420,7 @@ const ConversationAgent: React.FC = () => {
           <div className={cx(styles['left-panel'])}>
             <AgentConversationChatPanel
               selectedComputerId={finalSelectedComputerId}
+              onChangeSelectedComputerId={setCurrentSelectedComputerId}
               onEditAgent={() => setOpenEditAgent(true)}
             />
           </div>
