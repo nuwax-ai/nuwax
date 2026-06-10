@@ -83,7 +83,7 @@ import React, {
 } from 'react';
 import { useLocation, useModel, useParams } from 'umi';
 import AgentArrangeConfigSection from './AgentArrangePanel/AgentArrangeConfigSection';
-// import AgentConversationChatPanel from './AgentConversationChatPanel';
+import AgentConversationChatPanel from './AgentConversationChatPanel';
 import ConversationAgentFilePreview from './ConversationAgentFilePreview';
 import {
   getFileTabId,
@@ -1378,6 +1378,7 @@ const ConversationAgent: React.FC = () => {
               isFileTreeSidebarVisible={canShowFileView}
               onToggleFileTreeSidebar={handleToggleFileTreeSidebar}
             /> */}
+            <AgentConversationChatPanel />
           </div>
 
           {/* 中间面板（文件树） + 右侧面板（编排/预览 + 终端） */}

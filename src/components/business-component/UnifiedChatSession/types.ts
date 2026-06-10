@@ -22,30 +22,30 @@ export interface UnifiedAgentInfo {
 
 export interface UnifiedChatSessionProps {
   // 会话的核心数据
-  conversationId: number;
-  messageList: MessageInfo[];
-  roleInfo: RoleInfo;
-  isLoading: boolean; // 会话正在进行首次加载的 Loading 状态
-  loadingMore: boolean; // 是否正在向上拉取历史消息
-  isMoreMessage: boolean; // 是否还有历史消息可拉取
-  isConversationActive: boolean; // 会话是否活跃（大模型正流式交互中）
+  conversationId?: number;
+  messageList?: MessageInfo[];
+  roleInfo?: RoleInfo;
+  isLoading?: boolean; // 会话正在进行首次加载的 Loading 状态
+  loadingMore?: boolean; // 是否正在向上拉取历史消息
+  isMoreMessage?: boolean; // 是否还有历史消息可拉取
+  isConversationActive?: boolean; // 会话是否活跃（大模型正流式交互中）
   messageBottomMode?: 'none' | 'home' | 'chat'; // 消息底部操作栏模式：none | home | chat
   loadingSuggest?: boolean; // 会话建议加载状态
   chatSuggestList?: string[]; // 页面会话建议（开场白问题推荐）
 
   // 智能体配置与信息
-  agentInfo: UnifiedAgentInfo;
+  agentInfo?: UnifiedAgentInfo;
 
   // 事件与业务回调
-  onSendMessage: (
+  onSendMessage?: (
     messageInfo: string,
     files?: UploadFileInfo[],
     skillIds?: number[],
     modelId?: number,
     selectedAgentMode?: AgentMode,
   ) => void;
-  onClear: () => Promise<void>; // 刷新/清空会话的回调
-  onLoadMoreMessage: (id: number) => void; // 向上滚动到顶加载历史消息的回调
+  onClear?: () => Promise<void>; // 刷新/清空会话的回调
+  onLoadMoreMessage?: (id: number) => void; // 向上滚动到顶加载历史消息的回调
 
   // 输入框相关受控状态与属性
   selectedModelId?: number;
