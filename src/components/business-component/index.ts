@@ -22,8 +22,7 @@ export {
 export { default as CopyToSpaceComponent } from './CopyToSpaceComponent';
 export { default as FilePreview } from './FilePreview';
 export {
-  AppDevFileTreePanel,
-  default as FileTreePanel,
+  default as FileTreeGitSourcePanel,
   SourceControlPanel,
   TaskAgentFileTree,
   apiGitAdd,
@@ -32,6 +31,7 @@ export {
   apiGitRevert,
   apiGitStatus,
   apiGitUnstage,
+  useAppDevFileTree,
   useConversationAgentSourceControl,
   useSourceControl,
 } from './FileTreePanel';

@@ -10,8 +10,9 @@ import { Button, Card, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useState } from 'react';
 import SourceControlPanel from './SourceControl';
+import TaskAgentFileTree from './TaskAgentFileTree';
 import styles from './index.less';
-import type { FileTreePanelProps } from './types';
+import type { FileTreeGitSourcePanelProps } from './types';
 
 const cx = classNames.bind(styles);
 
@@ -19,16 +20,19 @@ const cx = classNames.bind(styles);
 type PanelView = 'files' | 'sourceControl';
 
 /**
- * FileTreePanel 公共组件
+ * FileTreeGitSourcePanel 公共组件
  * ConversationAgent 中间面板 / AppDev 文件树侧栏的统一壳层
  * 顶部切换文件树 / 源代码管理，统一样式与 Git 面板交互
  */
-const FileTreePanel: React.FC<FileTreePanelProps> = ({
+const FileTreeGitSourcePanel: React.FC<FileTreeGitSourcePanelProps> = ({
   className,
   layout = 'embedded',
   showSourceControl,
   collapsible = false,
-  children,
+  tree,
+  treeClassName,
+  treeHeaderClassName,
+  treeEmptyState,
   sourceControl,
 }) => {
   const [activeView, setActiveView] = useState<PanelView>('files');
@@ -125,8 +129,15 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
             />
           </div>
         ) : (
-          // 文件树容器
-          <div className={cx(styles.fileTreeContainer)}>{children}</div>
+          // 文件树容器（内部统一渲染 TaskAgentFileTree）
+          <div className={cx(styles.fileTreeContainer)}>
+            <TaskAgentFileTree
+              tree={tree}
+              className={treeClassName}
+              headerClassName={treeHeaderClassName}
+              emptyState={treeEmptyState}
+            />
+          </div>
         )}
       </div>
     </>
@@ -174,4 +185,4 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
   return <div className={cx(styles.panel, className)}>{panelBody}</div>;
 };
 
-export default FileTreePanel;
+export default FileTreeGitSourcePanel;

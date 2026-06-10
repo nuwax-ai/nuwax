@@ -30,6 +30,7 @@ const FileContextMenu: React.FC<FileContextMenuProps> = ({
   onCreateFolder,
   // 导入项目
   onImportProject,
+  importProjectLabel,
   onDownloadFileByUrl,
   disabledDelete = false,
   useRelativePosition = false,
@@ -345,12 +346,14 @@ const FileContextMenu: React.FC<FileContextMenuProps> = ({
           onClick: handleCreateFolder,
           disabled: !onCreateFolder,
         },
-        // 只有当 onImportProject 存在时才显示导入技能选项 （用于技能详情页导入技能）
+        // 只有当 onImportProject 存在时才显示导入选项（技能详情页导入技能 / AppDev 导入项目）
         ...(onImportProject
           ? [
               {
                 key: 'importProject',
-                label: dict('PC.Components.FileContextMenu.importSkill'),
+                label:
+                  importProjectLabel ??
+                  dict('PC.Components.FileContextMenu.importSkill'),
                 icon: <ImportOutlined />,
                 onClick: onImportProject,
               },

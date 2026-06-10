@@ -17,6 +17,8 @@ export interface TaskAgentFileTreeProps {
   tree: TaskAgentFileViewTree;
   className?: string;
   headerClassName?: string;
+  /** 文件列表为空（且非加载中）时的自定义空态内容，不传则使用 FileTree 默认空态 */
+  emptyState?: React.ReactNode;
 }
 
 /**
@@ -27,6 +29,7 @@ const TaskAgentFileTree: React.FC<TaskAgentFileTreeProps> = ({
   tree,
   className,
   headerClassName,
+  emptyState,
 }) => {
   const {
     files,
@@ -57,6 +60,8 @@ const TaskAgentFileTree: React.FC<TaskAgentFileTreeProps> = ({
     handleCreateFile,
     handleCreateFolder,
     handleDownloadFileByUrl,
+    handleImportProject,
+    importProjectLabel,
     handleExportProject,
     isExportingProject = false,
     toolbarDisabled = false,
@@ -122,6 +127,8 @@ const TaskAgentFileTree: React.FC<TaskAgentFileTreeProps> = ({
         onUploadFiles={handleUploadFromMenu}
         onCreateFile={handleCreateFile}
         onCreateFolder={handleCreateFolder}
+        onImportProject={handleImportProject}
+        importProjectLabel={importProjectLabel}
         onDownloadFileByUrl={handleDownloadFileByUrl}
         useRelativePosition={true}
       />
@@ -160,19 +167,23 @@ const TaskAgentFileTree: React.FC<TaskAgentFileTreeProps> = ({
         refreshLoading={isRefreshingFileTree}
       />
 
-      {/* 文件树 */}
-      <FileTree
-        ref={fileTreeRef}
-        fileTreeDataLoading={fileTreeDataLoading}
-        files={files}
-        taskAgentSelectedFileId={taskAgentSelectedFileId}
-        selectedFileId={selectedFileId}
-        renamingNode={renamingNode}
-        onCancelRename={handleCancelRename}
-        onContextMenu={handleContextMenu}
-        onFileSelect={handleFileSelect}
-        onConfirmRenameFile={handleRenameFile}
-      />
+      {/* 文件树；列表为空且非加载中时优先展示自定义空态 */}
+      {!fileTreeDataLoading && files.length === 0 && emptyState ? (
+        emptyState
+      ) : (
+        <FileTree
+          ref={fileTreeRef}
+          fileTreeDataLoading={fileTreeDataLoading}
+          files={files}
+          taskAgentSelectedFileId={taskAgentSelectedFileId}
+          selectedFileId={selectedFileId}
+          renamingNode={renamingNode}
+          onCancelRename={handleCancelRename}
+          onContextMenu={handleContextMenu}
+          onFileSelect={handleFileSelect}
+          onConfirmRenameFile={handleRenameFile}
+        />
+      )}
     </div>
   );
 };

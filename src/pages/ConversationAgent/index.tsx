@@ -2,8 +2,7 @@ import {
   ConversationBottomConsole,
   GitVersionRecordPanel,
 } from '@/components/business-component';
-import FileTreePanel, {
-  TaskAgentFileTree,
+import FileTreeGitSourcePanel, {
   useConversationAgentSourceControl,
   type SelectedChangeFile,
 } from '@/components/business-component/FileTreePanel';
@@ -1388,9 +1387,11 @@ const ConversationAgent: React.FC = () => {
               [styles['middle-panel-hidden']]: !canShowFileView,
             })}
           >
-            {/* ConversationAgent 中间面板（公共 FileTreePanel） */}
-            <FileTreePanel
+            {/* ConversationAgent 中间面板（公共 FileTreeGitSourcePanel，内部渲染文件树） */}
+            <FileTreeGitSourcePanel
               className={cx(styles['file-tree-sidebar'], 'w-full')}
+              tree={fileView.tree}
+              treeClassName="w-full h-full"
               sourceControl={{
                 gitWorkspace: {
                   workspaceType: 'taskAgent',
@@ -1413,12 +1414,7 @@ const ConversationAgent: React.FC = () => {
                 },
                 onCommit: gitSourceControl.handleCommit,
               }}
-            >
-              <TaskAgentFileTree
-                tree={fileView.tree}
-                className="w-full h-full"
-              />
-            </FileTreePanel>
+            />
           </div>
           {/* 右侧面板：编排配置 / 文件预览 + 终端 */}
           {renderRightPanel()}

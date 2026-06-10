@@ -5,8 +5,9 @@ import {
   GitVersionRecordPanel,
   type ConsoleLayoutMode,
 } from '@/components/business-component';
-import {
-  AppDevFileTreePanel,
+import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
+import FileTreeGitSourcePanel, {
+  useAppDevFileTree,
   useSourceControl,
 } from '@/components/business-component/FileTreePanel';
 import ConditionRender from '@/components/ConditionRender';
@@ -52,7 +53,7 @@ import { FileNode } from '@/types/interfaces/appDev';
 import { DataResource } from '@/types/interfaces/dataResource';
 import { generateRequestId } from '@/utils/chatUtils';
 import eventBus, { EVENT_NAMES } from '@/utils/eventBus';
-import { UploadOutlined } from '@ant-design/icons';
+import { ImportOutlined, UploadOutlined } from '@ant-design/icons';
 import {
   Alert,
   Button,
@@ -1170,6 +1171,40 @@ const AppDev: React.FC = () => {
   );
 
   /**
+   * 文件树点击文件：关闭版本记录面板、清空 diff 选中并切换到代码视图
+   */
+  const handleFileTreeSelect = useCallback(
+    (fileId: string) => {
+      setGitVersionPanelOpen(false);
+      sourceControl.clearSelectedDiff();
+      fileManagement.switchToFile(fileId);
+      setActiveTab('code');
+    },
+    [sourceControl.clearSelectedDiff, fileManagement.switchToFile],
+  );
+
+  /**
+   * 文件树状态适配：将 fileManagement 与页面回调
+   * 映射为 TaskAgentFileTree 所需的 tree 结构
+   */
+  const appDevFileTree = useAppDevFileTree({
+    files: stableCurrentFiles,
+    selectedFileId: fileManagement.fileContentState.selectedFile,
+    fileManagement,
+    isChatLoading: chat.isChatLoading,
+    isFileTreeInitializing: fileManagement.isFileTreeInitializing,
+    onFileSelect: handleFileTreeSelect,
+    onDeleteFile: isFileOperating ? noop : handleDeleteClick,
+    onRenameFile: isFileOperating ? asyncNoopFalse : handleRenameFile,
+    onUploadSingleFile: isFileOperating ? asyncNoop : handleRightClickUpload,
+    onImportProject: isFileOperating
+      ? noop
+      : () => setIsUploadModalVisible(true),
+    importProjectLabel: t('PC.Pages.AppDevFileTreeContextMenu.importProject'),
+    onExportProject: isFileOperating ? undefined : handleExportProject,
+  });
+
+  /**
    * 统一处理白屏和 iframe 错误的情况
    * 统一由 autoErrorHandling 管理处理，包括重试次数限制和用户确认
    * @param errorMessage 错误消息，为空字符串表示只有白屏没有错误
@@ -1557,60 +1592,28 @@ const AppDev: React.FC = () => {
                 <div className={styles.contentArea}>
                   <div className={styles.contentRow}>
                     <>
-                      {/* FileTreePanel 组件（版本记录面板打开时仍显示） */}
+                      {/* FileTreeGitSourcePanel 组件（版本记录面板打开时仍显示） */}
                       {activeTab !== 'preview' && (
-                        <AppDevFileTreePanel
-                          files={stableCurrentFiles}
-                          selectedFileId={
-                            fileManagement.fileContentState.selectedFile
-                          }
-                          // 已展开的文件夹ID集合
-                          expandedFolders={
-                            fileManagement.fileTreeState.expandedFolders
-                          }
-                          // 文件选择回调
-                          onFileSelect={(fileId) => {
-                            // 关闭版本记录面板，恢复显示文件内容
-                            setGitVersionPanelOpen(false);
-                            sourceControl.clearSelectedDiff();
-                            fileManagement.switchToFile(fileId);
-                            setActiveTab('code');
-                          }}
-                          // 文件夹展开/折叠回调
-                          onToggleFolder={fileManagement.toggleFolder}
-                          // 删除文件回调
-                          onDeleteFile={
-                            isFileOperating ? noop : handleDeleteClick
-                          }
-                          // 重命名文件回调
-                          onRenameFile={
-                            isFileOperating ? asyncNoopFalse : handleRenameFile
-                          }
-                          // 上传项目回调
-                          onUploadProject={
-                            isFileOperating
-                              ? noop
-                              : () => setIsUploadModalVisible(true)
-                          }
-                          // 上传单个文件回调
-                          onUploadSingleFile={
-                            isFileOperating ? asyncNoop : handleRightClickUpload
-                          }
-                          onExportProject={
-                            isFileOperating ? undefined : handleExportProject
-                          }
-                          onCollapseAll={fileManagement.collapseAllFolders}
-                          // 刷新文件树回调
-                          onRefresh={() =>
-                            fileManagement.loadFileTree(true, true)
-                          }
-                          // 文件管理方法
-                          fileManagement={fileManagement}
-                          // 是否正在AI聊天加载中
-                          isChatLoading={chat.isChatLoading}
-                          // 文件树初始化 loading 状态
-                          isFileTreeInitializing={
-                            fileManagement.isFileTreeInitializing
+                        <FileTreeGitSourcePanel
+                          layout="sidebar"
+                          collapsible
+                          // 文件树（含搜索、工具栏、右键菜单）
+                          tree={appDevFileTree.tree}
+                          treeClassName="w-full"
+                          treeEmptyState={
+                            <AppDevEmptyState
+                              type="no-file"
+                              buttons={[
+                                {
+                                  text: t(
+                                    'PC.Pages.AppDevFileTreePanel.importProject',
+                                  ),
+                                  icon: <ImportOutlined />,
+                                  onClick: () => setIsUploadModalVisible(true),
+                                  disabled: chat.isChatLoading,
+                                },
+                              ]}
+                            />
                           }
                           // =================源代码管理相关=================
                           sourceControl={{

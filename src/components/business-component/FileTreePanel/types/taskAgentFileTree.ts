@@ -33,10 +33,15 @@ export interface TaskAgentFileViewTree {
   handleUploadFromMenu: (node: FileNode | null) => Promise<void>;
   handleCreateFile: (parentNode: FileNode | null) => void;
   handleCreateFolder: (parentNode: FileNode | null) => void;
-  handleDownloadFileByUrl: (
+  /** 通过 URL 下载文件（可选，AppDev 场景无此能力） */
+  handleDownloadFileByUrl?: (
     node: FileNode,
     exportAsPdf?: boolean,
   ) => Promise<void>;
+  /** 导入项目（空白区域右键菜单，可选） */
+  handleImportProject?: () => void;
+  /** 导入项目菜单项文案（不传时使用默认的「导入技能」文案） */
+  importProjectLabel?: string;
   /** 导出项目 */
   handleExportProject?: () => Promise<void>;
   /** 是否正在导出项目 */
