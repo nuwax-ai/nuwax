@@ -2,7 +2,7 @@ import {
   apiGitDiff,
   apiGitFileContent,
 } from '@/components/business-component/FileTreeGitSourcePanel/services/git-version-management';
-import type { ChangeListSection } from '@/components/business-component/FileTreeGitSourcePanel/SourceControl/changeFileStatus';
+import type { ChangeListSection } from '@/components/business-component/FileTreeGitSourcePanel/SourceControlPanel/changeFileStatus';
 import type {
   GitCommitDiffFileItem,
   GitCommitDiffFileStatus,

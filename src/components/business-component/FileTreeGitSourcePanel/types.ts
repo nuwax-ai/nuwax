@@ -2,7 +2,7 @@ import type { GitWorkspaceConfig } from '@/components/business-component/FileTre
 import type {
   ChangeListSection,
   SelectedChangeFile,
-} from '@/components/business-component/FileTreeGitSourcePanel/SourceControl/changeFileStatus';
+} from '@/components/business-component/FileTreeGitSourcePanel/SourceControlPanel/changeFileStatus';
 import type { TaskAgentFileViewTree } from '@/components/business-component/FileTreeGitSourcePanel/types/taskAgentFileTree';
 import type { ChangeFileInfo } from '@/components/FileTreeView/type';
 import type { ReactNode } from 'react';

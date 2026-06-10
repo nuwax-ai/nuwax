@@ -9,7 +9,7 @@ import {
 import { Button, Card, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useState } from 'react';
-import SourceControlPanel from './SourceControl';
+import SourceControlPanel from './SourceControlPanel';
 import TaskAgentFileTree from './TaskAgentFileTree';
 import styles from './index.less';
 import type { FileTreeGitSourcePanelProps } from './types';

@@ -13,8 +13,8 @@ import {
 import type {
   ChangeListSection,
   SelectedChangeFile,
-} from '@/components/business-component/FileTreeGitSourcePanel/SourceControl/changeFileStatus';
-import { runGitDiscard } from '@/components/business-component/FileTreeGitSourcePanel/SourceControl/sourceControlGitActions';
+} from '@/components/business-component/FileTreeGitSourcePanel/SourceControlPanel/changeFileStatus';
+import { runGitDiscard } from '@/components/business-component/FileTreeGitSourcePanel/SourceControlPanel/sourceControlGitActions';
 import { fetchGitChangeFileContent } from '@/components/business-component/GitVersionRecordPanel/gitCommitDiffUtils';
 import type { ChangeFileInfo } from '@/components/FileTreeView/type';
 import { SUCCESS_CODE } from '@/constants/codes.constants';

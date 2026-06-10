@@ -19,11 +19,11 @@ export type {
 } from './hooks/useSourceControl';
 export { default as FileTreeGitSourcePanel, default } from './PanelCore';
 export * from './services/git-version-management';
-export { default as SourceControlPanel } from './SourceControl';
+export { default as SourceControlPanel } from './SourceControlPanel';
 export type {
   ChangeListSection,
   SelectedChangeFile,
-} from './SourceControl/changeFileStatus';
+} from './SourceControlPanel/changeFileStatus';
 export { default as TaskAgentFileTree } from './TaskAgentFileTree';
 export type { TaskAgentFileTreeProps } from './TaskAgentFileTree';
 export type { FileTreeGitSourcePanelProps, SourceControlProps } from './types';
