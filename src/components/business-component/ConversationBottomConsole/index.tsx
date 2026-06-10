@@ -10,7 +10,6 @@ import {
   SunOutlined,
   UpOutlined,
 } from '@ant-design/icons';
-import { Button } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import XtermTerminal from '../Terminal';
@@ -374,11 +373,7 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
             placement="top"
             className={cx(styles['console-action-btn'])}
             icon={
-              layoutMode === 'collapsed' ? (
-                <UpOutlined style={{ fontSize: 12 }} />
-              ) : (
-                <DownOutlined style={{ fontSize: 12 }} />
-              )
+              layoutMode === 'collapsed' ? <UpOutlined /> : <DownOutlined />
             }
             onClick={handleToggleCollapse}
           />
@@ -387,15 +382,9 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
           {onClose && (
             <TooltipIcon
               title={dict('PC.Pages.AppDevDevLogConsole.closeLogConsole')}
-              icon={
-                <Button
-                  type="text"
-                  size="small"
-                  className={cx(styles['console-action-btn'])}
-                  icon={<CloseOutlined />}
-                  onClick={onClose}
-                />
-              }
+              className={cx(styles['console-action-btn'])}
+              onClick={onClose}
+              icon={<CloseOutlined />}
             />
           )}
         </div>

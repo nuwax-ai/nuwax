@@ -6,6 +6,8 @@ import TipsBox from '@/components/TipsBox';
 import FileTreeToolbar from '@/components/business-component/FileTreePanel/FileTreeToolbar';
 import type { TaskAgentFileViewTree } from '@/components/business-component/FileTreePanel/types/taskAgentFileTree';
 import { dict } from '@/services/i18nRuntime';
+import type { FileNode } from '@/types/interfaces/appDev';
+import { findFileNode } from '@/utils/appDevUtils';
 import classNames from 'classnames';
 import React, { useRef } from 'react';
 import styles from './index.less';
@@ -62,6 +64,29 @@ const TaskAgentFileTree: React.FC<TaskAgentFileTreeProps> = ({
 
   const fileTreeRef = useRef<FileTreeRef>(null);
 
+  /**
+   * 计算工具栏新建文件/文件夹的目标父级节点
+   * - 选中文件夹：在该文件夹下创建
+   * - 选中文件：在该文件所在层级（其父文件夹）下创建
+   * - 未选中或找不到节点：在根目录创建
+   */
+  const resolveCreateParentNode = (): FileNode | null => {
+    if (!selectedFileId) {
+      return null;
+    }
+    const selectedNode = findFileNode(selectedFileId, files);
+    if (!selectedNode) {
+      return null;
+    }
+    if (selectedNode.type === 'folder') {
+      return selectedNode;
+    }
+    // 文件节点：在其父文件夹下创建（与选中文件同级）；无父级则为根目录
+    return selectedNode.parentPath
+      ? findFileNode(selectedNode.parentPath, files)
+      : null;
+  };
+
   if (hideFileTree) {
     return null;
   }
@@ -82,6 +107,7 @@ const TaskAgentFileTree: React.FC<TaskAgentFileTreeProps> = ({
         className,
       )}
     >
+      {/* 右键菜单 */}
       <FileContextMenu
         visible={contextMenuVisible}
         position={contextMenuPosition}
@@ -100,6 +126,7 @@ const TaskAgentFileTree: React.FC<TaskAgentFileTreeProps> = ({
         useRelativePosition={true}
       />
 
+      {/* 提示框 */}
       <TipsBox
         visible={isDownloadingFile}
         text={dict('PC.Components.FileTreeView.downloading')}
@@ -109,20 +136,22 @@ const TaskAgentFileTree: React.FC<TaskAgentFileTreeProps> = ({
         text={dict('PC.Components.FileTreeView.uploading')}
       />
 
+      {/* 搜索框 */}
       <SearchView
         className={headerClassName}
         files={files}
         onFileSelect={handleFileSelect}
       />
 
+      {/* 文件树工具栏 */}
       <FileTreeToolbar
         disabled={toolbarDisabled}
         exportLoading={isExportingProject}
         onExportProject={
           handleExportProject ? () => void handleExportProject() : undefined
         }
-        onCreateFile={() => handleCreateFile(null)}
-        onCreateFolder={() => handleCreateFolder(null)}
+        onCreateFile={() => handleCreateFile(resolveCreateParentNode())}
+        onCreateFolder={() => handleCreateFolder(resolveCreateParentNode())}
         onUpload={() => void handleUploadFromMenu(null)}
         onCollapseAll={() => fileTreeRef.current?.collapseAll()}
         onRefresh={
@@ -131,6 +160,7 @@ const TaskAgentFileTree: React.FC<TaskAgentFileTreeProps> = ({
         refreshLoading={isRefreshingFileTree}
       />
 
+      {/* 文件树 */}
       <FileTree
         ref={fileTreeRef}
         fileTreeDataLoading={fileTreeDataLoading}

@@ -3,6 +3,7 @@ import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
 import FileTreeToolbar from '@/components/business-component/FileTreePanel/FileTreeToolbar';
 import { t } from '@/services/i18nRuntime';
 import { FileNode } from '@/types/interfaces/appDev';
+import { findFileNode } from '@/utils/appDevUtils';
 import { ImportOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -164,6 +165,29 @@ const AppDevFileTreePanel: React.FC<AppDevFileTreePanelProps> = ({
   );
 
   /**
+   * 计算工具栏新建文件/文件夹的目标父级节点
+   * - 选中文件夹：在该文件夹下创建
+   * - 选中文件：在该文件所在层级（其父文件夹）下创建
+   * - 未选中或找不到节点：在根目录创建
+   */
+  const resolveCreateParentNode = useCallback((): FileNode | null => {
+    if (!selectedFileId) {
+      return null;
+    }
+    const selectedNode = findFileNode(selectedFileId, files);
+    if (!selectedNode) {
+      return null;
+    }
+    if (selectedNode.type === 'folder') {
+      return selectedNode;
+    }
+    // 文件节点：在其父文件夹下创建（与选中文件同级）；无父级则为根目录
+    return selectedNode.parentPath
+      ? findFileNode(selectedNode.parentPath, files)
+      : null;
+  }, [selectedFileId, files]);
+
+  /**
    * 处理重命名操作（从右键菜单触发）
    */
   const handleRenameFromMenu = useCallback((node: FileNode) => {
@@ -212,8 +236,14 @@ const AppDevFileTreePanel: React.FC<AppDevFileTreePanelProps> = ({
             onExportProject={
               onExportProject ? () => void onExportProject() : undefined
             }
-            onCreateFile={onCreateFile ?? (() => handleCreateFile(null))}
-            onCreateFolder={onCreateFolder ?? (() => handleCreateFolder(null))}
+            onCreateFile={
+              onCreateFile ??
+              (() => handleCreateFile(resolveCreateParentNode()))
+            }
+            onCreateFolder={
+              onCreateFolder ??
+              (() => handleCreateFolder(resolveCreateParentNode()))
+            }
             onUpload={() => handleUploadFromMenu(null)}
             onCollapseAll={onCollapseAll}
           />
