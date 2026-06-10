@@ -1,4 +1,5 @@
 import WorkspaceLayout from '@/components/WorkspaceLayout';
+import { apiProjectCreate } from '@/services/appDev';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { message } from 'antd';
 import classNames from 'classnames';
@@ -15,8 +16,15 @@ const SpaceCreateProject: React.FC = () => {
   const params = useParams();
   const spaceId = Number(params.spaceId);
 
-  const handleCreateSubmit = (type: string, prompt: string) => {
-    message.loading({
+  const handleCreateSubmit = async (
+    type: string,
+    prompt: string,
+    files?: any[],
+    skillIds?: number[],
+    modelId?: number,
+    tools?: any[],
+  ) => {
+    const hide = message.loading({
       content: `正在为您使用 AI 引擎构建 ${
         type === AgentComponentTypeEnum.Agent
           ? '智能体'
@@ -27,21 +35,57 @@ const SpaceCreateProject: React.FC = () => {
           : '插件'
       } 模版...`,
       key: 'create_project_loading',
-      duration: 1.5,
+      duration: 0,
     });
 
-    setTimeout(() => {
-      message.success({
-        content: `“${prompt.slice(
-          0,
-          15,
-        )}...” 构建成功！正在为您跳转到工作台...`,
-        key: 'create_project_loading',
-        duration: 2,
-      });
-      // Redirect back to develop page after creation
-      history.push(`/space/${spaceId}/page-develop`);
-    }, 1500);
+    try {
+      let targetType: AgentComponentTypeEnum = AgentComponentTypeEnum.Agent;
+      if (type === AgentComponentTypeEnum.PageApp) {
+        targetType = AgentComponentTypeEnum.PageApp;
+      } else if (type === AgentComponentTypeEnum.Skill) {
+        targetType = AgentComponentTypeEnum.Skill;
+      } else if (type === AgentComponentTypeEnum.Plugin) {
+        targetType = AgentComponentTypeEnum.Plugin;
+      }
+
+      const res = await apiProjectCreate({ targetType });
+      hide();
+
+      if (res.success && res.data) {
+        const { targetId, conversationId } = res.data;
+        message.success({
+          content: `构建成功！正在为您跳转到工作台...`,
+          key: 'create_project_loading',
+          duration: 2,
+        });
+
+        const redirectState = {
+          prompt,
+          files,
+          skillIds,
+          modelId,
+          tools,
+        };
+
+        if (targetType === 'PageApp') {
+          history.push({
+            pathname: `/space/${spaceId}/app-dev/${targetId}`,
+            state: redirectState,
+          });
+        } else {
+          history.push({
+            pathname: `/space/${spaceId}/conversation-agent`,
+            search: `?agentId=${targetId}&conversationId=${conversationId}`,
+            state: redirectState,
+          });
+        }
+      } else {
+        message.error(res.message || '项目创建失败，请重试！');
+      }
+    } catch (error: any) {
+      hide();
+      message.error(error.message || '项目创建失败，请重试！');
+    }
   };
 
   const handleRecentCardClick = (_type: string, name: string) => {

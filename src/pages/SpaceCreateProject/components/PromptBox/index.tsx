@@ -23,7 +23,14 @@ import styles from './index.less';
 const cx = classNames.bind(styles);
 
 interface PromptBoxProps {
-  onSubmit: (type: string, prompt: string) => void;
+  onSubmit: (
+    type: string,
+    prompt: string,
+    files?: any[],
+    skillIds?: number[],
+    modelId?: number,
+    tools?: any[],
+  ) => void;
 }
 
 interface TabItem {
@@ -141,14 +148,21 @@ const PromptBox: React.FC<PromptBoxProps> = ({ onSubmit }) => {
   }, [activeTab]);
 
   const handleSend = useCallback(
-    (msg: string) => {
-      if (!msg?.trim()) {
+    (msg: string, files?: any[], skillIds?: number[], modelId?: number) => {
+      if (!msg?.trim() && !files?.length) {
         message.warning('请输入您的任务描述！');
         return;
       }
-      onSubmit(activeTabRef.current, msg);
+      onSubmit(
+        activeTabRef.current,
+        msg,
+        files,
+        skillIds,
+        modelId,
+        selectedComponentList,
+      );
     },
-    [onSubmit],
+    [onSubmit, selectedComponentList],
   );
 
   return (

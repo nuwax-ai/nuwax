@@ -25,7 +25,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { useModel } from 'umi';
+import { useLocation, useModel } from 'umi';
 import ConversationAgentHeader from '../ConversationAgentHeader';
 import styles from './index.less';
 
@@ -106,6 +106,12 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
   onToggleFileTreeSidebar,
   hideHeader = false,
 }) => {
+  const location = useLocation();
+  const queryConversationId = useMemo(() => {
+    const queryId = new URLSearchParams(location.search).get('conversationId');
+    return queryId ? Number(queryId) : undefined;
+  }, [location.search]);
+
   // ==================== Refs ====================
   /**
    * 开发会话 ID 引用（ref 而非 state，避免闭包捕获旧值）
@@ -180,6 +186,7 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
    */
   const {
     selectedComponentList,
+    setSelectedComponentList,
     handleSelectComponent,
     initSelectedComponentList,
   } = useSelectedComponent();
@@ -213,15 +220,70 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
    * - 更新 devConversationIdRef
    * - 重置加载状态并查询会话消息
    * - 仅在 devConversationId 变化时触发（非完整 agentConfigInfo 对象）
+   * - 优先使用 URL 中传入的 conversationId
    */
   useEffect(() => {
     if (agentConfigInfo) {
-      const { devConversationId } = agentConfigInfo;
-      devConversationIdRef.current = devConversationId;
+      const targetConversationId =
+        queryConversationId || agentConfigInfo.devConversationId;
+      devConversationIdRef.current = targetConversationId;
       setIsLoadingConversation(false);
-      runQueryConversation(devConversationId);
+      runQueryConversation(targetConversationId);
     }
-  }, [agentConfigInfo?.devConversationId]);
+  }, [agentConfigInfo?.devConversationId, queryConversationId]);
+
+  const hasAutoSentRef = useRef<boolean>(false);
+
+  /**
+   * 当页面加载结束且携带了初始消息状态时，自动触发消息发送
+   */
+  useEffect(() => {
+    // 只有当加载结束，且我们还没有触发过自动发信
+    if (!loadingConversation && agentConfigInfo && !hasAutoSentRef.current) {
+      const state = location.state as any;
+      if (
+        state &&
+        (state.prompt?.trim() || state.files?.length || state.skillIds?.length)
+      ) {
+        hasAutoSentRef.current = true; // 设为 true，防止重复发送
+
+        // 如果 state 带有 tools，更新选中的组件列表
+        if (state.tools?.length) {
+          setSelectedComponentList(state.tools);
+        }
+
+        const id = devConversationIdRef.current;
+        if (id) {
+          // 确定沙箱 ID
+          const effectiveSandboxId = String(
+            conversationInfo?.sandboxServerId ??
+              conversationInfo?.agent?.sandboxId ??
+              selectedComputerId,
+          );
+
+          const sendParams: SendMessageParams = {
+            id,
+            messageInfo: state.prompt || '',
+            files: state.files,
+            infos: state.tools || [], // 直接使用 state.tools，保证不会因为 state 延迟导致拿不到最新的工具列表
+            sandboxId: effectiveSandboxId,
+            debug: true,
+            isSync: false,
+            skillIds: state.skillIds,
+          };
+
+          setHasUserSentMessage(true);
+          onMessageSend(sendParams);
+        }
+      }
+    }
+  }, [
+    loadingConversation,
+    agentConfigInfo,
+    location.state,
+    selectedComputerId,
+    conversationInfo,
+  ]);
 
   // ==================== 事件处理函数 ====================
 
