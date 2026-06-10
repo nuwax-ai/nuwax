@@ -23,6 +23,7 @@ const SpaceCreateProject: React.FC = () => {
     skillIds?: number[],
     modelId?: number,
     tools?: any[],
+    computerId?: string,
   ) => {
     const hide = message.loading({
       content: `正在为您使用 AI 引擎构建 ${
@@ -65,6 +66,7 @@ const SpaceCreateProject: React.FC = () => {
           skillIds,
           modelId,
           tools,
+          computerId,
         };
 
         if (targetType === 'PageApp') {

@@ -25,6 +25,7 @@ import {
   apiAgentComponentModelUpdate,
   apiAgentConfigInfo,
   apiAgentConfigUpdate,
+  apiAgentConversation,
 } from '@/services/agentConfig';
 import { dict } from '@/services/i18nRuntime';
 import { apiModelList } from '@/services/modelConfig';
@@ -142,13 +143,23 @@ const ConversationAgent: React.FC = () => {
     return queryAgentId ? Number(queryAgentId) : 0;
   }, [location.search]);
 
+  /**
+   * 从 URL query 参数中提取 conversationId
+   */
+  const queryConversationId = useMemo(() => {
+    const queryId = new URLSearchParams(location.search).get('conversationId');
+    return queryId ? Number(queryId) : undefined;
+  }, [location.search]);
+
   // ==================== Refs ====================
   /** 系统提示词编辑器引用，用于外部插入文本（如变量、工具标签） */
   const systemUserTipsWordRef = useRef<SystemUserTipsWordRef>(null);
 
   // ==================== 本地状态 ====================
   /** 当前智能体 ID */
-  const [agentId, setAgentId] = useState<number>(agentIdFromQuery);
+  const [agentId, setAgentId] = useState<number>(
+    queryConversationId ? 0 : agentIdFromQuery,
+  );
   /** 发布弹窗是否打开 */
   const [open, setOpen] = useState<boolean>(false);
   /** 编辑智能体基础信息弹窗是否打开 */
@@ -274,8 +285,34 @@ const ConversationAgent: React.FC = () => {
 
   /** URL 中的 agentId 变化时同步到本地状态 */
   useEffect(() => {
-    setAgentId(agentIdFromQuery);
-  }, [agentIdFromQuery]);
+    if (!queryConversationId) {
+      setAgentId(agentIdFromQuery);
+    }
+  }, [agentIdFromQuery, queryConversationId]);
+
+  // 如果 URL 中有 conversationId，通过 conversationId 查询当前会话以获取真正的 agentId
+  useEffect(() => {
+    if (queryConversationId) {
+      setLoadingAgentConfigInfo(true);
+      apiAgentConversation(queryConversationId)
+        .then((res) => {
+          if (res.code === SUCCESS_CODE && res.data) {
+            const fetchedAgentId = res.data.agentId || res.data.agent?.targetId;
+            if (fetchedAgentId) {
+              setAgentId(fetchedAgentId);
+            } else {
+              setLoadingAgentConfigInfo(false);
+            }
+          } else {
+            setLoadingAgentConfigInfo(false);
+          }
+        })
+        .catch((err) => {
+          console.error('Failed to query conversation for agentId:', err);
+          setLoadingAgentConfigInfo(false);
+        });
+    }
+  }, [queryConversationId]);
 
   /**
    * 智能体配置加载请求（带防抖）

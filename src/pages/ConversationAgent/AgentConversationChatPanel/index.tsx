@@ -123,8 +123,8 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
   // ==================== 本地状态 ====================
   /** 当前选中的沙箱电脑 ID（用户手动选择时更新，传递给终端和文件预览） */
   const [selectedComputerId, setSelectedComputerId] = useState<string>('');
-  /** 用户是否已发送过消息（用于控制沙箱选择器的固定状态，防止发送后切换） */
-  const [hasUserSentMessage, setHasUserSentMessage] = useState<boolean>(false);
+  /** 当前选中的大模型 ID */
+  const [selectedModelId, setSelectedModelId] = useState<number>();
 
   // ==================== 全局状态模型 ====================
   /**
@@ -232,14 +232,31 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
     }
   }, [agentConfigInfo?.devConversationId, queryConversationId]);
 
+  // 监听路由 state 以便在页面加载时立刻同步选中的模型，保证下拉框处于选中状态
+  useEffect(() => {
+    const state = location.state as any;
+    if (state?.modelId) {
+      setSelectedModelId(state.modelId);
+    }
+  }, [location.state]);
+
+  // 监听路由 state 以便在页面加载时立刻同步选中的电脑，保证云电脑处于选中状态
+  useEffect(() => {
+    const state = location.state as any;
+    if (state?.computerId) {
+      setSelectedComputerId(state.computerId);
+    }
+  }, [location.state]);
+
   const hasAutoSentRef = useRef<boolean>(false);
 
   /**
    * 当页面加载结束且携带了初始消息状态时，自动触发消息发送
    */
   useEffect(() => {
-    // 只有当加载结束，且我们还没有触发过自动发信
-    if (!loadingConversation && agentConfigInfo && !hasAutoSentRef.current) {
+    const id = devConversationIdRef.current;
+    // 只有当会话 ID 已经加载完成，且我们还没有触发过自动发信
+    if (id && agentConfigInfo && !hasAutoSentRef.current) {
       const state = location.state as any;
       if (
         state &&
@@ -251,39 +268,33 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
         if (state.tools?.length) {
           setSelectedComponentList(state.tools);
         }
-
-        const id = devConversationIdRef.current;
-        if (id) {
-          // 确定沙箱 ID
-          const effectiveSandboxId = String(
-            conversationInfo?.sandboxServerId ??
-              conversationInfo?.agent?.sandboxId ??
-              selectedComputerId,
-          );
-
-          const sendParams: SendMessageParams = {
-            id,
-            messageInfo: state.prompt || '',
-            files: state.files,
-            infos: state.tools || [], // 直接使用 state.tools，保证不会因为 state 延迟导致拿不到最新的工具列表
-            sandboxId: effectiveSandboxId,
-            debug: true,
-            isSync: false,
-            skillIds: state.skillIds,
-          };
-
-          setHasUserSentMessage(true);
-          onMessageSend(sendParams);
+        // 如果 state 带有 modelId，同步更新到本页面 state 中，保持模型选择器与用户选择一致
+        if (state.modelId) {
+          setSelectedModelId(state.modelId);
         }
+
+        // 确定沙箱 ID
+        const effectiveSandboxId = String(
+          conversationInfo?.sandboxServerId ??
+            conversationInfo?.agent?.sandboxId ??
+            selectedComputerId,
+        );
+
+        const sendParams: SendMessageParams = {
+          id,
+          messageInfo: state.prompt || '',
+          files: state.files,
+          infos: state.tools || [], // 直接使用 state.tools，保证不会因为 state 延迟导致拿不到最新的工具列表
+          sandboxId: effectiveSandboxId,
+          debug: true,
+          isSync: false,
+          skillIds: state.skillIds,
+        };
+
+        onMessageSend(sendParams);
       }
     }
-  }, [
-    loadingConversation,
-    agentConfigInfo,
-    location.state,
-    selectedComputerId,
-    conversationInfo,
-  ]);
+  }, [agentConfigInfo, location.state, selectedComputerId, conversationInfo]);
 
   // ==================== 事件处理函数 ====================
 
@@ -366,7 +377,6 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
     clearFilePanelInfo();
     setMessageList([]);
     setIsLoadingConversation(false);
-    setHasUserSentMessage(false);
 
     try {
       setIsLoadingOtherInterface(true);
@@ -428,8 +438,6 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
     if (!id) {
       return;
     }
-
-    setHasUserSentMessage(true);
 
     // 确定最终使用的沙箱 ID
     const effectiveSandboxId = String(
@@ -579,6 +587,9 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
             hasPermission: conversationInfo?.agent?.hasPermission,
             sandboxId: conversationInfo?.agent?.sandboxId,
           }}
+          allowOtherModel={agentConfigInfo?.allowOtherModel}
+          selectedModelId={selectedModelId}
+          onModelSelect={setSelectedModelId}
           onSendMessage={handleMessageSend}
           onClear={handleClear}
           onLoadMoreMessage={handleLoadMoreMessage}
@@ -592,15 +603,22 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
           }}
           showScrollBtn={showScrollBtn}
           messageViewRef={messageViewRef}
-          enableMention={false}
-          placeholder={dict(
-            'PC.Components.ChatInputHomeMentionEditor.placeholderWithoutMention',
-          )}
+          enableMention={
+            agentConfigInfo?.type === AgentTypeEnum.TaskAgent &&
+            agentConfigInfo?.allowAtSkill === 1
+          }
+          placeholder={
+            agentConfigInfo?.type === AgentTypeEnum.TaskAgent &&
+            agentConfigInfo?.allowAtSkill === 1
+              ? dict(
+                  'PC.Components.ChatInputHomeMentionEditor.placeholderWithMention',
+                )
+              : dict(
+                  'PC.Components.ChatInputHomeMentionEditor.placeholderWithoutMention',
+                )
+          }
           chatInputProps={{
-            fixedSelection:
-              !!conversationInfo?.agent?.sandboxId ||
-              !!conversationInfo?.sandboxServerId ||
-              hasUserSentMessage,
+            fixedSelection: true,
             agentSandboxId: conversationInfo?.agent?.sandboxId,
           }}
         />

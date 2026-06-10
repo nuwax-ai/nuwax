@@ -30,6 +30,7 @@ interface PromptBoxProps {
     skillIds?: number[],
     modelId?: number,
     tools?: any[],
+    computerId?: string,
   ) => void;
 }
 
@@ -94,6 +95,9 @@ const PromptBox: React.FC<PromptBoxProps> = ({ onSubmit }) => {
 
   // 选中的模型 ID
   const [selectedModelId, setSelectedModelId] = useState<number>();
+
+  // 选中的云电脑 ID
+  const [selectedComputerId, setSelectedComputerId] = useState<string>('');
 
   // 默认智能体配置详情
   const [agentDetail, setAgentDetail] = useState<AgentDetailDto>();
@@ -160,9 +164,10 @@ const PromptBox: React.FC<PromptBoxProps> = ({ onSubmit }) => {
         skillIds,
         modelId,
         selectedComponentList,
+        selectedComputerId,
       );
     },
-    [onSubmit, selectedComponentList],
+    [onSubmit, selectedComponentList, selectedComputerId],
   );
 
   return (
@@ -186,6 +191,9 @@ const PromptBox: React.FC<PromptBoxProps> = ({ onSubmit }) => {
         }
         selectedModelId={selectedModelId}
         onModelSelect={setSelectedModelId}
+        isTaskAgentActive={activeTab !== AgentComponentTypeEnum.PageApp}
+        selectedComputerId={selectedComputerId}
+        onComputerSelect={setSelectedComputerId}
         agentType={matchingAgentDetail?.type}
         agentId={matchingAgentDetail?.agentId}
         tabsSlot={
