@@ -1553,6 +1553,9 @@ const AppDevDesign: React.FC = () => {
                               isFileOperating ? undefined : handleExportProject
                             }
                             onCollapseAll={fileManagement.collapseAllFolders}
+                            onRefresh={() =>
+                              fileManagement.loadFileTree(true, true)
+                            }
                             fileManagement={fileManagement}
                             isChatLoading={chat.isChatLoading}
                             isFileTreeInitializing={

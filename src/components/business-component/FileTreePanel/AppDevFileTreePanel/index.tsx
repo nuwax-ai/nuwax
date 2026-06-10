@@ -34,6 +34,7 @@ const AppDevFileTreePanel: React.FC<AppDevFileTreePanelProps> = ({
   onCreateFile,
   onCreateFolder,
   onCollapseAll,
+  onRefresh,
   fileManagement,
   isChatLoading = false,
   // 新增：文件树初始化 loading 状态
@@ -56,6 +57,22 @@ const AppDevFileTreePanel: React.FC<AppDevFileTreePanelProps> = ({
 
   // 内联重命名状态
   const [renamingNode, setRenamingNode] = useState<FileNode | null>(null);
+
+  // 文件树刷新 loading 状态
+  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
+
+  /** 刷新文件树：内部维护 loading 状态，避免重复触发 */
+  const handleRefresh = useCallback(async () => {
+    if (!onRefresh || isRefreshing) {
+      return;
+    }
+    setIsRefreshing(true);
+    try {
+      await onRefresh();
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [onRefresh, isRefreshing]);
 
   /**
    * 保存滚动位置
@@ -246,6 +263,8 @@ const AppDevFileTreePanel: React.FC<AppDevFileTreePanelProps> = ({
             }
             onUpload={() => handleUploadFromMenu(null)}
             onCollapseAll={onCollapseAll}
+            onRefresh={onRefresh ? () => void handleRefresh() : undefined}
+            refreshLoading={isRefreshing}
           />
 
           {/* 文件树容器 */}

@@ -44,6 +44,9 @@ export interface AppDevFileTreePanelProps {
   /** 折叠全部文件夹回调 */
   onCollapseAll?: () => void;
 
+  /** 刷新文件树回调；传入后工具栏显示刷新按钮 */
+  onRefresh?: () => void | Promise<void>;
+
   /** 文件管理方法 */
   fileManagement: {
     switchToFile: (fileId: string) => void;

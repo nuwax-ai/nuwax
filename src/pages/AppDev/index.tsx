@@ -1567,6 +1567,10 @@ const AppDev: React.FC = () => {
                               isFileOperating ? undefined : handleExportProject
                             }
                             onCollapseAll={fileManagement.collapseAllFolders}
+                            // 刷新文件树回调
+                            onRefresh={() =>
+                              fileManagement.loadFileTree(true, true)
+                            }
                             // 文件管理方法
                             fileManagement={fileManagement}
                             // 是否正在AI聊天加载中
