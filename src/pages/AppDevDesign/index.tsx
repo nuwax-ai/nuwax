@@ -1200,7 +1200,7 @@ const AppDevDesign: React.FC = () => {
 
   /**
    * 文件树状态适配：将 fileManagement 与页面回调
-   * 映射为 TaskAgentFileTree 所需的 tree 结构
+   * 映射为 FileTreePanel 所需的 tree 结构
    */
   const appDevFileTree = useAppDevFileTree({
     files: stableCurrentFiles,

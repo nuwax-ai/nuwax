@@ -9,9 +9,9 @@ import {
 import { Button, Card, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useState } from 'react';
-import SourceControlPanel from './SourceControlPanel';
-import TaskAgentFileTree from './TaskAgentFileTree';
+import FileTreePanel from './FileTreePanel';
 import styles from './index.less';
+import SourceControlPanel from './SourceControlPanel';
 import type { FileTreeGitSourcePanelProps } from './types';
 
 const cx = classNames.bind(styles);
@@ -131,7 +131,7 @@ const FileTreeGitSourcePanel: React.FC<FileTreeGitSourcePanelProps> = ({
         ) : (
           // 文件树容器（内部统一渲染 TaskAgentFileTree）
           <div className={cx(styles.fileTreeContainer)}>
-            <TaskAgentFileTree
+            <FileTreePanel
               tree={tree}
               className={treeClassName}
               headerClassName={treeHeaderClassName}

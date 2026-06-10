@@ -12,7 +12,7 @@ import classNames from 'classnames';
 import React, { useRef } from 'react';
 import styles from './index.less';
 
-export interface TaskAgentFileTreeProps {
+export interface FileTreePanelProps {
   /** 文件树状态与交互处理器 */
   tree: TaskAgentFileViewTree;
   className?: string;
@@ -25,7 +25,7 @@ export interface TaskAgentFileTreeProps {
  * 任务智能体文件树组件
  * 负责文件树渲染、搜索、右键菜单、选中与重命名等交互
  */
-const TaskAgentFileTree: React.FC<TaskAgentFileTreeProps> = ({
+const FileTreePanel: React.FC<FileTreePanelProps> = ({
   tree,
   className,
   headerClassName,
@@ -188,4 +188,4 @@ const TaskAgentFileTree: React.FC<TaskAgentFileTreeProps> = ({
   );
 };
 
-export default TaskAgentFileTree;
+export default FileTreePanel;

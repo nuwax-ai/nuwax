@@ -23,8 +23,8 @@ export { default as CopyToSpaceComponent } from './CopyToSpaceComponent';
 export { default as FilePreview } from './FilePreview';
 export {
   default as FileTreeGitSourcePanel,
+  FileTreePanel,
   SourceControlPanel,
-  TaskAgentFileTree,
   apiGitAdd,
   apiGitCommit,
   apiGitLogList,

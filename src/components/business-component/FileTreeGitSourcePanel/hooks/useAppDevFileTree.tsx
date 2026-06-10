@@ -48,11 +48,11 @@ export interface UseAppDevFileTreeParams {
 
 /**
  * AppDev 文件树适配 Hook
- * 将 useAppDevFileManagement 的能力与页面回调适配为 TaskAgentFileTree
+ * 将 useAppDevFileManagement 的能力与页面回调适配为 FileTreePanel
  * 所需的 TaskAgentFileViewTree 结构，内部维护右键菜单、重命名、刷新等 UI 状态
  *
  * @param params 见 UseAppDevFileTreeParams
- * @returns tree：可直接传给 TaskAgentFileTree 的状态与处理器集合
+ * @returns tree：可直接传给 FileTreePanel 的状态与处理器集合
  */
 export function useAppDevFileTree(params: UseAppDevFileTreeParams): {
   tree: TaskAgentFileViewTree;

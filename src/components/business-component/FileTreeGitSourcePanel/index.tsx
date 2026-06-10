@@ -1,3 +1,5 @@
+export { default as FileTreePanel } from './FileTreePanel';
+export type { FileTreePanelProps } from './FileTreePanel';
 export { default as FileTreeToolbar } from './FileTreeToolbar';
 export type { FileTreeToolbarProps } from './FileTreeToolbar';
 export { useAppDevFileTree } from './hooks/useAppDevFileTree';
@@ -24,8 +26,6 @@ export type {
   ChangeListSection,
   SelectedChangeFile,
 } from './SourceControlPanel/changeFileStatus';
-export { default as TaskAgentFileTree } from './TaskAgentFileTree';
-export type { TaskAgentFileTreeProps } from './TaskAgentFileTree';
 export type { FileTreeGitSourcePanelProps, SourceControlProps } from './types';
 export type * from './types/git-version-management';
 export type { TaskAgentFileViewTree } from './types/taskAgentFileTree';
