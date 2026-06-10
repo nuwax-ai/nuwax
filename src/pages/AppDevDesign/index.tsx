@@ -5,10 +5,11 @@ import {
   GitVersionRecordPanel,
   type ConsoleLayoutMode,
 } from '@/components/business-component';
-import {
-  AppDevFileTreePanel,
+import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
+import FileTreeGitSourcePanel, {
+  useAppDevFileTree,
   useSourceControl,
-} from '@/components/business-component/FileTreePanel';
+} from '@/components/business-component/FileTreeGitSourcePanel';
 import ConditionRender from '@/components/ConditionRender';
 import Created from '@/components/Created';
 import PublishComponentModal from '@/components/PublishComponentModal';
@@ -57,7 +58,7 @@ import { FileNode } from '@/types/interfaces/appDev';
 import { DataResource } from '@/types/interfaces/dataResource';
 import { generateRequestId } from '@/utils/chatUtils';
 import eventBus, { EVENT_NAMES } from '@/utils/eventBus';
-import { UploadOutlined } from '@ant-design/icons';
+import { ImportOutlined, UploadOutlined } from '@ant-design/icons';
 import {
   Alert,
   Button,
@@ -151,10 +152,12 @@ const AppDevDesign: React.FC = () => {
   const [showDevLogConsole, setShowDevLogConsole] = useState(false);
   // 底部控制台布局模式（用于判断折叠状态）
   const devConsoleLayoutModeRef = useRef<ConsoleLayoutMode>('default');
-  // 控制台恢复默认高度信号
-  const [devConsoleRestoreSignal, setDevConsoleRestoreSignal] = useState(0);
+  // 底部控制台当前激活 Tab（用于判断显示终端还是日志）
+  const devConsoleActiveTabRef = useRef<'terminal' | 'logs'>('logs');
   // 控制台切换到终端 Tab 信号
   const [devConsoleTerminalSignal, setDevConsoleTerminalSignal] = useState(0);
+  // 控制台切换到日志 Tab 信号
+  const [devConsoleLogsSignal, setDevConsoleLogsSignal] = useState(0);
 
   // 空操作函数常量，避免每次渲染创建新函数实例
   const noop = useCallback(() => {}, []);
@@ -1184,6 +1187,39 @@ const AppDevDesign: React.FC = () => {
   );
 
   /**
+   * 文件树点击文件：清空 diff 选中并切换到代码视图
+   */
+  const handleFileTreeSelect = useCallback(
+    (fileId: string) => {
+      sourceControl.clearSelectedDiff();
+      fileManagement.switchToFile(fileId);
+      setActiveTab('code');
+    },
+    [sourceControl.clearSelectedDiff, fileManagement.switchToFile],
+  );
+
+  /**
+   * 文件树状态适配：将 fileManagement 与页面回调
+   * 映射为 FileTreePanel 所需的 tree 结构
+   */
+  const appDevFileTree = useAppDevFileTree({
+    files: stableCurrentFiles,
+    selectedFileId: fileManagement.fileContentState.selectedFile,
+    fileManagement,
+    isChatLoading: chat.isChatLoading,
+    isFileTreeInitializing: fileManagement.isFileTreeInitializing,
+    onFileSelect: handleFileTreeSelect,
+    onDeleteFile: isFileOperating ? noop : handleDeleteClick,
+    onRenameFile: isFileOperating ? asyncNoopFalse : handleRenameFile,
+    onUploadSingleFile: isFileOperating ? asyncNoop : handleRightClickUpload,
+    onImportProject: isFileOperating
+      ? noop
+      : () => setIsUploadModalVisible(true),
+    importProjectLabel: t('PC.Pages.AppDevFileTreeContextMenu.importProject'),
+    onExportProject: isFileOperating ? undefined : handleExportProject,
+  });
+
+  /**
    * 统一处理白屏和 iframe 错误的情况
    * 统一由 autoErrorHandling 管理处理，包括重试次数限制和用户确认
    * @param errorMessage 错误消息，为空字符串表示只有白屏没有错误
@@ -1472,23 +1508,43 @@ const AppDevDesign: React.FC = () => {
                     showDevLogConsole: showDevLogConsole,
                     hasErrorInLatestBlock: devLogs.hasErrorInLatestBlock,
                     onToggleDevLogConsole: () => {
-                      // 折叠状态下点击：恢复默认高度而非关闭
-                      if (
-                        showDevLogConsole &&
-                        devConsoleLayoutModeRef.current === 'collapsed'
-                      ) {
-                        setDevConsoleRestoreSignal((prev) => prev + 1);
+                      // 未打开：打开并显示日志 Tab
+                      if (!showDevLogConsole) {
+                        setShowDevLogConsole(true);
+                        setDevConsoleLogsSignal((prev) => prev + 1);
                         return;
                       }
-                      setShowDevLogConsole(!showDevLogConsole);
+                      // 已打开但显示终端 Tab 或处于折叠状态：切到日志/恢复高度，而非隐藏
+                      if (
+                        devConsoleActiveTabRef.current === 'terminal' ||
+                        devConsoleLayoutModeRef.current === 'collapsed'
+                      ) {
+                        setDevConsoleLogsSignal((prev) => prev + 1);
+                        return;
+                      }
+                      // 已打开且显示日志 Tab：关闭
+                      setShowDevLogConsole(false);
                     },
                   }}
                   // 终端相关
                   terminalData={{
                     onOpenTerminal: () => {
-                      // 打开底部控制台并切换到终端 Tab
-                      setShowDevLogConsole(true);
-                      setDevConsoleTerminalSignal((prev) => prev + 1);
+                      // 未打开：打开并显示终端 Tab
+                      if (!showDevLogConsole) {
+                        setShowDevLogConsole(true);
+                        setDevConsoleTerminalSignal((prev) => prev + 1);
+                        return;
+                      }
+                      // 已打开但显示日志 Tab 或处于折叠状态：切到终端/恢复高度，而非隐藏
+                      if (
+                        devConsoleActiveTabRef.current === 'logs' ||
+                        devConsoleLayoutModeRef.current === 'collapsed'
+                      ) {
+                        setDevConsoleTerminalSignal((prev) => prev + 1);
+                        return;
+                      }
+                      // 已打开且显示终端 Tab：关闭
+                      setShowDevLogConsole(false);
                     },
                   }}
                   // 更多操作相关
@@ -1539,52 +1595,31 @@ const AppDevDesign: React.FC = () => {
                       </div>
                     ) : (
                       <>
-                        {/* FileTreePanel 组件 */}
+                        {/* FileTreeGitSourcePanel 组件 */}
                         {activeTab !== 'preview' && (
-                          <AppDevFileTreePanel
-                            files={stableCurrentFiles}
-                            selectedFileId={
-                              fileManagement.fileContentState.selectedFile
+                          <FileTreeGitSourcePanel
+                            layout="sidebar"
+                            collapsible
+                            // 文件树（含搜索、工具栏、右键菜单）
+                            tree={appDevFileTree.tree}
+                            treeClassName="w-full"
+                            treeEmptyState={
+                              <AppDevEmptyState
+                                type="no-file"
+                                buttons={[
+                                  {
+                                    text: t(
+                                      'PC.Pages.AppDevFileTreePanel.importProject',
+                                    ),
+                                    icon: <ImportOutlined />,
+                                    onClick: () =>
+                                      setIsUploadModalVisible(true),
+                                    disabled: chat.isChatLoading,
+                                  },
+                                ]}
+                              />
                             }
-                            expandedFolders={
-                              fileManagement.fileTreeState.expandedFolders
-                            }
-                            onFileSelect={(fileId) => {
-                              sourceControl.clearSelectedDiff();
-                              fileManagement.switchToFile(fileId);
-                              setActiveTab('code');
-                            }}
-                            onToggleFolder={fileManagement.toggleFolder}
-                            onDeleteFile={
-                              isFileOperating ? noop : handleDeleteClick
-                            }
-                            onRenameFile={
-                              isFileOperating
-                                ? asyncNoopFalse
-                                : handleRenameFile
-                            }
-                            onUploadProject={
-                              isFileOperating
-                                ? noop
-                                : () => setIsUploadModalVisible(true)
-                            }
-                            onUploadSingleFile={
-                              isFileOperating
-                                ? asyncNoop
-                                : handleRightClickUpload
-                            }
-                            onExportProject={
-                              isFileOperating ? undefined : handleExportProject
-                            }
-                            onCollapseAll={fileManagement.collapseAllFolders}
-                            onRefresh={() =>
-                              fileManagement.loadFileTree(true, true)
-                            }
-                            fileManagement={fileManagement}
-                            isChatLoading={chat.isChatLoading}
-                            isFileTreeInitializing={
-                              fileManagement.isFileTreeInitializing
-                            }
+                            // =================源代码管理相关=================
                             sourceControl={{
                               gitWorkspace: {
                                 workspaceType: 'pageApp',
@@ -1706,10 +1741,13 @@ const AppDevDesign: React.FC = () => {
                 <ConversationBottomConsole
                   visible={showDevLogConsole}
                   defaultActiveTab="logs"
-                  restoreSignal={devConsoleRestoreSignal}
                   terminalSignal={devConsoleTerminalSignal}
+                  logsSignal={devConsoleLogsSignal}
                   onLayoutModeChange={(mode) => {
                     devConsoleLayoutModeRef.current = mode;
+                  }}
+                  onActiveTabChange={(tab) => {
+                    devConsoleActiveTabRef.current = tab;
                   }}
                   onClose={() => setShowDevLogConsole(false)}
                   wsUrl={terminalWsUrl}

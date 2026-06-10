@@ -1,9 +1,9 @@
-import { mergeGitStatusFileIds } from '@/components/business-component/FileTreePanel/hooks/gitStatusUtils';
+import { mergeGitStatusFileIds } from '@/components/business-component/FileTreeGitSourcePanel/hooks/gitStatusUtils';
 import {
   apiGitCommit,
   apiGitStatus,
-} from '@/components/business-component/FileTreePanel/services/git-version-management';
-import type { GitTagsParams } from '@/components/business-component/FileTreePanel/types/git-version-management';
+} from '@/components/business-component/FileTreeGitSourcePanel/services/git-version-management';
+import type { GitTagsParams } from '@/components/business-component/FileTreeGitSourcePanel/types/git-version-management';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
 

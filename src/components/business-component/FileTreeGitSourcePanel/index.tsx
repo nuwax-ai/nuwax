@@ -1,7 +1,12 @@
-export { default as AppDevFileTreePanel } from './AppDevFileTreePanel';
-export type { AppDevFileTreePanelProps } from './AppDevFileTreePanel/types';
+export { default as FileTreePanel } from './FileTreePanel';
+export type { FileTreePanelProps } from './FileTreePanel';
 export { default as FileTreeToolbar } from './FileTreeToolbar';
 export type { FileTreeToolbarProps } from './FileTreeToolbar';
+export { useAppDevFileTree } from './hooks/useAppDevFileTree';
+export type {
+  AppDevFileTreeFileManagement,
+  UseAppDevFileTreeParams,
+} from './hooks/useAppDevFileTree';
 export { useConversationAgentSourceControl } from './hooks/useConversationAgentSourceControl';
 export type {
   ConversationAgentSourceControlAdapters,
@@ -14,18 +19,16 @@ export type {
   UseAppDevSourceControlParams,
   UseAppDevSourceControlReturn,
 } from './hooks/useSourceControl';
-export { default } from './PanelCore';
+export { default as FileTreeGitSourcePanel, default } from './PanelCore';
 export * from './services/git-version-management';
-export { default as SourceControlPanel } from './SourceControl';
+export { default as SourceControlPanel } from './SourceControlPanel';
 export type {
   ChangeListSection,
   SelectedChangeFile,
-} from './SourceControl/changeFileStatus';
-export { default as TaskAgentFileTree } from './TaskAgentFileTree';
-export type { TaskAgentFileTreeProps } from './TaskAgentFileTree';
+} from './SourceControlPanel/changeFileStatus';
 export type {
-  FileTreePanelProps,
-  FileTreePanelSourceControlProps,
-} from './types';
+  FileTreeGitSourcePanelProps,
+  FileTreeState,
+  SourceControlProps,
+} from './types/file-tree-git-source';
 export type * from './types/git-version-management';
-export type { TaskAgentFileViewTree } from './types/taskAgentFileTree';

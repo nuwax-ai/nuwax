@@ -67,12 +67,14 @@ export interface ConversationBottomConsoleProps {
   layoutResetSignal?: number;
   /** 信号值变化时切到终端 Tab 并全屏展开（如点击「终端」入口） */
   expandSignal?: number;
-  /** 信号值变化时恢复默认高度（如折叠状态下再次点击入口图标） */
-  restoreSignal?: number;
   /** 信号值变化时切到终端 Tab（折叠时恢复默认高度，如点击「终端」图标） */
   terminalSignal?: number;
+  /** 信号值变化时切到日志 Tab（折叠时恢复默认高度，如点击「日志」图标） */
+  logsSignal?: number;
   /** 布局模式变化回调（供外部感知折叠/展开状态） */
   onLayoutModeChange?: (mode: ConsoleLayoutMode) => void;
+  /** 激活 Tab 变化回调（供外部感知当前显示终端还是日志） */
+  onActiveTabChange?: (tab: 'terminal' | 'logs') => void;
   /** 打开控制台时的默认 Tab @default 'terminal' */
   defaultActiveTab?: 'terminal' | 'logs';
   /** 头部操作区额外内容（渲染在内置按钮之前），仅日志 Tab 激活时显示 */
@@ -98,9 +100,10 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
   showTerminalAppearanceToggle = true,
   layoutResetSignal,
   expandSignal,
-  restoreSignal,
   terminalSignal,
+  logsSignal,
   onLayoutModeChange,
+  onActiveTabChange,
   defaultActiveTab = 'terminal',
   logsExtra,
 }) => {
@@ -177,12 +180,6 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
     setLayoutMode('expanded');
   }, [expandSignal]);
 
-  /** 外部信号：恢复默认高度（如折叠状态下再次点击入口图标） */
-  useEffect(() => {
-    if (!restoreSignal) return;
-    setLayoutMode('default');
-  }, [restoreSignal]);
-
   /** 外部信号：切到终端 Tab（折叠时恢复默认高度） */
   useEffect(() => {
     if (!terminalSignal) return;
@@ -190,10 +187,22 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
     setLayoutMode((prev) => (prev === 'collapsed' ? 'default' : prev));
   }, [terminalSignal]);
 
+  /** 外部信号：切到日志 Tab（折叠时恢复默认高度） */
+  useEffect(() => {
+    if (!logsSignal) return;
+    setActiveTab('logs');
+    setLayoutMode((prev) => (prev === 'collapsed' ? 'default' : prev));
+  }, [logsSignal]);
+
   /** 布局模式变化时通知外部 */
   useEffect(() => {
     onLayoutModeChange?.(layoutMode);
   }, [layoutMode, onLayoutModeChange]);
+
+  /** 激活 Tab 变化时通知外部 */
+  useEffect(() => {
+    onActiveTabChange?.(activeTab);
+  }, [activeTab, onActiveTabChange]);
 
   /** 全屏展开 / 恢复默认高度 */
   const handleToggleExpand = () => {

@@ -3,7 +3,7 @@ import type {
   GitCommitDiffFileItem,
   GitCommitDiffFileStatus,
   GitCommitLogItem,
-} from '@/components/business-component/FileTreePanel/types/git-version-management';
+} from '@/components/business-component/FileTreeGitSourcePanel/types/git-version-management';
 import Loading from '@/components/custom/Loading';
 import { dict } from '@/services/i18nRuntime';
 import { formatTimeAgo } from '@/utils/common';

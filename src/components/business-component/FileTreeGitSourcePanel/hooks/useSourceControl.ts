@@ -2,20 +2,6 @@
  * AppDev 源代码管理（Git）Hook
  * 管理修改文件列表、暂存、提交推送及 diff 预览相关逻辑
  */
-import {
-  buildChangeFilesFromGitStatus,
-  mergeGitStatusFileIds,
-} from '@/components/business-component/FileTreePanel/hooks/gitStatusUtils';
-import {
-  apiGitCommit,
-  apiGitStatus,
-} from '@/components/business-component/FileTreePanel/services/git-version-management';
-import type {
-  ChangeListSection,
-  SelectedChangeFile,
-} from '@/components/business-component/FileTreePanel/SourceControl/changeFileStatus';
-import { runGitDiscard } from '@/components/business-component/FileTreePanel/SourceControl/sourceControlGitActions';
-import { fetchGitChangeFileContent } from '@/components/business-component/GitVersionRecordPanel/gitCommitDiffUtils';
 import type { ChangeFileInfo } from '@/components/FileTreeView/type';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { getProjectContent, submitFilesUpdate } from '@/services/appDev';
@@ -24,6 +10,17 @@ import type { FileNode } from '@/types/interfaces/appDev';
 import { treeToFlatList } from '@/utils/appDevUtils';
 import { message } from 'antd';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { fetchGitChangeFileContent } from '../../GitVersionRecordPanel/gitCommitDiffUtils';
+import { apiGitCommit, apiGitStatus } from '../services/git-version-management';
+import type {
+  ChangeListSection,
+  SelectedChangeFile,
+} from '../SourceControlPanel/changeFileStatus';
+import { runGitDiscard } from '../SourceControlPanel/sourceControlGitActions';
+import {
+  buildChangeFilesFromGitStatus,
+  mergeGitStatusFileIds,
+} from './gitStatusUtils';
 
 /** 文件管理依赖（Hook 所需的最小接口） */
 export interface AppDevSourceControlFileManagement {

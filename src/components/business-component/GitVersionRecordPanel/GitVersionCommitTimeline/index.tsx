@@ -1,5 +1,5 @@
 import avatarImage from '@/assets/images/avatar.png';
-import type { GitCommitLogItem } from '@/components/business-component/FileTreePanel/types/git-version-management';
+import type { GitCommitLogItem } from '@/components/business-component/FileTreeGitSourcePanel/types/git-version-management';
 import { dict } from '@/services/i18nRuntime';
 import { UndoOutlined } from '@ant-design/icons';
 import { Button } from 'antd';

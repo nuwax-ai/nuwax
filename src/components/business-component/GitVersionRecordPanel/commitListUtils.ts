@@ -1,4 +1,4 @@
-import type { GitCommitLogItem } from '@/components/business-component/FileTreePanel/types/git-version-management';
+import type { GitCommitLogItem } from '@/components/business-component/FileTreeGitSourcePanel/types/git-version-management';
 import dayjs from 'dayjs';
 import type { CommitDateGroup } from './types';
 

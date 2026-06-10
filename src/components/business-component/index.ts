@@ -22,19 +22,19 @@ export {
 export { default as CopyToSpaceComponent } from './CopyToSpaceComponent';
 export { default as FilePreview } from './FilePreview';
 export {
-  AppDevFileTreePanel,
-  default as FileTreePanel,
+  default as FileTreeGitSourcePanel,
+  FileTreePanel,
   SourceControlPanel,
-  TaskAgentFileTree,
   apiGitAdd,
   apiGitCommit,
   apiGitLogList,
   apiGitRevert,
   apiGitStatus,
   apiGitUnstage,
+  useAppDevFileTree,
   useConversationAgentSourceControl,
   useSourceControl,
-} from './FileTreePanel';
+} from './FileTreeGitSourcePanel';
 export {
   default as GitVersionRecordPanel,
   type GitVersionRecordPanelProps,

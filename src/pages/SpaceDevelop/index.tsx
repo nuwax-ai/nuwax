@@ -453,7 +453,9 @@ const SpaceDevelop: React.FC = () => {
       return;
     }
     if (agentType === AgentTypeEnum.ConversationAgent) {
-      history.push(`/space/${spaceId}/conversation-agent?agentId=1596`);
+      history.push(
+        `/space/${spaceId}/conversation-agent?agentId=2854&conversationId=1552276`,
+      );
       return;
     }
     setOpenCreateAgent(true);

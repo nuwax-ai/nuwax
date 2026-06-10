@@ -44,6 +44,8 @@ export interface FileContextMenuProps {
   onCreateFolder?: (parentNode: FileNode | null) => void;
   /** 导入项目回调 */
   onImportProject?: () => void;
+  /** 导入项目菜单项文案（不传时使用默认的「导入技能」文案） */
+  importProjectLabel?: string;
   /** 通过URL下载文件回调 */
   onDownloadFileByUrl?: (node: FileNode, exportAsPdf?: boolean) => void;
   /** 是否使用相对定位（相对于父容器），默认为 false（使用 fixed 定位） */

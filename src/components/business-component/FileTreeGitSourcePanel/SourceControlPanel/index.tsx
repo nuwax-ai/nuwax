@@ -1,4 +1,3 @@
-import type { GitWorkspaceConfig } from '@/components/business-component/FileTreePanel/hooks/buildGitWorkspaceParams';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import type { ChangeFileInfo } from '@/components/FileTreeView/type';
 import { dict } from '@/services/i18nRuntime';
@@ -7,6 +6,7 @@ import { ReloadOutlined, UnorderedListOutlined } from '@ant-design/icons';
 import { Button, Input } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useMemo, useState } from 'react';
+import type { GitWorkspaceConfig } from '../hooks/buildGitWorkspaceParams';
 import { collectFilesUnderFolder } from './buildChangeFileTree';
 import ChangeFileContextMenu from './ChangeFileContextMenu';
 import ChangeFileListSection, {

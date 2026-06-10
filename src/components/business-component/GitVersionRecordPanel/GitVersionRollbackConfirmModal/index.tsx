@@ -1,4 +1,4 @@
-import type { GitCommitLogItem } from '@/components/business-component/FileTreePanel/types/git-version-management';
+import type { GitCommitLogItem } from '@/components/business-component/FileTreeGitSourcePanel/types/git-version-management';
 import { dict } from '@/services/i18nRuntime';
 import { formatTimeAgo } from '@/utils/common';
 import { Button, Modal } from 'antd';
