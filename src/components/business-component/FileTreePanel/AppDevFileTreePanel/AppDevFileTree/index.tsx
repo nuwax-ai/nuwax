@@ -22,7 +22,6 @@ const AppDevFileTree: React.FC<AppDevFileTreeProps> = ({
   onRenameFile,
   onContextMenu,
   fileManagement,
-  isChatLoading = false,
 }) => {
   const [renameValue, setRenameValue] = useState<string>('');
   const renameInputRef = useRef<InputRef>(null);
@@ -222,15 +221,6 @@ const AppDevFileTree: React.FC<AppDevFileTreeProps> = ({
               // 文件名
               <span className={styles.fileName}>{node.name}</span>
             )}
-
-            {/* 文件状态 */}
-            {!isChatLoading && !isRenaming && (
-              <>
-                {node.status && (
-                  <span className={styles.fileStatus}>{node.status}</span>
-                )}
-              </>
-            )}
           </div>
         );
       }
@@ -243,7 +233,6 @@ const AppDevFileTree: React.FC<AppDevFileTreeProps> = ({
       onToggleFolder,
       onFileSelect,
       fileManagement,
-      isChatLoading,
       onContextMenu,
       handleRenameKeyDown,
       handleRenameBlur,

@@ -309,7 +309,6 @@ const AppDevFileTreePanel: React.FC<AppDevFileTreePanelProps> = ({
                 onToggleFolder={onToggleFolder}
                 onRenameFile={onRenameFile}
                 fileManagement={fileManagement}
-                isChatLoading={isChatLoading}
               />
             )}
           </div>
