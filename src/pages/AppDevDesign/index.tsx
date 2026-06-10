@@ -1,6 +1,7 @@
 import { SvgIcon } from '@/components/base';
 import {
   ConversationBottomConsole,
+  DevLogActions,
   GitVersionRecordPanel,
 } from '@/components/business-component';
 import {
@@ -567,6 +568,15 @@ const AppDevDesign: React.FC = () => {
   useEffect(() => {
     autoErrorHandlingRef.current = autoErrorHandling;
   }, [autoErrorHandling]);
+
+  /** 开发日志加入对话（底部控制台日志面板与操作按钮共用） */
+  const handleDevLogAddToChat = useCallback(
+    (content: string, isAuto?: boolean) => {
+      currentErrorTypeRef.current = 'log';
+      autoErrorHandling.handleCustomError(content, 'log', isAuto);
+    },
+    [autoErrorHandling],
+  );
 
   // 数据资源管理
   const dataResourceManagement = useDataResourceManagement();
@@ -1675,25 +1685,25 @@ const AppDevDesign: React.FC = () => {
                   wsSubprotocols={[...TTYD_TERMINAL_WS_SUBPROTOCOLS]}
                   devLog={{
                     logs: devLogs.logs,
-                    hasErrorInLatestBlock: devLogs.hasErrorInLatestBlock,
                     latestErrorLogs: devLogs.latestErrorLogs,
                     isLoading: devLogs.isLoading,
                     lastLine: devLogs.lastLine,
-                    onClear: devLogs.clearLogs,
-                    onRefresh: devLogs.refreshLogs,
                     isChatLoading: chat.isChatLoading,
-                    onAddToChat: (content: string, isAuto?: boolean) => {
-                      currentErrorTypeRef.current = 'log';
-                      autoErrorHandling.handleCustomError(
-                        content,
-                        'log',
-                        isAuto,
-                      );
-                    },
-                    onResetAutoRetry: () => {
-                      autoErrorHandling.resetAndEnableAutoHandling();
-                    },
+                    onAddToChat: handleDevLogAddToChat,
                   }}
+                  logsExtra={
+                    <DevLogActions
+                      hasErrorInLatestBlock={devLogs.hasErrorInLatestBlock}
+                      latestErrorLogs={devLogs.latestErrorLogs}
+                      isChatLoading={chat.isChatLoading}
+                      onAddToChat={handleDevLogAddToChat}
+                      onResetAutoRetry={() => {
+                        autoErrorHandling.resetAndEnableAutoHandling();
+                      }}
+                      onRefresh={devLogs.refreshLogs}
+                      onClear={devLogs.clearLogs}
+                    />
+                  }
                 />
               </div>
             </div>
