@@ -70,16 +70,12 @@ const SpaceCreateProject: React.FC = () => {
         };
 
         if (targetType === 'PageApp') {
-          history.push({
-            pathname: `/space/${spaceId}/app-dev/${targetId}`,
-            state: redirectState,
-          });
+          history.push(`/space/${spaceId}/app-dev/${targetId}`, redirectState);
         } else {
-          history.push({
-            pathname: `/space/${spaceId}/conversation-agent`,
-            search: `?agentId=${targetId}&conversationId=${conversationId}`,
-            state: redirectState,
-          });
+          history.push(
+            `/space/${spaceId}/conversation-agent?agentId=${targetId}&conversationId=${conversationId}`,
+            redirectState,
+          );
         }
       } else {
         message.error(res.message || '项目创建失败，请重试！');

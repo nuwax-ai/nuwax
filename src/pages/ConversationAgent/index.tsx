@@ -25,7 +25,6 @@ import {
   apiAgentComponentModelUpdate,
   apiAgentConfigInfo,
   apiAgentConfigUpdate,
-  apiAgentConversation,
 } from '@/services/agentConfig';
 import { dict } from '@/services/i18nRuntime';
 import { apiModelList } from '@/services/modelConfig';
@@ -81,7 +80,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { useLocation, useModel, useParams } from 'umi';
+import { history, useLocation, useModel, useParams } from 'umi';
 import AgentArrangeConfigSection from './AgentArrangePanel/AgentArrangeConfigSection';
 import AgentConversationChatPanel from './AgentConversationChatPanel';
 import ConversationAgentFilePreview from './ConversationAgentFilePreview';
@@ -191,8 +190,6 @@ const ConversationAgent: React.FC = () => {
   const [promptVariables, setPromptVariables] = useState<PromptVariable[]>([]);
   /** 当前可用的工具列表（插件、工作流、MCP、技能、子智能体） */
   const [promptTools, setPromptTools] = useState<AgentComponentInfo[]>([]);
-  /** 当前用户手动选择的沙箱电脑 ID（优先于自动分配） */
-  const [currentSelectedComputerId] = useState<string>('');
   /** 智能体配置加载中状态 */
   const [loadingAgentConfigInfo, setLoadingAgentConfigInfo] = useState<boolean>(
     !!agentId,
@@ -232,7 +229,9 @@ const ConversationAgent: React.FC = () => {
     taskAgentSelectedFileId,
     taskAgentSelectTrigger,
     setIsLoadingOtherInterface,
+    onMessageSend,
   } = useModel('conversationAgent');
+  const hasAutoSentRef = useRef<boolean>(false);
   /** tenantConfigInfo model：租户配置（页面标题、订阅开关等） */
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
   const showSubscriptionTabs = tenantConfigInfo?.enableSubscription !== 0;
@@ -250,12 +249,11 @@ const ConversationAgent: React.FC = () => {
    */
   const finalSelectedComputerId = useMemo(() => {
     return (
-      currentSelectedComputerId ||
       conversationInfo?.agent?.sandboxId ||
       conversationInfo?.sandboxServerId ||
       ''
     );
-  }, [currentSelectedComputerId, conversationInfo]);
+  }, [conversationInfo]);
 
   /**
    * 终端 WebSocket 连接地址（ttyd）
@@ -274,6 +272,43 @@ const ConversationAgent: React.FC = () => {
 
   // ==================== 副作用 (Effects) ====================
 
+  /**
+   * 当页面加载结束且携带了初始消息状态时，自动触发消息发送
+   */
+  useEffect(() => {
+    const conversationId = conversationInfo?.id;
+    if (conversationId && !hasAutoSentRef.current) {
+      const state = (location.state || history.location.state) as any;
+      if (
+        state &&
+        (state.prompt?.trim() || state.files?.length || state.skillIds?.length)
+      ) {
+        hasAutoSentRef.current = true; // 设为 true，防止重复发送
+
+        // 确定沙箱 ID
+        const effectiveSandboxId = String(
+          conversationInfo?.agent?.sandboxId ||
+            conversationInfo?.sandboxServerId ||
+            '',
+        );
+
+        onMessageSend({
+          id: conversationId,
+          messageInfo: state.prompt || '',
+          files: state.files,
+          infos: state.tools || [],
+          sandboxId: effectiveSandboxId,
+          debug: true,
+          isSync: false,
+          skillIds: state.skillIds,
+        });
+
+        // 消费完毕后立即清空路由中的 state，防止用户刷新页面时重复触发发信接口
+        history.replace(location.pathname + location.search, undefined);
+      }
+    }
+  }, [conversationInfo, location.state, history.location.state]);
+
   /** 空间变化时重新加载模型列表 */
   useEffect(() => {
     runMode({
@@ -289,29 +324,25 @@ const ConversationAgent: React.FC = () => {
     }
   }, [agentIdFromQuery, queryConversationId]);
 
-  // 如果 URL 中有 conversationId，通过 conversationId 查询当前会话以获取真正的 agentId
+  // 如果 URL 中有 conversationId，通过状态管理器的方法查询当前会话
   useEffect(() => {
     if (queryConversationId) {
       setLoadingAgentConfigInfo(true);
-      apiAgentConversation(queryConversationId)
-        .then((res) => {
-          if (res.code === SUCCESS_CODE && res.data) {
-            const fetchedAgentId = res.data.agentId || res.data.agent?.targetId;
-            if (fetchedAgentId) {
-              setAgentId(fetchedAgentId);
-            } else {
-              setLoadingAgentConfigInfo(false);
-            }
-          } else {
-            setLoadingAgentConfigInfo(false);
-          }
-        })
-        .catch((err) => {
-          console.error('Failed to query conversation for agentId:', err);
-          setLoadingAgentConfigInfo(false);
-        });
+      runQueryConversation(queryConversationId);
     }
   }, [queryConversationId]);
+
+  // 监听状态管理器中的 conversationInfo 变化以同步真正的 agentId
+  useEffect(() => {
+    if (conversationInfo) {
+      const fetchedAgentId =
+        conversationInfo.agentId || conversationInfo.agent?.targetId;
+      if (fetchedAgentId) {
+        setAgentId(fetchedAgentId);
+      }
+      setLoadingAgentConfigInfo(false);
+    }
+  }, [conversationInfo]);
 
   /**
    * 智能体配置加载请求（带防抖）
@@ -1164,31 +1195,6 @@ const ConversationAgent: React.FC = () => {
 
   // ==================================== 渲染组件元素 ====================================
 
-  /** 「预览」页签：调试对话（原编排面板「调试」Tab） */
-  // const arrangeDebugChatPanel = useMemo(
-  //   () => (
-  //     <AgentConversationChatPanel
-  //       agentId={agentId}
-  //       agentConfigInfo={agentConfigInfo}
-  //       hideHeader
-  //       className={cx(styles['arrange-debug-chat'])}
-  //       onAgentConfigInfo={setAgentConfigInfo}
-  //       onChangeSelectedComputerId={setCurrentSelectedComputerId}
-  //       onEditAgent={() => setOpenEditAgent(true)}
-  //       isFileTreeSidebarVisible={canShowFileView}
-  //       onToggleFileTreeSidebar={handleToggleFileTreeSidebar}
-  //     />
-  //   ),
-  //   [
-  //     agentId,
-  //     agentConfigInfo,
-  //     canShowFileView,
-  //     handleToggleFileTreeSidebar,
-  //     setAgentConfigInfo,
-  //     setCurrentSelectedComputerId,
-  //   ],
-  // );
-
   /** 「编排」页签：模型、提示词、变量与工具配置 */
   const arrangeConfigPanel = useMemo(
     () => (
@@ -1369,16 +1375,10 @@ const ConversationAgent: React.FC = () => {
         <div className={cx(styles['main-row'], 'w-full')}>
           {/* 左侧面板：聊天区域（始终显示） */}
           <div className={cx(styles['left-panel'])}>
-            {/* <AgentConversationChatPanel
-              agentId={agentId}
-              agentConfigInfo={agentConfigInfo}
-              onAgentConfigInfo={setAgentConfigInfo}
-              onChangeSelectedComputerId={setCurrentSelectedComputerId}
+            <AgentConversationChatPanel
+              selectedComputerId={finalSelectedComputerId}
               onEditAgent={() => setOpenEditAgent(true)}
-              isFileTreeSidebarVisible={canShowFileView}
-              onToggleFileTreeSidebar={handleToggleFileTreeSidebar}
-            /> */}
-            <AgentConversationChatPanel />
+            />
           </div>
 
           {/* 中间面板（文件树） + 右侧面板（编排/预览 + 终端） */}

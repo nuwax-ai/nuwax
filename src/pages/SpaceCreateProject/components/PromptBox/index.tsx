@@ -119,6 +119,12 @@ const PromptBox: React.FC<PromptBoxProps> = ({ onSubmit }) => {
     }
   }, []);
 
+  // 切换 Tab 时重置选中的电脑和模型，防止上一个 Tab 的选择被错误带入
+  useEffect(() => {
+    setSelectedComputerId('');
+    setSelectedModelId(undefined);
+  }, [activeTab]);
+
   useEffect(() => {
     // 切换 Tab 时立刻清空旧的详情数据，防止 pending 期间或接口失败时展示旧的快捷标签和模型
     setAgentDetail(undefined);
