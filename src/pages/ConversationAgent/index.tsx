@@ -83,7 +83,7 @@ import React, {
 } from 'react';
 import { useLocation, useModel, useParams } from 'umi';
 import AgentArrangeConfigSection from './AgentArrangePanel/AgentArrangeConfigSection';
-import AgentConversationChatPanel from './AgentConversationChatPanel';
+// import AgentConversationChatPanel from './AgentConversationChatPanel';
 import ConversationAgentFilePreview from './ConversationAgentFilePreview';
 import {
   getFileTabId,
@@ -192,8 +192,7 @@ const ConversationAgent: React.FC = () => {
   /** 当前可用的工具列表（插件、工作流、MCP、技能、子智能体） */
   const [promptTools, setPromptTools] = useState<AgentComponentInfo[]>([]);
   /** 当前用户手动选择的沙箱电脑 ID（优先于自动分配） */
-  const [currentSelectedComputerId, setCurrentSelectedComputerId] =
-    useState<string>('');
+  const [currentSelectedComputerId] = useState<string>('');
   /** 智能体配置加载中状态 */
   const [loadingAgentConfigInfo, setLoadingAgentConfigInfo] = useState<boolean>(
     !!agentId,
@@ -203,7 +202,7 @@ const ConversationAgent: React.FC = () => {
     ModelConfigInfo[]
   >([]);
   /** 文件树区域是否显示（header 图标控制，控制中间面板的滑出/收起） */
-  const [canShowFileView, setCanShowFileView] = useState<boolean>(true);
+  const [canShowFileView] = useState<boolean>(true);
 
   // ==================== 全局状态模型 ====================
   /**
@@ -235,7 +234,7 @@ const ConversationAgent: React.FC = () => {
     setIsLoadingOtherInterface,
   } = useModel('conversationAgent');
   /** tenantConfigInfo model：租户配置（页面标题、订阅开关等） */
-  const { setTitle, tenantConfigInfo } = useModel('tenantConfigInfo');
+  const { tenantConfigInfo } = useModel('tenantConfigInfo');
   const showSubscriptionTabs = tenantConfigInfo?.enableSubscription !== 0;
   /** spaceAgent model：当前空间下的智能体组件列表（变量、插件、工具等） */
   const { agentComponentList } = useModel('spaceAgent');
@@ -318,7 +317,9 @@ const ConversationAgent: React.FC = () => {
    * 智能体配置加载请求（带防抖）
    * 用于首次加载或 agentId 切换时获取完整配置
    */
-  const { run } = useRequest(apiAgentConfigInfo, {
+  const {
+    /* run */
+  } = useRequest(apiAgentConfigInfo, {
     manual: true,
     debounceWait: 300,
     onSuccess: (result: RequestResponse<AgentConfigInfo>) => {
@@ -362,9 +363,9 @@ const ConversationAgent: React.FC = () => {
       setLoadingAgentConfigInfo(false);
       return;
     }
-    setLoadingAgentConfigInfo(true);
-    run(agentId);
-    setTitle();
+    // setLoadingAgentConfigInfo(true);
+    // run(agentId);
+    // setTitle();
   }, [agentId]);
 
   /** 初始化页面基础配置：为页面中所有链接添加 target 属性 */
@@ -810,18 +811,18 @@ const ConversationAgent: React.FC = () => {
   /**
    * 切换中间文件树栏显隐（仅由 header 图标控制，不受预览面板状态影响）
    */
-  const handleToggleFileTreeSidebar = useCallback(() => {
-    setCanShowFileView((prev) => {
-      const nextVisible = !prev;
-      if (nextVisible) {
-        const convId = agentConfigInfo?.devConversationId;
-        if (convId) {
-          handleRefreshFileList(convId);
-        }
-      }
-      return nextVisible;
-    });
-  }, [agentConfigInfo?.devConversationId, handleRefreshFileList]);
+  // const handleToggleFileTreeSidebar = useCallback(() => {
+  //   setCanShowFileView((prev) => {
+  //     const nextVisible = !prev;
+  //     if (nextVisible) {
+  //       const convId = agentConfigInfo?.devConversationId;
+  //       if (convId) {
+  //         handleRefreshFileList(convId);
+  //       }
+  //     }
+  //     return nextVisible;
+  //   });
+  // }, [agentConfigInfo?.devConversationId, handleRefreshFileList]);
 
   /**
    * 关闭预览面板
@@ -1164,29 +1165,29 @@ const ConversationAgent: React.FC = () => {
   // ==================================== 渲染组件元素 ====================================
 
   /** 「预览」页签：调试对话（原编排面板「调试」Tab） */
-  const arrangeDebugChatPanel = useMemo(
-    () => (
-      <AgentConversationChatPanel
-        agentId={agentId}
-        agentConfigInfo={agentConfigInfo}
-        hideHeader
-        className={cx(styles['arrange-debug-chat'])}
-        onAgentConfigInfo={setAgentConfigInfo}
-        onChangeSelectedComputerId={setCurrentSelectedComputerId}
-        onEditAgent={() => setOpenEditAgent(true)}
-        isFileTreeSidebarVisible={canShowFileView}
-        onToggleFileTreeSidebar={handleToggleFileTreeSidebar}
-      />
-    ),
-    [
-      agentId,
-      agentConfigInfo,
-      canShowFileView,
-      handleToggleFileTreeSidebar,
-      setAgentConfigInfo,
-      setCurrentSelectedComputerId,
-    ],
-  );
+  // const arrangeDebugChatPanel = useMemo(
+  //   () => (
+  //     <AgentConversationChatPanel
+  //       agentId={agentId}
+  //       agentConfigInfo={agentConfigInfo}
+  //       hideHeader
+  //       className={cx(styles['arrange-debug-chat'])}
+  //       onAgentConfigInfo={setAgentConfigInfo}
+  //       onChangeSelectedComputerId={setCurrentSelectedComputerId}
+  //       onEditAgent={() => setOpenEditAgent(true)}
+  //       isFileTreeSidebarVisible={canShowFileView}
+  //       onToggleFileTreeSidebar={handleToggleFileTreeSidebar}
+  //     />
+  //   ),
+  //   [
+  //     agentId,
+  //     agentConfigInfo,
+  //     canShowFileView,
+  //     handleToggleFileTreeSidebar,
+  //     setAgentConfigInfo,
+  //     setCurrentSelectedComputerId,
+  //   ],
+  // );
 
   /** 「编排」页签：模型、提示词、变量与工具配置 */
   const arrangeConfigPanel = useMemo(
@@ -1296,7 +1297,7 @@ const ConversationAgent: React.FC = () => {
               // 选中标签
               activeTab={previewTabs.activeTab}
               // 调试对话面板
-              debugPanel={arrangeDebugChatPanel}
+              // debugPanel={arrangeDebugChatPanel}
               // 编排配置面板
               arrangeConfigPanel={arrangeConfigPanel}
               // 版本控制面板（Git 提交记录）
@@ -1368,7 +1369,7 @@ const ConversationAgent: React.FC = () => {
         <div className={cx(styles['main-row'], 'w-full')}>
           {/* 左侧面板：聊天区域（始终显示） */}
           <div className={cx(styles['left-panel'])}>
-            <AgentConversationChatPanel
+            {/* <AgentConversationChatPanel
               agentId={agentId}
               agentConfigInfo={agentConfigInfo}
               onAgentConfigInfo={setAgentConfigInfo}
@@ -1376,7 +1377,7 @@ const ConversationAgent: React.FC = () => {
               onEditAgent={() => setOpenEditAgent(true)}
               isFileTreeSidebarVisible={canShowFileView}
               onToggleFileTreeSidebar={handleToggleFileTreeSidebar}
-            />
+            /> */}
           </div>
 
           {/* 中间面板（文件树） + 右侧面板（编排/预览 + 终端） */}
