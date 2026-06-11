@@ -220,7 +220,7 @@ const ConversationAgent: React.FC = () => {
     setIsSuggest,
     messageList,
     setChatSuggestList,
-    setIsLoadingConversation,
+    // setIsLoadingConversation,
     runQueryConversation,
     conversationInfo,
     isFileTreePinned,
@@ -671,17 +671,19 @@ const ConversationAgent: React.FC = () => {
       await runUpdate(updateParams);
 
       // 开场白/引导问题修改后，若消息列表较短则重新查询会话以即时预览效果
-      const messageListLength = messageList?.length || 0;
-      if (
-        (attr === 'openingChatMsg' && messageListLength <= 1) ||
-        (attr === 'guidQuestionDtos' && messageListLength === 1)
-      ) {
-        if (agentConfigInfo) {
-          const { devConversationId: convId } = agentConfigInfo;
-          setIsLoadingConversation(false);
-          runQueryConversation(convId);
-        }
-      }
+      // const messageListLength = messageList?.length || 0;
+      // if (
+      //   (attr === 'openingChatMsg' && messageListLength <= 1) ||
+      //   (attr === 'guidQuestionDtos' && messageListLength === 1)
+      // ) {
+      //   setIsLoadingConversation(false);
+      //   runQueryConversation(queryConversationId);
+      //   // if (agentConfigInfo) {
+      //   //   const { devConversationId: convId } = agentConfigInfo;
+      //   //   setIsLoadingConversation(false);
+      //   //   runQueryConversation(convId);
+      //   // }
+      // }
     },
     [agentConfigInfo, agentId, messageList?.length, closePreviewView],
   );
