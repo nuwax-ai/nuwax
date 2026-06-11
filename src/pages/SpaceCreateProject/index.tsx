@@ -61,12 +61,12 @@ const SpaceCreateProject: React.FC = () => {
         });
 
         const redirectState = {
-          prompt,
+          message: prompt,
           files,
           skillIds,
           modelId,
-          tools,
-          computerId,
+          infos: tools,
+          selectedComputerId: computerId,
         };
         if (targetType === 'PageApp') {
           history.push(`/space/${spaceId}/app-dev/${targetId}`, redirectState);

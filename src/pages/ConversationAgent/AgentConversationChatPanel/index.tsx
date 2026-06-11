@@ -1,4 +1,5 @@
 import { UnifiedChatSession } from '@/components/business-component';
+import { TaskStatus } from '@/types/enums/agent';
 import classNames from 'classnames';
 import React from 'react';
 import { useModel } from 'umi';
@@ -39,7 +40,7 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
     isMoreMessage,
     loadingMore,
     handleLoadMoreMessage,
-  } = useModel('conversationAgent');
+  } = useModel('conversationInfo');
 
   // ==================== 主渲染 ====================
   return (
@@ -59,7 +60,9 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
           isLoading={loadingConversation}
           loadingMore={loadingMore}
           isMoreMessage={isMoreMessage}
-          isConversationActive={conversationInfo?.taskStatus === 'executing'}
+          isConversationActive={
+            conversationInfo?.taskStatus === TaskStatus.EXECUTING
+          }
           messageBottomMode="chat"
           chatSuggestList={chatSuggestList}
           agentInfo={{
