@@ -183,6 +183,8 @@ const ConversationAgent: React.FC = () => {
   /** 标签选择面板是否展开 */
   /** 预览标签页操作 ref（供 fileViewProviderProps 回调使用） */
   const previewTabsRef = useRef<ReturnType<typeof usePreviewTabs> | null>(null);
+  /** 刷新 Git 变更列表（delete 等场景需在 fileView 初始化后调用） */
+  const refreshGitListRef = useRef<(() => Promise<void>) | null>(null);
   /** 统一主题样式（导航栏风格等） */
   const { navigationStyle } = useUnifiedTheme();
 
@@ -1014,6 +1016,26 @@ const ConversationAgent: React.FC = () => {
             : current,
         );
       },
+      /** 文件/文件夹删除后关闭预览标签并刷新 Git status */
+      onFileDeleted: (fileNode) => {
+        previewTabsRef.current?.closeFileTabs(
+          fileNode.id,
+          fileNode.type === 'folder',
+        );
+        setSelectedChangeFile((current) => {
+          if (!current?.fileId) {
+            return current;
+          }
+          if (fileNode.type === 'folder') {
+            const isUnderFolder =
+              current.fileId === fileNode.id ||
+              current.fileId.startsWith(`${fileNode.id}/`);
+            return isUnderFolder ? null : current;
+          }
+          return current.fileId === fileNode.id ? null : current;
+        });
+        void refreshGitListRef.current?.();
+      },
     };
   }, [
     taskAgentSelectedFileId,
@@ -1040,6 +1062,7 @@ const ConversationAgent: React.FC = () => {
 
   /** 初始化文件视图 Hook，获取文件树和预览的渲染组件 */
   const fileView = useConversationAgentFileView(fileViewProviderProps);
+  refreshGitListRef.current = fileView.refreshGitList;
 
   /** 预览区标签页管理 */
   const previewTabs = usePreviewTabs({

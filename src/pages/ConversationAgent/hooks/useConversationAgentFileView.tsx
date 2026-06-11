@@ -92,6 +92,8 @@ export function useConversationAgentFileView(
     onFileSelectOpenPreview,
     /** 文件重命名成功后回调 */
     onFileRenamed,
+    /** 文件/文件夹删除成功后回调 */
+    onFileDeleted,
     agentSandboxId,
   } = props;
   const headerClassName = undefined;
@@ -137,9 +139,10 @@ export function useConversationAgentFileView(
   // 修改的文件列表
   const [changeFiles, setChangeFiles] = useState<ChangeFileInfo[]>([]);
   // Git 列表刷新进行中
-  const [isRefreshingGitList, setIsRefreshingGitList] = useState(false);
-  const [gitBranch, setGitBranch] = useState('main');
-  const isRefreshingGitListRef = useRef(false);
+  const [isRefreshingGitList, setIsRefreshingGitList] =
+    useState<boolean>(false);
+  const [gitBranch, setGitBranch] = useState<string>('main');
+  const isRefreshingGitListRef = useRef<boolean>(false);
 
   // 是否正在保存文件
   const [isSavingFiles, setIsSavingFiles] = useState<boolean>(false);
@@ -376,8 +379,6 @@ export function useConversationAgentFileView(
       return;
     }
     void refreshGitList();
-    // 仅在 targetId 就绪时触发，避免与 refreshGitList 引用变化重复请求
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [targetId]);
 
   // 文件选择（内部函数，执行实际的选择逻辑）
@@ -430,17 +431,6 @@ export function useConversationAgentFileView(
           message.warning(dict('PC.Components.FileTreeView.fileRenaming'));
           return;
         }
-
-        /**
-         * 因为通过文件代理URL获取文件内容时，会重新加载文件内容，
-         * 当重新切换回来这个页面时，会导致已修改的文件内容丢失，所以需要清空修改的文件列表和重置正在保存文件的状态
-         */
-        // if (changeFiles?.length > 0) {
-        //   message.warning(
-        //     dict('PC.Components.FileTreeView.unsavedChangesSwitchFile'),
-        //   );
-        //   return;
-        // }
 
         // 选中文件后打开右侧预览面板（隐藏编排区域）
         onFileSelectOpenPreview?.(fileNode?.id || fileId);
@@ -760,10 +750,6 @@ export function useConversationAgentFileView(
    * 处理重命名操作（从右键菜单触发）
    */
   const handleRenameFromMenu = (node: FileNode) => {
-    if (!node?.fileProxyUrl && changeFiles?.length > 0) {
-      message.warning(dict('PC.Components.FileTreeView.unsavedChangesRename'));
-      return;
-    }
     setRenamingNode(node);
   };
 
@@ -874,11 +860,6 @@ export function useConversationAgentFileView(
    * 处理上传操作（从右键菜单触发）
    */
   const handleUploadFromMenu = async (node: FileNode | null) => {
-    // if (!node?.fileProxyUrl && changeFiles?.length > 0) {
-    //   message.warning(dict('PC.Components.FileTreeView.unsavedChangesUpload'));
-    //   return;
-    // }
-
     // 两种情况 第一个是文件夹，第二个是文件
     let relativePath = '';
 
@@ -940,10 +921,6 @@ export function useConversationAgentFileView(
    * 处理删除操作
    */
   const handleDelete = async (node: FileNode) => {
-    if (!node?.fileProxyUrl && changeFiles?.length > 0) {
-      message.warning(dict('PC.Components.FileTreeView.unsavedChangesDelete'));
-      return;
-    }
     // 直接调用现有的删除文件功能，等待返回值
     const isDeleteSuccess = await onDeleteFile?.(node);
 
@@ -954,6 +931,7 @@ export function useConversationAgentFileView(
         setSelectedFileNode(null);
         setSelectedFileId('');
       }
+      onFileDeleted?.(node);
     }
   };
 
@@ -1051,12 +1029,6 @@ export function useConversationAgentFileView(
   }, [onExportProject]);
 
   const handleCreateFile = (parentNode: FileNode | null) => {
-    // if (changeFiles?.length > 0) {
-    //   message.warning(
-    //     dict('PC.Components.FileTreeView.unsavedChangesCreateFile'),
-    //   );
-    //   return;
-    // }
     createTempNodeAndStartRename(parentNode, 'file');
   };
 
@@ -1064,12 +1036,6 @@ export function useConversationAgentFileView(
    * 处理新建文件夹操作
    */
   const handleCreateFolder = (parentNode: FileNode | null) => {
-    // if (changeFiles?.length > 0) {
-    //   message.warning(
-    //     dict('PC.Components.FileTreeView.unsavedChangesCreateFolder'),
-    //   );
-    //   return;
-    // }
     createTempNodeAndStartRename(parentNode, 'folder');
   };
 

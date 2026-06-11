@@ -63,6 +63,8 @@ export interface ConversationAgentFileViewProps {
   onFileSelectOpenPreview?: (fileId?: string) => void;
   /** 文件重命名成功后回调，用于同步预览区标签页 */
   onFileRenamed?: (oldFileId: string, newFileId: string) => void;
+  /** 文件/文件夹删除成功后回调，用于同步预览区标签页与 Git 状态 */
+  onFileDeleted?: (node: FileNode) => void;
 }
 
 /** ConversationAgent 预览 Tab 栏右侧文件操作区 props */
