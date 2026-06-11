@@ -16,7 +16,7 @@ import {
   EditOutlined,
   PlusOutlined,
 } from '@ant-design/icons';
-import { Button, Dropdown, MenuProps, message } from 'antd';
+import { Button, Dropdown, MenuProps, message, Typography } from 'antd';
 import classNames from 'classnames';
 import React, {
   useCallback,
@@ -318,10 +318,16 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
               [styles.open]: open,
             })}
           >
-            <span>
+            <Typography.Text
+              ellipsis={{
+                tooltip:
+                  selectedModel?.name ||
+                  dict('PC.Components.ModelSelector.selectModel'),
+              }}
+            >
               {selectedModel?.name ||
                 dict('PC.Components.ModelSelector.selectModel')}
-            </span>
+            </Typography.Text>
             <SvgIcon
               name="icons-common-caret_down"
               style={{ fontSize: 14 }}

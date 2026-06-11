@@ -191,12 +191,23 @@ const ConversationAgent: React.FC = () => {
   const [promptVariables, setPromptVariables] = useState<PromptVariable[]>([]);
   /** 当前可用的工具列表（插件、工作流、MCP、技能、子智能体） */
   const [promptTools, setPromptTools] = useState<AgentComponentInfo[]>([]);
-  /** 当前用户手动选择的沙箱电脑 ID（优先于自动分配） */
-  const [currentSelectedComputerId, setCurrentSelectedComputerId] =
-    useState<string>(() => {
-      const state = (location.state || history.location.state) as any;
-      return state?.computerId || '';
-    });
+  // 当前选中的电脑 ID
+  const [selectedComputerId, setSelectedComputerId] = useState<string>('');
+
+  // 仅在本次会话中使用从其它页面带过来的 selectedComputerId；
+  // 刷新（POP）或新建会话（REPLACE）时，不再沿用之前的选择。
+  useEffect(() => {
+    const passedDetails = (location.state as any)?.selectedComputerId;
+
+    // PUSH: 正常跳转
+    const isPushWithComputer = history.action === 'PUSH' && !!passedDetails;
+
+    if (isPushWithComputer) {
+      setSelectedComputerId(passedDetails);
+    } else {
+      setSelectedComputerId('');
+    }
+  }, [history.action, location.key]);
   /** 智能体配置加载中状态 */
   const [loadingAgentConfigInfo, setLoadingAgentConfigInfo] = useState<boolean>(
     !!agentId,
@@ -238,7 +249,8 @@ const ConversationAgent: React.FC = () => {
     setIsLoadingOtherInterface,
     onMessageSend,
     runAsync,
-  } = useModel('conversationAgent');
+    resetInit,
+  } = useModel('conversationInfo');
   /** tenantConfigInfo model：租户配置（页面标题、订阅开关等） */
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
   const showSubscriptionTabs = tenantConfigInfo?.enableSubscription !== 0;
@@ -250,18 +262,48 @@ const ConversationAgent: React.FC = () => {
   const devConversationId = agentConfigInfo?.devConversationId;
 
   /**
+   * 获取有效的沙箱 ID
+   */
+  const getEffectiveSandboxId = (info: any = conversationInfo) => {
+    try {
+      // 优先级 1: 手动选择 (selectedComputerId)
+      if (selectedComputerId) {
+        return selectedComputerId;
+      }
+
+      // 优先级 2: 兜底从 location.state 获取 (仅 PUSH 跳转)。
+      // 解决首次加载发消息时，状态未及时更新导致获取到内置 sandboxId 的问题。
+      if (
+        history.action === 'PUSH' &&
+        (location.state as any)?.selectedComputerId
+      ) {
+        return (location.state as any).selectedComputerId;
+      }
+
+      // 优先级 3: 个人电脑 (sandboxId)
+      if (info?.agent?.sandboxId) {
+        return info.agent.sandboxId;
+      }
+
+      // 优先级 4: 共享电脑 (sandboxServerId)
+      const sandboxServerId = info?.sandboxServerId;
+      if (sandboxServerId) {
+        return String(sandboxServerId);
+      }
+
+      return '';
+    } catch {
+      return selectedComputerId;
+    }
+  };
+
+  /**
    * 最终选中的沙箱电脑 ID
-   * 优先级：用户手动选择 > 会话关联的 agent sandboxId > 会话 sandboxServerId
    * 用于终端连接和文件预览
    */
   const finalSelectedComputerId = useMemo(() => {
-    return (
-      currentSelectedComputerId ||
-      conversationInfo?.agent?.sandboxId ||
-      conversationInfo?.sandboxServerId ||
-      ''
-    );
-  }, [currentSelectedComputerId, conversationInfo]);
+    return getEffectiveSandboxId();
+  }, [selectedComputerId, conversationInfo, history.action, location.state]);
 
   /**
    * 终端 WebSocket 连接地址（ttyd）
@@ -291,7 +333,7 @@ const ConversationAgent: React.FC = () => {
       const state = (location.state || history.location.state) as any;
       if (
         state &&
-        (state.prompt?.trim() || state.files?.length || state.skillIds?.length)
+        (state.message?.trim() || state.files?.length || state.skillIds?.length)
       ) {
         const asyncFun = async () => {
           let data = null;
@@ -314,32 +356,29 @@ const ConversationAgent: React.FC = () => {
 
           if (isCanMessage) {
             // 确定沙箱 ID
-            const effectiveSandboxId = String(
-              currentSelectedComputerId ||
-                data?.agent?.sandboxId ||
-                data?.sandboxServerId ||
-                state.computerId ||
-                '',
-            );
+            const effectiveSandboxId = String(getEffectiveSandboxId(data));
             onMessageSend({
               id,
-              messageInfo: state.prompt || '',
+              messageInfo: state.message || '',
               files: state.files,
-              infos: state.tools || [],
+              infos: state.infos || [],
               sandboxId: effectiveSandboxId,
               debug: true,
               isSync: false,
               skillIds: state.skillIds,
+              modelId: state.modelId,
               data,
             });
           }
 
-          // 消费完毕后清除发信所需的参数，但保留 computerId 供后续回显与绑定使用
+          // 消费完毕后清除发信所需的参数
           const nextState = {
             ...(location.state || history.location.state || {}),
-            prompt: undefined,
+            message: undefined,
             files: undefined,
             skillIds: undefined,
+            infos: undefined,
+            modelId: undefined,
           };
           history.replace(location.pathname + location.search, nextState);
         };
@@ -350,7 +389,7 @@ const ConversationAgent: React.FC = () => {
     conversationInfo?.id,
     location.state,
     history.location.state,
-    currentSelectedComputerId,
+    selectedComputerId,
     queryConversationId,
   ]);
 
@@ -373,6 +412,11 @@ const ConversationAgent: React.FC = () => {
       setLoadingAgentConfigInfo(true);
       runQueryConversation(queryConversationId);
     }
+
+    // 在 queryConversationId 变更前或组件卸载时清理会话数据
+    return () => {
+      resetInit();
+    };
   }, [queryConversationId]);
 
   // 监听状态管理器中的 conversationInfo 变化以关闭加载状态
@@ -386,14 +430,32 @@ const ConversationAgent: React.FC = () => {
    * 智能体配置加载请求（带防抖）
    * 用于首次加载或 agentId 切换时获取完整配置
    */
-  const {
-    /* run */
-  } = useRequest(apiAgentConfigInfo, {
+  const { run: runAgentConfigInfo } = useRequest(apiAgentConfigInfo, {
     manual: true,
     debounceWait: 300,
     onSuccess: (result: RequestResponse<AgentConfigInfo>) => {
       setLoadingAgentConfigInfo(false);
-      setAgentConfigInfo(result?.data);
+      const data = result?.data;
+      // 回显模型选择 (如果从创建项目页面带过来)
+      if (
+        data &&
+        history.action === 'PUSH' &&
+        (location.state as any)?.modelId
+      ) {
+        if (!data.modelComponentConfig) {
+          data.modelComponentConfig = {} as any;
+        }
+        data.modelComponentConfig.targetId = (location.state as any).modelId;
+
+        // 尝试从列表中回显名称
+        const matchedModel = originalModelConfigList.find(
+          (m) => m.id === (location.state as any).modelId,
+        );
+        if (matchedModel) {
+          data.modelComponentConfig.name = matchedModel.name;
+        }
+      }
+      setAgentConfigInfo(data);
     },
     onError: () => {
       setLoadingAgentConfigInfo(false);
@@ -432,10 +494,9 @@ const ConversationAgent: React.FC = () => {
       setLoadingAgentConfigInfo(false);
       return;
     }
-    // setLoadingAgentConfigInfo(true);
-    // run(agentId);
-    // setTitle();
-  }, [agentId]);
+    setLoadingAgentConfigInfo(true);
+    runAgentConfigInfo(agentId);
+  }, [agentId, runAgentConfigInfo]);
 
   /** 初始化页面基础配置：为页面中所有链接添加 target 属性 */
   useEffect(() => {
@@ -1415,7 +1476,7 @@ const ConversationAgent: React.FC = () => {
           <div className={cx(styles['left-panel'])}>
             <AgentConversationChatPanel
               selectedComputerId={finalSelectedComputerId}
-              onChangeSelectedComputerId={setCurrentSelectedComputerId}
+              // onChangeSelectedComputerId={setCurrentSelectedComputerId}
               onEditAgent={() => setOpenEditAgent(true)}
             />
           </div>
