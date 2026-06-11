@@ -4,24 +4,37 @@ import { dict } from '@/services/i18nRuntime';
 import { AgentTypeEnum } from '@/types/enums/space';
 import type { SkillDetailInfo } from '@/types/interfaces/skill';
 import React, { useEffect, useMemo, useState } from 'react';
-import { useModel } from 'umi';
+import { history, useLocation, useModel } from 'umi';
 
 export interface SkillChatSessionProps {
   conversationId?: number;
   skillInfo?: SkillDetailInfo | null;
+  selectedComputerId?: string;
+  onChangeSelectedComputerId?: (id: string) => void;
 }
 
 const SkillChatSession: React.FC<SkillChatSessionProps> = ({
-  conversationId = 1552195,
+  conversationId,
   skillInfo,
+  selectedComputerId,
+  onChangeSelectedComputerId,
 }) => {
-  const [loadingAsync, setLoadingAsync] = useState<boolean>(true);
+  const location = useLocation() as any;
+
+  // 是否锁定电脑选择（仅在带有 selectedComputerId 且为 PUSH 跳转时生效）
+  const [isSelectionLocked, setIsSelectionLocked] = useState<boolean>(false);
+
+  // 模型ID
+  const [selectedModelId, setSelectedModelId] = useState<number>(
+    (location.state as any)?.modelId,
+  );
 
   const {
     conversationInfo,
     messageList,
     chatSuggestList,
-    runAsync,
+    runQueryConversation,
+    loadingConversation,
     onMessageSend,
     messageViewRef,
     isConversationActive,
@@ -29,31 +42,65 @@ const SkillChatSession: React.FC<SkillChatSessionProps> = ({
     loadingMore,
     handleLoadMoreMessage,
     resetInit,
-    handleClearSideEffect,
-    setMessageList,
-    setIsMoreMessage,
+    manualComponents,
   } = useModel('conversationInfo');
+
+  // 获取有效的云电脑 ID（逻辑对齐 ConversationAgent）
+  const getEffectiveSandboxId = (info: any = conversationInfo) => {
+    try {
+      // 优先级 1: 手动选择 (selectedComputerId)
+      if (selectedComputerId) {
+        return selectedComputerId;
+      }
+
+      // 优先级 2: 兜底从 location.state 获取 (仅 PUSH 跳转)
+      if (
+        history.action === 'PUSH' &&
+        (location.state as any)?.selectedComputerId
+      ) {
+        return (location.state as any).selectedComputerId;
+      }
+
+      // 优先级 3: 个人电脑 (sandboxId)
+      if (info?.agent?.sandboxId) {
+        return info.agent.sandboxId;
+      }
+
+      // 优先级 4: 共享电脑 (sandboxServerId)
+      const sandboxServerId = info?.sandboxServerId;
+      if (sandboxServerId) {
+        return String(sandboxServerId);
+      }
+
+      return '';
+    } catch {
+      return selectedComputerId;
+    }
+  };
+
+  const finalSelectedComputerId = useMemo(() => {
+    return getEffectiveSandboxId();
+  }, [selectedComputerId, conversationInfo, history.action, location.state]);
+
+  // 同步初始化状态并锁定
+  useEffect(() => {
+    const isPushWithComputer =
+      history.action === 'PUSH' &&
+      !!(location.state as any)?.selectedComputerId;
+    if (isPushWithComputer) {
+      setIsSelectionLocked(true);
+    } else {
+      setIsSelectionLocked(false);
+    }
+  }, [history.action, location.key]);
 
   // 初始化查询会话信息与历史消息
   useEffect(() => {
-    let active = true;
-    const loadConversation = async () => {
-      try {
-        setLoadingAsync(true);
-        await runAsync(conversationId);
-      } catch (error) {
-        console.error('Failed to load conversation info:', error);
-      } finally {
-        if (active) {
-          setLoadingAsync(false);
-        }
-      }
-    };
-
-    loadConversation();
+    if (conversationId) {
+      runQueryConversation(conversationId);
+    }
 
     return () => {
-      active = false;
       // 组件卸载时重置全局会话状态，防止污染其他页面
       resetInit();
     };
@@ -88,32 +135,27 @@ const SkillChatSession: React.FC<SkillChatSessionProps> = ({
       id: conversationId,
       messageInfo,
       files,
-      infos: [],
+      infos: manualComponents,
       variableParams: undefined,
-      sandboxId: '-1',
+      sandboxId: finalSelectedComputerId || '-1',
       skillIds,
-      modelId,
+      modelId: modelId || selectedModelId,
       agentMode: agentMode || 'yolo',
     });
-  };
-
-  // 清除会话记录
-  const handleClear = async () => {
-    setMessageList([]);
-    setIsMoreMessage(false);
-    handleClearSideEffect();
   };
 
   const agentName = conversationInfo?.agent?.name || skillInfo?.name || '';
   const agentIcon =
     conversationInfo?.agent?.icon || skillInfo?.icon || (agentImage as string);
 
+  console.log('selectedComputerId', selectedComputerId);
+
   return (
     <UnifiedChatSession
       conversationId={conversationId}
       messageList={messageList}
       roleInfo={roleInfo}
-      isLoading={loadingAsync}
+      isLoading={loadingConversation}
       loadingMore={loadingMore}
       isMoreMessage={isMoreMessage}
       isConversationActive={isConversationActive}
@@ -121,18 +163,31 @@ const SkillChatSession: React.FC<SkillChatSessionProps> = ({
       loadingSuggest={false}
       chatSuggestList={chatSuggestList as string[]}
       agentInfo={{
-        id: conversationInfo?.agent?.targetId,
+        id: conversationInfo?.agentId || conversationInfo?.agent?.agentId,
         name: agentName,
         icon: agentIcon,
         type: (conversationInfo?.agent?.type || AgentTypeEnum.ChatBot) as any,
         openingChatMsg: conversationInfo?.agent?.openingChatMsg,
         guidQuestionDtos: conversationInfo?.agent?.guidQuestionDtos,
+        sandboxId: finalSelectedComputerId,
+      }}
+      chatInputProps={{
+        isTaskAgentActive: true, // 强制开启云电脑选择器
+      }}
+      // 允许切换模型
+      allowOtherModel={conversationInfo?.agent?.allowOtherModel}
+      selectedModelId={selectedModelId}
+      onModelSelect={setSelectedModelId}
+      isSelectionLocked={isSelectionLocked}
+      manualComponents={manualComponents}
+      selectedComputerId={finalSelectedComputerId}
+      onComputerSelect={(id) => {
+        onChangeSelectedComputerId?.(id);
       }}
       onSendMessage={handleSendMessage}
-      onClear={handleClear}
       onLoadMoreMessage={handleLoadMoreMessage}
-      readonly={false}
-      enableMention={false}
+      // 允许选择技能模型
+      enableMention={true}
       placeholder={dict(
         'PC.Components.ChatInputHomeMentionEditor.placeholderWithoutMention',
       )}

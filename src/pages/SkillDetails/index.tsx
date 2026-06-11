@@ -7,14 +7,14 @@ import CreateSkill from '@/pages/SpaceSkillManage/CreateSkill';
 import ImportSkillProjectModal from '@/pages/SpaceSkillManage/ImportSkillProjectModal';
 import { t } from '@/services/i18nRuntime';
 import { apiSkillDetail } from '@/services/skill';
-import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import { AgentComponentTypeEnum, MessageTypeEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum, PublishStatusEnum } from '@/types/enums/common';
 import { SkillInfo } from '@/types/interfaces/library';
 import type { SkillDetailInfo } from '@/types/interfaces/skill';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, { useEffect, useRef, useState } from 'react';
-import { useParams, useRequest } from 'umi';
+import { history, useLocation, useModel, useParams, useRequest } from 'umi';
 import SkillChatSession from './components/SkillChatSession';
 import SkillHeader from './components/SkillHeader';
 import { useSkillFiles } from './hooks/useSkillFiles';
@@ -30,8 +30,21 @@ const SkillDetails: React.FC = () => {
   const spaceId = Number(params.spaceId);
   const skillId = Number(params.skillId);
 
-  // 技能信息
+  const location = useLocation() as any;
+  const queryParams = new URLSearchParams(location?.search || '');
+  const queryConversationIdStr = queryParams.get('conversationId');
+  const conversationId = queryConversationIdStr
+    ? Number(queryConversationIdStr)
+    : undefined;
+
   const [skillInfo, setSkillInfo] = useState<SkillDetailInfo | null>(null);
+
+  // 云电脑选择
+  const [selectedComputerId, setSelectedComputerId] = useState<string>('');
+
+  // 会话模型
+  const { runAsync, onMessageSend, conversationInfo } =
+    useModel('conversationInfo');
 
   // 弹窗状态管理
   const [open, setOpen] = useState<boolean>(false);
@@ -112,6 +125,67 @@ const SkillDetails: React.FC = () => {
     discardText: t('PC.Pages.SkillDetails.leaveWithoutSaving'),
   });
 
+  /**
+   * 当页面加载结束且携带了初始消息状态时，自动触发消息发送
+   */
+  useEffect(() => {
+    const id = conversationId || conversationInfo?.id;
+    if (id) {
+      const state = (location.state || history.location.state) as any;
+      if (
+        state &&
+        (state.message?.trim() || state.files?.length || state.skillIds?.length)
+      ) {
+        const asyncFun = async () => {
+          let data = null;
+          try {
+            const { data: _data } = await runAsync(id);
+            data = _data;
+          } catch (error) {
+            console.error(
+              'Failed to query conversation before auto-send',
+              error,
+            );
+          }
+
+          const list = data?.messageList || [];
+          const len = list?.length || 0;
+          // 会话消息列表为空或者只有一条消息并且此消息是开场白时，可以发送消息
+          const isCanMessage =
+            !len ||
+            (len === 1 && list[0].messageType === MessageTypeEnum.ASSISTANT);
+
+          if (isCanMessage) {
+            const effectiveSandboxId =
+              state.selectedComputerId || data?.agent?.sandboxId || '-1';
+            onMessageSend({
+              id,
+              messageInfo: state.message || '',
+              files: state.files,
+              infos: state.infos || [],
+              sandboxId: String(effectiveSandboxId),
+              debug: true,
+              isSync: false,
+              skillIds: state.skillIds,
+              modelId: state.modelId,
+              agentMode:
+                (localStorage.getItem('nuwax_agent_mode_cache') as any) ||
+                'yolo',
+              data,
+            });
+          }
+        };
+        asyncFun();
+      }
+    }
+  }, [
+    conversationInfo?.id,
+    location.state,
+    history.location.state,
+    selectedComputerId,
+    conversationId,
+  ]);
+
   useEffect(() => {
     if (skillId) {
       setFileTreeDataLoading(true);
@@ -182,7 +256,12 @@ const SkillDetails: React.FC = () => {
       <div className={cx(styles['layout-wrapper'])}>
         {/* 左侧：调试聊天会话区域 */}
         <div className={cx(styles['chat-section'])}>
-          <SkillChatSession skillInfo={skillInfo} />
+          <SkillChatSession
+            skillInfo={skillInfo}
+            conversationId={conversationId}
+            selectedComputerId={selectedComputerId}
+            onChangeSelectedComputerId={setSelectedComputerId}
+          />
         </div>
 
         {/* 右侧：原有的详情内容区域 */}
