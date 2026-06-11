@@ -1,8 +1,16 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import { EllipsisTooltip } from '@/components/custom/EllipsisTooltip';
+import TooltipIcon from '@/components/custom/TooltipIcon';
 import fileTreeStyles from '@/components/FileTreeView/FileTree/index.less';
+import { dict } from '@/services/i18nRuntime';
 import { getFileIcon } from '@/utils/fileTree';
-import { RightOutlined } from '@ant-design/icons';
+import {
+  FileTextOutlined,
+  MinusOutlined,
+  PlusOutlined,
+  RightOutlined,
+  UndoOutlined,
+} from '@ant-design/icons';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ChangeListItem } from '../../utils/buildChangeFileTree';
@@ -41,6 +49,20 @@ export interface ChangeFileListSectionProps {
   onContextMenu?: (e: React.MouseEvent, fileId: string) => void;
   /** 树形视图文件夹右键菜单 */
   onFolderContextMenu?: (e: React.MouseEvent, folderId: string) => void;
+  /** 打开文件 */
+  onOpenFile?: (fileId: string) => void;
+  /** 放弃更改 */
+  onDiscardChange?: (fileId: string, fileName: string) => void;
+  /** 暂存更改 */
+  onStageChange?: (fileId: string) => void;
+  /** 取消暂存 */
+  onUnstageChange?: (fileId: string) => void;
+  /** 放弃区块内所有更改 */
+  onDiscardAllChanges?: () => void;
+  /** 暂存区块内所有更改 */
+  onStageAllChanges?: () => void;
+  /** 取消区块内所有暂存 */
+  onUnstageAllChanges?: () => void;
 }
 
 /**
@@ -57,6 +79,13 @@ const ChangeFileListSection: React.FC<ChangeFileListSectionProps> = ({
   onFileClick,
   onContextMenu,
   onFolderContextMenu,
+  onOpenFile,
+  onDiscardChange,
+  onStageChange,
+  onUnstageChange,
+  onDiscardAllChanges,
+  onStageAllChanges,
+  onUnstageAllChanges,
 }) => {
   const [expanded, setExpanded] = useState(true);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(
@@ -127,49 +156,204 @@ const ChangeFileListSection: React.FC<ChangeFileListSectionProps> = ({
     </span>
   );
 
-  /** 列表视图：平铺展示文件名与路径 */
-  const renderListFileRow = (item: ChangeListItem) => (
-    <div
-      key={`${section}-${item.fileId}`}
-      className={cx(styles['change-item'], {
-        [styles['change-item-active']]: isChangeFileSelected(
-          item.fileId,
-          section,
-          selectedChangeFile,
-        ),
-        [styles['change-item-deleted']]: isDeletedFile(item),
-        [styles['change-item-conflict']]: isConflictFile(item),
-      })}
-      onClick={() => onFileClick?.(item.fileId, section)}
-      onContextMenu={(e) => onContextMenu?.(e, item.fileId)}
-      title={item.fileId}
-    >
-      <span className={cx(styles['file-icon'])}>
-        {getFileIcon(item.fileName)}
-      </span>
+  /** 列表视图：悬停时展示快捷操作（与右键菜单对应能力一致） */
+  const renderListRowActions = (item: ChangeListItem) => {
+    const stopRowClick = (e: React.MouseEvent) => {
+      e.stopPropagation();
+    };
 
-      {/* 文件信息 */}
-      <div className={cx(styles['file-info'])}>
-        {/* 文件名 */}
-        <span className={cx(styles['file-name'], 'text-ellipsis')}>
-          {item.fileName}
+    const openFileLabel = dict(
+      'PC.Pages.ConversationAgentSourceControl.openFile',
+    );
+
+    const actions = (
+      section === 'staged'
+        ? [
+            {
+              key: 'openFile',
+              title: openFileLabel,
+              icon: <FileTextOutlined />,
+              enabled: Boolean(onOpenFile),
+              onClick: () => onOpenFile?.(item.fileId),
+            },
+            {
+              key: 'unstage',
+              title: dict(
+                'PC.Pages.ConversationAgentSourceControl.unstageChanges',
+              ),
+              icon: <MinusOutlined />,
+              enabled: Boolean(onUnstageChange),
+              onClick: () => onUnstageChange?.(item.fileId),
+            },
+          ]
+        : [
+            {
+              key: 'openFile',
+              title: openFileLabel,
+              icon: <FileTextOutlined />,
+              enabled: Boolean(onOpenFile),
+              onClick: () => onOpenFile?.(item.fileId),
+            },
+            {
+              key: 'discard',
+              title: dict(
+                'PC.Pages.ConversationAgentSourceControl.discardChanges',
+              ),
+              icon: <UndoOutlined />,
+              enabled: Boolean(onDiscardChange),
+              onClick: () => onDiscardChange?.(item.fileId, item.fileName),
+            },
+            {
+              key: 'stage',
+              title: dict(
+                'PC.Pages.ConversationAgentSourceControl.stageChanges',
+              ),
+              icon: <PlusOutlined />,
+              enabled: Boolean(onStageChange),
+              onClick: () => onStageChange?.(item.fileId),
+            },
+          ]
+    ).filter((action) => action.enabled);
+
+    if (!actions.length) {
+      return null;
+    }
+
+    return (
+      <div className={cx(styles['row-actions'])} onClick={stopRowClick}>
+        {actions.map((action) => (
+          <TooltipIcon
+            key={action.key}
+            title={action.title}
+            ariaLabel={action.title}
+            placement="top"
+            className={cx(styles['row-action-btn'])}
+            icon={action.icon}
+            onClick={action.onClick}
+          />
+        ))}
+      </div>
+    );
+  };
+
+  /** 区块标题悬停：批量操作（放弃/暂存/取消暂存全部） */
+  const renderSectionHeaderActions = () => {
+    const stopHeaderClick = (e: React.MouseEvent) => {
+      e.stopPropagation();
+    };
+
+    const actions = (
+      section === 'staged'
+        ? [
+            {
+              key: 'unstageAll',
+              title: dict(
+                'PC.Pages.ConversationAgentSourceControl.unstageAllChanges',
+              ),
+              icon: <MinusOutlined />,
+              enabled: Boolean(onUnstageAllChanges),
+              onClick: () => onUnstageAllChanges?.(),
+            },
+          ]
+        : [
+            {
+              key: 'discardAll',
+              title: dict(
+                'PC.Pages.ConversationAgentSourceControl.discardAllChanges',
+              ),
+              icon: <UndoOutlined />,
+              enabled: Boolean(onDiscardAllChanges),
+              onClick: () => onDiscardAllChanges?.(),
+            },
+            {
+              key: 'stageAll',
+              title: dict(
+                'PC.Pages.ConversationAgentSourceControl.stageAllChanges',
+              ),
+              icon: <PlusOutlined />,
+              enabled: Boolean(onStageAllChanges),
+              onClick: () => onStageAllChanges?.(),
+            },
+          ]
+    ).filter((action) => action.enabled);
+
+    if (!actions.length) {
+      return null;
+    }
+
+    return (
+      <div
+        className={cx(styles['changes-header-actions'])}
+        onClick={stopHeaderClick}
+      >
+        {actions.map((action) => (
+          <TooltipIcon
+            key={action.key}
+            title={action.title}
+            ariaLabel={action.title}
+            placement="top"
+            className={cx(styles['row-action-btn'])}
+            icon={action.icon}
+            onClick={action.onClick}
+          />
+        ))}
+      </div>
+    );
+  };
+
+  const sectionHeaderActions = renderSectionHeaderActions();
+
+  /** 列表视图：平铺展示文件名与路径 */
+  const renderListFileRow = (item: ChangeListItem) => {
+    const listRowActions = renderListRowActions(item);
+
+    return (
+      <div
+        key={`${section}-${item.fileId}`}
+        className={cx(styles['change-item'], {
+          [styles['change-item-active']]: isChangeFileSelected(
+            item.fileId,
+            section,
+            selectedChangeFile,
+          ),
+          [styles['change-item-deleted']]: isDeletedFile(item),
+          [styles['change-item-conflict']]: isConflictFile(item),
+          [styles['change-item-has-actions']]: Boolean(listRowActions),
+        })}
+        onClick={() => onFileClick?.(item.fileId, section)}
+        onContextMenu={(e) => onContextMenu?.(e, item.fileId)}
+        title={item.fileId}
+      >
+        <span className={cx(styles['file-icon'])}>
+          {getFileIcon(item.fileName)}
         </span>
 
-        {/* 文件路径 */}
-        {item.parentPath && (
-          <div className={cx(styles['file-path-wrap'])}>
-            <EllipsisTooltip
-              className={cx(styles['file-path'])}
-              text={item.parentPath}
-            />
-          </div>
-        )}
-      </div>
+        {/* 文件信息 */}
+        <div className={cx(styles['file-info'])}>
+          {/* 文件名 */}
+          <span className={cx(styles['file-name'], 'text-ellipsis')}>
+            {item.fileName}
+          </span>
 
-      {/* 文件状态 */}
-      {renderStatusBadge(item)}
-    </div>
-  );
+          {/* 文件路径 */}
+          {item.parentPath && (
+            <div className={cx(styles['file-path-wrap'])}>
+              <EllipsisTooltip
+                className={cx(styles['file-path'])}
+                text={item.parentPath}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* 文件状态与操作按钮 */}
+        <div className={cx(styles['change-item-trailing'])}>
+          {renderStatusBadge(item)}
+          {listRowActions}
+        </div>
+      </div>
+    );
+  };
 
   /**
    * 树形视图：对齐 FileTree 的文件夹/文件行样式与 caret 展开交互
@@ -184,24 +368,34 @@ const ChangeFileListSection: React.FC<ChangeFileListSectionProps> = ({
     return (
       <div
         key={`${section}-${item.fileId}`}
-        className={fileTreeCx(fileTreeStyles.fileItem, {
-          [fileTreeStyles.activeFile]: isSelected,
-        })}
-        style={{ marginLeft: level * 8 }}
+        className={fileTreeCx(
+          fileTreeStyles.fileItem,
+          styles['tree-file-item'],
+          {
+            [fileTreeStyles.activeFile]: isSelected,
+          },
+        )}
+        style={{ paddingLeft: 4 + level * 8 }}
         onClick={() => onFileClick?.(item.fileId, section)}
         onContextMenu={(e) => onContextMenu?.(e, item.fileId)}
-        title={item.fileId}
       >
         {getFileIcon(item.fileName)}
-        <span
-          className={fileTreeCx(fileTreeStyles.fileName, {
-            [styles['file-name-deleted']]: isDeletedFile(item),
-            [styles['file-name-conflict']]: isConflictFile(item),
-          })}
-        >
-          {item.fileName}
+        <div className={cx(styles['tree-file-name-wrap'])}>
+          <EllipsisTooltip
+            className={fileTreeCx(
+              fileTreeStyles.fileName,
+              styles['tree-file-name'],
+              {
+                [styles['file-name-deleted']]: isDeletedFile(item),
+                [styles['file-name-conflict']]: isConflictFile(item),
+              },
+            )}
+            text={item.fileName}
+          />
+        </div>
+        <span className={cx(styles['tree-file-trailing'])}>
+          {renderStatusBadge(item)}
         </span>
-        {renderStatusBadge(item)}
       </div>
     );
   };
@@ -217,8 +411,11 @@ const ChangeFileListSection: React.FC<ChangeFileListSectionProps> = ({
       return (
         <div
           key={node.id}
-          className={fileTreeCx(fileTreeStyles.folderItem)}
-          style={{ marginLeft: level * 8 }}
+          className={fileTreeCx(
+            fileTreeStyles.folderItem,
+            styles['tree-folder-item'],
+          )}
+          style={{ paddingLeft: level * 8 }}
         >
           <div
             className={fileTreeCx(fileTreeStyles.folderHeader)}
@@ -263,7 +460,10 @@ const ChangeFileListSection: React.FC<ChangeFileListSectionProps> = ({
     >
       {/* 区块标题 */}
       <div
-        className={cx(styles['changes-header'])}
+        className={cx(styles['changes-header'], {
+          [styles['changes-header-has-actions']]:
+            Boolean(sectionHeaderActions) && items.length > 0,
+        })}
         onClick={() => setExpanded((prev) => !prev)}
       >
         <div className={cx(styles['changes-title'])}>
@@ -277,7 +477,10 @@ const ChangeFileListSection: React.FC<ChangeFileListSectionProps> = ({
           </span>
           <span>{title}</span>
         </div>
-        <span className={cx(styles['changes-count'])}>{items.length}</span>
+        <div className={cx(styles['changes-header-trailing'])}>
+          <span className={cx(styles['changes-count'])}>{items.length}</span>
+          {items.length > 0 && sectionHeaderActions}
+        </div>
       </div>
 
       {expanded && (
@@ -285,6 +488,7 @@ const ChangeFileListSection: React.FC<ChangeFileListSectionProps> = ({
           className={cx(styles['changes-list'], styles['changes-list-nested'])}
         >
           {items.length ? (
+            // 树形视图
             viewMode === 'tree' ? (
               <div
                 className={fileTreeCx(
@@ -295,6 +499,7 @@ const ChangeFileListSection: React.FC<ChangeFileListSectionProps> = ({
                 {renderTreeNodes(treeNodes)}
               </div>
             ) : (
+              // 列表视图
               items.map((item) => renderListFileRow(item))
             )
           ) : (

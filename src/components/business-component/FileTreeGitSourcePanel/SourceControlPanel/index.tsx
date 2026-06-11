@@ -79,7 +79,7 @@ const SourceControlPanel: React.FC<SourceControlPanelProps> = ({
 }) => {
   const [commitMessage, setCommitMessage] = useState<string>('');
   // 视图模式：tree / list
-  const [viewMode, setViewMode] = useState<ChangeListViewMode>('tree');
+  const [viewMode, setViewMode] = useState<ChangeListViewMode>('list');
   // 提交消息
   const [contextMenuVisible, setContextMenuVisible] = useState<boolean>(false);
   // 右键菜单位置
@@ -355,6 +355,68 @@ const SourceControlPanel: React.FC<SourceControlPanelProps> = ({
     setViewMode((prev) => (prev === 'tree' ? 'list' : 'tree'));
   }, [hasAnyChanges]);
 
+  /** 列表行悬停：打开文件 */
+  const handleListOpenFile = useCallback(
+    (fileId: string) => {
+      onOpenFile?.(fileId);
+    },
+    [onOpenFile],
+  );
+
+  /** 列表行悬停：放弃更改（与右键菜单一致，需二次确认） */
+  const handleListDiscardChange = useCallback(
+    (fileId: string, fileName: string) => {
+      modalConfirm(
+        dict(
+          'PC.Pages.ConversationAgentSourceControl.discardChangesConfirmTitle',
+        ),
+        fileName,
+        () => discardChanges([fileId]),
+      );
+    },
+    [discardChanges],
+  );
+
+  /** 列表行悬停：暂存更改 */
+  const handleListStageChange = useCallback(
+    (fileId: string) => {
+      void stageChanges([fileId]);
+    },
+    [stageChanges],
+  );
+
+  /** 列表行悬停：取消暂存 */
+  const handleListUnstageChange = useCallback(
+    (fileId: string) => {
+      void unstageChanges([fileId]);
+    },
+    [unstageChanges],
+  );
+
+  /** 区块标题：放弃所有未暂存更改 */
+  const handleDiscardAllUnstagedChanges = useCallback(() => {
+    if (!unstagedItems.length) {
+      return;
+    }
+    modalConfirm(
+      dict(
+        'PC.Pages.ConversationAgentSourceControl.discardAllChangesConfirmTitle',
+      ),
+      dict('PC.Pages.ConversationAgentSourceControl.changes'),
+      () => discardChanges(unstagedItems.map((item) => item.fileId)),
+    );
+  }, [discardChanges, unstagedItems]);
+
+  /** 区块标题：暂存所有未暂存更改 */
+  const handleStageAllUnstagedChanges = useCallback(() => {
+    void stageChanges(unstagedItems.map((item) => item.fileId));
+  }, [stageChanges, unstagedItems]);
+
+  /** 区块标题：取消所有暂存 */
+  const handleUnstageAllStagedChanges = useCallback(() => {
+    void unstageChanges(stagedItems.map((item) => item.fileId));
+  }, [stagedItems, unstageChanges]);
+
   /** 视图模式切换标题 */
   const viewToggleTitle =
     viewMode === 'tree'
@@ -432,6 +494,9 @@ const SourceControlPanel: React.FC<SourceControlPanelProps> = ({
             onFileClick={handleFileClick}
             onContextMenu={handleContextMenu(true)}
             onFolderContextMenu={handleFolderContextMenu(true)}
+            onOpenFile={handleListOpenFile}
+            onUnstageChange={handleListUnstageChange}
+            onUnstageAllChanges={handleUnstageAllStagedChanges}
           />
         )}
         {/* 未暂存的变更 */}
@@ -445,6 +510,11 @@ const SourceControlPanel: React.FC<SourceControlPanelProps> = ({
           onFileClick={handleFileClick}
           onContextMenu={handleContextMenu(false)}
           onFolderContextMenu={handleFolderContextMenu(false)}
+          onOpenFile={handleListOpenFile}
+          onDiscardChange={handleListDiscardChange}
+          onStageChange={handleListStageChange}
+          onDiscardAllChanges={handleDiscardAllUnstagedChanges}
+          onStageAllChanges={handleStageAllUnstagedChanges}
         />
       </div>
 

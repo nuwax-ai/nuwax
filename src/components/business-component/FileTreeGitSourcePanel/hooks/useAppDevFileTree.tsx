@@ -1,6 +1,6 @@
 import type { FileNode } from '@/types/interfaces/appDev';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { FileTreeState } from '../types/file-tree-git-source';
+import type { FileTreeContainerProps } from '../types/file-tree-git-source';
 
 /** AppDev 文件树所需的 fileManagement 能力子集 */
 export interface AppDevFileTreeFileManagement {
@@ -55,7 +55,7 @@ export interface UseAppDevFileTreeParams {
  * @returns tree：可直接传给 FileTreePanel 的状态与处理器集合
  */
 export function useAppDevFileTree(params: UseAppDevFileTreeParams): {
-  tree: FileTreeState;
+  tree: FileTreeContainerProps;
 } {
   const {
     files,
@@ -245,7 +245,7 @@ export function useAppDevFileTree(params: UseAppDevFileTreeParams): {
     await onExportProject?.();
   }, [onExportProject]);
 
-  const tree = useMemo<FileTreeState>(
+  const tree = useMemo<FileTreeContainerProps>(
     () => ({
       files,
       selectedFileId,

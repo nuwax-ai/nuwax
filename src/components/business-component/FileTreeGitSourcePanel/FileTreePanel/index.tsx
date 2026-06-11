@@ -9,12 +9,12 @@ import type { FileNode } from '@/types/interfaces/appDev';
 import { findFileNode } from '@/utils/appDevUtils';
 import classNames from 'classnames';
 import React, { useRef } from 'react';
-import type { FileTreeState } from '../types/file-tree-git-source';
+import type { FileTreeContainerProps } from '../types/file-tree-git-source';
 import styles from './index.less';
 
 export interface FileTreePanelProps {
   /** 文件树状态与交互处理器 */
-  tree: FileTreeState;
+  tree: FileTreeContainerProps;
   className?: string;
   headerClassName?: string;
   /** 文件列表为空（且非加载中）时的自定义空态内容，不传则使用 FileTree 默认空态 */

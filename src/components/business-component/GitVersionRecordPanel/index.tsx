@@ -232,7 +232,14 @@ const GitVersionRecordPanel: React.FC<GitVersionRecordPanelProps> = ({
   // 工作空间 ID 未就绪时展示空状态
   if (!workspaceReady) {
     return (
-      <div className={cx(styles.panel, className)}>
+      <div
+        className={cx(
+          styles.panel,
+          'items-center',
+          'content-center',
+          className,
+        )}
+      >
         <Empty description={getWorkspaceEmptyDescription(workspace)} />
       </div>
     );

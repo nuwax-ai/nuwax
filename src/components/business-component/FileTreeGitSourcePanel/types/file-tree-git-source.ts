@@ -43,8 +43,8 @@ export interface FileTreeGitSourcePanelProps {
   isCollapsed?: boolean;
   /** 是否显示源代码管理 Tab（默认：存在 onCommit 时显示） */
   showSourceControl?: boolean;
-  /** 文件树状态与交互处理器（内部渲染 FileTreeState */
-  tree: FileTreeState;
+  /** 文件树状态与交互处理器（内部渲染 FileTreeContainerProps */
+  tree: FileTreeContainerProps;
   /** 文件树容器类名 */
   treeClassName?: string;
   /** 文件树头部（搜索区）类名 */
@@ -56,7 +56,7 @@ export interface FileTreeGitSourcePanelProps {
 }
 
 /** 任务智能体文件树 UI 所需的状态与处理器 */
-export interface FileTreeState {
+export interface FileTreeContainerProps {
   files: FileNode[];
   selectedFileId: string;
   renamingNode: FileNode | null;
