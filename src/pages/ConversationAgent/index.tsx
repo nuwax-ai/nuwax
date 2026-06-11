@@ -194,20 +194,6 @@ const ConversationAgent: React.FC = () => {
   // 当前选中的电脑 ID
   const [selectedComputerId, setSelectedComputerId] = useState<string>('');
 
-  // 仅在本次会话中使用从其它页面带过来的 selectedComputerId；
-  // 刷新（POP）或新建会话（REPLACE）时，不再沿用之前的选择。
-  useEffect(() => {
-    const passedDetails = (location.state as any)?.selectedComputerId;
-
-    // PUSH: 正常跳转
-    const isPushWithComputer = history.action === 'PUSH' && !!passedDetails;
-
-    if (isPushWithComputer) {
-      setSelectedComputerId(passedDetails);
-    } else {
-      setSelectedComputerId('');
-    }
-  }, [history.action, location.key]);
   /** 智能体配置加载中状态 */
   const [loadingAgentConfigInfo, setLoadingAgentConfigInfo] = useState<boolean>(
     !!agentId,
@@ -370,17 +356,6 @@ const ConversationAgent: React.FC = () => {
               data,
             });
           }
-
-          // 消费完毕后清除发信所需的参数
-          const nextState = {
-            ...(location.state || history.location.state || {}),
-            message: undefined,
-            files: undefined,
-            skillIds: undefined,
-            infos: undefined,
-            modelId: undefined,
-          };
-          history.replace(location.pathname + location.search, nextState);
         };
         asyncFun();
       }
@@ -1476,8 +1451,7 @@ const ConversationAgent: React.FC = () => {
           <div className={cx(styles['left-panel'])}>
             <AgentConversationChatPanel
               selectedComputerId={finalSelectedComputerId}
-              // onChangeSelectedComputerId={setCurrentSelectedComputerId}
-              onEditAgent={() => setOpenEditAgent(true)}
+              onChangeSelectedComputerId={setSelectedComputerId}
             />
           </div>
 
