@@ -532,7 +532,9 @@ const Chat: React.FC = () => {
             data,
             skillIds,
             modelId: selectedModelId,
-            agentMode: 'yolo',
+            agentMode:
+              (localStorage.getItem('nuwax_agent_mode_cache') as AgentMode) ||
+              'yolo',
           };
 
           onMessageSend(sendParams);

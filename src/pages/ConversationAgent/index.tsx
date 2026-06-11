@@ -2,6 +2,7 @@ import {
   ConversationBottomConsole,
   GitVersionRecordPanel,
 } from '@/components/business-component';
+import { type AgentMode } from '@/components/business-component/AgentIntervention';
 import FileTreeGitSourcePanel, {
   useConversationAgentSourceControl,
   type SelectedChangeFile,
@@ -353,6 +354,9 @@ const ConversationAgent: React.FC = () => {
               isSync: false,
               skillIds: state.skillIds,
               modelId: state.modelId,
+              agentMode:
+                (localStorage.getItem('nuwax_agent_mode_cache') as AgentMode) ||
+                'yolo',
               data,
             });
           }

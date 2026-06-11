@@ -98,7 +98,13 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
           selectedModelId={selectedModelId}
           onModelSelect={setSelectedModelId}
           isSelectionLocked={isSelectionLocked}
-          onSendMessage={(messageInfo, files, skillIds) => {
+          onSendMessage={(
+            messageInfo,
+            files,
+            skillIds,
+            modelId,
+            selectedAgentMode,
+          ) => {
             const id = conversationInfo?.id;
             if (id) {
               onMessageSend({
@@ -110,7 +116,8 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
                 debug: true,
                 isSync: false,
                 skillIds,
-                modelId: selectedModelId,
+                modelId: modelId || selectedModelId,
+                agentMode: selectedAgentMode,
               });
             }
           }}
