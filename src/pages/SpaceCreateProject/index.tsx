@@ -69,7 +69,7 @@ const SpaceCreateProject: React.FC = () => {
 
       // 技能
       if (targetType === AgentComponentTypeEnum.Skill) {
-        url = `/space/${spaceId}/skill-details/${targetId}?conversationId=${conversationId}`;
+        url = `/space/${spaceId}/skill-details/${targetId}`;
       }
 
       // 插件 1/2

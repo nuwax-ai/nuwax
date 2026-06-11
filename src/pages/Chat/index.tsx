@@ -67,10 +67,10 @@ import { Form, message as messageAntd } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { history, useLocation, useModel, useParams } from 'umi';
-import DropdownChangeName from './DropdownChangeName';
+import DropdownChangeName from './components/DropdownChangeName';
+import ShowArea from './components/ShowArea';
 import { useAutoPreviewFile } from './hooks/useAutoPreviewFile';
 import styles from './index.less';
-import ShowArea from './ShowArea';
 
 const cx = classNames.bind(styles);
 /**
