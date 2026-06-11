@@ -1,0 +1,67 @@
+@import '@/styles/token.less';
+
+/**
+ * AppDev 文件树侧栏外壳
+ * 作为折叠按钮的定位参照，宽度与内部 panelSidebar（260px）一致
+ */
+.sidebarWrapper {
+  position: relative;
+  height: 100%;
+  flex: 0 0 260px;
+  min-width: 260px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &.collapsed {
+    flex: 0 0 0;
+    min-width: 0;
+    max-width: 0;
+
+    /* 面板已卸载，仅保留绝对定位的折叠按钮，需允许溢出显示 */
+    overflow: visible;
+  }
+}
+
+/** 悬浮折叠/展开按钮：展开时位于文件树面板右下角，收起时位于内容区左下角 */
+.collapseButton {
+  position: absolute;
+  bottom: 16px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  color: @colorTextBase;
+  font-size: @fontSizeSm;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  outline: none;
+  background: @colorBgContainer;
+  border: none;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 8%);
+
+  &.expanded {
+    right: -12px;
+    left: auto;
+    opacity: 0.8;
+
+    &:hover {
+      background: @colorBgContainer;
+      opacity: 1;
+    }
+  }
+
+  &.collapsed {
+    left: 16px;
+    right: auto;
+    opacity: 1;
+
+    &:hover {
+      background: @colorBgContainer;
+      opacity: 1;
+    }
+  }
+
+  &:focus {
+    outline: none;
+  }
+}

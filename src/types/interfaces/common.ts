@@ -1,3 +1,4 @@
+import type { AgentMode } from '@/components/business-component/AgentIntervention';
 import { MentionItem } from '@/components/ChatInputHome/MentionPopup/types';
 import type { ResourcePricingType } from '@/pages/SpaceResource/types/resource';
 import type {
@@ -538,6 +539,7 @@ export interface ChatInputProps extends ManualComponentItemProps {
     files: UploadFileInfo[],
     skillIds?: number[],
     modelId?: number,
+    agentMode?: AgentMode,
   ) => void;
   /** 是否启用 @ 提及功能，默认启用 */
   enableMention?: boolean;
@@ -582,10 +584,20 @@ export interface ChatInputProps extends ManualComponentItemProps {
   onModelSelect?: (modelId: number) => void;
   /** 智能体类型 */
   agentType?: string;
+  /** 当前 Agent mode */
+  agentMode?: AgentMode;
+  /** Agent mode 变化回调 */
+  onAgentModeChange?: (mode: AgentMode) => void;
+  /** 是否展示 Agent mode 选择器 */
+  showAgentModeSelector?: boolean;
   /** 占位符文本 */
   placeholder?: string;
   /** 默认提及项列表（需同时传入 value 文本） */
   defaultMentions?: MentionItem[];
+  /** 插槽：用于完美嵌入和合并头部 Tab 选择组件 */
+  tabsSlot?: React.ReactNode;
+  /** 可用值:PageApp,TaskAgent */
+  usageScenarios?: AgentTypeEnum[];
 }
 
 // 聊天框底部更多操作组件

@@ -5,7 +5,6 @@ import { dict, t } from '@/services/i18nRuntime';
 import SvgIcon from '@/components/base/SvgIcon';
 import { MESSAGE_PAGE_SIZE } from '@/constants/common.constants';
 import { useIntersectionObserver } from '@/hooks/useIntersectionObserver';
-import DataResourceList from '@/pages/AppDev/components/FileTreePanel/DataResourceList';
 import type {
   AppDevChatMessage,
   Attachment,
@@ -37,6 +36,7 @@ import AppDevMarkdownCMDWrapper from './components/AppDevMarkdownCMDWrapper';
 import AssistantThinkingCollapsible from './components/AssistantThinkingCollapsible';
 import ChatAreaTabs from './components/ChatAreaTabs';
 import ChatInputHome, { MentionItem } from './components/ChatInputHome';
+import DataResourceList from './components/DataResourceList';
 import MessageAttachment from './components/MessageAttachment';
 import ReactScrollToBottomContainer, {
   ReactScrollToBottomContainerRef,
@@ -53,7 +53,6 @@ interface ChatAreaProps {
   fileContentState: any;
   isSupportDesignMode: boolean;
   modelSelector: any;
-  isComparing?: boolean;
   onUserManualSendMessage?: () => void;
   onUserCancelAgentTask?: () => void;
   files?: FileNode[];
@@ -76,7 +75,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   fileContentState,
   isSupportDesignMode,
   modelSelector,
-  isComparing = false, // Default false
   onUserManualSendMessage,
   onUserCancelAgentTask,
   files = [],
@@ -485,8 +483,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         allAttachments = message.attachments || [];
       }
 
-      console.log('传统附件（图片、文件等）allAttachments：', allAttachments);
-
       return (
         <div
           key={message.id}
@@ -692,7 +688,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                       />
                     }
                     onClick={onAddDataResource}
-                    disabled={chat.isChatLoading || isComparing}
+                    disabled={chat.isChatLoading}
                   />
                 </Tooltip>
               </div>

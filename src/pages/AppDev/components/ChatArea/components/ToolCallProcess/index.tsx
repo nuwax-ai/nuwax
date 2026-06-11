@@ -1,6 +1,7 @@
 import { t } from '@/services/i18nRuntime';
 import { Button, Tooltip } from 'antd';
 import React, { useState } from 'react';
+import DiffViewItem from './components/DiffViewItem';
 import styles from './index.less';
 
 interface ToolCallProcessProps {
@@ -222,6 +223,9 @@ const ToolCallProcess: React.FC<ToolCallProcessProps> = ({
                   </div>
                 );
               }
+            }
+            if (item?.type === 'diff') {
+              return <DiffViewItem key={index} item={item} index={index} />;
             }
             return (
               <div key={index} className={styles.unknownContent}>

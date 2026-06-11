@@ -2,11 +2,24 @@ import { HideDesktopEnum } from '@/types/enums/agent';
 import { FileNode } from '@/types/interfaces/appDev';
 import { IdleDetectionConfig } from '../business-component/VncPreview/type';
 
+/** Git 变更类型（与 VS Code 源代码管理角标一致） */
+export type ChangeFileGitStatusKind =
+  | 'modified'
+  | 'added'
+  | 'deleted'
+  | 'untracked'
+  | 'conflict'
+  | 'renamed';
+
 // 修改的文件信息
 export interface ChangeFileInfo {
   fileId: string;
   fileContent: string;
   originalFileContent: string;
+  /** 暂存区状态（存在于 status.staged 等时） */
+  stagedStatus?: ChangeFileGitStatusKind;
+  /** 工作区未暂存状态（created / modified / deleted / untracked / conflict 等） */
+  unstagedStatus?: ChangeFileGitStatusKind;
 }
 
 // 重新导出 IdleDetectionConfig 方便外部使用

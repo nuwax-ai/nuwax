@@ -1,7 +1,43 @@
+@import '@/styles/token.less';
+
 .version-history-header {
   height: 64px !important;
 }
 
 .mt-12 {
   margin-top: 12px;
+}
+
+.page-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+.layout-wrapper {
+  display: flex;
+  width: 100%;
+  overflow: hidden;
+  flex: 1;
+  min-height: 0;
+
+  .chat-section {
+    width: 33%;
+    height: 100%;
+    border-right: 1px solid @colorBorderSecondary;
+    background-color: @colorBgContainer;
+    display: flex;
+    flex-direction: column;
+    padding: @paddingSm @paddingMd;
+  }
+
+  .detail-section {
+    width: 67%;
+    height: 100%;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
 }

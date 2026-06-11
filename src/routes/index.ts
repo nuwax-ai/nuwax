@@ -50,6 +50,11 @@ const routes = [
         path: '/space/:spaceId/page-develop',
         component: '@/pages/SpacePageDevelop',
       },
+      // 新建项目
+      {
+        path: '/space/:spaceId/create-project',
+        component: '@/pages/SpaceCreateProject',
+      },
       // 技能管理
       {
         path: '/space/:spaceId/skill-manage',
@@ -551,6 +556,18 @@ const routes = [
     layout: false,
   },
   {
+    path: '/space/:spaceId/agent-flow',
+    component: '@/pages/AgentFlow',
+    wrappers: ['@/wrappers/authWithLoading'],
+    layout: false,
+  },
+  {
+    path: '/space/:spaceId/conversation-agent',
+    component: '@/pages/ConversationAgent',
+    wrappers: ['@/wrappers/authWithLoading'],
+    layout: false,
+  },
+  {
     path: '/app',
     component: '@/pages/OpenApp/BaseTemplate',
     wrappers: ['@/wrappers/authWithLoading'],
@@ -643,6 +660,11 @@ const routes = [
   {
     path: '/examples/menu-permission-demo',
     component: '@/examples/MenuPermissionDemo',
+    layout: false,
+  },
+  {
+    path: '/examples/agent-intervention-demo',
+    component: '@/examples/AgentInterventionDemo',
     layout: false,
   },
 ];

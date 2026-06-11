@@ -16,7 +16,7 @@ import {
   EditOutlined,
   PlusOutlined,
 } from '@ant-design/icons';
-import { Button, Dropdown, MenuProps, message } from 'antd';
+import { Button, Dropdown, MenuProps, message, Typography } from 'antd';
 import classNames from 'classnames';
 import React, {
   useCallback,
@@ -91,12 +91,15 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
     [agentType],
   );
 
-  // 挂载时加载数据
+  // 监听 agentId 的变化，当 agentId 改变时，重新加载数据并重置 initialized 状态与模型列表
   useEffect(() => {
-    if (agentId && !initialized) {
-      fetchModelOptions(agentId);
+    if (agentId) {
+      setInitialized(false);
+      initializedRef.current = false;
+      setModelList([]);
+      fetchModelOptions(agentId, true);
     }
-  }, [agentId, initialized, fetchModelOptions]);
+  }, [agentId, fetchModelOptions]);
 
   // 监听数据加载完成，自动应用默认选择
   useEffect(() => {
@@ -315,10 +318,16 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
               [styles.open]: open,
             })}
           >
-            <span>
+            <Typography.Text
+              ellipsis={{
+                tooltip:
+                  selectedModel?.name ||
+                  dict('PC.Components.ModelSelector.selectModel'),
+              }}
+            >
               {selectedModel?.name ||
                 dict('PC.Components.ModelSelector.selectModel')}
-            </span>
+            </Typography.Text>
             <SvgIcon
               name="icons-common-caret_down"
               style={{ fontSize: 14 }}

@@ -80,6 +80,9 @@ const TABS: TabConfig[] = [
 
 /** 单个 Tab 每次请求或分页追加的数量 */
 const PAGE_SIZE = 6;
+
+/** 默认的使用场景过滤参数（定义为静态常量以避免 React 解构默认值带来的引用死循环） */
+const DEFAULT_USAGE_SCENARIOS = [AgentTypeEnum.TaskAgent];
 /**
  * 单个 Tab 的列表状态
  * 用于管理分页数据、首次加载状态和滚动加载状态
@@ -142,7 +145,7 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
       maxHeight,
       onHeightChange,
       showSearchInput = false,
-      usageScenarios = [AgentTypeEnum.TaskAgent],
+      usageScenarios = DEFAULT_USAGE_SCENARIOS,
     },
     ref,
   ) => {
@@ -271,7 +274,7 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
 
         handleTabDataResponse('recent', records);
       }
-    }, [handleTabDataResponse]);
+    }, [handleTabDataResponse, usageScenarios, runRecentTabData]);
 
     /**
      * 加载「我的收藏」 Tab 数据
@@ -288,7 +291,7 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
 
         handleTabDataResponse('favorite', records);
       }
-    }, [handleTabDataResponse]);
+    }, [handleTabDataResponse, usageScenarios, runFavoriteTabData]);
 
     /**
      * 加载「全部」 Tab 数据
@@ -326,7 +329,7 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
           }));
         }
       },
-      [effectiveSearchText, updateTabDataState],
+      [effectiveSearchText, updateTabDataState, usageScenarios, runAllTabData],
     );
 
     /**
@@ -428,6 +431,22 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
       lastSearchTextRef.current = effectiveSearchText ?? '';
       loadTabData(activeTab, 1);
     }, [activeTab, loadTabData, visible, effectiveSearchText]);
+
+    /**
+     * 当 usageScenarios 改变时，如果已经加载过数据，则重置并重新拉取当前 Tab 的数据
+     */
+    useEffect(() => {
+      if (!visible) return;
+
+      if (hasInitTabsRef.current) {
+        setTabDataMap(createTabDataState());
+        setSelectedIndex(0);
+        if (listRef.current) {
+          listRef.current.scrollTop = 0;
+        }
+        loadTabData(activeTab, 1);
+      }
+    }, [usageScenarios, activeTab, loadTabData, visible]);
 
     /**
      * 弹窗已打开后：搜索关键字变化时

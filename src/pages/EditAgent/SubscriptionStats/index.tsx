@@ -124,7 +124,7 @@ const SubscriptionStats: React.FC<SubscriptionStatsProps> = ({
       {
         title: dict('PC.Pages.AgentEdit.SubscriptionStats.colSubscriberId'),
         dataIndex: ['subscriber', 'id'],
-        width: 100,
+        width: 150,
         render: (subscriberId?: number) =>
           subscriberId !== undefined && subscriberId !== null
             ? subscriberId
@@ -133,20 +133,20 @@ const SubscriptionStats: React.FC<SubscriptionStatsProps> = ({
       {
         title: dict('PC.Pages.AgentEdit.SubscriptionStats.colSubscriberName'),
         dataIndex: ['subscriber', 'name'],
-        width: 120,
+        width: 180,
         ellipsis: true,
         render: (subscriberName?: string) => subscriberName || '-',
       },
       {
         title: dict('PC.Pages.AgentEdit.SubscriptionStats.colStartTime'),
         dataIndex: 'startTime',
-        width: 200,
+        width: 180,
         render: (startTime: string) => formatDateTimeYmdHms(startTime),
       },
       {
         title: dict('PC.Pages.AgentEdit.SubscriptionStats.colEndTime'),
         dataIndex: 'endTime',
-        width: 200,
+        width: 180,
         render: (endTime: string) => formatDateTimeYmdHms(endTime),
       },
     ],
@@ -188,6 +188,7 @@ const SubscriptionStats: React.FC<SubscriptionStatsProps> = ({
           loading={loading}
           columns={columns}
           dataSource={statsResult?.subscribers || []}
+          scroll={{ x: 'max-content' }}
           pagination={{
             current: pageNum,
             pageSize,

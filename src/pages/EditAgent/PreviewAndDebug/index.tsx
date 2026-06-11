@@ -1,16 +1,10 @@
-import AgentChatEmpty from '@/components/AgentChatEmpty';
-import ChatInputHome from '@/components/ChatInputHome';
-import ChatView from '@/components/ChatView';
-import NewConversationSet from '@/components/NewConversationSet';
-import RecommendList from '@/components/RecommendList';
-import { MESSAGE_PAGE_SIZE } from '@/constants/common.constants';
+import { UnifiedChatSession } from '@/components/business-component';
+import { type AgentMode } from '@/components/business-component/AgentIntervention';
 import { EVENT_TYPE } from '@/constants/event.constants';
 import useConversation from '@/hooks/useConversation';
 import { useConversationScrollDetection } from '@/hooks/useConversationScrollDetection';
-import { useIntersectionObserver } from '@/hooks/useIntersectionObserver';
 import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
-import ConversationStatus from '@/pages/Chat/components/ConversationStatus';
 import { dict } from '@/services/i18nRuntime';
 import {
   ExpandPageAreaEnum,
@@ -28,7 +22,6 @@ import {
 } from '@/types/interfaces/conversationInfo';
 import { arraysContainSameItems } from '@/utils/common';
 import eventBus from '@/utils/eventBus';
-import { LoadingOutlined } from '@ant-design/icons';
 import { Form, message } from 'antd';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
@@ -79,8 +72,6 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
   // 记录用户是否已发送消息（用于锁定电脑选择）
   const [hasUserSentMessage, setHasUserSentMessage] = useState<boolean>(false);
 
-  const [isHoveringChat, setIsHoveringChat] = useState<boolean>(false);
-
   const {
     conversationInfo,
     messageList,
@@ -88,7 +79,6 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     chatSuggestList,
     loadingConversation,
     runQueryConversation,
-    isLoadingConversation,
     setIsLoadingConversation,
     loadingSuggest,
     onMessageSend,
@@ -201,36 +191,6 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     scrollTimeoutRef,
     setShowScrollBtn,
   );
-
-  // 到顶自动加载更多的侦测 Hook (提前 10px 触发，防止用户觉得过早)
-  const { ref: loadMoreRef, inView: loadMoreInView } = useIntersectionObserver({
-    rootMargin: '10px 0px 0px 0px',
-    threshold: 0,
-  });
-
-  // 监听进入视口事件，自动触发加载更多
-  // 使用 useRef 记录上一次的 inView 状态，严格保证只有在【刚进入视口】的那一瞬间才触发请求
-  const prevLoadMoreInViewRef = useRef(false);
-  useEffect(() => {
-    const isEntering = loadMoreInView && !prevLoadMoreInViewRef.current;
-    prevLoadMoreInViewRef.current = loadMoreInView;
-
-    if (
-      isEntering &&
-      isMoreMessage &&
-      !loadingMore &&
-      messageList?.length > 0 &&
-      devConversationIdRef.current
-    ) {
-      handleLoadMoreMessage(devConversationIdRef.current);
-    }
-  }, [
-    loadMoreInView,
-    isMoreMessage,
-    loadingMore,
-    messageList?.length,
-    handleLoadMoreMessage,
-  ]);
 
   useEffect(() => {
     // 初始化选中的组件列表
@@ -358,6 +318,8 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     messageInfo: string,
     files?: UploadFileInfo[],
     skillIds?: number[],
+    modelId?: number,
+    selectedAgentMode?: AgentMode,
   ) => {
     const id = devConversationIdRef.current;
     if (!id) {
@@ -392,8 +354,9 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
       isSync: false,
       // 技能ID列表
       skillIds,
+      modelId,
+      agentMode: selectedAgentMode || 'yolo',
     };
-
     onMessageSend(sendParams);
   };
 
@@ -452,14 +415,6 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     } else {
       openDesktopView(convId);
     }
-  };
-
-  // 修改 handleScrollBottom 函数，添加自动滚动控制
-  const onScrollBottom = () => {
-    allowAutoScrollRef.current = true;
-    // 滚动到底部
-    messageViewScrollToBottom();
-    setShowScrollBtn(false);
   };
 
   // 消息事件代理（处理会话输出中的点击事件）
@@ -538,159 +493,58 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
               'overflow-hide',
             )}
           >
-            {/* 新对话设置 */}
-            <NewConversationSet
-              form={form}
-              variables={variables}
-              isFilled
-              userFillVariables={userFillVariables}
-            />
-            <div
-              className={cx(
-                styles['chat-wrapper'],
-                'scroll-container',
-                'flex-1',
-              )}
-              ref={messageViewRef}
-              onMouseEnter={() => setIsHoveringChat(true)}
-              onMouseLeave={() => setIsHoveringChat(false)}
-            >
-              {loadingConversation ? (
-                <div
-                  className={cx(
-                    'flex',
-                    'items-center',
-                    'content-center',
-                    'h-full',
-                  )}
-                >
-                  <LoadingOutlined className={cx(styles.loading)} />
-                </div>
-              ) : messageList?.length > 0 ? (
-                <>
-                  {/* 自动加载更多的触发探测元素 */}
-                  {isMoreMessage &&
-                    (messageList?.length || 0) >= MESSAGE_PAGE_SIZE && (
-                      <div
-                        ref={loadMoreRef}
-                        className={cx(styles['load-more-container'])}
-                      >
-                        {loadingMore ? (
-                          <span>
-                            <LoadingOutlined style={{ marginRight: 8 }} />
-                            {dict('PC.Pages.Chat.loadingHistoryConversation')}
-                          </span>
-                        ) : null}
-                      </div>
-                    )}
-                  {messageList?.map((item: MessageInfo) => (
-                    <ChatView
-                      // 后端接口返回的消息列表id存在相同的情况，所以需要使用id和index来唯一标识
-                      key={`${item.id}-${item?.index}`}
-                      messageInfo={item}
-                      roleInfo={roleInfo}
-                      mode={'chat'}
-                      showStatusDesc={
-                        agentConfigInfo?.type !== AgentTypeEnum.TaskAgent
-                      }
-                    />
-                  ))}
-                  {/*会话建议*/}
-                  <RecommendList
-                    loading={loadingSuggest}
-                    chatSuggestList={chatSuggestList}
-                    onClick={handleMessageSend}
-                  />
-
-                  {/* 任务执行中容器 */}
-                  {conversationInfo?.taskStatus === TaskStatus.EXECUTING && (
-                    <div
-                      className={cx(
-                        styles['task-executing-container'],
-                        'flex',
-                        'items-center',
-                      )}
-                    >
-                      <LoadingOutlined />
-                      <span>{dict('PC.Pages.Chat.agentExecutingWait')}</span>
-                    </div>
-                  )}
-                </>
-              ) : (
-                isLoadingConversation && (
-                  // Chat记录为空
-                  <AgentChatEmpty
-                    className="h-full"
-                    icon={agentConfigInfo?.icon}
-                    name={agentConfigInfo?.name as string}
-                    // 会话建议
-                    extra={
-                      <div className="flex flex-col items-center content-center">
-                        <div className={cx(styles['opening-chat-msg'])}>
-                          {agentConfigInfo?.openingChatMsg}
-                        </div>
-                        <RecommendList
-                          className="mt-16"
-                          chatSuggestList={
-                            agentConfigInfo?.guidQuestionDtos || []
-                          }
-                          onClick={handleMessageSend}
-                        />
-                      </div>
-                    }
-                  />
-                )
-              )}
-            </div>
-            {/* 会话状态显示 - 有消息时就显示 */}
-            {messageList?.length > 0 &&
-              conversationInfo &&
-              agentConfigInfo?.type === AgentTypeEnum.TaskAgent && (
-                <ConversationStatus
-                  messageList={messageList}
-                  className={cx(styles['conversation-status-bar'])}
-                />
-              )}
-            {/*会话输入框*/}
-            <ChatInputHome
-              key={`edit-agent-${agentId}`}
-              clearDisabled={!messageList?.length}
-              onEnter={handleMessageSend}
+            <UnifiedChatSession
+              conversationId={devConversationIdRef.current}
+              messageList={messageList}
+              roleInfo={roleInfo}
+              isLoading={loadingConversation}
+              loadingMore={loadingMore}
+              isMoreMessage={isMoreMessage}
+              isConversationActive={
+                conversationInfo?.taskStatus === TaskStatus.EXECUTING
+              }
+              messageBottomMode="chat"
+              loadingSuggest={loadingSuggest}
+              chatSuggestList={chatSuggestList}
+              agentInfo={{
+                id: agentId,
+                name: agentConfigInfo?.name,
+                icon: agentConfigInfo?.icon,
+                type: agentConfigInfo?.type,
+                openingChatMsg: agentConfigInfo?.openingChatMsg,
+                guidQuestionDtos: agentConfigInfo?.guidQuestionDtos,
+                eventBindConfig: agentConfigInfo?.eventBindConfig,
+                hasPermission: conversationInfo?.agent?.hasPermission,
+                sandboxId: conversationInfo?.agent?.sandboxId,
+              }}
+              onSendMessage={handleMessageSend}
               onClear={handleClear}
-              wholeDisabled={wholeDisabled}
-              visible={showScrollBtn && isHoveringChat}
+              onLoadMoreMessage={handleLoadMoreMessage}
+              selectedModelId={undefined}
               manualComponents={manualComponents}
               selectedComponentList={selectedComponentList}
               onSelectComponent={handleSelectComponent}
-              onScrollBottom={onScrollBottom}
-              isTaskAgentActive={
-                agentConfigInfo?.type === AgentTypeEnum.TaskAgent
-              }
+              requiredNameList={requiredNameList}
+              variableParams={variableParams}
+              form={form}
+              variables={variables}
+              userFillVariables={userFillVariables}
+              isVariablesFilled={true}
+              clearLoading={false}
+              isSelectionLocked={false}
+              hasUserSentMessage={hasUserSentMessage}
               selectedComputerId={selectedComputerId}
               onComputerSelect={(id) => {
                 setSelectedComputerId(id);
-                // 将当前用户选择的电脑ID传递给父组件,用于文件树中是否显示重启智能体电脑选项按钮(agentSandboxId)
                 onChangeSelectedComputerId?.(id);
               }}
-              agentId={agentId}
-              agentSandboxId={conversationInfo?.agent?.sandboxId}
-              hasPermission={conversationInfo?.agent?.hasPermission}
-              maskText={
-                conversationInfo?.agent?.hasPermission
-                  ? ''
-                  : dict('PC.Components.ChatInputHome.noAgentPermission')
-              }
-              fixedSelection={
-                !!conversationInfo?.agent?.sandboxId ||
-                !!conversationInfo?.sandboxServerId ||
-                hasUserSentMessage
-              }
-              isPersonalComputer={!!conversationInfo?.agent?.sandboxId}
-              // 禁用 @ 提及功能 (编排页面不支持 @ 提及功能)
+              showScrollBtn={showScrollBtn}
+              readonly={false}
               enableMention={false}
               placeholder={dict(
                 'PC.Components.ChatInputHomeMentionEditor.placeholderWithoutMention',
               )}
+              messageViewRef={messageViewRef}
             />
           </div>
         </div>

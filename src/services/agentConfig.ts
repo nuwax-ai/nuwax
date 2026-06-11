@@ -1,3 +1,4 @@
+import type { AgentInterventionRespondRequest } from '@/components/business-component/AgentIntervention';
 import {
   AgentAddParams,
   AgentCardInfo,
@@ -294,6 +295,34 @@ export async function apiAgentConversationChatStop(
 ): Promise<RequestResponse<null>> {
   return request(`/api/agent/conversation/chat/stop/${requestId}`, {
     method: 'POST',
+  });
+}
+
+export function apiAgentInterventionRespond(
+  data: AgentInterventionRespondRequest,
+): Promise<RequestResponse<unknown>> {
+  const permissionRequest = data.permission_resolve_request;
+  const selected = permissionRequest?.request_permission_response.outcome
+    ? 'Selected' in permissionRequest.request_permission_response.outcome
+      ? permissionRequest.request_permission_response.outcome.Selected
+      : null
+    : null;
+  const fallbackOptionId =
+    permissionRequest?.request_permission_response.outcome &&
+    'Cancelled' in permissionRequest.request_permission_response.outcome
+      ? 'reject'
+      : undefined;
+
+  return request('/api/agent/conversation/chat/permission-request/response', {
+    method: 'POST',
+    data: {
+      conversationId: data.conversation_id,
+      toolId: permissionRequest?.tool_call_id,
+      option: {
+        optionId: selected?.option_id || fallbackOptionId,
+        outcome: selected ? 'selected' : 'cancelled',
+      },
+    },
   });
 }
 

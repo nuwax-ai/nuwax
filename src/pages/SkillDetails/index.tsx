@@ -1,153 +1,55 @@
 import FileTreeView from '@/components/FileTreeView';
-import type { FileTreeViewRef } from '@/components/FileTreeView/type';
 import PublishComponentModal from '@/components/PublishComponentModal';
 import TipsBox from '@/components/TipsBox';
 import VersionHistory from '@/components/VersionHistory';
-import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { useNavigationGuard } from '@/hooks/useNavigationGuard';
+import CreateSkill from '@/pages/SpaceSkillManage/CreateSkill';
+import ImportSkillProjectModal from '@/pages/SpaceSkillManage/ImportSkillProjectModal';
 import { t } from '@/services/i18nRuntime';
-import {
-  apiSkillDetail,
-  apiSkillImport,
-  apiSkillUpdate,
-  apiSkillUploadFiles,
-} from '@/services/skill';
+import { apiSkillDetail } from '@/services/skill';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum, PublishStatusEnum } from '@/types/enums/common';
-import type { FileNode } from '@/types/interfaces/appDev';
 import { SkillInfo } from '@/types/interfaces/library';
-import {
-  SkillDetailInfo,
-  SkillFileInfo,
-  SkillUpdateParams,
-} from '@/types/interfaces/skill';
-import { modalConfirm } from '@/utils/ant-custom';
-import { exportFileViaBrowserDownload } from '@/utils/exportImportFile';
-import { updateFilesListContent, updateFilesListName } from '@/utils/fileTree';
-import { message } from 'antd';
+import type { SkillDetailInfo } from '@/types/interfaces/skill';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useParams, useRequest } from 'umi';
-import CreateSkill from '../SpaceSkillManage/CreateSkill';
-import ImportSkillProjectModal from '../SpaceSkillManage/ImportSkillProjectModal';
+import SkillChatSession from './components/SkillChatSession';
+import SkillHeader from './components/SkillHeader';
+import { useSkillFiles } from './hooks/useSkillFiles';
 import styles from './index.less';
-import SkillHeader from './SkillHeader';
 
 const cx = classNames.bind(styles);
 
-// 技能项目文件大小限制
-const SKILL_MAX_FILE_SIZE = 20 * 1024 * 1024; // 最大文件大小20MB
-
 /**
- * 技能详情页面
+ * 技能详情页面 (已重构，核心逻辑已拆分至 useSkillFiles 和 SkillModals)
  */
 const SkillDetails: React.FC = () => {
   const params = useParams();
   const spaceId = Number(params.spaceId);
   const skillId = Number(params.skillId);
+
   // 技能信息
   const [skillInfo, setSkillInfo] = useState<SkillDetailInfo | null>(null);
-  // 文件树数据加载状态
-  const [fileTreeDataLoading, setFileTreeDataLoading] =
-    useState<boolean>(false);
-  // 发布技能弹窗是否打开
+
+  // 弹窗状态管理
   const [open, setOpen] = useState<boolean>(false);
-  // 编辑技能信息弹窗是否打开
   const [editSkillModalOpen, setEditSkillModalOpen] = useState<boolean>(false);
-  // 版本历史弹窗是否打开
   const [versionHistoryModal, setVersionHistoryModal] =
     useState<boolean>(false);
-  // 文件树视图ref
-  const fileTreeViewRef = useRef<FileTreeViewRef>(null);
-  // 是否显示全屏预览
-  const [isFullscreenPreview, setIsFullscreenPreview] =
-    useState<boolean>(false);
-  // 是否正在导入项目
-  const [isImportingProject, setIsImportingProject] = useState<boolean>(false);
-  // 重新导入项目触发标志，用于强制触发文件选择 （用于重新导入项目后，强制触发文件选择）
-  const [importProjectTrigger, setImportProjectTrigger] = useState<
-    number | string
-  >(0);
-  // 导出项目加载状态
-  const [loadingExportProject, setLoadingExportProject] =
-    useState<boolean>(false);
 
-  // 导入技能项目弹窗
-  const [openImportSkillProject, setOpenImportSkillProject] =
-    useState<boolean>(false);
-
-  // 检查是否有未保存的文件修改
-  const hasUnsavedChanges = useCallback(() => {
-    const changeFiles = fileTreeViewRef.current?.changeFiles;
-    return Array.isArray(changeFiles) && changeFiles.length > 0;
-  }, []);
-
-  /**
-   * 如果有未保存的文件修改，则提示用户并返回
-   * @param text 操作文本
-   * @returns {boolean} true-可以继续执行，false-有未保存更改，需要阻止执行
-   */
-  const handleCheckUnsavedChanges = (
-    text: string = t('PC.Pages.SkillDetails.actionPublish'),
-  ): boolean => {
-    // 检查是否有未保存的文件修改
-    const _hasUnsavedChanges = hasUnsavedChanges();
-    if (_hasUnsavedChanges) {
-      message.warning(t('PC.Pages.SkillDetails.saveBeforeAction', text));
-      return false; // 有未保存更改，阻止执行
-    }
-    return true; // 没有未保存更改，可以继续执行
-  };
-
-  // 保存未保存的文件（用于离开保护）
-  const saveUnsavedFiles = useCallback(async () => {
-    const changeFiles = fileTreeViewRef.current?.changeFiles;
-    if (changeFiles && changeFiles.length > 0) {
-      // 更新文件列表(只更新修改过的文件)
-      const updatedFilesList = updateFilesListContent(
-        skillInfo?.files || [],
-        changeFiles,
-        'modify',
-      );
-
-      // 更新技能信息，用于提交更新
-      const newSkillInfo: SkillUpdateParams = {
-        id: skillInfo?.id || 0,
-        files: updatedFilesList,
-      };
-
-      try {
-        const { code } = await apiSkillUpdate(newSkillInfo);
-        if (code === SUCCESS_CODE) {
-          message.success(t('PC.Pages.SkillDetails.saveSuccess'));
-          return true;
-        }
-        return false;
-      } catch (error) {
-        console.error('Failed to save files:', error);
-        return false;
-      }
-    }
-    return true;
-  }, [skillInfo]);
-
-  // 导航拦截保护
-  useNavigationGuard({
-    condition: hasUnsavedChanges,
-    onConfirm: saveUnsavedFiles,
-    title: t('PC.Pages.SkillDetails.unsavedTitle'),
-    message: t('PC.Pages.SkillDetails.unsavedLeaveMessage'),
-    confirmText: t('PC.Pages.SkillDetails.saveAndLeave'),
-    discardText: t('PC.Pages.SkillDetails.leaveWithoutSaving'),
-  });
+  // 使用 ref 来解决 setFileTreeDataLoading 的循环依赖以及 ESLint 的 no-use-before-define 报错
+  const setFileTreeDataLoadingRef = useRef<(loading: boolean) => void>(
+    () => {},
+  );
 
   // 查询技能信息
   const { run: runSkillInfo } = useRequest(apiSkillDetail, {
     manual: true,
     debounceInterval: 300,
     onSuccess: async (result: SkillDetailInfo) => {
-      setFileTreeDataLoading(false);
+      setFileTreeDataLoadingRef.current(false);
       const { files } = result || {};
       if (Array.isArray(files) && files.length > 0) {
         setSkillInfo(() => ({
@@ -162,8 +64,52 @@ const SkillDetails: React.FC = () => {
       }
     },
     onError: () => {
-      setFileTreeDataLoading(false);
+      setFileTreeDataLoadingRef.current(false);
     },
+  });
+
+  // 使用自定义 Hook 管理文件交互逻辑
+  const {
+    fileTreeViewRef,
+    fileTreeDataLoading,
+    setFileTreeDataLoading,
+    isFullscreenPreview,
+    setIsFullscreenPreview,
+    isImportingProject,
+    importProjectTrigger,
+    openImportSkillProject,
+    setOpenImportSkillProject,
+    loadingExportProject,
+    handleCheckUnsavedChanges,
+    saveUnsavedFiles,
+    handleDeleteFile,
+    handleCreateFileNode,
+    handleConfirmRenameFile,
+    handleSaveFiles,
+    handleUploadMultipleFiles,
+    handleExportProject,
+    handleImportProject,
+    handleImportSkillProjectConfirm,
+    hasUnsavedChanges,
+  } = useSkillFiles({
+    skillId,
+    spaceId,
+    skillInfo,
+    setSkillInfo,
+    runSkillInfo,
+  });
+
+  // 更新 ref 以便在 runSkillInfo 中调用
+  setFileTreeDataLoadingRef.current = setFileTreeDataLoading;
+
+  // 拦截离开页面
+  useNavigationGuard({
+    condition: hasUnsavedChanges,
+    onConfirm: saveUnsavedFiles,
+    title: t('PC.Pages.SkillDetails.unsavedTitle'),
+    message: t('PC.Pages.SkillDetails.unsavedLeaveMessage'),
+    confirmText: t('PC.Pages.SkillDetails.saveAndLeave'),
+    discardText: t('PC.Pages.SkillDetails.leaveWithoutSaving'),
   });
 
   useEffect(() => {
@@ -176,10 +122,7 @@ const SkillDetails: React.FC = () => {
   // 确认发布技能回调
   const handleConfirmPublish = () => {
     setOpen(false);
-
-    // 同步发布时间和修改时间
     const time = dayjs().toString();
-    // 更新智能体配置信息
     const _skillInfo = {
       ...skillInfo,
       publishDate: time,
@@ -189,300 +132,15 @@ const SkillDetails: React.FC = () => {
     setSkillInfo(_skillInfo);
   };
 
-  // 确认导入技能项目
-  const handleImportSkillProjectConfirm = async (file: File) => {
-    try {
-      setIsImportingProject(true);
-      // 调用导入接口
-      const { code } = await apiSkillImport({
-        file,
-        targetSkillId: skillId,
-        targetSpaceId: spaceId,
-      });
-
-      setIsImportingProject(false);
-      if (code === SUCCESS_CODE) {
-        message.success(t('PC.Pages.SkillDetails.importSuccess'));
-        setOpenImportSkillProject(false);
-        // 刷新技能信息
-        runSkillInfo(skillId);
-        setImportProjectTrigger(Date.now());
-      }
-    } catch (error) {
-      setIsImportingProject(false);
-      console.error('Import failed:', error);
-    }
-  };
-
-  // 导入项目
-  const handleImportProject = async () => {
-    if (!skillId) {
-      message.error(t('PC.Pages.SkillDetails.skillIdRequired'));
-      return;
-    }
-
-    if (!spaceId) {
-      message.error(t('PC.Pages.SkillDetails.spaceIdRequired'));
-      return;
-    }
-
-    setOpenImportSkillProject(true);
-  };
-
-  /**
-   * 处理上传多个文件回调
-   * @param files 文件列表
-   * @param filePaths 文件路径列表
-   * @returns Promise<void>
-   */
-  const handleUploadMultipleFiles = async (
-    files: File[],
-    filePaths: string[],
-  ) => {
-    if (!skillId) {
-      message.error(t('PC.Pages.SkillDetails.skillIdRequired'));
-      return;
-    }
-
-    // 上传文件总大小
-    const totalSize = files?.reduce((acc, file) => acc + file.size, 0);
-
-    // 上传文件总大小限制为20MB
-    if (totalSize > SKILL_MAX_FILE_SIZE) {
-      message.error(t('PC.Pages.SkillDetails.uploadSizeLimitExceeded'));
-      return;
-    }
-
-    try {
-      // 直接调用上传接口，使用文件名作为路径
-      const { code } = await apiSkillUploadFiles({
-        files,
-        skillId,
-        filePaths,
-      });
-
-      if (code === SUCCESS_CODE) {
-        message.success(t('PC.Pages.SkillDetails.uploadSuccess'));
-        // 刷新项目详情
-        runSkillInfo(skillId);
-      }
-    } catch (error) {
-      console.error('Upload failed:', error);
-    }
-  };
-
-  // 导出项目
-  const handleExportProject = async () => {
-    // 检查项目ID是否有效
-    if (!skillId) {
-      message.warning(t('PC.Pages.SkillDetails.invalidSkillIdForExport'));
-      return;
-    }
-
-    try {
-      setLoadingExportProject(true);
-      // 获取技能导出文件链接地址
-      const linkUrl = `${process.env.BASE_URL}/api/skill/export/${skillId}`;
-      // 通过浏览器下载文件
-      exportFileViaBrowserDownload(linkUrl);
-      message.success(t('PC.Pages.SkillDetails.exportSuccess'));
-    } catch (error) {
-      console.error('Failed to export project:', error);
-    } finally {
-      setLoadingExportProject(false);
-    }
-  };
-
-  // 删除文件
-  const handleDeleteFile = async (fileNode: FileNode): Promise<boolean> => {
-    return new Promise((resolve) => {
-      modalConfirm(
-        t('PC.Pages.SkillDetails.confirmDeleteFile'),
-        fileNode.name,
-        async () => {
-          try {
-            let updatedFilesList: SkillFileInfo[] = [];
-            if (fileNode.type === 'folder') {
-              updatedFilesList = [
-                {
-                  contents: '',
-                  name: fileNode.id,
-                  operation: 'delete', // 操作类型
-                  isDir: true,
-                },
-              ];
-            } else {
-              // 找到要删除的文件
-              const currentFile = skillInfo?.files?.find(
-                (item) => item.fileId === fileNode.id,
-              );
-              if (!currentFile) {
-                message.error(t('PC.Pages.SkillDetails.fileNotFound'));
-                resolve(false);
-                return;
-              }
-
-              // 更新文件操作
-              currentFile.operation = 'delete';
-              // 删除时，设置文件内容为空，避免上传内容导致删除文件时长太久
-              currentFile.contents = '';
-              // 更新文件列表
-              updatedFilesList = [currentFile];
-            }
-
-            // 更新技能信息
-            const newSkillInfo: SkillUpdateParams = {
-              id: skillInfo?.id || 0,
-              files: updatedFilesList,
-            };
-            const { code } = await apiSkillUpdate(newSkillInfo);
-            if (code === SUCCESS_CODE) {
-              // 重新查询技能信息，因为更新了文件名或文件夹名称，需要刷新文件树
-              runSkillInfo(skillId);
-              message.success(t('PC.Pages.SkillDetails.deleteSuccess'));
-              resolve(true);
-            } else {
-              resolve(false);
-            }
-          } catch (error) {
-            console.error('Failed to delete file:', error);
-            resolve(false);
-          }
-        },
-        () => {
-          // 用户取消删除
-          resolve(false);
-        },
-      );
-    });
-  };
-
-  // 新建文件（空内容）、文件夹
-  const handleCreateFileNode = async (
-    fileNode: FileNode,
-    newName: string,
-  ): Promise<boolean> => {
-    if (!skillInfo) {
-      message.error(t('PC.Pages.SkillDetails.skillInfoMissing'));
-      return false;
-    }
-
-    const trimmedName = newName.trim();
-    if (!trimmedName) {
-      return false;
-    }
-
-    // 计算新文件的完整路径：父路径 + 新文件名
-    const parentPath = fileNode.parentPath || '';
-    const newPath = parentPath ? `${parentPath}/${trimmedName}` : trimmedName;
-
-    const newFile: SkillFileInfo = {
-      fileId: newPath,
-      name: newPath,
-      contents: '',
-      operation: 'create',
-      isDir: fileNode.type === 'folder',
-    };
-
-    const updatedFilesList: SkillFileInfo[] = [newFile];
-
-    const newSkillInfo: SkillUpdateParams = {
-      id: skillInfo.id,
-      files: updatedFilesList,
-    };
-
-    const { code } = await apiSkillUpdate(newSkillInfo);
-    if (code === SUCCESS_CODE && skillId) {
-      // 新建成功后，重新拉取技能详情以刷新文件树和文件列表
-      setFileTreeDataLoading(true);
-      runSkillInfo(skillId);
-      return true;
-    }
-
-    return false;
-  };
-
-  // 确认重命名文件
-  const handleConfirmRenameFile = async (
-    fileNode: FileNode,
-    newName: string,
-  ) => {
-    // 更新原始文件列表中的文件名（用于提交更新）
-    const updatedFilesList = updateFilesListName(
-      skillInfo?.files || [],
-      fileNode,
-      newName,
-    );
-
-    // 更新技能信息，用于提交更新
-    const newSkillInfo: SkillUpdateParams = {
-      id: skillInfo?.id || 0,
-      files: updatedFilesList as unknown as SkillFileInfo[],
-    };
-
-    // 使用文件全量更新逻辑
-    const { code } = await apiSkillUpdate(newSkillInfo);
-    if (code === SUCCESS_CODE) {
-      // 重新查询技能信息，因为更新了文件名或文件夹名称，需要刷新文件树
-      setFileTreeDataLoading(true);
-      runSkillInfo(skillId);
-    }
-    return code === SUCCESS_CODE;
-  };
-
-  // 保存文件
-  const handleSaveFiles = async (
-    data: {
-      fileId: string;
-      fileContent: string;
-      originalFileContent: string;
-    }[],
-  ) => {
-    // 更新文件列表(只更新修改过的文件)
-    const updatedFilesList = updateFilesListContent(
-      skillInfo?.files || [],
-      data,
-      'modify',
-    );
-
-    // 更新技能信息，用于提交更新
-    const newSkillInfo: SkillUpdateParams = {
-      id: skillInfo?.id || 0,
-      files: updatedFilesList,
-    };
-
-    // 使用文件全量更新逻辑
-    const { code } = await apiSkillUpdate(newSkillInfo);
-    if (code === SUCCESS_CODE && skillId) {
-      // 重新查询技能信息，刷新文件树和文件列表
-      setFileTreeDataLoading(true);
-      runSkillInfo(skillId);
-
-      // 已发布的技能，修改时需要更新修改时间
-      if (
-        skillInfo &&
-        skillInfo.publishStatus === PublishStatusEnum.Published
-      ) {
-        setSkillInfo({
-          ...skillInfo,
-          modified: dayjs().toString(),
-        } as SkillDetailInfo);
-      }
-    }
-    return code === SUCCESS_CODE;
-  };
-
   // 确认编辑技能信息
   const handleEditSkillConfirm = () => {
     setEditSkillModalOpen(false);
-    // 重新查询技能信息，因为更新了技能信息，需要刷新文件树和文件列表
     setFileTreeDataLoading(true);
     runSkillInfo(skillId);
   };
 
   // 发布技能
   const handlePublishSkill = () => {
-    // 检查是否有未保存的文件修改，如果有则阻止执行
     if (!handleCheckUnsavedChanges()) {
       return;
     }
@@ -491,7 +149,6 @@ const SkillDetails: React.FC = () => {
 
   // 编辑技能信息
   const handleEditSkill = () => {
-    // 检查是否有未保存的文件修改，如果有则阻止执行
     if (!handleCheckUnsavedChanges(t('PC.Pages.SkillDetails.actionEdit'))) {
       return;
     }
@@ -499,24 +156,17 @@ const SkillDetails: React.FC = () => {
   };
 
   return (
-    <div
-      className={cx('flex', 'h-full', 'flex-col', 'overflow-hide', 'relative')}
-    >
+    <div className={cx(styles['page-container'])}>
       {/* 技能头部 */}
       <SkillHeader
         spaceId={spaceId}
         skillInfo={skillInfo}
-        // 编辑技能信息
         onEditAgent={handleEditSkill}
         onPublish={handlePublishSkill}
         onToggleHistory={() => setVersionHistoryModal(!versionHistoryModal)}
-        // 导入项目
         onImportProject={handleImportProject}
-        // 导出项目
         onExportProject={handleExportProject}
-        // 是否正在导出项目
         isExportingProject={loadingExportProject}
-        // 全屏
         onFullscreen={() => {
           setIsFullscreenPreview(true);
         }}
@@ -529,99 +179,95 @@ const SkillDetails: React.FC = () => {
         text={t('PC.Pages.SkillDetails.exporting')}
       />
 
-      <div className={cx('flex', 'flex-1', 'overflow-y')}>
-        {/* 文件树视图 */}
-        <FileTreeView
-          // 通用型智能体会话中点击选中的文件ID
-          taskAgentSelectedFileId={'SKILL.md'}
-          // 初始化视图类型
-          initViewFileType={'code'}
-          // 重新导入项目触发标志，用于强制触发文件选择 （用于重新导入项目后，强制触发文件选择）
-          isImportProjectTrigger={importProjectTrigger}
-          // 是否为项目技能模式
-          isProjectSkill={true}
-          ref={fileTreeViewRef}
-          // 文件树数据加载状态
-          fileTreeDataLoading={fileTreeDataLoading}
-          // 技能文件列表
-          originalFiles={skillInfo?.files || []}
-          // 上传文件
-          onUploadFiles={handleUploadMultipleFiles}
-          // 导出项目
-          onExportProject={handleExportProject}
-          // 重命名文件
-          onRenameFile={handleConfirmRenameFile}
-          // 新建文件
-          onCreateFileNode={handleCreateFileNode}
-          // 保存文件
-          onSaveFiles={handleSaveFiles}
-          // 删除文件
-          onDeleteFile={handleDeleteFile}
-          // 导入项目
-          onImportProject={handleImportProject}
-          // 是否正在导入项目
-          isImportingProject={isImportingProject}
-          // 是否显示更多操作菜单
-          showMoreActions={false}
-          // 是否显示全屏预览
-          isFullscreenPreview={isFullscreenPreview}
-          // 全屏预览
-          onFullscreenPreview={setIsFullscreenPreview}
-          // 是否显示全屏图标
-          showFullscreenIcon={false}
-          // 文件树是否固定（用户点击后固定）
-          isFileTreePinned={true}
-          // 技能不显示刷新按钮
-          showRefreshButton={false}
-          // 技能不显示分享按钮
-          isShowShare={false}
-          // 技能不显示下载按钮
-          isShowDownloadButton={false}
-          // 是否显示导出 PDF 按钮, 默认显示
-          isShowExportPdfButton={false}
-        />
+      <div className={cx(styles['layout-wrapper'])}>
+        {/* 左侧：调试聊天会话区域 */}
+        <div className={cx(styles['chat-section'])}>
+          <SkillChatSession skillInfo={skillInfo} />
+        </div>
 
-        {/*版本历史*/}
-        <VersionHistory
-          headerClassName={cx(styles['version-history-header'])}
-          targetId={skillId}
-          targetName={skillInfo?.name}
-          targetType={AgentComponentTypeEnum.Skill}
-          permissions={skillInfo?.permissions || []}
-          visible={versionHistoryModal}
-          onClose={() => setVersionHistoryModal(false)}
-        />
+        {/* 右侧：原有的详情内容区域 */}
+        <div className={cx(styles['detail-section'])}>
+          <div
+            className={cx(
+              'flex',
+              'h-full',
+              'flex-col',
+              'overflow-hide',
+              'relative',
+            )}
+          >
+            <div className={cx('flex', 'flex-1', 'overflow-y')}>
+              {/* 文件树视图 */}
+              <FileTreeView
+                taskAgentSelectedFileId={'SKILL.md'}
+                initViewFileType={'code'}
+                isImportProjectTrigger={importProjectTrigger}
+                isProjectSkill={true}
+                ref={fileTreeViewRef}
+                fileTreeDataLoading={fileTreeDataLoading}
+                originalFiles={skillInfo?.files || []}
+                onUploadFiles={handleUploadMultipleFiles}
+                onExportProject={handleExportProject}
+                onRenameFile={handleConfirmRenameFile}
+                onCreateFileNode={handleCreateFileNode}
+                onSaveFiles={handleSaveFiles}
+                onDeleteFile={handleDeleteFile}
+                onImportProject={handleImportProject}
+                isImportingProject={isImportingProject}
+                showMoreActions={false}
+                isFullscreenPreview={isFullscreenPreview}
+                onFullscreenPreview={setIsFullscreenPreview}
+                showFullscreenIcon={false}
+                isFileTreePinned={true}
+                showRefreshButton={false}
+                isShowShare={false}
+                isShowDownloadButton={false}
+                isShowExportPdfButton={false}
+              />
+
+              {/*版本历史*/}
+              <VersionHistory
+                headerClassName={cx(styles['version-history-header'])}
+                targetId={skillId}
+                targetName={skillInfo?.name}
+                targetType={AgentComponentTypeEnum.Skill}
+                permissions={skillInfo?.permissions || []}
+                visible={versionHistoryModal}
+                onClose={() => setVersionHistoryModal(false)}
+              />
+            </div>
+
+            {/*发布技能弹窗*/}
+            <PublishComponentModal
+              mode={AgentComponentTypeEnum.Skill}
+              targetId={skillId}
+              open={open}
+              spaceId={spaceId}
+              category={skillInfo?.category}
+              onCancel={() => setOpen(false)}
+              onConfirm={handleConfirmPublish}
+            />
+
+            {/* 创建技能弹窗 */}
+            <CreateSkill
+              spaceId={spaceId}
+              open={editSkillModalOpen}
+              type={CreateUpdateModeEnum.Update}
+              skillInfo={skillInfo ? (skillInfo as SkillInfo) : undefined}
+              onCancel={() => setEditSkillModalOpen(false)}
+              onConfirm={handleEditSkillConfirm}
+            />
+
+            {/* 导入技能项目弹窗 */}
+            <ImportSkillProjectModal
+              open={openImportSkillProject}
+              isCreate={false}
+              onCancel={() => setOpenImportSkillProject(false)}
+              onConfirm={handleImportSkillProjectConfirm}
+            />
+          </div>
+        </div>
       </div>
-
-      {/*发布技能弹窗*/}
-      <PublishComponentModal
-        mode={AgentComponentTypeEnum.Skill}
-        targetId={skillId}
-        open={open}
-        spaceId={spaceId}
-        category={skillInfo?.category}
-        // 取消发布
-        onCancel={() => setOpen(false)}
-        onConfirm={handleConfirmPublish}
-      />
-
-      {/* 创建技能弹窗 */}
-      <CreateSkill
-        spaceId={spaceId}
-        open={editSkillModalOpen}
-        type={CreateUpdateModeEnum.Update}
-        skillInfo={skillInfo as SkillInfo}
-        onCancel={() => setEditSkillModalOpen(false)}
-        onConfirm={handleEditSkillConfirm}
-      />
-
-      {/* 导入技能项目弹窗 */}
-      <ImportSkillProjectModal
-        open={openImportSkillProject}
-        isCreate={false}
-        onCancel={() => setOpenImportSkillProject(false)}
-        onConfirm={handleImportSkillProjectConfirm}
-      />
     </div>
   );
 };

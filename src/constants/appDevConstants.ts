@@ -170,16 +170,6 @@ export const KEYBOARD_SHORTCUTS = {
 } as const;
 
 /**
- * 版本相关常量
- */
-export const VERSION_CONSTANTS = {
-  AVAILABLE_VERSIONS: ['v1', 'v2', 'v3', 'v4', 'v5'],
-  DEFAULT_VERSION: 'v4',
-  READ_ONLY_MESSAGE: dict('PC.Constants.AppDev.readOnlyMessage'),
-  PREVIEW_DISABLED_MESSAGE: dict('PC.Constants.AppDev.previewDisabledMessage'),
-} as const;
-
-/**
  * 上传文件类型限制
  */
 export const UPLOAD_CONSTANTS = {

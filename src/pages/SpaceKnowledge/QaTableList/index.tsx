@@ -201,7 +201,7 @@ const QaTableList = forwardRef<QaTableListRef, QaTableListProps>(
           justifyContent: data.length > 0 ? 'flex-start' : 'center',
         }}
       >
-        {data.length > 0  ? (
+        {data.length > 0 ? (
           <Table
             rowKey="id"
             columns={columns}
