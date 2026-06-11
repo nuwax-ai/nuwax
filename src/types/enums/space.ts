@@ -23,8 +23,6 @@ export enum AgentTypeEnum {
   ChatBot = 'ChatBot',
   PageApp = 'PageApp',
   TaskAgent = 'TaskAgent',
-  AgentFlow = 'AgentFlow',
-  ConversationAgent = 'ConversationAgent',
 }
 
 // 过滤状态枚举
