@@ -273,26 +273,32 @@
   }
 }
 
-.action-btn {
+.save-time-box {
+  gap: @paddingXs;
+  color: @navFirstMenuTextSecondary;
+
+  .save-time {
+    font-size: 12px;
+    font-weight: @fontWeightStrong;
+    line-height: 19px;
+  }
+
+  .volcano {
+    color: @colorWarningText;
+    background: @colorWarningBg;
+    padding: 4px 8px;
+  }
+
+  :global {
+    .ant-tag {
+      margin-inline-end: 0;
+    }
+  }
+}
+
+.publish-btn {
   height: 28px;
   padding: 0 @paddingSm;
   font-size: @fontSizeSm;
   border-radius: @borderRadius;
-}
-
-.collaborate-btn {
-  border-color: @colorBorder;
-  color: @colorText;
-}
-
-.deploy-btn {
-  background: #151515;
-  border-color: #151515;
-  color: #fff;
-
-  &:hover {
-    background: #333 !important;
-    border-color: #333 !important;
-    color: #fff !important;
-  }
 }

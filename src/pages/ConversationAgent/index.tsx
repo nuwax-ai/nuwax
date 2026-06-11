@@ -1368,6 +1368,10 @@ const ConversationAgent: React.FC = () => {
           onTabReorder={previewTabs.reorderTabs}
           // 打开标签选择器
           onAddTab={previewTabs.openPickerTab}
+          // 智能体配置（保存时间、未发布提示）
+          agentConfigInfo={agentConfigInfo}
+          // 打开发布弹窗
+          onPublish={() => setOpen(true)}
         />
         {/* Tab 栏下方：预览内容 + 底部终端（终端放大时仅覆盖此区域） */}
         <div className={cx(styles['right-panel-main'])}>
