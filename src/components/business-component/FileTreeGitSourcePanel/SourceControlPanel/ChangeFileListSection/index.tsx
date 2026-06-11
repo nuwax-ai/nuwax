@@ -1,19 +1,20 @@
 import SvgIcon from '@/components/base/SvgIcon';
+import { EllipsisTooltip } from '@/components/custom/EllipsisTooltip';
 import fileTreeStyles from '@/components/FileTreeView/FileTree/index.less';
 import { getFileIcon } from '@/utils/fileTree';
 import { RightOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import type { ChangeListItem } from '../utils/buildChangeFileTree';
+import type { ChangeListItem } from '../../utils/buildChangeFileTree';
 import {
   buildChangeFileTree,
   type ChangeTreeNode,
-} from '../utils/buildChangeFileTree';
+} from '../../utils/buildChangeFileTree';
 import {
   type ChangeListSection,
   isChangeFileSelected,
   type SelectedChangeFile,
-} from '../utils/changeFileStatus';
+} from '../../utils/changeFileStatus';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -146,12 +147,26 @@ const ChangeFileListSection: React.FC<ChangeFileListSectionProps> = ({
       <span className={cx(styles['file-icon'])}>
         {getFileIcon(item.fileName)}
       </span>
+
+      {/* 文件信息 */}
       <div className={cx(styles['file-info'])}>
-        <span className={cx(styles['file-name'])}>{item.fileName}</span>
+        {/* 文件名 */}
+        <span className={cx(styles['file-name'], 'text-ellipsis')}>
+          {item.fileName}
+        </span>
+
+        {/* 文件路径 */}
         {item.parentPath && (
-          <span className={cx(styles['file-path'])}>{item.parentPath}</span>
+          <div className={cx(styles['file-path-wrap'])}>
+            <EllipsisTooltip
+              className={cx(styles['file-path'])}
+              text={item.parentPath}
+            />
+          </div>
         )}
       </div>
+
+      {/* 文件状态 */}
       {renderStatusBadge(item)}
     </div>
   );
@@ -191,6 +206,7 @@ const ChangeFileListSection: React.FC<ChangeFileListSectionProps> = ({
     );
   };
 
+  /** 树形视图：渲染文件夹与文件 */
   const renderTreeNodes = (nodes: ChangeTreeNode[], level = 0) =>
     nodes.map((node) => {
       if (node.type === 'file' && node.fileItem) {
@@ -245,6 +261,7 @@ const ChangeFileListSection: React.FC<ChangeFileListSectionProps> = ({
         styles['changes-section-nested'],
       )}
     >
+      {/* 区块标题 */}
       <div
         className={cx(styles['changes-header'])}
         onClick={() => setExpanded((prev) => !prev)}
