@@ -22,16 +22,18 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
+export interface SubmitPayload {
+  type: AgentComponentTypeEnum;
+  prompt: string;
+  files?: any[];
+  skillIds?: number[];
+  modelId?: number;
+  tools?: any[];
+  computerId?: string;
+}
+
 interface PromptBoxProps {
-  onSubmit: (
-    type: string,
-    prompt: string,
-    files?: any[],
-    skillIds?: number[],
-    modelId?: number,
-    tools?: any[],
-    computerId?: string,
-  ) => void;
+  onSubmit: (payload: SubmitPayload) => void;
 }
 
 interface TabItem {
@@ -163,15 +165,15 @@ const PromptBox: React.FC<PromptBoxProps> = ({ onSubmit }) => {
         message.warning('请输入您的任务描述！');
         return;
       }
-      onSubmit(
-        activeTabRef.current,
-        msg,
+      onSubmit({
+        type: activeTabRef.current as AgentComponentTypeEnum,
+        prompt: msg,
         files,
         skillIds,
         modelId,
-        selectedComponentList,
-        selectedComputerId,
-      );
+        tools: selectedComponentList,
+        computerId: selectedComputerId,
+      });
     },
     [onSubmit, selectedComponentList, selectedComputerId],
   );
