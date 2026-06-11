@@ -29,11 +29,32 @@ export interface UseAgentInterventionLayerResult {
   agentModeInputProps: AgentModeInputProps;
 }
 
+const AGENT_MODE_STORAGE_KEY = 'nuwax_agent_mode_cache';
+
 export function useAgentInterventionLayer(
   options: UseAgentInterventionLayerOptions,
 ): UseAgentInterventionLayerResult {
   const { conversationId, messageList, onSendMessage } = options;
-  const [agentMode, setAgentMode] = useState<AgentMode>('yolo');
+  const [agentMode, setAgentModeState] = useState<AgentMode>(() => {
+    try {
+      const cached = localStorage.getItem(AGENT_MODE_STORAGE_KEY);
+      if (cached === 'yolo' || cached === 'ask') {
+        return cached as AgentMode;
+      }
+    } catch (e) {
+      // ignore localStorage errors
+    }
+    return 'yolo';
+  });
+
+  const setAgentMode = useCallback((mode: AgentMode) => {
+    setAgentModeState(mode);
+    try {
+      localStorage.setItem(AGENT_MODE_STORAGE_KEY, mode);
+    } catch (e) {
+      // ignore localStorage errors
+    }
+  }, []);
 
   const {
     isConversationActive,

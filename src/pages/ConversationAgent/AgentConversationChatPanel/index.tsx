@@ -1,8 +1,8 @@
 import { UnifiedChatSession } from '@/components/business-component';
 import { TaskStatus } from '@/types/enums/agent';
 import classNames from 'classnames';
-import React from 'react';
-import { useModel } from 'umi';
+import React, { useEffect, useState } from 'react';
+import { history, useLocation, useModel } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -17,8 +17,6 @@ export interface AgentConversationChatPanelProps {
   onChangeSelectedComputerId?: (id: string) => void;
   /** 当前选中的电脑 ID */
   selectedComputerId?: string;
-  /** 打开编辑智能体基础信息弹窗 */
-  onEditAgent?: () => void;
 }
 
 /**
@@ -29,6 +27,32 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
   onChangeSelectedComputerId,
   selectedComputerId,
 }) => {
+  const location = useLocation();
+
+  // 是否锁定电脑选择（仅在带有 selectedComputerId 且为 PUSH 跳转时生效）
+  const [isSelectionLocked, setIsSelectionLocked] = useState<boolean>(false);
+
+  // 模型ID
+  const [selectedModelId, setSelectedModelId] = useState<number>(
+    (location.state as any)?.modelId,
+  );
+
+  // 仅在本次会话中使用从其它页面带过来的 selectedComputerId；
+  // 刷新（POP）或新建会话（REPLACE）时，不再沿用之前的选择。
+  useEffect(() => {
+    const passedDetails = (location.state as any)?.selectedComputerId;
+
+    // PUSH: 正常跳转
+    const isPushWithComputer = history.action === 'PUSH' && !!passedDetails;
+
+    if (isPushWithComputer) {
+      onChangeSelectedComputerId?.(passedDetails);
+      setIsSelectionLocked(true);
+    } else {
+      onChangeSelectedComputerId?.('');
+      setIsSelectionLocked(false);
+    }
+  }, [history.action, location.key]);
   // ==================== 全局状态模型 ====================
   const {
     conversationInfo,
@@ -69,13 +93,18 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
             ...conversationInfo?.agent,
             id: conversationInfo?.agent?.agentId,
             sandboxId: selectedComputerId,
-            // selectedComputerId ||
-            // conversationInfo?.agent?.sandboxId ||
-            // conversationInfo?.sandboxServerId ||
-            // '',
           }}
           allowOtherModel={conversationInfo?.agent?.allowOtherModel}
-          onSendMessage={(messageInfo, files, skillIds) => {
+          selectedModelId={selectedModelId}
+          onModelSelect={setSelectedModelId}
+          isSelectionLocked={isSelectionLocked}
+          onSendMessage={(
+            messageInfo,
+            files,
+            skillIds,
+            modelId,
+            selectedAgentMode,
+          ) => {
             const id = conversationInfo?.id;
             if (id) {
               onMessageSend({
@@ -84,13 +113,11 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
                 files,
                 infos: manualComponents,
                 sandboxId: selectedComputerId,
-                // selectedComputerId ||
-                // conversationInfo?.agent?.sandboxId ||
-                // conversationInfo?.sandboxServerId ||
-                // '',
                 debug: true,
                 isSync: false,
                 skillIds,
+                modelId: modelId || selectedModelId,
+                agentMode: selectedAgentMode,
               });
             }
           }}
