@@ -60,14 +60,22 @@ const AGENT_TYPE_LIST_ALL = [
   {
     value: AgentTypeEnum.ChatBot,
     label: dict('PC.Constants.Space.chatBotType'),
-    // icon: <ICON_AGENT />,
     tooltip: dict('PC.Constants.Space.chatBotTypeTooltip'),
   },
   {
     value: AgentTypeEnum.TaskAgent,
     label: dict('PC.Constants.Space.taskAgentType'),
-    // icon: <ICON_AGENT />,
     tooltip: dict('PC.Constants.Space.taskAgentTypeTooltip'),
+  },
+  {
+    value: AgentTypeEnum.AgentFlow,
+    label: 'AgentFlow',
+    tooltip: 'AgentFlow',
+  },
+  {
+    value: AgentTypeEnum.ConversationAgent,
+    label: 'ConversationAgent',
+    tooltip: 'ConversationAgent',
   },
 ];
 

@@ -1,4 +1,5 @@
 import SvgIcon from '@/components/base/SvgIcon';
+import type { AgentMode } from '@/components/business-component/AgentIntervention';
 import PaymentSubscriptionModal from '@/components/business-component/PaymentSubscriptionModal';
 import ChatUploadFile from '@/components/ChatUploadFile';
 import ConditionRender from '@/components/ConditionRender';
@@ -15,10 +16,11 @@ import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import { handleUploadFileList } from '@/utils/upload';
 import {
   ArrowDownOutlined,
+  CheckOutlined,
   DesktopOutlined,
   LoadingOutlined,
 } from '@ant-design/icons';
-import { message, Tooltip, Upload, UploadProps } from 'antd';
+import { Dropdown, message, Tooltip, Upload, UploadProps } from 'antd';
 import classNames from 'classnames';
 import React, {
   useCallback,
@@ -38,6 +40,11 @@ import type { MentionEditorHandle, MentionItem } from './MentionPopup/types';
 import ModelSelector from './ModelSelector';
 
 const cx = classNames.bind(styles);
+
+const AGENT_MODE_LABEL: Record<AgentMode, string> = {
+  yolo: 'YOLO',
+  ask: 'Ask',
+};
 
 /**
  * 聊天输入组件
@@ -88,6 +95,12 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   onModelSelect,
   /** 智能体类型 */
   agentType,
+  tabsSlot,
+  prefix,
+  agentMode = 'yolo',
+  onAgentModeChange,
+  showAgentModeSelector = false,
+  usageScenarios,
 }) => {
   // 获取停止会话相关的方法和状态
   const {
@@ -188,7 +201,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   const confirmSendMessage = (value: string) => {
     // 如果输入框内容不为空 或者 附件文件列表不为空
     if (!!value.trim() || !!files?.length) {
-      onEnter(value, files, skillIds, selectedModelId);
+      onEnter(value, files, skillIds, selectedModelId, agentMode);
       // 如果需要清空输入框
       if (isClearInput) {
         // 清空附件文件列表
@@ -590,6 +603,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
       <div
         className={cx(styles['chat-container'], 'flex', 'flex-col', {
           [styles['drag-over']]: isDragging,
+          [styles['has-tabs']]: !!tabsSlot,
         })}
         onDragEnter={handleDragEnter}
         onDragLeave={handleDragLeave}
@@ -610,216 +624,246 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
               : t('PC.Components.ChatInputHome.agentComputerUnavailable'))
           }
         />
-        {/*文件列表*/}
-        <ConditionRender condition={uploadFiles?.length}>
-          <ChatUploadFile files={uploadFiles} onDel={handleDelFile} />
-        </ConditionRender>
-        {/*输入框 - 使用 MentionEditor 实现 @ 提及功能*/}
-        <MentionEditor
-          ref={mentionEditorRef}
-          className={cx(styles.input)}
-          disabled={wholeDisabled}
-          value={messageInfo}
-          onChange={setMessageInfo}
-          onSkillIdsChange={setSkillIds}
-          // 是否启用 @ 提及功能，默认启用
-          enableMention={enableMention}
-          // @ 弹窗展示方向：auto | up | down
-          mentionPlacement={mentionPlacement}
-          // 回车事件处理
-          onPressEnter={handlePressEnter}
-          // 粘贴事件处理
-          onPaste={handlePaste}
-          placeholder={placeholder}
-          // 默认提及项列表
-          defaultMentions={defaultMentions}
-          enableSubscription={isEnableSubscription}
-          onUnsubscribedSkillSelect={handleUnsubscribedSkillSelect}
-        />
-        <footer className={cx('flex', 'flex-1', styles.footer)}>
-          {/* 清空会话记录 */}
-          {!!messageList?.filter((item: MessageInfo) => item.id)?.length && (
-            <ConditionRender condition={!!onClear}>
-              <Tooltip title={t('PC.Components.ChatInputHome.clearRecord')}>
+
+        {/* Tab 头部插槽 */}
+        {tabsSlot && (
+          <div className={cx(styles['tabs-wrapper'])}>{tabsSlot}</div>
+        )}
+
+        {/* 输入核心包裹区域 */}
+        <div className={cx(styles['input-wrapper'])}>
+          {/*文件列表*/}
+          <ConditionRender condition={uploadFiles?.length}>
+            <ChatUploadFile files={uploadFiles} onDel={handleDelFile} />
+          </ConditionRender>
+          {/*输入框 - 使用 MentionEditor 实现 @ 提及功能*/}
+          <MentionEditor
+            ref={mentionEditorRef}
+            className={cx(styles.input)}
+            disabled={wholeDisabled}
+            value={messageInfo}
+            onChange={setMessageInfo}
+            onSkillIdsChange={setSkillIds}
+            // 是否启用 @ 提及功能，默认启用
+            enableMention={enableMention}
+            // @ 弹窗展示方向：auto | up | down
+            mentionPlacement={mentionPlacement}
+            // 回车事件处理
+            onPressEnter={handlePressEnter}
+            // 粘贴事件处理
+            onPaste={handlePaste}
+            placeholder={placeholder}
+            // 默认提及项列表
+            defaultMentions={defaultMentions}
+            enableSubscription={isEnableSubscription}
+            onUnsubscribedSkillSelect={handleUnsubscribedSkillSelect}
+            usageScenarios={usageScenarios}
+          />
+          <footer className={cx('flex', 'flex-1', styles.footer)}>
+            {/* 清空会话记录 */}
+            {!!messageList?.filter((item: MessageInfo) => item.id)?.length && (
+              <ConditionRender condition={!!onClear}>
+                <Tooltip title={t('PC.Components.ChatInputHome.clearRecord')}>
+                  <span
+                    className={cx(
+                      styles.clear,
+                      'flex',
+                      'items-center',
+                      'content-center',
+                      'cursor-pointer',
+                      styles.box,
+                      styles['plus-box'],
+                      {
+                        [styles.disabled]:
+                          clearDisabled || wholeDisabled || clearLoading,
+                      },
+                    )}
+                    onClick={handleClear}
+                  >
+                    {clearLoading ? (
+                      <LoadingOutlined />
+                    ) : (
+                      <SvgIcon
+                        name="icons-chat-clear"
+                        style={{ fontSize: '14px' }}
+                        className={cx(styles['svg-icon'])}
+                      />
+                    )}
+                  </span>
+                </Tooltip>
+              </ConditionRender>
+            )}
+
+            {/* @ 提及技能 */}
+            <AtMentionIcon
+              enableMention={enableMention}
+              mentionPlacement={mentionPlacement}
+              enableSubscription={isEnableSubscription}
+              onSelectMention={handleInsertAtMention}
+              usageScenarios={usageScenarios}
+            />
+
+            {/*上传按钮*/}
+            <Upload
+              action={UPLOAD_FILE_ACTION}
+              disabled={wholeDisabled}
+              onChange={handleChange}
+              multiple={true}
+              fileList={uploadFiles}
+              headers={{
+                Authorization: token ? `Bearer ${token}` : '',
+              }}
+              data={{
+                type: 'tmp',
+              }}
+              showUploadList={false}
+            >
+              <Tooltip
+                title={t('PC.Components.ChatInputHome.uploadAttachment')}
+              >
                 <span
                   className={cx(
-                    styles.clear,
                     'flex',
                     'items-center',
                     'content-center',
                     'cursor-pointer',
                     styles.box,
                     styles['plus-box'],
-                    {
-                      [styles.disabled]:
-                        clearDisabled || wholeDisabled || clearLoading,
-                    },
+                    { [styles['upload-box-disabled']]: wholeDisabled },
                   )}
-                  onClick={handleClear}
                 >
-                  {clearLoading ? (
-                    <LoadingOutlined />
-                  ) : (
-                    <SvgIcon
-                      name="icons-chat-clear"
-                      style={{ fontSize: '14px' }}
-                      className={cx(styles['svg-icon'])}
-                    />
-                  )}
+                  <SvgIcon
+                    name="icons-chat-add"
+                    style={{ fontSize: '14px' }}
+                    className={cx(styles['svg-icon'])}
+                  />
                 </span>
               </Tooltip>
-            </ConditionRender>
-          )}
-
-          {/* @ 提及技能 */}
-          <AtMentionIcon
-            enableMention={enableMention}
-            mentionPlacement={mentionPlacement}
-            enableSubscription={isEnableSubscription}
-            onSelectMention={handleInsertAtMention}
-          />
-
-          {/*上传按钮*/}
-          <Upload
-            action={UPLOAD_FILE_ACTION}
-            disabled={wholeDisabled}
-            onChange={handleChange}
-            multiple={true}
-            fileList={uploadFiles}
-            headers={{
-              Authorization: token ? `Bearer ${token}` : '',
-            }}
-            data={{
-              type: 'tmp',
-            }}
-            showUploadList={false}
-          >
-            <Tooltip title={t('PC.Components.ChatInputHome.uploadAttachment')}>
-              <span
-                className={cx(
-                  'flex',
-                  'items-center',
-                  'content-center',
-                  'cursor-pointer',
-                  styles.box,
-                  styles['plus-box'],
-                  { [styles['upload-box-disabled']]: wholeDisabled },
-                )}
+            </Upload>
+            {showAgentModeSelector && (
+              <Dropdown
+                menu={{
+                  selectedKeys: [agentMode],
+                  items: (['yolo', 'ask'] as AgentMode[]).map((mode) => ({
+                    key: mode,
+                    label: (
+                      <div className={cx(styles['agent-mode-dropdown-item'])}>
+                        <span className={cx(styles['item-name'])}>
+                          {AGENT_MODE_LABEL[mode]}
+                        </span>
+                        {agentMode === mode && (
+                          <CheckOutlined
+                            className={cx(styles['agent-mode-check'])}
+                          />
+                        )}
+                      </div>
+                    ),
+                    onClick: () => onAgentModeChange?.(mode),
+                  })),
+                }}
+                trigger={['click']}
+                placement="topLeft"
+                disabled={wholeDisabled || isConversationActive}
+                overlayClassName="agent-mode-dropdown-overlay"
+                // 让菜单渲染到 body，避免被父容器 overflow: hidden 裁剪
               >
-                <SvgIcon
-                  name="icons-chat-add"
-                  style={{ fontSize: '14px' }}
-                  className={cx(styles['svg-icon'])}
-                />
-              </span>
-            </Tooltip>
-          </Upload>
-          {/*通用型智能体切换按钮*/}
-          {showTaskAgentToggle && (
-            <Tooltip
-              title={
-                isTaskAgentActive
-                  ? t('PC.Components.ChatInputHome.switchToNormalMode')
-                  : t('PC.Components.ChatInputHome.useAgentComputerTask')
-              }
-            >
-              <span
-                className={cx(
-                  'flex',
-                  'items-center',
-                  'content-center',
-                  'cursor-pointer',
-                  styles.box,
-                  styles['plus-box'],
-                  styles['task-agent-box'],
-                  { [styles['task-agent-active']]: isTaskAgentActive },
-                )}
-                onClick={onToggleTaskAgent}
+                <Tooltip title={t('PC.Components.ChatInputHome.agentMode')}>
+                  <span className={cx(styles['agent-mode-select'])}>
+                    <span
+                      className={cx(
+                        styles['agent-mode-trigger'],
+                        styles[`agent-mode-option-${agentMode}`],
+                      )}
+                    >
+                      <span>{AGENT_MODE_LABEL[agentMode]}</span>
+                      <SvgIcon
+                        name="icons-common-caret_down"
+                        style={{ fontSize: '14px' }}
+                        className={cx(styles['agent-mode-arrow'])}
+                      />
+                    </span>
+                  </span>
+                </Tooltip>
+              </Dropdown>
+            )}
+            {/*通用型智能体切换按钮*/}
+            {showTaskAgentToggle && (
+              <Tooltip
+                title={
+                  isTaskAgentActive
+                    ? t('PC.Components.ChatInputHome.switchToNormalMode')
+                    : t('PC.Components.ChatInputHome.useAgentComputerTask')
+                }
               >
-                <DesktopOutlined style={{ fontSize: '14px' }} />
-              </span>
-            </Tooltip>
-          )}
-
-          {/* 手动选择组件 */}
-          <ManualComponentItem
-            manualComponents={manualComponents}
-            selectedComponentList={selectedComponentList}
-            onSelectComponent={onSelectComponent}
-          />
-
-          <div className={cx('flex')} style={{ gap: 4 }}>
-            {/* 智能体电脑模式下显示电脑类型选择器 */}
-            {isTaskAgentActive && !readonly && (
-              <ComputerTypeSelector
-                value={
-                  agentSandboxId !== undefined && agentSandboxId !== null
-                    ? String(agentSandboxId)
-                    : conversationInfo?.sandboxServerId !== undefined &&
-                      conversationInfo?.sandboxServerId !== null
-                    ? String(conversationInfo.sandboxServerId)
-                    : selectedComputerId
-                }
-                onChange={(id: string) => onComputerSelect?.(id)}
-                disabled={wholeDisabled}
-                agentId={agentId}
-                fixedSelection={
-                  fixedSelection ||
-                  isConversationActive ||
-                  conversationInfo?.taskStatus === TaskStatus.EXECUTING
-                }
-                unavailable={isSandboxUnavailable}
-                autoSelect={autoSelectComputer}
-                saveOnSelect={saveComputerOnSelect}
-                isPersonalComputer={isPersonalComputer}
-                readonly={readonly}
-              />
-            )}
-            {/* 智能体模型选择器 */}
-            {allowOtherModel === DefaultSelectedEnum.Yes && (
-              <ModelSelector
-                agentId={agentId}
-                selectedModelId={selectedModelId}
-                onModelSelect={onModelSelect}
-                agentType={agentType}
-              />
-            )}
-            {/* 根据会话状态显示发送或停止按钮 */}
-            {isConversationActive ||
-            conversationInfo?.taskStatus === TaskStatus.EXECUTING ? (
-              // 会话进行中，显示停止按钮
-              <Tooltip title={getStopButtonTooltip()}>
                 <span
-                  onClick={handleStopConversation}
                   className={cx(
                     'flex',
                     'items-center',
                     'content-center',
                     'cursor-pointer',
                     styles.box,
-                    styles['send-box'],
-                    styles['stop-box'],
-                    // 当会话进行中且按钮可点击时，使用高亮样式
-                    {
-                      [styles['stop-box-active']]: !isStoppingConversation,
-                    },
+                    styles['plus-box'],
+                    styles['task-agent-box'],
+                    { [styles['task-agent-active']]: isTaskAgentActive },
                   )}
+                  onClick={onToggleTaskAgent}
                 >
-                  {isStoppingConversation ? (
-                    <div className={cx(styles['loading-box'])}>
-                      <LoadingOutlined className={cx(styles['loading-icon'])} />
-                    </div>
-                  ) : (
-                    <SvgIcon name="icons-chat-stop" />
-                  )}
+                  <DesktopOutlined style={{ fontSize: '14px' }} />
                 </span>
               </Tooltip>
-            ) : (
-              // 会话未进行中，显示发送按钮
-              <>
-                <Tooltip title={getButtonTooltip()}>
+            )}
+
+            {/* 手动选择组件 */}
+            <ManualComponentItem
+              manualComponents={manualComponents}
+              selectedComponentList={selectedComponentList}
+              onSelectComponent={onSelectComponent}
+            />
+
+            <div className={cx('flex')} style={{ gap: 4 }}>
+              {prefix}
+              {/* 智能体电脑模式下显示电脑类型选择器 */}
+              {isTaskAgentActive && !readonly && (
+                <ComputerTypeSelector
+                  value={
+                    agentSandboxId !== undefined && agentSandboxId !== null
+                      ? String(agentSandboxId)
+                      : conversationInfo?.sandboxServerId !== undefined &&
+                        conversationInfo?.sandboxServerId !== null
+                      ? String(conversationInfo.sandboxServerId)
+                      : selectedComputerId
+                  }
+                  onChange={(id: string) => onComputerSelect?.(id)}
+                  disabled={wholeDisabled}
+                  agentId={agentId}
+                  fixedSelection={
+                    fixedSelection ||
+                    isConversationActive ||
+                    conversationInfo?.taskStatus === TaskStatus.EXECUTING
+                  }
+                  unavailable={isSandboxUnavailable}
+                  autoSelect={autoSelectComputer}
+                  saveOnSelect={saveComputerOnSelect}
+                  isPersonalComputer={isPersonalComputer}
+                  readonly={readonly}
+                />
+              )}
+              {/* 智能体模型选择器 */}
+              {allowOtherModel === DefaultSelectedEnum.Yes && (
+                <ModelSelector
+                  agentId={agentId}
+                  selectedModelId={selectedModelId}
+                  onModelSelect={onModelSelect}
+                  agentType={agentType}
+                />
+              )}
+              {/* 根据会话状态显示发送或停止按钮 */}
+              {isConversationActive ||
+              conversationInfo?.taskStatus === TaskStatus.EXECUTING ? (
+                // 会话进行中，显示停止按钮
+                <Tooltip title={getStopButtonTooltip()}>
                   <span
-                    onClick={handleSendMessage}
+                    onClick={handleStopConversation}
                     className={cx(
                       'flex',
                       'items-center',
@@ -827,25 +871,57 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
                       'cursor-pointer',
                       styles.box,
                       styles['send-box'],
+                      styles['stop-box'],
+                      // 当会话进行中且按钮可点击时，使用高亮样式
                       {
-                        [styles.disabled]:
-                          disabledSend ||
-                          wholeDisabled ||
-                          loadingConversation ||
-                          isLoadingOtherInterface,
+                        [styles['stop-box-active']]: !isStoppingConversation,
                       },
                     )}
                   >
-                    <SvgIcon
-                      name="icons-chat-send"
-                      style={{ fontSize: '14px' }}
-                    />
+                    {isStoppingConversation ? (
+                      <div className={cx(styles['loading-box'])}>
+                        <LoadingOutlined
+                          className={cx(styles['loading-icon'])}
+                        />
+                      </div>
+                    ) : (
+                      <SvgIcon name="icons-chat-stop" />
+                    )}
                   </span>
                 </Tooltip>
-              </>
-            )}
-          </div>
-        </footer>
+              ) : (
+                // 会话未进行中，显示发送按钮
+                <>
+                  <Tooltip title={getButtonTooltip()}>
+                    <span
+                      onClick={handleSendMessage}
+                      className={cx(
+                        'flex',
+                        'items-center',
+                        'content-center',
+                        'cursor-pointer',
+                        styles.box,
+                        styles['send-box'],
+                        {
+                          [styles.disabled]:
+                            disabledSend ||
+                            wholeDisabled ||
+                            loadingConversation ||
+                            isLoadingOtherInterface,
+                        },
+                      )}
+                    >
+                      <SvgIcon
+                        name="icons-chat-send"
+                        style={{ fontSize: '14px' }}
+                      />
+                    </span>
+                  </Tooltip>
+                </>
+              )}
+            </div>
+          </footer>
+        </div>
       </div>
       {showAnnouncement && (
         <div className={cx(styles['announcement-box'])}>

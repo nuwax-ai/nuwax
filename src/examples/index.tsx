@@ -6,6 +6,7 @@ import {
   DesktopOutlined,
   ExperimentOutlined,
   EyeOutlined,
+  FormOutlined,
   HeartOutlined,
   InboxOutlined,
   LockOutlined,
@@ -145,6 +146,26 @@ const ExamplesIndex: React.FC = () => {
       ],
       icon: <RocketOutlined />,
       path: '/examples/sse-streaming-test',
+      featured: true,
+    },
+    {
+      id: 'agent-intervention-demo',
+      title: isChineseLanguage
+        ? 'Agent 干预交互卡片'
+        : 'Agent Intervention Cards',
+      description: isChineseLanguage
+        ? '展示 ACP 权限审批与 MCP Ask 结构化提问卡片的 UI 与交互，包含 radio、wizard、文件上传等多种表单形态（Mock 数据）。'
+        : 'Showcase ACP permission approval and MCP Ask structured question cards with radio, wizard, file upload and more (mock data).',
+      tags: [
+        { text: isChineseLanguage ? 'ACP 权限' : 'ACP', color: 'blue' },
+        { text: isChineseLanguage ? 'MCP Ask' : 'MCP Ask', color: 'green' },
+        {
+          text: isChineseLanguage ? '干预流程' : 'Intervention',
+          color: 'purple',
+        },
+      ],
+      icon: <FormOutlined />,
+      path: '/examples/agent-intervention-demo',
       featured: true,
     },
     {

@@ -1,0 +1,113 @@
+@import '@/styles/token.less';
+
+.diff-item-container {
+  border: 1px solid @colorBorder;
+  border-radius: @borderRadiusSm;
+  margin-bottom: @marginSm;
+  background: @colorBgContainer;
+  overflow: hidden;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  .diff-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: @paddingXs @paddingSm;
+    background: @colorBgLayout;
+    cursor: pointer;
+    border-bottom: 1px solid @colorBorder;
+    user-select: none;
+
+    &:hover {
+      background: @colorBgContainer;
+    }
+
+    .diff-item-path-container {
+      display: flex;
+      align-items: center;
+      gap: @marginXs;
+      flex: 1;
+      min-width: 0;
+
+      .diff-item-file-icon {
+        font-size: @fontSizeSm;
+        flex-shrink: 0;
+      }
+
+      .diff-item-path {
+        font-family: @fontFamilyCode;
+        font-size: @fontSizeSm;
+        color: @colorTextBase;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    }
+
+    .diff-item-stats {
+      display: flex;
+      align-items: center;
+      gap: @marginXs;
+      font-family: @fontFamilyCode;
+      font-size: @fontSizeSm;
+      font-weight: @fontWeightStrong;
+      flex-shrink: 0;
+
+      .diff-item-added {
+        color: @colorSuccess;
+      }
+
+      .diff-item-deleted {
+        color: @colorError;
+      }
+
+      .diff-item-toggle-icon {
+        font-size: @fontSizeSm;
+        color: @colorTextTertiary;
+        margin-left: @marginXs;
+      }
+    }
+  }
+
+  .diff-viewer-wrapper {
+    border-top: none;
+    max-width: 100%;
+    overflow-x: auto;
+
+    // 强制清除所有嵌套的表格、行和单元格边框，避免出现分割线样式异常
+    table,
+    tr,
+    td,
+    th {
+      border: none !important;
+      border-top: none !important;
+      border-bottom: none !important;
+      border-left: none !important;
+      border-right: none !important;
+      box-shadow: none !important;
+    }
+
+    pre {
+      margin: 0 !important;
+      padding: 0 !important;
+      background: transparent !important;
+      border: none !important;
+      border-radius: 0 !important;
+      box-shadow: none !important;
+      line-height: 1.3 !important;
+      font-family: @fontFamilyCode !important;
+      font-size: @fontSizeSm !important;
+      white-space: pre !important;
+    }
+
+    td {
+      padding: 1px 0 !important;
+      line-height: 1.3 !important;
+      height: auto !important;
+      vertical-align: middle !important;
+    }
+  }
+}

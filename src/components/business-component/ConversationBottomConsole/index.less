@@ -1,0 +1,244 @@
+@import '@/styles/token';
+
+@console-content-height: 240px;
+
+@terminal-console-bg-light: #ffffff;
+@terminal-console-fg-light: #1a1a1a;
+@terminal-console-bg-dark: #000000;
+@terminal-console-fg-dark: #d4d4d4;
+
+.console {
+  display: flex;
+  flex-direction: column;
+  border-top: @lineWidth solid @colorSplit;
+  background-color: @colorBgContainer;
+  flex-shrink: 0;
+
+  .console-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: @paddingXs @paddingSm;
+    border-bottom: @lineWidth solid @colorSplit;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 2;
+    background-color: @colorBgContainer;
+  }
+
+  .console-tabs {
+    display: flex;
+    gap: @margin;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .console-tab {
+    font-size: @fontSize;
+    color: @colorTextSecondary;
+    cursor: pointer;
+    padding: 2px 0;
+    transition: color 0.2s ease;
+
+    &:hover {
+      color: @colorPrimary;
+    }
+
+    &.active {
+      color: @colorPrimary;
+    }
+  }
+
+  .console-actions {
+    display: flex;
+    align-items: center;
+    gap: @marginXxs;
+    flex-shrink: 0;
+    margin-left: @marginSm;
+  }
+
+  .console-action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    color: @colorTextSecondary;
+    border-radius: @borderRadius;
+
+    &:hover {
+      color: @colorPrimary;
+      background-color: @colorPrimaryBg;
+    }
+  }
+
+  .console-log-actions {
+    display: flex;
+    align-items: center;
+    gap: @marginXxs;
+    margin-right: @marginXxs;
+    padding-right: @marginXxs;
+    border-right: @lineWidth solid @colorSplit;
+  }
+
+  .console-quick-fix-btn {
+    height: 24px;
+    padding: 0 8px;
+    font-size: @fontSizeSm;
+  }
+
+  &.console-expanded {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    flex-shrink: 0;
+    min-height: 0;
+
+    .console-content {
+      flex: 1;
+      height: auto;
+      min-height: 0;
+    }
+  }
+
+  &.console-collapsed {
+    .console-content {
+      display: none;
+    }
+  }
+
+  .console-content {
+    position: relative;
+    height: @console-content-height;
+    flex-shrink: 0;
+    overflow: hidden;
+    background-color: @terminal-console-bg-light;
+    transition: background-color 0.2s ease;
+  }
+
+  &.console-terminal-dark .console-content {
+    background-color: @terminal-console-bg-dark;
+  }
+
+  .tab-pane {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    visibility: hidden;
+    pointer-events: none;
+    z-index: 0;
+
+    &.tab-pane-active {
+      visibility: visible;
+      pointer-events: auto;
+      z-index: 1;
+    }
+  }
+
+  .console-body {
+    height: 100%;
+    overflow: auto;
+    padding: @paddingSm;
+    color: @terminal-console-fg-light;
+    font-family: Menlo, Monaco, Consolas, monospace;
+    font-size: @fontSizeSm;
+    line-height: @lineHeightLg;
+    white-space: pre-wrap;
+    word-break: break-all;
+    background-color: @terminal-console-bg-light;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  &.console-terminal-dark .console-body {
+    color: @terminal-console-fg-dark;
+    background-color: @terminal-console-bg-dark;
+  }
+
+  .console-empty {
+    color: @colorTextTertiary;
+    font-size: @fontSizeSm;
+    text-align: center;
+    padding: @paddingLg 0;
+  }
+
+  .xterm-container {
+    height: 100%;
+    overflow: hidden;
+    background-color: transparent;
+  }
+
+  .terminal-embedded {
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    outline: none !important;
+
+    :global(.xterm) {
+      height: 100%;
+      padding: @marginXxs @paddingSm @marginXxs;
+    }
+
+    :global(.xterm .xterm-viewport) {
+      background-color: transparent !important;
+    }
+
+    :global(.xterm-decoration-overview-ruler) {
+      opacity: 0.4;
+    }
+  }
+
+  .terminal-embedded-light {
+    background-color: @terminal-console-bg-light !important;
+
+    :global(.xterm .xterm-viewport) {
+      background-color: @terminal-console-bg-light !important;
+
+      &::-webkit-scrollbar {
+        width: @marginXs;
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background: @colorFill;
+        border-radius: @borderRadiusSm;
+
+        &:hover {
+          background: @colorPrimary;
+        }
+      }
+
+      &::-webkit-scrollbar-track {
+        background: @colorFillTertiary;
+      }
+    }
+  }
+
+  .terminal-embedded-dark {
+    background-color: @terminal-console-bg-dark !important;
+
+    :global(.xterm .xterm-viewport) {
+      background-color: @terminal-console-bg-dark !important;
+
+      &::-webkit-scrollbar {
+        width: @marginXs;
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background: @colorFillSecondary;
+        border-radius: @borderRadiusSm;
+
+        &:hover {
+          background: @cyan;
+        }
+      }
+
+      &::-webkit-scrollbar-track {
+        background: @colorFillQuaternary;
+      }
+    }
+  }
+
+  .dev-log-pane {
+    height: 100%;
+    overflow: hidden;
+  }
+}

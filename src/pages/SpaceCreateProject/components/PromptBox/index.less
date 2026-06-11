@@ -1,0 +1,24 @@
+@import '@/styles/token.less';
+
+.prompt-box-card {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto @marginXxl auto;
+  animation: slideUp 0.6s @motionEaseOut;
+
+  :global {
+    .chat-container {
+      max-width: 100%;
+      border: @lineWidth @lineType @colorBorderSecondary;
+      border-radius: @borderRadiusLg;
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 4%);
+      backdrop-filter: blur(8px);
+      transition: all @motionDurationMid @motionEaseOut;
+
+      &:hover {
+        border-color: @colorPrimaryBorder;
+        box-shadow: 0 12px 48px 0 rgba(0, 0, 0, 6%);
+      }
+    }
+  }
+}

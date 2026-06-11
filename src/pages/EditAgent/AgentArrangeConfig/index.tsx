@@ -75,6 +75,52 @@ import VariableList from './VariableList';
 const cx = classNames.bind(styles);
 
 /**
+ * 获取锚点定位应使用的滚动容器
+ *
+ * AgentArrangeConfig 仅用于 EditAgent / ConversationAgent（路由 layout: false，无 Layout 包裹），
+ * 从目标元素向上查找 overflow 容器，到 body 为止，避免使用 scrollIntoView 带动 window 滚动。
+ */
+const getAnchorScrollContainer = (element: HTMLElement): HTMLElement | null => {
+  const candidates: HTMLElement[] = [];
+
+  let parent = element.parentElement;
+  while (parent && parent !== document.body) {
+    const { overflowY } = window.getComputedStyle(parent);
+    if (overflowY === 'auto' || overflowY === 'scroll') {
+      candidates.push(parent);
+    }
+    parent = parent.parentElement;
+  }
+
+  // 优先使用实际可滚动的容器；否则使用最近的 overflow 容器
+  return (
+    candidates.find((el) => el.scrollHeight > el.clientHeight) ??
+    candidates[0] ??
+    null
+  );
+};
+
+/**
+ * 在编排配置区域内部滚动到锚点（不触发 window / 页面级滚动）
+ */
+const scrollAnchorTargetIntoView = (
+  target: HTMLElement,
+  behavior: ScrollBehavior = 'smooth',
+) => {
+  const scrollContainer = getAnchorScrollContainer(target);
+  if (!scrollContainer) {
+    return;
+  }
+
+  const containerRect = scrollContainer.getBoundingClientRect();
+  const targetRect = target.getBoundingClientRect();
+  const nextScrollTop =
+    scrollContainer.scrollTop + targetRect.top - containerRect.top;
+
+  scrollContainer.scrollTo({ top: nextScrollTop, behavior });
+};
+
+/**
  * 智能体编排区域配置
  */
 const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
@@ -174,19 +220,16 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   );
 
   /**
-   * 点击左侧锚点，滚动到对应配置块
+   * 点击左侧锚点，在编排配置区域内滚动到对应配置块（不滚动页面）
    */
-  const handleAnchorClick = (
-    key: string,
-    ref: React.RefObject<HTMLDivElement>,
-  ) => {
-    if (ref.current) {
-      ref.current.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start',
-      });
-    }
-  };
+  const handleAnchorClick = useCallback(
+    (_key: string, ref: React.RefObject<HTMLDivElement>) => {
+      if (ref.current) {
+        scrollAnchorTargetIntoView(ref.current, 'smooth');
+      }
+    },
+    [],
+  );
 
   // 根据组件类型，过滤组件
   const filterList = (type: AgentComponentTypeEnum) => {

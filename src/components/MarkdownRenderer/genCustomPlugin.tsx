@@ -21,13 +21,20 @@ export default (conversationId: string | number = '') => {
       script: () => null, // 禁用 script 标签，增强安全性
       html: ({ children }: any) => <>{children}</>, // 处理可能存在的 html 标签包裹
       // 确保使用一致的组件名称格式
-      'markdown-custom-process': ({
-        node,
-        type,
-        status,
-        executeid,
-        name,
-      }: any) => {
+      'markdown-custom-process': (props: any) => {
+        const node = props.node;
+        const properties = node?.properties || {};
+
+        // 终极安全提取：同时兼容 props 根级和 node.properties 下的驼峰及全小写命名
+        const actualExecuteId =
+          props.executeid ||
+          props.executeId ||
+          properties.executeid ||
+          properties.executeId;
+        const actualType = props.type || properties.type;
+        const actualStatus = props.status || properties.status;
+        const actualName = props.name || properties.name;
+
         const {
           end: { offset: endOffset },
           start: { offset: startOffset },
@@ -39,15 +46,15 @@ export default (conversationId: string | number = '') => {
             conversationId={conversationId}
             key={processKey}
             dataKey={processKey}
-            type={type}
-            status={status}
-            executeId={executeid}
+            type={actualType}
+            status={actualStatus}
+            executeId={actualExecuteId}
             name={(() => {
               try {
-                return decodeURIComponent(name || '');
+                return decodeURIComponent(actualName || '');
               } catch {
                 // Handle malformed URI sequences gracefully
-                return name || '';
+                return actualName || '';
               }
             })()}
           />

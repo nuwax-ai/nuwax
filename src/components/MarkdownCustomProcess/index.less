@@ -1,4 +1,4 @@
-@import '@/styles/token';
+@import '@/styles/token.less';
 
 .markdown-custom-process {
   //border: 0.5px solid #e5e5e5;
@@ -19,10 +19,9 @@
       font-size: 14px;
       color: rgba(0, 0, 0, 45%);
       font-weight: @fontWeightStrong;
-      display: block;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
       flex: 1;
       min-width: 0;
       line-height: 16px;
@@ -35,6 +34,43 @@
 
         &:hover {
           // color: rgba(0, 0, 0, 88%);
+        }
+      }
+
+      &.is-diff {
+        cursor: pointer;
+      }
+
+      .title-left-wrapper {
+        display: flex;
+        align-items: center;
+        gap: @marginXs;
+        min-width: 0;
+        flex: 1;
+        margin-right: @marginSm;
+      }
+
+      .diff-badges {
+        display: flex;
+        align-items: center;
+        gap: @marginXxs;
+        font-family: Monaco, Menlo, 'Ubuntu Mono', monospace;
+        font-size: @fontSizeSm;
+        font-weight: @fontWeightStrong;
+        flex-shrink: 0;
+
+        .badge-added {
+          color: @colorSuccess;
+          background: @colorSuccessBg;
+          padding: 0 @paddingXxs;
+          border-radius: @borderRadiusXs;
+        }
+
+        .badge-deleted {
+          color: @colorError;
+          background: @colorErrorBg;
+          padding: 0 @paddingXxs;
+          border-radius: @borderRadiusXs;
         }
       }
     }
@@ -191,6 +227,26 @@
           line-height: 1.5;
         }
       }
+    }
+  }
+}
+
+// Diff 展开内容区域样式
+.diff-container {
+  border-top: 1px solid rgba(0, 0, 0, 6%);
+  background: @colorBgContainer;
+  margin-bottom: @margin;
+
+  .diff-viewer-item {
+    margin: 0;
+    border: 1px solid @colorBorderSecondary;
+    border-radius: @borderRadius;
+    overflow: hidden;
+    background: @colorBgContainer;
+
+    .diff-viewer-item-content {
+      background: @colorBgContainer;
+      overflow-x: auto;
     }
   }
 }

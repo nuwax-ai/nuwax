@@ -1,5 +1,6 @@
 import { parseLogEntry } from '@/pages/AppDev/utils/devLogParser';
 import { t } from '@/services/i18nRuntime';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { PageDevelopPublishTypeEnum } from '@/types/enums/pageDev';
 import type {
   BuildResponse,
@@ -425,26 +426,6 @@ export const getProjectInfo = async (
 };
 
 /**
- * 获取项目历史版本内容
- * @param projectId 项目ID
- * @param codeVersion 代码版本号
- * @returns Promise<GetProjectContentResponse> 指定版本的项目文件数据
- */
-export const getProjectContentByVersion = async (
-  projectId: string,
-  codeVersion: number,
-): Promise<GetProjectContentResponse> => {
-  return request(
-    `/api/custom-page/get-project-content-by-version?projectId=${encodeURIComponent(
-      projectId,
-    )}&codeVersion=${codeVersion}`,
-    {
-      method: 'GET',
-    },
-  );
-};
-
-/**
  * 导出用户前端项目为zip文件
  * @param projectId 项目ID
  * @returns Promise<{ data: Blob; headers: any }> 导出结果，包含zip文件数据
@@ -473,26 +454,6 @@ export async function exportProject(projectId: string): Promise<void> {
     );
   }
 }
-
-/**
- * 回滚项目版本
- * 使用服务端直接回滚，避免大文件传输导致数据丢失
- * @param projectId 项目ID
- * @param rollbackTo 回滚到的版本号
- * @returns Promise<RequestResponse<void>> 回滚结果
- */
-export const rollbackVersion = async (
-  projectId: string,
-  rollbackTo: number,
-): Promise<RequestResponse<void>> => {
-  return request('/api/custom-page/rollback-version', {
-    method: 'POST',
-    data: {
-      projectId: Number(projectId),
-      rollbackTo,
-    },
-  });
-};
 
 // ==================== 会话管理相关API服务 ====================
 
@@ -650,4 +611,17 @@ export const getDevLogs = async (
         (response?.data?.totalLines || 0),
     },
   };
+};
+
+/**
+ * 创建项目接口
+ * @param data targetType
+ */
+export const apiProjectCreate = async (data: {
+  targetType: AgentComponentTypeEnum;
+}): Promise<any> => {
+  return request('/api/project/create', {
+    method: 'POST',
+    data,
+  });
 };

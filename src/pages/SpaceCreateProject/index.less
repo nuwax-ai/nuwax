@@ -1,0 +1,17 @@
+@import '@/styles/token.less';
+
+.create-project-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  min-height: 80vh;
+  padding: 150px @paddingLg @paddingLg @paddingLg;
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(var(--xagi-blue-rgb, 24), 144, 255, 3%) 0%,
+    rgba(var(--xagi-purple-rgb, 114), 46, 209, 1%) 50%,
+    transparent 100%
+  );
+  animation: fadeIn 0.8s @motionEaseOut;
+}

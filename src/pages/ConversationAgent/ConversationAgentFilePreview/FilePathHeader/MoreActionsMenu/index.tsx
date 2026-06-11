@@ -1,0 +1,152 @@
+import SvgIcon from '@/components/base/SvgIcon';
+import TooltipIcon from '@/components/custom/TooltipIcon';
+import { dict } from '@/services/i18nRuntime';
+import { InfoCircleOutlined } from '@ant-design/icons';
+import { Button, Dropdown } from 'antd';
+import classNames from 'classnames';
+import { useMemo } from 'react';
+import styles from './index.less';
+
+const cx = classNames.bind(styles);
+
+// 更多操作相关接口
+interface MoreActionsProps {
+  // 导入项目
+  onImportProject?: () => void;
+  // 重启智能体电脑
+  onRestartServer?: () => void;
+  // 重启智能体
+  onRestartAgent?: () => void;
+  // 导出项目
+  onExportProject?: () => void;
+  // 是否是云电脑
+  isCloudComputer?: boolean;
+}
+
+/**
+ * 更多操作菜单组件
+ * 负责更多操作相关的所有交互逻辑和状态管理
+ */
+const MoreActionsMenu: React.FC<MoreActionsProps> = ({
+  onImportProject,
+  onRestartServer,
+  onRestartAgent,
+  onExportProject,
+  isCloudComputer,
+}) => {
+  // 菜单项配置
+  const menuItems = useMemo(
+    () => [
+      // 只有当 onImportProject 存在时才显示导入项目选项
+      ...(onImportProject
+        ? [
+            {
+              key: 'import',
+              icon: (
+                <SvgIcon name="icons-common-import" style={{ fontSize: 16 }} />
+              ),
+              label: dict('PC.Components.MoreActionsMenu.importProject'),
+              onClick: onImportProject,
+            },
+            {
+              type: 'divider' as const,
+            },
+          ]
+        : []),
+      // 只有当 onRestartServer 存在且为云电脑时才显示重启服务器选项
+      ...(onRestartServer
+        ? [
+            {
+              key: 'restart',
+              icon: (
+                <SvgIcon
+                  name="icons-common-restart_agent"
+                  style={{ fontSize: 16 }}
+                />
+              ),
+              label: (
+                <div className="flex items-center">
+                  <span>
+                    {isCloudComputer
+                      ? dict('PC.Components.MoreActionsMenu.restartComputer')
+                      : dict('PC.Components.MoreActionsMenu.restartClient')}
+                  </span>
+                  <TooltipIcon
+                    title={dict(
+                      'PC.Components.MoreActionsMenu.restartComputerTooltip',
+                    )}
+                    icon={<InfoCircleOutlined />}
+                  />
+                </div>
+              ),
+              onClick: onRestartServer,
+            },
+          ]
+        : []),
+
+      // 只有当 onRestartAgent 存在时才显示重启智能体选项
+      ...(onRestartAgent
+        ? [
+            {
+              key: 'restart-agent',
+              icon: (
+                <SvgIcon name="icons-common-restart" style={{ fontSize: 16 }} />
+              ),
+              label: (
+                <div className="flex items-center">
+                  <span>
+                    {dict('PC.Components.MoreActionsMenu.restartAgent')}
+                  </span>
+                  <TooltipIcon
+                    title={dict(
+                      'PC.Components.MoreActionsMenu.restartAgentTooltip',
+                    )}
+                    icon={<InfoCircleOutlined />}
+                  />
+                </div>
+              ),
+              onClick: onRestartAgent,
+            },
+          ]
+        : []),
+
+      // 只有当 onExportProject 存在时才显示导出项目选项和分隔线
+      ...(onExportProject
+        ? [
+            {
+              type: 'divider' as const,
+            },
+            {
+              key: 'export',
+              icon: (
+                <SvgIcon
+                  name="icons-common-download"
+                  style={{ fontSize: 16 }}
+                />
+              ),
+              label: dict('PC.Components.MoreActionsMenu.exportResult'),
+              onClick: onExportProject,
+            },
+          ]
+        : []),
+    ],
+    [onImportProject, onRestartServer, onExportProject],
+  );
+
+  // 如果没有菜单项，则不显示
+  if (!menuItems?.length) {
+    return null;
+  }
+
+  return (
+    <Dropdown menu={{ items: menuItems }} placement="bottomRight">
+      <Button
+        type="text"
+        className={cx(styles['more-button'])}
+        icon={<SvgIcon name="icons-common-more" />}
+      />
+    </Dropdown>
+  );
+};
+
+export default MoreActionsMenu;
