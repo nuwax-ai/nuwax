@@ -6,10 +6,10 @@ import {
   apiUploadFiles,
 } from '@/services/vncDesktop';
 import { FileNode } from '@/types/interfaces/appDev';
+import { UpdateFileInfo } from '@/types/interfaces/fileTree';
 import {
   IUpdateStaticFileParams,
   StaticFileInfo,
-  VncDesktopUpdateFileInfo,
 } from '@/types/interfaces/vncDesktop';
 import { modalConfirm } from '@/utils/ant-custom';
 import { updateFilesListContent, updateFilesListName } from '@/utils/fileTree';
@@ -45,7 +45,7 @@ export const useChatFiles = ({
     const parentPath = fileNode.parentPath || '';
     const newPath = parentPath ? `${parentPath}/${trimmedName}` : trimmedName;
 
-    const newFile: VncDesktopUpdateFileInfo = {
+    const newFile: UpdateFileInfo = {
       name: newPath,
       binary: false,
       // 文件大小是否超过限制
@@ -60,7 +60,7 @@ export const useChatFiles = ({
       isDir: fileNode.type === 'folder',
     };
 
-    const updatedFilesList: VncDesktopUpdateFileInfo[] = [newFile];
+    const updatedFilesList: UpdateFileInfo[] = [newFile];
 
     const newSkillInfo: IUpdateStaticFileParams = {
       cId: id,
@@ -85,7 +85,7 @@ export const useChatFiles = ({
         async () => {
           try {
             // 更新文件列表
-            let updatedFilesList: VncDesktopUpdateFileInfo[] = [];
+            let updatedFilesList: UpdateFileInfo[] = [];
             if (fileNode.type === 'folder') {
               updatedFilesList = [
                 {
@@ -107,7 +107,7 @@ export const useChatFiles = ({
               }
 
               // 构造更新文件操作
-              const updateFile: VncDesktopUpdateFileInfo = {
+              const updateFile: UpdateFileInfo = {
                 name: currentFile.name,
                 binary: currentFile.binary,
                 sizeExceeded: currentFile.sizeExceeded,
@@ -162,7 +162,7 @@ export const useChatFiles = ({
     // 更新技能信息，用于提交更新
     const newSkillInfo: IUpdateStaticFileParams = {
       cId: id!,
-      files: updatedFilesList as VncDesktopUpdateFileInfo[],
+      files: updatedFilesList as UpdateFileInfo[],
     };
 
     // 使用文件全量更新逻辑
@@ -192,7 +192,7 @@ export const useChatFiles = ({
     // 更新技能信息，用于提交更新
     const newSkillInfo: IUpdateStaticFileParams = {
       cId: id!,
-      files: updatedFilesList as VncDesktopUpdateFileInfo[],
+      files: updatedFilesList as UpdateFileInfo[],
     };
 
     // 使用文件全量更新逻辑

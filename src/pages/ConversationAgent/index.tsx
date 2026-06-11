@@ -55,15 +55,13 @@ import {
 } from '@/types/interfaces/agent';
 import { FileNode } from '@/types/interfaces/appDev';
 import type { BindConfigWithSub } from '@/types/interfaces/common';
+import { UpdateFileInfo } from '@/types/interfaces/fileTree';
 import type {
   ModelConfigInfo,
   ModelListParams,
 } from '@/types/interfaces/model';
 import { RequestResponse } from '@/types/interfaces/request';
-import {
-  StaticFileInfo,
-  VncDesktopUpdateFileInfo,
-} from '@/types/interfaces/vncDesktop';
+import { StaticFileInfo } from '@/types/interfaces/vncDesktop';
 import { checkFileSizeExceedLimit } from '@/utils';
 import { modalConfirm } from '@/utils/ant-custom';
 import { addBaseTarget } from '@/utils/common';
@@ -799,7 +797,7 @@ const ConversationAgent: React.FC = () => {
     }
     const parentPath = fileNode.parentPath || '';
     const newPath = parentPath ? `${parentPath}/${trimmedName}` : trimmedName;
-    const newFile: VncDesktopUpdateFileInfo = {
+    const newFile: UpdateFileInfo = {
       name: newPath,
       binary: false,
       sizeExceeded: false,
@@ -836,7 +834,7 @@ const ConversationAgent: React.FC = () => {
             resolve(false);
             return;
           }
-          let updatedFilesList: VncDesktopUpdateFileInfo[] = [];
+          let updatedFilesList: UpdateFileInfo[] = [];
           if (fileNode.type === 'folder') {
             // 文件夹删除：直接发送文件夹 ID
             updatedFilesList = [
@@ -858,7 +856,7 @@ const ConversationAgent: React.FC = () => {
             }
             currentFile.operation = 'delete';
             currentFile.contents = '';
-            updatedFilesList = [currentFile] as VncDesktopUpdateFileInfo[];
+            updatedFilesList = [currentFile] as UpdateFileInfo[];
           }
           const { code } = await apiUpdateStaticFile({
             cId: queryConversationId,
@@ -894,7 +892,7 @@ const ConversationAgent: React.FC = () => {
     );
     const { code } = await apiUpdateStaticFile({
       cId: queryConversationId,
-      files: updatedFilesList as VncDesktopUpdateFileInfo[],
+      files: updatedFilesList as UpdateFileInfo[],
     });
     if (code === SUCCESS_CODE) {
       await handleRefreshFileList(queryConversationId);
@@ -925,7 +923,7 @@ const ConversationAgent: React.FC = () => {
     );
     const { code } = await apiUpdateStaticFile({
       cId: queryConversationId,
-      files: updatedFilesList as VncDesktopUpdateFileInfo[],
+      files: updatedFilesList as UpdateFileInfo[],
     });
     return code === SUCCESS_CODE;
   };
@@ -954,7 +952,7 @@ const ConversationAgent: React.FC = () => {
           }
           const { code } = await apiUpdateStaticFile({
             cId: queryConversationId,
-            files: updatedFilesList as VncDesktopUpdateFileInfo[],
+            files: updatedFilesList as UpdateFileInfo[],
           });
           if (code === SUCCESS_CODE) {
             void refreshGitListRef.current?.();
@@ -1271,7 +1269,7 @@ const ConversationAgent: React.FC = () => {
           );
           const { code } = await apiUpdateStaticFile({
             cId: queryConversationId,
-            files: updatedFilesList as VncDesktopUpdateFileInfo[],
+            files: updatedFilesList as UpdateFileInfo[],
           });
           if (code !== SUCCESS_CODE) {
             message.error(

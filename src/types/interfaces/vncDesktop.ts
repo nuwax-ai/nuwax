@@ -1,3 +1,5 @@
+import { UpdateFileInfo } from './fileTree';
+
 /**
  * 静态文件相关类型定义
  */
@@ -26,30 +28,12 @@ export interface StaticFileListResponse {
   files: StaticFileInfo[];
 }
 
-// 虚拟桌面（会话）更新文件信息
-export interface VncDesktopUpdateFileInfo {
-  // 文件名称
-  name: string;
-  // 是否为二进制文件
-  binary?: boolean;
-  // 文件大小是否超过限制
-  sizeExceeded?: boolean;
-  // 文件内容
-  contents: string;
-  // 重命名之前的文件名
-  renameFrom?: string;
-  // 操作类型
-  operation: string;
-  // 是否目录
-  isDir: boolean;
-}
-
 // 静态文件修改参数
 export interface IUpdateStaticFileParams {
   // 会话ID
   cId: number;
   // 文件列表
-  files: VncDesktopUpdateFileInfo[];
+  files: UpdateFileInfo[];
 }
 
 // 静态文件上传参数
