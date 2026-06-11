@@ -27,13 +27,16 @@ import {
 } from '@/services/agentConfig';
 import { dict } from '@/services/i18nRuntime';
 import { apiModelList } from '@/services/modelConfig';
-import { apiSaveSelectedSandbox } from '@/services/systemManage';
 import {
   apiDownloadAllFiles,
   apiUpdateStaticFile,
   apiUploadFiles,
 } from '@/services/vncDesktop';
-import { AgentComponentTypeEnum, HideDesktopEnum } from '@/types/enums/agent';
+import {
+  AgentComponentTypeEnum,
+  HideDesktopEnum,
+  MessageTypeEnum,
+} from '@/types/enums/agent';
 import { CreateUpdateModeEnum, PublishStatusEnum } from '@/types/enums/common';
 import { ModelTypeEnum } from '@/types/enums/modelConfig';
 import {
@@ -156,9 +159,7 @@ const ConversationAgent: React.FC = () => {
 
   // ==================== 本地状态 ====================
   /** 当前智能体 ID */
-  const [agentId, setAgentId] = useState<number>(
-    queryConversationId ? 0 : agentIdFromQuery,
-  );
+  const [agentId, setAgentId] = useState<number>(agentIdFromQuery);
   /** 发布弹窗是否打开 */
   const [open, setOpen] = useState<boolean>(false);
   /** 编辑智能体基础信息弹窗是否打开 */
@@ -192,7 +193,10 @@ const ConversationAgent: React.FC = () => {
   const [promptTools, setPromptTools] = useState<AgentComponentInfo[]>([]);
   /** 当前用户手动选择的沙箱电脑 ID（优先于自动分配） */
   const [currentSelectedComputerId, setCurrentSelectedComputerId] =
-    useState<string>('');
+    useState<string>(() => {
+      const state = (location.state || history.location.state) as any;
+      return state?.computerId || '';
+    });
   /** 智能体配置加载中状态 */
   const [loadingAgentConfigInfo, setLoadingAgentConfigInfo] = useState<boolean>(
     !!agentId,
@@ -233,11 +237,8 @@ const ConversationAgent: React.FC = () => {
     taskAgentSelectTrigger,
     setIsLoadingOtherInterface,
     onMessageSend,
+    runAsync,
   } = useModel('conversationAgent');
-  const hasAutoSentRef = useRef<boolean>(false);
-  const hasBoundRef = useRef<boolean>(false);
-  const pendingBindComputerIdRef = useRef<string>('');
-  const hasInitComputerIdRef = useRef<boolean>(false);
   /** tenantConfigInfo model：租户配置（页面标题、订阅开关等） */
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
   const showSubscriptionTabs = tenantConfigInfo?.enableSubscription !== 0;
@@ -279,77 +280,78 @@ const ConversationAgent: React.FC = () => {
 
   // ==================== 副作用 (Effects) ====================
 
-  // 监听路由 state 以便在页面加载时立刻同步选中的电脑
-  useEffect(() => {
-    if (hasInitComputerIdRef.current) return;
-    const state = (location.state || history.location.state) as any;
-    if (state?.computerId) {
-      hasInitComputerIdRef.current = true;
-      setCurrentSelectedComputerId(state.computerId);
-      pendingBindComputerIdRef.current = state.computerId;
-    }
-  }, [location.state, history.location.state]);
-
-  // 当 agentId 变为有效值且有待绑定的电脑时，自动将该智能体和云电脑绑定
-  useEffect(() => {
-    if (agentId && pendingBindComputerIdRef.current && !hasBoundRef.current) {
-      hasBoundRef.current = true;
-      apiSaveSelectedSandbox(agentId, pendingBindComputerIdRef.current).catch(
-        (err) => {
-          console.error('Failed to bind agent and computer:', err);
-        },
-      );
-    }
-  }, [agentId]);
-
   /**
    * 当页面加载结束且携带了初始消息状态时，自动触发消息发送
    */
   useEffect(() => {
-    const conversationId = conversationInfo?.id;
-    if (conversationId && !hasAutoSentRef.current) {
+    // 优先使用路由参数中指定的 conversationId
+    const id = queryConversationId || conversationInfo?.id;
+
+    if (id) {
       const state = (location.state || history.location.state) as any;
       if (
         state &&
         (state.prompt?.trim() || state.files?.length || state.skillIds?.length)
       ) {
-        hasAutoSentRef.current = true; // 设为 true，防止重复发送
+        const asyncFun = async () => {
+          let data = null;
+          try {
+            const { data: _data } = await runAsync(id);
+            data = _data;
+          } catch (error) {
+            console.error(
+              'Failed to query conversation before auto-send',
+              error,
+            );
+          }
 
-        // 确定沙箱 ID
-        const effectiveSandboxId = String(
-          currentSelectedComputerId ||
-            conversationInfo?.agent?.sandboxId ||
-            conversationInfo?.sandboxServerId ||
-            state.computerId ||
-            '',
-        );
+          const list = data?.messageList || [];
+          const len = list?.length || 0;
+          // 会话消息列表为空或者只有一条消息并且此消息时开场白时，可以发送消息
+          const isCanMessage =
+            !len ||
+            (len === 1 && list[0].messageType === MessageTypeEnum.ASSISTANT);
 
-        onMessageSend({
-          id: conversationId,
-          messageInfo: state.prompt || '',
-          files: state.files,
-          infos: state.tools || [],
-          sandboxId: effectiveSandboxId,
-          debug: true,
-          isSync: false,
-          skillIds: state.skillIds,
-        });
+          if (isCanMessage) {
+            // 确定沙箱 ID
+            const effectiveSandboxId = String(
+              currentSelectedComputerId ||
+                data?.agent?.sandboxId ||
+                data?.sandboxServerId ||
+                state.computerId ||
+                '',
+            );
+            onMessageSend({
+              id,
+              messageInfo: state.prompt || '',
+              files: state.files,
+              infos: state.tools || [],
+              sandboxId: effectiveSandboxId,
+              debug: true,
+              isSync: false,
+              skillIds: state.skillIds,
+              data,
+            });
+          }
 
-        // 消费完毕后清除发信所需的参数，但保留 computerId 供后续回显与绑定使用
-        const nextState = {
-          ...(location.state || history.location.state || {}),
-          prompt: undefined,
-          files: undefined,
-          skillIds: undefined,
+          // 消费完毕后清除发信所需的参数，但保留 computerId 供后续回显与绑定使用
+          const nextState = {
+            ...(location.state || history.location.state || {}),
+            prompt: undefined,
+            files: undefined,
+            skillIds: undefined,
+          };
+          history.replace(location.pathname + location.search, nextState);
         };
-        history.replace(location.pathname + location.search, nextState);
+        asyncFun();
       }
     }
   }, [
-    conversationInfo,
+    conversationInfo?.id,
     location.state,
     history.location.state,
     currentSelectedComputerId,
+    queryConversationId,
   ]);
 
   /** 空间变化时重新加载模型列表 */
@@ -362,10 +364,8 @@ const ConversationAgent: React.FC = () => {
 
   /** URL 中的 agentId 变化时同步到本地状态 */
   useEffect(() => {
-    if (!queryConversationId) {
-      setAgentId(agentIdFromQuery);
-    }
-  }, [agentIdFromQuery, queryConversationId]);
+    setAgentId(agentIdFromQuery);
+  }, [agentIdFromQuery]);
 
   // 如果 URL 中有 conversationId，通过状态管理器的方法查询当前会话
   useEffect(() => {
@@ -375,14 +375,9 @@ const ConversationAgent: React.FC = () => {
     }
   }, [queryConversationId]);
 
-  // 监听状态管理器中的 conversationInfo 变化以同步真正的 agentId
+  // 监听状态管理器中的 conversationInfo 变化以关闭加载状态
   useEffect(() => {
     if (conversationInfo) {
-      const fetchedAgentId =
-        conversationInfo.agentId || conversationInfo.agent?.targetId;
-      if (fetchedAgentId) {
-        setAgentId(fetchedAgentId);
-      }
       setLoadingAgentConfigInfo(false);
     }
   }, [conversationInfo]);

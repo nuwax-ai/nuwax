@@ -68,7 +68,6 @@ const SpaceCreateProject: React.FC = () => {
           tools,
           computerId,
         };
-
         if (targetType === 'PageApp') {
           history.push(`/space/${spaceId}/app-dev/${targetId}`, redirectState);
         } else {
@@ -82,7 +81,7 @@ const SpaceCreateProject: React.FC = () => {
       }
     } catch (error: any) {
       hide();
-      message.error(error.message || '项目创建失败，请重试！');
+      message.error(error?.message || '项目创建失败，请重试！');
     }
   };
 
