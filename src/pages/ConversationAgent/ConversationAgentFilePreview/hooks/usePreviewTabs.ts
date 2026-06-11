@@ -94,10 +94,10 @@ const buildArrangeTab = (): PreviewTab => ({
   label: dict(TOOL_I18N_MAP.arrange),
 });
 
-/** 进入 ConversationAgent 时默认展示的工作区 Tab（预览 + 编排） */
+/** 进入 ConversationAgent 时默认展示的工作区 Tab（编排 + 预览，编排在前） */
 const buildDefaultWorkspaceTabs = (): PreviewTab[] => [
-  buildPreviewTab(),
   buildArrangeTab(),
+  buildPreviewTab(),
 ];
 
 /**
@@ -110,14 +110,14 @@ export function usePreviewTabs(options: UsePreviewTabsOptions = {}) {
     buildDefaultWorkspaceTabs(),
   );
   const [activeTabId, setActiveTabId] = useState<string | null>(() =>
-    getToolTabId('preview'),
+    getToolTabId('arrange'),
   );
   const onToolTabActivateRef = useRef(onToolTabActivate);
   onToolTabActivateRef.current = onToolTabActivate;
 
-  /** 首次挂载：同步预览页签对应的编排面板状态 */
+  /** 首次挂载：同步默认「编排」页签对应的面板状态 */
   useEffect(() => {
-    onToolTabActivateRef.current?.('preview');
+    onToolTabActivateRef.current?.('arrange');
   }, []);
 
   /** 激活指定标签并触发对应回调 */
@@ -141,13 +141,13 @@ export function usePreviewTabs(options: UsePreviewTabsOptions = {}) {
     return [...pinned, ...unpinned];
   };
 
-  /** 重置为默认「预览 + 编排」页签 */
+  /** 重置为默认「编排 + 预览」页签，并激活编排 */
   const openDefaultPreviewTab = useCallback(() => {
     const defaultTabs = buildDefaultWorkspaceTabs();
-    const previewTab = defaultTabs[0];
+    const arrangeTab = defaultTabs[0];
     setTabs(defaultTabs);
-    setActiveTabId(previewTab.id);
-    onToolTabActivate?.('preview');
+    setActiveTabId(arrangeTab.id);
+    onToolTabActivate?.('arrange');
   }, [onToolTabActivate]);
 
   /** 打开或激活文件标签 */
@@ -266,10 +266,11 @@ export function usePreviewTabs(options: UsePreviewTabsOptions = {}) {
         const nextTabs = prev.filter((tab) => tab.id !== tabId);
 
         if (nextTabs.length === 0) {
-          const previewTab = buildPreviewTab();
-          setActiveTabId(previewTab.id);
-          onToolTabActivate?.('preview');
-          return [previewTab];
+          const defaultTabs = buildDefaultWorkspaceTabs();
+          const arrangeTab = defaultTabs[0];
+          setActiveTabId(arrangeTab.id);
+          onToolTabActivate?.('arrange');
+          return defaultTabs;
         }
 
         setActiveTabId((currentActiveId) => {
@@ -303,7 +304,7 @@ export function usePreviewTabs(options: UsePreviewTabsOptions = {}) {
     [activateTab],
   );
 
-  /** 关闭所有标签后默认展示「预览」页签（编排面板） */
+  /** 关闭所有标签后恢复默认「编排 + 预览」页签 */
   const closeAllTabs = useCallback(() => {
     openDefaultPreviewTab();
   }, [openDefaultPreviewTab]);
@@ -373,10 +374,11 @@ export function usePreviewTabs(options: UsePreviewTabsOptions = {}) {
         const nextTabs = prev.filter((tab) => !removedIds.has(tab.id));
 
         if (nextTabs.length === 0) {
-          const previewTab = buildPreviewTab();
-          setActiveTabId(previewTab.id);
-          onToolTabActivate?.('preview');
-          return [previewTab];
+          const defaultTabs = buildDefaultWorkspaceTabs();
+          const arrangeTab = defaultTabs[0];
+          setActiveTabId(arrangeTab.id);
+          onToolTabActivate?.('arrange');
+          return defaultTabs;
         }
 
         setActiveTabId((currentActiveId) => {

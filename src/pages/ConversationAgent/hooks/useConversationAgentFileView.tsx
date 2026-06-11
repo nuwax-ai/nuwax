@@ -332,7 +332,6 @@ export function useConversationAgentFileView(
    * 进入页面或暂存/取消暂存后调用，与 AppDev 源代码管理保持一致
    */
   const refreshGitList = useCallback(async () => {
-    console.log('refreshGitList', targetId);
     const cid = Number(targetId);
     if (!cid || isRefreshingGitListRef.current) {
       return;
