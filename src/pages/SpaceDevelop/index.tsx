@@ -309,8 +309,14 @@ const SpaceDevelop: React.FC = () => {
   };
 
   // 点击跳转到智能体
-  const handleClick = (agentId: number) => {
-    history.push(`/space/${spaceId}/agent/${agentId}`);
+  const handleClick = (agentId: number, item?: AgentConfigInfo) => {
+    if (item?.devAgentConversationId) {
+      history.push(
+        `/space/${spaceId}/conversation-agent?agentId=${agentId}&conversationId=${item.devAgentConversationId}`,
+      );
+    } else {
+      history.push(`/space/${spaceId}/agent/${agentId}`);
+    }
   };
 
   // 设置统计信息
@@ -527,7 +533,7 @@ const SpaceDevelop: React.FC = () => {
               key={item.id}
               agentConfigInfo={item}
               onClickMore={(type) => handlerClickMore(type, index)}
-              onClick={handleClick}
+              onClick={(agentId) => handleClick(agentId, item)}
             />
           ))}
         </div>

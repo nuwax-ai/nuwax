@@ -12,6 +12,8 @@ const cx = classNames.bind(styles);
 export interface AgentConversationChatPanelProps {
   /** 自定义容器类名 */
   className?: string;
+  /** 沙箱电脑 ID 变更回调 */
+  onChangeSelectedComputerId?: (id: string) => void;
   /** 当前选中的电脑 ID */
   selectedComputerId?: string;
   /** 打开编辑智能体基础信息弹窗 */
@@ -23,6 +25,7 @@ export interface AgentConversationChatPanelProps {
  */
 const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
   className,
+  onChangeSelectedComputerId,
   selectedComputerId,
 }) => {
   // ==================== 全局状态模型 ====================
@@ -62,10 +65,11 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
           agentInfo={{
             ...conversationInfo?.agent,
             id: conversationInfo?.agent?.agentId,
-            sandboxId:
-              conversationInfo?.agent?.sandboxId ||
-              conversationInfo?.sandboxServerId ||
-              '',
+            sandboxId: selectedComputerId,
+            // selectedComputerId ||
+            // conversationInfo?.agent?.sandboxId ||
+            // conversationInfo?.sandboxServerId ||
+            // '',
           }}
           allowOtherModel={conversationInfo?.agent?.allowOtherModel}
           onSendMessage={(messageInfo, files, skillIds) => {
@@ -76,10 +80,11 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
                 messageInfo,
                 files,
                 infos: manualComponents,
-                sandboxId:
-                  conversationInfo?.agent?.sandboxId ||
-                  conversationInfo?.sandboxServerId ||
-                  '',
+                sandboxId: selectedComputerId,
+                // selectedComputerId ||
+                // conversationInfo?.agent?.sandboxId ||
+                // conversationInfo?.sandboxServerId ||
+                // '',
                 debug: true,
                 isSync: false,
                 skillIds,
@@ -89,6 +94,9 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
           onLoadMoreMessage={handleLoadMoreMessage}
           manualComponents={manualComponents}
           selectedComputerId={selectedComputerId}
+          onComputerSelect={(id) => {
+            onChangeSelectedComputerId?.(id);
+          }}
         />
       </div>
     </div>
