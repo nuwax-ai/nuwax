@@ -87,6 +87,7 @@ import React, {
 import { history, useLocation, useModel, useParams } from 'umi';
 import AgentArrangeConfigSection from './AgentArrangePanel/AgentArrangeConfigSection';
 import AgentConversationChatPanel from './AgentConversationChatPanel';
+import ConversationAgentChatSession from './ConversationAgentChatSession';
 import ConversationAgentFilePreview from './ConversationAgentFilePreview';
 import {
   getFileTabId,
@@ -119,7 +120,7 @@ const cx = classNames.bind(styles);
  *
  * ## 核心职责
  * 1. 智能体配置加载与更新（agentConfigInfo）
- * 2. 聊天对话管理（通过 conversationAgent model）
+ * 2. 聊天对话管理（通过 conversationInfo model）
  * 3. 文件树管理（CRUD、上传、重命名等）
  * 4. 编排面板与文件预览的切换显示
  * 5. 终端 WebSocket 连接管理
@@ -128,7 +129,7 @@ const cx = classNames.bind(styles);
  * ## 数据流
  * - URL 参数 (agentId) → 加载智能体配置 → 驱动 UI 渲染
  * - 用户操作 → handleChangeAgent → 调用 API 更新 → 同步本地状态
- * - conversationAgent model 管理聊天消息、文件树、预览等页面状态
+ * - conversationInfo model 管理聊天消息、文件树、预览等页面状态
  */
 const ConversationAgent: React.FC = () => {
   // ==================== 路由参数 ====================
@@ -210,7 +211,7 @@ const ConversationAgent: React.FC = () => {
 
   // ==================== 全局状态模型 ====================
   /**
-   * conversationAgent model：聊天核心状态管理
+   * conversationInfo model：聊天核心状态管理
    * - 消息列表、会话信息、文件树数据
    * - 文件树可见性、固定状态、预览模式
    * - 文件操作（刷新、打开预览、关闭预览）
@@ -240,15 +241,23 @@ const ConversationAgent: React.FC = () => {
     runAsync,
     resetInit,
   } = useModel('conversationInfo');
+
+  /** conversationAgent model：页面独立聊天会话（与 conversationInfo 隔离） */
+  const {
+    runQueryConversation: runQueryAgentConversation,
+    resetInit: resetAgentConversation,
+  } = useModel('conversationAgent');
   /** tenantConfigInfo model：租户配置（页面标题、订阅开关等） */
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
-  const showSubscriptionTabs = tenantConfigInfo?.enableSubscription !== 0;
   /** spaceAgent model：当前空间下的智能体组件列表（变量、插件、工具等） */
   const { agentComponentList } = useModel('spaceAgent');
 
+  // 是否开启订阅功能
+  const isEnableSubscription = tenantConfigInfo?.enableSubscription !== 0;
+
   // ==================== 计算属性 ====================
-  /** 开发会话 ID，用于文件操作和 SSE 连接 */
-  // const devConversationId = agentConfigInfo?.devConversationId;
+  /** 开发会话 ID，用于聊天历史查询 */
+  const devConversationId = agentConfigInfo?.devConversationId;
 
   /**
    * 获取有效的沙箱 ID
@@ -312,11 +321,29 @@ const ConversationAgent: React.FC = () => {
   // ==================== 副作用 (Effects) ====================
 
   /**
+   * devConversationId 就绪后查询开发会话历史，写入 conversationAgent.messageList
+   * 注意：不要把 runQueryConversation / resetInit 放入依赖，否则 cleanup 会清空 messageList 并导致循环请求
+   */
+  useEffect(() => {
+    if (!devConversationId) {
+      return;
+    }
+    runQueryAgentConversation(devConversationId);
+  }, [devConversationId]);
+
+  /** 离开 ConversationAgent 页面时清理 conversationAgent 会话状态 */
+  useEffect(() => {
+    return () => {
+      resetAgentConversation();
+    };
+  }, []);
+
+  /**
    * 当页面加载结束且携带了初始消息状态时，自动触发消息发送
    */
   useEffect(() => {
     // 优先使用路由参数中指定的 conversationId
-    const id = queryConversationId || conversationInfo?.id;
+    const id = queryConversationId;
 
     if (id) {
       const state = (location.state || history.location.state) as any;
@@ -367,7 +394,6 @@ const ConversationAgent: React.FC = () => {
       }
     }
   }, [
-    conversationInfo?.id,
     location.state,
     history.location.state,
     selectedComputerId,
@@ -1297,6 +1323,17 @@ const ConversationAgent: React.FC = () => {
 
   // ==================================== 渲染组件元素 ====================================
 
+  /** 「预览」页签：调试对话（原编排面板「调试」Tab） */
+  const arrangeDebugChatPanel = useMemo(
+    () => (
+      <ConversationAgentChatSession
+        agentId={agentId}
+        agentConfigInfo={agentConfigInfo}
+      />
+    ),
+    [agentId, agentConfigInfo],
+  );
+
   /** 「编排」页签：模型、提示词、变量与工具配置 */
   const arrangeConfigPanel = useMemo(
     () => (
@@ -1332,19 +1369,19 @@ const ConversationAgent: React.FC = () => {
   /** 「订阅设置」页签（租户未开启订阅时不渲染） */
   const subscriptionSettingPanel = useMemo(
     () =>
-      showSubscriptionTabs && agentId ? (
+      isEnableSubscription && agentId ? (
         <SubscriptionSetting agentId={agentId} spaceId={spaceId} visible />
       ) : null,
-    [showSubscriptionTabs, agentId, spaceId],
+    [isEnableSubscription, agentId, spaceId],
   );
 
   /** 「订阅统计」页签（租户未开启订阅时不渲染） */
   const subscriptionStatsPanel = useMemo(
     () =>
-      showSubscriptionTabs && agentId ? (
+      isEnableSubscription && agentId ? (
         <SubscriptionStats agentId={agentId} visible />
       ) : null,
-    [showSubscriptionTabs, agentId],
+    [isEnableSubscription, agentId],
   );
 
   /** 「版本控制」页签：Git 提交记录 */
@@ -1409,7 +1446,7 @@ const ConversationAgent: React.FC = () => {
               // 选中标签
               activeTab={previewTabs.activeTab}
               // 调试对话面板
-              // debugPanel={arrangeDebugChatPanel}
+              debugPanel={arrangeDebugChatPanel}
               // 编排配置面板
               arrangeConfigPanel={arrangeConfigPanel}
               // 版本控制面板（Git 提交记录）

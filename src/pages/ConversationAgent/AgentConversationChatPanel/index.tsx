@@ -83,12 +83,14 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
   // ==================== 主渲染 ====================
   return (
     <div className={cx(styles.container, className, 'flex', 'h-full')}>
+      {/* 顶部 Header */}
       <ConversationAgentHeader
         agentConfigInfo={agentConfigInfo}
         onEditAgent={onEditAgent}
         isFileTreeSidebarVisible={isFileTreeSidebarVisible}
         onToggleFileTreeSidebar={onToggleFileTreeSidebar}
       />
+      {/* 主内容区域：消息列表 + 状态栏 + 输入框 */}
       <div
         className={cx(
           styles['main-content'],
