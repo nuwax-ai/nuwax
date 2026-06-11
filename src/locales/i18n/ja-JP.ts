@@ -2143,7 +2143,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.ConversationAgent.AgentGitVersionRecord.rollbackSuccess": "ロールバックに成功しました",
   "PC.Pages.ConversationAgent.AgentGitVersionRecord.commitsOn": "{0} のコミット",
   "PC.Pages.ConversationAgent.AgentGitVersionRecord.empty": "コミットはまだありません",
-  "PC.Pages.ConversationAgent.AgentGitVersionRecord.noConversation": "開発セッションを開始してからバージョン履歴を表示してください",
+  "PC.Pages.ConversationAgent.AgentGitVersionRecord.noConversation": "バージョン記録がありません",
   "PC.Components.FileTreePanel.FileTreeToolbar.projects": "プロジェクト",
   "PC.Components.FileTreePanel.FileTreeToolbar.exportProject": "プロジェクトをエクスポート",
   "PC.Components.FileTreePanel.FileTreeToolbar.newFile": "新規ファイル",

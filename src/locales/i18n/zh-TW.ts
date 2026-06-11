@@ -2362,7 +2362,7 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.ConversationAgent.AgentGitVersionRecord.rollbackSuccess": "回滾成功",
   "PC.Pages.ConversationAgent.AgentGitVersionRecord.commitsOn": "提交於 {0}",
   "PC.Pages.ConversationAgent.AgentGitVersionRecord.empty": "暫無提交記錄",
-  "PC.Pages.ConversationAgent.AgentGitVersionRecord.noConversation": "請先開始開發會話後再查看版本記錄",
+  "PC.Pages.ConversationAgent.AgentGitVersionRecord.noConversation": "暫無版本記錄",
   "PC.Components.FileTreePanel.FileTreeToolbar.projects": "專案",
   "PC.Components.FileTreePanel.FileTreeToolbar.exportProject": "匯出專案",
   "PC.Components.FileTreePanel.FileTreeToolbar.newFile": "新建檔案",

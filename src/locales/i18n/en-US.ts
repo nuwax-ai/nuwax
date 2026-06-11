@@ -2409,7 +2409,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.ConversationAgent.AgentGitVersionRecord.rollbackSuccess": "Rollback successful",
   "PC.Pages.ConversationAgent.AgentGitVersionRecord.commitsOn": "Commits on {0}",
   "PC.Pages.ConversationAgent.AgentGitVersionRecord.empty": "No commits yet",
-  "PC.Pages.ConversationAgent.AgentGitVersionRecord.noConversation": "Start a dev session to view version history",
+  "PC.Pages.ConversationAgent.AgentGitVersionRecord.noConversation": "No version records",
   "PC.Components.FileTreePanel.FileTreeToolbar.projects": "Projects",
   "PC.Components.FileTreePanel.FileTreeToolbar.exportProject": "Export project",
   "PC.Components.FileTreePanel.FileTreeToolbar.newFile": "New file",
