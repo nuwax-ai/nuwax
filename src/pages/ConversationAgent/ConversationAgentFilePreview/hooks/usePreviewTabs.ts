@@ -86,13 +86,29 @@ const buildPreviewTab = (): PreviewTab => ({
   label: dict(TOOL_I18N_MAP.preview),
 });
 
+/** 构建默认「编排」工具页签 */
+const buildArrangeTab = (): PreviewTab => ({
+  id: getToolTabId('arrange'),
+  type: 'tool',
+  toolId: 'arrange',
+  label: dict(TOOL_I18N_MAP.arrange),
+});
+
+/** 进入 ConversationAgent 时默认展示的工作区 Tab（预览 + 编排） */
+const buildDefaultWorkspaceTabs = (): PreviewTab[] => [
+  buildPreviewTab(),
+  buildArrangeTab(),
+];
+
 /**
  * 预览区标签页状态管理
  * 支持文件标签与工具标签的增删改查
  */
 export function usePreviewTabs(options: UsePreviewTabsOptions = {}) {
   const { onFileTabActivate, onToolTabActivate, onPickerTabActivate } = options;
-  const [tabs, setTabs] = useState<PreviewTab[]>(() => [buildPreviewTab()]);
+  const [tabs, setTabs] = useState<PreviewTab[]>(() =>
+    buildDefaultWorkspaceTabs(),
+  );
   const [activeTabId, setActiveTabId] = useState<string | null>(() =>
     getToolTabId('preview'),
   );
@@ -125,10 +141,11 @@ export function usePreviewTabs(options: UsePreviewTabsOptions = {}) {
     return [...pinned, ...unpinned];
   };
 
-  /** 重置为仅保留默认「预览」页签 */
+  /** 重置为默认「预览 + 编排」页签 */
   const openDefaultPreviewTab = useCallback(() => {
-    const previewTab = buildPreviewTab();
-    setTabs([previewTab]);
+    const defaultTabs = buildDefaultWorkspaceTabs();
+    const previewTab = defaultTabs[0];
+    setTabs(defaultTabs);
     setActiveTabId(previewTab.id);
     onToolTabActivate?.('preview');
   }, [onToolTabActivate]);

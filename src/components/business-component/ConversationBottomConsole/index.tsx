@@ -112,7 +112,7 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
     defaultActiveTab,
   );
   /** 面板布局模式：default 默认高度 / expanded 全屏 / collapsed 仅保留头部 */
-  const [layoutMode, setLayoutMode] = useState<ConsoleLayoutMode>('default');
+  const [layoutMode, setLayoutMode] = useState<ConsoleLayoutMode>('collapsed');
   /** 终端主题（非受控时的内部状态） */
   const [internalAppearance, setInternalAppearance] =
     useState<TerminalAppearanceMode>(defaultTerminalAppearance);
