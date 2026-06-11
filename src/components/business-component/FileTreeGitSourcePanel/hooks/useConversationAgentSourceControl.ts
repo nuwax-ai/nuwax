@@ -69,6 +69,8 @@ export interface UseConversationAgentSourceControlReturn {
   handleOpenChangeFile: (fileId: string) => void;
   /** 放弃更改（支持单文件或文件夹下多文件，含 Git discard + UI 同步） */
   handleDiscardChange: (fileIds: string[]) => Promise<void>;
+  /** Git discard 成功后的 UI 同步（不再调用 discard 接口） */
+  handleAfterDiscardChange: (fileId: string) => void;
   handleAddToGitignore: (fileId: string) => Promise<void>;
   handleCommit: (message: string) => Promise<void>;
 }
@@ -288,6 +290,17 @@ export const useConversationAgentSourceControl = ({
     [workspace, changeFiles, adapters],
   );
 
+  /** SourceControlPanel 已完成 Git discard 后，仅同步本地 UI */
+  const handleAfterDiscardChange = useCallback(
+    (fileId: string) => {
+      syncAfterDiscardChange(fileId);
+      setSelectedChangeFile((current) =>
+        current?.fileId === fileId ? null : current,
+      );
+    },
+    [syncAfterDiscardChange, setSelectedChangeFile],
+  );
+
   return {
     changeFiles,
     selectedChangeFile,
@@ -297,6 +310,7 @@ export const useConversationAgentSourceControl = ({
     handleDiffFileSelect,
     handleOpenChangeFile,
     handleDiscardChange,
+    handleAfterDiscardChange,
     handleAddToGitignore,
     handleCommit,
   };

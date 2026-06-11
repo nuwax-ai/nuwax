@@ -1634,9 +1634,8 @@ const AppDev: React.FC = () => {
                               sourceControl.handleDiffFileSelect,
                             onOpenChangeFile:
                               sourceControl.handleOpenChangeFile,
-                            onAfterDiscardChange: (fileId) => {
-                              void sourceControl.handleDiscardChange([fileId]);
-                            },
+                            onAfterDiscardChange:
+                              sourceControl.handleAfterDiscardChange,
                             onAddToGitignore:
                               sourceControl.handleAddToGitignore,
                             onCommit: sourceControl.handleCommit,

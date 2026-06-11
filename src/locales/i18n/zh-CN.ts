@@ -2474,8 +2474,6 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.ConversationAgentPreviewTabBar.contextMenu.pin": "固定",
   "PC.Pages.ConversationAgentPreviewTabBar.contextMenu.unpin": "取消固定",
   "PC.Pages.ConversationAgentPreviewTabBar.closeTab": "关闭标签页",
-  "PC.Pages.ConversationAgentPreviewTabBar.collaborate": "协作",
-  "PC.Pages.ConversationAgentPreviewTabBar.deploy": "部署",
   "PC.Pages.ConversationAgentTabPicker.devTools": "开发工具",
   "PC.Pages.ConversationAgentTabPicker.devToolsDesc": "提供代码编辑、实时预览和调试能力，支持开发与版本管理的全流程。",
   "PC.Pages.ConversationAgentTabPicker.preview": "预览",

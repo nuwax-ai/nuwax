@@ -2474,8 +2474,6 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.ConversationAgentPreviewTabBar.contextMenu.pin": "Pin",
   "PC.Pages.ConversationAgentPreviewTabBar.contextMenu.unpin": "Unpin",
   "PC.Pages.ConversationAgentPreviewTabBar.closeTab": "Close Tab",
-  "PC.Pages.ConversationAgentPreviewTabBar.collaborate": "Collaborate",
-  "PC.Pages.ConversationAgentPreviewTabBar.deploy": "Deploy",
   "PC.Pages.ConversationAgentTabPicker.devTools": "Development Tools",
   "PC.Pages.ConversationAgentTabPicker.devToolsDesc": "Code editing, live preview and debugging for the full development workflow.",
   "PC.Pages.ConversationAgentTabPicker.preview": "Preview",

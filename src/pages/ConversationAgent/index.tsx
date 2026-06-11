@@ -183,6 +183,8 @@ const ConversationAgent: React.FC = () => {
   /** 标签选择面板是否展开 */
   /** 预览标签页操作 ref（供 fileViewProviderProps 回调使用） */
   const previewTabsRef = useRef<ReturnType<typeof usePreviewTabs> | null>(null);
+  /** 刷新 Git 变更列表（delete 等场景需在 fileView 初始化后调用） */
+  const refreshGitListRef = useRef<(() => Promise<void>) | null>(null);
   /** 统一主题样式（导航栏风格等） */
   const { navigationStyle } = useUnifiedTheme();
 
@@ -220,7 +222,7 @@ const ConversationAgent: React.FC = () => {
     setIsSuggest,
     messageList,
     setChatSuggestList,
-    setIsLoadingConversation,
+    // setIsLoadingConversation,
     runQueryConversation,
     conversationInfo,
     isFileTreePinned,
@@ -246,7 +248,7 @@ const ConversationAgent: React.FC = () => {
 
   // ==================== 计算属性 ====================
   /** 开发会话 ID，用于文件操作和 SSE 连接 */
-  const devConversationId = agentConfigInfo?.devConversationId;
+  // const devConversationId = agentConfigInfo?.devConversationId;
 
   /**
    * 获取有效的沙箱 ID
@@ -671,17 +673,19 @@ const ConversationAgent: React.FC = () => {
       await runUpdate(updateParams);
 
       // 开场白/引导问题修改后，若消息列表较短则重新查询会话以即时预览效果
-      const messageListLength = messageList?.length || 0;
-      if (
-        (attr === 'openingChatMsg' && messageListLength <= 1) ||
-        (attr === 'guidQuestionDtos' && messageListLength === 1)
-      ) {
-        if (agentConfigInfo) {
-          const { devConversationId: convId } = agentConfigInfo;
-          setIsLoadingConversation(false);
-          runQueryConversation(convId);
-        }
-      }
+      // const messageListLength = messageList?.length || 0;
+      // if (
+      //   (attr === 'openingChatMsg' && messageListLength <= 1) ||
+      //   (attr === 'guidQuestionDtos' && messageListLength === 1)
+      // ) {
+      //   setIsLoadingConversation(false);
+      //   runQueryConversation(queryConversationId);
+      //   // if (agentConfigInfo) {
+      //   //   const { devConversationId: convId } = agentConfigInfo;
+      //   //   setIsLoadingConversation(false);
+      //   //   runQueryConversation(convId);
+      //   // }
+      // }
     },
     [agentConfigInfo, agentId, messageList?.length, closePreviewView],
   );
@@ -755,7 +759,7 @@ const ConversationAgent: React.FC = () => {
     fileNode: FileNode,
     newName: string,
   ): Promise<boolean> => {
-    if (!devConversationId) {
+    if (!queryConversationId) {
       return false;
     }
     const trimmedName = newName.trim();
@@ -774,11 +778,11 @@ const ConversationAgent: React.FC = () => {
       isDir: fileNode.type === 'folder',
     };
     const { code } = await apiUpdateStaticFile({
-      cId: devConversationId,
+      cId: queryConversationId,
       files: [newFile],
     });
     if (code === SUCCESS_CODE) {
-      await handleRefreshFileList(devConversationId);
+      await handleRefreshFileList(queryConversationId);
     }
     return code === SUCCESS_CODE;
   };
@@ -796,7 +800,7 @@ const ConversationAgent: React.FC = () => {
         dict('PC.Pages.EditAgent.deleteFileConfirmTitle'),
         fileNode.name,
         async () => {
-          if (!devConversationId) {
+          if (!queryConversationId) {
             resolve(false);
             return;
           }
@@ -825,11 +829,11 @@ const ConversationAgent: React.FC = () => {
             updatedFilesList = [currentFile] as VncDesktopUpdateFileInfo[];
           }
           const { code } = await apiUpdateStaticFile({
-            cId: devConversationId,
+            cId: queryConversationId,
             files: updatedFilesList,
           });
           if (code === SUCCESS_CODE) {
-            handleRefreshFileList(devConversationId);
+            handleRefreshFileList(queryConversationId);
             resolve(true);
           } else {
             resolve(false);
@@ -848,7 +852,7 @@ const ConversationAgent: React.FC = () => {
     fileNode: FileNode,
     newName: string,
   ) => {
-    if (!devConversationId) {
+    if (!queryConversationId) {
       return false;
     }
     const updatedFilesList = updateFilesListName(
@@ -857,11 +861,11 @@ const ConversationAgent: React.FC = () => {
       newName,
     );
     const { code } = await apiUpdateStaticFile({
-      cId: devConversationId,
+      cId: queryConversationId,
       files: updatedFilesList as VncDesktopUpdateFileInfo[],
     });
     if (code === SUCCESS_CODE) {
-      await handleRefreshFileList(devConversationId);
+      await handleRefreshFileList(queryConversationId);
     }
     return code === SUCCESS_CODE;
   };
@@ -879,7 +883,7 @@ const ConversationAgent: React.FC = () => {
       originalFileContent: string;
     }[],
   ) => {
-    if (!devConversationId) {
+    if (!queryConversationId) {
       return false;
     }
     const updatedFilesList = updateFilesListContent(
@@ -888,7 +892,7 @@ const ConversationAgent: React.FC = () => {
       'modify',
     );
     const { code } = await apiUpdateStaticFile({
-      cId: devConversationId,
+      cId: queryConversationId,
       files: updatedFilesList as VncDesktopUpdateFileInfo[],
     });
     return code === SUCCESS_CODE;
@@ -902,7 +906,7 @@ const ConversationAgent: React.FC = () => {
     files: File[],
     filePaths: string[],
   ) => {
-    if (!devConversationId) {
+    if (!queryConversationId) {
       return;
     }
     const { isExceedLimitSize } = checkFileSizeExceedLimit(files || []);
@@ -910,11 +914,11 @@ const ConversationAgent: React.FC = () => {
       return;
     }
     await apiUploadFiles({
-      cId: devConversationId,
+      cId: queryConversationId,
       files,
       filePaths,
     });
-    await handleRefreshFileList(devConversationId);
+    await handleRefreshFileList(queryConversationId);
   };
 
   /**
@@ -924,14 +928,11 @@ const ConversationAgent: React.FC = () => {
   //   setCanShowFileView((prev) => {
   //     const nextVisible = !prev;
   //     if (nextVisible) {
-  //       const convId = agentConfigInfo?.devConversationId;
-  //       if (convId) {
-  //         handleRefreshFileList(convId);
-  //       }
+  //        handleRefreshFileList(queryConversationId);
   //     }
   //     return nextVisible;
   //   });
-  // }, [agentConfigInfo?.devConversationId, handleRefreshFileList]);
+  // }, [handleRefreshFileList]);
 
   /**
    * 关闭预览面板
@@ -962,14 +963,14 @@ const ConversationAgent: React.FC = () => {
       taskAgentSelectTrigger, // 触发选中的事件标识
       originalFiles: fileTreeData, // 原始文件树数据
       fileTreeDataLoading, // 文件树加载状态
-      targetId: devConversationId?.toString() || '', // 关联的会话 ID
+      targetId: queryConversationId?.toString() || '', // 关联的会话 ID
       readOnly: false, // 文件是否只读
       onUploadFiles: async (files, filePaths) => {
         await handleUploadMultipleFiles(files, filePaths);
       },
       onExportProject: async () => {
-        if (devConversationId) {
-          await apiDownloadAllFiles(devConversationId);
+        if (queryConversationId) {
+          await apiDownloadAllFiles(queryConversationId);
         }
       },
       onRenameFile: handleConfirmRenameFile,
@@ -984,14 +985,14 @@ const ConversationAgent: React.FC = () => {
       isFileTreeSidebarVisible: canShowFileView,
       isCanDeleteSkillFile: true, // 是否允许删除技能文件
       onRefreshFileTree: async () => {
-        if (devConversationId) {
-          await refreshFileListImmediately(devConversationId);
+        if (queryConversationId) {
+          await refreshFileListImmediately(queryConversationId);
         }
       },
       hideDesktop: agentConfigInfo?.hideDesktop, // 是否隐藏桌面预览
       /** 静态文件基础路径，用于文件预览资源加载 */
-      staticFileBasePath: devConversationId
-        ? `/api/computer/static/${devConversationId}`
+      staticFileBasePath: queryConversationId
+        ? `/api/computer/static/${queryConversationId}`
         : undefined,
       /** 文件树选中文件时，切换右侧面板为文件预览并打开标签 */
       onFileSelectOpenPreview: (fileId?: string) => {
@@ -1002,8 +1003,8 @@ const ConversationAgent: React.FC = () => {
             skipActivate: true,
           });
         }
-        if (devConversationId) {
-          openPreviewView(devConversationId);
+        if (queryConversationId) {
+          openPreviewView(queryConversationId);
         }
       },
       /** 文件重命名后同步更新预览区标签页标题与 fileId */
@@ -1015,13 +1016,33 @@ const ConversationAgent: React.FC = () => {
             : current,
         );
       },
+      /** 文件/文件夹删除后关闭预览标签并刷新 Git status */
+      onFileDeleted: (fileNode) => {
+        previewTabsRef.current?.closeFileTabs(
+          fileNode.id,
+          fileNode.type === 'folder',
+        );
+        setSelectedChangeFile((current) => {
+          if (!current?.fileId) {
+            return current;
+          }
+          if (fileNode.type === 'folder') {
+            const isUnderFolder =
+              current.fileId === fileNode.id ||
+              current.fileId.startsWith(`${fileNode.id}/`);
+            return isUnderFolder ? null : current;
+          }
+          return current.fileId === fileNode.id ? null : current;
+        });
+        void refreshGitListRef.current?.();
+      },
     };
   }, [
     taskAgentSelectedFileId,
     taskAgentSelectTrigger,
     fileTreeData,
     fileTreeDataLoading,
-    devConversationId,
+    queryConversationId,
     handleUploadMultipleFiles,
     handleConfirmRenameFile,
     handleCreateFileNode,
@@ -1041,6 +1062,7 @@ const ConversationAgent: React.FC = () => {
 
   /** 初始化文件视图 Hook，获取文件树和预览的渲染组件 */
   const fileView = useConversationAgentFileView(fileViewProviderProps);
+  refreshGitListRef.current = fileView.refreshGitList;
 
   /** 预览区标签页管理 */
   const previewTabs = usePreviewTabs({
@@ -1062,8 +1084,8 @@ const ConversationAgent: React.FC = () => {
         }
       }
       // 打开预览视图
-      if (devConversationId) {
-        openPreviewView(devConversationId);
+      if (queryConversationId) {
+        openPreviewView(queryConversationId);
       }
     },
     // 打开标签选择器
@@ -1071,8 +1093,8 @@ const ConversationAgent: React.FC = () => {
       // 重置终端布局
       resetDevConsoleExpandedLayout();
       // 打开预览视图
-      if (devConversationId) {
-        await openPreviewView(devConversationId);
+      if (queryConversationId) {
+        await openPreviewView(queryConversationId);
       }
     },
     // 打开工具标签
@@ -1082,8 +1104,8 @@ const ConversationAgent: React.FC = () => {
         setDevConsoleExpandSignal((n) => n + 1);
         setSelectedChangeFile(null);
         // 打开预览视图
-        if (devConversationId) {
-          openPreviewView(devConversationId);
+        if (queryConversationId) {
+          openPreviewView(queryConversationId);
         }
         return;
       }
@@ -1092,8 +1114,8 @@ const ConversationAgent: React.FC = () => {
         skipDevConsoleResetRef.current = false;
         setSelectedChangeFile(null);
         // 打开预览视图
-        if (devConversationId) {
-          openPreviewView(devConversationId);
+        if (queryConversationId) {
+          openPreviewView(queryConversationId);
         }
         return;
       }
@@ -1108,8 +1130,8 @@ const ConversationAgent: React.FC = () => {
       }
 
       // 打开预览视图
-      if (devConversationId) {
-        openPreviewView(devConversationId);
+      if (queryConversationId) {
+        openPreviewView(queryConversationId);
       }
     },
   });
@@ -1121,7 +1143,7 @@ const ConversationAgent: React.FC = () => {
   /** 将文件路径添加到 .gitignore */
   const handleAddToGitignore = useCallback(
     async (fileId: string) => {
-      if (!devConversationId) {
+      if (!queryConversationId) {
         return;
       }
 
@@ -1163,7 +1185,7 @@ const ConversationAgent: React.FC = () => {
             'modify',
           );
           const { code } = await apiUpdateStaticFile({
-            cId: devConversationId,
+            cId: queryConversationId,
             files: updatedFilesList as VncDesktopUpdateFileInfo[],
           });
           if (code !== SUCCESS_CODE) {
@@ -1174,7 +1196,7 @@ const ConversationAgent: React.FC = () => {
           }
         } else {
           const { code } = await apiUpdateStaticFile({
-            cId: devConversationId,
+            cId: queryConversationId,
             files: [
               {
                 name: gitignoreId,
@@ -1198,7 +1220,7 @@ const ConversationAgent: React.FC = () => {
         message.success(
           dict('PC.Pages.ConversationAgentSourceControl.gitignoreSuccess'),
         );
-        await handleRefreshFileList(devConversationId);
+        await handleRefreshFileList(queryConversationId);
       } catch (error) {
         console.error('Add to gitignore failed:', error);
         message.error(
@@ -1206,7 +1228,7 @@ const ConversationAgent: React.FC = () => {
         );
       }
     },
-    [devConversationId, fileTreeData, handleRefreshFileList],
+    [fileTreeData, handleRefreshFileList],
   );
 
   /**
@@ -1214,7 +1236,7 @@ const ConversationAgent: React.FC = () => {
    * 封装暂存/取消暂存/提交推送等 Git 操作，差异逻辑通过 adapters 由页面注入
    */
   const gitSourceControl = useConversationAgentSourceControl({
-    cid: devConversationId ?? null,
+    cid: queryConversationId ?? null,
     changeFiles: fileView.changeFiles,
     selectedChangeFile,
     setSelectedChangeFile,
@@ -1243,7 +1265,7 @@ const ConversationAgent: React.FC = () => {
         previewTabs.clearTabs();
       },
       // 刷新 Git 变更列表（git status + 文件树）
-      refreshFileList: devConversationId
+      refreshFileList: queryConversationId
         ? async () => {
             await fileView.refreshGitList();
           }
@@ -1329,17 +1351,17 @@ const ConversationAgent: React.FC = () => {
       <GitVersionRecordPanel
         workspace={{
           workspaceType: 'taskAgent',
-          cid: devConversationId ?? null,
+          cid: queryConversationId ?? null,
         }}
         branch={fileView.gitBranch}
         onRollbackSuccess={() => {
-          if (devConversationId) {
-            handleRefreshFileList(devConversationId);
+          if (queryConversationId) {
+            handleRefreshFileList(queryConversationId);
           }
         }}
       />
     ),
-    [devConversationId, fileView.gitBranch, handleRefreshFileList],
+    [queryConversationId, fileView.gitBranch, handleRefreshFileList],
   );
 
   /**
@@ -1369,6 +1391,10 @@ const ConversationAgent: React.FC = () => {
           onTabReorder={previewTabs.reorderTabs}
           // 打开标签选择器
           onAddTab={previewTabs.openPickerTab}
+          // 智能体配置（保存时间、未发布提示）
+          agentConfigInfo={agentConfigInfo}
+          // 打开发布弹窗
+          onPublish={() => setOpen(true)}
         />
         {/* Tab 栏下方：预览内容 + 底部终端（终端放大时仅覆盖此区域） */}
         <div className={cx(styles['right-panel-main'])}>
@@ -1475,7 +1501,7 @@ const ConversationAgent: React.FC = () => {
               sourceControl={{
                 gitWorkspace: {
                   workspaceType: 'taskAgent',
-                  cid: devConversationId ?? null,
+                  cid: queryConversationId ?? null,
                 },
                 changeFiles: fileView.changeFiles,
                 selectedChangeFile: gitSourceControl.selectedChangeFile,
@@ -1486,9 +1512,7 @@ const ConversationAgent: React.FC = () => {
                 onRefreshGitList: fileView.refreshGitList,
                 onDiffFileSelect: gitSourceControl.handleDiffFileSelect,
                 onOpenChangeFile: gitSourceControl.handleOpenChangeFile,
-                onAfterDiscardChange: (fileId) => {
-                  void gitSourceControl.handleDiscardChange([fileId]);
-                },
+                onAfterDiscardChange: gitSourceControl.handleAfterDiscardChange,
                 onAddToGitignore: (fileId) => {
                   void gitSourceControl.handleAddToGitignore(fileId);
                 },

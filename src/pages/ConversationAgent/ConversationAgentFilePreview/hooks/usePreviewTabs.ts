@@ -323,6 +323,63 @@ export function usePreviewTabs(options: UsePreviewTabsOptions = {}) {
   }, []);
 
   /**
+   * 删除文件/文件夹后关闭相关标签（含 diff 与普通预览）
+   * @param deletedPath 被删除的文件或文件夹路径（fileId）
+   * @param isFolder 是否为文件夹删除（会关闭该路径下所有文件标签）
+   */
+  const closeFileTabs = useCallback(
+    (deletedPath: string, isFolder = false) => {
+      const shouldCloseFileTab = (fileId: string) => {
+        if (isFolder) {
+          return fileId === deletedPath || fileId.startsWith(`${deletedPath}/`);
+        }
+        return fileId === deletedPath;
+      };
+
+      setTabs((prev) => {
+        const removedIndices: number[] = [];
+        prev.forEach((tab, index) => {
+          if (
+            tab.type === 'file' &&
+            tab.fileId &&
+            shouldCloseFileTab(tab.fileId)
+          ) {
+            removedIndices.push(index);
+          }
+        });
+
+        if (removedIndices.length === 0) {
+          return prev;
+        }
+
+        const removedIds = new Set(removedIndices.map((i) => prev[i].id));
+        const nextTabs = prev.filter((tab) => !removedIds.has(tab.id));
+
+        if (nextTabs.length === 0) {
+          const previewTab = buildPreviewTab();
+          setActiveTabId(previewTab.id);
+          onToolTabActivate?.('preview');
+          return [previewTab];
+        }
+
+        setActiveTabId((currentActiveId) => {
+          if (!currentActiveId || !removedIds.has(currentActiveId)) {
+            return currentActiveId;
+          }
+          const firstRemovedIndex = removedIndices[0];
+          const nextIndex = Math.min(firstRemovedIndex, nextTabs.length - 1);
+          const nextTab = nextTabs[nextIndex];
+          activateTab(nextTab);
+          return nextTab.id;
+        });
+
+        return nextTabs;
+      });
+    },
+    [activateTab, onToolTabActivate],
+  );
+
+  /**
    * 文件重命名后同步更新已打开的文件标签（含 diff 标签）
    * @param oldFileId 重命名前的文件 ID
    * @param newFileId 重命名后的文件 ID
@@ -383,6 +440,7 @@ export function usePreviewTabs(options: UsePreviewTabsOptions = {}) {
     togglePinTab,
     reorderTabs,
     clearTabs,
+    closeFileTabs,
     renameFileTab,
   };
 }
