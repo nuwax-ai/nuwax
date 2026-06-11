@@ -206,7 +206,7 @@ const ConversationAgent: React.FC = () => {
     ModelConfigInfo[]
   >([]);
   /** 文件树区域是否显示（header 图标控制，控制中间面板的滑出/收起） */
-  const [canShowFileView] = useState<boolean>(true);
+  const [canShowFileView, setCanShowFileView] = useState<boolean>(true);
 
   // ==================== 全局状态模型 ====================
   /**
@@ -783,6 +783,7 @@ const ConversationAgent: React.FC = () => {
     });
     if (code === SUCCESS_CODE) {
       await handleRefreshFileList(queryConversationId);
+      void refreshGitListRef.current?.();
     }
     return code === SUCCESS_CODE;
   };
@@ -919,20 +920,21 @@ const ConversationAgent: React.FC = () => {
       filePaths,
     });
     await handleRefreshFileList(queryConversationId);
+    void refreshGitListRef.current?.();
   };
 
   /**
    * 切换中间文件树栏显隐（仅由 header 图标控制，不受预览面板状态影响）
    */
-  // const handleToggleFileTreeSidebar = useCallback(() => {
-  //   setCanShowFileView((prev) => {
-  //     const nextVisible = !prev;
-  //     if (nextVisible) {
-  //        handleRefreshFileList(queryConversationId);
-  //     }
-  //     return nextVisible;
-  //   });
-  // }, [handleRefreshFileList]);
+  const handleToggleFileTreeSidebar = useCallback(() => {
+    setCanShowFileView((prev) => {
+      const nextVisible = !prev;
+      if (nextVisible) {
+        handleRefreshFileList(queryConversationId);
+      }
+      return nextVisible;
+    });
+  }, [handleRefreshFileList]);
 
   /**
    * 关闭预览面板
@@ -1482,6 +1484,14 @@ const ConversationAgent: React.FC = () => {
             <AgentConversationChatPanel
               selectedComputerId={finalSelectedComputerId}
               onChangeSelectedComputerId={setSelectedComputerId}
+              // 切换文件树侧边栏显隐
+              onToggleFileTreeSidebar={handleToggleFileTreeSidebar}
+              // 智能体配置信息
+              agentConfigInfo={agentConfigInfo}
+              // 编辑智能体
+              onEditAgent={() => setOpenEditAgent(true)}
+              // 文件树侧边栏是否可见
+              isFileTreeSidebarVisible={canShowFileView}
             />
           </div>
 

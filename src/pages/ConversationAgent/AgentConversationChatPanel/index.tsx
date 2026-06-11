@@ -1,8 +1,10 @@
 import { UnifiedChatSession } from '@/components/business-component';
 import { TaskStatus } from '@/types/enums/agent';
+import { AgentConfigInfo } from '@/types/interfaces/agent';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { history, useLocation, useModel } from 'umi';
+import ConversationAgentHeader from '../ConversationAgentHeader';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -17,6 +19,14 @@ export interface AgentConversationChatPanelProps {
   onChangeSelectedComputerId?: (id: string) => void;
   /** 当前选中的电脑 ID */
   selectedComputerId?: string;
+  /** 切换文件树侧边栏显隐 */
+  onToggleFileTreeSidebar?: () => void;
+  /** 智能体配置信息 */
+  agentConfigInfo?: AgentConfigInfo;
+  /** 编辑智能体 */
+  onEditAgent?: () => void;
+  /** 文件树侧边栏是否可见 */
+  isFileTreeSidebarVisible?: boolean;
 }
 
 /**
@@ -26,6 +36,10 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
   className,
   onChangeSelectedComputerId,
   selectedComputerId,
+  onToggleFileTreeSidebar,
+  agentConfigInfo,
+  onEditAgent,
+  isFileTreeSidebarVisible,
 }) => {
   const location = useLocation();
 
@@ -69,6 +83,12 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
   // ==================== 主渲染 ====================
   return (
     <div className={cx(styles.container, className, 'flex', 'h-full')}>
+      <ConversationAgentHeader
+        agentConfigInfo={agentConfigInfo}
+        onEditAgent={onEditAgent}
+        isFileTreeSidebarVisible={isFileTreeSidebarVisible}
+        onToggleFileTreeSidebar={onToggleFileTreeSidebar}
+      />
       <div
         className={cx(
           styles['main-content'],
