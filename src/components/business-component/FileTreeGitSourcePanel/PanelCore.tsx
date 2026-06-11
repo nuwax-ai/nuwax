@@ -1,12 +1,6 @@
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import { dict } from '@/services/i18nRuntime';
-import {
-  BranchesOutlined,
-  FolderOutlined,
-  LeftOutlined,
-  RightOutlined,
-} from '@ant-design/icons';
-import { Button, Card, Tooltip } from 'antd';
+import { BranchesOutlined, FolderOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import React, { useCallback, useState } from 'react';
 import FileTreePanel from './FileTreePanel';
@@ -26,9 +20,8 @@ type PanelView = 'files' | 'sourceControl';
  */
 const FileTreeGitSourcePanel: React.FC<FileTreeGitSourcePanelProps> = ({
   className,
-  layout = 'embedded',
+  isCollapsed,
   showSourceControl,
-  collapsible = false,
   tree,
   treeClassName,
   treeHeaderClassName,
@@ -36,7 +29,6 @@ const FileTreeGitSourcePanel: React.FC<FileTreeGitSourcePanelProps> = ({
   sourceControl,
 }) => {
   const [activeView, setActiveView] = useState<PanelView>('files');
-  const [isCollapsed, setIsCollapsed] = useState(false);
 
   const {
     changeFiles,
@@ -129,7 +121,7 @@ const FileTreeGitSourcePanel: React.FC<FileTreeGitSourcePanelProps> = ({
             />
           </div>
         ) : (
-          // 文件树容器（内部统一渲染 TaskAgentFileTree）
+          // 文件树容器（内部统一渲染 FileTreePanel）
           <div className={cx(styles.fileTreeContainer)}>
             <FileTreePanel
               tree={tree}
@@ -143,46 +135,21 @@ const FileTreeGitSourcePanel: React.FC<FileTreeGitSourcePanelProps> = ({
     </>
   );
 
-  if (layout === 'sidebar') {
-    return (
-      <>
-        {/* 悬浮折叠/展开按钮 - 放在预览区域左下角 */}
-        {collapsible && (
-          <Tooltip
-            title={
-              isCollapsed
-                ? dict('PC.Pages.AppDevFileTreePanel.expand')
-                : dict('PC.Pages.AppDevFileTreePanel.collapse')
-            }
-          >
-            <Button
-              shape="circle"
-              size="small"
-              icon={isCollapsed ? <RightOutlined /> : <LeftOutlined />}
-              onClick={() => setIsCollapsed((prev) => !prev)}
-              className={cx(styles.collapseButton, {
-                [styles.collapsed]: isCollapsed,
-                [styles.expanded]: !isCollapsed,
-              })}
-            />
-          </Tooltip>
-        )}
-
-        {/* 文件树侧边栏 / 版本对比文件列表 */}
-        <div
-          className={cx(styles.panelSidebar, {
-            [styles.collapsed]: collapsible && isCollapsed,
-          })}
-        >
-          <Card className={cx(styles.panelCard)} variant="borderless">
-            {!(collapsible && isCollapsed) && panelBody}
-          </Card>
-        </div>
-      </>
-    );
-  }
-
-  return <div className={cx(styles.panel, className)}>{panelBody}</div>;
+  return (
+    <div
+      className={cx(
+        styles.panelSidebar,
+        'flex',
+        'flex-col',
+        {
+          [styles.collapsed]: isCollapsed,
+        },
+        className,
+      )}
+    >
+      {panelBody}
+    </div>
+  );
 };
 
 export default FileTreeGitSourcePanel;

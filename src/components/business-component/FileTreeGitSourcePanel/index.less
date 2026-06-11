@@ -6,45 +6,27 @@
 @icon-badge-font-size: 10px;
 @icon-badge-offset: 2px;
 
-.panel {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-height: 0;
-  background-color: @colorBgContainer;
-}
-
 .panelSidebar {
   flex: 0 0 260px;
   height: 100%;
   min-width: 260px;
-  background: @colorBgContainer;
   border-right: @lineWidth solid @colorBorderSecondary;
   padding: 0;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow-x: auto;
+  opacity: 1;
 
   &.collapsed {
     flex: 0 0 0 !important;
     min-width: 0 !important;
     max-width: 0 !important;
+    width: 0 !important;
     padding: 0 !important;
+    border-right: none !important;
     overflow: hidden !important;
-  }
-}
-
-.panelCard {
-  height: 100%;
-  background: transparent;
-  border: none;
-  border-radius: 0;
-  position: relative;
-
-  :global(.ant-card-body) {
-    padding: 0;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
+    visibility: hidden;
+    pointer-events: none;
+    opacity: 0;
   }
 }
 
@@ -125,7 +107,7 @@
   flex: 1;
   overflow-y: auto;
   overflow-x: auto;
-  padding: 8px;
+  padding: 8px 0;
   min-height: 0;
 }
 
@@ -133,46 +115,4 @@
   flex: 1;
   min-height: 0;
   overflow: hidden;
-}
-
-.collapseButton {
-  position: absolute;
-  bottom: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 6px;
-  color: @colorTextBase;
-  font-size: @fontSizeSm;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  z-index: 10;
-  cursor: pointer;
-  outline: none;
-  background: @colorBgContainer;
-  border: none;
-
-  &.expanded {
-    opacity: 0.8;
-    left: 248px;
-    color: @colorTextBase;
-
-    &:hover {
-      background: @colorBgContainer;
-      opacity: 1;
-    }
-  }
-
-  &.collapsed {
-    opacity: 1;
-    left: 16px;
-
-    &:hover {
-      background: @colorBgContainer;
-      opacity: 1;
-    }
-  }
-
-  &:focus {
-    outline: none;
-  }
 }

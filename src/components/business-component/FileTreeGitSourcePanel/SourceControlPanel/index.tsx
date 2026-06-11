@@ -368,6 +368,7 @@ const SourceControlPanel: React.FC<SourceControlPanelProps> = ({
           {dict('PC.Pages.ConversationAgentSourceControl.title')}
         </span>
         <div className={cx(styles['header-actions'])}>
+          {/* 刷新按钮 */}
           <TooltipIcon
             title={dict('PC.Pages.ConversationAgentSourceControl.refresh')}
             ariaLabel={dict('PC.Pages.ConversationAgentSourceControl.refresh')}
@@ -378,6 +379,7 @@ const SourceControlPanel: React.FC<SourceControlPanelProps> = ({
             icon={<ReloadOutlined spin={isRefreshing} />}
             onClick={() => onRefresh?.()}
           />
+          {/* 视图模式切换按钮 */}
           <TooltipIcon
             title={viewToggleTitle}
             ariaLabel={viewToggleTitle}
@@ -392,6 +394,7 @@ const SourceControlPanel: React.FC<SourceControlPanelProps> = ({
         </div>
       </div>
 
+      {/* 提交消息输入框 */}
       <div className={cx(styles['commit-box'])}>
         <Input.TextArea
           className={cx(styles['message-input'])}
@@ -403,6 +406,7 @@ const SourceControlPanel: React.FC<SourceControlPanelProps> = ({
           autoSize={{ minRows: 1, maxRows: 4 }}
           disabled={isCommitting}
         />
+        {/* 提交按钮 */}
         <Button
           type="primary"
           className={cx(styles['commit-btn'])}

@@ -39,12 +39,10 @@ export interface SourceControlProps {
  */
 export interface FileTreeGitSourcePanelProps {
   className?: string;
-  /** sidebar：AppDev 侧栏（可折叠）；embedded：ConversationAgent 嵌入面板 */
-  layout?: 'sidebar' | 'embedded';
+  /** 是否折叠 */
+  isCollapsed?: boolean;
   /** 是否显示源代码管理 Tab（默认：存在 onCommit 时显示） */
   showSourceControl?: boolean;
-  /** 侧栏模式是否支持折叠 */
-  collapsible?: boolean;
   /** 文件树状态与交互处理器（内部渲染 FileTreeState */
   tree: FileTreeState;
   /** 文件树容器类名 */

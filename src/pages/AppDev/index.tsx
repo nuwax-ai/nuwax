@@ -6,7 +6,7 @@ import {
   type ConsoleLayoutMode,
 } from '@/components/business-component';
 import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
-import FileTreeGitSourcePanel, {
+import {
   useAppDevFileTree,
   useSourceControl,
 } from '@/components/business-component/FileTreeGitSourcePanel';
@@ -75,7 +75,11 @@ import React, {
   useState,
 } from 'react';
 import { useModel, useParams, useRequest } from 'umi';
-import { AppDevHeader, ContentViewer } from './components';
+import {
+  AppDevHeader,
+  ContentViewer,
+  FileTreeGitSourceSidebar,
+} from './components';
 import ChatArea from './components/ChatArea';
 import { type DesignViewerRef } from './components/DesignViewer';
 import EditorHeaderRight from './components/EditorHeaderRight';
@@ -1592,11 +1596,9 @@ const AppDev: React.FC = () => {
                 <div className={styles.contentArea}>
                   <div className={styles.contentRow}>
                     <>
-                      {/* FileTreeGitSourcePanel 组件（版本记录面板打开时仍显示） */}
+                      {/* FileTreeGitSourceSidebar 组件（版本记录面板打开时仍显示） */}
                       {activeTab !== 'preview' && (
-                        <FileTreeGitSourcePanel
-                          layout="sidebar"
-                          collapsible
+                        <FileTreeGitSourceSidebar
                           // 文件树（含搜索、工具栏、右键菜单）
                           tree={appDevFileTree.tree}
                           treeClassName="w-full"
