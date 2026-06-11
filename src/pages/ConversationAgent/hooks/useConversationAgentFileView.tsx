@@ -71,6 +71,8 @@ export function useConversationAgentFileView(
     onDeleteFile,
     // 保存文件回调
     onSaveFiles,
+    // 单个文件内容变更后实时保存
+    onSaveFileContent,
     onClose,
     // 是否隐藏文件树（外部控制）
     // 文件树是否固定（用户点击后固定）
@@ -138,6 +140,11 @@ export function useConversationAgentFileView(
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   // 修改的文件列表
   const [changeFiles, setChangeFiles] = useState<ChangeFileInfo[]>([]);
+  const changeFilesRef = useRef(changeFiles);
+  changeFilesRef.current = changeFiles;
+  const onSaveFileContentRef = useRef(onSaveFileContent);
+  onSaveFileContentRef.current = onSaveFileContent;
+
   // Git 列表刷新进行中
   const [isRefreshingGitList, setIsRefreshingGitList] =
     useState<boolean>(false);
@@ -186,6 +193,10 @@ export function useConversationAgentFileView(
 
   // 备份文件列表，用于判断文件列表是否发生变化
   const filesRef = useRef<FileNode[]>([]);
+
+  useEffect(() => {
+    filesRef.current = files;
+  }, [files]);
 
   // 用于存储文件的刷新时间戳，确保每次点击时都能刷新
   // 统一使用一个时间戳，适用于 html、office、json、视频、音频、图片等需要刷新的文件类型
@@ -1039,62 +1050,71 @@ export function useConversationAgentFileView(
   };
 
   /**
-   * 处理内容变化
+   * 处理内容变化：同步本地状态并防抖提交到服务端
    */
-  const handleContentChange = (fileId: string, content: string) => {
-    // 保存原始内容的引用（用于首次修改时记录）
-    let originalContent = '';
-
-    // 更新文件树中的文件内容
-    setFiles((prevFiles) => {
-      // 从最新的 files 中获取原始内容
-      const currentFile = findFileNode(fileId, prevFiles);
-      // 获取原始内容
-      originalContent = currentFile?.content || '';
-
-      const updatedFiles: FileNode[] = updateFileTreeContent(
-        fileId,
-        content,
-        prevFiles,
-      );
-      return updatedFiles;
-    });
-
-    // 更新当前选中的文件内容
-    setSelectedFileNode((prevNode: any) => ({
-      ...prevNode,
-      content,
-    }));
-
-    // 使用函数式更新获取最新的 changeFiles 状态
-    setChangeFiles((prevChangeFiles) => {
-      const existingIndex = prevChangeFiles.findIndex(
+  const handleContentChange = useCallback(
+    (fileId: string, content: string) => {
+      const currentFile = findFileNode(fileId, filesRef.current);
+      const originalContent = currentFile?.content || '';
+      const existingChange = changeFilesRef.current.find(
         (item) => item.fileId === fileId,
       );
+      const originalFileContent =
+        existingChange?.originalFileContent ?? originalContent;
 
-      if (existingIndex !== -1) {
-        // 如果已存在，更新该项的 fileContent，保留原始的 originalFileContent
-        const updatedChangeFiles = [...prevChangeFiles];
-        updatedChangeFiles[existingIndex] = {
-          ...updatedChangeFiles[existingIndex],
-          fileContent: content,
-        };
-        return updatedChangeFiles;
-      } else if (content !== originalContent) {
-        // 如果不存在，追加新项，使用从最新 files 中获取的原始内容
-        return [
-          ...prevChangeFiles,
-          {
-            fileId,
+      setFiles((prevFiles) =>
+        updateFileTreeContent(fileId, content, prevFiles),
+      );
+
+      setSelectedFileNode((prevNode) =>
+        prevNode ? { ...prevNode, content } : prevNode,
+      );
+
+      setChangeFiles((prevChangeFiles) => {
+        const existingIndex = prevChangeFiles.findIndex(
+          (item) => item.fileId === fileId,
+        );
+
+        if (existingIndex !== -1) {
+          const updatedChangeFiles = [...prevChangeFiles];
+          updatedChangeFiles[existingIndex] = {
+            ...updatedChangeFiles[existingIndex],
             fileContent: content,
-            originalFileContent: originalContent,
-          },
-        ];
-      } else {
+          };
+          return updatedChangeFiles;
+        }
+        if (content !== originalFileContent) {
+          return [
+            ...prevChangeFiles,
+            {
+              fileId,
+              fileContent: content,
+              originalFileContent,
+            },
+          ];
+        }
         return prevChangeFiles;
+      });
+
+      if (content !== originalFileContent && !readOnly) {
+        void onSaveFileContentRef
+          .current?.(fileId, content, originalFileContent)
+          .then((success) => {
+            if (!success) {
+              return;
+            }
+            setChangeFiles((prev) => {
+              const item = prev.find((change) => change.fileId === fileId);
+              if (!item || item.fileContent !== content) {
+                return prev;
+              }
+              return prev.filter((change) => change.fileId !== fileId);
+            });
+          });
       }
-    });
-  };
+    },
+    [readOnly],
+  );
 
   /**
    * 处理全屏切换

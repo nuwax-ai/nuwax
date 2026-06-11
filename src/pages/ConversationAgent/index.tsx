@@ -77,6 +77,7 @@ import { message } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import cloneDeep from 'lodash/cloneDeep';
+import debounce from 'lodash/debounce';
 import React, {
   useCallback,
   useEffect,
@@ -241,6 +242,10 @@ const ConversationAgent: React.FC = () => {
     runAsync,
     resetInit,
   } = useModel('conversationInfo');
+
+  /** 文件树数据 ref，供防抖保存读取最新列表 */
+  const fileTreeDataRef = useRef(fileTreeData);
+  fileTreeDataRef.current = fileTreeData;
 
   /** conversationAgent model：页面独立聊天会话（与 conversationInfo 隔离） */
   const {
@@ -926,6 +931,42 @@ const ConversationAgent: React.FC = () => {
   };
 
   /**
+   * 编辑器内容变更：防抖实时保存单个文件到服务端
+   */
+  const handleSaveFileContent = useMemo(
+    () =>
+      debounce(
+        async (
+          fileId: string,
+          content: string,
+          originalFileContent: string,
+        ): Promise<boolean> => {
+          if (!queryConversationId) {
+            return false;
+          }
+          const updatedFilesList = updateFilesListContent(
+            fileTreeDataRef.current || [],
+            [{ fileId, fileContent: content, originalFileContent }],
+            'modify',
+          );
+          if (updatedFilesList.length === 0) {
+            return false;
+          }
+          const { code } = await apiUpdateStaticFile({
+            cId: queryConversationId,
+            files: updatedFilesList as VncDesktopUpdateFileInfo[],
+          });
+          if (code === SUCCESS_CODE) {
+            void refreshGitListRef.current?.();
+          }
+          return code === SUCCESS_CODE;
+        },
+        500,
+      ),
+    [queryConversationId],
+  );
+
+  /**
    * 批量上传文件
    * 先校验文件大小是否超限，通过后调用上传接口并刷新文件树
    */
@@ -1005,6 +1046,14 @@ const ConversationAgent: React.FC = () => {
       onCreateFileNode: handleCreateFileNode,
       onDeleteFile: handleDeleteFile,
       onSaveFiles: handleSaveFiles,
+      onSaveFileContent: async (fileId, content, originalFileContent) => {
+        const result = await handleSaveFileContent(
+          fileId,
+          content,
+          originalFileContent,
+        );
+        return result ?? false;
+      },
       agentSandboxId: finalSelectedComputerId, // 沙箱 ID（终端连接用）
       agentSandboxName: '',
       onClose: handleClosePreviewPanel, // 关闭预览回调
@@ -1076,6 +1125,7 @@ const ConversationAgent: React.FC = () => {
     handleCreateFileNode,
     handleDeleteFile,
     handleSaveFiles,
+    handleSaveFileContent,
     finalSelectedComputerId,
     handleClosePreviewPanel,
     isFileTreePinned,
@@ -1091,6 +1141,13 @@ const ConversationAgent: React.FC = () => {
   /** 初始化文件视图 Hook，获取文件树和预览的渲染组件 */
   const fileView = useConversationAgentFileView(fileViewProviderProps);
   refreshGitListRef.current = fileView.refreshGitList;
+
+  useEffect(
+    () => () => {
+      handleSaveFileContent.cancel();
+    },
+    [handleSaveFileContent],
+  );
 
   /** 预览区标签页管理 */
   const previewTabs = usePreviewTabs({
