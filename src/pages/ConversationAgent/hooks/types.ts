@@ -1,5 +1,5 @@
 import type { ChangeFileInfo } from '@/components/FileTreeView/type';
-import type { TaskAgentFileViewTree } from '@/components/business-component/FileTreeGitSourcePanel/types/taskAgentFileTree';
+import type { FileTreeContainerProps } from '@/components/business-component/FileTreeGitSourcePanel/types/file-tree-git-source';
 import type { HideDesktopEnum } from '@/types/enums/agent';
 import type { FileNode } from '@/types/interfaces/appDev';
 import type React from 'react';
@@ -68,9 +68,6 @@ export interface ConversationAgentFileViewProps {
 /** ConversationAgent 预览 Tab 栏右侧文件操作区 props */
 export type ConversationAgentFilePathHeaderProps = FilePathHeaderProps;
 
-/** 文件树 UI 所需的状态与处理器 */
-export type ConversationAgentFileViewTree = TaskAgentFileViewTree;
-
 /** 预览 UI 所需的状态、处理器与渲染函数 */
 export interface ConversationAgentFileViewPreview {
   selectedFileNode: FileNode | null;
@@ -105,6 +102,6 @@ export interface ConversationAgentFileViewValue {
   gitBranch: string;
   /** 刷新 Git 变更列表（git status） */
   refreshGitList: () => Promise<void>;
-  tree: TaskAgentFileViewTree;
+  tree: FileTreeContainerProps;
   preview: ConversationAgentFileViewPreview;
 }
