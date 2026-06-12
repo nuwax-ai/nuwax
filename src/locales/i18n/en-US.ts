@@ -1215,8 +1215,6 @@ export const EN_US: SystemLangMap = {
   "PC.Constants.Theme.colorRed": "Red",
   "PC.Hooks.UseAppDevFileManagement.editCanceled": "Edit canceled",
   "PC.Hooks.UseAppDevFileManagement.loadFileFailed": "Failed to load file {0}",
-  "PC.Hooks.UseAppDevFileManagement.renameFailed": "Failed to rename",
-  "PC.Hooks.UseAppDevFileManagement.renameFailedWithError": "Rename failed: {0}",
   "PC.Hooks.UseAppDevModelSelector.configCodingModel": "Please configure a coding model in system management or component library. Select a model that supports the Anthropic protocol. Recommended: Zhipu Coding Solution https://bigmodel.cn/glm-coding",
   "PC.Hooks.UseAppDevModelSelector.loadModelListFailed": "Failed to load model list. Please refresh and try again",
   "PC.Hooks.UseAppDevModelSelector.notice": "Notice",

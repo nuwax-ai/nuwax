@@ -1163,8 +1163,6 @@ export const ZH_TW: SystemLangMap = {
   "PC.Constants.Theme.colorRed": "紅色",
   "PC.Hooks.UseAppDevFileManagement.editCanceled": "已取消編輯",
   "PC.Hooks.UseAppDevFileManagement.loadFileFailed": "載入檔案 {0} 失敗",
-  "PC.Hooks.UseAppDevFileManagement.renameFailed": "重新命名失敗",
-  "PC.Hooks.UseAppDevFileManagement.renameFailedWithError": "重新命名失敗: {0}",
   "PC.Hooks.UseAppDevModelSelector.configCodingModel": "請先在系統管理或元件庫中設定編碼模型，請選擇支援 Anthropic 協議的模型。推薦：智譜編碼方案 https://bigmodel.cn/glm-coding",
   "PC.Hooks.UseAppDevModelSelector.loadModelListFailed": "載入模型列表失敗，請重新整理後重試",
   "PC.Hooks.UseAppDevModelSelector.notice": "提示",

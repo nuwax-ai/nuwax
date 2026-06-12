@@ -1144,8 +1144,6 @@ export const JA_JP: SystemLangMap = {
   "PC.Constants.Theme.colorRed": "赤",
   "PC.Hooks.UseAppDevFileManagement.editCanceled": "編集がキャンセルされました",
   "PC.Hooks.UseAppDevFileManagement.loadFileFailed": "ファイル {0} のロードに失敗しました",
-  "PC.Hooks.UseAppDevFileManagement.renameFailed": "名前の変更に失敗しました",
-  "PC.Hooks.UseAppDevFileManagement.renameFailedWithError": "名前の変更に失敗しました: {0}",
   "PC.Hooks.UseAppDevModelSelector.configCodingModel": "システム管理またはコンポーネントライブラリでコーディングモデルを設定してください。 Anthropic プロトコルをサポートするモデルを選択します。推奨: Zhipu コーディング ソリューション https://bigmodel.cn/glm-coding",
   "PC.Hooks.UseAppDevModelSelector.loadModelListFailed": "モデルリストの読み込みに失敗しました。更新してもう一度お試しください",
   "PC.Hooks.UseAppDevModelSelector.notice": "知らせ",
