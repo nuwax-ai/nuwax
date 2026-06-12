@@ -106,7 +106,8 @@ const LeftContent: React.FC<LeftContentProps> = ({
 
             {/* 这里放可以展开 AgentSidebar 的控制按钮 在AgentSidebar 展示的时候隐藏 反之显示 */}
             {/* 当文件树显示时，也显示这个按钮，用于关闭文件树并打开 AgentSidebar */}
-            {!isAppSidebarMode &&
+            {headerProps.showSidebar &&
+              !isAppSidebarMode &&
               !headerProps.isSidebarVisible &&
               !isMobile && (
                 <TooltipIcon

@@ -18,7 +18,7 @@ import { modalConfirm } from '@/utils/ant-custom';
 import { exportFileViaBrowserDownload } from '@/utils/exportImportFile';
 import { message } from 'antd';
 import { useEffect, useRef, useState } from 'react';
-import { history, useParams, useSearchParams } from 'umi';
+import { history, useModel, useParams, useSearchParams } from 'umi';
 import CreateSkill from './CreateSkill';
 import HeaderLeftSlot from './HeaderLeftSlot';
 import HeaderRightSlot from './HeaderRightSlot';
@@ -30,6 +30,7 @@ const SpaceSkillManage: React.FC = () => {
   const params = useParams();
   const spaceId = Number(params.spaceId);
   const [, setSearchParams] = useSearchParams();
+  const { tenantConfigInfo } = useModel('tenantConfigInfo');
 
   // 主要内容区域 ref
   const mainContentRef = useRef<MainContentRef>(null);
@@ -72,8 +73,14 @@ const SpaceSkillManage: React.FC = () => {
 
   // 点击技能卡片
   const handleClickItem = (info: SkillInfo) => {
-    const { id } = info;
-    history.push(`/space/${spaceId}/skill-details/${id}`);
+    const { id, devAgentConversationId } = info;
+    if (devAgentConversationId) {
+      history.push(
+        `/space/${spaceId}/skill-details-conversation/${id}?agentId=${tenantConfigInfo?.skillDevAgentId}&conversationId=${devAgentConversationId}`,
+      );
+    } else {
+      history.push(`/space/${spaceId}/skill-details/${id}`);
+    }
   };
 
   // 删除技能

@@ -386,6 +386,7 @@ export interface SkillInfo {
   modified: string;
   // 最后修改人 ID
   modifiedId: number;
+  devAgentConversationId?: number;
   // 最后修改人名称
   modifiedName: string;
 }

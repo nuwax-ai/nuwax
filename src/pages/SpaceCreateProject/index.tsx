@@ -3,7 +3,7 @@ import { apiProjectCreate } from '@/services/appDev';
 import { message } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
-import { history, useParams } from 'umi';
+import { history, useModel, useParams } from 'umi';
 import GreetingHeader from './components/GreetingHeader';
 import PromptBox from './components/PromptBox';
 import RecentProjects from './components/RecentProjects';
@@ -17,6 +17,7 @@ import type { SubmitPayload } from './components/PromptBox';
 const SpaceCreateProject: React.FC = () => {
   const params = useParams();
   const spaceId = Number(params.spaceId);
+  const { tenantConfigInfo } = useModel('tenantConfigInfo');
 
   const handleCreateSubmit = async ({
     type: targetType,
@@ -69,7 +70,7 @@ const SpaceCreateProject: React.FC = () => {
 
       // 技能
       if (targetType === AgentComponentTypeEnum.Skill) {
-        url = `/space/${spaceId}/skill-details/${targetId}`;
+        url = `/space/${spaceId}/skill-details-conversation/${targetId}?agentId=${tenantConfigInfo?.skillDevAgentId}&conversationId=${conversationId}`;
       }
 
       // 插件 1/2
