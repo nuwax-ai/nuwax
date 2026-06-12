@@ -870,7 +870,7 @@ export function useConversationAgentFileView(
   /**
    * 处理上传操作（从右键菜单触发）
    */
-  const handleUploadFromMenu = async (node: FileNode | null) => {
+  const handleUploadMultipleFiles = async (node: FileNode | null) => {
     // 两种情况 第一个是文件夹，第二个是文件
     let relativePath = '';
 
@@ -1633,7 +1633,7 @@ export function useConversationAgentFileView(
       handleRefreshFileList,
       handleDelete,
       handleRenameFromMenu,
-      handleUploadFromMenu,
+      handleUploadMultipleFiles,
       handleCreateFile,
       handleCreateFolder,
       handleDownloadFileByUrl,

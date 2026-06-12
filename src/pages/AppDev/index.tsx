@@ -1201,7 +1201,7 @@ const AppDev: React.FC = () => {
     onFileSelect: handleFileTreeSelect,
     onDeleteFile: handleDeleteClick,
     onRenameFile: handleRenameFile,
-    onUploadSingleFile: handleUploadMultipleFiles,
+    onUploadFiles: handleUploadMultipleFiles,
     onImportProject: () => setIsUploadModalVisible(true),
     importProjectLabel: t('PC.Pages.AppDevFileTreeContextMenu.importProject'),
     onExportProject: handleExportProject,
