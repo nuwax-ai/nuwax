@@ -78,12 +78,16 @@ const LeftContent: React.FC<LeftContentProps> = ({
               />
             </ConditionRender>
             {/* 下拉重命名会话、删除会话 */}
-            <DropdownChangeName
-              agentId={headerProps.agentId}
-              conversationInfo={headerProps.conversationInfo}
-              setConversationInfo={headerProps.setConversationInfo}
-              isAppSidebarMode={isAppSidebarMode}
-            />
+            {headerProps.renderTitle ? (
+              headerProps.renderTitle({ effectiveAgent, isAppSidebarMode })
+            ) : (
+              <DropdownChangeName
+                agentId={headerProps.agentId}
+                conversationInfo={headerProps.conversationInfo}
+                setConversationInfo={headerProps.setConversationInfo}
+                isAppSidebarMode={isAppSidebarMode}
+              />
+            )}
           </div>
 
           <div className={cx('flex', 'items-center', 'gap-4')}>
@@ -203,6 +207,9 @@ const LeftContent: React.FC<LeftContentProps> = ({
                 </ConditionRender>
               </>
             )}
+
+            {/* 自定义右侧控件插槽（例如发布组件） */}
+            {headerProps.renderHeaderRight?.({ effectiveAgent })}
           </div>
         </div>
       </header>

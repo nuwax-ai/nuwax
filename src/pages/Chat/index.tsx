@@ -57,6 +57,11 @@ export interface ChatCoreProps {
   showPayment?: boolean; // 是否包含订阅/扣费弹窗等逻辑，默认 true
   enableResizable?: boolean; // 是否开启拖拽分栏布局，默认 true
   showClearContext?: boolean; // 是否展示清除上下文按钮（刷子），默认 true
+  renderTitle?: (props: {
+    effectiveAgent: any;
+    isAppSidebarMode: boolean;
+  }) => React.ReactNode;
+  renderHeaderRight?: (props: { effectiveAgent: any }) => React.ReactNode;
 }
 
 /**
@@ -70,6 +75,8 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   showPayment = true,
   enableResizable = true,
   showClearContext = true,
+  renderTitle,
+  renderHeaderRight,
 }) => {
   const location = useLocation();
   const { handleAutoPreviewLastFile } = useAutoPreviewFile();
@@ -569,6 +576,8 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     viewMode,
     handleFileTreeVisible,
     handleOpenDesktopView,
+    renderTitle,
+    renderHeaderRight,
   };
 
   const chatSessionProps = {
