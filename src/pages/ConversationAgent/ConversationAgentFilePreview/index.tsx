@@ -1,6 +1,8 @@
 import ChangeFileGitDiffView from '@/components/business-component/ChangeFileGitDiffView';
+import VncPreview from '@/components/business-component/VncPreview';
 import fileTreeViewStyles from '@/components/FileTreeView/index.less';
 import type { ChangeFileInfo } from '@/components/FileTreeView/type';
+import { AgentTypeEnum } from '@/types/enums/space';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
 import type { ConversationAgentFileViewPreview } from '../hooks/types';
@@ -39,6 +41,14 @@ export interface ConversationAgentFilePreviewProps {
   /** 外层容器类名（来自 useConversationAgentFileView） */
   providerClassName?: string;
   className?: string;
+  /** 是否展示智能体电脑（VNC） */
+  isAgentDesktopOpen?: boolean;
+  /** 智能体电脑绑定的会话 ID */
+  desktopConversationId?: number;
+  /** 智能体类型（用于 VNC 空闲检测） */
+  agentType?: string;
+  /** VNC 空闲超时回调 */
+  onDesktopIdleTimeout?: () => void;
 }
 
 /**
@@ -59,6 +69,10 @@ const ConversationAgentFilePreview: React.FC<
   subscriptionStatsPanel,
   providerClassName,
   className,
+  isAgentDesktopOpen = false,
+  desktopConversationId,
+  agentType,
+  onDesktopIdleTimeout,
 }) => {
   const { renderPreviewContent, isFullscreen, filePathHeaderProps } = preview;
 
@@ -93,6 +107,105 @@ const ConversationAgentFilePreview: React.FC<
   const showOtherToolContent =
     activeTab?.type === 'tool' && !!activeTab.toolId && !activeWorkspaceToolId;
 
+  /** 工作区工具页签 → 面板内容映射 */
+  const workspacePanelMap = useMemo(
+    (): Partial<Record<PreviewToolId, React.ReactNode>> => ({
+      preview: debugPanel,
+      arrange: arrangeConfigPanel,
+      'version-control': versionPanel,
+      'subscription-setting': subscriptionSettingPanel,
+      'subscription-stats': subscriptionStatsPanel,
+    }),
+    [
+      debugPanel,
+      arrangeConfigPanel,
+      versionPanel,
+      subscriptionSettingPanel,
+      subscriptionStatsPanel,
+    ],
+  );
+
+  /** 按优先级渲染预览区主体（VNC > diff > 文件 > 工作区页签 > 其他） */
+  const previewBody = useMemo(() => {
+    if (isAgentDesktopOpen && desktopConversationId) {
+      return (
+        <div className={cx(styles['desktop-preview-layout'])}>
+          <VncPreview
+            serviceUrl={process.env.BASE_URL || ''}
+            cId={String(desktopConversationId)}
+            autoConnect
+            className={styles['vnc-preview']}
+            idleDetection={{
+              enabled: agentType === AgentTypeEnum.TaskAgent,
+              onIdleTimeout: onDesktopIdleTimeout,
+            }}
+          />
+        </div>
+      );
+    }
+
+    if (showDiff && diffFile) {
+      return (
+        <ChangeFileGitDiffView
+          fileId={diffFile.fileId}
+          fileName={diffFileName}
+          originalContent={diffFile.originalFileContent}
+          modifiedContent={diffFile.fileContent}
+          className={styles['diff-view']}
+        />
+      );
+    }
+
+    /** 显示文件预览内容 */
+    if (showFilePreview) {
+      return (
+        <div className={cx(styles['file-preview-layout'])}>
+          <FilePathHeader {...filePathHeaderProps} hideClose />
+          <div className={cx(styles['file-preview-scroll'])}>
+            {renderPreviewContent()}
+          </div>
+        </div>
+      );
+    }
+
+    /** 显示工作区工具页签内容 */
+    if (activeWorkspaceToolId) {
+      const panel = workspacePanelMap[activeWorkspaceToolId];
+      if (panel) {
+        return <div className={cx(styles['workspace-panel'])}>{panel}</div>;
+      }
+    }
+
+    /** 显示其他工具内容 */
+    if (showOtherToolContent && activeTab?.toolId) {
+      return <ToolTabContent toolId={activeTab.toolId} />;
+    }
+
+    /** 显示「新建页签」面板 */
+    if (showPicker && onSelectTool) {
+      return <TabPickerPanel embedded onSelectTool={onSelectTool} />;
+    }
+
+    return <div className={cx(styles['empty-preview'])} />;
+  }, [
+    isAgentDesktopOpen,
+    desktopConversationId,
+    agentType,
+    onDesktopIdleTimeout,
+    showDiff,
+    diffFile,
+    diffFileName,
+    showFilePreview,
+    filePathHeaderProps,
+    renderPreviewContent,
+    activeWorkspaceToolId,
+    workspacePanelMap,
+    showOtherToolContent,
+    activeTab?.toolId,
+    showPicker,
+    onSelectTool,
+  ]);
+
   return (
     <div
       className={cx(
@@ -112,58 +225,9 @@ const ConversationAgentFilePreview: React.FC<
       <div
         className={fileTreeCx('content-container', 'flex', 'flex-1', 'h-full')}
       >
+        {/* 预览内容区 */}
         <div className={cx('flex-1', 'overflow-hide', styles['preview-body'])}>
-          {/* 显示修改文件diff */}
-          {showDiff && diffFile ? (
-            <ChangeFileGitDiffView
-              fileId={diffFile.fileId}
-              fileName={diffFileName}
-              originalContent={diffFile.originalFileContent}
-              modifiedContent={diffFile.fileContent}
-              className={styles['diff-view']}
-            />
-          ) : showFilePreview ? (
-            // 显示文件预览内容
-            <div className={cx(styles['file-preview-layout'])}>
-              {/* 文件路径头 */}
-              <FilePathHeader {...filePathHeaderProps} hideClose />
-              {/* 文件预览内容 */}
-              <div className={cx(styles['file-preview-scroll'])}>
-                {renderPreviewContent()}
-              </div>
-            </div>
-          ) : activeWorkspaceToolId === 'preview' && debugPanel ? (
-            // 显示「预览」页签内容
-            <div className={cx(styles['workspace-panel'])}>{debugPanel}</div>
-          ) : activeWorkspaceToolId === 'arrange' && arrangeConfigPanel ? (
-            // 显示「编排」页签内容
-            <div className={cx(styles['workspace-panel'])}>
-              {arrangeConfigPanel}
-            </div>
-          ) : activeWorkspaceToolId === 'version-control' && versionPanel ? (
-            // 显示「版本控制」页签内容
-            <div className={cx(styles['workspace-panel'])}>{versionPanel}</div>
-          ) : activeWorkspaceToolId === 'subscription-setting' &&
-            // 显示「订阅设置」页签内容
-            subscriptionSettingPanel ? (
-            <div className={cx(styles['workspace-panel'])}>
-              {subscriptionSettingPanel}
-            </div>
-          ) : activeWorkspaceToolId === 'subscription-stats' &&
-            // 显示「订阅统计」页签内容
-            subscriptionStatsPanel ? (
-            <div className={cx(styles['workspace-panel'])}>
-              {subscriptionStatsPanel}
-            </div>
-          ) : showOtherToolContent && activeTab?.toolId ? (
-            // 工具类标签页占位内容
-            <ToolTabContent toolId={activeTab.toolId} />
-          ) : showPicker ? (
-            // 显示「新建页签」面板
-            <TabPickerPanel embedded onSelectTool={onSelectTool} />
-          ) : (
-            <div className={cx(styles['empty-preview'])} />
-          )}
+          {previewBody}
         </div>
       </div>
     </div>

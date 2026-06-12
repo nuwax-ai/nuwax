@@ -27,6 +27,12 @@ export interface AgentConversationChatPanelProps {
   onEditAgent?: () => void;
   /** 文件树侧边栏是否可见 */
   isFileTreeSidebarVisible?: boolean;
+  /** 是否显示智能体电脑入口 */
+  isShowDesktop?: boolean;
+  /** 智能体电脑是否已打开 */
+  isAgentDesktopOpen?: boolean;
+  /** 打开 / 关闭智能体电脑 */
+  onOpenDesktopPanel?: () => void;
 }
 
 /**
@@ -40,6 +46,9 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
   agentConfigInfo,
   onEditAgent,
   isFileTreeSidebarVisible,
+  isShowDesktop,
+  isAgentDesktopOpen,
+  onOpenDesktopPanel,
 }) => {
   const location = useLocation();
 
@@ -89,6 +98,9 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
         onEditAgent={onEditAgent}
         isFileTreeSidebarVisible={isFileTreeSidebarVisible}
         onToggleFileTreeSidebar={onToggleFileTreeSidebar}
+        isShowDesktop={isShowDesktop}
+        isAgentDesktopOpen={isAgentDesktopOpen}
+        onOpenDesktopPanel={onOpenDesktopPanel}
       />
       {/* 主内容区域：消息列表 + 状态栏 + 输入框 */}
       <div
