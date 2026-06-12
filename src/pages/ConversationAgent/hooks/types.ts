@@ -71,6 +71,8 @@ export interface ConversationAgentFileViewProps {
   onFileRenamed?: (oldFileId: string, newFileId: string) => void;
   /** 文件/文件夹删除成功后回调，用于同步预览区标签页与 Git 状态 */
   onFileDeleted?: (node: FileNode) => void;
+  /** CodeViewer 是否使用动态主题（Chat 页为 true） */
+  isDynamicTheme?: boolean;
 }
 
 /** ConversationAgent 预览 Tab 栏右侧文件操作区 props */

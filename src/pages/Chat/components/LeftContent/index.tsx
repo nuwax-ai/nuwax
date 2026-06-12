@@ -2,7 +2,8 @@ import SvgIcon from '@/components/base/SvgIcon';
 import UnifiedChatSession from '@/components/business-component/UnifiedChatSession';
 import ConditionRender from '@/components/ConditionRender';
 import TooltipIcon from '@/components/custom/TooltipIcon';
-import FileTreeView from '@/components/FileTreeView';
+import type { ChatFileTreeSidebarProps } from '@/pages/Chat/components/ChatFileTreeSidebar';
+import ChatFileTreeSidebar from '@/pages/Chat/components/ChatFileTreeSidebar';
 import DropdownChangeName from '@/pages/Chat/components/DropdownChangeName';
 import { t } from '@/services/i18nRuntime';
 import { HideDesktopEnum } from '@/types/enums/agent';
@@ -20,7 +21,7 @@ interface LeftContentProps {
   isAppSidebarMode: boolean;
   headerProps: any;
   chatSessionProps: any;
-  fileTreeProps: any;
+  fileSidebarProps: ChatFileTreeSidebarProps;
 }
 
 const LeftContent: React.FC<LeftContentProps> = ({
@@ -30,7 +31,7 @@ const LeftContent: React.FC<LeftContentProps> = ({
   isAppSidebarMode,
   headerProps,
   chatSessionProps,
-  fileTreeProps,
+  fileSidebarProps,
 }) => {
   return (
     <div
@@ -239,11 +240,11 @@ const LeftContent: React.FC<LeftContentProps> = ({
                 },
               )}
             >
-              <FileTreeView
-                {...fileTreeProps}
+              <ChatFileTreeSidebar
+                {...fileSidebarProps}
                 className={cx(
                   styles['file-tree-container'],
-                  fileTreeProps.className,
+                  fileSidebarProps.className,
                 )}
               />
             </div>
