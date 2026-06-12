@@ -32,11 +32,13 @@ import { useTerminalWsUrl } from '@/hooks/useTerminalWsUrl';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { apiAgentConfigInfo } from '@/services/agentConfig';
 import {
+  apiAppDevUploadFiles,
   bindDataSource,
   buildProject,
   exportProject,
   stopAgentService,
   uploadAndStartProject,
+  type AppDevUploadFilesParams,
 } from '@/services/appDev';
 import { t } from '@/services/i18nRuntime';
 import {
@@ -159,54 +161,52 @@ const AppDev: React.FC = () => {
   // 底部控制台当前激活 Tab（用于判断显示终端还是日志）
   const devConsoleActiveTabRef = useRef<'terminal' | 'logs'>('logs');
   // 控制台切换到终端 Tab 信号
-  const [devConsoleTerminalSignal, setDevConsoleTerminalSignal] = useState(0);
+  const [devConsoleTerminalSignal, setDevConsoleTerminalSignal] =
+    useState<number>(0);
   // 控制台切换到日志 Tab 信号
-  const [devConsoleLogsSignal, setDevConsoleLogsSignal] = useState(0);
-
-  // 空操作函数常量，避免每次渲染创建新函数实例
-  const noop = useCallback(() => {}, []);
-  const asyncNoopFalse = useCallback(async () => false, []);
-  const asyncNoop = useCallback(async () => {}, []);
+  const [devConsoleLogsSignal, setDevConsoleLogsSignal] = useState<number>(0);
 
   // 部署相关状态
-  const [isDeploying, setIsDeploying] = useState(false);
+  const [isDeploying, setIsDeploying] = useState<boolean>(false);
 
   // 单文件上传状态
   const [isSingleFileUploadModalVisible, setIsSingleFileUploadModalVisible] =
-    useState(false);
-  const [singleFileUploadLoading, setSingleFileUploadLoading] = useState(false);
-  const [singleFilePath, setSingleFilePath] = useState('');
+    useState<boolean>(false);
+  const [singleFileUploadLoading, setSingleFileUploadLoading] =
+    useState<boolean>(false);
+  const [singleFilePath, setSingleFilePath] = useState<string>('');
   const [uploadFile, setUploadFile] = useState<File | null>(null);
 
   // 项目导入状态
-  const [isProjectUploading, setIsProjectUploading] = useState(false);
+  const [isProjectUploading, setIsProjectUploading] = useState<boolean>(false);
 
   // 数据资源相关状态
   const [isAddDataResourceModalVisible, setIsAddDataResourceModalVisible] =
-    useState(false);
+    useState<boolean>(false);
 
   // 删除确认对话框状态
-  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [deleteModalVisible, setDeleteModalVisible] = useState<boolean>(false);
   const [nodeToDelete, setNodeToDelete] = useState<any>(null);
   // 文件操作状态，避免多步流程竞争和覆盖
-  const [isFileOperating, setIsFileOperating] = useState(false);
+  const [isFileOperating, setIsFileOperating] = useState<boolean>(false);
   // 文件操作遮罩显示状态，小于500ms不显示遮罩
   const [shouldShowFileOperatingMask, setShouldShowFileOperatingMask] =
-    useState(false);
+    useState<boolean>(false);
   // 文件操作开始时间
   const fileOperatingStartTimeRef = useRef<number | null>(null);
   // 文件操作延时定时器
   const fileOperatingTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // 版本历史弹窗状态
-  const [openVersionHistory, setOpenVersionHistory] = useState(false);
+  const [openVersionHistory, setOpenVersionHistory] = useState<boolean>(false);
 
   // Git 版本记录面板（主内容区展示）
-  const [gitVersionPanelOpen, setGitVersionPanelOpen] = useState(false);
+  const [gitVersionPanelOpen, setGitVersionPanelOpen] =
+    useState<boolean>(false);
 
   // 发布智能体弹窗状态
   const [openPublishComponentModal, setOpenPublishComponentModal] =
-    useState(false);
+    useState<boolean>(false);
   // 使用 Hook 控制抽屉打开时的滚动条
   useDrawerScroll(openVersionHistory);
   const { setIframeDesignMode } = useModel('appDevDesign');
@@ -312,7 +312,7 @@ const AppDev: React.FC = () => {
   // 整个页面生命周期内只触发一次：避免「restart → 仍失败 → 再 restart」的死循环，
   // 也避免跨项目切换时重复触发；如需重试由用户手动点「重启服务器」按钮。
   // 后续「等 iframe 加载完成 → 切回 design」的动作由 ChatAreaTabs 内部完成。
-  const designRecoveryFiredRef = useRef(false);
+  const designRecoveryFiredRef = useRef<boolean>(false);
   const handleDesignModeUnreachable = useCallback(async () => {
     if (designRecoveryFiredRef.current) return;
     designRecoveryFiredRef.current = true;
@@ -324,7 +324,7 @@ const AppDev: React.FC = () => {
   }, [server]);
 
   // Preview 状态跟踪
-  const [previewIsLoading, setPreviewIsLoading] = useState(false);
+  const [previewIsLoading, setPreviewIsLoading] = useState<boolean>(false);
   const [previewLastRefreshed, setPreviewLastRefreshed] = useState<Date | null>(
     null,
   );
@@ -455,7 +455,7 @@ const AppDev: React.FC = () => {
     },
   });
 
-  // ⭐ 自动错误处理 Model（用于记录和管理）
+  // 自动错误处理 Model（用于记录和管理）
   const autoErrorHandlingModelInstance = useModel('autoErrorHandling');
 
   // 使用 ref 存储 errorType 和 requestId，以便在 callback 中使用
@@ -1034,7 +1034,7 @@ const AppDev: React.FC = () => {
   /**
    * 处理右键上传（直接调用上传接口，不依赖状态）
    */
-  const handleRightClickUpload = useCallback(
+  const handleUploadMultipleFiles = useCallback(
     async (node: FileNode | null) => {
       if (!hasValidProjectId) {
         message.error(ERROR_MESSAGES.NO_PROJECT_ID);
@@ -1055,8 +1055,8 @@ const AppDev: React.FC = () => {
       const input = document.createElement('input');
       input.type = 'file';
       input.style.display = 'none';
-      // input.accept = '*';
-      // input.multiple = true;
+      input.accept = '*';
+      input.multiple = true;
       document.body.appendChild(input);
 
       // 等待用户选择文件
@@ -1069,10 +1069,14 @@ const AppDev: React.FC = () => {
           return;
         }
 
+        // 获取上传的文件列表
+        const files = Array.from((e.target as HTMLInputElement).files || []);
+        // 获取上传的文件路径列表
+        const filePaths = files.map((file) => relativePath + file.name);
+
         // 检查文件大小是否超过最大上传文件大小
-        const { isExceedLimitSize, maxFileSize } = checkFileSizeExceedLimit([
-          file,
-        ]);
+        const { isExceedLimitSize, maxFileSize } =
+          checkFileSizeExceedLimit(files);
         // 如果超过最大上传文件大小，则提示错误
         if (isExceedLimitSize) {
           message.error(
@@ -1086,13 +1090,15 @@ const AppDev: React.FC = () => {
           setSingleFileUploadLoading(true);
           setIsFileOperating(true);
 
-          // 直接调用上传接口，使用文件名作为路径
-          const result = await fileManagement.uploadSingleFileToServer(
-            file,
-            relativePath + file.name,
-          );
+          const params: AppDevUploadFilesParams = {
+            projectId,
+            files,
+            filePaths,
+          };
 
-          if (result) {
+          const { code } = await apiAppDevUploadFiles(params);
+
+          if (code === SUCCESS_CODE) {
             // 与弹窗上传成功后逻辑保持一致
             // 刷新项目详情(刷新版本列表)
             projectInfo.refreshProjectInfo();
@@ -1113,7 +1119,7 @@ const AppDev: React.FC = () => {
         setIsFileOperating(false);
       };
     },
-    [hasValidProjectId, fileManagement, projectInfo],
+    [hasValidProjectId, projectInfo, projectId],
   );
 
   /**
@@ -1193,14 +1199,12 @@ const AppDev: React.FC = () => {
     isChatLoading: chat.isChatLoading,
     isFileTreeInitializing: fileManagement.isFileTreeInitializing,
     onFileSelect: handleFileTreeSelect,
-    onDeleteFile: isFileOperating ? noop : handleDeleteClick,
-    onRenameFile: isFileOperating ? asyncNoopFalse : handleRenameFile,
-    onUploadSingleFile: isFileOperating ? asyncNoop : handleRightClickUpload,
-    onImportProject: isFileOperating
-      ? noop
-      : () => setIsUploadModalVisible(true),
+    onDeleteFile: handleDeleteClick,
+    onRenameFile: handleRenameFile,
+    onUploadFiles: handleUploadMultipleFiles,
+    onImportProject: () => setIsUploadModalVisible(true),
     importProjectLabel: t('PC.Pages.AppDevFileTreeContextMenu.importProject'),
-    onExportProject: isFileOperating ? undefined : handleExportProject,
+    onExportProject: handleExportProject,
   });
 
   /**
@@ -1560,7 +1564,6 @@ const AppDev: React.FC = () => {
                   // 更多操作相关
                   actionsData={{
                     onImportProject: () => setIsUploadModalVisible(true),
-                    onUploadSingleFile: () => handleRightClickUpload(null),
                     onRefreshPreview: () => previewRef.current?.refresh(),
                     onRestartServer: async () => {
                       //新逻辑 先停止Agent服务

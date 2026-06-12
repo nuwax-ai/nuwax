@@ -36,8 +36,8 @@ export interface UseAppDevFileTreeParams {
   onDeleteFile: (node: FileNode, event: React.MouseEvent) => void;
   /** 重命名/新建确认回调（新建节点 status === 'create'） */
   onRenameFile?: (node: FileNode, newName: string) => Promise<boolean>;
-  /** 上传单个文件回调（node 为 null 表示根目录） */
-  onUploadSingleFile: (node: FileNode | null) => void | Promise<void>;
+  /** 上传多个文件回调（node 为 null 表示根目录） */
+  onUploadFiles: (node: FileNode | null) => void | Promise<void>;
   /** 导入项目回调（空白区域右键菜单） */
   onImportProject?: () => void;
   /** 导入项目菜单项文案 */
@@ -66,7 +66,7 @@ export function useAppDevFileTree(params: UseAppDevFileTreeParams): {
     onFileSelect,
     onDeleteFile,
     onRenameFile,
-    onUploadSingleFile,
+    onUploadFiles,
     onImportProject,
     importProjectLabel,
     onExportProject,
@@ -220,11 +220,11 @@ export function useAppDevFileTree(params: UseAppDevFileTreeParams): {
   }, []);
 
   /** 从右键菜单/工具栏触发上传单个文件 */
-  const handleUploadFromMenu = useCallback(
+  const handleUploadMultipleFiles = useCallback(
     async (node: FileNode | null) => {
-      await onUploadSingleFile(node);
+      await onUploadFiles(node);
     },
-    [onUploadSingleFile],
+    [onUploadFiles],
   );
 
   /** 刷新文件树：内部维护 loading 状态，避免重复触发 */
@@ -272,7 +272,7 @@ export function useAppDevFileTree(params: UseAppDevFileTreeParams): {
       handleRefreshFileList,
       handleDelete,
       handleRenameFromMenu,
-      handleUploadFromMenu,
+      handleUploadMultipleFiles,
       handleCreateFile,
       handleCreateFolder,
       handleImportProject: onImportProject,
@@ -301,7 +301,7 @@ export function useAppDevFileTree(params: UseAppDevFileTreeParams): {
       handleRefreshFileList,
       handleDelete,
       handleRenameFromMenu,
-      handleUploadFromMenu,
+      handleUploadMultipleFiles,
       handleCreateFile,
       handleCreateFolder,
       handleExportProject,

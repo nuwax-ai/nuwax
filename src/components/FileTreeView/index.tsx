@@ -872,7 +872,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
     /**
      * 处理上传操作（从右键菜单触发）
      */
-    const handleUploadFromMenu = async (node: FileNode | null) => {
+    const handleUploadMultipleFiles = async (node: FileNode | null) => {
       if (!node?.fileProxyUrl && changeFiles?.length > 0) {
         message.warning(
           dict('PC.Components.FileTreeView.unsavedChangesUpload'),
@@ -1771,7 +1771,7 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
                   // 处理重命名操作
                   onRename={handleRenameFromMenu}
                   // 处理上传文件操作
-                  onUploadFiles={handleUploadFromMenu}
+                  onUploadFiles={handleUploadMultipleFiles}
                   // 处理新建文件操作
                   onCreateFile={handleCreateFile}
                   // 处理新建文件夹操作

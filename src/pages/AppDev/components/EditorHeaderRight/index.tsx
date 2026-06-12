@@ -41,7 +41,6 @@ interface GitVersionRecordButtonProps {
 // 更多操作相关接口
 interface MoreActionsProps {
   onImportProject: () => void;
-  onUploadSingleFile: () => void;
   onRefreshPreview: () => void;
   onRestartServer: () => void;
   onFullscreenPreview: () => void;
@@ -78,7 +77,6 @@ interface EditorHeaderRightProps {
   // 更多操作相关
   actionsData: {
     onImportProject: () => void;
-    onUploadSingleFile: () => void;
     onRefreshPreview: () => void;
     onRestartServer: () => void;
     onFullscreenPreview: () => void;
@@ -268,7 +266,6 @@ const ConsoleButton: React.FC<ConsoleButtonProps> = ({
  */
 const MoreActionsMenu: React.FC<MoreActionsProps> = ({
   onImportProject,
-  onUploadSingleFile,
   onRefreshPreview,
   onRestartServer,
   onFullscreenPreview,
@@ -324,7 +321,6 @@ const MoreActionsMenu: React.FC<MoreActionsProps> = ({
     ],
     [
       onImportProject,
-      onUploadSingleFile,
       onRefreshPreview,
       onRestartServer,
       onFullscreenPreview,
@@ -419,7 +415,6 @@ const EditorHeaderRight: React.FC<EditorHeaderRightProps> = ({
       {/* 更多操作菜单 */}
       <MoreActionsMenu
         onImportProject={actionsData.onImportProject}
-        onUploadSingleFile={actionsData.onUploadSingleFile}
         onRefreshPreview={actionsData.onRefreshPreview}
         onRestartServer={actionsData.onRestartServer}
         onFullscreenPreview={actionsData.onFullscreenPreview}

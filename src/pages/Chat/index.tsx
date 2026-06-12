@@ -49,36 +49,59 @@ import { useChatViewMode } from './hooks/useChatViewMode';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
+export interface ChatCoreProps {
+  id: number;
+  agentId: number;
+  locationState?: any;
+  showSidebar?: boolean; // 是否渲染右侧属性面板，默认 true
+  showPayment?: boolean; // 是否包含订阅/扣费弹窗等逻辑，默认 true
+  enableResizable?: boolean; // 是否开启拖拽分栏布局，默认 true
+  showClearContext?: boolean; // 是否展示清除上下文按钮（刷子），默认 true
+  renderTitle?: (props: {
+    effectiveAgent: any;
+    isAppSidebarMode: boolean;
+  }) => React.ReactNode;
+  renderHeaderRight?: (props: { effectiveAgent: any }) => React.ReactNode;
+}
+
 /**
  * 主页咨询聊天页面
  */
-const Chat: React.FC = () => {
+export const ChatCore: React.FC<ChatCoreProps> = ({
+  id,
+  agentId,
+  locationState,
+  showSidebar = true,
+  showPayment = true,
+  enableResizable = true,
+  showClearContext = true,
+  renderTitle,
+  renderHeaderRight,
+}) => {
   const location = useLocation();
-  const params = useParams();
   const { handleAutoPreviewLastFile } = useAutoPreviewFile();
-  // 会话ID
-  const id = Number(params.id);
-  const agentId = Number(params.agentId);
+  const stateToUse = locationState || location.state;
   // 附加state
-  const message = location.state?.message;
-  const files = location.state?.files;
-  const infos = location.state?.infos;
+  const message = stateToUse?.message;
+  const files = stateToUse?.files;
+  const infos = stateToUse?.infos;
   // 技能ID列表
-  const skillIds = location.state?.skillIds;
+  const skillIds = stateToUse?.skillIds;
   // 消息来源
   const messageSourceType: MessageSourceType =
-    (location.state?.messageSourceType as MessageSourceType) || 'new_chat'; // new_chat 新增会话
+    (stateToUse?.messageSourceType as MessageSourceType) || 'new_chat'; // new_chat 新增会话
   // 默认的智能体详情信息
-  const defaultAgentDetail = location.state?.defaultAgentDetail;
+  const defaultAgentDetail = stateToUse?.defaultAgentDetail;
   // 用户填写的变量参数，此处用于第一次发送消息时，传递变量参数
-  const firstVariableParams = location.state?.variableParams;
+  const firstVariableParams = stateToUse?.variableParams;
   // 模型ID
   const [selectedModelId, setSelectedModelId] = useState<number>(
-    location.state?.modelId,
+    stateToUse?.modelId,
   );
   const [form] = Form.useForm();
 
-  const [isSidebarVisible, setIsSidebarVisible] = useState<boolean>(true);
+  const [isSidebarVisible, setIsSidebarVisible] =
+    useState<boolean>(showSidebar);
   const sidebarRef = useRef<AgentSidebarRef>(null);
 
   // 开放应用智能体会话聊天页面相关状态
@@ -88,7 +111,6 @@ const Chat: React.FC = () => {
     isAppSidebarVisible,
     toggleAppSidebarVisible,
     createAppNewConversation,
-
     openPaymentModal,
     setOpenPaymentModal,
     localCalledTrialCount,
@@ -115,13 +137,14 @@ const Chat: React.FC = () => {
   } = useSubscription();
 
   useEffect(() => {
-    if (!openPaymentModal || isAppSidebarMode) {
+    if (!showPayment || !openPaymentModal || isAppSidebarMode) {
       return;
     }
 
     // 打开智能体订阅套餐弹窗
     queryAgentSubscriptionPlans(agentId);
   }, [
+    showPayment,
     openPaymentModal,
     isAppSidebarMode,
     queryAgentSubscriptionPlans,
@@ -222,7 +245,7 @@ const Chat: React.FC = () => {
     getEffectiveSandboxId,
     finalSelectedId,
   } = useChatSandbox({
-    location,
+    location: { ...location, state: stateToUse },
     history,
     effectiveAgent,
     conversationInfo,
@@ -517,7 +540,7 @@ const Chat: React.FC = () => {
       document.documentElement.style.minWidth = '1660px';
     } else {
       // 设置最小宽度-调试详情
-      if (isSidebarVisible) {
+      if (showSidebar && isSidebarVisible) {
         document.documentElement.style.minWidth = '1540px';
       } else {
         document.documentElement.style.minWidth = '1200px';
@@ -526,9 +549,16 @@ const Chat: React.FC = () => {
     return () => {
       document.documentElement.style.minWidth = 'unset';
     };
-  }, [pagePreviewData, isFileTreeVisible, isSidebarVisible, isMobile]);
+  }, [
+    pagePreviewData,
+    isFileTreeVisible,
+    showSidebar,
+    isSidebarVisible,
+    isMobile,
+  ]);
 
   const headerProps = {
+    showSidebar,
     isAppSidebarVisible,
     toggleAppSidebarVisible,
     createAppNewConversation,
@@ -546,6 +576,8 @@ const Chat: React.FC = () => {
     viewMode,
     handleFileTreeVisible,
     handleOpenDesktopView,
+    renderTitle,
+    renderHeaderRight,
   };
 
   const chatSessionProps = {
@@ -572,7 +604,7 @@ const Chat: React.FC = () => {
       expandPageArea: effectiveAgent?.expandPageArea,
     },
     onSendMessage: handleMessageSend,
-    onClear: handleClear,
+    onClear: showClearContext ? handleClear : undefined,
     onLoadMoreMessage: handleLoadMoreMessage,
     selectedModelId,
     onModelSelect: setSelectedModelId,
@@ -656,30 +688,98 @@ const Chat: React.FC = () => {
           [styles['main-area-mobile']]: isMobile,
         })}
       >
-        <ResizableSplit
-          resetTrigger={
-            pagePreviewData || isFileTreeVisible ? 'visible' : 'hidden'
-          }
-          minLeftWidth={430}
-          defaultLeftWidth={33}
-          // 当文件树显示时，左侧占满flex-1, 文件树占flex-2
-          left={
-            effectiveAgent?.hideChatArea ? null : (
-              <LeftContent
-                isMobile={isMobile}
-                isFileTreeVisible={isFileTreeVisible}
-                effectiveAgent={effectiveAgent}
-                isAppSidebarMode={isAppSidebarMode}
-                headerProps={headerProps}
-                chatSessionProps={chatSessionProps}
-                fileTreeProps={fileTreeProps}
-              />
-            )
-          }
-          right={
-            pagePreviewData &&
-            !isFileTreeVisible && (
-              <>
+        {enableResizable ? (
+          <ResizableSplit
+            resetTrigger={
+              pagePreviewData || isFileTreeVisible ? 'visible' : 'hidden'
+            }
+            minLeftWidth={430}
+            defaultLeftWidth={33}
+            // 当文件树显示时，左侧占满flex-1, 文件树占flex-2
+            left={
+              effectiveAgent?.hideChatArea ? null : (
+                <LeftContent
+                  isMobile={isMobile}
+                  isFileTreeVisible={isFileTreeVisible}
+                  effectiveAgent={effectiveAgent}
+                  isAppSidebarMode={isAppSidebarMode}
+                  headerProps={headerProps}
+                  chatSessionProps={chatSessionProps}
+                  fileTreeProps={fileTreeProps}
+                />
+              )
+            }
+            right={
+              pagePreviewData &&
+              !isFileTreeVisible && (
+                <>
+                  <PagePreviewIframe
+                    className={cx({
+                      [styles['mobile-page-preview-container']]: isMobile,
+                    })}
+                    pagePreviewData={pagePreviewData}
+                    showHeader={true}
+                    onClose={hidePagePreview}
+                    showCloseButton={!effectiveAgent?.hideChatArea}
+                    titleClassName={cx(styles['title-style'])}
+                    // 复制模板按钮相关 props
+                    showCopyButton={showCopyButton}
+                    allowCopy={effectiveAgent?.allowCopy === AllowCopyEnum.Yes}
+                    onCopyClick={() => setOpenCopyModal(true)}
+                    copyButtonText={t('PC.Pages.Chat.copyTemplate')}
+                    copyButtonClassName={styles['copy-btn']}
+                  />
+                  {/* 复制模板弹窗 */}
+                  {showCopyButton && effectiveAgent && pagePreviewData?.uri && (
+                    <CopyToSpaceComponent
+                      spaceId={effectiveAgent!.spaceId}
+                      mode={AgentComponentTypeEnum.Page}
+                      componentId={parsePageAppProjectId(pagePreviewData?.uri)}
+                      title={''}
+                      open={openCopyModal}
+                      isTemplate={true}
+                      onSuccess={(_: any, targetSpaceId: number) => {
+                        setOpenCopyModal(false);
+                        // 跳转
+                        jumpToPageDevelop(targetSpaceId);
+                      }}
+                      onCancel={() => setOpenCopyModal(false)}
+                    />
+                  )}
+                </>
+              )
+            }
+          />
+        ) : (
+          <div
+            className={styles['chat-flex-container']}
+            style={{
+              display: 'flex',
+              width: '100%',
+              height: '100%',
+              gap: '16px',
+            }}
+          >
+            {effectiveAgent?.hideChatArea ? null : (
+              <div
+                style={{
+                  flex: pagePreviewData && !isFileTreeVisible ? '0 0 50%' : '1',
+                  minWidth: 0,
+                }}
+              >
+                <LeftContent
+                  isMobile={isMobile}
+                  isFileTreeVisible={isFileTreeVisible}
+                  effectiveAgent={effectiveAgent}
+                  isAppSidebarMode={isAppSidebarMode}
+                  headerProps={headerProps}
+                  chatSessionProps={chatSessionProps}
+                  fileTreeProps={fileTreeProps}
+                />
+              </div>
+            )}
+            {pagePreviewData && !isFileTreeVisible && (
+              <div style={{ flex: '1', minWidth: 0 }}>
                 <PagePreviewIframe
                   className={cx({
                     [styles['mobile-page-preview-container']]: isMobile,
@@ -689,14 +789,12 @@ const Chat: React.FC = () => {
                   onClose={hidePagePreview}
                   showCloseButton={!effectiveAgent?.hideChatArea}
                   titleClassName={cx(styles['title-style'])}
-                  // 复制模板按钮相关 props
                   showCopyButton={showCopyButton}
                   allowCopy={effectiveAgent?.allowCopy === AllowCopyEnum.Yes}
                   onCopyClick={() => setOpenCopyModal(true)}
                   copyButtonText={t('PC.Pages.Chat.copyTemplate')}
                   copyButtonClassName={styles['copy-btn']}
                 />
-                {/* 复制模板弹窗 */}
                 {showCopyButton && effectiveAgent && pagePreviewData?.uri && (
                   <CopyToSpaceComponent
                     spaceId={effectiveAgent!.spaceId}
@@ -707,19 +805,20 @@ const Chat: React.FC = () => {
                     isTemplate={true}
                     onSuccess={(_: any, targetSpaceId: number) => {
                       setOpenCopyModal(false);
-                      // 跳转
                       jumpToPageDevelop(targetSpaceId);
                     }}
                     onCancel={() => setOpenCopyModal(false)}
                   />
                 )}
-              </>
-            )
-          }
-        />
+              </div>
+            )}
+          </div>
+        )}
       </div>
       {/* 非应用智能体模式下，显示智能体详情侧边栏 */}
-      <ConditionRender condition={!isAppSidebarMode && !isFileTreeVisible}>
+      <ConditionRender
+        condition={showSidebar && !isAppSidebarMode && !isFileTreeVisible}
+      >
         {/* AgentSidebar - 只在文件树隐藏时显示 */}
         <AgentSidebar
           ref={sidebarRef}
@@ -735,7 +834,9 @@ const Chat: React.FC = () => {
       {/*展示台区域*/}
       <ShowArea />
 
-      <ConditionRender condition={isEnableSubscription && !isAppSidebarMode}>
+      <ConditionRender
+        condition={showPayment && isEnableSubscription && !isAppSidebarMode}
+      >
         {/* 付费订阅套餐弹窗 */}
         <PaymentSubscriptionModal
           open={openPaymentModal}
@@ -762,4 +863,19 @@ const Chat: React.FC = () => {
   );
 };
 
-export default Chat;
+const ChatPage: React.FC = () => {
+  const params = useParams();
+  const location = useLocation();
+  return (
+    <ChatCore
+      id={Number(params.id)}
+      agentId={Number(params.agentId)}
+      locationState={location.state}
+      showSidebar={true}
+      showPayment={true}
+      enableResizable={true}
+    />
+  );
+};
+
+export default ChatPage;

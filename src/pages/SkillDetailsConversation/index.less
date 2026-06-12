@@ -1,0 +1,64 @@
+@import '@/styles/color';
+@import '@/styles/token';
+@import '@/styles/scrollbar.less';
+
+.copy-btn {
+  width: 120px;
+}
+
+.agent-sidebar {
+  position: sticky;
+  margin: 0;
+}
+
+.title-style {
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 24px;
+  color: @colorTextSecondary;
+}
+
+.mobile-page-preview-container {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 100;
+}
+
+.agent-sidebar-w {
+  position: sticky;
+  margin: 0;
+  min-width: 400px;
+}
+
+.chat-loading-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  height: 100%;
+  width: 100%;
+}
+
+.chat-root {
+  display: flex;
+  height: 100%;
+}
+
+.main-area {
+  flex: 4 1;
+  min-width: 430px;
+  width: 0;
+  transition: all 0.3s ease-in-out;
+
+  &.main-area-expanded {
+    flex: 9 1;
+    min-width: 900px;
+  }
+
+  &.main-area-mobile {
+    min-width: unset;
+    width: 100%;
+  }
+}
