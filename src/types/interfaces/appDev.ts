@@ -8,6 +8,7 @@ import { MessageStatusEnum } from '@/types/enums/common';
 import { CoverImgSourceTypeEnum } from '@/types/enums/pageDev';
 import type { Page, RequestResponse } from '@/types/interfaces/request';
 import { DataResource } from './dataResource';
+import { UpdateFileInfo } from './fileTree';
 
 /**
  * 项目文件信息接口
@@ -157,32 +158,13 @@ export interface UploadAndStartProjectResponse {
 }
 
 /**
- * 页面文件信息接口（用于提交文件修改）
- */
-export interface PageFileInfo {
-  /** 文件名 */
-  name: string;
-  /** 文件内容 */
-  contents?: string;
-  /** 是否为二进制文件 */
-  binary: boolean;
-  /** 文件大小是否超限 */
-  sizeExceeded?: boolean;
-  /** 重命名之前的文件名（仅在重命名场景下使用） */
-  renameFrom?: string;
-  operation?: 'create' | 'delete' | 'rename' | 'modify';
-  /*Whether entry is a directory */
-  isDir?: boolean;
-}
-
-/**
  * 提交项目修改请求参数接口
  */
 export interface SubmitFilesParams {
   /** 项目ID */
   projectId: string;
   /** 文件列表 */
-  files: PageFileInfo[];
+  files: UpdateFileInfo[];
 }
 
 /**

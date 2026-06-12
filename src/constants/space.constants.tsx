@@ -67,16 +67,6 @@ const AGENT_TYPE_LIST_ALL = [
     label: dict('PC.Constants.Space.taskAgentType'),
     tooltip: dict('PC.Constants.Space.taskAgentTypeTooltip'),
   },
-  {
-    value: AgentTypeEnum.AgentFlow,
-    label: 'AgentFlow',
-    tooltip: 'AgentFlow',
-  },
-  {
-    value: AgentTypeEnum.ConversationAgent,
-    label: 'ConversationAgent',
-    tooltip: 'ConversationAgent',
-  },
 ];
 
 // 兼容旧代码

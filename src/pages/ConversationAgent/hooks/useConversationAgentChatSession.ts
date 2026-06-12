@@ -1,6 +1,7 @@
 import type { AgentMode } from '@/components/business-component/AgentIntervention';
+import useConversation from '@/hooks/useConversation';
 import { dict } from '@/services/i18nRuntime';
-import { TaskStatus } from '@/types/enums/agent';
+import { ExpandPageAreaEnum, TaskStatus } from '@/types/enums/agent';
 import { AgentTypeEnum } from '@/types/enums/space';
 import type {
   AgentConfigInfo,
@@ -8,6 +9,7 @@ import type {
 } from '@/types/interfaces/agent';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type { RoleInfo } from '@/types/interfaces/conversationInfo';
+import cloneDeep from 'lodash/cloneDeep';
 import { useCallback, useMemo } from 'react';
 import { useModel } from 'umi';
 
@@ -16,6 +18,8 @@ export interface UseConversationAgentChatSessionOptions {
   agentId: number;
   /** 智能体配置（开场白、模型权限等） */
   agentConfigInfo?: AgentConfigInfo;
+  /** 更新智能体配置（清空会话后同步 devConversationId） */
+  onAgentConfigInfo?: (info: AgentConfigInfo) => void;
   /** 当前选中的沙箱电脑 ID */
   selectedComputerId?: string;
   /** 沙箱选择变更回调 */
@@ -42,6 +46,7 @@ export function useConversationAgentChatSession(
   const {
     agentId,
     agentConfigInfo,
+    onAgentConfigInfo,
     selectedComputerId = '',
     onChangeSelectedComputerId,
     selectedModelId,
@@ -54,6 +59,7 @@ export function useConversationAgentChatSession(
   const {
     conversationInfo,
     messageList,
+    setMessageList,
     chatSuggestList,
     loadingConversation,
     loadingMore,
@@ -64,7 +70,17 @@ export function useConversationAgentChatSession(
     handleLoadMoreMessage,
     messageViewRef,
     showScrollBtn,
+    setIsMoreMessage,
+    setIsLoadingConversation,
+    setIsLoadingOtherInterface,
+    isLoadingOtherInterface,
+    handleClearSideEffect,
+    runQueryConversation,
+    clearFilePanelInfo,
   } = useModel('conversationAgent');
+
+  const { hidePagePreview, showPagePreview } = useModel('chat');
+  const { runAsyncConversationCreate } = useConversation();
 
   const roleInfo: RoleInfo = useMemo(
     () => ({
@@ -126,6 +142,75 @@ export function useConversationAgentChatSession(
     ],
   );
 
+  /**
+   * 清空会话记录并创建新的开发会话
+   */
+  const handleClear = useCallback(async () => {
+    handleClearSideEffect();
+    // 重置是否还有更多消息
+    setIsMoreMessage(false);
+    // 清除文件面板信息, 并关闭文件面板
+    clearFilePanelInfo();
+    // 清空消息列表
+    setMessageList([]);
+    // 重置加载状态
+    setIsLoadingConversation(false);
+
+    try {
+      setIsLoadingOtherInterface(true);
+      // 创建智能体会话(智能体编排页面devMode为true)
+      const { success, data } = await runAsyncConversationCreate({
+        agentId,
+        devMode: true,
+      });
+
+      if (success) {
+        // 点击刷子时,智能体要"重置",默认有打开页面就返回到默认首页,默认没有打开页面,则把页面收起来
+        const agent = data?.agent || {};
+        const expandPageArea = agent.expandPageArea;
+        const pageHomeIndex = agent.pageHomeIndex;
+        if (expandPageArea === ExpandPageAreaEnum.No) {
+          hidePagePreview();
+        } else {
+          showPagePreview({
+            uri: pageHomeIndex,
+            params: {},
+          });
+        }
+
+        const id = data?.id;
+        if (agentConfigInfo && id) {
+          // 更新智能体配置信息
+          const _agentConfigInfo = cloneDeep(
+            agentConfigInfo,
+          ) as AgentConfigInfo;
+          _agentConfigInfo.devConversationId = id;
+          onAgentConfigInfo?.(_agentConfigInfo);
+        }
+        if (id) {
+          // 查询会话
+          await runQueryConversation(id);
+        }
+      }
+    } finally {
+      setIsLoadingOtherInterface(false);
+    }
+  }, [
+    agentId,
+    agentConfigInfo,
+    onAgentConfigInfo,
+    handleClearSideEffect,
+    setIsMoreMessage,
+    clearFilePanelInfo,
+    setMessageList,
+    setIsLoadingConversation,
+    setIsLoadingOtherInterface,
+    runAsyncConversationCreate,
+    hidePagePreview,
+    showPagePreview,
+    runQueryConversation,
+  ]);
+
   const enableMention =
     agentConfigInfo?.type === AgentTypeEnum.TaskAgent &&
     agentConfigInfo?.allowAtSkill === 1;
@@ -157,6 +242,8 @@ export function useConversationAgentChatSession(
     onModelSelect,
     isSelectionLocked,
     onSendMessage: handleSendMessage,
+    onClear: handleClear,
+    clearLoading: isLoadingOtherInterface,
     onLoadMoreMessage: handleLoadMoreMessage,
     manualComponents,
     selectedComponentList,
