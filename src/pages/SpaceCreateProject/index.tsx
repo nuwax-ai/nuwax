@@ -1,5 +1,7 @@
 import WorkspaceLayout from '@/components/WorkspaceLayout';
-import { apiProjectCreate } from '@/services/appDev';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { apiAgentGenerateInfo, apiProjectCreate } from '@/services/appDev';
+import { apiSkillUpdate } from '@/services/skill';
 import { message } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
@@ -38,9 +40,37 @@ const SpaceCreateProject: React.FC = () => {
 
     try {
       const res = await apiProjectCreate({ targetType });
+      const { targetId, conversationId } = res.data;
+
+      // 如果是技能类型，且存在 prompt，则前置自动生成技能名称、描述和图标，并更新技能信息
+      if (targetType === AgentComponentTypeEnum.Skill && prompt) {
+        message.loading({
+          content: `正在使用 AI 自动生成技能信息...`,
+          key: 'create_project_loading',
+          duration: 0,
+        });
+        try {
+          const generateRes = await apiAgentGenerateInfo({ prompt });
+          if (generateRes?.code === SUCCESS_CODE && generateRes?.data) {
+            const { name, description, iconUrl } = generateRes.data;
+            await apiSkillUpdate({
+              id: targetId,
+              name,
+              description,
+              icon: iconUrl,
+            });
+          }
+        } catch (error) {
+          console.error(
+            'Failed to generate or update skill info pre-navigation:',
+            error,
+          );
+          // 容灾处理：即便生成或更新报错，也不阻断后续跳转流程
+        }
+      }
+
       hide();
 
-      const { targetId, conversationId } = res.data;
       message.success({
         content: `构建成功！正在为您跳转到工作台...`,
         key: 'create_project_loading',
