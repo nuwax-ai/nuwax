@@ -975,10 +975,22 @@ const ConversationAgent: React.FC = () => {
     if (!queryConversationId) {
       return;
     }
-    const { isExceedLimitSize } = checkFileSizeExceedLimit(files || []);
+
+    // 检查文件大小是否超过最大上传文件大小
+    const { isExceedLimitSize, maxFileSize } = checkFileSizeExceedLimit(
+      files || [],
+    );
+    // 如果超过最大上传文件大小，则提示错误
     if (isExceedLimitSize) {
+      message.error(
+        dict('PC.Common.Global.uploadFileSizeExceed').replace(
+          '{0}',
+          String(maxFileSize),
+        ),
+      );
       return;
     }
+
     await apiUploadFiles({
       cId: queryConversationId,
       files,
@@ -1066,9 +1078,7 @@ const ConversationAgent: React.FC = () => {
       },
       hideDesktop: agentConfigInfo?.hideDesktop, // 是否隐藏桌面预览
       /** 静态文件基础路径，用于文件预览资源加载 */
-      staticFileBasePath: queryConversationId
-        ? `/api/computer/static/${queryConversationId}`
-        : undefined,
+      staticFileBasePath: `/api/computer/static/${queryConversationId}`,
       /** 文件树选中文件时，切换右侧面板为文件预览并打开标签 */
       onFileSelectOpenPreview: (fileId?: string) => {
         setSelectedChangeFile(null);

@@ -763,7 +763,7 @@ const EditAgent: React.FC = () => {
     // 如果超过最大上传文件大小，则提示错误
     if (isExceedLimitSize) {
       messageAntd.error(
-        dict('PC.Pages.EditAgent.uploadFileSizeExceed').replace(
+        dict('PC.Common.Global.uploadFileSizeExceed').replace(
           '{0}',
           String(maxFileSize),
         ),

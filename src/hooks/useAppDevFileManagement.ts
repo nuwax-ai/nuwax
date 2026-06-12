@@ -485,7 +485,6 @@ export const useAppDevFileManagement = ({
 
       try {
         // 上传文件
-
         const result = await uploadSingleFile({
           file,
           projectId,
@@ -493,8 +492,6 @@ export const useAppDevFileManagement = ({
         });
 
         if (result?.success) {
-          // message.success(`Uploaded to ${filePath.trim()}`);
-
           // 上传成功后重新加载文件树（与删除文件逻辑保持一致）
           await loadFileTree(true, true);
 

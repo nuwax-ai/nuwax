@@ -222,7 +222,7 @@ export const useChatFiles = ({
     // 如果超过最大上传文件大小，则提示错误
     if (isExceedLimitSize) {
       messageAntd.warning(
-        t('PC.Pages.Chat.uploadSizeLimitExceeded', maxFileSize),
+        t('PC.Common.Global.uploadFileSizeExceed', maxFileSize),
       );
       return;
     }

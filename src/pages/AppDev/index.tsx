@@ -921,8 +921,8 @@ const AppDev: React.FC = () => {
     ]);
     // 如果超过最大上传文件大小，则提示错误
     if (isExceedLimitSize) {
-      message.error(
-        t('PC.Pages.AppDevIndex.uploadSizeLimitExceeded', String(maxFileSize)),
+      message.warning(
+        t('PC.Common.Global.uploadFileSizeExceed', String(maxFileSize)),
       );
       return;
     }
@@ -962,14 +962,10 @@ const AppDev: React.FC = () => {
           }
         }, 500);
       } else {
-        // message.warning('Upload succeeded but response data format is invalid.');
         setIsProjectUploading(false);
       }
-    } catch (error) {
-      // message.error(error instanceof Error ? error.message : 'Project upload failed.');
-      setIsProjectUploading(false);
     } finally {
-      // setUploadLoading(false); // 移除未使用变量
+      setIsProjectUploading(false);
     }
   }, [selectedFile, projectId, workspace.projectName, server, projectInfo]);
 
@@ -1046,19 +1042,21 @@ const AppDev: React.FC = () => {
       }
       //两种情况 第一个是文件夹，第二个是文件
       let relativePath = '';
+
       if (node) {
         if (node.type === 'file') {
           relativePath = node.path.replace(new RegExp(node.name + '$'), ''); //只替换以node.name结尾的部分
         } else if (node.type === 'folder') {
           relativePath = node.path + '/';
         }
-      } else {
-        relativePath = '';
       }
+
       // 创建一个隐藏的文件输入框
       const input = document.createElement('input');
       input.type = 'file';
       input.style.display = 'none';
+      input.accept = '*';
+      input.multiple = true;
       document.body.appendChild(input);
 
       // 等待用户选择文件
@@ -1078,10 +1076,7 @@ const AppDev: React.FC = () => {
         // 如果超过最大上传文件大小，则提示错误
         if (isExceedLimitSize) {
           message.error(
-            t(
-              'PC.Pages.AppDevIndex.uploadSizeLimitExceeded',
-              String(maxFileSize),
-            ),
+            t('PC.Common.Global.uploadFileSizeExceed', String(maxFileSize)),
           );
           return;
         }
