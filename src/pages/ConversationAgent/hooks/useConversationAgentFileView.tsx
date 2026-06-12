@@ -15,6 +15,7 @@ import { dict } from '@/services/i18nRuntime';
 import { fetchContentFromUrl } from '@/services/skill';
 import { HideDesktopEnum } from '@/types/enums/agent';
 import { FileNode } from '@/types/interfaces/appDev';
+import { checkFileSizeExceedLimit } from '@/utils';
 import {
   findBestMatchingFileNode,
   findFileNode,
@@ -899,14 +900,25 @@ export function useConversationAgentFileView(
         return;
       }
 
+      // 获取上传的文件列表
+      const files = Array.from((e.target as HTMLInputElement).files || []);
+      // 获取上传的文件路径列表
+      const filePaths = files.map((file) => relativePath + file.name);
+
+      // 检查文件大小是否超过最大上传文件大小
+      const { isExceedLimitSize, maxFileSize } =
+        checkFileSizeExceedLimit(files);
+      // 如果超过最大上传文件大小，则提示错误
+      if (isExceedLimitSize) {
+        message.error(
+          dict('PC.Common.Global.uploadFileSizeExceed', String(maxFileSize)),
+        );
+        return;
+      }
+
       setIsUploadingFiles(true);
 
       try {
-        // 获取上传的文件列表
-        const files = Array.from((e.target as HTMLInputElement).files || []);
-        // 获取上传的文件路径列表
-        const filePaths = files.map((file) => relativePath + file.name);
-
         // 直接调用现有的上传多个文件功能
         await onUploadFiles?.(files, filePaths);
 
