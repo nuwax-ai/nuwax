@@ -392,11 +392,15 @@ const SpaceLibrary: React.FC = () => {
     id: number,
     spaceId: number,
     type: PluginTypeEnum,
+    devAgentConversationId?: number,
   ): string => {
+    const query = devAgentConversationId
+      ? `?conversationId=${devAgentConversationId}`
+      : '';
     if (type === PluginTypeEnum.CODE) {
-      return `/space/${spaceId}/plugin/${id}/cloud-tool`;
+      return `/space/${spaceId}/plugin/${id}/cloud-tool${query}`;
     } else if (type === PluginTypeEnum.HTTP) {
-      return `/space/${spaceId}/plugin/${id}`;
+      return `/space/${spaceId}/plugin/${id}${query}`;
     }
     return '';
   };
@@ -633,7 +637,12 @@ const SpaceLibrary: React.FC = () => {
         url = `/space/${spaceId}/workflow/${id}`;
         break;
       case ComponentTypeEnum.Plugin:
-        url = handlePluginUrl(id, spaceId, ext as PluginTypeEnum);
+        url = handlePluginUrl(
+          id,
+          spaceId,
+          ext as PluginTypeEnum,
+          item.devAgentConversationId,
+        );
         break;
       case ComponentTypeEnum.Knowledge:
         url = `/space/${spaceId}/knowledge/${id}`;
