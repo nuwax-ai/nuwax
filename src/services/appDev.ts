@@ -660,3 +660,17 @@ export const apiProjectCreate = async (data: {
     data,
   });
 };
+
+// AI生成项目信息
+export async function apiAgentGenerateInfo(data: { prompt: string }): Promise<
+  RequestResponse<{
+    name: string;
+    description: string;
+    iconUrl: string;
+  }>
+> {
+  return request('/api/agent/generate-info', {
+    method: 'POST',
+    data,
+  });
+}
