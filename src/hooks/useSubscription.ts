@@ -63,10 +63,6 @@ const useSubscription = () => {
     loadingDelay: 500,
   });
 
-  const ignoreRequestError = useCallback(() => {
-    // Global request errorHandler already shows the user-facing message.
-  }, []);
-
   /**
    * 创建智能体订阅订单
    */
@@ -87,40 +83,34 @@ const useSubscription = () => {
   };
 
   // 查询智能体订阅计划列表以及当前智能体我的订阅信息
-  const queryAgentSubscriptionPlans = useCallback(
-    (agentId: number) => {
-      // 查询智能体订阅计划列表
-      loadAgentSubscriptionPlans({
-        agentId,
-        status: SubscriptionPlanStatusEnum.Online,
-      }).catch(ignoreRequestError);
+  const queryAgentSubscriptionPlans = useCallback((agentId: number) => {
+    // 查询智能体订阅计划列表
+    loadAgentSubscriptionPlans({
+      agentId,
+      status: SubscriptionPlanStatusEnum.Online,
+    });
 
-      // 查询当前智能体维度「我的订阅」接口数据
-      loadMySubscription({
-        bizType: BizTypeEnum.Agent,
-        bizId: agentId,
-      }).catch(ignoreRequestError);
-    },
-    [ignoreRequestError, loadAgentSubscriptionPlans, loadMySubscription],
-  );
+    // 查询当前智能体维度「我的订阅」接口数据
+    loadMySubscription({
+      bizType: BizTypeEnum.Agent,
+      bizId: agentId,
+    });
+  }, []);
 
   // 查询智能体订阅计划列表以及当前智能体我的订阅信息
-  const querySkillSubscriptionPlans = useCallback(
-    (skillId: number) => {
-      // 查询技能定价配置
-      loadTargetPricing({
-        targetType: ToolPricingTargetType.SKILL,
-        targetId: String(skillId),
-      }).catch(ignoreRequestError);
+  const querySkillSubscriptionPlans = useCallback((skillId: number) => {
+    // 查询技能定价配置
+    loadTargetPricing({
+      targetType: ToolPricingTargetType.SKILL,
+      targetId: String(skillId),
+    });
 
-      // 查询当前技能维度「我的订阅」接口数据
-      loadMySubscription({
-        bizType: BizTypeEnum.Skill,
-        bizId: skillId,
-      }).catch(ignoreRequestError);
-    },
-    [ignoreRequestError, loadMySubscription, loadTargetPricing],
-  );
+    // 查询当前技能维度「我的订阅」接口数据
+    loadMySubscription({
+      bizType: BizTypeEnum.Skill,
+      bizId: skillId,
+    });
+  }, []);
 
   return {
     // 智能体订阅计划列表

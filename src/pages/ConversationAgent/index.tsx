@@ -207,6 +207,8 @@ const ConversationAgent: React.FC = () => {
   >([]);
   /** 文件树区域是否显示（header 图标控制，控制中间面板的滑出/收起） */
   const [canShowFileView, setCanShowFileView] = useState<boolean>(true);
+  /** 右侧预览区是否展示智能体电脑（VNC） */
+  const [isAgentDesktopOpen, setIsAgentDesktopOpen] = useState<boolean>(false);
 
   // ==================== 全局状态模型 ====================
   /**
@@ -228,6 +230,7 @@ const ConversationAgent: React.FC = () => {
     isFileTreePinned,
     setIsFileTreePinned,
     closePreviewView,
+    openDesktopView,
     fileTreeData,
     fileTreeDataLoading,
     handleRefreshFileList,
@@ -240,6 +243,12 @@ const ConversationAgent: React.FC = () => {
     runAsync,
     resetInit,
   } = useModel('conversationInfo');
+
+  /** 关闭远程智能体桌面（切换标签/文件等预览操作时调用） */
+  const closeAgentDesktop = useCallback(() => {
+    setIsAgentDesktopOpen(false);
+    closePreviewView();
+  }, [closePreviewView]);
 
   /** 文件树数据 ref，供防抖保存读取最新列表 */
   const fileTreeDataRef = useRef(fileTreeData);
@@ -655,7 +664,7 @@ const ConversationAgent: React.FC = () => {
         runUpdateAgent(agentId);
       }
       if (attr === 'hideDesktop' && value === HideDesktopEnum.Yes) {
-        closePreviewView();
+        closeAgentDesktop();
       }
 
       // 解构出需要持久化的配置字段
@@ -716,7 +725,7 @@ const ConversationAgent: React.FC = () => {
       //   // }
       // }
     },
-    [agentConfigInfo, agentId, messageList?.length, closePreviewView],
+    [agentConfigInfo, agentId, messageList?.length, closeAgentDesktop],
   );
 
   /**
@@ -1011,18 +1020,63 @@ const ConversationAgent: React.FC = () => {
       }
       return nextVisible;
     });
-  }, [handleRefreshFileList]);
+  }, [handleRefreshFileList, queryConversationId]);
+
+  /**
+   * 打开 / 切换智能体电脑（与编排页 PreviewAndDebug 行为一致）
+   */
+  const handleOpenDesktopPanel = useCallback(async () => {
+    const convId = queryConversationId;
+    if (!convId) {
+      message.warning(dict('PC.Pages.PreviewAndDebug.convIdNotFoundDesktop'));
+      return;
+    }
+
+    if (isAgentDesktopOpen) {
+      closePreviewView();
+      setIsAgentDesktopOpen(false);
+      return;
+    }
+
+    await openDesktopView(convId);
+    setIsAgentDesktopOpen(true);
+  }, [
+    queryConversationId,
+    isAgentDesktopOpen,
+    openDesktopView,
+    closePreviewView,
+  ]);
+
+  /** 是否显示文件面板相关入口（通用型智能体 + 有效消息） */
+  const isShowFilePanel = useMemo(() => {
+    if (agentConfigInfo?.type !== AgentTypeEnum.TaskAgent) {
+      return false;
+    }
+    if (!messageList?.length) {
+      return false;
+    }
+    if (messageList.length === 1) {
+      return !!messageList[0]?.id;
+    }
+    return true;
+  }, [agentConfigInfo?.type, messageList]);
+
+  /** 是否显示智能体电脑入口（云端电脑 + 未隐藏远程桌面） */
+  const isShowDesktop =
+    isShowFilePanel &&
+    agentConfigInfo?.hideDesktop === HideDesktopEnum.No &&
+    finalSelectedComputerId === '-1';
 
   /**
    * 关闭预览面板
    * 同时关闭文件预览视图和取消文件树固定状态
    */
   const handleClosePreviewPanel = useCallback(() => {
-    closePreviewView();
+    closeAgentDesktop();
     setIsFileTreePinned(false);
     setSelectedChangeFile(null);
     previewTabsRef.current?.clearTabs();
-  }, [closePreviewView, setIsFileTreePinned]);
+  }, [closeAgentDesktop, setIsFileTreePinned]);
 
   /** 切换预览标签/文件时，底部终端若处于 expanded 则恢复 default */
   const resetDevConsoleExpandedLayout = useCallback(() => {
@@ -1081,6 +1135,7 @@ const ConversationAgent: React.FC = () => {
       staticFileBasePath: `/api/computer/static/${queryConversationId}`,
       /** 文件树选中文件时，切换右侧面板为文件预览并打开标签 */
       onFileSelectOpenPreview: (fileId?: string) => {
+        closeAgentDesktop();
         setSelectedChangeFile(null);
         if (fileId) {
           resetDevConsoleExpandedLayout();
@@ -1144,6 +1199,7 @@ const ConversationAgent: React.FC = () => {
     agentConfigInfo?.hideDesktop,
     openPreviewView,
     resetDevConsoleExpandedLayout,
+    closeAgentDesktop,
   ]);
 
   /** 初始化文件视图 Hook，获取文件树和预览的渲染组件 */
@@ -1161,6 +1217,7 @@ const ConversationAgent: React.FC = () => {
   const previewTabs = usePreviewTabs({
     // 打开文件标签
     onFileTabActivate: async (fileId, isDiff) => {
+      closeAgentDesktop();
       // 重置终端布局
       resetDevConsoleExpandedLayout();
       // 选中差异文件
@@ -1183,6 +1240,7 @@ const ConversationAgent: React.FC = () => {
     },
     // 打开标签选择器
     onPickerTabActivate: async () => {
+      closeAgentDesktop();
       // 重置终端布局
       resetDevConsoleExpandedLayout();
       // 打开预览视图
@@ -1192,6 +1250,7 @@ const ConversationAgent: React.FC = () => {
     },
     // 打开工具标签
     onToolTabActivate: (toolId: PreviewToolId) => {
+      closeAgentDesktop();
       // 终端全屏展开
       if (toolId === 'terminal') {
         setDevConsoleExpandSignal((n) => n + 1);
@@ -1340,13 +1399,17 @@ const ConversationAgent: React.FC = () => {
       discardChangeFile: (fileId: string) =>
         fileView.preview.discardChangeFile(fileId),
       // 打开更改文件（选中文件并预览，非 diff）
-      openChangeFile: (fileId: string) =>
-        previewTabs.openFileTab(fileId, false),
+      openChangeFile: (fileId: string) => {
+        closeAgentDesktop();
+        previewTabs.openFileTab(fileId, false);
+      },
       // 将文件路径添加到 .gitignore
       addFileToGitignore: handleAddToGitignore,
       // 选中修改文件，在右侧预览区展示 diff
-      onDiffFileSelect: (fileId: string) =>
-        previewTabs.openFileTab(fileId, true),
+      onDiffFileSelect: (fileId: string) => {
+        closeAgentDesktop();
+        previewTabs.openFileTab(fileId, true);
+      },
       // 放弃更改后关闭预览 Tab
       onAfterDiscardChange: (fileId: string) => {
         previewTabs.closeTab(getFileTabId(fileId, true));
@@ -1483,7 +1546,10 @@ const ConversationAgent: React.FC = () => {
           // 选中标签 ID
           activeTabId={previewTabs.activeTabId}
           // 选中标签
-          onTabSelect={previewTabs.selectTab}
+          onTabSelect={(tabId) => {
+            closeAgentDesktop();
+            previewTabs.selectTab(tabId);
+          }}
           // 关闭标签
           onTabClose={previewTabs.closeTab}
           // 关闭其他标签
@@ -1495,7 +1561,10 @@ const ConversationAgent: React.FC = () => {
           // 重新排序标签
           onTabReorder={previewTabs.reorderTabs}
           // 打开标签选择器
-          onAddTab={previewTabs.openPickerTab}
+          onAddTab={() => {
+            closeAgentDesktop();
+            previewTabs.openPickerTab();
+          }}
           // 智能体配置（保存时间、未发布提示）
           agentConfigInfo={agentConfigInfo}
           // 打开发布弹窗
@@ -1507,6 +1576,11 @@ const ConversationAgent: React.FC = () => {
             <ConversationAgentFilePreview
               // 预览文件
               preview={fileView.preview}
+              // 智能体电脑（VNC）
+              isAgentDesktopOpen={isAgentDesktopOpen}
+              desktopConversationId={queryConversationId}
+              agentType={agentConfigInfo?.type}
+              onDesktopIdleTimeout={closeAgentDesktop}
               // 差异文件
               diffFile={gitSourceControl.selectedDiffFile ?? undefined}
               // 选中标签
@@ -1523,6 +1597,7 @@ const ConversationAgent: React.FC = () => {
               subscriptionStatsPanel={subscriptionStatsPanel}
               // 选择工具
               onSelectTool={(toolId) => {
+                closeAgentDesktop();
                 if (toolId === 'terminal') {
                   skipDevConsoleResetRef.current = true;
                   setDevConsoleExpandSignal((n) => n + 1);
@@ -1595,6 +1670,10 @@ const ConversationAgent: React.FC = () => {
               onEditAgent={() => setOpenEditAgent(true)}
               // 文件树侧边栏是否可见
               isFileTreeSidebarVisible={canShowFileView}
+              // 智能体电脑
+              isShowDesktop={isShowDesktop}
+              isAgentDesktopOpen={isAgentDesktopOpen}
+              onOpenDesktopPanel={handleOpenDesktopPanel}
             />
           </div>
 

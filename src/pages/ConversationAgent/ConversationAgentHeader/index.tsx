@@ -32,6 +32,12 @@ export interface ConversationAgentHeaderProps {
   isFileTreeSidebarVisible?: boolean;
   /** 切换文件树侧边栏显隐 */
   onToggleFileTreeSidebar?: () => void;
+  /** 是否显示智能体电脑入口 */
+  isShowDesktop?: boolean;
+  /** 智能体电脑是否已打开 */
+  isAgentDesktopOpen?: boolean;
+  /** 打开 / 关闭智能体电脑 */
+  onOpenDesktopPanel?: () => void;
 }
 
 /**
@@ -44,6 +50,9 @@ const ConversationAgentHeader: React.FC<ConversationAgentHeaderProps> = ({
   onEditAgent,
   isFileTreeSidebarVisible = false,
   onToggleFileTreeSidebar,
+  isShowDesktop = false,
+  isAgentDesktopOpen = false,
+  onOpenDesktopPanel,
 }) => {
   const { spaceId } = useParams();
 
@@ -84,6 +93,29 @@ const ConversationAgentHeader: React.FC<ConversationAgentHeaderProps> = ({
       </div>
 
       <div className={cx(styles['right-box'], 'flex', 'items-center')}>
+        <ConditionRender condition={isShowDesktop}>
+          <TooltipIcon
+            title={
+              isAgentDesktopOpen
+                ? dict(
+                    'PC.Pages.EditAgent.PreviewAndDebug.PreviewAndDebugHeader.closeAgentDesktop',
+                  )
+                : dict(
+                    'PC.Pages.EditAgent.PreviewAndDebug.PreviewAndDebugHeader.openAgentDesktop',
+                  )
+            }
+            className={cx(styles['panel-btn'], {
+              [styles.active]: isAgentDesktopOpen,
+            })}
+            icon={
+              <SvgIcon
+                name="icons-nav-computer-star"
+                style={{ fontSize: 16 }}
+              />
+            }
+            onClick={onOpenDesktopPanel}
+          />
+        </ConditionRender>
         <TooltipIcon
           title={
             isFileTreeSidebarVisible

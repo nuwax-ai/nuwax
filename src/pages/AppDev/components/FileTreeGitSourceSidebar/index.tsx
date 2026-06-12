@@ -44,6 +44,7 @@ const FileTreeGitSourceSidebar: React.FC<FileTreeGitSourcePanelProps> = (
         />
       </Tooltip>
 
+      {/* 文件树、git源代码管理面板 */}
       <FileTreeGitSourcePanel {...props} isCollapsed={isCollapsed} />
     </div>
   );
