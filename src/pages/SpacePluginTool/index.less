@@ -19,6 +19,7 @@
 
   .chat-section {
     width: 33%;
+    flex-shrink: 0;
     height: 100%;
     border-right: 1px solid @colorBorderSecondary;
     background-color: @colorBgContainer;
@@ -28,11 +29,15 @@
   }
 
   .detail-section {
-    width: 67%;
+    flex: 1;
     height: 100%;
     overflow: hidden;
     display: flex;
     flex-direction: column;
+
+    &.no-chat {
+      padding-left: @paddingSm;
+    }
   }
 }
 
