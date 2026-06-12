@@ -485,7 +485,6 @@ export const useAppDevFileManagement = ({
 
       try {
         // 上传文件
-
         const result = await uploadSingleFile({
           file,
           projectId,
@@ -493,8 +492,6 @@ export const useAppDevFileManagement = ({
         });
 
         if (result?.success) {
-          // message.success(`Uploaded to ${filePath.trim()}`);
-
           // 上传成功后重新加载文件树（与删除文件逻辑保持一致）
           await loadFileTree(true, true);
 
@@ -775,7 +772,7 @@ export const useAppDevFileManagement = ({
       const newPath = parentPath ? `${parentPath}/${trimmedName}` : trimmedName;
 
       try {
-        const response = await submitSpecifiedFilesUpdate(projectId, [
+        await submitSpecifiedFilesUpdate(projectId, [
           {
             name: newPath,
             contents: node.type === 'file' ? node.content || '' : '',
@@ -786,25 +783,11 @@ export const useAppDevFileManagement = ({
           },
         ]);
 
-        if (response.success && response.code === '0000') {
-          await loadFileTree(true, true);
-          keepAlive(projectId);
-          return true;
-        }
-
-        removeTempNode(node.id);
-        message.error(dict('PC.Hooks.UseAppDevFileManagement.createFailed'));
-        return false;
+        await loadFileTree(true, true);
+        keepAlive(projectId);
+        return true;
       } catch (error) {
         removeTempNode(node.id);
-        message.error(
-          dict(
-            'PC.Hooks.UseAppDevFileManagement.createFailedWithError',
-            error instanceof Error
-              ? error.message
-              : dict('PC.Common.Global.unknownError'),
-          ),
-        );
         return false;
       }
     },
@@ -929,25 +912,15 @@ export const useAppDevFileManagement = ({
             }
           }
 
-          // message.success(`Rename succeeded: ${fileNode.name} -> ${newName.trim()}`);
           return true;
         } else {
           // 重命名文件失败，重新加载文件树以恢复原状态
           await loadFileTree(true, true);
-          message.error(dict('PC.Hooks.UseAppDevFileManagement.renameFailed'));
           return false;
         }
       } catch (error) {
         // 重命名文件异常，重新加载文件树以恢复原状态
         await loadFileTree(true, true);
-        message.error(
-          dict(
-            'PC.Hooks.UseAppDevFileManagement.renameFailedWithError',
-            error instanceof Error
-              ? error.message
-              : dict('PC.Common.Global.unknownError'),
-          ),
-        );
         return false;
       }
     },

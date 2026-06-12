@@ -7,7 +7,7 @@ export interface UpdateFileInfo {
   /** 文件内容 */
   contents?: string;
   /** 是否为二进制文件 */
-  binary: boolean;
+  binary?: boolean;
   /** 文件大小是否超限 */
   sizeExceeded?: boolean;
   /** 重命名之前的文件名（仅在重命名场景下使用） */
