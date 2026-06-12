@@ -98,6 +98,7 @@ export function useConversationAgentFileView(
     /** 文件/文件夹删除成功后回调 */
     onFileDeleted,
     agentSandboxId,
+    isDynamicTheme = false,
   } = props;
   const headerClassName = undefined;
   const isImportProjectTrigger = undefined;
@@ -114,7 +115,6 @@ export function useConversationAgentFileView(
   const showFullscreenIcon = true;
   const hideFileTree = false;
   const showRefreshButton = true;
-  const isDynamicTheme = false;
   const isProjectSkill = false;
   // 文件树数据
   const [files, setFiles] = useState<FileNode[]>([]);
@@ -212,6 +212,13 @@ export function useConversationAgentFileView(
   useEffect(() => {
     setViewFileType('preview');
   }, [selectedFileId]);
+
+  // 当 isFileTreePinned 变化时，同步展开文件树（与 FileTreeView 一致）
+  useEffect(() => {
+    if (isFileTreePinned && !isControlledFileTreeSidebar) {
+      setInternalFileTreeVisible(true);
+    }
+  }, [isFileTreePinned, isControlledFileTreeSidebar]);
 
   useEffect(() => {
     // 如果通过父组件全屏预览模式打开，则设置全屏状态

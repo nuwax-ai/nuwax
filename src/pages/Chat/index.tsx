@@ -32,6 +32,8 @@ import type {
 } from '@/types/interfaces/conversationInfo';
 import { addBaseTarget, parsePageAppProjectId } from '@/utils/common';
 
+import type { FileTreeContainerProps } from '@/components/business-component/FileTreeGitSourcePanel/types/file-tree-git-source';
+import { useConversationAgentFileView } from '@/pages/ConversationAgent/hooks/useConversationAgentFileView';
 import { jumpToPageDevelop } from '@/utils/router';
 import { LoadingOutlined } from '@ant-design/icons';
 import { Form } from 'antd';
@@ -43,6 +45,7 @@ import ShowArea from './components/ShowArea';
 import { useAutoPreviewFile } from './hooks/useAutoPreviewFile';
 import { useChatConversation } from './hooks/useChatConversation';
 import { useChatFiles } from './hooks/useChatFiles';
+import { useChatGitSourceControl } from './hooks/useChatGitSourceControl';
 import { useChatSandbox } from './hooks/useChatSandbox';
 import { useChatVariables } from './hooks/useChatVariables';
 import { useChatViewMode } from './hooks/useChatViewMode';
@@ -528,6 +531,129 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     handleRefreshFileList,
   });
 
+  const fileView = useConversationAgentFileView({
+    taskAgentSelectedFileId,
+    taskAgentSelectTrigger,
+    originalFiles: fileTreeData,
+    fileTreeDataLoading,
+    targetId: id?.toString() || '',
+    readOnly: false,
+    onUploadFiles: handleUploadMultipleFiles,
+    onExportProject: handleExportProject,
+    onRenameFile: handleConfirmRenameFile,
+    onCreateFileNode: handleCreateFileNode,
+    onDeleteFile: handleDeleteFile,
+    onSaveFiles: handleSaveFiles,
+    agentSandboxId: finalSelectedId,
+    onClose: closePreviewView,
+    isFileTreePinned,
+    onFileTreePinnedChange: setIsFileTreePinned,
+    isCanDeleteSkillFile: true,
+    onRefreshFileTree: () => refreshFileListImmediately(id),
+    hideDesktop: effectiveAgent?.hideDesktop,
+    staticFileBasePath: `/api/computer/static/${id}`,
+    isDynamicTheme: true,
+  });
+
+  const gitSourceControl = useChatGitSourceControl({
+    conversationId: id,
+    fileTreeData,
+    changeFiles: fileView.changeFiles,
+    handleSaveFiles,
+    discardChangeFile: fileView.preview.discardChangeFile,
+    openChangeFile: async (fileId: string) => {
+      setTaskAgentSelectedFileId('');
+      await fileView.tree.handleFileSelect(fileId);
+    },
+    refreshGitList: fileView.refreshGitList,
+    handleRefreshFileList,
+    onDiffFileSelect: () => {
+      if (viewMode === 'desktop') {
+        openPreviewView(id);
+      }
+    },
+  });
+
+  const chatFileTree: FileTreeContainerProps = useMemo(
+    () => ({
+      ...fileView.tree,
+      handleFileSelect: async (fileId: string) => {
+        setTaskAgentSelectedFileId('');
+        gitSourceControl.setSelectedChangeFile(null);
+        await fileView.tree.handleFileSelect(fileId);
+      },
+    }),
+    [
+      fileView.tree,
+      setTaskAgentSelectedFileId,
+      gitSourceControl.setSelectedChangeFile,
+    ],
+  );
+
+  const fileSidebarProps = useMemo(
+    () => ({
+      tree: chatFileTree,
+      preview: fileView.preview,
+      viewMode,
+      hideDesktop: effectiveAgent?.hideDesktop,
+      diffFile: gitSourceControl.selectedDiffFile,
+      previewPanelProps: {
+        agentSandboxId: finalSelectedId,
+        agentSandboxName: '',
+        onRestartServer: () => restartVncPod(id, finalSelectedId),
+        onRestartAgent: () => restartAgent(id),
+        onExportProject: handleExportProject,
+        idleDetection: {
+          enabled: effectiveAgent?.type === AgentTypeEnum.TaskAgent,
+          onIdleTimeout: () => openPreviewView(id),
+        },
+      },
+      sourceControl: {
+        gitWorkspace: {
+          workspaceType: 'taskAgent' as const,
+          cid: id ?? null,
+        },
+        changeFiles: fileView.changeFiles,
+        selectedChangeFile: gitSourceControl.selectedChangeFile,
+        isCommitting:
+          gitSourceControl.isCommitting || fileView.preview.isSavingFiles,
+        isRefreshingGitList: fileView.isRefreshingGitList,
+        onRefreshGitList: fileView.refreshGitList,
+        onDiffFileSelect: gitSourceControl.handleDiffFileSelect,
+        onOpenChangeFile: gitSourceControl.handleOpenChangeFile,
+        onAfterDiscardChange: gitSourceControl.handleAfterDiscardChange,
+        onAddToGitignore: (fileId: string) => {
+          void gitSourceControl.handleAddToGitignore(fileId);
+        },
+        onCommit: gitSourceControl.handleCommit,
+      },
+    }),
+    [
+      chatFileTree,
+      fileView.preview,
+      fileView.changeFiles,
+      fileView.isRefreshingGitList,
+      fileView.refreshGitList,
+      gitSourceControl.selectedDiffFile,
+      gitSourceControl.selectedChangeFile,
+      gitSourceControl.isCommitting,
+      gitSourceControl.handleDiffFileSelect,
+      gitSourceControl.handleOpenChangeFile,
+      gitSourceControl.handleAfterDiscardChange,
+      gitSourceControl.handleAddToGitignore,
+      gitSourceControl.handleCommit,
+      viewMode,
+      id,
+      effectiveAgent?.hideDesktop,
+      effectiveAgent?.type,
+      finalSelectedId,
+      handleExportProject,
+      openPreviewView,
+      restartVncPod,
+      restartAgent,
+    ],
+  );
+
   // 设置最小宽度
   useEffect(() => {
     // 移动端不设置最小宽度
@@ -633,39 +759,6 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     messageViewRef,
   };
 
-  const fileTreeProps = {
-    taskAgentSelectedFileId,
-    clearTaskAgentSelectedFileId: () => setTaskAgentSelectedFileId(''),
-    taskAgentSelectTrigger,
-    originalFiles: fileTreeData,
-    fileTreeDataLoading,
-    targetId: id?.toString() || '',
-    viewMode,
-    readOnly: false,
-    onExportProject: handleExportProject,
-    onUploadFiles: handleUploadMultipleFiles,
-    onRenameFile: handleConfirmRenameFile,
-    onCreateFileNode: handleCreateFileNode,
-    onDeleteFile: handleDeleteFile,
-    onSaveFiles: handleSaveFiles,
-    agentSandboxId: finalSelectedId,
-    agentSandboxName: '',
-    onRestartServer: () => restartVncPod(id, finalSelectedId),
-    onRestartAgent: () => restartAgent(id),
-    onClose: closePreviewView,
-    isFileTreePinned,
-    onFileTreePinnedChange: setIsFileTreePinned,
-    isCanDeleteSkillFile: true,
-    onRefreshFileTree: () => refreshFileListImmediately(id),
-    idleDetection: {
-      enabled: effectiveAgent?.type === AgentTypeEnum.TaskAgent,
-      onIdleTimeout: () => openPreviewView(id),
-    },
-    hideDesktop: effectiveAgent?.hideDesktop,
-    isDynamicTheme: true,
-    staticFileBasePath: `/api/computer/static/${id}`,
-  };
-
   if (clearLoading || loadingConversation || loadingAsync) {
     return (
       <div className={cx(styles['chat-loading-container'])}>
@@ -705,7 +798,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
                   isAppSidebarMode={isAppSidebarMode}
                   headerProps={headerProps}
                   chatSessionProps={chatSessionProps}
-                  fileTreeProps={fileTreeProps}
+                  fileSidebarProps={fileSidebarProps}
                 />
               )
             }
@@ -774,7 +867,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
                   isAppSidebarMode={isAppSidebarMode}
                   headerProps={headerProps}
                   chatSessionProps={chatSessionProps}
-                  fileTreeProps={fileTreeProps}
+                  fileSidebarProps={fileSidebarProps}
                 />
               </div>
             )}
