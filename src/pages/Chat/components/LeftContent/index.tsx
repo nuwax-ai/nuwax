@@ -78,12 +78,16 @@ const LeftContent: React.FC<LeftContentProps> = ({
               />
             </ConditionRender>
             {/* 下拉重命名会话、删除会话 */}
-            <DropdownChangeName
-              agentId={headerProps.agentId}
-              conversationInfo={headerProps.conversationInfo}
-              setConversationInfo={headerProps.setConversationInfo}
-              isAppSidebarMode={isAppSidebarMode}
-            />
+            {headerProps.renderTitle ? (
+              headerProps.renderTitle({ effectiveAgent, isAppSidebarMode })
+            ) : (
+              <DropdownChangeName
+                agentId={headerProps.agentId}
+                conversationInfo={headerProps.conversationInfo}
+                setConversationInfo={headerProps.setConversationInfo}
+                isAppSidebarMode={isAppSidebarMode}
+              />
+            )}
           </div>
 
           <div className={cx('flex', 'items-center', 'gap-4')}>
@@ -106,7 +110,8 @@ const LeftContent: React.FC<LeftContentProps> = ({
 
             {/* 这里放可以展开 AgentSidebar 的控制按钮 在AgentSidebar 展示的时候隐藏 反之显示 */}
             {/* 当文件树显示时，也显示这个按钮，用于关闭文件树并打开 AgentSidebar */}
-            {!isAppSidebarMode &&
+            {headerProps.showSidebar &&
+              !isAppSidebarMode &&
               !headerProps.isSidebarVisible &&
               !isMobile && (
                 <TooltipIcon
@@ -202,6 +207,9 @@ const LeftContent: React.FC<LeftContentProps> = ({
                 </ConditionRender>
               </>
             )}
+
+            {/* 自定义右侧控件插槽（例如发布组件） */}
+            {headerProps.renderHeaderRight?.({ effectiveAgent })}
           </div>
         </div>
       </header>

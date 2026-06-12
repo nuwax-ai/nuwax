@@ -74,6 +74,10 @@ const routes = [
         path: '/space/:spaceId/skill-details/:skillId',
         component: '@/pages/SkillDetails',
       },
+      {
+        path: '/space/:spaceId/skill-details-conversation/:skillId',
+        component: '@/pages/SkillDetailsConversation',
+      },
       { path: '/space/:spaceId/:agentId/log', component: '@/pages/SpaceLog' },
       { path: '/space/:spaceId/library', component: '@/pages/SpaceLibrary' },
       // 组件资源子页面

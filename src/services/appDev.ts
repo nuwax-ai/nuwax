@@ -174,6 +174,41 @@ export const uploadSingleFile = async (params: {
   });
 };
 
+// 网页应用批量文件上传参数
+export interface AppDevUploadFilesParams {
+  files: File[];
+  projectId: string;
+  filePaths: string[];
+}
+
+// 批量文件上传
+export async function apiAppDevUploadFiles(
+  params: AppDevUploadFilesParams,
+): Promise<RequestResponse<number>> {
+  const { files, projectId, filePaths } = params;
+  const formData = new FormData();
+
+  // 批量上传文件：将每个文件 append 到 FormData
+  // 注意：多个文件使用相同的 key 'files'，后端会以数组形式接收
+  files.forEach((file) => {
+    formData.append('files', file);
+  });
+
+  // 添加技能ID
+  formData.append('projectId', projectId.toString());
+
+  // 批量添加文件路径：将每个路径 append 到 FormData
+  // 注意：多个路径使用相同的 key 'filePaths'，后端会以数组形式接收
+  filePaths.forEach((filePath) => {
+    formData.append('filePaths', filePath);
+  });
+
+  return request('/api/custom-page/upload-batch-files', {
+    method: 'POST',
+    data: formData,
+  });
+}
+
 /**
  * 获取项目内容（文件树）- 根据OpenAPI规范实现
  * @param projectId 项目ID
@@ -625,3 +660,17 @@ export const apiProjectCreate = async (data: {
     data,
   });
 };
+
+// AI生成项目信息
+export async function apiAgentGenerateInfo(data: { prompt: string }): Promise<
+  RequestResponse<{
+    name: string;
+    description: string;
+    iconUrl: string;
+  }>
+> {
+  return request('/api/agent/generate-info', {
+    method: 'POST',
+    data,
+  });
+}
