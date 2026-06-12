@@ -16,8 +16,8 @@ import type { PluginInfo } from '@/types/interfaces/plugin';
 import { getActiveKeys } from '@/utils/deepNode';
 import { Form } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect } from 'react';
-import { useLocation, useParams, useRequest } from 'umi';
+import React, { useEffect, useRef } from 'react';
+import { useLocation, useModel, useParams, useRequest } from 'umi';
 import PluginChatSession from './components/PluginChatSession';
 import PluginHeader from './components/PluginHeader';
 import PluginInputTable from './components/PluginInputTable';
@@ -114,6 +114,17 @@ const SpacePluginTool: React.FC = () => {
   useEffect(() => {
     runPluginInfo(pluginId);
   }, [pluginId]);
+
+  const { isConversationActive } = useModel('conversationInfo');
+  const prevActiveRef = useRef(false);
+
+  // 每次聊天对话完毕后，主动更新最新的插件配置信息
+  useEffect(() => {
+    if (prevActiveRef.current && !isConversationActive) {
+      runPluginInfo(pluginId);
+    }
+    prevActiveRef.current = isConversationActive;
+  }, [isConversationActive, runPluginInfo, pluginId]);
 
   // 保存插件信息
   const handleSave = async () => {
