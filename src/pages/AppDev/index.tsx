@@ -1055,8 +1055,8 @@ const AppDev: React.FC = () => {
       const input = document.createElement('input');
       input.type = 'file';
       input.style.display = 'none';
-      input.accept = '*';
-      input.multiple = true;
+      // input.accept = '*';
+      // input.multiple = true;
       document.body.appendChild(input);
 
       // 等待用户选择文件

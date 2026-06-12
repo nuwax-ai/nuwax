@@ -1394,6 +1394,7 @@ const ConversationAgent: React.FC = () => {
       <ConversationAgentChatSession
         agentId={agentId}
         agentConfigInfo={agentConfigInfo}
+        onAgentConfigInfo={setAgentConfigInfo}
       />
     ),
     [agentId, agentConfigInfo],
