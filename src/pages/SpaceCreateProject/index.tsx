@@ -108,7 +108,7 @@ const PROJECT_STRATEGIES: Partial<
       }
     },
     getUrl: ({ spaceId, targetId, conversationId }) =>
-      `/space/${spaceId}/plugin/${targetId}?conversationId=${conversationId}`,
+      `/space/${spaceId}/plugin/${targetId}/cloud-tool?conversationId=${conversationId}`,
   },
 };
 
