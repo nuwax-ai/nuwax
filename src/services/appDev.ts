@@ -16,12 +16,12 @@ import type {
   KeepAliveResponse,
   ListConversationsResponse,
   ListModelsResponse,
-  PageFileInfo,
   ProjectDetailResponse,
   SubmitFilesResponse,
   UploadAndStartProjectParams,
   UploadAndStartProjectResponse,
 } from '@/types/interfaces/appDev';
+import { UpdateFileInfo } from '@/types/interfaces/fileTree';
 import type { RequestResponse } from '@/types/interfaces/request';
 import { exportFileViaBrowserDownload } from '@/utils/exportImportFile';
 import { message } from 'antd';
@@ -236,7 +236,7 @@ export const keepAlive = async (
  */
 export const submitFiles = async (
   projectId: string,
-  files: PageFileInfo[],
+  files: UpdateFileInfo[],
 ): Promise<SubmitFilesResponse> => {
   return request('/api/custom-page/submit-files', {
     method: 'POST',
@@ -255,7 +255,7 @@ export const submitFiles = async (
  */
 export const submitFilesUpdate = async (
   projectId: string,
-  files: PageFileInfo[],
+  files: UpdateFileInfo[],
 ): Promise<SubmitFilesResponse> => {
   // 处理文件内容，对 content 字段进行 encodeURIComponent 编码
   const processedFiles = files.map((file) => ({
@@ -281,7 +281,7 @@ export const submitFilesUpdate = async (
  */
 export const submitSpecifiedFilesUpdate = async (
   projectId: string,
-  files: PageFileInfo[],
+  files: UpdateFileInfo[],
 ): Promise<SubmitFilesResponse> => {
   // 处理文件内容，对 content 字段进行 encodeURIComponent 编码
   const processedFiles = files.map((file) => ({

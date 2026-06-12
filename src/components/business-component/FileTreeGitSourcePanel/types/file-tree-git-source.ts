@@ -55,37 +55,64 @@ export interface FileTreeGitSourcePanelProps {
   sourceControl: SourceControlProps;
 }
 
-/** 任务智能体文件树 UI 所需的状态与处理器 */
+/** 通用智能体文件树 UI 所需的状态与处理器 */
 export interface FileTreeContainerProps {
+  /** 文件树节点列表（树形结构） */
   files: FileNode[];
+  /** 当前选中的文件 ID */
   selectedFileId: string;
+  /** 正在内联重命名的节点（null 表示无重命名进行中） */
   renamingNode: FileNode | null;
+  /** 右键菜单当前目标节点 */
   contextMenuTarget: FileNode | null;
+  /** 右键菜单显示坐标（相对视口） */
   contextMenuPosition: { x: number; y: number };
+  /** 右键菜单是否可见 */
   contextMenuVisible: boolean;
+  /** 文件树面板是否可见 */
   isFileTreeVisible: boolean;
+  /** 文件树容器 DOM 引用（滚动、定位等） */
   fileTreeContainerRef: React.RefObject<HTMLDivElement>;
+  /** 文件树数据是否加载中 */
   fileTreeDataLoading?: boolean;
+  /** TaskAgent 自动选中的文件 ID（外部驱动选中） */
   taskAgentSelectedFileId?: string;
+  /** 是否允许删除技能文件（如 SKILL.md） */
   isCanDeleteSkillFile: boolean;
+  /** 是否正在刷新文件树列表 */
   isRefreshingFileTree: boolean;
+  /** 是否正在上传文件 */
   isUploadingFiles: boolean;
+  /** 是否正在下载文件 */
   isDownloadingFile: boolean;
+  /** 是否隐藏文件树（仅保留源代码管理等场景） */
   hideFileTree: boolean;
+  /** 是否显示文件树刷新按钮 */
   showRefreshButton: boolean;
+  /** 选中文件并在右侧预览区打开 */
   handleFileSelect: (fileId: string) => Promise<void>;
+  /** 打开右键菜单 */
   handleContextMenu: (e: React.MouseEvent, node: FileNode | null) => void;
+  /** 关闭右键菜单 */
   closeContextMenu: () => void;
+  /** 确认重命名文件或文件夹 */
   handleRenameFile: (fileNode: FileNode, newName: string) => Promise<void>;
+  /** 取消重命名；新建节点时可选择移除临时节点 */
   handleCancelRename: (options?: {
     removeIfNew?: boolean;
     node?: FileNode | null;
   }) => void;
+  /** 从服务端重新拉取并刷新文件树 */
   handleRefreshFileList: () => Promise<void>;
+  /** 删除文件或文件夹 */
   handleDelete: (node: FileNode) => Promise<void>;
+  /** 从右键菜单进入重命名状态 */
   handleRenameFromMenu: (node: FileNode) => void;
+  /** 从右键菜单上传文件到指定目录 */
   handleUploadFromMenu: (node: FileNode | null) => Promise<void>;
+  /** 在指定父节点下新建文件 */
   handleCreateFile: (parentNode: FileNode | null) => void;
+  /** 在指定父节点下新建文件夹 */
   handleCreateFolder: (parentNode: FileNode | null) => void;
   /** 通过 URL 下载文件（可选，AppDev 场景无此能力） */
   handleDownloadFileByUrl?: (

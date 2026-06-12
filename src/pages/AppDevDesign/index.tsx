@@ -938,7 +938,7 @@ const AppDevDesign: React.FC = () => {
     // 如果超过最大上传文件大小，则提示错误
     if (isExceedLimitSize) {
       message.error(
-        t('PC.Pages.AppDevIndex.uploadSizeLimitExceeded', String(maxFileSize)),
+        t('PC.Common.Global.uploadFileSizeExceed', String(maxFileSize)),
       );
       return;
     }
@@ -1094,10 +1094,7 @@ const AppDevDesign: React.FC = () => {
         // 如果超过最大上传文件大小，则提示错误
         if (isExceedLimitSize) {
           message.error(
-            t(
-              'PC.Pages.AppDevIndex.uploadSizeLimitExceeded',
-              String(maxFileSize),
-            ),
+            t('PC.Common.Global.uploadFileSizeExceed', String(maxFileSize)),
           );
           return;
         }

@@ -37,6 +37,12 @@ export interface ConversationAgentFileViewProps {
   onDeleteFile?: (node: FileNode) => Promise<boolean>;
   /** 保存文件回调 */
   onSaveFiles?: (data: ChangeFileInfo[]) => Promise<boolean>;
+  /** 单个文件内容变更后实时保存（防抖） */
+  onSaveFileContent?: (
+    fileId: string,
+    content: string,
+    originalFileContent: string,
+  ) => Promise<boolean>;
   /** 用户选择的智能体电脑ID */
   agentSandboxId?: string;
   /** 用户选择的智能体电脑名称 */
