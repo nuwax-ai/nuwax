@@ -123,14 +123,17 @@ const ComponentList: React.FC<ComponentListProps> = ({
   };
 
   const handleClickComponent = (item: ComponentInfo) => {
-    const { type, id, spaceId, ext } = item;
+    const { type, id, spaceId, ext, devAgentConversationId } = item;
     if (type === ComponentTypeEnum.Workflow) {
       jumpTo(`/space/${spaceId}/workflow/${id}`);
     } else if (type === ComponentTypeEnum.Plugin) {
+      const query = devAgentConversationId
+        ? `?conversationId=${devAgentConversationId}`
+        : '';
       const url =
         ext === PluginTypeEnum.CODE
-          ? `/space/${spaceId}/plugin/${id}/cloud-tool`
-          : `/space/${spaceId}/plugin/${id}`;
+          ? `/space/${spaceId}/plugin/${id}/cloud-tool${query}`
+          : `/space/${spaceId}/plugin/${id}${query}`;
       jumpTo(url);
     }
   };

@@ -230,6 +230,8 @@ export interface UpdateSkillParams {
 
 // 组件信息
 export interface ComponentInfo {
+  // 开发会话 ID
+  devAgentConversationId?: number;
   // 是否启用
   enabled?: ModelComponentStatusEnum;
   // 组件ID

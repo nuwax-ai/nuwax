@@ -432,7 +432,12 @@ const SpacePluginCloudTool: React.FC = () => {
         )}
 
         {/* 右侧：原有的插件详情和配置表单内容区域 */}
-        <div className={cx(styles['detail-section'])}>
+        <div
+          className={cx(
+            styles['detail-section'],
+            !hasConversationId ? styles['no-chat'] : undefined,
+          )}
+        >
           <div className={cx('flex', 'h-full')}>
             <div className={cx(styles.container, 'flex', 'flex-col', 'flex-1')}>
               {codeMode === PluginCodeModeEnum.Metadata ? (
