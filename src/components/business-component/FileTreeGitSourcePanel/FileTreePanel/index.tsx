@@ -56,7 +56,7 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
     handleRefreshFileList,
     handleDelete,
     handleRenameFromMenu,
-    handleUploadFromMenu,
+    handleUploadMultipleFiles,
     handleCreateFile,
     handleCreateFolder,
     handleDownloadFileByUrl,
@@ -124,7 +124,7 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
         onClose={closeContextMenu}
         onDelete={handleDelete}
         onRename={handleRenameFromMenu}
-        onUploadFiles={handleUploadFromMenu}
+        onUploadFiles={handleUploadMultipleFiles}
         onCreateFile={handleCreateFile}
         onCreateFolder={handleCreateFolder}
         onImportProject={handleImportProject}
@@ -159,7 +159,7 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
         }
         onCreateFile={() => handleCreateFile(resolveCreateParentNode())}
         onCreateFolder={() => handleCreateFolder(resolveCreateParentNode())}
-        onUpload={() => void handleUploadFromMenu(null)}
+        onUpload={() => void handleUploadMultipleFiles(null)}
         onCollapseAll={() => fileTreeRef.current?.collapseAll()}
         onRefresh={
           showRefreshButton ? () => void handleRefreshFileList() : undefined
