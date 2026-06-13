@@ -11,14 +11,27 @@
   min-width: 1400px;
   height: 100vh;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+
+  /** 页面顶部 Header，横跨整页宽度 */
+  .page-header {
+    flex-shrink: 0;
+    width: 100%;
+    padding-left: @marginSm;
+    padding-right: @marginSm;
+    background-color: @colorBgContainer;
+  }
 
   .section {
+    flex: 1;
+    min-height: 0;
     overflow: hidden;
     border-radius: @pageContainerBorderRadius;
     border: @lineWidth solid @colorSplit;
-    margin: @marginSm @marginSm @marginSm;
+    margin: 0 @marginSm @marginSm;
     background-color: @colorBgContainer;
-    min-height: 0;
   }
 
   .main-row {

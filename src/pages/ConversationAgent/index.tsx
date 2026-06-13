@@ -14,8 +14,10 @@ import CreateAgent from '@/components/CreateAgent';
 import Loading from '@/components/custom/Loading';
 import type { ChangeFileInfo } from '@/components/FileTreeView/type';
 import PublishComponentModal from '@/components/PublishComponentModal';
+import ShowStand from '@/components/ShowStand';
 import type { PromptVariable } from '@/components/TiptapVariableInput/types';
 import { transformToPromptVariables } from '@/components/TiptapVariableInput/utils/variableTransform';
+import VersionHistory from '@/components/VersionHistory';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { useTerminalWsUrl } from '@/hooks/useTerminalWsUrl';
 import useUnifiedTheme from '@/hooks/useUnifiedTheme';
@@ -45,6 +47,7 @@ import { CreateUpdateModeEnum, PublishStatusEnum } from '@/types/enums/common';
 import { ModelTypeEnum } from '@/types/enums/modelConfig';
 import {
   AgentTypeEnum,
+  ApplicationMoreActionEnum,
   EditAgentShowType,
   OpenCloseEnum,
 } from '@/types/enums/space';
@@ -68,6 +71,7 @@ import { StaticFileInfo } from '@/types/interfaces/vncDesktop';
 import { checkFileSizeExceedLimit } from '@/utils';
 import { modalConfirm } from '@/utils/ant-custom';
 import { addBaseTarget } from '@/utils/common';
+import { exportConfigFile } from '@/utils/exportImportFile';
 import { updateFilesListContent, updateFilesListName } from '@/utils/fileTree';
 import {
   TTYD_TERMINAL_WIRE_PROTOCOL,
@@ -99,6 +103,7 @@ import {
   type PreviewToolId,
 } from './ConversationAgentFilePreview/hooks/usePreviewTabs';
 import PreviewTabBar from './ConversationAgentFilePreview/PreviewTabBar';
+import ConversationAgentHeader from './ConversationAgentHeader';
 import type { ConversationAgentFileViewProps } from './hooks/types';
 import { useConversationAgentDevLogs } from './hooks/useConversationAgentDevLogs';
 import { useConversationAgentFileView } from './hooks/useConversationAgentFileView';
@@ -253,6 +258,7 @@ const ConversationAgent: React.FC = () => {
     onMessageSend,
     runAsync,
     resetInit,
+    cardList,
   } = useModel('conversationInfo');
 
   /** 关闭远程智能体桌面（切换标签/文件等预览操作时调用） */
@@ -1085,6 +1091,52 @@ const ConversationAgent: React.FC = () => {
     closePreviewView,
   ]);
 
+  /** 打开展示台 / 版本历史等 Header 浮层 */
+  const handleHeaderOverlayType = useCallback(
+    (type: EditAgentShowType) => {
+      closeAgentDesktop();
+      closePreviewView();
+      setShowType(type);
+    },
+    [closeAgentDesktop, closePreviewView, setShowType],
+  );
+
+  /** Header 更多操作（与 EditAgent 一致） */
+  const handleHeaderMoreAction = useCallback(
+    (type: ApplicationMoreActionEnum) => {
+      switch (type) {
+        case ApplicationMoreActionEnum.Export_Config:
+          modalConfirm(
+            dict('PC.Pages.EditAgent.exportConfigTitle').replace(
+              '{0}',
+              agentConfigInfo?.name || '',
+            ),
+            dict('PC.Pages.EditAgent.exportConfigContent'),
+            () => {
+              exportConfigFile(
+                agentConfigInfo?.id as number,
+                AgentComponentTypeEnum.Agent,
+              );
+              return new Promise((resolve) => {
+                setTimeout(resolve, 1000);
+              });
+            },
+          );
+          break;
+        case ApplicationMoreActionEnum.Log:
+          history.push(
+            `/space/${spaceId}/library-log?targetType=${
+              AgentComponentTypeEnum.Agent
+            }&targetId=${agentConfigInfo?.id ?? ''}`,
+          );
+          break;
+        default:
+          break;
+      }
+    },
+    [agentConfigInfo?.id, agentConfigInfo?.name, spaceId],
+  );
+
   /** 是否显示文件面板相关入口（通用型智能体 + 有效消息） */
   const isShowFilePanel = useMemo(() => {
     if (agentConfigInfo?.type !== AgentTypeEnum.TaskAgent) {
@@ -1621,10 +1673,6 @@ const ConversationAgent: React.FC = () => {
             closeAgentDesktop();
             previewTabs.openPickerTab();
           }}
-          // 智能体配置（保存时间、未发布提示）
-          agentConfigInfo={agentConfigInfo}
-          // 打开发布弹窗
-          onPublish={() => setOpen(true)}
         />
         {/* Tab 栏下方：预览内容 + 底部终端（终端放大时仅覆盖此区域） */}
         <div className={cx(styles['right-panel-main'])}>
@@ -1713,7 +1761,27 @@ const ConversationAgent: React.FC = () => {
   // ==================== 主渲染 ====================
   return (
     <div className={cx(styles.container, 'flex', 'flex-col')}>
-      {/* 主内容区域 */}
+      {/* 页面顶部 Header：返回、智能体信息、文件树/远程桌面入口 */}
+      <ConversationAgentHeader
+        className={styles['page-header']}
+        agentConfigInfo={agentConfigInfo}
+        onEditAgent={() => setOpenEditAgent(true)}
+        onToggleShowStand={() =>
+          handleHeaderOverlayType(EditAgentShowType.Show_Stand)
+        }
+        onToggleVersionHistory={() =>
+          handleHeaderOverlayType(EditAgentShowType.Version_History)
+        }
+        onPublish={() => setOpen(true)}
+        onOtherAction={handleHeaderMoreAction}
+        isFileTreeSidebarVisible={canShowFileView}
+        onToggleFileTreeSidebar={handleToggleFileTreeSidebar}
+        isShowDesktop={isShowDesktop}
+        isAgentDesktopOpen={isAgentDesktopOpen}
+        onOpenDesktopPanel={handleOpenDesktopPanel}
+      />
+
+      {/* 主内容区域：左聊天 | 中文件树 | 右预览/终端 */}
       <section
         className={cx(
           'flex',
@@ -1728,18 +1796,6 @@ const ConversationAgent: React.FC = () => {
             <AgentConversationChatPanel
               selectedComputerId={finalSelectedComputerId}
               onChangeSelectedComputerId={setSelectedComputerId}
-              // 切换文件树侧边栏显隐
-              onToggleFileTreeSidebar={handleToggleFileTreeSidebar}
-              // 智能体配置信息
-              agentConfigInfo={agentConfigInfo}
-              // 编辑智能体
-              onEditAgent={() => setOpenEditAgent(true)}
-              // 文件树侧边栏是否可见
-              isFileTreeSidebarVisible={canShowFileView}
-              // 智能体电脑
-              isShowDesktop={isShowDesktop}
-              isAgentDesktopOpen={isAgentDesktopOpen}
-              onOpenDesktopPanel={handleOpenDesktopPanel}
             />
           </div>
 
@@ -1792,6 +1848,19 @@ const ConversationAgent: React.FC = () => {
         {/* 调试详情抽屉（按需显示） */}
         <DebugDetails
           visible={showType === EditAgentShowType.Debug_Details}
+          onClose={() => setShowType(EditAgentShowType.Hide)}
+        />
+        <ShowStand
+          cardList={cardList}
+          visible={showType === EditAgentShowType.Show_Stand}
+          onClose={() => setShowType(EditAgentShowType.Hide)}
+        />
+        <VersionHistory
+          targetId={agentId}
+          targetName={agentConfigInfo?.name}
+          targetType={AgentComponentTypeEnum.Agent}
+          permissions={agentConfigInfo?.permissions || []}
+          visible={showType === EditAgentShowType.Version_History}
           onClose={() => setShowType(EditAgentShowType.Hide)}
         />
       </section>

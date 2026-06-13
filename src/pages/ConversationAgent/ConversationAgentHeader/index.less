@@ -2,12 +2,7 @@
 @import '@/styles/token';
 
 .header {
-  display: flex;
-  align-items: center;
-  box-sizing: border-box;
-  height: 40px;
-  min-height: 40px;
-  padding: 0 @padding 0 0;
+  padding: @paddingSm @padding @paddingSm 0;
   overflow-x: auto;
   flex-shrink: 0;
 
@@ -34,16 +29,17 @@
 
     .h-title {
       max-width: 360px;
+      margin-right: @marginSm;
       font-size: 16px;
       font-weight: @fontWeightStrong;
-      line-height: 20px;
+      line-height: 24px;
       color: @navFirstMenuTextSecondary;
       white-space: nowrap;
     }
 
     .edit-ico {
-      color: @colorTextSecondary;
-      font-size: 14px;
+      color: @navFirstMenuTextSecondary;
+      font-size: 16px;
     }
   }
 
@@ -89,6 +85,16 @@
       .ant-tag {
         margin-inline-end: 0;
       }
+    }
+  }
+
+  .fold-box {
+    padding: 6px @paddingSm;
+
+    .fold-btn {
+      gap: @paddingXs;
+      color: @navFirstMenuTextSecondary;
+      font-size: @fontSize;
     }
   }
 

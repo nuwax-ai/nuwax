@@ -237,14 +237,6 @@
   }
 }
 
-.right-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-left: @paddingXs;
-  flex-shrink: 0;
-}
-
 .icon-group {
   display: flex;
   align-items: center;
@@ -271,34 +263,4 @@
     background: rgba(0, 0, 0, 4%);
     color: @colorText;
   }
-}
-
-.save-time-box {
-  gap: @paddingXs;
-  color: @navFirstMenuTextSecondary;
-
-  .save-time {
-    font-size: 12px;
-    font-weight: @fontWeightStrong;
-    line-height: 19px;
-  }
-
-  .volcano {
-    color: @colorWarningText;
-    background: @colorWarningBg;
-    padding: 4px 8px;
-  }
-
-  :global {
-    .ant-tag {
-      margin-inline-end: 0;
-    }
-  }
-}
-
-.publish-btn {
-  height: 28px;
-  padding: 0 @paddingSm;
-  font-size: @fontSizeSm;
-  border-radius: @borderRadius;
 }
