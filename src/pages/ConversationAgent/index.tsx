@@ -1,6 +1,8 @@
 import {
   ConversationBottomConsole,
+  DevLogActions,
   GitVersionRecordPanel,
+  type ConsoleLayoutMode,
 } from '@/components/business-component';
 import { type AgentMode } from '@/components/business-component/AgentIntervention';
 import FileTreeGitSourcePanel, {
@@ -97,6 +99,7 @@ import {
 } from './ConversationAgentFilePreview/hooks/usePreviewTabs';
 import PreviewTabBar from './ConversationAgentFilePreview/PreviewTabBar';
 import type { ConversationAgentFileViewProps } from './hooks/types';
+import { useConversationAgentDevLogs } from './hooks/useConversationAgentDevLogs';
 import { useConversationAgentFileView } from './hooks/useConversationAgentFileView';
 import styles from './index.less';
 
@@ -175,6 +178,13 @@ const ConversationAgent: React.FC = () => {
   /** 递增后触发底部终端全屏展开（开发工具「终端」入口） */
   const [devConsoleExpandSignal, setDevConsoleExpandSignal] =
     useState<number>(0);
+  /** 底部控制台当前激活 Tab（用于控制日志轮询） */
+  const [devConsoleActiveTab, setDevConsoleActiveTab] = useState<
+    'terminal' | 'logs'
+  >('terminal');
+  /** 底部控制台布局模式（collapsed 时停止日志轮询） */
+  const [devConsoleLayoutMode, setDevConsoleLayoutMode] =
+    useState<ConsoleLayoutMode>('collapsed');
   /** 从开发工具打开终端时跳过 onToolTabActivate 中的布局重置 */
   const skipDevConsoleResetRef = useRef<boolean>(false);
   /** 源代码管理中选中的变更文件（含区块） */
@@ -322,6 +332,17 @@ const ConversationAgent: React.FC = () => {
     agentConfigInfo?.tenantId,
     finalSelectedComputerId,
   );
+
+  /** 沙盒开发日志：仅在底部控制台打开且处于日志 Tab 时轮询 */
+  const devLogs = useConversationAgentDevLogs(queryConversationId, {
+    enabled:
+      showDevConsole &&
+      devConsoleActiveTab === 'logs' &&
+      devConsoleLayoutMode !== 'collapsed' &&
+      !!queryConversationId,
+    pollInterval: 5000,
+    tailLines: 1000,
+  });
 
   // ==================== 数据请求 ====================
   /** 加载空间下可用的聊天模型列表 */
@@ -1620,6 +1641,21 @@ const ConversationAgent: React.FC = () => {
             wsSubprotocols={[...TTYD_TERMINAL_WS_SUBPROTOCOLS]}
             layoutResetSignal={devConsoleLayoutResetSignal}
             expandSignal={devConsoleExpandSignal}
+            onLayoutModeChange={setDevConsoleLayoutMode}
+            onActiveTabChange={(tab) => {
+              setDevConsoleActiveTab(tab);
+            }}
+            devLog={{
+              logs: devLogs.logs,
+              isLoading: devLogs.isLoading,
+              lastLine: devLogs.lastLine,
+            }}
+            logsExtra={
+              <DevLogActions
+                onRefresh={devLogs.refreshLogs}
+                onClear={devLogs.clearLogs}
+              />
+            }
           />
         </div>
       </div>
