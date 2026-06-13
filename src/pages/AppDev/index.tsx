@@ -1189,6 +1189,31 @@ const AppDev: React.FC = () => {
   );
 
   /**
+   * 源代码管理选中 diff：切换到代码视图，并在内容区展示 ChangeFileGitDiffView
+   * （版本记录面板打开时仍优先展示 diff，避免 ContentViewer 被版本面板遮挡）
+   */
+  const handleSourceControlDiffSelect = useCallback(
+    (fileId: string, section: 'staged' | 'unstaged') => {
+      sourceControl.handleDiffFileSelect(fileId, section);
+      setActiveTab('code');
+    },
+    [sourceControl.handleDiffFileSelect],
+  );
+
+  /**
+   * 切换版本记录面板
+   * 若当前在查看 Git diff，再次点击版本按钮应回到版本列表（而非把 open 状态切反）
+   */
+  const handleToggleGitVersionPanel = useCallback(() => {
+    if (sourceControl.selectedDiffFile) {
+      sourceControl.clearSelectedDiff();
+      setGitVersionPanelOpen(true);
+      return;
+    }
+    setGitVersionPanelOpen((prev) => !prev);
+  }, [sourceControl.selectedDiffFile, sourceControl.clearSelectedDiff]);
+
+  /**
    * 文件树状态适配：将 fileManagement 与页面回调
    * 映射为 FileTreePanel 所需的 tree 结构
    */
@@ -1571,7 +1596,7 @@ const AppDev: React.FC = () => {
                       await handleRestartDevServer();
                     },
                     onFullscreenPreview: () => {
-                      if (previewRef.current && workspace.devServerUrl) {
+                      if (workspace.devServerUrl) {
                         window.open(
                           `${process.env.BASE_URL}${workspace.devServerUrl}`,
                           '_blank',
@@ -1582,7 +1607,7 @@ const AppDev: React.FC = () => {
                   }}
                   // 版本记录相关
                   gitVersionRecordData={{
-                    onOpen: () => setGitVersionPanelOpen((prev) => !prev),
+                    onOpen: handleToggleGitVersionPanel,
                     disabled: !hasValidProjectId,
                   }}
                   // 通用状态
@@ -1628,8 +1653,7 @@ const AppDev: React.FC = () => {
                             isRefreshingGitList:
                               sourceControl.isRefreshingGitList,
                             onRefreshGitList: sourceControl.refreshGitList,
-                            onDiffFileSelect:
-                              sourceControl.handleDiffFileSelect,
+                            onDiffFileSelect: handleSourceControlDiffSelect,
                             onOpenChangeFile:
                               sourceControl.handleOpenChangeFile,
                             onAfterDiscardChange:
@@ -1641,8 +1665,9 @@ const AppDev: React.FC = () => {
                         />
                       )}
 
-                      {/* 版本记录面板：打开时占据文件树右侧的内容区域 */}
-                      {gitVersionPanelOpen ? (
+                      {/* 版本记录面板：打开且无 diff 选中时占据内容区；选中 diff 时改由 ContentViewer 展示 */}
+                      {gitVersionPanelOpen &&
+                      !sourceControl.selectedDiffFile ? (
                         <div className={styles.gitVersionPanelCol}>
                           {/* 版本记录 */}
                           <GitVersionRecordPanel
