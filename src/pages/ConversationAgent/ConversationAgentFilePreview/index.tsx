@@ -1,8 +1,6 @@
 import ChangeFileGitDiffView from '@/components/business-component/ChangeFileGitDiffView';
-import VncPreview from '@/components/business-component/VncPreview';
 import fileTreeViewStyles from '@/components/FileTreeView/index.less';
 import type { ChangeFileInfo } from '@/components/FileTreeView/type';
-import { AgentTypeEnum } from '@/types/enums/space';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
 import type { ConversationAgentFileViewPreview } from '../hooks/types';
@@ -41,14 +39,6 @@ export interface ConversationAgentFilePreviewProps {
   /** 外层容器类名（来自 useConversationAgentFileView） */
   providerClassName?: string;
   className?: string;
-  /** 是否展示智能体电脑（VNC） */
-  isAgentDesktopOpen?: boolean;
-  /** 智能体电脑绑定的会话 ID */
-  desktopConversationId?: number;
-  /** 智能体类型（用于 VNC 空闲检测） */
-  agentType?: string;
-  /** VNC 空闲超时回调 */
-  onDesktopIdleTimeout?: () => void;
 }
 
 /**
@@ -69,10 +59,6 @@ const ConversationAgentFilePreview: React.FC<
   subscriptionStatsPanel,
   providerClassName,
   className,
-  isAgentDesktopOpen = false,
-  desktopConversationId,
-  agentType,
-  onDesktopIdleTimeout,
 }) => {
   const { renderPreviewContent, isFullscreen, filePathHeaderProps } = preview;
 
@@ -125,25 +111,8 @@ const ConversationAgentFilePreview: React.FC<
     ],
   );
 
-  /** 按优先级渲染预览区主体（VNC > diff > 文件 > 工作区页签 > 其他） */
+  /** 按优先级渲染预览区主体（diff > 文件 > 工作区页签 > 其他） */
   const previewBody = useMemo(() => {
-    if (isAgentDesktopOpen && desktopConversationId) {
-      return (
-        <div className={cx(styles['desktop-preview-layout'])}>
-          <VncPreview
-            serviceUrl={process.env.BASE_URL || ''}
-            cId={String(desktopConversationId)}
-            autoConnect
-            className={styles['vnc-preview']}
-            idleDetection={{
-              enabled: agentType === AgentTypeEnum.TaskAgent,
-              onIdleTimeout: onDesktopIdleTimeout,
-            }}
-          />
-        </div>
-      );
-    }
-
     if (showDiff && diffFile) {
       return (
         <ChangeFileGitDiffView
@@ -188,10 +157,6 @@ const ConversationAgentFilePreview: React.FC<
 
     return <div className={cx(styles['empty-preview'])} />;
   }, [
-    isAgentDesktopOpen,
-    desktopConversationId,
-    agentType,
-    onDesktopIdleTimeout,
     showDiff,
     diffFile,
     diffFileName,

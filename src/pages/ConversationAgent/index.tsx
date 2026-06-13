@@ -9,6 +9,7 @@ import FileTreeGitSourcePanel, {
   useConversationAgentSourceControl,
   type SelectedChangeFile,
 } from '@/components/business-component/FileTreeGitSourcePanel';
+import VncPreview from '@/components/business-component/VncPreview';
 import CreateAgent from '@/components/CreateAgent';
 import Loading from '@/components/custom/Loading';
 import type { ChangeFileInfo } from '@/components/FileTreeView/type';
@@ -1032,16 +1033,31 @@ const ConversationAgent: React.FC = () => {
 
   /**
    * 切换中间文件树栏显隐（仅由 header 图标控制，不受预览面板状态影响）
+   * 远程桌面打开时：先关闭桌面，再展开文件树与右侧工作区
    */
   const handleToggleFileTreeSidebar = useCallback(() => {
+    if (isAgentDesktopOpen) {
+      closeAgentDesktop();
+      setCanShowFileView(true);
+      if (queryConversationId) {
+        handleRefreshFileList(queryConversationId);
+      }
+      return;
+    }
+
     setCanShowFileView((prev) => {
       const nextVisible = !prev;
-      if (nextVisible) {
+      if (nextVisible && queryConversationId) {
         handleRefreshFileList(queryConversationId);
       }
       return nextVisible;
     });
-  }, [handleRefreshFileList, queryConversationId]);
+  }, [
+    isAgentDesktopOpen,
+    closeAgentDesktop,
+    handleRefreshFileList,
+    queryConversationId,
+  ]);
 
   /**
    * 打开 / 切换智能体电脑（与编排页 PreviewAndDebug 行为一致）
@@ -1060,6 +1076,7 @@ const ConversationAgent: React.FC = () => {
     }
 
     await openDesktopView(convId);
+    setCanShowFileView(false);
     setIsAgentDesktopOpen(true);
   }, [
     queryConversationId,
@@ -1554,6 +1571,24 @@ const ConversationAgent: React.FC = () => {
   );
 
   /**
+   * 渲染智能体电脑（VNC），占满文件树 + 右侧面板工作区
+   */
+  const renderAgentDesktopPanel = () => (
+    <div className={cx(styles['agent-desktop-workspace'])}>
+      <VncPreview
+        serviceUrl={process.env.BASE_URL || ''}
+        cId={String(queryConversationId)}
+        autoConnect
+        className={styles['agent-desktop-vnc']}
+        idleDetection={{
+          enabled: agentConfigInfo?.type === AgentTypeEnum.TaskAgent,
+          onIdleTimeout: closeAgentDesktop,
+        }}
+      />
+    </div>
+  );
+
+  /**
    * 渲染右侧面板
    * 布局：顶部 PreviewTabBar（始终）+ 内容区（文件 / 工作区工具页）+ 底部终端
    */
@@ -1597,11 +1632,6 @@ const ConversationAgent: React.FC = () => {
             <ConversationAgentFilePreview
               // 预览文件
               preview={fileView.preview}
-              // 智能体电脑（VNC）
-              isAgentDesktopOpen={isAgentDesktopOpen}
-              desktopConversationId={queryConversationId}
-              agentType={agentConfigInfo?.type}
-              onDesktopIdleTimeout={closeAgentDesktop}
               // 差异文件
               diffFile={gitSourceControl.selectedDiffFile ?? undefined}
               // 选中标签
@@ -1714,42 +1744,49 @@ const ConversationAgent: React.FC = () => {
           </div>
 
           {/* 中间面板（文件树） + 右侧面板（编排/预览 + 终端） */}
-          {/* 中间面板：文件树侧边栏（仅由 canShowFileView 控制显隐） */}
-          <div
-            className={cx(styles['middle-panel'], {
-              [styles['middle-panel-visible']]: canShowFileView,
-              [styles['middle-panel-hidden']]: !canShowFileView,
-            })}
-          >
-            {/* ConversationAgent 中间面板（公共 FileTreeGitSourcePanel，内部渲染文件树） */}
-            <FileTreeGitSourcePanel
-              className={cx(styles['file-tree-sidebar'], 'w-full')}
-              tree={fileView.tree}
-              treeClassName="w-full h-full"
-              sourceControl={{
-                gitWorkspace: {
-                  workspaceType: 'taskAgent',
-                  cid: queryConversationId ?? null,
-                },
-                changeFiles: fileView.changeFiles,
-                selectedChangeFile: gitSourceControl.selectedChangeFile,
-                isCommitting:
-                  gitSourceControl.isCommitting ||
-                  fileView.preview.isSavingFiles,
-                isRefreshingGitList: fileView.isRefreshingGitList,
-                onRefreshGitList: fileView.refreshGitList,
-                onDiffFileSelect: gitSourceControl.handleDiffFileSelect,
-                onOpenChangeFile: gitSourceControl.handleOpenChangeFile,
-                onAfterDiscardChange: gitSourceControl.handleAfterDiscardChange,
-                onAddToGitignore: (fileId) => {
-                  void gitSourceControl.handleAddToGitignore(fileId);
-                },
-                onCommit: gitSourceControl.handleCommit,
-              }}
-            />
-          </div>
-          {/* 右侧面板：编排配置 / 文件预览 + 终端 */}
-          {renderRightPanel()}
+          {isAgentDesktopOpen && queryConversationId ? (
+            renderAgentDesktopPanel()
+          ) : (
+            <>
+              {/* 中间面板：文件树侧边栏（仅由 canShowFileView 控制显隐） */}
+              <div
+                className={cx(styles['middle-panel'], {
+                  [styles['middle-panel-visible']]: canShowFileView,
+                  [styles['middle-panel-hidden']]: !canShowFileView,
+                })}
+              >
+                {/* ConversationAgent 中间面板（公共 FileTreeGitSourcePanel，内部渲染文件树） */}
+                <FileTreeGitSourcePanel
+                  className={cx(styles['file-tree-sidebar'], 'w-full')}
+                  tree={fileView.tree}
+                  treeClassName="w-full h-full"
+                  sourceControl={{
+                    gitWorkspace: {
+                      workspaceType: 'taskAgent',
+                      cid: queryConversationId ?? null,
+                    },
+                    changeFiles: fileView.changeFiles,
+                    selectedChangeFile: gitSourceControl.selectedChangeFile,
+                    isCommitting:
+                      gitSourceControl.isCommitting ||
+                      fileView.preview.isSavingFiles,
+                    isRefreshingGitList: fileView.isRefreshingGitList,
+                    onRefreshGitList: fileView.refreshGitList,
+                    onDiffFileSelect: gitSourceControl.handleDiffFileSelect,
+                    onOpenChangeFile: gitSourceControl.handleOpenChangeFile,
+                    onAfterDiscardChange:
+                      gitSourceControl.handleAfterDiscardChange,
+                    onAddToGitignore: (fileId) => {
+                      void gitSourceControl.handleAddToGitignore(fileId);
+                    },
+                    onCommit: gitSourceControl.handleCommit,
+                  }}
+                />
+              </div>
+              {/* 右侧面板：编排配置 / 文件预览 + 终端 */}
+              {renderRightPanel()}
+            </>
+          )}
         </div>
 
         {/* 调试详情抽屉（按需显示） */}

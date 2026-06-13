@@ -71,6 +71,22 @@
     min-height: 0;
   }
 
+  /** 智能体电脑（VNC）占满文件树 + 右侧面板工作区 */
+  .agent-desktop-workspace {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .agent-desktop-vnc {
+    flex: 1;
+    min-height: 0;
+    border: none !important;
+  }
+
   .file-preview-panel {
     flex: 1;
     min-height: 0;
