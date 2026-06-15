@@ -390,7 +390,8 @@ export function useConversationAgentFileView(
     setIsRefreshingGitList(true);
 
     try {
-      await onRefreshFileTree?.();
+      // 文件树刷新不阻塞 git status，避免与 openPreviewView 等并发刷新时 Promise 悬挂
+      void onRefreshFileTree?.();
 
       const statusResponse = await apiGitStatus({
         workspaceType: 'taskAgent',
@@ -413,8 +414,6 @@ export function useConversationAgentFileView(
           (fileId) => findFileNode(fileId, filesRef.current),
         ),
       );
-    } catch (error) {
-      console.error('Refresh git list failed:', error);
     } finally {
       isRefreshingGitListRef.current = false;
       setIsRefreshingGitList(false);
@@ -424,9 +423,15 @@ export function useConversationAgentFileView(
   /** 进入页面或切换会话时拉取 Git status（仅通用型智能体） */
   useEffect(() => {
     if (!targetId || !enableGitStatus) {
+      isRefreshingGitListRef.current = false;
+      setIsRefreshingGitList(false);
       return;
     }
     void refreshGitList();
+    return () => {
+      isRefreshingGitListRef.current = false;
+      setIsRefreshingGitList(false);
+    };
   }, [targetId, enableGitStatus]);
 
   // 文件选择（内部函数，执行实际的选择逻辑）
