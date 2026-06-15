@@ -36,6 +36,9 @@ export interface UnifiedChatSessionProps {
   // 智能体配置与信息
   agentInfo?: UnifiedAgentInfo;
 
+  /** 由上层（如新建项目页）透传的初始 Agent 模式，用于初始化介入图层的选择器 */
+  initialAgentMode?: AgentMode;
+
   // 事件与业务回调
   onSendMessage?: (
     messageInfo: string,

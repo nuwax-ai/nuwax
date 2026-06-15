@@ -340,6 +340,8 @@ export interface TenantConfigInfo {
   agentDevAgentId?: number;
   skillDevAgentId?: number;
   pluginDevAgentId?: number;
+  /** 是否显示 Agent 模式（yolo/ask）选择器；0 关闭，未下发则默认显示 */
+  enableAgentMode?: number;
 }
 
 // 设置用户账号信息
