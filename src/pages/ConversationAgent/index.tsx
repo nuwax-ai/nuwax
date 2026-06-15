@@ -1721,19 +1721,23 @@ const ConversationAgent: React.FC = () => {
             closeAgentDesktop();
             previewTabs.openPickerTab();
           }}
+          /** 重启智能体电脑 */
           onRestartServer={() => {
             if (queryConversationId) {
               restartVncPod(queryConversationId, finalSelectedComputerId);
             }
           }}
+          /** 重启智能体 */
           onRestartAgent={() => {
             if (queryConversationId) {
               restartAgent(queryConversationId);
             }
           }}
+          /** 导出项目 */
           onExportProject={() => {
             void fileView.tree.handleExportProject?.();
           }}
+          /** 是否为云电脑 */
           isCloudComputer={finalSelectedComputerId === '-1'}
         />
         {/* Tab 栏下方：预览内容 + 底部终端（终端放大时仅覆盖此区域） */}
