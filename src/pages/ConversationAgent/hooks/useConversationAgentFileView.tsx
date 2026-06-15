@@ -374,7 +374,7 @@ export function useConversationAgentFileView(
 
   /**
    * 刷新 Git 变更列表（git status）
-   * 进入页面或暂存/取消暂存后调用，与 AppDev 源代码管理保持一致
+   * 文件树展开或暂存/取消暂存后调用，与 AppDev 源代码管理保持一致
    */
   const refreshGitList = useCallback(async () => {
     if (!enableGitStatus) {
@@ -418,11 +418,11 @@ export function useConversationAgentFileView(
       isRefreshingGitListRef.current = false;
       setIsRefreshingGitList(false);
     }
-  }, [enableGitStatus, targetId, onRefreshFileTree]);
+  }, [enableGitStatus, targetId]);
 
-  /** 进入页面或切换会话时拉取 Git status（仅通用型智能体） */
+  /** 文件树展开时拉取 Git status（仅通用型智能体） */
   useEffect(() => {
-    if (!targetId || !enableGitStatus) {
+    if (!targetId || !enableGitStatus || !isFileTreeVisible) {
       isRefreshingGitListRef.current = false;
       setIsRefreshingGitList(false);
       return;
@@ -432,7 +432,7 @@ export function useConversationAgentFileView(
       isRefreshingGitListRef.current = false;
       setIsRefreshingGitList(false);
     };
-  }, [targetId, enableGitStatus]);
+  }, [targetId, enableGitStatus, isFileTreeVisible]);
 
   // 文件选择（内部函数，执行实际的选择逻辑）
   const handleFileSelectInternal = useCallback(
