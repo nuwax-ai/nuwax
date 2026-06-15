@@ -77,6 +77,8 @@ export interface ConversationAgentFileViewProps {
   onFileDeleted?: (node: FileNode) => void;
   /** CodeViewer 是否使用动态主题（Chat 页为 true） */
   isDynamicTheme?: boolean;
+  /** 是否启用 Git status（仅通用型 TaskAgent 智能体） */
+  enableGitStatus?: boolean;
 }
 
 /** ConversationAgent 预览 Tab 栏右侧文件操作区 props */

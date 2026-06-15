@@ -454,6 +454,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     }
   }, [infos, messageSourceType, manualComponents]);
 
+  // 会话相关 props
   const { handleClear, handleMessageSend } = useChatConversation({
     id,
     agentId,
@@ -518,19 +519,24 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     eventBindConfig: conversationInfo?.agent?.eventBindConfig,
   });
 
+  const refreshGitListRef = useRef<(() => void) | undefined>();
+
   const {
     handleCreateFileNode,
     handleDeleteFile,
     handleConfirmRenameFile,
     handleSaveFiles,
+    handleSaveFileContent,
     handleUploadMultipleFiles,
     handleExportProject,
   } = useChatFiles({
     id,
     fileTreeData,
     handleRefreshFileList,
+    onSaveFileContentSuccessRef: refreshGitListRef,
   });
 
+  // 文件视图 props
   const fileView = useConversationAgentFileView({
     taskAgentSelectedFileId,
     taskAgentSelectTrigger,
@@ -544,6 +550,14 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     onCreateFileNode: handleCreateFileNode,
     onDeleteFile: handleDeleteFile,
     onSaveFiles: handleSaveFiles,
+    onSaveFileContent: async (fileId, content, originalFileContent) => {
+      const result = await handleSaveFileContent(
+        fileId,
+        content,
+        originalFileContent,
+      );
+      return result ?? false;
+    },
     agentSandboxId: finalSelectedId,
     onClose: closePreviewView,
     isFileTreePinned,
@@ -553,8 +567,19 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     hideDesktop: effectiveAgent?.hideDesktop,
     staticFileBasePath: `/api/computer/static/${id}`,
     isDynamicTheme: true,
+    enableGitStatus: effectiveAgent?.type === AgentTypeEnum.TaskAgent,
   });
 
+  refreshGitListRef.current = fileView.refreshGitList;
+
+  useEffect(
+    () => () => {
+      handleSaveFileContent.cancel();
+    },
+    [handleSaveFileContent],
+  );
+
+  // Git 源代码管理 props
   const gitSourceControl = useChatGitSourceControl({
     conversationId: id,
     fileTreeData,
@@ -574,6 +599,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     },
   });
 
+  // 文件树 props
   const chatFileTree: FileTreeContainerProps = useMemo(
     () => ({
       ...fileView.tree,
@@ -590,6 +616,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     ],
   );
 
+  /** 文件树侧边栏 props */
   const fileSidebarProps = useMemo(
     () => ({
       tree: chatFileTree,
@@ -845,11 +872,8 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
           />
         ) : (
           <div
-            className={styles['chat-flex-container']}
+            className={cx('flex', 'w-full', 'h-full')}
             style={{
-              display: 'flex',
-              width: '100%',
-              height: '100%',
               gap: '16px',
             }}
           >

@@ -9,7 +9,7 @@ import { dict } from '@/services/i18nRuntime';
 import type { FileNode } from '@/types/interfaces/appDev';
 import { treeToFlatList } from '@/utils/appDevUtils';
 import { message } from 'antd';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { fetchGitChangeFileContent } from '../../GitVersionRecordPanel/gitCommitDiffUtils';
 import { apiGitCommit, apiGitStatus } from '../services/git-version-management';
 import type {
@@ -611,16 +611,6 @@ export const useSourceControl = ({
     },
     [fileManagement, clearChangeForFile],
   );
-
-  /** 进入页面或切换项目时拉取 Git status */
-  useEffect(() => {
-    if (!projectId) {
-      return;
-    }
-    void refreshGitList();
-    // 仅在 projectId 就绪时触发，避免与 refreshGitList 引用变化重复请求
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId]);
 
   /** SourceControlPanel 已完成 Git discard 后，仅同步本地 UI */
   const handleAfterDiscardChange = useCallback(

@@ -1284,6 +1284,8 @@ const ConversationAgent: React.FC = () => {
       hideDesktop: agentConfigInfo?.hideDesktop, // 是否隐藏桌面预览
       /** 静态文件基础路径，用于文件预览资源加载 */
       staticFileBasePath: `/api/computer/static/${queryConversationId}`,
+      /** 仅通用型智能体拉取 Git status */
+      enableGitStatus: agentConfigInfo?.type === AgentTypeEnum.TaskAgent,
       /** 文件树选中文件时，切换右侧面板为文件预览并打开标签 */
       onFileSelectOpenPreview: (fileId?: string) => {
         closeAgentDesktop();

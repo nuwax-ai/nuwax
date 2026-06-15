@@ -99,6 +99,8 @@ export function useConversationAgentFileView(
     onFileDeleted,
     agentSandboxId,
     isDynamicTheme = false,
+    /** 是否启用 Git status，仅通用型 TaskAgent 智能体为 true */
+    enableGitStatus = false,
   } = props;
   const headerClassName = undefined;
   const isImportProjectTrigger = undefined;
@@ -375,6 +377,10 @@ export function useConversationAgentFileView(
    * 进入页面或暂存/取消暂存后调用，与 AppDev 源代码管理保持一致
    */
   const refreshGitList = useCallback(async () => {
+    if (!enableGitStatus) {
+      return;
+    }
+
     const cid = Number(targetId);
     if (!cid || isRefreshingGitListRef.current) {
       return;
@@ -413,15 +419,15 @@ export function useConversationAgentFileView(
       isRefreshingGitListRef.current = false;
       setIsRefreshingGitList(false);
     }
-  }, [targetId, onRefreshFileTree]);
+  }, [enableGitStatus, targetId, onRefreshFileTree]);
 
-  /** 进入页面或切换会话时拉取 Git status */
+  /** 进入页面或切换会话时拉取 Git status（仅通用型智能体） */
   useEffect(() => {
-    if (!targetId) {
+    if (!targetId || !enableGitStatus) {
       return;
     }
     void refreshGitList();
-  }, [targetId]);
+  }, [targetId, enableGitStatus]);
 
   // 文件选择（内部函数，执行实际的选择逻辑）
   const handleFileSelectInternal = useCallback(
