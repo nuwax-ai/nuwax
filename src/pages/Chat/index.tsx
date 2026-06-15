@@ -32,20 +32,33 @@ import type {
 } from '@/types/interfaces/conversationInfo';
 import { addBaseTarget, parsePageAppProjectId } from '@/utils/common';
 
+import {
+  useSourceControl,
+  type SelectedChangeFile,
+} from '@/components/business-component/FileTreeGitSourcePanel';
 import type { FileTreeContainerProps } from '@/components/business-component/FileTreeGitSourcePanel/types/file-tree-git-source';
 import { useConversationAgentFileView } from '@/pages/ConversationAgent/hooks/useConversationAgentFileView';
+import { apiUpdateStaticFile } from '@/services/vncDesktop';
+import type { UpdateFileInfo } from '@/types/interfaces/fileTree';
+import type { StaticFileInfo } from '@/types/interfaces/vncDesktop';
+import { updateFilesListContent } from '@/utils/fileTree';
 import { jumpToPageDevelop } from '@/utils/router';
 import { LoadingOutlined } from '@ant-design/icons';
 import { Form } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { history, useLocation, useModel, useParams } from 'umi';
 import LeftContent from './components/LeftContent';
 import ShowArea from './components/ShowArea';
 import { useAutoPreviewFile } from './hooks/useAutoPreviewFile';
 import { useChatConversation } from './hooks/useChatConversation';
 import { useChatFiles } from './hooks/useChatFiles';
-import { useChatGitSourceControl } from './hooks/useChatGitSourceControl';
 import { useChatSandbox } from './hooks/useChatSandbox';
 import { useChatVariables } from './hooks/useChatVariables';
 import { useChatViewMode } from './hooks/useChatViewMode';
@@ -580,22 +593,118 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   );
 
   // Git 源代码管理 props
-  const gitSourceControl = useChatGitSourceControl({
-    conversationId: id,
-    fileTreeData,
-    changeFiles: fileView.changeFiles,
-    handleSaveFiles,
-    discardChangeFile: fileView.preview.discardChangeFile,
-    openChangeFile: async (fileId: string) => {
-      setTaskAgentSelectedFileId('');
-      await fileView.tree.handleFileSelect(fileId);
-    },
-    refreshGitList: fileView.refreshGitList,
-    handleRefreshFileList,
-    onDiffFileSelect: () => {
-      if (viewMode === 'desktop') {
-        openPreviewView(id);
+  const [selectedChangeFile, setSelectedChangeFile] =
+    useState<SelectedChangeFile | null>(null);
+
+  /** 将文件路径添加到 .gitignore */
+  const handleAddToGitignore = useCallback(
+    async (fileId: string) => {
+      if (!id) {
+        return;
       }
+
+      const gitignoreId = '.gitignore';
+      const existing = fileTreeData?.find(
+        (item: StaticFileInfo) => item.fileId === gitignoreId,
+      );
+      const currentContent = existing?.contents ?? '';
+      const entry = fileId.startsWith('/') ? fileId.slice(1) : fileId;
+
+      if (
+        currentContent
+          .split('\n')
+          .some(
+            (line: string) => line.trim() === entry || line.trim() === fileId,
+          )
+      ) {
+        message.info(
+          t('PC.Pages.ConversationAgentSourceControl.alreadyInGitignore'),
+        );
+        return;
+      }
+
+      const newContent = currentContent
+        ? `${currentContent.replace(/\n$/, '')}\n${entry}`
+        : entry;
+
+      try {
+        if (existing) {
+          const updatedFilesList = updateFilesListContent(
+            fileTreeData || [],
+            [
+              {
+                fileId: gitignoreId,
+                fileContent: newContent,
+                originalFileContent: currentContent,
+              },
+            ],
+            'modify',
+          );
+          await apiUpdateStaticFile({
+            cId: id,
+            files: updatedFilesList as UpdateFileInfo[],
+          });
+        } else {
+          await apiUpdateStaticFile({
+            cId: id,
+            files: [
+              {
+                name: gitignoreId,
+                contents: `${newContent}\n`,
+                operation: 'create',
+                binary: false,
+                sizeExceeded: false,
+                renameFrom: '',
+                isDir: false,
+              },
+            ],
+          });
+        }
+
+        message.success(
+          t('PC.Pages.ConversationAgentSourceControl.gitignoreSuccess'),
+        );
+        await handleRefreshFileList(id);
+      } catch (error) {
+        console.error('Add to gitignore failed:', error);
+      }
+    },
+    [id, fileTreeData, handleRefreshFileList],
+  );
+
+  const gitSourceControl = useSourceControl({
+    workspace: {
+      workspaceType: 'taskAgent',
+      cid: id ?? null,
+    },
+    changeFiles: fileView.changeFiles,
+    selectedChangeFile,
+    setSelectedChangeFile,
+    callbacks: {
+      discardChangeFile: fileView.preview.discardChangeFile,
+      openChangeFile: (fileId: string) => {
+        setSelectedChangeFile(null);
+        setTaskAgentSelectedFileId('');
+        void fileView.tree.handleFileSelect(fileId);
+      },
+      addFileToGitignore: handleAddToGitignore,
+      onDiffFileSelect: () => {
+        if (viewMode === 'desktop') {
+          openPreviewView(id);
+        }
+      },
+      onAfterDiscardChange: () => {
+        setSelectedChangeFile(null);
+      },
+      onCommitSuccess: async () => {
+        await fileView.refreshGitList();
+        setSelectedChangeFile(null);
+      },
+      onRefreshGitList: id
+        ? async () => {
+            await fileView.refreshGitList();
+          }
+        : undefined,
     },
   });
 

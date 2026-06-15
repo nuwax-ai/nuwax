@@ -32,7 +32,6 @@ export {
   apiGitStatus,
   apiGitUnstage,
   useAppDevFileTree,
-  useConversationAgentSourceControl,
   useSourceControl,
 } from './FileTreeGitSourcePanel';
 export {
