@@ -268,6 +268,8 @@ const ConversationAgent: React.FC = () => {
     runAsync,
     resetInit,
     cardList,
+    restartVncPod,
+    restartAgent,
   } = useModel('conversationInfo');
 
   /** 关闭远程智能体桌面（切换标签/文件等预览操作时调用） */
@@ -1245,6 +1247,16 @@ const ConversationAgent: React.FC = () => {
           await apiDownloadAllFiles(queryConversationId);
         }
       },
+      onRestartServer: () => {
+        if (queryConversationId) {
+          restartVncPod(queryConversationId, finalSelectedComputerId);
+        }
+      },
+      onRestartAgent: () => {
+        if (queryConversationId) {
+          restartAgent(queryConversationId);
+        }
+      },
       onRenameFile: handleConfirmRenameFile,
       onCreateFileNode: handleCreateFileNode,
       onDeleteFile: handleDeleteFile,
@@ -1339,6 +1351,8 @@ const ConversationAgent: React.FC = () => {
     openPreviewView,
     resetDevConsoleExpandedLayout,
     closeAgentDesktop,
+    restartVncPod,
+    restartAgent,
   ]);
 
   /** 初始化文件视图 Hook，获取文件树和预览的渲染组件 */
@@ -1707,6 +1721,20 @@ const ConversationAgent: React.FC = () => {
             closeAgentDesktop();
             previewTabs.openPickerTab();
           }}
+          onRestartServer={() => {
+            if (queryConversationId) {
+              restartVncPod(queryConversationId, finalSelectedComputerId);
+            }
+          }}
+          onRestartAgent={() => {
+            if (queryConversationId) {
+              restartAgent(queryConversationId);
+            }
+          }}
+          onExportProject={() => {
+            void fileView.tree.handleExportProject?.();
+          }}
+          isCloudComputer={finalSelectedComputerId === '-1'}
         />
         {/* Tab 栏下方：预览内容 + 底部终端（终端放大时仅覆盖此区域） */}
         <div className={cx(styles['right-panel-main'])}>

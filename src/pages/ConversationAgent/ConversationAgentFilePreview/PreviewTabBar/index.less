@@ -214,13 +214,20 @@
   }
 }
 
+.tab-bar-actions {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  margin-left: @paddingXxs;
+  gap: @marginXxs;
+}
+
 .add-tab-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 28px;
   height: 28px;
-  margin-left: @paddingXxs;
   border: @lineWidth solid transparent;
   border-radius: @borderRadius;
   background: transparent;
