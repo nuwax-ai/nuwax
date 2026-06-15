@@ -120,6 +120,11 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
   const terminalRef = useRef<XtermTerminalRef>(null);
   /** 上一次 visible 值（用于识别「重新打开」时机） */
   const prevVisibleRef = useRef(visible);
+  /** 外部信号上一次值（避免组件 remount 时重复触发） */
+  const prevLayoutResetSignalRef = useRef(layoutResetSignal);
+  const prevExpandSignalRef = useRef(expandSignal);
+  const prevTerminalSignalRef = useRef(terminalSignal);
+  const prevLogsSignalRef = useRef(logsSignal);
 
   /** 日志 Tab 是否使用结构化日志面板（DevLogPanel） */
   const useDevLogPanel = Boolean(devLog);
@@ -169,12 +174,26 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
 
   /** 外部信号：将全屏布局重置回默认高度（collapsed 状态保持不变） */
   useEffect(() => {
+    if (
+      layoutResetSignal === undefined ||
+      layoutResetSignal === prevLayoutResetSignalRef.current
+    ) {
+      return;
+    }
+    prevLayoutResetSignalRef.current = layoutResetSignal;
     if (!layoutResetSignal) return;
     setLayoutMode((prev) => (prev === 'expanded' ? 'default' : prev));
   }, [layoutResetSignal]);
 
   /** 外部信号：切到终端 Tab 并全屏展开 */
   useEffect(() => {
+    if (
+      expandSignal === undefined ||
+      expandSignal === prevExpandSignalRef.current
+    ) {
+      return;
+    }
+    prevExpandSignalRef.current = expandSignal;
     if (!expandSignal) return;
     setActiveTab('terminal');
     setLayoutMode('expanded');
@@ -182,6 +201,13 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
 
   /** 外部信号：切到终端 Tab（折叠时恢复默认高度） */
   useEffect(() => {
+    if (
+      terminalSignal === undefined ||
+      terminalSignal === prevTerminalSignalRef.current
+    ) {
+      return;
+    }
+    prevTerminalSignalRef.current = terminalSignal;
     if (!terminalSignal) return;
     setActiveTab('terminal');
     setLayoutMode((prev) => (prev === 'collapsed' ? 'default' : prev));
@@ -189,6 +215,10 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
 
   /** 外部信号：切到日志 Tab（折叠时恢复默认高度） */
   useEffect(() => {
+    if (logsSignal === undefined || logsSignal === prevLogsSignalRef.current) {
+      return;
+    }
+    prevLogsSignalRef.current = logsSignal;
     if (!logsSignal) return;
     setActiveTab('logs');
     setLayoutMode((prev) => (prev === 'collapsed' ? 'default' : prev));
