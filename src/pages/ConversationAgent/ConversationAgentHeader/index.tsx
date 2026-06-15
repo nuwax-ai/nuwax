@@ -271,12 +271,7 @@ const ConversationAgentHeader: React.FC<ConversationAgentHeaderProps> = ({
         />
 
         {/* 发布按钮 */}
-        <Button
-          type="primary"
-          className={cx(styles['publish-btn'])}
-          onClick={onPublish}
-          disabled={publishDisabled}
-        >
+        <Button type="primary" onClick={onPublish} disabled={publishDisabled}>
           {dict('PC.Pages.AgentEdit.publish')}
         </Button>
       </div>
