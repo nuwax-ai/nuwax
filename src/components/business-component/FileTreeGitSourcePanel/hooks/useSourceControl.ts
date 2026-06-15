@@ -565,23 +565,13 @@ export const useSourceControl = ({
           });
         }
 
-        const response = await submitFilesUpdate(projectId, filesList);
-        if (!response.success || response.code !== SUCCESS_CODE) {
-          message.error(
-            dict('PC.Pages.ConversationAgentSourceControl.gitignoreFailed'),
-          );
-          return;
-        }
-
+        await submitFilesUpdate(projectId, filesList);
         message.success(
           dict('PC.Pages.ConversationAgentSourceControl.gitignoreSuccess'),
         );
         await fileManagement.loadFileTree(true, true);
       } catch (error) {
         console.error('Add to gitignore failed:', error);
-        message.error(
-          dict('PC.Pages.ConversationAgentSourceControl.gitignoreFailed'),
-        );
       }
     },
     [projectId, fileManagement],

@@ -1475,18 +1475,12 @@ const ConversationAgent: React.FC = () => {
             ],
             'modify',
           );
-          const { code } = await apiUpdateStaticFile({
-            cId: queryConversationId,
+          await apiUpdateStaticFile({
+            cId: queryConversationId + 'dddd',
             files: updatedFilesList as UpdateFileInfo[],
           });
-          if (code !== SUCCESS_CODE) {
-            message.error(
-              dict('PC.Pages.ConversationAgentSourceControl.gitignoreFailed'),
-            );
-            return;
-          }
         } else {
-          const { code } = await apiUpdateStaticFile({
+          await apiUpdateStaticFile({
             cId: queryConversationId,
             files: [
               {
@@ -1500,12 +1494,6 @@ const ConversationAgent: React.FC = () => {
               },
             ],
           });
-          if (code !== SUCCESS_CODE) {
-            message.error(
-              dict('PC.Pages.ConversationAgentSourceControl.gitignoreFailed'),
-            );
-            return;
-          }
         }
 
         message.success(
@@ -1514,9 +1502,6 @@ const ConversationAgent: React.FC = () => {
         await handleRefreshFileList(queryConversationId);
       } catch (error) {
         console.error('Add to gitignore failed:', error);
-        message.error(
-          dict('PC.Pages.ConversationAgentSourceControl.gitignoreFailed'),
-        );
       }
     },
     [fileTreeData, handleRefreshFileList],
