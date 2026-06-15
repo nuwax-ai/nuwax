@@ -98,6 +98,9 @@ export function useConversationAgentFileView(
     /** 文件/文件夹删除成功后回调 */
     onFileDeleted,
     agentSandboxId,
+    isDynamicTheme = false,
+    /** 是否启用 Git status，仅通用型 TaskAgent 智能体为 true */
+    enableGitStatus = false,
   } = props;
   const headerClassName = undefined;
   const isImportProjectTrigger = undefined;
@@ -114,7 +117,6 @@ export function useConversationAgentFileView(
   const showFullscreenIcon = true;
   const hideFileTree = false;
   const showRefreshButton = true;
-  const isDynamicTheme = false;
   const isProjectSkill = false;
   // 文件树数据
   const [files, setFiles] = useState<FileNode[]>([]);
@@ -213,6 +215,13 @@ export function useConversationAgentFileView(
     setViewFileType('preview');
   }, [selectedFileId]);
 
+  // 当 isFileTreePinned 变化时，同步展开文件树（与 FileTreeView 一致）
+  useEffect(() => {
+    if (isFileTreePinned && !isControlledFileTreeSidebar) {
+      setInternalFileTreeVisible(true);
+    }
+  }, [isFileTreePinned, isControlledFileTreeSidebar]);
+
   useEffect(() => {
     // 如果通过父组件全屏预览模式打开，则设置全屏状态
     if (isFullscreenPreview) {
@@ -244,6 +253,30 @@ export function useConversationAgentFileView(
       }
     },
     [],
+  );
+
+  /** 导出 PDF 前先通过 fileProxyUrl 拉取 md/html 文件内容 */
+  const resolveNodeContentForPdfExport = useCallback(
+    async (node: FileNode): Promise<FileNode> => {
+      const fileName = node.name || '';
+      const canExportPdf =
+        isMarkdownFile(fileName) ||
+        fileName.endsWith('.html') ||
+        fileName.endsWith('.htm');
+      if (!canExportPdf || !node.fileProxyUrl) {
+        return node;
+      }
+
+      const fileContent = await fetchFileContentUpdateFiles(
+        node.fileProxyUrl,
+        node.id,
+      );
+      return {
+        ...node,
+        content: fileContent,
+      };
+    },
+    [fetchFileContentUpdateFiles],
   );
 
   // 判断文件是否为图片类型
@@ -344,6 +377,10 @@ export function useConversationAgentFileView(
    * 进入页面或暂存/取消暂存后调用，与 AppDev 源代码管理保持一致
    */
   const refreshGitList = useCallback(async () => {
+    if (!enableGitStatus) {
+      return;
+    }
+
     const cid = Number(targetId);
     if (!cid || isRefreshingGitListRef.current) {
       return;
@@ -382,15 +419,15 @@ export function useConversationAgentFileView(
       isRefreshingGitListRef.current = false;
       setIsRefreshingGitList(false);
     }
-  }, [targetId, onRefreshFileTree]);
+  }, [enableGitStatus, targetId, onRefreshFileTree]);
 
-  /** 进入页面或切换会话时拉取 Git status */
+  /** 进入页面或切换会话时拉取 Git status（仅通用型智能体） */
   useEffect(() => {
-    if (!targetId) {
+    if (!targetId || !enableGitStatus) {
       return;
     }
     void refreshGitList();
-  }, [targetId]);
+  }, [targetId, enableGitStatus]);
 
   // 文件选择（内部函数，执行实际的选择逻辑）
   const handleFileSelectInternal = useCallback(
@@ -1243,8 +1280,10 @@ export function useConversationAgentFileView(
     setIsDownloadingFile(true);
     setCurrentDownloadingFileId(node?.id);
     try {
-      // 下载文件
-      await downloadFileByUrl?.(node, exportAsPdf);
+      const targetNode = exportAsPdf
+        ? await resolveNodeContentForPdfExport(node)
+        : node;
+      await downloadFileByUrl?.(targetNode, exportAsPdf);
       setTimeout(() => {
         setIsDownloadingFile(false);
         setCurrentDownloadingFileId('');
@@ -1316,8 +1355,12 @@ export function useConversationAgentFileView(
   // 处理导出 PDF 操作
   const handleExportPdf = async (node: FileNode) => {
     setIsExportingPdf(true);
-    await downloadFileByUrl?.(node, true);
-    setIsExportingPdf(false);
+    try {
+      const targetNode = await resolveNodeContentForPdfExport(node);
+      await downloadFileByUrl?.(targetNode, true);
+    } finally {
+      setIsExportingPdf(false);
+    }
   };
 
   /**

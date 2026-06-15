@@ -1,7 +1,8 @@
 import { SvgIcon } from '@/components/base';
+import TooltipIcon from '@/components/custom/TooltipIcon';
 import { dict } from '@/services/i18nRuntime';
 import { ClearOutlined, ReloadOutlined } from '@ant-design/icons';
-import { Badge, Button, Tooltip } from 'antd';
+import { Badge, Button } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback } from 'react';
 import styles from './index.less';
@@ -52,11 +53,12 @@ const DevLogActions: React.FC<DevLogActionsProps> = ({
     <div className={cx(styles['console-log-actions'])}>
       {hasErrorInLatestBlock && onAddToChat && (
         <>
-          <Tooltip
+          <TooltipIcon
             title={dict('PC.Pages.AppDevDevLogConsole.latestLogsContainErrors')}
+            placement="top"
           >
             <Badge status="error" />
-          </Tooltip>
+          </TooltipIcon>
           <Button
             size="small"
             danger
@@ -71,22 +73,20 @@ const DevLogActions: React.FC<DevLogActionsProps> = ({
           </Button>
         </>
       )}
-      <Tooltip title={dict('PC.Pages.AppDevDevLogConsole.refreshLogs')}>
-        <Button
-          type="text"
-          size="small"
-          icon={<ReloadOutlined />}
-          onClick={onRefresh}
-        />
-      </Tooltip>
-      <Tooltip title={dict('PC.Pages.AppDevDevLogConsole.clearLogs')}>
-        <Button
-          type="text"
-          size="small"
-          icon={<ClearOutlined />}
-          onClick={onClear}
-        />
-      </Tooltip>
+      <TooltipIcon
+        title={dict('PC.Pages.AppDevDevLogConsole.refreshLogs')}
+        placement="top"
+        className={cx(styles['console-action-btn'])}
+        icon={<ReloadOutlined style={{ fontSize: 14 }} />}
+        onClick={onRefresh}
+      />
+      <TooltipIcon
+        title={dict('PC.Pages.AppDevDevLogConsole.clearLogs')}
+        placement="top"
+        className={cx(styles['console-action-btn'])}
+        icon={<ClearOutlined style={{ fontSize: 14 }} />}
+        onClick={onClear}
+      />
     </div>
   );
 };

@@ -1,6 +1,5 @@
+import MoreActionsMenu from '@/components/FileTreeView/FilePathHeader/MoreActionsMenu/index';
 import { dict } from '@/services/i18nRuntime';
-import { PermissionsEnum } from '@/types/enums/common';
-import type { AgentConfigInfo } from '@/types/interfaces/agent';
 import { getFileIcon } from '@/utils/fileTree';
 import {
   BarChartOutlined,
@@ -28,16 +27,8 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import type { Transform } from '@dnd-kit/utilities';
-import { Button, Tag } from 'antd';
 import classNames from 'classnames';
-import dayjs from 'dayjs';
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import type { PreviewTab, PreviewToolId } from '../hooks/usePreviewTabs';
 import PreviewTabContextMenu from './PreviewTabContextMenu';
 import PreviewTabLabel from './PreviewTabLabel';
@@ -67,10 +58,14 @@ export interface PreviewTabBarProps {
   onTabReorder: (activeId: string, overId: string) => void;
   /** 点击 + 打开「新建页签」内容标签 */
   onAddTab: () => void;
-  /** 智能体配置信息（用于展示保存时间与发布状态） */
-  agentConfigInfo?: AgentConfigInfo;
-  /** 点击发布按钮 */
-  onPublish?: () => void;
+  /** 重启智能体电脑 / 客户端 */
+  onRestartServer?: () => void;
+  /** 重启智能体 */
+  onRestartAgent?: () => void;
+  /** 导出项目 */
+  onExportProject?: () => void;
+  /** 是否为云电脑（影响重启文案） */
+  isCloudComputer?: boolean;
 }
 
 interface TabItemFaceProps {
@@ -254,7 +249,7 @@ const TOOL_ICON_MAP: Partial<Record<PreviewToolId, React.ReactNode>> = {
 
 /**
  * 预览区顶部标签栏
- * 左侧为可切换/关闭的标签页，右侧为功能操作按钮
+ * 左侧为可切换/关闭的标签页
  */
 const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
   tabs,
@@ -266,17 +261,11 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
   onTogglePinTab,
   onTabReorder,
   onAddTab,
-  agentConfigInfo,
-  onPublish,
+  onRestartServer,
+  onRestartAgent,
+  onExportProject,
+  isCloudComputer,
 }) => {
-  /** 发布按钮是否禁用 */
-  const publishDisabled = useMemo(() => {
-    if (agentConfigInfo) {
-      return !agentConfigInfo.permissions?.includes(PermissionsEnum.Publish);
-    }
-    return false;
-  }, [agentConfigInfo]);
-
   /** 拖拽中的标签 ID */
   const [activeDragTabId, setActiveDragTabId] = useState<string | null>(null);
   /** 标签栏视口引用 */
@@ -645,48 +634,22 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
         </div>
 
         {/* 「+」号按钮，点击打开「新建页签」面板 */}
-        <button
-          type="button"
-          className={cx(styles['add-tab-btn'])}
-          aria-label={dict('PC.Pages.ConversationAgentPreviewTabBar.addTab')}
-          onClick={onAddTab}
-        >
-          <PlusOutlined style={{ fontSize: 14 }} />
-        </button>
-      </div>
-
-      {/* 右侧：草稿保存时间、未发布提示与发布按钮 */}
-      <div className={cx(styles['right-actions'])}>
-        {agentConfigInfo?.modified && (
-          <div className={cx('flex', 'items-center', styles['save-time-box'])}>
-            <span className={cx(styles['save-time'])}>
-              {dict(
-                'PC.Pages.AgentEdit.draftAutoSavedAt',
-                dayjs(agentConfigInfo.modified).format('HH:mm'),
-              )}
-            </span>
-            {agentConfigInfo.publishDate !== null &&
-              dayjs(agentConfigInfo.publishDate).isBefore(
-                agentConfigInfo.modified,
-              ) && (
-                <Tag
-                  bordered={false}
-                  color="volcano"
-                  className={cx(styles['volcano'])}
-                >
-                  {dict('PC.Pages.AgentEdit.unpublishedChanges')}
-                </Tag>
-              )}
-          </div>
-        )}
-        <Button
-          type="primary"
-          className={cx(styles['publish-btn'])}
-          onClick={onPublish}
-          disabled={publishDisabled}
-        >
-          {dict('PC.Pages.AgentEdit.publish')}
-        </Button>
+        <div className={cx(styles['tab-bar-actions'])}>
+          <button
+            type="button"
+            className={cx(styles['add-tab-btn'])}
+            aria-label={dict('PC.Pages.ConversationAgentPreviewTabBar.addTab')}
+            onClick={onAddTab}
+          >
+            <PlusOutlined style={{ fontSize: 14 }} />
+          </button>
+          <MoreActionsMenu
+            onRestartServer={onRestartServer}
+            onRestartAgent={onRestartAgent}
+            onExportProject={onExportProject}
+            isCloudComputer={isCloudComputer}
+          />
+        </div>
       </div>
 
       {/* 预览区标签页右键菜单（带淡入缩放过渡） */}

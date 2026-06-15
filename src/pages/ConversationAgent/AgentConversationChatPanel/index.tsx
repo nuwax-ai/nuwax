@@ -1,10 +1,8 @@
 import { UnifiedChatSession } from '@/components/business-component';
 import { TaskStatus } from '@/types/enums/agent';
-import { AgentConfigInfo } from '@/types/interfaces/agent';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { history, useLocation, useModel } from 'umi';
-import ConversationAgentHeader from '../ConversationAgentHeader';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -19,36 +17,15 @@ export interface AgentConversationChatPanelProps {
   onChangeSelectedComputerId?: (id: string) => void;
   /** 当前选中的电脑 ID */
   selectedComputerId?: string;
-  /** 切换文件树侧边栏显隐 */
-  onToggleFileTreeSidebar?: () => void;
-  /** 智能体配置信息 */
-  agentConfigInfo?: AgentConfigInfo;
-  /** 编辑智能体 */
-  onEditAgent?: () => void;
-  /** 文件树侧边栏是否可见 */
-  isFileTreeSidebarVisible?: boolean;
-  /** 是否显示智能体电脑入口 */
-  isShowDesktop?: boolean;
-  /** 智能体电脑是否已打开 */
-  isAgentDesktopOpen?: boolean;
-  /** 打开 / 关闭智能体电脑 */
-  onOpenDesktopPanel?: () => void;
 }
 
 /**
- * AgentConversationChatPanel — 智能体对话面板
+ * AgentConversationChatPanel — 智能体对话面板（仅聊天区，Header 由页面级渲染）
  */
 const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
   className,
   onChangeSelectedComputerId,
   selectedComputerId,
-  onToggleFileTreeSidebar,
-  agentConfigInfo,
-  onEditAgent,
-  isFileTreeSidebarVisible,
-  isShowDesktop,
-  isAgentDesktopOpen,
-  onOpenDesktopPanel,
 }) => {
   const location = useLocation();
 
@@ -75,8 +52,8 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
       onChangeSelectedComputerId?.('');
       setIsSelectionLocked(false);
     }
-  }, [history.action, location.key]);
-  // ==================== 全局状态模型 ====================
+  }, [history.action, location.key, onChangeSelectedComputerId]);
+
   const {
     conversationInfo,
     messageList,
@@ -89,80 +66,60 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
     handleLoadMoreMessage,
   } = useModel('conversationInfo');
 
-  // ==================== 主渲染 ====================
   return (
-    <div className={cx(styles.container, className, 'flex', 'h-full')}>
-      {/* 顶部 Header */}
-      <ConversationAgentHeader
-        agentConfigInfo={agentConfigInfo}
-        onEditAgent={onEditAgent}
-        isFileTreeSidebarVisible={isFileTreeSidebarVisible}
-        onToggleFileTreeSidebar={onToggleFileTreeSidebar}
-        isShowDesktop={isShowDesktop}
-        isAgentDesktopOpen={isAgentDesktopOpen}
-        onOpenDesktopPanel={onOpenDesktopPanel}
-      />
-      {/* 主内容区域：消息列表 + 状态栏 + 输入框 */}
-      <div
-        className={cx(
-          styles['main-content'],
-          'flex-1',
-          'flex',
-          'flex-col',
-          'overflow-hide',
-        )}
-      >
-        <UnifiedChatSession
-          conversationId={conversationInfo?.id}
-          messageList={messageList}
-          isLoading={loadingConversation}
-          loadingMore={loadingMore}
-          isMoreMessage={isMoreMessage}
-          isConversationActive={
-            conversationInfo?.taskStatus === TaskStatus.EXECUTING
+    <div
+      className={cx(styles.container, className, 'flex', 'flex-col', 'h-full')}
+    >
+      <UnifiedChatSession
+        conversationId={conversationInfo?.id}
+        messageList={messageList}
+        isLoading={loadingConversation}
+        loadingMore={loadingMore}
+        isMoreMessage={isMoreMessage}
+        isConversationActive={
+          conversationInfo?.taskStatus === TaskStatus.EXECUTING
+        }
+        messageBottomMode="chat"
+        chatSuggestList={chatSuggestList}
+        agentInfo={{
+          ...conversationInfo?.agent,
+          id: conversationInfo?.agent?.agentId,
+          sandboxId: selectedComputerId,
+        }}
+        allowOtherModel={conversationInfo?.agent?.allowOtherModel}
+        selectedModelId={selectedModelId}
+        onModelSelect={setSelectedModelId}
+        isSelectionLocked={isSelectionLocked}
+        onSendMessage={(
+          messageInfo,
+          files,
+          skillIds,
+          modelId,
+          selectedAgentMode,
+        ) => {
+          const id = conversationInfo?.id;
+          if (id) {
+            onMessageSend({
+              id,
+              messageInfo,
+              files,
+              infos: manualComponents,
+              sandboxId: selectedComputerId,
+              debug: true,
+              isSync: false,
+              skillIds,
+              modelId: modelId || selectedModelId,
+              agentMode: selectedAgentMode,
+            });
           }
-          messageBottomMode="chat"
-          chatSuggestList={chatSuggestList}
-          agentInfo={{
-            ...conversationInfo?.agent,
-            id: conversationInfo?.agent?.agentId,
-            sandboxId: selectedComputerId,
-          }}
-          allowOtherModel={conversationInfo?.agent?.allowOtherModel}
-          selectedModelId={selectedModelId}
-          onModelSelect={setSelectedModelId}
-          isSelectionLocked={isSelectionLocked}
-          onSendMessage={(
-            messageInfo,
-            files,
-            skillIds,
-            modelId,
-            selectedAgentMode,
-          ) => {
-            const id = conversationInfo?.id;
-            if (id) {
-              onMessageSend({
-                id,
-                messageInfo,
-                files,
-                infos: manualComponents,
-                sandboxId: selectedComputerId,
-                debug: true,
-                isSync: false,
-                skillIds,
-                modelId: modelId || selectedModelId,
-                agentMode: selectedAgentMode,
-              });
-            }
-          }}
-          onLoadMoreMessage={handleLoadMoreMessage}
-          manualComponents={manualComponents}
-          selectedComputerId={selectedComputerId}
-          onComputerSelect={(id) => {
-            onChangeSelectedComputerId?.(id);
-          }}
-        />
-      </div>
+        }}
+        onLoadMoreMessage={handleLoadMoreMessage}
+        manualComponents={manualComponents}
+        selectedComputerId={selectedComputerId}
+        onComputerSelect={(id) => {
+          onChangeSelectedComputerId?.(id);
+        }}
+      />
     </div>
   );
 };
