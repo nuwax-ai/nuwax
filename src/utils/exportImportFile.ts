@@ -176,6 +176,7 @@ export const exportConfigFile = async (
  * 通过浏览器下载文件
  * @param linkUrl 文件链接地址
  * @param fileName 文件名称
+ * fileProxyUrl 拼上 BASE_URL 后需与页面同源，download 才生效
  */
 export const exportFileViaBrowserDownload = (
   linkUrl: string,
@@ -185,6 +186,7 @@ export const exportFileViaBrowserDownload = (
   const link = document.createElement('a');
   // 设置链接地址
   link.href = linkUrl;
+  link.style.display = 'none';
   link.target = '_blank';
   // 设置下载文件的名称
   link.download = fileName || '';

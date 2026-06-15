@@ -130,9 +130,28 @@ const SpaceCreateProject: React.FC = () => {
     tools,
     computerId,
   }: SubmitPayload) => {
+    // todo: 页面应用不需要策略，直接跳转到页面开发页面，后续再补充
+    if (targetType === AgentComponentTypeEnum.PageApp) {
+      const res = await apiProjectCreate({ targetType });
+      const { targetId } = res.data;
+
+      history.push(`/space/${spaceId}/app-dev/${targetId}`, {
+        message: prompt,
+        files,
+        skillIds,
+        modelId,
+        infos: tools,
+        selectedComputerId: computerId,
+      });
+      return;
+    }
+
     // 1. 匹配对应策略，未配置的类型（如 PageApp）直接拦截返回
     const strategy = PROJECT_STRATEGIES[targetType];
-    if (!strategy) return;
+
+    if (!strategy) {
+      return;
+    }
 
     // 2. 开启统一的新建 loading 提示
     const hide = message.loading({

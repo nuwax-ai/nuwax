@@ -210,6 +210,7 @@ const SourceControlPanel: React.FC<SourceControlPanelProps> = ({
 
   /**
    * 放弃更改：先调用 Git discard，再执行 UI 同步并刷新列表
+   * 注意：confirm 的 onOk 需等待 Promise resolve 才会关闭，刷新 Git 列表不阻塞弹窗关闭
    */
   const discardChanges = useCallback(
     async (fileIds: string[]) => {
@@ -219,15 +220,39 @@ const SourceControlPanel: React.FC<SourceControlPanelProps> = ({
 
       const isSuccess = await runGitDiscard(gitWorkspace, fileIds);
       if (!isSuccess) {
-        return;
+        return Promise.reject(new Error('Git discard failed'));
       }
 
-      for (const fileId of fileIds) {
-        await onAfterDiscardChange?.(fileId);
+      try {
+        for (const fileId of fileIds) {
+          await onAfterDiscardChange?.(fileId);
+        }
+      } catch (error) {
+        console.error('Discard UI sync failed:', error);
       }
-      await onRefresh?.();
+
+      void onRefresh?.();
     },
     [gitWorkspace, onAfterDiscardChange, onRefresh],
+  );
+
+  /** 放弃更改二次确认（统一封装，确保 onOk 返回 Promise 供 Modal 等待） */
+  const confirmDiscardChanges = useCallback(
+    (
+      fileIds: string[],
+      content: string,
+      title = dict(
+        'PC.Pages.ConversationAgentSourceControl.discardChangesConfirmTitle',
+      ),
+    ) => {
+      modalConfirm(title, content, async () => {
+        await discardChanges(fileIds);
+        return new Promise((resolve) => {
+          setTimeout(resolve, 300);
+        });
+      });
+    },
+    [discardChanges],
   );
 
   /** 暂存更改（git add） */
@@ -265,13 +290,7 @@ const SourceControlPanel: React.FC<SourceControlPanelProps> = ({
     if (contextMenuTarget?.kind === 'file' && contextMenuFile) {
       const { fileId, fileName } = contextMenuFile;
       closeContextMenu();
-      modalConfirm(
-        dict(
-          'PC.Pages.ConversationAgentSourceControl.discardChangesConfirmTitle',
-        ),
-        fileName,
-        () => discardChanges([fileId]),
-      );
+      confirmDiscardChanges([fileId], fileName);
       return;
     }
 
@@ -279,20 +298,14 @@ const SourceControlPanel: React.FC<SourceControlPanelProps> = ({
       const { folderId } = contextMenuTarget;
       const fileIds = contextMenuFolderFiles.map((item) => item.fileId);
       closeContextMenu();
-      modalConfirm(
-        dict(
-          'PC.Pages.ConversationAgentSourceControl.discardChangesConfirmTitle',
-        ),
-        folderId,
-        () => discardChanges(fileIds),
-      );
+      confirmDiscardChanges(fileIds, folderId);
     }
   }, [
     closeContextMenu,
+    confirmDiscardChanges,
     contextMenuFile,
     contextMenuFolderFiles,
     contextMenuTarget,
-    discardChanges,
   ]);
 
   /** 暂存文件夹下所有更改 */
@@ -366,15 +379,9 @@ const SourceControlPanel: React.FC<SourceControlPanelProps> = ({
   /** 列表行悬停：放弃更改（与右键菜单一致，需二次确认） */
   const handleListDiscardChange = useCallback(
     (fileId: string, fileName: string) => {
-      modalConfirm(
-        dict(
-          'PC.Pages.ConversationAgentSourceControl.discardChangesConfirmTitle',
-        ),
-        fileName,
-        () => discardChanges([fileId]),
-      );
+      confirmDiscardChanges([fileId], fileName);
     },
-    [discardChanges],
+    [confirmDiscardChanges],
   );
 
   /** 列表行悬停：暂存更改 */
@@ -398,14 +405,14 @@ const SourceControlPanel: React.FC<SourceControlPanelProps> = ({
     if (!unstagedItems.length) {
       return;
     }
-    modalConfirm(
+    confirmDiscardChanges(
+      unstagedItems.map((item) => item.fileId),
+      dict('PC.Pages.ConversationAgentSourceControl.changes'),
       dict(
         'PC.Pages.ConversationAgentSourceControl.discardAllChangesConfirmTitle',
       ),
-      dict('PC.Pages.ConversationAgentSourceControl.changes'),
-      () => discardChanges(unstagedItems.map((item) => item.fileId)),
     );
-  }, [discardChanges, unstagedItems]);
+  }, [confirmDiscardChanges, unstagedItems]);
 
   /** 区块标题：暂存所有未暂存更改 */
   const handleStageAllUnstagedChanges = useCallback(() => {

@@ -1,7 +1,6 @@
 import type { SelectedChangeFile } from '@/components/business-component/FileTreeGitSourcePanel';
 import { useConversationAgentSourceControl } from '@/components/business-component/FileTreeGitSourcePanel';
 import type { ChangeFileInfo } from '@/components/FileTreeView/type';
-import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
 import { apiUpdateStaticFile } from '@/services/vncDesktop';
 import type { UpdateFileInfo } from '@/types/interfaces/fileTree';
@@ -93,18 +92,12 @@ export function useChatGitSourceControl({
             ],
             'modify',
           );
-          const { code } = await apiUpdateStaticFile({
+          await apiUpdateStaticFile({
             cId: conversationId,
             files: updatedFilesList as UpdateFileInfo[],
           });
-          if (code !== SUCCESS_CODE) {
-            message.error(
-              dict('PC.Pages.ConversationAgentSourceControl.gitignoreFailed'),
-            );
-            return;
-          }
         } else {
-          const { code } = await apiUpdateStaticFile({
+          await apiUpdateStaticFile({
             cId: conversationId,
             files: [
               {
@@ -118,12 +111,6 @@ export function useChatGitSourceControl({
               },
             ],
           });
-          if (code !== SUCCESS_CODE) {
-            message.error(
-              dict('PC.Pages.ConversationAgentSourceControl.gitignoreFailed'),
-            );
-            return;
-          }
         }
 
         message.success(
@@ -132,9 +119,6 @@ export function useChatGitSourceControl({
         await handleRefreshFileList(conversationId);
       } catch (error) {
         console.error('Add to gitignore failed:', error);
-        message.error(
-          dict('PC.Pages.ConversationAgentSourceControl.gitignoreFailed'),
-        );
       }
     },
     [conversationId, fileTreeData, handleRefreshFileList],

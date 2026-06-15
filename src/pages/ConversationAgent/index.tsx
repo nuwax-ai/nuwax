@@ -26,6 +26,7 @@ import DebugDetails from '@/pages/EditAgent/DebugDetails';
 import SubscriptionSetting from '@/pages/EditAgent/SubscriptionSetting';
 import SubscriptionStats from '@/pages/EditAgent/SubscriptionStats';
 import { SystemUserTipsWordRef } from '@/pages/EditAgent/SystemTipsWord';
+import AnalyzeStatistics from '@/pages/SpaceDevelop/AnalyzeStatistics';
 import {
   apiAgentComponentModelUpdate,
   apiAgentConfigInfo,
@@ -60,7 +61,10 @@ import {
   GuidQuestionDto,
 } from '@/types/interfaces/agent';
 import { FileNode } from '@/types/interfaces/appDev';
-import type { BindConfigWithSub } from '@/types/interfaces/common';
+import type {
+  AnalyzeStatisticsItem,
+  BindConfigWithSub,
+} from '@/types/interfaces/common';
 import { UpdateFileInfo } from '@/types/interfaces/fileTree';
 import type {
   ModelConfigInfo,
@@ -176,6 +180,11 @@ const ConversationAgent: React.FC = () => {
   const [openEditAgent, setOpenEditAgent] = useState<boolean>(false);
   /** 模型设置弹窗是否打开 */
   const [openAgentModel, setOpenAgentModel] = useState<boolean>(false);
+  /** 分析统计弹窗 */
+  const [openAnalyze, setOpenAnalyze] = useState<boolean>(false);
+  const [agentStatistics, setAgentStatistics] = useState<
+    AnalyzeStatisticsItem[]
+  >([]);
   /** 底部开发者控制台（终端）是否显示 */
   const [showDevConsole] = useState<boolean>(true);
   /** 切换预览标签/文件时递增，用于终端从 expanded 恢复 default */
@@ -259,6 +268,8 @@ const ConversationAgent: React.FC = () => {
     runAsync,
     resetInit,
     cardList,
+    restartVncPod,
+    restartAgent,
   } = useModel('conversationInfo');
 
   /** 关闭远程智能体桌面（切换标签/文件等预览操作时调用） */
@@ -1101,10 +1112,44 @@ const ConversationAgent: React.FC = () => {
     [closeAgentDesktop, closePreviewView, setShowType],
   );
 
+  /** 设置分析统计信息（与 EditAgent 一致） */
+  const handleSetStatistics = useCallback((agentInfo: AgentConfigInfo) => {
+    const {
+      userCount = 0,
+      convCount = 0,
+      collectCount = 0,
+      likeCount = 0,
+    } = agentInfo?.agentStatistics || {};
+    setAgentStatistics([
+      {
+        label: dict('PC.Pages.EditAgent.statUserCount'),
+        value: userCount,
+      },
+      {
+        label: dict('PC.Pages.EditAgent.statConvCount'),
+        value: convCount,
+      },
+      {
+        label: dict('PC.Pages.EditAgent.statCollectCount'),
+        value: collectCount,
+      },
+      {
+        label: dict('PC.Pages.EditAgent.statLikeCount'),
+        value: likeCount,
+      },
+    ]);
+  }, []);
+
   /** Header 更多操作（与 EditAgent 一致） */
   const handleHeaderMoreAction = useCallback(
     (type: ApplicationMoreActionEnum) => {
       switch (type) {
+        case ApplicationMoreActionEnum.Analyze:
+          if (agentConfigInfo) {
+            handleSetStatistics(agentConfigInfo);
+            setOpenAnalyze(true);
+          }
+          break;
         case ApplicationMoreActionEnum.Export_Config:
           modalConfirm(
             dict('PC.Pages.EditAgent.exportConfigTitle').replace(
@@ -1134,7 +1179,13 @@ const ConversationAgent: React.FC = () => {
           break;
       }
     },
-    [agentConfigInfo?.id, agentConfigInfo?.name, spaceId],
+    [
+      agentConfigInfo,
+      handleSetStatistics,
+      agentConfigInfo?.id,
+      agentConfigInfo?.name,
+      spaceId,
+    ],
   );
 
   /** 是否显示文件面板相关入口（通用型智能体 + 有效消息） */
@@ -1196,6 +1247,16 @@ const ConversationAgent: React.FC = () => {
           await apiDownloadAllFiles(queryConversationId);
         }
       },
+      onRestartServer: () => {
+        if (queryConversationId) {
+          restartVncPod(queryConversationId, finalSelectedComputerId);
+        }
+      },
+      onRestartAgent: () => {
+        if (queryConversationId) {
+          restartAgent(queryConversationId);
+        }
+      },
       onRenameFile: handleConfirmRenameFile,
       onCreateFileNode: handleCreateFileNode,
       onDeleteFile: handleDeleteFile,
@@ -1223,6 +1284,8 @@ const ConversationAgent: React.FC = () => {
       hideDesktop: agentConfigInfo?.hideDesktop, // 是否隐藏桌面预览
       /** 静态文件基础路径，用于文件预览资源加载 */
       staticFileBasePath: `/api/computer/static/${queryConversationId}`,
+      /** 仅通用型智能体拉取 Git status */
+      enableGitStatus: agentConfigInfo?.type === AgentTypeEnum.TaskAgent,
       /** 文件树选中文件时，切换右侧面板为文件预览并打开标签 */
       onFileSelectOpenPreview: (fileId?: string) => {
         closeAgentDesktop();
@@ -1290,6 +1353,8 @@ const ConversationAgent: React.FC = () => {
     openPreviewView,
     resetDevConsoleExpandedLayout,
     closeAgentDesktop,
+    restartVncPod,
+    restartAgent,
   ]);
 
   /** 初始化文件视图 Hook，获取文件树和预览的渲染组件 */
@@ -1426,18 +1491,12 @@ const ConversationAgent: React.FC = () => {
             ],
             'modify',
           );
-          const { code } = await apiUpdateStaticFile({
+          await apiUpdateStaticFile({
             cId: queryConversationId,
             files: updatedFilesList as UpdateFileInfo[],
           });
-          if (code !== SUCCESS_CODE) {
-            message.error(
-              dict('PC.Pages.ConversationAgentSourceControl.gitignoreFailed'),
-            );
-            return;
-          }
         } else {
-          const { code } = await apiUpdateStaticFile({
+          await apiUpdateStaticFile({
             cId: queryConversationId,
             files: [
               {
@@ -1451,12 +1510,6 @@ const ConversationAgent: React.FC = () => {
               },
             ],
           });
-          if (code !== SUCCESS_CODE) {
-            message.error(
-              dict('PC.Pages.ConversationAgentSourceControl.gitignoreFailed'),
-            );
-            return;
-          }
         }
 
         message.success(
@@ -1465,9 +1518,6 @@ const ConversationAgent: React.FC = () => {
         await handleRefreshFileList(queryConversationId);
       } catch (error) {
         console.error('Add to gitignore failed:', error);
-        message.error(
-          dict('PC.Pages.ConversationAgentSourceControl.gitignoreFailed'),
-        );
       }
     },
     [fileTreeData, handleRefreshFileList],
@@ -1673,6 +1723,24 @@ const ConversationAgent: React.FC = () => {
             closeAgentDesktop();
             previewTabs.openPickerTab();
           }}
+          /** 重启智能体电脑 */
+          onRestartServer={() => {
+            if (queryConversationId) {
+              restartVncPod(queryConversationId, finalSelectedComputerId);
+            }
+          }}
+          /** 重启智能体 */
+          onRestartAgent={() => {
+            if (queryConversationId) {
+              restartAgent(queryConversationId);
+            }
+          }}
+          /** 导出项目 */
+          onExportProject={() => {
+            void fileView.tree.handleExportProject?.();
+          }}
+          /** 是否为云电脑 */
+          isCloudComputer={finalSelectedComputerId === '-1'}
         />
         {/* Tab 栏下方：预览内容 + 底部终端（终端放大时仅覆盖此区域） */}
         <div className={cx(styles['right-panel-main'])}>
@@ -1790,7 +1858,7 @@ const ConversationAgent: React.FC = () => {
           `xagi-nav-${navigationStyle}`,
         )}
       >
-        <div className={cx(styles['main-row'], 'w-full')}>
+        <div className={cx(styles['main-row'])}>
           {/* 左侧面板：聊天区域（始终显示） */}
           <div className={cx(styles['left-panel'])}>
             <AgentConversationChatPanel
@@ -1897,6 +1965,13 @@ const ConversationAgent: React.FC = () => {
         open={openAgentModel}
         devConversationId={agentConfigInfo?.devConversationId}
         onCancel={handleSetModel}
+      />
+      {/* 分析统计弹窗 */}
+      <AnalyzeStatistics
+        open={openAnalyze}
+        onCancel={() => setOpenAnalyze(false)}
+        title={dict('PC.Pages.EditAgent.agentOverview')}
+        list={agentStatistics}
       />
     </div>
   );

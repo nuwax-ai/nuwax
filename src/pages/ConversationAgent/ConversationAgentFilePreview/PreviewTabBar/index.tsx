@@ -1,3 +1,4 @@
+import MoreActionsMenu from '@/components/FileTreeView/FilePathHeader/MoreActionsMenu/index';
 import { dict } from '@/services/i18nRuntime';
 import { getFileIcon } from '@/utils/fileTree';
 import {
@@ -57,6 +58,14 @@ export interface PreviewTabBarProps {
   onTabReorder: (activeId: string, overId: string) => void;
   /** 点击 + 打开「新建页签」内容标签 */
   onAddTab: () => void;
+  /** 重启智能体电脑 / 客户端 */
+  onRestartServer?: () => void;
+  /** 重启智能体 */
+  onRestartAgent?: () => void;
+  /** 导出项目 */
+  onExportProject?: () => void;
+  /** 是否为云电脑（影响重启文案） */
+  isCloudComputer?: boolean;
 }
 
 interface TabItemFaceProps {
@@ -252,6 +261,10 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
   onTogglePinTab,
   onTabReorder,
   onAddTab,
+  onRestartServer,
+  onRestartAgent,
+  onExportProject,
+  isCloudComputer,
 }) => {
   /** 拖拽中的标签 ID */
   const [activeDragTabId, setActiveDragTabId] = useState<string | null>(null);
@@ -621,14 +634,22 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
         </div>
 
         {/* 「+」号按钮，点击打开「新建页签」面板 */}
-        <button
-          type="button"
-          className={cx(styles['add-tab-btn'])}
-          aria-label={dict('PC.Pages.ConversationAgentPreviewTabBar.addTab')}
-          onClick={onAddTab}
-        >
-          <PlusOutlined style={{ fontSize: 14 }} />
-        </button>
+        <div className={cx(styles['tab-bar-actions'])}>
+          <button
+            type="button"
+            className={cx(styles['add-tab-btn'])}
+            aria-label={dict('PC.Pages.ConversationAgentPreviewTabBar.addTab')}
+            onClick={onAddTab}
+          >
+            <PlusOutlined style={{ fontSize: 14 }} />
+          </button>
+          <MoreActionsMenu
+            onRestartServer={onRestartServer}
+            onRestartAgent={onRestartAgent}
+            onExportProject={onExportProject}
+            isCloudComputer={isCloudComputer}
+          />
+        </div>
       </div>
 
       {/* 预览区标签页右键菜单（带淡入缩放过渡） */}

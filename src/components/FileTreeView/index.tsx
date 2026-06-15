@@ -251,6 +251,30 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       [],
     );
 
+    /** 导出 PDF 前先通过 fileProxyUrl 拉取 md/html 文件内容 */
+    const resolveNodeContentForPdfExport = useCallback(
+      async (node: FileNode): Promise<FileNode> => {
+        const fileName = node.name || '';
+        const canExportPdf =
+          isMarkdownFile(fileName) ||
+          fileName.endsWith('.html') ||
+          fileName.endsWith('.htm');
+        if (!canExportPdf || !node.fileProxyUrl) {
+          return node;
+        }
+
+        const fileContent = await fetchFileContentUpdateFiles(
+          node.fileProxyUrl,
+          node.id,
+        );
+        return {
+          ...node,
+          content: fileContent,
+        };
+      },
+      [fetchFileContentUpdateFiles],
+    );
+
     // 判断文件是否为图片类型
     const isImage = isImageFile(selectedFileNode?.name || '');
     // 判断文件是否为视频类型
@@ -1316,8 +1340,10 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       setIsDownloadingFile(true);
       setCurrentDownloadingFileId(node?.id);
       try {
-        // 下载文件
-        await downloadFileByUrl?.(node, exportAsPdf);
+        const targetNode = exportAsPdf
+          ? await resolveNodeContentForPdfExport(node)
+          : node;
+        await downloadFileByUrl?.(targetNode, exportAsPdf);
         setTimeout(() => {
           setIsDownloadingFile(false);
           setCurrentDownloadingFileId('');
@@ -1332,8 +1358,12 @@ const FileTreeView = forwardRef<FileTreeViewRef, FileTreeViewProps>(
     // 处理导出 PDF 操作
     const handleExportPdf = async (node: FileNode) => {
       setIsExportingPdf(true);
-      await downloadFileByUrl?.(node, true);
-      setIsExportingPdf(false);
+      try {
+        const targetNode = await resolveNodeContentForPdfExport(node);
+        await downloadFileByUrl?.(targetNode, true);
+      } finally {
+        setIsExportingPdf(false);
+      }
     };
 
     /**

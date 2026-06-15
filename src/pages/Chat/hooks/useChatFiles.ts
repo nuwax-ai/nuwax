@@ -15,18 +15,26 @@ import { modalConfirm } from '@/utils/ant-custom';
 import { updateFilesListContent, updateFilesListName } from '@/utils/fileTree';
 import { checkFileSizeExceedLimit } from '@/utils/index';
 import { message as messageAntd } from 'antd';
+import debounce from 'lodash/debounce';
+import { useMemo, useRef, type MutableRefObject } from 'react';
 
 interface UseChatFilesProps {
   id?: number;
   fileTreeData: StaticFileInfo[] | null;
   handleRefreshFileList: (id: number) => Promise<void>;
+  /** 单文件实时保存成功后的回调（如刷新 Git 状态），通过 ref 注入以避免循环依赖 */
+  onSaveFileContentSuccessRef?: MutableRefObject<(() => void) | undefined>;
 }
 
 export const useChatFiles = ({
   id,
   fileTreeData,
   handleRefreshFileList,
+  onSaveFileContentSuccessRef,
 }: UseChatFilesProps) => {
+  const fileTreeDataRef = useRef(fileTreeData);
+  fileTreeDataRef.current = fileTreeData;
+
   const handleCreateFileNode = async (
     fileNode: FileNode,
     newName: string,
@@ -200,6 +208,40 @@ export const useChatFiles = ({
     return code === SUCCESS_CODE;
   };
 
+  /** 编辑器内容变更：防抖实时保存单个文件到服务端 */
+  const handleSaveFileContent = useMemo(
+    () =>
+      debounce(
+        async (
+          fileId: string,
+          content: string,
+          originalFileContent: string,
+        ): Promise<boolean> => {
+          if (!id) {
+            return false;
+          }
+          const updatedFilesList = updateFilesListContent(
+            fileTreeDataRef.current || [],
+            [{ fileId, fileContent: content, originalFileContent }],
+            'modify',
+          );
+          if (updatedFilesList.length === 0) {
+            return false;
+          }
+          const { code } = await apiUpdateStaticFile({
+            cId: id,
+            files: updatedFilesList as UpdateFileInfo[],
+          });
+          if (code === SUCCESS_CODE) {
+            void onSaveFileContentSuccessRef?.current?.();
+          }
+          return code === SUCCESS_CODE;
+        },
+        500,
+      ),
+    [id, onSaveFileContentSuccessRef],
+  );
+
   /**
    * 处理上传多个文件回调
    * @param files 文件列表
@@ -261,6 +303,7 @@ export const useChatFiles = ({
     handleDeleteFile,
     handleConfirmRenameFile,
     handleSaveFiles,
+    handleSaveFileContent,
     handleUploadMultipleFiles,
     handleExportProject,
   };

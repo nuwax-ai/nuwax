@@ -29,6 +29,10 @@ export interface ConversationAgentFileViewProps {
   onUploadFiles?: (files: File[], filePaths: string[]) => Promise<void>;
   /** 导出项目回调 */
   onExportProject?: () => Promise<void>;
+  /** 重启智能体电脑 / 客户端 */
+  onRestartServer?: () => void;
+  /** 重启智能体 */
+  onRestartAgent?: () => void;
   /** 重命名文件回调 */
   onRenameFile?: (node: FileNode, newName: string) => Promise<boolean>;
   /** 创建文件回调 */
@@ -73,6 +77,8 @@ export interface ConversationAgentFileViewProps {
   onFileDeleted?: (node: FileNode) => void;
   /** CodeViewer 是否使用动态主题（Chat 页为 true） */
   isDynamicTheme?: boolean;
+  /** 是否启用 Git status（仅通用型 TaskAgent 智能体） */
+  enableGitStatus?: boolean;
 }
 
 /** ConversationAgent 预览 Tab 栏右侧文件操作区 props */

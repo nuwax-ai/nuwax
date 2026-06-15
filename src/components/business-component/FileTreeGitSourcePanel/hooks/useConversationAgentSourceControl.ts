@@ -233,9 +233,6 @@ export const useConversationAgentSourceControl = ({
         await adapters.addFileToGitignore(fileId);
       } catch (error) {
         console.error('Add to gitignore failed:', error);
-        message.error(
-          dict('PC.Pages.ConversationAgentSourceControl.gitignoreFailed'),
-        );
       }
     },
     [workspace, adapters],

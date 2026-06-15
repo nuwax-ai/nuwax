@@ -17,8 +17,8 @@
 .tab-bar {
   display: flex;
   align-items: center;
-  height: 40px;
-  min-height: 40px;
+  height: 49px;
+  min-height: 49px;
   padding: 0 @paddingXs 0 0;
   border-bottom: @lineWidth solid @colorSplit;
   background: @colorBgContainer;
@@ -39,7 +39,7 @@
   flex: 1;
   min-width: 0;
   height: 46px;
-  padding-top: 6px;
+  padding-top: 8px;
 
   &:hover .tab-list-gutter {
     scrollbar-color: rgba(0, 0, 0, 20%) transparent;
@@ -99,7 +99,7 @@
   width: max-content;
   min-width: 100%;
   height: 100%;
-  padding: 0 2px;
+  padding: 0 8px;
   box-sizing: border-box;
 }
 
@@ -214,13 +214,20 @@
   }
 }
 
+.tab-bar-actions {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  margin-left: @paddingXxs;
+  gap: @marginXxs;
+}
+
 .add-tab-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 28px;
   height: 28px;
-  margin-left: @paddingXxs;
   border: @lineWidth solid transparent;
   border-radius: @borderRadius;
   background: transparent;

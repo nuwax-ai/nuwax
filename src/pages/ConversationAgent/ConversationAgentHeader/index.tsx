@@ -95,6 +95,8 @@ const ConversationAgentHeader: React.FC<ConversationAgentHeaderProps> = ({
       const type = item.type as ApplicationMoreActionEnum;
 
       switch (type) {
+        case ApplicationMoreActionEnum.Log:
+          return false;
         case ApplicationMoreActionEnum.Temporary_Session:
           return (
             hasPermission(PermissionsEnum.TempChat) &&
@@ -107,37 +109,34 @@ const ConversationAgentHeader: React.FC<ConversationAgentHeaderProps> = ({
       }
     }).map((item) => ({
       key: item.type,
-      label: (
-        <div
-          onClick={() => {
-            onOtherAction?.(item.type as ApplicationMoreActionEnum);
-          }}
-        >
-          {item.label}
-        </div>
-      ),
+      label: item.label,
     }));
-  }, [agentConfigInfo, onOtherAction]);
+  }, [agentConfigInfo]);
 
   const dropdownItems: MenuProps['items'] = [
     {
       key: 'showStand',
-      label: (
-        <div onClick={onToggleShowStand}>
-          {dict('PC.Pages.AgentEdit.showStand')}
-        </div>
-      ),
+      label: dict('PC.Pages.AgentEdit.showStand'),
     },
     {
       key: 'versionHistory',
-      label: (
-        <div onClick={onToggleVersionHistory}>
-          {dict('PC.Pages.AgentEdit.versionHistory')}
-        </div>
-      ),
+      label: dict('PC.Pages.AgentEdit.versionHistory'),
     },
     ...actionList,
   ];
+
+  /** 下拉菜单点击（使用 menu.onClick，避免 label 内嵌 div 点击失效） */
+  const handleDropdownMenuClick: MenuProps['onClick'] = ({ key }) => {
+    if (key === 'showStand') {
+      onToggleShowStand?.();
+      return;
+    }
+    if (key === 'versionHistory') {
+      onToggleVersionHistory?.();
+      return;
+    }
+    onOtherAction?.(key as ApplicationMoreActionEnum);
+  };
 
   return (
     <header
@@ -210,7 +209,10 @@ const ConversationAgentHeader: React.FC<ConversationAgentHeaderProps> = ({
 
         {/* 更多操作按钮 */}
         <div className={cx(styles['fold-box'])}>
-          <Dropdown menu={{ items: dropdownItems }} placement="bottomLeft">
+          <Dropdown
+            menu={{ items: dropdownItems, onClick: handleDropdownMenuClick }}
+            placement="bottomLeft"
+          >
             <span
               className={cx(
                 'flex',
@@ -269,12 +271,7 @@ const ConversationAgentHeader: React.FC<ConversationAgentHeaderProps> = ({
         />
 
         {/* 发布按钮 */}
-        <Button
-          type="primary"
-          className={cx(styles['publish-btn'])}
-          onClick={onPublish}
-          disabled={publishDisabled}
-        >
+        <Button type="primary" onClick={onPublish} disabled={publishDisabled}>
           {dict('PC.Pages.AgentEdit.publish')}
         </Button>
       </div>
