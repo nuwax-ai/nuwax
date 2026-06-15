@@ -1476,7 +1476,7 @@ const ConversationAgent: React.FC = () => {
             'modify',
           );
           await apiUpdateStaticFile({
-            cId: queryConversationId + 'dddd',
+            cId: queryConversationId,
             files: updatedFilesList as UpdateFileInfo[],
           });
         } else {
