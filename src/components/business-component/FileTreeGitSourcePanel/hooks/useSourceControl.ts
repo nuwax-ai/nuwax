@@ -315,18 +315,7 @@ export const useSourceControl = ({
 
       setIsCommitting(true);
       try {
-        // 1. 先保存文件到沙箱
-        // if (changeFilesList.length > 0) {
-        //   const saveSuccess = await saveChangeFiles(changeFilesList);
-        //   if (!saveSuccess) {
-        //     message.error(
-        //       dict('PC.Pages.ConversationAgent.gitPush.saveFailed'),
-        //     );
-        //     return false;
-        //   }
-        // }
-
-        // 2. 执行 git commit + push
+        // 执行 git commit + push
         const { code } = await apiGitCommit({
           workspaceType: 'pageApp',
           projectId: Number(projectId),
@@ -432,7 +421,7 @@ export const useSourceControl = ({
 
     setIsRefreshingGitList(true);
     try {
-      await fileManagement.loadFileTree(true, true);
+      void fileManagement.loadFileTree(true, true);
 
       const statusResponse = await apiGitStatus({
         workspaceType: 'pageApp',

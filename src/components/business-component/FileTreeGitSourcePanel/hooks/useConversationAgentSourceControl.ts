@@ -253,16 +253,6 @@ export const useConversationAgentSourceControl = ({
 
       setIsCommitting(true);
       try {
-        // if (changeFiles.length > 0) {
-        //   const saveSuccess = await adapters.saveChangeFiles(changeFiles);
-        //   if (!saveSuccess) {
-        //     message.error(
-        //       dict('PC.Pages.ConversationAgent.gitPush.saveFailed'),
-        //     );
-        //     return;
-        //   }
-        // }
-
         const { code } = await apiGitCommit({
           ...buildGitWorkspaceParams(workspace),
           message:
