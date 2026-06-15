@@ -372,7 +372,7 @@ SSE (ConversationChatResponse)
   → processInterventionSsePatch
     → applyAcpPermissionSseEvent → message.acpPermissionInteractions[]
     → applyMcpAskToolCallSseEvent  → message.mcpAskInteractions[]
-      → useActiveInterventionQueue（pending / submitting / failed）
+      → useActiveInterventionQueue（仅 pending / submitting 视为活动；submitted / failed 均为终态，卡片关闭）
         → AgentInterventionChatLayer → DockPanel
             → AcpPermissionCard / McpAskQuestionCard
             → respondAcpPermission → POST .../permission-request/response
