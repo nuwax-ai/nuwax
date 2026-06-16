@@ -435,6 +435,7 @@ const ConversationAgent: React.FC = () => {
               skillIds: state.skillIds,
               modelId: state.modelId,
               agentMode:
+                (state.agentMode as AgentMode) ||
                 (localStorage.getItem('nuwax_agent_mode_cache') as AgentMode) ||
                 'yolo',
               data,

@@ -1,4 +1,5 @@
 import { UnifiedChatSession } from '@/components/business-component';
+import type { AgentMode } from '@/components/business-component/AgentIntervention';
 import { TaskStatus } from '@/types/enums/agent';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
@@ -28,6 +29,11 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
   selectedComputerId,
 }) => {
   const location = useLocation();
+
+  // 从新建项目页透传过来的初始 Agent 模式（yolo/ask）
+  const initialAgentMode = (location.state as any)?.agentMode as
+    | AgentMode
+    | undefined;
 
   // 是否锁定电脑选择（仅在带有 selectedComputerId 且为 PUSH 跳转时生效）
   const [isSelectionLocked, setIsSelectionLocked] = useState<boolean>(false);
@@ -87,6 +93,7 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
           sandboxId: selectedComputerId,
         }}
         allowOtherModel={conversationInfo?.agent?.allowOtherModel}
+        initialAgentMode={initialAgentMode}
         selectedModelId={selectedModelId}
         onModelSelect={setSelectedModelId}
         isSelectionLocked={isSelectionLocked}

@@ -1,4 +1,5 @@
 import ChatInputHome from '@/components/ChatInputHome';
+import type { AgentMode } from '@/components/business-component/AgentIntervention';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
 import { apiPublishedAgentInfo } from '@/services/agentDev';
 import {
@@ -30,6 +31,7 @@ export interface SubmitPayload {
   modelId?: number;
   tools?: any[];
   computerId?: string;
+  agentMode?: AgentMode;
 }
 
 interface PromptBoxProps {
@@ -100,6 +102,9 @@ const PromptBox: React.FC<PromptBoxProps> = ({ onSubmit }) => {
 
   // 选中的云电脑 ID
   const [selectedComputerId, setSelectedComputerId] = useState<string>('');
+
+  // 选中的 Agent 模式（yolo/ask），随新建流程透传到目标会话页
+  const [agentMode, setAgentMode] = useState<AgentMode>('yolo');
 
   // 默认智能体配置详情
   const [agentDetail, setAgentDetail] = useState<AgentDetailDto>();
@@ -173,9 +178,10 @@ const PromptBox: React.FC<PromptBoxProps> = ({ onSubmit }) => {
         modelId,
         tools: selectedComponentList,
         computerId: selectedComputerId,
+        agentMode,
       });
     },
-    [onSubmit, selectedComponentList, selectedComputerId],
+    [onSubmit, selectedComponentList, selectedComputerId, agentMode],
   );
 
   return (
@@ -204,6 +210,9 @@ const PromptBox: React.FC<PromptBoxProps> = ({ onSubmit }) => {
         onComputerSelect={setSelectedComputerId}
         agentType={matchingAgentDetail?.type}
         agentId={matchingAgentDetail?.agentId}
+        showAgentModeSelector={tenantConfigInfo?.enableAgentMode !== 0}
+        agentMode={agentMode}
+        onAgentModeChange={setAgentMode}
         tabsSlot={
           <TabsList tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
         }

@@ -431,6 +431,10 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
     return null;
   }
 
+  // 工具栏标题：过长时 tooltip 限高 3 行，超出出现滚动条
+  const titleText =
+    innerProcessing?.name || dict('PC.Components.MarkdownCustomProcess.noName');
+
   return (
     <>
       <div
@@ -454,10 +458,22 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
             <div className={cx(styles['title-left-wrapper'])}>
               <Typography.Text
                 className={cx(styles['title-text'])}
-                ellipsis={{ tooltip: true }}
+                ellipsis={{
+                  tooltip: {
+                    title: titleText,
+                    // 放宽宽度，减少折行
+                    overlayStyle: { maxWidth: 380 },
+                    overlayInnerStyle: {
+                      // 最多展示 5 行（line-height 1.5 * 5 = 7.5em），超出滚动
+                      maxHeight: '7.5em',
+                      overflowY: 'auto',
+                      lineHeight: '1.5',
+                      overflowWrap: 'break-word',
+                    },
+                  },
+                }}
               >
-                {innerProcessing?.name ||
-                  dict('PC.Components.MarkdownCustomProcess.noName')}
+                {titleText}
               </Typography.Text>
               {hasDiff && (
                 <span className={cx(styles['diff-badges'])}>
