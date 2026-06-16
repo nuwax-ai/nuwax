@@ -4,11 +4,9 @@ import classNames from 'classnames';
 import React from 'react';
 import { useFileTreePreviewPanel } from './hooks/useFileTreePreviewPanel';
 import styles from './index.less';
-import previewLayoutStyles from './preview-layout.less';
 import type { FileTreePreviewPanelProps } from './types';
 
 const cx = classNames.bind(styles);
-const layoutCx = classNames.bind(previewLayoutStyles);
 
 export { default as FileTreeViewPanel } from './FileTreeViewPanel';
 export type { FileTreeViewProps, FileTreeViewRef } from './FileTreeViewPanel';
@@ -49,58 +47,45 @@ const FileTreePreviewPanel: React.FC<FileTreePreviewPanelProps> = ({
     !diffFile &&
     viewMode !== 'desktop';
 
-  const { isFullscreen, header, content, restartOverlay } =
-    useFileTreePreviewPanel({
-      preview,
-      viewMode,
-      hideDesktop,
-      diffFile,
-      showGitVersionButton,
-      isGitVersionPanelOpen: gitVersionPanelOpen,
-      onToggleGitVersionPanel,
-      ...previewPanelProps,
-    });
+  const { header, content, restartOverlay } = useFileTreePreviewPanel({
+    preview,
+    viewMode,
+    hideDesktop,
+    diffFile,
+    showGitVersionButton,
+    isGitVersionPanelOpen: gitVersionPanelOpen,
+    onToggleGitVersionPanel,
+    ...previewPanelProps,
+  });
+
+  const isFullscreen = preview.isFullscreen;
 
   const emptySourceControl = {
     changeFiles: preview.changeFiles,
   };
 
+  // 布局与 FileTreeView/index.tsx 1742-1769 保持一致
   return (
     <div
-      className={layoutCx(
+      className={cx(
         'flex',
-        'flex-col',
         'flex-1',
         'overflow-hide',
-        'h-full',
         {
-          [layoutCx('fullscreen-mode')]: isFullscreen,
+          [styles['fullscreen-mode']]: isFullscreen,
         },
-        cx('file-tree-preview-panel', className),
+        styles['file-tree-preview-panel'],
+        className,
       )}
     >
       <div
-        className={layoutCx(
-          'h-full',
-          'flex',
-          'flex-col',
-          'flex-1',
-          'overflow-hide',
-          {
-            [layoutCx('fullscreen-content-wrapper')]: isFullscreen,
-          },
-        )}
+        className={cx('h-full', 'flex', 'flex-col', 'flex-1', 'overflow-hide', {
+          [styles['fullscreen-content-wrapper']]: isFullscreen,
+        })}
       >
         <div className={cx('preview-header-shell')}>{header}</div>
 
-        <div
-          className={layoutCx(
-            'content-container',
-            'flex',
-            'flex-1',
-            'overflow-hide',
-          )}
-        >
+        <div className={cx(styles['content-container'], 'flex')}>
           {showFileTree && (
             <FileTreeGitSourcePanel
               showSourceControl={showSourceControl}

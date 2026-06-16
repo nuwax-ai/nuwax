@@ -12,11 +12,11 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import CompactFilePathHeader from '../FilePathHeader';
-import previewLayoutStyles from '../preview-layout.less';
+import FilePathHeader from '../FilePathHeader';
+import styles from '../index.less';
 import type { UseFileTreePreviewPanelParams } from '../types';
 
-const cx = classNames.bind(previewLayoutStyles);
+const cx = classNames.bind(styles);
 
 /** useFileTreePreviewPanel 返回值 */
 export interface UseFileTreePreviewPanelReturn {
@@ -151,7 +151,7 @@ export function useFileTreePreviewPanel(
     );
 
   const header = (
-    <CompactFilePathHeader
+    <FilePathHeader
       {...filePathHeaderProps}
       conversationId={targetId?.toString() || ''}
       viewMode={viewMode}
