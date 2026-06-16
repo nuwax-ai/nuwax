@@ -3,6 +3,7 @@ import AgentSidebar, { AgentSidebarRef } from '@/components/AgentSidebar';
 import SvgIcon from '@/components/base/SvgIcon';
 import {
   CopyToSpaceComponent,
+  FileTreeViewPanel,
   PagePreviewIframe,
 } from '@/components/business-component';
 import PaymentSubscriptionModal from '@/components/business-component/PaymentSubscriptionModal';
@@ -10,7 +11,6 @@ import ChatInputHome from '@/components/ChatInputHome';
 import ChatView from '@/components/ChatView';
 import ConditionRender from '@/components/ConditionRender';
 import TooltipIcon from '@/components/custom/TooltipIcon';
-import FileTreeView from '@/components/FileTreeView';
 import NewConversationSet from '@/components/NewConversationSet';
 import RecommendList from '@/components/RecommendList';
 import ResizableSplit from '@/components/ResizableSplit';
@@ -886,7 +886,7 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
                 'overflow-hide',
               )}
             >
-              <FileTreeView
+              <FileTreeViewPanel
                 className={cx(styles['file-tree-container'])}
                 targetId={agentDetail?.conversationId?.toString() || ''}
                 viewMode={'desktop'}

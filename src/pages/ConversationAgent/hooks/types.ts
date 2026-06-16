@@ -1,4 +1,7 @@
-import type { ChangeFileInfo } from '@/components/FileTreeView/type';
+import type {
+  ChangeFileInfo,
+  IdleDetectionConfig,
+} from '@/components/FileTreeView/type';
 import type { FileTreeContainerProps } from '@/components/business-component/FileTreeGitSourcePanel/types/file-tree-git-source';
 import type { HideDesktopEnum } from '@/types/enums/agent';
 import type { FileNode } from '@/types/interfaces/appDev';
@@ -13,16 +16,24 @@ export type { ChangeFileInfo };
  */
 export interface ConversationAgentFileViewProps {
   className?: string;
+  /** 文件树头部样式 */
+  headerClassName?: string;
   /** 通用型智能体会话中点击选中的文件ID */
   taskAgentSelectedFileId?: string;
+  /** 清除通用型智能体会话中点击选中的文件ID，手动切换文件时使用 */
+  clearTaskAgentSelectedFileId?: () => void;
   /** 通用型智能体文件选择触发标志 */
   taskAgentSelectTrigger?: number | string;
+  /** 是否导入了新的项目触发标志 */
+  isImportProjectTrigger?: number | string;
   /** 原始文件列表 */
   originalFiles?: any[];
   /** 文件树数据加载状态 */
   fileTreeDataLoading?: boolean;
   /** 目标ID（会话ID） */
   targetId?: string;
+  /** 当前视图模式 */
+  viewMode?: 'preview' | 'desktop';
   /** 是否只读 */
   readOnly?: boolean;
   /** 上传多个文件回调 */
@@ -41,6 +52,10 @@ export interface ConversationAgentFileViewProps {
   onDeleteFile?: (node: FileNode) => Promise<boolean>;
   /** 保存文件回调 */
   onSaveFiles?: (data: ChangeFileInfo[]) => Promise<boolean>;
+  /** 导入项目 */
+  onImportProject?: () => Promise<void>;
+  /** 是否正在导入项目 */
+  isImportingProject?: boolean;
   /** 单个文件内容变更后实时保存（防抖） */
   onSaveFileContent?: (
     fileId: string,
@@ -51,6 +66,31 @@ export interface ConversationAgentFileViewProps {
   agentSandboxId?: string;
   /** 用户选择的智能体电脑名称 */
   agentSandboxName?: string;
+  /** 是否显示更多操作菜单 */
+  showMoreActions?: boolean;
+  /** 是否显示全屏预览，由父组件控制 */
+  isFullscreenPreview?: boolean;
+  onFullscreenPreview?: (isFullscreen: boolean) => void;
+  /** 分享回调 */
+  onShare?: () => void;
+  /** 是否显示分享按钮 */
+  isShowShare?: boolean;
+  /** 是否显示全屏图标 */
+  showFullscreenIcon?: boolean;
+  /** 是否隐藏文件树（外部控制） */
+  hideFileTree?: boolean;
+  /** 是否显示刷新按钮 */
+  showRefreshButton?: boolean;
+  /** VNC 空闲检测配置 */
+  idleDetection?: IdleDetectionConfig;
+  /** 是否为项目技能模式 */
+  isProjectSkill?: boolean;
+  /** 初始化视图类型 */
+  initViewFileType?: 'preview' | 'code';
+  /** 是否显示导出 PDF 按钮 */
+  isShowExportPdfButton?: boolean;
+  /** 是否显示下载按钮 */
+  isShowDownloadButton?: boolean;
   /** 关闭整个面板 */
   onClose?: () => void;
   /** 文件树是否固定 */

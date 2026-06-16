@@ -1,6 +1,6 @@
+import { FileTreeViewPanel } from '@/components/business-component';
 import CreateAgent from '@/components/CreateAgent';
 import Loading from '@/components/custom/Loading';
-import FileTreeView from '@/components/FileTreeView';
 import PublishComponentModal from '@/components/PublishComponentModal';
 import ResizableSplit from '@/components/ResizableSplit';
 import ShowStand from '@/components/ShowStand';
@@ -1144,7 +1144,7 @@ const EditAgent: React.FC = () => {
                           )}
                         >
                           {/*文件树侧边栏 - 只在文件树可见时显示 */}
-                          <FileTreeView
+                          <FileTreeViewPanel
                             taskAgentSelectedFileId={taskAgentSelectedFileId}
                             clearTaskAgentSelectedFileId={() =>
                               setTaskAgentSelectedFileId('')

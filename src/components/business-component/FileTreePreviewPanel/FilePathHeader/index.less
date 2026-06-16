@@ -1,0 +1,153 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+// Chat 页文件预览 Header
+.filePathHeader {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  height: 48px;
+  min-height: 48px;
+  max-height: 48px;
+  padding: 0 8px 0 16px;
+  border-bottom: @lineWidth solid rgba(5, 5, 5, 6%);
+  gap: 10px;
+  overflow: hidden;
+  contain: layout style;
+
+  .fileInfo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 0 0 auto;
+    min-width: 0;
+    min-height: 32px;
+
+    .fileDetails {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      min-width: 0;
+      flex: 1;
+      min-height: 22px;
+
+      .fileName {
+        max-width: 200px;
+        font-size: @fontSize;
+        font-weight: @fontWeightStrong;
+        color: @colorTextSecondary;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        line-height: 22px;
+      }
+
+      .fileMeta {
+        font-size: @fontSizeSm;
+        color: @colorTextSecondary;
+        line-height: 22px;
+      }
+    }
+
+    .svg-box {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 6px;
+      font-size: 16px;
+    }
+
+    .pc-box {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: @fontSizeSm;
+      color: @colorTextSecondary;
+    }
+
+    .vncConnectStatus {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+  }
+
+  .fileTreeToggleButton {
+    color: @colorTextTertiary;
+    flex-shrink: 0;
+
+    &.fileTreeToggleButtonPinned {
+      color: @colorPrimary;
+      background: @colorPrimaryBg;
+    }
+  }
+
+  .viewModeButtons {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex: 0 0 auto;
+    margin-left: auto;
+    border-radius: @borderRadius;
+    overflow: hidden;
+    border: 1px solid @colorBorder;
+
+    .viewModeButton {
+      display: flex;
+      height: 28px;
+      padding: 0 10px;
+      align-items: center;
+      border-radius: 0;
+      font-size: @fontSizeSm;
+      border: none;
+      border-right: 1px solid @colorBorder;
+
+      &:last-child {
+        border-right: none;
+        border-top-right-radius: @borderRadius;
+        border-bottom-right-radius: @borderRadius;
+      }
+
+      &:first-child {
+        border-top-left-radius: @borderRadius;
+        border-bottom-left-radius: @borderRadius;
+      }
+    }
+  }
+
+  .actionButtons {
+    display: flex;
+    align-items: center;
+    height: 32px;
+    background: @WHITE;
+    border-radius: @borderRadius;
+
+    .actionButton {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 42px;
+      height: 32px;
+      color: @colorTextTertiary;
+
+      &:hover {
+        color: @colorText;
+        background: transparent;
+      }
+    }
+
+    .gitVersionButtonActive {
+      color: @colorPrimary;
+      background: @colorPrimaryBg;
+    }
+  }
+
+  .divider {
+    width: 1px;
+    height: 14px;
+    margin: 0 8px;
+    background: @colorBorder;
+  }
+}
