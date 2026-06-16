@@ -708,12 +708,35 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     },
   });
 
+  const [gitVersionPanelOpen, setGitVersionPanelOpen] = useState(false);
+
+  /** 切换 Git 版本记录面板（选中 diff 时先清除 diff 再打开面板） */
+  const handleToggleGitVersionPanel = useCallback(() => {
+    if (gitSourceControl.selectedDiffFile) {
+      gitSourceControl.clearSelectedDiff();
+      setGitVersionPanelOpen(true);
+      return;
+    }
+    setGitVersionPanelOpen((prev) => !prev);
+  }, [gitSourceControl.selectedDiffFile, gitSourceControl.clearSelectedDiff]);
+
+  useEffect(() => {
+    setGitVersionPanelOpen(false);
+  }, [id]);
+
+  useEffect(() => {
+    if (viewMode === 'desktop') {
+      setGitVersionPanelOpen(false);
+    }
+  }, [viewMode]);
+
   // 文件树 props
   const chatFileTree: FileTreeContainerProps = useMemo(
     () => ({
       ...fileView.tree,
       handleFileSelect: async (fileId: string) => {
         setTaskAgentSelectedFileId('');
+        setGitVersionPanelOpen(false);
         gitSourceControl.setSelectedChangeFile(null);
         await fileView.tree.handleFileSelect(fileId);
       },
@@ -733,6 +756,24 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       viewMode,
       hideDesktop: effectiveAgent?.hideDesktop,
       diffFile: gitSourceControl.selectedDiffFile,
+      gitVersionPanelOpen,
+      onToggleGitVersionPanel: handleToggleGitVersionPanel,
+      gitVersionControl:
+        effectiveAgent?.type === AgentTypeEnum.TaskAgent
+          ? {
+              workspace: {
+                workspaceType: 'taskAgent' as const,
+                cid: id ?? null,
+              },
+              branch: fileView.gitBranch,
+              onRollbackSuccess: () => {
+                if (id) {
+                  void handleRefreshFileList(id);
+                  void fileView.refreshGitList();
+                }
+              },
+            }
+          : undefined,
       previewPanelProps: {
         agentSandboxId: finalSelectedId,
         agentSandboxName: '',
@@ -778,6 +819,9 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       gitSourceControl.handleAfterDiscardChange,
       gitSourceControl.handleAddToGitignore,
       gitSourceControl.handleCommit,
+      gitVersionPanelOpen,
+      handleToggleGitVersionPanel,
+      fileView.gitBranch,
       viewMode,
       id,
       effectiveAgent?.hideDesktop,
