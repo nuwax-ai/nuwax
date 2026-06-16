@@ -13,8 +13,8 @@ import classNames from 'classnames';
 import React from 'react';
 import {
   useChatFilePreviewPanel,
-  type ChatFilePreviewPanelProps,
-} from '../ChatFilePreviewPanel';
+  type UseChatFilePreviewPanelParams,
+} from './hooks/useChatFilePreviewPanel';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -42,7 +42,7 @@ export interface ChatFileTreeSidebarProps {
   /** Git 版本记录面板配置（通用型智能体） */
   gitVersionControl?: ChatGitVersionControlProps;
   previewPanelProps: Omit<
-    ChatFilePreviewPanelProps,
+    UseChatFilePreviewPanelParams,
     | 'preview'
     | 'viewMode'
     | 'diffFile'
@@ -78,6 +78,7 @@ const ChatFileTreeSidebar: React.FC<ChatFileTreeSidebarProps> = ({
     !diffFile &&
     viewMode !== 'desktop';
 
+  // 文件预览逻辑 Hook
   const { isFullscreen, header, content, restartOverlay } =
     useChatFilePreviewPanel({
       preview,
@@ -128,6 +129,7 @@ const ChatFileTreeSidebar: React.FC<ChatFileTreeSidebarProps> = ({
             'overflow-hide',
           )}
         >
+          {/* 文件树 */}
           {showFileTree && (
             <FileTreeGitSourcePanel
               showSourceControl
@@ -137,6 +139,8 @@ const ChatFileTreeSidebar: React.FC<ChatFileTreeSidebarProps> = ({
               sourceControl={sourceControl}
             />
           )}
+
+          {/* 预览内容 */}
           <div className={cx('preview-panel', 'flex-1', 'h-full', 'relative')}>
             {showGitVersionPanel && gitVersionControl ? (
               <GitVersionRecordPanel

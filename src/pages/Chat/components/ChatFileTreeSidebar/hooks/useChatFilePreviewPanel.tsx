@@ -15,16 +15,15 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import ChatFilePathHeader from './FilePathHeader';
+import ChatFilePathHeader from '../FilePathHeader';
 
 const cx = classNames.bind(fileTreeViewStyles);
 
-export interface ChatFilePreviewPanelProps {
+export interface UseChatFilePreviewPanelParams {
   /** 文件预览状态与渲染函数（来自 useConversationAgentFileView） */
   preview: ConversationAgentFileViewPreview;
   /** 当前视图模式：文件预览 / 智能体电脑 */
   viewMode: 'preview' | 'desktop';
-  className?: string;
   /** 用户选择的智能体电脑 ID */
   agentSandboxId?: string;
   agentSandboxName?: string;
@@ -51,7 +50,7 @@ export interface ChatFilePreviewPanelProps {
 }
 
 /** useChatFilePreviewPanel 返回值 */
-export interface ChatFilePreviewPanelValue {
+export interface UseChatFilePreviewPanelReturn {
   isFullscreen: boolean;
   header: React.ReactNode;
   content: React.ReactNode;
@@ -63,8 +62,8 @@ export interface ChatFilePreviewPanelValue {
  * 提供顶部 Header 与右侧预览内容，供 ChatFileTreeSidebar 组合布局
  */
 export function useChatFilePreviewPanel(
-  props: ChatFilePreviewPanelProps,
-): ChatFilePreviewPanelValue {
+  params: UseChatFilePreviewPanelParams,
+): UseChatFilePreviewPanelReturn {
   const {
     preview,
     viewMode,
@@ -79,7 +78,7 @@ export function useChatFilePreviewPanel(
     showGitVersionButton = false,
     isGitVersionPanelOpen = false,
     onToggleGitVersionPanel,
-  } = props;
+  } = params;
 
   const {
     targetId,
@@ -91,13 +90,16 @@ export function useChatFilePreviewPanel(
   } = preview;
 
   const vncPreviewRef = useRef<VncPreviewRef>(null);
-  const [isRestarting, setIsRestarting] = useState(false);
-  const [isExportingProjecting, setIsExportingProjecting] = useState(false);
+  const [isRestarting, setIsRestarting] = useState<boolean>(false);
+  const [isExportingProjecting, setIsExportingProjecting] =
+    useState<boolean>(false);
 
+  // 获取 VNC 连接状态
   const renderVncPreviewStatus = useCallback(() => {
     return vncPreviewRef.current?.getStatus() ?? null;
   }, []);
 
+  // 导出项目
   const handleDownloadProject = useCallback(async () => {
     if (!onExportProject) {
       return;
@@ -110,6 +112,7 @@ export function useChatFilePreviewPanel(
     }
   }, [onExportProject]);
 
+  // 重启容器
   const handleRestartServer = useCallback(async () => {
     if (!onRestartServer) {
       return;
@@ -135,6 +138,7 @@ export function useChatFilePreviewPanel(
     }
   }, [viewMode]);
 
+  // VNC 空闲检测
   const wrappedIdleDetection = idleDetection
     ? {
         ...idleDetection,
@@ -144,6 +148,7 @@ export function useChatFilePreviewPanel(
       }
     : undefined;
 
+  // 差异文件名称
   const diffFileName = useMemo(() => {
     if (!diffFile) {
       return '';
@@ -152,6 +157,7 @@ export function useChatFilePreviewPanel(
     return segments[segments.length - 1] || diffFile.fileId;
   }, [diffFile]);
 
+  // 文件预览内容区
   const content =
     viewMode === 'desktop' ? (
       <VncPreview
@@ -175,6 +181,7 @@ export function useChatFilePreviewPanel(
       renderPreviewContent()
     );
 
+  // 文件预览 Header 组件
   const header = (
     <ChatFilePathHeader
       {...filePathHeaderProps}
@@ -196,6 +203,7 @@ export function useChatFilePreviewPanel(
     />
   );
 
+  // 重启容器遮罩
   const restartOverlay =
     isRestarting && hideDesktop !== HideDesktopEnum.Yes ? (
       <div className={cx('restart-container')}>
@@ -216,24 +224,3 @@ export function useChatFilePreviewPanel(
     restartOverlay,
   };
 }
-
-/**
- * Chat 页文件预览内容区（仅渲染区，不含 Header）
- */
-const ChatFilePreviewPanel: React.FC<
-  ChatFilePreviewPanelProps & { className?: string }
-> = (props) => {
-  const { className, ...rest } = props;
-  const { content, restartOverlay } = useChatFilePreviewPanel(rest);
-
-  return (
-    <div
-      className={cx('flex-1', 'overflow-hide', 'h-full', 'relative', className)}
-    >
-      {content}
-      {restartOverlay}
-    </div>
-  );
-};
-
-export default ChatFilePreviewPanel;
