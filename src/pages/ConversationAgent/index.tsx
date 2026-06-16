@@ -6,13 +6,12 @@ import {
 } from '@/components/business-component';
 import { type AgentMode } from '@/components/business-component/AgentIntervention';
 import FileTreeGitSourcePanel, {
-  useConversationAgentSourceControl,
+  useSourceControl,
   type SelectedChangeFile,
 } from '@/components/business-component/FileTreeGitSourcePanel';
 import VncPreview from '@/components/business-component/VncPreview';
 import CreateAgent from '@/components/CreateAgent';
 import Loading from '@/components/custom/Loading';
-import type { ChangeFileInfo } from '@/components/FileTreeView/type';
 import PublishComponentModal from '@/components/PublishComponentModal';
 import ShowStand from '@/components/ShowStand';
 import type { PromptVariable } from '@/components/TiptapVariableInput/types';
@@ -1526,16 +1525,17 @@ const ConversationAgent: React.FC = () => {
 
   /**
    * 源代码管理（Git）统一 Hook
-   * 封装暂存/取消暂存/提交推送等 Git 操作，差异逻辑通过 adapters 由页面注入
+   * 封装暂存/取消暂存/提交推送等 Git 操作，差异逻辑通过 callbacks 由页面注入
    */
-  const gitSourceControl = useConversationAgentSourceControl({
-    cid: queryConversationId ?? null,
+  const gitSourceControl = useSourceControl({
+    workspace: {
+      workspaceType: 'taskAgent',
+      cid: queryConversationId ?? null,
+    },
     changeFiles: fileView.changeFiles,
     selectedChangeFile,
     setSelectedChangeFile,
-    adapters: {
-      // 保存变更文件到沙箱
-      saveChangeFiles: (files: ChangeFileInfo[]) => handleSaveFiles(files),
+    callbacks: {
       // 放弃单个文件的更改
       discardChangeFile: (fileId: string) =>
         fileView.preview.discardChangeFile(fileId),
@@ -1562,7 +1562,7 @@ const ConversationAgent: React.FC = () => {
         previewTabs.clearTabs();
       },
       // 刷新 Git 变更列表（git status + 文件树）
-      refreshFileList: queryConversationId
+      onRefreshGitList: queryConversationId
         ? async () => {
             await fileView.refreshGitList();
           }

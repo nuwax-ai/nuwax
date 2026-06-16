@@ -62,4 +62,10 @@ export interface ChatFilePathHeaderProps {
   onFileTreeToggle?: () => void;
   /** 是否是云电脑 */
   isCloudComputer?: boolean;
+  /** 是否显示 Git 版本记录按钮 */
+  showGitVersionButton?: boolean;
+  /** Git 版本记录面板是否已打开 */
+  isGitVersionPanelOpen?: boolean;
+  /** 切换 Git 版本记录面板 */
+  onToggleGitVersionPanel?: () => void;
 }

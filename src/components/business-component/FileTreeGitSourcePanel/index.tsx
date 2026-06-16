@@ -7,18 +7,15 @@ export type {
   AppDevFileTreeFileManagement,
   UseAppDevFileTreeParams,
 } from './hooks/useAppDevFileTree';
-export { useConversationAgentSourceControl } from './hooks/useConversationAgentSourceControl';
-export type {
-  ConversationAgentSourceControlAdapters,
-  UseConversationAgentSourceControlParams,
-  UseConversationAgentSourceControlReturn,
-} from './hooks/useConversationAgentSourceControl';
 export { useSourceControl } from './hooks/useSourceControl';
 export type {
-  AppDevSourceControlFileManagement,
-  UseAppDevSourceControlParams,
-  UseAppDevSourceControlReturn,
+  GitWorkspaceConfig,
+  SourceControlCallbacks,
+  UseSourceControlParams,
+  UseSourceControlReturn,
 } from './hooks/useSourceControl';
+/** @deprecated 使用 SourceControlCallbacks */
+export type { SourceControlCallbacks as ConversationAgentSourceControlAdapters } from './hooks/useSourceControl';
 export { default as FileTreeGitSourcePanel, default } from './PanelCore';
 export * from './services/git-version-management';
 export { default as SourceControlPanel } from './SourceControlPanel';

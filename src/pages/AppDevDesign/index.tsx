@@ -296,9 +296,17 @@ const AppDevDesign: React.FC = () => {
 
   // 源代码管理
   const sourceControl = useSourceControl({
-    projectId,
-    fileManagement,
-    onRefreshProjectInfo: () => projectInfo.refreshProjectInfo(),
+    workspace: { workspaceType: 'pageApp', projectId },
+    callbacks: {
+      openChangeFile: (fileId) => fileManagement.switchToFile(fileId),
+      discardChangeFile: () => {},
+      loadFileTree: fileManagement.loadFileTree,
+      findFileNode: fileManagement.findFileNode,
+      updateFileContent: fileManagement.updateFileContent,
+      cancelEdit: fileManagement.cancelEdit,
+      getFileContentState: () => fileManagement.fileContentState,
+      onRefreshProjectInfo: () => projectInfo.refreshProjectInfo(),
+    },
   });
 
   useEffect(() => {

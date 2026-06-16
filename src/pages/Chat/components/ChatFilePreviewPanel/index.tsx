@@ -42,6 +42,12 @@ export interface ChatFilePreviewPanelProps {
   hideDesktop?: HideDesktopEnum;
   /** Git 源代码管理选中的 diff 文件（优先于普通预览） */
   diffFile?: ChangeFileInfo | null;
+  /** 是否显示 Git 版本记录按钮 */
+  showGitVersionButton?: boolean;
+  /** Git 版本记录面板是否已打开 */
+  isGitVersionPanelOpen?: boolean;
+  /** 切换 Git 版本记录面板 */
+  onToggleGitVersionPanel?: () => void;
 }
 
 /** useChatFilePreviewPanel 返回值 */
@@ -70,6 +76,9 @@ export function useChatFilePreviewPanel(
     idleDetection,
     hideDesktop = HideDesktopEnum.No,
     diffFile,
+    showGitVersionButton = false,
+    isGitVersionPanelOpen = false,
+    onToggleGitVersionPanel,
   } = props;
 
   const {
@@ -181,6 +190,9 @@ export function useChatFilePreviewPanel(
       isFullscreen={isFullscreen}
       onClose={filePathHeaderProps.onClose}
       vncConnectStatus={renderVncPreviewStatus()}
+      showGitVersionButton={showGitVersionButton}
+      isGitVersionPanelOpen={isGitVersionPanelOpen}
+      onToggleGitVersionPanel={onToggleGitVersionPanel}
     />
   );
 
