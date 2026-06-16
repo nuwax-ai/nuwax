@@ -1,7 +1,7 @@
 import type {
   ChangeFileGitStatusKind,
   ChangeFileInfo,
-} from '@/components/FileTreeView/type';
+} from '@/components/business-component/FileTreePreviewPanel/types/file-tree';
 import type { FileNode } from '@/types/interfaces/appDev';
 import type { GitStatusResponse } from '../types/git-version-management';
 

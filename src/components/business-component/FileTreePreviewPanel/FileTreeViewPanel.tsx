@@ -1,9 +1,3 @@
-import type {
-  ChangeFileInfo,
-  FileTreeViewProps,
-  FileTreeViewRef,
-} from '@/components/FileTreeView/type';
-import { useFileTreePreviewView } from '@/components/business-component/FileTreePreviewPanel/hooks/useFileTreePreviewView';
 import debounce from 'lodash/debounce';
 import {
   forwardRef,
@@ -12,7 +6,9 @@ import {
   useMemo,
   useRef,
 } from 'react';
+import { useFileTreePreviewView } from './hooks/useFileTreePreviewView';
 import FileTreePreviewPanel from './index';
+import type { FileTreeViewProps, FileTreeViewRef } from './types/file-tree';
 
 /**
  * FileTreeView 替代组件
@@ -135,4 +131,3 @@ const FileTreeViewPanel = forwardRef<FileTreeViewRef, FileTreeViewProps>(
 );
 
 export default FileTreeViewPanel;
-export type { ChangeFileInfo, FileTreeViewProps, FileTreeViewRef };

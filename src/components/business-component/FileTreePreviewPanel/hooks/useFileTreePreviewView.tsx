@@ -8,7 +8,6 @@ import {
   mergeGitStatusFileIds,
 } from '@/components/business-component/FileTreeGitSourcePanel/utils/gitStatusUtils';
 import CodeViewer from '@/components/CodeViewer';
-import { ChangeFileInfo } from '@/components/FileTreeView/type';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { ImageViewer } from '@/pages/AppDev/components';
 import { dict } from '@/services/i18nRuntime';
@@ -47,6 +46,20 @@ import type {
   FileTreePreviewViewProps,
   FileTreePreviewViewValue,
 } from '../types';
+import { ChangeFileInfo } from '../types/file-tree';
+
+/** 从文件树中移除指定 ID 的节点（含子树递归） */
+const removeNodeByIdFromTree = (
+  nodes: FileNode[],
+  targetId: string,
+): FileNode[] =>
+  nodes
+    .filter((node) => node.id !== targetId)
+    .map((node) =>
+      node.children?.length
+        ? { ...node, children: removeNodeByIdFromTree(node.children, targetId) }
+        : node,
+    );
 
 /**
  * 文件树 + 预览视图 Hook
@@ -124,6 +137,8 @@ export function useFileTreePreviewView(
   const [files, setFiles] = useState<FileNode[]>([]);
   // 当前选中的文件ID
   const [selectedFileId, setSelectedFileId] = useState<string>('');
+  /** 文件树中选中的文件夹 ID（仅用于树高亮与工具栏新建父级，不影响预览区） */
+  const [selectedFolderId, setSelectedFolderId] = useState<string>('');
   // 选中的文件节点
   const [selectedFileNode, setSelectedFileNode] = useState<FileNode | null>(
     null,
@@ -458,12 +473,14 @@ export function useFileTreePreviewView(
       }
 
       if (fileNode) {
-        // 文件树中点击文件夹：直接选中文件夹并高亮
+        // 文件树中点击文件夹：更新树选中态（与文件高亮互斥），不切换预览区
         if (fileNode.type === 'folder' && options?.selectFolder) {
-          setSelectedFileId(fileNode.id);
-          setSelectedFileNode(fileNode);
+          setSelectedFolderId(fileNode.id);
           return;
         }
+
+        // 选中文件时清除文件夹选中态
+        setSelectedFolderId('');
 
         // 如果文件节点是文件夹(folder)，则选择第一个子节点(点击会话中文件名时，如果文件名是文件夹，则选择第一个子节点)
         if (fileNode.type === 'folder') {
@@ -582,10 +599,13 @@ export function useFileTreePreviewView(
   // 文件选择（对外接口，用于用户主动选择）
   const handleFileSelect = useCallback(
     async (fileId: string, options?: { selectFolder?: boolean }) => {
+      if (options?.selectFolder) {
+        await handleFileSelectInternal(fileId, options);
+        return;
+      }
       // 记录用户主动选择的文件ID
       userSelectedFileRef.current = fileId;
       clearTaskAgentSelectedFileId?.();
-      // 调用内部选择函数
       await handleFileSelectInternal(fileId, options);
     },
     [handleFileSelectInternal, clearTaskAgentSelectedFileId],
@@ -805,21 +825,7 @@ export function useFileTreePreviewView(
     if (options?.removeIfNew && options.node) {
       const targetId = options.node.id;
 
-      const removeNodeById = (nodes: FileNode[]): FileNode[] => {
-        return nodes
-          .filter((node) => node.id !== targetId)
-          .map((node) => {
-            if (node.children && node.children.length > 0) {
-              return {
-                ...node,
-                children: removeNodeById(node.children),
-              };
-            }
-            return node;
-          });
-      };
-
-      setFiles((prevFiles) => removeNodeById(prevFiles));
+      setFiles((prevFiles) => removeNodeByIdFromTree(prevFiles, targetId));
 
       // 如果当前选中的是这个临时节点，清空选中状态
       if (selectedFileId === targetId) {
@@ -843,11 +849,25 @@ export function useFileTreePreviewView(
   };
 
   /**
+   * 新建失败时：移除临时节点并退出重命名态，恢复到新建前的目录
+   */
+  const rollbackFailedCreate = (
+    fileNode: FileNode,
+    filesBackup: FileNode[],
+  ) => {
+    setFiles(removeNodeByIdFromTree(filesBackup, fileNode.id));
+    setRenamingNode(null);
+  };
+
+  /**
    * 处理重命名操作
    */
   const handleRenameFile = async (fileNode: FileNode, newName: string) => {
     if (!newName || !newName?.trim()) {
-      // 重命名文件失败：新文件名为空
+      if (fileNode?.status === 'create') {
+        setFiles((prev) => removeNodeByIdFromTree(prev, fileNode.id));
+        setRenamingNode(null);
+      }
       return;
     }
 
@@ -878,6 +898,7 @@ export function useFileTreePreviewView(
         if (isCreateSuccess) {
           const trimmedName = newName?.trim();
           if (!trimmedName) {
+            rollbackFailedCreate(fileNode, filesBackup);
             return;
           }
 
@@ -890,7 +911,7 @@ export function useFileTreePreviewView(
           // 记录需要选择的文件路径，等待文件树更新后自动选择
           pendingSelectFileRef.current = newPath;
         } else {
-          setFiles(filesBackup);
+          rollbackFailedCreate(fileNode, filesBackup);
         }
       } else {
         setIsRenamingFile(true);
@@ -904,6 +925,10 @@ export function useFileTreePreviewView(
             : trimmedName;
 
           onFileRenamed?.(fileNode.id, newNodeId);
+
+          if (fileNode.type === 'folder' && selectedFolderId === fileNode.id) {
+            setSelectedFolderId(newNodeId);
+          }
 
           // 如果当前选中的文件节点是被重命名的节点，则同步更新名称
           if (
@@ -940,8 +965,11 @@ export function useFileTreePreviewView(
         }
       }
     } catch {
-      // 重命名文件失败，重新加载文件树以恢复原状态
-      setFiles(filesBackup);
+      if (fileNode?.status === 'create') {
+        rollbackFailedCreate(fileNode, filesBackup);
+      } else {
+        setFiles(filesBackup);
+      }
     }
   };
 
@@ -1031,6 +1059,9 @@ export function useFileTreePreviewView(
         setSelectedFileNode(null);
         setSelectedFileId('');
       }
+      if (node.id === selectedFolderId) {
+        setSelectedFolderId('');
+      }
       onFileDeleted?.(node);
     }
   };
@@ -1046,16 +1077,9 @@ export function useFileTreePreviewView(
   ) => {
     // 连续点击新建时，先移除上一个尚未命名的临时节点，避免残留空占位
     if (renamingNode?.status === 'create') {
-      const prevTempId = renamingNode.id;
-      const removeNodeById = (nodes: FileNode[]): FileNode[] =>
-        nodes
-          .filter((node) => node.id !== prevTempId)
-          .map((node) =>
-            node.children && node.children.length > 0
-              ? { ...node, children: removeNodeById(node.children) }
-              : node,
-          );
-      setFiles((prevFiles) => removeNodeById(prevFiles));
+      setFiles((prevFiles) =>
+        removeNodeByIdFromTree(prevFiles, renamingNode.id),
+      );
     }
 
     const parentPath = parentNode?.path || null;
@@ -1476,9 +1500,12 @@ export function useFileTreePreviewView(
       );
     }
 
-    // 预览模式：根据文件状态和类型渲染不同内容
-    // 未选择文件或新建文件时
-    if (!selectedFileNode || selectedFileNode?.id?.includes('__new__')) {
+    // 未选择文件、选中文件夹或新建文件时
+    if (
+      !selectedFileNode ||
+      selectedFileNode.type === 'folder' ||
+      selectedFileNode?.id?.includes('__new__')
+    ) {
       return (
         <AppDevEmptyState
           showTitle={false}
@@ -1703,6 +1730,7 @@ export function useFileTreePreviewView(
     tree: {
       files,
       selectedFileId,
+      selectedFolderId,
       renamingNode,
       contextMenuTarget,
       contextMenuPosition,

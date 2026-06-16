@@ -87,6 +87,8 @@ export function useAppDevFileTree(params: UseAppDevFileTreeParams): {
 
   // 内联重命名状态
   const [renamingNode, setRenamingNode] = useState<FileNode | null>(null);
+  /** 文件树中选中的文件夹 ID（工具栏新建父级） */
+  const [selectedFolderId, setSelectedFolderId] = useState<string>('');
 
   // 文件树刷新 loading 状态
   const [isRefreshingFileTree, setIsRefreshingFileTree] =
@@ -197,9 +199,15 @@ export function useAppDevFileTree(params: UseAppDevFileTreeParams): {
   /** 重命名/新建确认：透传给页面回调（内部区分新建与重命名） */
   const handleRenameFile = useCallback(
     async (node: FileNode, newName: string) => {
-      await onRenameFile?.(node, newName);
+      const success = await onRenameFile?.(node, newName);
+      const isTempNode =
+        node.status === 'create' || node.id.includes('__new__');
+      if (!success && isTempNode) {
+        fileManagement.removeTempNode?.(node.id);
+        setRenamingNode(null);
+      }
     },
-    [onRenameFile],
+    [onRenameFile, fileManagement],
   );
 
   /** 删除：适配页面 (node, event) 签名 */
@@ -249,6 +257,7 @@ export function useAppDevFileTree(params: UseAppDevFileTreeParams): {
     () => ({
       files,
       selectedFileId,
+      selectedFolderId,
       renamingNode,
       contextMenuTarget,
       contextMenuPosition,
@@ -262,7 +271,15 @@ export function useAppDevFileTree(params: UseAppDevFileTreeParams): {
       isDownloadingFile: false,
       hideFileTree: false,
       showRefreshButton: true,
-      handleFileSelect: async (fileId: string) => {
+      handleFileSelect: async (
+        fileId: string,
+        options?: { selectFolder?: boolean },
+      ) => {
+        if (options?.selectFolder) {
+          setSelectedFolderId(fileId);
+          return;
+        }
+        setSelectedFolderId('');
         onFileSelect(fileId);
       },
       handleContextMenu,
@@ -283,6 +300,7 @@ export function useAppDevFileTree(params: UseAppDevFileTreeParams): {
     [
       files,
       selectedFileId,
+      selectedFolderId,
       renamingNode,
       contextMenuTarget,
       contextMenuPosition,

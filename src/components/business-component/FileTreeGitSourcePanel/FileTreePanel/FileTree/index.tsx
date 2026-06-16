@@ -31,6 +31,7 @@ const FileTree = forwardRef<FileTreeRef, FileTreeProps>(
       fileTreeDataLoading,
       taskAgentSelectedFileId,
       selectedFileId,
+      selectedFolderId = '',
       // 正在重命名的节点
       renamingNode,
       // 取消重命名回调
@@ -307,7 +308,11 @@ const FileTree = forwardRef<FileTreeRef, FileTreeProps>(
     const renderFileTreeNode = useCallback(
       (node: FileNode, level: number = 0) => {
         const isExpanded = expandedFolders.has(node.id);
-        const isSelected = selectedFileId === node.id;
+        // 文件夹与文件选中互斥：选中文件夹时仅高亮文件夹，预览仍由 selectedFileId 驱动
+        const isSelected =
+          node.type === 'folder'
+            ? selectedFolderId === node.id
+            : selectedFileId === node.id && !selectedFolderId;
         const isRenaming = renamingNode?.id === node.id;
 
         const nodeKey = node.id;
@@ -418,6 +423,7 @@ const FileTree = forwardRef<FileTreeRef, FileTreeProps>(
       [
         expandedFolders,
         selectedFileId,
+        selectedFolderId,
         renamingNode,
         renameValue,
         onToggleFolder,

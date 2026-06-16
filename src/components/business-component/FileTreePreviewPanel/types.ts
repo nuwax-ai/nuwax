@@ -3,16 +3,19 @@ import type {
   FileTreeContainerProps,
   SourceControlProps,
 } from '@/components/business-component/FileTreeGitSourcePanel/types/file-tree-git-source';
-import type {
-  ChangeFileInfo,
-  IdleDetectionConfig,
-} from '@/components/FileTreeView/type';
 import type { HideDesktopEnum } from '@/types/enums/agent';
 import type { FileNode } from '@/types/interfaces/appDev';
 import type React from 'react';
-import type { ChatFilePathHeaderProps } from './FilePathHeader/type';
+import type { FilePathHeaderProps } from './FilePathHeader/type';
+import type { ChangeFileInfo, IdleDetectionConfig } from './types/file-tree';
 
-export type { ChangeFileInfo };
+export type {
+  ChangeFileGitStatusKind,
+  ChangeFileInfo,
+  FileTreeViewProps,
+  FileTreeViewRef,
+  IdleDetectionConfig,
+} from './types/file-tree';
 
 /**
  * 文件树 + 预览视图 Hook 入参
@@ -126,7 +129,7 @@ export interface FileTreePreviewViewProps {
 }
 
 /** 预览 Header 组件 props */
-export type FileTreePreviewPathHeaderProps = ChatFilePathHeaderProps;
+export type FileTreePreviewPathHeaderProps = FilePathHeaderProps;
 
 /** 预览 UI 所需的状态、处理器与渲染函数 */
 export interface FileTreePreviewViewPreview {

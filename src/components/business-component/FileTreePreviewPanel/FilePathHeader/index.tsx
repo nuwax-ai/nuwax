@@ -1,7 +1,5 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import { ConnectionStatus } from '@/components/business-component/VncPreview/type';
-import MoreActionsMenu from '@/components/FileTreeView/FilePathHeader/MoreActionsMenu/index';
-import ShareDesktopModal from '@/components/FileTreeView/FilePathHeader/ShareDesktopModal';
 import { USER_INFO } from '@/constants/home.constants';
 import { dict } from '@/services/i18nRuntime';
 import { FileNode } from '@/types/interfaces/appDev';
@@ -20,7 +18,9 @@ import { Button, ConfigProvider, message, Segmented, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo, useState } from 'react';
 import styles from './index.less';
-import type { ChatFilePathHeaderProps } from './type';
+import MoreActionsMenu from './MoreActionsMenu/index';
+import ShareDesktopModal from './ShareDesktopModal';
+import type { FilePathHeaderProps } from './type';
 
 const cx = classNames.bind(styles);
 
@@ -28,7 +28,7 @@ const cx = classNames.bind(styles);
  * Chat 页文件预览 Header
  * 基于 FilePathHeader 复制，移除保存/取消按钮逻辑
  */
-const ChatFilePathHeader: React.FC<ChatFilePathHeaderProps> = ({
+const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   className,
   conversationId,
   targetNode,
@@ -438,4 +438,4 @@ const ChatFilePathHeader: React.FC<ChatFilePathHeaderProps> = ({
   );
 };
 
-export default ChatFilePathHeader;
+export default FilePathHeader;

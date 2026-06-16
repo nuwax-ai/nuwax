@@ -1,5 +1,5 @@
+import type { ChangeFileInfo } from '@/components/business-component/FileTreePreviewPanel/types/file-tree';
 import TooltipIcon from '@/components/custom/TooltipIcon';
-import type { ChangeFileInfo } from '@/components/FileTreeView/type';
 import { dict } from '@/services/i18nRuntime';
 import { modalConfirm } from '@/utils/ant-custom';
 import { ReloadOutlined, UnorderedListOutlined } from '@ant-design/icons';

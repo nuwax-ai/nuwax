@@ -43,8 +43,6 @@ export {
   type FileTreePreviewViewPreview,
   type FileTreePreviewViewProps,
   type FileTreePreviewViewValue,
-  type FileTreeViewProps,
-  type FileTreeViewRef,
 } from './FileTreePreviewPanel';
 export {
   default as GitVersionRecordPanel,
