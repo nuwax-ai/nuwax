@@ -120,6 +120,14 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     useState<boolean>(showSidebar);
   const sidebarRef = useRef<AgentSidebarRef>(null);
 
+  // 复制模板弹窗状态
+  const [openCopyModal, setOpenCopyModal] = useState<boolean>(false);
+
+  const [clearLoading, setClearLoading] = useState<boolean>(false);
+
+  // 异步查询会话加载状态
+  const [loadingAsync, setLoadingAsync] = useState<boolean>(true);
+
   // 开放应用智能体会话聊天页面相关状态
   const {
     handleSetAppAgentDetail,
@@ -249,9 +257,6 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     return conversationInfo?.agent || agentDetail;
   }, [conversationInfo?.agent, agentDetail]);
 
-  // 复制模板弹窗状态
-  const [openCopyModal, setOpenCopyModal] = useState<boolean>(false);
-
   const {
     setSelectedComputerId,
     isSelectionLocked,
@@ -284,7 +289,6 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     openDesktopView,
     pagePreviewData,
   });
-  const [clearLoading, setClearLoading] = useState<boolean>(false);
 
   const {
     variableParams,
@@ -300,7 +304,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   // 导航拦截：追踪会话是否在本次会话中变为活跃状态
   // 使用 ref 追踪初始状态，避免在刷新时因历史消息状态触发拦截
   const wasConversationActiveOnMount = useRef<boolean | null>(null);
-  const shouldBlockNavigation = useRef(false);
+  const shouldBlockNavigation = useRef<boolean>(false);
 
   // 在首次获取到 isConversationActive 值时记录
   useEffect(() => {
@@ -384,9 +388,6 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     scrollTimeoutRef,
     setShowScrollBtn,
   );
-
-  // 异步查询会话加载状态
-  const [loadingAsync, setLoadingAsync] = useState<boolean>(true);
 
   useEffect(() => {
     if (id) {
@@ -596,6 +597,10 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   const [selectedChangeFile, setSelectedChangeFile] =
     useState<SelectedChangeFile | null>(null);
 
+  // Git 版本记录面板状态
+  const [gitVersionPanelOpen, setGitVersionPanelOpen] =
+    useState<boolean>(false);
+
   /** 将文件路径添加到 .gitignore */
   const handleAddToGitignore = useCallback(
     async (fileId: string) => {
@@ -707,8 +712,6 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
         : undefined,
     },
   });
-
-  const [gitVersionPanelOpen, setGitVersionPanelOpen] = useState(false);
 
   /** 切换 Git 版本记录面板（选中 diff 时先清除 diff 再打开面板） */
   const handleToggleGitVersionPanel = useCallback(() => {
@@ -863,6 +866,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     isMobile,
   ]);
 
+  // 聊天会话头部相关 props
   const headerProps = {
     showSidebar,
     isAppSidebarVisible,
@@ -886,6 +890,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     renderHeaderRight,
   };
 
+  // 聊天会话相关 props
   const chatSessionProps = {
     conversationId: id,
     messageList,
@@ -939,6 +944,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     messageViewRef,
   };
 
+  // 加载中
   if (clearLoading || loadingConversation || loadingAsync) {
     return (
       <div className={cx(styles['chat-loading-container'])}>
@@ -947,6 +953,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     );
   }
 
+  // 是否展开视图
   const isExpandedView = !!(pagePreviewData || isFileTreeVisible);
 
   return (
