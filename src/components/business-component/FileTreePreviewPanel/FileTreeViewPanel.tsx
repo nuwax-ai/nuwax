@@ -3,7 +3,7 @@ import type {
   FileTreeViewProps,
   FileTreeViewRef,
 } from '@/components/FileTreeView/type';
-import { useConversationAgentFileView } from '@/pages/ConversationAgent/hooks/useConversationAgentFileView';
+import { useFileTreePreviewView } from '@/components/business-component/FileTreePreviewPanel/hooks/useFileTreePreviewView';
 import debounce from 'lodash/debounce';
 import {
   forwardRef,
@@ -16,7 +16,7 @@ import FileTreePreviewPanel from './index';
 
 /**
  * FileTreeView 替代组件
- * 基于 FileTreePreviewPanel + useConversationAgentFileView，兼容 FileTreeViewProps / ref
+ * 基于 FileTreePreviewPanel + useFileTreePreviewView，兼容 FileTreeViewProps / ref
  * 文件修改通过 onSaveFileContent 防抖实时保存（与 Chat 页一致），Header 无保存/取消按钮
  */
 const FileTreeViewPanel = forwardRef<FileTreeViewRef, FileTreeViewProps>(
@@ -73,7 +73,7 @@ const FileTreeViewPanel = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       [debouncedSaveFileContent],
     );
 
-    const fileView = useConversationAgentFileView({
+    const fileView = useFileTreePreviewView({
       ...fileViewProps,
       className,
       headerClassName,

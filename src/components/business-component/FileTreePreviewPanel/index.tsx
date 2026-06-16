@@ -12,9 +12,13 @@ const layoutCx = classNames.bind(previewLayoutStyles);
 
 export { default as FileTreeViewPanel } from './FileTreeViewPanel';
 export type { FileTreeViewProps, FileTreeViewRef } from './FileTreeViewPanel';
+export { useFileTreePreviewView } from './hooks/useFileTreePreviewView';
 export type {
   FileTreePreviewGitVersionControlProps,
   FileTreePreviewPanelProps,
+  FileTreePreviewViewPreview,
+  FileTreePreviewViewProps,
+  FileTreePreviewViewValue,
   UseFileTreePreviewPanelParams,
 } from './types';
 

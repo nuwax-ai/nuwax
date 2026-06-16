@@ -37,8 +37,12 @@ export {
 export {
   default as FileTreePreviewPanel,
   FileTreeViewPanel,
+  useFileTreePreviewView,
   type FileTreePreviewGitVersionControlProps,
   type FileTreePreviewPanelProps,
+  type FileTreePreviewViewPreview,
+  type FileTreePreviewViewProps,
+  type FileTreePreviewViewValue,
   type FileTreeViewProps,
   type FileTreeViewRef,
 } from './FileTreePreviewPanel';

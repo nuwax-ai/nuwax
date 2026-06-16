@@ -44,17 +44,17 @@ import React, {
   useState,
 } from 'react';
 import type {
-  ConversationAgentFileViewProps,
-  ConversationAgentFileViewValue,
-} from './types';
+  FileTreePreviewViewProps,
+  FileTreePreviewViewValue,
+} from '../types';
 
 /**
- * ConversationAgent 文件视图 Hook
- * 从 FileTreeView 提取的状态、副作用与处理器
+ * 文件树 + 预览视图 Hook
+ * 从 FileTreeView 提取的状态、副作用与处理器，供 FileTreePreviewPanel 及上层页面使用
  */
-export function useConversationAgentFileView(
-  props: ConversationAgentFileViewProps,
-): ConversationAgentFileViewValue {
+export function useFileTreePreviewView(
+  props: FileTreePreviewViewProps,
+): FileTreePreviewViewValue {
   const {
     className,
     headerClassName,

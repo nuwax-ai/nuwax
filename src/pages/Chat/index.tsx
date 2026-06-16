@@ -37,7 +37,7 @@ import {
   type SelectedChangeFile,
 } from '@/components/business-component/FileTreeGitSourcePanel';
 import type { FileTreeContainerProps } from '@/components/business-component/FileTreeGitSourcePanel/types/file-tree-git-source';
-import { useConversationAgentFileView } from '@/pages/ConversationAgent/hooks/useConversationAgentFileView';
+import { useFileTreePreviewView } from '@/components/business-component/FileTreePreviewPanel/hooks/useFileTreePreviewView';
 import { apiUpdateStaticFile } from '@/services/vncDesktop';
 import type { UpdateFileInfo } from '@/types/interfaces/fileTree';
 import type { StaticFileInfo } from '@/types/interfaces/vncDesktop';
@@ -551,7 +551,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   });
 
   // 文件视图 props
-  const fileView = useConversationAgentFileView({
+  const fileView = useFileTreePreviewView({
     taskAgentSelectedFileId,
     taskAgentSelectTrigger,
     originalFiles: fileTreeData,
