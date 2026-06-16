@@ -737,11 +737,16 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   const chatFileTree: FileTreeContainerProps = useMemo(
     () => ({
       ...fileView.tree,
-      handleFileSelect: async (fileId: string) => {
-        setTaskAgentSelectedFileId('');
-        setGitVersionPanelOpen(false);
-        gitSourceControl.setSelectedChangeFile(null);
-        await fileView.tree.handleFileSelect(fileId);
+      handleFileSelect: async (
+        fileId: string,
+        options?: { selectFolder?: boolean },
+      ) => {
+        if (!options?.selectFolder) {
+          setTaskAgentSelectedFileId('');
+          setGitVersionPanelOpen(false);
+          gitSourceControl.setSelectedChangeFile(null);
+        }
+        await fileView.tree.handleFileSelect(fileId, options);
       },
     }),
     [

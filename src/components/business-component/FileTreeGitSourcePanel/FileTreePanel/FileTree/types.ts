@@ -16,6 +16,9 @@ export interface FileTreeProps {
   /** 当前选中的文件ID */
   selectedFileId: string;
 
+  /** 当前选中的文件夹 ID（仅用于树高亮） */
+  selectedFolderId?: string;
+
   /** 正在重命名的节点 */
   renamingNode?: FileNode | null;
 
@@ -30,7 +33,7 @@ export interface FileTreeProps {
   /** 右键菜单回调 */
   onContextMenu: (e: React.MouseEvent, node: FileNode | null) => void;
 
-  /** 文件选择回调；selectFolder 为 true 时直接选中文件夹（不自动进入子文件） */
+  /** 文件选择回调；selectFolder 为 true 时仅选中文件夹（不切换预览） */
   onFileSelect: (fileId: string, options?: { selectFolder?: boolean }) => void;
 
   /** 重命名文件回调 */

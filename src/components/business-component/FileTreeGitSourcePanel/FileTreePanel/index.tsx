@@ -34,6 +34,7 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
   const {
     files,
     selectedFileId,
+    selectedFolderId = '',
     renamingNode,
     contextMenuTarget,
     contextMenuPosition,
@@ -77,6 +78,12 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
    * - 未选中或找不到节点：在根目录创建
    */
   const resolveCreateParentNode = (): FileNode | null => {
+    if (selectedFolderId) {
+      const folderNode = findFileNode(selectedFolderId, files);
+      if (folderNode?.type === 'folder') {
+        return folderNode;
+      }
+    }
     if (!selectedFileId) {
       return null;
     }
@@ -186,6 +193,7 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
           files={files}
           taskAgentSelectedFileId={taskAgentSelectedFileId}
           selectedFileId={selectedFileId}
+          selectedFolderId={selectedFolderId}
           renamingNode={renamingNode}
           onCancelRename={handleCancelRename}
           onContextMenu={handleContextMenu}

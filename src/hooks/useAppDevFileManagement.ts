@@ -759,6 +759,7 @@ export const useAppDevFileManagement = ({
   const createFileItem = useCallback(
     async (node: FileNode, newName: string): Promise<boolean> => {
       if (!projectId) {
+        removeTempNode(node.id);
         return false;
       }
 

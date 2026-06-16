@@ -1562,11 +1562,9 @@ const ConversationAgent: React.FC = () => {
         previewTabs.clearTabs();
       },
       // 刷新 Git 变更列表（git status + 文件树）
-      onRefreshGitList: queryConversationId
-        ? async () => {
-            await fileView.refreshGitList();
-          }
-        : undefined,
+      onRefreshGitList: async () => {
+        await fileView.refreshGitList();
+      },
     },
   });
 
