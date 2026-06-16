@@ -9,9 +9,8 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { collectFilesUnderFolder } from '../utils/buildChangeFileTree';
 import type { GitWorkspaceConfig } from '../utils/buildGitWorkspaceParams';
 import {
+  splitChangeFilesForDisplay,
   type ChangeListSection,
-  resolveStagedStatusMeta,
-  resolveUnstagedStatusMeta,
   type SelectedChangeFile,
 } from '../utils/changeFileStatus';
 import {
@@ -91,43 +90,10 @@ const SourceControlPanel: React.FC<SourceControlPanelProps> = ({
   const [contextMenuTarget, setContextMenuTarget] =
     useState<ContextMenuTarget | null>(null);
 
-  /** 变更项基础信息（文件名、路径） */
-  const baseChangeItems = useMemo(
-    () =>
-      changeFiles.map((item) => {
-        const segments = item.fileId.split('/');
-        const fileName = segments[segments.length - 1] || item.fileId;
-        return {
-          ...item,
-          fileName,
-          parentPath: item.fileId,
-        };
-      }),
+  /** 暂存区 / 更改区列表（map + merge，角标 A/M/D/U/C/R） */
+  const { stagedItems, unstagedItems } = useMemo(
+    () => splitChangeFilesForDisplay(changeFiles),
     [changeFiles],
-  );
-
-  /** 暂存的更改：status.staged 等 */
-  const stagedItems = useMemo(
-    () =>
-      baseChangeItems
-        .map((item) => {
-          const statusMeta = resolveStagedStatusMeta(item);
-          return statusMeta ? { ...item, statusMeta } : null;
-        })
-        .filter((item): item is NonNullable<typeof item> => item !== null),
-    [baseChangeItems],
-  );
-
-  /** 更改：modified / deleted / untracked / conflict 等未暂存文件 */
-  const unstagedItems = useMemo(
-    () =>
-      baseChangeItems
-        .map((item) => {
-          const statusMeta = resolveUnstagedStatusMeta(item);
-          return statusMeta ? { ...item, statusMeta } : null;
-        })
-        .filter((item): item is NonNullable<typeof item> => item !== null),
-    [baseChangeItems],
   );
 
   // 变更项列表

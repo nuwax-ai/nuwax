@@ -409,8 +409,7 @@ export const useSourceControl = ({
 
   /**
    * 刷新 Git 变更列表（仅 status 接口）
-   * - 暂存的更改：status.staged
-   * - 更改：status.created + modified + deleted + untracked + conflicted
+   * 后端各数组非互斥，由 resolveGitFileStatuses 按优先级归一化后 merge 到暂存区/更改区
    */
   const refreshGitList = useCallback(async () => {
     if (!isGitWorkspaceReady(workspace) || isRefreshingGitList) {
