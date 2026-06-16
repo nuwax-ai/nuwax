@@ -220,7 +220,7 @@ const SourceControlPanel: React.FC<SourceControlPanelProps> = ({
 
       const isSuccess = await runGitDiscard(gitWorkspace, fileIds);
       if (!isSuccess) {
-        return Promise.reject(new Error('Git discard failed'));
+        return;
       }
 
       try {

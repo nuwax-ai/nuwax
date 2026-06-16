@@ -129,6 +129,7 @@ const SpaceCreateProject: React.FC = () => {
     modelId,
     tools,
     computerId,
+    agentMode,
   }: SubmitPayload) => {
     // todo: 页面应用不需要策略，直接跳转到页面开发页面，后续再补充
     if (targetType === AgentComponentTypeEnum.PageApp) {
@@ -142,6 +143,7 @@ const SpaceCreateProject: React.FC = () => {
         modelId,
         infos: tools,
         selectedComputerId: computerId,
+        agentMode,
       });
       return;
     }
@@ -211,6 +213,7 @@ const SpaceCreateProject: React.FC = () => {
           modelId,
           infos: tools,
           selectedComputerId: computerId,
+          agentMode,
         });
       }
     } catch (error: any) {

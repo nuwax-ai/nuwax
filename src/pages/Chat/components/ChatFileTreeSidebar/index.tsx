@@ -1,8 +1,10 @@
+import type { GitWorkspaceConfig } from '@/components/business-component/FileTreeGitSourcePanel';
 import FileTreeGitSourcePanel from '@/components/business-component/FileTreeGitSourcePanel';
 import type {
   FileTreeContainerProps,
   SourceControlProps,
 } from '@/components/business-component/FileTreeGitSourcePanel/types/file-tree-git-source';
+import GitVersionRecordPanel from '@/components/business-component/GitVersionRecordPanel';
 import fileTreeViewStyles from '@/components/FileTreeView/index.less';
 import type { ChangeFileInfo } from '@/components/FileTreeView/type';
 import type { ConversationAgentFileViewPreview } from '@/pages/ConversationAgent/hooks/types';
@@ -18,6 +20,12 @@ import styles from './index.less';
 const cx = classNames.bind(styles);
 const fileTreeCx = classNames.bind(fileTreeViewStyles);
 
+export interface ChatGitVersionControlProps {
+  workspace: GitWorkspaceConfig;
+  branch: string;
+  onRollbackSuccess?: () => void;
+}
+
 export interface ChatFileTreeSidebarProps {
   className?: string;
   tree: FileTreeContainerProps;
@@ -27,9 +35,20 @@ export interface ChatFileTreeSidebarProps {
   hideDesktop?: HideDesktopEnum;
   /** Git diff 预览文件 */
   diffFile?: ChangeFileInfo | null;
+  /** Git 版本记录面板是否打开 */
+  gitVersionPanelOpen?: boolean;
+  /** 切换 Git 版本记录面板 */
+  onToggleGitVersionPanel?: () => void;
+  /** Git 版本记录面板配置（通用型智能体） */
+  gitVersionControl?: ChatGitVersionControlProps;
   previewPanelProps: Omit<
     ChatFilePreviewPanelProps,
-    'preview' | 'viewMode' | 'diffFile'
+    | 'preview'
+    | 'viewMode'
+    | 'diffFile'
+    | 'showGitVersionButton'
+    | 'isGitVersionPanelOpen'
+    | 'onToggleGitVersionPanel'
   >;
 }
 
@@ -45,16 +64,29 @@ const ChatFileTreeSidebar: React.FC<ChatFileTreeSidebarProps> = ({
   viewMode,
   hideDesktop,
   diffFile,
+  gitVersionPanelOpen = false,
+  onToggleGitVersionPanel,
+  gitVersionControl,
   previewPanelProps,
 }) => {
   /** preview 模式下由 Header 折叠按钮控制；desktop 模式下不展示文件树 */
   const showFileTree = viewMode !== 'desktop' && tree.isFileTreeVisible;
+  const showGitVersionButton = Boolean(gitVersionControl);
+  const showGitVersionPanel =
+    gitVersionPanelOpen &&
+    showGitVersionButton &&
+    !diffFile &&
+    viewMode !== 'desktop';
+
   const { isFullscreen, header, content, restartOverlay } =
     useChatFilePreviewPanel({
       preview,
       viewMode,
       hideDesktop,
       diffFile,
+      showGitVersionButton,
+      isGitVersionPanelOpen: gitVersionPanelOpen,
+      onToggleGitVersionPanel,
       ...previewPanelProps,
     });
 
@@ -106,7 +138,16 @@ const ChatFileTreeSidebar: React.FC<ChatFileTreeSidebarProps> = ({
             />
           )}
           <div className={cx('preview-panel', 'flex-1', 'h-full', 'relative')}>
-            {content}
+            {showGitVersionPanel && gitVersionControl ? (
+              <GitVersionRecordPanel
+                className={cx('git-version-panel', 'h-full')}
+                workspace={gitVersionControl.workspace}
+                branch={gitVersionControl.branch}
+                onRollbackSuccess={gitVersionControl.onRollbackSuccess}
+              />
+            ) : (
+              content
+            )}
             {restartOverlay}
           </div>
         </div>

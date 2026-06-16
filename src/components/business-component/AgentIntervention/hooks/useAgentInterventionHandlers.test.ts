@@ -201,7 +201,10 @@ describe('useAgentInterventionHandlers', () => {
       expect(updated[0].acpPermissionInteractions![0].errorMessage).toBe(
         'network timeout',
       );
-      expect(message.error).toHaveBeenCalledWith('network timeout');
+      // toast 始终是统一友好文案，不再透传原始 message
+      expect(message.error).toHaveBeenCalledWith(
+        'PC.Models.ConversationInfo.permissionResponseFailed',
+      );
     });
 
     it('sets selectedOptionId when outcome is selected', async () => {

@@ -28,7 +28,11 @@ export type InterventionQueueItem =
 
 function isActiveResponseStatus(status: string | undefined): boolean {
   const value = status ?? 'pending';
-  return value === 'pending' || value === 'submitting' || value === 'failed';
+  // `failed` is terminal: once the user has responded, the card closes
+  // regardless of whether the API call succeeded, so a failed approval no
+  // longer pins the front of the dock and blocks later approvals. The error
+  // itself is still surfaced via toast in respondAcpPermission.
+  return value === 'pending' || value === 'submitting';
 }
 
 function readMcpAskRequestId(rawInput: unknown): string | undefined {

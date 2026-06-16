@@ -47,6 +47,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
   loadingSuggest = false,
   chatSuggestList = [],
   agentInfo = {},
+  initialAgentMode,
   onSendMessage,
   onClear,
   onLoadMoreMessage,
@@ -151,6 +152,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
   const interventionLayer = useAgentInterventionLayer({
     conversationId,
     messageList,
+    initialAgentMode,
     onSendMessage: (msg) => handleMessageSend(msg),
   });
   agentModeRef.current = interventionLayer.agentMode;
