@@ -9,9 +9,10 @@ import type { FileTreePreviewPanelProps } from './types';
 const cx = classNames.bind(styles);
 
 export { default as FileTreeViewPanel } from './FileTreeViewPanel';
-export type { FileTreeViewProps, FileTreeViewRef } from './FileTreeViewPanel';
 export { useFileTreePreviewView } from './hooks/useFileTreePreviewView';
 export type {
+  ChangeFileGitStatusKind,
+  ChangeFileInfo,
   FileTreePreviewGitVersionControlProps,
   FileTreePreviewPanelProps,
   FileTreePreviewViewPreview,

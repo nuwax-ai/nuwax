@@ -1,7 +1,3 @@
-import FileContextMenu from '@/components/FileTreeView/FileContextMenu';
-import FileTree from '@/components/FileTreeView/FileTree';
-import type { FileTreeRef } from '@/components/FileTreeView/FileTree/types';
-import SearchView from '@/components/FileTreeView/SearchView';
 import TipsBox from '@/components/TipsBox';
 import FileTreeToolbar from '@/components/business-component/FileTreeGitSourcePanel/FileTreeToolbar';
 import { dict } from '@/services/i18nRuntime';
@@ -10,6 +6,10 @@ import { findFileNode } from '@/utils/appDevUtils';
 import classNames from 'classnames';
 import React, { useRef } from 'react';
 import type { FileTreeContainerProps } from '../types/file-tree-git-source';
+import FileContextMenu from './FileContextMenu';
+import FileTree from './FileTree';
+import type { FileTreeRef } from './FileTree/types';
+import SearchView from './SearchView';
 import styles from './index.less';
 
 export interface FileTreePanelProps {

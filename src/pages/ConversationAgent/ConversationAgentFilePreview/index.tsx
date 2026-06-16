@@ -1,7 +1,7 @@
 import ChangeFileGitDiffView from '@/components/business-component/ChangeFileGitDiffView';
+import fileTreePreviewStyles from '@/components/business-component/FileTreePreviewPanel/index.less';
 import type { FileTreePreviewViewPreview } from '@/components/business-component/FileTreePreviewPanel/types';
-import fileTreeViewStyles from '@/components/FileTreeView/index.less';
-import type { ChangeFileInfo } from '@/components/FileTreeView/type';
+import type { ChangeFileInfo } from '@/components/business-component/FileTreePreviewPanel/types/file-tree';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
 import FilePathHeader from './FilePathHeader';
@@ -15,7 +15,7 @@ import TabPickerPanel from './TabPickerPanel';
 import ToolTabContent from './ToolTabContent';
 
 const cx = classNames.bind(styles);
-const fileTreeCx = classNames.bind(fileTreeViewStyles);
+const fileTreeCx = classNames.bind(fileTreePreviewStyles);
 
 export interface ConversationAgentFilePreviewProps {
   /** 文件预览状态与渲染函数 */

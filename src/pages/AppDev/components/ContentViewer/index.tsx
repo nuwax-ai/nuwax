@@ -1,7 +1,7 @@
 import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
 import ChangeFileGitDiffView from '@/components/business-component/ChangeFileGitDiffView';
+import type { ChangeFileInfo } from '@/components/business-component/FileTreePreviewPanel/types/file-tree';
 import CodeViewer from '@/components/CodeViewer';
-import type { ChangeFileInfo } from '@/components/FileTreeView/type';
 import { t } from '@/services/i18nRuntime';
 import { FileNode, ProjectDetailData } from '@/types/interfaces/appDev';
 import {

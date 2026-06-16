@@ -1,4 +1,4 @@
-import MoreActionsMenu from '@/components/FileTreeView/FilePathHeader/MoreActionsMenu/index';
+import MoreActionsMenu from '@/components/business-component/FileTreePreviewPanel/FilePathHeader/MoreActionsMenu';
 import { dict } from '@/services/i18nRuntime';
 import { getFileIcon } from '@/utils/fileTree';
 import {

@@ -1,7 +1,7 @@
 import type {
   ChangeFileGitStatusKind,
   ChangeFileInfo,
-} from '@/components/FileTreeView/type';
+} from '@/components/business-component/FileTreePreviewPanel/types/file-tree';
 
 /** 变更列表区块：暂存区 / 工作区 */
 export type ChangeListSection = 'staged' | 'unstaged';

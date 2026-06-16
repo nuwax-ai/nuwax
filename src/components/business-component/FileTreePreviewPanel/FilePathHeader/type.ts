@@ -2,7 +2,7 @@ import { ConnectionStatus } from '@/components/business-component/VncPreview/typ
 import { FileNode } from '@/types/interfaces/appDev';
 
 /** Chat 页文件预览 Header 组件 Props（不含保存/取消） */
-export interface ChatFilePathHeaderProps {
+export interface FilePathHeaderProps {
   /** 会话ID */
   conversationId: string;
   className?: string;

@@ -8,7 +8,6 @@ import {
   mergeGitStatusFileIds,
 } from '@/components/business-component/FileTreeGitSourcePanel/utils/gitStatusUtils';
 import CodeViewer from '@/components/CodeViewer';
-import { ChangeFileInfo } from '@/components/FileTreeView/type';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { ImageViewer } from '@/pages/AppDev/components';
 import { dict } from '@/services/i18nRuntime';
@@ -47,6 +46,7 @@ import type {
   FileTreePreviewViewProps,
   FileTreePreviewViewValue,
 } from '../types';
+import { ChangeFileInfo } from '../types/file-tree';
 
 /**
  * 文件树 + 预览视图 Hook

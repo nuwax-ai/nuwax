@@ -1,4 +1,4 @@
-import type { ChangeFileInfo } from '@/components/FileTreeView/type';
+import type { ChangeFileInfo } from '@/components/business-component/FileTreePreviewPanel/types/file-tree';
 import type { FileNode } from '@/types/interfaces/appDev';
 import type { ReactNode } from 'react';
 import type { GitWorkspaceConfig } from '../utils/buildGitWorkspaceParams';

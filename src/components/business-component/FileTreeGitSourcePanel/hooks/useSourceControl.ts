@@ -3,7 +3,7 @@
  * 管理修改文件列表、暂存、提交推送及 diff 预览相关逻辑
  * 支持 pageApp / taskAgent 两种 workspace，Git 操作集中在此，页面差异通过 callbacks 注入
  */
-import type { ChangeFileInfo } from '@/components/FileTreeView/type';
+import type { ChangeFileInfo } from '@/components/business-component/FileTreePreviewPanel/types/file-tree';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { getProjectContent, submitFilesUpdate } from '@/services/appDev';
 import { dict } from '@/services/i18nRuntime';
