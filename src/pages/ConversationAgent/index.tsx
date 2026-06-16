@@ -9,6 +9,8 @@ import FileTreeGitSourcePanel, {
   useSourceControl,
   type SelectedChangeFile,
 } from '@/components/business-component/FileTreeGitSourcePanel';
+import { useFileTreePreviewView } from '@/components/business-component/FileTreePreviewPanel/hooks/useFileTreePreviewView';
+import type { FileTreePreviewViewProps } from '@/components/business-component/FileTreePreviewPanel/types';
 import VncPreview from '@/components/business-component/VncPreview';
 import CreateAgent from '@/components/CreateAgent';
 import Loading from '@/components/custom/Loading';
@@ -107,9 +109,7 @@ import {
 } from './ConversationAgentFilePreview/hooks/usePreviewTabs';
 import PreviewTabBar from './ConversationAgentFilePreview/PreviewTabBar';
 import ConversationAgentHeader from './ConversationAgentHeader';
-import type { ConversationAgentFileViewProps } from './hooks/types';
 import { useConversationAgentDevLogs } from './hooks/useConversationAgentDevLogs';
-import { useConversationAgentFileView } from './hooks/useConversationAgentFileView';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -1228,9 +1228,9 @@ const ConversationAgent: React.FC = () => {
   /**
    * 文件视图 Hook 的完整配置属性
    * 聚合文件树、文件操作回调、沙箱信息、空闲检测等配置，
-   * 传递给 useConversationAgentFileView 以获得 tree/preview 渲染组件
+   * 传递给 useFileTreePreviewView 以获得 tree/preview 渲染组件
    */
-  const fileViewProviderProps = useMemo((): ConversationAgentFileViewProps => {
+  const fileViewProviderProps = useMemo((): FileTreePreviewViewProps => {
     return {
       className: cx(styles['file-tree-sidebar']),
       taskAgentSelectedFileId, // TaskAgent 自动选中的文件 ID
@@ -1358,7 +1358,7 @@ const ConversationAgent: React.FC = () => {
   ]);
 
   /** 初始化文件视图 Hook，获取文件树和预览的渲染组件 */
-  const fileView = useConversationAgentFileView(fileViewProviderProps);
+  const fileView = useFileTreePreviewView(fileViewProviderProps);
   refreshGitListRef.current = fileView.refreshGitList;
 
   useEffect(

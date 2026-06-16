@@ -127,6 +127,8 @@ export interface FileTreeContainerProps {
   handleExportProject?: () => Promise<void>;
   /** 是否正在导出项目 */
   isExportingProject?: boolean;
+  /** 是否正在导入项目 */
+  isImportingProject?: boolean;
   /** 工具栏是否禁用（如对比模式、聊天加载中） */
   toolbarDisabled?: boolean;
 }

@@ -1,9 +1,10 @@
 import SvgIcon from '@/components/base/SvgIcon';
+import FileTreePreviewPanel, {
+  type FileTreePreviewPanelProps,
+} from '@/components/business-component/FileTreePreviewPanel';
 import UnifiedChatSession from '@/components/business-component/UnifiedChatSession';
 import ConditionRender from '@/components/ConditionRender';
 import TooltipIcon from '@/components/custom/TooltipIcon';
-import type { ChatFileTreeSidebarProps } from '@/pages/Chat/components/ChatFileTreeSidebar';
-import ChatFileTreeSidebar from '@/pages/Chat/components/ChatFileTreeSidebar';
 import DropdownChangeName from '@/pages/Chat/components/DropdownChangeName';
 import { t } from '@/services/i18nRuntime';
 import { HideDesktopEnum } from '@/types/enums/agent';
@@ -21,7 +22,7 @@ interface LeftContentProps {
   isAppSidebarMode: boolean;
   headerProps: any;
   chatSessionProps: any;
-  fileSidebarProps: ChatFileTreeSidebarProps;
+  fileSidebarProps: FileTreePreviewPanelProps;
 }
 
 const LeftContent: React.FC<LeftContentProps> = ({
@@ -240,7 +241,7 @@ const LeftContent: React.FC<LeftContentProps> = ({
                 },
               )}
             >
-              <ChatFileTreeSidebar
+              <FileTreePreviewPanel
                 {...fileSidebarProps}
                 className={cx(
                   styles['file-tree-container'],

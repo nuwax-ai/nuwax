@@ -35,6 +35,18 @@ export {
   useSourceControl,
 } from './FileTreeGitSourcePanel';
 export {
+  default as FileTreePreviewPanel,
+  FileTreeViewPanel,
+  useFileTreePreviewView,
+  type FileTreePreviewGitVersionControlProps,
+  type FileTreePreviewPanelProps,
+  type FileTreePreviewViewPreview,
+  type FileTreePreviewViewProps,
+  type FileTreePreviewViewValue,
+  type FileTreeViewProps,
+  type FileTreeViewRef,
+} from './FileTreePreviewPanel';
+export {
   default as GitVersionRecordPanel,
   type GitVersionRecordPanelProps,
 } from './GitVersionRecordPanel';

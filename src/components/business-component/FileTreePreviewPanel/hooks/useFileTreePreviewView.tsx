@@ -44,25 +44,29 @@ import React, {
   useState,
 } from 'react';
 import type {
-  ConversationAgentFileViewProps,
-  ConversationAgentFileViewValue,
-} from './types';
+  FileTreePreviewViewProps,
+  FileTreePreviewViewValue,
+} from '../types';
 
 /**
- * ConversationAgent 文件视图 Hook
- * 从 FileTreeView 提取的状态、副作用与处理器
+ * 文件树 + 预览视图 Hook
+ * 从 FileTreeView 提取的状态、副作用与处理器，供 FileTreePreviewPanel 及上层页面使用
  */
-export function useConversationAgentFileView(
-  props: ConversationAgentFileViewProps,
-): ConversationAgentFileViewValue {
+export function useFileTreePreviewView(
+  props: FileTreePreviewViewProps,
+): FileTreePreviewViewValue {
   const {
     className,
+    headerClassName,
     taskAgentSelectedFileId,
+    clearTaskAgentSelectedFileId,
     taskAgentSelectTrigger,
+    isImportProjectTrigger,
     originalFiles,
     fileTreeDataLoading,
     readOnly = false,
     targetId,
+    viewMode = 'preview',
     onUploadFiles,
     onExportProject,
     onRenameFile,
@@ -72,10 +76,21 @@ export function useConversationAgentFileView(
     onDeleteFile,
     // 保存文件回调
     onSaveFiles,
+    onImportProject,
+    isImportingProject = false,
     // 单个文件内容变更后实时保存
     onSaveFileContent,
+    agentSandboxId,
+    showMoreActions = true,
+    isFullscreenPreview = false,
+    onFullscreenPreview,
+    onShare,
+    isShowShare = true,
+    isShowExportPdfButton = true,
+    isShowDownloadButton = true,
+    showFullscreenIcon = true,
     onClose,
-    // 是否隐藏文件树（外部控制）
+    hideFileTree = false,
     // 文件树是否固定（用户点击后固定）
     isFileTreePinned = false,
     // 文件树固定状态变化回调
@@ -88,7 +103,10 @@ export function useConversationAgentFileView(
     isCanDeleteSkillFile = false,
     // 刷新文件树回调
     onRefreshFileTree,
+    showRefreshButton = true,
     hideDesktop = HideDesktopEnum.No,
+    isProjectSkill = false,
+    initViewFileType,
     // 静态资源文件基础路径
     staticFileBasePath,
     /** 选中文件后打开右侧预览面板 */
@@ -97,27 +115,11 @@ export function useConversationAgentFileView(
     onFileRenamed,
     /** 文件/文件夹删除成功后回调 */
     onFileDeleted,
-    agentSandboxId,
     isDynamicTheme = false,
     /** 是否启用 Git status，仅通用型 TaskAgent 智能体为 true */
     enableGitStatus = false,
   } = props;
-  const headerClassName = undefined;
-  const isImportProjectTrigger = undefined;
-  const showMoreActions = true;
   const isCloudComputer = agentSandboxId === '-1';
-  const isFullscreenPreview = false;
-  const onFullscreenPreview = undefined as
-    | ((isFullscreen: boolean) => void)
-    | undefined;
-  const onShare = undefined;
-  const isShowShare = true;
-  const isShowExportPdfButton = true;
-  const isShowDownloadButton = true;
-  const showFullscreenIcon = true;
-  const hideFileTree = false;
-  const showRefreshButton = true;
-  const isProjectSkill = false;
   // 文件树数据
   const [files, setFiles] = useState<FileNode[]>([]);
   // 当前选中的文件ID
@@ -172,6 +174,8 @@ export function useConversationAgentFileView(
 
   // 是否正在上传文件
   const [isUploadingFiles, setIsUploadingFiles] = useState<boolean>(false);
+  // 是否正在导出项目
+  const [isExportingProject, setIsExportingProject] = useState<boolean>(false);
 
   // 文件树是否可见（默认隐藏，但如果已固定则显示）
   const [internalFileTreeVisible, setInternalFileTreeVisible] =
@@ -212,8 +216,16 @@ export function useConversationAgentFileView(
   );
 
   useEffect(() => {
-    setViewFileType('preview');
-  }, [selectedFileId]);
+    if (!initViewFileType) {
+      setViewFileType('preview');
+    }
+  }, [selectedFileId, initViewFileType]);
+
+  useEffect(() => {
+    if (initViewFileType) {
+      setViewFileType(initViewFileType);
+    }
+  }, [initViewFileType]);
 
   // 当 isFileTreePinned 变化时，同步展开文件树（与 FileTreeView 一致）
   useEffect(() => {
@@ -475,6 +487,9 @@ export function useConversationAgentFileView(
         if (!fileProxyUrl || fileNode?.isLink) {
           onFileSelectOpenPreview?.(fileNode?.id || fileId);
           setSelectedFileId(fileNode?.id || fileId);
+          if (!initViewFileType) {
+            setViewFileType('preview');
+          }
           setSelectedFileNode(fileNode);
           return;
         }
@@ -504,6 +519,10 @@ export function useConversationAgentFileView(
 
         setSelectedFileId(fileNode?.id || fileId);
 
+        if (!initViewFileType) {
+          setViewFileType('preview');
+        }
+
         // 图片、视频、音频、office 等通过 FilePreview 渲染
         if (
           isImageFileType ||
@@ -521,6 +540,16 @@ export function useConversationAgentFileView(
           // 如果文件不支持预览，则直接设置选中文件节点（如.zip、.rar、.7z 等压缩文件，不支持预览，也不需要获取压缩文件内容）
           if (!isPreviewable) {
             setSelectedFileNode(fileNode);
+            return;
+          }
+
+          const fileNameLower = (fileNode?.name || '').toLowerCase();
+          const _isMarkdownFile = isMarkdownFile(fileNameLower);
+          if (_isMarkdownFile && !initViewFileType) {
+            setSelectedFileNode({
+              ...fileNode,
+              content: '',
+            });
             return;
           }
 
@@ -547,7 +576,7 @@ export function useConversationAgentFileView(
         setSelectedFileId('');
       }
     },
-    [files, isRenamingFile, onFileSelectOpenPreview],
+    [files, isRenamingFile, onFileSelectOpenPreview, initViewFileType],
   );
 
   // 文件选择（对外接口，用于用户主动选择）
@@ -555,10 +584,11 @@ export function useConversationAgentFileView(
     async (fileId: string, options?: { selectFolder?: boolean }) => {
       // 记录用户主动选择的文件ID
       userSelectedFileRef.current = fileId;
+      clearTaskAgentSelectedFileId?.();
       // 调用内部选择函数
       await handleFileSelectInternal(fileId, options);
     },
-    [handleFileSelectInternal],
+    [handleFileSelectInternal, clearTaskAgentSelectedFileId],
   );
 
   // 监听 taskAgentSelectedFileId 和 taskAgentSelectTrigger 的变化，执行自动选择
@@ -699,7 +729,13 @@ export function useConversationAgentFileView(
         setSelectedFileId(newFileNode?.id);
       }
     }
-  }, [files, isProjectSkill, selectedFileId, taskAgentSelectedFileId]);
+  }, [
+    files,
+    isImportProjectTrigger,
+    isProjectSkill,
+    selectedFileId,
+    taskAgentSelectedFileId,
+  ]);
 
   /**
    * 处理右键菜单显示
@@ -1087,8 +1123,14 @@ export function useConversationAgentFileView(
    * 处理项目导出
    */
   const handleExportProject = useCallback(async () => {
-    if (onExportProject) {
+    if (!onExportProject) {
+      return;
+    }
+    setIsExportingProject(true);
+    try {
       await onExportProject();
+    } finally {
+      setTimeout(() => setIsExportingProject(false), 1000);
     }
   }, [onExportProject]);
 
@@ -1595,7 +1637,7 @@ export function useConversationAgentFileView(
       isFileTreePinned,
       onFileTreeToggle: handleFileTreeToggle,
       isCloudComputer,
-      viewMode: 'preview' as const,
+      viewMode,
       viewFileType,
       onViewFileTypeChange: handleViewFileTypeChange,
     }),
@@ -1613,6 +1655,7 @@ export function useConversationAgentFileView(
       currentDownloadingFileId,
       isShowShare,
       isShowDownloadButton,
+      onShare,
       isShowExportPdfButton,
       handleExportPdf,
       isExportingPdf,
@@ -1621,6 +1664,7 @@ export function useConversationAgentFileView(
       isFileTreePinned,
       handleFileTreeToggle,
       isCloudComputer,
+      viewMode,
       viewFileType,
       handleViewFileTypeChange,
     ],
@@ -1686,6 +1730,11 @@ export function useConversationAgentFileView(
       handleCreateFolder,
       handleDownloadFileByUrl,
       handleExportProject: onExportProject ? handleExportProject : undefined,
+      handleImportProject: onImportProject
+        ? () => void onImportProject()
+        : undefined,
+      isExportingProject,
+      isImportingProject,
       toolbarDisabled: fileTreeDataLoading || isUploadingFiles,
     },
     preview: {

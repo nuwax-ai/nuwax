@@ -1,4 +1,4 @@
-import FileTreeView from '@/components/FileTreeView';
+import { FileTreeViewPanel } from '@/components/business-component';
 import PublishComponentModal from '@/components/PublishComponentModal';
 import TipsBox from '@/components/TipsBox';
 import VersionHistory from '@/components/VersionHistory';
@@ -191,7 +191,7 @@ const SkillDetails: React.FC = () => {
           >
             <div className={cx('flex', 'flex-1', 'overflow-y')}>
               {/* 文件树视图 */}
-              <FileTreeView
+              <FileTreeViewPanel
                 taskAgentSelectedFileId={'SKILL.md'}
                 initViewFileType={'code'}
                 isImportProjectTrigger={importProjectTrigger}

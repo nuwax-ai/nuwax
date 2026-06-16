@@ -64,6 +64,7 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
     importProjectLabel,
     handleExportProject,
     isExportingProject = false,
+    isImportingProject = false,
     toolbarDisabled = false,
   } = tree;
 
@@ -141,6 +142,14 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
       <TipsBox
         visible={isUploadingFiles}
         text={dict('PC.Components.FileTreeView.uploading')}
+      />
+      <TipsBox
+        visible={isExportingProject}
+        text={dict('PC.Components.FileTreeView.exporting')}
+      />
+      <TipsBox
+        visible={isImportingProject}
+        text={dict('PC.Components.FileTreeView.importing')}
       />
 
       {/* 搜索框 */}
