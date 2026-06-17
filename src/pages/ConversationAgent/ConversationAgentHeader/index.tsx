@@ -7,7 +7,7 @@ import { dict } from '@/services/i18nRuntime';
 import { PermissionsEnum } from '@/types/enums/common';
 import { AgentTypeEnum, ApplicationMoreActionEnum } from '@/types/enums/space';
 import { AgentConfigInfo } from '@/types/interfaces/agent';
-import { FormOutlined } from '@ant-design/icons';
+import { FormOutlined, ThunderboltOutlined } from '@ant-design/icons';
 import { Button, Dropdown, MenuProps, Tag } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
@@ -44,6 +44,10 @@ export interface ConversationAgentHeaderProps {
   isFileTreeSidebarVisible?: boolean;
   /** 切换文件树侧边栏显隐 */
   onToggleFileTreeSidebar?: () => void;
+  /** 终端面板是否处于右侧全屏展开 */
+  isTerminalPanelOpen?: boolean;
+  /** 打开终端面板（底部控制台终端 Tab 全屏） */
+  onOpenTerminalPanel?: () => void;
   /** 是否显示智能体电脑入口 */
   isShowDesktop?: boolean;
   /** 智能体电脑是否已打开 */
@@ -65,6 +69,8 @@ const ConversationAgentHeader: React.FC<ConversationAgentHeaderProps> = ({
   onOtherAction,
   isFileTreeSidebarVisible = false,
   onToggleFileTreeSidebar,
+  isTerminalPanelOpen = false,
+  onOpenTerminalPanel,
   isShowDesktop = false,
   isAgentDesktopOpen = false,
   onOpenDesktopPanel,
@@ -215,6 +221,36 @@ const ConversationAgentHeader: React.FC<ConversationAgentHeaderProps> = ({
           </Dropdown>
         </div>
 
+        {/* 文件树侧边栏按钮 */}
+        <TooltipIcon
+          title={
+            isFileTreeSidebarVisible
+              ? dict('PC.Components.FilePathHeader.collapseFileTree')
+              : dict('PC.Components.FilePathHeader.expandFileTree')
+          }
+          className={cx(styles['panel-btn'], {
+            [styles.active]: isFileTreeSidebarVisible,
+          })}
+          icon={
+            <SvgIcon
+              name="icons-common-file_preview"
+              style={{ fontSize: 16 }}
+            />
+          }
+          onClick={onToggleFileTreeSidebar}
+        />
+
+        {/* 终端按钮 */}
+        <TooltipIcon
+          title={dict('PC.Pages.ConversationAgentTabPicker.terminal')}
+          ariaLabel={dict('PC.Pages.ConversationAgentTabPicker.terminal')}
+          className={cx(styles['panel-btn'], {
+            [styles.active]: isTerminalPanelOpen,
+          })}
+          icon={<ThunderboltOutlined style={{ fontSize: 16 }} />}
+          onClick={onOpenTerminalPanel}
+        />
+
         {/* 智能体电脑按钮 */}
         <ConditionRender condition={isShowDesktop}>
           <TooltipIcon
@@ -239,25 +275,6 @@ const ConversationAgentHeader: React.FC<ConversationAgentHeaderProps> = ({
             onClick={onOpenDesktopPanel}
           />
         </ConditionRender>
-
-        {/* 文件树侧边栏按钮 */}
-        <TooltipIcon
-          title={
-            isFileTreeSidebarVisible
-              ? dict('PC.Components.FilePathHeader.collapseFileTree')
-              : dict('PC.Components.FilePathHeader.expandFileTree')
-          }
-          className={cx(styles['panel-btn'], {
-            [styles.active]: isFileTreeSidebarVisible,
-          })}
-          icon={
-            <SvgIcon
-              name="icons-common-file_preview"
-              style={{ fontSize: 16 }}
-            />
-          }
-          onClick={onToggleFileTreeSidebar}
-        />
 
         {/* 发布按钮 */}
         <Button type="primary" onClick={onPublish} disabled={publishDisabled}>
