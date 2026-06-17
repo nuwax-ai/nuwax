@@ -15,7 +15,6 @@ import VncPreview from '@/components/business-component/VncPreview';
 import CreateAgent from '@/components/CreateAgent';
 import Loading from '@/components/custom/Loading';
 import PublishComponentModal from '@/components/PublishComponentModal';
-import ShowStand from '@/components/ShowStand';
 import type { PromptVariable } from '@/components/TiptapVariableInput/types';
 import { transformToPromptVariables } from '@/components/TiptapVariableInput/utils/variableTransform';
 import VersionHistory from '@/components/VersionHistory';
@@ -102,7 +101,6 @@ import ConversationAgentChatSession from './ConversationAgentChatSession';
 import ConversationAgentFilePreview from './ConversationAgentFilePreview';
 import {
   getFileTabId,
-  PREVIEW_TAB_PICKER_ID,
   usePreviewTabs,
   WORKSPACE_PREVIEW_TOOL_IDS,
   type PreviewToolId,
@@ -266,7 +264,6 @@ const ConversationAgent: React.FC = () => {
     onMessageSend,
     runAsync,
     resetInit,
-    cardList,
     restartVncPod,
     restartAgent,
   } = useModel('conversationInfo');
@@ -293,6 +290,15 @@ const ConversationAgent: React.FC = () => {
 
   // 是否开启订阅功能
   const isEnableSubscription = tenantConfigInfo?.enableSubscription !== 0;
+
+  /** 常驻工作区工具页签（租户未开启订阅时不含订阅相关页签） */
+  const workspaceToolIds = useMemo((): PreviewToolId[] => {
+    const ids: PreviewToolId[] = ['arrange', 'preview', 'version-control'];
+    if (isEnableSubscription) {
+      ids.push('subscription-setting', 'subscription-stats');
+    }
+    return ids;
+  }, [isEnableSubscription]);
 
   // ==================== 计算属性 ====================
   /** 开发会话 ID，用于聊天历史查询 */
@@ -381,13 +387,6 @@ const ConversationAgent: React.FC = () => {
     runQueryAgentConversation(devConversationId);
   }, [devConversationId]);
 
-  /** 离开 ConversationAgent 页面时清理 conversationAgent 会话状态 */
-  useEffect(() => {
-    return () => {
-      resetAgentConversation();
-    };
-  }, []);
-
   /**
    * 当页面加载结束且携带了初始消息状态时，自动触发消息发送
    */
@@ -468,12 +467,19 @@ const ConversationAgent: React.FC = () => {
   useEffect(() => {
     if (queryConversationId) {
       setLoadingAgentConfigInfo(true);
+      // 查询会话
       runQueryConversation(queryConversationId);
+
+      // 立即刷新文件列表
+      void refreshFileListImmediately(queryConversationId);
     }
 
     // 在 queryConversationId 变更前或组件卸载时清理会话数据
     return () => {
       resetInit();
+
+      /** 离开 ConversationAgent 页面时清理 conversationAgent 会话状态 */
+      resetAgentConversation();
     };
   }, [queryConversationId]);
 
@@ -1370,6 +1376,7 @@ const ConversationAgent: React.FC = () => {
 
   /** 预览区标签页管理 */
   const previewTabs = usePreviewTabs({
+    workspaceToolIds,
     // 打开文件标签
     onFileTabActivate: async (fileId, isDiff) => {
       closeAgentDesktop();
@@ -1391,16 +1398,6 @@ const ConversationAgent: React.FC = () => {
       // 打开预览视图
       if (queryConversationId) {
         openPreviewView(queryConversationId);
-      }
-    },
-    // 打开标签选择器
-    onPickerTabActivate: async () => {
-      closeAgentDesktop();
-      // 重置终端布局
-      resetDevConsoleExpandedLayout();
-      // 打开预览视图
-      if (queryConversationId) {
-        await openPreviewView(queryConversationId);
       }
     },
     // 打开工具标签
@@ -1717,11 +1714,7 @@ const ConversationAgent: React.FC = () => {
           onTogglePinTab={previewTabs.togglePinTab}
           // 重新排序标签
           onTabReorder={previewTabs.reorderTabs}
-          // 打开标签选择器
-          onAddTab={() => {
-            closeAgentDesktop();
-            previewTabs.openPickerTab();
-          }}
+          permanentWorkspaceToolIds={workspaceToolIds}
           /** 重启智能体电脑 */
           onRestartServer={() => {
             if (queryConversationId) {
@@ -1761,18 +1754,6 @@ const ConversationAgent: React.FC = () => {
               subscriptionSettingPanel={subscriptionSettingPanel}
               // 订阅统计面板
               subscriptionStatsPanel={subscriptionStatsPanel}
-              // 选择工具
-              onSelectTool={(toolId) => {
-                closeAgentDesktop();
-                if (toolId === 'terminal') {
-                  skipDevConsoleResetRef.current = true;
-                  setDevConsoleExpandSignal((n) => n + 1);
-                  previewTabs.closeTab(PREVIEW_TAB_PICKER_ID);
-                  return;
-                }
-                previewTabs.closeTab(PREVIEW_TAB_PICKER_ID);
-                previewTabs.openToolTab(toolId);
-              }}
               providerClassName={fileView.className}
               className={cx(styles['file-preview-panel'], 'w-full', 'h-full')}
             />
@@ -1833,9 +1814,6 @@ const ConversationAgent: React.FC = () => {
         className={styles['page-header']}
         agentConfigInfo={agentConfigInfo}
         onEditAgent={() => setOpenEditAgent(true)}
-        onToggleShowStand={() =>
-          handleHeaderOverlayType(EditAgentShowType.Show_Stand)
-        }
         onToggleVersionHistory={() =>
           handleHeaderOverlayType(EditAgentShowType.Version_History)
         }
@@ -1884,10 +1862,6 @@ const ConversationAgent: React.FC = () => {
                   tree={fileView.tree}
                   treeClassName="w-full h-full"
                   sourceControl={{
-                    gitWorkspace: {
-                      workspaceType: 'taskAgent',
-                      cid: queryConversationId ?? null,
-                    },
                     changeFiles: fileView.changeFiles,
                     selectedChangeFile: gitSourceControl.selectedChangeFile,
                     isCommitting:
@@ -1897,8 +1871,9 @@ const ConversationAgent: React.FC = () => {
                     onRefreshGitList: fileView.refreshGitList,
                     onDiffFileSelect: gitSourceControl.handleDiffFileSelect,
                     onOpenChangeFile: gitSourceControl.handleOpenChangeFile,
-                    onAfterDiscardChange:
-                      gitSourceControl.handleAfterDiscardChange,
+                    onDiscardChanges: gitSourceControl.handleDiscardChange,
+                    onStageChanges: gitSourceControl.handleStageChanges,
+                    onUnstageChanges: gitSourceControl.handleUnstageChanges,
                     onAddToGitignore: (fileId) => {
                       void gitSourceControl.handleAddToGitignore(fileId);
                     },
@@ -1915,11 +1890,6 @@ const ConversationAgent: React.FC = () => {
         {/* 调试详情抽屉（按需显示） */}
         <DebugDetails
           visible={showType === EditAgentShowType.Debug_Details}
-          onClose={() => setShowType(EditAgentShowType.Hide)}
-        />
-        <ShowStand
-          cardList={cardList}
-          visible={showType === EditAgentShowType.Show_Stand}
           onClose={() => setShowType(EditAgentShowType.Hide)}
         />
         <VersionHistory
