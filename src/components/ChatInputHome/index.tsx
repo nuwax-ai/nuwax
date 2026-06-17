@@ -13,6 +13,7 @@ import { DefaultSelectedEnum, TaskStatus } from '@/types/enums/agent';
 import { UploadFileStatus } from '@/types/enums/common';
 import type { ChatInputProps, UploadFileInfo } from '@/types/interfaces/common';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
+import eventBus, { EVENT_NAMES } from '@/utils/eventBus';
 import { handleUploadFileList } from '@/utils/upload';
 import {
   ArrowDownOutlined,
@@ -236,8 +237,9 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
    * 支持 contenteditable div 的回车事件
    */
   const handlePressEnter = () => {
-    //如果是输出过程中 或者 中止会话过程中 不能触发enter事件
-    if (isConversationActive || isStoppingConversation) {
+    // 中止会话过程中不能触发 enter 事件
+    // 会话活跃时不拦截：消息经 onEnter 流转到外层队列拦截逻辑入队
+    if (isStoppingConversation) {
       return;
     }
 
@@ -574,6 +576,25 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     };
   }, []);
 
+  // 监听队列消息编辑回填事件
+  useEffect(() => {
+    const handleEditMessage = ({
+      text,
+      files: editFiles,
+    }: {
+      text: string;
+      files?: UploadFileInfo[];
+    }) => {
+      setMessageInfo((prev) => (prev ? `${prev}\n${text}` : text));
+      if (editFiles?.length) {
+        setUploadFiles((prev) => [...prev, ...editFiles]);
+      }
+    };
+    eventBus.on(EVENT_NAMES.QUEUE_EDIT_MESSAGE, handleEditMessage);
+    return () =>
+      eventBus.off(EVENT_NAMES.QUEUE_EDIT_MESSAGE, handleEditMessage);
+  }, []);
+
   /**
    * 将底部 @ 图标选择的提及项插入到 MentionEditor
    */
@@ -858,10 +879,9 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
                   agentType={agentType}
                 />
               )}
-              {/* 根据会话状态显示发送或停止按钮 */}
-              {isConversationActive ||
-              conversationInfo?.taskStatus === TaskStatus.EXECUTING ? (
-                // 会话进行中，显示停止按钮
+              {/* 停止按钮：会话活跃或任务执行中时显示 */}
+              {(isConversationActive ||
+                conversationInfo?.taskStatus === TaskStatus.EXECUTING) && (
                 <Tooltip title={getStopButtonTooltip()}>
                   <span
                     onClick={handleStopConversation}
@@ -873,7 +893,6 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
                       styles.box,
                       styles['send-box'],
                       styles['stop-box'],
-                      // 当会话进行中且按钮可点击时，使用高亮样式
                       {
                         [styles['stop-box-active']]: !isStoppingConversation,
                       },
@@ -890,36 +909,40 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
                     )}
                   </span>
                 </Tooltip>
-              ) : (
-                // 会话未进行中，显示发送按钮
-                <>
-                  <Tooltip title={getButtonTooltip()}>
-                    <span
-                      onClick={handleSendMessage}
-                      className={cx(
-                        'flex',
-                        'items-center',
-                        'content-center',
-                        'cursor-pointer',
-                        styles.box,
-                        styles['send-box'],
-                        {
-                          [styles.disabled]:
-                            disabledSend ||
-                            wholeDisabled ||
-                            loadingConversation ||
-                            isLoadingOtherInterface,
-                        },
-                      )}
-                    >
-                      <SvgIcon
-                        name="icons-chat-send"
-                        style={{ fontSize: '14px' }}
-                      />
-                    </span>
-                  </Tooltip>
-                </>
               )}
+              {/* 发送按钮：始终显示；会话活跃时点击加入发送队列 */}
+              <Tooltip
+                title={
+                  isConversationActive ||
+                  conversationInfo?.taskStatus === TaskStatus.EXECUTING
+                    ? '加入发送队列'
+                    : getButtonTooltip()
+                }
+              >
+                <span
+                  onClick={handleSendMessage}
+                  className={cx(
+                    'flex',
+                    'items-center',
+                    'content-center',
+                    'cursor-pointer',
+                    styles.box,
+                    styles['send-box'],
+                    {
+                      [styles.disabled]:
+                        disabledSend ||
+                        wholeDisabled ||
+                        loadingConversation ||
+                        isLoadingOtherInterface,
+                    },
+                  )}
+                >
+                  <SvgIcon
+                    name="icons-chat-send"
+                    style={{ fontSize: '14px' }}
+                  />
+                </span>
+              </Tooltip>
             </div>
           </footer>
         </div>

@@ -1,0 +1,190 @@
+@import '@/styles/color';
+@import '@/styles/token';
+@import '@/styles/scrollbar.less';
+
+// ===== 待发送消息队列面板（紧凑 · 紧贴输入框上方）=====
+.queue-panel {
+  max-width: 800px;
+  width: 100%;
+  margin: 0 auto 6px;
+  padding: 4px 8px;
+  background: @colorBgContainer;
+  border: 1px solid @colorBorderSecondary;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  backdrop-filter: blur(6px);
+}
+
+// —— header：单行紧凑标签 ——
+.queue-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 20px;
+  padding: 0 2px;
+}
+
+.queue-header-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: @colorTextSecondary;
+  font-size: @fontSizeSm;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.queue-title {
+  letter-spacing: 0.02em;
+}
+
+.queue-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 5px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  color: @colorPrimary;
+  background: color-mix(in srgb, @colorPrimary 14%, transparent);
+  border-radius: 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+.queue-clear {
+  padding: 2px 4px;
+  font-size: @fontSizeSm;
+  line-height: 1;
+  color: @colorTextTertiary;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: color 0.15s ease;
+
+  &:hover {
+    color: @colorError;
+  }
+}
+
+// —— 列表 ——
+.queue-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  max-height: 132px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 1px 0 2px;
+
+  .scrollbar-auto-hide();
+}
+
+// ===== 单条待发送消息（紧凑行 · hover 显操作）=====
+.container {
+  width: 100%;
+}
+
+.card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 26px;
+  padding: 0 4px 0 8px;
+  border-radius: 8px;
+  background: transparent;
+  transition: background 0.15s ease;
+
+  &:hover,
+  &:focus-within {
+    background: @colorBgTextHover;
+
+    .actions {
+      opacity: 1;
+      pointer-events: auto;
+    }
+  }
+}
+
+.body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.text {
+  flex: 1;
+  min-width: 0;
+  font-size: @fontSizeSm;
+  color: @colorText;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-badge {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  height: 16px;
+  padding: 0 5px;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1;
+  color: @colorTextTertiary;
+  background: @colorFillTertiary;
+  border-radius: 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+// —— 操作区：默认隐藏，hover 显示 ——
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  cursor: pointer;
+  border-radius: 6px;
+  color: @colorTextTertiary;
+  font-size: 12px;
+  transition: all 0.15s ease;
+
+  &:hover {
+    background: color-mix(in srgb, @colorText 8%, transparent);
+    color: @colorText;
+  }
+}
+
+.send-btn {
+  color: @colorPrimary;
+
+  &:hover {
+    background: color-mix(in srgb, @colorPrimary 12%, transparent);
+    color: @colorPrimary;
+  }
+}
+
+.delete-btn {
+  &:hover {
+    color: @colorError;
+    background: color-mix(in srgb, @colorError 10%, transparent);
+  }
+}

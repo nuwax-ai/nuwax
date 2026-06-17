@@ -4,6 +4,9 @@ import {
   type AgentMode,
   useAgentInterventionLayer,
 } from '@/components/business-component/AgentIntervention';
+import MessageQueuePanel, {
+  useUnifiedChatQueue,
+} from '@/components/business-component/MessageQueue';
 import ChatInputHome from '@/components/ChatInputHome';
 import ChatView from '@/components/ChatView';
 import NewConversationSet from '@/components/NewConversationSet';
@@ -131,7 +134,16 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
     onLoadMoreMessage,
   ]);
 
-  // 3. 消息发送代理
+  // 3. 消息队列：会话活跃时消息入队，空闲时自动消费（逻辑收敛于 hook）
+  const messageQueue = useUnifiedChatQueue({
+    conversationId,
+    messageList,
+    selectedModelId,
+    agentModeRef,
+    onSendMessage,
+  });
+
+  // 消息发送代理：经队列拦截（活跃时入队，否则真正发送）
   const handleMessageSend = (
     messageInfo: string,
     files: UploadFileInfo[] = [],
@@ -139,12 +151,12 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
     modelId?: number,
     selectedAgentMode?: AgentMode,
   ) => {
-    onSendMessage?.(
+    messageQueue.trySend(
       messageInfo,
       files,
       skillIds,
-      modelId || selectedModelId,
-      selectedAgentMode || agentModeRef.current,
+      modelId,
+      selectedAgentMode,
     );
   };
 
@@ -354,6 +366,14 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
 
       {/* 统一会话输入框 */}
       <div className={cx(styles['chat-input-container'])}>
+        {/* 待发送消息队列面板（无队列时组件内部返回 null） */}
+        <MessageQueuePanel
+          queue={messageQueue.queue}
+          onSendNow={messageQueue.sendNow}
+          onDelete={messageQueue.deleteQueued}
+          onEdit={messageQueue.handleEditQueued}
+          onClear={messageQueue.clearQueue}
+        />
         <ChatInputHome
           key={`chat-input-${conversationId}`}
           clearDisabled={!messageList?.length}
