@@ -37,7 +37,7 @@ export interface SubmitPayload {
 }
 
 interface PromptBoxProps {
-  onSubmit: (payload: SubmitPayload) => void;
+  onSubmit: (payload: SubmitPayload) => Promise<void> | void;
 }
 
 interface TabItem {
@@ -81,6 +81,9 @@ const PromptBox: React.FC<PromptBoxProps> = ({ onSubmit }) => {
   const params = useParams();
   const spaceId = Number(params.spaceId);
   const isPageApp = activeTab === AgentComponentTypeEnum.PageApp;
+
+  // 提交中状态，防止连续发送
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // 获取租户配置信息
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
@@ -179,28 +182,39 @@ const PromptBox: React.FC<PromptBoxProps> = ({ onSubmit }) => {
 
   const handleSend = useCallback(
     (msg: string, files?: any[], skillIds?: number[], modelId?: number) => {
+      if (isSubmitting) return;
       if (!msg?.trim() && !files?.length) {
         message.warning('请输入您的任务描述！');
         return;
       }
-      onSubmit({
-        type: activeTabRef.current as AgentComponentTypeEnum,
-        prompt: msg,
-        files,
-        skillIds,
-        modelId,
-        tools: selectedComponentList,
-        computerId: selectedComputerId,
-        agentMode,
-      });
+      setIsSubmitting(true);
+      Promise.resolve(
+        onSubmit({
+          type: activeTabRef.current as AgentComponentTypeEnum,
+          prompt: msg,
+          files,
+          skillIds,
+          modelId,
+          tools: selectedComponentList,
+          computerId: selectedComputerId,
+          agentMode,
+        }),
+      ).finally(() => setIsSubmitting(false));
     },
-    [onSubmit, selectedComponentList, selectedComputerId, agentMode],
+    [
+      onSubmit,
+      selectedComponentList,
+      selectedComputerId,
+      agentMode,
+      isSubmitting,
+    ],
   );
 
   return (
     <div className={cx(styles['prompt-box-card'])}>
       <ChatInputHome
         key={currentTab.key}
+        wholeDisabled={isSubmitting}
         onEnter={handleSend}
         placeholder={currentTab.placeholder}
         usageScenarios={usageScenarios}
