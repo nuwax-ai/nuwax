@@ -419,7 +419,7 @@ export function useFileTreePreviewView(
 
     try {
       // 文件树刷新不阻塞 git status，避免与 openPreviewView 等并发刷新时 Promise 悬挂
-      void onRefreshFileTree?.();
+      // void onRefreshFileTree?.();
 
       const statusResponse = await apiGitStatus({
         workspaceType: 'taskAgent',

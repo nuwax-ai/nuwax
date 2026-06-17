@@ -387,13 +387,6 @@ const ConversationAgent: React.FC = () => {
     runQueryAgentConversation(devConversationId);
   }, [devConversationId]);
 
-  /** 离开 ConversationAgent 页面时清理 conversationAgent 会话状态 */
-  useEffect(() => {
-    return () => {
-      resetAgentConversation();
-    };
-  }, []);
-
   /**
    * 当页面加载结束且携带了初始消息状态时，自动触发消息发送
    */
@@ -474,12 +467,19 @@ const ConversationAgent: React.FC = () => {
   useEffect(() => {
     if (queryConversationId) {
       setLoadingAgentConfigInfo(true);
+      // 查询会话
       runQueryConversation(queryConversationId);
+
+      // 立即刷新文件列表
+      void refreshFileListImmediately(queryConversationId);
     }
 
     // 在 queryConversationId 变更前或组件卸载时清理会话数据
     return () => {
       resetInit();
+
+      /** 离开 ConversationAgent 页面时清理 conversationAgent 会话状态 */
+      resetAgentConversation();
     };
   }, [queryConversationId]);
 
