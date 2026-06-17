@@ -17,7 +17,7 @@ import {
 } from 'react';
 
 // xterm.js 核心样式
-import '@xterm/xterm/css/xterm.css';
+import './xterm.css';
 
 import styles from './index.less';
 import {

@@ -1,4 +1,4 @@
-import '@xterm/xterm/css/xterm.css';
+import './xterm.css';
 
 import classNames from 'classnames';
 import {
