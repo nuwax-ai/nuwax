@@ -678,6 +678,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     [id, fileTreeData, handleRefreshFileList],
   );
 
+  // Git 源代码管理 props
   const gitSourceControl = useSourceControl({
     workspace: {
       workspaceType: 'taskAgent',
