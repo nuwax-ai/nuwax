@@ -1,7 +1,3 @@
-import FileContextMenu from '@/components/FileTreeView/FileContextMenu';
-import FileTree from '@/components/FileTreeView/FileTree';
-import type { FileTreeRef } from '@/components/FileTreeView/FileTree/types';
-import SearchView from '@/components/FileTreeView/SearchView';
 import TipsBox from '@/components/TipsBox';
 import FileTreeToolbar from '@/components/business-component/FileTreeGitSourcePanel/FileTreeToolbar';
 import { dict } from '@/services/i18nRuntime';
@@ -10,6 +6,10 @@ import { findFileNode } from '@/utils/appDevUtils';
 import classNames from 'classnames';
 import React, { useRef } from 'react';
 import type { FileTreeContainerProps } from '../types/file-tree-git-source';
+import FileContextMenu from './FileContextMenu';
+import FileTree from './FileTree';
+import type { FileTreeRef } from './FileTree/types';
+import SearchView from './SearchView';
 import styles from './index.less';
 
 export interface FileTreePanelProps {
@@ -34,6 +34,7 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
   const {
     files,
     selectedFileId,
+    selectedFolderId = '',
     renamingNode,
     contextMenuTarget,
     contextMenuPosition,
@@ -64,6 +65,7 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
     importProjectLabel,
     handleExportProject,
     isExportingProject = false,
+    isImportingProject = false,
     toolbarDisabled = false,
   } = tree;
 
@@ -76,6 +78,12 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
    * - 未选中或找不到节点：在根目录创建
    */
   const resolveCreateParentNode = (): FileNode | null => {
+    if (selectedFolderId) {
+      const folderNode = findFileNode(selectedFolderId, files);
+      if (folderNode?.type === 'folder') {
+        return folderNode;
+      }
+    }
     if (!selectedFileId) {
       return null;
     }
@@ -142,6 +150,14 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
         visible={isUploadingFiles}
         text={dict('PC.Components.FileTreeView.uploading')}
       />
+      <TipsBox
+        visible={isExportingProject}
+        text={dict('PC.Components.FileTreeView.exporting')}
+      />
+      <TipsBox
+        visible={isImportingProject}
+        text={dict('PC.Components.FileTreeView.importing')}
+      />
 
       {/* 搜索框 */}
       <SearchView
@@ -177,6 +193,7 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
           files={files}
           taskAgentSelectedFileId={taskAgentSelectedFileId}
           selectedFileId={selectedFileId}
+          selectedFolderId={selectedFolderId}
           renamingNode={renamingNode}
           onCancelRename={handleCancelRename}
           onContextMenu={handleContextMenu}

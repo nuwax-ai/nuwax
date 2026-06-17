@@ -32,9 +32,18 @@ export {
   apiGitStatus,
   apiGitUnstage,
   useAppDevFileTree,
-  useConversationAgentSourceControl,
   useSourceControl,
 } from './FileTreeGitSourcePanel';
+export {
+  default as FileTreePreviewPanel,
+  FileTreeViewPanel,
+  useFileTreePreviewView,
+  type FileTreePreviewGitVersionControlProps,
+  type FileTreePreviewPanelProps,
+  type FileTreePreviewViewPreview,
+  type FileTreePreviewViewProps,
+  type FileTreePreviewViewValue,
+} from './FileTreePreviewPanel';
 export {
   default as GitVersionRecordPanel,
   type GitVersionRecordPanelProps,

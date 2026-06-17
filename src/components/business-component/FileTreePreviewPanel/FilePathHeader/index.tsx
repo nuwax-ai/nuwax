@@ -1,7 +1,5 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import { ConnectionStatus } from '@/components/business-component/VncPreview/type';
-import MoreActionsMenu from '@/components/FileTreeView/FilePathHeader/MoreActionsMenu/index';
-import ShareDesktopModal from '@/components/FileTreeView/FilePathHeader/ShareDesktopModal';
 import { USER_INFO } from '@/constants/home.constants';
 import { dict } from '@/services/i18nRuntime';
 import { FileNode } from '@/types/interfaces/appDev';
@@ -9,6 +7,7 @@ import { formatFileSize } from '@/utils/appDevUtils';
 import { copyTextToClipboard } from '@/utils/clipboard';
 import { isMarkdownFile } from '@/utils/common';
 import {
+  BranchesOutlined,
   CloseOutlined,
   FilePdfOutlined,
   FullscreenExitOutlined,
@@ -19,7 +18,9 @@ import { Button, ConfigProvider, message, Segmented, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo, useState } from 'react';
 import styles from './index.less';
-import type { ChatFilePathHeaderProps } from './type';
+import MoreActionsMenu from './MoreActionsMenu/index';
+import ShareDesktopModal from './ShareDesktopModal';
+import type { FilePathHeaderProps } from './type';
 
 const cx = classNames.bind(styles);
 
@@ -27,7 +28,7 @@ const cx = classNames.bind(styles);
  * Chat 页文件预览 Header
  * 基于 FilePathHeader 复制，移除保存/取消按钮逻辑
  */
-const ChatFilePathHeader: React.FC<ChatFilePathHeaderProps> = ({
+const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   className,
   conversationId,
   targetNode,
@@ -56,6 +57,9 @@ const ChatFilePathHeader: React.FC<ChatFilePathHeaderProps> = ({
   isFileTreePinned = false,
   onFileTreeToggle,
   isCloudComputer = true,
+  showGitVersionButton = false,
+  isGitVersionPanelOpen = false,
+  onToggleGitVersionPanel,
 }) => {
   const fileName = targetNode?.name;
   const fileSize = targetNode?.size;
@@ -122,7 +126,10 @@ const ChatFilePathHeader: React.FC<ChatFilePathHeaderProps> = ({
     const canFullscreen = showFullscreenIcon || isFullscreen;
     const canMoreActions = showMoreActions;
     const canClose = !!onClose && !isFullscreen;
-    return canShare || canFullscreen || canMoreActions || canClose;
+    const canGitVersion = showGitVersionButton && !!onToggleGitVersionPanel;
+    return (
+      canShare || canFullscreen || canMoreActions || canClose || canGitVersion
+    );
   }, [
     isShowShare,
     viewMode,
@@ -131,6 +138,8 @@ const ChatFilePathHeader: React.FC<ChatFilePathHeaderProps> = ({
     isFullscreen,
     showMoreActions,
     onClose,
+    showGitVersionButton,
+    onToggleGitVersionPanel,
   ]);
 
   return (
@@ -138,6 +147,8 @@ const ChatFilePathHeader: React.FC<ChatFilePathHeaderProps> = ({
       {viewMode !== 'desktop' && (
         <div className={cx('flex', 'items-center', 'gap-4')}>
           <span>{dict('PC.Components.FilePathHeader.filePreview')}</span>
+
+          {/* 文件树展开/折叠按钮 */}
           <Tooltip
             title={
               isFileTreeVisible
@@ -166,17 +177,17 @@ const ChatFilePathHeader: React.FC<ChatFilePathHeaderProps> = ({
 
       {viewMode === 'preview' ? (
         <div className={styles.fileInfo}>
-          <div
-            className={styles.fileDetails}
-            style={{
-              visibility: !isFileTreeVisible && fileName ? 'visible' : 'hidden',
-            }}
-          >
-            <div className={styles.fileName}>{fileName || '\u00A0'}</div>
-            {formattedSize && (
-              <span className={styles.fileMeta}>({formattedSize})</span>
-            )}
-          </div>
+          {/* 根据文件树列表是否展示来控制显隐：文件树展开时隐藏，文件树隐藏时显示 */}
+          {!isFileTreeVisible && fileName && (
+            <div className={styles.fileDetails}>
+              <div className={styles.fileName}>{fileName}</div>
+              {formattedSize && (
+                <span className={styles.fileMeta}>({formattedSize})</span>
+              )}
+            </div>
+          )}
+
+          {/* 只有存在 fileProxyUrl 或 content 时，才显示预览和代码视图切换按钮 */}
           {(targetNode?.fileProxyUrl ||
             (targetNode?.content !== undefined &&
               targetNode?.content !== null)) &&
@@ -315,6 +326,27 @@ const ChatFilePathHeader: React.FC<ChatFilePathHeaderProps> = ({
 
         {showRightActionButtons && (
           <div className={cx(styles.actionButtons)}>
+            {/* Git 版本记录按钮 */}
+            {showGitVersionButton && onToggleGitVersionPanel && (
+              <Tooltip
+                title={dict(
+                  'PC.Pages.AppDevEditorHeaderRight.gitVersionHistory',
+                )}
+                placement="bottom"
+              >
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<BranchesOutlined style={{ fontSize: 16 }} />}
+                  onClick={onToggleGitVersionPanel}
+                  className={cx(styles.actionButton, {
+                    [styles.gitVersionButtonActive]: isGitVersionPanelOpen,
+                  })}
+                />
+              </Tooltip>
+            )}
+
+            {/* 分享按钮 */}
             {isShowShare &&
               (viewMode === 'desktop' ||
                 (targetNode?.fileProxyUrl && viewMode === 'preview')) && (
@@ -337,6 +369,7 @@ const ChatFilePathHeader: React.FC<ChatFilePathHeaderProps> = ({
                 </Tooltip>
               )}
 
+            {/* 全屏按钮 */}
             {(showFullscreenIcon || isFullscreen) && (
               <Tooltip
                 title={
@@ -405,4 +438,4 @@ const ChatFilePathHeader: React.FC<ChatFilePathHeaderProps> = ({
   );
 };
 
-export default ChatFilePathHeader;
+export default FilePathHeader;

@@ -1,9 +1,6 @@
 import ChangeFileGitDiffView from '@/components/business-component/ChangeFileGitDiffView';
 import VncPreview from '@/components/business-component/VncPreview';
 import type { VncPreviewRef } from '@/components/business-component/VncPreview/type';
-import fileTreeViewStyles from '@/components/FileTreeView/index.less';
-import type { ChangeFileInfo } from '@/components/FileTreeView/type';
-import type { ConversationAgentFileViewPreview } from '@/pages/ConversationAgent/hooks/types';
 import { dict } from '@/services/i18nRuntime';
 import { HideDesktopEnum } from '@/types/enums/agent';
 import { Spin } from 'antd';
@@ -15,37 +12,14 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import ChatFilePathHeader from './FilePathHeader';
+import FilePathHeader from '../FilePathHeader';
+import styles from '../index.less';
+import type { UseFileTreePreviewPanelParams } from '../types';
 
-const cx = classNames.bind(fileTreeViewStyles);
+const cx = classNames.bind(styles);
 
-export interface ChatFilePreviewPanelProps {
-  /** 文件预览状态与渲染函数（来自 useConversationAgentFileView） */
-  preview: ConversationAgentFileViewPreview;
-  /** 当前视图模式：文件预览 / 智能体电脑 */
-  viewMode: 'preview' | 'desktop';
-  className?: string;
-  /** 用户选择的智能体电脑 ID */
-  agentSandboxId?: string;
-  agentSandboxName?: string;
-  /** 重启容器 */
-  onRestartServer?: () => Promise<void>;
-  /** 重启智能体 */
-  onRestartAgent?: () => void;
-  /** 导出项目 */
-  onExportProject?: () => Promise<void>;
-  /** VNC 空闲检测 */
-  idleDetection?: {
-    enabled?: boolean;
-    onIdleTimeout?: () => void;
-  };
-  hideDesktop?: HideDesktopEnum;
-  /** Git 源代码管理选中的 diff 文件（优先于普通预览） */
-  diffFile?: ChangeFileInfo | null;
-}
-
-/** useChatFilePreviewPanel 返回值 */
-export interface ChatFilePreviewPanelValue {
+/** useFileTreePreviewPanel 返回值 */
+export interface UseFileTreePreviewPanelReturn {
   isFullscreen: boolean;
   header: React.ReactNode;
   content: React.ReactNode;
@@ -53,12 +27,12 @@ export interface ChatFilePreviewPanelValue {
 }
 
 /**
- * Chat 页文件预览逻辑 Hook
- * 提供顶部 Header 与右侧预览内容，供 ChatFileTreeSidebar 组合布局
+ * 文件树预览区逻辑 Hook
+ * 提供顶部 Header 与右侧预览内容，供 FileTreePreviewPanel 组合布局
  */
-export function useChatFilePreviewPanel(
-  props: ChatFilePreviewPanelProps,
-): ChatFilePreviewPanelValue {
+export function useFileTreePreviewPanel(
+  params: UseFileTreePreviewPanelParams,
+): UseFileTreePreviewPanelReturn {
   const {
     preview,
     viewMode,
@@ -70,7 +44,10 @@ export function useChatFilePreviewPanel(
     idleDetection,
     hideDesktop = HideDesktopEnum.No,
     diffFile,
-  } = props;
+    showGitVersionButton = false,
+    isGitVersionPanelOpen = false,
+    onToggleGitVersionPanel,
+  } = params;
 
   const {
     targetId,
@@ -82,13 +59,16 @@ export function useChatFilePreviewPanel(
   } = preview;
 
   const vncPreviewRef = useRef<VncPreviewRef>(null);
-  const [isRestarting, setIsRestarting] = useState(false);
-  const [isExportingProjecting, setIsExportingProjecting] = useState(false);
+  const [isRestarting, setIsRestarting] = useState<boolean>(false);
+  const [isExportingProjecting, setIsExportingProjecting] =
+    useState<boolean>(false);
 
+  // 获取 VNC 连接状态
   const renderVncPreviewStatus = useCallback(() => {
     return vncPreviewRef.current?.getStatus() ?? null;
   }, []);
 
+  // 导出项目
   const handleDownloadProject = useCallback(async () => {
     if (!onExportProject) {
       return;
@@ -101,6 +81,7 @@ export function useChatFilePreviewPanel(
     }
   }, [onExportProject]);
 
+  // 重启容器
   const handleRestartServer = useCallback(async () => {
     if (!onRestartServer) {
       return;
@@ -126,6 +107,7 @@ export function useChatFilePreviewPanel(
     }
   }, [viewMode]);
 
+  // VNC 空闲检测
   const wrappedIdleDetection = idleDetection
     ? {
         ...idleDetection,
@@ -135,6 +117,7 @@ export function useChatFilePreviewPanel(
       }
     : undefined;
 
+  // 差异文件名称
   const diffFileName = useMemo(() => {
     if (!diffFile) {
       return '';
@@ -143,6 +126,7 @@ export function useChatFilePreviewPanel(
     return segments[segments.length - 1] || diffFile.fileId;
   }, [diffFile]);
 
+  // 文件预览内容区
   const content =
     viewMode === 'desktop' ? (
       <VncPreview
@@ -160,19 +144,21 @@ export function useChatFilePreviewPanel(
         fileName={diffFileName}
         originalContent={diffFile.originalFileContent}
         modifiedContent={diffFile.fileContent}
-        className={cx('flex-1', 'h-full')}
+        className="flex-1 h-full"
       />
     ) : (
       renderPreviewContent()
     );
 
   const header = (
-    <ChatFilePathHeader
+    <FilePathHeader
       {...filePathHeaderProps}
       conversationId={targetId?.toString() || ''}
       viewMode={viewMode}
       agentSandboxName={agentSandboxName}
-      onRestartServer={handleRestartServer}
+      onRestartServer={
+        onRestartServer ? () => void handleRestartServer() : undefined
+      }
       onRestartAgent={onRestartAgent}
       isCloudComputer={agentSandboxId === '-1'}
       onExportProject={onExportProject ? handleDownloadProject : undefined}
@@ -181,9 +167,13 @@ export function useChatFilePreviewPanel(
       isFullscreen={isFullscreen}
       onClose={filePathHeaderProps.onClose}
       vncConnectStatus={renderVncPreviewStatus()}
+      showGitVersionButton={showGitVersionButton}
+      isGitVersionPanelOpen={isGitVersionPanelOpen}
+      onToggleGitVersionPanel={onToggleGitVersionPanel}
     />
   );
 
+  // 重启容器遮罩
   const restartOverlay =
     isRestarting && hideDesktop !== HideDesktopEnum.Yes ? (
       <div className={cx('restart-container')}>
@@ -204,24 +194,3 @@ export function useChatFilePreviewPanel(
     restartOverlay,
   };
 }
-
-/**
- * Chat 页文件预览内容区（仅渲染区，不含 Header）
- */
-const ChatFilePreviewPanel: React.FC<
-  ChatFilePreviewPanelProps & { className?: string }
-> = (props) => {
-  const { className, ...rest } = props;
-  const { content, restartOverlay } = useChatFilePreviewPanel(rest);
-
-  return (
-    <div
-      className={cx('flex-1', 'overflow-hide', 'h-full', 'relative', className)}
-    >
-      {content}
-      {restartOverlay}
-    </div>
-  );
-};
-
-export default ChatFilePreviewPanel;

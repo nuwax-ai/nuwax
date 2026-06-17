@@ -32,20 +32,33 @@ import type {
 } from '@/types/interfaces/conversationInfo';
 import { addBaseTarget, parsePageAppProjectId } from '@/utils/common';
 
+import {
+  useSourceControl,
+  type SelectedChangeFile,
+} from '@/components/business-component/FileTreeGitSourcePanel';
 import type { FileTreeContainerProps } from '@/components/business-component/FileTreeGitSourcePanel/types/file-tree-git-source';
-import { useConversationAgentFileView } from '@/pages/ConversationAgent/hooks/useConversationAgentFileView';
+import { useFileTreePreviewView } from '@/components/business-component/FileTreePreviewPanel/hooks/useFileTreePreviewView';
+import { apiUpdateStaticFile } from '@/services/vncDesktop';
+import type { UpdateFileInfo } from '@/types/interfaces/fileTree';
+import type { StaticFileInfo } from '@/types/interfaces/vncDesktop';
+import { updateFilesListContent } from '@/utils/fileTree';
 import { jumpToPageDevelop } from '@/utils/router';
 import { LoadingOutlined } from '@ant-design/icons';
 import { Form } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { history, useLocation, useModel, useParams } from 'umi';
 import LeftContent from './components/LeftContent';
 import ShowArea from './components/ShowArea';
 import { useAutoPreviewFile } from './hooks/useAutoPreviewFile';
 import { useChatConversation } from './hooks/useChatConversation';
 import { useChatFiles } from './hooks/useChatFiles';
-import { useChatGitSourceControl } from './hooks/useChatGitSourceControl';
 import { useChatSandbox } from './hooks/useChatSandbox';
 import { useChatVariables } from './hooks/useChatVariables';
 import { useChatViewMode } from './hooks/useChatViewMode';
@@ -106,6 +119,14 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   const [isSidebarVisible, setIsSidebarVisible] =
     useState<boolean>(showSidebar);
   const sidebarRef = useRef<AgentSidebarRef>(null);
+
+  // 复制模板弹窗状态
+  const [openCopyModal, setOpenCopyModal] = useState<boolean>(false);
+
+  const [clearLoading, setClearLoading] = useState<boolean>(false);
+
+  // 异步查询会话加载状态
+  const [loadingAsync, setLoadingAsync] = useState<boolean>(true);
 
   // 开放应用智能体会话聊天页面相关状态
   const {
@@ -236,9 +257,6 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     return conversationInfo?.agent || agentDetail;
   }, [conversationInfo?.agent, agentDetail]);
 
-  // 复制模板弹窗状态
-  const [openCopyModal, setOpenCopyModal] = useState<boolean>(false);
-
   const {
     setSelectedComputerId,
     isSelectionLocked,
@@ -271,7 +289,6 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     openDesktopView,
     pagePreviewData,
   });
-  const [clearLoading, setClearLoading] = useState<boolean>(false);
 
   const {
     variableParams,
@@ -287,7 +304,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   // 导航拦截：追踪会话是否在本次会话中变为活跃状态
   // 使用 ref 追踪初始状态，避免在刷新时因历史消息状态触发拦截
   const wasConversationActiveOnMount = useRef<boolean | null>(null);
-  const shouldBlockNavigation = useRef(false);
+  const shouldBlockNavigation = useRef<boolean>(false);
 
   // 在首次获取到 isConversationActive 值时记录
   useEffect(() => {
@@ -371,9 +388,6 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     scrollTimeoutRef,
     setShowScrollBtn,
   );
-
-  // 异步查询会话加载状态
-  const [loadingAsync, setLoadingAsync] = useState<boolean>(true);
 
   useEffect(() => {
     if (id) {
@@ -537,7 +551,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   });
 
   // 文件视图 props
-  const fileView = useConversationAgentFileView({
+  const fileView = useFileTreePreviewView({
     taskAgentSelectedFileId,
     taskAgentSelectTrigger,
     originalFiles: fileTreeData,
@@ -580,33 +594,159 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   );
 
   // Git 源代码管理 props
-  const gitSourceControl = useChatGitSourceControl({
-    conversationId: id,
-    fileTreeData,
-    changeFiles: fileView.changeFiles,
-    handleSaveFiles,
-    discardChangeFile: fileView.preview.discardChangeFile,
-    openChangeFile: async (fileId: string) => {
-      setTaskAgentSelectedFileId('');
-      await fileView.tree.handleFileSelect(fileId);
-    },
-    refreshGitList: fileView.refreshGitList,
-    handleRefreshFileList,
-    onDiffFileSelect: () => {
-      if (viewMode === 'desktop') {
-        openPreviewView(id);
+  const [selectedChangeFile, setSelectedChangeFile] =
+    useState<SelectedChangeFile | null>(null);
+
+  // Git 版本记录面板状态
+  const [gitVersionPanelOpen, setGitVersionPanelOpen] =
+    useState<boolean>(false);
+
+  /** 将文件路径添加到 .gitignore */
+  const handleAddToGitignore = useCallback(
+    async (fileId: string) => {
+      if (!id) {
+        return;
+      }
+
+      const gitignoreId = '.gitignore';
+      const existing = fileTreeData?.find(
+        (item: StaticFileInfo) => item.fileId === gitignoreId,
+      );
+      const currentContent = existing?.contents ?? '';
+      const entry = fileId.startsWith('/') ? fileId.slice(1) : fileId;
+
+      if (
+        currentContent
+          .split('\n')
+          .some(
+            (line: string) => line.trim() === entry || line.trim() === fileId,
+          )
+      ) {
+        message.info(
+          t('PC.Pages.ConversationAgentSourceControl.alreadyInGitignore'),
+        );
+        return;
+      }
+
+      const newContent = currentContent
+        ? `${currentContent.replace(/\n$/, '')}\n${entry}`
+        : entry;
+
+      try {
+        if (existing) {
+          const updatedFilesList = updateFilesListContent(
+            fileTreeData || [],
+            [
+              {
+                fileId: gitignoreId,
+                fileContent: newContent,
+                originalFileContent: currentContent,
+              },
+            ],
+            'modify',
+          );
+          await apiUpdateStaticFile({
+            cId: id,
+            files: updatedFilesList as UpdateFileInfo[],
+          });
+        } else {
+          await apiUpdateStaticFile({
+            cId: id,
+            files: [
+              {
+                name: gitignoreId,
+                contents: `${newContent}\n`,
+                operation: 'create',
+                binary: false,
+                sizeExceeded: false,
+                renameFrom: '',
+                isDir: false,
+              },
+            ],
+          });
+        }
+
+        message.success(
+          t('PC.Pages.ConversationAgentSourceControl.gitignoreSuccess'),
+        );
+        await handleRefreshFileList(id);
+      } catch (error) {
+        console.error('Add to gitignore failed:', error);
       }
     },
+    [id, fileTreeData, handleRefreshFileList],
+  );
+
+  const gitSourceControl = useSourceControl({
+    workspace: {
+      workspaceType: 'taskAgent',
+      cid: id ?? null,
+    },
+    changeFiles: fileView.changeFiles,
+    selectedChangeFile,
+    setSelectedChangeFile,
+    callbacks: {
+      discardChangeFile: fileView.preview.discardChangeFile,
+      openChangeFile: (fileId: string) => {
+        setSelectedChangeFile(null);
+        setTaskAgentSelectedFileId('');
+        void fileView.tree.handleFileSelect(fileId);
+      },
+      addFileToGitignore: handleAddToGitignore,
+      onDiffFileSelect: () => {
+        if (viewMode === 'desktop') {
+          openPreviewView(id);
+        }
+      },
+      onAfterDiscardChange: () => {
+        setSelectedChangeFile(null);
+      },
+      onCommitSuccess: async () => {
+        await fileView.refreshGitList();
+        setSelectedChangeFile(null);
+      },
+      onRefreshGitList: id
+        ? async () => {
+            await fileView.refreshGitList();
+          }
+        : undefined,
+    },
   });
+
+  /** 切换 Git 版本记录面板（选中 diff 时先清除 diff 再打开面板） */
+  const handleToggleGitVersionPanel = useCallback(() => {
+    if (gitSourceControl.selectedDiffFile) {
+      gitSourceControl.clearSelectedDiff();
+      setGitVersionPanelOpen(true);
+      return;
+    }
+    setGitVersionPanelOpen((prev) => !prev);
+  }, [gitSourceControl.selectedDiffFile, gitSourceControl.clearSelectedDiff]);
+
+  useEffect(() => {
+    setGitVersionPanelOpen(false);
+  }, [id]);
+
+  useEffect(() => {
+    if (viewMode === 'desktop') {
+      setGitVersionPanelOpen(false);
+    }
+  }, [viewMode]);
 
   // 文件树 props
   const chatFileTree: FileTreeContainerProps = useMemo(
     () => ({
       ...fileView.tree,
-      handleFileSelect: async (fileId: string) => {
-        setTaskAgentSelectedFileId('');
-        gitSourceControl.setSelectedChangeFile(null);
-        await fileView.tree.handleFileSelect(fileId);
+      handleFileSelect: async (
+        fileId: string,
+        options?: { selectFolder?: boolean },
+      ) => {
+        if (!options?.selectFolder) {
+          setTaskAgentSelectedFileId('');
+          setGitVersionPanelOpen(false);
+          gitSourceControl.setSelectedChangeFile(null);
+        }
+        await fileView.tree.handleFileSelect(fileId, options);
       },
     }),
     [
@@ -624,6 +764,24 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       viewMode,
       hideDesktop: effectiveAgent?.hideDesktop,
       diffFile: gitSourceControl.selectedDiffFile,
+      gitVersionPanelOpen,
+      onToggleGitVersionPanel: handleToggleGitVersionPanel,
+      gitVersionControl:
+        effectiveAgent?.type === AgentTypeEnum.TaskAgent
+          ? {
+              workspace: {
+                workspaceType: 'taskAgent' as const,
+                cid: id ?? null,
+              },
+              branch: fileView.gitBranch,
+              onRollbackSuccess: () => {
+                if (id) {
+                  void handleRefreshFileList(id);
+                  void fileView.refreshGitList();
+                }
+              },
+            }
+          : undefined,
       previewPanelProps: {
         agentSandboxId: finalSelectedId,
         agentSandboxName: '',
@@ -669,6 +827,9 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       gitSourceControl.handleAfterDiscardChange,
       gitSourceControl.handleAddToGitignore,
       gitSourceControl.handleCommit,
+      gitVersionPanelOpen,
+      handleToggleGitVersionPanel,
+      fileView.gitBranch,
       viewMode,
       id,
       effectiveAgent?.hideDesktop,
@@ -710,6 +871,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     isMobile,
   ]);
 
+  // 聊天会话头部相关 props
   const headerProps = {
     showSidebar,
     isAppSidebarVisible,
@@ -733,6 +895,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     renderHeaderRight,
   };
 
+  // 聊天会话相关 props
   const chatSessionProps = {
     conversationId: id,
     messageList,
@@ -786,6 +949,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     messageViewRef,
   };
 
+  // 加载中
   if (clearLoading || loadingConversation || loadingAsync) {
     return (
       <div className={cx(styles['chat-loading-container'])}>
@@ -794,6 +958,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     );
   }
 
+  // 是否展开视图
   const isExpandedView = !!(pagePreviewData || isFileTreeVisible);
 
   return (

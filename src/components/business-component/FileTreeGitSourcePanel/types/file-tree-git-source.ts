@@ -1,4 +1,4 @@
-import type { ChangeFileInfo } from '@/components/FileTreeView/type';
+import type { ChangeFileInfo } from '@/components/business-component/FileTreePreviewPanel/types/file-tree';
 import type { FileNode } from '@/types/interfaces/appDev';
 import type { ReactNode } from 'react';
 import type { GitWorkspaceConfig } from '../utils/buildGitWorkspaceParams';
@@ -61,6 +61,8 @@ export interface FileTreeContainerProps {
   files: FileNode[];
   /** 当前选中的文件 ID */
   selectedFileId: string;
+  /** 当前选中的文件夹 ID（仅用于树高亮与工具栏新建父级） */
+  selectedFolderId?: string;
   /** 正在内联重命名的节点（null 表示无重命名进行中） */
   renamingNode: FileNode | null;
   /** 右键菜单当前目标节点 */
@@ -89,8 +91,11 @@ export interface FileTreeContainerProps {
   hideFileTree: boolean;
   /** 是否显示文件树刷新按钮 */
   showRefreshButton: boolean;
-  /** 选中文件并在右侧预览区打开 */
-  handleFileSelect: (fileId: string) => Promise<void>;
+  /** 选中文件并在右侧预览区打开；selectFolder 为 true 时仅选中文件夹 */
+  handleFileSelect: (
+    fileId: string,
+    options?: { selectFolder?: boolean },
+  ) => Promise<void>;
   /** 打开右键菜单 */
   handleContextMenu: (e: React.MouseEvent, node: FileNode | null) => void;
   /** 关闭右键菜单 */
@@ -127,6 +132,8 @@ export interface FileTreeContainerProps {
   handleExportProject?: () => Promise<void>;
   /** 是否正在导出项目 */
   isExportingProject?: boolean;
+  /** 是否正在导入项目 */
+  isImportingProject?: boolean;
   /** 工具栏是否禁用（如对比模式、聊天加载中） */
   toolbarDisabled?: boolean;
 }

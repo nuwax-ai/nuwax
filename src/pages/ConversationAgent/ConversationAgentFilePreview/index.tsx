@@ -1,9 +1,9 @@
 import ChangeFileGitDiffView from '@/components/business-component/ChangeFileGitDiffView';
-import fileTreeViewStyles from '@/components/FileTreeView/index.less';
-import type { ChangeFileInfo } from '@/components/FileTreeView/type';
+import fileTreePreviewStyles from '@/components/business-component/FileTreePreviewPanel/index.less';
+import type { FileTreePreviewViewPreview } from '@/components/business-component/FileTreePreviewPanel/types';
+import type { ChangeFileInfo } from '@/components/business-component/FileTreePreviewPanel/types/file-tree';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
-import type { ConversationAgentFileViewPreview } from '../hooks/types';
 import FilePathHeader from './FilePathHeader';
 import {
   WORKSPACE_PREVIEW_TOOL_IDS,
@@ -15,11 +15,11 @@ import TabPickerPanel from './TabPickerPanel';
 import ToolTabContent from './ToolTabContent';
 
 const cx = classNames.bind(styles);
-const fileTreeCx = classNames.bind(fileTreeViewStyles);
+const fileTreeCx = classNames.bind(fileTreePreviewStyles);
 
 export interface ConversationAgentFilePreviewProps {
   /** 文件预览状态与渲染函数 */
-  preview: ConversationAgentFileViewPreview;
+  preview: FileTreePreviewViewPreview;
   /** 源代码管理选中的 diff 文件（优先于普通预览） */
   diffFile?: ChangeFileInfo;
   /** 当前激活的标签（由外层 PreviewTabBar 控制） */
@@ -36,7 +36,7 @@ export interface ConversationAgentFilePreviewProps {
   subscriptionSettingPanel?: React.ReactNode;
   /** 「订阅统计」页签 */
   subscriptionStatsPanel?: React.ReactNode;
-  /** 外层容器类名（来自 useConversationAgentFileView） */
+  /** 外层容器类名（来自 useFileTreePreviewView） */
   providerClassName?: string;
   className?: string;
 }

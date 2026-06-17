@@ -2,7 +2,7 @@ import { ConnectionStatus } from '@/components/business-component/VncPreview/typ
 import { FileNode } from '@/types/interfaces/appDev';
 
 /** Chat 页文件预览 Header 组件 Props（不含保存/取消） */
-export interface ChatFilePathHeaderProps {
+export interface FilePathHeaderProps {
   /** 会话ID */
   conversationId: string;
   className?: string;
@@ -62,4 +62,10 @@ export interface ChatFilePathHeaderProps {
   onFileTreeToggle?: () => void;
   /** 是否是云电脑 */
   isCloudComputer?: boolean;
+  /** 是否显示 Git 版本记录按钮 */
+  showGitVersionButton?: boolean;
+  /** Git 版本记录面板是否已打开 */
+  isGitVersionPanelOpen?: boolean;
+  /** 切换 Git 版本记录面板 */
+  onToggleGitVersionPanel?: () => void;
 }

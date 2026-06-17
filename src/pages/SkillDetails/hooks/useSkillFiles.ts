@@ -1,4 +1,4 @@
-import type { FileTreeViewRef } from '@/components/FileTreeView/type';
+import type { FileTreeViewRef } from '@/components/business-component/FileTreePreviewPanel/types/file-tree';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { t } from '@/services/i18nRuntime';
 import {
