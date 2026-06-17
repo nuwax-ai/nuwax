@@ -1,9 +1,12 @@
+import SvgIcon from '@/components/base/SvgIcon';
+import TooltipIcon from '@/components/custom/TooltipIcon';
 import { dict } from '@/services/i18nRuntime';
+import { FileNode } from '@/types/interfaces/appDev';
 import { formatFileSize } from '@/utils/appDevUtils';
-import { ConfigProvider, Segmented } from 'antd';
+import { copyTextToClipboard } from '@/utils/clipboard';
+import { Button, ConfigProvider, message, Segmented } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
-import FilePathHeaderToolbar from './FilePathHeaderToolbar';
 import styles from './index.less';
 import { canShowPreviewCodeToggle } from './previewCodeToggle';
 import type { FilePathHeaderProps } from './type';
@@ -27,8 +30,8 @@ export type { FilePathHeaderProps };
 const cx = classNames.bind(styles);
 
 /**
- * ConversationAgent 文件路径头部组件（自 FileTreeView/FilePathHeader 复制，可独立演进）
- * 显示文件信息与操作按钮
+ * ConversationAgent 文件路径头部组件
+ * 显示文件路径、预览/代码切换与下载、复制操作
  */
 const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   className,
@@ -36,7 +39,8 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   viewMode = 'preview',
   viewFileType = 'preview',
   onViewFileTypeChange,
-  ...toolbarProps
+  isDownloadingFile = false,
+  onDownloadFileByUrl,
 }) => {
   const fileName = targetNode?.name;
   /** 文件树中的完整路径（fileId） */
@@ -47,6 +51,11 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
     return formatFileSize(fileSize);
   }, [fileSize]);
 
+  const displayFilePath = useMemo(() => {
+    if (!fileId) return '';
+    return fileId.replace(/\//g, ' > ');
+  }, [fileId]);
+
   const showPreviewCodeToggle = canShowPreviewCodeToggle(targetNode, fileName);
 
   return (
@@ -55,7 +64,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
         <div className={styles.fileInfo}>
           <div className={styles.fileDetails}>
             <div className={styles.fileName} title={fileId}>
-              {fileId}
+              {displayFilePath}
             </div>
             {formattedSize && (
               <span className={styles.fileMeta}>({formattedSize})</span>
@@ -82,7 +91,49 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
         </div>
       )}
 
-      <FilePathHeaderToolbar targetNode={targetNode} {...toolbarProps} />
+      <div className={cx('flex', 'items-center', 'ml-auto')}>
+        <div className={styles.actionButtons}>
+          {/* 下载按钮 */}
+          <TooltipIcon
+            placement="bottom"
+            title={
+              isDownloadingFile
+                ? dict('PC.Components.FilePathHeader.downloading')
+                : dict('PC.Components.FilePathHeader.download')
+            }
+          >
+            <Button
+              type="text"
+              size="small"
+              icon={
+                <SvgIcon
+                  name="icons-common-download"
+                  style={{ fontSize: 16 }}
+                />
+              }
+              onClick={() =>
+                targetNode && onDownloadFileByUrl?.(targetNode as FileNode)
+              }
+              className={styles.actionButton}
+              loading={isDownloadingFile}
+              disabled={isDownloadingFile}
+            />
+          </TooltipIcon>
+
+          {/* 复制按钮 */}
+          <TooltipIcon
+            title={dict('PC.Components.FilePathHeader.copy')}
+            placement="bottom"
+            className={styles.actionButton}
+            icon={<SvgIcon name="icons-chat-copy" style={{ fontSize: 16 }} />}
+            onClick={() => {
+              copyTextToClipboard(targetNode?.content || '', () => {
+                message.success(dict('PC.Toast.Global.copiedSuccessfully'));
+              });
+            }}
+          />
+        </div>
+      </div>
     </div>
   );
 };

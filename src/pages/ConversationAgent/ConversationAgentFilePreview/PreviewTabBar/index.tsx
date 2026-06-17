@@ -1,5 +1,6 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import MoreActionsMenu from '@/components/business-component/FileTreePreviewPanel/FilePathHeader/MoreActionsMenu';
+import ShareDesktopModal from '@/components/business-component/FileTreePreviewPanel/FilePathHeader/ShareDesktopModal';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import { dict } from '@/services/i18nRuntime';
 import { getFileIcon } from '@/utils/fileTree';
@@ -30,7 +31,6 @@ import {
 import type { Transform } from '@dnd-kit/utilities';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import ShareDesktopModal from '../FilePathHeader/ShareDesktopModal';
 import type { PreviewTab, PreviewToolId } from '../hooks/usePreviewTabs';
 import {
   isPermanentWorkspaceToolTab,
