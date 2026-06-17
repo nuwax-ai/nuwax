@@ -121,7 +121,7 @@
     border-color 0.2s ease, box-shadow 0.2s ease;
 
   &:hover {
-    background: rgba(0, 0, 0, 4%);
+    background-color: rgba(0, 0, 0, 4%);
     color: @colorText;
 
     .tab-close {
@@ -130,7 +130,7 @@
   }
 
   &.tab-item-active {
-    background: rgba(0, 0, 0, 6%);
+    background-color: rgba(0, 0, 0, 6%);
     border-color: rgba(0, 0, 0, 8%);
     box-shadow: 0 1px 2px rgba(0, 0, 0, 4%);
     color: @colorText;
@@ -141,7 +141,7 @@
     }
 
     &:hover {
-      background: rgba(0, 0, 0, 8%);
+      background-color: rgba(0, 0, 0, 8%);
     }
   }
 
@@ -217,8 +217,23 @@
   display: inline-flex;
   align-items: center;
   flex-shrink: 0;
-  margin-left: @paddingXxs;
-  gap: @marginXxs;
+  margin-left: @marginXs;
+  gap: @marginXs;
+}
+
+.tab-bar-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  color: @colorTextSecondary;
+
+  &:hover {
+    color: @colorText;
+    background: transparent;
+  }
 }
 
 .add-tab-btn {

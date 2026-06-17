@@ -351,10 +351,7 @@ const ConversationAgent: React.FC = () => {
   /**
    * 终端 WebSocket 连接地址（ttyd）
    */
-  const terminalWsUrl = useTerminalWsUrl(
-    agentConfigInfo?.tenantId,
-    finalSelectedComputerId,
-  );
+  const terminalWsUrl = useTerminalWsUrl(queryConversationId);
 
   /** 沙盒开发日志：仅在底部控制台打开且处于日志 Tab 时轮询 */
   const devLogs = useConversationAgentDevLogs(queryConversationId, {
@@ -1733,6 +1730,12 @@ const ConversationAgent: React.FC = () => {
           }}
           /** 是否为云电脑 */
           isCloudComputer={finalSelectedComputerId === '-1'}
+          conversationId={queryConversationId?.toString() ?? ''}
+          fileProxyUrl={
+            fileView.preview.filePathHeaderProps.targetNode?.fileProxyUrl ??
+            null
+          }
+          isShowShare={fileView.preview.filePathHeaderProps.isShowShare}
         />
         {/* Tab 栏下方：预览内容 + 底部终端（终端放大时仅覆盖此区域） */}
         <div className={cx(styles['right-panel-main'])}>

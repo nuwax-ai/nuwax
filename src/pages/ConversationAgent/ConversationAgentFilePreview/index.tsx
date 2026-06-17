@@ -123,7 +123,7 @@ const ConversationAgentFilePreview: React.FC<
     if (showFilePreview) {
       return (
         <div className={cx(styles['file-preview-layout'])}>
-          <FilePathHeader {...filePathHeaderProps} hideClose />
+          <FilePathHeader {...filePathHeaderProps} />
           <div className={cx(styles['file-preview-scroll'])}>
             {renderPreviewContent()}
           </div>
