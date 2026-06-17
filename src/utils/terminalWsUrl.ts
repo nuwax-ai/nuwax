@@ -32,24 +32,15 @@ export function normalizeTerminalWsUrl(base: string): string {
  * @param conversationId 会话 ID
  */
 export function buildTtydTerminalWsUrl(conversationId?: number): string {
-  console.log('构建 ttyd 终端 WebSocket 地址', conversationId);
   if (!conversationId) {
     return '';
   }
 
   if (typeof window !== 'undefined') {
-    const wsScheme =
-      process.env.NODE_ENV === 'development'
-        ? 'wss'
-        : window.location.protocol === 'https:'
-        ? 'wss'
-        : 'ws';
+    const wsScheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
 
-    // 开发环境使用测试域名，生产环境使用当前域名
-    const host =
-      process.env.NODE_ENV === 'development'
-        ? 'testagent.xspaceagi.com'
-        : window.location.host;
+    // 当前域名
+    const host = window.location.host;
 
     const url = normalizeTerminalWsUrl(
       `${wsScheme}://${host}/computer/terminal/${conversationId}/ws`,
