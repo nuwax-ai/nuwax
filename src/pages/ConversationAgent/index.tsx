@@ -15,7 +15,6 @@ import VncPreview from '@/components/business-component/VncPreview';
 import CreateAgent from '@/components/CreateAgent';
 import Loading from '@/components/custom/Loading';
 import PublishComponentModal from '@/components/PublishComponentModal';
-import ShowStand from '@/components/ShowStand';
 import type { PromptVariable } from '@/components/TiptapVariableInput/types';
 import { transformToPromptVariables } from '@/components/TiptapVariableInput/utils/variableTransform';
 import VersionHistory from '@/components/VersionHistory';
@@ -265,7 +264,6 @@ const ConversationAgent: React.FC = () => {
     onMessageSend,
     runAsync,
     resetInit,
-    cardList,
     restartVncPod,
     restartAgent,
   } = useModel('conversationInfo');
@@ -1816,9 +1814,6 @@ const ConversationAgent: React.FC = () => {
         className={styles['page-header']}
         agentConfigInfo={agentConfigInfo}
         onEditAgent={() => setOpenEditAgent(true)}
-        onToggleShowStand={() =>
-          handleHeaderOverlayType(EditAgentShowType.Show_Stand)
-        }
         onToggleVersionHistory={() =>
           handleHeaderOverlayType(EditAgentShowType.Version_History)
         }
@@ -1895,11 +1890,6 @@ const ConversationAgent: React.FC = () => {
         {/* 调试详情抽屉（按需显示） */}
         <DebugDetails
           visible={showType === EditAgentShowType.Debug_Details}
-          onClose={() => setShowType(EditAgentShowType.Hide)}
-        />
-        <ShowStand
-          cardList={cardList}
-          visible={showType === EditAgentShowType.Show_Stand}
           onClose={() => setShowType(EditAgentShowType.Hide)}
         />
         <VersionHistory

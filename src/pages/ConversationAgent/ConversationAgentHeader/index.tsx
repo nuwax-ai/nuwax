@@ -34,8 +34,6 @@ export interface ConversationAgentHeaderProps {
   agentConfigInfo?: AgentConfigInfo;
   /** 编辑智能体 */
   onEditAgent?: () => void;
-  /** 打开展示台 */
-  onToggleShowStand?: () => void;
   /** 打开版本历史 */
   onToggleVersionHistory?: () => void;
   /** 点击发布 */
@@ -62,7 +60,6 @@ const ConversationAgentHeader: React.FC<ConversationAgentHeaderProps> = ({
   hideBack = false,
   agentConfigInfo,
   onEditAgent,
-  onToggleShowStand,
   onToggleVersionHistory,
   onPublish,
   onOtherAction,
@@ -115,10 +112,6 @@ const ConversationAgentHeader: React.FC<ConversationAgentHeaderProps> = ({
 
   const dropdownItems: MenuProps['items'] = [
     {
-      key: 'showStand',
-      label: dict('PC.Pages.AgentEdit.showStand'),
-    },
-    {
       key: 'versionHistory',
       label: dict('PC.Pages.AgentEdit.versionHistory'),
     },
@@ -127,10 +120,6 @@ const ConversationAgentHeader: React.FC<ConversationAgentHeaderProps> = ({
 
   /** 下拉菜单点击（使用 menu.onClick，避免 label 内嵌 div 点击失效） */
   const handleDropdownMenuClick: MenuProps['onClick'] = ({ key }) => {
-    if (key === 'showStand') {
-      onToggleShowStand?.();
-      return;
-    }
     if (key === 'versionHistory') {
       onToggleVersionHistory?.();
       return;
