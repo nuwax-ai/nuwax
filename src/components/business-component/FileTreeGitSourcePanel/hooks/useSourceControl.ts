@@ -431,6 +431,7 @@ export const useSourceControl = ({
 
     setIsRefreshingGitList(true);
     try {
+      // 刷新文件树 （网页应用开发中需要，因为网页应用开发中文件内容是通过文件树接口一次性返回的，并不是点击文件时，通过文件url请求获取的）
       void callbacks.loadFileTree?.(true, true);
 
       const statusResponse = await apiGitStatus(

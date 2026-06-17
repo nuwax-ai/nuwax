@@ -635,6 +635,15 @@ const AppDev: React.FC = () => {
     return fileManagement.fileTreeState.data;
   }, [fileManagement.fileTreeState.data]);
 
+  /** 进入页面且文件树已有文件时，自动拉取 Git status（每个 projectId 仅一次） */
+  useEffect(() => {
+    if (!projectId || stableCurrentFiles.length === 0) {
+      return;
+    }
+
+    void refreshGitListAfterSaveRef.current();
+  }, [projectId, stableCurrentFiles.length]);
+
   /** 编辑器内容变更：同步本地状态并防抖自动保存 */
   const handleEditorContentChange = useCallback(
     (fileId: string, content: string) => {
