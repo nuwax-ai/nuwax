@@ -288,15 +288,43 @@ export default defineConfig({
     ]);
 
     // 保证所有 @xterm 依赖打入同一 vendor chunk，且共用同一份 ESM 入口
+    // 必须为每个 addon 都指定 .mjs 入口，否则 CJS/ESM 混用会导致
+    // "Super constructor null of X is not a constructor" 运行时错误
+    const xtermAddons = [
+      'addon-fit',
+      'addon-attach',
+      'addon-clipboard',
+      'addon-image',
+      'addon-ligatures',
+      'addon-progress',
+      'addon-search',
+      'addon-serialize',
+      'addon-unicode-graphemes',
+      'addon-unicode11',
+      'addon-web-fonts',
+      'addon-web-links',
+      'addon-webgl',
+    ];
     const xtermPackagePath = path.dirname(
       require.resolve('@xterm/xterm/package.json'),
     );
-    const fitPackagePath = path.dirname(
-      require.resolve('@xterm/addon-fit/package.json'),
+    config.resolve.alias.set(
+      '@xterm/xterm',
+      path.join(xtermPackagePath, 'lib/xterm.mjs'),
     );
-    config.resolve.alias
-      .set('@xterm/xterm', path.join(xtermPackagePath, 'lib/xterm.mjs'))
-      .set('@xterm/addon-fit', path.join(fitPackagePath, 'lib/addon-fit.mjs'));
+    for (const addon of xtermAddons) {
+      try {
+        const addonPath = path.dirname(
+          require.resolve(`@xterm/${addon}/package.json`),
+        );
+        config.resolve.alias.set(
+          `@xterm/${addon}`,
+          path.join(addonPath, `lib/${addon}.mjs`),
+        );
+      } catch {
+        // addon 未安装则跳过
+      }
+    }
 
     config.optimization.splitChunks({
       ...(config.optimization.get('splitChunks') || {}),

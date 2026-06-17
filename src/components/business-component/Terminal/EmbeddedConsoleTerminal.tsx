@@ -1,5 +1,3 @@
-import './xterm.css';
-
 import classNames from 'classnames';
 import {
   forwardRef,
@@ -18,6 +16,9 @@ import {
 } from './ttydWire';
 import type { TerminalWireProtocol } from './type';
 import { FitAddon, Terminal } from './xtermBundle';
+
+// xterm.js 核心样式
+import './xterm.css';
 
 export interface EmbeddedConsoleTerminalRef {
   writeln: (data: string) => void;
