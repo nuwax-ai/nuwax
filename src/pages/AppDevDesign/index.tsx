@@ -19,6 +19,7 @@ import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { CREATED_TABS } from '@/constants/common.constants';
 import { useAppDevChat } from '@/hooks/useAppDevChat';
 import { useAppDevFileManagement } from '@/hooks/useAppDevFileManagement';
+import { useAppDevInitialAutoSend } from '@/hooks/useAppDevInitialAutoSend';
 import { useAppDevModelSelector } from '@/hooks/useAppDevModelSelector';
 import { useAppDevProjectId } from '@/hooks/useAppDevProjectId';
 import { useAppDevProjectInfo } from '@/hooks/useAppDevProjectInfo';
@@ -480,6 +481,14 @@ const AppDevDesign: React.FC = () => {
         showMessage: false, // Agent 触发时不显示消息
       });
     },
+  });
+
+  useAppDevInitialAutoSend({
+    projectId: projectId || '',
+    hasValidProjectId,
+    hasPermission: projectInfo.hasPermission,
+    chat,
+    modelSelector,
   });
 
   // ⭐ 自动错误处理 Model（用于记录和管理）
