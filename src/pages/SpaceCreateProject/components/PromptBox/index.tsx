@@ -1,5 +1,7 @@
 import ChatInputHome from '@/components/ChatInputHome';
+import ModelSelector from '@/components/ChatInputHome/ModelSelector';
 import type { AgentMode } from '@/components/business-component/AgentIntervention';
+import { useAppDevModelSelector } from '@/hooks/useAppDevModelSelector';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
 import { apiPublishedAgentInfo } from '@/services/agentDev';
 import {
@@ -7,7 +9,7 @@ import {
   DefaultSelectedEnum,
 } from '@/types/enums/agent';
 import { AgentTypeEnum } from '@/types/enums/space';
-import { AgentDetailDto } from '@/types/interfaces/agent';
+import { AgentDetailDto, ModelOptionDto } from '@/types/interfaces/agent';
 import { message } from 'antd';
 import classNames from 'classnames';
 import React, {
@@ -17,7 +19,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { useModel } from 'umi';
+import { useModel, useParams } from 'umi';
 import TabsList from './components/TabsList';
 import styles from './index.less';
 
@@ -76,6 +78,10 @@ const PromptBox: React.FC<PromptBoxProps> = ({ onSubmit }) => {
     AgentComponentTypeEnum.Agent,
   );
 
+  const params = useParams();
+  const spaceId = Number(params.spaceId);
+  const isPageApp = activeTab === AgentComponentTypeEnum.PageApp;
+
   // 获取租户配置信息
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
 
@@ -131,6 +137,13 @@ const PromptBox: React.FC<PromptBoxProps> = ({ onSubmit }) => {
     setSelectedComputerId('');
     setSelectedModelId(undefined);
   }, [activeTab]);
+
+  // 网页应用编码模型，复用开发详情页同款 Hook
+  const { models: codingModels } = useAppDevModelSelector(
+    spaceId,
+    undefined,
+    isPageApp,
+  );
 
   useEffect(() => {
     // 切换 Tab 时立刻清空旧的详情数据，防止 pending 期间或接口失败时展示旧的快捷标签和模型
@@ -198,11 +211,7 @@ const PromptBox: React.FC<PromptBoxProps> = ({ onSubmit }) => {
           !matchingAgentDetail ||
           matchingAgentDetail.allowAtSkill === DefaultSelectedEnum.Yes
         }
-        allowOtherModel={
-          activeTab === AgentComponentTypeEnum.PageApp
-            ? undefined
-            : DefaultSelectedEnum.Yes
-        }
+        allowOtherModel={isPageApp ? undefined : DefaultSelectedEnum.Yes}
         selectedModelId={selectedModelId}
         onModelSelect={setSelectedModelId}
         isTaskAgentActive={activeTab !== AgentComponentTypeEnum.PageApp}
@@ -210,9 +219,22 @@ const PromptBox: React.FC<PromptBoxProps> = ({ onSubmit }) => {
         onComputerSelect={setSelectedComputerId}
         agentType={matchingAgentDetail?.type}
         agentId={matchingAgentDetail?.agentId}
-        showAgentModeSelector={tenantConfigInfo?.enableAgentMode !== 0}
+        showAgentModeSelector={
+          !isPageApp && tenantConfigInfo?.enableAgentMode !== 0
+        }
         agentMode={agentMode}
         onAgentModeChange={setAgentMode}
+        prefix={
+          isPageApp ? (
+            <ModelSelector
+              modelList={
+                codingModels?.chatModelList as unknown as ModelOptionDto[]
+              }
+              selectedModelId={selectedModelId}
+              onModelSelect={setSelectedModelId}
+            />
+          ) : undefined
+        }
         tabsSlot={
           <TabsList tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
         }

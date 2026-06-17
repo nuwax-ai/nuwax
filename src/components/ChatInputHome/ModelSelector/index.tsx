@@ -41,7 +41,9 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
   onModelSelect,
   agentType,
   className,
+  modelList: externalModelList,
 }) => {
+  const isExternalList = externalModelList !== undefined;
   const { spaceList } = useModel('spaceModel');
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -93,13 +95,22 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
 
   // 监听 agentId 的变化，当 agentId 改变时，重新加载数据并重置 initialized 状态与模型列表
   useEffect(() => {
+    if (isExternalList) return;
     if (agentId) {
       setInitialized(false);
       initializedRef.current = false;
       setModelList([]);
       fetchModelOptions(agentId, true);
     }
-  }, [agentId, fetchModelOptions]);
+  }, [agentId, fetchModelOptions, isExternalList]);
+
+  // 外部预加载模型列表：直接使用传入数据，跳过接口拉取
+  useEffect(() => {
+    if (!isExternalList) return;
+    setModelList(externalModelList);
+    setInitialized(true);
+    initializedRef.current = true;
+  }, [isExternalList, externalModelList]);
 
   // 监听数据加载完成，自动应用默认选择
   useEffect(() => {
@@ -227,7 +238,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
 
     return modelList.map((model) => {
       const isSelected = model.id === selectedModelId;
-      const isSpaceModel = model.spaceId !== -1;
+      const isSpaceModel = !isExternalList && model.spaceId !== -1;
       return {
         key: model.id,
         label: (
@@ -275,7 +286,10 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
     handleDeleteModel,
   ]);
 
-  if (!agentId || (modelList.length === 0 && initialized)) {
+  if (
+    (!isExternalList && !agentId) ||
+    (modelList.length === 0 && initialized)
+  ) {
     return null;
   }
 
@@ -299,16 +313,18 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
         popupRender={(menu) => (
           <div className={styles['model-dropdown-container']}>
             {menu}
-            <div className={styles['add-button-wrap']}>
-              <Button
-                block
-                type="dashed"
-                icon={<PlusOutlined />}
-                onClick={handleAddModel}
-              >
-                {dict('PC.Components.ModelSelector.addModel')}
-              </Button>
-            </div>
+            {!isExternalList && (
+              <div className={styles['add-button-wrap']}>
+                <Button
+                  block
+                  type="dashed"
+                  icon={<PlusOutlined />}
+                  onClick={handleAddModel}
+                >
+                  {dict('PC.Components.ModelSelector.addModel')}
+                </Button>
+              </div>
+            )}
           </div>
         )}
       >
