@@ -30,18 +30,17 @@ const cx = classNames.bind(styles);
  * ConversationAgent 文件路径头部组件（自 FileTreeView/FilePathHeader 复制，可独立演进）
  * 显示文件信息与操作按钮
  */
-const FilePathHeader: React.FC<
-  FilePathHeaderProps & { hideClose?: boolean }
-> = ({
+const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   className,
   targetNode,
-  hideClose,
   viewMode = 'preview',
   viewFileType = 'preview',
   onViewFileTypeChange,
   ...toolbarProps
 }) => {
   const fileName = targetNode?.name;
+  /** 文件树中的完整路径（fileId） */
+  const fileId = targetNode?.id;
   const fileSize = targetNode?.size;
   const formattedSize = useMemo(() => {
     if (!fileSize) return '';
@@ -52,10 +51,12 @@ const FilePathHeader: React.FC<
 
   return (
     <div className={cx(styles.filePathHeader, className)}>
-      {fileName && viewMode === 'preview' && (
+      {fileId && viewMode === 'preview' && (
         <div className={styles.fileInfo}>
           <div className={styles.fileDetails}>
-            <div className={styles.fileName}>{fileName}</div>
+            <div className={styles.fileName} title={fileId}>
+              {fileId}
+            </div>
             {formattedSize && (
               <span className={styles.fileMeta}>({formattedSize})</span>
             )}
@@ -81,11 +82,7 @@ const FilePathHeader: React.FC<
         </div>
       )}
 
-      <FilePathHeaderToolbar
-        targetNode={targetNode}
-        hideClose={hideClose}
-        {...toolbarProps}
-      />
+      <FilePathHeaderToolbar targetNode={targetNode} {...toolbarProps} />
     </div>
   );
 };

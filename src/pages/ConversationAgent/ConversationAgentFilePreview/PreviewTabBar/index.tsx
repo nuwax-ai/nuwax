@@ -1,4 +1,6 @@
+import SvgIcon from '@/components/base/SvgIcon';
 import MoreActionsMenu from '@/components/business-component/FileTreePreviewPanel/FilePathHeader/MoreActionsMenu';
+import TooltipIcon from '@/components/custom/TooltipIcon';
 import { dict } from '@/services/i18nRuntime';
 import { getFileIcon } from '@/utils/fileTree';
 import {
@@ -28,6 +30,7 @@ import {
 import type { Transform } from '@dnd-kit/utilities';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import ShareDesktopModal from '../FilePathHeader/ShareDesktopModal';
 import type { PreviewTab, PreviewToolId } from '../hooks/usePreviewTabs';
 import {
   isPermanentWorkspaceToolTab,
@@ -69,6 +72,12 @@ export interface PreviewTabBarProps {
   onExportProject?: () => void;
   /** 是否为云电脑（影响重启文案） */
   isCloudComputer?: boolean;
+  /** 会话 ID（分享弹窗） */
+  conversationId?: string;
+  /** 当前预览文件的代理 URL（分享弹窗） */
+  fileProxyUrl?: string | null;
+  /** 是否显示分享按钮 */
+  isShowShare?: boolean;
 }
 
 interface TabItemFaceProps {
@@ -275,7 +284,20 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
   onRestartAgent,
   onExportProject,
   isCloudComputer,
+  conversationId = '',
+  fileProxyUrl = null,
+  isShowShare = true,
 }) => {
+  const [shareDesktopModalVisible, setShareDesktopModalVisible] =
+    useState<boolean>(false);
+
+  const handleShareAction = useCallback(() => {
+    if (!conversationId) {
+      return;
+    }
+    setShareDesktopModalVisible(true);
+  }, [conversationId]);
+
   /** 拖拽中的标签 ID */
   const [activeDragTabId, setActiveDragTabId] = useState<string | null>(null);
   /** 标签栏视口引用 */
@@ -648,7 +670,7 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
           </div>
         </div>
 
-        {/* 「+」号按钮，点击打开「新建页签」面板 */}
+        {/* 更多操作菜单 */}
         <div className={cx(styles['tab-bar-actions'])}>
           <MoreActionsMenu
             onRestartServer={onRestartServer}
@@ -656,8 +678,28 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
             onExportProject={onExportProject}
             isCloudComputer={isCloudComputer}
           />
+          {isShowShare && (
+            <TooltipIcon
+              title={dict('PC.Components.FilePathHeader.share')}
+              ariaLabel={dict('PC.Components.FilePathHeader.share')}
+              placement="bottom"
+              className={cx(styles['tab-bar-action-btn'])}
+              icon={
+                <SvgIcon name="icons-chat-share" style={{ fontSize: 16 }} />
+              }
+              onClick={handleShareAction}
+            />
+          )}
         </div>
       </div>
+
+      <ShareDesktopModal
+        fileProxyUrl={fileProxyUrl}
+        shareType="CONVERSATION"
+        visible={shareDesktopModalVisible}
+        onClose={() => setShareDesktopModalVisible(false)}
+        conversationId={conversationId}
+      />
 
       {/* 预览区标签页右键菜单（带淡入缩放过渡） */}
       <PreviewTabContextMenu
