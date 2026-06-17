@@ -33,7 +33,11 @@ import {
   buildChangeFilesFromGitStatus,
   mergeGitStatusFileIds,
 } from '../utils/gitStatusUtils';
-import { runGitDiscard } from '../utils/sourceControlGitActions';
+import {
+  runGitDiscard,
+  runGitStage,
+  runGitUnstage,
+} from '../utils/sourceControlGitActions';
 
 export type { GitWorkspaceConfig };
 
@@ -114,7 +118,11 @@ export interface UseSourceControlReturn {
   handleOpenChangeFile: (fileId: string) => void;
   /** 放弃更改（支持单文件或文件夹下多文件，含 Git discard + UI 同步） */
   handleDiscardChange: (fileIds: string[]) => Promise<void>;
-  /** Git discard 成功后的 UI 同步（不再调用 discard 接口） */
+  /** 暂存更改（git add） */
+  handleStageChanges: (fileIds: string[]) => Promise<void>;
+  /** 取消暂存（git restore --staged） */
+  handleUnstageChanges: (fileIds: string[]) => Promise<void>;
+  /** Git discard 成功后的 UI 同步（不再调用 discard 接口，一般无需页面直接调用） */
   handleAfterDiscardChange: (fileId: string) => void;
   /** 添加到 .gitignore */
   handleAddToGitignore: (fileId: string) => Promise<void>;
@@ -456,6 +464,15 @@ export const useSourceControl = ({
     }
   }, [workspace, isRefreshingGitList, manageChangeFilesInternally, callbacks]);
 
+  /** Git 变更操作成功后刷新列表（pageApp 内部 / taskAgent 走页面回调） */
+  const refreshAfterGitMutation = useCallback(async () => {
+    if (manageChangeFilesInternally) {
+      await refreshGitList();
+    } else {
+      await callbacks.onRefreshGitList?.();
+    }
+  }, [manageChangeFilesInternally, refreshGitList, callbacks]);
+
   /**
    * 放弃更改：先 Git discard，再批量同步 UI 并刷新列表
    * @param fileIds 文件 ID 列表（单文件或同一文件夹下多文件）
@@ -477,20 +494,44 @@ export const useSourceControl = ({
         current && fileIds.includes(current.fileId) ? null : current,
       );
 
-      if (manageChangeFilesInternally) {
-        await refreshGitList();
-      } else {
-        await callbacks.onRefreshGitList?.();
-      }
+      await refreshAfterGitMutation();
     },
     [
       workspace,
       syncAfterDiscardChange,
       setSelectedChangeFile,
-      manageChangeFilesInternally,
-      refreshGitList,
-      callbacks,
+      refreshAfterGitMutation,
     ],
+  );
+
+  /** 暂存更改（git add） */
+  const handleStageChanges = useCallback(
+    async (fileIds: string[]) => {
+      if (!isGitWorkspaceReady(workspace) || !fileIds.length) {
+        return;
+      }
+
+      const isSuccess = await runGitStage(workspace, fileIds);
+      if (isSuccess) {
+        await refreshAfterGitMutation();
+      }
+    },
+    [workspace, refreshAfterGitMutation],
+  );
+
+  /** 取消暂存（git restore --staged） */
+  const handleUnstageChanges = useCallback(
+    async (fileIds: string[]) => {
+      if (!isGitWorkspaceReady(workspace) || !fileIds.length) {
+        return;
+      }
+
+      const isSuccess = await runGitUnstage(workspace, fileIds);
+      if (isSuccess) {
+        await refreshAfterGitMutation();
+      }
+    },
+    [workspace, refreshAfterGitMutation],
   );
 
   /**
@@ -699,6 +740,8 @@ export const useSourceControl = ({
     handleDiffFileSelect,
     handleOpenChangeFile,
     handleDiscardChange,
+    handleStageChanges,
+    handleUnstageChanges,
     handleAfterDiscardChange,
     handleAddToGitignore,
     handleCommit,

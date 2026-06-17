@@ -1884,10 +1884,6 @@ const ConversationAgent: React.FC = () => {
                   tree={fileView.tree}
                   treeClassName="w-full h-full"
                   sourceControl={{
-                    gitWorkspace: {
-                      workspaceType: 'taskAgent',
-                      cid: queryConversationId ?? null,
-                    },
                     changeFiles: fileView.changeFiles,
                     selectedChangeFile: gitSourceControl.selectedChangeFile,
                     isCommitting:
@@ -1897,8 +1893,9 @@ const ConversationAgent: React.FC = () => {
                     onRefreshGitList: fileView.refreshGitList,
                     onDiffFileSelect: gitSourceControl.handleDiffFileSelect,
                     onOpenChangeFile: gitSourceControl.handleOpenChangeFile,
-                    onAfterDiscardChange:
-                      gitSourceControl.handleAfterDiscardChange,
+                    onDiscardChanges: gitSourceControl.handleDiscardChange,
+                    onStageChanges: gitSourceControl.handleStageChanges,
+                    onUnstageChanges: gitSourceControl.handleUnstageChanges,
                     onAddToGitignore: (fileId) => {
                       void gitSourceControl.handleAddToGitignore(fileId);
                     },

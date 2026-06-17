@@ -1650,10 +1650,6 @@ const AppDev: React.FC = () => {
                           }
                           // =================源代码管理相关=================
                           sourceControl={{
-                            gitWorkspace: {
-                              workspaceType: 'pageApp',
-                              projectId,
-                            },
                             changeFiles: sourceControl.changeFiles,
                             selectedChangeFile:
                               sourceControl.selectedChangeFile,
@@ -1664,8 +1660,10 @@ const AppDev: React.FC = () => {
                             onDiffFileSelect: handleSourceControlDiffSelect,
                             onOpenChangeFile:
                               sourceControl.handleOpenChangeFile,
-                            onAfterDiscardChange:
-                              sourceControl.handleAfterDiscardChange,
+                            onDiscardChanges: sourceControl.handleDiscardChange,
+                            onStageChanges: sourceControl.handleStageChanges,
+                            onUnstageChanges:
+                              sourceControl.handleUnstageChanges,
                             onAddToGitignore:
                               sourceControl.handleAddToGitignore,
                             onCommit: sourceControl.handleCommit,

@@ -698,9 +698,6 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
           openPreviewView(id);
         }
       },
-      onAfterDiscardChange: () => {
-        setSelectedChangeFile(null);
-      },
       onCommitSuccess: async () => {
         await fileView.refreshGitList();
         setSelectedChangeFile(null);
@@ -794,10 +791,6 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
         },
       },
       sourceControl: {
-        gitWorkspace: {
-          workspaceType: 'taskAgent' as const,
-          cid: id ?? null,
-        },
         changeFiles: fileView.changeFiles,
         selectedChangeFile: gitSourceControl.selectedChangeFile,
         isCommitting:
@@ -806,7 +799,9 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
         onRefreshGitList: fileView.refreshGitList,
         onDiffFileSelect: gitSourceControl.handleDiffFileSelect,
         onOpenChangeFile: gitSourceControl.handleOpenChangeFile,
-        onAfterDiscardChange: gitSourceControl.handleAfterDiscardChange,
+        onDiscardChanges: gitSourceControl.handleDiscardChange,
+        onStageChanges: gitSourceControl.handleStageChanges,
+        onUnstageChanges: gitSourceControl.handleUnstageChanges,
         onAddToGitignore: (fileId: string) => {
           void gitSourceControl.handleAddToGitignore(fileId);
         },
@@ -824,7 +819,9 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       gitSourceControl.isCommitting,
       gitSourceControl.handleDiffFileSelect,
       gitSourceControl.handleOpenChangeFile,
-      gitSourceControl.handleAfterDiscardChange,
+      gitSourceControl.handleDiscardChange,
+      gitSourceControl.handleStageChanges,
+      gitSourceControl.handleUnstageChanges,
       gitSourceControl.handleAddToGitignore,
       gitSourceControl.handleCommit,
       gitVersionPanelOpen,
