@@ -431,6 +431,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
             skillIds,
             modelId: selectedModelId,
             agentMode:
+              (stateToUse?.agentMode as AgentMode) ||
               (localStorage.getItem('nuwax_agent_mode_cache') as AgentMode) ||
               'yolo',
           };
@@ -924,6 +925,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     onLoadMoreMessage: handleLoadMoreMessage,
     selectedModelId,
     onModelSelect: setSelectedModelId,
+    initialAgentMode: stateToUse?.agentMode,
     allowOtherModel: effectiveAgent?.allowOtherModel,
     manualComponents,
     selectedComponentList,
