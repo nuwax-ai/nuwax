@@ -205,7 +205,7 @@ export default defineConfig({
   jsMinifierOptions: {
     minify: true,
     target: ['es2020'],
-    format: 'iife',
+    // 勿使用 format: 'iife'，会破坏 webpack 分包后 ES class 继承链（xterm 报 Super constructor null）
   },
   chainWebpack(config: any) {
     config.plugin('copy-monaco').use(CopyWebpackPlugin, [
@@ -287,11 +287,30 @@ export default defineConfig({
       },
     ]);
 
-    // 保证所有 @xterm addon 与主包共用同一份 xterm 核心，避免生产分包后继承链断裂
+    // 保证所有 @xterm 依赖打入同一 vendor chunk，且共用同一份 ESM 入口
     const xtermPackagePath = path.dirname(
       require.resolve('@xterm/xterm/package.json'),
     );
-    config.resolve.alias.set('@xterm/xterm', xtermPackagePath);
+    const fitPackagePath = path.dirname(
+      require.resolve('@xterm/addon-fit/package.json'),
+    );
+    config.resolve.alias
+      .set('@xterm/xterm', path.join(xtermPackagePath, 'lib/xterm.mjs'))
+      .set('@xterm/addon-fit', path.join(fitPackagePath, 'lib/addon-fit.mjs'));
+
+    config.optimization.splitChunks({
+      ...(config.optimization.get('splitChunks') || {}),
+      cacheGroups: {
+        ...((config.optimization.get('splitChunks') || {}).cacheGroups || {}),
+        xtermVendor: {
+          test: /[\\/]node_modules[\\/]@xterm[\\/]/,
+          name: 'xterm-vendor',
+          chunks: 'all',
+          priority: 100,
+          enforce: true,
+        },
+      },
+    });
 
     config.plugin('monaco').use(MonacoWebpackPlugin, [
       {
