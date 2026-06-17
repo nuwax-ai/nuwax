@@ -293,15 +293,11 @@ export default defineConfig({
     const xtermAddons = [
       'addon-fit',
       'addon-attach',
-      'addon-clipboard',
       'addon-image',
       'addon-ligatures',
-      'addon-progress',
       'addon-search',
       'addon-serialize',
-      'addon-unicode-graphemes',
       'addon-unicode11',
-      'addon-web-fonts',
       'addon-web-links',
       'addon-webgl',
     ];
@@ -310,7 +306,7 @@ export default defineConfig({
     );
     config.resolve.alias.set(
       '@xterm/xterm',
-      path.join(xtermPackagePath, 'lib/xterm.mjs'),
+      path.join(xtermPackagePath, 'lib/xterm.js'),
     );
     for (const addon of xtermAddons) {
       try {
@@ -319,7 +315,7 @@ export default defineConfig({
         );
         config.resolve.alias.set(
           `@xterm/${addon}`,
-          path.join(addonPath, `lib/${addon}.mjs`),
+          path.join(addonPath, `lib/${addon}.js`),
         );
       } catch {
         // addon 未安装则跳过
