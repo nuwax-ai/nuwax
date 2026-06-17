@@ -100,7 +100,7 @@ const PluginChatSession: React.FC<PluginChatSessionProps> = ({
             isSync: false,
             skillIds: state.skillIds || [],
             modelId: selectedModelId,
-            agentMode: 'yolo',
+            agentMode: state.agentMode || 'yolo',
             data: conversationInfo,
           });
         } else {
@@ -203,6 +203,7 @@ const PluginChatSession: React.FC<PluginChatSessionProps> = ({
       }}
       onSendMessage={handleSendMessage}
       onLoadMoreMessage={handleLoadMoreMessage}
+      initialAgentMode={(location.state as any)?.agentMode}
       readonly={false}
       enableMention={true}
       allowOtherModel={conversationInfo?.agent?.allowOtherModel}
