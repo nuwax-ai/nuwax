@@ -93,4 +93,9 @@ export interface UnifiedChatSessionProps {
 
   // 输入框属性透传，用于支持展示不同的工具栏、工具列表配置
   chatInputProps?: Partial<ChatInputProps>;
+
+  /**
+   * 队列两次消费之间的最小间隔（ms），用于规避会话状态切换的中间空白；默认 500。
+   */
+  queueMinConsumeInterval?: number;
 }

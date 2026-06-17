@@ -1,5 +1,4 @@
 import type { AgentMode } from '@/components/business-component/AgentIntervention';
-import { TaskStatus } from '@/types/enums/agent';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import eventBus, { EVENT_NAMES } from '@/utils/eventBus';
@@ -25,6 +24,11 @@ export interface UseUnifiedChatQueueParams {
     modelId?: number,
     selectedAgentMode?: AgentMode,
   ) => void;
+  /**
+   * 队列两次消费之间的最小间隔（ms），默认 500。
+   * 用于规避会话状态切换的中间空白，避免队列在一次响应结束后过早消费下一条。
+   */
+  minConsumeInterval?: number;
 }
 
 /**
@@ -43,19 +47,15 @@ export const useUnifiedChatQueue = ({
   selectedModelId,
   agentModeRef,
   onSendMessage,
+  minConsumeInterval,
 }: UseUnifiedChatQueueParams) => {
-  const { isConversationActive, conversationInfo, runStopConversation } =
+  const { isConversationActive, runStopConversation } =
     useModel('conversationInfo');
 
-  const isActive =
-    !!isConversationActive ||
-    conversationInfo?.taskStatus === TaskStatus.EXECUTING;
-
-  const messageQueueCtrl = useChatMessageQueue({
-    isActive,
-    messageList: messageList || [],
-    conversationId,
-    sendMessage: (
+  // 直接发送（绕过队列拦截）：供 intervention（ask/question/审批）响应的 resume 消息使用，
+  // 避免回复被错误入队。用户提交结果后会话跑完空闲时，既有 auto-consume 自动恢复队列消费。
+  const rawSend = useCallback(
+    (
       messageInfo: string,
       files?: UploadFileInfo[],
       skillIds?: number[],
@@ -70,7 +70,16 @@ export const useUnifiedChatQueue = ({
         selectedAgentMode || agentModeRef.current,
       );
     },
+    [onSendMessage, selectedModelId, agentModeRef],
+  );
+
+  const messageQueueCtrl = useChatMessageQueue({
+    isConversationActive,
+    messageList: messageList || [],
+    conversationId,
+    sendMessage: rawSend,
     runStopConversation,
+    minConsumeInterval,
   });
 
   // 编辑队列消息：从队列移除并通过 eventBus 回填到输入框
@@ -90,5 +99,6 @@ export const useUnifiedChatQueue = ({
   return {
     ...messageQueueCtrl,
     handleEditQueued,
+    rawSend,
   };
 };

@@ -662,6 +662,11 @@ const routes = [
     layout: false,
   },
   {
+    path: '/examples/message-queue-demo',
+    component: '@/examples/MessageQueueDemo',
+    layout: false,
+  },
+  {
     path: '/examples/menu-permission-demo',
     component: '@/examples/MenuPermissionDemo',
     layout: false,

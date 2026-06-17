@@ -86,6 +86,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
   className,
   style,
   chatInputProps,
+  queueMinConsumeInterval,
 }) => {
   const [isHoveringChat, setIsHoveringChat] = useState<boolean>(false);
   const internalMessageViewRef = useRef<HTMLDivElement>(null);
@@ -141,6 +142,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
     selectedModelId,
     agentModeRef,
     onSendMessage,
+    minConsumeInterval: queueMinConsumeInterval,
   });
 
   // 消息发送代理：经队列拦截（活跃时入队，否则真正发送）
@@ -161,11 +163,12 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
   };
 
   // 4. 智能体指令介入图层 (ACP/MCP 审批交互)
+  //    intervention 响应的 resume 消息走 rawSend 绕过队列拦截，避免回复被错误入队
   const interventionLayer = useAgentInterventionLayer({
     conversationId,
     messageList,
     initialAgentMode,
-    onSendMessage: (msg) => handleMessageSend(msg),
+    onSendMessage: (msg) => messageQueue.rawSend(msg),
   });
   agentModeRef.current = interventionLayer.agentMode;
 

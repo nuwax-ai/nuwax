@@ -160,8 +160,17 @@ export default () => {
     useState<boolean>(false);
 
   // 会话是否正在进行中（有消息正在处理）
-  const [isConversationActive, setIsConversationActive] =
+  const [isConversationActive, setIsConversationActiveRaw] =
     useState<boolean>(false);
+  // 发送后会话活跃保活：发送后 3s 内拒绝置 false，避免停止 SSE 回流 / messageList
+  // 状态切换间隙的 false 覆盖乐观 true（消除"发出后长时间无状态"的空窗）
+  const lastSendAtRef = useRef(0);
+  const setIsConversationActive = useCallback((v: boolean) => {
+    if (!v && Date.now() - lastSendAtRef.current < 3000) {
+      return;
+    }
+    setIsConversationActiveRaw(v);
+  }, []);
   // 添加一个 ref 来控制是否允许自动滚动
   const allowAutoScrollRef = useRef<boolean>(true);
   // 是否显示点击下滚按钮
@@ -1313,6 +1322,11 @@ export default () => {
     } = sendParams;
     // 清除副作用
     handleClearSideEffect();
+
+    // 乐观标记会话活跃：发送瞬间即置为活跃，不依赖 messageList 出现 Loading 消息的延迟，
+    // 消除"发送后会话开始状态"的空窗期（保证队列入队判定及时、停止按钮立即显示）。
+    setIsConversationActive(true);
+    lastSendAtRef.current = Date.now(); // 触发"发送后保活"，3s 内拒绝置 false
 
     // 附件文件
     const attachments: AttachmentFile[] =

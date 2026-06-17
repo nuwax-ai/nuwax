@@ -198,6 +198,13 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     return !messageInfo && !files?.length;
   }, [messageInfo, files]);
 
+  // 会话是否活跃（与停止按钮判定一致）
+  const isActiveConversation =
+    isConversationActive ||
+    conversationInfo?.taskStatus === TaskStatus.EXECUTING;
+  // 单按钮模式：活跃且输入框为空时显示「停止」，否则显示「发送」（活跃时点击即加入队列）
+  const showStopButton = isActiveConversation && disabledSend;
+
   // enter事件 - 确认发送消息
   const confirmSendMessage = (value: string) => {
     // 如果输入框内容不为空 或者 附件文件列表不为空
@@ -879,9 +886,8 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
                   agentType={agentType}
                 />
               )}
-              {/* 停止按钮：会话活跃或任务执行中时显示 */}
-              {(isConversationActive ||
-                conversationInfo?.taskStatus === TaskStatus.EXECUTING) && (
+              {/* 单按钮：活跃且输入框为空时显示「停止」，否则显示「发送」（活跃时点击即加入队列） */}
+              {showStopButton ? (
                 <Tooltip title={getStopButtonTooltip()}>
                   <span
                     onClick={handleStopConversation}
@@ -909,40 +915,37 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
                     )}
                   </span>
                 </Tooltip>
-              )}
-              {/* 发送按钮：始终显示；会话活跃时点击加入发送队列 */}
-              <Tooltip
-                title={
-                  isConversationActive ||
-                  conversationInfo?.taskStatus === TaskStatus.EXECUTING
-                    ? '加入发送队列'
-                    : getButtonTooltip()
-                }
-              >
-                <span
-                  onClick={handleSendMessage}
-                  className={cx(
-                    'flex',
-                    'items-center',
-                    'content-center',
-                    'cursor-pointer',
-                    styles.box,
-                    styles['send-box'],
-                    {
-                      [styles.disabled]:
-                        disabledSend ||
-                        wholeDisabled ||
-                        loadingConversation ||
-                        isLoadingOtherInterface,
-                    },
-                  )}
+              ) : (
+                <Tooltip
+                  title={
+                    isActiveConversation ? '加入发送队列' : getButtonTooltip()
+                  }
                 >
-                  <SvgIcon
-                    name="icons-chat-send"
-                    style={{ fontSize: '14px' }}
-                  />
-                </span>
-              </Tooltip>
+                  <span
+                    onClick={handleSendMessage}
+                    className={cx(
+                      'flex',
+                      'items-center',
+                      'content-center',
+                      'cursor-pointer',
+                      styles.box,
+                      styles['send-box'],
+                      {
+                        [styles.disabled]:
+                          disabledSend ||
+                          wholeDisabled ||
+                          loadingConversation ||
+                          isLoadingOtherInterface,
+                      },
+                    )}
+                  >
+                    <SvgIcon
+                      name="icons-chat-send"
+                      style={{ fontSize: '14px' }}
+                    />
+                  </span>
+                </Tooltip>
+              )}
             </div>
           </footer>
         </div>
