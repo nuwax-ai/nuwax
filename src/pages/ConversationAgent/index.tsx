@@ -1227,6 +1227,19 @@ const ConversationAgent: React.FC = () => {
     setDevConsoleLayoutResetSignal((n) => n + 1);
   }, []);
 
+  /** 打开底部终端面板：切到终端 Tab 并在右侧内容区全屏展开 */
+  const handleOpenTerminalPanel = useCallback(() => {
+    closeAgentDesktop();
+    setDevConsoleExpandSignal((n) => n + 1);
+    setSelectedChangeFile(null);
+    if (queryConversationId) {
+      openPreviewView(queryConversationId);
+    }
+  }, [closeAgentDesktop, openPreviewView, queryConversationId]);
+
+  const isTerminalPanelOpen =
+    devConsoleLayoutMode === 'expanded' && devConsoleActiveTab === 'terminal';
+
   // ==================================== 文件视图 & 编排面板 ====================================
   /**
    * 文件视图 Hook 的完整配置属性
@@ -1400,16 +1413,6 @@ const ConversationAgent: React.FC = () => {
     // 打开工具标签
     onToolTabActivate: (toolId: PreviewToolId) => {
       closeAgentDesktop();
-      // 终端全屏展开
-      if (toolId === 'terminal') {
-        setDevConsoleExpandSignal((n) => n + 1);
-        setSelectedChangeFile(null);
-        // 打开预览视图
-        if (queryConversationId) {
-          openPreviewView(queryConversationId);
-        }
-        return;
-      }
       // 从开发工具打开终端时跳过 onToolTabActivate 中的布局重置
       if (skipDevConsoleResetRef.current) {
         skipDevConsoleResetRef.current = false;
@@ -1824,6 +1827,8 @@ const ConversationAgent: React.FC = () => {
         onOtherAction={handleHeaderMoreAction}
         isFileTreeSidebarVisible={canShowFileView}
         onToggleFileTreeSidebar={handleToggleFileTreeSidebar}
+        isTerminalPanelOpen={isTerminalPanelOpen}
+        onOpenTerminalPanel={handleOpenTerminalPanel}
         isShowDesktop={isShowDesktop}
         isAgentDesktopOpen={isAgentDesktopOpen}
         onOpenDesktopPanel={handleOpenDesktopPanel}
