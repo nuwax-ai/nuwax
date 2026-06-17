@@ -431,6 +431,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
             skillIds,
             modelId: selectedModelId,
             agentMode:
+              (stateToUse?.agentMode as AgentMode) ||
               (localStorage.getItem('nuwax_agent_mode_cache') as AgentMode) ||
               'yolo',
           };
@@ -677,6 +678,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     [id, fileTreeData, handleRefreshFileList],
   );
 
+  // Git 源代码管理 props
   const gitSourceControl = useSourceControl({
     workspace: {
       workspaceType: 'taskAgent',
@@ -697,9 +699,6 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
         if (viewMode === 'desktop') {
           openPreviewView(id);
         }
-      },
-      onAfterDiscardChange: () => {
-        setSelectedChangeFile(null);
       },
       onCommitSuccess: async () => {
         await fileView.refreshGitList();
@@ -794,10 +793,6 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
         },
       },
       sourceControl: {
-        gitWorkspace: {
-          workspaceType: 'taskAgent' as const,
-          cid: id ?? null,
-        },
         changeFiles: fileView.changeFiles,
         selectedChangeFile: gitSourceControl.selectedChangeFile,
         isCommitting:
@@ -806,7 +801,9 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
         onRefreshGitList: fileView.refreshGitList,
         onDiffFileSelect: gitSourceControl.handleDiffFileSelect,
         onOpenChangeFile: gitSourceControl.handleOpenChangeFile,
-        onAfterDiscardChange: gitSourceControl.handleAfterDiscardChange,
+        onDiscardChanges: gitSourceControl.handleDiscardChange,
+        onStageChanges: gitSourceControl.handleStageChanges,
+        onUnstageChanges: gitSourceControl.handleUnstageChanges,
         onAddToGitignore: (fileId: string) => {
           void gitSourceControl.handleAddToGitignore(fileId);
         },
@@ -824,7 +821,9 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       gitSourceControl.isCommitting,
       gitSourceControl.handleDiffFileSelect,
       gitSourceControl.handleOpenChangeFile,
-      gitSourceControl.handleAfterDiscardChange,
+      gitSourceControl.handleDiscardChange,
+      gitSourceControl.handleStageChanges,
+      gitSourceControl.handleUnstageChanges,
       gitSourceControl.handleAddToGitignore,
       gitSourceControl.handleCommit,
       gitVersionPanelOpen,
@@ -924,6 +923,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     onLoadMoreMessage: handleLoadMoreMessage,
     selectedModelId,
     onModelSelect: setSelectedModelId,
+    initialAgentMode: stateToUse?.agentMode,
     allowOtherModel: effectiveAgent?.allowOtherModel,
     manualComponents,
     selectedComponentList,

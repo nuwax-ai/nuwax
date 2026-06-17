@@ -19,6 +19,7 @@ import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { CREATED_TABS } from '@/constants/common.constants';
 import { useAppDevChat } from '@/hooks/useAppDevChat';
 import { useAppDevFileManagement } from '@/hooks/useAppDevFileManagement';
+import { useAppDevInitialAutoSend } from '@/hooks/useAppDevInitialAutoSend';
 import { useAppDevModelSelector } from '@/hooks/useAppDevModelSelector';
 import { useAppDevProjectId } from '@/hooks/useAppDevProjectId';
 import { useAppDevProjectInfo } from '@/hooks/useAppDevProjectInfo';
@@ -463,6 +464,14 @@ const AppDev: React.FC = () => {
     },
   });
 
+  useAppDevInitialAutoSend({
+    projectId: projectId || '',
+    hasValidProjectId,
+    hasPermission: projectInfo.hasPermission,
+    chat,
+    modelSelector,
+  });
+
   // 自动错误处理 Model（用于记录和管理）
   const autoErrorHandlingModelInstance = useModel('autoErrorHandling');
 
@@ -634,6 +643,15 @@ const AppDev: React.FC = () => {
   const stableCurrentFiles = useMemo(() => {
     return fileManagement.fileTreeState.data;
   }, [fileManagement.fileTreeState.data]);
+
+  /** 进入页面且文件树已有文件时，自动拉取 Git status（每个 projectId 仅一次） */
+  useEffect(() => {
+    if (!projectId || stableCurrentFiles.length === 0) {
+      return;
+    }
+
+    void refreshGitListAfterSaveRef.current();
+  }, [projectId, stableCurrentFiles.length]);
 
   /** 编辑器内容变更：同步本地状态并防抖自动保存 */
   const handleEditorContentChange = useCallback(
@@ -1650,10 +1668,6 @@ const AppDev: React.FC = () => {
                           }
                           // =================源代码管理相关=================
                           sourceControl={{
-                            gitWorkspace: {
-                              workspaceType: 'pageApp',
-                              projectId,
-                            },
                             changeFiles: sourceControl.changeFiles,
                             selectedChangeFile:
                               sourceControl.selectedChangeFile,
@@ -1664,8 +1678,10 @@ const AppDev: React.FC = () => {
                             onDiffFileSelect: handleSourceControlDiffSelect,
                             onOpenChangeFile:
                               sourceControl.handleOpenChangeFile,
-                            onAfterDiscardChange:
-                              sourceControl.handleAfterDiscardChange,
+                            onDiscardChanges: sourceControl.handleDiscardChange,
+                            onStageChanges: sourceControl.handleStageChanges,
+                            onUnstageChanges:
+                              sourceControl.handleUnstageChanges,
                             onAddToGitignore:
                               sourceControl.handleAddToGitignore,
                             onCommit: sourceControl.handleCommit,

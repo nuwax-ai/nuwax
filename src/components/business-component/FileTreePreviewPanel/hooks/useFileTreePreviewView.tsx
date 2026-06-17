@@ -195,10 +195,7 @@ export function useFileTreePreviewView(
   // 文件树是否可见（默认隐藏，但如果已固定则显示）
   const [internalFileTreeVisible, setInternalFileTreeVisible] =
     useState<boolean>(isFileTreePinned || false);
-  const isControlledFileTreeSidebar = isFileTreeSidebarVisible !== undefined;
-  const isFileTreeVisible = isControlledFileTreeSidebar
-    ? isFileTreeSidebarVisible
-    : internalFileTreeVisible;
+  const isFileTreeVisible = isFileTreeSidebarVisible || internalFileTreeVisible;
 
   // 文件树容器 ref
   const fileTreeContainerRef = useRef<HTMLDivElement>(null);
@@ -244,10 +241,14 @@ export function useFileTreePreviewView(
 
   // 当 isFileTreePinned 变化时，同步展开文件树（与 FileTreeView 一致）
   useEffect(() => {
-    if (isFileTreePinned && !isControlledFileTreeSidebar) {
+    if (isFileTreePinned && isFileTreeSidebarVisible === undefined) {
       setInternalFileTreeVisible(true);
     }
-  }, [isFileTreePinned, isControlledFileTreeSidebar]);
+
+    return () => {
+      setInternalFileTreeVisible(false);
+    };
+  }, [isFileTreePinned, isFileTreeSidebarVisible]);
 
   useEffect(() => {
     // 如果通过父组件全屏预览模式打开，则设置全屏状态
@@ -418,7 +419,7 @@ export function useFileTreePreviewView(
 
     try {
       // 文件树刷新不阻塞 git status，避免与 openPreviewView 等并发刷新时 Promise 悬挂
-      void onRefreshFileTree?.();
+      // void onRefreshFileTree?.();
 
       const statusResponse = await apiGitStatus({
         workspaceType: 'taskAgent',
@@ -447,19 +448,20 @@ export function useFileTreePreviewView(
     }
   }, [enableGitStatus, targetId]);
 
-  /** 文件树展开时拉取 Git status（仅通用型智能体） */
+  /** 文件树有内容时拉取 Git status（仅通用型智能体） */
   useEffect(() => {
-    if (!targetId || !enableGitStatus || !isFileTreeVisible) {
+    if (!targetId || !enableGitStatus || !files?.length) {
       isRefreshingGitListRef.current = false;
       setIsRefreshingGitList(false);
       return;
     }
+
     void refreshGitList();
     return () => {
       isRefreshingGitListRef.current = false;
       setIsRefreshingGitList(false);
     };
-  }, [targetId, enableGitStatus, isFileTreeVisible]);
+  }, [targetId, enableGitStatus, files?.length]);
 
   // 文件选择（内部函数，执行实际的选择逻辑）
   const handleFileSelectInternal = useCallback(
@@ -1330,7 +1332,7 @@ export function useFileTreePreviewView(
    */
   const handleFileTreeToggle = () => {
     const newVisibleState = !isFileTreeVisible;
-    if (isControlledFileTreeSidebar) {
+    if (isFileTreeSidebarVisible !== undefined) {
       onFileTreeSidebarVisibleChange?.(newVisibleState);
     } else {
       setInternalFileTreeVisible(newVisibleState);

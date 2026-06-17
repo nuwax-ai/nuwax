@@ -701,6 +701,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
               enableSubscription={isEnableSubscription}
               onSelectMention={handleInsertAtMention}
               usageScenarios={usageScenarios}
+              disabled={wholeDisabled}
             />
 
             {/*上传按钮*/}
