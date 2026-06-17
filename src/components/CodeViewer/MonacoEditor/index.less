@@ -1,0 +1,162 @@
+@import '@/styles/color.less';
+@import '@/styles/token.less';
+
+.monacoEditor {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--xagi-color-bg-container);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+// .editorHeader {
+//   display: flex;
+//   align-items: center;
+//   justify-content: space-between;
+//   padding: 8px 16px;
+//   background: var(--xagi-color-fill-quaternary);
+//   border-bottom: 1px solid var(--xagi-color-border);
+//   min-height: 40px;
+// }
+
+// .fileInfo {
+//   display: flex;
+//   align-items: center;
+//   gap: 12px;
+// }
+
+// .fileName {
+//   font-size: 14px;
+//   font-weight: 500;
+//   color: var(--xagi-color-text);
+// }
+
+// .fileLanguage {
+//   font-size: 12px;
+//   color: var(--xagi-color-text-tertiary);
+//   background: var(--xagi-color-fill-quaternary);
+//   padding: 2px 8px;
+//   border-radius: 4px;
+//   border: 1px solid var(--xagi-color-border);
+// }
+
+// .unsupportedWarning {
+//   font-size: 11px;
+//   color: var(--xagi-color-warning);
+//   background: var(--xagi-color-warning-bg);
+//   padding: 2px 6px;
+//   border-radius: 3px;
+//   border: 1px solid var(--xagi-color-warning-border);
+//   display: flex;
+//   align-items: center;
+//   gap: 4px;
+// }
+
+// .fileStats {
+//   display: flex;
+//   align-items: center;
+//   gap: 8px;
+// }
+
+// .fileSize {
+//   font-size: 12px;
+//   color: var(--xagi-color-text-tertiary);
+// }
+
+.editorContainer {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  // 确保容器不会影响编辑器内部布局
+  padding: 0;
+  margin: 0;
+}
+
+.editor {
+  width: 100%;
+  height: 100%;
+  // 确保编辑器容器没有额外的样式影响
+  padding: 0;
+  margin: 0;
+  border: none;
+  outline: none;
+
+  // 确保 Monaco Editor 内部元素正确对齐
+  :global(.monaco-editor) {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  // 确保编辑器内容区域没有偏移
+  :global(.monaco-editor .view-lines) {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  // 确保行号区域正确对齐
+  :global(.monaco-editor .margin) {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  // 确保光标和文本正确对齐
+  :global(.monaco-editor .view-line) {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  // 确保编辑器容器没有额外的边距
+  :global(.monaco-editor .overflow-guard) {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+}
+
+.emptyState {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: @colorTextTertiary;
+  padding: 40px;
+  text-align: center;
+}
+
+.emptyIcon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.6;
+}
+
+.emptyTitle {
+  font-size: 18px;
+  font-weight: @fontWeightStrong;
+  color: @colorTextSecondary;
+  margin: 0 0 8px;
+}
+
+.emptyDescription {
+  font-size: @fontSize;
+  color: @colorTextTertiary;
+  margin: 0;
+  line-height: 1.5;
+}
+
+// 暗色主题支持
+// [data-theme='dark'] {
+//   .monacoEditor {
+//     background: var(--xagi-color-bg-container);
+//   }
+
+//   .editorHeader {
+//     background: var(--xagi-color-fill-quaternary);
+//     border-bottom-color: var(--xagi-color-border);
+//   }
+
+//   .fileLanguage {
+//     background: var(--xagi-color-fill-quaternary);
+//     border-color: var(--xagi-color-border);
+//   }
+// }

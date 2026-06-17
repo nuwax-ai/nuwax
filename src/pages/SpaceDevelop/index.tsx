@@ -1,0 +1,579 @@
+import ButtonToggle from '@/components/ButtonToggle';
+import CreateAgent from '@/components/CreateAgent';
+import Loading from '@/components/custom/Loading';
+import SelectList from '@/components/custom/SelectList';
+import CustomPopover from '@/components/CustomPopover';
+import MoveCopyComponent from '@/components/MoveCopyComponent';
+import UploadImportConfig from '@/components/UploadImportConfig';
+import {
+  AGENT_TYPE_LIST,
+  AGENT_TYPE_LIST_DEV,
+  CREATE_LIST,
+  FILTER_STATUS,
+} from '@/constants/space.constants';
+import AnalyzeStatistics from '@/pages/SpaceDevelop/AnalyzeStatistics';
+import {
+  apiAgentConfigList,
+  apiAgentCopyToSpace,
+  apiAgentDelete,
+  apiAgentTransfer,
+} from '@/services/agentConfig';
+import { dict } from '@/services/i18nRuntime';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import { PublishStatusEnum } from '@/types/enums/common';
+import {
+  AgentTypeEnum,
+  ApplicationMoreActionEnum,
+  CreateListEnum,
+  FilterStatusEnum,
+} from '@/types/enums/space';
+import { AgentConfigInfo } from '@/types/interfaces/agent';
+import {
+  AnalyzeStatisticsItem,
+  CustomPopoverItem,
+  FileType,
+} from '@/types/interfaces/common';
+import { modalConfirm } from '@/utils/ant-custom';
+import { copyTextToClipboard } from '@/utils/clipboard';
+import { exportConfigFile } from '@/utils/exportImportFile';
+import { jumpToAgent } from '@/utils/router';
+import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
+import { Button, Empty, Input, message, Upload } from 'antd';
+import classNames from 'classnames';
+import React, { useEffect, useRef, useState } from 'react';
+import { history, useModel, useParams, useRequest, useSearchParams } from 'umi';
+import ApplicationItem from './ApplicationItem';
+import CreateApiKeyModal from './CreateApiKeyModal';
+import CreateTempChatModal from './CreateTempChatModal';
+import styles from './index.less';
+
+type IQuery = 'agentType' | 'status' | 'create' | 'keyword';
+
+const cx = classNames.bind(styles);
+
+/**
+ * 工作空间 - 应用开发
+ */
+const SpaceDevelop: React.FC = () => {
+  // ✅ umi 中的 useSearchParams
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // ✅ 当 select 改变时同步 URL
+  const handleChange = (key: IQuery, value: string) => {
+    // 更新 URL 参数
+    const newParams = new URLSearchParams(searchParams);
+    if (value) {
+      newParams.set(key, value);
+    } else {
+      newParams.delete(key);
+    }
+    setSearchParams(newParams);
+  };
+
+  const params = useParams();
+  const spaceId = Number(params.spaceId);
+  // 打开分析弹窗
+  const [openAnalyze, setOpenAnalyze] = useState<boolean>(false);
+  // 迁移、复制弹窗
+  const [openMove, setOpenMove] = useState<boolean>(false);
+  // 打开创建临时会话弹窗
+  const [openTempChat, setOpenTempChat] = useState<boolean>(false);
+  // 打开API Key弹窗
+  const [openApiKey, setOpenApiKey] = useState<boolean>(false);
+  const [currentAgentInfo, setCurrentAgentInfo] =
+    useState<AgentConfigInfo | null>(null);
+  const [openCreateAgent, setOpenCreateAgent] = useState<boolean>(false);
+  const [agentType, setAgentType] = useState<AgentTypeEnum>(
+    searchParams.get('agentType') || AgentTypeEnum.All,
+  );
+  const [status, setStatus] = useState<FilterStatusEnum>(
+    Number(searchParams.get('status')) || FilterStatusEnum.All,
+  );
+  const [agentStatistics, setAgentStatistics] = useState<
+    AnalyzeStatisticsItem[]
+  >([]);
+  const [create, setCreate] = useState<CreateListEnum>(
+    Number(searchParams.get('create')) || CreateListEnum.All_Person,
+  );
+  // 搜索关键词
+  const [keyword, setKeyword] = useState<string>(
+    searchParams.get('keyword') || '',
+  );
+  const [loading, setLoading] = useState<boolean>(false);
+  // 复制模板loading
+  const [transferLoading, setTransferLoading] = useState<boolean>(false);
+  const [copyToSpaceLoading, setCopyToSpaceLoading] = useState<boolean>(false);
+  const [currentAgentType, setCurrentAgentType] = useState<AgentTypeEnum>(
+    AgentTypeEnum.ChatBot,
+  );
+  // 目标智能体ID
+  const targetAgentIdRef = useRef<number>(0);
+  const currentClickTypeRef = useRef<ApplicationMoreActionEnum>();
+
+  // 暂时隐藏开发收藏功能
+  // const { agentList, setAgentList, agentAllRef, handlerCollect } =
+  const { agentList, setAgentList, agentAllRef } = useModel('applicationDev');
+  // const { runEdit, devCollectAgentList } =
+  const { runEdit } = useModel('devCollectAgent');
+  // 获取用户信息
+  const { userInfo } = useModel('userInfo');
+
+  // 过滤筛选智能体列表数据
+  const handleFilterList = (
+    filterAgentType: AgentTypeEnum,
+    filterStatus: FilterStatusEnum,
+    filterCreate: CreateListEnum,
+    filterKeyword: string,
+    list = agentAllRef.current,
+  ) => {
+    let _list = list as AgentConfigInfo[];
+    if (filterAgentType !== AgentTypeEnum.All) {
+      _list = _list.filter((item: any) => item.type === filterAgentType);
+    }
+    if (filterStatus === FilterStatusEnum.Published) {
+      _list = _list.filter(
+        (item) => item.publishStatus === PublishStatusEnum.Published,
+      );
+    }
+    if (filterCreate === CreateListEnum.Me) {
+      _list = _list.filter((item) => item.creatorId === userInfo.id);
+    }
+    if (filterKeyword) {
+      _list = _list.filter((item) => item.name.includes(filterKeyword));
+    }
+    setAgentList(_list);
+  };
+
+  // ✅ 监听 URL 改变（支持浏览器前进/后退）
+  useEffect(() => {
+    const agentType = searchParams.get('agentType') || AgentTypeEnum.All;
+
+    const status = Number(searchParams.get('status')) || FilterStatusEnum.All;
+    const create =
+      Number(searchParams.get('create')) || CreateListEnum.All_Person;
+    const keyword = searchParams.get('keyword') || '';
+
+    setAgentType(agentType);
+    setStatus(status);
+    setCreate(create);
+    setKeyword(keyword);
+
+    handleFilterList(agentType, status, create, keyword);
+  }, [searchParams]);
+
+  // 查询空间智能体列表接口
+  const { run } = useRequest(apiAgentConfigList, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: (result: AgentConfigInfo[]) => {
+      handleFilterList(agentType, status, create, keyword, result);
+      agentAllRef.current = result;
+      setLoading(false);
+    },
+    onError: () => {
+      setLoading(false);
+    },
+  });
+
+  // 复制到空间
+  const { run: runCopyToSpace } = useRequest(apiAgentCopyToSpace, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: (data: number, params: number[]) => {
+      setCopyToSpaceLoading(false);
+      message.success(dict('PC.Pages.SpaceDevelop.Index.copySuccess'));
+      // 关闭弹窗
+      setOpenMove(false);
+      // 目标空间ID
+      const targetSpaceId = params[1];
+      // 跳转
+      jumpToAgent(targetSpaceId, data);
+    },
+    onError: () => {
+      setCopyToSpaceLoading(false);
+    },
+  });
+
+  // 删除或者迁移智能体后, 从列表移除智能体
+  const handleDelAgent = () => {
+    const agentId = targetAgentIdRef.current;
+    const _agentList =
+      agentList?.filter((item: AgentConfigInfo) => item.id !== agentId) || [];
+    setAgentList(_agentList);
+    agentAllRef.current = agentAllRef.current?.filter(
+      (item: AgentConfigInfo) => item.id !== agentId,
+    );
+  };
+
+  // 删除智能体
+  const { run: runDel } = useRequest(apiAgentDelete, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: () => {
+      message.success(dict('PC.Pages.SpaceDevelop.Index.deleteSuccess'));
+      handleDelAgent();
+      runEdit({
+        size: 5,
+      });
+    },
+  });
+
+  // 智能体迁移接口
+  const { run: runTransfer } = useRequest(apiAgentTransfer, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: () => {
+      setTransferLoading(false);
+      message.success(dict('PC.Pages.SpaceDevelop.Index.transferSuccess'));
+      handleDelAgent();
+      setOpenMove(false);
+      setCurrentAgentInfo(null);
+    },
+    onError: () => {
+      setTransferLoading(false);
+    },
+  });
+
+  useEffect(() => {
+    // 如果有 location.state，说明是点击菜单跳转过来的，会触发下面的 useEffect，这里就不需要请求了
+    if (history.location.state) {
+      return;
+    }
+    setLoading(true);
+    run(spaceId);
+  }, [spaceId]);
+
+  // 监听菜单切换，重新加载数据
+  useEffect(() => {
+    if (history.location.state) {
+      // 清空URL搜索参数
+      const newParams = new URLSearchParams();
+      setSearchParams(newParams);
+      // 重新加载智能体列表
+      setLoading(true);
+      run(spaceId);
+    }
+  }, [history.location.state]);
+
+  // 切换智能体类型
+  const handlerChangeAgentType = (value: React.Key) => {
+    const _agentType = value as AgentTypeEnum;
+    setAgentType(_agentType);
+    handleFilterList(_agentType, status, create, keyword);
+    handleChange('agentType', _agentType.toString());
+  };
+  // 切换状态
+  const handlerChangeStatus = (value: React.Key) => {
+    const _status = value as FilterStatusEnum;
+    setStatus(_status);
+    handleFilterList(agentType, _status, create, keyword);
+    handleChange('status', _status.toString());
+  };
+
+  // 切换创建者
+  const handlerChangeCreate = (value: React.Key) => {
+    const _create = value as CreateListEnum;
+    setCreate(_create);
+    handleFilterList(agentType, status, _create, keyword);
+    handleChange('create', _create.toString());
+  };
+
+  // 智能体搜索
+  const handleQueryAgent = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const _keyword = e.target.value;
+    setKeyword(_keyword);
+    handleFilterList(agentType, status, create, _keyword);
+    handleChange('keyword', _keyword);
+  };
+
+  // 清除关键词
+  const handleClearKeyword = () => {
+    setKeyword('');
+    handleFilterList(agentType, status, create, '');
+  };
+
+  // 确认迁移智能体
+  const handlerConfirmMove = (targetSpaceId: number) => {
+    // 迁移
+    if (currentClickTypeRef.current === ApplicationMoreActionEnum.Move) {
+      setTransferLoading(true);
+      runTransfer(targetAgentIdRef.current, targetSpaceId);
+    }
+    // 复制到空间
+    else if (
+      currentClickTypeRef.current === ApplicationMoreActionEnum.Copy_To_Space
+    ) {
+      setCopyToSpaceLoading(true);
+      runCopyToSpace(targetAgentIdRef.current, targetSpaceId);
+    }
+  };
+
+  // 点击跳转到智能体
+  const handleClick = (agentId: number, item?: AgentConfigInfo) => {
+    if (item?.devAgentConversationId) {
+      history.push(
+        `/space/${spaceId}/conversation-agent?agentId=${agentId}&conversationId=${item.devAgentConversationId}`,
+      );
+    } else {
+      history.push(`/space/${spaceId}/agent/${agentId}`);
+    }
+  };
+
+  // 设置统计信息
+  const handleSetStatistics = (agentInfo: AgentConfigInfo) => {
+    const { userCount, convCount, collectCount, likeCount } =
+      agentInfo?.agentStatistics;
+    const analyzeList = [
+      {
+        label: dict('PC.Pages.SpaceDevelop.Index.statUserCount'),
+        value: userCount,
+      },
+      {
+        label: dict('PC.Pages.SpaceDevelop.Index.statConvCount'),
+        value: convCount,
+      },
+      {
+        label: dict('PC.Pages.SpaceDevelop.Index.statCollectCount'),
+        value: collectCount,
+      },
+      {
+        label: dict('PC.Pages.SpaceDevelop.Index.statLikeCount'),
+        value: likeCount,
+      },
+    ];
+    setAgentStatistics(analyzeList);
+  };
+
+  // 点击更多操作
+  const handlerClickMore = (type: ApplicationMoreActionEnum, index: number) => {
+    const agentInfo = agentList[index];
+    const { id } = agentInfo;
+    targetAgentIdRef.current = id;
+    switch (type) {
+      case ApplicationMoreActionEnum.Analyze:
+        handleSetStatistics(agentInfo);
+        setOpenAnalyze(true);
+        break;
+      // 复制到空间
+      case ApplicationMoreActionEnum.Copy_To_Space:
+      // 迁移
+      case ApplicationMoreActionEnum.Move:
+        // 记录当前点击操作的类型
+        currentClickTypeRef.current = type;
+        setOpenMove(true);
+        setCurrentAgentInfo(agentInfo);
+        break;
+      // 临时会话
+      case ApplicationMoreActionEnum.Temporary_Session:
+        setOpenTempChat(true);
+        setCurrentAgentInfo(agentInfo);
+        break;
+      // 独立会话
+      case ApplicationMoreActionEnum.Independent_Session:
+        // 之所以使用try catch，是因为navigator.clipboard.writeText在某些浏览器或NuwaClaw中可能不支持
+        try {
+          const origin = window.location.origin;
+          // 这里实现复制路径到浏览器地址栏
+          const path = `${origin}/app/${agentInfo.id}`;
+          // 复制路径到剪贴板
+          copyTextToClipboard(path, () => {
+            message.success(
+              dict('PC.Pages.SpaceDevelop.copyIndependentSessionSuccess'),
+            );
+          });
+        } catch (error) {
+          console.error('Failed to copy independent session path:', error);
+          message.error(
+            dict('PC.Pages.SpaceDevelop.copyIndependentSessionFailed'),
+          );
+        }
+        break;
+      // API Key
+      case ApplicationMoreActionEnum.API_Key:
+        setOpenApiKey(true);
+        setCurrentAgentInfo(agentInfo);
+        break;
+      // 导出配置
+      case ApplicationMoreActionEnum.Export_Config:
+        modalConfirm(
+          dict(
+            'PC.Pages.SpaceDevelop.Index.exportConfigTitle',
+            agentInfo?.name,
+          ),
+          dict('PC.Pages.SpaceDevelop.Index.exportConfigContent'),
+          () => {
+            exportConfigFile(id, AgentComponentTypeEnum.Agent);
+            return new Promise((resolve) => {
+              setTimeout(resolve, 1000);
+            });
+          },
+        );
+        break;
+      // 日志
+      case ApplicationMoreActionEnum.Log:
+        history.push(
+          `/space/${spaceId}/library-log?targetType=${AgentComponentTypeEnum.Agent}&targetId=${id}`,
+        );
+        break;
+      case ApplicationMoreActionEnum.Del:
+        modalConfirm(
+          dict('PC.Pages.SpaceDevelop.Index.deleteConfirmText'),
+          agentInfo?.name,
+          () => {
+            runDel(id);
+            return new Promise((resolve) => {
+              setTimeout(resolve, 1000);
+            });
+          },
+        );
+        break;
+    }
+  };
+
+  // 确认创建智能体
+  const handlerConfirmCreateAgent = (agentId: number) => {
+    setOpenCreateAgent(false);
+    history.push(`/space/${spaceId}/agent/${agentId}`);
+  };
+
+  // 导入配置成功后，刷新智能体列表
+  const handleImportConfig = () => {
+    run(spaceId);
+  };
+
+  // beforeUpload 返回 false 或 Promise.reject 时，只用于拦截上传行为，不会阻止文件进入上传列表（原因）。如果需要阻止列表展现，可以通过返回 Upload.LIST_IGNORE 实现。
+  const beforeUploadDefault = (file: FileType) => {
+    const fileName = file.name.toLocaleLowerCase();
+    const isValidFile = fileName.endsWith('.agent');
+    if (!isValidFile) {
+      message.error(dict('PC.Pages.SpaceDevelop.Index.agentFileOnly'));
+    }
+    return isValidFile || Upload.LIST_IGNORE;
+  };
+
+  // 点击智能体类型
+  const handlerClickAgentType = (item: CustomPopoverItem) => {
+    const agentType = item.value as AgentTypeEnum;
+    setOpenCreateAgent(true);
+    setCurrentAgentType(agentType);
+  };
+
+  return (
+    <div className={cx(styles.container, 'h-full', 'flex', 'flex-col')}>
+      <div className={cx(styles['header-area'])}>
+        <div className={cx(styles['header-left'])}>
+          <h3 className={cx(styles.title)}>
+            {dict('PC.Pages.SpaceDevelop.Index.agentDevelop')}
+          </h3>
+          <SelectList
+            value={agentType}
+            options={AGENT_TYPE_LIST_DEV}
+            onChange={handlerChangeAgentType}
+            size="middle"
+          />
+          {/* 单选模式 */}
+          <ButtonToggle
+            options={FILTER_STATUS}
+            value={status}
+            onChange={(value) => handlerChangeStatus(value as React.Key)}
+          />
+          <ButtonToggle
+            options={CREATE_LIST}
+            value={create}
+            onChange={(value) => handlerChangeCreate(value as React.Key)}
+          />
+        </div>
+        <div className={cx(styles['header-right'])}>
+          <Input
+            rootClassName={cx(styles.input)}
+            placeholder={dict('PC.Pages.SpaceDevelop.Index.searchAgent')}
+            value={keyword}
+            onChange={handleQueryAgent}
+            prefix={<SearchOutlined />}
+            allowClear
+            onClear={handleClearKeyword}
+            style={{ width: 214 }}
+          />
+          <UploadImportConfig
+            spaceId={spaceId}
+            onUploadSuccess={handleImportConfig}
+            beforeUpload={beforeUploadDefault}
+          />
+
+          {/* 创建智能体按钮：如果只有一种类型则直接创建，否则显示下拉选择 */}
+          <CustomPopover list={AGENT_TYPE_LIST} onClick={handlerClickAgentType}>
+            <Button type="primary" icon={<PlusOutlined />}>
+              {dict('PC.Pages.SpaceDevelop.Index.createAgent')}
+            </Button>
+          </CustomPopover>
+        </div>
+      </div>
+      {loading ? (
+        <Loading />
+      ) : agentList?.length > 0 ? (
+        <div
+          className={cx(
+            styles['main-container'],
+            'flex-1',
+            'scroll-container-hide',
+          )}
+        >
+          {agentList?.map((item: AgentConfigInfo, index: number) => (
+            <ApplicationItem
+              key={item.id}
+              agentConfigInfo={item}
+              onClickMore={(type) => handlerClickMore(type, index)}
+              onClick={(agentId) => handleClick(agentId, item)}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className={cx('flex', 'items-center', 'content-center', 'h-full')}>
+          <Empty description={dict('PC.Pages.SpaceDevelop.Index.noResults')} />
+        </div>
+      )}
+
+      {/*分析统计弹窗*/}
+      <AnalyzeStatistics
+        open={openAnalyze}
+        onCancel={() => setOpenAnalyze(false)}
+        title={dict('PC.Pages.SpaceDevelop.Index.agentOverview')}
+        list={agentStatistics}
+      />
+      {/*智能体迁移弹窗*/}
+      <MoveCopyComponent
+        spaceId={spaceId}
+        loading={copyToSpaceLoading || transferLoading}
+        type={currentClickTypeRef.current} // 默认为迁移
+        open={openMove}
+        title={currentAgentInfo?.name}
+        onCancel={() => setOpenMove(false)}
+        onConfirm={handlerConfirmMove}
+      />
+      {/*创建智能体*/}
+      <CreateAgent
+        type={currentAgentType}
+        spaceId={spaceId}
+        open={openCreateAgent}
+        onCancel={() => setOpenCreateAgent(false)}
+        onConfirmCreate={handlerConfirmCreateAgent}
+      />
+      {/* 临时会话弹窗 */}
+      <CreateTempChatModal
+        agentId={currentAgentInfo?.id}
+        open={openTempChat}
+        name={currentAgentInfo?.name}
+        onCancel={() => setOpenTempChat(false)}
+      />
+      {/* API Key弹窗 */}
+      <CreateApiKeyModal
+        agentId={currentAgentInfo?.id}
+        open={openApiKey}
+        name={currentAgentInfo?.name}
+        onCancel={() => setOpenApiKey(false)}
+      />
+    </div>
+  );
+};
+
+export default SpaceDevelop;

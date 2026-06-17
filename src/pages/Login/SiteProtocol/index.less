@@ -1,0 +1,25 @@
+@import '@/styles/token';
+@import '@/styles/color';
+
+.span {
+  color: @colorTextTertiary;
+}
+
+.pointer {
+  cursor: pointer;
+}
+
+.a {
+  color: @colorTextTertiary;
+  font-weight: @fontWeightStrong;
+  // 文本添加下划线
+  text-decoration: underline;
+  // 下划线距离文字顶部
+  text-underline-offset: 3px;
+
+  &:hover {
+    color: @colorTextTertiary;
+    // 文本添加下划线
+    text-decoration: underline;
+  }
+}

@@ -1,0 +1,107 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.container {
+  padding: 16px 24px;
+}
+
+// ─── Modal styles ───
+
+.modalContent {
+  text-align: center;
+}
+
+.modalIcon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  margin: 0 auto 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(13, 148, 136, 10%);
+  color: #0d9488;
+  font-size: 26px;
+}
+
+.modalIconDowngrade {
+  background: rgba(245, 158, 11, 10%);
+  color: #d97706;
+}
+
+.modalTitle {
+  font-size: 17px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.modalDesc {
+  font-size: 13px;
+  color: #4a5b6f;
+  margin-bottom: 20px;
+  line-height: 1.6;
+}
+
+.modalCompare {
+  background: rgba(240, 244, 254, 40%);
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  gap: 12px;
+}
+
+.modalCompareItem {
+  text-align: center;
+}
+
+.modalCompareLabel {
+  font-size: 11px;
+  color: #8a9bb0;
+  margin-bottom: 2px;
+}
+
+.modalCompareOldName {
+  font-size: 14px;
+  font-weight: 700;
+  color: #8a9bb0;
+  text-decoration: line-through;
+}
+
+.modalCompareOldPrice {
+  font-size: 12px;
+  color: #8a9bb0;
+}
+
+.modalCompareArrow {
+  color: #8a9bb0;
+  font-size: 18px;
+}
+
+.modalCompareNewName {
+  font-size: 16px;
+  font-weight: 800;
+  color: #1a6bff;
+}
+
+.modalCompareNewPrice {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a6bff;
+}
+
+.modalCancelBtn {
+  border-radius: 10px;
+  font-weight: 600;
+  flex: 1;
+}
+
+.modalConfirmBtn {
+  border-radius: 10px;
+  font-weight: 600;
+  flex: 1;
+  background: linear-gradient(135deg, #1a6bff, #0d9488);
+  border: none;
+}

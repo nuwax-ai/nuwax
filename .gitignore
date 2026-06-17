@@ -1,0 +1,47 @@
+/node_modules
+/.env.local
+/.umirc.local.ts
+/config/config.local.ts
+/src/.umi
+/src/.umi-production
+/src/.umi-test
+/.umi
+/.umi-production
+/.umi-test
+/dist
+/reports/a11y/*.json
+/.mfsu
+.swc
+/.idea
+/.yarn.lock
+package-lock.json
+pnpm-lock.yaml
+
+# Ignore DevSpace cache and log folder
+.devspace/
+
+/k8s
+/devspace.yaml
+/devspace_start.sh
+/Dockerfile
+
+# /.husky
+/src/mock
+.npm-cache
+
+# Claude local settings
+.claude/settings.local.json
+
+.claude
+.cursor
+.cursorrules
+.DS_Store
+.agent
+.kilo
+.temp
+.hermes
+# /deploy_test.sh
+
+# 微信公众/小程序域名校验文件：仅在生产 Nginx/网关/Volume 部署，勿放入 public/
+public/MP_verify_*.txt
+public/Nd28jPGzj4.txt

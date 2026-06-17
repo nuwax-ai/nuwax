@@ -1,0 +1,1000 @@
+import { ResourcePricingConfigInfo } from '@/pages/SpaceResource/types/resource';
+import {
+  AccessControlEnum,
+  MessageScopeEnum,
+  SandboxBindTypeEnum,
+  SandboxIsolationEnum,
+  SandboxTypeEnum,
+  UserRoleEnum,
+  UserStatusEnum,
+} from '@/types/enums/systemManage';
+import { PublishStatusEnum } from '../enums/common';
+import {
+  KnowledgeDataTypeEnum,
+  KnowledgePubStatusEnum,
+} from '../enums/library';
+import {
+  ModelApiProtocolEnum,
+  ModelCapabilityTypeEnum,
+  ModelFunctionCallEnum,
+  ModelNetworkTypeEnum,
+  ModelScopeEnum,
+  ModelStrategyEnum,
+  ModelTypeEnum,
+  ModelUsageScenarioEnum,
+} from '../enums/modelConfig';
+import { PluginPublishScopeEnum } from '../enums/plugin';
+import { ModelComponentStatusEnum } from '../enums/space';
+import { TaskInfo } from './library';
+
+/**
+ * 分页参数基础接口
+ */
+export interface SystemPaginationParams {
+  /** 页码 */
+  pageNo: number;
+  /** 每页条数 */
+  pageSize: number;
+}
+
+/**
+ * 分页返回结果基础接口
+ */
+export interface SystemPageResult<T> extends SystemPaginationParams {
+  /** 总条数 */
+  total: number;
+  /** 条目列表 */
+  records: T[];
+}
+
+/**
+ * 资源信息基础接口
+ */
+export interface SystemResourceInfo {
+  /** ID */
+  id: number;
+  /** 智能体ID */
+  agentId: number;
+  /** 名称 */
+  name: string;
+  /** 描述 */
+  description: string;
+  /** 创建人ID */
+  creatorId: number;
+  /** 创建人 */
+  creatorName: string;
+  /** 创建时间 */
+  created: string;
+  /** 空间ID */
+  spaceId: number;
+  /** 操作 */
+  operation: 'agent' | 'page';
+  // 是否受后台权限控制，0 不受，1 受 访问控制过滤，0 无需过滤，1 过滤出需要权限管控的内容
+  accessControl: AccessControlEnum;
+  /** 发布状态 */
+  publishStatus: PublishStatusEnum;
+  // 发布范围,可用值:Space,Tenant,Global
+  publishScope: PluginPublishScopeEnum;
+  // 网页应用的发布类型,可用值:AGENT,PAGE
+  publishType: 'AGENT' | 'PAGE';
+  // 网页应用绑定的智能体ID
+  pageAgentId: number;
+}
+
+// 查询用户列表输入参数
+export interface SystemUserListParams extends SystemPaginationParams {
+  queryFilter: {
+    role?: string;
+    userName?: string;
+    id?: number;
+  };
+}
+
+// 新增用户输入参数
+export interface AddSystemUserParams {
+  phone: string;
+  password: string;
+  userName: string;
+  nickName: string;
+  email?: string;
+  role: UserRoleEnum;
+}
+
+// 更新用户输入参数
+export interface UpdateSystemUserParams {
+  id: number;
+  phone: string;
+  userName: string;
+  nickName: string;
+  email?: string;
+  role: UserRoleEnum;
+}
+
+// 查询用户列表返回数据
+export interface SystemUserListInfo {
+  // 主键id
+  id: number;
+  // 昵称
+  nickName: string;
+  // 用户名
+  userName: string;
+  // 手机号码
+  phone: string;
+  // 邮箱
+  email: string;
+  // 角色
+  role: UserRoleEnum;
+  // 状态
+  status: UserStatusEnum;
+  // 加入时间
+  created: string;
+}
+export interface SystemUserConfig {
+  /** 租户ID */
+  tenantId: number;
+  /** 配置项名称 */
+  name: string;
+  /** 配置项值 */
+  value: string | string[];
+  /** 配置项描述 */
+  description: string;
+  /** 配置项分类，可用值: BaseConfig, ModelSetting, AgentSetting, DomainBind */
+  category: 'BaseConfig' | 'ModelSetting' | 'AgentSetting' | 'DomainBind';
+  /** 配置项输入类型，可用值: Input, MultiInput, Select, MultiSelect, Textarea, File */
+  inputType:
+    | 'Input'
+    | 'MultiInput'
+    | 'Select'
+    | 'MultiSelect'
+    | 'Textarea'
+    | 'File';
+  /** 配置项数据类型，可用值: String, Number, Array */
+  dataType: 'String' | 'Number' | 'Array';
+  /** 配置项提示 */
+  notice: string;
+  /** 配置项占位符 */
+  placeholder: string;
+  /** 配置项最小高度 */
+  minHeight: number;
+  /** 是否必填 */
+  required: boolean;
+  sort: number;
+}
+
+export type ConfigObj = {
+  [K in SystemUserConfig['category']]?: SystemUserConfig[];
+};
+
+export type TabKey =
+  | 'BaseConfig'
+  | 'ModelSetting'
+  | 'AgentSetting'
+  | 'DomainBind';
+
+export type BaseFormItemProps = {
+  props: SystemUserConfig;
+  currentTab: TabKey;
+  modelList: ModelConfigDto[];
+  agentList: PublishedDto[];
+};
+
+/**
+ * 模型配置数据
+ */
+export interface ModelConfigDto {
+  /** 模型ID */
+  id: number;
+  /** 商户ID */
+  tenantId: number;
+  /** 空间ID */
+  spaceId: number;
+  /** 提供商ID */
+  pid?: string;
+  /** 提供商名称 */
+  providerName?: string;
+  /** 模型生效范围（可用值: Space, Tenant, Global） */
+  scope: ModelScopeEnum;
+  /** 模型名称 */
+  name: string;
+  /** 模型描述 */
+  description: string;
+  /** 模型标识 */
+  model: string;
+  /** 模型类型（可用值: Completions, Chat, Edits, Images, Embeddings, Multi, Audio, Video, Other） */
+  type: ModelTypeEnum;
+  /** 模型能力类型（可用值: Text, Image, Audio, Video, TextEmbedding, MultiEmbedding, Reasoning） */
+  types: ModelCapabilityTypeEnum[];
+  /** 网络类型（可用值: Internet, Intranet） */
+  networkType: ModelNetworkTypeEnum;
+  /** 函数调用支持程度（可用值: Unsupported, CallSupported, StreamCallSupported） */
+  functionCall: ModelFunctionCallEnum;
+  /** 是否是推理模型（0/1） */
+  isReasonModel?: number;
+  /** token上限 */
+  maxTokens: number;
+  /** 最大上下文长度 */
+  maxContextTokens?: number;
+  /** 模型接口协议（可用值: OpenAI, Ollama, Zhipu, Anthropic） */
+  apiProtocol: ModelApiProtocolEnum;
+  /** API列表 */
+  apiInfoList: ApiInfo[];
+  /** 接口调用策略（可用值: RoundRobin, WeightedRoundRobin, LeastConnections, WeightedLeastConnections, Random, ResponseTime） */
+  strategy: ModelStrategyEnum;
+  /** 向量维度 */
+  dimension: number;
+  /** 修改时间（ISO格式日期字符串） */
+  modified: string;
+  /** 创建时间（ISO格式日期字符串） */
+  created: string;
+  /** 创建者信息 */
+  creator: CreatorDto;
+  /** 管控状态 */
+  accessControl?: AccessControlEnum;
+  /** 启用状态（1 启用 / 0 禁用） */
+  enabled?: ModelComponentStatusEnum;
+  /** 可用范围 */
+  usageScenarios?: ModelUsageScenarioEnum[];
+  /** 定价信息（对象或展示文案） */
+  pricing?: ResourcePricingConfigInfo | string;
+}
+
+/**
+ * API信息
+ */
+export interface ApiInfo {
+  /** 接口地址 */
+  url: string;
+  /** 接口密钥 */
+  key: string;
+  /** 权重 */
+  weight: number;
+}
+
+/**
+ * 创建者信息
+ */
+export interface CreatorDto {
+  /** 用户ID */
+  userId: number;
+  /** 用户名 */
+  userName: string;
+  /** 昵称 */
+  nickName: string;
+  /** 头像 */
+  avatar: string;
+}
+/**
+ * 发布对象数据
+ */
+export interface PublishedDto {
+  /** 发布ID */
+  id: number;
+  /** 空间ID */
+  spaceId: number;
+  /** 目标对象类型，可用值: Agent, Plugin, Workflow, Knowledge */
+  targetType: 'Agent' | 'Plugin' | 'Workflow' | 'Knowledge';
+  /** 目标对象（智能体、工作流、插件）ID */
+  targetId: number;
+  /** 发布名称 */
+  name: string;
+  /** 描述 */
+  description: string;
+  /** 图标 */
+  icon: string;
+  /** 备注 */
+  remark: string;
+  /** 智能体发布修改时间 */
+  modified: string;
+  /** 智能体发布创建时间 */
+  created: string;
+  /** 统计信息(智能体、插件、工作流相关的统计都在该结构里，根据实际情况取值) */
+  statistics: StatisticsDto;
+  /** 发布者信息 */
+  publishUser: PublishUserDto;
+  /** 分类名称 */
+  category: string;
+  /** 收藏状态 */
+  collect: boolean;
+}
+
+/**
+ * 统计信息
+ */
+export interface StatisticsDto {
+  /** 目标对象ID */
+  targetId: number;
+  /** 用户人数 */
+  userCount: number;
+  /** 会话次数 */
+  convCount: number;
+  /** 收藏次数 */
+  collectCount: number;
+  /** 点赞次数 */
+  likeCount: number;
+  /** 引用次数 */
+  referenceCount: number;
+  /** 调用总次数 */
+  callCount: number;
+  /** 失败调用次数 */
+  failCallCount: number;
+  /** 调用总时长 */
+  totalCallDuration: number;
+}
+
+/**
+ * 发布者信息
+ */
+export interface PublishUserDto {
+  /** 用户ID */
+  userId: number;
+  /** 用户名 */
+  userName: string;
+  /** 昵称 */
+  nickName: string;
+  /** 头像 */
+  avatar: string;
+}
+/**
+ * 上传结果数据
+ */
+export interface UploadResultDto {
+  /** 文件完整的网络地址 */
+  url: string;
+  /** 文件唯一标识 */
+  key: string;
+  /** 文件名称 */
+  fileName: string;
+  /** 文件类型 */
+  mimeType: string;
+  /** 文件大小 */
+  size: number;
+  /** 图片宽度 */
+  width: number;
+  /** 图片高度 */
+  height: number;
+}
+/**
+ * 租户配置数据
+ */
+export interface TenantConfigDto {
+  /** 站点名称 */
+  siteName?: string;
+  /** 站点描述 */
+  siteDescription?: string;
+  /** 站点LOGO（为空使用默认值） */
+  siteLogo?: string;
+  /** 登录页banner */
+  loginBanner?: string;
+  /** 登录页banner文案 */
+  loginBannerText?: string;
+  /** 广场Banner地址（为空使用默认值） */
+  squareBanner?: string;
+  /** 广场Banner文案标题 */
+  squareBannerText?: string;
+  /** 广场Banner文案副标题 */
+  squareBannerSubText?: string;
+  /** 广场Banner链接（为空不跳转） */
+  squareBannerLinkUrl?: string;
+  /** 开启注册状态（0关闭；1开启） */
+  openRegister?: number;
+  /** 默认站点Agent ID */
+  defaultAgentId?: number;
+  /** 首页推荐问题列表 */
+  homeRecommendQuestions?: string[];
+  /** 站点域名列表 */
+  domainNames?: string[];
+  /** 主题模板配置（JSON字符串） */
+  templateConfig?: string;
+}
+
+// 租户订阅基础配置信息，用于订阅基础配置的保存
+export interface TenantSubscriptionConfigInfo {
+  /*收入分成比例 */
+  revenueRatio?: Record<string, unknown>;
+
+  /*支付网关地址 */
+  paymentGateway?: string;
+
+  /*是否开启订阅模式 */
+  enableSubscription?: number;
+
+  /*积分兑换比例，比如 1000标识1块钱可以兑换1000积分 */
+  creditExchangeRate?: number;
+
+  /*积分兑换说明 */
+  creditExchangeDesc?: string;
+
+  /*是否开启注册积分赠送 */
+  enableGiftCredit?: number;
+
+  /*注册赠送积分数 */
+  giftCreditAmount?: number;
+
+  /*注册赠送积分有效期（天） */
+  giftCreditExpire?: number;
+
+  /*是否开启每日登录赠送积分 */
+  enableDailyGiftCredit?: number;
+
+  /*每日登录赠送积分数 */
+  dailyGiftCreditAmount?: number;
+}
+
+/**
+ * 支付配置查询结果
+ */
+export interface PayConfigResult {
+  /** 支付分成比例 */
+  payRate: number;
+}
+
+/**
+ * 支付网关连通性检测结果
+ */
+export interface PayConnectivityResult {
+  reachable: boolean;
+  message: string;
+  gatewayBaseUrl: string;
+  gatewayServerTimeMillis: number;
+  latencyMillis: number;
+}
+
+/**
+ * 主题配置数据结构
+ */
+export interface ThemeConfigData {
+  /** 主题色 */
+  primaryColor: string;
+  /** 背景图片ID */
+  backgroundId: string;
+  /** Ant Design主题（浅色/深色） */
+  antdTheme: 'light' | 'dark';
+  /** 导航栏风格（浅色/深色） */
+  layoutStyle: 'light' | 'dark';
+  /** 导航风格ID（style1/style2） */
+  navigationStyle: 'style1' | 'style2';
+  /** 时间戳 */
+  timestamp: number;
+}
+
+// 发送通知消息输入参数
+export interface NotifyMessageSendParams {
+  /** 消息类型 */
+  scope: MessageScopeEnum;
+  /** 消息内容 */
+  content: string;
+  /** 消息接收者 */
+  userIds: number[];
+}
+
+// 工作空间信息
+export type SystemSpaceInfo = SystemResourceInfo;
+
+// 查询工作空间列表参数
+export interface SystemSpaceListParams extends SystemPaginationParams {
+  /** 名称 */
+  name?: string;
+  /** 创建人ID列表 */
+  creatorIds?: number[];
+  /** 空间ID */
+  spaceId?: number;
+  /** 创建人名称 */
+  creatorName?: string;
+}
+
+// 空间列表分页响应
+export type SystemSpacePage = SystemPageResult<SystemSpaceInfo>;
+
+// 智能体信息
+export type SystemAgentInfo = SystemResourceInfo;
+
+// 查询智能体列表参数
+export interface SystemAgentListParams extends SystemPaginationParams {
+  /** 名称 (模糊搜索) */
+  name?: string;
+  /** 创建人ID列表 */
+  creatorIds?: number[];
+  /** 空间ID */
+  spaceId?: number;
+  /** 创建人名称 */
+  creatorName?: string;
+  /** 管控状态 */
+  accessControl?: AccessControlEnum;
+}
+
+// 智能体列表分页响应
+export type SystemAgentPage = SystemPageResult<SystemAgentInfo>;
+
+// 网页应用信息
+export type SystemWebappInfo = SystemResourceInfo;
+
+// 查询网页应用列表参数
+export interface SystemWebappListParams extends SystemPaginationParams {
+  /** 名称 (模糊搜索) */
+  name?: string;
+  /** 创建人ID列表 */
+  creatorIds?: number[];
+  /** 空间ID */
+  spaceId?: number;
+  /** 创建人名称 */
+  creatorName?: string;
+  /** 管控状态 */
+  accessControl?: AccessControlEnum;
+}
+
+// 网页应用列表分页响应
+export type SystemWebappPage = SystemPageResult<SystemWebappInfo>;
+
+// 知识库信息
+export type SystemKnowledgeInfo = SystemResourceInfo;
+
+// 根据id列表查询知识库详情
+export interface KnowledgeInfoById {
+  // 主键id
+  id: number;
+  // 知识库名称
+  name: string;
+  // 知识库描述
+  description: string;
+  // 知识状态,可用值:Waiting,Published
+  pubStatus: KnowledgePubStatusEnum;
+  // 数据类型,默认文本,1:文本;2:表格
+  dataType: KnowledgeDataTypeEnum;
+  // 知识库的嵌入模型ID
+  embeddingModelId: number;
+  // 知识库的生成Q&A模型ID
+  chatModelId: number;
+  spaceId: number;
+  // 图标的url地址
+  icon: string;
+  // 创建时间
+  created: string;
+  // 创建人id
+  creatorId: number;
+  // 创建人
+  creatorName: string;
+  // 	创建人昵称
+  creatorNickName: string;
+  // 头像
+  creatorAvatar: string;
+  // 更新时间
+  modified: string;
+  // 最后修改人id
+  modifiedId: number;
+  // 最后修改人
+  modifiedName: string;
+  // 工作流id
+  workflowId?: string;
+  // 是否受后台权限控制，0 不受，1 受
+  accessControl: AccessControlEnum;
+}
+
+// 查询知识库列表参数
+export interface SystemKnowledgeListParams extends SystemPaginationParams {
+  /** 名称 (模糊搜索) */
+  name?: string;
+  /** 创建人ID列表 */
+  creatorIds?: number[];
+  /** 空间ID */
+  spaceId?: number;
+  /** 创建人名称 */
+  creatorName?: string;
+  /** 管控状态 */
+  accessControl?: AccessControlEnum;
+}
+
+// 知识库列表分页响应
+export type SystemKnowledgePage = SystemPageResult<SystemKnowledgeInfo>;
+
+// 数据表信息
+export type SystemDataTableInfo = SystemResourceInfo;
+
+// 查询数据表列表参数
+export interface SystemDataTableListParams extends SystemPaginationParams {
+  /** 名称 (模糊搜索) */
+  name?: string;
+  /** 创建人ID列表 */
+  creatorIds?: number[];
+  /** 空间ID */
+  spaceId?: number;
+  /** 创建人名称 */
+  creatorName?: string;
+}
+
+// 数据表列表分页响应
+export type SystemDataTablePage = SystemPageResult<SystemDataTableInfo>;
+
+// 工作流信息
+export type SystemWorkflowInfo = SystemResourceInfo;
+
+// 查询工作流列表参数
+export interface SystemWorkflowListParams extends SystemPaginationParams {
+  /** 名称 (模糊搜索) */
+  name?: string;
+  /** 创建人ID列表 */
+  creatorIds?: number[];
+  /** 空间ID */
+  spaceId?: number;
+  /** 创建人名称 */
+  creatorName?: string;
+}
+
+// 工作流列表分页响应
+export type SystemWorkflowPage = SystemPageResult<SystemWorkflowInfo>;
+
+// 定时任务信息
+export type SystemTaskInfo = TaskInfo;
+
+// 查询定时任务列表参数
+export interface SystemTaskListParams extends SystemPaginationParams {
+  /** 任务名称 (模糊搜索) */
+  name?: string;
+  /** 创建人名称 */
+  creatorName?: string;
+}
+
+// 定时任务列表分页响应
+export type SystemTaskPage = SystemPageResult<SystemTaskInfo>;
+
+// 插件信息
+export type SystemPluginInfo = SystemResourceInfo;
+
+// 查询插件列表参数
+export interface SystemPluginListParams extends SystemPaginationParams {
+  /** 名称 (模糊搜索) */
+  name?: string;
+  /** 创建人ID列表 */
+  creatorIds?: number[];
+  /** 空间ID */
+  spaceId?: number;
+  /** 创建人名称 */
+  creatorName?: string;
+}
+
+// 插件列表分页响应
+export type SystemPluginPage = SystemPageResult<SystemPluginInfo>;
+
+/**
+ * MCP 信息
+ */
+export type SystemMcpInfo = SystemResourceInfo;
+
+/**
+ * 查询 MCP 列表参数
+ */
+export interface SystemMcpListParams extends SystemPaginationParams {
+  /** 名称 (模糊搜索) */
+  name?: string;
+  /** 创建人ID列表 */
+  creatorIds?: number[];
+  /** 空间ID */
+  spaceId?: number;
+  /** 创建人名称 */
+  creatorName?: string;
+}
+
+/**
+ * MCP 列表分页响应
+ */
+export type SystemMcpPage = SystemPageResult<SystemMcpInfo>;
+
+/**
+ * 技能信息
+ */
+export type SystemSkillInfo = SystemResourceInfo;
+
+/**
+ * 查询技能列表参数
+ */
+export interface SystemSkillListParams extends SystemPaginationParams {
+  /** 名称 (模糊搜索) */
+  name?: string;
+  /** 创建人ID列表 */
+  creatorIds?: number[];
+  /** 空间ID */
+  spaceId?: number;
+  /** 创建人名称 */
+  creatorName?: string;
+}
+
+/**
+ * 技能列表分页响应
+ */
+export type SystemSkillPage = SystemPageResult<SystemSkillInfo>;
+/**
+ * 访问统计返回结果
+ */
+export interface AccessStatsResult {
+  /** 今日访问量 */
+  todayUserCount: number;
+  /** 30日总访问量 */
+  last30DaysUserCount: number;
+  /** 七日访问趋势 */
+  last7DaysTrend: AccessStatsList[];
+}
+
+/**
+ * 访问统计趋势列表项
+ */
+export interface AccessStatsList {
+  /** 日期 */
+  date: string;
+  /** 访问量 */
+  userCount: number;
+}
+/**
+ * 用户统计返回结果
+ */
+export interface UserStatsResult {
+  /** 总用户数 */
+  totalUserCount: number;
+  /** 今日新增用户 */
+  todayNewUserCount: number;
+  /** 七日访问趋势 */
+  last7DaysTrend: UserTrendList[];
+  /** 三十日访问趋势 */
+  last30DaysTrend: UserTrendList[];
+  /** 当月访问趋势 */
+  monthlyTrend: UserTrendList[];
+}
+
+/**
+ * 用户趋势列表项
+ */
+export interface UserTrendList {
+  /** 日期 */
+  date: string;
+  /** 用户数 */
+  userCount: number;
+}
+
+/**
+ * 资源概览统计结果
+ */
+export interface TotalStatsResult {
+  /** 空间数 */
+  spaceCount: number;
+  /** 智能体数 */
+  agentCount: number;
+  /** 工作流数 */
+  workflowCount: number;
+  /** 知识库数 */
+  knowledgeCount: number;
+  /** 数据表数 */
+  tableCount: number;
+  /** MCP数 */
+  mcpCount: number;
+  /** 页面数 */
+  pageCount: number;
+  /** 模型数 */
+  modelCount: number;
+  /** 插件数 */
+  pluginCount: number;
+  /** 技能数 */
+  skillCount: number;
+}
+
+/**
+ * 会话统计返回结果
+ */
+export interface ConversationStatsResult {
+  /** 总会话数 */
+  totalConversations: number;
+  /** 今日新增会话 */
+  todayNewConversations: number;
+  /** 七日趋势 */
+  last7DaysTrend: ConversationTrendList[];
+  /** 三十日趋势 */
+  last30DaysTrend: ConversationTrendList[];
+  /** 月度趋势 */
+  monthlyTrend: ConversationTrendList[];
+}
+
+/**
+ * 会话趋势项
+ */
+export interface ConversationTrendList {
+  /** 日期 */
+  date: string;
+  /** 会话数 */
+  conversationCount: number;
+}
+
+/**
+ * 沙盒绑定信息项
+ */
+export interface SandboxBindItem {
+  /** 目标类型 (User/Space) */
+  targetType: SandboxBindTypeEnum;
+  /** 目标ID */
+  targetId: number;
+  /** 目标名称 */
+  targetName: string;
+}
+
+/**
+ * 沙盒配置项
+ */
+export interface SandboxConfigItem {
+  id: number;
+  scope: 'GLOBAL' | 'USER';
+  userId: number;
+  name: string;
+  configKey: string;
+  /** 沙盒类型: Agent (智能体), PageApp (应用开发) */
+  type: SandboxTypeEnum;
+  /** 绑定信息 */
+  bindItems?: SandboxBindItem[];
+  /** 沙盒隔离: Tenant (租户), Space (空间), Project (项目) */
+  isolation?: SandboxIsolationEnum;
+  configValue: {
+    hostWithScheme: string;
+    agentPort: number;
+    vncPort: number;
+    fileServerPort: number;
+    apiKey: string;
+    maxUsers: number;
+  };
+  description: string;
+  agentId?: number;
+  isActive: boolean;
+  online: boolean;
+  created: string;
+  modified: string;
+  usingCount?: number;
+  maxAgentCount?: number;
+}
+
+/**
+ * 沙盒全局配置
+ */
+export interface SandboxGlobalConfig {
+  perUserMemoryGB: number | string;
+  perUserCpuCores: number | string;
+}
+
+/**
+ * 沙盒选择项（用于电脑选择器下拉）
+ */
+export interface SandboxSelectDto {
+  /** 沙盒ID */
+  sandboxId: string;
+  /** 沙盒名称 */
+  name: string;
+  /** 沙盒描述 */
+  description: string;
+}
+
+/**
+ * 用户可选沙盒列表响应
+ */
+export interface UserSandBoxSelectDto {
+  /** 可选的沙盒列表 */
+  sandboxes: SandboxSelectDto[];
+  /** 已选择的沙盒，key为agentId，value为sandboxId */
+  agentSelected: Record<string, string>;
+}
+/**
+ * 查询收益明细参数
+ */
+export interface SystemRevenueDetailParams {
+  /** 用户ID */
+  userId: number;
+  /** 日期 (YYYYMMDD) */
+  dt?: number;
+  /** 页码 */
+  pageNum: number;
+  /** 每页条数 */
+  pageSize: number;
+}
+
+/**
+ * 收益明细信息
+ */
+export interface SystemRevenueDetailInfo {
+  /** 明细ID */
+  id: number;
+  /** 用户ID */
+  userId: number;
+  /** 日期 */
+  dt: string;
+  /** 金额 */
+  amount: number;
+  /** 类型 (PLAN, MODEL_CALL, TOOL_CALL 等) */
+  type: string;
+  /** 类型关联ID */
+  typeId: number;
+  /** 关联订单ID */
+  orderId: number;
+  /** 目标类型 (AGENT, SKILL, MODEL, PLUGIN, MCP, WORKFLOW) */
+  targetType: string;
+  /** 目标ID */
+  targetId: number;
+  /** 业务单号 */
+  bizNo: string;
+  /** 备注/收益项名称 */
+  remark: string;
+  /** 扩展字段 */
+  extra: Record<string, any>;
+  /** 创建时间 */
+  created: string;
+}
+
+/** 资源统计-统计分组 */
+export interface StatGroup {
+  /** 输入 Token（不含缓存）；总输入 = totalInputTokens + totalCacheInputTokens */
+  totalInputTokens: number;
+  /** 可选冗余字段，展示以 totalInputTokens 为准 */
+  inputTokens?: number;
+  /** 总输出Token */
+  totalOutputTokens: number;
+  /** 总缓存输入Token */
+  totalCacheInputTokens: number;
+  /** 工具总个数 */
+  toolCount: number;
+  /** 工具调用总次数 */
+  toolCallCount: number;
+  /** 智能体个数 */
+  agentCount: number;
+  /** 智能体调用总次数 */
+  agentCallCount: number;
+  /** 模型调用总次数 */
+  modelCallCount: number;
+  /** 模型调用失败次数 */
+  failedModelCallCount: number;
+  /** 工具调用失败次数 */
+  failedToolCallCount: number;
+  /** 智能体调用失败次数 */
+  failedAgentCallCount: number;
+  /** 总积分 */
+  totalCreditAmount: number;
+  /** 总金额 */
+  totalAmount: number;
+}
+
+/** 资源统计汇总 */
+export interface ResourceStatSummaryDTO {
+  /** 消费统计 */
+  consumption: StatGroup;
+  /** 销售统计 */
+  sales: StatGroup;
+}
+
+/** 资源统计明细查询参数 */
+export interface ResourceStatDetailParams {
+  userId?: number;
+  type?: 'CONSUMPTION' | 'SALES';
+  targetType?: string;
+  targetId?: number;
+  dtStart?: string;
+  dtEnd?: string;
+  pageNum?: number;
+  pageSize?: number;
+}
+
+/** 资源统计明细记录 */
+export interface ResourceStatDTO {
+  id: number;
+  tenantId: number;
+  userId: number;
+  userName: string;
+  nickName: string;
+  phone: string;
+  email: string;
+  type: string;
+  targetType: string;
+  targetId: number;
+  targetName: string;
+  dt: string;
+  callCount: number;
+  callFailedCount: number;
+  creditAmount: number;
+  feeAmount: number;
+  /** 缓存输入 Token */
+  cacheInputTokens: number;
+  /** 输入 Token（明细字段语义因业务接口而异，见各页 resourceStatTokenMetrics） */
+  inputTokens: number;
+  outputTokens: number;
+  extra: string;
+  created: string;
+}

@@ -1,0 +1,609 @@
+.antd-showcase {
+  padding: 24px;
+  height: 100vh;
+  background-color: var(--xagi-color-bg-layout);
+  overflow: auto;
+
+  // 页面标题区域
+  .showcase-header {
+    text-align: center;
+    margin-bottom: 40px;
+    padding: 40px 20px;
+    background: linear-gradient(
+      135deg,
+      var(--xagi-color-primary),
+      var(--xagi-color-info)
+    );
+    border-radius: var(--xagi-border-radius-lg);
+    color: white;
+    position: relative;
+    overflow: hidden;
+    animation: fade-in-up 0.8s ease-out;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="75" r="1" fill="white" opacity="0.1"/><circle cx="25" cy="75" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="25" r="1" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>')
+        repeat;
+      opacity: 0.3;
+    }
+
+    h1 {
+      color: white !important;
+      margin-bottom: 16px !important;
+      font-size: 2.5rem !important;
+      font-weight: 700 !important;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 20%);
+      position: relative;
+      z-index: 1;
+    }
+
+    .ant-typography {
+      color: rgba(255, 255, 255, 90%) !important;
+      font-size: 1.1rem;
+      position: relative;
+      z-index: 1;
+    }
+  }
+
+  // 卡片样式
+  .ant-card {
+    border-radius: var(--xagi-border-radius-lg);
+    box-shadow: var(--xagi-box-shadow-card);
+    border: 1px solid var(--xagi-color-border);
+    transition: all 0.3s ease;
+    animation: fade-in-up 0.6s ease-out;
+    animation-fill-mode: both;
+
+    &:hover {
+      box-shadow: var(--xagi-box-shadow-secondary);
+      transform: translateY(-2px);
+    }
+
+    &:nth-child(1) {
+      animation-delay: 0.1s;
+    }
+
+    &:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    &:nth-child(3) {
+      animation-delay: 0.3s;
+    }
+
+    &:nth-child(4) {
+      animation-delay: 0.4s;
+    }
+
+    &:nth-child(5) {
+      animation-delay: 0.5s;
+    }
+
+    .ant-card-head {
+      border-bottom: 1px solid var(--xagi-color-border);
+
+      .ant-card-head-title {
+        font-weight: 600;
+        font-size: 1.1rem;
+        color: var(--xagi-color-text-heading);
+
+        .anticon {
+          margin-right: 8px;
+          color: var(--xagi-color-primary);
+        }
+      }
+    }
+
+    .ant-card-body {
+      color: var(--xagi-color-text);
+    }
+  }
+
+  // 标题样式
+  h4.ant-typography {
+    color: var(--xagi-color-text-heading) !important;
+    font-weight: 600 !important;
+    margin-bottom: 16px !important;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--xagi-color-fill-quaternary);
+    position: relative;
+
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      width: 40px;
+      height: 2px;
+      background: var(--xagi-color-primary);
+    }
+  }
+
+  // 文字样式
+  .ant-typography {
+    color: var(--xagi-color-text);
+
+    &.ant-typography-secondary {
+      color: var(--xagi-color-text-secondary) !important;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+      color: var(--xagi-color-text-heading) !important;
+    }
+  }
+
+  // 按钮样式增强
+  .ant-btn {
+    border-radius: var(--xagi-border-radius);
+    font-weight: 500;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 0 rgba(0, 0, 0, 2%);
+
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 10%);
+    }
+
+    &.ant-btn-primary {
+      background: linear-gradient(
+        135deg,
+        var(--xagi-color-primary),
+        var(--xagi-color-primary-hover)
+      );
+      border-color: var(--xagi-color-primary);
+
+      &:hover {
+        background: linear-gradient(
+          135deg,
+          var(--xagi-color-primary-hover),
+          var(--xagi-color-primary-active)
+        );
+        border-color: var(--xagi-color-primary-hover);
+        box-shadow: 0 4px 16px rgba(81, 71, 255, 30%);
+      }
+    }
+
+    &.ant-btn-dangerous {
+      &:hover {
+        box-shadow: 0 4px 16px rgba(255, 77, 79, 30%);
+      }
+    }
+  }
+
+  // 输入框样式
+  .ant-input,
+  .ant-input-password,
+  .ant-select-selector,
+  .ant-picker,
+  .ant-input-number {
+    border-radius: var(--xagi-border-radius);
+    transition: all 0.3s ease;
+
+    &:hover {
+      border-color: var(--xagi-color-primary-hover);
+    }
+
+    &:focus,
+    &.ant-input-focused,
+    &.ant-select-focused .ant-select-selector,
+    &.ant-picker-focused {
+      border-color: var(--xagi-color-primary);
+      box-shadow: 0 0 0 2px rgba(81, 71, 255, 20%);
+    }
+  }
+
+  // 表格样式
+  .ant-table {
+    border-radius: var(--xagi-border-radius);
+    overflow: hidden;
+
+    .ant-table-thead > tr > th {
+      background-color: var(--xagi-color-fill-alter);
+      border-bottom: 1px solid var(--xagi-color-border);
+      font-weight: 600;
+      color: var(--xagi-color-text-heading);
+    }
+
+    .ant-table-tbody > tr {
+      transition: all 0.2s ease;
+
+      &:hover > td {
+        background-color: var(--xagi-color-fill-quaternary);
+      }
+    }
+  }
+
+  // 标签样式
+  .ant-tag {
+    border-radius: var(--xagi-border-radius);
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    border: 1px solid transparent;
+    transition: all 0.3s ease;
+
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 10%);
+    }
+  }
+
+  // 徽章样式
+  .ant-badge {
+    .ant-badge-count {
+      border-radius: var(--xagi-border-radius);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 10%);
+    }
+  }
+
+  // 统计数值样式
+  .ant-statistic {
+    text-align: center;
+    padding: 16px;
+    background: var(--xagi-color-fill-alter);
+    border-radius: var(--xagi-border-radius);
+    border: 1px solid var(--xagi-color-border);
+    transition: all 0.3s ease;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 10%);
+    }
+
+    .ant-statistic-title {
+      color: var(--xagi-color-text-secondary);
+      font-weight: 500;
+    }
+
+    .ant-statistic-content {
+      font-weight: 700;
+    }
+  }
+
+  // 进度条样式
+  .ant-progress {
+    .ant-progress-bg {
+      background: linear-gradient(
+        90deg,
+        var(--xagi-color-primary),
+        var(--xagi-color-info)
+      );
+    }
+
+    &.ant-progress-circle {
+      .ant-progress-text {
+        color: var(--xagi-color-text-heading);
+        font-weight: 600;
+      }
+    }
+  }
+
+  // 开关样式
+  .ant-switch {
+    &.ant-switch-checked {
+      background: var(--xagi-color-primary);
+    }
+  }
+
+  // 滑块样式
+  .ant-slider {
+    .ant-slider-track {
+      background: linear-gradient(
+        90deg,
+        var(--xagi-color-primary),
+        var(--xagi-color-info)
+      );
+    }
+
+    .ant-slider-handle {
+      border-color: var(--xagi-color-primary);
+      box-shadow: 0 2px 8px rgba(81, 71, 255, 30%);
+    }
+  }
+
+  // 评分样式
+  .ant-rate {
+    .ant-rate-star.ant-rate-star-full {
+      color: var(--xagi-color-warning);
+    }
+  }
+
+  // 警告框样式
+  .ant-alert {
+    border-radius: var(--xagi-border-radius);
+    border: 1px solid var(--xagi-color-border);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 6%);
+  }
+
+  // 步骤条样式
+  .ant-steps {
+    .ant-steps-item-process .ant-steps-item-icon {
+      background: var(--xagi-color-primary);
+      border-color: var(--xagi-color-primary);
+    }
+
+    .ant-steps-item-finish .ant-steps-item-icon {
+      background: var(--xagi-color-success);
+      border-color: var(--xagi-color-success);
+
+      .ant-steps-icon {
+        color: white;
+      }
+    }
+  }
+
+  // 分页样式
+  .ant-pagination {
+    .ant-pagination-item {
+      border-radius: var(--xagi-border-radius);
+      border-color: var(--xagi-color-border);
+
+      &.ant-pagination-item-active {
+        background: var(--xagi-color-primary);
+        border-color: var(--xagi-color-primary);
+
+        a {
+          color: white;
+        }
+      }
+    }
+
+    .ant-pagination-prev,
+    .ant-pagination-next {
+      border-radius: var(--xagi-border-radius);
+      border-color: var(--xagi-color-border);
+    }
+  }
+
+  // 标签页样式
+  .ant-tabs {
+    .ant-tabs-tab {
+      border-radius: var(--xagi-border-radius-sm) var(--xagi-border-radius-sm) 0
+        0;
+      transition: all 0.3s ease;
+
+      &:hover {
+        color: var(--xagi-color-primary-hover);
+      }
+
+      &.ant-tabs-tab-active {
+        color: var(--xagi-color-primary);
+        background: var(--xagi-color-fill-alter);
+      }
+    }
+
+    .ant-tabs-ink-bar {
+      background: var(--xagi-color-primary);
+    }
+  }
+
+  // 折叠面板样式
+  .ant-collapse {
+    border-radius: var(--xagi-border-radius);
+    border: 1px solid var(--xagi-color-border);
+
+    .ant-collapse-item {
+      border-bottom: 1px solid var(--xagi-color-border);
+
+      &:last-child {
+        border-bottom: none;
+      }
+    }
+
+    .ant-collapse-header {
+      border-radius: var(--xagi-border-radius-sm);
+      transition: all 0.3s ease;
+
+      &:hover {
+        background: var(--xagi-color-fill-quaternary);
+      }
+    }
+  }
+
+  // 空状态样式
+  .ant-empty {
+    margin: 40px 0;
+
+    .ant-empty-image {
+      margin-bottom: 16px;
+    }
+
+    .ant-empty-description {
+      color: var(--xagi-color-text-secondary);
+      margin-bottom: 16px;
+    }
+  }
+
+  // 模态框样式
+  .ant-modal {
+    .ant-modal-content {
+      border-radius: var(--xagi-border-radius-lg);
+      overflow: hidden;
+    }
+
+    .ant-modal-header {
+      background: var(--xagi-color-fill-alter);
+      border-bottom: 1px solid var(--xagi-color-border);
+    }
+  }
+
+  // 抽屉样式
+  .ant-drawer {
+    .ant-drawer-content {
+      border-radius: var(--xagi-border-radius-lg) 0 0
+        var(--xagi-border-radius-lg);
+    }
+
+    .ant-drawer-header {
+      background: var(--xagi-color-fill-alter);
+      border-bottom: 1px solid var(--xagi-color-border);
+    }
+  }
+
+  // 骨架屏样式
+  .ant-skeleton {
+    .ant-skeleton-content {
+      .ant-skeleton-title,
+      .ant-skeleton-paragraph > li {
+        background: linear-gradient(
+          90deg,
+          var(--xagi-color-fill-quaternary) 25%,
+          var(--xagi-color-fill-tertiary) 37%,
+          var(--xagi-color-fill-quaternary) 63%
+        );
+        background-size: 400% 100%;
+        animation: ant-skeleton-loading 1.4s ease infinite;
+      }
+    }
+  }
+
+  // 响应式布局
+  @media (max-width: 1200px) {
+    padding: 16px;
+
+    .showcase-header {
+      padding: 30px 16px;
+
+      h1 {
+        font-size: 2rem !important;
+      }
+    }
+  }
+
+  @media (max-width: 768px) {
+    padding: 12px;
+
+    .showcase-header {
+      padding: 20px 12px;
+
+      h1 {
+        font-size: 1.5rem !important;
+      }
+    }
+
+    .ant-col {
+      margin-bottom: 16px;
+    }
+
+    // 移动端表格滚动
+    .ant-table-wrapper {
+      overflow-x: auto;
+    }
+
+    // 移动端统计数值布局调整
+    .ant-statistic {
+      margin-bottom: 12px;
+    }
+  }
+
+  @media (max-width: 576px) {
+    .showcase-header {
+      h1 {
+        font-size: 1.2rem !important;
+      }
+
+      .ant-typography {
+        font-size: 0.9rem;
+      }
+    }
+
+    // 移动端按钮组换行
+    .ant-space.ant-space-horizontal {
+      .ant-space-item {
+        margin-bottom: 8px;
+      }
+    }
+  }
+}
+
+// 暗色主题下的特殊样式
+[data-theme='dark'] {
+  .antd-showcase {
+    .showcase-header {
+      background: linear-gradient(
+        135deg,
+        var(--xagi-color-primary),
+        var(--xagi-color-info)
+      );
+
+      &::before {
+        opacity: 0.2;
+      }
+    }
+
+    .ant-card {
+      background-color: var(--xagi-color-bg-container);
+      border-color: var(--xagi-color-border);
+
+      &:hover {
+        box-shadow: 0 4px 16px rgba(255, 255, 255, 5%);
+      }
+    }
+
+    .ant-statistic {
+      background: var(--xagi-color-bg-container);
+      border-color: var(--xagi-color-border);
+
+      &:hover {
+        box-shadow: 0 4px 16px rgba(255, 255, 255, 5%);
+      }
+    }
+
+    .ant-btn:hover {
+      box-shadow: 0 4px 12px rgba(255, 255, 255, 10%);
+    }
+
+    .ant-table {
+      .ant-table-thead > tr > th {
+        background-color: var(--xagi-color-bg-container);
+      }
+    }
+  }
+}
+
+// 加载动画优化
+@keyframes ant-skeleton-loading {
+  0% {
+    background-position-x: 100%;
+  }
+
+  100% {
+    background-position-x: -100%;
+  }
+}
+
+// 浮动效果
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+// 淡入动画
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

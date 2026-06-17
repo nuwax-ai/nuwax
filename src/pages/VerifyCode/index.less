@@ -1,0 +1,148 @@
+@import '@/styles/token';
+
+.container {
+  width: 100%; /* 宽度自适应 */
+  max-width: 520px;
+  max-height: 680px;
+  min-height: 680px;
+  padding: 48px 64px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 60%);
+  background: rgba(255, 255, 255, 85%);
+  box-shadow: 0 8px 48px 0 rgba(0, 0, 0, 16%);
+  backdrop-filter: blur(12px);
+
+  .input {
+    position: absolute;
+    top: 0;
+    right: 0;
+    opacity: 0;
+    z-index: -1;
+  }
+
+  // 输入框自动填充样式
+  input:-webkit-autofill {
+    -webkit-text-fill-color: #000 !important; /* 保证字体颜色正常 */
+    box-shadow: 0 0 0 1000px transparent inset !important; /* 背景覆盖成透明 */
+    transition: background-color 5000s ease-in-out 0s;
+  }
+
+  .inner {
+    position: relative;
+
+    .back {
+      position: absolute;
+      left: 0;
+      top: 0;
+    }
+
+    h3 {
+      margin-bottom: 40px;
+      margin-top: 104px;
+      font-size: 24px;
+      font-weight: @fontWeightStrong;
+      color: @colorText;
+    }
+
+    p {
+      color: @colorTextSecondary;
+    }
+
+    .code-container {
+      width: 100%;
+      display: flex;
+      padding: 0 8px;
+      margin-top: 50px;
+      margin-bottom: 12px;
+      gap: 8px;
+
+      .code-item {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 48px;
+        border-radius: 10px;
+        background: @colorFillTertiary;
+        border: 1px solid transparent;
+        margin-right: 7px;
+        color: @colorText;
+        font-size: 18px;
+
+        &.error {
+          border-color: @colorError;
+        }
+
+        &.active {
+          border-color: @colorPrimary;
+          position: relative;
+
+          &::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 1px;
+            height: 24px;
+            background-color: @colorPrimary;
+            animation: cursor-blink 1s infinite;
+          }
+        }
+
+        &:last-child {
+          margin-right: 0;
+        }
+      }
+    }
+
+    .count-down-container {
+      width: 100%;
+      text-align: right;
+      padding: 0 8px;
+
+      .count-down {
+        margin-left: auto;
+        margin-bottom: 40px;
+        color: @colorTextTertiary;
+      }
+
+      .resend-btn {
+        margin-left: 10px;
+        margin-bottom: 40px;
+        color: @colorTextTertiary;
+      }
+
+      .active {
+        color: @colorPrimary;
+      }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    .inner {
+      padding: 32px 24px 48px;
+      width: calc(100% - 24px);
+      height: unset;
+
+      .phone {
+        margin-bottom: 0;
+      }
+    }
+  }
+}
+
+// 光标闪烁动画
+@keyframes cursor-blink {
+  0%,
+  50% {
+    opacity: 1;
+  }
+
+  51%,
+  100% {
+    opacity: 0;
+  }
+}

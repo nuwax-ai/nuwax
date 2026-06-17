@@ -1,0 +1,32 @@
+@import '@/styles/token.less';
+
+.configCard {
+  max-width: 600px;
+  background: @colorBgContainer;
+  border-radius: @borderRadiusLg;
+  margin-top: 0;
+
+  .title {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    color: @colorTextHeading;
+  }
+
+  .hintText {
+    font-size: 13px;
+    color: #999;
+    margin-top: -12px;
+    margin-bottom: 24px;
+  }
+
+  .rowLayout {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 8px;
+
+    .rowItem {
+      flex: 1;
+    }
+  }
+}

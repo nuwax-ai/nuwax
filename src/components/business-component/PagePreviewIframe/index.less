@@ -1,0 +1,83 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.page-preview-iframe-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.copy-template-btn {
+  background-color: @colorPrimaryBg;
+
+  &:hover {
+    background-color: @colorPrimaryBg !important;
+  }
+}
+
+// 标题栏（参照 ToggleWrap 样式）
+.page-preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 32px;
+  padding: @paddingXs @paddingXs @paddingXs @paddingLg;
+  box-sizing: content-box;
+  border-bottom: @lineWidth solid @colorSplit;
+  background-color: @colorBgContainer;
+
+  h3 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    margin: 0;
+    font-size: 14px;
+    line-height: 24px;
+    color: @colorText;
+    white-space: nowrap;
+
+    .page-icon {
+      font-size: 16px;
+      color: @colorPrimary;
+    }
+
+    span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+}
+
+// iframe 预览区域
+.page-preview-body {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
+  background-color: @colorBgLayout;
+
+  // 独立 loading 遮罩：铺满区域并垂直水平居中
+  .page-preview-loading {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: @colorBgLayout;
+  }
+
+  .page-iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    outline: none;
+  }
+}

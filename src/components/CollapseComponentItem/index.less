@@ -1,0 +1,65 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.container {
+  gap: @marginSm;
+  min-height: 38px;
+  margin-bottom: @marginXxs;
+  padding: @paddingXxs @paddingXs;
+  border-radius: @borderRadius;
+  cursor: default;
+  background-color: @colorFillTertiary;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  &:hover {
+    .extra-box {
+      display: flex;
+    }
+  }
+
+  .gap-6 {
+    gap: 6px;
+  }
+
+  .img-box {
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    overflow: hidden;
+    line-height: 20px;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  }
+
+  .content-box {
+    gap: 2px;
+  }
+
+  .name {
+    display: inline-block;
+    color: @colorText;
+    font-size: @fontSizeSm;
+    line-height: @lineHeight;
+    font-weight: @fontWeightStrong;
+  }
+
+  .desc {
+    color: @colorTextSecondary;
+    font-size: @fontSizeSm;
+    line-height: @lineHeight;
+  }
+
+  .extra-box {
+    gap: @marginXxs;
+    display: none;
+    font-size: @fontSize;
+    transition: all 0.3s;
+  }
+}

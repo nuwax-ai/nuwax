@@ -1,0 +1,242 @@
+@import '@/styles/color.less';
+@import '@/styles/token.less';
+
+.emptyIconContainer {
+  margin-bottom: 16px;
+  font-size: 32px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: @colorTextBase;
+}
+
+.emptyIcon {
+  color: @colorTextBase;
+  transition: all 0.3s ease;
+}
+
+.loadingIcon {
+  color: @colorTextBase;
+  animation: pulse-animation 2s ease-in-out infinite;
+}
+
+.errorIcon {
+  color: @colorTextBase;
+  transition: all 0.3s ease;
+}
+
+// 服务器启动中图标 (绿色主题)
+.serverStartingIcon {
+  color: #52c41a; // Green color per Figma design
+  animation: pulse-animation 2s ease-in-out infinite;
+  font-size: 32px;
+}
+
+// 服务器重启中图标 (黄色主题)
+.serverRestartingIcon {
+  color: #faad14; // Yellow/orange color per Figma design
+  animation: pulse-animation 2s ease-in-out infinite;
+  font-size: 32px;
+}
+
+// 服务器状态图标容器 (新的 SVG 布局)
+.serverStateIcon {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.laptopIcon {
+  width: 92px;
+  height: 69px;
+  position: absolute;
+  left: 14px;
+  top: 25.5px;
+}
+
+// 对话空状态图标容器
+.conversationIcon {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.conversationImage {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.serverStateIndicator {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  right: 8px;
+  bottom: 19px;
+  border-radius: 6px;
+  backdrop-filter: blur(3.6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &.green {
+    background: rgba(216, 230, 216, 80%);
+  }
+
+  &.yellow {
+    background: rgba(255, 224, 163, 80%);
+  }
+
+  &.red {
+    background: rgba(255, 200, 200, 80%);
+  }
+
+  &.blue {
+    background: rgba(230, 247, 255, 80%);
+  }
+
+  img {
+    max-width: 16px;
+    max-height: 16px;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+  }
+}
+
+.emptyContent {
+  text-align: center;
+  max-width: 400px;
+  width: 100%;
+}
+
+.emptyTitle {
+  font-size: @fontSizeLg;
+  font-weight: 500;
+  margin: 0 0 8px;
+  color: @colorTextBase;
+  line-height: 1.4;
+  transition: color 0.3s ease;
+}
+
+.emptyDescription {
+  font-size: @fontSize;
+  color: @colorTextSecondary;
+  margin: 0 0 16px;
+  line-height: 1.5;
+  transition: color 0.3s ease;
+  word-break: break-word; // 允许长单词换行
+  max-width: 100%; // 确保不超出容器宽度
+
+  // 多行文本截取样式
+  &.multiLineTruncate {
+    display: box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: var(--max-lines, 3);
+    line-clamp: var(--max-lines, 3);
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  // 单行文本截取样式
+  &.singleLineTruncate {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &.mb-0 {
+    margin-bottom: 0;
+  }
+}
+
+// 完整内容弹窗样式
+.fullTextContent {
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid @colorBorder;
+}
+
+.fullTextPre {
+  margin: 0;
+  padding: 0;
+  font-family: @fontFamilyCode;
+  font-size: @fontSizeSm;
+  line-height: 1.5;
+  color: @colorTextBase;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: transparent;
+  border: none;
+}
+
+.emptyActions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.regularButtons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.viewFullTextButton {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-top: 4px;
+}
+
+@keyframes pulse-animation {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.6;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 40px 20px;
+  min-height: 200px;
+  background: transparent;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  animation: fade-in 0.3s ease-out;
+}

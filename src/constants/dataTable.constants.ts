@@ -1,0 +1,71 @@
+import { dict } from '@/services/i18nRuntime';
+import { TableFieldTypeEnum, TableTabsEnum } from '@/types/enums/dataTable';
+
+// 短文本
+export const SHORT_TEXT_STRING = dict('PC.Constants.DataTable.shortText');
+// 长文本
+export const MEDIUM_TEXT_STRING = dict('PC.Constants.DataTable.longText');
+
+// 数据表字段类型列表
+export const TABLE_FIELD_TYPE_LIST = [
+  { label: 'String', value: TableFieldTypeEnum.String },
+  { label: 'Integer', value: TableFieldTypeEnum.Integer },
+  { label: 'Number', value: TableFieldTypeEnum.Number },
+  { label: 'Boolean', value: TableFieldTypeEnum.Boolean },
+  // { label: 'Date', value: TableFieldTypeEnum.Date },
+];
+
+// 数据表字段类型是字符串时的选项列表
+export const TABLE_FIELD_STRING_LIST = [
+  { label: SHORT_TEXT_STRING, value: TableFieldTypeEnum.String },
+  { label: MEDIUM_TEXT_STRING, value: TableFieldTypeEnum.MEDIUMTEXT },
+];
+
+// 布尔值列表
+export const BOOLEAN_LIST = [
+  { label: 'true', value: true },
+  { label: 'false', value: false },
+];
+
+// 数据表tabs列表
+export const TABLE_TABS_LIST = [
+  {
+    key: TableTabsEnum.Structure,
+    label: dict('PC.Constants.DataTable.tableStructure'),
+  },
+  { key: TableTabsEnum.Data, label: dict('PC.Constants.DataTable.tableData') },
+];
+
+/**
+ * 通用 ProTable 配置
+ */
+export const COMMON_PRO_TABLE_PROPS = {
+  size: 'middle' as const,
+  debounceTime: 300,
+  toolBarRender: undefined,
+  options: {
+    setting: false,
+    reload: false,
+    density: false,
+    fullScreen: false,
+  },
+  cardProps: { bodyStyle: { padding: 0 } },
+  pagination: {
+    showSizeChanger: true,
+    pageSizeOptions: [15, 30, 50, 100],
+    showTotal: (total: number) =>
+      `${dict('PC.Constants.DataTable.totalPrefix')} ${total} ${dict(
+        'PC.Constants.DataTable.totalSuffix',
+      )}`,
+    defaultPageSize: 15,
+    locale: {
+      items_per_page: dict('PC.Constants.DataTable.itemsPerPage'),
+    },
+  },
+  search: {
+    filterType: 'light' as any,
+    defaultCollapsed: false,
+    searchText: dict('PC.Constants.DataTable.search'),
+    resetText: dict('PC.Constants.DataTable.reset'),
+  } as any,
+};

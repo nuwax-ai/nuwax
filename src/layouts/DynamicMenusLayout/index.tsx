@@ -1,0 +1,782 @@
+/**
+ * 动态菜单布局组件
+ * @description 完全独立于原有 MenusLayout，使用后端返回的菜单数据渲染
+ *
+ * 特点：
+ * 1. 从 menuModel 获取动态菜单数据
+ * 2. 支持一级、二级、三级菜单
+ * 3. 复用现有的 Header、User、UserOperateArea、TabItem、SecondMenuItem 等组件
+ */
+import HoverScrollbar from '@/components/base/HoverScrollbar';
+import ConditionRender from '@/components/ConditionRender';
+import { NAVIGATION_LAYOUT_SIZES } from '@/constants/layout.constants';
+import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
+import { dict } from '@/services/i18nRuntime';
+import type { MenuItemDto } from '@/types/interfaces/menu';
+import { theme, Typography } from 'antd';
+import classNames from 'classnames';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import { history, useLocation, useModel, useParams } from 'umi';
+import DynamicSecondMenu from './DynamicSecondMenu';
+import DynamicTabs from './DynamicTabs';
+// 复用原有组件
+import CreditsBalance from '@/components/business-component/CreditsBalance';
+import CollapseButton from './CollapseButton';
+import Header from './Header';
+import User from './User';
+import UserOperateArea from './UserOperateArea';
+// 复用原有样式
+import { PATH_URL } from '@/constants/home.constants';
+import {
+  MENU_CODE_DOCUMENTS,
+  MENU_CODE_MORE_PAGE,
+  MENU_CODE_MY_COMPUTER,
+  MENU_CODE_NOTIFICATION,
+  OTHER_MENU_CODES,
+} from '@/constants/menus.constants';
+import useConversation from '@/hooks/useConversation';
+import { ThemeNavigationStyleType } from '@/types/enums/theme';
+import EcosystemMarketSection from './EcosystemMarketSection';
+import HomeSection from './HomeSection';
+import styles from './index.less';
+import SpaceSection from './SpaceSection';
+import SquareSection from './SquareSection';
+import {
+  handleOpenUrl,
+  normalizeMenuPathname,
+  removePathUrlFromLocalStorage,
+} from './utils';
+
+const cx = classNames.bind(styles);
+
+export interface DynamicMenusLayoutProps {
+  /** 覆盖容器样式 */
+  overrideContainerStyle?: React.CSSProperties;
+  /** 是否为移动端 */
+  isMobile?: boolean;
+}
+
+/**
+ * 动态菜单布局组件
+ */
+const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
+  overrideContainerStyle,
+  isMobile = false,
+}) => {
+  const location = useLocation();
+  const params = useParams();
+  const { token } = theme.useToken();
+  const { navigationStyle, layoutStyle } = useUnifiedTheme();
+  const { isSecondMenuCollapsed, setOpenMessage, handleCloseMobileMenu } =
+    useModel('layout');
+
+  // 判断指定一级菜单及其所有子菜单中，是否存在与传入路径匹配的菜单
+  const { firstLevelMenus, otherMenus, hasPathUnderFirstLevelMenu } =
+    useModel('menuModel');
+
+  const { refreshUserInfo } = useModel('userInfo');
+
+  // 工作空间下的最近编辑和开发收藏
+  const { runEdit } = useModel('devCollectAgent');
+
+  // 当前激活的一级菜单 code
+  const [activeTab, setActiveTab] = useState<string>('');
+
+  // 是否点击了新对话菜单，特殊处理，用于显示title时使用
+  const [isClickNewConversation, setIsClickNewConversation] =
+    useState<boolean>(false);
+
+  // 创建智能体会话
+  const { handleCreateConversation } = useConversation();
+  const { tenantConfigInfo } = useModel('tenantConfigInfo');
+
+  // 是否点击菜单
+  const isClickMenu = useRef<boolean>(false);
+
+  const handlerClick = async () => {
+    if (tenantConfigInfo) {
+      // 创建智能体会话
+      await handleCreateConversation(tenantConfigInfo.defaultAgentId);
+    }
+  };
+
+  /**
+   * 递归检查菜单是否匹配当前路径
+   */
+  const isMenuMatch = (menu: MenuItemDto, pathname: string): boolean => {
+    const normalizedPathname = normalizeMenuPathname(pathname);
+
+    // 检查当前菜单路径
+    if (menu.path) {
+      // 移除查询参数（? 及后面的部分），因为 pathname 不包含查询参数
+      const menuPathWithoutQuery = menu.path.split('?')[0];
+
+      // 首页特殊处理 homepage 是动态菜单的编码，/home 是前端路由
+      if (menuPathWithoutQuery === '/homepage' || menuPathWithoutQuery === '') {
+        if (normalizedPathname === '/home' || normalizedPathname === '')
+          return true;
+      }
+      // 工作空间特殊处理，menu.path为/space 是工作空间的编码，pathname为/space/:spaceId/develop 是前端路由
+      else if (menuPathWithoutQuery === '/space') {
+        return normalizedPathname.startsWith(menuPathWithoutQuery);
+      } else if (normalizedPathname.includes('ecosystem')) {
+        // 生态市场特殊处理，pathname为/ecosystem/plugin 是前端路由
+        return menuPathWithoutQuery.startsWith('/ecosystem');
+      } else {
+        // 通用处理：取第一个斜杠后的路径段进行匹配
+        // 例如 pathname 为 /system/demo，menuPathWithoutQuery 为 /system/menu/xxx
+        // 则都取第一个非空段 system 进行比较
+        const getFirstSegment = (p: string) =>
+          p.split('?')[0].split('/').filter(Boolean)[0] || '';
+
+        const pathFirstSegment = getFirstSegment(normalizedPathname);
+        const menuFirstSegment = getFirstSegment(menuPathWithoutQuery);
+
+        if (menuFirstSegment && menuFirstSegment === pathFirstSegment) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  };
+
+  /**
+   * 检查路径是否匹配（用于子菜单的精确匹配）
+   * @param menuPath 菜单路径
+   * @param pathname 当前路径
+   * @returns 是否匹配
+   */
+  const isPathMatch = useCallback(
+    (menuPath: string, pathname: string): boolean => {
+      if (!menuPath) return false;
+
+      const normalizedPathname = normalizeMenuPathname(pathname);
+
+      // 移除查询参数
+      const menuPathWithoutQuery = menuPath.split('?')[0];
+
+      // 精确匹配
+      if (normalizedPathname === menuPathWithoutQuery) {
+        return true;
+      }
+
+      // 前缀匹配（例如 /system/menu 匹配 /system/menu/xxx）
+      if (normalizedPathname.startsWith(menuPathWithoutQuery + '/')) {
+        return true;
+      }
+
+      // 处理动态路径（例如 /space/:spaceId/develop）
+      if (menuPathWithoutQuery.includes(':')) {
+        // 将动态路径转换为正则表达式
+        const pattern = menuPathWithoutQuery.replace(/:(\w+)/g, '[^/]+');
+        const regex = new RegExp(`^${pattern}(/.*)?$`);
+        return regex.test(normalizedPathname);
+      }
+
+      return false;
+    },
+    [],
+  );
+
+  /**
+   * 递归根据 code 查找菜单，并返回其第一级菜单的 code
+   * @param menuCode 需要匹配的菜单 code（可能是任意层级）
+   * @returns 匹配菜单所属的第一级菜单 code，未找到返回 null
+   */
+  const findFirstLevelCodeByMenuCode = useCallback(
+    (menuCode: string): string | null => {
+      if (!menuCode || !firstLevelMenus?.length) return null;
+
+      /**
+       * 深度优先遍历查找匹配的菜单
+       * @param menus 当前遍历的菜单列表
+       * @param firstLevelCode 当前遍历所在的一级菜单 code
+       */
+      const dfs = (
+        menus: MenuItemDto[],
+        firstLevelCode: string,
+      ): string | null => {
+        for (const menu of menus) {
+          // 命中任意层级的菜单，返回对应的一级菜单 code
+          if (menu.code === menuCode) {
+            return firstLevelCode;
+          }
+
+          if (menu.children?.length) {
+            const found = dfs(menu.children, firstLevelCode);
+            if (found) {
+              return found;
+            }
+          }
+        }
+        return null;
+      };
+
+      // 遍历所有一级菜单，从每个一级菜单开始向下递归查找
+      for (const topMenu of firstLevelMenus) {
+        const result = dfs(topMenu.children || [], topMenu.code);
+        // 也要判断一级菜单本身是否就是要找的 code
+        if (topMenu.code === menuCode) {
+          return topMenu.code;
+        }
+        if (result) {
+          return result;
+        }
+      }
+
+      return null;
+    },
+    [firstLevelMenus],
+  );
+
+  /**
+   * 递归查找匹配路径的菜单，并返回其第一级父菜单的 code
+   * @param menus 菜单列表
+   * @param pathname 当前路径
+   * @param firstLevelCode 第一级菜单的 code（用于递归时传递）
+   * @returns 匹配菜单的第一级父菜单的 code，如果未找到则返回 null
+   */
+  const findFirstLevelCodeByPath = useCallback(
+    (
+      menus: MenuItemDto[],
+      pathname: string,
+      firstLevelCode?: string,
+    ): string | null => {
+      for (const menu of menus) {
+        // 如果是第一级菜单，记录其 code
+        const currentFirstLevelCode = firstLevelCode || menu.code;
+
+        // 检查当前菜单是否匹配（一级菜单使用 isMenuMatch，子菜单使用 isPathMatch）
+        const isMatch = firstLevelCode
+          ? isPathMatch(menu.path || '', pathname)
+          : isMenuMatch(menu, pathname);
+
+        if (isMatch) {
+          return currentFirstLevelCode || null;
+        }
+
+        // 如果有子菜单，递归查找
+        if (menu.children && menu.children.length > 0) {
+          const foundCode = findFirstLevelCodeByPath(
+            menu.children,
+            pathname,
+            currentFirstLevelCode,
+          );
+          if (foundCode) {
+            return foundCode;
+          }
+        }
+      }
+      return null;
+    },
+    [isMenuMatch, isPathMatch],
+  );
+
+  useEffect(() => {
+    // 强制刷新获取用户信息
+    refreshUserInfo();
+  }, []);
+
+  // 新对话菜单特殊处理
+  const handleNewConversation = useCallback(() => {
+    // 找到新对话菜单在同级别菜单中的位置，然后设置 activeTab 为下一个菜单
+    const currentIndex = firstLevelMenus.findIndex(
+      (m: MenuItemDto) => m.code === 'new_conversation',
+    );
+    if (currentIndex !== -1 && currentIndex < firstLevelMenus.length - 1) {
+      // 如果存在下一个菜单，设置为下一个菜单
+      const nextMenu = firstLevelMenus[currentIndex + 1];
+      setActiveTab(nextMenu.code as string);
+    }
+  }, [firstLevelMenus]);
+
+  // 刷新的时候触发，如果点击了一级菜单，则不触发
+  // 根据路径匹配当前激活的一级菜单
+  useEffect(() => {
+    /**
+     * 这里特殊处理，如果路径是/agent/xxx，则设置为首页
+     * 场景：从工作空间-空间广场，点击智能体，跳转至智能体详情页，此时路径为/agent/xxx，但是需要显示为首页，不然二级菜单点击会因为无法匹配动态路径而报错
+     */
+    const pathname = normalizeMenuPathname(location.pathname);
+
+    if (pathname.startsWith('/agent/') && params?.agentId) {
+      setActiveTab('homepage');
+      return;
+    }
+
+    // 广场特殊处理，如果路径是/square?cate_type=Agent，则设置为广场
+    if (
+      pathname.startsWith('/square') &&
+      location.search.includes('cate_type=')
+    ) {
+      setActiveTab('system_square');
+      return;
+    }
+
+    // 更多页面特殊处理，如果路径是/more-page，则设置为更多页面
+    if (pathname.startsWith('/more-page')) {
+      setActiveTab('more_page');
+      return;
+    }
+
+    // 多语言内容特殊处理，如果路径是/system/config/lang-content/:lang，则设置一级菜单选中系统管理
+    // 积分流水查询特殊处理，如果路径是/system/subscription-credits/credit-records，则设置一级菜单选中系统管理
+    if (
+      pathname.startsWith('/system/config/lang-content') ||
+      pathname.startsWith('/system/subscription-credits/credit-records')
+    ) {
+      setActiveTab('system_manage');
+      return;
+    }
+
+    // 如果点击了一级菜单，并且没有悬浮菜单，则不触发刷新
+    // if (isClickMenu.current && !showHoverMenu) {
+    if (isClickMenu.current) {
+      isClickMenu.current = false;
+      return;
+    }
+
+    if (!firstLevelMenus.length) return;
+
+    // 查找匹配当前路径的菜单
+    const matchedMenu = firstLevelMenus.find((menu: MenuItemDto) =>
+      isMenuMatch(menu, pathname),
+    );
+
+    if (matchedMenu && matchedMenu.code !== 'new_conversation') {
+      setActiveTab(matchedMenu.code);
+    }
+    // 根路径如果是新对话菜单,新对话菜单不显示
+    else if (pathname === '' || pathname === '/') {
+      if (firstLevelMenus[0].code !== 'new_conversation') {
+        setActiveTab(firstLevelMenus[0].code);
+      } else {
+        // 新对话菜单特殊处理
+        handleNewConversation();
+      }
+    }
+    // 首页
+    else if (pathname === '/home') {
+      // 默认选中首页
+      setActiveTab('homepage');
+    } else {
+      // 获取菜单码
+      const menuCode = params?.menuCode || location.state?.menuCode;
+      // 根据菜单码或路径获取第一级菜单的 code
+      let firstLevelCode = null;
+      // 如果菜单码存在，则根据菜单码获取第一级菜单的 code
+      if (menuCode) {
+        firstLevelCode = findFirstLevelCodeByMenuCode(menuCode);
+      } else {
+        // 递归查找匹配的子菜单，并获取其第一级父菜单的 code
+        firstLevelCode = findFirstLevelCodeByPath(firstLevelMenus, pathname);
+      }
+
+      // 存在第一级菜单 of the code 且不是新对话菜单，则设置为第一级菜单的 code
+      if (firstLevelCode && firstLevelCode !== 'new_conversation') {
+        setActiveTab(firstLevelCode);
+      } else if (OTHER_MENU_CODES.includes(menuCode || '')) {
+        // 其它需要单独分离的菜单（如我的电脑、更多页面）直接设置为当前 code
+        setActiveTab(menuCode as string);
+      }
+      // 新对话菜单特殊处理：如果第一级菜单的 code 是 new_conversation，则设置为 new_conversation
+      else if (firstLevelCode === 'new_conversation') {
+        handleNewConversation();
+      } else {
+        // 如果第一级菜单没有匹配到，则获取除新对话菜单外的第一个菜单
+        const filteredNewConversationFirstLevelMenus = firstLevelMenus.filter(
+          (menu: MenuItemDto) => menu.code !== 'new_conversation',
+        );
+        setActiveTab(filteredNewConversationFirstLevelMenus[0]?.code || '');
+      }
+    }
+  }, [location.pathname, params, firstLevelMenus, handleNewConversation]);
+
+  const handleRefreshEditAndCollect = useCallback(() => {
+    // 最近编辑
+    runEdit({
+      size: 5,
+    });
+  }, []);
+
+  /**
+   * 递归查找第一个有 path 的子菜单
+   * 如果第一个子菜单没有 path 但有 children，继续递归查找
+   */
+  const findFirstChildWithPath = useCallback(
+    (menu: MenuItemDto): MenuItemDto | null => {
+      // 如果当前菜单有 path，直接返回
+      if (menu.path) {
+        return menu;
+      }
+
+      // 如果没有子菜单，返回 null
+      if (!menu.children?.length) {
+        return null;
+      }
+
+      // 获取第一个子菜单
+      const firstChild = menu.children[0];
+
+      // 递归查找第一个子菜单的 path
+      return findFirstChildWithPath(firstChild);
+    },
+    [],
+  );
+
+  /**
+   * 点击一级菜单
+   */
+  const handleTabClick = useCallback(
+    (menu: MenuItemDto) => {
+      // 是否点击了一级菜单
+      isClickMenu.current = true;
+      // 关闭移动端菜单
+      handleCloseMobileMenu();
+
+      // 新对话,特殊处理，因为新对话时，不能选中新对话的菜单，需要跳转到下一个菜单
+      if (menu.code === 'new_conversation') {
+        // 如果用户匹配了路径，则处理路径，否则按照原逻辑创建智能体会话
+        if (menu.path) {
+          if (menu.path.includes('http')) {
+            handleOpenUrl(menu);
+          } else {
+            history.push(menu.path);
+          }
+        } else {
+          handlerClick();
+
+          setIsClickNewConversation(true);
+
+          // 新对话菜单特殊处理
+          handleNewConversation();
+        }
+        return;
+      }
+
+      // 设置当前激活的菜单
+      setActiveTab(menu.code || '');
+      // http开头的路径，直接打开
+      if (menu.path?.includes('http')) {
+        handleOpenUrl(menu);
+        return;
+      }
+
+      // 点击其他菜单，则设置为 false
+      setIsClickNewConversation(false);
+
+      if (menu.code === 'workspace') {
+        handleRefreshEditAndCollect();
+
+        // 防止系统设置中工作空间没有设置路径，导致跳转失败
+        const url = menu.path || '/space';
+        history.push(url, { _t: Date.now(), menuCode: menu.code });
+        return;
+      }
+
+      try {
+        // 从缓存中获取当前路径，如果存在且匹配当前菜单，则直接跳转
+        const pathUrl = localStorage.getItem(PATH_URL);
+        if (pathUrl && menu.code) {
+          const pathUrlObj = JSON.parse(pathUrl);
+          const pathUrlValue = pathUrlObj[menu.code];
+
+          // 判断指定一级菜单及其所有子菜单中，是否存在与传入路径匹配的菜单
+          const hasPath = hasPathUnderFirstLevelMenu(menu.code, pathUrlValue);
+          if (hasPath) {
+            if (pathUrlValue && !pathUrlValue.includes(':')) {
+              history.push(pathUrlValue, {
+                _t: Date.now(),
+                menuCode: menu.code,
+              });
+              return;
+            }
+          } else {
+            // 缓存路径已不在当前菜单树中，清除无效的 workspace 记录
+            removePathUrlFromLocalStorage(menu.code);
+          }
+        }
+      } catch {}
+
+      if (menu.path) {
+        history.push(menu.path, { _t: Date.now(), menuCode: menu.code });
+      } else if (menu.children?.length) {
+        // 递归查找第一个有 path 的子菜单
+        const firstPathMenu = findFirstChildWithPath(menu);
+        if (firstPathMenu) {
+          // http开头的路径，直接打开
+          if (firstPathMenu.path?.includes('http')) {
+            handleOpenUrl(firstPathMenu);
+            return;
+          }
+          // 其他路径，跳转路由
+          history.push(firstPathMenu.path, {
+            _t: Date.now(),
+            menuCode: firstPathMenu.code,
+          });
+        }
+      }
+    },
+    [
+      handleCloseMobileMenu,
+      findFirstChildWithPath,
+      handleRefreshEditAndCollect,
+      handlerClick,
+      handleNewConversation,
+    ],
+  );
+
+  /**
+   * 用户区域操作
+   */
+  const handleUserClick = useCallback(
+    (menu: MenuItemDto) => {
+      const code = menu.code;
+      // 是否点击了一级菜单
+      isClickMenu.current = false;
+      switch (code) {
+        case MENU_CODE_DOCUMENTS:
+          handleOpenUrl(menu);
+          break;
+        case MENU_CODE_NOTIFICATION:
+          setOpenMessage(true);
+          break;
+        case MENU_CODE_MY_COMPUTER:
+          {
+            setActiveTab(code || '');
+            history.push('/my-computer-manage', {
+              _t: Date.now(),
+              menuCode: menu.code,
+            });
+          }
+          break;
+        // 更多页面
+        case MENU_CODE_MORE_PAGE:
+          {
+            if (!menu?.children?.length) {
+              return;
+            }
+            const path = menu?.children[0]?.path;
+            setActiveTab(code || '');
+            // 需要定义更多菜单的路由
+            history.push(path, {
+              _t: Date.now(),
+              menuCode: menu.code,
+            });
+          }
+          break;
+      }
+    },
+    [setOpenMessage],
+  );
+
+  /**
+   * 获取当前一级菜单的标题
+   */
+  const currentTitle = useMemo(() => {
+    if (isClickNewConversation) {
+      return dict('PC.Layouts.DynamicMenusLayout.newConversation');
+    }
+    if (activeTab === 'my_computer' || activeTab === 'documents') {
+      return dict('PC.Layouts.DynamicMenusLayout.home');
+    }
+    if (activeTab === 'more_page') {
+      return dict('PC.Layouts.DynamicMenusLayout.more');
+    }
+    const current = firstLevelMenus.find(
+      (m: MenuItemDto) => m.code === activeTab,
+    );
+    return current?.name;
+  }, [activeTab, firstLevelMenus, isClickNewConversation]);
+
+  /**
+   * 是否显示标题
+   */
+  const isShowTitle = useMemo(() => {
+    // 工作空间不显示标题（因为有自己的标题组件）
+    // 支持静态菜单的 'space' 和 动态菜单的 'workspace'
+    return activeTab !== 'space' && activeTab !== 'workspace';
+  }, [activeTab]);
+
+  /**
+   * 计算一级导航宽度
+   */
+  const firstMenuWidth = useMemo(() => {
+    if (isMobile) {
+      return NAVIGATION_LAYOUT_SIZES.FIRST_MENU_WIDTH.STYLE1;
+    }
+    return navigationStyle === 'style2'
+      ? NAVIGATION_LAYOUT_SIZES.FIRST_MENU_WIDTH.STYLE2
+      : NAVIGATION_LAYOUT_SIZES.FIRST_MENU_WIDTH.STYLE1;
+  }, [navigationStyle, isMobile]);
+
+  /**
+   * 一级导航背景
+   */
+  const firstMenuBackground = useMemo(() => {
+    if (isMobile) {
+      return `var(--xagi-background-image) ${token.colorBgContainer}`;
+    }
+    return 'transparent';
+  }, [isMobile, token.colorBgContainer]);
+
+  /**
+   * 二级导航背景
+   */
+  const secondaryBackgroundColor = useMemo(() => {
+    if (isMobile) {
+      return token.colorBgContainer;
+    }
+    return navigationStyle === 'style2'
+      ? 'var(--xagi-layout-bg-container, rgba(255, 255, 255, 0.95))'
+      : 'transparent';
+  }, [isMobile, navigationStyle, token.colorBgContainer]);
+
+  /**
+   * 导航容器样式类名
+   */
+  const navigationClassName = useMemo(() => {
+    return cx(
+      styles.container,
+      'flex',
+      `xagi-layout-${layoutStyle}`,
+      `xagi-nav-${navigationStyle}`,
+      isMobile && styles['mobile-container'],
+    );
+  }, [layoutStyle, navigationStyle, isMobile]);
+
+  /**
+   * 渲染二级菜单
+   */
+  const renderSecondMenu = useMemo(() => {
+    /**
+     * 渲染特殊内容区域
+     */
+    // 主页、系统广场、生态市场特殊处理：直接渲染对应的 Section 组件
+    // 主页 homepage: 最近使用 + 会话记录
+    if (
+      activeTab === 'homepage' ||
+      activeTab === 'new_conversation' ||
+      activeTab === 'my_computer' ||
+      activeTab === 'documents'
+    ) {
+      return <HomeSection style={overrideContainerStyle} />;
+    }
+
+    // 工作空间
+    if (activeTab === 'space' || activeTab === 'workspace') {
+      return (
+        <SpaceSection activeTab={activeTab} style={overrideContainerStyle} />
+      );
+    }
+
+    // 系统广场
+    if (activeTab === 'system_square') {
+      return <SquareSection style={overrideContainerStyle} />;
+    }
+
+    // 生态市场
+    if (activeTab === 'eco_market') {
+      return <EcosystemMarketSection style={overrideContainerStyle} />;
+    }
+    return <DynamicSecondMenu parentCode={activeTab} />;
+  }, [activeTab, overrideContainerStyle]);
+
+  return (
+    <div className={navigationClassName}>
+      {/* 一级导航菜单栏 */}
+      <div
+        className={cx(
+          styles['first-menus'],
+          'flex',
+          'flex-col',
+          'items-center',
+        )}
+        style={{
+          width: firstMenuWidth,
+          background: firstMenuBackground,
+        }}
+      >
+        <Header />
+        {/* 动态一级菜单 */}
+        <DynamicTabs
+          isStyleOne={
+            navigationStyle === ThemeNavigationStyleType.STYLE1 || isMobile
+          }
+          menus={firstLevelMenus}
+          activeTab={activeTab}
+          onClick={handleTabClick}
+        />
+        {/* 用户操作区域 */}
+        <UserOperateArea onClick={handleUserClick} menus={otherMenus} />
+        {/* 用户头像 */}
+        <User />
+      </div>
+
+      {/* 二级导航菜单栏 */}
+      <div
+        className={cx(styles['nav-menus'], 'noselect')}
+        style={{
+          width: isSecondMenuCollapsed
+            ? 0
+            : NAVIGATION_LAYOUT_SIZES.SECOND_MENU_WIDTH,
+          paddingLeft: isSecondMenuCollapsed ? 0 : token.padding,
+          opacity: isSecondMenuCollapsed ? 0 : 1,
+          backgroundColor: secondaryBackgroundColor,
+        }}
+      >
+        <div className={cx(styles['nav-menus-scroll'])}>
+          <HoverScrollbar
+            className={cx('w-full', 'h-full')}
+            bodyWidth={
+              NAVIGATION_LAYOUT_SIZES.SECOND_MENU_WIDTH - token.padding * 2
+            }
+            style={{
+              padding: `${token.paddingSM}px 0`,
+            }}
+          >
+            <div
+              className={cx('flex', 'flex-col', 'h-full')}
+              style={{
+                minHeight: 0,
+              }}
+            >
+              {/* 标题 */}
+              <ConditionRender condition={isShowTitle && currentTitle}>
+                <div style={{ padding: '0 12px 12px' }}>
+                  <Typography.Title
+                    level={5}
+                    style={{ marginBottom: 0 }}
+                    className={cx(styles['menu-title'])}
+                  >
+                    {currentTitle}
+                  </Typography.Title>
+                </div>
+              </ConditionRender>
+
+              {/* 二级/三级菜单 */}
+              {renderSecondMenu}
+            </div>
+          </HoverScrollbar>
+        </div>
+
+        {/* 积分相关入口：放到二级导航栏底部固定展示 */}
+        <div className={cx(styles['integral-footer'])}>
+          <CreditsBalance />
+        </div>
+      </div>
+
+      {/* 收起/展开按钮 */}
+      <CollapseButton />
+    </div>
+  );
+};
+
+export default DynamicMenusLayout;

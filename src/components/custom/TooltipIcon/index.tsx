@@ -1,0 +1,67 @@
+import SvgIcon from '@/components/base/SvgIcon';
+import { TooltipTitleTypeEnum } from '@/types/enums/common';
+import type { TooltipIconProps } from '@/types/interfaces/space';
+import { theme, Tooltip } from 'antd';
+import classNames from 'classnames';
+import React from 'react';
+import styles from './index.less';
+
+const cx = classNames.bind(styles);
+
+/**
+ * 带icon的Tooltip组件
+ */
+const TooltipIcon: React.FC<TooltipIconProps> = ({
+  className,
+  type = TooltipTitleTypeEnum.Blank,
+  icon,
+  title,
+  ariaLabel,
+  placement,
+  onClick,
+  children,
+  tooltipStyles,
+}) => {
+  const bg =
+    type === TooltipTitleTypeEnum.Blank ? 'tooltip-blank' : 'tooltip-white';
+  const { token } = theme.useToken();
+  const accessibleLabel =
+    ariaLabel || (typeof title === 'string' ? title : undefined);
+
+  const trigger = children ?? (
+    <span
+      className={cx(
+        'hover-box',
+        'flex',
+        'content-center',
+        'items-center',
+        'cursor-pointer',
+        styles.box,
+        className,
+      )}
+      onClick={onClick}
+      aria-label={accessibleLabel}
+    >
+      {/*默认加号（+）*/}
+      {icon || (
+        <SvgIcon
+          name="icons-common-plus"
+          style={{ color: token.colorTextTertiary, fontSize: '15px' }}
+        />
+      )}
+    </span>
+  );
+
+  return (
+    <Tooltip
+      title={title}
+      classNames={{ root: bg }}
+      placement={placement}
+      styles={tooltipStyles}
+    >
+      {trigger}
+    </Tooltip>
+  );
+};
+
+export default TooltipIcon;

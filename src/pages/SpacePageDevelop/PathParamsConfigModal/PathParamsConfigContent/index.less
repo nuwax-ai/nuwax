@@ -1,0 +1,35 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.container {
+  position: relative;
+  height: 100%;
+  padding-top: 50px;
+  padding-bottom: 60px;
+  background-color: @WHITE;
+  overflow: hidden;
+
+  .add-btn {
+    position: absolute;
+    top: 16px;
+    left: 0;
+    width: 100px;
+    margin-left: 16px;
+  }
+
+  .title {
+    font-size: 14px;
+  }
+
+  .footer {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 100%;
+    padding: 14px 16px;
+    text-align: right;
+    background-color: @WHITE;
+    border-top: 1px solid rgba(0, 0, 0, 6%);
+    z-index: 10;
+  }
+}

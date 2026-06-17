@@ -1,0 +1,68 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.container {
+  margin-bottom: @marginXxs;
+  background-color: @colorFillTertiary;
+  border-radius: @borderRadius;
+
+  .group-mcp-item {
+    gap: 6px;
+    padding: @paddingXxs @paddingXs;
+    // border: 1px solid transparent;
+    cursor: default;
+
+    // &.border {
+    //   border-color: @colorFillTertiary;
+    // }
+
+    .img-box {
+      display: inline-block;
+      width: 24px;
+      height: 24px;
+      line-height: 20px;
+      overflow: hidden;
+
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+    }
+
+    .name {
+      display: inline-block;
+      color: @colorText;
+      font-size: @fontSizeSm;
+      line-height: @lineHeight;
+      font-weight: normal;
+    }
+
+    .desc {
+      color: @colorTextTertiary;
+      font-size: @fontSizeSm;
+      line-height: @lineHeight;
+    }
+
+    .extra-box {
+      color: @colorTextTertiary;
+      font-size: @fontSizeSm;
+
+      .down-icon {
+        transform: rotate(-90deg);
+        transition: transform 0.3s;
+
+        &.down-icon-rotate {
+          transform: rotate(0);
+        }
+      }
+    }
+  }
+
+  .group-mcp-item-children {
+    border-radius: 0 !important;
+    border-top: @lineWidth solid @colorSplit;
+    margin-bottom: 0 !important;
+    background-color: transparent;
+  }
+}

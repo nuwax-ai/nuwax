@@ -1,0 +1,262 @@
+@import '@/styles/token.less';
+
+.markdown-custom-process {
+  //border: 0.5px solid #e5e5e5;
+  border-radius: 8px;
+  margin: 10px 0;
+  overflow: hidden;
+  background: rgba(12, 20, 102, 3%);
+  // border: 1px solid rgba(5, 5, 5, 6%);
+
+  .process-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 3px 8px;
+
+    .process-title {
+      font-family: Monaco, Menlo, 'Ubuntu Mono', monospace;
+      font-size: 14px;
+      color: rgba(0, 0, 0, 45%);
+      font-weight: @fontWeightStrong;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex: 1;
+      min-width: 0;
+      line-height: 16px;
+      transition: all 0.2s;
+
+      &.is-edit {
+        cursor: pointer;
+        // font-weight: 600;
+        // color: rgba(0, 0, 0, 65%);
+
+        &:hover {
+          // color: rgba(0, 0, 0, 88%);
+        }
+      }
+
+      &.is-diff {
+        cursor: pointer;
+      }
+
+      .title-left-wrapper {
+        display: flex;
+        align-items: center;
+        gap: @marginXs;
+        min-width: 0;
+        flex: 1;
+        margin-right: @marginSm;
+      }
+
+      .diff-badges {
+        display: flex;
+        align-items: center;
+        gap: @marginXxs;
+        font-family: Monaco, Menlo, 'Ubuntu Mono', monospace;
+        font-size: @fontSizeSm;
+        font-weight: @fontWeightStrong;
+        flex-shrink: 0;
+
+        .badge-added {
+          color: @colorSuccess;
+          background: @colorSuccessBg;
+          padding: 0 @paddingXxs;
+          border-radius: @borderRadiusXs;
+        }
+
+        .badge-deleted {
+          color: @colorError;
+          background: @colorErrorBg;
+          padding: 0 @paddingXxs;
+          border-radius: @borderRadiusXs;
+        }
+      }
+    }
+
+    .process-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      .status-completed {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        color: #52c41a;
+        font-size: 12px;
+
+        .anticon {
+          font-size: 12px;
+        }
+      }
+
+      .status-running {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        color: #1890ff;
+        font-size: 12px;
+
+        .loading-spinner {
+          width: 12px;
+          height: 12px;
+          border: 2px solid #f3f3f3;
+          border-top: 2px solid #1890ff;
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+        }
+      }
+
+      .status-error {
+        height: 12px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        color: #ff4d4f;
+        font-size: 12px;
+      }
+
+      .control-btn {
+        background: none;
+        border: none;
+        padding: 4px;
+        cursor: pointer;
+        color: rgba(0, 0, 0, 45%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+        transition: all 0.2s;
+
+        &:hover {
+          background: #f0f0f0;
+          color: #333;
+        }
+
+        .anticon {
+          font-size: 14px;
+          transition: transform 0.2s;
+        }
+      }
+    }
+
+    .process-controls-actions {
+      padding-left: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      :global {
+        .ant-btn .ant-btn-icon {
+          color: rgba(0, 0, 0, 45%);
+        }
+
+        .ant-btn:not(:disabled):hover .ant-btn-icon {
+          color: rgba(0, 0, 0, 88%);
+        }
+      }
+    }
+    @media screen and (max-width: 720px) {
+      .process-title {
+        width: calc(100% - 132px);
+      }
+
+      .process-controls {
+        // width: 128px;
+        gap: 4px;
+
+        .process-controls-actions {
+          padding-left: 4px;
+          gap: 4px;
+        }
+      }
+    }
+  }
+
+  .process-content {
+    padding: 16px;
+
+    .default-content {
+      p {
+        margin: 8px 0;
+        font-size: 14px;
+        color: #666;
+      }
+
+      pre {
+        background: #f6f8fa;
+        padding: 12px;
+        border-radius: 6px;
+        overflow-x: auto;
+        font-size: 12px;
+        color: #333;
+        margin: 8px 0;
+      }
+    }
+  }
+
+  // Plan 类型展开内容样式
+  .plan-details {
+    padding: 0 16px 12px;
+    border-top: 1px solid rgba(0, 0, 0, 6%);
+
+    .plan-task-list {
+      max-height: 400px;
+      overflow-y: auto;
+      margin-top: 8px;
+
+      .plan-task-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 0;
+        font-size: 13px;
+        min-height: 24px;
+
+        .task-icon {
+          font-size: 14px;
+          color: #8c8c8c;
+          flex-shrink: 0;
+        }
+
+        .plan-task-text {
+          flex: 1;
+          color: rgba(0, 0, 0, 45%);
+          line-height: 1.5;
+        }
+      }
+    }
+  }
+}
+
+// Diff 展开内容区域样式
+.diff-container {
+  border-top: 1px solid rgba(0, 0, 0, 6%);
+  background: @colorBgContainer;
+  margin-bottom: @margin;
+
+  .diff-viewer-item {
+    margin: 0;
+    border: 1px solid @colorBorderSecondary;
+    border-radius: @borderRadius;
+    overflow: hidden;
+    background: @colorBgContainer;
+
+    .diff-viewer-item-content {
+      background: @colorBgContainer;
+      overflow-x: auto;
+    }
+  }
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}

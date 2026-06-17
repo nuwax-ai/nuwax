@@ -1,0 +1,982 @@
+/**
+ * AppDev 文件管理相关 Hook
+ */
+
+import { ERROR_MESSAGES, UI_CONSTANTS } from '@/constants/appDevConstants';
+import {
+  getFileContent,
+  getProjectContent,
+  keepAlive,
+  submitFilesUpdate,
+  submitSpecifiedFilesUpdate,
+  uploadSingleFile,
+} from '@/services/appDev';
+import { dict } from '@/services/i18nRuntime';
+import type {
+  FileContentState,
+  FileNode,
+  FileTreeState,
+} from '@/types/interfaces/appDev';
+import {
+  findFileNode,
+  isFileModified as isContentModified,
+  isPreviewableFile,
+  transformFlatListToTree,
+  treeToFlatList,
+} from '@/utils/appDevUtils';
+import { message } from 'antd';
+import debounce from 'lodash/debounce';
+import { useCallback, useEffect, useRef, useState } from 'react';
+
+interface UseAppDevFileManagementProps {
+  projectId: string;
+  onFileSelect?: (fileId: string) => void;
+  onFileContentChange?: (fileId: string, content: string) => void;
+  /** 文件保存到服务端成功后的回调（如刷新 Git status 列表） */
+  onSaveSuccess?: (fileId: string) => void | Promise<void>;
+  hasPermission?: boolean; // 新增：是否有权限访问项目
+}
+
+// design 模式支持的开发框架（拆分字段）
+const DESIGN_DEV_FRAMEWORK = 'vite';
+// design 模式支持的前端框架（拆分字段）
+const DESIGN_FRONTEND_FRAMEWORKS = new Set(['react', 'vue3']);
+// design 模式支持的组合框架标识（兼容后端直接返回组合值）
+const DESIGN_FRAMEWORK_COMBINATIONS = new Set(['react-vite', 'vue3-vite']);
+
+export const useAppDevFileManagement = ({
+  projectId,
+  onFileSelect,
+  onFileContentChange,
+  onSaveSuccess,
+  hasPermission = true,
+}: UseAppDevFileManagementProps) => {
+  // 文件树状态
+  const [fileTreeState, setFileTreeState] = useState<FileTreeState>({
+    data: [],
+    expandedFolders: new Set(),
+    isCollapsed: false,
+    lastLoadedProjectId: null,
+  });
+
+  // 文件内容状态
+  const [fileContentState, setFileContentState] = useState<FileContentState>({
+    selectedFile: '',
+    fileContent: '',
+    originalFileContent: '',
+    isLoadingFileContent: false,
+    fileContentError: null,
+    isFileModified: false,
+    isSavingFile: false,
+  });
+
+  // 文件树初始化 loading 状态（只在第一次加载时显示）
+  const [isFileTreeInitializing, setIsFileTreeInitializing] = useState(false);
+
+  // 跟踪已经尝试加载内容的文件（避免重复调用API）
+  const [loadedFiles, setLoadedFiles] = useState<Set<string>>(new Set());
+
+  // 跟踪文件树是否已经加载过，避免重复加载
+  const lastLoadedProjectIdRef = useRef<string | null>(null);
+
+  /**
+   * 设置选中的文件
+   */
+  const setSelectedFile = useCallback((fileId: string) => {
+    setFileContentState((prev) => ({ ...prev, selectedFile: fileId }));
+  }, []);
+
+  // 是否支持设计模式
+  const [isSupportDesignMode, setIsSupportDesignMode] =
+    useState<boolean>(false);
+
+  /**
+   * 加载文件树数据
+   * @param preserveState 是否保持当前状态（选中文件、展开文件夹等）
+   * @param forceRefresh 是否强制刷新（忽略重复加载检查）
+   */
+  const loadFileTree = useCallback(
+    async (preserveState = true, forceRefresh = false) => {
+      if (!projectId) {
+        return;
+      }
+
+      // 保存当前状态
+      const currentSelectedFile = preserveState
+        ? fileContentState.selectedFile
+        : '';
+      const currentExpandedFolders = preserveState
+        ? new Set<string>(fileTreeState.expandedFolders)
+        : new Set<string>();
+
+      // 检查是否已经加载过相同项目的文件树，避免重复调用
+      // 只有在保持状态且不是强制刷新时才跳过
+      if (
+        !forceRefresh &&
+        lastLoadedProjectIdRef.current === projectId &&
+        fileTreeState.data.length > 0 &&
+        preserveState
+      ) {
+        return;
+      }
+
+      // 只在第一次加载时显示初始化 loading 状态
+      const isFirstLoad = lastLoadedProjectIdRef.current !== projectId;
+      if (isFirstLoad) {
+        setIsFileTreeInitializing(true);
+      }
+
+      try {
+        const response = await getProjectContent(projectId);
+
+        if (response && response.code === '0000' && response.data) {
+          const { files, devFramework, frontendFramework } = response.data;
+          // 是否支持设计模式：
+          // 1) 兼容拆分字段：devFramework=vite 且 frontendFramework in [react, vue3]
+          // 2) 兼容组合字段：frontendFramework in [react-vite, vue3-vite]
+          const _isSupportDesignMode =
+            (devFramework === DESIGN_DEV_FRAMEWORK &&
+              DESIGN_FRONTEND_FRAMEWORKS.has(frontendFramework)) ||
+            DESIGN_FRAMEWORK_COMBINATIONS.has(frontendFramework);
+          // 设置是否支持设计模式
+          setIsSupportDesignMode(_isSupportDesignMode);
+
+          let treeData: FileNode[] = [];
+
+          // 检查是否是新的扁平格式
+          if (Array.isArray(files) && files.length > 0 && files[0].name) {
+            // 不做前端过滤，按后端返回的完整文件列表构建树（含 .gitignore 等点文件）
+            treeData = transformFlatListToTree(files, false);
+          } else if (Array.isArray(files)) {
+            // 如果是原有的树形格式，直接使用
+            treeData = files as FileNode[];
+          }
+
+          setFileTreeState((prev) => ({
+            ...prev,
+            data: treeData,
+            expandedFolders: currentExpandedFolders, // 恢复展开状态
+            lastLoadedProjectId: projectId,
+          }));
+
+          // 清空已加载文件的记录，因为项目内容可能已更新
+          setLoadedFiles(new Set());
+
+          lastLoadedProjectIdRef.current = projectId;
+
+          // 自动展开第一层文件夹（仅在非保持状态时）
+          if (!preserveState) {
+            const rootFolders = treeData
+              .filter((node) => node.type === 'folder')
+              .map((node) => node.id);
+            if (rootFolders.length > 0) {
+              setFileTreeState((prev) => ({
+                ...prev,
+                expandedFolders: new Set(rootFolders),
+              }));
+            }
+          }
+
+          // 验证并恢复选中文件
+          if (currentSelectedFile && preserveState) {
+            const fileExists = findFileNode(currentSelectedFile, treeData);
+            if (fileExists) {
+              // 文件存在，保持选中
+              setFileContentState((prev) => ({
+                ...prev,
+                selectedFile: currentSelectedFile,
+              }));
+            } else {
+              // 文件不存在，清空选中
+              setFileContentState((prev) => ({
+                ...prev,
+                selectedFile: '',
+                fileContent: '',
+                originalFileContent: '',
+              }));
+            }
+          }
+        } else {
+          throw new Error('Unexpected API response format');
+        }
+      } catch (error) {
+        // fallback到空项目结构
+        const emptyTreeData: FileNode[] = [];
+        setFileTreeState((prev) => ({
+          ...prev,
+          data: emptyTreeData,
+          lastLoadedProjectId: projectId,
+          expandedFolders: preserveState ? currentExpandedFolders : new Set(),
+        }));
+
+        lastLoadedProjectIdRef.current = projectId;
+
+        // 如果是保持状态模式且当前有选中文件，清空选中（因为项目为空）
+        if (preserveState && currentSelectedFile) {
+          setFileContentState((prev) => ({
+            ...prev,
+            selectedFile: '',
+            fileContent: '',
+            originalFileContent: '',
+          }));
+        } else if (!preserveState) {
+          setFileContentState((prev) => ({ ...prev, selectedFile: '' }));
+        }
+      } finally {
+        // 只在第一次加载时清除初始化 loading 状态
+        if (isFirstLoad) {
+          setIsFileTreeInitializing(false);
+        }
+      }
+    },
+    [projectId, fileTreeState.data.length, fileContentState.selectedFile],
+  );
+
+  /**
+   * 切换到指定文件
+   */
+  const switchToFile = useCallback(
+    async (fileId: string) => {
+      setFileContentState((prev) => ({ ...prev, selectedFile: fileId }));
+      onFileSelect?.(fileId);
+
+      if (!projectId) {
+        message.warning(ERROR_MESSAGES.NO_PROJECT_ID);
+        return;
+      }
+
+      // 检查文件是否已经有content数据，如果有则不需要调用API
+      const fileNode = findFileNode(fileId, fileTreeState.data);
+
+      // 选中文件夹时仅更新选中态，不加载文件内容
+      if (fileNode?.type === 'folder') {
+        setFileContentState((prev) => ({
+          ...prev,
+          isLoadingFileContent: false,
+          fileContentError: null,
+        }));
+        return;
+      }
+
+      // 检查文件是否已经有内容数据
+      const hasContent =
+        fileNode &&
+        fileNode.content !== undefined &&
+        fileNode.content !== null &&
+        fileNode.content.trim() !== '';
+      const hasTriedLoading = loadedFiles.has(fileId);
+
+      // 如果文件有内容，直接使用
+      if (hasContent) {
+        setFileContentState((prev) => ({
+          ...prev,
+          fileContent: fileNode?.content || '',
+          originalFileContent: fileNode?.content || '',
+          isFileModified: false,
+          fileContentError: null,
+        }));
+        return;
+      }
+
+      // 如果文件没有内容但已经尝试过加载，说明文件确实是空的，不需要再次调用API
+      if (fileNode && hasTriedLoading && !hasContent) {
+        setFileContentState((prev) => ({
+          ...prev,
+          fileContent: '',
+          originalFileContent: '',
+          isFileModified: false,
+          fileContentError: null,
+        }));
+        return;
+      }
+
+      // 检查文件是否支持预览，如果不支持则不调用API
+      if (!isPreviewableFile(fileId) && !hasContent) {
+        setFileContentState((prev) => ({
+          ...prev,
+          fileContent: '',
+          originalFileContent: '',
+          isFileModified: false,
+          fileContentError: null,
+          isLoadingFileContent: false,
+        }));
+        return;
+      }
+
+      // 如果文件节点存在但没有内容且未尝试过加载，需要调用API获取内容
+      if (fileNode && !hasContent && !hasTriedLoading) {
+        // 文件节点存在但无内容，需要调用API获取
+      }
+
+      // 清空当前文件内容，准备加载新文件
+      setFileContentState((prev) => ({
+        ...prev,
+        fileContent: '',
+        originalFileContent: '',
+        isFileModified: false,
+        fileContentError: null,
+        isLoadingFileContent: true,
+      }));
+
+      try {
+        const response = await getFileContent(projectId, fileId);
+        let content = '';
+
+        if (response && typeof response === 'object' && 'data' in response) {
+          content = (response as any).data as string;
+        } else if (typeof response === 'string') {
+          content = response;
+        } else {
+          throw new Error('File content is empty');
+        }
+
+        setFileContentState((prev) => ({
+          ...prev,
+          fileContent: content,
+          originalFileContent: content,
+          isFileModified: false,
+          fileContentError: null,
+          isLoadingFileContent: false,
+        }));
+
+        // 标记文件已尝试加载
+        setLoadedFiles((prev) => new Set(prev).add(fileId));
+
+        onFileContentChange?.(fileId, content);
+      } catch (error) {
+        const errorMessage = `Failed to load file ${fileId}: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`;
+
+        setFileContentState((prev) => ({
+          ...prev,
+          fileContentError: errorMessage,
+          isLoadingFileContent: false,
+        }));
+
+        // 即使失败也要标记文件已尝试加载，避免重复调用
+        setLoadedFiles((prev) => new Set(prev).add(fileId));
+
+        message.error(
+          dict('PC.Hooks.UseAppDevFileManagement.loadFileFailed', fileId),
+        );
+      }
+    },
+    [projectId, fileTreeState.data, onFileSelect, onFileContentChange],
+  );
+
+  /**
+   * 更新文件内容
+   */
+  const updateFileContent = useCallback(
+    (fileId: string, content: string) => {
+      setFileContentState((prev) => ({
+        ...prev,
+        fileContent: content,
+        isFileModified: isContentModified(content, prev.originalFileContent),
+      }));
+
+      // 更新文件树中对应文件的内容
+      setFileTreeState((prev) => {
+        const updateFileInTree = (nodes: FileNode[]): FileNode[] => {
+          return nodes.map((node) => {
+            if (node.id === fileId) {
+              return { ...node, content: content, lastModified: Date.now() };
+            }
+            if (node.children) {
+              return { ...node, children: updateFileInTree(node.children) };
+            }
+            return node;
+          });
+        };
+
+        return {
+          ...prev,
+          data: updateFileInTree(prev.data),
+        };
+      });
+
+      onFileContentChange?.(fileId, content);
+    },
+    [onFileContentChange],
+  );
+
+  /**
+   * 保存文件（防抖，仅提交指定文件）
+   * @param options.fileId 文件路径 ID
+   * @param options.content 文件内容
+   */
+  const saveFile = useCallback(
+    debounce(async (options: { fileId: string; content: string }) => {
+      const { fileId: selectedFile, content: fileContent } = options;
+
+      if (!selectedFile || !projectId) return;
+
+      try {
+        setFileContentState((prev) => ({ ...prev, isSavingFile: true }));
+
+        const response = await submitSpecifiedFilesUpdate(projectId, [
+          {
+            name: selectedFile,
+            contents: fileContent,
+            binary: false,
+            sizeExceeded: false,
+            operation: 'modify',
+          },
+        ]);
+
+        if (response.success && response.code === '0000') {
+          keepAlive(projectId);
+          setFileContentState((prev) => ({
+            ...prev,
+            originalFileContent: fileContent,
+            isFileModified: false,
+            isSavingFile: false,
+          }));
+          await onSaveSuccess?.(selectedFile);
+          return;
+        }
+
+        setFileContentState((prev) => ({ ...prev, isSavingFile: false }));
+      } catch (error) {
+        console.error('Failed to save file', error);
+        setFileContentState((prev) => ({ ...prev, isSavingFile: false }));
+      }
+    }, 500),
+    [projectId, onSaveSuccess],
+  );
+
+  /**
+   * 取消编辑
+   */
+  const cancelEdit = useCallback(
+    (silent: boolean = false) => {
+      const { selectedFile, originalFileContent } = fileContentState;
+
+      if (!selectedFile) return;
+
+      setFileContentState((prev) => ({
+        ...prev,
+        fileContent: originalFileContent,
+        isFileModified: false,
+      }));
+
+      if (!silent) {
+        message.info(dict('PC.Hooks.UseAppDevFileManagement.editCanceled'));
+      }
+    },
+    [fileContentState],
+  );
+
+  /**
+   * 上传单个文件
+   */
+  const uploadSingleFileToServer = useCallback(
+    async (file: File, filePath: string): Promise<boolean> => {
+      if (!projectId) {
+        message.error(ERROR_MESSAGES.NO_PROJECT_ID);
+        return false;
+      }
+
+      if (!filePath.trim()) {
+        message.error(ERROR_MESSAGES.EMPTY_FILE_PATH);
+        return false;
+      }
+
+      try {
+        // 上传文件
+        const result = await uploadSingleFile({
+          file,
+          projectId,
+          filePath: filePath.trim(),
+        });
+
+        if (result?.success) {
+          // 上传成功后重新加载文件树（与删除文件逻辑保持一致）
+          await loadFileTree(true, true);
+
+          // 文件上传成功后不自动选中，让用户自己选择要查看的文件
+          // 文件上传成功，文件树已更新
+
+          return true;
+        } else {
+          console.error('Upload failed', result);
+          return false;
+        }
+      } catch (error) {
+        // 上传单个文件失败
+        console.error('Upload failed', error);
+        return false;
+      }
+    },
+    [projectId, loadFileTree],
+  );
+
+  /**
+   * 切换文件夹展开状态
+   */
+  const toggleFolder = useCallback((folderId: string) => {
+    setFileTreeState((prev) => {
+      const newExpanded = new Set(prev.expandedFolders);
+      if (newExpanded.has(folderId)) {
+        newExpanded.delete(folderId);
+      } else {
+        newExpanded.add(folderId);
+      }
+      return { ...prev, expandedFolders: newExpanded };
+    });
+  }, []);
+
+  /**
+   * 折叠全部文件夹
+   */
+  const collapseAllFolders = useCallback(() => {
+    setFileTreeState((prev) => ({
+      ...prev,
+      expandedFolders: new Set(),
+    }));
+  }, []);
+
+  /**
+   * 切换文件树折叠状态
+   */
+  const toggleFileTreeCollapse = useCallback(() => {
+    setFileTreeState((prev) => {
+      // 切换文件树状态
+      return { ...prev, isCollapsed: !prev.isCollapsed };
+    });
+  }, []);
+
+  // 防抖的文件内容更新函数
+  const debouncedUpdateFileContent = useCallback(
+    debounce(updateFileContent, UI_CONSTANTS.DEBOUNCE_DELAY),
+    [updateFileContent],
+  );
+
+  /**
+   * 删除文件或文件夹（通过指定文件修改方式，只提交被删除的文件）
+   */
+  const deleteFileItem = useCallback(
+    async (fileId: string): Promise<boolean> => {
+      if (!projectId) {
+        // 删除文件失败：缺少项目ID
+        return false;
+      }
+
+      try {
+        const fileNode = findFileNode(fileId, fileTreeState.data);
+        if (!fileNode) {
+          // 删除文件失败：找不到文件节点
+          return false;
+        }
+
+        // 只提交被删除的文件/文件夹本身
+        const result = await submitSpecifiedFilesUpdate(projectId, [
+          {
+            name: fileNode.path,
+            binary: false,
+            sizeExceeded: false,
+            operation: 'delete',
+            isDir: fileNode.type === 'folder',
+          },
+        ]);
+
+        if (result?.success) {
+          // 文件删除成功
+          // 删除成功后重新加载文件树
+          await loadFileTree(true, true);
+          keepAlive(projectId);
+
+          // 如果删除的是当前选中的文件，清空选择
+          if (fileContentState.selectedFile === fileId) {
+            setSelectedFile('');
+          }
+
+          return true;
+        } else {
+          // 删除文件失败
+          return false;
+        }
+      } catch (error) {
+        // 删除文件异常
+        return false;
+      }
+    },
+    [
+      projectId,
+      fileTreeState.data,
+      fileContentState.selectedFile,
+      loadFileTree,
+      setSelectedFile,
+    ],
+  );
+
+  /**
+   * 根据路径查找文件节点
+   */
+  const findFileNodeByPath = useCallback(
+    (path: string, files: FileNode[]): FileNode | null => {
+      for (const file of files) {
+        if (file.path === path) {
+          return file;
+        }
+        if (file.children) {
+          const found = findFileNodeByPath(path, file.children);
+          if (found) return found;
+        }
+      }
+      return null;
+    },
+    [],
+  );
+
+  /**
+   * 更新文件树中的显示名字（用于即时反馈）
+   */
+  const updateFileTreeName = useCallback(
+    (fileTree: FileNode[], fileId: string, newName: string): FileNode[] => {
+      return fileTree.map((node) => {
+        if (node.id === fileId) {
+          return {
+            ...node,
+            name: newName,
+            path:
+              node.path.substring(0, node.path.lastIndexOf('/')) +
+              '/' +
+              newName,
+          };
+        }
+        if (node.children && node.children.length > 0) {
+          return {
+            ...node,
+            children: updateFileTreeName(node.children, fileId, newName),
+          };
+        }
+        return node;
+      });
+    },
+    [],
+  );
+
+  /**
+   * 在文件树中插入临时节点并进入重命名（新建文件/文件夹）
+   */
+  const insertTempNodeForCreate = useCallback(
+    (parentNode: FileNode | null, type: 'file' | 'folder'): FileNode => {
+      const parentPath = parentNode?.path || null;
+      const tempIdSuffix = `__new__${Date.now()}`;
+      const fullPath = parentPath
+        ? `${parentPath}/${tempIdSuffix}`
+        : tempIdSuffix;
+
+      const newNode: FileNode = {
+        id: fullPath,
+        name: '',
+        type,
+        path: fullPath,
+        children: type === 'folder' ? [] : undefined,
+        parentPath,
+        content: type === 'file' ? '' : undefined,
+        lastModified: Date.now(),
+        status: 'create',
+      };
+
+      const insertNodeAtTop = (
+        nodes: FileNode[],
+        targetParentId: string | null,
+      ): FileNode[] => {
+        if (!targetParentId) {
+          return [newNode, ...nodes];
+        }
+
+        return nodes.map((node) => {
+          if (node.id === targetParentId) {
+            const children = node.children || [];
+            return {
+              ...node,
+              children: [newNode, ...children],
+            };
+          }
+
+          if (node.children?.length) {
+            return {
+              ...node,
+              children: insertNodeAtTop(node.children, targetParentId),
+            };
+          }
+
+          return node;
+        });
+      };
+
+      setFileTreeState((prev) => {
+        const nextExpandedFolders = new Set(prev.expandedFolders);
+        if (parentNode?.id) {
+          nextExpandedFolders.add(parentNode.id);
+        }
+
+        return {
+          ...prev,
+          data: insertNodeAtTop(prev.data, parentNode?.id || null),
+          expandedFolders: nextExpandedFolders,
+        };
+      });
+
+      return newNode;
+    },
+    [],
+  );
+
+  /**
+   * 移除新建流程中的临时节点（取消重命名时）
+   */
+  const removeTempNode = useCallback((nodeId: string) => {
+    if (!nodeId.includes('__new__')) {
+      return;
+    }
+
+    const removeNodeFromTree = (
+      nodes: FileNode[],
+      targetId: string,
+    ): FileNode[] =>
+      nodes
+        .filter((node) => node.id !== targetId)
+        .map((node) =>
+          node.children?.length
+            ? { ...node, children: removeNodeFromTree(node.children, targetId) }
+            : node,
+        );
+
+    setFileTreeState((prev) => ({
+      ...prev,
+      data: removeNodeFromTree(prev.data, nodeId),
+    }));
+  }, []);
+
+  /**
+   * 创建文件或文件夹（确认临时节点名称后，通过 specified-files-update 提交）
+   */
+  const createFileItem = useCallback(
+    async (node: FileNode, newName: string): Promise<boolean> => {
+      if (!projectId) {
+        removeTempNode(node.id);
+        return false;
+      }
+
+      const trimmedName = newName.trim();
+      if (!trimmedName) {
+        removeTempNode(node.id);
+        return false;
+      }
+
+      const parentPath = node.parentPath || '';
+      const newPath = parentPath ? `${parentPath}/${trimmedName}` : trimmedName;
+
+      try {
+        await submitSpecifiedFilesUpdate(projectId, [
+          {
+            name: newPath,
+            contents: node.type === 'file' ? node.content || '' : '',
+            binary: false,
+            sizeExceeded: false,
+            operation: 'create',
+            isDir: node.type === 'folder',
+          },
+        ]);
+
+        await loadFileTree(true, true);
+        keepAlive(projectId);
+        return true;
+      } catch (error) {
+        removeTempNode(node.id);
+        return false;
+      }
+    },
+    [projectId, loadFileTree, removeTempNode],
+  );
+
+  /**
+   * 重命名文件或文件夹
+   */
+  const renameFileItem = useCallback(
+    async (fileId: string, newName: string): Promise<boolean> => {
+      if (!projectId) {
+        // 重命名文件失败：缺少项目ID
+        return false;
+      }
+
+      if (!newName.trim()) {
+        // 重命名文件失败：新文件名为空
+        return false;
+      }
+
+      try {
+        const fileNode = findFileNode(fileId, fileTreeState.data);
+        if (!fileNode) {
+          // 重命名文件失败：找不到文件节点
+          return false;
+        }
+
+        const oldPath = fileNode.path;
+        const parentPath = oldPath.substring(0, oldPath.lastIndexOf('/'));
+        const newPath = parentPath
+          ? `${parentPath}/${newName.trim()}`
+          : newName.trim();
+
+        // 先立即更新文件树中的显示名字，提供即时反馈
+        const updatedFileTree = updateFileTreeName(
+          fileTreeState.data,
+          fileId,
+          newName.trim(),
+        );
+        setFileTreeState((prev) => ({
+          ...prev,
+          data: updatedFileTree,
+        }));
+
+        // 获取当前的文件列表（扁平格式）
+        const projectResponse = await getProjectContent(projectId);
+        if (
+          !projectResponse ||
+          projectResponse.code !== '0000' ||
+          !projectResponse.data
+        ) {
+          return false;
+        }
+
+        // 将项目数据转换为扁平列表格式
+        let filesList: any[] = [];
+        const files = projectResponse.data.files;
+
+        if (Array.isArray(files) && files.length > 0 && files[0].name) {
+          // 如果是扁平格式，直接使用
+          filesList = [...files];
+        } else if (Array.isArray(files)) {
+          // 如果是树形格式，转换为扁平列表
+          filesList = treeToFlatList(files as FileNode[]);
+        }
+
+        // 更新文件列表中的文件名（包含完整路径+文件名+后缀）
+        const updatedFilesList = filesList.map((file) => {
+          // 如果是文件夹，需要更新文件夹本身以及所有子文件
+          if (fileNode.type === 'folder') {
+            // 检查是否是文件夹本身（虽然扁平列表中文件夹可能不存在）
+            if (file.name === oldPath) {
+              return {
+                ...file,
+                name: newPath, // 更新为新的完整路径
+                renameFrom: oldPath, // 记录重命名前的名字
+              };
+            }
+
+            // 检查是否是文件夹的子文件
+            if (file.name.startsWith(oldPath + '/')) {
+              // 计算新路径：将 oldPath 前缀替换为 newPath
+              const relativePath = file.name.substring(oldPath.length);
+              const newFilePath = newPath + relativePath;
+
+              return {
+                ...file,
+                name: newFilePath, // 更新为新的完整路径
+                renameFrom: file.name, // 记录重命名前的名字
+              };
+            }
+          } else {
+            // 如果是文件，直接更新匹配的文件
+            if (file.name === oldPath) {
+              return {
+                ...file,
+                name: newPath, // 更新为新的完整路径
+                renameFrom: oldPath, // 记录重命名前的名字
+              };
+            }
+          }
+
+          return file;
+        });
+
+        // 使用文件全量更新逻辑
+        const response = await submitFilesUpdate(projectId, updatedFilesList);
+
+        if (response.success && response.code === '0000') {
+          // 重命名成功后重新加载文件树
+          await loadFileTree(true, true);
+
+          keepAlive(projectId);
+
+          // 如果重命名的是当前选中的文件，更新选中状态
+          if (fileContentState.selectedFile === fileId) {
+            // 重新查找文件节点（ID可能会改变）
+            const newFileNode = findFileNodeByPath(newPath, fileTreeState.data);
+            if (newFileNode) {
+              setSelectedFile(newFileNode.id);
+            }
+          }
+
+          return true;
+        } else {
+          // 重命名文件失败，重新加载文件树以恢复原状态
+          await loadFileTree(true, true);
+          return false;
+        }
+      } catch (error) {
+        // 重命名文件异常，重新加载文件树以恢复原状态
+        await loadFileTree(true, true);
+        return false;
+      }
+    },
+    [
+      projectId,
+      fileTreeState.data,
+      fileContentState.selectedFile,
+      loadFileTree,
+      setSelectedFile,
+    ],
+  );
+
+  // 在项目ID变化时加载文件树
+  useEffect(() => {
+    if (projectId && hasPermission) {
+      // 项目ID变化且有权限时，加载文件树
+      loadFileTree(false, true);
+    }
+  }, [projectId, hasPermission]); // 移除 loadFileTree 依赖，避免重复执行
+
+  return {
+    // 文件树相关
+    fileTreeState,
+    loadFileTree,
+    toggleFolder,
+    collapseAllFolders,
+    toggleFileTreeCollapse,
+
+    // 文件内容相关
+    fileContentState,
+    setSelectedFile,
+    updateFileContent: debouncedUpdateFileContent,
+    switchToFile,
+    saveFile,
+    cancelEdit,
+
+    // 文件上传相关
+    uploadSingleFileToServer,
+
+    // 文件操作相关
+    deleteFileItem,
+    renameFileItem,
+    insertTempNodeForCreate,
+    removeTempNode,
+    createFileItem,
+
+    // 文件树初始化 loading 状态
+    isFileTreeInitializing,
+
+    // 工具函数
+    findFileNode: (fileId: string) => findFileNode(fileId, fileTreeState.data),
+    findFileNodeByPath: (path: string) =>
+      findFileNodeByPath(path, fileTreeState.data),
+
+    // 是否支持设计模式
+    isSupportDesignMode,
+  };
+};

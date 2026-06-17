@@ -1,0 +1,231 @@
+import Loading from '@/components/custom/Loading';
+import useSearchParamsCustom from '@/hooks/useSearchParamsCustom';
+import { dict } from '@/services/i18nRuntime';
+import { apiSkillList } from '@/services/library';
+import { PublishStatusEnum } from '@/types/enums/common';
+import { AgentTypeEnum, FilterStatusEnum } from '@/types/enums/space';
+import type { CustomPopoverItem } from '@/types/interfaces/common';
+import type { SkillInfo } from '@/types/interfaces/library';
+import { debounce } from '@/utils/debounce';
+import { Empty } from 'antd';
+import classNames from 'classnames';
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from 'react';
+import { history, useParams, useRequest } from 'umi';
+import ComponentItem from '../ComponentItem';
+import styles from './index.less';
+const cx = classNames.bind(styles);
+
+// 查询参数
+export type IQuery = 'status' | 'keyword' | 'usageScenario';
+
+// 暴露给父组件的方法
+export interface MainContentRef {
+  // 查询技能列表
+  exposeQueryComponentList: () => void;
+}
+
+export interface MainContentProps {
+  // 点击技能
+  onClickItem?: (info: SkillInfo) => void;
+  // 点击更多
+  onClickMore?: (item: CustomPopoverItem, info: SkillInfo) => void;
+}
+export interface MainContentCardProps {
+  // 加载中
+  loading: boolean;
+  // 技能列表
+  skillList: SkillInfo[];
+  // 点击技能
+  onClickItem?: (info: SkillInfo) => void;
+  // 点击更多
+  onClickMore?: (item: CustomPopoverItem, info: SkillInfo) => void;
+}
+
+const MainContentCard: React.FC<MainContentCardProps> = ({
+  loading,
+  skillList,
+  onClickItem,
+  onClickMore,
+}) => {
+  // 加载中
+  if (loading) {
+    return (
+      <div className={cx('flex', 'h-full', 'items-center', 'justify-center')}>
+        <Loading />
+      </div>
+    );
+  }
+
+  // 没有技能列表
+  if (skillList?.length === 0) {
+    return (
+      <div className={cx('flex', 'h-full', 'items-center', 'content-center')}>
+        <Empty
+          description={dict(
+            'PC.Pages.SpaceSkillManage.MainContent.noResultsFound',
+          )}
+        />
+      </div>
+    );
+  }
+
+  // 技能列表
+  return (
+    <div
+      className={cx(
+        styles['main-container'],
+        'flex-1',
+        'scroll-container-hide',
+      )}
+    >
+      {skillList?.map((info) => (
+        <ComponentItem
+          key={`${info.id}${info.publishStatus}`}
+          skillInfo={info}
+          onClick={() => onClickItem?.(info)}
+          onClickMore={(item) => onClickMore?.(item, info)}
+        />
+      ))}
+    </div>
+  );
+};
+
+const MainContent = forwardRef<MainContentRef, MainContentProps>(
+  ({ onClickItem = () => {}, onClickMore = () => {} }, ref) => {
+    const params = useParams();
+    const spaceId = Number(params.spaceId);
+    const { searchParams } = useSearchParamsCustom<IQuery>();
+    // 过滤状态
+    const [status, setStatus] = useState<FilterStatusEnum>(
+      Number(searchParams.get('status')) || FilterStatusEnum.All,
+    );
+    // 搜索关键词
+    const [keyword, setKeyword] = useState<string>(
+      searchParams.get('keyword') || '',
+    );
+    // 适用范围
+    const [usageScenario, setUsageScenario] = useState<AgentTypeEnum>(
+      (searchParams.get('usageScenario') as AgentTypeEnum) || AgentTypeEnum.All,
+    );
+
+    // 是否加载中
+    const [loading, setLoading] = useState(false);
+    // 技能列表
+    const [skillList, setSkillList] = useState<SkillInfo[]>([]);
+    // 所有技能列表
+    const skillListAllRef = useRef<SkillInfo[]>([]);
+
+    // 过滤筛选智能体列表数据
+    const handleFilterList = (
+      filterStatus: FilterStatusEnum,
+      filterKeyword: string,
+      filterUsageScenario: AgentTypeEnum,
+      list = skillListAllRef.current,
+    ) => {
+      if (list.length === 0) {
+        return;
+      }
+
+      let _list = list;
+      if (filterStatus === FilterStatusEnum.Published) {
+        _list = _list.filter(
+          (item) => item.publishStatus === PublishStatusEnum.Published,
+        );
+      }
+      if (filterKeyword) {
+        _list = _list.filter((item) => item.name.includes(filterKeyword));
+      }
+      if (filterUsageScenario !== AgentTypeEnum.All) {
+        _list = _list.filter((item) => {
+          const scenarios = item.usageScenarios || [];
+          if (filterUsageScenario === AgentTypeEnum.TaskAgent) {
+            return (
+              scenarios.length === 0 ||
+              scenarios.includes(AgentTypeEnum.TaskAgent)
+            );
+          }
+          return scenarios.includes(filterUsageScenario);
+        });
+      }
+      setSkillList(_list);
+    };
+    // 防抖过滤
+    const debounceFilterList = debounce(handleFilterList, 100);
+
+    // 查询组件列表接口
+    const { run: runSkillList } = useRequest(apiSkillList, {
+      manual: true,
+      debounceInterval: 300,
+      onSuccess: (result: SkillInfo[]) => {
+        setLoading(false);
+        skillListAllRef.current = result;
+        debounceFilterList(status, keyword, usageScenario, result);
+      },
+      onError: () => {
+        setLoading(false);
+      },
+    });
+
+    // 暴露查询技能列表接口
+    const exposeQueryComponentList = () => {
+      if (!spaceId) {
+        return;
+      }
+      setLoading(true);
+      runSkillList({ spaceId });
+    };
+
+    // 查询技能列表 - 当 spaceId 变化时重新查询
+    useEffect(() => {
+      // 如果有 location.state，说明是点击菜单跳转过来的，会触发下面的 useEffect，这里就不需要请求了
+      if (history.location.state) {
+        return;
+      }
+      // 清空旧数据，避免显示上一个空间的数据
+      skillListAllRef.current = [];
+      setSkillList([]);
+      // 重新查询
+      exposeQueryComponentList();
+    }, [spaceId]);
+
+    // 监听 URL 改变（支持浏览器前进/后退）
+    useEffect(() => {
+      const _status =
+        (Number(searchParams.get('status')) as FilterStatusEnum) ||
+        FilterStatusEnum.All;
+      const _keyword = searchParams.get('keyword') || '';
+      const _usageScenario =
+        (searchParams.get('usageScenario') as AgentTypeEnum) ||
+        AgentTypeEnum.All;
+
+      setStatus(_status);
+      setKeyword(_keyword);
+      setUsageScenario(_usageScenario);
+
+      // 使用最新的参数过滤，避免依赖旧的 state
+      debounceFilterList(_status, _keyword, _usageScenario);
+    }, [searchParams]);
+
+    // 暴露给父组件的方法
+    useImperativeHandle(ref, () => ({
+      exposeQueryComponentList,
+    }));
+
+    return (
+      <MainContentCard
+        loading={loading}
+        skillList={skillList ?? []}
+        onClickItem={onClickItem}
+        onClickMore={onClickMore}
+      />
+    );
+  },
+);
+
+export default MainContent;

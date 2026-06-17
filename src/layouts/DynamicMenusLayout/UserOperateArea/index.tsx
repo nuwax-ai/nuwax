@@ -1,0 +1,101 @@
+import SvgIcon from '@/components/base/SvgIcon';
+import { EVENT_TYPE } from '@/constants/event.constants';
+import { USER_OPERATE_AREA } from '@/constants/menus.constants';
+import { dict } from '@/services/i18nRuntime';
+import { UserOperatorAreaEnum } from '@/types/enums/menus';
+import type { UserOperateAreaItemType } from '@/types/interfaces/layouts';
+import { MenuItemDto } from '@/types/interfaces/menu';
+import eventBus from '@/utils/eventBus';
+import { Badge, Tooltip } from 'antd';
+import classNames from 'classnames';
+import { cloneDeep } from 'lodash';
+import React, { useEffect, useMemo } from 'react';
+import { useModel } from 'umi';
+import styles from './index.less';
+
+const cx = classNames.bind(styles);
+
+// 菜单栏~用户操作区域类型
+export interface UserOperateAreaType {
+  /** 一级菜单列表 */
+  menus: MenuItemDto[];
+  onClick: (item: MenuItemDto) => void;
+}
+
+/**
+ * 一级菜单栏底部的用户操作区域组件
+ */
+const UserOperateArea: React.FC<UserOperateAreaType> = ({ menus, onClick }) => {
+  const { unreadCount, runNotifyMessageUnreadCount } = useModel('layout');
+
+  const dataSource: UserOperateAreaItemType[] = useMemo(() => {
+    const _userOperateArea = cloneDeep(USER_OPERATE_AREA);
+    return _userOperateArea.map((item: UserOperateAreaItemType) => {
+      if (item.type === UserOperatorAreaEnum.Document) {
+        item.title = dict('PC.Components.UserOperate.documents');
+      }
+      if (item.type === UserOperatorAreaEnum.Computer) {
+        item.title = dict('PC.Components.UserOperate.myComputer');
+      }
+      if (item.type === UserOperatorAreaEnum.Message) {
+        item.title =
+          unreadCount > 0
+            ? dict(
+                'PC.Components.UserOperate.unreadMessageCount',
+                String(unreadCount),
+              )
+            : dict('PC.Components.UserOperate.noUnreadMessage');
+      }
+      return item;
+    });
+  }, [unreadCount, USER_OPERATE_AREA]);
+
+  useEffect(() => {
+    // 初始化查询未读消息数量
+    runNotifyMessageUnreadCount();
+    // 监听新消息事件
+    eventBus.on(EVENT_TYPE.NewNotifyMessage, runNotifyMessageUnreadCount);
+
+    return () => {
+      eventBus.off(EVENT_TYPE.NewNotifyMessage, runNotifyMessageUnreadCount);
+    };
+  }, []);
+
+  return menus?.map((item: MenuItemDto, index) => (
+    <Tooltip
+      key={index}
+      placement="right"
+      color={'#fff'}
+      styles={{
+        body: { color: '#000' },
+      }}
+      title={item.name}
+    >
+      <div
+        className={cx(
+          styles['user-icon'],
+          'flex',
+          'content-center',
+          'items-center',
+          'cursor-pointer',
+          { [styles.last]: index === dataSource.length - 1 },
+        )}
+        onClick={() => onClick(item)}
+      >
+        {item.code === 'notification' && unreadCount > 0 ? (
+          <Badge count={unreadCount} size="small">
+            <div className={cx(styles['active-icon-container'])}>
+              {item.icon ? <SvgIcon name={item.icon} /> : null}
+            </div>
+          </Badge>
+        ) : (
+          <div className={cx(styles['active-icon-container'])}>
+            <SvgIcon name={item.icon || 'icons-common-more'} />
+          </div>
+        )}
+      </div>
+    </Tooltip>
+  ));
+};
+
+export default UserOperateArea;

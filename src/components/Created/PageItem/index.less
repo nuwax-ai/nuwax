@@ -1,0 +1,57 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+// 每一个样式
+.container {
+  height: 120px;
+  padding: @paddingSm @paddingLg;
+  box-sizing: border-box;
+  border-bottom: @lineWidth solid @colorSplit;
+
+  .left-image-style {
+    width: 40px;
+    height: 40px;
+    border-radius: @borderRadius;
+    overflow: hidden;
+    margin-right: @margin;
+
+    svg {
+      width: 40px;
+      height: 40px;
+    }
+  }
+
+  .content-font {
+    display: flex;
+    flex-direction: column;
+    gap: @marginXxs;
+    margin-right: @margin;
+
+    .count-div-style {
+      font-size: @fontSizeSm;
+      color: @colorTextTertiary;
+      line-height: 19px;
+
+      img {
+        width: 12px;
+        height: 12px;
+        margin-right: @marginXxs;
+      }
+    }
+  }
+
+  .label-font-style {
+    font-size: @fontSize;
+    font-weight: @fontWeightStrong;
+    color: @colorText;
+    line-height: 24px;
+  }
+
+  .created-description-style {
+    max-width: 580px;
+    word-break: break-word;
+    line-height: 22px;
+    font-size: @fontSize;
+    color: @colorTextSecondary;
+  }
+}

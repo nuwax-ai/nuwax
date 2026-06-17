@@ -1,0 +1,269 @@
+/**
+ * 知识库管理页面
+ */
+import { TableActions, XProTable } from '@/components/ProComponents';
+import type { ActionItem } from '@/components/ProComponents/TableActions';
+import WorkspaceLayout from '@/components/WorkspaceLayout';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { dict, t } from '@/services/i18nRuntime';
+import {
+  apiSystemResourceKnowledgeAccessControl,
+  apiSystemResourceKnowledgeDelete,
+  apiSystemResourceKnowledgeList,
+} from '@/services/systemManage';
+import { AccessControlEnum } from '@/types/enums/systemManage';
+import { SystemKnowledgeInfo } from '@/types/interfaces/systemManage';
+import {
+  ActionType,
+  FormInstance,
+  ProColumns,
+} from '@ant-design/pro-components';
+import { message, Switch } from 'antd';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useLocation, useModel } from 'umi';
+import TargetAuthModal from '../components/TargetAuthModal';
+
+const KnowledgeBase: React.FC = () => {
+  const { hasPermission } = useModel('menuModel');
+  const actionRef = useRef<ActionType>();
+  const formRef = useRef<FormInstance>();
+  const location = useLocation();
+  const [accessControlLoadingMap, setAccessControlLoadingMap] = useState<
+    Record<number, boolean>
+  >({});
+
+  // 授权弹窗相关状态
+  const [authModalOpen, setAuthModalOpen] = useState<boolean>(false);
+  const [currentKnowledgeInfo, setCurrentKnowledgeInfo] =
+    useState<SystemKnowledgeInfo | null>(null);
+
+  const handleReset = useCallback(() => {
+    // 重置表单
+    formRef.current?.resetFields();
+    // 重置表格状态
+    actionRef.current?.reset?.();
+    // 设置分页参数:第1页,每页15条
+    actionRef.current?.setPageInfo?.({ current: 1, pageSize: 15 });
+    // 重新加载
+    actionRef.current?.reload();
+  }, []);
+
+  useEffect(() => {
+    // 当通过菜单切换页面时（location.state._t 变化），触发刷新
+    const state = location.state as any;
+    if (state?._t) {
+      handleReset();
+    }
+  }, [location.state, handleReset]);
+
+  /**
+   * 查看知识库详情
+   */
+  const handleView = useCallback((record: SystemKnowledgeInfo) => {
+    window.open(`/space/${record.spaceId}/knowledge/${record.id}`);
+  }, []);
+
+  /**
+   * 删除知识库
+   */
+  const handleDelete = useCallback(async (record: SystemKnowledgeInfo) => {
+    const response = await apiSystemResourceKnowledgeDelete({ id: record.id });
+    if (response.code === SUCCESS_CODE) {
+      message.success(t('PC.Pages.SystemContentKnowledgeBase.deleteSuccess'));
+      actionRef.current?.reload();
+    } else {
+      message.error(
+        response.message ||
+          t('PC.Pages.SystemContentKnowledgeBase.deleteFailed'),
+      );
+    }
+  }, []);
+
+  /**
+   * 切换管控状态
+   */
+  const handleAccessControlChange = useCallback(
+    async (record: SystemKnowledgeInfo, checked: boolean) => {
+      const newStatus = checked ? 1 : 0;
+      setAccessControlLoadingMap((prev) => ({ ...prev, [record.id]: true }));
+      try {
+        const response = await apiSystemResourceKnowledgeAccessControl(
+          record.id,
+          newStatus,
+        );
+        if (response.code === SUCCESS_CODE) {
+          actionRef.current?.reload();
+        }
+      } finally {
+        setAccessControlLoadingMap((prev) => ({ ...prev, [record.id]: false }));
+      }
+    },
+    [],
+  );
+
+  /**
+   * 处理授权
+   */
+  const handleAuth = useCallback((record: SystemKnowledgeInfo) => {
+    setCurrentKnowledgeInfo(record);
+    setAuthModalOpen(true);
+  }, []);
+
+  /**
+   * 操作列配置
+   */
+  const getActions = useCallback(
+    (record: SystemKnowledgeInfo): ActionItem<SystemKnowledgeInfo>[] => [
+      {
+        key: 'view',
+        label: t('PC.Pages.SystemContentKnowledgeBase.view'),
+        disabled: !hasPermission('content_knowledge_query_detail'),
+        onClick: handleView,
+      },
+      {
+        key: 'auth',
+        label: dict('PC.Pages.SystemContentKnowledgeBase.grantAuth'),
+        visible: record.accessControl === AccessControlEnum.Filter,
+        onClick: handleAuth,
+      },
+      {
+        key: 'delete',
+        label: t('PC.Pages.SystemContentKnowledgeBase.delete'),
+        confirm: {
+          title: t(
+            'PC.Pages.SystemContentKnowledgeBase.deleteConfirmTitle',
+            record.name,
+          ),
+          description: t(
+            'PC.Pages.SystemContentKnowledgeBase.deleteConfirmDescription',
+          ),
+        },
+        disabled: !hasPermission('content_knowledge_delete'),
+        onClick: handleDelete,
+      },
+    ],
+    [hasPermission, handleView, handleDelete, handleAuth],
+  );
+
+  /**
+   * 表格列定义
+   */
+  const columns: ProColumns<SystemKnowledgeInfo>[] = [
+    {
+      title: t('PC.Pages.SystemContentKnowledgeBase.columnName'),
+      dataIndex: 'name',
+      width: 180,
+      ellipsis: true,
+      fieldProps: {
+        placeholder: t('PC.Pages.SystemContentKnowledgeBase.searchName'),
+        allowClear: true,
+      },
+    },
+    {
+      title: t('PC.Pages.SystemContentKnowledgeBase.columnDescription'),
+      dataIndex: 'description',
+      width: 250,
+      ellipsis: true,
+      hideInSearch: true,
+    },
+    {
+      title: t('PC.Pages.SystemContentKnowledgeBase.columnCreator'),
+      dataIndex: 'creatorName',
+      width: 120,
+      ellipsis: true,
+      hideInSearch: false,
+    },
+    {
+      title: t('PC.Pages.SystemContentKnowledgeBase.columnCreated'),
+      dataIndex: 'created',
+      align: 'center',
+      width: 170,
+      hideInSearch: true,
+      valueType: 'dateTime',
+    },
+    {
+      title: dict('PC.Pages.SystemContentKnowledgeBase.accessControlTitle'),
+      dataIndex: 'accessControl',
+      tooltip: dict('PC.Pages.SystemContentKnowledgeBase.accessControlTooltip'),
+      align: 'center',
+      width: 100,
+      fixed: 'right',
+      render: (_, record: SystemKnowledgeInfo) => (
+        <Switch
+          checked={record.accessControl === AccessControlEnum.Filter}
+          loading={accessControlLoadingMap[record.id] || false}
+          onChange={(checked) => handleAccessControlChange(record, checked)}
+        />
+      ),
+    },
+    {
+      title: dict('PC.Common.Global.action'),
+      valueType: 'option',
+      fixed: 'right',
+      align: 'center',
+      width: 180,
+      render: (_, record) => (
+        <TableActions<SystemKnowledgeInfo>
+          record={record}
+          actions={getActions(record)}
+        />
+      ),
+    },
+  ];
+
+  /**
+   * ProTable request 函数
+   */
+  const request = async (params: {
+    pageSize?: number;
+    current?: number;
+    name?: string;
+    creatorName?: string;
+    accessControl?: AccessControlEnum;
+  }) => {
+    const response = await apiSystemResourceKnowledgeList({
+      pageNo: params.current || 1,
+      pageSize: params.pageSize || 15,
+      name: params.name,
+      creatorName: params.creatorName,
+      accessControl: params.accessControl,
+    });
+
+    return {
+      data: response.data.records,
+      total: response.data.total,
+      success: response.code === SUCCESS_CODE,
+    };
+  };
+
+  return (
+    <WorkspaceLayout
+      title={t('PC.Pages.SystemContentKnowledgeBase.pageTitle')}
+      hideScroll
+    >
+      <XProTable<SystemKnowledgeInfo>
+        actionRef={actionRef}
+        formRef={formRef}
+        rowKey="id"
+        columns={columns}
+        request={request}
+        onReset={handleReset}
+        showQueryButtons={hasPermission('content_knowledge_query_list')}
+      />
+
+      {/* 授权弹窗 */}
+      <TargetAuthModal
+        open={authModalOpen}
+        targetId={currentKnowledgeInfo?.id || 0}
+        targetName={currentKnowledgeInfo?.name}
+        targetType="knowledge"
+        onCancel={() => {
+          setAuthModalOpen(false);
+          setCurrentKnowledgeInfo(null);
+        }}
+      />
+    </WorkspaceLayout>
+  );
+};
+
+export default KnowledgeBase;

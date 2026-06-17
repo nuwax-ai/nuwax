@@ -1,0 +1,54 @@
+@import '@/styles/color';
+@import '@/styles/token';
+@import '@/styles/custom-variate';
+
+.container {
+  padding: 55px 0 0;
+  font-size: 14px;
+  background-color: @WHITE;
+
+  .content {
+    padding: 0 20px;
+
+    .header {
+      margin-bottom: 4px;
+      color: @BLANK11;
+      font-weight: @fontWeightStrong;
+
+      h3 {
+        font-weight: @fontWeightStrong;
+      }
+    }
+
+    .desc {
+      color: @BLANK13;
+    }
+
+    .reply-content {
+      margin: 12px 0;
+      color: @BLANK11;
+      font-weight: @fontWeightStrong;
+
+      .textarea {
+        color: rgba(56, 55, 67, 100%);
+      }
+    }
+
+    .tips {
+      color: @RED01;
+      font-size: 12px;
+    }
+  }
+
+  .footer {
+    border-top: 1px solid @antdFooterBorderColor;
+    padding: @antdFooterPadding;
+    text-align: right;
+
+    .btn-disabled {
+      border-color: transparent;
+      color: @WHITE;
+      background: @BLUE12;
+    }
+  }
+}

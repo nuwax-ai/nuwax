@@ -1,0 +1,173 @@
+import { SvgIcon } from '@/components/base';
+import ConditionRender from '@/components/ConditionRender';
+
+import { dict } from '@/services/i18nRuntime';
+import {
+  ModelApiProtocolEnum,
+  ModelFunctionCallEnum,
+} from '@/types/enums/modelConfig';
+import { AgentTypeEnum } from '@/types/enums/space';
+import type { ArrangeTitleProps } from '@/types/interfaces/agentConfig';
+import type { MenuProps } from 'antd';
+import { Dropdown } from 'antd';
+import classNames from 'classnames';
+import React, { useEffect, useMemo, useState } from 'react';
+import styles from './index.less';
+
+const cx = classNames.bind(styles);
+
+const renderModelMenuLabel = (item: {
+  name: string;
+  description?: string;
+  icon?: string;
+}) => (
+  <div className={cx(styles['model-option'])}>
+    {!!item.icon && (
+      <img className={cx(styles['model-option-icon'])} src={item.icon} alt="" />
+    )}
+    <div className={cx(styles['model-option-content'])}>
+      <span className={cx(styles['model-option-name'])}>{item.name}</span>
+      {!!item.description && (
+        <span className={cx(styles['model-option-desc'])}>
+          {item.description}
+        </span>
+      )}
+    </div>
+  </div>
+);
+
+/**
+ * 编排顶部title组件
+ */
+const ArrangeTitle: React.FC<ArrangeTitleProps> = ({
+  originalModelConfigList,
+  agentConfigInfo,
+  icon,
+  modelName,
+  onClick,
+  onModelChange,
+}) => {
+  // 是否显示模型名称
+  const [showModelName, setShowModelName] = useState<boolean>(false);
+
+  const isTaskAgent = agentConfigInfo?.type === AgentTypeEnum.TaskAgent;
+
+  useEffect(() => {
+    if (agentConfigInfo && originalModelConfigList) {
+      if (isTaskAgent) {
+        const targetId = agentConfigInfo?.modelComponentConfig?.targetId;
+
+        const modelInfo = originalModelConfigList.find((item) => {
+          if (item.id !== targetId) return false;
+
+          const isBaseSupported =
+            (item.apiProtocol === ModelApiProtocolEnum.Anthropic ||
+              item.apiProtocol === ModelApiProtocolEnum.OpenAI) &&
+            item.functionCall !== ModelFunctionCallEnum.Unsupported;
+
+          if (!isBaseSupported) return false;
+
+          return true;
+        });
+        setShowModelName(!!modelInfo);
+      } else {
+        setShowModelName(true);
+      }
+    }
+  }, [agentConfigInfo, originalModelConfigList]);
+
+  // 通用智能体的 Dropdown 菜单项
+  const dropdownMenuItems: MenuProps['items'] = useMemo(() => {
+    if (!isTaskAgent || !originalModelConfigList?.length) return [];
+    return originalModelConfigList
+      .filter(
+        (item) =>
+          (item.apiProtocol === ModelApiProtocolEnum.Anthropic ||
+            item.apiProtocol === ModelApiProtocolEnum.OpenAI) &&
+          item.functionCall !== ModelFunctionCallEnum.Unsupported,
+      )
+      .filter((item) => {
+        if (!agentConfigInfo?.type) return true;
+        return item.usageScenarios?.includes(agentConfigInfo.type as any);
+      })
+      .map((item) => ({
+        key: String(item.id),
+        label: renderModelMenuLabel(item),
+      }));
+  }, [agentConfigInfo?.type, isTaskAgent, originalModelConfigList]);
+
+  // 通用智能体：下拉切换模型
+  const handleMenuClick: MenuProps['onClick'] = ({ key }) => {
+    const _id = Number(key);
+    const modelInfo = originalModelConfigList?.find((item) => item.id === _id);
+    if (modelInfo && onModelChange) {
+      onModelChange(_id, modelInfo.name);
+    }
+  };
+
+  // 检查 originalModelConfigList 中是否存在匹配 targetId 的模型
+  const hasMatchedModel = useMemo(() => {
+    if (!originalModelConfigList?.length) return false;
+    const targetId = agentConfigInfo?.modelComponentConfig?.targetId;
+    if (targetId === undefined || targetId === null) return false;
+    return originalModelConfigList.some((item) => item.id === targetId);
+  }, [
+    originalModelConfigList,
+    agentConfigInfo?.modelComponentConfig?.targetId,
+  ]);
+
+  const triggerContent = (
+    <div
+      className={cx(
+        'flex',
+        'items-center',
+        'cursor-pointer',
+        styles['drop-box'],
+      )}
+      onClick={isTaskAgent ? undefined : onClick}
+    >
+      <ConditionRender condition={!!icon}>
+        <img src={icon} alt="" />
+      </ConditionRender>
+      <span>
+        {showModelName && hasMatchedModel
+          ? modelName
+          : dict('PC.Pages.EditAgent.ArrangeTitle.selectChatModel')}
+      </span>
+      <SvgIcon name="icons-common-caret_down" style={{ fontSize: 16 }} />
+    </div>
+  );
+
+  return (
+    <div
+      className={cx(
+        'flex',
+        'content-between',
+        'items-center',
+        styles['edit-header'],
+      )}
+    >
+      <h3>{dict('PC.Pages.EditAgent.ArrangeTitle.arrange')}</h3>
+      {isTaskAgent ? (
+        <Dropdown
+          menu={{
+            items: dropdownMenuItems,
+            onClick: handleMenuClick,
+            selectedKeys: agentConfigInfo?.modelComponentConfig?.targetId
+              ? [String(agentConfigInfo.modelComponentConfig.targetId)]
+              : [],
+          }}
+          trigger={['click']}
+          placement="bottomRight"
+          rootClassName={cx(styles['model-dropdown'])}
+        >
+          {triggerContent}
+        </Dropdown>
+      ) : (
+        triggerContent
+      )}
+    </div>
+  );
+};
+
+export default ArrangeTitle;

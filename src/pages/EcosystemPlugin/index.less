@@ -1,0 +1,92 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.container {
+  :global {
+    .ant-card-head {
+      border-bottom: none;
+    }
+
+    .ant-card-body {
+      padding: 0;
+    }
+  }
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  border-bottom: none;
+  padding: 16px 24px;
+}
+
+.searchInput {
+  width: 240px;
+
+  :global {
+    .ant-input-search-button {
+      height: 32px;
+    }
+  }
+}
+
+.pluginList {
+  padding: 0 16px 24px;
+}
+
+.list-section {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+
+  /* 关键修复：确保内容从顶部开始排列，避免不均匀的间距分布 */
+  align-content: start;
+}
+
+.title {
+  font-size: 16px;
+  font-weight: @fontWeightStrong;
+  color: #333;
+  margin-right: 20px;
+}
+
+.segmented {
+  :global {
+    .ant-segmented-item-selected {
+      font-weight: @fontWeightStrong !important;
+    }
+  }
+}
+
+.select {
+  width: 120px;
+  margin-left: 0 !important;
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+@media (min-width: 1200px) {
+  .list-section {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1440px) {
+  .list-section {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+// @media (max-width: 768px) {
+//   .list-section {
+//     grid-template-columns: repeat(1, minmax(0, 1fr));
+//   }
+// }

@@ -1,0 +1,31 @@
+@import '@/styles/color';
+
+.container {
+  gap: 4px;
+  padding: 10px 8px;
+  font-size: 12px;
+  border-bottom: 1px solid @GRAY06;
+  position: relative;
+
+  &:last-child {
+    border-bottom-color: transparent;
+  }
+
+  .header {
+    gap: 8px;
+
+    .name {
+      max-width: 60%;
+      color: @BLUE04;
+    }
+
+    .author-update-time {
+      color: @BLUE04;
+    }
+  }
+
+  .desc {
+    line-height: 20px;
+    color: @BLANK04;
+  }
+}

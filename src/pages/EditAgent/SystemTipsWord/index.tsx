@@ -1,0 +1,375 @@
+import { SvgIcon } from '@/components/base';
+import PromptOptimizeModal from '@/components/PromptOptimizeModal';
+import TiptapVariableInput from '@/components/TiptapVariableInput/TiptapVariableInput';
+import { extractTextFromHTML } from '@/components/TiptapVariableInput/utils/htmlUtils';
+import { dict } from '@/services/i18nRuntime';
+import { AgentTypeEnum } from '@/types/enums/space';
+import type { SystemUserTipsWordProps } from '@/types/interfaces/space';
+import { Button, Modal, Segmented, theme, Tooltip } from 'antd';
+import classNames from 'classnames';
+import {
+  forwardRef,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import styles from './index.less';
+
+const cx = classNames.bind(styles);
+
+/**
+ * 系统提示词组件暴露的方法
+ */
+export interface SystemUserTipsWordRef {
+  insertText: (text: string) => void;
+}
+
+/**
+ * 系统提示词组件
+ */
+const SystemTipsWord = forwardRef<
+  SystemUserTipsWordRef,
+  SystemUserTipsWordProps
+>(
+  (
+    {
+      className,
+      valueUser,
+      valueSystem,
+      onChangeUser,
+      onChangeSystem,
+      agentConfigInfo,
+      onReplace,
+      variables,
+      skills,
+    },
+    ref,
+  ) => {
+    const [open, setOpen] = useState<boolean>(false);
+    const editorUserRef = useRef<any | null>(null);
+    const editorSystemRef = useRef<any | null>(null);
+    const [valueSegmented, setValueSegmented] = useState<
+      'systemPrompt' | 'userPrompt'
+    >('systemPrompt');
+    const { token } = theme.useToken();
+
+    /**
+     * 在光标位置插入文本
+     */
+    const insertTextAtCursor = (
+      text: string,
+      editorRef: React.MutableRefObject<any | null>,
+      value?: string,
+      onChange?: (value: string) => void,
+    ) => {
+      if (!editorRef.current) {
+        const currentValue = value || '';
+        const newValue = currentValue ? `${currentValue}\n${text}` : text;
+        onChange?.(newValue);
+        return;
+      }
+
+      // Tiptap editor instance
+      if (editorRef.current?.commands?.insertContent) {
+        editorRef.current.commands.insertContent(text);
+        return;
+      }
+
+      // 获取当前光标位置 (Legacy editor)
+      let cursorPosition = 0;
+      if (typeof editorRef.current?.getCursorPosition === 'function') {
+        cursorPosition = editorRef.current.getCursorPosition();
+      }
+
+      try {
+        // 检查编辑器是否有 replaceText 方法
+        if (typeof editorRef.current?.replaceText !== 'function') {
+          throw new Error('replaceText method does not exist');
+        }
+
+        // 使用编辑器的 replaceText API 在光标位置插入文本
+        const replaceOptions = {
+          from: cursorPosition,
+          to: cursorPosition,
+          text: text,
+          cursorOffset: text.length, // 将光标移动到插入文本的末尾
+          scrollIntoView: true,
+          userEvent: 'insertText',
+        };
+
+        editorRef.current?.replaceText?.(replaceOptions);
+        return;
+      } catch {}
+
+      // 备用方案：追加到末尾
+      const currentValue = value || '';
+      if (currentValue) {
+        const firstValue = currentValue.substring(0, cursorPosition);
+        const lastValue = currentValue.substring(cursorPosition);
+        const newValue = `${firstValue}\n${text}${lastValue}`;
+        onChange?.(newValue);
+      } else {
+        onChange?.(text);
+      }
+    };
+    const handleReplace = (value?: string) => {
+      setOpen(false);
+      onReplace(value);
+    };
+
+    /**
+     * 向外暴露插入文本的方法
+     */
+    useImperativeHandle(ref, () => ({
+      insertText: (text: string) => {
+        if (valueSegmented === 'userPrompt') {
+          insertTextAtCursor(text, editorUserRef, valueUser, onChangeUser);
+        }
+        if (valueSegmented === 'systemPrompt') {
+          insertTextAtCursor(
+            text,
+            editorSystemRef,
+            valueSystem,
+            onChangeSystem,
+          );
+        }
+      },
+    }));
+
+    const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+
+    /**
+     * 切换全屏模式
+     */
+    const toggleFullscreen = () => {
+      setIsFullscreen((prev) => !prev);
+    };
+
+    /**
+     * 提示词输入区域
+     */
+    const promptInput = useMemo(() => {
+      return (
+        <div className={'flex-1 scroll-container h-full'}>
+          {valueSegmented === 'systemPrompt' ? (
+            <TiptapVariableInput
+              key={'systemPrompt'}
+              value={valueSystem}
+              onChange={(html) => onChangeSystem(extractTextFromHTML(html))}
+              placeholder={dict(
+                'PC.Pages.EditAgent.SystemTipsWord.systemPromptPlaceholder',
+              )}
+              getEditor={(editor: any) => {
+                editorSystemRef.current = editor;
+              }}
+              style={
+                isFullscreen
+                  ? {}
+                  : agentConfigInfo?.type === AgentTypeEnum.ChatBot
+                  ? { height: '100%', border: 'none' }
+                  : {}
+              }
+              variables={variables}
+              skills={skills}
+              enableHistory={true}
+            />
+          ) : (
+            <TiptapVariableInput
+              key={'userPrompt'}
+              value={valueUser}
+              onChange={(html) => onChangeUser(extractTextFromHTML(html))}
+              placeholder={dict(
+                'PC.Pages.EditAgent.SystemTipsWord.userPromptPlaceholder',
+              )}
+              getEditor={(editor: any) => {
+                editorUserRef.current = editor;
+              }}
+              style={
+                isFullscreen
+                  ? {}
+                  : agentConfigInfo?.type === AgentTypeEnum.ChatBot
+                  ? { height: '100%', border: 'none' }
+                  : {}
+              }
+              variables={variables}
+              skills={skills}
+              enableHistory={true}
+            />
+          )}
+        </div>
+      );
+    }, [
+      isFullscreen,
+      valueSegmented,
+      valueSystem,
+      valueUser,
+      variables,
+      skills,
+      onChangeSystem,
+      onChangeUser,
+    ]);
+
+    /**
+     * 标题：包含全屏切换按钮
+     */
+    const modalTitle = (
+      <div className={cx('flex', 'items-center', 'content-between')}>
+        <span>
+          {valueSegmented === 'systemPrompt'
+            ? dict('PC.Pages.EditAgent.SystemTipsWord.systemPrompt')
+            : dict('PC.Pages.EditAgent.SystemTipsWord.userPrompt')}
+        </span>
+        <Tooltip
+          title={dict('PC.Pages.EditAgent.SystemTipsWord.exitFullscreen')}
+        >
+          <Button
+            type="text"
+            icon={
+              <SvgIcon
+                name="icons-common-zoom_out"
+                style={{ fontSize: '14px' }}
+              />
+            }
+            onClick={toggleFullscreen}
+          />
+        </Tooltip>
+      </div>
+    );
+
+    return (
+      <div
+        className={cx(
+          'flex',
+          'flex-col',
+          'flex-1',
+          styles.container,
+          className,
+        )}
+      >
+        <div
+          className={cx(
+            'flex',
+            'items-center',
+            'content-between',
+            styles['system-tips-wrapper'],
+          )}
+        >
+          <Segmented
+            value={valueSegmented}
+            onChange={setValueSegmented}
+            options={[
+              {
+                label: dict('PC.Pages.EditAgent.SystemTipsWord.systemPrompt'),
+                value: 'systemPrompt',
+              },
+              {
+                label: dict('PC.Pages.EditAgent.SystemTipsWord.userPrompt'),
+                value: 'userPrompt',
+              },
+            ]}
+          />
+          <div className="flex items-center gap-6">
+            <Tooltip
+              title={dict('PC.Pages.EditAgent.SystemTipsWord.fullscreenEdit')}
+            >
+              <Button
+                type="text"
+                className={cx(styles['border-none'])}
+                icon={
+                  <SvgIcon
+                    name="icons-common-zoom_in"
+                    style={{ fontSize: '14px' }}
+                  />
+                }
+                onClick={toggleFullscreen}
+              />
+            </Tooltip>
+            {valueSegmented === 'systemPrompt' && (
+              <Tooltip
+                title={dict(
+                  'PC.Pages.EditAgent.SystemTipsWord.autoOptimizeTooltip',
+                )}
+                placement="top"
+              >
+                <Button
+                  color="primary"
+                  variant="filled"
+                  size="small"
+                  className={cx(styles['optimize-btn'])}
+                  icon={
+                    <SvgIcon
+                      name="icons-common-stars"
+                      style={{ fontSize: 16 }}
+                    />
+                  }
+                  onClick={(e) => {
+                    setOpen(true);
+                    // 移除按钮焦点，避免显示边框
+                    if (e.currentTarget) {
+                      e.currentTarget.blur();
+                    }
+                  }}
+                >
+                  {dict('PC.Pages.EditAgent.SystemTipsWord.optimize')}
+                </Button>
+              </Tooltip>
+            )}
+          </div>
+        </div>
+
+        {agentConfigInfo?.type === AgentTypeEnum.TaskAgent ? (
+          <div
+            style={{
+              height: '300px',
+              paddingLeft: token.paddingXS,
+              marginTop: 6,
+            }}
+          >
+            {/* 提示词输入区域 */}
+            {promptInput}
+          </div>
+        ) : (
+          <>
+            {/* 提示词输入区域 */}
+            {promptInput}
+          </>
+        )}
+
+        {/* 自动优化弹窗 */}
+        <PromptOptimizeModal
+          open={open}
+          onCancel={() => setOpen(false)}
+          onReplace={handleReplace}
+          targetId={agentConfigInfo?.id}
+          defaultValue={
+            valueSystem ||
+            `${agentConfigInfo?.name || ''}` +
+              `${agentConfigInfo?.description || ''}`
+          }
+        />
+
+        {/* 提示词全屏弹窗 */}
+        <Modal
+          title={modalTitle}
+          open={isFullscreen}
+          footer={null}
+          closable={false}
+          onCancel={toggleFullscreen}
+          width="100vw"
+          className={cx(isFullscreen && styles['fullscreen-modal'])}
+          style={{
+            top: 0,
+            paddingBottom: 0,
+            maxWidth: '100vw',
+          }}
+        >
+          {/* 提示词输入区域 */}
+          {promptInput}
+        </Modal>
+      </div>
+    );
+  },
+);
+
+export default SystemTipsWord;

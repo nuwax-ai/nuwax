@@ -1,0 +1,164 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+@keyframes fade-in {
+  0% {
+    opacity: 0;
+  }
+
+  100% {
+    opacity: 1;
+  }
+}
+
+.main-content {
+  height: 100%;
+  position: relative;
+  min-width: 400px;
+  animation: fade-in 0.4s ease-out forwards;
+
+  &.mobile-box {
+    min-width: 0;
+  }
+
+  .title-box {
+    background-color: transparent;
+
+    .title-container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 32px;
+      padding: @paddingXs 12px @paddingXs 20px;
+      box-sizing: content-box;
+
+      // 应用智能体模式下，显示内容导航按钮
+      &.app-title-container {
+        padding-left: @padding;
+      }
+
+      &.app-title-container-collapsed {
+        padding-left: @paddingXs;
+      }
+
+      .title {
+        margin-bottom: 0;
+        color: @colorTextSecondary;
+        font-size: @fontSize;
+      }
+
+      .icon-box {
+        width: 32px;
+        height: 32px;
+        color: @colorTextTertiary;
+      }
+    }
+  }
+
+  .main-content-box {
+    width: 100%;
+    padding: 0 20px;
+    overflow-y: hidden;
+    height: 100%;
+    flex: 1;
+    display: flex;
+    position: relative;
+    gap: 20px;
+
+    //隐藏滚动条
+    &::-webkit-scrollbar {
+      display: none;
+    }
+
+    .chat-section {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+
+      .chat-wrapper-content {
+        margin-bottom: 5px;
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+
+        .chat-wrapper {
+          padding-bottom: 40px - 16px;
+          max-width: 800px;
+          width: 100%;
+          margin: 0 auto;
+
+          .loading {
+            color: @colorPrimary;
+          }
+
+          .chat-inner {
+            background-color: transparent;
+            padding: 0 @paddingXs;
+          }
+
+          .suggest-item {
+            background-color: @colorBgContainer;
+
+            &:hover {
+              background-color: @colorBgContainer;
+            }
+          }
+        }
+      }
+
+      .chat-input-container {
+        position: sticky;
+        bottom: 0;
+        z-index: 10;
+        display: flex;
+        flex-direction: column;
+        background-color: transparent;
+        border-radius: @borderRadiusLg @borderRadiusLg 0 0;
+        width: 100%;
+      }
+    }
+  }
+}
+
+.agent-sidebar {
+  position: sticky;
+  margin: 0;
+}
+
+.title-style {
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 24px;
+  color: @colorTextSecondary;
+}
+
+.mobile-page-preview-container {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 100;
+}
+
+.copy-btn {
+  width: 120px;
+}
+
+.agent-sidebar-w {
+  position: sticky;
+  margin: 0;
+  min-width: 400px;
+}
+
+@media (max-width: 768px) {
+  .agent-sidebar {
+    display: none;
+  }
+}
+
+/* 当屏幕宽度小于等于 720px 时应用的样式 */
+@media screen and (max-width: 720px) {
+  .main-content {
+    width: 100%;
+  }
+}

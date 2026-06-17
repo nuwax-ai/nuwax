@@ -1,0 +1,62 @@
+@import '@/styles/token';
+
+.container {
+  width: 100%;
+}
+
+.content {
+  padding: @paddingLg;
+
+  .configContainer {
+    margin-bottom: @paddingXl;
+  }
+
+  .configItem {
+    margin-bottom: 24px;
+    padding: 0;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+}
+
+// 响应式设计
+// @media (max-width: @screenLg) {
+//   .content {
+//     .configItem {
+//       margin-bottom: @paddingMd;
+//     }
+//   }
+// }
+
+// @media (max-width: @screenMd) {
+//   .title {
+//     padding: 16px;
+//   }
+
+//   .content {
+//     padding: 16px;
+//     padding-top: 70px; // 调整移动端标题高度
+//     padding-bottom: 70px; // 调整移动端底部高度
+
+//     .configItem {
+//       margin-bottom: @paddingSm;
+//       padding: 0;
+//     }
+//   }
+
+//   .footer {
+//     display: flex;
+//     justify-content: flex-start;
+//     align-items: center;
+//     flex-direction: column;
+//     gap: @paddingMd;
+//     padding: 16px;
+
+//     :global(.ant-btn) {
+//       width: 100%;
+//       max-width: 200px;
+//     }
+//   }
+// }

@@ -1,0 +1,76 @@
+@import '@/styles/token';
+
+/**
+ * 覆盖 antd Tree 内部类名必须用 :global，且建议写成 `:global(.ant-xxx)`，
+ * 避免 `.local { :global { .ant-xxx { } } }` 在 css-loader 下把内层选择器误当作局部类名哈希化，
+ * 导致页面上真实的 `.ant-tree-*` 匹配不到。
+ * 选择器会编译为：`.api-permission-tree_哈希 .ant-tree-...`（仅作用于本面板内的树）。
+ */
+.api-permission-tree {
+  min-width: 0;
+
+  :global(.ant-tree-list-holder-inner .ant-tree-treenode) {
+    align-items: center;
+  }
+
+  :global(.ant-tree-node-content-wrapper) {
+    overflow: hidden;
+    flex: 1;
+    min-width: 0;
+  }
+
+  :global(.ant-tree-title) {
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+  }
+}
+
+// API 权限树节点标题（只读展示 RPM/RPD）
+.openApiTreeTitleRow {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  gap: 12px;
+  justify-content: space-between;
+  height: 26px;
+
+  .openApiTreeTitleLeft {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    overflow: hidden;
+
+    .openApiTreeTitleName {
+      flex: 0 1 auto;
+      max-width: 60%;
+    }
+
+    .openApiTreeTitlePath {
+      flex: 1 1 auto;
+      min-width: 0;
+      font-size: @fontSizeSm;
+      color: @colorTextSecondary;
+    }
+  }
+
+  .openApiTreeTitleControls {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+}
+
+/* 与系统管理端 ApiPermissionTabPanel 中 InputNumber 的 className 一致，供 CSS Modules 导出 */
+.font-12 {
+  font-size: @fontSizeSm;
+  color: @colorTextSecondary;
+}
+
+.input-number {
+  width: 72px;
+}

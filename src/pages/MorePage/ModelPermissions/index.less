@@ -1,0 +1,50 @@
+@import '@/styles/token.less';
+
+.permissions-table {
+  :global {
+    .ant-pro-table-list-toolbar-left {
+      flex: none;
+      min-width: 0;
+      margin-right: 4px;
+    }
+
+    .ant-pro-table-list-toolbar-right {
+      flex: 1;
+      min-width: 0;
+    }
+  }
+}
+
+.segmented {
+  flex-shrink: 0;
+}
+
+.model-id-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+}
+
+.model-id-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.copy-icon-btn {
+  flex-shrink: 0;
+  color: @colorTextSecondary;
+}
+
+.external-call-cell {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.interface-address-btn {
+  padding: 0;
+  height: auto;
+  font-size: inherit;
+}

@@ -1,0 +1,601 @@
+import ChangeFileGitDiffView, {
+  DiffModeEnum,
+} from '@/components/business-component/ChangeFileGitDiffView';
+import { dict } from '@/services/i18nRuntime';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import { ProcessingEnum } from '@/types/enums/common';
+import { cloneDeep } from '@/utils/common';
+import {
+  BorderOutlined,
+  CheckOutlined,
+  CheckSquareOutlined,
+  CloseSquareOutlined,
+  EyeInvisibleOutlined,
+  EyeOutlined,
+  HourglassOutlined,
+  MinusOutlined,
+  PlusOutlined,
+  ProfileOutlined,
+} from '@ant-design/icons';
+import { Button, message, Tooltip, Typography } from 'antd';
+import classNames from 'classnames';
+import { isEqual } from 'lodash';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { useModel } from 'umi';
+import styles from './index.less';
+import SeeDetailModal from './SeeDetailModal';
+
+const cx = classNames.bind(styles);
+
+/**
+ * 极简、快速且鲁棒的行级差异统计函数（Myers / LCS 基础版）
+ */
+const getDiffStats = (oldStr: string = '', newStr: string = '') => {
+  const oldLines = (oldStr || '').split('\n');
+  const newLines = (newStr || '').split('\n');
+  const m = oldLines.length;
+  const n = newLines.length;
+
+  const dp = Array.from({ length: m + 1 }, () => new Int32Array(n + 1));
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (oldLines[i - 1] === newLines[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+      }
+    }
+  }
+  const lcs = dp[m][n];
+  const deletions = m - lcs;
+  const additions = n - lcs;
+
+  return { additions, deletions };
+};
+
+interface ProcessDiffViewerProps {
+  item: {
+    path: string;
+    oldText?: string;
+    newText?: string;
+  };
+}
+
+const ProcessDiffViewer: React.FC<ProcessDiffViewerProps> = ({ item }) => {
+  return (
+    <div className={cx(styles['diff-viewer-item'])}>
+      <div className={cx(styles['diff-viewer-item-content'])}>
+        <ChangeFileGitDiffView
+          fileId={item.path}
+          fileName={item.path}
+          originalContent={item.oldText || ''}
+          modifiedContent={item.newText || ''}
+          diffViewMode={DiffModeEnum.Unified}
+        />
+      </div>
+    </div>
+  );
+};
+
+interface MarkdownCustomProcessProps {
+  executeId: string;
+  name: string;
+  status: ProcessingEnum;
+  type: AgentComponentTypeEnum;
+  dataKey: string;
+  conversationId: number | string;
+}
+interface InputProps {
+  method: 'browser_open_page' | 'browser_navigate_page';
+  data_type: 'markdown' | 'html';
+  uri_type: 'Page' | 'Link';
+  uri: string;
+  arguments: Record<string, any>;
+  request_id: string;
+}
+
+function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
+  const {
+    getProcessingById,
+    processingList,
+    pagePreviewData,
+    showPagePreview,
+    agentPageConfig,
+  } = useModel('chat');
+
+  const {
+    openPreviewView,
+    setTaskAgentSelectedFileId,
+    setTaskAgentSelectTrigger,
+  } = useModel('conversationInfo');
+
+  const [detailData, setDetailData] = useState<{
+    params: Record<string, any>;
+    response: Record<string, any>;
+  } | null>(null);
+
+  const [innerProcessing, setInnerProcessing] = useState({
+    ...props,
+    result: '',
+  });
+
+  // 添加 WebSearchProModal 的状态管理
+  const [openModal, setOpenModal] = useState(false);
+  // Plan 类型展开/收起状态
+  const [isPlanExpanded, setIsPlanExpanded] = useState(true);
+  // Diff 展开/收起状态
+  const [isDiffExpanded, setIsDiffExpanded] = useState(false);
+
+  // 提取 data 中的 type === 'diff' 的数据
+  const diffItems = useMemo(() => {
+    const data = (innerProcessing.result as any)?.data;
+    if (Array.isArray(data)) {
+      return data.filter((item: any) => item && item.type === 'diff');
+    }
+    return [];
+  }, [innerProcessing.result]);
+
+  const hasDiff = diffItems.length > 0;
+
+  // 统计总的 additions 和 deletions
+  const { totalAdditions, totalDeletions } = useMemo(() => {
+    let additions = 0;
+    let deletions = 0;
+    diffItems.forEach((item) => {
+      const stats = getDiffStats(item.oldText || '', item.newText || '');
+      additions += stats.additions;
+      deletions += stats.deletions;
+    });
+    return { totalAdditions: additions, totalDeletions: deletions };
+  }, [diffItems]);
+
+  useEffect(() => {
+    // if (innerProcessing.status !== ProcessingEnum.EXECUTING) {
+    //   // 如果状态不是执行中，则不更新
+    //   return;
+    // }
+    const processing = getProcessingById(
+      innerProcessing.executeId,
+      innerProcessing.type,
+    );
+    if (
+      processing &&
+      (processing?.status !== innerProcessing.status ||
+        !isEqual(processing.result, innerProcessing.result))
+    ) {
+      setInnerProcessing(processing);
+    }
+  }, [processingList, innerProcessing.executeId]);
+
+  // 状态显示
+  const genStatusDisplay = useCallback(() => {
+    switch (innerProcessing.status) {
+      case ProcessingEnum.FINISHED:
+        return (
+          <div className={cx(styles['status-completed'])}>
+            <CheckOutlined />
+            {/* 已完成 */}
+          </div>
+        );
+      case ProcessingEnum.EXECUTING:
+        return (
+          <div className={cx(styles['status-running'])}>
+            <div className={cx(styles['loading-spinner'])} />
+            {/* 运行中 */}
+          </div>
+        );
+      case ProcessingEnum.FAILED:
+        return <div className={cx(styles['status-error'])}>⚠️{/* 错误 */}</div>;
+      default:
+        return null;
+    }
+  }, [innerProcessing.status]);
+
+  // const handleCopy = useCallback(async () => {
+  //   if (!detailData) {
+  //     message.error('暂无数据');
+  //     return;
+  //   }
+  //   // 复制功能 - 可以复制组件的配置或内容
+  //   const jsonText = JSON.stringify(detailData, null, 2);
+  //   await copyTextToClipboard(jsonText, undefined, true);
+  // }, [detailData]);
+
+  // 准备 详情弹窗 所需的数据
+  const getDetailData = useCallback((result: any) => {
+    if (!result) {
+      return null;
+    }
+    const _result = cloneDeep(result);
+    return {
+      // 从结果中提取输入参数，如果没有则提供空对象
+      params: _result.input || {},
+      // 使用结果的 data 作为响应数据，如果没有则提供空对象
+      response: _result.data || null,
+    };
+  }, []);
+
+  useEffect(() => {
+    if (
+      innerProcessing.executeId &&
+      (innerProcessing.status === ProcessingEnum.FINISHED ||
+        innerProcessing.status === ProcessingEnum.FAILED)
+    ) {
+      const theDetailData = getDetailData(innerProcessing.result);
+      if (detailData && isEqual(theDetailData, detailData)) {
+        // loose equal
+        return;
+      }
+      setDetailData(theDetailData);
+
+      // 自动展开页面预览逻辑
+      // 如果是 Page 类型且配置为自动展开，并且状态为完成，自动触发预览
+      // if (
+      //   innerProcessing.type === AgentComponentTypeEnum.Page &&
+      //   innerProcessing.status === ProcessingEnum.FINISHED &&
+      //   agentPageConfig.expandPageArea === ExpandPageAreaEnum.Yes &&
+      //   theDetailData
+      // ) {
+      //   const result = innerProcessing.result;
+      //   if (result && typeof result === 'object') {
+      //     const input = (
+      //       result as {
+      //         input?: { uri?: string; arguments?: Record<string, any> };
+      //       }
+      //     ).input;
+      //     if (input?.uri) {
+      //       // 自动触发预览
+      //       showPagePreview({
+      //         name: innerProcessing.name || '页面预览',
+      //         uri: input.uri,
+      //         params: input.arguments || {},
+      //         executeId: innerProcessing.executeId || '',
+      //       });
+      //     }
+      //   }
+      // }
+    }
+  }, [
+    innerProcessing.executeId,
+    innerProcessing.status,
+    innerProcessing.result,
+    innerProcessing.type,
+    innerProcessing.name,
+    agentPageConfig.expandPageArea,
+    showPagePreview,
+    getDetailData,
+  ]);
+
+  const disabled = useMemo(() => {
+    return (
+      !(
+        detailData &&
+        (innerProcessing.status === ProcessingEnum.FINISHED ||
+          innerProcessing.status === ProcessingEnum.FAILED)
+      ) || false
+    );
+  }, [innerProcessing.status, detailData]);
+
+  const handleOpenFileTree = useCallback(() => {
+    const result = innerProcessing.result as any;
+    // 打开文件树
+    if (result?.kind === 'edit') {
+      const conversationId = props.conversationId;
+      const file_path = result?.input?.file_path;
+
+      openPreviewView(conversationId);
+      setTaskAgentSelectedFileId(file_path);
+      // 每次点击时更新触发标志，确保即使文件ID相同也能触发文件选择
+      setTaskAgentSelectTrigger(Date.now());
+    }
+  }, [
+    innerProcessing.result,
+    props.conversationId,
+    openPreviewView,
+    setTaskAgentSelectedFileId,
+    setTaskAgentSelectTrigger,
+  ]);
+
+  const handleShowDetailModal = useCallback(() => {
+    if (!detailData) {
+      message.error(dict('PC.Components.MarkdownCustomProcess.noData'));
+      return;
+    }
+    setOpenModal(true);
+  }, [detailData]);
+
+  // 判断是否为 Page 类型
+  const isPageType = useMemo(() => {
+    return innerProcessing.type === AgentComponentTypeEnum.Page;
+  }, [innerProcessing.type]);
+
+  // 判断是否为 Plan 类型
+  const isPlanType = useMemo(() => {
+    return innerProcessing.type === AgentComponentTypeEnum.Plan;
+  }, [innerProcessing.type]);
+
+  // 获取 Plan 任务状态图标
+  const getPlanStatusIcon = useCallback((status: string) => {
+    const iconProps = { className: cx(styles['task-icon']) };
+    switch (status) {
+      case 'completed':
+        return <CheckSquareOutlined {...iconProps} />;
+      case 'pending':
+        return <BorderOutlined {...iconProps} />;
+      case 'failed':
+        return <CloseSquareOutlined {...iconProps} />;
+      case 'in_progress':
+        return <HourglassOutlined {...iconProps} />;
+      default:
+        return <BorderOutlined {...iconProps} />;
+    }
+  }, []);
+
+  // 渲染 Plan 任务列表
+  const renderPlanDetails = useCallback(() => {
+    if (
+      !isPlanType ||
+      !isPlanExpanded ||
+      !detailData?.response ||
+      !Array.isArray(detailData.response)
+    ) {
+      return null;
+    }
+
+    return (
+      <div className={cx(styles['plan-details'])}>
+        <div className={cx(styles['plan-task-list'])}>
+          {detailData.response.map((entry: any, index: number) => (
+            <div key={index} className={cx(styles['plan-task-item'])}>
+              {getPlanStatusIcon(entry.status)}
+              <span className={cx(styles['plan-task-text'])}>
+                {entry.content}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }, [isPlanType, isPlanExpanded, detailData?.response, getPlanStatusIcon]);
+
+  const [open, setOpen] = useState(false);
+
+  // 打开预览页面
+  const openPreviewPage = () => {
+    // if (!detailData) {
+    //   message.error('暂无数据');
+    //   return;
+    // }
+
+    const result = innerProcessing.result;
+    if (!result || typeof result !== 'object') {
+      // message.error('数据格式错误');
+      return;
+    }
+
+    const input: InputProps = (result as { input: InputProps }).input;
+    // 判断页面类型
+    if (!input.uri_type || input.uri_type === 'Page') {
+      // if (!input?.uri) {
+      //   message.error('页面路径不存在');
+      //   return;
+      // }
+
+      const previewData = {
+        uri: input.uri,
+        params: input.arguments || {},
+        method: '', // input.method,
+        request_id: '', //  input.request_id,
+        data_type: '', // input.data_type,
+      };
+
+      // 显示页面预览
+      showPagePreview(previewData);
+    }
+    // 链接类型
+    if (input.uri_type === 'Link') {
+      // 拼接 query 参数
+      const queryString = new URLSearchParams(input.arguments).toString();
+      const pageUrl = `${input.uri}?${queryString}`;
+      window.open(pageUrl, '_blank');
+    }
+  };
+  // 处理预览页面
+  const handlePreviewPage = useCallback(() => {
+    // 点击前先关闭 Tooltip，防止残留
+    setOpen(false);
+    // 执行你的布局变化逻辑
+    // ...
+
+    if (pagePreviewData) {
+      showPagePreview(null);
+      return;
+    }
+    // 打开预览页面
+    openPreviewPage();
+  }, [detailData, innerProcessing, showPagePreview, pagePreviewData]);
+
+  // 自动打开预览页面功能
+  // useEffect(() => {
+  //   if (innerProcessing.status === ProcessingEnum.EXECUTING) {
+  //     console.log('innerProcessing.status',innerProcessing.status)
+  //     // 打开预览页面
+  //     openPreviewPage();
+  //   }
+  // }, [innerProcessing]);
+
+  if (
+    !innerProcessing.executeId ||
+    innerProcessing.type === AgentComponentTypeEnum.Event // 所有事件都不显示
+  ) {
+    return null;
+  }
+
+  // 工具栏标题：过长时 tooltip 限高 3 行，超出出现滚动条
+  const titleText =
+    innerProcessing?.name || dict('PC.Components.MarkdownCustomProcess.noName');
+
+  return (
+    <>
+      <div
+        className={cx(styles['markdown-custom-process'])}
+        key={props.dataKey}
+        data-key={props.dataKey}
+      >
+        <div className={cx(styles['process-header'])}>
+          <div
+            className={cx(styles['process-title'], {
+              [styles['is-edit']]:
+                !hasDiff && (innerProcessing.result as any)?.kind === 'edit',
+              [styles['is-diff']]: hasDiff,
+            })}
+            onClick={
+              hasDiff
+                ? () => setIsDiffExpanded(!isDiffExpanded)
+                : handleOpenFileTree
+            }
+          >
+            <div className={cx(styles['title-left-wrapper'])}>
+              <Typography.Text
+                className={cx(styles['title-text'])}
+                ellipsis={{
+                  tooltip: {
+                    title: titleText,
+                    // 放宽宽度，减少折行
+                    overlayStyle: { maxWidth: 380 },
+                    overlayInnerStyle: {
+                      // 最多展示 5 行（line-height 1.5 * 5 = 7.5em），超出滚动
+                      maxHeight: '7.5em',
+                      overflowY: 'auto',
+                      lineHeight: '1.5',
+                      overflowWrap: 'break-word',
+                    },
+                  },
+                }}
+              >
+                {titleText}
+              </Typography.Text>
+              {hasDiff && (
+                <span className={cx(styles['diff-badges'])}>
+                  {totalAdditions > 0 && (
+                    <span className={cx(styles['badge-added'])}>
+                      +{totalAdditions}
+                    </span>
+                  )}
+                  {totalDeletions > 0 && (
+                    <span className={cx(styles['badge-deleted'])}>
+                      -{totalDeletions}
+                    </span>
+                  )}
+                </span>
+              )}
+            </div>
+          </div>
+          <div className={cx(styles['process-controls'])}>
+            {genStatusDisplay()}
+            <div className={cx(styles['process-controls-actions'])}>
+              <Tooltip
+                title={dict('PC.Components.MarkdownCustomProcess.viewDetail')}
+              >
+                <Button
+                  size="small"
+                  type="text"
+                  disabled={disabled}
+                  icon={<ProfileOutlined />}
+                  onClick={handleShowDetailModal}
+                />
+              </Tooltip>
+              {isPageType ? (
+                <Tooltip
+                  title={
+                    pagePreviewData
+                      ? dict('PC.Components.MarkdownCustomProcess.closePreview')
+                      : dict('PC.Components.MarkdownCustomProcess.previewPage')
+                  }
+                  open={open}
+                  onOpenChange={setOpen}
+                >
+                  <Button
+                    size="small"
+                    type="text"
+                    disabled={disabled}
+                    icon={
+                      pagePreviewData ? (
+                        <EyeInvisibleOutlined />
+                      ) : (
+                        <EyeOutlined />
+                      )
+                    }
+                    onClick={handlePreviewPage}
+                    onMouseEnter={() => setOpen(true)}
+                    onMouseLeave={() => setOpen(false)}
+                  />
+                </Tooltip>
+              ) : null}
+              {/* 展开/收起 */}
+              {isPlanType && (
+                <Tooltip
+                  title={
+                    isPlanExpanded
+                      ? dict('PC.Components.MarkdownCustomProcess.collapse')
+                      : dict('PC.Components.MarkdownCustomProcess.expand')
+                  }
+                >
+                  <Button
+                    size="small"
+                    type="text"
+                    icon={isPlanExpanded ? <MinusOutlined /> : <PlusOutlined />}
+                    onClick={() => setIsPlanExpanded(!isPlanExpanded)}
+                    disabled={
+                      !detailData?.response ||
+                      !Array.isArray(detailData.response)
+                    }
+                  />
+                </Tooltip>
+              )}
+
+              {/*<Tooltip title="复制">*/}
+              {/*  <Button*/}
+              {/*    size="small"*/}
+              {/*    type="text"*/}
+              {/*    icon={<CopyOutlined />}*/}
+              {/*    disabled={disabled}*/}
+              {/*    onClick={handleCopy}*/}
+              {/*  />*/}
+              {/*</Tooltip>*/}
+            </div>
+          </div>
+        </div>
+        {/* Plan 类型展开内容 */}
+        {renderPlanDetails()}
+        {/* 使用 SeeDetailModal 组件 */}
+        <SeeDetailModal
+          key={innerProcessing.executeId}
+          title={
+            innerProcessing.name ||
+            dict('PC.Components.MarkdownCustomProcess.noName')
+          }
+          visible={openModal}
+          onClose={() => setOpenModal(false)}
+          data={detailData}
+        />
+      </div>
+      {/* Diff 类型展开内容 */}
+      {hasDiff && isDiffExpanded && (
+        <div className={cx(styles['diff-container'])}>
+          {diffItems.map((item, index) => (
+            <ProcessDiffViewer key={index} item={item} />
+          ))}
+        </div>
+      )}
+    </>
+  );
+}
+
+export default memo(MarkdownCustomProcess, (prevProps, nextProps) => {
+  return (
+    prevProps.executeId === nextProps.executeId &&
+    prevProps.status === nextProps.status &&
+    prevProps.conversationId === nextProps.conversationId
+  );
+});

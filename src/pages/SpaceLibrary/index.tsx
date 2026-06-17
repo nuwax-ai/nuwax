@@ -1,0 +1,799 @@
+// import AnalyzeStatistics from '@/components/AnalyzeStatistics';
+import ButtonToggle from '@/components/ButtonToggle';
+import ConditionRender from '@/components/ConditionRender';
+import CreateKnowledge from '@/components/CreateKnowledge';
+import CreateNewPlugin from '@/components/CreateNewPlugin';
+import CreateWorkflow from '@/components/CreateWorkflow';
+import CreatedItem from '@/components/CreatedItem';
+import CustomPopover from '@/components/CustomPopover';
+import MoveCopyComponent from '@/components/MoveCopyComponent';
+import UploadImportConfig from '@/components/UploadImportConfig';
+import Loading from '@/components/custom/Loading';
+import SelectList from '@/components/custom/SelectList';
+import {
+  CREATE_LIST,
+  FILTER_STATUS,
+  LIBRARY_ALL_RESOURCE,
+  LIBRARY_ALL_TYPE,
+} from '@/constants/space.constants';
+import { apiTableAdd, apiTableDelete } from '@/services/dataTable';
+import { dict } from '@/services/i18nRuntime';
+import { apiKnowledgeConfigDelete } from '@/services/knowledge';
+import {
+  apiComponentList,
+  apiCopyTable,
+  apiWorkflowCopyToSpace,
+  apiWorkflowDelete,
+} from '@/services/library';
+import { apiModelDelete } from '@/services/modelConfig';
+import { apiPluginCopyToSpace, apiPluginDelete } from '@/services/plugin';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import { CreateUpdateModeEnum, PublishStatusEnum } from '@/types/enums/common';
+import { PluginTypeEnum } from '@/types/enums/plugin';
+import {
+  ApplicationMoreActionEnum,
+  ComponentTypeEnum,
+  CreateListEnum,
+  FilterStatusEnum,
+} from '@/types/enums/space';
+import type { CustomPopoverItem } from '@/types/interfaces/common';
+import type { ComponentInfo } from '@/types/interfaces/library';
+import { modalConfirm } from '@/utils/ant-custom';
+import { exportConfigFile } from '@/utils/exportImportFile';
+import {
+  jumpTo,
+  jumpToPlugin,
+  jumpToPluginCloudTool,
+  jumpToWorkflow,
+} from '@/utils/router';
+import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
+import { Button, Empty, Input, message } from 'antd';
+import { AnyObject } from 'antd/es/_util/type';
+import classNames from 'classnames';
+import React, { useEffect, useRef, useState } from 'react';
+import { history, useModel, useParams, useRequest, useSearchParams } from 'umi';
+import ComponentItem from './ComponentItem';
+import CreateModel from './CreateModel';
+import styles from './index.less';
+type IQuery = 'type' | 'create' | 'status' | 'keyword';
+
+const cx = classNames.bind(styles);
+
+/**
+ * 工作空间 - 组件库
+ */
+const SpaceLibrary: React.FC = () => {
+  // ✅ umi 中的 useSearchParams
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // ✅ 当 select 改变时同步 URL
+  const handleChange = (key: IQuery, value: string) => {
+    // 更新 URL 参数
+    const newParams = new URLSearchParams(searchParams);
+    if (value) {
+      newParams.set(key, value);
+    } else {
+      newParams.delete(key);
+    }
+    setSearchParams(newParams);
+  };
+
+  const params = useParams();
+  const spaceId = Number(params.spaceId);
+  // 组件列表
+  const [componentList, setComponentList] = useState<ComponentInfo[]>([]);
+  // 所有智能体列表
+  const componentAllRef = useRef<ComponentInfo[]>([]);
+  // 当前组件信息
+  const [currentComponentInfo, setCurrentComponentInfo] =
+    useState<ComponentInfo | null>(null);
+  // 新建工作流弹窗
+  const [openWorkflow, setOpenWorkflow] = useState<boolean>(false);
+  // 新建插件弹窗
+  const [openPlugin, setOpenPlugin] = useState<boolean>(false);
+  // 新建数据库弹窗
+  const [openDatabase, setOpenDatabase] = useState<boolean>(false);
+  // 迁移、复制弹窗
+  const [openMove, setOpenMove] = useState<boolean>(false);
+  // 打开创建知识库弹窗
+  const [openKnowledge, setOpenKnowledge] = useState<boolean>(false);
+  // 打开创建模型弹窗
+  const [openModel, setOpenModel] = useState<boolean>(false);
+  const [modelComponentInfo, setModelComponentInfo] =
+    useState<ComponentInfo | null>();
+  // 类型
+  const [type, setType] = useState<ComponentTypeEnum>(
+    searchParams.get('type') || ComponentTypeEnum.All_Type,
+  );
+  // 过滤状态
+  const [status, setStatus] = useState<FilterStatusEnum>(
+    Number(searchParams.get('status')) || FilterStatusEnum.All,
+  );
+  // 搜索关键词
+  const [keyword, setKeyword] = useState<string>(
+    searchParams.get('keyword') || '',
+  );
+  const [loading, setLoading] = useState<boolean>(false);
+  const [loadingWorkflow, setLoadingWorkflow] = useState<boolean>(false);
+  const [loadingPlugin, setLoadingPlugin] = useState<boolean>(false);
+  // const [componentStatistics, setComponentStatistics] = useState<
+  //   AnalyzeStatisticsItem[]
+  // >([]);
+
+  // 创建
+  const [create, setCreate] = useState<CreateListEnum>(
+    Number(searchParams.get('create')) || CreateListEnum.All_Person,
+  );
+
+  // 获取用户信息
+  const { userInfo } = useModel('userInfo');
+
+  // 过滤筛选智能体列表数据
+  const handleFilterList = (
+    filterType: ComponentTypeEnum,
+    filterStatus: FilterStatusEnum,
+    filterCreate: CreateListEnum,
+    filterKeyword: string,
+    list = componentAllRef.current,
+  ) => {
+    let _list = list;
+    if (filterType !== ComponentTypeEnum.All_Type) {
+      _list = _list.filter((item) => item.type === filterType);
+    }
+    if (filterStatus === FilterStatusEnum.Published) {
+      _list = _list.filter(
+        (item) => item.publishStatus === PublishStatusEnum.Published,
+      );
+    }
+    if (filterCreate === CreateListEnum.Me) {
+      _list = _list.filter((item) => item.creatorId === userInfo.id);
+    }
+    if (filterKeyword) {
+      _list = _list.filter((item) => item.name.includes(filterKeyword));
+    }
+    setComponentList(_list);
+  };
+
+  // ✅ 监听 URL 改变（支持浏览器前进/后退）
+  useEffect(() => {
+    const type = searchParams.get('type') || ComponentTypeEnum.All_Type;
+    const status = Number(searchParams.get('status')) || FilterStatusEnum.All;
+    const create =
+      Number(searchParams.get('create')) || CreateListEnum.All_Person;
+    const keyword = searchParams.get('keyword') || '';
+
+    setType(type);
+    setStatus(status);
+    setCreate(create);
+    setKeyword(keyword);
+
+    handleFilterList(type, status, create, keyword);
+  }, [searchParams]);
+
+  // 查询组件列表接口
+  const { run: runComponent } = useRequest(apiComponentList, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: (result: ComponentInfo[]) => {
+      handleFilterList(type, status, create, keyword, result);
+      componentAllRef.current = result;
+      setLoading(false);
+    },
+    onError: () => {
+      setLoading(false);
+    },
+  });
+
+  // 复制到空间成功后处理数据
+  const handleCopyToSpaceSuccess = ({
+    params,
+    data,
+    type,
+  }: {
+    params: number[];
+    data: number;
+    type: ComponentTypeEnum;
+  }) => {
+    // 关闭弹窗
+    setOpenMove(false);
+    // 目标空间ID
+    const targetSpaceId = params[1];
+    // 跳转
+    if (type === ComponentTypeEnum.Plugin) {
+      // 代码插件跳转云端工具页面
+      if (currentComponentInfo?.ext === PluginTypeEnum.CODE) {
+        jumpToPluginCloudTool(targetSpaceId, data);
+      } else {
+        // 普通插件跳转插件工具页面
+        jumpToPlugin(targetSpaceId, data);
+      }
+    } else if (type === ComponentTypeEnum.Workflow) {
+      jumpToWorkflow(targetSpaceId, data);
+    }
+  };
+
+  // 插件 - 复制到空间接口
+  const { run: runPluginCopyToSpace } = useRequest(apiPluginCopyToSpace, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: (data: number, params: number[]) => {
+      message.success(dict('PC.Pages.SpaceLibrary.Index.pluginCopySuccess'));
+      setLoadingPlugin(false);
+      // 复制到空间成功后处理数据
+      handleCopyToSpaceSuccess({
+        params,
+        data,
+        type: ComponentTypeEnum.Plugin,
+      });
+    },
+    onError: () => {
+      setLoadingPlugin(false);
+    },
+  });
+
+  // 删除成功后处理数据
+  const handleDel = (id: number) => {
+    const list = componentList.filter((info) => info.id !== id);
+    setComponentList(list);
+    componentAllRef.current = componentAllRef.current.filter(
+      (info) => info.id !== id,
+    );
+  };
+
+  // 删除插件接口
+  const { run: runPluginDel } = useRequest(apiPluginDelete, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: (_: null, params: number[]) => {
+      message.success(dict('PC.Pages.SpaceLibrary.Index.pluginDeleteSuccess'));
+      const id = params[0];
+      handleDel(id);
+    },
+  });
+
+  // 删除指定模型配置信息
+  const { run: runModelDel } = useRequest(apiModelDelete, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: (_: null, params: number[]) => {
+      message.success(dict('PC.Pages.SpaceLibrary.Index.modelDeleteSuccess'));
+      const id = params[0];
+      handleDel(id);
+    },
+  });
+
+  // 工作流 - 复制工作流到空间
+  const { run: runWorkflowCopyToSpace } = useRequest(apiWorkflowCopyToSpace, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: (data: number, params: number[]) => {
+      message.success(dict('PC.Pages.SpaceLibrary.Index.workflowCopySuccess'));
+      setLoadingWorkflow(false);
+      // 复制到空间成功后处理数据
+      handleCopyToSpaceSuccess({
+        params,
+        data,
+        type: ComponentTypeEnum.Workflow,
+      });
+    },
+    onError: () => {
+      setLoadingWorkflow(false);
+    },
+  });
+
+  // 工作流 - 删除工作流接口
+  const { run: runWorkflowDel } = useRequest(apiWorkflowDelete, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: (_: null, params: number[]) => {
+      message.success(
+        dict('PC.Pages.SpaceLibrary.Index.workflowDeleteSuccess'),
+      );
+      const id = params[0];
+      handleDel(id);
+    },
+  });
+
+  // 知识库基础配置接口 - 数据删除接口
+  const { run: runKnowledgeDel } = useRequest(apiKnowledgeConfigDelete, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: (_: null, params: number[]) => {
+      message.success(
+        dict('PC.Pages.SpaceLibrary.Index.knowledgeDeleteSuccess'),
+      );
+      const id = params[0];
+      handleDel(id);
+    },
+  });
+
+  // Table - 数据删除接口
+  const { run: runTableDel } = useRequest(apiTableDelete, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: (_: null, params: number[]) => {
+      message.success(dict('PC.Pages.SpaceLibrary.Index.tableDeleteSuccess'));
+      const id = params[0];
+      handleDel(id);
+    },
+  });
+
+  // Table - 数据表复制
+  const { run: runCopyTable } = useRequest(apiCopyTable, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: () => {
+      message.success(dict('PC.Pages.SpaceLibrary.Index.tableCopySuccess'));
+      runComponent(spaceId);
+    },
+  });
+
+  useEffect(() => {
+    // 如果有 location.state，说明是点击菜单跳转过来的，会触发下面的 useEffect，这里就不需要请求了
+    if (history.location.state) {
+      return;
+    }
+    setLoading(true);
+    runComponent(spaceId);
+  }, [spaceId]);
+
+  // 监听菜单切换，重新加载数据
+  useEffect(() => {
+    if (history.location.state) {
+      // 清空URL搜索参数
+      const newParams = new URLSearchParams();
+      setSearchParams(newParams);
+      // 重新加载组件列表
+      setLoading(true);
+      runComponent(spaceId);
+    }
+  }, [history.location.state]);
+
+  // 切换类型
+  const handlerChangeType = (value: React.Key) => {
+    const _value = value as ComponentTypeEnum;
+    setType(_value);
+    handleFilterList(_value, status, create, keyword);
+    handleChange('type', _value);
+  };
+
+  // 切换创建者
+  const handlerChangeCreate = (value: React.Key) => {
+    const _value = value as CreateListEnum;
+    setCreate(_value);
+    handleFilterList(type, status, _value, keyword);
+    handleChange('create', _value.toString());
+  };
+
+  // 切换状态
+  const handlerChangeStatus = (value: React.Key) => {
+    const _value = value as FilterStatusEnum;
+    setStatus(_value);
+    handleFilterList(type, _value, create, keyword);
+    handleChange('status', _value.toString());
+  };
+
+  // 智能体搜索
+  const handleQueryAgent = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const _keyword = e.target.value;
+    setKeyword(_keyword);
+    handleFilterList(type, status, create, _keyword);
+    handleChange('keyword', _keyword);
+  };
+
+  // 清除关键词
+  const handleClearKeyword = () => {
+    setKeyword('');
+    handleFilterList(type, status, create, '');
+  };
+
+  // 根据type类型，判断插件跳转路径
+  const handlePluginUrl = (
+    id: number,
+    spaceId: number,
+    type: PluginTypeEnum,
+    devAgentConversationId?: number,
+  ): string => {
+    const query = devAgentConversationId
+      ? `?conversationId=${devAgentConversationId}`
+      : '';
+    if (type === PluginTypeEnum.CODE) {
+      return `/space/${spaceId}/plugin/${id}/cloud-tool${query}`;
+    } else if (type === PluginTypeEnum.HTTP) {
+      return `/space/${spaceId}/plugin/${id}${query}`;
+    }
+    return '';
+  };
+
+  const handleConfirmModel = () => {
+    setOpenModel(false);
+    runComponent(spaceId);
+  };
+
+  // 点击添加资源
+  const handleClickPopoverItem = (item: CustomPopoverItem) => {
+    const { value: type } = item;
+    switch (type) {
+      case ComponentTypeEnum.Workflow:
+        setOpenWorkflow(true);
+        break;
+      case ComponentTypeEnum.Plugin:
+        setOpenPlugin(true);
+        break;
+      case ComponentTypeEnum.Knowledge:
+        setOpenKnowledge(true);
+        break;
+      case ComponentTypeEnum.Table:
+        setOpenDatabase(true);
+        break;
+      case ComponentTypeEnum.Model:
+        setModelComponentInfo(null);
+        setOpenModel(true);
+        break;
+    }
+  };
+
+  // 确认创建数据表
+  const handleConfirmCreateTable = async (value: AnyObject) => {
+    const { name: tableName, description: tableDescription, icon } = value;
+    const params = {
+      tableName,
+      tableDescription,
+      spaceId,
+      icon,
+    };
+
+    const { data } = await apiTableAdd(params);
+    history.push(`/space/${spaceId}/table/${data}`);
+  };
+
+  // 删除组件确认弹窗
+  const showDeleteConfirm = (type: ComponentTypeEnum, info: ComponentInfo) => {
+    const { id, name } = info;
+    modalConfirm(
+      dict('PC.Pages.SpaceLibrary.Index.confirmDeleteComponent'),
+      name,
+      () => {
+        switch (type) {
+          case ComponentTypeEnum.Plugin:
+            runPluginDel(id);
+            break;
+          case ComponentTypeEnum.Model:
+            runModelDel(id);
+            break;
+          case ComponentTypeEnum.Workflow:
+            runWorkflowDel(id);
+            break;
+          case ComponentTypeEnum.Knowledge:
+            runKnowledgeDel(id);
+            break;
+          case ComponentTypeEnum.Table:
+            runTableDel(id);
+            break;
+        }
+        return new Promise((resolve) => {
+          setTimeout(resolve, 1000);
+        });
+      },
+    );
+  };
+
+  // 确认复制到空间
+  const handlerConfirmCopyToSpace = (targetSpaceId: number) => {
+    if (currentComponentInfo?.type === ComponentTypeEnum.Plugin) {
+      setLoadingPlugin(true);
+      runPluginCopyToSpace(currentComponentInfo.id, targetSpaceId);
+    } else if (currentComponentInfo?.type === ComponentTypeEnum.Workflow) {
+      setLoadingWorkflow(true);
+      runWorkflowCopyToSpace(currentComponentInfo.id, targetSpaceId);
+    }
+  };
+
+  // 点击更多操作 插件：复制到空间、导出配置、删除
+  const handlePluginClickMore = (
+    action: ApplicationMoreActionEnum,
+    info: ComponentInfo,
+  ) => {
+    switch (action) {
+      // 复制到空间
+      case ApplicationMoreActionEnum.Copy_To_Space:
+        setOpenMove(true);
+        setCurrentComponentInfo(info);
+        break;
+      // 导出配置
+      case ApplicationMoreActionEnum.Export_Config:
+        exportConfigFile(info.id, AgentComponentTypeEnum.Plugin);
+        break;
+    }
+  };
+
+  // 点击更多操作 模型：导出配置、删除
+  const handleModelClickMore = (
+    action: ApplicationMoreActionEnum,
+    info: ComponentInfo,
+  ) => {
+    switch (action) {
+      case ApplicationMoreActionEnum.Export_Config:
+        exportConfigFile(info.id, AgentComponentTypeEnum.Model);
+        break;
+    }
+  };
+
+  // 点击更多操作 工作流：复制到空间、导出配置、删除
+  const handleWorkflowClickMore = (
+    action: ApplicationMoreActionEnum,
+    info: ComponentInfo,
+  ) => {
+    switch (action) {
+      case ApplicationMoreActionEnum.Copy_To_Space:
+        setOpenMove(true);
+        setCurrentComponentInfo(info);
+        break;
+      case ApplicationMoreActionEnum.Export_Config:
+        modalConfirm(
+          dict(
+            'PC.Pages.SpaceLibrary.Index.exportConfigTitle',
+            info?.name || '',
+          ),
+          dict('PC.Pages.SpaceLibrary.Index.exportWorkflowConfigDesc'),
+          () => {
+            exportConfigFile(info.id, AgentComponentTypeEnum.Workflow);
+            return new Promise((resolve) => {
+              setTimeout(resolve, 1000);
+            });
+          },
+        );
+        break;
+    }
+  };
+
+  // 点击更多操作 数据表：复制、导出配置、删除
+  const handleTableClickMore = (
+    action: ApplicationMoreActionEnum,
+    info: ComponentInfo,
+  ) => {
+    switch (action) {
+      case ApplicationMoreActionEnum.Export_Config:
+        modalConfirm(
+          dict(
+            'PC.Pages.SpaceLibrary.Index.exportConfigTitle',
+            info?.name || '',
+          ),
+          dict('PC.Pages.SpaceLibrary.Index.exportTableConfigDesc'),
+          () => {
+            exportConfigFile(info.id, AgentComponentTypeEnum.Table);
+            return new Promise((resolve) => {
+              setTimeout(resolve, 1000);
+            });
+          },
+        );
+        break;
+      case ApplicationMoreActionEnum.Copy:
+        runCopyTable({ tableId: info.id });
+        break;
+    }
+  };
+
+  // 点击更多操作 日志
+  const handleClickLog = (type: ComponentTypeEnum, info: ComponentInfo) => {
+    switch (type) {
+      case ComponentTypeEnum.Workflow:
+        history.push(
+          `/space/${spaceId}/library-log?targetType=${
+            AgentComponentTypeEnum.Workflow
+          }&targetId=${info?.id ?? ''}`,
+        );
+        break;
+      case ComponentTypeEnum.Plugin:
+        history.push(
+          `/space/${spaceId}/library-log?targetType=${
+            AgentComponentTypeEnum.Plugin
+          }&targetId=${info?.id ?? ''}`,
+        );
+        break;
+    }
+  };
+
+  // 点击更多操作
+  const handleClickMore = (item: CustomPopoverItem, info: ComponentInfo) => {
+    const { action, type } = item as unknown as {
+      action: ApplicationMoreActionEnum;
+      type: ComponentTypeEnum;
+    };
+    // 删除操作，所有类型的组件都有删除操作，所以单独处理, 知识库只有删除操作
+    if (action === ApplicationMoreActionEnum.Del) {
+      showDeleteConfirm(type, info);
+    } else if (action === ApplicationMoreActionEnum.Log) {
+      handleClickLog(type, info);
+    } else {
+      switch (type) {
+        // 插件
+        case ComponentTypeEnum.Plugin:
+          handlePluginClickMore(action, info);
+          break;
+        // 模型
+        case ComponentTypeEnum.Model:
+          handleModelClickMore(action, info);
+          break;
+        // 工作流
+        case ComponentTypeEnum.Workflow:
+          handleWorkflowClickMore(action, info);
+          break;
+        // 数据表
+        case ComponentTypeEnum.Table:
+          handleTableClickMore(action, info);
+          break;
+      }
+    }
+  };
+
+  // 点击单个资源组件
+  const handleClickComponent = (item: ComponentInfo) => {
+    const { type, id, spaceId, ext } = item;
+
+    let url = '';
+    switch (type) {
+      case ComponentTypeEnum.Workflow:
+        url = `/space/${spaceId}/workflow/${id}`;
+        break;
+      case ComponentTypeEnum.Plugin:
+        url = handlePluginUrl(
+          id,
+          spaceId,
+          ext as PluginTypeEnum,
+          item.devAgentConversationId,
+        );
+        break;
+      case ComponentTypeEnum.Knowledge:
+        url = `/space/${spaceId}/knowledge/${id}`;
+        break;
+      case ComponentTypeEnum.Table:
+        url = `/space/${spaceId}/table/${id}`;
+        break;
+      case ComponentTypeEnum.Model:
+        setModelComponentInfo(item);
+        setOpenModel(true);
+        break;
+    }
+
+    if (url) {
+      jumpTo(url);
+    }
+  };
+
+  // 导入配置成功后，刷新组件列表
+  const handleImportConfig = () => {
+    runComponent(spaceId);
+  };
+
+  return (
+    <div className={cx(styles.container, 'flex', 'flex-col', 'h-full')}>
+      <div className={cx(styles['header-area'])}>
+        <div className={cx(styles['header-left'])}>
+          <h3 className={cx(styles.title)}>
+            {dict('PC.Pages.SpaceLibrary.Index.pageTitle')}
+          </h3>
+          <SelectList
+            value={type}
+            options={LIBRARY_ALL_TYPE}
+            onChange={handlerChangeType}
+          />
+          {/* 单选模式 */}
+          <ButtonToggle
+            options={CREATE_LIST}
+            value={create}
+            onChange={(value) => handlerChangeCreate(value as React.Key)}
+          />
+          <ButtonToggle
+            options={FILTER_STATUS}
+            value={status}
+            onChange={(value) => handlerChangeStatus(value as React.Key)}
+          />
+        </div>
+        <div className={cx(styles['header-right'])}>
+          <Input
+            rootClassName={cx(styles.input)}
+            placeholder={dict('PC.Pages.SpaceLibrary.Index.searchComponent')}
+            value={keyword}
+            onChange={handleQueryAgent}
+            prefix={<SearchOutlined />}
+            allowClear
+            onClear={handleClearKeyword}
+            style={{ width: 214 }}
+          />
+          <UploadImportConfig
+            spaceId={spaceId}
+            onUploadSuccess={handleImportConfig}
+          />
+          {/*添加资源*/}
+          <CustomPopover
+            list={LIBRARY_ALL_RESOURCE}
+            onClick={handleClickPopoverItem}
+          >
+            <Button type="primary" icon={<PlusOutlined />}>
+              {dict('PC.Pages.SpaceLibrary.Index.addComponent')}
+            </Button>
+          </CustomPopover>
+        </div>
+      </div>
+
+      {loading ? (
+        <Loading />
+      ) : componentList?.length > 0 ? (
+        <div
+          className={cx(
+            styles['main-container'],
+            'flex-1',
+            'scroll-container-hide',
+          )}
+        >
+          {componentList?.map((info) => (
+            <ComponentItem
+              key={`${info.id}${info.type}`}
+              componentInfo={info}
+              onClick={() => handleClickComponent(info)}
+              onClickMore={(item) => handleClickMore(item, info)}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className={cx('flex', 'h-full', 'items-center', 'content-center')}>
+          <Empty description={dict('PC.Pages.SpaceLibrary.Index.noResults')} />
+        </div>
+      )}
+      {/*新建插件弹窗*/}
+      <CreateNewPlugin
+        spaceId={spaceId}
+        open={openPlugin}
+        onCancel={() => setOpenPlugin(false)}
+      />
+      {/*创建知识库弹窗*/}
+      <CreateKnowledge
+        spaceId={spaceId}
+        open={openKnowledge}
+        onCancel={() => setOpenKnowledge(false)}
+      />
+      <CreatedItem
+        spaceId={spaceId}
+        open={openDatabase}
+        type={AgentComponentTypeEnum.Table}
+        onCancel={() => setOpenDatabase(false)}
+        Confirm={handleConfirmCreateTable}
+      />
+      {/*复制到空间弹窗*/}
+      <MoveCopyComponent
+        spaceId={spaceId}
+        loading={loadingPlugin || loadingWorkflow}
+        type={ApplicationMoreActionEnum.Copy_To_Space}
+        mode={currentComponentInfo?.type as unknown as AgentComponentTypeEnum}
+        open={openMove}
+        title={currentComponentInfo?.name}
+        onCancel={() => setOpenMove(false)}
+        onConfirm={handlerConfirmCopyToSpace}
+      />
+      {/*创建工作流*/}
+      <CreateWorkflow
+        spaceId={spaceId}
+        open={openWorkflow}
+        onCancel={() => setOpenWorkflow(false)}
+      />
+      <ConditionRender condition={openModel}>
+        {/*创建模型*/}
+        <CreateModel
+          mode={
+            modelComponentInfo
+              ? CreateUpdateModeEnum.Update
+              : CreateUpdateModeEnum.Create
+          }
+          spaceId={spaceId}
+          id={modelComponentInfo?.id}
+          open={openModel}
+          onCancel={() => setOpenModel(false)}
+          onConfirm={handleConfirmModel}
+        />
+      </ConditionRender>
+    </div>
+  );
+};
+
+export default SpaceLibrary;

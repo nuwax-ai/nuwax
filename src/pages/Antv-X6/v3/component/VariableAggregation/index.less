@@ -1,0 +1,134 @@
+@import '@/styles/color.less';
+@import '@/styles/token.less';
+
+// 聚合策略选择器
+.aggregation-strategy-select {
+  width: 100%;
+  height: @controlHeightSm;
+  border-radius: @borderRadiusSm;
+  border: @lineWidth solid @colorBorder;
+  padding: 0 @paddingXs;
+}
+
+// 空状态提示
+.empty-state-tip {
+  color: @colorTextTertiary;
+  font-size: @fontSizeSm;
+  text-align: center;
+  padding: @paddingMd;
+}
+
+// 分组项容器
+.group-item-container {
+  margin-bottom: @marginXs;
+  padding: @paddingXs 0 @padding @padding;
+}
+
+// 分组头部
+.group-header {
+  margin-bottom: @marginXxs;
+}
+
+// 分组名称输入框
+.group-name-input {
+  width: 100px;
+  margin-right: @marginXs;
+  border-radius: @borderRadius;
+}
+
+// 分组类型标签
+.group-type-tag {
+  font-size: @fontSizeSm;
+}
+
+// 操作按钮
+.action-button {
+  padding: 0 @paddingXxs;
+}
+
+// 变量引用项
+.variable-reference-item {
+  margin-top: @marginXxs;
+}
+
+// 删除输入按钮
+.remove-input-button {
+  margin-left: @marginXxs;
+  padding: 0 @paddingXxs;
+}
+
+// 分组空状态提示
+.group-empty-tip {
+  color: @colorTextTertiary;
+  font-size: @fontSizeSm;
+  text-align: center;
+  padding: @paddingXs 0;
+}
+
+// 变量选择器容器
+.variable-selector-container {
+  margin-left: @marginXs;
+  flex: 1;
+  border: @lineWidth solid @colorBorder;
+  border-radius: @borderRadius;
+  padding: @paddingXxs @paddingXxs;
+}
+
+// 变量标签
+.variable-tag {
+  max-width: 100%;
+  margin-right: @marginXs;
+}
+
+// 占位符文本
+.placeholder-text {
+  color: @colorTextPlaceholder;
+  font-size: @fontSizeSm;
+  margin-right: @marginXs;
+  margin-left: @marginXs;
+}
+
+// 设置图标
+.setting-icon {
+  cursor: pointer;
+}
+
+// 树节点标题容器
+.tree-title-container {
+  opacity: 1;
+
+  &.disabled {
+    opacity: 0.5;
+  }
+}
+
+// 信息提示图标
+.info-icon {
+  margin-left: @marginXxs;
+  font-size: @fontSizeSm;
+  cursor: help;
+}
+
+// 数据类型标签
+.data-type-tag {
+  margin-left: @marginXs;
+  font-size: @fontSizeSm;
+  line-height: @lineHeightSm;
+}
+
+// 无数据提示
+.no-data-tip {
+  padding: @paddingXs;
+  color: @colorError;
+}
+
+// 树容器
+.tree-container {
+  padding: @paddingSm @paddingSm @paddingXs;
+}
+
+// 树组件
+.custom-tree {
+  max-height: 300px;
+  overflow: auto;
+}

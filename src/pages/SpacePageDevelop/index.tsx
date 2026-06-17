@@ -1,0 +1,621 @@
+import { CopyToSpaceComponent } from '@/components/business-component';
+import ButtonToggle from '@/components/ButtonToggle';
+import Loading from '@/components/custom/Loading';
+import SelectList from '@/components/custom/SelectList';
+import CustomPopover from '@/components/CustomPopover';
+import PageCard from '@/components/PageCard';
+import { ICON_MORE } from '@/constants/images.constants';
+import {
+  PAGE_DEVELOP_ALL_TYPE,
+  PAGE_DEVELOP_CREATE_TYPE_LIST,
+  PAGE_DEVELOP_MORE_ACTIONS,
+} from '@/constants/pageDev.constants';
+import { CREATE_LIST, FILTER_STATUS_DEV } from '@/constants/space.constants';
+import { exportProject } from '@/services/appDev';
+import { dict } from '@/services/i18nRuntime';
+import {
+  apiCustomPageQueryList,
+  apiPageDeleteProject,
+  apiPageGetProjectInfo,
+} from '@/services/pageDev';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import {
+  BuildRunningEnum,
+  PageDevelopCreateTypeEnum,
+  PageDevelopMoreActionEnum,
+  PageDevelopPublishTypeEnum,
+  PageDevelopSelectTypeEnum,
+  PageProjectTypeEnum,
+} from '@/types/enums/pageDev';
+import { CreateListEnum, FilterStatusEnum } from '@/types/enums/space';
+import type { CustomPopoverItem } from '@/types/interfaces/common';
+import {
+  CreateCustomPageInfo,
+  CustomPageDto,
+} from '@/types/interfaces/pageDev';
+import { modalConfirm } from '@/utils/ant-custom';
+import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
+import { Button, Empty, Input, message } from 'antd';
+import classNames from 'classnames';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { history, useModel, useParams, useRequest, useSearchParams } from 'umi';
+import AuthConfigModal from './AuthConfigModal';
+import DomainBindingModal from './DomainBindingModal';
+import styles from './index.less';
+import PageCreateModal from './PageCreateModal';
+import PathParamsConfigModal from './PathParamsConfigModal';
+import ReverseProxyModal from './ReverseProxyModal';
+
+const cx = classNames.bind(styles);
+type IQuery = 'type' | 'status' | 'create' | 'keyword';
+
+/**
+ * 工作空间 - 页面开发
+ */
+const SpacePageDevelop: React.FC = () => {
+  // umi 中的 useSearchParams
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // 当 select 改变时同步 URL
+  const handleChange = (key: IQuery, value: string) => {
+    // 更新 URL 参数
+    const newParams = new URLSearchParams(searchParams);
+    if (value) {
+      newParams.set(key, value);
+    } else {
+      newParams.delete(key);
+    }
+    setSearchParams(newParams);
+  };
+  const params = useParams();
+  const spaceId = Number(params.spaceId);
+  // 页面列表
+  const [pageList, setPageList] = useState<CustomPageDto[]>([]);
+  // 所有页面列表
+  const pageAllRef = useRef<CustomPageDto[]>([]);
+  // 状态
+  const [status, setStatus] = useState<FilterStatusEnum>(
+    searchParams.get('status') || FilterStatusEnum.All,
+  );
+  // 类型
+  const [type, setType] = useState<PageDevelopSelectTypeEnum>(
+    searchParams.get('type') || PageDevelopSelectTypeEnum.All_Type,
+  );
+  // 搜索关键词
+  const [keyword, setKeyword] = useState<string>(
+    searchParams.get('keyword') || '',
+  );
+  const [loading, setLoading] = useState<boolean>(false);
+  // 打开反向代理弹窗
+  const [openReverseProxyModal, setOpenReverseProxyModal] =
+    useState<boolean>(false);
+  // 打开路径参数配置弹窗
+  const [openPathParamsConfigModal, setOpenPathParamsConfigModal] =
+    useState<boolean>(false);
+  // 打开页面创建弹窗
+  const [openPageCreateModal, setOpenPageCreateModal] =
+    useState<boolean>(false);
+  // 打开认证配置弹窗
+  const [openAuthConfigModal, setOpenAuthConfigModal] =
+    useState<boolean>(false);
+  // 打开复制到空间弹窗
+  const [openCopyToSpaceModal, setOpenCopyToSpaceModal] =
+    useState<boolean>(false);
+  // 创建
+  const [create, setCreate] = useState<CreateListEnum>(
+    Number(searchParams.get('create')) || CreateListEnum.All_Person,
+  );
+  // 缓存页面创建类型
+  const pageCreateTypeRef = useRef<PageDevelopCreateTypeEnum>(
+    PageDevelopCreateTypeEnum.Import_Project,
+  );
+  // 当前页面信息
+  const [currentPageInfo, setCurrentPageInfo] = useState<CustomPageDto>();
+  // 当前项目ID
+  const [projectId, setProjectId] = useState<number>(0);
+  // 获取用户信息
+  const { userInfo } = useModel('userInfo');
+  // 获取租户配置信息
+  const { tenantConfigInfo } = useModel('tenantConfigInfo');
+  // 打开域名绑定弹窗
+  const [openDomainBindingModal, setOpenDomainBindingModal] =
+    useState<boolean>(false);
+
+  // 过滤筛选智能体列表数据
+  const handleFilterList = (
+    filterType: PageDevelopSelectTypeEnum,
+    filterStatus: FilterStatusEnum,
+    filterCreate: CreateListEnum,
+    filterKeyword: string,
+    list = pageAllRef.current,
+  ) => {
+    let _list = list;
+    // 过滤发布类型
+    if (filterType !== PageDevelopSelectTypeEnum.All_Type) {
+      _list = _list.filter(
+        (item) =>
+          item.publishType ===
+          (filterType as unknown as PageDevelopPublishTypeEnum),
+      );
+    }
+    // 过滤发布状态
+    if (filterStatus !== FilterStatusEnum.All) {
+      const buildRunning = filterStatus === FilterStatusEnum.Published;
+      _list = _list.filter((item) => item.buildRunning === buildRunning);
+    }
+    if (filterCreate === CreateListEnum.Me) {
+      _list = _list.filter((item) => item.creatorId === userInfo.id);
+    }
+    if (filterKeyword) {
+      _list = _list.filter((item) => item.name.includes(filterKeyword));
+    }
+    setPageList(_list);
+  };
+  // 监听 URL 改变（支持浏览器前进/后退）
+  useEffect(() => {
+    const type = searchParams.get('type') || PageDevelopSelectTypeEnum.All_Type;
+    const status = Number(searchParams.get('status')) || FilterStatusEnum.All;
+    const create =
+      Number(searchParams.get('create')) || CreateListEnum.All_Person;
+    const keyword = searchParams.get('keyword') || '';
+
+    setType(type);
+    setStatus(status);
+    setCreate(create);
+    setKeyword(keyword);
+
+    handleFilterList(type, status, create, keyword);
+  }, [searchParams]);
+
+  // 查询页面列表接口
+  const { run: runPageList } = useRequest(apiCustomPageQueryList, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: (result: CustomPageDto[]) => {
+      handleFilterList(type, status, create, keyword, result);
+      pageAllRef.current = result;
+      setLoading(false);
+    },
+    onError: () => {
+      setLoading(false);
+    },
+  });
+
+  // 删除页面项目接口
+  const { run: runPageDelete } = useRequest(apiPageDeleteProject, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: () => {
+      message.success(dict('PC.Toast.Global.deletedSuccessfully'));
+      // 重新查询页面列表
+      runPageList({
+        spaceId,
+      });
+    },
+    onError: () => {
+      // 即使删除报错（可能项目已被删除），也重新查询列表以同步状态
+      runPageList({
+        spaceId,
+      });
+    },
+  });
+
+  useEffect(() => {
+    // 如果有 location.state，说明是点击菜单跳转过来的，会触发下面的 useEffect，这里就不需要请求了
+    if (history.location.state) {
+      return;
+    }
+    setLoading(true);
+    runPageList({
+      spaceId,
+    });
+  }, [spaceId]);
+
+  // 监听菜单切换，重新加载数据
+  useEffect(() => {
+    if (history.location.state) {
+      // 清空URL搜索参数
+      const newParams = new URLSearchParams();
+      setSearchParams(newParams);
+      // 重新加载页面列表
+      setLoading(true);
+      runPageList({
+        spaceId,
+      });
+    }
+  }, [history.location.state]);
+
+  // 切换类型
+  const handlerChangeType = (value: React.Key) => {
+    const _value = value as PageDevelopSelectTypeEnum;
+    setType(_value);
+    handleFilterList(_value, status, create, keyword);
+    handleChange('type', _value);
+  };
+  // 切换状态
+  const handlerChangeStatus = (value: React.Key) => {
+    const _value = value as FilterStatusEnum;
+    setStatus(_value);
+    handleFilterList(type, _value, create, keyword);
+    handleChange('status', _value.toString());
+  };
+
+  // 切换创建者
+  const handlerChangeCreate = (value: React.Key) => {
+    const _value = value as CreateListEnum;
+    setCreate(_value);
+    handleFilterList(type, status, _value, keyword);
+    handleChange('create', _value.toString());
+  };
+
+  // 页面搜索
+  const handleQueryPage = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const _keyword = e.target.value;
+    setKeyword(_keyword);
+    handleFilterList(type, status, create, _keyword);
+    handleChange('keyword', _keyword);
+  };
+
+  // 清除关键词
+  const handleClearKeyword = () => {
+    setKeyword('');
+    handleFilterList(type, status, create, '');
+  };
+
+  /**
+   * 点击创建应用类型
+   * @param 添加项目表单字段：名称、描述、图标、路径（唯一）
+   */
+  const handleClickPopoverItem = (item: CustomPopoverItem) => {
+    setOpenPageCreateModal(true);
+    pageCreateTypeRef.current = item.value as PageDevelopCreateTypeEnum;
+  };
+
+  /**
+   * 确认创建应用
+   * 导入项目、在线开发、反向代理点击后，都是打开这个表单弹窗
+   * 导入项目、在线开发表单弹窗填写后，进入项目之前弹出“调试智能体绑定”框，确认后进入开发界面
+   * 反向代理表单填写后，点击不进入开发界面，直接弹出“反向代理配置”框
+   */
+  const handleConfirmCreatePage = (result: CreateCustomPageInfo) => {
+    setProjectId(result.projectId);
+    // 关闭表单弹窗
+    setOpenPageCreateModal(false);
+    switch (pageCreateTypeRef.current) {
+      // 导入项目、在线开发
+      case PageDevelopCreateTypeEnum.Import_Project:
+      case PageDevelopCreateTypeEnum.Online_Develop:
+        // 跳转到开发页面
+        history.push(`/space/${spaceId}/app-dev/${result.projectId}`);
+        break;
+      case PageDevelopCreateTypeEnum.Reverse_Proxy:
+        setOpenReverseProxyModal(true);
+        break;
+    }
+  };
+
+  // 点击卡片
+  const handleClickCard = (item: CustomPageDto) => {
+    setProjectId(item.projectId);
+    setCurrentPageInfo(item);
+    // 根据页面类型（页面创建模式）导入项目、在线创建，判断是否需要打开调试智能体绑定弹窗，反向代理，打开路径参数配置弹窗
+    if (item.projectType === PageProjectTypeEnum.ONLINE_DEPLOY) {
+      // 跳转到开发页面
+      history.push(`/space/${spaceId}/app-dev/${item.projectId}`);
+    }
+    // 反向代理
+    else if (item.projectType === PageProjectTypeEnum.REVERSE_PROXY) {
+      setOpenReverseProxyModal(true);
+    }
+  };
+
+  // 查询页面信息
+  const { run: runPageInfo } = useRequest(apiPageGetProjectInfo, {
+    manual: true,
+    onSuccess: (result: CustomPageDto) => {
+      if (result.pageUrl) {
+        // 打开页面预览
+        const url = `${process.env.BASE_URL}${result.pageUrl}`;
+        window.open(url, '_blank');
+      } else {
+        message.error(dict('PC.Pages.SpacePageDevelop.Index.pageUrlNotExist'));
+      }
+    },
+  });
+
+  /**
+   * 处理项目导出
+   */
+  const handleExportProject = useCallback(async (projectId: string) => {
+    // 检查项目ID是否有效
+    if (!projectId) {
+      message.warning(
+        dict('PC.Pages.SpacePageDevelop.Index.projectIdInvalidCannotExport'),
+      );
+      return;
+    }
+
+    // 导出整个项目压缩包
+    exportProject(projectId);
+  }, []);
+
+  // 域名绑定
+  const handleDomainBinding = (info: CustomPageDto) => {
+    const { needLogin, publishType } = info;
+    // 域名绑定在不满足下面条件时，点击直接提示下面这句话
+    // 域名绑定仅在发布类型为“应用”且认证配置为“免登录访问”开启时可用
+    if (
+      !(publishType === String(PageDevelopSelectTypeEnum.AGENT) && !needLogin)
+    ) {
+      message.warning(
+        dict('PC.Pages.SpacePageDevelop.Index.domainBindingConditionWarning'),
+      );
+    } else {
+      setOpenDomainBindingModal(true);
+    }
+  };
+
+  // 点击更多操作
+  const handleClickMore = (item: CustomPopoverItem, info: CustomPageDto) => {
+    setProjectId(info.projectId);
+    setCurrentPageInfo(info);
+    const { value } = item;
+    switch (value) {
+      // 反向代理配置
+      case PageDevelopMoreActionEnum.Reverse_Proxy_Config:
+        setOpenReverseProxyModal(true);
+        break;
+      // 路径参数配置
+      case PageDevelopMoreActionEnum.Path_Params_Config:
+        setOpenPathParamsConfigModal(true);
+        break;
+      // 认证配置
+      case PageDevelopMoreActionEnum.Auth_Config:
+        setOpenAuthConfigModal(true);
+        break;
+      // 域名绑定
+      case PageDevelopMoreActionEnum.Domain_Binding:
+        handleDomainBinding(info);
+        break;
+      // 页面预览
+      case PageDevelopMoreActionEnum.Page_Preview:
+        runPageInfo(info.projectId);
+        break;
+      // 复制到空间
+      case PageDevelopMoreActionEnum.Copy_To_Space:
+        setOpenCopyToSpaceModal(true);
+        break;
+      // 导出项目
+      case PageDevelopMoreActionEnum.Export_Project:
+        handleExportProject(info.projectId.toString());
+        break;
+      // 删除页面项目
+      case PageDevelopMoreActionEnum.Delete:
+        modalConfirm(
+          dict('PC.Pages.SpacePageDevelop.Index.confirmDeletePage'),
+          info.name,
+          () => {
+            runPageDelete(info.projectId);
+            return new Promise((resolve) => {
+              setTimeout(resolve, 1000);
+            });
+          },
+        );
+        break;
+    }
+  };
+
+  // 取消反向代理
+  const handleCancelReverseProxy = () => {
+    setOpenReverseProxyModal(false);
+    // 重新查询页面列表
+    runPageList({
+      spaceId,
+    });
+  };
+
+  // 取消路径参数配置
+  const handleCancelPathParamsConfig = () => {
+    setOpenPathParamsConfigModal(false);
+    // 重新查询页面列表
+    runPageList({
+      spaceId,
+    });
+  };
+
+  // 确认认证配置
+  const handleConfirmAuthConfig = (projectId: number, needLogin: boolean) => {
+    setOpenAuthConfigModal(false);
+    const _pageList = pageList.map((item) => {
+      if (item.projectId === projectId) {
+        return { ...item, needLogin };
+      }
+      return item;
+    });
+    setPageList(_pageList);
+    pageAllRef.current = pageAllRef.current.map((item) => {
+      if (item.projectId === projectId) {
+        return { ...item, needLogin };
+      }
+      return item;
+    });
+  };
+
+  return (
+    <div className={cx(styles.container, 'flex', 'flex-col', 'h-full')}>
+      <div className={cx(styles['header-area'])}>
+        <div className={cx(styles['header-left'])}>
+          <h3 className={cx(styles.title)}>
+            {dict('PC.Pages.SpacePageDevelop.Index.pageTitle')}
+          </h3>
+          <SelectList
+            value={type}
+            options={PAGE_DEVELOP_ALL_TYPE}
+            onChange={handlerChangeType}
+          />
+          {/* 单选模式 */}
+          <ButtonToggle
+            options={FILTER_STATUS_DEV}
+            value={status}
+            onChange={(value) => handlerChangeStatus(value as React.Key)}
+          />
+          <ButtonToggle
+            options={CREATE_LIST}
+            value={create}
+            onChange={(value) => handlerChangeCreate(value as React.Key)}
+          />
+        </div>
+        <div className={cx(styles['header-right'])}>
+          <Input
+            rootClassName={cx(styles.input)}
+            placeholder={dict(
+              'PC.Pages.SpacePageDevelop.Index.searchPlaceholder',
+            )}
+            value={keyword}
+            onChange={handleQueryPage}
+            prefix={<SearchOutlined />}
+            allowClear
+            onClear={handleClearKeyword}
+            style={{ width: 214 }}
+          />
+          {/*添加*/}
+          <CustomPopover
+            list={PAGE_DEVELOP_CREATE_TYPE_LIST}
+            onClick={handleClickPopoverItem}
+          >
+            <Button type="primary" icon={<PlusOutlined />}>
+              {dict('PC.Pages.SpacePageDevelop.Index.create')}
+            </Button>
+          </CustomPopover>
+        </div>
+      </div>
+
+      {loading ? (
+        <Loading />
+      ) : pageList?.length > 0 ? (
+        <div
+          className={cx(styles['main-container'], 'flex-1', 'scroll-container')}
+        >
+          {pageList?.map((info) => {
+            /**
+             * 更多操作列表
+             */
+            const moreActionList = PAGE_DEVELOP_MORE_ACTIONS.filter((item) => {
+              // 页面预览
+              if (item.value === PageDevelopMoreActionEnum.Page_Preview) {
+                return (
+                  info.projectType === PageProjectTypeEnum.REVERSE_PROXY ||
+                  (info.projectType === PageProjectTypeEnum.ONLINE_DEPLOY &&
+                    info.buildRunning === Boolean(BuildRunningEnum.Published))
+                );
+              }
+              // 域名绑定功能需要根据租户配置动态控制
+              if (item.value === PageDevelopMoreActionEnum.Domain_Binding) {
+                return !!tenantConfigInfo?.supportCustomDomain;
+              }
+              return true;
+            });
+            return (
+              <PageCard
+                key={info.projectId}
+                coverImg={info.coverImg}
+                name={info.name}
+                avatar={info.creatorAvatar}
+                userName={info.creatorNickName || info.creatorName}
+                created={info.created}
+                overlayText={dict(
+                  'PC.Pages.SpacePageDevelop.Index.viewDetails',
+                )}
+                onClick={() => handleClickCard(info)}
+                footerInner={
+                  <CustomPopover
+                    list={moreActionList}
+                    onClick={(item) => handleClickMore(item, info)}
+                  >
+                    <Button type="text" icon={<ICON_MORE />}></Button>
+                  </CustomPopover>
+                }
+                extra={
+                  <div
+                    className={cx(
+                      styles['position-top-right'],
+                      info.buildRunning
+                        ? styles['published-text']
+                        : styles['unpublished-text'],
+                    )}
+                  >
+                    {info.buildRunning
+                      ? dict('PC.Pages.SpacePageDevelop.Index.published')
+                      : dict('PC.Pages.SpacePageDevelop.Index.unpublished')}
+                  </div>
+                }
+              />
+            );
+          })}
+        </div>
+      ) : (
+        <div className={cx('flex', 'h-full', 'items-center', 'content-center')}>
+          <Empty
+            description={dict('PC.Pages.SpacePageDevelop.Index.noResultsFound')}
+          />
+        </div>
+      )}
+      {/* 反向代理弹窗 */}
+      <ReverseProxyModal
+        open={openReverseProxyModal}
+        projectId={projectId}
+        projectType={currentPageInfo?.projectType}
+        defaultProxyConfigs={currentPageInfo?.proxyConfigs || []}
+        onCancel={handleCancelReverseProxy}
+      />
+      {/* 路径参数配置弹窗 */}
+      <PathParamsConfigModal
+        currentPageInfo={currentPageInfo}
+        open={openPathParamsConfigModal}
+        onCancel={handleCancelPathParamsConfig}
+      />
+      {/* 页面创建弹窗 */}
+      <PageCreateModal
+        spaceId={spaceId}
+        type={pageCreateTypeRef.current}
+        open={openPageCreateModal}
+        onConfirm={handleConfirmCreatePage}
+        onCancel={() => setOpenPageCreateModal(false)}
+      />
+      {/* 认证配置弹窗 */}
+      <AuthConfigModal
+        open={openAuthConfigModal}
+        pageInfo={currentPageInfo}
+        onCancel={() => setOpenAuthConfigModal(false)}
+        onConfirm={handleConfirmAuthConfig}
+      />
+      {/* 域名绑定弹窗 */}
+      <DomainBindingModal
+        open={openDomainBindingModal}
+        projectId={projectId}
+        onCancel={() => setOpenDomainBindingModal(false)}
+      />
+      {/*复制到空间弹窗*/}
+      {currentPageInfo && (
+        <CopyToSpaceComponent
+          spaceId={spaceId}
+          mode={AgentComponentTypeEnum.Page}
+          componentId={projectId}
+          title={currentPageInfo.name}
+          open={openCopyToSpaceModal}
+          isTemplate={false}
+          onCancel={() => setOpenCopyToSpaceModal(false)}
+          onSuccess={(data: any, targetSpaceId: number) => {
+            if (targetSpaceId === spaceId) {
+              runPageList({
+                spaceId,
+              });
+            }
+          }}
+        />
+      )}
+    </div>
+  );
+};
+
+export default SpacePageDevelop;

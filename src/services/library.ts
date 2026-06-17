@@ -1,0 +1,261 @@
+import type {
+  AddSkillParams,
+  AddTimedTaskParams,
+  AddWorkflowParams,
+  ComponentInfo,
+  CopyTableParams,
+  ResourceGroupInfo,
+  ResourceGroupListParams,
+  SkillCopyToSpaceParams,
+  SkillInfo,
+  SkillQueryFilter,
+  TaskInfo,
+  UpdateSkillParams,
+  UpdateTimedTaskParams,
+  UpdateWorkflowParams,
+} from '@/types/interfaces/library';
+import type { RequestResponse } from '@/types/interfaces/request';
+import { request } from 'umi';
+
+// 添加工作流
+export async function apiAddWorkflow(
+  data: AddWorkflowParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/workflow/add', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 添加定时任务
+export async function apiAddTimedTask(
+  data: AddTimedTaskParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/task/create', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 添加技能
+export async function apiAddSkill(
+  data: AddSkillParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/skill/add', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 更新技能
+export async function apiUpdateSkill(
+  data: UpdateSkillParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/skill/update', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 删除技能
+export async function apiDeleteSkill(
+  id: number,
+): Promise<RequestResponse<null>> {
+  return request(`/api/skill/delete/${id}`, {
+    method: 'POST',
+  });
+}
+
+// 更新工作流
+export async function apiUpdateWorkflow(
+  data: UpdateWorkflowParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/workflow/update', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 更新定时任务
+export async function apiUpdateTimedTask(
+  data: UpdateTimedTaskParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/task/update', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 工作流 - 复制工作流到空间
+export async function apiWorkflowCopyToSpace(
+  workflowId: number,
+  targetSpaceId: number,
+): Promise<RequestResponse<number>> {
+  return request(`/api/workflow/copy/${workflowId}/${targetSpaceId}`, {
+    method: 'POST',
+  });
+}
+
+// 工作流 - 删除工作流接口
+export async function apiWorkflowDelete(
+  workflowId: number,
+): Promise<RequestResponse<number>> {
+  return request(`/api/workflow/delete/${workflowId}`, {
+    method: 'POST',
+  });
+}
+
+// 查询组件列表接口
+export async function apiComponentList(
+  spaceId: number,
+): Promise<RequestResponse<ComponentInfo[]>> {
+  return request(`/api/component/list/${spaceId}`, {
+    method: 'GET',
+  });
+}
+
+// 查询任务列表接口
+export async function apiTaskList(
+  spaceId: number,
+): Promise<RequestResponse<TaskInfo[]>> {
+  return request(`/api/task/list/${spaceId}`, {
+    method: 'POST',
+  });
+}
+
+// 执行任务接口
+export async function apiTaskExecute(
+  id: number,
+): Promise<RequestResponse<null>> {
+  return request(`/api/task/execute/${id}`, {
+    method: 'POST',
+  });
+}
+
+// 启用定时任务
+export async function apiTaskEnable(
+  id: number,
+): Promise<RequestResponse<null>> {
+  return request(`/api/task/enable/${id}`, {
+    method: 'POST',
+  });
+}
+
+// 停用定时任务
+export async function apiTaskDisable(
+  id: number,
+): Promise<RequestResponse<null>> {
+  return request(`/api/task/cancel/${id}`, {
+    method: 'POST',
+  });
+}
+
+// 删除定时任务
+export async function apiTaskDelete(
+  id: number,
+): Promise<RequestResponse<null>> {
+  return request(`/api/task/delete/${id}`, {
+    method: 'POST',
+  });
+}
+
+// 查询技能列表接口
+export async function apiSkillList(
+  queryFilter: SkillQueryFilter,
+): Promise<RequestResponse<SkillInfo[]>> {
+  return request(`/api/skill/list`, {
+    method: 'GET',
+    params: queryFilter,
+  });
+}
+
+// 技能 - 复制技能到空间
+export async function apiSkillCopyToSpace(
+  data: SkillCopyToSpaceParams,
+): Promise<RequestResponse<number>> {
+  return request(`/api/skill/copy`, {
+    method: 'POST',
+    data,
+  });
+}
+
+// 数据表复制(请求类型 - query)
+export function apiCopyTable(
+  data: CopyTableParams,
+): Promise<RequestResponse<number>> {
+  return request('/api/compose/db/table/copyTableDefinition', {
+    method: 'POST',
+    params: data,
+  });
+}
+
+// 查询资源分组列表
+export async function apiResourceGroupList(
+  data: ResourceGroupListParams,
+): Promise<RequestResponse<ResourceGroupInfo[]>> {
+  return request('/api/resource/group/list', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 添加资源分组
+export async function apiAddResourceGroup(
+  data: ResourceGroupInfo,
+): Promise<RequestResponse<number>> {
+  return request('/api/resource/group/add', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 更新资源分组
+export async function apiUpdateResourceGroup(
+  id: number,
+  data: ResourceGroupInfo,
+): Promise<RequestResponse<any>> {
+  return request(`/api/resource/group/update/${id}`, {
+    method: 'POST',
+    data,
+  });
+}
+
+// 查询资源分组详情
+export async function apiGetResourceGroup(
+  id: number,
+): Promise<RequestResponse<ResourceGroupInfo>> {
+  return request(`/api/resource/group/${id}`, {
+    method: 'GET',
+  });
+}
+
+// 删除资源分组
+export async function apiDeleteResourceGroup(
+  id: number,
+): Promise<RequestResponse<any>> {
+  return request(`/api/resource/group/delete/${id}`, {
+    method: 'POST',
+  });
+}
+
+// 添加资源到分组
+export async function apiAddResourceToGroup(
+  groupId: number,
+  data: { targetType: string; targetId: number },
+): Promise<RequestResponse<any>> {
+  return request(`/api/resource/group/${groupId}/resource/add`, {
+    method: 'POST',
+    data,
+  });
+}
+
+// 从分组移除资源
+export async function apiRemoveResourceFromGroup(
+  groupId: number,
+  data: { targetType: string; targetId: number },
+): Promise<RequestResponse<any>> {
+  return request(`/api/resource/group/${groupId}/resource/remove`, {
+    method: 'POST',
+    data,
+  });
+}

@@ -1,0 +1,332 @@
+import { TableActions, XProTable } from '@/components/ProComponents';
+import type { ActionItem } from '@/components/ProComponents/TableActions';
+import WorkspaceLayout from '@/components/WorkspaceLayout';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { t } from '@/services/i18nRuntime';
+import {
+  apiSystemResourceWebappDelete,
+  apiSystemResourceWebappList,
+} from '@/services/systemManage';
+import { PublishStatusEnum } from '@/types/enums/common';
+import { PluginPublishScopeEnum } from '@/types/enums/plugin';
+import { AccessControlEnum } from '@/types/enums/systemManage';
+import { SystemWebappInfo } from '@/types/interfaces/systemManage';
+import {
+  ActionType,
+  FormInstance,
+  ProColumns,
+} from '@ant-design/pro-components';
+import { message, Switch } from 'antd';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useLocation, useModel } from 'umi';
+import TargetAuthModal from '../components/TargetAuthModal';
+import { apiSystemResourceAgentAccess } from '../content-manage';
+
+/**
+ * 网页应用管理页面
+ */
+const WebApplication: React.FC = () => {
+  const { hasPermission } = useModel('menuModel');
+  const actionRef = useRef<ActionType>();
+  const formRef = useRef<FormInstance>();
+  const location = useLocation();
+  // 管控状态切换 loading 状态
+  const [accessControlLoadingMap, setAccessControlLoadingMap] = useState<
+    Record<number, boolean>
+  >({});
+  // 授权弹窗相关状态
+  const [authModalOpen, setAuthModalOpen] = useState<boolean>(false);
+  const [currentPageAppInfo, setCurrentPageAppInfo] =
+    useState<SystemWebappInfo | null>(null);
+
+  const handleReset = useCallback(() => {
+    // 重置表单
+    formRef.current?.resetFields();
+    // 重置表格状态
+    actionRef.current?.reset?.();
+    // 设置分页参数:第1页,每页15条
+    actionRef.current?.setPageInfo?.({ current: 1, pageSize: 15 });
+    // 重新加载
+    actionRef.current?.reload();
+  }, []);
+
+  useEffect(() => {
+    // 当通过菜单切换页面时（location.state._t 变化），触发刷新
+    const state = location.state as any;
+    if (state?._t) {
+      handleReset();
+    }
+  }, [location.state, handleReset]);
+
+  /**
+   * 查看网页应用详情
+   */
+  const handleView = useCallback((record: SystemWebappInfo) => {
+    window.open(`/space/${record.spaceId}/app-dev/${record.id}`);
+  }, []);
+
+  /**
+   * 处理授权
+   */
+  const handleAuth = useCallback((record: SystemWebappInfo) => {
+    setCurrentPageAppInfo(record);
+    setAuthModalOpen(true);
+  }, []);
+
+  /**
+   * 删除网页应用
+   */
+  const handleDelete = useCallback(async (record: SystemWebappInfo) => {
+    const response = await apiSystemResourceWebappDelete({ id: record.id });
+    if (response.code === SUCCESS_CODE) {
+      message.success(t('PC.Pages.SystemContentWebApplication.deleteSuccess'));
+      actionRef.current?.reload();
+    } else {
+      message.error(
+        response.message ||
+          t('PC.Pages.SystemContentWebApplication.deleteFailed'),
+      );
+    }
+  }, []);
+
+  /**
+   * 切换管控状态
+   */
+  const handleAccessControlChange = useCallback(
+    async (record: SystemWebappInfo, checked: boolean) => {
+      const newStatus = checked
+        ? AccessControlEnum.Filter
+        : AccessControlEnum.NoFilter;
+      setAccessControlLoadingMap((prev) => ({
+        ...prev,
+        [record.agentId]: true,
+      }));
+      try {
+        const response = await apiSystemResourceAgentAccess(
+          record.agentId,
+          newStatus,
+        );
+        if (response.code === SUCCESS_CODE) {
+          actionRef.current?.reload();
+        }
+      } finally {
+        setAccessControlLoadingMap((prev) => ({
+          ...prev,
+          [record.agentId]: false,
+        }));
+      }
+    },
+    [],
+  );
+
+  /**
+   * 操作列配置
+   */
+  const getActions = useCallback(
+    (record: SystemWebappInfo): ActionItem<SystemWebappInfo>[] => {
+      const actions: ActionItem<SystemWebappInfo>[] = [
+        {
+          key: 'view',
+          label: t('PC.Pages.SystemContentWebApplication.view'),
+          disabled: !hasPermission('content_page_app_query_detail'),
+          onClick: handleView,
+        },
+      ];
+
+      // 当 accessControl 为 1 并且发布状态为已发布并且发布范围为系统广场时，显示授权项
+      if (
+        record.accessControl === AccessControlEnum.Filter &&
+        record.publishStatus === PublishStatusEnum.Published &&
+        record.publishScope === PluginPublishScopeEnum.Tenant
+      ) {
+        actions.push({
+          key: 'auth',
+          label: t('PC.Pages.SystemContentWebApplication.authorize'),
+          disabled: !hasPermission('content_page_app_access_control'),
+          onClick: handleAuth,
+        });
+      }
+
+      actions.push({
+        key: 'delete',
+        label: t('PC.Pages.SystemContentWebApplication.delete'),
+        confirm: {
+          title: t(
+            'PC.Pages.SystemContentWebApplication.deleteConfirmTitle',
+            record.name,
+          ),
+          description: t(
+            'PC.Pages.SystemContentWebApplication.deleteConfirmDescription',
+          ),
+        },
+        disabled: !hasPermission('content_page_app_delete'),
+        onClick: handleDelete,
+      });
+
+      return actions;
+    },
+    [hasPermission, handleView, handleAuth, handleDelete],
+  );
+
+  /**
+   * 表格列定义
+   */
+  const columns: ProColumns<SystemWebappInfo>[] = [
+    {
+      title: t('PC.Pages.SystemContentWebApplication.columnName'),
+      dataIndex: 'name',
+      width: 180,
+      ellipsis: true,
+      fieldProps: {
+        placeholder: t('PC.Pages.SystemContentWebApplication.searchName'),
+        allowClear: true,
+      },
+    },
+    {
+      title: t('PC.Pages.SystemContentWebApplication.columnDescription'),
+      dataIndex: 'description',
+      width: 250,
+      ellipsis: true,
+      hideInSearch: true,
+    },
+    {
+      title: t('PC.Pages.SystemContentWebApplication.columnCreator'),
+      dataIndex: 'creatorName',
+      width: 120,
+      ellipsis: true,
+      hideInSearch: false,
+    },
+    {
+      title: t('PC.Pages.SystemContentWebApplication.columnPublishStatus'),
+      dataIndex: 'publishStatus',
+      align: 'center',
+      width: 100,
+      hideInSearch: true,
+      render: (_, record: SystemWebappInfo) => {
+        const statusMap: Record<PublishStatusEnum, string> = {
+          [PublishStatusEnum.Developing]: t(
+            'PC.Pages.SystemContentWebApplication.statusDeveloping',
+          ),
+          [PublishStatusEnum.Applying]: t(
+            'PC.Pages.SystemContentWebApplication.statusApplying',
+          ),
+          [PublishStatusEnum.Published]: t(
+            'PC.Pages.SystemContentWebApplication.statusPublished',
+          ),
+          [PublishStatusEnum.Rejected]: t(
+            'PC.Pages.SystemContentWebApplication.statusRejected',
+          ),
+        };
+        return statusMap[record.publishStatus] || '--';
+      },
+    },
+    {
+      title: t('PC.Pages.SystemContentWebApplication.columnCreated'),
+      dataIndex: 'created',
+      align: 'center',
+      width: 170,
+      hideInSearch: true,
+      valueType: 'dateTime',
+    },
+    {
+      title: t('PC.Pages.SystemContentWebApplication.columnAccessControl'),
+      tooltip: t('PC.Pages.SystemContentWebApplication.accessControlTooltip'),
+      dataIndex: 'accessControl',
+      align: 'center',
+      width: 100,
+      fixed: 'right',
+      valueEnum: {
+        [AccessControlEnum.NoFilter]: {
+          text: t('PC.Pages.SystemContentWebApplication.accessControlOff'),
+          status: 'Default',
+        },
+        [AccessControlEnum.Filter]: {
+          text: t('PC.Pages.SystemContentWebApplication.accessControlOn'),
+          status: 'Processing',
+        },
+      },
+      valueType: 'select',
+      render: (_, record: SystemWebappInfo) => {
+        const accessControlSwitchEnabled =
+          record.publishStatus === PublishStatusEnum.Published &&
+          record.publishScope === PluginPublishScopeEnum.Tenant;
+        return (
+          <Switch
+            checked={record.accessControl === AccessControlEnum.Filter}
+            disabled={!accessControlSwitchEnabled}
+            loading={accessControlLoadingMap[record.agentId] || false}
+            onChange={(checked) => handleAccessControlChange(record, checked)}
+          />
+        );
+      },
+    },
+    {
+      title: t('PC.Pages.SystemContentWebApplication.columnAction'),
+      valueType: 'option',
+      fixed: 'right',
+      align: 'center',
+      width: 160,
+      render: (_, record) => (
+        <TableActions<SystemWebappInfo>
+          record={record}
+          actions={getActions(record)}
+        />
+      ),
+    },
+  ];
+
+  /**
+   * ProTable request 函数
+   */
+  const request = async (params: {
+    pageSize?: number;
+    current?: number;
+    name?: string;
+    creatorName?: string;
+    accessControl?: AccessControlEnum;
+  }) => {
+    const response = await apiSystemResourceWebappList({
+      pageNo: params.current || 1,
+      pageSize: params.pageSize || 15,
+      name: params.name,
+      creatorName: params.creatorName,
+      accessControl: params.accessControl,
+    });
+
+    return {
+      data: response.data.records,
+      total: response.data.total,
+      success: response.code === SUCCESS_CODE,
+    };
+  };
+
+  return (
+    <WorkspaceLayout
+      title={t('PC.Pages.SystemContentWebApplication.pageTitle')}
+      hideScroll
+    >
+      <XProTable<SystemWebappInfo>
+        actionRef={actionRef}
+        formRef={formRef}
+        rowKey="id"
+        columns={columns}
+        request={request}
+        onReset={handleReset}
+        showQueryButtons={hasPermission('content_page_app_query_list')}
+      />
+      {/* 授权弹窗 */}
+      <TargetAuthModal
+        open={authModalOpen}
+        targetId={currentPageAppInfo?.agentId || 0}
+        targetName={currentPageAppInfo?.name}
+        targetType="page"
+        onCancel={() => {
+          setAuthModalOpen(false);
+          setCurrentPageAppInfo(null);
+        }}
+      />
+    </WorkspaceLayout>
+  );
+};
+
+export default WebApplication;

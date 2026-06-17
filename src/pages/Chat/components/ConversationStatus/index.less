@@ -1,0 +1,25 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.conversationStatus {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 15px 5px 0;
+  transition: all 0.3s ease;
+
+  .statusBadge {
+    margin-right: 10px;
+    overflow: hidden;
+  }
+
+  .timer {
+    font-size: @fontSizeSm;
+    font-weight: 600;
+    color: @colorTextTertiary;
+    font-family: Monaco, Menlo, Consolas, monospace;
+    flex-shrink: 0;
+    min-width: 50px;
+    text-align: right;
+  }
+}

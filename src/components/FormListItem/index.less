@@ -1,0 +1,233 @@
+@import '@/styles/token.less';
+
+.action-form-item-style {
+  display: flex;
+  justify-content: left;
+
+  .ant-form-item {
+    margin-bottom: 0 !important;
+  }
+}
+
+.input-or-reference {
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  padding: 0;
+  height: 28px;
+  width: 100%;
+  background-color: rgb(252, 252, 252);
+
+  .ant-input {
+    height: 26px !important;
+  }
+
+  .ant-input-outlined {
+    border: none;
+  }
+
+  .ant-input-outlined:focus {
+    box-shadow: none;
+  }
+
+  .ant-input-outlined.ant-input-status-error:not(.ant-input-disabled) {
+    border: none;
+  }
+
+  .input-or-reference-tag {
+    margin-left: 4px;
+    max-width: 140px;
+    display: flex;
+    align-items: center;
+
+    .tag-text-style {
+      max-width: 135px;
+      overflow: hidden;
+    }
+  }
+
+  input {
+    height: 20px;
+  }
+}
+
+.tree-form-name {
+  margin-right: 4px;
+}
+
+.is-body-cascader {
+  .ant-select-arrow {
+    display: none;
+  }
+}
+
+.tree-name-style {
+  width: 100px;
+  margin-left: 40px;
+}
+
+.tree-data-type-style {
+  width: 110px;
+}
+
+.input-reference-icon-style {
+  width: 24px;
+  height: calc(100% - 6px);
+  padding-right: 6px;
+  padding-left: 6px;
+  min-height: 12px;
+}
+
+.tree-icon-style {
+  width: 18px;
+
+  &:hover {
+    background-color: none;
+  }
+}
+
+.tree-form-style {
+  font-size: 12px;
+  position: relative; /* 设置容器为相对定位 */
+  .ant-tree-switcher {
+    display: none;
+  }
+
+  .ant-tree-treenode {
+    width: 100%;
+
+    .ant-tree-node-content-wrapper {
+      padding-inline: 0;
+      width: 100%;
+    }
+  }
+
+  svg {
+    width: 12px;
+  }
+}
+
+.tree-form-style-no-child {
+  font-size: 12px;
+  width: 100%;
+
+  .ant-tree-treenode {
+    width: 100%;
+
+    .ant-tree-node-content-wrapper {
+      padding-inline: 0;
+      width: 100%;
+    }
+  }
+
+  .ant-tree-switcher {
+    display: none;
+  }
+
+  svg {
+    width: 12px;
+  }
+}
+
+.reference-item-child {
+  display: 'flex';
+  align-items: 'center';
+  width: 300;
+
+  &hover {
+    background-color: #f5f5f5;
+  }
+}
+
+.ml-20 {
+  margin-left: 20px;
+}
+
+.tree-input-style {
+  .ant-tree-switcher {
+    display: none;
+  }
+
+  .ant-tree-treenode {
+    width: 100%;
+
+    .ant-tree-node-content-wrapper {
+      width: 100%;
+    }
+  }
+}
+
+.nested-form-icon-button {
+  display: flex;
+  justify-content: flex-start !important;
+  align-items: center;
+
+  .ant-btn-icon-only {
+    width: 16px;
+  }
+
+  :where(.css-dev-only-do-not-override-77tu7h).ant-btn.ant-btn-icon-only {
+    width: 16px;
+  }
+
+  .ant-checkbox-inner {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+.custom-tree-style {
+  border: none;
+  max-height: 400px;
+  overflow-y: auto;
+  margin: 0;
+
+  // width: 100%;
+  // .ant-tree-switcher-noop {
+  //   display: none;
+  // }
+
+  .ant-tree-node-content-wrapper {
+    cursor: pointer;
+
+    &.ant-tree-node-selected {
+      background: @colorBgTextActive;
+      cursor: default;
+    }
+  }
+  // .ant-tree-treenode-leaf-last{
+  //   margin-bottom: 0;
+  // }
+
+  .ant-tree-switcher {
+    margin-right: 0;
+  }
+
+  &.custom-tree-no-children-style {
+    .ant-tree-switcher-noop {
+      display: none;
+    }
+  }
+
+  .tree-custom-title-style {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: center;
+  }
+}
+
+.inputOrReferencePopup {
+  .ant-dropdown-menu-item:hover {
+    background-color: #fff !important;
+    border-radius: 12px;
+    padding: 0 0 2px 12px;
+  }
+
+  .ant-dropdown-menu {
+    padding: 0;
+
+    .ant-dropdown-menu-item {
+      padding: 0 0 2px 12px;
+    }
+  }
+}

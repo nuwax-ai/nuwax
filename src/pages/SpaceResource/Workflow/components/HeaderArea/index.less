@@ -1,0 +1,43 @@
+@import '@/styles/token.less';
+@import '@/styles/color.less';
+
+@headerAreaGap: 12px;
+@headerAreaMarginBottom: 5px;
+@headerRightGap: 10px;
+@titleLineHeight: 32px;
+@titleRightMargin: 20px;
+@headerAreaPaddingTop: 4px;
+
+.header-area {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: @headerAreaGap;
+  margin-bottom: @headerAreaMarginBottom;
+  padding-top: @headerAreaPaddingTop;
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: @headerAreaGap;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: @headerRightGap;
+    flex-wrap: wrap;
+  }
+}
+
+.title {
+  line-height: @titleLineHeight;
+  font-size: @fontSizeLg;
+  font-weight: 600;
+  color: @BLANK04;
+  margin-right: @titleRightMargin;
+}

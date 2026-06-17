@@ -1,0 +1,216 @@
+/**
+ * AppDev 页面相关常量定义
+ */
+
+import { dict } from '@/services/i18nRuntime';
+import type { ChatMessage } from '@/types/interfaces/appDev';
+
+/**
+ * 聊天相关常量
+ */
+export const CHAT_CONSTANTS = {
+  DEFAULT_MESSAGES: [
+    {
+      id: '1',
+      type: 'ai' as const,
+      content: dict('PC.Constants.AppDev.defaultAiMessage'),
+      timestamp: new Date(),
+    },
+  ] as ChatMessage[],
+  DEFAULT_USER_ID: 'app-dev-user',
+  MODEL_NAME: 'deepseek-v3',
+  SSE_HEARTBEAT_INTERVAL: 30000, // 30秒
+  REQUEST_ID_PREFIX: 'req_',
+  SESSION_ID_PREFIX: 'session_',
+} as const;
+
+/**
+ * 文件相关常量
+ */
+export const FILE_CONSTANTS = {
+  // 支持预览的文件扩展名白名单
+  SUPPORTED_EXTENSIONS: [
+    // 图片文件
+    'jpg',
+    'jpeg',
+    'png',
+    'gif',
+    'bmp',
+    'webp',
+    'svg',
+    'ico',
+    'tiff',
+    // 代码文件
+    'ts',
+    'tsx',
+    'js',
+    'jsx',
+    'mjs',
+    'cjs',
+    'css',
+    'less',
+    'scss',
+    'sass',
+    'html',
+    'htm',
+    'vue',
+    'json',
+    'jsonc',
+    'yaml',
+    'yml',
+    'xml',
+    'toml',
+    'ini',
+    'py',
+    'java',
+    'c',
+    'cpp',
+    'cs',
+    'php',
+    'rb',
+    'go',
+    'rs',
+    'swift',
+    'kt',
+    'scala',
+    'sh',
+    'bash',
+    'zsh',
+    'fish',
+    'ps1',
+    'bat',
+    'sql',
+    'dockerfile',
+    'makefile',
+    // 文本文件
+    'txt',
+    'md',
+    'markdown',
+    'log',
+    'csv',
+    'tsv',
+    'rtf',
+  ],
+  // 忽略的文件模式
+  IGNORED_FILE_PATTERNS: [
+    /^\./, // 以 . 开头的隐藏文件
+    /^\.DS_Store$/,
+    /^Thumbs\.db$/,
+    /\.tmp$/,
+    /\.bak$/,
+  ],
+  DEFAULT_FILE_LANGUAGE: 'Plain Text',
+  FALLBACK_SIZE: 0,
+  TREE_ROOT_LEVEL: 0,
+  INDENT_SIZE: 16,
+  REQUEST_ID_PREFIX: 'req_',
+  SESSION_ID_PREFIX: 'session_',
+} as const;
+
+/**
+ * 开发服务器相关常量
+ */
+export const DEV_SERVER_CONSTANTS = {
+  DEFAULT_PORT_RANGE: [3000, 4000] as [number, number],
+  STATUS_MESSAGES: {
+    STARTING: dict('PC.Constants.AppDev.statusStarting'),
+    RUNNING: dict('PC.Constants.AppDev.statusRunning'),
+    STOPPED: dict('PC.Constants.AppDev.statusStopped'),
+    ERROR: dict('PC.Constants.AppDev.statusError'),
+  },
+  API_TIMEOUT: 10000, // 10秒
+  SSE_HEARTBEAT_INTERVAL: 30000, // 30秒
+} as const;
+
+/**
+ * UI 相关常量
+ */
+export const UI_CONSTANTS = {
+  MODAL_WIDTHS: {
+    UPLOAD_PROJECT: 500,
+    UPLOAD_SINGLE_FILE: 500,
+  },
+  LOADING_MESSAGES: {
+    FILE_CONTENT: dict('PC.Constants.AppDev.loadingFileContent'),
+    FILE_TREE: dict('PC.Constants.AppDev.loadingFileTree'),
+    UPLOADING: dict('PC.Constants.AppDev.uploadingFile'),
+  },
+  ANIMATION_DURATION: 300,
+  DEBOUNCE_DELAY: 300,
+  PRELOAD_DELAY: 1000,
+} as const;
+
+/**
+ * 编辑器相关常量
+ */
+export const EDITOR_CONSTANTS = {
+  DEFAULT_SETTINGS: {
+    theme: 'light' as 'light' | 'dark',
+    fontSize: 14,
+    tabSize: 2,
+  },
+  MONACO_OPTIONS: {
+    minimap: { enabled: false },
+    scrollBeyondLastLine: false,
+    automaticLayout: true,
+  },
+} as const;
+
+/**
+ * 键盘快捷键常量
+ */
+export const KEYBOARD_SHORTCUTS = {
+  SEND_MESSAGE: 'Enter',
+  SAVE_FILE: 's',
+  RESTART_DEV: 'r',
+  MODIFIER_KEYS: {
+    CTRL: 'ctrlKey',
+    META: 'metaKey',
+  },
+} as const;
+
+/**
+ * 上传文件类型限制
+ */
+export const UPLOAD_CONSTANTS = {
+  ALLOWED_PROJECT_TYPES: ['.zip', '.tar.gz', '.rar'],
+  MAX_FILE_SIZE: 50 * 1024 * 1024, // 50MB
+} as const;
+
+/**
+ * 错误消息常量
+ */
+export const ERROR_MESSAGES = {
+  NO_PROJECT_ID: dict('PC.Constants.AppDev.errNoProjectId'),
+  EMPTY_FILE_PATH: dict('PC.Constants.AppDev.errEmptyFilePath'),
+  NO_FILE_SELECTED: dict('PC.Constants.AppDev.errNoFileSelected'),
+  UPLOAD_FAILED: dict('PC.Constants.AppDev.errUploadFailed'),
+  LOAD_FILE_FAILED: dict('PC.Constants.AppDev.errLoadFileFailed'),
+  SAVE_FILE_FAILED: dict('PC.Constants.AppDev.errSaveFileFailed'),
+  DEV_SERVER_START_FAILED: dict('PC.Constants.AppDev.errDevServerStartFailed'),
+  CHAT_SEND_FAILED: dict('PC.Constants.AppDev.errChatSendFailed'),
+} as const;
+
+/**
+ * 成功消息常量
+ */
+export const SUCCESS_MESSAGES = {
+  FILE_SAVED: dict('PC.Constants.AppDev.successFileSaved'),
+  FILE_UPLOADED: dict('PC.Constants.AppDev.successFileUploaded'),
+  PROJECT_UPLOADED: dict('PC.Constants.AppDev.successProjectUploaded'),
+  DEV_SERVER_STARTED: dict('PC.Constants.AppDev.successDevServerStarted'),
+  CHAT_CANCELLED: dict('PC.Constants.AppDev.successChatCancelled'),
+} as const;
+
+/**
+ * 页面级 URL 查询参数名，例如 `?developingOverlay=false`。
+ * 优先级高于组件默认值。
+ */
+export const APP_DEV_AGENT_PREVIEW_OVERLAY_QUERY_PARAM =
+  'developingOverlay' as const;
+
+/**
+ * 历史参数名兼容（避免旧链接失效）。
+ */
+export const LEGACY_APP_DEV_AGENT_PREVIEW_OVERLAY_QUERY_PARAM =
+  'agentDevelopingOverlay' as const;

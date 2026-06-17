@@ -1,0 +1,67 @@
+.container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.toolbar {
+  display: flex;
+  //justify-content: space-between;
+  justify-content: right;
+  align-items: center;
+  margin-bottom: 4px;
+  gap: 8px;
+}
+
+.statusTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background-color: rgba(0, 0, 0, 4%);
+  font-size: 12px;
+}
+
+.statusDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.statusText {
+  color: rgba(0, 0, 0, 65%);
+}
+
+.nameCell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.docName {
+  color: #1890ff;
+  cursor: pointer;
+  text-decoration: none;
+  transition: color 0.3s;
+
+  &:hover {
+    color: #40a9ff;
+  }
+}
+
+.docNameDisabled {
+  color: rgba(0, 0, 0, 45%);
+  cursor: not-allowed;
+}
+
+.copyIcon {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 45%);
+  cursor: pointer;
+
+  &:hover {
+    color: #1890ff;
+  }
+}

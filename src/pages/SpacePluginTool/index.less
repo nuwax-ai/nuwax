@@ -1,0 +1,93 @@
+@import '@/styles/color';
+@import '@/styles/token';
+@import '@/styles/custom-variate';
+
+.page-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+.layout-wrapper {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  overflow: hidden;
+
+  .chat-section {
+    width: 33%;
+    flex-shrink: 0;
+    height: 100%;
+    border-right: 1px solid @colorBorderSecondary;
+    background-color: @colorBgContainer;
+    display: flex;
+    flex-direction: column;
+    padding: @paddingSm @paddingMd;
+  }
+
+  .detail-section {
+    flex: 1;
+    height: 100%;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+
+    &.no-chat {
+      padding-left: @paddingSm;
+    }
+  }
+}
+
+.container {
+  padding: 0 5px;
+
+  .main-container {
+    flex: 1;
+    //padding: 16px 20px;
+    padding: 10px;
+    margin: 10px 0;
+
+    .title {
+      font-size: 18px;
+      font-weight: @fontWeightStrong;
+      color: @BLANK04;
+    }
+
+    .request-select {
+      width: 98px;
+      margin-right: 16px;
+    }
+
+    .table-wrap {
+      border-radius: @antdTableBorderRadius;
+      border: 1px solid @BLANK19;
+
+      &.mb-24 {
+        margin-bottom: 24px;
+      }
+
+      :global {
+        .ant-table-tbody > tr > td {
+          border-bottom: none;
+        }
+      }
+    }
+
+    .select {
+      width: 120px;
+    }
+  }
+}
+
+.version-history-header {
+  height: 56px !important;
+}
+
+@media (max-width: 768px) {
+  .container {
+    min-width: 900px;
+  }
+}

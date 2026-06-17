@@ -1,0 +1,11 @@
+// .xagi-svg-icon {
+// 	/* 让 color 透传至 path 的 stroke/fill，要求源 SVG 使用 currentColor */
+// 	color: inherit;
+// 	// vertical-align: -0.125em;
+// }
+
+/* 使用文件导入的 SVG 往往包含 stroke/fill 的展示属性，这里统一覆盖为 currentColor */
+.xagi-svg-icon path {
+  // stroke: currentColor;
+  fill: currentcolor;
+}

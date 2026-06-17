@@ -1,0 +1,220 @@
+{
+  "code": "0000",
+  "displayCode": "0000",
+  "message": "成功",
+  "data": {
+    "id": 1141765870648524,
+    "name": "循环_3",
+    "description": "用于通过设定循环次数和逻辑，重复执行一系列任务",
+    "workflowId": 1135,
+    "type": "Loop",
+    "preNodes": [],
+    "nodeConfig": {
+      "extension": {
+        "x": -690,
+        "width": 1060,
+        "y": -330.1788635253906,
+        "height": 240
+      },
+      "inputArgs": [
+        {
+          "key": null,
+          "name": "input",
+          "displayName": null,
+          "description": null,
+          "dataType": "Array_Object",
+          "originDataType": null,
+          "require": false,
+          "enable": true,
+          "systemVariable": false,
+          "bindValueType": null,
+          "bindValue": null,
+          "subArgs": null,
+          "inputType": null,
+          "selectConfig": null,
+          "loopId": null,
+          "children": null
+        }
+      ],
+      "outputArgs": [],
+      "exceptionHandleConfig": {
+        "retryCount": 0,
+        "timeout": 180,
+        "exceptionHandleType": "INTERRUPT",
+        "specificContent": {},
+        "exceptionHandleNodeIds": []
+      },
+      "loopType": "ARRAY_LOOP",
+      "variableArgs": null,
+      "loopTimes": null
+    },
+    "nextNodes": [],
+    "unreachableNextNodeIds": [],
+    "nextNodeIds": null,
+    "originalNextNodeIds": null,
+    "loopNodeId": null,
+    "innerNodes": [
+      {
+        "id": 1141765870648526,
+        "name": "单次开始",
+        "description": "循环单次起始节点",
+        "workflowId": 1135,
+        "type": "LoopStart",
+        "preNodes": [],
+        "nodeConfig": {
+          "extension": {
+            "x": -650,
+            "y": -230
+          },
+          "inputArgs": null,
+          "outputArgs": null,
+          "exceptionHandleConfig": {
+            "retryCount": 0,
+            "timeout": 180,
+            "exceptionHandleType": "INTERRUPT",
+            "specificContent": {},
+            "exceptionHandleNodeIds": []
+          }
+        },
+        "nextNodes": [],
+        "unreachableNextNodeIds": [],
+        "nextNodeIds": [1141765870648525],
+        "originalNextNodeIds": null,
+        "loopNodeId": 1141765870648524,
+        "innerNodes": null,
+        "innerStartNodeId": null,
+        "innerEndNodeId": null,
+        "virtualExecute": false,
+        "startNode": null,
+        "endNode": null,
+        "spaceId": 36,
+        "modified": "2025-12-19T08:00:10.000+00:00",
+        "created": "2025-12-19T08:00:10.000+00:00",
+        "innerEndNode": false
+      },
+      {
+        "id": 1141765870648525,
+        "name": "单次结束",
+        "description": "循环单次结束节点",
+        "workflowId": 1135,
+        "type": "LoopEnd",
+        "preNodes": [],
+        "nodeConfig": {
+          "extension": {
+            "x": -90,
+            "y": -230
+          },
+          "inputArgs": null,
+          "outputArgs": null,
+          "exceptionHandleConfig": {
+            "retryCount": 0,
+            "timeout": 180,
+            "exceptionHandleType": "INTERRUPT",
+            "specificContent": {},
+            "exceptionHandleNodeIds": []
+          }
+        },
+        "nextNodes": [],
+        "unreachableNextNodeIds": [],
+        "nextNodeIds": null,
+        "originalNextNodeIds": null,
+        "loopNodeId": 1141765870648524,
+        "innerNodes": null,
+        "innerStartNodeId": null,
+        "innerEndNodeId": null,
+        "virtualExecute": false,
+        "startNode": null,
+        "endNode": null,
+        "spaceId": 36,
+        "modified": "2025-12-19T08:00:10.000+00:00",
+        "created": "2025-12-19T08:00:10.000+00:00",
+        "innerEndNode": false
+      }
+    ],
+    "innerStartNodeId": 1141765870648526,
+    "innerEndNodeId": 1141765870648525,
+    "virtualExecute": false,
+    "startNode": {
+      "id": 1141765870648526,
+      "name": "单次开始",
+      "description": "循环单次起始节点",
+      "workflowId": 1135,
+      "type": "LoopStart",
+      "preNodes": [],
+      "nodeConfig": {
+        "extension": {
+          "x": -650,
+          "y": -230
+        },
+        "inputArgs": null,
+        "outputArgs": null,
+        "exceptionHandleConfig": {
+          "retryCount": 0,
+          "timeout": 180,
+          "exceptionHandleType": "INTERRUPT",
+          "specificContent": {},
+          "exceptionHandleNodeIds": []
+        }
+      },
+      "nextNodes": [],
+      "unreachableNextNodeIds": [],
+      "nextNodeIds": [1141765870648525],
+      "originalNextNodeIds": null,
+      "loopNodeId": 1141765870648524,
+      "innerNodes": null,
+      "innerStartNodeId": null,
+      "innerEndNodeId": null,
+      "virtualExecute": false,
+      "startNode": null,
+      "endNode": null,
+      "spaceId": 36,
+      "modified": "2025-12-19T08:00:10.000+00:00",
+      "created": "2025-12-19T08:00:10.000+00:00",
+      "innerEndNode": false
+    },
+    "endNode": {
+      "id": 1141765870648525,
+      "name": "单次结束",
+      "description": "循环单次结束节点",
+      "workflowId": 1135,
+      "type": "LoopEnd",
+      "preNodes": [],
+      "nodeConfig": {
+        "extension": {
+          "x": -90,
+          "y": -230
+        },
+        "inputArgs": null,
+        "outputArgs": null,
+        "exceptionHandleConfig": {
+          "retryCount": 0,
+          "timeout": 180,
+          "exceptionHandleType": "INTERRUPT",
+          "specificContent": {},
+          "exceptionHandleNodeIds": []
+        }
+      },
+      "nextNodes": [],
+      "unreachableNextNodeIds": [],
+      "nextNodeIds": null,
+      "originalNextNodeIds": null,
+      "loopNodeId": 1141765870648524,
+      "innerNodes": null,
+      "innerStartNodeId": null,
+      "innerEndNodeId": null,
+      "virtualExecute": false,
+      "startNode": null,
+      "endNode": null,
+      "spaceId": 36,
+      "modified": "2025-12-19T08:00:10.000+00:00",
+      "created": "2025-12-19T08:00:10.000+00:00",
+      "innerEndNode": false
+    },
+    "spaceId": 36,
+    "modified": "2025-12-19T08:00:10.000+00:00",
+    "created": "2025-12-19T08:00:10.000+00:00",
+    "innerEndNode": false
+  },
+  "tid": "2670081766131210343",
+  "success": true
+}

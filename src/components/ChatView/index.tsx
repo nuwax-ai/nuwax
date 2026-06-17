@@ -1,0 +1,257 @@
+import agentImage from '@/assets/images/agent_image.png';
+import avatar from '@/assets/images/avatar.png';
+import CopyButton from '@/components/base/CopyButton';
+import AttachFile from '@/components/ChatView/AttachFile';
+import ConditionRender from '@/components/ConditionRender';
+import MarkdownRenderer from '@/components/MarkdownRenderer';
+import { USER_INFO } from '@/constants/home.constants';
+import useMarkdownRender from '@/hooks/useMarkdownRender';
+import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
+import { dict } from '@/services/i18nRuntime';
+import { AssistantRoleEnum } from '@/types/enums/agent';
+import { MessageStatusEnum } from '@/types/enums/common';
+import type {
+  AttachmentFile,
+  ChatViewProps,
+} from '@/types/interfaces/conversationInfo';
+import { message, theme } from 'antd';
+import classNames from 'classnames';
+import { isEqual } from 'lodash';
+import React, { memo, useCallback, useMemo } from 'react';
+import { useModel } from 'umi';
+import ChatBottomDebug from './ChatBottomDebug';
+import ChatBottomMore from './ChatBottomMore';
+import ChatSampleBottom from './ChatSampleBottom';
+// import RunOver from './RunOver';
+import { groupMarkdownProcesses } from '@/components/MarkdownRenderer/utils';
+import styles from './index.less';
+import RunOver from './RunOver';
+
+const cx = classNames.bind(styles);
+
+// 聊天视图组件
+const ChatView: React.FC<ChatViewProps> = memo(
+  ({
+    className,
+    contentClassName,
+    roleInfo,
+    messageInfo,
+    mode = 'chat',
+    conversationId = '',
+    showStatusDesc = true,
+  }) => {
+    const { userInfo } = useModel('userInfo');
+    const { data } = useUnifiedTheme();
+    const isDarkMode = data.antdTheme === 'dark';
+
+    const processedText = useMemo(() => {
+      return groupMarkdownProcesses(messageInfo?.text || '');
+    }, [messageInfo?.text]);
+
+    const { markdownRef, messageIdRef } = useMarkdownRender({
+      answer: processedText,
+      thinking: messageInfo?.think || '',
+      id: messageInfo?.id || '',
+    });
+    const _userInfo =
+      userInfo || JSON.parse(localStorage.getItem(USER_INFO) as string);
+
+    // 计算角色信息
+    const info = (() => {
+      const { assistant, system } = roleInfo;
+      switch (messageInfo?.role) {
+        case AssistantRoleEnum.USER:
+          return {
+            name:
+              _userInfo?.nickName ||
+              _userInfo?.userName ||
+              dict('PC.Components.ChatView.guest'),
+            avatar: _userInfo?.avatar || avatar,
+          };
+        case AssistantRoleEnum.ASSISTANT:
+          return {
+            name: assistant.name,
+            avatar: assistant.avatar || agentImage,
+          };
+        case AssistantRoleEnum.SYSTEM:
+          return {
+            name: system.name,
+            avatar: system.avatar || agentImage,
+          };
+      }
+    })();
+
+    const handleTextCopy = () => {
+      message.success(dict('PC.Toast.Global.copiedSuccessfully'));
+    };
+
+    const trim = useCallback((text: string) => {
+      return text.replace(/^\s+|\s+$/g, '');
+    }, []);
+
+    const isUser = useMemo(() => {
+      return messageInfo?.role === AssistantRoleEnum.USER;
+    }, [messageInfo?.role]);
+
+    const { token } = theme.useToken();
+
+    return (
+      <div
+        className={cx(styles.container, 'flex', className)}
+        data-message-id={messageInfo?.id}
+      >
+        <div
+          className={cx('flex-1', 'overflow-hide', {
+            [styles.userContainer]: isUser,
+          })}
+        >
+          {/* ASSISTANT 角色消息 */}
+          {!isUser && (
+            <div className={cx(styles['agent-title-bar'])}>
+              <img
+                className={cx(styles.avatar)}
+                src={info?.avatar as string}
+                alt=""
+                onError={(e) => {
+                  e.currentTarget.onerror = null;
+                  e.currentTarget.src = agentImage;
+                }}
+              />
+              <div className={cx(styles.author)}>{info?.name}</div>
+              <ConditionRender condition={!!messageInfo?.status}>
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'row',
+                    gap: 12,
+                    flex: 1,
+                    minWidth: 0,
+                  }}
+                >
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <RunOver
+                      messageInfo={messageInfo}
+                      showStatusDesc={showStatusDesc}
+                    />
+                  </div>
+                </div>
+              </ConditionRender>
+            </div>
+          )}
+
+          {/* USER 角色消息附件 */}
+          {!!messageInfo?.attachments?.length && (
+            <div className={cx(styles['attach-file-container'])}>
+              <AttachFile
+                files={messageInfo?.attachments as AttachmentFile[]}
+              />
+            </div>
+          )}
+
+          {/* USER 角色消息 */}
+          {isUser && !!messageInfo?.text && (
+            <div className={cx(styles['user-content'])}>
+              <div
+                className={cx(
+                  styles['chat-content'],
+                  styles.user,
+                  'radius-6',
+                  contentClassName,
+                  'ds-markdown',
+                  {
+                    'ds-markdown-dark': isDarkMode,
+                  },
+                )}
+              >
+                <div className="ds-markdown-answer">
+                  <div
+                    style={{ whiteSpace: 'pre-wrap' }}
+                    className="ds-markdown-paragraph ds-typed-answer"
+                  >
+                    {trim(messageInfo?.text)}
+                  </div>
+                </div>
+              </div>
+              <div
+                className={cx(
+                  styles['user-action-box'],
+                  'flex',
+                  'items-center',
+                )}
+              >
+                <CopyButton
+                  text={messageInfo.text || ''}
+                  onCopy={handleTextCopy}
+                >
+                  {dict('PC.Components.ChatView.copy')}
+                </CopyButton>
+              </div>
+            </div>
+          )}
+
+          {/* ASSISTANT 角色会话消息 */}
+          <ConditionRender
+            condition={messageInfo?.role !== AssistantRoleEnum.USER}
+          >
+            {/* 内容区域: 思考内容、会话内容 */}
+            {(!!messageInfo?.think || !!messageInfo?.text) && (
+              <div className={cx(styles['inner-container'], contentClassName)}>
+                <div
+                  className={cx(styles['chat-content'], 'radius-6', 'w-full', {
+                    [styles.typing]:
+                      messageInfo.status === MessageStatusEnum.Incomplete ||
+                      messageInfo.status === MessageStatusEnum.Loading,
+                  })}
+                >
+                  {/* 思考内容 */}
+                  <MarkdownRenderer
+                    key={`${messageIdRef.current}`}
+                    id={`${messageIdRef.current}`}
+                    markdownRef={markdownRef}
+                    conversationId={conversationId}
+                    answer={processedText}
+                    thinking={messageInfo?.think}
+                    status={messageInfo?.status}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* 底部区域: 复制按钮、运行时间 */}
+            <ConditionRender
+              condition={
+                messageInfo &&
+                (messageInfo?.status === MessageStatusEnum.Complete ||
+                  !messageInfo?.status)
+              }
+            >
+              {/* 聊天模式 */}
+              {mode === 'chat' ? (
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'row',
+                    gap: 12,
+                    padding: `0 ${token.paddingXS}px`,
+                  }}
+                >
+                  <div style={{ flex: 1 }}>
+                    <ChatBottomMore messageInfo={messageInfo} />
+                  </div>
+                  <ChatBottomDebug messageInfo={messageInfo} />
+                </div>
+              ) : mode === 'home' ? (
+                <ChatSampleBottom messageInfo={messageInfo} />
+              ) : null}
+            </ConditionRender>
+          </ConditionRender>
+        </div>
+      </div>
+    );
+  },
+  (prevProps, nextProps) => {
+    return isEqual(prevProps.messageInfo, nextProps.messageInfo);
+  },
+);
+
+export default ChatView;

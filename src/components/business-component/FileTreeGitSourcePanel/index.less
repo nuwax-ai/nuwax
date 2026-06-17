@@ -1,0 +1,119 @@
+@import '@/styles/color.less';
+@import '@/styles/token.less';
+
+@middle-panel-icon-btn-height: 28px;
+@icon-badge-size: 14px;
+@icon-badge-font-size: 10px;
+@icon-badge-offset: 2px;
+
+.panelSidebar {
+  flex: 0 0 260px;
+  height: 100%;
+  min-width: 260px;
+  border-right: @lineWidth solid @colorBorderSecondary;
+  padding: 0;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow-x: auto;
+  opacity: 1;
+
+  &.collapsed {
+    flex: 0 0 0 !important;
+    min-width: 0 !important;
+    max-width: 0 !important;
+    width: 0 !important;
+    padding: 0 !important;
+    border-right: none !important;
+    overflow: hidden !important;
+    visibility: hidden;
+    pointer-events: none;
+    opacity: 0;
+  }
+}
+
+.iconBar {
+  display: flex;
+  align-items: center;
+  gap: @marginXxs;
+  // height: @controlHeightLg;
+  height: 49px;
+  padding: 0 @paddingXs;
+  flex-shrink: 0;
+  border-bottom: @lineWidth solid @colorSplit;
+  box-sizing: border-box;
+}
+
+.iconBarItem {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+
+  > :global(*) {
+    display: flex;
+    align-items: center;
+    width: 100%;
+  }
+}
+
+.iconBtn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: @middle-panel-icon-btn-height;
+  padding: 0;
+  border: none;
+  border-radius: @borderRadius;
+  background: transparent;
+  color: @colorTextSecondary;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+
+  &:hover {
+    color: @colorText;
+    background-color: @colorBgTextHover;
+  }
+
+  &.active {
+    color: @colorText;
+    background-color: @colorBgTextActive;
+  }
+}
+
+.iconBadge {
+  position: absolute;
+  top: @icon-badge-offset;
+  right: @icon-badge-offset;
+  min-width: @icon-badge-size;
+  height: @icon-badge-size;
+  padding: 0 @marginXxs;
+  border-radius: (@icon-badge-size / 2);
+  background-color: @colorPrimary;
+  color: @colorTextLightSolid;
+  font-size: @icon-badge-font-size;
+  line-height: @icon-badge-size;
+  text-align: center;
+}
+
+.panelContent {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.fileTreeContainer {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: auto;
+  padding: 8px 0;
+  min-height: 0;
+}
+
+.sourceControlContainer {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}

@@ -1,0 +1,1021 @@
+import {
+  CloudDownloadOutlined,
+  CodeOutlined,
+  FileExcelOutlined,
+  FileImageOutlined,
+  FileOutlined,
+  FilePdfOutlined,
+  FilePptOutlined,
+  FileTextOutlined,
+  FileWordOutlined,
+  Html5Outlined,
+  LeftOutlined,
+  PlayCircleOutlined,
+  ReloadOutlined,
+  RightOutlined,
+  SoundOutlined,
+} from '@ant-design/icons';
+import { Alert, Button, Spin, Tooltip } from 'antd';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import ReactMarkdown from 'react-markdown';
+import styles from './index.less';
+
+// @ts-ignore
+import jsPreviewDocx from '@js-preview/docx';
+import '@js-preview/docx/lib/index.css';
+// @ts-ignore
+import jsPreviewExcel from '@js-preview/excel';
+import '@js-preview/excel/lib/index.css';
+// @ts-ignore
+import jsPreviewPdf from '@js-preview/pdf';
+// @ts-ignore
+import { PureMarkdownRenderer } from '@/components/MarkdownRenderer';
+import { SANDBOX } from '@/constants/common.constants';
+import { t } from '@/services/i18nRuntime';
+import { init as pptxInit } from 'pptx-preview';
+
+// File type categories
+export type DocumentType = 'docx' | 'xlsx' | 'pptx' | 'pdf';
+export type ImageType = 'image';
+export type AudioType = 'audio';
+export type VideoType = 'video';
+export type HtmlType = 'html';
+export type MarkdownType = 'markdown';
+export type TextType = 'text';
+export type UnsupportedType = 'unsupported';
+
+export type FileType =
+  | DocumentType
+  | ImageType
+  | AudioType
+  | VideoType
+  | HtmlType
+  | MarkdownType
+  | TextType
+  | UnsupportedType;
+
+export interface FilePreviewProps {
+  /** 静态资源文件基础路径 */
+  staticFileBasePath?: string;
+  /** File source: URL string, ArrayBuffer, Blob, or File object */
+  src?: string | ArrayBuffer | Blob | File;
+  /** File content string (alternative to src) */
+  content?: string;
+  /** For multiple images: array of image sources */
+  srcList?: Array<string | File>;
+  /** File type (auto-detected if not provided) */
+  fileType?: FileType;
+  /** Show refresh button @default false */
+  showRefresh?: boolean;
+  /** Container height @default '100%' */
+  height?: number | string;
+  /** Container width @default '100%' */
+  width?: number | string;
+  /** Show download button @default false */
+  showDownload?: boolean;
+  /** Custom download filename */
+  downloadFileName?: string;
+  /** Callback when preview is rendered */
+  onRendered?: () => void;
+  /** Callback when error occurs */
+  onError?: (error: Error) => void;
+  /** Custom class name */
+  className?: string;
+  /** Custom styles */
+  style?: React.CSSProperties;
+}
+
+type PreviewStatus = 'idle' | 'loading' | 'success' | 'error' | 'unsupported';
+
+// Extension to file type mapping
+const EXTENSION_MAP: Record<string, FileType> = {
+  // Documents
+  docx: 'docx',
+  doc: 'docx',
+  xlsx: 'xlsx',
+  xls: 'xlsx',
+  pptx: 'pptx',
+  ppt: 'pptx',
+  pdf: 'pdf',
+  // Images
+  jpg: 'image',
+  jpeg: 'image',
+  png: 'image',
+  gif: 'image',
+  webp: 'image',
+  svg: 'image',
+  bmp: 'image',
+  ico: 'image',
+  // Audio
+  mp3: 'audio',
+  wav: 'audio',
+  ogg: 'audio',
+  m4a: 'audio',
+  aac: 'audio',
+  flac: 'audio',
+  // Video
+  mp4: 'video',
+  webm: 'video',
+  mov: 'video',
+  avi: 'video',
+  mkv: 'video',
+  // HTML
+  html: 'html',
+  htm: 'html',
+  // Markdown
+  md: 'markdown',
+  markdown: 'markdown',
+  // Text/Code
+  txt: 'text',
+  json: 'text',
+  xml: 'text',
+  js: 'text',
+  jsx: 'text',
+  ts: 'text',
+  tsx: 'text',
+  css: 'text',
+  less: 'text',
+  scss: 'text',
+  sass: 'text',
+  yaml: 'text',
+  yml: 'text',
+  ini: 'text',
+  conf: 'text',
+  sh: 'text',
+  bash: 'text',
+  py: 'text',
+  java: 'text',
+  c: 'text',
+  cpp: 'text',
+  h: 'text',
+  go: 'text',
+  rs: 'text',
+  rb: 'text',
+  php: 'text',
+  sql: 'text',
+  log: 'text',
+  csv: 'text',
+};
+
+// Content-Type to FileType mapping
+const CONTENT_TYPE_MAP: Record<string, FileType> = {
+  'image/jpeg': 'image',
+  'image/png': 'image',
+  'image/gif': 'image',
+  'image/webp': 'image',
+  'image/svg+xml': 'image',
+  'image/bmp': 'image',
+  'audio/mpeg': 'audio',
+  'audio/wav': 'audio',
+  'audio/ogg': 'audio',
+  'audio/mp4': 'audio',
+  'audio/aac': 'audio',
+  'video/mp4': 'video',
+  'video/webm': 'video',
+  'video/quicktime': 'video',
+  'text/html': 'html',
+  'application/pdf': 'pdf',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+    'docx',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation':
+    'pptx',
+  'text/plain': 'text',
+  'text/markdown': 'markdown',
+  'application/json': 'text',
+  'application/xml': 'text',
+};
+
+const getFileTypeFromName = (name: string): FileType => {
+  const cleanName = name.split('?')[0].split('#')[0];
+  const ext = cleanName.split('.').pop()?.toLowerCase() || '';
+  return EXTENSION_MAP[ext] || 'unsupported';
+};
+
+const getExtension = (name: string): string => {
+  const cleanName = name.split('?')[0].split('#')[0];
+  return cleanName.split('.').pop()?.toLowerCase() || '';
+};
+
+const getFileTypeFromContentType = (contentType: string): FileType => {
+  const baseType = contentType.split(';')[0].trim().toLowerCase();
+  return CONTENT_TYPE_MAP[baseType] || 'unsupported';
+};
+
+const getFileIcon = (type: FileType, size = 48) => {
+  const iconStyle = { fontSize: size, marginBottom: 16 };
+  switch (type) {
+    case 'docx':
+      return <FileWordOutlined style={{ ...iconStyle, color: '#2b579a' }} />;
+    case 'xlsx':
+      return <FileExcelOutlined style={{ ...iconStyle, color: '#217346' }} />;
+    case 'pptx':
+      return <FilePptOutlined style={{ ...iconStyle, color: '#d24726' }} />;
+    case 'pdf':
+      return <FilePdfOutlined style={{ ...iconStyle, color: '#ff4d4f' }} />;
+    case 'image':
+      return <FileImageOutlined style={{ ...iconStyle, color: '#1890ff' }} />;
+    case 'audio':
+      return <SoundOutlined style={{ ...iconStyle, color: '#722ed1' }} />;
+    case 'video':
+      return <PlayCircleOutlined style={{ ...iconStyle, color: '#eb2f96' }} />;
+    case 'html':
+      return <Html5Outlined style={{ ...iconStyle, color: '#e34c26' }} />;
+    case 'markdown':
+      return <FileTextOutlined style={{ ...iconStyle, color: '#083fa1' }} />;
+    case 'text':
+      return <CodeOutlined style={{ ...iconStyle, color: '#52c41a' }} />;
+    default:
+      return <FileOutlined style={{ ...iconStyle, color: '#bfbfbf' }} />;
+  }
+};
+
+const getSourceUrl = (src: string | ArrayBuffer | Blob | File): string => {
+  if (typeof src === 'string') return src;
+  if (src instanceof File || src instanceof Blob)
+    return URL.createObjectURL(src);
+  return URL.createObjectURL(new Blob([src]));
+};
+
+/**
+ * 将技术性错误信息转换为用户友好的中文提示
+ * @param error 原始错误信息
+ * @param fileType 文件类型
+ * @returns 用户友好的中文错误信息
+ */
+const getLocalizedErrorMessage = (
+  error: string | undefined,
+  fileType?: string,
+): string => {
+  const errorStr = error?.toLowerCase() || '';
+
+  // PPTX 相关错误
+  if (
+    errorStr.includes('central directory') ||
+    errorStr.includes('zip file') ||
+    errorStr.includes('jszip')
+  ) {
+    return t('PC.Components.FilePreview.errorInvalid');
+  }
+
+  // 网络相关错误
+  if (
+    errorStr.includes('network') ||
+    errorStr.includes('fetch') ||
+    errorStr.includes('failed to fetch')
+  ) {
+    return t('PC.Components.FilePreview.errorNetwork');
+  }
+
+  // 文件加载错误
+  if (errorStr.includes('load') || errorStr.includes('loading')) {
+    return t('PC.Components.FilePreview.errorFileLoad');
+  }
+
+  // 解析错误
+  if (errorStr.includes('parse') || errorStr.includes('parsing')) {
+    return t('PC.Components.FilePreview.errorFileParse');
+  }
+
+  // 根据文件类型返回默认错误
+  switch (fileType) {
+    case 'docx':
+      return t('PC.Components.FilePreview.errorDocxPreview');
+    case 'xlsx':
+      return t('PC.Components.FilePreview.errorXlsxPreview');
+    case 'pdf':
+      return t('PC.Components.FilePreview.errorPdfPreview');
+    case 'pptx':
+      return t('PC.Components.FilePreview.errorPptxPreview');
+    case 'image':
+      return t('PC.Components.FilePreview.errorImageLoad');
+    default:
+      return t('PC.Components.FilePreview.errorDefaultPreview');
+  }
+};
+
+const FilePreview: React.FC<FilePreviewProps> = ({
+  src,
+  staticFileBasePath,
+  srcList,
+  fileType,
+  height = '100%',
+  width = '100%',
+  showDownload = false,
+  showRefresh = false,
+  downloadFileName,
+  onRendered,
+  onError,
+  className,
+  style,
+  content: propsContent,
+}) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const previewerRef = useRef<any>(null);
+  const [status, setStatus] = useState<PreviewStatus>('idle');
+  const [errorMessage, setErrorMessage] = useState<string>('');
+  const [detectedType, setDetectedType] = useState<FileType | undefined>();
+  const [textContent, setTextContent] = useState<string>('');
+  const [htmlUrl, setHtmlUrl] = useState<string | null>(null);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [objectUrls, setObjectUrls] = useState<string[]>([]);
+  // 关键修复：延迟渲染 Markdown，避免从 HTML 切换到 MD 时的闪动
+  const [shouldRenderMarkdown, setShouldRenderMarkdown] =
+    useState<boolean>(false);
+  // 控制 Markdown 实际可见性：
+  // 不使用 callback ref 返回清理函数（React 会告警），改由 effect 管理显示时机
+  const [isMarkdownVisible, setIsMarkdownVisible] = useState<boolean>(false);
+
+  const resolvedType = fileType || detectedType;
+
+  // 关键修复：当从 HTML 切换到 Markdown 时，延迟渲染 PureMarkdownRenderer
+  // 使用 useEffect 延迟渲染，确保 HTML 容器已完全移除且布局稳定
+  useEffect(() => {
+    if (resolvedType === 'markdown' && textContent) {
+      // 增加延迟时间，确保 HTML 容器完全移除且布局稳定
+      const timer = setTimeout(() => {
+        setShouldRenderMarkdown(true);
+      }, 100); // 增加延迟时间，确保 DOM 更新和布局计算完成
+      return () => clearTimeout(timer);
+    } else if (resolvedType !== 'markdown') {
+      // 切换到其他类型时，立即重置
+      setShouldRenderMarkdown(false);
+      setIsMarkdownVisible(false);
+    }
+  }, [resolvedType, textContent]);
+
+  useEffect(() => {
+    if (!shouldRenderMarkdown || !textContent) {
+      setIsMarkdownVisible(false);
+      return;
+    }
+    // 先隐藏，再等待 DsMarkdown 完成首轮渲染后显示，避免初始化期间闪动/抖动
+    setIsMarkdownVisible(false);
+    const timer = setTimeout(() => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setIsMarkdownVisible(true);
+        });
+      });
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [shouldRenderMarkdown, textContent]);
+
+  const fileName = useMemo(() => {
+    if (downloadFileName) return downloadFileName;
+    if (typeof src === 'string') {
+      const parts = src.split('/');
+      return parts[parts.length - 1].split('?')[0] || 'download';
+    }
+    if (src instanceof File) return src.name;
+    return 'download';
+  }, [src, downloadFileName]);
+
+  useEffect(() => {
+    return () => {
+      objectUrls.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [objectUrls]);
+
+  const imageSources = useMemo(() => {
+    if (srcList && srcList.length > 0) {
+      return srcList.map((item) => {
+        if (typeof item === 'string') return item;
+        const url = URL.createObjectURL(item);
+        setObjectUrls((prev) => [...prev, url]);
+        return url;
+      });
+    }
+    if (src && resolvedType === 'image') return [getSourceUrl(src)];
+    return [];
+  }, [srcList, src, resolvedType]);
+
+  const handleDownload = useCallback(() => {
+    if (!src) return;
+    const url = getSourceUrl(src);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    if (typeof src !== 'string') URL.revokeObjectURL(url);
+  }, [src, fileName]);
+
+  const initPreview = async () => {
+    if (!containerRef.current || (!src && !srcList?.length && !propsContent))
+      return;
+
+    // Handle srcList for image gallery
+    if (srcList && srcList.length > 0) {
+      setDetectedType('image');
+      setStatus('success');
+      onRendered?.();
+      return;
+    }
+
+    if (!src) return;
+
+    // Detect file type
+    let type: FileType = fileType || 'unsupported';
+    if (!fileType) {
+      if (typeof src === 'string') {
+        type = getFileTypeFromName(src);
+        // Try Content-Type for URLs without extension
+        if (type === 'unsupported') {
+          try {
+            const response = await fetch(src, { method: 'HEAD' });
+            const contentType = response.headers.get('Content-Type');
+            if (contentType) type = getFileTypeFromContentType(contentType);
+          } catch (e) {
+            console.warn('Failed to detect Content-Type:', e);
+          }
+        }
+      } else if (src instanceof File) {
+        type = getFileTypeFromName(src.name);
+        if (type === 'unsupported' && src.type)
+          type = getFileTypeFromContentType(src.type);
+      } else if (src instanceof Blob && src.type) {
+        type = getFileTypeFromContentType(src.type);
+      }
+    }
+
+    setDetectedType(type);
+
+    if (type === 'unsupported') {
+      setStatus('unsupported');
+      return;
+    }
+
+    // Native browser types
+    if (['image', 'audio', 'video'].includes(type)) {
+      setStatus('success');
+      onRendered?.();
+      return;
+    }
+
+    // Text-based types
+    if (['markdown', 'text'].includes(type)) {
+      if (propsContent) {
+        setTextContent(propsContent);
+        setStatus('success');
+        onRendered?.();
+        return;
+      }
+      setStatus('loading');
+      try {
+        let content: string;
+        if (typeof src === 'string') {
+          const response = await fetch(src);
+          content = await response.text();
+        } else if (src instanceof File || src instanceof Blob) {
+          content = await src.text();
+        } else {
+          content = new TextDecoder().decode(src);
+        }
+        setTextContent(content);
+        setStatus('success');
+        onRendered?.();
+      } catch (error: any) {
+        setStatus('error');
+        setErrorMessage(t('PC.Components.FilePreview.errorLoadFileContent'));
+        onError?.(error);
+      }
+      return;
+    }
+
+    // HTML handling
+    if (type === 'html') {
+      if (propsContent) {
+        setHtmlUrl(null);
+        setTextContent(propsContent);
+        setStatus('success');
+        onRendered?.();
+        return;
+      }
+      if (typeof src === 'string') {
+        setHtmlUrl(src);
+        setTextContent('');
+        setStatus('success');
+        onRendered?.();
+      } else {
+        setStatus('loading');
+        setHtmlUrl(null);
+        try {
+          let content: string;
+          if (src instanceof File || src instanceof Blob) {
+            content = await src.text();
+          } else {
+            content = new TextDecoder().decode(src as ArrayBuffer);
+          }
+          setTextContent(content);
+          setStatus('success');
+          onRendered?.();
+        } catch (error: any) {
+          setStatus('error');
+          setErrorMessage(t('PC.Components.FilePreview.errorLoadHtmlContent'));
+          onError?.(error);
+        }
+      }
+      return;
+    }
+
+    // Document types with library preview
+    setStatus('loading');
+    setErrorMessage('');
+
+    if (previewerRef.current) {
+      try {
+        previewerRef.current.destroy?.();
+      } catch (e) {
+        /* ignore */
+      }
+      previewerRef.current = null;
+    }
+
+    containerRef.current.innerHTML = '';
+
+    try {
+      let previewer: any;
+      let previewSrc: any = src;
+
+      if (src instanceof File) {
+        previewSrc = await src.arrayBuffer();
+      }
+
+      switch (type) {
+        case 'docx':
+          previewer = jsPreviewDocx.init(containerRef.current);
+          await previewer.preview(previewSrc);
+          break;
+        case 'xlsx':
+          // @js-preview/excel 不支持 height 参数，高度通过 CSS 控制
+          previewer = jsPreviewExcel.init(containerRef.current);
+          await previewer.preview(previewSrc);
+          break;
+        case 'pdf':
+          previewer = jsPreviewPdf.init(containerRef.current, {
+            width: containerRef.current.clientWidth || undefined,
+            onError: (e: any) => {
+              setStatus('error');
+              setErrorMessage(getLocalizedErrorMessage(e?.message, 'pdf'));
+              onError?.(e);
+            },
+            onRendered: () => {
+              setStatus('success');
+              onRendered?.();
+            },
+          });
+          await previewer.preview(previewSrc);
+          break;
+        case 'pptx': {
+          // 由于初始化时容器 display: none，clientHeight 可能为 0
+          // 尝试从父容器获取尺寸，或使用传入的 height/width 属性
+          const parentEl = containerRef.current.parentElement;
+          const containerWidth =
+            containerRef.current.clientWidth ||
+            parentEl?.clientWidth ||
+            (typeof width === 'number' ? width : 800);
+          const containerHeight =
+            containerRef.current.clientHeight ||
+            parentEl?.clientHeight ||
+            (typeof height === 'number' ? height : 600);
+
+          previewer = pptxInit(containerRef.current, {
+            width: containerWidth,
+            height: containerHeight,
+          });
+          if (typeof previewSrc === 'string') {
+            const response = await fetch(previewSrc);
+            previewSrc = await response.arrayBuffer();
+          }
+          await previewer.preview(previewSrc);
+          break;
+        }
+      }
+
+      previewerRef.current = previewer;
+      if (type !== 'pdf') {
+        setStatus('success');
+        onRendered?.();
+      }
+    } catch (error: any) {
+      console.error('File preview error:', error);
+      setStatus('error');
+      // 使用用户友好的中文错误信息
+      const friendlyMessage = getLocalizedErrorMessage(error?.message, type);
+      setErrorMessage(friendlyMessage);
+      onError?.(error);
+    }
+  };
+
+  useEffect(() => {
+    if (src || srcList?.length || propsContent) {
+      initPreview();
+    } else {
+      setStatus('idle');
+    }
+    return () => {
+      if (previewerRef.current) {
+        try {
+          previewerRef.current.destroy?.();
+        } catch (e) {
+          /* ignore */
+        }
+        previewerRef.current = null;
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [src, srcList, fileType, propsContent]);
+
+  // ResizeObserver 监听容器尺寸变化
+  const lastSizeRef = useRef<{ width: number; height: number } | null>(null);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    let resizeTimeout: ReturnType<typeof setTimeout> | null = null;
+    const resizeObserver = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (!entry) return;
+
+      const { width, height } = entry.contentRect;
+
+      // 检查尺寸是否有显著变化（阈值 10px），避免重复初始化
+      const lastSize = lastSizeRef.current;
+      if (
+        lastSize &&
+        Math.abs(lastSize.width - width) < 10 &&
+        Math.abs(lastSize.height - height) < 10
+      ) {
+        return;
+      }
+
+      // 使用 debounce 避免频繁触发
+      if (resizeTimeout) clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(() => {
+        // 只有在已成功渲染且是需要尺寸的类型时才重新初始化
+        if (
+          status === 'success' &&
+          resolvedType &&
+          ['pptx', 'xlsx', 'pdf', 'docx'].includes(resolvedType)
+        ) {
+          lastSizeRef.current = { width, height };
+          initPreview();
+        }
+      }, 500);
+    });
+
+    // 监听父容器而非自身（因为自身可能 display: none）
+    const parentEl = containerRef.current.parentElement;
+    if (parentEl) {
+      // 初始化时记录尺寸
+      lastSizeRef.current = {
+        width: parentEl.clientWidth,
+        height: parentEl.clientHeight,
+      };
+      resizeObserver.observe(parentEl);
+    }
+
+    return () => {
+      if (resizeTimeout) clearTimeout(resizeTimeout);
+      resizeObserver.disconnect();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status, resolvedType]);
+
+  const handleRetry = () => {
+    initPreview();
+  };
+
+  const handlePrevImage = () => {
+    setCurrentImageIndex((prev) =>
+      prev > 0 ? prev - 1 : imageSources.length - 1,
+    );
+  };
+
+  const handleNextImage = () => {
+    setCurrentImageIndex((prev) =>
+      prev < imageSources.length - 1 ? prev + 1 : 0,
+    );
+  };
+
+  // 统一的图片路径处理函数
+  const normalizeImageSrc = useCallback(
+    (src: string) => {
+      if (!src || !staticFileBasePath) return src;
+
+      // 外部链接直接返回
+      if (src.startsWith('http') || src.startsWith('data:')) {
+        return src;
+      }
+
+      // 以 / 开头的绝对路径
+      if (src.startsWith('/')) {
+        // 已经是完整的静态资源路径，直接返回
+        if (src.startsWith('/api/computer/static/')) {
+          return src;
+        }
+
+        // 其他绝对路径，如果有 staticFileBasePath，则在前面拼上
+        return `${staticFileBasePath}${src}`;
+      }
+
+      // 处理相对路径 ./ ../
+      const normalized = src
+        .replace(/^\.\//, '') // ./ -> 空
+        .replace(/^\.\.\//, '') // ../ -> 空
+        .replace(/\/\.\//g, '/'); // /a/./b -> /a/b
+
+      return `${staticFileBasePath}/${normalized}`;
+    },
+    [staticFileBasePath],
+  );
+
+  // 对 Markdown 文本中的图片链接进行统一路径处理
+  const processedMarkdown = useMemo(() => {
+    if (!textContent) return textContent;
+
+    // 仅处理标准图片语法 ![alt](url)
+    return textContent.replace(
+      /(!\[[^\]]*\]\()([^)\s]+)(\))/g,
+      (match, prefix, url, suffix) => {
+        const normalizedUrl = normalizeImageSrc(url);
+        return `${prefix}${normalizedUrl}${suffix}`;
+      },
+    );
+  }, [textContent, normalizeImageSrc]);
+
+  const renderPreviewContent = () => {
+    if (!resolvedType) return null;
+
+    switch (resolvedType) {
+      case 'image':
+        return (
+          <div className={styles.imagePreview}>
+            {imageSources.length > 1 && (
+              <Button
+                className={styles.imageNavBtn}
+                icon={<LeftOutlined />}
+                onClick={handlePrevImage}
+              />
+            )}
+            <img
+              src={imageSources[currentImageIndex]}
+              alt="preview"
+              className={styles.previewImage}
+              onError={() => {
+                setStatus('error');
+                setErrorMessage(
+                  t('PC.Components.FilePreview.errorImageLoadCheckFile'),
+                );
+              }}
+            />
+            {imageSources.length > 1 && (
+              <>
+                <Button
+                  className={`${styles.imageNavBtn} ${styles.imageNavRight}`}
+                  icon={<RightOutlined />}
+                  onClick={handleNextImage}
+                />
+                <div className={styles.imageCounter}>
+                  {currentImageIndex + 1} / {imageSources.length}
+                </div>
+              </>
+            )}
+          </div>
+        );
+      case 'audio':
+        return (
+          <div className={styles.audioPreview}>
+            {getFileIcon('audio', 64)}
+            <audio controls className={styles.audioPlayer}>
+              <source src={getSourceUrl(src!)} />
+            </audio>
+          </div>
+        );
+      case 'video':
+        return (
+          <div className={styles.videoPreview}>
+            <video controls className={styles.videoPlayer}>
+              <source src={getSourceUrl(src!)} />
+            </video>
+          </div>
+        );
+      case 'html':
+        return (
+          <div className={styles.htmlPreview}>
+            <iframe
+              src={htmlUrl || undefined}
+              srcDoc={htmlUrl ? undefined : textContent}
+              sandbox={SANDBOX}
+              className={styles.htmlFrame}
+              title="HTML Preview"
+            />
+          </div>
+        );
+      case 'markdown':
+        return (
+          <div
+            className={`${styles.markdownPreview} ${styles['p-16']}`}
+            style={{
+              // 关键修复：确保容器尺寸稳定，避免 PureMarkdownRenderer 初始化时导致布局重排
+              width: '100%',
+              height: '100%',
+              minHeight: 0,
+              maxHeight: '100%',
+              contain: 'layout style paint',
+              boxSizing: 'border-box',
+              position: 'relative',
+            }}
+          >
+            {/* 关键修复：延迟渲染 PureMarkdownRenderer，避免从 HTML 切换到 MD 时的闪动 */}
+            {/* 在延迟期间使用 ReactMarkdown 作为占位符，避免空白 */}
+            {!shouldRenderMarkdown && textContent && (
+              <div
+                style={{
+                  padding: '24px',
+                  opacity: 0,
+                  visibility: 'hidden',
+                  pointerEvents: 'none',
+                }}
+              >
+                <ReactMarkdown>{processedMarkdown}</ReactMarkdown>
+              </div>
+            )}
+            {/* PureMarkdownRenderer 延迟渲染，使用绝对定位和隐藏，避免初始化时影响布局 */}
+            {shouldRenderMarkdown && textContent && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  padding: '24px',
+                  overflow: 'auto',
+                  // 通过 state 控制显隐，而不是 callback ref 返回 cleanup（避免 React ref 警告）
+                  opacity: isMarkdownVisible ? 1 : 0,
+                  visibility: isMarkdownVisible ? 'visible' : 'hidden',
+                  pointerEvents: isMarkdownVisible ? 'auto' : 'none',
+                  transition: 'opacity 0.3s ease-in-out',
+                }}
+              >
+                <PureMarkdownRenderer id="file-preview-md" disableTyping={true}>
+                  {processedMarkdown}
+                </PureMarkdownRenderer>
+              </div>
+            )}
+          </div>
+        );
+      case 'text':
+        return (
+          <div className={styles.textPreview}>
+            <pre className={styles.codeBlock}>
+              <code>{textContent}</code>
+            </pre>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
+  // 判断是否需要滚动支持（文档类型需要滚动，Excel 除外，它有自己的滚动条）
+  const needsScroll = ['docx', 'pdf', 'pptx'].includes(resolvedType || '');
+
+  // 是否应该显示内容（占据布局空间）
+  const shouldShowContent = ['docx', 'xlsx', 'pdf', 'pptx'].includes(
+    resolvedType || '',
+  );
+
+  return (
+    <div
+      className={`${styles.filePreviewContainer} ${
+        needsScroll ? styles.scrollable : ''
+      } ${className || ''}`}
+      style={{ width, height, ...style }}
+    >
+      {/* 工具栏 */}
+      {(showRefresh || showDownload) && src && status === 'success' && (
+        <div className={styles.toolbar}>
+          {showRefresh && (
+            <Tooltip title={t('PC.Components.FilePreview.tooltipRefresh')}>
+              <Button
+                className={styles.toolbarBtn}
+                icon={<ReloadOutlined />}
+                onClick={handleRetry}
+                type="text"
+              />
+            </Tooltip>
+          )}
+          {showDownload && (
+            <Tooltip title={t('PC.Components.FilePreview.tooltipDownload')}>
+              <Button
+                className={styles.toolbarBtn}
+                icon={<CloudDownloadOutlined />}
+                onClick={handleDownload}
+                type="text"
+              />
+            </Tooltip>
+          )}
+        </div>
+      )}
+
+      {status === 'idle' && !src && !srcList?.length && (
+        <div className={styles.placeholder}>
+          <FileOutlined
+            style={{ fontSize: 48, color: '#bfbfbf', marginBottom: 16 }}
+          />
+          <p>{t('PC.Components.FilePreview.emptyNoFile')}</p>
+        </div>
+      )}
+
+      {status === 'loading' && (
+        <div className={styles.loadingOverlay}>
+          {resolvedType && getFileIcon(resolvedType)}
+          <Spin size="large" />
+          <span className={styles.loadingText}>
+            {t('PC.Components.FilePreview.loadingPreview')}
+          </span>
+        </div>
+      )}
+
+      {status === 'error' && (
+        <div className={styles.errorOverlay}>
+          <Alert
+            message={t('PC.Components.FilePreview.alertPreviewFailed')}
+            description={
+              errorMessage || t('PC.Components.FilePreview.alertCannotPreview')
+            }
+            type="error"
+            showIcon
+            action={
+              <Button
+                size="small"
+                type="primary"
+                icon={<ReloadOutlined />}
+                onClick={handleRetry}
+              >
+                {t('PC.Components.FilePreview.retry')}
+              </Button>
+            }
+          />
+        </div>
+      )}
+
+      {status === 'unsupported' && (
+        <div className={styles.unsupportedOverlay}>
+          {getFileIcon('unsupported', 64)}
+          <p className={styles.unsupportedText}>
+            {t('PC.Components.FilePreview.unsupportedType')}
+          </p>
+          <p className={styles.unsupportedHint}>
+            {t(
+              'PC.Components.FilePreview.fileTypeLabel',
+              getExtension(fileName),
+            )}
+          </p>
+          {showDownload && (
+            <Button
+              type="primary"
+              icon={<CloudDownloadOutlined />}
+              onClick={handleDownload}
+            >
+              {t('PC.Components.FilePreview.downloadFile')}
+            </Button>
+          )}
+        </div>
+      )}
+
+      {status === 'success' &&
+        ['image', 'audio', 'video', 'html', 'markdown', 'text'].includes(
+          resolvedType || '',
+        ) &&
+        renderPreviewContent()}
+
+      <div
+        ref={containerRef}
+        className={styles.previewContent}
+        style={{
+          height,
+          width,
+          // 使用 visibility 控制显示，确保初始化时容器有尺寸
+          visibility: status === 'success' ? 'visible' : 'hidden',
+          // 只有在是文档类型时才占据空间（display block），否则隐藏不占据空间
+          display: shouldShowContent ? 'block' : 'none',
+          // Excel 不需要 overflow，因为它自己处理
+          overflow: resolvedType === 'xlsx' ? 'hidden' : 'auto',
+        }}
+      />
+    </div>
+  );
+};
+
+export default FilePreview;

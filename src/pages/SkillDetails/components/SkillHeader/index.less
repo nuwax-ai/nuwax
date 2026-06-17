@@ -1,0 +1,47 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.header {
+  height: 57px;
+  padding: @paddingSm @padding;
+  overflow-x: auto;
+  border-bottom: 1px solid @WHITE07;
+  box-sizing: border-box;
+
+  .avatar {
+    width: 27px;
+    height: 27px;
+    border-radius: @borderRadius;
+  }
+
+  .circle {
+    color: @GREEN03;
+    font-size: 16px;
+  }
+
+  .header-info {
+    padding-left: @paddingSm;
+    gap: 6px;
+
+    .h-title {
+      max-width: 360px;
+      font-size: 14px;
+      font-weight: @fontWeightStrong;
+      color: #3d3d3d;
+      white-space: nowrap;
+    }
+
+    .edit-ico {
+      color: #95979c;
+      font-size: 14px;
+    }
+  }
+
+  .right-box {
+    margin-left: auto;
+
+    .publish-btn {
+      margin-left: @marginXs;
+    }
+  }
+}

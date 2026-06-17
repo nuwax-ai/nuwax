@@ -1,0 +1,232 @@
+import agentImage from '@/assets/images/agent_image.png';
+import SvgIcon from '@/components/base/SvgIcon';
+import ConditionRender from '@/components/ConditionRender';
+import { APPLICATION_MORE_ACTION_DETAIL } from '@/constants/space.constants';
+import { dict } from '@/services/i18nRuntime';
+import { PermissionsEnum } from '@/types/enums/common';
+import { AgentTypeEnum, ApplicationMoreActionEnum } from '@/types/enums/space';
+import type {
+  AgentHeaderProps,
+  AgentHeaderTabKey,
+} from '@/types/interfaces/agentConfig';
+import { FormOutlined } from '@ant-design/icons';
+import { Button, Dropdown, MenuProps, Segmented, Tag } from 'antd';
+import classNames from 'classnames';
+import dayjs from 'dayjs';
+import React, { useMemo } from 'react';
+import { history, useModel, useParams } from 'umi';
+import styles from './index.less';
+
+const cx = classNames.bind(styles);
+
+/**
+ * 编辑智能体顶部header
+ */
+const AgentHeader: React.FC<AgentHeaderProps> = ({
+  // 是否隐藏返回箭头, 默认不隐藏
+  hideBack = false,
+  agentConfigInfo,
+  onToggleShowStand,
+  onToggleVersionHistory,
+  onEditAgent,
+  onPublish,
+  onOtherAction,
+  activeTab = 'arrange',
+  onTabChange,
+}) => {
+  const { spaceId } = useParams();
+
+  // 发布按钮是否禁用
+  const disabledBtn = useMemo(() => {
+    if (agentConfigInfo) {
+      return !agentConfigInfo?.permissions?.includes(PermissionsEnum.Publish);
+    } else {
+      return false;
+    }
+  }, [agentConfigInfo]);
+
+  // 提取权限检查逻辑
+  const hasPermission = (permission: PermissionsEnum) => {
+    return agentConfigInfo?.permissions?.includes(permission);
+  };
+
+  // 更多操作列表
+  const actionList = useMemo(() => {
+    return APPLICATION_MORE_ACTION_DETAIL.filter((item) => {
+      const type = item.type as ApplicationMoreActionEnum;
+
+      switch (type) {
+        // 临时会话
+        case ApplicationMoreActionEnum.Temporary_Session:
+          return (
+            hasPermission(PermissionsEnum.TempChat) &&
+            agentConfigInfo?.type !== AgentTypeEnum.TaskAgent
+          );
+        case ApplicationMoreActionEnum.Export_Config:
+          // 导出配置操作：只有空间创建者、空间管理员和智能体本身的创建者可导出
+          return hasPermission(PermissionsEnum.Export);
+        default:
+          // 其他操作默认展示
+          return true;
+      }
+    }).map((item) => {
+      return {
+        key: item.type,
+        label: (
+          <div
+            onClick={() => {
+              onOtherAction(item.type as ApplicationMoreActionEnum);
+            }}
+          >
+            {item.label}
+          </div>
+        ),
+      };
+    });
+  }, [agentConfigInfo]);
+
+  const items: MenuProps['items'] = [
+    {
+      key: 'showStand',
+      label: (
+        <div onClick={onToggleShowStand}>
+          {dict('PC.Pages.AgentEdit.showStand')}
+        </div>
+      ),
+    },
+    {
+      key: 'versionHistory',
+      label: (
+        <div onClick={onToggleVersionHistory}>
+          {dict('PC.Pages.AgentEdit.versionHistory')}
+        </div>
+      ),
+    },
+    ...actionList,
+  ];
+
+  const { tenantConfigInfo } = useModel('tenantConfigInfo');
+  const showSubscriptionTabs = tenantConfigInfo?.enableSubscription !== 0;
+
+  const tabOptions = useMemo(() => {
+    const opts = [
+      {
+        label: dict('PC.Pages.AgentEdit.arrange'),
+        value: 'arrange' as AgentHeaderTabKey,
+      },
+    ];
+    if (showSubscriptionTabs) {
+      opts.push(
+        {
+          label: dict('PC.Pages.AgentEdit.subscriptionSetting'),
+          value: 'subscriptionSetting' as AgentHeaderTabKey,
+        },
+        {
+          label: dict('PC.Pages.AgentEdit.subscriptionStats'),
+          value: 'subscriptionStats' as AgentHeaderTabKey,
+        },
+      );
+    }
+    return opts;
+  }, [showSubscriptionTabs]);
+
+  return (
+    <header className={cx('flex', 'items-center', 'relative', styles.header)}>
+      <ConditionRender condition={!hideBack}>
+        <SvgIcon
+          name="icons-nav-backward"
+          className={cx(styles['icon-backward'])}
+          onClick={() => {
+            history.push(`/space/${spaceId}/develop`);
+          }}
+        />
+      </ConditionRender>
+      <img
+        className={cx(styles.avatar, { [styles['hide-back']]: hideBack })}
+        src={agentConfigInfo?.icon || (agentImage as string)}
+        alt=""
+      />
+      <div className={cx('flex', 'flex-col', styles['header-info'])}>
+        <div className={cx('flex', 'items-center')}>
+          <h3 className={cx(styles['h-title'], 'text-ellipsis')}>
+            {agentConfigInfo?.name}
+          </h3>
+
+          <div className={cx('flex', 'items-center', styles['agent-rel-info'])}>
+            <ConditionRender condition={agentConfigInfo?.space?.icon}>
+              <img src={agentConfigInfo?.space?.icon} alt="" />
+            </ConditionRender>
+            <span className={cx(styles['space-name'], 'text-ellipsis')}>
+              {agentConfigInfo?.space?.name}
+            </span>
+          </div>
+
+          <FormOutlined
+            className={cx(styles['edit-ico'])}
+            onClick={onEditAgent}
+          />
+        </div>
+      </div>
+
+      {/* 头部导航栏 */}
+      {showSubscriptionTabs && (
+        <div className={cx('absolute', styles['header-segmented-wrap'])}>
+          <Segmented<AgentHeaderTabKey>
+            value={activeTab}
+            options={tabOptions}
+            onChange={(value) => onTabChange?.(value)}
+          />
+        </div>
+      )}
+
+      {/* 右侧操作区域 */}
+      <div className={cx(styles['right-box'], 'flex', 'items-center')}>
+        <div className={cx('flex', 'items-center', styles['save-time-box'])}>
+          <span className={cx(styles['save-time'])}>
+            {dict(
+              'PC.Pages.AgentEdit.draftAutoSavedAt',
+              dayjs(agentConfigInfo?.modified).format('HH:mm'),
+            )}
+          </span>
+          {/* 发布时间，如果不为空，与当前modified时间做对比，如果发布时间小于modified，则前端显示：有更新未发布 */}
+          {agentConfigInfo?.publishDate !== null &&
+            dayjs(agentConfigInfo?.publishDate).isBefore(
+              agentConfigInfo?.modified,
+            ) && (
+              <Tag
+                bordered={false}
+                color="volcano"
+                className={cx(styles['volcano'])}
+              >
+                {dict('PC.Pages.AgentEdit.unpublishedChanges')}
+              </Tag>
+            )}
+        </div>
+        <div className={cx(styles['fold-box'])}>
+          <Dropdown menu={{ items }} placement="bottomLeft">
+            <span
+              className={cx(
+                'flex',
+                'items-center',
+                'cursor-pointer',
+                styles['fold-btn'],
+              )}
+            >
+              <SvgIcon name="icons-common-more" />
+            </span>
+          </Dropdown>
+        </div>
+        <Button
+          type="primary"
+          className={cx(styles['publish-btn'])}
+          onClick={onPublish}
+          disabled={disabledBtn}
+        >
+          {dict('PC.Pages.AgentEdit.publish')}
+        </Button>
+      </div>
+    </header>
+  );
+};
+
+export default AgentHeader;

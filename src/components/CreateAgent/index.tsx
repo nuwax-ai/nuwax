@@ -1,0 +1,248 @@
+import agentImage from '@/assets/images/agent_image.png';
+import CustomFormModal from '@/components/CustomFormModal';
+import OverrideTextArea from '@/components/OverrideTextArea';
+import UploadAvatar from '@/components/UploadAvatar';
+// import { ICON_CONFIRM_STAR } from '@/constants/images.constants';
+// import { CREATE_AGENT_LIST } from '@/constants/space.constants';
+import { apiAgentAdd, apiAgentConfigUpdate } from '@/services/agentConfig';
+import { dict } from '@/services/i18nRuntime';
+import { CreateUpdateModeEnum } from '@/types/enums/common';
+import { AgentTypeEnum } from '@/types/enums/space';
+import type {
+  AgentAddParams,
+  AgentConfigUpdateParams,
+} from '@/types/interfaces/agent';
+import type { CreateAgentProps } from '@/types/interfaces/common';
+import { customizeRequiredMark } from '@/utils/form';
+import { Form, FormProps, Input, message } from 'antd';
+// import classNames from 'classnames';
+import React, { useCallback, useEffect, useState } from 'react';
+import { useRequest } from 'umi';
+// import styles from './index.less';
+
+// const cx = classNames.bind(styles);
+//
+// const { TextArea } = Input;
+
+const CreateAgent: React.FC<CreateAgentProps> = ({
+  type,
+  spaceId,
+  mode = CreateUpdateModeEnum.Create,
+  agentConfigInfo,
+  open,
+  onCancel,
+  onConfirmCreate,
+  onConfirmUpdate,
+}) => {
+  // 分段控制器：标准创建、AI 创建
+  // const [createAgentType, setCreateAgentType] = useState<CreateAgentEnum>(
+  //   CreateAgentEnum.Standard,
+  // );
+  const [form] = Form.useForm();
+  const [imageUrl, setImageUrl] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false);
+
+  // 新增智能体接口
+  const { run: runAdd } = useRequest(apiAgentAdd, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: (result: number) => {
+      setImageUrl('');
+      onConfirmCreate?.(result);
+      message.success(dict('PC.Components.CreateAgent.createSuccess'));
+      setLoading(false);
+    },
+    onError: () => {
+      setLoading(false);
+    },
+  });
+
+  // 更新智能体基础配置信息
+  const { run: runUpdate } = useRequest(apiAgentConfigUpdate, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: (_: null, params: AgentConfigUpdateParams[]) => {
+      message.success(dict('PC.Components.CreateAgent.editSuccess'));
+      setLoading(false);
+      const info: AgentConfigUpdateParams = params[0];
+      onConfirmUpdate?.(info);
+    },
+    onError: () => {
+      setLoading(false);
+    },
+  });
+
+  const initForm = () => {
+    setImageUrl(agentConfigInfo?.icon as string);
+    form.setFieldsValue({
+      name: agentConfigInfo?.name,
+      description: agentConfigInfo?.description,
+    });
+  };
+
+  useEffect(() => {
+    if (open) {
+      initForm();
+    }
+  }, [open, agentConfigInfo]);
+
+  const onFinish: FormProps<AgentAddParams>['onFinish'] = (values) => {
+    setLoading(true);
+    if (mode === CreateUpdateModeEnum.Create) {
+      runAdd({
+        ...values,
+        icon: imageUrl,
+        spaceId,
+        type,
+      });
+    } else {
+      // 更新智能体
+      runUpdate({
+        ...values,
+        icon: imageUrl,
+        id: agentConfigInfo?.id,
+        type,
+      });
+    }
+  };
+
+  const handlerSubmit = () => {
+    form.submit();
+  };
+
+  // 取消操作
+  const handleCancel = () => {
+    onCancel();
+    initForm();
+  };
+
+  // 获取标题
+  const getTitle = useCallback(() => {
+    if (type) {
+      const typeMap: Record<
+        AgentTypeEnum.ChatBot | AgentTypeEnum.TaskAgent,
+        string
+      > = {
+        [AgentTypeEnum.ChatBot]: dict('PC.Components.CreateAgent.typeChatBot'),
+        [AgentTypeEnum.TaskAgent]: dict(
+          'PC.Components.CreateAgent.typeTaskAgent',
+        ),
+      };
+
+      const typeName =
+        typeMap[type as AgentTypeEnum.ChatBot | AgentTypeEnum.TaskAgent];
+      return mode === CreateUpdateModeEnum.Create
+        ? dict('PC.Components.CreateAgent.createTypeTitle', typeName)
+        : dict('PC.Components.CreateAgent.updateTypeTitle', typeName);
+    }
+    return mode === CreateUpdateModeEnum.Create
+      ? dict('PC.Components.CreateAgent.createTitle')
+      : dict('PC.Components.CreateAgent.updateTitle');
+  }, [type, mode]);
+
+  return (
+    <CustomFormModal
+      form={form}
+      title={getTitle()}
+      open={open}
+      loading={loading}
+      // okText={createAgentType === CreateAgentEnum.Standard ? '' : '生成'}
+      // okPrefixIcon={
+      //   createAgentType === CreateAgentEnum.Standard ? (
+      //     ''
+      //   ) : (
+      //     <ICON_CONFIRM_STAR />
+      //   )
+      // }
+      onCancel={handleCancel}
+      onConfirm={handlerSubmit}
+    >
+      {/*{mode === CreateUpdateModeEnum.Create && (*/}
+      {/*  <Segmented*/}
+      {/*    className={cx(styles.segment)}*/}
+      {/*    value={createAgentType}*/}
+      {/*    onChange={setCreateAgentType}*/}
+      {/*    block*/}
+      {/*    options={CREATE_AGENT_LIST}*/}
+      {/*  />*/}
+      {/*)}*/}
+      <Form
+        form={form}
+        requiredMark={customizeRequiredMark}
+        layout="vertical"
+        onFinish={onFinish}
+        autoComplete="off"
+      >
+        {/*{createAgentType === CreateAgentEnum.Standard ? (*/}
+        {/*  <>*/}
+        <Form.Item
+          name="name"
+          label={dict('PC.Components.CreateAgent.nameLabel')}
+          validateTrigger="onBlur"
+          rules={[
+            {
+              required: true,
+              message: dict('PC.Components.CreateAgent.nameRequired'),
+            },
+            {
+              validator(_, value) {
+                if (!value || value?.length <= 50) {
+                  return Promise.resolve();
+                }
+                if (value?.length > 50) {
+                  return Promise.reject(
+                    new Error(dict('PC.Components.CreateAgent.nameMaxLength')),
+                  );
+                }
+                return Promise.reject(
+                  new Error(dict('PC.Components.CreateAgent.nameRequired')),
+                );
+              },
+            },
+          ]}
+        >
+          <Input
+            placeholder={dict('PC.Components.CreateAgent.namePlaceholder')}
+            showCount
+            maxLength={50}
+          />
+        </Form.Item>
+        <OverrideTextArea
+          name="description"
+          label={dict('PC.Components.CreateAgent.descriptionLabel')}
+          initialValue={agentConfigInfo?.description}
+          placeholder={dict('PC.Components.CreateAgent.descriptionPlaceholder')}
+          maxLength={10000}
+        />
+        <Form.Item
+          name="icon"
+          label={dict('PC.Components.CreateAgent.iconLabel')}
+        >
+          <UploadAvatar
+            onUploadSuccess={setImageUrl}
+            imageUrl={imageUrl}
+            defaultImage={agentImage as string}
+            svgIconName="icons-workspace-agent"
+          />
+        </Form.Item>
+        {/*  </>*/}
+        {/*) : (*/}
+        {/*  <Form.Item*/}
+        {/*    className={cx(styles['text-area'])}*/}
+        {/*    name="description"*/}
+        {/*    rules={[*/}
+        {/*      { required: true, message: '请描述你希望创建一个什么样的智能体' },*/}
+        {/*    ]}*/}
+        {/*  >*/}
+        {/*    <TextArea*/}
+        {/*      placeholder="请描述你希望创建一个什么样的智能体"*/}
+        {/*      autoSize={{ minRows: 4, maxRows: 6 }}*/}
+        {/*    />*/}
+        {/*  </Form.Item>*/}
+        {/*)}*/}
+      </Form>
+    </CustomFormModal>
+  );
+};
+
+export default CreateAgent;

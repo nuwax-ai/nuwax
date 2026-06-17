@@ -1,0 +1,309 @@
+@import '@/styles/color.less';
+@import '@/styles/token.less';
+
+/* ─── Shell ─────────────────────────────────────────── */
+.shell {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  height: auto;
+  max-height: min(420px, 45vh);
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 8%);
+  border-radius: 14px;
+  background: @colorBgContainer;
+  box-shadow: 0 2px 8px -3px rgba(0, 0, 0, 6%), 0 1px 2px -1px rgba(0, 0, 0, 4%);
+}
+
+/* ─── Header ─────────────────────────────────────────── */
+.header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 10px;
+  padding: 10px 14px 8px;
+  border-bottom: 1px solid rgba(0, 0, 0, 6%);
+  background: linear-gradient(
+    180deg,
+    rgba(@colorPrimary, 0.06) 0%,
+    @colorBgContainer 100%
+  );
+  border-radius: 14px 14px 0 0;
+}
+
+.iconWrap {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: rgba(@colorPrimary, 0.1);
+  color: @colorPrimary;
+  font-size: 15px;
+  line-height: 1;
+}
+
+.headerMain {
+  flex: 1;
+  min-width: 0;
+}
+
+.eyebrow {
+  display: block;
+  margin-bottom: 1px;
+  color: @colorPrimary;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.title {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  color: @colorTextBase;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: @lineHeight;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.desc {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  margin-top: 2px;
+  font-size: 12px;
+  color: @colorTextSecondary;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.statusTag {
+  flex-shrink: 0;
+  align-self: flex-start;
+  margin: 2px 0 0;
+}
+
+/* ─── Wizard ─────────────────────────────────────────── */
+.wizardBlock {
+  flex-shrink: 0;
+  padding: 8px 14px 0;
+}
+
+.steps {
+  margin-bottom: 0;
+
+  :global {
+    .ant-steps-item-container {
+      display: flex !important;
+      align-items: center !important;
+    }
+
+    .ant-steps-item-icon {
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      margin-top: 0 !important;
+      margin-bottom: 0 !important;
+    }
+
+    .ant-steps-item-content {
+      display: inline-flex !important;
+      align-items: center !important;
+    }
+
+    .ant-steps-item-title {
+      font-size: 12px !important;
+      line-height: 1 !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      height: 24px !important;
+    }
+
+    .ant-steps-item-description {
+      max-width: 120px;
+      font-size: 11px !important;
+    }
+
+    .ant-steps-item-process .ant-steps-item-icon {
+      background: @colorPrimary;
+      border-color: @colorPrimary;
+    }
+  }
+}
+
+.stepCallout {
+  margin-top: 6px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 3%);
+  border: 1px solid rgba(0, 0, 0, 6%);
+}
+
+.stepCalloutText {
+  font-size: 12px;
+  color: @colorTextSecondary;
+  line-height: 1.4;
+}
+
+/* ─── Form Surface (scrollable) ─────────────────────── */
+.formSurface {
+  flex: 1;
+  min-height: 0;
+  padding: 10px 14px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 12%) transparent;
+
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 12%);
+    border-radius: 4px;
+  }
+}
+
+.form {
+  margin: 0;
+  min-width: 0;
+
+  :global {
+    .ant-form-item,
+    .ant-form-item-control,
+    .ant-form-item-control-input,
+    .ant-form-item-control-input-content {
+      min-width: 0;
+      max-width: 100%;
+    }
+
+    .ant-form-item {
+      margin-bottom: 10px;
+    }
+
+    .ant-form-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .ant-form-item-label > label {
+      color: @colorTextSecondary;
+      font-size: 12px;
+      font-weight: 500;
+      padding-bottom: 3px;
+    }
+
+    .ant-form-item-explain-error {
+      font-size: 11px;
+      margin-top: 2px;
+    }
+  }
+}
+
+/* ─── Footer ─────────────────────────────────────────── */
+.footer {
+  flex-shrink: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 14px 10px;
+  border-top: 1px solid rgba(0, 0, 0, 6%);
+  background: rgba(0, 0, 0, 2%);
+  border-radius: 0 0 14px 14px;
+}
+
+.stepMeta {
+  font-size: 12px;
+  color: @colorTextSecondary;
+}
+
+.footerActions {
+  margin-left: auto;
+  max-width: 100%;
+  justify-content: flex-end;
+
+  :global {
+    .ant-space-item {
+      min-width: 0;
+    }
+  }
+}
+
+.buttonLabel {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  gap: 5px;
+}
+
+.shortcut {
+  display: inline-block;
+  min-width: 16px;
+  padding: 0 3px;
+  border: 1px solid rgba(0, 0, 0, 10%);
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 70%);
+  color: @colorTextSecondary;
+  font-size: 10px;
+  font-family: inherit;
+  line-height: 14px;
+  text-align: center;
+  pointer-events: none;
+}
+
+.error {
+  display: block;
+  padding: 0 14px 6px;
+  font-size: 12px;
+}
+
+@media screen and (max-width: 520px) {
+  .shell {
+    max-height: min(460px, 55vh);
+  }
+
+  .header {
+    align-items: flex-start;
+    gap: 8px;
+    padding: 10px 12px 8px;
+  }
+
+  .wizardBlock,
+  .formSurface {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .footer {
+    justify-content: flex-end;
+    padding: 8px 12px 10px;
+  }
+
+  .stepMeta {
+    width: 100%;
+  }
+
+  .footerActions {
+    margin-left: 0;
+  }
+}

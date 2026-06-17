@@ -1,0 +1,197 @@
+@import '@/styles/token.less';
+
+.body {
+  padding: @paddingXs @paddingMd @paddingLg;
+}
+
+.loading-wrap {
+  min-height: 320px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/** 套餐卡片区域：列数由 TS 注入 `--plan-cols`（与 Modal 宽度推导一致）；`data-desktop-cols` 仅供下方媒体查询判断「桌面是否三列」。 */
+.cards-row {
+  --plan-cols: 3;
+
+  display: grid;
+  grid-template-columns: repeat(var(--plan-cols), minmax(0, 1fr));
+  gap: 16px;
+  max-height: min(520px, 62vh);
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding-bottom: @paddingXs;
+  align-content: start;
+  scrollbar-width: thin;
+
+  /** 平板宽度：若在桌面为三列布局，则降为两列，避免卡片过窄 */
+  @media (max-width: 900px) {
+    &[data-desktop-cols='3'] {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  /** 小屏单列，与 Modal min(…, 100vw-32px) 配合阅读 */
+  @media (max-width: 560px) {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
+
+  &::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    border-radius: 3px;
+    background: rgba(0, 0, 0, 12%);
+  }
+}
+
+.plan-pay-card {
+  position: relative;
+  min-width: 0;
+  width: 100%;
+  background: #f5f5f7;
+  border-radius: 16px;
+  padding: 20px 18px 18px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+
+.card-header {
+  margin-bottom: @marginSm;
+}
+
+.title {
+  font-size: @fontSizeXl;
+  color: @colorTextHeading;
+  line-height: 1.3;
+  margin-bottom: 0;
+}
+
+.price-block {
+  margin-bottom: @marginSm;
+}
+
+.price-main-row {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+}
+
+.price-main {
+  font-size: 32px;
+  line-height: 1;
+  color: @colorTextHeading;
+}
+
+.price-unit {
+  font-size: @fontSizeSm;
+  color: @colorTextSecondary;
+}
+
+.price-original {
+  height: 20px;
+  width: 100%;
+  font-size: @fontSizeSm;
+  color: @colorTextTertiary;
+  text-decoration: line-through;
+}
+
+.subscribe-btn-wrap {
+  margin-bottom: @margin;
+
+  /** Ant Design Button：根节点 inline-flex；省略须落在包住文案的子 span（并设 min-width:0） */
+  :global(.ant-btn) {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    overflow: hidden;
+    height: 36px;
+    border-radius: 10px;
+    font-size: @fontSize;
+    font-weight: 500;
+  }
+
+  :global(.ant-btn:not(.ant-btn-icon-only) > span:not(.ant-btn-loading-icon)) {
+    min-width: 0;
+    flex: 1 1 auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: center;
+  }
+
+  /** 无 ant-btn 类时的兜底（一般不存在） */
+  button:not(:global(.ant-btn)) {
+    width: 100%;
+    min-width: 0;
+    height: 36px;
+    border-radius: 10px;
+    font-size: @fontSize;
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.subscribe-btn-upgrade {
+  background: @colorPrimary !important;
+  border-color: @colorPrimary !important;
+  color: #fff !important;
+
+  &:hover {
+    opacity: 0.88;
+    color: #fff !important;
+  }
+}
+
+.subscribe-btn-upgrade-accent {
+  background: #a8856a !important;
+  border-color: #a8856a !important;
+  color: #fff !important;
+
+  &:hover {
+    opacity: 0.9;
+    color: #fff !important;
+  }
+}
+
+.subscribe-btn-current {
+  background: #ece8e1 !important;
+  border-color: #ece8e1 !important;
+  color: @colorTextSecondary !important;
+}
+
+.points-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  font-size: @fontSize;
+  font-weight: 500;
+  color: @colorTextSecondary;
+}
+
+.diamond {
+  display: inline-block;
+  font-size: @fontSizeSm;
+  line-height: 1;
+  color: @colorTextHeading;
+  transform: rotate(45deg);
+  width: 8px;
+  height: 8px;
+  border: 1.5px solid @colorTextHeading;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.empty {
+  padding: 48px @padding;
+  text-align: center;
+  color: @colorTextTertiary;
+}

@@ -1,0 +1,74 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.row {
+  padding: @paddingXs;
+  cursor: default;
+  color: @navSecondMenuTextSecondary;
+
+  &.menuItem {
+    cursor: pointer;
+
+    .name {
+      color: @navSecondMenuTextSecondary;
+      font-size: @fontSize;
+      line-height: @fontHeightLg;
+      white-space: nowrap;
+    }
+
+    &.has-icon {
+      .name {
+        margin-left: @marginXs;
+      }
+    }
+  }
+
+  &.active {
+    background-color: @colorBgContainer;
+    color: @colorPrimary;
+    border-radius: @borderRadius;
+    box-shadow: @boxShadowTertiary;
+
+    .name {
+      color: @colorPrimary;
+    }
+  }
+
+  &:hover {
+    background-color: @colorBgContainer;
+    border-radius: @borderRadius;
+    box-shadow: @boxShadowTertiary;
+    color: @colorTextSecondary;
+
+    .name {
+      color: @colorTextSecondary;
+    }
+
+    .collectIcon {
+      visibility: visible;
+      color: @colorTextSecondary;
+    }
+  }
+
+  .icon-box {
+    font-size: 20px;
+    border-radius: @borderRadiusSm;
+    overflow: hidden;
+    flex-shrink: 0;
+
+    .icon-image {
+      width: 20px;
+      height: 20px;
+    }
+  }
+
+  .collectIcon {
+    color: @navSecondMenuTextSecondary;
+    visibility: hidden;
+    transition: background-color ease-in-out 0.2s;
+
+    &:hover {
+      background-color: @colorBgContainer;
+    }
+  }
+}

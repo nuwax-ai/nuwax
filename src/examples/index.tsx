@@ -1,0 +1,420 @@
+import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
+import {
+  AppstoreOutlined,
+  BulbOutlined,
+  CodeOutlined,
+  DesktopOutlined,
+  ExperimentOutlined,
+  EyeOutlined,
+  FormOutlined,
+  HeartOutlined,
+  InboxOutlined,
+  LockOutlined,
+  RocketOutlined,
+  StarOutlined,
+} from '@ant-design/icons';
+import {
+  Avatar,
+  Button,
+  Card,
+  Col,
+  List,
+  Row,
+  Space,
+  Tag,
+  Typography,
+} from 'antd';
+import React from 'react';
+import { history } from 'umi';
+import './index.less';
+
+const { Title, Paragraph, Text } = Typography;
+
+/**
+ * 示例页面索引
+ * 展示所有可用的示例和演示页面
+ */
+const ExamplesIndex: React.FC = () => {
+  const { data } = useUnifiedTheme();
+  const isChineseLanguage = data.language === 'zh-CN';
+
+  // 示例列表数据
+  const examples = [
+    {
+      id: 'antd-showcase',
+      title: isChineseLanguage
+        ? 'Ant Design 组件展示'
+        : 'Ant Design Components Showcase',
+      description: isChineseLanguage
+        ? '全面展示 Ant Design 所有组件在不同主题和语言下的样式效果，包括按钮、表格、表单、导航等各类组件。'
+        : 'Comprehensive showcase of all Ant Design components with different themes and languages, including buttons, tables, forms, navigation and more.',
+      tags: [
+        { text: isChineseLanguage ? '组件展示' : 'Components', color: 'blue' },
+        {
+          text: isChineseLanguage ? '主题切换' : 'Theme Switch',
+          color: 'purple',
+        },
+        {
+          text: isChineseLanguage ? '多语言' : 'Multi-language',
+          color: 'green',
+        },
+      ],
+      icon: <AppstoreOutlined />,
+      path: '/examples/antd-showcase',
+      featured: true,
+    },
+    {
+      id: 'svg-icon-showcase',
+      title: isChineseLanguage ? 'SvgIcon 图标展示' : 'SvgIcon Showcase',
+      description: isChineseLanguage
+        ? '展示项目中所有可用的 SVG 图标，支持搜索、分类查看和代码复制功能，方便开发者快速找到和使用图标。'
+        : 'Showcase all available SVG icons in the project with search, category viewing, and code copying functionality for easy developer usage.',
+      tags: [
+        { text: isChineseLanguage ? '图标展示' : 'Icons', color: 'green' },
+        {
+          text: isChineseLanguage ? '搜索功能' : 'Search',
+          color: 'blue',
+        },
+        {
+          text: isChineseLanguage ? '代码复制' : 'Code Copy',
+          color: 'purple',
+        },
+      ],
+      icon: <AppstoreOutlined />,
+      path: '/examples/svg-icon-showcase',
+      featured: true,
+    },
+    {
+      id: 'theme-demo',
+      title: isChineseLanguage ? '主题功能演示' : 'Theme Demo',
+      description: isChineseLanguage
+        ? '演示主题切换和多语言功能的使用方法，展示如何在组件中集成全局设置。'
+        : 'Demonstrate theme switching and multi-language functionality, showing how to integrate global settings in components.',
+      tags: [
+        { text: isChineseLanguage ? '主题' : 'Theme', color: 'orange' },
+        { text: isChineseLanguage ? '演示' : 'Demo', color: 'cyan' },
+      ],
+      icon: <BulbOutlined />,
+      path: '/examples/theme-demo',
+      featured: false,
+    },
+    {
+      id: 'vnc-preview-demo',
+      title: isChineseLanguage ? 'VNC 远程桌面演示' : 'VNC Preview Demo',
+      description: isChineseLanguage
+        ? '演示 VncPreview 组件的使用，连接到远程 VNC 会话，支持自动连接、自适应缩放等功能。'
+        : 'Demonstrate the usage of VncPreview component, connecting to a remote VNC session with auto-connect and responsive scaling.',
+      tags: [
+        { text: isChineseLanguage ? '远程桌面' : 'VNC', color: 'blue' },
+        { text: isChineseLanguage ? '组件演示' : 'Demo', color: 'green' },
+      ],
+      icon: <DesktopOutlined />,
+      path: '/examples/vnc-preview-demo',
+      featured: true,
+    },
+    {
+      id: 'empty-state-showcase',
+      title: isChineseLanguage ? '空状态组件展示' : 'Empty State Showcase',
+      description: isChineseLanguage
+        ? '展示 AppDevEmptyState 组件的所有状态类型，包括加载中、错误、空状态、服务器状态等 16 种状态的 Figma 设计图标。'
+        : 'Showcase all empty state types of AppDevEmptyState component, including loading, error, empty, server states with Figma-designed icons.',
+      tags: [
+        { text: isChineseLanguage ? '空状态' : 'Empty State', color: 'blue' },
+        {
+          text: isChineseLanguage ? 'Figma 图标' : 'Figma Icons',
+          color: 'purple',
+        },
+        { text: isChineseLanguage ? '组件展示' : 'Components', color: 'green' },
+      ],
+      icon: <InboxOutlined />,
+      path: '/examples/empty-state-showcase',
+      featured: true,
+    },
+    {
+      id: 'sse-streaming-test',
+      title: isChineseLanguage ? 'SSE 流式渲染测试' : 'SSE Streaming Test',
+      description: isChineseLanguage
+        ? '使用真实的 SSE 数据模拟流式渲染，验证消息缓冲区优化效果，监控帧率和渲染性能。'
+        : 'Test streaming rendering with real SSE data, verify message buffer optimization effect, monitor FPS and rendering performance.',
+      tags: [
+        {
+          text: isChineseLanguage ? '性能测试' : 'Performance',
+          color: 'orange',
+        },
+        { text: isChineseLanguage ? '流式渲染' : 'Streaming', color: 'blue' },
+        { text: isChineseLanguage ? 'SSE' : 'SSE', color: 'green' },
+      ],
+      icon: <RocketOutlined />,
+      path: '/examples/sse-streaming-test',
+      featured: true,
+    },
+    {
+      id: 'agent-intervention-demo',
+      title: isChineseLanguage
+        ? 'Agent 干预交互卡片'
+        : 'Agent Intervention Cards',
+      description: isChineseLanguage
+        ? '展示 ACP 权限审批与 MCP Ask 结构化提问卡片的 UI 与交互，包含 radio、wizard、文件上传等多种表单形态（Mock 数据）。'
+        : 'Showcase ACP permission approval and MCP Ask structured question cards with radio, wizard, file upload and more (mock data).',
+      tags: [
+        { text: isChineseLanguage ? 'ACP 权限' : 'ACP', color: 'blue' },
+        { text: isChineseLanguage ? 'MCP Ask' : 'MCP Ask', color: 'green' },
+        {
+          text: isChineseLanguage ? '干预流程' : 'Intervention',
+          color: 'purple',
+        },
+      ],
+      icon: <FormOutlined />,
+      path: '/examples/agent-intervention-demo',
+      featured: true,
+    },
+    {
+      id: 'menu-permission-demo',
+      title: isChineseLanguage ? '菜单权限演示' : 'Menu Permission Demo',
+      description: isChineseLanguage
+        ? '展示动态菜单系统和功能权限控制的使用方式，包括 PermissionWrapper 组件和 usePermission Hook 的使用示例。'
+        : 'Demonstrate dynamic menu system and permission control usage, including PermissionWrapper component and usePermission Hook examples.',
+      tags: [
+        { text: isChineseLanguage ? '权限控制' : 'Permission', color: 'red' },
+        {
+          text: isChineseLanguage ? '动态菜单' : 'Dynamic Menu',
+          color: 'blue',
+        },
+        { text: isChineseLanguage ? 'Hook' : 'Hook', color: 'purple' },
+      ],
+      icon: <LockOutlined />,
+      path: '/examples/menu-permission-demo',
+      featured: true,
+    },
+  ];
+
+  // 跳转到示例页面
+  const navigateToExample = (path: string) => {
+    if (path.startsWith('/examples/')) {
+      // 对于 examples 下的页面，直接在当前窗口打开
+      window.location.href = path;
+    } else {
+      // 对于其他页面，使用 history 跳转
+      history.push(path);
+    }
+  };
+
+  // 特色示例
+  const featuredExamples = examples.filter((example) => example.featured);
+
+  return (
+    <div className="examples-index">
+      {/* 页面标题 */}
+      <div className="examples-header">
+        <Title level={1}>
+          <ExperimentOutlined
+            style={{ marginRight: 16, color: 'var(--xagi-color-primary)' }}
+          />
+          {isChineseLanguage ? '示例展示中心' : 'Examples Showcase Center'}
+        </Title>
+        <Paragraph type="secondary">
+          {isChineseLanguage
+            ? '这里包含了各种功能演示和组件展示页面，帮助你了解项目的功能特性和使用方法。'
+            : 'This contains various feature demonstrations and component showcase pages to help you understand the project features and usage.'}
+        </Paragraph>
+      </div>
+
+      <Row gutter={[24, 24]}>
+        {/* 特色示例 */}
+        {featuredExamples.length > 0 && (
+          <Col span={24}>
+            <Card
+              title={
+                <Space>
+                  <StarOutlined
+                    style={{ color: 'var(--xagi-color-warning)' }}
+                  />
+                  {isChineseLanguage ? '特色示例' : 'Featured Examples'}
+                </Space>
+              }
+              className="featured-section"
+            >
+              <Row gutter={[16, 16]}>
+                {featuredExamples.map((example) => (
+                  <Col xs={24} sm={24} md={12} lg={8} key={example.id}>
+                    <Card
+                      hoverable
+                      className="example-card featured-card"
+                      cover={
+                        <div className="example-cover">
+                          <div className="example-icon">{example.icon}</div>
+                        </div>
+                      }
+                      actions={[
+                        <Button
+                          key="view"
+                          type="primary"
+                          icon={<EyeOutlined />}
+                          onClick={() => navigateToExample(example.path)}
+                        >
+                          {isChineseLanguage ? '查看示例' : 'View Example'}
+                        </Button>,
+                      ]}
+                    >
+                      <Card.Meta
+                        title={
+                          <Space>
+                            {example.title}
+                            <Tag color="gold" style={{ marginLeft: 4 }}>
+                              {isChineseLanguage ? '推荐' : 'Featured'}
+                            </Tag>
+                          </Space>
+                        }
+                        description={
+                          <div>
+                            <Paragraph ellipsis={{ rows: 3 }}>
+                              {example.description}
+                            </Paragraph>
+                            <Space wrap style={{ marginTop: 8 }}>
+                              {example.tags.map((tag, index) => (
+                                <Tag key={index} color={tag.color}>
+                                  {tag.text}
+                                </Tag>
+                              ))}
+                            </Space>
+                          </div>
+                        }
+                      />
+                    </Card>
+                  </Col>
+                ))}
+              </Row>
+            </Card>
+          </Col>
+        )}
+
+        {/* 所有示例列表 */}
+        <Col span={24}>
+          <Card
+            title={
+              <Space>
+                <CodeOutlined />
+                {isChineseLanguage ? '所有示例' : 'All Examples'}
+              </Space>
+            }
+          >
+            <List
+              itemLayout="vertical"
+              dataSource={examples}
+              renderItem={(example) => (
+                <List.Item
+                  key={example.id}
+                  className="example-list-item"
+                  actions={[
+                    <Button
+                      key="view"
+                      type="primary"
+                      icon={<EyeOutlined />}
+                      onClick={() => navigateToExample(example.path)}
+                    >
+                      {isChineseLanguage ? '查看示例' : 'View Example'}
+                    </Button>,
+                  ]}
+                >
+                  <List.Item.Meta
+                    avatar={
+                      <Avatar
+                        size={64}
+                        icon={example.icon}
+                        style={{
+                          backgroundColor: 'var(--xagi-color-primary)',
+                          fontSize: 24,
+                        }}
+                      />
+                    }
+                    title={
+                      <Space>
+                        <Text strong style={{ fontSize: 18 }}>
+                          {example.title}
+                        </Text>
+                        {example.featured && (
+                          <Tag color="gold">
+                            {isChineseLanguage ? '推荐' : 'Featured'}
+                          </Tag>
+                        )}
+                      </Space>
+                    }
+                    description={
+                      <div>
+                        <Paragraph style={{ margin: '8px 0' }}>
+                          {example.description}
+                        </Paragraph>
+                        <Space wrap>
+                          {example.tags.map((tag, index) => (
+                            <Tag key={index} color={tag.color}>
+                              {tag.text}
+                            </Tag>
+                          ))}
+                        </Space>
+                      </div>
+                    }
+                  />
+                </List.Item>
+              )}
+            />
+          </Card>
+        </Col>
+
+        {/* 使用指南 */}
+        <Col span={24}>
+          <Card
+            title={
+              <Space>
+                <BulbOutlined />
+                {isChineseLanguage ? '使用指南' : 'Usage Guide'}
+              </Space>
+            }
+          >
+            <Row gutter={[16, 16]}>
+              <Col xs={24} md={12}>
+                <div className="guide-item">
+                  <RocketOutlined
+                    style={{
+                      fontSize: 24,
+                      color: 'var(--xagi-color-primary)',
+                      marginBottom: 8,
+                    }}
+                  />
+                  <Title level={4}>
+                    {isChineseLanguage ? '快速开始' : 'Quick Start'}
+                  </Title>
+                  <Paragraph>
+                    {isChineseLanguage
+                      ? '选择你感兴趣的示例，点击"查看示例"按钮即可访问。每个示例都包含完整的代码实现和详细的功能说明。'
+                      : 'Choose the example you are interested in and click the "View Example" button to access it. Each example includes complete code implementation and detailed feature descriptions.'}
+                  </Paragraph>
+                </div>
+              </Col>
+              <Col xs={24} md={12}>
+                <div className="guide-item">
+                  <HeartOutlined
+                    style={{
+                      fontSize: 24,
+                      color: 'var(--xagi-color-error)',
+                      marginBottom: 8,
+                    }}
+                  />
+                  <Title level={4}>
+                    {isChineseLanguage ? '主题切换' : 'Theme Switching'}
+                  </Title>
+                  <Paragraph>
+                    {isChineseLanguage
+                      ? '使用右下角的设置按钮可以切换亮色/暗色主题和中英文语言，实时查看不同配置下的组件效果。'
+                      : 'Use the settings button in the bottom right corner to switch between light/dark themes and Chinese/English languages to see component effects under different configurations.'}
+                  </Paragraph>
+                </div>
+              </Col>
+            </Row>
+          </Card>
+        </Col>
+      </Row>
+    </div>
+  );
+};
+
+export default ExamplesIndex;

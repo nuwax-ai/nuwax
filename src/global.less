@@ -1,0 +1,195 @@
+@import 'styles/color.less';
+@import 'styles/custom.less';
+@import 'styles/components.less';
+
+html {
+  width: 100%;
+  height: 100%;
+  min-width: 1200px; //TODO 这个要和UI 确认
+  background-color: #fff;
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+}
+
+body {
+  position: relative;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, Roboto,
+    Ubuntu, Cantarell, 'Noto Sans', Arial, 'PingFang SC', 'Source Han Sans SC',
+    'Microsoft YaHei UI', 'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif;
+  margin: 0;
+  padding: 0;
+  transform: translate3d(0, 0, 0);
+
+  ul,
+  li {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  a {
+    text-decoration: none; /* 取消链接默认的下划线 */
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    margin-bottom: 0;
+  }
+
+  p {
+    margin-bottom: 0;
+  }
+}
+
+// 滚动条
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+// 滚动条轨道
+::-webkit-scrollbar-track {
+  // background: @GRAY01;
+  background: transparent;
+}
+// 滚动条滑块
+::-webkit-scrollbar-thumb {
+  background: @GRAY19;
+  border-radius: 6px; /* 滚动条滑块圆角 */
+  transition: background-color 0.3s ease-in-out; /* 添加过渡动画 */
+}
+// 滚动条滑块悬停效果
+::-webkit-scrollbar-thumb:hover {
+  background: @GRAY; /* 鼠标悬停时颜色加深 */
+}
+
+@media (max-width: 768px) {
+  html {
+    min-width: unset;
+  }
+}
+
+.scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.scrollbar::-webkit-scrollbar-track-piece {
+  background-color: #fff;
+}
+
+/* 滚动条的内层滑轨背景颜色 */
+
+.scrollbar::-webkit-scrollbar-track {
+  background: @GRAY01;
+}
+
+/* 滚动条的外层滑轨背景颜色 */
+
+.scrollbar::-webkit-scrollbar-thumb {
+  background: @GRAY19;
+  border-radius: 6px;
+  transition: background-color 0.3s ease-in-out; /* 添加过渡动画 */
+
+  /* 滚动条滑块圆角 */
+}
+
+/* 滚动条的内层滑块悬停效果 */
+.scrollbar::-webkit-scrollbar-thumb:hover {
+  background: @GRAY; /* 鼠标悬停时颜色进一步加深 */
+}
+
+/* 滚动条的内层滑块颜色 */
+
+.scrollbar::-webkit-scrollbar-button {
+  background-color: #fff;
+  display: none;
+}
+
+/* 「hover 时才显示滚动条，默认隐藏」 */
+.scroll-container {
+  overflow: hidden;
+  scrollbar-gutter: stable;
+
+  /* 保持布局稳定 */
+}
+
+.scroll-container:hover {
+  overflow: auto;
+}
+
+.noselect {
+  user-select: none; /* 禁用文本选择，兼容所有浏览器 */
+}
+
+// 隐藏滚动条
+.scroll-container-hide {
+  //height: 200px;        /* 固定高度以触发滚动 */
+  overflow: auto; /* 或 overflow-y: auto; */
+  -ms-overflow-style: none; /* IE 10+ 和旧 Edge 隐藏滚动条 */
+  scrollbar-width: none; /* Firefox 隐藏滚动条 */
+
+  /* Chrome, Safari, Edge(Chromium) */
+  &::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+}
+
+// 表格头部背景色及其分页边框颜色
+.ant-pagination-options .ant-select-selector,
+.ant-table thead.ant-table-thead > tr > th,
+.ant-table thead.ant-table-thead .ant-table-cell-fix-left,
+.ant-table thead.ant-table-thead .ant-table-cell-fix-right,
+.ant-table-container thead.ant-table-thead > tr > th,
+.ant-table-content thead.ant-table-thead > tr > th {
+  background-color: #f0f2f5 !important;
+}
+
+// 表格分页下拉框边框颜色
+.ant-pagination-options .ant-select-selector {
+  border-color: #f0f2f5 !important;
+}
+
+// XProTable 表格滚动条样式：显示滑块，隐藏轨道
+.x-pro-table {
+  .ant-table-body,
+  .ant-table-content {
+    // 针对 Webkit 内核浏览器 (Chrome, Safari, Edge)
+    &::-webkit-scrollbar {
+      width: 8px !important;
+      height: 8px !important;
+    }
+
+    // 隐藏滚动条轨道（透明背景）
+    &::-webkit-scrollbar-track {
+      background: transparent !important;
+    }
+
+    // 显示滚动条滑块
+    &::-webkit-scrollbar-thumb {
+      background: @GRAY19 !important;
+      border-radius: 6px !important;
+    }
+
+    &::-webkit-scrollbar-thumb:hover {
+      background: @GRAY !important;
+    }
+
+    // 针对 Firefox - 使用 thin 模式保留滑块
+    scrollbar-width: thin !important;
+    scrollbar-color: @GRAY19 transparent !important;
+  }
+}
+
+.ds-markdown .ds-typed-thinking {
+  border-left-width: 1px !important;
+  margin-left: 4px !important;
+}

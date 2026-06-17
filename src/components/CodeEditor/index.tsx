@@ -1,0 +1,223 @@
+import CodeOptimizeModal from '@/components/CodeOptimizeModal';
+import { ICON_CONFIRM_STAR } from '@/constants/images.constants';
+import { dict } from '@/services/i18nRuntime';
+import { CodeLangEnum } from '@/types/enums/plugin';
+import Editor, { loader } from '@monaco-editor/react';
+import { FloatButton, Form } from 'antd';
+import { FormInstance } from 'antd/lib/form/Form';
+import * as monaco from 'monaco-editor';
+import React, { useEffect, useState } from 'react';
+import { useModel } from 'umi';
+import ConditionRender from '../ConditionRender';
+
+interface Props {
+  className?: string;
+  codeLanguage: CodeLangEnum;
+  height?: string;
+  value?: string | undefined;
+  onChange?: (code: string) => void;
+  form?: FormInstance;
+  minimap?: boolean;
+  // 是否显示代码优化按钮
+  codeOptimizeVisible?: boolean;
+  // 是否只读
+  readOnly?: boolean;
+  editorOptions?: any;
+}
+
+const CodeEditor: React.FC<Props> = ({
+  value = '',
+  className,
+  onChange,
+  height = '400px',
+  codeLanguage,
+  minimap = false,
+  form,
+  codeOptimizeVisible = true,
+  readOnly = false,
+  editorOptions,
+}) => {
+  const [isMonacoReady, setIsMonacoReady] = useState(false);
+  const [open, setOpen] = useState<boolean>(false);
+  const { testRun } = useModel('model');
+  useEffect(() => {
+    loader.config({
+      monaco,
+      paths: {
+        vs: '/vs', // 确保与 webpack 配置一致
+      },
+    });
+
+    const initializeMonaco = async () => {
+      try {
+        const { conf, language } = await import(
+          'monaco-editor/esm/vs/basic-languages/python/python'
+        );
+        await loader.init();
+
+        // 如果是 JSON 语言，则注册 JSON 语言服务,并允许注释：保留 json 语法高亮，不因 /** */、// 标红
+        if (codeLanguage === CodeLangEnum.JSON) {
+          // 确保 JSON 语言服务已注册，并允许注释：保留 json 语法高亮，不因 /** */、// 标红
+          await import(
+            'monaco-editor/esm/vs/language/json/monaco.contribution'
+          );
+          monaco.languages.json?.jsonDefaults?.setDiagnosticsOptions({
+            validate: true,
+            allowComments: true,
+            comments: 'ignore', // comments: 'ignore' 是关键：Monaco 默认里曾有 comments: "error"，会把 /** */ 标成问题；设为 'ignore' 后注释不再作为诊断错误。
+            trailingCommas: 'ignore',
+            schemas: [],
+            enableSchemaRequest: false,
+          });
+        }
+
+        // 注册 Python 语言配置
+        monaco.languages.register({ id: 'python' });
+        monaco.languages.setMonarchTokensProvider('python', language);
+        monaco.languages.setLanguageConfiguration('python', conf);
+
+        // 设置 worker 路径
+        (window as any).MonacoEnvironment = {
+          getWorkerUrl: function (moduleId: number, label: string) {
+            if (label === 'json') {
+              return '/vs/json.worker.js';
+            }
+            if (label === 'typescript' || label === 'javascript') {
+              return '/vs/ts.worker.js';
+            }
+            if (label === 'python') {
+              return '/vs/ts.worker.js'; // Python 使用 TypeScript worker
+            }
+            return '/vs/editor.worker.js';
+          },
+        };
+
+        setIsMonacoReady(true);
+      } catch (error) {
+        console.error('Failed to initialize Monaco Editor:', error);
+      }
+    };
+
+    initializeMonaco();
+  }, []);
+
+  if (!isMonacoReady) {
+    return <div>{dict('PC.Components.CodeEditor.loadingEditor')}</div>;
+  }
+
+  const handleCodeChange = (newValue?: string) => {
+    if (onChange) {
+      onChange(newValue || '');
+    }
+  };
+
+  // 根据语言类型动态配置编辑器选项
+  const getEditorOptions = (_editorOptions?: any) => {
+    const rewriteEditorOptions = _editorOptions || {};
+    const baseOptions = {
+      selectOnLineNumbers: true,
+      folding: true,
+      automaticLayout: true,
+      minimap: {
+        enabled: minimap,
+      },
+      readOnly: readOnly, // 添加只读模式配置
+      ...rewriteEditorOptions,
+    };
+
+    // 如果是JSON语言，关闭代码输入提示相关功能
+    if (codeLanguage?.toLowerCase() === 'json') {
+      return {
+        ...baseOptions,
+        // 关闭智能感知和自动完成
+        quickSuggestions: false,
+        suggestOnTriggerCharacters: false,
+        acceptSuggestionOnEnter: 'off' as const,
+        tabCompletion: 'off' as const,
+        wordBasedSuggestions: false,
+        // 关闭参数提示
+        parameterHints: {
+          enabled: false,
+        },
+        // 关闭悬停提示
+        hover: {
+          enabled: false,
+        },
+        // 关闭代码片段
+        snippetSuggestions: 'none' as const,
+      };
+    }
+
+    return baseOptions;
+  };
+
+  return (
+    <>
+      {form ? (
+        <Form.Item
+          noStyle
+          name={
+            form?.getFieldValue('codeLanguage') === CodeLangEnum.JavaScript
+              ? 'codeJavaScript'
+              : 'codePython'
+          }
+        >
+          <Editor
+            className={className}
+            height={height}
+            language={codeLanguage?.toLowerCase()}
+            theme="vs-dark"
+            value={value}
+            onChange={handleCodeChange}
+            options={getEditorOptions(editorOptions)}
+          />
+        </Form.Item>
+      ) : (
+        <Editor
+          className={className}
+          height={height}
+          language={codeLanguage?.toLowerCase()}
+          theme="vs-dark"
+          value={value}
+          onChange={handleCodeChange}
+          options={getEditorOptions(editorOptions)}
+        />
+      )}
+      <ConditionRender condition={codeOptimizeVisible && !readOnly}>
+        {/* 代码辅助生成，增加复用写在这个文件里面 */}
+        <FloatButton
+          shape="circle"
+          type="primary"
+          style={{ insetInlineEnd: 94, display: testRun ? 'none' : 'block' }}
+          icon={<ICON_CONFIRM_STAR />}
+          tooltip={dict('PC.Components.CodeEditor.codeAssistant')}
+          onClick={() => {
+            setOpen(true);
+          }}
+        />
+        <CodeOptimizeModal
+          title={dict('PC.Components.CodeEditor.codeAssistant')}
+          open={open}
+          codeLanguage={codeLanguage}
+          onCancel={() => {
+            setOpen(false);
+          }}
+          onReplace={(newValue?: string) => {
+            if (!newValue) return;
+
+            let text = newValue;
+
+            if (text.includes('```')) {
+              text = text.replace(/```/g, '');
+            }
+
+            onChange?.(text || '');
+            setOpen(false);
+          }}
+        />
+      </ConditionRender>
+    </>
+  );
+};
+
+export default CodeEditor;

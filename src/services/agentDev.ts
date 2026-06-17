@@ -1,0 +1,310 @@
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import type {
+  AgentAkDeleteParams,
+  AgentAkUpdateParams,
+  AgentDetailDto,
+  AgentInfo,
+  AgentLogDetailParams,
+  apiAgentLogListParams,
+  apiSpaceLogListParams,
+  logInfo,
+  OperationLogInfo,
+  SpaceLogDetailParams,
+  SpaceLogInfo,
+  SpaceLogInfoDetail,
+  UserApiKeyInfo,
+} from '@/types/interfaces/agent';
+import type { HomeAgentCategoryInfo } from '@/types/interfaces/agentConfig';
+import type { ListParams, PageParams } from '@/types/interfaces/common';
+import type { Page, RequestResponse } from '@/types/interfaces/request';
+import {
+  apiExportFileBlob,
+  ExportFileBlobResponse,
+} from '@/utils/exportImportFile';
+import { request } from 'umi';
+
+// 取消点赞智能体
+export async function apiUnlikeAgent(
+  agentId: number,
+): Promise<RequestResponse<null>> {
+  return request(`/api/user/agent/unLike/${agentId}`, {
+    method: 'POST',
+  });
+}
+
+// 智能体取消收藏
+export async function apiUnCollectAgent(
+  agentId: number,
+): Promise<RequestResponse<null>> {
+  return request(`/api/user/agent/unCollect/${agentId}`, {
+    method: 'POST',
+  });
+}
+
+// 点赞智能体
+export async function apiLikeAgent(
+  agentId: number,
+): Promise<RequestResponse<null>> {
+  return request(`/api/user/agent/like/${agentId}`, {
+    method: 'POST',
+  });
+}
+
+// 取消开发智能体收藏
+export async function apiDevUnCollectAgent(
+  agentId: number,
+): Promise<RequestResponse<null>> {
+  return request(`/api/user/agent/dev/unCollect/${agentId}`, {
+    method: 'POST',
+  });
+}
+
+// 开发智能体收藏
+export async function apiDevCollectAgent(
+  agentId: number,
+): Promise<RequestResponse<null>> {
+  return request(`/api/user/agent/dev/collect/${agentId}`, {
+    method: 'POST',
+  });
+}
+
+// 智能体收藏
+export async function apiCollectAgent(
+  agentId: number,
+): Promise<RequestResponse<null>> {
+  return request(`/api/user/agent/collect/${agentId}`, {
+    method: 'POST',
+  });
+}
+
+// 查询用户最近使用过的智能体列表
+export async function apiUserUsedAgentList(
+  params: ListParams,
+): Promise<RequestResponse<AgentInfo[]>> {
+  const size = params.size;
+  return request(`/api/user/agent/used/list/${size}`, {
+    method: 'GET',
+  });
+}
+
+// 查询用户最近编辑的智能体列表
+export async function apiUserEditAgentList(
+  params: ListParams,
+): Promise<RequestResponse<AgentInfo[]>> {
+  const size = params.size;
+  return request(`/api/user/agent/edit/list/${size}`, {
+    method: 'GET',
+  });
+}
+
+// 查询用户开发智能体收藏列表
+export async function apiUserDevCollectAgentList(
+  params: PageParams,
+): Promise<RequestResponse<AgentInfo[]>> {
+  const { page, size } = params;
+  return request(`/api/user/agent/dev/collect/list/${page}/${size}`, {
+    method: 'GET',
+  });
+}
+
+// 查询用户收藏的智能体列表
+export async function apiUserCollectAgentList(
+  params: PageParams,
+): Promise<RequestResponse<AgentInfo[]>> {
+  const { page, size } = params;
+  return request(`/api/user/agent/collect/list/${page}/${size}`, {
+    method: 'GET',
+  });
+}
+
+// 主页智能体列表接口 - 数据列表查询
+export async function apiHomeCategoryList(options?: {
+  skipErrorHandler?: boolean;
+}): Promise<RequestResponse<HomeAgentCategoryInfo>> {
+  return request('/api/home/list', {
+    method: 'GET',
+    skipErrorHandler: options?.skipErrorHandler,
+  });
+}
+
+// 已发布的智能体详情接口
+export function apiPublishedAgentInfo(
+  agentId: number,
+  withConversationId: boolean = false,
+): Promise<RequestResponse<AgentDetailDto>> {
+  return request(`/api/published/agent/${agentId}`, {
+    method: 'GET',
+    params: {
+      withConversationId,
+    },
+  });
+}
+
+// 分类以及智能体排序更新
+export async function apiUpdateAgentSort(
+  types?: string[] | undefined, //分类列表，按顺序排，可选，传递时需要传完整的列表
+  typeAgentIds?: { [key: string]: number[] } | undefined, //分类下的智能体ID列表，按顺序排，可选，可传某个分类下的所有id列表
+): Promise<RequestResponse<null>> {
+  return request(`/api/home/sort/update`, {
+    method: 'POST',
+    data: {
+      types,
+      typeAgentIds,
+    },
+  });
+}
+
+// 日志查询
+export async function apiAgentLogList(
+  data: apiAgentLogListParams,
+): Promise<RequestResponse<Page<logInfo>>> {
+  return request('/api/logPlatform/agent/list', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 工作空间日志查询
+export async function apiSpaceLogList(
+  data: apiSpaceLogListParams,
+): Promise<RequestResponse<Page<SpaceLogInfo>>> {
+  return request('/api/requestLogs/list', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 日志查询-运行日志（列表）
+export async function apiRunningLogList(
+  data: apiSpaceLogListParams,
+): Promise<RequestResponse<Page<logInfo>>> {
+  return request('/api/system/requestLogs/list', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 日志查询-API调用日志（列表）
+export async function apiApiKeyLogList(
+  data: apiSpaceLogListParams,
+): Promise<RequestResponse<Page<logInfo>>> {
+  return request('/api/requestLogs/apikey/list', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 日志查询-运行日志（详情）
+export async function apiRunningLogDetail(
+  data: SpaceLogDetailParams,
+): Promise<RequestResponse<SpaceLogInfoDetail>> {
+  return request('/api/system/requestLogs/detail', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 日志查询-操作日志（列表）
+export async function apiOperationLogList(
+  data: apiSpaceLogListParams,
+): Promise<RequestResponse<Page<logInfo>>> {
+  return request('/api/sys/operator/log/list', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 日志查询-操作日志（详情）
+export async function apiOperationLogDetail(
+  data: SpaceLogDetailParams,
+): Promise<RequestResponse<OperationLogInfo>> {
+  return request('/api/sys/operator/log/queryById', {
+    method: 'GET',
+    params: data,
+  });
+}
+
+// 日志查询-操作日志系统类型选项
+export async function apiOperationLogSystemCodeOptions(): Promise<
+  RequestResponse<{ value: string; label: string }[]>
+> {
+  return request('/api/sys/operator/log/systemCode/options', {
+    method: 'GET',
+  });
+}
+
+// 日志查询-操作日志操作方式选项
+export async function apiOperationLogActionTypeOptions(): Promise<
+  RequestResponse<{ value: string; label: string }[]>
+> {
+  return request('/api/sys/operator/log/actionType/options', {
+    method: 'GET',
+  });
+}
+
+/**
+ * 工作空间日志详情
+ */
+export async function apiSpaceLogDetail(
+  data: SpaceLogDetailParams,
+): Promise<RequestResponse<SpaceLogInfoDetail>> {
+  return request('/api/requestLogs/detail', {
+    method: 'POST',
+    data,
+  });
+}
+// 日志详情
+export async function apiAgentLogDetail(
+  data: AgentLogDetailParams,
+): Promise<RequestResponse<logInfo>> {
+  return request('/api/logPlatform/agent/detail', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 更新智能体APIKEY是否为开发模式
+export async function apiAgentAkUpdate(
+  data: AgentAkUpdateParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/agent/ak/update', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 删除智能体APIKEY
+export async function apiAgentAkDelete(
+  data: AgentAkDeleteParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/agent/ak/delete', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 新增智能体APIKEY
+export async function apiAgentAkCreate(
+  agentId: number,
+): Promise<RequestResponse<UserApiKeyInfo>> {
+  return request(`/api/agent/ak/create/${agentId}`, {
+    method: 'POST',
+  });
+}
+
+// 查询智能体APIKEY列表
+export async function apiAgentAkList(
+  agentId: number,
+): Promise<RequestResponse<UserApiKeyInfo>> {
+  return request(`/api/agent/ak/list/${agentId}`, {
+    method: 'GET',
+  });
+}
+
+// 导出配置接口，支持Agent、Workflow、Plugin、Table
+export async function apiTemplateExport(
+  targetId: number,
+  targetType: AgentComponentTypeEnum,
+): Promise<ExportFileBlobResponse> {
+  return apiExportFileBlob(`/api/template/export/${targetType}/${targetId}`);
+}

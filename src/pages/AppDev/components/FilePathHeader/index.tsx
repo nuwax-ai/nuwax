@@ -1,0 +1,95 @@
+import SvgIcon from '@/components/base/SvgIcon';
+import { dict } from '@/services/i18nRuntime';
+import { CheckOutlined } from '@ant-design/icons';
+import { Button, Spin, Tooltip } from 'antd';
+import React from 'react';
+import styles from './index.less';
+
+interface FilePathHeaderProps {
+  /** 文件路径 */
+  filePath: string;
+  /** 文件是否被修改 */
+  isModified: boolean;
+  /** 是否正在加载 */
+  isLoading: boolean;
+  /** 是否正在保存 */
+  isSaving?: boolean;
+  /** 是否只读模式 */
+  readOnly: boolean;
+  /** 保存回调（传入时显示保存按钮） */
+  onSave?: () => void;
+  /** 取消编辑回调（传入时显示取消按钮） */
+  onCancel?: () => void;
+  /** 刷新回调 */
+  onRefresh: () => void;
+}
+
+/**
+ * 文件路径头部组件
+ * 显示文件路径信息和操作按钮（保存、取消、刷新）
+ */
+const FilePathHeader: React.FC<FilePathHeaderProps> = ({
+  filePath,
+  isModified,
+  isLoading,
+  isSaving = false,
+  readOnly,
+  onSave,
+  onCancel,
+  onRefresh,
+}) => {
+  const showSaveActions = Boolean(onSave && onCancel);
+  return (
+    <div className={styles.filePathHeader}>
+      <div className={styles.filePathInfo}>
+        {/* <FileOutlined className={styles.fileIcon} /> */}
+        <span className={styles.filePath}>{filePath}</span>
+        {/* <span className={styles.fileLanguage}>{language}</span> */}
+        {isLoading && <Spin size="small" />}
+        {isModified && !readOnly && (
+          <span className={styles.modifiedIndicator}>
+            {dict('PC.Pages.AppDevFilePathHeader.modified')}
+          </span>
+        )}
+      </div>
+      <div className={styles.fileActions}>
+        {showSaveActions && isModified && !readOnly && (
+          <>
+            <Button
+              size="small"
+              type="primary"
+              icon={<CheckOutlined />}
+              onClick={onSave}
+              loading={isSaving}
+              disabled={!isModified || readOnly}
+              style={{ marginRight: 8 }}
+            >
+              {dict('PC.Common.Global.save')}
+            </Button>
+            <Button
+              size="small"
+              onClick={onCancel}
+              disabled={!isModified || readOnly}
+              style={{ marginRight: 8 }}
+            >
+              {dict('PC.Common.Global.cancel')}
+            </Button>
+          </>
+        )}
+        <Tooltip title={dict('PC.Common.Global.refresh')}>
+          <Button
+            size="small"
+            type="text"
+            icon={
+              <SvgIcon name="icons-common-refresh" style={{ fontSize: 16 }} />
+            }
+            onClick={onRefresh}
+            loading={isLoading}
+          />
+        </Tooltip>
+      </div>
+    </div>
+  );
+};
+
+export default FilePathHeader;

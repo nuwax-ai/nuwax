@@ -1,0 +1,195 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.container {
+  background-image: @backgroundImage;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  transition: background-image 0.3s ease;
+  min-width: 1400px;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+
+  /** 页面顶部 Header，横跨整页宽度 */
+  .page-header {
+    flex-shrink: 0;
+    width: 100%;
+    padding-left: @marginSm;
+    padding-right: @marginSm;
+    background-color: @colorBgContainer;
+  }
+
+  .section {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    border-radius: @pageContainerBorderRadius;
+    border: @lineWidth solid @colorSplit;
+    margin: 0 @marginSm @marginSm;
+    background-color: @colorBgContainer;
+  }
+
+  .main-row {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    height: 100%;
+  }
+
+  .left-panel {
+    width: 480px;
+    flex-shrink: 0;
+    border-right: @lineWidth solid @colorSplit;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .middle-panel {
+    width: 280px;
+    flex-shrink: 0;
+    border-right: @lineWidth solid @colorSplit;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    background-color: @colorBgContainer;
+    overflow: hidden;
+    transition: width 0.3s ease-in-out, opacity 0.3s ease-in-out,
+      border-right-width 0.3s ease-in-out;
+
+    &.middle-panel-hidden {
+      width: 0;
+      opacity: 0;
+      border-right-width: 0;
+      pointer-events: none;
+    }
+
+    &.middle-panel-visible {
+      width: 280px;
+      opacity: 1;
+      pointer-events: auto;
+    }
+  }
+
+  .right-panel {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  /** 智能体电脑（VNC）占满文件树 + 右侧面板工作区 */
+  .agent-desktop-workspace {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .agent-desktop-vnc {
+    flex: 1;
+    min-height: 0;
+    border: none !important;
+  }
+
+  .file-preview-panel {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .right-panel-body {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /**
+   * Tab 栏下方主区域：预览内容 + 底部终端
+   * position: relative 供终端 expanded 时 absolute 定位，不遮挡 PreviewTabBar
+   */
+  .right-panel-main {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /** 编排面板或文件预览 */
+  .right-panel-content {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /** 编排面板「调试」Tab 内嵌聊天，占满 Tab 内容区 */
+  .arrange-debug-chat {
+    flex: 1;
+    min-height: 0;
+    height: 100%;
+    border: none;
+    background-color: @colorBgContainer;
+  }
+
+  .file-tree-sidebar {
+    flex: 1;
+    min-height: 0;
+  }
+
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: @colorTextSecondary;
+    gap: 12px;
+    padding: 24px;
+    text-align: center;
+  }
+
+  :global {
+    .xagi-nav-style2 {
+      margin: 0;
+      border-radius: 0;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    min-width: unset;
+
+    .main-row {
+      flex-direction: column;
+    }
+
+    .left-panel,
+    .middle-panel {
+      width: 100%;
+      border-right: none;
+      border-bottom: @lineWidth solid @colorSplit;
+    }
+
+    .right-panel {
+      border-left: none;
+      border-bottom: @lineWidth solid @colorSplit;
+    }
+  }
+}

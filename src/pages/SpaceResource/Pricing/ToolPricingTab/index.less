@@ -1,0 +1,86 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+// 表格底部关闭收费说明
+.tool-billing-notice {
+  padding: @paddingXs @padding;
+  border-top: @lineWidth solid @colorBorderSecondary;
+  display: flex;
+  align-items: center;
+  gap: @paddingXs;
+  font-size: @fontSizeSm;
+  color: @colorTextTertiary;
+  background: @colorWarningBg;
+  border-radius: 0 0 @borderRadius @borderRadius;
+}
+
+.tool-billing-notice-icon {
+  flex-shrink: 0;
+  color: @colorWarning;
+}
+
+// 表格名称列（头像 + 标题 + 描述）
+.tool-name-cell {
+  display: flex;
+  align-items: center;
+  gap: @marginSm;
+  min-width: 0;
+  padding: @paddingXxs 0;
+}
+
+.tool-name-avatar-wrap {
+  flex-shrink: 0;
+  width: @controlHeightLg;
+  height: @controlHeightLg;
+  border-radius: @borderRadiusLg;
+  background: @colorPrimaryBg;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.tool-name-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.tool-name-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.tool-name-title {
+  font-size: @fontSize;
+  font-weight: @fontWeightStrong;
+  color: @colorText;
+  line-height: @lineHeightSm;
+}
+
+.tool-name-subtitle {
+  font-size: @fontSizeSm;
+  color: @colorTextTertiary;
+  margin-top: @borderRadiusXs;
+}
+
+// 表格价格列（¥ + 金额 + 计价单位）
+.tool-price-cell {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0;
+  flex-wrap: nowrap;
+  line-height: @lineHeightSm;
+}
+
+.tool-price-amount {
+  font-size: @fontSize;
+  font-weight: @fontWeightStrong;
+  color: @colorText;
+  margin-right: @marginXxs;
+}
+
+.tool-price-unit {
+  font-size: @fontSizeSm;
+  color: @colorTextTertiary;
+}

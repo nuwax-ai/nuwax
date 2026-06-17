@@ -1,0 +1,86 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.container {
+  flex: 4 1;
+  min-width: 350px;
+  border-left: @lineWidth solid @colorSplit;
+
+  .loading {
+    color: @BLUE08;
+  }
+
+  .main-content {
+    // gap: 20px;
+    padding: 20px;
+
+    .opening-chat-msg {
+      line-height: 26px;
+      font-size: 14px;
+      text-align: center;
+    }
+
+    .chat-wrapper {
+      margin: 0 auto;
+      width: 100%;
+      max-width: 800px;
+      padding-bottom: 30px;
+
+      // 此处注释掉是因为在企业微信西财智能体中，智能体内容输出区域的背景色是白色，导致页面看不见打字机效果了，也看不见聊天内容，所以不需要遮罩层
+      // mask: linear-gradient(180deg, @WHITE 91.89%, hsla(0deg, 0%, 100%, 0%));
+
+      // 加载更多按钮容器
+      .load-more-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: @padding 0;
+        margin-bottom: @paddingSm;
+        color: #999;
+
+        .load-more-btn {
+          font-size: @fontSize;
+          padding: 0 @padding;
+        }
+      }
+
+      // 任务执行中容器
+      .task-executing-container {
+        height: 32px;
+        color: @colorTextSecondary;
+        font-size: @fontSizeSm;
+        gap: @paddingSm;
+      }
+    }
+
+    // 会话状态栏样式
+    .conversation-status-bar {
+      max-width: 800px;
+      width: 100%;
+      margin: 0 auto !important;
+      animation: slide-in-up 0.3s ease-out;
+    }
+
+    .intervention-dock {
+      flex-shrink: 0;
+      width: 100%;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 0 0 @paddingXs;
+      box-sizing: border-box;
+    }
+  }
+}
+
+// 状态栏滑入动画
+@keyframes slide-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

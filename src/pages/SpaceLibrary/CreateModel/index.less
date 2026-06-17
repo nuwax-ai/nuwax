@@ -1,0 +1,88 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.container {
+  width: 600px;
+  border-radius: 10px !important;
+
+  .body {
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+
+  .gap-16 {
+    gap: 16px;
+  }
+}
+
+.table-bg {
+  background-color: @WHITE12 !important;
+  padding-top: 10px !important;
+  padding-bottom: 6px !important;
+}
+
+.hide {
+  height: 0;
+  visibility: hidden;
+}
+
+.weight-600 {
+  font-weight: @fontWeightStrong;
+}
+
+/** apiInfoList 单行：URL 加宽、操作列收窄 */
+.apiInfoRow {
+  width: 100%;
+}
+
+.apiInfoUrl {
+  flex: 3 1 300px;
+  min-width: 260px;
+  margin-bottom: 0 !important;
+
+  :global(.ant-input) {
+    width: 100%;
+  }
+}
+
+.apiInfoKey {
+  flex: 1 1 160px;
+  min-width: 120px;
+  margin-bottom: 0 !important;
+
+  :global(.ant-input) {
+    width: 100%;
+  }
+}
+
+.apiInfoWeight {
+  flex: 0 0 70px;
+  min-width: 64px;
+  margin-bottom: 0 !important;
+
+  :global(.ant-input-number) {
+    width: 100%;
+  }
+}
+
+.apiInfoActions {
+  flex: 0 0 44px;
+  min-width: 44px;
+  max-width: 48px;
+  margin-bottom: 0 !important;
+}
+
+.btn {
+  width: 100px;
+}
+
+.connection-btn {
+  width: 140px;
+}
+
+.confirm-btn[disabled] {
+  background-color: @GRAY03; /* 修改背景颜色 */
+  color: @WHITE; /* 修改文本颜色 */
+  border-color: transparent; /* 修改边框颜色 */
+  cursor: not-allowed; /* 修改鼠标指针样式 */
+}

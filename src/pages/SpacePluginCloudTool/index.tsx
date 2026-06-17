@@ -1,0 +1,582 @@
+import CodeEditor from '@/components/CodeEditor';
+import CreateNewPlugin from '@/components/CreateNewPlugin';
+import LabelStar from '@/components/LabelStar';
+import PluginAutoAnalysis from '@/components/PluginAutoAnalysis';
+import PluginConfigTitle from '@/components/PluginConfigTitle';
+import PluginTryRunModal from '@/components/PluginTryRunModal';
+import PublishComponentModal from '@/components/PublishComponentModal';
+import VersionHistory from '@/components/VersionHistory';
+import { ICON_ADD_TR } from '@/constants/images.constants';
+import usePluginConfig from '@/hooks/usePluginConfig';
+import { dataTypes } from '@/pages/Antv-X6/params';
+import { dict } from '@/services/i18nRuntime';
+import { apiPluginCodeUpdate, apiPluginInfo } from '@/services/plugin';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import { CreateUpdateModeEnum, DataTypeEnum } from '@/types/enums/common';
+import { PluginCodeModeEnum } from '@/types/enums/plugin';
+import type { BindConfigWithSub } from '@/types/interfaces/common';
+import type { PluginInfo } from '@/types/interfaces/plugin';
+import { CascaderChange, CascaderValue } from '@/utils';
+import { getActiveKeys } from '@/utils/deepNode';
+import { DeleteOutlined } from '@ant-design/icons';
+import type { TableColumnsType } from 'antd';
+import { Button, Cascader, Checkbox, Input, Table, Tooltip } from 'antd';
+import classNames from 'classnames';
+import React, { useEffect, useRef, useState } from 'react';
+import { useLocation, useModel, useParams, useRequest } from 'umi';
+import PluginChatSession from '../SpacePluginTool/components/PluginChatSession';
+import styles from './index.less';
+import PluginCodeHeader from './PluginCodeHeader';
+
+const cx = classNames.bind(styles);
+
+/**
+ * 工作空间-组件库-测试插件组件（基于云端代码js、python创建）
+ */
+const SpacePluginCloudTool: React.FC = () => {
+  const params = useParams();
+  const spaceId = Number(params.spaceId);
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const conversationId =
+    Number(searchParams.get('conversationId')) || undefined;
+  const hasConversationId = !!searchParams.get('conversationId');
+
+  const [codeMode, setCodeMode] = useState<PluginCodeModeEnum>(
+    PluginCodeModeEnum.Metadata,
+  );
+  // 代码
+  const [code, setCode] = useState<string>('');
+
+  const {
+    isModalOpen,
+    setIsModalOpen,
+    autoAnalysisOpen,
+    setAutoAnalysisOpen,
+    visible,
+    setVisible,
+    openModal,
+    setOpenModal,
+    pluginId,
+    pluginInfo,
+    setPluginInfo,
+    openPlugin,
+    setOpenPlugin,
+    inputConfigArgs,
+    setInputConfigArgs,
+    outputConfigArgs,
+    expandedRowKeys,
+    setExpandedRowKeys,
+    outputExpandedRowKeys,
+    handleInputValue,
+    handleOutputValue,
+    handleInputAddChild,
+    handleOutputAddChild,
+    handleInputDel,
+    handleOutputDel,
+    handleConfirmUpdate,
+    handleInputConfigAdd,
+    handleOutputConfigAdd,
+    handleOutputConfigArgs,
+    handleConfirmPublishPlugin,
+    handleUpdateSuccess,
+    isClickSaveBtnRef,
+  } = usePluginConfig();
+
+  // 查询插件信息
+  const { run: runPluginInfo } = useRequest(apiPluginInfo, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: (result: PluginInfo) => {
+      setPluginInfo(result);
+      setCode(result?.config?.code);
+      if (result.config) {
+        const { inputArgs, outputArgs } = result.config;
+        // 默认展开的入参配置key
+        const _expandedRowKeys = getActiveKeys(inputArgs);
+        setExpandedRowKeys(_expandedRowKeys);
+        setInputConfigArgs(inputArgs);
+        // 设置出参配置以及展开key值
+        handleOutputConfigArgs(outputArgs);
+      }
+    },
+  });
+
+  // 更新代码插件配置接口
+  const { run: runUpdate } = useRequest(apiPluginCodeUpdate, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: () => {
+      handleUpdateSuccess();
+    },
+  });
+
+  useEffect(() => {
+    runPluginInfo(pluginId);
+  }, [pluginId]);
+
+  const { isConversationActive } = useModel('conversationInfo');
+  const prevActiveRef = useRef(false);
+
+  // 每次聊天对话完毕后，主动更新最新的插件配置信息
+  useEffect(() => {
+    if (prevActiveRef.current && !isConversationActive) {
+      runPluginInfo(pluginId);
+    }
+    prevActiveRef.current = isConversationActive;
+  }, [isConversationActive, runPluginInfo, pluginId]);
+
+  // Just show the latest item.
+  const displayRender = (labels: string[]) => labels[labels.length - 1];
+
+  // 入参配置columns
+  const inputColumns: TableColumnsType<BindConfigWithSub> = [
+    {
+      title: (
+        <LabelStar label={dict('PC.Pages.SpacePluginCloudTool.paramName')} />
+      ),
+      dataIndex: 'name',
+      key: 'name',
+      className: 'flex items-center',
+      render: (value, record) => (
+        <Input
+          placeholder={dict(
+            'PC.Pages.SpacePluginCloudTool.paramNamePlaceholder',
+          )}
+          value={value}
+          onChange={(e) => handleInputValue(record.key, 'name', e.target.value)}
+        />
+      ),
+    },
+    {
+      title: (
+        <LabelStar label={dict('PC.Pages.SpacePluginCloudTool.paramDesc')} />
+      ),
+      dataIndex: 'description',
+      key: 'description',
+      render: (value, record) => (
+        <Input
+          placeholder={dict(
+            'PC.Pages.SpacePluginCloudTool.paramDescPlaceholder',
+          )}
+          value={value}
+          onChange={(e) =>
+            handleInputValue(record.key, 'description', e.target.value)
+          }
+        />
+      ),
+    },
+    {
+      title: (
+        <LabelStar label={dict('PC.Pages.SpacePluginCloudTool.paramType')} />
+      ),
+      dataIndex: 'dataType',
+      key: 'dataType',
+      width: 120,
+      render: (value, record) => (
+        <Cascader
+          rootClassName={styles.select}
+          allowClear={false}
+          options={dataTypes}
+          expandTrigger="hover"
+          displayRender={displayRender}
+          defaultValue={CascaderValue(value)}
+          onChange={(value) => {
+            handleInputValue(record.key, 'dataType', CascaderChange(value));
+          }}
+          placeholder={dict('PC.Pages.SpacePluginCloudTool.selectDataType')}
+        />
+      ),
+    },
+    {
+      title: dict('PC.Pages.SpacePluginCloudTool.isRequired'),
+      dataIndex: 'require',
+      key: 'require',
+      width: 100,
+      align: 'center',
+      render: (value, record) => (
+        <Checkbox
+          checked={value}
+          onChange={(e) =>
+            handleInputValue(record.key, 'require', e.target.checked)
+          }
+        />
+      ),
+    },
+    {
+      title: dict('PC.Pages.SpacePluginCloudTool.defaultValue'),
+      dataIndex: 'bindValue',
+      key: 'bindValue',
+      width: 150,
+      render: (value, record) => (
+        <Input
+          placeholder={dict('PC.Pages.SpacePluginCloudTool.enterDefaultValue')}
+          disabled={
+            DataTypeEnum.Object === record.dataType ||
+            DataTypeEnum.Array_Object === record.dataType ||
+            record.dataType?.includes('Array') ||
+            !record.enable
+          }
+          value={value}
+          onChange={(e) =>
+            handleInputValue(record.key, 'bindValue', e.target.value)
+          }
+        />
+      ),
+    },
+    {
+      title: dict('PC.Pages.SpacePluginCloudTool.enable'),
+      dataIndex: 'enable',
+      key: 'enable',
+      width: 70,
+      align: 'center',
+      render: (value: boolean, record) => (
+        <Tooltip
+          title={
+            record.require &&
+            !record.bindValue &&
+            dict('PC.Pages.SpacePluginCloudTool.requiredParamTooltip')
+          }
+        >
+          <Checkbox
+            disabled={record.require && !record.bindValue}
+            checked={value}
+            onChange={(e) =>
+              handleInputValue(record.key, 'enable', e.target.checked)
+            }
+          />
+        </Tooltip>
+      ),
+    },
+    {
+      title: dict('PC.Pages.SpacePluginCloudTool.operation'),
+      key: 'action',
+      width: 66,
+      align: 'right',
+      render: (_, record) => {
+        return (
+          <div className="flex items-center content-end gap-4">
+            {(DataTypeEnum.Object === record.dataType ||
+              DataTypeEnum.Array_Object === record.dataType) && (
+              <Button
+                type="text"
+                onClick={() => handleInputAddChild(record.key)}
+                icon={<ICON_ADD_TR />}
+              />
+            )}
+            <Button
+              type="text"
+              onClick={() => handleInputDel(record.key)}
+              icon={<DeleteOutlined />}
+            />
+          </div>
+        );
+      },
+    },
+  ];
+
+  // 出参配置columns
+  const outputColumns: TableColumnsType<BindConfigWithSub> = [
+    {
+      title: (
+        <LabelStar label={dict('PC.Pages.SpacePluginCloudTool.paramName')} />
+      ),
+      dataIndex: 'name',
+      key: 'name',
+      width: 430,
+      className: 'flex items-center',
+      render: (value, record) => (
+        <Input
+          placeholder={dict(
+            'PC.Pages.SpacePluginCloudTool.paramNamePlaceholder',
+          )}
+          value={value}
+          onChange={(e) =>
+            handleOutputValue(record.key, 'name', e.target.value)
+          }
+        />
+      ),
+    },
+    {
+      title: (
+        <LabelStar label={dict('PC.Pages.SpacePluginCloudTool.paramDesc')} />
+      ),
+      dataIndex: 'description',
+      key: 'description',
+      render: (value, record) => (
+        <Input
+          placeholder={dict(
+            'PC.Pages.SpacePluginCloudTool.paramDescPlaceholder',
+          )}
+          onChange={(e) =>
+            handleOutputValue(record.key, 'description', e.target.value)
+          }
+          value={value}
+        />
+      ),
+    },
+    {
+      title: (
+        <LabelStar label={dict('PC.Pages.SpacePluginCloudTool.paramType')} />
+      ),
+      dataIndex: 'dataType',
+      key: 'dataType',
+      width: 120,
+      render: (value, record) => (
+        <Cascader
+          allowClear={false}
+          rootClassName={styles.select}
+          options={dataTypes}
+          expandTrigger="hover"
+          displayRender={displayRender}
+          defaultValue={CascaderValue(value)}
+          onChange={(value) => {
+            handleOutputValue(record.key, 'dataType', CascaderChange(value));
+          }}
+          placeholder={dict('PC.Pages.SpacePluginCloudTool.selectDataType')}
+        />
+      ),
+    },
+    {
+      title: dict('PC.Pages.SpacePluginCloudTool.enable'),
+      dataIndex: 'enable',
+      key: 'enable',
+      width: 70,
+      align: 'center',
+      render: (value, record) => (
+        <Checkbox
+          checked={value}
+          onChange={(e) =>
+            handleOutputValue(record.key, 'enable', e.target.checked)
+          }
+        />
+      ),
+    },
+    {
+      title: dict('PC.Pages.SpacePluginCloudTool.operation'),
+      key: 'action',
+      width: 66,
+      align: 'right',
+      render: (_, record) => {
+        return (
+          <div className="flex items-center content-end gap-4">
+            {(DataTypeEnum.Object === record.dataType ||
+              DataTypeEnum.Array_Object === record.dataType) && (
+              <Button
+                type="text"
+                onClick={() => handleOutputAddChild(record.key)}
+                icon={<ICON_ADD_TR />}
+              />
+            )}
+            <Button
+              type="text"
+              onClick={() => handleOutputDel(record.key)}
+              icon={<DeleteOutlined />}
+            />
+          </div>
+        );
+      },
+    },
+  ];
+
+  // 保存插件信息
+  const handleSave = () => {
+    runUpdate({
+      id: pluginId,
+      config: {
+        inputArgs: inputConfigArgs,
+        outputArgs: outputConfigArgs,
+        code,
+      },
+    });
+  };
+
+  // 单独点击保存按钮，提示保存成功
+  const handleSaveConfig = () => {
+    isClickSaveBtnRef.current = true;
+    handleSave();
+  };
+
+  // 试运行
+  const handleTryRun = () => {
+    handleSave();
+    setIsModalOpen(true);
+  };
+
+  // 发布事件
+  const handlePublish = () => {
+    handleSave();
+    setOpenModal(true);
+  };
+
+  const handleAutoResolve = () => {
+    handleSave();
+    setAutoAnalysisOpen(true);
+  };
+
+  const handleChangeSegmented = (value: string | number) => {
+    const _value = value as PluginCodeModeEnum;
+    setCodeMode(_value);
+  };
+
+  return (
+    <div className={cx(styles['page-container'])}>
+      <PluginCodeHeader
+        codeMode={codeMode}
+        pluginInfo={pluginInfo as PluginInfo}
+        onEdit={() => setOpenPlugin(true)}
+        onChange={handleChangeSegmented}
+        onToggleHistory={() => setVisible(!visible)}
+        onSave={handleSaveConfig}
+        onTryRun={handleTryRun}
+        onPublish={handlePublish}
+      />
+      <div className={cx(styles['layout-wrapper'])}>
+        {/* 左侧：调试聊天会话区域 */}
+        {hasConversationId && (
+          <div className={cx(styles['chat-section'])}>
+            <PluginChatSession
+              conversationId={conversationId}
+              pluginInfo={pluginInfo as PluginInfo}
+            />
+          </div>
+        )}
+
+        {/* 右侧：原有的插件详情和配置表单内容区域 */}
+        <div
+          className={cx(
+            styles['detail-section'],
+            !hasConversationId ? styles['no-chat'] : undefined,
+          )}
+        >
+          <div className={cx('flex', 'h-full')}>
+            <div className={cx(styles.container, 'flex', 'flex-col', 'flex-1')}>
+              {codeMode === PluginCodeModeEnum.Metadata ? (
+                <div
+                  className={cx(
+                    styles['main-container'],
+                    'overflow-y',
+                    'flex-1',
+                  )}
+                >
+                  <PluginConfigTitle
+                    title={dict('PC.Pages.SpacePluginCloudTool.inputConfig')}
+                    onClick={handleInputConfigAdd}
+                  />
+                  <Table<BindConfigWithSub>
+                    className={cx(
+                      styles['table-wrap'],
+                      styles['mb-24'],
+                      'overflow-hide',
+                    )}
+                    columns={inputColumns}
+                    dataSource={inputConfigArgs}
+                    pagination={false}
+                    expandable={{
+                      childrenColumnName: 'subArgs',
+                      defaultExpandAllRows: true,
+                      expandedRowKeys: expandedRowKeys,
+                      expandIcon: () => null,
+                    }}
+                  />
+                  <PluginConfigTitle
+                    title={dict('PC.Pages.SpacePluginCloudTool.outputConfig')}
+                    onClick={handleOutputConfigAdd}
+                    extra={
+                      <Button onClick={handleAutoResolve}>
+                        {dict('PC.Pages.SpacePluginCloudTool.autoAnalyze')}
+                      </Button>
+                    }
+                  />
+                  <Table<BindConfigWithSub>
+                    className={cx(styles['table-wrap'], 'overflow-hide')}
+                    columns={outputColumns}
+                    dataSource={outputConfigArgs}
+                    pagination={false}
+                    expandable={{
+                      childrenColumnName: 'subArgs',
+                      // 初始时，是否展开所有行
+                      defaultExpandAllRows: true,
+                      expandedRowKeys: outputExpandedRowKeys,
+                      expandIcon: () => null,
+                    }}
+                  />
+                </div>
+              ) : (
+                <div
+                  className={cx(
+                    styles['main-container'],
+                    styles['code-wrap'],
+                    'overflow-y',
+                    'flex-1',
+                  )}
+                >
+                  <CodeEditor
+                    value={code}
+                    height={'100%'}
+                    onChange={setCode}
+                    codeLanguage={pluginInfo?.config?.codeLang}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+      {/*试运行弹窗*/}
+      <PluginTryRunModal
+        inputConfigArgs={inputConfigArgs}
+        inputExpandedRowKeys={expandedRowKeys}
+        pluginId={pluginId}
+        pluginName={pluginInfo?.name as string}
+        open={isModalOpen}
+        onCancel={() => setIsModalOpen(false)}
+      />
+      {/*自动解析弹窗组件*/}
+      <PluginAutoAnalysis
+        inputConfigArgs={inputConfigArgs}
+        inputExpandedRowKeys={expandedRowKeys}
+        pluginId={pluginId}
+        pluginName={pluginInfo?.name as string}
+        open={autoAnalysisOpen}
+        onCancel={() => setAutoAnalysisOpen(false)}
+        onConfirm={handleOutputConfigArgs}
+      />
+      {/*插件发布弹窗*/}
+      <PublishComponentModal
+        mode={AgentComponentTypeEnum.Plugin}
+        targetId={pluginId}
+        category={pluginInfo?.category}
+        spaceId={spaceId}
+        open={openModal}
+        onlyShowTemplate={false}
+        // 取消发布
+        onCancel={() => setOpenModal(false)}
+        onConfirm={handleConfirmPublishPlugin}
+      />
+      {/*版本历史*/}
+      <VersionHistory
+        headerClassName={cx(styles['version-history-header'])}
+        targetId={pluginId}
+        targetName={pluginInfo?.name}
+        targetType={AgentComponentTypeEnum.Plugin}
+        permissions={pluginInfo?.permissions || []}
+        visible={visible}
+        onClose={() => setVisible(false)}
+      />
+      {/*修改插件弹窗*/}
+      <CreateNewPlugin
+        open={openPlugin}
+        id={pluginInfo?.id}
+        icon={pluginInfo?.icon}
+        name={pluginInfo?.name}
+        description={pluginInfo?.description}
+        mode={CreateUpdateModeEnum.Update}
+        onCancel={() => setOpenPlugin(false)}
+        onConfirm={handleConfirmUpdate}
+      />
+    </div>
+  );
+};
+
+export default SpacePluginCloudTool;

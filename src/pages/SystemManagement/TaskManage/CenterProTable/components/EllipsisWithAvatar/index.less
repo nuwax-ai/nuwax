@@ -1,0 +1,43 @@
+/* 固定列宽并显示省略号的单元格容器 */
+.ellipsisCell {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  overflow: hidden;
+
+  /* 只影响当前 ellipsisCell 内的 Space 组件 */
+  :global(.ant-space) {
+    width: 100%;
+    min-width: 0;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* 只影响当前 ellipsisCell 内的 Space Item（最后一个子项需要能够省略） */
+  :global(.ant-space-item) {
+    &:first-child {
+      flex-shrink: 0; // 头像不压缩
+    }
+
+    &:last-child {
+      flex: 1;
+      min-width: 0; // 关键：允许 flex 子项缩小到小于内容宽度
+      overflow: hidden;
+    }
+  }
+
+  /* 只影响当前 ellipsisCell 内的 Avatar（确保头像不变形） */
+  :global(.ant-avatar) {
+    flex-shrink: 0;
+  }
+}
+
+/* 文本省略样式（仅作用于标记了此类名的元素） */
+.ellipsisText {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%;
+  min-width: 0; // 配合 flex 布局使用
+}

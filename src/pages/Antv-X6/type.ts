@@ -1,0 +1,167 @@
+// 引入 AntV X6 图形库中的 Graph 和 Node 类，用于创建图形和节点。
+import { FieldConfig } from '@/components/FormListItem/type';
+import type {
+  GroupModelItem,
+  ModelListItemProps,
+} from '@/types/interfaces/model';
+import {
+  HttpNodeConfig,
+  NodeConfig,
+  PreviousList,
+} from '@/types/interfaces/node';
+import { FormInstance } from 'antd';
+/**
+ * 定义键值对接口，用于表示具有标签和值的对象。
+ */
+export interface KeyValuePairs {
+  // 键值对的标签
+  label: string;
+  // 键值对对应的值
+  value: string;
+}
+
+/**
+ * 定义 右侧节点数组设置。
+ */
+// 使用 antd 内置的 FormListFieldData 类型
+export type FormListFieldData = {
+  key: string | number;
+  name: string | number;
+  fieldKey?: string | number;
+};
+
+/**
+ * 定义节点
+ */
+export interface NodeDisposeProps {
+  // 当前节点的参数
+  params: NodeConfig;
+  // 修改节点信息
+  Modified: (params: NodeConfig) => void;
+  // 实时调用接口，修改节点
+  updateNode?: (params: NodeConfig) => void;
+  // 当前节点的类型
+  type?: string;
+  // 选项列表
+  options?: ModelListItemProps[];
+  // 分组的模型列表
+  groupedOptionsData?: GroupModelItem[];
+}
+
+/**
+ * 定义Http节点
+ */
+export interface HttpNodeDisposeProps {
+  // 当前节点的参数
+  params: HttpNodeConfig;
+  // 修改节点信息
+  Modified: (params: NodeConfig) => void;
+  // 当前节点的类型
+  type?: string;
+  // 选项列表
+  options?: ModelListItemProps[];
+  // 分组的模型列表
+  groupedOptionsData?: GroupModelItem[];
+}
+/**
+ * 定义带勾选框的select
+ */
+export interface MultiSelectWithCheckboxProps {
+  options: KeyValuePairs[];
+  onChange?: (selectedOptions: string[]) => void;
+  placeholder?: string;
+}
+
+// 定义输入或引用参数
+export interface InputOrReferenceProps {
+  // 当前的引用列表
+  referenceList: PreviousList[];
+  // 与输入
+  placeholder?: string;
+  // 新增：接受当前值
+  value: string;
+  // 父组件传递的方法，改变当前的值，渲染页面
+  onChange: (value: string) => void;
+}
+
+// 定义传递给 renderItem 的参数类型
+export interface RenderItemProps {
+  // 当前字段的field
+  field: FormListFieldData;
+  // 删除当前行
+  onRemove: () => void;
+  // 当前渲染的详细信息
+  fieldConfigs: FieldConfig[];
+  // 当前行的索引
+  rowIndex: number;
+  // 父组件传递下来的form
+  form: FormInstance;
+  // 当前值改变的时候，通知父组件，重新获取值
+  onChange: () => void;
+  // 是否渲染复选框
+  showCheckbox?: boolean;
+  // 是否显示复制按钮
+  showCopy?: boolean;
+}
+
+// 定义通用节点渲染逻辑的props类型
+export interface NodeRenderProps {
+  // 标题
+  title: string;
+  // 遍历渲染的字段配置
+  fieldConfigs: FieldConfig[];
+  // 改变节点的入参和出参
+  handleChangeNodeConfig: (params: NodeConfig) => void;
+  // 渲染的内容(可以自定义，也可以使用默认的renderItem)
+  renderItem?: (props: RenderItemProps) => JSX.Element; // 可选，允许自定义renderItem
+  // 初始值（适用于已经编辑过的内容）
+  initialValues?: object;
+  // 如果有多个相同组件时，传递不同的inputListName区分
+  inputItemName?: string;
+  // 是否展示选中的选项框
+  showCheckbox?: boolean;
+  // 是否显示复制按钮
+  showCopy?: boolean;
+}
+
+// 定义技能
+export interface SkillProps {
+  title: string;
+  icon: React.ReactNode;
+  desc: string;
+}
+
+// 定义分组的模型列表
+export interface GroupModelListItemProps {
+  groupedOptionsData?: GroupModelItem[];
+  onChange: (value: string) => void;
+  value?: string;
+}
+
+export interface ModelSettingProp {
+  value: {
+    top: number;
+    reply: number;
+    random: number;
+  };
+  onChange: (newSettings: {
+    top: number;
+    reply: number;
+    random: number;
+  }) => void;
+}
+
+export interface ModelSelectProp {
+  settings: ModelSettingProp;
+  groupModelList: GroupModelListItemProps;
+}
+
+// 定义可以展开的inputTextarea
+export interface ExpandableInputTextareaProps {
+  title: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  rows?: number;
+  onExpand?: () => void;
+}

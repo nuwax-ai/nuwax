@@ -1,0 +1,276 @@
+import { t } from '@/services/i18nRuntime';
+import type {
+  AudioAttachment,
+  DataSourceAttachment,
+  DocumentAttachment,
+  FileAttachment, // 新增：支持 FileAttachment 类型
+  ImageAttachment,
+  TextAttachment,
+} from '@/types/interfaces/appDev';
+import {
+  ApiOutlined,
+  FileOutlined,
+  FileTextOutlined,
+  SoundOutlined,
+  ThunderboltOutlined,
+} from '@ant-design/icons';
+import { Image } from 'antd';
+import React from 'react';
+import styles from './index.less';
+
+/**
+ * 消息附件组件属性
+ */
+interface MessageAttachmentProps {
+  /** 附件数据 */
+  attachment:
+    | ImageAttachment
+    | TextAttachment
+    | DocumentAttachment
+    | AudioAttachment
+    | FileAttachment // 新增：支持 FileAttachment 类型
+    | DataSourceAttachment;
+  /** 附件类型 */
+  type: 'Image' | 'Text' | 'Document' | 'Audio' | 'File' | 'DataSource';
+  /** 图片尺寸（仅对图片类型有效） */
+  size?: number;
+  /** 是否显示预览（仅对图片类型有效） */
+  showPreview?: boolean;
+  /** 自定义样式类名 */
+  className?: string;
+  /** 点击回调 */
+  onClick?: () => void;
+}
+
+/**
+ * 消息附件组件
+ * 用于在聊天消息中显示各种类型的附件（图片、文件等）
+ */
+const MessageAttachment: React.FC<MessageAttachmentProps> = ({
+  attachment,
+  type,
+  size = 120,
+  showPreview = true,
+  className,
+  onClick,
+}) => {
+  // 渲染图片附件
+  const renderImageAttachment = (imageAttachment: ImageAttachment) => {
+    // 根据数据源类型获取图片地址
+    const getImageSrc = (): string => {
+      const { source_type, data } = imageAttachment.source;
+
+      switch (source_type) {
+        case 'Base64':
+          // Base64 格式
+          return `data:${imageAttachment.mime_type};base64,${data.data}`;
+        case 'Url':
+          // URL 格式
+          return data.url || '';
+        case 'FilePath':
+          // 文件路径格式
+          return data.path || '';
+        default:
+          return '';
+      }
+    };
+
+    const imageSrc = getImageSrc();
+
+    return (
+      <div className={`${styles.messageImageAttachment} ${className || ''}`}>
+        <Image
+          src={imageSrc}
+          alt={
+            imageAttachment.filename ||
+            t('PC.Pages.AppDevMessageAttachment.imageAlt')
+          }
+          width={size}
+          height={size}
+          style={{
+            objectFit: 'cover',
+            borderRadius: 8,
+          }}
+          preview={
+            showPreview
+              ? {
+                  mask: false,
+                }
+              : false
+          }
+        />
+      </div>
+    );
+  };
+
+  // 渲染文件附件
+  const renderFileAttachment = (
+    fileAttachment:
+      | TextAttachment
+      | DocumentAttachment
+      | AudioAttachment
+      | FileAttachment, // 新增：支持 FileAttachment 类型
+  ) => {
+    // 获取文件类型显示文本
+    const getFileTypeText = (
+      fileType: 'Text' | 'Document' | 'Audio' | 'File',
+    ): string => {
+      switch (fileType) {
+        case 'Text':
+          return t('PC.Pages.AppDevMessageAttachment.fileTypeText');
+        case 'Document':
+          return t('PC.Pages.AppDevMessageAttachment.fileTypeDocument');
+        case 'Audio':
+          return t('PC.Pages.AppDevMessageAttachment.fileTypeAudio');
+        case 'File':
+          return t('PC.Pages.AppDevMessageAttachment.fileTypeFile');
+        default:
+          return t('PC.Pages.AppDevMessageAttachment.fileTypeFile');
+      }
+    };
+
+    // 获取文件图标
+    const getFileIcon = (
+      fileType: 'Text' | 'Document' | 'Audio' | 'File',
+    ): React.ReactNode => {
+      switch (fileType) {
+        case 'Text':
+          return <FileTextOutlined />;
+        case 'Document':
+          return <FileOutlined />;
+        case 'Audio':
+          return <SoundOutlined />;
+        case 'File':
+          return <FileOutlined />;
+        default:
+          return <FileOutlined />;
+      }
+    };
+
+    return (
+      <div
+        className={`${styles.messageFileAttachment} ${className || ''}`}
+        onClick={onClick}
+      >
+        <div className={styles.fileAttachmentIcon}>
+          {getFileIcon(type as 'Text' | 'Document' | 'Audio' | 'File')}
+        </div>
+        <div className={styles.fileAttachmentInfo}>
+          <div className={styles.fileAttachmentName}>
+            {fileAttachment.filename ||
+              (fileAttachment.source?.source_type === 'FilePath'
+                ? fileAttachment.source.data?.path?.split('/').pop()
+                : null) ||
+              t('PC.Pages.AppDevMessageAttachment.fileTypeFile')}
+          </div>
+          <div className={styles.fileAttachmentType}>
+            {getFileTypeText(type as 'Text' | 'Document' | 'Audio' | 'File')}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // 渲染数据源附件
+  const renderDataSourceAttachment = (
+    dataSourceAttachment: DataSourceAttachment,
+  ) => {
+    // 获取数据源类型显示文本
+    const getDataSourceTypeText = (type: 'plugin' | 'workflow'): string => {
+      switch (type) {
+        case 'plugin':
+          return t('PC.Pages.AppDevMessageAttachment.dataSourcePlugin');
+        case 'workflow':
+          return t('PC.Pages.AppDevMessageAttachment.dataSourceWorkflow');
+        default:
+          return t('PC.Pages.AppDevMessageAttachment.dataSourceDefault');
+      }
+    };
+
+    // 获取数据源图标
+    const getDataSourceIcon = (
+      type: 'plugin' | 'workflow',
+    ): React.ReactNode => {
+      switch (type) {
+        case 'plugin':
+          return <ApiOutlined />;
+        case 'workflow':
+          return <ThunderboltOutlined />;
+        default:
+          return <ApiOutlined />;
+      }
+    };
+
+    // 处理数据源附件点击事件
+    const handleDataSourceClick = () => {
+      // 如果有自定义点击回调，优先执行
+      if (onClick) {
+        onClick();
+        return;
+      }
+
+      // 根据数据源类型在新页面中打开对应页面
+      const { type, dataSourceId } = dataSourceAttachment;
+
+      if (type === 'plugin') {
+        // 在新页面中打开插件详情页面
+        window.open(
+          `/square/publish/plugin/${dataSourceId}`,
+          '_blank',
+          'noopener,noreferrer',
+        );
+      } else if (type === 'workflow') {
+        // 在新页面中打开工作流详情页面
+        window.open(
+          `/square/publish/workflow/${dataSourceId}`,
+          '_blank',
+          'noopener,noreferrer',
+        );
+      }
+    };
+
+    return (
+      <div
+        className={`${styles.messageDataSourceAttachment} ${className || ''}`}
+        onClick={handleDataSourceClick}
+        style={{ cursor: 'pointer' }}
+      >
+        <div className={styles.dataSourceAttachmentIcon}>
+          {getDataSourceIcon(dataSourceAttachment.type)}
+        </div>
+        <div className={styles.dataSourceAttachmentInfo}>
+          <div className={styles.dataSourceAttachmentName}>
+            {dataSourceAttachment.name}
+          </div>
+          <div className={styles.dataSourceAttachmentType}>
+            {getDataSourceTypeText(dataSourceAttachment.type)}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // 根据类型渲染不同的附件
+  switch (type) {
+    case 'Image':
+      return renderImageAttachment(attachment as ImageAttachment);
+    case 'Text':
+    case 'Document':
+    case 'File': // 新增：处理通过 @ 选择的文件和目录
+      return renderFileAttachment(
+        attachment as
+          | TextAttachment
+          | DocumentAttachment
+          | AudioAttachment
+          | FileAttachment,
+      );
+    case 'Audio':
+      return null;
+    case 'DataSource':
+      return renderDataSourceAttachment(attachment as DataSourceAttachment);
+    default:
+      return null;
+  }
+};
+
+export default MessageAttachment;

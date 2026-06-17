@@ -1,0 +1,81 @@
+@import '@/styles/color';
+
+.detailCard {
+  border-radius: 8px;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 10%);
+  margin-bottom: 24px;
+  position: relative;
+}
+
+.backButton {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 10;
+  padding: 0;
+}
+
+.header {
+  display: flex;
+  padding: 32px 24px 16px;
+  margin-bottom: 16px;
+}
+
+.iconContainer {
+  flex-shrink: 0;
+  margin-right: 24px;
+}
+
+.icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+.infoContainer {
+  flex: 1;
+  min-width: 0;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.title {
+  margin: 0 !important;
+  margin-right: 12px !important;
+  color: @BLUE08;
+}
+
+.newTag {
+  margin-left: 8px;
+}
+
+.metaInfo {
+  margin-bottom: 12px;
+}
+
+.categories {
+  margin-bottom: 16px;
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.actionButton {
+  min-width: 100px;
+}
+
+.descriptionSection,
+.detailsSection {
+  padding: 0 24px;
+  margin-bottom: 24px;
+}
+
+.description {
+  color: @GRAY04;
+  font-size: 14px;
+  line-height: 1.6;
+}

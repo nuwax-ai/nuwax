@@ -1,0 +1,328 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.chat-container {
+  width: 100%;
+  margin: 0 auto;
+  max-width: 800px;
+  gap: @marginXxs;
+  padding: @padding @padding 12px;
+  border-radius: 20px;
+  background: @colorBgContainer;
+  box-sizing: border-box;
+  transition: box-shadow 0.3s, border-color 0.3s;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 13%);
+  box-shadow: 0 5px 16px -4px #00000012;
+
+  &.drag-over {
+    border-color: @colorPrimary;
+  }
+
+  &.has-tabs {
+    padding: 0;
+    gap: 0;
+
+    .tabs-wrapper {
+      width: 100%;
+    }
+
+    .input-wrapper {
+      padding: @padding @padding @padding;
+      display: flex;
+      flex-direction: column;
+      gap: @marginXxs;
+    }
+  }
+
+  .drag-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 20px;
+    opacity: 0.8;
+    color: @colorPrimary;
+    font-size: @fontSize;
+    font-weight: 500;
+    pointer-events: none;
+  }
+
+  .input {
+    font-size: @fontSize;
+    caret-color: @colorPrimary;
+    width: 100%;
+    border: none;
+    background-color: transparent;
+    resize: none;
+    color: @colorText;
+  }
+
+  :global {
+    .ant-input-outlined:focus,
+    .ant-input-outlined:focus-within {
+      border: none;
+      box-shadow: none;
+    }
+  }
+
+  .footer {
+    gap: 6px;
+    width: 100%;
+    align-items: center;
+
+    .svg-icon {
+      color: @colorTextDescription;
+    }
+
+    .clear {
+      color: @colorTextDescription;
+      font-size: @fontSize;
+      transition: color ease-in-out 0.2s;
+
+      &.disabled {
+        cursor: not-allowed;
+        color: @colorTextDescription;
+        background-color: @colorBgContainerDisabled;
+      }
+
+      &:hover {
+        background-color: @colorPrimaryBg;
+      }
+    }
+
+    .box {
+      padding: @paddingXs;
+      border-radius: @borderRadius;
+      height: 36px;
+
+      &.plus-box {
+        color: @colorTextDescription;
+        font-size: @fontSize;
+        transition: color ease-in-out 0.2s;
+        border-radius: 50% !important;
+        height: 32px !important;
+        width: 32px !important;
+        border: 1px solid @colorSplit;
+
+        &:hover {
+          background-color: @colorPrimaryBg;
+        }
+      }
+
+      &.task-agent-box {
+        transition: all ease-in-out 0.2s;
+
+        &.task-agent-active {
+          color: @colorPrimary;
+          border-color: @colorPrimary;
+          background-color: @colorPrimaryBg;
+        }
+      }
+
+      &.upload-box-disabled {
+        cursor: not-allowed;
+        color: @colorIcon !important;
+        background-color: @colorBgContainerDisabled !important;
+      }
+
+      .loading-box {
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      &.send-box {
+        font-size: @fontSizeSm;
+        transition: color ease-in-out 0.2s;
+        color: @colorWhite;
+        background-color: @colorPrimary;
+        width: 36px;
+        height: 36px;
+
+        &.disabled {
+          color: @colorIcon;
+          cursor: not-allowed;
+          background-color: @colorBgContainerDisabled;
+        }
+
+        // 停止按钮样式
+        &.stop-box {
+          &.disabled {
+            cursor: not-allowed;
+            color: @colorIcon;
+            background-color: @colorBgContainerDisabled;
+          }
+
+          // 停止按钮高亮样式 - 当会话进行中且可点击时
+          &.stop-box-active {
+            background-color: @colorInfoBg;
+            color: @colorPrimary;
+            transition: background-color ease-in-out 0.2s;
+
+            &:hover:not(.disabled) {
+              background-color: @colorInfoBgHover;
+            }
+          }
+        }
+      }
+    }
+
+    .agent-mode-select {
+      display: inline-flex;
+      align-items: center;
+      height: 28px;
+
+      .agent-mode-trigger {
+        padding: @paddingXxs @paddingXs;
+        border-radius: @borderRadius;
+        box-sizing: border-box;
+        color: @colorTextSecondary;
+        font-size: @fontSizeSm;
+        transition: background-color ease-in-out 0.3s;
+        word-wrap: normal;
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        cursor: pointer;
+
+        &:hover {
+          background: @colorFillTertiary;
+        }
+
+        .agent-mode-arrow {
+          transition: transform @motionDurationFast ease;
+        }
+      }
+    }
+
+    .right-actions {
+      gap: 4px;
+      margin-left: auto;
+      align-items: center;
+      min-width: 0;
+    }
+  }
+}
+
+// 下拉菜单容器
+:global {
+  .agent-mode-dropdown-overlay {
+    z-index: 9999;
+
+    .ant-dropdown-menu {
+      min-width: 100px;
+      max-height: 240px;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    .ant-dropdown-menu-item {
+      background: transparent !important;
+
+      &:hover {
+        background: @colorFillTertiary !important;
+      }
+
+      &.ant-dropdown-menu-item-selected {
+        background: transparent !important;
+
+        &:hover {
+          background: @colorFillTertiary !important;
+        }
+      }
+    }
+  }
+}
+
+.agent-mode-dropdown-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100px;
+
+  .item-name {
+    color: @colorTextSecondary;
+    font-size: @fontSizeSm;
+    font-weight: 500;
+    line-height: 28px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.agent-mode-check {
+  margin-left: @marginSm;
+  color: @colorPrimary;
+  font-size: @fontSizeSm;
+}
+
+// 加载图标样式
+.loading-icon {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.chat-action {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translate(-50%);
+
+  .to-bottom {
+    width: 44px;
+    height: 44px;
+    position: absolute;
+    bottom: 24px;
+    border: @lineWidth solid @colorSplit;
+    background-color: @colorBgContainer;
+    border-radius: 50%;
+    cursor: pointer;
+    left: 50%;
+    transform: translate(-50%);
+    display: flex;
+    align-items: center;
+    font-size: @fontSizeXl;
+    justify-content: center;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 25%);
+    z-index: 100;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+
+    &.visible {
+      opacity: 1;
+      visibility: visible;
+    }
+  }
+}
+
+.announcement-box {
+  font-size: 10px;
+  line-height: @fontHeight;
+  color: @colorTextQuaternary;
+  text-align: center;
+}
+
+@media screen and (max-width: 720px) {
+  .chat-container {
+    max-width: 100%;
+  }
+}

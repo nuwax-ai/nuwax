@@ -1,0 +1,439 @@
+import {
+  LimitedTooltip,
+  TableActions,
+  XProTable,
+} from '@/components/ProComponents';
+import { apiRunningLogList } from '@/services/agentDev';
+import { t } from '@/services/i18nRuntime';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import type {
+  SpaceLogInfo,
+  SpaceLogQueryFilter,
+} from '@/types/interfaces/agent';
+import type { RequestResponse } from '@/types/interfaces/request';
+import { getIntegerOnlyFieldProps } from '@/utils/inputValidation';
+import { getTruncatedLogContent } from '@/utils/logContentUtils';
+import type {
+  ActionType,
+  FormInstance,
+  ProColumns,
+} from '@ant-design/pro-components';
+import { message } from 'antd';
+import dayjs from 'dayjs';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import { useLocation, useModel, useParams, useSearchParams } from 'umi';
+import LogDetailDrawer from '../LogDetailDrawer';
+
+/**
+ * 工作空间日志查询（ProTable 版本）
+ * - 支持：筛选查询、分页、点击行查看详情
+ * - 数据源：apiSpaceLogList / apiSpaceLogDetail
+ */
+const LogProTable: React.FC = () => {
+  const { hasPermission } = useModel('menuModel');
+  const params = useParams();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const spaceId = Number(params.spaceId);
+  const actionRef = useRef<ActionType>();
+  const formRef = useRef<FormInstance>();
+
+  const [detailsVisible, setDetailsVisible] = useState<boolean>(false);
+  const [currentId, setCurrentId] = useState<string>();
+
+  // 从 URL 查询参数中获取 targetType，用于初始化查询表单
+  const targetTypeFromUrl = useMemo(() => {
+    const searchParams = new URLSearchParams(location.search);
+    return searchParams.get('targetType') || undefined;
+  }, [location.search]);
+
+  // 从 URL 查询参数中获取 targetId，用于初始化查询表单
+  const targetIdFromUrl = useMemo(() => {
+    const searchParams = new URLSearchParams(location.search);
+    return searchParams.get('targetId') || undefined;
+  }, [location.search]);
+
+  const handleCloseDetails = useCallback(() => {
+    setDetailsVisible(false);
+    setCurrentId(undefined);
+  }, []);
+
+  const columns: ProColumns<SpaceLogInfo>[] = useMemo(
+    () => [
+      {
+        width: 100,
+        title: t('PC.Pages.SystemRunningLogTable.columnType'),
+        dataIndex: 'targetType',
+        valueType: 'select',
+        valueEnum: {
+          [AgentComponentTypeEnum.Agent]: {
+            text: t('PC.Pages.SystemRunningLogTable.targetTypeAgent'),
+          },
+          [AgentComponentTypeEnum.Plugin]: {
+            text: t('PC.Pages.SystemRunningLogTable.targetTypePlugin'),
+          },
+          [AgentComponentTypeEnum.Workflow]: {
+            text: t('PC.Pages.SystemRunningLogTable.targetTypeWorkflow'),
+          },
+          [AgentComponentTypeEnum.MCP]: { text: 'MCP' },
+          [AgentComponentTypeEnum.Model]: {
+            text: t('PC.Pages.SystemRunningLogTable.targetTypeModel'),
+          },
+        },
+        hideInTable: false,
+        initialValue: targetTypeFromUrl,
+        fieldProps: {
+          placeholder: t('PC.Pages.SystemRunningLogTable.placeholderType'),
+          allowClear: true,
+        },
+      },
+      {
+        title: t('PC.Pages.SystemRunningLogTable.columnObjectId'),
+        dataIndex: 'targetId',
+        width: 140,
+        ellipsis: true,
+        initialValue: targetIdFromUrl,
+        fieldProps: {
+          placeholder: t('PC.Pages.SystemRunningLogTable.placeholderObjectId'),
+        },
+      },
+      {
+        title: t('PC.Pages.SystemRunningLogTable.columnObjectName'),
+        dataIndex: 'targetName',
+        width: 140,
+        ellipsis: true,
+        fieldProps: {
+          placeholder: t(
+            'PC.Pages.SystemRunningLogTable.placeholderObjectName',
+          ),
+        },
+      },
+      {
+        title: t('PC.Pages.SystemRunningLogTable.columnRequestId'),
+        dataIndex: 'requestId',
+        width: 160,
+        ellipsis: true,
+        hideInTable: false,
+        fieldProps: {
+          placeholder: t('PC.Pages.SystemRunningLogTable.placeholderRequestId'),
+        },
+      },
+      {
+        title: t('PC.Pages.SystemRunningLogTable.columnUserId'),
+        dataIndex: 'userId',
+        width: 100,
+        ellipsis: true,
+        fieldProps: getIntegerOnlyFieldProps(
+          t('PC.Pages.SystemRunningLogTable.placeholderUserIdIntegerOnly'),
+          18,
+        ),
+      },
+      {
+        title: t('PC.Pages.SystemRunningLogTable.columnUserName'),
+        dataIndex: 'userName',
+        width: 180,
+        ellipsis: true,
+        fieldProps: {
+          placeholder: t('PC.Pages.SystemRunningLogTable.placeholderUserName'),
+        },
+      },
+      {
+        title: t('PC.Pages.SystemRunningLogTable.columnConversationId'),
+        dataIndex: 'conversationId',
+        width: 140,
+        ellipsis: true,
+        fieldProps: {
+          placeholder: t(
+            'PC.Pages.SystemRunningLogTable.placeholderConversationId',
+          ),
+        },
+      },
+
+      {
+        title: t('PC.Pages.SystemRunningLogTable.columnInput'),
+        dataIndex: 'input',
+        minWidth: 150,
+        width: 220,
+        // 关闭默认 title 提示（无法限制高度），改用自定义 Tooltip
+        ellipsis: { showTitle: false },
+        render: (_: any, record: SpaceLogInfo) => (
+          <LimitedTooltip formatJson>
+            {getTruncatedLogContent(record?.input)}
+          </LimitedTooltip>
+        ),
+        fieldProps: {
+          placeholder: t('PC.Pages.SystemRunningLogTable.placeholderKeywords'),
+        },
+      },
+      {
+        title: t('PC.Pages.SystemRunningLogTable.columnOutput'),
+        dataIndex: 'output',
+        minWidth: 150,
+        width: 220,
+        // 关闭默认 title 提示（无法限制高度），改用自定义 Tooltip
+        ellipsis: { showTitle: false },
+        render: (_: any, record: SpaceLogInfo) => (
+          <LimitedTooltip formatJson>
+            {getTruncatedLogContent(record?.output)}
+          </LimitedTooltip>
+        ),
+        fieldProps: {
+          placeholder: t('PC.Pages.SystemRunningLogTable.placeholderKeywords'),
+        },
+      },
+
+      {
+        title: t('PC.Pages.SystemRunningLogTable.columnTimeRange'),
+        dataIndex: 'createTimeRange',
+        valueType: 'dateTimeRange',
+        hideInTable: true,
+      },
+      {
+        title: t('PC.Pages.SystemRunningLogTable.columnInputToken'),
+        dataIndex: 'inputToken',
+        width: 100,
+        align: 'center',
+        search: false,
+      },
+      {
+        title: t('PC.Pages.SystemRunningLogTable.columnOutputToken'),
+        dataIndex: 'outputToken',
+        width: 100,
+        align: 'center',
+        search: false,
+      },
+      {
+        title: t('PC.Pages.SystemRunningLogTable.columnRequestTime'),
+        dataIndex: 'requestStartTime',
+        width: 180,
+        valueType: 'dateTime',
+        search: false,
+        // renderText: (text: any) => {
+        //   if (!text) return '-';
+        //   return dayjs(text).format('YYYY-MM-DD HH:mm:ss');
+        // },
+      },
+      {
+        title: t('PC.Pages.SystemRunningLogTable.columnElapsedTime'),
+        key: 'elapsedTimeMs',
+        width: 110,
+        align: 'center',
+        search: false,
+        render: (_: any, record: SpaceLogInfo) => {
+          const endTime = record.requestEndTime;
+          const startTime = record.requestStartTime;
+          if (!endTime || !startTime) {
+            return <span>0 ms</span>;
+          }
+          const elapsedTime = dayjs(endTime).diff(
+            dayjs(startTime),
+            'millisecond',
+          );
+          return <span>{elapsedTime} ms</span>;
+        },
+      },
+    ],
+    [],
+  );
+
+  // 中间变量用于判断是否是点击重置按钮
+  const isReset = useRef(false);
+
+  const request = useCallback(
+    async (_tableParams: Record<string, any>) => {
+      let tableParams = _tableParams;
+      // 判断是否是点击重置按钮
+      if (isReset.current) {
+        isReset.current = false;
+        // 重置表单
+        formRef.current?.resetFields();
+        // 设置表单值为空(需要特殊处理)
+        formRef.current?.setFieldsValue({
+          targetType: undefined,
+          targetId: undefined,
+        });
+
+        tableParams = {
+          current: tableParams.current,
+          pageSize: tableParams.pageSize,
+        };
+      }
+      const current = Number(tableParams.current || 1);
+      const pageSize = Number(tableParams.pageSize || 15);
+
+      const timeRange = tableParams.createTimeRange as
+        | [number, number]
+        | [string, string]
+        | undefined;
+      const createTimeGt = timeRange?.[0] ? Number(timeRange[0]) : undefined;
+      const createTimeLt = timeRange?.[1] ? Number(timeRange[1]) : undefined;
+
+      const userIdNum =
+        tableParams.userId !== undefined && tableParams.userId !== ''
+          ? Number(tableParams.userId)
+          : undefined;
+
+      const queryFilter: SpaceLogQueryFilter = {
+        spaceId: Number.isFinite(spaceId) ? spaceId : undefined,
+        targetId: tableParams.targetId || undefined,
+        targetType: tableParams.targetType || undefined,
+        requestId: tableParams.requestId || undefined,
+        userId: Number.isFinite(userIdNum as number)
+          ? (userIdNum as number)
+          : undefined,
+        userName: tableParams.userName || undefined,
+        conversationId: tableParams.conversationId || undefined,
+        input: tableParams.input || undefined,
+        output: tableParams.output || undefined,
+        targetName: tableParams.targetName || undefined,
+        createTimeGt,
+        createTimeLt,
+      };
+
+      try {
+        const from = searchParams.get('from') || undefined;
+        // 额外查询条件
+        if (from) queryFilter.from = from;
+        const resp = (await apiRunningLogList({
+          queryFilter,
+          current,
+          pageSize,
+        })) as unknown as RequestResponse<any>;
+
+        if (
+          resp &&
+          typeof resp === 'object' &&
+          'success' in resp &&
+          !resp.success
+        ) {
+          message.error(
+            resp.message || t('PC.Pages.SystemRunningLogTable.queryFailed'),
+          );
+          return { data: [], total: 0, success: false };
+        }
+
+        const page = (resp as any)?.data?.records
+          ? (resp as any).data
+          : (resp as any);
+        const records: SpaceLogInfo[] = page?.records ?? [];
+        const total: number = page?.total ?? 0;
+
+        return { data: records, total, success: true };
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.error('[RunningLog] query failed', e);
+        return { data: [], total: 0, success: false };
+      }
+    },
+    [spaceId],
+  );
+
+  /**
+   * 打开详情抽屉（由“操作-详情”按钮触发）
+   * 直接使用当前行的数据，不调用接口
+   */
+  const handleOpenDetails = useCallback((record: SpaceLogInfo) => {
+    if (!record?.id) {
+      message.warning(
+        t('PC.Pages.SystemRunningLogTable.missingRequestIdForDetail'),
+      );
+      return;
+    }
+
+    setDetailsVisible(true);
+    setCurrentId(record.id);
+  }, []);
+
+  const columnsWithActions: ProColumns<SpaceLogInfo>[] = useMemo(() => {
+    return [
+      ...columns,
+      {
+        title: t('PC.Pages.SystemRunningLogTable.columnAction'),
+        valueType: 'option',
+        width: 90,
+        fixed: 'right',
+        align: 'center',
+        render: (_: any, record: SpaceLogInfo) => {
+          return (
+            <TableActions
+              record={record}
+              actions={[
+                {
+                  key: 'detail',
+                  label: t('PC.Pages.SystemRunningLogTable.detail'),
+                  disabled: !hasPermission('system_running_log_query_detail'),
+                  onClick: () => handleOpenDetails(record),
+                },
+              ]}
+            />
+          );
+        },
+      },
+    ];
+  }, [columns, handleOpenDetails, spaceId]);
+
+  const handleReset = () => {
+    isReset.current = true;
+    // 重置表格状态
+    actionRef.current?.reset?.();
+    // 设置分页参数:第1页,每页15条
+    actionRef.current?.setPageInfo?.({ current: 1, pageSize: 15 });
+    // 延迟一下再重新加载,确保分页参数已设置
+    actionRef.current?.reload();
+  };
+
+  // 监听 location.state 变化
+  // 当 state 中存在 _t 变量时，说明是通过菜单切换过来的，需要清空 query 参数
+  useEffect(() => {
+    const state = location.state as any;
+    if (state?._t) {
+      handleReset();
+    }
+  }, [location.state]);
+
+  // 记录是否是首次加载，避免在初始加载时清空 URL 参数
+  const isFirstLoad = useRef(true);
+
+  // 监听 spaceId 变化，切换空间时刷新数据
+  useEffect(() => {
+    // 首次加载时不触发重置，保留 URL 参数用于初始化查询
+    if (isFirstLoad.current) {
+      isFirstLoad.current = false;
+      return;
+    }
+
+    // 只在 spaceId 变化（非首次加载）时才重置
+    if (spaceId) {
+      handleReset();
+    }
+  }, [spaceId]);
+
+  return (
+    <>
+      <XProTable<SpaceLogInfo>
+        formRef={formRef}
+        actionRef={actionRef}
+        rowKey={(record) => record.id}
+        columns={columnsWithActions}
+        request={request}
+        dateFormatter="number"
+        onSubmit={handleCloseDetails}
+        onReset={handleReset}
+        showQueryButtons={hasPermission('system_running_log_query_list')}
+      />
+      <LogDetailDrawer
+        open={detailsVisible}
+        id={currentId}
+        onClose={handleCloseDetails}
+      />
+    </>
+  );
+};
+
+export default LogProTable;

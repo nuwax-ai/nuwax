@@ -1,0 +1,63 @@
+@import '@/styles/token.less';
+
+// 用户组卡片
+.user-group-card {
+  border: 1px solid #f0f0f0;
+  border-radius: @borderRadiusLg;
+  padding: @paddingSm;
+  flex: 1 1 calc(50% - 6px);
+  min-width: 280px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: @colorPrimary;
+  }
+
+  &.user-group-card-selected {
+    border-color: @colorPrimary;
+  }
+
+  &.user-group-card-locked {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  .user-group-card-title {
+    max-width: 80%;
+    font-size: @fontSizeLg;
+    margin-bottom: @marginXxs;
+  }
+
+  .user-group-card-desc {
+    font-size: @fontSizeSm;
+    color: @colorTextSecondary;
+    line-height: 1.5;
+    height: 18px;
+    word-break: break-word;
+  }
+}
+
+// 用户组卡片容器
+.user-group-card-container {
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.create-plan-modal-body {
+  max-height: 60vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.developer-permission-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1f1f1f;
+  margin-bottom: @marginXxs;
+}
+
+.developer-permission-desc {
+  color: #8c8c8c;
+  margin-bottom: @margin;
+}

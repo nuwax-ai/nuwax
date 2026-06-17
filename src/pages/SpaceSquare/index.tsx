@@ -1,0 +1,451 @@
+import CustomPopover from '@/components/CustomPopover';
+import InfiniteScrollDiv from '@/components/custom/InfiniteScrollDiv';
+import Loading from '@/components/custom/Loading';
+import useSpaceSquare from '@/hooks/useSpaceSquare';
+import { dict } from '@/services/i18nRuntime';
+import { apiPublishOffShelf } from '@/services/publish';
+import {
+  apiPublishedAgentList,
+  apiPublishedPluginList,
+  apiPublishedSkillList,
+  apiPublishedTemplateList,
+  apiPublishedWorkflowList,
+} from '@/services/square';
+import { SquareAgentTypeEnum } from '@/types/enums/square';
+import { Page } from '@/types/interfaces/request';
+import { SquarePublishedItemInfo } from '@/types/interfaces/square';
+import { getToolPricingPeriodLabel } from '@/utils/resourcePricing';
+import { ExclamationCircleFilled } from '@ant-design/icons';
+import { Button, Empty, Modal, Segmented, Space, Tag } from 'antd';
+import classNames from 'classnames';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useModel, useParams, useRequest, useSearchParams } from 'umi';
+// 复用广场中的组件
+import { ICON_MORE } from '@/constants/images.constants';
+import { getSpaceSquareTabs } from '@/constants/space.constants';
+import SingleAgent from '../Square/SingleAgent';
+import SquareComponentInfo from '../Square/SquareComponentInfo';
+import TemplateItem from '../Square/TemplateItem';
+import styles from './index.less';
+
+const cx = classNames.bind(styles);
+type IQuery = 'activeKey';
+
+// 空间广场
+const SpaceSection: React.FC = () => {
+  // ✅ umi 中的 useSearchParams
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // ✅ 当 select 改变时同步 URL
+  const handleChange = (key: IQuery, value: string) => {
+    // 更新 URL 参数
+    const newParams = new URLSearchParams(searchParams);
+    if (value) {
+      newParams.set(key, value);
+    } else {
+      newParams.delete(key);
+    }
+    setSearchParams(newParams);
+  };
+  const params = useParams();
+  const spaceId = Number(params.spaceId);
+  // 目标类型（智能体、插件、工作流、模板）
+  const targetComponentTypeRef = React.useRef<SquareAgentTypeEnum>();
+  // tabs激活的key
+  const [activeKey, setActiveKey] = useState<SquareAgentTypeEnum>(
+    searchParams.get('activeKey') || SquareAgentTypeEnum.Agent,
+  );
+  const [loading, setLoading] = useState<boolean>(false);
+  // 当前页码
+  const [page, setPage] = useState<number>(1);
+  // 是否有更多数据
+  const [hasMore, setHasMore] = useState<boolean>(true);
+
+  // 滚动容器与内容区域，用于自动补全加载
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const contentRef = useRef<HTMLDivElement | null>(null);
+
+  const {
+    squareComponentList,
+    setSquareComponentList,
+    handleClick,
+    handleToggleCollectSuccess,
+  } = useSpaceSquare();
+  // 获取租户配置信息
+  const { tenantConfigInfo } = useModel('tenantConfigInfo');
+  // 是否开启订阅功能
+  const isEnableSubscription = tenantConfigInfo?.enableSubscription !== 0;
+
+  // 空间广场-分类（根据enabledSandbox动态获取）
+  const spaceSquareSegmentedList =
+    getSpaceSquareTabs(tenantConfigInfo?.enabledSandbox)?.map((item) => ({
+      label: item?.label,
+      value: item?.key,
+    })) || [];
+
+  // 查询列表成功后处理数据
+  const handleSuccess = (result: Page<SquarePublishedItemInfo>) => {
+    const { records, pages, current } = result;
+    const data = records || [];
+    setSquareComponentList((prev) => {
+      return current === 1 ? data : [...prev, ...data];
+    });
+    // 如果当前页码大于等于总页数，则不再加载更多数据
+    setHasMore(current < pages);
+    // 更新页码
+    setPage(current);
+    setLoading(false);
+  };
+
+  // 提取api公共配置
+  const commonConfig = {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: (result: Page<SquarePublishedItemInfo>) => {
+      handleSuccess(result);
+    },
+    onError: () => {
+      setLoading(false);
+    },
+  };
+
+  // 广场-已发布智能体列表接口
+  const { run: runAgentList } = useRequest(apiPublishedAgentList, commonConfig);
+
+  // 广场-已发布插件列表接口（广场以及弹框选择中全部插件）
+  const { run: runPluginList } = useRequest(
+    apiPublishedPluginList,
+    commonConfig,
+  );
+
+  // 广场-已发布工作流列表接口（广场以及弹框选择中全部插件）
+  const { run: runWorkflowList } = useRequest(
+    apiPublishedWorkflowList,
+    commonConfig,
+  );
+
+  // 广场-已发布模板列表接口
+  const { run: runTemplateList } = useRequest(
+    apiPublishedTemplateList,
+    commonConfig,
+  );
+
+  // 广场-已发布技能列表接口
+  const { run: runSkillList } = useRequest(apiPublishedSkillList, commonConfig);
+
+  // 查询列表
+  const handleQuery = (
+    targetType: SquareAgentTypeEnum,
+    pageIndex: number = 1,
+  ) => {
+    const params = {
+      page: pageIndex,
+      pageSize: 48,
+      category: targetType,
+      // 空间ID（可选）需要通过空间过滤时有用
+      spaceId,
+      // 只返回空间的组件
+      justReturnSpaceData: true,
+    };
+    // 分类类型
+    switch (targetType) {
+      case SquareAgentTypeEnum.Agent:
+        runAgentList(params);
+        break;
+      case SquareAgentTypeEnum.Plugin:
+        runPluginList(params);
+        break;
+      case SquareAgentTypeEnum.Workflow:
+        runWorkflowList(params);
+        break;
+      case SquareAgentTypeEnum.Template:
+        runTemplateList(params);
+        break;
+      case SquareAgentTypeEnum.Skill:
+        runSkillList(params);
+        break;
+    }
+  };
+
+  // 智能体、插件、工作流、技能下架
+  const { run: runOffShelf } = useRequest(apiPublishOffShelf, {
+    manual: true,
+    debounceInterval: 300,
+    onSuccess: () => {
+      // 刷新
+      const targetType = targetComponentTypeRef.current;
+      handleQuery(targetType as SquareAgentTypeEnum);
+    },
+  });
+
+  // 切换标签页 targetType: 组件类型，agent: 智能体，plugin: 插件，workflow: 工作流，template: 模板
+  const handleTabClick = (targetType: string) => {
+    setLoading(true);
+    setSquareComponentList([]);
+    const _activeKey = targetType as SquareAgentTypeEnum;
+    setActiveKey(_activeKey);
+    handleQuery(_activeKey);
+    handleChange('activeKey', _activeKey);
+  };
+
+  // ✅ 监听 URL 改变（支持浏览器前进/后退）
+  useEffect(() => {
+    const activeKey =
+      searchParams.get('activeKey') || SquareAgentTypeEnum.Agent;
+
+    setActiveKey(activeKey);
+
+    handleTabClick(activeKey);
+  }, [searchParams, spaceId]);
+
+  // 下架
+  const handleOffShelf = (
+    componentTypeName: string,
+    info: SquarePublishedItemInfo,
+    componentType: SquareAgentTypeEnum,
+    justOffShelfTemplate: boolean = false,
+  ) => {
+    const { targetId, name, targetType, id: publishId } = info;
+    Modal.confirm({
+      title: dict('PC.Pages.SpaceSquare.confirmOffShelf', componentTypeName),
+      icon: <ExclamationCircleFilled />,
+      content: name,
+      okText: dict('PC.Common.Global.confirm'),
+      maskClosable: true,
+      cancelText: dict('PC.Common.Global.cancel'),
+      onOk() {
+        targetComponentTypeRef.current = componentType;
+        runOffShelf({
+          targetType,
+          targetId,
+          publishId,
+          justOffShelfTemplate,
+        });
+      },
+    });
+  };
+
+  // 获取组件额外信息
+  const getExtra = (
+    componentTypeName: string,
+    info: SquarePublishedItemInfo,
+    componentType: SquareAgentTypeEnum,
+    justOffShelfTemplate: boolean = false,
+  ) => {
+    return (
+      <CustomPopover
+        list={[{ label: dict('PC.Pages.SpaceSquare.offShelf') }]}
+        onClick={() =>
+          handleOffShelf(
+            componentTypeName,
+            info,
+            componentType,
+            justOffShelfTemplate,
+          )
+        }
+      >
+        <Button size="small" type="text" icon={<ICON_MORE />}></Button>
+      </CustomPopover>
+    );
+  };
+
+  // 获取订阅标签
+  const getSubscribedLabel = (subscribed: boolean) => {
+    return (
+      <Tag
+        color={subscribed ? 'success' : 'processing'}
+        style={{ marginRight: 0, flexShrink: 0 }}
+      >
+        {subscribed
+          ? dict('PC.Pages.Square.SingleAgent.subscribed')
+          : dict('PC.Pages.Square.SingleAgent.paid')}
+      </Tag>
+    );
+  };
+
+  // 获取标题
+  const getTitle = (
+    info: SquarePublishedItemInfo,
+    isPluginAndWorkflow: boolean = false,
+  ) => {
+    const { name, paymentRequired, subscribed, price, pricingType } = info;
+    /** 需付费时在卡片角标展示「付费 / 已订阅」 */
+    const paymentExtra =
+      isEnableSubscription && paymentRequired === true ? (
+        isPluginAndWorkflow && price ? (
+          <span className={cx(styles['price-title'])}>
+            {`${dict(
+              'PC.Common.Global.currencySymbol',
+            )}${price}/${getToolPricingPeriodLabel(pricingType)}`}
+          </span>
+        ) : (
+          getSubscribedLabel(subscribed)
+        )
+      ) : undefined;
+
+    return (
+      <div className={cx('text-ellipsis', 'flex-1', 'flex', 'content-between')}>
+        <span className={cx('text-ellipsis', 'flex-1')}>{name}</span>
+        {paymentExtra}
+      </div>
+    );
+  };
+
+  // 获取子组件
+  const getChildren = (type: SquareAgentTypeEnum) => {
+    return squareComponentList.map((item, index) => {
+      if (type === SquareAgentTypeEnum.Agent) {
+        const title = getTitle(item);
+        return (
+          <SingleAgent
+            key={index}
+            title={title}
+            publishedItemInfo={item}
+            extra={getExtra(dict('PC.Pages.SpaceSquare.agent'), item, type)}
+            onToggleCollectSuccess={handleToggleCollectSuccess}
+            onClick={() => handleClick(item.targetId, item.targetType, 'space')}
+            onStartUse={() =>
+              handleClick(item.targetId, item.targetType, 'space')
+            }
+          />
+        );
+      } else if (type === SquareAgentTypeEnum.Template) {
+        return (
+          <TemplateItem
+            key={index}
+            publishedItemInfo={item}
+            extra={getExtra(
+              dict('PC.Pages.SpaceSquare.template'),
+              item,
+              type,
+              true,
+            )}
+            onClick={() => handleClick(item.targetId, item.targetType, 'space')}
+          />
+        );
+      } else {
+        // 枚举组件类型名称
+        let componentTypeName = '';
+        let isPluginAndWorkflow = false;
+        switch (type) {
+          case SquareAgentTypeEnum.Plugin:
+            componentTypeName = dict('PC.Pages.SpaceSquare.plugin');
+            isPluginAndWorkflow = true;
+            break;
+          case SquareAgentTypeEnum.Workflow:
+            componentTypeName = dict('PC.Pages.SpaceSquare.workflow');
+            isPluginAndWorkflow = true;
+            break;
+          case SquareAgentTypeEnum.Skill:
+            componentTypeName = dict('PC.Pages.SpaceSquare.skill');
+            break;
+          default:
+            componentTypeName = '';
+            break;
+        }
+        const title = getTitle(item, isPluginAndWorkflow);
+        return (
+          <SquareComponentInfo
+            key={index}
+            title={title}
+            publishedItemInfo={item}
+            extra={getExtra(componentTypeName, item, type)}
+            onToggleCollectSuccess={handleToggleCollectSuccess}
+            onClick={() => handleClick(item.targetId, item.targetType, 'space')}
+          />
+        );
+      }
+    });
+  };
+
+  // 滚动加载更多
+  const handleScroll = () => {
+    // 下一页页码
+    const nextPage = page + 1;
+    handleQuery(activeKey, nextPage);
+  };
+
+  /**
+   * 检查列表内容是否填满容器，如果未填满且还有更多数据，则自动加载下一页
+   */
+  const checkAndAutoFill = useCallback(() => {
+    if (
+      !containerRef.current ||
+      !contentRef.current ||
+      loading ||
+      !hasMore ||
+      !squareComponentList ||
+      squareComponentList.length === 0
+    ) {
+      return;
+    }
+
+    const containerHeight = containerRef.current.clientHeight;
+    const contentHeight = contentRef.current.scrollHeight;
+
+    // 如果内容没填满容器，继续加载
+    if (contentHeight <= containerHeight) {
+      handleScroll();
+    }
+  }, [loading, hasMore, squareComponentList, handleScroll]);
+
+  // 数据更新后检查是否需要自动补充加载
+  useEffect(() => {
+    const timer = window.setTimeout(checkAndAutoFill, 100);
+    return () => window.clearTimeout(timer);
+  }, [squareComponentList, checkAndAutoFill]);
+
+  // 窗口大小变化时重新检查
+  useEffect(() => {
+    const handleResize = () => {
+      checkAndAutoFill();
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [checkAndAutoFill]);
+
+  return (
+    <div className={cx(styles.container, 'flex', 'flex-col')}>
+      <Space style={{ marginBottom: 15 }}>
+        <h3 className={cx(styles.title)}>
+          {dict('PC.Pages.SpaceSquare.title')}
+        </h3>
+        <Segmented
+          className={cx(styles.segmented)}
+          options={spaceSquareSegmentedList}
+          value={activeKey}
+          onChange={handleTabClick}
+        />
+      </Space>
+      {loading ? (
+        <Loading />
+      ) : squareComponentList?.length > 0 ? (
+        <div
+          className={cx('flex-1', 'scroll-container-hide')}
+          id="scrollableDiv"
+          ref={containerRef}
+        >
+          <InfiniteScrollDiv
+            scrollableTarget="scrollableDiv"
+            list={squareComponentList}
+            hasMore={hasMore}
+            onScroll={handleScroll}
+          >
+            <div className={cx(styles['list-section'])} ref={contentRef}>
+              {getChildren(activeKey)}
+            </div>
+          </InfiniteScrollDiv>
+        </div>
+      ) : (
+        <div className={cx('flex', 'h-full', 'items-center', 'content-center')}>
+          <Empty description={dict('PC.Common.Global.emptyData')} />
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default SpaceSection;

@@ -1,0 +1,371 @@
+// 取消以下注释并确保已安装依赖
+import CopyWebpackPlugin from 'copy-webpack-plugin';
+import MonacoWebpackPlugin from 'monaco-editor-webpack-plugin';
+import path from 'path';
+import { defineConfig } from 'umi';
+import routes from '../src/routes';
+
+export default defineConfig({
+  // 优先从环境变量读取（需要创建 .env 文件）
+  // publicPath: process.env.UMI_PUBLIC_PATH || '/',
+  antd: {
+    appConfig: {
+      style: {
+        height: '100%',
+      },
+    },
+    configProvider: {
+      direction: 'ltr',
+      theme: {
+        cssVar: {
+          prefix: 'xagi',
+        },
+      },
+    },
+  },
+  locale: {
+    default: 'zh-CN',
+    antd: true,
+    baseSeparator: '-',
+    baseNavigator: true,
+  },
+  layout: false,
+  access: {},
+  model: {},
+  initialState: {},
+  request: {},
+  routes,
+  npmClient: 'pnpm',
+  // 排除不兼容模块联邦的包
+  // mfsu: {
+  //   exclude: ['jspdf', 'html2canvas'],
+  // },
+  mfsu: false,
+  // 添加阿里云验证码脚本和双向跳转脚本
+  headScripts: [
+    {
+      src: 'https://o.alicdn.com/captcha-frontend/aliyunCaptcha/AliyunCaptcha.js',
+      type: 'text/javascript',
+    },
+    {
+      content: `
+        (function () {
+				if (typeof window === 'undefined') {
+					return;
+				}
+
+				// 开发模式检测 - 如果是开发环境则不执行跳转
+				if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'development') {
+					console.log('开发模式检测到，跳过双向跳转逻辑');
+					return;
+				}
+
+				const { protocol, host, href, hash } = window.location;
+				const isMobile = /Android|iPhone|iPad|iPod|Mobile|Tablet/i.test(navigator.userAgent);
+				const baseUrl = protocol + '//' + host;
+				const agentDetailPathMobile = '/pages/agent-detail/agent-detail'; //分包前的页面路径
+				const chatTempPathMobile = '/pages/chat-temp/chat-temp'; //分包前的页面路径
+				const newAgentDetailPathMobile = '/subpackages' + agentDetailPathMobile; //分包后的页面路径
+				const newChatTempPathMobile = '/subpackages' + chatTempPathMobile; //分包后的页面路径
+
+        // 应用详情页路径
+        const appDetailsPathMobile = '/subpackages/pages/app-details/app-details';
+
+				//兼容分包前的页面 先转为分包后的页面 然后跳转
+				if (isMobile && href.includes('/m/#/pages/')) {
+					let mHash = hash;
+					if (hash.indexOf(agentDetailPathMobile) !== -1) {
+						mHash = mHash.replace(agentDetailPathMobile, newAgentDetailPathMobile);
+						window.location.replace(baseUrl + '/m/' + mHash);
+						return;
+					}
+					if(hash.indexOf(chatTempPathMobile) !== -1) {
+						mHash = mHash.replace(chatTempPathMobile, newChatTempPathMobile);
+						window.location.replace(baseUrl + '/m/' + mHash);
+						return;
+					}
+				}
+
+				// PC 端访问 M 页面 => 跳转 PC
+				if (!isMobile && href.includes('/m/')) {
+					if (hash && hash.indexOf(agentDetailPathMobile) !== -1) {
+						const matchId = hash.match(new RegExp('[?&]id=([^&#]+)'));
+						const matchConversationId = hash.match(new RegExp('[?&]conversationId=([^&#]+)'));
+						if (matchId && matchId[1]) {
+							const agentId = matchId[1];
+							// 若带 conversationId 则跳转到 PC 会话详情页，否则跳转到智能体详情页
+							if (matchConversationId && matchConversationId[1]) {
+								const conversationId = matchConversationId[1];
+								window.location.replace(baseUrl + '/home/chat/' + conversationId + '/' + agentId);
+							} else {
+								window.location.replace(baseUrl + '/agent/' + agentId);
+							}
+							return;
+						}
+					}
+
+          // 应用详情页路径
+          if (hash && hash.indexOf(appDetailsPathMobile) !== -1) {
+						const matchId = hash.match(new RegExp('[?&]id=([^&#]+)'));
+						const matchConversationId = hash.match(new RegExp('[?&]conversationId=([^&#]+)'));
+						if (matchId && matchId[1]) {
+							const agentId = matchId[1];
+							// 若带 conversationId 则跳转到 PC 应用会话详情页，否则跳转到应用智能体详情页
+							if (matchConversationId && matchConversationId[1]) {
+								const conversationId = matchConversationId[1];
+								window.location.replace(baseUrl + '/app/chat/' + agentId + '/' + conversationId);
+							} else {
+								window.location.replace(baseUrl + '/app/' + agentId);
+							}
+							return;
+						}
+					}
+
+					// 临时会话页面: PC 端访问 M 页面 => 跳转 PC
+					if (hash && hash.indexOf(chatTempPathMobile) !== -1) {
+						const matchChatTemp = hash.match(new RegExp('[?&]chatKey=([^&#]+)'));
+						if (matchChatTemp && matchChatTemp[1]) {
+							const chatKey = matchChatTemp[1];
+							window.location.replace(baseUrl + '/chat-temp/' + chatKey);
+							return;
+						}
+					}
+					window.location.replace(baseUrl + '/');
+					return;
+				}
+
+				// 移动端访问 PC 页面 => 跳转 M
+				if (isMobile && !href.includes('/m/')) {
+          // 智能体详情页
+					const match = href.match(new RegExp('/agent/([^/?#]+)'));
+					if (match) {
+						const agentId = match[1];
+						window.location.replace(baseUrl + '/m/#' + newAgentDetailPathMobile + '?id=' + agentId);
+						return;
+					}
+
+          // 应用会话页 (这里必须要放在应用详情页匹配之前，否则会匹配到应用详情页)
+          const matchAppChat = href.match(new RegExp('/app/chat/([^/]+)/([^/]+)'));
+          if (matchAppChat) {
+            const agentId = matchAppChat[1];
+            const conversationId = matchAppChat[2];
+            replaceUrl = baseUrl + '/m/#' + appDetailsPathMobile + '?id=' + agentId + '&conversationId=' + conversationId;
+            window.location.replace(replaceUrl);
+            return;
+          }
+
+          // 应用详情页
+          const matchAppDetails = href.match(new RegExp('/app/([^/?#]+)'));
+          if (matchAppDetails) {
+            replaceUrl = baseUrl + '/m/#' + appDetailsPathMobile + '?id=' + matchAppDetails[1];
+
+            // url 中携带 params 参数时，仅保留并追加 params 参数
+            const hasParamsQuery = /[?&]params=/.test(href);
+            if (hasParamsQuery) {
+              const queryString = href.split('?')[1] || '';
+              const paramsQuery = queryString
+                .split('&')
+                .find((queryItem) => queryItem.startsWith('params='));
+              if (paramsQuery) {
+                replaceUrl += '&' + paramsQuery;
+              }
+            }
+
+            window.location.replace(replaceUrl);
+            return;
+          }
+
+					// 临时会话页面: 移动端访问 PC 页面 => 跳转 M
+					const matchChatTemp = href.match(new RegExp('/chat-temp/([^/?#]+)'));
+					if (matchChatTemp) {
+						const chatKey = matchChatTemp[1];
+						window.location.replace(baseUrl + '/m/#' + newChatTempPathMobile + '?chatKey=' + chatKey);
+						return;
+					}
+
+					// H5 会话详情链接: /home/chat/conversationId/agentId，在移动端打开时跳转到 M 端 agent-detail 并带 id、conversationId
+					const matchHomeChat = href.match(new RegExp('home/chat/([^/]+)/([^/]+)'));
+					if (matchHomeChat) {
+						const conversationId = matchHomeChat[1];
+						const agentId = matchHomeChat[2];
+						window.location.replace(baseUrl + '/m/#' + newAgentDetailPathMobile + '?id=' + agentId + '&conversationId=' + conversationId);
+						return;
+					}
+
+					window.location.replace(baseUrl + '/m/');
+					return;
+				}
+			})();
+      `,
+      type: 'text/javascript',
+    },
+  ],
+  // 添加在顶层配置中
+  jsMinifier: 'esbuild',
+  jsMinifierOptions: {
+    minify: true,
+    target: ['es2020'],
+    // 勿使用 format: 'iife'，会破坏 webpack 分包后 ES class 继承链（xterm 报 Super constructor null）
+  },
+  chainWebpack(config: any) {
+    config.plugin('copy-monaco').use(CopyWebpackPlugin, [
+      {
+        patterns: [
+          {
+            from: path.join(
+              path.dirname(require.resolve('monaco-editor/package.json')),
+              'min/vs',
+            ),
+            to: 'vs', // 修改为直接复制到 vs 目录
+            force: true,
+          },
+        ],
+      },
+    ]);
+
+    // 复制并压缩 dev-monitor.js
+    config.plugin('copy-dev-monitor').use(CopyWebpackPlugin, [
+      {
+        patterns: [
+          {
+            from: path.resolve(__dirname, '../public/sdk/dev-monitor.js'),
+            to: 'sdk/dev-monitor.js',
+            force: true,
+            // 使用 transform 在复制时进行压缩
+            transform: async (content: Buffer) => {
+              const code = content.toString('utf-8');
+              // 动态导入 esbuild 进行压缩
+              const { transform } = await import('esbuild');
+              const result = await transform(code, {
+                minify: true,
+                target: 'es2020',
+                format: 'iife',
+                // 保持代码为单行，移除注释和空白
+                legalComments: 'none',
+              });
+              return Buffer.from(result.code, 'utf-8');
+            },
+          },
+        ],
+      },
+    ]);
+
+    // 复制并压缩 tailwind_design_mode.all.css
+    config.plugin('copy-tailwind-css').use(CopyWebpackPlugin, [
+      {
+        patterns: [
+          {
+            from: path.resolve(
+              __dirname,
+              '../public/sdk/tailwind_design_mode.all.css',
+            ),
+            to: 'sdk/tailwind_design_mode.all.css',
+            force: true,
+            // 使用 transform 在复制时进行压缩
+            transform: async (content: Buffer) => {
+              const css = content.toString('utf-8');
+              // 动态导入 clean-css 进行压缩
+              const CleanCSS = (await import('clean-css')).default;
+              const minifier = new CleanCSS({
+                level: 2, // 启用所有优化级别
+                format: false, // 不格式化输出
+                returnPromise: false,
+              });
+              const result = minifier.minify(css);
+              if (result.errors && result.errors.length > 0) {
+                console.warn(
+                  'CSS minification warnings:',
+                  result.errors.join('\n'),
+                );
+              }
+              // 确保返回压缩后的 CSS
+              const minifiedCss = result.styles || css;
+              return Buffer.from(minifiedCss, 'utf-8');
+            },
+          },
+        ],
+      },
+    ]);
+
+    // 保证所有 @xterm 依赖打入同一 vendor chunk，且共用同一份 ESM 入口
+    // 必须为每个 addon 都指定 .mjs 入口，否则 CJS/ESM 混用会导致
+    // "Super constructor null of X is not a constructor" 运行时错误
+    const xtermAddons = [
+      'addon-fit',
+      'addon-attach',
+      'addon-clipboard',
+      'addon-image',
+      'addon-ligatures',
+      'addon-progress',
+      'addon-search',
+      'addon-serialize',
+      'addon-unicode-graphemes',
+      'addon-unicode11',
+      'addon-web-fonts',
+      'addon-web-links',
+      'addon-webgl',
+    ];
+    const xtermPackagePath = path.dirname(
+      require.resolve('@xterm/xterm/package.json'),
+    );
+    config.resolve.alias.set(
+      '@xterm/xterm',
+      path.join(xtermPackagePath, 'lib/xterm.mjs'),
+    );
+    for (const addon of xtermAddons) {
+      try {
+        const addonPath = path.dirname(
+          require.resolve(`@xterm/${addon}/package.json`),
+        );
+        config.resolve.alias.set(
+          `@xterm/${addon}`,
+          path.join(addonPath, `lib/${addon}.mjs`),
+        );
+      } catch {
+        // addon 未安装则跳过
+      }
+    }
+
+    config.optimization.splitChunks({
+      ...(config.optimization.get('splitChunks') || {}),
+      cacheGroups: {
+        ...((config.optimization.get('splitChunks') || {}).cacheGroups || {}),
+        xtermVendor: {
+          test: /[\\/]node_modules[\\/]@xterm[\\/]/,
+          name: 'xterm-vendor',
+          chunks: 'all',
+          priority: 100,
+          enforce: true,
+        },
+      },
+    });
+
+    config.plugin('monaco').use(MonacoWebpackPlugin, [
+      {
+        languages: [
+          'javascript',
+          'typescript',
+          'json',
+          'python',
+          'html',
+          'css',
+          'scss',
+          'less',
+        ],
+        publicPath: '/', // 修改为根路径
+        filename: 'vs/[name].worker.js',
+        features: [
+          'accessibilityHelp',
+          'bracketMatching',
+          'clipboard',
+          'find',
+          'folding',
+          'hover',
+          'links',
+          'suggest',
+          'wordHighlighter',
+        ],
+      },
+    ]);
+  },
+});

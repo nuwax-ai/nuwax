@@ -1,0 +1,50 @@
+@import '@/styles/token.less';
+
+.price-row {
+  display: flex;
+  align-items: center;
+  gap: @paddingSm;
+}
+
+.limit-switch-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.limit-btn {
+  height: 36px;
+  border-radius: 10px;
+}
+
+.function-only-row {
+  margin-top: @marginXxs;
+  border: @lineWidth @lineType @colorBorderSecondary;
+  border-radius: @borderRadiusLg;
+  padding: @paddingSm;
+  display: flex;
+  align-items: center;
+  gap: @paddingSm;
+  box-sizing: border-box;
+
+  .function-only-text {
+    flex: 1;
+    min-width: 0;
+
+    .function-only-desc {
+      color: @colorTextDescription;
+      font-size: 13px;
+      line-height: @lineHeightLg;
+
+      .function-only-highlight {
+        color: @colorPrimary;
+        font-weight: 600;
+      }
+
+      .function-only-highlight-pay {
+        color: @colorError;
+        font-weight: 600;
+      }
+    }
+  }
+}

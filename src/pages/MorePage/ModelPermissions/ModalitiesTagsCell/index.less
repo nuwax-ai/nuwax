@@ -1,0 +1,20 @@
+.types-tags-cell {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, max-content));
+  justify-content: start;
+  column-gap: 4px;
+  row-gap: 4px;
+
+  /** 两行 Tag（每行三个），超出裁剪 */
+  max-height: 48px;
+  overflow: hidden;
+
+  :global(.ant-tag) {
+    margin: 0;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: center;
+  }
+}

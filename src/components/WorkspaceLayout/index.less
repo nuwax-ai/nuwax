@@ -1,0 +1,99 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.container {
+  .title {
+    line-height: 32px;
+    font-size: @fontSizeLg;
+    font-weight: 600;
+    color: @BLANK04;
+    margin-right: 20px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .tips-icon {
+    font-size: 14px;
+    cursor: pointer;
+    transition: color 0.3s;
+
+    &:hover {
+      color: @BLANK04;
+    }
+  }
+
+  .icon-back {
+    color: @BLANK17;
+    font-size: 16px;
+  }
+
+  .header-area {
+    flex-shrink: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 15px 15px 10px 24px;
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .header-area {
+      flex-direction: column;
+      align-items: flex-start;
+
+      .header-left {
+        width: 100%;
+
+        .title {
+          width: 100%;
+          margin-bottom: 4px;
+          margin-right: 0;
+        }
+      }
+
+      .header-right {
+        width: 100%;
+        justify-content: flex-start !important;
+        text-align: left !important;
+      }
+    }
+  }
+
+  .content {
+    overflow-x: hidden;
+    overflow-y: auto;
+    height: 100%;
+    padding: 0 16px 16px 24px;
+    background-color: transparent;
+
+    // hideScroll：内容区占满页头以下剩余高度，由页面内部自行分配滚动
+    &.scroll-container-hide {
+      flex: 1;
+      min-height: 0;
+      height: auto;
+      overflow: hidden;
+    }
+  }
+
+  .extra-container {
+    padding: 0 16px 16px 24px;
+  }
+}

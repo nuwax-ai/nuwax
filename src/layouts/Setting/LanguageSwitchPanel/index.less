@@ -1,0 +1,52 @@
+@import '@/styles/token';
+
+.container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+.title {
+  font-weight: @fontWeightStrong;
+  font-size: @fontSizeLg;
+  padding: @paddingLg;
+  border-bottom: @lineWidth solid @colorSplit;
+  color: @colorText;
+  box-sizing: border-box;
+}
+
+.content {
+  flex: 1;
+  padding: @paddingLg;
+
+  .configItem {
+    margin-bottom: @paddingMd;
+
+    .label {
+      margin-bottom: @marginSm;
+      color: @colorTextSecondary;
+      font-size: @fontSizeSm;
+    }
+
+    .actionRow {
+      display: flex;
+      align-items: center;
+      gap: @marginSm;
+
+      :global {
+        .ant-select {
+          flex: 1;
+          max-width: 320px;
+        }
+      }
+    }
+  }
+}
+
+.langOption {
+  display: flex;
+  align-items: center;
+  gap: @marginXs;
+}

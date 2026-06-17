@@ -1,0 +1,76 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.hover-menu {
+  position: fixed;
+  top: 0;
+  height: 100%;
+  // 使用与 layout 一致的背景色
+  background: @navSecondMenuBg;
+  border-right: @lineWidth solid
+    var(--xagi-layout-border-primary, @navBorderColor);
+  z-index: 998; // 比一级菜单层级低一点
+  transition: opacity 0.2s ease-in-out, background-color 0.3s ease;
+  // box-shadow: var(--xagi-layout-shadow, @navSecondMenuShadow);
+  color: var(--xagi-layout-second-menu-text-color, @navSecondMenuTextSecondary);
+
+  &.hover-menu-container-collapsed {
+    border-radius: 0 @borderRadius @borderRadius 0;
+    background: @colorBgContainer;
+    border-right-width: 0;
+    box-shadow: 12px 0 24px -4px rgba(0, 0, 0, 12%);
+  }
+
+  &.hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  &.visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .menu-content {
+    height: 100%;
+    padding: 12px 0;
+    overflow-y: auto;
+
+    // 二级菜单项样式
+    .menu-item {
+      padding: @paddingXs @paddingSm;
+      margin: 2px @paddingXs;
+      border-radius: @borderRadiusSm;
+      transition: all 0.3s ease;
+      cursor: pointer;
+
+      &:hover {
+        background: var(--xagi-layout-bg-card, @navItemHoverBg);
+        color: var(
+          --xagi-layout-second-menu-text-color,
+          @navSecondMenuTextSecondary
+        );
+      }
+
+      &.active {
+        background: var(--xagi-layout-bg-primary, @navItemActiveBg);
+        color: var(
+          --xagi-layout-second-menu-text-color,
+          @navSecondMenuTextSecondary
+        );
+      }
+    }
+  }
+
+  .menu-title {
+    color: @colorText;
+    font-size: @fontSizeHeading5;
+  }
+}
+
+// 移动端隐藏悬浮菜单
+@media (max-width: 768px) {
+  .hover-menu {
+    display: none !important;
+  }
+}

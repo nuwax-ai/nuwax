@@ -1,0 +1,85 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.show-stand {
+  width: 360px;
+  border-radius: 15px;
+  background: @WHITE;
+  //box-shadow: 0 0 5px 0 @BLANK05;
+  transition: display ease-in-out 0.3s;
+
+  &.hidden {
+    display: none;
+  }
+}
+
+.stand-header {
+  padding: 0 12px;
+
+  .form-style {
+    width: 100%;
+    margin-bottom: 0;
+    height: 100%;
+    padding-top: 4px;
+  }
+
+  .form-item-style {
+    width: 100%;
+    margin-bottom: 0 !important;
+    min-height: 24px;
+  }
+
+  span {
+    font-size: 16px;
+    font-weight: @fontWeightStrong;
+    color: @BLANK04;
+
+    &.icon-margin {
+      margin-left: 6px;
+    }
+  }
+
+  .close {
+    margin-left: 8px;
+    font-size: 12px;
+    transition: opacity ease-in-out 0.2s;
+
+    &:hover {
+      opacity: 0.8;
+    }
+  }
+}
+
+.desc {
+  line-height: 22px;
+  color: @GRAY07;
+  margin-top: 12px;
+  font-size: 12px;
+}
+
+.divider-horizontal {
+  border-bottom: 1px solid @GRAY06;
+
+  &.margin {
+    margin: 0 12px;
+  }
+}
+
+.empty {
+  margin-top: 200px;
+}
+
+.title-style {
+  max-width: 220px;
+}
+
+.icon-box-style {
+  width: 20px;
+  height: 20px;
+
+  svg {
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+  }
+}

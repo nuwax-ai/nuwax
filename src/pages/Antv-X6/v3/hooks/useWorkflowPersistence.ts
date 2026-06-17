@@ -1,0 +1,312 @@
+import Constant, {
+  WORKFLOW_VERSION_CONFLICT,
+} from '@/constants/codes.constants';
+import { SaveStatusEnum } from '@/models/workflowV3';
+import { t } from '@/services/i18nRuntime';
+import service from '@/services/workflow';
+import { FoldFormIdEnum } from '@/types/enums/node';
+import { ChildNode, GraphContainerRef } from '@/types/interfaces/graph';
+import { workflowLogger } from '@/utils/logger';
+import { Modal } from 'antd';
+import { debounce } from 'lodash';
+import {
+  MutableRefObject,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+} from 'react';
+import { useModel } from 'umi';
+import { workflowProxy } from '../services/workflowProxyV3';
+import { workflowSaveService } from '../services/WorkflowSaveService';
+
+interface UseWorkflowPersistenceProps {
+  graphRef: MutableRefObject<GraphContainerRef | null>;
+  graphInstanceRef?: MutableRefObject<any | null>; // Fallback ref for unmount
+  changeUpdateTime: () => void;
+  getReference: (id: number) => Promise<boolean>;
+  setFoldWrapItem?: (data: ChildNode) => void;
+}
+
+export const useWorkflowPersistence = ({
+  graphRef,
+  graphInstanceRef,
+  changeUpdateTime,
+  getReference,
+  setFoldWrapItem,
+}: UseWorkflowPersistenceProps) => {
+  const { getWorkflow, setSaveStatus, setLastSaveTime, setSaveError } =
+    useModel('workflowV3');
+
+  // 用于防止重复弹出版本冲突弹窗
+  const isVersionConflictModalVisibleRef = useRef(false);
+  const isMountedRef = useRef(true);
+
+  // V3 Fix: 用于存储防抖函数引用，以便在手动保存时取消自动保存
+  const debouncedSaveRef = useRef<any>(null);
+  // V3 Fix: 用于存储当前正在进行的保存 Promise，防止并行保存
+  const savePromiseRef = useRef<Promise<boolean> | null>(null);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  // V3: 全量保存工作流配置
+  // @param forceCommit 是否强制提交（忽略版本冲突）
+  // @param onSuccess 保存成功后的回调
+  // @param onCancel 版本冲突时用户点击取消的回调（用于放弃修改直接返回等场景）
+  // V3: 全量保存工作流配置 (内部实现)
+  // @param forceCommit 是否强制提交（忽略版本冲突）
+  // @param onSuccess 保存成功后的回调
+  // @param onCancel 版本冲突时用户点击取消的回调（用于放弃修改直接返回等场景）
+  const _saveFullWorkflowImpl = useCallback(
+    async (
+      forceCommit = false,
+      onSuccess?: () => void,
+      onCancel?: () => void,
+    ): Promise<boolean> => {
+      try {
+        const graph =
+          graphRef.current?.getGraphRef?.() || graphInstanceRef?.current;
+        if (!graph) {
+          workflowLogger.error('Canvas is not initialized');
+          return false;
+        }
+
+        // 使用新保存服务从画布构建数据（单一数据源）
+        let payload = workflowSaveService.buildPayload(graph);
+
+        // 如果画布数据无效（页面离开时画布已清除），回退到使用 workflowProxy 的数据
+        if (!payload) {
+          workflowLogger.warn(
+            'Canvas payload is invalid, fallback to workflowProxy payload',
+          );
+          payload = workflowProxy.buildFullConfig();
+          if (!payload) {
+            workflowLogger.error(
+              'Failed to build save payload: no available data source',
+            );
+            return false;
+          }
+          workflowLogger.log('Saving with workflowProxy payload');
+        } else {
+          workflowLogger.log(
+            'Saving with single source payload, node count:',
+            payload.nodes.length,
+          );
+        }
+
+        // 标记保存中状态
+        setSaveStatus(SaveStatusEnum.Saving);
+
+        // 构建保存请求参数，版本信息放入 workflowConfig
+        const saveParams = {
+          workflowConfig: {
+            ...payload,
+            editVersion: workflowSaveService.getEditVersion(),
+            forceCommit: forceCommit ? (1 as const) : (0 as const),
+          },
+        };
+
+        const _res = await service.saveWorkflow(saveParams);
+
+        if (_res.code === Constant.success) {
+          // 保存成功，更新版本号（data 直接是版本号）
+          if (_res.data !== null && _res.data !== undefined) {
+            workflowSaveService.setEditVersion(_res.data);
+            workflowLogger.log('Edit version updated:', _res.data);
+          }
+          workflowSaveService.clearDirty();
+          workflowProxy.clearPendingUpdates();
+          changeUpdateTime();
+          // 更新保存状态为成功
+          setSaveStatus(SaveStatusEnum.Saved);
+          setLastSaveTime(new Date());
+          setSaveError(null);
+          workflowLogger.log('Save succeeded ✓');
+          if (onSuccess) {
+            onSuccess();
+          }
+          return true;
+        } else if (_res.code === WORKFLOW_VERSION_CONFLICT) {
+          // 版本冲突，弹窗询问用户是否强制覆盖
+          workflowLogger.warn(
+            'Version conflict: workflow was modified in another window',
+          );
+          setSaveStatus(SaveStatusEnum.Failed);
+          setSaveError(t('PC.Pages.AntvX6Persistence.versionConflict'));
+
+          // 防止重复弹出版本冲突弹窗，且组件必须处于挂载状态
+          if (
+            !isVersionConflictModalVisibleRef.current &&
+            isMountedRef.current
+          ) {
+            isVersionConflictModalVisibleRef.current = true;
+            Modal.confirm({
+              title: t('PC.Pages.AntvX6Persistence.versionConflictTitle'),
+              content: t('PC.Pages.AntvX6Persistence.versionConflictContent'),
+              okText: t('PC.Pages.AntvX6Persistence.forceOverwrite'),
+              cancelText: t('PC.Pages.AntvX6Persistence.cancel'),
+              onOk: () => {
+                // 用户确认强制覆盖
+                isVersionConflictModalVisibleRef.current = false;
+                // 强制覆盖时递归调用，产生新的 Promise
+                _saveFullWorkflowImpl(true, onSuccess, onCancel);
+              },
+              onCancel: () => {
+                isVersionConflictModalVisibleRef.current = false;
+                // 用户取消强制覆盖，调用 onCancel 回调（放弃修改直接返回等）
+                if (onCancel) {
+                  onCancel();
+                }
+              },
+            });
+          }
+          return false;
+        } else {
+          workflowLogger.error('Workflow save failed:', _res.message);
+          // 更新保存状态为失败
+          setSaveStatus(SaveStatusEnum.Failed);
+          setSaveError(
+            _res.message || t('PC.Pages.AntvX6Persistence.saveFailed'),
+          );
+          return false;
+        }
+      } catch (error) {
+        console.error('[V3] Workflow save exception:', error);
+        // 更新保存状态为失败
+        setSaveStatus(SaveStatusEnum.Failed);
+        setSaveError(
+          error instanceof Error
+            ? error.message
+            : t('PC.Pages.AntvX6Persistence.networkSaveFailed'),
+        );
+        return false;
+      }
+    },
+    [
+      changeUpdateTime,
+      graphRef,
+      graphInstanceRef,
+      setSaveStatus,
+      setLastSaveTime,
+      setSaveError,
+    ],
+  );
+
+  // V3: 外部调用的保存包装器（处理并发和防抖取消）
+  const saveFullWorkflow = useCallback(
+    (
+      forceCommit = false,
+      onSuccess?: () => void,
+      onCancel?: () => void,
+    ): Promise<boolean> => {
+      // 1. 取消防抖
+      if (debouncedSaveRef.current?.cancel) {
+        debouncedSaveRef.current.cancel();
+      }
+
+      // 2. 复用 Pending Promise
+      if (savePromiseRef.current) {
+        workflowLogger.warn('WorkFlow save pending, reusing existing promise');
+        return savePromiseRef.current;
+      }
+
+      // 3. 执行保存并记录 Promise
+      const promise = _saveFullWorkflowImpl(
+        forceCommit,
+        onSuccess,
+        onCancel,
+      ).finally(() => {
+        savePromiseRef.current = null;
+      });
+
+      savePromiseRef.current = promise;
+      return promise;
+    },
+    [_saveFullWorkflowImpl],
+  );
+
+  // V3: 防抖保存（自动保存用）
+  const debouncedSaveFullWorkflow = useMemo(() => {
+    const fn = debounce(async () => {
+      // 使用新保存服务检查脏数据，同时兼容旧代理层
+      if (
+        workflowSaveService.hasPendingChanges() ||
+        workflowProxy.hasPendingChanges()
+      ) {
+        await saveFullWorkflow();
+      }
+    }, 1500); // 1.5秒防抖
+    debouncedSaveRef.current = fn;
+    return fn;
+  }, [saveFullWorkflow]);
+
+  // V3 Fix: 清理防抖函数
+  useEffect(() => {
+    return () => {
+      debouncedSaveFullWorkflow.cancel();
+    };
+  }, [debouncedSaveFullWorkflow]);
+
+  // 自动保存节点配置
+  const autoSaveNodeConfig = useCallback(
+    async (
+      updateFormConfig: ChildNode,
+      setCurrentFoldWrapItem?: (data: ChildNode) => void,
+    ): Promise<boolean> => {
+      if (updateFormConfig.id === FoldFormIdEnum.empty) return false;
+
+      const params = JSON.parse(JSON.stringify(updateFormConfig));
+      graphRef.current?.graphUpdateNode(String(params.id), params);
+
+      // V3: 使用代理层更新数据，不调用后端接口
+      const proxyResult = workflowProxy.updateNode(params);
+
+      if (proxyResult.success) {
+        // 标记为有未保存的更改
+        setSaveStatus(SaveStatusEnum.Unsaved);
+
+        // 如果是修改节点的参数，那么就要更新当前节点的参数
+        const drawerForm = getWorkflow('drawerForm');
+        if (updateFormConfig.id === drawerForm?.id) {
+          if (setCurrentFoldWrapItem) {
+            setCurrentFoldWrapItem(params);
+          } else if (setFoldWrapItem) {
+            setFoldWrapItem(params);
+          }
+        }
+
+        // 更新当前节点的上级参数（使用前端计算）
+        if (drawerForm?.id) {
+          await getReference(drawerForm.id);
+        }
+        changeUpdateTime();
+        // V3: 触发防抖全量保存
+        debouncedSaveFullWorkflow();
+        return true;
+      }
+
+      console.error('[V3] Auto-save node config failed:', proxyResult.message);
+      return false;
+    },
+    [
+      getReference,
+      changeUpdateTime,
+      debouncedSaveFullWorkflow,
+      getWorkflow,
+      graphRef,
+      setFoldWrapItem,
+      setSaveStatus,
+    ],
+  );
+
+  return {
+    saveFullWorkflow,
+    debouncedSaveFullWorkflow,
+    autoSaveNodeConfig,
+  };
+};

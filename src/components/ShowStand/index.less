@@ -1,0 +1,25 @@
+@import '@/styles/color';
+
+.inner-container {
+  padding: 10px;
+  height: 100%;
+  overflow-y: hidden; // 添加这行，使内容溢出时显示垂直滚动条
+  &:hover {
+    overflow-y: scroll;
+  }
+
+  position: relative;
+
+  .card-item-container {
+    position: absolute;
+    //width: 381px;
+    left: 10px;
+    width: 100%;
+    max-width: 400px;
+
+    .card-style-two {
+      background-color: @WHITE01;
+      border-radius: 6px;
+    }
+  }
+}
