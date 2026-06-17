@@ -19,9 +19,8 @@ import {
 // xterm.js 核心样式
 import '@xterm/xterm/css/xterm.css';
 
-import { createLogger } from '@/utils/logger';
-
-import type { Terminal } from '@xterm/xterm';
+import { FitAddon } from '@xterm/addon-fit';
+import { Terminal } from '@xterm/xterm';
 import styles from './index.less';
 import {
   DEFAULT_TERMINAL_SEARCH_OPTIONS,
@@ -40,6 +39,8 @@ import {
   type XtermTerminalProps,
   type XtermTerminalRef,
 } from './type';
+
+import { createLogger } from '@/utils/logger';
 
 const terminalLogger = createLogger('[XtermTerminal]');
 
@@ -450,9 +451,17 @@ const XtermTerminal = forwardRef<XtermTerminalRef, XtermTerminalProps>(
       async (terminal: Terminal): Promise<TerminalAddonsMap> => {
         const addons: TerminalAddonsMap = new Map();
 
+        // 嵌入式控制台仅加载 FitAddon（静态导入），避免生产环境 async chunk
+        // 各自打包 @xterm/xterm 副本导致「Super constructor null」运行时错误
+        if (embedded) {
+          const fitAddon = new FitAddon();
+          terminal.loadAddon(fitAddon);
+          addons.set('fit', fitAddon);
+          return addons;
+        }
+
         // 1. FitAddon
         try {
-          const { FitAddon } = await import('@xterm/addon-fit');
           const fitAddon = new FitAddon();
           terminal.loadAddon(fitAddon);
           addons.set('fit', fitAddon);
@@ -541,19 +550,7 @@ const XtermTerminal = forwardRef<XtermTerminalRef, XtermTerminalProps>(
           }
         }
 
-        // 9. UnicodeGraphemesAddon (实验性)
-        try {
-          const { UnicodeGraphemesAddon } = await import(
-            '@xterm/addon-unicode-graphemes'
-          );
-          const graphemesAddon = new UnicodeGraphemesAddon();
-          terminal.loadAddon(graphemesAddon);
-          addons.set('unicodeGraphemes', graphemesAddon);
-        } catch (e) {
-          terminalLogger.warn('UnicodeGraphemesAddon failed to load:', e);
-        }
-
-        // 10. ImageAddon (条件加载)
+        // 9. ImageAddon (条件加载)
         if (enableImages) {
           try {
             const { ImageAddon } = await import('@xterm/addon-image');
@@ -565,7 +562,7 @@ const XtermTerminal = forwardRef<XtermTerminalRef, XtermTerminalProps>(
           }
         }
 
-        // 11. LigaturesAddon (条件加载)
+        // 10. LigaturesAddon (条件加载)
         if (ligatures) {
           try {
             const { LigaturesAddon } = await import('@xterm/addon-ligatures');
@@ -579,7 +576,7 @@ const XtermTerminal = forwardRef<XtermTerminalRef, XtermTerminalProps>(
 
         return addons;
       },
-      [enableWebgl, enableImages, ligatures],
+      [embedded, enableWebgl, enableImages, ligatures],
     );
 
     // ─── 初始化终端 ──────────────────────────────────────────
@@ -589,8 +586,6 @@ const XtermTerminal = forwardRef<XtermTerminalRef, XtermTerminalProps>(
       let disposed = false;
 
       const initTerminal = async () => {
-        const { Terminal } = await import('@xterm/xterm');
-
         if (disposed || !viewportRef.current) return;
 
         const resolvedTheme = resolveTheme(theme);
