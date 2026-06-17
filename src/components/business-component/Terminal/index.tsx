@@ -469,27 +469,7 @@ const XtermTerminal = forwardRef<XtermTerminalRef, XtermTerminalProps>(
           terminalLogger.warn('SerializeAddon failed to load:', e);
         }
 
-        // 6. ClipboardAddon
-        try {
-          const { ClipboardAddon } = await import('@xterm/addon-clipboard');
-          const clipboardAddon = new ClipboardAddon();
-          terminal.loadAddon(clipboardAddon);
-          addons.set('clipboard', clipboardAddon);
-        } catch (e) {
-          terminalLogger.warn('ClipboardAddon failed to load:', e);
-        }
-
-        // 7. ProgressAddon
-        try {
-          const { ProgressAddon } = await import('@xterm/addon-progress');
-          const progressAddon = new ProgressAddon();
-          terminal.loadAddon(progressAddon);
-          addons.set('progress', progressAddon);
-        } catch (e) {
-          terminalLogger.warn('ProgressAddon failed to load:', e);
-        }
-
-        // 8. WebglAddon (条件加载，带回退)
+        // 6. WebglAddon (条件加载，带回退)
         if (enableWebgl) {
           try {
             const { WebglAddon } = await import('@xterm/addon-webgl');
@@ -509,7 +489,7 @@ const XtermTerminal = forwardRef<XtermTerminalRef, XtermTerminalProps>(
           }
         }
 
-        // 9. ImageAddon (条件加载)
+        // 7. ImageAddon (条件加载)
         if (enableImages) {
           try {
             const { ImageAddon } = await import('@xterm/addon-image');
@@ -521,7 +501,7 @@ const XtermTerminal = forwardRef<XtermTerminalRef, XtermTerminalProps>(
           }
         }
 
-        // 10. LigaturesAddon (条件加载)
+        // 8. LigaturesAddon (条件加载)
         if (ligatures) {
           try {
             const { LigaturesAddon } = await import('@xterm/addon-ligatures');
