@@ -12,8 +12,9 @@ import {
 } from '@ant-design/icons';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import XtermTerminal from '../Terminal';
-import type { TerminalWireProtocol, XtermTerminalRef } from '../Terminal/type';
+import type { EmbeddedConsoleTerminalRef } from '../Terminal/EmbeddedConsoleTerminal';
+import EmbeddedConsoleTerminal from '../Terminal/EmbeddedConsoleTerminal';
+import type { TerminalWireProtocol } from '../Terminal/type';
 import DevLogPanel from './DevLogPanel';
 import styles from './index.less';
 import {
@@ -117,7 +118,7 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
   const [internalAppearance, setInternalAppearance] =
     useState<TerminalAppearanceMode>(defaultTerminalAppearance);
   /** 终端实例引用（用于主动 refresh 修复切换 Tab 后的渲染残影） */
-  const terminalRef = useRef<XtermTerminalRef>(null);
+  const terminalRef = useRef<EmbeddedConsoleTerminalRef>(null);
   /** 上一次 visible 值（用于识别「重新打开」时机） */
   const prevVisibleRef = useRef(visible);
   /** 外部信号上一次值（避免组件 remount 时重复触发） */
@@ -261,9 +262,8 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
     if (wsUrl) {
       return (
         <div className={cx(styles['xterm-container'])}>
-          <XtermTerminal
+          <EmbeddedConsoleTerminal
             ref={terminalRef}
-            embedded
             className={cx(styles['terminal-embedded'], {
               [styles['terminal-embedded-light']]: isLightTerminal,
               [styles['terminal-embedded-dark']]: !isLightTerminal,
@@ -277,7 +277,6 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
             fontFamily={CONSOLE_TERMINAL_FONT_FAMILY}
             lineHeight={1.35}
             cursorBlink
-            enableWebgl={false}
             reconnect={{ enabled: true, maxRetries: 5, retryDelay: 2000 }}
             onConnect={() => {
               terminalRef.current?.writeln(

@@ -1,4 +1,7 @@
+import SvgIcon from '@/components/base/SvgIcon';
 import MoreActionsMenu from '@/components/business-component/FileTreePreviewPanel/FilePathHeader/MoreActionsMenu';
+import ShareDesktopModal from '@/components/business-component/FileTreePreviewPanel/FilePathHeader/ShareDesktopModal';
+import TooltipIcon from '@/components/custom/TooltipIcon';
 import { dict } from '@/services/i18nRuntime';
 import { getFileIcon } from '@/utils/fileTree';
 import {
@@ -7,7 +10,6 @@ import {
   CloseOutlined,
   DesktopOutlined,
   FormOutlined,
-  PlusOutlined,
   PushpinFilled,
   SettingOutlined,
   ThunderboltOutlined,
@@ -30,6 +32,10 @@ import type { Transform } from '@dnd-kit/utilities';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import type { PreviewTab, PreviewToolId } from '../hooks/usePreviewTabs';
+import {
+  isPermanentWorkspaceToolTab,
+  WORKSPACE_PREVIEW_TOOL_IDS,
+} from '../hooks/usePreviewTabs';
 import PreviewTabContextMenu from './PreviewTabContextMenu';
 import PreviewTabLabel from './PreviewTabLabel';
 import {
@@ -56,8 +62,8 @@ export interface PreviewTabBarProps {
   onTogglePinTab: (tabId: string) => void;
   /** 拖拽结束后更新标签顺序 */
   onTabReorder: (activeId: string, overId: string) => void;
-  /** 点击 + 打开「新建页签」内容标签 */
-  onAddTab: () => void;
+  /** 不可关闭的常驻工作区工具页签 ID 列表 */
+  permanentWorkspaceToolIds?: PreviewToolId[];
   /** 重启智能体电脑 / 客户端 */
   onRestartServer?: () => void;
   /** 重启智能体 */
@@ -66,6 +72,12 @@ export interface PreviewTabBarProps {
   onExportProject?: () => void;
   /** 是否为云电脑（影响重启文案） */
   isCloudComputer?: boolean;
+  /** 会话 ID（分享弹窗） */
+  conversationId?: string;
+  /** 当前预览文件的代理 URL（分享弹窗） */
+  fileProxyUrl?: string | null;
+  /** 是否显示分享按钮 */
+  isShowShare?: boolean;
 }
 
 interface TabItemFaceProps {
@@ -144,6 +156,7 @@ const TAB_SCROLL_INTO_VIEW_PADDING = 8;
 interface SortableTabItemProps {
   tab: PreviewTab;
   isActive: boolean;
+  closable: boolean;
   onSelect: () => void;
   onClose: () => void;
   onContextMenu: (e: React.MouseEvent) => void;
@@ -156,6 +169,8 @@ const SortableTabItem: React.FC<SortableTabItemProps> = ({
   tab,
   /** 是否激活 */
   isActive,
+  /** 是否可关闭 */
+  closable,
   /** 切换标签 */
   onSelect,
   /** 关闭标签 */
@@ -232,7 +247,11 @@ const SortableTabItem: React.FC<SortableTabItemProps> = ({
       {...tabDragListeners}
     >
       {/* 标签项外观 */}
-      <TabItemFace tab={tab} renderTabIcon={renderTabIcon} onClose={onClose} />
+      <TabItemFace
+        tab={tab}
+        renderTabIcon={renderTabIcon}
+        onClose={closable ? onClose : undefined}
+      />
     </div>
   );
 };
@@ -260,12 +279,25 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
   onCloseAllTabs,
   onTogglePinTab,
   onTabReorder,
-  onAddTab,
+  permanentWorkspaceToolIds = WORKSPACE_PREVIEW_TOOL_IDS,
   onRestartServer,
   onRestartAgent,
   onExportProject,
   isCloudComputer,
+  conversationId = '',
+  fileProxyUrl = null,
+  isShowShare = true,
 }) => {
+  const [shareDesktopModalVisible, setShareDesktopModalVisible] =
+    useState<boolean>(false);
+
+  const handleShareAction = useCallback(() => {
+    if (!conversationId) {
+      return;
+    }
+    setShareDesktopModalVisible(true);
+  }, [conversationId]);
+
   /** 拖拽中的标签 ID */
   const [activeDragTabId, setActiveDragTabId] = useState<string | null>(null);
   /** 标签栏视口引用 */
@@ -338,6 +370,9 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
 
   /** 标签栏右键菜单对应的标签 */
   const contextTab = tabs.find((tab) => tab.id === contextMenu.tabId) ?? null;
+  const contextTabClosable = contextTab
+    ? !isPermanentWorkspaceToolTab(contextTab, permanentWorkspaceToolIds)
+    : false;
 
   /** 关闭标签栏右键菜单 */
   const closeContextMenu = useCallback(() => {
@@ -546,10 +581,6 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
    * @returns 标签图标
    */
   const renderTabIcon = (tab: PreviewTab) => {
-    /** 渲染「新建页签」标签图标 */
-    if (tab.type === 'picker') {
-      return <PlusOutlined style={{ fontSize: 14 }} />;
-    }
     /** 渲染文件标签图标 */
     if (tab.type === 'file' && tab.fileId) {
       return getFileIcon(tab.label);
@@ -588,6 +619,12 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
                         key={tab.id}
                         tab={tab}
                         isActive={tab.id === activeTabId}
+                        closable={
+                          !isPermanentWorkspaceToolTab(
+                            tab,
+                            permanentWorkspaceToolIds,
+                          )
+                        }
                         onSelect={() => onTabSelect(tab.id)}
                         onClose={() => onTabClose(tab.id)}
                         onContextMenu={(e) => handleTabContextMenu(e, tab.id)}
@@ -633,24 +670,36 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
           </div>
         </div>
 
-        {/* 「+」号按钮，点击打开「新建页签」面板 */}
+        {/* 更多操作菜单 */}
         <div className={cx(styles['tab-bar-actions'])}>
-          <button
-            type="button"
-            className={cx(styles['add-tab-btn'])}
-            aria-label={dict('PC.Pages.ConversationAgentPreviewTabBar.addTab')}
-            onClick={onAddTab}
-          >
-            <PlusOutlined style={{ fontSize: 14 }} />
-          </button>
           <MoreActionsMenu
             onRestartServer={onRestartServer}
             onRestartAgent={onRestartAgent}
             onExportProject={onExportProject}
             isCloudComputer={isCloudComputer}
           />
+          {isShowShare && (
+            <TooltipIcon
+              title={dict('PC.Components.FilePathHeader.share')}
+              ariaLabel={dict('PC.Components.FilePathHeader.share')}
+              placement="bottom"
+              className={cx(styles['tab-bar-action-btn'])}
+              icon={
+                <SvgIcon name="icons-chat-share" style={{ fontSize: 16 }} />
+              }
+              onClick={handleShareAction}
+            />
+          )}
         </div>
       </div>
+
+      <ShareDesktopModal
+        fileProxyUrl={fileProxyUrl}
+        shareType="CONVERSATION"
+        visible={shareDesktopModalVisible}
+        onClose={() => setShareDesktopModalVisible(false)}
+        conversationId={conversationId}
+      />
 
       {/* 预览区标签页右键菜单（带淡入缩放过渡） */}
       <PreviewTabContextMenu
@@ -663,7 +712,9 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
         onClose={closeContextMenu}
         /** 关闭指定标签 */
         onCloseTab={
-          contextMenu.tabId ? () => onTabClose(contextMenu.tabId!) : undefined
+          contextMenu.tabId && contextTabClosable
+            ? () => onTabClose(contextMenu.tabId!)
+            : undefined
         }
         /** 关闭除指定标签外的所有标签 */
         onCloseOtherTabs={

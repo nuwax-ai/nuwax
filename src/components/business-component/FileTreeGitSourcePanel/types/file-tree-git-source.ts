@@ -1,16 +1,13 @@
 import type { ChangeFileInfo } from '@/components/business-component/FileTreePreviewPanel/types/file-tree';
 import type { FileNode } from '@/types/interfaces/appDev';
 import type { ReactNode } from 'react';
-import type { GitWorkspaceConfig } from '../utils/buildGitWorkspaceParams';
 import type {
   ChangeListSection,
   SelectedChangeFile,
 } from '../utils/changeFileStatus';
 
-/** 源代码管理绑定（Git API 在 SourceControlPanel 内统一调用） */
+/** 源代码管理绑定（Git API 在 useSourceControl 内统一调用，面板仅负责 UI） */
 export interface SourceControlProps {
-  /** Git 工作空间（pageApp / taskAgent） */
-  gitWorkspace?: GitWorkspaceConfig;
   /** 已修改文件列表（源代码管理） */
   changeFiles: ChangeFileInfo[];
   /** 当前选中的变更文件（含区块） */
@@ -27,8 +24,12 @@ export interface SourceControlProps {
   onDiffFileSelect?: (fileId: string, section: ChangeListSection) => void;
   /** 打开文件（选中并预览，非 diff） */
   onOpenChangeFile?: (fileId: string) => void;
-  /** Git discard 成功后的 UI 同步（还原编辑器、清理本地变更记录等） */
-  onAfterDiscardChange?: (fileId: string) => void | Promise<void>;
+  /** 放弃更改（Git discard + UI 同步 + 刷新列表） */
+  onDiscardChanges?: (fileIds: string[]) => void | Promise<void>;
+  /** 暂存更改（git add） */
+  onStageChanges?: (fileIds: string[]) => void | Promise<void>;
+  /** 取消暂存（git restore --staged） */
+  onUnstageChanges?: (fileIds: string[]) => void | Promise<void>;
   /** 添加到 .gitignore */
   onAddToGitignore?: (fileId: string) => void;
 }
