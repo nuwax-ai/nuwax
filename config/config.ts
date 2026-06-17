@@ -287,6 +287,12 @@ export default defineConfig({
       },
     ]);
 
+    // 保证所有 @xterm addon 与主包共用同一份 xterm 核心，避免生产分包后继承链断裂
+    const xtermPackagePath = path.dirname(
+      require.resolve('@xterm/xterm/package.json'),
+    );
+    config.resolve.alias.set('@xterm/xterm', xtermPackagePath);
+
     config.plugin('monaco').use(MonacoWebpackPlugin, [
       {
         languages: [
