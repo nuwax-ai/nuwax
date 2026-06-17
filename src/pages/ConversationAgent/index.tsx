@@ -351,10 +351,7 @@ const ConversationAgent: React.FC = () => {
   /**
    * 终端 WebSocket 连接地址（ttyd）
    */
-  const terminalWsUrl = useTerminalWsUrl(
-    agentConfigInfo?.tenantId,
-    finalSelectedComputerId,
-  );
+  const terminalWsUrl = useTerminalWsUrl(queryConversationId);
 
   /** 沙盒开发日志：仅在底部控制台打开且处于日志 Tab 时轮询 */
   const devLogs = useConversationAgentDevLogs(queryConversationId, {

@@ -5,8 +5,8 @@ export const TTYD_TERMINAL_WS_SUBPROTOCOLS = ['tty'] as const;
 export const TTYD_TERMINAL_WIRE_PROTOCOL = 'ttyd' as const;
 
 /** 本地 ttyd 联调默认地址（缺少 tenant/computer 时回退） */
-const DEV_TTYD_WS_FALLBACK =
-  'ws://192.168.1.34:8088/computer/ttyd/6/1548510/ws';
+const DEV_TTYD_WS_FALLBACK = (conversationId: number) =>
+  `wss://testagent.xspaceagi.com/computer/terminal/${conversationId}/ws`;
 
 /**
  * 将 http(s)/ws(s) 基础地址规范化为 WebSocket URL
@@ -29,18 +29,29 @@ export function normalizeTerminalWsUrl(base: string): string {
 
 /**
  * 构建 ttyd 终端 WebSocket 地址
- * @param tenantId 租户 ID
- * @param computerId 沙箱/电脑/项目 ID
+ * @param conversationId 会话 ID
  */
-export function buildTtydTerminalWsUrl(
-  tenantId?: string | number | null,
-  computerId?: string | number | null,
-): string {
-  if (tenantId && computerId && typeof window !== 'undefined') {
-    const wsScheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
+export function buildTtydTerminalWsUrl(conversationId?: number): string {
+  if (!conversationId) {
+    return '';
+  }
+
+  if (typeof window !== 'undefined') {
+    const wsScheme =
+      process.env.NODE_ENV === 'development'
+        ? 'wss'
+        : window.location.protocol === 'https:'
+        ? 'wss'
+        : 'ws';
+
+    // 开发环境使用测试域名，生产环境使用当前域名
+    const host =
+      process.env.NODE_ENV === 'development'
+        ? 'testagent.xspaceagi.com'
+        : window.location.host;
     return normalizeTerminalWsUrl(
-      `${wsScheme}://${window.location.host}/computer/ttyd/${tenantId}/${computerId}/ws`,
+      `${wsScheme}://${host}/computer/terminal/${conversationId}/ws`,
     );
   }
-  return normalizeTerminalWsUrl(DEV_TTYD_WS_FALLBACK);
+  return normalizeTerminalWsUrl(DEV_TTYD_WS_FALLBACK(conversationId));
 }
