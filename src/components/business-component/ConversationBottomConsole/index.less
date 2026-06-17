@@ -162,24 +162,24 @@
   }
 
   .xterm-container {
+    width: 100%;
     height: 100%;
     overflow: hidden;
-    background-color: transparent;
   }
 
   .terminal-embedded {
+    width: 100%;
+    height: 100%;
     border: none !important;
     border-radius: 0 !important;
     box-shadow: none !important;
     outline: none !important;
+    overflow: hidden;
 
     :global(.xterm) {
       height: 100%;
       padding: @marginXxs @paddingSm @marginXxs;
-    }
-
-    :global(.xterm .xterm-viewport) {
-      background-color: transparent !important;
+      box-sizing: border-box;
     }
 
     :global(.xterm-decoration-overview-ruler) {
@@ -188,10 +188,10 @@
   }
 
   .terminal-embedded-light {
-    background-color: @terminal-console-bg-light !important;
+    background-color: @terminal-console-bg-light;
 
     :global(.xterm .xterm-viewport) {
-      background-color: @terminal-console-bg-light !important;
+      background-color: @terminal-console-bg-light;
 
       &::-webkit-scrollbar {
         width: @marginXs;
@@ -213,10 +213,10 @@
   }
 
   .terminal-embedded-dark {
-    background-color: @terminal-console-bg-dark !important;
+    background-color: @terminal-console-bg-dark;
 
     :global(.xterm .xterm-viewport) {
-      background-color: @terminal-console-bg-dark !important;
+      background-color: @terminal-console-bg-dark;
 
       &::-webkit-scrollbar {
         width: @marginXs;
