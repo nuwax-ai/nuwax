@@ -1,16 +1,26 @@
 import { SvgIcon } from '@/components/base';
 import TooltipIcon from '@/components/custom/TooltipIcon';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
+import { apiEnsurePod, apiKeepalivePod } from '@/services/vncDesktop';
 import type { DevLogEntry } from '@/types/interfaces/appDev';
 import {
   DownOutlined,
   FullscreenExitOutlined,
   MoonOutlined,
+  ReloadOutlined,
   SunOutlined,
   UpOutlined,
 } from '@ant-design/icons';
+import { useRequest } from 'ahooks';
 import classNames from 'classnames';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
 import type { EmbeddedConsoleTerminalRef } from '../Terminal/EmbeddedConsoleTerminal';
 import EmbeddedConsoleTerminal from '../Terminal/EmbeddedConsoleTerminal';
 import type { TerminalWireProtocol } from '../Terminal/type';
@@ -50,11 +60,11 @@ export interface ConversationBottomConsoleProps {
   /** 终端 WebSocket 地址；传入后终端 Tab 渲染 XtermTerminal */
   wsUrl?: string;
   /**
-   * 是否允许终端发起 WebSocket 连接 @default true
-   * - true：终端渲染后立即连接（需同时传入 wsUrl）
-   * - false：终端组件保持挂载但不建立连接；切换为 true 时才发起连接
+   * 会话 ID；传入后组件挂载时自动调用 apiEnsurePod 启动容器，
+   * 容器启动成功后才允许终端发起 WebSocket 连接。
+   * 若不传，则不启动容器，终端在有 wsUrl 时直接连接。
    */
-  terminalAutoConnect?: boolean;
+  conversationId?: number;
   /** WebSocket 子协议（ttyd 需传 ['tty']） */
   wsSubprotocols?: string | string[];
   /** 终端消息格式（'plain' | 'ttyd'） */
@@ -95,7 +105,7 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
   runtimeLogs = '',
   devLog,
   wsUrl,
-  terminalAutoConnect = true,
+  conversationId,
   wsSubprotocols,
   wireProtocol,
   terminalAppearance: terminalAppearanceProp,
@@ -122,6 +132,117 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
     useState<TerminalAppearanceMode>(defaultTerminalAppearance);
   /** 终端实例引用（用于主动 refresh 修复切换 Tab 后的渲染残影） */
   const terminalRef = useRef<EmbeddedConsoleTerminalRef>(null);
+
+  /**
+   * 容器启动状态机：
+   * - idle：未传 conversationId，无需启动容器，终端在有 wsUrl 时直接连接
+   * - starting：apiEnsurePod 调用中，终端等待
+   * - running：容器已就绪，终端可连接，保活轮询中
+   * - error：容器启动或保活失败，显示重试按钮，终端不可连接
+   */
+  const [containerStatus, setContainerStatus] = useState<
+    'idle' | 'starting' | 'running' | 'error'
+  >(conversationId ? 'starting' : 'idle');
+  const [containerError, setContainerError] = useState<string>('');
+
+  /**
+   * 保活轮询（useRequest 自动管理定时器、页面可见性暂停/恢复）
+   * 使用 ref 持有 run/cancel，避免闭包陷阱并保证 startContainer 引用稳定
+   */
+  const runKeepaliveRef = useRef<(cId: number) => void>(() => {});
+  const stopKeepaliveRef = useRef<() => void>(() => {});
+
+  const { run: runKeepalivePodPolling, cancel: stopKeepalivePodPolling } =
+    useRequest(apiKeepalivePod, {
+      manual: true,
+      loadingDelay: 30_000,
+      debounceWait: 5_000,
+      pollingInterval: 60_000, // 60 秒保活一次
+      pollingWhenHidden: false, // 屏幕不可见时暂停
+      pollingErrorRetryCount: -1, // 网络错误无限重试
+      // 页面重新可见时，调用 apiEnsurePod 确保容器运行
+      onBefore: async (params) => {
+        if (document.visibilityState === 'visible' && params[0]) {
+          try {
+            await apiEnsurePod(params[0]);
+          } catch (error) {
+            console.error('[keepalive] apiEnsurePod failed:', error);
+          }
+        }
+      },
+      onSuccess: (result) => {
+        // HTTP 成功但业务码失败 → 视为保活失败，停止轮询并显示错误
+        if (result.code !== SUCCESS_CODE) {
+          setContainerStatus('error');
+          setContainerError(
+            result.message ||
+              dict(
+                'PC.Components.ConversationBottomConsole.containerKeepaliveFailed',
+              ),
+          );
+          stopKeepaliveRef.current();
+        }
+      },
+      onError: (error) => {
+        console.error('[keepalive] Pod keepalive error:', error);
+        setContainerStatus('error');
+        setContainerError(
+          dict(
+            'PC.Components.ConversationBottomConsole.containerKeepaliveError',
+          ),
+        );
+        stopKeepaliveRef.current();
+      },
+    });
+
+  // 同步 ref，保证 startContainer / useLayoutEffect 中始终拿到最新引用
+  runKeepaliveRef.current = runKeepalivePodPolling;
+  stopKeepaliveRef.current = stopKeepalivePodPolling;
+
+  /** 启动容器并开启保活轮询 */
+  const startContainer = useCallback(async (cId: number) => {
+    setContainerStatus('starting');
+    setContainerError('');
+    try {
+      const { code } = await apiEnsurePod(cId);
+      if (code === SUCCESS_CODE) {
+        setContainerStatus('running');
+        runKeepaliveRef.current(cId);
+      }
+    } catch (error: any) {
+      setContainerStatus('error');
+      setContainerError(
+        error?.message ||
+          dict('PC.Components.ConversationBottomConsole.containerStartError'),
+      );
+    }
+  }, []);
+
+  /** 挂载时启动容器；conversationId 变化时重启 */
+  useLayoutEffect(() => {
+    if (!conversationId) {
+      setContainerStatus('idle');
+      return;
+    }
+
+    // 清理旧的保活轮询
+    stopKeepaliveRef.current();
+
+    startContainer(conversationId);
+
+    return () => {
+      stopKeepaliveRef.current();
+    };
+  }, [conversationId, startContainer]);
+
+  /**
+   * 终端连接开关（完全由内部容器状态控制）：
+   * - idle：未传 conversationId，无需容器，终端在有 wsUrl 时直接连接
+   * - running：容器就绪，终端可连接
+   * - starting / error：容器未就绪，终端不可连接
+   */
+  const terminalAutoConnect =
+    containerStatus === 'idle' || containerStatus === 'running';
   /** 上一次 visible 值（用于识别「重新打开」时机） */
   const prevVisibleRef = useRef(visible);
   /** 外部信号上一次值（避免组件 remount 时重复触发） */
@@ -256,8 +377,69 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
     }
   };
 
-  /** 终端 Tab 内容：有 wsUrl 时渲染交互式终端，否则展示空态 */
+  /** 终端 Tab 内容：容器就绪后渲染交互式终端，否则展示加载/错误/空态 */
   const renderTerminalTab = () => {
+    // 容器正在启动中
+    if (containerStatus === 'starting') {
+      return (
+        <div className={cx(styles['console-body'])}>
+          <div
+            className={cx(
+              styles['console-empty'],
+              'flex',
+              'flex-col',
+              'items-center',
+              'content-center',
+              'h-full',
+              'gap-8',
+            )}
+          >
+            <span>
+              {dict(
+                'PC.Components.ConversationBottomConsole.containerStarting',
+              )}
+            </span>
+          </div>
+        </div>
+      );
+    }
+
+    // 容器启动或保活失败，显示重试按钮
+    if (containerStatus === 'error') {
+      return (
+        <div className={cx(styles['console-body'])}>
+          <div
+            className={cx(
+              styles['console-empty'],
+              'flex',
+              'flex-col',
+              'items-center',
+              'content-center',
+              'h-full',
+              'gap-8',
+            )}
+          >
+            <span className={cx(styles['container-error-text'])}>
+              {containerError ||
+                dict(
+                  'PC.Components.ConversationBottomConsole.containerStartFailed',
+                )}
+            </span>
+            <button
+              type="button"
+              className={cx(styles['container-retry-btn'])}
+              onClick={() => conversationId && startContainer(conversationId)}
+            >
+              <ReloadOutlined style={{ marginRight: 6 }} />
+              {dict(
+                'PC.Components.ConversationBottomConsole.retryStartContainer',
+              )}
+            </button>
+          </div>
+        </div>
+      );
+    }
+
     if (wsUrl) {
       return (
         <div className={cx(styles['xterm-container'])}>
@@ -276,7 +458,7 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
             fontFamily={CONSOLE_TERMINAL_FONT_FAMILY}
             lineHeight={1.35}
             cursorBlink
-            reconnect={{ enabled: true, maxRetries: 5, retryDelay: 2000 }}
+            reconnect={{ enabled: true, maxRetries: 3, retryDelay: 2000 }}
             onConnect={() => {
               terminalRef.current?.writeln(
                 '\x1b[32m[Terminal connected]\x1b[0m',
@@ -292,7 +474,7 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
       );
     }
 
-    // 空态（无 wsUrl 时）
+    // 空态（无 wsUrl 且无需启动容器时）
     return (
       <div className={cx(styles['console-body'])}>
         <div
