@@ -144,6 +144,24 @@ export default () => {
     AgentManualComponentInfo[]
   >([]);
 
+  // 当前会话 ID（用于停止会话等操作）
+  const [currentConversationId, setCurrentConversationId] = useState<
+    number | null
+  >(null);
+  // 当前会话请求 ID（用于停止临时会话等操作）
+  const [currentConversationRequestId, setCurrentConversationRequestId] =
+    useState<string>('');
+
+  // 获取当前会话 ID
+  const getCurrentConversationId = useCallback(() => {
+    return currentConversationId;
+  }, [currentConversationId]);
+
+  // 获取当前会话请求 ID
+  const getCurrentConversationRequestId = useCallback(() => {
+    return currentConversationRequestId;
+  }, [currentConversationRequestId]);
+
   // 滚动到底部
   const messageViewScrollToBottom = () => {
     // 只有在允许自动滚动时才执行滚动
@@ -277,6 +295,8 @@ export default () => {
         setChatProcessingList(data?.messageList || []);
         // 设置会话信息
         setConversationInfo(data);
+        // 记录当前会话 ID（用于停止会话等操作）
+        setCurrentConversationId(data?.id ?? null);
 
         // 是否开启用户问题建议
         setIsSuggest(data?.agent?.openSuggest === OpenCloseEnum.Open);
@@ -597,6 +617,7 @@ export default () => {
         list.splice(index, arraySpliceAction, newMessage as MessageInfo);
       }
 
+      // 同步更新会话活跃状态
       checkConversationActive(list);
 
       return list;
@@ -628,9 +649,14 @@ export default () => {
         perfLifecycle.onSseConnect();
       },
       onMessage: (res: ConversationChatResponse) => {
-        // 将 chunk 的实际载荷也传给 perfTracker，避免只依赖 eventType 误判“首包”
-        // 传入整个响应对象：若其中存在 subType（例如 unified 会话流），perfTracker 可据此判断“真正消息块”。
+        // 将 chunk 的实际载荷也传给 perfTracker，避免只依赖 eventType 误判”首包”
+        // 传入整个响应对象：若其中存在 subType（例如 unified 会话流），perfTracker 可据此判断”真正消息块”。
         perfLifecycle.onFirstChunk(res?.eventType, res);
+
+        // 记录当前会话请求 ID（用于停止会话等操作）
+        if (res?.requestId) {
+          setCurrentConversationRequestId(res.requestId);
+        }
 
         // 现在逻辑已重构为同步，按序处理所有包，包括带有 finished: true 的结束包。
         handleChangeMessageList(params, res, currentMessageId);
@@ -707,6 +733,8 @@ export default () => {
 
         perfLifecycle.onStreamEnd();
         perfLifecycle.onCloseRenderComplete();
+        // SSE 关闭时重置会话活跃状态
+        disabledConversationActive();
       },
       onError: () => {
         message.error(dict('PC.Models.ConversationInfo.networkTimeoutError'));
@@ -722,6 +750,8 @@ export default () => {
           disabledConversationActive();
           return list;
         });
+        // setMessageList(list);
+        checkConversationActive(list);
         perfLifecycle.onStreamEnd('error');
       },
     });
@@ -767,6 +797,11 @@ export default () => {
     setConversationInfo(null);
     // 重置问题建议
     setIsSuggest(false);
+    // 重置会话活跃状态
+    disabledConversationActive();
+    // 重置当前会话 ID 和请求 ID
+    setCurrentConversationId(null);
+    setCurrentConversationRequestId('');
 
     // 清除文件面板信息, 并关闭文件面板
     clearFilePanelInfo();
@@ -850,6 +885,7 @@ export default () => {
     setMessageList(newMessageList);
     // 缓存消息列表
     messageListRef.current = newMessageList;
+    // 同步更新会话活跃状态（用户发送消息后，新消息带有 Loading 状态）
     checkConversationActive(newMessageList);
 
     // 允许滚动
@@ -903,10 +939,16 @@ export default () => {
     clearFilePanelInfo,
     isLoadingOtherInterface,
     setIsLoadingOtherInterface,
-    isConversationActive,
-    checkConversationActive,
-    disabledConversationActive,
+    // 停止会话相关
     runStopConversation,
     loadingStopConversation,
+    // 会话活跃状态（SSE 流式交互中）
+    isConversationActive,
+    disabledConversationActive,
+    checkConversationActive,
+    // 当前会话 ID 与请求 ID
+    getCurrentConversationId,
+    getCurrentConversationRequestId,
+    setCurrentConversationRequestId,
   };
 };

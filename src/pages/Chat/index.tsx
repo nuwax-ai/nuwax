@@ -237,6 +237,14 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     taskAgentSelectTrigger,
     // 会话是否正在进行中（有消息正在处理）
     isConversationActive,
+    // 停止会话相关
+    runStopConversation,
+    loadingStopConversation,
+    getCurrentConversationId,
+    getCurrentConversationRequestId,
+    disabledConversationActive,
+    // 其它接口加载状态
+    isLoadingOtherInterface,
     // 加载更多消息相关
     isMoreMessage,
     setIsMoreMessage,
@@ -945,6 +953,15 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     showAnnouncement: true,
     mentionPlacement: 'up',
     messageViewRef,
+    // 原 conversationInfo model 数据，传给独立版输入组件
+    runStopConversation,
+    loadingStopConversation,
+    getCurrentConversationId,
+    getCurrentConversationRequestId,
+    disabledConversationActive,
+    loadingConversation,
+    isLoadingOtherInterface,
+    conversationInfo,
   };
 
   // 加载中

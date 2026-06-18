@@ -109,6 +109,14 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     setIsMoreMessage,
     loadingMore,
     handleLoadMoreMessage,
+    // 停止会话相关
+    runStopConversation,
+    loadingStopConversation,
+    getCurrentConversationId,
+    getCurrentConversationRequestId,
+    disabledConversationActive,
+    // 其它接口加载状态
+    isLoadingOtherInterface,
   } = useModel('conversationInfo');
 
   // 获取 chat model 中的页面预览状态
@@ -521,6 +529,15 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
                 'PC.Components.ChatInputHomeMentionEditor.placeholderWithoutMention',
               )}
               messageViewRef={messageViewRef}
+              // 原 conversationInfo model 数据，传给独立版输入组件
+              runStopConversation={runStopConversation}
+              loadingStopConversation={loadingStopConversation}
+              getCurrentConversationId={getCurrentConversationId}
+              getCurrentConversationRequestId={getCurrentConversationRequestId}
+              disabledConversationActive={disabledConversationActive}
+              loadingConversation={loadingConversation}
+              isLoadingOtherInterface={isLoadingOtherInterface}
+              conversationInfo={conversationInfo}
             />
           </div>
         </div>

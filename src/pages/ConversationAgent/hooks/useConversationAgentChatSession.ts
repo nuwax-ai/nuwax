@@ -78,9 +78,13 @@ export function useConversationAgentChatSession(
     runQueryConversation,
     clearFilePanelInfo,
     isConversationActive: agentStreamActive,
-    runStopConversation: agentRunStopConversation,
-    loadingStopConversation: agentLoadingStopConversation,
-    disabledConversationActive: agentDisabledConversationActive,
+    // 停止会话相关
+    runStopConversation,
+    loadingStopConversation,
+    disabledConversationActive,
+    // 当前会话 ID 与请求 ID
+    getCurrentConversationId,
+    getCurrentConversationRequestId,
   } = useModel('conversationAgent');
 
   const { hidePagePreview, showPagePreview } = useModel('chat');
@@ -234,7 +238,7 @@ export function useConversationAgentChatSession(
       streamActive: agentStreamActive,
       taskExecuting: agentTaskExecuting,
       runStopConversation: (id: number | string) => {
-        void agentRunStopConversation(String(id));
+        void runStopConversation(String(id));
       },
     },
     messageBottomMode: 'chat' as const,
@@ -281,10 +285,19 @@ export function useConversationAgentChatSession(
       taskExecutingOverride: agentTaskExecuting,
       stopConversationIdOverride: devConversationId,
       onStopConversationOverride: (id: number | string) => {
-        void agentRunStopConversation(String(id));
+        void runStopConversation(String(id));
       },
-      loadingStopConversationOverride: agentLoadingStopConversation,
-      onDisabledStreamActiveOverride: agentDisabledConversationActive,
+      loadingStopConversationOverride: loadingStopConversation,
+      onDisabledStreamActiveOverride: disabledConversationActive,
     },
+    // 停止会话相关数据，供独立版输入组件使用（全部来自 conversationAgent model）
+    runStopConversation,
+    loadingStopConversation,
+    getCurrentConversationId,
+    getCurrentConversationRequestId,
+    disabledConversationActive,
+    loadingConversation,
+    isLoadingOtherInterface,
+    conversationInfo,
   };
 }

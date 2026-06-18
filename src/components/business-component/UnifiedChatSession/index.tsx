@@ -8,7 +8,6 @@ import { useActiveInterventionQueue } from '@/components/business-component/Agen
 import MessageQueuePanel, {
   useUnifiedChatQueue,
 } from '@/components/business-component/MessageQueue';
-import ChatInputHome from '@/components/ChatInputHome';
 import ChatView from '@/components/ChatView';
 import NewConversationSet from '@/components/NewConversationSet';
 import RecommendList from '@/components/RecommendList';
@@ -28,6 +27,7 @@ import type {
   MessageInfo,
   RoleInfo,
 } from '@/types/interfaces/conversationInfo';
+import ChatInputHomeIndependent from './ChatInputHomeIndependent';
 
 import styles from './index.less';
 import type { UnifiedChatSessionProps } from './types';
@@ -89,6 +89,16 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
   chatInputProps,
   queueMinConsumeInterval,
   queueContext,
+
+  // 原 ChatInputHome 中 useModel('conversationInfo') 数据
+  runStopConversation,
+  loadingStopConversation,
+  getCurrentConversationId,
+  getCurrentConversationRequestId,
+  disabledConversationActive,
+  loadingConversation,
+  isLoadingOtherInterface,
+  conversationInfo,
 }) => {
   const [isHoveringChat, setIsHoveringChat] = useState<boolean>(false);
   const internalMessageViewRef = useRef<HTMLDivElement>(null);
@@ -375,7 +385,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
         className={cx(styles['intervention-dock'])}
       />
 
-      {/* 统一会话输入框 */}
+      {/* 统一会话输入框（使用独立版组件，避免与 conversationInfo model 强耦合） */}
       <div className={cx(styles['chat-input-container'])}>
         {/* 待发送消息队列面板：有待处理 intervention（ask/question/审批）时隐藏，让 intervention 独占展示 */}
         {!hasPendingIntervention && (
@@ -388,7 +398,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
             onReorder={messageQueue.reorder}
           />
         )}
-        <ChatInputHome
+        <ChatInputHomeIndependent
           key={`chat-input-${conversationId}`}
           clearDisabled={!messageList?.length}
           onEnter={handleMessageSend}
@@ -429,6 +439,17 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
           onModelSelect={onModelSelect}
           agentType={agentInfo?.type}
           {...chatInputProps}
+          // 传入原 conversationInfo model 数据
+          runStopConversation={runStopConversation}
+          loadingStopConversation={loadingStopConversation}
+          getCurrentConversationId={getCurrentConversationId}
+          getCurrentConversationRequestId={getCurrentConversationRequestId}
+          isConversationActive={isConversationActive}
+          disabledConversationActive={disabledConversationActive}
+          messageList={messageList}
+          loadingConversation={loadingConversation}
+          isLoadingOtherInterface={isLoadingOtherInterface}
+          conversationInfo={conversationInfo}
         />
       </div>
     </div>

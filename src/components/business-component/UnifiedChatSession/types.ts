@@ -2,6 +2,7 @@ import type { AgentMode } from '@/components/business-component/AgentInterventio
 import type { UnifiedChatQueueContext } from '@/components/business-component/MessageQueue/useUnifiedChatQueue';
 import type { ChatInputProps, UploadFileInfo } from '@/types/interfaces/common';
 import type {
+  ConversationInfo,
   MessageInfo,
   RoleInfo,
 } from '@/types/interfaces/conversationInfo';
@@ -109,4 +110,21 @@ export interface UnifiedChatSessionProps {
    * 未传时使用全局 conversationInfo model。
    */
   queueContext?: UnifiedChatQueueContext;
+  // ===== 原 ChatInputHome 中 useModel('conversationInfo') 数据，改为从外部传入 =====
+  /** 停止会话的异步函数 */
+  runStopConversation?: (id: string) => Promise<any>;
+  /** 停止会话接口的加载状态 */
+  loadingStopConversation?: boolean;
+  /** 获取当前会话 ID */
+  getCurrentConversationId?: () => number | null;
+  /** 获取当前会话请求 ID */
+  getCurrentConversationRequestId?: () => string;
+  /** 强制将会话设置为非活跃状态 */
+  disabledConversationActive?: () => void;
+  /** 会话消息加载中状态 */
+  loadingConversation?: boolean;
+  /** 其它接口加载中状态（用于禁用发送按钮） */
+  isLoadingOtherInterface?: boolean;
+  /** 当前会话详情 */
+  conversationInfo?: ConversationInfo | null;
 }

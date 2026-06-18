@@ -34,6 +34,15 @@ const PluginChatSession: React.FC<PluginChatSessionProps> = ({
     loadingMore,
     handleLoadMoreMessage,
     resetInit,
+    // 停止会话相关
+    runStopConversation,
+    loadingStopConversation,
+    getCurrentConversationId,
+    getCurrentConversationRequestId,
+    disabledConversationActive,
+    // 加载状态
+    loadingConversation,
+    isLoadingOtherInterface,
   } = useModel('conversationInfo');
 
   // 1. 初始化回显从外部跳转传递过来的信息
@@ -219,6 +228,15 @@ const PluginChatSession: React.FC<PluginChatSessionProps> = ({
         'PC.Components.ChatInputHomeMentionEditor.placeholderWithoutMention',
       )}
       messageViewRef={messageViewRef}
+      // 原 conversationInfo model 数据，传给独立版输入组件
+      runStopConversation={runStopConversation}
+      loadingStopConversation={loadingStopConversation}
+      getCurrentConversationId={getCurrentConversationId}
+      getCurrentConversationRequestId={getCurrentConversationRequestId}
+      disabledConversationActive={disabledConversationActive}
+      loadingConversation={loadingConversation}
+      isLoadingOtherInterface={isLoadingOtherInterface}
+      conversationInfo={conversationInfo}
     />
   );
 };
