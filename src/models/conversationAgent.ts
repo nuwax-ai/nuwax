@@ -111,6 +111,9 @@ export default () => {
   const [chatSuggestList, setChatSuggestList] = useState<
     string[] | GuidQuestionDto[]
   >([]);
+  /** 发送新消息（含队列自动消费）时递增，用于丢弃过期的 suggest 响应 */
+  const suggestGenerationRef = useRef(0);
+  const pendingSuggestGenerationRef = useRef(0);
   const messageViewRef = useRef<HTMLDivElement | null>(null);
   const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortConnectionRef = useRef<unknown>();
@@ -369,6 +372,11 @@ export default () => {
       manual: true,
       debounceWait: 300,
       onSuccess: (result: RequestResponse<string[]>) => {
+        if (
+          pendingSuggestGenerationRef.current !== suggestGenerationRef.current
+        ) {
+          return;
+        }
         setChatSuggestList(result.data);
         handleScrollBottom();
       },
@@ -579,6 +587,7 @@ export default () => {
 
         // 是否开启问题建议,可用值:Open,Close
         if (isSuggest.current) {
+          pendingSuggestGenerationRef.current = suggestGenerationRef.current;
           runChatSuggest(params as ConversationChatSuggestParams);
         }
 
@@ -675,6 +684,8 @@ export default () => {
         }
       },
       onClose: async () => {
+        // 明确的流结束信号：打破「发送后 3s 保活」，确保活跃态能落 false（停止/快速结束场景）
+        lastSendAtRef.current = 0;
         // 将当前会话的loading状态的消息改为Stopped状态，并将所有正在执行的 processing 状态更新为 FAILED
         setMessageList((list) => {
           try {
@@ -738,14 +749,28 @@ export default () => {
       },
       onError: () => {
         message.error(dict('PC.Models.ConversationInfo.networkTimeoutError'));
-        // 将当前会话的loading状态的消息改为Error状态
+        // 将当前会话的 loading 消息改为 Error，并把其 processingList 中执行中的项更新为 FAILED，
+        // 否则 isSessionStreamBusy 会因残留 EXECUTING 项持续为 true，导致活跃态/停止按钮/队列消费卡死。
         const list =
           messageListRef.current?.map((info: MessageInfo) => {
             if (info?.id === currentMessageId) {
-              return { ...info, status: MessageStatusEnum.Error };
+              const processingList = Array.isArray(info.processingList)
+                ? info.processingList.map((item: ProcessingInfo) =>
+                    item.status === ProcessingEnum.EXECUTING
+                      ? { ...item, status: ProcessingEnum.FAILED }
+                      : item,
+                  )
+                : info.processingList;
+              return {
+                ...info,
+                status: MessageStatusEnum.Error,
+                processingList,
+              };
             }
             return info;
           }) || [];
+        // 明确终止：打破「发送后 3s 保活」，确保活跃态能立即落 false
+        lastSendAtRef.current = 0;
         setMessageList(() => {
           disabledConversationActive();
           return list;
@@ -761,6 +786,7 @@ export default () => {
   const handleClearSideEffect = () => {
     // 重置消息ID
     messageIdRef.current = '';
+    suggestGenerationRef.current += 1;
     // 重置问题建议列表
     setChatSuggestList([]);
     if (scrollTimeoutRef.current) {

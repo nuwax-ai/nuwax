@@ -4,10 +4,16 @@
  * 以「功能维度」组织：验证会话活跃期间消息队列的完整行为，
  * 包括入队、自动消费、intervention 协调、消费节流与队列操作。
  */
-import { useChatMessageQueue } from '@/components/business-component/MessageQueue/useChatMessageQueue';
-import { MessageStatusEnum } from '@/types/enums/common';
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+// 队列单测需启用功能开关（生产环境默认关闭）
+vi.mock('@/constants/feature.constants', () => ({
+  ENABLE_CHAT_MESSAGE_QUEUE: true,
+}));
+
+import { useChatMessageQueue } from '@/components/business-component/MessageQueue/useChatMessageQueue';
+import { MessageStatusEnum } from '@/types/enums/common';
 
 describe('消息队列功能', () => {
   let sendMessage: ReturnType<typeof vi.fn>;
@@ -17,6 +23,7 @@ describe('消息队列功能', () => {
     sendMessage = vi.fn();
     runStopConversation = vi.fn();
     vi.useFakeTimers();
+    localStorage.clear();
   });
 
   afterEach(() => {
@@ -30,6 +37,7 @@ describe('消息队列功能', () => {
         isConversationActive,
         isEnqueueBlocked,
         isTaskExecuting,
+        isSuggestLoading,
         hasPendingIntervention,
         minConsumeInterval,
         messageList,
@@ -38,6 +46,7 @@ describe('消息队列功能', () => {
           isConversationActive,
           isEnqueueBlocked,
           isTaskExecuting,
+          isSuggestLoading,
           messageList,
           conversationId: 'conv-1',
           sendMessage,
@@ -50,6 +59,7 @@ describe('消息队列功能', () => {
           isConversationActive: false,
           isEnqueueBlocked: undefined,
           isTaskExecuting: false,
+          isSuggestLoading: false,
           hasPendingIntervention: false,
           minConsumeInterval: 500,
           messageList: [],
@@ -77,7 +87,13 @@ describe('消息队列功能', () => {
         result.current.trySend('你好');
       });
       expect(result.current.queue).toHaveLength(0);
-      expect(sendMessage).toHaveBeenCalledWith('你好', undefined);
+      expect(sendMessage).toHaveBeenCalledWith(
+        '你好',
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+      );
     });
 
     it('直接发送时透传附件与技能/模型等参数', () => {
@@ -115,12 +131,41 @@ describe('消息队列功能', () => {
         result.current.trySend('直发');
       });
       expect(result.current.queue).toHaveLength(0);
-      expect(sendMessage).toHaveBeenCalledWith('直发', undefined);
+      expect(sendMessage).toHaveBeenCalledWith(
+        '直发',
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+      );
     });
   });
 
   // ============ 功能2：会话空闲后自动逐条发送队列 ============
   describe('会话空闲后自动逐条发送队列', () => {
+    it('入队消息在消费时回放 skillIds/modelId/agentMode 快照', () => {
+      const { result, rerender } = setup({ isConversationActive: true });
+      act(() => {
+        result.current.trySend('带技能', [{ name: 'f' } as any], [7], 3, 'ask');
+      });
+      rerender({
+        isConversationActive: false,
+        hasPendingIntervention: false,
+        minConsumeInterval: 500,
+        messageList: [],
+      });
+      act(() => {
+        vi.advanceTimersByTime(500);
+      });
+      expect(sendMessage).toHaveBeenCalledWith(
+        '带技能',
+        [{ name: 'f' }],
+        [7],
+        3,
+        'ask',
+      );
+    });
+
     it('会话由活跃转为空闲后，延迟发送队首消息', () => {
       const { result, rerender } = setup({ isConversationActive: true });
       act(() => {
@@ -142,7 +187,13 @@ describe('消息队列功能', () => {
         vi.advanceTimersByTime(500);
       });
       expect(sendMessage).toHaveBeenCalledTimes(1);
-      expect(sendMessage).toHaveBeenCalledWith('m1', []);
+      expect(sendMessage).toHaveBeenCalledWith(
+        'm1',
+        [],
+        undefined,
+        undefined,
+        undefined,
+      );
     });
 
     it('延迟期内会话再次进入活跃，则取消本轮消费', () => {
@@ -257,7 +308,141 @@ describe('消息队列功能', () => {
       act(() => {
         vi.advanceTimersByTime(500);
       });
-      expect(sendMessage).toHaveBeenCalledWith('m1', []);
+      expect(sendMessage).toHaveBeenCalledWith(
+        'm1',
+        [],
+        undefined,
+        undefined,
+        undefined,
+      );
+    });
+
+    it('流式结束但 suggest 接口仍加载时不自动消费', () => {
+      const { result, rerender } = setup({ isConversationActive: true });
+      act(() => {
+        result.current.trySend('m1');
+      });
+      rerender({
+        isConversationActive: false,
+        isTaskExecuting: false,
+        isEnqueueBlocked: true,
+        isSuggestLoading: true,
+        hasPendingIntervention: false,
+        minConsumeInterval: 500,
+        messageList: [],
+      });
+      act(() => {
+        vi.advanceTimersByTime(500);
+      });
+      expect(sendMessage).not.toHaveBeenCalled();
+    });
+
+    it('suggest 接口结束后自动消费队首', () => {
+      const { result, rerender } = setup({ isConversationActive: true });
+      act(() => {
+        result.current.trySend('m1');
+      });
+      rerender({
+        isConversationActive: false,
+        isTaskExecuting: false,
+        isEnqueueBlocked: true,
+        isSuggestLoading: true,
+        hasPendingIntervention: false,
+        minConsumeInterval: 500,
+        messageList: [],
+      });
+      act(() => {
+        vi.advanceTimersByTime(500);
+      });
+      expect(sendMessage).not.toHaveBeenCalled();
+
+      rerender({
+        isConversationActive: false,
+        isTaskExecuting: false,
+        isEnqueueBlocked: false,
+        isSuggestLoading: false,
+        hasPendingIntervention: false,
+        minConsumeInterval: 500,
+        messageList: [],
+      });
+      act(() => {
+        vi.advanceTimersByTime(500);
+      });
+      expect(sendMessage).toHaveBeenCalledWith(
+        'm1',
+        [],
+        undefined,
+        undefined,
+        undefined,
+      );
+    });
+
+    it('流式刚结束、suggest 在消费定时器触发前开始时，取消待发消费', () => {
+      const { result, rerender } = setup({ isConversationActive: true });
+      act(() => {
+        result.current.trySend('m1');
+      });
+      rerender({
+        isConversationActive: false,
+        hasPendingIntervention: false,
+        minConsumeInterval: 500,
+        messageList: [],
+      });
+      rerender({
+        isConversationActive: false,
+        isEnqueueBlocked: true,
+        isSuggestLoading: true,
+        hasPendingIntervention: false,
+        minConsumeInterval: 500,
+        messageList: [],
+      });
+      act(() => {
+        vi.advanceTimersByTime(500);
+      });
+      expect(sendMessage).not.toHaveBeenCalled();
+
+      rerender({
+        isConversationActive: false,
+        isEnqueueBlocked: false,
+        isSuggestLoading: false,
+        hasPendingIntervention: false,
+        minConsumeInterval: 500,
+        messageList: [],
+      });
+      act(() => {
+        vi.advanceTimersByTime(500);
+      });
+      expect(sendMessage).toHaveBeenCalledTimes(1);
+    });
+
+    it('未传 isEnqueueBlocked 时 isSuggestLoading 单独阻塞入队与消费', () => {
+      const { result, rerender } = setup({
+        isConversationActive: false,
+        isSuggestLoading: true,
+      });
+      act(() => {
+        result.current.trySend('排队');
+      });
+      expect(result.current.queue).toHaveLength(1);
+      expect(sendMessage).not.toHaveBeenCalled();
+
+      rerender({
+        isConversationActive: false,
+        isSuggestLoading: false,
+        hasPendingIntervention: false,
+        minConsumeInterval: 500,
+        messageList: [],
+      });
+      act(() => {
+        vi.advanceTimersByTime(500);
+      });
+      expect(sendMessage).toHaveBeenCalledWith(
+        '排队',
+        [],
+        undefined,
+        undefined,
+        undefined,
+      );
     });
   });
 
@@ -306,7 +491,13 @@ describe('消息队列功能', () => {
       act(() => {
         vi.advanceTimersByTime(500);
       });
-      expect(sendMessage).toHaveBeenCalledWith('m1', []);
+      expect(sendMessage).toHaveBeenCalledWith(
+        'm1',
+        [],
+        undefined,
+        undefined,
+        undefined,
+      );
     });
   });
 
@@ -361,7 +552,13 @@ describe('消息队列功能', () => {
         vi.advanceTimersByTime(500);
       });
       expect(sendMessage).toHaveBeenCalledTimes(2);
-      expect(sendMessage).toHaveBeenLastCalledWith('m2', []);
+      expect(sendMessage).toHaveBeenLastCalledWith(
+        'm2',
+        [],
+        undefined,
+        undefined,
+        undefined,
+      );
     });
   });
 
@@ -453,6 +650,119 @@ describe('消息队列功能', () => {
         result.current.reorder(0, 99);
       });
       expect(result.current.queue.map((q) => q.text)).toEqual(['m1', 'm2']);
+    });
+  });
+
+  // ============ 功能6：localStorage 按会话持久化 ============
+  describe('队列按会话持久化到 localStorage', () => {
+    it('入队后卸载，重新挂载同会话从 localStorage 恢复队列（含 skillIds 快照）', () => {
+      const first = setup({ isConversationActive: true });
+      act(() => {
+        first.result.current.trySend('persisted', undefined, [9], 5, 'ask');
+      });
+      expect(first.result.current.queue).toHaveLength(1);
+      first.unmount();
+
+      const second = setup({ isConversationActive: true });
+      expect(second.result.current.queue).toHaveLength(1);
+      expect(second.result.current.queue[0].text).toBe('persisted');
+      expect(second.result.current.queue[0].skillIds).toEqual([9]);
+      expect(second.result.current.queue[0].queuedAt).toBeInstanceOf(Date);
+    });
+
+    it('清空队列后重新挂载不再恢复', () => {
+      const first = setup({ isConversationActive: true });
+      act(() => {
+        first.result.current.trySend('m1');
+      });
+      act(() => {
+        first.result.current.clearQueue();
+      });
+      first.unmount();
+
+      const second = setup({ isConversationActive: true });
+      expect(second.result.current.queue).toHaveLength(0);
+    });
+
+    it('持久化恢复后会话空闲时自动消费队首', () => {
+      const first = setup({ isConversationActive: true });
+      act(() => {
+        first.result.current.trySend('persisted');
+      });
+      first.unmount();
+
+      const second = setup({
+        isConversationActive: false,
+        minConsumeInterval: 500,
+      });
+      expect(second.result.current.queue).toHaveLength(1);
+      act(() => {
+        vi.advanceTimersByTime(500);
+      });
+      expect(sendMessage).toHaveBeenCalledWith(
+        'persisted',
+        [],
+        undefined,
+        undefined,
+        undefined,
+      );
+    });
+
+    it('切换 conversationId 加载对应会话队列并消费', () => {
+      localStorage.setItem(
+        'msg_queue:conv-2',
+        JSON.stringify([
+          {
+            id: 'q1',
+            text: 'from-b',
+            queuedAt: new Date().toISOString(),
+          },
+        ]),
+      );
+
+      const { result, rerender } = renderHook(
+        (props: any) =>
+          useChatMessageQueue({
+            ...props,
+            conversationId: props.conversationId,
+            sendMessage,
+            runStopConversation,
+          }),
+        {
+          initialProps: {
+            isConversationActive: false,
+            messageList: [],
+            conversationId: 'conv-1',
+            minConsumeInterval: 500,
+            hasPendingIntervention: false,
+          },
+        },
+      );
+
+      rerender({
+        isConversationActive: false,
+        messageList: [],
+        conversationId: 'conv-2',
+        minConsumeInterval: 500,
+        hasPendingIntervention: false,
+      });
+
+      expect(result.current.queue).toHaveLength(1);
+      expect(result.current.queue[0].text).toBe('from-b');
+
+      act(() => {
+        vi.advanceTimersByTime(0);
+      });
+      act(() => {
+        vi.advanceTimersByTime(500);
+      });
+      expect(sendMessage).toHaveBeenCalledWith(
+        'from-b',
+        [],
+        undefined,
+        undefined,
+        undefined,
+      );
     });
   });
 });

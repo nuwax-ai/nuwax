@@ -7,9 +7,15 @@
  * - 混合类型 Intervention（ask+审批）的处理顺序
  * - Intervention 超时与队列消费恢复
  */
-import { useChatMessageQueue } from '@/components/business-component/MessageQueue/useChatMessageQueue';
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+// 队列单测需启用功能开关（生产环境默认关闭）
+vi.mock('@/constants/feature.constants', () => ({
+  ENABLE_CHAT_MESSAGE_QUEUE: true,
+}));
+
+import { useChatMessageQueue } from '@/components/business-component/MessageQueue/useChatMessageQueue';
 
 describe('消息队列与 Intervention 协调', () => {
   let sendMessage: ReturnType<typeof vi.fn>;
@@ -19,6 +25,7 @@ describe('消息队列与 Intervention 协调', () => {
     sendMessage = vi.fn();
     runStopConversation = vi.fn();
     vi.useFakeTimers();
+    localStorage.clear();
   });
 
   afterEach(() => {
@@ -78,7 +85,13 @@ describe('消息队列与 Intervention 协调', () => {
         vi.advanceTimersByTime(500);
       });
       expect(sendMessage).toHaveBeenCalledTimes(1);
-      expect(sendMessage).toHaveBeenCalledWith('m1', []);
+      expect(sendMessage).toHaveBeenCalledWith(
+        'm1',
+        [],
+        undefined,
+        undefined,
+        undefined,
+      );
 
       // 模拟 m1 处理周期：会话活跃再空闲
       rerender({
@@ -174,7 +187,13 @@ describe('消息队列与 Intervention 协调', () => {
         vi.advanceTimersByTime(500);
       });
       expect(sendMessage).toHaveBeenCalledTimes(1);
-      expect(sendMessage).toHaveBeenCalledWith('m1', []);
+      expect(sendMessage).toHaveBeenCalledWith(
+        'm1',
+        [],
+        undefined,
+        undefined,
+        undefined,
+      );
     });
 
     it('Intervention 解除后遵循最小消费间隔', () => {
@@ -228,7 +247,13 @@ describe('消息队列与 Intervention 协调', () => {
         vi.advanceTimersByTime(500);
       });
       expect(sendMessage).toHaveBeenCalledTimes(2);
-      expect(sendMessage).toHaveBeenLastCalledWith('m2', []);
+      expect(sendMessage).toHaveBeenLastCalledWith(
+        'm2',
+        [],
+        undefined,
+        undefined,
+        undefined,
+      );
     });
   });
 
@@ -265,7 +290,13 @@ describe('消息队列与 Intervention 协调', () => {
         vi.advanceTimersByTime(500);
       });
       expect(sendMessage).toHaveBeenCalledTimes(1);
-      expect(sendMessage).toHaveBeenCalledWith('m1', []);
+      expect(sendMessage).toHaveBeenCalledWith(
+        'm1',
+        [],
+        undefined,
+        undefined,
+        undefined,
+      );
 
       // 第二个 Intervention
       rerender({
@@ -294,7 +325,13 @@ describe('消息队列与 Intervention 协调', () => {
         vi.advanceTimersByTime(500);
       });
       expect(sendMessage).toHaveBeenCalledTimes(2);
-      expect(sendMessage).toHaveBeenCalledWith('m2', []);
+      expect(sendMessage).toHaveBeenCalledWith(
+        'm2',
+        [],
+        undefined,
+        undefined,
+        undefined,
+      );
     });
 
     it('Intervention 期间新增消息，解除后按顺序消费', () => {
@@ -318,7 +355,13 @@ describe('消息队列与 Intervention 协调', () => {
         vi.advanceTimersByTime(500);
       });
       expect(sendMessage).toHaveBeenCalledTimes(1);
-      expect(sendMessage).toHaveBeenCalledWith('m1', []);
+      expect(sendMessage).toHaveBeenCalledWith(
+        'm1',
+        [],
+        undefined,
+        undefined,
+        undefined,
+      );
 
       // 模拟 m1 处理周期
       rerender({
@@ -361,7 +404,13 @@ describe('消息队列与 Intervention 协调', () => {
         vi.advanceTimersByTime(500);
       });
       expect(sendMessage).toHaveBeenCalledTimes(2);
-      expect(sendMessage).toHaveBeenCalledWith('m2', []);
+      expect(sendMessage).toHaveBeenCalledWith(
+        'm2',
+        [],
+        undefined,
+        undefined,
+        undefined,
+      );
     });
   });
 
@@ -425,7 +474,13 @@ describe('消息队列与 Intervention 协调', () => {
         vi.advanceTimersByTime(500);
       });
       expect(sendMessage).toHaveBeenCalledTimes(1);
-      expect(sendMessage).toHaveBeenCalledWith('m1', []);
+      expect(sendMessage).toHaveBeenCalledWith(
+        'm1',
+        [],
+        undefined,
+        undefined,
+        undefined,
+      );
     });
   });
 

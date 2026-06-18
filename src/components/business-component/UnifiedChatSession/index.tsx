@@ -17,9 +17,11 @@ import classNames from 'classnames';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import { MESSAGE_PAGE_SIZE } from '@/constants/common.constants';
+import { ENABLE_CHAT_MESSAGE_QUEUE } from '@/constants/feature.constants';
 import { useConversationScrollDetection } from '@/hooks/useConversationScrollDetection';
 import { useIntersectionObserver } from '@/hooks/useIntersectionObserver';
 import { dict } from '@/services/i18nRuntime';
+import { TaskStatus } from '@/types/enums/agent';
 import { MessageStatusEnum } from '@/types/enums/common';
 import { AgentTypeEnum } from '@/types/enums/space';
 import type { UploadFileInfo } from '@/types/interfaces/common';
@@ -160,6 +162,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
     onSendMessage,
     minConsumeInterval: queueMinConsumeInterval,
     hasPendingIntervention,
+    loadingSuggest,
     queueContext,
   });
 
@@ -227,6 +230,38 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
       lastMessage.status === MessageStatusEnum.Incomplete
     );
   }, [messageList]);
+
+  /**
+   * 「智能体正在执行，请稍等」仅在后端 taskStatus=EXECUTING 且流式已结束时展示。
+   * 不用 isConversationActive：队列自动发送会乐观置活跃，末条仍为 Complete 时会误显示。
+   */
+  const showTaskExecutingWait = useMemo(() => {
+    return (
+      conversationInfo?.taskStatus === TaskStatus.EXECUTING &&
+      !hasActiveStreamingMessage
+    );
+  }, [conversationInfo?.taskStatus, hasActiveStreamingMessage]);
+
+  /**
+   * 会话 suggest 仅在整轮结束且队列已排空时展示。
+   * 队列自动消费下一条时，上一轮 suggest 若仍挂在底部会与新一轮消息割裂成两块。
+   */
+  const shouldShowSessionSuggest = useMemo(() => {
+    if (!messageList?.length) {
+      return false;
+    }
+    if (messageQueue.hasQueuedMessages) {
+      return false;
+    }
+    if (isConversationActive) {
+      return false;
+    }
+    return true;
+  }, [
+    messageList?.length,
+    messageQueue.hasQueuedMessages,
+    isConversationActive,
+  ]);
 
   // 大模型流式输出或更新时自动平滑滚动置底
   useEffect(() => {
@@ -327,16 +362,18 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
                     );
                   })}
 
-                  {/* 开场推荐提问建议列表 */}
-                  <RecommendList
-                    className={cx(styles['recommend-list-box'])}
-                    loading={loadingSuggest}
-                    chatSuggestList={chatSuggestList}
-                    onClick={handleMessageSend}
-                  />
+                  {/* 问题建议：仅会话空闲且队列已排空时展示，避免与队列中的下一轮消息割裂 */}
+                  {shouldShowSessionSuggest && (
+                    <RecommendList
+                      className={cx(styles['recommend-list-box'])}
+                      loading={loadingSuggest}
+                      chatSuggestList={chatSuggestList}
+                      onClick={handleMessageSend}
+                    />
+                  )}
 
-                  {/* 通用型智能体执行中状态提示 */}
-                  {isConversationActive && !hasActiveStreamingMessage && (
+                  {/* 通用型智能体：后台任务执行中且流式已结束 */}
+                  {showTaskExecutingWait && (
                     <div className={cx(styles['task-executing-container'])}>
                       <LoadingOutlined />
                       <span>{dict('PC.Pages.Chat.agentExecutingWait')}</span>
@@ -387,8 +424,8 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
 
       {/* 统一会话输入框（使用独立版组件，避免与 conversationInfo model 强耦合） */}
       <div className={cx(styles['chat-input-container'])}>
-        {/* 待发送消息队列面板：有待处理 intervention（ask/question/审批）时隐藏，让 intervention 独占展示 */}
-        {!hasPendingIntervention && (
+        {/* 待发送消息队列面板：功能开关关闭或有待处理 intervention 时隐藏 */}
+        {ENABLE_CHAT_MESSAGE_QUEUE && !hasPendingIntervention && (
           <MessageQueuePanel
             queue={messageQueue.queue}
             onSendNow={messageQueue.sendNow}

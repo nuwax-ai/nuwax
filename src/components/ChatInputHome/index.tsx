@@ -6,6 +6,7 @@ import ConditionRender from '@/components/ConditionRender';
 import PermissionMask from '@/components/PermissionMask';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
+import { ENABLE_CHAT_MESSAGE_QUEUE } from '@/constants/feature.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { isSessionStreamBusy } from '@/hooks/useExecutingTaskStatusPoll';
 import useSubscription from '@/hooks/useSubscription';
@@ -252,8 +253,9 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     return () => window.clearTimeout(timer);
   }, [isActiveConversation]);
 
-  // 单按钮模式：活跃且输入框为空时显示「停止」，否则显示「发送」（活跃时点击即加入队列）
-  const showStopButton = buttonSlotActive && disabledSend;
+  // 单按钮模式：活跃且输入框为空时显示「停止」；队列关闭时活跃态始终显示停止
+  const showStopButton =
+    buttonSlotActive && (disabledSend || !ENABLE_CHAT_MESSAGE_QUEUE);
 
   // enter事件 - 确认发送消息
   const confirmSendMessage = (value: string) => {
@@ -280,7 +282,9 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
       disabledSend ||
       wholeDisabled ||
       loadingConversation ||
-      isLoadingOtherInterface
+      isLoadingOtherInterface ||
+      // 队列关闭时，会话活跃期间禁止点击发送
+      (!ENABLE_CHAT_MESSAGE_QUEUE && isActiveConversation)
     ) {
       return;
     }
@@ -295,8 +299,11 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
    */
   const handlePressEnter = () => {
     // 中止会话过程中不能触发 enter 事件
-    // 会话活跃时不拦截：消息经 onEnter 流转到外层队列拦截逻辑入队
     if (isStoppingConversation) {
+      return;
+    }
+    // 队列开启：活跃时不拦截，由外层队列入队；队列关闭：活跃时拦截直发
+    if (!ENABLE_CHAT_MESSAGE_QUEUE && isActiveConversation) {
       return;
     }
 
@@ -630,33 +637,71 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     return t('PC.Components.ChatInputHome.clickStopConversation');
   };
 
+  // 卸载时清理活跃态与附件：用 ref 读取最新值、依赖置空，确保仅在真正卸载时执行一次。
+  // （disabledConversationActive 每次 render 都是新引用，放进依赖会令 cleanup 每次渲染都跑、误清空用户已选附件）
+  const isIsolatedSessionSourceRef = useRef(isIsolatedSessionSource);
+  isIsolatedSessionSourceRef.current = isIsolatedSessionSource;
+  const disabledConversationActiveRef = useRef(disabledConversationActive);
+  disabledConversationActiveRef.current = disabledConversationActive;
+
   useEffect(() => {
     return () => {
-      if (!isIsolatedSessionSource) {
-        disabledConversationActive();
+      if (!isIsolatedSessionSourceRef.current) {
+        disabledConversationActiveRef.current();
       }
       setUploadFiles([]);
     };
-  }, [isIsolatedSessionSource, disabledConversationActive]);
+  }, []);
+
+  // 本输入框所属会话 id（隔离源用 override，否则取 model），用于过滤队列编辑回填事件
+  const ownConversationId = stopConversationIdOverride ?? conversationInfo?.id;
+  const ownConversationIdRef = useRef(ownConversationId);
+  ownConversationIdRef.current = ownConversationId;
 
   // 监听队列消息编辑回填事件
   useEffect(() => {
     const handleEditMessage = ({
       text,
       files: editFiles,
+      skillIds: editSkillIds,
+      modelId: editModelId,
+      selectedAgentMode: editAgentMode,
+      conversationId: targetConversationId,
     }: {
       text: string;
       files?: UploadFileInfo[];
+      skillIds?: number[];
+      modelId?: number;
+      selectedAgentMode?: AgentMode;
+      conversationId?: number | string;
     }) => {
+      // 仅回填到目标会话对应的输入框，避免多实例（主聊天 / 预览 Tab）串扰；
+      // 事件未带 conversationId 时按旧行为不过滤（单输入框场景）
+      if (
+        targetConversationId !== undefined &&
+        targetConversationId !== null &&
+        String(targetConversationId) !== String(ownConversationIdRef.current)
+      ) {
+        return;
+      }
       setMessageInfo((prev) => (prev ? `${prev}\n${text}` : text));
       if (editFiles?.length) {
         setUploadFiles((prev) => [...prev, ...editFiles]);
+      }
+      if (editSkillIds?.length) {
+        setSkillIds(editSkillIds);
+      }
+      if (editModelId !== undefined) {
+        onModelSelect?.(editModelId);
+      }
+      if (editAgentMode !== undefined) {
+        onAgentModeChange?.(editAgentMode);
       }
     };
     eventBus.on(EVENT_NAMES.QUEUE_EDIT_MESSAGE, handleEditMessage);
     return () =>
       eventBus.off(EVENT_NAMES.QUEUE_EDIT_MESSAGE, handleEditMessage);
-  }, []);
+  }, [onModelSelect, onAgentModeChange]);
 
   /**
    * 将底部 @ 图标选择的提及项插入到 MentionEditor

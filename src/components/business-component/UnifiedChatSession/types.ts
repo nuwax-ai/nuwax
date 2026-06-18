@@ -31,8 +31,8 @@ export interface UnifiedChatSessionProps {
   loadingMore?: boolean; // 是否正在向上拉取历史消息
   isMoreMessage?: boolean; // 是否还有历史消息可拉取
   /**
-   * 是否展示「智能体正在执行，请稍等」。
-   * 实际语义：taskStatus === EXECUTING 且当前无流式消息（由上层计算后传入）。
+   * 会话流式/任务活跃（停止按钮、队列入队等）。
+   * 与 showTaskExecutingWait 分离：后者仅 taskStatus=EXECUTING 且无流式消息时展示横幅。
    */
   isConversationActive?: boolean;
   messageBottomMode?: 'none' | 'home' | 'chat'; // 消息底部操作栏模式：none | home | chat

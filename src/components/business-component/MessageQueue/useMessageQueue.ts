@@ -1,20 +1,39 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useRef, useState } from 'react';
+import { loadQueue, saveQueue } from './queueStorage';
 import type { QueuedMessage } from './types';
 
-export const useMessageQueue = () => {
-  const [queue, setQueue] = useState<QueuedMessage[]>([]);
-  const queueRef = useRef<QueuedMessage[]>([]);
+/**
+ * 待发送消息队列（按 conversationId 持久化到 localStorage）。
+ * 传入 conversationId 时：mount / 切换会话自动恢复对应队列，任何变更即写回；
+ * 不传时退化为纯内存队列。
+ */
+export const useMessageQueue = (conversationId?: string | number | null) => {
+  const conversationIdRef = useRef(conversationId);
+  conversationIdRef.current = conversationId;
+
+  const [queue, setQueue] = useState<QueuedMessage[]>(() =>
+    loadQueue(conversationId),
+  );
+  const queueRef = useRef<QueuedMessage[]>(queue);
 
   const updateQueue = useCallback(
     (updater: (prev: QueuedMessage[]) => QueuedMessage[]) => {
       setQueue((prev) => {
         const next = updater(prev);
         queueRef.current = next;
+        saveQueue(conversationIdRef.current, next);
         return next;
       });
     },
     [],
   );
+
+  // 切换会话：同步加载持久化队列，避免 effect 延迟导致误用上一会话的内存队列
+  useLayoutEffect(() => {
+    const loaded = loadQueue(conversationId);
+    queueRef.current = loaded;
+    setQueue(loaded);
+  }, [conversationId]);
 
   const enqueue = useCallback(
     (item: Omit<QueuedMessage, 'id' | 'queuedAt'>) => {
