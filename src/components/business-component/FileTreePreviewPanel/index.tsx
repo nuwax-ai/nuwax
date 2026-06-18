@@ -54,7 +54,6 @@ const FileTreePreviewPanel: React.FC<FileTreePreviewPanelProps> = ({
     hideDesktop,
     diffFile,
     showGitVersionButton,
-    isGitVersionPanelOpen: gitVersionPanelOpen,
     onToggleGitVersionPanel,
     ...previewPanelProps,
   });

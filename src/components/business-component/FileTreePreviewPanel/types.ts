@@ -192,7 +192,6 @@ export interface UseFileTreePreviewPanelParams {
   /** Git 源代码管理选中的 diff 文件（优先于普通预览） */
   diffFile?: ChangeFileInfo | null;
   showGitVersionButton?: boolean;
-  isGitVersionPanelOpen?: boolean;
   onToggleGitVersionPanel?: () => void;
 }
 
