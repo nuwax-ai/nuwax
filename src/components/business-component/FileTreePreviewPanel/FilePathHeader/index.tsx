@@ -58,7 +58,6 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   onFileTreeToggle,
   isCloudComputer = true,
   showGitVersionButton = false,
-  isGitVersionPanelOpen = false,
   onToggleGitVersionPanel,
 }) => {
   const fileName = targetNode?.name;
@@ -339,9 +338,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
                   size="small"
                   icon={<BranchesOutlined style={{ fontSize: 16 }} />}
                   onClick={onToggleGitVersionPanel}
-                  className={cx(styles.actionButton, {
-                    [styles.gitVersionButtonActive]: isGitVersionPanelOpen,
-                  })}
+                  className={cx(styles.actionButton)}
                 />
               </Tooltip>
             )}

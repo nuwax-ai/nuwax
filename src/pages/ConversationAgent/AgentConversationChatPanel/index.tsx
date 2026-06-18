@@ -2,7 +2,7 @@ import { UnifiedChatSession } from '@/components/business-component';
 import type { AgentMode } from '@/components/business-component/AgentIntervention';
 import { TaskStatus } from '@/types/enums/agent';
 import classNames from 'classnames';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { history, useLocation, useModel } from 'umi';
 import styles from './index.less';
 
@@ -18,6 +18,8 @@ export interface AgentConversationChatPanelProps {
   onChangeSelectedComputerId?: (id: string) => void;
   /** 当前选中的电脑 ID */
   selectedComputerId?: string;
+  /** 会话结束后回调（用于刷新文件树、Git 状态、智能体编排等） */
+  onConversationEnd?: () => void;
 }
 
 /**
@@ -27,6 +29,7 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
   className,
   onChangeSelectedComputerId,
   selectedComputerId,
+  onConversationEnd,
 }) => {
   const location = useLocation();
 
@@ -60,6 +63,9 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
     }
   }, [history.action, location.key, onChangeSelectedComputerId]);
 
+  // 追踪会话活跃状态的上一次值，用于检测「活跃→非活跃」的转换
+  const prevIsActiveRef = useRef<boolean>(false);
+
   const {
     conversationInfo,
     messageList,
@@ -76,10 +82,19 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
     getCurrentConversationId,
     getCurrentConversationRequestId,
     disabledConversationActive,
+    // SSE 流式交互状态
+    isConversationActive,
     // 其它接口加载状态
     isLoadingOtherInterface,
-    isConversationActive,
   } = useModel('conversationInfo');
+
+  // 监听 isConversationActive 从 true → false，触发会话结束回调
+  useEffect(() => {
+    if (prevIsActiveRef.current && !isConversationActive) {
+      onConversationEnd?.();
+    }
+    prevIsActiveRef.current = isConversationActive;
+  }, [isConversationActive, onConversationEnd]);
 
   return (
     <div
