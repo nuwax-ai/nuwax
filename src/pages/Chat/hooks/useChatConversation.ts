@@ -3,7 +3,6 @@ import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { EVENT_TYPE } from '@/constants/event.constants';
 import { apiAgentConversationCreate } from '@/services/agentConfig';
 import { t } from '@/services/i18nRuntime';
-import { TaskStatus } from '@/types/enums/agent';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import {
   MessageInfo,
@@ -34,8 +33,6 @@ export interface UseChatConversationProps {
   setHasUserSentMessage: (sent: boolean) => void;
   setIsLoadingOtherInterface: (loading: boolean) => void;
   onMessageSend: (params: SendMessageParams) => void;
-  conversationInfo: any;
-  runAsync: (id: number) => Promise<any>;
   allowAutoScrollRef: React.MutableRefObject<boolean>;
   messageViewRef: React.RefObject<HTMLDivElement>;
   incrementCalledTrialCount: () => void;
@@ -64,8 +61,6 @@ export const useChatConversation = ({
   setHasUserSentMessage,
   setIsLoadingOtherInterface,
   onMessageSend,
-  conversationInfo,
-  runAsync,
   allowAutoScrollRef,
   messageViewRef,
   incrementCalledTrialCount,
@@ -174,32 +169,6 @@ export const useChatConversation = ({
     incrementCalledTrialCount();
     onMessageSend(sendParams);
   };
-
-  useEffect(() => {
-    if (!conversationInfo?.id) {
-      return;
-    }
-
-    // 监听会话状态更新事件
-    const listenConversationStatusUpdate = (data: {
-      conversationId: string;
-    }) => {
-      const { conversationId } = data;
-      // 如果会话ID和当前会话ID相同，并且会话状态为已完成，则显示成功提示
-      if (conversationId === conversationInfo?.id?.toString()) {
-        // 如果会话状态为执行中，则重新查询会话信息
-        if (conversationInfo?.taskStatus === TaskStatus.EXECUTING) {
-          // 重新查询会话信息
-          runAsync(id);
-        }
-      }
-    };
-
-    eventBus.on(EVENT_TYPE.ChatFinished, listenConversationStatusUpdate);
-    return () => {
-      eventBus.off(EVENT_TYPE.ChatFinished, listenConversationStatusUpdate);
-    };
-  }, [id, conversationInfo, runAsync]);
 
   // 监听会话更新事件，更新会话记录
   useEffect(() => {

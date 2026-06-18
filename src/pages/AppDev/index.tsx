@@ -1507,6 +1507,11 @@ const AppDev: React.FC = () => {
                   // 用户取消Agent任务，重置自动重试计数
                   autoErrorHandling.handleUserCancelAuto();
                 }}
+                onChatSessionEnd={() => {
+                  // 每次会话结束后刷新文件树列表和 git 源代码管理 status
+                  fileManagement.loadFileTree(false, true);
+                  sourceControl.refreshGitList();
+                }}
                 defaultActiveTab={'chat'}
                 hiddenTabs={[]}
                 onDesignModeUnreachable={handleDesignModeUnreachable}

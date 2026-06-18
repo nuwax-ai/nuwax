@@ -77,6 +77,14 @@ export function useConversationAgentChatSession(
     handleClearSideEffect,
     runQueryConversation,
     clearFilePanelInfo,
+    isConversationActive: agentStreamActive,
+    // 停止会话相关
+    runStopConversation,
+    loadingStopConversation,
+    disabledConversationActive,
+    // 当前会话 ID 与请求 ID
+    getCurrentConversationId,
+    getCurrentConversationRequestId,
   } = useModel('conversationAgent');
 
   const { hidePagePreview, showPagePreview } = useModel('chat');
@@ -215,6 +223,9 @@ export function useConversationAgentChatSession(
     agentConfigInfo?.type === AgentTypeEnum.TaskAgent &&
     agentConfigInfo?.allowAtSkill === 1;
 
+  const agentTaskExecuting =
+    conversationInfo?.taskStatus === TaskStatus.EXECUTING;
+
   return {
     conversationId: devConversationId,
     messageList,
@@ -222,7 +233,14 @@ export function useConversationAgentChatSession(
     isLoading: loadingConversation,
     loadingMore,
     isMoreMessage,
-    isConversationActive: conversationInfo?.taskStatus === TaskStatus.EXECUTING,
+    isConversationActive: agentTaskExecuting || agentStreamActive,
+    queueContext: {
+      streamActive: agentStreamActive,
+      taskExecuting: agentTaskExecuting || agentStreamActive,
+      runStopConversation: (id: number | string) => {
+        void runStopConversation(String(id));
+      },
+    },
     messageBottomMode: 'chat' as const,
     loadingSuggest,
     chatSuggestList,
@@ -263,6 +281,23 @@ export function useConversationAgentChatSession(
     chatInputProps: {
       fixedSelection: true,
       agentSandboxId: conversationInfo?.agent?.sandboxId,
+      streamActiveOverride: agentStreamActive || agentStreamActive,
+      taskExecutingOverride: agentTaskExecuting || agentStreamActive,
+      stopConversationIdOverride: devConversationId,
+      onStopConversationOverride: (id: number | string) => {
+        void runStopConversation(String(id));
+      },
+      loadingStopConversationOverride: loadingStopConversation,
+      onDisabledStreamActiveOverride: disabledConversationActive,
     },
+    // 停止会话相关数据，供独立版输入组件使用（全部来自 conversationAgent model）
+    runStopConversation,
+    loadingStopConversation,
+    getCurrentConversationId,
+    getCurrentConversationRequestId,
+    disabledConversationActive,
+    loadingConversation,
+    isLoadingOtherInterface,
+    conversationInfo,
   };
 }

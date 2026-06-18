@@ -1,20 +1,31 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import type { AgentMode } from '@/components/business-component/AgentIntervention';
 import PaymentSubscriptionModal from '@/components/business-component/PaymentSubscriptionModal';
+import AtMentionIcon from '@/components/ChatInputHome/AtMentionIcon';
+import ComputerTypeSelector from '@/components/ChatInputHome/ComputerTypeSelector';
+import styles from '@/components/ChatInputHome/index.less';
+import ManualComponentItem from '@/components/ChatInputHome/ManualComponentItem';
+import MentionEditor from '@/components/ChatInputHome/MentionEditor';
+import type {
+  MentionEditorHandle,
+  MentionItem,
+} from '@/components/ChatInputHome/MentionPopup/types';
+import ModelSelector from '@/components/ChatInputHome/ModelSelector';
 import ChatUploadFile from '@/components/ChatUploadFile';
 import ConditionRender from '@/components/ConditionRender';
 import PermissionMask from '@/components/PermissionMask';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
-import { isSessionStreamBusy } from '@/hooks/useExecutingTaskStatusPoll';
 import useSubscription from '@/hooks/useSubscription';
 import { t } from '@/services/i18nRuntime';
 import { DefaultSelectedEnum, TaskStatus } from '@/types/enums/agent';
 import { UploadFileStatus } from '@/types/enums/common';
-import type { ChatInputProps, UploadFileInfo } from '@/types/interfaces/common';
-import type { MessageInfo } from '@/types/interfaces/conversationInfo';
-import eventBus, { EVENT_NAMES } from '@/utils/eventBus';
+import type { UploadFileInfo } from '@/types/interfaces/common';
+import type {
+  ConversationInfo,
+  MessageInfo,
+} from '@/types/interfaces/conversationInfo';
 import { handleUploadFileList } from '@/utils/upload';
 import {
   ArrowDownOutlined,
@@ -33,13 +44,6 @@ import React, {
 } from 'react';
 import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
-import AtMentionIcon from './AtMentionIcon';
-import ComputerTypeSelector from './ComputerTypeSelector';
-import styles from './index.less';
-import ManualComponentItem from './ManualComponentItem';
-import MentionEditor from './MentionEditor';
-import type { MentionEditorHandle, MentionItem } from './MentionPopup/types';
-import ModelSelector from './ModelSelector';
 
 const cx = classNames.bind(styles);
 
@@ -49,9 +53,92 @@ const AGENT_MODE_LABEL: Record<AgentMode, string> = {
 };
 
 /**
- * 聊天输入组件
+ * ChatInputHomeIndependent 组件的 Props 类型
+ * 将原 ChatInputHome 中 useModel('conversationInfo') 的数据改为外部传入，
+ * 实现组件独立性，避免与 model 强关联。
  */
-const ChatInputHome: React.FC<ChatInputProps> = ({
+export interface ChatInputHomeIndependentProps {
+  // ===== 原 ChatInputHome 的受控属性 =====
+  className?: React.CSSProperties;
+  wholeDisabled?: boolean;
+  clearDisabled?: boolean;
+  clearLoading?: boolean;
+  visible?: boolean;
+  isClearInput?: boolean;
+  onScrollBottom?: () => void;
+  onClear?: () => void;
+  onEnter: (
+    message: string,
+    files: UploadFileInfo[],
+    skillIds?: number[],
+    modelId?: number,
+    agentMode?: AgentMode,
+  ) => void;
+  enableMention?: boolean;
+  mentionPlacement?: 'auto' | 'up' | 'down';
+  showAnnouncement?: boolean;
+  onTempChatStop?: (requestId: string) => void;
+  loadingStopTempConversation?: boolean;
+  showTaskAgentToggle?: boolean;
+  isTaskAgentActive?: boolean;
+  onToggleTaskAgent?: () => void;
+  selectedComputerId?: string;
+  onComputerSelect?: (id: string) => void;
+  agentId?: number;
+  agentSandboxId?: string | number;
+  fixedSelection?: boolean;
+  hasPermission?: boolean;
+  isSandboxUnavailable?: boolean;
+  readonly?: boolean;
+  maskText?: string;
+  autoSelectComputer?: boolean;
+  saveComputerOnSelect?: boolean;
+  isPersonalComputer?: boolean;
+  allowOtherModel?: DefaultSelectedEnum;
+  selectedModelId?: number;
+  onModelSelect?: (modelId: number) => void;
+  agentType?: string;
+  agentMode?: AgentMode;
+  onAgentModeChange?: (mode: AgentMode) => void;
+  showAgentModeSelector?: boolean;
+  placeholder?: string;
+  defaultMentions?: MentionItem[];
+  tabsSlot?: React.ReactNode;
+  usageScenarios?: any[];
+  manualComponents?: any[];
+  selectedComponentList?: any[];
+  onSelectComponent?: (infos: any) => void;
+  prefix?: React.ReactNode;
+
+  // ===== 原 useModel('conversationInfo') 数据，改为从外部传入 =====
+  /** 停止会话的异步函数 */
+  runStopConversation?: (id: string) => Promise<any>;
+  /** 停止会话接口的加载状态 */
+  loadingStopConversation?: boolean;
+  /** 获取当前会话 ID */
+  getCurrentConversationId?: () => number | null;
+  /** 获取当前会话请求 ID */
+  getCurrentConversationRequestId?: () => string;
+  /** 会话是否正在活跃（SSE 流式交互中） */
+  isConversationActive?: boolean;
+  /** 强制将会话设置为非活跃状态 */
+  disabledConversationActive?: () => void;
+  /** 当前消息列表 */
+  messageList?: MessageInfo[];
+  /** 会话消息加载中状态 */
+  loadingConversation?: boolean;
+  /** 其它接口加载中状态（用于禁用发送按钮） */
+  isLoadingOtherInterface?: boolean;
+  /** 当前会话详情 */
+  conversationInfo?: ConversationInfo | null;
+}
+
+/**
+ * 独立版聊天输入组件
+ * 与原 ChatInputHome 功能完全一致，但 conversationInfo model 数据全部从外部 props 传入，
+ * 实现与 model 的解耦，便于在不同上下文（如 conversationAgent model）中复用。
+ */
+const ChatInputHomeIndependent: React.FC<ChatInputHomeIndependentProps> = ({
   className,
   wholeDisabled = false,
   clearDisabled = false,
@@ -83,19 +170,12 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   isPersonalComputer,
   readonly,
   enableMention = true,
-  // @ 提及弹窗展示方向：auto | up | down，默认 auto
   mentionPlacement = 'auto',
-  /** 占位符文本 */
   placeholder,
-  /** 默认提及项列表（需同时传入 value 文本） */
   defaultMentions,
-  /** 是否允许选择自有模型 */
   allowOtherModel,
-  /** 当前选中的模型 ID */
   selectedModelId,
-  /** 模型改变时的回调 */
   onModelSelect,
-  /** 智能体类型 */
   agentType,
   tabsSlot,
   prefix,
@@ -103,52 +183,21 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   onAgentModeChange,
   showAgentModeSelector = false,
   usageScenarios,
-  streamActiveOverride,
-  taskExecutingOverride,
-  stopConversationIdOverride,
-  onStopConversationOverride,
-  loadingStopConversationOverride,
-  onDisabledStreamActiveOverride,
+
+  // 原 useModel('conversationInfo') 数据
+  runStopConversation,
+  loadingStopConversation = false,
+  getCurrentConversationId,
+  getCurrentConversationRequestId,
+  isConversationActive = false,
+  disabledConversationActive,
+  messageList = [],
+  loadingConversation = false,
+  isLoadingOtherInterface = false,
+  conversationInfo,
 }) => {
-  // 获取停止会话相关的方法和状态
-  const {
-    runStopConversation,
-    loadingStopConversation: modelLoadingStopConversation,
-    getCurrentConversationId,
-    getCurrentConversationRequestId,
-    isConversationActive: modelStreamActive,
-    disabledConversationActive,
-    messageList,
-    loadingConversation,
-    isLoadingOtherInterface,
-    conversationInfo,
-  } = useModel('conversationInfo');
-
-  /** 使用独立会话 model（如预览 Tab），勿改动全局 conversationInfo 活跃状态 */
-  const isIsolatedSessionSource = streamActiveOverride !== undefined;
-
-  const resetStreamActive = useCallback(() => {
-    if (isIsolatedSessionSource) {
-      onDisabledStreamActiveOverride?.();
-      return;
-    }
-    disabledConversationActive();
-  }, [
-    isIsolatedSessionSource,
-    onDisabledStreamActiveOverride,
-    disabledConversationActive,
-  ]);
-
-  const isConversationActive = streamActiveOverride ?? modelStreamActive;
-  const loadingStopConversation =
-    loadingStopConversationOverride ?? modelLoadingStopConversation;
-  const effectiveTaskExecuting =
-    taskExecutingOverride ??
-    conversationInfo?.taskStatus === TaskStatus.EXECUTING;
-
   // 获取租户配置信息
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
-  // 是否启用订阅
   const isEnableSubscription = tenantConfigInfo?.enableSubscription !== 0;
 
   const {
@@ -160,30 +209,20 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     loadingMySubscription,
   } = useSubscription();
 
-  // 是否打开订阅弹窗
   const [openPaymentModal, setOpenPaymentModal] = useState<boolean>(false);
-
-  // 文档
   const [uploadFiles, setUploadFiles] = useState<UploadFileInfo[]>([]);
   const [files, setFiles] = useState<UploadFileInfo[]>([]);
   const [messageInfo, setMessageInfo] = useState<string>('');
-  // 已选中的技能 ID 列表
   const [skillIds, setSkillIds] = useState<number[]>([]);
-  // 停止操作是否正在进行中
   const [isStoppingConversation, setIsStoppingConversation] =
     useState<boolean>(false);
-  // @ 提及编辑器引用
   const mentionEditorRef = useRef<MentionEditorHandle>(null);
-  // 滚动按钮自身的悬停状态
   const [isHoveringBtn, setIsHoveringBtn] = useState<boolean>(false);
-  // 延迟显示的可见性状态，用于处理移出延时
   const [delayedVisible, setDelayedVisible] = useState<boolean>(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-  // 拖拽进入计数，避免 dragenter/dragleave 嵌套元素导致遮罩闪烁
   const dragCounterRef = useRef<number>(0);
   const [isDragging, setIsDragging] = useState<boolean>(false);
 
-  // 处理可见性延迟逻辑
   useEffect(() => {
     if (visible || isHoveringBtn) {
       if (timerRef.current) {
@@ -192,10 +231,9 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
       }
       setDelayedVisible(true);
     } else {
-      // 当外部不可见且按钮未悬停时，增加延时消失，防止闪烁
       timerRef.current = setTimeout(() => {
         setDelayedVisible(false);
-      }, 300); // 300ms 延时
+      }, 300);
     }
 
     return () => {
@@ -215,66 +253,28 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     );
   }, [uploadFiles]);
 
-  // 监听会话状态变化，当会话结束时重置停止状态
   useEffect(() => {
     if (!isConversationActive) {
       setIsStoppingConversation(false);
     }
   }, [isConversationActive]);
 
-  // 发送按钮disabled
   const disabledSend = useMemo(() => {
     return !messageInfo && !files?.length;
   }, [messageInfo, files]);
 
-  /**
-   * 会话是否活跃（与停止钮 / 队列入队一致）：
-   * model 流式信号 + messageList 兜底 + 后台 taskStatus
-   */
-  const streamActive = useMemo(
-    () => isConversationActive || isSessionStreamBusy(messageList),
-    [isConversationActive, messageList],
-  );
-  const isActiveConversation = streamActive || effectiveTaskExecuting;
-
-  /** 按钮区活跃态（延迟回落）：吸收 model / taskStatus 短暂抖动，避免停止钮与发送钮来回闪 */
-  const BUTTON_SLOT_RELEASE_MS = 800;
-  const [buttonSlotActive, setButtonSlotActive] = useState(false);
-  useEffect(() => {
-    if (isActiveConversation) {
-      setButtonSlotActive(true);
-      return;
-    }
-    const timer = window.setTimeout(
-      () => setButtonSlotActive(false),
-      BUTTON_SLOT_RELEASE_MS,
-    );
-    return () => window.clearTimeout(timer);
-  }, [isActiveConversation]);
-
-  // 单按钮模式：活跃且输入框为空时显示「停止」，否则显示「发送」（活跃时点击即加入队列）
-  const showStopButton = buttonSlotActive && disabledSend;
-
-  // enter事件 - 确认发送消息
   const confirmSendMessage = (value: string) => {
-    // 如果输入框内容不为空 或者 附件文件列表不为空
     if (!!value.trim() || !!files?.length) {
       onEnter(value, files, skillIds, selectedModelId, agentMode);
-      // 如果需要清空输入框
       if (isClearInput) {
-        // 清空附件文件列表
         setUploadFiles([]);
-        // 清空输入框
         setMessageInfo('');
-        // 清空已选中的技能 ID 列表
         setSkillIds([]);
-        // 清空@提及编辑器
         mentionEditorRef.current?.clear();
       }
     }
   };
 
-  // 点击发送事件
   const handleSendMessage = () => {
     if (
       disabledSend ||
@@ -284,23 +284,13 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     ) {
       return;
     }
-
-    // 确认发送消息
     confirmSendMessage(messageInfo);
   };
 
-  /**
-   * 处理回车发送消息
-   * 支持 contenteditable div 的回车事件
-   */
   const handlePressEnter = () => {
-    // 中止会话过程中不能触发 enter 事件
-    // 会话活跃时不拦截：消息经 onEnter 流转到外层队列拦截逻辑入队
-    if (isStoppingConversation) {
+    if (isConversationActive || isStoppingConversation) {
       return;
     }
-
-    // 确认发送消息
     confirmSendMessage(messageInfo);
   };
 
@@ -332,17 +322,11 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     );
   };
 
-  /**
-   * 从剪贴板中提取所有文件（支持图片、文档等多种类型）
-   * 支持从剪贴板粘贴图片（Ctrl+V 或 Cmd+V）
-   * 支持多张图片同时粘贴
-   *  */
   const extractClipboardFiles = useCallback(
     (clipboardData: DataTransfer | null): File[] => {
       if (!clipboardData?.items) {
         return [];
       }
-
       const files: File[] = [];
       for (let i = 0; i < clipboardData.items.length; i++) {
         const item = clipboardData.items[i];
@@ -358,9 +342,6 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     [],
   );
 
-  /**
-   * 为待上传文件生成默认文件名
-   */
   const getDefaultFileName = useCallback((file: File, index: number) => {
     if (file.type.startsWith('image/')) {
       return t(
@@ -376,9 +357,6 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     );
   }, []);
 
-  /**
-   * 批量上传文件（粘贴、拖拽共用）
-   */
   const uploadFilesToServer = useCallback(
     async (filesToUpload: File[]) => {
       if (wholeDisabled || !filesToUpload.length) {
@@ -459,29 +437,21 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     [applyServerUploadResult, getDefaultFileName, token, wholeDisabled],
   );
 
-  /**
-   * 处理粘贴事件，支持粘贴多种文件上传
-   */
   const handlePaste = useCallback(
     async (e: React.ClipboardEvent<HTMLDivElement>) => {
       if (wholeDisabled) {
         return;
       }
-
       const pastedFiles = extractClipboardFiles(e.clipboardData);
       if (!pastedFiles.length) {
         return;
       }
-
       e.preventDefault();
       await uploadFilesToServer(pastedFiles);
     },
     [extractClipboardFiles, uploadFilesToServer, wholeDisabled],
   );
 
-  /**
-   * 处理拖拽进入，显示上传提示遮罩
-   */
   const handleDragEnter = useCallback(
     (e: React.DragEvent<HTMLDivElement>) => {
       e.preventDefault();
@@ -495,9 +465,6 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     [wholeDisabled],
   );
 
-  /**
-   * 处理拖拽离开，隐藏上传提示遮罩
-   */
   const handleDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
@@ -508,9 +475,6 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     }
   }, []);
 
-  /**
-   * 处理拖拽悬停，允许放置文件
-   */
   const handleDragOver = useCallback(
     (e: React.DragEvent<HTMLDivElement>) => {
       e.preventDefault();
@@ -523,9 +487,6 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     [wholeDisabled],
   );
 
-  /**
-   * 处理文件拖放上传
-   */
   const handleDrop = useCallback(
     async (e: React.DragEvent<HTMLDivElement>) => {
       e.preventDefault();
@@ -549,46 +510,32 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     if (clearDisabled || wholeDisabled) {
       return;
     }
-    resetStreamActive();
+    disabledConversationActive?.();
     onClear?.();
   };
 
-  // 停止会话功能 - 直接集成到组件内部
   const handleStopConversation = useCallback(async () => {
-    // 防止重复点击
     if (isStoppingConversation) {
       return;
     }
-    // 设置停止操作状态
     setIsStoppingConversation(true);
 
-    // 获取当前会话请求ID
-    const requestId = getCurrentConversationRequestId();
-    const conversationId =
-      stopConversationIdOverride ?? getCurrentConversationId();
+    const requestId = getCurrentConversationRequestId?.() ?? '';
+    const conversationId = getCurrentConversationId?.() ?? null;
 
-    // 修复：即使 requestId 为空也应该调用停止接口
-    // 因为在会话刚开始时，requestId 可能还未设置，但会话已经在进行中
     if (onTempChatStop && requestId) {
-      // 临时聊天需要 requestId
       onTempChatStop(requestId);
-    } else if (onStopConversationOverride && conversationId) {
-      onStopConversationOverride(conversationId);
-    } else if (conversationId) {
-      // 正常会话只需要 conversationId 即可停止
-      runStopConversation(conversationId);
+    } else if (conversationId && runStopConversation) {
+      runStopConversation(conversationId.toString());
     }
   }, [
     isStoppingConversation,
     getCurrentConversationRequestId,
     getCurrentConversationId,
-    stopConversationIdOverride,
-    onStopConversationOverride,
     runStopConversation,
     onTempChatStop,
   ]);
 
-  // 获取按钮提示文本
   const getButtonTooltip = () => {
     if (wholeDisabled) {
       return t('PC.Components.ChatInputHome.conversationDisabled');
@@ -596,16 +543,14 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     if (disabledSend) {
       return t('PC.Components.ChatInputHome.enterQuestion');
     }
-    if (streamActive) {
+    if (isConversationActive) {
       return t('PC.Components.ChatInputHome.clickStopConversation');
     }
     return t('PC.Components.ChatInputHome.clickSendMessage');
   };
 
-  // 获取停止按钮提示文本
   const getStopButtonTooltip = () => {
-    // 如果是任务执行状态
-    if (effectiveTaskExecuting) {
+    if (conversationInfo?.taskStatus === TaskStatus.EXECUTING) {
       if (
         isStoppingConversation ||
         loadingStopConversation ||
@@ -616,8 +561,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
       return t('PC.Components.ChatInputHome.clickStopAgentTask');
     }
 
-    // 普通会话状态
-    if (!streamActive) {
+    if (!isConversationActive) {
       return t('PC.Components.ChatInputHome.noActiveConversation');
     }
     if (
@@ -630,60 +574,14 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     return t('PC.Components.ChatInputHome.clickStopConversation');
   };
 
-  // 卸载时清理活跃态与附件：用 ref 读取最新值、依赖置空，确保仅在真正卸载时执行一次。
-  // （disabledConversationActive 每次 render 都是新引用，放进依赖会令 cleanup 每次渲染都跑、误清空用户已选附件）
-  const isIsolatedSessionSourceRef = useRef(isIsolatedSessionSource);
-  isIsolatedSessionSourceRef.current = isIsolatedSessionSource;
-  const disabledConversationActiveRef = useRef(disabledConversationActive);
-  disabledConversationActiveRef.current = disabledConversationActive;
-
   useEffect(() => {
     return () => {
-      if (!isIsolatedSessionSourceRef.current) {
-        disabledConversationActiveRef.current();
-      }
+      disabledConversationActive?.();
       setUploadFiles([]);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 本输入框所属会话 id（隔离源用 override，否则取 model），用于过滤队列编辑回填事件
-  const ownConversationId = stopConversationIdOverride ?? conversationInfo?.id;
-  const ownConversationIdRef = useRef(ownConversationId);
-  ownConversationIdRef.current = ownConversationId;
-
-  // 监听队列消息编辑回填事件
-  useEffect(() => {
-    const handleEditMessage = ({
-      text,
-      files: editFiles,
-      conversationId: targetConversationId,
-    }: {
-      text: string;
-      files?: UploadFileInfo[];
-      conversationId?: number | string;
-    }) => {
-      // 仅回填到目标会话对应的输入框，避免多实例（主聊天 / 预览 Tab）串扰；
-      // 事件未带 conversationId 时按旧行为不过滤（单输入框场景）
-      if (
-        targetConversationId !== undefined &&
-        targetConversationId !== null &&
-        String(targetConversationId) !== String(ownConversationIdRef.current)
-      ) {
-        return;
-      }
-      setMessageInfo((prev) => (prev ? `${prev}\n${text}` : text));
-      if (editFiles?.length) {
-        setUploadFiles((prev) => [...prev, ...editFiles]);
-      }
-    };
-    eventBus.on(EVENT_NAMES.QUEUE_EDIT_MESSAGE, handleEditMessage);
-    return () =>
-      eventBus.off(EVENT_NAMES.QUEUE_EDIT_MESSAGE, handleEditMessage);
-  }, []);
-
-  /**
-   * 将底部 @ 图标选择的提及项插入到 MentionEditor
-   */
   const handleInsertAtMention = useCallback(
     (item: MentionItem) => {
       mentionEditorRef.current?.handleAtIconMentionSelect(item);
@@ -691,9 +589,6 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     [mentionEditorRef],
   );
 
-  /**
-   * 选中未订阅的付费技能时，打开订阅弹窗并拉取套餐列表
-   */
   const handleUnsubscribedSkillSelect = useCallback(
     (item: MentionItem) => {
       if (!isEnableSubscription || !item.paymentRequired || item.subscribed) {
@@ -732,18 +627,14 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
           }
         />
 
-        {/* Tab 头部插槽 */}
         {tabsSlot && (
           <div className={cx(styles['tabs-wrapper'])}>{tabsSlot}</div>
         )}
 
-        {/* 输入核心包裹区域 */}
         <div className={cx(styles['input-wrapper'])}>
-          {/*文件列表*/}
           <ConditionRender condition={uploadFiles?.length}>
             <ChatUploadFile files={uploadFiles} onDel={handleDelFile} />
           </ConditionRender>
-          {/*输入框 - 使用 MentionEditor 实现 @ 提及功能*/}
           <MentionEditor
             ref={mentionEditorRef}
             className={cx(styles.input)}
@@ -751,23 +642,17 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
             value={messageInfo}
             onChange={setMessageInfo}
             onSkillIdsChange={setSkillIds}
-            // 是否启用 @ 提及功能，默认启用
             enableMention={enableMention}
-            // @ 弹窗展示方向：auto | up | down
             mentionPlacement={mentionPlacement}
-            // 回车事件处理
             onPressEnter={handlePressEnter}
-            // 粘贴事件处理
             onPaste={handlePaste}
             placeholder={placeholder}
-            // 默认提及项列表
             defaultMentions={defaultMentions}
             enableSubscription={isEnableSubscription}
             onUnsubscribedSkillSelect={handleUnsubscribedSkillSelect}
             usageScenarios={usageScenarios}
           />
           <footer className={cx('flex', 'flex-1', styles.footer)}>
-            {/* 清空会话记录 */}
             {!!messageList?.filter((item: MessageInfo) => item.id)?.length && (
               <ConditionRender condition={!!onClear}>
                 <Tooltip title={t('PC.Components.ChatInputHome.clearRecord')}>
@@ -801,7 +686,6 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
               </ConditionRender>
             )}
 
-            {/* @ 提及技能 */}
             <AtMentionIcon
               enableMention={enableMention}
               mentionPlacement={mentionPlacement}
@@ -811,7 +695,6 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
               disabled={wholeDisabled}
             />
 
-            {/*上传按钮*/}
             <Upload
               action={UPLOAD_FILE_ACTION}
               disabled={wholeDisabled}
@@ -871,9 +754,8 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
                 }}
                 trigger={['click']}
                 placement="topLeft"
-                disabled={wholeDisabled || streamActive}
+                disabled={wholeDisabled || isConversationActive}
                 overlayClassName="agent-mode-dropdown-overlay"
-                // 让菜单渲染到 body，避免被父容器 overflow: hidden 裁剪
               >
                 <Tooltip title={t('PC.Components.ChatInputHome.agentMode')}>
                   <span className={cx(styles['agent-mode-select'])}>
@@ -894,7 +776,6 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
                 </Tooltip>
               </Dropdown>
             )}
-            {/*通用型智能体切换按钮*/}
             {showTaskAgentToggle && (
               <Tooltip
                 title={
@@ -921,7 +802,6 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
               </Tooltip>
             )}
 
-            {/* 手动选择组件 */}
             <ManualComponentItem
               manualComponents={manualComponents}
               selectedComponentList={selectedComponentList}
@@ -930,7 +810,6 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
 
             <div className={cx('flex')} style={{ gap: 4 }}>
               {prefix}
-              {/* 智能体电脑模式下显示电脑类型选择器 */}
               {isTaskAgentActive && !readonly && (
                 <ComputerTypeSelector
                   value={
@@ -945,7 +824,9 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
                   disabled={wholeDisabled}
                   agentId={agentId}
                   fixedSelection={
-                    fixedSelection || streamActive || effectiveTaskExecuting
+                    fixedSelection ||
+                    isConversationActive ||
+                    conversationInfo?.taskStatus === TaskStatus.EXECUTING
                   }
                   unavailable={isSandboxUnavailable}
                   autoSelect={autoSelectComputer}
@@ -954,7 +835,6 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
                   readonly={readonly}
                 />
               )}
-              {/* 智能体模型选择器 */}
               {allowOtherModel === DefaultSelectedEnum.Yes && (
                 <ModelSelector
                   agentId={agentId}
@@ -963,8 +843,8 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
                   agentType={agentType}
                 />
               )}
-              {/* 单按钮：活跃且输入框为空时显示「停止」，否则显示「发送」（活跃时点击即加入队列） */}
-              {showStopButton ? (
+              {isConversationActive ||
+              conversationInfo?.taskStatus === TaskStatus.EXECUTING ? (
                 <Tooltip title={getStopButtonTooltip()}>
                   <span
                     onClick={handleStopConversation}
@@ -993,34 +873,33 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
                   </span>
                 </Tooltip>
               ) : (
-                <Tooltip
-                  title={buttonSlotActive ? '加入发送队列' : getButtonTooltip()}
-                >
-                  <span
-                    onClick={handleSendMessage}
-                    className={cx(
-                      'flex',
-                      'items-center',
-                      'content-center',
-                      'cursor-pointer',
-                      styles.box,
-                      styles['send-box'],
-                      {
-                        [styles['send-box-queue']]: buttonSlotActive,
-                        [styles.disabled]:
-                          disabledSend ||
-                          wholeDisabled ||
-                          loadingConversation ||
-                          isLoadingOtherInterface,
-                      },
-                    )}
-                  >
-                    <SvgIcon
-                      name="icons-chat-send"
-                      style={{ fontSize: '14px' }}
-                    />
-                  </span>
-                </Tooltip>
+                <>
+                  <Tooltip title={getButtonTooltip()}>
+                    <span
+                      onClick={handleSendMessage}
+                      className={cx(
+                        'flex',
+                        'items-center',
+                        'content-center',
+                        'cursor-pointer',
+                        styles.box,
+                        styles['send-box'],
+                        {
+                          [styles.disabled]:
+                            disabledSend ||
+                            wholeDisabled ||
+                            loadingConversation ||
+                            isLoadingOtherInterface,
+                        },
+                      )}
+                    >
+                      <SvgIcon
+                        name="icons-chat-send"
+                        style={{ fontSize: '14px' }}
+                      />
+                    </span>
+                  </Tooltip>
+                </>
               )}
             </div>
           </footer>
@@ -1031,7 +910,6 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
           {t('PC.Components.ChatInputHome.generatedByAiNotice')}
         </div>
       )}
-      {/* 滚动到底部按钮 */}
       <div className={cx(styles['chat-action'])}>
         <div
           className={cx(styles['to-bottom'], {
@@ -1049,7 +927,6 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
         </div>
       </div>
 
-      {/* 技能订阅弹窗 */}
       <ConditionRender condition={isEnableSubscription}>
         <PaymentSubscriptionModal
           open={openPaymentModal}
@@ -1067,4 +944,4 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   );
 };
 
-export default ChatInputHome;
+export default ChatInputHomeIndependent;

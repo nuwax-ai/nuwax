@@ -169,6 +169,19 @@ const ExamplesIndex: React.FC = () => {
       featured: true,
     },
     {
+      id: 'message-queue-demo',
+      title: isChineseLanguage ? '消息队列' : 'Message Queue',
+      description: isChineseLanguage
+        ? '调试会话活跃期间的待发送消息队列：入队、空闲自动消费、立即发送、编辑回填、删除清空（Mock，不依赖后端）。'
+        : 'Debug the pending message queue during active conversation: enqueue, auto-consume on idle, send now, edit, delete (mock, no backend).',
+      tags: [
+        { text: isChineseLanguage ? '消息队列' : 'Queue', color: 'orange' },
+        { text: isChineseLanguage ? '会话' : 'Session', color: 'blue' },
+      ],
+      icon: <InboxOutlined />,
+      path: '/examples/message-queue-demo',
+    },
+    {
       id: 'menu-permission-demo',
       title: isChineseLanguage ? '菜单权限演示' : 'Menu Permission Demo',
       description: isChineseLanguage

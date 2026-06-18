@@ -23,6 +23,8 @@ import './xterm.css';
 export interface EmbeddedConsoleTerminalRef {
   writeln: (data: string) => void;
   getTerminal: () => Terminal | null;
+  /** 重新计算 cols/rows 以适配容器尺寸（容器从隐藏变为可见后调用） */
+  fit: () => void;
 }
 
 export interface EmbeddedConsoleTerminalProps {
@@ -303,6 +305,13 @@ const EmbeddedConsoleTerminal = forwardRef<
           terminalRef.current?.writeln(data);
         },
         getTerminal: () => terminalRef.current,
+        fit: () => {
+          try {
+            fitAddonRef.current?.fit();
+          } catch {
+            /* ignore */
+          }
+        },
       }),
       [],
     );
@@ -366,7 +375,27 @@ const EmbeddedConsoleTerminal = forwardRef<
         },
       );
 
+      /**
+       * 监听容器尺寸变化（如面板折叠/展开、布局切换），
+       * 自动调用 fit 重新适配 cols/rows，避免 xterm-screen 停留在旧尺寸。
+       * 容器尺寸为 0（处于 display:none 状态）时跳过，防止 fit 出极小值。
+       */
+      const resizeObserver = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+          const { width, height } = entry.contentRect;
+          if (width > 0 && height > 0) {
+            try {
+              fitAddon.fit();
+            } catch {
+              /* ignore */
+            }
+          }
+        }
+      });
+      resizeObserver.observe(viewportRef.current);
+
       return () => {
+        resizeObserver.disconnect();
         terminalReadyRef.current = false;
         pendingWritesRef.current = [];
         ttydInitSentRef.current = false;
