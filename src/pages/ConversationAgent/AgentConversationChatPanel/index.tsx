@@ -70,6 +70,16 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
     isMoreMessage,
     loadingMore,
     handleLoadMoreMessage,
+    // 停止会话相关
+    runStopConversation,
+    loadingStopConversation,
+    getCurrentConversationId,
+    getCurrentConversationRequestId,
+    disabledConversationActive,
+    // SSE 流式交互状态
+    isConversationActive,
+    // 其它接口加载状态
+    isLoadingOtherInterface,
   } = useModel('conversationInfo');
 
   return (
@@ -83,7 +93,8 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
         loadingMore={loadingMore}
         isMoreMessage={isMoreMessage}
         isConversationActive={
-          conversationInfo?.taskStatus === TaskStatus.EXECUTING
+          conversationInfo?.taskStatus === TaskStatus.EXECUTING ||
+          isConversationActive
         }
         messageBottomMode="chat"
         chatSuggestList={chatSuggestList}
@@ -126,6 +137,15 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
         onComputerSelect={(id) => {
           onChangeSelectedComputerId?.(id);
         }}
+        // 原 conversationInfo model 数据，传给独立版输入组件
+        runStopConversation={runStopConversation}
+        loadingStopConversation={loadingStopConversation}
+        getCurrentConversationId={getCurrentConversationId}
+        getCurrentConversationRequestId={getCurrentConversationRequestId}
+        disabledConversationActive={disabledConversationActive}
+        loadingConversation={loadingConversation}
+        isLoadingOtherInterface={isLoadingOtherInterface}
+        conversationInfo={conversationInfo}
       />
     </div>
   );
