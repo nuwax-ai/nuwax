@@ -65,6 +65,11 @@ interface ChatAreaProps {
    * iframe 内 design runtime 不响应 TOGGLE_DESIGN_MODE 时回调；调用方据此重启 dev server。
    */
   onDesignModeUnreachable?: () => void;
+  /**
+   * 每次聊天会话结束时回调（isChatLoading 从 true 变为 false 时触发）。
+   * 典型用途：刷新文件树列表和 git 源代码管理 status。
+   */
+  onChatSessionEnd?: () => void;
 }
 
 const ChatArea: React.FC<ChatAreaProps> = ({
@@ -84,6 +89,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   defaultActiveTab = 'chat',
   hiddenTabs = [],
   onDesignModeUnreachable,
+  onChatSessionEnd,
 }) => {
   // 权限检查
   const { hasPermissionByMenuCode } = useModel('menuModel');
@@ -96,6 +102,20 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   useEffect(() => {
     setActiveTab(defaultActiveTab);
   }, [defaultActiveTab]);
+
+  /**
+   * 监听 chat.isChatLoading 变化：从 true 变为 false 时视为一次会话结束，
+   * 触发 onChatSessionEnd 回调（用于刷新文件树和 git status）。
+   */
+  const prevIsChatLoadingRef = useRef<boolean>(chat.isChatLoading);
+  useEffect(() => {
+    const wasLoading = prevIsChatLoadingRef.current;
+    const isLoading = chat.isChatLoading;
+    if (wasLoading && !isLoading) {
+      onChatSessionEnd?.();
+    }
+    prevIsChatLoadingRef.current = isLoading;
+  }, [chat.isChatLoading, onChatSessionEnd]);
 
   const autoErrorRetryCount = useModel('autoErrorHandling').autoRetryCount;
 
