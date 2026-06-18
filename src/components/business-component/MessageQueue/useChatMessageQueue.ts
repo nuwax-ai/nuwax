@@ -1,3 +1,4 @@
+import { ENABLE_CHAT_MESSAGE_QUEUE } from '@/constants/feature.constants';
 import { isSessionStreamBusy } from '@/hooks/useExecutingTaskStatusPoll';
 import { MessageStatusEnum } from '@/types/enums/common';
 import type { UploadFileInfo } from '@/types/interfaces/common';
@@ -90,6 +91,12 @@ export const useChatMessageQueue = ({
   messageListRef.current = messageList;
   const conversationIdRef = useRef(conversationId);
   conversationIdRef.current = conversationId;
+
+  /**
+   * 队列关闭时的乐观发送锁：首条消息发出后、model/messageList 活跃信号更新前存在空窗，
+   * 连续回车/点击会在 enqueueBlocked=false 时穿透；发送瞬间置锁，会话完全空闲后释放。
+   */
+  const optimisticSendLockRef = useRef(false);
 
   const hasQueueItems = useCallback(() => {
     return (
@@ -197,6 +204,15 @@ export const useChatMessageQueue = ({
       modelId?: number,
       selectedAgentMode?: QueuedMessage['selectedAgentMode'],
     ) => {
+      // 功能关闭时：会话活跃/任务执行/suggest 加载中或乐观锁期间拦截；空闲时直发
+      if (!ENABLE_CHAT_MESSAGE_QUEUE) {
+        if (enqueueBlocked || optimisticSendLockRef.current) {
+          return;
+        }
+        optimisticSendLockRef.current = true;
+        sendMessage(messageInfo, files, skillIds, modelId, selectedAgentMode);
+        return;
+      }
       if (enqueueBlocked) {
         // 入队时一并快照 skillIds/modelId/agentMode，消费时原样回放
         messageQueue.enqueue({
@@ -213,8 +229,22 @@ export const useChatMessageQueue = ({
     [enqueueBlocked, messageQueue, sendMessage],
   );
 
+  // 队列关闭：会话完全空闲后释放乐观发送锁，允许下一条直发
+  useEffect(() => {
+    if (ENABLE_CHAT_MESSAGE_QUEUE) {
+      return;
+    }
+    if (!enqueueBlocked) {
+      optimisticSendLockRef.current = false;
+    }
+  }, [enqueueBlocked]);
+
   // 切换会话：重置消费锁与定时器；队列由 useMessageQueue 按 conversationId 同步加载
   useEffect(() => {
+    if (!ENABLE_CHAT_MESSAGE_QUEUE) {
+      optimisticSendLockRef.current = false;
+      return;
+    }
     consumeLockRef.current = false;
     clearTimers();
     prevConsumeBlockedRef.current = consumeBlockedRef.current;
@@ -235,6 +265,9 @@ export const useChatMessageQueue = ({
   }, [conversationId, clearTimers]);
 
   useEffect(() => {
+    if (!ENABLE_CHAT_MESSAGE_QUEUE) {
+      return;
+    }
     streamActiveRef.current = streamActive;
     taskExecutingRef.current = isTaskExecuting;
     consumeBlockedRef.current = consumeBlocked;
@@ -271,6 +304,9 @@ export const useChatMessageQueue = ({
   ]);
 
   useEffect(() => {
+    if (!ENABLE_CHAT_MESSAGE_QUEUE) {
+      return;
+    }
     if (hasPendingIntervention) {
       clearTimers();
       consumeLockRef.current = false;
@@ -279,6 +315,9 @@ export const useChatMessageQueue = ({
 
   // consumeBlocked 边沿：变阻塞时取消待发消费；全部解除后再 schedule
   useEffect(() => {
+    if (!ENABLE_CHAT_MESSAGE_QUEUE) {
+      return;
+    }
     const wasBlocked = prevConsumeBlockedRef.current;
     prevConsumeBlockedRef.current = consumeBlocked;
 
@@ -297,7 +336,19 @@ export const useChatMessageQueue = ({
     clearConsumeTimer,
   ]);
 
-  useEffect(() => () => clearTimers(), [clearTimers]);
+  useEffect(
+    () => () => {
+      if (!ENABLE_CHAT_MESSAGE_QUEUE) {
+        return;
+      }
+      clearTimers();
+    },
+    [clearTimers],
+  );
+
+  /** 功能关闭时的空操作，避免面板隐藏后仍被误调用 */
+  const noop = useCallback(() => {}, []);
+  const noopEdit = useCallback((): QueuedMessage | undefined => undefined, []);
 
   const sendNow = useCallback(
     (qMsg: QueuedMessage) => {
@@ -328,13 +379,14 @@ export const useChatMessageQueue = ({
   );
 
   return {
-    queue: messageQueue.queue,
-    hasQueuedMessages: messageQueue.hasQueuedMessages,
-    clearQueue: messageQueue.clearQueue,
+    queue: ENABLE_CHAT_MESSAGE_QUEUE ? messageQueue.queue : [],
+    hasQueuedMessages:
+      ENABLE_CHAT_MESSAGE_QUEUE && messageQueue.hasQueuedMessages,
+    clearQueue: ENABLE_CHAT_MESSAGE_QUEUE ? messageQueue.clearQueue : noop,
     trySend,
-    sendNow,
-    deleteQueued,
-    editQueued,
-    reorder: messageQueue.reorder,
+    sendNow: ENABLE_CHAT_MESSAGE_QUEUE ? sendNow : noop,
+    deleteQueued: ENABLE_CHAT_MESSAGE_QUEUE ? deleteQueued : noop,
+    editQueued: ENABLE_CHAT_MESSAGE_QUEUE ? editQueued : noopEdit,
+    reorder: ENABLE_CHAT_MESSAGE_QUEUE ? messageQueue.reorder : noop,
   };
 };

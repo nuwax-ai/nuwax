@@ -16,6 +16,7 @@ import ConditionRender from '@/components/ConditionRender';
 import PermissionMask from '@/components/PermissionMask';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
+import { ENABLE_CHAT_MESSAGE_QUEUE } from '@/constants/feature.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { isSessionStreamBusy } from '@/hooks/useExecutingTaskStatusPoll';
 import useSubscription from '@/hooks/useSubscription';
@@ -294,7 +295,9 @@ const ChatInputHomeIndependent: React.FC<ChatInputHomeIndependentProps> = ({
       disabledSend ||
       wholeDisabled ||
       loadingConversation ||
-      isLoadingOtherInterface
+      isLoadingOtherInterface ||
+      // 队列关闭时，会话活跃期间禁止点击发送（仅保留停止）
+      (!ENABLE_CHAT_MESSAGE_QUEUE && isSessionActive)
     ) {
       return;
     }
@@ -302,8 +305,12 @@ const ChatInputHomeIndependent: React.FC<ChatInputHomeIndependentProps> = ({
   };
 
   const handlePressEnter = () => {
-    // 中止会话过程中不能触发 enter；会话活跃时不拦截，由外层队列逻辑入队
+    // 中止会话过程中不能触发 enter
     if (isStoppingConversation) {
+      return;
+    }
+    // 队列关闭时，会话活跃期间拦截回车（无队列入队能力，由 trySend 乐观锁兜底）
+    if (!ENABLE_CHAT_MESSAGE_QUEUE && isSessionActive) {
       return;
     }
     confirmSendMessage(messageInfo);

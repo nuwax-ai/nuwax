@@ -4,10 +4,16 @@
  * 以「功能维度」组织：验证会话活跃期间消息队列的完整行为，
  * 包括入队、自动消费、intervention 协调、消费节流与队列操作。
  */
-import { useChatMessageQueue } from '@/components/business-component/MessageQueue/useChatMessageQueue';
-import { MessageStatusEnum } from '@/types/enums/common';
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+// 队列单测需启用功能开关（生产环境默认关闭）
+vi.mock('@/constants/feature.constants', () => ({
+  ENABLE_CHAT_MESSAGE_QUEUE: true,
+}));
+
+import { useChatMessageQueue } from '@/components/business-component/MessageQueue/useChatMessageQueue';
+import { MessageStatusEnum } from '@/types/enums/common';
 
 describe('消息队列功能', () => {
   let sendMessage: ReturnType<typeof vi.fn>;

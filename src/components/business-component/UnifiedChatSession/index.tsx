@@ -17,6 +17,7 @@ import classNames from 'classnames';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import { MESSAGE_PAGE_SIZE } from '@/constants/common.constants';
+import { ENABLE_CHAT_MESSAGE_QUEUE } from '@/constants/feature.constants';
 import { useConversationScrollDetection } from '@/hooks/useConversationScrollDetection';
 import { useIntersectionObserver } from '@/hooks/useIntersectionObserver';
 import { dict } from '@/services/i18nRuntime';
@@ -423,8 +424,8 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
 
       {/* 统一会话输入框（使用独立版组件，避免与 conversationInfo model 强耦合） */}
       <div className={cx(styles['chat-input-container'])}>
-        {/* 待发送消息队列面板：有待处理 intervention（ask/question/审批）时隐藏，让 intervention 独占展示 */}
-        {!hasPendingIntervention && (
+        {/* 待发送消息队列面板：功能开关关闭或有待处理 intervention 时隐藏 */}
+        {ENABLE_CHAT_MESSAGE_QUEUE && !hasPendingIntervention && (
           <MessageQueuePanel
             queue={messageQueue.queue}
             onSendNow={messageQueue.sendNow}

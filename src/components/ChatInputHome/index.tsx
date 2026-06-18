@@ -6,6 +6,7 @@ import ConditionRender from '@/components/ConditionRender';
 import PermissionMask from '@/components/PermissionMask';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
+import { ENABLE_CHAT_MESSAGE_QUEUE } from '@/constants/feature.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { isSessionStreamBusy } from '@/hooks/useExecutingTaskStatusPoll';
 import useSubscription from '@/hooks/useSubscription';
@@ -252,8 +253,9 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     return () => window.clearTimeout(timer);
   }, [isActiveConversation]);
 
-  // 单按钮模式：活跃且输入框为空时显示「停止」，否则显示「发送」（活跃时点击即加入队列）
-  const showStopButton = buttonSlotActive && disabledSend;
+  // 单按钮模式：活跃且输入框为空时显示「停止」；队列关闭时活跃态始终显示停止
+  const showStopButton =
+    buttonSlotActive && (disabledSend || !ENABLE_CHAT_MESSAGE_QUEUE);
 
   // enter事件 - 确认发送消息
   const confirmSendMessage = (value: string) => {
@@ -280,7 +282,9 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
       disabledSend ||
       wholeDisabled ||
       loadingConversation ||
-      isLoadingOtherInterface
+      isLoadingOtherInterface ||
+      // 队列关闭时，会话活跃期间禁止点击发送
+      (!ENABLE_CHAT_MESSAGE_QUEUE && isActiveConversation)
     ) {
       return;
     }
@@ -295,8 +299,11 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
    */
   const handlePressEnter = () => {
     // 中止会话过程中不能触发 enter 事件
-    // 会话活跃时不拦截：消息经 onEnter 流转到外层队列拦截逻辑入队
     if (isStoppingConversation) {
+      return;
+    }
+    // 队列开启：活跃时不拦截，由外层队列入队；队列关闭：活跃时拦截直发
+    if (!ENABLE_CHAT_MESSAGE_QUEUE && isActiveConversation) {
       return;
     }
 
