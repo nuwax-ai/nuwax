@@ -86,7 +86,6 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
     isConversationActive,
     // 其它接口加载状态
     isLoadingOtherInterface,
-    isConversationActive,
   } = useModel('conversationInfo');
 
   // 监听 isConversationActive 从 true → false，触发会话结束回调
