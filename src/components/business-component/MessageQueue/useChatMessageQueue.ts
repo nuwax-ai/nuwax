@@ -133,7 +133,14 @@ export const useChatMessageQueue = ({
       const next = messageQueue.dequeueFirst();
       if (next) {
         lastConsumeAtRef.current = Date.now();
-        sendMessage(next.text, next.files || []);
+        // 回放入队时的快照参数，避免 skillIds/modelId/agentMode 丢失
+        sendMessage(
+          next.text,
+          next.files || [],
+          next.skillIds,
+          next.modelId,
+          next.selectedAgentMode,
+        );
       } else {
         consumeLockRef.current = false;
       }
@@ -152,16 +159,25 @@ export const useChatMessageQueue = ({
   }, [canAttemptConsume, clearTimers, messageQueue.dequeueFirst, sendMessage]);
 
   const trySend = useCallback(
-    (messageInfo: string, files?: UploadFileInfo[], ...rest: any[]) => {
+    (
+      messageInfo: string,
+      files?: UploadFileInfo[],
+      skillIds?: number[],
+      modelId?: number,
+      selectedAgentMode?: QueuedMessage['selectedAgentMode'],
+    ) => {
       if (enqueueBlocked) {
-        messageQueue.enqueue({ text: messageInfo, files });
+        // 入队时一并快照 skillIds/modelId/agentMode，消费时原样回放，避免丢失（尤其 @技能）
+        messageQueue.enqueue({
+          text: messageInfo,
+          files,
+          skillIds,
+          modelId,
+          selectedAgentMode,
+        });
         return;
       }
-      (sendMessage as SendMessage)(
-        messageInfo,
-        files,
-        ...(rest as [any, any, any]),
-      );
+      sendMessage(messageInfo, files, skillIds, modelId, selectedAgentMode);
     },
     [enqueueBlocked, messageQueue, sendMessage],
   );

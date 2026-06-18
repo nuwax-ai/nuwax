@@ -630,24 +630,47 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     return t('PC.Components.ChatInputHome.clickStopConversation');
   };
 
+  // 卸载时清理活跃态与附件：用 ref 读取最新值、依赖置空，确保仅在真正卸载时执行一次。
+  // （disabledConversationActive 每次 render 都是新引用，放进依赖会令 cleanup 每次渲染都跑、误清空用户已选附件）
+  const isIsolatedSessionSourceRef = useRef(isIsolatedSessionSource);
+  isIsolatedSessionSourceRef.current = isIsolatedSessionSource;
+  const disabledConversationActiveRef = useRef(disabledConversationActive);
+  disabledConversationActiveRef.current = disabledConversationActive;
+
   useEffect(() => {
     return () => {
-      if (!isIsolatedSessionSource) {
-        disabledConversationActive();
+      if (!isIsolatedSessionSourceRef.current) {
+        disabledConversationActiveRef.current();
       }
       setUploadFiles([]);
     };
-  }, [isIsolatedSessionSource, disabledConversationActive]);
+  }, []);
+
+  // 本输入框所属会话 id（隔离源用 override，否则取 model），用于过滤队列编辑回填事件
+  const ownConversationId = stopConversationIdOverride ?? conversationInfo?.id;
+  const ownConversationIdRef = useRef(ownConversationId);
+  ownConversationIdRef.current = ownConversationId;
 
   // 监听队列消息编辑回填事件
   useEffect(() => {
     const handleEditMessage = ({
       text,
       files: editFiles,
+      conversationId: targetConversationId,
     }: {
       text: string;
       files?: UploadFileInfo[];
+      conversationId?: number | string;
     }) => {
+      // 仅回填到目标会话对应的输入框，避免多实例（主聊天 / 预览 Tab）串扰；
+      // 事件未带 conversationId 时按旧行为不过滤（单输入框场景）
+      if (
+        targetConversationId !== undefined &&
+        targetConversationId !== null &&
+        String(targetConversationId) !== String(ownConversationIdRef.current)
+      ) {
+        return;
+      }
       setMessageInfo((prev) => (prev ? `${prev}\n${text}` : text));
       if (editFiles?.length) {
         setUploadFiles((prev) => [...prev, ...editFiles]);
