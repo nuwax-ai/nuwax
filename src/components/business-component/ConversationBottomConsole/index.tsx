@@ -49,6 +49,12 @@ export interface ConversationBottomConsoleProps {
   devLog?: ConversationBottomConsoleDevLogProps;
   /** 终端 WebSocket 地址；传入后终端 Tab 渲染 XtermTerminal */
   wsUrl?: string;
+  /**
+   * 是否允许终端发起 WebSocket 连接 @default true
+   * - true：终端渲染后立即连接（需同时传入 wsUrl）
+   * - false：终端组件保持挂载但不建立连接；切换为 true 时才发起连接
+   */
+  terminalAutoConnect?: boolean;
   /** WebSocket 子协议（ttyd 需传 ['tty']） */
   wsSubprotocols?: string | string[];
   /** 终端消息格式（'plain' | 'ttyd'） */
@@ -89,6 +95,7 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
   runtimeLogs = '',
   devLog,
   wsUrl,
+  terminalAutoConnect = true,
   wsSubprotocols,
   wireProtocol,
   terminalAppearance: terminalAppearanceProp,
@@ -263,7 +270,7 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
             wsUrl={wsUrl}
             wsSubprotocols={wsSubprotocols}
             wireProtocol={wireProtocol}
-            autoConnect
+            autoConnect={terminalAutoConnect}
             theme={getConsoleTerminalTheme(terminalAppearance)}
             fontSize={13}
             fontFamily={CONSOLE_TERMINAL_FONT_FAMILY}

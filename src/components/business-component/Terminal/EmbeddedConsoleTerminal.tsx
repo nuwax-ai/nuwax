@@ -107,6 +107,22 @@ const EmbeddedConsoleTerminal = forwardRef<
     const pendingWritesRef = useRef<string[]>([]);
     const terminalReadyRef = useRef(false);
 
+    /**
+     * 将回调和配置存入 ref，保持 connect/disconnect 的引用稳定，
+     * 避免因父组件每次渲染传入新的 onConnect/onDisconnect/reconnect 对象
+     * 导致 useEffect 反复触发 disconnect → connect 循环。
+     */
+    const onConnectRef = useRef(onConnect);
+    onConnectRef.current = onConnect;
+    const onDisconnectRef = useRef(onDisconnect);
+    onDisconnectRef.current = onDisconnect;
+    const reconnectConfigRef = useRef(reconnect);
+    reconnectConfigRef.current = reconnect;
+    const wsUrlRef = useRef(wsUrl);
+    wsUrlRef.current = wsUrl;
+    const wsSubprotocolsRef = useRef(wsSubprotocols);
+    wsSubprotocolsRef.current = wsSubprotocols;
+
     const syncBackendSize = useCallback(
       (ws: WebSocket, options?: { sendTtydInit?: boolean }) => {
         const term = terminalRef.current;
@@ -122,12 +138,14 @@ const EmbeddedConsoleTerminal = forwardRef<
           }
         }
       },
-      [wireProtocol],
+      // wireProtocol 是基本值，几乎不会变化；此处保持稳定引用
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      [],
     );
 
     const connect = useCallback(
       (url?: string) => {
-        const targetUrl = url || wsUrl;
+        const targetUrl = url || wsUrlRef.current;
         if (!targetUrl) {
           console.warn('[EmbeddedTerminal] No WebSocket URL provided');
           return;
@@ -148,21 +166,22 @@ const EmbeddedConsoleTerminal = forwardRef<
 
         let ws: WebSocket;
         try {
-          ws = wsSubprotocols
-            ? new WebSocket(targetUrl, wsSubprotocols)
+          const subprotocols = wsSubprotocolsRef.current;
+          ws = subprotocols
+            ? new WebSocket(targetUrl, subprotocols)
             : new WebSocket(targetUrl);
           ws.binaryType = 'arraybuffer';
           wsRef.current = ws;
         } catch (err) {
           console.error('[EmbeddedTerminal] WebSocket creation failed:', err);
-          // 尝试重连
+          const reconnectConfig = reconnectConfigRef.current;
           if (
-            reconnect.enabled !== false &&
-            reconnectCountRef.current < (reconnect.maxRetries ?? 5) &&
+            reconnectConfig.enabled !== false &&
+            reconnectCountRef.current < (reconnectConfig.maxRetries ?? 5) &&
             !isManualDisconnectRef.current
           ) {
             const delay =
-              (reconnect.retryDelay ?? 2000) *
+              (reconnectConfig.retryDelay ?? 2000) *
               Math.pow(2, reconnectCountRef.current);
             reconnectCountRef.current += 1;
             reconnectTimerRef.current = setTimeout(() => {
@@ -175,7 +194,6 @@ const EmbeddedConsoleTerminal = forwardRef<
         ws.onopen = () => {
           console.log('[EmbeddedTerminal] WebSocket connected');
           reconnectCountRef.current = 0;
-          // 清理可能残留的旧重连 timer
           if (reconnectTimerRef.current) {
             clearTimeout(reconnectTimerRef.current);
             reconnectTimerRef.current = null;
@@ -184,7 +202,6 @@ const EmbeddedConsoleTerminal = forwardRef<
             () => fitAddonRef.current?.fit(),
             () => {
               syncBackendSize(ws, { sendTtydInit: true });
-              // 刷掉 WS 早于 xterm 就绪时暂存的输出
               const pending = pendingWritesRef.current.splice(0);
               const term = terminalRef.current;
               if (term && pending.length > 0) {
@@ -192,7 +209,7 @@ const EmbeddedConsoleTerminal = forwardRef<
                   term.write(chunk);
                 }
               }
-              onConnect?.();
+              onConnectRef.current?.();
             },
           );
         };
@@ -207,7 +224,6 @@ const EmbeddedConsoleTerminal = forwardRef<
               : new TextDecoder().decode(event.data);
           if (!data) return;
           if (!term || !terminalReadyRef.current) {
-            // xterm 尚未就绪，暂存数据
             pendingWritesRef.current.push(data);
             return;
           }
@@ -222,23 +238,23 @@ const EmbeddedConsoleTerminal = forwardRef<
           );
           ttydInitSentRef.current = false;
           wsRef.current = null;
-          onDisconnect?.(event);
+          onDisconnectRef.current?.(event);
 
+          const reconnectConfig = reconnectConfigRef.current;
           if (
-            reconnect.enabled !== false &&
-            reconnectCountRef.current < (reconnect.maxRetries ?? 5) &&
+            reconnectConfig.enabled !== false &&
+            reconnectCountRef.current < (reconnectConfig.maxRetries ?? 5) &&
             !isManualDisconnectRef.current
           ) {
             const delay =
-              (reconnect.retryDelay ?? 2000) *
+              (reconnectConfig.retryDelay ?? 2000) *
               Math.pow(2, reconnectCountRef.current);
             reconnectCountRef.current += 1;
             console.log(
               `[EmbeddedTerminal] Reconnecting in ${delay}ms (attempt ${
                 reconnectCountRef.current
-              }/${reconnect.maxRetries ?? 5})`,
+              }/${reconnectConfig.maxRetries ?? 5})`,
             );
-            // 确保清理旧 timer
             if (reconnectTimerRef.current) {
               clearTimeout(reconnectTimerRef.current);
             }
@@ -248,7 +264,7 @@ const EmbeddedConsoleTerminal = forwardRef<
             }, delay);
           } else if (
             !isManualDisconnectRef.current &&
-            reconnectCountRef.current >= (reconnect.maxRetries ?? 5)
+            reconnectCountRef.current >= (reconnectConfig.maxRetries ?? 5)
           ) {
             console.error(
               '[EmbeddedTerminal] Max reconnection attempts reached',
@@ -260,15 +276,9 @@ const EmbeddedConsoleTerminal = forwardRef<
           console.error('[EmbeddedTerminal] WebSocket error:', event);
         };
       },
-      [
-        onConnect,
-        onDisconnect,
-        reconnect,
-        syncBackendSize,
-        wireProtocol,
-        wsSubprotocols,
-        wsUrl,
-      ],
+      // 所有外部依赖已通过 ref 访问，保持 connect 引用稳定
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      [syncBackendSize, wireProtocol],
     );
 
     const disconnect = useCallback(() => {
@@ -283,6 +293,7 @@ const EmbeddedConsoleTerminal = forwardRef<
       }
       pendingWritesRef.current = [];
       ttydInitSentRef.current = false;
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useImperativeHandle(
@@ -379,7 +390,7 @@ const EmbeddedConsoleTerminal = forwardRef<
       if (!autoConnect || !wsUrl) return;
       connect(wsUrl);
       return () => disconnect();
-    }, [autoConnect, connect, disconnect, wsUrl]);
+    }, [autoConnect, wsUrl]);
 
     useEffect(() => {
       if (!terminalRef.current) return;
