@@ -17,6 +17,7 @@ import PermissionMask from '@/components/PermissionMask';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
+import { isSessionStreamBusy } from '@/hooks/useExecutingTaskStatusPoll';
 import useSubscription from '@/hooks/useSubscription';
 import { t } from '@/services/i18nRuntime';
 import { DefaultSelectedEnum, TaskStatus } from '@/types/enums/agent';
@@ -253,15 +254,27 @@ const ChatInputHomeIndependent: React.FC<ChatInputHomeIndependentProps> = ({
     );
   }, [uploadFiles]);
 
-  useEffect(() => {
-    if (!isConversationActive) {
-      setIsStoppingConversation(false);
-    }
-  }, [isConversationActive]);
-
   const disabledSend = useMemo(() => {
     return !messageInfo && !files?.length;
   }, [messageInfo, files]);
+
+  /**
+   * 会话活跃态：上层传入的流式/任务信号 + messageList 末条 Loading 兜底
+   * 与 ChatInputHome 的 streamActive 逻辑对齐，避免上层漏传时停止按钮不显示
+   */
+  const isSessionActive = useMemo(
+    () =>
+      isConversationActive ||
+      isSessionStreamBusy(messageList) ||
+      conversationInfo?.taskStatus === TaskStatus.EXECUTING,
+    [isConversationActive, messageList, conversationInfo?.taskStatus],
+  );
+
+  useEffect(() => {
+    if (!isSessionActive) {
+      setIsStoppingConversation(false);
+    }
+  }, [isSessionActive]);
 
   const confirmSendMessage = (value: string) => {
     if (!!value.trim() || !!files?.length) {
@@ -288,7 +301,8 @@ const ChatInputHomeIndependent: React.FC<ChatInputHomeIndependentProps> = ({
   };
 
   const handlePressEnter = () => {
-    if (isConversationActive || isStoppingConversation) {
+    // 中止会话过程中不能触发 enter；会话活跃时不拦截，由外层队列逻辑入队
+    if (isStoppingConversation) {
       return;
     }
     confirmSendMessage(messageInfo);
@@ -543,7 +557,7 @@ const ChatInputHomeIndependent: React.FC<ChatInputHomeIndependentProps> = ({
     if (disabledSend) {
       return t('PC.Components.ChatInputHome.enterQuestion');
     }
-    if (isConversationActive) {
+    if (isSessionActive) {
       return t('PC.Components.ChatInputHome.clickStopConversation');
     }
     return t('PC.Components.ChatInputHome.clickSendMessage');
@@ -561,7 +575,7 @@ const ChatInputHomeIndependent: React.FC<ChatInputHomeIndependentProps> = ({
       return t('PC.Components.ChatInputHome.clickStopAgentTask');
     }
 
-    if (!isConversationActive) {
+    if (!isSessionActive) {
       return t('PC.Components.ChatInputHome.noActiveConversation');
     }
     if (
@@ -754,7 +768,7 @@ const ChatInputHomeIndependent: React.FC<ChatInputHomeIndependentProps> = ({
                 }}
                 trigger={['click']}
                 placement="topLeft"
-                disabled={wholeDisabled || isConversationActive}
+                disabled={wholeDisabled || isSessionActive}
                 overlayClassName="agent-mode-dropdown-overlay"
               >
                 <Tooltip title={t('PC.Components.ChatInputHome.agentMode')}>
@@ -823,11 +837,7 @@ const ChatInputHomeIndependent: React.FC<ChatInputHomeIndependentProps> = ({
                   onChange={(id: string) => onComputerSelect?.(id)}
                   disabled={wholeDisabled}
                   agentId={agentId}
-                  fixedSelection={
-                    fixedSelection ||
-                    isConversationActive ||
-                    conversationInfo?.taskStatus === TaskStatus.EXECUTING
-                  }
+                  fixedSelection={fixedSelection || isSessionActive}
                   unavailable={isSandboxUnavailable}
                   autoSelect={autoSelectComputer}
                   saveOnSelect={saveComputerOnSelect}
@@ -843,8 +853,7 @@ const ChatInputHomeIndependent: React.FC<ChatInputHomeIndependentProps> = ({
                   agentType={agentType}
                 />
               )}
-              {isConversationActive ||
-              conversationInfo?.taskStatus === TaskStatus.EXECUTING ? (
+              {isSessionActive ? (
                 <Tooltip title={getStopButtonTooltip()}>
                   <span
                     onClick={handleStopConversation}

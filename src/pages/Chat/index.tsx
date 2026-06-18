@@ -908,7 +908,10 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     isLoading: loadingConversation,
     loadingMore,
     isMoreMessage,
-    isConversationActive: conversationInfo?.taskStatus === TaskStatus.EXECUTING,
+    // 流式输出中 + 后台 taskStatus 执行中，驱动停止按钮与「智能体执行中」提示
+    isConversationActive:
+      isConversationActive ||
+      conversationInfo?.taskStatus === TaskStatus.EXECUTING,
     loadingSuggest,
     chatSuggestList,
     agentInfo: {
