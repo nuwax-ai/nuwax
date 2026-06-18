@@ -29,6 +29,8 @@ export interface UseUnifiedChatQueueParams {
    * 用于规避会话状态切换的中间空白，避免队列在一次响应结束后过早消费下一条。
    */
   minConsumeInterval?: number;
+  /** 当前是否有待处理 intervention（ask/question/审批），为 true 时暂停队列消费 */
+  hasPendingIntervention?: boolean;
 }
 
 /**
@@ -48,6 +50,7 @@ export const useUnifiedChatQueue = ({
   agentModeRef,
   onSendMessage,
   minConsumeInterval,
+  hasPendingIntervention,
 }: UseUnifiedChatQueueParams) => {
   const { isConversationActive, runStopConversation } =
     useModel('conversationInfo');
@@ -80,6 +83,7 @@ export const useUnifiedChatQueue = ({
     sendMessage: rawSend,
     runStopConversation,
     minConsumeInterval,
+    hasPendingIntervention,
   });
 
   // 编辑队列消息：从队列移除并通过 eventBus 回填到输入框

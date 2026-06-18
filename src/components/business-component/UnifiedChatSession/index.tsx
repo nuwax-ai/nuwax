@@ -4,6 +4,7 @@ import {
   type AgentMode,
   useAgentInterventionLayer,
 } from '@/components/business-component/AgentIntervention';
+import { useActiveInterventionQueue } from '@/components/business-component/AgentIntervention/hooks/useActiveInterventionQueue';
 import MessageQueuePanel, {
   useUnifiedChatQueue,
 } from '@/components/business-component/MessageQueue';
@@ -135,6 +136,10 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
     onLoadMoreMessage,
   ]);
 
+  // 是否有待处理的 intervention（ask/question/审批）：有则暂停队列消费并隐藏队列面板
+  const activeInterventions = useActiveInterventionQueue(messageList);
+  const hasPendingIntervention = activeInterventions.length > 0;
+
   // 3. 消息队列：会话活跃时消息入队，空闲时自动消费（逻辑收敛于 hook）
   const messageQueue = useUnifiedChatQueue({
     conversationId,
@@ -143,6 +148,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
     agentModeRef,
     onSendMessage,
     minConsumeInterval: queueMinConsumeInterval,
+    hasPendingIntervention,
   });
 
   // 消息发送代理：经队列拦截（活跃时入队，否则真正发送）
@@ -369,14 +375,16 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
 
       {/* 统一会话输入框 */}
       <div className={cx(styles['chat-input-container'])}>
-        {/* 待发送消息队列面板（无队列时组件内部返回 null） */}
-        <MessageQueuePanel
-          queue={messageQueue.queue}
-          onSendNow={messageQueue.sendNow}
-          onDelete={messageQueue.deleteQueued}
-          onEdit={messageQueue.handleEditQueued}
-          onClear={messageQueue.clearQueue}
-        />
+        {/* 待发送消息队列面板：有待处理 intervention（ask/question/审批）时隐藏，让 intervention 独占展示 */}
+        {!hasPendingIntervention && (
+          <MessageQueuePanel
+            queue={messageQueue.queue}
+            onSendNow={messageQueue.sendNow}
+            onDelete={messageQueue.deleteQueued}
+            onEdit={messageQueue.handleEditQueued}
+            onClear={messageQueue.clearQueue}
+          />
+        )}
         <ChatInputHome
           key={`chat-input-${conversationId}`}
           clearDisabled={!messageList?.length}

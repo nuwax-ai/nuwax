@@ -34,6 +34,11 @@ export interface UseChatMessageQueueParams {
    * 用于等待会话状态稳定，避免状态切换中间空白误消费；默认 500。
    */
   minConsumeInterval?: number;
+  /**
+   * 当前是否有待处理的 intervention（ask/question/审批）。
+   * 为 true 时暂停 auto-consume，等用户提交 intervention 后再恢复消费队列。
+   */
+  hasPendingIntervention?: boolean;
 }
 
 export const useChatMessageQueue = ({
@@ -43,12 +48,17 @@ export const useChatMessageQueue = ({
   sendMessage,
   runStopConversation,
   minConsumeInterval = 500,
+  hasPendingIntervention = false,
 }: UseChatMessageQueueParams) => {
   const messageQueue = useMessageQueue();
 
   // auto-consume 相关：一律以纯 isConversationActive 为准（消息状态驱动，稳定）
   const convActiveRef = useRef(isConversationActive);
   const prevConvActiveRef = useRef(isConversationActive);
+  const prevPendingRef = useRef(hasPendingIntervention);
+  // intervention pending（ref 避免 effect 依赖频繁触发）
+  const hasPendingInterventionRef = useRef(hasPendingIntervention);
+  hasPendingInterventionRef.current = hasPendingIntervention;
   // 最小消费间隔（ref 避免 effect 依赖频繁触发）
   const minIntervalRef = useRef(minConsumeInterval);
   minIntervalRef.current = minConsumeInterval;
@@ -103,15 +113,30 @@ export const useChatMessageQueue = ({
     }
   }, [isConversationActive, clearTimers]);
 
+  // 有待处理 intervention（ask/question/审批）时，取消任何待消费定时器并释放锁，
+  // 暂停队列消费；待用户提交 intervention、会话再次回到空闲后由 auto-consume 恢复。
+  useEffect(() => {
+    if (hasPendingIntervention) {
+      clearTimers();
+      consumeLockRef.current = false;
+    }
+  }, [hasPendingIntervention, clearTimers]);
+
   // 自动消费：纯 isConversationActive 由 true -> false（消息真正流转完成）且队列非空时，
   // 延迟发送队首。用此信号而非合并 isActive，可避免 taskStatus 状态机切换的中间空白误触发。
   useEffect(() => {
     const wasActive = prevConvActiveRef.current;
+    const wasPending = prevPendingRef.current;
+    const wasBlocked = wasActive || wasPending;
     prevConvActiveRef.current = isConversationActive;
+    prevPendingRef.current = hasPendingIntervention;
 
+    // 触发条件：从阻塞（会话活跃 OR intervention pending）转为完全空闲。
+    // 这样 intervention 解除后（即使 isConversationActive 一直为 false）也能恢复消费。
     if (
-      wasActive &&
+      wasBlocked &&
       !isConversationActive &&
+      !hasPendingIntervention &&
       messageQueue.hasQueuedMessages &&
       !consumeLockRef.current
     ) {
@@ -139,8 +164,6 @@ export const useChatMessageQueue = ({
         const next = messageQueue.dequeueFirst();
         if (next) {
           lastConsumeAtRef.current = Date.now();
-          // eslint-disable-next-line no-console
-          console.log('[MQ consume]', next.text, 'after wait', wait);
           sendMessage(next.text, next.files || []);
         } else {
           consumeLockRef.current = false;
@@ -157,6 +180,7 @@ export const useChatMessageQueue = ({
     }
   }, [
     isConversationActive,
+    hasPendingIntervention,
     messageQueue.hasQueuedMessages,
     messageQueue.dequeueFirst,
     messageList,
