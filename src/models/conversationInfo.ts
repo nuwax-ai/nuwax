@@ -142,6 +142,9 @@ export default () => {
   const [chatSuggestList, setChatSuggestList] = useState<
     string[] | GuidQuestionDto[]
   >([]);
+  /** 发送新消息（含队列自动消费）时递增，用于丢弃过期的 suggest 响应 */
+  const suggestGenerationRef = useRef(0);
+  const pendingSuggestGenerationRef = useRef(0);
   const messageViewRef = useRef<HTMLDivElement | null>(null);
   const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortConnectionRef = useRef<unknown>();
@@ -811,6 +814,11 @@ export default () => {
       manual: true,
       debounceWait: 300,
       onSuccess: (result: RequestResponse<string[]>) => {
+        if (
+          pendingSuggestGenerationRef.current !== suggestGenerationRef.current
+        ) {
+          return;
+        }
         setChatSuggestList(result.data);
         handleScrollBottom();
       },
@@ -1120,6 +1128,7 @@ export default () => {
         setFinalResult(data as ConversationFinalResult);
         // 是否开启问题建议,可用值:Open,Close
         if (isSuggest.current) {
+          pendingSuggestGenerationRef.current = suggestGenerationRef.current;
           runChatSuggest(params as ConversationChatSuggestParams);
         }
 
@@ -1307,6 +1316,8 @@ export default () => {
   const handleClearSideEffect = () => {
     // 重置消息ID
     messageIdRef.current = '';
+    // 新消息发出后丢弃在途 suggest，并清空展示
+    suggestGenerationRef.current += 1;
     // 重置问题建议列表
     setChatSuggestList([]);
     if (scrollTimeoutRef.current) {
