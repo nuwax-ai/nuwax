@@ -3,7 +3,6 @@ import TooltipIcon from '@/components/custom/TooltipIcon';
 import { dict } from '@/services/i18nRuntime';
 import type { DevLogEntry } from '@/types/interfaces/appDev';
 import {
-  CloseOutlined,
   DownOutlined,
   FullscreenExitOutlined,
   MoonOutlined,
@@ -44,8 +43,6 @@ export interface ConversationBottomConsoleDevLogProps {
 export interface ConversationBottomConsoleProps {
   /** 是否显示面板 @default true */
   visible?: boolean;
-  /** 关闭回调；传入后头部显示关闭按钮 */
-  onClose?: () => void;
   /** 运行日志纯文本（会话智能体） */
   runtimeLogs?: string;
   /** 开发服务器结构化日志；传入后日志 Tab 使用 DevLogPanel */
@@ -89,7 +86,6 @@ export interface ConversationBottomConsoleProps {
  */
 const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
   visible = true,
-  onClose,
   runtimeLogs = '',
   devLog,
   wsUrl,
@@ -253,10 +249,6 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
     }
   };
 
-  if (!visible) {
-    return null;
-  }
-
   /** 终端 Tab 内容：有 wsUrl 时渲染交互式终端，否则展示空态 */
   const renderTerminalTab = () => {
     if (wsUrl) {
@@ -354,6 +346,7 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
       className={cx(styles.console, {
         [styles['console-expanded']]: layoutMode === 'expanded',
         [styles['console-collapsed']]: layoutMode === 'collapsed',
+        [styles['console-hidden']]: !visible,
         [styles['console-terminal-light']]: isLightTerminal,
         [styles['console-terminal-dark']]: !isLightTerminal,
       })}
@@ -443,16 +436,6 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
             }
             onClick={handleToggleCollapse}
           />
-
-          {/* 关闭按钮 */}
-          {onClose && (
-            <TooltipIcon
-              title={dict('PC.Pages.AppDevDevLogConsole.closeLogConsole')}
-              className={cx(styles['console-action-btn'])}
-              onClick={onClose}
-              icon={<CloseOutlined />}
-            />
-          )}
         </div>
       </div>
       {/* 内容区：两个 Tab 面板常驻渲染，通过样式切换显隐（保持终端连接不断开） */}

@@ -1803,7 +1803,6 @@ const AppDev: React.FC = () => {
                   onActiveTabChange={(tab) => {
                     devConsoleActiveTabRef.current = tab;
                   }}
-                  onClose={() => setShowDevLogConsole(false)}
                   wsUrl={terminalWsUrl}
                   wireProtocol={TTYD_TERMINAL_WIRE_PROTOCOL}
                   wsSubprotocols={[...TTYD_TERMINAL_WS_SUBPROTOCOLS]}
