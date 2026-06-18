@@ -7,6 +7,7 @@ import PermissionMask from '@/components/PermissionMask';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
+import { isSessionStreamBusy } from '@/hooks/useExecutingTaskStatusPoll';
 import useSubscription from '@/hooks/useSubscription';
 import { t } from '@/services/i18nRuntime';
 import { DefaultSelectedEnum, TaskStatus } from '@/types/enums/agent';
@@ -226,19 +227,28 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     return !messageInfo && !files?.length;
   }, [messageInfo, files]);
 
-  // 会话是否活跃（与停止按钮判定一致）
-  const isActiveConversation = isConversationActive || effectiveTaskExecuting;
-
   /**
-   * 按钮区活跃态（延迟回落）：stream / taskStatus 抖动时避免空输入瞬间切回主色「发送」钮闪现
+   * 会话是否活跃（与停止钮 / 队列入队一致）：
+   * model 流式信号 + messageList 兜底 + 后台 taskStatus
    */
+  const streamActive = useMemo(
+    () => isConversationActive || isSessionStreamBusy(messageList),
+    [isConversationActive, messageList],
+  );
+  const isActiveConversation = streamActive || effectiveTaskExecuting;
+
+  /** 按钮区活跃态（延迟回落）：吸收 model / taskStatus 短暂抖动，避免停止钮与发送钮来回闪 */
+  const BUTTON_SLOT_RELEASE_MS = 800;
   const [buttonSlotActive, setButtonSlotActive] = useState(false);
   useEffect(() => {
     if (isActiveConversation) {
       setButtonSlotActive(true);
       return;
     }
-    const timer = window.setTimeout(() => setButtonSlotActive(false), 250);
+    const timer = window.setTimeout(
+      () => setButtonSlotActive(false),
+      BUTTON_SLOT_RELEASE_MS,
+    );
     return () => window.clearTimeout(timer);
   }, [isActiveConversation]);
 
@@ -586,7 +596,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     if (disabledSend) {
       return t('PC.Components.ChatInputHome.enterQuestion');
     }
-    if (isConversationActive) {
+    if (streamActive) {
       return t('PC.Components.ChatInputHome.clickStopConversation');
     }
     return t('PC.Components.ChatInputHome.clickSendMessage');
@@ -607,7 +617,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     }
 
     // 普通会话状态
-    if (!isConversationActive) {
+    if (!streamActive) {
       return t('PC.Components.ChatInputHome.noActiveConversation');
     }
     if (
@@ -838,7 +848,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
                 }}
                 trigger={['click']}
                 placement="topLeft"
-                disabled={wholeDisabled || isConversationActive}
+                disabled={wholeDisabled || streamActive}
                 overlayClassName="agent-mode-dropdown-overlay"
                 // 让菜单渲染到 body，避免被父容器 overflow: hidden 裁剪
               >
@@ -912,9 +922,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
                   disabled={wholeDisabled}
                   agentId={agentId}
                   fixedSelection={
-                    fixedSelection ||
-                    isConversationActive ||
-                    effectiveTaskExecuting
+                    fixedSelection || streamActive || effectiveTaskExecuting
                   }
                   unavailable={isSandboxUnavailable}
                   autoSelect={autoSelectComputer}

@@ -1,5 +1,5 @@
 import type { AgentMode } from '@/components/business-component/AgentIntervention';
-import { hasActiveStreamingInMessages } from '@/hooks/useExecutingTaskStatusPoll';
+import { isSessionStreamBusy } from '@/hooks/useExecutingTaskStatusPoll';
 import { TaskStatus } from '@/types/enums/agent';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
@@ -75,8 +75,7 @@ export const useUnifiedChatQueue = ({
   } = useModel('conversationInfo');
 
   const streamActiveByModel = queueContext?.streamActive ?? modelStreamActive;
-  const streamActive =
-    streamActiveByModel || hasActiveStreamingInMessages(messageList);
+  const streamActive = streamActiveByModel || isSessionStreamBusy(messageList);
   const taskExecuting =
     queueContext?.taskExecuting ??
     conversationInfo?.taskStatus === TaskStatus.EXECUTING;

@@ -1,4 +1,4 @@
-import { hasActiveStreamingInMessages } from '@/hooks/useExecutingTaskStatusPoll';
+import { isSessionStreamBusy } from '@/hooks/useExecutingTaskStatusPoll';
 import { MessageStatusEnum } from '@/types/enums/common';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
@@ -50,7 +50,7 @@ export const useChatMessageQueue = ({
 
   /** 以 messageList 为准兜底，避免 model isConversationActive 与真实流式状态脱节 */
   const streamActive = useMemo(
-    () => isConversationActive || hasActiveStreamingInMessages(messageList),
+    () => isConversationActive || isSessionStreamBusy(messageList),
     [isConversationActive, messageList],
   );
 

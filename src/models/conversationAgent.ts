@@ -11,7 +11,10 @@ import {
   MESSAGE_PAGE_SIZE,
 } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
-import { useExecutingTaskStatusPoll } from '@/hooks/useExecutingTaskStatusPoll';
+import {
+  isSessionStreamBusy,
+  useExecutingTaskStatusPoll,
+} from '@/hooks/useExecutingTaskStatusPoll';
 import { getCustomBlock } from '@/plugins/ds-markdown-process';
 import {
   apiAgentConversation,
@@ -359,16 +362,10 @@ export default () => {
       debounceWait: 300,
     });
 
-  /** 根据最近消息是否含 Loading/Incomplete 更新流式活跃状态 */
+  /** 根据最近消息是否含 Loading/Incomplete / processing 执行中 更新流式活跃状态 */
   const checkConversationActive = useCallback((messages: MessageInfo[]) => {
     const recentMessages = messages?.slice(-5) || [];
-    const hasActiveMessage =
-      recentMessages.some(
-        (msg) =>
-          msg.status === MessageStatusEnum.Loading ||
-          msg.status === MessageStatusEnum.Incomplete,
-      ) || false;
-    setIsConversationActive(hasActiveMessage);
+    setIsConversationActive(isSessionStreamBusy(recentMessages));
   }, []);
 
   const disabledConversationActive = () => {
@@ -703,7 +700,7 @@ export default () => {
           params.conversationId &&
           conversationInfoRef.current?.agent?.type === AgentTypeEnum.TaskAgent
         ) {
-          void syncConversationTaskStatus(params.conversationId);
+          await syncConversationTaskStatus(params.conversationId);
         }
 
         disabledConversationActive();

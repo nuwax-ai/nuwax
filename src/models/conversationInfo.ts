@@ -9,7 +9,10 @@ import {
   MESSAGE_PAGE_SIZE,
 } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
-import { useExecutingTaskStatusPoll } from '@/hooks/useExecutingTaskStatusPoll';
+import {
+  isSessionStreamBusy,
+  useExecutingTaskStatusPoll,
+} from '@/hooks/useExecutingTaskStatusPoll';
 import { getCustomBlock } from '@/plugins/ds-markdown-process';
 import {
   apiAgentConversation,
@@ -572,15 +575,8 @@ export default () => {
 
   // 检查会话是否正在进行中（有消息正在处理）
   const checkConversationActive = useCallback((messages: MessageInfo[]) => {
-    // 只检查最后几条消息的状态，而不是所有消息
-    const recentMessages = messages?.slice(-5) || []; // 只检查最后5条消息
-    const hasActiveMessage =
-      recentMessages.some(
-        (message) =>
-          message.status === MessageStatusEnum.Loading ||
-          message.status === MessageStatusEnum.Incomplete,
-      ) || false;
-    setIsConversationActive(hasActiveMessage);
+    const recentMessages = messages?.slice(-5) || [];
+    setIsConversationActive(isSessionStreamBusy(recentMessages));
   }, []);
 
   const disabledConversationActive = () => {
@@ -1265,7 +1261,7 @@ export default () => {
           params.conversationId &&
           conversationInfoRef.current?.agent?.type === AgentTypeEnum.TaskAgent
         ) {
-          void syncConversationTaskStatus(params.conversationId);
+          await syncConversationTaskStatus(params.conversationId);
         }
 
         // 主动关闭连接时，禁用会话
