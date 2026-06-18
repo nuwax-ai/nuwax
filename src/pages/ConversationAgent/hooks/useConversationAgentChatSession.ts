@@ -233,10 +233,10 @@ export function useConversationAgentChatSession(
     isLoading: loadingConversation,
     loadingMore,
     isMoreMessage,
-    isConversationActive: agentTaskExecuting || agentStreamActive,
+    isConversationActive: agentTaskExecuting,
     queueContext: {
       streamActive: agentStreamActive,
-      taskExecuting: agentTaskExecuting || agentStreamActive,
+      taskExecuting: agentTaskExecuting,
       runStopConversation: (id: number | string) => {
         void runStopConversation(String(id));
       },
@@ -281,8 +281,8 @@ export function useConversationAgentChatSession(
     chatInputProps: {
       fixedSelection: true,
       agentSandboxId: conversationInfo?.agent?.sandboxId,
-      streamActiveOverride: agentStreamActive || agentStreamActive,
-      taskExecutingOverride: agentTaskExecuting || agentStreamActive,
+      streamActiveOverride: agentStreamActive,
+      taskExecutingOverride: agentTaskExecuting,
       stopConversationIdOverride: devConversationId,
       onStopConversationOverride: (id: number | string) => {
         void runStopConversation(String(id));

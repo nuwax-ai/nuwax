@@ -107,8 +107,7 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
         loadingMore={loadingMore}
         isMoreMessage={isMoreMessage}
         isConversationActive={
-          conversationInfo?.taskStatus === TaskStatus.EXECUTING ||
-          isConversationActive
+          conversationInfo?.taskStatus === TaskStatus.EXECUTING
         }
         messageBottomMode="chat"
         chatSuggestList={chatSuggestList}
