@@ -107,6 +107,10 @@
     }
   }
 
+  &.console-hidden {
+    display: none;
+  }
+
   .console-content {
     position: relative;
     height: @console-content-height;
@@ -159,6 +163,36 @@
     font-size: @fontSizeSm;
     text-align: center;
     padding: @paddingLg 0;
+  }
+
+  .container-error-text {
+    color: @colorError;
+    font-size: @fontSizeSm;
+    text-align: center;
+  }
+
+  .container-retry-btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    font-size: @fontSizeSm;
+    color: @colorPrimary;
+    background: transparent;
+    border: @lineWidth solid @colorPrimaryBorder;
+    border-radius: @borderRadius;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      color: @colorPrimaryHover;
+      border-color: @colorPrimaryHover;
+      background: @colorPrimaryBg;
+    }
+
+    &:active {
+      color: @colorPrimaryActive;
+      border-color: @colorPrimaryActive;
+    }
   }
 
   .xterm-container {
