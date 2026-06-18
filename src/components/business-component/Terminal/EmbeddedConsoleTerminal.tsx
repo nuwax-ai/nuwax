@@ -103,6 +103,9 @@ const EmbeddedConsoleTerminal = forwardRef<
     );
     const reconnectCountRef = useRef(0);
     const isManualDisconnectRef = useRef(false);
+    /** xterm 是否已完成 open，WS 早到的输出暂存于此 */
+    const pendingWritesRef = useRef<string[]>([]);
+    const terminalReadyRef = useRef(false);
 
     const syncBackendSize = useCallback(
       (ws: WebSocket, options?: { sendTtydInit?: boolean }) => {
@@ -125,7 +128,10 @@ const EmbeddedConsoleTerminal = forwardRef<
     const connect = useCallback(
       (url?: string) => {
         const targetUrl = url || wsUrl;
-        if (!targetUrl) return;
+        if (!targetUrl) {
+          console.warn('[EmbeddedTerminal] No WebSocket URL provided');
+          return;
+        }
 
         if (
           wsRef.current?.readyState === WebSocket.OPEN ||
@@ -135,42 +141,21 @@ const EmbeddedConsoleTerminal = forwardRef<
         }
 
         isManualDisconnectRef.current = false;
+        ttydInitSentRef.current = false;
+        pendingWritesRef.current = [];
 
-        const ws = wsSubprotocols
-          ? new WebSocket(targetUrl, wsSubprotocols)
-          : new WebSocket(targetUrl);
-        ws.binaryType = 'arraybuffer';
-        wsRef.current = ws;
+        console.log('[EmbeddedTerminal] Connecting to', targetUrl);
 
-        ws.onopen = () => {
-          reconnectCountRef.current = 0;
-          scheduleFit(
-            () => fitAddonRef.current?.fit(),
-            () => {
-              syncBackendSize(ws, { sendTtydInit: true });
-              onConnect?.();
-            },
-          );
-        };
-
-        ws.onmessage = (event: MessageEvent) => {
-          const term = terminalRef.current;
-          if (!term) return;
-          const data =
-            wireProtocol === 'ttyd'
-              ? decodeTtydMessage(event.data)
-              : typeof event.data === 'string'
-              ? event.data
-              : new TextDecoder().decode(event.data);
-          if (data) {
-            term.write(data);
-          }
-        };
-
-        ws.onclose = (event: CloseEvent) => {
-          ttydInitSentRef.current = false;
-          onDisconnect?.(event);
-
+        let ws: WebSocket;
+        try {
+          ws = wsSubprotocols
+            ? new WebSocket(targetUrl, wsSubprotocols)
+            : new WebSocket(targetUrl);
+          ws.binaryType = 'arraybuffer';
+          wsRef.current = ws;
+        } catch (err) {
+          console.error('[EmbeddedTerminal] WebSocket creation failed:', err);
+          // 尝试重连
           if (
             reconnect.enabled !== false &&
             reconnectCountRef.current < (reconnect.maxRetries ?? 5) &&
@@ -184,10 +169,95 @@ const EmbeddedConsoleTerminal = forwardRef<
               connect(targetUrl);
             }, delay);
           }
+          return;
+        }
+
+        ws.onopen = () => {
+          console.log('[EmbeddedTerminal] WebSocket connected');
+          reconnectCountRef.current = 0;
+          // 清理可能残留的旧重连 timer
+          if (reconnectTimerRef.current) {
+            clearTimeout(reconnectTimerRef.current);
+            reconnectTimerRef.current = null;
+          }
+          scheduleFit(
+            () => fitAddonRef.current?.fit(),
+            () => {
+              syncBackendSize(ws, { sendTtydInit: true });
+              // 刷掉 WS 早于 xterm 就绪时暂存的输出
+              const pending = pendingWritesRef.current.splice(0);
+              const term = terminalRef.current;
+              if (term && pending.length > 0) {
+                for (const chunk of pending) {
+                  term.write(chunk);
+                }
+              }
+              onConnect?.();
+            },
+          );
         };
 
-        ws.onerror = () => {
-          /* onclose 会跟进 */
+        ws.onmessage = (event: MessageEvent) => {
+          const term = terminalRef.current;
+          const data =
+            wireProtocol === 'ttyd'
+              ? decodeTtydMessage(event.data)
+              : typeof event.data === 'string'
+              ? event.data
+              : new TextDecoder().decode(event.data);
+          if (!data) return;
+          if (!term || !terminalReadyRef.current) {
+            // xterm 尚未就绪，暂存数据
+            pendingWritesRef.current.push(data);
+            return;
+          }
+          term.write(data);
+        };
+
+        ws.onclose = (event: CloseEvent) => {
+          console.log(
+            '[EmbeddedTerminal] WebSocket closed:',
+            event.code,
+            event.reason,
+          );
+          ttydInitSentRef.current = false;
+          wsRef.current = null;
+          onDisconnect?.(event);
+
+          if (
+            reconnect.enabled !== false &&
+            reconnectCountRef.current < (reconnect.maxRetries ?? 5) &&
+            !isManualDisconnectRef.current
+          ) {
+            const delay =
+              (reconnect.retryDelay ?? 2000) *
+              Math.pow(2, reconnectCountRef.current);
+            reconnectCountRef.current += 1;
+            console.log(
+              `[EmbeddedTerminal] Reconnecting in ${delay}ms (attempt ${
+                reconnectCountRef.current
+              }/${reconnect.maxRetries ?? 5})`,
+            );
+            // 确保清理旧 timer
+            if (reconnectTimerRef.current) {
+              clearTimeout(reconnectTimerRef.current);
+            }
+            reconnectTimerRef.current = setTimeout(() => {
+              reconnectTimerRef.current = null;
+              connect(targetUrl);
+            }, delay);
+          } else if (
+            !isManualDisconnectRef.current &&
+            reconnectCountRef.current >= (reconnect.maxRetries ?? 5)
+          ) {
+            console.error(
+              '[EmbeddedTerminal] Max reconnection attempts reached',
+            );
+          }
+        };
+
+        ws.onerror = (event) => {
+          console.error('[EmbeddedTerminal] WebSocket error:', event);
         };
       },
       [
@@ -207,8 +277,12 @@ const EmbeddedConsoleTerminal = forwardRef<
         clearTimeout(reconnectTimerRef.current);
         reconnectTimerRef.current = null;
       }
-      wsRef.current?.close();
-      wsRef.current = null;
+      if (wsRef.current) {
+        wsRef.current.close();
+        wsRef.current = null;
+      }
+      pendingWritesRef.current = [];
+      ttydInitSentRef.current = false;
     }, []);
 
     useImperativeHandle(
@@ -242,6 +316,7 @@ const EmbeddedConsoleTerminal = forwardRef<
 
       terminalRef.current = term;
       fitAddonRef.current = fitAddon;
+      terminalReadyRef.current = true;
 
       term.onData((data) => {
         if (wsRef.current?.readyState === WebSocket.OPEN) {
@@ -262,9 +337,28 @@ const EmbeddedConsoleTerminal = forwardRef<
         }
       });
 
-      scheduleFit(() => fitAddon.fit());
+      scheduleFit(
+        () => fitAddon.fit(),
+        () => {
+          // xterm 就绪后刷掉 WS 早到的输出
+          const pending = pendingWritesRef.current.splice(0);
+          if (pending.length > 0) {
+            for (const chunk of pending) {
+              term.write(chunk);
+            }
+          }
+          // 若 WS 已连接但尚未发 ttyd init（竞态），补发
+          const ws = wsRef.current;
+          if (ws?.readyState === WebSocket.OPEN) {
+            syncBackendSize(ws, { sendTtydInit: true });
+          }
+        },
+      );
 
       return () => {
+        terminalReadyRef.current = false;
+        pendingWritesRef.current = [];
+        ttydInitSentRef.current = false;
         disconnect();
         fitAddon.dispose();
         term.dispose();
@@ -277,6 +371,7 @@ const EmbeddedConsoleTerminal = forwardRef<
       fontFamily,
       fontSize,
       lineHeight,
+      syncBackendSize,
       wireProtocol,
     ]);
 

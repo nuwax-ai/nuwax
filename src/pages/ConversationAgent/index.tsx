@@ -354,12 +354,12 @@ const ConversationAgent: React.FC = () => {
   const terminalWsUrl = useTerminalWsUrl(queryConversationId);
 
   /** 沙盒开发日志：仅在底部控制台打开且处于日志 Tab 时轮询 */
-  const devLogs = useConversationAgentDevLogs(queryConversationId, {
+  const devLogs = useConversationAgentDevLogs(devConversationId, {
     enabled:
       showDevConsole &&
       devConsoleActiveTab === 'logs' &&
       devConsoleLayoutMode !== 'collapsed' &&
-      !!queryConversationId,
+      !!devConversationId,
     pollInterval: 5000,
     tailLines: 1000,
   });
