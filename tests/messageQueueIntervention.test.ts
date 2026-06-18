@@ -19,6 +19,8 @@ describe('消息队列与 Intervention 协调', () => {
     sendMessage = vi.fn();
     runStopConversation = vi.fn();
     vi.useFakeTimers();
+    // 队列已按 conversationId 持久化到 localStorage，清理避免用例间串扰
+    localStorage.clear();
   });
 
   afterEach(() => {

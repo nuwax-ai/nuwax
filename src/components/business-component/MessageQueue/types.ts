@@ -1,4 +1,4 @@
-import type { AgentMode } from '@/components/business-component/AgentIntervention';
+import type { AgentMode } from '@/components/business-component/AgentIntervention/types/acpIntervention';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 
 /** 队列中的待发送消息 */

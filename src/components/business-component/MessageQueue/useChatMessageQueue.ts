@@ -46,7 +46,7 @@ export const useChatMessageQueue = ({
   minConsumeInterval = 100,
   hasPendingIntervention = false,
 }: UseChatMessageQueueParams) => {
-  const messageQueue = useMessageQueue();
+  const messageQueue = useMessageQueue(conversationId);
 
   /** 以 messageList 为准兜底，避免 model isConversationActive 与真实流式状态脱节 */
   const streamActive = useMemo(
@@ -182,12 +182,12 @@ export const useChatMessageQueue = ({
     [enqueueBlocked, messageQueue, sendMessage],
   );
 
+  // 切换会话：重置消费锁与定时器；队列本身由 useMessageQueue 按 conversationId
+  // 加载对应的持久化数据（不再无条件清空，保证切走再回来队列仍在）
   useEffect(() => {
-    messageQueue.clearQueue();
     consumeLockRef.current = false;
     clearTimers();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [conversationId]);
+  }, [conversationId, clearTimers]);
 
   useEffect(() => {
     streamActiveRef.current = streamActive;

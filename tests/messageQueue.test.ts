@@ -17,6 +17,8 @@ describe('消息队列功能', () => {
     sendMessage = vi.fn();
     runStopConversation = vi.fn();
     vi.useFakeTimers();
+    // 队列已按 conversationId 持久化到 localStorage，清理避免用例间串扰
+    localStorage.clear();
   });
 
   afterEach(() => {
@@ -512,6 +514,39 @@ describe('消息队列功能', () => {
         result.current.reorder(0, 99);
       });
       expect(result.current.queue.map((q) => q.text)).toEqual(['m1', 'm2']);
+    });
+  });
+
+  // ============ 功能6：localStorage 按会话持久化 ============
+  describe('队列按会话持久化到 localStorage', () => {
+    it('入队后卸载，重新挂载同会话从 localStorage 恢复队列（含 skillIds 快照）', () => {
+      const first = setup({ isConversationActive: true });
+      act(() => {
+        first.result.current.trySend('persisted', undefined, [9], 5, 'ask');
+      });
+      expect(first.result.current.queue).toHaveLength(1);
+      first.unmount();
+
+      // 重新挂载同一会话（conv-1）应从 localStorage 恢复
+      const second = setup({ isConversationActive: true });
+      expect(second.result.current.queue).toHaveLength(1);
+      expect(second.result.current.queue[0].text).toBe('persisted');
+      expect(second.result.current.queue[0].skillIds).toEqual([9]);
+      expect(second.result.current.queue[0].queuedAt).toBeInstanceOf(Date);
+    });
+
+    it('清空队列后重新挂载不再恢复', () => {
+      const first = setup({ isConversationActive: true });
+      act(() => {
+        first.result.current.trySend('m1');
+      });
+      act(() => {
+        first.result.current.clearQueue();
+      });
+      first.unmount();
+
+      const second = setup({ isConversationActive: true });
+      expect(second.result.current.queue).toHaveLength(0);
     });
   });
 });
