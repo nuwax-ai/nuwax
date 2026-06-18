@@ -57,7 +57,7 @@ describe('消息队列与 Intervention 协调', () => {
   // ============ 场景1：Intervention 出现时暂停队列消费 ============
   describe('Intervention 出现时暂停队列消费', () => {
     it('会话空闲时出现 Intervention，队列消费暂停', () => {
-      const { result, rerender } = setup({ isConversationActive: false });
+      const { result, rerender } = setup({ isConversationActive: true });
 
       // 入队消息
       act(() => {
@@ -65,13 +65,7 @@ describe('消息队列与 Intervention 协调', () => {
         result.current.trySend('m2');
       });
 
-      // 模拟会话活跃再空闲
-      rerender({
-        isConversationActive: true,
-        hasPendingIntervention: false,
-        minConsumeInterval: 500,
-        messageList: [],
-      });
+      // 会话空闲，触发自动消费
       rerender({
         isConversationActive: false,
         hasPendingIntervention: false,
@@ -81,25 +75,28 @@ describe('消息队列与 Intervention 协调', () => {
 
       // 首条消息应被消费
       act(() => {
-        vi.advanceTimersByTime(1);
+        vi.advanceTimersByTime(500);
       });
       expect(sendMessage).toHaveBeenCalledTimes(1);
+      expect(sendMessage).toHaveBeenCalledWith('m1', []);
 
-      // 出现 Intervention
+      // 模拟 m1 处理周期：会话活跃再空闲
       rerender({
-        isConversationActive: false,
-        hasPendingIntervention: true,
+        isConversationActive: true,
+        hasPendingIntervention: false,
         minConsumeInterval: 500,
         messageList: [],
       });
 
-      // 模拟会话再次活跃再空闲
+      // 出现 Intervention（会话仍活跃）
       rerender({
         isConversationActive: true,
         hasPendingIntervention: true,
         minConsumeInterval: 500,
         messageList: [],
       });
+
+      // 会话空闲但 Intervention pending
       rerender({
         isConversationActive: false,
         hasPendingIntervention: true,
@@ -308,20 +305,7 @@ describe('消息队列与 Intervention 协调', () => {
         result.current.trySend('m1');
       });
 
-      // Intervention 出现
-      rerender({
-        isConversationActive: false,
-        hasPendingIntervention: true,
-        minConsumeInterval: 500,
-        messageList: [],
-      });
-
-      // Intervention 期间入队 m2
-      act(() => {
-        result.current.trySend('m2');
-      });
-
-      // Intervention 解除
+      // 会话空闲
       rerender({
         isConversationActive: false,
         hasPendingIntervention: false,
@@ -343,6 +327,28 @@ describe('消息队列与 Intervention 协调', () => {
         minConsumeInterval: 500,
         messageList: [],
       });
+
+      // Intervention 出现 + 入队 m2
+      act(() => {
+        result.current.trySend('m2');
+      });
+
+      rerender({
+        isConversationActive: true,
+        hasPendingIntervention: true,
+        minConsumeInterval: 500,
+        messageList: [],
+      });
+
+      // 会话空闲但 Intervention pending
+      rerender({
+        isConversationActive: false,
+        hasPendingIntervention: true,
+        minConsumeInterval: 500,
+        messageList: [],
+      });
+
+      // Intervention 解除
       rerender({
         isConversationActive: false,
         hasPendingIntervention: false,
