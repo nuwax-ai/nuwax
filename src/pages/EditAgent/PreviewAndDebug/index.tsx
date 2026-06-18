@@ -117,6 +117,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     disabledConversationActive,
     // 其它接口加载状态
     isLoadingOtherInterface,
+    isConversationActive,
   } = useModel('conversationInfo');
 
   // 获取 chat model 中的页面预览状态
@@ -485,6 +486,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
               loadingMore={loadingMore}
               isMoreMessage={isMoreMessage}
               isConversationActive={
+                isConversationActive ||
                 conversationInfo?.taskStatus === TaskStatus.EXECUTING
               }
               messageBottomMode="chat"

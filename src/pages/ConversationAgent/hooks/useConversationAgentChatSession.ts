@@ -233,7 +233,7 @@ export function useConversationAgentChatSession(
     isLoading: loadingConversation,
     loadingMore,
     isMoreMessage,
-    isConversationActive: agentTaskExecuting,
+    isConversationActive: agentStreamActive || agentTaskExecuting,
     queueContext: {
       streamActive: agentStreamActive,
       taskExecuting: agentTaskExecuting,
