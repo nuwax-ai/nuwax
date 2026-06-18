@@ -64,10 +64,11 @@ const MessageQueuePanel: React.FC<MessageQueuePanelProps> = ({
           onClick={() => setCollapsed((c) => !c)}
         >
           <SvgIcon
-            name="icons-common-arrow_down"
+            name="icons-common-caret_down"
             className={cx(styles['toggle-icon'], {
               [styles['toggle-icon-collapsed']]: collapsed,
             })}
+            style={{ fontSize: 14 }}
           />
           <div className={cx(styles['queue-title'])}>待发送</div>
           <div className={cx(styles['queue-count'])}>{queue.length}</div>
