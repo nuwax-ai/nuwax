@@ -31,6 +31,7 @@ describe('消息队列功能', () => {
         isConversationActive,
         isEnqueueBlocked,
         isTaskExecuting,
+        isSuggestLoading,
         hasPendingIntervention,
         minConsumeInterval,
         messageList,
@@ -39,6 +40,7 @@ describe('消息队列功能', () => {
           isConversationActive,
           isEnqueueBlocked,
           isTaskExecuting,
+          isSuggestLoading,
           messageList,
           conversationId: 'conv-1',
           sendMessage,
@@ -51,6 +53,7 @@ describe('消息队列功能', () => {
           isConversationActive: false,
           isEnqueueBlocked: undefined,
           isTaskExecuting: false,
+          isSuggestLoading: false,
           hasPendingIntervention: false,
           minConsumeInterval: 500,
           messageList: [],
@@ -301,6 +304,134 @@ describe('消息队列功能', () => {
       });
       expect(sendMessage).toHaveBeenCalledWith(
         'm1',
+        [],
+        undefined,
+        undefined,
+        undefined,
+      );
+    });
+
+    it('流式结束但 suggest 接口仍加载时不自动消费', () => {
+      const { result, rerender } = setup({ isConversationActive: true });
+      act(() => {
+        result.current.trySend('m1');
+      });
+      rerender({
+        isConversationActive: false,
+        isTaskExecuting: false,
+        isEnqueueBlocked: true,
+        isSuggestLoading: true,
+        hasPendingIntervention: false,
+        minConsumeInterval: 500,
+        messageList: [],
+      });
+      act(() => {
+        vi.advanceTimersByTime(500);
+      });
+      expect(sendMessage).not.toHaveBeenCalled();
+    });
+
+    it('suggest 接口结束后自动消费队首', () => {
+      const { result, rerender } = setup({ isConversationActive: true });
+      act(() => {
+        result.current.trySend('m1');
+      });
+      rerender({
+        isConversationActive: false,
+        isTaskExecuting: false,
+        isEnqueueBlocked: true,
+        isSuggestLoading: true,
+        hasPendingIntervention: false,
+        minConsumeInterval: 500,
+        messageList: [],
+      });
+      act(() => {
+        vi.advanceTimersByTime(500);
+      });
+      expect(sendMessage).not.toHaveBeenCalled();
+
+      rerender({
+        isConversationActive: false,
+        isTaskExecuting: false,
+        isEnqueueBlocked: false,
+        isSuggestLoading: false,
+        hasPendingIntervention: false,
+        minConsumeInterval: 500,
+        messageList: [],
+      });
+      act(() => {
+        vi.advanceTimersByTime(500);
+      });
+      expect(sendMessage).toHaveBeenCalledWith(
+        'm1',
+        [],
+        undefined,
+        undefined,
+        undefined,
+      );
+    });
+
+    it('流式刚结束、suggest 在消费定时器触发前开始时，取消待发消费', () => {
+      const { result, rerender } = setup({ isConversationActive: true });
+      act(() => {
+        result.current.trySend('m1');
+      });
+      rerender({
+        isConversationActive: false,
+        hasPendingIntervention: false,
+        minConsumeInterval: 500,
+        messageList: [],
+      });
+      rerender({
+        isConversationActive: false,
+        isEnqueueBlocked: true,
+        isSuggestLoading: true,
+        hasPendingIntervention: false,
+        minConsumeInterval: 500,
+        messageList: [],
+      });
+      act(() => {
+        vi.advanceTimersByTime(500);
+      });
+      expect(sendMessage).not.toHaveBeenCalled();
+
+      rerender({
+        isConversationActive: false,
+        isEnqueueBlocked: false,
+        isSuggestLoading: false,
+        hasPendingIntervention: false,
+        minConsumeInterval: 500,
+        messageList: [],
+      });
+      act(() => {
+        vi.advanceTimersByTime(500);
+      });
+      expect(sendMessage).toHaveBeenCalledTimes(1);
+    });
+
+    it('未传 isEnqueueBlocked 时 isSuggestLoading 单独阻塞入队与消费', () => {
+      const { result, rerender } = setup({
+        isConversationActive: false,
+        isSuggestLoading: true,
+      });
+      act(() => {
+        result.current.trySend('排队');
+      });
+      expect(result.current.queue).toHaveLength(1);
+      expect(sendMessage).not.toHaveBeenCalled();
+
+      rerender({
+        isConversationActive: false,
+        isSuggestLoading: false,
+        hasPendingIntervention: false,
+        minConsumeInterval: 500,
+        messageList: [],
+      });
+      act(() => {
+        vi.advanceTimersByTime(500);
+      });
+      expect(sendMessage).toHaveBeenCalledWith(
+        '排队',
         [],
         undefined,
         undefined,

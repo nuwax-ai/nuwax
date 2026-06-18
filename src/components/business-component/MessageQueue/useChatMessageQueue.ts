@@ -28,6 +28,11 @@ export interface UseChatMessageQueueParams {
   isEnqueueBlocked?: boolean;
   /** 后台 taskStatus===EXECUTING */
   isTaskExecuting?: boolean;
+  /**
+   * 入队/消费额外阻塞：问题建议（suggest）接口请求中。
+   * 通常由 useUnifiedChatQueue 合并进 isEnqueueBlocked，单独传入时参与 consumeBlocked。
+   */
+  isSuggestLoading?: boolean;
   messageList: MessageInfo[];
   conversationId: any;
   sendMessage: SendMessage;
@@ -40,6 +45,7 @@ export const useChatMessageQueue = ({
   isConversationActive,
   isEnqueueBlocked,
   isTaskExecuting = false,
+  isSuggestLoading = false,
   messageList,
   conversationId,
   sendMessage,
@@ -56,15 +62,18 @@ export const useChatMessageQueue = ({
   );
 
   const enqueueBlocked = useMemo(
-    () => isEnqueueBlocked ?? (streamActive || isTaskExecuting),
-    [isEnqueueBlocked, streamActive, isTaskExecuting],
+    () =>
+      isEnqueueBlocked ?? (streamActive || isTaskExecuting || isSuggestLoading),
+    [isEnqueueBlocked, streamActive, isTaskExecuting, isSuggestLoading],
   );
 
-  /** 队列消费阻塞：流式 OR 后台任务 OR intervention，须全部解除后才可 auto-consume */
+  /** 队列消费阻塞：流式 OR 后台任务 OR suggest OR intervention，须全部解除后才可 auto-consume */
   const consumeBlocked = enqueueBlocked || hasPendingIntervention;
 
   const streamActiveRef = useRef(streamActive);
   const taskExecutingRef = useRef(isTaskExecuting);
+  const enqueueBlockedRef = useRef(enqueueBlocked);
+  const prevEnqueueBlockedRef = useRef(enqueueBlocked);
   const consumeBlockedRef = useRef(consumeBlocked);
   const prevConsumeBlockedRef = useRef(consumeBlocked);
   const prevStreamActiveRef = useRef(streamActive);
@@ -89,16 +98,20 @@ export const useChatMessageQueue = ({
     );
   }, [messageQueue.hasQueuedMessages]);
 
-  const clearTimers = useCallback(() => {
+  const clearConsumeTimer = useCallback(() => {
     if (consumeTimerRef.current) {
       window.clearTimeout(consumeTimerRef.current);
       consumeTimerRef.current = null;
     }
+  }, []);
+
+  const clearTimers = useCallback(() => {
+    clearConsumeTimer();
     if (releaseTimerRef.current) {
       window.clearTimeout(releaseTimerRef.current);
       releaseTimerRef.current = null;
     }
-  }, []);
+  }, [clearConsumeTimer]);
 
   const canAttemptConsume = useCallback(() => {
     if (consumeLockRef.current) {
@@ -107,7 +120,8 @@ export const useChatMessageQueue = ({
     if (!hasQueueItems()) {
       return false;
     }
-    if (streamActiveRef.current || taskExecutingRef.current) {
+    // 流式 / 后台任务 / suggest / intervention 须全部结束
+    if (consumeBlockedRef.current || enqueueBlockedRef.current) {
       return false;
     }
     if (hasPendingInterventionRef.current) {
@@ -131,12 +145,14 @@ export const useChatMessageQueue = ({
 
     const elapsed = Date.now() - lastConsumeAtRef.current;
     const wait = Math.max(minIntervalRef.current - elapsed, 0);
+    // 至少延迟 1ms，给 suggest / task 等阻塞信号同一事件循环内更新的机会
+    const delay = Math.max(wait, 1);
 
     consumeTimerRef.current = window.setTimeout(() => {
       consumeTimerRef.current = null;
       if (
-        streamActiveRef.current ||
-        taskExecutingRef.current ||
+        consumeBlockedRef.current ||
+        enqueueBlockedRef.current ||
         hasPendingInterventionRef.current
       ) {
         consumeLockRef.current = false;
@@ -156,14 +172,14 @@ export const useChatMessageQueue = ({
       } else {
         consumeLockRef.current = false;
       }
-    }, wait);
+    }, delay);
 
     releaseTimerRef.current = window.setTimeout(() => {
       releaseTimerRef.current = null;
       if (
         consumeLockRef.current &&
-        !streamActiveRef.current &&
-        !taskExecutingRef.current
+        !consumeBlockedRef.current &&
+        !enqueueBlockedRef.current
       ) {
         consumeLockRef.current = false;
       }
@@ -204,6 +220,7 @@ export const useChatMessageQueue = ({
     prevConsumeBlockedRef.current = consumeBlockedRef.current;
     prevStreamActiveRef.current = streamActiveRef.current;
     prevTaskExecutingRef.current = taskExecutingRef.current;
+    prevEnqueueBlockedRef.current = enqueueBlockedRef.current;
 
     // 持久化恢复：layout 加载队列后，若会话空闲则主动尝试消费（无 blocked 边沿时不会触发）
     const resumeTimer = window.setTimeout(() => {
@@ -221,10 +238,13 @@ export const useChatMessageQueue = ({
     streamActiveRef.current = streamActive;
     taskExecutingRef.current = isTaskExecuting;
     consumeBlockedRef.current = consumeBlocked;
+    enqueueBlockedRef.current = enqueueBlocked;
 
     const streamBecameActive = !prevStreamActiveRef.current && streamActive;
     const taskBecameExecuting =
       !prevTaskExecutingRef.current && isTaskExecuting;
+    const enqueueBecameBlocked =
+      !prevEnqueueBlockedRef.current && enqueueBlocked;
 
     if (streamActive || isTaskExecuting) {
       consumeLockRef.current = false;
@@ -232,11 +252,23 @@ export const useChatMessageQueue = ({
       if (streamBecameActive || taskBecameExecuting) {
         clearTimers();
       }
+    } else if (enqueueBecameBlocked) {
+      // 流式已结束但 suggest 等仍阻塞：取消已排队的消费定时器
+      consumeLockRef.current = false;
+      clearConsumeTimer();
     }
 
     prevStreamActiveRef.current = streamActive;
     prevTaskExecutingRef.current = isTaskExecuting;
-  }, [streamActive, isTaskExecuting, consumeBlocked, clearTimers]);
+    prevEnqueueBlockedRef.current = enqueueBlocked;
+  }, [
+    streamActive,
+    isTaskExecuting,
+    enqueueBlocked,
+    consumeBlocked,
+    clearTimers,
+    clearConsumeTimer,
+  ]);
 
   useEffect(() => {
     if (hasPendingIntervention) {
@@ -245,15 +277,25 @@ export const useChatMessageQueue = ({
     }
   }, [hasPendingIntervention, clearTimers]);
 
-  // 仅在「流式 + 后台任务 + intervention」全部解除后触发消费（不再单独监听流式结束）
+  // consumeBlocked 边沿：变阻塞时取消待发消费；全部解除后再 schedule
   useEffect(() => {
     const wasBlocked = prevConsumeBlockedRef.current;
     prevConsumeBlockedRef.current = consumeBlocked;
 
+    if (!wasBlocked && consumeBlocked) {
+      consumeLockRef.current = false;
+      clearConsumeTimer();
+    }
+
     if (wasBlocked && !consumeBlocked && messageQueue.hasQueuedMessages) {
       scheduleAutoConsume();
     }
-  }, [consumeBlocked, messageQueue.hasQueuedMessages, scheduleAutoConsume]);
+  }, [
+    consumeBlocked,
+    messageQueue.hasQueuedMessages,
+    scheduleAutoConsume,
+    clearConsumeTimer,
+  ]);
 
   useEffect(() => () => clearTimers(), [clearTimers]);
 

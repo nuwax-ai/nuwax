@@ -160,6 +160,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
     onSendMessage,
     minConsumeInterval: queueMinConsumeInterval,
     hasPendingIntervention,
+    loadingSuggest,
     queueContext,
   });
 
