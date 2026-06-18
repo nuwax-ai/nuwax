@@ -1688,6 +1688,8 @@ const ConversationAgent: React.FC = () => {
           if (queryConversationId) {
             handleRefreshFileList(queryConversationId);
           }
+          // 回滚成功后同步刷新 Git 源代码管理状态列表
+          void refreshGitListRef.current?.();
         }}
       />
     ),
