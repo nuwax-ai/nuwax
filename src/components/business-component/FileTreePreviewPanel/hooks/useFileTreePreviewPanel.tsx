@@ -45,7 +45,6 @@ export function useFileTreePreviewPanel(
     hideDesktop = HideDesktopEnum.No,
     diffFile,
     showGitVersionButton = false,
-    isGitVersionPanelOpen = false,
     onToggleGitVersionPanel,
   } = params;
 
@@ -168,7 +167,6 @@ export function useFileTreePreviewPanel(
       onClose={filePathHeaderProps.onClose}
       vncConnectStatus={renderVncPreviewStatus()}
       showGitVersionButton={showGitVersionButton}
-      isGitVersionPanelOpen={isGitVersionPanelOpen}
       onToggleGitVersionPanel={onToggleGitVersionPanel}
     />
   );

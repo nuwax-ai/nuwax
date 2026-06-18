@@ -204,10 +204,18 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
     setContainerStatus('starting');
     setContainerError('');
     try {
-      const { code } = await apiEnsurePod(cId);
+      const { code, message } = await apiEnsurePod(cId);
       if (code === SUCCESS_CODE) {
         setContainerStatus('running');
         runKeepaliveRef.current(cId);
+      } else {
+        setContainerStatus('error');
+        setContainerError(
+          message ||
+            dict(
+              'PC.Components.ConversationBottomConsole.containerStartFailed',
+            ),
+        );
       }
     } catch (error: any) {
       setContainerStatus('error');

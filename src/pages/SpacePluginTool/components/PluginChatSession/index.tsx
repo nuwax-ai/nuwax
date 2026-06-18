@@ -43,6 +43,7 @@ const PluginChatSession: React.FC<PluginChatSessionProps> = ({
     // 加载状态
     loadingConversation,
     isLoadingOtherInterface,
+    isConversationActive,
   } = useModel('conversationInfo');
 
   // 1. 初始化回显从外部跳转传递过来的信息
@@ -199,6 +200,7 @@ const PluginChatSession: React.FC<PluginChatSessionProps> = ({
       loadingMore={loadingMore}
       isMoreMessage={isMoreMessage}
       isConversationActive={
+        isConversationActive ||
         conversationInfo?.taskStatus === TaskStatus.EXECUTING
       }
       messageBottomMode="chat"
