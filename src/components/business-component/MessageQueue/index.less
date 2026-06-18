@@ -36,6 +36,30 @@
   line-height: 1;
 }
 
+// 折叠 toggle 区域（可点击）
+.queue-toggle {
+  cursor: pointer;
+  user-select: none;
+  transition: opacity 0.15s ease;
+
+  &:hover {
+    opacity: 0.8;
+  }
+}
+
+// 折叠箭头图标
+.toggle-icon {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: @colorTextTertiary;
+  transition: transform 0.2s ease;
+}
+
+// 折叠时逆时针旋转 90 度
+.toggle-icon-collapsed {
+  transform: rotate(-90deg);
+}
+
 .queue-title {
   letter-spacing: 0.02em;
 }

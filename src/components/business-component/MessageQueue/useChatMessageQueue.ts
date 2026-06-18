@@ -1,7 +1,8 @@
+import { hasActiveStreamingInMessages } from '@/hooks/useExecutingTaskStatusPoll';
 import { MessageStatusEnum } from '@/types/enums/common';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import type { QueuedMessage } from './types';
 import { useMessageQueue } from './useMessageQueue';
 
@@ -16,38 +17,21 @@ type SendMessage = (
 
 export interface UseChatMessageQueueParams {
   /**
-   * 会话消息是否处理中（纯流式信号：messageList 的 Loading/Incomplete）。
-   * 用于 auto-consume 触发与消费锁释放。
+   * 流式活跃信号（model/context）；会与 messageList 末条 Loading/Incomplete 合并。
    */
   isConversationActive: boolean;
   /**
-   * 入队拦截判定（可选）。未传时与 isConversationActive 相同。
-   * 合并 taskStatus===EXECUTING 时应传 true，避免 TaskAgent 后台执行期间消息直接发出。
+   * 入队拦截：streamActive || taskExecuting（与发送/停止按钮一致）。
+   * 未传时回退为 streamActive || isTaskExecuting。
    */
   isEnqueueBlocked?: boolean;
-  /**
-   * 后台任务是否执行中（taskStatus===EXECUTING）。
-   * 不参与 auto-consume 触发（避免 taskStatus 抖动误触发），
-   * 但会阻塞实际 dequeue；任务结束后再尝试消费队列。
-   */
+  /** 后台 taskStatus===EXECUTING */
   isTaskExecuting?: boolean;
   messageList: MessageInfo[];
-  /** 当前会话 ID，切换时清空队列 */
   conversationId: any;
-  /** 真正发送消息（会话空闲时调用） */
   sendMessage: SendMessage;
-  /** 停止当前会话（"立即发送"时调用，停止后会触发 auto-consume） */
   runStopConversation: (id: any) => void;
-  /**
-   * auto-consume 触发后、发送队首前的最小等待间隔（ms）。
-   * 用于等待会话状态稳定（React 渲染周期级），默认 100。
-   * 乐观更新 + 3s 保活 + lastConsumeAt 硬间隔 + 锁机制已提供主要保护。
-   */
   minConsumeInterval?: number;
-  /**
-   * 当前是否有待处理的 intervention（ask/question/审批）。
-   * 为 true 时暂停 auto-consume，等用户提交 intervention 后再恢复消费队列。
-   */
   hasPendingIntervention?: boolean;
 }
 
@@ -63,14 +47,25 @@ export const useChatMessageQueue = ({
   hasPendingIntervention = false,
 }: UseChatMessageQueueParams) => {
   const messageQueue = useMessageQueue();
-  /** 入队判定：默认与流式活跃一致，可由上层合并 taskStatus */
-  const enqueueBlocked = isEnqueueBlocked ?? isConversationActive;
 
-  const convActiveRef = useRef(isConversationActive);
-  const prevConvActiveRef = useRef(isConversationActive);
-  const prevPendingRef = useRef(hasPendingIntervention);
+  /** 以 messageList 为准兜底，避免 model isConversationActive 与真实流式状态脱节 */
+  const streamActive = useMemo(
+    () => isConversationActive || hasActiveStreamingInMessages(messageList),
+    [isConversationActive, messageList],
+  );
+
+  const enqueueBlocked = useMemo(
+    () => isEnqueueBlocked ?? (streamActive || isTaskExecuting),
+    [isEnqueueBlocked, streamActive, isTaskExecuting],
+  );
+
+  /** 队列消费阻塞：流式 OR 后台任务 OR intervention，须全部解除后才可 auto-consume */
+  const consumeBlocked = enqueueBlocked || hasPendingIntervention;
+
+  const streamActiveRef = useRef(streamActive);
   const taskExecutingRef = useRef(isTaskExecuting);
-  const prevTaskExecutingRef = useRef(isTaskExecuting);
+  const consumeBlockedRef = useRef(consumeBlocked);
+  const prevConsumeBlockedRef = useRef(consumeBlocked);
   const hasPendingInterventionRef = useRef(hasPendingIntervention);
   hasPendingInterventionRef.current = hasPendingIntervention;
   const minIntervalRef = useRef(minConsumeInterval);
@@ -93,7 +88,6 @@ export const useChatMessageQueue = ({
     }
   }, []);
 
-  /** 是否满足消费队列的前置条件（不含冷却间隔） */
   const canAttemptConsume = useCallback(() => {
     if (consumeLockRef.current) {
       return false;
@@ -101,7 +95,7 @@ export const useChatMessageQueue = ({
     if (!messageQueue.hasQueuedMessages) {
       return false;
     }
-    if (convActiveRef.current || taskExecutingRef.current) {
+    if (streamActiveRef.current || taskExecutingRef.current) {
       return false;
     }
     if (hasPendingInterventionRef.current) {
@@ -115,7 +109,6 @@ export const useChatMessageQueue = ({
     return true;
   }, [messageQueue.hasQueuedMessages]);
 
-  /** 延迟发送队首；触发仍由流式结束 / 任务结束 / intervention 解除驱动 */
   const scheduleAutoConsume = useCallback(() => {
     if (!canAttemptConsume()) {
       return;
@@ -129,7 +122,11 @@ export const useChatMessageQueue = ({
 
     consumeTimerRef.current = window.setTimeout(() => {
       consumeTimerRef.current = null;
-      if (convActiveRef.current || taskExecutingRef.current) {
+      if (
+        streamActiveRef.current ||
+        taskExecutingRef.current ||
+        hasPendingInterventionRef.current
+      ) {
         consumeLockRef.current = false;
         return;
       }
@@ -146,7 +143,7 @@ export const useChatMessageQueue = ({
       releaseTimerRef.current = null;
       if (
         consumeLockRef.current &&
-        !convActiveRef.current &&
+        !streamActiveRef.current &&
         !taskExecutingRef.current
       ) {
         consumeLockRef.current = false;
@@ -177,20 +174,15 @@ export const useChatMessageQueue = ({
   }, [conversationId]);
 
   useEffect(() => {
-    convActiveRef.current = isConversationActive;
-    if (isConversationActive) {
-      consumeLockRef.current = false;
-      clearTimers();
-    }
-  }, [isConversationActive, clearTimers]);
-
-  useEffect(() => {
+    streamActiveRef.current = streamActive;
     taskExecutingRef.current = isTaskExecuting;
-    if (isTaskExecuting) {
-      clearTimers();
+    consumeBlockedRef.current = consumeBlocked;
+
+    if (streamActive || isTaskExecuting) {
       consumeLockRef.current = false;
+      clearTimers();
     }
-  }, [isTaskExecuting, clearTimers]);
+  }, [streamActive, isTaskExecuting, consumeBlocked, clearTimers]);
 
   useEffect(() => {
     if (hasPendingIntervention) {
@@ -199,50 +191,15 @@ export const useChatMessageQueue = ({
     }
   }, [hasPendingIntervention, clearTimers]);
 
-  // 流式结束或 intervention 解除后尝试消费
+  // 仅在「流式 + 后台任务 + intervention」全部解除后触发消费（不再单独监听流式结束）
   useEffect(() => {
-    const wasActive = prevConvActiveRef.current;
-    const wasPending = prevPendingRef.current;
-    const wasBlocked = wasActive || wasPending;
-    prevConvActiveRef.current = isConversationActive;
-    prevPendingRef.current = hasPendingIntervention;
+    const wasBlocked = prevConsumeBlockedRef.current;
+    prevConsumeBlockedRef.current = consumeBlocked;
 
-    if (
-      wasBlocked &&
-      !isConversationActive &&
-      !hasPendingIntervention &&
-      messageQueue.hasQueuedMessages
-    ) {
+    if (wasBlocked && !consumeBlocked && messageQueue.hasQueuedMessages) {
       scheduleAutoConsume();
     }
-  }, [
-    isConversationActive,
-    hasPendingIntervention,
-    messageQueue.hasQueuedMessages,
-    scheduleAutoConsume,
-  ]);
-
-  // 后台任务结束后（流式已空闲）再尝试消费，避免「请稍等」期间发出队首
-  useEffect(() => {
-    const wasTaskExecuting = prevTaskExecutingRef.current;
-    prevTaskExecutingRef.current = isTaskExecuting;
-
-    if (
-      wasTaskExecuting &&
-      !isTaskExecuting &&
-      !isConversationActive &&
-      !hasPendingIntervention &&
-      messageQueue.hasQueuedMessages
-    ) {
-      scheduleAutoConsume();
-    }
-  }, [
-    isTaskExecuting,
-    isConversationActive,
-    hasPendingIntervention,
-    messageQueue.hasQueuedMessages,
-    scheduleAutoConsume,
-  ]);
+  }, [consumeBlocked, messageQueue.hasQueuedMessages, scheduleAutoConsume]);
 
   useEffect(() => () => clearTimers(), [clearTimers]);
 

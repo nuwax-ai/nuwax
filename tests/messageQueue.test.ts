@@ -5,6 +5,7 @@
  * 包括入队、自动消费、intervention 协调、消费节流与队列操作。
  */
 import { useChatMessageQueue } from '@/components/business-component/MessageQueue/useChatMessageQueue';
+import { MessageStatusEnum } from '@/types/enums/common';
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -197,6 +198,25 @@ describe('消息队列功能', () => {
         hasPendingIntervention: false,
         minConsumeInterval: 500,
         messageList: [],
+      });
+      act(() => {
+        vi.advanceTimersByTime(500);
+      });
+      expect(sendMessage).not.toHaveBeenCalled();
+    });
+
+    it('model 流式 false 但 messageList 仍 Incomplete 时不自动消费', () => {
+      const { result, rerender } = setup({ isConversationActive: true });
+      act(() => {
+        result.current.trySend('m1');
+      });
+      rerender({
+        isConversationActive: false,
+        isTaskExecuting: false,
+        isEnqueueBlocked: true,
+        hasPendingIntervention: false,
+        minConsumeInterval: 500,
+        messageList: [{ id: 'a', status: MessageStatusEnum.Incomplete } as any],
       });
       act(() => {
         vi.advanceTimersByTime(500);

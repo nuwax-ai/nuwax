@@ -1,10 +1,11 @@
+import SvgIcon from '@/components/base/SvgIcon';
 import { closestCenter, DndContext, type DragEndEvent } from '@dnd-kit/core';
 import {
   SortableContext,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import classNames from 'classnames';
-import React from 'react';
+import React, { useState } from 'react';
 import QueuedMessageItem from './QueuedMessageItem';
 import styles from './index.less';
 import type { QueuedMessage } from './types';
@@ -42,6 +43,8 @@ const MessageQueuePanel: React.FC<MessageQueuePanelProps> = ({
   onClear,
   onReorder,
 }) => {
+  const [collapsed, setCollapsed] = useState(false);
+
   if (!queue.length) return null;
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -56,36 +59,52 @@ const MessageQueuePanel: React.FC<MessageQueuePanelProps> = ({
   return (
     <div className={cx(styles['queue-panel'])}>
       <div className={cx(styles['queue-header'])}>
-        <div className={cx(styles['queue-header-left'])}>
+        <div
+          className={cx(styles['queue-header-left'], styles['queue-toggle'])}
+          onClick={() => setCollapsed((c) => !c)}
+        >
+          <SvgIcon
+            name="icons-common-arrow_down"
+            className={cx(styles['toggle-icon'], {
+              [styles['toggle-icon-collapsed']]: collapsed,
+            })}
+          />
           <div className={cx(styles['queue-title'])}>待发送</div>
           <div className={cx(styles['queue-count'])}>{queue.length}</div>
         </div>
-        <button
-          type="button"
-          className={cx(styles['queue-clear'])}
-          onClick={onClear}
-        >
-          清空全部
-        </button>
+        {!collapsed && (
+          <button
+            type="button"
+            className={cx(styles['queue-clear'])}
+            onClick={onClear}
+          >
+            清空全部
+          </button>
+        )}
       </div>
-      <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <SortableContext
-          items={queue.map((q) => q.id)}
-          strategy={verticalListSortingStrategy}
+      {!collapsed && (
+        <DndContext
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
         >
-          <div className={cx(styles['queue-list'])}>
-            {queue.map((qMsg) => (
-              <QueuedMessageItem
-                key={qMsg.id}
-                message={qMsg}
-                onSendNow={onSendNow}
-                onDelete={onDelete}
-                onEdit={onEdit}
-              />
-            ))}
-          </div>
-        </SortableContext>
-      </DndContext>
+          <SortableContext
+            items={queue.map((q) => q.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            <div className={cx(styles['queue-list'])}>
+              {queue.map((qMsg) => (
+                <QueuedMessageItem
+                  key={qMsg.id}
+                  message={qMsg}
+                  onSendNow={onSendNow}
+                  onDelete={onDelete}
+                  onEdit={onEdit}
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
+      )}
     </div>
   );
 };

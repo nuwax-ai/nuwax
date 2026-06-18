@@ -228,8 +228,22 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
 
   // 会话是否活跃（与停止按钮判定一致）
   const isActiveConversation = isConversationActive || effectiveTaskExecuting;
+
+  /**
+   * 按钮区活跃态（延迟回落）：stream / taskStatus 抖动时避免空输入瞬间切回主色「发送」钮闪现
+   */
+  const [buttonSlotActive, setButtonSlotActive] = useState(false);
+  useEffect(() => {
+    if (isActiveConversation) {
+      setButtonSlotActive(true);
+      return;
+    }
+    const timer = window.setTimeout(() => setButtonSlotActive(false), 250);
+    return () => window.clearTimeout(timer);
+  }, [isActiveConversation]);
+
   // 单按钮模式：活跃且输入框为空时显示「停止」，否则显示「发送」（活跃时点击即加入队列）
-  const showStopButton = isActiveConversation && disabledSend;
+  const showStopButton = buttonSlotActive && disabledSend;
 
   // enter事件 - 确认发送消息
   const confirmSendMessage = (value: string) => {
@@ -949,9 +963,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
                 </Tooltip>
               ) : (
                 <Tooltip
-                  title={
-                    isActiveConversation ? '加入发送队列' : getButtonTooltip()
-                  }
+                  title={buttonSlotActive ? '加入发送队列' : getButtonTooltip()}
                 >
                   <span
                     onClick={handleSendMessage}
@@ -963,6 +975,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
                       styles.box,
                       styles['send-box'],
                       {
+                        [styles['send-box-queue']]: buttonSlotActive,
                         [styles.disabled]:
                           disabledSend ||
                           wholeDisabled ||

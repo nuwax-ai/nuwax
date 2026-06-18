@@ -1,4 +1,5 @@
 import type { AgentMode } from '@/components/business-component/AgentIntervention';
+import { hasActiveStreamingInMessages } from '@/hooks/useExecutingTaskStatusPoll';
 import { TaskStatus } from '@/types/enums/agent';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
@@ -52,9 +53,10 @@ export interface UseUnifiedChatQueueParams {
 /**
  * UnifiedChatSession 专用消息队列 hook
  *
- * 信号拆分：
- * - 入队拦截：streamActive || taskExecuting（与发送/停止按钮一致）
- * - auto-consume：仅 streamActive（避免 taskStatus 状态机切换空白误消费）
+ * 信号：
+ * - streamActive = model/context 流式 OR messageList 末条 Loading/Incomplete
+ * - 入队 / 消费阻塞：streamActive || taskExecuting（+ intervention 仅消费）
+ * - auto-consume：上述阻塞全部解除后才触发
  */
 export const useUnifiedChatQueue = ({
   conversationId,
@@ -72,7 +74,9 @@ export const useUnifiedChatQueue = ({
     runStopConversation: modelRunStop,
   } = useModel('conversationInfo');
 
-  const streamActive = queueContext?.streamActive ?? modelStreamActive;
+  const streamActiveByModel = queueContext?.streamActive ?? modelStreamActive;
+  const streamActive =
+    streamActiveByModel || hasActiveStreamingInMessages(messageList);
   const taskExecuting =
     queueContext?.taskExecuting ??
     conversationInfo?.taskStatus === TaskStatus.EXECUTING;
