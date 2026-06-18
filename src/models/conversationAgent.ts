@@ -11,6 +11,10 @@ import {
   MESSAGE_PAGE_SIZE,
 } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
+import {
+  isSessionStreamBusy,
+  useExecutingTaskStatusPoll,
+} from '@/hooks/useExecutingTaskStatusPoll';
 import { getCustomBlock } from '@/plugins/ds-markdown-process';
 import {
   apiAgentConversation,
@@ -26,7 +30,7 @@ import {
   MessageTypeEnum,
 } from '@/types/enums/agent';
 import { MessageStatusEnum, ProcessingEnum } from '@/types/enums/common';
-import { OpenCloseEnum } from '@/types/enums/space';
+import { AgentTypeEnum, OpenCloseEnum } from '@/types/enums/space';
 import {
   AgentManualComponentInfo,
   GuidQuestionDto,
@@ -44,6 +48,10 @@ import type {
 } from '@/types/interfaces/conversationInfo';
 import { RequestResponse } from '@/types/interfaces/request';
 import { modalConfirm } from '@/utils/ant-custom';
+import {
+  createSyncConversationTaskStatus,
+  subscribeChatFinishedTaskSync,
+} from '@/utils/conversationTaskStatusSync';
 import { createSSEConnection } from '@/utils/fetchEventSourceConversationInfo';
 import {
   perfTracker,
@@ -53,7 +61,7 @@ import { adjustScrollPositionAfterDOMUpdate } from '@/utils/scrollUtils';
 import { useRequest } from 'ahooks';
 import { message } from 'antd';
 import dayjs from 'dayjs';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -63,6 +71,28 @@ export default () => {
   // 会话信息
   const [conversationInfo, setConversationInfo] =
     useState<ConversationInfo | null>();
+  const conversationInfoRef = useRef<ConversationInfo | null>(null);
+  useEffect(() => {
+    conversationInfoRef.current = conversationInfo || null;
+  }, [conversationInfo]);
+
+  const syncConversationTaskStatus = useCallback(
+    createSyncConversationTaskStatus(setConversationInfo),
+    [],
+  );
+
+  useEffect(() => {
+    return subscribeChatFinishedTaskSync(
+      conversationInfo?.id,
+      conversationInfo?.taskStatus,
+      syncConversationTaskStatus,
+    );
+  }, [
+    conversationInfo?.id,
+    conversationInfo?.taskStatus,
+    syncConversationTaskStatus,
+  ]);
+
   // 是否用户问题建议
   // const [isSuggest, setIsSuggest] = useState<boolean>(false);
   const isSuggest = useRef(false);
@@ -92,6 +122,19 @@ export default () => {
   // 其它调用接口的情况下判断是否正在加载中用于禁用聊天发送按钮
   const [isLoadingOtherInterface, setIsLoadingOtherInterface] =
     useState<boolean>(false);
+
+  // 会话是否正在进行中（有消息正在流式处理 Loading/Incomplete）
+  const [isConversationActive, setIsConversationActiveRaw] =
+    useState<boolean>(false);
+  // 发送后 3s 内拒绝置 false，避免 SSE 回流间隙覆盖乐观 true
+  const lastSendAtRef = useRef(0);
+  const setIsConversationActive = useCallback((v: boolean) => {
+    if (!v && Date.now() - lastSendAtRef.current < 3000) {
+      return;
+    }
+    setIsConversationActiveRaw(v);
+  }, []);
+
   // 添加一个 ref 来控制是否允许自动滚动
   const allowAutoScrollRef = useRef<boolean>(true);
   // 是否显示点击下滚按钮
@@ -313,13 +356,30 @@ export default () => {
   );
 
   // 停止会话
-  const { runAsync: runStopConversation } = useRequest(
-    apiAgentConversationChatStop,
-    {
+  const { runAsync: runStopConversation, loading: loadingStopConversation } =
+    useRequest(apiAgentConversationChatStop, {
       manual: true,
       debounceWait: 300,
-    },
-  );
+    });
+
+  /** 根据最近消息是否含 Loading/Incomplete / processing 执行中 更新流式活跃状态 */
+  const checkConversationActive = useCallback((messages: MessageInfo[]) => {
+    const recentMessages = messages?.slice(-5) || [];
+    setIsConversationActive(isSessionStreamBusy(recentMessages));
+  }, []);
+
+  const disabledConversationActive = () => {
+    setIsConversationActive(false);
+  };
+
+  // 流式已结束但 taskStatus 仍为 EXECUTING 时轮询同步（ChatFinished 遗漏 / 后端延迟）
+  useExecutingTaskStatusPoll({
+    conversationId: conversationInfo?.id,
+    taskStatus: conversationInfo?.taskStatus,
+    messageList,
+    onSync: syncConversationTaskStatus,
+    enabled: conversationInfo?.agent?.type === AgentTypeEnum.TaskAgent,
+  });
 
   // 修改消息列表
   const handleChangeMessageList = (
@@ -502,6 +562,14 @@ export default () => {
           runChatSuggest(params as ConversationChatSuggestParams);
         }
 
+        // TaskAgent：同步后台 taskStatus，驱动「智能体正在执行，请稍等」展示/结束
+        if (
+          params.conversationId &&
+          conversationInfoRef.current?.agent?.type === AgentTypeEnum.TaskAgent
+        ) {
+          void syncConversationTaskStatus(params.conversationId);
+        }
+
         // 用户主动取消任务
         if (!data?.success && data?.error?.includes('用户主动取消任务')) {
           // 如果没有输出文本，删除最后一条消息，不显示流式输出内容
@@ -528,6 +596,8 @@ export default () => {
       if (newMessage) {
         list.splice(index, arraySpliceAction, newMessage as MessageInfo);
       }
+
+      checkConversationActive(list);
 
       return list;
     });
@@ -618,12 +688,22 @@ export default () => {
               }
             }
 
+            checkConversationActive(copyList);
             return copyList;
           } catch (error) {
             console.error('[onClose] ERROR:', error);
             return list;
           }
         });
+
+        if (
+          params.conversationId &&
+          conversationInfoRef.current?.agent?.type === AgentTypeEnum.TaskAgent
+        ) {
+          await syncConversationTaskStatus(params.conversationId);
+        }
+
+        disabledConversationActive();
 
         perfLifecycle.onStreamEnd();
         perfLifecycle.onCloseRenderComplete();
@@ -638,7 +718,10 @@ export default () => {
             }
             return info;
           }) || [];
-        setMessageList(list);
+        setMessageList(() => {
+          disabledConversationActive();
+          return list;
+        });
         perfLifecycle.onStreamEnd('error');
       },
     });
@@ -705,6 +788,10 @@ export default () => {
     // 清除副作用
     handleClearSideEffect();
 
+    // 乐观标记流式活跃，保证停止按钮与队列入队判定及时
+    setIsConversationActive(true);
+    lastSendAtRef.current = Date.now();
+
     // 附件文件
     const attachments: AttachmentFile[] =
       files?.map((file) => ({
@@ -763,6 +850,7 @@ export default () => {
     setMessageList(newMessageList);
     // 缓存消息列表
     messageListRef.current = newMessageList;
+    checkConversationActive(newMessageList);
 
     // 允许滚动
     allowAutoScrollRef.current = true;
@@ -815,5 +903,10 @@ export default () => {
     clearFilePanelInfo,
     isLoadingOtherInterface,
     setIsLoadingOtherInterface,
+    isConversationActive,
+    checkConversationActive,
+    disabledConversationActive,
+    runStopConversation,
+    loadingStopConversation,
   };
 };

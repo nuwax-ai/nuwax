@@ -48,6 +48,11 @@ export {
   default as GitVersionRecordPanel,
   type GitVersionRecordPanelProps,
 } from './GitVersionRecordPanel';
+export {
+  default as MessageQueuePanel,
+  useChatMessageQueue,
+  type QueuedMessage,
+} from './MessageQueue';
 export { default as PagePreviewIframe } from './PagePreviewIframe';
 export { default as XtermTerminal } from './Terminal';
 export { default as UnifiedChatSession } from './UnifiedChatSession';

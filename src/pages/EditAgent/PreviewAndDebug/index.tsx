@@ -234,30 +234,6 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     };
   }, []);
 
-  // 监听会话状态更新事件
-  const listenConversationStatusUpdate = (data: { conversationId: string }) => {
-    const { conversationId } = data;
-    // 如果会话ID和当前会话ID相同，并且会话状态为已完成，则显示成功提示
-    if (conversationId === conversationInfo?.id?.toString()) {
-      // 重新查询会话信息
-      runQueryConversation(conversationId);
-
-      // 取消监听会话状态更新事件
-      eventBus.off(EVENT_TYPE.ChatFinished, listenConversationStatusUpdate);
-    }
-  };
-
-  useEffect(() => {
-    if (conversationInfo?.taskStatus === TaskStatus.EXECUTING) {
-      // 监听会话状态更新事件
-      eventBus.on(EVENT_TYPE.ChatFinished, listenConversationStatusUpdate);
-    }
-
-    return () => {
-      eventBus.off(EVENT_TYPE.ChatFinished, listenConversationStatusUpdate);
-    };
-  }, [conversationInfo?.taskStatus]);
-
   // 清空会话记录，实际上是创建新的会话
   const handleClear = useCallback(async () => {
     // 重置对话设置表单数据

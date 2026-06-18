@@ -4,6 +4,10 @@ import {
   type AgentMode,
   useAgentInterventionLayer,
 } from '@/components/business-component/AgentIntervention';
+import { useActiveInterventionQueue } from '@/components/business-component/AgentIntervention/hooks/useActiveInterventionQueue';
+import MessageQueuePanel, {
+  useUnifiedChatQueue,
+} from '@/components/business-component/MessageQueue';
 import ChatInputHome from '@/components/ChatInputHome';
 import ChatView from '@/components/ChatView';
 import NewConversationSet from '@/components/NewConversationSet';
@@ -83,6 +87,8 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
   className,
   style,
   chatInputProps,
+  queueMinConsumeInterval,
+  queueContext,
 }) => {
   const [isHoveringChat, setIsHoveringChat] = useState<boolean>(false);
   const internalMessageViewRef = useRef<HTMLDivElement>(null);
@@ -131,7 +137,23 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
     onLoadMoreMessage,
   ]);
 
-  // 3. 消息发送代理
+  // 是否有待处理的 intervention（ask/question/审批）：有则暂停队列消费并隐藏队列面板
+  const activeInterventions = useActiveInterventionQueue(messageList);
+  const hasPendingIntervention = activeInterventions.length > 0;
+
+  // 3. 消息队列：会话活跃时消息入队，空闲时自动消费（逻辑收敛于 hook）
+  const messageQueue = useUnifiedChatQueue({
+    conversationId,
+    messageList,
+    selectedModelId,
+    agentModeRef,
+    onSendMessage,
+    minConsumeInterval: queueMinConsumeInterval,
+    hasPendingIntervention,
+    queueContext,
+  });
+
+  // 消息发送代理：经队列拦截（活跃时入队，否则真正发送）
   const handleMessageSend = (
     messageInfo: string,
     files: UploadFileInfo[] = [],
@@ -139,21 +161,22 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
     modelId?: number,
     selectedAgentMode?: AgentMode,
   ) => {
-    onSendMessage?.(
+    messageQueue.trySend(
       messageInfo,
       files,
       skillIds,
-      modelId || selectedModelId,
-      selectedAgentMode || agentModeRef.current,
+      modelId,
+      selectedAgentMode,
     );
   };
 
   // 4. 智能体指令介入图层 (ACP/MCP 审批交互)
+  //    intervention 响应的 resume 消息走 rawSend 绕过队列拦截，避免回复被错误入队
   const interventionLayer = useAgentInterventionLayer({
     conversationId,
     messageList,
     initialAgentMode,
-    onSendMessage: (msg) => handleMessageSend(msg),
+    onSendMessage: (msg) => messageQueue.rawSend(msg),
   });
   agentModeRef.current = interventionLayer.agentMode;
 
@@ -354,6 +377,17 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
 
       {/* 统一会话输入框 */}
       <div className={cx(styles['chat-input-container'])}>
+        {/* 待发送消息队列面板：有待处理 intervention（ask/question/审批）时隐藏，让 intervention 独占展示 */}
+        {!hasPendingIntervention && (
+          <MessageQueuePanel
+            queue={messageQueue.queue}
+            onSendNow={messageQueue.sendNow}
+            onDelete={messageQueue.deleteQueued}
+            onEdit={messageQueue.handleEditQueued}
+            onClear={messageQueue.clearQueue}
+            onReorder={messageQueue.reorder}
+          />
+        )}
         <ChatInputHome
           key={`chat-input-${conversationId}`}
           clearDisabled={!messageList?.length}

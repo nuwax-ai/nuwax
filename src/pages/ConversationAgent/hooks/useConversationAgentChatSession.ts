@@ -77,6 +77,10 @@ export function useConversationAgentChatSession(
     handleClearSideEffect,
     runQueryConversation,
     clearFilePanelInfo,
+    isConversationActive: agentStreamActive,
+    runStopConversation: agentRunStopConversation,
+    loadingStopConversation: agentLoadingStopConversation,
+    disabledConversationActive: agentDisabledConversationActive,
   } = useModel('conversationAgent');
 
   const { hidePagePreview, showPagePreview } = useModel('chat');
@@ -215,6 +219,9 @@ export function useConversationAgentChatSession(
     agentConfigInfo?.type === AgentTypeEnum.TaskAgent &&
     agentConfigInfo?.allowAtSkill === 1;
 
+  const agentTaskExecuting =
+    conversationInfo?.taskStatus === TaskStatus.EXECUTING;
+
   return {
     conversationId: devConversationId,
     messageList,
@@ -222,7 +229,14 @@ export function useConversationAgentChatSession(
     isLoading: loadingConversation,
     loadingMore,
     isMoreMessage,
-    isConversationActive: conversationInfo?.taskStatus === TaskStatus.EXECUTING,
+    isConversationActive: agentTaskExecuting,
+    queueContext: {
+      streamActive: agentStreamActive,
+      taskExecuting: agentTaskExecuting,
+      runStopConversation: (id: number | string) => {
+        void agentRunStopConversation(String(id));
+      },
+    },
     messageBottomMode: 'chat' as const,
     loadingSuggest,
     chatSuggestList,
@@ -263,6 +277,14 @@ export function useConversationAgentChatSession(
     chatInputProps: {
       fixedSelection: true,
       agentSandboxId: conversationInfo?.agent?.sandboxId,
+      streamActiveOverride: agentStreamActive,
+      taskExecutingOverride: agentTaskExecuting,
+      stopConversationIdOverride: devConversationId,
+      onStopConversationOverride: (id: number | string) => {
+        void agentRunStopConversation(String(id));
+      },
+      loadingStopConversationOverride: agentLoadingStopConversation,
+      onDisabledStreamActiveOverride: agentDisabledConversationActive,
     },
   };
 }

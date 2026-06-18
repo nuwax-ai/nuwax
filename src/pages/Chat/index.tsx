@@ -491,8 +491,6 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     setHasUserSentMessage,
     setIsLoadingOtherInterface,
     onMessageSend,
-    conversationInfo,
-    runAsync,
     allowAutoScrollRef,
     messageViewRef,
     incrementCalledTrialCount,
