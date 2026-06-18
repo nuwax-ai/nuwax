@@ -13,8 +13,10 @@ import { useChatMessageQueue } from './useChatMessageQueue';
 export interface UnifiedChatQueueContext {
   /** 流式活跃（messageList Loading/Incomplete），驱动 auto-consume */
   streamActive?: boolean;
-  /** 后台任务执行中（taskStatus===EXECUTING），仅参与入队拦截 */
+  /** 后台任务执行中（taskStatus===EXECUTING），参与入队/消费阻塞 */
   taskExecuting?: boolean;
+  /** 问题建议（suggest）接口加载中 */
+  suggestLoading?: boolean;
   /** 停止当前会话（立即发送队列消息时调用） */
   runStopConversation?: (id: number | string) => void;
 }
@@ -37,10 +39,11 @@ export interface UseUnifiedChatQueueParams {
     selectedAgentMode?: AgentMode,
   ) => void;
   /**
-   * 队列两次消费之间的最小间隔（ms），默认 500。
-   * 用于规避会话状态切换的中间空白，避免队列在一次响应结束后过早消费下一条。
+   * 队列两次消费之间的最小间隔（ms），默认 100（与 useChatMessageQueue 一致）。
    */
   minConsumeInterval?: number;
+  /** 问题建议（suggest）接口加载中，参与入队/消费阻塞 */
+  loadingSuggest?: boolean;
   /** 当前是否有待处理 intervention（ask/question/审批），为 true 时暂停队列消费 */
   hasPendingIntervention?: boolean;
   /**
@@ -55,8 +58,8 @@ export interface UseUnifiedChatQueueParams {
  *
  * 信号：
  * - streamActive = model/context 流式 OR messageList 末条 Loading/Incomplete
- * - 入队 / 消费阻塞：streamActive || taskExecuting（+ intervention 仅消费）
- * - auto-consume：上述阻塞全部解除后才触发
+ * - 入队 / 消费阻塞：streamActive || taskExecuting || loadingSuggest（+ intervention 仅消费）
+ * - auto-consume：上述阻塞全部解除后才触发（含 suggest 接口返回）
  */
 export const useUnifiedChatQueue = ({
   conversationId,
@@ -66,11 +69,13 @@ export const useUnifiedChatQueue = ({
   onSendMessage,
   minConsumeInterval,
   hasPendingIntervention,
+  loadingSuggest = false,
   queueContext,
 }: UseUnifiedChatQueueParams) => {
   const {
     isConversationActive: modelStreamActive,
     conversationInfo,
+    loadingSuggest: modelLoadingSuggest,
     runStopConversation: modelRunStop,
   } = useModel('conversationInfo');
 
@@ -79,7 +84,9 @@ export const useUnifiedChatQueue = ({
   const taskExecuting =
     queueContext?.taskExecuting ??
     conversationInfo?.taskStatus === TaskStatus.EXECUTING;
-  const isEnqueueBlocked = streamActive || taskExecuting;
+  const suggestLoading =
+    queueContext?.suggestLoading ?? loadingSuggest ?? modelLoadingSuggest;
+  const isEnqueueBlocked = streamActive || taskExecuting || suggestLoading;
   const runStopConversation = queueContext?.runStopConversation ?? modelRunStop;
 
   const rawSend = useCallback(
@@ -111,6 +118,7 @@ export const useUnifiedChatQueue = ({
     runStopConversation,
     minConsumeInterval,
     hasPendingIntervention,
+    isSuggestLoading: suggestLoading,
   });
 
   const handleEditQueued = useCallback(
@@ -120,10 +128,14 @@ export const useUnifiedChatQueue = ({
         eventBus.emit(EVENT_NAMES.QUEUE_EDIT_MESSAGE, {
           text: item.text,
           files: item.files,
+          skillIds: item.skillIds,
+          modelId: item.modelId,
+          selectedAgentMode: item.selectedAgentMode,
+          conversationId,
         });
       }
     },
-    [messageQueueCtrl],
+    [messageQueueCtrl, conversationId],
   );
 
   return {

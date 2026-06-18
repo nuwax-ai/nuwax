@@ -9,7 +9,10 @@ import UnifiedChatSession from '@/components/business-component/UnifiedChatSessi
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-// —— mock 重依赖，聚焦 UnifiedChatSession 的「intervention 隐藏队列」协调逻辑 ——
+// UI 协调单测需启用功能开关（生产环境默认关闭）
+vi.mock('@/constants/feature.constants', () => ({
+  ENABLE_CHAT_MESSAGE_QUEUE: true,
+}));
 
 // 避免 umi / @umijs 链触发 esbuild 环境问题
 vi.mock('umi', () => ({
