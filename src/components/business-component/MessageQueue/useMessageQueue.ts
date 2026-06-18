@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { loadQueue, saveQueue } from './queueStorage';
 import type { QueuedMessage } from './types';
 
@@ -28,8 +28,8 @@ export const useMessageQueue = (conversationId?: string | number | null) => {
     [],
   );
 
-  // 切换会话：加载该会话的持久化队列（替代旧的无条件清空，保证切走再回来队列仍在）
-  useEffect(() => {
+  // 切换会话：同步加载持久化队列，避免 effect 延迟导致旧会话队列误消费
+  useLayoutEffect(() => {
     const loaded = loadQueue(conversationId);
     queueRef.current = loaded;
     setQueue(loaded);

@@ -74,6 +74,8 @@ export const useUnifiedChatQueue = ({
     runStopConversation: modelRunStop,
   } = useModel('conversationInfo');
 
+  const effectiveMinConsumeInterval = minConsumeInterval ?? 500;
+
   const streamActiveByModel = queueContext?.streamActive ?? modelStreamActive;
   const streamActive = streamActiveByModel || isSessionStreamBusy(messageList);
   const taskExecuting =
@@ -109,7 +111,7 @@ export const useUnifiedChatQueue = ({
     conversationId,
     sendMessage: rawSend,
     runStopConversation,
-    minConsumeInterval,
+    minConsumeInterval: effectiveMinConsumeInterval,
     hasPendingIntervention,
   });
 
