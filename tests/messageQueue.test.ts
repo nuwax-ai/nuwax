@@ -77,7 +77,13 @@ describe('消息队列功能', () => {
         result.current.trySend('你好');
       });
       expect(result.current.queue).toHaveLength(0);
-      expect(sendMessage).toHaveBeenCalledWith('你好', undefined);
+      expect(sendMessage).toHaveBeenCalledWith(
+        '你好',
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+      );
     });
 
     it('直接发送时透传附件与技能/模型等参数', () => {
@@ -115,12 +121,41 @@ describe('消息队列功能', () => {
         result.current.trySend('直发');
       });
       expect(result.current.queue).toHaveLength(0);
-      expect(sendMessage).toHaveBeenCalledWith('直发', undefined);
+      expect(sendMessage).toHaveBeenCalledWith(
+        '直发',
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+      );
     });
   });
 
   // ============ 功能2：会话空闲后自动逐条发送队列 ============
   describe('会话空闲后自动逐条发送队列', () => {
+    it('入队消息在消费时回放 skillIds/modelId/agentMode 快照', () => {
+      const { result, rerender } = setup({ isConversationActive: true });
+      act(() => {
+        result.current.trySend('带技能', [{ name: 'f' } as any], [7], 3, 'ask');
+      });
+      rerender({
+        isConversationActive: false,
+        hasPendingIntervention: false,
+        minConsumeInterval: 500,
+        messageList: [],
+      });
+      act(() => {
+        vi.advanceTimersByTime(500);
+      });
+      expect(sendMessage).toHaveBeenCalledWith(
+        '带技能',
+        [{ name: 'f' }],
+        [7],
+        3,
+        'ask',
+      );
+    });
+
     it('会话由活跃转为空闲后，延迟发送队首消息', () => {
       const { result, rerender } = setup({ isConversationActive: true });
       act(() => {
@@ -142,7 +177,13 @@ describe('消息队列功能', () => {
         vi.advanceTimersByTime(500);
       });
       expect(sendMessage).toHaveBeenCalledTimes(1);
-      expect(sendMessage).toHaveBeenCalledWith('m1', []);
+      expect(sendMessage).toHaveBeenCalledWith(
+        'm1',
+        [],
+        undefined,
+        undefined,
+        undefined,
+      );
     });
 
     it('延迟期内会话再次进入活跃，则取消本轮消费', () => {
@@ -257,7 +298,13 @@ describe('消息队列功能', () => {
       act(() => {
         vi.advanceTimersByTime(500);
       });
-      expect(sendMessage).toHaveBeenCalledWith('m1', []);
+      expect(sendMessage).toHaveBeenCalledWith(
+        'm1',
+        [],
+        undefined,
+        undefined,
+        undefined,
+      );
     });
   });
 
@@ -306,7 +353,13 @@ describe('消息队列功能', () => {
       act(() => {
         vi.advanceTimersByTime(500);
       });
-      expect(sendMessage).toHaveBeenCalledWith('m1', []);
+      expect(sendMessage).toHaveBeenCalledWith(
+        'm1',
+        [],
+        undefined,
+        undefined,
+        undefined,
+      );
     });
   });
 
@@ -361,7 +414,13 @@ describe('消息队列功能', () => {
         vi.advanceTimersByTime(500);
       });
       expect(sendMessage).toHaveBeenCalledTimes(2);
-      expect(sendMessage).toHaveBeenLastCalledWith('m2', []);
+      expect(sendMessage).toHaveBeenLastCalledWith(
+        'm2',
+        [],
+        undefined,
+        undefined,
+        undefined,
+      );
     });
   });
 

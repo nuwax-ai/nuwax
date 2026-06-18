@@ -120,10 +120,12 @@ export const useUnifiedChatQueue = ({
         eventBus.emit(EVENT_NAMES.QUEUE_EDIT_MESSAGE, {
           text: item.text,
           files: item.files,
+          // 带上会话 id，监听方（ChatInputHome）据此过滤，避免多实例（主聊天/预览 Tab）串扰
+          conversationId,
         });
       }
     },
-    [messageQueueCtrl],
+    [messageQueueCtrl, conversationId],
   );
 
   return {
