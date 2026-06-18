@@ -307,6 +307,10 @@ const MessageQueueDemo: React.FC = () => {
                     messageQueue.clearQueue();
                     log('🗑 清空');
                   }}
+                  onReorder={(from, to) => {
+                    messageQueue.reorder(from, to);
+                    log(`↕️ 排序：${from} → ${to}`);
+                  }}
                 />
               </div>
               <div className={cx(styles['input-row'])}>

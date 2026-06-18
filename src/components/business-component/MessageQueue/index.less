@@ -84,9 +84,39 @@
   .scrollbar-auto-hide();
 }
 
-// ===== 单条待发送消息（紧凑行 · hover 显操作）=====
+// ===== 单条待发送消息（紧凑行 · hover 显操作 · 可拖拽排序）=====
 .container {
   width: 100%;
+}
+
+// 拖拽手柄
+.drag-handle {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  color: @colorTextTertiary;
+  cursor: grab;
+  border-radius: 4px;
+  font-size: 12px;
+  transition: color 0.15s ease, background 0.15s ease;
+
+  &:hover {
+    color: @colorTextSecondary;
+    background: color-mix(in srgb, @colorText 6%, transparent);
+  }
+
+  &:active {
+    cursor: grabbing;
+  }
+}
+
+// 拖拽中样式
+.is-dragging .card {
+  border: 1px solid color-mix(in srgb, @colorPrimary 40%, transparent);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 12%);
 }
 
 .card {

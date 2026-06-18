@@ -223,5 +223,6 @@ export const useChatMessageQueue = ({
     sendNow,
     deleteQueued,
     editQueued,
+    reorder: messageQueue.reorder,
   };
 };

@@ -316,5 +316,38 @@ describe('消息队列功能', () => {
       });
       expect(result.current.queue).toHaveLength(0);
     });
+
+    it('拖拽排序：把指定位置的消息移动到新位置', () => {
+      const { result } = setup({ isConversationActive: true });
+      act(() => {
+        result.current.trySend('m1');
+        result.current.trySend('m2');
+        result.current.trySend('m3');
+      });
+      act(() => {
+        result.current.reorder(0, 2); // m1 移到末尾 → m2, m3, m1
+      });
+      expect(result.current.queue.map((q) => q.text)).toEqual([
+        'm2',
+        'm3',
+        'm1',
+      ]);
+    });
+
+    it('拖拽排序：相同位置或越界时队列不变', () => {
+      const { result } = setup({ isConversationActive: true });
+      act(() => {
+        result.current.trySend('m1');
+        result.current.trySend('m2');
+      });
+      act(() => {
+        result.current.reorder(0, 0);
+      });
+      expect(result.current.queue.map((q) => q.text)).toEqual(['m1', 'm2']);
+      act(() => {
+        result.current.reorder(0, 99);
+      });
+      expect(result.current.queue.map((q) => q.text)).toEqual(['m1', 'm2']);
+    });
   });
 });

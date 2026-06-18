@@ -1,3 +1,8 @@
+import { closestCenter, DndContext, type DragEndEvent } from '@dnd-kit/core';
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
 import classNames from 'classnames';
 import React from 'react';
 import QueuedMessageItem from './QueuedMessageItem';
@@ -21,6 +26,8 @@ export interface MessageQueuePanelProps {
   onEdit: (message: QueuedMessage) => void;
   /** 清空全部 */
   onClear: () => void;
+  /** 拖拽排序：把 fromIndex 处的项移动到 toIndex */
+  onReorder: (fromIndex: number, toIndex: number) => void;
 }
 
 /**
@@ -33,8 +40,18 @@ const MessageQueuePanel: React.FC<MessageQueuePanelProps> = ({
   onDelete,
   onEdit,
   onClear,
+  onReorder,
 }) => {
   if (!queue.length) return null;
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const fromIndex = queue.findIndex((q) => q.id === active.id);
+    const toIndex = queue.findIndex((q) => q.id === over.id);
+    if (fromIndex < 0 || toIndex < 0) return;
+    onReorder(fromIndex, toIndex);
+  };
 
   return (
     <div className={cx(styles['queue-panel'])}>
@@ -51,17 +68,24 @@ const MessageQueuePanel: React.FC<MessageQueuePanelProps> = ({
           清空全部
         </button>
       </div>
-      <div className={cx(styles['queue-list'])}>
-        {queue.map((qMsg) => (
-          <QueuedMessageItem
-            key={qMsg.id}
-            message={qMsg}
-            onSendNow={onSendNow}
-            onDelete={onDelete}
-            onEdit={onEdit}
-          />
-        ))}
-      </div>
+      <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext
+          items={queue.map((q) => q.id)}
+          strategy={verticalListSortingStrategy}
+        >
+          <div className={cx(styles['queue-list'])}>
+            {queue.map((qMsg) => (
+              <QueuedMessageItem
+                key={qMsg.id}
+                message={qMsg}
+                onSendNow={onSendNow}
+                onDelete={onDelete}
+                onEdit={onEdit}
+              />
+            ))}
+          </div>
+        </SortableContext>
+      </DndContext>
     </div>
   );
 };

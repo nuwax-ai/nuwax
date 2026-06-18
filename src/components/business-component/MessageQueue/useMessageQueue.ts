@@ -69,6 +69,28 @@ export const useMessageQueue = () => {
 
   const clearQueue = useCallback(() => updateQueue(() => []), [updateQueue]);
 
+  /** 拖拽排序：把 fromIndex 处的项移动到 toIndex */
+  const reorder = useCallback(
+    (fromIndex: number, toIndex: number) => {
+      updateQueue((prev) => {
+        if (
+          fromIndex < 0 ||
+          fromIndex >= prev.length ||
+          toIndex < 0 ||
+          toIndex >= prev.length ||
+          fromIndex === toIndex
+        ) {
+          return prev;
+        }
+        const next = [...prev];
+        const [moved] = next.splice(fromIndex, 1);
+        next.splice(toIndex, 0, moved);
+        return next;
+      });
+    },
+    [updateQueue],
+  );
+
   return {
     queue,
     hasQueuedMessages: queue.length > 0,
@@ -78,5 +100,6 @@ export const useMessageQueue = () => {
     dequeueForEdit,
     dequeueFirst,
     clearQueue,
+    reorder,
   };
 };

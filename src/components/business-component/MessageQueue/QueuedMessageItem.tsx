@@ -1,4 +1,11 @@
-import { CloseOutlined, EditOutlined, SendOutlined } from '@ant-design/icons';
+import {
+  CloseOutlined,
+  EditOutlined,
+  HolderOutlined,
+  SendOutlined,
+} from '@ant-design/icons';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { Tooltip } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
@@ -14,16 +21,47 @@ export interface QueuedMessageItemProps {
   onEdit: (message: QueuedMessage) => void;
 }
 
-/** 单条待发送消息项 */
+/** 单条待发送消息项（可拖拽排序，手柄触发） */
 const QueuedMessageItem: React.FC<QueuedMessageItemProps> = ({
   message,
   onSendNow,
   onDelete,
   onEdit,
 }) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    setActivatorNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: message.id });
+
+  const style: React.CSSProperties = {
+    transform: CSS.Translate.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 10 : 1,
+  };
+
   return (
-    <div className={cx(styles.container)}>
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cx(styles.container, { [styles['is-dragging']]: isDragging })}
+      {...attributes}
+    >
       <div className={cx(styles.card)}>
+        {/* 拖拽手柄：仅手柄触发拖拽，避免误触操作按钮 */}
+        <span
+          ref={setActivatorNodeRef}
+          {...listeners}
+          className={cx(styles['drag-handle'])}
+          aria-label="拖动排序"
+        >
+          <HolderOutlined />
+        </span>
         <div className={cx(styles.body)}>
           <div className={cx(styles.text)} title={message.text}>
             {message.text}

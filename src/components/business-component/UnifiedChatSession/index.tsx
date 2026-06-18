@@ -383,6 +383,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
             onDelete={messageQueue.deleteQueued}
             onEdit={messageQueue.handleEditQueued}
             onClear={messageQueue.clearQueue}
+            onReorder={messageQueue.reorder}
           />
         )}
         <ChatInputHome
