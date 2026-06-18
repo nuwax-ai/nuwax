@@ -656,10 +656,16 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     const handleEditMessage = ({
       text,
       files: editFiles,
+      skillIds: editSkillIds,
+      modelId: editModelId,
+      selectedAgentMode: editAgentMode,
       conversationId: targetConversationId,
     }: {
       text: string;
       files?: UploadFileInfo[];
+      skillIds?: number[];
+      modelId?: number;
+      selectedAgentMode?: AgentMode;
       conversationId?: number | string;
     }) => {
       // 仅回填到目标会话对应的输入框，避免多实例（主聊天 / 预览 Tab）串扰；
@@ -675,11 +681,20 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
       if (editFiles?.length) {
         setUploadFiles((prev) => [...prev, ...editFiles]);
       }
+      if (editSkillIds?.length) {
+        setSkillIds(editSkillIds);
+      }
+      if (editModelId !== undefined) {
+        onModelSelect?.(editModelId);
+      }
+      if (editAgentMode !== undefined) {
+        onAgentModeChange?.(editAgentMode);
+      }
     };
     eventBus.on(EVENT_NAMES.QUEUE_EDIT_MESSAGE, handleEditMessage);
     return () =>
       eventBus.off(EVENT_NAMES.QUEUE_EDIT_MESSAGE, handleEditMessage);
-  }, []);
+  }, [onModelSelect, onAgentModeChange]);
 
   /**
    * 将底部 @ 图标选择的提及项插入到 MentionEditor

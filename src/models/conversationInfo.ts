@@ -1206,8 +1206,6 @@ export default () => {
         }
       },
       onClose: async () => {
-        // 明确的流结束信号：打破「发送后 3s 保活」，确保活跃态能落 false（停止/快速结束场景）
-        lastSendAtRef.current = 0;
         // 将当前会话的loading状态的消息改为Stopped状态，并将所有正在执行的 processing 状态更新为 FAILED
         setMessageList((list) => {
           try {
@@ -1274,8 +1272,8 @@ export default () => {
       },
       onError: () => {
         message.error(dict('PC.Models.ConversationInfo.networkTimeoutError'));
-        // 将当前会话的 loading 消息改为 Error，并把其 processingList 中执行中的项更新为 FAILED，
-        // 否则 isSessionStreamBusy 会因残留 EXECUTING 项持续为 true，导致活跃态/停止按钮/队列消费卡死。
+        // 将 loading 消息改为 Error，并把 processingList 中执行中的项更新为 FAILED，
+        // 否则 isSessionStreamBusy 会因残留 EXECUTING 持续为 true，导致队列消费卡死。
         const list =
           messageListRef.current?.map((info: MessageInfo) => {
             if (info?.id === currentMessageId) {

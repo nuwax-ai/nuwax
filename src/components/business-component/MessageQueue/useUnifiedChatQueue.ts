@@ -37,8 +37,7 @@ export interface UseUnifiedChatQueueParams {
     selectedAgentMode?: AgentMode,
   ) => void;
   /**
-   * 队列两次消费之间的最小间隔（ms），默认 500。
-   * 用于规避会话状态切换的中间空白，避免队列在一次响应结束后过早消费下一条。
+   * 队列两次消费之间的最小间隔（ms），默认 100（与 useChatMessageQueue 一致）。
    */
   minConsumeInterval?: number;
   /** 当前是否有待处理 intervention（ask/question/审批），为 true 时暂停队列消费 */
@@ -73,8 +72,6 @@ export const useUnifiedChatQueue = ({
     conversationInfo,
     runStopConversation: modelRunStop,
   } = useModel('conversationInfo');
-
-  const effectiveMinConsumeInterval = minConsumeInterval ?? 500;
 
   const streamActiveByModel = queueContext?.streamActive ?? modelStreamActive;
   const streamActive = streamActiveByModel || isSessionStreamBusy(messageList);
@@ -111,7 +108,7 @@ export const useUnifiedChatQueue = ({
     conversationId,
     sendMessage: rawSend,
     runStopConversation,
-    minConsumeInterval: effectiveMinConsumeInterval,
+    minConsumeInterval,
     hasPendingIntervention,
   });
 
@@ -122,7 +119,9 @@ export const useUnifiedChatQueue = ({
         eventBus.emit(EVENT_NAMES.QUEUE_EDIT_MESSAGE, {
           text: item.text,
           files: item.files,
-          // 带上会话 id，监听方（ChatInputHome）据此过滤，避免多实例（主聊天/预览 Tab）串扰
+          skillIds: item.skillIds,
+          modelId: item.modelId,
+          selectedAgentMode: item.selectedAgentMode,
           conversationId,
         });
       }

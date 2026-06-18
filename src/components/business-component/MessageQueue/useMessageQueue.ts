@@ -28,7 +28,7 @@ export const useMessageQueue = (conversationId?: string | number | null) => {
     [],
   );
 
-  // 切换会话：同步加载持久化队列，避免 effect 延迟导致旧会话队列误消费
+  // 切换会话：同步加载持久化队列，避免 effect 延迟导致误用上一会话的内存队列
   useLayoutEffect(() => {
     const loaded = loadQueue(conversationId);
     queueRef.current = loaded;

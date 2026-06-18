@@ -27,6 +27,7 @@ import type {
   ConversationInfo,
   MessageInfo,
 } from '@/types/interfaces/conversationInfo';
+import eventBus, { EVENT_NAMES } from '@/utils/eventBus';
 import { handleUploadFileList } from '@/utils/upload';
 import {
   ArrowDownOutlined,
@@ -595,6 +596,55 @@ const ChatInputHomeIndependent: React.FC<ChatInputHomeIndependentProps> = ({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // 本输入框所属会话 id，用于过滤队列编辑回填（避免主聊天 / 预览 Tab 串扰）
+  const ownConversationId =
+    getCurrentConversationId?.() ?? conversationInfo?.id ?? null;
+  const ownConversationIdRef = useRef(ownConversationId);
+  ownConversationIdRef.current = ownConversationId;
+
+  // 监听队列消息编辑回填（含 skillIds / modelId / agentMode 快照）
+  useEffect(() => {
+    const handleEditMessage = ({
+      text,
+      files: editFiles,
+      skillIds: editSkillIds,
+      modelId: editModelId,
+      selectedAgentMode: editAgentMode,
+      conversationId: targetConversationId,
+    }: {
+      text: string;
+      files?: UploadFileInfo[];
+      skillIds?: number[];
+      modelId?: number;
+      selectedAgentMode?: AgentMode;
+      conversationId?: number | string;
+    }) => {
+      if (
+        targetConversationId !== undefined &&
+        targetConversationId !== null &&
+        String(targetConversationId) !== String(ownConversationIdRef.current)
+      ) {
+        return;
+      }
+      setMessageInfo((prev) => (prev ? `${prev}\n${text}` : text));
+      if (editFiles?.length) {
+        setUploadFiles((prev) => [...prev, ...editFiles]);
+      }
+      if (editSkillIds?.length) {
+        setSkillIds(editSkillIds);
+      }
+      if (editModelId !== undefined) {
+        onModelSelect?.(editModelId);
+      }
+      if (editAgentMode !== undefined) {
+        onAgentModeChange?.(editAgentMode);
+      }
+    };
+    eventBus.on(EVENT_NAMES.QUEUE_EDIT_MESSAGE, handleEditMessage);
+    return () =>
+      eventBus.off(EVENT_NAMES.QUEUE_EDIT_MESSAGE, handleEditMessage);
+  }, [onModelSelect, onAgentModeChange]);
 
   const handleInsertAtMention = useCallback(
     (item: MentionItem) => {

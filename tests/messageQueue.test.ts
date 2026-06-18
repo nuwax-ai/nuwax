@@ -17,7 +17,6 @@ describe('消息队列功能', () => {
     sendMessage = vi.fn();
     runStopConversation = vi.fn();
     vi.useFakeTimers();
-    // 队列已按 conversationId 持久化到 localStorage，清理避免用例间串扰
     localStorage.clear();
   });
 
@@ -527,7 +526,6 @@ describe('消息队列功能', () => {
       expect(first.result.current.queue).toHaveLength(1);
       first.unmount();
 
-      // 重新挂载同一会话（conv-1）应从 localStorage 恢复
       const second = setup({ isConversationActive: true });
       expect(second.result.current.queue).toHaveLength(1);
       expect(second.result.current.queue[0].text).toBe('persisted');
@@ -547,6 +545,87 @@ describe('消息队列功能', () => {
 
       const second = setup({ isConversationActive: true });
       expect(second.result.current.queue).toHaveLength(0);
+    });
+
+    it('持久化恢复后会话空闲时自动消费队首', () => {
+      const first = setup({ isConversationActive: true });
+      act(() => {
+        first.result.current.trySend('persisted');
+      });
+      first.unmount();
+
+      const second = setup({
+        isConversationActive: false,
+        minConsumeInterval: 500,
+      });
+      expect(second.result.current.queue).toHaveLength(1);
+      act(() => {
+        vi.advanceTimersByTime(500);
+      });
+      expect(sendMessage).toHaveBeenCalledWith(
+        'persisted',
+        [],
+        undefined,
+        undefined,
+        undefined,
+      );
+    });
+
+    it('切换 conversationId 加载对应会话队列并消费', () => {
+      localStorage.setItem(
+        'msg_queue:conv-2',
+        JSON.stringify([
+          {
+            id: 'q1',
+            text: 'from-b',
+            queuedAt: new Date().toISOString(),
+          },
+        ]),
+      );
+
+      const { result, rerender } = renderHook(
+        (props: any) =>
+          useChatMessageQueue({
+            ...props,
+            conversationId: props.conversationId,
+            sendMessage,
+            runStopConversation,
+          }),
+        {
+          initialProps: {
+            isConversationActive: false,
+            messageList: [],
+            conversationId: 'conv-1',
+            minConsumeInterval: 500,
+            hasPendingIntervention: false,
+          },
+        },
+      );
+
+      rerender({
+        isConversationActive: false,
+        messageList: [],
+        conversationId: 'conv-2',
+        minConsumeInterval: 500,
+        hasPendingIntervention: false,
+      });
+
+      expect(result.current.queue).toHaveLength(1);
+      expect(result.current.queue[0].text).toBe('from-b');
+
+      act(() => {
+        vi.advanceTimersByTime(0);
+      });
+      act(() => {
+        vi.advanceTimersByTime(500);
+      });
+      expect(sendMessage).toHaveBeenCalledWith(
+        'from-b',
+        [],
+        undefined,
+        undefined,
+        undefined,
+      );
     });
   });
 });
