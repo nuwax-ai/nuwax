@@ -100,6 +100,7 @@
 // 统一干预固定栏：与 ChatInputHome .chat-container 外框同宽
 .intervention-dock {
   flex-shrink: 0;
+  position: relative; // 让 z-index 生效，确保 ask/question/审批卡片置于输入框(sticky,z-index:10)之上
   z-index: 30;
   width: 100%;
   max-width: @chat-max-width;

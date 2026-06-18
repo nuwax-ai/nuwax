@@ -7,17 +7,11 @@ import { Button, Input } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useMemo, useState } from 'react';
 import { collectFilesUnderFolder } from '../utils/buildChangeFileTree';
-import type { GitWorkspaceConfig } from '../utils/buildGitWorkspaceParams';
 import {
   splitChangeFilesForDisplay,
   type ChangeListSection,
   type SelectedChangeFile,
 } from '../utils/changeFileStatus';
-import {
-  runGitDiscard,
-  runGitStage,
-  runGitUnstage,
-} from '../utils/sourceControlGitActions';
 import ChangeFileContextMenu from './ChangeFileContextMenu';
 import ChangeFileListSection, {
   type ChangeListViewMode,
@@ -34,8 +28,6 @@ type ContextMenuTarget =
 export interface SourceControlPanelProps {
   /** 已修改文件列表 */
   changeFiles: ChangeFileInfo[];
-  /** Git 工作空间 */
-  gitWorkspace?: GitWorkspaceConfig;
   /** 是否正在提交 */
   isCommitting?: boolean;
   /** 是否正在刷新 Git 列表 */
@@ -52,8 +44,12 @@ export interface SourceControlPanelProps {
   onOpenChanges?: (fileId: string, section: ChangeListSection) => void;
   /** 打开文件 */
   onOpenFile?: (fileId: string) => void;
-  /** Git discard 成功后的 UI 同步 */
-  onAfterDiscardChange?: (fileId: string) => void | Promise<void>;
+  /** 放弃更改（Git discard + UI 同步 + 刷新） */
+  onDiscardChanges?: (fileIds: string[]) => void | Promise<void>;
+  /** 暂存更改（git add） */
+  onStageChanges?: (fileIds: string[]) => void | Promise<void>;
+  /** 取消暂存（git restore --staged） */
+  onUnstageChanges?: (fileIds: string[]) => void | Promise<void>;
   /** 添加到 .gitignore */
   onAddToGitignore?: (fileId: string) => void;
 }
@@ -64,7 +60,6 @@ export interface SourceControlPanelProps {
  */
 const SourceControlPanel: React.FC<SourceControlPanelProps> = ({
   changeFiles,
-  gitWorkspace,
   isCommitting = false,
   isRefreshing = false,
   selectedChangeFile,
@@ -73,7 +68,9 @@ const SourceControlPanel: React.FC<SourceControlPanelProps> = ({
   onFileClick,
   onOpenChanges,
   onOpenFile,
-  onAfterDiscardChange,
+  onDiscardChanges,
+  onStageChanges,
+  onUnstageChanges,
   onAddToGitignore,
 }) => {
   const [commitMessage, setCommitMessage] = useState<string>('');
@@ -175,31 +172,16 @@ const SourceControlPanel: React.FC<SourceControlPanelProps> = ({
   );
 
   /**
-   * 放弃更改：先调用 Git discard，再执行 UI 同步并刷新列表
-   * 注意：confirm 的 onOk 需等待 Promise resolve 才会关闭，刷新 Git 列表不阻塞弹窗关闭
+   * 放弃更改：由 useSourceControl 统一执行 Git discard、UI 同步与列表刷新
    */
   const discardChanges = useCallback(
     async (fileIds: string[]) => {
-      if (!gitWorkspace || !fileIds.length) {
+      if (!fileIds.length) {
         return;
       }
-
-      const isSuccess = await runGitDiscard(gitWorkspace, fileIds);
-      if (!isSuccess) {
-        return;
-      }
-
-      try {
-        for (const fileId of fileIds) {
-          await onAfterDiscardChange?.(fileId);
-        }
-      } catch (error) {
-        console.error('Discard UI sync failed:', error);
-      }
-
-      void onRefresh?.();
+      await onDiscardChanges?.(fileIds);
     },
-    [gitWorkspace, onAfterDiscardChange, onRefresh],
+    [onDiscardChanges],
   );
 
   /** 放弃更改二次确认（统一封装，确保 onOk 返回 Promise 供 Modal 等待） */
@@ -224,31 +206,23 @@ const SourceControlPanel: React.FC<SourceControlPanelProps> = ({
   /** 暂存更改（git add） */
   const stageChanges = useCallback(
     async (fileIds: string[]) => {
-      if (!gitWorkspace || !fileIds.length) {
+      if (!fileIds.length) {
         return;
       }
-
-      const isSuccess = await runGitStage(gitWorkspace, fileIds);
-      if (isSuccess) {
-        await onRefresh?.();
-      }
+      await onStageChanges?.(fileIds);
     },
-    [gitWorkspace, onRefresh],
+    [onStageChanges],
   );
 
   /** 取消暂存（git restore --staged） */
   const unstageChanges = useCallback(
     async (fileIds: string[]) => {
-      if (!gitWorkspace || !fileIds.length) {
+      if (!fileIds.length) {
         return;
       }
-
-      const isSuccess = await runGitUnstage(gitWorkspace, fileIds);
-      if (isSuccess) {
-        await onRefresh?.();
-      }
+      await onUnstageChanges?.(fileIds);
     },
-    [gitWorkspace, onRefresh],
+    [onUnstageChanges],
   );
 
   /** 放弃更改（二次确认） */

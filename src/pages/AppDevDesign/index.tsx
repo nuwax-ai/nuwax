@@ -274,10 +274,7 @@ const AppDevDesign: React.FC = () => {
 
   // 使用项目详情 Hook
   const projectInfo = useAppDevProjectInfo(projectId);
-  const terminalWsUrl = useTerminalWsUrl(
-    projectInfo.projectInfoState.projectInfo?.tenantId,
-    projectId,
-  );
+  const terminalWsUrl = useTerminalWsUrl(projectId);
 
   /** 保存成功后刷新 Git 列表（sourceControl 初始化后注入） */
   const refreshGitListAfterSaveRef = useRef<() => Promise<void>>(
@@ -1637,10 +1634,6 @@ const AppDevDesign: React.FC = () => {
                             }
                             // =================源代码管理相关=================
                             sourceControl={{
-                              gitWorkspace: {
-                                workspaceType: 'pageApp',
-                                projectId,
-                              },
                               changeFiles: sourceControl.changeFiles,
                               selectedChangeFile:
                                 sourceControl.selectedChangeFile,
@@ -1652,8 +1645,11 @@ const AppDevDesign: React.FC = () => {
                                 sourceControl.handleDiffFileSelect,
                               onOpenChangeFile:
                                 sourceControl.handleOpenChangeFile,
-                              onAfterDiscardChange:
-                                sourceControl.handleAfterDiscardChange,
+                              onDiscardChanges:
+                                sourceControl.handleDiscardChange,
+                              onStageChanges: sourceControl.handleStageChanges,
+                              onUnstageChanges:
+                                sourceControl.handleUnstageChanges,
                               onAddToGitignore:
                                 sourceControl.handleAddToGitignore,
                               onCommit: sourceControl.handleCommit,
@@ -1752,6 +1748,8 @@ const AppDevDesign: React.FC = () => {
 
                 {/* 底部终端、开发日志合集面板 */}
                 <ConversationBottomConsole
+                  // todo: 需要传入会话ID，后续完善
+                  conversationId={projectId}
                   visible={showDevLogConsole}
                   defaultActiveTab="logs"
                   terminalSignal={devConsoleTerminalSignal}
@@ -1762,7 +1760,6 @@ const AppDevDesign: React.FC = () => {
                   onActiveTabChange={(tab) => {
                     devConsoleActiveTabRef.current = tab;
                   }}
-                  onClose={() => setShowDevLogConsole(false)}
                   wsUrl={terminalWsUrl}
                   wireProtocol={TTYD_TERMINAL_WIRE_PROTOCOL}
                   wsSubprotocols={[...TTYD_TERMINAL_WS_SUBPROTOCOLS]}

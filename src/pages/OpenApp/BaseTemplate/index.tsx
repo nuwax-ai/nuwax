@@ -7,13 +7,13 @@ import ConditionRender from '@/components/ConditionRender';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import { EVENT_TYPE } from '@/constants/event.constants';
 import { ANIMATION_DURATION } from '@/constants/layout.constants';
+import { useChatFinishedWhenListExecuting } from '@/hooks/useChatFinishedWhenListExecuting';
 import useSubscription from '@/hooks/useSubscription';
 import User from '@/layouts/DynamicMenusLayout/User';
 import Message from '@/layouts/Message';
 import Setting from '@/layouts/Setting';
 import { apiPublishedAgentInfo } from '@/services/agentDev';
 import { dict } from '@/services/i18nRuntime';
-import { TaskStatus } from '@/types/enums/agent';
 import { UserAvatarEnum } from '@/types/enums/menus';
 import { AgentDetailDto, CustomPageNavItem } from '@/types/interfaces/agent';
 import { ConversationInfo } from '@/types/interfaces/conversationInfo';
@@ -352,24 +352,10 @@ const BaseTemplate: React.FC = () => {
     };
   }, [openAdmin, openMessage]);
 
-  useEffect(() => {
-    // 如果会话列表中存在执行中的会话，则监听会话状态更新事件
-    const _executingConversationList = conversationList?.find(
-      (item: ConversationInfo) => item.taskStatus === TaskStatus.EXECUTING,
-    );
-
-    // 如果会话列表中不存在执行中的会话，则不监听会话状态更新事件
-    if (!_executingConversationList) {
-      return;
-    }
-
-    // 监听会话状态更新事件
-    eventBus.on(EVENT_TYPE.ChatFinished, handleConversationUpdate);
-
-    return () => {
-      eventBus.off(EVENT_TYPE.ChatFinished, handleConversationUpdate);
-    };
-  }, [agentId, conversationList, handleConversationUpdate]);
+  useChatFinishedWhenListExecuting({
+    conversationList,
+    onChatFinished: handleConversationUpdate,
+  });
 
   // 图片错误处理
   const handleError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {

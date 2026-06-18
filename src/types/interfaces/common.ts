@@ -598,6 +598,25 @@ export interface ChatInputProps extends ManualComponentItemProps {
   tabsSlot?: React.ReactNode;
   /** 可用值:PageApp,TaskAgent */
   usageScenarios?: AgentTypeEnum[];
+  /**
+   * 隔离会话源时覆盖 model 的流式活跃（Loading/Incomplete）。
+   * 用于 ConversationAgent 预览 Tab，避免与左侧主聊天共用 conversationInfo。
+   */
+  streamActiveOverride?: boolean;
+  /**
+   * 隔离会话源时覆盖 taskStatus===EXECUTING 判定。
+   */
+  taskExecutingOverride?: boolean;
+  /** 隔离会话源时覆盖停止接口使用的会话 ID */
+  stopConversationIdOverride?: number | string;
+  /** 隔离会话源时覆盖停止会话方法 */
+  onStopConversationOverride?: (conversationId: number | string) => void;
+  /** 隔离会话源时覆盖停止按钮 loading */
+  loadingStopConversationOverride?: boolean;
+  /**
+   * 隔离会话源时重置流式活跃（清空/卸载时调用，替代 conversationInfo.disabledConversationActive）
+   */
+  onDisabledStreamActiveOverride?: () => void;
 }
 
 // 聊天框底部更多操作组件

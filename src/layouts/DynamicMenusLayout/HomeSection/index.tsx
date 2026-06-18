@@ -1,11 +1,9 @@
 import MenuListItem from '@/components/base/MenuListItem';
 import ConditionRender from '@/components/ConditionRender';
-import { EVENT_TYPE } from '@/constants/event.constants';
+import { useChatFinishedWhenListExecuting } from '@/hooks/useChatFinishedWhenListExecuting';
 import { dict } from '@/services/i18nRuntime';
-import { TaskStatus } from '@/types/enums/agent';
 import { AgentInfo } from '@/types/interfaces/agent';
 import { ConversationInfo } from '@/types/interfaces/conversationInfo';
-import eventBus from '@/utils/eventBus';
 import { RightOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import React, { useEffect } from 'react';
@@ -77,24 +75,10 @@ const HomeSection: React.FC<{
     });
   }, []);
 
-  useEffect(() => {
-    // 如果会话列表中存在执行中的会话，则监听会话状态更新事件
-    const _executingConversationList = conversationList?.find(
-      (item: ConversationInfo) => item.taskStatus === TaskStatus.EXECUTING,
-    );
-
-    // 如果会话列表中不存在执行中的会话，则不监听会话状态更新事件
-    if (!_executingConversationList) {
-      return;
-    }
-
-    // 监听会话状态更新事件
-    eventBus.on(EVENT_TYPE.ChatFinished, handleConversationUpdate);
-
-    return () => {
-      eventBus.off(EVENT_TYPE.ChatFinished, handleConversationUpdate);
-    };
-  }, [conversationList, handleConversationUpdate]);
+  useChatFinishedWhenListExecuting({
+    conversationList,
+    onChatFinished: handleConversationUpdate,
+  });
 
   return (
     <div style={style}>

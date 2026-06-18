@@ -85,16 +85,16 @@
     overflow: hidden;
     min-height: 200px;
 
-    // xterm.js 内部样式覆盖（xterm.css 默认 viewport 为 #000，需覆盖以免浅色主题露黑边）
+    // xterm.js 内部样式覆盖
     :global {
       .xterm {
         height: 100%;
         padding: @marginXxs 0 0 @marginXxs;
+        box-sizing: border-box;
       }
 
       .xterm .xterm-viewport {
         overflow-y: auto !important;
-        background-color: transparent !important;
       }
     }
   }
@@ -178,10 +178,6 @@
   &.lightTheme {
     background-color: @colorBgContainer;
     border-color: @colorBorderSecondary;
-
-    .terminalViewport :global(.xterm .xterm-viewport) {
-      background-color: @colorBgContainer !important;
-    }
 
     .controlsBar {
       background-color: @colorBgLayout;

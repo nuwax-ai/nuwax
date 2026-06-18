@@ -253,10 +253,7 @@ const AppDev: React.FC = () => {
 
   // 使用项目详情 Hook
   const projectInfo = useAppDevProjectInfo(projectId);
-  const terminalWsUrl = useTerminalWsUrl(
-    projectInfo.projectInfoState.projectInfo?.tenantId,
-    projectId,
-  );
+  const terminalWsUrl = useTerminalWsUrl(projectId);
 
   /** 保存成功后刷新 Git 列表（sourceControl 初始化后注入） */
   const refreshGitListAfterSaveRef = useRef<() => Promise<void>>(
@@ -643,6 +640,15 @@ const AppDev: React.FC = () => {
   const stableCurrentFiles = useMemo(() => {
     return fileManagement.fileTreeState.data;
   }, [fileManagement.fileTreeState.data]);
+
+  /** 进入页面且文件树已有文件时，自动拉取 Git status（每个 projectId 仅一次） */
+  useEffect(() => {
+    if (!projectId || stableCurrentFiles.length === 0) {
+      return;
+    }
+
+    void refreshGitListAfterSaveRef.current();
+  }, [projectId, stableCurrentFiles.length]);
 
   /** 编辑器内容变更：同步本地状态并防抖自动保存 */
   const handleEditorContentChange = useCallback(
@@ -1659,10 +1665,6 @@ const AppDev: React.FC = () => {
                           }
                           // =================源代码管理相关=================
                           sourceControl={{
-                            gitWorkspace: {
-                              workspaceType: 'pageApp',
-                              projectId,
-                            },
                             changeFiles: sourceControl.changeFiles,
                             selectedChangeFile:
                               sourceControl.selectedChangeFile,
@@ -1673,8 +1675,10 @@ const AppDev: React.FC = () => {
                             onDiffFileSelect: handleSourceControlDiffSelect,
                             onOpenChangeFile:
                               sourceControl.handleOpenChangeFile,
-                            onAfterDiscardChange:
-                              sourceControl.handleAfterDiscardChange,
+                            onDiscardChanges: sourceControl.handleDiscardChange,
+                            onStageChanges: sourceControl.handleStageChanges,
+                            onUnstageChanges:
+                              sourceControl.handleUnstageChanges,
                             onAddToGitignore:
                               sourceControl.handleAddToGitignore,
                             onCommit: sourceControl.handleCommit,
@@ -1789,6 +1793,8 @@ const AppDev: React.FC = () => {
 
                 {/* 底部终端、开发日志合集面板 */}
                 <ConversationBottomConsole
+                  // todo: 需要传入会话ID，后续完善
+                  conversationId={projectId}
                   visible={showDevLogConsole}
                   defaultActiveTab="logs"
                   terminalSignal={devConsoleTerminalSignal}
@@ -1799,7 +1805,6 @@ const AppDev: React.FC = () => {
                   onActiveTabChange={(tab) => {
                     devConsoleActiveTabRef.current = tab;
                   }}
-                  onClose={() => setShowDevLogConsole(false)}
                   wsUrl={terminalWsUrl}
                   wireProtocol={TTYD_TERMINAL_WIRE_PROTOCOL}
                   wsSubprotocols={[...TTYD_TERMINAL_WS_SUBPROTOCOLS]}

@@ -11,7 +11,6 @@ import {
   type PreviewToolId,
 } from './hooks/usePreviewTabs';
 import styles from './index.less';
-import TabPickerPanel from './TabPickerPanel';
 import ToolTabContent from './ToolTabContent';
 
 const cx = classNames.bind(styles);
@@ -24,8 +23,6 @@ export interface ConversationAgentFilePreviewProps {
   diffFile?: ChangeFileInfo;
   /** 当前激活的标签（由外层 PreviewTabBar 控制） */
   activeTab: PreviewTab | null;
-  /** 在「新建页签」面板中选择工具 */
-  onSelectTool?: (toolId: PreviewToolId) => void;
   /** 「预览」页签：调试对话面板 */
   debugPanel?: React.ReactNode;
   /** 「编排」页签：智能体配置编辑区 */
@@ -51,7 +48,6 @@ const ConversationAgentFilePreview: React.FC<
   preview,
   diffFile,
   activeTab,
-  onSelectTool,
   debugPanel,
   arrangeConfigPanel,
   versionPanel,
@@ -80,8 +76,6 @@ const ConversationAgentFilePreview: React.FC<
 
   /** 是否显示文件预览内容 */
   const showFilePreview = activeTab?.type === 'file' && !showDiff;
-  /** 是否显示「新建页签」面板 */
-  const showPicker = activeTab?.type === 'picker' && !!onSelectTool;
   /** 当前激活的工作区工具 ID */
   const activeWorkspaceToolId =
     activeTab?.type === 'tool' &&
@@ -129,7 +123,7 @@ const ConversationAgentFilePreview: React.FC<
     if (showFilePreview) {
       return (
         <div className={cx(styles['file-preview-layout'])}>
-          <FilePathHeader {...filePathHeaderProps} hideClose />
+          <FilePathHeader {...filePathHeaderProps} />
           <div className={cx(styles['file-preview-scroll'])}>
             {renderPreviewContent()}
           </div>
@@ -150,11 +144,6 @@ const ConversationAgentFilePreview: React.FC<
       return <ToolTabContent toolId={activeTab.toolId} />;
     }
 
-    /** 显示「新建页签」面板 */
-    if (showPicker && onSelectTool) {
-      return <TabPickerPanel embedded onSelectTool={onSelectTool} />;
-    }
-
     return <div className={cx(styles['empty-preview'])} />;
   }, [
     showDiff,
@@ -167,8 +156,6 @@ const ConversationAgentFilePreview: React.FC<
     workspacePanelMap,
     showOtherToolContent,
     activeTab?.toolId,
-    showPicker,
-    onSelectTool,
   ]);
 
   return (
