@@ -1,6 +1,5 @@
 import ButtonToggle from '@/components/ButtonToggle';
 import CreateKnowledge from '@/components/CreateKnowledge';
-import UploadImportConfig from '@/components/UploadImportConfig';
 import Loading from '@/components/custom/Loading';
 import { CREATE_LIST, FILTER_STATUS } from '@/constants/space.constants';
 import { dict } from '@/services/i18nRuntime';
@@ -203,10 +202,6 @@ const SpaceKnowledge: React.FC = () => {
               handleFilterList(status, create, '');
             }}
             style={{ width: 214 }}
-          />
-          <UploadImportConfig
-            spaceId={spaceId}
-            onUploadSuccess={() => runComponent(spaceId)}
           />
           <Button
             type="primary"

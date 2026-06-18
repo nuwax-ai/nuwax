@@ -1748,6 +1748,8 @@ const AppDevDesign: React.FC = () => {
 
                 {/* 底部终端、开发日志合集面板 */}
                 <ConversationBottomConsole
+                  // todo: 需要传入会话ID，后续完善
+                  conversationId={projectId}
                   visible={showDevLogConsole}
                   defaultActiveTab="logs"
                   terminalSignal={devConsoleTerminalSignal}
@@ -1758,7 +1760,6 @@ const AppDevDesign: React.FC = () => {
                   onActiveTabChange={(tab) => {
                     devConsoleActiveTabRef.current = tab;
                   }}
-                  onClose={() => setShowDevLogConsole(false)}
                   wsUrl={terminalWsUrl}
                   wireProtocol={TTYD_TERMINAL_WIRE_PROTOCOL}
                   wsSubprotocols={[...TTYD_TERMINAL_WS_SUBPROTOCOLS]}
