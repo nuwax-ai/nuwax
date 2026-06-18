@@ -88,6 +88,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
   style,
   chatInputProps,
   queueMinConsumeInterval,
+  queueContext,
 }) => {
   const [isHoveringChat, setIsHoveringChat] = useState<boolean>(false);
   const internalMessageViewRef = useRef<HTMLDivElement>(null);
@@ -149,6 +150,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
     onSendMessage,
     minConsumeInterval: queueMinConsumeInterval,
     hasPendingIntervention,
+    queueContext,
   });
 
   // 消息发送代理：经队列拦截（活跃时入队，否则真正发送）

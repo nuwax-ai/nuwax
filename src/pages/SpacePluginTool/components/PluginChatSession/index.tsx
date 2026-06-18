@@ -1,6 +1,7 @@
 import agentImage from '@/assets/images/agent_image.png';
 import { UnifiedChatSession } from '@/components/business-component';
 import { dict } from '@/services/i18nRuntime';
+import { TaskStatus } from '@/types/enums/agent';
 import { AgentTypeEnum } from '@/types/enums/space';
 import type { PluginInfo } from '@/types/interfaces/plugin';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -29,7 +30,6 @@ const PluginChatSession: React.FC<PluginChatSessionProps> = ({
     runAsync,
     onMessageSend,
     messageViewRef,
-    isConversationActive,
     isMoreMessage,
     loadingMore,
     handleLoadMoreMessage,
@@ -189,7 +189,9 @@ const PluginChatSession: React.FC<PluginChatSessionProps> = ({
       isLoading={loadingAsync}
       loadingMore={loadingMore}
       isMoreMessage={isMoreMessage}
-      isConversationActive={isConversationActive}
+      isConversationActive={
+        conversationInfo?.taskStatus === TaskStatus.EXECUTING
+      }
       messageBottomMode="chat"
       loadingSuggest={false}
       chatSuggestList={chatSuggestList as string[]}

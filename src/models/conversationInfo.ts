@@ -9,6 +9,7 @@ import {
   MESSAGE_PAGE_SIZE,
 } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
+import { useExecutingTaskStatusPoll } from '@/hooks/useExecutingTaskStatusPoll';
 import { getCustomBlock } from '@/plugins/ds-markdown-process';
 import {
   apiAgentConversation,
@@ -74,6 +75,10 @@ import {
 import { extractTaskResult } from '@/utils';
 import { modalConfirm } from '@/utils/ant-custom';
 import { isEmptyObject } from '@/utils/common';
+import {
+  createSyncConversationTaskStatus,
+  subscribeChatFinishedTaskSync,
+} from '@/utils/conversationTaskStatusSync';
 import { createSSEConnection } from '@/utils/fetchEventSourceConversationInfo';
 import {
   perfTracker,
@@ -582,6 +587,36 @@ export default () => {
     setIsConversationActive(false);
   };
 
+  /**
+   * 仅同步 taskStatus（ChatFinished / SSE 结束兜底），不导出、不侵入页面层
+   */
+  const syncConversationTaskStatus = useCallback(
+    createSyncConversationTaskStatus(setConversationInfo),
+    [],
+  );
+
+  // taskStatus=EXECUTING 时自动监听 ChatFinished，无需各页面手动接入
+  useEffect(() => {
+    return subscribeChatFinishedTaskSync(
+      conversationInfo?.id,
+      conversationInfo?.taskStatus,
+      syncConversationTaskStatus,
+    );
+  }, [
+    conversationInfo?.id,
+    conversationInfo?.taskStatus,
+    syncConversationTaskStatus,
+  ]);
+
+  // 流式已结束但 taskStatus 仍为 EXECUTING 时轮询同步（ChatFinished 遗漏 / 后端延迟）
+  useExecutingTaskStatusPoll({
+    conversationId: conversationInfo?.id,
+    taskStatus: conversationInfo?.taskStatus,
+    messageList,
+    onSync: syncConversationTaskStatus,
+    enabled: conversationInfo?.agent?.type === AgentTypeEnum.TaskAgent,
+  });
+
   // 设置所有的详细信息
   const setChatProcessingList = (messageList: MessageInfo[]) => {
     const list: any[] = [];
@@ -1035,6 +1070,9 @@ export default () => {
             // 刷新文件树
             await handleRefreshFileList(params.conversationId);
 
+            // 同步后台任务状态，确保「智能体正在执行，请稍等」能正确展示/结束
+            void syncConversationTaskStatus(params.conversationId);
+
             const taskResult = extractTaskResult(data.outputText);
             // 如果有任务结果，并且有文件，则打开预览视图
             if (taskResult.hasTaskResult && taskResult.file) {
@@ -1221,6 +1259,15 @@ export default () => {
             return list;
           }
         });
+
+        // SSE 结束后兜底同步 taskStatus（通用型智能体后台任务可能仍在执行或刚结束）
+        if (
+          params.conversationId &&
+          conversationInfoRef.current?.agent?.type === AgentTypeEnum.TaskAgent
+        ) {
+          void syncConversationTaskStatus(params.conversationId);
+        }
+
         // 主动关闭连接时，禁用会话
         disabledConversationActive();
 

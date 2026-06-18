@@ -102,20 +102,48 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   onAgentModeChange,
   showAgentModeSelector = false,
   usageScenarios,
+  streamActiveOverride,
+  taskExecutingOverride,
+  stopConversationIdOverride,
+  onStopConversationOverride,
+  loadingStopConversationOverride,
+  onDisabledStreamActiveOverride,
 }) => {
   // 获取停止会话相关的方法和状态
   const {
     runStopConversation,
-    loadingStopConversation,
+    loadingStopConversation: modelLoadingStopConversation,
     getCurrentConversationId,
     getCurrentConversationRequestId,
-    isConversationActive,
+    isConversationActive: modelStreamActive,
     disabledConversationActive,
     messageList,
     loadingConversation,
     isLoadingOtherInterface,
     conversationInfo,
   } = useModel('conversationInfo');
+
+  /** 使用独立会话 model（如预览 Tab），勿改动全局 conversationInfo 活跃状态 */
+  const isIsolatedSessionSource = streamActiveOverride !== undefined;
+
+  const resetStreamActive = useCallback(() => {
+    if (isIsolatedSessionSource) {
+      onDisabledStreamActiveOverride?.();
+      return;
+    }
+    disabledConversationActive();
+  }, [
+    isIsolatedSessionSource,
+    onDisabledStreamActiveOverride,
+    disabledConversationActive,
+  ]);
+
+  const isConversationActive = streamActiveOverride ?? modelStreamActive;
+  const loadingStopConversation =
+    loadingStopConversationOverride ?? modelLoadingStopConversation;
+  const effectiveTaskExecuting =
+    taskExecutingOverride ??
+    conversationInfo?.taskStatus === TaskStatus.EXECUTING;
 
   // 获取租户配置信息
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
@@ -199,9 +227,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   }, [messageInfo, files]);
 
   // 会话是否活跃（与停止按钮判定一致）
-  const isActiveConversation =
-    isConversationActive ||
-    conversationInfo?.taskStatus === TaskStatus.EXECUTING;
+  const isActiveConversation = isConversationActive || effectiveTaskExecuting;
   // 单按钮模式：活跃且输入框为空时显示「停止」，否则显示「发送」（活跃时点击即加入队列）
   const showStopButton = isActiveConversation && disabledSend;
 
@@ -499,7 +525,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     if (clearDisabled || wholeDisabled) {
       return;
     }
-    disabledConversationActive();
+    resetStreamActive();
     onClear?.();
   };
 
@@ -514,14 +540,16 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
 
     // 获取当前会话请求ID
     const requestId = getCurrentConversationRequestId();
-    // 获取当前会话ID
-    const conversationId = getCurrentConversationId();
+    const conversationId =
+      stopConversationIdOverride ?? getCurrentConversationId();
 
     // 修复：即使 requestId 为空也应该调用停止接口
     // 因为在会话刚开始时，requestId 可能还未设置，但会话已经在进行中
     if (onTempChatStop && requestId) {
       // 临时聊天需要 requestId
       onTempChatStop(requestId);
+    } else if (onStopConversationOverride && conversationId) {
+      onStopConversationOverride(conversationId);
     } else if (conversationId) {
       // 正常会话只需要 conversationId 即可停止
       runStopConversation(conversationId);
@@ -530,6 +558,8 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     isStoppingConversation,
     getCurrentConversationRequestId,
     getCurrentConversationId,
+    stopConversationIdOverride,
+    onStopConversationOverride,
     runStopConversation,
     onTempChatStop,
   ]);
@@ -551,7 +581,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   // 获取停止按钮提示文本
   const getStopButtonTooltip = () => {
     // 如果是任务执行状态
-    if (conversationInfo?.taskStatus === TaskStatus.EXECUTING) {
+    if (effectiveTaskExecuting) {
       if (
         isStoppingConversation ||
         loadingStopConversation ||
@@ -578,10 +608,12 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
 
   useEffect(() => {
     return () => {
-      disabledConversationActive();
+      if (!isIsolatedSessionSource) {
+        disabledConversationActive();
+      }
       setUploadFiles([]);
     };
-  }, []);
+  }, [isIsolatedSessionSource, disabledConversationActive]);
 
   // 监听队列消息编辑回填事件
   useEffect(() => {
@@ -868,7 +900,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
                   fixedSelection={
                     fixedSelection ||
                     isConversationActive ||
-                    conversationInfo?.taskStatus === TaskStatus.EXECUTING
+                    effectiveTaskExecuting
                   }
                   unavailable={isSandboxUnavailable}
                   autoSelect={autoSelectComputer}

@@ -104,7 +104,6 @@ describe('会话生命周期管理', () => {
           setIsLoadingOtherInterface: mockSetIsLoadingOtherInterface,
           onMessageSend: vi.fn(),
           conversationInfo: { id: 100 },
-          runAsync: vi.fn(),
           allowAutoScrollRef: { current: true },
           messageViewRef: { current: null },
           incrementCalledTrialCount: vi.fn(),
@@ -178,7 +177,6 @@ describe('会话生命周期管理', () => {
           setIsLoadingOtherInterface: mockSetIsLoadingOtherInterface,
           onMessageSend: vi.fn(),
           conversationInfo: { id: 100 },
-          runAsync: vi.fn(),
           allowAutoScrollRef: { current: true },
           messageViewRef: { current: null },
           incrementCalledTrialCount: vi.fn(),
@@ -232,7 +230,6 @@ describe('会话生命周期管理', () => {
           setIsLoadingOtherInterface: vi.fn(),
           onMessageSend: vi.fn(),
           conversationInfo: { id: 100 },
-          runAsync: vi.fn(),
           allowAutoScrollRef: { current: true },
           messageViewRef: { current: null },
           incrementCalledTrialCount: vi.fn(),
@@ -288,7 +285,6 @@ describe('会话生命周期管理', () => {
           setIsLoadingOtherInterface: vi.fn(),
           onMessageSend: mockOnMessageSend,
           conversationInfo: { id: 100 },
-          runAsync: vi.fn(),
           allowAutoScrollRef: { current: true },
           messageViewRef: { current: null },
           incrementCalledTrialCount: vi.fn(),
@@ -336,7 +332,6 @@ describe('会话生命周期管理', () => {
           setIsLoadingOtherInterface: vi.fn(),
           onMessageSend: mockOnMessageSend,
           conversationInfo: { id: 100 },
-          runAsync: vi.fn(),
           allowAutoScrollRef: { current: true },
           messageViewRef: { current: null },
           incrementCalledTrialCount: mockIncrementCalledTrialCount,
@@ -374,7 +369,7 @@ describe('会话生命周期管理', () => {
 
   // ============ 场景3：事件监听与清理 ============
   describe('事件监听与清理', () => {
-    it('注册正确的事件监听器', async () => {
+    it('注册 RefreshChatMessage 监听', async () => {
       const { useChatConversation } = await import(
         '@/pages/Chat/hooks/useChatConversation'
       );
@@ -402,7 +397,6 @@ describe('会话生命周期管理', () => {
           setIsLoadingOtherInterface: vi.fn(),
           onMessageSend: vi.fn(),
           conversationInfo: { id: 100 },
-          runAsync: vi.fn(),
           allowAutoScrollRef: { current: true },
           messageViewRef: { current: null },
           incrementCalledTrialCount: vi.fn(),
@@ -412,16 +406,13 @@ describe('会话生命周期管理', () => {
       );
 
       expect(mockEventBusOn).toHaveBeenCalledWith(
-        'chat_finished',
-        expect.any(Function),
-      );
-      expect(mockEventBusOn).toHaveBeenCalledWith(
         'refresh_chat_message',
         expect.any(Function),
       );
     });
 
-    it('组件卸载时移除事件监听器', async () => {
+    it('组件卸载时移除 RefreshChatMessage 监听', async () => {
+      const { TaskStatus } = await import('@/types/enums/agent');
       const { useChatConversation } = await import(
         '@/pages/Chat/hooks/useChatConversation'
       );
@@ -448,8 +439,7 @@ describe('会话生命周期管理', () => {
           setHasUserSentMessage: vi.fn(),
           setIsLoadingOtherInterface: vi.fn(),
           onMessageSend: vi.fn(),
-          conversationInfo: { id: 100 },
-          runAsync: vi.fn(),
+          conversationInfo: { id: 100, taskStatus: TaskStatus.EXECUTING },
           allowAutoScrollRef: { current: true },
           messageViewRef: { current: null },
           incrementCalledTrialCount: vi.fn(),
@@ -460,10 +450,6 @@ describe('会话生命周期管理', () => {
 
       unmount();
 
-      expect(mockEventBusOff).toHaveBeenCalledWith(
-        'chat_finished',
-        expect.any(Function),
-      );
       expect(mockEventBusOff).toHaveBeenCalledWith(
         'refresh_chat_message',
         expect.any(Function),

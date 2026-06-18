@@ -8,6 +8,16 @@ import { useModel } from 'umi';
 import type { QueuedMessage } from './types';
 import { useChatMessageQueue } from './useChatMessageQueue';
 
+/** 隔离会话源（如 ConversationAgent 预览 Tab）时覆盖队列上下文 */
+export interface UnifiedChatQueueContext {
+  /** 流式活跃（messageList Loading/Incomplete），驱动 auto-consume */
+  streamActive?: boolean;
+  /** 后台任务执行中（taskStatus===EXECUTING），仅参与入队拦截 */
+  taskExecuting?: boolean;
+  /** 停止当前会话（立即发送队列消息时调用） */
+  runStopConversation?: (id: number | string) => void;
+}
+
 export interface UseUnifiedChatQueueParams {
   /** 当前会话 ID */
   conversationId?: number;
@@ -32,17 +42,19 @@ export interface UseUnifiedChatQueueParams {
   minConsumeInterval?: number;
   /** 当前是否有待处理 intervention（ask/question/审批），为 true 时暂停队列消费 */
   hasPendingIntervention?: boolean;
+  /**
+   * 可选：覆盖 conversationInfo model 的活跃/停止上下文。
+   * 预览 Tab 使用 conversationAgent model 时传入，避免与左侧主聊天串扰。
+   */
+  queueContext?: UnifiedChatQueueContext;
 }
 
 /**
  * UnifiedChatSession 专用消息队列 hook
  *
- * 在统一会话底层接入消息队列，使所有使用 UnifiedChatSession 的页面
- * （Chat / ConversationAgent / AgentConversationChatPanel 等）自动获得：
- * - 会话活跃时消息入队、空闲时自动消费
- * - 立即发送 / 编辑回填 / 删除 / 清空
- *
- * 入队判定与发送按钮状态一致：isConversationActive || taskStatus === EXECUTING
+ * 信号拆分：
+ * - 入队拦截：streamActive || taskExecuting（与发送/停止按钮一致）
+ * - auto-consume：仅 streamActive（避免 taskStatus 状态机切换空白误消费）
  */
 export const useUnifiedChatQueue = ({
   conversationId,
@@ -52,21 +64,21 @@ export const useUnifiedChatQueue = ({
   onSendMessage,
   minConsumeInterval,
   hasPendingIntervention,
+  queueContext,
 }: UseUnifiedChatQueueParams) => {
   const {
-    isConversationActive: modelIsActive,
+    isConversationActive: modelStreamActive,
     conversationInfo,
-    runStopConversation,
+    runStopConversation: modelRunStop,
   } = useModel('conversationInfo');
 
-  // 合并活跃判定：消息流式处理中 OR 任务执行中（TaskAgent "智能体正在执行，请稍等"）。
-  // 两种状态都应暂停队列消费、消息入队，直到真正空闲。
-  // 乐观更新 + 3s 保活 + lastConsumeAt 硬间隔已能防止 taskStatus 状态机切换空白误触发。
-  const isConversationActive =
-    modelIsActive || conversationInfo?.taskStatus === TaskStatus.EXECUTING;
+  const streamActive = queueContext?.streamActive ?? modelStreamActive;
+  const taskExecuting =
+    queueContext?.taskExecuting ??
+    conversationInfo?.taskStatus === TaskStatus.EXECUTING;
+  const isEnqueueBlocked = streamActive || taskExecuting;
+  const runStopConversation = queueContext?.runStopConversation ?? modelRunStop;
 
-  // 直接发送（绕过队列拦截）：供 intervention（ask/question/审批）响应的 resume 消息使用，
-  // 避免回复被错误入队。用户提交结果后会话跑完空闲时，既有 auto-consume 自动恢复队列消费。
   const rawSend = useCallback(
     (
       messageInfo: string,
@@ -87,7 +99,9 @@ export const useUnifiedChatQueue = ({
   );
 
   const messageQueueCtrl = useChatMessageQueue({
-    isConversationActive,
+    isConversationActive: streamActive,
+    isEnqueueBlocked,
+    isTaskExecuting: taskExecuting,
     messageList: messageList || [],
     conversationId,
     sendMessage: rawSend,
@@ -96,7 +110,6 @@ export const useUnifiedChatQueue = ({
     hasPendingIntervention,
   });
 
-  // 编辑队列消息：从队列移除并通过 eventBus 回填到输入框
   const handleEditQueued = useCallback(
     (qMsg: QueuedMessage) => {
       const item = messageQueueCtrl.editQueued(qMsg);

@@ -27,12 +27,16 @@ describe('消息队列功能', () => {
     return renderHook(
       ({
         isConversationActive,
+        isEnqueueBlocked,
+        isTaskExecuting,
         hasPendingIntervention,
         minConsumeInterval,
         messageList,
       }: any) =>
         useChatMessageQueue({
           isConversationActive,
+          isEnqueueBlocked,
+          isTaskExecuting,
           messageList,
           conversationId: 'conv-1',
           sendMessage,
@@ -43,6 +47,8 @@ describe('消息队列功能', () => {
       {
         initialProps: {
           isConversationActive: false,
+          isEnqueueBlocked: undefined,
+          isTaskExecuting: false,
           hasPendingIntervention: false,
           minConsumeInterval: 500,
           messageList: [],
@@ -85,6 +91,30 @@ describe('消息队列功能', () => {
         2,
         'ask',
       );
+    });
+
+    it('流式空闲但 taskExecuting 时仍入队（isEnqueueBlocked）', () => {
+      const { result } = setup({
+        isConversationActive: false,
+        isEnqueueBlocked: true,
+      });
+      act(() => {
+        result.current.trySend('排队');
+      });
+      expect(result.current.queue).toHaveLength(1);
+      expect(sendMessage).not.toHaveBeenCalled();
+    });
+
+    it('isEnqueueBlocked 为 false 时流式活跃也不入队（仅当未传 isEnqueueBlocked 才随流式）', () => {
+      const { result } = setup({
+        isConversationActive: true,
+        isEnqueueBlocked: false,
+      });
+      act(() => {
+        result.current.trySend('直发');
+      });
+      expect(result.current.queue).toHaveLength(0);
+      expect(sendMessage).toHaveBeenCalledWith('直发', undefined);
     });
   });
 
@@ -153,6 +183,61 @@ describe('消息队列功能', () => {
         vi.advanceTimersByTime(500);
       });
       expect(sendMessage).not.toHaveBeenCalled();
+    });
+
+    it('流式结束但后台任务仍执行时不自动消费', () => {
+      const { result, rerender } = setup({ isConversationActive: true });
+      act(() => {
+        result.current.trySend('m1');
+      });
+      rerender({
+        isConversationActive: false,
+        isTaskExecuting: true,
+        isEnqueueBlocked: true,
+        hasPendingIntervention: false,
+        minConsumeInterval: 500,
+        messageList: [],
+      });
+      act(() => {
+        vi.advanceTimersByTime(500);
+      });
+      expect(sendMessage).not.toHaveBeenCalled();
+    });
+
+    it('后台任务结束后自动消费队首', () => {
+      const { result, rerender } = setup({
+        isConversationActive: true,
+        isTaskExecuting: true,
+        isEnqueueBlocked: true,
+      });
+      act(() => {
+        result.current.trySend('m1');
+      });
+      rerender({
+        isConversationActive: false,
+        isTaskExecuting: true,
+        isEnqueueBlocked: true,
+        hasPendingIntervention: false,
+        minConsumeInterval: 500,
+        messageList: [],
+      });
+      act(() => {
+        vi.advanceTimersByTime(500);
+      });
+      expect(sendMessage).not.toHaveBeenCalled();
+
+      rerender({
+        isConversationActive: false,
+        isTaskExecuting: false,
+        isEnqueueBlocked: false,
+        hasPendingIntervention: false,
+        minConsumeInterval: 500,
+        messageList: [],
+      });
+      act(() => {
+        vi.advanceTimersByTime(500);
+      });
+      expect(sendMessage).toHaveBeenCalledWith('m1', []);
     });
   });
 

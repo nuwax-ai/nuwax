@@ -1,4 +1,5 @@
 import type { AgentMode } from '@/components/business-component/AgentIntervention';
+import type { UnifiedChatQueueContext } from '@/components/business-component/MessageQueue/useUnifiedChatQueue';
 import type { ChatInputProps, UploadFileInfo } from '@/types/interfaces/common';
 import type {
   MessageInfo,
@@ -28,7 +29,11 @@ export interface UnifiedChatSessionProps {
   isLoading?: boolean; // 会话正在进行首次加载的 Loading 状态
   loadingMore?: boolean; // 是否正在向上拉取历史消息
   isMoreMessage?: boolean; // 是否还有历史消息可拉取
-  isConversationActive?: boolean; // 会话是否活跃（大模型正流式交互中）
+  /**
+   * 是否展示「智能体正在执行，请稍等」。
+   * 实际语义：taskStatus === EXECUTING 且当前无流式消息（由上层计算后传入）。
+   */
+  isConversationActive?: boolean;
   messageBottomMode?: 'none' | 'home' | 'chat'; // 消息底部操作栏模式：none | home | chat
   loadingSuggest?: boolean; // 会话建议加载状态
   chatSuggestList?: string[]; // 页面会话建议（开场白问题推荐）
@@ -98,4 +103,10 @@ export interface UnifiedChatSessionProps {
    * 队列两次消费之间的最小间隔（ms），用于规避会话状态切换的中间空白；默认 500。
    */
   queueMinConsumeInterval?: number;
+
+  /**
+   * 消息队列上下文覆盖（预览 Tab 等隔离会话源场景）。
+   * 未传时使用全局 conversationInfo model。
+   */
+  queueContext?: UnifiedChatQueueContext;
 }
