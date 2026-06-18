@@ -76,6 +76,8 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
     getCurrentConversationId,
     getCurrentConversationRequestId,
     disabledConversationActive,
+    // SSE 流式交互状态
+    isConversationActive,
     // 其它接口加载状态
     isLoadingOtherInterface,
   } = useModel('conversationInfo');
@@ -91,7 +93,8 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
         loadingMore={loadingMore}
         isMoreMessage={isMoreMessage}
         isConversationActive={
-          conversationInfo?.taskStatus === TaskStatus.EXECUTING
+          conversationInfo?.taskStatus === TaskStatus.EXECUTING ||
+          isConversationActive
         }
         messageBottomMode="chat"
         chatSuggestList={chatSuggestList}
