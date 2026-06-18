@@ -280,12 +280,15 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
   }, [isControlled, onTerminalAppearanceChange, terminalAppearance]);
 
   /**
-   * 切换到终端 Tab / 布局或主题变化后，延迟刷新 xterm 渲染，
-   * 避免 display:none 期间的尺寸变化导致内容残影或空白
+   * 切换到终端 Tab / 布局或主题变化 / visible 从 false 变为 true 后，
+   * 延迟重新计算终端 cols/rows（fit）并刷新渲染，
+   * 避免容器从 display:none / visibility:hidden 恢复后 xterm-screen 尺寸停留在初始极小值。
    */
   useEffect(() => {
-    if (activeTab !== 'terminal' || !wsUrl) return;
+    if (activeTab !== 'terminal' || !wsUrl || !visible) return;
     const timer = window.setTimeout(() => {
+      // 先 fit 重新计算 cols/rows 适配容器尺寸，再 refresh 重绘
+      terminalRef.current?.fit();
       const term = terminalRef.current?.getTerminal();
       if (!term) return;
       try {
@@ -295,7 +298,7 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
       }
     }, 100);
     return () => window.clearTimeout(timer);
-  }, [activeTab, layoutMode, wsUrl, terminalAppearance]);
+  }, [activeTab, layoutMode, wsUrl, terminalAppearance, visible]);
 
   /** 外部信号：将全屏布局重置回默认高度（collapsed 状态保持不变） */
   useEffect(() => {
