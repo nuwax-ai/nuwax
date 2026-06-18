@@ -779,6 +779,32 @@ const ConversationAgent: React.FC = () => {
   };
 
   /**
+   * 聊天会话结束后统一刷新页面数据
+   * - 刷新文件树
+   * - 刷新 Git 源代码管理列表
+   * - 刷新智能体编排配置
+   */
+  const handleConversationEnd = useCallback(() => {
+    // 刷新文件树（立即刷新，不节流）
+    if (queryConversationId) {
+      refreshFileListImmediately(queryConversationId);
+    }
+
+    // 刷新 Git 源代码管理状态列表
+    void refreshGitListRef.current?.();
+
+    // 刷新智能体编排等信息（重新拉取完整配置）
+    if (agentId) {
+      runAgentConfigInfo(agentId);
+    }
+  }, [
+    queryConversationId,
+    refreshFileListImmediately,
+    agentId,
+    runAgentConfigInfo,
+  ]);
+
+  /**
    * 确认编辑智能体基础信息（名称、图标、描述等）
    * 将编辑后的信息合并到本地配置并关闭弹窗
    */
@@ -1850,6 +1876,7 @@ const ConversationAgent: React.FC = () => {
             <AgentConversationChatPanel
               selectedComputerId={finalSelectedComputerId}
               onChangeSelectedComputerId={setSelectedComputerId}
+              onConversationEnd={handleConversationEnd}
             />
           </div>
 
