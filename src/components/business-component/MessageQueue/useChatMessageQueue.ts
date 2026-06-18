@@ -31,7 +31,8 @@ export interface UseChatMessageQueueParams {
   runStopConversation: (id: any) => void;
   /**
    * auto-consume 触发后、发送队首前的最小等待间隔（ms）。
-   * 用于等待会话状态稳定，避免状态切换中间空白误消费；默认 500。
+   * 用于等待会话状态稳定（React 渲染周期级），默认 100。
+   * 乐观更新 + 3s 保活 + lastConsumeAt 硬间隔 + 锁机制已提供主要保护。
    */
   minConsumeInterval?: number;
   /**
@@ -47,7 +48,7 @@ export const useChatMessageQueue = ({
   conversationId,
   sendMessage,
   runStopConversation,
-  minConsumeInterval = 500,
+  minConsumeInterval = 100,
   hasPendingIntervention = false,
 }: UseChatMessageQueueParams) => {
   const messageQueue = useMessageQueue();

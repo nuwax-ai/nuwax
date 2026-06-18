@@ -2,19 +2,19 @@
 @import '@/styles/token';
 @import '@/styles/scrollbar.less';
 
-// ===== 待发送消息队列面板（紧凑 · 紧贴输入框上方）=====
+// ===== 待发送消息队列面板（与 intervention 卡片同款圆角边框）=====
 .queue-panel {
   max-width: 800px;
   width: 100%;
-  margin: 0 auto 6px;
-  padding: 4px 8px;
+  margin: 0 auto 8px;
+  padding: @padding;
   background: @colorBgContainer;
-  border: 1px solid @colorBorderSecondary;
-  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 8%);
+  border-radius: 14px;
+  box-shadow: 0 2px 8px -3px rgba(0, 0, 0, 6%), 0 1px 2px -1px rgba(0, 0, 0, 4%);
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  backdrop-filter: blur(6px);
+  gap: 4px;
 }
 
 // —— header：单行紧凑标签 ——
@@ -23,7 +23,7 @@
   align-items: center;
   justify-content: space-between;
   height: 20px;
-  padding: 0 2px;
+  padding: 0 4px; // 与下方列表项内边距对齐
 }
 
 .queue-header-left {
@@ -46,9 +46,9 @@
   justify-content: center;
   min-width: 16px;
   height: 16px;
-  padding: 0 5px;
+  padding: 0;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: @fontWeightStrong;
   line-height: 1;
   color: @colorPrimary;
   background: color-mix(in srgb, @colorPrimary 14%, transparent);
@@ -79,7 +79,7 @@
   max-height: 132px;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 1px 0 2px;
+  padding: 0;
 
   .scrollbar-auto-hide();
 }
@@ -125,7 +125,7 @@
   gap: 8px;
   width: 100%;
   height: 26px;
-  padding: 0 4px 0 8px;
+  padding: 0 6px;
   border-radius: 8px;
   background: transparent;
   transition: background 0.15s ease;

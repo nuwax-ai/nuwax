@@ -1,4 +1,5 @@
 import type { AgentMode } from '@/components/business-component/AgentIntervention';
+import { TaskStatus } from '@/types/enums/agent';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import eventBus, { EVENT_NAMES } from '@/utils/eventBus';
@@ -52,8 +53,17 @@ export const useUnifiedChatQueue = ({
   minConsumeInterval,
   hasPendingIntervention,
 }: UseUnifiedChatQueueParams) => {
-  const { isConversationActive, runStopConversation } =
-    useModel('conversationInfo');
+  const {
+    isConversationActive: modelIsActive,
+    conversationInfo,
+    runStopConversation,
+  } = useModel('conversationInfo');
+
+  // 合并活跃判定：消息流式处理中 OR 任务执行中（TaskAgent "智能体正在执行，请稍等"）。
+  // 两种状态都应暂停队列消费、消息入队，直到真正空闲。
+  // 乐观更新 + 3s 保活 + lastConsumeAt 硬间隔已能防止 taskStatus 状态机切换空白误触发。
+  const isConversationActive =
+    modelIsActive || conversationInfo?.taskStatus === TaskStatus.EXECUTING;
 
   // 直接发送（绕过队列拦截）：供 intervention（ask/question/审批）响应的 resume 消息使用，
   // 避免回复被错误入队。用户提交结果后会话跑完空闲时，既有 auto-consume 自动恢复队列消费。
