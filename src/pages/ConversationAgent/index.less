@@ -2,7 +2,7 @@
 @import '@/styles/token';
 
 .container {
-  background-image: @backgroundImage;
+  // background-image: @backgroundImage;
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -21,17 +21,13 @@
     width: 100%;
     padding-left: @marginSm;
     padding-right: @marginSm;
-    background-color: @colorBgContainer;
   }
 
   .section {
     flex: 1;
     min-height: 0;
     overflow: hidden;
-    border-radius: @pageContainerBorderRadius;
-    border: @lineWidth solid @colorSplit;
     margin: 0 @marginSm @marginSm;
-    background-color: @colorBgContainer;
   }
 
   .main-row {
@@ -40,12 +36,18 @@
     min-width: 0;
     min-height: 0;
     height: 100%;
+    gap: @marginSm;
+
+    .content-container {
+      border-radius: @pageContainerBorderRadius;
+      border: @lineWidth solid @colorSplit;
+      overflow: hidden;
+    }
   }
 
   .left-panel {
     width: 480px;
     flex-shrink: 0;
-    border-right: @lineWidth solid @colorSplit;
     display: flex;
     flex-direction: column;
     min-height: 0;
@@ -54,7 +56,6 @@
   .middle-panel {
     width: 280px;
     flex-shrink: 0;
-    border-right: @lineWidth solid @colorSplit;
     display: flex;
     flex-direction: column;
     min-height: 0;

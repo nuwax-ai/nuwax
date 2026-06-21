@@ -1882,47 +1882,49 @@ const ConversationAgent: React.FC = () => {
             />
           </div>
 
-          {/* 中间面板（文件树） + 右侧面板（编排/预览 + 终端） */}
-          {isAgentDesktopOpen && queryConversationId ? (
-            renderAgentDesktopPanel()
-          ) : (
-            <>
-              {/* 中间面板：文件树侧边栏（仅由 canShowFileView 控制显隐） */}
-              <div
-                className={cx(styles['middle-panel'], {
-                  [styles['middle-panel-visible']]: canShowFileView,
-                  [styles['middle-panel-hidden']]: !canShowFileView,
-                })}
-              >
-                {/* ConversationAgent 中间面板（公共 FileTreeGitSourcePanel，内部渲染文件树） */}
-                <FileTreeGitSourcePanel
-                  className={cx(styles['file-tree-sidebar'], 'w-full')}
-                  tree={fileView.tree}
-                  treeClassName="w-full h-full"
-                  sourceControl={{
-                    changeFiles: fileView.changeFiles,
-                    selectedChangeFile: gitSourceControl.selectedChangeFile,
-                    isCommitting:
-                      gitSourceControl.isCommitting ||
-                      fileView.preview.isSavingFiles,
-                    isRefreshingGitList: fileView.isRefreshingGitList,
-                    onRefreshGitList: fileView.refreshGitList,
-                    onDiffFileSelect: gitSourceControl.handleDiffFileSelect,
-                    onOpenChangeFile: gitSourceControl.handleOpenChangeFile,
-                    onDiscardChanges: gitSourceControl.handleDiscardChange,
-                    onStageChanges: gitSourceControl.handleStageChanges,
-                    onUnstageChanges: gitSourceControl.handleUnstageChanges,
-                    onAddToGitignore: (fileId) => {
-                      void gitSourceControl.handleAddToGitignore(fileId);
-                    },
-                    onCommit: gitSourceControl.handleCommit,
-                  }}
-                />
-              </div>
-              {/* 右侧面板：编排配置 / 文件预览 + 终端 */}
-              {renderRightPanel()}
-            </>
-          )}
+          <div className={cx('flex', 'flex-1', styles['content-container'])}>
+            {/* 中间面板（文件树） + 右侧面板（编排/预览 + 终端） */}
+            {isAgentDesktopOpen && queryConversationId ? (
+              renderAgentDesktopPanel()
+            ) : (
+              <>
+                {/* 中间面板：文件树侧边栏（仅由 canShowFileView 控制显隐） */}
+                <div
+                  className={cx(styles['middle-panel'], {
+                    [styles['middle-panel-visible']]: canShowFileView,
+                    [styles['middle-panel-hidden']]: !canShowFileView,
+                  })}
+                >
+                  {/* ConversationAgent 中间面板（公共 FileTreeGitSourcePanel，内部渲染文件树） */}
+                  <FileTreeGitSourcePanel
+                    className={cx(styles['file-tree-sidebar'], 'w-full')}
+                    tree={fileView.tree}
+                    treeClassName="w-full h-full"
+                    sourceControl={{
+                      changeFiles: fileView.changeFiles,
+                      selectedChangeFile: gitSourceControl.selectedChangeFile,
+                      isCommitting:
+                        gitSourceControl.isCommitting ||
+                        fileView.preview.isSavingFiles,
+                      isRefreshingGitList: fileView.isRefreshingGitList,
+                      onRefreshGitList: fileView.refreshGitList,
+                      onDiffFileSelect: gitSourceControl.handleDiffFileSelect,
+                      onOpenChangeFile: gitSourceControl.handleOpenChangeFile,
+                      onDiscardChanges: gitSourceControl.handleDiscardChange,
+                      onStageChanges: gitSourceControl.handleStageChanges,
+                      onUnstageChanges: gitSourceControl.handleUnstageChanges,
+                      onAddToGitignore: (fileId) => {
+                        void gitSourceControl.handleAddToGitignore(fileId);
+                      },
+                      onCommit: gitSourceControl.handleCommit,
+                    }}
+                  />
+                </div>
+                {/* 右侧面板：编排配置 / 文件预览 + 终端 */}
+                {renderRightPanel()}
+              </>
+            )}
+          </div>
         </div>
 
         {/* 调试详情抽屉（按需显示） */}

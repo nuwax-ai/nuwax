@@ -4,9 +4,6 @@ import { TaskStatus } from '@/types/enums/agent';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
 import { history, useLocation, useModel } from 'umi';
-import styles from './index.less';
-
-const cx = classNames.bind(styles);
 
 /**
  * Props 类型定义
@@ -97,9 +94,7 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
   }, [isConversationActive, onConversationEnd]);
 
   return (
-    <div
-      className={cx(styles.container, className, 'flex', 'flex-col', 'h-full')}
-    >
+    <div className={classNames('flex', 'flex-col', 'h-full', className)}>
       <UnifiedChatSession
         conversationId={conversationInfo?.id}
         messageList={messageList}
