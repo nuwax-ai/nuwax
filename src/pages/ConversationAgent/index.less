@@ -43,6 +43,21 @@
       border: @lineWidth solid @colorSplit;
       overflow: hidden;
     }
+
+    // 预览内容区全屏模式
+    .content-container-fullscreen {
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      bottom: 0 !important;
+      width: 100% !important;
+      height: 100vh !important;
+      z-index: 9999;
+      background: @colorBgContainer;
+      border-radius: 0 !important;
+      border: none !important;
+    }
   }
 
   .left-panel {

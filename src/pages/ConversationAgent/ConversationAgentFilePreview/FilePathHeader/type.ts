@@ -22,4 +22,16 @@ export interface FilePathHeaderProps {
   viewFileType?: 'preview' | 'code';
   /** 切换预览 / 代码视图 */
   onViewFileTypeChange?: (type: 'preview' | 'code') => void;
+  /** 会话 ID（分享弹窗） */
+  conversationId?: string;
+  /** 是否显示分享按钮 */
+  isShowShare?: boolean;
+  /** 分享回调（打开分享弹窗时传入 fileProxyUrl） */
+  onShare?: (fileProxyUrl?: string | null) => void;
+  /** 全屏回调 */
+  onFullscreen?: () => void;
+  /** 是否处于全屏状态 */
+  isFullscreen?: boolean;
+  /** 是否显示全屏图标 */
+  showFullscreenIcon?: boolean;
 }

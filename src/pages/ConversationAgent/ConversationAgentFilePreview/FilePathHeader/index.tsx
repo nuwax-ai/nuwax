@@ -1,12 +1,14 @@
 import SvgIcon from '@/components/base/SvgIcon';
+import ShareDesktopModal from '@/components/business-component/FileTreePreviewPanel/FilePathHeader/ShareDesktopModal';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import { dict } from '@/services/i18nRuntime';
 import { FileNode } from '@/types/interfaces/appDev';
 import { formatFileSize } from '@/utils/appDevUtils';
 import { copyTextToClipboard } from '@/utils/clipboard';
-import { Button, ConfigProvider, message, Segmented } from 'antd';
+import { FullscreenExitOutlined } from '@ant-design/icons';
+import { Button, ConfigProvider, message, Segmented, Tooltip } from 'antd';
 import classNames from 'classnames';
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import styles from './index.less';
 import { canShowPreviewCodeToggle } from './previewCodeToggle';
 import type { FilePathHeaderProps } from './type';
@@ -31,7 +33,7 @@ const cx = classNames.bind(styles);
 
 /**
  * ConversationAgent 文件路径头部组件
- * 显示文件路径、预览/代码切换与下载、复制操作
+ * 显示文件路径、预览/代码切换与下载、复制、分享、全屏操作
  */
 const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   className,
@@ -41,6 +43,11 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   onViewFileTypeChange,
   isDownloadingFile = false,
   onDownloadFileByUrl,
+  conversationId = '',
+  isShowShare = true,
+  onFullscreen,
+  isFullscreen = false,
+  showFullscreenIcon = true,
 }) => {
   const fileName = targetNode?.name;
   /** 文件树中的完整路径（fileId） */
@@ -57,6 +64,18 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   }, [fileId]);
 
   const showPreviewCodeToggle = canShowPreviewCodeToggle(targetNode, fileName);
+
+  /** 分享弹窗状态 */
+  const [shareDesktopModalVisible, setShareDesktopModalVisible] =
+    useState<boolean>(false);
+
+  /** 分享按钮点击 */
+  const handleShareAction = useCallback(() => {
+    if (!conversationId) {
+      return;
+    }
+    setShareDesktopModalVisible(true);
+  }, [conversationId]);
 
   return (
     <div className={cx(styles.filePathHeader, className)}>
@@ -132,8 +151,60 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
               });
             }}
           />
+
+          {/* 分享按钮 */}
+          {isShowShare && (
+            <TooltipIcon
+              title={dict('PC.Components.FilePathHeader.share')}
+              placement="bottom"
+              className={styles.actionButton}
+              icon={
+                <SvgIcon name="icons-chat-share" style={{ fontSize: 16 }} />
+              }
+              onClick={handleShareAction}
+            />
+          )}
+
+          {/* 全屏按钮 */}
+          {(showFullscreenIcon || isFullscreen) && (
+            <Tooltip
+              title={
+                isFullscreen
+                  ? dict('PC.Components.FilePathHeader.exitFullscreen')
+                  : dict('PC.Components.FilePathHeader.fullscreen')
+              }
+              placement="bottom"
+              key={isFullscreen ? 'exit' : 'enter'}
+            >
+              <Button
+                type="text"
+                size="small"
+                icon={
+                  isFullscreen ? (
+                    <FullscreenExitOutlined style={{ fontSize: 16 }} />
+                  ) : (
+                    <SvgIcon
+                      name="icons-common-fullscreen"
+                      style={{ fontSize: 16 }}
+                    />
+                  )
+                }
+                onClick={onFullscreen}
+                className={styles.actionButton}
+              />
+            </Tooltip>
+          )}
         </div>
       </div>
+
+      {/* 分享弹窗 */}
+      <ShareDesktopModal
+        fileProxyUrl={targetNode?.fileProxyUrl ?? null}
+        shareType="CONVERSATION"
+        visible={shareDesktopModalVisible}
+        conversationId={conversationId}
+        onClose={() => setShareDesktopModalVisible(false)}
+      />
     </div>
   );
 };

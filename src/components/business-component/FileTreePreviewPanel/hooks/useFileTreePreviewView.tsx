@@ -1253,6 +1253,21 @@ export function useFileTreePreviewView(
     }
   };
 
+  /** 按 ESC 键退出全屏 */
+  useEffect(() => {
+    const handleEscKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isFullscreen) {
+        setIsFullscreen(false);
+        onFullscreenPreview?.(false);
+        document.body.classList.remove('file-tree-view-fullscreen-active');
+      }
+    };
+    document.addEventListener('keydown', handleEscKey);
+    return () => {
+      document.removeEventListener('keydown', handleEscKey);
+    };
+  }, [isFullscreen, onFullscreenPreview]);
+
   // 保存文件
   const saveFiles = async () => {
     setIsSavingFiles(true);

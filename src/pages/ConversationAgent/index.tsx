@@ -1761,12 +1761,6 @@ const ConversationAgent: React.FC = () => {
           }}
           /** 是否为云电脑 */
           isCloudComputer={finalSelectedComputerId === '-1'}
-          conversationId={queryConversationId?.toString() ?? ''}
-          fileProxyUrl={
-            fileView.preview.filePathHeaderProps.targetNode?.fileProxyUrl ??
-            null
-          }
-          isShowShare={fileView.preview.filePathHeaderProps.isShowShare}
         />
         {/* Tab 栏下方：预览内容 + 底部终端（终端放大时仅覆盖此区域） */}
         <div className={cx(styles['right-panel-main'])}>
@@ -1882,7 +1876,12 @@ const ConversationAgent: React.FC = () => {
             />
           </div>
 
-          <div className={cx('flex', 'flex-1', styles['content-container'])}>
+          <div
+            className={cx('flex', 'flex-1', styles['content-container'], {
+              [styles['content-container-fullscreen']]:
+                fileView.preview.isFullscreen,
+            })}
+          >
             {/* 中间面板（文件树） + 右侧面板（编排/预览 + 终端） */}
             {isAgentDesktopOpen && queryConversationId ? (
               renderAgentDesktopPanel()
