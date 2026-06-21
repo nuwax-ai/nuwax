@@ -238,9 +238,14 @@ const requestInterceptors = [
       config.headers.Authorization = `Bearer ${token}`;
     }
 
-    // 添加通用头信息
-    config.headers['Content-Type'] = 'application/json';
-    config.headers['Accept'] = 'application/json, text/plain, */*';
+    // FormData 上传不需要设置 Content-Type，浏览器会自动设置 multipart/form-data; boundary=...
+    if (config.data instanceof FormData) {
+      config.headers['Accept'] = 'application/json, text/plain, */*';
+    } else {
+      // 添加通用头信息
+      config.headers['Content-Type'] = 'application/json';
+      config.headers['Accept'] = 'application/json, text/plain, */*';
+    }
     const browserLang =
       typeof navigator !== 'undefined' && navigator.language
         ? navigator.language.toLowerCase()
