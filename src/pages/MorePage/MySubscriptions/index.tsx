@@ -18,7 +18,9 @@ import SubscriptionPlanCards from './components/SubscriptionPlanCards';
 const MySubscriptions: React.FC<{
   app?: boolean;
   onViewCreditRecords?: () => void;
-}> = ({ app = false, onViewCreditRecords }) => {
+  /** 标题左侧插槽（如侧边栏展开图标） */
+  titleLeftSlot?: React.ReactNode;
+}> = ({ app = false, onViewCreditRecords, titleLeftSlot }) => {
   const [purchaseOpen, setPurchaseOpen] = useState(false);
   const location = useLocation();
 
@@ -66,6 +68,7 @@ const MySubscriptions: React.FC<{
   return (
     <WorkspaceLayout
       title={dict('PC.Pages.MorePage.MySubscriptions.pageTitle')}
+      titleLeftSlot={titleLeftSlot}
     >
       <Spin spinning={pageLoading}>
         {/* 展板信息 */}
