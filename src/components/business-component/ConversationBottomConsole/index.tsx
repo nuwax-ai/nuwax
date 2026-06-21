@@ -13,6 +13,7 @@ import {
   UpOutlined,
 } from '@ant-design/icons';
 import { useRequest } from 'ahooks';
+import { Button } from 'antd';
 import classNames from 'classnames';
 import React, {
   useCallback,
@@ -204,24 +205,20 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
     setContainerStatus('starting');
     setContainerError('');
     try {
-      const { code, message } = await apiEnsurePod(cId);
+      const { code } = await apiEnsurePod(cId);
       if (code === SUCCESS_CODE) {
         setContainerStatus('running');
         runKeepaliveRef.current(cId);
       } else {
         setContainerStatus('error');
         setContainerError(
-          message ||
-            dict(
-              'PC.Components.ConversationBottomConsole.containerStartFailed',
-            ),
+          dict('PC.Components.ConversationBottomConsole.containerStartFailed'),
         );
       }
     } catch (error: any) {
       setContainerStatus('error');
       setContainerError(
-        error?.message ||
-          dict('PC.Components.ConversationBottomConsole.containerStartError'),
+        dict('PC.Components.ConversationBottomConsole.containerStartError'),
       );
     }
   }, []);
@@ -436,16 +433,16 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
                   'PC.Components.ConversationBottomConsole.containerStartFailed',
                 )}
             </span>
-            <button
-              type="button"
+            <Button
+              type="primary"
+              icon={<ReloadOutlined />}
               className={cx(styles['container-retry-btn'])}
               onClick={() => conversationId && startContainer(conversationId)}
             >
-              <ReloadOutlined style={{ marginRight: 6 }} />
               {dict(
                 'PC.Components.ConversationBottomConsole.retryStartContainer',
               )}
-            </button>
+            </Button>
           </div>
         </div>
       );
