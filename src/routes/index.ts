@@ -74,6 +74,16 @@ const routes = [
         path: '/space/:spaceId/skill-details/:skillId',
         component: '@/pages/SkillDetails',
       },
+      // 待审核的技能详情
+      {
+        path: '/space/:spaceId/apply/skill-details/:skillId',
+        component: '@/pages/ApplySkillDetails',
+      },
+      // 已发布的技能详情
+      {
+        path: '/space/:spaceId/published/skill-details/:skillId',
+        component: '@/pages/PublishedSkillDetails',
+      },
       {
         path: '/space/:spaceId/skill-details-conversation/:skillId',
         component: '@/pages/SkillDetailsConversation',
