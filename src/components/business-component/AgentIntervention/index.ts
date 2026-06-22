@@ -6,7 +6,10 @@ export { useAgentInterventionHandlers } from './hooks/useAgentInterventionHandle
 export { useAgentInterventionLayer } from './hooks/useAgentInterventionLayer';
 
 // Utils
-export { hydrateMcpAskInteractionsInMessageList } from './utils/mcpAskHydrateMessage';
+export {
+  hydrateMcpAskInteractionsInMessageList,
+  prependAndHydrateMcpAskMessageList,
+} from './utils/mcpAskHydrateMessage';
 export { processInterventionSsePatch } from './utils/processInterventionSsePatch';
 
 // Types
