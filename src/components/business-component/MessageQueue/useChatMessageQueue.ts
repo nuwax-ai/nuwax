@@ -43,7 +43,7 @@ export const useChatMessageQueue = ({
   conversationId,
   sendMessage,
   runStopConversation,
-  minConsumeInterval = 100,
+  minConsumeInterval = 1200,
   hasPendingIntervention = false,
 }: UseChatMessageQueueParams) => {
   const messageQueue = useMessageQueue();
@@ -70,7 +70,8 @@ export const useChatMessageQueue = ({
   hasPendingInterventionRef.current = hasPendingIntervention;
   const minIntervalRef = useRef(minConsumeInterval);
   minIntervalRef.current = minConsumeInterval;
-  const lastConsumeAtRef = useRef(0);
+  /** 最近一次「消费阻塞解除（≈流式结束）」的时刻，作为消费间隔的起算基准 */
+  const blockReleasedAtRef = useRef(0);
   const consumeLockRef = useRef(false);
   const consumeTimerRef = useRef<number | null>(null);
   const releaseTimerRef = useRef<number | null>(null);
@@ -117,7 +118,9 @@ export const useChatMessageQueue = ({
     consumeLockRef.current = true;
     clearTimers();
 
-    const elapsed = Date.now() - lastConsumeAtRef.current;
+    // 从「流式结束时刻」起算，而非上次发送时刻：上一条响应通常耗时数秒，
+    // 若以发送时刻为基准，elapsed 恒大于间隔会使 wait≈0，间隔形同虚设。
+    const elapsed = Date.now() - blockReleasedAtRef.current;
     const wait = Math.max(minIntervalRef.current - elapsed, 0);
 
     consumeTimerRef.current = window.setTimeout(() => {
@@ -132,7 +135,6 @@ export const useChatMessageQueue = ({
       }
       const next = messageQueue.dequeueFirst();
       if (next) {
-        lastConsumeAtRef.current = Date.now();
         // 回放入队时的快照参数，避免 skillIds/modelId/agentMode 丢失
         sendMessage(
           next.text,
@@ -213,6 +215,8 @@ export const useChatMessageQueue = ({
     prevConsumeBlockedRef.current = consumeBlocked;
 
     if (wasBlocked && !consumeBlocked && messageQueue.hasQueuedMessages) {
+      // 记录「消费阻塞解除（≈流式结束）」时刻，作为本次消费间隔的起算基准
+      blockReleasedAtRef.current = Date.now();
       scheduleAutoConsume();
     }
   }, [consumeBlocked, messageQueue.hasQueuedMessages, scheduleAutoConsume]);

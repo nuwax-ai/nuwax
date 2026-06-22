@@ -4,4 +4,4 @@
  */
 
 /** 聊天消息队列：待发送面板、入队拦截、空闲自动消费 */
-export const ENABLE_CHAT_MESSAGE_QUEUE = false;
+export const ENABLE_CHAT_MESSAGE_QUEUE = true;
