@@ -135,7 +135,7 @@ const SpaceCreateProject: React.FC = () => {
   }: SubmitPayload) => {
     // todo: 页面应用不需要策略，直接跳转到页面开发页面，后续再补充
     if (targetType === AgentComponentTypeEnum.PageApp) {
-      const res = await apiProjectCreate({ targetType });
+      const res = await apiProjectCreate({ spaceId, targetType });
       const { targetId } = res.data;
 
       setContext(createAppDevInitialPayloadKey(targetId), {
@@ -167,7 +167,7 @@ const SpaceCreateProject: React.FC = () => {
 
     try {
       // 3. 调用 API 创建基础项目记录以获取 ID
-      const res = await apiProjectCreate({ targetType });
+      const res = await apiProjectCreate({ spaceId, targetType });
       const { targetId, conversationId } = res.data;
 
       // 4. 前置自动生成名称、描述和图标，并更新配置信息

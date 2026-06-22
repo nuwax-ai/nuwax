@@ -137,6 +137,7 @@ const SpacePluginCloudTool: React.FC = () => {
       ),
       dataIndex: 'name',
       key: 'name',
+      ellipsis: true,
       className: 'flex items-center',
       render: (value, record) => (
         <Input
@@ -154,6 +155,7 @@ const SpacePluginCloudTool: React.FC = () => {
       ),
       dataIndex: 'description',
       key: 'description',
+      ellipsis: true,
       render: (value, record) => (
         <Input
           placeholder={dict(
@@ -172,7 +174,8 @@ const SpacePluginCloudTool: React.FC = () => {
       ),
       dataIndex: 'dataType',
       key: 'dataType',
-      width: 120,
+      ellipsis: true,
+      width: 160,
       render: (value, record) => (
         <Cascader
           rootClassName={styles.select}
@@ -192,6 +195,7 @@ const SpacePluginCloudTool: React.FC = () => {
       title: dict('PC.Pages.SpacePluginCloudTool.isRequired'),
       dataIndex: 'require',
       key: 'require',
+      ellipsis: true,
       width: 100,
       align: 'center',
       render: (value, record) => (
@@ -207,6 +211,7 @@ const SpacePluginCloudTool: React.FC = () => {
       title: dict('PC.Pages.SpacePluginCloudTool.defaultValue'),
       dataIndex: 'bindValue',
       key: 'bindValue',
+      ellipsis: true,
       width: 150,
       render: (value, record) => (
         <Input
@@ -228,6 +233,7 @@ const SpacePluginCloudTool: React.FC = () => {
       title: dict('PC.Pages.SpacePluginCloudTool.enable'),
       dataIndex: 'enable',
       key: 'enable',
+      ellipsis: true,
       width: 70,
       align: 'center',
       render: (value: boolean, record) => (
@@ -251,6 +257,7 @@ const SpacePluginCloudTool: React.FC = () => {
     {
       title: dict('PC.Pages.SpacePluginCloudTool.operation'),
       key: 'action',
+      ellipsis: true,
       width: 66,
       align: 'right',
       render: (_, record) => {
@@ -283,7 +290,8 @@ const SpacePluginCloudTool: React.FC = () => {
       ),
       dataIndex: 'name',
       key: 'name',
-      width: 430,
+      ellipsis: true,
+      width: 200,
       className: 'flex items-center',
       render: (value, record) => (
         <Input
@@ -303,6 +311,7 @@ const SpacePluginCloudTool: React.FC = () => {
       ),
       dataIndex: 'description',
       key: 'description',
+      ellipsis: true,
       render: (value, record) => (
         <Input
           placeholder={dict(
@@ -321,7 +330,8 @@ const SpacePluginCloudTool: React.FC = () => {
       ),
       dataIndex: 'dataType',
       key: 'dataType',
-      width: 120,
+      ellipsis: true,
+      width: 160,
       render: (value, record) => (
         <Cascader
           allowClear={false}
@@ -341,6 +351,7 @@ const SpacePluginCloudTool: React.FC = () => {
       title: dict('PC.Pages.SpacePluginCloudTool.enable'),
       dataIndex: 'enable',
       key: 'enable',
+      ellipsis: true,
       width: 70,
       align: 'center',
       render: (value, record) => (
@@ -355,6 +366,7 @@ const SpacePluginCloudTool: React.FC = () => {
     {
       title: dict('PC.Pages.SpacePluginCloudTool.operation'),
       key: 'action',
+      ellipsis: true,
       width: 66,
       align: 'right',
       render: (_, record) => {
@@ -472,6 +484,7 @@ const SpacePluginCloudTool: React.FC = () => {
                     columns={inputColumns}
                     dataSource={inputConfigArgs}
                     pagination={false}
+                    scroll={{ x: 800 }}
                     expandable={{
                       childrenColumnName: 'subArgs',
                       defaultExpandAllRows: true,
@@ -493,6 +506,7 @@ const SpacePluginCloudTool: React.FC = () => {
                     columns={outputColumns}
                     dataSource={outputConfigArgs}
                     pagination={false}
+                    scroll={{ x: 800 }}
                     expandable={{
                       childrenColumnName: 'subArgs',
                       // 初始时，是否展开所有行
