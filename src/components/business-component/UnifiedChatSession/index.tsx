@@ -44,7 +44,7 @@ const DEFAULT_ROLE_INFO: RoleInfo = {
 const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
   conversationId,
   messageList = [],
-  roleInfo = DEFAULT_ROLE_INFO,
+  roleInfo,
   isLoading = false,
   loadingMore = false,
   isMoreMessage = false,
@@ -107,10 +107,28 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
   const messageViewRef = externalMessageViewRef || internalMessageViewRef;
   const allowAutoScrollRef = useRef<boolean>(true);
   const scrollTimeoutRef = useRef<any>(null);
+  const programmaticTimerRef = useRef<any>(null);
   const [scrollBtnVisible, setScrollBtnVisible] =
     useState<boolean>(showScrollBtn);
 
   const agentModeRef = useRef<AgentMode>('yolo');
+
+  // 角色信息（名称、头像）默认逻辑：优先使用外部传入，其次根据传入的 agentInfo 自适应组装，最后使用 DEFAULT_ROLE_INFO 兜底
+  const effectiveRoleInfo = useMemo(() => {
+    if (roleInfo && roleInfo !== DEFAULT_ROLE_INFO) {
+      return roleInfo;
+    }
+    return {
+      assistant: {
+        name: (agentInfo?.name as string) || 'Assistant',
+        avatar: (agentInfo?.icon as string) || '',
+      },
+      system: {
+        name: (agentInfo?.name as string) || 'System',
+        avatar: (agentInfo?.icon as string) || '',
+      },
+    };
+  }, [roleInfo, agentInfo?.name, agentInfo?.icon]);
 
   // 1. 滚动检测逻辑
   useConversationScrollDetection(
@@ -162,7 +180,6 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
     onSendMessage,
     minConsumeInterval: queueMinConsumeInterval,
     hasPendingIntervention,
-    loadingSuggest,
     queueContext,
   });
 
@@ -197,10 +214,20 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
     allowAutoScrollRef.current = true;
     const element = messageViewRef.current;
     if (element) {
+      (element as any).__isProgrammaticScroll = 'smooth';
       element.scrollTo({
         top: element.scrollHeight,
         behavior: 'smooth',
       });
+      if (programmaticTimerRef.current) {
+        clearTimeout(programmaticTimerRef.current);
+      }
+      programmaticTimerRef.current = setTimeout(() => {
+        if (messageViewRef.current) {
+          (messageViewRef.current as any).__isProgrammaticScroll = false;
+        }
+        programmaticTimerRef.current = null;
+      }, 500);
     }
     setScrollBtnVisible(false);
   };
@@ -268,13 +295,46 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
     if (allowAutoScrollRef.current) {
       const element = messageViewRef.current;
       if (element) {
-        element.scrollTo({
-          top: element.scrollHeight,
-          behavior: 'instant',
-        });
+        const performScroll = () => {
+          const el = messageViewRef.current;
+          if (el) {
+            if (programmaticTimerRef.current) {
+              clearTimeout(programmaticTimerRef.current);
+            }
+            (el as any).__isProgrammaticScroll = true;
+            el.scrollTo({
+              top: el.scrollHeight,
+              behavior: 'instant',
+            });
+            // 延迟重置为 false，确保该瞬间滚动引起的所有同步/异步 scroll 事件都在 isProgrammatic 为真的情况下被忽略
+            programmaticTimerRef.current = setTimeout(() => {
+              (el as any).__isProgrammaticScroll = false;
+              programmaticTimerRef.current = null;
+            }, 100);
+          }
+        };
+
+        // 立即执行一次
+        performScroll();
+
+        // 延迟执行以确保在子组件（如 Markdown、图表等）渲染完且高度撑开后能重新置底
+        const timer = setTimeout(performScroll, 60);
+
+        return () => {
+          clearTimeout(timer);
+        };
       }
     }
   }, [messageList, isConversationActive, chatSuggestList]);
+
+  // 组件卸载时清理定时器
+  useEffect(() => {
+    return () => {
+      if (programmaticTimerRef.current) {
+        clearTimeout(programmaticTimerRef.current);
+      }
+    };
+  }, []);
 
   // 向上滚动加载更多历史消息时的滚动锁定机制
   const lastScrollHeightRef = useRef<number>(0);
@@ -353,7 +413,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
                       <ChatView
                         key={`${item.id}-${item?.index || idx}`}
                         messageInfo={item}
-                        roleInfo={roleInfo}
+                        roleInfo={effectiveRoleInfo}
                         mode={messageBottomMode}
                         showStatusDesc={
                           agentInfo?.type !== AgentTypeEnum.TaskAgent

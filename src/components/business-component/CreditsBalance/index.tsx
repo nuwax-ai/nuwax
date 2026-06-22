@@ -3,7 +3,7 @@ import PurchaseModal from '@/pages/MorePage/MySubscriptions/components/CreditsBr
 import { dict } from '@/services/i18nRuntime';
 import { apiGetCreditSummary } from '@/services/subscriptionService';
 import { InfoCircleOutlined } from '@ant-design/icons';
-import { Button, Tooltip } from 'antd';
+import { Button, Tooltip, Typography } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { history, useLocation, useModel, useRequest } from 'umi';
@@ -81,9 +81,19 @@ const CreditsBalance: React.FC<CreditsBalanceProps> = ({
             {dict('PC.Components.CreditsBalance.credits')}:
           </span>
           <span className={cx(styles.balance)}>
-            {balance !== null && balance !== undefined
-              ? Math.floor(balance).toLocaleString()
-              : '--'}
+            <Typography.Text
+              className={cx(styles['balance-text'])}
+              ellipsis={{
+                tooltip:
+                  balance !== null && balance !== undefined
+                    ? Math.floor(balance).toLocaleString()
+                    : '--',
+              }}
+            >
+              {balance !== null && balance !== undefined
+                ? Math.floor(balance).toLocaleString()
+                : '--'}
+            </Typography.Text>
             {tenantConfigInfo?.creditExchangeDesc && (
               <Tooltip title={tenantConfigInfo.creditExchangeDesc}>
                 <InfoCircleOutlined className={cx(styles['info-icon'])} />

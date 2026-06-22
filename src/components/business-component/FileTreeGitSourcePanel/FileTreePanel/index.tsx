@@ -32,6 +32,7 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
   emptyState,
 }) => {
   const {
+    readOnly = false,
     files,
     selectedFileId,
     selectedFolderId = '',
@@ -173,9 +174,19 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
         onExportProject={
           handleExportProject ? () => void handleExportProject() : undefined
         }
-        onCreateFile={() => handleCreateFile(resolveCreateParentNode())}
-        onCreateFolder={() => handleCreateFolder(resolveCreateParentNode())}
-        onUpload={() => void handleUploadMultipleFiles(null)}
+        onCreateFile={
+          readOnly
+            ? undefined
+            : () => handleCreateFile(resolveCreateParentNode())
+        }
+        onCreateFolder={
+          readOnly
+            ? undefined
+            : () => handleCreateFolder(resolveCreateParentNode())
+        }
+        onUpload={
+          readOnly ? undefined : () => void handleUploadMultipleFiles(null)
+        }
         onCollapseAll={() => fileTreeRef.current?.collapseAll()}
         onRefresh={
           showRefreshButton ? () => void handleRefreshFileList() : undefined
