@@ -1,37 +1,21 @@
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import type { McpAskInteraction } from '../types/mcpAskIntervention';
 import { createInterventionTriggeredAt } from './interventionTrigger';
+import {
+  getMcpAskComponentInput,
+  getMcpAskComponentToolCallId,
+  isMcpAskFailedComponent,
+  resolveMcpAskHydratedResponseStatus,
+  type McpAskExecutedComponent,
+} from './mcpAskExecutedComponent';
 import { parseMcpAskToolInput } from './parseMcpAskToolInput';
-
-function getComponentInput(component: any): unknown {
-  return component?.input ?? component?.result?.input;
-}
-
-function getComponentToolCallId(component: any): string | undefined {
-  const id =
-    component?.executeId ??
-    component?.result?.executeId ??
-    component?.toolCallId ??
-    component?.result?.toolCallId;
-  return typeof id === 'string' && id ? id : undefined;
-}
-
-function isFailedComponent(component: any): boolean {
-  const status = String(component?.status ?? component?.result?.status ?? '')
-    .toLowerCase()
-    .trim();
-  return (
-    status === 'failed' ||
-    status === 'error' ||
-    component?.success === false ||
-    component?.result?.success === false
-  );
-}
+import { reconcileMcpAskHydratedMessageList } from './reconcileMcpAskHydratedStatus';
 
 export function hydrateMcpAskInteractionsFromExecutedComponents(
   message: MessageInfo,
 ): MessageInfo {
-  const componentExecutedList = message.componentExecutedList || [];
+  const componentExecutedList = (message.componentExecutedList ||
+    []) as McpAskExecutedComponent[];
   if (!componentExecutedList.length) {
     return message;
   }
@@ -42,13 +26,13 @@ export function hydrateMcpAskInteractionsFromExecutedComponents(
   );
   const hydrated: McpAskInteraction[] = [];
 
-  componentExecutedList.forEach((component: any) => {
-    if (isFailedComponent(component)) {
+  componentExecutedList.forEach((component) => {
+    if (isMcpAskFailedComponent(component)) {
       return;
     }
 
-    const input = parseMcpAskToolInput(getComponentInput(component));
-    const toolCallId = getComponentToolCallId(component);
+    const input = parseMcpAskToolInput(getMcpAskComponentInput(component));
+    const toolCallId = getMcpAskComponentToolCallId(component);
     if (!input || !toolCallId || existingRequestIds.has(input.requestId)) {
       return;
     }
@@ -57,7 +41,7 @@ export function hydrateMcpAskInteractionsFromExecutedComponents(
     hydrated.push({
       input,
       toolCallId,
-      responseStatus: 'pending',
+      responseStatus: resolveMcpAskHydratedResponseStatus(component),
       triggeredAt: createInterventionTriggeredAt(),
     });
   });
@@ -72,10 +56,27 @@ export function hydrateMcpAskInteractionsFromExecutedComponents(
   };
 }
 
+/**
+ * 从历史 componentExecutedList 重建 MCP Ask 交互，并结合完整会话上下文推断是否已回复。
+ */
 export function hydrateMcpAskInteractionsInMessageList(
   messageList: MessageInfo[] = [],
+  contextMessageList: MessageInfo[] = messageList,
 ): MessageInfo[] {
-  return messageList.map((message) =>
+  const hydratedList = messageList.map((message) =>
     hydrateMcpAskInteractionsFromExecutedComponents(message),
   );
+
+  return reconcileMcpAskHydratedMessageList(hydratedList, contextMessageList);
+}
+
+/**
+ * 加载更多历史消息：前置合并后在完整上下文中 hydrate。
+ */
+export function prependAndHydrateMcpAskMessageList(
+  olderMessages: MessageInfo[],
+  currentMessageList: MessageInfo[],
+): MessageInfo[] {
+  const merged = [...olderMessages, ...currentMessageList];
+  return hydrateMcpAskInteractionsInMessageList(merged, merged);
 }
