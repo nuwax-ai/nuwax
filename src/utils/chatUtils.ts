@@ -928,3 +928,49 @@ export const getAuthHeaders = (): Record<string, string> => {
     Accept: 'application/json, text/plain, */* ',
   };
 };
+
+/**
+ * 将悬挂状态的权限审批与提问弹窗关闭
+ * 修改为 failed 状态以触发组件卸载
+ * @param message 聊天消息对象
+ */
+export const cleanupPendingInteractions = (message: any) => {
+  if (
+    message.acpPermissionInteractions &&
+    Array.isArray(message.acpPermissionInteractions)
+  ) {
+    message.acpPermissionInteractions = message.acpPermissionInteractions.map(
+      (interaction: any) => {
+        if (
+          !interaction.responseStatus ||
+          interaction.responseStatus === 'pending' ||
+          interaction.responseStatus === 'submitting'
+        ) {
+          return {
+            ...interaction,
+            responseStatus: 'failed',
+          };
+        }
+        return interaction;
+      },
+    );
+  }
+
+  if (message.mcpAskInteractions && Array.isArray(message.mcpAskInteractions)) {
+    message.mcpAskInteractions = message.mcpAskInteractions.map(
+      (interaction: any) => {
+        if (
+          !interaction.responseStatus ||
+          interaction.responseStatus === 'pending' ||
+          interaction.responseStatus === 'submitting'
+        ) {
+          return {
+            ...interaction,
+            responseStatus: 'failed',
+          };
+        }
+        return interaction;
+      },
+    );
+  }
+};

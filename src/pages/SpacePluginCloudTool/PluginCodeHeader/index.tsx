@@ -4,7 +4,7 @@ import { dict } from '@/services/i18nRuntime';
 import { PermissionsEnum, PublishStatusEnum } from '@/types/enums/common';
 import { PluginTypeEnum } from '@/types/enums/plugin';
 import type { PluginCodeHeaderProps } from '@/types/interfaces/plugin';
-import { jumpBack } from '@/utils/router';
+import { jumpTo } from '@/utils/router';
 import {
   CaretRightOutlined,
   CheckCircleOutlined,
@@ -48,7 +48,7 @@ const PluginCodeHeader: React.FC<PluginCodeHeaderProps> = ({
     <header className={cx('flex', 'items-center', 'w-full', styles.header)}>
       <LeftOutlined
         className={cx(styles['icon-back'], 'cursor-pointer')}
-        onClick={() => jumpBack(`/space/${spaceId}/library`)}
+        onClick={() => jumpTo(`/space/${spaceId}/plugin`)}
       />
       <img
         className={cx(styles.logo)}
