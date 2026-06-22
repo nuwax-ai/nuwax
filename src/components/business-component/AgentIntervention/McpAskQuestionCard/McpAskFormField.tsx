@@ -3,10 +3,19 @@ import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { t } from '@/services/i18nRuntime';
 import { handleUploadFileList } from '@/utils/upload';
 import { InboxOutlined } from '@ant-design/icons';
-import { Checkbox, Form, Input, Radio, Select, Upload } from 'antd';
+import {
+  Checkbox,
+  Form,
+  Input,
+  InputNumber,
+  Radio,
+  Select,
+  Upload,
+} from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import type { ParsedMcpAskField } from '../utils/parseMcpAskSchema';
+import { getJsonSchemaPrimaryType } from '../utils/parseMcpAskSchema';
 import styles from './McpAskFormField.less';
 
 interface McpAskFormFieldProps {
@@ -136,6 +145,25 @@ const McpAskFormField: React.FC<McpAskFormFieldProps> = ({
             </Radio>
           ))}
         </Radio.Group>
+      </Form.Item>
+    );
+  }
+
+  if (widget === 'number') {
+    const isInteger = getJsonSchemaPrimaryType(property) === 'integer';
+
+    return (
+      <Form.Item name={name} label={label} rules={rules}>
+        <InputNumber
+          disabled={disabled}
+          className={styles.textControl}
+          style={{ width: '100%' }}
+          placeholder={options.placeholder || label}
+          min={property.minimum}
+          max={property.maximum}
+          step={property.multipleOf ?? (isInteger ? 1 : undefined)}
+          precision={isInteger ? 0 : undefined}
+        />
       </Form.Item>
     );
   }

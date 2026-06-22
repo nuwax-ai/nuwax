@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { hydrateMcpAskInteractionsFromExecutedComponents } from './mcpAskHydrateMessage';
+import {
+  hydrateMcpAskInteractionsFromExecutedComponents,
+  hydrateMcpAskInteractionsInMessageList,
+  prependAndHydrateMcpAskMessageList,
+} from './mcpAskHydrateMessage';
 
 const askInput = {
   schemaVersion: 'nuwaclaw.mcp_ask.v1',
@@ -22,7 +26,7 @@ const askInput = {
 };
 
 describe('hydrateMcpAskInteractionsFromExecutedComponents', () => {
-  it('hydrates pending ask/question forms from successful persisted tool calls', () => {
+  it('hydrates successful persisted tool calls as submitted', () => {
     const message = hydrateMcpAskInteractionsFromExecutedComponents({
       id: 'msg-1',
       componentExecutedList: [
@@ -41,10 +45,7 @@ describe('hydrateMcpAskInteractionsFromExecutedComponents', () => {
     } as any);
 
     expect(message.mcpAskInteractions).toHaveLength(1);
-    expect(message.mcpAskInteractions?.[0].toolCallId).toBe('call-1');
-    expect(message.mcpAskInteractions?.[0].input.requestId).toBe(
-      'ask-history-1',
-    );
+    expect(message.mcpAskInteractions?.[0].responseStatus).toBe('submitted');
   });
 
   it('does not hydrate failed timed-out ask/question calls', () => {
@@ -66,5 +67,69 @@ describe('hydrateMcpAskInteractionsFromExecutedComponents', () => {
     } as any);
 
     expect(message.mcpAskInteractions).toBeUndefined();
+  });
+});
+
+describe('hydrateMcpAskInteractionsInMessageList', () => {
+  it('resolves pending asks using resume messages from already loaded batches', () => {
+    const olderAskMessage = {
+      id: 'assistant-ask',
+      index: 1,
+      componentExecutedList: [
+        {
+          status: 'EXECUTING',
+          result: { executeId: 'call-1' },
+          input: { ...askInput, toolName: 'nuwax_ask_question' },
+        },
+      ],
+    };
+
+    const newerResumeMessage = {
+      id: 'user-resume',
+      index: 2,
+      text: '我已填写「历史表单」，表单内容如下：\n\n主题：AI',
+    };
+
+    const mergedContext = [olderAskMessage, newerResumeMessage] as any[];
+    const hydratedOlderBatch = hydrateMcpAskInteractionsInMessageList(
+      [olderAskMessage as any],
+      mergedContext,
+    );
+
+    expect(hydratedOlderBatch[0].mcpAskInteractions?.[0].responseStatus).toBe(
+      'submitted',
+    );
+  });
+});
+
+describe('prependAndHydrateMcpAskMessageList', () => {
+  it('hydrates prepended older messages against the merged context', () => {
+    const olderAskMessage = {
+      id: 'assistant-ask',
+      index: 1,
+      componentExecutedList: [
+        {
+          status: 'EXECUTING',
+          result: { executeId: 'call-1' },
+          input: { ...askInput, toolName: 'nuwax_ask_question' },
+        },
+      ],
+    };
+
+    const currentMessageList = [
+      {
+        id: 'user-resume',
+        index: 2,
+        text: '我已填写「历史表单」，表单内容如下：\n\n主题：AI',
+      },
+    ] as any[];
+
+    const result = prependAndHydrateMcpAskMessageList(
+      [olderAskMessage as any],
+      currentMessageList,
+    );
+
+    expect(result).toHaveLength(2);
+    expect(result[0].mcpAskInteractions?.[0].responseStatus).toBe('submitted');
   });
 });

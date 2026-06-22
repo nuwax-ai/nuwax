@@ -253,8 +253,32 @@ function escapedBracketRule(delimiters: any) {
   };
 }
 // 新的数学公式替换函数 - 直接替换为 $$ 分隔符
+//
+// 性能注意：
+// 本函数对文本逐字符扫描，escapedBracketRule 内部还会对每个位置做 slice+startsWith。
+// 当文本里包含 base64 data URL（单张图片可达数 MB）时，复杂度退化为 O(N^2)，
+// 会长时间阻塞主线程导致页面无响应。
+// data URL 内部不可能出现 \(\)/\[\] 数学定界符，因此扫描时整段跳过即可。
+//
+// 字符集说明：base64 编码只用 A-Za-z0-9+/=，中间不会出现空格或换行。
+// 不匹配 \s：否则当两个 data URL 仅用空格分隔时，贪心匹配会把第一个 URL 尾部、
+// 中间分隔空白、以及第二个 URL 的 "data" 前缀一起吞进第一个匹配，破坏后续渲染。
+const DATA_URL_PLACEHOLDER_RE =
+  /data:[a-z0-9.+-]+\/[a-z0-9.+-]+;base64,[A-Za-z0-9+/=]+/gi;
+
 function replaceMathBracket(text: string): string {
-  // 创建只包含非美元符号分隔符的选项
+  if (!text) return '';
+
+  // 1. 先把所有 base64 data URL 抽出，用短占位符替换，避免对超大字符串逐字符扫描
+  const dataUrls: string[] = [];
+  const withoutDataUrl = text.replace(DATA_URL_PLACEHOLDER_RE, (match) => {
+    const idx = dataUrls.length;
+    dataUrls.push(match);
+    // 用 ASCII 控制符区间作为占位符，避免与正文冲突，也不含数学定界符
+    return `\u0000${idx}\u0000`;
+  });
+
+  // 2. 创建只包含非美元符号分隔符的选项
   const nonDollarDelimiters = defaultDelimiters.filter(
     (delimiter) =>
       !delimiter.left.includes('$') && !delimiter.right.includes('$'),
@@ -264,20 +288,28 @@ function replaceMathBracket(text: string): string {
   let result = '';
   let pos = 0;
 
-  while (pos < text.length) {
-    const match = rule(text, pos);
+  while (pos < withoutDataUrl.length) {
+    const match = rule(withoutDataUrl, pos);
     if (match.success) {
       // 添加匹配前的文本
-      result += text.slice(pos, match.start);
+      result += withoutDataUrl.slice(pos, match.start);
       // 替换为 $$ 分隔符
       const delimiter = match.display ? '$$' : '$';
       result += `${delimiter}${match.formula}${delimiter}`;
       pos = match.end;
     } else {
       // 没有匹配，添加当前字符
-      result += text[pos];
+      result += withoutDataUrl[pos];
       pos++;
     }
+  }
+
+  // 3. 把 base64 data URL 还原回去
+  if (dataUrls.length > 0) {
+    result = result.replace(/\u0000(\d+)\u0000/g, (_m, idxStr) => {
+      const idx = Number(idxStr);
+      return dataUrls[idx] ?? '';
+    });
   }
 
   return result;
@@ -294,6 +326,12 @@ function replaceMathBracket(text: string): string {
  */
 function groupMarkdownProcesses(text: string): string {
   if (!text) return '';
+
+  // 快速短路：base64 data URL 内部不可能包含 markdown-custom-process 标签，
+  // 若文本不含任何过程标签，直接返回原文，避免对大文本（如带 base64 图片的消息）做空正则扫描。
+  if (text.indexOf('markdown-custom-process') === -1) {
+    return text;
+  }
 
   // 匹配 markdown-custom-process 标签及其可选的 div/p 包装器
   // 注意：[^>]*? 虽然简单，但在绝大多数情况下足够。如果以后有更复杂的属性需求（如带 > 的属性），再考虑更复杂的正则
@@ -437,8 +475,10 @@ function groupMarkdownProcesses(text: string): string {
       normalizedTag += '</markdown-custom-process>';
     }
 
-    // 检查是否为“执行计划”
-    const isPlan = /type=["']Plan["']/.test(normalizedTag);
+    // 检查是否为"执行计划"——在归一化之前用原始标签判断，
+    // 否则当 type 排在 name 之后时，归一化会把 type 编码进 name 值，导致 isPlan 漏判、Plan 被误并入 group。
+    // 容忍 SSE 流式产生的转义引号（type=\"Plan\" / type=\'Plan\'）
+    const isPlan = /type=\\?["']Plan\\?["']/i.test(tagMatch);
 
     // 处理匹配项之前的文本
     const textBefore = dedupedText.slice(lastIndex, groupMatch.index);
