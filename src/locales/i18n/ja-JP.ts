@@ -1836,6 +1836,8 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.AntvX6Params.nodeIntentRecognitionName": "意図の認識",
   "PC.Pages.AntvX6Params.nodeKnowledgeBaseDescription": "入力変数に基づいて、選択した知識ソースから最も一致する情報を呼び出します",
   "PC.Pages.AntvX6Params.nodeKnowledgeBaseName": "ナレッジベース",
+  "PC.Pages.AntvX6Params.nodeKnowledgeInsertName": "ナレッジ挿入",
+  "PC.Pages.AntvX6Params.nodeKnowledgeInsertDescription": "選択したナレッジベースにコンテンツを書き込みます",
   "PC.Pages.AntvX6Params.nodeLlmDescription": "大規模な言語モデルを呼び出し、変数とプロンプトを使用して応答を生成します",
   "PC.Pages.AntvX6Params.nodeLlmName": "大規模言語モデル",
   "PC.Pages.AntvX6Params.nodeLongTermMemoryDescription": "長期記憶を呼び出してユーザーの個人設定データを取得する",

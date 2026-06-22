@@ -1902,6 +1902,8 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.AntvX6Params.nodeIntentRecognitionName": "意图识别",
   "PC.Pages.AntvX6Params.nodeKnowledgeBaseDescription": "在选定的知识中，根据输入变量召回最匹配的信息",
   "PC.Pages.AntvX6Params.nodeKnowledgeBaseName": "知识库",
+  "PC.Pages.AntvX6Params.nodeKnowledgeInsertName": "知识库写入",
+  "PC.Pages.AntvX6Params.nodeKnowledgeInsertDescription": "将内容写入选定的知识库",
   "PC.Pages.AntvX6Params.nodeLlmDescription": "调用大语言模型，使用变量和提示词生成回复",
   "PC.Pages.AntvX6Params.nodeLlmName": "大模型",
   "PC.Pages.AntvX6Params.nodeLongTermMemoryDescription": "用于调用长期记忆，获取用户的个性化信息",

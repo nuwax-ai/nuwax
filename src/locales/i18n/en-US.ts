@@ -1902,6 +1902,8 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.AntvX6Params.nodeIntentRecognitionName": "Intent Recognition",
   "PC.Pages.AntvX6Params.nodeKnowledgeBaseDescription": "Recall the best matched information from selected knowledge sources based on input variables",
   "PC.Pages.AntvX6Params.nodeKnowledgeBaseName": "Knowledge Base",
+  "PC.Pages.AntvX6Params.nodeKnowledgeInsertName": "Knowledge Insert",
+  "PC.Pages.AntvX6Params.nodeKnowledgeInsertDescription": "Write content into the selected knowledge bases",
   "PC.Pages.AntvX6Params.nodeLlmDescription": "Call the large language model and generate responses with variables and prompts",
   "PC.Pages.AntvX6Params.nodeLlmName": "Large Language Model",
   "PC.Pages.AntvX6Params.nodeLongTermMemoryDescription": "Call long-term memory to retrieve user personalization data",

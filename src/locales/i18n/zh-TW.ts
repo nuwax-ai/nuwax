@@ -1855,6 +1855,8 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.AntvX6Params.nodeIntentRecognitionName": "意圖識別",
   "PC.Pages.AntvX6Params.nodeKnowledgeBaseDescription": "在選定的知識中，根據輸入變數召回最匹配的資訊",
   "PC.Pages.AntvX6Params.nodeKnowledgeBaseName": "知識庫",
+  "PC.Pages.AntvX6Params.nodeKnowledgeInsertName": "知識庫寫入",
+  "PC.Pages.AntvX6Params.nodeKnowledgeInsertDescription": "將內容寫入選定的知識庫",
   "PC.Pages.AntvX6Params.nodeLlmDescription": "呼叫大語言模型，使用變數和提示詞生成回覆",
   "PC.Pages.AntvX6Params.nodeLlmName": "大模型",
   "PC.Pages.AntvX6Params.nodeLongTermMemoryDescription": "用於呼叫長期記憶，獲取使用者的個性化資訊",
