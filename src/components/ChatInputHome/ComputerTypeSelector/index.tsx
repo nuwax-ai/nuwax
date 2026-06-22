@@ -156,33 +156,6 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
     autoSelect,
   ]);
 
-  /**
-   * fixedSelection 模式下：当前选中值不在可用列表时，自动回退到第一个可用选项
-   * 避免显示「电脑不可用」而实际有可切换的电脑（如云端电脑）
-   */
-  useEffect(() => {
-    if (
-      !fixedSelection ||
-      !initialized ||
-      unavailable ||
-      computerList.length === 0
-    ) {
-      return;
-    }
-
-    const isValueValid =
-      value && computerList.some((opt) => String(opt.id) === String(value));
-
-    if (isValueValid) {
-      return;
-    }
-
-    const fallbackOption = computerList[0];
-    if (fallbackOption && String(fallbackOption.id) !== String(value)) {
-      onChange?.(fallbackOption.id, fallbackOption);
-    }
-  }, [fixedSelection, initialized, unavailable, computerList, value, onChange]);
-
   // 挂载时加载数据
   useEffect(() => {
     if (!initialized) {
