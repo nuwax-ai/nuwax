@@ -4,8 +4,8 @@ import ConditionRender from '@/components/ConditionRender';
 import MoveCopyComponent from '@/components/MoveCopyComponent';
 import useSubscription from '@/hooks/useSubscription';
 import { dict } from '@/services/i18nRuntime';
-import { apiPublishedSkillInfo } from '@/services/plugin';
 import { apiPublishTemplateCopy } from '@/services/publish';
+import { apiPublishedSkillDetail } from '@/services/skill';
 import { AgentComponentTypeEnum, AllowCopyEnum } from '@/types/enums/agent';
 import { ApplicationMoreActionEnum } from '@/types/enums/space';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
@@ -60,7 +60,7 @@ const SkillDetail: React.FC = ({}) => {
     run: runSkillInfo,
     data: skillInfo,
     loading: loadingSkillInfo,
-  } = useRequest(apiPublishedSkillInfo, {
+  } = useRequest(apiPublishedSkillDetail, {
     manual: true,
     debounceInterval: 300,
   });

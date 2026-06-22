@@ -5,7 +5,7 @@ import {
 } from '@/services/skill';
 import type { SkillDetailInfo } from '@/types/interfaces/skill';
 import classNames from 'classnames';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useRequest } from 'umi';
 import SkillHeader, { type SkillDetailViewMode } from './SkillHeader';
 import styles from './index.less';
@@ -73,6 +73,19 @@ const SkillDetailView: React.FC<SkillDetailViewProps> = ({ skillId, mode }) => {
     }
   }, [skillId]);
 
+  /** 刷新文件树：重新拉取技能详情并更新 files 列表 */
+  const handleRefreshFileTree = useCallback(async () => {
+    if (!skillId) {
+      return;
+    }
+    setFileTreeDataLoading(true);
+    try {
+      await runSkillInfo(skillId);
+    } catch {
+      setFileTreeDataLoading(false);
+    }
+  }, [skillId, runSkillInfo]);
+
   return (
     <div className={cx(styles['page-container'])}>
       {/* 技能头部 */}
@@ -93,6 +106,7 @@ const SkillDetailView: React.FC<SkillDetailViewProps> = ({ skillId, mode }) => {
             <div className={cx('flex', 'flex-1', 'overflow-y')}>
               {/* 文件树视图（只读模式） */}
               <FileTreeViewPanel
+                readOnly={true}
                 taskAgentSelectedFileId={'SKILL.md'}
                 initViewFileType={'code'}
                 isProjectSkill={true}
@@ -102,7 +116,8 @@ const SkillDetailView: React.FC<SkillDetailViewProps> = ({ skillId, mode }) => {
                 isFullscreenPreview={false}
                 showFullscreenIcon={false}
                 isFileTreePinned={true}
-                showRefreshButton={false}
+                showRefreshButton={true}
+                onRefreshFileTree={handleRefreshFileTree}
                 isShowShare={false}
                 isShowDownloadButton={false}
                 isShowExportPdfButton={false}
