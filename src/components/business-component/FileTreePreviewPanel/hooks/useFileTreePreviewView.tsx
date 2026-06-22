@@ -137,6 +137,16 @@ export function useFileTreePreviewView(
   const [files, setFiles] = useState<FileNode[]>([]);
   // 当前选中的文件ID
   const [selectedFileId, setSelectedFileId] = useState<string>('');
+  /**
+   * 当前选中文件ID的同步引用
+   * - 用途：在异步请求返回时，判断用户是否已经切换到其他文件
+   */
+  const selectedFileIdRef = useRef<string>('');
+  /**
+   * 当前文件选择请求 token
+   * - 用途：只允许“最后一次点击文件”的请求回写内容，避免慢请求/跳转请求覆盖最新选中项
+   */
+  const latestFileSelectTokenRef = useRef<string>('');
   /** 文件树中选中的文件夹 ID（仅用于树高亮与工具栏新建父级，不影响预览区） */
   const [selectedFolderId, setSelectedFolderId] = useState<string>('');
   // 选中的文件节点
@@ -217,6 +227,10 @@ export function useFileTreePreviewView(
     filesRef.current = files;
   }, [files]);
 
+  useEffect(() => {
+    selectedFileIdRef.current = selectedFileId;
+  }, [selectedFileId]);
+
   // 用于存储文件的刷新时间戳，确保每次点击时都能刷新
   // 统一使用一个时间戳，适用于 html、office、json、视频、音频、图片等需要刷新的文件类型
   const [fileRefreshTimestamp, setFileRefreshTimestamp] = useState<number>(
@@ -273,6 +287,8 @@ export function useFileTreePreviewView(
           );
           return updatedFiles;
         });
+        // 内容拉取成功后更新时间戳，供只读技能详情场景强制刷新 CodeViewer
+        setFileRefreshTimestamp(Date.now());
 
         return fileContent;
       } catch (error) {
@@ -484,6 +500,11 @@ export function useFileTreePreviewView(
         // 选中文件时清除文件夹选中态
         setSelectedFolderId('');
 
+        // 为本次“选中文件”生成唯一 token（后续异步回写时用于判定是否过期）
+        const currentSelectedId = fileNode?.id || fileId;
+        const selectToken = `${currentSelectedId}-${Date.now()}`;
+        latestFileSelectTokenRef.current = selectToken;
+
         // 如果文件节点是文件夹(folder)，则选择第一个子节点(点击会话中文件名时，如果文件名是文件夹，则选择第一个子节点)
         if (fileNode.type === 'folder') {
           // 如果文件节点是文件夹，且有子节点，则选择第一个子节点
@@ -505,7 +526,9 @@ export function useFileTreePreviewView(
          */
         if (!fileProxyUrl || fileNode?.isLink) {
           onFileSelectOpenPreview?.(fileNode?.id || fileId);
-          setSelectedFileId(fileNode?.id || fileId);
+          // 同步 ref，确保异步逻辑读取到最新选中文件
+          selectedFileIdRef.current = currentSelectedId;
+          setSelectedFileId(currentSelectedId);
           if (!initViewFileType) {
             setViewFileType('preview');
           }
@@ -536,7 +559,9 @@ export function useFileTreePreviewView(
         // 更新刷新时间戳，触发预览区重渲染
         setFileRefreshTimestamp(Date.now());
 
-        setSelectedFileId(fileNode?.id || fileId);
+        // 先写 ref 再 setState，降低异步回调读取旧选中值的概率
+        selectedFileIdRef.current = currentSelectedId;
+        setSelectedFileId(currentSelectedId);
 
         if (!initViewFileType) {
           setViewFileType('preview');
@@ -581,8 +606,17 @@ export function useFileTreePreviewView(
           // 获取文件内容并更新文件树
           const newFileContent = await fetchFileContentUpdateFiles(
             fileProxyUrl,
-            fileNode?.id || fileId,
+            currentSelectedId,
           );
+
+          // 只允许“当前最新选中”的请求回写编辑器内容，避免 302 跳转/慢请求导致旧数据覆盖
+          if (
+            latestFileSelectTokenRef.current !== selectToken ||
+            selectedFileIdRef.current !== currentSelectedId
+          ) {
+            return;
+          }
+
           // 设置选中文件节点
           setSelectedFileNode({
             ...fileNode,
@@ -1390,6 +1424,8 @@ export function useFileTreePreviewView(
       return;
     }
 
+    const currentRefreshFileId = selectedFileId;
+
     const fileName = selectedFileNode?.name || '';
     const previewable = isPreviewableFile(fileName, true);
     const isNeedRefreshFileContent =
@@ -1407,8 +1443,12 @@ export function useFileTreePreviewView(
     try {
       const newFileContent = await fetchFileContentUpdateFiles(
         fileProxyUrl,
-        selectedFileId,
+        currentRefreshFileId,
       );
+      // 请求返回时若用户已切换文件，则丢弃本次回写
+      if (selectedFileIdRef.current !== currentRefreshFileId) {
+        return;
+      }
       setSelectedFileNode((prevNode) =>
         prevNode
           ? {
@@ -1641,10 +1681,18 @@ export function useFileTreePreviewView(
     }
 
     const fileContent = String(selectedFileNode?.content ?? '');
+    /**
+     * 只读技能详情场景下，带上 fileRefreshTimestamp 强制重建 CodeViewer，
+     * 兜底规避 Monaco 增量更新链路在慢请求场景下可能不刷新的问题。
+     */
+    const codeViewerKey =
+      readOnly && isProjectSkill
+        ? `code-viewer-${selectedFileId}-${fileRefreshTimestamp}`
+        : `code-viewer-${selectedFileId}`;
 
     return (
       <CodeViewer
-        key={`code-viewer-${selectedFileId}`}
+        key={codeViewerKey}
         isDynamicTheme={isDynamicTheme}
         fileId={selectedFileId}
         fileName={fileName}
