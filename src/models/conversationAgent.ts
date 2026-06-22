@@ -48,7 +48,6 @@ import type {
 } from '@/types/interfaces/conversationInfo';
 import { RequestResponse } from '@/types/interfaces/request';
 import { modalConfirm } from '@/utils/ant-custom';
-import { cleanupPendingInteractions } from '@/utils/chatUtils';
 import {
   createSyncConversationTaskStatus,
   subscribeChatFinishedTaskSync,
@@ -723,7 +722,7 @@ export default () => {
               }
 
               // 3. 将悬挂状态的权限审批与提问弹窗关闭
-              cleanupPendingInteractions(currentMessage);
+              // cleanupPendingInteractions(currentMessage);
             }
 
             // 再次调用 checkConversationActive 确保状态同步
