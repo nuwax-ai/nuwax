@@ -1620,9 +1620,11 @@ const ConversationAgent: React.FC = () => {
         agentId={agentId}
         agentConfigInfo={agentConfigInfo}
         onAgentConfigInfo={setAgentConfigInfo}
+        selectedComputerId={finalSelectedComputerId}
+        onChangeSelectedComputerId={setSelectedComputerId}
       />
     ),
-    [agentId, agentConfigInfo],
+    [agentId, agentConfigInfo, finalSelectedComputerId],
   );
 
   /** 「编排」页签：模型、提示词、变量与工具配置 */

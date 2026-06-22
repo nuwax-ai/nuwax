@@ -118,19 +118,12 @@ export function useConversationAgentChatSession(
         return;
       }
 
-      const effectiveSandboxId = String(
-        selectedComputerId ||
-          conversationInfo?.sandboxServerId ||
-          conversationInfo?.agent?.sandboxId ||
-          '',
-      );
-
       onMessageSend({
         id: devConversationId,
         messageInfo,
         files,
         infos: selectedComponentList ?? manualComponents,
-        sandboxId: effectiveSandboxId,
+        sandboxId: selectedComputerId,
         debug: true,
         isSync: false,
         skillIds,
@@ -140,8 +133,6 @@ export function useConversationAgentChatSession(
     },
     [
       devConversationId,
-      conversationInfo?.sandboxServerId,
-      conversationInfo?.agent?.sandboxId,
       selectedComputerId,
       selectedComponentList,
       manualComponents,
@@ -237,7 +228,6 @@ export function useConversationAgentChatSession(
     queueContext: {
       streamActive: agentStreamActive,
       taskExecuting: agentTaskExecuting,
-      suggestLoading: loadingSuggest,
       runStopConversation: (id: number | string) => {
         void runStopConversation(String(id));
       },
@@ -254,7 +244,8 @@ export function useConversationAgentChatSession(
       guidQuestionDtos: agentConfigInfo?.guidQuestionDtos,
       eventBindConfig: agentConfigInfo?.eventBindConfig,
       hasPermission: conversationInfo?.agent?.hasPermission,
-      sandboxId: conversationInfo?.agent?.sandboxId,
+      // 与左侧聊天区一致，直接使用页面级选中的电脑 ID
+      sandboxId: selectedComputerId,
     },
     allowOtherModel: agentConfigInfo?.allowOtherModel,
     selectedModelId,
@@ -280,8 +271,8 @@ export function useConversationAgentChatSession(
           'PC.Components.ChatInputHomeMentionEditor.placeholderWithoutMention',
         ),
     chatInputProps: {
-      fixedSelection: true,
-      agentSandboxId: conversationInfo?.agent?.sandboxId,
+      // 与左侧一致：直接使用页面级选中的电脑 ID
+      agentSandboxId: selectedComputerId,
       streamActiveOverride: agentStreamActive,
       taskExecutingOverride: agentTaskExecuting,
       stopConversationIdOverride: devConversationId,

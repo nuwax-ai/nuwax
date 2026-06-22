@@ -107,6 +107,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
   const messageViewRef = externalMessageViewRef || internalMessageViewRef;
   const allowAutoScrollRef = useRef<boolean>(true);
   const scrollTimeoutRef = useRef<any>(null);
+  const programmaticTimerRef = useRef<any>(null);
   const [scrollBtnVisible, setScrollBtnVisible] =
     useState<boolean>(showScrollBtn);
 
@@ -162,7 +163,6 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
     onSendMessage,
     minConsumeInterval: queueMinConsumeInterval,
     hasPendingIntervention,
-    loadingSuggest,
     queueContext,
   });
 
@@ -197,10 +197,20 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
     allowAutoScrollRef.current = true;
     const element = messageViewRef.current;
     if (element) {
+      (element as any).__isProgrammaticScroll = 'smooth';
       element.scrollTo({
         top: element.scrollHeight,
         behavior: 'smooth',
       });
+      if (programmaticTimerRef.current) {
+        clearTimeout(programmaticTimerRef.current);
+      }
+      programmaticTimerRef.current = setTimeout(() => {
+        if (messageViewRef.current) {
+          (messageViewRef.current as any).__isProgrammaticScroll = false;
+        }
+        programmaticTimerRef.current = null;
+      }, 500);
     }
     setScrollBtnVisible(false);
   };
@@ -268,13 +278,46 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
     if (allowAutoScrollRef.current) {
       const element = messageViewRef.current;
       if (element) {
-        element.scrollTo({
-          top: element.scrollHeight,
-          behavior: 'instant',
-        });
+        const performScroll = () => {
+          const el = messageViewRef.current;
+          if (el) {
+            if (programmaticTimerRef.current) {
+              clearTimeout(programmaticTimerRef.current);
+            }
+            (el as any).__isProgrammaticScroll = true;
+            el.scrollTo({
+              top: el.scrollHeight,
+              behavior: 'instant',
+            });
+            // 延迟重置为 false，确保该瞬间滚动引起的所有同步/异步 scroll 事件都在 isProgrammatic 为真的情况下被忽略
+            programmaticTimerRef.current = setTimeout(() => {
+              (el as any).__isProgrammaticScroll = false;
+              programmaticTimerRef.current = null;
+            }, 100);
+          }
+        };
+
+        // 立即执行一次
+        performScroll();
+
+        // 延迟执行以确保在子组件（如 Markdown、图表等）渲染完且高度撑开后能重新置底
+        const timer = setTimeout(performScroll, 60);
+
+        return () => {
+          clearTimeout(timer);
+        };
       }
     }
   }, [messageList, isConversationActive, chatSuggestList]);
+
+  // 组件卸载时清理定时器
+  useEffect(() => {
+    return () => {
+      if (programmaticTimerRef.current) {
+        clearTimeout(programmaticTimerRef.current);
+      }
+    };
+  }, []);
 
   // 向上滚动加载更多历史消息时的滚动锁定机制
   const lastScrollHeightRef = useRef<number>(0);
