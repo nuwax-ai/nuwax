@@ -94,14 +94,21 @@ export interface JsonSchemaProperty {
   minItems?: number;
   maxItems?: number;
   uniqueItems?: boolean;
+  minimum?: number;
+  maximum?: number;
+  multipleOf?: number;
 }
 
-export type McpAskFieldWidget =
-  | 'radio'
-  | 'checkboxes'
-  | 'select'
-  | 'text'
-  | 'textarea'
-  | 'radio-with-custom'
-  | 'list'
-  | 'file';
+export const MCP_ASK_WIDGET_TYPES = [
+  'text',
+  'textarea',
+  'number',
+  'radio',
+  'checkboxes',
+  'select',
+  'list',
+  'file',
+  'radio-with-custom',
+] as const;
+
+export type McpAskFieldWidget = (typeof MCP_ASK_WIDGET_TYPES)[number];
