@@ -1,5 +1,6 @@
 import {
   hydrateMcpAskInteractionsInMessageList,
+  prependAndHydrateMcpAskMessageList,
   processInterventionSsePatch,
   useAgentInterventionHandlers,
 } from '@/components/business-component/AgentIntervention';
@@ -673,12 +674,9 @@ export default () => {
         // 如果查询到的消息数量大于0，则表示有更多消息
         if (!!data?.length) {
           // 将新消息追加到消息列表前面
-          setMessageList((messageList: MessageInfo[]) => {
-            return [
-              ...hydrateMcpAskInteractionsInMessageList(data),
-              ...messageList,
-            ];
-          });
+          setMessageList((messageList: MessageInfo[]) =>
+            prependAndHydrateMcpAskMessageList(data, messageList),
+          );
 
           // 如果查询到的消息数量小于20，则表示没有更多消息
           if (data.length < MESSAGE_PAGE_SIZE) {
