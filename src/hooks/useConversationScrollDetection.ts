@@ -87,7 +87,9 @@ export const useConversationScrollDetection = (
         // 增加 1px 的阈值补偿，提高触控板滚动的灵敏度
         const isScrollingUp = scrollTop < lastScrollTopRef.current - 1;
 
-        if (isScrollingUp) {
+        // 仅在平滑滚动 (smooth) 过程中允许用户向上滑动打断自动滚动。
+        // 瞬间滚动 (instant) 是一步到位的，其间产生的 scrollTop 减小多为浏览器排版或重绘抖动，忽略打断判定。
+        if (isScrollingUp && isProgrammatic === 'smooth') {
           // 用户试图向上滚动，立即禁用自动滚动
           allowAutoScrollRef.current = false;
           // 清除滚动定时器
