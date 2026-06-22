@@ -17,6 +17,8 @@ export interface HistoryConversationListProps {
   onClickLink: (id: number, agentId: number) => void;
   /** 是否是应用智能体模式 */
   isAppSidebarMode?: boolean;
+  /** 标题左侧插槽 */
+  titleLeftSlot?: React.ReactNode;
 }
 
 /**
@@ -27,6 +29,7 @@ const HistoryConversationList: React.FC<HistoryConversationListProps> = ({
   agentId,
   onClickLink,
   isAppSidebarMode = false,
+  titleLeftSlot,
 }) => {
   const { runHistory } = useModel('conversationHistory');
   const location = useLocation();
@@ -161,11 +164,12 @@ const HistoryConversationList: React.FC<HistoryConversationListProps> = ({
       </div>
       <div className={styles['main-content']}>
         <div
-          className={`${styles.title} ${
+          className={`${styles.title} flex items-center gap-4 ${
             isMobile ? styles['title-mobile'] : ''
           }`}
         >
-          {t('PC.Components.HistoryConversationList.pageTitle')}
+          {titleLeftSlot}
+          <span>{t('PC.Components.HistoryConversationList.pageTitle')}</span>
         </div>
         <div
           className={`${styles['search-input']} ${

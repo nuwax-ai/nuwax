@@ -22,6 +22,7 @@
     align-items: center;
     justify-content: space-between;
     width: 100%;
+    min-width: 0;
     gap: @paddingXs;
     cursor: pointer;
     padding: @paddingXs @marginSm;
@@ -55,6 +56,7 @@
 
     .balance {
       flex: 1;
+      min-width: 0;
       font-weight: @fontWeightStrong;
       font-size: @fontSizeSm;
       color: @navSecondMenuText;
@@ -63,6 +65,14 @@
       display: inline-flex;
       align-items: center;
       gap: @infoIconMarginLeft;
+
+      .balance-text {
+        color: inherit !important;
+        font-size: inherit;
+        font-weight: inherit;
+        flex: 1;
+        min-width: 0;
+      }
     }
   }
 
@@ -85,6 +95,7 @@
   border: none;
   background: @btnBgColor;
   color: @navSecondMenuTextSecondary;
+  flex-shrink: 0;
 
   &:hover {
     background: rgba(0, 0, 0, 8%);
