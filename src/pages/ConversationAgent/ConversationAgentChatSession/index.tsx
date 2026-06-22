@@ -29,7 +29,6 @@ const ConversationAgentChatSession: React.FC<
 
   return (
     <div className={cx(styles.container, className, 'flex', 'h-full')}>
-      <div>这里是头部区域</div>
       <div
         className={cx(
           styles['main-content'],

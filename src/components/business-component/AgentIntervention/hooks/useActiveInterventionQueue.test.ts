@@ -177,6 +177,33 @@ describe('useActiveInterventionQueue', () => {
     expect(result.current[0].kind).toBe('mcp_ask');
   });
 
+  it('drops a failed ACP permission so later approvals can proceed', () => {
+    const failed = createAcpPermissionInteraction('failed');
+    failed.intervention.id = 'itv-failed';
+    failed.intervention.acp.request.toolCall.toolCallId = 'call-failed';
+
+    const pending = createAcpPermissionInteraction('pending');
+    pending.intervention.id = 'itv-pending';
+    pending.intervention.createdAt = 200;
+    pending.intervention.acp.request.toolCall.toolCallId = 'call-pending';
+
+    const messageList = [
+      {
+        id: 'assistant',
+        index: 1,
+        acpPermissionInteractions: [failed, pending],
+      },
+    ] as MessageInfo[];
+
+    const { result } = renderHook(() =>
+      useActiveInterventionQueue(messageList),
+    );
+
+    // The failed approval must leave the queue; only the later pending one stays.
+    expect(result.current).toHaveLength(1);
+    expect(result.current[0].interaction.intervention.id).toBe('itv-pending');
+  });
+
   it('keeps ask/question visible when pending ACP permission is unrelated', () => {
     const unrelatedPermission = createAcpPermissionInteraction('pending', {
       command: 'ls',

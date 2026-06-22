@@ -1,0 +1,41 @@
+@import '@/styles/color.less';
+@import '@/styles/token.less';
+
+.header {
+  height: 56px;
+  min-height: 56px;
+  padding: 0 16px;
+  border-bottom: 1px solid @colorBorderSecondary;
+  background-color: @colorBgContainer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  .avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: @borderRadius;
+    flex-shrink: 0;
+  }
+
+  .header-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    .title {
+      max-width: 300px;
+      font-size: 16px;
+      font-weight: @fontWeightStrong;
+      color: @colorText;
+      white-space: nowrap;
+      margin: 0;
+    }
+  }
+
+  .status-tag {
+    flex-shrink: 0;
+  }
+}

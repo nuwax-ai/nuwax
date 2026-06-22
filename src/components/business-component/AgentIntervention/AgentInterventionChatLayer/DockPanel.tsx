@@ -84,6 +84,9 @@ const DockPanel: React.FC<InterventionDockPanelProps> = ({
 
   const offsetTotal = (stackDepth - 1) * STACK_OFFSET_PX;
 
+  // 反转顺序：最新到来的 intervention 在顶层（front，先处理），符合 unshift 到顶的语义
+  const reversedItems = [...items].reverse();
+
   return (
     <div
       className={styles.stackRoot}
@@ -101,7 +104,7 @@ const DockPanel: React.FC<InterventionDockPanelProps> = ({
       </span>
 
       <div className={styles.stack}>
-        {items.map((item, index) => {
+        {reversedItems.map((item, index) => {
           const isFront = index === 0;
           return (
             <div

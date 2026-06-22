@@ -32,11 +32,27 @@ import type {
 } from '@/types/interfaces/conversationInfo';
 import { addBaseTarget, parsePageAppProjectId } from '@/utils/common';
 
+import {
+  useSourceControl,
+  type SelectedChangeFile,
+} from '@/components/business-component/FileTreeGitSourcePanel';
+import type { FileTreeContainerProps } from '@/components/business-component/FileTreeGitSourcePanel/types/file-tree-git-source';
+import { useFileTreePreviewView } from '@/components/business-component/FileTreePreviewPanel/hooks/useFileTreePreviewView';
+import { apiUpdateStaticFile } from '@/services/vncDesktop';
+import type { UpdateFileInfo } from '@/types/interfaces/fileTree';
+import type { StaticFileInfo } from '@/types/interfaces/vncDesktop';
+import { updateFilesListContent } from '@/utils/fileTree';
 import { jumpToPageDevelop } from '@/utils/router';
 import { LoadingOutlined } from '@ant-design/icons';
 import { Form } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { history, useLocation, useModel, useParams } from 'umi';
 import LeftContent from './components/LeftContent';
 import ShowArea from './components/ShowArea';
@@ -103,6 +119,14 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   const [isSidebarVisible, setIsSidebarVisible] =
     useState<boolean>(showSidebar);
   const sidebarRef = useRef<AgentSidebarRef>(null);
+
+  // 复制模板弹窗状态
+  const [openCopyModal, setOpenCopyModal] = useState<boolean>(false);
+
+  const [clearLoading, setClearLoading] = useState<boolean>(false);
+
+  // 异步查询会话加载状态
+  const [loadingAsync, setLoadingAsync] = useState<boolean>(true);
 
   // 开放应用智能体会话聊天页面相关状态
   const {
@@ -213,6 +237,14 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     taskAgentSelectTrigger,
     // 会话是否正在进行中（有消息正在处理）
     isConversationActive,
+    // 停止会话相关
+    runStopConversation,
+    loadingStopConversation,
+    getCurrentConversationId,
+    getCurrentConversationRequestId,
+    disabledConversationActive,
+    // 其它接口加载状态
+    isLoadingOtherInterface,
     // 加载更多消息相关
     isMoreMessage,
     setIsMoreMessage,
@@ -232,9 +264,6 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   const effectiveAgent = useMemo(() => {
     return conversationInfo?.agent || agentDetail;
   }, [conversationInfo?.agent, agentDetail]);
-
-  // 复制模板弹窗状态
-  const [openCopyModal, setOpenCopyModal] = useState<boolean>(false);
 
   const {
     setSelectedComputerId,
@@ -268,7 +297,6 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     openDesktopView,
     pagePreviewData,
   });
-  const [clearLoading, setClearLoading] = useState<boolean>(false);
 
   const {
     variableParams,
@@ -284,7 +312,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   // 导航拦截：追踪会话是否在本次会话中变为活跃状态
   // 使用 ref 追踪初始状态，避免在刷新时因历史消息状态触发拦截
   const wasConversationActiveOnMount = useRef<boolean | null>(null);
-  const shouldBlockNavigation = useRef(false);
+  const shouldBlockNavigation = useRef<boolean>(false);
 
   // 在首次获取到 isConversationActive 值时记录
   useEffect(() => {
@@ -369,9 +397,6 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     setShowScrollBtn,
   );
 
-  // 异步查询会话加载状态
-  const [loadingAsync, setLoadingAsync] = useState<boolean>(true);
-
   useEffect(() => {
     if (id) {
       setIsLoadingConversation(false);
@@ -414,6 +439,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
             skillIds,
             modelId: selectedModelId,
             agentMode:
+              (stateToUse?.agentMode as AgentMode) ||
               (localStorage.getItem('nuwax_agent_mode_cache') as AgentMode) ||
               'yolo',
           };
@@ -451,6 +477,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     }
   }, [infos, messageSourceType, manualComponents]);
 
+  // 会话相关 props
   const { handleClear, handleMessageSend } = useChatConversation({
     id,
     agentId,
@@ -472,8 +499,6 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     setHasUserSentMessage,
     setIsLoadingOtherInterface,
     onMessageSend,
-    conversationInfo,
-    runAsync,
     allowAutoScrollRef,
     messageViewRef,
     incrementCalledTrialCount,
@@ -515,18 +540,312 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     eventBindConfig: conversationInfo?.agent?.eventBindConfig,
   });
 
+  const refreshGitListRef = useRef<(() => void) | undefined>();
+
   const {
     handleCreateFileNode,
     handleDeleteFile,
     handleConfirmRenameFile,
     handleSaveFiles,
+    handleSaveFileContent,
     handleUploadMultipleFiles,
     handleExportProject,
   } = useChatFiles({
     id,
     fileTreeData,
     handleRefreshFileList,
+    onSaveFileContentSuccessRef: refreshGitListRef,
   });
+
+  // 文件视图 props
+  const fileView = useFileTreePreviewView({
+    taskAgentSelectedFileId,
+    taskAgentSelectTrigger,
+    originalFiles: fileTreeData,
+    fileTreeDataLoading,
+    targetId: id?.toString() || '',
+    readOnly: false,
+    onUploadFiles: handleUploadMultipleFiles,
+    onExportProject: handleExportProject,
+    onRenameFile: handleConfirmRenameFile,
+    onCreateFileNode: handleCreateFileNode,
+    onDeleteFile: handleDeleteFile,
+    onSaveFiles: handleSaveFiles,
+    onSaveFileContent: async (fileId, content, originalFileContent) => {
+      const result = await handleSaveFileContent(
+        fileId,
+        content,
+        originalFileContent,
+      );
+      return result ?? false;
+    },
+    agentSandboxId: finalSelectedId,
+    onClose: closePreviewView,
+    isFileTreePinned,
+    onFileTreePinnedChange: setIsFileTreePinned,
+    isCanDeleteSkillFile: true,
+    onRefreshFileTree: () => refreshFileListImmediately(id),
+    hideDesktop: effectiveAgent?.hideDesktop,
+    staticFileBasePath: `/api/computer/static/${id}`,
+    isDynamicTheme: true,
+    enableGitStatus: effectiveAgent?.type === AgentTypeEnum.TaskAgent,
+  });
+
+  refreshGitListRef.current = fileView.refreshGitList;
+
+  useEffect(
+    () => () => {
+      handleSaveFileContent.cancel();
+    },
+    [handleSaveFileContent],
+  );
+
+  // Git 源代码管理 props
+  const [selectedChangeFile, setSelectedChangeFile] =
+    useState<SelectedChangeFile | null>(null);
+
+  // Git 版本记录面板状态
+  const [gitVersionPanelOpen, setGitVersionPanelOpen] =
+    useState<boolean>(false);
+
+  /** 将文件路径添加到 .gitignore */
+  const handleAddToGitignore = useCallback(
+    async (fileId: string) => {
+      if (!id) {
+        return;
+      }
+
+      const gitignoreId = '.gitignore';
+      const existing = fileTreeData?.find(
+        (item: StaticFileInfo) => item.fileId === gitignoreId,
+      );
+      const currentContent = existing?.contents ?? '';
+      const entry = fileId.startsWith('/') ? fileId.slice(1) : fileId;
+
+      if (
+        currentContent
+          .split('\n')
+          .some(
+            (line: string) => line.trim() === entry || line.trim() === fileId,
+          )
+      ) {
+        message.info(
+          t('PC.Pages.ConversationAgentSourceControl.alreadyInGitignore'),
+        );
+        return;
+      }
+
+      const newContent = currentContent
+        ? `${currentContent.replace(/\n$/, '')}\n${entry}`
+        : entry;
+
+      try {
+        if (existing) {
+          const updatedFilesList = updateFilesListContent(
+            fileTreeData || [],
+            [
+              {
+                fileId: gitignoreId,
+                fileContent: newContent,
+                originalFileContent: currentContent,
+              },
+            ],
+            'modify',
+          );
+          await apiUpdateStaticFile({
+            cId: id,
+            files: updatedFilesList as UpdateFileInfo[],
+          });
+        } else {
+          await apiUpdateStaticFile({
+            cId: id,
+            files: [
+              {
+                name: gitignoreId,
+                contents: `${newContent}\n`,
+                operation: 'create',
+                binary: false,
+                sizeExceeded: false,
+                renameFrom: '',
+                isDir: false,
+              },
+            ],
+          });
+        }
+
+        message.success(
+          t('PC.Pages.ConversationAgentSourceControl.gitignoreSuccess'),
+        );
+        await handleRefreshFileList(id);
+      } catch (error) {
+        console.error('Add to gitignore failed:', error);
+      }
+    },
+    [id, fileTreeData, handleRefreshFileList],
+  );
+
+  // Git 源代码管理 props
+  const gitSourceControl = useSourceControl({
+    workspace: {
+      workspaceType: 'taskAgent',
+      cid: id ?? null,
+    },
+    changeFiles: fileView.changeFiles,
+    selectedChangeFile,
+    setSelectedChangeFile,
+    callbacks: {
+      discardChangeFile: fileView.preview.discardChangeFile,
+      openChangeFile: (fileId: string) => {
+        setSelectedChangeFile(null);
+        setTaskAgentSelectedFileId('');
+        void fileView.tree.handleFileSelect(fileId);
+      },
+      addFileToGitignore: handleAddToGitignore,
+      onDiffFileSelect: () => {
+        if (viewMode === 'desktop') {
+          openPreviewView(id);
+        }
+      },
+      onCommitSuccess: async () => {
+        await fileView.refreshGitList();
+        setSelectedChangeFile(null);
+      },
+      onRefreshGitList: id
+        ? async () => {
+            await fileView.refreshGitList();
+          }
+        : undefined,
+    },
+  });
+
+  /** 切换 Git 版本记录面板（选中 diff 时先清除 diff 再打开面板） */
+  const handleToggleGitVersionPanel = useCallback(() => {
+    if (gitSourceControl.selectedDiffFile) {
+      gitSourceControl.clearSelectedDiff();
+      setGitVersionPanelOpen(true);
+      return;
+    }
+    setGitVersionPanelOpen((prev) => !prev);
+  }, [gitSourceControl.selectedDiffFile, gitSourceControl.clearSelectedDiff]);
+
+  useEffect(() => {
+    setGitVersionPanelOpen(false);
+  }, [id]);
+
+  useEffect(() => {
+    if (viewMode === 'desktop') {
+      setGitVersionPanelOpen(false);
+    }
+  }, [viewMode]);
+
+  // 文件树 props
+  const chatFileTree: FileTreeContainerProps = useMemo(
+    () => ({
+      ...fileView.tree,
+      handleFileSelect: async (
+        fileId: string,
+        options?: { selectFolder?: boolean },
+      ) => {
+        if (!options?.selectFolder) {
+          setTaskAgentSelectedFileId('');
+          setGitVersionPanelOpen(false);
+          gitSourceControl.setSelectedChangeFile(null);
+        }
+        await fileView.tree.handleFileSelect(fileId, options);
+      },
+    }),
+    [
+      fileView.tree,
+      setTaskAgentSelectedFileId,
+      gitSourceControl.setSelectedChangeFile,
+    ],
+  );
+
+  /** 文件树侧边栏 props */
+  const fileSidebarProps = useMemo(
+    () => ({
+      tree: chatFileTree,
+      preview: fileView.preview,
+      viewMode,
+      hideDesktop: effectiveAgent?.hideDesktop,
+      diffFile: gitSourceControl.selectedDiffFile,
+      gitVersionPanelOpen,
+      onToggleGitVersionPanel: handleToggleGitVersionPanel,
+      gitVersionControl:
+        effectiveAgent?.type === AgentTypeEnum.TaskAgent
+          ? {
+              workspace: {
+                workspaceType: 'taskAgent' as const,
+                cid: id ?? null,
+              },
+              branch: fileView.gitBranch,
+              onRollbackSuccess: () => {
+                if (id) {
+                  void handleRefreshFileList(id);
+                  void fileView.refreshGitList();
+                }
+              },
+            }
+          : undefined,
+      previewPanelProps: {
+        agentSandboxId: finalSelectedId,
+        agentSandboxName: '',
+        onRestartServer: () => restartVncPod(id, finalSelectedId),
+        onRestartAgent: () => restartAgent(id),
+        onExportProject: handleExportProject,
+        idleDetection: {
+          enabled: effectiveAgent?.type === AgentTypeEnum.TaskAgent,
+          onIdleTimeout: () => openPreviewView(id),
+        },
+      },
+      sourceControl: {
+        changeFiles: fileView.changeFiles,
+        selectedChangeFile: gitSourceControl.selectedChangeFile,
+        isCommitting:
+          gitSourceControl.isCommitting || fileView.preview.isSavingFiles,
+        isRefreshingGitList: fileView.isRefreshingGitList,
+        onRefreshGitList: fileView.refreshGitList,
+        onDiffFileSelect: gitSourceControl.handleDiffFileSelect,
+        onOpenChangeFile: gitSourceControl.handleOpenChangeFile,
+        onDiscardChanges: gitSourceControl.handleDiscardChange,
+        onStageChanges: gitSourceControl.handleStageChanges,
+        onUnstageChanges: gitSourceControl.handleUnstageChanges,
+        onAddToGitignore: (fileId: string) => {
+          void gitSourceControl.handleAddToGitignore(fileId);
+        },
+        onCommit: gitSourceControl.handleCommit,
+      },
+    }),
+    [
+      chatFileTree,
+      fileView.preview,
+      fileView.changeFiles,
+      fileView.isRefreshingGitList,
+      fileView.refreshGitList,
+      gitSourceControl.selectedDiffFile,
+      gitSourceControl.selectedChangeFile,
+      gitSourceControl.isCommitting,
+      gitSourceControl.handleDiffFileSelect,
+      gitSourceControl.handleOpenChangeFile,
+      gitSourceControl.handleDiscardChange,
+      gitSourceControl.handleStageChanges,
+      gitSourceControl.handleUnstageChanges,
+      gitSourceControl.handleAddToGitignore,
+      gitSourceControl.handleCommit,
+      gitVersionPanelOpen,
+      handleToggleGitVersionPanel,
+      fileView.gitBranch,
+      viewMode,
+      id,
+      effectiveAgent?.hideDesktop,
+      effectiveAgent?.type,
+      finalSelectedId,
+      handleExportProject,
+      openPreviewView,
+      restartVncPod,
+      restartAgent,
+    ],
+  );
 
   // 设置最小宽度
   useEffect(() => {
@@ -557,6 +876,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     isMobile,
   ]);
 
+  // 聊天会话头部相关 props
   const headerProps = {
     showSidebar,
     isAppSidebarVisible,
@@ -580,6 +900,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     renderHeaderRight,
   };
 
+  // 聊天会话相关 props
   const chatSessionProps = {
     conversationId: id,
     messageList,
@@ -587,7 +908,10 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     isLoading: loadingConversation,
     loadingMore,
     isMoreMessage,
-    isConversationActive: conversationInfo?.taskStatus === TaskStatus.EXECUTING,
+    // 流式输出中 + 后台 taskStatus 执行中，驱动停止按钮与「智能体执行中」提示
+    isConversationActive:
+      isConversationActive ||
+      conversationInfo?.taskStatus === TaskStatus.EXECUTING,
     loadingSuggest,
     chatSuggestList,
     agentInfo: {
@@ -608,6 +932,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     onLoadMoreMessage: handleLoadMoreMessage,
     selectedModelId,
     onModelSelect: setSelectedModelId,
+    initialAgentMode: stateToUse?.agentMode,
     allowOtherModel: effectiveAgent?.allowOtherModel,
     manualComponents,
     selectedComponentList,
@@ -631,41 +956,18 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     showAnnouncement: true,
     mentionPlacement: 'up',
     messageViewRef,
+    // 原 conversationInfo model 数据，传给独立版输入组件
+    runStopConversation,
+    loadingStopConversation,
+    getCurrentConversationId,
+    getCurrentConversationRequestId,
+    disabledConversationActive,
+    loadingConversation,
+    isLoadingOtherInterface,
+    conversationInfo,
   };
 
-  const fileTreeProps = {
-    taskAgentSelectedFileId,
-    clearTaskAgentSelectedFileId: () => setTaskAgentSelectedFileId(''),
-    taskAgentSelectTrigger,
-    originalFiles: fileTreeData,
-    fileTreeDataLoading,
-    targetId: id?.toString() || '',
-    viewMode,
-    readOnly: false,
-    onExportProject: handleExportProject,
-    onUploadFiles: handleUploadMultipleFiles,
-    onRenameFile: handleConfirmRenameFile,
-    onCreateFileNode: handleCreateFileNode,
-    onDeleteFile: handleDeleteFile,
-    onSaveFiles: handleSaveFiles,
-    agentSandboxId: finalSelectedId,
-    agentSandboxName: '',
-    onRestartServer: () => restartVncPod(id, finalSelectedId),
-    onRestartAgent: () => restartAgent(id),
-    onClose: closePreviewView,
-    isFileTreePinned,
-    onFileTreePinnedChange: setIsFileTreePinned,
-    isCanDeleteSkillFile: true,
-    onRefreshFileTree: () => refreshFileListImmediately(id),
-    idleDetection: {
-      enabled: effectiveAgent?.type === AgentTypeEnum.TaskAgent,
-      onIdleTimeout: () => openPreviewView(id),
-    },
-    hideDesktop: effectiveAgent?.hideDesktop,
-    isDynamicTheme: true,
-    staticFileBasePath: `/api/computer/static/${id}`,
-  };
-
+  // 加载中
   if (clearLoading || loadingConversation || loadingAsync) {
     return (
       <div className={cx(styles['chat-loading-container'])}>
@@ -674,6 +976,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     );
   }
 
+  // 是否展开视图
   const isExpandedView = !!(pagePreviewData || isFileTreeVisible);
 
   return (
@@ -705,7 +1008,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
                   isAppSidebarMode={isAppSidebarMode}
                   headerProps={headerProps}
                   chatSessionProps={chatSessionProps}
-                  fileTreeProps={fileTreeProps}
+                  fileSidebarProps={fileSidebarProps}
                 />
               )
             }
@@ -752,11 +1055,8 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
           />
         ) : (
           <div
-            className={styles['chat-flex-container']}
+            className={cx('flex', 'w-full', 'h-full')}
             style={{
-              display: 'flex',
-              width: '100%',
-              height: '100%',
               gap: '16px',
             }}
           >
@@ -774,7 +1074,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
                   isAppSidebarMode={isAppSidebarMode}
                   headerProps={headerProps}
                   chatSessionProps={chatSessionProps}
-                  fileTreeProps={fileTreeProps}
+                  fileSidebarProps={fileSidebarProps}
                 />
               </div>
             )}

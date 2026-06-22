@@ -1,5 +1,5 @@
+import type { ChangeFileInfo } from '@/components/business-component/FileTreePreviewPanel/types/file-tree';
 import TooltipIcon from '@/components/custom/TooltipIcon';
-import type { ChangeFileInfo } from '@/components/FileTreeView/type';
 import { dict } from '@/services/i18nRuntime';
 import { modalConfirm } from '@/utils/ant-custom';
 import { ReloadOutlined, UnorderedListOutlined } from '@ant-design/icons';
@@ -7,18 +7,11 @@ import { Button, Input } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useMemo, useState } from 'react';
 import { collectFilesUnderFolder } from '../utils/buildChangeFileTree';
-import type { GitWorkspaceConfig } from '../utils/buildGitWorkspaceParams';
 import {
+  splitChangeFilesForDisplay,
   type ChangeListSection,
-  resolveStagedStatusMeta,
-  resolveUnstagedStatusMeta,
   type SelectedChangeFile,
 } from '../utils/changeFileStatus';
-import {
-  runGitDiscard,
-  runGitStage,
-  runGitUnstage,
-} from '../utils/sourceControlGitActions';
 import ChangeFileContextMenu from './ChangeFileContextMenu';
 import ChangeFileListSection, {
   type ChangeListViewMode,
@@ -35,8 +28,6 @@ type ContextMenuTarget =
 export interface SourceControlPanelProps {
   /** 已修改文件列表 */
   changeFiles: ChangeFileInfo[];
-  /** Git 工作空间 */
-  gitWorkspace?: GitWorkspaceConfig;
   /** 是否正在提交 */
   isCommitting?: boolean;
   /** 是否正在刷新 Git 列表 */
@@ -53,8 +44,12 @@ export interface SourceControlPanelProps {
   onOpenChanges?: (fileId: string, section: ChangeListSection) => void;
   /** 打开文件 */
   onOpenFile?: (fileId: string) => void;
-  /** Git discard 成功后的 UI 同步 */
-  onAfterDiscardChange?: (fileId: string) => void | Promise<void>;
+  /** 放弃更改（Git discard + UI 同步 + 刷新） */
+  onDiscardChanges?: (fileIds: string[]) => void | Promise<void>;
+  /** 暂存更改（git add） */
+  onStageChanges?: (fileIds: string[]) => void | Promise<void>;
+  /** 取消暂存（git restore --staged） */
+  onUnstageChanges?: (fileIds: string[]) => void | Promise<void>;
   /** 添加到 .gitignore */
   onAddToGitignore?: (fileId: string) => void;
 }
@@ -65,7 +60,6 @@ export interface SourceControlPanelProps {
  */
 const SourceControlPanel: React.FC<SourceControlPanelProps> = ({
   changeFiles,
-  gitWorkspace,
   isCommitting = false,
   isRefreshing = false,
   selectedChangeFile,
@@ -74,7 +68,9 @@ const SourceControlPanel: React.FC<SourceControlPanelProps> = ({
   onFileClick,
   onOpenChanges,
   onOpenFile,
-  onAfterDiscardChange,
+  onDiscardChanges,
+  onStageChanges,
+  onUnstageChanges,
   onAddToGitignore,
 }) => {
   const [commitMessage, setCommitMessage] = useState<string>('');
@@ -91,43 +87,10 @@ const SourceControlPanel: React.FC<SourceControlPanelProps> = ({
   const [contextMenuTarget, setContextMenuTarget] =
     useState<ContextMenuTarget | null>(null);
 
-  /** 变更项基础信息（文件名、路径） */
-  const baseChangeItems = useMemo(
-    () =>
-      changeFiles.map((item) => {
-        const segments = item.fileId.split('/');
-        const fileName = segments[segments.length - 1] || item.fileId;
-        return {
-          ...item,
-          fileName,
-          parentPath: item.fileId,
-        };
-      }),
+  /** 暂存区 / 更改区列表（map + merge，角标 A/M/D/U/C/R） */
+  const { stagedItems, unstagedItems } = useMemo(
+    () => splitChangeFilesForDisplay(changeFiles),
     [changeFiles],
-  );
-
-  /** 暂存的更改：status.staged 等 */
-  const stagedItems = useMemo(
-    () =>
-      baseChangeItems
-        .map((item) => {
-          const statusMeta = resolveStagedStatusMeta(item);
-          return statusMeta ? { ...item, statusMeta } : null;
-        })
-        .filter((item): item is NonNullable<typeof item> => item !== null),
-    [baseChangeItems],
-  );
-
-  /** 更改：modified / deleted / untracked / conflict 等未暂存文件 */
-  const unstagedItems = useMemo(
-    () =>
-      baseChangeItems
-        .map((item) => {
-          const statusMeta = resolveUnstagedStatusMeta(item);
-          return statusMeta ? { ...item, statusMeta } : null;
-        })
-        .filter((item): item is NonNullable<typeof item> => item !== null),
-    [baseChangeItems],
   );
 
   // 变更项列表
@@ -209,55 +172,57 @@ const SourceControlPanel: React.FC<SourceControlPanelProps> = ({
   );
 
   /**
-   * 放弃更改：先调用 Git discard，再执行 UI 同步并刷新列表
+   * 放弃更改：由 useSourceControl 统一执行 Git discard、UI 同步与列表刷新
    */
   const discardChanges = useCallback(
     async (fileIds: string[]) => {
-      if (!gitWorkspace || !fileIds.length) {
+      if (!fileIds.length) {
         return;
       }
-
-      const isSuccess = await runGitDiscard(gitWorkspace, fileIds);
-      if (!isSuccess) {
-        return;
-      }
-
-      for (const fileId of fileIds) {
-        await onAfterDiscardChange?.(fileId);
-      }
-      await onRefresh?.();
+      await onDiscardChanges?.(fileIds);
     },
-    [gitWorkspace, onAfterDiscardChange, onRefresh],
+    [onDiscardChanges],
+  );
+
+  /** 放弃更改二次确认（统一封装，确保 onOk 返回 Promise 供 Modal 等待） */
+  const confirmDiscardChanges = useCallback(
+    (
+      fileIds: string[],
+      content: string,
+      title = dict(
+        'PC.Pages.ConversationAgentSourceControl.discardChangesConfirmTitle',
+      ),
+    ) => {
+      modalConfirm(title, content, async () => {
+        await discardChanges(fileIds);
+        return new Promise((resolve) => {
+          setTimeout(resolve, 300);
+        });
+      });
+    },
+    [discardChanges],
   );
 
   /** 暂存更改（git add） */
   const stageChanges = useCallback(
     async (fileIds: string[]) => {
-      if (!gitWorkspace || !fileIds.length) {
+      if (!fileIds.length) {
         return;
       }
-
-      const isSuccess = await runGitStage(gitWorkspace, fileIds);
-      if (isSuccess) {
-        await onRefresh?.();
-      }
+      await onStageChanges?.(fileIds);
     },
-    [gitWorkspace, onRefresh],
+    [onStageChanges],
   );
 
   /** 取消暂存（git restore --staged） */
   const unstageChanges = useCallback(
     async (fileIds: string[]) => {
-      if (!gitWorkspace || !fileIds.length) {
+      if (!fileIds.length) {
         return;
       }
-
-      const isSuccess = await runGitUnstage(gitWorkspace, fileIds);
-      if (isSuccess) {
-        await onRefresh?.();
-      }
+      await onUnstageChanges?.(fileIds);
     },
-    [gitWorkspace, onRefresh],
+    [onUnstageChanges],
   );
 
   /** 放弃更改（二次确认） */
@@ -265,13 +230,7 @@ const SourceControlPanel: React.FC<SourceControlPanelProps> = ({
     if (contextMenuTarget?.kind === 'file' && contextMenuFile) {
       const { fileId, fileName } = contextMenuFile;
       closeContextMenu();
-      modalConfirm(
-        dict(
-          'PC.Pages.ConversationAgentSourceControl.discardChangesConfirmTitle',
-        ),
-        fileName,
-        () => discardChanges([fileId]),
-      );
+      confirmDiscardChanges([fileId], fileName);
       return;
     }
 
@@ -279,20 +238,14 @@ const SourceControlPanel: React.FC<SourceControlPanelProps> = ({
       const { folderId } = contextMenuTarget;
       const fileIds = contextMenuFolderFiles.map((item) => item.fileId);
       closeContextMenu();
-      modalConfirm(
-        dict(
-          'PC.Pages.ConversationAgentSourceControl.discardChangesConfirmTitle',
-        ),
-        folderId,
-        () => discardChanges(fileIds),
-      );
+      confirmDiscardChanges(fileIds, folderId);
     }
   }, [
     closeContextMenu,
+    confirmDiscardChanges,
     contextMenuFile,
     contextMenuFolderFiles,
     contextMenuTarget,
-    discardChanges,
   ]);
 
   /** 暂存文件夹下所有更改 */
@@ -366,15 +319,9 @@ const SourceControlPanel: React.FC<SourceControlPanelProps> = ({
   /** 列表行悬停：放弃更改（与右键菜单一致，需二次确认） */
   const handleListDiscardChange = useCallback(
     (fileId: string, fileName: string) => {
-      modalConfirm(
-        dict(
-          'PC.Pages.ConversationAgentSourceControl.discardChangesConfirmTitle',
-        ),
-        fileName,
-        () => discardChanges([fileId]),
-      );
+      confirmDiscardChanges([fileId], fileName);
     },
-    [discardChanges],
+    [confirmDiscardChanges],
   );
 
   /** 列表行悬停：暂存更改 */
@@ -398,14 +345,14 @@ const SourceControlPanel: React.FC<SourceControlPanelProps> = ({
     if (!unstagedItems.length) {
       return;
     }
-    modalConfirm(
+    confirmDiscardChanges(
+      unstagedItems.map((item) => item.fileId),
+      dict('PC.Pages.ConversationAgentSourceControl.changes'),
       dict(
         'PC.Pages.ConversationAgentSourceControl.discardAllChangesConfirmTitle',
       ),
-      dict('PC.Pages.ConversationAgentSourceControl.changes'),
-      () => discardChanges(unstagedItems.map((item) => item.fileId)),
     );
-  }, [discardChanges, unstagedItems]);
+  }, [confirmDiscardChanges, unstagedItems]);
 
   /** 区块标题：暂存所有未暂存更改 */
   const handleStageAllUnstagedChanges = useCallback(() => {

@@ -15,7 +15,7 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    flex: 0 0 auto;
+    flex: 1;
     min-width: 0;
 
     .fileDetails {
@@ -26,7 +26,8 @@
       flex: 1;
 
       .fileName {
-        max-width: 200px;
+        flex: 1;
+        min-width: 0;
         font-size: @fontSize;
         font-weight: @fontWeightStrong;
         color: @colorTextSecondary;

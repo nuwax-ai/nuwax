@@ -1,13 +1,9 @@
 import { UnifiedChatSession } from '@/components/business-component';
+import type { AgentMode } from '@/components/business-component/AgentIntervention';
 import { TaskStatus } from '@/types/enums/agent';
-import { AgentConfigInfo } from '@/types/interfaces/agent';
 import classNames from 'classnames';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { history, useLocation, useModel } from 'umi';
-import ConversationAgentHeader from '../ConversationAgentHeader';
-import styles from './index.less';
-
-const cx = classNames.bind(styles);
 
 /**
  * Props 类型定义
@@ -19,38 +15,25 @@ export interface AgentConversationChatPanelProps {
   onChangeSelectedComputerId?: (id: string) => void;
   /** 当前选中的电脑 ID */
   selectedComputerId?: string;
-  /** 切换文件树侧边栏显隐 */
-  onToggleFileTreeSidebar?: () => void;
-  /** 智能体配置信息 */
-  agentConfigInfo?: AgentConfigInfo;
-  /** 编辑智能体 */
-  onEditAgent?: () => void;
-  /** 文件树侧边栏是否可见 */
-  isFileTreeSidebarVisible?: boolean;
-  /** 是否显示智能体电脑入口 */
-  isShowDesktop?: boolean;
-  /** 智能体电脑是否已打开 */
-  isAgentDesktopOpen?: boolean;
-  /** 打开 / 关闭智能体电脑 */
-  onOpenDesktopPanel?: () => void;
+  /** 会话结束后回调（用于刷新文件树、Git 状态、智能体编排等） */
+  onConversationEnd?: () => void;
 }
 
 /**
- * AgentConversationChatPanel — 智能体对话面板
+ * AgentConversationChatPanel — 智能体对话面板（仅聊天区，Header 由页面级渲染）
  */
 const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
   className,
   onChangeSelectedComputerId,
   selectedComputerId,
-  onToggleFileTreeSidebar,
-  agentConfigInfo,
-  onEditAgent,
-  isFileTreeSidebarVisible,
-  isShowDesktop,
-  isAgentDesktopOpen,
-  onOpenDesktopPanel,
+  onConversationEnd,
 }) => {
   const location = useLocation();
+
+  // 从新建项目页透传过来的初始 Agent 模式（yolo/ask）
+  const initialAgentMode = (location.state as any)?.agentMode as
+    | AgentMode
+    | undefined;
 
   // 是否锁定电脑选择（仅在带有 selectedComputerId 且为 PUSH 跳转时生效）
   const [isSelectionLocked, setIsSelectionLocked] = useState<boolean>(false);
@@ -75,8 +58,11 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
       onChangeSelectedComputerId?.('');
       setIsSelectionLocked(false);
     }
-  }, [history.action, location.key]);
-  // ==================== 全局状态模型 ====================
+  }, [history.action, location.key, onChangeSelectedComputerId]);
+
+  // 追踪会话活跃状态的上一次值，用于检测「活跃→非活跃」的转换
+  const prevIsActiveRef = useRef<boolean>(false);
+
   const {
     conversationInfo,
     messageList,
@@ -87,82 +73,89 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
     isMoreMessage,
     loadingMore,
     handleLoadMoreMessage,
+    // 停止会话相关
+    runStopConversation,
+    loadingStopConversation,
+    getCurrentConversationId,
+    getCurrentConversationRequestId,
+    disabledConversationActive,
+    // SSE 流式交互状态
+    isConversationActive,
+    // 其它接口加载状态
+    isLoadingOtherInterface,
   } = useModel('conversationInfo');
 
-  // ==================== 主渲染 ====================
+  // 监听 isConversationActive 从 true → false，触发会话结束回调
+  useEffect(() => {
+    if (prevIsActiveRef.current && !isConversationActive) {
+      onConversationEnd?.();
+    }
+    prevIsActiveRef.current = isConversationActive;
+  }, [isConversationActive, onConversationEnd]);
+
   return (
-    <div className={cx(styles.container, className, 'flex', 'h-full')}>
-      {/* 顶部 Header */}
-      <ConversationAgentHeader
-        agentConfigInfo={agentConfigInfo}
-        onEditAgent={onEditAgent}
-        isFileTreeSidebarVisible={isFileTreeSidebarVisible}
-        onToggleFileTreeSidebar={onToggleFileTreeSidebar}
-        isShowDesktop={isShowDesktop}
-        isAgentDesktopOpen={isAgentDesktopOpen}
-        onOpenDesktopPanel={onOpenDesktopPanel}
-      />
-      {/* 主内容区域：消息列表 + 状态栏 + 输入框 */}
-      <div
-        className={cx(
-          styles['main-content'],
-          'flex-1',
-          'flex',
-          'flex-col',
-          'overflow-hide',
-        )}
-      >
-        <UnifiedChatSession
-          conversationId={conversationInfo?.id}
-          messageList={messageList}
-          isLoading={loadingConversation}
-          loadingMore={loadingMore}
-          isMoreMessage={isMoreMessage}
-          isConversationActive={
-            conversationInfo?.taskStatus === TaskStatus.EXECUTING
+    <div className={classNames('flex', 'flex-col', 'h-full', className)}>
+      <UnifiedChatSession
+        conversationId={conversationInfo?.id}
+        messageList={messageList}
+        isLoading={loadingConversation}
+        loadingMore={loadingMore}
+        isMoreMessage={isMoreMessage}
+        isConversationActive={
+          isConversationActive ||
+          conversationInfo?.taskStatus === TaskStatus.EXECUTING
+        }
+        messageBottomMode="chat"
+        chatSuggestList={chatSuggestList}
+        agentInfo={{
+          ...conversationInfo?.agent,
+          id: conversationInfo?.agent?.agentId,
+          sandboxId: selectedComputerId,
+        }}
+        allowOtherModel={conversationInfo?.agent?.allowOtherModel}
+        initialAgentMode={initialAgentMode}
+        selectedModelId={selectedModelId}
+        onModelSelect={setSelectedModelId}
+        isSelectionLocked={isSelectionLocked}
+        onSendMessage={(
+          messageInfo,
+          files,
+          skillIds,
+          modelId,
+          selectedAgentMode,
+        ) => {
+          const id = conversationInfo?.id;
+          if (id) {
+            onMessageSend({
+              id,
+              messageInfo,
+              files,
+              infos: manualComponents,
+              sandboxId: selectedComputerId,
+              debug: true,
+              isSync: false,
+              skillIds,
+              modelId: modelId || selectedModelId,
+              agentMode: selectedAgentMode,
+            });
           }
-          messageBottomMode="chat"
-          chatSuggestList={chatSuggestList}
-          agentInfo={{
-            ...conversationInfo?.agent,
-            id: conversationInfo?.agent?.agentId,
-            sandboxId: selectedComputerId,
-          }}
-          allowOtherModel={conversationInfo?.agent?.allowOtherModel}
-          selectedModelId={selectedModelId}
-          onModelSelect={setSelectedModelId}
-          isSelectionLocked={isSelectionLocked}
-          onSendMessage={(
-            messageInfo,
-            files,
-            skillIds,
-            modelId,
-            selectedAgentMode,
-          ) => {
-            const id = conversationInfo?.id;
-            if (id) {
-              onMessageSend({
-                id,
-                messageInfo,
-                files,
-                infos: manualComponents,
-                sandboxId: selectedComputerId,
-                debug: true,
-                isSync: false,
-                skillIds,
-                modelId: modelId || selectedModelId,
-                agentMode: selectedAgentMode,
-              });
-            }
-          }}
-          onLoadMoreMessage={handleLoadMoreMessage}
-          manualComponents={manualComponents}
-          selectedComputerId={selectedComputerId}
-          onComputerSelect={(id) => {
-            onChangeSelectedComputerId?.(id);
-          }}
-        />
-      </div>
+        }}
+        onLoadMoreMessage={handleLoadMoreMessage}
+        manualComponents={manualComponents}
+        selectedComputerId={selectedComputerId}
+        onComputerSelect={(id) => {
+          onChangeSelectedComputerId?.(id);
+        }}
+        // 原 conversationInfo model 数据，传给独立版输入组件
+        runStopConversation={runStopConversation}
+        loadingStopConversation={loadingStopConversation}
+        getCurrentConversationId={getCurrentConversationId}
+        getCurrentConversationRequestId={getCurrentConversationRequestId}
+        disabledConversationActive={disabledConversationActive}
+        loadingConversation={loadingConversation}
+        isLoadingOtherInterface={isLoadingOtherInterface}
+        conversationInfo={conversationInfo}
+      />
     </div>
   );
 };

@@ -16,7 +16,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 export const useAppDevModelSelector = (
   spaceId: number,
-  projectId: string,
+  projectId?: string,
   hasPermission: boolean = true,
 ) => {
   // 模型对象（包含编码模型列表、视觉模型列表）
@@ -34,7 +34,7 @@ export const useAppDevModelSelector = (
    * 加载模型列表
    */
   const loadModels = useCallback(async () => {
-    if (!projectId) return;
+    if (!spaceId) return;
 
     setIsLoadingModels(true);
     try {
@@ -86,7 +86,7 @@ export const useAppDevModelSelector = (
     } finally {
       setIsLoadingModels(false);
     }
-  }, [projectId, spaceId]);
+  }, [spaceId]);
 
   /**
    * 选择编码模型
@@ -110,10 +110,10 @@ export const useAppDevModelSelector = (
 
   // 组件初始化时加载模型列表
   useEffect(() => {
-    if (projectId && hasPermission) {
+    if (spaceId && hasPermission) {
       loadModels();
     }
-  }, [projectId, hasPermission]); // 移除 loadModels 依赖，避免重复执行
+  }, [spaceId, hasPermission]); // 移除 loadModels 依赖，避免重复执行
 
   return {
     models,

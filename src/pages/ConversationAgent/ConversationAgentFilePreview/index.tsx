@@ -1,11 +1,9 @@
 import ChangeFileGitDiffView from '@/components/business-component/ChangeFileGitDiffView';
-import VncPreview from '@/components/business-component/VncPreview';
-import fileTreeViewStyles from '@/components/FileTreeView/index.less';
-import type { ChangeFileInfo } from '@/components/FileTreeView/type';
-import { AgentTypeEnum } from '@/types/enums/space';
+import fileTreePreviewStyles from '@/components/business-component/FileTreePreviewPanel/index.less';
+import type { FileTreePreviewViewPreview } from '@/components/business-component/FileTreePreviewPanel/types';
+import type { ChangeFileInfo } from '@/components/business-component/FileTreePreviewPanel/types/file-tree';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
-import type { ConversationAgentFileViewPreview } from '../hooks/types';
 import FilePathHeader from './FilePathHeader';
 import {
   WORKSPACE_PREVIEW_TOOL_IDS,
@@ -13,21 +11,18 @@ import {
   type PreviewToolId,
 } from './hooks/usePreviewTabs';
 import styles from './index.less';
-import TabPickerPanel from './TabPickerPanel';
 import ToolTabContent from './ToolTabContent';
 
 const cx = classNames.bind(styles);
-const fileTreeCx = classNames.bind(fileTreeViewStyles);
+const fileTreeCx = classNames.bind(fileTreePreviewStyles);
 
 export interface ConversationAgentFilePreviewProps {
   /** 文件预览状态与渲染函数 */
-  preview: ConversationAgentFileViewPreview;
+  preview: FileTreePreviewViewPreview;
   /** 源代码管理选中的 diff 文件（优先于普通预览） */
   diffFile?: ChangeFileInfo;
   /** 当前激活的标签（由外层 PreviewTabBar 控制） */
   activeTab: PreviewTab | null;
-  /** 在「新建页签」面板中选择工具 */
-  onSelectTool?: (toolId: PreviewToolId) => void;
   /** 「预览」页签：调试对话面板 */
   debugPanel?: React.ReactNode;
   /** 「编排」页签：智能体配置编辑区 */
@@ -38,17 +33,9 @@ export interface ConversationAgentFilePreviewProps {
   subscriptionSettingPanel?: React.ReactNode;
   /** 「订阅统计」页签 */
   subscriptionStatsPanel?: React.ReactNode;
-  /** 外层容器类名（来自 useConversationAgentFileView） */
+  /** 外层容器类名（来自 useFileTreePreviewView） */
   providerClassName?: string;
   className?: string;
-  /** 是否展示智能体电脑（VNC） */
-  isAgentDesktopOpen?: boolean;
-  /** 智能体电脑绑定的会话 ID */
-  desktopConversationId?: number;
-  /** 智能体类型（用于 VNC 空闲检测） */
-  agentType?: string;
-  /** VNC 空闲超时回调 */
-  onDesktopIdleTimeout?: () => void;
 }
 
 /**
@@ -61,7 +48,6 @@ const ConversationAgentFilePreview: React.FC<
   preview,
   diffFile,
   activeTab,
-  onSelectTool,
   debugPanel,
   arrangeConfigPanel,
   versionPanel,
@@ -69,10 +55,6 @@ const ConversationAgentFilePreview: React.FC<
   subscriptionStatsPanel,
   providerClassName,
   className,
-  isAgentDesktopOpen = false,
-  desktopConversationId,
-  agentType,
-  onDesktopIdleTimeout,
 }) => {
   const { renderPreviewContent, isFullscreen, filePathHeaderProps } = preview;
 
@@ -94,8 +76,6 @@ const ConversationAgentFilePreview: React.FC<
 
   /** 是否显示文件预览内容 */
   const showFilePreview = activeTab?.type === 'file' && !showDiff;
-  /** 是否显示「新建页签」面板 */
-  const showPicker = activeTab?.type === 'picker' && !!onSelectTool;
   /** 当前激活的工作区工具 ID */
   const activeWorkspaceToolId =
     activeTab?.type === 'tool' &&
@@ -125,25 +105,8 @@ const ConversationAgentFilePreview: React.FC<
     ],
   );
 
-  /** 按优先级渲染预览区主体（VNC > diff > 文件 > 工作区页签 > 其他） */
+  /** 按优先级渲染预览区主体（diff > 文件 > 工作区页签 > 其他） */
   const previewBody = useMemo(() => {
-    if (isAgentDesktopOpen && desktopConversationId) {
-      return (
-        <div className={cx(styles['desktop-preview-layout'])}>
-          <VncPreview
-            serviceUrl={process.env.BASE_URL || ''}
-            cId={String(desktopConversationId)}
-            autoConnect
-            className={styles['vnc-preview']}
-            idleDetection={{
-              enabled: agentType === AgentTypeEnum.TaskAgent,
-              onIdleTimeout: onDesktopIdleTimeout,
-            }}
-          />
-        </div>
-      );
-    }
-
     if (showDiff && diffFile) {
       return (
         <ChangeFileGitDiffView
@@ -160,7 +123,7 @@ const ConversationAgentFilePreview: React.FC<
     if (showFilePreview) {
       return (
         <div className={cx(styles['file-preview-layout'])}>
-          <FilePathHeader {...filePathHeaderProps} hideClose />
+          <FilePathHeader {...filePathHeaderProps} />
           <div className={cx(styles['file-preview-scroll'])}>
             {renderPreviewContent()}
           </div>
@@ -181,17 +144,8 @@ const ConversationAgentFilePreview: React.FC<
       return <ToolTabContent toolId={activeTab.toolId} />;
     }
 
-    /** 显示「新建页签」面板 */
-    if (showPicker && onSelectTool) {
-      return <TabPickerPanel embedded onSelectTool={onSelectTool} />;
-    }
-
     return <div className={cx(styles['empty-preview'])} />;
   }, [
-    isAgentDesktopOpen,
-    desktopConversationId,
-    agentType,
-    onDesktopIdleTimeout,
     showDiff,
     diffFile,
     diffFileName,
@@ -202,8 +156,6 @@ const ConversationAgentFilePreview: React.FC<
     workspacePanelMap,
     showOtherToolContent,
     activeTab?.toolId,
-    showPicker,
-    onSelectTool,
   ]);
 
   return (

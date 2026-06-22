@@ -1,6 +1,7 @@
 import agentImage from '@/assets/images/agent_image.png';
 import { UnifiedChatSession } from '@/components/business-component';
 import { dict } from '@/services/i18nRuntime';
+import { TaskStatus } from '@/types/enums/agent';
 import { AgentTypeEnum } from '@/types/enums/space';
 import type { PluginInfo } from '@/types/interfaces/plugin';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -29,11 +30,20 @@ const PluginChatSession: React.FC<PluginChatSessionProps> = ({
     runAsync,
     onMessageSend,
     messageViewRef,
-    isConversationActive,
     isMoreMessage,
     loadingMore,
     handleLoadMoreMessage,
     resetInit,
+    // 停止会话相关
+    runStopConversation,
+    loadingStopConversation,
+    getCurrentConversationId,
+    getCurrentConversationRequestId,
+    disabledConversationActive,
+    // 加载状态
+    loadingConversation,
+    isLoadingOtherInterface,
+    isConversationActive,
   } = useModel('conversationInfo');
 
   // 1. 初始化回显从外部跳转传递过来的信息
@@ -100,7 +110,7 @@ const PluginChatSession: React.FC<PluginChatSessionProps> = ({
             isSync: false,
             skillIds: state.skillIds || [],
             modelId: selectedModelId,
-            agentMode: 'yolo',
+            agentMode: state.agentMode || 'yolo',
             data: conversationInfo,
           });
         } else {
@@ -189,7 +199,10 @@ const PluginChatSession: React.FC<PluginChatSessionProps> = ({
       isLoading={loadingAsync}
       loadingMore={loadingMore}
       isMoreMessage={isMoreMessage}
-      isConversationActive={isConversationActive}
+      isConversationActive={
+        isConversationActive ||
+        conversationInfo?.taskStatus === TaskStatus.EXECUTING
+      }
       messageBottomMode="chat"
       loadingSuggest={false}
       chatSuggestList={chatSuggestList as string[]}
@@ -203,6 +216,7 @@ const PluginChatSession: React.FC<PluginChatSessionProps> = ({
       }}
       onSendMessage={handleSendMessage}
       onLoadMoreMessage={handleLoadMoreMessage}
+      initialAgentMode={(location.state as any)?.agentMode}
       readonly={false}
       enableMention={true}
       allowOtherModel={conversationInfo?.agent?.allowOtherModel}
@@ -216,6 +230,15 @@ const PluginChatSession: React.FC<PluginChatSessionProps> = ({
         'PC.Components.ChatInputHomeMentionEditor.placeholderWithoutMention',
       )}
       messageViewRef={messageViewRef}
+      // 原 conversationInfo model 数据，传给独立版输入组件
+      runStopConversation={runStopConversation}
+      loadingStopConversation={loadingStopConversation}
+      getCurrentConversationId={getCurrentConversationId}
+      getCurrentConversationRequestId={getCurrentConversationRequestId}
+      disabledConversationActive={disabledConversationActive}
+      loadingConversation={loadingConversation}
+      isLoadingOtherInterface={isLoadingOtherInterface}
+      conversationInfo={conversationInfo}
     />
   );
 };

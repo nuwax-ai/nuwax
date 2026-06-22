@@ -19,6 +19,7 @@ import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { CREATED_TABS } from '@/constants/common.constants';
 import { useAppDevChat } from '@/hooks/useAppDevChat';
 import { useAppDevFileManagement } from '@/hooks/useAppDevFileManagement';
+import { useAppDevInitialAutoSend } from '@/hooks/useAppDevInitialAutoSend';
 import { useAppDevModelSelector } from '@/hooks/useAppDevModelSelector';
 import { useAppDevProjectId } from '@/hooks/useAppDevProjectId';
 import { useAppDevProjectInfo } from '@/hooks/useAppDevProjectInfo';
@@ -252,10 +253,7 @@ const AppDev: React.FC = () => {
 
   // 使用项目详情 Hook
   const projectInfo = useAppDevProjectInfo(projectId);
-  const terminalWsUrl = useTerminalWsUrl(
-    projectInfo.projectInfoState.projectInfo?.tenantId,
-    projectId,
-  );
+  const terminalWsUrl = useTerminalWsUrl(projectId);
 
   /** 保存成功后刷新 Git 列表（sourceControl 初始化后注入） */
   const refreshGitListAfterSaveRef = useRef<() => Promise<void>>(
@@ -275,9 +273,17 @@ const AppDev: React.FC = () => {
 
   // 源代码管理
   const sourceControl = useSourceControl({
-    projectId,
-    fileManagement,
-    onRefreshProjectInfo: () => projectInfo.refreshProjectInfo(),
+    workspace: { workspaceType: 'pageApp', projectId },
+    callbacks: {
+      openChangeFile: (fileId) => fileManagement.switchToFile(fileId),
+      discardChangeFile: () => {},
+      loadFileTree: fileManagement.loadFileTree,
+      findFileNode: fileManagement.findFileNode,
+      updateFileContent: fileManagement.updateFileContent,
+      cancelEdit: fileManagement.cancelEdit,
+      getFileContentState: () => fileManagement.fileContentState,
+      onRefreshProjectInfo: () => projectInfo.refreshProjectInfo(),
+    },
   });
 
   useEffect(() => {
@@ -455,6 +461,14 @@ const AppDev: React.FC = () => {
     },
   });
 
+  useAppDevInitialAutoSend({
+    projectId: projectId || '',
+    hasValidProjectId,
+    hasPermission: projectInfo.hasPermission,
+    chat,
+    modelSelector,
+  });
+
   // 自动错误处理 Model（用于记录和管理）
   const autoErrorHandlingModelInstance = useModel('autoErrorHandling');
 
@@ -626,6 +640,15 @@ const AppDev: React.FC = () => {
   const stableCurrentFiles = useMemo(() => {
     return fileManagement.fileTreeState.data;
   }, [fileManagement.fileTreeState.data]);
+
+  /** 进入页面且文件树已有文件时，自动拉取 Git status（每个 projectId 仅一次） */
+  useEffect(() => {
+    if (!projectId || stableCurrentFiles.length === 0) {
+      return;
+    }
+
+    void refreshGitListAfterSaveRef.current();
+  }, [projectId, stableCurrentFiles.length]);
 
   /** 编辑器内容变更：同步本地状态并防抖自动保存 */
   const handleEditorContentChange = useCallback(
@@ -1189,6 +1212,31 @@ const AppDev: React.FC = () => {
   );
 
   /**
+   * 源代码管理选中 diff：切换到代码视图，并在内容区展示 ChangeFileGitDiffView
+   * （版本记录面板打开时仍优先展示 diff，避免 ContentViewer 被版本面板遮挡）
+   */
+  const handleSourceControlDiffSelect = useCallback(
+    (fileId: string, section: 'staged' | 'unstaged') => {
+      sourceControl.handleDiffFileSelect(fileId, section);
+      setActiveTab('code');
+    },
+    [sourceControl.handleDiffFileSelect],
+  );
+
+  /**
+   * 切换版本记录面板
+   * 若当前在查看 Git diff，再次点击版本按钮应回到版本列表（而非把 open 状态切反）
+   */
+  const handleToggleGitVersionPanel = useCallback(() => {
+    if (sourceControl.selectedDiffFile) {
+      sourceControl.clearSelectedDiff();
+      setGitVersionPanelOpen(true);
+      return;
+    }
+    setGitVersionPanelOpen((prev) => !prev);
+  }, [sourceControl.selectedDiffFile, sourceControl.clearSelectedDiff]);
+
+  /**
    * 文件树状态适配：将 fileManagement 与页面回调
    * 映射为 FileTreePanel 所需的 tree 结构
    */
@@ -1459,6 +1507,11 @@ const AppDev: React.FC = () => {
                   // 用户取消Agent任务，重置自动重试计数
                   autoErrorHandling.handleUserCancelAuto();
                 }}
+                onChatSessionEnd={() => {
+                  // 每次会话结束后刷新文件树列表和 git 源代码管理 status
+                  fileManagement.loadFileTree(false, true);
+                  sourceControl.refreshGitList();
+                }}
                 defaultActiveTab={'chat'}
                 hiddenTabs={[]}
                 onDesignModeUnreachable={handleDesignModeUnreachable}
@@ -1571,7 +1624,7 @@ const AppDev: React.FC = () => {
                       await handleRestartDevServer();
                     },
                     onFullscreenPreview: () => {
-                      if (previewRef.current && workspace.devServerUrl) {
+                      if (workspace.devServerUrl) {
                         window.open(
                           `${process.env.BASE_URL}${workspace.devServerUrl}`,
                           '_blank',
@@ -1582,7 +1635,7 @@ const AppDev: React.FC = () => {
                   }}
                   // 版本记录相关
                   gitVersionRecordData={{
-                    onOpen: () => setGitVersionPanelOpen((prev) => !prev),
+                    onOpen: handleToggleGitVersionPanel,
                     disabled: !hasValidProjectId,
                   }}
                   // 通用状态
@@ -1617,10 +1670,6 @@ const AppDev: React.FC = () => {
                           }
                           // =================源代码管理相关=================
                           sourceControl={{
-                            gitWorkspace: {
-                              workspaceType: 'pageApp',
-                              projectId,
-                            },
                             changeFiles: sourceControl.changeFiles,
                             selectedChangeFile:
                               sourceControl.selectedChangeFile,
@@ -1628,12 +1677,13 @@ const AppDev: React.FC = () => {
                             isRefreshingGitList:
                               sourceControl.isRefreshingGitList,
                             onRefreshGitList: sourceControl.refreshGitList,
-                            onDiffFileSelect:
-                              sourceControl.handleDiffFileSelect,
+                            onDiffFileSelect: handleSourceControlDiffSelect,
                             onOpenChangeFile:
                               sourceControl.handleOpenChangeFile,
-                            onAfterDiscardChange:
-                              sourceControl.handleAfterDiscardChange,
+                            onDiscardChanges: sourceControl.handleDiscardChange,
+                            onStageChanges: sourceControl.handleStageChanges,
+                            onUnstageChanges:
+                              sourceControl.handleUnstageChanges,
                             onAddToGitignore:
                               sourceControl.handleAddToGitignore,
                             onCommit: sourceControl.handleCommit,
@@ -1641,8 +1691,9 @@ const AppDev: React.FC = () => {
                         />
                       )}
 
-                      {/* 版本记录面板：打开时占据文件树右侧的内容区域 */}
-                      {gitVersionPanelOpen ? (
+                      {/* 版本记录面板：打开且无 diff 选中时占据内容区；选中 diff 时改由 ContentViewer 展示 */}
+                      {gitVersionPanelOpen &&
+                      !sourceControl.selectedDiffFile ? (
                         <div className={styles.gitVersionPanelCol}>
                           {/* 版本记录 */}
                           <GitVersionRecordPanel
@@ -1747,6 +1798,8 @@ const AppDev: React.FC = () => {
 
                 {/* 底部终端、开发日志合集面板 */}
                 <ConversationBottomConsole
+                  // todo: 需要传入会话ID，后续完善
+                  conversationId={projectId}
                   visible={showDevLogConsole}
                   defaultActiveTab="logs"
                   terminalSignal={devConsoleTerminalSignal}
@@ -1757,7 +1810,6 @@ const AppDev: React.FC = () => {
                   onActiveTabChange={(tab) => {
                     devConsoleActiveTabRef.current = tab;
                   }}
-                  onClose={() => setShowDevLogConsole(false)}
                   wsUrl={terminalWsUrl}
                   wireProtocol={TTYD_TERMINAL_WIRE_PROTOCOL}
                   wsSubprotocols={[...TTYD_TERMINAL_WS_SUBPROTOCOLS]}

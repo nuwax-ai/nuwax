@@ -151,6 +151,16 @@
           background-color: @colorBgContainerDisabled;
         }
 
+        // 会话活跃时的入队发送：与停止钮同色，避免主色蓝与停止态来回闪
+        &.send-box-queue:not(.disabled) {
+          background-color: @colorInfoBg;
+          color: @colorPrimary;
+
+          &:hover {
+            background-color: @colorInfoBgHover;
+          }
+        }
+
         // 停止按钮样式
         &.stop-box {
           &.disabled {

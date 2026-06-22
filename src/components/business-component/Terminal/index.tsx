@@ -17,12 +17,18 @@ import {
 } from 'react';
 
 // xterm.js 核心样式
-import '@xterm/xterm/css/xterm.css';
+import './xterm.css';
 
-import { createLogger } from '@/utils/logger';
-
-import type { Terminal } from '@xterm/xterm';
 import styles from './index.less';
+import {
+  decodeTtydMessage,
+  encodeTtydInit,
+  encodeTtydInput,
+  encodeTtydResize,
+  sendTtydFlowControl,
+  TTYD_CMD_PAUSE,
+  TTYD_CMD_RESUME,
+} from './ttydWire';
 import {
   DEFAULT_TERMINAL_SEARCH_OPTIONS,
   DEFAULT_TTYD_FLOW_CONTROL,
@@ -40,6 +46,9 @@ import {
   type XtermTerminalProps,
   type XtermTerminalRef,
 } from './type';
+import { FitAddon, Terminal } from './xtermBundle';
+
+import { createLogger } from '@/utils/logger';
 
 const terminalLogger = createLogger('[XtermTerminal]');
 
@@ -144,55 +153,6 @@ const ensureTerminalDimensions = (
     term.resize(cols, rows);
   }
   return { cols, rows };
-};
-
-/**
- * ttyd WebSocket 帧首字节（与官方 Command 枚举一致）
- *
- * 服务端 → 客户端：'0' OUTPUT | '1' SET_WINDOW_TITLE | '2' SET_PREFERENCES
- * 客户端 → 服务端：'0' INPUT | '1' RESIZE | '2' PAUSE | '3' RESUME
- */
-const TTYD_CMD_INPUT = 0x30;
-const TTYD_CMD_OUTPUT = 0x30;
-/** 客户端 → 服务端：pty_pause()，在 xterm 渲染积压时暂停下行 */
-const TTYD_CMD_PAUSE = 0x32;
-/** 客户端 → 服务端：pty_resume()，渲染队列消化后恢复下行 */
-const TTYD_CMD_RESUME = 0x33;
-
-/** 向 ttyd 发送单字节流控命令（PAUSE / RESUME），无 payload */
-const sendTtydFlowControl = (ws: WebSocket | null | undefined, cmd: number) => {
-  if (ws?.readyState === WebSocket.OPEN) {
-    ws.send(new Uint8Array([cmd]));
-  }
-};
-
-/** ttyd 首包：以 '{' 开头的 JSON，触发 fork shell */
-const encodeTtydInit = (cols: number, rows: number): string =>
-  JSON.stringify({ columns: cols, rows });
-
-/** ttyd：'0' + 原始输入字节 */
-const encodeTtydInput = (data: string): Uint8Array => {
-  const bytes = new TextEncoder().encode(data);
-  const out = new Uint8Array(bytes.length + 1);
-  out[0] = TTYD_CMD_INPUT;
-  out.set(bytes, 1);
-  return out;
-};
-
-/** ttyd：'1' + { columns, rows } */
-const encodeTtydResize = (cols: number, rows: number): string =>
-  '1' + JSON.stringify({ columns: cols, rows });
-
-/** 解析 ttyd 二进制下行帧，仅提取 OUTPUT(0x30) 写入 xterm */
-const decodeTtydMessage = (raw: ArrayBuffer | string): string => {
-  const buf =
-    typeof raw === 'string'
-      ? new TextEncoder().encode(raw)
-      : new Uint8Array(raw);
-  if (buf.length === 0 || buf[0] !== TTYD_CMD_OUTPUT) {
-    return '';
-  }
-  return new TextDecoder().decode(buf.subarray(1));
 };
 
 // ─── 组件实现 ────────────────────────────────────────────────────
@@ -450,9 +410,17 @@ const XtermTerminal = forwardRef<XtermTerminalRef, XtermTerminalProps>(
       async (terminal: Terminal): Promise<TerminalAddonsMap> => {
         const addons: TerminalAddonsMap = new Map();
 
+        // 嵌入式控制台仅加载 FitAddon（静态导入），避免生产环境 async chunk
+        // 各自打包 @xterm/xterm 副本导致「Super constructor null」运行时错误
+        if (embedded) {
+          const fitAddon = new FitAddon();
+          terminal.loadAddon(fitAddon);
+          addons.set('fit', fitAddon);
+          return addons;
+        }
+
         // 1. FitAddon
         try {
-          const { FitAddon } = await import('@xterm/addon-fit');
           const fitAddon = new FitAddon();
           terminal.loadAddon(fitAddon);
           addons.set('fit', fitAddon);
@@ -501,27 +469,7 @@ const XtermTerminal = forwardRef<XtermTerminalRef, XtermTerminalProps>(
           terminalLogger.warn('SerializeAddon failed to load:', e);
         }
 
-        // 6. ClipboardAddon
-        try {
-          const { ClipboardAddon } = await import('@xterm/addon-clipboard');
-          const clipboardAddon = new ClipboardAddon();
-          terminal.loadAddon(clipboardAddon);
-          addons.set('clipboard', clipboardAddon);
-        } catch (e) {
-          terminalLogger.warn('ClipboardAddon failed to load:', e);
-        }
-
-        // 7. ProgressAddon
-        try {
-          const { ProgressAddon } = await import('@xterm/addon-progress');
-          const progressAddon = new ProgressAddon();
-          terminal.loadAddon(progressAddon);
-          addons.set('progress', progressAddon);
-        } catch (e) {
-          terminalLogger.warn('ProgressAddon failed to load:', e);
-        }
-
-        // 8. WebglAddon (条件加载，带回退)
+        // 6. WebglAddon (条件加载，带回退)
         if (enableWebgl) {
           try {
             const { WebglAddon } = await import('@xterm/addon-webgl');
@@ -541,19 +489,7 @@ const XtermTerminal = forwardRef<XtermTerminalRef, XtermTerminalProps>(
           }
         }
 
-        // 9. UnicodeGraphemesAddon (实验性)
-        try {
-          const { UnicodeGraphemesAddon } = await import(
-            '@xterm/addon-unicode-graphemes'
-          );
-          const graphemesAddon = new UnicodeGraphemesAddon();
-          terminal.loadAddon(graphemesAddon);
-          addons.set('unicodeGraphemes', graphemesAddon);
-        } catch (e) {
-          terminalLogger.warn('UnicodeGraphemesAddon failed to load:', e);
-        }
-
-        // 10. ImageAddon (条件加载)
+        // 7. ImageAddon (条件加载)
         if (enableImages) {
           try {
             const { ImageAddon } = await import('@xterm/addon-image');
@@ -565,7 +501,7 @@ const XtermTerminal = forwardRef<XtermTerminalRef, XtermTerminalProps>(
           }
         }
 
-        // 11. LigaturesAddon (条件加载)
+        // 8. LigaturesAddon (条件加载)
         if (ligatures) {
           try {
             const { LigaturesAddon } = await import('@xterm/addon-ligatures');
@@ -579,7 +515,7 @@ const XtermTerminal = forwardRef<XtermTerminalRef, XtermTerminalProps>(
 
         return addons;
       },
-      [enableWebgl, enableImages, ligatures],
+      [embedded, enableWebgl, enableImages, ligatures],
     );
 
     // ─── 初始化终端 ──────────────────────────────────────────
@@ -589,8 +525,6 @@ const XtermTerminal = forwardRef<XtermTerminalRef, XtermTerminalProps>(
       let disposed = false;
 
       const initTerminal = async () => {
-        const { Terminal } = await import('@xterm/xterm');
-
         if (disposed || !viewportRef.current) return;
 
         const resolvedTheme = resolveTheme(theme);

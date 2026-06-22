@@ -1,7 +1,7 @@
 import SvgIcon from '@/components/base/SvgIcon';
+import fileTreeStyles from '@/components/business-component/FileTreeGitSourcePanel/FileTreePanel/FileTree/index.less';
 import { EllipsisTooltip } from '@/components/custom/EllipsisTooltip';
 import TooltipIcon from '@/components/custom/TooltipIcon';
-import fileTreeStyles from '@/components/FileTreeView/FileTree/index.less';
 import { dict } from '@/services/i18nRuntime';
 import { getFileIcon } from '@/utils/fileTree';
 import {

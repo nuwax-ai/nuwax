@@ -29,6 +29,8 @@ export interface AtMentionIconProps {
   onSelectMention: (item: MentionItem) => void;
   /** 可用值:PageApp,TaskAgent */
   usageScenarios?: AgentTypeEnum[];
+  /** 是否禁用（置灰且不可点击） */
+  disabled?: boolean;
 }
 
 /**
@@ -44,6 +46,7 @@ const AtMentionIcon: React.FC<AtMentionIconProps> = ({
   enableSubscription = false,
   onSelectMention,
   usageScenarios,
+  disabled = false,
 }) => {
   // 是否显示提及弹窗
   const [atIconShowMentionPopup, setAtIconShowMentionPopup] =
@@ -129,7 +132,7 @@ const AtMentionIcon: React.FC<AtMentionIconProps> = ({
   const handleMentionIconClick = useCallback(
     (e: React.MouseEvent<HTMLSpanElement>) => {
       // 若禁用则不做任何事
-      if (!enableMention) {
+      if (disabled || !enableMention) {
         closeAtIconMentionPopup();
         return;
       }
@@ -150,7 +153,12 @@ const AtMentionIcon: React.FC<AtMentionIconProps> = ({
 
       setAtIconShowMentionPopup(true);
     },
-    [enableMention, closeAtIconMentionPopup, calcAndSetAtIconMentionPosition],
+    [
+      enableMention,
+      disabled,
+      closeAtIconMentionPopup,
+      calcAndSetAtIconMentionPosition,
+    ],
   );
 
   /**
@@ -227,6 +235,7 @@ const AtMentionIcon: React.FC<AtMentionIconProps> = ({
             styles.clear,
             styles.box,
             styles['plus-box'],
+            { [styles['upload-box-disabled']]: disabled },
           )}
           onClick={handleMentionIconClick}
         >

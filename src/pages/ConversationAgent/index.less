@@ -2,7 +2,7 @@
 @import '@/styles/token';
 
 .container {
-  background-image: @backgroundImage;
+  // background-image: @backgroundImage;
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -11,27 +11,58 @@
   min-width: 1400px;
   height: 100vh;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+
+  /** 页面顶部 Header，横跨整页宽度 */
+  .page-header {
+    flex-shrink: 0;
+    width: 100%;
+    padding-left: @marginSm;
+    padding-right: @marginSm;
+  }
 
   .section {
-    overflow: hidden;
-    border-radius: @pageContainerBorderRadius;
-    border: @lineWidth solid @colorSplit;
-    margin: @marginSm @marginSm @marginSm;
-    background-color: @colorBgContainer;
+    flex: 1;
     min-height: 0;
+    overflow: hidden;
+    margin: 0 @marginSm @marginSm;
   }
 
   .main-row {
     display: flex;
     flex: 1;
+    min-width: 0;
     min-height: 0;
     height: 100%;
+    gap: @marginSm;
+
+    .content-container {
+      border-radius: @pageContainerBorderRadius;
+      border: @lineWidth solid @colorSplit;
+      overflow: hidden;
+    }
+
+    // 预览内容区全屏模式
+    .content-container-fullscreen {
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      bottom: 0 !important;
+      width: 100% !important;
+      height: 100vh !important;
+      z-index: 1000;
+      background: @colorBgContainer;
+      border-radius: 0 !important;
+      border: none !important;
+    }
   }
 
   .left-panel {
     width: 480px;
     flex-shrink: 0;
-    border-right: @lineWidth solid @colorSplit;
     display: flex;
     flex-direction: column;
     min-height: 0;
@@ -40,7 +71,6 @@
   .middle-panel {
     width: 280px;
     flex-shrink: 0;
-    border-right: @lineWidth solid @colorSplit;
     display: flex;
     flex-direction: column;
     min-height: 0;
@@ -69,6 +99,22 @@
     display: flex;
     flex-direction: column;
     min-height: 0;
+  }
+
+  /** 智能体电脑（VNC）占满文件树 + 右侧面板工作区 */
+  .agent-desktop-workspace {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .agent-desktop-vnc {
+    flex: 1;
+    min-height: 0;
+    border: none !important;
   }
 
   .file-preview-panel {

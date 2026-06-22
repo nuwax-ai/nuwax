@@ -1,4 +1,4 @@
-import type { ChangeFileInfo } from '@/components/FileTreeView/type';
+import type { ChangeFileInfo } from '@/components/business-component/FileTreePreviewPanel/types/file-tree';
 import type { ChangeFileStatusMeta } from './changeFileStatus';
 
 /** 变更列表项（含展示元数据） */

@@ -1,16 +1,13 @@
-import type { ChangeFileInfo } from '@/components/FileTreeView/type';
+import type { ChangeFileInfo } from '@/components/business-component/FileTreePreviewPanel/types/file-tree';
 import type { FileNode } from '@/types/interfaces/appDev';
 import type { ReactNode } from 'react';
-import type { GitWorkspaceConfig } from '../utils/buildGitWorkspaceParams';
 import type {
   ChangeListSection,
   SelectedChangeFile,
 } from '../utils/changeFileStatus';
 
-/** 源代码管理绑定（Git API 在 SourceControlPanel 内统一调用） */
+/** 源代码管理绑定（Git API 在 useSourceControl 内统一调用，面板仅负责 UI） */
 export interface SourceControlProps {
-  /** Git 工作空间（pageApp / taskAgent） */
-  gitWorkspace?: GitWorkspaceConfig;
   /** 已修改文件列表（源代码管理） */
   changeFiles: ChangeFileInfo[];
   /** 当前选中的变更文件（含区块） */
@@ -27,8 +24,12 @@ export interface SourceControlProps {
   onDiffFileSelect?: (fileId: string, section: ChangeListSection) => void;
   /** 打开文件（选中并预览，非 diff） */
   onOpenChangeFile?: (fileId: string) => void;
-  /** Git discard 成功后的 UI 同步（还原编辑器、清理本地变更记录等） */
-  onAfterDiscardChange?: (fileId: string) => void | Promise<void>;
+  /** 放弃更改（Git discard + UI 同步 + 刷新列表） */
+  onDiscardChanges?: (fileIds: string[]) => void | Promise<void>;
+  /** 暂存更改（git add） */
+  onStageChanges?: (fileIds: string[]) => void | Promise<void>;
+  /** 取消暂存（git restore --staged） */
+  onUnstageChanges?: (fileIds: string[]) => void | Promise<void>;
   /** 添加到 .gitignore */
   onAddToGitignore?: (fileId: string) => void;
 }
@@ -61,6 +62,8 @@ export interface FileTreeContainerProps {
   files: FileNode[];
   /** 当前选中的文件 ID */
   selectedFileId: string;
+  /** 当前选中的文件夹 ID（仅用于树高亮与工具栏新建父级） */
+  selectedFolderId?: string;
   /** 正在内联重命名的节点（null 表示无重命名进行中） */
   renamingNode: FileNode | null;
   /** 右键菜单当前目标节点 */
@@ -89,8 +92,11 @@ export interface FileTreeContainerProps {
   hideFileTree: boolean;
   /** 是否显示文件树刷新按钮 */
   showRefreshButton: boolean;
-  /** 选中文件并在右侧预览区打开 */
-  handleFileSelect: (fileId: string) => Promise<void>;
+  /** 选中文件并在右侧预览区打开；selectFolder 为 true 时仅选中文件夹 */
+  handleFileSelect: (
+    fileId: string,
+    options?: { selectFolder?: boolean },
+  ) => Promise<void>;
   /** 打开右键菜单 */
   handleContextMenu: (e: React.MouseEvent, node: FileNode | null) => void;
   /** 关闭右键菜单 */
@@ -127,6 +133,8 @@ export interface FileTreeContainerProps {
   handleExportProject?: () => Promise<void>;
   /** 是否正在导出项目 */
   isExportingProject?: boolean;
+  /** 是否正在导入项目 */
+  isImportingProject?: boolean;
   /** 工具栏是否禁用（如对比模式、聊天加载中） */
   toolbarDisabled?: boolean;
 }

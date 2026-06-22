@@ -1,5 +1,6 @@
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { createAppDevInitialPayloadKey } from '@/hooks/useAppDevInitialAutoSend';
 import { apiAgentConfigUpdate } from '@/services/agentConfig';
 import { apiAgentGenerateInfo, apiProjectCreate } from '@/services/appDev';
 import { apiPluginHttpUpdate } from '@/services/plugin';
@@ -116,6 +117,7 @@ const SpaceCreateProject: React.FC = () => {
   const params = useParams();
   const spaceId = Number(params.spaceId);
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
+  const { setContext } = useModel('pageHandoffContext');
 
   /**
    * 处理新建项目提交逻辑
@@ -129,10 +131,32 @@ const SpaceCreateProject: React.FC = () => {
     modelId,
     tools,
     computerId,
+    agentMode,
   }: SubmitPayload) => {
+    // todo: 页面应用不需要策略，直接跳转到页面开发页面，后续再补充
+    if (targetType === AgentComponentTypeEnum.PageApp) {
+      const res = await apiProjectCreate({ targetType });
+      const { targetId } = res.data;
+
+      setContext(createAppDevInitialPayloadKey(targetId), {
+        message: prompt,
+        files,
+        skillIds,
+        modelId,
+        infos: tools,
+        selectedComputerId: computerId,
+        agentMode,
+      });
+      history.push(`/space/${spaceId}/app-dev/${targetId}`);
+      return;
+    }
+
     // 1. 匹配对应策略，未配置的类型（如 PageApp）直接拦截返回
     const strategy = PROJECT_STRATEGIES[targetType];
-    if (!strategy) return;
+
+    if (!strategy) {
+      return;
+    }
 
     // 2. 开启统一的新建 loading 提示
     const hide = message.loading({
@@ -192,6 +216,7 @@ const SpaceCreateProject: React.FC = () => {
           modelId,
           infos: tools,
           selectedComputerId: computerId,
+          agentMode,
         });
       }
     } catch (error: any) {
