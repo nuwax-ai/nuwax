@@ -259,8 +259,12 @@ function escapedBracketRule(delimiters: any) {
 // 当文本里包含 base64 data URL（单张图片可达数 MB）时，复杂度退化为 O(N^2)，
 // 会长时间阻塞主线程导致页面无响应。
 // data URL 内部不可能出现 \(\)/\[\] 数学定界符，因此扫描时整段跳过即可。
+//
+// 字符集说明：base64 编码只用 A-Za-z0-9+/=，中间不会出现空格或换行。
+// 不匹配 \s：否则当两个 data URL 仅用空格分隔时，贪心匹配会把第一个 URL 尾部、
+// 中间分隔空白、以及第二个 URL 的 "data" 前缀一起吞进第一个匹配，破坏后续渲染。
 const DATA_URL_PLACEHOLDER_RE =
-  /data:[a-z0-9.+-]+\/[a-z0-9.+-]+;base64,[A-Za-z0-9+/=\s]+/gi;
+  /data:[a-z0-9.+-]+\/[a-z0-9.+-]+;base64,[A-Za-z0-9+/=]+/gi;
 
 function replaceMathBracket(text: string): string {
   if (!text) return '';
@@ -471,8 +475,10 @@ function groupMarkdownProcesses(text: string): string {
       normalizedTag += '</markdown-custom-process>';
     }
 
-    // 检查是否为“执行计划”
-    const isPlan = /type=["']Plan["']/.test(normalizedTag);
+    // 检查是否为"执行计划"——在归一化之前用原始标签判断，
+    // 否则当 type 排在 name 之后时，归一化会把 type 编码进 name 值，导致 isPlan 漏判、Plan 被误并入 group。
+    // 容忍 SSE 流式产生的转义引号（type=\"Plan\" / type=\'Plan\'）
+    const isPlan = /type=\\?["']Plan\\?["']/i.test(tagMatch);
 
     // 处理匹配项之前的文本
     const textBefore = dedupedText.slice(lastIndex, groupMatch.index);
