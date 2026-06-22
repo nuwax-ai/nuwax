@@ -87,7 +87,6 @@ export const useDevLogs = (
   // 引用管理
   const sentErrorsRef = useRef<Set<string>>(new Set());
   const previousLogsRef = useRef<DevLogEntry[]>([]);
-  const isMountedRef = useRef(true);
   const lastLineRef = useRef(0); // 使用 ref 存储 lastLine，供轮询函数使用
 
   // 使用 ref 存储 projectId，避免依赖项变化导致 useRequest 重新创建
@@ -123,7 +122,7 @@ export const useDevLogs = (
    * 使用稳定的回调，避免依赖项变化
    */
   const addNewLogs = useCallback((newLogs: DevLogEntry[]) => {
-    if (!newLogs || !isMountedRef.current || newLogs.length === 0) {
+    if (!newLogs || newLogs.length === 0) {
       // 如果新日志为空，则清空日志
       setLogs([]);
       setHasErrorInLatestBlock(false);
@@ -167,7 +166,7 @@ export const useDevLogs = (
   const devLogsPolling = useRequest(
     () => {
       const currentProjectId = projectIdRef.current;
-      if (!currentProjectId || !isMountedRef.current) {
+      if (!currentProjectId) {
         return Promise.resolve({
           success: false,
           data: { logs: [] },
@@ -324,7 +323,6 @@ export const useDevLogs = (
   // 组件卸载时清理
   useEffect(() => {
     return () => {
-      isMountedRef.current = false;
       stopPolling();
     };
   }, [stopPolling]);

@@ -61,7 +61,15 @@ export const extractTimestamp = (line: string): string | undefined => {
   const timestampMatch = line.match(
     /\[(\d{4}\/\d{2}\/\d{2}\s+\d{2}:\d{2}:\d{2})\]/,
   );
-  return timestampMatch?.[1];
+  if (timestampMatch?.[1]) {
+    return timestampMatch[1];
+  }
+
+  // 匹配智能体沙盒日志格式: 2026-06-19 16:02:03.583 [info] ...
+  const agentTimestampMatch = line.match(
+    /^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})(?:\.\d{1,3})?\b/,
+  );
+  return agentTimestampMatch?.[1];
 };
 
 /**
@@ -349,7 +357,7 @@ const createLogGroup = (timestamp: string, logs: DevLogEntry[]): LogGroup => {
   ).length;
 
   return {
-    timestamp: timestamp || 'Unknown time',
+    timestamp: timestamp || '',
     logs,
     errorCount,
     warnCount,
@@ -400,6 +408,10 @@ export const groupLogsByTimestamp = (logs: DevLogEntry[]): LogGroup[] => {
  * @returns 格式化后的时间戳
  */
 export const formatTimestampDisplay = (timestamp: string): string => {
+  if (!timestamp) {
+    return '';
+  }
+
   // 如果已经是格式化好的时间戳，直接返回
   if (timestamp.includes('/') && timestamp.includes(':')) {
     return timestamp;
