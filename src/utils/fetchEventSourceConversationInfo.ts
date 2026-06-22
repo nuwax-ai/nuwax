@@ -190,7 +190,10 @@ export function createSSEConnection<T = any>(
               console.log(
                 `✅ [SSE Utils] Page development or chat finished, disconnecting subType:${subType} completed:${completed}`,
               );
-              abortFunction();
+              // 延迟 200ms 断开长连接，确保网络缓冲区中的遗留状态更新包可以被 fetchEventSource 完整解析并分发
+              setTimeout(() => {
+                abortFunction();
+              }, 200);
             }
           } catch (error) {
             const normalizedError =
