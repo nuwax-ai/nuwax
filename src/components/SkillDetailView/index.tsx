@@ -93,6 +93,7 @@ const SkillDetailView: React.FC<SkillDetailViewProps> = ({ skillId, mode }) => {
             <div className={cx('flex', 'flex-1', 'overflow-y')}>
               {/* 文件树视图（只读模式） */}
               <FileTreeViewPanel
+                readOnly={true}
                 taskAgentSelectedFileId={'SKILL.md'}
                 initViewFileType={'code'}
                 isProjectSkill={true}
