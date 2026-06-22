@@ -106,6 +106,33 @@ export function useConversationAgentChatSession(
 
   const devConversationId = agentConfigInfo?.devConversationId;
 
+  /**
+   * 与左侧 AgentConversationChatPanel 保持一致的沙箱电脑 ID
+   * 优先使用页面级 selectedComputerId，再回退到会话/智能体绑定值
+   */
+  const effectiveComputerId = useMemo(() => {
+    return String(
+      selectedComputerId ||
+        conversationInfo?.sandboxServerId ||
+        conversationInfo?.agent?.sandboxId ||
+        '',
+    );
+  }, [
+    selectedComputerId,
+    conversationInfo?.sandboxServerId,
+    conversationInfo?.agent?.sandboxId,
+  ]);
+
+  /** 当前是否使用智能体绑定的个人电脑（非云端电脑 -1） */
+  const isPersonalComputer = useMemo(() => {
+    const agentSandboxId = conversationInfo?.agent?.sandboxId;
+    return (
+      !!agentSandboxId &&
+      effectiveComputerId === String(agentSandboxId) &&
+      effectiveComputerId !== '-1'
+    );
+  }, [conversationInfo?.agent?.sandboxId, effectiveComputerId]);
+
   const handleSendMessage = useCallback(
     (
       messageInfo: string,
@@ -118,19 +145,12 @@ export function useConversationAgentChatSession(
         return;
       }
 
-      const effectiveSandboxId = String(
-        selectedComputerId ||
-          conversationInfo?.sandboxServerId ||
-          conversationInfo?.agent?.sandboxId ||
-          '',
-      );
-
       onMessageSend({
         id: devConversationId,
         messageInfo,
         files,
         infos: selectedComponentList ?? manualComponents,
-        sandboxId: effectiveSandboxId,
+        sandboxId: effectiveComputerId,
         debug: true,
         isSync: false,
         skillIds,
@@ -140,9 +160,7 @@ export function useConversationAgentChatSession(
     },
     [
       devConversationId,
-      conversationInfo?.sandboxServerId,
-      conversationInfo?.agent?.sandboxId,
-      selectedComputerId,
+      effectiveComputerId,
       selectedComponentList,
       manualComponents,
       onMessageSend,
@@ -254,7 +272,8 @@ export function useConversationAgentChatSession(
       guidQuestionDtos: agentConfigInfo?.guidQuestionDtos,
       eventBindConfig: agentConfigInfo?.eventBindConfig,
       hasPermission: conversationInfo?.agent?.hasPermission,
-      sandboxId: conversationInfo?.agent?.sandboxId,
+      // 与左侧聊天区一致，使用页面级最终选中的电脑 ID
+      sandboxId: effectiveComputerId,
     },
     allowOtherModel: agentConfigInfo?.allowOtherModel,
     selectedModelId,
@@ -267,7 +286,7 @@ export function useConversationAgentChatSession(
     manualComponents,
     selectedComponentList,
     onSelectComponent,
-    selectedComputerId,
+    selectedComputerId: effectiveComputerId,
     onComputerSelect: (id: string) => {
       onChangeSelectedComputerId?.(id);
     },
@@ -280,8 +299,9 @@ export function useConversationAgentChatSession(
           'PC.Components.ChatInputHomeMentionEditor.placeholderWithoutMention',
         ),
     chatInputProps: {
-      fixedSelection: true,
-      agentSandboxId: conversationInfo?.agent?.sandboxId,
+      // 与左侧一致：使用页面级最终选中的电脑，不再强制锁定 agent 个人 sandboxId
+      agentSandboxId: effectiveComputerId,
+      isPersonalComputer,
       streamActiveOverride: agentStreamActive,
       taskExecutingOverride: agentTaskExecuting,
       stopConversationIdOverride: devConversationId,
