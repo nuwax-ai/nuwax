@@ -485,13 +485,15 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
               terminalConnectedRef.current = true;
               terminalConnectedOnceRef.current = true;
               terminalRef.current?.writeln(
-                '\x1b[32m[Terminal connected]\x1b[0m',
+                // 使用 ANSI 真彩 + 加粗，确保连接提示在不同主题下都有明显高亮
+                '\x1b[1;38;2;22;163;74m[Terminal connected]\x1b[0m',
               );
             }}
             onDisconnect={() => {
               terminalConnectedRef.current = false;
               terminalRef.current?.writeln(
-                '\x1b[31m[Terminal disconnected]\x1b[0m',
+                // 使用 ANSI 真彩 + 加粗，确保断开提示在不同主题下都有明显高亮
+                '\x1b[1;38;2;220;38;38m[Terminal disconnected]\x1b[0m',
               );
             }}
           />
