@@ -1,1 +1,0 @@
-"use strict";(self.webpackChunknuwax_frontend=self.webpackChunknuwax_frontend||[]).push([[4768],{44768:function(e,n,_){_.d(n,{createRadarServices:function(){return u.T}});var u=_(71866),a=_(53978)}}]);
