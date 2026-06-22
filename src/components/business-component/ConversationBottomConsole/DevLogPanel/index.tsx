@@ -55,6 +55,10 @@ const LogContentBlock: React.FC<{ logs: DevLogEntry[] }> = ({ logs }) => {
         /\[\d{4}\/\d{2}\/\d{2}\s+\d{2}:\d{2}:\d{2}\]\s*/,
         '',
       );
+      content = content.replace(
+        /^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?\s*/,
+        '',
+      );
       content = content.replace(/^\d+\|\s*/, '');
 
       return (
@@ -119,7 +123,7 @@ const LogGroupItem: React.FC<{
         >
           <div className={cx(styles['group-header-left'])}>
             <span className={cx(styles['group-timestamp'])}>
-              {formatTimestampDisplay(group.timestamp)}
+              {formatTimestampDisplay(group.timestamp) || '\u00a0'}
             </span>
           </div>
         </Tooltip>

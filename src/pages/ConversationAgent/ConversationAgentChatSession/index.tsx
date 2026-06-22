@@ -38,7 +38,7 @@ const ConversationAgentChatSession: React.FC<
           'overflow-hide',
         )}
       >
-        <UnifiedChatSession {...chatSessionProps} />
+        <UnifiedChatSession {...chatSessionProps} mentionPlacement="up" />
       </div>
     </div>
   );

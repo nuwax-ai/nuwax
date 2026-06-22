@@ -152,6 +152,10 @@ const AcpPermissionCard: React.FC<AcpPermissionCardProps> = ({
                 <Button
                   key={option.optionId}
                   size="small"
+                  className={classNames(styles.actionBtn, {
+                    [styles.allowBtn]: isAllow,
+                    [styles.rejectBtn]: option.kind.startsWith('reject'),
+                  })}
                   type={isAllow ? 'primary' : 'default'}
                   danger={option.kind.startsWith('reject')}
                   icon={renderOptionIcon(option)}

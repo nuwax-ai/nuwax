@@ -137,23 +137,67 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
-  padding: 8px 14px 10px;
+  gap: 8px;
+  padding: 10px 14px 12px;
   background: rgba(0, 0, 0, 2%);
 }
 
 .card:not(.cardDocked) .actions {
-  padding: 8px 14px;
+  padding: 10px 14px;
   border-top: none;
   background: transparent;
 }
 
 /* ─── Buttons ─────────────────────────────────────────── */
+.actionBtn {
+  border-radius: 6px;
+  padding: 4px 12px;
+  height: auto;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  box-shadow: none !important;
+}
+
+.allowBtn {
+  background-color: #54f !important;
+  border-color: #54f !important;
+  color: #fff !important;
+
+  &:hover {
+    background-color: #4a3be0 !important;
+    border-color: #4a3be0 !important;
+  }
+
+  .shortcut {
+    border: none;
+    background: rgba(255, 255, 255, 25%);
+    color: #fff;
+  }
+}
+
+.rejectBtn {
+  color: #e53e3e !important;
+  border-color: rgba(229, 62, 62, 30%) !important;
+  background-color: #fff !important;
+
+  &:hover {
+    background-color: #fff5f5 !important;
+    border-color: rgba(229, 62, 62, 50%) !important;
+  }
+
+  .shortcut {
+    border: 1px solid rgba(0, 0, 0, 8%);
+    background: #f7fafc;
+    color: #718096;
+  }
+}
+
 .buttonLabel {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  font-size: 12px;
+  gap: 6px;
+  font-size: 13px;
 }
 
 .button-text {
@@ -166,21 +210,22 @@
 .shortcutGroup {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
+  margin-left: 2px;
 }
 
 .shortcut {
-  display: inline-block;
-  min-width: 16px;
-  padding: 0 3px;
-  border: 1px solid rgba(0, 0, 0, 10%);
-  border-radius: 3px;
-  background: rgba(255, 255, 255, 70%);
-  color: @colorTextSecondary;
-  font-size: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 4px;
+  font-size: 11px;
   font-family: inherit;
-  line-height: 14px;
-  text-align: center;
+  font-weight: 600;
+  line-height: 1;
   pointer-events: none;
 }
 

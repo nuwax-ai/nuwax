@@ -131,6 +131,19 @@ const ComputerTypeSelector: React.FC<ComputerTypeSelectorProps> = ({
       }
     }
 
+    // 个人电脑下线处理：如果列表中仅剩云电脑（-1），且当前状态并非云电脑，则主动同步到后端
+    if (
+      agentId &&
+      computerList.length === 1 &&
+      String(computerList[0].id) === '-1' &&
+      agentSelectedMap?.[String(agentId)] !== '-1' &&
+      saveOnSelect
+    ) {
+      apiSaveSelectedSandbox(agentId, '-1').catch(console.error);
+      setAgentSelectedMap((prev) => ({ ...prev, [String(agentId)]: '-1' }));
+      selectedId = '-1';
+    }
+
     // 2. 如果没有已保存的选择，且当前值无效，默认选中列表中的第一个
     if (!selectedId && !isValueValid && computerList.length > 0) {
       selectedId = computerList[0].id;

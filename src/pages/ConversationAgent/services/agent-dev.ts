@@ -10,17 +10,34 @@ export interface GetAgentDevLogParams {
 
 /** 沙盒日志接口响应（兼容多种后端字段） */
 export interface GetAgentDevLogResponse {
-  logs?: Array<string | (Partial<DevLogEntry> & { content?: string })>;
-  content?: string;
+  logFileName: string;
+  logs?: Array<{
+    line?: number;
+    content: string;
+  }>;
+  message: string;
+  startIndex: number;
+  success: boolean;
   totalLines?: number;
 }
 
-const DEFAULT_TAIL_LINES = 1000;
+/**
+ * 将日志内容按纯文本解析为 DevLogEntry
+ * 当前接口返回的 logs[].content 是普通文本，不需要再 JSON.parse。
+ */
+const parseContentToEntry = (
+  rawContent: string,
+  lineNumber: number,
+): DevLogEntry => {
+  return parseLogEntry(rawContent ?? '', lineNumber);
+};
 
 /**
  * 将接口返回数据规范化为 DevLogEntry 列表
  */
-export const normalizeAgentDevLogEntries = (data: unknown): DevLogEntry[] => {
+export const normalizeAgentDevLogEntries = (
+  data: GetAgentDevLogResponse | string,
+): DevLogEntry[] => {
   if (!data) {
     return [];
   }
@@ -34,36 +51,18 @@ export const normalizeAgentDevLogEntries = (data: unknown): DevLogEntry[] => {
 
   const payload = data as GetAgentDevLogResponse;
 
-  if (typeof payload.content === 'string') {
-    return payload.content
-      .split('\n')
-      .filter((line) => line.length > 0)
-      .map((line, index) => parseLogEntry(line, index + 1));
-  }
-
   if (!Array.isArray(payload.logs) || payload.logs.length === 0) {
     return [];
   }
 
   return payload.logs.map((log, index) => {
     if (typeof log === 'string') {
-      return parseLogEntry(log, index + 1);
+      return parseContentToEntry(log, index + 1);
     }
 
     const lineNumber = log.line ?? index + 1;
     const content = log.content ?? '';
-    if (!log.level || log.isError === undefined) {
-      return parseLogEntry(content, lineNumber);
-    }
-
-    return {
-      line: lineNumber,
-      timestamp: log.timestamp,
-      level: log.level,
-      content,
-      isError: log.isError,
-      errorFingerprint: log.errorFingerprint,
-    } as DevLogEntry;
+    return parseContentToEntry(content, lineNumber);
   });
 };
 
@@ -72,24 +71,9 @@ export const normalizeAgentDevLogEntries = (data: unknown): DevLogEntry[] => {
  */
 export async function apiGetAgentDevLog(
   params: GetAgentDevLogParams,
-): Promise<RequestResponse<GetAgentDevLogResponse | string>> {
+): Promise<RequestResponse<GetAgentDevLogResponse>> {
   return request('/api/computer/logs', {
     method: 'GET',
     params,
   });
-}
-
-/**
- * 拉取并解析沙盒日志
- */
-export async function fetchAgentDevLogs(
-  cId: number,
-  tailLines: number = DEFAULT_TAIL_LINES,
-): Promise<DevLogEntry[]> {
-  const response = await apiGetAgentDevLog({ cId, tailLines });
-  const isSuccess = response?.code === '0000' || response?.success === true;
-  if (!isSuccess) {
-    return [];
-  }
-  return normalizeAgentDevLogEntries(response.data);
 }
