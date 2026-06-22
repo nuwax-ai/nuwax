@@ -343,18 +343,19 @@ POST /api/agent/conversation/chat/permission-request/response
 
 ### `uiSchema` 已落地 widget
 
-| `ui:widget`         | 渲染                                              |
-| ------------------- | ------------------------------------------------- |
-| `radio`             | Radio.Group                                       |
-| `checkboxes`        | Checkbox.Group（含 items.enum）                   |
-| `select`            | Select                                            |
-| `text`              | Input                                             |
-| `textarea`          | Input.TextArea                                    |
-| `radio-with-custom` | Radio + 自定义输入（`otherValue` / `otherField`） |
-| `list`              | 纵向单选列表                                      |
-| `file`              | 上传（`ui:options.accept`、`multiple`）           |
+| `ui:widget`         | 渲染                                                |
+| ------------------- | --------------------------------------------------- |
+| `radio`             | Radio.Group                                         |
+| `checkboxes`        | Checkbox.Group（含 items.enum）                     |
+| `select`            | Select                                              |
+| `text`              | Input                                               |
+| `textarea`          | Input.TextArea                                      |
+| `number`            | InputNumber（`minimum` / `maximum` / `multipleOf`） |
+| `radio-with-custom` | Radio + 自定义输入（`otherValue` / `otherField`）   |
+| `list`              | 纵向单选列表                                        |
+| `file`              | 上传（`ui:options.accept`、`multiple`）             |
 
-未写 `ui:widget` 时按 schema 推断（如 `enum` → `radio`，`items.enum` → `checkboxes`）。
+未写 `ui:widget` 时按 schema 推断（如 `enum` → `radio`，`items.enum` → `checkboxes`，`number`/`integer` → `number`）。
 
 ### `presentation` 实际行为
 
@@ -372,7 +373,7 @@ SSE (ConversationChatResponse)
   → processInterventionSsePatch
     → applyAcpPermissionSseEvent → message.acpPermissionInteractions[]
     → applyMcpAskToolCallSseEvent  → message.mcpAskInteractions[]
-      → useActiveInterventionQueue（pending / submitting / failed）
+      → useActiveInterventionQueue（仅 pending / submitting 视为活动；submitted / failed 均为终态，卡片关闭）
         → AgentInterventionChatLayer → DockPanel
             → AcpPermissionCard / McpAskQuestionCard
             → respondAcpPermission → POST .../permission-request/response

@@ -4,12 +4,8 @@
  */
 
 import { getProjectInfo } from '@/services/appDev';
-import { dict, getCurrentLang } from '@/services/i18nRuntime';
-import type {
-  ProjectDetailData,
-  VersionInfoItem,
-} from '@/types/interfaces/appDev';
-import { getJsLocale } from '@/utils/i18nAdapters';
+import { dict } from '@/services/i18nRuntime';
+import type { ProjectDetailData } from '@/types/interfaces/appDev';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 /**
@@ -38,14 +34,6 @@ export interface UseAppDevProjectInfoReturn {
   refreshProjectInfo: () => Promise<void>;
   /** 检查是否有更新未部署 */
   hasUpdates: boolean;
-  /** 版本列表 */
-  versionList: VersionInfoItem[];
-  /** 获取操作类型文本 */
-  getActionText: (action: string) => string;
-  /** 获取操作类型颜色 */
-  getActionColor: (action: string) => string;
-  /** 格式化版本时间 */
-  formatVersionTime: (time: string) => string;
   /** 是否有权限访问项目 */
   hasPermission: boolean;
 }
@@ -143,88 +131,6 @@ export const useAppDevProjectInfo = (
     projectInfoState.projectInfo?.buildVersion,
   ]);
 
-  /**
-   * 版本列表（按版本号降序排列）
-   */
-  const versionList = useMemo(() => {
-    if (!projectInfoState.projectInfo?.versionInfo) {
-      return [];
-    }
-
-    return [...projectInfoState.projectInfo.versionInfo].sort(
-      (a, b) => b.version - a.version,
-    );
-  }, [projectInfoState.projectInfo]);
-
-  /**
-   * 获取操作类型文本
-   * @param action 操作类型
-   * @returns 操作类型文本
-   */
-  const getActionText = useCallback((action: string): string => {
-    switch (action) {
-      case 'chat':
-        return dict('PC.Hooks.UseAppDevProjectInfo.actionChat');
-      case 'submit_files_update':
-        return dict('PC.Hooks.UseAppDevProjectInfo.actionFileUpdate');
-      case 'upload_single_file':
-        return dict('PC.Hooks.UseAppDevProjectInfo.actionUploadSingleFile');
-      case 'create_project':
-        return dict('PC.Hooks.UseAppDevProjectInfo.actionCreateProject');
-      case 'build':
-        return dict('PC.Hooks.UseAppDevProjectInfo.actionBuild');
-      case 'deploy':
-        return dict('PC.Hooks.UseAppDevProjectInfo.actionDeploy');
-      case 'upload':
-        return dict('PC.Hooks.UseAppDevProjectInfo.actionUploadProject');
-      case 'rollback_version':
-        return dict('PC.Hooks.UseAppDevProjectInfo.actionVersionRollback');
-      default:
-        return dict('PC.Hooks.UseAppDevProjectInfo.actionUnknown');
-    }
-  }, []);
-
-  /**
-   * 获取操作类型颜色
-   * @param action 操作类型
-   * @returns 操作类型颜色
-   */
-  const getActionColor = useCallback((action: string): string => {
-    switch (action) {
-      case 'chat':
-        return 'blue';
-      case 'submit_files_update':
-        return 'green';
-      case 'build':
-        return 'orange';
-      case 'deploy':
-        return 'purple';
-      default:
-        return 'default';
-    }
-  }, []);
-
-  /**
-   * 格式化版本时间
-   * @param time 时间字符串
-   * @returns 格式化后的时间
-   */
-  const formatVersionTime = useCallback((time: string): string => {
-    try {
-      const date = new Date(time);
-      return date.toLocaleString(getJsLocale(getCurrentLang()), {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-      });
-    } catch (error) {
-      return time;
-    }
-  }, []);
-
   // 当项目ID变化时，自动获取项目详情
   useEffect(() => {
     if (projectId) {
@@ -236,10 +142,6 @@ export const useAppDevProjectInfo = (
     projectInfoState,
     refreshProjectInfo,
     hasUpdates,
-    versionList,
-    getActionText,
-    getActionColor,
-    formatVersionTime,
     hasPermission: projectInfoState.hasPermission,
   };
 };

@@ -1,5 +1,6 @@
 import { parseLogEntry } from '@/pages/AppDev/utils/devLogParser';
 import { t } from '@/services/i18nRuntime';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { PageDevelopPublishTypeEnum } from '@/types/enums/pageDev';
 import type {
   BuildResponse,
@@ -15,12 +16,12 @@ import type {
   KeepAliveResponse,
   ListConversationsResponse,
   ListModelsResponse,
-  PageFileInfo,
   ProjectDetailResponse,
   SubmitFilesResponse,
   UploadAndStartProjectParams,
   UploadAndStartProjectResponse,
 } from '@/types/interfaces/appDev';
+import { UpdateFileInfo } from '@/types/interfaces/fileTree';
 import type { RequestResponse } from '@/types/interfaces/request';
 import { exportFileViaBrowserDownload } from '@/utils/exportImportFile';
 import { message } from 'antd';
@@ -173,6 +174,41 @@ export const uploadSingleFile = async (params: {
   });
 };
 
+// 网页应用批量文件上传参数
+export interface AppDevUploadFilesParams {
+  files: File[];
+  projectId: string;
+  filePaths: string[];
+}
+
+// 批量文件上传
+export async function apiAppDevUploadFiles(
+  params: AppDevUploadFilesParams,
+): Promise<RequestResponse<number>> {
+  const { files, projectId, filePaths } = params;
+  const formData = new FormData();
+
+  // 批量上传文件：将每个文件 append 到 FormData
+  // 注意：多个文件使用相同的 key 'files'，后端会以数组形式接收
+  files.forEach((file) => {
+    formData.append('files', file);
+  });
+
+  // 添加技能ID
+  formData.append('projectId', projectId.toString());
+
+  // 批量添加文件路径：将每个路径 append 到 FormData
+  // 注意：多个路径使用相同的 key 'filePaths'，后端会以数组形式接收
+  filePaths.forEach((filePath) => {
+    formData.append('filePaths', filePath);
+  });
+
+  return request('/api/custom-page/upload-batch-files', {
+    method: 'POST',
+    data: formData,
+  });
+}
+
 /**
  * 获取项目内容（文件树）- 根据OpenAPI规范实现
  * @param projectId 项目ID
@@ -235,7 +271,7 @@ export const keepAlive = async (
  */
 export const submitFiles = async (
   projectId: string,
-  files: PageFileInfo[],
+  files: UpdateFileInfo[],
 ): Promise<SubmitFilesResponse> => {
   return request('/api/custom-page/submit-files', {
     method: 'POST',
@@ -254,7 +290,7 @@ export const submitFiles = async (
  */
 export const submitFilesUpdate = async (
   projectId: string,
-  files: PageFileInfo[],
+  files: UpdateFileInfo[],
 ): Promise<SubmitFilesResponse> => {
   // 处理文件内容，对 content 字段进行 encodeURIComponent 编码
   const processedFiles = files.map((file) => ({
@@ -280,7 +316,7 @@ export const submitFilesUpdate = async (
  */
 export const submitSpecifiedFilesUpdate = async (
   projectId: string,
-  files: PageFileInfo[],
+  files: UpdateFileInfo[],
 ): Promise<SubmitFilesResponse> => {
   // 处理文件内容，对 content 字段进行 encodeURIComponent 编码
   const processedFiles = files.map((file) => ({
@@ -425,26 +461,6 @@ export const getProjectInfo = async (
 };
 
 /**
- * 获取项目历史版本内容
- * @param projectId 项目ID
- * @param codeVersion 代码版本号
- * @returns Promise<GetProjectContentResponse> 指定版本的项目文件数据
- */
-export const getProjectContentByVersion = async (
-  projectId: string,
-  codeVersion: number,
-): Promise<GetProjectContentResponse> => {
-  return request(
-    `/api/custom-page/get-project-content-by-version?projectId=${encodeURIComponent(
-      projectId,
-    )}&codeVersion=${codeVersion}`,
-    {
-      method: 'GET',
-    },
-  );
-};
-
-/**
  * 导出用户前端项目为zip文件
  * @param projectId 项目ID
  * @returns Promise<{ data: Blob; headers: any }> 导出结果，包含zip文件数据
@@ -473,26 +489,6 @@ export async function exportProject(projectId: string): Promise<void> {
     );
   }
 }
-
-/**
- * 回滚项目版本
- * 使用服务端直接回滚，避免大文件传输导致数据丢失
- * @param projectId 项目ID
- * @param rollbackTo 回滚到的版本号
- * @returns Promise<RequestResponse<void>> 回滚结果
- */
-export const rollbackVersion = async (
-  projectId: string,
-  rollbackTo: number,
-): Promise<RequestResponse<void>> => {
-  return request('/api/custom-page/rollback-version', {
-    method: 'POST',
-    data: {
-      projectId: Number(projectId),
-      rollbackTo,
-    },
-  });
-};
 
 // ==================== 会话管理相关API服务 ====================
 
@@ -651,3 +647,30 @@ export const getDevLogs = async (
     },
   };
 };
+
+/**
+ * 创建项目接口
+ * @param data targetType
+ */
+export const apiProjectCreate = async (data: {
+  targetType: AgentComponentTypeEnum;
+}): Promise<any> => {
+  return request('/api/project/create', {
+    method: 'POST',
+    data,
+  });
+};
+
+// AI生成项目信息
+export async function apiAgentGenerateInfo(data: { prompt: string }): Promise<
+  RequestResponse<{
+    name: string;
+    description: string;
+    iconUrl: string;
+  }>
+> {
+  return request('/api/agent/generate-info', {
+    method: 'POST',
+    data,
+  });
+}

@@ -78,7 +78,7 @@ const PublishAudit: React.FC = () => {
         applyId,
       });
     } else if (targetType === SquareAgentTypeEnum.Skill) {
-      url = `/space/${spaceId}/skill-details/${targetId}?applyId=${applyId}`;
+      url = `/space/${spaceId}/apply/skill-details/${targetId}?applyId=${applyId}`;
     }
 
     if (url) {

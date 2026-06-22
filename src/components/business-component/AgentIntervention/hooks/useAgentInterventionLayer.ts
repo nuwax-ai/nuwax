@@ -11,13 +11,15 @@ import type {
 export interface UseAgentInterventionLayerOptions {
   conversationId?: number | string | null;
   messageList: MessageInfo[];
+  /** 由上层（如新建项目页）透传的初始 Agent 模式，优先于 localStorage 缓存 */
+  initialAgentMode?: AgentMode;
   onSendMessage: (message: string) => void;
 }
 
 export interface AgentModeInputProps {
   agentMode: AgentMode;
   onAgentModeChange: (mode: AgentMode) => void;
-  showAgentModeSelector: true;
+  showAgentModeSelector: boolean;
 }
 
 export interface UseAgentInterventionLayerResult {
@@ -29,11 +31,37 @@ export interface UseAgentInterventionLayerResult {
   agentModeInputProps: AgentModeInputProps;
 }
 
+const AGENT_MODE_STORAGE_KEY = 'nuwax_agent_mode_cache';
+
 export function useAgentInterventionLayer(
   options: UseAgentInterventionLayerOptions,
 ): UseAgentInterventionLayerResult {
-  const { conversationId, messageList, onSendMessage } = options;
-  const [agentMode, setAgentMode] = useState<AgentMode>('yolo');
+  const { conversationId, messageList, initialAgentMode, onSendMessage } =
+    options;
+  const [agentMode, setAgentModeState] = useState<AgentMode>(() => {
+    // 优先使用透传的初始模式，其次 localStorage 缓存，最后兜底 yolo
+    if (initialAgentMode === 'yolo' || initialAgentMode === 'ask') {
+      return initialAgentMode;
+    }
+    try {
+      const cached = localStorage.getItem(AGENT_MODE_STORAGE_KEY);
+      if (cached === 'yolo' || cached === 'ask') {
+        return cached as AgentMode;
+      }
+    } catch (e) {
+      // ignore localStorage errors
+    }
+    return 'yolo';
+  });
+
+  const setAgentMode = useCallback((mode: AgentMode) => {
+    setAgentModeState(mode);
+    try {
+      localStorage.setItem(AGENT_MODE_STORAGE_KEY, mode);
+    } catch (e) {
+      // ignore localStorage errors
+    }
+  }, []);
 
   const {
     isConversationActive,
@@ -41,6 +69,9 @@ export function useAgentInterventionLayer(
     respondMcpAsk,
     runStopConversation,
   } = useModel('conversationInfo');
+
+  // Agent 模式选择器是否展示：由租户配置控制，未下发（undefined）默认展示
+  const { tenantConfigInfo } = useModel('tenantConfigInfo');
 
   const cancelActiveConversation = useCallback(async () => {
     if (!isConversationActive || !conversationId) {
@@ -70,7 +101,7 @@ export function useAgentInterventionLayer(
     agentModeInputProps: {
       agentMode,
       onAgentModeChange: setAgentMode,
-      showAgentModeSelector: true,
+      showAgentModeSelector: tenantConfigInfo?.enableAgentMode !== 0,
     },
   };
 }

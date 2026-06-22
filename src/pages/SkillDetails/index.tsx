@@ -1,4 +1,4 @@
-import FileTreeView from '@/components/FileTreeView';
+import { FileTreeViewPanel } from '@/components/business-component';
 import PublishComponentModal from '@/components/PublishComponentModal';
 import TipsBox from '@/components/TipsBox';
 import VersionHistory from '@/components/VersionHistory';
@@ -15,7 +15,6 @@ import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, { useEffect, useRef, useState } from 'react';
 import { useParams, useRequest } from 'umi';
-import SkillChatSession from './components/SkillChatSession';
 import SkillHeader from './components/SkillHeader';
 import { useSkillFiles } from './hooks/useSkillFiles';
 import styles from './index.less';
@@ -30,7 +29,6 @@ const SkillDetails: React.FC = () => {
   const spaceId = Number(params.spaceId);
   const skillId = Number(params.skillId);
 
-  // 技能信息
   const [skillInfo, setSkillInfo] = useState<SkillDetailInfo | null>(null);
 
   // 弹窗状态管理
@@ -180,12 +178,7 @@ const SkillDetails: React.FC = () => {
       />
 
       <div className={cx(styles['layout-wrapper'])}>
-        {/* 左侧：调试聊天会话区域 */}
-        <div className={cx(styles['chat-section'])}>
-          <SkillChatSession skillInfo={skillInfo} />
-        </div>
-
-        {/* 右侧：原有的详情内容区域 */}
+        {/* 详情内容区域 */}
         <div className={cx(styles['detail-section'])}>
           <div
             className={cx(
@@ -198,7 +191,7 @@ const SkillDetails: React.FC = () => {
           >
             <div className={cx('flex', 'flex-1', 'overflow-y')}>
               {/* 文件树视图 */}
-              <FileTreeView
+              <FileTreeViewPanel
                 taskAgentSelectedFileId={'SKILL.md'}
                 initViewFileType={'code'}
                 isImportProjectTrigger={importProjectTrigger}

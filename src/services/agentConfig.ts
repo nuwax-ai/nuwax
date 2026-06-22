@@ -394,6 +394,10 @@ export function apiAgentInterventionRespond(
 
   return request('/api/agent/conversation/chat/permission-request/response', {
     method: 'POST',
+    // 审批结果提交的错误由 respondAcpPermission 自行处理（卡片关闭 + 友好 toast），
+    // 跳过全局 errorHandler 以避免与后端原始 message（如 "permission request not
+    // found or already resolved"）重复弹窗。
+    skipErrorHandler: true,
     data: {
       conversationId: data.conversation_id,
       toolId: permissionRequest?.tool_call_id,

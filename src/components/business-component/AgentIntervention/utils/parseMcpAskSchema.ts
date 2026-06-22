@@ -5,6 +5,7 @@ import type {
   JsonSchemaProperty,
   McpAskFieldWidget,
 } from '../types/mcpAskIntervention';
+import { MCP_ASK_WIDGET_TYPES } from '../types/mcpAskIntervention';
 
 export interface ParsedMcpAskField {
   name: string;
@@ -161,6 +162,20 @@ function resolveEnumLabels(
   return enumValues;
 }
 
+/** JSON Schema 主类型（忽略 null 联合） */
+export function getJsonSchemaPrimaryType(
+  prop: Pick<JsonSchemaProperty, 'type'>,
+): string {
+  if (Array.isArray(prop.type)) {
+    return prop.type.find((t) => t !== 'null') || 'string';
+  }
+  return prop.type || 'string';
+}
+
+function isKnownWidget(widget: string): widget is McpAskFieldWidget {
+  return (MCP_ASK_WIDGET_TYPES as readonly string[]).includes(widget);
+}
+
 export function resolveFieldWidget(
   name: string,
   prop: JsonSchemaProperty,
@@ -168,25 +183,12 @@ export function resolveFieldWidget(
 ): McpAskFieldWidget {
   const fieldUi = asRecord(uiSchema?.[name]);
   const widget = fieldUi?.['ui:widget'];
-  if (typeof widget === 'string') {
-    if (
-      widget === 'radio' ||
-      widget === 'checkboxes' ||
-      widget === 'select' ||
-      widget === 'text' ||
-      widget === 'textarea' ||
-      widget === 'radio-with-custom' ||
-      widget === 'list' ||
-      widget === 'file'
-    ) {
-      return widget;
-    }
+  if (typeof widget === 'string' && isKnownWidget(widget)) {
+    return widget;
   }
 
   const options = getUiOptions(uiSchema, name);
-  const propType = Array.isArray(prop.type)
-    ? prop.type.find((t) => t !== 'null') || 'string'
-    : prop.type;
+  const propType = getJsonSchemaPrimaryType(prop);
 
   if (propType === 'array') {
     const itemEnum = prop.items?.enum;
@@ -200,6 +202,10 @@ export function resolveFieldWidget(
       return 'radio-with-custom';
     }
     return 'radio';
+  }
+
+  if (propType === 'number' || propType === 'integer') {
+    return 'number';
   }
 
   if (propType === 'string') {

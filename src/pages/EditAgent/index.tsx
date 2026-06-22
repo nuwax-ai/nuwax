@@ -1,6 +1,6 @@
+import { FileTreeViewPanel } from '@/components/business-component';
 import CreateAgent from '@/components/CreateAgent';
 import Loading from '@/components/custom/Loading';
-import FileTreeView from '@/components/FileTreeView';
 import PublishComponentModal from '@/components/PublishComponentModal';
 import ResizableSplit from '@/components/ResizableSplit';
 import ShowStand from '@/components/ShowStand';
@@ -46,6 +46,7 @@ import type {
   AnalyzeStatisticsItem,
   BindConfigWithSub,
 } from '@/types/interfaces/common';
+import { UpdateFileInfo } from '@/types/interfaces/fileTree';
 import type {
   ModelConfigInfo,
   ModelListParams,
@@ -54,7 +55,6 @@ import { RequestResponse } from '@/types/interfaces/request';
 import {
   IUpdateStaticFileParams,
   StaticFileInfo,
-  VncDesktopUpdateFileInfo,
 } from '@/types/interfaces/vncDesktop';
 import { checkFileSizeExceedLimit } from '@/utils';
 import { modalConfirm } from '@/utils/ant-custom';
@@ -580,7 +580,7 @@ const EditAgent: React.FC = () => {
     const parentPath = fileNode.parentPath || '';
     const newPath = parentPath ? `${parentPath}/${trimmedName}` : trimmedName;
 
-    const newFile: VncDesktopUpdateFileInfo = {
+    const newFile: UpdateFileInfo = {
       name: newPath,
       binary: false,
       sizeExceeded: false,
@@ -590,7 +590,7 @@ const EditAgent: React.FC = () => {
       isDir: fileNode.type === 'folder',
     };
 
-    const updatedFilesList: VncDesktopUpdateFileInfo[] = [newFile];
+    const updatedFilesList: UpdateFileInfo[] = [newFile];
 
     const newSkillInfo: IUpdateStaticFileParams = {
       cId: devConversationId,
@@ -622,7 +622,7 @@ const EditAgent: React.FC = () => {
             }
 
             // 更新文件列表
-            let updatedFilesList: VncDesktopUpdateFileInfo[] = [];
+            let updatedFilesList: UpdateFileInfo[] = [];
             if (fileNode.type === 'folder') {
               updatedFilesList = [
                 {
@@ -650,7 +650,7 @@ const EditAgent: React.FC = () => {
               // 删除时，设置文件内容为空，避免上传内容导致删除文件时长太久
               currentFile.contents = '';
               // 更新文件列表
-              updatedFilesList = [currentFile] as VncDesktopUpdateFileInfo[];
+              updatedFilesList = [currentFile] as UpdateFileInfo[];
             }
 
             // 更新技能信息
@@ -699,7 +699,7 @@ const EditAgent: React.FC = () => {
     // 更新技能信息，用于提交更新
     const newSkillInfo: IUpdateStaticFileParams = {
       cId: devConversationId,
-      files: updatedFilesList as VncDesktopUpdateFileInfo[],
+      files: updatedFilesList as UpdateFileInfo[],
     };
 
     // 使用文件全量更新逻辑
@@ -733,7 +733,7 @@ const EditAgent: React.FC = () => {
     // 更新技能信息，用于提交更新
     const newSkillInfo: IUpdateStaticFileParams = {
       cId: devConversationId,
-      files: updatedFilesList as VncDesktopUpdateFileInfo[],
+      files: updatedFilesList as UpdateFileInfo[],
     };
 
     // 使用文件全量更新逻辑
@@ -763,7 +763,7 @@ const EditAgent: React.FC = () => {
     // 如果超过最大上传文件大小，则提示错误
     if (isExceedLimitSize) {
       messageAntd.error(
-        dict('PC.Pages.EditAgent.uploadFileSizeExceed').replace(
+        dict('PC.Common.Global.uploadFileSizeExceed').replace(
           '{0}',
           String(maxFileSize),
         ),
@@ -1144,7 +1144,7 @@ const EditAgent: React.FC = () => {
                           )}
                         >
                           {/*文件树侧边栏 - 只在文件树可见时显示 */}
-                          <FileTreeView
+                          <FileTreeViewPanel
                             taskAgentSelectedFileId={taskAgentSelectedFileId}
                             clearTaskAgentSelectedFileId={() =>
                               setTaskAgentSelectedFileId('')

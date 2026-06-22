@@ -309,9 +309,13 @@ const SpaceDevelop: React.FC = () => {
   };
 
   // 点击跳转到智能体
-  const handleClick = (agentId: number, type: AgentTypeEnum) => {
-    if (type === AgentTypeEnum.AgentFlow) {
+  const handleClick = (agentId: number, item?: AgentConfigInfo) => {
+    if (item?.type === AgentTypeEnum.AgentFlow) {
       history.push(`/space/${spaceId}/agent-flow/${agentId}`);
+    } else if (item?.devAgentConversationId) {
+      history.push(
+        `/space/${spaceId}/conversation-agent?agentId=${agentId}&conversationId=${item.devAgentConversationId}`,
+      );
     } else {
       history.push(`/space/${spaceId}/agent/${agentId}`);
     }
@@ -468,14 +472,6 @@ const SpaceDevelop: React.FC = () => {
   // 点击智能体类型
   const handlerClickAgentType = (item: CustomPopoverItem) => {
     const agentType = item.value as AgentTypeEnum;
-    if (agentType === AgentTypeEnum.AgentFlow) {
-      history.push(`/space/${spaceId}/agent-flow`);
-      return;
-    }
-    if (agentType === AgentTypeEnum.ConversationAgent) {
-      history.push(`/space/${spaceId}/conversation-agent?agentId=1596`);
-      return;
-    }
     setOpenCreateAgent(true);
     setCurrentAgentType(agentType);
   };
@@ -545,7 +541,7 @@ const SpaceDevelop: React.FC = () => {
               key={item.id}
               agentConfigInfo={item}
               onClickMore={(type) => handlerClickMore(type, index)}
-              onClick={handleClick}
+              onClick={(agentId) => handleClick(agentId, item)}
             />
           ))}
         </div>

@@ -32,6 +32,8 @@ interface UseAppDevFileManagementProps {
   projectId: string;
   onFileSelect?: (fileId: string) => void;
   onFileContentChange?: (fileId: string, content: string) => void;
+  /** 文件保存到服务端成功后的回调（如刷新 Git status 列表） */
+  onSaveSuccess?: (fileId: string) => void | Promise<void>;
   hasPermission?: boolean; // 新增：是否有权限访问项目
 }
 
@@ -46,6 +48,7 @@ export const useAppDevFileManagement = ({
   projectId,
   onFileSelect,
   onFileContentChange,
+  onSaveSuccess,
   hasPermission = true,
 }: UseAppDevFileManagementProps) => {
   // 文件树状态
@@ -142,7 +145,8 @@ export const useAppDevFileManagement = ({
 
           // 检查是否是新的扁平格式
           if (Array.isArray(files) && files.length > 0 && files[0].name) {
-            treeData = transformFlatListToTree(files);
+            // 不做前端过滤，按后端返回的完整文件列表构建树（含 .gitignore 等点文件）
+            treeData = transformFlatListToTree(files, false);
           } else if (Array.isArray(files)) {
             // 如果是原有的树形格式，直接使用
             treeData = files as FileNode[];
@@ -243,6 +247,16 @@ export const useAppDevFileManagement = ({
 
       // 检查文件是否已经有content数据，如果有则不需要调用API
       const fileNode = findFileNode(fileId, fileTreeState.data);
+
+      // 选中文件夹时仅更新选中态，不加载文件内容
+      if (fileNode?.type === 'folder') {
+        setFileContentState((prev) => ({
+          ...prev,
+          isLoadingFileContent: false,
+          fileContentError: null,
+        }));
+        return;
+      }
 
       // 检查文件是否已经有内容数据
       const hasContent =
@@ -419,6 +433,7 @@ export const useAppDevFileManagement = ({
             isFileModified: false,
             isSavingFile: false,
           }));
+          await onSaveSuccess?.(selectedFile);
           return;
         }
 
@@ -428,7 +443,7 @@ export const useAppDevFileManagement = ({
         setFileContentState((prev) => ({ ...prev, isSavingFile: false }));
       }
     }, 500),
-    [projectId],
+    [projectId, onSaveSuccess],
   );
 
   /**
@@ -470,7 +485,6 @@ export const useAppDevFileManagement = ({
 
       try {
         // 上传文件
-
         const result = await uploadSingleFile({
           file,
           projectId,
@@ -478,8 +492,6 @@ export const useAppDevFileManagement = ({
         });
 
         if (result?.success) {
-          // message.success(`Uploaded to ${filePath.trim()}`);
-
           // 上传成功后重新加载文件树（与删除文件逻辑保持一致）
           await loadFileTree(true, true);
 
@@ -516,6 +528,16 @@ export const useAppDevFileManagement = ({
   }, []);
 
   /**
+   * 折叠全部文件夹
+   */
+  const collapseAllFolders = useCallback(() => {
+    setFileTreeState((prev) => ({
+      ...prev,
+      expandedFolders: new Set(),
+    }));
+  }, []);
+
+  /**
    * 切换文件树折叠状态
    */
   const toggleFileTreeCollapse = useCallback(() => {
@@ -532,7 +554,7 @@ export const useAppDevFileManagement = ({
   );
 
   /**
-   * 删除文件或文件夹（通过全量更新方式）
+   * 删除文件或文件夹（通过指定文件修改方式，只提交被删除的文件）
    */
   const deleteFileItem = useCallback(
     async (fileId: string): Promise<boolean> => {
@@ -548,31 +570,16 @@ export const useAppDevFileManagement = ({
           return false;
         }
 
-        // 删除文件
-
-        // 获取当前完整文件列表
-        const flatFileList = treeToFlatList(fileTreeState.data);
-
-        // 过滤掉要删除的文件及其所有子文件（如果是文件夹）
-        const filteredList = flatFileList.filter((file) => {
-          // 如果是文件本身，直接删除
-          if (file.name === fileId) {
-            // 从列表中移除文件
-            return false;
-          }
-          // 如果是文件夹，删除其所有子文件
-          if (fileNode.type === 'folder') {
-            const shouldRemove = file.name.startsWith(fileNode.path + '/');
-            if (shouldRemove) {
-              // 从列表中移除子文件
-            }
-            return !shouldRemove;
-          }
-          return true;
-        });
-
-        // 提交更新后的文件列表
-        const result = await submitFilesUpdate(projectId, filteredList);
+        // 只提交被删除的文件/文件夹本身
+        const result = await submitSpecifiedFilesUpdate(projectId, [
+          {
+            name: fileNode.path,
+            binary: false,
+            sizeExceeded: false,
+            operation: 'delete',
+            isDir: fileNode.type === 'folder',
+          },
+        ]);
 
         if (result?.success) {
           // 文件删除成功
@@ -649,6 +656,143 @@ export const useAppDevFileManagement = ({
       });
     },
     [],
+  );
+
+  /**
+   * 在文件树中插入临时节点并进入重命名（新建文件/文件夹）
+   */
+  const insertTempNodeForCreate = useCallback(
+    (parentNode: FileNode | null, type: 'file' | 'folder'): FileNode => {
+      const parentPath = parentNode?.path || null;
+      const tempIdSuffix = `__new__${Date.now()}`;
+      const fullPath = parentPath
+        ? `${parentPath}/${tempIdSuffix}`
+        : tempIdSuffix;
+
+      const newNode: FileNode = {
+        id: fullPath,
+        name: '',
+        type,
+        path: fullPath,
+        children: type === 'folder' ? [] : undefined,
+        parentPath,
+        content: type === 'file' ? '' : undefined,
+        lastModified: Date.now(),
+        status: 'create',
+      };
+
+      const insertNodeAtTop = (
+        nodes: FileNode[],
+        targetParentId: string | null,
+      ): FileNode[] => {
+        if (!targetParentId) {
+          return [newNode, ...nodes];
+        }
+
+        return nodes.map((node) => {
+          if (node.id === targetParentId) {
+            const children = node.children || [];
+            return {
+              ...node,
+              children: [newNode, ...children],
+            };
+          }
+
+          if (node.children?.length) {
+            return {
+              ...node,
+              children: insertNodeAtTop(node.children, targetParentId),
+            };
+          }
+
+          return node;
+        });
+      };
+
+      setFileTreeState((prev) => {
+        const nextExpandedFolders = new Set(prev.expandedFolders);
+        if (parentNode?.id) {
+          nextExpandedFolders.add(parentNode.id);
+        }
+
+        return {
+          ...prev,
+          data: insertNodeAtTop(prev.data, parentNode?.id || null),
+          expandedFolders: nextExpandedFolders,
+        };
+      });
+
+      return newNode;
+    },
+    [],
+  );
+
+  /**
+   * 移除新建流程中的临时节点（取消重命名时）
+   */
+  const removeTempNode = useCallback((nodeId: string) => {
+    if (!nodeId.includes('__new__')) {
+      return;
+    }
+
+    const removeNodeFromTree = (
+      nodes: FileNode[],
+      targetId: string,
+    ): FileNode[] =>
+      nodes
+        .filter((node) => node.id !== targetId)
+        .map((node) =>
+          node.children?.length
+            ? { ...node, children: removeNodeFromTree(node.children, targetId) }
+            : node,
+        );
+
+    setFileTreeState((prev) => ({
+      ...prev,
+      data: removeNodeFromTree(prev.data, nodeId),
+    }));
+  }, []);
+
+  /**
+   * 创建文件或文件夹（确认临时节点名称后，通过 specified-files-update 提交）
+   */
+  const createFileItem = useCallback(
+    async (node: FileNode, newName: string): Promise<boolean> => {
+      if (!projectId) {
+        removeTempNode(node.id);
+        return false;
+      }
+
+      const trimmedName = newName.trim();
+      if (!trimmedName) {
+        removeTempNode(node.id);
+        return false;
+      }
+
+      const parentPath = node.parentPath || '';
+      const newPath = parentPath ? `${parentPath}/${trimmedName}` : trimmedName;
+
+      try {
+        await submitSpecifiedFilesUpdate(projectId, [
+          {
+            name: newPath,
+            contents: node.type === 'file' ? node.content || '' : '',
+            binary: false,
+            sizeExceeded: false,
+            operation: 'create',
+            isDir: node.type === 'folder',
+          },
+        ]);
+
+        await loadFileTree(true, true);
+        keepAlive(projectId);
+        return true;
+      } catch (error) {
+        removeTempNode(node.id);
+        return false;
+      }
+    },
+    [projectId, loadFileTree, removeTempNode],
   );
 
   /**
@@ -769,25 +913,15 @@ export const useAppDevFileManagement = ({
             }
           }
 
-          // message.success(`Rename succeeded: ${fileNode.name} -> ${newName.trim()}`);
           return true;
         } else {
           // 重命名文件失败，重新加载文件树以恢复原状态
           await loadFileTree(true, true);
-          message.error(dict('PC.Hooks.UseAppDevFileManagement.renameFailed'));
           return false;
         }
       } catch (error) {
         // 重命名文件异常，重新加载文件树以恢复原状态
         await loadFileTree(true, true);
-        message.error(
-          dict(
-            'PC.Hooks.UseAppDevFileManagement.renameFailedWithError',
-            error instanceof Error
-              ? error.message
-              : dict('PC.Common.Global.unknownError'),
-          ),
-        );
         return false;
       }
     },
@@ -813,6 +947,7 @@ export const useAppDevFileManagement = ({
     fileTreeState,
     loadFileTree,
     toggleFolder,
+    collapseAllFolders,
     toggleFileTreeCollapse,
 
     // 文件内容相关
@@ -829,6 +964,9 @@ export const useAppDevFileManagement = ({
     // 文件操作相关
     deleteFileItem,
     renameFileItem,
+    insertTempNodeForCreate,
+    removeTempNode,
+    createFileItem,
 
     // 文件树初始化 loading 状态
     isFileTreeInitializing,

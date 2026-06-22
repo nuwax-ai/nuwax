@@ -16,8 +16,8 @@ import type { PluginInfo } from '@/types/interfaces/plugin';
 import { getActiveKeys } from '@/utils/deepNode';
 import { Form } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect } from 'react';
-import { useParams, useRequest } from 'umi';
+import React, { useEffect, useRef } from 'react';
+import { useLocation, useModel, useParams, useRequest } from 'umi';
 import PluginChatSession from './components/PluginChatSession';
 import PluginHeader from './components/PluginHeader';
 import PluginInputTable from './components/PluginInputTable';
@@ -33,6 +33,11 @@ const cx = classNames.bind(styles);
 const SpacePluginTool: React.FC = () => {
   const params = useParams();
   const spaceId = Number(params.spaceId);
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const conversationId =
+    Number(searchParams.get('conversationId')) || undefined;
+  const hasConversationId = !!searchParams.get('conversationId');
 
   const [form] = Form.useForm();
 
@@ -110,6 +115,17 @@ const SpacePluginTool: React.FC = () => {
     runPluginInfo(pluginId);
   }, [pluginId]);
 
+  const { isConversationActive } = useModel('conversationInfo');
+  const prevActiveRef = useRef(false);
+
+  // 每次聊天对话完毕后，主动更新最新的插件配置信息
+  useEffect(() => {
+    if (prevActiveRef.current && !isConversationActive) {
+      runPluginInfo(pluginId);
+    }
+    prevActiveRef.current = isConversationActive;
+  }, [isConversationActive, runPluginInfo, pluginId]);
+
   // 保存插件信息
   const handleSave = async () => {
     const values = await form.validateFields();
@@ -160,12 +176,22 @@ const SpacePluginTool: React.FC = () => {
       />
       <div className={cx(styles['layout-wrapper'])}>
         {/* 左侧：调试聊天会话区域 */}
-        <div className={cx(styles['chat-section'])}>
-          <PluginChatSession pluginInfo={pluginInfo as PluginInfo} />
-        </div>
+        {hasConversationId && (
+          <div className={cx(styles['chat-section'])}>
+            <PluginChatSession
+              conversationId={conversationId}
+              pluginInfo={pluginInfo as PluginInfo}
+            />
+          </div>
+        )}
 
         {/* 右侧：原有的插件详情和配置表单内容区域 */}
-        <div className={cx(styles['detail-section'])}>
+        <div
+          className={cx(
+            styles['detail-section'],
+            !hasConversationId ? styles['no-chat'] : undefined,
+          )}
+        >
           <div className={cx('flex', 'h-full')}>
             <div
               className={cx(

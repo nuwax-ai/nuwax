@@ -109,6 +109,15 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     setIsMoreMessage,
     loadingMore,
     handleLoadMoreMessage,
+    // 停止会话相关
+    runStopConversation,
+    loadingStopConversation,
+    getCurrentConversationId,
+    getCurrentConversationRequestId,
+    disabledConversationActive,
+    // 其它接口加载状态
+    isLoadingOtherInterface,
+    isConversationActive,
   } = useModel('conversationInfo');
 
   // 获取 chat model 中的页面预览状态
@@ -233,30 +242,6 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
       resetInit();
     };
   }, []);
-
-  // 监听会话状态更新事件
-  const listenConversationStatusUpdate = (data: { conversationId: string }) => {
-    const { conversationId } = data;
-    // 如果会话ID和当前会话ID相同，并且会话状态为已完成，则显示成功提示
-    if (conversationId === conversationInfo?.id?.toString()) {
-      // 重新查询会话信息
-      runQueryConversation(conversationId);
-
-      // 取消监听会话状态更新事件
-      eventBus.off(EVENT_TYPE.ChatFinished, listenConversationStatusUpdate);
-    }
-  };
-
-  useEffect(() => {
-    if (conversationInfo?.taskStatus === TaskStatus.EXECUTING) {
-      // 监听会话状态更新事件
-      eventBus.on(EVENT_TYPE.ChatFinished, listenConversationStatusUpdate);
-    }
-
-    return () => {
-      eventBus.off(EVENT_TYPE.ChatFinished, listenConversationStatusUpdate);
-    };
-  }, [conversationInfo?.taskStatus]);
 
   // 清空会话记录，实际上是创建新的会话
   const handleClear = useCallback(async () => {
@@ -501,6 +486,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
               loadingMore={loadingMore}
               isMoreMessage={isMoreMessage}
               isConversationActive={
+                isConversationActive ||
                 conversationInfo?.taskStatus === TaskStatus.EXECUTING
               }
               messageBottomMode="chat"
@@ -545,6 +531,15 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
                 'PC.Components.ChatInputHomeMentionEditor.placeholderWithoutMention',
               )}
               messageViewRef={messageViewRef}
+              // 原 conversationInfo model 数据，传给独立版输入组件
+              runStopConversation={runStopConversation}
+              loadingStopConversation={loadingStopConversation}
+              getCurrentConversationId={getCurrentConversationId}
+              getCurrentConversationRequestId={getCurrentConversationRequestId}
+              disabledConversationActive={disabledConversationActive}
+              loadingConversation={loadingConversation}
+              isLoadingOtherInterface={isLoadingOtherInterface}
+              conversationInfo={conversationInfo}
             />
           </div>
         </div>

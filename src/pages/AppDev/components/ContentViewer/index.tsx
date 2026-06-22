@@ -1,8 +1,7 @@
 import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
+import ChangeFileGitDiffView from '@/components/business-component/ChangeFileGitDiffView';
+import type { ChangeFileInfo } from '@/components/business-component/FileTreePreviewPanel/types/file-tree';
 import CodeViewer from '@/components/CodeViewer';
-import type { ChangeFileInfo } from '@/components/FileTreeView/type';
-import { VERSION_CONSTANTS } from '@/constants/appDevConstants';
-import ChangeFileGitDiffView from '@/pages/ConversationAgent/ConversationAgentFilePreview/ChangeFileGitDiffView';
 import { t } from '@/services/i18nRuntime';
 import { FileNode, ProjectDetailData } from '@/types/interfaces/appDev';
 import {
@@ -26,12 +25,8 @@ interface ContentViewerProps {
   files?: FileNode[];
   /** 显示模式 */
   mode: 'preview' | 'code';
-  /** 是否在版本对比模式 */
-  isComparing: boolean;
   /** 选中的文件ID */
   selectedFileId: string | null;
-  /** 文件节点数据 */
-  fileNode: any;
   /** 文件内容 */
   fileContent: string;
   /** 是否正在加载文件内容 */
@@ -105,9 +100,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
   projectInfo,
   refreshProjectInfo,
   mode,
-  isComparing,
   selectedFileId,
-  fileNode,
   fileContent,
   isLoadingFileContent,
   fileContentError,
@@ -258,7 +251,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
           filePath={currentFileNode?.path || selectedFileId}
           isModified={isFileModified}
           isLoading={isLoadingFileContent}
-          readOnly={isComparing || isChatLoading}
+          readOnly={isChatLoading}
           onRefresh={onRefreshFile}
         />
 
@@ -295,7 +288,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
               fileName={selectedFileId.split('/').pop() || selectedFileId}
               filePath={`app/${selectedFileId}`}
               content={currentFileNode.content}
-              readOnly={isComparing || isChatLoading}
+              readOnly={isChatLoading}
               onContentChange={onContentChange}
             />
           ) : fileContent ? (
@@ -304,7 +297,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
               fileName={selectedFileId.split('/').pop() || selectedFileId}
               filePath={`app/${selectedFileId}`}
               content={fileContent}
-              readOnly={isComparing || isChatLoading}
+              readOnly={isChatLoading}
               onContentChange={onContentChange}
             />
           ) : (
@@ -327,7 +320,6 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
     selectedFileId,
     findFileNode,
     isFileModified,
-    isComparing,
     isChatLoading,
     devServerUrl,
     fileContent,
@@ -336,106 +328,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
     previewRef,
   ]);
 
-  // 使用 useMemo 缓存版本对比模式下的代码编辑器组件
-  const versionCompareCodeComponent = useMemo(() => {
-    if (!selectedFileId) {
-      return (
-        <AppDevEmptyState
-          type="no-file"
-          title={t('PC.Pages.AppDevContentViewer.noSelectedFileTitle')}
-          description={t(
-            'PC.Pages.AppDevContentViewer.noSelectedFileDescription',
-          )}
-        />
-      );
-    }
-
-    const hasContents =
-      fileNode && fileNode.content && fileNode.content.trim() !== '';
-    const isImage = isImageFile(selectedFileId);
-    const isPreviewable = isPreviewableFile(selectedFileId);
-
-    return (
-      <>
-        {/* 文件路径显示 */}
-        <FilePathHeader
-          filePath={fileNode?.path || selectedFileId}
-          isModified={false}
-          isLoading={false}
-          readOnly={true}
-          onRefresh={() => {}}
-        />
-
-        {/* 文件内容显示区域 */}
-        <div className={styles.fileContentPreview}>
-          {!isPreviewable && !hasContents ? (
-            <AppDevEmptyState
-              type="error"
-              title={t('PC.Pages.AppDevContentViewer.unsupportedFileTypeTitle')}
-              description={t(
-                'PC.Pages.AppDevContentViewer.unsupportedFileTypeDescription',
-                selectedFileId.split('.').pop() || selectedFileId,
-              )}
-            />
-          ) : hasContents ? (
-            <CodeViewer
-              fileId={selectedFileId}
-              fileName={selectedFileId.split('/').pop() || selectedFileId}
-              filePath={`app/${selectedFileId}`}
-              content={fileNode.content}
-              readOnly={true || isChatLoading}
-              onContentChange={() => {}}
-            />
-          ) : isImage ? (
-            <ImageViewer
-              imagePath={selectedFileId}
-              imageUrl={processImageContent(
-                fileNode.content,
-                devServerUrl
-                  ? `${devServerUrl}/${selectedFileId}`
-                  : `/${selectedFileId}`,
-              )}
-              alt={selectedFileId}
-              onRefresh={() => {
-                if (previewRef.current) {
-                  previewRef.current.refresh();
-                }
-              }}
-            />
-          ) : (
-            <AppDevEmptyState
-              type="error"
-              title={t('PC.Pages.AppDevContentViewer.unsupportedFileTypeTitle')}
-              description={t(
-                'PC.Pages.AppDevContentViewer.unsupportedFileTypeDescription',
-                selectedFileId,
-              )}
-            />
-          )}
-        </div>
-      </>
-    );
-  }, [selectedFileId, fileNode, devServerUrl, isChatLoading, previewRef]);
-
-  // 版本对比模式 + preview标签页：显示禁用提示
-  if (isComparing && mode === 'preview') {
-    return (
-      <AppDevEmptyState
-        type="no-preview-url"
-        title={VERSION_CONSTANTS.PREVIEW_DISABLED_MESSAGE}
-        description={t(
-          'PC.Pages.AppDevContentViewer.previewDisabledDescription',
-        )}
-      />
-    );
-  }
-
-  // 版本对比模式 + code标签页：使用缓存的版本对比代码组件
-  if (isComparing && mode === 'code') {
-    return versionCompareCodeComponent;
-  }
-
-  // 正常模式：同时渲染两个组件，通过 CSS 控制显示/隐藏
+  // 同时渲染两个组件，通过 CSS 控制显示/隐藏
   return (
     <div className={styles.contentViewerContainer}>
       {/* 预览组件 - 始终存在，通过 CSS 控制显示 */}

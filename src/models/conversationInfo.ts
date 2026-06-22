@@ -1,5 +1,6 @@
 import {
   hydrateMcpAskInteractionsInMessageList,
+  prependAndHydrateMcpAskMessageList,
   processInterventionSsePatch,
   useAgentInterventionHandlers,
 } from '@/components/business-component/AgentIntervention';
@@ -9,6 +10,10 @@ import {
   MESSAGE_PAGE_SIZE,
 } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
+import {
+  isSessionStreamBusy,
+  useExecutingTaskStatusPoll,
+} from '@/hooks/useExecutingTaskStatusPoll';
 import { getCustomBlock } from '@/plugins/ds-markdown-process';
 import {
   apiAgentConversation,
@@ -80,6 +85,10 @@ import { extractTaskResult } from '@/utils';
 import { normalizeAcpPermissionProgressMessage } from '@/utils/acpPermission';
 import { modalConfirm } from '@/utils/ant-custom';
 import { isEmptyObject } from '@/utils/common';
+import {
+  createSyncConversationTaskStatus,
+  subscribeChatFinishedTaskSync,
+} from '@/utils/conversationTaskStatusSync';
 import { createSSEConnection } from '@/utils/fetchEventSourceConversationInfo';
 import {
   perfTracker,
@@ -166,8 +175,17 @@ export default () => {
     useState<boolean>(false);
 
   // 会话是否正在进行中（有消息正在处理）
-  const [isConversationActive, setIsConversationActive] =
+  const [isConversationActive, setIsConversationActiveRaw] =
     useState<boolean>(false);
+  // 发送后会话活跃保活：发送后 3s 内拒绝置 false，避免停止 SSE 回流 / messageList
+  // 状态切换间隙的 false 覆盖乐观 true（消除"发出后长时间无状态"的空窗）
+  const lastSendAtRef = useRef(0);
+  const setIsConversationActive = useCallback((v: boolean) => {
+    if (!v && Date.now() - lastSendAtRef.current < 3000) {
+      return;
+    }
+    setIsConversationActiveRaw(v);
+  }, []);
   // 添加一个 ref 来控制是否允许自动滚动
   const allowAutoScrollRef = useRef<boolean>(true);
   // 是否显示点击下滚按钮
@@ -564,20 +582,43 @@ export default () => {
 
   // 检查会话是否正在进行中（有消息正在处理）
   const checkConversationActive = useCallback((messages: MessageInfo[]) => {
-    // 只检查最后几条消息的状态，而不是所有消息
-    const recentMessages = messages?.slice(-5) || []; // 只检查最后5条消息
-    const hasActiveMessage =
-      recentMessages.some(
-        (message) =>
-          message.status === MessageStatusEnum.Loading ||
-          message.status === MessageStatusEnum.Incomplete,
-      ) || false;
-    setIsConversationActive(hasActiveMessage);
+    const recentMessages = messages?.slice(-5) || [];
+    setIsConversationActive(isSessionStreamBusy(recentMessages));
   }, []);
 
   const disabledConversationActive = () => {
     setIsConversationActive(false);
   };
+
+  /**
+   * 仅同步 taskStatus（ChatFinished / SSE 结束兜底），不导出、不侵入页面层
+   */
+  const syncConversationTaskStatus = useCallback(
+    createSyncConversationTaskStatus(setConversationInfo),
+    [],
+  );
+
+  // taskStatus=EXECUTING 时自动监听 ChatFinished，无需各页面手动接入
+  useEffect(() => {
+    return subscribeChatFinishedTaskSync(
+      conversationInfo?.id,
+      conversationInfo?.taskStatus,
+      syncConversationTaskStatus,
+    );
+  }, [
+    conversationInfo?.id,
+    conversationInfo?.taskStatus,
+    syncConversationTaskStatus,
+  ]);
+
+  // 流式已结束但 taskStatus 仍为 EXECUTING 时轮询同步（ChatFinished 遗漏 / 后端延迟）
+  useExecutingTaskStatusPoll({
+    conversationId: conversationInfo?.id,
+    taskStatus: conversationInfo?.taskStatus,
+    messageList,
+    onSync: syncConversationTaskStatus,
+    enabled: conversationInfo?.agent?.type === AgentTypeEnum.TaskAgent,
+  });
 
   // 设置所有的详细信息
   const setChatProcessingList = (messageList: MessageInfo[]) => {
@@ -639,12 +680,9 @@ export default () => {
         // 如果查询到的消息数量大于0，则表示有更多消息
         if (!!data?.length) {
           // 将新消息追加到消息列表前面
-          setMessageList((messageList: MessageInfo[]) => {
-            return [
-              ...hydrateMcpAskInteractionsInMessageList(data),
-              ...messageList,
-            ];
-          });
+          setMessageList((messageList: MessageInfo[]) =>
+            prependAndHydrateMcpAskMessageList(data, messageList),
+          );
 
           // 如果查询到的消息数量小于20，则表示没有更多消息
           if (data.length < MESSAGE_PAGE_SIZE) {
@@ -1050,6 +1088,9 @@ export default () => {
             // 刷新文件树
             await handleRefreshFileList(params.conversationId);
 
+            // 同步后台任务状态，确保「智能体正在执行，请稍等」能正确展示/结束
+            void syncConversationTaskStatus(params.conversationId);
+
             const taskResult = extractTaskResult(data.outputText);
             // 如果有任务结果，并且有文件，则打开预览视图
             if (taskResult.hasTaskResult && taskResult.file) {
@@ -1187,6 +1228,8 @@ export default () => {
         }
       },
       onClose: async () => {
+        // 明确的流结束信号：打破「发送后 3s 保活」，确保活跃态能落 false（停止/快速结束场景）
+        lastSendAtRef.current = 0;
         // 将当前会话的loading状态的消息改为Stopped状态，并将所有正在执行的 processing 状态更新为 FAILED
         setMessageList((list) => {
           try {
@@ -1236,6 +1279,15 @@ export default () => {
             return list;
           }
         });
+
+        // SSE 结束后兜底同步 taskStatus（通用型智能体后台任务可能仍在执行或刚结束）
+        if (
+          params.conversationId &&
+          conversationInfoRef.current?.agent?.type === AgentTypeEnum.TaskAgent
+        ) {
+          await syncConversationTaskStatus(params.conversationId);
+        }
+
         // 主动关闭连接时，禁用会话
         disabledConversationActive();
 
@@ -1244,14 +1296,28 @@ export default () => {
       },
       onError: () => {
         message.error(dict('PC.Models.ConversationInfo.networkTimeoutError'));
-        // 将当前会话的loading状态的消息改为Error状态
+        // 将当前会话的 loading 消息改为 Error，并把其 processingList 中执行中的项更新为 FAILED，
+        // 否则 isSessionStreamBusy 会因残留 EXECUTING 项持续为 true，导致活跃态/停止按钮/队列消费卡死。
         const list =
           messageListRef.current?.map((info: MessageInfo) => {
             if (info?.id === currentMessageId) {
-              return { ...info, status: MessageStatusEnum.Error };
+              const processingList = Array.isArray(info.processingList)
+                ? info.processingList.map((item: ProcessingInfo) =>
+                    item.status === ProcessingEnum.EXECUTING
+                      ? { ...item, status: ProcessingEnum.FAILED }
+                      : item,
+                  )
+                : info.processingList;
+              return {
+                ...info,
+                status: MessageStatusEnum.Error,
+                processingList,
+              };
             }
             return info;
           }) || [];
+        // 明确终止：打破「发送后 3s 保活」，确保活跃态能立即落 false
+        lastSendAtRef.current = 0;
         setMessageList(() => {
           disabledConversationActive();
           return list;
@@ -1337,6 +1403,11 @@ export default () => {
     } = sendParams;
     // 清除副作用
     handleClearSideEffect();
+
+    // 乐观标记会话活跃：发送瞬间即置为活跃，不依赖 messageList 出现 Loading 消息的延迟，
+    // 消除"发送后会话开始状态"的空窗期（保证队列入队判定及时、停止按钮立即显示）。
+    setIsConversationActive(true);
+    lastSendAtRef.current = Date.now(); // 触发"发送后保活"，3s 内拒绝置 false
 
     // 附件文件
     const attachments: AttachmentFile[] =

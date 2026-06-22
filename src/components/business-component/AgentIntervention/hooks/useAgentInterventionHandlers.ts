@@ -127,7 +127,11 @@ export function useAgentInterventionHandlers({
           responseStatus: 'failed',
           errorMessage,
         });
-        message.error(errorMessage);
+        // 始终展示统一的友好提示，避免透传后端原始 message（已通过
+        // skipErrorHandler 关闭全局 toast，确保只弹一次）。
+        message.error(
+          dict('PC.Models.ConversationInfo.permissionResponseFailed'),
+        );
       }
     },
     [updateAcpPermissionInteraction, conversationId],

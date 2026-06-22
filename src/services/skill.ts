@@ -23,6 +23,24 @@ export async function apiSkillDetail(
   });
 }
 
+// 发布申请的技能详情接口 - 查询待审核技能详情
+export async function apiPublishSkillDetail(
+  skillId: number,
+): Promise<RequestResponse<SkillDetailInfo>> {
+  return request(`/api/publish/skill/${skillId}`, {
+    method: 'GET',
+  });
+}
+
+// 已发布的技能详情接口 - 查询审核通过的技能详情
+export async function apiPublishedSkillDetail(
+  skillId: number,
+): Promise<RequestResponse<SkillDetailInfo>> {
+  return request(`/api/published/skill/${skillId}`, {
+    method: 'GET',
+  });
+}
+
 // 查询技能模板
 export async function apiSkillTemplate(): Promise<
   RequestResponse<SkillDetailInfo>

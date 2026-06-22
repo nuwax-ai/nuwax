@@ -80,4 +80,6 @@ export const EVENT_NAMES = {
   SEND_CHAT_MESSAGE: 'send_chat_message',
   // 清空聊天输入框事件
   CLEAR_CHAT_INPUT: 'clear_chat_input',
+  // 队列消息编辑回填事件
+  QUEUE_EDIT_MESSAGE: 'queue_edit_message',
 } as const;

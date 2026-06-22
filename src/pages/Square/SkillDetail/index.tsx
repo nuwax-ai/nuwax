@@ -1,6 +1,6 @@
+import { FileTreeViewPanel } from '@/components/business-component';
 import PaymentSubscriptionModal from '@/components/business-component/PaymentSubscriptionModal';
 import ConditionRender from '@/components/ConditionRender';
-import FileTreeView from '@/components/FileTreeView';
 import MoveCopyComponent from '@/components/MoveCopyComponent';
 import useSubscription from '@/hooks/useSubscription';
 import { dict } from '@/services/i18nRuntime';
@@ -204,7 +204,7 @@ const SkillDetail: React.FC = ({}) => {
       )}
 
       {/* 文件树视图 */}
-      <FileTreeView
+      <FileTreeViewPanel
         // 通用型智能体选中文件ID
         taskAgentSelectedFileId={'SKILL.md'}
         // 加载状态

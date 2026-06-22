@@ -17,8 +17,8 @@
 .tab-bar {
   display: flex;
   align-items: center;
-  height: 40px;
-  min-height: 40px;
+  height: 49px;
+  min-height: 49px;
   padding: 0 @paddingXs 0 0;
   border-bottom: @lineWidth solid @colorSplit;
   background: @colorBgContainer;
@@ -39,7 +39,7 @@
   flex: 1;
   min-width: 0;
   height: 46px;
-  padding-top: 6px;
+  padding-top: 8px;
 
   &:hover .tab-list-gutter {
     scrollbar-color: rgba(0, 0, 0, 20%) transparent;
@@ -99,7 +99,7 @@
   width: max-content;
   min-width: 100%;
   height: 100%;
-  padding: 0 2px;
+  padding: 0 8px;
   box-sizing: border-box;
 }
 
@@ -113,7 +113,7 @@
   height: 28px;
   padding: 0 @paddingXs;
   border-radius: @borderRadius;
-  cursor: grab;
+  cursor: pointer;
   flex-shrink: 0;
   touch-action: none;
   color: @colorTextSecondary;
@@ -121,7 +121,7 @@
     border-color 0.2s ease, box-shadow 0.2s ease;
 
   &:hover {
-    background: rgba(0, 0, 0, 4%);
+    background-color: rgba(0, 0, 0, 4%);
     color: @colorText;
 
     .tab-close {
@@ -130,7 +130,7 @@
   }
 
   &.tab-item-active {
-    background: rgba(0, 0, 0, 6%);
+    background-color: rgba(0, 0, 0, 6%);
     border-color: rgba(0, 0, 0, 8%);
     box-shadow: 0 1px 2px rgba(0, 0, 0, 4%);
     color: @colorText;
@@ -141,7 +141,7 @@
     }
 
     &:hover {
-      background: rgba(0, 0, 0, 8%);
+      background-color: rgba(0, 0, 0, 8%);
     }
   }
 
@@ -192,8 +192,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 16px;
-  height: 16px;
+  width: 22px;
+  height: 22px;
   border: none;
   border-radius: @borderRadiusSm;
   padding: 0;
@@ -209,8 +209,30 @@
   }
 
   &:hover {
-    background: rgba(0, 0, 0, 8%);
     color: @colorText;
+  }
+}
+
+.tab-bar-actions {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  margin-left: @marginXs;
+  gap: @marginXs;
+}
+
+.tab-bar-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  color: @colorTextSecondary;
+
+  &:hover {
+    color: @colorText;
+    background: transparent;
   }
 }
 
@@ -220,7 +242,6 @@
   justify-content: center;
   width: 28px;
   height: 28px;
-  margin-left: @paddingXxs;
   border: @lineWidth solid transparent;
   border-radius: @borderRadius;
   background: transparent;
@@ -235,14 +256,6 @@
     border-color: rgba(0, 0, 0, 6%);
     color: @colorText;
   }
-}
-
-.right-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-left: @paddingXs;
-  flex-shrink: 0;
 }
 
 .icon-group {
@@ -270,29 +283,5 @@
   &:hover {
     background: rgba(0, 0, 0, 4%);
     color: @colorText;
-  }
-}
-
-.action-btn {
-  height: 28px;
-  padding: 0 @paddingSm;
-  font-size: @fontSizeSm;
-  border-radius: @borderRadius;
-}
-
-.collaborate-btn {
-  border-color: @colorBorder;
-  color: @colorText;
-}
-
-.deploy-btn {
-  background: #151515;
-  border-color: #151515;
-  color: #fff;
-
-  &:hover {
-    background: #333 !important;
-    border-color: #333 !important;
-    color: #fff !important;
   }
 }

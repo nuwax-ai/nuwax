@@ -15,7 +15,7 @@ git pull origin dev
 echo ">>> 正在更新 test 分支并合并 dev..."
 git checkout test
 git pull origin test
-git merge dev -m "merge: 合并 dev 分支到当前分支"
+git merge dev -X ours -m "merge: 合并 dev 分支到当前分支（冲突以本地 test 为准）"
 
 # 3. 执行生产构建
 echo ">>> 正在执行构建: npm run build:prod:m gitlab"

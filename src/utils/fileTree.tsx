@@ -272,37 +272,8 @@ export const downloadFileByUrl = async (
       ? fileProxyUrl
       : `${process.env.BASE_URL || ''}${fileProxyUrl}`;
 
-    // 通过浏览器下载文件
-    exportFileViaBrowserDownload(fullUrl);
-
-    // // 使用 fetch 获取文件内容
-    // const response = await fetch(fullUrl);
-    // if (!response.ok) {
-    //   throw new Error(`下载失败: ${response.statusText}`);
-    // }
-
-    // // 将响应转换为 Blob
-    // const blob = await response.blob();
-
-    // // 创建临时 URL
-    // const objectURL = URL.createObjectURL(blob);
-
-    // // 创建下载链接
-    // const link = document.createElement('a');
-    // link.href = objectURL;
-    // link.download = fileName;
-    // link.style.display = 'none';
-
-    // // 添加到 DOM 并触发下载
-    // document.body.appendChild(link);
-    // link.click();
-
-    // // 清理
-    // document.body.removeChild(link);
-    // // 释放 URL 对象
-    // setTimeout(() => {
-    //   URL.revokeObjectURL(objectURL);
-    // }, 100);
+    // 通过 a 标签直接触发浏览器下载（同源 URL + download 属性，无需先 fetch 内容）
+    exportFileViaBrowserDownload(fullUrl, fileName);
   } catch (error) {
     console.error('Failed to download file:', error);
     message.error(dict('PC.Utils.FileTree.downloadFailedRetry'));

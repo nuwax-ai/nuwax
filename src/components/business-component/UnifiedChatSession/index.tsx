@@ -4,7 +4,10 @@ import {
   type AgentMode,
   useAgentInterventionLayer,
 } from '@/components/business-component/AgentIntervention';
-import ChatInputHome from '@/components/ChatInputHome';
+import { useActiveInterventionQueue } from '@/components/business-component/AgentIntervention/hooks/useActiveInterventionQueue';
+import MessageQueuePanel, {
+  useUnifiedChatQueue,
+} from '@/components/business-component/MessageQueue';
 import ChatView from '@/components/ChatView';
 import NewConversationSet from '@/components/NewConversationSet';
 import RecommendList from '@/components/RecommendList';
@@ -14,31 +17,43 @@ import classNames from 'classnames';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import { MESSAGE_PAGE_SIZE } from '@/constants/common.constants';
+import { ENABLE_CHAT_MESSAGE_QUEUE } from '@/constants/feature.constants';
 import { useConversationScrollDetection } from '@/hooks/useConversationScrollDetection';
 import { useIntersectionObserver } from '@/hooks/useIntersectionObserver';
 import { dict } from '@/services/i18nRuntime';
+import { TaskStatus } from '@/types/enums/agent';
 import { MessageStatusEnum } from '@/types/enums/common';
 import { AgentTypeEnum } from '@/types/enums/space';
 import type { UploadFileInfo } from '@/types/interfaces/common';
-import type { MessageInfo } from '@/types/interfaces/conversationInfo';
+import type {
+  MessageInfo,
+  RoleInfo,
+} from '@/types/interfaces/conversationInfo';
+import ChatInputHomeIndependent from './ChatInputHomeIndependent';
 
 import styles from './index.less';
 import type { UnifiedChatSessionProps } from './types';
 
 const cx = classNames.bind(styles);
 
+const DEFAULT_ROLE_INFO: RoleInfo = {
+  assistant: { name: 'Assistant', avatar: '' },
+  system: { name: 'System', avatar: '' },
+};
+
 const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
   conversationId,
-  messageList,
-  roleInfo,
-  isLoading,
-  loadingMore,
-  isMoreMessage,
-  isConversationActive,
+  messageList = [],
+  roleInfo = DEFAULT_ROLE_INFO,
+  isLoading = false,
+  loadingMore = false,
+  isMoreMessage = false,
+  isConversationActive = false,
   messageBottomMode = 'home',
   loadingSuggest = false,
   chatSuggestList = [],
-  agentInfo,
+  agentInfo = {},
+  initialAgentMode,
   onSendMessage,
   onClear,
   onLoadMoreMessage,
@@ -74,12 +89,25 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
   className,
   style,
   chatInputProps,
+  queueMinConsumeInterval,
+  queueContext,
+
+  // 原 ChatInputHome 中 useModel('conversationInfo') 数据
+  runStopConversation,
+  loadingStopConversation,
+  getCurrentConversationId,
+  getCurrentConversationRequestId,
+  disabledConversationActive,
+  loadingConversation,
+  isLoadingOtherInterface,
+  conversationInfo,
 }) => {
   const [isHoveringChat, setIsHoveringChat] = useState<boolean>(false);
   const internalMessageViewRef = useRef<HTMLDivElement>(null);
   const messageViewRef = externalMessageViewRef || internalMessageViewRef;
   const allowAutoScrollRef = useRef<boolean>(true);
   const scrollTimeoutRef = useRef<any>(null);
+  const programmaticTimerRef = useRef<any>(null);
   const [scrollBtnVisible, setScrollBtnVisible] =
     useState<boolean>(showScrollBtn);
 
@@ -111,7 +139,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
       messageList?.length > 0 &&
       conversationId
     ) {
-      onLoadMoreMessage(conversationId);
+      onLoadMoreMessage?.(conversationId);
     }
   }, [
     loadMoreInView,
@@ -122,7 +150,23 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
     onLoadMoreMessage,
   ]);
 
-  // 3. 消息发送代理
+  // 是否有待处理的 intervention（ask/question/审批）：有则暂停队列消费并隐藏队列面板
+  const activeInterventions = useActiveInterventionQueue(messageList);
+  const hasPendingIntervention = activeInterventions.length > 0;
+
+  // 3. 消息队列：会话活跃时消息入队，空闲时自动消费（逻辑收敛于 hook）
+  const messageQueue = useUnifiedChatQueue({
+    conversationId,
+    messageList,
+    selectedModelId,
+    agentModeRef,
+    onSendMessage,
+    minConsumeInterval: queueMinConsumeInterval,
+    hasPendingIntervention,
+    queueContext,
+  });
+
+  // 消息发送代理：经队列拦截（活跃时入队，否则真正发送）
   const handleMessageSend = (
     messageInfo: string,
     files: UploadFileInfo[] = [],
@@ -130,20 +174,22 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
     modelId?: number,
     selectedAgentMode?: AgentMode,
   ) => {
-    onSendMessage(
+    messageQueue.trySend(
       messageInfo,
       files,
       skillIds,
-      modelId || selectedModelId,
-      selectedAgentMode || agentModeRef.current,
+      modelId,
+      selectedAgentMode,
     );
   };
 
   // 4. 智能体指令介入图层 (ACP/MCP 审批交互)
+  //    intervention 响应的 resume 消息走 rawSend 绕过队列拦截，避免回复被错误入队
   const interventionLayer = useAgentInterventionLayer({
     conversationId,
     messageList,
-    onSendMessage: (msg) => handleMessageSend(msg),
+    initialAgentMode,
+    onSendMessage: (msg) => messageQueue.rawSend(msg),
   });
   agentModeRef.current = interventionLayer.agentMode;
 
@@ -151,10 +197,20 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
     allowAutoScrollRef.current = true;
     const element = messageViewRef.current;
     if (element) {
+      (element as any).__isProgrammaticScroll = 'smooth';
       element.scrollTo({
         top: element.scrollHeight,
         behavior: 'smooth',
       });
+      if (programmaticTimerRef.current) {
+        clearTimeout(programmaticTimerRef.current);
+      }
+      programmaticTimerRef.current = setTimeout(() => {
+        if (messageViewRef.current) {
+          (messageViewRef.current as any).__isProgrammaticScroll = false;
+        }
+        programmaticTimerRef.current = null;
+      }, 500);
     }
     setScrollBtnVisible(false);
   };
@@ -185,18 +241,83 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
     );
   }, [messageList]);
 
+  /**
+   * 「智能体正在执行，请稍等」仅在后端 taskStatus=EXECUTING 且流式已结束时展示。
+   * 不用 isConversationActive：队列自动发送会乐观置活跃，末条仍为 Complete 时会误显示。
+   */
+  const showTaskExecutingWait = useMemo(() => {
+    return (
+      conversationInfo?.taskStatus === TaskStatus.EXECUTING &&
+      !hasActiveStreamingMessage
+    );
+  }, [conversationInfo?.taskStatus, hasActiveStreamingMessage]);
+
+  /**
+   * 会话 suggest 仅在整轮结束且队列已排空时展示。
+   * 队列自动消费下一条时，上一轮 suggest 若仍挂在底部会与新一轮消息割裂成两块。
+   */
+  const shouldShowSessionSuggest = useMemo(() => {
+    if (!messageList?.length) {
+      return false;
+    }
+    if (messageQueue.hasQueuedMessages) {
+      return false;
+    }
+    if (isConversationActive) {
+      return false;
+    }
+    return true;
+  }, [
+    messageList?.length,
+    messageQueue.hasQueuedMessages,
+    isConversationActive,
+  ]);
+
   // 大模型流式输出或更新时自动平滑滚动置底
   useEffect(() => {
     if (allowAutoScrollRef.current) {
       const element = messageViewRef.current;
       if (element) {
-        element.scrollTo({
-          top: element.scrollHeight,
-          behavior: 'instant',
-        });
+        const performScroll = () => {
+          const el = messageViewRef.current;
+          if (el) {
+            if (programmaticTimerRef.current) {
+              clearTimeout(programmaticTimerRef.current);
+            }
+            (el as any).__isProgrammaticScroll = true;
+            el.scrollTo({
+              top: el.scrollHeight,
+              behavior: 'instant',
+            });
+            // 延迟重置为 false，确保该瞬间滚动引起的所有同步/异步 scroll 事件都在 isProgrammatic 为真的情况下被忽略
+            programmaticTimerRef.current = setTimeout(() => {
+              (el as any).__isProgrammaticScroll = false;
+              programmaticTimerRef.current = null;
+            }, 100);
+          }
+        };
+
+        // 立即执行一次
+        performScroll();
+
+        // 延迟执行以确保在子组件（如 Markdown、图表等）渲染完且高度撑开后能重新置底
+        const timer = setTimeout(performScroll, 60);
+
+        return () => {
+          clearTimeout(timer);
+        };
       }
     }
   }, [messageList, isConversationActive, chatSuggestList]);
+
+  // 组件卸载时清理定时器
+  useEffect(() => {
+    return () => {
+      if (programmaticTimerRef.current) {
+        clearTimeout(programmaticTimerRef.current);
+      }
+    };
+  }, []);
 
   // 向上滚动加载更多历史消息时的滚动锁定机制
   const lastScrollHeightRef = useRef<number>(0);
@@ -217,7 +338,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
 
     lastScrollHeightRef.current = element.scrollHeight;
     lastScrollTopRef.current = element.scrollTop;
-    prevLoadingMoreRef.current = loadingMore;
+    prevLoadingMoreRef.current = loadingMore || false;
   }, [messageList, loadingMore]);
 
   return (
@@ -266,7 +387,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
                     )}
 
                   {/* 消息渲染列表 */}
-                  {messageList.map((item: MessageInfo, idx: number) => {
+                  {messageList?.map((item: MessageInfo, idx: number) => {
                     const isLastMessage = idx === messageList.length - 1;
                     if (renderMessageItem) {
                       return renderMessageItem(item, isLastMessage);
@@ -284,16 +405,18 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
                     );
                   })}
 
-                  {/* 开场推荐提问建议列表 */}
-                  <RecommendList
-                    className={cx(styles['recommend-list-box'])}
-                    loading={loadingSuggest}
-                    chatSuggestList={chatSuggestList}
-                    onClick={handleMessageSend}
-                  />
+                  {/* 问题建议：仅会话空闲且队列已排空时展示，避免与队列中的下一轮消息割裂 */}
+                  {shouldShowSessionSuggest && (
+                    <RecommendList
+                      className={cx(styles['recommend-list-box'])}
+                      loading={loadingSuggest}
+                      chatSuggestList={chatSuggestList}
+                      onClick={handleMessageSend}
+                    />
+                  )}
 
-                  {/* 通用型智能体执行中状态提示 */}
-                  {isConversationActive && !hasActiveStreamingMessage && (
+                  {/* 通用型智能体：后台任务执行中且流式已结束 */}
+                  {showTaskExecutingWait && (
                     <div className={cx(styles['task-executing-container'])}>
                       <LoadingOutlined />
                       <span>{dict('PC.Pages.Chat.agentExecutingWait')}</span>
@@ -342,9 +465,20 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
         className={cx(styles['intervention-dock'])}
       />
 
-      {/* 统一会话输入框 */}
+      {/* 统一会话输入框（使用独立版组件，避免与 conversationInfo model 强耦合） */}
       <div className={cx(styles['chat-input-container'])}>
-        <ChatInputHome
+        {/* 待发送消息队列面板：功能开关关闭或有待处理 intervention 时隐藏 */}
+        {ENABLE_CHAT_MESSAGE_QUEUE && !hasPendingIntervention && (
+          <MessageQueuePanel
+            queue={messageQueue.queue}
+            onSendNow={messageQueue.sendNow}
+            onDelete={messageQueue.deleteQueued}
+            onEdit={messageQueue.handleEditQueued}
+            onClear={messageQueue.clearQueue}
+            onReorder={messageQueue.reorder}
+          />
+        )}
+        <ChatInputHomeIndependent
           key={`chat-input-${conversationId}`}
           clearDisabled={!messageList?.length}
           onEnter={handleMessageSend}
@@ -385,6 +519,17 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
           onModelSelect={onModelSelect}
           agentType={agentInfo?.type}
           {...chatInputProps}
+          // 传入原 conversationInfo model 数据
+          runStopConversation={runStopConversation}
+          loadingStopConversation={loadingStopConversation}
+          getCurrentConversationId={getCurrentConversationId}
+          getCurrentConversationRequestId={getCurrentConversationRequestId}
+          isConversationActive={isConversationActive}
+          disabledConversationActive={disabledConversationActive}
+          messageList={messageList}
+          loadingConversation={loadingConversation}
+          isLoadingOtherInterface={isLoadingOtherInterface}
+          conversationInfo={conversationInfo}
         />
       </div>
     </div>

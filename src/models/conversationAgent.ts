@@ -11,39 +11,30 @@ import {
   MESSAGE_PAGE_SIZE,
 } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
+import {
+  isSessionStreamBusy,
+  useExecutingTaskStatusPoll,
+} from '@/hooks/useExecutingTaskStatusPoll';
 import { getCustomBlock } from '@/plugins/ds-markdown-process';
 import {
   apiAgentConversation,
   apiAgentConversationChatStop,
   apiAgentConversationChatSuggest,
   apiAgentConversationMessageList,
-  apiAgentConversationUpdate,
 } from '@/services/agentConfig';
 import { dict } from '@/services/i18nRuntime';
-import { apiGetStaticFileList } from '@/services/vncDesktop';
 import {
-  AgentComponentTypeEnum,
   AssistantRoleEnum,
   ConversationEventTypeEnum,
   MessageModeEnum,
   MessageTypeEnum,
 } from '@/types/enums/agent';
-import {
-  CreateUpdateModeEnum,
-  MessageStatusEnum,
-  ProcessingEnum,
-} from '@/types/enums/common';
-import { BindCardStyleEnum } from '@/types/enums/plugin';
-import {
-  AgentTypeEnum,
-  EditAgentShowType,
-  OpenCloseEnum,
-} from '@/types/enums/space';
+import { MessageStatusEnum, ProcessingEnum } from '@/types/enums/common';
+import { AgentTypeEnum, OpenCloseEnum } from '@/types/enums/space';
 import {
   AgentManualComponentInfo,
   GuidQuestionDto,
 } from '@/types/interfaces/agent';
-import { CardDataInfo } from '@/types/interfaces/cardInfo';
 import type {
   AttachmentFile,
   ConversationChatParams,
@@ -55,18 +46,12 @@ import type {
   ProcessingInfo,
   SendMessageParams,
 } from '@/types/interfaces/conversationInfo';
-import {
-  CardInfo,
-  ConversationFinalResult,
-} from '@/types/interfaces/conversationInfo';
 import { RequestResponse } from '@/types/interfaces/request';
-import {
-  StaticFileInfo,
-  StaticFileListResponse,
-} from '@/types/interfaces/vncDesktop';
-import { extractTaskResult } from '@/utils';
 import { modalConfirm } from '@/utils/ant-custom';
-import { isEmptyObject } from '@/utils/common';
+import {
+  createSyncConversationTaskStatus,
+  subscribeChatFinishedTaskSync,
+} from '@/utils/conversationTaskStatusSync';
 import { createSSEConnection } from '@/utils/fetchEventSourceConversationInfo';
 import {
   perfTracker,
@@ -76,33 +61,38 @@ import { adjustScrollPositionAfterDOMUpdate } from '@/utils/scrollUtils';
 import { useRequest } from 'ahooks';
 import { message } from 'antd';
 import dayjs from 'dayjs';
-import { throttle } from 'lodash';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 
 export default () => {
-  // 历史记录
-  const { runHistory, runHistoryItem } = useModel('conversationHistory');
   const { showPagePreview, handleChatProcessingList } = useModel('chat');
-  // 是否是应用智能体模式
-  const { isAppSidebarMode } = useModel('useOpenApp');
+
   // 会话信息
   const [conversationInfo, setConversationInfo] =
     useState<ConversationInfo | null>();
-  // 使用 ref 跟踪最新的 conversationInfo，解决异步回调中的闭包陈旧问题
   const conversationInfoRef = useRef<ConversationInfo | null>(null);
   useEffect(() => {
     conversationInfoRef.current = conversationInfo || null;
   }, [conversationInfo]);
 
-  // 当前会话ID
-  const [currentConversationId, setCurrentConversationId] = useState<
-    number | null
-  >(null);
-  // 会话消息ID
-  const [currentConversationRequestId, setCurrentConversationRequestId] =
-    useState<string>('');
+  const syncConversationTaskStatus = useCallback(
+    createSyncConversationTaskStatus(setConversationInfo),
+    [],
+  );
+
+  useEffect(() => {
+    return subscribeChatFinishedTaskSync(
+      conversationInfo?.id,
+      conversationInfo?.taskStatus,
+      syncConversationTaskStatus,
+    );
+  }, [
+    conversationInfo?.id,
+    conversationInfo?.taskStatus,
+    syncConversationTaskStatus,
+  ]);
+
   // 是否用户问题建议
   // const [isSuggest, setIsSuggest] = useState<boolean>(false);
   const isSuggest = useRef(false);
@@ -121,34 +111,33 @@ export default () => {
   const [chatSuggestList, setChatSuggestList] = useState<
     string[] | GuidQuestionDto[]
   >([]);
+  /** 发送新消息（含队列自动消费）时递增，用于丢弃过期的 suggest 响应 */
+  const suggestGenerationRef = useRef(0);
+  const pendingSuggestGenerationRef = useRef(0);
   const messageViewRef = useRef<HTMLDivElement | null>(null);
   const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortConnectionRef = useRef<unknown>();
-  const [showType, setShowType] = useState<EditAgentShowType>(
-    EditAgentShowType.Hide,
-  );
-  // 会话请求ID
-  const [requestId, setRequestId] = useState<string>('');
   // 会话消息ID
   const messageIdRef = useRef<string>('');
-  // 调试结果
-  const [finalResult, setFinalResult] =
-    useState<ConversationFinalResult | null>(null);
-  // 是否需要更新主题
-  const needUpdateTopicRef = useRef<boolean>(true);
-  // 展示台卡片列表
-  const [cardList, setCardList] = useState<CardInfo[]>([]);
   // 是否正在加载会话
-  const [isLoadingConversation, setIsLoadingConversation] =
-    useState<boolean>(false);
+  const [, setIsLoadingConversation] = useState<boolean>(false);
 
   // 其它调用接口的情况下判断是否正在加载中用于禁用聊天发送按钮
   const [isLoadingOtherInterface, setIsLoadingOtherInterface] =
     useState<boolean>(false);
 
-  // 会话是否正在进行中（有消息正在处理）
-  const [isConversationActive, setIsConversationActive] =
+  // 会话是否正在进行中（有消息正在流式处理 Loading/Incomplete）
+  const [isConversationActive, setIsConversationActiveRaw] =
     useState<boolean>(false);
+  // 发送后 3s 内拒绝置 false，避免 SSE 回流间隙覆盖乐观 true
+  const lastSendAtRef = useRef(0);
+  const setIsConversationActive = useCallback((v: boolean) => {
+    if (!v && Date.now() - lastSendAtRef.current < 3000) {
+      return;
+    }
+    setIsConversationActiveRaw(v);
+  }, []);
+
   // 添加一个 ref 来控制是否允许自动滚动
   const allowAutoScrollRef = useRef<boolean>(true);
   // 是否显示点击下滚按钮
@@ -158,121 +147,23 @@ export default () => {
     AgentManualComponentInfo[]
   >([]);
 
-  // 定时任务弹窗状态管理
-  const [isTimedTaskOpen, setIsTimedTaskOpen] = useState<boolean>(false);
-  const [timedTaskMode, setTimedTaskMode] = useState<CreateUpdateModeEnum>();
-
-  // 文件树显隐状态
-  const [isFileTreeVisible, setIsFileTreeVisible] = useState<boolean>(false);
-  // 文件树是否固定（用户点击后固定）
-  const [isFileTreePinned, setIsFileTreePinned] = useState<boolean>(false);
-  // 任务智能体会话中点击选中的文件ID
-  const [taskAgentSelectedFileId, setTaskAgentSelectedFileId] =
+  // 当前会话 ID（用于停止会话等操作）
+  const [currentConversationId, setCurrentConversationId] = useState<
+    number | null
+  >(null);
+  // 当前会话请求 ID（用于停止临时会话等操作）
+  const [currentConversationRequestId, setCurrentConversationRequestId] =
     useState<string>('');
-  // 任务智能体文件选择触发标志，每次点击按钮时传入不同的值（如时间戳），用于强制触发文件选择
-  const [taskAgentSelectTrigger, setTaskAgentSelectTrigger] = useState<
-    number | string
-  >(0);
-  // 文件树数据
-  const [fileTreeData, setFileTreeData] = useState<StaticFileInfo[]>([]);
-  // 文件树数据加载状态
-  const [fileTreeDataLoading, setFileTreeDataLoading] =
-    useState<boolean>(false);
-  // 使用 ref 跟踪文件树可见状态，用于避免不必要的刷新
-  const isFileTreeVisibleRef = useRef<boolean>(false);
 
-  // 打开定时任务弹窗
-  const openTimedTask = useCallback((taskMode: CreateUpdateModeEnum) => {
-    setIsTimedTaskOpen(true);
-    setTimedTaskMode(taskMode);
-  }, []);
+  // 获取当前会话 ID
+  const getCurrentConversationId = useCallback(() => {
+    return currentConversationId;
+  }, [currentConversationId]);
 
-  // 关闭定时任务弹窗
-  const closeTimedTask = useCallback(() => {
-    setIsTimedTaskOpen(false);
-  }, []);
-
-  // 查询文件列表
-  const { runAsync: runGetStaticFileList } = useRequest(apiGetStaticFileList, {
-    manual: true,
-    debounceWait: 500,
-    onSuccess: (result: RequestResponse<StaticFileListResponse>) => {
-      setFileTreeDataLoading(false);
-      const files = result?.data?.files || [];
-      if (files?.length) {
-        const _fileTreeData = files.map((item) => ({
-          ...item,
-          fileId: item.name,
-        }));
-        setFileTreeData(_fileTreeData);
-      } else {
-        // 如果文件列表为空，则清空文件树数据(比如：删除所有文件后，文件树数据为空)
-        setFileTreeData([]);
-      }
-    },
-    onError: () => {
-      setFileTreeDataLoading(false);
-      setFileTreeData([]);
-    },
-  });
-
-  // 立即刷新文件列表（供用户手动点击刷新按钮使用，不做节流）
-  const refreshFileListImmediately = useCallback(
-    async (cId?: number) => {
-      if (!cId) {
-        return;
-      }
-      setFileTreeDataLoading(true);
-      await runGetStaticFileList(cId);
-    },
-    [runGetStaticFileList],
-  );
-
-  // 处理文件列表刷新事件（节流，供 SSE / 自动触发场景防刷）
-  const handleRefreshFileList = useMemo(
-    () =>
-      throttle(refreshFileListImmediately, 2000, {
-        leading: true,
-        trailing: true,
-      }),
-    [refreshFileListImmediately],
-  );
-
-  /** 打开文件预览面板 */
-  const openFilePreviewPanel = useCallback(() => {
-    setIsFileTreeVisible(true);
-    isFileTreeVisibleRef.current = true;
-  }, []);
-
-  // 关闭预览视图
-  const closePreviewView = useCallback(() => {
-    // 关闭文件树
-    setIsFileTreeVisible(false);
-    // 更新 ref 值
-    isFileTreeVisibleRef.current = false;
-  }, []);
-
-  // 清除文件面板信息, 并关闭文件面板
-  const clearFilePanelInfo = useCallback(() => {
-    closePreviewView();
-    // 清空文件树数据
-    setFileTreeData([]);
-  }, [closePreviewView]);
-
-  // 打开预览视图
-  const openPreviewView = useCallback(
-    async (cId: number) => {
-      // 首次打开文件预览面板时刷新文件列表
-      const needRefresh = !isFileTreeVisibleRef.current;
-
-      openFilePreviewPanel();
-      // 只在需要时触发文件列表刷新事件
-      if (needRefresh) {
-        handleRefreshFileList(cId);
-      }
-    },
-    [handleRefreshFileList, openFilePreviewPanel],
-  );
+  // 获取当前会话请求 ID
+  const getCurrentConversationRequestId = useCallback(() => {
+    return currentConversationRequestId;
+  }, [currentConversationRequestId]);
 
   // 滚动到底部
   const messageViewScrollToBottom = () => {
@@ -307,115 +198,10 @@ export default () => {
     }
   };
 
-  // 根据用户消息更新会话主题
-  const { runAsync: runUpdateTopic } = useRequest(apiAgentConversationUpdate, {
-    manual: true,
-    debounceWait: 300,
-    onSuccess: (result: RequestResponse<ConversationInfo>) => {
-      needUpdateTopicRef.current = false;
-      setConversationInfo(
-        (info) =>
-          ({
-            ...info,
-            topic: result?.data?.topic,
-          } as ConversationInfo),
-      );
-    },
-  });
-
-  /**
-   * 更新会话主题（仅在会话开始时调用一次）
-   * @param params - 会话参数
-   * @param currentInfo - 当前会话信息
-   * @param isSync - 是否同步会话记录
-   * @description 该方法用于在会话开始时更新主题，通过 needUpdateTopicRef 确保只调用一次
-   */
-  const updateTopicOnce = useCallback(
-    async (
-      params: ConversationChatParams,
-      currentInfo: ConversationInfo | null | undefined,
-      isSync: boolean,
-    ) => {
-      // 检查是否需要更新主题：必须满足以下条件
-      // 1. isSync 为 true（需要同步）
-      // 2. conversationInfo 存在
-      // 3. topicUpdated 不等于 1（主题未更新过）
-      // 4. needUpdateTopicRef.current 为 true（允许更新）
-      if (
-        isSync &&
-        currentInfo &&
-        currentInfo?.topicUpdated !== 1 &&
-        needUpdateTopicRef.current
-      ) {
-        // 标记已更新，防止重复调用
-        needUpdateTopicRef.current = false;
-
-        try {
-          // 调用更新主题接口
-          const result: RequestResponse<ConversationInfo> =
-            await runUpdateTopic({
-              id: params.conversationId,
-              firstMessage: params.message,
-            });
-
-          // 更新会话信息
-          setConversationInfo({
-            ...currentInfo,
-            topicUpdated: result.data?.topicUpdated,
-            topic: result.data?.topic,
-          });
-
-          // 如果是应用智能体模式，则同步更新当前智能体的会话记录
-          if (isAppSidebarMode) {
-            // 如果是会话聊天页（chat页），同步更新会话记录
-            runHistory({
-              agentId: currentInfo.agentId,
-              limit: 8,
-            });
-          } else {
-            // 如果是会话聊天页（chat页），同步更新会话记录
-            runHistory({
-              agentId: null,
-              limit: 5,
-            });
-
-            // 获取当前智能体的历史记录
-            runHistoryItem({
-              agentId: currentInfo.agentId,
-              limit: 20,
-            });
-          }
-        } catch (error) {
-          console.error('Failed to update session theme:', error);
-          // 更新失败时重置标志，允许下次重试
-          needUpdateTopicRef.current = true;
-        }
-      }
-    },
-    [runUpdateTopic, runHistory, runHistoryItem, isAppSidebarMode],
-  );
-
-  // 检查会话是否正在进行中（有消息正在处理）
-  const checkConversationActive = useCallback((messages: MessageInfo[]) => {
-    // 只检查最后几条消息的状态，而不是所有消息
-    const recentMessages = messages?.slice(-5) || []; // 只检查最后5条消息
-    const hasActiveMessage =
-      recentMessages.some(
-        (message) =>
-          message.status === MessageStatusEnum.Loading ||
-          message.status === MessageStatusEnum.Incomplete,
-      ) || false;
-    setIsConversationActive(hasActiveMessage);
-  }, []);
-
-  const disabledConversationActive = () => {
-    setIsConversationActive(false);
-  };
-
   // 设置所有的详细信息
-  const setChatProcessingList = (messageList: MessageInfo[]) => {
+  const setChatProcessingList = (messages: MessageInfo[]) => {
     const list: any[] = [];
-    messageList
+    messages
       .filter((item) => item.role === AssistantRoleEnum.ASSISTANT)
       .forEach((item) => {
         const componentExecutedList = item?.componentExecutedList || [];
@@ -472,9 +258,7 @@ export default () => {
         // 如果查询到的消息数量大于0，则表示有更多消息
         if (!!data?.length) {
           // 将新消息追加到消息列表前面
-          setMessageList((messageList: MessageInfo[]) => {
-            return [...data, ...messageList];
-          });
+          setMessageList((prev) => [...data, ...prev]);
 
           // 如果查询到的消息数量小于20，则表示没有更多消息
           if (data.length < MESSAGE_PAGE_SIZE) {
@@ -502,92 +286,84 @@ export default () => {
   };
 
   // 查询会话
-  const {
-    run: runQueryConversation,
-    runAsync,
-    loading: loadingConversation,
-  } = useRequest(apiAgentConversation, {
-    manual: true,
-    debounceWait: 300,
-    loadingDelay: 300, // 300ms内不显示loading
-    onSuccess: (result: RequestResponse<ConversationInfo>) => {
-      setIsLoadingConversation(true);
-      const { data } = result;
-      // 设置所有的详细信息
-      setChatProcessingList(data?.messageList || []);
-      // 设置会话信息
-      setConversationInfo(data);
-      // 缓存当前会话ID
-      if (data?.id) {
-        setCurrentConversationId(data.id);
-      }
+  const { run: runQueryConversation, loading: loadingConversation } =
+    useRequest(apiAgentConversation, {
+      manual: true,
+      debounceWait: 300,
+      loadingDelay: 300, // 300ms内不显示loading
+      onSuccess: (result: RequestResponse<ConversationInfo>) => {
+        setIsLoadingConversation(false);
+        const { data } = result;
+        // 设置所有的详细信息
+        setChatProcessingList(data?.messageList || []);
+        // 设置会话信息
+        setConversationInfo(data);
+        // 记录当前会话 ID（用于停止会话等操作）
+        setCurrentConversationId(data?.id ?? null);
 
-      // 是否开启用户问题建议
-      setIsSuggest(data?.agent?.openSuggest === OpenCloseEnum.Open);
-      // 可手动选择的组件列表
-      setManualComponents(data?.agent?.manualComponents || []);
-      // 消息列表
-      const _messageList = data?.messageList || [];
-      const len = _messageList?.length || 0;
-      if (len) {
-        setMessageList(() => {
-          checkConversationActive(_messageList);
-          return _messageList;
-        });
-        // 最后一条消息为"问答"时，获取问题建议
-        const lastMessage = _messageList[len - 1];
-        if (
-          lastMessage.type === MessageModeEnum.QUESTION &&
-          lastMessage.ext?.length
-        ) {
-          // 问题建议列表
-          const suggestList = lastMessage.ext.map((item) => item.content) || [];
-          setChatSuggestList(suggestList);
+        // 是否开启用户问题建议
+        setIsSuggest(data?.agent?.openSuggest === OpenCloseEnum.Open);
+        // 可手动选择的组件列表
+        setManualComponents(data?.agent?.manualComponents || []);
+        // 消息列表
+        const _messageList = data?.messageList || [];
+        const len = _messageList?.length || 0;
+        if (len) {
+          setMessageList(_messageList);
+          // 最后一条消息为"问答"时，获取问题建议
+          const lastMessage = _messageList[len - 1];
+          if (
+            lastMessage.type === MessageModeEnum.QUESTION &&
+            lastMessage.ext?.length
+          ) {
+            // 问题建议列表
+            const suggestList =
+              lastMessage.ext.map((item) => item.content) || [];
+            setChatSuggestList(suggestList);
+          }
+          // 如果消息列表大于1时，说明已开始会话，就不显示预置问题，反之显示
+          else if (len === 1) {
+            const guidQuestionDtos = data?.agent?.guidQuestionDtos || [];
+            // 如果存在预置问题，显示预置问题
+            setChatSuggestList(guidQuestionDtos);
+          }
+
+          // 无论初始返回的 messageList 长度多少，都认为可能有历史消息，
+          // 保证第一次上滑到顶部时始终调用一次列表接口进行确认。
+          if (len > 0) {
+            setIsMoreMessage(true);
+          }
         }
-        // 如果消息列表大于1时，说明已开始会话，就不显示预置问题，反之显示
-        else if (len === 1) {
+        // 不存在会话消息时，才显示开场白预置问题
+        else {
+          setMessageList([]);
           const guidQuestionDtos = data?.agent?.guidQuestionDtos || [];
           // 如果存在预置问题，显示预置问题
           setChatSuggestList(guidQuestionDtos);
         }
 
-        // 无论初始返回的 messageList 长度多少，都认为可能有历史消息，
-        // 保证第一次上滑到顶部时始终调用一次列表接口进行确认。
-        if (len > 0) {
-          setIsMoreMessage(true);
-        }
-      }
-      // 不存在会话消息时，才显示开场白预置问题
-      else {
-        setMessageList([]);
-        const guidQuestionDtos = data?.agent?.guidQuestionDtos || [];
-        // 如果存在预置问题，显示预置问题
-        setChatSuggestList(guidQuestionDtos);
-      }
-
-      // 通过 requestAnimationFrame 在接下来的 800ms 内持续并在浏览器每次重绘前强制置底
-      // 能够完美解决由于聊天气泡、Markdown、图片等异步渲染撑开高度，导致的跳闪和未置底问题
-      const startTime = Date.now();
-      const forceScrollToBottom = () => {
-        // 滚动到底部
-        const element = messageViewRef?.current;
-        if (element) {
-          element.scrollTo({
-            top: element.scrollHeight,
-            behavior: 'instant',
-          });
-        }
-        if (Date.now() - startTime < 800) {
-          requestAnimationFrame(forceScrollToBottom);
-        }
-      };
-      requestAnimationFrame(forceScrollToBottom);
-    },
-    onError: () => {
-      setIsLoadingConversation(true);
-      disabledConversationActive();
-    },
-  });
+        // 通过 requestAnimationFrame 在接下来的 800ms 内持续并在浏览器每次重绘前强制置底
+        // 能够完美解决由于聊天气泡、Markdown、图片等异步渲染撑开高度，导致的跳闪和未置底问题
+        const startTime = Date.now();
+        const forceScrollToBottom = () => {
+          // 滚动到底部
+          const element = messageViewRef?.current;
+          if (element) {
+            element.scrollTo({
+              top: element.scrollHeight,
+              behavior: 'instant',
+            });
+          }
+          if (Date.now() - startTime < 800) {
+            requestAnimationFrame(forceScrollToBottom);
+          }
+        };
+        requestAnimationFrame(forceScrollToBottom);
+      },
+      onError: () => {
+        setIsLoadingConversation(false);
+      },
+    });
 
   // 智能体会话问题建议
   const { run: runChatSuggest, loading: loadingSuggest } = useRequest(
@@ -596,6 +372,11 @@ export default () => {
       manual: true,
       debounceWait: 300,
       onSuccess: (result: RequestResponse<string[]>) => {
+        if (
+          pendingSuggestGenerationRef.current !== suggestGenerationRef.current
+        ) {
+          return;
+        }
         setChatSuggestList(result.data);
         handleScrollBottom();
       },
@@ -609,6 +390,25 @@ export default () => {
       debounceWait: 300,
     });
 
+  /** 根据最近消息是否含 Loading/Incomplete / processing 执行中 更新流式活跃状态 */
+  const checkConversationActive = useCallback((messages: MessageInfo[]) => {
+    const recentMessages = messages?.slice(-5) || [];
+    setIsConversationActive(isSessionStreamBusy(recentMessages));
+  }, []);
+
+  const disabledConversationActive = () => {
+    setIsConversationActive(false);
+  };
+
+  // 流式已结束但 taskStatus 仍为 EXECUTING 时轮询同步（ChatFinished 遗漏 / 后端延迟）
+  useExecutingTaskStatusPoll({
+    conversationId: conversationInfo?.id,
+    taskStatus: conversationInfo?.taskStatus,
+    messageList,
+    onSync: syncConversationTaskStatus,
+    enabled: conversationInfo?.agent?.type === AgentTypeEnum.TaskAgent,
+  });
+
   // 修改消息列表
   const handleChangeMessageList = (
     params: ConversationChatParams,
@@ -617,13 +417,11 @@ export default () => {
     currentMessageId: string,
   ) => {
     const { data, eventType } = res;
-    setCurrentConversationRequestId(res.requestId);
 
     // 立即执行同步更新：React 18 会自动处理批量更新合并，无需手动防抖。
     // 这保证了流式输出中的每一个数据包（Chunk）都能被正确拼接，且不会丢失。
     setMessageList((messageList) => {
       if (!messageList?.length) {
-        disabledConversationActive();
         return [];
       }
       // 深拷贝消息列表
@@ -702,61 +500,6 @@ export default () => {
           }
         }
 
-        // 已调用完毕后, 处理卡片信息
-        if (
-          data?.status === ProcessingEnum.FINISHED &&
-          data?.cardBindConfig &&
-          data?.cardData
-        ) {
-          // 卡片列表
-          setCardList((cardList) => {
-            // 竖向列表
-            if (data.cardBindConfig?.bindCardStyle === BindCardStyleEnum.LIST) {
-              // 过滤掉空对象, 因为cardData中可能存在空对象
-              const _cardData =
-                data?.cardData?.filter(
-                  (item: CardDataInfo) => !isEmptyObject(item),
-                ) || [];
-              // 如果卡片列表不为空，则自动展开展示台
-              if (_cardData?.length) {
-                // 自动展开展示台
-                setShowType(EditAgentShowType.Show_Stand);
-              }
-              const cardDataList =
-                _cardData?.map((item: CardDataInfo) => ({
-                  ...item,
-                  cardKey: data.cardBindConfig.cardKey,
-                })) || [];
-              // 如果是同一次会话请求，则追加，否则更新
-              return res.requestId === requestId
-                ? [...cardList, ...cardDataList]
-                : [...cardDataList];
-            }
-            // 自动展开展示台
-            setShowType(EditAgentShowType.Show_Stand);
-            // 单张卡片
-            const cardInfo = {
-              ...data?.cardData,
-              cardKey: data.cardBindConfig?.cardKey,
-            };
-            // 如果是同一次会话请求，则追加，否则更新
-            return (
-              res.requestId === requestId ? [...cardList, cardInfo] : [cardInfo]
-            ) as CardInfo[];
-          });
-        }
-
-        // 通用型任务处理(刷新文件树)
-        if (
-          data.type === AgentComponentTypeEnum.ToolCall &&
-          isFileTreeVisibleRef.current && // 是否已经打开文件预览窗口
-          // 使用当前会话请求的 conversationId，避免闭包中 conversationInfo 还是旧值
-          params.conversationId
-        ) {
-          // 刷新文件树
-          handleRefreshFileList(params.conversationId);
-        }
-
         handleChatProcessingList(processingList);
       }
       // MESSAGE事件
@@ -814,33 +557,6 @@ export default () => {
         // 重置消息ID
         messageIdRef.current = '';
 
-        setTimeout(async () => {
-          // 会话结束后，如果是通用型任务，则刷新文件树，避免用户点击生成的文件时，无法定位到文件树中的文件，因为此时文件树未更新
-          if (
-            params.conversationId &&
-            conversationInfoRef.current?.agent?.type === AgentTypeEnum.TaskAgent
-          ) {
-            // 刷新文件树
-            await handleRefreshFileList(params.conversationId);
-
-            const taskResult = extractTaskResult(data.outputText);
-            // 如果有任务结果，并且有文件，则打开预览视图
-            if (taskResult.hasTaskResult && taskResult.file) {
-              // 打开预览视图
-              openPreviewView(params.conversationId);
-              const fileId = taskResult.file
-                ?.split(`${params.conversationId}/`)
-                .pop();
-              // 如果文件ID存在，则设置文件ID
-              if (fileId) {
-                setTaskAgentSelectedFileId(fileId);
-                // 每次设置文件ID时更新触发标志，确保即使文件ID相同也能触发文件选择
-                setTaskAgentSelectTrigger(Date.now());
-              }
-            }
-          }
-        }, 0);
-
         /**
          * "error":"Agent正在执行任务，请等待当前任务完成后再发送新请求"
          */
@@ -869,12 +585,18 @@ export default () => {
           requestId: res.requestId,
         };
 
-        // 调试结果
-        setRequestId(res.requestId);
-        setFinalResult(data as ConversationFinalResult);
         // 是否开启问题建议,可用值:Open,Close
         if (isSuggest.current) {
+          pendingSuggestGenerationRef.current = suggestGenerationRef.current;
           runChatSuggest(params as ConversationChatSuggestParams);
+        }
+
+        // TaskAgent：同步后台 taskStatus，驱动「智能体正在执行，请稍等」展示/结束
+        if (
+          params.conversationId &&
+          conversationInfoRef.current?.agent?.type === AgentTypeEnum.TaskAgent
+        ) {
+          void syncConversationTaskStatus(params.conversationId);
         }
 
         // 用户主动取消任务
@@ -904,7 +626,7 @@ export default () => {
         list.splice(index, arraySpliceAction, newMessage as MessageInfo);
       }
 
-      // 检查会话状态
+      // 同步更新会话活跃状态
       checkConversationActive(list);
 
       return list;
@@ -916,9 +638,6 @@ export default () => {
     params: ConversationChatParams,
     currentMessageId: string,
     perfLifecycle: MessagePerfLifecycle,
-    // 是否同步会话记录
-    isSync: boolean = true,
-    data: any = null,
   ) => {
     const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
 
@@ -939,11 +658,14 @@ export default () => {
         perfLifecycle.onSseConnect();
       },
       onMessage: (res: ConversationChatResponse) => {
-        // 将 chunk 的实际载荷也传给 perfTracker，避免只依赖 eventType 误判“首包”
-        // 传入整个响应对象：若其中存在 subType（例如 unified 会话流），perfTracker 可据此判断“真正消息块”。
+        // 将 chunk 的实际载荷也传给 perfTracker，避免只依赖 eventType 误判”首包”
+        // 传入整个响应对象：若其中存在 subType（例如 unified 会话流），perfTracker 可据此判断”真正消息块”。
         perfLifecycle.onFirstChunk(res?.eventType, res);
-        // 第一次收到消息后更新主题（仅调用一次）
-        updateTopicOnce(params, conversationInfo ?? data, isSync);
+
+        // 记录当前会话请求 ID（用于停止会话等操作）
+        if (res?.requestId) {
+          setCurrentConversationRequestId(res.requestId);
+        }
 
         // 现在逻辑已重构为同步，按序处理所有包，包括带有 finished: true 的结束包。
         handleChangeMessageList(params, res, currentMessageId);
@@ -962,6 +684,8 @@ export default () => {
         }
       },
       onClose: async () => {
+        // 明确的流结束信号：打破「发送后 3s 保活」，确保活跃态能落 false（停止/快速结束场景）
+        lastSendAtRef.current = 0;
         // 将当前会话的loading状态的消息改为Stopped状态，并将所有正在执行的 processing 状态更新为 FAILED
         setMessageList((list) => {
           try {
@@ -984,7 +708,7 @@ export default () => {
                 lastMessage.processingList &&
                 Array.isArray(lastMessage.processingList)
               ) {
-                const updatedProcessingList = lastMessage.processingList.map(
+                lastMessage.processingList = lastMessage.processingList.map(
                   (item: ProcessingInfo) => {
                     if (item.status === ProcessingEnum.EXECUTING) {
                       return {
@@ -996,14 +720,11 @@ export default () => {
                   },
                 );
 
-                lastMessage.processingList = updatedProcessingList;
-
                 // ✨ 关键：同时更新全局的 processingList，这样 MarkdownCustomProcess 组件才能正确更新
                 // handleChatProcessingList(updatedProcessingList); // 暂时不需要，通过对象引用已经修改了最后一条数据的状态
               }
             }
 
-            // 再次调用 checkConversationActive 确保状态同步
             checkConversationActive(copyList);
             return copyList;
           } catch (error) {
@@ -1011,26 +732,51 @@ export default () => {
             return list;
           }
         });
-        // 主动关闭连接时，禁用会话
+
+        if (
+          params.conversationId &&
+          conversationInfoRef.current?.agent?.type === AgentTypeEnum.TaskAgent
+        ) {
+          await syncConversationTaskStatus(params.conversationId);
+        }
+
         disabledConversationActive();
 
         perfLifecycle.onStreamEnd();
         perfLifecycle.onCloseRenderComplete();
+        // SSE 关闭时重置会话活跃状态
+        disabledConversationActive();
       },
       onError: () => {
         message.error(dict('PC.Models.ConversationInfo.networkTimeoutError'));
-        // 将当前会话的loading状态的消息改为Error状态
+        // 将当前会话的 loading 消息改为 Error，并把其 processingList 中执行中的项更新为 FAILED，
+        // 否则 isSessionStreamBusy 会因残留 EXECUTING 项持续为 true，导致活跃态/停止按钮/队列消费卡死。
         const list =
           messageListRef.current?.map((info: MessageInfo) => {
             if (info?.id === currentMessageId) {
-              return { ...info, status: MessageStatusEnum.Error };
+              const processingList = Array.isArray(info.processingList)
+                ? info.processingList.map((item: ProcessingInfo) =>
+                    item.status === ProcessingEnum.EXECUTING
+                      ? { ...item, status: ProcessingEnum.FAILED }
+                      : item,
+                  )
+                : info.processingList;
+              return {
+                ...info,
+                status: MessageStatusEnum.Error,
+                processingList,
+              };
             }
             return info;
           }) || [];
+        // 明确终止：打破「发送后 3s 保活」，确保活跃态能立即落 false
+        lastSendAtRef.current = 0;
         setMessageList(() => {
           disabledConversationActive();
           return list;
         });
+        // setMessageList(list);
+        checkConversationActive(list);
         perfLifecycle.onStreamEnd('error');
       },
     });
@@ -1040,6 +786,7 @@ export default () => {
   const handleClearSideEffect = () => {
     // 重置消息ID
     messageIdRef.current = '';
+    suggestGenerationRef.current += 1;
     // 重置问题建议列表
     setChatSuggestList([]);
     if (scrollTimeoutRef.current) {
@@ -1056,6 +803,10 @@ export default () => {
     }
   };
 
+  // 清除文件面板信息, 并关闭文件面板
+  // 文件树相关状态由 conversationInfo model 维护，此处保留空实现以兼容清空会话调用
+  const clearFilePanelInfo = useCallback(() => {}, []);
+
   // 重置初始化
   const resetInit = () => {
     handleClearSideEffect();
@@ -1063,27 +814,19 @@ export default () => {
     setIsMoreMessage(false);
     // 重置加载更多消息的状态
     setLoadingMore(false);
-    setShowType(EditAgentShowType.Hide);
     setManualComponents([]);
-    needUpdateTopicRef.current = true;
     allowAutoScrollRef.current = true;
     setShowScrollBtn(false);
-    // 重置卡片列表
-    setCardList([]);
     // 重置消息列表
     setMessageList([]);
     // 重置会话信息
     setConversationInfo(null);
-    conversationInfoRef.current = null;
-    // 重置当前会话ID
-    setCurrentConversationId(null);
     // 重置问题建议
     setIsSuggest(false);
-    // 重置请求ID
-    setRequestId('');
-    // 重置调试结果
-    setFinalResult(null);
-    // 重置会话消息ID
+    // 重置会话活跃状态
+    disabledConversationActive();
+    // 重置当前会话 ID 和请求 ID
+    setCurrentConversationId(null);
     setCurrentConversationRequestId('');
 
     // 清除文件面板信息, 并关闭文件面板
@@ -1100,13 +843,15 @@ export default () => {
       variableParams,
       sandboxId,
       debug = false,
-      isSync = true,
-      data = null,
       skillIds,
       modelId,
     } = sendParams;
     // 清除副作用
     handleClearSideEffect();
+
+    // 乐观标记流式活跃，保证停止按钮与队列入队判定及时
+    setIsConversationActive(true);
+    lastSendAtRef.current = Date.now();
 
     // 附件文件
     const attachments: AttachmentFile[] =
@@ -1163,12 +908,11 @@ export default () => {
       currentMessage,
     ] as MessageInfo[];
 
-    setMessageList(() => {
-      checkConversationActive(newMessageList);
-      return newMessageList;
-    });
+    setMessageList(newMessageList);
     // 缓存消息列表
     messageListRef.current = newMessageList;
+    // 同步更新会话活跃状态（用户发送消息后，新消息带有 Loading 状态）
+    checkConversationActive(newMessageList);
 
     // 允许滚动
     allowAutoScrollRef.current = true;
@@ -1192,50 +936,20 @@ export default () => {
     };
 
     // 处理会话
-    handleConversation(params, currentMessageId, perfLifecycle, isSync, data);
+    handleConversation(params, currentMessageId, perfLifecycle);
   };
 
-  const handleDebug = useCallback((info: MessageInfo) => {
-    const result = info?.finalResult;
-    if (result) {
-      setRequestId(info.requestId as string);
-      setFinalResult(result);
-    }
-    setShowType(EditAgentShowType.Debug_Details);
-    // 关闭文件树
-    setIsFileTreeVisible(false);
-    // 更新 ref 值
-    isFileTreeVisibleRef.current = false;
-  }, []);
-
-  const getCurrentConversationRequestId = useCallback(() => {
-    return currentConversationRequestId;
-  }, [currentConversationRequestId]);
-
-  // 获取当前会话ID
-  const getCurrentConversationId = useCallback(() => {
-    return currentConversationId;
-  }, [currentConversationId]);
-
   return {
-    setIsSuggest,
     conversationInfo,
     manualComponents,
     messageList,
     setMessageList,
-    requestId,
-    finalResult,
-    setFinalResult,
     chatSuggestList,
-    setChatSuggestList,
     loadingConversation,
     runQueryConversation,
-    isLoadingConversation,
     setIsLoadingConversation,
-    runAsync,
     loadingSuggest,
     onMessageSend,
-    handleDebug,
     messageViewRef,
     // 是否还有更多消息
     isMoreMessage,
@@ -1244,53 +958,23 @@ export default () => {
     loadingMore,
     // 加载更多消息
     handleLoadMoreMessage,
-    // 滚动到消息底部
-    messageViewScrollToBottom,
-    allowAutoScrollRef,
-    scrollTimeoutRef,
-    showType,
-    setShowType,
     handleClearSideEffect,
-    cardList,
     showScrollBtn,
     setShowScrollBtn,
     resetInit,
-    runStopConversation,
-    loadingStopConversation,
-    isConversationActive,
-    checkConversationActive,
-    disabledConversationActive,
-    setCurrentConversationRequestId,
-    getCurrentConversationRequestId,
-    getCurrentConversationId,
-    timedTaskMode,
-    isTimedTaskOpen,
-    openTimedTask,
-    closeTimedTask,
-    setConversationInfo,
-    // 文件树显隐状态
-    isFileTreeVisible,
-    // 文件树是否固定（用户点击后固定）
-    isFileTreePinned,
-    setIsFileTreePinned,
-    closePreviewView,
     clearFilePanelInfo,
-    // 文件树数据
-    fileTreeData,
-    fileTreeDataLoading,
-    setFileTreeData,
-    // 处理文件列表刷新事件（节流，供 SSE / 自动触发）
-    handleRefreshFileList,
-    // 立即刷新文件列表（供手动点击刷新按钮）
-    refreshFileListImmediately,
-    openPreviewView,
-    // 通用型智能体会话中点击选中的文件ID
-    taskAgentSelectedFileId,
-    setTaskAgentSelectedFileId,
-    // 通用型智能体文件选择触发标志
-    taskAgentSelectTrigger,
-    setTaskAgentSelectTrigger,
     isLoadingOtherInterface,
     setIsLoadingOtherInterface,
+    // 停止会话相关
+    runStopConversation,
+    loadingStopConversation,
+    // 会话活跃状态（SSE 流式交互中）
+    isConversationActive,
+    disabledConversationActive,
+    checkConversationActive,
+    // 当前会话 ID 与请求 ID
+    getCurrentConversationId,
+    getCurrentConversationRequestId,
+    setCurrentConversationRequestId,
   };
 };

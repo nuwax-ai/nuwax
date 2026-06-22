@@ -1,0 +1,321 @@
+@import '@/styles/token';
+
+@change-list-compact-gap: 6px;
+@change-list-count-badge-size: 18px;
+@change-list-count-font-size: 11px;
+@change-list-status-font-size: 11px;
+// 已删除文件：文件名、删除横线、D 角标统一颜色
+@change-list-deleted-color: @red3;
+// 合并冲突文件：文件名、C 角标统一大红色
+@change-list-conflict-color: @red6;
+
+.changes-section {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  &.changes-section-nested {
+    flex: none;
+  }
+}
+
+.changes-list-nested {
+  flex: none;
+  min-height: auto;
+  overflow: visible;
+}
+
+.change-file-tree {
+  padding: 0 @paddingSm;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+.tree-folder-item {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.tree-file-item {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.tree-file-name-wrap {
+  flex: 1;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.tree-file-name {
+  width: 100%;
+  max-width: 100%;
+}
+
+.tree-file-trailing {
+  flex-shrink: 0;
+  margin-left: auto;
+  padding-left: @marginXxs;
+}
+
+.changes-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 34px;
+  padding: 0 @paddingSm;
+  flex-shrink: 0;
+  cursor: pointer;
+  user-select: none;
+
+  .changes-title {
+    display: flex;
+    align-items: center;
+    gap: @change-list-compact-gap;
+    font-size: @fontSizeSm;
+    font-weight: @fontWeightStrong;
+    color: @colorText;
+
+    .changes-expand-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      color: @colorTextSecondary;
+      transform: rotate(0deg);
+      transition: transform 0.2s ease;
+
+      &.changes-expand-icon-expanded {
+        transform: rotate(90deg);
+      }
+    }
+  }
+
+  .changes-header-trailing {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex-shrink: 0;
+  }
+
+  .changes-count {
+    min-width: @change-list-count-badge-size;
+    height: @change-list-count-badge-size;
+    padding: 0 @change-list-compact-gap;
+    border-radius: (@change-list-count-badge-size / 2);
+    background-color: @colorBgTextActive;
+    font-size: @change-list-count-font-size;
+    line-height: @change-list-count-badge-size;
+    text-align: center;
+    color: @colorTextSecondary;
+  }
+
+  &.changes-header-has-actions:hover {
+    .changes-count {
+      display: none;
+    }
+
+    .changes-header-actions {
+      display: flex;
+    }
+  }
+}
+
+.changes-header-actions {
+  display: none;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.changes-list {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.change-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px @paddingSm;
+  font-size: 13px;
+  color: #5e5e5b;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background-color: @colorBgTextHover;
+  }
+
+  &.change-item-has-actions:hover {
+    .status-badge {
+      display: none;
+    }
+
+    .row-actions {
+      display: flex;
+    }
+  }
+
+  &.change-item-active {
+    background-color: @colorFillTertiary;
+
+    &:hover {
+      background-color: @colorFillSecondary;
+    }
+  }
+
+  .file-icon {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    font-size: @fontSizeLg;
+  }
+
+  .file-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: baseline;
+    gap: @marginXxs;
+  }
+
+  .file-name {
+    flex-shrink: 0;
+    height: 22px;
+    font-size: @fontSize;
+    font-family: @fontFamilyCode;
+    color: #5e5e5b;
+    max-width: 100%;
+  }
+
+  .file-path-wrap {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .file-path {
+    width: 100%;
+    height: 22px;
+    font-size: @fontSize;
+    font-family: @fontFamilyCode;
+    color: @colorTextPlaceholder;
+  }
+
+  // 已删除文件：文件名、路径删除横线与 D 角标同色
+  &-deleted {
+    .file-name,
+    .file-path {
+      text-decoration: line-through;
+      color: @change-list-deleted-color;
+    }
+  }
+
+  // 合并冲突文件：大红加粗
+  &-conflict {
+    .file-name {
+      color: @change-list-conflict-color;
+      font-weight: @fontWeightStrong;
+    }
+  }
+}
+
+.change-item-trailing {
+  flex-shrink: 0;
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+}
+
+.row-actions {
+  display: none;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.row-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: @borderRadius;
+  color: @colorTextSecondary;
+  cursor: pointer;
+  transition: color 0.2s ease;
+
+  &:hover {
+    color: @colorText;
+  }
+}
+
+.file-name-deleted {
+  text-decoration: line-through;
+  color: @change-list-deleted-color;
+}
+
+.file-name-conflict {
+  color: @change-list-conflict-color;
+  font-weight: @fontWeightStrong;
+}
+
+.status-badge {
+  flex-shrink: 0;
+  min-width: 14px;
+  font-size: @change-list-status-font-size;
+  font-weight: @fontWeightStrong;
+  text-align: center;
+  line-height: 1.2;
+
+  // 未暂存：修改（VS Code 黄）
+  &--modified {
+    color: @gold7;
+  }
+
+  // 新增 / 未跟踪（VS Code 绿）
+  &--added,
+  &--untracked {
+    color: @green7;
+  }
+
+  // 删除（与已删除文件名、删除横线同色）
+  &--deleted {
+    color: @change-list-deleted-color;
+  }
+
+  // 冲突：大红色加粗
+  &--conflict {
+    color: @change-list-conflict-color;
+    font-weight: @fontWeightStrong;
+  }
+
+  // 重命名
+  &--renamed {
+    color: @blue7;
+  }
+
+  // 已暂存：修改态在 VS Code 中为绿色 M
+  &--staged&--modified {
+    color: @green7;
+  }
+}
+
+.empty-state {
+  padding: @paddingLg @paddingSm;
+  text-align: center;
+  font-size: @fontSizeSm;
+  color: @colorTextTertiary;
+}

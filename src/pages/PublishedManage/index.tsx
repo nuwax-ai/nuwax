@@ -71,7 +71,7 @@ const PublishedManage: React.FC = () => {
         { publishId: record.id },
       );
     } else if (record.targetType === SquareAgentTypeEnum.Skill) {
-      url = `/space/${record.spaceId}/skill-details/${record.targetId}?publishId=${record.id}`;
+      url = `/space/${record.spaceId}/published/skill-details/${record.targetId}?publishId=${record.id}`;
     }
 
     if (url) {

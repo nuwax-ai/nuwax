@@ -1,18 +1,13 @@
 import AgentSidebar, { AgentSidebarRef } from '@/components/AgentSidebar';
-import SvgIcon from '@/components/base/SvgIcon';
 import {
   CopyToSpaceComponent,
   PagePreviewIframe,
-  UnifiedChatSession,
 } from '@/components/business-component';
 import { type AgentMode } from '@/components/business-component/AgentIntervention';
 import PaymentSubscriptionModal from '@/components/business-component/PaymentSubscriptionModal';
 import ConditionRender from '@/components/ConditionRender';
-import TooltipIcon from '@/components/custom/TooltipIcon';
-import FileTreeView from '@/components/FileTreeView';
 import ResizableSplit from '@/components/ResizableSplit';
-import { SUCCESS_CODE } from '@/constants/codes.constants';
-import { EVENT_TYPE } from '@/constants/event.constants';
+
 import useAgentDetails from '@/hooks/useAgentDetails';
 import { useConversationScrollDetection } from '@/hooks/useConversationScrollDetection';
 import useExclusivePanels from '@/hooks/useExclusivePanels';
@@ -20,109 +15,118 @@ import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
 import { useNavigationGuard } from '@/hooks/useNavigationGuard';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
 import useSubscription from '@/hooks/useSubscription';
-import { apiAgentConversationCreate } from '@/services/agentConfig';
+
 import { t } from '@/services/i18nRuntime';
-import {
-  apiDownloadAllFiles,
-  apiUpdateStaticFile,
-  apiUploadFiles,
-} from '@/services/vncDesktop';
 import {
   AgentComponentTypeEnum,
   AllowCopyEnum,
   DefaultSelectedEnum,
-  HideDesktopEnum,
   MessageTypeEnum,
   TaskStatus,
 } from '@/types/enums/agent';
 import { AgentTypeEnum } from '@/types/enums/space';
-import { FileNode } from '@/types/interfaces/appDev';
+import type { MessageSourceType } from '@/types/interfaces/common';
 import type {
-  MessageSourceType,
-  UploadFileInfo,
-} from '@/types/interfaces/common';
-import type {
-  ConversationInfo,
-  MessageInfo,
   RoleInfo,
   SendMessageParams,
 } from '@/types/interfaces/conversationInfo';
+import { addBaseTarget, parsePageAppProjectId } from '@/utils/common';
+
 import {
-  IUpdateStaticFileParams,
-  StaticFileInfo,
-  VncDesktopUpdateFileInfo,
-} from '@/types/interfaces/vncDesktop';
-import { modalConfirm } from '@/utils/ant-custom';
-import {
-  addBaseTarget,
-  arraysContainSameItems,
-  parsePageAppProjectId,
-} from '@/utils/common';
-import eventBus from '@/utils/eventBus';
-import { updateFilesListContent, updateFilesListName } from '@/utils/fileTree';
-import { checkFileSizeExceedLimit } from '@/utils/index';
+  useSourceControl,
+  type SelectedChangeFile,
+} from '@/components/business-component/FileTreeGitSourcePanel';
+import type { FileTreeContainerProps } from '@/components/business-component/FileTreeGitSourcePanel/types/file-tree-git-source';
+import { useFileTreePreviewView } from '@/components/business-component/FileTreePreviewPanel/hooks/useFileTreePreviewView';
+import { apiUpdateStaticFile } from '@/services/vncDesktop';
+import type { UpdateFileInfo } from '@/types/interfaces/fileTree';
+import type { StaticFileInfo } from '@/types/interfaces/vncDesktop';
+import { updateFilesListContent } from '@/utils/fileTree';
 import { jumpToPageDevelop } from '@/utils/router';
 import { LoadingOutlined } from '@ant-design/icons';
-import { Form, message as messageAntd } from 'antd';
+import { Form } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { history, useLocation, useModel, useParams } from 'umi';
-import DropdownChangeName from './DropdownChangeName';
+import LeftContent from './components/LeftContent';
+import ShowArea from './components/ShowArea';
 import { useAutoPreviewFile } from './hooks/useAutoPreviewFile';
+import { useChatConversation } from './hooks/useChatConversation';
+import { useChatFiles } from './hooks/useChatFiles';
+import { useChatSandbox } from './hooks/useChatSandbox';
+import { useChatVariables } from './hooks/useChatVariables';
+import { useChatViewMode } from './hooks/useChatViewMode';
 import styles from './index.less';
-import ShowArea from './ShowArea';
 
 const cx = classNames.bind(styles);
+export interface ChatCoreProps {
+  id: number;
+  agentId: number;
+  locationState?: any;
+  showSidebar?: boolean; // 是否渲染右侧属性面板，默认 true
+  showPayment?: boolean; // 是否包含订阅/扣费弹窗等逻辑，默认 true
+  enableResizable?: boolean; // 是否开启拖拽分栏布局，默认 true
+  showClearContext?: boolean; // 是否展示清除上下文按钮（刷子），默认 true
+  renderTitle?: (props: {
+    effectiveAgent: any;
+    isAppSidebarMode: boolean;
+  }) => React.ReactNode;
+  renderHeaderRight?: (props: { effectiveAgent: any }) => React.ReactNode;
+}
+
 /**
  * 主页咨询聊天页面
  */
-const Chat: React.FC = () => {
+export const ChatCore: React.FC<ChatCoreProps> = ({
+  id,
+  agentId,
+  locationState,
+  showSidebar = true,
+  showPayment = true,
+  enableResizable = true,
+  showClearContext = true,
+  renderTitle,
+  renderHeaderRight,
+}) => {
   const location = useLocation();
-  const params = useParams();
   const { handleAutoPreviewLastFile } = useAutoPreviewFile();
-  // 会话ID
-  const id = Number(params.id);
-  const agentId = Number(params.agentId);
+  const stateToUse = locationState || location.state;
   // 附加state
-  const message = location.state?.message;
-  const files = location.state?.files;
-  const infos = location.state?.infos;
+  const message = stateToUse?.message;
+  const files = stateToUse?.files;
+  const infos = stateToUse?.infos;
   // 技能ID列表
-  const skillIds = location.state?.skillIds;
+  const skillIds = stateToUse?.skillIds;
   // 消息来源
   const messageSourceType: MessageSourceType =
-    (location.state?.messageSourceType as MessageSourceType) || 'new_chat'; // new_chat 新增会话
+    (stateToUse?.messageSourceType as MessageSourceType) || 'new_chat'; // new_chat 新增会话
   // 默认的智能体详情信息
-  const defaultAgentDetail = location.state?.defaultAgentDetail;
+  const defaultAgentDetail = stateToUse?.defaultAgentDetail;
   // 用户填写的变量参数，此处用于第一次发送消息时，传递变量参数
-  const firstVariableParams = location.state?.variableParams;
+  const firstVariableParams = stateToUse?.variableParams;
   // 模型ID
   const [selectedModelId, setSelectedModelId] = useState<number>(
-    location.state?.modelId,
+    stateToUse?.modelId,
   );
   const [form] = Form.useForm();
-  // 变量参数
-  const [variableParams, setVariableParams] = useState<Record<
-    string,
-    string | number
-  > | null>(null);
-  const [clearLoading, setClearLoading] = useState<boolean>(false);
-  // 是否发送过消息,如果是,则禁用变量参数
-  const isSendMessageRef = useRef<boolean>(false);
 
-  const [isSidebarVisible, setIsSidebarVisible] = useState<boolean>(true);
+  const [isSidebarVisible, setIsSidebarVisible] =
+    useState<boolean>(showSidebar);
   const sidebarRef = useRef<AgentSidebarRef>(null);
 
   // 复制模板弹窗状态
   const [openCopyModal, setOpenCopyModal] = useState<boolean>(false);
-  // 是否锁定电脑选择（仅在从 AgentDetails 页面带有 selectedComputerId 且为 PUSH 跳转时生效）
-  const [isSelectionLocked, setIsSelectionLocked] = useState<boolean>(false);
 
-  // 当前选中的电脑 ID（通用型智能体）
-  const [selectedComputerId, setSelectedComputerId] = useState<string>('');
+  const [clearLoading, setClearLoading] = useState<boolean>(false);
 
-  // 记录用户是否已发送消息（用于锁定电脑选择）
-  const [hasUserSentMessage, setHasUserSentMessage] = useState<boolean>(false);
+  // 异步查询会话加载状态
+  const [loadingAsync, setLoadingAsync] = useState<boolean>(true);
 
   // 开放应用智能体会话聊天页面相关状态
   const {
@@ -131,7 +135,6 @@ const Chat: React.FC = () => {
     isAppSidebarVisible,
     toggleAppSidebarVisible,
     createAppNewConversation,
-
     openPaymentModal,
     setOpenPaymentModal,
     localCalledTrialCount,
@@ -158,35 +161,19 @@ const Chat: React.FC = () => {
   } = useSubscription();
 
   useEffect(() => {
-    if (!openPaymentModal || isAppSidebarMode) {
+    if (!showPayment || !openPaymentModal || isAppSidebarMode) {
       return;
     }
 
     // 打开智能体订阅套餐弹窗
     queryAgentSubscriptionPlans(agentId);
   }, [
+    showPayment,
     openPaymentModal,
     isAppSidebarMode,
     queryAgentSubscriptionPlans,
     agentId,
   ]);
-
-  // 仅在本次会话中使用从 AgentDetails 页面带过来的 selectedComputerId；
-  // 刷新（POP）或新建会话（REPLACE）时，不再沿用之前的选择。
-  useEffect(() => {
-    const passedDetails = location.state?.selectedComputerId;
-
-    // PUSH: 正常跳转 (AgentDetails -> Chat)
-    const isPushWithComputer = history.action === 'PUSH' && !!passedDetails;
-
-    if (isPushWithComputer) {
-      setSelectedComputerId(passedDetails);
-      setIsSelectionLocked(true);
-    } else {
-      setSelectedComputerId('');
-      setIsSelectionLocked(false);
-    }
-  }, [history.action, location.key]);
 
   // 智能体详情
   const { agentDetail, setAgentDetail } = useAgentDetails();
@@ -250,6 +237,14 @@ const Chat: React.FC = () => {
     taskAgentSelectTrigger,
     // 会话是否正在进行中（有消息正在处理）
     isConversationActive,
+    // 停止会话相关
+    runStopConversation,
+    loadingStopConversation,
+    getCurrentConversationId,
+    getCurrentConversationRequestId,
+    disabledConversationActive,
+    // 其它接口加载状态
+    isLoadingOtherInterface,
     // 加载更多消息相关
     isMoreMessage,
     setIsMoreMessage,
@@ -271,123 +266,54 @@ const Chat: React.FC = () => {
     return conversationInfo?.agent || agentDetail;
   }, [conversationInfo?.agent, agentDetail]);
 
-  /**
-   * 是否显示文件预览 / 智能体电脑切换按钮：
-   * 1. 仅通用型智能体 (TaskAgent)
-   * 2. 必须存在消息
-   * 3. 如果只有一条消息，则该消息的 id 必须非空（id 为空视为无效消息）
-   */
-  const isShowFilePanel = useMemo(() => {
-    if (effectiveAgent?.type !== AgentTypeEnum.TaskAgent) {
-      return false;
-    }
+  const {
+    setSelectedComputerId,
+    isSelectionLocked,
+    setIsSelectionLocked,
+    hasUserSentMessage,
+    setHasUserSentMessage,
+    getEffectiveSandboxId,
+    finalSelectedId,
+  } = useChatSandbox({
+    location: { ...location, state: stateToUse },
+    history,
+    effectiveAgent,
+    conversationInfo,
+  });
 
-    if (!messageList || messageList.length === 0) {
-      return false;
-    }
-
-    if (messageList.length === 1) {
-      const first = messageList[0];
-      return !!first?.id;
-    }
-
-    return true;
-  }, [effectiveAgent?.type, messageList]);
-
-  // 获取有效的沙箱ID
-  const getEffectiveSandboxId = (info: ConversationInfo = conversationInfo) => {
-    try {
-      // 优先级 1: 手动选择 (selectedComputerId)
-      if (selectedComputerId) {
-        return selectedComputerId;
-      }
-
-      // 优先级 2: 兜底从 location.state 获取 (仅 PUSH 跳转)。
-      // 解决首次加载发消息时，状态未及时更新导致获取到内置 sandboxId 的问题。
-      if (history.action === 'PUSH' && location.state?.selectedComputerId) {
-        return location.state.selectedComputerId;
-      }
-
-      // 优先级 3: 个人电脑 (sandboxId)
-      if (effectiveAgent?.sandboxId) {
-        return effectiveAgent.sandboxId;
-      }
-
-      // 优先级 4: 共享电脑 (sandboxServerId)
-      const sandboxServerId = info?.sandboxServerId;
-      if (sandboxServerId) {
-        return String(sandboxServerId);
-      }
-
-      return '';
-    } catch {
-      return selectedComputerId;
-    }
-  };
-
-  // 从 pagePreviewData 的 params 或 URI 中获取工作流信息
-  // 支持多种可能的参数名：workflowId, workflow_id, id
-  // 也支持从 URI 路径中解析（如 /square/workflow/123）
-  const workflowId = useMemo(() => {
-    // 1. 先从 params 中获取
-    if (pagePreviewData?.params) {
-      const params = pagePreviewData.params;
-      const workflowIdFromParams =
-        params.workflowId || params.workflow_id || params.id;
-      if (workflowIdFromParams) {
-        const id = Number(workflowIdFromParams);
-        if (!isNaN(id)) return id;
-      }
-    }
-
-    // 2. 从 URI 路径中解析（如 /square/workflow/123 或 /workflow/123）
-    if (pagePreviewData?.uri) {
-      const uri = pagePreviewData.uri;
-      const workflowMatch = uri.match(/[/]workflow[/](\d+)/i);
-      if (workflowMatch && workflowMatch[1]) {
-        const id = Number(workflowMatch[1]);
-        if (!isNaN(id)) return id;
-      }
-    }
-
-    return null;
-  }, [pagePreviewData?.params, pagePreviewData?.uri]);
-
-  // 判断是否显示复制按钮（智能体允许复制即可显示，支持复制智能体或工作流模板）
-  const showCopyButton = useMemo(() => {
-    const shouldShow = effectiveAgent?.allowCopy === AllowCopyEnum.Yes;
-    return shouldShow;
-  }, [
-    workflowId,
-    effectiveAgent?.allowCopy,
-    effectiveAgent?.agentId,
+  const {
+    isShowFilePanel,
+    showCopyButton,
+    handleFileTreeVisible,
+    handleOpenDesktopView,
+  } = useChatViewMode({
+    effectiveAgent,
+    messageList,
+    isFileTreeVisible,
+    viewMode,
+    id,
+    sidebarRef,
+    openPreviewView,
+    closePreviewView,
+    openDesktopView,
     pagePreviewData,
-  ]);
+  });
 
-  const values = Form.useWatch([], { form, preserve: true });
-
-  useEffect(() => {
-    // 监听form表单值变化
-    if (values && Object.keys(values).length === 0) {
-      return;
-    }
-    form
-      .validateFields({ validateOnly: true })
-      .then(() => setVariableParams(values))
-      .catch(() => setVariableParams(null));
-  }, [form, values]);
-
-  // 用户在智能体主页填写的变量信息
-  useEffect(() => {
-    if (!!firstVariableParams) {
-      setVariableParams(firstVariableParams);
-    }
-  }, [firstVariableParams]);
+  const {
+    variableParams,
+    setVariableParams,
+    isSendMessageRef,
+    isChatInputDisabled,
+  } = useChatVariables({
+    firstVariableParams,
+    requiredNameList,
+    form,
+  });
 
   // 导航拦截：追踪会话是否在本次会话中变为活跃状态
   // 使用 ref 追踪初始状态，避免在刷新时因历史消息状态触发拦截
   const wasConversationActiveOnMount = useRef<boolean | null>(null);
-  const shouldBlockNavigation = useRef(false);
+  const shouldBlockNavigation = useRef<boolean>(false);
 
   // 在首次获取到 isConversationActive 值时记录
   useEffect(() => {
@@ -414,23 +340,6 @@ const Chat: React.FC = () => {
     message: t('PC.Pages.Chat.leaveTaskWarning'),
     discardText: t('PC.Pages.Chat.confirmLeave'),
   });
-
-  // 聊天会话框是否禁用，不能发送消息
-  const wholeDisabled = useMemo(() => {
-    // 变量参数为空，不发送消息
-    if (requiredNameList?.length > 0) {
-      // 未填写必填参数，禁用发送按钮
-      if (!variableParams) {
-        return true;
-      }
-      const isSameName = arraysContainSameItems(
-        requiredNameList,
-        Object.keys(variableParams),
-      );
-      return !isSameName;
-    }
-    return false;
-  }, [requiredNameList, variableParams]);
 
   // 角色信息（名称、头像）
   const roleInfo: RoleInfo = useMemo(() => {
@@ -489,9 +398,6 @@ const Chat: React.FC = () => {
     setShowScrollBtn,
   );
 
-  // 异步查询会话加载状态
-  const [loadingAsync, setLoadingAsync] = useState<boolean>(true);
-
   useEffect(() => {
     if (id) {
       setIsLoadingConversation(false);
@@ -533,7 +439,10 @@ const Chat: React.FC = () => {
             data,
             skillIds,
             modelId: selectedModelId,
-            agentMode: 'yolo',
+            agentMode:
+              (stateToUse?.agentMode as AgentMode) ||
+              (localStorage.getItem('nuwax_agent_mode_cache') as AgentMode) ||
+              'yolo',
           };
 
           onMessageSend(sendParams);
@@ -569,51 +478,34 @@ const Chat: React.FC = () => {
     }
   }, [infos, messageSourceType, manualComponents]);
 
-  useEffect(() => {
-    if (!conversationInfo?.id) {
-      return;
-    }
-
-    // 监听会话状态更新事件
-    const listenConversationStatusUpdate = (data: {
-      conversationId: string;
-    }) => {
-      const { conversationId } = data;
-      // 如果会话ID和当前会话ID相同，并且会话状态为已完成，则显示成功提示
-      if (conversationId === conversationInfo?.id?.toString()) {
-        // 如果会话状态为执行中，则重新查询会话信息
-        if (conversationInfo?.taskStatus === TaskStatus.EXECUTING) {
-          // 重新查询会话信息
-          runAsync(id);
-        }
-      }
-    };
-
-    // 监听会话状态更新事件
-    eventBus.on(EVENT_TYPE.ChatFinished, listenConversationStatusUpdate);
-  }, [id, conversationInfo]);
-
-  // 监听会话更新事件，更新会话记录
-  const handleConversationUpdate = (data: {
-    conversationId: string;
-    message: MessageInfo;
-  }) => {
-    const { conversationId, message } = data;
-    if (Number(id) === Number(conversationId)) {
-      setMessageList((list: MessageInfo[]) => [...list, message]);
-      // 当用户手动滚动时，暂停自动滚动
-      if (allowAutoScrollRef.current) {
-        // 在流式输出/高频更新时，使用强制即时置底，避免 smooth 滚动的堆积和抖动
-        const element = messageViewRef.current;
-        if (element) {
-          element.scrollTo({
-            top: element.scrollHeight,
-            behavior: 'instant',
-          });
-        }
-      }
-    }
-  };
+  // 会话相关 props
+  const { handleClear, handleMessageSend } = useChatConversation({
+    id,
+    agentId,
+    isAppSidebarMode,
+    history,
+    form,
+    isChatInputDisabled,
+    isSendMessageRef,
+    variableParams,
+    getEffectiveSandboxId,
+    setClearLoading,
+    handleClearSideEffect,
+    setIsMoreMessage,
+    setMessageList,
+    clearFilePanelInfo,
+    setVariableParams,
+    setSelectedComputerId,
+    setIsSelectionLocked,
+    setHasUserSentMessage,
+    setIsLoadingOtherInterface,
+    onMessageSend,
+    allowAutoScrollRef,
+    messageViewRef,
+    incrementCalledTrialCount,
+    selectedComponentList,
+    selectedModelId,
+  });
 
   useEffect(() => {
     // 切换会话时立即隐藏预览，防止旧数据重新打开导致闪烁
@@ -623,12 +515,7 @@ const Chat: React.FC = () => {
     // conversationInfo 会无缝接管加载显示，不会出现 AgentChatEmpty 闪现
     setClearLoading(false);
 
-    // 监听新消息事件
-    eventBus.on(EVENT_TYPE.RefreshChatMessage, handleConversationUpdate);
-
     return () => {
-      eventBus.off(EVENT_TYPE.RefreshChatMessage, handleConversationUpdate);
-
       // 组件卸载时重置全局会话状态，防止污染其他页面
       resetInit();
       setSelectedComponentList([]);
@@ -637,113 +524,6 @@ const Chat: React.FC = () => {
       setOpenPaymentModal(false);
     };
   }, [id]);
-
-  // 清空会话记录并创建新会话
-  const handleClear = async () => {
-    setClearLoading(true);
-    handleClearSideEffect();
-    setIsMoreMessage(false);
-    setMessageList([]);
-    clearFilePanelInfo();
-    form.resetFields();
-    setVariableParams(null);
-    setSelectedComputerId(''); // 显式重置选中电脑ID
-    setIsSelectionLocked(false); // 显式解除锁定
-    setHasUserSentMessage(false); // 重置发送状态
-    setIsLoadingOtherInterface(true);
-
-    try {
-      const res = await apiAgentConversationCreate({
-        agentId,
-        devMode: false,
-      });
-
-      if (res.code === SUCCESS_CODE && res.data) {
-        // 注意：这里不重置 clearLoading，让它在 useEffect([id]) 中重置
-        // 避免 setClearLoading(false) 与 history.replace 之间的渲染间隙导致 AgentChatEmpty 闪现
-        setIsLoadingOtherInterface(false);
-        const { id: newConversationId, agentId: newAgentId } = res.data;
-
-        // 会话发起后跳转的页面URL
-        let url = '';
-
-        // 应用智能体模式下，跳转到应用智能体会话页面
-        if (isAppSidebarMode) {
-          // 会话发起后跳转的页面URL
-          const conversationUrl = '/app/chat/:agentId/:id';
-          url = conversationUrl
-            .replace(':agentId', newAgentId.toString())
-            .replace(':id', newConversationId?.toString() || '');
-        } else {
-          url = `/home/chat/${newConversationId}/${newAgentId}`;
-        }
-
-        // 跳转会话页面
-        history.replace(url, {
-          message: '',
-          files: [],
-          infos,
-          // defaultAgentDetail: effectiveAgent || defaultAgentDetail,
-          firstVariableParams: null,
-          selectedComputerId: null, // 显式清除 location.state 中的 selectedComputerId
-        });
-      } else {
-        throw new Error(
-          res.message || t('PC.Pages.Chat.createConversationFailed'),
-        );
-      }
-    } catch (error: any) {
-      const errorMsg =
-        error?.message ||
-        (typeof error === 'string' ? error : null) ||
-        t('PC.Pages.Chat.clearAndCreateFailed');
-      message.error(errorMsg);
-      setClearLoading(false);
-      setIsLoadingOtherInterface(false);
-    }
-  };
-
-  // 消息发送
-  const handleMessageSend = (
-    messageInfo: string,
-    files: UploadFileInfo[] = [],
-    skillIds: number[] = [],
-    modelId?: number,
-    selectedAgentMode?: AgentMode,
-  ) => {
-    // 变量参数为空，不发送消息
-    if (wholeDisabled) {
-      form.validateFields(); // 触发表单验证以显示error
-      return;
-    }
-
-    // 标记用户已发送消息
-    setHasUserSentMessage(true);
-
-    isSendMessageRef.current = true;
-    const effectiveSandboxId = getEffectiveSandboxId();
-
-    // 发送消息参数
-    const sendParams: SendMessageParams = {
-      id,
-      messageInfo,
-      files,
-      infos: selectedComponentList,
-      variableParams: variableParams || undefined,
-      sandboxId: effectiveSandboxId,
-      skillIds,
-      modelId: modelId || selectedModelId,
-      agentMode: selectedAgentMode || 'yolo',
-    };
-
-    incrementCalledTrialCount();
-    onMessageSend(sendParams);
-  };
-
-  // 计算最终选中的沙盒ID
-  const finalSelectedId = useMemo(() => {
-    return getEffectiveSandboxId();
-  }, [getEffectiveSandboxId]);
 
   // 互斥面板控制器：管理 PagePreview、AgentSidebar、ShowArea 的互斥展示
   useExclusivePanels({
@@ -761,285 +541,312 @@ const Chat: React.FC = () => {
     eventBindConfig: conversationInfo?.agent?.eventBindConfig,
   });
 
-  /**
-   * 切换文件树「预览」视图
-   *
-   * 需求：
-   * 1. 当 isFileTreeVisible 为 false 时：
-   *    - 点击「预览」按钮，打开文件树并展示预览视图。
-   * 2. 当 isFileTreeVisible 为 true 时：
-   *    - 当前为 preview 时，再次点击「预览」按钮，关闭文件树视图。
-   *    - 当前为 desktop 时，点击「预览」按钮，保持文件树显示，仅切换到预览视图。
-   */
-  const handleFileTreeVisible = () => {
-    if (!isFileTreeVisible) {
-      // 文件树当前未显示：关闭 AgentSidebar，打开预览视图
-      sidebarRef.current?.close();
-      openPreviewView(id);
-      return;
-    }
+  const refreshGitListRef = useRef<(() => void) | undefined>();
 
-    // 文件树已显示
-    if (viewMode === 'preview') {
-      // 当前就是预览视图：再次点击关闭视图
-      closePreviewView();
-    } else {
-      // 当前是其他模式（例如 desktop）：切换为预览视图但保持文件树显示
-      openPreviewView(id);
-    }
-  };
+  const {
+    handleCreateFileNode,
+    handleDeleteFile,
+    handleConfirmRenameFile,
+    handleSaveFiles,
+    handleSaveFileContent,
+    handleUploadMultipleFiles,
+    handleExportProject,
+  } = useChatFiles({
+    id,
+    fileTreeData,
+    handleRefreshFileList,
+    onSaveFileContentSuccessRef: refreshGitListRef,
+  });
 
-  /**
-   * 切换「智能体电脑」视图∂∂∂∂
-   *
-   * 需求：
-   * 1. 当 isFileTreeVisible 为 false 时：
-   *    - 点击「智能体电脑」按钮，打开文件树并展示 desktop 视图。
-   * 2. 当 isFileTreeVisible 为 true 时：
-   *    - 当前为 desktop 时，再次点击按钮，关闭视图。
-   *    - 当前为 preview 时，点击按钮，保持文件树显示，仅切换到 desktop 视图。
-   */
-  const handleOpenDesktopView = () => {
-    if (!isFileTreeVisible) {
-      // 文件树当前未显示：关闭 AgentSidebar，打开智能体电脑视图
-      sidebarRef.current?.close();
-      openDesktopView(id);
-      return;
-    }
-
-    // 文件树已显示
-    if (viewMode === 'desktop') {
-      // 当前就是智能体电脑视图：再次点击关闭视图
-      closePreviewView();
-    } else {
-      // 当前是其他模式（例如 preview）：切换为智能体电脑视图但保持文件树显示
-      openDesktopView(id);
-    }
-  };
-
-  // 新建文件（空内容）、文件夹
-  const handleCreateFileNode = async (
-    fileNode: FileNode,
-    newName: string,
-  ): Promise<boolean> => {
-    if (!id) {
-      messageAntd.warning(t('PC.Pages.Chat.conversationIdMissingCreateFile'));
-      return false;
-    }
-
-    const trimmedName = newName.trim();
-    if (!trimmedName) {
-      return false;
-    }
-
-    // 计算新文件的完整路径：父路径 + 新文件名
-    const parentPath = fileNode.parentPath || '';
-    const newPath = parentPath ? `${parentPath}/${trimmedName}` : trimmedName;
-
-    const newFile: VncDesktopUpdateFileInfo = {
-      name: newPath,
-      binary: false,
-      // 文件大小是否超过限制
-      sizeExceeded: false,
-      // 文件内容
-      contents: '',
-      // 重命名之前的文件名
-      renameFrom: '',
-      // 操作类型
-      operation: 'create',
-      // 是否为目录
-      isDir: fileNode.type === 'folder',
-    };
-
-    const updatedFilesList: VncDesktopUpdateFileInfo[] = [newFile];
-
-    const newSkillInfo: IUpdateStaticFileParams = {
-      cId: id,
-      files: updatedFilesList,
-    };
-
-    const { code } = await apiUpdateStaticFile(newSkillInfo);
-    if (code === SUCCESS_CODE && id) {
-      // 新建成功后，重新查询文件树列表，因为更新了文件名或文件夹名称，需要刷新文件树
-      await handleRefreshFileList(id);
-    }
-
-    return code === SUCCESS_CODE;
-  };
-
-  // 删除文件
-  const handleDeleteFile = async (fileNode: FileNode): Promise<boolean> => {
-    return new Promise((resolve) => {
-      modalConfirm(
-        t('PC.Pages.Chat.confirmDeleteFile'),
-        fileNode.name,
-        async () => {
-          try {
-            // 更新文件列表
-            let updatedFilesList: VncDesktopUpdateFileInfo[] = [];
-            if (fileNode.type === 'folder') {
-              updatedFilesList = [
-                {
-                  contents: '',
-                  name: fileNode.id,
-                  operation: 'delete', // 操作类型
-                  isDir: true,
-                },
-              ];
-            } else {
-              // 找到要删除的文件
-              const currentFile = fileTreeData?.find(
-                (item: StaticFileInfo) => item.fileId === fileNode.id,
-              );
-              if (!currentFile) {
-                messageAntd.error(t('PC.Pages.Chat.fileNotFoundDelete'));
-                resolve(false);
-                return;
-              }
-
-              // 更新文件操作
-              currentFile.operation = 'delete';
-              // 删除时，设置文件内容为空，避免上传内容导致删除文件时长太久
-              currentFile.contents = '';
-              // 更新文件列表
-              updatedFilesList = [currentFile] as VncDesktopUpdateFileInfo[];
-            }
-
-            // 更新技能信息
-            const newSkillInfo: IUpdateStaticFileParams = {
-              cId: id,
-              files: updatedFilesList,
-            };
-            const { code } = await apiUpdateStaticFile(newSkillInfo);
-            if (code === SUCCESS_CODE) {
-              // 重新查询文件树列表，因为更新了文件名或文件夹名称，需要刷新文件树
-              handleRefreshFileList(id);
-              messageAntd.success(t('PC.Pages.Chat.deleteSuccess'));
-              resolve(true);
-            } else {
-              resolve(false);
-            }
-          } catch (error) {
-            console.error('Failed to delete file:', error);
-            resolve(false);
-          }
-        },
-        () => {
-          // 用户取消删除
-          resolve(false);
-        },
+  // 文件视图 props
+  const fileView = useFileTreePreviewView({
+    taskAgentSelectedFileId,
+    taskAgentSelectTrigger,
+    originalFiles: fileTreeData,
+    fileTreeDataLoading,
+    targetId: id?.toString() || '',
+    readOnly: false,
+    onUploadFiles: handleUploadMultipleFiles,
+    onExportProject: handleExportProject,
+    onRenameFile: handleConfirmRenameFile,
+    onCreateFileNode: handleCreateFileNode,
+    onDeleteFile: handleDeleteFile,
+    onSaveFiles: handleSaveFiles,
+    onSaveFileContent: async (fileId, content, originalFileContent) => {
+      const result = await handleSaveFileContent(
+        fileId,
+        content,
+        originalFileContent,
       );
-    });
-  };
+      return result ?? false;
+    },
+    agentSandboxId: finalSelectedId,
+    onClose: closePreviewView,
+    isFileTreePinned,
+    onFileTreePinnedChange: setIsFileTreePinned,
+    isCanDeleteSkillFile: true,
+    onRefreshFileTree: () => refreshFileListImmediately(id),
+    hideDesktop: effectiveAgent?.hideDesktop,
+    staticFileBasePath: `/api/computer/static/${id}`,
+    isDynamicTheme: true,
+    enableGitStatus: effectiveAgent?.type === AgentTypeEnum.TaskAgent,
+  });
 
-  // 确认重命名文件
-  const handleConfirmRenameFile = async (
-    fileNode: FileNode,
-    newName: string,
-  ) => {
-    // 更新原始文件列表中的文件名（用于提交更新）
-    const updatedFilesList = updateFilesListName(
-      fileTreeData || [],
-      fileNode,
-      newName,
-    );
+  refreshGitListRef.current = fileView.refreshGitList;
 
-    // 更新技能信息，用于提交更新
-    const newSkillInfo: IUpdateStaticFileParams = {
-      cId: id,
-      files: updatedFilesList as VncDesktopUpdateFileInfo[],
-    };
+  useEffect(
+    () => () => {
+      handleSaveFileContent.cancel();
+    },
+    [handleSaveFileContent],
+  );
 
-    // 使用文件全量更新逻辑
-    const { code } = await apiUpdateStaticFile(newSkillInfo);
-    if (code === SUCCESS_CODE) {
-      // 重新查询文件树列表，因为更新了文件名或文件夹名称，需要刷新文件树
-      await handleRefreshFileList(id);
-    }
-    return code === SUCCESS_CODE;
-  };
+  // Git 源代码管理 props
+  const [selectedChangeFile, setSelectedChangeFile] =
+    useState<SelectedChangeFile | null>(null);
 
-  // 保存文件
-  const handleSaveFiles = async (
-    data: {
-      fileId: string;
-      fileContent: string;
-      originalFileContent: string;
-    }[],
-  ) => {
-    // 更新文件列表(只更新修改过的文件)
-    const updatedFilesList = updateFilesListContent(
-      fileTreeData || [],
-      data,
-      'modify',
-    );
+  // Git 版本记录面板状态
+  const [gitVersionPanelOpen, setGitVersionPanelOpen] =
+    useState<boolean>(false);
 
-    // 更新技能信息，用于提交更新
-    const newSkillInfo: IUpdateStaticFileParams = {
-      cId: id,
-      files: updatedFilesList as VncDesktopUpdateFileInfo[],
-    };
-
-    // 使用文件全量更新逻辑
-    const { code } = await apiUpdateStaticFile(newSkillInfo);
-    return code === SUCCESS_CODE;
-  };
-
-  /**
-   * 处理上传多个文件回调
-   * @param files 文件列表
-   * @param filePaths 文件路径列表
-   * @returns Promise<void>
-   */
-  const handleUploadMultipleFiles = async (
-    files: File[],
-    filePaths: string[],
-  ) => {
-    if (!id) {
-      messageAntd.warning(t('PC.Pages.Chat.conversationIdMissingUpload'));
-      return;
-    }
-
-    // 检查文件大小是否超过最大上传文件大小
-    const { isExceedLimitSize, maxFileSize } = checkFileSizeExceedLimit(
-      files || [],
-    );
-    // 如果超过最大上传文件大小，则提示错误
-    if (isExceedLimitSize) {
-      messageAntd.warning(
-        t('PC.Pages.Chat.uploadSizeLimitExceeded', maxFileSize),
-      );
-      return;
-    }
-
-    try {
-      // 直接调用上传接口，使用文件名作为路径
-      const { code } = await apiUploadFiles({
-        files,
-        cId: id,
-        filePaths,
-      });
-
-      if (code === SUCCESS_CODE) {
-        messageAntd.success(t('PC.Pages.Chat.uploadSuccess'));
-        // 刷新项目详情
-        await handleRefreshFileList(id);
+  /** 将文件路径添加到 .gitignore */
+  const handleAddToGitignore = useCallback(
+    async (fileId: string) => {
+      if (!id) {
+        return;
       }
-    } catch (error) {
-      console.error('Upload failed:', error);
-    }
-  };
 
-  // 导出项目
-  const handleExportProject = async () => {
-    // 检查项目ID是否有效
-    if (!id) {
-      messageAntd.warning(t('PC.Pages.Chat.invalidConversationIdExport'));
+      const gitignoreId = '.gitignore';
+      const existing = fileTreeData?.find(
+        (item: StaticFileInfo) => item.fileId === gitignoreId,
+      );
+      const currentContent = existing?.contents ?? '';
+      const entry = fileId.startsWith('/') ? fileId.slice(1) : fileId;
+
+      if (
+        currentContent
+          .split('\n')
+          .some(
+            (line: string) => line.trim() === entry || line.trim() === fileId,
+          )
+      ) {
+        message.info(
+          t('PC.Pages.ConversationAgentSourceControl.alreadyInGitignore'),
+        );
+        return;
+      }
+
+      const newContent = currentContent
+        ? `${currentContent.replace(/\n$/, '')}\n${entry}`
+        : entry;
+
+      try {
+        if (existing) {
+          const updatedFilesList = updateFilesListContent(
+            fileTreeData || [],
+            [
+              {
+                fileId: gitignoreId,
+                fileContent: newContent,
+                originalFileContent: currentContent,
+              },
+            ],
+            'modify',
+          );
+          await apiUpdateStaticFile({
+            cId: id,
+            files: updatedFilesList as UpdateFileInfo[],
+          });
+        } else {
+          await apiUpdateStaticFile({
+            cId: id,
+            files: [
+              {
+                name: gitignoreId,
+                contents: `${newContent}\n`,
+                operation: 'create',
+                binary: false,
+                sizeExceeded: false,
+                renameFrom: '',
+                isDir: false,
+              },
+            ],
+          });
+        }
+
+        message.success(
+          t('PC.Pages.ConversationAgentSourceControl.gitignoreSuccess'),
+        );
+        await handleRefreshFileList(id);
+      } catch (error) {
+        console.error('Add to gitignore failed:', error);
+      }
+    },
+    [id, fileTreeData, handleRefreshFileList],
+  );
+
+  // Git 源代码管理 props
+  const gitSourceControl = useSourceControl({
+    workspace: {
+      workspaceType: 'taskAgent',
+      cid: id ?? null,
+    },
+    changeFiles: fileView.changeFiles,
+    selectedChangeFile,
+    setSelectedChangeFile,
+    callbacks: {
+      discardChangeFile: fileView.preview.discardChangeFile,
+      openChangeFile: (fileId: string) => {
+        setSelectedChangeFile(null);
+        setTaskAgentSelectedFileId('');
+        void fileView.tree.handleFileSelect(fileId);
+      },
+      addFileToGitignore: handleAddToGitignore,
+      onDiffFileSelect: () => {
+        if (viewMode === 'desktop') {
+          openPreviewView(id);
+        }
+      },
+      onCommitSuccess: async () => {
+        await fileView.refreshGitList();
+        setSelectedChangeFile(null);
+      },
+      onRefreshGitList: id
+        ? async () => {
+            await fileView.refreshGitList();
+          }
+        : undefined,
+    },
+  });
+
+  /** 切换 Git 版本记录面板（选中 diff 时先清除 diff 再打开面板） */
+  const handleToggleGitVersionPanel = useCallback(() => {
+    if (gitSourceControl.selectedDiffFile) {
+      gitSourceControl.clearSelectedDiff();
+      setGitVersionPanelOpen(true);
       return;
     }
+    setGitVersionPanelOpen((prev) => !prev);
+  }, [gitSourceControl.selectedDiffFile, gitSourceControl.clearSelectedDiff]);
 
-    apiDownloadAllFiles(id);
-  };
+  useEffect(() => {
+    setGitVersionPanelOpen(false);
+  }, [id]);
+
+  useEffect(() => {
+    if (viewMode === 'desktop') {
+      setGitVersionPanelOpen(false);
+    }
+  }, [viewMode]);
+
+  // 文件树 props
+  const chatFileTree: FileTreeContainerProps = useMemo(
+    () => ({
+      ...fileView.tree,
+      handleFileSelect: async (
+        fileId: string,
+        options?: { selectFolder?: boolean },
+      ) => {
+        if (!options?.selectFolder) {
+          setTaskAgentSelectedFileId('');
+          setGitVersionPanelOpen(false);
+          gitSourceControl.setSelectedChangeFile(null);
+        }
+        await fileView.tree.handleFileSelect(fileId, options);
+      },
+    }),
+    [
+      fileView.tree,
+      setTaskAgentSelectedFileId,
+      gitSourceControl.setSelectedChangeFile,
+    ],
+  );
+
+  /** 文件树侧边栏 props */
+  const fileSidebarProps = useMemo(
+    () => ({
+      tree: chatFileTree,
+      preview: fileView.preview,
+      viewMode,
+      hideDesktop: effectiveAgent?.hideDesktop,
+      diffFile: gitSourceControl.selectedDiffFile,
+      gitVersionPanelOpen,
+      onToggleGitVersionPanel: handleToggleGitVersionPanel,
+      gitVersionControl:
+        effectiveAgent?.type === AgentTypeEnum.TaskAgent
+          ? {
+              workspace: {
+                workspaceType: 'taskAgent' as const,
+                cid: id ?? null,
+              },
+              branch: fileView.gitBranch,
+              onRollbackSuccess: () => {
+                if (id) {
+                  void handleRefreshFileList(id);
+                  void fileView.refreshGitList();
+                }
+              },
+            }
+          : undefined,
+      previewPanelProps: {
+        agentSandboxId: finalSelectedId,
+        agentSandboxName: '',
+        onRestartServer: () => restartVncPod(id, finalSelectedId),
+        onRestartAgent: () => restartAgent(id),
+        onExportProject: handleExportProject,
+        idleDetection: {
+          enabled: effectiveAgent?.type === AgentTypeEnum.TaskAgent,
+          onIdleTimeout: () => openPreviewView(id),
+        },
+      },
+      sourceControl: {
+        changeFiles: fileView.changeFiles,
+        selectedChangeFile: gitSourceControl.selectedChangeFile,
+        isCommitting:
+          gitSourceControl.isCommitting || fileView.preview.isSavingFiles,
+        isRefreshingGitList: fileView.isRefreshingGitList,
+        onRefreshGitList: fileView.refreshGitList,
+        onDiffFileSelect: gitSourceControl.handleDiffFileSelect,
+        onOpenChangeFile: gitSourceControl.handleOpenChangeFile,
+        onDiscardChanges: gitSourceControl.handleDiscardChange,
+        onStageChanges: gitSourceControl.handleStageChanges,
+        onUnstageChanges: gitSourceControl.handleUnstageChanges,
+        onAddToGitignore: (fileId: string) => {
+          void gitSourceControl.handleAddToGitignore(fileId);
+        },
+        onCommit: gitSourceControl.handleCommit,
+      },
+    }),
+    [
+      chatFileTree,
+      fileView.preview,
+      fileView.changeFiles,
+      fileView.isRefreshingGitList,
+      fileView.refreshGitList,
+      gitSourceControl.selectedDiffFile,
+      gitSourceControl.selectedChangeFile,
+      gitSourceControl.isCommitting,
+      gitSourceControl.handleDiffFileSelect,
+      gitSourceControl.handleOpenChangeFile,
+      gitSourceControl.handleDiscardChange,
+      gitSourceControl.handleStageChanges,
+      gitSourceControl.handleUnstageChanges,
+      gitSourceControl.handleAddToGitignore,
+      gitSourceControl.handleCommit,
+      gitVersionPanelOpen,
+      handleToggleGitVersionPanel,
+      fileView.gitBranch,
+      viewMode,
+      id,
+      effectiveAgent?.hideDesktop,
+      effectiveAgent?.type,
+      finalSelectedId,
+      handleExportProject,
+      openPreviewView,
+      restartVncPod,
+      restartAgent,
+    ],
+  );
 
   // 设置最小宽度
   useEffect(() => {
@@ -1053,7 +860,7 @@ const Chat: React.FC = () => {
       document.documentElement.style.minWidth = '1660px';
     } else {
       // 设置最小宽度-调试详情
-      if (isSidebarVisible) {
+      if (showSidebar && isSidebarVisible) {
         document.documentElement.style.minWidth = '1540px';
       } else {
         document.documentElement.style.minWidth = '1200px';
@@ -1062,363 +869,218 @@ const Chat: React.FC = () => {
     return () => {
       document.documentElement.style.minWidth = 'unset';
     };
-  }, [pagePreviewData, isFileTreeVisible, isSidebarVisible, isMobile]);
+  }, [
+    pagePreviewData,
+    isFileTreeVisible,
+    showSidebar,
+    isSidebarVisible,
+    isMobile,
+  ]);
 
-  // 左侧内容
-  const LeftContent = () => {
+  // 聊天会话头部相关 props
+  const headerProps = {
+    showSidebar,
+    isAppSidebarVisible,
+    toggleAppSidebarVisible,
+    createAppNewConversation,
+    agentId,
+    conversationInfo,
+    setConversationInfo,
+    isEnableSubscription,
+    setOpenPaymentModal,
+    isSidebarVisible,
+    sidebarRef,
+    hidePagePreview,
+    closePreviewView,
+    handleOpenPreview,
+    isShowFilePanel,
+    viewMode,
+    handleFileTreeVisible,
+    handleOpenDesktopView,
+    renderTitle,
+    renderHeaderRight,
+  };
+
+  // 聊天会话相关 props
+  const chatSessionProps = {
+    conversationId: id,
+    messageList,
+    roleInfo,
+    isLoading: loadingConversation,
+    loadingMore,
+    isMoreMessage,
+    // 流式输出中 + 后台 taskStatus 执行中，驱动停止按钮与「智能体执行中」提示
+    isConversationActive:
+      isConversationActive ||
+      conversationInfo?.taskStatus === TaskStatus.EXECUTING,
+    loadingSuggest,
+    chatSuggestList,
+    agentInfo: {
+      id: agentId,
+      name: effectiveAgent?.name,
+      icon: effectiveAgent?.icon,
+      type: effectiveAgent?.type,
+      openingChatMsg: effectiveAgent?.openingChatMsg,
+      guidQuestionDtos: effectiveAgent?.guidQuestionDtos,
+      eventBindConfig: effectiveAgent?.eventBindConfig,
+      hasPermission: effectiveAgent?.hasPermission,
+      sandboxId: effectiveAgent?.sandboxId,
+      hideDesktop: effectiveAgent?.hideDesktop,
+      expandPageArea: effectiveAgent?.expandPageArea,
+    },
+    onSendMessage: handleMessageSend,
+    onClear: showClearContext ? handleClear : undefined,
+    onLoadMoreMessage: handleLoadMoreMessage,
+    selectedModelId,
+    onModelSelect: setSelectedModelId,
+    initialAgentMode: stateToUse?.agentMode,
+    allowOtherModel: effectiveAgent?.allowOtherModel,
+    manualComponents,
+    selectedComponentList,
+    onSelectComponent: handleSelectComponent,
+    requiredNameList,
+    variableParams,
+    form,
+    variables,
+    userFillVariables: firstVariableParams,
+    isVariablesDisabled: !!firstVariableParams || isSendMessageRef.current,
+    clearLoading,
+    isSelectionLocked,
+    hasUserSentMessage,
+    selectedComputerId: finalSelectedId,
+    onComputerSelect: setSelectedComputerId,
+    showScrollBtn,
+    readonly: effectiveAgent?.allowPrivateSandbox === DefaultSelectedEnum.No,
+    enableMention:
+      effectiveAgent?.type === AgentTypeEnum.TaskAgent &&
+      effectiveAgent?.allowAtSkill === DefaultSelectedEnum.Yes,
+    showAnnouncement: true,
+    mentionPlacement: 'up',
+    messageViewRef,
+    // 原 conversationInfo model 数据，传给独立版输入组件
+    runStopConversation,
+    loadingStopConversation,
+    getCurrentConversationId,
+    getCurrentConversationRequestId,
+    disabledConversationActive,
+    loadingConversation,
+    isLoadingOtherInterface,
+    conversationInfo,
+  };
+
+  // 加载中
+  if (clearLoading || loadingConversation || loadingAsync) {
     return (
+      <div className={cx(styles['chat-loading-container'])}>
+        <LoadingOutlined />
+      </div>
+    );
+  }
+
+  // 是否展开视图
+  const isExpandedView = !!(pagePreviewData || isFileTreeVisible);
+
+  return (
+    <div
+      className={cx(styles['chat-root'])}
+      data-nuwaclaw-perf-scope="chat-root"
+    >
+      {/* 智能体聊天和预览页面 */}
       <div
-        className={cx('flex-1', 'flex', 'flex-col', styles['main-content'], {
-          [styles['mobile-box']]: isMobile,
+        className={cx(styles['main-area'], {
+          [styles['main-area-expanded']]: isExpandedView,
+          [styles['main-area-mobile']]: isMobile,
         })}
       >
-        {/* 页面顶部: 标题区域 */}
-        <header className={cx(styles['title-box'])}>
-          <div
-            className={cx(styles['title-container'], {
-              [styles['title-container-collapsed']]: isAppSidebarMode,
-            })}
-          >
-            <div className={cx('flex', 'items-center', 'gap-4')}>
-              {/* 应用智能体模式下，显示内容导航按钮 */}
-              <ConditionRender
-                condition={isAppSidebarMode && !isAppSidebarVisible}
-              >
-                <TooltipIcon
-                  title={t('PC.Pages.Chat.expandNavigation')}
-                  className={cx(styles['icon-box'])}
-                  icon={
-                    <SvgIcon
-                      name="icons-nav-sidebar"
-                      style={{ fontSize: 16 }}
-                      onClick={toggleAppSidebarVisible}
-                    />
-                  }
+        {enableResizable ? (
+          <ResizableSplit
+            resetTrigger={
+              pagePreviewData || isFileTreeVisible ? 'visible' : 'hidden'
+            }
+            minLeftWidth={430}
+            defaultLeftWidth={33}
+            // 当文件树显示时，左侧占满flex-1, 文件树占flex-2
+            left={
+              effectiveAgent?.hideChatArea ? null : (
+                <LeftContent
+                  isMobile={isMobile}
+                  isFileTreeVisible={isFileTreeVisible}
+                  effectiveAgent={effectiveAgent}
+                  isAppSidebarMode={isAppSidebarMode}
+                  headerProps={headerProps}
+                  chatSessionProps={chatSessionProps}
+                  fileSidebarProps={fileSidebarProps}
                 />
-
-                {/* 新建会话 */}
-                <TooltipIcon
-                  title={t('PC.Pages.Chat.newConversation')}
-                  className={cx(styles['icon-box'])}
-                  icon={
-                    <SvgIcon
-                      name="icons-nav-new_chat"
-                      style={{ fontSize: 16 }}
-                      onClick={() => createAppNewConversation(agentId)}
-                    />
-                  }
-                />
-              </ConditionRender>
-              {/* 下拉重命名会话、删除会话 */}
-              <DropdownChangeName
-                agentId={agentId}
-                conversationInfo={conversationInfo}
-                setConversationInfo={setConversationInfo}
-                isAppSidebarMode={isAppSidebarMode}
-              />
-            </div>
-
-            <div className={cx('flex', 'items-center', 'gap-4')}>
-              {/* 需付费订阅的智能体：打开订阅套餐 */}
-              {isEnableSubscription &&
-                agentDetail?.paymentRequired &&
-                !isAppSidebarMode && (
-                  <TooltipIcon
-                    title={t('PC.Components.ConversationDetails.paidSubscribe')}
-                    className={cx(styles['icon-box'])}
-                    icon={
-                      <SvgIcon
-                        name="icons-nav-wodedingyue"
-                        style={{ fontSize: 16 }}
-                      />
-                    }
-                    onClick={() => setOpenPaymentModal(true)}
-                  />
-                )}
-
-              {/* 这里放可以展开 AgentSidebar 的控制按钮 在AgentSidebar 展示的时候隐藏 反之显示 */}
-              {/* 当文件树显示时，也显示这个按钮，用于关闭文件树并打开 AgentSidebar */}
-              {!isAppSidebarMode && !isSidebarVisible && !isMobile && (
-                <TooltipIcon
-                  title={t('PC.Pages.Chat.viewAgentDetails')}
-                  className={cx(styles['icon-box'])}
-                  icon={
-                    <SvgIcon
-                      name="icons-nav-sidebar"
-                      style={{ fontSize: 16 }}
-                    />
-                  }
-                  onClick={() => {
-                    hidePagePreview();
-                    // 先关闭文件树
-                    closePreviewView();
-                    // 然后打开 AgentSidebar
-                    // 使用 setTimeout 确保状态更新完成后再打开，避免状态冲突
-                    setTimeout(() => {
-                      sidebarRef.current?.open();
-                    }, 100);
-                  }}
-                />
-              )}
-
-              {/*打开预览页面*/}
-              {!!effectiveAgent?.expandPageArea &&
-                !!effectiveAgent?.pageHomeIndex && (
-                  <TooltipIcon
-                    title={t('PC.Pages.Chat.openPreviewPage')}
-                    className={cx(styles['icon-box'])}
-                    icon={
-                      <SvgIcon
-                        name="icons-nav-ecosystem"
-                        style={{ fontSize: 16 }}
-                      />
-                    }
-                    onClick={() => {
-                      sidebarRef.current?.close();
-                      closePreviewView(); // 关闭文件树
-                      handleOpenPreview(effectiveAgent);
-                    }}
-                  />
-                )}
-
-              {/* 通用智能体, 有有效消息时，文件预览/智能体电脑切换按钮 */}
-              {isShowFilePanel && (
+              )
+            }
+            right={
+              pagePreviewData &&
+              !isFileTreeVisible && (
                 <>
-                  {/* 文件预览视图 */}
-                  <TooltipIcon
-                    title={
-                      isFileTreeVisible && viewMode === 'preview'
-                        ? t('PC.Pages.Chat.closeFilePreview')
-                        : t('PC.Pages.Chat.openFilePreview')
-                    }
-                    className={cx(styles['icon-box'], {
-                      [styles['active']]:
-                        isFileTreeVisible && viewMode === 'preview',
+                  <PagePreviewIframe
+                    className={cx({
+                      [styles['mobile-page-preview-container']]: isMobile,
                     })}
-                    icon={
-                      <SvgIcon
-                        name="icons-common-file_preview"
-                        style={{ fontSize: 16 }}
-                      />
-                    }
-                    onClick={handleFileTreeVisible}
+                    pagePreviewData={pagePreviewData}
+                    showHeader={true}
+                    onClose={hidePagePreview}
+                    showCloseButton={!effectiveAgent?.hideChatArea}
+                    titleClassName={cx(styles['title-style'])}
+                    // 复制模板按钮相关 props
+                    showCopyButton={showCopyButton}
+                    allowCopy={effectiveAgent?.allowCopy === AllowCopyEnum.Yes}
+                    onCopyClick={() => setOpenCopyModal(true)}
+                    copyButtonText={t('PC.Pages.Chat.copyTemplate')}
+                    copyButtonClassName={styles['copy-btn']}
                   />
-
-                  {/* 智能体电脑视图 */}
-                  <ConditionRender
-                    condition={
-                      conversationInfo?.agent?.hideDesktop ===
-                      HideDesktopEnum.No
-                    }
-                  >
-                    <TooltipIcon
-                      title={
-                        isFileTreeVisible && viewMode === 'desktop'
-                          ? t('PC.Pages.Chat.closeAgentDesktop')
-                          : t('PC.Pages.Chat.openAgentDesktop')
-                      }
-                      className={cx(styles['icon-box'], {
-                        [styles['active']]:
-                          isFileTreeVisible && viewMode === 'desktop',
-                      })}
-                      icon={
-                        <SvgIcon
-                          name="icons-nav-computer-star"
-                          style={{ fontSize: 16 }}
-                        />
-                      }
-                      onClick={handleOpenDesktopView}
+                  {/* 复制模板弹窗 */}
+                  {showCopyButton && effectiveAgent && pagePreviewData?.uri && (
+                    <CopyToSpaceComponent
+                      spaceId={effectiveAgent!.spaceId}
+                      mode={AgentComponentTypeEnum.Page}
+                      componentId={parsePageAppProjectId(pagePreviewData?.uri)}
+                      title={''}
+                      open={openCopyModal}
+                      isTemplate={true}
+                      onSuccess={(_: any, targetSpaceId: number) => {
+                        setOpenCopyModal(false);
+                        // 跳转
+                        jumpToPageDevelop(targetSpaceId);
+                      }}
+                      onCancel={() => setOpenCopyModal(false)}
                     />
-                  </ConditionRender>
+                  )}
                 </>
-              )}
-            </div>
-          </div>
-        </header>
-
-        {/* 页面主体: 内容区域 */}
-        <div className={cx(styles['main-content-box'])}>
-          {/* 聊天内容区域 */}
+              )
+            }
+          />
+        ) : (
           <div
-            className={cx(styles['chat-section'], {
-              [styles['file-tree-visible']]: isFileTreeVisible,
-            })}
+            className={cx('flex', 'w-full', 'h-full')}
+            style={{
+              gap: '16px',
+            }}
           >
-            <UnifiedChatSession
-              conversationId={id}
-              messageList={messageList}
-              roleInfo={roleInfo}
-              isLoading={loadingConversation}
-              loadingMore={loadingMore}
-              isMoreMessage={isMoreMessage}
-              isConversationActive={
-                conversationInfo?.taskStatus === TaskStatus.EXECUTING
-              }
-              loadingSuggest={loadingSuggest}
-              chatSuggestList={chatSuggestList}
-              agentInfo={{
-                id: agentId,
-                name: effectiveAgent?.name,
-                icon: effectiveAgent?.icon,
-                type: effectiveAgent?.type,
-                openingChatMsg: effectiveAgent?.openingChatMsg,
-                guidQuestionDtos: effectiveAgent?.guidQuestionDtos,
-                eventBindConfig: effectiveAgent?.eventBindConfig,
-                hasPermission: effectiveAgent?.hasPermission,
-                sandboxId: effectiveAgent?.sandboxId,
-                hideDesktop: effectiveAgent?.hideDesktop,
-                expandPageArea: effectiveAgent?.expandPageArea,
-              }}
-              onSendMessage={handleMessageSend}
-              onClear={handleClear}
-              onLoadMoreMessage={handleLoadMoreMessage}
-              selectedModelId={selectedModelId}
-              onModelSelect={setSelectedModelId}
-              allowOtherModel={effectiveAgent?.allowOtherModel}
-              manualComponents={manualComponents}
-              selectedComponentList={selectedComponentList}
-              onSelectComponent={handleSelectComponent}
-              requiredNameList={requiredNameList}
-              variableParams={variableParams}
-              form={form}
-              variables={variables}
-              userFillVariables={firstVariableParams}
-              isVariablesDisabled={
-                !!firstVariableParams || isSendMessageRef.current
-              }
-              clearLoading={clearLoading}
-              isSelectionLocked={isSelectionLocked}
-              hasUserSentMessage={hasUserSentMessage}
-              selectedComputerId={finalSelectedId}
-              onComputerSelect={setSelectedComputerId}
-              showScrollBtn={showScrollBtn}
-              readonly={
-                effectiveAgent?.allowPrivateSandbox === DefaultSelectedEnum.No
-              }
-              enableMention={
-                effectiveAgent?.type === AgentTypeEnum.TaskAgent &&
-                effectiveAgent?.allowAtSkill === DefaultSelectedEnum.Yes
-              }
-              showAnnouncement={true}
-              mentionPlacement="up"
-              messageViewRef={messageViewRef}
-            />
-          </div>
-
-          {/* 通用型(TaskAgent)智能体专用文件树区域 */}
-          {effectiveAgent?.type === AgentTypeEnum.TaskAgent &&
-            isFileTreeVisible && (
+            {effectiveAgent?.hideChatArea ? null : (
               <div
-                className={cx(
-                  styles['file-tree-sidebar'],
-                  'flex',
-                  'w-full',
-                  'overflow-hide',
-                  {
-                    [styles['mobile-file-tree-sidebar']]: isMobile,
-                  },
-                )}
+                style={{
+                  flex: pagePreviewData && !isFileTreeVisible ? '0 0 50%' : '1',
+                  minWidth: 0,
+                }}
               >
-                <FileTreeView
-                  className={cx(styles['file-tree-container'])}
-                  taskAgentSelectedFileId={taskAgentSelectedFileId}
-                  clearTaskAgentSelectedFileId={() =>
-                    setTaskAgentSelectedFileId('')
-                  }
-                  taskAgentSelectTrigger={taskAgentSelectTrigger}
-                  originalFiles={fileTreeData}
-                  fileTreeDataLoading={fileTreeDataLoading}
-                  targetId={id?.toString() || ''}
-                  viewMode={viewMode}
-                  readOnly={false}
-                  // 导出项目
-                  onExportProject={handleExportProject}
-                  // 上传文件
-                  onUploadFiles={handleUploadMultipleFiles}
-                  // 重命名文件
-                  onRenameFile={handleConfirmRenameFile}
-                  // 新建文件、文件夹
-                  onCreateFileNode={handleCreateFileNode}
-                  // 删除文件
-                  onDeleteFile={handleDeleteFile}
-                  // 保存文件
-                  onSaveFiles={handleSaveFiles}
-                  // 用户选择的智能体电脑ID
-                  agentSandboxId={finalSelectedId}
-                  // 用户选择的智能体电脑名称
-                  agentSandboxName={''}
-                  // 重启容器
-                  onRestartServer={() => restartVncPod(id, finalSelectedId)}
-                  // 重启智能体
-                  onRestartAgent={() => restartAgent(id)}
-                  // 关闭整个面板
-                  onClose={closePreviewView}
-                  // 文件树是否固定（用户点击后固定）
-                  isFileTreePinned={isFileTreePinned}
-                  // 文件树固定状态变化回调
-                  onFileTreePinnedChange={setIsFileTreePinned}
-                  isCanDeleteSkillFile={true}
-                  // 刷新文件树回调
-                  onRefreshFileTree={() => refreshFileListImmediately(id)}
-                  // VNC 空闲检测配置（仅通用型智能体启用）
-                  idleDetection={{
-                    enabled: effectiveAgent?.type === AgentTypeEnum.TaskAgent,
-                    onIdleTimeout: () => openPreviewView(id),
-                  }}
-                  // 是否隐藏远程桌面
-                  hideDesktop={effectiveAgent?.hideDesktop}
-                  // 是否动态主题
-                  isDynamicTheme={true}
-                  // 静态资源文件基础路径
-                  staticFileBasePath={`/api/computer/static/${id}`}
+                <LeftContent
+                  isMobile={isMobile}
+                  isFileTreeVisible={isFileTreeVisible}
+                  effectiveAgent={effectiveAgent}
+                  isAppSidebarMode={isAppSidebarMode}
+                  headerProps={headerProps}
+                  chatSessionProps={chatSessionProps}
+                  fileSidebarProps={fileSidebarProps}
                 />
               </div>
             )}
-        </div>
-      </div>
-    );
-  };
-
-  return clearLoading || loadingConversation || loadingAsync ? (
-    <div
-      className={cx(
-        'flex',
-        'items-center',
-        'content-center',
-        'flex-1',
-        'h-full',
-        'w-full',
-      )}
-    >
-      <LoadingOutlined />
-    </div>
-  ) : (
-    <div className={cx('flex', 'h-full')} data-nuwaclaw-perf-scope="chat-root">
-      {/* 智能体聊天和预览页面 */}
-      <div
-        style={{
-          flex: pagePreviewData || isFileTreeVisible ? '9 1' : '4 1',
-          minWidth: isMobile
-            ? 'unset'
-            : pagePreviewData || isFileTreeVisible
-            ? '900px'
-            : '430px',
-          // 移动端宽度100%
-          width: isMobile ? '100%' : '0',
-        }}
-      >
-        <ResizableSplit
-          resetTrigger={
-            pagePreviewData || isFileTreeVisible ? 'visible' : 'hidden'
-          }
-          minLeftWidth={430}
-          defaultLeftWidth={33}
-          // 当文件树显示时，左侧占满flex-1, 文件树占flex-2
-          left={effectiveAgent?.hideChatArea ? null : LeftContent()}
-          right={
-            pagePreviewData &&
-            !isFileTreeVisible && (
-              <>
+            {pagePreviewData && !isFileTreeVisible && (
+              <div style={{ flex: '1', minWidth: 0 }}>
                 <PagePreviewIframe
                   className={cx({
                     [styles['mobile-page-preview-container']]: isMobile,
@@ -1428,14 +1090,12 @@ const Chat: React.FC = () => {
                   onClose={hidePagePreview}
                   showCloseButton={!effectiveAgent?.hideChatArea}
                   titleClassName={cx(styles['title-style'])}
-                  // 复制模板按钮相关 props
                   showCopyButton={showCopyButton}
                   allowCopy={effectiveAgent?.allowCopy === AllowCopyEnum.Yes}
                   onCopyClick={() => setOpenCopyModal(true)}
                   copyButtonText={t('PC.Pages.Chat.copyTemplate')}
                   copyButtonClassName={styles['copy-btn']}
                 />
-                {/* 复制模板弹窗 */}
                 {showCopyButton && effectiveAgent && pagePreviewData?.uri && (
                   <CopyToSpaceComponent
                     spaceId={effectiveAgent!.spaceId}
@@ -1446,19 +1106,20 @@ const Chat: React.FC = () => {
                     isTemplate={true}
                     onSuccess={(_: any, targetSpaceId: number) => {
                       setOpenCopyModal(false);
-                      // 跳转
                       jumpToPageDevelop(targetSpaceId);
                     }}
                     onCancel={() => setOpenCopyModal(false)}
                   />
                 )}
-              </>
-            )
-          }
-        />
+              </div>
+            )}
+          </div>
+        )}
       </div>
       {/* 非应用智能体模式下，显示智能体详情侧边栏 */}
-      <ConditionRender condition={!isAppSidebarMode && !isFileTreeVisible}>
+      <ConditionRender
+        condition={showSidebar && !isAppSidebarMode && !isFileTreeVisible}
+      >
         {/* AgentSidebar - 只在文件树隐藏时显示 */}
         <AgentSidebar
           ref={sidebarRef}
@@ -1474,7 +1135,9 @@ const Chat: React.FC = () => {
       {/*展示台区域*/}
       <ShowArea />
 
-      <ConditionRender condition={isEnableSubscription && !isAppSidebarMode}>
+      <ConditionRender
+        condition={showPayment && isEnableSubscription && !isAppSidebarMode}
+      >
         {/* 付费订阅套餐弹窗 */}
         <PaymentSubscriptionModal
           open={openPaymentModal}
@@ -1501,4 +1164,19 @@ const Chat: React.FC = () => {
   );
 };
 
-export default Chat;
+const ChatPage: React.FC = () => {
+  const params = useParams();
+  const location = useLocation();
+  return (
+    <ChatCore
+      id={Number(params.id)}
+      agentId={Number(params.agentId)}
+      locationState={location.state}
+      showSidebar={true}
+      showPayment={true}
+      enableResizable={true}
+    />
+  );
+};
+
+export default ChatPage;

@@ -521,6 +521,7 @@ export interface AgentConfigInfo {
   isSandboxUnavailable?: boolean;
   /** 智能体绑定的事件配置 */
   eventBindConfig?: any;
+  devAgentConversationId?: number;
 }
 
 // 智能体历史配置信息

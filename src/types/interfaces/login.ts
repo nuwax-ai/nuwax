@@ -337,6 +337,11 @@ export interface TenantConfigInfo {
 
   /** 模型 OpenAPI 调用基础地址（拼接模型标识 model 字段） */
   baseModelApiUrl?: string;
+  agentDevAgentId?: number;
+  skillDevAgentId?: number;
+  pluginDevAgentId?: number;
+  /** 是否显示 Agent 模式（yolo/ask）选择器；0 关闭，未下发则默认显示 */
+  enableAgentMode?: number;
 }
 
 // 设置用户账号信息

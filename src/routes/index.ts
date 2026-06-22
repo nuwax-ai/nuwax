@@ -74,6 +74,20 @@ const routes = [
         path: '/space/:spaceId/skill-details/:skillId',
         component: '@/pages/SkillDetails',
       },
+      // 待审核的技能详情
+      {
+        path: '/space/:spaceId/apply/skill-details/:skillId',
+        component: '@/pages/ApplySkillDetails',
+      },
+      // 已发布的技能详情
+      {
+        path: '/space/:spaceId/published/skill-details/:skillId',
+        component: '@/pages/PublishedSkillDetails',
+      },
+      {
+        path: '/space/:spaceId/skill-details-conversation/:skillId',
+        component: '@/pages/SkillDetailsConversation',
+      },
       { path: '/space/:spaceId/:agentId/log', component: '@/pages/SpaceLog' },
       { path: '/space/:spaceId/library', component: '@/pages/SpaceLibrary' },
       // 组件资源子页面
@@ -661,6 +675,11 @@ const routes = [
   {
     path: '/examples/sse-streaming-test',
     component: '@/examples/SSEStreamingTest',
+    layout: false,
+  },
+  {
+    path: '/examples/message-queue-demo',
+    component: '@/examples/MessageQueueDemo',
     layout: false,
   },
   {
