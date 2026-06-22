@@ -108,6 +108,26 @@ const RouteDecisionForm: React.FC<NodeDisposeProps> = () => {
                       )}
                     />
                   </Form.Item>
+                  <Form.Item
+                    name={[name, 'condition']}
+                    label={t(
+                      'PC.Pages.AgentFlowNode.routeDecisionRouteConditionLabel',
+                      '条件比对',
+                    )}
+                    tooltip={t(
+                      'PC.Pages.AgentFlowNode.routeDecisionRouteConditionTooltip',
+                      '用于精确比对的条件表达式，如 {{var}} == value',
+                    )}
+                    className="af-field"
+                  >
+                    <TextArea
+                      rows={2}
+                      placeholder={t(
+                        'PC.Pages.AgentFlowNode.routeDecisionRouteConditionPlaceholder',
+                        '输入条件比对表达式，支持 {{变量}} 引用',
+                      )}
+                    />
+                  </Form.Item>
                 </div>
               ))}
               <Button
@@ -122,6 +142,7 @@ const RouteDecisionForm: React.FC<NodeDisposeProps> = () => {
                     uuid,
                     routeName: '',
                     description: '',
+                    condition: '',
                     nextNodeIds: [],
                   });
                 }}

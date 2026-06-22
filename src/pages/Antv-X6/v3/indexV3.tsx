@@ -82,7 +82,17 @@ const workflowCreatedTabs = CREATED_TABS.filter((item) =>
   ].includes(item.key),
 );
 
-const Workflow: React.FC = () => {
+export interface WorkflowV3Props {
+  /** 外部注入的 workflowId，优先于路由参数（用于在 EditAgent 内嵌时复用） */
+  workflowIdOverride?: number;
+  /** 外部注入的 spaceId，优先于路由参数 */
+  spaceIdOverride?: number;
+}
+
+const Workflow: React.FC<WorkflowV3Props> = ({
+  workflowIdOverride,
+  spaceIdOverride,
+}) => {
   const flowKind = useFlowKind();
   const isAgentFlow = flowKind === FlowKindEnum.AgentFlow;
   const [flowControlModel, setFlowControlModel] = useState<string>('qwen-plus');
@@ -100,9 +110,11 @@ const Workflow: React.FC = () => {
   const location = useLocation();
 
   const params = useParams();
-  // id
-  const workflowId = Number(params.workflowId);
-  const spaceId = Number(params.spaceId);
+  // id（优先使用外部注入值，便于在非 agent-flow 路由下复用）
+  const workflowId =
+    workflowIdOverride != null ? workflowIdOverride : Number(params.workflowId);
+  const spaceId =
+    spaceIdOverride != null ? spaceIdOverride : Number(params.spaceId);
   const [foldWrapItem, setFoldWrapItem] =
     useState<ChildNode>(DEFAULT_DRAWER_FORM);
 

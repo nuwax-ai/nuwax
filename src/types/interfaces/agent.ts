@@ -67,6 +67,8 @@ export interface AgentInfo extends AgentBaseInfo {
 export interface AgentAddParams extends AgentBaseInfo {
   spaceId: number;
   type: AgentTypeEnum;
+  // 智能体子类型
+  subType?: string;
 }
 
 /**
@@ -500,6 +502,8 @@ export interface AgentConfigInfo {
   pageHomeIndex: string;
   // 智能体类型
   type: AgentTypeEnum;
+  // 智能体子类型
+  subType?: string;
   // 是否隐藏远程桌面，1 隐藏；0 不隐藏
   hideDesktop: HideDesktopEnum;
   // 允许用户选择自有模型

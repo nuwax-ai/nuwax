@@ -654,6 +654,7 @@ export const getDevLogs = async (
  */
 export const apiProjectCreate = async (data: {
   targetType: AgentComponentTypeEnum;
+  subType?: string;
 }): Promise<any> => {
   return request('/api/project/create', {
     method: 'POST',

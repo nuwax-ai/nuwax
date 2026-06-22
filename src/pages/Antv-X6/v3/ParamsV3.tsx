@@ -1,10 +1,9 @@
 import {
   BG_ICON_AGENTFLOW_AGENT,
-  BG_ICON_AGENTFLOW_EVALGATE,
-  BG_ICON_AGENTFLOW_EXTERNAL_CONNECTOR,
-  BG_ICON_AGENTFLOW_HUMAN_APPROVE,
   BG_ICON_AGENTFLOW_HUMAN_ASK,
   BG_ICON_AGENTFLOW_ROUTE_DECISION,
+  BG_ICON_WORKFLOW_OUTPUT,
+  BG_ICON_WORKFLOW_PLUGIN,
 } from '@/constants/images.constants';
 import { t } from '@/services/i18nRuntime';
 import {
@@ -46,8 +45,9 @@ const WORKFLOW_ONLY_TYPES = new Set<NodeTypeEnum>([
   NodeTypeEnum.MCP,
   NodeTypeEnum.HTTPRequest,
   NodeTypeEnum.IntentRecognition,
-  NodeTypeEnum.TableDataAdd,
-  NodeTypeEnum.TableDataDelete,
+ NodeTypeEnum.TableDataAdd,
+ NodeTypeEnum.Output,
+ NodeTypeEnum.TableDataDelete,
   NodeTypeEnum.TableDataUpdate,
   NodeTypeEnum.TableDataQuery,
   NodeTypeEnum.TableSQL,
@@ -143,16 +143,6 @@ const agentFlowProcessGroup: StencilList = {
       flowKinds: [FlowKindEnum.AgentFlow],
     },
     {
-      name: t('PC.Pages.AgentFlowParams.nodeHumanApproveName'),
-      icon: null,
-      bgIcon: BG_ICON_AGENTFLOW_HUMAN_APPROVE,
-      type: NodeTypeEnum.HumanInteraction,
-      shape: NodeShapeEnum.General,
-      description: t('PC.Pages.AgentFlowParams.nodeHumanApproveDescription'),
-      flowKinds: [FlowKindEnum.AgentFlow],
-      nodeConfig: { hitlMode: HitlModeEnum.Approve } as any,
-    },
-    {
       name: t('PC.Pages.AgentFlowParams.nodeHumanAskName'),
       icon: null,
       bgIcon: BG_ICON_AGENTFLOW_HUMAN_ASK,
@@ -160,43 +150,24 @@ const agentFlowProcessGroup: StencilList = {
       shape: NodeShapeEnum.General,
       description: t('PC.Pages.AgentFlowParams.nodeHumanAskDescription'),
       flowKinds: [FlowKindEnum.AgentFlow],
-      nodeConfig: { hitlMode: HitlModeEnum.Ask } as any,
+     nodeConfig: { hitlMode: HitlModeEnum.Ask } as any,
+   },
+  {
+    name: t('PC.Pages.AntvX6Params.nodeProcessOutputName'),
+      icon: null,
+      bgIcon: BG_ICON_WORKFLOW_OUTPUT,
+      type: NodeTypeEnum.Output,
+      shape: NodeShapeEnum.General,
+      description: t('PC.Pages.AntvX6Params.nodeProcessOutputDescription'),
+      flowKinds: [FlowKindEnum.AgentFlow],
     },
   ],
 };
 
-// ── AgentFlow 高级节点组 ──
-const agentFlowAdvancedGroup: StencilList = {
-  name: t('PC.Pages.AgentFlowParams.groupAgentFlowAdvanced'),
-  key: 'groupAgentFlowAdvanced',
-  children: [
-    {
-      name: t('PC.Pages.AgentFlowParams.nodeEvalGateName'),
-      icon: null,
-      bgIcon: BG_ICON_AGENTFLOW_EVALGATE,
-      type: NodeTypeEnum.EvalGate,
-      shape: NodeShapeEnum.General,
-      description: t('PC.Pages.AgentFlowParams.nodeEvalGateDescription'),
-      flowKinds: [FlowKindEnum.AgentFlow],
-    },
-    {
-      name: t('PC.Pages.AgentFlowParams.nodeExternalConnectorName'),
-      icon: null,
-      bgIcon: BG_ICON_AGENTFLOW_EXTERNAL_CONNECTOR,
-      type: NodeTypeEnum.ExternalConnector,
-      shape: NodeShapeEnum.General,
-      description: t(
-        'PC.Pages.AgentFlowParams.nodeExternalConnectorDescription',
-      ),
-      flowKinds: [FlowKindEnum.AgentFlow],
-    },
-  ],
-};
 
 export const asideList: StencilList[] = [
   ...buildV3AsideList(),
   agentFlowProcessGroup,
-  agentFlowAdvancedGroup,
 ];
 
 export {
