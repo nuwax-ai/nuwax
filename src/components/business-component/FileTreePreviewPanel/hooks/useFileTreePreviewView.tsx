@@ -1745,6 +1745,7 @@ export function useFileTreePreviewView(
     gitBranch,
     refreshGitList,
     tree: {
+      readOnly,
       files,
       selectedFileId,
       selectedFolderId,

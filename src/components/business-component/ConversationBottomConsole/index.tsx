@@ -133,6 +133,10 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
     useState<TerminalAppearanceMode>(defaultTerminalAppearance);
   /** 终端实例引用（用于主动 refresh 修复切换 Tab 后的渲染残影） */
   const terminalRef = useRef<EmbeddedConsoleTerminalRef>(null);
+  /** 终端当前连接状态（用于控制断连后再触发容器兜底重启） */
+  const terminalConnectedRef = useRef<boolean>(false);
+  /** 终端是否曾成功连接过（避免首次连接前误判为“断开”） */
+  const terminalConnectedOnceRef = useRef<boolean>(false);
 
   /**
    * 容器启动状态机：
@@ -156,14 +160,20 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
   const { run: runKeepalivePodPolling, cancel: stopKeepalivePodPolling } =
     useRequest(apiKeepalivePod, {
       manual: true,
-      loadingDelay: 30_000,
-      debounceWait: 5_000,
-      pollingInterval: 60_000, // 60 秒保活一次
+      loadingDelay: 30000,
+      debounceWait: 5000,
+      pollingInterval: 60000, // 60 秒保活一次
       pollingWhenHidden: false, // 屏幕不可见时暂停
       pollingErrorRetryCount: -1, // 网络错误无限重试
       // 页面重新可见时，调用 apiEnsurePod 确保容器运行
       onBefore: async (params) => {
-        if (document.visibilityState === 'visible' && params[0]) {
+        const shouldEnsureContainer =
+          document.visibilityState === 'visible' &&
+          params[0] &&
+          terminalConnectedOnceRef.current &&
+          !terminalConnectedRef.current;
+
+        if (shouldEnsureContainer) {
           try {
             await apiEnsurePod(params[0]);
           } catch (error) {
@@ -227,11 +237,15 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
   useLayoutEffect(() => {
     if (!conversationId) {
       setContainerStatus('idle');
+      terminalConnectedRef.current = false;
+      terminalConnectedOnceRef.current = false;
       return;
     }
 
     // 清理旧的保活轮询
     stopKeepaliveRef.current();
+    terminalConnectedRef.current = false;
+    terminalConnectedOnceRef.current = false;
 
     startContainer(conversationId);
 
@@ -468,11 +482,14 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
             cursorBlink
             reconnect={{ enabled: true, maxRetries: 3, retryDelay: 2000 }}
             onConnect={() => {
+              terminalConnectedRef.current = true;
+              terminalConnectedOnceRef.current = true;
               terminalRef.current?.writeln(
                 '\x1b[32m[Terminal connected]\x1b[0m',
               );
             }}
             onDisconnect={() => {
+              terminalConnectedRef.current = false;
               terminalRef.current?.writeln(
                 '\x1b[31m[Terminal disconnected]\x1b[0m',
               );
