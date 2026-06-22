@@ -12,7 +12,11 @@ import {
 import type { DevLogEntry } from '@/types/interfaces/appDev';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRequest } from 'umi';
-import { fetchAgentDevLogs } from '../services/agent-dev';
+import {
+  apiGetAgentDevLog,
+  GetAgentDevLogResponse,
+  normalizeAgentDevLogEntries,
+} from '../services/agent-dev';
 
 /**
  * 沙盒日志 Hook 的配置选项
@@ -99,8 +103,8 @@ export const useConversationAgentDevLogs = (
   // ==================== 状态 ====================
   const [logs, setLogs] = useState<DevLogEntry[]>([]);
   const [hasErrorInLatestBlock, setHasErrorInLatestBlock] = useState(false);
-  const [lastLine, setLastLine] = useState(0);
-  const [isPolling, setIsPolling] = useState(false);
+  const [lastLine, setLastLine] = useState<number>(0);
+  const [isPolling, setIsPolling] = useState<boolean>(false);
   const [latestErrorLogs, setLatestErrorLogs] = useState('');
 
   // ==================== Refs ====================
@@ -108,30 +112,20 @@ export const useConversationAgentDevLogs = (
   const sentErrorsRef = useRef<Set<string>>(new Set());
   /** 上一轮日志快照，供 getNewErrors 对比增量 */
   const previousLogsRef = useRef<DevLogEntry[]>([]);
-  /** 组件是否仍挂载，避免卸载后 setState */
-  const isMountedRef = useRef(true);
   /** 当前会话 ID，避免轮询闭包读取过期值 */
   const conversationIdRef = useRef(conversationId);
   /** 当前 tailLines，避免 useRequest 因依赖变化重建 */
   const tailLinesRef = useRef(tailLines);
 
-  useEffect(() => {
-    conversationIdRef.current = conversationId;
-  }, [conversationId]);
-
-  useEffect(() => {
-    tailLinesRef.current = tailLines;
-  }, [tailLines]);
+  // 每次渲染都同步最新参数，避免 useEffect 异步更新导致「点击刷新时偶发读到旧值」。
+  conversationIdRef.current = conversationId;
+  tailLinesRef.current = tailLines;
 
   /**
    * 用接口返回的尾部日志快照整体更新本地状态
    * 沙盒接口按 tailLines 返回最新片段，每次轮询直接替换而非增量追加
    */
   const updateLogsSnapshot = useCallback((nextLogs: DevLogEntry[]) => {
-    if (!isMountedRef.current) {
-      return;
-    }
-
     setLogs(nextLogs);
     setHasErrorInLatestBlock(!!getLatestErrorLogs(nextLogs));
     setLatestErrorLogs(getLatestErrorLogs(nextLogs));
@@ -151,11 +145,14 @@ export const useConversationAgentDevLogs = (
   const devLogsPolling = useRequest(
     () => {
       const currentConversationId = conversationIdRef.current;
-      if (!currentConversationId || !isMountedRef.current) {
+      if (!currentConversationId) {
         return Promise.resolve([]);
       }
 
-      return fetchAgentDevLogs(currentConversationId, tailLinesRef.current);
+      return apiGetAgentDevLog({
+        cId: currentConversationId,
+        tailLines: tailLinesRef.current,
+      });
     },
     {
       manual: true,
@@ -164,7 +161,8 @@ export const useConversationAgentDevLogs = (
       pollingWhenHidden: false,
       pollingErrorRetryCount: -1,
       throwOnError: false,
-      onSuccess: (newLogs: DevLogEntry[]) => {
+      onSuccess: (data: GetAgentDevLogResponse) => {
+        const newLogs = normalizeAgentDevLogEntries(data);
         updateLogsSnapshot(newLogs || []);
       },
       onError: () => {
@@ -176,7 +174,7 @@ export const useConversationAgentDevLogs = (
   const devLogsPollingRef = useRef(devLogsPolling);
   devLogsPollingRef.current = devLogsPolling;
   /** 轮询是否至少执行过一次，cancel 前需判断避免 umi 警告 */
-  const hasExecutedRef = useRef(false);
+  const hasExecutedRef = useRef<boolean>(false);
 
   /** 停止轮询并取消 useRequest 定时任务 */
   const stopPolling = useCallback(() => {
@@ -209,7 +207,14 @@ export const useConversationAgentDevLogs = (
 
   /** 清空后手动触发一次拉取 */
   const refreshLogs = useCallback(async () => {
+    // conversationId 缺失时直接返回，避免出现“点击刷新但没有实际请求”的错觉。
+    if (!conversationIdRef.current) {
+      return;
+    }
+
     clearLogs();
+    // 手动刷新同样算一次执行，便于后续 stopPolling 可以正确 cancel。
+    hasExecutedRef.current = true;
     devLogsPollingRef.current.run();
   }, [clearLogs]);
 
@@ -251,7 +256,6 @@ export const useConversationAgentDevLogs = (
   /** 组件卸载时标记并停止轮询 */
   useEffect(() => {
     return () => {
-      isMountedRef.current = false;
       stopPolling();
     };
   }, [stopPolling]);
