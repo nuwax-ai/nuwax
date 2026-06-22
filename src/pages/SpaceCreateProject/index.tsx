@@ -11,7 +11,6 @@ import React from 'react';
 import { history, useModel, useParams } from 'umi';
 import GreetingHeader from './components/GreetingHeader';
 import PromptBox from './components/PromptBox';
-import RecentProjects from './components/RecentProjects';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -224,10 +223,6 @@ const SpaceCreateProject: React.FC = () => {
     }
   };
 
-  const handleRecentCardClick = () => {
-    // 暂时移除原有的跳转与 mock loading 逻辑
-  };
-
   return (
     <WorkspaceLayout>
       <div className={cx(styles['create-project-wrapper'])}>
@@ -236,9 +231,6 @@ const SpaceCreateProject: React.FC = () => {
 
         {/* Modular Prompt Box */}
         <PromptBox onSubmit={handleCreateSubmit} />
-
-        {/* High-Fidelity Recent Projects Card Grid */}
-        <RecentProjects onProjectClick={handleRecentCardClick} />
       </div>
     </WorkspaceLayout>
   );
