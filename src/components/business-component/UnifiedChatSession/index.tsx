@@ -44,7 +44,7 @@ const DEFAULT_ROLE_INFO: RoleInfo = {
 const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
   conversationId,
   messageList = [],
-  roleInfo = DEFAULT_ROLE_INFO,
+  roleInfo,
   isLoading = false,
   loadingMore = false,
   isMoreMessage = false,
@@ -112,6 +112,23 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
     useState<boolean>(showScrollBtn);
 
   const agentModeRef = useRef<AgentMode>('yolo');
+
+  // 角色信息（名称、头像）默认逻辑：优先使用外部传入，其次根据传入的 agentInfo 自适应组装，最后使用 DEFAULT_ROLE_INFO 兜底
+  const effectiveRoleInfo = useMemo(() => {
+    if (roleInfo && roleInfo !== DEFAULT_ROLE_INFO) {
+      return roleInfo;
+    }
+    return {
+      assistant: {
+        name: (agentInfo?.name as string) || 'Assistant',
+        avatar: (agentInfo?.icon as string) || '',
+      },
+      system: {
+        name: (agentInfo?.name as string) || 'System',
+        avatar: (agentInfo?.icon as string) || '',
+      },
+    };
+  }, [roleInfo, agentInfo?.name, agentInfo?.icon]);
 
   // 1. 滚动检测逻辑
   useConversationScrollDetection(
@@ -396,7 +413,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
                       <ChatView
                         key={`${item.id}-${item?.index || idx}`}
                         messageInfo={item}
-                        roleInfo={roleInfo}
+                        roleInfo={effectiveRoleInfo}
                         mode={messageBottomMode}
                         showStatusDesc={
                           agentInfo?.type !== AgentTypeEnum.TaskAgent
