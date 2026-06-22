@@ -136,4 +136,40 @@ describe('resolveFieldWidget', () => {
     );
     expect(widget).toBe('radio');
   });
+
+  it('resolves number widget from ui:widget', () => {
+    const widget = resolveFieldWidget(
+      'age',
+      { type: 'integer', title: '年龄', minimum: 0 },
+      { age: { 'ui:widget': 'number' } },
+    );
+    expect(widget).toBe('number');
+  });
+
+  it('auto-detects number for integer type', () => {
+    const widget = resolveFieldWidget(
+      'count',
+      { type: 'integer', title: '数量' },
+      undefined,
+    );
+    expect(widget).toBe('number');
+  });
+
+  it('auto-detects number for number type', () => {
+    const widget = resolveFieldWidget(
+      'score',
+      { type: 'number', title: '分数', minimum: 0, maximum: 100 },
+      undefined,
+    );
+    expect(widget).toBe('number');
+  });
+
+  it('auto-detects number for integer union type', () => {
+    const widget = resolveFieldWidget(
+      'count',
+      { type: ['integer', 'null'], title: '数量' },
+      undefined,
+    );
+    expect(widget).toBe('number');
+  });
 });

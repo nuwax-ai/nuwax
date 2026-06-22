@@ -78,7 +78,7 @@ const MessageQueueDemo: React.FC = () => {
   // 会话活跃（= isConversationActive）：sendMessage 自动驱动，开关/审批可手动占据
   const [active, setActive] = useState(false);
   // 队列消费最小间隔（ms），可调，对应会话框的 queueMinConsumeInterval
-  const [minInterval, setMinInterval] = useState(100);
+  const [minInterval, setMinInterval] = useState(1200);
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<MessageInfo[]>([
     makeAssistantMessage(
