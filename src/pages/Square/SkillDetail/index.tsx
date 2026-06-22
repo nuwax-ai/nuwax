@@ -165,7 +165,9 @@ const SkillDetail: React.FC = ({}) => {
   };
 
   return (
-    <div className={cx(styles.container, 'flex', 'flex-col', 'h-full')}>
+    <div
+      className={cx(styles.container, 'flex', 'flex-col', 'h-full', 'w-full')}
+    >
       {skillInfo?.id && (
         <PluginHeader
           targetInfo={skillInfo}
@@ -204,32 +206,35 @@ const SkillDetail: React.FC = ({}) => {
       )}
 
       {/* 文件树视图 */}
-      <FileTreeViewPanel
-        // 通用型智能体选中文件ID
-        taskAgentSelectedFileId={'SKILL.md'}
-        // 加载状态
-        fileTreeDataLoading={loadingSkillInfo}
-        // 是否为项目技能模式
-        isProjectSkill={true}
-        // 技能文件列表
-        originalFiles={skillInfo?.files || []}
-        // 是否只读
-        readOnly={true}
-        // 是否显示更多操作菜单
-        showMoreActions={false}
-        // 是否显示全屏图标
-        showFullscreenIcon={false}
-        // 文件树是否固定
-        isFileTreePinned={true}
-        // 不显示刷新按钮
-        showRefreshButton={false}
-        // 技能不显示分享按钮
-        isShowShare={false}
-        // 技能不显示下载按钮
-        isShowDownloadButton={false}
-        // 是否显示导出 PDF 按钮, 默认显示
-        isShowExportPdfButton={false}
-      />
+      <div className={cx(styles['file-tree-wrapper'])}>
+        <FileTreeViewPanel
+          className={cx(styles['file-tree-panel'])}
+          // 通用型智能体选中文件ID
+          taskAgentSelectedFileId={'SKILL.md'}
+          // 加载状态
+          fileTreeDataLoading={loadingSkillInfo}
+          // 是否为项目技能模式
+          isProjectSkill={true}
+          // 技能文件列表
+          originalFiles={skillInfo?.files || []}
+          // 是否只读
+          readOnly={true}
+          // 是否显示更多操作菜单
+          showMoreActions={false}
+          // 是否显示全屏图标
+          showFullscreenIcon={false}
+          // 文件树是否固定
+          isFileTreePinned={true}
+          // 不显示刷新按钮
+          showRefreshButton={false}
+          // 技能不显示分享按钮
+          isShowShare={false}
+          // 技能不显示下载按钮
+          isShowDownloadButton={false}
+          // 是否显示导出 PDF 按钮, 默认显示
+          isShowExportPdfButton={false}
+        />
+      </div>
 
       {/*智能体迁移弹窗*/}
       <MoveCopyComponent

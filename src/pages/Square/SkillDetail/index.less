@@ -3,12 +3,14 @@
 @import '@/styles/custom-variate';
 
 .container {
-  //padding: 19px 16px;
   padding: 0 10px 10px;
+  box-sizing: border-box;
+  min-height: 0;
+  overflow: hidden;
+  scrollbar-gutter: stable;
 
   .main-container {
     flex: 1;
-    //padding: 34px 37px;
     padding: 10px;
     margin-right: -10px;
 
@@ -87,4 +89,17 @@
     padding: 16px 20px;
     margin: 16px 0;
   }
+}
+
+.file-tree-wrapper {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  overflow: hidden;
+  scrollbar-gutter: stable;
+}
+
+.file-tree-panel {
+  flex: 1;
+  min-height: 0;
 }
