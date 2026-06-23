@@ -564,6 +564,21 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     onSaveFileContentSuccessRef: refreshGitListRef,
   });
 
+  /** 存在有效消息列表时才允许查询 Git status；单条开场白不算有效消息 */
+  const hasValidMessageList = useMemo(() => {
+    const currentMessageList = messageList || [];
+    if (!currentMessageList.length) {
+      return false;
+    }
+    return !(
+      currentMessageList.length === 1 &&
+      currentMessageList[0]?.messageType === MessageTypeEnum.ASSISTANT
+    );
+  }, [messageList]);
+
+  /** 无有效消息列表时不允许刷新 Git status，逻辑与进入页面自动拉取 api/git/status 保持一致 */
+  const isGitStatusRefreshDisabled = !hasValidMessageList;
+
   // 文件视图 props
   const fileView = useFileTreePreviewView({
     taskAgentSelectedFileId,
@@ -595,7 +610,8 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     hideDesktop: effectiveAgent?.hideDesktop,
     staticFileBasePath: `/api/computer/static/${id}`,
     isDynamicTheme: true,
-    enableGitStatus: effectiveAgent?.type === AgentTypeEnum.TaskAgent,
+    enableGitStatus:
+      effectiveAgent?.type === AgentTypeEnum.TaskAgent && hasValidMessageList,
   });
 
   refreshGitListRef.current = fileView.refreshGitList;
@@ -855,7 +871,10 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
         isCommitting:
           gitSourceControl.isCommitting || fileView.preview.isSavingFiles,
         isRefreshingGitList: fileView.isRefreshingGitList,
-        onRefreshGitList: fileView.refreshGitList,
+        refreshDisabled: isGitStatusRefreshDisabled,
+        onRefreshGitList: isGitStatusRefreshDisabled
+          ? undefined
+          : fileView.refreshGitList,
         onDiffFileSelect: gitSourceControl.handleDiffFileSelect,
         onOpenChangeFile: gitSourceControl.handleOpenChangeFile,
         onDiscardChanges: gitSourceControl.handleDiscardChange,
@@ -873,6 +892,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       fileView.changeFiles,
       fileView.isRefreshingGitList,
       fileView.refreshGitList,
+      isGitStatusRefreshDisabled,
       gitSourceControl.selectedDiffFile,
       gitSourceControl.selectedChangeFile,
       gitSourceControl.isCommitting,

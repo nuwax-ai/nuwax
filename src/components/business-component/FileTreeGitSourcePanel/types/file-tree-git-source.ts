@@ -16,6 +16,8 @@ export interface SourceControlProps {
   isCommitting?: boolean;
   /** 是否正在刷新 Git 列表 */
   isRefreshingGitList?: boolean;
+  /** 是否禁用刷新 Git 变更列表 */
+  refreshDisabled?: boolean;
   /** 刷新 Git 变更列表 */
   onRefreshGitList?: () => void | Promise<void>;
   /** 提交修改（保存并推送） */
