@@ -2176,7 +2176,6 @@ export const ZH_HK: SystemLangMap = {
   "PC.Pages.AppDevEditorHeaderRight.openDesignMode": "開啟設計模式",
   "PC.Pages.AppDevEditorHeaderRight.closeDesignMode": "關閉設計模式",
   "PC.Pages.AppDevFileOperatingMask.defaultTip": "文件操作進行中，請稍候...",
-  "PC.Pages.AppDevFilePathHeader.modified": "已修改",
   "PC.Pages.AppDevFileTreeContextMenu.importProject": "導入項目",
   "PC.Pages.AppDevFileTreePanel.collapse": "收起文件樹",
   "PC.Pages.AppDevFileTreePanel.expand": "展開文件樹",

@@ -2212,7 +2212,6 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.AppDevEditorHeaderRight.viewTerminal": "View terminal",
   "PC.Pages.AppDevEditorHeaderRight.gitVersionHistory": "Version history",
   "PC.Pages.AppDevFileOperatingMask.defaultTip": "File operation in progress. Please wait...",
-  "PC.Pages.AppDevFilePathHeader.modified": "Modified",
   "PC.Pages.AppDevFileTreeContextMenu.importProject": "Import Project",
   "PC.Pages.AppDevFileTreePanel.collapse": "Collapse file tree",
   "PC.Pages.AppDevFileTreePanel.expand": "Expand file tree",
