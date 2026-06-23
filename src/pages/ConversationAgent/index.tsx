@@ -1618,7 +1618,6 @@ const ConversationAgent: React.FC = () => {
       },
       // 提交成功后清空本地修改并关闭 Tab
       onCommitSuccess: async () => {
-        await fileView.preview.saveFiles();
         previewTabs.clearTabs();
         await fileView.refreshGitList();
       },
