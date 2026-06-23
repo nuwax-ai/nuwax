@@ -1,16 +1,15 @@
 import { EllipsisTooltip } from '@/components/custom/EllipsisTooltip';
 import { t } from '@/services/i18nRuntime';
 import {
-  CheckOutlined,
-  CloseOutlined,
+  ArrowDownOutlined,
+  ArrowUpOutlined,
   SafetyOutlined,
 } from '@ant-design/icons';
-import { Button, Space, Tag, Typography } from 'antd';
+import { Button, Tag, Typography } from 'antd';
 import classNames from 'classnames';
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type {
   AcpPermissionInteraction,
-  AcpPermissionOption,
   AcpRequestPermissionResponse,
 } from '../types/acpIntervention';
 import styles from './index.less';
@@ -31,26 +30,6 @@ interface AcpPermissionCardProps {
   onRespond?: (response: AcpRequestPermissionResponse) => void;
 }
 
-function AllowAlwaysIcon() {
-  return (
-    <span className={styles.multiCheck} aria-hidden>
-      <CheckOutlined className={styles.multiCheckItem} />
-      <CheckOutlined className={styles.multiCheckItem} />
-      <CheckOutlined className={styles.multiCheckItem} />
-    </span>
-  );
-}
-
-function renderOptionIcon(option: AcpPermissionOption): React.ReactNode {
-  if (option.kind === 'allow_always') {
-    return <AllowAlwaysIcon />;
-  }
-  if (option.kind.startsWith('allow')) {
-    return <CheckOutlined />;
-  }
-  return <CloseOutlined />;
-}
-
 const AcpPermissionCard: React.FC<AcpPermissionCardProps> = ({
   interaction,
   docked = false,
@@ -64,6 +43,8 @@ const AcpPermissionCard: React.FC<AcpPermissionCardProps> = ({
   const isSubmitted = interaction.responseStatus === 'submitted';
   const isFailed = interaction.responseStatus === 'failed';
   const disabled = isSubmitting || isSubmitted || !onRespond;
+
+  const [activeIndex, setActiveIndex] = useState(0);
 
   const handleSelect = useCallback(
     (optionId: string) => {
@@ -92,11 +73,22 @@ const AcpPermissionCard: React.FC<AcpPermissionCardProps> = ({
     [request.options],
   );
 
+  const rejectOption = useMemo(
+    () => (request.options ?? []).find((o) => o.kind.startsWith('reject')),
+    [request.options],
+  );
+
+  useEffect(() => {
+    setActiveIndex(0);
+  }, [visibleOptions]);
+
   useAcpPermissionShortcuts({
     enabled: !disabled && keyboardShortcutsEnabled,
     options: visibleOptions,
     onSelect: handleSelect,
     onCancel: () => {},
+    activeIndex,
+    setActiveIndex,
   });
 
   return (
@@ -140,58 +132,78 @@ const AcpPermissionCard: React.FC<AcpPermissionCardProps> = ({
 
       <div className={styles.body}>
         <div className={styles.actions}>
-          <Space size={8} wrap>
-            {visibleOptions.map((option) => {
-              const isAllow = option.kind.startsWith('allow');
-              const shortcut = getAcpPermissionShortcutHint(option.kind);
-              const camelCaseKind = option.kind.replace(
-                /_([a-z])/g,
-                (_, letter) => letter.toUpperCase(),
-              );
-              return (
-                <Button
-                  key={option.optionId}
-                  size="small"
-                  className={classNames(styles.actionBtn, {
-                    [styles.allowBtn]: isAllow,
-                    [styles.rejectBtn]: option.kind.startsWith('reject'),
-                  })}
-                  type={isAllow ? 'primary' : 'default'}
-                  danger={option.kind.startsWith('reject')}
-                  icon={renderOptionIcon(option)}
-                  loading={
-                    isSubmitting &&
-                    interaction.selectedOptionId === option.optionId
-                  }
-                  disabled={disabled}
-                  onClick={() => handleSelect(option.optionId)}
-                >
-                  <span className={styles.buttonLabel}>
-                    <EllipsisTooltip
-                      text={
-                        t(
-                          `PC.Components.AcpPermissionCard.${camelCaseKind}` as any,
-                        ) ||
-                        option.name ||
-                        option.optionId
-                      }
-                      className={styles['button-text']}
-                    />
-                    {shortcut && !isSubmitted && (
-                      <span className={styles.shortcutGroup}>
-                        <kbd className={styles.shortcut}>{shortcut}</kbd>
-                        {option.kind === 'allow_once' && (
-                          <kbd className={styles.shortcut}>↵</kbd>
-                        )}
-                      </span>
-                    )}
-                  </span>
-                </Button>
-              );
-            })}
-          </Space>
+          {visibleOptions.map((option, index) => {
+            const isAllow = option.kind.startsWith('allow');
+            const isActive = index === activeIndex;
+            const camelCaseKind = option.kind.replace(
+              /_([a-z])/g,
+              (_, letter) => letter.toUpperCase(),
+            );
+            const label =
+              t(`PC.Components.AcpPermissionCard.${camelCaseKind}` as any) ||
+              option.name ||
+              option.optionId;
+            return (
+              <Button
+                key={option.optionId}
+                className={classNames(styles.actionBtn, {
+                  [styles.allowBtn]: isAllow && !isActive,
+                  [styles.rejectBtn]:
+                    option.kind.startsWith('reject') && !isActive,
+                  [styles['active-btn']]: isActive,
+                })}
+                // loading={
+                //   isSubmitting &&
+                //   interaction.selectedOptionId === option.optionId
+                // }
+                disabled={disabled}
+                onClick={() => setActiveIndex(index)}
+                onDoubleClick={() => handleSelect(option.optionId)}
+              >
+                <span className={styles.buttonLabel}>
+                  <span className={styles['option-index']}>{index + 1}</span>
+                  <EllipsisTooltip
+                    text={label}
+                    className={styles['button-text']}
+                  />
+                  {isActive && !isSubmitted && (
+                    <span className={styles['arrow-indicators']}>
+                      <ArrowUpOutlined className={styles.arrowIcon} />
+                      <ArrowDownOutlined className={styles.arrowIcon} />
+                    </span>
+                  )}
+                </span>
+              </Button>
+            );
+          })}
         </div>
       </div>
+
+      <footer className={styles.footer}>
+        <Button
+          className={styles['cancel-btn']}
+          disabled={disabled || !rejectOption}
+          onClick={() => rejectOption && handleSelect(rejectOption.optionId)}
+        >
+          {t('PC.Components.McpAskQuestionCard.skip')}
+        </Button>
+        <Button
+          className={styles['submit-btn']}
+          loading={isSubmitting}
+          disabled={disabled}
+          onClick={() => {
+            const activeOption = visibleOptions[activeIndex];
+            if (activeOption) {
+              handleSelect(activeOption.optionId);
+            }
+          }}
+        >
+          <span className={styles.buttonLabel}>
+            {t('PC.Common.Global.confirm')}
+            <kbd className={styles.shortcut}>↵</kbd>
+          </span>
+        </Button>
+      </footer>
 
       {isFailed && interaction.errorMessage ? (
         <Text type="danger" className={styles.error}>

@@ -1,6 +1,6 @@
 import { t } from '@/services/i18nRuntime';
 import { QuestionCircleOutlined } from '@ant-design/icons';
-import { Button, Form, Space, Steps, Tag, Typography } from 'antd';
+import { Button, Form, Steps, Tag, Typography } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useInterventionEscapeKey } from '../hooks/useInterventionEscapeKey';
@@ -71,6 +71,7 @@ const McpAskQuestionCard: React.FC<McpAskQuestionCardProps> = ({
   useEffect(() => {
     const initial = ui.initialValue || interaction.formData;
     if (initial) {
+      // @ts-ignore
       form.setFieldsValue(initial);
     }
   }, [form, ui.initialValue, interaction.formData, input.requestId]);
@@ -246,15 +247,39 @@ const McpAskQuestionCard: React.FC<McpAskQuestionCardProps> = ({
           ) : (
             <span />
           )}
-          <Space size={8} wrap className={styles.footerActions}>
+          <div className={styles.footerActions}>
             {isWizard && currentStep > 0 ? (
-              <Button disabled={disabled} onClick={handlePrev}>
+              <Button
+                className={styles['cancel-btn']}
+                disabled={disabled}
+                onClick={handlePrev}
+              >
                 {t('PC.Components.McpAskQuestionCard.prevStep')}
+              </Button>
+            ) : null}
+            <Button
+              className={styles['cancel-btn']}
+              disabled={disabled}
+              onClick={handleCancel}
+              title={t('PC.Components.McpAskQuestionCard.cancelShortcutHint')}
+            >
+              <span className={styles.buttonLabel}>
+                {ui.cancelLabel || t('PC.Common.Global.cancel')}
+                {/* <kbd className={styles.shortcut}>Esc</kbd> */}
+              </span>
+            </Button>
+            {allowSkip ? (
+              <Button
+                className={styles['cancel-btn']}
+                disabled={disabled}
+                onClick={handleSkip}
+              >
+                {skipLabel}
               </Button>
             ) : null}
             {isWizard && !isLastStep ? (
               <Button
-                type="primary"
+                className={styles['submit-btn']}
                 disabled={disabled}
                 onClick={() => void handleNext()}
               >
@@ -262,30 +287,18 @@ const McpAskQuestionCard: React.FC<McpAskQuestionCardProps> = ({
               </Button>
             ) : (
               <Button
-                type="primary"
+                className={styles['submit-btn']}
                 loading={isSubmitting}
                 disabled={disabled}
                 onClick={() => void handleSubmit()}
               >
-                {ui.submitLabel || t('PC.Common.Global.confirm')}
+                <span className={styles.buttonLabel}>
+                  {ui.submitLabel || t('PC.Common.Global.confirm')}
+                  <kbd className={styles.shortcut}>↵</kbd>
+                </span>
               </Button>
             )}
-            {allowSkip ? (
-              <Button disabled={disabled} onClick={handleSkip}>
-                {skipLabel}
-              </Button>
-            ) : null}
-            <Button
-              disabled={disabled}
-              onClick={handleCancel}
-              title={t('PC.Components.McpAskQuestionCard.cancelShortcutHint')}
-            >
-              <span className={styles.buttonLabel}>
-                {ui.cancelLabel || t('PC.Common.Global.cancel')}
-                <kbd className={styles.shortcut}>Esc</kbd>
-              </span>
-            </Button>
-          </Space>
+          </div>
         </footer>
       ) : null}
 

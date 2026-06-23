@@ -1,217 +1,363 @@
-@import '@/styles/color.less';
 @import '@/styles/token.less';
 
-@button-max-width: 140px;
+@button-max-width: 160px;
 
+/* ─── Card Shell ─────────────────────────────────────── */
 .card {
   display: flex;
   flex-direction: column;
   width: 100%;
   min-width: 0;
-  border: 1px solid rgba(0, 0, 0, 8%);
-  border-radius: 14px;
+  border: 1px solid @colorBorderSecondary;
+  border-radius: @borderRadiusLg;
   background: @colorBgContainer;
-  box-shadow: 0 2px 8px -3px rgba(0, 0, 0, 6%), 0 1px 2px -1px rgba(0, 0, 0, 4%);
-  transition: box-shadow 0.2s ease;
-}
+  overflow: hidden;
 
-.card:hover {
-  box-shadow: 0 4px 12px -4px rgba(0, 0, 0, 8%),
-    0 2px 4px -2px rgba(0, 0, 0, 5%);
-}
+  &.cardDocked {
+    height: auto;
+    max-height: none;
 
-/* ─── Docked layout ─────────────────────────────────── */
-.cardDocked {
-  height: auto;
-  max-height: none;
-  overflow: visible;
+    .title {
+      white-space: normal;
+      overflow: hidden;
+      display: box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
+  }
 
+  /* ─── Header ─────────────────────────────────────────── */
   .header {
-    border-radius: 14px 14px 0 0;
+    flex-shrink: 0;
+    display: flex;
+    align-items: flex-start;
+    gap: @marginXs;
+    padding: @paddingSm @paddingSm @paddingXs;
+    background: @colorBgContainer;
+
+    .icon {
+      display: none;
+    }
+
+    .iconWrap {
+      display: none;
+    }
+
+    .headerMain {
+      flex: 1;
+      min-width: 0;
+
+      .eyebrow {
+        display: block;
+        margin-bottom: @marginXxs;
+        color: @colorTextTertiary;
+        font-size: @fontSizeSm;
+        font-weight: 500;
+        line-height: 1.3;
+      }
+
+      .title {
+        display: block;
+        min-width: 0;
+        color: @colorTextBase;
+        font-size: @fontSize;
+        font-weight: 600;
+        line-height: @lineHeight;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+    }
+
+    .kindTag {
+      display: none;
+    }
+
+    .statusTag {
+      flex-shrink: 0;
+      align-self: flex-start;
+      margin: 2px 0 0;
+      font-size: @fontSizeSm;
+      line-height: 1.4;
+    }
   }
 
-  .actions {
-    border-radius: 0 0 14px 14px;
-  }
-}
-
-/* ─── Header ─────────────────────────────────────────── */
-.header {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 14px 8px;
-  border-bottom: 1px solid rgba(0, 0, 0, 6%);
-  background: linear-gradient(
-    180deg,
-    rgba(@colorPrimary, 0.06) 0%,
-    @colorBgContainer 100%
-  );
-}
-
-.card:not(.cardDocked) .header {
-  align-items: center;
-  padding: 10px 14px;
-  border-bottom: none;
-  background: transparent;
-}
-
-.iconWrap {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 8px;
-  background: rgba(@colorPrimary, 0.1);
-  color: @colorPrimary;
-  font-size: 15px;
-  line-height: 1;
-}
-
-.icon {
-  flex-shrink: 0;
-  color: @colorPrimary;
-  font-size: 15px;
-  line-height: 1;
-}
-
-.headerMain {
-  flex: 1;
-  min-width: 0;
-}
-
-.eyebrow {
-  display: block;
-  margin-bottom: 1px;
-  color: @colorPrimary;
-  font-size: 11px;
-  font-weight: 600;
-  line-height: 1.2;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.title {
-  flex: 1;
-  min-width: 0;
-  color: @colorTextBase;
-  font-size: 13px;
-  font-weight: 600;
-  line-height: @lineHeight;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.cardDocked .title {
-  white-space: normal;
-  -webkit-line-clamp: 2;
-  display: box;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.kindTag,
-.statusTag {
-  flex-shrink: 0;
-  align-self: flex-start;
-  margin: 2px 0 0;
-  font-size: 11px;
-  line-height: 1.4;
-}
-
-/* ─── Body / Actions ─────────────────────────────────── */
-.body {
-  padding: 0;
-}
-
-.card:not(.cardDocked) .body {
-  display: none;
-}
-
-.actions {
-  flex-shrink: 0;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 14px 12px;
-  background: rgba(0, 0, 0, 2%);
-}
-
-.card:not(.cardDocked) .actions {
-  padding: 10px 14px;
-  border-top: none;
-  background: transparent;
-}
-
-/* ─── Buttons ─────────────────────────────────────────── */
-.actionBtn {
-  border-radius: 6px;
-  padding: 4px 12px;
-  height: auto;
-  font-weight: 500;
-  display: inline-flex;
-  align-items: center;
-  box-shadow: none !important;
-}
-
-.allowBtn {
-  background-color: #54f !important;
-  border-color: #54f !important;
-  color: #fff !important;
-
-  &:hover {
-    background-color: #4a3be0 !important;
-    border-color: #4a3be0 !important;
+  &:not(.cardDocked) .header {
+    padding: @paddingXs @paddingSm;
+    border-bottom: none;
   }
 
-  .shortcut {
-    border: none;
-    background: rgba(255, 255, 255, 25%);
-    color: #fff;
+  /* ─── Body / Options List ─────────────────────────────── */
+  .body {
+    padding: 0;
+
+    .actions {
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      padding: 0 @paddingSm @paddingXs; // 增加左右边距
+      gap: 6px; // 每一项之间增加微小的间距
+
+      .actionBtn {
+        width: 100%;
+        height: auto;
+        min-height: 30px; // 减少高度
+        padding: 2px @paddingXs; // 减少内边距
+        border: none;
+        border-radius: 10px !important;
+        background: transparent;
+        font-size: @fontSize;
+        font-weight: 400;
+        text-align: left;
+        display: flex;
+        align-items: center;
+        box-shadow: none !important;
+
+        &:hover {
+          background: @colorFillTertiary !important;
+        }
+
+        .buttonLabel {
+          display: inline-flex;
+          align-items: center;
+          font-size: inherit;
+          width: 100%;
+          gap: @marginXxs;
+
+          .option-index {
+            flex-shrink: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: @colorFill;
+            color: @colorTextSecondary;
+            font-size: 11px;
+            font-weight: 600;
+            line-height: 1;
+          }
+
+          .button-text {
+            display: inline-block;
+            flex: 1;
+            min-width: 0;
+            max-width: @button-max-width;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            vertical-align: middle;
+            color: inherit !important;
+          }
+
+          .arrow-indicators {
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+            margin-left: auto;
+            color: @colorTextTertiary;
+            font-size: 11px;
+            flex-shrink: 0;
+
+            .arrowIcon {
+              font-size: 10px;
+            }
+          }
+
+          .shortcutGroup {
+            display: inline-flex;
+            align-items: center;
+            gap: @marginXxs;
+            margin-left: auto;
+            flex-shrink: 0;
+          }
+
+          .multiCheck {
+            display: inline-flex;
+            align-items: center;
+            margin-right: 2px;
+
+            .multiCheckItem {
+              font-size: 11px;
+
+              &:not(:first-child) {
+                margin-left: -6px;
+              }
+            }
+          }
+        }
+
+        &.allowBtn {
+          background-color: transparent !important;
+          border-color: transparent !important;
+          color: @colorText !important;
+
+          &:hover {
+            background-color: @colorFillTertiary !important;
+          }
+
+          .buttonLabel .shortcutGroup .shortcut {
+            border: none;
+            background: rgba(0, 0, 0, 8%);
+            color: @colorTextSecondary;
+          }
+        }
+
+        &.rejectBtn {
+          background-color: transparent !important;
+          border-color: transparent !important;
+          color: @colorTextSecondary !important;
+
+          &:hover {
+            background: @colorFillTertiary !important;
+            color: @colorText !important;
+          }
+
+          .buttonLabel .shortcutGroup .shortcut {
+            border: 1px solid @colorBorderSecondary;
+            background: @colorBgContainer;
+            color: @colorTextTertiary;
+          }
+        }
+
+        &.active-btn {
+          border-radius: 10px !important; // 胶囊形状
+          background-color: @colorFillSecondary !important; // 浅灰背景色
+          color: @colorText !important;
+          border-color: transparent !important;
+
+          &:hover {
+            background-color: @colorFill !important;
+          }
+        }
+      }
+    }
   }
-}
 
-.rejectBtn {
-  color: #e53e3e !important;
-  border-color: rgba(229, 62, 62, 30%) !important;
-  background-color: #fff !important;
-
-  &:hover {
-    background-color: #fff5f5 !important;
-    border-color: rgba(229, 62, 62, 50%) !important;
+  .active-btn {
+    .buttonLabel .option-index {
+      background: @colorTextBase !important;
+      color: @colorBgContainer !important;
+    }
   }
 
-  .shortcut {
-    border: 1px solid rgba(0, 0, 0, 8%);
-    background: #f7fafc;
-    color: #718096;
+  &:not(.cardDocked) {
+    .body {
+      display: none;
+    }
+
+    .actions {
+      flex-flow: row wrap;
+      gap: @marginXs;
+      padding: @paddingXs @paddingSm;
+      border-top: none;
+
+      .actionBtn {
+        width: auto;
+        height: @controlHeightSm;
+        padding: 0 @paddingSm;
+        border-radius: @borderRadius;
+        font-weight: 500;
+        font-size: @fontSizeSm;
+        border: 1px solid @colorBorder;
+
+        &.allowBtn {
+          background-color: @colorBgSolid !important;
+          border-color: @colorBgSolid !important;
+          color: @colorTextLightSolid !important;
+
+          &:hover {
+            background-color: @colorBgSolidHover !important;
+            border-color: @colorBgSolidHover !important;
+          }
+
+          .buttonLabel .shortcutGroup .shortcut {
+            border: none;
+            background: rgba(255, 255, 255, 20%);
+            color: rgba(255, 255, 255, 80%);
+          }
+        }
+
+        &.rejectBtn {
+          color: @colorError !important;
+          border-color: @colorErrorBorder !important;
+          background-color: @colorBgContainer !important;
+
+          &:hover {
+            background-color: @colorErrorBg !important;
+            border-color: @colorErrorBorderHover !important;
+          }
+        }
+      }
+    }
   }
-}
 
-.buttonLabel {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-}
+  /* ─── Footer ─────────────────────────────────────────── */
+  .footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: @marginXs;
+    padding: @paddingXs @paddingSm;
+    border-top: 1px solid @colorBorderSecondary;
+    background: @colorBgContainer;
+    border-radius: 0 0 @borderRadiusLg @borderRadiusLg;
 
-.button-text {
-  display: inline-block;
-  max-width: @button-max-width;
-  vertical-align: middle;
-  color: inherit !important;
-}
+    .buttonLabel {
+      display: inline-flex;
+      align-items: center;
+      min-width: 0;
+      gap: @marginXxs;
+    }
 
-.shortcutGroup {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  margin-left: 2px;
+    .submit-btn {
+      background: @colorBgSolid !important;
+      border-color: @colorBgSolid !important;
+      color: @colorTextLightSolid !important;
+      border-radius: @borderRadiusLg !important;
+      font-weight: 500;
+
+      &:hover {
+        background: @colorBgSolidHover !important;
+        border-color: @colorBgSolidHover !important;
+      }
+
+      &:disabled {
+        opacity: 0.5;
+      }
+
+      .shortcut {
+        border: 1px solid rgba(255, 255, 255, 25%) !important;
+        background: rgba(255, 255, 255, 15%) !important;
+        color: rgba(255, 255, 255, 75%) !important;
+      }
+    }
+
+    .cancel-btn {
+      border: none !important;
+      background: transparent !important;
+      box-shadow: none !important;
+      color: @colorTextSecondary !important;
+      padding-left: @paddingSm !important; // 增加内边距
+      padding-right: @paddingSm !important; // 增加内边距
+      margin-right: @marginXs; // 增加右侧外边距以和确定按钮拉开距离
+      border-radius: @borderRadiusLg !important;
+
+      &:hover {
+        color: @colorText !important;
+        background: @colorFillTertiary !important;
+      }
+    }
+  }
+
+  /* ─── Error ─────────────────────────────────────────── */
+  .error {
+    display: block;
+    padding: 0 @paddingSm @paddingXs;
+    font-size: @fontSizeSm;
+  }
 }
 
 .shortcut {
@@ -220,37 +366,11 @@
   justify-content: center;
   min-width: 18px;
   height: 18px;
-  padding: 0 4px;
-  border-radius: 4px;
+  padding: 0 @paddingXxs;
+  border-radius: @borderRadiusSm;
   font-size: 11px;
   font-family: inherit;
   font-weight: 600;
   line-height: 1;
   pointer-events: none;
-}
-
-/* ─── Error ─────────────────────────────────────────── */
-.error {
-  display: block;
-  padding: 0 14px 8px;
-  font-size: 12px;
-}
-
-.card:not(.cardDocked) .error {
-  padding: 0 14px 6px;
-}
-
-/* ─── Inline message slot (non-docked) ──────────────── */
-.multiCheck {
-  display: inline-flex;
-  align-items: center;
-  margin-right: 2px;
-}
-
-.multiCheckItem {
-  font-size: 12px;
-
-  &:not(:first-child) {
-    margin-left: -7px;
-  }
 }
