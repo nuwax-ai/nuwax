@@ -53,6 +53,8 @@ export interface SourceControlCallbacks {
   onDiffFileSelect?: (fileId: string, section: ChangeListSection) => void;
   /** Git discard 成功后的页面操作 */
   onAfterDiscardChange?: (fileId: string) => void | Promise<void>;
+  /** 批量 Git discard 完成后的页面操作（整批只调用一次） */
+  onAfterDiscardChanges?: (fileIds: string[]) => void | Promise<void>;
   /** Git commit 成功后的页面操作 */
   onCommitSuccess?: () => Promise<void>;
   /** discard 等操作后刷新 Git 列表（taskAgent 通常刷新 fileView） */
@@ -492,6 +494,8 @@ export const useSourceControl = ({
       for (const fileId of fileIds) {
         await syncAfterDiscardChange(fileId);
       }
+
+      await callbacks.onAfterDiscardChanges?.(fileIds);
 
       setSelectedChangeFile((current) =>
         current && fileIds.includes(current.fileId) ? null : current,

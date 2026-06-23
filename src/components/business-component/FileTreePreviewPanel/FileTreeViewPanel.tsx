@@ -206,7 +206,7 @@ const FileTreeViewPanel = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           void fileView.tree.handleFileSelect(fileId);
         },
         addFileToGitignore: gitSourceControl?.callbacks?.addFileToGitignore,
-        onAfterDiscardChange: async () => {
+        onAfterDiscardChanges: async () => {
           await fileView.tree.handleRefreshFileList();
         },
         onCommitSuccess: async () => {

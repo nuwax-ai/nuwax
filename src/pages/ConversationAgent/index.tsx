@@ -1399,6 +1399,11 @@ const ConversationAgent: React.FC = () => {
         });
         void refreshGitListRef.current?.();
       },
+      /** 刷新文件树后，当前选中文件不存在时关闭对应标签 */
+      onSelectedFileMissing: (fileId) => {
+        previewTabsRef.current?.closeTab(getFileTabId(fileId, true));
+        previewTabsRef.current?.closeTab(getFileTabId(fileId, false));
+      },
     };
   }, [
     taskAgentSelectedFileId,
@@ -1591,9 +1596,6 @@ const ConversationAgent: React.FC = () => {
     selectedChangeFile,
     setSelectedChangeFile,
     callbacks: {
-      // 放弃单个文件的更改
-      discardChangeFile: (fileId: string) =>
-        fileView.preview.discardChangeFile(fileId),
       // 打开更改文件（选中文件并预览，非 diff）
       openChangeFile: (fileId: string) => {
         closeAgentDesktop();
@@ -1609,9 +1611,10 @@ const ConversationAgent: React.FC = () => {
       // 放弃更改后关闭预览 Tab
       onAfterDiscardChange: (fileId: string) => {
         previewTabs.closeTab(getFileTabId(fileId, true));
-        if (fileView.preview.selectedFileId === fileId) {
-          void fileView.preview.refreshSelectedFileContent();
-        }
+      },
+      // 批量放弃更改完成后，只刷新一次文件树
+      onAfterDiscardChanges: async () => {
+        await fileView.tree.handleRefreshFileList();
       },
       // 提交成功后清空本地修改并关闭 Tab
       onCommitSuccess: async () => {

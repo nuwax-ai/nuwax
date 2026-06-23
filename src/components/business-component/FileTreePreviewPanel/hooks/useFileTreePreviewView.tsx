@@ -128,6 +128,8 @@ export function useFileTreePreviewView(
     onFileRenamed,
     /** 文件/文件夹删除成功后回调 */
     onFileDeleted,
+    /** 刷新文件树后，当前选中文件已不存在时回调 */
+    onSelectedFileMissing,
     isDynamicTheme = false,
     /** 是否启用 Git status，仅通用型 TaskAgent 智能体为 true */
     enableGitStatus = false,
@@ -240,6 +242,8 @@ export function useFileTreePreviewView(
   const [viewFileType, setViewFileType] = useState<'preview' | 'code'>(
     'preview',
   );
+  const onSelectedFileMissingRef = useRef(onSelectedFileMissing);
+  onSelectedFileMissingRef.current = onSelectedFileMissing;
 
   useEffect(() => {
     if (!initViewFileType) {
@@ -737,6 +741,15 @@ export function useFileTreePreviewView(
   useEffect(() => {
     if (!originalFiles || originalFiles.length === 0) {
       setFiles([]);
+      if (pendingRefreshSelectedAfterFilesUpdateRef.current) {
+        pendingRefreshSelectedAfterFilesUpdateRef.current = false;
+        const currentSelectedFileId =
+          selectedFileIdRef.current || selectedFileId;
+        if (currentSelectedFileId) {
+          onSelectedFileMissingRef.current?.(currentSelectedFileId);
+          clearSelectedFile();
+        }
+      }
       return;
     }
     // 如果文件列表不为空，则转换为树形结构
@@ -745,38 +758,37 @@ export function useFileTreePreviewView(
         originalFiles,
         false,
       );
+      filesRef.current = treeData;
       setFiles(treeData);
-    }
 
-    return () => {
-      setFiles([]);
-    };
+      // discard / 回滚等场景必须基于“刚刷新得到的新文件树”判断当前选中文件。
+      // 不再放到独立的 files effect 中，避免同一轮 effect 读取到旧 files。
+      if (pendingRefreshSelectedAfterFilesUpdateRef.current) {
+        pendingRefreshSelectedAfterFilesUpdateRef.current = false;
+
+        const currentSelectedFileId =
+          selectedFileIdRef.current || selectedFileId;
+        if (!currentSelectedFileId) {
+          return;
+        }
+
+        const nextSelectedFileNode = findFileNode(
+          currentSelectedFileId,
+          treeData,
+        );
+        if (!nextSelectedFileNode) {
+          onSelectedFileMissingRef.current?.(currentSelectedFileId);
+          clearSelectedFile();
+          return;
+        }
+
+        selectedFileIdRef.current = nextSelectedFileNode.id;
+        setSelectedFileId(nextSelectedFileNode.id);
+        setSelectedFileNode(nextSelectedFileNode);
+        void refreshSelectedFileContent(nextSelectedFileNode);
+      }
+    }
   }, [originalFiles]);
-
-  /** 文件树刷新完成后，基于新文件树决定是否保留并刷新当前选中文件 */
-  useEffect(() => {
-    if (!pendingRefreshSelectedAfterFilesUpdateRef.current) {
-      return;
-    }
-
-    pendingRefreshSelectedAfterFilesUpdateRef.current = false;
-
-    const currentSelectedFileId = selectedFileIdRef.current || selectedFileId;
-    if (!currentSelectedFileId) {
-      return;
-    }
-
-    const nextSelectedFileNode = findFileNode(currentSelectedFileId, files);
-    if (!nextSelectedFileNode) {
-      clearSelectedFile();
-      return;
-    }
-
-    selectedFileIdRef.current = nextSelectedFileNode.id;
-    setSelectedFileId(nextSelectedFileNode.id);
-    setSelectedFileNode(nextSelectedFileNode);
-    void refreshSelectedFileContent(nextSelectedFileNode);
-  }, [files, selectedFileId, clearSelectedFile, refreshSelectedFileContent]);
 
   // 监听 files 变化，当有待选择的文件时自动选择
   useEffect(() => {
