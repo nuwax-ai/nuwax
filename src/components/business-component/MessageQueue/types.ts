@@ -17,4 +17,6 @@ export interface QueuedMessage {
   modelId?: number;
   /** 入队时快照 - 智能体模式 */
   selectedAgentMode?: AgentMode;
+  /** 立即发送中：置位后该条展示 loading 且不可重复点击，实际消费发送后随队列出列移除 */
+  sending?: boolean;
 }
