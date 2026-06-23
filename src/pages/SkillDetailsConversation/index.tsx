@@ -25,6 +25,7 @@ const SkillDetailsConversation: React.FC = () => {
       showPayment={false}
       enableResizable={false}
       showClearContext={false}
+      defaultFileTreeVisible={true}
       renderTitle={() => <SkillHeader spaceId={spaceId} skillId={skillId} />}
       renderHeaderRight={() => (
         <SkillPublishAction spaceId={spaceId} skillId={skillId} />
