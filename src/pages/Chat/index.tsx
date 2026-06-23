@@ -611,6 +611,9 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     isDynamicTheme: true,
     enableGitStatus:
       effectiveAgent?.type === AgentTypeEnum.TaskAgent && hasValidMessageList,
+    onSelectedFileMissing: () => {
+      setTaskAgentSelectedFileId('');
+    },
   });
 
   refreshGitListRef.current = fileView.refreshGitList;
@@ -726,7 +729,6 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     selectedChangeFile,
     setSelectedChangeFile,
     callbacks: {
-      discardChangeFile: fileView.preview.discardChangeFile,
       openChangeFile: (fileId: string) => {
         setSelectedChangeFile(null);
         setTaskAgentSelectedFileId('');
@@ -741,6 +743,9 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       onCommitSuccess: async () => {
         await fileView.refreshGitList();
         setSelectedChangeFile(null);
+      },
+      onAfterDiscardChanges: async () => {
+        await fileView.tree.handleRefreshFileList();
       },
       onRefreshGitList: id
         ? async () => {
