@@ -814,6 +814,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   /** 文件树预览区底部终端，仅显示终端 Tab，不展示日志 */
   const terminalConsole = hasTerminalConsoleRendered ? (
     <ConversationBottomConsole
+      className={cx(styles['terminal-console'])}
       conversationId={finalSelectedId === '-1' ? id : undefined}
       visible={terminalConsoleVisible}
       wsUrl={terminalWsUrl}

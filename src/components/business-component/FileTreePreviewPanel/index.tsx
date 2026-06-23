@@ -82,9 +82,17 @@ const FileTreePreviewPanel: React.FC<FileTreePreviewPanelProps> = ({
       )}
     >
       <div
-        className={cx('h-full', 'flex', 'flex-col', 'flex-1', 'overflow-hide', {
-          [styles['fullscreen-content-wrapper']]: isFullscreen,
-        })}
+        className={cx(
+          'relative',
+          'h-full',
+          'flex',
+          'flex-col',
+          'flex-1',
+          'overflow-hide',
+          {
+            [styles['fullscreen-content-wrapper']]: isFullscreen,
+          },
+        )}
       >
         <div className={cx('preview-header-shell')}>{header}</div>
 
