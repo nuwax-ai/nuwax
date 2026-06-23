@@ -287,7 +287,7 @@ const Layout: React.FC = () => {
         className={cx(pageContainerClassName, [
           { 'scroll-container': !isMobile },
           // 移动端模式下宽度100%
-          { 'w-full': isMobile },
+          // { 'w-full': isMobile }, // 存在 BUG 需要注释掉
         ])}
         id="page-container-selector"
       >

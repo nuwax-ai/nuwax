@@ -88,11 +88,7 @@ const SkillHeader: React.FC<SkillHeaderProps> = ({ spaceId, skillId }) => {
         type="text"
         icon={<LeftOutlined />}
         onClick={() => {
-          if (window.history.length > 1) {
-            history.back();
-          } else {
-            history.push(`/space/${spaceId}/skill-details/${skillId}`);
-          }
+          history.push(`/space/${spaceId}/skill-manage`);
         }}
         className={cx(styles['back-btn'])}
       />

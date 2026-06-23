@@ -82,9 +82,13 @@ const AcpPermissionCard: React.FC<AcpPermissionCardProps> = ({
 
   const visibleOptions = useMemo(
     () =>
-      (request.options ?? []).filter(
-        (option) => !HIDDEN_OPTION_KINDS.has(option.kind),
-      ),
+      (request.options ?? [])
+        .filter((option) => !HIDDEN_OPTION_KINDS.has(option.kind))
+        .sort((a, b) => {
+          const orderA = getAcpPermissionShortcutHint(a.kind) || '9';
+          const orderB = getAcpPermissionShortcutHint(b.kind) || '9';
+          return orderA.localeCompare(orderB);
+        }),
     [request.options],
   );
 
@@ -140,10 +144,18 @@ const AcpPermissionCard: React.FC<AcpPermissionCardProps> = ({
             {visibleOptions.map((option) => {
               const isAllow = option.kind.startsWith('allow');
               const shortcut = getAcpPermissionShortcutHint(option.kind);
+              const camelCaseKind = option.kind.replace(
+                /_([a-z])/g,
+                (_, letter) => letter.toUpperCase(),
+              );
               return (
                 <Button
                   key={option.optionId}
                   size="small"
+                  className={classNames(styles.actionBtn, {
+                    [styles.allowBtn]: isAllow,
+                    [styles.rejectBtn]: option.kind.startsWith('reject'),
+                  })}
                   type={isAllow ? 'primary' : 'default'}
                   danger={option.kind.startsWith('reject')}
                   icon={renderOptionIcon(option)}
@@ -156,7 +168,13 @@ const AcpPermissionCard: React.FC<AcpPermissionCardProps> = ({
                 >
                   <span className={styles.buttonLabel}>
                     <EllipsisTooltip
-                      text={option.name || option.optionId}
+                      text={
+                        t(
+                          `PC.Components.AcpPermissionCard.${camelCaseKind}` as any,
+                        ) ||
+                        option.name ||
+                        option.optionId
+                      }
                       className={styles['button-text']}
                     />
                     {shortcut && !isSubmitted && (

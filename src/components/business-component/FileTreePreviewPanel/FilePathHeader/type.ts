@@ -1,5 +1,6 @@
 import { ConnectionStatus } from '@/components/business-component/VncPreview/type';
 import { FileNode } from '@/types/interfaces/appDev';
+import type React from 'react';
 
 /** Chat 页文件预览 Header 组件 Props（不含保存/取消） */
 export interface FilePathHeaderProps {
@@ -66,4 +67,6 @@ export interface FilePathHeaderProps {
   showGitVersionButton?: boolean;
   /** 切换 Git 版本记录面板 */
   onToggleGitVersionPanel?: () => void;
+  /** Git 版本记录按钮后的额外操作按钮 */
+  afterGitVersionActions?: React.ReactNode;
 }

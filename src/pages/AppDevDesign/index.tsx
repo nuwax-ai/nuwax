@@ -42,6 +42,8 @@ import EditorHeaderRight from '@/pages/AppDev/components/EditorHeaderRight';
 import FileOperatingMask from '@/pages/AppDev/components/FileOperatingMask';
 import { apiAgentConfigInfo } from '@/services/agentConfig';
 import {
+  apiAppDevUploadFiles,
+  AppDevUploadFilesParams,
   bindDataSource,
   buildProject,
   exportProject,
@@ -164,11 +166,6 @@ const AppDevDesign: React.FC = () => {
   // 控制台切换到日志 Tab 信号
   const [devConsoleLogsSignal, setDevConsoleLogsSignal] = useState(0);
 
-  // 空操作函数常量，避免每次渲染创建新函数实例
-  const noop = useCallback(() => {}, []);
-  const asyncNoopFalse = useCallback(async () => false, []);
-  const asyncNoop = useCallback(async () => {}, []);
-
   // 部署相关状态
   const [isDeploying, setIsDeploying] = useState(false);
 
@@ -276,7 +273,7 @@ const AppDevDesign: React.FC = () => {
   const projectInfo = useAppDevProjectInfo(projectId);
   const terminalWsUrl = useTerminalWsUrl(projectId);
 
-  /** 保存成功后刷新 Git 列表（sourceControl 初始化后注入） */
+  /** 文件写操作成功后刷新 Git 列表（sourceControl 初始化后注入） */
   const refreshGitListAfterSaveRef = useRef<() => Promise<void>>(
     async () => {},
   );
@@ -287,6 +284,9 @@ const AppDevDesign: React.FC = () => {
     onFileSelect: setActiveFile,
     onFileContentChange: updateFileContent,
     onSaveSuccess: async () => {
+      await refreshGitListAfterSaveRef.current();
+    },
+    onFileMutationSuccess: async () => {
       await refreshGitListAfterSaveRef.current();
     },
     hasPermission: projectInfo.hasPermission, // 传递权限状态
@@ -1068,7 +1068,7 @@ const AppDevDesign: React.FC = () => {
   /**
    * 处理右键上传（直接调用上传接口，不依赖状态）
    */
-  const handleRightClickUpload = useCallback(
+  const handleUploadMultipleFiles = useCallback(
     async (node: FileNode | null) => {
       if (!hasValidProjectId) {
         message.error(ERROR_MESSAGES.NO_PROJECT_ID);
@@ -1076,19 +1076,21 @@ const AppDevDesign: React.FC = () => {
       }
       //两种情况 第一个是文件夹，第二个是文件
       let relativePath = '';
+
       if (node) {
         if (node.type === 'file') {
           relativePath = node.path.replace(new RegExp(node.name + '$'), ''); //只替换以node.name结尾的部分
         } else if (node.type === 'folder') {
           relativePath = node.path + '/';
         }
-      } else {
-        relativePath = '';
       }
+
       // 创建一个隐藏的文件输入框
       const input = document.createElement('input');
       input.type = 'file';
       input.style.display = 'none';
+      input.accept = '*';
+      input.multiple = true;
       document.body.appendChild(input);
 
       // 等待用户选择文件
@@ -1101,10 +1103,14 @@ const AppDevDesign: React.FC = () => {
           return;
         }
 
+        // 获取上传的文件列表
+        const files = Array.from((e.target as HTMLInputElement).files || []);
+        // 获取上传的文件路径列表
+        const filePaths = files.map((file) => relativePath + file.name);
+
         // 检查文件大小是否超过最大上传文件大小
-        const { isExceedLimitSize, maxFileSize } = checkFileSizeExceedLimit([
-          file,
-        ]);
+        const { isExceedLimitSize, maxFileSize } =
+          checkFileSizeExceedLimit(files);
         // 如果超过最大上传文件大小，则提示错误
         if (isExceedLimitSize) {
           message.error(
@@ -1118,13 +1124,15 @@ const AppDevDesign: React.FC = () => {
           setSingleFileUploadLoading(true);
           setIsFileOperating(true);
 
-          // 直接调用上传接口，使用文件名作为路径
-          const result = await fileManagement.uploadSingleFileToServer(
-            file,
-            relativePath + file.name,
-          );
+          const params: AppDevUploadFilesParams = {
+            projectId,
+            files,
+            filePaths,
+          };
 
-          if (result) {
+          const { code } = await apiAppDevUploadFiles(params);
+
+          if (code === SUCCESS_CODE) {
             // 与弹窗上传成功后逻辑保持一致
             // 刷新项目详情(刷新版本列表)
             projectInfo.refreshProjectInfo();
@@ -1145,7 +1153,7 @@ const AppDevDesign: React.FC = () => {
         setIsFileOperating(false);
       };
     },
-    [hasValidProjectId, fileManagement, projectInfo],
+    [hasValidProjectId, projectInfo, projectId],
   );
 
   /**
@@ -1224,12 +1232,10 @@ const AppDevDesign: React.FC = () => {
     isChatLoading: chat.isChatLoading,
     isFileTreeInitializing: fileManagement.isFileTreeInitializing,
     onFileSelect: handleFileTreeSelect,
-    onDeleteFile: isFileOperating ? noop : handleDeleteClick,
-    onRenameFile: isFileOperating ? asyncNoopFalse : handleRenameFile,
-    onUploadSingleFile: isFileOperating ? asyncNoop : handleRightClickUpload,
-    onImportProject: isFileOperating
-      ? noop
-      : () => setIsUploadModalVisible(true),
+    onDeleteFile: handleDeleteClick,
+    onRenameFile: handleRenameFile,
+    onUploadFiles: handleUploadMultipleFiles,
+    onImportProject: () => setIsUploadModalVisible(true),
     importProjectLabel: t('PC.Pages.AppDevFileTreeContextMenu.importProject'),
     onExportProject: isFileOperating ? undefined : handleExportProject,
   });
@@ -1565,7 +1571,6 @@ const AppDevDesign: React.FC = () => {
                   // 更多操作相关
                   actionsData={{
                     onImportProject: () => setIsUploadModalVisible(true),
-                    onUploadSingleFile: () => handleRightClickUpload(null),
                     onRefreshPreview: () => previewRef.current?.refresh(),
                     onRestartServer: async () => {
                       //新逻辑 先停止Agent服务

@@ -18,10 +18,6 @@
   min-width: 400px;
   animation: fade-in 0.4s ease-out forwards;
 
-  &.mobile-box {
-    min-width: 0;
-  }
-
   .title-box {
     background-color: transparent;
 
@@ -70,7 +66,7 @@
 
       &.file-tree-visible {
         flex: none;
-        width: 33%;
+        width: 35%;
       }
 
       /* 干预固定栏：与 ChatInputHome .chat-container 外框同宽 */
@@ -183,16 +179,6 @@
       visibility: visible;
       opacity: 1;
       transition: opacity 0.3s ease-in-out, width 0.2s ease-in-out;
-
-      &.mobile-file-tree-sidebar {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        top: 0;
-        min-width: 800px;
-        z-index: 100;
-      }
 
       .file-tree-container {
         border-radius: 16px;

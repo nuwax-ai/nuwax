@@ -92,8 +92,13 @@ export interface ConversationBottomConsoleProps {
   onActiveTabChange?: (tab: 'terminal' | 'logs') => void;
   /** 打开控制台时的默认 Tab @default 'terminal' */
   defaultActiveTab?: 'terminal' | 'logs';
+  /** 打开控制台时的默认布局模式 @default 'collapsed' */
+  defaultLayoutMode?: ConsoleLayoutMode;
+  /** 是否显示日志 Tab @default true */
+  showLogsTab?: boolean;
   /** 头部操作区额外内容（渲染在内置按钮之前），仅日志 Tab 激活时显示 */
   logsExtra?: React.ReactNode;
+  className?: string;
 }
 
 /**
@@ -120,19 +125,27 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
   onLayoutModeChange,
   onActiveTabChange,
   defaultActiveTab = 'terminal',
+  defaultLayoutMode = 'collapsed',
+  showLogsTab = true,
   logsExtra,
+  className,
 }) => {
   /** 当前激活的 Tab（终端 / 日志） */
   const [activeTab, setActiveTab] = useState<'terminal' | 'logs'>(
-    defaultActiveTab,
+    showLogsTab ? defaultActiveTab : 'terminal',
   );
   /** 面板布局模式：default 默认高度 / expanded 全屏 / collapsed 仅保留头部 */
-  const [layoutMode, setLayoutMode] = useState<ConsoleLayoutMode>('collapsed');
+  const [layoutMode, setLayoutMode] =
+    useState<ConsoleLayoutMode>(defaultLayoutMode);
   /** 终端主题（非受控时的内部状态） */
   const [internalAppearance, setInternalAppearance] =
     useState<TerminalAppearanceMode>(defaultTerminalAppearance);
   /** 终端实例引用（用于主动 refresh 修复切换 Tab 后的渲染残影） */
   const terminalRef = useRef<EmbeddedConsoleTerminalRef>(null);
+  /** 终端当前连接状态（用于控制断连后再触发容器兜底重启） */
+  const terminalConnectedRef = useRef<boolean>(false);
+  /** 终端是否曾成功连接过（避免首次连接前误判为“断开”） */
+  const terminalConnectedOnceRef = useRef<boolean>(false);
 
   /**
    * 容器启动状态机：
@@ -156,14 +169,20 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
   const { run: runKeepalivePodPolling, cancel: stopKeepalivePodPolling } =
     useRequest(apiKeepalivePod, {
       manual: true,
-      loadingDelay: 30_000,
-      debounceWait: 5_000,
-      pollingInterval: 60_000, // 60 秒保活一次
+      loadingDelay: 30000,
+      debounceWait: 5000,
+      pollingInterval: 60000, // 60 秒保活一次
       pollingWhenHidden: false, // 屏幕不可见时暂停
       pollingErrorRetryCount: -1, // 网络错误无限重试
       // 页面重新可见时，调用 apiEnsurePod 确保容器运行
       onBefore: async (params) => {
-        if (document.visibilityState === 'visible' && params[0]) {
+        const shouldEnsureContainer =
+          document.visibilityState === 'visible' &&
+          params[0] &&
+          terminalConnectedOnceRef.current &&
+          !terminalConnectedRef.current;
+
+        if (shouldEnsureContainer) {
           try {
             await apiEnsurePod(params[0]);
           } catch (error) {
@@ -227,11 +246,15 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
   useLayoutEffect(() => {
     if (!conversationId) {
       setContainerStatus('idle');
+      terminalConnectedRef.current = false;
+      terminalConnectedOnceRef.current = false;
       return;
     }
 
     // 清理旧的保活轮询
     stopKeepaliveRef.current();
+    terminalConnectedRef.current = false;
+    terminalConnectedOnceRef.current = false;
 
     startContainer(conversationId);
 
@@ -348,14 +371,18 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
 
   /** 外部信号：切到日志 Tab（折叠时恢复默认高度） */
   useEffect(() => {
-    if (logsSignal === undefined || logsSignal === prevLogsSignalRef.current) {
+    if (
+      logsSignal === undefined ||
+      !showLogsTab ||
+      logsSignal === prevLogsSignalRef.current
+    ) {
       return;
     }
     prevLogsSignalRef.current = logsSignal;
     if (!logsSignal) return;
     setActiveTab('logs');
     setLayoutMode((prev) => (prev === 'collapsed' ? 'default' : prev));
-  }, [logsSignal]);
+  }, [logsSignal, showLogsTab]);
 
   /** 布局模式变化时通知外部 */
   useEffect(() => {
@@ -468,13 +495,18 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
             cursorBlink
             reconnect={{ enabled: true, maxRetries: 3, retryDelay: 2000 }}
             onConnect={() => {
+              terminalConnectedRef.current = true;
+              terminalConnectedOnceRef.current = true;
               terminalRef.current?.writeln(
-                '\x1b[32m[Terminal connected]\x1b[0m',
+                // 使用 ANSI 真彩 + 加粗，确保连接提示在不同主题下都有明显高亮
+                '\x1b[1;38;2;22;163;74m[Terminal connected]\x1b[0m',
               );
             }}
             onDisconnect={() => {
+              terminalConnectedRef.current = false;
               terminalRef.current?.writeln(
-                '\x1b[31m[Terminal disconnected]\x1b[0m',
+                // 使用 ANSI 真彩 + 加粗，确保断开提示在不同主题下都有明显高亮
+                '\x1b[1;38;2;220;38;38m[Terminal disconnected]\x1b[0m',
               );
             }}
           />
@@ -540,13 +572,17 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
 
   return (
     <div
-      className={cx(styles.console, {
-        [styles['console-expanded']]: layoutMode === 'expanded',
-        [styles['console-collapsed']]: layoutMode === 'collapsed',
-        [styles['console-hidden']]: !visible,
-        [styles['console-terminal-light']]: isLightTerminal,
-        [styles['console-terminal-dark']]: !isLightTerminal,
-      })}
+      className={cx(
+        styles.console,
+        {
+          [styles['console-expanded']]: layoutMode === 'expanded',
+          [styles['console-collapsed']]: layoutMode === 'collapsed',
+          [styles['console-hidden']]: !visible,
+          [styles['console-terminal-light']]: isLightTerminal,
+          [styles['console-terminal-dark']]: !isLightTerminal,
+        },
+        className,
+      )}
     >
       {/* 头部：左侧 Tab 切换 + 右侧操作按钮 */}
       <div className={cx(styles['console-header'])}>
@@ -559,18 +595,20 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
           >
             {dict('PC.Components.ConversationBottomConsole.tabTerminal')}
           </span>
-          <span
-            className={cx(styles['console-tab'], {
-              [styles.active]: activeTab === 'logs',
-            })}
-            onClick={() => handleTabClick('logs')}
-          >
-            {dict('PC.Components.ConversationBottomConsole.tabLogs')}
-          </span>
+          {showLogsTab && (
+            <span
+              className={cx(styles['console-tab'], {
+                [styles.active]: activeTab === 'logs',
+              })}
+              onClick={() => handleTabClick('logs')}
+            >
+              {dict('PC.Components.ConversationBottomConsole.tabLogs')}
+            </span>
+          )}
         </div>
         <div className={cx(styles['console-actions'])}>
           {/* 页面注入的额外操作（如开发日志操作按钮组），仅日志 Tab 显示 */}
-          {activeTab === 'logs' && logsExtra}
+          {showLogsTab && activeTab === 'logs' && logsExtra}
 
           {/* 终端主题切换按钮 */}
           {showTerminalAppearanceToggle && (

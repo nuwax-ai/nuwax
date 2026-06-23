@@ -151,6 +151,8 @@ export interface FileTreePreviewViewPreview {
   cancelSaveFiles: () => void;
   /** 放弃单个文件的修改 */
   discardChangeFile: (fileId: string) => void;
+  /** 重新通过 fileProxyUrl 拉取当前选中文件内容 */
+  refreshSelectedFileContent: () => Promise<void>;
   /** 是否正在保存文件 */
   isSavingFiles: boolean;
 }
@@ -193,6 +195,8 @@ export interface UseFileTreePreviewPanelParams {
   diffFile?: ChangeFileInfo | null;
   showGitVersionButton?: boolean;
   onToggleGitVersionPanel?: () => void;
+  /** Git 版本记录按钮后的额外操作按钮 */
+  afterGitVersionActions?: React.ReactNode;
 }
 
 /** FileTreePreviewPanel 组件属性 */
@@ -208,6 +212,10 @@ export interface FileTreePreviewPanelProps {
   diffFile?: ChangeFileInfo | null;
   gitVersionPanelOpen?: boolean;
   onToggleGitVersionPanel?: () => void;
+  /** Git 版本记录按钮后的额外操作按钮 */
+  afterGitVersionActions?: React.ReactNode;
+  /** 面板底部附加内容 */
+  bottomContent?: React.ReactNode;
   gitVersionControl?: FileTreePreviewGitVersionControlProps;
   previewPanelProps: Omit<
     UseFileTreePreviewPanelParams,

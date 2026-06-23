@@ -1,5 +1,10 @@
+import SvgIcon from '@/components/base/SvgIcon';
+import ConditionRender from '@/components/ConditionRender';
+import TooltipIcon from '@/components/custom/TooltipIcon';
+import { t } from '@/services/i18nRuntime';
+import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
-import { useLocation } from 'umi';
+import { useLocation, useModel } from 'umi';
 
 /**
  * 打开iframe页面
@@ -18,8 +23,37 @@ const OpenIframePage: React.FC = () => {
     }
   }, [location]);
 
+  // 仅在 /app 下 BaseTemplate 组件中渲染时，才支持侧边栏展开操作
+  const isAppShell = location.pathname.startsWith('/app/');
+  const { isAppSidebarVisible, toggleAppSidebarVisible, isAppSidebarMode } =
+    useModel('useOpenApp');
+
   return (
-    <div className="h-full w-full">
+    <div className={classNames('h-full', 'w-full', 'relative')}>
+      {/* 独立会话页面 BaseTemplate 侧边栏隐藏时的展开按钮 */}
+      <ConditionRender
+        condition={isAppShell && isAppSidebarMode && !isAppSidebarVisible}
+      >
+        <div
+          style={{
+            position: 'absolute',
+            top: 16,
+            left: 16,
+            zIndex: 10,
+          }}
+        >
+          <TooltipIcon
+            title={t('PC.Components.ConversationDetails.expandNavigation')}
+            icon={
+              <SvgIcon
+                name="icons-nav-sidebar"
+                style={{ fontSize: 16 }}
+                onClick={toggleAppSidebarVisible}
+              />
+            }
+          />
+        </div>
+      </ConditionRender>
       <iframe
         src={iframeUrl}
         width="100%"

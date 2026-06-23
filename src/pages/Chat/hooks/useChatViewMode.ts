@@ -19,7 +19,6 @@ interface UseChatViewModeProps {
 
 export const useChatViewMode = ({
   effectiveAgent,
-  messageList,
   isFileTreeVisible,
   viewMode,
   id,
@@ -32,25 +31,10 @@ export const useChatViewMode = ({
   /**
    * 是否显示文件预览 / 智能体电脑切换按钮：
    * 1. 仅通用型智能体 (TaskAgent)
-   * 2. 必须存在消息
-   * 3. 如果只有一条消息，则该消息的 id 必须非空（id 为空视为无效消息）
    */
   const isShowFilePanel = useMemo(() => {
-    if (effectiveAgent?.type !== AgentTypeEnum.TaskAgent) {
-      return false;
-    }
-
-    if (!messageList || messageList.length === 0) {
-      return false;
-    }
-
-    if (messageList.length === 1) {
-      const first = messageList[0];
-      return !!first?.id;
-    }
-
-    return true;
-  }, [effectiveAgent?.type, messageList]);
+    return effectiveAgent?.type === AgentTypeEnum.TaskAgent;
+  }, [effectiveAgent?.type]);
 
   // 判断是否显示复制按钮（智能体允许复制即可显示，支持复制智能体或工作流模板）
   const showCopyButton = useMemo(() => {

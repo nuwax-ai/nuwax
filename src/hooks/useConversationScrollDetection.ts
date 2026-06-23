@@ -144,13 +144,30 @@ export const useConversationScrollDetection = (
       handleScrollThrottled();
     };
 
+    // 原生滚轮事件监听，一旦滚轮向上滚动，说明用户显式向上操作，立即打断自动置底
+    const wheelHandler = (e: WheelEvent) => {
+      if (e.deltaY < 0) {
+        allowAutoScrollRef.current = false;
+        // 清除滚动定时器
+        if (scrollTimeoutRef.current) {
+          clearTimeout(scrollTimeoutRef.current);
+          scrollTimeoutRef.current = null;
+        }
+        setShowScrollBtn(true);
+      }
+    };
+
     messageView.addEventListener('scroll', scrollHandler, {
+      passive: true,
+    });
+    messageView.addEventListener('wheel', wheelHandler, {
       passive: true,
     });
 
     // 组件卸载时移除滚动事件监听器
     return () => {
       messageView.removeEventListener('scroll', scrollHandler);
+      messageView.removeEventListener('wheel', wheelHandler);
     };
   }, [
     messageViewTarget,

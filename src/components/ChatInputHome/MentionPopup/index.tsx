@@ -79,7 +79,7 @@ const TABS: TabConfig[] = [
 ];
 
 /** 单个 Tab 每次请求或分页追加的数量 */
-const PAGE_SIZE = 6;
+const PAGE_SIZE = 12;
 
 /** 默认的使用场景过滤参数（定义为静态常量以避免 React 解构默认值带来的引用死循环） */
 const DEFAULT_USAGE_SCENARIOS = [AgentTypeEnum.TaskAgent];

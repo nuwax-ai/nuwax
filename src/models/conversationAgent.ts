@@ -691,25 +691,26 @@ export default () => {
           try {
             const copyList = JSON.parse(JSON.stringify(list));
 
-            // 遍历消息列表，找到最后一条消息并更新其 processingList
-            if (copyList.length > 0) {
-              const lastMessage = copyList[copyList.length - 1];
+            // 从后往前遍历消息列表，修复包含有工具调用的前置消息状态
+            for (let i = copyList.length - 1; i >= 0; i--) {
+              const currentMessage = copyList[i];
 
-              // ✨ 关键：将 Loading 或 Incomplete 状态更新为 Stopped，确保计时器暂停、加载指示器消失
+              // 1. 仅对列表的最后一条真正的消息，如果处于加载态则强置为 Stopped
               if (
-                lastMessage.status === MessageStatusEnum.Loading ||
-                lastMessage.status === MessageStatusEnum.Incomplete
+                i === copyList.length - 1 &&
+                (currentMessage.status === MessageStatusEnum.Loading ||
+                  currentMessage.status === MessageStatusEnum.Incomplete)
               ) {
-                lastMessage.status = MessageStatusEnum.Stopped;
+                currentMessage.status = MessageStatusEnum.Stopped;
               }
 
-              // 如果消息有 processingList，将所有 EXECUTING 状态更新为 FAILED
+              // 2. 遍历所有消息 of processingList，强置其中残余的 EXECUTING 状态为 FAILED
               if (
-                lastMessage.processingList &&
-                Array.isArray(lastMessage.processingList)
+                currentMessage.processingList &&
+                Array.isArray(currentMessage.processingList)
               ) {
-                lastMessage.processingList = lastMessage.processingList.map(
-                  (item: ProcessingInfo) => {
+                currentMessage.processingList =
+                  currentMessage.processingList.map((item: ProcessingInfo) => {
                     if (item.status === ProcessingEnum.EXECUTING) {
                       return {
                         ...item,
@@ -717,14 +718,14 @@ export default () => {
                       };
                     }
                     return item;
-                  },
-                );
-
-                // ✨ 关键：同时更新全局的 processingList，这样 MarkdownCustomProcess 组件才能正确更新
-                // handleChatProcessingList(updatedProcessingList); // 暂时不需要，通过对象引用已经修改了最后一条数据的状态
+                  });
               }
+
+              // 3. 将悬挂状态的权限审批与提问弹窗关闭
+              // cleanupPendingInteractions(currentMessage);
             }
 
+            // 再次调用 checkConversationActive 确保状态同步
             checkConversationActive(copyList);
             return copyList;
           } catch (error) {

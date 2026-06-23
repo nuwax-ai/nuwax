@@ -16,6 +16,8 @@ export interface SourceControlProps {
   isCommitting?: boolean;
   /** 是否正在刷新 Git 列表 */
   isRefreshingGitList?: boolean;
+  /** 是否禁用刷新 Git 变更列表 */
+  refreshDisabled?: boolean;
   /** 刷新 Git 变更列表 */
   onRefreshGitList?: () => void | Promise<void>;
   /** 提交修改（保存并推送） */
@@ -58,6 +60,8 @@ export interface FileTreeGitSourcePanelProps {
 
 /** 通用智能体文件树 UI 所需的状态与处理器 */
 export interface FileTreeContainerProps {
+  /** 是否只读（只读时禁用新建/上传等写操作） */
+  readOnly?: boolean;
   /** 文件树节点列表（树形结构） */
   files: FileNode[];
   /** 当前选中的文件 ID */

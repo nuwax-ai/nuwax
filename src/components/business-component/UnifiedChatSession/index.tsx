@@ -44,12 +44,13 @@ const DEFAULT_ROLE_INFO: RoleInfo = {
 const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
   conversationId,
   messageList = [],
-  roleInfo = DEFAULT_ROLE_INFO,
+  roleInfo,
   isLoading = false,
   loadingMore = false,
   isMoreMessage = false,
   isConversationActive = false,
   messageBottomMode = 'home',
+  showDebug,
   loadingSuggest = false,
   chatSuggestList = [],
   agentInfo = {},
@@ -106,12 +107,31 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
   const internalMessageViewRef = useRef<HTMLDivElement>(null);
   const messageViewRef = externalMessageViewRef || internalMessageViewRef;
   const allowAutoScrollRef = useRef<boolean>(true);
+  const lastMsgCountRef = useRef<number>(0);
+  const lastTextLengthRef = useRef<number>(0);
   const scrollTimeoutRef = useRef<any>(null);
   const programmaticTimerRef = useRef<any>(null);
   const [scrollBtnVisible, setScrollBtnVisible] =
     useState<boolean>(showScrollBtn);
 
   const agentModeRef = useRef<AgentMode>('yolo');
+
+  // 角色信息（名称、头像）默认逻辑：优先使用外部传入，其次根据传入的 agentInfo 自适应组装，最后使用 DEFAULT_ROLE_INFO 兜底
+  const effectiveRoleInfo = useMemo(() => {
+    if (roleInfo && roleInfo !== DEFAULT_ROLE_INFO) {
+      return roleInfo;
+    }
+    return {
+      assistant: {
+        name: (agentInfo?.name as string) || 'Assistant',
+        avatar: (agentInfo?.icon as string) || '',
+      },
+      system: {
+        name: (agentInfo?.name as string) || 'System',
+        avatar: (agentInfo?.icon as string) || '',
+      },
+    };
+  }, [roleInfo, agentInfo?.name, agentInfo?.icon]);
 
   // 1. 滚动检测逻辑
   useConversationScrollDetection(
@@ -277,7 +297,30 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
 
   // 大模型流式输出或更新时自动平滑滚动置底
   useEffect(() => {
-    if (allowAutoScrollRef.current) {
+    const lastMessage = messageList[messageList.length - 1];
+    // 判定大模型是否正在流式输出
+    const isStreaming =
+      lastMessage?.status === MessageStatusEnum.Loading ||
+      lastMessage?.status === MessageStatusEnum.Incomplete ||
+      isConversationActive;
+    const textLength = lastMessage?.text?.length || 0;
+    const msgCount = messageList.length;
+
+    let shouldScroll = false;
+
+    if (msgCount > lastMsgCountRef.current) {
+      // 消息条数增加了，肯定是发了新消息或收到新回复，需要滚动
+      shouldScroll = true;
+    } else if (isStreaming && textLength > lastTextLengthRef.current) {
+      // 正在打字输出且文本确实增长了，需要滚动
+      shouldScroll = true;
+    }
+
+    // 缓存当前的最新状态
+    lastMsgCountRef.current = msgCount;
+    lastTextLengthRef.current = textLength;
+
+    if (shouldScroll && allowAutoScrollRef.current) {
       const element = messageViewRef.current;
       if (element) {
         const performScroll = () => {
@@ -293,7 +336,9 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
             });
             // 延迟重置为 false，确保该瞬间滚动引起的所有同步/异步 scroll 事件都在 isProgrammatic 为真的情况下被忽略
             programmaticTimerRef.current = setTimeout(() => {
-              (el as any).__isProgrammaticScroll = false;
+              if (messageViewRef.current) {
+                (messageViewRef.current as any).__isProgrammaticScroll = false;
+              }
               programmaticTimerRef.current = null;
             }, 100);
           }
@@ -348,7 +393,19 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
       <div
         className={cx(styles['chat-wrapper-content'], 'scroll-container')}
         ref={messageViewRef}
-        onMouseEnter={() => setIsHoveringChat(true)}
+        onMouseEnter={() => {
+          setIsHoveringChat(true);
+          const el = messageViewRef.current;
+          if (el) {
+            const { scrollTop, scrollHeight, clientHeight } = el;
+            const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+            if (scrollHeight > clientHeight && distanceFromBottom > 50) {
+              setScrollBtnVisible(true);
+            } else {
+              setScrollBtnVisible(false);
+            }
+          }
+        }}
         onMouseLeave={() => setIsHoveringChat(false)}
       >
         <div className={cx(styles['chat-wrapper'], 'flex-1')}>
@@ -398,8 +455,9 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
                       <ChatView
                         key={`${item.id}-${item?.index || idx}`}
                         messageInfo={item}
-                        roleInfo={roleInfo}
+                        roleInfo={effectiveRoleInfo}
                         mode={messageBottomMode}
+                        showDebug={showDebug}
                         showStatusDesc={
                           agentInfo?.type !== AgentTypeEnum.TaskAgent
                         }

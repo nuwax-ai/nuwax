@@ -1,7 +1,7 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import { dict } from '@/services/i18nRuntime';
 import { CheckOutlined } from '@ant-design/icons';
-import { Button, Spin, Tooltip } from 'antd';
+import { Button, Tooltip } from 'antd';
 import React from 'react';
 import styles from './index.less';
 
@@ -42,15 +42,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   return (
     <div className={styles.filePathHeader}>
       <div className={styles.filePathInfo}>
-        {/* <FileOutlined className={styles.fileIcon} /> */}
         <span className={styles.filePath}>{filePath}</span>
-        {/* <span className={styles.fileLanguage}>{language}</span> */}
-        {isLoading && <Spin size="small" />}
-        {isModified && !readOnly && (
-          <span className={styles.modifiedIndicator}>
-            {dict('PC.Pages.AppDevFilePathHeader.modified')}
-          </span>
-        )}
       </div>
       <div className={styles.fileActions}>
         {showSaveActions && isModified && !readOnly && (

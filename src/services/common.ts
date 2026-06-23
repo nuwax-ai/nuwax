@@ -82,6 +82,8 @@ const beSilentRequestList = (url: string): boolean => {
     '/api/computer/pod/keepalive', // 远程桌面容器保活
     '/api/computer/pod/vnc-status', // 远程桌面容器检查启动状态
     '/api/computer/pod/ensure', // 远程桌面容器触发重启
+    '/api/computer/static/file-list', // 刷新文件列表接口
+    '/api/git/status', // Git status
     // 可以在此添加其他不需要显示错误消息的API
   ];
   return list.some((api) => url.includes(api));

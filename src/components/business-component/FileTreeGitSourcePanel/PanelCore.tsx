@@ -35,6 +35,7 @@ const FileTreeGitSourcePanel: React.FC<FileTreeGitSourcePanelProps> = ({
     selectedChangeFile = null,
     isCommitting = false,
     isRefreshingGitList = false,
+    refreshDisabled = false,
     onRefreshGitList,
     onCommit,
     onDiffFileSelect,
@@ -111,6 +112,7 @@ const FileTreeGitSourcePanel: React.FC<FileTreeGitSourcePanelProps> = ({
               isCommitting={isCommitting}
               isRefreshing={isRefreshingGitList}
               selectedChangeFile={selectedChangeFile}
+              refreshDisabled={refreshDisabled}
               onRefresh={onRefreshGitList}
               onCommit={onCommit}
               onFileClick={handleModifiedFileClick}

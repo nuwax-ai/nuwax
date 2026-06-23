@@ -109,6 +109,7 @@ import PreviewTabBar from './ConversationAgentFilePreview/PreviewTabBar';
 import ConversationAgentHeader from './ConversationAgentHeader';
 import { useConversationAgentDevLogs } from './hooks/useConversationAgentDevLogs';
 import styles from './index.less';
+import { apiInstallAgentProjectDependencies } from './services/agent-dev';
 
 const cx = classNames.bind(styles);
 
@@ -207,6 +208,10 @@ const ConversationAgent: React.FC = () => {
   const previewTabsRef = useRef<ReturnType<typeof usePreviewTabs> | null>(null);
   /** 刷新 Git 变更列表（delete 等场景需在 fileView 初始化后调用） */
   const refreshGitListRef = useRef<(() => Promise<void>) | null>(null);
+  /** 刷新文件树，并在存在当前选中文件时同步刷新文件内容 */
+  const refreshFileTreeAndSelectedFileRef = useRef<
+    (() => Promise<void>) | null
+  >(null);
   /** 统一主题样式（导航栏风格等） */
   const { navigationStyle } = useUnifiedTheme();
 
@@ -460,10 +465,26 @@ const ConversationAgent: React.FC = () => {
     setAgentId(agentIdFromQuery);
   }, [agentIdFromQuery]);
 
+  /** 安装项目依赖 */
+  const { run: runInstallProject } = useRequest(
+    apiInstallAgentProjectDependencies,
+    {
+      manual: true,
+      debounceWait: 300,
+    },
+  );
+
   // 如果 URL 中有 conversationId，通过状态管理器的方法查询当前会话
   useEffect(() => {
     if (queryConversationId) {
       setLoadingAgentConfigInfo(true);
+
+      // 安装项目依赖
+      runInstallProject({
+        programmingLanguage: 'typescript',
+        cId: queryConversationId,
+      });
+
       // 查询会话
       runQueryConversation(queryConversationId);
 
@@ -785,9 +806,15 @@ const ConversationAgent: React.FC = () => {
    * - 刷新智能体编排配置
    */
   const handleConversationEnd = useCallback(() => {
-    // 刷新文件树（立即刷新，不节流）
+    // 刷新文件树；如果当前有选中文件，同步刷新当前文件内容
     if (queryConversationId) {
-      refreshFileListImmediately(queryConversationId);
+      const refreshFileTreeAndSelectedFile =
+        refreshFileTreeAndSelectedFileRef.current;
+      if (refreshFileTreeAndSelectedFile) {
+        void refreshFileTreeAndSelectedFile();
+      } else {
+        void refreshFileListImmediately(queryConversationId);
+      }
     }
 
     // 刷新 Git 源代码管理状态列表
@@ -973,6 +1000,7 @@ const ConversationAgent: React.FC = () => {
     });
     if (code === SUCCESS_CODE) {
       await handleRefreshFileList(queryConversationId);
+      void refreshGitListRef.current?.();
     }
     return code === SUCCESS_CODE;
   };
@@ -1403,6 +1431,10 @@ const ConversationAgent: React.FC = () => {
   const fileView = useFileTreePreviewView(fileViewProviderProps);
   refreshGitListRef.current = fileView.refreshGitList;
 
+  // 刷新文件树，并在存在当前选中文件时同步刷新文件内容
+  refreshFileTreeAndSelectedFileRef.current =
+    fileView.tree.handleRefreshFileList;
+
   useEffect(
     () => () => {
       handleSaveFileContent.cancel();
@@ -1577,12 +1609,15 @@ const ConversationAgent: React.FC = () => {
       // 放弃更改后关闭预览 Tab
       onAfterDiscardChange: (fileId: string) => {
         previewTabs.closeTab(getFileTabId(fileId, true));
-        previewTabs.closeTab(getFileTabId(fileId, false));
+        if (fileView.preview.selectedFileId === fileId) {
+          void fileView.preview.refreshSelectedFileContent();
+        }
       },
       // 提交成功后清空本地修改并关闭 Tab
       onCommitSuccess: async () => {
         await fileView.preview.saveFiles();
         previewTabs.clearTabs();
+        await fileView.refreshGitList();
       },
       // 刷新 Git 变更列表（git status + 文件树）
       onRefreshGitList: async () => {

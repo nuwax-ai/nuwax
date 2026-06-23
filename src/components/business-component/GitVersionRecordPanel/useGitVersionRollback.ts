@@ -1,4 +1,4 @@
-import { apiGitReset } from '@/components/business-component/FileTreeGitSourcePanel/services/git-version-management';
+import { apiGitRevert } from '@/components/business-component/FileTreeGitSourcePanel/services/git-version-management';
 import type {
   GitCommitLogItem,
   GitTagsParams,
@@ -37,6 +37,7 @@ export function useGitVersionRollback({
     setRollbackCommit(null);
   }, [loading]);
 
+  // 回滚功能，目前使用 git revert 命令
   const confirmRollback = useCallback(async () => {
     if (!workspaceParams || !rollbackCommit) {
       return;
@@ -49,10 +50,10 @@ export function useGitVersionRollback({
         return;
       }
 
-      const { code } = await apiGitReset({
+      const { code } = await apiGitRevert({
         ...workspaceParams,
         target: rollbackCommit.hash,
-        mode: 'mixed',
+        // mode: 'mixed',
       });
       if (code === SUCCESS_CODE) {
         message.success(

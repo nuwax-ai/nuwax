@@ -137,6 +137,16 @@ export function useFileTreePreviewView(
   const [files, setFiles] = useState<FileNode[]>([]);
   // 当前选中的文件ID
   const [selectedFileId, setSelectedFileId] = useState<string>('');
+  /**
+   * 当前选中文件ID的同步引用
+   * - 用途：在异步请求返回时，判断用户是否已经切换到其他文件
+   */
+  const selectedFileIdRef = useRef<string>('');
+  /**
+   * 当前文件选择请求 token
+   * - 用途：只允许“最后一次点击文件”的请求回写内容，避免慢请求/跳转请求覆盖最新选中项
+   */
+  const latestFileSelectTokenRef = useRef<string>('');
   /** 文件树中选中的文件夹 ID（仅用于树高亮与工具栏新建父级，不影响预览区） */
   const [selectedFolderId, setSelectedFolderId] = useState<string>('');
   // 选中的文件节点
@@ -180,8 +190,6 @@ export function useFileTreePreviewView(
     useState<string>('');
   // 是否正在导出 PDF
   const [isExportingPdf, setIsExportingPdf] = useState<boolean>(false);
-  // 是否正在重命名文件
-  const [isRenamingFile, setIsRenamingFile] = useState<boolean>(false);
   // 是否正在刷新文件树
   const [isRefreshingFileTree, setIsRefreshingFileTree] =
     useState<boolean>(false);
@@ -216,6 +224,10 @@ export function useFileTreePreviewView(
   useEffect(() => {
     filesRef.current = files;
   }, [files]);
+
+  useEffect(() => {
+    selectedFileIdRef.current = selectedFileId;
+  }, [selectedFileId]);
 
   // 用于存储文件的刷新时间戳，确保每次点击时都能刷新
   // 统一使用一个时间戳，适用于 html、office、json、视频、音频、图片等需要刷新的文件类型
@@ -273,6 +285,8 @@ export function useFileTreePreviewView(
           );
           return updatedFiles;
         });
+        // 内容拉取成功后更新时间戳，供只读技能详情场景强制刷新 CodeViewer
+        setFileRefreshTimestamp(Date.now());
 
         return fileContent;
       } catch (error) {
@@ -319,6 +333,58 @@ export function useFileTreePreviewView(
   const isOfficeDocument = result?.isDoc || false;
   const documentFileType = result?.fileType;
 
+  /** 通过当前选中文件的 fileProxyUrl 重新拉取文件内容 */
+  const refreshSelectedFileContent = useCallback(async () => {
+    const currentSelectedFileId = selectedFileIdRef.current || selectedFileId;
+    if (!currentSelectedFileId) {
+      return;
+    }
+
+    const currentNode =
+      findFileNode(currentSelectedFileId, filesRef.current) || selectedFileNode;
+    const fileProxyUrl = currentNode?.fileProxyUrl || '';
+    if (!currentNode || !fileProxyUrl || currentNode.isLink) {
+      return;
+    }
+
+    const fileName = currentNode.name || '';
+    const currentDocumentResult = isDocumentFile(fileName);
+    const shouldOnlyRefreshPreview =
+      isVideoFile(fileName) ||
+      isAudioFile(fileName) ||
+      currentDocumentResult?.isDoc ||
+      isImageFile(fileName);
+
+    setFileRefreshTimestamp(Date.now());
+
+    if (shouldOnlyRefreshPreview) {
+      setSelectedFileNode((prevNode) =>
+        prevNode ? { ...prevNode, ...currentNode } : currentNode,
+      );
+      return;
+    }
+
+    const newFileContent = await fetchFileContentUpdateFiles(
+      fileProxyUrl,
+      currentSelectedFileId,
+    );
+
+    // 请求返回时如果用户已经切换文件，则丢弃本次回写
+    if (selectedFileIdRef.current !== currentSelectedFileId) {
+      return;
+    }
+
+    setSelectedFileNode((prevNode) =>
+      prevNode || currentNode
+        ? {
+            ...(prevNode || currentNode),
+            ...currentNode,
+            content: newFileContent || '',
+          }
+        : prevNode,
+    );
+  }, [selectedFileId, selectedFileNode, fetchFileContentUpdateFiles]);
+
   // 刷新文件树和文件内容
   const handleRefreshFileList = useCallback(async () => {
     // 使用 ref 防重复点击，避免闭包中 isRefreshingFileTree 过期
@@ -333,72 +399,14 @@ export function useFileTreePreviewView(
       // 刷新文件树
       await onRefreshFileTree?.();
 
-      // 如果存在当前选中文件，则重新通过 fileProxyUrl 更新文件内容
-      if (selectedFileId && selectedFileNode) {
-        const fileProxyUrl = selectedFileNode?.fileProxyUrl || '';
-
-        // 如果有 fileProxyUrl，重新获取文件内容
-        if (fileProxyUrl) {
-          try {
-            const fileName = selectedFileNode?.name || '';
-
-            // 判断文件是否支持预览（白名单方案）
-            const isPreviewable = isPreviewableFile(fileName, true);
-            // 如果文件不支持预览或文件是链接文件，则直接设置选中文件节点（如.zip、.rar、.7z 等压缩文件，不支持预览，也不需要获取压缩文件内容）
-            if (!isPreviewable || selectedFileNode?.isLink) {
-              return;
-            }
-
-            // 更新刷新时间戳，触发预览区重渲染
-            setFileRefreshTimestamp(Date.now());
-
-            // 视频、音频、office、图片等通过 FilePreview 渲染，浅拷贝节点触发更新
-            if (isVideo || isAudio || isOfficeDocument || isImage) {
-              setSelectedFileNode((prevNode) =>
-                prevNode ? { ...prevNode } : prevNode,
-              );
-              return;
-            }
-
-            // 获取文件内容并更新文件树
-            const newFileContent = await fetchFileContentUpdateFiles(
-              fileProxyUrl,
-              selectedFileId,
-            );
-
-            // 更新选中文件节点的内容
-            setSelectedFileNode((prevNode) =>
-              prevNode
-                ? {
-                    ...prevNode,
-                    content: newFileContent || '',
-                  }
-                : prevNode,
-            );
-          } catch (error) {
-            console.error('Failed to refresh file content: ', error);
-            setIsRefreshingFileTree(false);
-            isRefreshingFileTreeRef.current = false;
-          }
-        }
-      }
+      await refreshSelectedFileContent();
     } catch (error) {
       console.error('Failed to refresh file tree: ', error);
     } finally {
       isRefreshingFileTreeRef.current = false;
       setIsRefreshingFileTree(false);
     }
-  }, [
-    onRefreshFileTree,
-    isPreviewableFile,
-    selectedFileId,
-    selectedFileNode,
-    fetchFileContentUpdateFiles,
-    isVideo,
-    isAudio,
-    isOfficeDocument,
-    isImage,
-  ]);
+  }, [onRefreshFileTree, refreshSelectedFileContent]);
 
   /**
    * 刷新 Git 变更列表（git status）
@@ -448,9 +456,9 @@ export function useFileTreePreviewView(
     }
   }, [enableGitStatus, targetId]);
 
-  /** 文件树有内容时拉取 Git status（仅通用型智能体） */
+  /** 启用 Git status 时拉取一次，避免新建临时节点导致 files.length 变化后误触发 */
   useEffect(() => {
-    if (!targetId || !enableGitStatus || !files?.length) {
+    if (!targetId || !enableGitStatus) {
       isRefreshingGitListRef.current = false;
       setIsRefreshingGitList(false);
       return;
@@ -461,7 +469,7 @@ export function useFileTreePreviewView(
       isRefreshingGitListRef.current = false;
       setIsRefreshingGitList(false);
     };
-  }, [targetId, enableGitStatus, files?.length]);
+  }, [targetId, enableGitStatus]);
 
   // 文件选择（内部函数，执行实际的选择逻辑）
   const handleFileSelectInternal = useCallback(
@@ -484,6 +492,11 @@ export function useFileTreePreviewView(
         // 选中文件时清除文件夹选中态
         setSelectedFolderId('');
 
+        // 为本次“选中文件”生成唯一 token（后续异步回写时用于判定是否过期）
+        const currentSelectedId = fileNode?.id || fileId;
+        const selectToken = `${currentSelectedId}-${Date.now()}`;
+        latestFileSelectTokenRef.current = selectToken;
+
         // 如果文件节点是文件夹(folder)，则选择第一个子节点(点击会话中文件名时，如果文件名是文件夹，则选择第一个子节点)
         if (fileNode.type === 'folder') {
           // 如果文件节点是文件夹，且有子节点，则选择第一个子节点
@@ -505,17 +518,13 @@ export function useFileTreePreviewView(
          */
         if (!fileProxyUrl || fileNode?.isLink) {
           onFileSelectOpenPreview?.(fileNode?.id || fileId);
-          setSelectedFileId(fileNode?.id || fileId);
+          // 同步 ref，确保异步逻辑读取到最新选中文件
+          selectedFileIdRef.current = currentSelectedId;
+          setSelectedFileId(currentSelectedId);
           if (!initViewFileType) {
             setViewFileType('preview');
           }
           setSelectedFileNode(fileNode);
-          return;
-        }
-
-        // 文件没有内容或需要重新加载
-        if (isRenamingFile) {
-          message.warning(dict('PC.Components.FileTreeView.fileRenaming'));
           return;
         }
 
@@ -536,7 +545,9 @@ export function useFileTreePreviewView(
         // 更新刷新时间戳，触发预览区重渲染
         setFileRefreshTimestamp(Date.now());
 
-        setSelectedFileId(fileNode?.id || fileId);
+        // 先写 ref 再 setState，降低异步回调读取旧选中值的概率
+        selectedFileIdRef.current = currentSelectedId;
+        setSelectedFileId(currentSelectedId);
 
         if (!initViewFileType) {
           setViewFileType('preview');
@@ -581,8 +592,17 @@ export function useFileTreePreviewView(
           // 获取文件内容并更新文件树
           const newFileContent = await fetchFileContentUpdateFiles(
             fileProxyUrl,
-            fileNode?.id || fileId,
+            currentSelectedId,
           );
+
+          // 只允许“当前最新选中”的请求回写编辑器内容，避免 302 跳转/慢请求导致旧数据覆盖
+          if (
+            latestFileSelectTokenRef.current !== selectToken ||
+            selectedFileIdRef.current !== currentSelectedId
+          ) {
+            return;
+          }
+
           // 设置选中文件节点
           setSelectedFileNode({
             ...fileNode,
@@ -595,7 +615,7 @@ export function useFileTreePreviewView(
         setSelectedFileId('');
       }
     },
-    [files, isRenamingFile, onFileSelectOpenPreview, initViewFileType],
+    [files, onFileSelectOpenPreview, initViewFileType],
   );
 
   // 文件选择（对外接口，用于用户主动选择）
@@ -916,10 +936,8 @@ export function useFileTreePreviewView(
           rollbackFailedCreate(fileNode, filesBackup);
         }
       } else {
-        setIsRenamingFile(true);
         // 直接调用现有的重命名文件功能(异步更新文件树)
         const isChangeSuccess = await onRenameFile?.(fileNode, newName);
-        setIsRenamingFile(false);
         if (isChangeSuccess) {
           const trimmedName = newName.trim();
           const newNodeId = fileNode.parentPath
@@ -1390,6 +1408,8 @@ export function useFileTreePreviewView(
       return;
     }
 
+    const currentRefreshFileId = selectedFileId;
+
     const fileName = selectedFileNode?.name || '';
     const previewable = isPreviewableFile(fileName, true);
     const isNeedRefreshFileContent =
@@ -1407,8 +1427,12 @@ export function useFileTreePreviewView(
     try {
       const newFileContent = await fetchFileContentUpdateFiles(
         fileProxyUrl,
-        selectedFileId,
+        currentRefreshFileId,
       );
+      // 请求返回时若用户已切换文件，则丢弃本次回写
+      if (selectedFileIdRef.current !== currentRefreshFileId) {
+        return;
+      }
       setSelectedFileNode((prevNode) =>
         prevNode
           ? {
@@ -1641,10 +1665,18 @@ export function useFileTreePreviewView(
     }
 
     const fileContent = String(selectedFileNode?.content ?? '');
+    /**
+     * 只读技能详情场景下，带上 fileRefreshTimestamp 强制重建 CodeViewer，
+     * 兜底规避 Monaco 增量更新链路在慢请求场景下可能不刷新的问题。
+     */
+    const codeViewerKey =
+      readOnly && isProjectSkill
+        ? `code-viewer-${selectedFileId}-${fileRefreshTimestamp}`
+        : `code-viewer-${selectedFileId}`;
 
     return (
       <CodeViewer
-        key={`code-viewer-${selectedFileId}`}
+        key={codeViewerKey}
         isDynamicTheme={isDynamicTheme}
         fileId={selectedFileId}
         fileName={fileName}
@@ -1745,6 +1777,7 @@ export function useFileTreePreviewView(
     gitBranch,
     refreshGitList,
     tree: {
+      readOnly,
       files,
       selectedFileId,
       selectedFolderId,
@@ -1798,6 +1831,7 @@ export function useFileTreePreviewView(
       saveFiles,
       cancelSaveFiles,
       discardChangeFile,
+      refreshSelectedFileContent,
       isSavingFiles,
     },
   };

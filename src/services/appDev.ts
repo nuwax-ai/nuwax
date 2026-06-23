@@ -650,10 +650,13 @@ export const getDevLogs = async (
 
 /**
  * 创建项目接口
- * @param data targetType
+ * @param data 参数
  */
 export const apiProjectCreate = async (data: {
+  spaceId: number;
   targetType: AgentComponentTypeEnum;
+  name?: string;
+  programmingLanguage?: string;
 }): Promise<any> => {
   return request('/api/project/create', {
     method: 'POST',

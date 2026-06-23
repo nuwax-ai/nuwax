@@ -32,6 +32,8 @@ export interface SourceControlPanelProps {
   isCommitting?: boolean;
   /** 是否正在刷新 Git 列表 */
   isRefreshing?: boolean;
+  /** 是否禁用刷新 Git 变更列表 */
+  refreshDisabled?: boolean;
   /** 当前选中的变更文件（含区块） */
   selectedChangeFile?: SelectedChangeFile | null;
   /** 提交修改（保存并推送） */
@@ -62,6 +64,7 @@ const SourceControlPanel: React.FC<SourceControlPanelProps> = ({
   changeFiles,
   isCommitting = false,
   isRefreshing = false,
+  refreshDisabled = false,
   selectedChangeFile,
   onCommit,
   onRefresh,
@@ -384,9 +387,10 @@ const SourceControlPanel: React.FC<SourceControlPanelProps> = ({
             placement="bottom"
             className={cx(styles['header-action-btn'], {
               [styles['header-action-btn-loading']]: isRefreshing,
+              [styles['header-action-btn-disabled']]: refreshDisabled,
             })}
             icon={<ReloadOutlined spin={isRefreshing} />}
-            onClick={() => onRefresh?.()}
+            onClick={refreshDisabled ? undefined : () => onRefresh?.()}
           />
           {/* 视图模式切换按钮 */}
           <TooltipIcon
