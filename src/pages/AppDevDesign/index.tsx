@@ -415,8 +415,12 @@ const AppDevDesign: React.FC = () => {
 
     const { chatModelList, multiModelList } = modelSelector.models || {};
 
-    // 如果上次使用的多模态模型ID存在，则使用上次使用的多模态模型ID
-    if (lastMultiModelId && !!multiModelList?.length) {
+    // 仅在未选择多模态模型时初始化默认值，避免会话结束刷新项目详情后覆盖用户选择
+    if (
+      !modelSelector.selectedMultiModelId &&
+      lastMultiModelId &&
+      !!multiModelList?.length
+    ) {
       const index = multiModelList?.findIndex((m) => m.id === lastMultiModelId);
       if (index > -1) {
         modelSelector.selectMultiModel(lastMultiModelId);
@@ -424,6 +428,11 @@ const AppDevDesign: React.FC = () => {
         // 如果上次使用的模型已被删除或不存在，则使用列表第一个模型
         modelSelector.selectMultiModel(multiModelList[0].id);
       }
+    }
+
+    // 已有编码模型选择时不再覆盖，避免发送消息后刷新项目详情导致模型回退
+    if (modelSelector.selectedModelId) {
+      return;
     }
 
     // 如果上次使用的编码模型ID存在，则使用上次使用的编码模型ID
@@ -452,6 +461,8 @@ const AppDevDesign: React.FC = () => {
     }
   }, [
     modelSelector.models,
+    modelSelector.selectedModelId,
+    modelSelector.selectedMultiModelId,
     projectInfo.projectInfoState.projectInfo,
     projectInfo.hasPermission,
   ]);
