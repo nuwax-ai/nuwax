@@ -464,9 +464,9 @@ export function useFileTreePreviewView(
     }
   }, [enableGitStatus, targetId]);
 
-  /** 文件树有内容时拉取 Git status（仅通用型智能体） */
+  /** 存在有效会话消息时拉取 Git status（由 enableGitStatus 控制） */
   useEffect(() => {
-    if (!targetId || !enableGitStatus || !files?.length) {
+    if (!targetId || !enableGitStatus) {
       isRefreshingGitListRef.current = false;
       setIsRefreshingGitList(false);
       return;
@@ -477,7 +477,7 @@ export function useFileTreePreviewView(
       isRefreshingGitListRef.current = false;
       setIsRefreshingGitList(false);
     };
-  }, [targetId, enableGitStatus, files?.length]);
+  }, [targetId, enableGitStatus]);
 
   // 文件选择（内部函数，执行实际的选择逻辑）
   const handleFileSelectInternal = useCallback(

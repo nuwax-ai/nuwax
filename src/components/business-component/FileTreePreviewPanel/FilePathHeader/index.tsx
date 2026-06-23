@@ -59,6 +59,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   isCloudComputer = true,
   showGitVersionButton = false,
   onToggleGitVersionPanel,
+  afterGitVersionActions,
 }) => {
   const fileName = targetNode?.name;
   const fileSize = targetNode?.size;
@@ -126,8 +127,14 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
     const canMoreActions = showMoreActions;
     const canClose = !!onClose && !isFullscreen;
     const canGitVersion = showGitVersionButton && !!onToggleGitVersionPanel;
+    const canAfterGitVersionActions = !!afterGitVersionActions;
     return (
-      canShare || canFullscreen || canMoreActions || canClose || canGitVersion
+      canShare ||
+      canFullscreen ||
+      canMoreActions ||
+      canClose ||
+      canGitVersion ||
+      canAfterGitVersionActions
     );
   }, [
     isShowShare,
@@ -139,6 +146,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
     onClose,
     showGitVersionButton,
     onToggleGitVersionPanel,
+    afterGitVersionActions,
   ]);
 
   return (
@@ -342,6 +350,8 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
                 />
               </Tooltip>
             )}
+
+            {afterGitVersionActions}
 
             {/* 分享按钮 */}
             {isShowShare &&
