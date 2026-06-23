@@ -1,4 +1,5 @@
 import SvgIcon from '@/components/base/SvgIcon';
+import { t } from '@/services/i18nRuntime';
 import { closestCenter, DndContext, type DragEndEvent } from '@dnd-kit/core';
 import {
   SortableContext,
@@ -82,7 +83,9 @@ const MessageQueuePanel: React.FC<MessageQueuePanelProps> = ({
             })}
             style={{ fontSize: 14 }}
           />
-          <div className={cx(styles['queue-title'])}>待发送</div>
+          <div className={cx(styles['queue-title'])}>
+            {t('PC.Components.MessageQueue.title')}
+          </div>
           <div className={cx(styles['queue-count'])}>{queue.length}</div>
         </div>
         {!collapsed && (
@@ -91,7 +94,7 @@ const MessageQueuePanel: React.FC<MessageQueuePanelProps> = ({
             className={cx(styles['queue-clear'])}
             onClick={onClear}
           >
-            清空全部
+            {t('PC.Components.MessageQueue.clearAll')}
           </button>
         )}
       </div>
