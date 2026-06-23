@@ -98,6 +98,7 @@ export interface ConversationBottomConsoleProps {
   showLogsTab?: boolean;
   /** 头部操作区额外内容（渲染在内置按钮之前），仅日志 Tab 激活时显示 */
   logsExtra?: React.ReactNode;
+  className?: string;
 }
 
 /**
@@ -127,6 +128,7 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
   defaultLayoutMode = 'collapsed',
   showLogsTab = true,
   logsExtra,
+  className,
 }) => {
   /** 当前激活的 Tab（终端 / 日志） */
   const [activeTab, setActiveTab] = useState<'terminal' | 'logs'>(
@@ -570,13 +572,17 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
 
   return (
     <div
-      className={cx(styles.console, {
-        [styles['console-expanded']]: layoutMode === 'expanded',
-        [styles['console-collapsed']]: layoutMode === 'collapsed',
-        [styles['console-hidden']]: !visible,
-        [styles['console-terminal-light']]: isLightTerminal,
-        [styles['console-terminal-dark']]: !isLightTerminal,
-      })}
+      className={cx(
+        styles.console,
+        {
+          [styles['console-expanded']]: layoutMode === 'expanded',
+          [styles['console-collapsed']]: layoutMode === 'collapsed',
+          [styles['console-hidden']]: !visible,
+          [styles['console-terminal-light']]: isLightTerminal,
+          [styles['console-terminal-dark']]: !isLightTerminal,
+        },
+        className,
+      )}
     >
       {/* 头部：左侧 Tab 切换 + 右侧操作按钮 */}
       <div className={cx(styles['console-header'])}>

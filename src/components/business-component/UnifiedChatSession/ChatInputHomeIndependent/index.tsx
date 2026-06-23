@@ -116,6 +116,8 @@ export interface ChatInputHomeIndependentProps {
   // ===== 原 useModel('conversationInfo') 数据，改为从外部传入 =====
   /** 停止会话的异步函数 */
   runStopConversation?: (id: string) => Promise<any>;
+  /** 用户点击「停止」主动中止会话时的回调（用于暂停队列自动消费） */
+  onUserStopConversation?: () => void;
   /** 停止会话接口的加载状态 */
   loadingStopConversation?: boolean;
   /** 获取当前会话 ID */
@@ -189,6 +191,7 @@ const ChatInputHomeIndependent: React.FC<ChatInputHomeIndependentProps> = ({
 
   // 原 useModel('conversationInfo') 数据
   runStopConversation,
+  onUserStopConversation,
   loadingStopConversation = false,
   getCurrentConversationId,
   getCurrentConversationRequestId,
@@ -548,6 +551,9 @@ const ChatInputHomeIndependent: React.FC<ChatInputHomeIndependentProps> = ({
     if (onTempChatStop && requestId) {
       onTempChatStop(requestId);
     } else if (conversationId && runStopConversation) {
+      // 停止的是当前会话：暂停队列自动消费，避免停止后立即发送下一条排队消息。
+      // 仅真实会话停止才暂停；临时会话（onTempChatStop）停止与本会话队列无关。
+      onUserStopConversation?.();
       runStopConversation(conversationId.toString());
     }
   }, [
@@ -556,6 +562,7 @@ const ChatInputHomeIndependent: React.FC<ChatInputHomeIndependentProps> = ({
     getCurrentConversationId,
     runStopConversation,
     onTempChatStop,
+    onUserStopConversation,
   ]);
 
   const getButtonTooltip = () => {

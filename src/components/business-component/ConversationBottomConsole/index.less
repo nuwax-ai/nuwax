@@ -23,7 +23,6 @@
     flex-shrink: 0;
     position: relative;
     z-index: 2;
-    background-color: @colorBgContainer;
   }
 
   .console-tabs {
@@ -116,7 +115,7 @@
     height: @console-content-height;
     flex-shrink: 0;
     overflow: hidden;
-    background-color: @terminal-console-bg-light;
+    background-color: transparent;
     transition: background-color 0.2s ease;
   }
 
@@ -149,13 +148,13 @@
     line-height: @lineHeightLg;
     white-space: pre-wrap;
     word-break: break-all;
-    background-color: @terminal-console-bg-light;
+    background-color: transparent;
     transition: background-color 0.2s ease, color 0.2s ease;
   }
 
   &.console-terminal-dark .console-body {
     color: @terminal-console-fg-dark;
-    background-color: @terminal-console-bg-dark;
+    background-color: transparent;
   }
 
   .console-empty {

@@ -77,3 +77,29 @@ export async function apiGetAgentDevLog(
     params,
   });
 }
+
+/**
+ * 安装项目依赖参数接口
+ */
+export interface InstallProjectParams {
+  /*用户ID */
+  userId?: number;
+
+  /*编程语言,可用值:typescript,python */
+  programmingLanguage: string;
+
+  /*会话ID */
+  cId: number;
+}
+
+/**
+ * 安装项目依赖
+ */
+export async function apiInstallAgentProjectDependencies(
+  data: InstallProjectParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/agent/workspace/install-project', {
+    method: 'POST',
+    data,
+  });
+}

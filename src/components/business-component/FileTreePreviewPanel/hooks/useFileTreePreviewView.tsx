@@ -190,8 +190,6 @@ export function useFileTreePreviewView(
     useState<string>('');
   // 是否正在导出 PDF
   const [isExportingPdf, setIsExportingPdf] = useState<boolean>(false);
-  // 是否正在重命名文件
-  const [isRenamingFile, setIsRenamingFile] = useState<boolean>(false);
   // 是否正在刷新文件树
   const [isRefreshingFileTree, setIsRefreshingFileTree] =
     useState<boolean>(false);
@@ -464,9 +462,9 @@ export function useFileTreePreviewView(
     }
   }, [enableGitStatus, targetId]);
 
-  /** 存在有效会话消息时拉取 Git status（由 enableGitStatus 控制） */
+  /** 文件树有内容时拉取 Git status（仅通用型智能体） */
   useEffect(() => {
-    if (!targetId || !enableGitStatus) {
+    if (!targetId || !enableGitStatus || !files?.length) {
       isRefreshingGitListRef.current = false;
       setIsRefreshingGitList(false);
       return;
@@ -477,7 +475,7 @@ export function useFileTreePreviewView(
       isRefreshingGitListRef.current = false;
       setIsRefreshingGitList(false);
     };
-  }, [targetId, enableGitStatus]);
+  }, [targetId, enableGitStatus, files?.length]);
 
   // 文件选择（内部函数，执行实际的选择逻辑）
   const handleFileSelectInternal = useCallback(
@@ -533,12 +531,6 @@ export function useFileTreePreviewView(
             setViewFileType('preview');
           }
           setSelectedFileNode(fileNode);
-          return;
-        }
-
-        // 文件没有内容或需要重新加载
-        if (isRenamingFile) {
-          message.warning(dict('PC.Components.FileTreeView.fileRenaming'));
           return;
         }
 
@@ -629,7 +621,7 @@ export function useFileTreePreviewView(
         setSelectedFileId('');
       }
     },
-    [files, isRenamingFile, onFileSelectOpenPreview, initViewFileType],
+    [files, onFileSelectOpenPreview, initViewFileType],
   );
 
   // 文件选择（对外接口，用于用户主动选择）
@@ -950,10 +942,8 @@ export function useFileTreePreviewView(
           rollbackFailedCreate(fileNode, filesBackup);
         }
       } else {
-        setIsRenamingFile(true);
         // 直接调用现有的重命名文件功能(异步更新文件树)
         const isChangeSuccess = await onRenameFile?.(fileNode, newName);
-        setIsRenamingFile(false);
         if (isChangeSuccess) {
           const trimmedName = newName.trim();
           const newNodeId = fileNode.parentPath

@@ -67,6 +67,11 @@ export const useChatMessageQueue = ({
   const consumeBlockedRef = useRef(consumeBlocked);
   const prevConsumeBlockedRef = useRef(consumeBlocked);
   const hasPendingInterventionRef = useRef(hasPendingIntervention);
+  /**
+   * 用户主动停止会话后置 true：暂停队列自动消费，避免停止后立即发送下一条排队消息。
+   * 用户再次发送新提示词（或点击「立即发送」）后置 false，恢复自动消费。
+   */
+  const userPausedRef = useRef(false);
   hasPendingInterventionRef.current = hasPendingIntervention;
   const minIntervalRef = useRef(minConsumeInterval);
   minIntervalRef.current = minConsumeInterval;
@@ -94,6 +99,10 @@ export const useChatMessageQueue = ({
       return false;
     }
     if (!messageQueue.hasQueuedMessages) {
+      return false;
+    }
+    // 用户主动停止会话后暂停自动消费，等待用户再次发送新消息后才恢复
+    if (userPausedRef.current) {
       return false;
     }
     if (streamActiveRef.current || taskExecutingRef.current) {
@@ -160,6 +169,23 @@ export const useChatMessageQueue = ({
     }, 2000);
   }, [canAttemptConsume, clearTimers, messageQueue.dequeueFirst, sendMessage]);
 
+  /** 用户主动停止会话：暂停队列自动消费，清掉待执行的消费定时器 */
+  const pauseAutoConsume = useCallback(() => {
+    userPausedRef.current = true;
+    clearTimers();
+    consumeLockRef.current = false;
+  }, [clearTimers]);
+
+  /**
+   * 用户再次发送新消息：仅解除暂停位，不主动触发消费。
+   * 新消息发送后流式结束时的 consumeBlocked 释放信号会自然驱动消费下一条；
+   * 此处若主动 schedule，会在会话仍空闲的瞬间抢先消费，导致排队消息抢在
+   * 用户刚输入的消息之前（或与之同时）被发送。
+   */
+  const resumeAutoConsume = useCallback(() => {
+    userPausedRef.current = false;
+  }, []);
+
   const trySend = useCallback(
     (
       messageInfo: string,
@@ -187,6 +213,7 @@ export const useChatMessageQueue = ({
   useEffect(() => {
     messageQueue.clearQueue();
     consumeLockRef.current = false;
+    userPausedRef.current = false;
     clearTimers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversationId]);
@@ -225,13 +252,24 @@ export const useChatMessageQueue = ({
 
   const sendNow = useCallback(
     (qMsg: QueuedMessage) => {
+      // 「立即发送」视为用户重新参与，恢复自动消费，确保停止后队列中的下一条能继续发送
+      userPausedRef.current = false;
       messageQueue.remove(qMsg.id);
-      messageQueue.prepend({ text: qMsg.text, files: qMsg.files });
+      // 回放入队时快照的全部参数（技能/模型/智能体模式），避免立即发送丢失 @技能等
+      messageQueue.prepend({
+        text: qMsg.text,
+        files: qMsg.files,
+        skillIds: qMsg.skillIds,
+        modelId: qMsg.modelId,
+        selectedAgentMode: qMsg.selectedAgentMode,
+      });
       if (conversationId) {
         runStopConversation(conversationId);
       }
+      // 会话已空闲（如暂停态下点击立即发送）时不会有流式结束信号，需主动触发一次消费
+      scheduleAutoConsume();
     },
-    [messageQueue, conversationId, runStopConversation],
+    [messageQueue, conversationId, runStopConversation, scheduleAutoConsume],
   );
 
   const deleteQueued = useCallback(
@@ -254,5 +292,7 @@ export const useChatMessageQueue = ({
     deleteQueued,
     editQueued,
     reorder: messageQueue.reorder,
+    pauseAutoConsume,
+    resumeAutoConsume,
   };
 };
