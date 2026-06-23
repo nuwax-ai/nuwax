@@ -440,7 +440,6 @@ export const ZH_HK: SystemLangMap = {
   "PC.Components.FileTreeView.cannotPreviewType": "無法預覽此文件類型",
   "PC.Components.FileTreeView.downloading": "正在下載",
   "PC.Components.FileTreeView.exporting": "正在導出",
-  "PC.Components.FileTreeView.fileRenaming": "文件正在重命名中，請稍後再試",
   "PC.Components.FileTreeView.files": "文件",
   "PC.Components.FileTreeView.importing": "正在導入",
   "PC.Components.FileTreeView.noFilesToPreview": "當前沒有可預覽的文件",

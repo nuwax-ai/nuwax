@@ -440,7 +440,6 @@ export const JA_JP: SystemLangMap = {
   "PC.Components.FileTreeView.cannotPreviewType": "このファイルタイプはプレビューできません",
   "PC.Components.FileTreeView.downloading": "ダウンロード中",
   "PC.Components.FileTreeView.exporting": "輸出中",
-  "PC.Components.FileTreeView.fileRenaming": "ファイルの名前が変更されています。後でもう一度試してください",
   "PC.Components.FileTreeView.files": "ファイル",
   "PC.Components.FileTreeView.importing": "インポート中",
   "PC.Components.FileTreeView.noFilesToPreview": "プレビューに使用できるファイルがありません",

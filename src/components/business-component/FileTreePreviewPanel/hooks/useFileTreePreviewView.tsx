@@ -190,8 +190,6 @@ export function useFileTreePreviewView(
     useState<string>('');
   // 是否正在导出 PDF
   const [isExportingPdf, setIsExportingPdf] = useState<boolean>(false);
-  // 是否正在重命名文件
-  const [isRenamingFile, setIsRenamingFile] = useState<boolean>(false);
   // 是否正在刷新文件树
   const [isRefreshingFileTree, setIsRefreshingFileTree] =
     useState<boolean>(false);
@@ -536,12 +534,6 @@ export function useFileTreePreviewView(
           return;
         }
 
-        // 文件没有内容或需要重新加载
-        if (isRenamingFile) {
-          message.warning(dict('PC.Components.FileTreeView.fileRenaming'));
-          return;
-        }
-
         // 选中文件后打开右侧预览面板（隐藏编排区域）
         onFileSelectOpenPreview?.(fileNode?.id || fileId);
 
@@ -629,7 +621,7 @@ export function useFileTreePreviewView(
         setSelectedFileId('');
       }
     },
-    [files, isRenamingFile, onFileSelectOpenPreview, initViewFileType],
+    [files, onFileSelectOpenPreview, initViewFileType],
   );
 
   // 文件选择（对外接口，用于用户主动选择）
@@ -950,10 +942,8 @@ export function useFileTreePreviewView(
           rollbackFailedCreate(fileNode, filesBackup);
         }
       } else {
-        setIsRenamingFile(true);
         // 直接调用现有的重命名文件功能(异步更新文件树)
         const isChangeSuccess = await onRenameFile?.(fileNode, newName);
-        setIsRenamingFile(false);
         if (isChangeSuccess) {
           const trimmedName = newName.trim();
           const newNodeId = fileNode.parentPath
