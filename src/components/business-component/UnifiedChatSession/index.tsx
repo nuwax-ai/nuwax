@@ -192,6 +192,8 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
     modelId?: number,
     selectedAgentMode?: AgentMode,
   ) => {
+    // 用户在会话中发送新提示词：恢复队列自动消费（解除此前主动停止造成的暂停）
+    messageQueue.resumeAutoConsume();
     messageQueue.trySend(
       messageInfo,
       files,
@@ -540,6 +542,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
           {...chatInputProps}
           // 传入原 conversationInfo model 数据
           runStopConversation={runStopConversation}
+          onUserStopConversation={messageQueue.pauseAutoConsume}
           loadingStopConversation={loadingStopConversation}
           getCurrentConversationId={getCurrentConversationId}
           getCurrentConversationRequestId={getCurrentConversationRequestId}
