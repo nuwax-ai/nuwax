@@ -25,6 +25,12 @@ export interface EmbeddedConsoleTerminalRef {
   getTerminal: () => Terminal | null;
   /** 重新计算 cols/rows 以适配容器尺寸（容器从隐藏变为可见后调用） */
   fit: () => void;
+  /** 建立 WebSocket 连接 */
+  connect: (url?: string) => void;
+  /** 断开 WebSocket 连接 */
+  disconnect: () => void;
+  /** 重置重连计数后重新连接 */
+  reconnect: (url?: string) => void;
 }
 
 export interface EmbeddedConsoleTerminalProps {
@@ -45,6 +51,8 @@ export interface EmbeddedConsoleTerminalProps {
   };
   onConnect?: () => void;
   onDisconnect?: (event?: CloseEvent) => void;
+  /** 自动重连达到最大次数后触发 */
+  onReconnectFailed?: () => void;
 }
 
 const scheduleFit = (fit: () => void, afterFit?: () => void) => {
@@ -92,6 +100,7 @@ const EmbeddedConsoleTerminal = forwardRef<
       reconnect = { enabled: true, maxRetries: 5, retryDelay: 2000 },
       onConnect,
       onDisconnect,
+      onReconnectFailed,
     },
     ref,
   ) => {
@@ -118,6 +127,8 @@ const EmbeddedConsoleTerminal = forwardRef<
     onConnectRef.current = onConnect;
     const onDisconnectRef = useRef(onDisconnect);
     onDisconnectRef.current = onDisconnect;
+    const onReconnectFailedRef = useRef(onReconnectFailed);
+    onReconnectFailedRef.current = onReconnectFailed;
     const reconnectConfigRef = useRef(reconnect);
     reconnectConfigRef.current = reconnect;
     const wsUrlRef = useRef(wsUrl);
@@ -189,6 +200,8 @@ const EmbeddedConsoleTerminal = forwardRef<
             reconnectTimerRef.current = setTimeout(() => {
               connect(targetUrl);
             }, delay);
+          } else if (!isManualDisconnectRef.current) {
+            onReconnectFailedRef.current?.();
           }
           return;
         }
@@ -271,6 +284,7 @@ const EmbeddedConsoleTerminal = forwardRef<
             console.error(
               '[EmbeddedTerminal] Max reconnection attempts reached',
             );
+            onReconnectFailedRef.current?.();
           }
         };
 
@@ -298,6 +312,17 @@ const EmbeddedConsoleTerminal = forwardRef<
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    const reconnectTerminal = useCallback(
+      (url?: string) => {
+        reconnectCountRef.current = 0;
+        disconnect();
+        window.setTimeout(() => {
+          connect(url || wsUrlRef.current);
+        }, 0);
+      },
+      [connect, disconnect],
+    );
+
     useImperativeHandle(
       ref,
       () => ({
@@ -312,8 +337,11 @@ const EmbeddedConsoleTerminal = forwardRef<
             /* ignore */
           }
         },
+        connect,
+        disconnect,
+        reconnect: reconnectTerminal,
       }),
-      [],
+      [connect, disconnect, reconnectTerminal],
     );
 
     useEffect(() => {

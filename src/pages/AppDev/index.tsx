@@ -1824,6 +1824,7 @@ const AppDev: React.FC = () => {
                 <ConversationBottomConsole
                   // todo: 需要传入会话ID，后续完善
                   conversationId={projectId}
+                  enableKeepalivePolling={false}
                   visible={showDevLogConsole}
                   defaultActiveTab="logs"
                   terminalSignal={devConsoleTerminalSignal}
