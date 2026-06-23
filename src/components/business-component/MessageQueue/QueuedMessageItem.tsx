@@ -1,3 +1,4 @@
+import { t } from '@/services/i18nRuntime';
 import {
   CloseOutlined,
   EditOutlined,
@@ -58,7 +59,6 @@ const QueuedMessageItem: React.FC<QueuedMessageItemProps> = ({
           ref={setActivatorNodeRef}
           {...listeners}
           className={cx(styles['drag-handle'])}
-          aria-label="拖动排序"
         >
           <HolderOutlined />
         </span>
@@ -73,7 +73,7 @@ const QueuedMessageItem: React.FC<QueuedMessageItemProps> = ({
           )}
         </div>
         <div className={cx(styles.actions)}>
-          <Tooltip title="立即发送">
+          <Tooltip title={t('PC.Components.MessageQueue.sendNowTooltip')}>
             <span
               className={cx(styles['action-btn'], styles['send-btn'])}
               onClick={() => onSendNow(message)}
@@ -81,7 +81,7 @@ const QueuedMessageItem: React.FC<QueuedMessageItemProps> = ({
               <SendOutlined />
             </span>
           </Tooltip>
-          <Tooltip title="编辑消息">
+          <Tooltip title={t('PC.Components.MessageQueue.editMessageTooltip')}>
             <span
               className={cx(styles['action-btn'], styles['icon-btn'])}
               onClick={() => onEdit(message)}
@@ -89,7 +89,9 @@ const QueuedMessageItem: React.FC<QueuedMessageItemProps> = ({
               <EditOutlined />
             </span>
           </Tooltip>
-          <Tooltip title="删除">
+          <Tooltip
+            title={t('PC.Components.HistoryConversationList.deleteTooltip')}
+          >
             <span
               className={cx(
                 styles['action-btn'],
