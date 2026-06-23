@@ -220,4 +220,104 @@ describe('applyMcpAskToolCallSseEvent', () => {
     expect(patched?.mcpAskInteractions?.[0]?.toolCallId).toBe('tool-call-8');
     expect(patched?.mcpAskInteractions?.[0]?.input.requestId).toBe('ask-8');
   });
+
+  it('accepts agent input missing schemaVersion when ui.version is present', () => {
+    const patched = applyMcpAskToolCallSseEvent(
+      {
+        eventType: ConversationEventTypeEnum.PROCESSING,
+        data: {
+          name: 'ask-question__nuwax_ask_question',
+          type: 'ToolCall',
+          status: 'EXECUTING',
+          result: {
+            executeId: 'call-775',
+            input: {
+              requestId: 'weather-plan-confirm-5',
+              revision: 1,
+              sessionId: 'weather-dev',
+              title: '确认方案',
+              ui: {
+                version: 'nuwax.interaction.v1',
+                presentation: 'modal',
+                title: '确认方案',
+                schema: { type: 'object', properties: {} },
+              },
+            },
+          },
+        },
+      } as any,
+      { id: 'msg-1' } as any,
+    );
+
+    expect(patched?.mcpAskInteractions?.[0]?.input.schemaVersion).toBe(
+      'nuwax.mcp_ask.v1',
+    );
+    expect(patched?.mcpAskInteractions?.[0]?.input.requestId).toBe(
+      'weather-plan-confirm-5',
+    );
+  });
+
+  it('prefers canonical input from result.data structuredContent over agent result.input', () => {
+    const patched = applyMcpAskToolCallSseEvent(
+      {
+        eventType: ConversationEventTypeEnum.PROCESSING,
+        data: {
+          name: 'ask-question__nuwax_ask_question',
+          type: 'ToolCall',
+          status: 'FINISHED',
+          result: {
+            executeId: 'call-775',
+            input: {
+              requestId: 'weather-plan-confirm-5',
+              revision: 1,
+              sessionId: 'weather-dev',
+              title: 'agent title',
+              ui: {
+                version: 'nuwax.interaction.v1',
+                presentation: 'modal',
+                title: 'agent title',
+                schema: { type: 'object', properties: {} },
+              },
+            },
+            data: [
+              {
+                type: 'content',
+                content: {
+                  type: 'text',
+                  text: JSON.stringify({
+                    status: 'pending',
+                    requestId: 'weather-plan-confirm-5',
+                    revision: 1,
+                    message: 'presented',
+                    input: {
+                      toolName: 'nuwax_ask_question',
+                      schemaVersion: 'nuwax.mcp_ask.v1',
+                      requestId: 'weather-plan-confirm-5',
+                      revision: 1,
+                      sessionId: 'weather-dev',
+                      title: 'canonical title',
+                      ui: {
+                        version: 'nuwax.interaction.v1',
+                        presentation: 'modal',
+                        title: 'canonical title',
+                        schema: { type: 'object', properties: {} },
+                      },
+                    },
+                  }),
+                },
+              },
+            ],
+          },
+        },
+      } as any,
+      { id: 'msg-1' } as any,
+    );
+
+    expect(patched?.mcpAskInteractions?.[0]?.input.title).toBe(
+      'canonical title',
+    );
+    expect(patched?.mcpAskInteractions?.[0]?.input.toolName).toBe(
+      'nuwax_ask_question',
+    );
+  });
 });
