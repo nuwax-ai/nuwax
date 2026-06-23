@@ -39,6 +39,7 @@ const ChatView: React.FC<ChatViewProps> = memo(
     mode = 'chat',
     conversationId = '',
     showStatusDesc = true,
+    showDebug = true,
   }) => {
     const { userInfo } = useModel('userInfo');
     const { data } = useUnifiedTheme();
@@ -238,7 +239,9 @@ const ChatView: React.FC<ChatViewProps> = memo(
                   <div style={{ flex: 1 }}>
                     <ChatBottomMore messageInfo={messageInfo} />
                   </div>
-                  <ChatBottomDebug messageInfo={messageInfo} />
+                  {showDebug !== false && (
+                    <ChatBottomDebug messageInfo={messageInfo} />
+                  )}
                 </div>
               ) : mode === 'home' ? (
                 <ChatSampleBottom messageInfo={messageInfo} />
