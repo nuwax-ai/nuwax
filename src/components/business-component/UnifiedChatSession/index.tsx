@@ -393,7 +393,19 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
       <div
         className={cx(styles['chat-wrapper-content'], 'scroll-container')}
         ref={messageViewRef}
-        onMouseEnter={() => setIsHoveringChat(true)}
+        onMouseEnter={() => {
+          setIsHoveringChat(true);
+          const el = messageViewRef.current;
+          if (el) {
+            const { scrollTop, scrollHeight, clientHeight } = el;
+            const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+            if (scrollHeight > clientHeight && distanceFromBottom > 50) {
+              setScrollBtnVisible(true);
+            } else {
+              setScrollBtnVisible(false);
+            }
+          }
+        }}
         onMouseLeave={() => setIsHoveringChat(false)}
       >
         <div className={cx(styles['chat-wrapper'], 'flex-1')}>
