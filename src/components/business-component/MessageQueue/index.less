@@ -211,7 +211,7 @@
   gap: 1px;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.15s ease;
+  transition: opacity 0.18s ease;
 }
 
 .action-btn {
@@ -224,11 +224,35 @@
   border-radius: 6px;
   color: @colorTextTertiary;
   font-size: 12px;
-  transition: all 0.15s ease;
+  opacity: 0;
+  transform: scale(0.85) translateY(3px);
+  transition: opacity 0.2s ease,
+    transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.15s ease,
+    color 0.15s ease;
 
   &:hover {
     background: color-mix(in srgb, @colorText 8%, transparent);
     color: @colorText;
+  }
+}
+
+// 按钮区显示时按钮逐个弹入（stagger）：delay 仅挂在触发态，离开时同步收回、不拖沓
+.card:hover .action-btn,
+.card:focus-within .action-btn,
+.queue-list.is-hinting > .container:first-child .action-btn {
+  opacity: 1;
+  transform: none;
+
+  &:nth-child(1) {
+    transition-delay: 0.02s;
+  }
+
+  &:nth-child(2) {
+    transition-delay: 0.07s;
+  }
+
+  &:nth-child(3) {
+    transition-delay: 0.12s;
   }
 }
 
