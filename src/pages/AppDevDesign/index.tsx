@@ -304,6 +304,9 @@ const AppDevDesign: React.FC = () => {
       cancelEdit: fileManagement.cancelEdit,
       getFileContentState: () => fileManagement.fileContentState,
       onRefreshProjectInfo: () => projectInfo.refreshProjectInfo(),
+      onCommitSuccess: async () => {
+        await refreshGitListAfterSaveRef.current();
+      },
     },
   });
 
