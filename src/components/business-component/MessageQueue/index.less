@@ -107,6 +107,12 @@
   .scrollbar-auto-hide();
 }
 
+// 首次出现数据时短暂提示「第一条」的按钮区（其余仍 hover 显示）
+.queue-list.is-hinting > .container:first-child .actions {
+  opacity: 1;
+  pointer-events: auto;
+}
+
 // ===== 单条待发送消息（紧凑行 · hover 显操作 · 可拖拽排序）=====
 .container {
   width: 100%;
