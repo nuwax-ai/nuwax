@@ -990,6 +990,7 @@ const ConversationAgent: React.FC = () => {
     });
     if (code === SUCCESS_CODE) {
       await handleRefreshFileList(queryConversationId);
+      void refreshGitListRef.current?.();
     }
     return code === SUCCESS_CODE;
   };
