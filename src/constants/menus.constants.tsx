@@ -148,4 +148,8 @@ export const MENU_PATH_NORMALIZATION_MAP: Record<string, string> = {
   // 收益明细 -> 开发者收益统计
   '/system/payment-earnings/earnings-detail':
     '/system/payment-earnings/earnings-stats',
+
+  // 技能详情及开发会话页面 -> 技能管理
+  '^/space/(\\d+)/skill-details(?:-conversation)?/\\d+':
+    '/space/$1/skill-manage',
 };

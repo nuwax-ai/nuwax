@@ -70,6 +70,8 @@ export interface SkillDetailInfo {
   paymentRequired: boolean;
   // 技能订阅状态
   subscribed: boolean;
+  // 关联的开发智能体对话ID
+  devAgentConversationId?: number;
 }
 
 // 修改技能

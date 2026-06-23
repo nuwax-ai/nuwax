@@ -2,10 +2,11 @@ import { FileTreeViewPanel } from '@/components/business-component';
 import PaymentSubscriptionModal from '@/components/business-component/PaymentSubscriptionModal';
 import ConditionRender from '@/components/ConditionRender';
 import MoveCopyComponent from '@/components/MoveCopyComponent';
+import { SUCCESS_CODE } from '@/constants/codes.constants';
 import useSubscription from '@/hooks/useSubscription';
 import { dict } from '@/services/i18nRuntime';
 import { apiPublishTemplateCopy } from '@/services/publish';
-import { apiPublishedSkillDetail } from '@/services/skill';
+import { apiPublishedSkillDetail, apiSkillDetail } from '@/services/skill';
 import { AgentComponentTypeEnum, AllowCopyEnum } from '@/types/enums/agent';
 import { ApplicationMoreActionEnum } from '@/types/enums/space';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
@@ -71,7 +72,7 @@ const SkillDetail: React.FC = ({}) => {
     {
       manual: true,
       debounceInterval: 300,
-      onSuccess: (data: number, params: PublishTemplateCopyParams[]) => {
+      onSuccess: async (data: number, params: PublishTemplateCopyParams[]) => {
         message.success(
           dict('PC.Pages.Square.SkillDetail.templateCopySuccess'),
         );
@@ -79,7 +80,26 @@ const SkillDetail: React.FC = ({}) => {
         setOpenMove(false);
         // 目标空间ID
         const { targetSpaceId } = params[0];
-        // 跳转
+
+        try {
+          // 异步获取技能详情
+          const res = await apiSkillDetail(data);
+          if (res.code === SUCCESS_CODE) {
+            const conversationId = res.data?.devAgentConversationId;
+            const agentId = tenantConfigInfo?.skillDevAgentId;
+            if (agentId && conversationId) {
+              // 跳转至技能开发对话页面
+              history.push(
+                `/space/${targetSpaceId}/skill-details-conversation/${data}?agentId=${agentId}&conversationId=${conversationId}`,
+              );
+              return;
+            }
+          }
+        } catch (error) {
+          console.error('Failed to get skill details for routing:', error);
+        }
+
+        // 降级跳转到普通技能详情
         jumpToSkill(targetSpaceId, data);
       },
     },
