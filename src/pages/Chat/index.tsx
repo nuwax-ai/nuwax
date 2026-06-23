@@ -256,7 +256,6 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   const { pagePreviewData, showPagePreview, hidePagePreview } =
     useModel('chat');
 
-  const { isMobile } = useModel('layout');
   // 会话记录
   const { runHistoryItem } = useModel('conversationHistory');
 
@@ -849,11 +848,6 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
 
   // 设置最小宽度
   useEffect(() => {
-    // 移动端不设置最小宽度
-    if (isMobile) {
-      document.documentElement.style.minWidth = 'unset';
-      return;
-    }
     // 设置最小宽度-扩展页面/文件树
     if (pagePreviewData || isFileTreeVisible) {
       document.documentElement.style.minWidth = '1660px';
@@ -868,13 +862,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     return () => {
       document.documentElement.style.minWidth = 'unset';
     };
-  }, [
-    pagePreviewData,
-    isFileTreeVisible,
-    showSidebar,
-    isSidebarVisible,
-    isMobile,
-  ]);
+  }, [pagePreviewData, isFileTreeVisible, showSidebar, isSidebarVisible]);
 
   // 聊天会话头部相关 props
   const headerProps = {
@@ -988,7 +976,6 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       <div
         className={cx(styles['main-area'], {
           [styles['main-area-expanded']]: isExpandedView,
-          [styles['main-area-mobile']]: isMobile,
         })}
       >
         {enableResizable ? (
@@ -1002,7 +989,6 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
             left={
               effectiveAgent?.hideChatArea ? null : (
                 <LeftContent
-                  isMobile={isMobile}
                   isFileTreeVisible={isFileTreeVisible}
                   effectiveAgent={effectiveAgent}
                   isAppSidebarMode={isAppSidebarMode}
@@ -1017,9 +1003,6 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
               !isFileTreeVisible && (
                 <>
                   <PagePreviewIframe
-                    className={cx({
-                      [styles['mobile-page-preview-container']]: isMobile,
-                    })}
                     pagePreviewData={pagePreviewData}
                     showHeader={true}
                     onClose={hidePagePreview}
@@ -1068,7 +1051,6 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
                 }}
               >
                 <LeftContent
-                  isMobile={isMobile}
                   isFileTreeVisible={isFileTreeVisible}
                   effectiveAgent={effectiveAgent}
                   isAppSidebarMode={isAppSidebarMode}
@@ -1081,9 +1063,6 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
             {pagePreviewData && !isFileTreeVisible && (
               <div style={{ flex: '1', minWidth: 0 }}>
                 <PagePreviewIframe
-                  className={cx({
-                    [styles['mobile-page-preview-container']]: isMobile,
-                  })}
                   pagePreviewData={pagePreviewData}
                   showHeader={true}
                   onClose={hidePagePreview}
