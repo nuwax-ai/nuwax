@@ -117,10 +117,12 @@ import './index.less';
 
 // V3
 import { WORKFLOW_CONFIG } from './config';
+import { clearPendingNodeCreateSession } from './v3/utils/nodeCreateSession';
 const workflowCreatedTabs = CREATED_TABS.filter((item) =>
   [
     AgentComponentTypeEnum.Plugin,
     AgentComponentTypeEnum.Workflow,
+    AgentComponentTypeEnum.Knowledge,
     AgentComponentTypeEnum.Table,
     AgentComponentTypeEnum.MCP,
   ].includes(item.key),
@@ -1074,8 +1076,16 @@ const Workflow: React.FC = () => {
       val.targetType === AgentComponentTypeEnum.Knowledge ||
       val.targetType === AgentComponentTypeEnum.Table
     ) {
+      const knowledgeNodeType = sessionStorage.getItem('knowledgeNodeType');
       const knowledgeBaseConfigs = [
-        { ...val, type: NodeTypeEnum.Knowledge, knowledgeBaseId: val.targetId },
+        {
+          ...val,
+          type:
+            knowledgeNodeType === NodeTypeEnum.KnowledgeInsert
+              ? NodeTypeEnum.KnowledgeInsert
+              : NodeTypeEnum.Knowledge,
+          knowledgeBaseId: val.targetId,
+        },
       ];
       const tableType = sessionStorage.getItem('tableType');
       _child = {
@@ -1084,7 +1094,7 @@ const Workflow: React.FC = () => {
         description: val.description,
         type:
           val.targetType === AgentComponentTypeEnum.Knowledge
-            ? NodeTypeEnum.Knowledge
+            ? ((knowledgeNodeType || NodeTypeEnum.Knowledge) as NodeTypeEnum)
             : ((tableType || NodeTypeEnum.TableDataQuery) as NodeTypeEnum),
         typeId: val.targetId,
         nodeConfig: {
@@ -1125,9 +1135,7 @@ const Workflow: React.FC = () => {
     }
 
     addNode(_child, dragEvent);
-    if (sessionStorage.getItem('tableType')) {
-      sessionStorage.removeItem('tableType');
-    }
+    clearPendingNodeCreateSession();
     // graphRef.current.addNode(dragEvent, _child);
     setOpen(false);
   };
@@ -1152,6 +1160,9 @@ const Workflow: React.FC = () => {
       'TableSQL',
     ].includes(childType);
 
+    // 知识库写入：拖入时先弹出知识库选择弹窗（与数据新增选表交互一致）
+    const isKnowledgeInsertNode = childType === NodeTypeEnum.KnowledgeInsert;
+
     const viewGraph = graphRef.current?.getCurrentViewPort();
     if (isSpecialType) {
       setCreatedItem(childType as unknown as AgentComponentTypeEnum); //
@@ -1162,6 +1173,11 @@ const Workflow: React.FC = () => {
       setOpen(true);
       setDragEvent(getCoordinates(position, viewGraph, continueDragCount));
       sessionStorage.setItem('tableType', childType);
+    } else if (isKnowledgeInsertNode) {
+      setCreatedItem(AgentComponentTypeEnum.Knowledge);
+      setOpen(true);
+      setDragEvent(getCoordinates(position, viewGraph, continueDragCount));
+      sessionStorage.setItem('knowledgeNodeType', childType);
     } else {
       const coordinates = getCoordinates(
         position,
@@ -1813,7 +1829,10 @@ const Workflow: React.FC = () => {
             status: AgentAddComponentStatusEnum.Added,
           },
         ]}
-        onCancel={() => setOpen(false)}
+        onCancel={() => {
+          clearPendingNodeCreateSession();
+          setOpen(false);
+        }}
       />
       <TestRun
         node={foldWrapItem}

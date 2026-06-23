@@ -73,7 +73,7 @@ const QueuedMessageItem: React.FC<QueuedMessageItemProps> = ({
           )}
         </div>
         <div className={cx(styles.actions)}>
-          <Tooltip title="立即发送（将停止当前会话）">
+          <Tooltip title="立即发送">
             <span
               className={cx(styles['action-btn'], styles['send-btn'])}
               onClick={() => onSendNow(message)}

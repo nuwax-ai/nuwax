@@ -33,6 +33,7 @@ import {
 } from '../constants/loopNodeConstants';
 import { workflowProxy } from '../services/workflowProxyV3';
 import { getEdges } from '../utils/graphV3';
+import { clearPendingNodeCreateSession } from '../utils/nodeCreateSession';
 import {
   getNodeSize,
   getShape,
@@ -985,10 +986,14 @@ export const useNodeOperations = ({
         val.targetType === AgentComponentTypeEnum.Knowledge ||
         val.targetType === AgentComponentTypeEnum.Table
       ) {
+        const knowledgeNodeType = sessionStorage.getItem('knowledgeNodeType');
         const knowledgeBaseConfigs = [
           {
             ...val,
-            type: NodeTypeEnum.Knowledge,
+            type:
+              knowledgeNodeType === NodeTypeEnum.KnowledgeInsert
+                ? NodeTypeEnum.KnowledgeInsert
+                : NodeTypeEnum.Knowledge,
             knowledgeBaseId: val.targetId,
           },
         ];
@@ -999,7 +1004,7 @@ export const useNodeOperations = ({
           description: val.description,
           type:
             val.targetType === AgentComponentTypeEnum.Knowledge
-              ? NodeTypeEnum.Knowledge
+              ? ((knowledgeNodeType || NodeTypeEnum.Knowledge) as NodeTypeEnum)
               : ((tableType || NodeTypeEnum.TableDataQuery) as NodeTypeEnum),
           typeId: val.targetId,
           nodeConfig: {
@@ -1040,9 +1045,7 @@ export const useNodeOperations = ({
       }
 
       addNode(_child, dragEvent);
-      if (sessionStorage.getItem('tableType')) {
-        sessionStorage.removeItem('tableType');
-      }
+      clearPendingNodeCreateSession();
       setOpen(false);
     },
     [addNode, dragEvent, setOpen],
@@ -1073,6 +1076,9 @@ export const useNodeOperations = ({
         'TableSQL',
       ].includes(childType);
 
+      // 知识库写入：拖入时先弹出知识库选择弹窗（与数据新增选表交互一致）
+      const isKnowledgeInsertNode = childType === NodeTypeEnum.KnowledgeInsert;
+
       const viewGraph = graphRef.current?.getCurrentViewPort();
       if (isSpecialType) {
         setCreatedItem(childType as unknown as AgentComponentTypeEnum);
@@ -1083,6 +1089,11 @@ export const useNodeOperations = ({
         setOpen(true);
         setDragEvent(getCoordinates(position, viewGraph, continueDragCount));
         sessionStorage.setItem('tableType', childType);
+      } else if (isKnowledgeInsertNode) {
+        setCreatedItem(AgentComponentTypeEnum.Knowledge);
+        setOpen(true);
+        setDragEvent(getCoordinates(position, viewGraph, continueDragCount));
+        sessionStorage.setItem('knowledgeNodeType', childType);
       } else {
         const coordinates = getCoordinates(
           position,

@@ -22,7 +22,7 @@ const {
 } = NodeItem;
 const { ModelNode, IntentionNode, QuestionsNode, HttpToolNode } = ComplexNode;
 const { PluginInNode } = ReferenceNode;
-const { KnowledgeNode } = Library;
+const { KnowledgeNode, KnowledgeInsertNode } = Library;
 
 // 定义试运行,后面删除
 const LoopContinue: React.FC = () => {
@@ -79,6 +79,7 @@ export const getNodeComponent = (params: ChildNode, form: FormInstance) => {
     [NodeTypeEnum.QA]: <QuestionsNode {...commonProps} />,
     [NodeTypeEnum.HTTPRequest]: <HttpToolNode {...commonProps} />,
     [NodeTypeEnum.Knowledge]: <KnowledgeNode {...commonProps} />,
+    [NodeTypeEnum.KnowledgeInsert]: <KnowledgeInsertNode {...commonProps} />,
     [NodeTypeEnum.Condition]: <ConditionNode {...commonProps} />,
     [NodeTypeEnum.IntentRecognition]: <IntentionNode {...commonProps} />,
     [NodeTypeEnum.LoopBreak]: <LoopBreak />,
