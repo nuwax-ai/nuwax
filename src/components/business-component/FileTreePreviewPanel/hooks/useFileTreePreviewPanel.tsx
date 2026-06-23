@@ -46,6 +46,7 @@ export function useFileTreePreviewPanel(
     diffFile,
     showGitVersionButton = false,
     onToggleGitVersionPanel,
+    afterGitVersionActions,
   } = params;
 
   const {
@@ -168,6 +169,7 @@ export function useFileTreePreviewPanel(
       vncConnectStatus={renderVncPreviewStatus()}
       showGitVersionButton={showGitVersionButton}
       onToggleGitVersionPanel={onToggleGitVersionPanel}
+      afterGitVersionActions={afterGitVersionActions}
     />
   );
 

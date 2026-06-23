@@ -193,6 +193,8 @@ export interface UseFileTreePreviewPanelParams {
   diffFile?: ChangeFileInfo | null;
   showGitVersionButton?: boolean;
   onToggleGitVersionPanel?: () => void;
+  /** Git 版本记录按钮后的额外操作按钮 */
+  afterGitVersionActions?: React.ReactNode;
 }
 
 /** FileTreePreviewPanel 组件属性 */
@@ -208,6 +210,10 @@ export interface FileTreePreviewPanelProps {
   diffFile?: ChangeFileInfo | null;
   gitVersionPanelOpen?: boolean;
   onToggleGitVersionPanel?: () => void;
+  /** Git 版本记录按钮后的额外操作按钮 */
+  afterGitVersionActions?: React.ReactNode;
+  /** 面板底部附加内容 */
+  bottomContent?: React.ReactNode;
   gitVersionControl?: FileTreePreviewGitVersionControlProps;
   previewPanelProps: Omit<
     UseFileTreePreviewPanelParams,
