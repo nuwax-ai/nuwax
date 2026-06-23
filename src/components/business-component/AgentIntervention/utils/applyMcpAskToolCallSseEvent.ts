@@ -4,6 +4,7 @@ import type {
   ConversationChatResponse,
   MessageInfo,
 } from '@/types/interfaces/conversationInfo';
+import { extractMcpAskStructuredInputFromResult } from './extractMcpAskStructuredInput';
 import { createInterventionTriggeredAt } from './interventionTrigger';
 import { parseMcpAskToolInput } from './parseMcpAskToolInput';
 import {
@@ -26,6 +27,7 @@ function readRawInput(
       ? (value as Record<string, unknown>)
       : undefined;
   return (
+    nonEmpty(extractMcpAskStructuredInputFromResult(result)) ??
     nonEmpty(eventData.raw_input) ??
     nonEmpty(eventData.rawInput) ??
     nonEmpty(ext.raw_input) ??

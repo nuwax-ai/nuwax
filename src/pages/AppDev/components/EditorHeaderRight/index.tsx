@@ -2,8 +2,8 @@ import SvgIcon from '@/components/base/SvgIcon';
 import { t } from '@/services/i18nRuntime';
 import {
   BranchesOutlined,
-  CodeOutlined,
   SyncOutlined,
+  ThunderboltOutlined,
 } from '@ant-design/icons';
 import { Badge, Button, Dropdown, Tooltip } from 'antd';
 import React, { useEffect, useMemo } from 'react';
@@ -215,7 +215,7 @@ const TerminalButton: React.FC<TerminalButtonProps> = ({ onOpenTerminal }) => (
     <Button
       type="text"
       className={styles.consoleButton}
-      icon={<CodeOutlined style={{ fontSize: 16 }} />}
+      icon={<ThunderboltOutlined style={{ fontSize: 16 }} />}
       onClick={onOpenTerminal}
     />
   </Tooltip>

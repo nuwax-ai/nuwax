@@ -2212,7 +2212,6 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.AppDevEditorHeaderRight.viewTerminal": "查看终端",
   "PC.Pages.AppDevEditorHeaderRight.gitVersionHistory": "版本记录",
   "PC.Pages.AppDevFileOperatingMask.defaultTip": "文件操作进行中，请稍候...",
-  "PC.Pages.AppDevFilePathHeader.modified": "已修改",
   "PC.Pages.AppDevFileTreeContextMenu.importProject": "导入项目",
   "PC.Pages.AppDevFileTreePanel.collapse": "收起文件树",
   "PC.Pages.AppDevFileTreePanel.expand": "展开文件树",

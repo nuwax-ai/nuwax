@@ -2165,7 +2165,6 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.AppDevEditorHeaderRight.openDesignMode": "開啟設計模式",
   "PC.Pages.AppDevEditorHeaderRight.closeDesignMode": "關閉設計模式",
   "PC.Pages.AppDevFileOperatingMask.defaultTip": "檔案操作進行中，請稍候...",
-  "PC.Pages.AppDevFilePathHeader.modified": "已修改",
   "PC.Pages.AppDevFileTreeContextMenu.importProject": "匯入專案",
   "PC.Pages.AppDevFileTreePanel.collapse": "收起檔案樹",
   "PC.Pages.AppDevFileTreePanel.expand": "展開檔案樹",
