@@ -103,6 +103,9 @@ const KnowledgeHeader: React.FC<KnowledgeHeaderProps> = ({
             {dict('PC.Pages.SpaceKnowledge.KnowledgeHeader.graph')}
           </Radio>
         )}
+        <Radio value={KnowledgeDocTypeEnum.ACCURACYTEST}>
+          {dict('PC.Pages.SpaceKnowledge.KnowledgeHeader.accuracytest')}
+        </Radio>
       </Radio.Group>
       {/* </div> */}
       {/*添加内容*/}
@@ -137,6 +140,10 @@ const KnowledgeHeader: React.FC<KnowledgeHeaderProps> = ({
         ) : docType === KnowledgeDocTypeEnum.GRAPH ? (
           <Button type="primary" onClick={onViewAllGraphs}>
             {dict('PC.Pages.SpaceKnowledge.KnowledgeHeader.graph')}
+          </Button>
+        ) : docType === KnowledgeDocTypeEnum.ACCURACYTEST ? (
+          <Button type="primary">
+            {dict('PC.Pages.SpaceKnowledge.KnowledgeHeader.accuracytest')}
           </Button>
         ) : null}
       </div>

@@ -2999,6 +2999,8 @@ export const ZH_HK: SystemLangMap = {
   "PC.Pages.SpaceKnowledge.KnowledgeHeader.doc": "文檔",
   "PC.Pages.SpaceKnowledge.KnowledgeHeader.docCount": "{0}個文檔",
   "PC.Pages.SpaceKnowledge.KnowledgeHeader.qa": "QA問答",
+
+  "PC.Pages.SpaceKnowledge.KnowledgeHeader.accuracytest": "測試命中",
   "PC.Pages.SpaceKnowledge.LocalCustomDocModal.addContent": "添加內容",
   "PC.Pages.SpaceKnowledge.LocalCustomDocModal.docAddSuccess": "文檔添加成功",
   "PC.Pages.SpaceKnowledge.LocalCustomDocModal.nextStep": "下一步",
