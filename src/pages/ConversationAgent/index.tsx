@@ -1601,6 +1601,7 @@ const ConversationAgent: React.FC = () => {
       onCommitSuccess: async () => {
         await fileView.preview.saveFiles();
         previewTabs.clearTabs();
+        await fileView.refreshGitList();
       },
       // 刷新 Git 变更列表（git status + 文件树）
       onRefreshGitList: async () => {
