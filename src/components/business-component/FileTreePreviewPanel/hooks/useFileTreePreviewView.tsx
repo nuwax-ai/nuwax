@@ -196,6 +196,17 @@ export function useFileTreePreviewView(
   const [isRefreshingFileTree, setIsRefreshingFileTree] =
     useState<boolean>(false);
   const isRefreshingFileTreeRef = useRef<boolean>(false);
+  const refreshFileTreeTimeoutRef = useRef<number | null>(null);
+
+  /** 统一结束文件树刷新状态，避免异常或外部请求不 resolve 导致按钮持续 loading */
+  const stopRefreshingFileTree = useCallback(() => {
+    if (refreshFileTreeTimeoutRef.current) {
+      window.clearTimeout(refreshFileTreeTimeoutRef.current);
+      refreshFileTreeTimeoutRef.current = null;
+    }
+    isRefreshingFileTreeRef.current = false;
+    setIsRefreshingFileTree(false);
+  }, []);
 
   // 是否正在上传文件
   const [isUploadingFiles, setIsUploadingFiles] = useState<boolean>(false);
@@ -413,6 +424,13 @@ export function useFileTreePreviewView(
 
     isRefreshingFileTreeRef.current = true;
     setIsRefreshingFileTree(true);
+    if (refreshFileTreeTimeoutRef.current) {
+      window.clearTimeout(refreshFileTreeTimeoutRef.current);
+    }
+    refreshFileTreeTimeoutRef.current = window.setTimeout(() => {
+      pendingRefreshSelectedAfterFilesUpdateRef.current = false;
+      stopRefreshingFileTree();
+    }, 10000);
 
     try {
       pendingRefreshSelectedAfterFilesUpdateRef.current = Boolean(
@@ -424,10 +442,33 @@ export function useFileTreePreviewView(
       pendingRefreshSelectedAfterFilesUpdateRef.current = false;
       console.error('Failed to refresh file tree: ', error);
     } finally {
-      isRefreshingFileTreeRef.current = false;
-      setIsRefreshingFileTree(false);
+      // 如果父级暴露了文件树 loading，则等待外部 loading 结束再复位；
+      // 否则直接复位，超时兜底会处理异常悬挂场景。
+      if (!fileTreeDataLoading) {
+        stopRefreshingFileTree();
+      }
     }
-  }, [onRefreshFileTree, selectedFileId]);
+  }, [
+    onRefreshFileTree,
+    selectedFileId,
+    fileTreeDataLoading,
+    stopRefreshingFileTree,
+  ]);
+
+  useEffect(() => {
+    if (!fileTreeDataLoading && isRefreshingFileTreeRef.current) {
+      stopRefreshingFileTree();
+    }
+  }, [fileTreeDataLoading, stopRefreshingFileTree]);
+
+  useEffect(
+    () => () => {
+      if (refreshFileTreeTimeoutRef.current) {
+        window.clearTimeout(refreshFileTreeTimeoutRef.current);
+      }
+    },
+    [],
+  );
 
   /**
    * 刷新 Git 变更列表（git status）
