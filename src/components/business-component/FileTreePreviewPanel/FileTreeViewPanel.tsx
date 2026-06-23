@@ -1,6 +1,7 @@
 import debounce from 'lodash/debounce';
 import {
   forwardRef,
+  useCallback,
   useEffect,
   useImperativeHandle,
   useMemo,
@@ -33,6 +34,10 @@ const FileTreeViewPanel = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       onExportProject,
       onImportProject,
       isImportingProject,
+      onUploadFiles,
+      onRenameFile,
+      onCreateFileNode,
+      onDeleteFile,
       idleDetection,
       hideDesktop,
       isFullscreenPreview,
@@ -47,6 +52,71 @@ const FileTreeViewPanel = forwardRef<FileTreeViewRef, FileTreeViewProps>(
     const onSaveFilesRef = useRef(onSaveFiles);
     onSaveFilesRef.current = onSaveFiles;
     const refreshGitListRef = useRef<(() => Promise<void>) | null>(null);
+
+    /** 文件树写操作成功后刷新 Git status */
+    const refreshGitStatusAfterSuccess = useCallback(
+      async (success?: boolean) => {
+        if (success) {
+          await refreshGitListRef.current?.();
+        }
+      },
+      [],
+    );
+
+    const handleUploadFiles = useCallback(
+      async (files: File[], filePaths: string[]) => {
+        if (!onUploadFiles) {
+          return;
+        }
+        await onUploadFiles(files, filePaths);
+        await refreshGitListRef.current?.();
+      },
+      [onUploadFiles],
+    );
+
+    const handleRenameFile = useCallback(
+      async (
+        ...args: Parameters<NonNullable<FileTreeViewProps['onRenameFile']>>
+      ) => {
+        const result = await onRenameFile?.(...args);
+        await refreshGitStatusAfterSuccess(result);
+        return result ?? false;
+      },
+      [onRenameFile, refreshGitStatusAfterSuccess],
+    );
+
+    const handleCreateFileNode = useCallback(
+      async (
+        ...args: Parameters<NonNullable<FileTreeViewProps['onCreateFileNode']>>
+      ) => {
+        const result = await onCreateFileNode?.(...args);
+        await refreshGitStatusAfterSuccess(result);
+        return result ?? false;
+      },
+      [onCreateFileNode, refreshGitStatusAfterSuccess],
+    );
+
+    const handleDeleteFile = useCallback(
+      async (
+        ...args: Parameters<NonNullable<FileTreeViewProps['onDeleteFile']>>
+      ) => {
+        const result = await onDeleteFile?.(...args);
+        await refreshGitStatusAfterSuccess(result);
+        return result ?? false;
+      },
+      [onDeleteFile, refreshGitStatusAfterSuccess],
+    );
+
+    const handleSaveFiles = useCallback(
+      async (
+        ...args: Parameters<NonNullable<FileTreeViewProps['onSaveFiles']>>
+      ) => {
+        const result = await onSaveFiles?.(...args);
+        await refreshGitStatusAfterSuccess(result);
+        return result ?? false;
+      },
+      [onSaveFiles, refreshGitStatusAfterSuccess],
+    );
 
     /** 编辑器内容变更：防抖实时保存单个文件（与 Chat 页 useChatFiles 一致） */
     const debouncedSaveFileContent = useMemo(
@@ -92,13 +162,17 @@ const FileTreeViewPanel = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       onExportProject,
       onImportProject,
       isImportingProject,
+      onUploadFiles: handleUploadFiles,
+      onRenameFile: handleRenameFile,
+      onCreateFileNode: handleCreateFileNode,
+      onDeleteFile: handleDeleteFile,
       hideDesktop,
       idleDetection,
       isFullscreenPreview,
       onFullscreenPreview,
       readOnly,
       enableGitStatus: Boolean(gitSourceControl),
-      onSaveFiles,
+      onSaveFiles: handleSaveFiles,
       onSaveFileContent: readOnly
         ? undefined
         : async (fileId, content, originalFileContent) => {
