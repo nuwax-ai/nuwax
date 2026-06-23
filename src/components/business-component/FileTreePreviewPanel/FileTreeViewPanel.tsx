@@ -46,6 +46,7 @@ const FileTreeViewPanel = forwardRef<FileTreeViewRef, FileTreeViewProps>(
 
     const onSaveFilesRef = useRef(onSaveFiles);
     onSaveFilesRef.current = onSaveFiles;
+    const refreshGitListRef = useRef<(() => Promise<void>) | null>(null);
 
     /** 编辑器内容变更：防抖实时保存单个文件（与 Chat 页 useChatFiles 一致） */
     const debouncedSaveFileContent = useMemo(
@@ -62,6 +63,9 @@ const FileTreeViewPanel = forwardRef<FileTreeViewRef, FileTreeViewProps>(
             const result = await onSaveFilesRef.current([
               { fileId, fileContent: content, originalFileContent },
             ]);
+            if (result) {
+              await refreshGitListRef.current?.();
+            }
             return result ?? false;
           },
           500,
@@ -106,6 +110,10 @@ const FileTreeViewPanel = forwardRef<FileTreeViewRef, FileTreeViewProps>(
             return result ?? false;
           },
     });
+
+    refreshGitListRef.current = gitSourceControl
+      ? fileView.refreshGitList
+      : null;
 
     const [selectedChangeFile, setSelectedChangeFile] =
       useState<SelectedChangeFile | null>(null);
