@@ -66,6 +66,11 @@ export interface ConversationBottomConsoleProps {
    * 若不传，则不启动容器，终端在有 wsUrl 时直接连接。
    */
   conversationId?: number;
+  /**
+   * 容器启动成功后是否开启保活轮询 @default true
+   * 网页应用开发只需要确保/重启服务，不需要轮询保活接口。
+   */
+  enableKeepalivePolling?: boolean;
   /** WebSocket 子协议（ttyd 需传 ['tty']） */
   wsSubprotocols?: string | string[];
   /** 终端消息格式（'plain' | 'ttyd'） */
@@ -112,6 +117,7 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
   devLog,
   wsUrl,
   conversationId,
+  enableKeepalivePolling = true,
   wsSubprotocols,
   wireProtocol,
   terminalAppearance: terminalAppearanceProp,
@@ -146,6 +152,12 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
   const terminalConnectedRef = useRef<boolean>(false);
   /** 终端是否曾成功连接过（避免首次连接前误判为“断开”） */
   const terminalConnectedOnceRef = useRef<boolean>(false);
+  /** 终端自动重连耗尽后显示手动重连按钮 */
+  const [showTerminalReconnect, setShowTerminalReconnect] =
+    useState<boolean>(false);
+  /** 手动重连 loading */
+  const [isTerminalReconnecting, setIsTerminalReconnecting] =
+    useState<boolean>(false);
 
   /**
    * 容器启动状态机：
@@ -220,27 +232,37 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
   stopKeepaliveRef.current = stopKeepalivePodPolling;
 
   /** 启动容器并开启保活轮询 */
-  const startContainer = useCallback(async (cId: number) => {
-    setContainerStatus('starting');
-    setContainerError('');
-    try {
-      const { code } = await apiEnsurePod(cId);
-      if (code === SUCCESS_CODE) {
-        setContainerStatus('running');
-        runKeepaliveRef.current(cId);
-      } else {
+  const startContainer = useCallback(
+    async (cId: number): Promise<boolean> => {
+      setContainerStatus('starting');
+      setContainerError('');
+      try {
+        const { code } = await apiEnsurePod(cId);
+        if (code === SUCCESS_CODE) {
+          setContainerStatus('running');
+          if (enableKeepalivePolling) {
+            runKeepaliveRef.current(cId);
+          }
+          return true;
+        } else {
+          setContainerStatus('error');
+          setContainerError(
+            dict(
+              'PC.Components.ConversationBottomConsole.containerStartFailed',
+            ),
+          );
+          return false;
+        }
+      } catch (error: any) {
         setContainerStatus('error');
         setContainerError(
-          dict('PC.Components.ConversationBottomConsole.containerStartFailed'),
+          dict('PC.Components.ConversationBottomConsole.containerStartError'),
         );
+        return false;
       }
-    } catch (error: any) {
-      setContainerStatus('error');
-      setContainerError(
-        dict('PC.Components.ConversationBottomConsole.containerStartError'),
-      );
-    }
-  }, []);
+    },
+    [enableKeepalivePolling],
+  );
 
   /** 挂载时启动容器；conversationId 变化时重启 */
   useLayoutEffect(() => {
@@ -252,16 +274,20 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
     }
 
     // 清理旧的保活轮询
-    stopKeepaliveRef.current();
+    if (enableKeepalivePolling) {
+      stopKeepaliveRef.current();
+    }
     terminalConnectedRef.current = false;
     terminalConnectedOnceRef.current = false;
 
     startContainer(conversationId);
 
     return () => {
-      stopKeepaliveRef.current();
+      if (enableKeepalivePolling) {
+        stopKeepaliveRef.current();
+      }
     };
-  }, [conversationId, startContainer]);
+  }, [conversationId, startContainer, enableKeepalivePolling]);
 
   /**
    * 终端连接开关（完全由内部容器状态控制）：
@@ -404,6 +430,30 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
     setLayoutMode((prev) => (prev === 'collapsed' ? 'default' : 'collapsed'));
   };
 
+  /** 手动重连终端：云端容器先 ensurePod，本地直连场景直接重连 WS */
+  const handleReconnectTerminal = useCallback(async () => {
+    if (!wsUrl || isTerminalReconnecting) {
+      return;
+    }
+
+    setIsTerminalReconnecting(true);
+    try {
+      if (conversationId) {
+        const isReady = await startContainer(conversationId);
+        if (!isReady) {
+          return;
+        }
+      }
+
+      setShowTerminalReconnect(false);
+      terminalRef.current?.reconnect(wsUrl);
+      setActiveTab('terminal');
+      setLayoutMode((prev) => (prev === 'collapsed' ? 'default' : prev));
+    } finally {
+      setIsTerminalReconnecting(false);
+    }
+  }, [conversationId, isTerminalReconnecting, startContainer, wsUrl]);
+
   /** 切换 Tab；折叠状态下点击 Tab 自动恢复默认高度 */
   const handleTabClick = (tab: 'terminal' | 'logs') => {
     setActiveTab(tab);
@@ -497,6 +547,7 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
             onConnect={() => {
               terminalConnectedRef.current = true;
               terminalConnectedOnceRef.current = true;
+              setShowTerminalReconnect(false);
               terminalRef.current?.writeln(
                 // 使用 ANSI 真彩 + 加粗，确保连接提示在不同主题下都有明显高亮
                 '\x1b[1;38;2;22;163;74m[Terminal connected]\x1b[0m',
@@ -508,6 +559,10 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
                 // 使用 ANSI 真彩 + 加粗，确保断开提示在不同主题下都有明显高亮
                 '\x1b[1;38;2;220;38;38m[Terminal disconnected]\x1b[0m',
               );
+            }}
+            onReconnectFailed={() => {
+              terminalConnectedRef.current = false;
+              setShowTerminalReconnect(true);
             }}
           />
         </div>
@@ -609,6 +664,24 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
         <div className={cx(styles['console-actions'])}>
           {/* 页面注入的额外操作（如开发日志操作按钮组），仅日志 Tab 显示 */}
           {showLogsTab && activeTab === 'logs' && logsExtra}
+
+          {/* 终端主题切换按钮 */}
+          {activeTab === 'terminal' && showTerminalReconnect && (
+            <TooltipIcon
+              title={dict(
+                'PC.Components.ConversationBottomConsole.retryStartContainer',
+              )}
+              placement="top"
+              className={cx(styles['console-action-btn'])}
+              icon={
+                <ReloadOutlined
+                  spin={isTerminalReconnecting}
+                  style={{ fontSize: 14 }}
+                />
+              }
+              onClick={handleReconnectTerminal}
+            />
+          )}
 
           {/* 终端主题切换按钮 */}
           {showTerminalAppearanceToggle && (

@@ -45,6 +45,7 @@ interface PreviewAndDebugProps extends PreviewAndDebugHeaderProps {
   /** 设置智能体配置信息的方法 */
   onAgentConfigInfo: (info: AgentConfigInfo) => void;
   onOpenPreview?: () => void;
+  onOpenTerminalPanel?: () => void;
   onChangeSelectedComputerId?: (id: string) => void;
 }
 
@@ -58,6 +59,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
   onPressDebug,
   onOpenPreview,
   onChangeSelectedComputerId,
+  onOpenTerminalPanel,
 }) => {
   const [form] = Form.useForm();
   // 会话ID
@@ -467,6 +469,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
             isFileTreeVisible={isFileTreeVisible}
             viewMode={viewMode}
             onOpenPreviewPanel={handleOpenPreviewPanel}
+            onOpenTerminalPanel={onOpenTerminalPanel}
             onOpenDesktopPanel={handleOpenDesktopPanel}
           />
           <div
