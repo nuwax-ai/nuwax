@@ -151,6 +151,8 @@ export interface FileTreePreviewViewPreview {
   cancelSaveFiles: () => void;
   /** 放弃单个文件的修改 */
   discardChangeFile: (fileId: string) => void;
+  /** 重新通过 fileProxyUrl 拉取当前选中文件内容 */
+  refreshSelectedFileContent: () => Promise<void>;
   /** 是否正在保存文件 */
   isSavingFiles: boolean;
 }
