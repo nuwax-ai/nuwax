@@ -1059,7 +1059,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
               pagePreviewData || isFileTreeVisible ? 'visible' : 'hidden'
             }
             minLeftWidth={430}
-            defaultLeftWidth={33}
+            defaultLeftWidth={35}
             // 当文件树显示时，左侧占满flex-1, 文件树占flex-2
             left={
               effectiveAgent?.hideChatArea ? null : (
