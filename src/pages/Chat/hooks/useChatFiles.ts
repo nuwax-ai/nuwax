@@ -14,7 +14,7 @@ import {
 import { modalConfirm } from '@/utils/ant-custom';
 import { updateFilesListContent, updateFilesListName } from '@/utils/fileTree';
 import { checkFileSizeExceedLimit } from '@/utils/index';
-import { message as messageAntd } from 'antd';
+import { message } from 'antd';
 import debounce from 'lodash/debounce';
 import { useMemo, useRef, type MutableRefObject } from 'react';
 
@@ -24,6 +24,8 @@ interface UseChatFilesProps {
   handleRefreshFileList: (id: number) => Promise<void>;
   /** 单文件实时保存成功后的回调（如刷新 Git 状态），通过 ref 注入以避免循环依赖 */
   onSaveFileContentSuccessRef?: MutableRefObject<(() => void) | undefined>;
+  /** 文件树写操作成功后的回调（如刷新 Git 状态），通过 ref 注入以避免循环依赖 */
+  onFileMutationSuccessRef?: MutableRefObject<(() => void) | undefined>;
 }
 
 export const useChatFiles = ({
@@ -31,16 +33,24 @@ export const useChatFiles = ({
   fileTreeData,
   handleRefreshFileList,
   onSaveFileContentSuccessRef,
+  onFileMutationSuccessRef,
 }: UseChatFilesProps) => {
   const fileTreeDataRef = useRef(fileTreeData);
   fileTreeDataRef.current = fileTreeData;
+
+  /** 文件树发生写操作后统一刷新 Git status */
+  const notifyFileMutationSuccess = () => {
+    const callback =
+      onFileMutationSuccessRef?.current ?? onSaveFileContentSuccessRef?.current;
+    void callback?.();
+  };
 
   const handleCreateFileNode = async (
     fileNode: FileNode,
     newName: string,
   ): Promise<boolean> => {
     if (!id) {
-      messageAntd.warning(t('PC.Pages.Chat.conversationIdMissingCreateFile'));
+      message.warning(t('PC.Pages.Chat.conversationIdMissingCreateFile'));
       return false;
     }
 
@@ -79,6 +89,7 @@ export const useChatFiles = ({
     if (code === SUCCESS_CODE && id) {
       // 新建成功后，重新查询文件树列表，因为更新了文件名或文件夹名称，需要刷新文件树
       await handleRefreshFileList(id);
+      notifyFileMutationSuccess();
     }
 
     return code === SUCCESS_CODE;
@@ -109,7 +120,7 @@ export const useChatFiles = ({
                 (item: StaticFileInfo) => item.fileId === fileNode.id,
               );
               if (!currentFile) {
-                messageAntd.error(t('PC.Pages.Chat.fileNotFoundDelete'));
+                message.error(t('PC.Pages.Chat.fileNotFoundDelete'));
                 resolve(false);
                 return;
               }
@@ -136,8 +147,9 @@ export const useChatFiles = ({
             const { code } = await apiUpdateStaticFile(newSkillInfo);
             if (code === SUCCESS_CODE) {
               // 重新查询文件树列表，因为更新了文件名或文件夹名称，需要刷新文件树
-              handleRefreshFileList(id!);
-              messageAntd.success(t('PC.Pages.Chat.deleteSuccess'));
+              await handleRefreshFileList(id!);
+              notifyFileMutationSuccess();
+              message.success(t('PC.Pages.Chat.deleteSuccess'));
               resolve(true);
             } else {
               resolve(false);
@@ -178,6 +190,7 @@ export const useChatFiles = ({
     if (code === SUCCESS_CODE) {
       // 重新查询文件树列表，因为更新了文件名或文件夹名称，需要刷新文件树
       await handleRefreshFileList(id!);
+      notifyFileMutationSuccess();
     }
     return code === SUCCESS_CODE;
   };
@@ -205,6 +218,9 @@ export const useChatFiles = ({
 
     // 使用文件全量更新逻辑
     const { code } = await apiUpdateStaticFile(newSkillInfo);
+    if (code === SUCCESS_CODE) {
+      notifyFileMutationSuccess();
+    }
     return code === SUCCESS_CODE;
   };
 
@@ -233,13 +249,13 @@ export const useChatFiles = ({
             files: updatedFilesList as UpdateFileInfo[],
           });
           if (code === SUCCESS_CODE) {
-            void onSaveFileContentSuccessRef?.current?.();
+            notifyFileMutationSuccess();
           }
           return code === SUCCESS_CODE;
         },
         500,
       ),
-    [id, onSaveFileContentSuccessRef],
+    [id, onFileMutationSuccessRef, onSaveFileContentSuccessRef],
   );
 
   /**
@@ -253,7 +269,7 @@ export const useChatFiles = ({
     filePaths: string[],
   ) => {
     if (!id) {
-      messageAntd.warning(t('PC.Pages.Chat.conversationIdMissingUpload'));
+      message.warning(t('PC.Pages.Chat.conversationIdMissingUpload'));
       return;
     }
 
@@ -263,9 +279,7 @@ export const useChatFiles = ({
     );
     // 如果超过最大上传文件大小，则提示错误
     if (isExceedLimitSize) {
-      messageAntd.warning(
-        t('PC.Common.Global.uploadFileSizeExceed', maxFileSize),
-      );
+      message.warning(t('PC.Common.Global.uploadFileSizeExceed', maxFileSize));
       return;
     }
 
@@ -278,9 +292,10 @@ export const useChatFiles = ({
       });
 
       if (code === SUCCESS_CODE) {
-        messageAntd.success(t('PC.Pages.Chat.uploadSuccess'));
+        message.success(t('PC.Pages.Chat.uploadSuccess'));
         // 刷新项目详情
         await handleRefreshFileList(id);
+        notifyFileMutationSuccess();
       }
     } catch (error) {
       console.error('Upload failed:', error);
@@ -291,7 +306,7 @@ export const useChatFiles = ({
   const handleExportProject = async () => {
     // 检查项目ID是否有效
     if (!id) {
-      messageAntd.warning(t('PC.Pages.Chat.invalidConversationIdExport'));
+      message.warning(t('PC.Pages.Chat.invalidConversationIdExport'));
       return;
     }
 

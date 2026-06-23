@@ -560,7 +560,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     id,
     fileTreeData,
     handleRefreshFileList,
-    onSaveFileContentSuccessRef: refreshGitListRef,
+    onFileMutationSuccessRef: refreshGitListRef,
   });
 
   /** 存在有效消息列表时才允许查询 Git status；单条开场白不算有效消息 */
@@ -708,6 +708,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
           t('PC.Pages.ConversationAgentSourceControl.gitignoreSuccess'),
         );
         await handleRefreshFileList(id);
+        void refreshGitListRef.current?.();
       } catch (error) {
         console.error('Add to gitignore failed:', error);
       }

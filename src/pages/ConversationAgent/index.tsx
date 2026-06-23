@@ -109,6 +109,7 @@ import PreviewTabBar from './ConversationAgentFilePreview/PreviewTabBar';
 import ConversationAgentHeader from './ConversationAgentHeader';
 import { useConversationAgentDevLogs } from './hooks/useConversationAgentDevLogs';
 import styles from './index.less';
+import { apiInstallAgentProjectDependencies } from './services/agent-dev';
 
 const cx = classNames.bind(styles);
 
@@ -460,10 +461,26 @@ const ConversationAgent: React.FC = () => {
     setAgentId(agentIdFromQuery);
   }, [agentIdFromQuery]);
 
+  /** 安装项目依赖 */
+  const { run: runInstallProject } = useRequest(
+    apiInstallAgentProjectDependencies,
+    {
+      manual: true,
+      debounceWait: 300,
+    },
+  );
+
   // 如果 URL 中有 conversationId，通过状态管理器的方法查询当前会话
   useEffect(() => {
     if (queryConversationId) {
       setLoadingAgentConfigInfo(true);
+
+      // 安装项目依赖
+      runInstallProject({
+        programmingLanguage: 'typescript',
+        cId: queryConversationId,
+      });
+
       // 查询会话
       runQueryConversation(queryConversationId);
 
@@ -973,6 +990,7 @@ const ConversationAgent: React.FC = () => {
     });
     if (code === SUCCESS_CODE) {
       await handleRefreshFileList(queryConversationId);
+      void refreshGitListRef.current?.();
     }
     return code === SUCCESS_CODE;
   };

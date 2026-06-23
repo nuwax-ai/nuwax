@@ -469,7 +469,6 @@ export const EN_US: SystemLangMap = {
   "PC.Components.FileTreeView.cannotPreviewType": "Cannot preview this file type",
   "PC.Components.FileTreeView.downloading": "Downloading",
   "PC.Components.FileTreeView.exporting": "Exporting",
-  "PC.Components.FileTreeView.fileRenaming": "File is being renamed. Please try again later",
   "PC.Components.FileTreeView.files": "Files",
   "PC.Components.FileTreeView.importing": "Importing",
   "PC.Components.FileTreeView.noFilesToPreview": "No files available for preview",
