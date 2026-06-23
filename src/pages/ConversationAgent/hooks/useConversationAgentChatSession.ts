@@ -68,7 +68,6 @@ export function useConversationAgentChatSession(
     onMessageSend,
     manualComponents,
     handleLoadMoreMessage,
-    messageViewRef,
     showScrollBtn,
     setIsMoreMessage,
     setIsLoadingConversation,
@@ -263,7 +262,6 @@ export function useConversationAgentChatSession(
       onChangeSelectedComputerId?.(id);
     },
     showScrollBtn,
-    messageViewRef,
     enableMention,
     placeholder: enableMention
       ? dict('PC.Components.ChatInputHomeMentionEditor.placeholderWithMention')

@@ -34,6 +34,8 @@ interface UseAppDevFileManagementProps {
   onFileContentChange?: (fileId: string, content: string) => void;
   /** 文件保存到服务端成功后的回调（如刷新 Git status 列表） */
   onSaveSuccess?: (fileId: string) => void | Promise<void>;
+  /** 文件树写操作成功后的回调（如刷新 Git status 列表） */
+  onFileMutationSuccess?: () => void | Promise<void>;
   hasPermission?: boolean; // 新增：是否有权限访问项目
 }
 
@@ -49,6 +51,7 @@ export const useAppDevFileManagement = ({
   onFileSelect,
   onFileContentChange,
   onSaveSuccess,
+  onFileMutationSuccess,
   hasPermission = true,
 }: UseAppDevFileManagementProps) => {
   // 文件树状态
@@ -494,6 +497,7 @@ export const useAppDevFileManagement = ({
         if (result?.success) {
           // 上传成功后重新加载文件树（与删除文件逻辑保持一致）
           await loadFileTree(true, true);
+          await onFileMutationSuccess?.();
 
           // 文件上传成功后不自动选中，让用户自己选择要查看的文件
           // 文件上传成功，文件树已更新
@@ -509,7 +513,7 @@ export const useAppDevFileManagement = ({
         return false;
       }
     },
-    [projectId, loadFileTree],
+    [projectId, loadFileTree, onFileMutationSuccess],
   );
 
   /**
@@ -586,6 +590,7 @@ export const useAppDevFileManagement = ({
           // 删除成功后重新加载文件树
           await loadFileTree(true, true);
           keepAlive(projectId);
+          await onFileMutationSuccess?.();
 
           // 如果删除的是当前选中的文件，清空选择
           if (fileContentState.selectedFile === fileId) {
@@ -608,6 +613,7 @@ export const useAppDevFileManagement = ({
       fileContentState.selectedFile,
       loadFileTree,
       setSelectedFile,
+      onFileMutationSuccess,
     ],
   );
 
@@ -786,13 +792,14 @@ export const useAppDevFileManagement = ({
 
         await loadFileTree(true, true);
         keepAlive(projectId);
+        await onFileMutationSuccess?.();
         return true;
       } catch (error) {
         removeTempNode(node.id);
         return false;
       }
     },
-    [projectId, loadFileTree, removeTempNode],
+    [projectId, loadFileTree, removeTempNode, onFileMutationSuccess],
   );
 
   /**
@@ -903,6 +910,7 @@ export const useAppDevFileManagement = ({
           await loadFileTree(true, true);
 
           keepAlive(projectId);
+          await onFileMutationSuccess?.();
 
           // 如果重命名的是当前选中的文件，更新选中状态
           if (fileContentState.selectedFile === fileId) {
@@ -931,6 +939,7 @@ export const useAppDevFileManagement = ({
       fileContentState.selectedFile,
       loadFileTree,
       setSelectedFile,
+      onFileMutationSuccess,
     ],
   );
 

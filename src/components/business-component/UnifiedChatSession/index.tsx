@@ -107,6 +107,8 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
   const internalMessageViewRef = useRef<HTMLDivElement>(null);
   const messageViewRef = externalMessageViewRef || internalMessageViewRef;
   const allowAutoScrollRef = useRef<boolean>(true);
+  const lastMsgCountRef = useRef<number>(0);
+  const lastTextLengthRef = useRef<number>(0);
   const scrollTimeoutRef = useRef<any>(null);
   const programmaticTimerRef = useRef<any>(null);
   const [scrollBtnVisible, setScrollBtnVisible] =
@@ -295,7 +297,30 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
 
   // 大模型流式输出或更新时自动平滑滚动置底
   useEffect(() => {
-    if (allowAutoScrollRef.current) {
+    const lastMessage = messageList[messageList.length - 1];
+    // 判定大模型是否正在流式输出
+    const isStreaming =
+      lastMessage?.status === MessageStatusEnum.Loading ||
+      lastMessage?.status === MessageStatusEnum.Incomplete ||
+      isConversationActive;
+    const textLength = lastMessage?.text?.length || 0;
+    const msgCount = messageList.length;
+
+    let shouldScroll = false;
+
+    if (msgCount > lastMsgCountRef.current) {
+      // 消息条数增加了，肯定是发了新消息或收到新回复，需要滚动
+      shouldScroll = true;
+    } else if (isStreaming && textLength > lastTextLengthRef.current) {
+      // 正在打字输出且文本确实增长了，需要滚动
+      shouldScroll = true;
+    }
+
+    // 缓存当前的最新状态
+    lastMsgCountRef.current = msgCount;
+    lastTextLengthRef.current = textLength;
+
+    if (shouldScroll && allowAutoScrollRef.current) {
       const element = messageViewRef.current;
       if (element) {
         const performScroll = () => {
@@ -311,7 +336,9 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
             });
             // 延迟重置为 false，确保该瞬间滚动引起的所有同步/异步 scroll 事件都在 isProgrammatic 为真的情况下被忽略
             programmaticTimerRef.current = setTimeout(() => {
-              (el as any).__isProgrammaticScroll = false;
+              if (messageViewRef.current) {
+                (messageViewRef.current as any).__isProgrammaticScroll = false;
+              }
               programmaticTimerRef.current = null;
             }, 100);
           }
