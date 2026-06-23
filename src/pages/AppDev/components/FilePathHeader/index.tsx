@@ -42,9 +42,7 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   return (
     <div className={styles.filePathHeader}>
       <div className={styles.filePathInfo}>
-        {/* <FileOutlined className={styles.fileIcon} /> */}
         <span className={styles.filePath}>{filePath}</span>
-        {/* <span className={styles.fileLanguage}>{language}</span> */}
       </div>
       <div className={styles.fileActions}>
         {showSaveActions && isModified && !readOnly && (
