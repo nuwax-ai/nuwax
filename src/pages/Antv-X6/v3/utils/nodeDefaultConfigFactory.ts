@@ -42,6 +42,7 @@ export const NODE_DEFAULT_NAMES: Partial<Record<NodeTypeEnum, string>> = {
   [NodeTypeEnum.VariableAggregation]: 'Variable Aggregation',
   [NodeTypeEnum.DocumentExtraction]: 'Document Extraction',
   [NodeTypeEnum.Knowledge]: 'Knowledge Base',
+  [NodeTypeEnum.KnowledgeInsert]: 'Knowledge Insert',
   [NodeTypeEnum.HTTPRequest]: 'HTTP Request',
   [NodeTypeEnum.Plugin]: 'Plugin',
   [NodeTypeEnum.Workflow]: 'Workflow',
@@ -358,6 +359,23 @@ export function createDefaultNodeConfig(
             name: 'result',
             dataType: DataTypeEnum.Array_String,
             description: 'Retrieved knowledge content',
+            require: true,
+            systemVariable: true,
+          }),
+        ],
+      };
+
+    case NodeTypeEnum.KnowledgeInsert:
+      return {
+        ...baseConfig,
+        knowledgeBaseConfigs: [],
+        inputArgs: [],
+        outputArgs: [
+          createDefaultArg({
+            key: 'isSuccess',
+            name: 'isSuccess',
+            dataType: DataTypeEnum.Boolean,
+            description: 'Insert operation succeeded',
             require: true,
             systemVariable: true,
           }),

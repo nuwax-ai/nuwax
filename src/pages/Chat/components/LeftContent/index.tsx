@@ -16,7 +16,6 @@ import styles from './index.less';
 const cx = classNames.bind(styles);
 
 interface LeftContentProps {
-  isMobile: boolean;
   isFileTreeVisible: boolean;
   effectiveAgent: any;
   isAppSidebarMode: boolean;
@@ -26,7 +25,6 @@ interface LeftContentProps {
 }
 
 const LeftContent: React.FC<LeftContentProps> = ({
-  isMobile,
   isFileTreeVisible,
   effectiveAgent,
   isAppSidebarMode,
@@ -35,11 +33,7 @@ const LeftContent: React.FC<LeftContentProps> = ({
   fileSidebarProps,
 }) => {
   return (
-    <div
-      className={cx('flex-1', 'flex', 'flex-col', styles['main-content'], {
-        [styles['mobile-box']]: isMobile,
-      })}
-    >
+    <div className={cx('flex-1', 'flex', 'flex-col', styles['main-content'])}>
       {/* 页面顶部: 标题区域 */}
       <header className={cx(styles['title-box'])}>
         <div
@@ -114,8 +108,7 @@ const LeftContent: React.FC<LeftContentProps> = ({
             {/* 当文件树显示时，也显示这个按钮，用于关闭文件树并打开 AgentSidebar */}
             {headerProps.showSidebar &&
               !isAppSidebarMode &&
-              !headerProps.isSidebarVisible &&
-              !isMobile && (
+              !headerProps.isSidebarVisible && (
                 <TooltipIcon
                   title={t('PC.Pages.Chat.viewAgentDetails')}
                   className={cx(styles['icon-box'])}
@@ -236,9 +229,6 @@ const LeftContent: React.FC<LeftContentProps> = ({
                 'flex',
                 'w-full',
                 'overflow-hide',
-                {
-                  [styles['mobile-file-tree-sidebar']]: isMobile,
-                },
               )}
             >
               <FileTreePreviewPanel

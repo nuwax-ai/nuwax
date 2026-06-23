@@ -36,6 +36,7 @@ export interface UnifiedChatSessionProps {
    */
   isConversationActive?: boolean;
   messageBottomMode?: 'none' | 'home' | 'chat'; // 消息底部操作栏模式：none | home | chat
+  showDebug?: boolean;
   loadingSuggest?: boolean; // 会话建议加载状态
   chatSuggestList?: string[]; // 页面会话建议（开场白问题推荐）
 
