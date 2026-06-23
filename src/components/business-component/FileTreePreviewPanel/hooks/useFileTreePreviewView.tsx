@@ -333,6 +333,58 @@ export function useFileTreePreviewView(
   const isOfficeDocument = result?.isDoc || false;
   const documentFileType = result?.fileType;
 
+  /** 通过当前选中文件的 fileProxyUrl 重新拉取文件内容 */
+  const refreshSelectedFileContent = useCallback(async () => {
+    const currentSelectedFileId = selectedFileIdRef.current || selectedFileId;
+    if (!currentSelectedFileId) {
+      return;
+    }
+
+    const currentNode =
+      findFileNode(currentSelectedFileId, filesRef.current) || selectedFileNode;
+    const fileProxyUrl = currentNode?.fileProxyUrl || '';
+    if (!currentNode || !fileProxyUrl || currentNode.isLink) {
+      return;
+    }
+
+    const fileName = currentNode.name || '';
+    const currentDocumentResult = isDocumentFile(fileName);
+    const shouldOnlyRefreshPreview =
+      isVideoFile(fileName) ||
+      isAudioFile(fileName) ||
+      currentDocumentResult?.isDoc ||
+      isImageFile(fileName);
+
+    setFileRefreshTimestamp(Date.now());
+
+    if (shouldOnlyRefreshPreview) {
+      setSelectedFileNode((prevNode) =>
+        prevNode ? { ...prevNode, ...currentNode } : currentNode,
+      );
+      return;
+    }
+
+    const newFileContent = await fetchFileContentUpdateFiles(
+      fileProxyUrl,
+      currentSelectedFileId,
+    );
+
+    // 请求返回时如果用户已经切换文件，则丢弃本次回写
+    if (selectedFileIdRef.current !== currentSelectedFileId) {
+      return;
+    }
+
+    setSelectedFileNode((prevNode) =>
+      prevNode || currentNode
+        ? {
+            ...(prevNode || currentNode),
+            ...currentNode,
+            content: newFileContent || '',
+          }
+        : prevNode,
+    );
+  }, [selectedFileId, selectedFileNode, fetchFileContentUpdateFiles]);
+
   // 刷新文件树和文件内容
   const handleRefreshFileList = useCallback(async () => {
     // 使用 ref 防重复点击，避免闭包中 isRefreshingFileTree 过期
@@ -347,72 +399,14 @@ export function useFileTreePreviewView(
       // 刷新文件树
       await onRefreshFileTree?.();
 
-      // 如果存在当前选中文件，则重新通过 fileProxyUrl 更新文件内容
-      if (selectedFileId && selectedFileNode) {
-        const fileProxyUrl = selectedFileNode?.fileProxyUrl || '';
-
-        // 如果有 fileProxyUrl，重新获取文件内容
-        if (fileProxyUrl) {
-          try {
-            const fileName = selectedFileNode?.name || '';
-
-            // 判断文件是否支持预览（白名单方案）
-            const isPreviewable = isPreviewableFile(fileName, true);
-            // 如果文件不支持预览或文件是链接文件，则直接设置选中文件节点（如.zip、.rar、.7z 等压缩文件，不支持预览，也不需要获取压缩文件内容）
-            if (!isPreviewable || selectedFileNode?.isLink) {
-              return;
-            }
-
-            // 更新刷新时间戳，触发预览区重渲染
-            setFileRefreshTimestamp(Date.now());
-
-            // 视频、音频、office、图片等通过 FilePreview 渲染，浅拷贝节点触发更新
-            if (isVideo || isAudio || isOfficeDocument || isImage) {
-              setSelectedFileNode((prevNode) =>
-                prevNode ? { ...prevNode } : prevNode,
-              );
-              return;
-            }
-
-            // 获取文件内容并更新文件树
-            const newFileContent = await fetchFileContentUpdateFiles(
-              fileProxyUrl,
-              selectedFileId,
-            );
-
-            // 更新选中文件节点的内容
-            setSelectedFileNode((prevNode) =>
-              prevNode
-                ? {
-                    ...prevNode,
-                    content: newFileContent || '',
-                  }
-                : prevNode,
-            );
-          } catch (error) {
-            console.error('Failed to refresh file content: ', error);
-            setIsRefreshingFileTree(false);
-            isRefreshingFileTreeRef.current = false;
-          }
-        }
-      }
+      await refreshSelectedFileContent();
     } catch (error) {
       console.error('Failed to refresh file tree: ', error);
     } finally {
       isRefreshingFileTreeRef.current = false;
       setIsRefreshingFileTree(false);
     }
-  }, [
-    onRefreshFileTree,
-    isPreviewableFile,
-    selectedFileId,
-    selectedFileNode,
-    fetchFileContentUpdateFiles,
-    isVideo,
-    isAudio,
-    isOfficeDocument,
-    isImage,
-  ]);
+  }, [onRefreshFileTree, refreshSelectedFileContent]);
 
   /**
    * 刷新 Git 变更列表（git status）
@@ -462,9 +456,9 @@ export function useFileTreePreviewView(
     }
   }, [enableGitStatus, targetId]);
 
-  /** 文件树有内容时拉取 Git status（仅通用型智能体） */
+  /** 启用 Git status 时拉取一次，避免新建临时节点导致 files.length 变化后误触发 */
   useEffect(() => {
-    if (!targetId || !enableGitStatus || !files?.length) {
+    if (!targetId || !enableGitStatus) {
       isRefreshingGitListRef.current = false;
       setIsRefreshingGitList(false);
       return;
@@ -475,7 +469,7 @@ export function useFileTreePreviewView(
       isRefreshingGitListRef.current = false;
       setIsRefreshingGitList(false);
     };
-  }, [targetId, enableGitStatus, files?.length]);
+  }, [targetId, enableGitStatus]);
 
   // 文件选择（内部函数，执行实际的选择逻辑）
   const handleFileSelectInternal = useCallback(
@@ -1837,6 +1831,7 @@ export function useFileTreePreviewView(
       saveFiles,
       cancelSaveFiles,
       discardChangeFile,
+      refreshSelectedFileContent,
       isSavingFiles,
     },
   };

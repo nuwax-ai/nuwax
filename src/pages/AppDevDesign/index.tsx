@@ -273,7 +273,7 @@ const AppDevDesign: React.FC = () => {
   const projectInfo = useAppDevProjectInfo(projectId);
   const terminalWsUrl = useTerminalWsUrl(projectId);
 
-  /** 保存成功后刷新 Git 列表（sourceControl 初始化后注入） */
+  /** 文件写操作成功后刷新 Git 列表（sourceControl 初始化后注入） */
   const refreshGitListAfterSaveRef = useRef<() => Promise<void>>(
     async () => {},
   );
@@ -284,6 +284,9 @@ const AppDevDesign: React.FC = () => {
     onFileSelect: setActiveFile,
     onFileContentChange: updateFileContent,
     onSaveSuccess: async () => {
+      await refreshGitListAfterSaveRef.current();
+    },
+    onFileMutationSuccess: async () => {
       await refreshGitListAfterSaveRef.current();
     },
     hasPermission: projectInfo.hasPermission, // 传递权限状态
