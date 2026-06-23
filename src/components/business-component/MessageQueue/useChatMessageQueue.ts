@@ -254,15 +254,10 @@ export const useChatMessageQueue = ({
     (qMsg: QueuedMessage) => {
       // 「立即发送」视为用户重新参与，恢复自动消费，确保停止后队列中的下一条能继续发送
       userPausedRef.current = false;
-      messageQueue.remove(qMsg.id);
-      // 回放入队时快照的全部参数（技能/模型/智能体模式），避免立即发送丢失 @技能等
-      messageQueue.prepend({
-        text: qMsg.text,
-        files: qMsg.files,
-        skillIds: qMsg.skillIds,
-        modelId: qMsg.modelId,
-        selectedAgentMode: qMsg.selectedAgentMode,
-      });
+      // 移到队首并标记 sending：保留原 id，UI 立即显示 loading 且不可重复点击；
+      // 该条会一直留在队列里（保持 loading），直到会话停止、队列消费实际发送后
+      // 随 dequeueFirst 出列移除——即 loading 的结束与队列出列移除是同一时刻。
+      messageQueue.markSending(qMsg.id);
       if (conversationId) {
         runStopConversation(conversationId);
       }
