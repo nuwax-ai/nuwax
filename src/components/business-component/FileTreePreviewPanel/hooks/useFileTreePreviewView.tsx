@@ -128,6 +128,8 @@ export function useFileTreePreviewView(
     onFileRenamed,
     /** 文件/文件夹删除成功后回调 */
     onFileDeleted,
+    /** 刷新文件树后，当前选中文件已不存在时回调 */
+    onSelectedFileMissing,
     isDynamicTheme = false,
     /** 是否启用 Git status，仅通用型 TaskAgent 智能体为 true */
     enableGitStatus = false,
@@ -217,6 +219,8 @@ export function useFileTreePreviewView(
   );
   // 用于记录创建文件成功后需要选择的文件路径
   const pendingSelectFileRef = useRef<string | null>(null);
+  /** 文件树异步刷新完成后，是否需要基于新文件树处理当前选中文件 */
+  const pendingRefreshSelectedAfterFilesUpdateRef = useRef<boolean>(false);
 
   // 备份文件列表，用于判断文件列表是否发生变化
   const filesRef = useRef<FileNode[]>([]);
@@ -238,6 +242,8 @@ export function useFileTreePreviewView(
   const [viewFileType, setViewFileType] = useState<'preview' | 'code'>(
     'preview',
   );
+  const onSelectedFileMissingRef = useRef(onSelectedFileMissing);
+  onSelectedFileMissingRef.current = onSelectedFileMissing;
 
   useEffect(() => {
     if (!initViewFileType) {
@@ -333,57 +339,70 @@ export function useFileTreePreviewView(
   const isOfficeDocument = result?.isDoc || false;
   const documentFileType = result?.fileType;
 
+  /** 清空当前选中文件信息 */
+  const clearSelectedFile = useCallback(() => {
+    selectedFileIdRef.current = '';
+    setSelectedFileId('');
+    setSelectedFileNode(null);
+  }, []);
+
   /** 通过当前选中文件的 fileProxyUrl 重新拉取文件内容 */
-  const refreshSelectedFileContent = useCallback(async () => {
-    const currentSelectedFileId = selectedFileIdRef.current || selectedFileId;
-    if (!currentSelectedFileId) {
-      return;
-    }
+  const refreshSelectedFileContent = useCallback(
+    async (targetNode?: FileNode) => {
+      const currentSelectedFileId =
+        targetNode?.id || selectedFileIdRef.current || selectedFileId;
+      if (!currentSelectedFileId) {
+        return;
+      }
 
-    const currentNode =
-      findFileNode(currentSelectedFileId, filesRef.current) || selectedFileNode;
-    const fileProxyUrl = currentNode?.fileProxyUrl || '';
-    if (!currentNode || !fileProxyUrl || currentNode.isLink) {
-      return;
-    }
+      const currentNode =
+        targetNode ||
+        findFileNode(currentSelectedFileId, filesRef.current) ||
+        selectedFileNode;
+      const fileProxyUrl = currentNode?.fileProxyUrl || '';
+      if (!currentNode || !fileProxyUrl || currentNode.isLink) {
+        return;
+      }
 
-    const fileName = currentNode.name || '';
-    const currentDocumentResult = isDocumentFile(fileName);
-    const shouldOnlyRefreshPreview =
-      isVideoFile(fileName) ||
-      isAudioFile(fileName) ||
-      currentDocumentResult?.isDoc ||
-      isImageFile(fileName);
+      const fileName = currentNode.name || '';
+      const currentDocumentResult = isDocumentFile(fileName);
+      const shouldOnlyRefreshPreview =
+        isVideoFile(fileName) ||
+        isAudioFile(fileName) ||
+        currentDocumentResult?.isDoc ||
+        isImageFile(fileName);
 
-    setFileRefreshTimestamp(Date.now());
+      setFileRefreshTimestamp(Date.now());
 
-    if (shouldOnlyRefreshPreview) {
-      setSelectedFileNode((prevNode) =>
-        prevNode ? { ...prevNode, ...currentNode } : currentNode,
+      if (shouldOnlyRefreshPreview) {
+        setSelectedFileNode((prevNode) =>
+          prevNode ? { ...prevNode, ...currentNode } : currentNode,
+        );
+        return;
+      }
+
+      const newFileContent = await fetchFileContentUpdateFiles(
+        fileProxyUrl,
+        currentSelectedFileId,
       );
-      return;
-    }
 
-    const newFileContent = await fetchFileContentUpdateFiles(
-      fileProxyUrl,
-      currentSelectedFileId,
-    );
+      // 请求返回时如果用户已经切换文件，则丢弃本次回写
+      if (selectedFileIdRef.current !== currentSelectedFileId) {
+        return;
+      }
 
-    // 请求返回时如果用户已经切换文件，则丢弃本次回写
-    if (selectedFileIdRef.current !== currentSelectedFileId) {
-      return;
-    }
-
-    setSelectedFileNode((prevNode) =>
-      prevNode || currentNode
-        ? {
-            ...(prevNode || currentNode),
-            ...currentNode,
-            content: newFileContent || '',
-          }
-        : prevNode,
-    );
-  }, [selectedFileId, selectedFileNode, fetchFileContentUpdateFiles]);
+      setSelectedFileNode((prevNode) =>
+        prevNode || currentNode
+          ? {
+              ...(prevNode || currentNode),
+              ...currentNode,
+              content: newFileContent || '',
+            }
+          : prevNode,
+      );
+    },
+    [selectedFileId, selectedFileNode, fetchFileContentUpdateFiles],
+  );
 
   // 刷新文件树和文件内容
   const handleRefreshFileList = useCallback(async () => {
@@ -396,17 +415,19 @@ export function useFileTreePreviewView(
     setIsRefreshingFileTree(true);
 
     try {
+      pendingRefreshSelectedAfterFilesUpdateRef.current = Boolean(
+        selectedFileIdRef.current || selectedFileId,
+      );
       // 刷新文件树
       await onRefreshFileTree?.();
-
-      await refreshSelectedFileContent();
     } catch (error) {
+      pendingRefreshSelectedAfterFilesUpdateRef.current = false;
       console.error('Failed to refresh file tree: ', error);
     } finally {
       isRefreshingFileTreeRef.current = false;
       setIsRefreshingFileTree(false);
     }
-  }, [onRefreshFileTree, refreshSelectedFileContent]);
+  }, [onRefreshFileTree, selectedFileId]);
 
   /**
    * 刷新 Git 变更列表（git status）
@@ -720,6 +741,15 @@ export function useFileTreePreviewView(
   useEffect(() => {
     if (!originalFiles || originalFiles.length === 0) {
       setFiles([]);
+      if (pendingRefreshSelectedAfterFilesUpdateRef.current) {
+        pendingRefreshSelectedAfterFilesUpdateRef.current = false;
+        const currentSelectedFileId =
+          selectedFileIdRef.current || selectedFileId;
+        if (currentSelectedFileId) {
+          onSelectedFileMissingRef.current?.(currentSelectedFileId);
+          clearSelectedFile();
+        }
+      }
       return;
     }
     // 如果文件列表不为空，则转换为树形结构
@@ -728,12 +758,36 @@ export function useFileTreePreviewView(
         originalFiles,
         false,
       );
+      filesRef.current = treeData;
       setFiles(treeData);
-    }
 
-    return () => {
-      setFiles([]);
-    };
+      // discard / 回滚等场景必须基于“刚刷新得到的新文件树”判断当前选中文件。
+      // 不再放到独立的 files effect 中，避免同一轮 effect 读取到旧 files。
+      if (pendingRefreshSelectedAfterFilesUpdateRef.current) {
+        pendingRefreshSelectedAfterFilesUpdateRef.current = false;
+
+        const currentSelectedFileId =
+          selectedFileIdRef.current || selectedFileId;
+        if (!currentSelectedFileId) {
+          return;
+        }
+
+        const nextSelectedFileNode = findFileNode(
+          currentSelectedFileId,
+          treeData,
+        );
+        if (!nextSelectedFileNode) {
+          onSelectedFileMissingRef.current?.(currentSelectedFileId);
+          clearSelectedFile();
+          return;
+        }
+
+        selectedFileIdRef.current = nextSelectedFileNode.id;
+        setSelectedFileId(nextSelectedFileNode.id);
+        setSelectedFileNode(nextSelectedFileNode);
+        void refreshSelectedFileContent(nextSelectedFileNode);
+      }
+    }
   }, [originalFiles]);
 
   // 监听 files 变化，当有待选择的文件时自动选择

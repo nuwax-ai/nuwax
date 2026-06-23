@@ -46,13 +46,15 @@ export interface SourceControlCallbacks {
   /** 打开更改文件（非 diff） */
   openChangeFile: (fileId: string) => void;
   /** 放弃单个文件本地修改（还原编辑器内容） */
-  discardChangeFile: (fileId: string) => void;
+  discardChangeFile?: (fileId: string) => void;
   /** 将文件添加到 .gitignore（taskAgent 由页面实现；pageApp 不传则走内置逻辑） */
   addFileToGitignore?: (fileId: string) => Promise<void>;
   /** 选中 diff 文件后的页面操作 */
   onDiffFileSelect?: (fileId: string, section: ChangeListSection) => void;
   /** Git discard 成功后的页面操作 */
-  onAfterDiscardChange?: (fileId: string) => void;
+  onAfterDiscardChange?: (fileId: string) => void | Promise<void>;
+  /** 批量 Git discard 完成后的页面操作（整批只调用一次） */
+  onAfterDiscardChanges?: (fileIds: string[]) => void | Promise<void>;
   /** Git commit 成功后的页面操作 */
   onCommitSuccess?: () => Promise<void>;
   /** discard 等操作后刷新 Git 列表（taskAgent 通常刷新 fileView） */
@@ -383,14 +385,14 @@ export const useSourceControl = ({
    * 同步单个文件放弃更改后的 UI 状态
    */
   const syncAfterDiscardChange = useCallback(
-    (fileId: string) => {
+    async (fileId: string) => {
       if (manageChangeFilesInternally) {
         const changeFile = internalChangeFiles.find(
           (item) => item.fileId === fileId,
         );
         if (!changeFile) {
           clearChangeForFile(fileId);
-          callbacks.onAfterDiscardChange?.(fileId);
+          await callbacks.onAfterDiscardChange?.(fileId);
           return;
         }
 
@@ -402,10 +404,10 @@ export const useSourceControl = ({
 
         clearChangeForFile(fileId);
       } else {
-        callbacks.discardChangeFile(fileId);
+        callbacks.discardChangeFile?.(fileId);
       }
 
-      callbacks.onAfterDiscardChange?.(fileId);
+      await callbacks.onAfterDiscardChange?.(fileId);
     },
     [
       manageChangeFilesInternally,
@@ -489,7 +491,11 @@ export const useSourceControl = ({
         return;
       }
 
-      fileIds.forEach((fileId) => syncAfterDiscardChange(fileId));
+      for (const fileId of fileIds) {
+        await syncAfterDiscardChange(fileId);
+      }
+
+      await callbacks.onAfterDiscardChanges?.(fileIds);
 
       setSelectedChangeFile((current) =>
         current && fileIds.includes(current.fileId) ? null : current,
