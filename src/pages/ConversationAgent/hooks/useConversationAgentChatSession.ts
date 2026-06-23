@@ -228,7 +228,6 @@ export function useConversationAgentChatSession(
     queueContext: {
       streamActive: agentStreamActive,
       taskExecuting: agentTaskExecuting,
-      suggestLoading: loadingSuggest,
       runStopConversation: (id: number | string) => {
         void runStopConversation(String(id));
       },
