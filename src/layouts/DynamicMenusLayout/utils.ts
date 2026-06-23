@@ -72,11 +72,30 @@ export const handleOpenUrl = (menu: MenuItemDto, parentCode?: string) => {
   });
 };
 
-/**
- * 规范化/归一化子路由路径，以处理特定详情/编辑子路由高亮对应列表菜单的需求
- * @param pathname 当前路径
- * @returns 规范化后的路径
- */
 export const normalizeMenuPathname = (pathname: string): string => {
-  return MENU_PATH_NORMALIZATION_MAP[pathname] || pathname;
+  // 1. 优先进行静态精确匹配
+  if (MENU_PATH_NORMALIZATION_MAP[pathname]) {
+    return MENU_PATH_NORMALIZATION_MAP[pathname];
+  }
+
+  // 2. 支持通过动态正则配置进行替换（key 以 ^ 开头的项）
+  for (const [pattern, replacement] of Object.entries(
+    MENU_PATH_NORMALIZATION_MAP,
+  )) {
+    if (pattern.startsWith('^')) {
+      try {
+        const regex = new RegExp(pattern);
+        if (regex.test(pathname)) {
+          return pathname.replace(regex, replacement);
+        }
+      } catch (error) {
+        console.error(
+          `Invalid regexp pattern in MENU_PATH_NORMALIZATION_MAP: ${pattern}`,
+          error,
+        );
+      }
+    }
+  }
+
+  return pathname;
 };
