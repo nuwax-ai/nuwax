@@ -1,6 +1,62 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { McpAskInteraction } from '../types/mcpAskIntervention';
-import { buildMcpAskResumeMessage } from './mcpAskResumeMessage';
+import {
+  buildMcpAskResumeMessage,
+  isMcpAskResumeMessageForInteraction,
+} from './mcpAskResumeMessage';
+
+/** 测试用中文 i18n 字典，与 zh-CN 本地包 resume 相关 key 对齐 */
+const zhCnResumeDict: Record<string, string> = {
+  'PC.Common.Global.yes': '是',
+  'PC.Common.Global.no': '否',
+  'PC.Components.McpAskQuestionCard.defaultTitle': '这次提问',
+  'PC.Components.McpAskQuestionCard.notFilled': '未填写',
+  'PC.Components.McpAskQuestionCard.unknownFile': '未知文件',
+  'PC.Components.McpAskQuestionCard.file': '文件',
+  'PC.Components.McpAskQuestionCard.emptyFormContent': '（无表单内容）',
+  'PC.Components.McpAskQuestionCard.listSeparator': '、',
+  'PC.Components.McpAskQuestionCard.objectEntrySeparator': '，',
+  'PC.Components.McpAskQuestionCard.labelSeparator': '：',
+  'PC.Components.McpAskQuestionCard.resumeCancelled': '我取消了「{0}」。',
+  'PC.Components.McpAskQuestionCard.resumeSkipped': '我跳过了「{0}」。',
+  'PC.Components.McpAskQuestionCard.resumeTimeout':
+    '「{0}」已超时，没有收到表单答案。',
+  'PC.Components.McpAskQuestionCard.resumeSubmitted':
+    '我已填写「{0}」，表单内容如下：',
+};
+
+/** 测试用英文 i18n 字典 */
+const enUsResumeDict: Record<string, string> = {
+  'PC.Common.Global.yes': 'Yes',
+  'PC.Common.Global.no': 'No',
+  'PC.Components.McpAskQuestionCard.defaultTitle': 'This question',
+  'PC.Components.McpAskQuestionCard.notFilled': 'Not provided',
+  'PC.Components.McpAskQuestionCard.unknownFile': 'Unknown file',
+  'PC.Components.McpAskQuestionCard.file': 'File',
+  'PC.Components.McpAskQuestionCard.emptyFormContent': '(No form content)',
+  'PC.Components.McpAskQuestionCard.listSeparator': ', ',
+  'PC.Components.McpAskQuestionCard.objectEntrySeparator': '; ',
+  'PC.Components.McpAskQuestionCard.labelSeparator': ': ',
+  'PC.Components.McpAskQuestionCard.resumeCancelled': 'I cancelled "{0}".',
+  'PC.Components.McpAskQuestionCard.resumeSkipped': 'I skipped "{0}".',
+  'PC.Components.McpAskQuestionCard.resumeTimeout':
+    '"{0}" timed out. No form answer was received.',
+  'PC.Components.McpAskQuestionCard.resumeSubmitted':
+    'I answered "{0}". Form details:',
+};
+
+let activeDict = zhCnResumeDict;
+
+vi.mock('@/services/i18nRuntime', () => ({
+  dict: (key: string, ...args: (string | number)[]) => {
+    const template = activeDict[key] ?? key;
+    return args.reduce(
+      (text, item, index) =>
+        text.replace(new RegExp(`\\{${index}\\}`, 'g'), String(item)),
+      template,
+    );
+  },
+}));
 
 const baseInteraction: McpAskInteraction = {
   toolCallId: 'tc-1',
@@ -58,6 +114,7 @@ const baseInteraction: McpAskInteraction = {
 
 describe('buildMcpAskResumeMessage', () => {
   it('formats submitted answers as user-friendly label value lines', () => {
+    activeDict = zhCnResumeDict;
     const message = buildMcpAskResumeMessage(baseInteraction, {
       interventionId: 'ask-1',
       revision: 1,
@@ -74,7 +131,6 @@ describe('buildMcpAskResumeMessage', () => {
     expect(message).toBe(
       [
         '我已填写「请选择继续方式」，表单内容如下：',
-        '',
         '选项：先跑测试',
         '补充说明：先跑关键链路',
         '检查项：代码检查、单元测试',
@@ -85,6 +141,7 @@ describe('buildMcpAskResumeMessage', () => {
   });
 
   it('keeps unknown fields readable without JSON blocks', () => {
+    activeDict = zhCnResumeDict;
     const message = buildMcpAskResumeMessage(baseInteraction, {
       interventionId: 'ask-1',
       revision: 1,
@@ -103,6 +160,7 @@ describe('buildMcpAskResumeMessage', () => {
   });
 
   it('uses custom radio input as the field value', () => {
+    activeDict = zhCnResumeDict;
     const message = buildMcpAskResumeMessage(
       {
         ...baseInteraction,
@@ -151,6 +209,7 @@ describe('buildMcpAskResumeMessage', () => {
   });
 
   it('formats cancel, skip, and timeout as normal chat messages', () => {
+    activeDict = zhCnResumeDict;
     const commonPayload = {
       interventionId: 'ask-1',
       revision: 1,
@@ -176,5 +235,57 @@ describe('buildMcpAskResumeMessage', () => {
         action: 'timeout',
       }),
     ).toBe('「请选择继续方式」已超时，没有收到表单答案。');
+  });
+
+  it('uses English templates when locale dict is English', () => {
+    activeDict = enUsResumeDict;
+    const message = buildMcpAskResumeMessage(baseInteraction, {
+      interventionId: 'ask-1',
+      revision: 1,
+      source: 'mcp_ask',
+      protocol: 'mcp',
+      action: 'submit',
+      formData: {
+        confirmed: true,
+      },
+    });
+
+    expect(message).toContain('I answered "请选择继续方式". Form details:');
+    expect(message).toContain('confirmed: Yes');
+  });
+});
+
+describe('isMcpAskResumeMessageForInteraction', () => {
+  it('matches resume messages across supported locales and legacy Chinese text', () => {
+    activeDict = enUsResumeDict;
+    const title = '请选择继续方式';
+
+    expect(
+      isMcpAskResumeMessageForInteraction(
+        '我已填写「请选择继续方式」，表单内容如下：\n选项：先跑测试',
+        baseInteraction,
+      ),
+    ).toBe(true);
+
+    expect(
+      isMcpAskResumeMessageForInteraction(
+        `I answered "${title}". Form details:\nchoice: test`,
+        baseInteraction,
+      ),
+    ).toBe(true);
+
+    expect(
+      isMcpAskResumeMessageForInteraction(
+        '我取消了「请选择继续方式」。',
+        baseInteraction,
+      ),
+    ).toBe(true);
+
+    expect(
+      isMcpAskResumeMessageForInteraction(
+        'unrelated user message',
+        baseInteraction,
+      ),
+    ).toBe(false);
   });
 });
