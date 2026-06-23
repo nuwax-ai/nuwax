@@ -458,6 +458,8 @@ export interface ChatViewProps {
   conversationId?: string | number;
   // 是否显示状态描述
   showStatusDesc?: boolean;
+  // debug 图标显隐控制
+  showDebug?: boolean;
   onAcpPermissionRespond?: (
     interaction: AcpPermissionInteraction,
     acpResponse: AcpRequestPermissionResponse,

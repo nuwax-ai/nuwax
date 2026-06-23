@@ -1,5 +1,6 @@
 import AgentSidebar, { AgentSidebarRef } from '@/components/AgentSidebar';
 import {
+  ConversationBottomConsole,
   CopyToSpaceComponent,
   PagePreviewIframe,
 } from '@/components/business-component';
@@ -15,6 +16,7 @@ import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
 import { useNavigationGuard } from '@/hooks/useNavigationGuard';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
 import useSubscription from '@/hooks/useSubscription';
+import useTerminalWsUrl from '@/hooks/useTerminalWsUrl';
 
 import { t } from '@/services/i18nRuntime';
 import {
@@ -38,12 +40,17 @@ import {
 } from '@/components/business-component/FileTreeGitSourcePanel';
 import type { FileTreeContainerProps } from '@/components/business-component/FileTreeGitSourcePanel/types/file-tree-git-source';
 import { useFileTreePreviewView } from '@/components/business-component/FileTreePreviewPanel/hooks/useFileTreePreviewView';
+import TooltipIcon from '@/components/custom/TooltipIcon';
 import { apiUpdateStaticFile } from '@/services/vncDesktop';
 import type { UpdateFileInfo } from '@/types/interfaces/fileTree';
 import type { StaticFileInfo } from '@/types/interfaces/vncDesktop';
 import { updateFilesListContent } from '@/utils/fileTree';
 import { jumpToPageDevelop } from '@/utils/router';
-import { LoadingOutlined } from '@ant-design/icons';
+import {
+  TTYD_TERMINAL_WIRE_PROTOCOL,
+  TTYD_TERMINAL_WS_SUBPROTOCOLS,
+} from '@/utils/terminalWsUrl';
+import { LoadingOutlined, ThunderboltOutlined } from '@ant-design/icons';
 import { Form } from 'antd';
 import classNames from 'classnames';
 import React, {
@@ -256,7 +263,6 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   const { pagePreviewData, showPagePreview, hidePagePreview } =
     useModel('chat');
 
-  const { isMobile } = useModel('layout');
   // 会话记录
   const { runHistoryItem } = useModel('conversationHistory');
 
@@ -557,6 +563,21 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     onSaveFileContentSuccessRef: refreshGitListRef,
   });
 
+  /** 存在有效消息列表时才允许查询 Git status；单条开场白不算有效消息 */
+  const hasValidMessageList = useMemo(() => {
+    const currentMessageList = messageList || [];
+    if (!currentMessageList.length) {
+      return false;
+    }
+    return !(
+      currentMessageList.length === 1 &&
+      currentMessageList[0]?.messageType === MessageTypeEnum.ASSISTANT
+    );
+  }, [messageList]);
+
+  /** 无有效消息列表时不允许刷新 Git status，逻辑与进入页面自动拉取 api/git/status 保持一致 */
+  const isGitStatusRefreshDisabled = !hasValidMessageList;
+
   // 文件视图 props
   const fileView = useFileTreePreviewView({
     taskAgentSelectedFileId,
@@ -588,7 +609,8 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     hideDesktop: effectiveAgent?.hideDesktop,
     staticFileBasePath: `/api/computer/static/${id}`,
     isDynamicTheme: true,
-    enableGitStatus: effectiveAgent?.type === AgentTypeEnum.TaskAgent,
+    enableGitStatus:
+      effectiveAgent?.type === AgentTypeEnum.TaskAgent && hasValidMessageList,
   });
 
   refreshGitListRef.current = fileView.refreshGitList;
@@ -607,6 +629,15 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   // Git 版本记录面板状态
   const [gitVersionPanelOpen, setGitVersionPanelOpen] =
     useState<boolean>(false);
+  /** 文件树预览区底部终端是否显示 */
+  const [terminalConsoleVisible, setTerminalConsoleVisible] =
+    useState<boolean>(false);
+  /** 文件树预览区底部终端是否已经渲染过，渲染后保持挂载避免 wss 重连 */
+  const [hasTerminalConsoleRendered, setHasTerminalConsoleRendered] =
+    useState<boolean>(false);
+
+  /** 终端 WebSocket 连接地址（ttyd） */
+  const terminalWsUrl = useTerminalWsUrl(id);
 
   /** 将文件路径添加到 .gitignore */
   const handleAddToGitignore = useCallback(
@@ -730,6 +761,8 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
 
   useEffect(() => {
     setGitVersionPanelOpen(false);
+    setTerminalConsoleVisible(false);
+    setHasTerminalConsoleRendered(false);
   }, [id]);
 
   useEffect(() => {
@@ -761,6 +794,37 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     ],
   );
 
+  /** 文件树预览区 Header 终端按钮 */
+  const terminalActionButton = useMemo(
+    () => (
+      <TooltipIcon
+        title={t('PC.Components.ConversationBottomConsole.tabTerminal')}
+        ariaLabel={t('PC.Components.ConversationBottomConsole.tabTerminal')}
+        className={cx(styles['panel-btn'])}
+        icon={<ThunderboltOutlined style={{ fontSize: 16 }} />}
+        onClick={() => {
+          setHasTerminalConsoleRendered(true);
+          setTerminalConsoleVisible((prev) => !prev);
+        }}
+      />
+    ),
+    [],
+  );
+
+  /** 文件树预览区底部终端，仅显示终端 Tab，不展示日志 */
+  const terminalConsole = hasTerminalConsoleRendered ? (
+    <ConversationBottomConsole
+      conversationId={finalSelectedId === '-1' ? id : undefined}
+      visible={terminalConsoleVisible}
+      wsUrl={terminalWsUrl}
+      wireProtocol={TTYD_TERMINAL_WIRE_PROTOCOL}
+      wsSubprotocols={[...TTYD_TERMINAL_WS_SUBPROTOCOLS]}
+      defaultActiveTab="terminal"
+      defaultLayoutMode="default"
+      showLogsTab={false}
+    />
+  ) : null;
+
   /** 文件树侧边栏 props */
   const fileSidebarProps = useMemo(
     () => ({
@@ -771,6 +835,8 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       diffFile: gitSourceControl.selectedDiffFile,
       gitVersionPanelOpen,
       onToggleGitVersionPanel: handleToggleGitVersionPanel,
+      afterGitVersionActions: terminalActionButton,
+      bottomContent: terminalConsole,
       gitVersionControl:
         effectiveAgent?.type === AgentTypeEnum.TaskAgent
           ? {
@@ -804,7 +870,10 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
         isCommitting:
           gitSourceControl.isCommitting || fileView.preview.isSavingFiles,
         isRefreshingGitList: fileView.isRefreshingGitList,
-        onRefreshGitList: fileView.refreshGitList,
+        refreshDisabled: isGitStatusRefreshDisabled,
+        onRefreshGitList: isGitStatusRefreshDisabled
+          ? undefined
+          : fileView.refreshGitList,
         onDiffFileSelect: gitSourceControl.handleDiffFileSelect,
         onOpenChangeFile: gitSourceControl.handleOpenChangeFile,
         onDiscardChanges: gitSourceControl.handleDiscardChange,
@@ -822,6 +891,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       fileView.changeFiles,
       fileView.isRefreshingGitList,
       fileView.refreshGitList,
+      isGitStatusRefreshDisabled,
       gitSourceControl.selectedDiffFile,
       gitSourceControl.selectedChangeFile,
       gitSourceControl.isCommitting,
@@ -834,6 +904,8 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       gitSourceControl.handleCommit,
       gitVersionPanelOpen,
       handleToggleGitVersionPanel,
+      terminalActionButton,
+      terminalConsole,
       fileView.gitBranch,
       viewMode,
       id,
@@ -849,11 +921,6 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
 
   // 设置最小宽度
   useEffect(() => {
-    // 移动端不设置最小宽度
-    if (isMobile) {
-      document.documentElement.style.minWidth = 'unset';
-      return;
-    }
     // 设置最小宽度-扩展页面/文件树
     if (pagePreviewData || isFileTreeVisible) {
       document.documentElement.style.minWidth = '1660px';
@@ -868,13 +935,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     return () => {
       document.documentElement.style.minWidth = 'unset';
     };
-  }, [
-    pagePreviewData,
-    isFileTreeVisible,
-    showSidebar,
-    isSidebarVisible,
-    isMobile,
-  ]);
+  }, [pagePreviewData, isFileTreeVisible, showSidebar, isSidebarVisible]);
 
   // 聊天会话头部相关 props
   const headerProps = {
@@ -988,7 +1049,6 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       <div
         className={cx(styles['main-area'], {
           [styles['main-area-expanded']]: isExpandedView,
-          [styles['main-area-mobile']]: isMobile,
         })}
       >
         {enableResizable ? (
@@ -1002,7 +1062,6 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
             left={
               effectiveAgent?.hideChatArea ? null : (
                 <LeftContent
-                  isMobile={isMobile}
                   isFileTreeVisible={isFileTreeVisible}
                   effectiveAgent={effectiveAgent}
                   isAppSidebarMode={isAppSidebarMode}
@@ -1017,9 +1076,6 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
               !isFileTreeVisible && (
                 <>
                   <PagePreviewIframe
-                    className={cx({
-                      [styles['mobile-page-preview-container']]: isMobile,
-                    })}
                     pagePreviewData={pagePreviewData}
                     showHeader={true}
                     onClose={hidePagePreview}
@@ -1068,7 +1124,6 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
                 }}
               >
                 <LeftContent
-                  isMobile={isMobile}
                   isFileTreeVisible={isFileTreeVisible}
                   effectiveAgent={effectiveAgent}
                   isAppSidebarMode={isAppSidebarMode}
@@ -1081,9 +1136,6 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
             {pagePreviewData && !isFileTreeVisible && (
               <div style={{ flex: '1', minWidth: 0 }}>
                 <PagePreviewIframe
-                  className={cx({
-                    [styles['mobile-page-preview-container']]: isMobile,
-                  })}
                   pagePreviewData={pagePreviewData}
                   showHeader={true}
                   onClose={hidePagePreview}

@@ -1,3 +1,11 @@
+import {
+  MIN_EN_I18N_MAP,
+  MIN_JA_I18N_MAP,
+  MIN_ZH_HK_I18N_MAP,
+  MIN_ZH_I18N_MAP,
+  MIN_ZH_TW_I18N_MAP,
+} from '@/constants/i18n.constants';
+import { dict } from '@/services/i18nRuntime';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import type {
   McpAskInteraction,
@@ -5,44 +13,154 @@ import type {
 } from '../types/mcpAskIntervention';
 import { parseInteractionFields } from './parseMcpAskSchema';
 
+/** MCP Ask resume 消息相关的 i18n key 前缀 */
+const I18N_PREFIX = 'PC.Components.McpAskQuestionCard';
+
+type McpAskResumeAction = 'submit' | 'cancel' | 'skip' | 'timeout';
+
+const RESUME_MESSAGE_KEY_BY_ACTION: Record<
+  Exclude<McpAskResumeAction, 'submit'>,
+  string
+> = {
+  cancel: `${I18N_PREFIX}.resumeCancelled`,
+  skip: `${I18N_PREFIX}.resumeSkipped`,
+  timeout: `${I18N_PREFIX}.resumeTimeout`,
+};
+
+const SUBMITTED_HEADER_KEY = `${I18N_PREFIX}.resumeSubmitted`;
+
+/** 各语言本地包，用于跨语言匹配历史 resume 消息 */
+const LOCAL_RESUME_MESSAGE_MAPS = [
+  MIN_ZH_I18N_MAP,
+  MIN_ZH_TW_I18N_MAP,
+  MIN_ZH_HK_I18N_MAP,
+  MIN_EN_I18N_MAP,
+  MIN_JA_I18N_MAP,
+] as const;
+
+/**
+ * 迁移期兜底：旧版硬编码中文 resume 消息首行片段。
+ * 用于识别切换语言前已发送的历史消息。
+ */
+const LEGACY_RESUME_MESSAGE_SNIPPETS_BY_ACTION: Record<
+  McpAskResumeAction,
+  (title: string) => string
+> = {
+  submit: (title) => `我已填写「${title}」`,
+  cancel: (title) => `我取消了「${title}」`,
+  skip: (title) => `我跳过了「${title}」`,
+  timeout: (title) => `「${title}」已超时`,
+};
+
+/**
+ * 按模板与占位符生成文案（不依赖当前运行时语言）。
+ */
+function formatTemplate(template: string, values: (string | number)[]): string {
+  let text = template;
+  values.forEach((value, index) => {
+    text = text.replace(new RegExp(`\\{${index}\\}`, 'g'), String(value ?? ''));
+  });
+  return text;
+}
+
+/**
+ * 从指定语言包读取 resume 消息模板并格式化。
+ */
+function formatResumeMessageFromMap(
+  map: Record<string, string>,
+  key: string,
+  title: string,
+): string | undefined {
+  const template = map[key];
+  if (!template?.trim()) {
+    return undefined;
+  }
+  return formatTemplate(template, [title]);
+}
+
+/**
+ * 收集某标题下所有语言的 resume 消息签名，供历史消息识别使用。
+ */
+function collectResumeMessageSignatures(
+  title: string,
+  action: McpAskResumeAction,
+): string[] {
+  const key =
+    action === 'submit'
+      ? SUBMITTED_HEADER_KEY
+      : RESUME_MESSAGE_KEY_BY_ACTION[action];
+  const signatures = new Set<string>();
+
+  LOCAL_RESUME_MESSAGE_MAPS.forEach((map) => {
+    const formatted = formatResumeMessageFromMap(map, key, title);
+    if (formatted) {
+      signatures.add(formatted);
+      // submit 消息可能有多行，仅用首行做 includes 匹配
+      if (action === 'submit') {
+        signatures.add(formatted.split('\n')[0]);
+      }
+    }
+  });
+
+  signatures.add(LEGACY_RESUME_MESSAGE_SNIPPETS_BY_ACTION[action](title));
+
+  return [...signatures];
+}
+
+function tMcpAsk(key: string, ...values: (string | number)[]): string {
+  return dict(key, ...values);
+}
+
 function stringifyDisplayValue(value: unknown): string {
   if (value === undefined || value === null || value === '') {
-    return '未填写';
+    return tMcpAsk(`${I18N_PREFIX}.notFilled`);
   }
   if (typeof value === 'boolean') {
-    return value ? '是' : '否';
+    return value
+      ? tMcpAsk('PC.Common.Global.yes')
+      : tMcpAsk('PC.Common.Global.no');
   }
   if (typeof value === 'string' || typeof value === 'number') {
     return String(value);
   }
+
+  const listSeparator = tMcpAsk(`${I18N_PREFIX}.listSeparator`);
+
   if (Array.isArray(value)) {
     if (!value.length) {
-      return '未填写';
+      return tMcpAsk(`${I18N_PREFIX}.notFilled`);
     }
     // 检查是否为文件上传数组 (UploadFileInfo[])
     if (value.length > 0 && typeof value[0] === 'object' && value[0] !== null) {
       const first = value[0] as any;
       if ('name' in first || 'url' in first || 'fileName' in first) {
         return value
-          .map((f: any) => f.name || f.fileName || f.url || '未知文件')
-          .join('、');
+          .map(
+            (f: any) =>
+              f.name ||
+              f.fileName ||
+              f.url ||
+              tMcpAsk(`${I18N_PREFIX}.unknownFile`),
+          )
+          .join(listSeparator);
       }
     }
-    return value.map(stringifyDisplayValue).join('、');
+    return value.map(stringifyDisplayValue).join(listSeparator);
   }
   if (typeof value === 'object') {
     // 检查是否为单个文件对象
     const obj = value as any;
     if (obj.name || obj.fileName || obj.url) {
-      return `📎 ${obj.name || obj.fileName || '文件'}`;
+      return `📎 ${obj.name || obj.fileName || tMcpAsk(`${I18N_PREFIX}.file`)}`;
     }
     const entries = Object.entries(value as Record<string, unknown>);
     if (!entries.length) {
-      return '未填写';
+      return tMcpAsk(`${I18N_PREFIX}.notFilled`);
     }
+    const objectEntrySeparator = tMcpAsk(`${I18N_PREFIX}.objectEntrySeparator`);
     return entries
       .map(([key, item]) => `${key}: ${stringifyDisplayValue(item)}`)
-      .join('，');
+      .join(objectEntrySeparator);
   }
   return String(value);
 }
@@ -75,10 +193,12 @@ function formatAskFormData(
   interaction: McpAskInteraction,
   formData?: Record<string, unknown>,
 ) {
+  const emptyFormContent = tMcpAsk(`${I18N_PREFIX}.emptyFormContent`);
   if (!formData || Object.keys(formData).length === 0) {
-    return '（无表单内容）';
+    return emptyFormContent;
   }
 
+  const labelSeparator = tMcpAsk(`${I18N_PREFIX}.labelSeparator`);
   const fields = parseInteractionFields(interaction.input.ui);
   const consumedKeys = new Set<string>();
   const lines = fields
@@ -96,27 +216,33 @@ function formatAskFormData(
         Object.prototype.hasOwnProperty.call(formData, otherField)
       ) {
         consumedKeys.add(otherField);
-        return `${label}：${stringifyDisplayValue(formData[otherField])}`;
+        return `${label}${labelSeparator}${stringifyDisplayValue(
+          formData[otherField],
+        )}`;
       }
       const value = formatFieldValue(
         formData[field.name],
         field.enumValues,
         field.enumLabels,
       );
-      return `${label}：${value}`;
+      return `${label}${labelSeparator}${value}`;
     });
 
   Object.entries(formData).forEach(([key, value]) => {
     if (!consumedKeys.has(key)) {
-      lines.push(`${key}：${stringifyDisplayValue(value)}`);
+      lines.push(`${key}${labelSeparator}${stringifyDisplayValue(value)}`);
     }
   });
 
-  return lines.length ? lines.join('\n') : '（无表单内容）';
+  return lines.length ? lines.join('\n') : emptyFormContent;
 }
 
 export function getMcpAskResumeTitle(interaction: McpAskInteraction): string {
-  return interaction.input.title || interaction.input.ui.title || '这次提问';
+  return (
+    interaction.input.title ||
+    interaction.input.ui.title ||
+    tMcpAsk(`${I18N_PREFIX}.defaultTitle`)
+  );
 }
 
 export function buildMcpAskResumeMessage(
@@ -126,18 +252,17 @@ export function buildMcpAskResumeMessage(
   const title = getMcpAskResumeTitle(interaction);
 
   if (payload.action === 'cancel') {
-    return `我取消了「${title}」。`;
+    return tMcpAsk(RESUME_MESSAGE_KEY_BY_ACTION.cancel, title);
   }
   if (payload.action === 'skip') {
-    return `我跳过了「${title}」。`;
+    return tMcpAsk(RESUME_MESSAGE_KEY_BY_ACTION.skip, title);
   }
   if (payload.action === 'timeout') {
-    return `「${title}」已超时，没有收到表单答案。`;
+    return tMcpAsk(RESUME_MESSAGE_KEY_BY_ACTION.timeout, title);
   }
 
   return [
-    `我已填写「${title}」，表单内容如下：`,
-    '',
+    tMcpAsk(SUBMITTED_HEADER_KEY, title),
     formatAskFormData(interaction, payload.formData),
   ].join('\n');
 }
@@ -150,11 +275,12 @@ export function isMcpAskResumeMessageForInteraction(
     return false;
   }
   const title = getMcpAskResumeTitle(interaction);
-  return (
-    text.includes(`我已填写「${title}」`) ||
-    text.includes(`我取消了「${title}」`) ||
-    text.includes(`我跳过了「${title}」`) ||
-    text.includes(`「${title}」已超时`)
+  const actions: McpAskResumeAction[] = ['submit', 'cancel', 'skip', 'timeout'];
+
+  return actions.some((action) =>
+    collectResumeMessageSignatures(title, action).some((signature) =>
+      text.includes(signature),
+    ),
   );
 }
 

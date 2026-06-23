@@ -25,6 +25,7 @@ import { LoadingOutlined } from '@ant-design/icons';
 import { Form, FormInstance, Spin } from 'antd';
 import React, { MutableRefObject } from 'react';
 import VersionAction from '../../../components/VersionAction';
+import { clearPendingNodeCreateSession } from '../../utils/nodeCreateSession';
 import { returnBackgroundColor, returnImg } from '../../utils/workflowV3';
 import GraphContainer from '../graph/GraphContainer';
 import NodePanelDrawer from '../panels/PropertyPanel';
@@ -297,7 +298,10 @@ const WorkflowLayout: React.FC<WorkflowLayoutProps> = ({
             status: AgentAddComponentStatusEnum.Added,
           },
         ]}
-        onCancel={() => setOpen(false)}
+        onCancel={() => {
+          clearPendingNodeCreateSession();
+          setOpen(false);
+        }}
       />
 
       <TestRun

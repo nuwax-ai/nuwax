@@ -1401,7 +1401,7 @@ export default () => {
       attachments,
       id: uuidv4(),
       messageType: MessageTypeEnum.USER,
-    };
+    } as MessageInfo;
 
     const currentMessageId = uuidv4();
     const perfLifecycle = perfTracker.createLifecycle(

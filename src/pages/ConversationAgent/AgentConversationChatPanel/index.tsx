@@ -106,6 +106,7 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
           conversationInfo?.taskStatus === TaskStatus.EXECUTING
         }
         messageBottomMode="chat"
+        showDebug={false}
         chatSuggestList={chatSuggestList}
         agentInfo={{
           ...conversationInfo?.agent,

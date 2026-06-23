@@ -31,6 +31,8 @@ export enum NodeTypeEnum {
   // Database = 'Database',
   // 知识库
   Knowledge = 'Knowledge',
+  // 知识库写入
+  KnowledgeInsert = 'KnowledgeInsert',
   // http
   HTTPRequest = 'HTTPRequest',
   // 问答
