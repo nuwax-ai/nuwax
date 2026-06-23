@@ -75,6 +75,7 @@ const workflowCreatedTabs = CREATED_TABS.filter((item) =>
   [
     AgentComponentTypeEnum.Plugin,
     AgentComponentTypeEnum.Workflow,
+    AgentComponentTypeEnum.Knowledge,
     AgentComponentTypeEnum.Table,
     AgentComponentTypeEnum.MCP,
   ].includes(item.key),

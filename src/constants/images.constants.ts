@@ -49,6 +49,7 @@ import { ReactComponent as ICON_WORKFLOW_DOCUMENT_EXTRACTION } from '@/assets/wo
 import { ReactComponent as ICON_WORKFLOW_HTTP_REQUEST } from '@/assets/workflow/workflow-HTTPRequest.svg';
 import { ReactComponent as ICON_WORKFLOW_INTENT_RECOGNITION } from '@/assets/workflow/workflow-IntentRecognition.svg';
 import { ReactComponent as ICON_WORKFLOW_KNOWLEDGE_BASE } from '@/assets/workflow/workflow-Knowledge.svg';
+import { ReactComponent as ICON_WORKFLOW_KNOWLEDGE_INSERT } from '@/assets/workflow/workflow-KnowledgeInsert.svg';
 import { ReactComponent as ICON_WORKFLOW_LLM } from '@/assets/workflow/workflow-LLM.svg';
 import { ReactComponent as ICON_WORKFLOW_LONG_TERM_MEMORY } from '@/assets/workflow/workflow-LongTermMemory.svg';
 import { ReactComponent as ICON_WORKFLOW_LOOP } from '@/assets/workflow/workflow-Loop.svg';
@@ -74,6 +75,7 @@ import BG_ICON_WORKFLOW_DOCUMENT_EXTRACTION from '@/assets/workflow/workflow-Doc
 import BG_ICON_WORKFLOW_HTTP_REQUEST from '@/assets/workflow/workflow-HTTPRequest.svg';
 import BG_ICON_WORKFLOW_INTENT_RECOGNITION from '@/assets/workflow/workflow-IntentRecognition.svg';
 import BG_ICON_WORKFLOW_KNOWLEDGE_BASE from '@/assets/workflow/workflow-Knowledge.svg';
+import BG_ICON_WORKFLOW_KNOWLEDGE_INSERT from '@/assets/workflow/workflow-KnowledgeInsert.svg';
 import BG_ICON_WORKFLOW_LLM from '@/assets/workflow/workflow-LLM.svg';
 import BG_ICON_WORKFLOW_LONG_TERM_MEMORY from '@/assets/workflow/workflow-LongTermMemory.svg';
 import BG_ICON_WORKFLOW_LOOP from '@/assets/workflow/workflow-Loop.svg';
@@ -108,6 +110,7 @@ export {
   BG_ICON_WORKFLOW_HTTP_REQUEST,
   BG_ICON_WORKFLOW_INTENT_RECOGNITION,
   BG_ICON_WORKFLOW_KNOWLEDGE_BASE,
+  BG_ICON_WORKFLOW_KNOWLEDGE_INSERT,
   BG_ICON_WORKFLOW_LLM,
   BG_ICON_WORKFLOW_LONG_TERM_MEMORY,
   BG_ICON_WORKFLOW_LOOP,
@@ -175,6 +178,7 @@ export {
   ICON_WORKFLOW_HTTP_REQUEST,
   ICON_WORKFLOW_INTENT_RECOGNITION,
   ICON_WORKFLOW_KNOWLEDGE_BASE,
+  ICON_WORKFLOW_KNOWLEDGE_INSERT,
   ICON_WORKFLOW_LLM,
   ICON_WORKFLOW_LONG_TERM_MEMORY,
   ICON_WORKFLOW_LOOP,
