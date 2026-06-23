@@ -641,14 +641,21 @@ const AppDev: React.FC = () => {
     return fileManagement.fileTreeState.data;
   }, [fileManagement.fileTreeState.data]);
 
-  /** 进入页面且文件树已有文件时，自动拉取 Git status（每个 projectId 仅一次） */
+  /** 排除新建流程中的临时节点，避免点击新建时误触发 Git status */
+  const stablePersistedFilesCount = useMemo(() => {
+    return stableCurrentFiles.filter(
+      (file) => file.status !== 'create' && !file.id?.includes('__new__'),
+    ).length;
+  }, [stableCurrentFiles]);
+
+  /** 进入页面且文件树已有持久化文件时，自动拉取 Git status */
   useEffect(() => {
-    if (!projectId || stableCurrentFiles.length === 0) {
+    if (!projectId || stablePersistedFilesCount === 0) {
       return;
     }
 
     void refreshGitListAfterSaveRef.current();
-  }, [projectId, stableCurrentFiles.length]);
+  }, [projectId, stablePersistedFilesCount]);
 
   /** 编辑器内容变更：同步本地状态并防抖自动保存 */
   const handleEditorContentChange = useCallback(
