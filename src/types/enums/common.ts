@@ -89,6 +89,55 @@ export enum NodeTypeEnum {
   TableSQL = 'TableSQL',
   // mcp
   MCP = 'Mcp',
+  // 智能体（AgentFlow 专用）
+  Agent = 'Agent',
+  // 评估验证（AgentFlow 专用）
+  EvalGate = 'EvalGate',
+  // 人类介入：询问 / 审批（AgentFlow 专用）
+  HumanInteraction = 'HumanInteraction',
+  // 三方平台连接器（AgentFlow 专用，dify / n8n / coze / ragflow）
+  ExternalConnector = 'ExternalConnector',
+  // 路由决策：AI 决策走哪条分支（AgentFlow 专用）
+  RouteDecision = 'RouteDecision',
+}
+
+// 流类型：Workflow（严格连线）/ AgentFlow（AI 驱动 + RunContext）
+export enum FlowKindEnum {
+  Workflow = 'Workflow',
+  AgentFlow = 'AgentFlow',
+}
+
+// HITL 模式
+export enum HitlModeEnum {
+  Ask = 'ask',
+  Approve = 'approve',
+}
+
+// HITL 审批动作
+export enum HitlApprovalActionEnum {
+  Approve = 'approve',
+  Edit = 'edit',
+  Reject = 'reject',
+}
+
+// Agent 节点模式
+export enum AgentNodeModeEnum {
+  Platform = 'platform',
+  SubFlow = 'subflow',
+}
+
+// EvalGate validator 类型
+export enum EvalValidatorTypeEnum {
+  Rule = 'rule',
+  LlmJudge = 'llm-judge',
+}
+
+// 三方连接器 provider
+export enum ExternalConnectorProviderEnum {
+  Dify = 'dify',
+  N8n = 'n8n',
+  Coze = 'coze',
+  Ragflow = 'ragflow',
 }
 
 export enum DataTypeEnum {

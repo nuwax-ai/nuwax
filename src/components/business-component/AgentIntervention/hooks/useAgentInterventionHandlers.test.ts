@@ -57,16 +57,16 @@ function createMcpAskInteraction(
   return {
     input: {
       toolName: 'nuwax_ask_question',
-      schemaVersion: 'nuwaclaw.mcp_ask.v1',
+      schemaVersion: 'nuwax.mcp_ask.v2',
       requestId: 'req-001',
       revision: 1,
       sessionId: 'sess-001',
       title: '测试问题',
       ui: {
-        version: 'nuwaclaw.interaction.v1',
+        version: 'nuwax.interaction.v2',
         presentation: 'inline',
         title: 'Q',
-        schema: {},
+        fields: [],
       },
     },
     toolCallId: 'tc-001',

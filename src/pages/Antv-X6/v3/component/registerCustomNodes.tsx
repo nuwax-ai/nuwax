@@ -1,6 +1,7 @@
 import EditableTitle from '@/components/editableTitle';
 import { ICON_WORKFLOW_LOOP } from '@/constants/images.constants';
 import useNodeSelection from '@/hooks/useNodeSelection';
+import { isAgentFlowType } from '@/pages/Antv-X6/v3/agentFlow/types';
 import {
   answerTypeMap,
   branchTypeMap,
@@ -22,13 +23,14 @@ import {
 import { ConditionBranchTypeEnum } from '@/types/enums/node';
 import { ChildNode, NodeProps, RunResultItem } from '@/types/interfaces/graph';
 import { ExceptionHandleConfig } from '@/types/interfaces/node';
-import { Path } from '@antv/x6';
 import { register } from '@antv/x6-react-shape';
 import { Tag } from 'antd';
 import React, { useCallback, useEffect, useState } from 'react';
 import '../indexV3.less';
 import { showExceptionHandle } from '../utils/graphV3';
 import './registerCustomNodes.less';
+// AgentFlowPortChips 已移除 — 对齐 workflow v3 样式
+// import AgentFlowPortChips from './agentFlowPortChips';
 import RunResult from './runResult';
 // 定义那些节点有试运行
 
@@ -77,6 +79,99 @@ const ConditionNode: React.FC<{ data: ChildNode }> = ({ data }) => {
           </div>
         );
       })}
+    </div>
+  );
+};
+
+// 路由决策节点（显示路由列表）
+const RouteDecisionNode: React.FC<{ data: ChildNode }> = ({ data }) => {
+  const nc = data.nodeConfig as any;
+  const routes: any[] = nc?.routes || [];
+
+  return (
+    <div className="route-decision-node-content">
+      {routes.map((route, i) => (
+        <div key={route.uuid || i} className="dis-left route-decision-item">
+          <span
+            className="route-decision-dot"
+            style={{ backgroundColor: '#fa8c16' }}
+          />
+          <span className="route-decision-name">
+            {route.routeName || route.name || `Route ${i + 1}`}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+// EvalGate 评估门控节点（显示通过/不达标分支）
+const EvalGateNode: React.FC<{ data: ChildNode }> = ({ data }) => {
+  const nc = data.nodeConfig as any;
+  const branches: any[] = nc?.branches || [];
+
+  return (
+    <div className="route-decision-node-content">
+      {branches.map((branch, i) => (
+        <div key={branch.uuid || i} className="dis-left route-decision-item">
+          <span
+            className="route-decision-dot"
+            style={{ backgroundColor: i === 0 ? '#52c41a' : '#ff4d4f' }}
+          />
+          <span className="route-decision-name">
+            {branch.name || (i === 0 ? '通过' : `分支 ${i + 1}`)}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+// HITL-Approve 人类审批节点（显示通过/拒绝分支）
+const HitlApproveNode: React.FC<{ data: ChildNode }> = ({ data }) => {
+  const nc = data.nodeConfig as any;
+  const branches: any[] = nc?.branches || [];
+
+  return (
+    <div className="route-decision-node-content">
+      {branches.map((branch, i) => (
+        <div key={branch.uuid || i} className="dis-left route-decision-item">
+          <span
+            className="route-decision-dot"
+            style={{
+              backgroundColor:
+                branch.uuid === 'approve' || branch.uuid === 'pass'
+                  ? '#52c41a'
+                  : '#ff4d4f',
+            }}
+          />
+          <span className="route-decision-name">
+            {branch.name || (i === 0 ? '通过' : '拒绝')}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+// HITL-Ask 人类询问节点（显示选项分支）
+const HitlAskOptionsNode: React.FC<{ data: ChildNode }> = ({ data }) => {
+  const nc = data.nodeConfig as any;
+  const options: any[] = nc?.askConfig?.options || [];
+
+  return (
+    <div className="route-decision-node-content">
+      {options.map((opt, i) => (
+        <div key={opt.uuid || i} className="dis-left route-decision-item">
+          <span
+            className="route-decision-dot"
+            style={{ backgroundColor: '#5147FF' }}
+          />
+          <span className="route-decision-name">
+            {opt.content || `选项 ${i + 1}`}
+          </span>
+        </div>
+      ))}
     </div>
   );
 };
@@ -318,6 +413,8 @@ export const GeneralNode: React.FC<NodeProps> = (props) => {
     NodeTypeEnum.IntentRecognition,
   ].includes(data.type);
   const marginBottom = isSpecialNode ? '10px' : '0';
+  // AgentFlow 节点走白卡片 + 端口 chip；其他节点保留原渐变 + 徽章
+  const isAgentFlow = isAgentFlowType(data.type);
 
   const handleEditingStatusChange = (val: boolean) => {
     // 编辑中不能移动节点
@@ -350,7 +447,9 @@ export const GeneralNode: React.FC<NodeProps> = (props) => {
   return (
     <>
       <div
-        className={`general-node ${selected ? 'selected-general-node' : ''}`} // 根据选中状态应用类名
+        className={`general-node ${selected ? 'selected-general-node' : ''} ${
+          isAgentFlow ? 'general-node-agent-flow' : ''
+        }`} // 根据选中状态应用类名
       >
         {/* 节点头部，包含标题、图像和操作菜单 */}
         <div
@@ -358,7 +457,7 @@ export const GeneralNode: React.FC<NodeProps> = (props) => {
           style={{
             background: gradientBackground,
             marginBottom,
-          }} // 应用渐变背景
+          }}
         >
           <div className="dis-left general-node-header-image">
             {returnImg(data.type)}
@@ -371,15 +470,45 @@ export const GeneralNode: React.FC<NodeProps> = (props) => {
             disabled={canNotEditNode}
             onEditingStatusChange={handleEditingStatusChange}
           />
+          {/* AgentFlow 节点描述行（小字灰色，节点原型 header 风格） */}
+          {isAgentFlow && (data as any).description && (
+            <div className="general-node-header-desc">
+              {(data as any).description}
+            </div>
+          )}
         </div>
 
         {data.type === NodeTypeEnum.Condition && <ConditionNode data={data} />}
+
+        {data.type === NodeTypeEnum.RouteDecision && (
+          <RouteDecisionNode data={data} />
+        )}
+
+        {data.type === NodeTypeEnum.EvalGate && <EvalGateNode data={data} />}
+
+        {data.type === NodeTypeEnum.HumanInteraction && (
+          <>
+            {(data.nodeConfig as any)?.hitlMode === 'approve' && (
+              <HitlApproveNode data={data} />
+            )}
+            {(data.nodeConfig as any)?.hitlMode !== 'approve' &&
+              ((data.nodeConfig as any)?.askConfig?.options?.length > 0 ||
+                (data.nodeConfig as any)?.askConfig?.answerType ===
+                  'SELECT') && <HitlAskOptionsNode data={data} />}
+          </>
+        )}
 
         {data.type === NodeTypeEnum.QA && <QANode data={data} />}
 
         {data.type === NodeTypeEnum.IntentRecognition && (
           <IntentRecognitionNode data={data} />
         )}
+
+        {/* AgentFlow 旧徽章：被 chip 浮层取代。仅当不是 AgentFlow 时保留原徽章逻辑。
+            当前所有使用徽章的 type 都是 AgentFlow 类型，因此整体退役，未来如要回退可恢复。 */}
+
+        {/* AgentFlow 端口 chip 已移除 — 对齐 workflow v3 样式，仅保留端口圆点 */}
+
         {/* 异常处理 */}
         {showException && (
           <ExceptionHandle data={data.nodeConfig.exceptionHandleConfig} />
@@ -493,11 +622,11 @@ export const createCurvePath = (s: Point, e: Point) => {
   const v1 = { x: newStartX + control, y: startY };
   const v2 = { x: newEndX - control, y: endY };
 
-  return Path.normalize(
-    `M ${newStartX} ${startY}
+  return `M ${newStartX} ${startY}
      L ${newStartX + (s.x < e.x ? startOffset : -startOffset)} ${startY}
      C ${v1.x} ${v1.y} ${v2.x} ${v2.y} ${newEndX} ${endY}
      L ${newEndX} ${endY}
-    `,
-  );
+    `
+    .replace(/\s+/g, ' ')
+    .trim();
 };

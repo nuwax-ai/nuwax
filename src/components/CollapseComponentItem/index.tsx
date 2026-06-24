@@ -2,6 +2,7 @@ import ConditionRender from '@/components/ConditionRender';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { PluginTypeEnum } from '@/types/enums/plugin';
 import type { CollapseComponentItemProps } from '@/types/interfaces/agentConfig';
+import { buildWorkflowRoute } from '@/utils/router';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
 import { Link } from 'umi';
@@ -34,7 +35,9 @@ const CollapseComponentItem: React.FC<CollapseComponentItemProps> = ({
         }
         // 工作流、表格、知识库等类型，跳转链接不同
         case AgentComponentTypeEnum.Workflow:
-          return `/space/${spaceId}/workflow/${targetId}`;
+          return targetId !== null
+            ? buildWorkflowRoute(spaceId, targetId, targetConfig?.workflowType)
+            : undefined;
         case AgentComponentTypeEnum.Table:
           return `/space/${spaceId}/table/${targetId}`;
         case AgentComponentTypeEnum.Knowledge:

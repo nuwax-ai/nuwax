@@ -1,7 +1,12 @@
 import {
+  AgentNodeModeEnum,
   AnswerTypeEnum,
   DataTypeEnum,
+  EvalValidatorTypeEnum,
   ExceptionHandleTypeEnum,
+  ExternalConnectorProviderEnum,
+  HitlApprovalActionEnum,
+  HitlModeEnum,
   NodeTypeEnum,
 } from '@/types/enums/common';
 import { ConditionBranchTypeEnum, PortGroupEnum } from '@/types/enums/node';
@@ -142,6 +147,96 @@ export interface ExceptionHandleConfig {
   exceptionHandleNodeIds?: number[];
 }
 
+// AgentFlow: EvalGate validator 失败回跳配置
+/** @deprecated v2 使用 branches[] + evalFailMsg 替代 */
+export interface EvalValidatorOnFail {
+  targetNodeId?: number | string;
+  appendPrompt: string;
+  reason: string;
+}
+
+// AgentFlow: EvalGate validator
+/** @deprecated v2 使用 evalItems (加权评分) 替代 */
+export interface EvalValidator {
+  uuid?: string;
+  name: string;
+  type: EvalValidatorTypeEnum;
+  config?: Record<string, any>;
+  onFail: EvalValidatorOnFail;
+}
+
+// AgentFlow: HITL ask 模式配置
+export interface HitlAskConfig {
+  question: string;
+  answerType: AnswerTypeEnum;
+  options?: QANodeOption[];
+  answerKey: string;
+  required?: boolean;
+}
+
+// AgentFlow: HITL approve 模式配置
+/** @deprecated v2 使用 confirmRole/approvalMode/instruction/branches 扁平字段替代 */
+export interface HitlApproveConfig {
+  actions: HitlApprovalActionEnum[];
+  promptToReviewer: string;
+  draftSource: string;
+  onReject?: { targetNodeId?: number | string } | 'fail';
+}
+
+// AgentFlow: 三方连接器配置
+export interface ExternalConnectorConfig {
+  endpoint: string;
+  authRef: string;
+  payloadTemplate: string;
+  responseMapping: Record<string, string>;
+}
+
+// ===== AgentFlow v2 新增接口 =====
+
+// 动态分支通用结构（HumanInteraction:approve 和 EvalGate 共用）
+export interface BranchConfig {
+  uuid: string;
+  name: string;
+  desc: string;
+  nextNodeIds: number[];
+}
+
+// Agent 节点上下文参数配置
+export interface ExtraParam {
+  name: string;
+  valueType: 'literal' | 'variable';
+  value?: string;
+  variableRef?: string;
+}
+
+export interface ContextParamConfig {
+  baseParam?: string;
+  upstreamOutputs?: string[];
+  extraParams?: ExtraParam[];
+}
+
+// EvalGate 加权评分项（替代 EvalValidator）
+export interface EvalItemConfig {
+  uuid: string;
+  name: string;
+  weight: number;
+  description: string;
+}
+
+// HumanInteraction:approve 外部确认通道
+export interface ChannelConfig {
+  type: string;
+  enabled: boolean;
+}
+
+// HumanInteraction:ask 表单字段定义
+export interface FormFieldConfig {
+  label: string;
+  type: 'radio' | 'checkbox' | 'input' | 'number' | 'textarea' | 'file';
+  required: boolean;
+  options?: string;
+}
+
 // 节点内部的config
 export interface NodeConfig {
   // 扩展信息，前端配置，设置节点的宽高，位置
@@ -251,6 +346,64 @@ export interface NodeConfig {
   exceptionHandleConfig?: ExceptionHandleConfig;
   toolName?: string;
   mcpId?: number;
+
+  // ===== AgentFlow 专用字段 =====
+  // Agent 节点
+  agentMode?: AgentNodeModeEnum;
+  agentId?: number;
+  /** @deprecated v2 不再使用子工作流概念 */
+  subFlowId?: number;
+  /** @deprecated v2 使用 contextParams.extraParams 替代 */
+  agentInputs?: Record<string, string>;
+  // Agent v2: 上下文传递
+  contextPassMode?: 'auto' | 'manual';
+  contextParams?: ContextParamConfig;
+  // EvalGate 节点
+  /** @deprecated v2 使用 branches[0].nextNodeIds 替代 */
+  passNextNodeIds?: number[];
+  /** @deprecated v2 使用 evalItems (加权评分) 替代 */
+  evalValidators?: EvalValidator[];
+  evalMaxRetry?: number;
+  /** @deprecated v2 使用 evalFailMsg 替代 */
+  evalOnMaxRetry?: 'fail' | 'continue' | 'human';
+  // EvalGate v2
+  evalItems?: EvalItemConfig[];
+  passThreshold?: number;
+  evalOutput?: boolean;
+  evalFailMsg?: string;
+  // 动态分支（HumanInteraction:approve 和 EvalGate 共用）
+  branches?: BranchConfig[];
+  // HumanInteraction 节点
+  hitlMode?: HitlModeEnum;
+  askConfig?: HitlAskConfig;
+  /** @deprecated v2 使用 confirmRole/approvalMode/instruction/branches 扁平字段替代 */
+  approveConfig?: HitlApproveConfig;
+  /** @deprecated v2 使用 branches[] 替代 */
+  approveNextNodeIds?: number[];
+  /** @deprecated v2 使用 branches[] 替代 */
+  rejectNextNodeIds?: number[];
+  // HITL:approve v2
+  confirmRole?: 'user' | 'external';
+  approvalMode?: string;
+  instruction?: string;
+  channels?: ChannelConfig[];
+  channelTimeout?: number;
+  escalation?: string;
+  channelRetry?: number;
+  // HITL:ask v2
+  replyMode?: 'text' | 'options' | 'form';
+  formFields?: FormFieldConfig[];
+  // ExternalConnector 节点
+  connectorProvider?: ExternalConnectorProviderEnum;
+  connectorConfig?: ExternalConnectorConfig;
+  // Plugin/Workflow v2 (AgentFlow-only)
+  inputPassMode?: 'auto' | 'manual';
+  triggerMode?: 'sync' | 'async';
+  // RunContext 显式读写声明（可选）
+  contextReads?: string[];
+  contextWrites?: string[];
+  /** @deprecated v2 Agent 节点使用 contextPassMode 替代 */
+  autoWirePrevOutput?: boolean;
 }
 
 export interface HttpNodeConfig extends NodeConfig {

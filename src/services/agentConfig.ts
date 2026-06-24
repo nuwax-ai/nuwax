@@ -1,6 +1,11 @@
 import type { AgentInterventionRespondRequest } from '@/components/business-component/AgentIntervention';
+import type {
+  RcoderNotifyResolvedRequest,
+  RcoderPermissionProgressData,
+} from '@/types/interfaces/acpPermission';
 import {
   AgentAddParams,
+  AgentAddResult,
   AgentCardInfo,
   AgentComponentAddParams,
   AgentComponentEventUpdateParams,
@@ -209,7 +214,7 @@ export async function apiAgentComponentAdd(
 // 新增智能体接口
 export async function apiAgentAdd(
   data: AgentAddParams,
-): Promise<RequestResponse<number>> {
+): Promise<RequestResponse<AgentAddResult>> {
   return request('/api/agent/add', {
     method: 'POST',
     data,
@@ -295,6 +300,18 @@ export async function apiAgentConversationChatStop(
 ): Promise<RequestResponse<null>> {
   return request(`/api/agent/conversation/chat/stop/${requestId}`, {
     method: 'POST',
+  });
+}
+
+// ACP 权限审批结果回调
+export function apiResolveAcpPermission(
+  data: RcoderNotifyResolvedRequest,
+): Promise<
+  RequestResponse<RcoderPermissionProgressData> | Record<string, any>
+> {
+  return request('/api/computer/notify-resolved', {
+    method: 'POST',
+    data,
   });
 }
 

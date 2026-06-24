@@ -23,6 +23,7 @@ import {
 } from '@/types/enums/agent';
 import {
   AgentArrangeConfigEnum,
+  AgentSubTypeEnum,
   AgentTypeEnum,
   ComponentSettingEnum,
   OpenCloseEnum,
@@ -344,14 +345,17 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     if (isExistComponent(AgentComponentTypeEnum.Plugin)) {
       tool.push(AgentArrangeConfigEnum.Plugin);
     }
-    if (isExistComponent(AgentComponentTypeEnum.Workflow)) {
+    if (
+      agentConfigInfo?.subType !== AgentSubTypeEnum.Flow &&
+      isExistComponent(AgentComponentTypeEnum.Workflow)
+    ) {
       tool.push(AgentArrangeConfigEnum.Workflow);
     }
     if (isExistComponent(AgentComponentTypeEnum.MCP)) {
       tool.push(AgentArrangeConfigEnum.MCP);
     }
     return tool;
-  }, [agentComponentList]);
+  }, [agentComponentList, agentConfigInfo?.subType]);
 
   // 知识 - 当前激活 tab 面板的 key
   const knowledgeActiveKey = useMemo(() => {
@@ -643,7 +647,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     asyncFun(true);
   };
 
-  // 工具列表
+  // 工具列表（AgentFlow 下隐藏「工作流」工具：其编排即画布本身）
   const ToolList: CollapseProps['items'] = [
     {
       key: AgentArrangeConfigEnum.Plugin,
@@ -726,7 +730,13 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         body: 'collapse-body',
       },
     },
-  ];
+  ].filter(
+    (item) =>
+      !(
+        agentConfigInfo?.subType === AgentSubTypeEnum.Flow &&
+        item?.key === AgentArrangeConfigEnum.Workflow
+      ),
+  );
 
   // 知识库
   const KnowledgeList: CollapseProps['items'] = [

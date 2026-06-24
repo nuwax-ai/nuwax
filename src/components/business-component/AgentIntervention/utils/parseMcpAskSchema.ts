@@ -1,4 +1,6 @@
 import type {
+  FieldOption,
+  FormField,
   InteractionUiOptions,
   InteractionUiSchema,
   InteractionUiStep,
@@ -7,6 +9,10 @@ import type {
 } from '../types/mcpAskIntervention';
 import { MCP_ASK_WIDGET_TYPES } from '../types/mcpAskIntervention';
 
+/**
+ * 解析后的字段:形状对齐渲染层(McpAskFormField)的读取路径,故渲染组件无需改动。
+ * `property` 为从 v2 FormField 重建的 JsonSchema 约束视图。
+ */
 export interface ParsedMcpAskField {
   name: string;
   property: JsonSchemaProperty;
@@ -17,234 +23,79 @@ export interface ParsedMcpAskField {
   enumLabels: string[];
 }
 
-const SCHEMA_META_KEYS = new Set([
-  'type',
-  'title',
-  'description',
-  'required',
-  'properties',
-  'schema',
-  'uiSchema',
-  'steps',
-]);
-
-function asRecord(value: unknown): Record<string, unknown> | undefined {
-  return value && typeof value === 'object'
-    ? (value as Record<string, unknown>)
-    : undefined;
-}
-
-function asStringArray(value: unknown): string[] {
-  return Array.isArray(value)
-    ? value.filter((item): item is string => typeof item === 'string')
-    : [];
-}
-
-function isJsonSchemaProperty(value: unknown): value is JsonSchemaProperty {
-  const record = asRecord(value);
-  if (!record) {
-    return false;
-  }
+function isKnownWidget(widget: unknown): widget is McpAskFieldWidget {
   return (
-    typeof record.type === 'string' ||
-    Array.isArray(record.type) ||
-    typeof record.title === 'string' ||
-    typeof record.description === 'string' ||
-    Array.isArray(record.enum) ||
-    !!record.items
+    typeof widget === 'string' &&
+    (MCP_ASK_WIDGET_TYPES as readonly string[]).includes(widget)
   );
 }
 
-function normalizeProperties(
-  value: unknown,
-): Record<string, JsonSchemaProperty> {
-  const record = asRecord(value);
-  if (!record) {
-    return {};
-  }
-
-  return Object.fromEntries(
-    Object.entries(record).filter(
-      ([key, property]) =>
-        !SCHEMA_META_KEYS.has(key) && isJsonSchemaProperty(property),
-    ),
-  ) as Record<string, JsonSchemaProperty>;
+function isFieldOption(opt: unknown): opt is FieldOption {
+  return (
+    !!opt &&
+    typeof opt === 'object' &&
+    typeof (opt as FieldOption).value === 'string' &&
+    typeof (opt as FieldOption).label === 'string'
+  );
 }
 
-function findSchemaCandidates(
-  ui: InteractionUiSchema,
-): Record<string, unknown>[] {
-  const schema = asRecord(ui.schema);
-  if (!schema) {
-    return [];
-  }
-
-  return [
-    schema,
-    asRecord(schema.schema),
-    asRecord(schema.properties),
-    asRecord(asRecord(schema.properties)?.schema),
-  ].filter(Boolean) as Record<string, unknown>[];
-}
-
-function getEffectiveUiSchema(
-  ui: InteractionUiSchema,
-): Record<string, unknown> | undefined {
-  if (ui.uiSchema) {
-    return ui.uiSchema;
-  }
-
-  for (const candidate of findSchemaCandidates(ui)) {
-    const nestedUiSchema =
-      asRecord(candidate.uiSchema) ??
-      asRecord(asRecord(candidate.properties)?.uiSchema);
-    if (nestedUiSchema) {
-      return nestedUiSchema;
-    }
-  }
-
-  return undefined;
-}
-
-export function getUiOptions(
-  uiSchema: Record<string, unknown> | undefined,
-  fieldName?: string,
-): InteractionUiOptions {
-  const root = asRecord(uiSchema?.['ui:options']) ?? {};
-  if (!fieldName) {
-    return root as InteractionUiOptions;
-  }
-  const fieldUi = asRecord(uiSchema?.[fieldName]);
-  const fieldOpts = asRecord(fieldUi?.['ui:options']) ?? {};
-  return { ...root, ...fieldOpts } as InteractionUiOptions;
-}
-
-function getRootSchema(ui: InteractionUiSchema): {
-  properties: Record<string, JsonSchemaProperty>;
-  required: string[];
-} {
-  for (const candidate of findSchemaCandidates(ui)) {
-    const nestedProperties = normalizeProperties(candidate.properties);
-    const properties = Object.keys(nestedProperties).length
-      ? nestedProperties
-      : normalizeProperties(candidate);
-    const directRequired = asStringArray(candidate.required);
-    const required = directRequired.length
-      ? directRequired
-      : asStringArray(asRecord(candidate.properties)?.required);
-    if (Object.keys(properties).length) {
-      return { properties, required };
-    }
-  }
-
+/** 把 v2 FormField 重建为 JsonSchema 约束视图(FormField 组件读取路径)。 */
+function buildProperty(field: FormField): JsonSchemaProperty {
   return {
-    properties: {},
-    required: [],
+    type: field.type,
+    title: field.title,
+    description: field.description,
+    minimum: field.minimum,
+    maximum: field.maximum,
+    multipleOf: field.multipleOf,
+    minLength: field.minLength,
+    maxLength: field.maxLength,
   };
 }
 
-function resolveEnumLabels(
-  enumValues: string[],
-  property: JsonSchemaProperty,
-  options: InteractionUiOptions,
-): string[] {
-  if (options.enumNames?.length === enumValues.length) {
-    return options.enumNames;
-  }
-  const propertyEnumNames = (
-    property as JsonSchemaProperty & {
-      enumNames?: string[];
-    }
-  ).enumNames;
-  if (propertyEnumNames?.length === enumValues.length) {
-    return propertyEnumNames;
-  }
-  return enumValues;
+function buildOptions(field: FormField): InteractionUiOptions {
+  return {
+    placeholder: field.placeholder,
+    allowCustom: field.allowCustom,
+    otherValue: field.otherValue,
+    otherField: field.otherField,
+    accept: field.accept,
+    multiple: field.multiple,
+  };
 }
 
-/** JSON Schema 主类型（忽略 null 联合） */
-export function getJsonSchemaPrimaryType(
-  prop: Pick<JsonSchemaProperty, 'type'>,
-): string {
-  if (Array.isArray(prop.type)) {
-    return prop.type.find((t) => t !== 'null') || 'string';
-  }
-  return prop.type || 'string';
+function parseField(field: FormField): ParsedMcpAskField {
+  const options = Array.isArray(field.options)
+    ? field.options.filter(isFieldOption)
+    : [];
+  return {
+    name: field.name,
+    property: buildProperty(field),
+    widget: isKnownWidget(field.widget) ? field.widget : 'text',
+    required: field.required === true,
+    options: buildOptions(field),
+    enumValues: options.map((opt) => opt.value),
+    enumLabels: options.map((opt) => opt.label),
+  };
 }
 
-function isKnownWidget(widget: string): widget is McpAskFieldWidget {
-  return (MCP_ASK_WIDGET_TYPES as readonly string[]).includes(widget);
-}
-
-export function resolveFieldWidget(
-  name: string,
-  prop: JsonSchemaProperty,
-  uiSchema?: Record<string, unknown>,
-): McpAskFieldWidget {
-  const fieldUi = asRecord(uiSchema?.[name]);
-  const widget = fieldUi?.['ui:widget'];
-  if (typeof widget === 'string' && isKnownWidget(widget)) {
-    return widget;
-  }
-
-  const options = getUiOptions(uiSchema, name);
-  const propType = getJsonSchemaPrimaryType(prop);
-
-  if (propType === 'array') {
-    const itemEnum = prop.items?.enum;
-    if (itemEnum?.length) {
-      return 'checkboxes';
-    }
-  }
-
-  if (prop.enum?.length) {
-    if (options.allowCustom || options.otherField) {
-      return 'radio-with-custom';
-    }
-    return 'radio';
-  }
-
-  if (propType === 'number' || propType === 'integer') {
-    return 'number';
-  }
-
-  if (propType === 'string') {
-    return fieldUi?.['ui:widget'] === 'textarea' ? 'textarea' : 'text';
-  }
-
-  return 'text';
-}
-
+/**
+ * 解析 v2 表单字段:遍历 `ui.fields[]`,数组顺序即展示顺序。
+ * 传入 `fieldNames`(wizard 步骤)时,按其顺序与名称过滤对应字段。
+ */
 export function parseInteractionFields(
   ui: InteractionUiSchema,
   fieldNames?: string[],
 ): ParsedMcpAskField[] {
-  const { properties, required } = getRootSchema(ui);
-  const uiSchema = getEffectiveUiSchema(ui);
-  const names = fieldNames ?? Object.keys(properties);
-
-  return names
-    .filter((name) => properties[name])
-    .map((name) => {
-      const property = properties[name];
-      const options = getUiOptions(uiSchema, name);
-      const widget = resolveFieldWidget(name, property, uiSchema);
-      const enumValues =
-        property.enum ??
-        (property.items?.enum && widget === 'checkboxes'
-          ? property.items.enum
-          : []);
-
-      return {
-        name,
-        property,
-        widget,
-        required: required.includes(name),
-        options,
-        enumValues,
-        enumLabels: resolveEnumLabels(enumValues, property, options),
-      };
-    });
+  const fields = ui.fields ?? [];
+  if (!fieldNames?.length) {
+    return fields.map(parseField);
+  }
+  const byName = new Map(fields.map((f) => [f.name, f]));
+  return fieldNames
+    .map((name) => byName.get(name))
+    .filter((f): f is FormField => !!f)
+    .map(parseField);
 }
 
 export function isWizardPresentation(ui: InteractionUiSchema): boolean {
@@ -260,9 +111,8 @@ export function getInteractionSteps(
   if (ui.steps?.length) {
     return ui.steps;
   }
-  const { properties } = getRootSchema(ui);
-  const allFields = Object.keys(properties);
-  if (!allFields.length) {
+  const fields = ui.fields ?? [];
+  if (!fields.length) {
     return [];
   }
   return [
@@ -270,17 +120,26 @@ export function getInteractionSteps(
       id: 'default',
       title: ui.title,
       description: ui.description,
-      fields: allFields,
+      fields: fields.map((f) => f.name),
     },
   ];
 }
 
+/** 是否允许跳过:v2 由 ui.allowSkip 顶层字段控制(旧 v1 的 uiSchema.ui:options.allowSkip 已移除)。 */
 export function isSkipAllowed(ui: InteractionUiSchema): boolean {
-  const rootOpts = getUiOptions(ui.uiSchema);
-  return rootOpts.allowSkip === true;
+  return ui.allowSkip === true;
 }
 
 export function getSkipLabel(ui: InteractionUiSchema): string | undefined {
-  const rootOpts = getUiOptions(ui.uiSchema);
-  return ui.skipLabel || rootOpts.skipLabel;
+  return ui.skipLabel;
+}
+
+/** JSON Schema 主类型(忽略 null 联合成员)。McpAskFormField 用于判断 integer。 */
+export function getJsonSchemaPrimaryType(
+  prop: Pick<JsonSchemaProperty, 'type'>,
+): string {
+  if (Array.isArray(prop.type)) {
+    return prop.type.find((t) => t !== 'null') || 'string';
+  }
+  return prop.type || 'string';
 }

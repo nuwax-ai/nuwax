@@ -5,6 +5,7 @@
 **导航**: [📚 文档索引](./README.md) | [⬆️ 主文档](../V1-FEATURES.md)
 
 **相关文档**:
+
 - [X6 自定义节点](./X6-CUSTOM-NODES.md) - 节点组件实现
 - [连接桩配置](./X6-PORTS.md) - 端口配置和交互
 - [X6 连线](./X6-EDGES.md) - 边的事件处理
@@ -32,7 +33,7 @@
 ```typescript
 const graph = new Graph({
   container: graphContainer,
-  
+
   // 网格配置
   grid: {
     visible: true,
@@ -40,25 +41,25 @@ const graph = new Graph({
     size: 22,
     args: { color: '#606060', thickness: 1 },
   },
-  
+
   // 自动调整大小
   autoResize: true,
-  
+
   // 允许拖拽画布
   panning: true,
-  
+
   // 鼠标滚轮缩放
   mousewheel: {
     enabled: true,
     zoomAtMousePosition: true,
     minScale: 0.2,
     maxScale: 3,
-    modifiers: ['ctrl', 'meta'],  // 需要按住 Ctrl/Cmd
+    modifiers: ['ctrl', 'meta'], // 需要按住 Ctrl/Cmd
   },
-  
+
   // 背景色
   background: { color: '#f2f2f2' },
-  
+
   // 高亮配置
   highlighting: {
     magnetAdsorbed: {
@@ -71,7 +72,7 @@ const graph = new Graph({
       },
     },
   },
-  
+
   // 节点移动控制
   interacting: {
     nodeMovable(view) {
@@ -93,7 +94,7 @@ graph.on('blank:click', () => {
   const cells = graph.getSelectedCells();
   graph.unselect(cells);
   graph.cleanSelection();
-  
+
   // 2. 关闭右侧抽屉
   onClickBlank?.();
 });
@@ -103,7 +104,7 @@ graph.on('blank:click', () => {
 
 ```typescript
 graph.on('scale', ({ sx }) => {
-  changeZoom(sx);  // 更新缩放比例状态
+  changeZoom(sx); // 更新缩放比例状态
 });
 ```
 
@@ -147,7 +148,7 @@ const graphChangeZoomToFit = () => {
 graph.on('node:mouseenter', ({ node }) => {
   const currentPorts = node.getPorts();
   const portStatusList = { in: 'active', out: 'active' };
-  
+
   // LoopStart 的 in 端口保持 normal
   if (node.getData()?.type === 'LoopStart') {
     portStatusList.in = 'normal';
@@ -156,13 +157,13 @@ graph.on('node:mouseenter', ({ node }) => {
   if (node.getData()?.type === 'LoopEnd') {
     portStatusList.out = 'normal';
   }
-  
+
   // 更新端口样式
   const updatedPorts = currentPorts.map((port) => {
     return handlePortConfig(
       port,
       portStatusList[port.group || 'in'],
-      port.attrs?.circle?.fill
+      port.attrs?.circle?.fill,
     );
   });
   node.prop('ports/items', updatedPorts);
@@ -172,7 +173,7 @@ graph.on('node:mouseenter', ({ node }) => {
 graph.on('node:mouseleave', ({ node }) => {
   const ports = node.getPorts();
   const updatedPorts = ports.map((port) =>
-    handlePortConfig(port, 'normal', port.attrs?.circle?.fill)
+    handlePortConfig(port, 'normal', port.attrs?.circle?.fill),
   );
   node.prop('ports/items', updatedPorts);
 });
@@ -197,22 +198,22 @@ const handlePortConfig = (
       },
     },
   };
-  
+
   return {
     normal: {
       ...baseConfig,
       attrs: {
         ...baseConfig.attrs,
-        circle: { ...baseConfig.attrs.circle, r: 3 },  // 小圆点
-        icon: { width: 0, height: 0, opacity: 0 },     // 隐藏图标
+        circle: { ...baseConfig.attrs.circle, r: 3 }, // 小圆点
+        icon: { width: 0, height: 0, opacity: 0 }, // 隐藏图标
       },
     },
     active: {
       ...baseConfig,
       attrs: {
         ...baseConfig.attrs,
-        circle: { ...baseConfig.attrs.circle, r: 8 },  // 大圆点
-        icon: { width: 10, height: 10, x: -5, y: -5, opacity: 1 },  // 显示图标
+        circle: { ...baseConfig.attrs.circle, r: 8 }, // 大圆点
+        icon: { width: 10, height: 10, x: -5, y: -5, opacity: 1 }, // 显示图标
       },
     },
   }[portStatus];
@@ -227,14 +228,14 @@ const handlePortConfig = (
 graph.on('node:selected', ({ node }) => {
   // 1. 更新层级
   changeZIndex(node);
-  
+
   const data = node.getData();
-  
+
   // 2. 如果是聚焦状态（通过 runResult 聚焦），不打开属性面板
   if (data.isFocus) {
     return;
   }
-  
+
   // 3. 打开右侧属性面板
   const newData = { ...data, id: node.id };
   changeDrawer(newData);
@@ -248,7 +249,7 @@ graph.on('node:selected', ({ node }) => {
 ```typescript
 graph.on('node:mousedown', ({ node }) => {
   const data = node.getData();
-  
+
   // 如果之前是聚焦状态，需要重新打开属性面板
   if (data.isFocus) {
     node.updateData({ isFocus: false });
@@ -266,22 +267,23 @@ graph.on('node:mousedown', ({ node }) => {
 ```typescript
 graph.on('node:moved', ({ node, e }) => {
   e.stopPropagation();
-  
+
   const { x, y } = node.getPosition();
   const data = node.getData();
-  
+
   // 1. 更新节点位置到 extension
   data.nodeConfig.extension = {
     ...data.nodeConfig.extension,
-    x, y,
+    x,
+    y,
   };
-  
+
   // 2. 处理循环内部节点
   if (data.loopNodeId) {
     const parentNode = graph.getCellById(data.loopNodeId);
     const _position = parentNode.getPosition();
     const _size = parentNode.getSize();
-    
+
     // 更新子节点位置
     const children = parentNode.getChildren();
     children?.forEach((item) => {
@@ -289,11 +291,14 @@ graph.on('node:moved', ({ node, e }) => {
         const childData = item.getData();
         if (childData.id === data.id) {
           childData.nodeConfig.extension = { x, y };
-          changeCondition({ nodeData: childData, update: NodeUpdateEnum.moved });
+          changeCondition({
+            nodeData: childData,
+            update: NodeUpdateEnum.moved,
+          });
         }
       }
     });
-    
+
     // 更新父节点尺寸和位置
     const parent = parentNode.getData();
     parent.nodeConfig.extension = {
@@ -302,25 +307,27 @@ graph.on('node:moved', ({ node, e }) => {
       x: _position.x,
       y: _position.y,
     };
-    parent.innerNodes = children?.filter(i => i.isNode()).map(i => i.getData());
+    parent.innerNodes = children
+      ?.filter((i) => i.isNode())
+      .map((i) => i.getData());
     changeCondition({ nodeData: parent, update: NodeUpdateEnum.moved });
     return;
   }
-  
+
   // 3. 处理循环节点本身
   if (data.type === NodeTypeEnum.Loop) {
     const children = node.getChildren();
     const innerNodes = data.innerNodes || [];
-    
+
     // 同步更新所有子节点位置
     children?.forEach((item) => {
       if (item.isNode()) {
         const position = item.getPosition();
         const childData = item.getData();
         childData.nodeConfig.extension = { x: position.x, y: position.y };
-        
+
         // 更新 innerNodes 列表
-        const index = innerNodes.findIndex(n => n.id === childData.id);
+        const index = innerNodes.findIndex((n) => n.id === childData.id);
         if (index === -1) {
           innerNodes.push(childData);
         } else {
@@ -328,18 +335,19 @@ graph.on('node:moved', ({ node, e }) => {
         }
       }
     });
-    
+
     data.innerNodes = innerNodes;
     const _size = node.getSize();
     data.nodeConfig.extension = {
-      x, y,
+      x,
+      y,
       width: _size.width,
       height: _size.height,
     };
     changeCondition({ nodeData: data, update: NodeUpdateEnum.moved });
     return;
   }
-  
+
   // 4. 普通节点
   changeCondition({ nodeData: data, update: NodeUpdateEnum.moved });
   changeZIndex(node);
@@ -356,11 +364,11 @@ graph.on('node:change:position', ({ node }) => {
   if (node.getData().type !== 'Loop') {
     node.toFront();
   }
-  
+
   // 调整父节点尺寸
   let parentNode = node.getParent();
   const data = node.getData();
-  
+
   if (!parentNode && data.loopNodeId) {
     const cell = graph.getCellById(data.loopNodeId);
     if (cell?.isNode()) {
@@ -368,7 +376,7 @@ graph.on('node:change:position', ({ node }) => {
       adjustParentSize(parentNode);
     }
   }
-  
+
   if (parentNode?.isNode() && parentNode.getData()?.type === 'Loop') {
     adjustParentSize(parentNode);
   }
@@ -391,10 +399,7 @@ graph.on('node:change:size', ({ node }) => {
 **文件**: `src/utils/graph.ts` - `registerNodeClickAndDblclick`
 
 ```typescript
-export const registerNodeClickAndDblclick = ({
-  graph,
-  changeZIndex,
-}) => {
+export const registerNodeClickAndDblclick = ({ graph, changeZIndex }) => {
   // 单击
   graph.on('node:click', ({ node }) => {
     setTimeout(() => {
@@ -403,22 +408,25 @@ export const registerNodeClickAndDblclick = ({
         node.prop('__click_type__', null);
         return;
       }
-      
+
       // 如果不是最高层级，更新层级
       if (!isHighestNodeZIndex(node)) {
         changeZIndex(node);
       }
     }, 0);
   });
-  
+
   // 双击
   graph.on('node:dblclick', ({ node, e: { target } }) => {
     const isHighest = isHighestNodeZIndex(node);
-    
+
     // 查找可编辑标题元素
-    const editableTitleEl = findElementClassName(target, 'node-editable-title-text');
+    const editableTitleEl = findElementClassName(
+      target,
+      'node-editable-title-text',
+    );
     if (!editableTitleEl) return;
-    
+
     if (!isHighest) {
       // 先提升层级，再触发编辑
       node.prop('__click_type__', 'dblclick');
@@ -428,7 +436,11 @@ export const registerNodeClickAndDblclick = ({
           node.prop('__click_flag__', true);
           graph.trigger('node:dblclick', {
             node,
-            e: { target: document.querySelector(`[data-id="${node.getData().id}"]`) },
+            e: {
+              target: document.querySelector(
+                `[data-id="${node.getData().id}"]`,
+              ),
+            },
           });
         }
       }, 0);
@@ -462,12 +474,12 @@ graph.on('node:custom:save', ({ data, payload }) => {
 ```typescript
 const changeZIndex = (node?: Node) => {
   const nodes = graph.getNodes();
-  
+
   // 1. 重置所有节点层级
   nodes.forEach((n) => {
     n.prop('zIndex', 4);
   });
-  
+
   // 2. Loop 节点设置为 5，其子节点设置为 8
   const loopNodes = nodes.filter((item) => item.getData().type === 'Loop');
   loopNodes.forEach((loopNode) => {
@@ -476,7 +488,7 @@ const changeZIndex = (node?: Node) => {
       child.prop('zIndex', 8);
     });
   });
-  
+
   // 3. 选中节点特殊处理
   if (node) {
     const data = node.getData();
@@ -505,25 +517,25 @@ const changeZIndex = (node?: Node) => {
 ```typescript
 graph.on('node:port:click', ({ node, port, e }) => {
   const isLoopNode = node.getData()?.loopNodeId;
-  
+
   if (isLoopNode) {
     const isIn = port?.includes('in');
     const parentNode = node.getParent()?.getData();
-    
+
     // 检查是否是循环的开始/结束节点
     const isStartNode = node.getData()?.id === parentNode.innerStartNodeId;
     const isEndNode = node.getData()?.id === parentNode.innerEndNodeId;
-    
+
     // 开始节点的 in 端口和结束节点的 out 端口不能快捷添加
     if ((isStartNode && isIn) || (isEndNode && !isIn)) {
       message.warning('循环节点的开始和结束节点不能快捷添加其他节点');
       return;
     }
   }
-  
+
   // 创建节点选择弹窗
   createNodeAndEdge(graph, e, node.getData(), port);
-  
+
   // 选中当前节点
   graph.select(node);
 });
@@ -539,7 +551,7 @@ const changePortSize = () => {
       ...p,
       attrs: {
         ...p.attrs,
-        circle: { r: 3 },           // 重置为小圆点
+        circle: { r: 3 }, // 重置为小圆点
         pointerEvents: 'all',
         event: 'mouseenter',
       },
@@ -561,13 +573,13 @@ const changePortSize = () => {
 graph.on('edge:mouseenter', ({ edge }) => {
   const sourceNode = edge.getSourceCell()?.getData();
   const targetNode = edge.getTargetCell()?.getData();
-  
+
   // 跳过循环内部边
   if ((sourceNode.type === 'Loop' && targetNode.loopNodeId) ||
       (sourceNode.loopNodeId && targetNode?.type === 'Loop')) {
     return;
   }
-  
+
   // 添加边中点按钮
   edge.addTools([{
     name: 'button',
@@ -592,7 +604,7 @@ graph.on('edge:mouseenter', ({ edge }) => {
 
 ```typescript
 graph.on('edge:mouseleave', ({ edge }) => {
-  edge.removeTools();  // 移除按钮工具
+  edge.removeTools(); // 移除按钮工具
 });
 ```
 
@@ -600,8 +612,8 @@ graph.on('edge:mouseleave', ({ edge }) => {
 
 ```typescript
 graph.on('edge:click', ({ edge }) => {
-  edge.attr('line/stroke', '#37D0FF');  // 选中时变蓝色
-  onClickBlank?.();  // 关闭属性面板
+  edge.attr('line/stroke', '#37D0FF'); // 选中时变蓝色
+  onClickBlank?.(); // 关闭属性面板
 });
 ```
 
@@ -609,7 +621,7 @@ graph.on('edge:click', ({ edge }) => {
 
 ```typescript
 graph.on('edge:unselected', ({ edge }) => {
-  edge.attr('line/stroke', '#5147FF');  // 恢复紫色
+  edge.attr('line/stroke', '#5147FF'); // 恢复紫色
 });
 ```
 
@@ -626,7 +638,7 @@ graph.on('edge:mousedown', () => {
 
 ```typescript
 graph.on('edge:removed', () => {
-  changePortSize();        // 重置端口尺寸
+  changePortSize(); // 重置端口尺寸
   updateEdgeArrows(graph); // 更新箭头显示
 });
 ```
@@ -653,7 +665,7 @@ const bindEventHandlers = ({
   modal,
   message,
 }: BindEventHandlers) => {
-  
+
   // 复制: Ctrl/Cmd + C
   graph.bindKey(['meta+c', 'ctrl+c'], () => {
     const cells = graph.getSelectedCells();
@@ -662,14 +674,14 @@ const bindEventHandlers = ({
     }
     return false;
   });
-  
+
   // 粘贴: Ctrl/Cmd + V
   graph.bindKey(['meta+v', 'ctrl+v'], () => {
     if (!graph.isClipboardEmpty()) {
       const cells = graph.getSelectedCells();
       if (cells?.length > 0) {
         const node = cells[0].getData();
-        
+
         // 禁止粘贴的节点类型
         const forbiddenTypes = [
           NodeTypeEnum.LoopStart,
@@ -678,40 +690,40 @@ const bindEventHandlers = ({
           NodeTypeEnum.Start,
           NodeTypeEnum.End,
         ];
-        
+
         if (forbiddenTypes.includes(node.type)) {
-          message.error(`不能粘贴${node.type === NodeTypeEnum.Start ? '开始' : 
+          message.error(`不能粘贴${node.type === NodeTypeEnum.Start ? '开始' :
                          node.type === NodeTypeEnum.End ? '结束' : '循环'}节点`);
           return;
         }
-        
+
         copyNode(node);
       }
       graph.cleanSelection();
     }
     return false;
   });
-  
+
   // 删除: Delete / Backspace
   graph.bindKey(['delete', 'backspace'], () => {
     const cells = graph.getSelectedCells();
     if (!cells.length) return false;
-    
+
     const _cell = cells[0];
-    
+
     if (_cell.isEdge()) {
       // 删除边 - 详见 eventHandlers.tsx
       handleEdgeDeletion(_cell, ...);
     } else {
       // 删除节点
       const nodeData = _cell.getData();
-      
+
       // 禁止删除的节点类型
       if (isResistNodeType.includes(nodeData.type)) {
         message.warning('不能删除开始节点和结束节点');
         return;
       }
-      
+
       // 循环节点删除确认
       if (nodeData.loopNodeId || nodeData.type === NodeTypeEnum.Loop) {
         if (nodeData.type === NodeTypeEnum.Loop) {
@@ -731,11 +743,11 @@ const bindEventHandlers = ({
         removeNode(_cell.id);
       }
     }
-    
+
     graph.removeCells(cells);
     return false;
   });
-  
+
   // 返回清理函数
   return () => {
     // 清理工作
@@ -747,10 +759,10 @@ const bindEventHandlers = ({
 
 ```typescript
 const isResistNodeType = [
-  NodeTypeEnum.Start,      // 开始节点
-  NodeTypeEnum.End,        // 结束节点
-  NodeTypeEnum.LoopStart,  // 循环开始节点
-  NodeTypeEnum.LoopEnd,    // 循环结束节点
+  NodeTypeEnum.Start, // 开始节点
+  NodeTypeEnum.End, // 结束节点
+  NodeTypeEnum.LoopStart, // 循环开始节点
+  NodeTypeEnum.LoopEnd, // 循环结束节点
 ];
 ```
 
@@ -764,11 +776,11 @@ const isResistNodeType = [
 
 ```typescript
 graph
-  .use(new Snapline())    // 对齐辅助线
-  .use(new Keyboard())    // 键盘快捷键
-  .use(new Clipboard())   // 剪贴板（复制/粘贴）
-  .use(new History())     // 历史记录（撤销/重做）
-  .use(new Selection())   // 节点选择
+  .use(new Snapline()) // 对齐辅助线
+  .use(new Keyboard()) // 键盘快捷键
+  .use(new Clipboard()) // 剪贴板（复制/粘贴）
+  .use(new History()) // 历史记录（撤销/重做）
+  .use(new Selection()); // 节点选择
 ```
 
 ### 6.2 Snapline 插件
@@ -782,6 +794,7 @@ graph
 ### 6.4 Clipboard 插件
 
 提供剪贴板功能：
+
 - `graph.copy(cells)` - 复制单元格
 - `graph.isClipboardEmpty()` - 检查剪贴板是否为空
 - `graph.paste()` - 粘贴
@@ -789,6 +802,7 @@ graph
 ### 6.5 History 插件
 
 提供撤销/重做功能：
+
 - `graph.canUndo()` - 是否可撤销
 - `graph.undo()` - 撤销
 - `graph.canRedo()` - 是否可重做
@@ -808,6 +822,7 @@ graph
 ### 6.6 Selection 插件
 
 提供节点选择功能：
+
 - `graph.select(node)` - 选中节点
 - `graph.unselect(cells)` - 取消选中
 - `graph.getSelectedCells()` - 获取选中的单元格
@@ -854,18 +869,18 @@ graph
 
 ## 8. 关键回调函数
 
-| 回调函数 | 触发时机 | 作用 |
-|---------|---------|------|
-| `changeDrawer` | 节点选中 | 打开/更新右侧属性面板 |
-| `changeCondition` | 节点属性/位置变化 | 更新节点配置并同步后端 |
-| `changeEdgeConfigWithRefresh` | 边创建/删除 | 更新连线并同步后端 |
-| `changeNodeConfigWithRefresh` | 特殊节点连线 | 更新节点配置并刷新 |
-| `changeZoom` | 画布缩放 | 更新缩放比例状态 |
-| `createNodeByPortOrEdge` | 端口/边上创建节点 | 创建新节点并连线 |
-| `onSaveNode` | 节点保存 | 保存节点名称等属性 |
-| `onClickBlank` | 点击空白/边 | 关闭属性面板 |
-| `copyNode` | 粘贴节点 | 复制节点 |
-| `removeNode` | 删除节点 | 删除节点并同步后端 |
+| 回调函数                      | 触发时机          | 作用                   |
+| ----------------------------- | ----------------- | ---------------------- |
+| `changeDrawer`                | 节点选中          | 打开/更新右侧属性面板  |
+| `changeCondition`             | 节点属性/位置变化 | 更新节点配置并同步后端 |
+| `changeEdgeConfigWithRefresh` | 边创建/删除       | 更新连线并同步后端     |
+| `changeNodeConfigWithRefresh` | 特殊节点连线      | 更新节点配置并刷新     |
+| `changeZoom`                  | 画布缩放          | 更新缩放比例状态       |
+| `createNodeByPortOrEdge`      | 端口/边上创建节点 | 创建新节点并连线       |
+| `onSaveNode`                  | 节点保存          | 保存节点名称等属性     |
+| `onClickBlank`                | 点击空白/边       | 关闭属性面板           |
+| `copyNode`                    | 粘贴节点          | 复制节点               |
+| `removeNode`                  | 删除节点          | 删除节点并同步后端     |
 
 ---
 

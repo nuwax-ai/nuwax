@@ -31,6 +31,7 @@ import { AgentComponentTypeEnum, HideDesktopEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum, PublishStatusEnum } from '@/types/enums/common';
 import { ModelTypeEnum } from '@/types/enums/modelConfig';
 import {
+  AgentSubTypeEnum,
   AgentTypeEnum,
   ApplicationMoreActionEnum,
   EditAgentShowType,
@@ -84,6 +85,7 @@ import React, {
 import { history, useLocation, useModel, useParams } from 'umi';
 import PagePreviewIframe from '../../components/business-component/PagePreviewIframe';
 import AgentArrangeConfig from './AgentArrangeConfig';
+import AgentFlowCanvas from './AgentFlowCanvas';
 import AgentHeader from './AgentHeader';
 import AgentModelSetting from './AgentModelSetting';
 import ArrangeTitle from './ArrangeTitle';
@@ -194,6 +196,18 @@ const EditAgent: React.FC = () => {
       conversationInfo?.sandboxServerId
     );
   }, [currentSelectedComputerId, conversationInfo]);
+
+  // 是否为 AgentFlow（通用型智能体的 Flow 子类型）。AgentFlow 与 TaskAgent 的唯一差异是
+  // 用「工作流画布」替代「工具下的工作流」，其余完全一致。所有 Flow 专属分支统一用此标志。
+  const isFlowAgent = agentConfigInfo?.subType === AgentSubTypeEnum.Flow;
+  // AgentFlow 画布所需的工作流 ID：优先取 workflowId，回退到组件列表中 Workflow 组件的 targetId
+  const agentFlowWorkflowId = useMemo(() => {
+    if (agentConfigInfo?.workflowId) return agentConfigInfo.workflowId;
+    const wfComponent = agentConfigInfo?.agentComponentConfigList?.find(
+      (c) => c.type === AgentComponentTypeEnum.Workflow,
+    );
+    return wfComponent?.targetId;
+  }, [agentConfigInfo]);
 
   useEffect(() => {
     // 查询可使用模型列表接口
@@ -1093,24 +1107,33 @@ const EditAgent: React.FC = () => {
                 <AgentArrangeConfig
                   extraComponent={
                     agentConfigInfo?.type === AgentTypeEnum.TaskAgent && (
-                      <SystemUserTipsWord
-                        className={cx(styles['prompt-wrapper'], 'w-full')}
-                        ref={systemUserTipsWordRef}
-                        agentConfigInfo={agentConfigInfo}
-                        valueUser={agentConfigInfo?.userPrompt}
-                        valueSystem={agentConfigInfo?.systemPrompt}
-                        onChangeUser={(value) =>
-                          handleChangeAgent(value, 'userPrompt')
-                        }
-                        onChangeSystem={(value) =>
-                          handleChangeAgent(value, 'systemPrompt')
-                        }
-                        onReplace={(value) =>
-                          handleChangeAgent(value!, 'systemPrompt')
-                        }
-                        variables={promptVariables}
-                        skills={promptTools}
-                      />
+                      <>
+                        {/* AgentFlow 画布（自带全屏）：位于系统提示词之前，与提示词同处编排流 */}
+                        {isFlowAgent && agentFlowWorkflowId && (
+                          <AgentFlowCanvas
+                            workflowId={agentFlowWorkflowId}
+                            spaceId={spaceId}
+                          />
+                        )}
+                        <SystemUserTipsWord
+                          className={cx(styles['prompt-wrapper'], 'w-full')}
+                          ref={systemUserTipsWordRef}
+                          agentConfigInfo={agentConfigInfo}
+                          valueUser={agentConfigInfo?.userPrompt}
+                          valueSystem={agentConfigInfo?.systemPrompt}
+                          onChangeUser={(value) =>
+                            handleChangeAgent(value, 'userPrompt')
+                          }
+                          onChangeSystem={(value) =>
+                            handleChangeAgent(value, 'systemPrompt')
+                          }
+                          onReplace={(value) =>
+                            handleChangeAgent(value!, 'systemPrompt')
+                          }
+                          variables={promptVariables}
+                          skills={promptTools}
+                        />
+                      </>
                     )
                   }
                   agentId={agentId}

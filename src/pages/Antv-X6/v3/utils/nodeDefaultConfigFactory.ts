@@ -5,8 +5,12 @@
  */
 
 import {
+  AgentNodeModeEnum,
   AnswerTypeEnum,
   DataTypeEnum,
+  ExternalConnectorProviderEnum,
+  HitlApprovalActionEnum,
+  HitlModeEnum,
   NodeShapeEnum,
   NodeTypeEnum,
 } from '@/types/enums/common';
@@ -57,6 +61,12 @@ export const NODE_DEFAULT_NAMES: Partial<Record<NodeTypeEnum, string>> = {
   [NodeTypeEnum.LoopCondition]: 'Loop Condition',
   [NodeTypeEnum.Interval]: 'Interval',
   [NodeTypeEnum.TextProcessing]: 'Text Processing',
+  // AgentFlow 专用
+  [NodeTypeEnum.Agent]: 'Agent',
+  [NodeTypeEnum.EvalGate]: 'Eval Gate',
+  [NodeTypeEnum.HumanInteraction]: 'Human Interaction',
+  [NodeTypeEnum.ExternalConnector]: 'External Connector',
+  [NodeTypeEnum.RouteDecision]: 'Route Decision',
 };
 
 /**
@@ -418,6 +428,105 @@ export function createDefaultNodeConfig(
         tableId: undefined,
         conditionType: 'AND',
         conditionArgs: [],
+        inputArgs: [],
+        outputArgs: [],
+      };
+
+    case NodeTypeEnum.Agent:
+      return {
+        ...baseConfig,
+        agentMode: AgentNodeModeEnum.Platform,
+        contextPassMode: 'auto',
+        systemPrompt: '',
+        inputArgs: [],
+        outputArgs: [
+          createDefaultArg({
+            key: 'output',
+            name: 'output',
+            dataType: DataTypeEnum.String,
+            description: 'Agent reply',
+            require: true,
+            systemVariable: true,
+          }),
+        ],
+      };
+
+    case NodeTypeEnum.EvalGate:
+      return {
+        ...baseConfig,
+        // v1 保留（向后兼容）
+        evalValidators: [],
+        passNextNodeIds: [],
+        // v2 新增
+        evalItems: [],
+        passThreshold: 80,
+        evalOutput: true,
+        evalFailMsg: '',
+        branches: [
+          { uuid: 'auto-pass', name: '通过', desc: '', nextNodeIds: [] },
+        ],
+        evalMaxRetry: 3,
+        inputArgs: [],
+        outputArgs: [],
+      };
+
+    case NodeTypeEnum.HumanInteraction:
+      return {
+        ...baseConfig,
+        hitlMode: HitlModeEnum.Ask,
+        // v1 ask 保留
+        askConfig: {
+          question: '',
+          answerType: AnswerTypeEnum.TEXT,
+          answerKey: 'userAnswer',
+        },
+        // v2 ask 新增
+        replyMode: 'text',
+        formFields: [],
+        // v1 approve 保留
+        approveConfig: {
+          actions: [
+            HitlApprovalActionEnum.Approve,
+            HitlApprovalActionEnum.Edit,
+            HitlApprovalActionEnum.Reject,
+          ],
+          promptToReviewer: '',
+          draftSource: '',
+        },
+        approveNextNodeIds: [],
+        rejectNextNodeIds: [],
+        // v2 approve 新增
+        confirmRole: 'user',
+        approvalMode: 'approve_reject',
+        instruction: '',
+        channels: [],
+        channelTimeout: 300,
+        escalation: 'skip',
+        channelRetry: 3,
+        inputArgs: [],
+        outputArgs: [],
+      };
+
+    case NodeTypeEnum.ExternalConnector:
+      return {
+        ...baseConfig,
+        connectorProvider: ExternalConnectorProviderEnum.Dify,
+        connectorConfig: {
+          endpoint: '',
+          authRef: '',
+          payloadTemplate: '',
+          responseMapping: {},
+        },
+        inputArgs: [],
+        outputArgs: [],
+      };
+
+    case NodeTypeEnum.RouteDecision:
+      return {
+        ...baseConfig,
+        routes: [],
+        extraPrompt: '',
+        modelId: undefined,
         inputArgs: [],
         outputArgs: [],
       };

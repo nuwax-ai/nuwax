@@ -9,9 +9,9 @@ import {
   AgentComponentTypeEnum,
   DefaultSelectedEnum,
 } from '@/types/enums/agent';
-import { AgentTypeEnum } from '@/types/enums/space';
+import { AgentSubTypeEnum, AgentTypeEnum } from '@/types/enums/space';
 import { AgentDetailDto, ModelOptionDto } from '@/types/interfaces/agent';
-import { message } from 'antd';
+import { message, Select } from 'antd';
 import classNames from 'classnames';
 import React, {
   useCallback,
@@ -28,6 +28,7 @@ const cx = classNames.bind(styles);
 
 export interface SubmitPayload {
   type: AgentComponentTypeEnum;
+  subType?: string;
   prompt: string;
   files?: any[];
   skillIds?: number[];
@@ -73,6 +74,17 @@ const PromptBox: React.FC<PromptBoxProps> = ({ onSubmit }) => {
 
   const [activeTab, setActiveTab] = useState<string>(
     AgentComponentTypeEnum.Agent,
+  );
+  // 智能体子类型选择（仅智能体 tab 下显示）
+  const subTypeOptions = [
+    { label: '问答型', value: AgentSubTypeEnum.ChatBot },
+    { label: '通用型', value: AgentSubTypeEnum.General },
+    { label: '自定义', value: AgentSubTypeEnum.Custom },
+    { label: 'AgentFlow', value: AgentSubTypeEnum.Flow },
+    { label: 'AgentGroup', value: AgentSubTypeEnum.Group },
+  ];
+  const [subType, setSubType] = useState<AgentSubTypeEnum>(
+    AgentSubTypeEnum.ChatBot,
   );
 
   const params = useParams();
@@ -168,6 +180,8 @@ const PromptBox: React.FC<PromptBoxProps> = ({ onSubmit }) => {
 
   const activeTabRef = useRef(activeTab);
   activeTabRef.current = activeTab;
+  const subTypeRef = useRef(subType);
+  subTypeRef.current = subType;
 
   const currentTab = tabs.find((t) => t.key === activeTab) || tabs[0];
 
@@ -190,6 +204,7 @@ const PromptBox: React.FC<PromptBoxProps> = ({ onSubmit }) => {
       Promise.resolve(
         onSubmit({
           type: activeTabRef.current as AgentComponentTypeEnum,
+          subType: subTypeRef.current,
           prompt: msg,
           files,
           skillIds,
@@ -206,6 +221,7 @@ const PromptBox: React.FC<PromptBoxProps> = ({ onSubmit }) => {
       selectedComputerId,
       agentMode,
       isSubmitting,
+      subType,
     ],
   );
 
@@ -249,7 +265,22 @@ const PromptBox: React.FC<PromptBoxProps> = ({ onSubmit }) => {
           ) : undefined
         }
         tabsSlot={
-          <TabsList tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <TabsList
+              tabs={tabs}
+              activeTab={activeTab}
+              onChange={setActiveTab}
+            />
+            {activeTab === AgentComponentTypeEnum.Agent && (
+              <Select
+                size="small"
+                value={subType}
+                onChange={(v) => setSubType(v as AgentSubTypeEnum)}
+                options={subTypeOptions}
+                style={{ width: 120 }}
+              />
+            )}
+          </div>
         }
       />
     </div>

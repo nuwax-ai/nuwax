@@ -80,7 +80,10 @@ function getBridgePerf(): NuwaPerfBridge | undefined {
   return (window as any).NuwaClawBridge?.perf;
 }
 
-function buildPayload(ctx: MessagePerfContext, extra: PerfPayload = {}): PerfPayload {
+function buildPayload(
+  ctx: MessagePerfContext,
+  extra: PerfPayload = {},
+): PerfPayload {
   return {
     cid: ctx.conversationId,
     mid: ctx.messageId,
@@ -118,7 +121,11 @@ function emitSummary(ctx: MessagePerfContext, reason?: string): void {
   );
 }
 
-function mark(stage: PerfStage, ctx: MessagePerfContext, extra?: PerfPayload): void {
+function mark(
+  stage: PerfStage,
+  ctx: MessagePerfContext,
+  extra?: PerfPayload,
+): void {
   const perf = getBridgePerf();
   if (!perf?.enabled?.()) return;
   trackStage(ctx, stage);
@@ -143,7 +150,10 @@ function markOnceWithFallback(
 }
 
 export const perfTracker = {
-  createLifecycle(conversationId: number, messageId: string): MessagePerfLifecycle {
+  createLifecycle(
+    conversationId: number,
+    messageId: string,
+  ): MessagePerfLifecycle {
     const normalizedConversationId = Number.isFinite(conversationId)
       ? conversationId
       : null;

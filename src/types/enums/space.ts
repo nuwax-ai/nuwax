@@ -23,6 +23,17 @@ export enum AgentTypeEnum {
   ChatBot = 'ChatBot',
   PageApp = 'PageApp',
   TaskAgent = 'TaskAgent',
+  AgentFlow = 'AgentFlow',
+  ConversationAgent = 'ConversationAgent',
+}
+
+// 智能体子类型枚举（创建时区分具体形态）
+export enum AgentSubTypeEnum {
+  ChatBot = 'ChatBot',
+  General = 'General',
+  Custom = 'Custom',
+  Flow = 'Flow',
+  Group = 'Group',
 }
 
 // 过滤状态枚举

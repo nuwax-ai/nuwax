@@ -1,6 +1,4 @@
 import type {
-  AcpPermissionInteraction,
-  AcpRequestPermissionResponse,
   AgentMode,
   McpAskInteraction,
 } from '@/components/business-component/AgentIntervention';
@@ -32,6 +30,10 @@ import type {
   BindConfigWithSub,
   UploadFileInfo,
 } from '@/types/interfaces/common';
+import type {
+  RcoderAcpPermissionInteraction,
+  RcoderRequestPermissionResponse,
+} from './acpPermission';
 
 // 会话聊天消息
 export interface ConversationChatMessage {
@@ -295,8 +297,8 @@ export interface MessageInfo extends ChatMessageDto {
   finalResult?: ConversationFinalResult;
   // 消息查询过程信息
   processingList?: ProcessingInfo[];
-  /** ACP permission approval 交互 */
-  acpPermissionInteractions?: AcpPermissionInteraction[];
+  // ACP 权限审批交互
+  acpPermissionInteractions?: RcoderAcpPermissionInteraction[];
   /** MCP ask/question 交互（toolName: nuwax_ask_question） */
   mcpAskInteractions?: McpAskInteraction[];
 }
@@ -460,9 +462,11 @@ export interface ChatViewProps {
   showStatusDesc?: boolean;
   // debug 图标显隐控制
   showDebug?: boolean;
+  // ACP 权限审批回调
   onAcpPermissionRespond?: (
-    interaction: AcpPermissionInteraction,
-    acpResponse: AcpRequestPermissionResponse,
+    interaction: RcoderAcpPermissionInteraction,
+    response: RcoderRequestPermissionResponse,
+    options?: { saveRule?: boolean },
   ) => void;
 }
 

@@ -43,7 +43,8 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({
         case ApplicationMoreActionEnum.Temporary_Session:
           return (
             hasPermission(PermissionsEnum.TempChat) &&
-            agentConfigInfo.type !== AgentTypeEnum.TaskAgent
+            agentConfigInfo.type !== AgentTypeEnum.TaskAgent &&
+            agentConfigInfo.type !== AgentTypeEnum.AgentFlow
           );
         // 独立会话
         case ApplicationMoreActionEnum.Independent_Session:
@@ -86,7 +87,7 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({
       content={agentConfigInfo.description}
       icon={agentConfigInfo.icon}
       defaultIcon={agentImage}
-      onClick={() => onClick(agentConfigInfo.id)}
+      onClick={() => onClick(agentConfigInfo.id, agentConfigInfo.type)}
       extra={
         <>
           <span className={cx('text-ellipsis', 'flex-1')}>
@@ -116,6 +117,10 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({
             {agentConfigInfo.type === AgentTypeEnum.TaskAgent ? (
               <Tag color="orange">
                 {dict('PC.Pages.SpaceDevelop.ApplicationItem.taskType')}
+              </Tag>
+            ) : agentConfigInfo.type === AgentTypeEnum.AgentFlow ? (
+              <Tag color="purple">
+                {dict('PC.Pages.SpaceDevelop.ApplicationItem.agentFlowType')}
               </Tag>
             ) : (
               <Tag color="green">

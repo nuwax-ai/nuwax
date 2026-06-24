@@ -3,16 +3,16 @@ import { describe, expect, it } from 'vitest';
 import { applyMcpAskToolCallSseEvent } from './applyMcpAskToolCallSseEvent';
 
 const baseAskInput = {
-  schemaVersion: 'nuwaclaw.mcp_ask.v1',
+  schemaVersion: 'nuwax.mcp_ask.v2',
   requestId: 'ask-1',
   revision: 1,
   sessionId: 'session-1',
   title: 'Need input',
   ui: {
-    version: 'nuwaclaw.interaction.v1',
+    version: 'nuwax.interaction.v2',
     presentation: 'inline',
     title: 'Need input',
-    schema: { type: 'object', properties: {} },
+    fields: [{ name: 'choice', title: '选项', widget: 'text' }],
   },
 };
 
@@ -195,32 +195,6 @@ describe('applyMcpAskToolCallSseEvent', () => {
     expect(patched?.mcpAskInteractions?.[0]?.input.requestId).toBe('ask-7');
   });
 
-  it('accepts nuwax namespace schema aliases during migration', () => {
-    const patched = applyMcpAskToolCallSseEvent(
-      {
-        messageType: 'agentSessionUpdate',
-        subType: 'tool_call',
-        data: {
-          toolCallId: 'tool-call-8',
-          rawInput: {
-            ...baseAskInput,
-            schemaVersion: 'nuwax.mcp_ask.v1',
-            requestId: 'ask-8',
-            toolName: 'nuwax_ask_question',
-            ui: {
-              ...baseAskInput.ui,
-              version: 'nuwax.interaction.v1',
-            },
-          },
-        },
-      } as any,
-      { id: 'msg-1' } as any,
-    );
-
-    expect(patched?.mcpAskInteractions?.[0]?.toolCallId).toBe('tool-call-8');
-    expect(patched?.mcpAskInteractions?.[0]?.input.requestId).toBe('ask-8');
-  });
-
   it('accepts agent input missing schemaVersion when ui.version is present', () => {
     const patched = applyMcpAskToolCallSseEvent(
       {
@@ -237,10 +211,10 @@ describe('applyMcpAskToolCallSseEvent', () => {
               sessionId: 'weather-dev',
               title: '确认方案',
               ui: {
-                version: 'nuwax.interaction.v1',
+                version: 'nuwax.interaction.v2',
                 presentation: 'modal',
                 title: '确认方案',
-                schema: { type: 'object', properties: {} },
+                fields: [{ name: 'confirm', title: '确认', widget: 'text' }],
               },
             },
           },
@@ -250,7 +224,7 @@ describe('applyMcpAskToolCallSseEvent', () => {
     );
 
     expect(patched?.mcpAskInteractions?.[0]?.input.schemaVersion).toBe(
-      'nuwax.mcp_ask.v1',
+      'nuwax.mcp_ask.v2',
     );
     expect(patched?.mcpAskInteractions?.[0]?.input.requestId).toBe(
       'weather-plan-confirm-5',
@@ -273,10 +247,10 @@ describe('applyMcpAskToolCallSseEvent', () => {
               sessionId: 'weather-dev',
               title: 'agent title',
               ui: {
-                version: 'nuwax.interaction.v1',
+                version: 'nuwax.interaction.v2',
                 presentation: 'modal',
                 title: 'agent title',
-                schema: { type: 'object', properties: {} },
+                fields: [{ name: 'confirm', title: '确认', widget: 'text' }],
               },
             },
             data: [
@@ -291,16 +265,18 @@ describe('applyMcpAskToolCallSseEvent', () => {
                     message: 'presented',
                     input: {
                       toolName: 'nuwax_ask_question',
-                      schemaVersion: 'nuwax.mcp_ask.v1',
+                      schemaVersion: 'nuwax.mcp_ask.v2',
                       requestId: 'weather-plan-confirm-5',
                       revision: 1,
                       sessionId: 'weather-dev',
                       title: 'canonical title',
                       ui: {
-                        version: 'nuwax.interaction.v1',
+                        version: 'nuwax.interaction.v2',
                         presentation: 'modal',
                         title: 'canonical title',
-                        schema: { type: 'object', properties: {} },
+                        fields: [
+                          { name: 'confirm', title: '确认', widget: 'text' },
+                        ],
                       },
                     },
                   }),
@@ -318,6 +294,49 @@ describe('applyMcpAskToolCallSseEvent', () => {
     );
     expect(patched?.mcpAskInteractions?.[0]?.input.toolName).toBe(
       'nuwax_ask_question',
+    );
+  });
+
+  it('accepts bare v2 input with no schemaVersion/ui.version (agent omits stamp fields)', () => {
+    const patched = applyMcpAskToolCallSseEvent(
+      {
+        messageType: 'agentSessionUpdate',
+        subType: 'tool_call',
+        data: {
+          toolCallId: 'tool-call-bare-v2',
+          rawInput: {
+            requestId: 'ask-bare',
+            revision: 1,
+            sessionId: 'sess-bare',
+            title: 'Bare v2',
+            // 无 schemaVersion、无 ui.version(agent 按"服务端盖戳"约定省略)
+            ui: {
+              presentation: 'inline',
+              title: 'Bare v2',
+              fields: [
+                {
+                  name: 'choice',
+                  title: '选项',
+                  widget: 'radio',
+                  options: [
+                    { value: 'a', label: '甲' },
+                    { value: 'b', label: '乙' },
+                  ],
+                },
+              ],
+            },
+          },
+        },
+      } as any,
+      { id: 'msg-1' } as any,
+    );
+
+    expect(patched?.mcpAskInteractions?.[0]?.toolCallId).toBe(
+      'tool-call-bare-v2',
+    );
+    expect(patched?.mcpAskInteractions?.[0]?.input.requestId).toBe('ask-bare');
+    expect(patched?.mcpAskInteractions?.[0]?.input.schemaVersion).toBe(
+      'nuwax.mcp_ask.v2',
     );
   });
 });

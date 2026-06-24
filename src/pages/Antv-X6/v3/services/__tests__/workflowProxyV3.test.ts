@@ -7,8 +7,9 @@
  * - 边增删
  * - 数据一致性验证
  */
-import { NodeTypeEnum } from '@/types/enums/common';
-import { ChildNode } from '@/types/interfaces/graph';
+import { NodeShapeEnum, NodeTypeEnum } from '@/types/enums/common';
+import { ConditionBranchTypeEnum } from '@/types/enums/node';
+import type { ChildNode } from '@/types/interfaces/graph';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { EdgeV3, WorkflowDataV3 } from '../../types/interfaces';
 import WorkflowProxyV3 from '../workflowProxyV3';
@@ -21,7 +22,7 @@ const createMockNode = (overrides: Partial<ChildNode>): ChildNode => ({
   name: 'Test Node',
   description: '',
   workflowId: 12345,
-  shape: 'custom-react',
+  shape: NodeShapeEnum.General,
   icon: '',
   nextNodeIds: [],
   nodeConfig: {
@@ -50,7 +51,7 @@ const createMockWorkflowData = (): WorkflowDataV3 => ({
       nextNodeIds: [3],
       nodeConfig: {
         extension: { x: 300, y: 200, width: 200, height: 150 },
-        modelId: 'gpt-4',
+        modelId: 4,
         skillComponentConfigs: [],
       },
     }),
@@ -89,8 +90,20 @@ const createMockConditionWorkflowData = (): WorkflowDataV3 => ({
       nodeConfig: {
         extension: { x: 300, y: 200 },
         conditionBranchConfigs: [
-          { uuid: 'branch-1', conditionArgs: [], nextNodeIds: [3] },
-          { uuid: 'branch-2', conditionArgs: [], nextNodeIds: [4] },
+          {
+            uuid: 'branch-1',
+            branchType: ConditionBranchTypeEnum.IF,
+            conditionType: null,
+            conditionArgs: [],
+            nextNodeIds: [3],
+          },
+          {
+            uuid: 'branch-2',
+            branchType: ConditionBranchTypeEnum.ELSE,
+            conditionType: null,
+            conditionArgs: [],
+            nextNodeIds: [4],
+          },
         ],
       },
     }),
@@ -257,7 +270,7 @@ describe('WorkflowProxyV3', () => {
         nextNodeIds: [3],
         nodeConfig: {
           extension: { x: 350, y: 250 },
-          modelId: 'gpt-4-turbo',
+          modelId: 40,
         },
       });
 
@@ -266,7 +279,7 @@ describe('WorkflowProxyV3', () => {
       expect(result.success).toBe(true);
       const node = proxy.getNodeById(2);
       expect(node?.name).toBe('Updated LLM');
-      expect(node?.nodeConfig?.modelId).toBe('gpt-4-turbo');
+      expect(node?.nodeConfig?.modelId).toBe(40);
     });
 
     it('should add node if not exists (via update)', () => {

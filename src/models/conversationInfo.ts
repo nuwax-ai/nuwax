@@ -77,6 +77,7 @@ import {
   VncDesktopContainerInfo,
 } from '@/types/interfaces/vncDesktop';
 import { extractTaskResult } from '@/utils';
+import { normalizeAcpPermissionProgressMessage } from '@/utils/acpPermission';
 import { modalConfirm } from '@/utils/ant-custom';
 import { isEmptyObject } from '@/utils/common';
 import {
@@ -857,6 +858,24 @@ export default () => {
 
       let newMessage: any = null;
 
+      const permissionInteraction = normalizeAcpPermissionProgressMessage(res);
+      if (permissionInteraction) {
+        const interactions = currentMessage.acpPermissionInteractions || [];
+        if (interactions.some((item) => item.id === permissionInteraction.id)) {
+          return messageList;
+        }
+
+        newMessage = {
+          ...currentMessage,
+          acpPermissionInteractions: [...interactions, permissionInteraction],
+          status: currentMessage.status || MessageStatusEnum.Loading,
+        };
+
+        list.splice(index, arraySpliceAction, newMessage as MessageInfo);
+        checkConversationActive(list);
+        return list;
+      }
+
       const interventionPatch = processInterventionSsePatch(
         res,
         currentMessage,
@@ -1505,6 +1524,7 @@ export default () => {
     runAsync,
     loadingSuggest,
     onMessageSend,
+    respondAcpPermission,
     handleDebug,
     messageViewRef,
     // 是否还有更多消息
@@ -1532,7 +1552,6 @@ export default () => {
     handleVariables,
     runStopConversation,
     loadingStopConversation,
-    respondAcpPermission,
     respondMcpAsk,
     isConversationActive,
     checkConversationActive,

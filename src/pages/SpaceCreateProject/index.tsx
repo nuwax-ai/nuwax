@@ -11,6 +11,7 @@ import styles from './index.less';
 const cx = classNames.bind(styles);
 
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import { AgentSubTypeEnum } from '@/types/enums/space';
 import type { SubmitPayload } from './components/PromptBox';
 
 /**
@@ -67,6 +68,7 @@ const SpaceCreateProject: React.FC = () => {
    */
   const handleCreateSubmit = async ({
     type: targetType,
+    subType,
     prompt,
     files,
     skillIds,
@@ -84,7 +86,14 @@ const SpaceCreateProject: React.FC = () => {
 
     try {
       // 2. 调用 API 创建基础项目记录以获取 ID
-      const res = await apiProjectCreate({ spaceId, targetType });
+      // Flow 子类型用专门的 targetType，后端按此区分创建逻辑
+      const flowTargetType =
+        subType === AgentSubTypeEnum.Flow ? 'AgentFlow' : targetType;
+      const res = await apiProjectCreate({
+        spaceId,
+        targetType: flowTargetType,
+        subType,
+      });
       const { targetId, conversationId } = res.data;
 
       // 3. 针对网页应用类型额外设置初始 Context
@@ -108,8 +117,14 @@ const SpaceCreateProject: React.FC = () => {
         tenantConfigInfo,
       });
 
+      // AgentFlow 子类型跳转到智能体编排页面（与普通智能体同路由，EditAgent 按 subType 渲染画布）
+      const finalUrl =
+        subType === AgentSubTypeEnum.Flow
+          ? `/space/${spaceId}/agent/${targetId}`
+          : url;
+
       // 5. 携带初始状态跳转到工作台详情会话中
-      history.push(url, {
+      history.push(finalUrl, {
         message: prompt,
         files,
         skillIds,
