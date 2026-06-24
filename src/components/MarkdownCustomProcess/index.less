@@ -1,23 +1,52 @@
 @import '@/styles/token.less';
 
+@headerPaddingVertical: 2px;
+
 .markdown-custom-process {
-  //border: 0.5px solid #e5e5e5;
-  border-radius: 8px;
-  margin: 10px 0;
+  position: relative;
+  border-radius: 5px;
+  margin: 6px 0;
   overflow: hidden;
-  background: rgba(12, 20, 102, 3%);
-  // border: 1px solid rgba(5, 5, 5, 6%);
+  background-color: @colorBgContainer;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background-color: @colorBorder; // 重点强调左边框（默认框）
+    z-index: 1;
+    transition: background-color @motionDurationMid @motionEaseInOut;
+  }
+
+  &:hover {
+    &::before {
+      background-color: @colorTextTertiary; // 鼠标移入时高亮左边框
+    }
+
+    .process-header {
+      background-color: #f7f8fa; // 鼠标移入后的背景色需要同系统适配
+
+      .process-controls {
+        opacity: 1; // 鼠标移入显示状态图标和查看详情等控制动作
+      }
+    }
+  }
 
   .process-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 3px 8px;
+    padding: @headerPaddingVertical @paddingSm @headerPaddingVertical @padding; // 统一 padding 结构以保持对齐
+    background-color: @colorBgContainer;
+    transition: background-color @motionDurationFast;
 
     .process-title {
       font-family: Monaco, Menlo, 'Ubuntu Mono', monospace;
       font-size: 14px;
-      color: rgba(0, 0, 0, 45%);
+      color: @colorTextDescription;
       font-weight: @fontWeightStrong;
       display: flex;
       align-items: center;
@@ -26,6 +55,10 @@
       min-width: 0;
       line-height: 16px;
       transition: all 0.2s;
+
+      .title-text {
+        color: inherit;
+      }
 
       &.is-edit {
         cursor: pointer;
@@ -79,6 +112,8 @@
       display: flex;
       align-items: center;
       gap: 8px;
+      opacity: 0; // 默认隐藏，在 hover 整个容器时展现
+      transition: opacity @motionDurationMid @motionEaseInOut;
 
       .status-completed {
         display: flex;

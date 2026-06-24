@@ -32,31 +32,33 @@ const MarkdownCustomProcessGroup: React.FC<MarkdownCustomProcessGroupProps> = ({
   if (processCount === 0) return null;
 
   return (
-    <div className={cx(styles['markdown-custom-process-group'])}>
-      <div
-        className={cx(styles['group-header'])}
-        onClick={() => setIsExpanded(!isExpanded)}
-      >
-        <div className={cx(styles['header-left'])}>
-          <span className={cx(styles['group-title'])}>
-            {dict('PC.Components.MarkdownRenderer.executedProcesses')}
-          </span>
-        </div>
-        <div className={cx(styles['header-right'])}>
-          <span className={cx(styles['process-count'])}>
-            {processCount} {dict('PC.Components.MarkdownRenderer.items')}
-          </span>
-          <DownOutlined
-            className={cx(styles['expand-icon'], {
-              [styles['is-expanded']]: isExpanded,
-            })}
-          />
+    <>
+      <div className={cx(styles['markdown-custom-process-group'])}>
+        <div
+          className={cx(styles['group-header'])}
+          onClick={() => setIsExpanded(!isExpanded)}
+        >
+          <div className={cx(styles['header-left'])}>
+            <span className={cx(styles['group-title'])}>
+              {dict('PC.Components.MarkdownRenderer.executedProcesses')}
+            </span>
+            <span className={cx(styles['process-count'])}>
+              {processCount} {dict('PC.Components.MarkdownRenderer.items')}
+            </span>
+          </div>
+          <div className={cx(styles['header-right'])}>
+            <DownOutlined
+              className={cx(styles['expand-icon'], {
+                [styles['is-expanded']]: isExpanded,
+              })}
+            />
+          </div>
         </div>
       </div>
       {isExpanded && (
         <div className={cx(styles['group-content'])}>{children}</div>
       )}
-    </div>
+    </>
   );
 };
 
