@@ -45,9 +45,13 @@ const AcpPermissionCard: React.FC<AcpPermissionCardProps> = ({
   const disabled = isSubmitting || isSubmitted || !onRespond;
 
   const [activeIndex, setActiveIndex] = useState(0);
+  const [submitType, setSubmitType] = useState<'confirm' | 'cancel' | null>(
+    null,
+  );
 
   const handleSelect = useCallback(
-    (optionId: string) => {
+    (optionId: string, type: 'confirm' | 'cancel' = 'confirm') => {
+      setSubmitType(type);
       onRespond?.({
         outcome: {
           outcome: 'selected',
@@ -57,6 +61,12 @@ const AcpPermissionCard: React.FC<AcpPermissionCardProps> = ({
     },
     [onRespond],
   );
+
+  useEffect(() => {
+    if (!isSubmitting) {
+      setSubmitType(null);
+    }
+  }, [isSubmitting]);
 
   const title =
     toolCall.title?.trim() || t('PC.Components.AcpPermissionCard.defaultTitle');
@@ -82,11 +92,21 @@ const AcpPermissionCard: React.FC<AcpPermissionCardProps> = ({
     setActiveIndex(0);
   }, [visibleOptions]);
 
+  const handleCancel = useCallback(() => {
+    if (rejectOption) {
+      handleSelect(rejectOption.optionId, 'cancel');
+    }
+  }, [rejectOption, handleSelect]);
+
+  const isSubmitLoading =
+    isSubmitting && (submitType === 'confirm' || !submitType);
+  const isCancelLoading = isSubmitting && submitType === 'cancel';
+
   useAcpPermissionShortcuts({
     enabled: !disabled && keyboardShortcutsEnabled,
     options: visibleOptions,
     onSelect: handleSelect,
-    onCancel: () => {},
+    onCancel: handleCancel,
     activeIndex,
     setActiveIndex,
   });
@@ -182,19 +202,25 @@ const AcpPermissionCard: React.FC<AcpPermissionCardProps> = ({
       <footer className={styles.footer}>
         <Button
           className={styles['cancel-btn']}
+          loading={isCancelLoading}
           disabled={disabled || !rejectOption}
-          onClick={() => rejectOption && handleSelect(rejectOption.optionId)}
+          onClick={() =>
+            rejectOption && handleSelect(rejectOption.optionId, 'cancel')
+          }
         >
-          {t('PC.Components.McpAskQuestionCard.skip')}
+          <span className={styles.buttonLabel}>
+            {t('PC.Components.McpAskQuestionCard.skip')}
+            <kbd className={styles.shortcut}>Esc</kbd>
+          </span>
         </Button>
         <Button
           className={styles['submit-btn']}
-          loading={isSubmitting}
+          loading={isSubmitLoading}
           disabled={disabled}
           onClick={() => {
             const activeOption = visibleOptions[activeIndex];
             if (activeOption) {
-              handleSelect(activeOption.optionId);
+              handleSelect(activeOption.optionId, 'confirm');
             }
           }}
         >
