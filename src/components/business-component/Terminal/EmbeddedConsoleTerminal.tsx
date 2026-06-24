@@ -9,6 +9,12 @@ import {
 
 import type { ITheme } from '@xterm/xterm';
 import {
+  DEFAULT_TERMINAL_RECONNECT,
+  getTerminalMaxRetries,
+  getTerminalReconnectDelay,
+  type TerminalReconnectConfig,
+} from './terminalReconnect';
+import {
   decodeTtydMessage,
   encodeTtydInit,
   encodeTtydInput,
@@ -25,6 +31,16 @@ export interface EmbeddedConsoleTerminalRef {
   getTerminal: () => Terminal | null;
   /** 重新计算 cols/rows 以适配容器尺寸（容器从隐藏变为可见后调用） */
   fit: () => void;
+  /** fit 后向后端同步 ttyd 尺寸（init 尚未发送时会补发 init） */
+  fitAndSyncBackend: () => void;
+  /** 聚焦终端以接收键盘输入 */
+  focus: () => void;
+  /** 建立 WebSocket 连接 */
+  connect: (url?: string) => void;
+  /** 断开 WebSocket 连接 */
+  disconnect: () => void;
+  /** 重置重连计数后重新连接 */
+  reconnect: (url?: string) => void;
 }
 
 export interface EmbeddedConsoleTerminalProps {
@@ -38,13 +54,11 @@ export interface EmbeddedConsoleTerminalProps {
   lineHeight?: number;
   cursorBlink?: boolean;
   autoConnect?: boolean;
-  reconnect?: {
-    enabled?: boolean;
-    maxRetries?: number;
-    retryDelay?: number;
-  };
+  reconnect?: TerminalReconnectConfig;
   onConnect?: () => void;
   onDisconnect?: (event?: CloseEvent) => void;
+  /** 自动重连达到最大次数后触发 */
+  onReconnectFailed?: () => void;
 }
 
 const scheduleFit = (fit: () => void, afterFit?: () => void) => {
@@ -58,6 +72,27 @@ const scheduleFit = (fit: () => void, afterFit?: () => void) => {
       afterFit?.();
     });
   });
+};
+
+/** 容器从 display:none / 0 尺寸恢复时，fit 可能无效；等到可见且有宽高再执行 */
+const scheduleFitWhenVisible = (
+  getViewport: () => HTMLDivElement | null,
+  fit: () => void,
+  afterFit?: () => void,
+  retries = 12,
+) => {
+  const attempt = (left: number) => {
+    const el = getViewport();
+    const rect = el?.getBoundingClientRect();
+    const visible = !!rect && rect.width > 0 && rect.height > 0;
+
+    if (visible || left <= 0) {
+      scheduleFit(fit, afterFit);
+      return;
+    }
+    requestAnimationFrame(() => attempt(left - 1));
+  };
+  attempt(retries);
 };
 
 const ensureDimensions = (term: Terminal): { cols: number; rows: number } => {
@@ -89,9 +124,10 @@ const EmbeddedConsoleTerminal = forwardRef<
       lineHeight = 1.35,
       cursorBlink = true,
       autoConnect = true,
-      reconnect = { enabled: true, maxRetries: 5, retryDelay: 2000 },
+      reconnect = DEFAULT_TERMINAL_RECONNECT,
       onConnect,
       onDisconnect,
+      onReconnectFailed,
     },
     ref,
   ) => {
@@ -109,6 +145,13 @@ const EmbeddedConsoleTerminal = forwardRef<
     const pendingWritesRef = useRef<string[]>([]);
     const terminalReadyRef = useRef(false);
 
+    /** 心跳检测：最后一次收到服务端消息的时间戳 */
+    const lastServerMessageTimeRef = useRef<number>(0);
+    /** 心跳检测定时器 */
+    const heartbeatTimerRef = useRef<ReturnType<typeof setInterval> | null>(
+      null,
+    );
+
     /**
      * 将回调和配置存入 ref，保持 connect/disconnect 的引用稳定，
      * 避免因父组件每次渲染传入新的 onConnect/onDisconnect/reconnect 对象
@@ -118,12 +161,18 @@ const EmbeddedConsoleTerminal = forwardRef<
     onConnectRef.current = onConnect;
     const onDisconnectRef = useRef(onDisconnect);
     onDisconnectRef.current = onDisconnect;
+    const onReconnectFailedRef = useRef(onReconnectFailed);
+    onReconnectFailedRef.current = onReconnectFailed;
     const reconnectConfigRef = useRef(reconnect);
     reconnectConfigRef.current = reconnect;
     const wsUrlRef = useRef(wsUrl);
     wsUrlRef.current = wsUrl;
     const wsSubprotocolsRef = useRef(wsSubprotocols);
     wsSubprotocolsRef.current = wsSubprotocols;
+    const autoConnectRef = useRef(autoConnect);
+    autoConnectRef.current = autoConnect;
+    /** 连接成功但尚未成功 focus 时置 true，容器变为可见后补 focus */
+    const pendingFocusRef = useRef(false);
 
     const syncBackendSize = useCallback(
       (ws: WebSocket, options?: { sendTtydInit?: boolean }) => {
@@ -132,7 +181,10 @@ const EmbeddedConsoleTerminal = forwardRef<
 
         const { cols, rows } = ensureDimensions(term);
         if (wireProtocol === 'ttyd') {
-          if (options?.sendTtydInit && !ttydInitSentRef.current) {
+          const shouldSendInit =
+            options?.sendTtydInit === true ||
+            (options?.sendTtydInit !== false && !ttydInitSentRef.current);
+          if (shouldSendInit && !ttydInitSentRef.current) {
             ws.send(encodeTtydInit(cols, rows));
             ttydInitSentRef.current = true;
           } else if (ttydInitSentRef.current) {
@@ -144,6 +196,93 @@ const EmbeddedConsoleTerminal = forwardRef<
       // eslint-disable-next-line react-hooks/exhaustive-deps
       [],
     );
+
+    const fitAndSyncBackend = useCallback(() => {
+      try {
+        fitAddonRef.current?.fit();
+      } catch {
+        /* ignore */
+      }
+      const ws = wsRef.current;
+      if (ws?.readyState === WebSocket.OPEN) {
+        syncBackendSize(ws, { sendTtydInit: !ttydInitSentRef.current });
+      }
+    }, [syncBackendSize]);
+
+    const focusTerminal = useCallback(() => {
+      const term = terminalRef.current;
+      const viewport = viewportRef.current;
+      if (!term || !viewport) return;
+
+      const rect = viewport.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0) {
+        pendingFocusRef.current = true;
+        return;
+      }
+
+      term.focus();
+      pendingFocusRef.current = false;
+    }, []);
+
+    /** 停止心跳检测 */
+    const stopHeartbeat = useCallback(() => {
+      if (heartbeatTimerRef.current) {
+        clearInterval(heartbeatTimerRef.current);
+        heartbeatTimerRef.current = null;
+      }
+    }, []);
+
+    /** 启动心跳检测 */
+    const startHeartbeat = useCallback(() => {
+      stopHeartbeat();
+      const cfg = reconnectConfigRef.current;
+      const interval =
+        cfg.heartbeatInterval ?? DEFAULT_TERMINAL_RECONNECT.heartbeatInterval;
+      if (interval <= 0) return;
+
+      lastServerMessageTimeRef.current = Date.now();
+
+      heartbeatTimerRef.current = setInterval(() => {
+        const ws = wsRef.current;
+        const term = terminalRef.current;
+        if (!ws || ws.readyState !== WebSocket.OPEN || !term) {
+          stopHeartbeat();
+          return;
+        }
+
+        // 检查是否超时未收到服务端消息
+        const timeout =
+          cfg.heartbeatTimeout ?? DEFAULT_TERMINAL_RECONNECT.heartbeatTimeout;
+        const elapsed = Date.now() - lastServerMessageTimeRef.current;
+        if (elapsed > timeout) {
+          console.warn(
+            `[EmbeddedTerminal] Heartbeat timeout: no message for ${elapsed}ms, reconnecting...`,
+          );
+          // 强制关闭 WS 触发 onclose → 走自动重连逻辑
+          // 不设置 isManualDisconnectRef，让 reconnect 流程处理
+          ws.close();
+          return;
+        }
+
+        // 发送 ttyd resize 作为保活探测，若 send 抛异常说明连接已断
+        if (wireProtocol === 'ttyd') {
+          try {
+            const { cols, rows } = ensureDimensions(term);
+            ws.send(encodeTtydResize(cols, rows));
+          } catch (err) {
+            console.warn('[EmbeddedTerminal] Heartbeat send failed:', err);
+            ws.close();
+          }
+        }
+      }, interval);
+    }, [stopHeartbeat, wireProtocol]);
+
+    const clearReconnectTimer = useCallback(() => {
+      if (reconnectTimerRef.current) {
+        clearTimeout(reconnectTimerRef.current);
+        reconnectTimerRef.current = null;
+      }
+    }, []);
 
     const connect = useCallback(
       (url?: string) => {
@@ -159,6 +298,40 @@ const EmbeddedConsoleTerminal = forwardRef<
         ) {
           return;
         }
+
+        const scheduleReconnect = () => {
+          const reconnectConfig = reconnectConfigRef.current;
+          if (
+            reconnectConfig.enabled === false ||
+            isManualDisconnectRef.current
+          ) {
+            return;
+          }
+
+          const maxRetries = getTerminalMaxRetries(reconnectConfig);
+          if (reconnectCountRef.current >= maxRetries) {
+            console.error(
+              `[EmbeddedTerminal] Max reconnection attempts reached (${maxRetries})`,
+            );
+            onReconnectFailedRef.current?.();
+            return;
+          }
+
+          const delay = getTerminalReconnectDelay(
+            reconnectCountRef.current,
+            reconnectConfig,
+          );
+          reconnectCountRef.current += 1;
+          console.log(
+            `[EmbeddedTerminal] Reconnect #${reconnectCountRef.current}/${maxRetries} in ${delay}ms`,
+          );
+
+          clearReconnectTimer();
+          reconnectTimerRef.current = setTimeout(() => {
+            reconnectTimerRef.current = null;
+            connect(targetUrl);
+          }, delay);
+        };
 
         isManualDisconnectRef.current = false;
         ttydInitSentRef.current = false;
@@ -176,31 +349,18 @@ const EmbeddedConsoleTerminal = forwardRef<
           wsRef.current = ws;
         } catch (err) {
           console.error('[EmbeddedTerminal] WebSocket creation failed:', err);
-          const reconnectConfig = reconnectConfigRef.current;
-          if (
-            reconnectConfig.enabled !== false &&
-            reconnectCountRef.current < (reconnectConfig.maxRetries ?? 5) &&
-            !isManualDisconnectRef.current
-          ) {
-            const delay =
-              (reconnectConfig.retryDelay ?? 2000) *
-              Math.pow(2, reconnectCountRef.current);
-            reconnectCountRef.current += 1;
-            reconnectTimerRef.current = setTimeout(() => {
-              connect(targetUrl);
-            }, delay);
-          }
+          scheduleReconnect();
           return;
         }
 
         ws.onopen = () => {
           console.log('[EmbeddedTerminal] WebSocket connected');
           reconnectCountRef.current = 0;
-          if (reconnectTimerRef.current) {
-            clearTimeout(reconnectTimerRef.current);
-            reconnectTimerRef.current = null;
-          }
-          scheduleFit(
+          clearReconnectTimer();
+          lastServerMessageTimeRef.current = Date.now();
+          startHeartbeat();
+          scheduleFitWhenVisible(
+            () => viewportRef.current,
             () => fitAddonRef.current?.fit(),
             () => {
               syncBackendSize(ws, { sendTtydInit: true });
@@ -211,12 +371,23 @@ const EmbeddedConsoleTerminal = forwardRef<
                   term.write(chunk);
                 }
               }
+              focusTerminal();
               onConnectRef.current?.();
+              // 父组件 onConnect 可能写入提示行，延迟再 fit + focus 确保可输入
+              scheduleFitWhenVisible(
+                () => viewportRef.current,
+                () => fitAddonRef.current?.fit(),
+                () => {
+                  syncBackendSize(ws, { sendTtydInit: false });
+                  focusTerminal();
+                },
+              );
             },
           );
         };
 
         ws.onmessage = (event: MessageEvent) => {
+          lastServerMessageTimeRef.current = Date.now();
           const term = terminalRef.current;
           const data =
             wireProtocol === 'ttyd'
@@ -233,6 +404,7 @@ const EmbeddedConsoleTerminal = forwardRef<
         };
 
         ws.onclose = (event: CloseEvent) => {
+          stopHeartbeat();
           console.log(
             '[EmbeddedTerminal] WebSocket closed:',
             event.code,
@@ -242,35 +414,8 @@ const EmbeddedConsoleTerminal = forwardRef<
           wsRef.current = null;
           onDisconnectRef.current?.(event);
 
-          const reconnectConfig = reconnectConfigRef.current;
-          if (
-            reconnectConfig.enabled !== false &&
-            reconnectCountRef.current < (reconnectConfig.maxRetries ?? 5) &&
-            !isManualDisconnectRef.current
-          ) {
-            const delay =
-              (reconnectConfig.retryDelay ?? 2000) *
-              Math.pow(2, reconnectCountRef.current);
-            reconnectCountRef.current += 1;
-            console.log(
-              `[EmbeddedTerminal] Reconnecting in ${delay}ms (attempt ${
-                reconnectCountRef.current
-              }/${reconnectConfig.maxRetries ?? 5})`,
-            );
-            if (reconnectTimerRef.current) {
-              clearTimeout(reconnectTimerRef.current);
-            }
-            reconnectTimerRef.current = setTimeout(() => {
-              reconnectTimerRef.current = null;
-              connect(targetUrl);
-            }, delay);
-          } else if (
-            !isManualDisconnectRef.current &&
-            reconnectCountRef.current >= (reconnectConfig.maxRetries ?? 5)
-          ) {
-            console.error(
-              '[EmbeddedTerminal] Max reconnection attempts reached',
-            );
+          if (!isManualDisconnectRef.current) {
+            scheduleReconnect();
           }
         };
 
@@ -280,23 +425,38 @@ const EmbeddedConsoleTerminal = forwardRef<
       },
       // 所有外部依赖已通过 ref 访问，保持 connect 引用稳定
       // eslint-disable-next-line react-hooks/exhaustive-deps
-      [syncBackendSize, wireProtocol],
+      [clearReconnectTimer, syncBackendSize, wireProtocol],
     );
 
     const disconnect = useCallback(() => {
+      stopHeartbeat();
       isManualDisconnectRef.current = true;
-      if (reconnectTimerRef.current) {
-        clearTimeout(reconnectTimerRef.current);
-        reconnectTimerRef.current = null;
-      }
+      clearReconnectTimer();
       if (wsRef.current) {
         wsRef.current.close();
         wsRef.current = null;
       }
       pendingWritesRef.current = [];
       ttydInitSentRef.current = false;
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [clearReconnectTimer, stopHeartbeat]);
+
+    const reconnectTerminal = useCallback(
+      (url?: string) => {
+        reconnectCountRef.current = 0;
+        clearReconnectTimer();
+        isManualDisconnectRef.current = false;
+        if (wsRef.current) {
+          wsRef.current.close();
+          wsRef.current = null;
+        }
+        pendingWritesRef.current = [];
+        ttydInitSentRef.current = false;
+        window.setTimeout(() => {
+          connect(url || wsUrlRef.current);
+        }, 0);
+      },
+      [clearReconnectTimer, connect],
+    );
 
     useImperativeHandle(
       ref,
@@ -312,8 +472,19 @@ const EmbeddedConsoleTerminal = forwardRef<
             /* ignore */
           }
         },
+        fitAndSyncBackend,
+        focus: focusTerminal,
+        connect,
+        disconnect,
+        reconnect: reconnectTerminal,
       }),
-      [],
+      [
+        connect,
+        disconnect,
+        fitAndSyncBackend,
+        focusTerminal,
+        reconnectTerminal,
+      ],
     );
 
     useEffect(() => {
@@ -350,9 +521,15 @@ const EmbeddedConsoleTerminal = forwardRef<
 
       term.onResize(({ cols, rows }) => {
         if (
-          wsRef.current?.readyState === WebSocket.OPEN &&
-          wireProtocol === 'ttyd'
+          wsRef.current?.readyState !== WebSocket.OPEN ||
+          wireProtocol !== 'ttyd'
         ) {
+          return;
+        }
+        if (!ttydInitSentRef.current) {
+          wsRef.current.send(encodeTtydInit(cols, rows));
+          ttydInitSentRef.current = true;
+        } else {
           wsRef.current.send(encodeTtydResize(cols, rows));
         }
       });
@@ -389,6 +566,14 @@ const EmbeddedConsoleTerminal = forwardRef<
             } catch {
               /* ignore */
             }
+            const ws = wsRef.current;
+            if (ws?.readyState === WebSocket.OPEN) {
+              syncBackendSize(ws, { sendTtydInit: !ttydInitSentRef.current });
+            }
+            if (pendingFocusRef.current) {
+              term.focus();
+              pendingFocusRef.current = false;
+            }
           }
         }
       });
@@ -416,10 +601,29 @@ const EmbeddedConsoleTerminal = forwardRef<
     ]);
 
     useEffect(() => {
-      if (!autoConnect || !wsUrl) return;
-      connect(wsUrl);
-      return () => disconnect();
-    }, [autoConnect, wsUrl]);
+      if (!autoConnect || !wsUrl || !terminalReadyRef.current) return;
+
+      let cancelled = false;
+      const tryConnect = (retries = 12) => {
+        if (cancelled || !autoConnectRef.current || !wsUrlRef.current) return;
+
+        const viewport = viewportRef.current;
+        const rect = viewport?.getBoundingClientRect();
+        const visible = !!rect && rect.width > 0 && rect.height > 0;
+
+        if (visible || retries <= 0) {
+          connect(wsUrlRef.current);
+          return;
+        }
+        requestAnimationFrame(() => tryConnect(retries - 1));
+      };
+
+      tryConnect();
+      return () => {
+        cancelled = true;
+        disconnect();
+      };
+    }, [autoConnect, wsUrl, connect, disconnect]);
 
     useEffect(() => {
       if (!terminalRef.current) return;
@@ -431,6 +635,10 @@ const EmbeddedConsoleTerminal = forwardRef<
         className={classNames(className)}
         ref={viewportRef}
         style={{ width: '100%', height: '100%' }}
+        onMouseDown={(event) => {
+          if (event.button !== 0) return;
+          focusTerminal();
+        }}
       />
     );
   },

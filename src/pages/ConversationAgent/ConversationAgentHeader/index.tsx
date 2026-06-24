@@ -2,13 +2,11 @@ import agentImage from '@/assets/images/agent_image.png';
 import { SvgIcon } from '@/components/base';
 import ConditionRender from '@/components/ConditionRender';
 import TooltipIcon from '@/components/custom/TooltipIcon';
-import { APPLICATION_MORE_ACTION_DETAIL } from '@/constants/space.constants';
 import { dict } from '@/services/i18nRuntime';
 import { PermissionsEnum } from '@/types/enums/common';
-import { AgentTypeEnum, ApplicationMoreActionEnum } from '@/types/enums/space';
 import { AgentConfigInfo } from '@/types/interfaces/agent';
-import { FormOutlined, ThunderboltOutlined } from '@ant-design/icons';
-import { Button, Dropdown, MenuProps, Tag } from 'antd';
+import { CodeOutlined, FormOutlined, SettingOutlined } from '@ant-design/icons';
+import { Button, Tag } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, { useMemo } from 'react';
@@ -34,12 +32,10 @@ export interface ConversationAgentHeaderProps {
   agentConfigInfo?: AgentConfigInfo;
   /** 编辑智能体 */
   onEditAgent?: () => void;
-  /** 打开版本历史 */
-  onToggleVersionHistory?: () => void;
   /** 点击发布 */
   onPublish?: () => void;
-  /** 更多操作 */
-  onOtherAction?: (type: ApplicationMoreActionEnum) => void;
+  /** 打开高级设置（新窗口打开智能体编辑页） */
+  onOpenAdvancedSettings?: () => void;
   /** 文件树侧边栏是否可见 */
   isFileTreeSidebarVisible?: boolean;
   /** 切换文件树侧边栏显隐 */
@@ -64,9 +60,8 @@ const ConversationAgentHeader: React.FC<ConversationAgentHeaderProps> = ({
   hideBack = false,
   agentConfigInfo,
   onEditAgent,
-  onToggleVersionHistory,
   onPublish,
-  onOtherAction,
+  onOpenAdvancedSettings,
   isFileTreeSidebarVisible = false,
   onToggleFileTreeSidebar,
   isTerminalPanelOpen = false,
@@ -87,51 +82,6 @@ const ConversationAgentHeader: React.FC<ConversationAgentHeaderProps> = ({
     }
     return false;
   }, [agentConfigInfo]);
-
-  const hasPermission = (permission: PermissionsEnum) => {
-    return agentConfigInfo?.permissions?.includes(permission);
-  };
-
-  /** 更多操作菜单项（与 EditAgent AgentHeader 一致） */
-  const actionList = useMemo(() => {
-    return APPLICATION_MORE_ACTION_DETAIL.filter((item) => {
-      const type = item.type as ApplicationMoreActionEnum;
-
-      switch (type) {
-        case ApplicationMoreActionEnum.Log:
-          return false;
-        case ApplicationMoreActionEnum.Temporary_Session:
-          return (
-            hasPermission(PermissionsEnum.TempChat) &&
-            agentConfigInfo?.type !== AgentTypeEnum.TaskAgent
-          );
-        case ApplicationMoreActionEnum.Export_Config:
-          return hasPermission(PermissionsEnum.Export);
-        default:
-          return true;
-      }
-    }).map((item) => ({
-      key: item.type,
-      label: item.label,
-    }));
-  }, [agentConfigInfo]);
-
-  const dropdownItems: MenuProps['items'] = [
-    {
-      key: 'versionHistory',
-      label: dict('PC.Pages.AgentEdit.versionHistory'),
-    },
-    ...actionList,
-  ];
-
-  /** 下拉菜单点击（使用 menu.onClick，避免 label 内嵌 div 点击失效） */
-  const handleDropdownMenuClick: MenuProps['onClick'] = ({ key }) => {
-    if (key === 'versionHistory') {
-      onToggleVersionHistory?.();
-      return;
-    }
-    onOtherAction?.(key as ApplicationMoreActionEnum);
-  };
 
   return (
     <header
@@ -180,46 +130,29 @@ const ConversationAgentHeader: React.FC<ConversationAgentHeaderProps> = ({
       </div>
 
       <div className={cx(styles['right-box'], 'flex', 'items-center')}>
-        {/* 最后更新时间显示 */}
-        <div className={cx('flex', 'items-center', styles['save-time-box'])}>
-          <span className={cx(styles['save-time'])}>
-            {dict(
-              'PC.Pages.AgentEdit.draftAutoSavedAt',
-              dayjs(agentConfigInfo?.modified).format('HH:mm'),
-            )}
-          </span>
-          {agentConfigInfo?.publishDate !== null &&
-            dayjs(agentConfigInfo?.publishDate).isBefore(
-              agentConfigInfo?.modified,
-            ) && (
-              <Tag
-                bordered={false}
-                color="volcano"
-                className={cx(styles['volcano'])}
-              >
-                {dict('PC.Pages.AgentEdit.unpublishedChanges')}
-              </Tag>
-            )}
-        </div>
-
-        {/* 更多操作按钮 */}
-        <div className={cx(styles['fold-box'])}>
-          <Dropdown
-            menu={{ items: dropdownItems, onClick: handleDropdownMenuClick }}
-            placement="bottomLeft"
-          >
-            <span
-              className={cx(
-                'flex',
-                'items-center',
-                'cursor-pointer',
-                styles['fold-btn'],
-              )}
+        {/* 未发布变更提示 */}
+        {agentConfigInfo?.publishDate !== null &&
+          dayjs(agentConfigInfo?.publishDate).isBefore(
+            agentConfigInfo?.modified,
+          ) && (
+            <Tag
+              bordered={false}
+              color="volcano"
+              className={cx(styles['publish-status-tag'])}
             >
-              <SvgIcon name="icons-common-more" />
-            </span>
-          </Dropdown>
-        </div>
+              {dict('PC.Pages.AgentEdit.unpublishedChanges')}
+            </Tag>
+          )}
+
+        {/* 高级设置 */}
+        {onOpenAdvancedSettings && (
+          <TooltipIcon
+            title={dict('PC.Components.ModelSetting.advancedSettings')}
+            className={cx(styles['panel-btn'])}
+            icon={<SettingOutlined style={{ fontSize: 16 }} />}
+            onClick={onOpenAdvancedSettings}
+          />
+        )}
 
         {/* 文件树侧边栏按钮 */}
         <TooltipIcon
@@ -247,7 +180,7 @@ const ConversationAgentHeader: React.FC<ConversationAgentHeaderProps> = ({
           className={cx(styles['panel-btn'], {
             [styles.active]: isTerminalPanelOpen,
           })}
-          icon={<ThunderboltOutlined style={{ fontSize: 16 }} />}
+          icon={<CodeOutlined style={{ fontSize: 16 }} />}
           onClick={onOpenTerminalPanel}
         />
 

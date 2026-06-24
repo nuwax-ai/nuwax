@@ -15,22 +15,15 @@ import VncPreview from '@/components/business-component/VncPreview';
 import CreateAgent from '@/components/CreateAgent';
 import Loading from '@/components/custom/Loading';
 import PublishComponentModal from '@/components/PublishComponentModal';
-import type { PromptVariable } from '@/components/TiptapVariableInput/types';
-import { transformToPromptVariables } from '@/components/TiptapVariableInput/utils/variableTransform';
 import VersionHistory from '@/components/VersionHistory';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { useInitProjectMetadata } from '@/hooks/useInitProjectMetadata';
 import { useTerminalWsUrl } from '@/hooks/useTerminalWsUrl';
 import useUnifiedTheme from '@/hooks/useUnifiedTheme';
-import AgentModelSetting from '@/pages/EditAgent/AgentModelSetting';
 import DebugDetails from '@/pages/EditAgent/DebugDetails';
-import SubscriptionSetting from '@/pages/EditAgent/SubscriptionSetting';
-import SubscriptionStats from '@/pages/EditAgent/SubscriptionStats';
-import { SystemUserTipsWordRef } from '@/pages/EditAgent/SystemTipsWord';
-import AnalyzeStatistics from '@/pages/SpaceDevelop/AnalyzeStatistics';
 import {
   apiAgentComponentModelUpdate,
   apiAgentConfigInfo,
-  apiAgentConfigUpdate,
 } from '@/services/agentConfig';
 import { dict } from '@/services/i18nRuntime';
 import { apiModelList } from '@/services/modelConfig';
@@ -46,25 +39,13 @@ import {
 } from '@/types/enums/agent';
 import { CreateUpdateModeEnum, PublishStatusEnum } from '@/types/enums/common';
 import { ModelTypeEnum } from '@/types/enums/modelConfig';
-import {
-  AgentTypeEnum,
-  ApplicationMoreActionEnum,
-  EditAgentShowType,
-  OpenCloseEnum,
-} from '@/types/enums/space';
+import { AgentTypeEnum, EditAgentShowType } from '@/types/enums/space';
 import {
   AgentBaseInfo,
-  AgentComponentInfo,
   AgentConfigInfo,
-  AgentConfigUpdateParams,
-  ComponentModelBindConfig,
-  GuidQuestionDto,
+  type ComponentModelBindConfig,
 } from '@/types/interfaces/agent';
 import { FileNode } from '@/types/interfaces/appDev';
-import type {
-  AnalyzeStatisticsItem,
-  BindConfigWithSub,
-} from '@/types/interfaces/common';
 import { UpdateFileInfo } from '@/types/interfaces/fileTree';
 import type {
   ModelConfigInfo,
@@ -75,7 +56,6 @@ import { StaticFileInfo } from '@/types/interfaces/vncDesktop';
 import { checkFileSizeExceedLimit } from '@/utils';
 import { modalConfirm } from '@/utils/ant-custom';
 import { addBaseTarget } from '@/utils/common';
-import { exportConfigFile } from '@/utils/exportImportFile';
 import { updateFilesListContent, updateFilesListName } from '@/utils/fileTree';
 import {
   TTYD_TERMINAL_WIRE_PROTOCOL,
@@ -85,7 +65,6 @@ import { useRequest } from 'ahooks';
 import { message } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
-import cloneDeep from 'lodash/cloneDeep';
 import debounce from 'lodash/debounce';
 import React, {
   useCallback,
@@ -95,7 +74,6 @@ import React, {
   useState,
 } from 'react';
 import { history, useLocation, useModel, useParams } from 'umi';
-import AgentArrangeConfigSection from './AgentArrangePanel/AgentArrangeConfigSection';
 import AgentConversationChatPanel from './AgentConversationChatPanel';
 import ConversationAgentChatSession from './ConversationAgentChatSession';
 import ConversationAgentFilePreview from './ConversationAgentFilePreview';
@@ -165,10 +143,6 @@ const ConversationAgent: React.FC = () => {
     return queryId ? Number(queryId) : undefined;
   }, [location.search]);
 
-  // ==================== Refs ====================
-  /** 系统提示词编辑器引用，用于外部插入文本（如变量、工具标签） */
-  const systemUserTipsWordRef = useRef<SystemUserTipsWordRef>(null);
-
   // ==================== 本地状态 ====================
   /** 当前智能体 ID */
   const [agentId, setAgentId] = useState<number>(agentIdFromQuery);
@@ -176,13 +150,6 @@ const ConversationAgent: React.FC = () => {
   const [open, setOpen] = useState<boolean>(false);
   /** 编辑智能体基础信息弹窗是否打开 */
   const [openEditAgent, setOpenEditAgent] = useState<boolean>(false);
-  /** 模型设置弹窗是否打开 */
-  const [openAgentModel, setOpenAgentModel] = useState<boolean>(false);
-  /** 分析统计弹窗 */
-  const [openAnalyze, setOpenAnalyze] = useState<boolean>(false);
-  const [agentStatistics, setAgentStatistics] = useState<
-    AnalyzeStatisticsItem[]
-  >([]);
   /** 底部开发者控制台（终端）是否显示 */
   const [showDevConsole] = useState<boolean>(true);
   /** 切换预览标签/文件时递增，用于终端从 expanded 恢复 default */
@@ -217,10 +184,6 @@ const ConversationAgent: React.FC = () => {
 
   /** 智能体完整配置信息，驱动整个页面的渲染 */
   const [agentConfigInfo, setAgentConfigInfo] = useState<AgentConfigInfo>();
-  /** 当前可用的提示词变量列表（从智能体组件列表中提取） */
-  const [promptVariables, setPromptVariables] = useState<PromptVariable[]>([]);
-  /** 当前可用的工具列表（插件、工作流、MCP、技能、子智能体） */
-  const [promptTools, setPromptTools] = useState<AgentComponentInfo[]>([]);
   // 当前选中的电脑 ID
   const [selectedComputerId, setSelectedComputerId] = useState<string>('');
 
@@ -232,8 +195,8 @@ const ConversationAgent: React.FC = () => {
   const [originalModelConfigList, setOriginalModelConfigList] = useState<
     ModelConfigInfo[]
   >([]);
-  /** 文件树区域是否显示（header 图标控制，控制中间面板的滑出/收起） */
-  const [canShowFileView, setCanShowFileView] = useState<boolean>(true);
+  /** 文件树区域是否显示（header 图标控制，默认折叠） */
+  const [canShowFileView, setCanShowFileView] = useState<boolean>(false);
   /** 右侧预览区是否展示智能体电脑（VNC） */
   const [isAgentDesktopOpen, setIsAgentDesktopOpen] = useState<boolean>(false);
 
@@ -248,9 +211,7 @@ const ConversationAgent: React.FC = () => {
   const {
     showType,
     setShowType,
-    setIsSuggest,
     messageList,
-    setChatSuggestList,
     // setIsLoadingConversation,
     runQueryConversation,
     conversationInfo,
@@ -288,22 +249,50 @@ const ConversationAgent: React.FC = () => {
     runQueryConversation: runQueryAgentConversation,
     resetInit: resetAgentConversation,
   } = useModel('conversationAgent');
-  /** tenantConfigInfo model：租户配置（页面标题、订阅开关等） */
-  const { tenantConfigInfo } = useModel('tenantConfigInfo');
-  /** spaceAgent model：当前空间下的智能体组件列表（变量、插件、工具等） */
-  const { agentComponentList } = useModel('spaceAgent');
 
-  // 是否开启订阅功能
-  const isEnableSubscription = tenantConfigInfo?.enableSubscription !== 0;
+  /** 常驻工作区工具页签 */
+  const workspaceToolIds = useMemo(
+    (): PreviewToolId[] => ['preview', 'version-control'],
+    [],
+  );
 
-  /** 常驻工作区工具页签（租户未开启订阅时不含订阅相关页签） */
-  const workspaceToolIds = useMemo((): PreviewToolId[] => {
-    const ids: PreviewToolId[] = ['arrange', 'preview', 'version-control'];
-    if (isEnableSubscription) {
-      ids.push('subscription-setting', 'subscription-stats');
+  /** 新窗口打开智能体高级设置（EditAgent 页面） */
+  const handleOpenAdvancedSettings = useCallback(() => {
+    if (!spaceId || !agentId) {
+      return;
     }
-    return ids;
-  }, [isEnableSubscription]);
+    window.open(
+      `/space/${spaceId}/agent/${agentId}`,
+      '_blank',
+      'noopener,noreferrer',
+    );
+  }, [spaceId, agentId]);
+
+  /** 预览 Tab 栏切换模型（与 EditAgent ArrangeTitle 一致） */
+  const handlePreviewTabModelChange = useCallback(
+    async (modelId: number, name: string) => {
+      const componentId = agentConfigInfo?.modelComponentConfig?.id;
+      if (!componentId || !agentConfigInfo) {
+        return;
+      }
+      const bindConfig = agentConfigInfo.modelComponentConfig
+        ?.bindConfig as ComponentModelBindConfig;
+      await apiAgentComponentModelUpdate({
+        id: componentId,
+        targetId: modelId,
+        bindConfig,
+      });
+      setAgentConfigInfo({
+        ...agentConfigInfo,
+        modelComponentConfig: {
+          ...agentConfigInfo.modelComponentConfig,
+          targetId: modelId,
+          name,
+        },
+      });
+    },
+    [agentConfigInfo],
+  );
 
   // ==================== 计算属性 ====================
   /** 开发会话 ID，用于聊天历史查询 */
@@ -544,20 +533,11 @@ const ConversationAgent: React.FC = () => {
     },
   });
 
-  /**
-   * 智能体配置局部刷新请求
-   * 仅更新 pageHomeIndex 字段（首页索引），用于 expandPageArea 变更后同步
-   */
-  const { run: runUpdateAgent } = useRequest(apiAgentConfigInfo, {
-    manual: true,
-    debounceWait: 300,
-    onSuccess: (result: RequestResponse<AgentConfigInfo>) => {
-      const { data } = result;
-      const _agentConfigInfo = {
-        ...agentConfigInfo,
-        pageHomeIndex: data?.pageHomeIndex,
-      } as AgentConfigInfo;
-      setAgentConfigInfo(_agentConfigInfo);
+  useInitProjectMetadata({
+    targetType: AgentComponentTypeEnum.Agent,
+    targetId: agentId,
+    onSuccess: () => {
+      if (agentId) runAgentConfigInfo(agentId);
     },
   });
 
@@ -585,219 +565,7 @@ const ConversationAgent: React.FC = () => {
     addBaseTarget();
   }, [location]);
 
-  /**
-   * 智能体组件列表变化时，同步提取变量和工具信息
-   * - 变量（Variable 类型）：转换为提示词编辑器可用的 PromptVariable 格式
-   * - 工具（Plugin/Workflow/MCP/Skill/SubAgent 类型）：用于编排面板的工具选择
-   */
-  useEffect(() => {
-    const _variablesInfo = agentComponentList?.find(
-      (item: AgentComponentInfo) =>
-        item.type === AgentComponentTypeEnum.Variable,
-    );
-    setPromptVariables(
-      transformToPromptVariables(_variablesInfo?.bindConfig?.variables || []),
-    );
-    setPromptTools(
-      agentComponentList
-        ?.filter(
-          (item: AgentComponentInfo) =>
-            item.type === AgentComponentTypeEnum.Plugin ||
-            item.type === AgentComponentTypeEnum.Workflow ||
-            item.type === AgentComponentTypeEnum.MCP ||
-            item.type === AgentComponentTypeEnum.Skill ||
-            item.type === AgentComponentTypeEnum.SubAgent,
-        )
-        ?.map((item: AgentComponentInfo) => ({
-          ...item,
-          id: item.targetId || 0,
-        })) || [],
-    );
-  }, [agentComponentList]);
-
   // ==================== 事件处理函数 ====================
-
-  /**
-   * 变量列表变更回调
-   * 保留系统变量（systemVariable），合并用户自定义变量
-   */
-  const handleVariablesChange = useCallback(
-    (variables: BindConfigWithSub[]) => {
-      setPromptVariables((prev) => {
-        const systemVariables = prev.filter((item) => item.systemVariable);
-        return [
-          ...systemVariables,
-          ...transformToPromptVariables(variables || []),
-        ];
-      });
-    },
-    [],
-  );
-
-  /**
-   * 工具列表变更回调
-   * 从更新后的组件列表中筛选出工具类型的组件
-   */
-  const handleToolsChange = useCallback(
-    (_agentComponentList: AgentComponentInfo[]) => {
-      setPromptTools(
-        _agentComponentList
-          ?.filter(
-            (item: AgentComponentInfo) =>
-              item.type === AgentComponentTypeEnum.Plugin ||
-              item.type === AgentComponentTypeEnum.Workflow ||
-              item.type === AgentComponentTypeEnum.MCP ||
-              item.type === AgentComponentTypeEnum.Skill ||
-              item.type === AgentComponentTypeEnum.SubAgent,
-          )
-          ?.map((item: AgentComponentInfo) => ({
-            ...item,
-            id: item.targetId || 0,
-          })) || [],
-      );
-    },
-    [],
-  );
-
-  /** 智能体配置更新请求（带 600ms 防抖，避免频繁保存） */
-  const { runAsync: runUpdate } = useRequest(apiAgentConfigUpdate, {
-    manual: true,
-    debounceWait: 600,
-  });
-
-  /**
-   * 更新智能体配置的本地状态（乐观更新）
-   * - 立即更新本地 agentConfigInfo 状态
-   * - 若智能体已发布，自动更新修改时间
-   * - 若更新的是引导问题且消息列表为空，同步更新聊天建议列表
-   * @returns 更新后的配置对象
-   */
-  const handleUpdateEventQuestions = (
-    value: string | string[] | number | GuidQuestionDto[],
-    attr: string,
-  ) => {
-    const _agentConfigInfo = {
-      ...agentConfigInfo,
-      [attr]: value,
-    } as AgentConfigInfo;
-
-    if (_agentConfigInfo.publishStatus === PublishStatusEnum.Published) {
-      _agentConfigInfo.modified = dayjs().toString();
-    }
-
-    setAgentConfigInfo(_agentConfigInfo);
-
-    if (attr === 'guidQuestionDtos' && !messageList?.length) {
-      const _suggestList = value as GuidQuestionDto[];
-      const list =
-        _suggestList?.filter((item) => !!item.info)?.map((item) => item.info) ||
-        [];
-      setChatSuggestList(list);
-    }
-
-    return _agentConfigInfo;
-  };
-
-  /**
-   * 智能体配置变更的统一入口（编排面板各属性修改时调用）
-   *
-   * 处理流程：
-   * 1. 乐观更新本地状态（handleUpdateEventQuestions）
-   * 2. 处理特殊属性的副作用（openSuggest → 建议列表显隐、expandPageArea → 刷新配置、hideDesktop → 关闭预览）
-   * 3. 调用 API 持久化更新（runUpdate）
-   * 4. 若修改了开场白或引导问题且消息列表较短，重新查询会话以刷新 UI
-   */
-  const handleChangeAgent = useCallback(
-    async (
-      value: string | string[] | number | GuidQuestionDto[],
-      attr: string,
-    ) => {
-      const currentConfig = agentConfigInfo;
-      if (!currentConfig) {
-        return;
-      }
-
-      const _agentConfigInfo = handleUpdateEventQuestions(value, attr);
-
-      // 特殊属性的副作用处理
-      if (attr === 'openSuggest') {
-        setIsSuggest(value === OpenCloseEnum.Open);
-      }
-      if (attr === 'expandPageArea') {
-        runUpdateAgent(agentId);
-      }
-      if (attr === 'hideDesktop' && value === HideDesktopEnum.Yes) {
-        closeAgentDesktop();
-      }
-
-      // 解构出需要持久化的配置字段
-      const {
-        id,
-        name,
-        description,
-        icon,
-        userPrompt,
-        openSuggest,
-        systemPrompt,
-        suggestPrompt,
-        openingChatMsg,
-        openScheduledTask,
-        openLongMemory,
-        expandPageArea,
-        guidQuestionDtos,
-        hideDesktop,
-        allowOtherModel,
-        allowAtSkill,
-        allowPrivateSandbox,
-      } = _agentConfigInfo;
-
-      const updateParams = {
-        id,
-        name,
-        description,
-        icon,
-        systemPrompt,
-        userPrompt,
-        openSuggest,
-        suggestPrompt,
-        openingChatMsg,
-        openScheduledTask,
-        openLongMemory,
-        expandPageArea,
-        guidQuestionDtos,
-        hideDesktop,
-        allowOtherModel,
-        allowAtSkill,
-        allowPrivateSandbox,
-      } as AgentConfigUpdateParams;
-
-      await runUpdate(updateParams);
-
-      // 开场白/引导问题修改后，若消息列表较短则重新查询会话以即时预览效果
-      // const messageListLength = messageList?.length || 0;
-      // if (
-      //   (attr === 'openingChatMsg' && messageListLength <= 1) ||
-      //   (attr === 'guidQuestionDtos' && messageListLength === 1)
-      // ) {
-      //   setIsLoadingConversation(false);
-      //   runQueryConversation(queryConversationId);
-      //   // if (agentConfigInfo) {
-      //   //   const { devConversationId: convId } = agentConfigInfo;
-      //   //   setIsLoadingConversation(false);
-      //   //   runQueryConversation(convId);
-      //   // }
-      // }
-    },
-    [agentConfigInfo, agentId, messageList?.length, closeAgentDesktop],
-  );
-
-  /**
-   * 向系统提示词编辑器中插入文本（变量标签、工具标签等）
-   * 通过 ref 调用编辑器实例的 insertText 方法
-   */
-  const handleInsertSystemPrompt = (text: string) => {
-    systemUserTipsWordRef.current?.insertText(text);
-  };
 
   /**
    * 聊天会话结束后统一刷新页面数据
@@ -842,24 +610,6 @@ const ConversationAgent: React.FC = () => {
     } as AgentConfigInfo;
     setAgentConfigInfo(_agentConfigInfo);
     setOpenEditAgent(false);
-  };
-
-  /**
-   * 设置智能体绑定的 AI 模型
-   * 更新模型组件配置（targetId、名称、绑定配置）
-   */
-  const handleSetModel = async (
-    targetId: number | null,
-    name: string,
-    config: ComponentModelBindConfig,
-  ) => {
-    setOpenAgentModel(false);
-    const _agentConfigInfo = cloneDeep(agentConfigInfo) as AgentConfigInfo;
-    _agentConfigInfo.modelComponentConfig.bindConfig = config;
-    _agentConfigInfo.modelComponentConfig.targetId = targetId;
-    _agentConfigInfo.modelComponentConfig.name =
-      name || _agentConfigInfo.modelComponentConfig.name;
-    setAgentConfigInfo(_agentConfigInfo);
   };
 
   /**
@@ -1159,92 +909,6 @@ const ConversationAgent: React.FC = () => {
     closePreviewView,
   ]);
 
-  /** 打开展示台 / 版本历史等 Header 浮层 */
-  const handleHeaderOverlayType = useCallback(
-    (type: EditAgentShowType) => {
-      closeAgentDesktop();
-      closePreviewView();
-      setShowType(type);
-    },
-    [closeAgentDesktop, closePreviewView, setShowType],
-  );
-
-  /** 设置分析统计信息（与 EditAgent 一致） */
-  const handleSetStatistics = useCallback((agentInfo: AgentConfigInfo) => {
-    const {
-      userCount = 0,
-      convCount = 0,
-      collectCount = 0,
-      likeCount = 0,
-    } = agentInfo?.agentStatistics || {};
-    setAgentStatistics([
-      {
-        label: dict('PC.Pages.EditAgent.statUserCount'),
-        value: userCount,
-      },
-      {
-        label: dict('PC.Pages.EditAgent.statConvCount'),
-        value: convCount,
-      },
-      {
-        label: dict('PC.Pages.EditAgent.statCollectCount'),
-        value: collectCount,
-      },
-      {
-        label: dict('PC.Pages.EditAgent.statLikeCount'),
-        value: likeCount,
-      },
-    ]);
-  }, []);
-
-  /** Header 更多操作（与 EditAgent 一致） */
-  const handleHeaderMoreAction = useCallback(
-    (type: ApplicationMoreActionEnum) => {
-      switch (type) {
-        case ApplicationMoreActionEnum.Analyze:
-          if (agentConfigInfo) {
-            handleSetStatistics(agentConfigInfo);
-            setOpenAnalyze(true);
-          }
-          break;
-        case ApplicationMoreActionEnum.Export_Config:
-          modalConfirm(
-            dict('PC.Pages.EditAgent.exportConfigTitle').replace(
-              '{0}',
-              agentConfigInfo?.name || '',
-            ),
-            dict('PC.Pages.EditAgent.exportConfigContent'),
-            () => {
-              exportConfigFile(
-                agentConfigInfo?.id as number,
-                AgentComponentTypeEnum.Agent,
-              );
-              return new Promise((resolve) => {
-                setTimeout(resolve, 1000);
-              });
-            },
-          );
-          break;
-        case ApplicationMoreActionEnum.Log:
-          history.push(
-            `/space/${spaceId}/library-log?targetType=${
-              AgentComponentTypeEnum.Agent
-            }&targetId=${agentConfigInfo?.id ?? ''}`,
-          );
-          break;
-        default:
-          break;
-      }
-    },
-    [
-      agentConfigInfo,
-      handleSetStatistics,
-      agentConfigInfo?.id,
-      agentConfigInfo?.name,
-      spaceId,
-    ],
-  );
-
   /** 是否显示文件面板相关入口（通用型智能体 + 有效消息） */
   const isShowFilePanel = useMemo(() => {
     if (agentConfigInfo?.type !== AgentTypeEnum.TaskAgent) {
@@ -1398,6 +1062,11 @@ const ConversationAgent: React.FC = () => {
           return current.fileId === fileNode.id ? null : current;
         });
         void refreshGitListRef.current?.();
+      },
+      /** 刷新文件树后，当前选中文件不存在时关闭对应标签 */
+      onSelectedFileMissing: (fileId) => {
+        previewTabsRef.current?.closeTab(getFileTabId(fileId, true));
+        previewTabsRef.current?.closeTab(getFileTabId(fileId, false));
       },
     };
   }, [
@@ -1591,9 +1260,6 @@ const ConversationAgent: React.FC = () => {
     selectedChangeFile,
     setSelectedChangeFile,
     callbacks: {
-      // 放弃单个文件的更改
-      discardChangeFile: (fileId: string) =>
-        fileView.preview.discardChangeFile(fileId),
       // 打开更改文件（选中文件并预览，非 diff）
       openChangeFile: (fileId: string) => {
         closeAgentDesktop();
@@ -1609,13 +1275,13 @@ const ConversationAgent: React.FC = () => {
       // 放弃更改后关闭预览 Tab
       onAfterDiscardChange: (fileId: string) => {
         previewTabs.closeTab(getFileTabId(fileId, true));
-        if (fileView.preview.selectedFileId === fileId) {
-          void fileView.preview.refreshSelectedFileContent();
-        }
+      },
+      // 批量放弃更改完成后，只刷新一次文件树
+      onAfterDiscardChanges: async () => {
+        await fileView.tree.handleRefreshFileList();
       },
       // 提交成功后清空本地修改并关闭 Tab
       onCommitSuccess: async () => {
-        await fileView.preview.saveFiles();
         previewTabs.clearTabs();
         await fileView.refreshGitList();
       },
@@ -1626,30 +1292,10 @@ const ConversationAgent: React.FC = () => {
     },
   });
 
-  /** 通用智能体直接切换模型，无需弹窗 */
-  const handleArrangeModelChange = useCallback(
-    async (modelId: number, name: string) => {
-      const componentId = agentConfigInfo?.modelComponentConfig?.id;
-      if (!componentId) return;
-      const bindConfig = agentConfigInfo?.modelComponentConfig
-        ?.bindConfig as ComponentModelBindConfig;
-      await apiAgentComponentModelUpdate({
-        id: componentId,
-        targetId: modelId,
-        bindConfig,
-      });
-      const _agentConfigInfo = cloneDeep(agentConfigInfo) as AgentConfigInfo;
-      _agentConfigInfo.modelComponentConfig.targetId = modelId;
-      _agentConfigInfo.modelComponentConfig.name = name;
-      setAgentConfigInfo(_agentConfigInfo);
-    },
-    [agentConfigInfo, setAgentConfigInfo],
-  );
-
   // ==================================== 渲染组件元素 ====================================
 
-  /** 「预览」页签：调试对话（原编排面板「调试」Tab） */
-  const arrangeDebugChatPanel = useMemo(
+  /** 「预览」页签：调试对话 */
+  const previewDebugChatPanel = useMemo(
     () => (
       <ConversationAgentChatSession
         agentId={agentId}
@@ -1662,58 +1308,8 @@ const ConversationAgent: React.FC = () => {
     [agentId, agentConfigInfo, finalSelectedComputerId],
   );
 
-  /** 「编排」页签：模型、提示词、变量与工具配置 */
-  const arrangeConfigPanel = useMemo(
-    () => (
-      <AgentArrangeConfigSection
-        agentId={agentId}
-        agentConfigInfo={agentConfigInfo}
-        originalModelConfigList={originalModelConfigList}
-        systemUserTipsWordRef={systemUserTipsWordRef}
-        promptVariables={promptVariables}
-        promptTools={promptTools}
-        onChangeAgent={handleChangeAgent}
-        onInsertSystemPrompt={handleInsertSystemPrompt}
-        onVariablesChange={handleVariablesChange}
-        onToolsChange={handleToolsChange}
-        onOpenAgentModel={() => setOpenAgentModel(true)}
-        onModelChange={handleArrangeModelChange}
-      />
-    ),
-    [
-      agentId,
-      agentConfigInfo,
-      originalModelConfigList,
-      promptVariables,
-      promptTools,
-      handleChangeAgent,
-      handleInsertSystemPrompt,
-      handleVariablesChange,
-      handleToolsChange,
-      handleArrangeModelChange,
-    ],
-  );
-
-  /** 「订阅设置」页签（租户未开启订阅时不渲染） */
-  const subscriptionSettingPanel = useMemo(
-    () =>
-      isEnableSubscription && agentId ? (
-        <SubscriptionSetting agentId={agentId} spaceId={spaceId} visible />
-      ) : null,
-    [isEnableSubscription, agentId, spaceId],
-  );
-
-  /** 「订阅统计」页签（租户未开启订阅时不渲染） */
-  const subscriptionStatsPanel = useMemo(
-    () =>
-      isEnableSubscription && agentId ? (
-        <SubscriptionStats agentId={agentId} visible />
-      ) : null,
-    [isEnableSubscription, agentId],
-  );
-
   /** 「版本控制」页签：Git 提交记录 */
-  const arrangeVersionPanel = useMemo(
+  const versionControlPanel = useMemo(
     () => (
       <GitVersionRecordPanel
         workspace={{
@@ -1798,6 +1394,9 @@ const ConversationAgent: React.FC = () => {
           }}
           /** 是否为云电脑 */
           isCloudComputer={finalSelectedComputerId === '-1'}
+          originalModelConfigList={originalModelConfigList}
+          agentConfigInfo={agentConfigInfo}
+          onModelChange={handlePreviewTabModelChange}
         />
         {/* Tab 栏下方：预览内容 + 底部终端（终端放大时仅覆盖此区域） */}
         <div className={cx(styles['right-panel-main'])}>
@@ -1810,15 +1409,9 @@ const ConversationAgent: React.FC = () => {
               // 选中标签
               activeTab={previewTabs.activeTab}
               // 调试对话面板
-              debugPanel={arrangeDebugChatPanel}
-              // 编排配置面板
-              arrangeConfigPanel={arrangeConfigPanel}
+              debugPanel={previewDebugChatPanel}
               // 版本控制面板（Git 提交记录）
-              versionPanel={arrangeVersionPanel}
-              // 订阅设置面板
-              subscriptionSettingPanel={subscriptionSettingPanel}
-              // 订阅统计面板
-              subscriptionStatsPanel={subscriptionStatsPanel}
+              versionPanel={versionControlPanel}
               providerClassName={fileView.className}
               className={cx(styles['file-preview-panel'], 'w-full', 'h-full')}
             />
@@ -1883,11 +1476,8 @@ const ConversationAgent: React.FC = () => {
         className={styles['page-header']}
         agentConfigInfo={agentConfigInfo}
         onEditAgent={() => setOpenEditAgent(true)}
-        onToggleVersionHistory={() =>
-          handleHeaderOverlayType(EditAgentShowType.Version_History)
-        }
         onPublish={() => setOpen(true)}
-        onOtherAction={handleHeaderMoreAction}
+        onOpenAdvancedSettings={handleOpenAdvancedSettings}
         isFileTreeSidebarVisible={canShowFileView}
         onToggleFileTreeSidebar={handleToggleFileTreeSidebar}
         isTerminalPanelOpen={isTerminalPanelOpen}
@@ -2001,25 +1591,6 @@ const ConversationAgent: React.FC = () => {
         open={openEditAgent}
         onCancel={() => setOpenEditAgent(false)}
         onConfirmUpdate={handlerConfirmEditAgent}
-      />
-      {/* 模型设置弹窗（选择 AI 模型和参数配置） */}
-      <AgentModelSetting
-        originalModelConfigList={originalModelConfigList}
-        spaceId={spaceId}
-        agentConfigInfo={agentConfigInfo}
-        modelComponentConfig={
-          agentConfigInfo?.modelComponentConfig as AgentComponentInfo
-        }
-        open={openAgentModel}
-        devConversationId={agentConfigInfo?.devConversationId}
-        onCancel={handleSetModel}
-      />
-      {/* 分析统计弹窗 */}
-      <AnalyzeStatistics
-        open={openAnalyze}
-        onCancel={() => setOpenAnalyze(false)}
-        title={dict('PC.Pages.EditAgent.agentOverview')}
-        list={agentStatistics}
       />
     </div>
   );

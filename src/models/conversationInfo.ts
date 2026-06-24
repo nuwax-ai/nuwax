@@ -419,6 +419,8 @@ export default () => {
     viewModeRef.current = 'preview';
     // 设置远程桌面容器信息为空
     setVncContainerInfo(null);
+    // 重置文件树固定状态
+    setIsFileTreePinned(false);
   }, []);
 
   // 打开预览视图

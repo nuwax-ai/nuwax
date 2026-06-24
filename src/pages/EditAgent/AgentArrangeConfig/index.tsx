@@ -169,6 +169,10 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   // 打开子智能体编辑弹窗
   const [openSubAgentModel, setOpenSubAgentModel] = useState<boolean>(false);
 
+  /** 存在 devAgentConversationId 时隐藏子智能体与定时任务模块 */
+  const hideSubAgentAndScheduledTask =
+    !!agentConfigInfo?.devAgentConversationId;
+
   // 各配置块 DOM 引用，用于滚动定位
   const planSectionRef = useRef<HTMLDivElement | null>(null);
   const toolSectionRef = useRef<HTMLDivElement | null>(null);
@@ -367,11 +371,14 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     if (isExistComponent(AgentComponentTypeEnum.Skill)) {
       keys.push(AgentArrangeConfigEnum.Skill);
     }
-    if (isExistComponent(AgentComponentTypeEnum.SubAgent)) {
+    if (
+      !hideSubAgentAndScheduledTask &&
+      isExistComponent(AgentComponentTypeEnum.SubAgent)
+    ) {
       keys.push(AgentArrangeConfigEnum.SubAgent);
     }
     return keys;
-  }, [agentComponentList]);
+  }, [agentComponentList, hideSubAgentAndScheduledTask]);
 
   // 记忆 - 当前激活 tab 面板的 key
   const memoryActiveKey = useMemo(() => {
@@ -785,29 +792,33 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         body: 'collapse-body',
       },
     },
-    {
-      key: AgentArrangeConfigEnum.SubAgent,
-      label: t('PC.Pages.AgentArrangeConfig.subAgent'),
-      children: (
-        <SubAgentConfig
-          subAgents={subAgentComponentInfo?.bindConfig?.subAgents}
-          onUpdate={handleSubAgentUpdate}
-        />
-      ),
-      extra: (
-        <TooltipIcon
-          title={t('PC.Pages.AgentArrangeConfig.addSubAgent')}
-          onClick={(e) => {
-            e.stopPropagation();
-            setOpenSubAgentModel(true);
-          }}
-        />
-      ),
-      classNames: {
-        header: 'collapse-header',
-        body: 'collapse-body',
-      },
-    },
+    ...(!hideSubAgentAndScheduledTask
+      ? [
+          {
+            key: AgentArrangeConfigEnum.SubAgent,
+            label: t('PC.Pages.AgentArrangeConfig.subAgent'),
+            children: (
+              <SubAgentConfig
+                subAgents={subAgentComponentInfo?.bindConfig?.subAgents}
+                onUpdate={handleSubAgentUpdate}
+              />
+            ),
+            extra: (
+              <TooltipIcon
+                title={t('PC.Pages.AgentArrangeConfig.addSubAgent')}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setOpenSubAgentModel(true);
+                }}
+              />
+            ),
+            classNames: {
+              header: 'collapse-header',
+              body: 'collapse-body',
+            },
+          },
+        ]
+      : []),
   ];
 
   // 记忆
@@ -922,34 +933,40 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         body: 'collapse-body',
       },
     },
-    {
-      key: AgentArrangeConfigEnum.Open_Scheduled_Task,
-      label: t('PC.Pages.AgentArrangeConfig.scheduledTask'),
-      children: (
-        <p className={cx(styles.text)}>
-          {t('PC.Pages.AgentArrangeConfig.scheduledTaskDescription')}
-        </p>
-      ),
-      extra: (
-        <Switch
-          value={agentConfigInfo?.openScheduledTask === OpenCloseEnum.Open}
-          // 阻止冒泡事件
-          onClick={(_, e: any) => {
-            e.stopPropagation();
-          }}
-          onChange={(value) =>
-            onChangeAgent(
-              value ? OpenCloseEnum.Open : OpenCloseEnum.Close,
-              'openScheduledTask',
-            )
-          }
-        />
-      ),
-      classNames: {
-        header: 'collapse-header',
-        body: 'collapse-body',
-      },
-    },
+    ...(!hideSubAgentAndScheduledTask
+      ? [
+          {
+            key: AgentArrangeConfigEnum.Open_Scheduled_Task,
+            label: t('PC.Pages.AgentArrangeConfig.scheduledTask'),
+            children: (
+              <p className={cx(styles.text)}>
+                {t('PC.Pages.AgentArrangeConfig.scheduledTaskDescription')}
+              </p>
+            ),
+            extra: (
+              <Switch
+                value={
+                  agentConfigInfo?.openScheduledTask === OpenCloseEnum.Open
+                }
+                // 阻止冒泡事件
+                onClick={(_, e: any) => {
+                  e.stopPropagation();
+                }}
+                onChange={(value) =>
+                  onChangeAgent(
+                    value ? OpenCloseEnum.Open : OpenCloseEnum.Close,
+                    'openScheduledTask',
+                  )
+                }
+              />
+            ),
+            classNames: {
+              header: 'collapse-header',
+              body: 'collapse-body',
+            },
+          },
+        ]
+      : []),
     // 允许用户选择自有模型
     {
       key: AgentArrangeConfigEnum.Allow_Other_Model,

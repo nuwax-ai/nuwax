@@ -110,7 +110,6 @@ export const JA_JP: SystemLangMap = {
   "PC.Components.ConversationBottomConsole.containerKeepaliveError": "サービスのキープアライブ リクエストに失敗しました。ネットワークを確認して再試行してください。",
   "PC.Components.ConversationBottomConsole.containerKeepaliveFailed": "サービスのキープアライブに失敗しました。サービスを再起動してください。",
   "PC.Components.ConversationBottomConsole.containerStartError": "サービスの起動に失敗しました。しばらくしてから再試行してください。",
-  "PC.Components.ConversationBottomConsole.containerStartFailed": "サービスの起動に失敗しました。再試行してください。",
   "PC.Components.ConversationBottomConsole.containerStarting": "サービスを起動中です。しばらくお待ちください…",
   "PC.Components.ConversationBottomConsole.expandHeight": "全画面に拡大",
   "PC.Components.ConversationBottomConsole.logsEmpty": "ログはまだありません",

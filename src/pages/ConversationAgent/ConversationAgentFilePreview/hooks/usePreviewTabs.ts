@@ -49,10 +49,7 @@ export interface UsePreviewTabsOptions {
 /** 在右侧工作区展示的工具页签（非文件预览区） */
 export const WORKSPACE_PREVIEW_TOOL_IDS: PreviewToolId[] = [
   'preview',
-  'arrange',
   'version-control',
-  'subscription-setting',
-  'subscription-stats',
 ];
 
 const TOOL_I18N_MAP: Record<PreviewToolId, string> = {
@@ -78,14 +75,21 @@ export const getFileTabId = (fileId: string, isDiff = false): string =>
 /** 生成工具标签 ID */
 export const getToolTabId = (toolId: PreviewToolId): string => `tool:${toolId}`;
 
-/** 默认工作区工具页签顺序（编排在前，与进入页面默认激活一致） */
+/** 默认工作区工具页签顺序（预览在前，与进入页面默认激活一致） */
 export const DEFAULT_WORKSPACE_TOOL_ORDER: PreviewToolId[] = [
-  'arrange',
   'preview',
   'version-control',
-  'subscription-setting',
-  'subscription-stats',
 ];
+
+/** 解析默认激活的工作区工具页签 */
+const resolveDefaultWorkspaceToolId = (
+  workspaceToolIds: PreviewToolId[],
+): PreviewToolId => {
+  if (workspaceToolIds.includes('preview')) {
+    return 'preview';
+  }
+  return workspaceToolIds[0] ?? 'preview';
+};
 
 /** 构建单个工具页签 */
 const buildToolTab = (toolId: PreviewToolId): PreviewTab => ({
@@ -127,14 +131,16 @@ export function usePreviewTabs(options: UsePreviewTabsOptions = {}) {
     buildDefaultWorkspaceTabs(resolvedWorkspaceToolIds),
   );
   const [activeTabId, setActiveTabId] = useState<string | null>(() =>
-    getToolTabId('arrange'),
+    getToolTabId(resolveDefaultWorkspaceToolId(resolvedWorkspaceToolIds)),
   );
   const onToolTabActivateRef = useRef(onToolTabActivate);
   onToolTabActivateRef.current = onToolTabActivate;
 
-  /** 首次挂载：同步默认「编排」页签对应的面板状态 */
+  /** 首次挂载：同步默认工作区页签对应的面板状态 */
   useEffect(() => {
-    onToolTabActivateRef.current?.('arrange');
+    onToolTabActivateRef.current?.(
+      resolveDefaultWorkspaceToolId(workspaceToolIdsRef.current),
+    );
   }, []);
 
   /** 激活指定标签并触发对应回调 */
@@ -156,13 +162,16 @@ export function usePreviewTabs(options: UsePreviewTabsOptions = {}) {
     return [...pinned, ...unpinned];
   };
 
-  /** 重置为默认工作区页签，并激活编排 */
+  /** 重置为默认工作区页签，并激活预览 */
   const openDefaultPreviewTab = useCallback(() => {
     const defaultTabs = buildDefaultWorkspaceTabs(workspaceToolIdsRef.current);
-    const arrangeTab = defaultTabs.find((tab) => tab.toolId === 'arrange')!;
+    const defaultToolId = resolveDefaultWorkspaceToolId(
+      workspaceToolIdsRef.current,
+    );
+    const defaultTab = defaultTabs.find((tab) => tab.toolId === defaultToolId)!;
     setTabs(defaultTabs);
-    setActiveTabId(arrangeTab.id);
-    onToolTabActivate?.('arrange');
+    setActiveTabId(defaultTab.id);
+    onToolTabActivate?.(defaultToolId);
   }, [onToolTabActivate]);
 
   /** 打开或激活文件标签 */
@@ -280,11 +289,14 @@ export function usePreviewTabs(options: UsePreviewTabsOptions = {}) {
           const defaultTabs = buildDefaultWorkspaceTabs(
             workspaceToolIdsRef.current,
           );
-          const arrangeTab = defaultTabs.find(
-            (tab) => tab.toolId === 'arrange',
+          const defaultToolId = resolveDefaultWorkspaceToolId(
+            workspaceToolIdsRef.current,
+          );
+          const defaultTab = defaultTabs.find(
+            (tab) => tab.toolId === defaultToolId,
           )!;
-          setActiveTabId(arrangeTab.id);
-          onToolTabActivate?.('arrange');
+          setActiveTabId(defaultTab.id);
+          onToolTabActivate?.(defaultToolId);
           return defaultTabs;
         }
 
@@ -320,7 +332,7 @@ export function usePreviewTabs(options: UsePreviewTabsOptions = {}) {
     [activateTab, mergeWithWorkspaceTabs],
   );
 
-  /** 关闭所有标签后恢复默认「编排 + 预览」页签 */
+  /** 关闭所有标签后恢复默认工作区页签 */
   const closeAllTabs = useCallback(() => {
     openDefaultPreviewTab();
   }, [openDefaultPreviewTab]);
@@ -393,11 +405,14 @@ export function usePreviewTabs(options: UsePreviewTabsOptions = {}) {
           const defaultTabs = buildDefaultWorkspaceTabs(
             workspaceToolIdsRef.current,
           );
-          const arrangeTab = defaultTabs.find(
-            (tab) => tab.toolId === 'arrange',
+          const defaultToolId = resolveDefaultWorkspaceToolId(
+            workspaceToolIdsRef.current,
+          );
+          const defaultTab = defaultTabs.find(
+            (tab) => tab.toolId === defaultToolId,
           )!;
-          setActiveTabId(arrangeTab.id);
-          onToolTabActivate?.('arrange');
+          setActiveTabId(defaultTab.id);
+          onToolTabActivate?.(defaultToolId);
           return defaultTabs;
         }
 

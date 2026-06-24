@@ -1,14 +1,12 @@
 import PublishComponentModal from '@/components/PublishComponentModal';
 import { dict } from '@/services/i18nRuntime';
-import { apiSkillDetail } from '@/services/skill';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
-import { PublishStatusEnum } from '@/types/enums/common';
 import { SkillDetailInfo } from '@/types/interfaces/skill';
 import { Button, Tag } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
-import React, { useEffect, useState } from 'react';
-import { useModel, useRequest } from 'umi';
+import React, { useState } from 'react';
+import { useModel } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -16,6 +14,8 @@ const cx = classNames.bind(styles);
 export interface SkillPublishActionProps {
   spaceId: number;
   skillId: number;
+  skillInfo: SkillDetailInfo | null;
+  onRefresh: () => void;
 }
 
 /**
@@ -24,8 +24,9 @@ export interface SkillPublishActionProps {
 const SkillPublishAction: React.FC<SkillPublishActionProps> = ({
   spaceId,
   skillId,
+  skillInfo,
+  onRefresh,
 }) => {
-  const [skillInfo, setSkillInfo] = useState<SkillDetailInfo | null>(null);
   const [publishModalOpen, setPublishModalOpen] = useState<boolean>(false);
 
   // 会话文件树刷新逻辑
@@ -38,29 +39,6 @@ const SkillPublishAction: React.FC<SkillPublishActionProps> = ({
     }
   };
 
-  // 请求技能详情
-  const { run: runSkillInfo } = useRequest(apiSkillDetail, {
-    manual: true,
-    debounceInterval: 300,
-    onSuccess: (result: any) => {
-      const data = result?.data !== undefined ? result.data : result;
-      setSkillInfo(data);
-    },
-  });
-
-  useEffect(() => {
-    if (skillId) {
-      runSkillInfo(skillId);
-    }
-  }, [skillId]);
-
-  // 当外部会话列表刷新时，我们也重新同步一下技能信息（以便检测是否有未发布的更新）
-  useEffect(() => {
-    if (skillId && conversationModel?.fileTreeData) {
-      runSkillInfo(skillId);
-    }
-  }, [conversationModel?.fileTreeData]);
-
   // 发布技能
   const handlePublishSkill = () => {
     setPublishModalOpen(true);
@@ -68,16 +46,7 @@ const SkillPublishAction: React.FC<SkillPublishActionProps> = ({
 
   const handleConfirmPublish = () => {
     setPublishModalOpen(false);
-    const time = dayjs().toString();
-    if (skillInfo) {
-      setSkillInfo({
-        ...skillInfo,
-        publishDate: time,
-        modified: time,
-        publishStatus: PublishStatusEnum.Published,
-      } as SkillDetailInfo);
-    }
-    runSkillInfo(skillId);
+    onRefresh();
     refreshFiles();
   };
 

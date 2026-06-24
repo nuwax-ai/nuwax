@@ -1,4 +1,7 @@
-import { FileTreeViewPanel } from '@/components/business-component';
+import {
+  ConversationBottomConsole,
+  FileTreeViewPanel,
+} from '@/components/business-component';
 import CreateAgent from '@/components/CreateAgent';
 import Loading from '@/components/custom/Loading';
 import PublishComponentModal from '@/components/PublishComponentModal';
@@ -8,6 +11,7 @@ import type { PromptVariable } from '@/components/TiptapVariableInput/types';
 import { transformToPromptVariables } from '@/components/TiptapVariableInput/utils/variableTransform';
 import VersionHistory from '@/components/VersionHistory';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { useTerminalWsUrl } from '@/hooks/useTerminalWsUrl';
 import useUnifiedTheme from '@/hooks/useUnifiedTheme';
 import AnalyzeStatistics from '@/pages/SpaceDevelop/AnalyzeStatistics';
 import CreateTempChatModal from '@/pages/SpaceDevelop/CreateTempChatModal';
@@ -62,6 +66,10 @@ import { modalConfirm } from '@/utils/ant-custom';
 import { addBaseTarget } from '@/utils/common';
 import { exportConfigFile } from '@/utils/exportImportFile';
 import { updateFilesListContent, updateFilesListName } from '@/utils/fileTree';
+import {
+  TTYD_TERMINAL_WIRE_PROTOCOL,
+  TTYD_TERMINAL_WS_SUBPROTOCOLS,
+} from '@/utils/terminalWsUrl';
 import { FullscreenExitOutlined, FullscreenOutlined } from '@ant-design/icons';
 import { useRequest } from 'ahooks';
 import { message as messageAntd } from 'antd';
@@ -404,6 +412,13 @@ const EditAgent: React.FC = () => {
 
   // 获取开发会话ID
   const devConversationId = agentConfigInfo?.devConversationId;
+  const terminalWsUrl = useTerminalWsUrl(devConversationId);
+  /** 文件树预览区底部终端是否显示 */
+  const [terminalConsoleVisible, setTerminalConsoleVisible] =
+    useState<boolean>(false);
+  /** 终端首次渲染后保持挂载，避免 wss 反复重连 */
+  const [hasTerminalConsoleRendered, setHasTerminalConsoleRendered] =
+    useState<boolean>(false);
 
   // 更新智能体信息
   const handleChangeAgent = useCallback(
@@ -924,6 +939,25 @@ const EditAgent: React.FC = () => {
     showPagePreview,
   ]);
 
+  /** 打开 / 切换文件树底部终端 */
+  const handleOpenTerminalPanel = useCallback(() => {
+    if (!devConversationId) {
+      messageAntd.warning(
+        dict('PC.Pages.PreviewAndDebug.convIdNotFoundFilePreview'),
+      );
+      return;
+    }
+    showPagePreview(null);
+    openPreviewView(devConversationId);
+    setHasTerminalConsoleRendered(true);
+    setTerminalConsoleVisible((prev) => !prev);
+  }, [devConversationId, openPreviewView, showPagePreview]);
+
+  useEffect(() => {
+    setTerminalConsoleVisible(false);
+    setHasTerminalConsoleRendered(false);
+  }, [devConversationId]);
+
   useEffect(() => {
     handleOpenPreview();
   }, [handleOpenPreview]);
@@ -1213,6 +1247,7 @@ const EditAgent: React.FC = () => {
                         }
                         onAgentConfigInfo={setAgentConfigInfo}
                         onOpenPreview={handleOpenPreview}
+                        onOpenTerminalPanel={handleOpenTerminalPanel}
                         onChangeSelectedComputerId={
                           setCurrentSelectedComputerId
                         }
@@ -1300,6 +1335,32 @@ const EditAgent: React.FC = () => {
                             hideDesktop={agentConfigInfo?.hideDesktop}
                             // 静态资源文件基础路径
                             staticFileBasePath={`/api/computer/static/${devConversationId}`}
+                            gitSourceControl={{
+                              workspace: {
+                                workspaceType: 'taskAgent',
+                                cid: devConversationId,
+                              },
+                            }}
+                            bottomContent={
+                              hasTerminalConsoleRendered ? (
+                                <ConversationBottomConsole
+                                  conversationId={
+                                    finalSelectedComputerId === '-1'
+                                      ? devConversationId
+                                      : undefined
+                                  }
+                                  visible={terminalConsoleVisible}
+                                  wsUrl={terminalWsUrl}
+                                  wireProtocol={TTYD_TERMINAL_WIRE_PROTOCOL}
+                                  wsSubprotocols={[
+                                    ...TTYD_TERMINAL_WS_SUBPROTOCOLS,
+                                  ]}
+                                  defaultActiveTab="terminal"
+                                  defaultLayoutMode="default"
+                                  showLogsTab={false}
+                                />
+                              ) : null
+                            }
                           />
                         </div>
                       )

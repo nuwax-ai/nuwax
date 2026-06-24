@@ -1,0 +1,89 @@
+@import '@/styles/token';
+
+.model-select-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: @marginXxs;
+  max-width: 180px;
+  height: 28px;
+  padding: 0 @paddingXs;
+  color: @colorTextSecondary;
+  font-size: @fontSizeSm;
+  font-weight: @fontWeightStrong;
+  cursor: pointer;
+  border-radius: @borderRadius;
+  transition: color 0.2s ease, background-color 0.2s ease;
+
+  &:hover {
+    color: @colorText;
+    background-color: rgba(0, 0, 0, 4%);
+  }
+}
+
+.model-select-icon {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border-radius: 2px;
+  object-fit: cover;
+}
+
+.model-select-label {
+  min-width: 0;
+  max-width: 120px;
+}
+
+.model-dropdown {
+  background-color: @colorBgContainer;
+
+  :global(.ant-dropdown-menu) {
+    min-width: 320px;
+    max-height: 400px;
+    overflow-y: auto;
+  }
+
+  :global(.ant-dropdown-menu-item) {
+    padding: @paddingXs @paddingSm;
+  }
+}
+
+.model-option {
+  display: flex;
+  align-items: flex-start;
+  gap: @marginSm;
+  max-width: 360px;
+}
+
+.model-option-icon {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  object-fit: cover;
+}
+
+.model-option-content {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 2px;
+}
+
+.model-option-name {
+  color: @colorText;
+  font-size: 14px;
+  font-weight: @fontWeightStrong;
+  line-height: 20px;
+}
+
+.model-option-desc {
+  display: box;
+  overflow: hidden;
+  color: @colorTextTertiary;
+  font-size: 12px;
+  line-height: 18px;
+  white-space: normal;
+  word-break: break-word;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}

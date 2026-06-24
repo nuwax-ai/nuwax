@@ -24,6 +24,7 @@ import React, {
 } from 'react';
 import type { EmbeddedConsoleTerminalRef } from '../Terminal/EmbeddedConsoleTerminal';
 import EmbeddedConsoleTerminal from '../Terminal/EmbeddedConsoleTerminal';
+import { DEFAULT_TERMINAL_RECONNECT } from '../Terminal/terminalReconnect';
 import type { TerminalWireProtocol } from '../Terminal/type';
 import DevLogPanel from './DevLogPanel';
 import styles from './index.less';
@@ -66,6 +67,11 @@ export interface ConversationBottomConsoleProps {
    * 若不传，则不启动容器，终端在有 wsUrl 时直接连接。
    */
   conversationId?: number;
+  /**
+   * 容器启动成功后是否开启保活轮询 @default true
+   * 网页应用开发只需要确保/重启服务，不需要轮询保活接口。
+   */
+  enableKeepalivePolling?: boolean;
   /** WebSocket 子协议（ttyd 需传 ['tty']） */
   wsSubprotocols?: string | string[];
   /** 终端消息格式（'plain' | 'ttyd'） */
@@ -112,6 +118,7 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
   devLog,
   wsUrl,
   conversationId,
+  enableKeepalivePolling = true,
   wsSubprotocols,
   wireProtocol,
   terminalAppearance: terminalAppearanceProp,
@@ -144,8 +151,18 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
   const terminalRef = useRef<EmbeddedConsoleTerminalRef>(null);
   /** 终端当前连接状态（用于控制断连后再触发容器兜底重启） */
   const terminalConnectedRef = useRef<boolean>(false);
-  /** 终端是否曾成功连接过（避免首次连接前误判为“断开”） */
+  /** 终端是否曾成功连接过（避免首次连接前误判为”断开”） */
   const terminalConnectedOnceRef = useRef<boolean>(false);
+  /** 用户是否曾展开过终端面板（首次展开后才触发容器启动/WS连接） */
+  const terminalActivatedRef = useRef<boolean>(false);
+  /** 上一次 layoutMode 值，用于检测首次从 collapsed 展开 */
+  const prevLayoutModeRef = useRef<ConsoleLayoutMode>(defaultLayoutMode);
+  /** 终端自动重连耗尽后显示手动重连按钮 */
+  const [showTerminalReconnect, setShowTerminalReconnect] =
+    useState<boolean>(false);
+  /** 手动重连 loading */
+  const [isTerminalReconnecting, setIsTerminalReconnecting] =
+    useState<boolean>(false);
 
   /**
    * 容器启动状态机：
@@ -156,8 +173,7 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
    */
   const [containerStatus, setContainerStatus] = useState<
     'idle' | 'starting' | 'running' | 'error'
-  >(conversationId ? 'starting' : 'idle');
-  const [containerError, setContainerError] = useState<string>('');
+  >('idle');
 
   /**
    * 保活轮询（useRequest 自动管理定时器、页面可见性暂停/恢复）
@@ -194,23 +210,12 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
         // HTTP 成功但业务码失败 → 视为保活失败，停止轮询并显示错误
         if (result.code !== SUCCESS_CODE) {
           setContainerStatus('error');
-          setContainerError(
-            result.message ||
-              dict(
-                'PC.Components.ConversationBottomConsole.containerKeepaliveFailed',
-              ),
-          );
           stopKeepaliveRef.current();
         }
       },
       onError: (error) => {
         console.error('[keepalive] Pod keepalive error:', error);
         setContainerStatus('error');
-        setContainerError(
-          dict(
-            'PC.Components.ConversationBottomConsole.containerKeepaliveError',
-          ),
-        );
         stopKeepaliveRef.current();
       },
     });
@@ -220,29 +225,30 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
   stopKeepaliveRef.current = stopKeepalivePodPolling;
 
   /** 启动容器并开启保活轮询 */
-  const startContainer = useCallback(async (cId: number) => {
-    setContainerStatus('starting');
-    setContainerError('');
-    try {
-      const { code } = await apiEnsurePod(cId);
-      if (code === SUCCESS_CODE) {
-        setContainerStatus('running');
-        runKeepaliveRef.current(cId);
-      } else {
+  const startContainer = useCallback(
+    async (cId: number): Promise<boolean> => {
+      setContainerStatus('starting');
+      try {
+        const { code } = await apiEnsurePod(cId);
+        if (code === SUCCESS_CODE) {
+          setContainerStatus('running');
+          if (enableKeepalivePolling) {
+            runKeepaliveRef.current(cId);
+          }
+          return true;
+        } else {
+          setContainerStatus('error');
+          return false;
+        }
+      } catch (error: any) {
         setContainerStatus('error');
-        setContainerError(
-          dict('PC.Components.ConversationBottomConsole.containerStartFailed'),
-        );
+        return false;
       }
-    } catch (error: any) {
-      setContainerStatus('error');
-      setContainerError(
-        dict('PC.Components.ConversationBottomConsole.containerStartError'),
-      );
-    }
-  }, []);
+    },
+    [enableKeepalivePolling],
+  );
 
-  /** 挂载时启动容器；conversationId 变化时重启 */
+  /** 挂载时仅清理状态，不自动启动容器；等用户首次展开时触发 */
   useLayoutEffect(() => {
     if (!conversationId) {
       setContainerStatus('idle');
@@ -251,26 +257,60 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
       return;
     }
 
-    // 清理旧的保活轮询
-    stopKeepaliveRef.current();
+    // 清理旧的保活轮询，重置状态，但不启动容器
+    if (enableKeepalivePolling) {
+      stopKeepaliveRef.current();
+    }
+    setContainerStatus('idle');
     terminalConnectedRef.current = false;
     terminalConnectedOnceRef.current = false;
 
-    startContainer(conversationId);
-
     return () => {
-      stopKeepaliveRef.current();
+      if (enableKeepalivePolling) {
+        stopKeepaliveRef.current();
+      }
     };
-  }, [conversationId, startContainer]);
+  }, [conversationId, enableKeepalivePolling]);
+
+  /** 用户首次展开终端面板时，触发容器启动 / 终端直接连接 */
+  const handleFirstExpand = useCallback(() => {
+    terminalActivatedRef.current = true;
+
+    // 云端电脑：容器尚未启动时触发启动
+    if (conversationId && containerStatus === 'idle') {
+      startContainer(conversationId);
+    }
+  }, [conversationId, containerStatus, startContainer]);
+
+  /** 监听 layoutMode 变化，检测首次从 collapsed 展开 */
+  useEffect(() => {
+    // 两种情况触发首次启动：
+    // 1. 首次渲染时已是非折叠状态（如 defaultLayoutMode="default"）
+    // 2. 从折叠展开为非折叠状态
+    const isFirstExpand =
+      (!terminalActivatedRef.current && layoutMode !== 'collapsed') ||
+      (layoutMode !== 'collapsed' && prevLayoutModeRef.current === 'collapsed');
+
+    if (isFirstExpand) {
+      handleFirstExpand();
+    }
+    prevLayoutModeRef.current = layoutMode;
+  }, [layoutMode, handleFirstExpand]);
 
   /**
    * 终端连接开关（完全由内部容器状态控制）：
    * - idle：未传 conversationId，无需容器，终端在有 wsUrl 时直接连接
    * - running：容器就绪，终端可连接
    * - starting / error：容器未就绪，终端不可连接
+   * 面板折叠或整体隐藏时不建立连接，避免在 display:none 容器内 init ttyd 导致无法输入
+   * 例外：用户已首次展开过终端面板后，即使折叠也保持连接不断
+   * 终端重连失败展示重试面板时暂停自动连接
    */
   const terminalAutoConnect =
-    containerStatus === 'idle' || containerStatus === 'running';
+    (containerStatus === 'idle' || containerStatus === 'running') &&
+    visible &&
+    !showTerminalReconnect &&
+    (layoutMode !== 'collapsed' || terminalActivatedRef.current);
   /** 上一次 visible 值（用于识别「重新打开」时机） */
   const prevVisibleRef = useRef(visible);
   /** 外部信号上一次值（避免组件 remount 时重复触发） */
@@ -308,25 +348,48 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
   }, [isControlled, onTerminalAppearanceChange, terminalAppearance]);
 
   /**
-   * 切换到终端 Tab / 布局或主题变化 / visible 从 false 变为 true 后，
-   * 延迟重新计算终端 cols/rows（fit）并刷新渲染，
+   * 切换到终端 Tab / 布局或主题变化 / visible 从 false 变为 true / 容器就绪后，
+   * 延迟重新计算终端 cols/rows（fit）并同步 ttyd 尺寸、聚焦终端，
    * 避免容器从 display:none / visibility:hidden 恢复后 xterm-screen 尺寸停留在初始极小值。
    */
+  const syncTerminalLayoutAndFocus = useCallback(() => {
+    terminalRef.current?.fitAndSyncBackend();
+    terminalRef.current?.focus();
+    const term = terminalRef.current?.getTerminal();
+    if (!term) return;
+    try {
+      term.refresh(0, Math.max(term.rows - 1, 0));
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
   useEffect(() => {
-    if (activeTab !== 'terminal' || !wsUrl || !visible) return;
-    const timer = window.setTimeout(() => {
-      // 先 fit 重新计算 cols/rows 适配容器尺寸，再 refresh 重绘
-      terminalRef.current?.fit();
-      const term = terminalRef.current?.getTerminal();
-      if (!term) return;
-      try {
-        term.refresh(0, Math.max(term.rows - 1, 0));
-      } catch {
-        /* ignore */
-      }
-    }, 100);
-    return () => window.clearTimeout(timer);
-  }, [activeTab, layoutMode, wsUrl, terminalAppearance, visible]);
+    if (
+      activeTab !== 'terminal' ||
+      !wsUrl ||
+      !visible ||
+      layoutMode === 'collapsed' ||
+      (conversationId && containerStatus !== 'running')
+    ) {
+      return;
+    }
+    const timer = window.setTimeout(syncTerminalLayoutAndFocus, 100);
+    const retryTimer = window.setTimeout(syncTerminalLayoutAndFocus, 300);
+    return () => {
+      window.clearTimeout(timer);
+      window.clearTimeout(retryTimer);
+    };
+  }, [
+    activeTab,
+    containerStatus,
+    conversationId,
+    layoutMode,
+    syncTerminalLayoutAndFocus,
+    wsUrl,
+    terminalAppearance,
+    visible,
+  ]);
 
   /** 外部信号：将全屏布局重置回默认高度（collapsed 状态保持不变） */
   useEffect(() => {
@@ -404,20 +467,163 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
     setLayoutMode((prev) => (prev === 'collapsed' ? 'default' : 'collapsed'));
   };
 
+  /**
+   * 手动重连：有 conversationId 时始终 ensurePod 再连终端。
+   * 不能仅依赖 containerStatus === 'running' 跳过启动——未开保活或保活间隔内
+   * 容器已停而前端状态未更新时，必须先拉起服务才能连终端。
+   * apiEnsurePod 对已在运行的容器是幂等的，重复调用开销可接受。
+   */
+  const handleReconnectTerminal = useCallback(async () => {
+    if (!wsUrl || isTerminalReconnecting) {
+      return;
+    }
+
+    setIsTerminalReconnecting(true);
+    try {
+      if (conversationId) {
+        const isReady = await startContainer(conversationId);
+        if (!isReady) {
+          return;
+        }
+      }
+
+      setShowTerminalReconnect(false);
+      setActiveTab('terminal');
+      setLayoutMode((prev) => (prev === 'collapsed' ? 'default' : prev));
+
+      window.requestAnimationFrame(() => {
+        terminalRef.current?.reconnect(wsUrl);
+      });
+    } finally {
+      setIsTerminalReconnecting(false);
+    }
+  }, [conversationId, isTerminalReconnecting, startContainer, wsUrl]);
+
+  /** 容器启动失败或终端连接失败时，展示统一的重启服务面板（叠加层内容） */
+  const renderTerminalRetryOverlay = () => (
+    <div
+      className={cx(
+        styles['console-empty'],
+        'flex',
+        'flex-col',
+        'items-center',
+        'content-center',
+        'h-full',
+        'gap-8',
+      )}
+    >
+      <Button
+        type="primary"
+        icon={<ReloadOutlined />}
+        loading={isTerminalReconnecting}
+        className={cx(styles['container-retry-btn'])}
+        onClick={handleReconnectTerminal}
+      >
+        {dict('PC.Components.ConversationBottomConsole.retryStartContainer')}
+      </Button>
+    </div>
+  );
+
   /** 切换 Tab；折叠状态下点击 Tab 自动恢复默认高度 */
   const handleTabClick = (tab: 'terminal' | 'logs') => {
     setActiveTab(tab);
     if (layoutMode === 'collapsed') {
       setLayoutMode('default');
     }
+    if (tab === 'terminal') {
+      window.setTimeout(syncTerminalLayoutAndFocus, 100);
+    }
   };
 
-  /** 终端 Tab 内容：容器就绪后渲染交互式终端，否则展示加载/错误/空态 */
+  /** 终端 Tab：终端始终挂载，加载/错误态以叠加层淡入淡出展示 */
   const renderTerminalTab = () => {
-    // 容器正在启动中
-    if (containerStatus === 'starting') {
+    const showStartingOverlay = containerStatus === 'starting';
+    const showRetryOverlay =
+      containerStatus === 'error' || showTerminalReconnect;
+
+    if (!wsUrl) {
       return (
         <div className={cx(styles['console-body'])}>
+          <div
+            className={cx(
+              styles['console-empty'],
+              'flex',
+              'items-center',
+              'content-center',
+              'h-full',
+            )}
+          >
+            {dict('PC.Components.ConversationBottomConsole.terminalEmpty')}
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div
+        className={cx(styles['terminal-tab-stage'], {
+          [styles['terminal-tab-stage-light']]: isLightTerminal,
+          [styles['terminal-tab-stage-dark']]: !isLightTerminal,
+        })}
+      >
+        <div
+          className={cx(styles['xterm-container'])}
+          onMouseDown={(event) => {
+            if (event.button !== 0 || showStartingOverlay || showRetryOverlay) {
+              return;
+            }
+            terminalRef.current?.focus();
+          }}
+        >
+          <EmbeddedConsoleTerminal
+            ref={terminalRef}
+            className={cx(styles['terminal-embedded'], {
+              [styles['terminal-embedded-light']]: isLightTerminal,
+              [styles['terminal-embedded-dark']]: !isLightTerminal,
+            })}
+            wsUrl={wsUrl}
+            wsSubprotocols={wsSubprotocols}
+            wireProtocol={wireProtocol}
+            autoConnect={terminalAutoConnect}
+            theme={getConsoleTerminalTheme(terminalAppearance)}
+            fontSize={13}
+            fontFamily={CONSOLE_TERMINAL_FONT_FAMILY}
+            lineHeight={1.35}
+            cursorBlink
+            reconnect={DEFAULT_TERMINAL_RECONNECT}
+            onConnect={() => {
+              terminalConnectedRef.current = true;
+              terminalConnectedOnceRef.current = true;
+              setShowTerminalReconnect(false);
+              terminalRef.current?.writeln(
+                '\x1b[1;38;2;22;163;74m[Terminal connected]\x1b[0m',
+              );
+              window.setTimeout(syncTerminalLayoutAndFocus, 50);
+              window.setTimeout(syncTerminalLayoutAndFocus, 250);
+            }}
+            onDisconnect={() => {
+              terminalConnectedRef.current = false;
+              terminalRef.current?.writeln(
+                '\x1b[1;38;2;220;38;38m[Terminal disconnected]\x1b[0m',
+              );
+            }}
+            onReconnectFailed={() => {
+              terminalConnectedRef.current = false;
+              setShowTerminalReconnect(true);
+            }}
+          />
+        </div>
+
+        <div
+          className={cx(
+            styles['terminal-tab-overlay'],
+            styles['terminal-tab-overlay-instant'],
+            {
+              [styles['terminal-tab-overlay-visible']]: showStartingOverlay,
+            },
+          )}
+          aria-hidden={!showStartingOverlay}
+        >
           <div
             className={cx(
               styles['console-empty'],
@@ -436,97 +642,14 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
             </span>
           </div>
         </div>
-      );
-    }
 
-    // 容器启动或保活失败，显示重试按钮
-    if (containerStatus === 'error') {
-      return (
-        <div className={cx(styles['console-body'])}>
-          <div
-            className={cx(
-              styles['console-empty'],
-              'flex',
-              'flex-col',
-              'items-center',
-              'content-center',
-              'h-full',
-              'gap-8',
-            )}
-          >
-            <span className={cx(styles['container-error-text'])}>
-              {containerError ||
-                dict(
-                  'PC.Components.ConversationBottomConsole.containerStartFailed',
-                )}
-            </span>
-            <Button
-              type="primary"
-              icon={<ReloadOutlined />}
-              className={cx(styles['container-retry-btn'])}
-              onClick={() => conversationId && startContainer(conversationId)}
-            >
-              {dict(
-                'PC.Components.ConversationBottomConsole.retryStartContainer',
-              )}
-            </Button>
-          </div>
-        </div>
-      );
-    }
-
-    if (wsUrl) {
-      return (
-        <div className={cx(styles['xterm-container'])}>
-          <EmbeddedConsoleTerminal
-            ref={terminalRef}
-            className={cx(styles['terminal-embedded'], {
-              [styles['terminal-embedded-light']]: isLightTerminal,
-              [styles['terminal-embedded-dark']]: !isLightTerminal,
-            })}
-            wsUrl={wsUrl}
-            wsSubprotocols={wsSubprotocols}
-            wireProtocol={wireProtocol}
-            autoConnect={terminalAutoConnect}
-            theme={getConsoleTerminalTheme(terminalAppearance)}
-            fontSize={13}
-            fontFamily={CONSOLE_TERMINAL_FONT_FAMILY}
-            lineHeight={1.35}
-            cursorBlink
-            reconnect={{ enabled: true, maxRetries: 3, retryDelay: 2000 }}
-            onConnect={() => {
-              terminalConnectedRef.current = true;
-              terminalConnectedOnceRef.current = true;
-              terminalRef.current?.writeln(
-                // 使用 ANSI 真彩 + 加粗，确保连接提示在不同主题下都有明显高亮
-                '\x1b[1;38;2;22;163;74m[Terminal connected]\x1b[0m',
-              );
-            }}
-            onDisconnect={() => {
-              terminalConnectedRef.current = false;
-              terminalRef.current?.writeln(
-                // 使用 ANSI 真彩 + 加粗，确保断开提示在不同主题下都有明显高亮
-                '\x1b[1;38;2;220;38;38m[Terminal disconnected]\x1b[0m',
-              );
-            }}
-          />
-        </div>
-      );
-    }
-
-    // 空态（无 wsUrl 且无需启动容器时）
-    return (
-      <div className={cx(styles['console-body'])}>
         <div
-          className={cx(
-            styles['console-empty'],
-            'flex',
-            'items-center',
-            'content-center',
-            'h-full',
-          )}
+          className={cx(styles['terminal-tab-overlay'], {
+            [styles['terminal-tab-overlay-visible']]: showRetryOverlay,
+          })}
+          aria-hidden={!showRetryOverlay}
         >
-          {dict('PC.Components.ConversationBottomConsole.terminalEmpty')}
+          {renderTerminalRetryOverlay()}
         </div>
       </div>
     );
@@ -589,7 +712,8 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
         <div className={cx(styles['console-tabs'])}>
           <span
             className={cx(styles['console-tab'], {
-              [styles.active]: activeTab === 'terminal',
+              [styles.active]:
+                activeTab === 'terminal' && layoutMode !== 'collapsed',
             })}
             onClick={() => handleTabClick('terminal')}
           >
@@ -598,7 +722,8 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
           {showLogsTab && (
             <span
               className={cx(styles['console-tab'], {
-                [styles.active]: activeTab === 'logs',
+                [styles.active]:
+                  activeTab === 'logs' && layoutMode !== 'collapsed',
               })}
               onClick={() => handleTabClick('logs')}
             >

@@ -3,6 +3,7 @@ import ConditionRender from '@/components/ConditionRender';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import { dict } from '@/services/i18nRuntime';
 import { EditAgentShowType } from '@/types/enums/space';
+import { CodeOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import React from 'react';
 import { useModel } from 'umi';
@@ -28,6 +29,8 @@ interface PreviewAndDebugHeaderProps {
   onOpenPreviewPanel?: () => void;
   /** 打开 / 切换到 智能体电脑 视图 */
   onOpenDesktopPanel?: () => void;
+  /** 打开 / 切换到底部终端 */
+  onOpenTerminalPanel?: () => void;
 }
 
 /**
@@ -44,6 +47,7 @@ const PreviewAndDebugHeader: React.FC<PreviewAndDebugHeaderProps> = ({
   viewMode,
   onOpenPreviewPanel,
   onOpenDesktopPanel,
+  onOpenTerminalPanel,
 }) => {
   const { showType } = useModel('conversationInfo');
 
@@ -109,6 +113,19 @@ const PreviewAndDebugHeader: React.FC<PreviewAndDebugHeaderProps> = ({
               })}
               icon={<SvgIcon name="icons-common-file_preview" />}
               onClick={onOpenPreviewPanel}
+            />
+
+            {/* 终端视图 */}
+            <TooltipIcon
+              title={dict(
+                'PC.Components.ConversationBottomConsole.tabTerminal',
+              )}
+              ariaLabel={dict(
+                'PC.Components.ConversationBottomConsole.tabTerminal',
+              )}
+              className={cx(styles['icon-box'])}
+              icon={<CodeOutlined style={{ fontSize: 16 }} />}
+              onClick={onOpenTerminalPanel}
             />
 
             {/* 智能体电脑视图 */}

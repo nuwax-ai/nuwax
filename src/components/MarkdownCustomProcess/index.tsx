@@ -566,8 +566,6 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
             </div>
           </div>
         </div>
-        {/* Plan 类型展开内容 */}
-        {renderPlanDetails()}
         {/* 使用 SeeDetailModal 组件 */}
         <SeeDetailModal
           key={innerProcessing.executeId}
@@ -580,6 +578,8 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
           data={detailData}
         />
       </div>
+      {/* Plan 类型展开内容 */}
+      {renderPlanDetails()}
       {/* Diff 类型展开内容 */}
       {hasDiff && isDiffExpanded && (
         <div className={cx(styles['diff-container'])}>

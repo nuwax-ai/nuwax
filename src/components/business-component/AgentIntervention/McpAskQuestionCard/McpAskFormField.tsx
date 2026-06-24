@@ -18,6 +18,8 @@ import type { ParsedMcpAskField } from '../utils/parseMcpAskSchema';
 import { getJsonSchemaPrimaryType } from '../utils/parseMcpAskSchema';
 import styles from './McpAskFormField.less';
 
+const cx = classNames.bind(styles);
+
 interface McpAskFormFieldProps {
   field: ParsedMcpAskField;
   disabled?: boolean;
@@ -55,7 +57,10 @@ const McpAskFormField: React.FC<McpAskFormFieldProps> = ({
           },
         ]}
       >
-        <Checkbox.Group disabled={disabled} className={styles.optionGroup}>
+        <Checkbox.Group
+          disabled={disabled}
+          className={cx(styles['option-group'])}
+        >
           {enumValues.map((value, index) => (
             <Checkbox key={value} value={value}>
               {enumLabels[index] ?? value}
@@ -73,7 +78,10 @@ const McpAskFormField: React.FC<McpAskFormFieldProps> = ({
     return (
       <>
         <Form.Item name={name} label={label} rules={rules}>
-          <Radio.Group disabled={disabled} className={styles.optionGroup}>
+          <Radio.Group
+            disabled={disabled}
+            className={cx(styles['option-group'])}
+          >
             {enumValues.map((value, index) => (
               <Radio key={value} value={value}>
                 {enumLabels[index] ?? value}
@@ -106,7 +114,7 @@ const McpAskFormField: React.FC<McpAskFormFieldProps> = ({
               >
                 <Input
                   disabled={disabled}
-                  className={styles.textControl}
+                  className={cx(styles['text-control'])}
                   placeholder={
                     options.placeholder ||
                     t('PC.Components.McpAskQuestionCard.customInputPlaceholder')
@@ -126,7 +134,8 @@ const McpAskFormField: React.FC<McpAskFormFieldProps> = ({
         <Form.Item name={name} label={label} rules={rules}>
           <Select
             disabled={disabled}
-            className={styles.textControl}
+            className={cx(styles['text-control'])}
+            popupClassName={cx(styles['select-dropdown'])}
             placeholder={options.placeholder || label}
             options={enumValues.map((value, index) => ({
               value,
@@ -138,7 +147,7 @@ const McpAskFormField: React.FC<McpAskFormFieldProps> = ({
     }
     return (
       <Form.Item name={name} label={label} rules={rules}>
-        <Radio.Group disabled={disabled} className={styles.optionGroup}>
+        <Radio.Group disabled={disabled} className={cx(styles['option-group'])}>
           {enumValues.map((value, index) => (
             <Radio key={value} value={value}>
               {enumLabels[index] ?? value}
@@ -156,7 +165,7 @@ const McpAskFormField: React.FC<McpAskFormFieldProps> = ({
       <Form.Item name={name} label={label} rules={rules}>
         <InputNumber
           disabled={disabled}
-          className={styles.textControl}
+          className={cx(styles['text-control'])}
           style={{ width: '100%' }}
           placeholder={options.placeholder || label}
           min={property.minimum}
@@ -173,7 +182,7 @@ const McpAskFormField: React.FC<McpAskFormFieldProps> = ({
       <Form.Item name={name} label={label} rules={rules}>
         <Input.TextArea
           disabled={disabled}
-          className={styles.textControl}
+          className={cx(styles['text-control'])}
           rows={3}
           placeholder={options.placeholder || label}
           maxLength={property.maxLength}
@@ -186,9 +195,13 @@ const McpAskFormField: React.FC<McpAskFormFieldProps> = ({
   if (widget === 'list' && enumValues.length) {
     return (
       <Form.Item name={name} label={label} rules={rules}>
-        <Radio.Group disabled={disabled} className={styles.optionGroup}>
+        <Radio.Group disabled={disabled} className={cx(styles['option-group'])}>
           {enumValues.map((value, index) => (
-            <Radio key={value} value={value} className={styles.listRadio}>
+            <Radio
+              key={value}
+              value={value}
+              className={cx(styles['list-radio'])}
+            >
               {enumLabels[index] ?? value}
             </Radio>
           ))}
@@ -221,7 +234,7 @@ const McpAskFormField: React.FC<McpAskFormFieldProps> = ({
           multiple={multiple}
           accept={accept}
           listType="picture"
-          className={styles.uploadControl}
+          className={cx(styles['upload-control'])}
         >
           <p className="ant-upload-drag-icon">
             <InboxOutlined />
@@ -239,7 +252,7 @@ const McpAskFormField: React.FC<McpAskFormFieldProps> = ({
     <Form.Item name={name} label={label} rules={rules}>
       <Input
         disabled={disabled}
-        className={classNames(styles.textControl)}
+        className={cx(styles['text-control'])}
         placeholder={options.placeholder || label}
         maxLength={property.maxLength}
       />

@@ -27,6 +27,7 @@ import { useAppDevServer } from '@/hooks/useAppDevServer';
 import { useAutoErrorHandling } from '@/hooks/useAutoErrorHandling';
 import { useDataResourceManagement } from '@/hooks/useDataResourceManagement';
 import useDrawerScroll from '@/hooks/useDrawerScroll';
+import { useInitProjectMetadata } from '@/hooks/useInitProjectMetadata';
 import { useMergedAppDevAgentDevelopingOverlay } from '@/hooks/useMergedAppDevAgentDevelopingOverlay';
 import { useRestartDevServer } from '@/hooks/useRestartDevServer';
 import { useTerminalWsUrl } from '@/hooks/useTerminalWsUrl';
@@ -255,6 +256,14 @@ const AppDev: React.FC = () => {
   const projectInfo = useAppDevProjectInfo(projectId);
   const terminalWsUrl = useTerminalWsUrl(projectId);
 
+  useInitProjectMetadata({
+    targetType: AgentComponentTypeEnum.PageApp,
+    targetId: Number(projectId),
+    onSuccess: () => {
+      if (projectId) projectInfo.refreshProjectInfo();
+    },
+  });
+
   /** 文件写操作成功后刷新 Git 列表（sourceControl 初始化后注入） */
   const refreshGitListAfterSaveRef = useRef<() => Promise<void>>(
     async () => {},
@@ -286,6 +295,9 @@ const AppDev: React.FC = () => {
       cancelEdit: fileManagement.cancelEdit,
       getFileContentState: () => fileManagement.fileContentState,
       onRefreshProjectInfo: () => projectInfo.refreshProjectInfo(),
+      onCommitSuccess: async () => {
+        await refreshGitListAfterSaveRef.current();
+      },
     },
   });
 
@@ -396,8 +408,12 @@ const AppDev: React.FC = () => {
 
     const { chatModelList, multiModelList } = modelSelector.models || {};
 
-    // 如果上次使用的多模态模型ID存在，则使用上次使用的多模态模型ID
-    if (lastMultiModelId && !!multiModelList?.length) {
+    // 仅在未选择多模态模型时初始化默认值，避免会话结束刷新项目详情后覆盖用户选择
+    if (
+      !modelSelector.selectedMultiModelId &&
+      lastMultiModelId &&
+      !!multiModelList?.length
+    ) {
       const index = multiModelList?.findIndex((m) => m.id === lastMultiModelId);
       if (index > -1) {
         modelSelector.selectMultiModel(lastMultiModelId);
@@ -405,6 +421,11 @@ const AppDev: React.FC = () => {
         // 如果上次使用的模型已被删除或不存在，则使用列表第一个模型
         modelSelector.selectMultiModel(multiModelList[0].id);
       }
+    }
+
+    // 已有编码模型选择时不再覆盖，避免发送消息后刷新项目详情导致模型回退
+    if (modelSelector.selectedModelId) {
+      return;
     }
 
     // 如果上次使用的编码模型ID存在，则使用上次使用的编码模型ID
@@ -433,6 +454,8 @@ const AppDev: React.FC = () => {
     }
   }, [
     modelSelector.models,
+    modelSelector.selectedModelId,
+    modelSelector.selectedMultiModelId,
     projectInfo.projectInfoState.projectInfo,
     projectInfo.hasPermission,
   ]);
@@ -1810,6 +1833,7 @@ const AppDev: React.FC = () => {
                 <ConversationBottomConsole
                   // todo: 需要传入会话ID，后续完善
                   conversationId={projectId}
+                  enableKeepalivePolling={false}
                   visible={showDevLogConsole}
                   defaultActiveTab="logs"
                   terminalSignal={devConsoleTerminalSignal}

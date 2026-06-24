@@ -1,15 +1,16 @@
 import MoreActionsMenu from '@/components/business-component/FileTreePreviewPanel/FilePathHeader/MoreActionsMenu';
 import { dict } from '@/services/i18nRuntime';
+import type { AgentConfigInfo } from '@/types/interfaces/agent';
+import type { ModelConfigInfo } from '@/types/interfaces/model';
 import { getFileIcon } from '@/utils/fileTree';
 import {
   BarChartOutlined,
   BranchesOutlined,
   CloseOutlined,
-  DesktopOutlined,
+  CodeOutlined,
   FormOutlined,
   PushpinFilled,
   SettingOutlined,
-  ThunderboltOutlined,
 } from '@ant-design/icons';
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import {
@@ -35,6 +36,7 @@ import {
 } from '../hooks/usePreviewTabs';
 import PreviewTabContextMenu from './PreviewTabContextMenu';
 import PreviewTabLabel from './PreviewTabLabel';
+import PreviewTabModelSelect from './PreviewTabModelSelect';
 import {
   isPointerOverPreviewTabTooltip,
   PreviewTabTooltipDragProvider,
@@ -69,6 +71,12 @@ export interface PreviewTabBarProps {
   onExportProject?: () => void;
   /** 是否为云电脑（影响重启文案） */
   isCloudComputer?: boolean;
+  /** 空间模型列表（TaskAgent 模型下拉） */
+  originalModelConfigList?: ModelConfigInfo[];
+  /** 智能体配置（TaskAgent 模型下拉） */
+  agentConfigInfo?: AgentConfigInfo;
+  /** 切换模型 */
+  onModelChange?: (modelId: number, modelName: string) => void | Promise<void>;
 }
 
 interface TabItemFaceProps {
@@ -249,9 +257,26 @@ const SortableTabItem: React.FC<SortableTabItemProps> = ({
 
 /** 工具标签图标映射 */
 const TOOL_ICON_MAP: Partial<Record<PreviewToolId, React.ReactNode>> = {
-  preview: <DesktopOutlined style={{ fontSize: 14 }} />,
+  preview: (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <rect x="2" y="4" width="20" height="16" rx="2" />
+      <path d="M10 4v4" />
+      <path d="M2 8h20" />
+      <path d="M6 4v4" />
+    </svg>
+  ),
   arrange: <FormOutlined style={{ fontSize: 14 }} />,
-  terminal: <ThunderboltOutlined style={{ fontSize: 14 }} />,
+  terminal: <CodeOutlined style={{ fontSize: 14 }} />,
   'version-control': <BranchesOutlined style={{ fontSize: 14 }} />,
   'subscription-setting': <SettingOutlined style={{ fontSize: 14 }} />,
   'subscription-stats': <BarChartOutlined style={{ fontSize: 14 }} />,
@@ -275,6 +300,9 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
   onRestartAgent,
   onExportProject,
   isCloudComputer,
+  originalModelConfigList,
+  agentConfigInfo,
+  onModelChange,
 }) => {
   /** 拖拽中的标签 ID */
   const [activeDragTabId, setActiveDragTabId] = useState<string | null>(null);
@@ -650,6 +678,11 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
 
         {/* 更多操作菜单 */}
         <div className={cx(styles['tab-bar-actions'])}>
+          <PreviewTabModelSelect
+            originalModelConfigList={originalModelConfigList}
+            agentConfigInfo={agentConfigInfo}
+            onModelChange={onModelChange}
+          />
           <MoreActionsMenu
             onRestartServer={onRestartServer}
             onRestartAgent={onRestartAgent}
