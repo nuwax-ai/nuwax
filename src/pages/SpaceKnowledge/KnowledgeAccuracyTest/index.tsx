@@ -37,7 +37,7 @@ const KnowledgeAccuracyTest: React.FC<KnowledgeAccuracyTestProps> = ({
   const [recallResults, setRecallResults] = useState<RecallResultItem[]>([]);
 
   // 展开状态管理
-  const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
+  const [expandedCardId, setExpandedCardId] = useState<string | number | null>(null);
 
   // 搜索参数
   const [topK, setTopK] = useState(10);
@@ -128,16 +128,7 @@ const KnowledgeAccuracyTest: React.FC<KnowledgeAccuracyTestProps> = ({
 
   // 获取排名标签颜色
   const getRankColor = (rank: number) => {
-    switch (rank) {
-      case 1:
-        return '#FF69B4'; // 粉色
-      case 2:
-        return '#FFA500'; // 橙色
-      case 3:
-        return '#20B2AA'; // 青色
-      default:
-        return '#999999'; // 灰色
-    }
+    return rank <= 3 ? 'rgb(124, 112, 255)' : '#999999';
   };
 
   // 获取排名标签文本
@@ -326,7 +317,6 @@ const KnowledgeAccuracyTest: React.FC<KnowledgeAccuracyTestProps> = ({
             {/* 执行测试按钮 */}
             <Button
               type="primary"
-              className={styles.testButton}
               onClick={handleSearchTest}
               loading={searchLoading}
               icon={<SearchOutlined />}
@@ -405,8 +395,11 @@ const KnowledgeAccuracyTest: React.FC<KnowledgeAccuracyTestProps> = ({
                             </>
                           )}
                           {showExpandButton && (
-                            <div className={styles.expandHint} onClick={() => handleCardToggle(result.docId)} style={{ cursor: 'pointer' }}>
-                                {isExpanded ? '点击收缩' : '点击展开'}
+                            <div className={styles.expandHint} onClick={(e) => {
+                              e.stopPropagation();
+                              handleCardToggle(result.docId);
+                            }} style={{ cursor: 'pointer' }}>
+                                {isExpanded ? '收缩' : '展开'}
                               </div>
                             )}
                         </div>
