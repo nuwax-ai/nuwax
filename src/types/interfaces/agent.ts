@@ -498,6 +498,7 @@ export interface AgentConfigInfo {
   isSandboxUnavailable?: boolean;
   /** 智能体绑定的事件配置 */
   eventBindConfig?: any;
+  // 智能体开发模式下会话ID（用于区分不同会话）
   devAgentConversationId?: number;
 }
 
