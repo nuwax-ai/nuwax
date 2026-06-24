@@ -7,7 +7,7 @@ import { dict } from '@/services/i18nRuntime';
 import { PermissionsEnum } from '@/types/enums/common';
 import { AgentTypeEnum, ApplicationMoreActionEnum } from '@/types/enums/space';
 import { AgentConfigInfo } from '@/types/interfaces/agent';
-import { FormOutlined, ThunderboltOutlined } from '@ant-design/icons';
+import { CodeOutlined, FormOutlined } from '@ant-design/icons';
 import { Button, Dropdown, MenuProps, Tag } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
@@ -247,7 +247,7 @@ const ConversationAgentHeader: React.FC<ConversationAgentHeaderProps> = ({
           className={cx(styles['panel-btn'], {
             [styles.active]: isTerminalPanelOpen,
           })}
-          icon={<ThunderboltOutlined style={{ fontSize: 16 }} />}
+          icon={<CodeOutlined style={{ fontSize: 16 }} />}
           onClick={onOpenTerminalPanel}
         />
 

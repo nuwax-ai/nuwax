@@ -644,7 +644,8 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
         <div className={cx(styles['console-tabs'])}>
           <span
             className={cx(styles['console-tab'], {
-              [styles.active]: activeTab === 'terminal',
+              [styles.active]:
+                activeTab === 'terminal' && layoutMode !== 'collapsed',
             })}
             onClick={() => handleTabClick('terminal')}
           >
@@ -653,7 +654,8 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
           {showLogsTab && (
             <span
               className={cx(styles['console-tab'], {
-                [styles.active]: activeTab === 'logs',
+                [styles.active]:
+                  activeTab === 'logs' && layoutMode !== 'collapsed',
               })}
               onClick={() => handleTabClick('logs')}
             >
@@ -671,13 +673,21 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
               title={dict(
                 'PC.Components.ConversationBottomConsole.retryStartContainer',
               )}
-              placement="top"
-              className={cx(styles['console-action-btn'])}
+              className={cx(
+                styles['console-action-btn'],
+                styles['console-action-restart-btn'],
+              )}
               icon={
-                <ReloadOutlined
-                  spin={isTerminalReconnecting}
-                  style={{ fontSize: 14 }}
-                />
+                <Button
+                  danger
+                  type="primary"
+                  icon={<ReloadOutlined />}
+                  loading={isTerminalReconnecting}
+                >
+                  {dict(
+                    'PC.Components.ConversationBottomConsole.retryStartContainer',
+                  )}
+                </Button>
               }
               onClick={handleReconnectTerminal}
             />

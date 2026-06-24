@@ -3,7 +3,7 @@ import ConditionRender from '@/components/ConditionRender';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import { dict } from '@/services/i18nRuntime';
 import { EditAgentShowType } from '@/types/enums/space';
-import { ThunderboltOutlined } from '@ant-design/icons';
+import { CodeOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import React from 'react';
 import { useModel } from 'umi';
@@ -124,7 +124,7 @@ const PreviewAndDebugHeader: React.FC<PreviewAndDebugHeaderProps> = ({
                 'PC.Components.ConversationBottomConsole.tabTerminal',
               )}
               className={cx(styles['icon-box'])}
-              icon={<ThunderboltOutlined style={{ fontSize: 16 }} />}
+              icon={<CodeOutlined style={{ fontSize: 16 }} />}
               onClick={onOpenTerminalPanel}
             />
 
