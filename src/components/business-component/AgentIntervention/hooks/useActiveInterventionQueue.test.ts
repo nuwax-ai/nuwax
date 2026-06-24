@@ -11,19 +11,16 @@ function createAskInteraction(
   return {
     input: {
       toolName: 'nuwax_ask_question',
-      schemaVersion: 'nuwax.mcp_ask.v1',
+      schemaVersion: 'nuwax.mcp_ask.v2',
       requestId: 'ask-1',
       revision: 1,
       sessionId: 'session-1',
       title: '毕业论文 PPT 前置信息收集',
       ui: {
-        version: 'nuwax.interaction.v1',
+        version: 'nuwax.interaction.v2',
         presentation: 'wizard',
         title: '毕业论文 PPT 前置信息收集',
-        schema: {
-          type: 'object',
-          properties: {},
-        },
+        fields: [],
       },
     },
     toolCallId: 'call-ask-1',
