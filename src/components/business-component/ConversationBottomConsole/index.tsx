@@ -671,13 +671,21 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
               title={dict(
                 'PC.Components.ConversationBottomConsole.retryStartContainer',
               )}
-              placement="top"
-              className={cx(styles['console-action-btn'])}
+              className={cx(
+                styles['console-action-btn'],
+                styles['console-action-restart-btn'],
+              )}
               icon={
-                <ReloadOutlined
-                  spin={isTerminalReconnecting}
-                  style={{ fontSize: 14 }}
-                />
+                <Button
+                  danger
+                  type="primary"
+                  icon={<ReloadOutlined />}
+                  loading={isTerminalReconnecting}
+                >
+                  {dict(
+                    'PC.Components.ConversationBottomConsole.retryStartContainer',
+                  )}
+                </Button>
               }
               onClick={handleReconnectTerminal}
             />
