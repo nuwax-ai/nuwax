@@ -294,9 +294,12 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
    * - idle：未传 conversationId，无需容器，终端在有 wsUrl 时直接连接
    * - running：容器就绪，终端可连接
    * - starting / error：容器未就绪，终端不可连接
+   * 面板折叠或整体隐藏时不建立连接，避免在 display:none 容器内 init ttyd 导致无法输入
    */
   const terminalAutoConnect =
-    containerStatus === 'idle' || containerStatus === 'running';
+    (containerStatus === 'idle' || containerStatus === 'running') &&
+    visible &&
+    layoutMode !== 'collapsed';
   /** 上一次 visible 值（用于识别「重新打开」时机） */
   const prevVisibleRef = useRef(visible);
   /** 外部信号上一次值（避免组件 remount 时重复触发） */
@@ -335,14 +338,21 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
 
   /**
    * 切换到终端 Tab / 布局或主题变化 / visible 从 false 变为 true 后，
-   * 延迟重新计算终端 cols/rows（fit）并刷新渲染，
+   * 延迟重新计算终端 cols/rows（fit）并同步 ttyd 尺寸、聚焦终端，
    * 避免容器从 display:none / visibility:hidden 恢复后 xterm-screen 尺寸停留在初始极小值。
    */
   useEffect(() => {
-    if (activeTab !== 'terminal' || !wsUrl || !visible) return;
+    if (
+      activeTab !== 'terminal' ||
+      !wsUrl ||
+      !visible ||
+      layoutMode === 'collapsed'
+    ) {
+      return;
+    }
     const timer = window.setTimeout(() => {
-      // 先 fit 重新计算 cols/rows 适配容器尺寸，再 refresh 重绘
-      terminalRef.current?.fit();
+      terminalRef.current?.fitAndSyncBackend();
+      terminalRef.current?.focus();
       const term = terminalRef.current?.getTerminal();
       if (!term) return;
       try {
@@ -459,6 +469,12 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
     setActiveTab(tab);
     if (layoutMode === 'collapsed') {
       setLayoutMode('default');
+    }
+    if (tab === 'terminal') {
+      window.setTimeout(() => {
+        terminalRef.current?.fitAndSyncBackend();
+        terminalRef.current?.focus();
+      }, 100);
     }
   };
 

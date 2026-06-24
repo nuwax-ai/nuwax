@@ -25,6 +25,10 @@ export interface EmbeddedConsoleTerminalRef {
   getTerminal: () => Terminal | null;
   /** 重新计算 cols/rows 以适配容器尺寸（容器从隐藏变为可见后调用） */
   fit: () => void;
+  /** fit 后向后端同步 ttyd 尺寸（init 尚未发送时会补发 init） */
+  fitAndSyncBackend: () => void;
+  /** 聚焦终端以接收键盘输入 */
+  focus: () => void;
   /** 建立 WebSocket 连接 */
   connect: (url?: string) => void;
   /** 断开 WebSocket 连接 */
@@ -143,7 +147,10 @@ const EmbeddedConsoleTerminal = forwardRef<
 
         const { cols, rows } = ensureDimensions(term);
         if (wireProtocol === 'ttyd') {
-          if (options?.sendTtydInit && !ttydInitSentRef.current) {
+          const shouldSendInit =
+            options?.sendTtydInit === true ||
+            (options?.sendTtydInit !== false && !ttydInitSentRef.current);
+          if (shouldSendInit && !ttydInitSentRef.current) {
             ws.send(encodeTtydInit(cols, rows));
             ttydInitSentRef.current = true;
           } else if (ttydInitSentRef.current) {
@@ -155,6 +162,22 @@ const EmbeddedConsoleTerminal = forwardRef<
       // eslint-disable-next-line react-hooks/exhaustive-deps
       [],
     );
+
+    const fitAndSyncBackend = useCallback(() => {
+      try {
+        fitAddonRef.current?.fit();
+      } catch {
+        /* ignore */
+      }
+      const ws = wsRef.current;
+      if (ws?.readyState === WebSocket.OPEN) {
+        syncBackendSize(ws, { sendTtydInit: !ttydInitSentRef.current });
+      }
+    }, [syncBackendSize]);
+
+    const focusTerminal = useCallback(() => {
+      terminalRef.current?.focus();
+    }, []);
 
     const connect = useCallback(
       (url?: string) => {
@@ -224,6 +247,7 @@ const EmbeddedConsoleTerminal = forwardRef<
                   term.write(chunk);
                 }
               }
+              term?.focus();
               onConnectRef.current?.();
             },
           );
@@ -337,11 +361,19 @@ const EmbeddedConsoleTerminal = forwardRef<
             /* ignore */
           }
         },
+        fitAndSyncBackend,
+        focus: focusTerminal,
         connect,
         disconnect,
         reconnect: reconnectTerminal,
       }),
-      [connect, disconnect, reconnectTerminal],
+      [
+        connect,
+        disconnect,
+        fitAndSyncBackend,
+        focusTerminal,
+        reconnectTerminal,
+      ],
     );
 
     useEffect(() => {
@@ -378,9 +410,15 @@ const EmbeddedConsoleTerminal = forwardRef<
 
       term.onResize(({ cols, rows }) => {
         if (
-          wsRef.current?.readyState === WebSocket.OPEN &&
-          wireProtocol === 'ttyd'
+          wsRef.current?.readyState !== WebSocket.OPEN ||
+          wireProtocol !== 'ttyd'
         ) {
+          return;
+        }
+        if (!ttydInitSentRef.current) {
+          wsRef.current.send(encodeTtydInit(cols, rows));
+          ttydInitSentRef.current = true;
+        } else {
           wsRef.current.send(encodeTtydResize(cols, rows));
         }
       });
@@ -416,6 +454,10 @@ const EmbeddedConsoleTerminal = forwardRef<
               fitAddon.fit();
             } catch {
               /* ignore */
+            }
+            const ws = wsRef.current;
+            if (ws?.readyState === WebSocket.OPEN) {
+              syncBackendSize(ws, { sendTtydInit: !ttydInitSentRef.current });
             }
           }
         }
