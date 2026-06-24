@@ -1,3 +1,4 @@
+import { dict } from '@/services/i18nRuntime';
 import classNames from 'classnames';
 import React from 'react';
 import { useModel } from 'umi';
@@ -13,7 +14,7 @@ const GreetingHeader: React.FC = () => {
   return (
     <div className={cx(styles['greeting-header-container'])}>
       <h1 className={cx(styles['greeting-title'])}>
-        嗨，{nickname}，给我一个任务，现在开始？
+        {dict('PC.Pages.SpaceCreateProject.greetingTitle', nickname)}
       </h1>
     </div>
   );

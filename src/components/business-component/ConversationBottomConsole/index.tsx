@@ -150,8 +150,12 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
   const terminalRef = useRef<EmbeddedConsoleTerminalRef>(null);
   /** 终端当前连接状态（用于控制断连后再触发容器兜底重启） */
   const terminalConnectedRef = useRef<boolean>(false);
-  /** 终端是否曾成功连接过（避免首次连接前误判为“断开”） */
+  /** 终端是否曾成功连接过（避免首次连接前误判为”断开”） */
   const terminalConnectedOnceRef = useRef<boolean>(false);
+  /** 用户是否曾展开过终端面板（首次展开后才触发容器启动/WS连接） */
+  const terminalActivatedRef = useRef<boolean>(false);
+  /** 上一次 layoutMode 值，用于检测首次从 collapsed 展开 */
+  const prevLayoutModeRef = useRef<ConsoleLayoutMode>(defaultLayoutMode);
   /** 终端自动重连耗尽后显示手动重连按钮 */
   const [showTerminalReconnect, setShowTerminalReconnect] =
     useState<boolean>(false);
@@ -168,7 +172,7 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
    */
   const [containerStatus, setContainerStatus] = useState<
     'idle' | 'starting' | 'running' | 'error'
-  >(conversationId ? 'starting' : 'idle');
+  >('idle');
   const [containerError, setContainerError] = useState<string>('');
 
   /**
@@ -264,7 +268,7 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
     [enableKeepalivePolling],
   );
 
-  /** 挂载时启动容器；conversationId 变化时重启 */
+  /** 挂载时仅清理状态，不自动启动容器；等用户首次展开时触发 */
   useLayoutEffect(() => {
     if (!conversationId) {
       setContainerStatus('idle');
@@ -273,30 +277,58 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
       return;
     }
 
-    // 清理旧的保活轮询
+    // 清理旧的保活轮询，重置状态，但不启动容器
     if (enableKeepalivePolling) {
       stopKeepaliveRef.current();
     }
+    setContainerStatus('idle');
     terminalConnectedRef.current = false;
     terminalConnectedOnceRef.current = false;
-
-    startContainer(conversationId);
 
     return () => {
       if (enableKeepalivePolling) {
         stopKeepaliveRef.current();
       }
     };
-  }, [conversationId, startContainer, enableKeepalivePolling]);
+  }, [conversationId, enableKeepalivePolling]);
+
+  /** 用户首次展开终端面板时，触发容器启动 / 终端直接连接 */
+  const handleFirstExpand = useCallback(() => {
+    terminalActivatedRef.current = true;
+
+    // 云端电脑：容器尚未启动时触发启动
+    if (conversationId && containerStatus === 'idle') {
+      startContainer(conversationId);
+    }
+  }, [conversationId, containerStatus, startContainer]);
+
+  /** 监听 layoutMode 变化，检测首次从 collapsed 展开 */
+  useEffect(() => {
+    // 两种情况触发首次启动：
+    // 1. 首次渲染时已是非折叠状态（如 defaultLayoutMode="default"）
+    // 2. 从折叠展开为非折叠状态
+    const isFirstExpand =
+      (!terminalActivatedRef.current && layoutMode !== 'collapsed') ||
+      (layoutMode !== 'collapsed' && prevLayoutModeRef.current === 'collapsed');
+
+    if (isFirstExpand) {
+      handleFirstExpand();
+    }
+    prevLayoutModeRef.current = layoutMode;
+  }, [layoutMode, handleFirstExpand]);
 
   /**
    * 终端连接开关（完全由内部容器状态控制）：
    * - idle：未传 conversationId，无需容器，终端在有 wsUrl 时直接连接
    * - running：容器就绪，终端可连接
    * - starting / error：容器未就绪，终端不可连接
+   * 面板折叠或整体隐藏时不建立连接，避免在 display:none 容器内 init ttyd 导致无法输入
+   * 例外：用户已首次展开过终端面板后，即使折叠也保持连接不断
    */
   const terminalAutoConnect =
-    containerStatus === 'idle' || containerStatus === 'running';
+    (containerStatus === 'idle' || containerStatus === 'running') &&
+    visible &&
+    (layoutMode !== 'collapsed' || terminalActivatedRef.current);
   /** 上一次 visible 值（用于识别「重新打开」时机） */
   const prevVisibleRef = useRef(visible);
   /** 外部信号上一次值（避免组件 remount 时重复触发） */
@@ -335,14 +367,21 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
 
   /**
    * 切换到终端 Tab / 布局或主题变化 / visible 从 false 变为 true 后，
-   * 延迟重新计算终端 cols/rows（fit）并刷新渲染，
+   * 延迟重新计算终端 cols/rows（fit）并同步 ttyd 尺寸、聚焦终端，
    * 避免容器从 display:none / visibility:hidden 恢复后 xterm-screen 尺寸停留在初始极小值。
    */
   useEffect(() => {
-    if (activeTab !== 'terminal' || !wsUrl || !visible) return;
+    if (
+      activeTab !== 'terminal' ||
+      !wsUrl ||
+      !visible ||
+      layoutMode === 'collapsed'
+    ) {
+      return;
+    }
     const timer = window.setTimeout(() => {
-      // 先 fit 重新计算 cols/rows 适配容器尺寸，再 refresh 重绘
-      terminalRef.current?.fit();
+      terminalRef.current?.fitAndSyncBackend();
+      terminalRef.current?.focus();
       const term = terminalRef.current?.getTerminal();
       if (!term) return;
       try {
@@ -459,6 +498,12 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
     setActiveTab(tab);
     if (layoutMode === 'collapsed') {
       setLayoutMode('default');
+    }
+    if (tab === 'terminal') {
+      window.setTimeout(() => {
+        terminalRef.current?.fitAndSyncBackend();
+        terminalRef.current?.focus();
+      }, 100);
     }
   };
 
@@ -644,7 +689,8 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
         <div className={cx(styles['console-tabs'])}>
           <span
             className={cx(styles['console-tab'], {
-              [styles.active]: activeTab === 'terminal',
+              [styles.active]:
+                activeTab === 'terminal' && layoutMode !== 'collapsed',
             })}
             onClick={() => handleTabClick('terminal')}
           >
@@ -653,7 +699,8 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
           {showLogsTab && (
             <span
               className={cx(styles['console-tab'], {
-                [styles.active]: activeTab === 'logs',
+                [styles.active]:
+                  activeTab === 'logs' && layoutMode !== 'collapsed',
               })}
               onClick={() => handleTabClick('logs')}
             >
@@ -671,13 +718,21 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
               title={dict(
                 'PC.Components.ConversationBottomConsole.retryStartContainer',
               )}
-              placement="top"
-              className={cx(styles['console-action-btn'])}
+              className={cx(
+                styles['console-action-btn'],
+                styles['console-action-restart-btn'],
+              )}
               icon={
-                <ReloadOutlined
-                  spin={isTerminalReconnecting}
-                  style={{ fontSize: 14 }}
-                />
+                <Button
+                  danger
+                  type="primary"
+                  icon={<ReloadOutlined />}
+                  loading={isTerminalReconnecting}
+                >
+                  {dict(
+                    'PC.Components.ConversationBottomConsole.retryStartContainer',
+                  )}
+                </Button>
               }
               onClick={handleReconnectTerminal}
             />
