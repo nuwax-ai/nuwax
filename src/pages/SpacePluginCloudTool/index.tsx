@@ -7,6 +7,7 @@ import PluginTryRunModal from '@/components/PluginTryRunModal';
 import PublishComponentModal from '@/components/PublishComponentModal';
 import VersionHistory from '@/components/VersionHistory';
 import { ICON_ADD_TR } from '@/constants/images.constants';
+import { useInitProjectMetadata } from '@/hooks/useInitProjectMetadata';
 import usePluginConfig from '@/hooks/usePluginConfig';
 import { dataTypes } from '@/pages/Antv-X6/params';
 import { dict } from '@/services/i18nRuntime';
@@ -101,6 +102,16 @@ const SpacePluginCloudTool: React.FC = () => {
       }
     },
   });
+
+  useInitProjectMetadata({
+    targetType: AgentComponentTypeEnum.Plugin,
+    targetId: pluginId,
+    onSuccess: () => {
+      if (pluginId) runPluginInfo(pluginId);
+    },
+  });
+
+  // ========== 代码保存逻辑 ==========
 
   // 更新代码插件配置接口
   const { run: runUpdate } = useRequest(apiPluginCodeUpdate, {

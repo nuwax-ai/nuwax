@@ -1,5 +1,7 @@
+import { useInitProjectMetadata } from '@/hooks/useInitProjectMetadata';
 import { ChatCore } from '@/pages/Chat';
 import { apiSkillDetail } from '@/services/skill';
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { SkillDetailInfo } from '@/types/interfaces/skill';
 import React, { useEffect, useRef, useState } from 'react';
 import { useLocation, useModel, useParams, useRequest } from 'umi';
@@ -47,6 +49,14 @@ const SkillDetailsConversation: React.FC = () => {
       } else {
         setSkillInfo(data);
       }
+    },
+  });
+
+  useInitProjectMetadata({
+    targetType: AgentComponentTypeEnum.Skill,
+    targetId: skillId,
+    onSuccess: () => {
+      if (skillId) runSkillInfo(skillId);
     },
   });
 
