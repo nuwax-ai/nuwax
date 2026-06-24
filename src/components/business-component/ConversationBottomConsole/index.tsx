@@ -304,11 +304,14 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
 
   /** 监听 layoutMode 变化，检测首次从 collapsed 展开 */
   useEffect(() => {
-    // 从 collapsed 展开为非 collapsed 状态时触发
-    if (
-      layoutMode !== 'collapsed' &&
-      prevLayoutModeRef.current === 'collapsed'
-    ) {
+    // 两种情况触发首次启动：
+    // 1. 首次渲染时已是非折叠状态（如 defaultLayoutMode="default"）
+    // 2. 从折叠展开为非折叠状态
+    const isFirstExpand =
+      (!terminalActivatedRef.current && layoutMode !== 'collapsed') ||
+      (layoutMode !== 'collapsed' && prevLayoutModeRef.current === 'collapsed');
+
+    if (isFirstExpand) {
       handleFirstExpand();
     }
     prevLayoutModeRef.current = layoutMode;
