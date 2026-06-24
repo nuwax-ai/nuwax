@@ -21,7 +21,10 @@ import { useInitProjectMetadata } from '@/hooks/useInitProjectMetadata';
 import { useTerminalWsUrl } from '@/hooks/useTerminalWsUrl';
 import useUnifiedTheme from '@/hooks/useUnifiedTheme';
 import DebugDetails from '@/pages/EditAgent/DebugDetails';
-import { apiAgentConfigInfo } from '@/services/agentConfig';
+import {
+  apiAgentComponentModelUpdate,
+  apiAgentConfigInfo,
+} from '@/services/agentConfig';
 import { dict } from '@/services/i18nRuntime';
 import { apiModelList } from '@/services/modelConfig';
 import {
@@ -37,7 +40,11 @@ import {
 import { CreateUpdateModeEnum, PublishStatusEnum } from '@/types/enums/common';
 import { ModelTypeEnum } from '@/types/enums/modelConfig';
 import { AgentTypeEnum, EditAgentShowType } from '@/types/enums/space';
-import { AgentBaseInfo, AgentConfigInfo } from '@/types/interfaces/agent';
+import {
+  AgentBaseInfo,
+  AgentConfigInfo,
+  type ComponentModelBindConfig,
+} from '@/types/interfaces/agent';
 import { FileNode } from '@/types/interfaces/appDev';
 import { UpdateFileInfo } from '@/types/interfaces/fileTree';
 import type {
@@ -260,6 +267,32 @@ const ConversationAgent: React.FC = () => {
       'noopener,noreferrer',
     );
   }, [spaceId, agentId]);
+
+  /** 预览 Tab 栏切换模型（与 EditAgent ArrangeTitle 一致） */
+  const handlePreviewTabModelChange = useCallback(
+    async (modelId: number, name: string) => {
+      const componentId = agentConfigInfo?.modelComponentConfig?.id;
+      if (!componentId || !agentConfigInfo) {
+        return;
+      }
+      const bindConfig = agentConfigInfo.modelComponentConfig
+        ?.bindConfig as ComponentModelBindConfig;
+      await apiAgentComponentModelUpdate({
+        id: componentId,
+        targetId: modelId,
+        bindConfig,
+      });
+      setAgentConfigInfo({
+        ...agentConfigInfo,
+        modelComponentConfig: {
+          ...agentConfigInfo.modelComponentConfig,
+          targetId: modelId,
+          name,
+        },
+      });
+    },
+    [agentConfigInfo],
+  );
 
   // ==================== 计算属性 ====================
   /** 开发会话 ID，用于聊天历史查询 */
@@ -1361,6 +1394,9 @@ const ConversationAgent: React.FC = () => {
           }}
           /** 是否为云电脑 */
           isCloudComputer={finalSelectedComputerId === '-1'}
+          originalModelConfigList={originalModelConfigList}
+          agentConfigInfo={agentConfigInfo}
+          onModelChange={handlePreviewTabModelChange}
         />
         {/* Tab 栏下方：预览内容 + 底部终端（终端放大时仅覆盖此区域） */}
         <div className={cx(styles['right-panel-main'])}>
