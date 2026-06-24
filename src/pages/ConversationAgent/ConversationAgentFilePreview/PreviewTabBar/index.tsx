@@ -5,11 +5,11 @@ import {
   BarChartOutlined,
   BranchesOutlined,
   CloseOutlined,
+  CodeOutlined,
   DesktopOutlined,
   FormOutlined,
   PushpinFilled,
   SettingOutlined,
-  ThunderboltOutlined,
 } from '@ant-design/icons';
 import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import {
@@ -251,7 +251,7 @@ const SortableTabItem: React.FC<SortableTabItemProps> = ({
 const TOOL_ICON_MAP: Partial<Record<PreviewToolId, React.ReactNode>> = {
   preview: <DesktopOutlined style={{ fontSize: 14 }} />,
   arrange: <FormOutlined style={{ fontSize: 14 }} />,
-  terminal: <ThunderboltOutlined style={{ fontSize: 14 }} />,
+  terminal: <CodeOutlined style={{ fontSize: 14 }} />,
   'version-control': <BranchesOutlined style={{ fontSize: 14 }} />,
   'subscription-setting': <SettingOutlined style={{ fontSize: 14 }} />,
   'subscription-stats': <BarChartOutlined style={{ fontSize: 14 }} />,

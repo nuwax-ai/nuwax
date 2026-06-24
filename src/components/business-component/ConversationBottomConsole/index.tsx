@@ -644,7 +644,8 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
         <div className={cx(styles['console-tabs'])}>
           <span
             className={cx(styles['console-tab'], {
-              [styles.active]: activeTab === 'terminal',
+              [styles.active]:
+                activeTab === 'terminal' && layoutMode !== 'collapsed',
             })}
             onClick={() => handleTabClick('terminal')}
           >
@@ -653,7 +654,8 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
           {showLogsTab && (
             <span
               className={cx(styles['console-tab'], {
-                [styles.active]: activeTab === 'logs',
+                [styles.active]:
+                  activeTab === 'logs' && layoutMode !== 'collapsed',
               })}
               onClick={() => handleTabClick('logs')}
             >
