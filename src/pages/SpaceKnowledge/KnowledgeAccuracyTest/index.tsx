@@ -147,15 +147,44 @@ const KnowledgeAccuracyTest: React.FC<KnowledgeAccuracyTestProps> = ({
 
   // 处理测试历史记录点击事件
   const handleHistoryClick = (record: TestHistoryItem) => {
+    console.log('点击了历史记录:', record);
     try {
       // 解析results字段
       const results = typeof record.results === 'string'
         ? JSON.parse(record.results)
         : record.results;
 
+      console.log('解析后的results:', results);
+
+      // 处理results字段为对象的情况
+      let resultsArray: RecallResultItem[] = [];
+
       if (Array.isArray(results)) {
-        setRecallResults(results);
+        // 如果直接是数组，直接使用
+        resultsArray = results;
+      } else if (typeof results === 'object' && results !== null) {
+        // 如果是对象，尝试提取数组数据
+        // 优先检查 results.results 属性（实际数据结构）
+        if (Array.isArray(results.results)) {
+          resultsArray = results.results;
+          console.log('从 results.results 提取到数组数据，长度:', resultsArray.length);
+        } else if (Array.isArray(results.data)) {
+          resultsArray = results.data;
+          console.log('从 results.data 提取到数组数据，长度:', resultsArray.length);
+        } else if (Array.isArray(results.list)) {
+          resultsArray = results.list;
+          console.log('从 results.list 提取到数组数据，长度:', resultsArray.length);
+        } else {
+          console.warn('无法从results对象中提取数组数据:', results);
+        }
+      }
+
+      if (resultsArray.length > 0) {
+        console.log('设置召回结果:', resultsArray);
+        setRecallResults(resultsArray);
         setExpandedCardId(null); // 重置展开状态
+      } else {
+        console.warn('没有有效的召回结果数据');
       }
     } catch (error) {
       console.error('解析历史记录结果失败', error);
@@ -180,7 +209,11 @@ const KnowledgeAccuracyTest: React.FC<KnowledgeAccuracyTestProps> = ({
       width: '70%',
       render: (text: string, record: TestHistoryItem) => (
         <a
-          onClick={() => handleHistoryClick(record)}
+          onClick={(e) => {
+            e.preventDefault();
+            console.log('Query点击事件触发:', record);
+            handleHistoryClick(record);
+          }}
           style={{ cursor: 'pointer', color: '#1890FF' }}
         >
           {text}
