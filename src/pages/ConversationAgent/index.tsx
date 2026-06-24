@@ -19,6 +19,7 @@ import type { PromptVariable } from '@/components/TiptapVariableInput/types';
 import { transformToPromptVariables } from '@/components/TiptapVariableInput/utils/variableTransform';
 import VersionHistory from '@/components/VersionHistory';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { useInitProjectMetadata } from '@/hooks/useInitProjectMetadata';
 import { useTerminalWsUrl } from '@/hooks/useTerminalWsUrl';
 import useUnifiedTheme from '@/hooks/useUnifiedTheme';
 import AgentModelSetting from '@/pages/EditAgent/AgentModelSetting';
@@ -541,6 +542,14 @@ const ConversationAgent: React.FC = () => {
     },
     onError: () => {
       setLoadingAgentConfigInfo(false);
+    },
+  });
+
+  useInitProjectMetadata({
+    targetType: AgentComponentTypeEnum.Agent,
+    targetId: agentId,
+    onSuccess: () => {
+      if (agentId) runAgentConfigInfo(agentId);
     },
   });
 
