@@ -2,7 +2,6 @@ import agentImage from '@/assets/images/agent_image.png';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import CreateSkill from '@/pages/SpaceSkillManage/CreateSkill';
 import { dict } from '@/services/i18nRuntime';
-import { apiSkillDetail } from '@/services/skill';
 import { CreateUpdateModeEnum, PublishStatusEnum } from '@/types/enums/common';
 import { SkillInfo } from '@/types/interfaces/library';
 import { SkillDetailInfo } from '@/types/interfaces/skill';
@@ -13,8 +12,8 @@ import {
 } from '@ant-design/icons';
 import { Button } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useState } from 'react';
-import { history, useModel, useRequest } from 'umi';
+import React, { useState } from 'react';
+import { history, useModel } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -22,14 +21,18 @@ const cx = classNames.bind(styles);
 export interface SkillHeaderProps {
   spaceId: number;
   skillId: number;
+  skillInfo: SkillDetailInfo | null;
+  onRefresh: () => void;
 }
 
 /**
  * 技能详情会话左上角技能头部组件
  */
-const SkillHeader: React.FC<SkillHeaderProps> = ({ spaceId, skillId }) => {
-  const [skillInfo, setSkillInfo] = useState<SkillDetailInfo | null>(null);
-
+const SkillHeader: React.FC<SkillHeaderProps> = ({
+  spaceId,
+  skillInfo,
+  onRefresh,
+}) => {
   // 弹窗状态
   const [editSkillModalOpen, setEditSkillModalOpen] = useState<boolean>(false);
 
@@ -43,34 +46,6 @@ const SkillHeader: React.FC<SkillHeaderProps> = ({ spaceId, skillId }) => {
     }
   };
 
-  // 请求技能详情
-  const { run: runSkillInfo } = useRequest(apiSkillDetail, {
-    manual: true,
-    debounceInterval: 300,
-    onSuccess: (result: any) => {
-      // 兼容可能为 { code, data } 或直接为 data 的情况
-      const data = result?.data !== undefined ? result.data : result;
-      const { files } = data || {};
-      if (Array.isArray(files) && files.length > 0) {
-        setSkillInfo(() => ({
-          ...data,
-          files: files.map((item: any) => ({
-            ...item,
-            fileId: item.name,
-          })),
-        }));
-      } else {
-        setSkillInfo(data);
-      }
-    },
-  });
-
-  useEffect(() => {
-    if (skillId) {
-      runSkillInfo(skillId);
-    }
-  }, [skillId]);
-
   // 编辑技能信息
   const handleEditSkill = () => {
     setEditSkillModalOpen(true);
@@ -78,7 +53,7 @@ const SkillHeader: React.FC<SkillHeaderProps> = ({ spaceId, skillId }) => {
 
   const handleEditSkillConfirm = () => {
     setEditSkillModalOpen(false);
-    runSkillInfo(skillId);
+    onRefresh();
     refreshFiles();
   };
 

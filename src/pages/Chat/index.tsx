@@ -80,6 +80,7 @@ export interface ChatCoreProps {
   showPayment?: boolean; // 是否包含订阅/扣费弹窗等逻辑，默认 true
   enableResizable?: boolean; // 是否开启拖拽分栏布局，默认 true
   showClearContext?: boolean; // 是否展示清除上下文按钮（刷子），默认 true
+  defaultFileTreeVisible?: boolean; // 是否默认显示文件树，默认 false
   renderTitle?: (props: {
     effectiveAgent: any;
     isAppSidebarMode: boolean;
@@ -98,6 +99,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   showPayment = true,
   enableResizable = true,
   showClearContext = true,
+  defaultFileTreeVisible = false,
   renderTitle,
   renderHeaderRight,
 }) => {
@@ -529,6 +531,13 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       setOpenPaymentModal(false);
     };
   }, [id]);
+
+  useEffect(() => {
+    if (id && defaultFileTreeVisible) {
+      openPreviewView(id);
+      setIsFileTreePinned(true);
+    }
+  }, [id, defaultFileTreeVisible, openPreviewView, setIsFileTreePinned]);
 
   // 互斥面板控制器：管理 PagePreview、AgentSidebar、ShowArea 的互斥展示
   useExclusivePanels({
