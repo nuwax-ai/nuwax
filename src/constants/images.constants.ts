@@ -88,6 +88,13 @@ import BG_ICON_WORKFLOW_QA from '@/assets/workflow/workflow-QA.svg';
 import BG_ICON_WORKFLOW_TEXT_PROCESSING from '@/assets/workflow/workflow-TextProcessing.svg';
 import BG_ICON_WORKFLOW_VARIABLE from '@/assets/workflow/workflow-Variable.svg';
 import BG_ICON_WORKFLOW_WORKFLOW from '@/assets/workflow/workflow-Workflow.svg';
+// AgentFlow 专用图标
+import BG_ICON_AGENTFLOW_AGENT from '@/assets/workflow/workflow-Agent.svg';
+import BG_ICON_AGENTFLOW_EVALGATE from '@/assets/workflow/workflow-EvalGate.svg';
+import BG_ICON_AGENTFLOW_EXTERNAL_CONNECTOR from '@/assets/workflow/workflow-ExternalConnector.svg';
+import BG_ICON_AGENTFLOW_HUMAN_APPROVE from '@/assets/workflow/workflow-HumanApprove.svg';
+import BG_ICON_AGENTFLOW_HUMAN_ASK from '@/assets/workflow/workflow-HumanAsk.svg';
+import BG_ICON_AGENTFLOW_ROUTE_DECISION from '@/assets/workflow/workflow-RouteDecision.svg';
 // 修改导入语句以正确导入图片
 
 import { ReactComponent as ICON_MORE } from '@/assets/svg/icon_more.svg';
@@ -99,6 +106,13 @@ import { ReactComponent as ICON_MESSAGE } from '@/assets/svg/icon_message.svg';
 import { ReactComponent as ICON_USER } from '@/assets/svg/icon_user.svg';
 
 export {
+  // AgentFlow 专用图标
+  BG_ICON_AGENTFLOW_AGENT,
+  BG_ICON_AGENTFLOW_EVALGATE,
+  BG_ICON_AGENTFLOW_EXTERNAL_CONNECTOR,
+  BG_ICON_AGENTFLOW_HUMAN_APPROVE,
+  BG_ICON_AGENTFLOW_HUMAN_ASK,
+  BG_ICON_AGENTFLOW_ROUTE_DECISION,
   BG_ICON_WORKFLOW_CODE,
   BG_ICON_WORKFLOW_CONDITION,
   BG_ICON_WORKFLOW_DATABASE,

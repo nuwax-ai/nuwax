@@ -23,6 +23,7 @@ import {
 } from '@/types/enums/agent';
 import {
   AgentArrangeConfigEnum,
+  AgentSubTypeEnum,
   AgentTypeEnum,
   ComponentSettingEnum,
   OpenCloseEnum,
@@ -636,7 +637,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     asyncFun(true);
   };
 
-  // 工具列表
+  // 工具列表（AgentFlow 下隐藏「工作流」工具：其编排即画布本身）
   const ToolList: CollapseProps['items'] = [
     {
       key: AgentArrangeConfigEnum.Plugin,
@@ -719,7 +720,13 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         body: 'collapse-body',
       },
     },
-  ];
+  ].filter(
+    (item) =>
+      !(
+        agentConfigInfo?.subType === AgentSubTypeEnum.Flow &&
+        item?.key === AgentArrangeConfigEnum.Workflow
+      ),
+  );
 
   // 知识库
   const KnowledgeList: CollapseProps['items'] = [

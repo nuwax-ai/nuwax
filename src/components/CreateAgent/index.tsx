@@ -7,9 +7,10 @@ import UploadAvatar from '@/components/UploadAvatar';
 import { apiAgentAdd, apiAgentConfigUpdate } from '@/services/agentConfig';
 import { dict } from '@/services/i18nRuntime';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
-import { AgentTypeEnum } from '@/types/enums/space';
+import { AgentSubTypeEnum, AgentTypeEnum } from '@/types/enums/space';
 import type {
   AgentAddParams,
+  AgentAddResult,
   AgentConfigUpdateParams,
 } from '@/types/interfaces/agent';
 import type { CreateAgentProps } from '@/types/interfaces/common';
@@ -46,7 +47,7 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
   const { run: runAdd } = useRequest(apiAgentAdd, {
     manual: true,
     debounceInterval: 300,
-    onSuccess: (result: number) => {
+    onSuccess: (result: AgentAddResult) => {
       setImageUrl('');
       onConfirmCreate?.(result);
       message.success(dict('PC.Components.CreateAgent.createSuccess'));
@@ -89,11 +90,14 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
   const onFinish: FormProps<AgentAddParams>['onFinish'] = (values) => {
     setLoading(true);
     if (mode === CreateUpdateModeEnum.Create) {
+      // AgentFlow 在后端实际类型为 TaskAgent，通过 subType=Flow 区分
+      const isAgentFlow = type === AgentTypeEnum.AgentFlow;
       runAdd({
         ...values,
         icon: imageUrl,
         spaceId,
-        type,
+        type: isAgentFlow ? AgentTypeEnum.TaskAgent : type,
+        subType: isAgentFlow ? AgentSubTypeEnum.Flow : undefined,
       });
     } else {
       // 更新智能体
@@ -119,21 +123,26 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
   // 获取标题
   const getTitle = useCallback(() => {
     if (type) {
-      const typeMap: Record<
-        AgentTypeEnum.ChatBot | AgentTypeEnum.TaskAgent,
-        string
-      > = {
-        [AgentTypeEnum.ChatBot]: dict('PC.Components.CreateAgent.typeChatBot'),
-        [AgentTypeEnum.TaskAgent]: dict(
-          'PC.Components.CreateAgent.typeTaskAgent',
-        ),
-      };
+      let typeName: string | undefined;
+      switch (type) {
+        case AgentTypeEnum.ChatBot:
+          typeName = dict('PC.Components.CreateAgent.typeChatBot');
+          break;
+        case AgentTypeEnum.TaskAgent:
+          typeName = dict('PC.Components.CreateAgent.typeTaskAgent');
+          break;
+        case AgentTypeEnum.AgentFlow:
+          typeName = dict('PC.Components.CreateAgent.typeAgentFlow');
+          break;
+        default:
+          typeName = undefined;
+      }
 
-      const typeName =
-        typeMap[type as AgentTypeEnum.ChatBot | AgentTypeEnum.TaskAgent];
-      return mode === CreateUpdateModeEnum.Create
-        ? dict('PC.Components.CreateAgent.createTypeTitle', typeName)
-        : dict('PC.Components.CreateAgent.updateTypeTitle', typeName);
+      if (typeName) {
+        return mode === CreateUpdateModeEnum.Create
+          ? dict('PC.Components.CreateAgent.createTypeTitle', typeName)
+          : dict('PC.Components.CreateAgent.updateTypeTitle', typeName);
+      }
     }
     return mode === CreateUpdateModeEnum.Create
       ? dict('PC.Components.CreateAgent.createTitle')

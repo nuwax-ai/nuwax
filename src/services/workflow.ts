@@ -15,6 +15,31 @@ import { request } from 'umi';
 
 // 工作流的接口
 
+const SUCCESS_CODE = '0000';
+
+function isAgentFlowSaveMockEnabled(): boolean {
+  if (typeof window === 'undefined') return false;
+  const { pathname, search } = window.location;
+  const searchParams = new URLSearchParams(search);
+  return (
+    pathname.includes('/agent-flow/') &&
+    (searchParams.get('mockAgentFlow') === 'true' ||
+      searchParams.get('mock') === 'agent-flow')
+  );
+}
+
+function createMockResponse<T>(data: T): RequestResponse<T> {
+  return {
+    code: SUCCESS_CODE,
+    displayCode: SUCCESS_CODE,
+    message: 'mock success',
+    data,
+    debugInfo: {},
+    success: true,
+    tid: `mock_${Date.now()}`,
+  };
+}
+
 interface IGetModelList {
   modelType?: string;
   apiProtocol?: string;
@@ -120,6 +145,8 @@ export interface IgetDetails {
   editVersion?: number;
   // 是否强制提交: 0-检测版本冲突, 1-强制提交
   forceCommit?: 0 | 1;
+  // 流类型：Workflow / AgentFlow（AgentFlow 分支专用，旧数据缺省即 Workflow）
+  workflowType?: string;
 }
 
 // 工作流保存请求参数
@@ -338,6 +365,11 @@ export async function apiRestoreWorkflowVersion(
 export async function saveWorkflow(
   params: ISaveWorkflowParams,
 ): Promise<RequestResponse<ISaveWorkflowResponse | null>> {
+  if (isAgentFlowSaveMockEnabled()) {
+    const currentVersion = params.workflowConfig.editVersion || 1;
+    return createMockResponse<ISaveWorkflowResponse>(currentVersion + 1);
+  }
+
   return request(`/api/workflow/save`, {
     method: 'POST',
     skipErrorHandler: true, // 跳过错误处理

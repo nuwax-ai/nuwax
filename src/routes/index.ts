@@ -552,6 +552,12 @@ const routes = [
     layout: false,
   },
   {
+    path: '/space/:spaceId/agent-flow/:workflowId',
+    component: '@/pages/EditAgent',
+    wrappers: ['@/wrappers/authWithLoading'],
+    layout: false,
+  },
+  {
     path: '/space/:spaceId/agent/:agentId',
     component: '@/pages/EditAgent',
     wrappers: ['@/wrappers/authWithLoading'],
@@ -571,7 +577,7 @@ const routes = [
   },
   {
     path: '/space/:spaceId/agent-flow',
-    component: '@/pages/AgentFlow',
+    component: '@/pages/EditAgent',
     wrappers: ['@/wrappers/authWithLoading'],
     layout: false,
   },

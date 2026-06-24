@@ -27,7 +27,7 @@ import {
   CreateListEnum,
   FilterStatusEnum,
 } from '@/types/enums/space';
-import { AgentConfigInfo } from '@/types/interfaces/agent';
+import type { AgentAddResult, AgentConfigInfo } from '@/types/interfaces/agent';
 import {
   AnalyzeStatisticsItem,
   CustomPopoverItem,
@@ -310,7 +310,9 @@ const SpaceDevelop: React.FC = () => {
 
   // 点击跳转到智能体
   const handleClick = (agentId: number, item?: AgentConfigInfo) => {
-    if (item?.devAgentConversationId) {
+    if (item?.type === AgentTypeEnum.AgentFlow) {
+      history.push(`/space/${spaceId}/agent-flow/${agentId}`);
+    } else if (item?.devAgentConversationId) {
       history.push(
         `/space/${spaceId}/conversation-agent?agentId=${agentId}&conversationId=${item.devAgentConversationId}`,
       );
@@ -431,9 +433,25 @@ const SpaceDevelop: React.FC = () => {
   };
 
   // 确认创建智能体
-  const handlerConfirmCreateAgent = (agentId: number) => {
+  const handlerConfirmCreateAgent = (result: AgentAddResult) => {
+    // 确定性 ID 解析：统一优先级 agentId > workflowId > id，避免依赖 UI 状态
+    const createdId =
+      typeof result === 'number'
+        ? result
+        : result?.agentId ?? result?.workflowId ?? result?.id;
+
+    if (!createdId) {
+      // ID 缺失时保持弹窗打开，让用户感知失败并可重试
+      message.error(dict('PC.Common.Global.operationFailed'));
+      return;
+    }
+
     setOpenCreateAgent(false);
-    history.push(`/space/${spaceId}/agent/${agentId}`);
+    if (currentAgentType === AgentTypeEnum.AgentFlow) {
+      history.push(`/space/${spaceId}/agent-flow/${createdId}`);
+    } else {
+      history.push(`/space/${spaceId}/agent/${createdId}`);
+    }
   };
 
   // 导入配置成功后，刷新智能体列表

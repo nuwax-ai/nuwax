@@ -16,6 +16,7 @@ import styles from './index.less';
 const cx = classNames.bind(styles);
 
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import { AgentSubTypeEnum } from '@/types/enums/space';
 import type { SubmitPayload } from './components/PromptBox';
 
 /**
@@ -124,6 +125,7 @@ const SpaceCreateProject: React.FC = () => {
    */
   const handleCreateSubmit = async ({
     type: targetType,
+    subType,
     prompt,
     files,
     skillIds,
@@ -134,7 +136,7 @@ const SpaceCreateProject: React.FC = () => {
   }: SubmitPayload) => {
     // todo: 页面应用不需要策略，直接跳转到页面开发页面，后续再补充
     if (targetType === AgentComponentTypeEnum.PageApp) {
-      const res = await apiProjectCreate({ spaceId, targetType });
+      const res = await apiProjectCreate({ spaceId, targetType, subType });
       const { targetId } = res.data;
 
       setContext(createAppDevInitialPayloadKey(targetId), {
@@ -166,7 +168,14 @@ const SpaceCreateProject: React.FC = () => {
 
     try {
       // 3. 调用 API 创建基础项目记录以获取 ID
-      const res = await apiProjectCreate({ spaceId, targetType });
+      // Flow 子类型用专门的 targetType，后端按此区分创建逻辑
+      const flowTargetType =
+        subType === AgentSubTypeEnum.Flow ? 'AgentFlow' : targetType;
+      const res = await apiProjectCreate({
+        spaceId,
+        targetType: flowTargetType,
+        subType,
+      });
       const { targetId, conversationId } = res.data;
 
       // 4. 前置自动生成名称、描述和图标，并更新配置信息
@@ -206,9 +215,15 @@ const SpaceCreateProject: React.FC = () => {
         tenantConfigInfo,
       });
 
+      // AgentFlow 子类型跳转到画布编排页面
+      const finalUrl =
+        subType === AgentSubTypeEnum.Flow
+          ? `/space/${spaceId}/agent-flow/${targetId}`
+          : url;
+
       // 7. 携带初始状态跳转到工作台详情会话中
-      if (url) {
-        history.push(url, {
+      if (finalUrl) {
+        history.push(finalUrl, {
           message: prompt,
           files,
           skillIds,

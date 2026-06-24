@@ -90,6 +90,7 @@ interface UseNodeOperationsParams {
   changeDrawer: (val: any) => void;
   getNodeConfig: (id: number) => void;
   getReference: (id: number) => Promise<boolean>;
+  getWorkflow?: (key: string) => any;
   changeNode: (
     params: { nodeData: any },
     callback?: () => void,
@@ -1039,6 +1040,17 @@ export const useNodeOperations = ({
             mcpId: val.targetId,
           },
         };
+      } else if (val.targetType === AgentComponentTypeEnum.Agent) {
+        // 智能体节点：先弹窗选择已发布 ChatBot 智能体，再创建并绑定 agentId
+        _child = {
+          name: val.name,
+          shape: NodeShapeEnum.General,
+          description: val.description,
+          type: NodeTypeEnum.Agent,
+          nodeConfig: {
+            agentId: val.targetId,
+          },
+        };
       } else {
         message.warning(t('PC.Pages.AntvX6Workflow.unsupportedComponentType'));
         return;
@@ -1066,6 +1078,7 @@ export const useNodeOperations = ({
         NodeTypeEnum.Plugin,
         NodeTypeEnum.Workflow,
         NodeTypeEnum.MCP,
+        NodeTypeEnum.Agent,
       ].includes(childType);
 
       const isTableNode = [

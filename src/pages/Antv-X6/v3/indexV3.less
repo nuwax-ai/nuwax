@@ -1,6 +1,9 @@
 @import '@/styles/color.less';
 @import '@/styles/token.less';
 
+@sidebar-width: 240px;
+@header-height: 56px;
+
 .absolute-box {
   position: absolute;
   height: 42px;
@@ -40,11 +43,96 @@
   }
 }
 
-// 添加节点的样式
+// Left sidebar panel (permanent, replaces Popover stencil)
+.stencil-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+
+  .stencil-panel-header {
+    padding: 12px 12px 8px;
+    border-bottom: 1px solid @WHITE03;
+
+    .stencil-search {
+      border-radius: 6px;
+    }
+  }
+
+  .stencil-panel-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 12px 12px;
+
+    .stencil-group {
+      margin-bottom: 12px;
+
+      .stencil-group-title {
+        margin-bottom: 6px;
+        font-size: 11px;
+        font-weight: 500;
+        line-height: 16px;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        color: @GRAY05;
+      }
+
+      .stencil-group-content {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+
+        .stencil-node-item {
+          display: flex;
+          align-items: center;
+          padding: 6px 8px;
+          border-radius: 6px;
+          cursor: pointer;
+          transition: background-color 0.15s;
+
+          &:hover {
+            background-color: @WHITE03;
+          }
+
+          .icon-box-style {
+            flex-shrink: 0;
+            width: 20px;
+            height: 20px;
+            margin-right: 8px;
+          }
+
+          .stencil-node-label {
+            font-size: 13px;
+            color: @GRAY03;
+            line-height: 18px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+        }
+      }
+    }
+  }
+
+  .stencil-empty {
+    padding: 20px 0;
+    text-align: center;
+    color: @GRAY05;
+    font-size: 12px;
+  }
+}
+
+// MiniMap container at bottom of sidebar
+.workflow-minimap {
+  border-top: 1px solid @WHITE03;
+  background: #fafafa;
+  min-height: 140px;
+}
+
+// ── Workflow v3: stencil popover styles ────────────────────
 .stencil-content {
   width: 240px;
-  max-height: calc(100vh - 100px); // 设置最大高度为视口高度减去100px
-  overflow-y: auto; // 内容超出时显示垂直滚动条
+  max-height: calc(100vh - 100px);
+  overflow-y: auto;
 
   .stencil-title {
     color: @GRAY07;
@@ -84,12 +172,6 @@
             width: 20px;
             height: 20px;
             margin-right: 8px;
-
-            svg {
-              width: 20px;
-              height: 20px;
-              border-radius: 6px;
-            }
           }
 
           span {
@@ -102,19 +184,42 @@
   }
 }
 
+// ── Main layout container ─────────────────────────────────
 #container {
   display: flex;
   flex-direction: column;
   position: absolute;
-  // border: 1px solid #dfe3e8;
-  width: 100%; // 改为视窗单位
+  width: 100%;
   height: 100%;
   top: 0;
-  left: 0; // 改为视窗单位
+  left: 0;
   overflow-y: auto;
   overflow-x: hidden;
   min-height: 600px;
   min-width: 1200px;
+}
+
+.workflow-body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  height: calc(100% - @header-height);
+
+  .workflow-sidebar {
+    width: @sidebar-width;
+    min-width: @sidebar-width;
+    background: #fff;
+    border-right: 1px solid @WHITE03;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .workflow-canvas {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+  }
 }
 
 .x6-widget-transform {

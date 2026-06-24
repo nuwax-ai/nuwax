@@ -654,9 +654,10 @@ export const getDevLogs = async (
  */
 export const apiProjectCreate = async (data: {
   spaceId: number;
-  targetType: AgentComponentTypeEnum;
+  targetType: AgentComponentTypeEnum | string;
   name?: string;
   programmingLanguage?: string;
+  subType?: string;
 }): Promise<any> => {
   return request('/api/project/create', {
     method: 'POST',

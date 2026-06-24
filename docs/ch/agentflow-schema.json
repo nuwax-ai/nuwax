@@ -1,0 +1,906 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "version": "1.0.0",
+  "title": "AgentFlow Schema",
+  "description": "AgentFlow 多智能体协作编排 — 节点连线规则与属性面板配置",
+
+  "flowKind": "AgentFlow",
+
+  "globalConfig": {
+    "flowControlModel": {
+      "type": "select",
+      "label": "流程控制模型",
+      "description": "可在顶部工具栏切换，新建智能体节点自动使用此模型",
+      "options": [
+        "Qwen3.6-Plus",
+        "Qwen3.5-Turbo",
+        "deepseek-v4-flash",
+        "qwen-max",
+        "qwen-plus"
+      ],
+      "default": "Qwen3.6-Plus"
+    }
+  },
+
+  "contextMechanism": {
+    "type": "globalContext",
+    "variableSyntax": "{{variableName}}",
+    "parseByBackend": true,
+    "frontendInference": {
+      "description": "前端从已有节点推断可选上下文变量列表",
+      "sources": [
+        "startNode.variables — 开始节点定义的输入变量",
+        "node_{id}_output — 各节点的输出",
+        "user_input — 用户的原始输入内容",
+        "user_reply — 询问用户节点的用户回复",
+        "systemBuiltin — 系统内置上下文变量"
+      ]
+    }
+  },
+
+  "nodeTypes": {
+    "start": {
+      "_comment": "与 V3 Workflow 一致，不做改动",
+      "reuseFrom": "V3"
+    },
+
+    "end": {
+      "_comment": "与 V3 Workflow 一致，不做改动",
+      "reuseFrom": "V3"
+    },
+
+    "route": {
+      "label": "路由决策",
+      "category": "processing",
+      "description": "AI决策走哪条分支",
+      "icon": "route",
+      "color": "route",
+
+      "ports": {
+        "input": {
+          "id": "{nodeId}-in",
+          "group": "in",
+          "maxConnections": 1
+        },
+        "output": {
+          "type": "dynamicBranches",
+          "branches": {
+            "source": "node.branches",
+            "portIdPattern": "{nodeId}-route-{branchIndex}-out",
+            "defaultPort": {
+              "id": "{nodeId}-route-default-out",
+              "group": "special",
+              "label": "默认",
+              "color": "#bfbfbf",
+              "maxConnections": 1
+            },
+            "branchPort": {
+              "group": "special",
+              "maxConnections": 1,
+              "optional": true
+            }
+          },
+          "rules": {
+            "maxPerPort": 1,
+            "optionalConnection": true,
+            "minBranches": 1,
+            "allBranchesModifiable": true
+          }
+        }
+      },
+
+      "properties": {
+        "model": {
+          "type": "select",
+          "label": "识别模型",
+          "options": [
+            "Qwen3.6-Plus",
+            "Qwen3.5-Turbo",
+            "deepseek-v4-flash",
+            "qwen-max",
+            "qwen-plus"
+          ],
+          "default": "Qwen3.6-Plus"
+        },
+        "systemPrompt": {
+          "type": "textarea",
+          "label": "系统提示词",
+          "placeholder": "指导AI如何做路由决策...",
+          "description": "AI根据上下文和各分支描述自动决策走哪条路",
+          "defaultValue": ""
+        },
+        "branches": {
+          "type": "dynamicList",
+          "label": "路由分支",
+          "addButtonText": "+ 添加分支",
+          "minItems": 1,
+          "itemSchema": {
+            "name": {
+              "type": "text",
+              "label": "分支名称",
+              "placeholder": "分支名称",
+              "required": true
+            },
+            "desc": {
+              "type": "textarea",
+              "label": "分支描述",
+              "placeholder": "分支描述：什么情况下走这条分支..."
+            }
+          }
+        }
+      },
+
+      "defaults": {
+        "systemPrompt": "",
+        "branches": [{ "name": "分支1", "desc": "" }]
+      }
+    },
+
+    "agent": {
+      "label": "智能体",
+      "category": "processing",
+      "description": "调用AI智能体处理",
+      "icon": "agent",
+      "color": "agent",
+
+      "ports": {
+        "input": {
+          "id": "{nodeId}-in",
+          "group": "in",
+          "maxConnections": 1
+        },
+        "output": {
+          "id": "{nodeId}-out",
+          "group": "out",
+          "maxConnections": 1
+        }
+      },
+
+      "properties": {
+        "contextPassMode": {
+          "type": "segmented",
+          "label": "上下文传递",
+          "options": [
+            { "value": "auto", "label": "自动" },
+            { "value": "manual", "label": "手动" }
+          ],
+          "default": "auto",
+          "description": {
+            "auto": "自动读取上游全部上下文，AI自动从上下文中提取所需信息，无需手动绑定",
+            "manual": "手动选择要传递给智能体的上下文变量"
+          }
+        },
+        "contextParams": {
+          "type": "conditional",
+          "showWhen": { "contextPassMode": "manual" },
+          "fields": {
+            "baseParam": {
+              "type": "radioList",
+              "label": "基础入参",
+              "description": "选择一个基础输入源",
+              "singleSelect": true,
+              "options": [
+                {
+                  "key": "user_input",
+                  "label": "用户输入",
+                  "desc": "用户的原始输入内容"
+                },
+                {
+                  "key": "flow_context",
+                  "label": "流程上下文",
+                  "desc": "上游节点产生的全部上下文数据"
+                }
+              ],
+              "dynamicOptions": "startNode.variables（排除 user_input 后的开始节点输入变量）"
+            },
+            "upstreamOutputs": {
+              "type": "checkboxList",
+              "label": "上级节点输出",
+              "description": "选择要传递的上游节点输出",
+              "source": "frontendInferredUpstreamNodes",
+              "optionTemplate": {
+                "key": "node_{nodeId}_output",
+                "label": "{node.label}",
+                "icon": "{node.type}",
+                "color": "{node.type}"
+              }
+            },
+            "extraParams": {
+              "type": "dynamicList",
+              "label": "额外参数",
+              "addButtonText": "+ 添加参数",
+              "itemSchema": {
+                "name": {
+                  "type": "text",
+                  "label": "参数名",
+                  "placeholder": "参数名"
+                },
+                "valueType": {
+                  "type": "segmented",
+                  "options": [
+                    { "value": "literal", "label": "填写值" },
+                    { "value": "variable", "label": "引用变量" }
+                  ],
+                  "default": "literal"
+                },
+                "value": {
+                  "type": "conditional",
+                  "showWhen": { "valueType": "literal" },
+                  "fieldType": "text",
+                  "placeholder": "参数值"
+                },
+                "variableRef": {
+                  "type": "conditional",
+                  "showWhen": { "valueType": "variable" },
+                  "fieldType": "select",
+                  "placeholder": "选择上下文变量...",
+                  "optionsSource": "contextVariableList"
+                }
+              }
+            }
+          }
+        },
+        "systemPrompt": {
+          "type": "textarea",
+          "label": "补充提示词",
+          "placeholder": "可以添加提示词来约束智能体输出格式等，也可以在此引用上下文变量",
+          "supportsVariableRef": true,
+          "defaultValue": ""
+        }
+      },
+
+      "defaults": {
+        "contextPassMode": "auto",
+        "contextParams": [],
+        "extraParams": [],
+        "systemPrompt": ""
+      }
+    },
+
+    "plugin": {
+      "_comment": "复用 V3 插件节点类型，AgentFlow 场景下属性面板按原型展示",
+      "reuseFrom": "V3",
+      "label": "插件",
+      "category": "processing",
+      "description": "调用外部插件执行",
+
+      "ports": {
+        "input": { "id": "{nodeId}-in", "group": "in", "maxConnections": 1 },
+        "output": { "id": "{nodeId}-out", "group": "out", "maxConnections": 1 }
+      },
+
+      "properties": {
+        "_scope": "AgentFlow only, V3 unchanged",
+        "inputPassMode": {
+          "type": "segmented",
+          "label": "入参配置",
+          "options": [
+            { "value": "auto", "label": "自动" },
+            { "value": "manual", "label": "手动" }
+          ],
+          "default": "auto",
+          "description": {
+            "auto": "自动读取上游全部上下文作为入参，AI自动从上下文中提取所需信息传递给插件",
+            "manual": "手动配置每个参数的值或引用变量"
+          }
+        },
+        "inputParams": {
+          "type": "conditional",
+          "showWhen": { "inputPassMode": "manual" },
+          "fields": {
+            "params": {
+              "type": "predefinedParamList",
+              "description": "参数名固定（来自插件定义），每个参数值支持填写值/引用变量",
+              "paramSchema": {
+                "label": {
+                  "type": "text",
+                  "source": "predefined",
+                  "description": "参数显示名"
+                },
+                "name": {
+                  "type": "text",
+                  "source": "predefined",
+                  "description": "参数标识名"
+                },
+                "valueType": {
+                  "type": "segmented",
+                  "options": [
+                    { "value": "literal", "label": "填写值" },
+                    { "value": "variable", "label": "引用变量" }
+                  ],
+                  "default": "literal"
+                },
+                "value": {
+                  "type": "conditional",
+                  "showWhen": { "valueType": "literal" },
+                  "fieldType": "text",
+                  "placeholder": "参数值"
+                },
+                "variableRef": {
+                  "type": "conditional",
+                  "showWhen": { "valueType": "variable" },
+                  "fieldType": "select",
+                  "placeholder": "选择上下文变量...",
+                  "optionsSource": "contextVariableList"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "workflow": {
+      "_comment": "复用 V3 工作流节点类型，AgentFlow 场景下属性面板按原型展示",
+      "reuseFrom": "V3",
+      "label": "工作流",
+      "category": "processing",
+      "description": "调用其他工作流",
+
+      "ports": {
+        "input": { "id": "{nodeId}-in", "group": "in", "maxConnections": 1 },
+        "output": { "id": "{nodeId}-out", "group": "out", "maxConnections": 1 }
+      },
+
+      "properties": {
+        "_scope": "AgentFlow only, V3 unchanged",
+        "triggerMode": {
+          "type": "select",
+          "label": "触发方式",
+          "options": [
+            { "value": "sync", "label": "同步（等待完成）" },
+            { "value": "async", "label": "异步（立即返回）" }
+          ],
+          "default": "sync"
+        },
+        "inputPassMode": {
+          "type": "segmented",
+          "label": "入参配置",
+          "options": [
+            { "value": "auto", "label": "自动" },
+            { "value": "manual", "label": "手动" }
+          ],
+          "default": "auto",
+          "description": {
+            "auto": "自动读取上游全部上下文作为入参，AI自动从上下文中提取所需信息传递给工作流",
+            "manual": "手动配置每个参数的值或引用变量"
+          }
+        },
+        "inputParams": {
+          "type": "conditional",
+          "showWhen": { "inputPassMode": "manual" },
+          "fields": {
+            "params": {
+              "type": "predefinedParamList",
+              "description": "参数名固定（来自工作流定义），每个参数值支持填写值/引用变量",
+              "paramSchema": "同 plugin.inputParams.params.paramSchema"
+            }
+          }
+        }
+      }
+    },
+
+    "human": {
+      "label": "人工确认",
+      "category": "human",
+      "description": "暂停等待人工审核",
+      "icon": "human",
+      "color": "human",
+
+      "ports": {
+        "input": {
+          "id": "{nodeId}-in",
+          "group": "in",
+          "maxConnections": 1
+        },
+        "output": {
+          "type": "dynamicBranches",
+          "branches": {
+            "source": "node.branches",
+            "portIdPattern": "{nodeId}-hitl-{branchIndex}-out",
+            "branchPort": {
+              "group": "special",
+              "maxConnections": 1,
+              "optional": true
+            },
+            "rules": {
+              "maxPerPort": 1,
+              "optionalConnection": true,
+              "minBranches": 1,
+              "allBranchesModifiable": true
+            }
+          }
+        }
+      },
+
+      "properties": {
+        "confirmRole": {
+          "type": "radioCards",
+          "label": "确认角色",
+          "options": [
+            {
+              "value": "user",
+              "label": "使用者确认",
+              "description": "当前用户直接确认"
+            },
+            {
+              "value": "external",
+              "label": "外部确认",
+              "description": "通过通道通知他人"
+            }
+          ],
+          "default": "user"
+        },
+        "approvalMode": {
+          "type": "select",
+          "label": "审核模式",
+          "options": [
+            { "value": "approve_reject", "label": "通过 / 拒绝" },
+            { "value": "edit_approve", "label": "可编辑后通过" },
+            { "value": "always_pass", "label": "仅通知（自动通过）" }
+          ],
+          "conditionalOptions": {
+            "always_pass": { "showWhen": { "confirmRole": "user" } }
+          },
+          "default": "approve_reject"
+        },
+        "instruction": {
+          "type": "textarea",
+          "label": "审核说明",
+          "placeholder": {
+            "user": "向使用者说明需要确认的内容...",
+            "external": "告诉审核人需要关注什么..."
+          },
+          "defaultValue": ""
+        },
+        "branches": {
+          "type": "dynamicList",
+          "label": "输出分支",
+          "description": "每个分支对应一个输出连接桩，审核结果将走对应分支",
+          "addButtonText": "+ 添加分支",
+          "minItems": 1,
+          "itemSchema": {
+            "name": {
+              "type": "text",
+              "label": "分支名称",
+              "placeholder": "分支名称",
+              "required": true
+            },
+            "desc": {
+              "type": "textarea",
+              "label": "分支描述",
+              "placeholder": "分支描述..."
+            }
+          }
+        },
+        "channels": {
+          "type": "conditional",
+          "showWhen": { "confirmRole": "external" },
+          "label": "确认通道",
+          "description": "配置如何通知审核人进行确认，支持多通道",
+          "fields": {
+            "channelList": {
+              "type": "dynamicList",
+              "addButtonText": "+ 添加通道",
+              "itemSchema": {
+                "type": {
+                  "type": "select",
+                  "label": "通道类型",
+                  "options": ["webhook"],
+                  "default": "webhook"
+                },
+                "enabled": {
+                  "type": "switch",
+                  "label": "启用",
+                  "default": true
+                }
+              }
+            }
+          }
+        },
+        "channelTimeout": {
+          "type": "conditional",
+          "showWhen": { "confirmRole": "external" },
+          "fieldType": "number",
+          "label": "等待超时（秒）",
+          "min": 30,
+          "max": 86400,
+          "default": 300,
+          "description": "超时未确认的处理方式"
+        },
+        "escalation": {
+          "type": "conditional",
+          "showWhen": { "confirmRole": "external" },
+          "fieldType": "select",
+          "label": "超时处理",
+          "options": [
+            { "value": "skip", "label": "跳过（自动通过继续执行）" },
+            { "value": "reject", "label": "自动拒绝" },
+            { "value": "retry", "label": "重新通知审核人" },
+            { "value": "abort", "label": "中止工作流" }
+          ],
+          "default": "skip"
+        },
+        "channelRetry": {
+          "type": "conditional",
+          "showWhen": { "confirmRole": "external" },
+          "fieldType": "number",
+          "label": "重试次数",
+          "min": 0,
+          "max": 10,
+          "default": 3
+        },
+        "contextDisplay": {
+          "type": "readonly",
+          "label": "上下文展示",
+          "description": "运行时展示上游所有处理结果供审核"
+        }
+      },
+
+      "defaults": {
+        "confirmRole": "user",
+        "approvalMode": "approve_reject",
+        "instruction": "",
+        "branches": [
+          { "name": "通过", "desc": "" },
+          { "name": "拒绝", "desc": "" }
+        ],
+        "channels": [{ "type": "webhook", "enabled": true }],
+        "channelTimeout": 300,
+        "escalation": "skip",
+        "channelRetry": 3
+      }
+    },
+
+    "ask": {
+      "label": "询问用户",
+      "category": "human",
+      "description": "向用户提问收集信息",
+      "icon": "ask",
+      "color": "ask",
+
+      "ports": {
+        "input": {
+          "id": "{nodeId}-in",
+          "group": "in",
+          "maxConnections": 1
+        },
+        "output": {
+          "type": "modeDependent",
+          "modes": {
+            "text": {
+              "id": "{nodeId}-out",
+              "group": "out",
+              "maxConnections": 1
+            },
+            "options": {
+              "type": "dynamicBranches",
+              "branches": {
+                "source": "node.options (每行一个)",
+                "portIdPattern": "{nodeId}-option-{optionIndex}-out",
+                "branchPort": {
+                  "group": "special",
+                  "maxConnections": 1,
+                  "optional": true
+                },
+                "rules": {
+                  "maxPerPort": 1,
+                  "optionalConnection": true,
+                  "noDefaultPort": true,
+                  "unconnectedMeans": "放弃该选项"
+                }
+              }
+            },
+            "form": {
+              "id": "{nodeId}-out",
+              "group": "out",
+              "maxConnections": 1
+            }
+          }
+        }
+      },
+
+      "properties": {
+        "questionTemplate": {
+          "type": "textarea",
+          "label": "提问模板",
+          "placeholder": "向用户提出的问题...",
+          "supportsVariableRef": true,
+          "variableRefHint": "可使用 {{上下文变量}} 引用上游结果",
+          "defaultValue": ""
+        },
+        "replyMode": {
+          "type": "buttonGroup",
+          "label": "回复模式",
+          "options": [
+            { "value": "text", "label": "文本回复" },
+            { "value": "options", "label": "选项回复" },
+            { "value": "form", "label": "表单回复" }
+          ],
+          "default": "text"
+        },
+        "options": {
+          "type": "conditional",
+          "showWhen": { "replyMode": "options" },
+          "fieldType": "textarea",
+          "label": "选项内容",
+          "hint": "每个选项可连线",
+          "placeholder": "每行一个选项...",
+          "description": "每个选项会显示为独立输出端口",
+          "parseRule": "每行一个选项，生成对应输出端口"
+        },
+        "formFields": {
+          "type": "conditional",
+          "showWhen": { "replyMode": "form" },
+          "label": "表单字段",
+          "description": "定义用户需要填写的表单字段",
+          "fieldType": "dynamicList",
+          "addButtonText": "+ 添加字段",
+          "itemSchema": {
+            "label": {
+              "type": "text",
+              "label": "字段名称",
+              "placeholder": "字段名称",
+              "required": true
+            },
+            "type": {
+              "type": "select",
+              "label": "字段类型",
+              "options": [
+                { "value": "radio", "label": "单选" },
+                { "value": "checkbox", "label": "多选" },
+                { "value": "input", "label": "单行文本" },
+                { "value": "number", "label": "数字" },
+                { "value": "textarea", "label": "多行文本" },
+                { "value": "file", "label": "文件上传" }
+              ],
+              "default": "input"
+            },
+            "required": {
+              "type": "switch",
+              "label": "必填",
+              "default": false
+            },
+            "options": {
+              "type": "conditional",
+              "showWhen": { "type": ["radio", "checkbox"] },
+              "fieldType": "textarea",
+              "placeholder": "选项内容（每行一个选项）"
+            }
+          }
+        },
+        "required": {
+          "type": "select",
+          "label": "是否必填",
+          "options": [
+            { "value": true, "label": "必填（等待用户回复后继续）" },
+            { "value": false, "label": "可选（可跳过）" }
+          ],
+          "default": true
+        },
+        "timeout": {
+          "type": "number",
+          "label": "超时时间（秒）",
+          "hint": "可选",
+          "placeholder": "留空则不限制超时",
+          "min": 30,
+          "max": 3600,
+          "default": null,
+          "description": "留空则一直等待用户回复"
+        },
+        "contextWrite": {
+          "type": "readonly",
+          "label": "上下文写入",
+          "value": "user_reply",
+          "description": "用户回复自动写入全局上下文供下游使用"
+        }
+      },
+
+      "defaults": {
+        "questionTemplate": "",
+        "replyMode": "text",
+        "options": "",
+        "formFields": [],
+        "required": true,
+        "timeout": null
+      }
+    },
+
+    "evaluation": {
+      "label": "结果评估",
+      "category": "advanced",
+      "description": "评估输出质量与准确性",
+      "icon": "evaluation",
+      "color": "evaluation",
+
+      "ports": {
+        "input": {
+          "id": "{nodeId}-in",
+          "group": "in",
+          "maxConnections": 1
+        },
+        "output": {
+          "type": "dynamicBranches",
+          "branches": {
+            "source": "node.branches",
+            "portIdPattern": "{nodeId}-eval-{branchIndex}-out",
+            "passPort": {
+              "index": 0,
+              "id": "{nodeId}-eval-pass-out",
+              "group": "special",
+              "label": "通过",
+              "badge": "✓",
+              "badgeColor": "#52c41a",
+              "maxConnections": 1
+            },
+            "failPorts": {
+              "startIndex": 1,
+              "group": "special",
+              "maxConnections": 1,
+              "optional": true
+            },
+            "rules": {
+              "maxPerPort": 1,
+              "optionalConnection": true,
+              "minBranches": 1,
+              "allBranchesModifiable": true
+            }
+          }
+        }
+      },
+
+      "properties": {
+        "evalModel": {
+          "type": "select",
+          "label": "评估模型",
+          "options": [
+            "Qwen3.6-Plus",
+            "Qwen3.5-Turbo",
+            "deepseek-v4-flash",
+            "qwen-max",
+            "qwen-plus"
+          ],
+          "defaultFromGlobal": "flowControlModel"
+        },
+        "shareContext": {
+          "type": "checkbox",
+          "label": "共用上游智能体上下文",
+          "default": true
+        },
+        "evalItems": {
+          "type": "dynamicList",
+          "label": "评估项目",
+          "addButtonText": "+ 添加",
+          "itemSchema": {
+            "name": {
+              "type": "text",
+              "label": "项目名称",
+              "placeholder": "项目名称",
+              "required": true
+            },
+            "weight": {
+              "type": "number",
+              "label": "权重",
+              "suffix": "%",
+              "min": 0,
+              "max": 100,
+              "default": 0
+            },
+            "description": {
+              "type": "textarea",
+              "label": "评估标准描述",
+              "placeholder": "评估标准描述（可选）"
+            }
+          },
+          "validation": {
+            "totalWeightMustEqual": 100,
+            "errorMessage": "权重合计需等于100%"
+          }
+        },
+        "passThreshold": {
+          "type": "number",
+          "label": "通过阈值",
+          "hint": "（加权总分 ≥ 该值即通过）",
+          "min": 0,
+          "max": 100,
+          "default": 80,
+          "suffix": "分"
+        },
+        "evalOutput": {
+          "type": "checkbox",
+          "label": "评估过程输出",
+          "description": "开启后会将评估过程输出给用户",
+          "default": true
+        },
+        "maxEvalLoops": {
+          "type": "number",
+          "label": "最多循环评估次数",
+          "hint": "（不通过时重新评估的上限）",
+          "min": 1,
+          "max": 10,
+          "default": 3,
+          "suffix": "次"
+        },
+        "evalFailMsg": {
+          "type": "textarea",
+          "label": "超过上限未通过时提示",
+          "hint": "（将输出展示给用户）",
+          "placeholder": "例如：智能体输出结果评估未通过，请仔细甄别",
+          "defaultValue": ""
+        },
+        "branches": {
+          "type": "dynamicList",
+          "label": "评估分支",
+          "description": "通过分支固定为第一个，其余为不通过时的细分路径",
+          "addButtonText": "+ 添加不通过分支",
+          "minItems": 1,
+          "itemSchema": {
+            "name": {
+              "type": "text",
+              "label": "分支名称",
+              "placeholder": "分支名称",
+              "required": true
+            },
+            "desc": {
+              "type": "textarea",
+              "label": "分支描述",
+              "placeholder": "分支描述：什么情况下走这条分支..."
+            }
+          }
+        }
+      },
+
+      "defaults": {
+        "evalModel": null,
+        "shareContext": true,
+        "evalItems": [],
+        "passThreshold": 80,
+        "evalOutput": true,
+        "maxEvalLoops": 3,
+        "evalFailMsg": "",
+        "branches": [{ "name": "通过", "desc": "" }]
+      }
+    }
+  },
+
+  "sidebarLayout": {
+    "groups": [
+      {
+        "label": "处理节点",
+        "nodes": ["route", "agent", "plugin", "workflow"]
+      },
+      {
+        "label": "人工确认",
+        "nodes": ["human"]
+      },
+      {
+        "label": "询问用户",
+        "nodes": ["ask"]
+      },
+      {
+        "label": "高级节点",
+        "nodes": ["evaluation"]
+      }
+    ]
+  },
+
+  "connectionRules": {
+    "general": {
+      "startNode": "与 V3 一致，新建时自动创建，不可删除",
+      "endNode": "与 V3 一致，新建时自动创建，不可删除",
+      "defaultRule": "每个输出端口最多连接 1 个下游节点（一对一）",
+      "unconnectedBehavior": "未连接的输出端口 = 流程到此结束/放弃该路径"
+    },
+    "branchNodes": ["route", "human", "evaluation", "ask(options)"],
+    "branchRules": {
+      "minBranches": 1,
+      "allBranchesModifiable": true,
+      "maxConnectionsPerPort": 1,
+      "optionalConnection": true
+    }
+  },
+
+  "outOfScope": {
+    "ExternalConnector": "不在本次范围内，后续迭代"
+  }
+}
