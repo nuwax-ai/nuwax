@@ -1,6 +1,7 @@
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { apiAgentConfigUpdate } from '@/services/agentConfig';
 import { apiAgentGenerateInfo } from '@/services/appDev';
+import { apiPageUpdateProject } from '@/services/pageDev';
 import { apiPluginHttpUpdate } from '@/services/plugin';
 import { apiSkillUpdate } from '@/services/skill';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
@@ -48,12 +49,30 @@ export const useInitProjectMetadata = ({
             };
 
             // 根据不同的组件类型，分发调用其特有的配置更新接口
-            if (targetType === AgentComponentTypeEnum.Agent) {
-              await apiAgentConfigUpdate(updateParams as any);
-            } else if (targetType === AgentComponentTypeEnum.Skill) {
-              await apiSkillUpdate(updateParams);
-            } else if (targetType === AgentComponentTypeEnum.Plugin) {
-              await apiPluginHttpUpdate(updateParams);
+            switch (targetType) {
+              // 智能体
+              case AgentComponentTypeEnum.Agent:
+                await apiAgentConfigUpdate(updateParams as any);
+                break;
+              // 页面应用
+              case AgentComponentTypeEnum.PageApp:
+                await apiPageUpdateProject({
+                  projectId: targetId,
+                  projectName: meta.name,
+                  projectDesc: meta.description,
+                  icon: meta.iconUrl,
+                } as any);
+                break;
+              // 技能
+              case AgentComponentTypeEnum.Skill:
+                await apiSkillUpdate(updateParams);
+                break;
+              // 插件
+              case AgentComponentTypeEnum.Plugin:
+                await apiPluginHttpUpdate(updateParams);
+                break;
+              default:
+                break;
             }
 
             if (onSuccess) {

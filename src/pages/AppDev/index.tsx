@@ -27,6 +27,7 @@ import { useAppDevServer } from '@/hooks/useAppDevServer';
 import { useAutoErrorHandling } from '@/hooks/useAutoErrorHandling';
 import { useDataResourceManagement } from '@/hooks/useDataResourceManagement';
 import useDrawerScroll from '@/hooks/useDrawerScroll';
+import { useInitProjectMetadata } from '@/hooks/useInitProjectMetadata';
 import { useMergedAppDevAgentDevelopingOverlay } from '@/hooks/useMergedAppDevAgentDevelopingOverlay';
 import { useRestartDevServer } from '@/hooks/useRestartDevServer';
 import { useTerminalWsUrl } from '@/hooks/useTerminalWsUrl';
@@ -254,6 +255,14 @@ const AppDev: React.FC = () => {
   // 使用项目详情 Hook
   const projectInfo = useAppDevProjectInfo(projectId);
   const terminalWsUrl = useTerminalWsUrl(projectId);
+
+  useInitProjectMetadata({
+    targetType: AgentComponentTypeEnum.PageApp,
+    targetId: Number(projectId),
+    onSuccess: () => {
+      if (projectId) projectInfo.refreshProjectInfo();
+    },
+  });
 
   /** 文件写操作成功后刷新 Git 列表（sourceControl 初始化后注入） */
   const refreshGitListAfterSaveRef = useRef<() => Promise<void>>(

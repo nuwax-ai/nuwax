@@ -39,6 +39,10 @@ const PROJECT_STRATEGIES: Partial<
     getUrl: ({ spaceId, targetId, conversationId }) =>
       `/space/${spaceId}/conversation-agent?agentId=${targetId}&conversationId=${conversationId}`,
   },
+  // 网页应用策略
+  [AgentComponentTypeEnum.PageApp]: {
+    getUrl: ({ spaceId, targetId }) => `/space/${spaceId}/app-dev/${targetId}`,
+  },
   // 技能策略
   [AgentComponentTypeEnum.Skill]: {
     getUrl: ({ spaceId, targetId, conversationId, tenantConfigInfo }) =>
@@ -71,25 +75,7 @@ const SpaceCreateProject: React.FC = () => {
     computerId,
     agentMode,
   }: SubmitPayload) => {
-    // todo: 页面应用不需要策略，直接跳转到页面开发页面，后续再补充
-    if (targetType === AgentComponentTypeEnum.PageApp) {
-      const res = await apiProjectCreate({ spaceId, targetType });
-      const { targetId } = res.data;
-
-      setContext(createAppDevInitialPayloadKey(targetId), {
-        message: prompt,
-        files,
-        skillIds,
-        modelId,
-        infos: tools,
-        selectedComputerId: computerId,
-        agentMode,
-      });
-      history.push(`/space/${spaceId}/app-dev/${targetId}`);
-      return;
-    }
-
-    // 1. 匹配对应策略，未配置的类型（如 PageApp）直接拦截返回
+    // 1. 匹配对应策略，未配置的类型直接拦截返回
     const strategy = PROJECT_STRATEGIES[targetType];
 
     if (!strategy) {
@@ -101,17 +87,9 @@ const SpaceCreateProject: React.FC = () => {
       const res = await apiProjectCreate({ spaceId, targetType });
       const { targetId, conversationId } = res.data;
 
-      // 3. 调用策略计算出对应的路由 URL
-      const url = strategy.getUrl({
-        spaceId,
-        targetId,
-        conversationId,
-        tenantConfigInfo,
-      });
-
-      // 5. 携带初始状态跳转到工作台详情会话中
-      if (url) {
-        history.push(url, {
+      // 3. 针对网页应用类型额外设置初始 Context
+      if (targetType === AgentComponentTypeEnum.PageApp) {
+        setContext(createAppDevInitialPayloadKey(targetId), {
           message: prompt,
           files,
           skillIds,
@@ -121,6 +99,25 @@ const SpaceCreateProject: React.FC = () => {
           agentMode,
         });
       }
+
+      // 4. 调用策略计算出对应的路由 URL
+      const url = strategy.getUrl({
+        spaceId,
+        targetId,
+        conversationId,
+        tenantConfigInfo,
+      });
+
+      // 5. 携带初始状态跳转到工作台详情会话中
+      history.push(url, {
+        message: prompt,
+        files,
+        skillIds,
+        modelId,
+        infos: tools,
+        selectedComputerId: computerId,
+        agentMode,
+      });
     } catch (error: any) {
       console.error('Failed to create project:', error);
     }
