@@ -294,7 +294,7 @@ const McpAskQuestionCard: React.FC<McpAskQuestionCardProps> = ({
               >
                 <span className={styles.buttonLabel}>
                   {ui.submitLabel || t('PC.Common.Global.confirm')}
-                  <kbd className={styles.shortcut}>↵</kbd>
+                  {/* <kbd className={styles.shortcut}>↵</kbd> */}
                 </span>
               </Button>
             )}
