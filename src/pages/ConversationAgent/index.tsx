@@ -195,8 +195,8 @@ const ConversationAgent: React.FC = () => {
   const [originalModelConfigList, setOriginalModelConfigList] = useState<
     ModelConfigInfo[]
   >([]);
-  /** 文件树区域是否显示（header 图标控制，控制中间面板的滑出/收起） */
-  const [canShowFileView, setCanShowFileView] = useState<boolean>(true);
+  /** 文件树区域是否显示（header 图标控制，默认折叠） */
+  const [canShowFileView, setCanShowFileView] = useState<boolean>(false);
   /** 右侧预览区是否展示智能体电脑（VNC） */
   const [isAgentDesktopOpen, setIsAgentDesktopOpen] = useState<boolean>(false);
 
