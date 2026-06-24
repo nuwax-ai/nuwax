@@ -148,46 +148,83 @@ const KnowledgeAccuracyTest: React.FC<KnowledgeAccuracyTestProps> = ({
   // 处理测试历史记录点击事件
   const handleHistoryClick = (record: TestHistoryItem) => {
     console.log('点击了历史记录:', record);
-    try {
-      // 解析results字段
-      const results = typeof record.results === 'string'
-        ? JSON.parse(record.results)
-        : record.results;
+    console.log('record.results:', record.results);
+    console.log('record.results 类型:', typeof record.results);
 
-      console.log('解析后的results:', results);
+    try {
+      // 先清空当前显示的召回结果
+      setRecallResults([]);
+      setExpandedCardId(null);
+
+      // 检查results字段是否为空
+      if (!record.results ||
+          record.results === '' ||
+          record.results === null ||
+          record.results === undefined ||
+          record.results === '[]' ||
+          record.results === '{}') {
+        console.log('results字段为空，召回结果已清空');
+        return;
+      }
+
+      // 如果是字符串，先解析
+      let parsedResults: any;
+      if (typeof record.results === 'string') {
+        // 尝试解析JSON字符串
+        try {
+          parsedResults = JSON.parse(record.results);
+          console.log('解析后的results:', parsedResults);
+        } catch (e) {
+          console.error('JSON解析失败:', e);
+          return;
+        }
+      } else {
+        parsedResults = record.results;
+      }
+
+      // 检查解析后的结果是否为空对象或空数组
+      if (
+        (Array.isArray(parsedResults) && parsedResults.length === 0) ||
+        (typeof parsedResults === 'object' && Object.keys(parsedResults).length === 0)
+      ) {
+        console.log('解析后的结果为空数组或空对象，召回结果保持为空');
+        return;
+      }
 
       // 处理results字段为对象的情况
       let resultsArray: RecallResultItem[] = [];
 
-      if (Array.isArray(results)) {
+      if (Array.isArray(parsedResults)) {
         // 如果直接是数组，直接使用
-        resultsArray = results;
-      } else if (typeof results === 'object' && results !== null) {
+        resultsArray = parsedResults;
+      } else if (typeof parsedResults === 'object' && parsedResults !== null) {
         // 如果是对象，尝试提取数组数据
-        // 优先检查 results.results 属性（实际数据结构）
-        if (Array.isArray(results.results)) {
-          resultsArray = results.results;
+        if (Array.isArray(parsedResults.results)) {
+          resultsArray = parsedResults.results;
           console.log('从 results.results 提取到数组数据，长度:', resultsArray.length);
-        } else if (Array.isArray(results.data)) {
-          resultsArray = results.data;
+        } else if (Array.isArray(parsedResults.data)) {
+          resultsArray = parsedResults.data;
           console.log('从 results.data 提取到数组数据，长度:', resultsArray.length);
-        } else if (Array.isArray(results.list)) {
-          resultsArray = results.list;
+        } else if (Array.isArray(parsedResults.list)) {
+          resultsArray = parsedResults.list;
           console.log('从 results.list 提取到数组数据，长度:', resultsArray.length);
         } else {
-          console.warn('无法从results对象中提取数组数据:', results);
+          console.warn('无法从results对象中提取数组数据:', parsedResults);
+          return;
         }
       }
 
-      if (resultsArray.length > 0) {
-        console.log('设置召回结果:', resultsArray);
-        setRecallResults(resultsArray);
-        setExpandedCardId(null); // 重置展开状态
-      } else {
-        console.warn('没有有效的召回结果数据');
+      // 检查提取的数组是否为空
+      if (!resultsArray || resultsArray.length === 0) {
+        console.log('提取的数组为空，召回结果保持为空');
+        return;
       }
+
+      console.log('设置召回结果:', resultsArray);
+      setRecallResults(resultsArray);
     } catch (error) {
       console.error('解析历史记录结果失败', error);
+      // 解析失败时也清空召回结果（已经在开始时清空了）
     }
   };
 
