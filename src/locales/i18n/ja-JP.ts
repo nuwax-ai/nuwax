@@ -2196,7 +2196,6 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.AppDevEditorHeaderRight.openDesignMode": "デザインモードをオンにする",
   "PC.Pages.AppDevEditorHeaderRight.closeDesignMode": "デザインモードをオフにする",
   "PC.Pages.AppDevFileOperatingMask.defaultTip": "ファイル操作が進行中です。お待ちください...",
-  "PC.Pages.AppDevFilePathHeader.modified": "修正済み",
   "PC.Pages.AppDevFileTreeContextMenu.importProject": "プロジェクトのインポート",
   "PC.Pages.AppDevFileTreePanel.collapse": "ファイルツリーを折りたたむ",
   "PC.Pages.AppDevFileTreePanel.expand": "ファイルツリーを展開する",

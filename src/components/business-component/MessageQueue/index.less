@@ -265,6 +265,29 @@
   }
 }
 
+// 发送中的行：常驻显示按钮区，使 loading 图标无需 hover 即可见
+.card.is-sending {
+  .actions {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .action-btn {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+// 发送中：保持可见（显示 loading 图标），但不可交互、无 hover 反馈
+.action-btn.is-disabled {
+  pointer-events: none;
+  cursor: default;
+
+  &:hover {
+    background: transparent;
+  }
+}
+
 .delete-btn {
   &:hover {
     color: @colorError;

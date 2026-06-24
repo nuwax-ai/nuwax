@@ -1,6 +1,11 @@
 import type { IdleDetectionConfig } from '@/components/business-component/VncPreview/type';
 import type { HideDesktopEnum } from '@/types/enums/agent';
 import type { FileNode } from '@/types/interfaces/appDev';
+import type React from 'react';
+import type {
+  GitWorkspaceConfig,
+  SourceControlCallbacks,
+} from '../../FileTreeGitSourcePanel';
 
 /** Git 变更类型（与 VS Code 源代码管理角标一致） */
 export type ChangeFileGitStatusKind =
@@ -77,4 +82,16 @@ export interface FileTreeViewProps {
   staticFileBasePath?: string;
   isProjectSkill?: boolean;
   initViewFileType?: 'preview' | 'code';
+  /** Git 源代码管理配置；传入后显示源代码管理面板 */
+  gitSourceControl?: {
+    workspace: GitWorkspaceConfig;
+    callbacks?: Partial<
+      Pick<
+        SourceControlCallbacks,
+        'addFileToGitignore' | 'onCommitSuccess' | 'onRefreshGitList'
+      >
+    >;
+  };
+  /** 文件树预览面板底部内容 */
+  bottomContent?: React.ReactNode;
 }

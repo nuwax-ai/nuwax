@@ -16,6 +16,8 @@ interface UseAcpPermissionShortcutsOptions {
   options: AcpPermissionOption[];
   onSelect: (optionId: string) => void;
   onCancel: () => void;
+  activeIndex: number;
+  setActiveIndex: React.Dispatch<React.SetStateAction<number>>;
 }
 
 export function useAcpPermissionShortcuts({
@@ -23,6 +25,8 @@ export function useAcpPermissionShortcuts({
   options,
   onSelect,
   onCancel,
+  activeIndex,
+  setActiveIndex,
 }: UseAcpPermissionShortcutsOptions): void {
   useInterventionEscapeKey({
     enabled,
@@ -35,9 +39,6 @@ export function useAcpPermissionShortcuts({
       return;
     }
 
-    const findByKind = (kind: string) =>
-      options.find((o) => o.kind === kind)?.optionId;
-
     const handleKeyDown = (event: KeyboardEvent) => {
       if (isFormFieldTarget(event.target)) {
         return;
@@ -47,16 +48,30 @@ export function useAcpPermissionShortcuts({
         return;
       }
 
+      if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+        event.preventDefault();
+        setActiveIndex((prev) => {
+          const count = options.length;
+          if (count === 0) return prev;
+          if (event.key === 'ArrowDown') {
+            return (prev + 1) % count;
+          } else {
+            return (prev - 1 + count) % count;
+          }
+        });
+        return;
+      }
+
       if (
         event.key === 'Enter' &&
         !event.shiftKey &&
         !event.metaKey &&
         !event.ctrlKey
       ) {
-        const allowOnceId = findByKind('allow_once');
-        if (allowOnceId) {
-          event.preventDefault();
-          onSelect(allowOnceId);
+        event.preventDefault();
+        const activeOption = options[activeIndex];
+        if (activeOption) {
+          onSelect(activeOption.optionId);
         }
         return;
       }
@@ -75,9 +90,9 @@ export function useAcpPermissionShortcuts({
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [enabled, onSelect, options]);
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
+  }, [enabled, onSelect, options, activeIndex, setActiveIndex]);
 }
 
 export function getAcpPermissionShortcutHint(kind: string): string | undefined {

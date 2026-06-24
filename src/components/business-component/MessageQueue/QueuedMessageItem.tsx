@@ -3,6 +3,7 @@ import {
   CloseOutlined,
   EditOutlined,
   HolderOutlined,
+  LoadingOutlined,
   SendOutlined,
 } from '@ant-design/icons';
 import { useSortable } from '@dnd-kit/sortable';
@@ -53,7 +54,9 @@ const QueuedMessageItem: React.FC<QueuedMessageItemProps> = ({
       className={cx(styles.container, { [styles['is-dragging']]: isDragging })}
       {...attributes}
     >
-      <div className={cx(styles.card)}>
+      <div
+        className={cx(styles.card, { [styles['is-sending']]: message.sending })}
+      >
         {/* 拖拽手柄：仅手柄触发拖拽，避免误触操作按钮 */}
         <span
           ref={setActivatorNodeRef}
@@ -75,10 +78,18 @@ const QueuedMessageItem: React.FC<QueuedMessageItemProps> = ({
         <div className={cx(styles.actions)}>
           <Tooltip title={t('PC.Components.MessageQueue.sendNowTooltip')}>
             <span
-              className={cx(styles['action-btn'], styles['send-btn'])}
-              onClick={() => onSendNow(message)}
+              className={cx(
+                styles['action-btn'],
+                styles['send-btn'],
+                message.sending && styles['is-disabled'],
+              )}
+              onClick={() => {
+                // sending 态由队列持有：loading 期间禁止重复触发
+                if (message.sending) return;
+                onSendNow(message);
+              }}
             >
-              <SendOutlined />
+              {message.sending ? <LoadingOutlined /> : <SendOutlined />}
             </span>
           </Tooltip>
           <Tooltip title={t('PC.Components.MessageQueue.editMessageTooltip')}>
