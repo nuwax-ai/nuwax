@@ -1060,10 +1060,6 @@ const EditAgent: React.FC = () => {
                   'flex',
                   'overflow-y',
                   styles['edit-content'],
-                  {
-                    [styles['edit-content-col']]:
-                      agentConfigInfo?.subType === AgentSubTypeEnum.Flow,
-                  },
                 )}
               >
                 {/* 问答型智能体、应用页面 */}

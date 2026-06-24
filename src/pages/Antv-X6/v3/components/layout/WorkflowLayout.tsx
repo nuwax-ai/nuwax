@@ -213,25 +213,29 @@ const WorkflowLayout: React.FC<WorkflowLayoutProps> = ({
 
   return (
     <div id="container">
-      <Header
-        hideBack={hideBack}
-        isValidLoading={isValidLoading}
-        info={info ?? {}}
-        onToggleVersionHistory={() => setShowVersionHistory(true)}
-        setShowCreateWorkflow={() => setShowCreateWorkflow(true)}
-        showPublish={handleShowPublish}
-        canUndo={canUndo}
-        canRedo={canRedo}
-        onUndo={onUndo}
-        onRedo={onRedo}
-        onManualSave={onManualSave}
-        onBack={onBack}
-        onAutoArrange={onAutoArrange}
-        handleTestRun={handleTestRunProp}
-        testRunLoading={testRunLoading}
-        flowControlModel={flowControlModel}
-        onFlowControlModelChange={onFlowControlModelChange}
-      />
+      {/* AgentFlow 作为智能体子类型嵌入 EditAgent 时，顶部栏由 EditAgent 的 AgentHeader 提供，
+          不再渲染工作流编辑器自带的 Header（避免出现第二条顶部栏，与 TaskAgent 一致） */}
+      {!isAgentFlow && (
+        <Header
+          hideBack={hideBack}
+          isValidLoading={isValidLoading}
+          info={info ?? {}}
+          onToggleVersionHistory={() => setShowVersionHistory(true)}
+          setShowCreateWorkflow={() => setShowCreateWorkflow(true)}
+          showPublish={handleShowPublish}
+          canUndo={canUndo}
+          canRedo={canRedo}
+          onUndo={onUndo}
+          onRedo={onRedo}
+          onManualSave={onManualSave}
+          onBack={onBack}
+          onAutoArrange={onAutoArrange}
+          handleTestRun={handleTestRunProp}
+          testRunLoading={testRunLoading}
+          flowControlModel={flowControlModel}
+          onFlowControlModelChange={onFlowControlModelChange}
+        />
+      )}
 
       {isAgentFlow ? (
         <div className="workflow-body">
