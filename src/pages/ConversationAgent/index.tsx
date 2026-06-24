@@ -21,8 +21,10 @@ import { useInitProjectMetadata } from '@/hooks/useInitProjectMetadata';
 import { useTerminalWsUrl } from '@/hooks/useTerminalWsUrl';
 import useUnifiedTheme from '@/hooks/useUnifiedTheme';
 import DebugDetails from '@/pages/EditAgent/DebugDetails';
-import AnalyzeStatistics from '@/pages/SpaceDevelop/AnalyzeStatistics';
-import { apiAgentConfigInfo } from '@/services/agentConfig';
+import {
+  apiAgentComponentModelUpdate,
+  apiAgentConfigInfo,
+} from '@/services/agentConfig';
 import { dict } from '@/services/i18nRuntime';
 import { apiModelList } from '@/services/modelConfig';
 import {
@@ -37,14 +39,13 @@ import {
 } from '@/types/enums/agent';
 import { CreateUpdateModeEnum, PublishStatusEnum } from '@/types/enums/common';
 import { ModelTypeEnum } from '@/types/enums/modelConfig';
+import { AgentTypeEnum, EditAgentShowType } from '@/types/enums/space';
 import {
-  AgentTypeEnum,
-  ApplicationMoreActionEnum,
-  EditAgentShowType,
-} from '@/types/enums/space';
-import { AgentBaseInfo, AgentConfigInfo } from '@/types/interfaces/agent';
+  AgentBaseInfo,
+  AgentConfigInfo,
+  type ComponentModelBindConfig,
+} from '@/types/interfaces/agent';
 import { FileNode } from '@/types/interfaces/appDev';
-import type { AnalyzeStatisticsItem } from '@/types/interfaces/common';
 import { UpdateFileInfo } from '@/types/interfaces/fileTree';
 import type {
   ModelConfigInfo,
@@ -55,7 +56,6 @@ import { StaticFileInfo } from '@/types/interfaces/vncDesktop';
 import { checkFileSizeExceedLimit } from '@/utils';
 import { modalConfirm } from '@/utils/ant-custom';
 import { addBaseTarget } from '@/utils/common';
-import { exportConfigFile } from '@/utils/exportImportFile';
 import { updateFilesListContent, updateFilesListName } from '@/utils/fileTree';
 import {
   TTYD_TERMINAL_WIRE_PROTOCOL,
@@ -150,11 +150,6 @@ const ConversationAgent: React.FC = () => {
   const [open, setOpen] = useState<boolean>(false);
   /** 编辑智能体基础信息弹窗是否打开 */
   const [openEditAgent, setOpenEditAgent] = useState<boolean>(false);
-  /** 分析统计弹窗 */
-  const [openAnalyze, setOpenAnalyze] = useState<boolean>(false);
-  const [agentStatistics, setAgentStatistics] = useState<
-    AnalyzeStatisticsItem[]
-  >([]);
   /** 底部开发者控制台（终端）是否显示 */
   const [showDevConsole] = useState<boolean>(true);
   /** 切换预览标签/文件时递增，用于终端从 expanded 恢复 default */
@@ -200,8 +195,8 @@ const ConversationAgent: React.FC = () => {
   const [originalModelConfigList, setOriginalModelConfigList] = useState<
     ModelConfigInfo[]
   >([]);
-  /** 文件树区域是否显示（header 图标控制，控制中间面板的滑出/收起） */
-  const [canShowFileView, setCanShowFileView] = useState<boolean>(true);
+  /** 文件树区域是否显示（header 图标控制，默认折叠） */
+  const [canShowFileView, setCanShowFileView] = useState<boolean>(false);
   /** 右侧预览区是否展示智能体电脑（VNC） */
   const [isAgentDesktopOpen, setIsAgentDesktopOpen] = useState<boolean>(false);
 
@@ -272,6 +267,32 @@ const ConversationAgent: React.FC = () => {
       'noopener,noreferrer',
     );
   }, [spaceId, agentId]);
+
+  /** 预览 Tab 栏切换模型（与 EditAgent ArrangeTitle 一致） */
+  const handlePreviewTabModelChange = useCallback(
+    async (modelId: number, name: string) => {
+      const componentId = agentConfigInfo?.modelComponentConfig?.id;
+      if (!componentId || !agentConfigInfo) {
+        return;
+      }
+      const bindConfig = agentConfigInfo.modelComponentConfig
+        ?.bindConfig as ComponentModelBindConfig;
+      await apiAgentComponentModelUpdate({
+        id: componentId,
+        targetId: modelId,
+        bindConfig,
+      });
+      setAgentConfigInfo({
+        ...agentConfigInfo,
+        modelComponentConfig: {
+          ...agentConfigInfo.modelComponentConfig,
+          targetId: modelId,
+          name,
+        },
+      });
+    },
+    [agentConfigInfo],
+  );
 
   // ==================== 计算属性 ====================
   /** 开发会话 ID，用于聊天历史查询 */
@@ -888,92 +909,6 @@ const ConversationAgent: React.FC = () => {
     closePreviewView,
   ]);
 
-  /** 打开展示台 / 版本历史等 Header 浮层 */
-  const handleHeaderOverlayType = useCallback(
-    (type: EditAgentShowType) => {
-      closeAgentDesktop();
-      closePreviewView();
-      setShowType(type);
-    },
-    [closeAgentDesktop, closePreviewView, setShowType],
-  );
-
-  /** 设置分析统计信息（与 EditAgent 一致） */
-  const handleSetStatistics = useCallback((agentInfo: AgentConfigInfo) => {
-    const {
-      userCount = 0,
-      convCount = 0,
-      collectCount = 0,
-      likeCount = 0,
-    } = agentInfo?.agentStatistics || {};
-    setAgentStatistics([
-      {
-        label: dict('PC.Pages.EditAgent.statUserCount'),
-        value: userCount,
-      },
-      {
-        label: dict('PC.Pages.EditAgent.statConvCount'),
-        value: convCount,
-      },
-      {
-        label: dict('PC.Pages.EditAgent.statCollectCount'),
-        value: collectCount,
-      },
-      {
-        label: dict('PC.Pages.EditAgent.statLikeCount'),
-        value: likeCount,
-      },
-    ]);
-  }, []);
-
-  /** Header 更多操作（与 EditAgent 一致） */
-  const handleHeaderMoreAction = useCallback(
-    (type: ApplicationMoreActionEnum) => {
-      switch (type) {
-        case ApplicationMoreActionEnum.Analyze:
-          if (agentConfigInfo) {
-            handleSetStatistics(agentConfigInfo);
-            setOpenAnalyze(true);
-          }
-          break;
-        case ApplicationMoreActionEnum.Export_Config:
-          modalConfirm(
-            dict('PC.Pages.EditAgent.exportConfigTitle').replace(
-              '{0}',
-              agentConfigInfo?.name || '',
-            ),
-            dict('PC.Pages.EditAgent.exportConfigContent'),
-            () => {
-              exportConfigFile(
-                agentConfigInfo?.id as number,
-                AgentComponentTypeEnum.Agent,
-              );
-              return new Promise((resolve) => {
-                setTimeout(resolve, 1000);
-              });
-            },
-          );
-          break;
-        case ApplicationMoreActionEnum.Log:
-          history.push(
-            `/space/${spaceId}/library-log?targetType=${
-              AgentComponentTypeEnum.Agent
-            }&targetId=${agentConfigInfo?.id ?? ''}`,
-          );
-          break;
-        default:
-          break;
-      }
-    },
-    [
-      agentConfigInfo,
-      handleSetStatistics,
-      agentConfigInfo?.id,
-      agentConfigInfo?.name,
-      spaceId,
-    ],
-  );
-
   /** 是否显示文件面板相关入口（通用型智能体 + 有效消息） */
   const isShowFilePanel = useMemo(() => {
     if (agentConfigInfo?.type !== AgentTypeEnum.TaskAgent) {
@@ -1459,7 +1394,9 @@ const ConversationAgent: React.FC = () => {
           }}
           /** 是否为云电脑 */
           isCloudComputer={finalSelectedComputerId === '-1'}
-          onOpenAdvancedSettings={handleOpenAdvancedSettings}
+          originalModelConfigList={originalModelConfigList}
+          agentConfigInfo={agentConfigInfo}
+          onModelChange={handlePreviewTabModelChange}
         />
         {/* Tab 栏下方：预览内容 + 底部终端（终端放大时仅覆盖此区域） */}
         <div className={cx(styles['right-panel-main'])}>
@@ -1539,11 +1476,8 @@ const ConversationAgent: React.FC = () => {
         className={styles['page-header']}
         agentConfigInfo={agentConfigInfo}
         onEditAgent={() => setOpenEditAgent(true)}
-        onToggleVersionHistory={() =>
-          handleHeaderOverlayType(EditAgentShowType.Version_History)
-        }
         onPublish={() => setOpen(true)}
-        onOtherAction={handleHeaderMoreAction}
+        onOpenAdvancedSettings={handleOpenAdvancedSettings}
         isFileTreeSidebarVisible={canShowFileView}
         onToggleFileTreeSidebar={handleToggleFileTreeSidebar}
         isTerminalPanelOpen={isTerminalPanelOpen}
@@ -1657,13 +1591,6 @@ const ConversationAgent: React.FC = () => {
         open={openEditAgent}
         onCancel={() => setOpenEditAgent(false)}
         onConfirmUpdate={handlerConfirmEditAgent}
-      />
-      {/* 分析统计弹窗 */}
-      <AnalyzeStatistics
-        open={openAnalyze}
-        onCancel={() => setOpenAnalyze(false)}
-        title={dict('PC.Pages.EditAgent.agentOverview')}
-        list={agentStatistics}
       />
     </div>
   );

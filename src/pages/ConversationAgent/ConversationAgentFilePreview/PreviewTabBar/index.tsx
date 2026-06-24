@@ -1,6 +1,7 @@
 import MoreActionsMenu from '@/components/business-component/FileTreePreviewPanel/FilePathHeader/MoreActionsMenu';
-import TooltipIcon from '@/components/custom/TooltipIcon';
 import { dict } from '@/services/i18nRuntime';
+import type { AgentConfigInfo } from '@/types/interfaces/agent';
+import type { ModelConfigInfo } from '@/types/interfaces/model';
 import { getFileIcon } from '@/utils/fileTree';
 import {
   BarChartOutlined,
@@ -35,6 +36,7 @@ import {
 } from '../hooks/usePreviewTabs';
 import PreviewTabContextMenu from './PreviewTabContextMenu';
 import PreviewTabLabel from './PreviewTabLabel';
+import PreviewTabModelSelect from './PreviewTabModelSelect';
 import {
   isPointerOverPreviewTabTooltip,
   PreviewTabTooltipDragProvider,
@@ -69,8 +71,12 @@ export interface PreviewTabBarProps {
   onExportProject?: () => void;
   /** 是否为云电脑（影响重启文案） */
   isCloudComputer?: boolean;
-  /** 打开高级设置（新窗口打开智能体编辑页） */
-  onOpenAdvancedSettings?: () => void;
+  /** 空间模型列表（TaskAgent 模型下拉） */
+  originalModelConfigList?: ModelConfigInfo[];
+  /** 智能体配置（TaskAgent 模型下拉） */
+  agentConfigInfo?: AgentConfigInfo;
+  /** 切换模型 */
+  onModelChange?: (modelId: number, modelName: string) => void | Promise<void>;
 }
 
 interface TabItemFaceProps {
@@ -294,7 +300,9 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
   onRestartAgent,
   onExportProject,
   isCloudComputer,
-  onOpenAdvancedSettings,
+  originalModelConfigList,
+  agentConfigInfo,
+  onModelChange,
 }) => {
   /** 拖拽中的标签 ID */
   const [activeDragTabId, setActiveDragTabId] = useState<string | null>(null);
@@ -670,6 +678,11 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
 
         {/* 更多操作菜单 */}
         <div className={cx(styles['tab-bar-actions'])}>
+          <PreviewTabModelSelect
+            originalModelConfigList={originalModelConfigList}
+            agentConfigInfo={agentConfigInfo}
+            onModelChange={onModelChange}
+          />
           <MoreActionsMenu
             onRestartServer={onRestartServer}
             onRestartAgent={onRestartAgent}
@@ -678,17 +691,6 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
           />
         </div>
       </div>
-
-      {onOpenAdvancedSettings && (
-        <div className={cx(styles['tab-bar-right'])}>
-          <TooltipIcon
-            title={dict('PC.Components.ModelSetting.advancedSettings')}
-            className={cx(styles['tab-bar-action-btn'])}
-            icon={<SettingOutlined style={{ fontSize: 16 }} />}
-            onClick={onOpenAdvancedSettings}
-          />
-        </div>
-      )}
 
       {/* 预览区标签页右键菜单（带淡入缩放过渡） */}
       <PreviewTabContextMenu
