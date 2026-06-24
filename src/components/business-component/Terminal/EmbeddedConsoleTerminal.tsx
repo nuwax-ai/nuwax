@@ -9,6 +9,12 @@ import {
 
 import type { ITheme } from '@xterm/xterm';
 import {
+  DEFAULT_TERMINAL_RECONNECT,
+  getTerminalMaxRetries,
+  getTerminalReconnectDelay,
+  type TerminalReconnectConfig,
+} from './terminalReconnect';
+import {
   decodeTtydMessage,
   encodeTtydInit,
   encodeTtydInput,
@@ -48,15 +54,7 @@ export interface EmbeddedConsoleTerminalProps {
   lineHeight?: number;
   cursorBlink?: boolean;
   autoConnect?: boolean;
-  reconnect?: {
-    enabled?: boolean;
-    maxRetries?: number;
-    retryDelay?: number;
-    /** 心跳检测间隔（ms），0 为禁用，默认 30000 */
-    heartbeatInterval?: number;
-    /** 心跳超时（ms），超过此时间未收到服务端消息则强制断连重连，默认 90000 */
-    heartbeatTimeout?: number;
-  };
+  reconnect?: TerminalReconnectConfig;
   onConnect?: () => void;
   onDisconnect?: (event?: CloseEvent) => void;
   /** 自动重连达到最大次数后触发 */
@@ -126,7 +124,7 @@ const EmbeddedConsoleTerminal = forwardRef<
       lineHeight = 1.35,
       cursorBlink = true,
       autoConnect = true,
-      reconnect = { enabled: true, maxRetries: 5, retryDelay: 2000 },
+      reconnect = DEFAULT_TERMINAL_RECONNECT,
       onConnect,
       onDisconnect,
       onReconnectFailed,
@@ -238,7 +236,8 @@ const EmbeddedConsoleTerminal = forwardRef<
     const startHeartbeat = useCallback(() => {
       stopHeartbeat();
       const cfg = reconnectConfigRef.current;
-      const interval = cfg.heartbeatInterval ?? 30000;
+      const interval =
+        cfg.heartbeatInterval ?? DEFAULT_TERMINAL_RECONNECT.heartbeatInterval;
       if (interval <= 0) return;
 
       lastServerMessageTimeRef.current = Date.now();
@@ -252,7 +251,8 @@ const EmbeddedConsoleTerminal = forwardRef<
         }
 
         // 检查是否超时未收到服务端消息
-        const timeout = cfg.heartbeatTimeout ?? 90000;
+        const timeout =
+          cfg.heartbeatTimeout ?? DEFAULT_TERMINAL_RECONNECT.heartbeatTimeout;
         const elapsed = Date.now() - lastServerMessageTimeRef.current;
         if (elapsed > timeout) {
           console.warn(
@@ -277,6 +277,13 @@ const EmbeddedConsoleTerminal = forwardRef<
       }, interval);
     }, [stopHeartbeat, wireProtocol]);
 
+    const clearReconnectTimer = useCallback(() => {
+      if (reconnectTimerRef.current) {
+        clearTimeout(reconnectTimerRef.current);
+        reconnectTimerRef.current = null;
+      }
+    }, []);
+
     const connect = useCallback(
       (url?: string) => {
         const targetUrl = url || wsUrlRef.current;
@@ -291,6 +298,40 @@ const EmbeddedConsoleTerminal = forwardRef<
         ) {
           return;
         }
+
+        const scheduleReconnect = () => {
+          const reconnectConfig = reconnectConfigRef.current;
+          if (
+            reconnectConfig.enabled === false ||
+            isManualDisconnectRef.current
+          ) {
+            return;
+          }
+
+          const maxRetries = getTerminalMaxRetries(reconnectConfig);
+          if (reconnectCountRef.current >= maxRetries) {
+            console.error(
+              `[EmbeddedTerminal] Max reconnection attempts reached (${maxRetries})`,
+            );
+            onReconnectFailedRef.current?.();
+            return;
+          }
+
+          const delay = getTerminalReconnectDelay(
+            reconnectCountRef.current,
+            reconnectConfig,
+          );
+          reconnectCountRef.current += 1;
+          console.log(
+            `[EmbeddedTerminal] Reconnect #${reconnectCountRef.current}/${maxRetries} in ${delay}ms`,
+          );
+
+          clearReconnectTimer();
+          reconnectTimerRef.current = setTimeout(() => {
+            reconnectTimerRef.current = null;
+            connect(targetUrl);
+          }, delay);
+        };
 
         isManualDisconnectRef.current = false;
         ttydInitSentRef.current = false;
@@ -308,32 +349,14 @@ const EmbeddedConsoleTerminal = forwardRef<
           wsRef.current = ws;
         } catch (err) {
           console.error('[EmbeddedTerminal] WebSocket creation failed:', err);
-          const reconnectConfig = reconnectConfigRef.current;
-          if (
-            reconnectConfig.enabled !== false &&
-            reconnectCountRef.current < (reconnectConfig.maxRetries ?? 5) &&
-            !isManualDisconnectRef.current
-          ) {
-            const delay =
-              (reconnectConfig.retryDelay ?? 2000) *
-              Math.pow(2, reconnectCountRef.current);
-            reconnectCountRef.current += 1;
-            reconnectTimerRef.current = setTimeout(() => {
-              connect(targetUrl);
-            }, delay);
-          } else if (!isManualDisconnectRef.current) {
-            onReconnectFailedRef.current?.();
-          }
+          scheduleReconnect();
           return;
         }
 
         ws.onopen = () => {
           console.log('[EmbeddedTerminal] WebSocket connected');
           reconnectCountRef.current = 0;
-          if (reconnectTimerRef.current) {
-            clearTimeout(reconnectTimerRef.current);
-            reconnectTimerRef.current = null;
-          }
+          clearReconnectTimer();
           lastServerMessageTimeRef.current = Date.now();
           startHeartbeat();
           scheduleFitWhenVisible(
@@ -391,36 +414,8 @@ const EmbeddedConsoleTerminal = forwardRef<
           wsRef.current = null;
           onDisconnectRef.current?.(event);
 
-          const reconnectConfig = reconnectConfigRef.current;
-          if (
-            reconnectConfig.enabled !== false &&
-            reconnectCountRef.current < (reconnectConfig.maxRetries ?? 5) &&
-            !isManualDisconnectRef.current
-          ) {
-            const delay =
-              (reconnectConfig.retryDelay ?? 2000) *
-              Math.pow(2, reconnectCountRef.current);
-            reconnectCountRef.current += 1;
-            console.log(
-              `[EmbeddedTerminal] Reconnecting in ${delay}ms (attempt ${
-                reconnectCountRef.current
-              }/${reconnectConfig.maxRetries ?? 5})`,
-            );
-            if (reconnectTimerRef.current) {
-              clearTimeout(reconnectTimerRef.current);
-            }
-            reconnectTimerRef.current = setTimeout(() => {
-              reconnectTimerRef.current = null;
-              connect(targetUrl);
-            }, delay);
-          } else if (
-            !isManualDisconnectRef.current &&
-            reconnectCountRef.current >= (reconnectConfig.maxRetries ?? 5)
-          ) {
-            console.error(
-              '[EmbeddedTerminal] Max reconnection attempts reached',
-            );
-            onReconnectFailedRef.current?.();
+          if (!isManualDisconnectRef.current) {
+            scheduleReconnect();
           }
         };
 
@@ -430,34 +425,37 @@ const EmbeddedConsoleTerminal = forwardRef<
       },
       // 所有外部依赖已通过 ref 访问，保持 connect 引用稳定
       // eslint-disable-next-line react-hooks/exhaustive-deps
-      [syncBackendSize, wireProtocol],
+      [clearReconnectTimer, syncBackendSize, wireProtocol],
     );
 
     const disconnect = useCallback(() => {
       stopHeartbeat();
       isManualDisconnectRef.current = true;
-      if (reconnectTimerRef.current) {
-        clearTimeout(reconnectTimerRef.current);
-        reconnectTimerRef.current = null;
-      }
+      clearReconnectTimer();
       if (wsRef.current) {
         wsRef.current.close();
         wsRef.current = null;
       }
       pendingWritesRef.current = [];
       ttydInitSentRef.current = false;
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [clearReconnectTimer, stopHeartbeat]);
 
     const reconnectTerminal = useCallback(
       (url?: string) => {
         reconnectCountRef.current = 0;
-        disconnect();
+        clearReconnectTimer();
+        isManualDisconnectRef.current = false;
+        if (wsRef.current) {
+          wsRef.current.close();
+          wsRef.current = null;
+        }
+        pendingWritesRef.current = [];
+        ttydInitSentRef.current = false;
         window.setTimeout(() => {
           connect(url || wsUrlRef.current);
         }, 0);
       },
-      [connect, disconnect],
+      [clearReconnectTimer, connect],
     );
 
     useImperativeHandle(
