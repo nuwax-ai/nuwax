@@ -46,6 +46,7 @@ import QaBatchModal from './QaBatchModal';
 import QaModal from './QaModal';
 import QaTableList, { QaTableListRef } from './QaTableList';
 import RawSegmentInfo from './RawSegmentInfo';
+import KnowledgeAccuracyTest from './KnowledgeAccuracyTest';
 
 const cx = classNames.bind(styles);
 
@@ -663,6 +664,11 @@ const SpaceKnowledge: React.FC = () => {
     );
   };
 
+  // 渲染命中测试内容
+  const renderAccuracyTestContent = () => {
+    return <KnowledgeAccuracyTest knowledgeBaseId={knowledgeId} />;
+  };
+
   // 确认QA问答
   const handleConfirmQa = async (values: any): Promise<null> => {
     // 把数据添加到后端
@@ -724,6 +730,7 @@ const SpaceKnowledge: React.FC = () => {
         {docType === KnowledgeDocTypeEnum.DOC && renderDocContent()}
         {docType === KnowledgeDocTypeEnum.QA && renderQaContent()}
         {docType === KnowledgeDocTypeEnum.GRAPH && renderGraphContent()}
+        {docType === KnowledgeDocTypeEnum.ACCURACYTEST && renderAccuracyTestContent()}
       </div>
 
       {/*本地文档弹窗*/}
