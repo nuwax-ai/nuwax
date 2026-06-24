@@ -24,6 +24,12 @@ function resolveSchemaVersion(record: Record<string, unknown>): string | null {
     return MCP_ASK_SCHEMA_VERSION;
   }
 
+  // 兜底:agent 按"服务端盖戳"约定省略 schemaVersion/ui.version 时,识别裸 v2。
+  // v2 强信号 = 有 ui.fields 且无 v1 的 ui.schema(v1 用 schema,无 fields)。
+  if (ui && Array.isArray(ui.fields) && !ui.schema) {
+    return MCP_ASK_SCHEMA_VERSION;
+  }
+
   return null;
 }
 
@@ -43,12 +49,7 @@ export function parseMcpAskToolInput(raw: unknown): McpAskUserToolInput | null {
     return null;
   }
   const ui = record.ui as Record<string, unknown>;
-  if (
-    typeof ui.version !== 'string' ||
-    ui.version !== INTERACTION_UI_SCHEMA_VERSION
-  ) {
-    return null;
-  }
+  // 版本识别已在 resolveSchemaVersion 完成(含裸 v2 推断);此处只校验 v2 形状。
   // v2:表单定义为 fields[](inline/modal)或 steps[](wizard)
   const hasFields = Array.isArray(ui.fields) && ui.fields.length > 0;
   const hasSteps = Array.isArray(ui.steps) && ui.steps.length > 0;

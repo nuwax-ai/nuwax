@@ -296,4 +296,47 @@ describe('applyMcpAskToolCallSseEvent', () => {
       'nuwax_ask_question',
     );
   });
+
+  it('accepts bare v2 input with no schemaVersion/ui.version (agent omits stamp fields)', () => {
+    const patched = applyMcpAskToolCallSseEvent(
+      {
+        messageType: 'agentSessionUpdate',
+        subType: 'tool_call',
+        data: {
+          toolCallId: 'tool-call-bare-v2',
+          rawInput: {
+            requestId: 'ask-bare',
+            revision: 1,
+            sessionId: 'sess-bare',
+            title: 'Bare v2',
+            // 无 schemaVersion、无 ui.version(agent 按"服务端盖戳"约定省略)
+            ui: {
+              presentation: 'inline',
+              title: 'Bare v2',
+              fields: [
+                {
+                  name: 'choice',
+                  title: '选项',
+                  widget: 'radio',
+                  options: [
+                    { value: 'a', label: '甲' },
+                    { value: 'b', label: '乙' },
+                  ],
+                },
+              ],
+            },
+          },
+        },
+      } as any,
+      { id: 'msg-1' } as any,
+    );
+
+    expect(patched?.mcpAskInteractions?.[0]?.toolCallId).toBe(
+      'tool-call-bare-v2',
+    );
+    expect(patched?.mcpAskInteractions?.[0]?.input.requestId).toBe('ask-bare');
+    expect(patched?.mcpAskInteractions?.[0]?.input.schemaVersion).toBe(
+      'nuwax.mcp_ask.v2',
+    );
+  });
 });
