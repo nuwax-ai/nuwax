@@ -366,32 +366,48 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
   }, [isControlled, onTerminalAppearanceChange, terminalAppearance]);
 
   /**
-   * 切换到终端 Tab / 布局或主题变化 / visible 从 false 变为 true 后，
+   * 切换到终端 Tab / 布局或主题变化 / visible 从 false 变为 true / 容器就绪后，
    * 延迟重新计算终端 cols/rows（fit）并同步 ttyd 尺寸、聚焦终端，
    * 避免容器从 display:none / visibility:hidden 恢复后 xterm-screen 尺寸停留在初始极小值。
    */
+  const syncTerminalLayoutAndFocus = useCallback(() => {
+    terminalRef.current?.fitAndSyncBackend();
+    terminalRef.current?.focus();
+    const term = terminalRef.current?.getTerminal();
+    if (!term) return;
+    try {
+      term.refresh(0, Math.max(term.rows - 1, 0));
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
   useEffect(() => {
     if (
       activeTab !== 'terminal' ||
       !wsUrl ||
       !visible ||
-      layoutMode === 'collapsed'
+      layoutMode === 'collapsed' ||
+      (conversationId && containerStatus !== 'running')
     ) {
       return;
     }
-    const timer = window.setTimeout(() => {
-      terminalRef.current?.fitAndSyncBackend();
-      terminalRef.current?.focus();
-      const term = terminalRef.current?.getTerminal();
-      if (!term) return;
-      try {
-        term.refresh(0, Math.max(term.rows - 1, 0));
-      } catch {
-        /* ignore */
-      }
-    }, 100);
-    return () => window.clearTimeout(timer);
-  }, [activeTab, layoutMode, wsUrl, terminalAppearance, visible]);
+    const timer = window.setTimeout(syncTerminalLayoutAndFocus, 100);
+    const retryTimer = window.setTimeout(syncTerminalLayoutAndFocus, 300);
+    return () => {
+      window.clearTimeout(timer);
+      window.clearTimeout(retryTimer);
+    };
+  }, [
+    activeTab,
+    containerStatus,
+    conversationId,
+    layoutMode,
+    syncTerminalLayoutAndFocus,
+    wsUrl,
+    terminalAppearance,
+    visible,
+  ]);
 
   /** 外部信号：将全屏布局重置回默认高度（collapsed 状态保持不变） */
   useEffect(() => {
@@ -500,10 +516,7 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
       setLayoutMode('default');
     }
     if (tab === 'terminal') {
-      window.setTimeout(() => {
-        terminalRef.current?.fitAndSyncBackend();
-        terminalRef.current?.focus();
-      }, 100);
+      window.setTimeout(syncTerminalLayoutAndFocus, 100);
     }
   };
 
@@ -572,7 +585,13 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
 
     if (wsUrl) {
       return (
-        <div className={cx(styles['xterm-container'])}>
+        <div
+          className={cx(styles['xterm-container'])}
+          onMouseDown={(event) => {
+            if (event.button !== 0) return;
+            terminalRef.current?.focus();
+          }}
+        >
           <EmbeddedConsoleTerminal
             ref={terminalRef}
             className={cx(styles['terminal-embedded'], {
@@ -597,6 +616,8 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
                 // 使用 ANSI 真彩 + 加粗，确保连接提示在不同主题下都有明显高亮
                 '\x1b[1;38;2;22;163;74m[Terminal connected]\x1b[0m',
               );
+              window.setTimeout(syncTerminalLayoutAndFocus, 50);
+              window.setTimeout(syncTerminalLayoutAndFocus, 250);
             }}
             onDisconnect={() => {
               terminalConnectedRef.current = false;

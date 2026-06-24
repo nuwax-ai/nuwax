@@ -76,6 +76,27 @@ const scheduleFit = (fit: () => void, afterFit?: () => void) => {
   });
 };
 
+/** 容器从 display:none / 0 尺寸恢复时，fit 可能无效；等到可见且有宽高再执行 */
+const scheduleFitWhenVisible = (
+  getViewport: () => HTMLDivElement | null,
+  fit: () => void,
+  afterFit?: () => void,
+  retries = 12,
+) => {
+  const attempt = (left: number) => {
+    const el = getViewport();
+    const rect = el?.getBoundingClientRect();
+    const visible = !!rect && rect.width > 0 && rect.height > 0;
+
+    if (visible || left <= 0) {
+      scheduleFit(fit, afterFit);
+      return;
+    }
+    requestAnimationFrame(() => attempt(left - 1));
+  };
+  attempt(retries);
+};
+
 const ensureDimensions = (term: Terminal): { cols: number; rows: number } => {
   let { cols, rows } = term;
   if (cols <= 0 || rows <= 0) {
@@ -150,6 +171,10 @@ const EmbeddedConsoleTerminal = forwardRef<
     wsUrlRef.current = wsUrl;
     const wsSubprotocolsRef = useRef(wsSubprotocols);
     wsSubprotocolsRef.current = wsSubprotocols;
+    const autoConnectRef = useRef(autoConnect);
+    autoConnectRef.current = autoConnect;
+    /** 连接成功但尚未成功 focus 时置 true，容器变为可见后补 focus */
+    const pendingFocusRef = useRef(false);
 
     const syncBackendSize = useCallback(
       (ws: WebSocket, options?: { sendTtydInit?: boolean }) => {
@@ -187,7 +212,18 @@ const EmbeddedConsoleTerminal = forwardRef<
     }, [syncBackendSize]);
 
     const focusTerminal = useCallback(() => {
-      terminalRef.current?.focus();
+      const term = terminalRef.current;
+      const viewport = viewportRef.current;
+      if (!term || !viewport) return;
+
+      const rect = viewport.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0) {
+        pendingFocusRef.current = true;
+        return;
+      }
+
+      term.focus();
+      pendingFocusRef.current = false;
     }, []);
 
     /** 停止心跳检测 */
@@ -300,7 +336,8 @@ const EmbeddedConsoleTerminal = forwardRef<
           }
           lastServerMessageTimeRef.current = Date.now();
           startHeartbeat();
-          scheduleFit(
+          scheduleFitWhenVisible(
+            () => viewportRef.current,
             () => fitAddonRef.current?.fit(),
             () => {
               syncBackendSize(ws, { sendTtydInit: true });
@@ -311,8 +348,17 @@ const EmbeddedConsoleTerminal = forwardRef<
                   term.write(chunk);
                 }
               }
-              term?.focus();
+              focusTerminal();
               onConnectRef.current?.();
+              // 父组件 onConnect 可能写入提示行，延迟再 fit + focus 确保可输入
+              scheduleFitWhenVisible(
+                () => viewportRef.current,
+                () => fitAddonRef.current?.fit(),
+                () => {
+                  syncBackendSize(ws, { sendTtydInit: false });
+                  focusTerminal();
+                },
+              );
             },
           );
         };
@@ -526,6 +572,10 @@ const EmbeddedConsoleTerminal = forwardRef<
             if (ws?.readyState === WebSocket.OPEN) {
               syncBackendSize(ws, { sendTtydInit: !ttydInitSentRef.current });
             }
+            if (pendingFocusRef.current) {
+              term.focus();
+              pendingFocusRef.current = false;
+            }
           }
         }
       });
@@ -553,10 +603,29 @@ const EmbeddedConsoleTerminal = forwardRef<
     ]);
 
     useEffect(() => {
-      if (!autoConnect || !wsUrl) return;
-      connect(wsUrl);
-      return () => disconnect();
-    }, [autoConnect, wsUrl]);
+      if (!autoConnect || !wsUrl || !terminalReadyRef.current) return;
+
+      let cancelled = false;
+      const tryConnect = (retries = 12) => {
+        if (cancelled || !autoConnectRef.current || !wsUrlRef.current) return;
+
+        const viewport = viewportRef.current;
+        const rect = viewport?.getBoundingClientRect();
+        const visible = !!rect && rect.width > 0 && rect.height > 0;
+
+        if (visible || retries <= 0) {
+          connect(wsUrlRef.current);
+          return;
+        }
+        requestAnimationFrame(() => tryConnect(retries - 1));
+      };
+
+      tryConnect();
+      return () => {
+        cancelled = true;
+        disconnect();
+      };
+    }, [autoConnect, wsUrl, connect, disconnect]);
 
     useEffect(() => {
       if (!terminalRef.current) return;
@@ -568,6 +637,10 @@ const EmbeddedConsoleTerminal = forwardRef<
         className={classNames(className)}
         ref={viewportRef}
         style={{ width: '100%', height: '100%' }}
+        onMouseDown={(event) => {
+          if (event.button !== 0) return;
+          focusTerminal();
+        }}
       />
     );
   },
