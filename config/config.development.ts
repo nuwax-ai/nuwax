@@ -7,7 +7,8 @@ export default defineConfig({
   hash: true,
   proxy: {
     '/api/': {
-      target: 'https://testagent.xspaceagi.com',
+      //target: 'https://testagent.xspaceagi.com',
+      target: 'http://127.0.0.1:8081',
       changeOrigin: true,
     },
   },
