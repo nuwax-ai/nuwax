@@ -9,6 +9,7 @@ import DropdownChangeName from '@/pages/Chat/components/DropdownChangeName';
 import { t } from '@/services/i18nRuntime';
 import { HideDesktopEnum } from '@/types/enums/agent';
 import { AgentTypeEnum } from '@/types/enums/space';
+import { CodeOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import React from 'react';
 import styles from './index.less';
@@ -172,6 +173,16 @@ const LeftContent: React.FC<LeftContentProps> = ({
                     />
                   }
                   onClick={headerProps.handleFileTreeVisible}
+                />
+
+                {/* 终端视图 */}
+                <TooltipIcon
+                  title={t(
+                    'PC.Components.ConversationBottomConsole.tabTerminal',
+                  )}
+                  className={cx(styles['icon-box'])}
+                  icon={<CodeOutlined style={{ fontSize: 16 }} />}
+                  onClick={headerProps.handleToggleTerminalConsole}
                 />
 
                 {/* 智能体电脑视图 */}
