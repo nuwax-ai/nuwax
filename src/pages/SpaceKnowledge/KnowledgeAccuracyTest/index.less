@@ -1,0 +1,404 @@
+.container {
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  background-color: #F8F9FA;
+  gap: 16px;
+  padding: 16px;
+}
+
+.leftPanel {
+  width: 35%;
+  min-width: 320px;
+  max-width: 450px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+}
+
+.rightPanel {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+}
+
+.knowledgeSelector {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.selectorHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid #F0F0F0;
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.backIcon {
+  cursor: pointer;
+  font-size: 16px;
+  color: #666;
+
+  &:hover {
+    color: #1890FF;
+  }
+}
+
+.headerTitle {
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+}
+
+.currentKnowledge {
+  font-size: 13px;
+  color: #666;
+  padding: 2px 8px;
+  background: #F5F5F5;
+  border-radius: 4px;
+}
+
+.headerRight {
+  display: flex;
+  gap: 16px;
+}
+
+.iconButton {
+  cursor: pointer;
+  font-size: 16px;
+  color: #666;
+
+  &:hover {
+    color: #1890FF;
+  }
+}
+
+.knowledgeContent {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.chapterTitle {
+  font-size: 15px;
+  font-weight: 500;
+  color: #333;
+  line-height: 1.6;
+}
+
+.testButton {
+  width: 100%;
+  height: 40px;
+  background: #FFA500;
+  border: none;
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+
+  &:hover {
+    background: #FF8C00;
+  }
+
+  &:active {
+    background: #E67300;
+  }
+}
+
+.testHistory {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  flex: 1;
+
+  .ant-card-head {
+    border-bottom: 1px solid #F0F0F0;
+  }
+
+  .ant-card-head-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+  }
+}
+
+.historyRow {
+  cursor: pointer;
+
+  &:hover {
+    background-color: #F5F5F5;
+  }
+
+  td {
+    font-size: 13px;
+    color: #333;
+  }
+}
+
+.resultsPanel {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  min-height: 100%;
+}
+
+.resultsHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid #F0F0F0;
+}
+
+.resultsTitle {
+  font-size: 16px;
+  font-weight: 500;
+  color: #333;
+}
+
+.resultsMeta {
+  display: flex;
+  gap: 16px;
+  font-size: 12px;
+  color: #666;
+}
+
+.tokenCount {
+  font-weight: 500;
+}
+
+.requestId {
+  color: #999;
+}
+
+.resultsList {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.resultCard {
+  background: #FAFAFA;
+  border: 1px solid #F0F0F0;
+  border-radius: 8px;
+  padding: 16px;
+  transition: all 0.3s ease;
+
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-color: #E0E0E0;
+  }
+}
+
+.resultHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.rankTag {
+  padding: 4px 12px;
+  border-radius: 4px;
+  color: white;
+  font-size: 12px;
+  font-weight: 500;
+  min-width: 50px;
+  text-align: center;
+}
+
+.scoreText {
+  font-size: 13px;
+  color: #666;
+  font-weight: 500;
+}
+
+.documentInfo {
+  margin-bottom: 8px;
+}
+
+.documentName {
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 4px;
+}
+
+.documentSource {
+  font-size: 12px;
+  color: #999;
+}
+
+.segmentInfo {
+  display: flex;
+  gap: 8px;
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.segmentId {
+  font-weight: 500;
+}
+
+.segmentCharCount {
+  color: #999;
+}
+
+.extraInfo {
+  color: #999;
+}
+
+.expandButton {
+  font-size: 12px;
+  color: #4169E1;
+  padding: 0;
+
+  &:hover {
+    color: #3658C4;
+  }
+}
+
+.expandedContent {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #F0F0F0;
+}
+
+.contentText {
+  font-size: 13px;
+  color: #666;
+  line-height: 1.8;
+  margin-bottom: 12px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.collapseButton {
+  font-size: 12px;
+  color: #4169E1;
+  padding: 0;
+
+  &:hover {
+    color: #3658C4;
+  }
+}
+
+// 新增测试配置区样式
+.testConfig {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+  .configHeader {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #F0F0F0;
+  }
+
+  .configContent {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .configItem {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    .label {
+      font-size: 14px;
+      font-weight: 500;
+      color: #333;
+    }
+
+    .select,
+    .textarea {
+      width: 100%;
+    }
+
+    .textarea {
+      resize: vertical;
+    }
+  }
+
+  .testButton {
+    width: 100%;
+    height: 40px;
+    margin-top: 8px;
+    background: #1890FF;
+    border: none;
+    color: white;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: 6px;
+    cursor: pointer;
+
+    &:hover:not(:disabled) {
+      background: #40A9FF;
+    }
+
+    &:active:not(:disabled) {
+      background: #096DD9;
+    }
+
+    &:disabled {
+      background: #D9D9D9;
+      cursor: not-allowed;
+    }
+  }
+}
+
+.emptyState {
+  text-align: center;
+  padding: 40px;
+  color: #999;
+  font-size: 14px;
+  background: #FAFAFA;
+  border-radius: 8px;
+  border: 1px dashed #D9D9D9;
+}
+
+.contentPreview {
+  font-size: 13px;
+  color: #666;
+  line-height: 1.6;
+  background: #f5f5f5;
+  padding: 12px;
+  border-radius: 4px;
+  margin-top: 8px;
+}
+
+.contentText {
+  font-size: 13px;
+  color: #666;
+  line-height: 1.8;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.expandHint {
+  font-size: 12px;
+  color: #1890FF;
+  margin-top: 8px;
+  text-align: center;
+  cursor: pointer;
+  user-select: none;
+}
