@@ -40,7 +40,6 @@ import {
 } from '@/components/business-component/FileTreeGitSourcePanel';
 import type { FileTreeContainerProps } from '@/components/business-component/FileTreeGitSourcePanel/types/file-tree-git-source';
 import { useFileTreePreviewView } from '@/components/business-component/FileTreePreviewPanel/hooks/useFileTreePreviewView';
-import TooltipIcon from '@/components/custom/TooltipIcon';
 import { apiUpdateStaticFile } from '@/services/vncDesktop';
 import type { UpdateFileInfo } from '@/types/interfaces/fileTree';
 import type { StaticFileInfo } from '@/types/interfaces/vncDesktop';
@@ -50,7 +49,7 @@ import {
   TTYD_TERMINAL_WIRE_PROTOCOL,
   TTYD_TERMINAL_WS_SUBPROTOCOLS,
 } from '@/utils/terminalWsUrl';
-import { LoadingOutlined, ThunderboltOutlined } from '@ant-design/icons';
+import { LoadingOutlined } from '@ant-design/icons';
 import { Form } from 'antd';
 import classNames from 'classnames';
 import React, {
@@ -288,6 +287,19 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     conversationInfo,
   });
 
+  /** 文件树预览区底部终端是否显示 */
+  const [terminalConsoleVisible, setTerminalConsoleVisible] =
+    useState<boolean>(false);
+  /** 文件树预览区底部终端是否已经渲染过，渲染后保持挂载避免 wss 重连 */
+  const [hasTerminalConsoleRendered, setHasTerminalConsoleRendered] =
+    useState<boolean>(false);
+
+  /** 关闭文件树时同步折叠终端，避免再次打开文件树时终端以展开状态恢复 */
+  const handleClosePreviewView = useCallback(() => {
+    setTerminalConsoleVisible(false);
+    closePreviewView();
+  }, [closePreviewView]);
+
   const {
     isShowFilePanel,
     showCopyButton,
@@ -301,10 +313,19 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     id,
     sidebarRef,
     openPreviewView,
-    closePreviewView,
+    closePreviewView: handleClosePreviewView,
     openDesktopView,
     pagePreviewData,
   });
+
+  /** 打开文件树时默认折叠终端 */
+  const handleFileTreeVisibleClick = useCallback(() => {
+    const openingFileTree = !isFileTreeVisible;
+    handleFileTreeVisible();
+    if (openingFileTree) {
+      setTerminalConsoleVisible(false);
+    }
+  }, [isFileTreeVisible, handleFileTreeVisible]);
 
   const {
     variableParams,
@@ -610,7 +631,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       return result ?? false;
     },
     agentSandboxId: finalSelectedId,
-    onClose: closePreviewView,
+    onClose: handleClosePreviewView,
     isFileTreePinned,
     onFileTreePinnedChange: setIsFileTreePinned,
     isCanDeleteSkillFile: true,
@@ -640,12 +661,6 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
 
   // Git 版本记录面板状态
   const [gitVersionPanelOpen, setGitVersionPanelOpen] =
-    useState<boolean>(false);
-  /** 文件树预览区底部终端是否显示 */
-  const [terminalConsoleVisible, setTerminalConsoleVisible] =
-    useState<boolean>(false);
-  /** 文件树预览区底部终端是否已经渲染过，渲染后保持挂载避免 wss 重连 */
-  const [hasTerminalConsoleRendered, setHasTerminalConsoleRendered] =
     useState<boolean>(false);
 
   /** 终端 WebSocket 连接地址（ttyd） */
@@ -809,22 +824,14 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     ],
   );
 
-  /** 文件树预览区 Header 终端按钮 */
-  const terminalActionButton = useMemo(
-    () => (
-      <TooltipIcon
-        title={t('PC.Components.ConversationBottomConsole.tabTerminal')}
-        ariaLabel={t('PC.Components.ConversationBottomConsole.tabTerminal')}
-        className={cx(styles['panel-btn'])}
-        icon={<ThunderboltOutlined style={{ fontSize: 16 }} />}
-        onClick={() => {
-          setHasTerminalConsoleRendered(true);
-          setTerminalConsoleVisible((prev) => !prev);
-        }}
-      />
-    ),
-    [],
-  );
+  /** 切换文件树预览区底部终端 */
+  const handleToggleTerminalConsole = useCallback(() => {
+    setHasTerminalConsoleRendered(true);
+    setTerminalConsoleVisible((prev) => !prev);
+    if (!isFileTreeVisible) {
+      openPreviewView(id);
+    }
+  }, [id, isFileTreeVisible, openPreviewView]);
 
   /** 文件树预览区底部终端，仅显示终端 Tab，不展示日志 */
   const terminalConsole = hasTerminalConsoleRendered ? (
@@ -851,7 +858,6 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       diffFile: gitSourceControl.selectedDiffFile,
       gitVersionPanelOpen,
       onToggleGitVersionPanel: handleToggleGitVersionPanel,
-      afterGitVersionActions: terminalActionButton,
       bottomContent: terminalConsole,
       gitVersionControl:
         effectiveAgent?.type === AgentTypeEnum.TaskAgent
@@ -920,7 +926,6 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       gitSourceControl.handleCommit,
       gitVersionPanelOpen,
       handleToggleGitVersionPanel,
-      terminalActionButton,
       terminalConsole,
       fileView.gitBranch,
       viewMode,
@@ -967,11 +972,13 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     isSidebarVisible,
     sidebarRef,
     hidePagePreview,
-    closePreviewView,
+    closePreviewView: handleClosePreviewView,
     handleOpenPreview,
     isShowFilePanel,
     viewMode,
-    handleFileTreeVisible,
+    handleFileTreeVisible: handleFileTreeVisibleClick,
+    terminalConsoleVisible,
+    handleToggleTerminalConsole,
     handleOpenDesktopView,
     renderTitle,
     renderHeaderRight,
