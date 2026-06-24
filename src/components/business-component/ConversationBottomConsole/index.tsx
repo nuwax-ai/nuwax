@@ -173,7 +173,6 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
   const [containerStatus, setContainerStatus] = useState<
     'idle' | 'starting' | 'running' | 'error'
   >('idle');
-  const [containerError, setContainerError] = useState<string>('');
 
   /**
    * 保活轮询（useRequest 自动管理定时器、页面可见性暂停/恢复）
@@ -210,23 +209,12 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
         // HTTP 成功但业务码失败 → 视为保活失败，停止轮询并显示错误
         if (result.code !== SUCCESS_CODE) {
           setContainerStatus('error');
-          setContainerError(
-            result.message ||
-              dict(
-                'PC.Components.ConversationBottomConsole.containerKeepaliveFailed',
-              ),
-          );
           stopKeepaliveRef.current();
         }
       },
       onError: (error) => {
         console.error('[keepalive] Pod keepalive error:', error);
         setContainerStatus('error');
-        setContainerError(
-          dict(
-            'PC.Components.ConversationBottomConsole.containerKeepaliveError',
-          ),
-        );
         stopKeepaliveRef.current();
       },
     });
@@ -239,7 +227,6 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
   const startContainer = useCallback(
     async (cId: number): Promise<boolean> => {
       setContainerStatus('starting');
-      setContainerError('');
       try {
         const { code } = await apiEnsurePod(cId);
         if (code === SUCCESS_CODE) {
@@ -250,18 +237,10 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
           return true;
         } else {
           setContainerStatus('error');
-          setContainerError(
-            dict(
-              'PC.Components.ConversationBottomConsole.containerStartFailed',
-            ),
-          );
           return false;
         }
       } catch (error: any) {
         setContainerStatus('error');
-        setContainerError(
-          dict('PC.Components.ConversationBottomConsole.containerStartError'),
-        );
         return false;
       }
     },
@@ -562,12 +541,6 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
               'gap-8',
             )}
           >
-            <span className={cx(styles['container-error-text'])}>
-              {containerError ||
-                dict(
-                  'PC.Components.ConversationBottomConsole.containerStartFailed',
-                )}
-            </span>
             <Button
               type="primary"
               icon={<ReloadOutlined />}
