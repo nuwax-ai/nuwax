@@ -25,14 +25,8 @@ export interface ConversationAgentFilePreviewProps {
   activeTab: PreviewTab | null;
   /** 「预览」页签：调试对话面板 */
   debugPanel?: React.ReactNode;
-  /** 「编排」页签：智能体配置编辑区 */
-  arrangeConfigPanel?: React.ReactNode;
   /** 「版本控制」页签：Git 提交记录 */
   versionPanel?: React.ReactNode;
-  /** 「订阅设置」页签 */
-  subscriptionSettingPanel?: React.ReactNode;
-  /** 「订阅统计」页签 */
-  subscriptionStatsPanel?: React.ReactNode;
   /** 外层容器类名（来自 useFileTreePreviewView） */
   providerClassName?: string;
   className?: string;
@@ -49,10 +43,7 @@ const ConversationAgentFilePreview: React.FC<
   diffFile,
   activeTab,
   debugPanel,
-  arrangeConfigPanel,
   versionPanel,
-  subscriptionSettingPanel,
-  subscriptionStatsPanel,
   providerClassName,
   className,
 }) => {
@@ -91,18 +82,9 @@ const ConversationAgentFilePreview: React.FC<
   const workspacePanelMap = useMemo(
     (): Partial<Record<PreviewToolId, React.ReactNode>> => ({
       preview: debugPanel,
-      arrange: arrangeConfigPanel,
       'version-control': versionPanel,
-      'subscription-setting': subscriptionSettingPanel,
-      'subscription-stats': subscriptionStatsPanel,
     }),
-    [
-      debugPanel,
-      arrangeConfigPanel,
-      versionPanel,
-      subscriptionSettingPanel,
-      subscriptionStatsPanel,
-    ],
+    [debugPanel, versionPanel],
   );
 
   /** 按优先级渲染预览区主体（diff > 文件 > 工作区页签 > 其他） */

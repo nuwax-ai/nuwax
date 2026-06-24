@@ -4,6 +4,7 @@ import type { AgentMode } from '@/components/business-component/AgentInterventio
 import { useAppDevModelSelector } from '@/hooks/useAppDevModelSelector';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
 import { apiPublishedAgentInfo } from '@/services/agentDev';
+import { dict } from '@/services/i18nRuntime';
 import {
   AgentComponentTypeEnum,
   DefaultSelectedEnum,
@@ -50,27 +51,23 @@ const PromptBox: React.FC<PromptBoxProps> = ({ onSubmit }) => {
   const tabs: TabItem[] = [
     {
       key: AgentComponentTypeEnum.Agent,
-      label: '智能体',
-      placeholder:
-        '描述你想要的智能体，例如：帮我创建一个代码审查助手，能自动检测代码问题并给出优化建议',
+      label: dict('PC.Pages.SpaceCreateProject.tabAgent'),
+      placeholder: dict('PC.Pages.SpaceCreateProject.placeholderAgent'),
     },
     {
       key: AgentComponentTypeEnum.PageApp,
-      label: '网页应用',
-      placeholder:
-        '描述你想要的网页应用，例如：帮我开发一个颜值管理网站，支持上传照片智能评估颜值与肤质',
+      label: dict('PC.Pages.SpaceCreateProject.tabPageApp'),
+      placeholder: dict('PC.Pages.SpaceCreateProject.placeholderPageApp'),
     },
     {
       key: AgentComponentTypeEnum.Skill,
-      label: '技能',
-      placeholder:
-        '描述你想要的自定义技能，例如：帮我写一个根据经纬度查询当前天气状况的API接口',
+      label: dict('PC.Pages.SpaceCreateProject.tabSkill'),
+      placeholder: dict('PC.Pages.SpaceCreateProject.placeholderSkill'),
     },
     {
       key: AgentComponentTypeEnum.Plugin,
-      label: '插件',
-      placeholder:
-        '描述你想要的插件工具，例如：帮我对接第三方图片转换的HTTP接口插件',
+      label: dict('PC.Pages.SpaceCreateProject.tabPlugin'),
+      placeholder: dict('PC.Pages.SpaceCreateProject.placeholderPlugin'),
     },
   ];
 
@@ -184,7 +181,9 @@ const PromptBox: React.FC<PromptBoxProps> = ({ onSubmit }) => {
     (msg: string, files?: any[], skillIds?: number[], modelId?: number) => {
       if (isSubmitting) return;
       if (!msg?.trim() && !files?.length) {
-        message.warning('请输入您的任务描述！');
+        message.warning(
+          dict('PC.Pages.SpaceCreateProject.inputRequiredWarning'),
+        );
         return;
       }
       setIsSubmitting(true);
