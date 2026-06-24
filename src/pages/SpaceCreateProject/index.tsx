@@ -5,7 +5,6 @@ import { apiAgentConfigUpdate } from '@/services/agentConfig';
 import { apiAgentGenerateInfo, apiProjectCreate } from '@/services/appDev';
 import { apiPluginHttpUpdate } from '@/services/plugin';
 import { apiSkillUpdate } from '@/services/skill';
-import { message } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import { history, useModel, useParams } from 'umi';
@@ -23,8 +22,6 @@ import type { SubmitPayload } from './components/PromptBox';
  * 用于解耦不同项目类型在新建阶段独特的初始化元数据与路由配置
  */
 interface ProjectStrategy {
-  /** 构建阶段自定义的 Loading 提示文案，若为空则不显示阶段 loading */
-  loadingText?: string;
   /** 可选的前置 AI 元数据（名称、描述、头像）生成与接口保存更新逻辑 */
   initMetadata?: (targetId: number, prompt: string) => Promise<void>;
   /** 生成跳转的目标路由 URL */
@@ -58,7 +55,6 @@ const PROJECT_STRATEGIES: Partial<
 > = {
   // 智能体策略
   [AgentComponentTypeEnum.Agent]: {
-    loadingText: '正在使用 AI 自动生成智能体信息...',
     initMetadata: async (targetId, prompt) => {
       const meta = await generateProjectMetadata(prompt);
       if (meta) {
@@ -76,7 +72,6 @@ const PROJECT_STRATEGIES: Partial<
   },
   // 技能策略
   [AgentComponentTypeEnum.Skill]: {
-    loadingText: '正在使用 AI 自动生成技能信息...',
     initMetadata: async (targetId, prompt) => {
       const meta = await generateProjectMetadata(prompt);
       if (meta) {
@@ -94,7 +89,6 @@ const PROJECT_STRATEGIES: Partial<
   },
   // 插件策略
   [AgentComponentTypeEnum.Plugin]: {
-    loadingText: '正在使用 AI 自动生成插件信息...',
     initMetadata: async (targetId, prompt) => {
       const meta = await generateProjectMetadata(prompt);
       if (meta) {
@@ -157,27 +151,13 @@ const SpaceCreateProject: React.FC = () => {
       return;
     }
 
-    // 2. 开启统一的新建 loading 提示
-    const hide = message.loading({
-      content: `正在为您使用 AI 引擎构建项目...`,
-      key: 'create_project_loading',
-      duration: 0,
-    });
-
     try {
-      // 3. 调用 API 创建基础项目记录以获取 ID
+      // 2. 调用 API 创建基础项目记录以获取 ID
       const res = await apiProjectCreate({ spaceId, targetType });
       const { targetId, conversationId } = res.data;
 
-      // 4. 前置自动生成名称、描述和图标，并更新配置信息
+      // 3. 前置自动生成名称、描述和图标，并更新配置信息
       if (prompt && strategy.initMetadata) {
-        if (strategy.loadingText) {
-          message.loading({
-            content: strategy.loadingText,
-            key: 'create_project_loading',
-            duration: 0,
-          });
-        }
         try {
           await strategy.initMetadata(targetId, prompt);
         } catch (error) {
@@ -189,16 +169,7 @@ const SpaceCreateProject: React.FC = () => {
         }
       }
 
-      // 5. 关闭 loading 状态并提示构建成功
-      hide();
-
-      message.success({
-        content: `构建成功！正在为您跳转到工作台...`,
-        key: 'create_project_loading',
-        duration: 2,
-      });
-
-      // 6. 调用策略计算出对应的路由 URL
+      // 4. 调用策略计算出对应的路由 URL
       const url = strategy.getUrl({
         spaceId,
         targetId,
@@ -206,7 +177,7 @@ const SpaceCreateProject: React.FC = () => {
         tenantConfigInfo,
       });
 
-      // 7. 携带初始状态跳转到工作台详情会话中
+      // 5. 携带初始状态跳转到工作台详情会话中
       if (url) {
         history.push(url, {
           message: prompt,
@@ -219,7 +190,7 @@ const SpaceCreateProject: React.FC = () => {
         });
       }
     } catch (error: any) {
-      hide();
+      console.error('Failed to create project:', error);
     }
   };
 
