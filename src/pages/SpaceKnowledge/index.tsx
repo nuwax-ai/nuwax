@@ -666,7 +666,7 @@ const SpaceKnowledge: React.FC = () => {
 
   // 渲染命中测试内容
   const renderAccuracyTestContent = () => {
-    return <KnowledgeAccuracyTest />;
+    return <KnowledgeAccuracyTest knowledgeBaseId={knowledgeId} />;
   };
 
   // 确认QA问答
