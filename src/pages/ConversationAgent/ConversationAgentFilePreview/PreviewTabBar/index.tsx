@@ -1,5 +1,4 @@
 import MoreActionsMenu from '@/components/business-component/FileTreePreviewPanel/FilePathHeader/MoreActionsMenu';
-import TooltipIcon from '@/components/custom/TooltipIcon';
 import { dict } from '@/services/i18nRuntime';
 import { getFileIcon } from '@/utils/fileTree';
 import {
@@ -69,8 +68,6 @@ export interface PreviewTabBarProps {
   onExportProject?: () => void;
   /** 是否为云电脑（影响重启文案） */
   isCloudComputer?: boolean;
-  /** 打开高级设置（新窗口打开智能体编辑页） */
-  onOpenAdvancedSettings?: () => void;
 }
 
 interface TabItemFaceProps {
@@ -294,7 +291,6 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
   onRestartAgent,
   onExportProject,
   isCloudComputer,
-  onOpenAdvancedSettings,
 }) => {
   /** 拖拽中的标签 ID */
   const [activeDragTabId, setActiveDragTabId] = useState<string | null>(null);
@@ -678,17 +674,6 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
           />
         </div>
       </div>
-
-      {onOpenAdvancedSettings && (
-        <div className={cx(styles['tab-bar-right'])}>
-          <TooltipIcon
-            title={dict('PC.Components.ModelSetting.advancedSettings')}
-            className={cx(styles['tab-bar-action-btn'])}
-            icon={<SettingOutlined style={{ fontSize: 16 }} />}
-            onClick={onOpenAdvancedSettings}
-          />
-        </div>
-      )}
 
       {/* 预览区标签页右键菜单（带淡入缩放过渡） */}
       <PreviewTabContextMenu
