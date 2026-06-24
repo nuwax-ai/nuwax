@@ -2,8 +2,6 @@ import {
   BG_ICON_AGENTFLOW_AGENT,
   BG_ICON_AGENTFLOW_HUMAN_ASK,
   BG_ICON_AGENTFLOW_ROUTE_DECISION,
-  BG_ICON_WORKFLOW_OUTPUT,
-  BG_ICON_WORKFLOW_PLUGIN,
 } from '@/constants/images.constants';
 import { t } from '@/services/i18nRuntime';
 import {
@@ -45,9 +43,10 @@ const WORKFLOW_ONLY_TYPES = new Set<NodeTypeEnum>([
   NodeTypeEnum.MCP,
   NodeTypeEnum.HTTPRequest,
   NodeTypeEnum.IntentRecognition,
- NodeTypeEnum.TableDataAdd,
- NodeTypeEnum.Output,
- NodeTypeEnum.TableDataDelete,
+  NodeTypeEnum.TableDataAdd,
+  NodeTypeEnum.Plugin,
+  NodeTypeEnum.Output,
+  NodeTypeEnum.TableDataDelete,
   NodeTypeEnum.TableDataUpdate,
   NodeTypeEnum.TableDataQuery,
   NodeTypeEnum.TableSQL,
@@ -150,20 +149,10 @@ const agentFlowProcessGroup: StencilList = {
       shape: NodeShapeEnum.General,
       description: t('PC.Pages.AgentFlowParams.nodeHumanAskDescription'),
       flowKinds: [FlowKindEnum.AgentFlow],
-     nodeConfig: { hitlMode: HitlModeEnum.Ask } as any,
-   },
-  {
-    name: t('PC.Pages.AntvX6Params.nodeProcessOutputName'),
-      icon: null,
-      bgIcon: BG_ICON_WORKFLOW_OUTPUT,
-      type: NodeTypeEnum.Output,
-      shape: NodeShapeEnum.General,
-      description: t('PC.Pages.AntvX6Params.nodeProcessOutputDescription'),
-      flowKinds: [FlowKindEnum.AgentFlow],
+      nodeConfig: { hitlMode: HitlModeEnum.Ask } as any,
     },
   ],
 };
-
 
 export const asideList: StencilList[] = [
   ...buildV3AsideList(),

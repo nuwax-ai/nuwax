@@ -27,6 +27,7 @@ import { AgentComponentTypeEnum, HideDesktopEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum, PublishStatusEnum } from '@/types/enums/common';
 import { ModelTypeEnum } from '@/types/enums/modelConfig';
 import {
+  AgentSubTypeEnum,
   AgentTypeEnum,
   ApplicationMoreActionEnum,
   EditAgentShowType,
@@ -76,8 +77,8 @@ import React, {
 import { history, useLocation, useModel, useParams } from 'umi';
 import PagePreviewIframe from '../../components/business-component/PagePreviewIframe';
 import AgentArrangeConfig from './AgentArrangeConfig';
-import AgentHeader from './AgentHeader';
 import AgentFlowCanvas from './AgentFlowCanvas';
+import AgentHeader from './AgentHeader';
 import AgentModelSetting from './AgentModelSetting';
 import ArrangeTitle from './ArrangeTitle';
 import DebugDetails from './DebugDetails';
@@ -100,7 +101,9 @@ const EditAgent: React.FC = () => {
   const systemUserTipsWordRef = useRef<SystemUserTipsWordRef>(null);
   const spaceId = Number(params.spaceId);
   // agent-flow 路由的参数名是 workflowId，作为 agentId 的 fallback
-  const routeWorkflowId = Number(params.workflowId);
+  const routeWorkflowId = params.workflowId
+    ? Number(params.workflowId)
+    : undefined;
   const agentId = Number(params.agentId ?? params.workflowId);
   // 是否为 agent-flow 路由（/space/:spaceId/agent-flow/:workflowId）
   const isAgentFlowRoute = location.pathname.includes('/agent-flow');
@@ -191,6 +194,15 @@ const EditAgent: React.FC = () => {
       conversationInfo?.sandboxServerId
     );
   }, [currentSelectedComputerId, conversationInfo]);
+
+  // AgentFlow 画布所需的工作流 ID：优先从组件列表中 Workflow 组件的 targetId 获取
+  const agentFlowWorkflowId = useMemo(() => {
+    if (agentConfigInfo?.workflowId) return agentConfigInfo.workflowId;
+    const wfComponent = agentConfigInfo?.agentComponentConfigList?.find(
+      (c) => c.type === AgentComponentTypeEnum.Workflow,
+    );
+    return wfComponent?.targetId || routeWorkflowId;
+  }, [agentConfigInfo, routeWorkflowId]);
 
   useEffect(() => {
     // 查询可使用模型列表接口
@@ -1028,43 +1040,43 @@ const EditAgent: React.FC = () => {
                   _agentConfigInfo.modelComponentConfig.targetId = modelId;
                   _agentConfigInfo.modelComponentConfig.name = name;
                   setAgentConfigInfo(_agentConfigInfo);
-             }}
-           />
-           <div
-             className={cx(
-               'flex-1',
-               'flex',
-               'overflow-y',
-               styles['edit-content'],
-               {
-                 [styles['edit-content-col']]:
-                   isAgentFlowRoute ||
-                   agentConfigInfo?.type === AgentTypeEnum.AgentFlow,
-               },
-             )}
-           >
-             {/* AgentFlow 画布（放在同一容器内，系统提示词上方） */}
-             {(isAgentFlowRoute ||
-               agentConfigInfo?.type === AgentTypeEnum.AgentFlow) &&
-               (agentConfigInfo?.workflowId || routeWorkflowId) && (
-                 <div
-                   style={{
-                     width: '100%',
-                     height: 500,
-                     flexShrink: 0,
-                     overflow: 'hidden',
-                     borderRadius: 8,
-                     marginBottom: 12,
-                   }}
-                 >
-                   <AgentFlowCanvas
-                     workflowId={agentConfigInfo?.workflowId || routeWorkflowId}
-                     spaceId={spaceId}
-                   />
-                 </div>
-               )}
-              {/* 问答型智能体、应用页面 */}
-              {agentConfigInfo?.type !== AgentTypeEnum.TaskAgent && (
+                }}
+              />
+              <div
+                className={cx(
+                  'flex-1',
+                  'flex',
+                  'overflow-y',
+                  styles['edit-content'],
+                  {
+                    [styles['edit-content-col']]:
+                      isAgentFlowRoute ||
+                      agentConfigInfo?.subType === AgentSubTypeEnum.Flow,
+                  },
+                )}
+              >
+                {/* AgentFlow 画布（放在同一容器内，系统提示词上方） */}
+                {(isAgentFlowRoute ||
+                  agentConfigInfo?.subType === AgentSubTypeEnum.Flow) &&
+                  agentFlowWorkflowId && (
+                    <div
+                      style={{
+                        width: '100%',
+                        height: 500,
+                        flexShrink: 0,
+                        overflow: 'hidden',
+                        borderRadius: 8,
+                        marginBottom: 12,
+                      }}
+                    >
+                      <AgentFlowCanvas
+                        workflowId={agentFlowWorkflowId}
+                        spaceId={spaceId}
+                      />
+                    </div>
+                  )}
+                {/* 问答型智能体、应用页面 */}
+                {agentConfigInfo?.type !== AgentTypeEnum.TaskAgent && (
                   // 系统提示词/用户提示词
                   <SystemUserTipsWord
                     ref={systemUserTipsWordRef}

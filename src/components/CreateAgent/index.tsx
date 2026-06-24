@@ -7,7 +7,7 @@ import UploadAvatar from '@/components/UploadAvatar';
 import { apiAgentAdd, apiAgentConfigUpdate } from '@/services/agentConfig';
 import { dict } from '@/services/i18nRuntime';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
-import { AgentTypeEnum } from '@/types/enums/space';
+import { AgentSubTypeEnum, AgentTypeEnum } from '@/types/enums/space';
 import type {
   AgentAddParams,
   AgentAddResult,
@@ -90,11 +90,14 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
   const onFinish: FormProps<AgentAddParams>['onFinish'] = (values) => {
     setLoading(true);
     if (mode === CreateUpdateModeEnum.Create) {
+      // AgentFlow 在后端实际类型为 TaskAgent，通过 subType=Flow 区分
+      const isAgentFlow = type === AgentTypeEnum.AgentFlow;
       runAdd({
         ...values,
         icon: imageUrl,
         spaceId,
-        type,
+        type: isAgentFlow ? AgentTypeEnum.TaskAgent : type,
+        subType: isAgentFlow ? AgentSubTypeEnum.Flow : undefined,
       });
     } else {
       // 更新智能体

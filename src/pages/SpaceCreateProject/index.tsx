@@ -124,17 +124,17 @@ const SpaceCreateProject: React.FC = () => {
    * 处理新建项目提交逻辑
    * 基于策略模式，统一控制新建流、AI 元数据初始化以及路由跳转
    */
-const handleCreateSubmit = async ({
-  type: targetType,
-  subType,
-  prompt,
-  files,
-  skillIds,
-  modelId,
-  tools,
-  computerId,
-  agentMode,
-}: SubmitPayload) => {
+  const handleCreateSubmit = async ({
+    type: targetType,
+    subType,
+    prompt,
+    files,
+    skillIds,
+    modelId,
+    tools,
+    computerId,
+    agentMode,
+  }: SubmitPayload) => {
     // todo: 页面应用不需要策略，直接跳转到页面开发页面，后续再补充
     if (targetType === AgentComponentTypeEnum.PageApp) {
       const res = await apiProjectCreate({ targetType, subType });
@@ -169,7 +169,13 @@ const handleCreateSubmit = async ({
 
     try {
       // 3. 调用 API 创建基础项目记录以获取 ID
-      const res = await apiProjectCreate({ targetType, subType });
+      // Flow 子类型用专门的 targetType，后端按此区分创建逻辑
+      const flowTargetType =
+        subType === AgentSubTypeEnum.Flow ? 'AgentFlow' : targetType;
+      const res = await apiProjectCreate({
+        targetType: flowTargetType,
+        subType,
+      });
       const { targetId, conversationId } = res.data;
 
       // 4. 前置自动生成名称、描述和图标，并更新配置信息
