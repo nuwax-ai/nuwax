@@ -9,9 +9,11 @@ import {
 } from '@/components/KnowledgeAccuracyTest/service';
 import type { DocumentItem, TestHistoryItem, RecallResultItem } from '@/components/KnowledgeAccuracyTest/types';
 import styles from './index.less';
+import { useModel } from 'umi';
 
 const { TextArea } = Input;
 const { Option } = Select;
+
 
 interface KnowledgeAccuracyTestProps {
   knowledgeBaseId?: string | number;
@@ -36,6 +38,8 @@ const KnowledgeAccuracyTest: React.FC<KnowledgeAccuracyTestProps> = ({
   const [testHistory, setTestHistory] = useState<TestHistoryItem[]>([]);
   const [recallResults, setRecallResults] = useState<RecallResultItem[]>([]);
 
+  const { tenantConfigInfo } = useModel('tenantConfigInfo');
+  let isShowGRAPH = tenantConfigInfo.commercialEdition;
 
   // 搜索参数
   const [topK, setTopK] = useState(10);
@@ -95,6 +99,7 @@ const KnowledgeAccuracyTest: React.FC<KnowledgeAccuracyTestProps> = ({
         searchStrategy,
         topK,
         matchingDegree,
+        isShowGRAPH,
       });
 
       if (response?.data) {
