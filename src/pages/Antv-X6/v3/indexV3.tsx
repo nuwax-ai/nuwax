@@ -115,7 +115,7 @@ const Workflow: React.FC<WorkflowV3Props> = ({
   const location = useLocation();
 
   const params = useParams();
-  // id（优先使用外部注入值，便于在非 agent-flow 路由下复用）
+  // id（优先使用外部注入值，便于在 EditAgent 内嵌画布时复用）
   const workflowId =
     workflowIdOverride !== undefined
       ? workflowIdOverride

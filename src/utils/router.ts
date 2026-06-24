@@ -1,4 +1,3 @@
-import { FlowKindEnum } from '@/types/enums/common';
 import { isWeakNumber } from '@/utils/common';
 import { history } from 'umi';
 
@@ -55,9 +54,7 @@ export const buildWorkflowRoute = (
   workflowType?: string,
   query?: WorkflowRouteQuery,
 ) => {
-  const routePrefix =
-    workflowType === FlowKindEnum.AgentFlow ? 'agent-flow' : 'workflow';
-  const route = `/space/${targetSpaceId}/${routePrefix}/${workflowId}`;
+  const route = `/space/${targetSpaceId}/workflow/${workflowId}`;
   const searchParams = new URLSearchParams();
 
   Object.entries(query || {}).forEach(([key, value]) => {

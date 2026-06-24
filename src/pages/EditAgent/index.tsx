@@ -70,7 +70,6 @@ import {
   TTYD_TERMINAL_WIRE_PROTOCOL,
   TTYD_TERMINAL_WS_SUBPROTOCOLS,
 } from '@/utils/terminalWsUrl';
-import { FullscreenExitOutlined, FullscreenOutlined } from '@ant-design/icons';
 import { useRequest } from 'ahooks';
 import { message as messageAntd } from 'antd';
 import classNames from 'classnames';
@@ -109,10 +108,6 @@ const EditAgent: React.FC = () => {
   // 系统/用户提示词组件引用
   const systemUserTipsWordRef = useRef<SystemUserTipsWordRef>(null);
   const spaceId = Number(params.spaceId);
-  // agent-flow 路由的参数名是 workflowId，作为 agentId 的 fallback
-  const routeWorkflowId = params.workflowId
-    ? Number(params.workflowId)
-    : undefined;
   const agentId = Number(params.agentId);
   const [open, setOpen] = useState<boolean>(false);
   const [openEditAgent, setOpenEditAgent] = useState<boolean>(false);
@@ -166,9 +161,6 @@ const EditAgent: React.FC = () => {
   const [openTempChat, setOpenTempChat] = useState<boolean>(false);
   // 顶部分段菜单选中项
   const [headerTab, setHeaderTab] = useState<AgentHeaderTabKey>('arrange');
-  // AgentFlow 画布全屏（覆盖整页，交互与系统提示词全屏一致）
-  const [isFlowCanvasFullscreen, setIsFlowCanvasFullscreen] =
-    useState<boolean>(false);
 
   // 获取 chat model 中的页面预览状态
   const { pagePreviewData, hidePagePreview, showPagePreview } =
@@ -205,24 +197,17 @@ const EditAgent: React.FC = () => {
     );
   }, [currentSelectedComputerId, conversationInfo]);
 
-  // AgentFlow 画布所需的工作流 ID：优先从组件列表中 Workflow 组件的 targetId 获取
+  // 是否为 AgentFlow（通用型智能体的 Flow 子类型）。AgentFlow 与 TaskAgent 的唯一差异是
+  // 用「工作流画布」替代「工具下的工作流」，其余完全一致。所有 Flow 专属分支统一用此标志。
+  const isFlowAgent = agentConfigInfo?.subType === AgentSubTypeEnum.Flow;
+  // AgentFlow 画布所需的工作流 ID：优先取 workflowId，回退到组件列表中 Workflow 组件的 targetId
   const agentFlowWorkflowId = useMemo(() => {
     if (agentConfigInfo?.workflowId) return agentConfigInfo.workflowId;
     const wfComponent = agentConfigInfo?.agentComponentConfigList?.find(
       (c) => c.type === AgentComponentTypeEnum.Workflow,
     );
-    return wfComponent?.targetId || routeWorkflowId;
-  }, [agentConfigInfo, routeWorkflowId]);
-
-  // ESC 退出画布全屏（与系统提示词全屏弹窗的退出交互一致）
-  useEffect(() => {
-    if (!isFlowCanvasFullscreen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setIsFlowCanvasFullscreen(false);
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [isFlowCanvasFullscreen]);
+    return wfComponent?.targetId;
+  }, [agentConfigInfo]);
 
   useEffect(() => {
     // 查询可使用模型列表接口
@@ -1123,71 +1108,13 @@ const EditAgent: React.FC = () => {
                   extraComponent={
                     agentConfigInfo?.type === AgentTypeEnum.TaskAgent && (
                       <>
-                        {/* AgentFlow 画布：位于系统提示词之前，同处编排流；点击右上角全屏覆盖整页 */}
-                        {agentConfigInfo?.subType === AgentSubTypeEnum.Flow &&
-                          agentFlowWorkflowId && (
-                            <div
-                              style={
-                                isFlowCanvasFullscreen
-                                  ? {
-                                      position: 'fixed',
-                                      inset: 0,
-                                      zIndex: 1010,
-                                      width: '100vw',
-                                      height: '100vh',
-                                      background: '#fff',
-                                    }
-                                  : {
-                                      position: 'relative',
-                                      width: '100%',
-                                      height: 460,
-                                      marginBottom: 12,
-                                      overflow: 'hidden',
-                                      borderRadius: 8,
-                                    }
-                              }
-                            >
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setIsFlowCanvasFullscreen((v) => !v)
-                                }
-                                title={
-                                  isFlowCanvasFullscreen
-                                    ? dict(
-                                        'PC.Pages.EditAgent.SystemTipsWord.exitFullscreen',
-                                      )
-                                    : dict(
-                                        'PC.Pages.EditAgent.SystemTipsWord.fullscreenEdit',
-                                      )
-                                }
-                                style={{
-                                  position: 'absolute',
-                                  top: 8,
-                                  right: 8,
-                                  zIndex: 2,
-                                  border: 'none',
-                                  background: 'rgba(255, 255, 255, 0.85)',
-                                  cursor: 'pointer',
-                                  color: '#666',
-                                  fontSize: 16,
-                                  lineHeight: 1,
-                                  padding: 4,
-                                  borderRadius: 4,
-                                }}
-                              >
-                                {isFlowCanvasFullscreen ? (
-                                  <FullscreenExitOutlined />
-                                ) : (
-                                  <FullscreenOutlined />
-                                )}
-                              </button>
-                              <AgentFlowCanvas
-                                workflowId={agentFlowWorkflowId}
-                                spaceId={spaceId}
-                              />
-                            </div>
-                          )}
+                        {/* AgentFlow 画布（自带全屏）：位于系统提示词之前，与提示词同处编排流 */}
+                        {isFlowAgent && agentFlowWorkflowId && (
+                          <AgentFlowCanvas
+                            workflowId={agentFlowWorkflowId}
+                            spaceId={spaceId}
+                          />
+                        )}
                         <SystemUserTipsWord
                           className={cx(styles['prompt-wrapper'], 'w-full')}
                           ref={systemUserTipsWordRef}
