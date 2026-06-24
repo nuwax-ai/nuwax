@@ -341,14 +341,17 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     if (isExistComponent(AgentComponentTypeEnum.Plugin)) {
       tool.push(AgentArrangeConfigEnum.Plugin);
     }
-    if (isExistComponent(AgentComponentTypeEnum.Workflow)) {
+    if (
+      agentConfigInfo?.subType !== AgentSubTypeEnum.Flow &&
+      isExistComponent(AgentComponentTypeEnum.Workflow)
+    ) {
       tool.push(AgentArrangeConfigEnum.Workflow);
     }
     if (isExistComponent(AgentComponentTypeEnum.MCP)) {
       tool.push(AgentArrangeConfigEnum.MCP);
     }
     return tool;
-  }, [agentComponentList]);
+  }, [agentComponentList, agentConfigInfo?.subType]);
 
   // 知识 - 当前激活 tab 面板的 key
   const knowledgeActiveKey = useMemo(() => {

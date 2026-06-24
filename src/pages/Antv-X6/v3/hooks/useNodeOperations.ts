@@ -715,6 +715,9 @@ export const useNodeOperations = ({
                         _params.nodeConfig.knowledgeBaseConfigs,
                     }
                   : {}),
+                ...(_params.nodeConfig?.agentId
+                  ? { agentId: _params.nodeConfig.agentId }
+                  : {}),
               }
             : undefined;
 

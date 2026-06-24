@@ -62,6 +62,7 @@ import { modalConfirm } from '@/utils/ant-custom';
 import { addBaseTarget } from '@/utils/common';
 import { exportConfigFile } from '@/utils/exportImportFile';
 import { updateFilesListContent, updateFilesListName } from '@/utils/fileTree';
+import { FullscreenExitOutlined, FullscreenOutlined } from '@ant-design/icons';
 import { useRequest } from 'ahooks';
 import { message as messageAntd } from 'antd';
 import classNames from 'classnames';
@@ -104,9 +105,7 @@ const EditAgent: React.FC = () => {
   const routeWorkflowId = params.workflowId
     ? Number(params.workflowId)
     : undefined;
-  const agentId = Number(params.agentId ?? params.workflowId);
-  // 是否为 agent-flow 路由（/space/:spaceId/agent-flow/:workflowId）
-  const isAgentFlowRoute = location.pathname.includes('/agent-flow');
+  const agentId = Number(params.agentId);
   const [open, setOpen] = useState<boolean>(false);
   const [openEditAgent, setOpenEditAgent] = useState<boolean>(false);
   const [openAgentModel, setOpenAgentModel] = useState<boolean>(false);
@@ -159,6 +158,9 @@ const EditAgent: React.FC = () => {
   const [openTempChat, setOpenTempChat] = useState<boolean>(false);
   // 顶部分段菜单选中项
   const [headerTab, setHeaderTab] = useState<AgentHeaderTabKey>('arrange');
+  // AgentFlow 画布全屏（覆盖整页，交互与系统提示词全屏一致）
+  const [isFlowCanvasFullscreen, setIsFlowCanvasFullscreen] =
+    useState<boolean>(false);
 
   // 获取 chat model 中的页面预览状态
   const { pagePreviewData, hidePagePreview, showPagePreview } =
@@ -203,6 +205,16 @@ const EditAgent: React.FC = () => {
     );
     return wfComponent?.targetId || routeWorkflowId;
   }, [agentConfigInfo, routeWorkflowId]);
+
+  // ESC 退出画布全屏（与系统提示词全屏弹窗的退出交互一致）
+  useEffect(() => {
+    if (!isFlowCanvasFullscreen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsFlowCanvasFullscreen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isFlowCanvasFullscreen]);
 
   useEffect(() => {
     // 查询可使用模型列表接口
@@ -1050,31 +1062,10 @@ const EditAgent: React.FC = () => {
                   styles['edit-content'],
                   {
                     [styles['edit-content-col']]:
-                      isAgentFlowRoute ||
                       agentConfigInfo?.subType === AgentSubTypeEnum.Flow,
                   },
                 )}
               >
-                {/* AgentFlow 画布（放在同一容器内，系统提示词上方） */}
-                {(isAgentFlowRoute ||
-                  agentConfigInfo?.subType === AgentSubTypeEnum.Flow) &&
-                  agentFlowWorkflowId && (
-                    <div
-                      style={{
-                        width: '100%',
-                        height: 500,
-                        flexShrink: 0,
-                        overflow: 'hidden',
-                        borderRadius: 8,
-                        marginBottom: 12,
-                      }}
-                    >
-                      <AgentFlowCanvas
-                        workflowId={agentFlowWorkflowId}
-                        spaceId={spaceId}
-                      />
-                    </div>
-                  )}
                 {/* 问答型智能体、应用页面 */}
                 {agentConfigInfo?.type !== AgentTypeEnum.TaskAgent && (
                   // 系统提示词/用户提示词
@@ -1101,24 +1092,91 @@ const EditAgent: React.FC = () => {
                 <AgentArrangeConfig
                   extraComponent={
                     agentConfigInfo?.type === AgentTypeEnum.TaskAgent && (
-                      <SystemUserTipsWord
-                        className={cx(styles['prompt-wrapper'], 'w-full')}
-                        ref={systemUserTipsWordRef}
-                        agentConfigInfo={agentConfigInfo}
-                        valueUser={agentConfigInfo?.userPrompt}
-                        valueSystem={agentConfigInfo?.systemPrompt}
-                        onChangeUser={(value) =>
-                          handleChangeAgent(value, 'userPrompt')
-                        }
-                        onChangeSystem={(value) =>
-                          handleChangeAgent(value, 'systemPrompt')
-                        }
-                        onReplace={(value) =>
-                          handleChangeAgent(value!, 'systemPrompt')
-                        }
-                        variables={promptVariables}
-                        skills={promptTools}
-                      />
+                      <>
+                        {/* AgentFlow 画布：位于系统提示词之前，同处编排流；点击右上角全屏覆盖整页 */}
+                        {agentConfigInfo?.subType === AgentSubTypeEnum.Flow &&
+                          agentFlowWorkflowId && (
+                            <div
+                              style={
+                                isFlowCanvasFullscreen
+                                  ? {
+                                      position: 'fixed',
+                                      inset: 0,
+                                      zIndex: 1010,
+                                      width: '100vw',
+                                      height: '100vh',
+                                      background: '#fff',
+                                    }
+                                  : {
+                                      position: 'relative',
+                                      width: '100%',
+                                      height: 460,
+                                      marginBottom: 12,
+                                      overflow: 'hidden',
+                                      borderRadius: 8,
+                                    }
+                              }
+                            >
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setIsFlowCanvasFullscreen((v) => !v)
+                                }
+                                title={
+                                  isFlowCanvasFullscreen
+                                    ? dict(
+                                        'PC.Pages.EditAgent.SystemTipsWord.exitFullscreen',
+                                      )
+                                    : dict(
+                                        'PC.Pages.EditAgent.SystemTipsWord.fullscreenEdit',
+                                      )
+                                }
+                                style={{
+                                  position: 'absolute',
+                                  top: 8,
+                                  right: 8,
+                                  zIndex: 2,
+                                  border: 'none',
+                                  background: 'rgba(255, 255, 255, 0.85)',
+                                  cursor: 'pointer',
+                                  color: '#666',
+                                  fontSize: 16,
+                                  lineHeight: 1,
+                                  padding: 4,
+                                  borderRadius: 4,
+                                }}
+                              >
+                                {isFlowCanvasFullscreen ? (
+                                  <FullscreenExitOutlined />
+                                ) : (
+                                  <FullscreenOutlined />
+                                )}
+                              </button>
+                              <AgentFlowCanvas
+                                workflowId={agentFlowWorkflowId}
+                                spaceId={spaceId}
+                              />
+                            </div>
+                          )}
+                        <SystemUserTipsWord
+                          className={cx(styles['prompt-wrapper'], 'w-full')}
+                          ref={systemUserTipsWordRef}
+                          agentConfigInfo={agentConfigInfo}
+                          valueUser={agentConfigInfo?.userPrompt}
+                          valueSystem={agentConfigInfo?.systemPrompt}
+                          onChangeUser={(value) =>
+                            handleChangeAgent(value, 'userPrompt')
+                          }
+                          onChangeSystem={(value) =>
+                            handleChangeAgent(value, 'systemPrompt')
+                          }
+                          onReplace={(value) =>
+                            handleChangeAgent(value!, 'systemPrompt')
+                          }
+                          variables={promptVariables}
+                          skills={promptTools}
+                        />
+                      </>
                     )
                   }
                   agentId={agentId}

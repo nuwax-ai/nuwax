@@ -311,7 +311,7 @@ const SpaceDevelop: React.FC = () => {
   // 点击跳转到智能体
   const handleClick = (agentId: number, item?: AgentConfigInfo) => {
     if (item?.type === AgentTypeEnum.AgentFlow) {
-      history.push(`/space/${spaceId}/agent-flow/${agentId}`);
+      history.push(`/space/${spaceId}/agent/${agentId}`);
     } else if (item?.devAgentConversationId) {
       history.push(
         `/space/${spaceId}/conversation-agent?agentId=${agentId}&conversationId=${item.devAgentConversationId}`,
@@ -447,11 +447,7 @@ const SpaceDevelop: React.FC = () => {
     }
 
     setOpenCreateAgent(false);
-    if (currentAgentType === AgentTypeEnum.AgentFlow) {
-      history.push(`/space/${spaceId}/agent-flow/${createdId}`);
-    } else {
-      history.push(`/space/${spaceId}/agent/${createdId}`);
-    }
+    history.push(`/space/${spaceId}/agent/${createdId}`);
   };
 
   // 导入配置成功后，刷新智能体列表

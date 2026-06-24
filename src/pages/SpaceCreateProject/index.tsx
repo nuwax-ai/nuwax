@@ -215,10 +215,10 @@ const SpaceCreateProject: React.FC = () => {
         tenantConfigInfo,
       });
 
-      // AgentFlow 子类型跳转到画布编排页面
+      // AgentFlow 子类型跳转到智能体编排页面（与普通智能体同路由，EditAgent 按 subType 渲染画布）
       const finalUrl =
         subType === AgentSubTypeEnum.Flow
-          ? `/space/${spaceId}/agent-flow/${targetId}`
+          ? `/space/${spaceId}/agent/${targetId}`
           : url;
 
       // 7. 携带初始状态跳转到工作台详情会话中
