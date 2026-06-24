@@ -272,7 +272,6 @@ const KnowledgeAccuracyTest: React.FC<KnowledgeAccuracyTestProps> = ({
         {/* 测试配置区 */}
         <Card className={styles.testConfig} bordered={false}>
           <div className={styles.configHeader}>
-            <ArrowLeftOutlined onClick={onBack} className={styles.backIcon} />
             <span className={styles.headerTitle}>命中测试配置</span>
           </div>
 
@@ -331,7 +330,7 @@ const KnowledgeAccuracyTest: React.FC<KnowledgeAccuracyTestProps> = ({
               onClick={handleSearchTest}
               loading={searchLoading}
               icon={<SearchOutlined />}
-              disabled={!query.trim()}
+              disabled={!query.trim() || selectedDocuments.length === 0}
             >
               执行命中测试
             </Button>
@@ -376,8 +375,6 @@ const KnowledgeAccuracyTest: React.FC<KnowledgeAccuracyTestProps> = ({
                       key={result.docId}
                       className={styles.resultCard}
                       bordered={false}
-                      onClick={() => showExpandButton && handleCardToggle(result.docId)}
-                      style={showExpandButton ? { cursor: 'pointer' } : undefined}
                     >
                       <div className={styles.resultHeader}>
                         <Tag
@@ -408,7 +405,7 @@ const KnowledgeAccuracyTest: React.FC<KnowledgeAccuracyTestProps> = ({
                             </>
                           )}
                           {showExpandButton && (
-                            <div className={styles.expandHint}>
+                            <div className={styles.expandHint} onClick={() => handleCardToggle(result.docId)} style={{ cursor: 'pointer' }}>
                                 {isExpanded ? '点击收缩' : '点击展开'}
                               </div>
                             )}

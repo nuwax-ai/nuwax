@@ -142,9 +142,7 @@ const KnowledgeHeader: React.FC<KnowledgeHeaderProps> = ({
             {dict('PC.Pages.SpaceKnowledge.KnowledgeHeader.graph')}
           </Button>
         ) : docType === KnowledgeDocTypeEnum.ACCURACYTEST ? (
-          <Button type="primary">
-            {dict('PC.Pages.SpaceKnowledge.KnowledgeHeader.accuracytest')}
-          </Button>
+          null
         ) : null}
       </div>
     </header>
