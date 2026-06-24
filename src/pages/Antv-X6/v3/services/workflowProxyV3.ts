@@ -22,6 +22,7 @@ import { AnswerTypeEnum, NodeTypeEnum } from '@/types/enums/common';
 import type { ChildNode, Edge } from '@/types/interfaces/graph';
 import { workflowLogger } from '@/utils/logger';
 import cloneDeep from 'lodash/cloneDeep';
+import { extensionRegistry } from '../extensions/registry';
 import { SpecialPortType } from '../types/enums';
 import type {
   EdgeV3,
@@ -248,10 +249,12 @@ class WorkflowProxyV3 {
     // 2. 验证 nextNodeIds 与边的一致性（仅警告，不自动修复）
     nodes.forEach((node) => {
       // 跳过特殊分支节点（它们使用分支配置管理连线）
+      const vHandler = extensionRegistry.get(node.type);
       if (
         node.type === NodeTypeEnum.Condition ||
         node.type === NodeTypeEnum.IntentRecognition ||
-        node.type === NodeTypeEnum.QA
+        node.type === NodeTypeEnum.QA ||
+        vHandler?.isSpecialBranchNode?.(node)
       ) {
         return;
       }
@@ -485,6 +488,12 @@ class WorkflowProxyV3 {
         });
       }
 
+      // 扩展点：清理被删节点在特殊分支节点中的引用
+      const dHandler = extensionRegistry.get(node.type);
+      if (dHandler?.cleanupNodeReferences) {
+        dHandler.cleanupNodeReferences(node, nodeId);
+      }
+
       // 异常处理配置
       if (node.nodeConfig?.exceptionHandleConfig?.exceptionHandleNodeIds) {
         const exceptionIds =
@@ -666,6 +675,13 @@ class WorkflowProxyV3 {
       return { type: SpecialPortType.Loop };
     }
 
+    // 扩展点：委托给注册的 handler（AgentFlow 等分支类型）
+    const ppHandler = extensionRegistry.get(sourceNode.type);
+    if (ppHandler?.parseSourcePort) {
+      const result = ppHandler.parseSourcePort(sourceNode, sourcePort);
+      if (result) return result;
+    }
+
     // 检查条件/意图/问答节点的分支端口
     // 格式为 ${nodeId}-${uuid}-out
     if (
@@ -715,6 +731,18 @@ class WorkflowProxyV3 {
     action: 'add' | 'remove',
   ): boolean {
     const { type, uuid } = portInfo;
+
+    // 扩展点：委托给注册的 handler
+    const ucHandler = extensionRegistry.get(sourceNode.type);
+    if (ucHandler?.updateConnection) {
+      const handled = ucHandler.updateConnection(
+        sourceNode,
+        portInfo,
+        targetNodeId,
+        action,
+      );
+      if (handled) return true;
+    }
 
     switch (type) {
       case SpecialPortType.Condition: {
@@ -1105,6 +1133,15 @@ class WorkflowProxyV3 {
         branchNextNodeIds.set(existingNodeId, branchMap);
       }
 
+      // 扩展点：通过 handler 初始化 AgentFlow 等分支类型的 branchMap
+      const ibHandler = extensionRegistry.get(existingNode.type);
+      if (ibHandler?.initBranchMap) {
+        const extMap = ibHandler.initBranchMap(existingNode);
+        if (extMap) {
+          branchNextNodeIds.set(existingNodeId, extMap);
+        }
+      }
+
       // 初始化异常处理连接
       if (existingNode.nodeConfig?.exceptionHandleConfig) {
         exceptionNextNodeIds.set(existingNodeId, []);
@@ -1125,17 +1162,28 @@ class WorkflowProxyV3 {
         switch (portInfo.type) {
           case SpecialPortType.Condition:
           case SpecialPortType.Intent:
-          case SpecialPortType.QAOption: {
-            if (portInfo.uuid) {
+          case SpecialPortType.QAOption:
+          case SpecialPortType.EvalGatePass:
+          case SpecialPortType.EvalGateFail:
+          case SpecialPortType.EvalGateBranch:
+          case SpecialPortType.HitlApprove:
+          case SpecialPortType.HitlReject:
+          case SpecialPortType.HitlBranch:
+          case SpecialPortType.HitlOption: {
+            // Condition/Intent/QA 用 uuid，AgentFlow 用 handler.getBranchKey
+            const bkHandler = extensionRegistry.get(sourceNode.type);
+            const branchKey =
+              bkHandler?.getBranchKey?.(portInfo) || portInfo.uuid;
+            if (branchKey) {
               let branchMap = branchNextNodeIds.get(sourceId);
               if (!branchMap) {
                 branchMap = new Map<string, number[]>();
                 branchNextNodeIds.set(sourceId, branchMap);
               }
-              let targetIds = branchMap.get(portInfo.uuid);
+              let targetIds = branchMap.get(branchKey);
               if (!targetIds) {
                 targetIds = [];
-                branchMap.set(portInfo.uuid, targetIds);
+                branchMap.set(branchKey, targetIds);
               }
               if (!targetIds.includes(targetId)) {
                 targetIds.push(targetId);
@@ -1200,7 +1248,10 @@ class WorkflowProxyV3 {
         mergedNode.type === NodeTypeEnum.Condition ||
         mergedNode.type === NodeTypeEnum.IntentRecognition ||
         (mergedNode.type === NodeTypeEnum.QA &&
-          mergedNode.nodeConfig?.answerType === AnswerTypeEnum.SELECT);
+          mergedNode.nodeConfig?.answerType === AnswerTypeEnum.SELECT) ||
+        extensionRegistry
+          .get(mergedNode.type)
+          ?.isSpecialBranchNode?.(mergedNode);
 
       if (!isSpecialBranchNode) {
         mergedNode.nextNodeIds = normalNextNodeIds.get(nodeId) || [];
@@ -1238,6 +1289,12 @@ class WorkflowProxyV3 {
           mergedNode.nodeConfig.options.forEach((option) => {
             option.nextNodeIds = branchMap.get(option.uuid) || [];
           });
+        }
+
+        // 扩展点：通过 handler 写回 AgentFlow 等分支数据
+        const mbHandler = extensionRegistry.get(mergedNode.type);
+        if (mbHandler?.mergeBranchData) {
+          mbHandler.mergeBranchData(mergedNode, branchMap);
         }
       }
 

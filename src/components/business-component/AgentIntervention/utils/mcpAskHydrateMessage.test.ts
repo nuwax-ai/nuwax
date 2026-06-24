@@ -6,22 +6,16 @@ import {
 } from './mcpAskHydrateMessage';
 
 const askInput = {
-  schemaVersion: 'nuwaclaw.mcp_ask.v1',
+  schemaVersion: 'nuwax.mcp_ask.v2',
   requestId: 'ask-history-1',
   revision: 1,
   sessionId: 'session-1',
   title: '历史表单',
   ui: {
-    version: 'nuwaclaw.interaction.v1',
+    version: 'nuwax.interaction.v2',
     presentation: 'inline',
     title: '历史表单',
-    schema: {
-      type: 'object',
-      properties: {
-        topic: { type: 'string', title: '主题' },
-      },
-      required: ['topic'],
-    },
+    fields: [{ name: 'topic', title: '主题', widget: 'text', required: true }],
   },
 };
 

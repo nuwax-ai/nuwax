@@ -35,53 +35,40 @@ const interaction: McpAskInteraction = {
   responseStatus: 'pending',
   input: {
     toolName: 'nuwax_ask_question',
-    schemaVersion: 'nuwaclaw.mcp_ask.v1',
+    schemaVersion: 'nuwax.mcp_ask.v2',
     requestId: 'ask-1',
     revision: 1,
     sessionId: 'session-1',
     title: '请选择继续方式',
     description: 'Agent 需要你确认下一步。',
     ui: {
-      version: 'nuwaclaw.interaction.v1',
+      version: 'nuwax.interaction.v2',
       presentation: 'inline',
       title: '请选择继续方式',
-      schema: {
-        type: 'object',
-        properties: {
-          choice: {
-            type: 'string',
-            title: '选项',
-            enum: ['deploy', 'test', 'cancel'],
-          },
-          notes: {
-            type: 'string',
-            title: '补充说明',
-          },
-          checks: {
-            type: 'array',
-            title: '检查项',
-            items: {
-              type: 'string',
-              enum: ['lint', 'unit'],
-            },
-          },
+      fields: [
+        {
+          name: 'choice',
+          title: '选项',
+          widget: 'radio',
+          required: true,
+          options: [
+            { value: 'deploy', label: '直接部署' },
+            { value: 'test', label: '先跑测试' },
+            { value: 'cancel', label: '取消任务' },
+          ],
         },
-        required: ['choice'],
-      },
-      uiSchema: {
-        choice: {
-          'ui:widget': 'radio',
-          'ui:options': {
-            enumNames: ['直接部署', '先跑测试', '取消任务'],
-          },
+        { name: 'notes', title: '补充说明', widget: 'textarea' },
+        {
+          name: 'checks',
+          title: '检查项',
+          widget: 'checkboxes',
+          type: 'array',
+          options: [
+            { value: 'lint', label: '代码检查' },
+            { value: 'unit', label: '单元测试' },
+          ],
         },
-        checks: {
-          'ui:widget': 'checkboxes',
-          'ui:options': {
-            enumNames: ['代码检查', '单元测试'],
-          },
-        },
-      },
+      ],
       submitLabel: '提交',
       cancelLabel: '取消',
     },

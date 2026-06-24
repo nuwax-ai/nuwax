@@ -51,7 +51,7 @@ export const EXCEPTION_HANDLE_OPTIONS = [
     value: ExceptionHandleTypeEnum.EXECUTE_EXCEPTION_FLOW,
   },
 ];
-//  异常处理，支持节点包括：大模型、插件、工作流、MCP、代码、意图识别、知识库、数据表（相关五个节点）、问答、文档提取、HTTP请求
+//  异常处理，支持节点包括：大模型、插件、工作流、MCP、代码、意图识别、知识库、数据表（相关五个节点）、问答、文档提取、HTTP请求、AgentFlow 节点
 export const EXCEPTION_NODES_TYPE = [
   NodeTypeEnum.LLM,
   NodeTypeEnum.Plugin,
@@ -69,6 +69,11 @@ export const EXCEPTION_NODES_TYPE = [
   NodeTypeEnum.QA,
   NodeTypeEnum.DocumentExtraction,
   NodeTypeEnum.HTTPRequest,
+  // AgentFlow 专用节点
+  NodeTypeEnum.Agent,
+  NodeTypeEnum.EvalGate,
+  NodeTypeEnum.HumanInteraction,
+  NodeTypeEnum.ExternalConnector,
 ];
 
 export const RETRY_COUNT_OPTIONS = [

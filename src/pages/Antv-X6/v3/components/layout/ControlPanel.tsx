@@ -14,7 +14,7 @@ import React, { useState } from 'react';
 import StencilContent from './Sidebar';
 interface ControlPanelProps {
   // 拖拽节点到画布
-  dragChild: (
+  dragChild?: (
     child: StencilChildNode,
     position?: React.DragEvent<HTMLDivElement>,
     continueDragCount?: number,
@@ -26,7 +26,7 @@ interface ControlPanelProps {
   // 当前画布的缩放比例
   zoomSize?: number;
   // 当前正在展示的节点
-  foldWrapItem: ChildNode;
+  foldWrapItem?: ChildNode;
   // 试运行loading
   testRunLoading: boolean;
 }
@@ -75,71 +75,74 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
     setContinueDragCount(0);
   };
 
+  // AgentFlow 模式：不渲染 StencilContent Popover（侧边栏已包含）
+  const showStencil = dragChild && foldWrapItem;
+
   return (
-    <>
-      <div className="absolute-box">
-        <div className="action-section">
-          <Button
-            type="text"
-            style={{ marginRight: 2 }}
-            icon={<MinusOutlined />}
-            onClick={() => {
-              const factor = -10;
+    <div className="absolute-box">
+      <div className="action-section">
+        <Button
+          type="text"
+          style={{ marginRight: 2 }}
+          icon={<MinusOutlined />}
+          onClick={() => {
+            const factor = -10;
+            const currentPercent = Math.round(zoomSize * 100);
+            const newPercent = currentPercent + factor;
+            const clampedPercent = Math.max(20, Math.min(300, newPercent));
+            const newVal = clampedPercent / 100;
+            changeGraph(Number(newVal));
+          }}
+        />
+        <Select
+          options={options}
+          value={`${Math.round(zoomSize * 100)}%`}
+          onChange={(val) => {
+            let newVal;
+            if (typeof val === 'string' && ['+', '-'].includes(val)) {
+              const factor = val === '+' ? 10 : -10;
               const currentPercent = Math.round(zoomSize * 100);
               const newPercent = currentPercent + factor;
-              const clampedPercent = Math.max(20, Math.min(300, newPercent));
-              const newVal = clampedPercent / 100;
-              changeGraph(Number(newVal));
-            }}
-          />
-          <Select
-            options={options}
-            value={`${Math.round(zoomSize * 100)}%`}
-            onChange={(val) => {
-              let newVal;
-              if (typeof val === 'string' && ['+', '-'].includes(val)) {
-                const factor = val === '+' ? 10 : -10;
-                const currentPercent = Math.round(zoomSize * 100);
-                const newPercent = currentPercent + factor;
 
-                const clampedPercent = Math.max(20, Math.min(300, newPercent));
-                newVal = clampedPercent / 100;
-              } else {
-                newVal = val;
-              }
-              changeGraph(Number(newVal));
-            }}
-            style={{ width: 80, marginRight: 2, height: 28 }}
-            popupMatchSelectWidth={false}
-            optionLabelProp="displayValue"
-            size="small"
-          />
+              const clampedPercent = Math.max(20, Math.min(300, newPercent));
+              newVal = clampedPercent / 100;
+            } else {
+              newVal = val;
+            }
+            changeGraph(Number(newVal));
+          }}
+          style={{ width: 80, marginRight: 2, height: 28 }}
+          popupMatchSelectWidth={false}
+          optionLabelProp="displayValue"
+          size="small"
+        />
+        <Button
+          type="text"
+          style={{ marginRight: 12 }}
+          icon={<PlusOutlined />}
+          onClick={() => {
+            const factor = 10;
+            const currentPercent = Math.round(zoomSize * 100);
+            const newPercent = currentPercent + factor;
+            const clampedPercent = Math.max(20, Math.min(300, newPercent));
+            const newVal = clampedPercent / 100;
+            changeGraph(Number(newVal));
+          }}
+        />
+        {/* 添加缩放到适配画布 */}
+        <Popover
+          content={t('PC.Pages.AntvX6ControlPanel.fitCanvas')}
+          trigger={['hover']}
+          mouseEnterDelay={1}
+        >
           <Button
             type="text"
             style={{ marginRight: 12 }}
-            icon={<PlusOutlined />}
-            onClick={() => {
-              const factor = 10;
-              const currentPercent = Math.round(zoomSize * 100);
-              const newPercent = currentPercent + factor;
-              const clampedPercent = Math.max(20, Math.min(300, newPercent));
-              const newVal = clampedPercent / 100;
-              changeGraph(Number(newVal));
-            }}
+            icon={<CompressOutlined />}
+            onClick={() => changeGraph(-1)}
           />
-          {/* 添加缩放到适配画布 */}
-          <Popover
-            content={t('PC.Pages.AntvX6ControlPanel.fitCanvas')}
-            trigger={['hover']}
-            mouseEnterDelay={1}
-          >
-            <Button
-              type="text"
-              style={{ marginRight: 12 }}
-              icon={<CompressOutlined />}
-              onClick={() => changeGraph(-1)}
-            />
-          </Popover>
+        </Popover>
+        {showStencil && (
           <Popover
             content={
               <StencilContent
@@ -150,11 +153,10 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
                 ) => {
                   setContinueDragCount(continueDragCount + 1);
                   dragChild(child, position, continueDragCount);
-                  // setOpen(false);
                 }}
               />
             }
-            trigger={['click']} // 支持 hover 和 click 触发
+            trigger={['click']}
             open={open}
             onOpenChange={handleOpenChange}
           >
@@ -167,24 +169,24 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
               {t('PC.Pages.AntvX6ControlPanel.addNode')}
             </Button>
           </Popover>
-        </div>
-        <div className="action-section" style={{ marginLeft: 18 }}>
-          <ToolOutlined
-            title={t('PC.Pages.AntvX6ControlPanel.debug')}
-            style={{ paddingRight: 12, paddingLeft: 12 }}
-          />
-          <Button
-            loading={testRunLoading}
-            icon={<CaretRightOutlined />}
-            variant="solid"
-            color="green"
-            onClick={handleTestRun}
-          >
-            {t('PC.Pages.AntvX6ControlPanel.testRun')}
-          </Button>
-        </div>
+        )}
       </div>
-    </>
+      <div className="action-section" style={{ marginLeft: 18 }}>
+        <ToolOutlined
+          title={t('PC.Pages.AntvX6ControlPanel.debug')}
+          style={{ paddingRight: 12, paddingLeft: 12 }}
+        />
+        <Button
+          loading={testRunLoading}
+          icon={<CaretRightOutlined />}
+          variant="solid"
+          color="green"
+          onClick={handleTestRun}
+        >
+          {t('PC.Pages.AntvX6ControlPanel.testRun')}
+        </Button>
+      </div>
+    </div>
   );
 };
 

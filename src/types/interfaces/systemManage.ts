@@ -75,6 +75,8 @@ export interface SystemResourceInfo {
   publishStatus: PublishStatusEnum;
   // 发布范围,可用值:Space,Tenant,Global
   publishScope: PluginPublishScopeEnum;
+  // 流类型：Workflow / AgentFlow
+  workflowType?: string;
   // 网页应用的发布类型,可用值:AGENT,PAGE
   publishType: 'AGENT' | 'PAGE';
   // 网页应用绑定的智能体ID

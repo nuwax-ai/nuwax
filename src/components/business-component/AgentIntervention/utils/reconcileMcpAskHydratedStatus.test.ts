@@ -5,16 +5,16 @@ import { reconcileMcpAskHydratedMessageList } from './reconcileMcpAskHydratedSta
 const askInteraction = {
   input: {
     toolName: 'nuwax_ask_question' as const,
-    schemaVersion: 'nuwax.mcp_ask.v1',
+    schemaVersion: 'nuwax.mcp_ask.v2',
     requestId: 'ask-1',
     revision: 1,
     sessionId: 'session-1',
     title: '历史表单',
     ui: {
-      version: 'nuwax.interaction.v1',
+      version: 'nuwax.interaction.v2',
       presentation: 'inline' as const,
       title: '历史表单',
-      schema: { type: 'object', properties: {} },
+      fields: [],
     },
   },
   toolCallId: 'call-1',

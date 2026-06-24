@@ -16,16 +16,16 @@ describe('extractMcpAskStructuredInputFromResult', () => {
               message: 'presented',
               input: {
                 toolName: 'nuwax_ask_question',
-                schemaVersion: 'nuwax.mcp_ask.v1',
+                schemaVersion: 'nuwax.mcp_ask.v2',
                 requestId: 'weather-plan-confirm-5',
                 revision: 1,
                 sessionId: 'weather-dev',
                 title: '确认方案',
                 ui: {
-                  version: 'nuwax.interaction.v1',
+                  version: 'nuwax.interaction.v2',
                   presentation: 'modal',
                   title: '确认方案',
-                  schema: { type: 'object', properties: {} },
+                  fields: [],
                 },
               },
             }),
@@ -34,7 +34,7 @@ describe('extractMcpAskStructuredInputFromResult', () => {
       ],
     });
 
-    expect(input?.schemaVersion).toBe('nuwax.mcp_ask.v1');
+    expect(input?.schemaVersion).toBe('nuwax.mcp_ask.v2');
     expect(input?.requestId).toBe('weather-plan-confirm-5');
   });
 });

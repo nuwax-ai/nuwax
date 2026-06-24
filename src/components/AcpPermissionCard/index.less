@@ -1,0 +1,94 @@
+@import '@/styles/color.less';
+@import '@/styles/token.less';
+
+.card {
+  margin-top: @paddingSm;
+  padding: @padding;
+  border: @lineWidth solid @colorBorderSecondary;
+  border-radius: @borderRadius;
+  background: @colorBgContainer;
+  box-shadow: @boxShadowTertiary;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: @paddingSm;
+  margin-bottom: @paddingSm;
+}
+
+.eyebrow {
+  color: @colorTextTertiary;
+  font-size: @fontSizeSm;
+  line-height: @lineHeightSm;
+}
+
+.title {
+  margin-top: @paddingXxs;
+  color: @colorTextBase;
+  font-size: @fontSize;
+  font-weight: @fontWeightStrong;
+  line-height: @lineHeight;
+}
+
+.meta {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: @paddingXs;
+  align-items: center;
+  margin-bottom: @paddingSm;
+}
+
+.rawInput {
+  margin-bottom: @paddingSm;
+
+  pre {
+    max-height: 180px;
+    margin: @paddingXxs 0 0;
+    padding: @paddingSm;
+    overflow: auto;
+    color: @colorText;
+    font-size: @fontSizeSm;
+    line-height: @lineHeightSm;
+    white-space: pre-wrap;
+    word-break: break-word;
+    background: @colorFillQuaternary;
+    border-radius: @borderRadiusSm;
+  }
+}
+
+.sectionTitle {
+  color: @colorTextSecondary;
+  font-size: @fontSizeSm;
+}
+
+.saveRule {
+  margin-bottom: @paddingSm;
+}
+
+.ruleDescription {
+  margin-top: @paddingXxs;
+  color: @colorTextTertiary;
+  font-size: @fontSizeSm;
+  line-height: @lineHeightSm;
+  word-break: break-word;
+}
+
+.options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: @paddingXs;
+}
+
+.error {
+  margin-top: @paddingSm;
+  color: @colorError;
+  font-size: @fontSizeSm;
+}
+
+.submitted {
+  margin-top: @paddingSm;
+  color: @colorSuccess;
+  font-size: @fontSizeSm;
+}

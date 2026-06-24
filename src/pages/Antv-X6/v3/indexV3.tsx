@@ -64,24 +64,44 @@ import { useWorkflowPersistence } from './hooks/useWorkflowPersistence';
 import { useWorkflowValidation } from './hooks/useWorkflowValidation';
 
 // V3 data proxy layer.
+import { useFlowKind } from '@/contexts/FlowKindContext';
 import { WorkflowVersionProvider } from '@/contexts/WorkflowVersionContext';
+import { FlowKindEnum } from '@/types/enums/common';
 import { workflowLogger } from '@/utils/logger';
 import { workflowProxy } from './services/workflowProxyV3';
 import { workflowSaveService } from './services/WorkflowSaveService';
 import type { WorkflowDataV3 } from './types';
 import { calculateNodePreviousArgs } from './utils/variableReferenceV3';
 
-const workflowCreatedTabs = CREATED_TABS.filter((item) =>
-  [
-    AgentComponentTypeEnum.Plugin,
-    AgentComponentTypeEnum.Workflow,
-    AgentComponentTypeEnum.Knowledge,
-    AgentComponentTypeEnum.Table,
-    AgentComponentTypeEnum.MCP,
-  ].includes(item.key),
-);
+export interface WorkflowV3Props {
+  /** 外部注入的 workflowId，优先于路由参数（用于在 EditAgent 内嵌时复用） */
+  workflowIdOverride?: number;
+  /** 外部注入的 spaceId，优先于路由参数 */
+  spaceIdOverride?: number;
+}
 
-const Workflow: React.FC = () => {
+const Workflow: React.FC<WorkflowV3Props> = ({
+  workflowIdOverride,
+  spaceIdOverride,
+}) => {
+  const flowKind = useFlowKind();
+  const isAgentFlow = flowKind === FlowKindEnum.AgentFlow;
+  // AgentFlow 下「添加智能体」节点需先选择已发布 ChatBot，Created 弹窗需暴露 Agent tab
+  const workflowCreatedTabs = CREATED_TABS.filter((item) => {
+    const allowedTabs = [
+      AgentComponentTypeEnum.Plugin,
+      AgentComponentTypeEnum.Workflow,
+      AgentComponentTypeEnum.Knowledge,
+      AgentComponentTypeEnum.Table,
+      AgentComponentTypeEnum.MCP,
+    ];
+    if (isAgentFlow) {
+      allowedTabs.push(AgentComponentTypeEnum.Agent);
+    }
+    return allowedTabs.includes(item.key);
+  });
+  const [flowControlModel, setFlowControlModel] = useState<string>('qwen-plus');
+
   const {
     getWorkflow,
     storeWorkflow,
@@ -95,9 +115,13 @@ const Workflow: React.FC = () => {
   const location = useLocation();
 
   const params = useParams();
-  // id
-  const workflowId = Number(params.workflowId);
-  const spaceId = Number(params.spaceId);
+  // id（优先使用外部注入值，便于在 EditAgent 内嵌画布时复用）
+  const workflowId =
+    workflowIdOverride !== undefined
+      ? workflowIdOverride
+      : Number(params.workflowId);
+  const spaceId =
+    spaceIdOverride !== undefined ? spaceIdOverride : Number(params.spaceId);
   const [foldWrapItem, setFoldWrapItem] =
     useState<ChildNode>(DEFAULT_DRAWER_FORM);
 
@@ -111,6 +135,7 @@ const Workflow: React.FC = () => {
     refreshGraphData,
   } = useWorkflowLifecycle({
     workflowId,
+    spaceId,
     handleInitLoading,
   });
 
@@ -1108,6 +1133,69 @@ const Workflow: React.FC = () => {
         showCreateWorkflow={showCreateWorkflow}
         showVersionHistory={showVersionHistory}
         onBack={handleBack}
+        // AgentFlow Header extensions
+        onAutoArrange={
+          isAgentFlow
+            ? () => {
+                const graph = graphRef.current?.getGraph?.();
+                if (graph) {
+                  // Simple auto-arrange: sort nodes by x position with equal spacing
+                  const nodes = graph.getNodes();
+                  if (nodes.length === 0) return;
+                  const startNodes = nodes.filter(
+                    (n) => n.getData()?.type === NodeTypeEnum.Start,
+                  );
+                  // BFS-based layout
+                  const visited = new Set<string>();
+                  const queue: string[] = [];
+                  startNodes.forEach((n) => {
+                    queue.push(n.id);
+                    visited.add(n.id);
+                  });
+                  let x = 80;
+                  let y = 100;
+                  const xStep = 280;
+                  const yStep = 120;
+                  while (queue.length > 0) {
+                    const nodeId = queue.shift()!;
+                    const node = graph.getCellById(nodeId);
+                    if (node && node.isNode()) {
+                      node.setPosition(x, y);
+                      y += yStep;
+                    }
+                    const outgoingEdges = graph.getOutgoingEdges(nodeId) || [];
+                    for (const edge of outgoingEdges) {
+                      const target = edge.getTargetCellId();
+                      if (target && !visited.has(target as string)) {
+                        visited.add(target as string);
+                        queue.push(target as string);
+                      }
+                    }
+                    // If no outgoing edges, check next branch
+                    if (queue.length === 0 && visited.size < nodes.length) {
+                      // Find unvisited nodes
+                      for (const n of nodes) {
+                        if (!visited.has(n.id)) {
+                          visited.add(n.id);
+                          queue.push(n.id);
+                          x += xStep;
+                          y = 100;
+                          break;
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            : undefined
+        }
+        handleTestRun={isAgentFlow ? testRunHook.testRunAll : undefined}
+        flowControlModel={isAgentFlow ? flowControlModel : undefined}
+        onFlowControlModelChange={
+          isAgentFlow
+            ? (model: string) => setFlowControlModel(model)
+            : undefined
+        }
       />
     </WorkflowVersionProvider>
   );

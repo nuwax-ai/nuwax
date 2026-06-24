@@ -1,175 +1,155 @@
 import { describe, expect, it } from 'vitest';
 import type { InteractionUiSchema } from '../types/mcpAskIntervention';
 import {
+  getInteractionSteps,
+  isWizardPresentation,
   parseInteractionFields,
-  resolveFieldWidget,
 } from './parseMcpAskSchema';
 
-describe('parseInteractionFields', () => {
-  it('parses fields from a normal JSON schema', () => {
-    const fields = parseInteractionFields({
-      version: 'nuwaclaw.interaction.v1',
-      presentation: 'wizard',
-      title: 'Ask',
-      schema: {
-        type: 'object',
-        required: ['thesisTitle'],
-        properties: {
-          thesisTitle: { type: 'string', title: '论文题目' },
-        },
-      },
-    } as InteractionUiSchema);
+const v2 = (
+  overrides: Partial<InteractionUiSchema> = {},
+): InteractionUiSchema =>
+  ({
+    version: 'nuwax.interaction.v2',
+    presentation: 'inline',
+    title: 'Ask',
+    ...overrides,
+  } as InteractionUiSchema);
+
+describe('parseInteractionFields (v2)', () => {
+  it('maps fields[] in array order with merged options', () => {
+    const fields = parseInteractionFields(
+      v2({
+        fields: [
+          { name: 'remark', title: '备注', widget: 'textarea' },
+          {
+            name: 'choice',
+            title: '继续方式',
+            widget: 'radio',
+            required: true,
+            options: [
+              { value: 'a', label: '甲' },
+              { value: 'b', label: '乙' },
+            ],
+          },
+        ],
+      }),
+    );
 
     expect(fields).toMatchObject([
+      { name: 'remark', widget: 'textarea', required: false },
       {
-        name: 'thesisTitle',
+        name: 'choice',
+        widget: 'radio',
         required: true,
-        widget: 'text',
+        enumValues: ['a', 'b'],
+        enumLabels: ['甲', '乙'],
       },
     ]);
   });
 
-  it('tolerates schema metadata nested under properties', () => {
-    const fields = parseInteractionFields(
-      {
-        version: 'nuwaclaw.interaction.v1',
-        presentation: 'wizard',
-        title: 'Ask',
-        schema: {
-          type: 'object',
-          properties: {
-            thesisTitle: { type: 'string', title: '论文题目' },
-            defenseDuration: {
-              type: 'string',
-              title: '答辩时长',
-              enum: ['10分钟', '15分钟'],
-            },
-            required: ['thesisTitle'],
-            uiSchema: {
-              defenseDuration: { 'ui:widget': 'radio' },
-            },
+  it('rebuilds JsonSchema constraint view from v2 field', () => {
+    const [field] = parseInteractionFields(
+      v2({
+        fields: [
+          {
+            name: 'count',
+            title: '并发数',
+            widget: 'number',
+            type: 'integer',
+            minimum: 1,
+            maximum: 10,
+            multipleOf: 2,
           },
-        },
-      } as unknown as InteractionUiSchema,
-      ['thesisTitle', 'defenseDuration'],
+        ],
+      }),
     );
-
-    expect(fields).toHaveLength(2);
-    expect(fields[0]).toMatchObject({
-      name: 'thesisTitle',
-      required: true,
-      widget: 'text',
-    });
-    expect(fields[1]).toMatchObject({
-      name: 'defenseDuration',
-      required: false,
-      widget: 'radio',
-      enumValues: ['10分钟', '15分钟'],
+    expect(field.property).toMatchObject({
+      title: '并发数',
+      type: 'integer',
+      minimum: 1,
+      maximum: 10,
+      multipleOf: 2,
     });
   });
 
-  it('tolerates an extra schema wrapper', () => {
-    const fields = parseInteractionFields(
-      {
-        version: 'nuwaclaw.interaction.v1',
-        presentation: 'wizard',
-        title: 'Ask',
-        schema: {
-          schema: {
-            type: 'object',
-            required: ['major'],
-            properties: {
-              major: { type: 'string', title: '专业方向' },
-            },
+  it('carries placeholder/accept/multiple into options', () => {
+    const [field] = parseInteractionFields(
+      v2({
+        fields: [
+          {
+            name: 'screenshot',
+            title: '截图',
+            widget: 'file',
+            accept: 'image/*',
+            multiple: true,
+            placeholder: '上传图片',
           },
-        },
-      } as unknown as InteractionUiSchema,
-      ['major'],
+        ],
+      }),
     );
+    expect(field.options).toMatchObject({
+      accept: 'image/*',
+      multiple: true,
+      placeholder: '上传图片',
+    });
+  });
 
-    expect(fields).toMatchObject([
-      {
-        name: 'major',
-        required: true,
-      },
-    ]);
+  it('falls back unknown widget to text', () => {
+    const [field] = parseInteractionFields(
+      v2({
+        fields: [{ name: 'x', title: 'X', widget: 'bogus' } as never],
+      }),
+    );
+    expect(field.widget).toBe('text');
+  });
+
+  it('filters by fieldNames (wizard step) in the given order', () => {
+    const fields = parseInteractionFields(
+      v2({
+        presentation: 'wizard',
+        fields: [
+          { name: 'a', title: 'A', widget: 'text' },
+          { name: 'b', title: 'B', widget: 'text' },
+          { name: 'c', title: 'C', widget: 'text' },
+        ],
+      }),
+      ['c', 'a'],
+    );
+    expect(fields.map((f) => f.name)).toEqual(['c', 'a']);
+  });
+
+  it('returns [] when no fields', () => {
+    expect(parseInteractionFields(v2())).toEqual([]);
   });
 });
 
-describe('resolveFieldWidget', () => {
-  it('resolves file widget from ui:widget', () => {
-    const widget = resolveFieldWidget(
-      'screenshot',
-      { type: 'string', format: 'data-url', title: '截图' },
-      { screenshot: { 'ui:widget': 'file' } },
-    );
-    expect(widget).toBe('file');
+describe('getInteractionSteps / isWizardPresentation (v2)', () => {
+  it('returns ui.steps when provided', () => {
+    const ui = v2({
+      presentation: 'wizard',
+      fields: [{ name: 'a', title: 'A', widget: 'text' }],
+      steps: [{ id: 's1', title: '步骤一', fields: ['a'] }],
+    });
+    expect(getInteractionSteps(ui)).toMatchObject([
+      { id: 's1', fields: ['a'] },
+    ]);
+    expect(isWizardPresentation(ui)).toBe(true);
   });
 
-  it('resolves list widget from ui:widget', () => {
-    const widget = resolveFieldWidget(
-      'framework',
-      { type: 'string', enum: ['react', 'vue', 'angular'], title: '框架' },
-      { framework: { 'ui:widget': 'list' } },
-    );
-    expect(widget).toBe('list');
+  it('builds a default single step from fields[]', () => {
+    const ui = v2({
+      fields: [
+        { name: 'a', title: 'A', widget: 'text' },
+        { name: 'b', title: 'B', widget: 'text' },
+      ],
+    });
+    expect(getInteractionSteps(ui)).toMatchObject([
+      { id: 'default', fields: ['a', 'b'] },
+    ]);
   });
 
-  it('auto-detects checkboxes for array with enum items', () => {
-    const widget = resolveFieldWidget(
-      'features',
-      {
-        type: 'array',
-        items: { type: 'string', enum: ['a', 'b', 'c'] },
-        title: '功能',
-      },
-      undefined,
-    );
-    expect(widget).toBe('checkboxes');
-  });
-
-  it('auto-detects radio for enum', () => {
-    const widget = resolveFieldWidget(
-      'choice',
-      { type: 'string', enum: ['a', 'b'], title: '选择' },
-      undefined,
-    );
-    expect(widget).toBe('radio');
-  });
-
-  it('resolves number widget from ui:widget', () => {
-    const widget = resolveFieldWidget(
-      'age',
-      { type: 'integer', title: '年龄', minimum: 0 },
-      { age: { 'ui:widget': 'number' } },
-    );
-    expect(widget).toBe('number');
-  });
-
-  it('auto-detects number for integer type', () => {
-    const widget = resolveFieldWidget(
-      'count',
-      { type: 'integer', title: '数量' },
-      undefined,
-    );
-    expect(widget).toBe('number');
-  });
-
-  it('auto-detects number for number type', () => {
-    const widget = resolveFieldWidget(
-      'score',
-      { type: 'number', title: '分数', minimum: 0, maximum: 100 },
-      undefined,
-    );
-    expect(widget).toBe('number');
-  });
-
-  it('auto-detects number for integer union type', () => {
-    const widget = resolveFieldWidget(
-      'count',
-      { type: ['integer', 'null'], title: '数量' },
-      undefined,
-    );
-    expect(widget).toBe('number');
+  it('returns [] when no fields and no steps', () => {
+    expect(getInteractionSteps(v2())).toEqual([]);
   });
 });

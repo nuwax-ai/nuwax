@@ -570,12 +570,6 @@ const routes = [
     layout: false,
   },
   {
-    path: '/space/:spaceId/agent-flow',
-    component: '@/pages/AgentFlow',
-    wrappers: ['@/wrappers/authWithLoading'],
-    layout: false,
-  },
-  {
     path: '/space/:spaceId/conversation-agent',
     component: '@/pages/ConversationAgent',
     wrappers: ['@/wrappers/authWithLoading'],

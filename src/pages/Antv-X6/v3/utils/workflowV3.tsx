@@ -81,6 +81,7 @@ import { Graph, Node } from '@antv/x6';
 import { FormInstance } from 'antd';
 import isEqual from 'lodash/isEqual';
 
+import { extensionRegistry } from '../extensions/registry';
 import {
   adjustParentSize,
   generatePortGroupConfig,
@@ -230,6 +231,14 @@ export const returnImg = (type: NodeTypeEnum): React.ReactNode => {
       return <ICON_WORKFLOW_DATABASE />;
     case NodeTypeEnum.MCP:
       return <ICON_WORKFLOW_MCP />;
+    case NodeTypeEnum.Agent:
+      return <ICON_NEW_AGENT />;
+    case NodeTypeEnum.EvalGate:
+      return <ICON_WORKFLOW_CONDITION />;
+    case NodeTypeEnum.HumanInteraction:
+      return <ICON_WORKFLOW_QA />;
+    case NodeTypeEnum.ExternalConnector:
+      return <ICON_WORKFLOW_HTTP_REQUEST />;
     default:
       return <ICON_NEW_AGENT />;
   }
@@ -261,7 +270,6 @@ export const returnBackgroundColor = (type: NodeTypeEnum) => {
     case NodeTypeEnum.TextProcessing:
     case NodeTypeEnum.HTTPRequest:
       return '#fef9eb';
-
     case NodeTypeEnum.LLM:
       return '#E9EBED';
     case NodeTypeEnum.Plugin:
@@ -270,6 +278,14 @@ export const returnBackgroundColor = (type: NodeTypeEnum) => {
       return '#D0FFDB';
     case NodeTypeEnum.Output:
       return '#E7E1FF';
+    case NodeTypeEnum.Agent:
+      return '#E8F5E9';
+    case NodeTypeEnum.EvalGate:
+      return '#FFF3E0';
+    case NodeTypeEnum.HumanInteraction:
+      return '#E3F2FD';
+    case NodeTypeEnum.ExternalConnector:
+      return '#F3E5F5';
     default:
       return '#EEEEFF';
   }
@@ -416,6 +432,23 @@ export const generatePorts = (data: ChildNode): PortsConfig => {
     generatePortConfig({ group: PortGroupEnum.in, idSuffix: 'in' }),
   ];
   let outputPorts: Array<ReturnType<typeof generatePortConfig>> = [];
+
+  // 扩展点：委托给注册的 handler（AgentFlow 等分支类型）
+  const portHandler = extensionRegistry.get(data.type);
+  if (portHandler?.generatePorts) {
+    const result = portHandler.generatePorts(data, { generatePortConfig });
+    if (result) {
+      outputPorts = _handleExceptionOutputPort(
+        data,
+        result.outputPorts,
+        generatePortConfig,
+      );
+      return {
+        groups: generatePortGroupConfig(basePortSize, data),
+        items: [...result.inputPorts, ...outputPorts],
+      };
+    }
+  }
 
   switch (data.type) {
     case NodeTypeEnum.Start:
@@ -596,8 +629,11 @@ export const createBaseNode = (node: ChildNode): NodeMetadata => {
       'exceptionHandleConfig',
     ];
     propsToHoist.forEach((prop) => {
-      if ((node as any)[prop] === undefined && node.nodeConfig?.[prop]) {
-        (hoistedData as any)[prop] = node.nodeConfig[prop];
+      if (
+        (node as any)[prop] === undefined &&
+        (node.nodeConfig as any)?.[prop]
+      ) {
+        (hoistedData as any)[prop] = (node.nodeConfig as any)[prop];
       }
     });
   }
@@ -715,6 +751,13 @@ export const handleSpecialNodesNextIndex = (
   id: number,
   targetNode?: ChildNode,
 ): ChildNode => {
+  // 扩展点：委托给注册的 handler
+  const spHandler = extensionRegistry.get(node.type as NodeTypeEnum);
+  if (spHandler?.handleSpecialNextIndex) {
+    const result = spHandler.handleSpecialNextIndex(node, uuid, id, targetNode);
+    if (result) return result;
+  }
+
   let configs: ConditionBranchConfigs[] | IntentConfigs[] | QANodeOption[];
   switch (node.type) {
     case 'Condition': {
@@ -776,6 +819,16 @@ export const removeFromSpecialNodesNextIndex = (
   portId: string,
   targetId: number,
 ): ChildNode => {
+  // 扩展点：委托给注册的 handler
+  const spHandler = extensionRegistry.get(node.type as NodeTypeEnum);
+  if (spHandler?.parseSourcePort) {
+    const parsed = spHandler.parseSourcePort(node, portId);
+    if (parsed) {
+      spHandler.updateConnection?.(node, parsed, targetId, 'remove');
+      return node;
+    }
+  }
+
   // 从 portId 中提取 uuid（格式: {nodeId}-{uuid}-out）
   const segments = portId.split('-');
   const uuid = segments.slice(1, -1).join('-'); // 移除 nodeId 和 out
