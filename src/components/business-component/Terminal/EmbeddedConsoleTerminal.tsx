@@ -52,6 +52,10 @@ export interface EmbeddedConsoleTerminalProps {
     enabled?: boolean;
     maxRetries?: number;
     retryDelay?: number;
+    /** 心跳检测间隔（ms），0 为禁用，默认 30000 */
+    heartbeatInterval?: number;
+    /** 心跳超时（ms），超过此时间未收到服务端消息则强制断连重连，默认 90000 */
+    heartbeatTimeout?: number;
   };
   onConnect?: () => void;
   onDisconnect?: (event?: CloseEvent) => void;
@@ -122,6 +126,13 @@ const EmbeddedConsoleTerminal = forwardRef<
     const pendingWritesRef = useRef<string[]>([]);
     const terminalReadyRef = useRef(false);
 
+    /** 心跳检测：最后一次收到服务端消息的时间戳 */
+    const lastServerMessageTimeRef = useRef<number>(0);
+    /** 心跳检测定时器 */
+    const heartbeatTimerRef = useRef<ReturnType<typeof setInterval> | null>(
+      null,
+    );
+
     /**
      * 将回调和配置存入 ref，保持 connect/disconnect 的引用稳定，
      * 避免因父组件每次渲染传入新的 onConnect/onDisconnect/reconnect 对象
@@ -178,6 +189,57 @@ const EmbeddedConsoleTerminal = forwardRef<
     const focusTerminal = useCallback(() => {
       terminalRef.current?.focus();
     }, []);
+
+    /** 停止心跳检测 */
+    const stopHeartbeat = useCallback(() => {
+      if (heartbeatTimerRef.current) {
+        clearInterval(heartbeatTimerRef.current);
+        heartbeatTimerRef.current = null;
+      }
+    }, []);
+
+    /** 启动心跳检测 */
+    const startHeartbeat = useCallback(() => {
+      stopHeartbeat();
+      const cfg = reconnectConfigRef.current;
+      const interval = cfg.heartbeatInterval ?? 30000;
+      if (interval <= 0) return;
+
+      lastServerMessageTimeRef.current = Date.now();
+
+      heartbeatTimerRef.current = setInterval(() => {
+        const ws = wsRef.current;
+        const term = terminalRef.current;
+        if (!ws || ws.readyState !== WebSocket.OPEN || !term) {
+          stopHeartbeat();
+          return;
+        }
+
+        // 检查是否超时未收到服务端消息
+        const timeout = cfg.heartbeatTimeout ?? 90000;
+        const elapsed = Date.now() - lastServerMessageTimeRef.current;
+        if (elapsed > timeout) {
+          console.warn(
+            `[EmbeddedTerminal] Heartbeat timeout: no message for ${elapsed}ms, reconnecting...`,
+          );
+          // 强制关闭 WS 触发 onclose → 走自动重连逻辑
+          // 不设置 isManualDisconnectRef，让 reconnect 流程处理
+          ws.close();
+          return;
+        }
+
+        // 发送 ttyd resize 作为保活探测，若 send 抛异常说明连接已断
+        if (wireProtocol === 'ttyd') {
+          try {
+            const { cols, rows } = ensureDimensions(term);
+            ws.send(encodeTtydResize(cols, rows));
+          } catch (err) {
+            console.warn('[EmbeddedTerminal] Heartbeat send failed:', err);
+            ws.close();
+          }
+        }
+      }, interval);
+    }, [stopHeartbeat, wireProtocol]);
 
     const connect = useCallback(
       (url?: string) => {
@@ -236,6 +298,8 @@ const EmbeddedConsoleTerminal = forwardRef<
             clearTimeout(reconnectTimerRef.current);
             reconnectTimerRef.current = null;
           }
+          lastServerMessageTimeRef.current = Date.now();
+          startHeartbeat();
           scheduleFit(
             () => fitAddonRef.current?.fit(),
             () => {
@@ -254,6 +318,7 @@ const EmbeddedConsoleTerminal = forwardRef<
         };
 
         ws.onmessage = (event: MessageEvent) => {
+          lastServerMessageTimeRef.current = Date.now();
           const term = terminalRef.current;
           const data =
             wireProtocol === 'ttyd'
@@ -270,6 +335,7 @@ const EmbeddedConsoleTerminal = forwardRef<
         };
 
         ws.onclose = (event: CloseEvent) => {
+          stopHeartbeat();
           console.log(
             '[EmbeddedTerminal] WebSocket closed:',
             event.code,
@@ -322,6 +388,7 @@ const EmbeddedConsoleTerminal = forwardRef<
     );
 
     const disconnect = useCallback(() => {
+      stopHeartbeat();
       isManualDisconnectRef.current = true;
       if (reconnectTimerRef.current) {
         clearTimeout(reconnectTimerRef.current);
