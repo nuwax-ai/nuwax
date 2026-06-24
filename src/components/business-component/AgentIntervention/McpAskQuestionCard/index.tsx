@@ -265,7 +265,7 @@ const McpAskQuestionCard: React.FC<McpAskQuestionCardProps> = ({
             >
               <span className={styles.buttonLabel}>
                 {ui.cancelLabel || t('PC.Common.Global.cancel')}
-                {/* <kbd className={styles.shortcut}>Esc</kbd> */}
+                <kbd className={styles.shortcut}>Esc</kbd>
               </span>
             </Button>
             {allowSkip ? (
@@ -294,7 +294,7 @@ const McpAskQuestionCard: React.FC<McpAskQuestionCardProps> = ({
               >
                 <span className={styles.buttonLabel}>
                   {ui.submitLabel || t('PC.Common.Global.confirm')}
-                  {/* <kbd className={styles.shortcut}>↵</kbd> */}
+                  <kbd className={styles.shortcut}>↵</kbd>
                 </span>
               </Button>
             )}

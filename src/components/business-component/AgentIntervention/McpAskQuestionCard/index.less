@@ -262,6 +262,12 @@
           color: @colorText !important;
           background: @colorFillTertiary !important;
         }
+
+        .shortcut {
+          border: 1px solid @colorBorderSecondary !important;
+          background: @colorFillSecondary !important;
+          color: @colorTextSecondary !important;
+        }
       }
     }
   }
@@ -283,17 +289,20 @@
 }
 
 .shortcut {
-  display: inline-block;
-  min-width: 16px;
-  padding: 0 3px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 @paddingXxs;
   border: 1px solid rgba(255, 255, 255, 25%);
-  border-radius: @borderRadiusXs;
+  border-radius: @borderRadiusSm;
   background: rgba(255, 255, 255, 15%);
   color: rgba(255, 255, 255, 75%);
-  font-size: 10px;
+  font-size: 11px;
   font-family: inherit;
-  line-height: 14px;
-  text-align: center;
+  font-weight: 600;
+  line-height: 1;
   pointer-events: none;
 }
 
