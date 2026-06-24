@@ -36,8 +36,6 @@ const KnowledgeAccuracyTest: React.FC<KnowledgeAccuracyTestProps> = ({
   const [testHistory, setTestHistory] = useState<TestHistoryItem[]>([]);
   const [recallResults, setRecallResults] = useState<RecallResultItem[]>([]);
 
-  // 展开状态管理
-  const [expandedCardId, setExpandedCardId] = useState<string | number | null>(null);
 
   // 搜索参数
   const [topK, setTopK] = useState(10);
@@ -100,7 +98,10 @@ const KnowledgeAccuracyTest: React.FC<KnowledgeAccuracyTestProps> = ({
       });
 
       if (response?.data) {
-        setRecallResults(response.data.results || []);
+        setRecallResults((response.data.results || []).map((result: RecallResultItem) => ({
+          ...result,
+          isExpanded: false,
+        })));
 
         // 重新加载测试历史
         await loadTestHistory();
@@ -145,7 +146,6 @@ const KnowledgeAccuracyTest: React.FC<KnowledgeAccuracyTestProps> = ({
     try {
       // 先清空当前显示的召回结果
       setRecallResults([]);
-      setExpandedCardId(null);
 
       // 检查results字段是否为空
       if (!record.results ||
@@ -212,7 +212,10 @@ const KnowledgeAccuracyTest: React.FC<KnowledgeAccuracyTestProps> = ({
       }
 
       console.log('设置召回结果:', resultsArray);
-      setRecallResults(resultsArray);
+      setRecallResults(resultsArray.map((result: RecallResultItem) => ({
+        ...result,
+        isExpanded: false,
+      })));
     } catch (error) {
       console.error('解析历史记录结果失败', error);
       // 解析失败时也清空召回结果（已经在开始时清空了）
@@ -220,12 +223,14 @@ const KnowledgeAccuracyTest: React.FC<KnowledgeAccuracyTestProps> = ({
   };
 
   // 处理卡片展开/收缩
-  const handleCardToggle = (docId: string | number) => {
-    if (expandedCardId === docId) {
-      setExpandedCardId(null); // 收缩
-    } else {
-      setExpandedCardId(docId); // 展开
-    }
+  const handleCardToggle = (index: number) => {
+    setRecallResults(prevResults =>
+      prevResults.map((result, i) =>
+        i === index
+          ? { ...result, isExpanded: !result.isExpanded }
+          : result
+      )
+    );
   };
 
   // 测试历史表格列定义
@@ -357,12 +362,12 @@ const KnowledgeAccuracyTest: React.FC<KnowledgeAccuracyTestProps> = ({
                 </div>
               ) : (
                 recallResults.map((result, index) => {
-                  const isExpanded = expandedCardId === result.docId;
+                  const isExpanded = result.isExpanded;
                   const showExpandButton = result.content && result.content.length > 200;
 
                   return (
                     <Card
-                      key={result.docId}
+                      key={`recall-result-${index}`}
                       className={styles.resultCard}
                       bordered={false}
                     >
@@ -397,7 +402,7 @@ const KnowledgeAccuracyTest: React.FC<KnowledgeAccuracyTestProps> = ({
                           {showExpandButton && (
                             <div className={styles.expandHint} onClick={(e) => {
                               e.stopPropagation();
-                              handleCardToggle(result.docId);
+                              handleCardToggle(index);
                             }} style={{ cursor: 'pointer' }}>
                                 {isExpanded ? '收缩' : '展开'}
                               </div>

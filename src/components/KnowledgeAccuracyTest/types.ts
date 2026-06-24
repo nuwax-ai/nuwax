@@ -31,6 +31,7 @@ export interface RecallResultItem {
   content: string;
   rank: number;
   metadata?: any;
+  isExpanded?: boolean;
 }
 
 // 命中测试请求参数
