@@ -9,7 +9,7 @@
 - 节点枚举：`src/types/enums/common.ts`
 - 节点配置类型：`src/types/interfaces/node.ts`
 - 默认配置：`src/pages/Antv-X6/v3/utils/nodeDefaultConfigFactory.ts`
-- 属性面板：`src/pages/Antv-X6/v3/component/agentFlowNodes.tsx`
+- 属性面板：`src/pages/Antv-X6/v3/agentFlow/forms/`（每种节点一个 `*Form.tsx`，`index.tsx` 汇总注册）
 
 本文只覆盖 AgentFlow 新增节点：`Agent`、`EvalGate`、`HumanInteraction`、`ExternalConnector`。既有 Workflow 节点沿用原协议。
 

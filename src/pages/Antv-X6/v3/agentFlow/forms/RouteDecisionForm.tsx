@@ -56,7 +56,7 @@ const RouteDecisionForm: React.FC<NodeDisposeProps> = () => {
         <div className="af-section-title">
           {t('PC.Pages.AgentFlowNode.routeDecisionRoutesTitle', '路由分支')}
         </div>
-        <Form.List name="routes">
+        <Form.List name="intentConfigs">
           {(fields, { add, remove }) => (
             <>
               {fields.map(({ key, name }) => (
@@ -77,7 +77,7 @@ const RouteDecisionForm: React.FC<NodeDisposeProps> = () => {
                     />
                   </div>
                   <Form.Item
-                    name={[name, 'routeName']}
+                    name={[name, 'intent']}
                     label={t(
                       'PC.Pages.AgentFlowNode.routeDecisionRouteNameLabel',
                       '分支名称',
@@ -140,7 +140,7 @@ const RouteDecisionForm: React.FC<NodeDisposeProps> = () => {
                     .substring(2, 9)}`;
                   add({
                     uuid,
-                    routeName: '',
+                    intent: '',
                     description: '',
                     condition: '',
                     nextNodeIds: [],
