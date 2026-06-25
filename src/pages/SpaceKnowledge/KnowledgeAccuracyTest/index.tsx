@@ -286,8 +286,11 @@ const KnowledgeAccuracyTest: React.FC<KnowledgeAccuracyTestProps> = ({
                 className={styles.select}
                 placeholder={dict('PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.selectTestDoc')}
                 value={selectedDocuments}
-                onChange={setSelectedDocuments}
-                allowClear
+                onChange={(value) => {
+                  // 不更新 selectedDocuments 状态
+                  console.log('尝试修改测试范围，被阻止:', value);
+                }}
+                allowClear={false}
                 maxTagCount="responsive"
                 maxTagPlaceholder={(omittedValues) => `+ ${omittedValues.length} ...`}
               >
