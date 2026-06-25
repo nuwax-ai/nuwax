@@ -309,6 +309,35 @@ export interface AgentComponentVariableUpdateParams
   };
 }
 
+// Hook配置
+export interface HookConfig {
+  /*Hook名称 */
+  name?: string;
+
+  /*Hook事件 */
+  event?: string;
+
+  /*Hook匹配规则 */
+  matcher?: string;
+
+  /*Hook类型 */
+  type?: string;
+
+  /*Hook配置 */
+  config?: string;
+
+  /*Hook状态,1 启用；0 停用 */
+  status?: number;
+}
+
+// 更新Hook配置输入参数
+export interface AgentComponentHookUpdateParams extends AgentComponentBaseInfo {
+  bindConfig: {
+    // Hook列表
+    hooks: HookConfig[];
+  };
+}
+
 // 更新插件组件配置
 export type AgentComponentPluginUpdateParams =
   AgentComponentWorkflowUpdateParams;
@@ -562,7 +591,7 @@ export interface AgentComponentInfo {
   description: string;
   // 关联的AgentID
   agentId: number;
-  // 组件类型,可用值:Plugin,Workflow,Trigger,Knowledge,Variable,Database,Model,Agent,Table,Mcp,Page,Event
+  // 组件类型,可用值:Plugin,Workflow,Trigger,Knowledge,Variable,Database,Model,Agent,Table,Mcp,Page,Event,Skill,SubAgent,Hook
   type: AgentComponentTypeEnum;
   // 绑定组件配置，不同组件配置不一样
   bindConfig: any;

@@ -8,6 +8,7 @@ export enum CategoryTypeEnum {
   PageApp = 'PageApp',
 }
 
+// 组件类型,可用值:Plugin,Workflow,Trigger,Knowledge,Variable,Database,Model,Agent,Table,Mcp,Page,Event,Skill,SubAgent,Hook
 export enum AgentComponentTypeEnum {
   Plugin = 'Plugin',
   Workflow = 'Workflow',
@@ -31,6 +32,8 @@ export enum AgentComponentTypeEnum {
   // 执行计划
   Plan = 'Plan',
   ApiKey = 'ApiKey',
+  // Hook设置
+  Hook = 'Hook',
 }
 
 // 用户APIKEY目标类型,可用值:Agent,Mcp,TempChat

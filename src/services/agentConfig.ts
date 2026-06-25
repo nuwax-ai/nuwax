@@ -9,6 +9,7 @@ import {
   AgentCardInfo,
   AgentComponentAddParams,
   AgentComponentEventUpdateParams,
+  AgentComponentHookUpdateParams,
   AgentComponentInfo,
   AgentComponentKnowledgeUpdateParams,
   AgentComponentMcpUpdateParams,
@@ -127,6 +128,16 @@ export async function apiAgentComponentVariableUpdate(
   data: AgentComponentVariableUpdateParams,
 ): Promise<RequestResponse<null>> {
   return request('/api/agent/component/variable/update', {
+    method: 'POST',
+    data,
+  });
+}
+
+// 更新Hook配置
+export async function apiAgentComponentHookUpdate(
+  data: AgentComponentHookUpdateParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/agent/component/hook/update', {
     method: 'POST',
     data,
   });
