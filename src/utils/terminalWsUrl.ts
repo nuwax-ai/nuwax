@@ -45,7 +45,7 @@ export function buildTtydTerminalWsUrl(conversationId?: number): string {
     const url = normalizeTerminalWsUrl(
       `${wsScheme}://${host}/computer/terminal/${conversationId}/ws`,
     );
-    console.log('buildTtydTerminalWsUrl', url);
+    // console.log('buildTtydTerminalWsUrl', url);
     return url;
   }
   return normalizeTerminalWsUrl(DEV_TTYD_WS_FALLBACK(conversationId));
