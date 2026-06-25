@@ -31,6 +31,7 @@ export enum AgentTypeEnum {
   TaskAgent = 'TaskAgent',
   AgentFlow = 'AgentFlow',
   ConversationAgent = 'ConversationAgent',
+  AgentGroup = 'AgentGroup',
 }
 
 // 智能体子类型枚举（创建时区分具体形态）
