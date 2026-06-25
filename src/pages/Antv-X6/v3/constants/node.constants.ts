@@ -59,6 +59,7 @@ export const EXCEPTION_NODES_TYPE = [
   NodeTypeEnum.MCP,
   NodeTypeEnum.Code,
   NodeTypeEnum.IntentRecognition,
+  NodeTypeEnum.RouteDecision,
   NodeTypeEnum.Knowledge,
   NodeTypeEnum.KnowledgeInsert,
   NodeTypeEnum.TableDataQuery,

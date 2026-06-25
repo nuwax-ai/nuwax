@@ -34,17 +34,14 @@ const createHitlNode = (
   nextNodeIds: [],
   nodeConfig: {
     hitlMode: overrides.hitlMode ?? HitlModeEnum.Ask,
-    askConfig: {
-      question: '',
-      answerType:
-        overrides.answerType ??
-        (overrides.replyMode === 'options' || overrides.options
-          ? AnswerTypeEnum.SELECT
-          : AnswerTypeEnum.TEXT),
-      answerKey: 'userAnswer',
-      options: overrides.options ?? [],
-    },
-    replyMode: overrides.replyMode,
+    question: '',
+    answerType:
+      overrides.answerType ??
+      (overrides.replyMode === 'options' || overrides.options?.length
+        ? AnswerTypeEnum.SELECT
+        : AnswerTypeEnum.TEXT),
+    replyMode: overrides.replyMode ?? 'text',
+    options: overrides.options ?? [],
   } as any,
 });
 
@@ -152,9 +149,7 @@ describe('HumanInteraction Handler (ask mode)', () => {
       );
 
       expect(ok).toBe(true);
-      expect(
-        (node.nodeConfig as any).askConfig.options[0].nextNodeIds,
-      ).toContain(5);
+      expect((node.nodeConfig as any).options[0].nextNodeIds).toContain(5);
     });
 
     it('should remove targetNodeId from the matched option nextNodeIds', () => {
@@ -169,9 +164,7 @@ describe('HumanInteraction Handler (ask mode)', () => {
         'remove',
       );
 
-      expect((node.nodeConfig as any).askConfig.options[0].nextNodeIds).toEqual(
-        [3],
-      );
+      expect((node.nodeConfig as any).options[0].nextNodeIds).toEqual([3]);
     });
 
     it('should not add a duplicate targetNodeId', () => {
@@ -186,9 +179,7 @@ describe('HumanInteraction Handler (ask mode)', () => {
         'add',
       );
 
-      expect((node.nodeConfig as any).askConfig.options[0].nextNodeIds).toEqual(
-        [5],
-      );
+      expect((node.nodeConfig as any).options[0].nextNodeIds).toEqual([5]);
     });
 
     it('should return false for an unknown option uuid', () => {
@@ -227,12 +218,8 @@ describe('HumanInteraction Handler (ask mode)', () => {
       });
       humanInteractionHandler.cleanupNodeReferences!(node, 5);
 
-      expect((node.nodeConfig as any).askConfig.options[0].nextNodeIds).toEqual(
-        [3],
-      );
-      expect((node.nodeConfig as any).askConfig.options[1].nextNodeIds).toEqual(
-        [8],
-      );
+      expect((node.nodeConfig as any).options[0].nextNodeIds).toEqual([3]);
+      expect((node.nodeConfig as any).options[1].nextNodeIds).toEqual([8]);
     });
 
     it('should be a no-op when the deleted node is not referenced', () => {
@@ -242,9 +229,7 @@ describe('HumanInteraction Handler (ask mode)', () => {
       });
       humanInteractionHandler.cleanupNodeReferences!(node, 9);
 
-      expect((node.nodeConfig as any).askConfig.options[0].nextNodeIds).toEqual(
-        [3],
-      );
+      expect((node.nodeConfig as any).options[0].nextNodeIds).toEqual([3]);
     });
 
     it('should be a no-op when nodeConfig is undefined', () => {
@@ -287,9 +272,7 @@ describe('HumanInteraction Handler (ask mode)', () => {
       });
       humanInteractionHandler.resetBranchData!(node);
 
-      expect((node.nodeConfig as any).askConfig.options[0].nextNodeIds).toEqual(
-        [],
-      );
+      expect((node.nodeConfig as any).options[0].nextNodeIds).toEqual([]);
     });
   });
 
@@ -325,12 +308,8 @@ describe('HumanInteraction Handler (ask mode)', () => {
 
       humanInteractionHandler.mergeBranchData!(node, branchMap);
 
-      expect((node.nodeConfig as any).askConfig.options[0].nextNodeIds).toEqual(
-        [3, 4],
-      );
-      expect((node.nodeConfig as any).askConfig.options[1].nextNodeIds).toEqual(
-        [5],
-      );
+      expect((node.nodeConfig as any).options[0].nextNodeIds).toEqual([3, 4]);
+      expect((node.nodeConfig as any).options[1].nextNodeIds).toEqual([5]);
     });
   });
 
@@ -359,9 +338,7 @@ describe('HumanInteraction Handler (ask mode)', () => {
       );
 
       expect(result).not.toBeNull();
-      expect(
-        (result!.nodeConfig as any).askConfig.options[0].nextNodeIds,
-      ).toContain(20);
+      expect((result!.nodeConfig as any).options[0].nextNodeIds).toContain(20);
     });
 
     it('should replace an existing targetNode id with newNodeId', () => {
@@ -377,9 +354,7 @@ describe('HumanInteraction Handler (ask mode)', () => {
         targetNode,
       );
 
-      expect(
-        (result!.nodeConfig as any).askConfig.options[0].nextNodeIds,
-      ).toEqual([20]);
+      expect((result!.nodeConfig as any).options[0].nextNodeIds).toEqual([20]);
     });
 
     it('should return null for an unknown port pattern', () => {
@@ -398,18 +373,14 @@ describe('HumanInteraction Handler (ask mode)', () => {
         replyMode: 'options',
         options: [{ uuid: 'o1', content: 'A', nextNodeIds: [] }],
       });
-      const original = [
-        ...(node.nodeConfig as any).askConfig.options[0].nextNodeIds,
-      ];
+      const original = [...(node.nodeConfig as any).options[0].nextNodeIds];
       humanInteractionHandler.handleSpecialNextIndex!(
         node,
         '10-hitl-option-o1-out',
         20,
       );
 
-      expect((node.nodeConfig as any).askConfig.options[0].nextNodeIds).toEqual(
-        original,
-      );
+      expect((node.nodeConfig as any).options[0].nextNodeIds).toEqual(original);
     });
   });
 });

@@ -1,3 +1,4 @@
+import { isHitlOptionsBranchMode } from '@/pages/Antv-X6/v3/agentFlow/adapters/qaConfigAdapter';
 import { isAgentFlowType } from '@/pages/Antv-X6/v3/agentFlow/types';
 import {
   DEFAULT_NODE_CONFIG,
@@ -642,17 +643,12 @@ export const showExceptionHandle = (node: ChildNode): boolean => {
 export const needUpdateNodes = (node: ChildNode): boolean => {
   const isHitlWithOptions =
     node.type === NodeTypeEnum.HumanInteraction &&
-    ((node.nodeConfig as any)?.askConfig?.options?.length > 0 ||
-      (node.nodeConfig as any)?.askConfig?.answerType === 'SELECT');
+    isHitlOptionsBranchMode(node.nodeConfig as Record<string, any>);
   return (
-    [
-      ...EXCEPTION_NODES_TYPE,
-      NodeTypeEnum.Condition,
-      NodeTypeEnum.RouteDecision,
-    ].includes(node.type) ||
+    [...EXCEPTION_NODES_TYPE, NodeTypeEnum.Condition].includes(node.type) ||
     // HITL-Ask options 模式端口数可能变化
     isHitlWithOptions
-  ); // 需要更新端口配置的节点：异常节点 + 条件 + 路由决策 + HITL 询问选项
+  ); // 需要更新端口配置的节点：异常节点（含路由决策）+ 条件 + HITL 询问选项
 };
 
 export const showExceptionPort = (

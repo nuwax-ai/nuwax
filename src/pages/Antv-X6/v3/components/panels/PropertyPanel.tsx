@@ -1,3 +1,4 @@
+import { useFlowKind } from '@/contexts/FlowKindContext';
 import { ExceptionHandleTypeEnum } from '@/types/enums/common';
 import { ChildNode, ExceptionItemProps } from '@/types/interfaces/graph';
 import { ExceptionHandleConfig } from '@/types/interfaces/node';
@@ -44,10 +45,11 @@ const ExceptionHandle: React.FC<{
  */
 export default function NodePanelDrawerV3({ params }: { params: ChildNode }) {
   const form = Form.useFormInstance();
+  const flowKind = useFlowKind();
   const showException = showExceptionHandle(params);
   return (
     <>
-      {getNodeComponent(params, form)}
+      {getNodeComponent(params, form, flowKind)}
       {/* 处理节点异常项展示*/}
       {showException && (
         <ExceptionHandle data={params.nodeConfig?.exceptionHandleConfig} />

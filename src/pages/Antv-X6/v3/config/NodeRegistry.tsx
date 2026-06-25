@@ -1,5 +1,5 @@
 import { dict } from '@/services/i18nRuntime';
-import { NodeTypeEnum } from '@/types/enums/common';
+import { FlowKindEnum, NodeTypeEnum } from '@/types/enums/common';
 import { ChildNode } from '@/types/interfaces/graph';
 import { FormInstance } from 'antd';
 import React from 'react';
@@ -24,9 +24,15 @@ const {
 const { ModelNode, IntentionNode, QuestionsNode, HttpToolNode } = ComplexNode;
 const { PluginInNode } = ReferenceNode;
 const { KnowledgeNode, KnowledgeInsertNode } = Library;
-const { AgentNode, HumanInteractionNode, RouteDecisionNode } = AgentFlowNodes;
+const {
+  AgentFlowStartNode,
+  AgentFlowEndNode,
+  AgentFlowWorkflowNode,
+  AgentNode,
+  HumanInteractionNode,
+  RouteDecisionNode,
+} = AgentFlowNodes;
 
-// 定义试运行,后面删除
 const LoopContinue: React.FC = () => {
   return (
     <div className="node-title-style">
@@ -50,7 +56,15 @@ export interface NodeComponentProps {
   nodeConfig: any;
 }
 
-export const getNodeComponent = (params: ChildNode, form: FormInstance) => {
+/**
+ * 根据节点类型与 flowKind 渲染属性面板。
+ * AgentFlow 走 agentFlow/forms/* 独立面板；Workflow 走原有 nodeItem/complexNode 等。
+ */
+export const getNodeComponent = (
+  params: ChildNode,
+  form: FormInstance,
+  flowKind?: FlowKindEnum,
+) => {
   const nodeType: NodeTypeEnum = params.type;
   const commonProps = {
     type: params.type,
@@ -58,6 +72,23 @@ export const getNodeComponent = (params: ChildNode, form: FormInstance) => {
     form,
     nodeConfig: params.nodeConfig,
   };
+
+  if (flowKind === FlowKindEnum.AgentFlow) {
+    const agentFlowMap: Partial<Record<string, React.ReactElement>> = {
+      [NodeTypeEnum.Start]: <AgentFlowStartNode {...commonProps} />,
+      [NodeTypeEnum.End]: <AgentFlowEndNode {...commonProps} />,
+      [NodeTypeEnum.Output]: <AgentFlowEndNode {...commonProps} />,
+      [NodeTypeEnum.Workflow]: <AgentFlowWorkflowNode {...commonProps} />,
+      [NodeTypeEnum.Agent]: <AgentNode {...commonProps} />,
+      [NodeTypeEnum.HumanInteraction]: (
+        <HumanInteractionNode {...commonProps} />
+      ),
+      [NodeTypeEnum.RouteDecision]: <RouteDecisionNode {...commonProps} />,
+    };
+    if (agentFlowMap[nodeType]) {
+      return agentFlowMap[nodeType];
+    }
+  }
 
   const nodeMap: Record<string, React.ReactElement> = {
     [NodeTypeEnum.Start]: <StartNode {...commonProps} />,
@@ -91,8 +122,6 @@ export const getNodeComponent = (params: ChildNode, form: FormInstance) => {
     [NodeTypeEnum.TableDataUpdate]: <Database {...commonProps} />,
     [NodeTypeEnum.TableDataQuery]: <Database {...commonProps} />,
     [NodeTypeEnum.TableSQL]: <Database {...commonProps} />,
-    // AgentFlow 专用节点（本迭代仅 Agent / HumanInteraction(Ask) / RouteDecision；
-    // Workflow 走上方的 PluginInNode）
     [NodeTypeEnum.Agent]: <AgentNode {...commonProps} />,
     [NodeTypeEnum.HumanInteraction]: <HumanInteractionNode {...commonProps} />,
     [NodeTypeEnum.RouteDecision]: <RouteDecisionNode {...commonProps} />,

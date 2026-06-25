@@ -285,7 +285,7 @@ const WorkflowLayout: React.FC<WorkflowLayoutProps> = ({
         otherAction={
           <OtherOperations
             onChange={handleOperationsChange}
-            testRun={testRunList.includes(foldWrapItem.type)}
+            testRun={!isAgentFlow && testRunList.includes(foldWrapItem.type)}
             nodeType={foldWrapItem.type}
             action={
               foldWrapItem.type !== NodeTypeEnum.Start &&

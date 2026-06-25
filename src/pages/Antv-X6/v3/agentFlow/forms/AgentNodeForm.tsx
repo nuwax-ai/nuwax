@@ -3,38 +3,42 @@
  *
  * 数据格式（与后端对齐）：
  * - agentId: Long       智能体ID（当前空间内选择）
+ * - inputArgs: ArgItem[] 入参（对照开始节点）
  * - extraPrompt: String  补充提示词
  * - selfLoopTimes: int   自身循环次数
  * - reminderPrompt: String 循环提醒提示词
+ *
+ * 样式对齐 Workflow V3：node-item-style 分区
  */
 
+import ExpandableInputTextarea from '@/components/ExpandTextArea';
+import CustomTree from '@/components/FormListItem/NestedForm';
+import { transformToPromptVariables } from '@/components/TiptapVariableInput/utils/variableTransform';
 import { apiAgentConfigList } from '@/services/agentConfig';
 import { t } from '@/services/i18nRuntime';
 import type { AgentConfigInfo } from '@/types/interfaces/agent';
+import { InputAndOutConfig } from '@/types/interfaces/node';
 import { NodeDisposeProps } from '@/types/interfaces/workflow';
-import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
-import {
-  Button,
-  Form,
-  Input,
-  InputNumber,
-  Segmented,
-  Select,
-  Spin,
-} from 'antd';
+import { Form, InputNumber, Select, Spin } from 'antd';
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'umi';
+import { useModel, useParams } from 'umi';
 
-const { TextArea } = Input;
-
-const AgentNodeForm: React.FC<NodeDisposeProps> = ({ form }) => {
-  const contextPassMode =
-    Form.useWatch('contextPassMode', { form, preserve: true }) || 'auto';
-
+const AgentNodeForm: React.FC<NodeDisposeProps> = ({
+  form,
+  nodeConfig,
+  id,
+  type,
+}) => {
+  const { referenceList } = useModel('workflowV3');
   const params = useParams<{ spaceId?: string }>();
   const spaceId = Number(params.spaceId);
   const [agents, setAgents] = useState<AgentConfigInfo[]>([]);
   const [loading, setLoading] = useState(false);
+
+  const inputArgs =
+    Form.useWatch('inputArgs', { form, preserve: true }) ||
+    nodeConfig?.inputArgs ||
+    [];
 
   useEffect(() => {
     if (!spaceId || Number.isNaN(spaceId)) return;
@@ -53,14 +57,20 @@ const AgentNodeForm: React.FC<NodeDisposeProps> = ({ form }) => {
     };
   }, [spaceId]);
 
+  const promptVariables = transformToPromptVariables(
+    (inputArgs as InputAndOutConfig[]).filter(
+      (item) => !['', null, undefined].includes(item.name),
+    ),
+    referenceList?.argMap,
+  );
+
   return (
-    <div className="af-panel">
-      <div className="af-section">
+    <>
+      <div className="node-item-style">
         <Form.Item
           name="agentId"
           label={t('PC.Pages.AgentFlowNode.agentIdLabel', '智能体')}
           rules={[{ required: true }]}
-          className="af-field"
         >
           <Select
             showSearch
@@ -83,25 +93,35 @@ const AgentNodeForm: React.FC<NodeDisposeProps> = ({ form }) => {
             }))}
           />
         </Form.Item>
+      </div>
 
-        <Form.Item
-          name="extraPrompt"
-          label={t('PC.Pages.AgentFlowNode.extraPromptLabel', '补充提示词')}
-          tooltip={t(
-            'PC.Pages.AgentFlowNode.extraPromptTooltip',
-            '约束输出格式等，支持 {{变量}} 引用',
-          )}
-          className="af-field"
-        >
-          <TextArea
-            rows={3}
-            placeholder={t(
-              'PC.Pages.AgentFlowNode.extraPromptPlaceholder',
-              '可添加提示词约束智能体输出格式...',
-            )}
+      <div className="node-item-style">
+        <Form.Item name="inputArgs">
+          <CustomTree
+            key={`${type}-${id}-inputArgs`}
+            title={t('PC.Pages.AgentFlowNode.agentInputLabel', '入参')}
+            inputItemName="inputArgs"
+            params={nodeConfig?.inputArgs || []}
+            form={form}
+            showCheck
           />
         </Form.Item>
+      </div>
 
+      <div className="node-item-style">
+        <ExpandableInputTextarea
+          title={t('PC.Pages.AgentFlowNode.extraPromptLabel', '补充提示词')}
+          inputFieldName="extraPrompt"
+          onExpand
+          placeholder={t(
+            'PC.Pages.AgentFlowNode.extraPromptPlaceholder',
+            '可添加提示词约束智能体输出格式...',
+          )}
+          variables={promptVariables}
+        />
+      </div>
+
+      <div className="node-item-style">
         <Form.Item
           name="selfLoopTimes"
           label={t('PC.Pages.AgentFlowNode.selfLoopTimesLabel', '自身循环次数')}
@@ -110,7 +130,6 @@ const AgentNodeForm: React.FC<NodeDisposeProps> = ({ form }) => {
             '智能体自循环执行的次数，0 表示不循环',
           )}
           initialValue={0}
-          className="af-field"
         >
           <InputNumber
             min={0}
@@ -119,105 +138,24 @@ const AgentNodeForm: React.FC<NodeDisposeProps> = ({ form }) => {
             style={{ width: '100%' }}
           />
         </Form.Item>
+      </div>
 
-        <Form.Item
-          name="reminderPrompt"
-          label={t(
+      <div className="node-item-style">
+        <ExpandableInputTextarea
+          title={t(
             'PC.Pages.AgentFlowNode.reminderPromptLabel',
             '循环提醒提示词',
           )}
-          tooltip={t(
-            'PC.Pages.AgentFlowNode.reminderPromptTooltip',
-            '每次自循环结束后注入的提醒提示词，支持 {{变量}} 引用',
+          inputFieldName="reminderPrompt"
+          onExpand
+          placeholder={t(
+            'PC.Pages.AgentFlowNode.reminderPromptPlaceholder',
+            '循环提醒提示词...',
           )}
-          className="af-field"
-        >
-          <TextArea
-            rows={2}
-            placeholder={t(
-              'PC.Pages.AgentFlowNode.reminderPromptPlaceholder',
-              '循环提醒提示词...',
-            )}
-          />
-        </Form.Item>
+          variables={promptVariables}
+        />
       </div>
-
-      <div className="af-section">
-        <Form.Item
-          name="contextPassMode"
-          label={t('PC.Pages.AgentFlowNode.contextPassModeLabel', '上下文传递')}
-          initialValue="auto"
-          className="af-field"
-        >
-          <Segmented
-            options={[
-              {
-                label: t('PC.Pages.AgentFlowNode.contextPassAuto', '自动'),
-                value: 'auto',
-              },
-              {
-                label: t('PC.Pages.AgentFlowNode.contextPassManual', '手动'),
-                value: 'manual',
-              },
-            ]}
-          />
-        </Form.Item>
-
-        {contextPassMode === 'manual' && (
-          <>
-            <Form.Item
-              name={['contextParams', 'baseParam']}
-              label={t('PC.Pages.AgentFlowNode.baseParamLabel', '基础参数')}
-              className="af-field"
-            >
-              <Input placeholder="user_input" />
-            </Form.Item>
-            <Form.List name={['contextParams', 'extraParams']}>
-              {(fields, { add, remove }) => (
-                <>
-                  <div className="af-section-title">
-                    {t('PC.Pages.AgentFlowNode.extraParamsTitle', '自定义参数')}
-                  </div>
-                  {fields.map(({ key, name }) => (
-                    <div key={key} className="af-inline-row">
-                      <Form.Item
-                        name={[name, 'name']}
-                        rules={[{ required: true, max: 32 }]}
-                      >
-                        <Input placeholder="param" style={{ width: 100 }} />
-                      </Form.Item>
-                      <Form.Item name={[name, 'value']}>
-                        <Input
-                          placeholder="{{variable}}"
-                          style={{ width: 180 }}
-                        />
-                      </Form.Item>
-                      <Button
-                        type="text"
-                        size="small"
-                        danger
-                        icon={<DeleteOutlined />}
-                        onClick={() => remove(name)}
-                      />
-                    </div>
-                  ))}
-                  <Button
-                    type="dashed"
-                    icon={<PlusOutlined />}
-                    block
-                    onClick={() =>
-                      add({ name: '', valueType: 'literal', value: '' })
-                    }
-                  >
-                    {t('PC.Pages.AgentFlowNode.extraParamsAdd', '+ 添加参数')}
-                  </Button>
-                </>
-              )}
-            </Form.List>
-          </>
-        )}
-      </div>
-    </div>
+    </>
   );
 };
 

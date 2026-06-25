@@ -13,6 +13,10 @@
  */
 
 import {
+  getHitlOptions,
+  isHitlOptionsBranchMode,
+} from '@/pages/Antv-X6/v3/agentFlow/adapters/qaConfigAdapter';
+import {
   BRANCH_PORT_BASE_Y,
   BRANCH_PORT_ITEM_HEIGHT,
   BRANCH_PORT_STEP,
@@ -70,15 +74,13 @@ function buildChips(data: ChildNode): ChipDescriptor[] {
     }
 
     case NodeTypeEnum.HumanInteraction: {
-      // ask options 模式
-      if (nc.replyMode === 'options' || nc.askConfig?.answerType === 'SELECT') {
-        const options: any[] = nc.askConfig?.options || [];
+      if (isHitlOptionsBranchMode(nc)) {
+        const options = getHitlOptions(nc);
         return options.map((o: any, i: number) => ({
           label: o.content || `Option ${i + 1}`,
           tone: 'route' as ChipTone,
         }));
       }
-      // ask text/form 模式：无 chip
       return [];
     }
 

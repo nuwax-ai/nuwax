@@ -1,18 +1,34 @@
 /**
- * HumanInteraction:ask 属性面板
+ * HumanInteraction（询问用户）属性面板
  *
- * v2 变更：
- * - answerType → replyMode（text/options/form）
- * - options 模式每个选项对应一个输出端口
- * - form 模式支持多字段类型
- * - 新增 timeout、contextWriteKey
+ * 独立维护，对照 Workflow QuestionsNode；字段对齐 QA 扁平结构。
+ * 样式对齐 Workflow V3：node-title-style + node-item-style
  */
 
+import ExpandableInputTextarea from '@/components/ExpandTextArea';
+import { ModelSelected } from '@/components/ModelSetting';
+import { transformToPromptVariables } from '@/components/TiptapVariableInput/utils/variableTransform';
 import { t } from '@/services/i18nRuntime';
+import { AnswerTypeEnum } from '@/types/enums/common';
+import { InputItemNameEnum } from '@/types/enums/node';
+import { InputAndOutConfig } from '@/types/interfaces/node';
 import { NodeDisposeProps } from '@/types/interfaces/workflow';
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
-import { Button, Form, Input, InputNumber, Radio, Select, Switch } from 'antd';
+import {
+  Button,
+  Form,
+  Input,
+  Radio,
+  RadioChangeEvent,
+  Select,
+  Space,
+  Switch,
+} from 'antd';
 import React from 'react';
+import { useModel } from 'umi';
+import { v4 as uuidv4 } from 'uuid';
+import { outPutConfigs } from '../../ParamsV3';
+import { FormList, InputAndOut } from '../../component/commonNode';
 
 const { TextArea } = Input;
 
@@ -38,123 +54,151 @@ const FORM_FIELD_TYPE_OPTIONS = [
 ];
 
 const HumanInteractionAskForm: React.FC<NodeDisposeProps> = ({ form }) => {
+  const { referenceList } = useModel('workflowV3');
+
   const replyMode =
     Form.useWatch('replyMode', { form, preserve: true }) || 'text';
+
+  const inputArgs =
+    Form.useWatch(InputItemNameEnum.inputArgs, { form, preserve: true }) || [];
 
   const formFieldTypes =
     Form.useWatch('formFields', { form, preserve: true }) || [];
 
-  return (
-    <div className="af-panel">
-      <div className="af-section">
-        <Form.Item
-          name={['askConfig', 'question']}
-          label={t('PC.Pages.AgentFlowNode.askQuestionLabel', '提问模板')}
-          className="af-field"
-        >
-          <TextArea
-            rows={3}
-            placeholder={t(
-              'PC.Pages.AgentFlowNode.askQuestionPlaceholder',
-              '向用户提出的问题...',
-            )}
-          />
-        </Form.Item>
+  const promptVariables = transformToPromptVariables(
+    (inputArgs as InputAndOutConfig[]).filter(
+      (item) => !['', null, undefined].includes(item.name),
+    ),
+    referenceList?.argMap,
+  );
 
+  /** 切换回复模式，同步 answerType / options */
+  const changeReplyMode = (mode: 'text' | 'options' | 'form') => {
+    let options = form.getFieldValue('options');
+    if (mode === 'options' && (!options || !options.length)) {
+      options = [
+        { uuid: uuidv4(), index: 0, content: '', nextNodeIds: [] },
+        {
+          uuid: uuidv4(),
+          index: 1,
+          content: t('PC.Pages.AntvX6CommonNode.otherBranchHint'),
+          nextNodeIds: [],
+        },
+      ];
+    }
+    if (mode === 'text' || mode === 'form') {
+      options = options?.map((item: any) => ({
+        ...item,
+        nextNodeIds: [],
+      }));
+    }
+
+    form.setFieldsValue({
+      replyMode: mode,
+      answerType:
+        mode === 'options' ? AnswerTypeEnum.SELECT : AnswerTypeEnum.TEXT,
+      options,
+    });
+    form.submit();
+  };
+
+  return (
+    <div className="node-title-style">
+      <ModelSelected form={form} />
+
+      <div className="node-item-style">
+        <InputAndOut
+          title={t('PC.Pages.AgentFlowNode.inputRefVarsLabel', '引用变量')}
+          fieldConfigs={outPutConfigs}
+          inputItemName={InputItemNameEnum.inputArgs}
+          form={form}
+        />
+      </div>
+
+      <div className="node-item-style">
+        <ExpandableInputTextarea
+          title={t('PC.Pages.AgentFlowNode.askQuestionLabel', '提问模版')}
+          inputFieldName="question"
+          onExpand
+          placeholder={t(
+            'PC.Pages.AgentFlowNode.askQuestionPlaceholder',
+            '向用户提出的问题...',
+          )}
+          variables={promptVariables}
+        />
+      </div>
+
+      <div className="node-item-style">
         <Form.Item
           name="replyMode"
           label={t('PC.Pages.AgentFlowNode.replyModeLabel', '回复模式')}
           initialValue="text"
-          className="af-field"
         >
-          <Radio.Group optionType="button">
-            <Radio.Button value="text">
-              {t('PC.Pages.AgentFlowNode.replyModeText', '文本')}
-            </Radio.Button>
-            <Radio.Button value="options">
-              {t('PC.Pages.AgentFlowNode.replyModeOptions', '选项')}
-            </Radio.Button>
-            <Radio.Button value="form">
-              {t('PC.Pages.AgentFlowNode.replyModeForm', '表单')}
-            </Radio.Button>
+          <Radio.Group
+            onChange={(e: RadioChangeEvent) => changeReplyMode(e.target.value)}
+          >
+            <Space direction="vertical">
+              <Radio value="text">
+                {t('PC.Pages.AgentFlowNode.replyModeTextReply', '文本回复')}
+              </Radio>
+              <Radio value="options">
+                {t('PC.Pages.AgentFlowNode.replyModeOptionsReply', '选项回复')}
+              </Radio>
+              <Radio value="form">
+                {t('PC.Pages.AgentFlowNode.replyModeFormReply', '表单回复')}
+              </Radio>
+            </Space>
           </Radio.Group>
+        </Form.Item>
+        <Form.Item name="answerType" hidden>
+          <Input />
         </Form.Item>
       </div>
 
       {replyMode === 'options' && (
-        <div className="af-section">
-          <div className="af-section-title">
-            {t('PC.Pages.AgentFlowNode.askOptionsTitle', '选项内容')}
-          </div>
-          <Form.List name={['askConfig', 'options']}>
-            {(fields, { add, remove }) => (
-              <>
-                {fields.map(({ key, name }) => (
-                  <div key={key} className="af-inline-row">
-                    <Form.Item
-                      name={[name, 'content']}
-                      rules={[{ required: true }]}
-                    >
-                      <Input
-                        placeholder={t(
-                          'PC.Pages.AgentFlowNode.optionContentPlaceholder',
-                          '选项内容',
-                        )}
-                        style={{ width: 220 }}
-                      />
-                    </Form.Item>
-                    <Button
-                      type="text"
-                      size="small"
-                      danger
-                      icon={<DeleteOutlined />}
-                      onClick={() => remove(name)}
-                    />
-                  </div>
-                ))}
-                <Button
-                  type="dashed"
-                  icon={<PlusOutlined />}
-                  block
-                  onClick={() => {
-                    const uuid = `${Date.now()}-${Math.random()
-                      .toString(36)
-                      .substring(2, 9)}`;
-                    add({ uuid, content: '', nextNodeIds: [] });
-                  }}
-                >
-                  {t('PC.Pages.AgentFlowNode.optionAdd', '+ 添加选项')}
-                </Button>
-              </>
-            )}
-          </Form.List>
+        <div className="node-item-style">
+          <FormList
+            title={t('PC.Pages.AgentFlowNode.askOptionsTitle', '选项内容')}
+            form={form}
+            field="content"
+            inputItemName={InputItemNameEnum.options}
+            hasUuid
+            showIndex
+          />
         </div>
       )}
 
       {replyMode === 'form' && (
-        <div className="af-section">
-          <div className="af-section-title">
-            {t('PC.Pages.AgentFlowNode.formFieldsTitle', '表单字段')}
-          </div>
+        <div className="node-item-style">
           <Form.List name="formFields">
             {(fields, { add, remove }) => (
               <>
+                <div className="dis-sb margin-bottom">
+                  <span className="node-title-style">
+                    {t('PC.Pages.AgentFlowNode.formFieldsTitle', '表单字段')}
+                  </span>
+                  <Button
+                    icon={<PlusOutlined />}
+                    size="small"
+                    type="text"
+                    onClick={() =>
+                      add({ label: '', type: 'input', required: false })
+                    }
+                  />
+                </div>
                 {fields.map(({ key, name }) => {
                   const fieldType = formFieldTypes[name]?.type || 'input';
                   return (
-                    <div key={key} className="af-card">
-                      <div className="af-card-header">
-                        <span>
+                    <div key={key} className="margin-bottom">
+                      <div className="dis-sb margin-bottom">
+                        <span className="node-title-grey-style">
                           {t(
                             'PC.Pages.AgentFlowNode.formFieldIndex',
                             '字段 {{index}}',
                           ).replace('{{index}}', String(name + 1))}
                         </span>
-                        <Button
-                          type="text"
-                          size="small"
-                          danger
-                          icon={<DeleteOutlined />}
+                        <DeleteOutlined
+                          className="ml-10"
                           onClick={() => remove(name)}
                         />
                       </div>
@@ -165,7 +209,6 @@ const HumanInteractionAskForm: React.FC<NodeDisposeProps> = ({ form }) => {
                           '字段名称',
                         )}
                         rules={[{ required: true }]}
-                        className="af-field"
                       >
                         <Input
                           placeholder={t(
@@ -181,7 +224,6 @@ const HumanInteractionAskForm: React.FC<NodeDisposeProps> = ({ form }) => {
                           '字段类型',
                         )}
                         initialValue="input"
-                        className="af-field"
                       >
                         <Select options={FORM_FIELD_TYPE_OPTIONS} />
                       </Form.Item>
@@ -192,7 +234,6 @@ const HumanInteractionAskForm: React.FC<NodeDisposeProps> = ({ form }) => {
                             'PC.Pages.AgentFlowNode.formFieldOptions',
                             '选项',
                           )}
-                          className="af-field"
                         >
                           <TextArea
                             rows={2}
@@ -211,62 +252,34 @@ const HumanInteractionAskForm: React.FC<NodeDisposeProps> = ({ form }) => {
                         )}
                         valuePropName="checked"
                         initialValue={false}
-                        className="af-field"
                       >
                         <Switch size="small" />
                       </Form.Item>
                     </div>
                   );
                 })}
-                <Button
-                  type="dashed"
-                  icon={<PlusOutlined />}
-                  block
-                  onClick={() =>
-                    add({ label: '', type: 'input', required: false })
-                  }
-                >
-                  {t('PC.Pages.AgentFlowNode.formFieldAdd', '+ 添加字段')}
-                </Button>
               </>
             )}
           </Form.List>
         </div>
       )}
 
-      <div className="af-section">
+      <div className="node-item-style">
         <Form.Item
-          name={['askConfig', 'required']}
-          label={t('PC.Pages.AgentFlowNode.askRequiredLabel', '是否必填')}
-          valuePropName="checked"
-          initialValue={true}
-          className="af-field"
+          name="contextWriteKey"
+          label={t('PC.Pages.AgentFlowNode.contextWriteKeyLabel', '上下文写入')}
+          tooltip={t(
+            'PC.Pages.AgentFlowNode.contextWriteKeyHint',
+            '输出写入的上下文键名，如 user_reply',
+          )}
         >
-          <Switch />
-        </Form.Item>
-
-        <Form.Item
-          name={['askConfig', 'timeout']}
-          label={t('PC.Pages.AgentFlowNode.askTimeoutLabel', '超时时间（秒）')}
-          className="af-field"
-        >
-          <InputNumber
-            min={30}
-            max={3600}
-            style={{ width: '100%' }}
+          <Input
             placeholder={t(
-              'PC.Pages.AgentFlowNode.askTimeoutPlaceholder',
-              '不限制',
+              'PC.Pages.AgentFlowNode.contextWriteKeyPlaceholder',
+              '如 user_reply',
             )}
           />
         </Form.Item>
-
-        <div className="af-hint">
-          {t(
-            'PC.Pages.AgentFlowNode.contextWriteKeyHint',
-            '上下文写入：user_reply',
-          )}
-        </div>
       </div>
     </div>
   );

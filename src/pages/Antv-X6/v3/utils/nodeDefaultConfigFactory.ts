@@ -430,12 +430,9 @@ export function createDefaultNodeConfig(
     case NodeTypeEnum.Agent:
       return {
         ...baseConfig,
-        // 后端契约字段（Agent 节点数据格式：agentId 选择后写入）
         extraPrompt: '',
         selfLoopTimes: 0,
         reminderPrompt: '',
-        // 前端属性面板字段（上下文传递，沿用我们的 UI）
-        contextPassMode: 'auto',
         inputArgs: [],
         outputArgs: [
           createDefaultArg({
@@ -453,28 +450,42 @@ export function createDefaultNodeConfig(
       return {
         ...baseConfig,
         hitlMode: HitlModeEnum.Ask,
-        // v1 ask 保留
-        askConfig: {
-          question: '',
-          answerType: AnswerTypeEnum.TEXT,
-          answerKey: 'userAnswer',
-        },
-        // v2 ask 新增
+        question: '',
+        answerType: AnswerTypeEnum.TEXT,
         replyMode: 'text',
+        options: [],
         formFields: [],
+        contextWriteKey: 'user_reply',
         inputArgs: [],
-        outputArgs: [],
+        outputArgs: [
+          createDefaultArg({
+            key: 'answer',
+            name: 'answer',
+            dataType: DataTypeEnum.String,
+            description: 'User answer',
+            require: true,
+            systemVariable: true,
+          }),
+        ],
       };
 
     case NodeTypeEnum.RouteDecision:
       return {
         ...baseConfig,
-        // 复用原意图识别的 intentConfigs 结构，每项新增 condition 条件比对
-        intentConfigs: [],
+        intentConfigs: createDefaultIntentConfig(),
         extraPrompt: '',
         modelId: undefined,
         inputArgs: [],
-        outputArgs: [],
+        outputArgs: [
+          createDefaultArg({
+            key: 'matchedIntent',
+            name: 'matchedIntent',
+            dataType: DataTypeEnum.String,
+            description: 'Matched intent',
+            require: true,
+            systemVariable: true,
+          }),
+        ],
       };
 
     default:

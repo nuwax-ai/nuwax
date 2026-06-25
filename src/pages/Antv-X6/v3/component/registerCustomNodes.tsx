@@ -26,6 +26,10 @@ import { ExceptionHandleConfig } from '@/types/interfaces/node';
 import { register } from '@antv/x6-react-shape';
 import { Tag } from 'antd';
 import React, { useCallback, useEffect, useState } from 'react';
+import {
+  getHitlOptions,
+  isHitlOptionsBranchMode,
+} from '../agentFlow/adapters/qaConfigAdapter';
 import '../indexV3.less';
 import { showExceptionHandle } from '../utils/graphV3';
 import './registerCustomNodes.less';
@@ -110,7 +114,7 @@ const RouteDecisionNode: React.FC<{ data: ChildNode }> = ({ data }) => {
 // HITL-Ask 人类询问节点（显示选项分支）
 const HitlAskOptionsNode: React.FC<{ data: ChildNode }> = ({ data }) => {
   const nc = data.nodeConfig as any;
-  const options: any[] = nc?.askConfig?.options || [];
+  const options: any[] = getHitlOptions(nc);
 
   return (
     <div className="route-decision-node-content">
@@ -438,8 +442,7 @@ export const GeneralNode: React.FC<NodeProps> = (props) => {
         )}
 
         {data.type === NodeTypeEnum.HumanInteraction &&
-          ((data.nodeConfig as any)?.askConfig?.options?.length > 0 ||
-            (data.nodeConfig as any)?.askConfig?.answerType === 'SELECT') && (
+          isHitlOptionsBranchMode(data.nodeConfig as Record<string, any>) && (
             <HitlAskOptionsNode data={data} />
           )}
 
