@@ -28,6 +28,10 @@ import {
 } from '@/types/interfaces/graph';
 
 import {
+  isFrontendMappedType,
+  toBackendNodeType,
+} from '../agentFlow/nodeTypeMapping';
+import {
   LOOP_NODE_DEFAULT_HEIGHT,
   LOOP_NODE_DEFAULT_WIDTH,
 } from '../constants/loopNodeConstants';
@@ -74,6 +78,12 @@ const noop = () => {};
 
 interface UseNodeOperationsParams {
   workflowId: number;
+  /**
+   * 新增节点后是否自动选中并打开右侧属性面板。
+   * 默认 true（Workflow v3 行为）；AgentFlow 传 false，拖入/添加节点时仅放置到画布，
+   * 不自动弹出属性面板（避免「拖动节点直接弹面板」），需用户点击节点再配置。
+   */
+  focusNewNode?: boolean;
   graphRef: React.RefObject<GraphContainerRef | null>;
   currentNodeRef: React.MutableRefObject<CurrentNodeRefProps | null>;
   foldWrapItem: ChildNode;
@@ -136,6 +146,7 @@ interface UseNodeOperationsReturn {
 
 export const useNodeOperations = ({
   workflowId,
+  focusNewNode = true,
   graphRef,
   currentNodeRef,
   foldWrapItem,
@@ -521,11 +532,15 @@ export const useNodeOperations = ({
         nodeData as unknown as ChildNode,
       );
 
-      // 选中新增的节点
-      graphRef.current?.graphSelectNode(String(nodeData.id));
-
-      // 显式打开右侧属性面板（确保快捷添加节点后面板正确打开）
-      changeDrawer(nodeData as unknown as ChildNode);
+      // 选中新增的节点并打开右侧属性面板。
+      // Workflow v3（focusNewNode=true）：选中节点 + 显式打开面板。
+      // AgentFlow（focusNewNode=false）：拖入/添加节点仅放置到画布，不主动选中、不弹面板——
+      // 面板已改由 node:click 触发（见 registerNodeClickAndDblclick），程序化选中不再自动开面板，
+      // 故此处需显式调用；AgentFlow 下留待用户点击节点再打开。
+      if (focusNewNode) {
+        graphRef.current?.graphSelectNode(String(nodeData.id));
+        changeDrawer(nodeData as unknown as ChildNode);
+      }
 
       // 处理连接桩或边创建的节点
       if (currentNodeRef.current) {
@@ -611,6 +626,7 @@ export const useNodeOperations = ({
     [
       graphRef,
       currentNodeRef,
+      focusNewNode,
       changeDrawer,
       handleSpecialPortConnection,
       handleExceptionPortConnection,
@@ -723,7 +739,8 @@ export const useNodeOperations = ({
 
         const apiRes = await service.apiAddNodeV3({
           workflowId: workflowId,
-          type: _params.type,
+          // RouteDecision 复用后端 IntentRecognition 类型收发（见 nodeTypeMapping.ts）
+          type: toBackendNodeType(_params.type),
           typeId: _params.typeId,
           name: _params.name,
           shape: _params.shape,
@@ -754,6 +771,12 @@ export const useNodeOperations = ({
       _params.id = nodeId;
 
       if (apiNodeData) {
+        // RouteDecision / HumanInteraction 复用后端类型创建（见 nodeTypeMapping.ts）：
+        // 后端返回的 type/name 会回写成后端类型的默认值，这里按请求值还原前端语义。
+        const requestedType = _params.type;
+        const wasRemapped = isFrontendMappedType(requestedType);
+        const requestedName = _params.name;
+        const requestedDescription = _params.description;
         _params = {
           ..._params,
           ...apiNodeData,
@@ -762,6 +785,14 @@ export const useNodeOperations = ({
             extension: _params.extension,
           },
         };
+        if (wasRemapped) {
+          _params = {
+            ..._params,
+            type: requestedType,
+            name: requestedName,
+            description: requestedDescription,
+          };
+        }
 
         if (_params.type === NodeTypeEnum.Loop) {
           _params.nodeConfig.extension = {
@@ -861,6 +892,9 @@ export const useNodeOperations = ({
 
           const newNode: ChildNode = {
             ...rest,
+            // RouteDecision / HumanInteraction 复用后端类型：复制返回的 type 为后端类型，
+            // 这里按源节点类型还原前端语义（见 nodeTypeMapping.ts）
+            ...(isFrontendMappedType(child.type) ? { type: child.type } : {}),
             shape: getShape(_res.data.type),
             nodeConfig: {
               ...nodeConfig,
@@ -882,8 +916,13 @@ export const useNodeOperations = ({
               newNode,
             );
 
-            // 选中新增的节点
-            graphRef.current?.graphSelectNode(String(newNode.id));
+            // 选中复制出的节点并打开属性面板。
+            // 面板打开已从 node:selected 迁移到 node:click，程序化选中不再自动打开，
+            // 故此处显式处理；AgentFlow（focusNewNode=false）下与新增节点一致，仅放置不弹面板。
+            if (focusNewNode) {
+              graphRef.current?.graphSelectNode(String(newNode.id));
+              changeDrawer(newNode);
+            }
             changeUpdateTime();
           } else {
             console.warn(
@@ -901,7 +940,7 @@ export const useNodeOperations = ({
         message.error(t('PC.Pages.AntvX6NodeOperations.copyNodeNetworkError'));
       }
     },
-    [graphRef, changeUpdateTime],
+    [graphRef, changeUpdateTime, focusNewNode, changeDrawer],
   );
 
   /**

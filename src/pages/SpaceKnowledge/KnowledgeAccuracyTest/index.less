@@ -199,10 +199,20 @@
   border-radius: 8px;
   padding: 16px;
   transition: all 0.3s ease;
+  box-shadow: none !important;
 
   &:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     border-color: #E0E0E0;
+    box-shadow: none !important;
+  }
+}
+
+// 覆盖 antd Card 组件的默认样式
+.ant-card.resultCard {
+  box-shadow: none !important;
+
+  &:hover {
+    box-shadow: none !important;
   }
 }
 

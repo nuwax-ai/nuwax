@@ -467,6 +467,8 @@ const Workflow: React.FC<WorkflowV3Props> = ({
   // V3:  Hook（ ref ）
   const nodeOperationsHook = useNodeOperations({
     workflowId,
+    // AgentFlow：拖入/添加节点后不自动选中并弹出属性面板，仅放置到画布
+    focusNewNode: !isAgentFlow,
     graphRef,
     currentNodeRef,
     foldWrapItem,
@@ -930,6 +932,10 @@ const Workflow: React.FC<WorkflowV3Props> = ({
       }
       // 2.
       selectGraphNode(node.id);
+      // 面板打开已从 node:selected 迁移至 node:click，程序化选中不再自动打开，
+      // 错误定位需显式打开对应节点的属性面板以便修复。
+      const latestNode = workflowProxy.getNodeById(node.id);
+      changeDrawer(latestNode ?? node);
     }
   };
 

@@ -1,5 +1,6 @@
+import { useFlowKind } from '@/contexts/FlowKindContext';
 import { t } from '@/services/i18nRuntime';
-import { NodeTypeEnum } from '@/types/enums/common';
+import { FlowKindEnum, NodeTypeEnum } from '@/types/enums/common';
 import { ChildNode, StencilChildNode } from '@/types/interfaces/graph';
 import {
   CaretRightOutlined,
@@ -70,6 +71,8 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
 }) => {
   const [open, setOpen] = useState(false);
   const [continueDragCount, setContinueDragCount] = useState(0);
+  // AgentFlow 画布不展示「调试 / 试运行」
+  const isAgentFlow = useFlowKind() === FlowKindEnum.AgentFlow;
   const handleOpenChange = (newOpen: boolean) => {
     setOpen(newOpen);
     setContinueDragCount(0);
@@ -171,21 +174,23 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
           </Popover>
         )}
       </div>
-      <div className="action-section" style={{ marginLeft: 18 }}>
-        <ToolOutlined
-          title={t('PC.Pages.AntvX6ControlPanel.debug')}
-          style={{ paddingRight: 12, paddingLeft: 12 }}
-        />
-        <Button
-          loading={testRunLoading}
-          icon={<CaretRightOutlined />}
-          variant="solid"
-          color="green"
-          onClick={handleTestRun}
-        >
-          {t('PC.Pages.AntvX6ControlPanel.testRun')}
-        </Button>
-      </div>
+      {!isAgentFlow && (
+        <div className="action-section" style={{ marginLeft: 18 }}>
+          <ToolOutlined
+            title={t('PC.Pages.AntvX6ControlPanel.debug')}
+            style={{ paddingRight: 12, paddingLeft: 12 }}
+          />
+          <Button
+            loading={testRunLoading}
+            icon={<CaretRightOutlined />}
+            variant="solid"
+            color="green"
+            onClick={handleTestRun}
+          >
+            {t('PC.Pages.AntvX6ControlPanel.testRun')}
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

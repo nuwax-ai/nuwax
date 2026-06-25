@@ -91,12 +91,8 @@ export enum NodeTypeEnum {
   MCP = 'Mcp',
   // 智能体（AgentFlow 专用）
   Agent = 'Agent',
-  // 评估验证（AgentFlow 专用）
-  EvalGate = 'EvalGate',
-  // 人类介入：询问 / 审批（AgentFlow 专用）
+  // 人类介入：询问（AgentFlow 专用，仅 Ask 模式）
   HumanInteraction = 'HumanInteraction',
-  // 三方平台连接器（AgentFlow 专用，dify / n8n / coze / ragflow）
-  ExternalConnector = 'ExternalConnector',
   // 路由决策：AI 决策走哪条分支（AgentFlow 专用）
   RouteDecision = 'RouteDecision',
 }
@@ -107,37 +103,15 @@ export enum FlowKindEnum {
   AgentFlow = 'AgentFlow',
 }
 
-// HITL 模式
+// HITL 模式（仅 Ask；approve 模式已移除）
 export enum HitlModeEnum {
   Ask = 'ask',
-  Approve = 'approve',
-}
-
-// HITL 审批动作
-export enum HitlApprovalActionEnum {
-  Approve = 'approve',
-  Edit = 'edit',
-  Reject = 'reject',
 }
 
 // Agent 节点模式
 export enum AgentNodeModeEnum {
   Platform = 'platform',
   SubFlow = 'subflow',
-}
-
-// EvalGate validator 类型
-export enum EvalValidatorTypeEnum {
-  Rule = 'rule',
-  LlmJudge = 'llm-judge',
-}
-
-// 三方连接器 provider
-export enum ExternalConnectorProviderEnum {
-  Dify = 'dify',
-  N8n = 'n8n',
-  Coze = 'coze',
-  Ragflow = 'ragflow',
 }
 
 export enum DataTypeEnum {
