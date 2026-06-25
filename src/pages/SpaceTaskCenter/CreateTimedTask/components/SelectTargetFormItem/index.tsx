@@ -125,7 +125,6 @@ const SelectTarget: React.FC<SelectTargetProps> = ({
       <Created
         // 隐藏顶部
         hideTop={hideTop}
-        isSpaceOnly={true}
         open={openAddComponent}
         onCancel={() => setOpenAddComponent(false)}
         checkTag={checkTag}
