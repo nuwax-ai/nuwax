@@ -1452,6 +1452,7 @@ export const ZH_HK: SystemLangMap = {
   "PC.Pages.AgentArrangeConfig.addHook": "添加 Hook",
   "PC.Pages.AgentArrangeConfig.hook": "Hook 設置",
   "PC.Pages.AgentArrangeConfig.hookUnavailable": "Hook 組件未就緒，請稍後重試",
+  "PC.Pages.AgentArrangeConfig.enableAskQuestion": "允許詢問用戶",
   "PC.Components.HookList.description": "通過 Hook 可在智能體執行的關鍵節點插入自定義邏輯。",
   "PC.Pages.AgentArrangeEventBindModal.agentIdVariable": "智能體ID",
   "PC.Pages.AgentArrangeEventBindModal.configInputArgs": "配置輸入參數",

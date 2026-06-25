@@ -1452,6 +1452,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.AgentArrangeConfig.addHook": "Hook を追加",
   "PC.Pages.AgentArrangeConfig.hook": "Hook 設定",
   "PC.Pages.AgentArrangeConfig.hookUnavailable": "Hook コンポーネントの準備ができていません。後でもう一度お試しください",
+  "PC.Pages.AgentArrangeConfig.enableAskQuestion": "ユーザーへの質問を許可",
   "PC.Components.HookList.description": "Hook を使用すると、エージェント実行の重要なポイントにカスタムロジックを挿入できます。",
   "PC.Pages.AgentArrangeEventBindModal.agentIdVariable": "エージェントID",
   "PC.Pages.AgentArrangeEventBindModal.configInputArgs": "入力パラメータの構成",

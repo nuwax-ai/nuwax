@@ -1588,6 +1588,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.AgentArrangeConfig.addHook": "Add Hook",
   "PC.Pages.AgentArrangeConfig.hook": "Hook Settings",
   "PC.Pages.AgentArrangeConfig.hookUnavailable": "Hook component is not ready, please try again later",
+  "PC.Pages.AgentArrangeConfig.enableAskQuestion": "Allow asking user",
   "PC.Components.HookList.description": "Hooks let you inject custom logic at key points during agent execution.",
   "PC.Pages.AgentArrangeEventBindModal.agentIdVariable": "Agent ID",
   "PC.Pages.AgentArrangeEventBindModal.configInputArgs": "Configure Input Parameters",

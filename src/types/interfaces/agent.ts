@@ -177,6 +177,10 @@ export interface AgentConfigUpdateParams extends AgentBaseInfo {
   allowAtSkill: DefaultSelectedEnum;
   // 允许用户选择个人电脑
   allowPrivateSandbox: DefaultSelectedEnum;
+  // 是否开启询问用户， 1 允许，其他不允许
+  enableAskQuestion: DefaultSelectedEnum;
+  // 是否开启版本控制， 1 允许，其他不允许
+  enableVersionControl: DefaultSelectedEnum;
 }
 
 // 更新智能体页面配置输入参数
@@ -514,7 +518,7 @@ export interface AgentConfigInfo {
   // 返回的具体业务数据
   space: SpaceInfo;
   devCollected: boolean;
-  // 会话ID
+  // debug调试会话ID
   devConversationId: number;
   // 发布时间，如果不为空，与当前modified时间做对比，如果发布时间小于modified，则前端显示：有更新未发布
   publishDate: string;
@@ -556,8 +560,24 @@ export interface AgentConfigInfo {
   isSandboxUnavailable?: boolean;
   /** 智能体绑定的事件配置 */
   eventBindConfig?: any;
-  // 智能体开发模式下会话ID（用于区分不同会话）
+  // 开发Agent的会话ID（用于区分不同会话）
   devAgentConversationId?: number;
+  // 是否允许用户在对话框中选择模式， 1 允许，其他不允许
+  allowChooseMode?: number;
+  // 是否开启询问用户， 1 允许，其他不允许
+  enableAskQuestion: DefaultSelectedEnum;
+  // 是否开启版本控制， 1 允许，其他不允许
+  enableVersionControl: DefaultSelectedEnum;
+  // 发布版本列表
+  publishVersion: {
+    version: string;
+    gitCommit: string;
+    latest: boolean;
+    packages: {
+      platform: string;
+      url: string;
+    }[];
+  }[];
 }
 
 // 智能体历史配置信息

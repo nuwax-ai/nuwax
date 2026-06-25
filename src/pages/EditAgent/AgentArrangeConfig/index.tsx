@@ -396,6 +396,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     }
 
     if (
+      agentConfigInfo?.type === AgentTypeEnum.TaskAgent &&
       isExistComponent(AgentComponentTypeEnum.Hook) &&
       hooksInfo?.bindConfig?.hooks?.length
     ) {
@@ -1162,27 +1163,62 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         body: 'collapse-body',
       },
     },
-    {
-      key: AgentArrangeConfigEnum.Hook,
-      label: t('PC.Pages.AgentArrangeConfig.hook'),
-      children: (
-        <HookList
-          textClassName={cx(styles.text)}
-          list={hooksInfo?.bindConfig?.hooks || []}
-          onClick={handlerHookPlus}
-        />
-      ),
-      extra: (
-        <TooltipIcon
-          title={t('PC.Pages.AgentArrangeConfig.addHook')}
-          onClick={handlerHookPlus}
-        />
-      ),
-      classNames: {
-        header: 'collapse-header',
-        body: 'collapse-body',
-      },
-    },
+    ...(agentConfigInfo?.type === AgentTypeEnum.TaskAgent
+      ? [
+          {
+            key: AgentArrangeConfigEnum.Hook,
+            label: t('PC.Pages.AgentArrangeConfig.hook'),
+            children: (
+              <>
+                <HookList
+                  textClassName={cx(styles.text)}
+                  list={hooksInfo?.bindConfig?.hooks || []}
+                  onClick={handlerHookPlus}
+                />
+                <div
+                  className={cx(
+                    styles['hook-ask-question-row'],
+                    'flex',
+                    'items-center',
+                    'content-between',
+                  )}
+                >
+                  <span className={cx(styles.text)}>
+                    {t('PC.Pages.AgentArrangeConfig.enableAskQuestion')}
+                  </span>
+                  <Switch
+                    value={
+                      agentConfigInfo?.enableAskQuestion ===
+                      DefaultSelectedEnum.Yes
+                    }
+                    onClick={(_, e: any) => {
+                      e.stopPropagation();
+                    }}
+                    onChange={(value) =>
+                      onChangeAgent(
+                        value
+                          ? DefaultSelectedEnum.Yes
+                          : DefaultSelectedEnum.No,
+                        'enableAskQuestion',
+                      )
+                    }
+                  />
+                </div>
+              </>
+            ),
+            extra: (
+              <TooltipIcon
+                title={t('PC.Pages.AgentArrangeConfig.addHook')}
+                onClick={handlerHookPlus}
+              />
+            ),
+            classNames: {
+              header: 'collapse-header',
+              body: 'collapse-body',
+            },
+          },
+        ]
+      : []),
   ];
 
   // 添加插件、工作流、知识库、数据库、MCP、页面、技能

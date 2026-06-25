@@ -507,6 +507,8 @@ const EditAgent: React.FC = () => {
         allowOtherModel,
         allowAtSkill,
         allowPrivateSandbox,
+        enableAskQuestion,
+        enableVersionControl,
       } = _agentConfigInfo;
 
       const params = {
@@ -527,6 +529,8 @@ const EditAgent: React.FC = () => {
         allowOtherModel,
         allowAtSkill,
         allowPrivateSandbox,
+        enableAskQuestion,
+        enableVersionControl,
       } as AgentConfigUpdateParams;
 
       // 更新智能体信息

@@ -1475,6 +1475,7 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.AgentArrangeConfig.addHook": "新增 Hook",
   "PC.Pages.AgentArrangeConfig.hook": "Hook 設定",
   "PC.Pages.AgentArrangeConfig.hookUnavailable": "Hook 元件未就緒，請稍後重試",
+  "PC.Pages.AgentArrangeConfig.enableAskQuestion": "允許詢問用戶",
   "PC.Components.HookList.description": "透過 Hook 可在智慧體執行的關鍵節點插入自訂邏輯。",
   "PC.Pages.AgentArrangeEventBindModal.agentIdVariable": "智慧體ID",
   "PC.Pages.AgentArrangeEventBindModal.configInputArgs": "設定輸入引數",
