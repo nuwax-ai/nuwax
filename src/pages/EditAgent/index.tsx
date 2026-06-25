@@ -554,14 +554,6 @@ const EditAgent: React.FC = () => {
     [agentConfigInfo, viewMode], // 添加依赖
   );
 
-  /**
-   * 处理插入系统提示词
-   * @param text 要插入的文本内容
-   */
-  const handleInsertSystemPrompt = (text: string) => {
-    systemUserTipsWordRef.current?.insertText(text);
-  };
-
   useEffect(() => {
     if (pagePreviewData) {
       setShowType(EditAgentShowType.Hide);
@@ -1139,7 +1131,6 @@ const EditAgent: React.FC = () => {
                   agentId={agentId}
                   agentConfigInfo={agentConfigInfo}
                   onChangeAgent={handleChangeAgent}
-                  onInsertSystemPrompt={handleInsertSystemPrompt}
                   onVariablesChange={handleVariablesChange}
                   onToolsChange={handleToolsChange}
                 />

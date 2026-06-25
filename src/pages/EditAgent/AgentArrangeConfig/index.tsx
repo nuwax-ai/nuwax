@@ -7,7 +7,6 @@ import { COMPONENT_SETTING_ACTIONS } from '@/constants/space.constants';
 import {
   apiAgentComponentAdd,
   apiAgentComponentDelete,
-  apiAgentComponentEventUpdate,
   apiAgentComponentList,
   apiAgentComponentSubAgentUpdate,
   apiAgentVariables,
@@ -17,7 +16,6 @@ import {
   AgentAddComponentStatusEnum,
   AgentComponentTypeEnum,
   DefaultSelectedEnum,
-  EventListEnum,
   ExpandPageAreaEnum,
   HideDesktopEnum,
 } from '@/types/enums/agent';
@@ -28,12 +26,7 @@ import {
   ComponentSettingEnum,
   OpenCloseEnum,
 } from '@/types/enums/space';
-import type {
-  AgentComponentEventConfig,
-  AgentComponentEventUpdateParams,
-  AgentComponentInfo,
-  SubAgent,
-} from '@/types/interfaces/agent';
+import type { AgentComponentInfo, SubAgent } from '@/types/interfaces/agent';
 import type {
   AgentAddComponentBaseInfo,
   AgentArrangeConfigProps,
@@ -48,7 +41,6 @@ import { loopSetBindValueType } from '@/utils/deepNode';
 import { useRequest } from 'ahooks';
 import { CollapseProps, message, Switch, Tooltip } from 'antd';
 import classNames from 'classnames';
-import cloneDeep from 'lodash/cloneDeep';
 import React, {
   MouseEvent,
   useCallback,
@@ -61,8 +53,6 @@ import { useModel } from 'umi';
 import ComponentSettingModal from './ComponentSettingModal';
 import ConfigOptionsHeader from './ConfigOptionsHeader';
 import CreateVariables from './CreateVariables';
-import EventBindModal from './EventBindModal';
-import EventList from './EventList';
 import styles from './index.less';
 import KnowledgeTextList from './KnowledgeTextList';
 import LongMemoryContent from './LongMemoryContent';
@@ -129,7 +119,6 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   agentConfigInfo,
   extraComponent,
   onChangeAgent,
-  onInsertSystemPrompt,
   onVariablesChange,
   onToolsChange,
 }) => {
@@ -155,16 +144,11 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   const [deleteList, setDeleteList] = useState<DeleteComponentInfo[]>([]);
   // 打开、关闭组件选择弹窗
   const [show, setShow] = useState<boolean>(false);
-  // 打开、关闭事件绑定弹窗
-  const [openEventBindModel, setOpenEventBindModel] = useState<boolean>(false);
   // 打开、关闭页面设置弹窗
   const [openPageModel, setOpenPageModel] = useState<boolean>(false);
   // 智能体组件列表
   const { agentComponentList, setAgentComponentList } = useModel('spaceAgent');
   const { handleVariables } = useModel('conversationInfo');
-  // 点击的当前事件配置
-  const [currentEventConfig, setCurrentEventConfig] =
-    useState<AgentComponentEventConfig>();
 
   // 打开子智能体编辑弹窗
   const [openSubAgentModel, setOpenSubAgentModel] = useState<boolean>(false);
@@ -286,13 +270,6 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     );
   }, [agentComponentList]);
 
-  // 绑定的事件信息
-  const eventsInfo = useMemo(() => {
-    return agentComponentList?.find(
-      (item: AgentComponentInfo) => item.type === AgentComponentTypeEnum.Event,
-    );
-  }, [agentComponentList]);
-
   // 子智能体组件信息
   const subAgentComponentInfo = useMemo(() => {
     return agentComponentList?.find(
@@ -404,15 +381,6 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     // 页面
     if (isExistComponent(AgentComponentTypeEnum.Page)) {
       keyList.push(AgentArrangeConfigEnum.Page);
-    }
-
-    // 事件绑定（通用智能体不显示）
-    if (
-      agentConfigInfo?.type !== AgentTypeEnum.TaskAgent &&
-      isExistComponent(AgentComponentTypeEnum.Event) &&
-      eventsInfo?.bindConfig?.eventConfigs?.length
-    ) {
-      keyList.push(AgentArrangeConfigEnum.Page_Event_Binding);
     }
 
     // 开场白 (仅通用型智能体展示开场白块)
@@ -1081,122 +1049,6 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     setOpenPageModel(true);
   };
 
-  // 添加事件绑定
-  const handleAddEventBinding = (item?: AgentComponentEventConfig) => {
-    setOpenEventBindModel(true);
-    setCurrentEventConfig(item);
-  };
-
-  // 更新事件绑定配置
-  const { runAsync: runEventUpdate } = useRequest(
-    apiAgentComponentEventUpdate,
-    {
-      manual: true,
-      debounceWait: 300,
-    },
-  );
-
-  // 删除事件绑定
-  const handleDeletEventBinding = async (index: number) => {
-    const newEventConfigs = cloneDeep(eventsInfo?.bindConfig?.eventConfigs);
-    newEventConfigs?.splice(index, 1);
-    // 更新事件绑定信息
-    const newEventsInfo = {
-      id: eventsInfo?.id,
-      bindConfig: {
-        eventConfigs: newEventConfigs,
-      },
-    } as AgentComponentEventUpdateParams;
-    await runEventUpdate(newEventsInfo);
-    message.success(t('PC.Pages.AgentArrangeConfig.deleteSuccessSimple'));
-    // 重新查询智能体配置组件列表
-    asyncFun(true);
-  };
-
-  /**
-   * 点击事件绑定项
-   * @param item 点击事件绑定项
-   * @param action 操作事件类型
-   * @param index 事件绑定项索引
-   */
-  const handleClickEventBindingItem = (
-    item: AgentComponentEventConfig,
-    action: EventListEnum,
-    index: number,
-  ) => {
-    switch (action) {
-      // 编辑
-      case EventListEnum.Edit:
-        handleAddEventBinding(item);
-        break;
-      // 插入到提示词
-      case EventListEnum.InsertSystemPrompt:
-        if (onInsertSystemPrompt) {
-          // 格式化事件配置信息
-          // 解析 JSON Schema
-          const jsonSchema = item.argJsonSchema
-            ? JSON.parse(item.argJsonSchema)
-            : { type: 'object', properties: {}, required: [] };
-          const jsonSchemaString = JSON.stringify(jsonSchema, null, 2);
-
-          // 导入转义函数（如果还没有导入，需要在文件顶部添加）
-          // import { escapeHTML } from '@/components/TiptapVariableInput/utils/htmlUtils';
-
-          // 将 JSON Schema 的每一行用 <p> 标签包裹（需要转义内容）
-          const jsonSchemaLines = jsonSchemaString
-            .split('\n')
-            .map(
-              (line) =>
-                `<p>${line
-                  .replace(/&/g, '&amp;')
-                  .replace(/</g, '&lt;')
-                  .replace(/>/g, '&gt;')
-                  .replace(/"/g, '&quot;')
-                  .replace(/'/g, '&#039;')}</p>`,
-            )
-            .join('');
-
-          // 构建事件标签的 HTML（需要转义）
-          const eventTagHtml = `<div class="event" event-type="${
-            item.identification
-          }" data='${t(
-            'PC.Pages.AgentArrangeConfig.dynamicJsonParameter',
-          )}'>[${t('PC.Pages.AgentArrangeConfig.referenceNumber')}]</div>`;
-          const escapedEventTag = eventTagHtml
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;');
-
-          // 转义 identification 字段
-          const escapedIdentification = item.identification
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#039;');
-
-          // 构建完整的 HTML 格式文本
-          const eventText = `<p>${t(
-            'PC.Pages.AgentArrangeConfig.appendReferenceInfo',
-          )}</p><p>${escapedEventTag}</p><p><br class="ProseMirror-trailingBreak"></p><p>${t(
-            'PC.Pages.AgentArrangeConfig.dynamicJsonSchemaPrefix',
-            escapedIdentification,
-          )}</p><p>\`\`\`</p>${jsonSchemaLines}<p>\`\`\`</p>`;
-
-          onInsertSystemPrompt(eventText);
-          message.success(t('PC.Pages.AgentArrangeConfig.insertPromptSuccess'));
-        } else {
-          message.warning(
-            t('PC.Pages.AgentArrangeConfig.insertPromptUnavailable'),
-          );
-        }
-        break;
-      // 删除
-      case EventListEnum.Delete:
-        handleDeletEventBinding(index);
-        break;
-    }
-  };
-
   // 界面配置列表
   const PageConfigList: CollapseProps['items'] = [
     // 通用型智能体 才显示 隐藏远程桌面 按钮
@@ -1314,36 +1166,6 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         body: 'collapse-body',
       },
     },
-    // 通用型智能体不显示 【事件绑定】
-    ...(agentConfigInfo?.type === AgentTypeEnum.TaskAgent
-      ? []
-      : [
-          {
-            key: AgentArrangeConfigEnum.Page_Event_Binding,
-            label: t('PC.Pages.AgentArrangeConfig.eventBinding'),
-            children: (
-              // 事件绑定列表
-              <EventList
-                textClassName={cx(styles.text)}
-                list={eventsInfo?.bindConfig?.eventConfigs || []}
-                onClick={handleClickEventBindingItem}
-              />
-            ),
-            extra: (
-              <TooltipIcon
-                title={t('PC.Pages.AgentArrangeConfig.addEventBinding')}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleAddEventBinding();
-                }}
-              />
-            ),
-            classNames: {
-              header: 'collapse-header',
-              body: 'collapse-body',
-            },
-          },
-        ]),
   ];
 
   // 添加插件、工作流、知识库、数据库、MCP、页面、技能
@@ -1387,13 +1209,6 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     }
     return COMPONENT_SETTING_ACTIONS;
   }, []);
-
-  // 确认事件绑定
-  const handleConfirmEventBinding = () => {
-    setOpenEventBindModel(false);
-    // 重新查询智能体配置组件列表
-    asyncFun(true);
-  };
 
   // 取消页面设置弹窗
   const handleCancelPageModel = () => {
@@ -1543,16 +1358,6 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         devConversationId={agentConfigInfo?.devConversationId}
         settingActionList={getSettingActionList(currentComponentInfo?.type)}
         onCancel={() => setOpenPluginModel(false)}
-      />
-      {/*事件绑定弹窗*/}
-      <EventBindModal
-        open={openEventBindModel}
-        // 事件绑定 - 更新 这里是当前事件配置
-        eventsInfo={eventsInfo}
-        currentEventConfig={currentEventConfig}
-        pageArgConfigs={pageArgConfigs}
-        onCancel={() => setOpenEventBindModel(false)}
-        onConfirm={handleConfirmEventBinding}
       />
       {/*页面设置弹窗*/}
       <PageSettingModal
