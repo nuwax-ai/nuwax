@@ -41,7 +41,7 @@
 .container {
   flex: 1;
   border-left: @lineWidth solid @colorSplit;
-  padding: @paddingXs @padding;
+  padding: @paddingXs @padding 30px;
 
   //隐藏滚动条
   &::-webkit-scrollbar {
@@ -53,6 +53,12 @@
   color: @colorTextTertiary;
   font-size: @fontSizeSm;
   line-height: @lineHeight;
+}
+
+.hook-ask-question-row {
+  margin-top: @marginSm;
+  padding-top: @paddingSm;
+  border-top: @lineWidth solid @colorSplit;
 }
 
 .page-setting-item {

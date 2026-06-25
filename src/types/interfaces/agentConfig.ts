@@ -2,7 +2,6 @@ import {
   AgentAddComponentStatusEnum,
   AgentComponentTypeEnum,
   DefaultSelectedEnum,
-  EventListEnum,
   HomeIndexEnum,
   InvokeTypeEnum,
   OutputDirectlyEnum,
@@ -13,13 +12,13 @@ import type { ComponentSettingEnum, OpenCloseEnum } from '@/types/enums/space';
 import { ApplicationMoreActionEnum } from '@/types/enums/space';
 import type {
   AgentCardInfo,
-  AgentComponentEventConfig,
   AgentComponentInfo,
   AgentConfigInfo,
   AgentStatisticsInfo,
   ComponentModelBindConfig,
   CreatorInfo,
   GuidQuestionDto,
+  HookConfig,
 } from '@/types/interfaces/agent';
 import type {
   BindConfigWithSub,
@@ -77,8 +76,6 @@ export interface AgentArrangeConfigProps {
     value: string | string[] | number | GuidQuestionDto[],
     attr: string,
   ) => void;
-  // 插入系统提示词
-  onInsertSystemPrompt?: (text: string) => void;
   // 变量列表变化回调，用于同步变量列表到父组件
   onVariablesChange?: (variables: BindConfigWithSub[]) => void;
   onToolsChange?: (tools: AgentComponentInfo[]) => void;
@@ -310,32 +307,11 @@ export interface PagePathSelectOption {
   pageId?: number;
 }
 
-// 事件绑定弹窗Props
-export interface EventBindModalProps {
-  open: boolean;
-  eventsInfo: AgentComponentInfo;
-  currentEventConfig?: AgentComponentEventConfig;
-  pageArgConfigs: PageArgConfig[];
-  onCancel: () => void;
-  onConfirm: () => void;
-}
-
 // 变量列表组件
 export interface VariableListProps {
   textClassName?: string;
   onClick: (e: MouseEvent) => void;
   list: BindConfigWithSub[];
-}
-
-// 事件列表组件
-export interface EventListProps {
-  textClassName?: string;
-  onClick: (
-    item: AgentComponentEventConfig,
-    action: EventListEnum,
-    index: number,
-  ) => void;
-  list: AgentComponentEventConfig[];
 }
 
 // 聊天上传文件列表组件
@@ -429,6 +405,33 @@ export interface CreateVariablesProps {
   variablesInfo: AgentComponentInfo;
   onCancel: () => void;
   onConfirm: () => void;
+}
+
+// Hook 列表（折叠面板内）
+export interface HookListProps {
+  textClassName?: string;
+  list: HookConfig[];
+  onClick: (e: MouseEvent) => void;
+}
+
+// Hook 管理弹窗
+export interface CreateHooksProps {
+  open: boolean;
+  hooksInfo: AgentComponentInfo;
+  onCancel: () => void;
+  onConfirm: () => void;
+}
+
+// 新建 / 编辑 Hook 弹窗
+export interface CreateHookModalProps {
+  open: boolean;
+  mode?: CreateUpdateModeEnum;
+  hooksInfo: AgentComponentInfo;
+  currentHook?: HookConfig;
+  hookList: HookConfig[];
+  editIndex?: number;
+  onCancel: () => void;
+  onConfirm: (nextHooks: HookConfig[]) => void;
 }
 
 // 智能体分类信息
