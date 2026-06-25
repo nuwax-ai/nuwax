@@ -119,6 +119,8 @@ export interface IntentConfigs {
   condition?: string;
   /** 路由决策（RouteDecision）：分支描述（沿用我们的属性面板 UI） */
   description?: string;
+  /** 路由决策（RouteDecision）：结构化条件匹配（前端编辑，保存时同步至 condition） */
+  conditionArgs?: ConditionArgs[];
 }
 
 export interface Extension {

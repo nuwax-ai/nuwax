@@ -4,6 +4,7 @@
  * 用于离线模式下生成节点的默认配置
  */
 
+import { createEmptyConditionArg } from '@/pages/Antv-X6/v3/agentFlow/adapters/routeConditionAdapter';
 import {
   AnswerTypeEnum,
   DataTypeEnum,
@@ -151,8 +152,10 @@ function createDefaultIntentConfig(): any[] {
   return [
     {
       uuid: `intent-${generateUuid()}`,
-      intent: 'Intent 1',
+      intent: '',
       description: '',
+      condition: '',
+      conditionArgs: [createEmptyConditionArg()],
       nextNodeIds: [],
     },
   ];

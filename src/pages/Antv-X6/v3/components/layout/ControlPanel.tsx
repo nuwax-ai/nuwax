@@ -73,6 +73,10 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
   const [continueDragCount, setContinueDragCount] = useState(0);
   // AgentFlow 画布不展示「调试 / 试运行」
   const isAgentFlow = useFlowKind() === FlowKindEnum.AgentFlow;
+  // AgentFlow 画布控制条紧凑化：缩小整体高度、按钮尺寸与间距
+  const compact = isAgentFlow;
+  const btnSize: 'small' | 'middle' = compact ? 'small' : 'middle';
+  const gap = compact ? 4 : 12;
   const handleOpenChange = (newOpen: boolean) => {
     setOpen(newOpen);
     setContinueDragCount(0);
@@ -82,10 +86,11 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
   const showStencil = dragChild && foldWrapItem;
 
   return (
-    <div className="absolute-box">
+    <div className={`absolute-box${compact ? ' absolute-box-compact' : ''}`}>
       <div className="action-section">
         <Button
           type="text"
+          size={btnSize}
           style={{ marginRight: 2 }}
           icon={<MinusOutlined />}
           onClick={() => {
@@ -114,14 +119,19 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
             }
             changeGraph(Number(newVal));
           }}
-          style={{ width: 80, marginRight: 2, height: 28 }}
+          style={{
+            width: compact ? 68 : 80,
+            marginRight: 2,
+            height: compact ? 24 : 28,
+          }}
           popupMatchSelectWidth={false}
           optionLabelProp="displayValue"
           size="small"
         />
         <Button
           type="text"
-          style={{ marginRight: 12 }}
+          size={btnSize}
+          style={{ marginRight: gap }}
           icon={<PlusOutlined />}
           onClick={() => {
             const factor = 10;
@@ -140,7 +150,8 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
         >
           <Button
             type="text"
-            style={{ marginRight: 12 }}
+            size={btnSize}
+            style={{ marginRight: gap }}
             icon={<CompressOutlined />}
             onClick={() => changeGraph(-1)}
           />
@@ -164,6 +175,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
             onOpenChange={handleOpenChange}
           >
             <Button
+              size={btnSize}
               onMouseEnter={() => setOpen(true)}
               icon={<PlusOutlined />}
               type="primary"
