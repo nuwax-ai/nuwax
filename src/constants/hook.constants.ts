@@ -31,13 +31,9 @@ export const HOOK_TYPE_OPTIONS = [
 export const getDefaultHookConfigJson = (type: string): string => {
   const templates: Record<string, object> = {
     command: { type: 'command', command: '', args: [] },
-    http: { type: 'http', url: '' },
-    mcp_tool: { type: 'mcp_tool', tool: '' },
+    http: { type: 'http', url: '', timeout: 30 },
+    mcp_tool: { type: 'mcp_tool', server: '', tool: '', input: {} },
     prompt: { type: 'prompt', prompt: '' },
   };
   return JSON.stringify(templates[type] ?? templates.command, null, 2);
 };
-
-/** Hook 启用状态 */
-export const HOOK_STATUS_ENABLED = 1;
-export const HOOK_STATUS_DISABLED = 0;

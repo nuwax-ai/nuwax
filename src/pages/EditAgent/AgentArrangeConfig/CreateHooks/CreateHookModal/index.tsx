@@ -1,17 +1,18 @@
 import {
   getDefaultHookConfigJson,
   HOOK_EVENT_OPTIONS,
-  HOOK_STATUS_ENABLED,
   HOOK_TYPE_OPTIONS,
 } from '@/constants/hook.constants';
 import { apiAgentComponentHookUpdate } from '@/services/agentConfig';
 import { t } from '@/services/i18nRuntime';
+import { HookStatusEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import type { HookConfig } from '@/types/interfaces/agent';
 import type { CreateHookModalProps } from '@/types/interfaces/agentConfig';
+import { customizeRequiredMark } from '@/utils/form';
 import { Button, Form, Input, message, Modal, Select } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useRequest } from 'umi';
 import styles from './index.less';
 
@@ -39,8 +40,9 @@ const CreateHookModal: React.FC<CreateHookModalProps> = ({
   onConfirm,
 }) => {
   const [form] = Form.useForm<HookFormValues>();
-  const hookType = Form.useWatch('type', form);
+  const pendingHooksRef = useRef<HookConfig[]>([]);
 
+  // 更新 Hook 配置
   const { run: runHookUpdate, loading } = useRequest(
     apiAgentComponentHookUpdate,
     {
@@ -48,7 +50,7 @@ const CreateHookModal: React.FC<CreateHookModalProps> = ({
       debounceInterval: 300,
       onSuccess: () => {
         message.success(t('PC.Pages.AgentArrangeCreateHooks.updateSuccess'));
-        onConfirm(nextHooks);
+        onConfirm(pendingHooksRef.current);
       },
     },
   );
@@ -59,6 +61,7 @@ const CreateHookModal: React.FC<CreateHookModalProps> = ({
       return;
     }
 
+    // 编辑 Hook
     if (mode === CreateUpdateModeEnum.Update && currentHook) {
       form.setFieldsValue({
         name: currentHook.name ?? '',
@@ -72,6 +75,7 @@ const CreateHookModal: React.FC<CreateHookModalProps> = ({
       return;
     }
 
+    // 新建 Hook
     form.setFieldsValue({
       name: '',
       event: HOOK_EVENT_OPTIONS[0].value,
@@ -81,10 +85,12 @@ const CreateHookModal: React.FC<CreateHookModalProps> = ({
     });
   }, [open, mode, currentHook, form]);
 
+  // 切换 Hook 类型
   const handleTypeChange = (type: string) => {
     form.setFieldValue('config', getDefaultHookConfigJson(type));
   };
 
+  // 保存 Hook 配置
   const handleSave = async () => {
     const values = await form.validateFields();
     let parsedConfig: string = values.config.trim();
@@ -104,17 +110,21 @@ const CreateHookModal: React.FC<CreateHookModalProps> = ({
       config: parsedConfig,
       status:
         mode === CreateUpdateModeEnum.Update && currentHook
-          ? currentHook.status ?? HOOK_STATUS_ENABLED
-          : HOOK_STATUS_ENABLED,
+          ? currentHook.status ?? HookStatusEnum.Enabled
+          : HookStatusEnum.Enabled,
     };
 
     const nextHooks = [...hookList];
+    // 编辑 Hook
     if (mode === CreateUpdateModeEnum.Update && editIndex !== undefined) {
       nextHooks[editIndex] = nextHook;
     } else {
+      // 新建 Hook
       nextHooks.push(nextHook);
     }
 
+    pendingHooksRef.current = nextHooks;
+    // 更新 Hook 配置
     runHookUpdate({
       id: hooksInfo?.id as number,
       targetId: hooksInfo?.targetId ?? -1,
@@ -122,6 +132,7 @@ const CreateHookModal: React.FC<CreateHookModalProps> = ({
     });
   };
 
+  // 弹窗标题
   const title =
     mode === CreateUpdateModeEnum.Update
       ? t('PC.Pages.AgentArrangeCreateHookModal.titleEdit')
@@ -132,7 +143,7 @@ const CreateHookModal: React.FC<CreateHookModalProps> = ({
       title={title}
       open={open}
       width={560}
-      destroyOnClose
+      destroyOnHidden
       onCancel={onCancel}
       footer={[
         <Button key="cancel" onClick={onCancel}>
@@ -148,8 +159,14 @@ const CreateHookModal: React.FC<CreateHookModalProps> = ({
         </Button>,
       ]}
     >
-      <Form form={form} layout="vertical" preserve={false}>
-        <div className={cx('flex', 'gap-12')}>
+      <Form
+        form={form}
+        layout="vertical"
+        preserve={false}
+        requiredMark={customizeRequiredMark}
+        autoComplete="off"
+      >
+        <div className={cx('flex', 'gap-10')}>
           <Form.Item
             className={cx('flex-1')}
             name="name"
@@ -194,9 +211,6 @@ const CreateHookModal: React.FC<CreateHookModalProps> = ({
             )}
           />
         </Form.Item>
-        <p className={cx(styles['form-hint'])}>
-          {t('PC.Pages.AgentArrangeCreateHookModal.matcherHint')}
-        </p>
 
         <Form.Item
           name="type"
@@ -223,12 +237,6 @@ const CreateHookModal: React.FC<CreateHookModalProps> = ({
         >
           <Input.TextArea rows={8} className={cx(styles['config-textarea'])} />
         </Form.Item>
-        <p className={cx(styles['form-hint'])}>
-          {t(
-            'PC.Pages.AgentArrangeCreateHookModal.configHint',
-            hookType ?? 'command',
-          )}
-        </p>
       </Form>
     </Modal>
   );

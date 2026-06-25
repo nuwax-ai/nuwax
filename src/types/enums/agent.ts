@@ -36,6 +36,12 @@ export enum AgentComponentTypeEnum {
   Hook = 'Hook',
 }
 
+/** Hook 状态：1 启用；0 停用 */
+export enum HookStatusEnum {
+  Disabled = 0,
+  Enabled = 1,
+}
+
 // 用户APIKEY目标类型,可用值:Agent,Mcp,TempChat
 export enum AgentApiKeyTargetEnum {
   Agent = 'Agent',

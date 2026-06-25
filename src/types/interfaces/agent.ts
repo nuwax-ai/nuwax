@@ -11,6 +11,7 @@ import type {
   HideChatAreaEnum,
   HideDesktopEnum,
   HomeIndexEnum,
+  HookStatusEnum,
   InvokeTypeEnum,
   NoneRecallReplyTypeEnum,
   OutputDirectlyEnum,
@@ -327,7 +328,7 @@ export interface HookConfig {
   config?: string;
 
   /*Hook状态,1 启用；0 停用 */
-  status?: number;
+  status?: HookStatusEnum;
 }
 
 // 更新Hook配置输入参数

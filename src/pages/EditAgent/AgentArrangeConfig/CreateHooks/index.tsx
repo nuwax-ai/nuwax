@@ -1,9 +1,6 @@
-import {
-  HOOK_STATUS_DISABLED,
-  HOOK_STATUS_ENABLED,
-} from '@/constants/hook.constants';
 import { apiAgentComponentHookUpdate } from '@/services/agentConfig';
 import { t } from '@/services/i18nRuntime';
+import { HookStatusEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import type { HookConfig } from '@/types/interfaces/agent';
 import type { CreateHooksProps } from '@/types/interfaces/agentConfig';
@@ -104,7 +101,7 @@ const CreateHooks: React.FC<CreateHooksProps> = ({
       idx === index
         ? {
             ...item,
-            status: enabled ? HOOK_STATUS_ENABLED : HOOK_STATUS_DISABLED,
+            status: enabled ? HookStatusEnum.Enabled : HookStatusEnum.Disabled,
           }
         : item,
     );
@@ -175,7 +172,7 @@ const CreateHooks: React.FC<CreateHooksProps> = ({
       render: (value: number | undefined, record) => (
         <Switch
           size="small"
-          checked={value !== HOOK_STATUS_DISABLED}
+          checked={value !== HookStatusEnum.Disabled}
           onChange={(checked) => handleToggleStatus(record._index, checked)}
         />
       ),
