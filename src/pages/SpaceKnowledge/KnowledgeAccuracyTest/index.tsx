@@ -41,6 +41,7 @@ const KnowledgeAccuracyTest: React.FC<KnowledgeAccuracyTestProps> = ({
 
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
   let isShowGRAPH = tenantConfigInfo.commercialEdition;
+  isShowGRAPH = true;
 
   // 搜索参数
   const [topK, setTopK] = useState(10);
