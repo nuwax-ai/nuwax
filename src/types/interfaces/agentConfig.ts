@@ -18,6 +18,7 @@ import type {
   ComponentModelBindConfig,
   CreatorInfo,
   GuidQuestionDto,
+  HookConfig,
 } from '@/types/interfaces/agent';
 import type {
   BindConfigWithSub,
@@ -404,6 +405,33 @@ export interface CreateVariablesProps {
   variablesInfo: AgentComponentInfo;
   onCancel: () => void;
   onConfirm: () => void;
+}
+
+// Hook 列表（折叠面板内）
+export interface HookListProps {
+  textClassName?: string;
+  list: HookConfig[];
+  onClick: (e: MouseEvent) => void;
+}
+
+// Hook 管理弹窗
+export interface CreateHooksProps {
+  open: boolean;
+  hooksInfo: AgentComponentInfo;
+  onCancel: () => void;
+  onConfirm: () => void;
+}
+
+// 新建 / 编辑 Hook 弹窗
+export interface CreateHookModalProps {
+  open: boolean;
+  mode?: CreateUpdateModeEnum;
+  hooksInfo: AgentComponentInfo;
+  currentHook?: HookConfig;
+  hookList: HookConfig[];
+  editIndex?: number;
+  onCancel: () => void;
+  onConfirm: (nextHooks: HookConfig[]) => void;
 }
 
 // 智能体分类信息

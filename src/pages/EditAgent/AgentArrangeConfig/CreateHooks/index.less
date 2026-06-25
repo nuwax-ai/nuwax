@@ -1,0 +1,41 @@
+@import '@/styles/color';
+
+.table-container {
+  :global {
+    .ant-table-content .ant-table-thead > tr > th {
+      padding: 8px 12px;
+      font-size: 13px;
+      color: @GRAY05;
+      background: transparent;
+    }
+
+    .ant-table-content .ant-table-tbody > tr > td {
+      padding: 10px 12px;
+      color: @BLANK04;
+      font-size: 12px;
+    }
+
+    .ant-table-footer {
+      padding: 10px 0;
+      background-color: transparent;
+    }
+  }
+}
+
+.tag {
+  display: inline-block;
+  padding: 2px 8px;
+  font-size: 12px;
+  font-family: Menlo, Monaco, Consolas, monospace;
+  color: @GRAY12;
+  background-color: @GRAY01;
+  border-radius: 4px;
+}
+
+.tag-muted {
+  color: @GRAY05;
+}
+
+.action-btn {
+  padding: 0 4px;
+}

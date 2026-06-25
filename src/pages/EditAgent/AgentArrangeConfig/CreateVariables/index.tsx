@@ -442,7 +442,7 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
       </DndContext>
       <CreateVariableModal
         id={variablesInfo?.id}
-        targetId={variablesInfo?.targetId}
+        targetId={variablesInfo?.targetId || 0}
         mode={mode}
         currentVariable={currentVariable}
         inputData={inputData}

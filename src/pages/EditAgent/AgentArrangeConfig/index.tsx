@@ -52,7 +52,9 @@ import React, {
 import { useModel } from 'umi';
 import ComponentSettingModal from './ComponentSettingModal';
 import ConfigOptionsHeader from './ConfigOptionsHeader';
+import CreateHooks from './CreateHooks';
 import CreateVariables from './CreateVariables';
+import HookList from './HookList';
 import styles from './index.less';
 import KnowledgeTextList from './KnowledgeTextList';
 import LongMemoryContent from './LongMemoryContent';
@@ -126,6 +128,8 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   const [openPluginModel, setOpenPluginModel] = useState<boolean>(false);
   // 变量弹窗
   const [openVariableModel, setOpenVariableModel] = useState<boolean>(false);
+  // Hook 管理弹窗
+  const [openHookModel, setOpenHookModel] = useState<boolean>(false);
   const [checkTag, setCheckTag] = useState<AgentComponentTypeEnum>(
     AgentComponentTypeEnum.Plugin,
   );
@@ -269,6 +273,13 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     );
   }, [agentComponentList]);
 
+  // Hook 配置信息
+  const hooksInfo = useMemo(() => {
+    return agentComponentList?.find(
+      (item: AgentComponentInfo) => item.type === AgentComponentTypeEnum.Hook,
+    );
+  }, [agentComponentList]);
+
   // 子智能体组件信息
   const subAgentComponentInfo = useMemo(() => {
     return agentComponentList?.find(
@@ -384,8 +395,15 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       keyList.push(AgentArrangeConfigEnum.Opening_Remarks);
     }
 
+    if (
+      isExistComponent(AgentComponentTypeEnum.Hook) &&
+      hooksInfo?.bindConfig?.hooks?.length
+    ) {
+      keyList.push(AgentArrangeConfigEnum.Hook);
+    }
+
     return keyList;
-  }, [agentComponentList, agentConfigInfo?.type]);
+  }, [agentComponentList, agentConfigInfo?.type, hooksInfo?.bindConfig?.hooks]);
 
   // 查询智能体配置组件列表
   const { runAsync } = useRequest(apiAgentComponentList, {
@@ -540,6 +558,16 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     setOpenVariableModel(true);
   };
 
+  // 打开 Hook 管理弹窗
+  const handlerHookPlus = (e: MouseEvent) => {
+    e.stopPropagation();
+    if (!hooksInfo) {
+      message.warning(t('PC.Pages.AgentArrangeConfig.hookUnavailable'));
+      return;
+    }
+    setOpenHookModel(true);
+  };
+
   // 确定添加、更新变量
   const handleConfirmVariables = async () => {
     setOpenVariableModel(false);
@@ -549,6 +577,12 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     const { data } = await runVariables(agentId);
     // 处理变量参数
     handleVariables(data);
+  };
+
+  // 确定 Hook 配置变更
+  const handleConfirmHooks = async () => {
+    setOpenHookModel(false);
+    await asyncFun(true);
   };
 
   // 插件、工作流、MCP、数据表设置
@@ -1128,6 +1162,27 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         body: 'collapse-body',
       },
     },
+    {
+      key: AgentArrangeConfigEnum.Hook,
+      label: t('PC.Pages.AgentArrangeConfig.hook'),
+      children: (
+        <HookList
+          textClassName={cx(styles.text)}
+          list={hooksInfo?.bindConfig?.hooks || []}
+          onClick={handlerHookPlus}
+        />
+      ),
+      extra: (
+        <TooltipIcon
+          title={t('PC.Pages.AgentArrangeConfig.addHook')}
+          onClick={handlerHookPlus}
+        />
+      ),
+      classNames: {
+        header: 'collapse-header',
+        body: 'collapse-body',
+      },
+    },
   ];
 
   // 添加插件、工作流、知识库、数据库、MCP、页面、技能
@@ -1312,6 +1367,15 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         onCancel={() => setOpenVariableModel(false)}
         onConfirm={handleConfirmVariables}
       />
+      {/* Hook 管理弹窗 */}
+      {hooksInfo && (
+        <CreateHooks
+          open={openHookModel}
+          hooksInfo={hooksInfo}
+          onCancel={() => setOpenHookModel(false)}
+          onConfirm={handleConfirmHooks}
+        />
+      )}
       {/*组件设置弹窗*/}
       <ComponentSettingModal
         open={openPluginModel}
