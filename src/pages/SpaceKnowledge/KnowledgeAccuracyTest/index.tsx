@@ -337,11 +337,13 @@ const KnowledgeAccuracyTest: React.FC<KnowledgeAccuracyTestProps> = ({
             <div className={styles.configItem}>
               <label className={styles.label}>{dict('PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.testQuery')}：</label>
               <TextArea
-                className={styles.textarea}
+                className={`${styles.textarea} dispose-textarea-count`}
                 placeholder={dict('PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.inputQueryText')}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                rows={4}
+                autoSize={{ minRows: 4, maxRows: 6 }}
+                maxLength={100}
+                showCount
               />
             </div>
 
