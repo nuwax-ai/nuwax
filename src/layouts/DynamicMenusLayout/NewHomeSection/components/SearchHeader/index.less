@@ -1,0 +1,73 @@
+@import '@/styles/token.less';
+
+@headerRowHeight: 72px; // 顶部栏专用高度
+@searchWrapperMarginLeft: 3px;
+@newChatIconSize: 18px;
+
+.header-search-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: @headerRowHeight;
+  padding: 0 @paddingXs;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  gap: @paddingXs;
+
+  .search-input-wrapper {
+    flex: 1;
+    min-width: 0;
+    margin-left: @searchWrapperMarginLeft;
+
+    .search-input {
+      font-size: @fontSize;
+      border-radius: @borderRadius;
+      background-color: @colorFillAlter;
+      border: none;
+      color: @navSecondMenuAdaptiveText;
+
+      :global {
+        .ant-input {
+          font-size: @fontSize !important;
+          color: @navSecondMenuAdaptiveText !important;
+          background-color: transparent !important;
+
+          &::placeholder {
+            color: @navSecondMenuAdaptiveTextTertiary !important;
+          }
+        }
+      }
+
+      .search-icon-inner {
+        color: @navSecondMenuAdaptiveTextTertiary;
+      }
+
+      &:hover,
+      &:focus {
+        background-color: @colorFillSecondary;
+      }
+    }
+  }
+
+  .new-chat-btn {
+    width: @controlHeight;
+    height: @controlHeight;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: @borderRadiusSm;
+    cursor: pointer;
+    color: @navSecondMenuAdaptiveTextSecondary;
+    transition: all 0.2s ease;
+
+    &:hover {
+      color: @navSecondMenuAdaptiveText;
+      background-color: @colorBgTextHover;
+    }
+
+    .new-chat-svg {
+      width: @newChatIconSize;
+      height: @newChatIconSize;
+    }
+  }
+}
