@@ -3232,6 +3232,8 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.SkillDetailsMoreActionsMenu.importSkill": "インポートスキル",
   "PC.Pages.SpaceDevelop.ApplicationItem.chatType": "チャットボット",
   "PC.Pages.SpaceDevelop.ApplicationItem.agentFlowType": "AgentFlow",
+  "PC.Pages.SpaceDevelop.ApplicationItem.customType": "カスタム",
+  "PC.Pages.SpaceDevelop.ApplicationItem.agentGroupType": "AgentGroup",
   "PC.Pages.SpaceDevelop.ApplicationItem.lastEdited": "最終編集",
   "PC.Pages.SpaceDevelop.ApplicationItem.privateComputer": "パーソナルコンピュータ",
   "PC.Pages.SpaceDevelop.ApplicationItem.published": "発行済み",

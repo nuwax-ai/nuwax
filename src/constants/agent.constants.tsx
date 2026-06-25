@@ -353,9 +353,24 @@ export const AGENT_COMPONENT_TYPE_MAP = {
 
 // 智能体子类型选择（仅智能体 tab 下显示）
 export const AGENT_SUB_TYPE_OPTIONS = [
-  { label: '问答型', value: AgentSubTypeEnum.ChatBot },
-  { label: '通用型', value: AgentSubTypeEnum.General },
-  { label: '自定义', value: AgentSubTypeEnum.Custom },
-  { label: 'AgentFlow', value: AgentSubTypeEnum.Flow },
-  { label: 'AgentGroup', value: AgentSubTypeEnum.Group },
+  {
+    label: dict('PC.Pages.SpaceDevelop.ApplicationItem.chatType'),
+    value: AgentSubTypeEnum.ChatBot,
+  },
+  {
+    label: dict('PC.Pages.SpaceDevelop.ApplicationItem.taskType'),
+    value: AgentSubTypeEnum.General,
+  },
+  {
+    label: dict('PC.Pages.SpaceDevelop.ApplicationItem.customType'),
+    value: AgentSubTypeEnum.Custom,
+  },
+  {
+    label: dict('PC.Pages.SpaceDevelop.ApplicationItem.agentFlowType'),
+    value: AgentSubTypeEnum.Flow,
+  },
+  {
+    label: dict('PC.Pages.SpaceDevelop.ApplicationItem.agentGroupType'),
+    value: AgentSubTypeEnum.Group,
+  },
 ];

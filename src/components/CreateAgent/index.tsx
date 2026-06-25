@@ -2,8 +2,6 @@ import agentImage from '@/assets/images/agent_image.png';
 import CustomFormModal from '@/components/CustomFormModal';
 import OverrideTextArea from '@/components/OverrideTextArea';
 import UploadAvatar from '@/components/UploadAvatar';
-// import { ICON_CONFIRM_STAR } from '@/constants/images.constants';
-// import { CREATE_AGENT_LIST } from '@/constants/space.constants';
 import { apiAgentAdd, apiAgentConfigUpdate } from '@/services/agentConfig';
 import { dict } from '@/services/i18nRuntime';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
@@ -16,14 +14,8 @@ import type {
 import type { CreateAgentProps } from '@/types/interfaces/common';
 import { customizeRequiredMark } from '@/utils/form';
 import { Form, FormProps, Input, message } from 'antd';
-// import classNames from 'classnames';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useRequest } from 'umi';
-// import styles from './index.less';
-
-// const cx = classNames.bind(styles);
-//
-// const { TextArea } = Input;
 
 const CreateAgent: React.FC<CreateAgentProps> = ({
   type,
@@ -35,10 +27,6 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
   onConfirmCreate,
   onConfirmUpdate,
 }) => {
-  // 分段控制器：标准创建、AI 创建
-  // const [createAgentType, setCreateAgentType] = useState<CreateAgentEnum>(
-  //   CreateAgentEnum.Standard,
-  // );
   const [form] = Form.useForm();
   const [imageUrl, setImageUrl] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
@@ -155,26 +143,9 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
       title={getTitle()}
       open={open}
       loading={loading}
-      // okText={createAgentType === CreateAgentEnum.Standard ? '' : '生成'}
-      // okPrefixIcon={
-      //   createAgentType === CreateAgentEnum.Standard ? (
-      //     ''
-      //   ) : (
-      //     <ICON_CONFIRM_STAR />
-      //   )
-      // }
       onCancel={handleCancel}
       onConfirm={handlerSubmit}
     >
-      {/*{mode === CreateUpdateModeEnum.Create && (*/}
-      {/*  <Segmented*/}
-      {/*    className={cx(styles.segment)}*/}
-      {/*    value={createAgentType}*/}
-      {/*    onChange={setCreateAgentType}*/}
-      {/*    block*/}
-      {/*    options={CREATE_AGENT_LIST}*/}
-      {/*  />*/}
-      {/*)}*/}
       <Form
         form={form}
         requiredMark={customizeRequiredMark}
@@ -182,8 +153,6 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
         onFinish={onFinish}
         autoComplete="off"
       >
-        {/*{createAgentType === CreateAgentEnum.Standard ? (*/}
-        {/*  <>*/}
         <Form.Item
           name="name"
           label={dict('PC.Components.CreateAgent.nameLabel')}
@@ -234,21 +203,6 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
             svgIconName="icons-workspace-agent"
           />
         </Form.Item>
-        {/*  </>*/}
-        {/*) : (*/}
-        {/*  <Form.Item*/}
-        {/*    className={cx(styles['text-area'])}*/}
-        {/*    name="description"*/}
-        {/*    rules={[*/}
-        {/*      { required: true, message: '请描述你希望创建一个什么样的智能体' },*/}
-        {/*    ]}*/}
-        {/*  >*/}
-        {/*    <TextArea*/}
-        {/*      placeholder="请描述你希望创建一个什么样的智能体"*/}
-        {/*      autoSize={{ minRows: 4, maxRows: 6 }}*/}
-        {/*    />*/}
-        {/*  </Form.Item>*/}
-        {/*)}*/}
       </Form>
     </CustomFormModal>
   );
