@@ -45,6 +45,7 @@ import { ThemeNavigationStyleType } from '@/types/enums/theme';
 import EcosystemMarketSection from './EcosystemMarketSection';
 import HomeSection from './HomeSection';
 import styles from './index.less';
+import NewHomeSection from './NewHomeSection';
 import SpaceSection from './SpaceSection';
 import SquareSection from './SquareSection';
 import {
@@ -661,8 +662,11 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
      */
     // 主页、系统广场、生态市场特殊处理：直接渲染对应的 Section 组件
     // 主页 homepage: 最近使用 + 会话记录
+    // 主页: 使用新版侧栏（会话历史 + 搜索 + 新建会话）
+    if (activeTab === 'homepage') {
+      return <NewHomeSection style={overrideContainerStyle} />;
+    }
     if (
-      activeTab === 'homepage' ||
       activeTab === 'new_conversation' ||
       activeTab === 'my_computer' ||
       activeTab === 'documents'
@@ -733,38 +737,42 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
         }}
       >
         <div className={cx(styles['nav-menus-scroll'])}>
-          <HoverScrollbar
-            className={cx('w-full', 'h-full')}
-            bodyWidth={
-              NAVIGATION_LAYOUT_SIZES.SECOND_MENU_WIDTH - token.padding * 2
-            }
-            style={{
-              padding: `${token.paddingSM}px 0`,
-            }}
-          >
-            <div
-              className={cx('flex', 'flex-col', 'h-full')}
+          {activeTab === 'homepage' ? (
+            renderSecondMenu
+          ) : (
+            <HoverScrollbar
+              className={cx('w-full', 'h-full')}
+              bodyWidth={
+                NAVIGATION_LAYOUT_SIZES.SECOND_MENU_WIDTH - token.padding * 2
+              }
               style={{
-                minHeight: 0,
+                padding: `${token.paddingSM}px 0`,
               }}
             >
-              {/* 标题 */}
-              <ConditionRender condition={isShowTitle && currentTitle}>
-                <div style={{ padding: '0 12px 12px' }}>
-                  <Typography.Title
-                    level={5}
-                    style={{ marginBottom: 0 }}
-                    className={cx(styles['menu-title'])}
-                  >
-                    {currentTitle}
-                  </Typography.Title>
-                </div>
-              </ConditionRender>
+              <div
+                className={cx('flex', 'flex-col', 'h-full')}
+                style={{
+                  minHeight: 0,
+                }}
+              >
+                {/* 标题 */}
+                <ConditionRender condition={isShowTitle && currentTitle}>
+                  <div style={{ padding: '0 12px 12px' }}>
+                    <Typography.Title
+                      level={5}
+                      style={{ marginBottom: 0 }}
+                      className={cx(styles['menu-title'])}
+                    >
+                      {currentTitle}
+                    </Typography.Title>
+                  </div>
+                </ConditionRender>
 
-              {/* 二级/三级菜单 */}
-              {renderSecondMenu}
-            </div>
-          </HoverScrollbar>
+                {/* 二级/三级菜单 */}
+                {renderSecondMenu}
+              </div>
+            </HoverScrollbar>
+          )}
         </div>
 
         {/* 积分相关入口：放到二级导航栏底部固定展示 */}
