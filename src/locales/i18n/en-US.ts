@@ -3516,6 +3516,8 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.SpaceAgentSubscriptions.upgrade": "Upgrade",
   "PC.Pages.SpaceDevelop.ApplicationItem.chatType": "Chatbot",
   "PC.Pages.SpaceDevelop.ApplicationItem.agentFlowType": "AgentFlow",
+  "PC.Pages.SpaceDevelop.ApplicationItem.customType": "Custom",
+  "PC.Pages.SpaceDevelop.ApplicationItem.agentGroupType": "AgentGroup",
   "PC.Pages.SpaceDevelop.ApplicationItem.lastEdited": "Last edited",
   "PC.Pages.SpaceDevelop.ApplicationItem.privateComputer": "Personal Computer",
   "PC.Pages.SpaceDevelop.ApplicationItem.published": "Published",

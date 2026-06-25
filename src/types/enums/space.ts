@@ -17,7 +17,13 @@ export enum CreateSkillWayEnum {
   Import = 'Import',
 }
 
-// 智能体类型枚举
+/**
+ * 智能体类型枚举
+ * All 全部
+ * ChatBot 对话智能体
+ * PageApp 网页应用智能体
+ * TaskAgent 任务型智能体
+ */
 export enum AgentTypeEnum {
   All = 'All',
   ChatBot = 'ChatBot',
