@@ -56,7 +56,7 @@ export const LIBRARY_ALL_RESOURCE = [
 ];
 
 // 智能体类型列表
-const AGENT_TYPE_LIST_ALL = [
+export const AGENT_TYPE_LIST = [
   {
     value: AgentTypeEnum.ChatBot,
     label: dict('PC.Constants.Space.chatBotType'),
@@ -72,10 +72,12 @@ const AGENT_TYPE_LIST_ALL = [
     label: dict('PC.Constants.Space.agentFlowType'),
     tooltip: dict('PC.Constants.Space.agentFlowTypeTooltip'),
   },
+  {
+    value: AgentTypeEnum.AgentGroup,
+    label: dict('PC.Constants.Space.agentGroupType'),
+    tooltip: dict('PC.Constants.Space.agentGroupTypeTooltip'),
+  },
 ];
-
-// 兼容旧代码
-export const AGENT_TYPE_LIST = AGENT_TYPE_LIST_ALL;
 
 // 技能库所有资源类型
 export const SKILL_ALL_RESOURCE = [

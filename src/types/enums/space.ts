@@ -29,8 +29,11 @@ export enum AgentTypeEnum {
   ChatBot = 'ChatBot',
   PageApp = 'PageApp',
   TaskAgent = 'TaskAgent',
+
+  // =============================== 自定义枚举值 ===============================
   AgentFlow = 'AgentFlow',
   ConversationAgent = 'ConversationAgent',
+  AgentGroup = 'AgentGroup',
 }
 
 // 智能体子类型枚举（创建时区分具体形态）
@@ -138,6 +141,8 @@ export enum AgentArrangeConfigEnum {
   Table = 'Table',
   // 长期记忆
   Long_Memory = 'Long_Memory',
+  // 版本管理
+  Version_Control = 'Version_Control',
   // 文件盒子
   File_Box = 'File_Box',
   // 用户问题建议
@@ -170,6 +175,10 @@ export enum AgentArrangeConfigEnum {
   Allow_At_Skill = 'Allow_At_Skill',
   // 允许用户选择个人电脑
   Allow_Private_Sandbox = 'Allow_Private_Sandbox',
+  // 允许用户在对话框中选择模式
+  Allow_Choose_Mode = 'Allow_Choose_Mode',
+  // 允许询问用户
+  Enable_Ask_Question = 'Enable_Ask_Question',
 }
 
 // 是否开启问题建议,可用值:Open,Close

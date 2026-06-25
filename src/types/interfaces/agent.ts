@@ -181,6 +181,8 @@ export interface AgentConfigUpdateParams extends AgentBaseInfo {
   enableAskQuestion: DefaultSelectedEnum;
   // 是否开启版本控制， 1 允许，其他不允许
   enableVersionControl: DefaultSelectedEnum;
+  // 是否允许用户在对话框中选择模式， 1 允许，其他不允许
+  allowChooseMode: DefaultSelectedEnum;
 }
 
 // 更新智能体页面配置输入参数
