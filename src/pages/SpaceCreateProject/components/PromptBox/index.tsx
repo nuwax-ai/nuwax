@@ -1,6 +1,7 @@
 import ChatInputHome from '@/components/ChatInputHome';
 import ModelSelector from '@/components/ChatInputHome/ModelSelector';
 import type { AgentMode } from '@/components/business-component/AgentIntervention';
+import { AGENT_SUB_TYPE_OPTIONS } from '@/constants/agent.constants';
 import { useAppDevModelSelector } from '@/hooks/useAppDevModelSelector';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
 import { apiPublishedAgentInfo } from '@/services/agentDev';
@@ -75,14 +76,8 @@ const PromptBox: React.FC<PromptBoxProps> = ({ onSubmit }) => {
   const [activeTab, setActiveTab] = useState<string>(
     AgentComponentTypeEnum.Agent,
   );
-  // 智能体子类型选择（仅智能体 tab 下显示）
-  const subTypeOptions = [
-    { label: '问答型', value: AgentSubTypeEnum.ChatBot },
-    { label: '通用型', value: AgentSubTypeEnum.General },
-    { label: '自定义', value: AgentSubTypeEnum.Custom },
-    { label: 'AgentFlow', value: AgentSubTypeEnum.Flow },
-    { label: 'AgentGroup', value: AgentSubTypeEnum.Group },
-  ];
+
+  // 智能体子类型，默认问答型
   const [subType, setSubType] = useState<AgentSubTypeEnum>(
     AgentSubTypeEnum.ChatBot,
   );
@@ -276,7 +271,7 @@ const PromptBox: React.FC<PromptBoxProps> = ({ onSubmit }) => {
                 size="small"
                 value={subType}
                 onChange={(v) => setSubType(v as AgentSubTypeEnum)}
-                options={subTypeOptions}
+                options={AGENT_SUB_TYPE_OPTIONS}
                 style={{ width: 120 }}
               />
             )}
