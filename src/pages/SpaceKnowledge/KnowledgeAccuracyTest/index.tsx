@@ -41,7 +41,6 @@ const KnowledgeAccuracyTest: React.FC<KnowledgeAccuracyTestProps> = ({
 
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
   let isShowGRAPH = tenantConfigInfo.commercialEdition;
-  isShowGRAPH = true;
 
   // 搜索参数
   const [topK, setTopK] = useState(10);
@@ -240,13 +239,26 @@ const KnowledgeAccuracyTest: React.FC<KnowledgeAccuracyTestProps> = ({
     );
   };
 
+  // 自定义测试范围标签渲染（不显示删除图标）
+  const renderTestScopeTag = (props: any) => {
+    const { label, value } = props;
+    return (
+      <Tag
+        className={styles.customTag}
+        closable={false}
+      >
+        {label}
+      </Tag>
+    );
+  };
+
   // 测试历史表格列定义
   const historyColumns = [
     {
       title: 'Query',
       dataIndex: 'query',
       key: 'query',
-      width: '60%',
+      width: '70%',
       render: (text: string, record: TestHistoryItem) => (
         <a
           onClick={(e) => {
@@ -264,17 +276,7 @@ const KnowledgeAccuracyTest: React.FC<KnowledgeAccuracyTestProps> = ({
       title: dict('PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.time'),
       dataIndex: 'createTime',
       key: 'createTime',
-      width: '40%',
-      render: (text: string) => (
-        <div style={{
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          fontSize: '13px'
-        }}>
-          {text}
-        </div>
-      ),
+      width: '30%',
     },
   ];
 
@@ -297,10 +299,14 @@ const KnowledgeAccuracyTest: React.FC<KnowledgeAccuracyTestProps> = ({
                 className={styles.select}
                 placeholder={dict('PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.selectTestDoc')}
                 value={selectedDocuments}
-                onChange={setSelectedDocuments}
-                allowClear
+                onChange={(value) => {
+                  // 不更新 selectedDocuments 状态
+                  console.log('尝试修改测试范围，被阻止:', value);
+                }}
+                allowClear={false}
                 maxTagCount="responsive"
                 maxTagPlaceholder={(omittedValues) => `+ ${omittedValues.length} ...`}
+                tagRender={renderTestScopeTag}
               >
                 {documents.map((doc) => (
                   <Option key={doc.id} value={doc.id}>
