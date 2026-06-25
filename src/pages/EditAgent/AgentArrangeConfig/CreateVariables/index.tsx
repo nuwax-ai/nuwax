@@ -125,7 +125,7 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
   const updateVariablesTypeRef = useRef<UpdateVariablesTypeEnum>(
     UpdateVariablesTypeEnum.Delete,
   );
-  const inputTypeLabelMap = useMemo<Record<InputTypeEnum, string>>(
+  const inputTypeLabelMap = useMemo<Partial<Record<InputTypeEnum, string>>>(
     () => ({
       [InputTypeEnum.Text]: t(
         'PC.Pages.AgentArrangeCreateVariableModal.inputTypeText',

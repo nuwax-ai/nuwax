@@ -2,8 +2,21 @@
 export const HOOK_EVENT_OPTIONS = [
   { label: 'PreToolUse', value: 'PreToolUse' },
   { label: 'PostToolUse', value: 'PostToolUse' },
-  { label: 'SessionStart', value: 'SessionStart' },
+  { label: 'PostToolUseFailure', value: 'PostToolUseFailure' },
+  { label: 'PostToolBatch', value: 'PostToolBatch' },
+  { label: 'PermissionRequest', value: 'PermissionRequest' },
+  { label: 'PermissionDenied', value: 'PermissionDenied' },
   { label: 'Stop', value: 'Stop' },
+  { label: 'StopFailure', value: 'StopFailure' },
+  { label: 'SessionStart', value: 'SessionStart' },
+  { label: 'UserPromptSubmit', value: 'UserPromptSubmit' },
+  { label: 'UserPromptExpansion', value: 'UserPromptExpansion' },
+  { label: 'SubagentStart', value: 'SubagentStart' },
+  { label: 'SubagentStop', value: 'SubagentStop' },
+  { label: 'TaskCreated', value: 'TaskCreated' },
+  { label: 'TaskCompleted', value: 'TaskCompleted' },
+  { label: 'PreCompact', value: 'PreCompact' },
+  { label: 'PostCompact', value: 'PostCompact' },
 ];
 
 /** Hook 类型选项 */
