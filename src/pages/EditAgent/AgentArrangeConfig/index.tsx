@@ -898,6 +898,42 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         body: 'collapse-body',
       },
     },
+
+    // 版本管理：任务型智能体（通用型智能体、AgentFlow、AgentGroup、自定义） 才显示 版本管理 按钮
+    ...(agentConfigInfo?.type === AgentTypeEnum.TaskAgent
+      ? [
+          {
+            key: AgentArrangeConfigEnum.Version_Control,
+            label: t('PC.Pages.AgentArrangeConfig.versionControl'),
+            children: (
+              <p className={cx(styles.text)}>
+                {t('PC.Pages.AgentArrangeConfig.versionControlDesc')}
+              </p>
+            ),
+            extra: (
+              <Switch
+                value={
+                  agentConfigInfo?.enableVersionControl ===
+                  DefaultSelectedEnum.Yes
+                }
+                onClick={(_, e: any) => {
+                  e.stopPropagation();
+                }}
+                onChange={(value) =>
+                  onChangeAgent(
+                    value ? DefaultSelectedEnum.Yes : DefaultSelectedEnum.No,
+                    'enableVersionControl',
+                  )
+                }
+              />
+            ),
+            classNames: {
+              header: 'collapse-header',
+              body: 'collapse-body',
+            },
+          },
+        ]
+      : []),
   ];
 
   // 对话体验
@@ -1035,6 +1071,74 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
               ]),
         ]
       : []),
+
+    // 通用型智能体、AgentFlow、AgentGroup、自定义智能体 才显示 允许用户在对话框中选择模式 按钮
+    ...(agentConfigInfo?.subType === AgentSubTypeEnum.General ||
+    agentConfigInfo?.subType === AgentSubTypeEnum.Flow ||
+    agentConfigInfo?.subType === AgentSubTypeEnum.Group ||
+    agentConfigInfo?.subType === AgentSubTypeEnum.Custom
+      ? [
+          // 允许用户在对话框中选择模式
+          {
+            key: AgentArrangeConfigEnum.Allow_Choose_Mode,
+            label: t('PC.Pages.AgentArrangeConfig.allowChooseMode'),
+            children: (
+              <p className={cx(styles.text)}>
+                {t('PC.Pages.AgentArrangeConfig.allowChooseModeDesc')}
+              </p>
+            ),
+            extra: (
+              <Switch
+                value={
+                  agentConfigInfo?.allowChooseMode === DefaultSelectedEnum.Yes
+                }
+                onClick={(_, e: any) => {
+                  e.stopPropagation();
+                }}
+                onChange={(value) =>
+                  onChangeAgent(
+                    value ? DefaultSelectedEnum.Yes : DefaultSelectedEnum.No,
+                    'allowChooseMode',
+                  )
+                }
+              />
+            ),
+            classNames: {
+              header: 'collapse-header',
+              body: 'collapse-body',
+            },
+          },
+        ]
+      : []),
+
+    // 允许询问用户
+    {
+      key: AgentArrangeConfigEnum.Enable_Ask_Question,
+      label: t('PC.Pages.AgentArrangeConfig.enableAskQuestion'),
+      children: (
+        <p className={cx(styles.text)}>
+          {t('PC.Pages.AgentArrangeConfig.enableAskQuestionDesc')}
+        </p>
+      ),
+      extra: (
+        <Switch
+          value={agentConfigInfo?.enableAskQuestion === DefaultSelectedEnum.Yes}
+          onClick={(_, e: any) => {
+            e.stopPropagation();
+          }}
+          onChange={(value) =>
+            onChangeAgent(
+              value ? DefaultSelectedEnum.Yes : DefaultSelectedEnum.No,
+              'enableAskQuestion',
+            )
+          }
+        />
+      ),
+      classNames: {
+        header: 'collapse-header',
+        body: 'collapse-body',
+      },
+    },
   ];
 
   // 界面配置 - 设置
@@ -1169,42 +1273,11 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
             key: AgentArrangeConfigEnum.Hook,
             label: t('PC.Pages.AgentArrangeConfig.hook'),
             children: (
-              <>
-                <HookList
-                  textClassName={cx(styles.text)}
-                  list={hooksInfo?.bindConfig?.hooks || []}
-                  onClick={handlerHookPlus}
-                />
-                <div
-                  className={cx(
-                    styles['hook-ask-question-row'],
-                    'flex',
-                    'items-center',
-                    'content-between',
-                  )}
-                >
-                  <span className={cx(styles.text)}>
-                    {t('PC.Pages.AgentArrangeConfig.enableAskQuestion')}
-                  </span>
-                  <Switch
-                    value={
-                      agentConfigInfo?.enableAskQuestion ===
-                      DefaultSelectedEnum.Yes
-                    }
-                    onClick={(_, e: any) => {
-                      e.stopPropagation();
-                    }}
-                    onChange={(value) =>
-                      onChangeAgent(
-                        value
-                          ? DefaultSelectedEnum.Yes
-                          : DefaultSelectedEnum.No,
-                        'enableAskQuestion',
-                      )
-                    }
-                  />
-                </div>
-              </>
+              <HookList
+                textClassName={cx(styles.text)}
+                list={hooksInfo?.bindConfig?.hooks || []}
+                onClick={handlerHookPlus}
+              />
             ),
             extra: (
               <TooltipIcon
