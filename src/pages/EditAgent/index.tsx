@@ -509,6 +509,7 @@ const EditAgent: React.FC = () => {
         allowPrivateSandbox,
         enableAskQuestion,
         enableVersionControl,
+        allowChooseMode,
       } = _agentConfigInfo;
 
       const params = {
@@ -531,6 +532,7 @@ const EditAgent: React.FC = () => {
         allowPrivateSandbox,
         enableAskQuestion,
         enableVersionControl,
+        allowChooseMode,
       } as AgentConfigUpdateParams;
 
       // 更新智能体信息
