@@ -3515,6 +3515,8 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.SpaceAgentSubscriptions.upgrade": "升级",
   "PC.Pages.SpaceDevelop.ApplicationItem.chatType": "问答型",
   "PC.Pages.SpaceDevelop.ApplicationItem.agentFlowType": "AgentFlow",
+  "PC.Pages.SpaceDevelop.ApplicationItem.customType": "自定义",
+  "PC.Pages.SpaceDevelop.ApplicationItem.agentGroupType": "AgentGroup",
   "PC.Pages.SpaceDevelop.ApplicationItem.lastEdited": "最近编辑",
   "PC.Pages.SpaceDevelop.ApplicationItem.privateComputer": "个人电脑",
   "PC.Pages.SpaceDevelop.ApplicationItem.published": "已发布",

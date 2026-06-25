@@ -24,6 +24,7 @@ import type {
 } from '@/types/enums/common';
 import type { UpdateModeComponentEnum } from '@/types/enums/library';
 import type {
+  AgentSubTypeEnum,
   AgentTypeEnum,
   HistoryActionTypeEnum,
   OpenCloseEnum,
@@ -502,8 +503,8 @@ export interface AgentConfigInfo {
   pageHomeIndex: string;
   // 智能体类型
   type: AgentTypeEnum;
-  // 智能体子类型
-  subType?: string;
+  // 智能体子类型,ChatBot->ChatBot、PageApp->PageApp, TaskAgent -> General、Custom、Flow、Group
+  subType?: AgentSubTypeEnum;
   // 是否隐藏远程桌面，1 隐藏；0 不隐藏
   hideDesktop: HideDesktopEnum;
   // 允许用户选择自有模型
