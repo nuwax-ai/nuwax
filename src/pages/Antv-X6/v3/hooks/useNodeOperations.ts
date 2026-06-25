@@ -1083,7 +1083,7 @@ export const useNodeOperations = ({
           },
         };
       } else if (val.targetType === AgentComponentTypeEnum.Agent) {
-        // 智能体节点：先弹窗选择已发布 ChatBot 智能体，再创建并绑定 agentId
+        // 智能体节点：弹窗选择当前空间已发布 ChatBot，写入 agentId 及默认配置字段
         _child = {
           name: val.name,
           shape: NodeShapeEnum.General,
@@ -1091,6 +1091,10 @@ export const useNodeOperations = ({
           type: NodeTypeEnum.Agent,
           nodeConfig: {
             agentId: val.targetId,
+            inputArgs: [],
+            extraPrompt: '',
+            selfLoopTimes: 0,
+            reminderPrompt: '',
           },
         };
       } else {

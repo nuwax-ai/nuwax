@@ -1,7 +1,7 @@
 import {
   ICON_END,
-  ICON_NEW_AGENT,
   ICON_START,
+  ICON_WORKFLOW_AGENT,
   ICON_WORKFLOW_CODE,
   ICON_WORKFLOW_CONDITION,
   ICON_WORKFLOW_DATABASE,
@@ -11,6 +11,7 @@ import {
   ICON_WORKFLOW_DATABASEUPDATE,
   ICON_WORKFLOW_DOCUMENT_EXTRACTION,
   ICON_WORKFLOW_HTTP_REQUEST,
+  ICON_WORKFLOW_HUMAN_ASK,
   ICON_WORKFLOW_INTENT_RECOGNITION,
   ICON_WORKFLOW_KNOWLEDGE_BASE,
   ICON_WORKFLOW_KNOWLEDGE_INSERT,
@@ -233,13 +234,13 @@ export const returnImg = (type: NodeTypeEnum): React.ReactNode => {
     case NodeTypeEnum.MCP:
       return <ICON_WORKFLOW_MCP />;
     case NodeTypeEnum.Agent:
-      return <ICON_NEW_AGENT />;
+      return <ICON_WORKFLOW_AGENT />;
     case NodeTypeEnum.RouteDecision:
       return <ICON_WORKFLOW_ROUTE_DECISION />;
     case NodeTypeEnum.HumanInteraction:
-      return <ICON_WORKFLOW_QA />;
+      return <ICON_WORKFLOW_HUMAN_ASK />;
     default:
-      return <ICON_NEW_AGENT />;
+      return <ICON_WORKFLOW_AGENT />;
   }
 };
 

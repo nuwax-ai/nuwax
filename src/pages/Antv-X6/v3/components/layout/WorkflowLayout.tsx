@@ -5,6 +5,7 @@ import OtherOperations from '@/components/OtherAction';
 import PublishComponentModal from '@/components/PublishComponentModal';
 import TestRun from '@/components/TestRun';
 import VersionHistory from '@/components/VersionHistory';
+import { CREATED_TABS } from '@/constants/common.constants';
 import { useFlowKind } from '@/contexts/FlowKindContext';
 import { testRunList } from '@/pages/Antv-X6/v3/constants/node.constants';
 import {
@@ -28,7 +29,7 @@ import { TestRunParams } from '@/types/interfaces/node';
 import { ErrorParams } from '@/types/interfaces/workflow';
 import { LoadingOutlined } from '@ant-design/icons';
 import { Form, FormInstance, Spin } from 'antd';
-import React, { MutableRefObject } from 'react';
+import React, { MutableRefObject, useMemo } from 'react';
 import VersionAction from '../../../components/VersionAction';
 import { clearPendingNodeCreateSession } from '../../utils/nodeCreateSession';
 import { returnBackgroundColor, returnImg } from '../../utils/workflowV3';
@@ -210,6 +211,19 @@ const WorkflowLayout: React.FC<WorkflowLayoutProps> = ({
   const flowKind = useFlowKind();
   const isAgentFlow = flowKind === FlowKindEnum.AgentFlow;
 
+  /** AgentFlow 添加智能体节点：Created 仅展示「智能体」Tab，且列表限定当前空间已发布 */
+  const createdModalTabs = useMemo(() => {
+    if (isAgentFlow && createdItem === AgentComponentTypeEnum.Agent) {
+      return CREATED_TABS.filter(
+        (item) => item.key === AgentComponentTypeEnum.Agent,
+      );
+    }
+    return workflowCreatedTabs;
+  }, [isAgentFlow, createdItem, workflowCreatedTabs]);
+
+  const createdIsSpaceOnly =
+    isAgentFlow && createdItem === AgentComponentTypeEnum.Agent;
+
   return (
     <div id="container">
       {/* AgentFlow 作为智能体子类型嵌入 EditAgent 时，顶部栏由 EditAgent 的 AgentHeader 提供，
@@ -320,7 +334,9 @@ const WorkflowLayout: React.FC<WorkflowLayoutProps> = ({
         checkTag={createdItem}
         onAdded={onAdded}
         open={open}
-        tabs={workflowCreatedTabs}
+        tabs={createdModalTabs}
+        isSpaceOnly={createdIsSpaceOnly}
+        modalZIndex={isAgentFlow ? 1100 : undefined}
         addComponents={[
           {
             type: AgentComponentTypeEnum.Workflow,

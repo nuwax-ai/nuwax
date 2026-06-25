@@ -2,26 +2,22 @@
  * Agent 节点属性面板
  *
  * 数据格式（与后端对齐）：
- * - agentId: Long       智能体ID（当前空间内选择）
- * - inputArgs: ArgItem[] 入参（对照开始节点）
- * - extraPrompt: String  补充提示词
- * - selfLoopTimes: int   自身循环次数
- * - reminderPrompt: String 循环提醒提示词
- *
- * 样式对齐 Workflow V3：node-item-style 分区
+ * - agentId: Long            智能体ID（添加节点弹窗选定，当前空间已发布 ChatBot）
+ * - inputArgs: ArgItem[]     入参（引用上游变量，对照开始节点）
+ * - extraPrompt: String      补充提示词
+ * - selfLoopTimes: int       自身循环次数
+ * - reminderPrompt: String   循环提醒提示词
  */
 
 import ExpandableInputTextarea from '@/components/ExpandTextArea';
 import CustomTree from '@/components/FormListItem/NestedForm';
 import { transformToPromptVariables } from '@/components/TiptapVariableInput/utils/variableTransform';
-import { apiAgentConfigList } from '@/services/agentConfig';
 import { t } from '@/services/i18nRuntime';
-import type { AgentConfigInfo } from '@/types/interfaces/agent';
 import { InputAndOutConfig } from '@/types/interfaces/node';
 import { NodeDisposeProps } from '@/types/interfaces/workflow';
-import { Form, InputNumber, Select, Spin } from 'antd';
-import React, { useEffect, useState } from 'react';
-import { useModel, useParams } from 'umi';
+import { Form, Input, InputNumber } from 'antd';
+import React from 'react';
+import { useModel } from 'umi';
 
 const AgentNodeForm: React.FC<NodeDisposeProps> = ({
   form,
@@ -30,32 +26,11 @@ const AgentNodeForm: React.FC<NodeDisposeProps> = ({
   type,
 }) => {
   const { referenceList } = useModel('workflowV3');
-  const params = useParams<{ spaceId?: string }>();
-  const spaceId = Number(params.spaceId);
-  const [agents, setAgents] = useState<AgentConfigInfo[]>([]);
-  const [loading, setLoading] = useState(false);
 
   const inputArgs =
     Form.useWatch('inputArgs', { form, preserve: true }) ||
     nodeConfig?.inputArgs ||
     [];
-
-  useEffect(() => {
-    if (!spaceId || Number.isNaN(spaceId)) return;
-    let cancelled = false;
-    setLoading(true);
-    apiAgentConfigList(spaceId)
-      .then((res) => {
-        if (cancelled) return;
-        setAgents(res?.data || []);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [spaceId]);
 
   const promptVariables = transformToPromptVariables(
     (inputArgs as InputAndOutConfig[]).filter(
@@ -66,34 +41,10 @@ const AgentNodeForm: React.FC<NodeDisposeProps> = ({
 
   return (
     <>
-      <div className="node-item-style">
-        <Form.Item
-          name="agentId"
-          label={t('PC.Pages.AgentFlowNode.agentIdLabel', '智能体')}
-          rules={[{ required: true }]}
-        >
-          <Select
-            showSearch
-            optionFilterProp="label"
-            placeholder={t(
-              'PC.Pages.AgentFlowNode.agentIdPlaceholder',
-              '选择当前空间内的智能体',
-            )}
-            loading={loading}
-            notFoundContent={
-              loading ? (
-                <Spin size="small" />
-              ) : (
-                t('PC.Pages.AgentFlowNode.agentIdEmpty', '暂无智能体')
-              )
-            }
-            options={agents.map((a) => ({
-              label: a.name || `#${a.id}`,
-              value: a.id,
-            }))}
-          />
-        </Form.Item>
-      </div>
+      {/* agentId：添加节点时于 Created 弹窗绑定，属性面板只读保留 */}
+      <Form.Item name="agentId" hidden>
+        <Input />
+      </Form.Item>
 
       <div className="node-item-style">
         <Form.Item name="inputArgs">
