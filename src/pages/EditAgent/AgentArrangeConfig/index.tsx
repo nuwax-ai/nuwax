@@ -1074,6 +1074,35 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
           },
         ]
       : []),
+
+    // 允许询问用户
+    {
+      key: AgentArrangeConfigEnum.Enable_Ask_Question,
+      label: t('PC.Pages.AgentArrangeConfig.enableAskQuestion'),
+      children: (
+        <p className={cx(styles.text)}>
+          {t('PC.Pages.AgentArrangeConfig.enableAskQuestionDesc')}
+        </p>
+      ),
+      extra: (
+        <Switch
+          value={agentConfigInfo?.enableAskQuestion === DefaultSelectedEnum.Yes}
+          onClick={(_, e: any) => {
+            e.stopPropagation();
+          }}
+          onChange={(value) =>
+            onChangeAgent(
+              value ? DefaultSelectedEnum.Yes : DefaultSelectedEnum.No,
+              'enableAskQuestion',
+            )
+          }
+        />
+      ),
+      classNames: {
+        header: 'collapse-header',
+        body: 'collapse-body',
+      },
+    },
   ];
 
   // 界面配置 - 设置
@@ -1208,42 +1237,11 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
             key: AgentArrangeConfigEnum.Hook,
             label: t('PC.Pages.AgentArrangeConfig.hook'),
             children: (
-              <>
-                <HookList
-                  textClassName={cx(styles.text)}
-                  list={hooksInfo?.bindConfig?.hooks || []}
-                  onClick={handlerHookPlus}
-                />
-                <div
-                  className={cx(
-                    styles['hook-ask-question-row'],
-                    'flex',
-                    'items-center',
-                    'content-between',
-                  )}
-                >
-                  <span className={cx(styles.text)}>
-                    {t('PC.Pages.AgentArrangeConfig.enableAskQuestion')}
-                  </span>
-                  <Switch
-                    value={
-                      agentConfigInfo?.enableAskQuestion ===
-                      DefaultSelectedEnum.Yes
-                    }
-                    onClick={(_, e: any) => {
-                      e.stopPropagation();
-                    }}
-                    onChange={(value) =>
-                      onChangeAgent(
-                        value
-                          ? DefaultSelectedEnum.Yes
-                          : DefaultSelectedEnum.No,
-                        'enableAskQuestion',
-                      )
-                    }
-                  />
-                </div>
-              </>
+              <HookList
+                textClassName={cx(styles.text)}
+                list={hooksInfo?.bindConfig?.hooks || []}
+                onClick={handlerHookPlus}
+              />
             ),
             extra: (
               <TooltipIcon

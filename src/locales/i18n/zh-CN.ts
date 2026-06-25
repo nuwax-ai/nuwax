@@ -1591,6 +1591,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.AgentArrangeConfig.hook": "Hook 设置",
   "PC.Pages.AgentArrangeConfig.hookUnavailable": "Hook 组件未就绪，请稍后重试",
   "PC.Pages.AgentArrangeConfig.enableAskQuestion": "允许询问用户",
+  "PC.Pages.AgentArrangeConfig.enableAskQuestionDesc": "开启后，智能体需要额外信息时可以弹出表单向用户询问。",
   "PC.Components.HookList.description": "通过 Hook 可在智能体执行的关键节点插入自定义逻辑。",
   "PC.Pages.AgentArrangeEventBindModal.agentIdVariable": "智能体ID",
   "PC.Pages.AgentArrangeEventBindModal.configInputArgs": "配置输入参数",

@@ -172,6 +172,8 @@ export enum AgentArrangeConfigEnum {
   Allow_Private_Sandbox = 'Allow_Private_Sandbox',
   // 允许用户在对话框中选择模式
   Allow_Choose_Mode = 'Allow_Choose_Mode',
+  // 允许询问用户
+  Enable_Ask_Question = 'Enable_Ask_Question',
 }
 
 // 是否开启问题建议,可用值:Open,Close
