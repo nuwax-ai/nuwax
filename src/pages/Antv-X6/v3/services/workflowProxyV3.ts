@@ -22,6 +22,7 @@ import { AnswerTypeEnum, NodeTypeEnum } from '@/types/enums/common';
 import type { ChildNode, Edge } from '@/types/interfaces/graph';
 import { workflowLogger } from '@/utils/logger';
 import cloneDeep from 'lodash/cloneDeep';
+import { serializeNodeForBackend } from '../agentFlow/nodeTypeMapping';
 import { extensionRegistry } from '../extensions/registry';
 import { SpecialPortType } from '../types/enums';
 import type {
@@ -186,7 +187,8 @@ class WorkflowProxyV3 {
       if ((node as any).systemVariables) {
         delete (node as any).systemVariables;
       }
-      return node;
+      // RouteDecision 复用后端 IntentRecognition 类型收发（见 nodeTypeMapping.ts）
+      return serializeNodeForBackend(node);
     });
 
     const config: IgetDetails & { systemVariables?: any } = {
@@ -1163,12 +1165,6 @@ class WorkflowProxyV3 {
           case SpecialPortType.Condition:
           case SpecialPortType.Intent:
           case SpecialPortType.QAOption:
-          case SpecialPortType.EvalGatePass:
-          case SpecialPortType.EvalGateFail:
-          case SpecialPortType.EvalGateBranch:
-          case SpecialPortType.HitlApprove:
-          case SpecialPortType.HitlReject:
-          case SpecialPortType.HitlBranch:
           case SpecialPortType.HitlOption: {
             // Condition/Intent/QA 用 uuid，AgentFlow 用 handler.getBranchKey
             const bkHandler = extensionRegistry.get(sourceNode.type);

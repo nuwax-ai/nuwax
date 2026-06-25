@@ -2,9 +2,7 @@ import { useFlowKind } from '@/contexts/FlowKindContext';
 import { t } from '@/services/i18nRuntime';
 import { FlowKindEnum, NodeTypeEnum } from '@/types/enums/common';
 import { StencilChildNode } from '@/types/interfaces/graph';
-import { SearchOutlined } from '@ant-design/icons';
-import { Input } from 'antd';
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import '../../indexV3.less';
 import { asideList } from '../../ParamsV3';
 
@@ -41,8 +39,6 @@ const StencilContent = ({
 }: Prop) => {
   const flowKindFromCtx = useFlowKind();
   const flowKind = flowKindProp ?? flowKindFromCtx;
-  const isAgentFlow = flowKind === FlowKindEnum.AgentFlow;
-  const [searchText, setSearchText] = useState('');
 
   const matchesFlowKind = (child: StencilChildNode) =>
     !child.flowKinds || child.flowKinds.includes(flowKind);
@@ -55,7 +51,6 @@ const StencilContent = ({
   };
 
   const filteredGroups = useMemo(() => {
-    const keyword = searchText.toLowerCase().trim();
     return asideList
       .filter((item) => item.children.some(matchesFlowKind))
       .map((item) => ({
@@ -63,10 +58,6 @@ const StencilContent = ({
         children: item.children
           .filter(matchesFlowKind)
           .filter((child) => (isLoop ? child.type !== NodeTypeEnum.Loop : true))
-          .filter((child) => {
-            if (!keyword) return true;
-            return child.name?.toLowerCase().includes(keyword);
-          })
           .filter((child) => {
             const isLoopControl = [
               NodeTypeEnum.LoopBreak,
@@ -76,58 +67,9 @@ const StencilContent = ({
           }),
       }))
       .filter((item) => item.children.length > 0);
-  }, [asideList, flowKind, isLoop, searchText]);
+  }, [asideList, flowKind, isLoop]);
 
-  // AgentFlow: vertical list sidebar style
-  if (isAgentFlow) {
-    return (
-      <div className="stencil-panel">
-        <div className="stencil-panel-header">
-          <Input
-            placeholder={
-              t('PC.Pages.AntvX6Stencil.searchPlaceholder') || 'Search nodes...'
-            }
-            prefix={<SearchOutlined />}
-            size="small"
-            allowClear
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            className="stencil-search"
-          />
-        </div>
-        <div className="stencil-panel-body">
-          {filteredGroups.map((item) => (
-            <div className="stencil-group" key={item.key}>
-              {item.name && (
-                <div className="stencil-group-title">{item.name}</div>
-              )}
-              <div className="stencil-group-content">
-                {item.children.map((child, childIndex) => (
-                  <div
-                    className="stencil-node-item"
-                    draggable="true"
-                    key={`${child.type}-${childIndex}`}
-                    onDragEnd={(e) => handleDragStart(child, e)}
-                    onClick={() => handleDragStart(child)}
-                  >
-                    {renderIcon(child.bgIcon || '')}
-                    <span className="stencil-node-label">{child.name}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-          {filteredGroups.length === 0 && (
-            <div className="stencil-empty">
-              {t('PC.Pages.AntvX6Stencil.noMatches') || 'No matches found'}
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  // Workflow v3: original two-column grid Popover stencil
+  // 节点选择面板：与 Workflow v3 一致的两列网格样式（AgentFlow 复用同一入口）
   return (
     <div className="stencil-content">
       <p className="stencil-title">

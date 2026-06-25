@@ -37,7 +37,6 @@ import NodePanelDrawer from '../panels/PropertyPanel';
 import ControlPanel from './ControlPanel';
 import ErrorList from './ErrorList';
 import Header from './Header';
-import StencilContent from './Sidebar';
 
 export interface WorkflowLayoutProps {
   // Header Props
@@ -237,84 +236,39 @@ const WorkflowLayout: React.FC<WorkflowLayoutProps> = ({
         />
       )}
 
-      {isAgentFlow ? (
-        <div className="workflow-body">
-          <div className="workflow-sidebar">
-            <StencilContent
-              isLoop={foldWrapItem.type === NodeTypeEnum.Loop}
-              dragChild={(child, position) => {
-                dragChild(child, position);
-              }}
-            />
-            <div className="workflow-minimap" id="minimap-container" />
-          </div>
+      {/* AgentFlow 与 Workflow v3 共用同一画布布局：满屏画布 + 左下角浮动控制面板
+          （含「添加节点」入口）。AgentFlow 仅多传 flowKind 以渲染分支节点。 */}
+      <Spin
+        spinning={globalLoadingTime > 0}
+        indicator={<LoadingOutlined spin />}
+        wrapperClassName="spin-workflow-global-style"
+      >
+        <GraphContainer
+          graphParams={graphParams}
+          ref={graphRef}
+          changeDrawer={handleNodeClick}
+          changeEdge={nodeChangeEdge}
+          changeCondition={changeNode}
+          removeNode={deleteNode}
+          copyNode={copyNode}
+          changeZoom={changeZoom}
+          createNodeByPortOrEdge={createNodeByPortOrEdge}
+          onSaveNode={handleSaveNode}
+          onClickBlank={handleClickBlank}
+          onInit={handleInitLoading}
+          onRefresh={handleRefreshGraph}
+          flowKind={isAgentFlow ? flowKind : undefined}
+        />
+      </Spin>
 
-          <div className="workflow-canvas">
-            <Spin
-              spinning={globalLoadingTime > 0}
-              indicator={<LoadingOutlined spin />}
-              wrapperClassName="spin-workflow-global-style"
-            >
-              <GraphContainer
-                graphParams={graphParams}
-                ref={graphRef}
-                changeDrawer={handleNodeClick}
-                changeEdge={nodeChangeEdge}
-                changeCondition={changeNode}
-                removeNode={deleteNode}
-                copyNode={copyNode}
-                changeZoom={changeZoom}
-                createNodeByPortOrEdge={createNodeByPortOrEdge}
-                onSaveNode={handleSaveNode}
-                onClickBlank={handleClickBlank}
-                onInit={handleInitLoading}
-                onRefresh={handleRefreshGraph}
-                flowKind={flowKind}
-              />
-            </Spin>
-
-            <ControlPanel
-              changeGraph={changeGraph}
-              handleTestRun={testRunAll}
-              testRunLoading={testRunLoading}
-              zoomSize={(info?.extension?.size as number) ?? 1}
-            />
-          </div>
-        </div>
-      ) : (
-        <>
-          <Spin
-            spinning={globalLoadingTime > 0}
-            indicator={<LoadingOutlined spin />}
-            wrapperClassName="spin-workflow-global-style"
-          >
-            <GraphContainer
-              graphParams={graphParams}
-              ref={graphRef}
-              changeDrawer={handleNodeClick}
-              changeEdge={nodeChangeEdge}
-              changeCondition={changeNode}
-              removeNode={deleteNode}
-              copyNode={copyNode}
-              changeZoom={changeZoom}
-              createNodeByPortOrEdge={createNodeByPortOrEdge}
-              onSaveNode={handleSaveNode}
-              onClickBlank={handleClickBlank}
-              onInit={handleInitLoading}
-              onRefresh={handleRefreshGraph}
-            />
-          </Spin>
-
-          <ControlPanel
-            dragChild={dragChild}
-            foldWrapItem={foldWrapItem}
-            changeGraph={changeGraph}
-            handleTestRun={testRunAll}
-            testRunLoading={testRunLoading}
-            zoomSize={(info?.extension?.size as number) ?? 1}
-          />
-        </>
-      )}
+      <ControlPanel
+        dragChild={dragChild}
+        foldWrapItem={foldWrapItem}
+        changeGraph={changeGraph}
+        handleTestRun={testRunAll}
+        testRunLoading={testRunLoading}
+        zoomSize={(info?.extension?.size as number) ?? 1}
+      />
 
       <FoldWrap
         className="fold-wrap-style"

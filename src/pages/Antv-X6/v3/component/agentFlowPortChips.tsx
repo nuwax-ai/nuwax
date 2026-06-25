@@ -1,9 +1,8 @@
 /**
  * AgentFlow 分支端口 chip 浮层
  *
- * 在节点 React 容器内 absolute 渲染每个分支端口的彩色 chip（绿=pass/approve，
- * 红=fail/reject，橙=route）。位置由 `portLayout.branchPortY` 计算，与
- * handler 生成的端口 y 坐标对齐。
+ * 在节点 React 容器内 absolute 渲染每个分支端口的彩色 chip（橙=route）。
+ * 位置由 `portLayout.branchPortY` 计算，与 handler 生成的端口 y 坐标对齐。
  *
  * 渲染位置：每个 chip 位于节点右侧外部 ~8px，与 X6 端口圆点同行。
  *
@@ -20,7 +19,7 @@ import {
 } from '@/pages/Antv-X6/v3/agentFlow/handlers/portLayout';
 import { isAgentFlowType } from '@/pages/Antv-X6/v3/agentFlow/types';
 import { t } from '@/services/i18nRuntime';
-import { HitlModeEnum, NodeTypeEnum } from '@/types/enums/common';
+import { NodeTypeEnum } from '@/types/enums/common';
 import { ChildNode } from '@/types/interfaces/graph';
 import { Tooltip } from 'antd';
 import React from 'react';
@@ -44,7 +43,6 @@ export interface ChipDescriptor {
   tone: ChipTone;
   /**
    * chip 对应的端口数组下标（用于和 handler 生成的 outputPorts 数组对齐）
-   * - EvalGate / HITL approve: 0..N-1（与 chip 数组下标一致，可省略）
    * - RouteDecision: default 占位 0，routes 从 1 开始，所以 chip[0] 的 portIndex=1
    * 未设置时默认使用 chip 数组下标
    */
@@ -54,73 +52,24 @@ export interface ChipDescriptor {
 /**
  * 根据节点 type + nodeConfig 枚举 chip 列表
  * 列表顺序与 handler 生成的端口顺序一致：
- * - EvalGate: [pass(portIdx=0), fail_1(portIdx=1), fail_2(portIdx=2), ...]
  * - RouteDecision: [default 跳过, route_1(portIdx=1), route_2(portIdx=2), ...]
- * - HITL approve: [approve(portIdx=0), reject(portIdx=1)]
+ * - HITL ask(options): [option_1, option_2, ...]（ask 文本/表单模式无 chip）
  */
 function buildChips(data: ChildNode): ChipDescriptor[] {
   const nc: any = data.nodeConfig || {};
 
   switch (data.type) {
-    case NodeTypeEnum.EvalGate: {
-      // v2: 从 branches[] 构建 chips
-      const branches: any[] = nc.branches || [];
-      if (branches.length > 0) {
-        const chips: ChipDescriptor[] = [
-          {
-            label:
-              branches[0]?.name || t('PC.Pages.AgentFlow.chipPass', '通过'),
-            tone: 'pass',
-          },
-        ];
-        for (let i = 1; i < branches.length; i++) {
-          chips.push({
-            label: branches[i].name || `Branch ${i}`,
-            tone: 'fail',
-          });
-        }
-        return chips;
-      }
-      // v1 回退：从 evalValidators[] 构建
-      const validators: any[] = nc.evalValidators || [];
-      const chips: ChipDescriptor[] = [
-        { label: t('PC.Pages.AgentFlow.chipPass', '通过'), tone: 'pass' },
-      ];
-      validators.forEach(() => {
-        chips.push({
-          label: t('PC.Pages.AgentFlow.chipFail', '不达标'),
-          tone: 'fail',
-        });
-      });
-      return chips;
-    }
-
     case NodeTypeEnum.RouteDecision: {
-      const routes: any[] = nc.routes || [];
+      const routes: any[] = nc.intentConfigs || [];
       // default 端口不渲染 chip；第 1 个 route 实际是 outputPorts 数组下标 1
       return routes.map((r, i) => ({
-        label: r.routeName || r.name || `Route ${i + 1}`,
+        label: r.intent || r.name || `Route ${i + 1}`,
         tone: 'route',
         portIndex: i + 1,
       }));
     }
 
     case NodeTypeEnum.HumanInteraction: {
-      if (nc.hitlMode === HitlModeEnum.Approve) {
-        // v2: 从 branches[] 构建
-        const branches: any[] = nc.branches || [];
-        if (branches.length > 0) {
-          return branches.map((b: any, i: number) => ({
-            label: b.name || `Branch ${i + 1}`,
-            tone: i === 0 ? 'pass' : 'fail',
-          }));
-        }
-        // v1 回退
-        return [
-          { label: t('PC.Pages.AgentFlow.chipApprove', '通过'), tone: 'pass' },
-          { label: t('PC.Pages.AgentFlow.chipReject', '拒绝'), tone: 'fail' },
-        ];
-      }
       // ask options 模式
       if (nc.replyMode === 'options' || nc.askConfig?.answerType === 'SELECT') {
         const options: any[] = nc.askConfig?.options || [];

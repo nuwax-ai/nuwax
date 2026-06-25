@@ -5,11 +5,8 @@
  */
 
 import {
-  AgentNodeModeEnum,
   AnswerTypeEnum,
   DataTypeEnum,
-  ExternalConnectorProviderEnum,
-  HitlApprovalActionEnum,
   HitlModeEnum,
   NodeShapeEnum,
   NodeTypeEnum,
@@ -63,9 +60,7 @@ export const NODE_DEFAULT_NAMES: Partial<Record<NodeTypeEnum, string>> = {
   [NodeTypeEnum.TextProcessing]: 'Text Processing',
   // AgentFlow 专用
   [NodeTypeEnum.Agent]: 'Agent',
-  [NodeTypeEnum.EvalGate]: 'Eval Gate',
   [NodeTypeEnum.HumanInteraction]: 'Human Interaction',
-  [NodeTypeEnum.ExternalConnector]: 'External Connector',
   [NodeTypeEnum.RouteDecision]: 'Route Decision',
 };
 
@@ -435,9 +430,12 @@ export function createDefaultNodeConfig(
     case NodeTypeEnum.Agent:
       return {
         ...baseConfig,
-        agentMode: AgentNodeModeEnum.Platform,
+        // 后端契约字段（Agent 节点数据格式：agentId 选择后写入）
+        extraPrompt: '',
+        selfLoopTimes: 0,
+        reminderPrompt: '',
+        // 前端属性面板字段（上下文传递，沿用我们的 UI）
         contextPassMode: 'auto',
-        systemPrompt: '',
         inputArgs: [],
         outputArgs: [
           createDefaultArg({
@@ -449,25 +447,6 @@ export function createDefaultNodeConfig(
             systemVariable: true,
           }),
         ],
-      };
-
-    case NodeTypeEnum.EvalGate:
-      return {
-        ...baseConfig,
-        // v1 保留（向后兼容）
-        evalValidators: [],
-        passNextNodeIds: [],
-        // v2 新增
-        evalItems: [],
-        passThreshold: 80,
-        evalOutput: true,
-        evalFailMsg: '',
-        branches: [
-          { uuid: 'auto-pass', name: '通过', desc: '', nextNodeIds: [] },
-        ],
-        evalMaxRetry: 3,
-        inputArgs: [],
-        outputArgs: [],
       };
 
     case NodeTypeEnum.HumanInteraction:
@@ -483,40 +462,6 @@ export function createDefaultNodeConfig(
         // v2 ask 新增
         replyMode: 'text',
         formFields: [],
-        // v1 approve 保留
-        approveConfig: {
-          actions: [
-            HitlApprovalActionEnum.Approve,
-            HitlApprovalActionEnum.Edit,
-            HitlApprovalActionEnum.Reject,
-          ],
-          promptToReviewer: '',
-          draftSource: '',
-        },
-        approveNextNodeIds: [],
-        rejectNextNodeIds: [],
-        // v2 approve 新增
-        confirmRole: 'user',
-        approvalMode: 'approve_reject',
-        instruction: '',
-        channels: [],
-        channelTimeout: 300,
-        escalation: 'skip',
-        channelRetry: 3,
-        inputArgs: [],
-        outputArgs: [],
-      };
-
-    case NodeTypeEnum.ExternalConnector:
-      return {
-        ...baseConfig,
-        connectorProvider: ExternalConnectorProviderEnum.Dify,
-        connectorConfig: {
-          endpoint: '',
-          authRef: '',
-          payloadTemplate: '',
-          responseMapping: {},
-        },
         inputArgs: [],
         outputArgs: [],
       };
@@ -524,7 +469,8 @@ export function createDefaultNodeConfig(
     case NodeTypeEnum.RouteDecision:
       return {
         ...baseConfig,
-        routes: [],
+        // 复用原意图识别的 intentConfigs 结构，每项新增 condition 条件比对
+        intentConfigs: [],
         extraPrompt: '',
         modelId: undefined,
         inputArgs: [],

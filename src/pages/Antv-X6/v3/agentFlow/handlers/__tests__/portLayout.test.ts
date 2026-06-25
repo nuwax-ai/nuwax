@@ -95,28 +95,10 @@ describe('branchPortY', () => {
 /**
  * 端口布局不变量：分支 handler 端口 y = branchPortY(端口下标)
  * chip 浮层用 buildChips(...).portIndex 也必须调用 branchPortY 同一索引
- * 这里锁住 "EvalGate / RouteDecision / HITL 三个 handler 都用同一公式"
+ * 这里锁住 "RouteDecision / HITL ask(options) handler 都用同一公式"
  * 防止后续 handler 改动时分支错位
  */
 describe('port-layout invariant (handler <-> chip alignment)', () => {
-  it('EvalGate: pass/fail indices 0..N-1 各自对齐', () => {
-    // handler 端：pass = branchPortY(0), fail[i] = branchPortY(i+1)
-    // chip 端：chip[0] 用 portIndex=0, chip[i+1] 用 portIndex=i+1
-    for (let i = 0; i < 5; i++) {
-      const passPort = branchPortY(0);
-      const failPort = branchPortY(i + 1);
-      // 与 chipTop(portIndex) 计算一致
-      const chipTopForChip0 =
-        BRANCH_PORT_BASE_Y + 1 * BRANCH_PORT_ITEM_HEIGHT - BRANCH_PORT_STEP;
-      const chipTopForChipI1 =
-        BRANCH_PORT_BASE_Y +
-        (i + 2) * BRANCH_PORT_ITEM_HEIGHT -
-        BRANCH_PORT_STEP;
-      expect(passPort.yHeight).toBe(chipTopForChip0);
-      expect(failPort.yHeight).toBe(chipTopForChipI1);
-    }
-  });
-
   it('RouteDecision: default 用 branchPortY(0), route[i] 用 branchPortY(i+1), chip[i] 显式传 portIndex=i+1', () => {
     // chip[0] 应对齐 default? 错! chip 数组跳过 default, chip[i] 应对齐 route[i]
     // 即 chip[0].portIndex=1, chip[1].portIndex=2, ...
@@ -131,7 +113,7 @@ describe('port-layout invariant (handler <-> chip alignment)', () => {
     }
   });
 
-  it('HITL approve: approve = branchPortY(0), reject = branchPortY(1)', () => {
+  it('HITL ask(options): option[i] 用 branchPortY(i)', () => {
     expect(branchPortY(0).yHeight).toBe(54);
     expect(branchPortY(1).yHeight).toBe(78);
   });

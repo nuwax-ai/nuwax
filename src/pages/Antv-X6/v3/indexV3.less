@@ -1,9 +1,6 @@
 @import '@/styles/color.less';
 @import '@/styles/token.less';
 
-@sidebar-width: 240px;
-@header-height: 56px;
-
 .absolute-box {
   position: absolute;
   height: 42px;
@@ -41,91 +38,6 @@
     width: 100%;
     height: 100%;
   }
-}
-
-// Left sidebar panel (permanent, replaces Popover stencil)
-.stencil-panel {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-
-  .stencil-panel-header {
-    padding: 12px 12px 8px;
-    border-bottom: 1px solid @WHITE03;
-
-    .stencil-search {
-      border-radius: 6px;
-    }
-  }
-
-  .stencil-panel-body {
-    flex: 1;
-    overflow-y: auto;
-    padding: 8px 12px 12px;
-
-    .stencil-group {
-      margin-bottom: 12px;
-
-      .stencil-group-title {
-        margin-bottom: 6px;
-        font-size: 11px;
-        font-weight: 500;
-        line-height: 16px;
-        letter-spacing: 0.5px;
-        text-transform: uppercase;
-        color: @GRAY05;
-      }
-
-      .stencil-group-content {
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-
-        .stencil-node-item {
-          display: flex;
-          align-items: center;
-          padding: 6px 8px;
-          border-radius: 6px;
-          cursor: pointer;
-          transition: background-color 0.15s;
-
-          &:hover {
-            background-color: @WHITE03;
-          }
-
-          .icon-box-style {
-            flex-shrink: 0;
-            width: 20px;
-            height: 20px;
-            margin-right: 8px;
-          }
-
-          .stencil-node-label {
-            font-size: 13px;
-            color: @GRAY03;
-            line-height: 18px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-          }
-        }
-      }
-    }
-  }
-
-  .stencil-empty {
-    padding: 20px 0;
-    text-align: center;
-    color: @GRAY05;
-    font-size: 12px;
-  }
-}
-
-// MiniMap container at bottom of sidebar
-.workflow-minimap {
-  border-top: 1px solid @WHITE03;
-  background: #fafafa;
-  min-height: 140px;
 }
 
 // ── Workflow v3: stencil popover styles ────────────────────
@@ -197,29 +109,6 @@
   overflow-x: hidden;
   min-height: 600px;
   min-width: 1200px;
-}
-
-.workflow-body {
-  display: flex;
-  flex: 1;
-  overflow: hidden;
-  height: calc(100% - @header-height);
-
-  .workflow-sidebar {
-    width: @sidebar-width;
-    min-width: @sidebar-width;
-    background: #fff;
-    border-right: 1px solid @WHITE03;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-
-  .workflow-canvas {
-    flex: 1;
-    position: relative;
-    overflow: hidden;
-  }
 }
 
 .x6-widget-transform {

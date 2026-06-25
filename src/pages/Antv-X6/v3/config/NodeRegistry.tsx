@@ -3,7 +3,7 @@ import { NodeTypeEnum } from '@/types/enums/common';
 import { ChildNode } from '@/types/interfaces/graph';
 import { FormInstance } from 'antd';
 import React from 'react';
-import AgentFlowNodes from '../component/agentFlow';
+import AgentFlowNodes from '../agentFlow/forms';
 import ComplexNode from '../component/complexNode';
 import ConditionNode from '../component/condition';
 import Database from '../component/database';
@@ -24,13 +24,7 @@ const {
 const { ModelNode, IntentionNode, QuestionsNode, HttpToolNode } = ComplexNode;
 const { PluginInNode } = ReferenceNode;
 const { KnowledgeNode, KnowledgeInsertNode } = Library;
-const {
-  AgentNode,
-  HumanInteractionNode,
-  EvalGateNode,
-  ExternalConnectorNode,
-  RouteDecisionNode,
-} = AgentFlowNodes;
+const { AgentNode, HumanInteractionNode, RouteDecisionNode } = AgentFlowNodes;
 
 // 定义试运行,后面删除
 const LoopContinue: React.FC = () => {
@@ -97,13 +91,10 @@ export const getNodeComponent = (params: ChildNode, form: FormInstance) => {
     [NodeTypeEnum.TableDataUpdate]: <Database {...commonProps} />,
     [NodeTypeEnum.TableDataQuery]: <Database {...commonProps} />,
     [NodeTypeEnum.TableSQL]: <Database {...commonProps} />,
-    // AgentFlow 专用节点
+    // AgentFlow 专用节点（本迭代仅 Agent / HumanInteraction(Ask) / RouteDecision；
+    // Workflow 走上方的 PluginInNode）
     [NodeTypeEnum.Agent]: <AgentNode {...commonProps} />,
-    [NodeTypeEnum.EvalGate]: <EvalGateNode {...commonProps} />,
     [NodeTypeEnum.HumanInteraction]: <HumanInteractionNode {...commonProps} />,
-    [NodeTypeEnum.ExternalConnector]: (
-      <ExternalConnectorNode {...commonProps} />
-    ),
     [NodeTypeEnum.RouteDecision]: <RouteDecisionNode {...commonProps} />,
   };
 

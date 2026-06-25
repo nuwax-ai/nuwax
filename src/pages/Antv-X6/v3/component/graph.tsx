@@ -798,19 +798,12 @@ const initGraph = ({
     },
   );
   graph.on('node:selected', ({ node }) => {
-    // 1.
-    // 2.API，，
-
+    // 仅处理选中高亮 / 层级置顶。
+    // 属性面板的打开已迁移到 node:click（见 registerNodeClickAndDblclick）：
+    // 选中是由 node:mousedown 触发的，拖拽节点时会在「按下」瞬间选中，
+    // 若在此打开面板会导致「拖拽即弹面板」。改用 node:click 才能区分点击与拖拽
+    // （X6 在拖拽时不会触发 node:click）。
     changeZIndex(node);
-    const data = node.getData();
-    if (data?.isFocus) {
-      return;
-    }
-    const newData = {
-      ...data,
-      id: node.id,
-    };
-    changeDrawer(newData);
   });
   // graph.on('node:unselected', (...args) => {
   //   console.log('node:unselected', args);
@@ -1043,7 +1036,7 @@ const initGraph = ({
     }
   });
 
-  registerNodeClickAndDblclick({ graph, changeZIndex });
+  registerNodeClickAndDblclick({ graph, changeZIndex, changeDrawer });
 
   return graph; //
 };
