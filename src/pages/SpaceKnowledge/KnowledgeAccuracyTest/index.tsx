@@ -239,6 +239,19 @@ const KnowledgeAccuracyTest: React.FC<KnowledgeAccuracyTestProps> = ({
     );
   };
 
+  // 自定义测试范围标签渲染（不显示删除图标）
+  const renderTestScopeTag = (props: any) => {
+    const { label, value } = props;
+    return (
+      <Tag
+        className={styles.customTag}
+        closable={false}
+      >
+        {label}
+      </Tag>
+    );
+  };
+
   // 测试历史表格列定义
   const historyColumns = [
     {
@@ -293,6 +306,7 @@ const KnowledgeAccuracyTest: React.FC<KnowledgeAccuracyTestProps> = ({
                 allowClear={false}
                 maxTagCount="responsive"
                 maxTagPlaceholder={(omittedValues) => `+ ${omittedValues.length} ...`}
+                tagRender={renderTestScopeTag}
               >
                 {documents.map((doc) => (
                   <Option key={doc.id} value={doc.id}>
