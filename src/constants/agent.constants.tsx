@@ -20,6 +20,7 @@ import {
   BindCardStyleEnum,
   PluginPublishScopeEnum,
 } from '@/types/enums/plugin';
+import { AgentSubTypeEnum } from '@/types/enums/space';
 import { InfoCircleOutlined } from '@ant-design/icons';
 
 // Agent引擎选项
@@ -349,3 +350,27 @@ export const AGENT_COMPONENT_TYPE_MAP = {
   [AgentComponentTypeEnum.Model]: { text: dict('PC.Common.Global.model') },
   [AgentComponentTypeEnum.ApiKey]: { text: 'ApiKey' },
 };
+
+// 智能体子类型选择（仅智能体 tab 下显示）
+export const AGENT_SUB_TYPE_OPTIONS = [
+  {
+    label: dict('PC.Pages.SpaceDevelop.ApplicationItem.chatType'),
+    value: AgentSubTypeEnum.ChatBot,
+  },
+  {
+    label: dict('PC.Pages.SpaceDevelop.ApplicationItem.taskType'),
+    value: AgentSubTypeEnum.General,
+  },
+  {
+    label: dict('PC.Pages.SpaceDevelop.ApplicationItem.customType'),
+    value: AgentSubTypeEnum.Custom,
+  },
+  {
+    label: dict('PC.Pages.SpaceDevelop.ApplicationItem.agentFlowType'),
+    value: AgentSubTypeEnum.Flow,
+  },
+  {
+    label: dict('PC.Pages.SpaceDevelop.ApplicationItem.agentGroupType'),
+    value: AgentSubTypeEnum.Group,
+  },
+];

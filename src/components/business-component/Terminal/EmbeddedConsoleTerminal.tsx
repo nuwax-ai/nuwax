@@ -33,6 +33,11 @@ export interface EmbeddedConsoleTerminalRef {
   fit: () => void;
   /** fit 后向后端同步 ttyd 尺寸（init 尚未发送时会补发 init） */
   fitAndSyncBackend: () => void;
+  /**
+   * 面板从 display:none / 折叠恢复可见后调用：
+   * 等待容器有尺寸 → fit → 同步 ttyd resize → refresh → focus
+   */
+  restoreAfterVisibilityChange: () => void;
   /** 聚焦终端以接收键盘输入 */
   focus: () => void;
   /** 建立 WebSocket 连接 */
@@ -174,12 +179,31 @@ const EmbeddedConsoleTerminal = forwardRef<
     /** 连接成功但尚未成功 focus 时置 true，容器变为可见后补 focus */
     const pendingFocusRef = useRef(false);
 
+    const isViewportMeasurable = useCallback(() => {
+      const rect = viewportRef.current?.getBoundingClientRect();
+      return !!rect && rect.width > 0 && rect.height > 0;
+    }, []);
+
     const syncBackendSize = useCallback(
-      (ws: WebSocket, options?: { sendTtydInit?: boolean }) => {
+      (
+        ws: WebSocket,
+        options?: { sendTtydInit?: boolean; allowFallbackDimensions?: boolean },
+      ) => {
         const term = terminalRef.current;
         if (!term || ws.readyState !== WebSocket.OPEN) return;
 
-        const { cols, rows } = ensureDimensions(term);
+        if (!isViewportMeasurable()) {
+          return;
+        }
+
+        let { cols, rows } = term;
+        if (cols <= 0 || rows <= 0) {
+          if (!options?.allowFallbackDimensions) {
+            return;
+          }
+          ({ cols, rows } = ensureDimensions(term));
+        }
+
         if (wireProtocol === 'ttyd') {
           const shouldSendInit =
             options?.sendTtydInit === true ||
@@ -194,10 +218,14 @@ const EmbeddedConsoleTerminal = forwardRef<
       },
       // wireProtocol 是基本值，几乎不会变化；此处保持稳定引用
       // eslint-disable-next-line react-hooks/exhaustive-deps
-      [],
+      [isViewportMeasurable],
     );
 
     const fitAndSyncBackend = useCallback(() => {
+      if (!isViewportMeasurable()) {
+        pendingFocusRef.current = true;
+        return;
+      }
       try {
         fitAddonRef.current?.fit();
       } catch {
@@ -207,7 +235,7 @@ const EmbeddedConsoleTerminal = forwardRef<
       if (ws?.readyState === WebSocket.OPEN) {
         syncBackendSize(ws, { sendTtydInit: !ttydInitSentRef.current });
       }
-    }, [syncBackendSize]);
+    }, [isViewportMeasurable, syncBackendSize]);
 
     const focusTerminal = useCallback(() => {
       const term = terminalRef.current;
@@ -223,6 +251,38 @@ const EmbeddedConsoleTerminal = forwardRef<
       term.focus();
       pendingFocusRef.current = false;
     }, []);
+
+    const restoreAfterVisibilityChange = useCallback(() => {
+      scheduleFitWhenVisible(
+        () => viewportRef.current,
+        () => {
+          try {
+            fitAddonRef.current?.fit();
+          } catch {
+            /* ignore */
+          }
+        },
+        () => {
+          const ws = wsRef.current;
+          const term = terminalRef.current;
+          if (ws?.readyState === WebSocket.OPEN) {
+            syncBackendSize(ws, {
+              sendTtydInit: false,
+              allowFallbackDimensions: true,
+            });
+          }
+          if (term) {
+            try {
+              term.refresh(0, Math.max(term.rows - 1, 0));
+            } catch {
+              /* ignore */
+            }
+          }
+          focusTerminal();
+        },
+        24,
+      );
+    }, [focusTerminal, syncBackendSize]);
 
     /** 停止心跳检测 */
     const stopHeartbeat = useCallback(() => {
@@ -264,10 +324,16 @@ const EmbeddedConsoleTerminal = forwardRef<
           return;
         }
 
-        // 发送 ttyd resize 作为保活探测，若 send 抛异常说明连接已断
+        // 折叠/隐藏期间容器尺寸为 0，跳过 resize 避免向后端发送错误的 80x24
         if (wireProtocol === 'ttyd') {
+          if (!isViewportMeasurable()) {
+            return;
+          }
+          const { cols, rows } = term;
+          if (cols <= 0 || rows <= 0) {
+            return;
+          }
           try {
-            const { cols, rows } = ensureDimensions(term);
             ws.send(encodeTtydResize(cols, rows));
           } catch (err) {
             console.warn('[EmbeddedTerminal] Heartbeat send failed:', err);
@@ -275,7 +341,7 @@ const EmbeddedConsoleTerminal = forwardRef<
           }
         }
       }, interval);
-    }, [stopHeartbeat, wireProtocol]);
+    }, [isViewportMeasurable, stopHeartbeat, wireProtocol]);
 
     const clearReconnectTimer = useCallback(() => {
       if (reconnectTimerRef.current) {
@@ -363,7 +429,10 @@ const EmbeddedConsoleTerminal = forwardRef<
             () => viewportRef.current,
             () => fitAddonRef.current?.fit(),
             () => {
-              syncBackendSize(ws, { sendTtydInit: true });
+              syncBackendSize(ws, {
+                sendTtydInit: true,
+                allowFallbackDimensions: true,
+              });
               const pending = pendingWritesRef.current.splice(0);
               const term = terminalRef.current;
               if (term && pending.length > 0) {
@@ -473,6 +542,7 @@ const EmbeddedConsoleTerminal = forwardRef<
           }
         },
         fitAndSyncBackend,
+        restoreAfterVisibilityChange,
         focus: focusTerminal,
         connect,
         disconnect,
@@ -484,6 +554,7 @@ const EmbeddedConsoleTerminal = forwardRef<
         fitAndSyncBackend,
         focusTerminal,
         reconnectTerminal,
+        restoreAfterVisibilityChange,
       ],
     );
 

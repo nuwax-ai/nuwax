@@ -3226,6 +3226,8 @@ export const ZH_HK: SystemLangMap = {
   "PC.Pages.SkillDetailsMoreActionsMenu.importSkill": "導入技能",
   "PC.Pages.SpaceDevelop.ApplicationItem.chatType": "問答型",
   "PC.Pages.SpaceDevelop.ApplicationItem.agentFlowType": "AgentFlow",
+  "PC.Pages.SpaceDevelop.ApplicationItem.customType": "自定義",
+  "PC.Pages.SpaceDevelop.ApplicationItem.agentGroupType": "AgentGroup",
   "PC.Pages.SpaceDevelop.ApplicationItem.lastEdited": "最近編輯",
   "PC.Pages.SpaceDevelop.ApplicationItem.privateComputer": "個人電腦",
   "PC.Pages.SpaceDevelop.ApplicationItem.published": "已發佈",
