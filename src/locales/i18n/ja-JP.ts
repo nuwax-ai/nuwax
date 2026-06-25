@@ -1378,8 +1378,6 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.AgentArrangeConfig.plan": "企画",
   "PC.Pages.AgentArrangeConfig.plugin": "プラグイン",
   "PC.Pages.AgentArrangeConfig.referenceNumber": "#参照番号",
-  "PC.Pages.AgentArrangeConfig.scheduledTask": "スケジュールされたタスク",
-  "PC.Pages.AgentArrangeConfig.scheduledTaskDescription": "有効にすると、ユーザーはスケジュールされたタスク設定を通じてタスクを実行できます。",
   "PC.Pages.AgentArrangeConfig.skill": "スキル",
   "PC.Pages.AgentArrangeConfig.skills": "スキル",
   "PC.Pages.AgentArrangeConfig.subAgent": "副代理人",

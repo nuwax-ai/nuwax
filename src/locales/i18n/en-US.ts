@@ -1514,8 +1514,6 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.AgentArrangeConfig.plan": "Planning",
   "PC.Pages.AgentArrangeConfig.plugin": "Plugin",
   "PC.Pages.AgentArrangeConfig.referenceNumber": "#Reference Number",
-  "PC.Pages.AgentArrangeConfig.scheduledTask": "Scheduled Task",
-  "PC.Pages.AgentArrangeConfig.scheduledTaskDescription": "When enabled, users can run tasks via scheduled task settings.",
   "PC.Pages.AgentArrangeConfig.skill": "Skill",
   "PC.Pages.AgentArrangeConfig.skills": "Skills",
   "PC.Pages.AgentArrangeConfig.subAgent": "Sub-agent",

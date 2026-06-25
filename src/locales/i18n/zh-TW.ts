@@ -1401,8 +1401,6 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.AgentArrangeConfig.plan": "規劃",
   "PC.Pages.AgentArrangeConfig.plugin": "套件",
   "PC.Pages.AgentArrangeConfig.referenceNumber": "#引用編號",
-  "PC.Pages.AgentArrangeConfig.scheduledTask": "定時任務",
-  "PC.Pages.AgentArrangeConfig.scheduledTaskDescription": "開啟後，使用者可以透過設定定時任務的方式讓智慧體執行任務",
   "PC.Pages.AgentArrangeConfig.skill": "技能",
   "PC.Pages.AgentArrangeConfig.skills": "技能",
   "PC.Pages.AgentArrangeConfig.subAgent": "子智慧體",
