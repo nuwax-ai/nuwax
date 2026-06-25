@@ -29,6 +29,8 @@ export enum AgentTypeEnum {
   ChatBot = 'ChatBot',
   PageApp = 'PageApp',
   TaskAgent = 'TaskAgent',
+
+  // =============================== 自定义枚举值 ===============================
   AgentFlow = 'AgentFlow',
   ConversationAgent = 'ConversationAgent',
   AgentGroup = 'AgentGroup',
@@ -139,6 +141,8 @@ export enum AgentArrangeConfigEnum {
   Table = 'Table',
   // 长期记忆
   Long_Memory = 'Long_Memory',
+  // 版本管理
+  Version_Control = 'Version_Control',
   // 文件盒子
   File_Box = 'File_Box',
   // 用户问题建议

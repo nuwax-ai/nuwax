@@ -1510,6 +1510,8 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.AgentArrangeConfig.interfaceConfig": "Interface Config",
   "PC.Pages.AgentArrangeConfig.knowledge": "Knowledge",
   "PC.Pages.AgentArrangeConfig.longMemory": "Long-term Memory",
+  "PC.Pages.AgentArrangeConfig.versionControl": "Version Control",
+  "PC.Pages.AgentArrangeConfig.versionControlDesc": "When enabled, the agent supports version control to view code changes and commit history.",
   "PC.Pages.AgentArrangeConfig.mcpDescription": "The agent can connect to service APIs through the standardized MCP protocol and invoke them.",
   "PC.Pages.AgentArrangeConfig.memory": "Memory",
   "PC.Pages.AgentArrangeConfig.openingRemarks": "Opening message",

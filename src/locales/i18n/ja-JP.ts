@@ -1374,6 +1374,8 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.AgentArrangeConfig.interfaceConfig": "インターフェース構成",
   "PC.Pages.AgentArrangeConfig.knowledge": "知識",
   "PC.Pages.AgentArrangeConfig.longMemory": "長期記憶",
+  "PC.Pages.AgentArrangeConfig.versionControl": "バージョン管理",
+  "PC.Pages.AgentArrangeConfig.versionControlDesc": "有効にすると、エージェントはバージョン管理をサポートし、コード変更とコミット履歴を確認できます。",
   "PC.Pages.AgentArrangeConfig.mcpDescription": "エージェントは、標準化された MCP プロトコルを通じてサービス API に接続し、それらを呼び出すことができます。",
   "PC.Pages.AgentArrangeConfig.memory": "メモリ",
   "PC.Pages.AgentArrangeConfig.openingRemarks": "冒頭メッセージ",

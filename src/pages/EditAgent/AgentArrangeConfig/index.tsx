@@ -898,6 +898,42 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         body: 'collapse-body',
       },
     },
+
+    // 版本管理：任务型智能体（通用型智能体、AgentFlow、AgentGroup、自定义） 才显示 版本管理 按钮
+    ...(agentConfigInfo?.type === AgentTypeEnum.TaskAgent
+      ? [
+          {
+            key: AgentArrangeConfigEnum.Version_Control,
+            label: t('PC.Pages.AgentArrangeConfig.versionControl'),
+            children: (
+              <p className={cx(styles.text)}>
+                {t('PC.Pages.AgentArrangeConfig.versionControlDesc')}
+              </p>
+            ),
+            extra: (
+              <Switch
+                value={
+                  agentConfigInfo?.enableVersionControl ===
+                  DefaultSelectedEnum.Yes
+                }
+                onClick={(_, e: any) => {
+                  e.stopPropagation();
+                }}
+                onChange={(value) =>
+                  onChangeAgent(
+                    value ? DefaultSelectedEnum.Yes : DefaultSelectedEnum.No,
+                    'enableVersionControl',
+                  )
+                }
+              />
+            ),
+            classNames: {
+              header: 'collapse-header',
+              body: 'collapse-body',
+            },
+          },
+        ]
+      : []),
   ];
 
   // 对话体验

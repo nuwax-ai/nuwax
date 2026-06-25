@@ -1374,6 +1374,8 @@ export const ZH_HK: SystemLangMap = {
   "PC.Pages.AgentArrangeConfig.interfaceConfig": "界面配置",
   "PC.Pages.AgentArrangeConfig.knowledge": "知識",
   "PC.Pages.AgentArrangeConfig.longMemory": "長期記憶",
+  "PC.Pages.AgentArrangeConfig.versionControl": "版本管理",
+  "PC.Pages.AgentArrangeConfig.versionControlDesc": "開啓後，智能體支持版本管理，可查看代碼變更和提交歷史。",
   "PC.Pages.AgentArrangeConfig.mcpDescription": "智能體可以通過標準化協議（MCP）連接各類服務API併發起調用。",
   "PC.Pages.AgentArrangeConfig.memory": "記憶",
   "PC.Pages.AgentArrangeConfig.openingRemarks": "開場白",
