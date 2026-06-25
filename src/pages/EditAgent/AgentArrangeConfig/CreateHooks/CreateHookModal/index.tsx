@@ -1,3 +1,5 @@
+import CodeEditor from '@/components/CodeEditor';
+import CustomFormModal from '@/components/CustomFormModal';
 import {
   getDefaultHookConfigJson,
   HOOK_EVENT_OPTIONS,
@@ -7,10 +9,11 @@ import { apiAgentComponentHookUpdate } from '@/services/agentConfig';
 import { t } from '@/services/i18nRuntime';
 import { HookStatusEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
+import { CodeLangEnum } from '@/types/enums/plugin';
 import type { HookConfig } from '@/types/interfaces/agent';
 import type { CreateHookModalProps } from '@/types/interfaces/agentConfig';
 import { customizeRequiredMark } from '@/utils/form';
-import { Button, Form, Input, message, Modal, Select } from 'antd';
+import { Form, Input, message, Select } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef } from 'react';
 import { useRequest } from 'umi';
@@ -139,25 +142,14 @@ const CreateHookModal: React.FC<CreateHookModalProps> = ({
       : t('PC.Pages.AgentArrangeCreateHookModal.titleCreate');
 
   return (
-    <Modal
+    <CustomFormModal
+      form={form}
       title={title}
       open={open}
       width={560}
-      destroyOnHidden
+      loading={loading}
       onCancel={onCancel}
-      footer={[
-        <Button key="cancel" onClick={onCancel}>
-          {t('PC.Pages.AgentArrangeCreateHookModal.cancel')}
-        </Button>,
-        <Button
-          key="save"
-          type="primary"
-          loading={loading}
-          onClick={handleSave}
-        >
-          {t('PC.Pages.AgentArrangeCreateHookModal.save')}
-        </Button>,
-      ]}
+      onConfirm={handleSave}
     >
       <Form
         form={form}
@@ -235,10 +227,22 @@ const CreateHookModal: React.FC<CreateHookModalProps> = ({
             },
           ]}
         >
-          <Input.TextArea rows={8} className={cx(styles['config-textarea'])} />
+          <CodeEditor
+            codeLanguage={CodeLangEnum.JSON}
+            height="240px"
+            codeOptimizeVisible={false}
+            className={cx(styles['config-editor'])}
+            editorOptions={{
+              wordWrap: 'bounded',
+              wrappingStrategy: 'advanced',
+              wrappingIndent: 'indent',
+              scrollBeyondLastLine: false,
+              minimap: { enabled: false },
+            }}
+          />
         </Form.Item>
       </Form>
-    </Modal>
+    </CustomFormModal>
   );
 };
 
