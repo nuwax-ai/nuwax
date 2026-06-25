@@ -154,6 +154,8 @@ export enum AgentArrangeConfigEnum {
   Page = 'Page',
   // 默认展开页面区
   Default_Expand_Page_Area = 'Default_Expand_Page_Area',
+  // Hook 设置
+  Hook = 'Hook',
   // 隐藏主会话框
   Hide_Chat_Area = 'Hide_Chat_Area',
   // 界面事件绑定

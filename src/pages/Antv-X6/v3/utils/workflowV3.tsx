@@ -23,6 +23,7 @@ import {
   ICON_WORKFLOW_OUTPUT,
   ICON_WORKFLOW_PLUGIN,
   ICON_WORKFLOW_QA,
+  ICON_WORKFLOW_ROUTE_DECISION,
   ICON_WORKFLOW_TEXT_PROCESSING,
   ICON_WORKFLOW_VARIABLE,
   ICON_WORKFLOW_WORKFLOW,
@@ -233,12 +234,10 @@ export const returnImg = (type: NodeTypeEnum): React.ReactNode => {
       return <ICON_WORKFLOW_MCP />;
     case NodeTypeEnum.Agent:
       return <ICON_NEW_AGENT />;
-    case NodeTypeEnum.EvalGate:
-      return <ICON_WORKFLOW_CONDITION />;
+    case NodeTypeEnum.RouteDecision:
+      return <ICON_WORKFLOW_ROUTE_DECISION />;
     case NodeTypeEnum.HumanInteraction:
       return <ICON_WORKFLOW_QA />;
-    case NodeTypeEnum.ExternalConnector:
-      return <ICON_WORKFLOW_HTTP_REQUEST />;
     default:
       return <ICON_NEW_AGENT />;
   }
@@ -280,12 +279,10 @@ export const returnBackgroundColor = (type: NodeTypeEnum) => {
       return '#E7E1FF';
     case NodeTypeEnum.Agent:
       return '#E8F5E9';
-    case NodeTypeEnum.EvalGate:
+    case NodeTypeEnum.RouteDecision:
       return '#FFF3E0';
     case NodeTypeEnum.HumanInteraction:
       return '#E3F2FD';
-    case NodeTypeEnum.ExternalConnector:
-      return '#F3E5F5';
     default:
       return '#EEEEFF';
   }

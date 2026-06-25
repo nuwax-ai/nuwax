@@ -11,9 +11,7 @@ import { NodeTypeEnum } from '@/types/enums/common';
 /** AgentFlow 流的节点类型集合（与 extensionRegistry 注册范围一致） */
 export const AGENT_FLOW_NODE_TYPES: ReadonlyArray<NodeTypeEnum> = [
   NodeTypeEnum.Agent,
-  NodeTypeEnum.EvalGate,
   NodeTypeEnum.HumanInteraction,
-  NodeTypeEnum.ExternalConnector,
   NodeTypeEnum.RouteDecision,
 ] as const;
 

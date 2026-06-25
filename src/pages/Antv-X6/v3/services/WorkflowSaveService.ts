@@ -20,6 +20,7 @@ import { AnswerTypeEnum, NodeTypeEnum } from '@/types/enums/common';
 import type { ChildNode } from '@/types/interfaces/graph';
 import { cloneDeep } from '@/utils/common';
 import type { Graph } from '@antv/x6';
+import { serializeNodeForBackend } from '../agentFlow/nodeTypeMapping';
 import { extensionRegistry } from '../extensions/registry';
 import { SpecialPortType as PortType } from '../types/enums';
 import type { EdgeV3 as EdgeData } from '../types/interfaces';
@@ -180,7 +181,8 @@ class WorkflowSaveService {
     const payload: IgetDetails = {
       ...this.originalDetails,
       ...this.meta,
-      nodes: nodes,
+      // RouteDecision 复用后端 IntentRecognition 类型收发（见 nodeTypeMapping.ts）
+      nodes: nodes.map((node) => serializeNodeForBackend(node)),
       startNode: startNode || this.originalDetails.startNode,
       endNode: endNode || this.originalDetails.endNode,
       inputArgs:

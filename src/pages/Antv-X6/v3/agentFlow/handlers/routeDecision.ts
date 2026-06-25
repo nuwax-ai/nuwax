@@ -8,7 +8,7 @@
  * - 路由端口: {nodeId}-route-{routeUuid}-out（每条路由规则一个）
  *
  * 视觉对齐：default 端口圆点用 `ROUTE_DEFAULT_PORT_COLOR`（灰色），React 层
- * 不渲染 chip；route 端口由 `agentFlowPortChips` 渲染橙色 chip 显示 routeName。
+ * 不渲染 chip；route 端口由 `agentFlowPortChips` 渲染橙色 chip 显示 intent。
  *
  * 端口 y 由 `branchPortY(i)` 计算。
  */
@@ -33,7 +33,7 @@ export const routeDecisionHandler: BranchNodeHandler = {
 
   generatePorts(data: ChildNode, ctx: PortGeneratorContext) {
     const nc = data.nodeConfig as any;
-    const routes: any[] = nc?.routes || [];
+    const routes: any[] = nc?.intentConfigs || [];
     const defaultIds: number[] = nc?.defaultNextNodeIds || [];
 
     const inputPorts = [
@@ -120,7 +120,7 @@ export const routeDecisionHandler: BranchNodeHandler = {
 
       case SpecialPortType.RouteDecisionRoute: {
         if (!portInfo.uuid) return false;
-        const routes = (sourceNode.nodeConfig as any).routes;
+        const routes = (sourceNode.nodeConfig as any).intentConfigs;
         const route = routes?.find((r: any) => r.uuid === portInfo.uuid);
         if (!route) return false;
         if (action === 'add') {
@@ -152,8 +152,8 @@ export const routeDecisionHandler: BranchNodeHandler = {
       );
     }
 
-    if (nc.routes) {
-      nc.routes.forEach((r: any) => {
+    if (nc.intentConfigs) {
+      nc.intentConfigs.forEach((r: any) => {
         if (r.nextNodeIds?.includes(deletedNodeId)) {
           r.nextNodeIds = r.nextNodeIds.filter(
             (id: number) => id !== deletedNodeId,
@@ -168,7 +168,7 @@ export const routeDecisionHandler: BranchNodeHandler = {
     if (!nc) return;
 
     nc.defaultNextNodeIds = [];
-    const routes = nc.routes || [];
+    const routes = nc.intentConfigs || [];
     routes.forEach((r: any) => {
       r.nextNodeIds = [];
     });
@@ -180,7 +180,7 @@ export const routeDecisionHandler: BranchNodeHandler = {
 
     branchMap.set('route-default', []);
 
-    const routes = nc?.routes || [];
+    const routes = nc?.intentConfigs || [];
     routes.forEach((r: any) => {
       const key = `route-${r.uuid}`;
       branchMap.set(key, []);
@@ -203,7 +203,7 @@ export const routeDecisionHandler: BranchNodeHandler = {
     const nc = node.nodeConfig as any;
     nc.defaultNextNodeIds = branchMap.get('route-default') || [];
 
-    const routes = nc.routes || [];
+    const routes = nc.intentConfigs || [];
     routes.forEach((r: any) => {
       const ids = branchMap.get(`route-${r.uuid}`) || [];
       r.nextNodeIds = ids;
@@ -235,8 +235,8 @@ export const routeDecisionHandler: BranchNodeHandler = {
       nodeConfig.defaultNextNodeIds = defaultIds;
     } else if (suffix.startsWith('route-')) {
       const routeUuid = suffix.substring('route-'.length);
-      const routes = nodeConfig.routes || [];
-      nodeConfig.routes = routes.map((r: any) => {
+      const routes = nodeConfig.intentConfigs || [];
+      nodeConfig.intentConfigs = routes.map((r: any) => {
         if (r.uuid === routeUuid) {
           let ids: number[] = r.nextNodeIds || [];
           if (targetNode) {

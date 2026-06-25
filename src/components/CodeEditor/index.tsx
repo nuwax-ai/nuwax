@@ -22,6 +22,8 @@ interface Props {
   codeOptimizeVisible?: boolean;
   // 是否只读
   readOnly?: boolean;
+  /** Monaco 编辑器主题，vs 为浅色底，vs-dark 为深色底 */
+  theme?: 'vs' | 'vs-dark';
   editorOptions?: any;
 }
 
@@ -35,6 +37,7 @@ const CodeEditor: React.FC<Props> = ({
   form,
   codeOptimizeVisible = true,
   readOnly = false,
+  theme = 'vs-dark',
   editorOptions,
 }) => {
   const [isMonacoReady, setIsMonacoReady] = useState(false);
@@ -166,7 +169,7 @@ const CodeEditor: React.FC<Props> = ({
             className={className}
             height={height}
             language={codeLanguage?.toLowerCase()}
-            theme="vs-dark"
+            theme={theme}
             value={value}
             onChange={handleCodeChange}
             options={getEditorOptions(editorOptions)}
@@ -177,7 +180,7 @@ const CodeEditor: React.FC<Props> = ({
           className={className}
           height={height}
           language={codeLanguage?.toLowerCase()}
-          theme="vs-dark"
+          theme={theme}
           value={value}
           onChange={handleCodeChange}
           options={getEditorOptions(editorOptions)}

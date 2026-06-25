@@ -1,9 +1,13 @@
 import Constant from '@/constants/codes.constants';
+import { useFlowKind } from '@/contexts/FlowKindContext';
+import { dict } from '@/services/i18nRuntime';
 import service, { IgetDetails, IUpdateDetails } from '@/services/workflow';
+import { FlowKindEnum, NodeTypeEnum } from '@/types/enums/common';
 import { ChildNode, Edge } from '@/types/interfaces/graph';
 import { workflowLogger } from '@/utils/logger';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useModel } from 'umi';
+import { normalizeLoadedNodes } from '../agentFlow/nodeTypeMapping';
 import { workflowProxy } from '../services/workflowProxyV3';
 import { workflowSaveService } from '../services/WorkflowSaveService';
 import { getEdges } from '../utils/graphV3';
@@ -20,6 +24,8 @@ export const useWorkflowLifecycle = ({
   handleInitLoading,
 }: UseWorkflowLifecycleProps) => {
   const { setSpaceId } = useModel('workflowV3');
+  // AgentFlow 下后端 IntentRecognition 统一渲染为路由决策（RouteDecision 复用意图识别类型）
+  const isAgentFlow = useFlowKind() === FlowKindEnum.AgentFlow;
 
   // 防止 React StrictMode 双重调用
   const isInitializedRef = useRef(false);
@@ -40,7 +46,37 @@ export const useWorkflowLifecycle = ({
         setSpaceId(data.spaceId);
       }
 
-      const _nodeList = data.nodes || [];
+      // RouteDecision / HumanInteraction 复用后端类型存储（见 nodeTypeMapping.ts）；
+      // AgentFlow 下统一渲染回前端类型。后端按后端类型建节点会回写其后端默认文案，
+      // 这里把遗留/空默认值修正为前端默认文案。
+      const _nodeList = normalizeLoadedNodes(data.nodes || [], isAgentFlow, {
+        [NodeTypeEnum.IntentRecognition]: {
+          frontendDefaultName: dict(
+            'PC.Pages.AgentFlowParams.nodeRouteDecisionName',
+          ),
+          frontendDefaultDescription: dict(
+            'PC.Pages.AgentFlowParams.nodeRouteDecisionDescription',
+          ),
+          backendDefaultName: dict(
+            'PC.Pages.AntvX6Params.nodeIntentRecognitionName',
+          ),
+          backendDefaultDescription: dict(
+            'PC.Pages.AntvX6Params.nodeIntentRecognitionDescription',
+          ),
+        },
+        [NodeTypeEnum.QA]: {
+          frontendDefaultName: dict(
+            'PC.Pages.AgentFlowParams.nodeHumanAskName',
+          ),
+          frontendDefaultDescription: dict(
+            'PC.Pages.AgentFlowParams.nodeHumanAskDescription',
+          ),
+          backendDefaultName: dict('PC.Pages.AntvX6Params.nodeQaName'),
+          backendDefaultDescription: dict(
+            'PC.Pages.AntvX6Params.nodeQaDescription',
+          ),
+        },
+      });
       const _edgeList = getEdges(_nodeList);
       setGraphParams({ edgeList: _edgeList, nodeList: _nodeList });
 
@@ -59,7 +95,7 @@ export const useWorkflowLifecycle = ({
         workflowLogger.log('Edit version updated:', data.editVersion);
       }
     },
-    [setSpaceId, workflowId],
+    [setSpaceId, workflowId, isAgentFlow],
   );
 
   const getWorkflowDetails = useCallback(async () => {
