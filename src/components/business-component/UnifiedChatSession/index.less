@@ -4,7 +4,6 @@
 
 @chat-max-width: 800px;
 @zero-value: 0;
-@margin-bottom-gap: 5px;
 @slide-in-offset: 10px;
 @scroll-btn-bottom-offset: 100px;
 
@@ -18,81 +17,10 @@
   position: relative;
 
   &.only-input {
-    .chat-wrapper-content,
+    // 隐藏核心展现内容区（针对 hash 化局部类选择器由子组件 index.less 内部 `:global` 实现）
     .conversation-status-bar,
     .intervention-dock {
       display: none !important;
-    }
-  }
-}
-
-.chat-wrapper-content {
-  overflow: auto;
-  margin-bottom: @margin-bottom-gap;
-  padding-left: 8px;
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: @zero-value;
-  width: 100%;
-
-  // 使用滚动条自动隐藏 mixin
-  .scrollbar-auto-hide();
-
-  .chat-wrapper {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    min-height: @zero-value;
-    max-width: @chat-max-width;
-    width: 100%;
-    margin: @zero-value auto;
-
-    // 使用伪元素优雅解决 flex 子容器下 padding-bottom 在滚动高度中坍塌的 bug
-    &::after {
-      content: '';
-      display: block;
-      height: @paddingLg;
-      flex-shrink: 0;
-    }
-
-    .loading-wrapper {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 100%;
-    }
-
-    .loading-icon {
-      color: @colorPrimary;
-    }
-
-    // 加载更多按钮容器
-    .load-more-container {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      margin-bottom: @paddingSm;
-      text-align: center;
-      padding: @padding @zero-value;
-      color: @colorTextTertiary;
-    }
-
-    // 任务执行中容器
-    .task-executing-container {
-      display: flex;
-      align-items: center;
-      height: @controlHeight;
-      color: @colorTextSecondary;
-      font-size: @fontSizeSm;
-      gap: @paddingSm;
-    }
-
-    .opening-chat-msg {
-      margin-top: @paddingMd;
-      margin-bottom: @paddingMd;
-      color: @colorTextSecondary;
-      font-size: @fontSize;
     }
   }
 }
@@ -146,9 +74,4 @@
   :global(.chat-action .to-bottom) {
     bottom: @scroll-btn-bottom-offset !important;
   }
-}
-
-// 推荐列表容器下边距，防止紧贴输入框
-.recommend-list-box {
-  padding-bottom: @marginLg;
 }

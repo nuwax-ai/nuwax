@@ -1,4 +1,3 @@
-import AgentChatEmpty from '@/components/AgentChatEmpty';
 import {
   AgentInterventionChatLayer,
   type AgentMode,
@@ -8,18 +7,11 @@ import { useActiveInterventionQueue } from '@/components/business-component/Agen
 import MessageQueuePanel, {
   useUnifiedChatQueue,
 } from '@/components/business-component/MessageQueue';
-import ChatView from '@/components/ChatView';
-import NewConversationSet from '@/components/NewConversationSet';
-import RecommendList from '@/components/RecommendList';
 import ConversationStatus from '@/pages/Chat/components/ConversationStatus';
-import { LoadingOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef } from 'react';
 
-import { MESSAGE_PAGE_SIZE } from '@/constants/common.constants';
 import { ENABLE_CHAT_MESSAGE_QUEUE } from '@/constants/feature.constants';
-import { useConversationScrollDetection } from '@/hooks/useConversationScrollDetection';
-import { useIntersectionObserver } from '@/hooks/useIntersectionObserver';
 import { dict } from '@/services/i18nRuntime';
 import { TaskStatus } from '@/types/enums/agent';
 import { MessageStatusEnum } from '@/types/enums/common';
@@ -29,7 +21,10 @@ import type {
   MessageInfo,
   RoleInfo,
 } from '@/types/interfaces/conversationInfo';
-import ChatInputHomeIndependent from './ChatInputHomeIndependent';
+import ChatInputHomeIndependent from './components/ChatInputHomeIndependent';
+import ChatContentArea from './components/ChatContentArea';
+import { useUnifiedChatScroll } from './hooks/useUnifiedChatScroll';
+import { useLoadMoreHistory } from './hooks/useLoadMoreHistory';
 
 import styles from './index.less';
 import type { UnifiedChatSessionProps } from './types';
@@ -103,21 +98,38 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
   isLoadingOtherInterface,
   conversationInfo,
 }) => {
-  const [isHoveringChat, setIsHoveringChat] = useState<boolean>(false);
-  const internalMessageViewRef = useRef<HTMLDivElement>(null);
-  const messageViewRef = externalMessageViewRef || internalMessageViewRef;
-  const allowAutoScrollRef = useRef<boolean>(true);
-  const lastMsgCountRef = useRef<number>(0);
-  const lastTextLengthRef = useRef<number>(0);
-  const scrollTimeoutRef = useRef<any>(null);
-  const programmaticTimerRef = useRef<any>(null);
-  const [scrollBtnVisible, setScrollBtnVisible] =
-    useState<boolean>(showScrollBtn);
+  // 滚动管理 Hook
+  const {
+    messageViewRef,
+    scrollBtnVisible,
+    isHoveringChat,
+    handleSendScrollReset,
+    onScrollBottom,
+    handleMouseEnter,
+    handleMouseLeave,
+  } = useUnifiedChatScroll({
+    messageList,
+    isConversationActive,
+    chatSuggestList,
+    isLoading,
+    loadingMore,
+    externalMessageViewRef,
+    showScrollBtn,
+  });
+
+  // 历史消息交叉加载 Hook
+  const { loadMoreRef } = useLoadMoreHistory({
+    conversationId,
+    messageList,
+    isMoreMessage,
+    loadingMore,
+    onLoadMoreMessage,
+  });
 
   const agentModeRef = useRef<AgentMode>('yolo');
 
   // 角色信息（名称、头像）默认逻辑：优先使用外部传入，其次根据传入的 agentInfo 自适应组装，最后使用 DEFAULT_ROLE_INFO 兜底
-  const effectiveRoleInfo = useMemo(() => {
+  const effectiveRoleInfo = useMemo<RoleInfo>(() => {
     if (roleInfo && roleInfo !== DEFAULT_ROLE_INFO) {
       return roleInfo;
     }
@@ -133,48 +145,11 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
     };
   }, [roleInfo, agentInfo?.name, agentInfo?.icon]);
 
-  // 1. 滚动检测逻辑
-  useConversationScrollDetection(
-    messageViewRef,
-    allowAutoScrollRef,
-    scrollTimeoutRef,
-    setScrollBtnVisible,
-  );
-
-  // 2. 向上滚动到顶加载历史消息的 IntersectionObserver 探测器
-  const { ref: loadMoreRef, inView: loadMoreInView } = useIntersectionObserver({
-    rootMargin: '10px 0px 0px 0px',
-    threshold: 0,
-  });
-
-  const prevLoadMoreInViewRef = useRef<boolean>(false);
-  useEffect(() => {
-    const isEntering = loadMoreInView && !prevLoadMoreInViewRef.current;
-    prevLoadMoreInViewRef.current = loadMoreInView;
-
-    if (
-      isEntering &&
-      isMoreMessage &&
-      !loadingMore &&
-      messageList?.length > 0 &&
-      conversationId
-    ) {
-      onLoadMoreMessage?.(conversationId);
-    }
-  }, [
-    loadMoreInView,
-    isMoreMessage,
-    loadingMore,
-    messageList?.length,
-    conversationId,
-    onLoadMoreMessage,
-  ]);
-
   // 是否有待处理的 intervention（ask/question/审批）：有则暂停队列消费并隐藏队列面板
   const activeInterventions = useActiveInterventionQueue(messageList);
   const hasPendingIntervention = activeInterventions.length > 0;
 
-  // 3. 消息队列：会话活跃时消息入队，空闲时自动消费（逻辑收敛于 hook）
+  // 消息队列：会话活跃时消息入队，空闲时自动消费（逻辑收敛于 hook）
   const messageQueue = useUnifiedChatQueue({
     conversationId,
     messageList,
@@ -196,6 +171,10 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
   ) => {
     // 用户在会话中发送新提示词：恢复队列自动消费（解除此前主动停止造成的暂停）
     messageQueue.resumeAutoConsume();
+
+    // 发送消息时强制重置自动滚动状态并立即置底
+    handleSendScrollReset();
+
     messageQueue.trySend(
       messageInfo,
       files,
@@ -205,8 +184,8 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
     );
   };
 
-  // 4. 智能体指令介入图层 (ACP/MCP 审批交互)
-  //    intervention 响应的 resume 消息走 rawSend 绕过队列拦截，避免回复被错误入队
+  // 智能体指令介入图层 (ACP/MCP 审批交互)
+  // intervention 响应的 resume 消息走 rawSend 绕过队列拦截，避免回复被错误入队
   const interventionLayer = useAgentInterventionLayer({
     conversationId,
     messageList,
@@ -214,28 +193,6 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
     onSendMessage: (msg) => messageQueue.rawSend(msg),
   });
   agentModeRef.current = interventionLayer.agentMode;
-
-  const onScrollBottom = () => {
-    allowAutoScrollRef.current = true;
-    const element = messageViewRef.current;
-    if (element) {
-      (element as any).__isProgrammaticScroll = 'smooth';
-      element.scrollTo({
-        top: element.scrollHeight,
-        behavior: 'smooth',
-      });
-      if (programmaticTimerRef.current) {
-        clearTimeout(programmaticTimerRef.current);
-      }
-      programmaticTimerRef.current = setTimeout(() => {
-        if (messageViewRef.current) {
-          (messageViewRef.current as any).__isProgrammaticScroll = false;
-        }
-        programmaticTimerRef.current = null;
-      }, 500);
-    }
-    setScrollBtnVisible(false);
-  };
 
   // 输入框是否禁用（表单必填验证）
   const inputDisabled = useMemo(() => {
@@ -295,220 +252,36 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
     isConversationActive,
   ]);
 
-  // 大模型流式输出或更新时自动平滑滚动置底
-  useEffect(() => {
-    const lastMessage = messageList[messageList.length - 1];
-    // 判定大模型是否正在流式输出
-    const isStreaming =
-      lastMessage?.status === MessageStatusEnum.Loading ||
-      lastMessage?.status === MessageStatusEnum.Incomplete ||
-      isConversationActive;
-    const textLength = lastMessage?.text?.length || 0;
-    const msgCount = messageList.length;
-
-    let shouldScroll = false;
-
-    if (msgCount > lastMsgCountRef.current) {
-      // 消息条数增加了，肯定是发了新消息或收到新回复，需要滚动
-      shouldScroll = true;
-    } else if (isStreaming && textLength > lastTextLengthRef.current) {
-      // 正在打字输出且文本确实增长了，需要滚动
-      shouldScroll = true;
-    }
-
-    // 缓存当前的最新状态
-    lastMsgCountRef.current = msgCount;
-    lastTextLengthRef.current = textLength;
-
-    if (shouldScroll && allowAutoScrollRef.current) {
-      const element = messageViewRef.current;
-      if (element) {
-        const performScroll = () => {
-          const el = messageViewRef.current;
-          if (el) {
-            if (programmaticTimerRef.current) {
-              clearTimeout(programmaticTimerRef.current);
-            }
-            (el as any).__isProgrammaticScroll = true;
-            el.scrollTo({
-              top: el.scrollHeight,
-              behavior: 'instant',
-            });
-            // 延迟重置为 false，确保该瞬间滚动引起的所有同步/异步 scroll 事件都在 isProgrammatic 为真的情况下被忽略
-            programmaticTimerRef.current = setTimeout(() => {
-              if (messageViewRef.current) {
-                (messageViewRef.current as any).__isProgrammaticScroll = false;
-              }
-              programmaticTimerRef.current = null;
-            }, 100);
-          }
-        };
-
-        // 立即执行一次
-        performScroll();
-
-        // 延迟执行以确保在子组件（如 Markdown、图表等）渲染完且高度撑开后能重新置底
-        const timer = setTimeout(performScroll, 60);
-
-        return () => {
-          clearTimeout(timer);
-        };
-      }
-    }
-  }, [messageList, isConversationActive, chatSuggestList]);
-
-  // 组件卸载时清理定时器
-  useEffect(() => {
-    return () => {
-      if (programmaticTimerRef.current) {
-        clearTimeout(programmaticTimerRef.current);
-      }
-    };
-  }, []);
-
-  // 向上滚动加载更多历史消息时的滚动锁定机制
-  const lastScrollHeightRef = useRef<number>(0);
-  const lastScrollTopRef = useRef<number>(0);
-  const prevLoadingMoreRef = useRef<boolean>(false);
-
-  useLayoutEffect(() => {
-    const element = messageViewRef.current;
-    if (!element) return;
-
-    if (prevLoadingMoreRef.current && !loadingMore) {
-      const heightDifference =
-        element.scrollHeight - lastScrollHeightRef.current;
-      if (heightDifference > 0) {
-        element.scrollTop = lastScrollTopRef.current + heightDifference;
-      }
-    }
-
-    lastScrollHeightRef.current = element.scrollHeight;
-    lastScrollTopRef.current = element.scrollTop;
-    prevLoadingMoreRef.current = loadingMore || false;
-  }, [messageList, loadingMore]);
-
   return (
     <div className={cx(styles['session-container'], className)} style={style}>
-      <div
-        className={cx(styles['chat-wrapper-content'], 'scroll-container')}
-        ref={messageViewRef}
-        onMouseEnter={() => {
-          setIsHoveringChat(true);
-          const el = messageViewRef.current;
-          if (el) {
-            const { scrollTop, scrollHeight, clientHeight } = el;
-            const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
-            if (scrollHeight > clientHeight && distanceFromBottom > 50) {
-              setScrollBtnVisible(true);
-            } else {
-              setScrollBtnVisible(false);
-            }
-          }
-        }}
-        onMouseLeave={() => setIsHoveringChat(false)}
-      >
-        <div className={cx(styles['chat-wrapper'], 'flex-1')}>
-          {isLoading ? (
-            <div className={cx(styles['loading-wrapper'])}>
-              <LoadingOutlined className={cx(styles['loading-icon'])} />
-            </div>
-          ) : (
-            <>
-              {/* 变量参数配置表单 */}
-              {form && (
-                <NewConversationSet
-                  className="mb-16"
-                  form={form}
-                  variables={variables || agentInfo?.guidQuestionDtos || []}
-                  userFillVariables={userFillVariables}
-                  isFilled={isVariablesFilled ?? !!variableParams}
-                  disabled={isVariablesDisabled}
-                />
-              )}
-
-              {messageList?.length > 0 ? (
-                <>
-                  {/* 加载历史消息的触发探测节点 */}
-                  {isMoreMessage &&
-                    (messageList?.length || 0) >= MESSAGE_PAGE_SIZE && (
-                      <div
-                        ref={loadMoreRef}
-                        className={cx(styles['load-more-container'])}
-                      >
-                        {loadingMore ? (
-                          <span>
-                            <LoadingOutlined style={{ marginRight: 8 }} />
-                            {dict('PC.Pages.Chat.loadingHistoryConversation')}
-                          </span>
-                        ) : null}
-                      </div>
-                    )}
-
-                  {/* 消息渲染列表 */}
-                  {messageList?.map((item: MessageInfo, idx: number) => {
-                    const isLastMessage = idx === messageList.length - 1;
-                    if (renderMessageItem) {
-                      return renderMessageItem(item, isLastMessage);
-                    }
-                    return (
-                      <ChatView
-                        key={`${item.id}-${item?.index || idx}`}
-                        messageInfo={item}
-                        roleInfo={effectiveRoleInfo}
-                        mode={messageBottomMode}
-                        showDebug={showDebug}
-                        showStatusDesc={
-                          agentInfo?.type !== AgentTypeEnum.TaskAgent
-                        }
-                      />
-                    );
-                  })}
-
-                  {/* 问题建议：仅会话空闲且队列已排空时展示，避免与队列中的下一轮消息割裂 */}
-                  {shouldShowSessionSuggest && (
-                    <RecommendList
-                      className={cx(styles['recommend-list-box'])}
-                      loading={loadingSuggest}
-                      chatSuggestList={chatSuggestList}
-                      onClick={handleMessageSend}
-                    />
-                  )}
-
-                  {/* 通用型智能体：后台任务执行中且流式已结束 */}
-                  {showTaskExecutingWait && (
-                    <div className={cx(styles['task-executing-container'])}>
-                      <LoadingOutlined />
-                      <span>{dict('PC.Pages.Chat.agentExecutingWait')}</span>
-                    </div>
-                  )}
-                </>
-              ) : // 空状态展现
-              renderEmptyState ? (
-                renderEmptyState()
-              ) : (
-                <AgentChatEmpty
-                  className="h-full"
-                  icon={agentInfo?.icon}
-                  name={agentInfo?.name as string}
-                  extra={
-                    <div className="flex flex-col items-center content-center">
-                      <div className={cx(styles['opening-chat-msg'])}>
-                        {agentInfo?.openingChatMsg}
-                      </div>
-                      <RecommendList
-                        className="mt-16"
-                        chatSuggestList={agentInfo?.guidQuestionDtos || []}
-                        onClick={handleMessageSend}
-                      />
-                    </div>
-                  }
-                />
-              )}
-            </>
-          )}
-        </div>
-      </div>
+      {/* 核心聊天展现内容区 */}
+      <ChatContentArea
+        messageViewRef={messageViewRef}
+        handleMouseEnter={handleMouseEnter}
+        handleMouseLeave={handleMouseLeave}
+        isLoading={isLoading}
+        form={form}
+        variables={variables}
+        agentInfo={agentInfo}
+        userFillVariables={userFillVariables}
+        isVariablesFilled={isVariablesFilled}
+        isVariablesDisabled={isVariablesDisabled}
+        variableParams={variableParams}
+        messageList={messageList}
+        isMoreMessage={isMoreMessage}
+        loadMoreRef={loadMoreRef}
+        loadingMore={loadingMore}
+        renderMessageItem={renderMessageItem}
+        effectiveRoleInfo={effectiveRoleInfo}
+        messageBottomMode={messageBottomMode}
+        showDebug={showDebug}
+        shouldShowSessionSuggest={shouldShowSessionSuggest}
+        loadingSuggest={loadingSuggest}
+        chatSuggestList={chatSuggestList}
+        handleMessageSend={handleMessageSend}
+        showTaskExecutingWait={showTaskExecutingWait}
+        renderEmptyState={renderEmptyState}
+      />
 
       {/* 会话执行状态栏 */}
       {messageList?.length > 0 &&
