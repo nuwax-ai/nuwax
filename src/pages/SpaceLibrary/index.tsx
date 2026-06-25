@@ -41,6 +41,7 @@ import type { ComponentInfo } from '@/types/interfaces/library';
 import { modalConfirm } from '@/utils/ant-custom';
 import { exportConfigFile } from '@/utils/exportImportFile';
 import {
+  buildWorkflowRoute,
   jumpTo,
   jumpToPlugin,
   jumpToPluginCloudTool,
@@ -629,12 +630,16 @@ const SpaceLibrary: React.FC = () => {
 
   // 点击单个资源组件
   const handleClickComponent = (item: ComponentInfo) => {
-    const { type, id, spaceId, ext } = item;
+    const { type, id, spaceId, ext, workflowType } = item;
 
     let url = '';
     switch (type) {
       case ComponentTypeEnum.Workflow:
-        url = `/space/${spaceId}/workflow/${id}`;
+        url = buildWorkflowRoute(
+          spaceId,
+          id,
+          workflowType || ext?.workflowType,
+        );
         break;
       case ComponentTypeEnum.Plugin:
         url = handlePluginUrl(

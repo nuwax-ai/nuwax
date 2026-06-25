@@ -338,13 +338,14 @@ function groupMarkdownProcesses(text: string): string {
   const blockRegex =
     /(?:\s*<(?:div|p)>\s*)?(<markdown-custom-process\b[^>]*?>(?:<\/markdown-custom-process>)?)(?:\s*<\/(?:div|p)>\s*)?/g;
 
-  // 1. 扫描所有匹配项，提取 executeId 并记录它们的位置，以解决 SSE 流式生成 and PROCESSING 阶段追加导致的重复问题
+  // 1. 扫描所有匹配项，提取 executeId、类型并记录位置，以解决重复与连续冗余 Plan 问题
   const matches: {
     index: number;
     endIndex: number;
     executeId: string;
     fullMatch: string;
     tagMatch: string;
+    isPlan: boolean;
   }[] = [];
   let match;
   const lastIndexMap = new Map<string, number>(); // executeId -> last match index
@@ -360,23 +361,60 @@ function groupMarkdownProcesses(text: string): string {
     const executeId = executeIdMatch ? executeIdMatch[1] : null;
 
     if (executeId) {
+      const isPlan = /type=\\?["']Plan\\?["']/i.test(tagMatch);
       matches.push({
         index: match.index,
         endIndex: blockRegex.lastIndex,
         executeId,
         fullMatch,
         tagMatch,
+        isPlan,
       });
       lastIndexMap.set(executeId, match.index);
     }
   }
 
-  // 2. 根据 lastIndexMap 进行过滤，只保留每个 executeId 的最后一项（最新、属性最全的那一项）
+  // 2. 识别过滤项：只保留每个 executeId 的最后一项，且过滤相邻连续的 Plan（只保留连续 Plan 中的最后一个）
+  const ignoreMatchIndices = new Set<number>();
+  for (let i = 0; i < matches.length; i++) {
+    const m = matches[i];
+
+    // 原有的 executeId 去重过滤
+    if (lastIndexMap.get(m.executeId) !== m.index) {
+      ignoreMatchIndices.add(i);
+      continue;
+    }
+
+    // 连续相邻 Plan 过滤
+    if (m.isPlan) {
+      let nextPlanIndex = -1;
+      for (let j = i + 1; j < matches.length; j++) {
+        const next = matches[j];
+        if (next.isPlan) {
+          // 只有当两者之间全是空白字符/换行符时，当前 Plan 才是连续冗余的
+          const middleText = text.slice(m.endIndex, next.index);
+          if (middleText.trim() === '') {
+            nextPlanIndex = j;
+          }
+          break; // 只要遇到任何 Plan，不管连不连续都必须停止向后搜索
+        } else {
+          // 遇到非 Plan 节点，说明它们之间不连续，不能过滤
+          break;
+        }
+      }
+
+      if (nextPlanIndex !== -1) {
+        ignoreMatchIndices.add(i);
+      }
+    }
+  }
+
   let dedupedText = '';
   let lastPos = 0;
 
-  for (const m of matches) {
-    if (lastIndexMap.get(m.executeId) !== m.index) {
+  for (let i = 0; i < matches.length; i++) {
+    const m = matches[i];
+    if (ignoreMatchIndices.has(i)) {
       dedupedText += text.slice(lastPos, m.index);
       lastPos = m.endIndex;
     }

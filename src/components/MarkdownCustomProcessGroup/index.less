@@ -1,31 +1,51 @@
 @import '@/styles/token.less';
 
+@headerPaddingVertical: 2px;
+
 .markdown-custom-process-group {
-  margin: @marginSm 0;
-  border-radius: @borderRadius;
+  position: relative;
+  margin: @marginXs 0;
+  border-radius: 5px;
   background-color: @colorBgContainer;
-  border: @lineWidth solid @colorBorderSecondary;
   overflow: hidden;
-  transition: all @motionDurationMid @motionEaseInOut;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background-color: @colorBorder; // 重点强调左边框（默认框）
+    z-index: 1;
+    transition: background-color @motionDurationMid @motionEaseInOut;
+  }
 
   &:hover {
-    border-color: @colorPrimaryHover;
-    // box-shadow: @boxShadowSecondary;
+    &::before {
+      background-color: @colorTextTertiary; // 鼠标移入时高亮左边框（深灰色）
+    }
+
+    .group-header {
+      background-color: #f7f8fa; // 鼠标移入后的背景色需要同系统适配
+
+      .header-right {
+        .expand-icon {
+          opacity: 1; // 鼠标移入时才显示展开关闭图标
+        }
+      }
+    }
   }
 
   .group-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: @paddingXxs @paddingSm;
+    padding: @headerPaddingVertical @paddingSm @headerPaddingVertical @padding; // 左侧留出 16px 空间（其中 4px 被左伪边框覆盖，余下 12px 维持对称间距）
     cursor: pointer;
     user-select: none;
-    background-color: @colorFillQuaternary;
+    background-color: @colorBgContainer;
     transition: background-color @motionDurationFast;
-
-    &:hover {
-      background-color: @colorFillTertiary;
-    }
 
     .header-left {
       display: flex;
@@ -35,7 +55,16 @@
       .group-title {
         font-size: @fontSize;
         font-weight: @fontWeightStrong;
-        color: @colorTextSecondary;
+        color: @colorTextTertiary;
+      }
+
+      .process-count {
+        font-size: 10px;
+        color: @colorTextDescription;
+        background-color: @colorFillSecondary; // 标签样式底色
+        padding: 1px @paddingXs;
+        border-radius: 10px;
+        line-height: @lineHeightSm;
       }
     }
 
@@ -44,18 +73,12 @@
       align-items: center;
       gap: @paddingXs;
 
-      .process-count {
-        font-size: @fontSizeSm;
-        color: @colorTextDescription;
-        // background: @colorFillSecondary;
-        padding: 1px @paddingXs;
-        border-radius: 10px;
-      }
-
       .expand-icon {
         font-size: @fontSizeSm;
         color: @colorTextQuaternary;
-        transition: transform @motionDurationMid @motionEaseInOut;
+        opacity: 0; // 默认隐藏，在 hover 整个容器时展现
+        transition: transform @motionDurationMid @motionEaseInOut,
+          opacity @motionDurationMid @motionEaseInOut;
 
         &.is-expanded {
           transform: rotate(180deg);
@@ -63,48 +86,46 @@
       }
     }
   }
+}
 
-  .group-content {
-    border-top: @lineWidth solid @colorBorderSecondary;
-    padding: 0 @paddingXxs 0 @padding;
-    background-color: @colorBgContainer;
-    max-height: 400px;
-    overflow-y: auto;
-    scrollbar-width: thin;
-    scrollbar-color: transparent transparent;
+.group-content {
+  // margin: @marginXs 0;
+  // max-height: 400px;
+  // overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
 
-    &::-webkit-scrollbar {
-      width: 3px;
-    }
+  &::-webkit-scrollbar {
+    width: 3px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: @borderRadiusXs;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &:hover {
+    scrollbar-color: @colorFill transparent;
 
     &::-webkit-scrollbar-thumb {
-      background: transparent;
-      border-radius: @borderRadiusXs;
+      background: @colorFillSecondary;
     }
+  }
 
-    &::-webkit-scrollbar-track {
-      background: transparent;
-    }
+  // 覆盖内部元素的 margin，使布局紧凑
+  :global {
+    .markdown-custom-process {
+      margin: @marginXs 0;
+      border: none;
+      background: @colorFillQuaternary;
 
-    &:hover {
-      scrollbar-color: @colorFill transparent;
-
-      &::-webkit-scrollbar-thumb {
-        background: @colorFillSecondary;
-      }
-    }
-
-    // 覆盖内部元素的 margin，使布局紧凑
-    :global {
-      .markdown-custom-process {
-        margin: @paddingXxs 0;
-        border: none;
-        background: @colorFillQuaternary;
-
-        &:hover {
-          background: @colorFillTertiary;
-          box-shadow: none;
-        }
+      &:hover {
+        background: @colorFillTertiary;
+        box-shadow: none;
       }
     }
   }

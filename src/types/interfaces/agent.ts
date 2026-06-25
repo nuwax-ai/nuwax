@@ -59,14 +59,39 @@ export interface AgentInfo extends AgentBaseInfo {
   // 最后一次会话ID
   lastConversationId?: number;
   spaceId: number;
-  // ChatBot、PageApp
-  agentType: 'ChatBot' | 'PageApp' | 'TaskAgent';
+  // ChatBot、PageApp、TaskAgent、AgentFlow
+  agentType: 'ChatBot' | 'PageApp' | 'TaskAgent' | 'AgentFlow';
 }
 
 // 新增智能体输入参数
 export interface AgentAddParams extends AgentBaseInfo {
   spaceId: number;
+  type: AgentTypeEnum;
+  // 智能体子类型
+  subType?: string;
 }
+
+/**
+ * 新增智能体接口的返回结果（对象形式）。
+ *
+ * 不同 AgentTypeEnum 下，后端返回的字段存在差异：
+ * - ChatBot / TaskAgent：通常返回 `agentId`（已存在的智能体 ID）
+ * - AgentFlow：通常返回 `workflowId`（工作流 ID），部分场景下也可能返回 `agentId`
+ * - `id` 为兜底字段，在前两者均缺失时使用
+ *
+ * 调用方应通过 `agentId ?? workflowId ?? id` 的优先级顺序解析，
+ * 不应依赖调用时的 UI 状态（如 currentAgentType）来决定取值。
+ */
+export interface AgentCreateResult {
+  /** 通用主键 ID，作为兜底字段 */
+  id?: number;
+  /** 智能体 ID，ChatBot / TaskAgent 场景下的首选字段 */
+  agentId?: number;
+  /** 工作流 ID，AgentFlow 场景下的首选字段 */
+  workflowId?: number;
+}
+
+export type AgentAddResult = number | AgentCreateResult;
 
 // 智能体发布申请输入参数
 export interface AgentPublishApplyParams {
@@ -477,6 +502,8 @@ export interface AgentConfigInfo {
   pageHomeIndex: string;
   // 智能体类型
   type: AgentTypeEnum;
+  // 智能体子类型
+  subType?: string;
   // 是否隐藏远程桌面，1 隐藏；0 不隐藏
   hideDesktop: HideDesktopEnum;
   // 允许用户选择自有模型
@@ -498,6 +525,7 @@ export interface AgentConfigInfo {
   isSandboxUnavailable?: boolean;
   /** 智能体绑定的事件配置 */
   eventBindConfig?: any;
+  // 智能体开发模式下会话ID（用于区分不同会话）
   devAgentConversationId?: number;
 }
 

@@ -114,4 +114,6 @@ export enum KnowledgeDocTypeEnum {
   QA = 2,
   // 知识图谱
   GRAPH = 3,
+  // 命中测试
+  ACCURACYTEST = 4,
 }

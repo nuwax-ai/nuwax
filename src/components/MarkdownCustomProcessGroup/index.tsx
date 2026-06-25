@@ -16,47 +16,88 @@ const MarkdownCustomProcessGroup: React.FC<MarkdownCustomProcessGroupProps> = ({
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  // 计算子元素数量（过滤掉可能的空白节点，并排除隐藏的 Event 类型）
-  const processCount = React.Children.toArray(children).filter((child) => {
+  // 递归寻找并获取真正的 type 属性以适配可能被 div 等标签包装的子节点
+  const findProcessType = (node: React.ReactNode): string | undefined => {
+    if (!React.isValidElement(node)) return undefined;
+    const props = node.props as any;
+    if (props && props.type) {
+      return props.type;
+    }
+    if (props && props.children) {
+      if (React.isValidElement(props.children)) {
+        return findProcessType(props.children);
+      }
+      if (Array.isArray(props.children)) {
+        for (const subChild of props.children) {
+          const t = findProcessType(subChild);
+          if (t) return t;
+        }
+      }
+    }
+    return undefined;
+  };
+
+  // 过滤并处理子元素：连续相同的执行计划（Plan）只显示最后一个，并过滤 Event 类型
+  const childrenArray = React.Children.toArray(children);
+  let lastPlanIndex = -1;
+  for (let i = childrenArray.length - 1; i >= 0; i--) {
+    const child = childrenArray[i];
+    const type = findProcessType(child);
+    if (type === 'Plan' || type === AgentComponentTypeEnum.Plan) {
+      lastPlanIndex = i;
+      break;
+    }
+  }
+
+  const filteredChildren = childrenArray.filter((child, index) => {
     if (!React.isValidElement(child)) return false;
-    // 过滤掉隐藏的 Event 类型
-    if (
-      (child.props as any)?.type === AgentComponentTypeEnum.Event ||
-      (child.props as any)?.type === 'Event'
-    ) {
+
+    const type = findProcessType(child);
+    // 所有事件类型都不显示
+    if (type === AgentComponentTypeEnum.Event || type === 'Event') {
       return false;
     }
+
+    // 执行计划只保留最新的一个
+    if (type === 'Plan' || type === AgentComponentTypeEnum.Plan) {
+      return index === lastPlanIndex;
+    }
+
     return true;
-  }).length;
+  });
+
+  const processCount = filteredChildren.length;
 
   if (processCount === 0) return null;
 
   return (
-    <div className={cx(styles['markdown-custom-process-group'])}>
-      <div
-        className={cx(styles['group-header'])}
-        onClick={() => setIsExpanded(!isExpanded)}
-      >
-        <div className={cx(styles['header-left'])}>
-          <span className={cx(styles['group-title'])}>
-            {dict('PC.Components.MarkdownRenderer.executedProcesses')}
-          </span>
-        </div>
-        <div className={cx(styles['header-right'])}>
-          <span className={cx(styles['process-count'])}>
-            {processCount} {dict('PC.Components.MarkdownRenderer.items')}
-          </span>
-          <DownOutlined
-            className={cx(styles['expand-icon'], {
-              [styles['is-expanded']]: isExpanded,
-            })}
-          />
+    <>
+      <div className={cx(styles['markdown-custom-process-group'])}>
+        <div
+          className={cx(styles['group-header'])}
+          onClick={() => setIsExpanded(!isExpanded)}
+        >
+          <div className={cx(styles['header-left'])}>
+            <span className={cx(styles['group-title'])}>
+              {dict('PC.Components.MarkdownRenderer.executedProcesses')}
+            </span>
+            <span className={cx(styles['process-count'])}>
+              {processCount} {dict('PC.Components.MarkdownRenderer.items')}
+            </span>
+          </div>
+          <div className={cx(styles['header-right'])}>
+            <DownOutlined
+              className={cx(styles['expand-icon'], {
+                [styles['is-expanded']]: isExpanded,
+              })}
+            />
+          </div>
         </div>
       </div>
       {isExpanded && (
-        <div className={cx(styles['group-content'])}>{children}</div>
+        <div className={cx(styles['group-content'])}>{filteredChildren}</div>
       )}
-    </div>
+    </>
   );
 };
 

@@ -1,0 +1,129 @@
+@import '@/styles/color.less';
+@import '@/styles/token.less';
+
+// ── AgentFlow Panel Design System ─────────────────────────
+// "Refined Utility" — Linear/Figma property panel aesthetic
+// Namespace: af- (agentflow)
+// Parent context: .dispose-node-style (padding: 12px, width ~346px)
+
+// ── Root Wrapper ──────────────────────────────────────────
+// Replaces the orphan class "model-node-style"
+.af-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+// ── Section Grouping ──────────────────────────────────────
+// Groups related fields into a visual block with subtle bg
+.af-section {
+  background: @WHITE04;
+  border: 1px solid @WHITE15;
+  border-radius: @borderRadius;
+  padding: 10px;
+  margin-top: 8px;
+
+  &:first-child {
+    margin-top: 0;
+  }
+}
+
+// ── Section Title ─────────────────────────────────────────
+// Title with a 3px left accent bar, replacing "node-title-style"
+.af-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: @fontWeightStrong;
+  line-height: 20px;
+  color: @BLANK04;
+  margin-bottom: 8px;
+  padding-left: 8px;
+  position: relative;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 2px;
+    bottom: 2px;
+    width: 3px;
+    border-radius: 2px;
+    background: @colorPrimary;
+  }
+}
+
+// ── Repeatable Card Item ──────────────────────────────────
+// Used for eval items, route cards, form field cards
+.af-card {
+  border: 1px solid @WHITE15;
+  border-radius: @borderRadiusSm;
+  padding: 8px;
+  margin-bottom: 8px;
+  background: @WHITE;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    border-color: @colorBorder;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 4%);
+  }
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+// ── Card Header Row ───────────────────────────────────────
+// Contains the card index label and delete button
+.af-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+  font-size: 13px;
+  font-weight: @fontWeightStrong;
+  color: @GRAY11;
+
+  span {
+    color: @GRAY11;
+  }
+}
+
+// ── Form Field ────────────────────────────────────────────
+// Consistent spacing for all form items (replaces fieldStyle inline)
+.af-field {
+  margin-bottom: 8px;
+}
+
+// For fields inside cards that need tighter spacing at bottom,
+// use af-field with explicit style={{ marginBottom: 0 }}
+
+// ── Inline Row ────────────────────────────────────────────
+// For Space-based inline form items (branch rows, param rows)
+.af-inline-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+// ── Hint Text ─────────────────────────────────────────────
+// For small grey hint text at bottom of forms
+.af-hint {
+  margin-bottom: 8px;
+  color: @GRAY05;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+// ── Weight Total Display ──────────────────────────────────
+// EvalGate's weight total readout
+.af-weight-total {
+  margin-top: 8px;
+  margin-bottom: 8px;
+
+  span {
+    font-weight: @fontWeightStrong;
+  }
+}

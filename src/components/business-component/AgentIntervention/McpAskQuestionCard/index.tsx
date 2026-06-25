@@ -69,12 +69,22 @@ const McpAskQuestionCard: React.FC<McpAskQuestionCardProps> = ({
   }, [input.requestId]);
 
   useEffect(() => {
-    const initial = ui.initialValue || interaction.formData;
+    const fieldInitials = (ui.fields ?? []).reduce<Record<string, unknown>>(
+      (acc, f) =>
+        f.initialValue !== undefined
+          ? { ...acc, [f.name]: f.initialValue }
+          : acc,
+      {},
+    );
+    const initial =
+      Object.keys(fieldInitials).length > 0
+        ? { ...fieldInitials, ...(interaction.formData ?? {}) }
+        : interaction.formData;
     if (initial) {
       // @ts-ignore
       form.setFieldsValue(initial);
     }
-  }, [form, ui.initialValue, interaction.formData, input.requestId]);
+  }, [form, ui.fields, interaction.formData, input.requestId]);
 
   const buildPayload = (
     action: McpAskRespondPayload['action'],

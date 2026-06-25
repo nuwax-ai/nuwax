@@ -1,0 +1,877 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "version": "2.0.0",
+  "title": "AgentFlow Schema (aligned with V3 NodeConfig)",
+
+  "_changelog": "v2 — 修复节点类型键名对齐 NodeTypeEnum、字段名对齐 NodeConfig、端口模式对齐 handler 实现、新增字段标记 [NEW]",
+
+  "flowKind": "AgentFlow",
+
+  "globalConfig": {
+    "flowControlModel": {
+      "field": "modelId",
+      "type": "select",
+      "label": "流程控制模型",
+      "optionsFrom": "/api/model/list",
+      "default": null
+    }
+  },
+
+  "contextMechanism": {
+    "variableSyntax": "{{variableName}}",
+    "parseByBackend": true,
+    "frontendInferenceSources": [
+      "startNode.nodeConfig.inputArgs — 开始节点定义的输入变量",
+      "node_{id}_output — 各节点 nodeConfig.outputArgs",
+      "user_input — 用户原始输入",
+      "user_reply — 询问用户节点的回复"
+    ]
+  },
+
+  "nodeTypes": {
+    "RouteDecision": {
+      "nodeTypeEnum": "NodeTypeEnum.RouteDecision",
+      "label": "路由决策",
+      "category": "processing",
+      "description": "AI决策走哪条分支",
+      "defaultName": "Route Decision",
+
+      "ports": {
+        "input": { "group": "in", "idSuffix": "in", "maxConnections": 1 },
+        "output": {
+          "type": "dynamicBranches",
+          "defaultPort": {
+            "idSuffix": "route-default-out",
+            "group": "special",
+            "specialPortType": "RouteDecisionDefault",
+            "label": "默认",
+            "color": "#bfbfbf",
+            "maxConnections": 1
+          },
+          "branchPort": {
+            "idSuffixPattern": "route-{routeUuid}-out",
+            "group": "special",
+            "specialPortType": "RouteDecisionRoute",
+            "maxConnections": 1,
+            "optional": true
+          },
+          "rules": {
+            "maxPerPort": 1,
+            "optionalConnection": true,
+            "minBranches": 1,
+            "allBranchesModifiable": true
+          }
+        }
+      },
+
+      "properties": {
+        "modelId": {
+          "field": "nodeConfig.modelId",
+          "type": "select",
+          "label": "识别模型",
+          "optionsFrom": "/api/model/list",
+          "default": null,
+          "_note": "[CHANGE] 新增独立模型选择，V3 无此字段"
+        },
+        "extraPrompt": {
+          "field": "nodeConfig.extraPrompt",
+          "type": "textarea",
+          "label": "系统提示词",
+          "placeholder": "指导AI如何做路由决策...",
+          "default": ""
+        },
+        "routes": {
+          "field": "nodeConfig.routes",
+          "type": "dynamicList",
+          "label": "路由分支",
+          "addButtonText": "+ 添加分支",
+          "minItems": 1,
+          "itemSchema": {
+            "uuid": { "type": "auto-generated" },
+            "name": { "type": "text", "label": "分支名称", "required": true },
+            "desc": {
+              "type": "textarea",
+              "label": "分支描述",
+              "placeholder": "什么情况下走这条分支..."
+            },
+            "nextNodeIds": { "type": "hidden", "default": [] }
+          }
+        }
+      },
+
+      "defaults": {
+        "extraPrompt": "",
+        "routes": [],
+        "inputArgs": [],
+        "outputArgs": []
+      }
+    },
+
+    "Agent": {
+      "nodeTypeEnum": "NodeTypeEnum.Agent",
+      "label": "智能体",
+      "category": "processing",
+      "description": "调用AI智能体处理",
+      "defaultName": "Agent",
+
+      "ports": {
+        "input": { "group": "in", "idSuffix": "in", "maxConnections": 1 },
+        "output": { "group": "out", "idSuffix": "out", "maxConnections": 1 }
+      },
+
+      "properties": {
+        "contextPassMode": {
+          "field": "nodeConfig.contextPassMode",
+          "type": "segmented",
+          "label": "上下文传递",
+          "options": [
+            { "value": "auto", "label": "自动" },
+            { "value": "manual", "label": "手动" }
+          ],
+          "default": "auto",
+          "_note": "[NEW] 替代原有 autoWirePrevOutput(boolean)，细化为 auto/manual 模式"
+        },
+        "contextParams": {
+          "field": "nodeConfig.contextParams",
+          "showWhen": { "contextPassMode": "manual" },
+          "type": "compound",
+          "subFields": {
+            "baseParam": {
+              "type": "radioList",
+              "singleSelect": true,
+              "options": [
+                { "key": "user_input", "label": "用户输入" },
+                { "key": "flow_context", "label": "流程上下文" }
+              ],
+              "dynamicOptions": "startNode.nodeConfig.inputArgs"
+            },
+            "upstreamOutputs": {
+              "type": "checkboxList",
+              "source": "frontendInferredUpstreamNodes",
+              "optionKey": "node_{nodeId}_output"
+            },
+            "extraParams": {
+              "type": "dynamicList",
+              "addButtonText": "+ 添加参数",
+              "itemSchema": {
+                "name": { "type": "text", "placeholder": "参数名" },
+                "valueType": {
+                  "type": "segmented",
+                  "options": ["literal", "variable"],
+                  "default": "literal"
+                },
+                "value": { "type": "text", "placeholder": "参数值" },
+                "variableRef": {
+                  "type": "select",
+                  "optionsSource": "contextVariableList"
+                }
+              }
+            }
+          },
+          "_note": "[NEW] 手动模式下的上下文选择器，需新增 NodeConfig 字段"
+        },
+        "systemPrompt": {
+          "field": "nodeConfig.systemPrompt",
+          "type": "textarea",
+          "label": "补充提示词",
+          "placeholder": "可以添加提示词来约束智能体输出格式等，也可以在此引用上下文变量",
+          "supportsVariableRef": true,
+          "default": "",
+          "_note": "[REUSE] 复用 NodeConfig.systemPrompt（V3 LLM 节点已有），语义为补充提示词"
+        }
+      },
+
+      "defaults": {
+        "agentMode": "Platform",
+        "contextPassMode": "auto",
+        "contextParams": [],
+        "systemPrompt": "",
+        "inputArgs": [],
+        "outputArgs": [
+          {
+            "key": "output",
+            "name": "output",
+            "dataType": "String",
+            "require": true,
+            "systemVariable": true
+          }
+        ]
+      }
+    },
+
+    "Plugin": {
+      "nodeTypeEnum": "NodeTypeEnum.Plugin",
+      "label": "插件",
+      "category": "processing",
+      "description": "调用外部插件执行",
+      "_scope": "复用 V3 Plugin 节点，AgentFlow 场景下属性面板增加 auto/manual 入参模式",
+
+      "ports": {
+        "input": { "group": "in", "idSuffix": "in", "maxConnections": 1 },
+        "output": { "group": "out", "idSuffix": "out", "maxConnections": 1 }
+      },
+
+      "properties": {
+        "inputPassMode": {
+          "field": "nodeConfig.inputPassMode",
+          "type": "segmented",
+          "label": "入参配置",
+          "options": [
+            { "value": "auto", "label": "自动" },
+            { "value": "manual", "label": "手动" }
+          ],
+          "default": "auto",
+          "_note": "[NEW][AgentFlow-only] V3 不变，仅 AgentFlow 场景展示"
+        },
+        "inputParams": {
+          "field": "nodeConfig.inputArgs",
+          "showWhen": { "inputPassMode": "manual" },
+          "type": "predefinedParamList",
+          "paramSchema": {
+            "label": { "source": "predefined" },
+            "name": { "source": "predefined" },
+            "bindValueType": {
+              "type": "segmented",
+              "options": ["Input", "Reference"],
+              "default": "Input"
+            },
+            "bindValue": { "type": "text", "placeholder": "参数值" }
+          },
+          "_note": "[CHANGE] 手动模式下复用 InputAndOutConfig.bindValueType/bindValue 机制"
+        }
+      },
+
+      "defaults": {
+        "inputArgs": [],
+        "outputArgs": []
+      }
+    },
+
+    "Workflow": {
+      "nodeTypeEnum": "NodeTypeEnum.Workflow",
+      "label": "工作流",
+      "category": "processing",
+      "description": "调用其他工作流",
+      "_scope": "复用 V3 Workflow 节点，AgentFlow 场景下增加触发方式 + auto/manual 入参",
+
+      "ports": {
+        "input": { "group": "in", "idSuffix": "in", "maxConnections": 1 },
+        "output": { "group": "out", "idSuffix": "out", "maxConnections": 1 }
+      },
+
+      "properties": {
+        "triggerMode": {
+          "field": "nodeConfig.triggerMode",
+          "type": "select",
+          "label": "触发方式",
+          "options": [
+            { "value": "sync", "label": "同步（等待完成）" },
+            { "value": "async", "label": "异步（立即返回）" }
+          ],
+          "default": "sync",
+          "_note": "[NEW][AgentFlow-only]"
+        },
+        "inputPassMode": {
+          "field": "nodeConfig.inputPassMode",
+          "type": "segmented",
+          "label": "入参配置",
+          "options": [
+            { "value": "auto", "label": "自动" },
+            { "value": "manual", "label": "手动" }
+          ],
+          "default": "auto",
+          "_note": "[NEW][AgentFlow-only]"
+        },
+        "inputParams": {
+          "field": "nodeConfig.inputArgs",
+          "showWhen": { "inputPassMode": "manual" },
+          "type": "predefinedParamList",
+          "paramSchema": "同 Plugin.inputParams.paramSchema",
+          "_note": "[CHANGE] 复用 InputAndOutConfig"
+        }
+      },
+
+      "defaults": {
+        "triggerMode": "sync",
+        "inputArgs": [],
+        "outputArgs": []
+      }
+    },
+
+    "HumanInteraction:approve": {
+      "nodeTypeEnum": "NodeTypeEnum.HumanInteraction",
+      "hitlMode": "HitlModeEnum.Approve",
+      "label": "人工确认",
+      "category": "human",
+      "description": "暂停等待人工审核",
+      "stencilLabel": "人工确认",
+      "defaultName": "Human Approve",
+      "_note": "拖拽时按 approve 模式创建，hitlMode 固定为 Approve",
+
+      "ports": {
+        "input": { "group": "in", "idSuffix": "in", "maxConnections": 1 },
+        "output": {
+          "type": "dynamicBranches",
+          "branchPort": {
+            "idSuffixPattern": "hitl-{branchUuid}-out",
+            "group": "special",
+            "maxConnections": 1,
+            "optional": true
+          },
+          "rules": {
+            "maxPerPort": 1,
+            "optionalConnection": true,
+            "minBranches": 1,
+            "allBranchesModifiable": true
+          },
+          "_note": "[CHANGE] 原代码固定 approve/reject 两个端口，原型改为动态分支"
+        }
+      },
+
+      "properties": {
+        "hitlMode": {
+          "field": "nodeConfig.hitlMode",
+          "type": "fixed",
+          "value": "approve",
+          "_note": "创建时固定，不可切换"
+        },
+        "confirmRole": {
+          "field": "nodeConfig.confirmRole",
+          "type": "radioCards",
+          "label": "确认角色",
+          "options": [
+            {
+              "value": "user",
+              "label": "使用者确认",
+              "description": "当前用户直接确认"
+            },
+            {
+              "value": "external",
+              "label": "外部确认",
+              "description": "通过通道通知他人"
+            }
+          ],
+          "default": "user",
+          "_note": "[NEW] 需新增 NodeConfig 字段"
+        },
+        "approvalMode": {
+          "field": "nodeConfig.approvalMode",
+          "type": "select",
+          "label": "审核模式",
+          "options": [
+            { "value": "approve_reject", "label": "通过 / 拒绝" },
+            { "value": "edit_approve", "label": "可编辑后通过" },
+            { "value": "always_pass", "label": "仅通知（自动通过）" }
+          ],
+          "conditionalOptions": {
+            "always_pass": { "showWhen": { "confirmRole": "user" } }
+          },
+          "default": "approve_reject",
+          "_note": "[CHANGE] 替代原有 approveConfig.actions 数组"
+        },
+        "instruction": {
+          "field": "nodeConfig.instruction",
+          "type": "textarea",
+          "label": "审核说明",
+          "placeholder": "向审核人说明需要确认的内容...",
+          "default": "",
+          "_note": "[NEW] 替代原有 approveConfig.promptToReviewer"
+        },
+        "branches": {
+          "field": "nodeConfig.branches",
+          "type": "dynamicList",
+          "label": "输出分支",
+          "addButtonText": "+ 添加分支",
+          "minItems": 1,
+          "itemSchema": {
+            "uuid": { "type": "auto-generated" },
+            "name": { "type": "text", "label": "分支名称", "required": true },
+            "desc": { "type": "textarea", "label": "分支描述" },
+            "nextNodeIds": { "type": "hidden", "default": [] }
+          },
+          "_note": "[CHANGE] 替代原有 approveNextNodeIds/rejectNextNodeIds，改为动态分支"
+        },
+        "channels": {
+          "field": "nodeConfig.channels",
+          "showWhen": { "confirmRole": "external" },
+          "type": "dynamicList",
+          "label": "确认通道",
+          "addButtonText": "+ 添加通道",
+          "itemSchema": {
+            "type": {
+              "type": "select",
+              "options": ["webhook"],
+              "default": "webhook"
+            },
+            "enabled": { "type": "switch", "default": true }
+          },
+          "_note": "[NEW] 外部确认通道配置"
+        },
+        "channelTimeout": {
+          "field": "nodeConfig.channelTimeout",
+          "showWhen": { "confirmRole": "external" },
+          "type": "number",
+          "label": "等待超时（秒）",
+          "min": 30,
+          "max": 86400,
+          "default": 300,
+          "_note": "[NEW]"
+        },
+        "escalation": {
+          "field": "nodeConfig.escalation",
+          "showWhen": { "confirmRole": "external" },
+          "type": "select",
+          "label": "超时处理",
+          "options": [
+            { "value": "skip", "label": "跳过（自动通过继续执行）" },
+            { "value": "reject", "label": "自动拒绝" },
+            { "value": "retry", "label": "重新通知审核人" },
+            { "value": "abort", "label": "中止工作流" }
+          ],
+          "default": "skip",
+          "_note": "[NEW]"
+        },
+        "channelRetry": {
+          "field": "nodeConfig.channelRetry",
+          "showWhen": { "confirmRole": "external" },
+          "type": "number",
+          "label": "重试次数",
+          "min": 0,
+          "max": 10,
+          "default": 3,
+          "_note": "[NEW]"
+        }
+      },
+
+      "defaults": {
+        "hitlMode": "approve",
+        "confirmRole": "user",
+        "approvalMode": "approve_reject",
+        "instruction": "",
+        "branches": [
+          { "uuid": "auto", "name": "通过", "desc": "", "nextNodeIds": [] },
+          { "uuid": "auto", "name": "拒绝", "desc": "", "nextNodeIds": [] }
+        ],
+        "channels": [{ "type": "webhook", "enabled": true }],
+        "channelTimeout": 300,
+        "escalation": "skip",
+        "channelRetry": 3,
+        "inputArgs": [],
+        "outputArgs": []
+      }
+    },
+
+    "HumanInteraction:ask": {
+      "nodeTypeEnum": "NodeTypeEnum.HumanInteraction",
+      "hitlMode": "HitlModeEnum.Ask",
+      "label": "询问用户",
+      "category": "human",
+      "description": "向用户提问收集信息",
+      "stencilLabel": "询问用户",
+      "defaultName": "Ask User",
+      "_note": "拖拽时按 ask 模式创建，hitlMode 固定为 Ask",
+
+      "ports": {
+        "input": { "group": "in", "idSuffix": "in", "maxConnections": 1 },
+        "output": {
+          "type": "modeDependent",
+          "modes": {
+            "text": {
+              "group": "out",
+              "idSuffix": "out",
+              "maxConnections": 1
+            },
+            "options": {
+              "type": "dynamicBranches",
+              "branchPort": {
+                "idSuffixPattern": "option-{optionUuid}-out",
+                "group": "special",
+                "maxConnections": 1,
+                "optional": true
+              },
+              "rules": {
+                "maxPerPort": 1,
+                "optionalConnection": true,
+                "unconnectedMeans": "放弃该选项"
+              },
+              "_note": "[NEW] 每个 option 生成独立输出端口"
+            },
+            "form": {
+              "group": "out",
+              "idSuffix": "out",
+              "maxConnections": 1
+            }
+          }
+        }
+      },
+
+      "properties": {
+        "hitlMode": {
+          "field": "nodeConfig.hitlMode",
+          "type": "fixed",
+          "value": "ask"
+        },
+        "questionTemplate": {
+          "field": "nodeConfig.askConfig.question",
+          "type": "textarea",
+          "label": "提问模板",
+          "placeholder": "向用户提出的问题...",
+          "supportsVariableRef": true,
+          "default": "",
+          "_note": "[REUSE] 写入现有 askConfig.question 字段"
+        },
+        "replyMode": {
+          "field": "nodeConfig.replyMode",
+          "type": "buttonGroup",
+          "label": "回复模式",
+          "options": [
+            { "value": "text", "label": "文本回复" },
+            { "value": "options", "label": "选项回复" },
+            { "value": "form", "label": "表单回复" }
+          ],
+          "default": "text",
+          "_note": "[CHANGE] 扩展原有 askConfig.answerType(TEXT/SELECT) → replyMode(text/options/form)"
+        },
+        "options": {
+          "field": "nodeConfig.askConfig.options",
+          "showWhen": { "replyMode": "options" },
+          "type": "dynamicList",
+          "label": "选项内容",
+          "description": "每个选项会显示为独立输出端口",
+          "addButtonText": "+ 添加选项",
+          "itemSchema": {
+            "uuid": { "type": "auto-generated" },
+            "content": {
+              "type": "text",
+              "label": "选项内容",
+              "required": true
+            },
+            "nextNodeIds": { "type": "hidden", "default": [] }
+          },
+          "_note": "[CHANGE] 复用 QANodeOption[] 结构，每个 option 对应一个输出端口"
+        },
+        "formFields": {
+          "field": "nodeConfig.formFields",
+          "showWhen": { "replyMode": "form" },
+          "type": "dynamicList",
+          "label": "表单字段",
+          "addButtonText": "+ 添加字段",
+          "itemSchema": {
+            "label": { "type": "text", "label": "字段名称", "required": true },
+            "type": {
+              "type": "select",
+              "label": "字段类型",
+              "options": [
+                "radio",
+                "checkbox",
+                "input",
+                "number",
+                "textarea",
+                "file"
+              ],
+              "default": "input"
+            },
+            "required": { "type": "switch", "label": "必填", "default": false },
+            "options": {
+              "showWhen": { "type": ["radio", "checkbox"] },
+              "type": "textarea",
+              "placeholder": "选项内容（每行一个选项）"
+            }
+          },
+          "_note": "[NEW] 表单模式字段定义，需新增 NodeConfig 字段"
+        },
+        "required": {
+          "field": "nodeConfig.askConfig.required",
+          "type": "select",
+          "label": "是否必填",
+          "options": [
+            { "value": true, "label": "必填（等待用户回复后继续）" },
+            { "value": false, "label": "可选（可跳过）" }
+          ],
+          "default": true,
+          "_note": "[REUSE] 复用 askConfig.required"
+        },
+        "timeout": {
+          "field": "nodeConfig.askConfig.timeout",
+          "type": "number",
+          "label": "超时时间（秒）",
+          "placeholder": "留空则不限制超时",
+          "min": 30,
+          "max": 3600,
+          "default": null,
+          "_note": "[NEW] 需扩展 askConfig 增加 timeout 字段"
+        },
+        "contextWriteKey": {
+          "type": "readonly",
+          "label": "上下文写入",
+          "value": "user_reply",
+          "description": "用户回复自动写入全局上下文供下游使用"
+        }
+      },
+
+      "defaults": {
+        "hitlMode": "ask",
+        "askConfig": {
+          "question": "",
+          "answerType": "TEXT",
+          "answerKey": "userReply",
+          "required": true
+        },
+        "replyMode": "text",
+        "formFields": [],
+        "inputArgs": [],
+        "outputArgs": []
+      }
+    },
+
+    "EvalGate": {
+      "nodeTypeEnum": "NodeTypeEnum.EvalGate",
+      "label": "结果评估",
+      "category": "advanced",
+      "description": "评估输出质量与准确性",
+      "defaultName": "Eval Gate",
+
+      "ports": {
+        "input": { "group": "in", "idSuffix": "in", "maxConnections": 1 },
+        "output": {
+          "type": "dynamicBranches",
+          "passPort": {
+            "idSuffix": "eval-pass-out",
+            "group": "special",
+            "specialPortType": "EvalGatePass",
+            "label": "通过",
+            "badge": "✓",
+            "badgeColor": "#52c41a",
+            "maxConnections": 1
+          },
+          "failPorts": {
+            "idSuffixPattern": "eval-fail-{branchUuid}-out",
+            "group": "special",
+            "specialPortType": "EvalGateFail",
+            "maxConnections": 1,
+            "optional": true
+          },
+          "rules": {
+            "maxPerPort": 1,
+            "optionalConnection": true,
+            "minBranches": 1,
+            "allBranchesModifiable": true
+          }
+        }
+      },
+
+      "properties": {
+        "modelId": {
+          "field": "nodeConfig.modelId",
+          "type": "select",
+          "label": "评估模型",
+          "optionsFrom": "/api/model/list",
+          "defaultFromGlobal": "flowControlModel",
+          "_note": "[REUSE] 复用 NodeConfig.modelId（V3 LLM 节点已有）"
+        },
+        "shareContext": {
+          "field": "nodeConfig.autoWirePrevOutput",
+          "type": "checkbox",
+          "label": "共用上游智能体上下文",
+          "default": true,
+          "_note": "[REUSE] 复用 autoWirePrevOutput，语义映射为'共用上下文'"
+        },
+        "evalItems": {
+          "field": "nodeConfig.evalItems",
+          "type": "dynamicList",
+          "label": "评估项目",
+          "addButtonText": "+ 添加",
+          "itemSchema": {
+            "uuid": { "type": "auto-generated" },
+            "name": { "type": "text", "label": "项目名称", "required": true },
+            "weight": {
+              "type": "number",
+              "label": "权重",
+              "suffix": "%",
+              "min": 0,
+              "max": 100,
+              "default": 0
+            },
+            "description": {
+              "type": "textarea",
+              "label": "评估标准描述",
+              "placeholder": "评估标准描述（可选）"
+            }
+          },
+          "validation": {
+            "totalWeightMustEqual": 100,
+            "errorMessage": "权重合计需等于100%"
+          },
+          "_note": "[CHANGE] 替代原有 evalValidators（rule/llm-judge），改为加权打分制"
+        },
+        "passThreshold": {
+          "field": "nodeConfig.passThreshold",
+          "type": "number",
+          "label": "通过阈值",
+          "hint": "（加权总分 ≥ 该值即通过）",
+          "min": 0,
+          "max": 100,
+          "default": 80,
+          "suffix": "分",
+          "_note": "[NEW] 加权打分制通过阈值"
+        },
+        "evalOutput": {
+          "field": "nodeConfig.evalOutput",
+          "type": "checkbox",
+          "label": "评估过程输出",
+          "description": "开启后会将评估过程输出给用户",
+          "default": true,
+          "_note": "[NEW]"
+        },
+        "evalMaxRetry": {
+          "field": "nodeConfig.evalMaxRetry",
+          "type": "number",
+          "label": "最多循环评估次数",
+          "hint": "（不通过时重新评估的上限）",
+          "min": 1,
+          "max": 10,
+          "default": 3,
+          "suffix": "次",
+          "_note": "[REUSE] 复用原有 evalMaxRetry 字段，默认值从 2 调整为 3"
+        },
+        "evalFailMsg": {
+          "field": "nodeConfig.evalFailMsg",
+          "type": "textarea",
+          "label": "超过上限未通过时提示",
+          "hint": "（将输出展示给用户）",
+          "placeholder": "例如：智能体输出结果评估未通过，请仔细甄别",
+          "default": "",
+          "_note": "[NEW] 替代原有 evalOnMaxRetry 枚举，改为用户可自定义提示语"
+        },
+        "branches": {
+          "field": "nodeConfig.branches",
+          "type": "dynamicList",
+          "label": "评估分支",
+          "description": "通过分支固定为第一个，其余为不通过时的细分路径",
+          "addButtonText": "+ 添加不通过分支",
+          "minItems": 1,
+          "itemSchema": {
+            "uuid": { "type": "auto-generated" },
+            "name": { "type": "text", "label": "分支名称", "required": true },
+            "desc": { "type": "textarea", "label": "分支描述" },
+            "nextNodeIds": { "type": "hidden", "default": [] }
+          },
+          "_note": "[CHANGE] 替代原有 passNextNodeIds + evalValidators[].onFail.targetNodeId，改为动态分支"
+        }
+      },
+
+      "defaults": {
+        "modelId": null,
+        "autoWirePrevOutput": true,
+        "evalItems": [],
+        "passThreshold": 80,
+        "evalOutput": true,
+        "evalMaxRetry": 3,
+        "evalFailMsg": "",
+        "branches": [
+          { "uuid": "auto", "name": "通过", "desc": "", "nextNodeIds": [] }
+        ],
+        "passNextNodeIds": [],
+        "inputArgs": [],
+        "outputArgs": []
+      }
+    }
+  },
+
+  "sidebarLayout": {
+    "groups": [
+      {
+        "label": "处理节点",
+        "items": [
+          {
+            "nodeType": "RouteDecision",
+            "label": "路由决策",
+            "desc": "AI决策走哪条分支"
+          },
+          {
+            "nodeType": "Agent",
+            "label": "智能体",
+            "desc": "调用AI智能体处理"
+          },
+          { "nodeType": "Plugin", "label": "插件", "desc": "调用外部插件执行" },
+          {
+            "nodeType": "Workflow",
+            "label": "工作流",
+            "desc": "调用其他工作流"
+          }
+        ]
+      },
+      {
+        "label": "人工确认",
+        "items": [
+          {
+            "nodeType": "HumanInteraction:approve",
+            "label": "人工确认",
+            "desc": "暂停等待人工审核"
+          }
+        ]
+      },
+      {
+        "label": "询问用户",
+        "items": [
+          {
+            "nodeType": "HumanInteraction:ask",
+            "label": "询问用户",
+            "desc": "向用户提问收集信息"
+          }
+        ]
+      },
+      {
+        "label": "高级节点",
+        "items": [
+          {
+            "nodeType": "EvalGate",
+            "label": "结果评估",
+            "desc": "评估输出质量与准确性"
+          }
+        ]
+      }
+    ]
+  },
+
+  "connectionRules": {
+    "startEndNodes": "与 V3 一致，新建时自动创建，不可删除",
+    "defaultRule": "每个输出端口最多连接 1 个下游节点（一对一）",
+    "unconnectedBehavior": "未连接的输出端口 = 流程到此结束 / 放弃该路径",
+    "branchNodes": [
+      "RouteDecision",
+      "HumanInteraction:approve",
+      "HumanInteraction:ask(options)",
+      "EvalGate"
+    ],
+    "branchRules": {
+      "minBranches": 1,
+      "allBranchesModifiable": true,
+      "maxConnectionsPerPort": 1,
+      "optionalConnection": true
+    }
+  },
+
+  "outOfScope": ["ExternalConnector"],
+
+  "newNodeConfigFields": [
+    "contextPassMode",
+    "contextParams",
+    "inputPassMode",
+    "triggerMode",
+    "confirmRole",
+    "approvalMode",
+    "instruction",
+    "branches (dynamic, for HumanInteraction:approve and EvalGate)",
+    "channels",
+    "channelTimeout",
+    "escalation",
+    "channelRetry",
+    "replyMode",
+    "formFields",
+    "evalItems (replaces evalValidators for weighted scoring)",
+    "passThreshold",
+    "evalOutput",
+    "evalFailMsg"
+  ]
+}

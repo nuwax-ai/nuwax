@@ -43,8 +43,37 @@ export const jumpToPluginCloudTool = (
   jumpTo(`/space/${targetSpaceId}/plugin/${pluginId}/cloud-tool`);
 };
 
-export const jumpToWorkflow = (targetSpaceId: number, workflowId: number) => {
-  jumpTo(`/space/${targetSpaceId}/workflow/${workflowId}`);
+type WorkflowRouteQuery = Record<
+  string,
+  string | number | boolean | null | undefined
+>;
+
+export const buildWorkflowRoute = (
+  targetSpaceId: number | string,
+  workflowId: number | string,
+  workflowType?: string,
+  query?: WorkflowRouteQuery,
+) => {
+  const route = `/space/${targetSpaceId}/workflow/${workflowId}`;
+  const searchParams = new URLSearchParams();
+
+  Object.entries(query || {}).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) {
+      searchParams.set(key, String(value));
+    }
+  });
+
+  const search = searchParams.toString();
+  return search ? `${route}?${search}` : route;
+};
+
+export const jumpToWorkflow = (
+  targetSpaceId: number,
+  workflowId: number,
+  workflowType?: string,
+  query?: WorkflowRouteQuery,
+) => {
+  jumpTo(buildWorkflowRoute(targetSpaceId, workflowId, workflowType, query));
 };
 
 export const jumpToSkill = (targetSpaceId: number, skillId: number) => {

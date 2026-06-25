@@ -152,6 +152,7 @@ export const useTestRun = ({
   const testRunAllNode = useCallback(
     async (params: ITestRun) => {
       setLoading(true);
+
       const abortConnection = await createSSEConnection({
         url: `${process.env.BASE_URL}/api/workflow/test/execute`,
         method: 'POST',
@@ -248,7 +249,7 @@ export const useTestRun = ({
       abortConnection();
       changeUpdateTime();
     },
-    [graphRef, spaceId, workflowId, info, changeUpdateTime],
+    [graphRef, spaceId, workflowId, info, changeUpdateTime, setErrorParams],
   );
 
   // 试运行所有节点（入口）
