@@ -258,7 +258,8 @@ const KnowledgeAccuracyTest: React.FC<KnowledgeAccuracyTestProps> = ({
       title: 'Query',
       dataIndex: 'query',
       key: 'query',
-      width: '55%',
+      width: '50%',
+      ellipsis: true,
       render: (text: string, record: TestHistoryItem) => (
         <a
           onClick={(e) => {
@@ -266,6 +267,8 @@ const KnowledgeAccuracyTest: React.FC<KnowledgeAccuracyTestProps> = ({
             console.log(dict('PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.queryClickEventTriggered'), record);
             handleHistoryClick(record);
           }}
+          className={styles.queryCell}
+          title={text}
           style={{ cursor: 'pointer', color: '#1890FF' }}
         >
           {text}
@@ -276,7 +279,7 @@ const KnowledgeAccuracyTest: React.FC<KnowledgeAccuracyTestProps> = ({
       title: dict('PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.time'),
       dataIndex: 'createTime',
       key: 'createTime',
-      width: '45%',
+      width: '50%',
       render: (text: string) => (
         <div className={styles.timeCell}>{text}</div>
       ),
