@@ -1227,7 +1227,6 @@ export const ZH_HK: SystemLangMap = {
   "PC.Layouts.DynamicMenusLayout.home": "主頁",
   "PC.Layouts.DynamicMenusLayout.HomeSection.conversationHistory": "會話記錄",
   "PC.Layouts.DynamicMenusLayout.HomeSection.exploreSquare": "現在去廣場開啓你的探索之旅吧～",
-  "PC.Layouts.DynamicMenusLayout.HomeSection.lookRight": "右邊看👉",
   "PC.Layouts.DynamicMenusLayout.HomeSection.noAgentUsed": "你還沒有使用任何智能體",
   "PC.Layouts.DynamicMenusLayout.HomeSection.recentlyUsed": "最近使用",
   "PC.Layouts.DynamicMenusLayout.HomeSection.startFirstConversation": "在會話框中輸入指令開始你的第一次會話吧～",
