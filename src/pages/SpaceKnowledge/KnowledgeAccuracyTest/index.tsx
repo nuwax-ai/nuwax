@@ -258,7 +258,7 @@ const KnowledgeAccuracyTest: React.FC<KnowledgeAccuracyTestProps> = ({
       title: 'Query',
       dataIndex: 'query',
       key: 'query',
-      width: '70%',
+      width: '55%',
       render: (text: string, record: TestHistoryItem) => (
         <a
           onClick={(e) => {
@@ -276,7 +276,10 @@ const KnowledgeAccuracyTest: React.FC<KnowledgeAccuracyTestProps> = ({
       title: dict('PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.time'),
       dataIndex: 'createTime',
       key: 'createTime',
-      width: '30%',
+      width: '45%',
+      render: (text: string) => (
+        <div className={styles.timeCell}>{text}</div>
+      ),
     },
   ];
 
