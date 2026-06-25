@@ -14,10 +14,10 @@ const createMockHandler = (nodeType: NodeTypeEnum): BranchNodeHandler => ({
 
 describe('ExtensionRegistry', () => {
   it('should register and retrieve a handler', () => {
-    const handler = createMockHandler(NodeTypeEnum.EvalGate);
+    const handler = createMockHandler(NodeTypeEnum.RouteDecision);
     extensionRegistry.register(handler);
 
-    const retrieved = extensionRegistry.get(NodeTypeEnum.EvalGate);
+    const retrieved = extensionRegistry.get(NodeTypeEnum.RouteDecision);
     expect(retrieved).toBe(handler);
   });
 
@@ -43,13 +43,15 @@ describe('ExtensionRegistry', () => {
   });
 
   it('should support multiple node types', () => {
-    const evalHandler = createMockHandler(NodeTypeEnum.EvalGate);
+    const routeHandler = createMockHandler(NodeTypeEnum.RouteDecision);
     const hitlHandler = createMockHandler(NodeTypeEnum.HumanInteraction);
 
-    extensionRegistry.register(evalHandler);
+    extensionRegistry.register(routeHandler);
     extensionRegistry.register(hitlHandler);
 
-    expect(extensionRegistry.get(NodeTypeEnum.EvalGate)).toBe(evalHandler);
+    expect(extensionRegistry.get(NodeTypeEnum.RouteDecision)).toBe(
+      routeHandler,
+    );
     expect(extensionRegistry.get(NodeTypeEnum.HumanInteraction)).toBe(
       hitlHandler,
     );

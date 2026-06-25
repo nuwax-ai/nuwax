@@ -59,6 +59,7 @@ import { ReactComponent as ICON_WORKFLOW_MCP } from '@/assets/workflow/workflow-
 import { ReactComponent as ICON_WORKFLOW_OUTPUT } from '@/assets/workflow/workflow-Output.svg';
 import { ReactComponent as ICON_WORKFLOW_PLUGIN } from '@/assets/workflow/workflow-Plugin.svg';
 import { ReactComponent as ICON_WORKFLOW_QA } from '@/assets/workflow/workflow-QA.svg';
+import { ReactComponent as ICON_WORKFLOW_ROUTE_DECISION } from '@/assets/workflow/workflow-RouteDecision.svg';
 import { ReactComponent as ICON_WORKFLOW_TEXT_PROCESSING } from '@/assets/workflow/workflow-TextProcessing.svg';
 import { ReactComponent as ICON_WORKFLOW_VARIABLE } from '@/assets/workflow/workflow-Variable.svg';
 import { ReactComponent as ICON_WORKFLOW_WORKFLOW } from '@/assets/workflow/workflow-Workflow.svg';
@@ -90,9 +91,6 @@ import BG_ICON_WORKFLOW_VARIABLE from '@/assets/workflow/workflow-Variable.svg';
 import BG_ICON_WORKFLOW_WORKFLOW from '@/assets/workflow/workflow-Workflow.svg';
 // AgentFlow 专用图标
 import BG_ICON_AGENTFLOW_AGENT from '@/assets/workflow/workflow-Agent.svg';
-import BG_ICON_AGENTFLOW_EVALGATE from '@/assets/workflow/workflow-EvalGate.svg';
-import BG_ICON_AGENTFLOW_EXTERNAL_CONNECTOR from '@/assets/workflow/workflow-ExternalConnector.svg';
-import BG_ICON_AGENTFLOW_HUMAN_APPROVE from '@/assets/workflow/workflow-HumanApprove.svg';
 import BG_ICON_AGENTFLOW_HUMAN_ASK from '@/assets/workflow/workflow-HumanAsk.svg';
 import BG_ICON_AGENTFLOW_ROUTE_DECISION from '@/assets/workflow/workflow-RouteDecision.svg';
 // 修改导入语句以正确导入图片
@@ -108,9 +106,6 @@ import { ReactComponent as ICON_USER } from '@/assets/svg/icon_user.svg';
 export {
   // AgentFlow 专用图标
   BG_ICON_AGENTFLOW_AGENT,
-  BG_ICON_AGENTFLOW_EVALGATE,
-  BG_ICON_AGENTFLOW_EXTERNAL_CONNECTOR,
-  BG_ICON_AGENTFLOW_HUMAN_APPROVE,
   BG_ICON_AGENTFLOW_HUMAN_ASK,
   BG_ICON_AGENTFLOW_ROUTE_DECISION,
   BG_ICON_WORKFLOW_CODE,
@@ -202,6 +197,7 @@ export {
   ICON_WORKFLOW_OUTPUT,
   ICON_WORKFLOW_PLUGIN,
   ICON_WORKFLOW_QA,
+  ICON_WORKFLOW_ROUTE_DECISION,
   ICON_WORKFLOW_SQUARE,
   ICON_WORKFLOW_TEXT_PROCESSING,
   ICON_WORKFLOW_VARIABLE,

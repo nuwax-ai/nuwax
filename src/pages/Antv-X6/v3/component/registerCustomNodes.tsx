@@ -86,67 +86,20 @@ const ConditionNode: React.FC<{ data: ChildNode }> = ({ data }) => {
 // 路由决策节点（显示路由列表）
 const RouteDecisionNode: React.FC<{ data: ChildNode }> = ({ data }) => {
   const nc = data.nodeConfig as any;
-  const routes: any[] = nc?.routes || [];
+  const intentConfigs: any[] = nc?.intentConfigs || [];
 
   return (
     <div className="route-decision-node-content">
-      {routes.map((route, i) => (
+      {intentConfigs.map((route, i) => (
         <div key={route.uuid || i} className="dis-left route-decision-item">
           <span
             className="route-decision-dot"
             style={{ backgroundColor: '#fa8c16' }}
           />
           <span className="route-decision-name">
-            {route.routeName || route.name || `Route ${i + 1}`}
-          </span>
-        </div>
-      ))}
-    </div>
-  );
-};
-
-// EvalGate 评估门控节点（显示通过/不达标分支）
-const EvalGateNode: React.FC<{ data: ChildNode }> = ({ data }) => {
-  const nc = data.nodeConfig as any;
-  const branches: any[] = nc?.branches || [];
-
-  return (
-    <div className="route-decision-node-content">
-      {branches.map((branch, i) => (
-        <div key={branch.uuid || i} className="dis-left route-decision-item">
-          <span
-            className="route-decision-dot"
-            style={{ backgroundColor: i === 0 ? '#52c41a' : '#ff4d4f' }}
-          />
-          <span className="route-decision-name">
-            {branch.name || (i === 0 ? '通过' : `分支 ${i + 1}`)}
-          </span>
-        </div>
-      ))}
-    </div>
-  );
-};
-
-// HITL-Approve 人类审批节点（显示通过/拒绝分支）
-const HitlApproveNode: React.FC<{ data: ChildNode }> = ({ data }) => {
-  const nc = data.nodeConfig as any;
-  const branches: any[] = nc?.branches || [];
-
-  return (
-    <div className="route-decision-node-content">
-      {branches.map((branch, i) => (
-        <div key={branch.uuid || i} className="dis-left route-decision-item">
-          <span
-            className="route-decision-dot"
-            style={{
-              backgroundColor:
-                branch.uuid === 'approve' || branch.uuid === 'pass'
-                  ? '#52c41a'
-                  : '#ff4d4f',
-            }}
-          />
-          <span className="route-decision-name">
-            {branch.name || (i === 0 ? '通过' : '拒绝')}
+            {route.intent ||
+              route.name ||
+              t('PC.Pages.AgentFlowNode.routeDecisionItemFallback', i + 1)}
           </span>
         </div>
       ))}
@@ -168,7 +121,7 @@ const HitlAskOptionsNode: React.FC<{ data: ChildNode }> = ({ data }) => {
             style={{ backgroundColor: '#5147FF' }}
           />
           <span className="route-decision-name">
-            {opt.content || `选项 ${i + 1}`}
+            {opt.content || t('PC.Pages.AgentFlowNode.askOptionIndex', i + 1)}
           </span>
         </div>
       ))}
@@ -484,19 +437,11 @@ export const GeneralNode: React.FC<NodeProps> = (props) => {
           <RouteDecisionNode data={data} />
         )}
 
-        {data.type === NodeTypeEnum.EvalGate && <EvalGateNode data={data} />}
-
-        {data.type === NodeTypeEnum.HumanInteraction && (
-          <>
-            {(data.nodeConfig as any)?.hitlMode === 'approve' && (
-              <HitlApproveNode data={data} />
-            )}
-            {(data.nodeConfig as any)?.hitlMode !== 'approve' &&
-              ((data.nodeConfig as any)?.askConfig?.options?.length > 0 ||
-                (data.nodeConfig as any)?.askConfig?.answerType ===
-                  'SELECT') && <HitlAskOptionsNode data={data} />}
-          </>
-        )}
+        {data.type === NodeTypeEnum.HumanInteraction &&
+          ((data.nodeConfig as any)?.askConfig?.options?.length > 0 ||
+            (data.nodeConfig as any)?.askConfig?.answerType === 'SELECT') && (
+            <HitlAskOptionsNode data={data} />
+          )}
 
         {data.type === NodeTypeEnum.QA && <QANode data={data} />}
 

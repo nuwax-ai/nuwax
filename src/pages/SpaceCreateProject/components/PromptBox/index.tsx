@@ -80,7 +80,7 @@ const PromptBox: React.FC<PromptBoxProps> = ({ onSubmit }) => {
   const isPageApp = activeTab === AgentComponentTypeEnum.PageApp;
 
   // 提交中状态，防止连续发送
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   // 获取租户配置信息
   const { tenantConfigInfo } = useModel('tenantConfigInfo');

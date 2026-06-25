@@ -71,9 +71,7 @@ export const EXCEPTION_NODES_TYPE = [
   NodeTypeEnum.HTTPRequest,
   // AgentFlow 专用节点
   NodeTypeEnum.Agent,
-  NodeTypeEnum.EvalGate,
   NodeTypeEnum.HumanInteraction,
-  NodeTypeEnum.ExternalConnector,
 ];
 
 export const RETRY_COUNT_OPTIONS = [

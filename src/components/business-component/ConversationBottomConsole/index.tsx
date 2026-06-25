@@ -282,20 +282,56 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
     }
   }, [conversationId, containerStatus, startContainer]);
 
+  /** 终端可见后 fit / sync / focus（委托给 EmbeddedConsoleTerminal） */
+  const syncTerminalLayoutAndFocus = useCallback(() => {
+    terminalRef.current?.restoreAfterVisibilityChange();
+  }, []);
+
+  /** 折叠恢复可见后多轮 restore，覆盖布局动画与浏览器重排延迟 */
+  const scheduleTerminalRestoreAfterExpand = useCallback(() => {
+    const restore = () => terminalRef.current?.restoreAfterVisibilityChange();
+    window.requestAnimationFrame(() => {
+      restore();
+      window.setTimeout(restore, 50);
+      window.setTimeout(restore, 150);
+      window.setTimeout(restore, 350);
+    });
+  }, []);
+
   /** 监听 layoutMode 变化，检测首次从 collapsed 展开 */
   useEffect(() => {
+    const prevMode = prevLayoutModeRef.current;
     // 两种情况触发首次启动：
     // 1. 首次渲染时已是非折叠状态（如 defaultLayoutMode="default"）
     // 2. 从折叠展开为非折叠状态
     const isFirstExpand =
       (!terminalActivatedRef.current && layoutMode !== 'collapsed') ||
-      (layoutMode !== 'collapsed' && prevLayoutModeRef.current === 'collapsed');
+      (layoutMode !== 'collapsed' && prevMode === 'collapsed');
 
     if (isFirstExpand) {
       handleFirstExpand();
     }
+
+    // 从折叠恢复：终端仍连着 WS 但 xterm 在 display:none 内尺寸/焦点会失效
+    if (
+      layoutMode !== 'collapsed' &&
+      prevMode === 'collapsed' &&
+      activeTab === 'terminal' &&
+      wsUrl &&
+      visible
+    ) {
+      scheduleTerminalRestoreAfterExpand();
+    }
+
     prevLayoutModeRef.current = layoutMode;
-  }, [layoutMode, handleFirstExpand]);
+  }, [
+    activeTab,
+    handleFirstExpand,
+    layoutMode,
+    scheduleTerminalRestoreAfterExpand,
+    visible,
+    wsUrl,
+  ]);
 
   /**
    * 终端连接开关（完全由内部容器状态控制）：
@@ -346,23 +382,6 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
     }
     onTerminalAppearanceChange?.(next);
   }, [isControlled, onTerminalAppearanceChange, terminalAppearance]);
-
-  /**
-   * 切换到终端 Tab / 布局或主题变化 / visible 从 false 变为 true / 容器就绪后，
-   * 延迟重新计算终端 cols/rows（fit）并同步 ttyd 尺寸、聚焦终端，
-   * 避免容器从 display:none / visibility:hidden 恢复后 xterm-screen 尺寸停留在初始极小值。
-   */
-  const syncTerminalLayoutAndFocus = useCallback(() => {
-    terminalRef.current?.fitAndSyncBackend();
-    terminalRef.current?.focus();
-    const term = terminalRef.current?.getTerminal();
-    if (!term) return;
-    try {
-      term.refresh(0, Math.max(term.rows - 1, 0));
-    } catch {
-      /* ignore */
-    }
-  }, []);
 
   useEffect(() => {
     if (
@@ -526,12 +545,17 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
 
   /** 切换 Tab；折叠状态下点击 Tab 自动恢复默认高度 */
   const handleTabClick = (tab: 'terminal' | 'logs') => {
+    const wasCollapsed = layoutMode === 'collapsed';
     setActiveTab(tab);
-    if (layoutMode === 'collapsed') {
+    if (wasCollapsed) {
       setLayoutMode('default');
     }
     if (tab === 'terminal') {
-      window.setTimeout(syncTerminalLayoutAndFocus, 100);
+      if (wasCollapsed) {
+        scheduleTerminalRestoreAfterExpand();
+      } else {
+        window.setTimeout(syncTerminalLayoutAndFocus, 100);
+      }
     }
   };
 

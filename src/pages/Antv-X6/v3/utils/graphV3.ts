@@ -7,7 +7,6 @@ import {
 import {
   AnswerTypeEnum,
   ExceptionHandleTypeEnum,
-  HitlModeEnum,
   NodeTypeEnum,
 } from '@/types/enums/common';
 import { PortGroupEnum } from '@/types/enums/node';
@@ -95,24 +94,12 @@ export const adjustParentSize = (parentNode: Node | Cell) => {
 
 /** AgentFlow 分支端口边色 + label 集中配置 */
 const BRANCH_PALETTE = {
-  pass: { stroke: '#52c41a', label: 'Pass' },
-  fail: { stroke: '#ff4d4f', label: 'Fail' },
-  hitl_approve: { stroke: '#52c41a', label: 'Approve' },
-  hitl_reject: { stroke: '#ff4d4f', label: 'Reject' },
-  route: { stroke: '#fa8c16', label: '' }, // label 由 routeName 动态填
+  route: { stroke: '#fa8c16', label: '' }, // label 由 intent 动态填
 } as const;
-
-const BRANCH_COLORS: Record<string, { stroke: string; label: string }> = {
-  eval_pass: BRANCH_PALETTE.pass,
-  eval_fail: BRANCH_PALETTE.fail,
-  hitl_approve: BRANCH_PALETTE.hitl_approve,
-  hitl_reject: BRANCH_PALETTE.hitl_reject,
-};
 
 /**
  * 解析 source port 对应的分支样式。
- * - `eval-*` / `hitl-*` / `route-*` 走 BRANCH_PALETTE
- * - `route-{uuid}-out` 需要从 source node 的 `nodeConfig.routes` 拿 routeName 作 label
+ * - `route-{uuid}-out` 需要从 source node 的 `nodeConfig.intentConfigs` 拿 intent 作 label
  * - `route-default-out` 显式返回 null（落默认紫色）
  */
 function parseEdgeBranch(
@@ -123,11 +110,6 @@ function parseEdgeBranch(
   label: string;
 } | null {
   if (!sourcePort) return null;
-  for (const [key, cfg] of Object.entries(BRANCH_COLORS)) {
-    if (sourcePort.includes(`-${key.replace('_', '-')}-out`)) {
-      return cfg;
-    }
-  }
   // 路由决策的 route-{uuid} 端口（排除 default 兜底）
   if (
     sourcePort.includes('-route-') &&
@@ -141,10 +123,9 @@ function parseEdgeBranch(
     const uuid = m?.[1] || '';
     if (!uuid) return null; // 端口 id 形如异常, 走默认色
     const sourceData = edge.getSourceNode()?.getData() || {};
-    const routes: any[] = (sourceData as any)?.nodeConfig?.routes || [];
+    const routes: any[] = (sourceData as any)?.nodeConfig?.intentConfigs || [];
     const found = routes.find((r) => r.uuid === uuid);
-    const label =
-      found?.routeName || found?.name || `Route ${uuid.slice(0, 4)}`;
+    const label = found?.intent || found?.name || `Route ${uuid.slice(0, 4)}`;
     return { stroke: BRANCH_PALETTE.route.stroke, label };
   }
   return null;
@@ -661,7 +642,6 @@ export const showExceptionHandle = (node: ChildNode): boolean => {
 export const needUpdateNodes = (node: ChildNode): boolean => {
   const isHitlWithOptions =
     node.type === NodeTypeEnum.HumanInteraction &&
-    (node.nodeConfig as any)?.hitlMode !== 'approve' &&
     ((node.nodeConfig as any)?.askConfig?.options?.length > 0 ||
       (node.nodeConfig as any)?.askConfig?.answerType === 'SELECT');
   return (
@@ -670,12 +650,9 @@ export const needUpdateNodes = (node: ChildNode): boolean => {
       NodeTypeEnum.Condition,
       NodeTypeEnum.RouteDecision,
     ].includes(node.type) ||
-    // HITL-Approve 的 branches 在更新后端口数可能变化
-    (node.type === NodeTypeEnum.HumanInteraction &&
-      (node.nodeConfig as any)?.hitlMode === 'approve') ||
     // HITL-Ask options 模式端口数可能变化
     isHitlWithOptions
-  ); // 需要更新端口配置的节点：异常节点 + 条件 + 路由决策 + HITL 审批/询问选项
+  ); // 需要更新端口配置的节点：异常节点 + 条件 + 路由决策 + HITL 询问选项
 };
 
 export const showExceptionPort = (
@@ -747,21 +724,29 @@ export const isHighestNodeZIndex = (node: Node): boolean => {
 export const registerNodeClickAndDblclick = ({
   graph,
   changeZIndex,
+  changeDrawer,
 }: {
   graph: Graph;
   changeZIndex: (node: Node) => void;
+  // 打开右侧属性面板。仅在「真正的点击」时调用（区别于拖拽 / 双击）。
+  changeDrawer?: (data: any) => void;
 }) => {
   graph.on('node:click', ({ node }) => {
     setTimeout(() => {
+      // 双击的第二次 click 由 dblclick 守卫跳过，避免双击编辑标题时误开面板
       if (node.prop('__click_type__') === 'dblclick') {
         node.prop('__click_type__', null);
         return;
       }
-      const value = isHighestNodeZIndex(node);
-      if (value) {
-        return;
+      if (!isHighestNodeZIndex(node)) {
+        changeZIndex(node);
       }
-      changeZIndex(node);
+      // 真正的点击才打开属性面板：X6 在拖拽时不会触发 node:click，
+      // 因此拖拽节点不会再误弹面板（面板打开已从 node:selected 迁移至此）。
+      const data = node.getData();
+      if (!data?.isFocus) {
+        changeDrawer?.({ ...data, id: node.id });
+      }
     }, 0);
   });
 
@@ -942,56 +927,8 @@ const handleAgentFlowEdges = (
   if (!nc) return edges;
   const z = isLoopNode ? 5 : 1;
 
-  if (node.type === NodeTypeEnum.EvalGate) {
-    // v2: branches[] 驱动；v1 回退: passNextNodeIds + evalValidators
-    const branches: any[] = nc.branches || [];
-    if (branches.length > 0) {
-      // pass 分支（branches[0]）
-      const passIds: number[] = branches[0]?.nextNodeIds || [];
-      passIds.forEach((id) => {
-        edges.push({
-          source: `${node.id}-eval-pass`,
-          target: id.toString(),
-          zIndex: z,
-        });
-      });
-      // fail 分支（branches[1..N]）
-      for (let i = 1; i < branches.length; i++) {
-        const failIds: number[] = branches[i]?.nextNodeIds || [];
-        failIds.forEach((id) => {
-          edges.push({
-            source: `${node.id}-eval-fail-${branches[i].uuid}`,
-            target: id.toString(),
-            zIndex: z,
-          });
-        });
-      }
-    } else {
-      // v1 回退
-      const passIds: number[] = nc.passNextNodeIds || [];
-      passIds.forEach((id) => {
-        edges.push({
-          source: `${node.id}-eval-pass`,
-          target: id.toString(),
-          zIndex: z,
-        });
-      });
-      const validators = nc.evalValidators || [];
-      validators.forEach((v: any) => {
-        const failId = v.onFail?.targetNodeId;
-        if (failId) {
-          edges.push({
-            source: `${node.id}-eval-fail-${v.uuid}`,
-            target: failId.toString(),
-            zIndex: z,
-          });
-        }
-      });
-    }
-  }
-
   if (node.type === NodeTypeEnum.RouteDecision) {
-    const routes: any[] = nc.routes || [];
+    const routes: any[] = nc.intentConfigs || [];
     // default 兜底端口（注意：source 须带 -out 后缀，因为 "route"
     // 包含 "out" 子串，parseEndpoint 会误判 isLoop=true 导致不加 -out）
     const defaultIds: number[] = nc.defaultNextNodeIds || [];
@@ -1013,45 +950,6 @@ const handleAgentFlowEdges = (
         });
       });
     });
-  }
-
-  if (
-    node.type === NodeTypeEnum.HumanInteraction &&
-    nc.hitlMode === HitlModeEnum.Approve
-  ) {
-    // v2: branches[] 驱动；v1 回退: approveNextNodeIds + rejectNextNodeIds
-    const branches: any[] = nc.branches || [];
-    if (branches.length > 0) {
-      branches.forEach((branch, i) => {
-        const ids: number[] = branch.nextNodeIds || [];
-        ids.forEach((id) => {
-          edges.push({
-            source:
-              i === 0 ? `${node.id}-hitl-approve` : `${node.id}-hitl-reject`,
-            target: id.toString(),
-            zIndex: z,
-          });
-        });
-      });
-    } else {
-      // v1 回退
-      const approveIds: number[] = nc.approveNextNodeIds || [];
-      approveIds.forEach((id) => {
-        edges.push({
-          source: `${node.id}-hitl-approve`,
-          target: id.toString(),
-          zIndex: z,
-        });
-      });
-      const rejectIds: number[] = nc.rejectNextNodeIds || [];
-      rejectIds.forEach((id) => {
-        edges.push({
-          source: `${node.id}-hitl-reject`,
-          target: id.toString(),
-          zIndex: z,
-        });
-      });
-    }
   }
 
   return edges;
@@ -1139,12 +1037,7 @@ export const getEdges = (
         return handleSpecialNodes(node, isLoopNode);
       } else if (node.type === NodeTypeEnum.Loop) {
         return handleLoopEdges(node);
-      } else if (
-        node.type === NodeTypeEnum.EvalGate ||
-        node.type === NodeTypeEnum.RouteDecision ||
-        (node.type === NodeTypeEnum.HumanInteraction &&
-          (node.nodeConfig as any)?.hitlMode === HitlModeEnum.Approve)
-      ) {
+      } else if (node.type === NodeTypeEnum.RouteDecision) {
         return handleAgentFlowEdges(node, isLoopNode);
       } else if (node.nextNodeIds && node.nextNodeIds.length > 0) {
         const _arr = node.nextNodeIds.filter(

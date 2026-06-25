@@ -17,7 +17,13 @@ export enum CreateSkillWayEnum {
   Import = 'Import',
 }
 
-// 智能体类型枚举
+/**
+ * 智能体类型枚举
+ * All 全部
+ * ChatBot 对话智能体
+ * PageApp 网页应用智能体
+ * TaskAgent 任务型智能体
+ */
 export enum AgentTypeEnum {
   All = 'All',
   ChatBot = 'ChatBot',
@@ -148,6 +154,8 @@ export enum AgentArrangeConfigEnum {
   Page = 'Page',
   // 默认展开页面区
   Default_Expand_Page_Area = 'Default_Expand_Page_Area',
+  // Hook 设置
+  Hook = 'Hook',
   // 隐藏主会话框
   Hide_Chat_Area = 'Hide_Chat_Area',
   // 界面事件绑定
