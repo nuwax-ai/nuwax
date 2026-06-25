@@ -1346,6 +1346,8 @@ export const ZH_HK: SystemLangMap = {
   "PC.Pages.AgentArrangeConfig.addWorkflow": "添加工作流",
   "PC.Pages.AgentArrangeConfig.allowAtSkill": "允許用户@技能",
   "PC.Pages.AgentArrangeConfig.allowAtSkillDesc": "開啓後，用户可以在會話中添加任意技能",
+  "PC.Pages.AgentArrangeConfig.allowChooseMode": "允許用户在對話框中選擇模式",
+  "PC.Pages.AgentArrangeConfig.allowChooseModeDesc": "開啓後用户在對話框下可以選擇：自動（Auto）、審批（Approval），關閉後默認使用自動模式。",
   "PC.Pages.AgentArrangeConfig.allowOtherModel": "允許用户選擇自有模型",
   "PC.Pages.AgentArrangeConfig.allowOtherModelDesc": "開啓後，用户可以在會話中選擇自己的模型",
   "PC.Pages.AgentArrangeConfig.allowPrivateSandbox": "允許用户選擇個人電腦",

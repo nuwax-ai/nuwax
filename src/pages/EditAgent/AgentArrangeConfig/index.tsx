@@ -1035,6 +1035,45 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
               ]),
         ]
       : []),
+
+    // 通用型智能体、AgentFlow、AgentGroup、自定义智能体 才显示 允许用户在对话框中选择模式 按钮
+    ...(agentConfigInfo?.subType === AgentSubTypeEnum.General ||
+    agentConfigInfo?.subType === AgentSubTypeEnum.Flow ||
+    agentConfigInfo?.subType === AgentSubTypeEnum.Group ||
+    agentConfigInfo?.subType === AgentSubTypeEnum.Custom
+      ? [
+          // 允许用户在对话框中选择模式
+          {
+            key: AgentArrangeConfigEnum.Allow_Choose_Mode,
+            label: t('PC.Pages.AgentArrangeConfig.allowChooseMode'),
+            children: (
+              <p className={cx(styles.text)}>
+                {t('PC.Pages.AgentArrangeConfig.allowChooseModeDesc')}
+              </p>
+            ),
+            extra: (
+              <Switch
+                value={
+                  agentConfigInfo?.allowChooseMode === DefaultSelectedEnum.Yes
+                }
+                onClick={(_, e: any) => {
+                  e.stopPropagation();
+                }}
+                onChange={(value) =>
+                  onChangeAgent(
+                    value ? DefaultSelectedEnum.Yes : DefaultSelectedEnum.No,
+                    'allowChooseMode',
+                  )
+                }
+              />
+            ),
+            classNames: {
+              header: 'collapse-header',
+              body: 'collapse-body',
+            },
+          },
+        ]
+      : []),
   ];
 
   // 界面配置 - 设置

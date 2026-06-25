@@ -1346,6 +1346,8 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.AgentArrangeConfig.addWorkflow": "ワークフローの追加",
   "PC.Pages.AgentArrangeConfig.allowAtSkill": "ユーザーに @ スキルを許可する",
   "PC.Pages.AgentArrangeConfig.allowAtSkillDesc": "有効にすると、ユーザーはセッションにスキルを追加できます",
+  "PC.Pages.AgentArrangeConfig.allowChooseMode": "ユーザーがダイアログでモードを選択できるようにする",
+  "PC.Pages.AgentArrangeConfig.allowChooseModeDesc": "有効にすると、ユーザーはダイアログ下部で Auto または Approval を選択できます。無効の場合は、デフォルトで Auto モードが使用されます。",
   "PC.Pages.AgentArrangeConfig.allowOtherModel": "ユーザーが独自のモデルを選択できるようにする",
   "PC.Pages.AgentArrangeConfig.allowOtherModelDesc": "有効にすると、ユーザーはセッションで独自のモデルを選択できます",
   "PC.Pages.AgentArrangeConfig.allowPrivateSandbox": "ユーザーがプライベート コンピュータを選択できるようにする",

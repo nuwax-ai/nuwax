@@ -170,6 +170,8 @@ export enum AgentArrangeConfigEnum {
   Allow_At_Skill = 'Allow_At_Skill',
   // 允许用户选择个人电脑
   Allow_Private_Sandbox = 'Allow_Private_Sandbox',
+  // 允许用户在对话框中选择模式
+  Allow_Choose_Mode = 'Allow_Choose_Mode',
 }
 
 // 是否开启问题建议,可用值:Open,Close

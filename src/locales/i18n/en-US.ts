@@ -1482,6 +1482,8 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.AgentArrangeConfig.addWorkflow": "Add Workflow",
   "PC.Pages.AgentArrangeConfig.allowAtSkill": "Allow users to @ skills",
   "PC.Pages.AgentArrangeConfig.allowAtSkillDesc": "When enabled, users can add any skills in the session",
+  "PC.Pages.AgentArrangeConfig.allowChooseMode": "Allow users to choose mode in the dialog",
+  "PC.Pages.AgentArrangeConfig.allowChooseModeDesc": "When enabled, users can choose Auto or Approval below the dialog. When disabled, Auto mode is used by default.",
   "PC.Pages.AgentArrangeConfig.allowOtherModel": "Allow users to select their own models",
   "PC.Pages.AgentArrangeConfig.allowOtherModelDesc": "When enabled, users can select their own models in the session",
   "PC.Pages.AgentArrangeConfig.allowPrivateSandbox": "Allow users to select private computer",
