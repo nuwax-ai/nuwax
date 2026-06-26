@@ -10,7 +10,7 @@ import { t } from '@/services/i18nRuntime';
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import type { FormInstance } from 'antd';
 import { Button, Form, Input, Select } from 'antd';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { createEmptyConditionArg } from '../adapters/routeConditionAdapter';
 
 export interface RouteConditionMatchProps {
@@ -34,6 +34,15 @@ const RouteConditionMatch: React.FC<RouteConditionMatchProps> = ({
       form,
       preserve: true,
     }) || 'AND';
+
+  // conditionType 的 AND/OR 选项只在用户切换时写回表单，默认值 'AND' 不会被持久化，
+  // 导致保存的 intentConfigs 缺少 conditionType。这里在字段为空时补默认 'AND'。
+  useEffect(() => {
+    const fieldPath = ['intentConfigs', listFieldName, 'conditionType'];
+    if (!form.getFieldValue(fieldPath)) {
+      form.setFieldValue(fieldPath, 'AND');
+    }
+  }, [form, listFieldName]);
 
   return (
     <div className="route-condition-match">

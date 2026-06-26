@@ -708,7 +708,14 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
     useEffect(() => {
       if (!isCanvasFullscreen || !graphRef.current) return;
       const timer = setTimeout(() => {
-        graphRef.current?.graphChangeZoomToFit();
+        // graphRef.current 是 X6 Graph 实例（来自 InitGraph），直接调其 zoomToFit
+        graphRef.current?.zoomToFit({
+          padding: { top: 128 + 18, left: 18, right: 18, bottom: 18 },
+          maxScale: 1,
+          minScale: 0.2,
+          preserveAspectRatio: true,
+          useCellGeometry: true,
+        });
       }, 200);
       return () => clearTimeout(timer);
     }, [isCanvasFullscreen]);

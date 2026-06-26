@@ -1985,6 +1985,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.AgentFlowNode.routeInputLabel": "输入",
   "PC.Pages.AgentFlowNode.routeExtraPromptLabel": "补充提示词",
   "PC.Pages.AgentFlowNode.routeBranchesTitle": "路由分支",
+  "PC.Pages.AgentFlowNode.routeOtherIntent": "其他意图",
   "PC.Pages.AgentFlowNode.routeAddBranch": "添加分支",
   "PC.Pages.AgentFlowNode.routeAddCondition": "添加条件",
   "PC.Pages.AgentFlowNode.routeConditionMatchLabel": "条件匹配",

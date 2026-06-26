@@ -1854,6 +1854,7 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.AgentFlowNode.routeAddBranch": "新增分支",
   "PC.Pages.AgentFlowNode.routeAddCondition": "新增條件",
   "PC.Pages.AgentFlowNode.routeBranchesTitle": "路由分支",
+  "PC.Pages.AgentFlowNode.routeOtherIntent": "其他意圖",
   "PC.Pages.AgentFlowNode.routeConditionMatchLabel": "條件匹配",
   "PC.Pages.AgentFlowNode.routeConditionValue": "值",
   "PC.Pages.AgentFlowNode.routeConditionVariable": "變數",

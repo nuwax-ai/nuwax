@@ -1829,6 +1829,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.AgentFlowNode.routeAddBranch": "分岐を追加",
   "PC.Pages.AgentFlowNode.routeAddCondition": "条件を追加",
   "PC.Pages.AgentFlowNode.routeBranchesTitle": "ルート分岐",
+  "PC.Pages.AgentFlowNode.routeOtherIntent": "その他",
   "PC.Pages.AgentFlowNode.routeConditionMatchLabel": "条件マッチング",
   "PC.Pages.AgentFlowNode.routeConditionValue": "値",
   "PC.Pages.AgentFlowNode.routeConditionVariable": "変数",

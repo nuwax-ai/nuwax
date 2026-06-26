@@ -1960,6 +1960,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.AgentFlowNode.routeAddBranch": "Add Branch",
   "PC.Pages.AgentFlowNode.routeAddCondition": "Add Condition",
   "PC.Pages.AgentFlowNode.routeBranchesTitle": "Route Branches",
+  "PC.Pages.AgentFlowNode.routeOtherIntent": "Other Intent",
   "PC.Pages.AgentFlowNode.routeConditionMatchLabel": "Condition Match",
   "PC.Pages.AgentFlowNode.routeConditionValue": "Value",
   "PC.Pages.AgentFlowNode.routeConditionVariable": "Variable",

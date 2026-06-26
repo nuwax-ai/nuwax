@@ -320,6 +320,20 @@ export function prepareNodeForBackendSerialize<
   if (node.type === NodeTypeEnum.HumanInteraction) {
     nc = serializeHitlNodeConfig(nc);
   }
+  // RouteDecision：conditionType（多条件 AND/OR 连接符）兜底为 'AND'，
+  // 避免未在面板切换过 AND/OR 时保存的数据缺少 conditionType。
+  if (
+    node.type === NodeTypeEnum.RouteDecision &&
+    Array.isArray(nc.intentConfigs)
+  ) {
+    nc = {
+      ...nc,
+      intentConfigs: nc.intentConfigs.map((branch: Record<string, any>) => ({
+        ...branch,
+        conditionType: branch?.conditionType === 'OR' ? 'OR' : 'AND',
+      })),
+    };
+  }
   // 剥离完整 modelConfig（仅展示用，回传 modelId 即可）
   if (nc.modelConfig !== undefined) {
     const rest = { ...nc };
