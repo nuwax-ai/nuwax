@@ -5,48 +5,34 @@ export type AcpPermissionOptionKind =
   | 'reject_always';
 
 export interface RcoderPermissionToolCall {
-  tool_call_id: string;
+  toolCallId: string;
   kind: string;
   status: 'pending' | 'in_progress' | 'completed' | 'failed' | string;
   title: string;
   content: unknown[];
-  raw_input: unknown;
+  rawInput: any;
   _meta?: Record<string, unknown>;
 }
 
 export interface RcoderPermissionOption {
-  option_id: string;
+  optionId: string;
   name: string;
   kind: AcpPermissionOptionKind;
   _meta?: Record<string, unknown>;
 }
 
 export interface RcoderRequestPermissionRequest {
-  session_id: string;
-  tool_call: RcoderPermissionToolCall;
+  sessionId: string;
+  toolCall: RcoderPermissionToolCall;
   options: RcoderPermissionOption[];
   _meta?: Record<string, unknown>;
 }
 
-export interface RcoderPermissionSaveRule {
-  suggested_pattern: string;
-  rule_type: 'allow' | 'deny';
-  tool_name: string;
-}
-
-export interface RcoderPermissionProgressData {
-  request_permission_request: RcoderRequestPermissionRequest;
-  tool_call_id: string;
-  save_rule?: RcoderPermissionSaveRule;
-  _meta?: Record<string, unknown>;
-}
-
-export type RcoderRequestPermissionOutcome =
-  | { Selected: { option_id: string } }
-  | { Cancelled: Record<string, never> | null };
-
 export interface RcoderRequestPermissionResponse {
-  outcome: RcoderRequestPermissionOutcome;
+  outcome: {
+    outcome: 'selected' | 'cancelled';
+    optionId?: string;
+  };
 }
 
 export interface RcoderPermissionResolveRequest {
@@ -68,7 +54,25 @@ export interface RcoderNotifyResolvedRequest {
 
 export interface RcoderAcpPermissionInteraction {
   id: string;
-  permission: RcoderPermissionProgressData;
+  intervention: {
+    id: string;
+    revision: number;
+    kind: string;
+    status: string;
+    sessionId: string;
+    source: string;
+    engine: string;
+    protocol: string;
+    callbackTarget: {
+      kind: string;
+      targetId: string;
+    };
+    acp: {
+      method: string;
+      request: RcoderRequestPermissionRequest;
+    };
+    createdAt: number;
+  };
   responseStatus?: 'pending' | 'submitting' | 'submitted' | 'failed';
   selectedOptionId?: string;
   errorMessage?: string;

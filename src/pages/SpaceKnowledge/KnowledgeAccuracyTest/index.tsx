@@ -246,6 +246,7 @@ const KnowledgeAccuracyTest: React.FC<KnowledgeAccuracyTestProps> = ({
       <Tag
         className={styles.customTag}
         closable={false}
+        title={label}  // 添加title属性以显示完整文件名
       >
         {label}
       </Tag>
@@ -315,7 +316,7 @@ const KnowledgeAccuracyTest: React.FC<KnowledgeAccuracyTestProps> = ({
                 tagRender={renderTestScopeTag}
               >
                 {documents.map((doc) => (
-                  <Option key={doc.id} value={doc.id}>
+                  <Option key={doc.id} value={doc.id} title={doc.name}>
                     {doc.name}
                   </Option>
                 ))}

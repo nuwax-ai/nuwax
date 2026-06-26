@@ -87,6 +87,51 @@ const NewHomeSection: React.FC<{
   }, []);
 
   useEffect(() => {
+    const handleConversationUpdated = (e: Event) => {
+      const customEvent = e as CustomEvent<{
+        id: number;
+        topic: string;
+        icon?: string;
+      }>;
+      if (!customEvent.detail) return;
+      const { id, topic, icon } = customEvent.detail;
+      setLocalList((prev) =>
+        prev.map((item) => {
+          if (item.id === id) {
+            return {
+              ...item,
+              topic,
+              icon,
+            };
+          }
+          return item;
+        }),
+      );
+    };
+
+    const handleConversationDeleted = (e: Event) => {
+      const customEvent = e as CustomEvent<{ id: number }>;
+      if (!customEvent.detail) return;
+      const { id } = customEvent.detail;
+      setLocalList((prev) => prev.filter((item) => item.id !== id));
+    };
+
+    window.addEventListener('conversation-updated', handleConversationUpdated);
+    window.addEventListener('conversation-deleted', handleConversationDeleted);
+
+    return () => {
+      window.removeEventListener(
+        'conversation-updated',
+        handleConversationUpdated,
+      );
+      window.removeEventListener(
+        'conversation-deleted',
+        handleConversationDeleted,
+      );
+    };
+  }, []);
+
+  useEffect(() => {
     if (!initializedRef.current) return;
     setHasMore(true);
     setLocalList([]);
