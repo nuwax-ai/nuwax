@@ -1,4 +1,5 @@
 import type { ChangeFileInfo } from '@/components/business-component/FileTreePreviewPanel/types/file-tree';
+import type { DefaultSelectedEnum } from '@/types/enums/agent';
 import type { FileNode } from '@/types/interfaces/appDev';
 import type { ReactNode } from 'react';
 import type {
@@ -46,6 +47,8 @@ export interface FileTreeGitSourcePanelProps {
   isCollapsed?: boolean;
   /** 是否显示源代码管理 Tab（默认：存在 onCommit 时显示） */
   showSourceControl?: boolean;
+  /** 智能体是否开启版本管理；为 No 或未开启时隐藏源代码管理 */
+  enableVersionControl?: DefaultSelectedEnum;
   /** 文件树状态与交互处理器（内部渲染 FileTreeContainerProps */
   tree: FileTreeContainerProps;
   /** 文件树容器类名 */

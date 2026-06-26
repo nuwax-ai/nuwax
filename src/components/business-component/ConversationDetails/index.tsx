@@ -836,6 +836,9 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
               agentId={agentId}
               agentSandboxId={agentDetail?.sandboxId}
               hasPermission={agentDetail?.hasPermission}
+              showAgentModeSelector={
+                agentDetail?.allowChooseMode === DefaultSelectedEnum.Yes
+              }
               maskText={t(
                 'PC.Components.ConversationDetails.noAgentPermission',
               )}

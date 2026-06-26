@@ -1,5 +1,6 @@
 import type { AgentMode } from '@/components/business-component/AgentIntervention';
 import type { UnifiedChatQueueContext } from '@/components/business-component/MessageQueue/useUnifiedChatQueue';
+import type { DefaultSelectedEnum } from '@/types/enums/agent';
 import type { ChatInputProps, UploadFileInfo } from '@/types/interfaces/common';
 import type {
   ConversationInfo,
@@ -20,6 +21,8 @@ export interface UnifiedAgentInfo {
   sandboxId?: string;
   hideDesktop?: number;
   expandPageArea?: number;
+  /** 是否允许用户在对话框中选择 Agent 模式（1 允许，其他不允许） */
+  allowChooseMode?: DefaultSelectedEnum | number;
 }
 
 export interface UnifiedChatSessionProps {

@@ -167,6 +167,8 @@ export enum AgentArrangeConfigEnum {
   Page_Event_Binding = 'Page_Event_Binding',
   // 子智能体
   SubAgent = 'SubAgent',
+  // 群组智能体
+  Group_Agent = 'Group_Agent',
   // 隐藏远程桌面
   Hide_Remote_Desktop = 'Hide_Remote_Desktop',
   // 允许用户选择自有模型
@@ -205,6 +207,8 @@ export enum ComponentSettingEnum {
   Params,
   // 调用方式
   Method_Call,
+  // 调用审批
+  Call_Approval,
   // 输出方式
   Output_Way,
   // 异步运行

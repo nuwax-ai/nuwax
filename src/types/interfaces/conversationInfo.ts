@@ -396,6 +396,12 @@ export interface ConversationInfo {
     hasPermission?: boolean;
     /** 会话关联的智能体电脑是否不可用 */
     isSandboxUnavailable?: boolean;
+    /** 是否允许用户在对话框中选择 Agent 模式，1 允许，其他不允许 */
+    allowChooseMode?: number;
+    /** 是否开启版本管理，1 开启，其他不开启 */
+    enableVersionControl?: number;
+    /** 允许用户选择自有模型 */
+    allowOtherModel?: number;
   };
   // 会话消息列表，会话列表查询时不会返回该字段值
   messageList: MessageInfo[];

@@ -42,6 +42,8 @@ const CollapseComponentItem: React.FC<CollapseComponentItemProps> = ({
           return `/space/${spaceId}/table/${targetId}`;
         case AgentComponentTypeEnum.Knowledge:
           return `/space/${spaceId}/knowledge/${targetId}`;
+        case AgentComponentTypeEnum.Agent:
+          return `/space/${spaceId}/agent/${targetId}`;
       }
     }
   }, [agentComponentInfo]);

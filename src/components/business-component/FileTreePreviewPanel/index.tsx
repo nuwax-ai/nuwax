@@ -1,7 +1,8 @@
 import FileTreeGitSourcePanel from '@/components/business-component/FileTreeGitSourcePanel';
 import GitVersionRecordPanel from '@/components/business-component/GitVersionRecordPanel';
+import { isAgentVersionControlEnabled } from '@/constants/agent.constants';
 import classNames from 'classnames';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useFileTreePreviewPanel } from './hooks/useFileTreePreviewPanel';
 import styles from './index.less';
 import type { FileTreePreviewPanelProps } from './types';
@@ -31,6 +32,7 @@ const FileTreePreviewPanel: React.FC<FileTreePreviewPanelProps> = ({
   preview,
   sourceControl,
   showSourceControl = Boolean(sourceControl?.onCommit),
+  enableVersionControl,
   viewMode,
   hideDesktop,
   diffFile,
@@ -42,8 +44,17 @@ const FileTreePreviewPanel: React.FC<FileTreePreviewPanelProps> = ({
   previewPanelProps,
   treeHeaderClassName,
 }) => {
+  const resolvedShowSourceControl = useMemo(() => {
+    const base = showSourceControl ?? Boolean(sourceControl?.onCommit);
+    if (enableVersionControl === undefined) {
+      return base;
+    }
+    return base && isAgentVersionControlEnabled(enableVersionControl);
+  }, [showSourceControl, sourceControl?.onCommit, enableVersionControl]);
+
   const showFileTree = viewMode !== 'desktop' && tree.isFileTreeVisible;
-  const showGitVersionButton = Boolean(gitVersionControl);
+  const showGitVersionButton =
+    Boolean(gitVersionControl) && resolvedShowSourceControl;
   const showGitVersionPanel =
     gitVersionPanelOpen &&
     showGitVersionButton &&
@@ -99,7 +110,8 @@ const FileTreePreviewPanel: React.FC<FileTreePreviewPanelProps> = ({
         <div className={cx(styles['content-container'], 'flex')}>
           {showFileTree && (
             <FileTreeGitSourcePanel
-              showSourceControl={showSourceControl}
+              showSourceControl={resolvedShowSourceControl}
+              enableVersionControl={enableVersionControl}
               className={cx('file-tree-panel', 'h-full')}
               tree={tree}
               treeClassName="w-full h-full"

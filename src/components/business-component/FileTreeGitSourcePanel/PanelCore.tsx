@@ -1,8 +1,9 @@
 import TooltipIcon from '@/components/custom/TooltipIcon';
+import { isAgentVersionControlEnabled } from '@/constants/agent.constants';
 import { dict } from '@/services/i18nRuntime';
 import { BranchesOutlined, FolderOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import FileTreePanel from './FileTreePanel';
 import styles from './index.less';
 import SourceControlPanel from './SourceControlPanel';
@@ -22,6 +23,7 @@ const FileTreeGitSourcePanel: React.FC<FileTreeGitSourcePanelProps> = ({
   className,
   isCollapsed,
   showSourceControl,
+  enableVersionControl,
   tree,
   treeClassName,
   treeHeaderClassName,
@@ -47,7 +49,19 @@ const FileTreeGitSourcePanel: React.FC<FileTreeGitSourcePanelProps> = ({
   } = sourceControl;
 
   const modifiedCount = changeFiles.length;
-  const enableSourceControl = showSourceControl ?? Boolean(onCommit);
+  const enableSourceControl = useMemo(() => {
+    const baseEnabled = showSourceControl ?? Boolean(onCommit);
+    if (enableVersionControl === undefined) {
+      return baseEnabled;
+    }
+    return baseEnabled && isAgentVersionControlEnabled(enableVersionControl);
+  }, [showSourceControl, onCommit, enableVersionControl]);
+
+  useEffect(() => {
+    if (!enableSourceControl && activeView === 'sourceControl') {
+      setActiveView('files');
+    }
+  }, [enableSourceControl, activeView]);
 
   /** 点击修改文件：仅触发 diff 预览，不走文件树选中逻辑 */
   const handleModifiedFileClick = useCallback(

@@ -43,9 +43,17 @@ import ModelSelector from './ModelSelector';
 
 const cx = classNames.bind(styles);
 
-const AGENT_MODE_LABEL: Record<AgentMode, string> = {
-  yolo: 'YOLO',
-  ask: 'Ask',
+const AGENT_MODE_OPTIONS: AgentMode[] = ['yolo', 'ask'];
+
+const AGENT_MODE_I18N: Record<AgentMode, { label: string; desc: string }> = {
+  yolo: {
+    label: 'PC.Components.ChatInputHome.agentModeAuto',
+    desc: 'PC.Components.ChatInputHome.agentModeAutoDesc',
+  },
+  ask: {
+    label: 'PC.Components.ChatInputHome.agentModeApproval',
+    desc: 'PC.Components.ChatInputHome.agentModeApprovalDesc',
+  },
 };
 
 /**
@@ -852,13 +860,18 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
               <Dropdown
                 menu={{
                   selectedKeys: [agentMode],
-                  items: (['yolo', 'ask'] as AgentMode[]).map((mode) => ({
+                  items: AGENT_MODE_OPTIONS.map((mode) => ({
                     key: mode,
                     label: (
                       <div className={cx(styles['agent-mode-dropdown-item'])}>
-                        <span className={cx(styles['item-name'])}>
-                          {AGENT_MODE_LABEL[mode]}
-                        </span>
+                        <div className={cx(styles['item-content'])}>
+                          <span className={cx(styles['item-name'])}>
+                            {t(AGENT_MODE_I18N[mode].label)}
+                          </span>
+                          <span className={cx(styles['item-desc'])}>
+                            {t(AGENT_MODE_I18N[mode].desc)}
+                          </span>
+                        </div>
                         {agentMode === mode && (
                           <CheckOutlined
                             className={cx(styles['agent-mode-check'])}
@@ -883,7 +896,7 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
                         styles[`agent-mode-option-${agentMode}`],
                       )}
                     >
-                      <span>{AGENT_MODE_LABEL[agentMode]}</span>
+                      <span>{t(AGENT_MODE_I18N[agentMode].label)}</span>
                       <SvgIcon
                         name="icons-common-caret_down"
                         style={{ fontSize: '14px' }}

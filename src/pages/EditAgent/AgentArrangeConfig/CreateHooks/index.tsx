@@ -288,9 +288,9 @@ const CreateHooks: React.FC<CreateHooksProps> = ({
       width: 140,
       fixed: 'left',
       render: (value: string) => (
-        <div className={cx('flex', 'items-center', 'h-full')}>
-          <span className={cx('text-ellipsis')}>{value || '--'}</span>
-        </div>
+        <span className={cx('flex', 'items-center', 'h-full')}>
+          <EllipsisTooltip text={value || '--'} />
+        </span>
       ),
     },
     {

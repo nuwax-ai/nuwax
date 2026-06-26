@@ -358,6 +358,10 @@ export const COMPONENT_SETTING_ACTIONS = [
     label: dict('PC.Constants.Space.callMethod'),
   },
   {
+    type: ComponentSettingEnum.Call_Approval,
+    label: dict('PC.Constants.Space.callApproval'),
+  },
+  {
     type: ComponentSettingEnum.Output_Way,
     label: dict('PC.Constants.Space.outputWay'),
   },
