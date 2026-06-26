@@ -228,7 +228,7 @@
     z-index: 9999;
 
     .ant-dropdown-menu {
-      min-width: 100px;
+      min-width: 280px;
       max-height: 240px;
       overflow-y: auto;
       overflow-x: hidden;
@@ -256,21 +256,36 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  width: 100px;
+  gap: @marginSm;
+  width: 280px;
+
+  .item-content {
+    flex: 1;
+    min-width: 0;
+  }
 
   .item-name {
+    display: block;
     color: @colorTextSecondary;
     font-size: @fontSizeSm;
     font-weight: 500;
-    line-height: 28px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    line-height: 20px;
+  }
+
+  .item-desc {
+    display: block;
+    margin-top: 2px;
+    color: @colorTextTertiary;
+    font-size: @fontSizeSm;
+    font-weight: 400;
+    line-height: 18px;
+    white-space: normal;
   }
 }
 
 .agent-mode-check {
-  margin-left: @marginSm;
+  flex-shrink: 0;
+  margin-left: 0;
   color: @colorPrimary;
   font-size: @fontSizeSm;
 }

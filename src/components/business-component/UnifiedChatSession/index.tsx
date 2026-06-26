@@ -13,18 +13,15 @@ import { useMemo, useRef } from 'react';
 
 import { ENABLE_CHAT_MESSAGE_QUEUE } from '@/constants/feature.constants';
 import { dict } from '@/services/i18nRuntime';
-import { TaskStatus } from '@/types/enums/agent';
+import { DefaultSelectedEnum, TaskStatus } from '@/types/enums/agent';
 import { MessageStatusEnum } from '@/types/enums/common';
 import { AgentTypeEnum } from '@/types/enums/space';
 import type { UploadFileInfo } from '@/types/interfaces/common';
-import type {
-  MessageInfo,
-  RoleInfo,
-} from '@/types/interfaces/conversationInfo';
-import ChatInputHomeIndependent from './components/ChatInputHomeIndependent';
+import type { RoleInfo } from '@/types/interfaces/conversationInfo';
 import ChatContentArea from './components/ChatContentArea';
-import { useUnifiedChatScroll } from './hooks/useUnifiedChatScroll';
+import ChatInputHomeIndependent from './components/ChatInputHomeIndependent';
 import { useLoadMoreHistory } from './hooks/useLoadMoreHistory';
+import { useUnifiedChatScroll } from './hooks/useUnifiedChatScroll';
 
 import styles from './index.less';
 import type { UnifiedChatSessionProps } from './types';
@@ -252,6 +249,12 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
     isConversationActive,
   ]);
 
+  /** Agent 模式选择器：由智能体 allowChooseMode 配置控制 */
+  const showAgentModeSelector = useMemo(
+    () => agentInfo?.allowChooseMode === DefaultSelectedEnum.Yes,
+    [agentInfo?.allowChooseMode],
+  );
+
   return (
     <div className={cx(styles['session-container'], className)} style={style}>
       {/* 核心聊天展现内容区 */}
@@ -342,6 +345,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
           }
           isPersonalComputer={!!agentInfo?.sandboxId}
           {...interventionLayer.agentModeInputProps}
+          showAgentModeSelector={showAgentModeSelector}
           enableMention={enableMention}
           placeholder={placeholder}
           readonly={readonly}
