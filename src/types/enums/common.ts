@@ -103,17 +103,6 @@ export enum FlowKindEnum {
   AgentFlow = 'AgentFlow',
 }
 
-// HITL 模式（仅 Ask；approve 模式已移除）
-export enum HitlModeEnum {
-  Ask = 'ask',
-}
-
-// Agent 节点模式
-export enum AgentNodeModeEnum {
-  Platform = 'platform',
-  SubFlow = 'subflow',
-}
-
 export enum DataTypeEnum {
   String = 'String', // 文本
   Integer = 'Integer', // 整型数字
