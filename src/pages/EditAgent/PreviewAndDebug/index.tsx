@@ -507,6 +507,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
                 sandboxId:
                   conversationInfo?.sandboxServerId ||
                   conversationInfo?.agent?.sandboxId,
+                allowChooseMode: agentConfigInfo?.allowChooseMode,
               }}
               onSendMessage={handleMessageSend}
               onClear={handleClear}

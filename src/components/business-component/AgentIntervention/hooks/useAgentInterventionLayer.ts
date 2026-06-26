@@ -19,7 +19,6 @@ export interface UseAgentInterventionLayerOptions {
 export interface AgentModeInputProps {
   agentMode: AgentMode;
   onAgentModeChange: (mode: AgentMode) => void;
-  showAgentModeSelector: boolean;
 }
 
 export interface UseAgentInterventionLayerResult {
@@ -70,9 +69,6 @@ export function useAgentInterventionLayer(
     runStopConversation,
   } = useModel('conversationInfo');
 
-  // Agent 模式选择器是否展示：由租户配置控制，未下发（undefined）默认展示
-  const { tenantConfigInfo } = useModel('tenantConfigInfo');
-
   const cancelActiveConversation = useCallback(async () => {
     if (!isConversationActive || !conversationId) {
       return;
@@ -101,7 +97,6 @@ export function useAgentInterventionLayer(
     agentModeInputProps: {
       agentMode,
       onAgentModeChange: setAgentMode,
-      showAgentModeSelector: tenantConfigInfo?.enableAgentMode !== 0,
     },
   };
 }

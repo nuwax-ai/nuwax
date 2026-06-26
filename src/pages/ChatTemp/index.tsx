@@ -934,6 +934,8 @@ const ChatTemp: React.FC = () => {
               loadingStopTempConversation={loadingStopTempConversation}
               // 禁用 @ 提及功能
               enableMention={false}
+              // 临时会话不允许选择智能体模式
+              showAgentModeSelector={false}
               placeholder={dict('PC.Pages.ChatTemp.inputPlaceholder')}
             />
             {/*手机会话输入框*/}

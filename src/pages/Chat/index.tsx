@@ -1010,6 +1010,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       sandboxId: effectiveAgent?.sandboxId,
       hideDesktop: effectiveAgent?.hideDesktop,
       expandPageArea: effectiveAgent?.expandPageArea,
+      allowChooseMode: effectiveAgent?.allowChooseMode,
     },
     onSendMessage: handleMessageSend,
     onClear: showClearContext ? handleClear : undefined,
