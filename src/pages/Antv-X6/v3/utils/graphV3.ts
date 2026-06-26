@@ -1,4 +1,7 @@
-import { isHitlOptionsBranchMode } from '@/pages/Antv-X6/v3/agentFlow/adapters/qaConfigAdapter';
+import {
+  getHitlOptions,
+  isHitlOptionsBranchMode,
+} from '@/pages/Antv-X6/v3/agentFlow/adapters/qaConfigAdapter';
 import {
   DEFAULT_NODE_CONFIG,
   DEFAULT_NODE_CONFIG_MAP,
@@ -832,7 +835,6 @@ export const calculateNodePosition = ({
   );
   const theRange = 200;
   if (isOut) {
-    // port 为 out 出边，需要向右偏移
     position.x = position.x + DEFAULT_NODE_CONFIG.newNodeOffsetX;
     if (peerPosition !== null && peerPosition.x <= position.x + theRange) {
       position.x = peerPosition.x + DEFAULT_NODE_CONFIG.offsetGapX;
@@ -847,7 +849,10 @@ export const calculateNodePosition = ({
     }
   }
 
-  return position;
+  // position 是图本地坐标，转为客户端坐标后 _doAddNode 可以可靠地识别
+  // 并通过 clientToGraph 转换回正确的图坐标，避免坐标范围误判。
+  const clientPos = graph.localToClient(position.x, position.y);
+  return { x: clientPos.x, y: clientPos.y };
 };
 // 获取当前画布可视区域中心点
 const getViewportCenter = (
@@ -951,6 +956,20 @@ const handleAgentFlowEdges = (
     });
   }
 
+  if (node.type === NodeTypeEnum.HumanInteraction) {
+    const options: any[] = getHitlOptions(nc);
+    options.forEach((opt: any) => {
+      const optIds: number[] = opt.nextNodeIds || [];
+      optIds.forEach((id) => {
+        edges.push({
+          source: `${node.id}-hitl-option-${opt.uuid}-out`,
+          target: id.toString(),
+          zIndex: z,
+        });
+      });
+    });
+  }
+
   return edges;
 };
 
@@ -1034,11 +1053,23 @@ export const getEdges = (
           node.nodeConfig.answerType === AnswerTypeEnum.SELECT)
       ) {
         return handleSpecialNodes(node, isLoopNode);
-      } else if (node.type === NodeTypeEnum.Loop) {
+      }
+      if (node.type === NodeTypeEnum.Loop) {
         return handleLoopEdges(node);
-      } else if (node.type === NodeTypeEnum.RouteDecision) {
+      }
+      if (node.type === NodeTypeEnum.RouteDecision) {
         return handleAgentFlowEdges(node, isLoopNode);
-      } else if (node.nextNodeIds && node.nextNodeIds.length > 0) {
+      }
+      if (
+        node.type === NodeTypeEnum.HumanInteraction &&
+        isHitlOptionsBranchMode(node.nodeConfig as any)
+      ) {
+        const hitlEdges = handleAgentFlowEdges(node, isLoopNode);
+        // options 数组有内容时直接返回各选项连线；
+        // options 为空（节点刚创建尚未配置选项）时回落到 nextNodeIds 路径。
+        if (hitlEdges.length > 0) return hitlEdges;
+      }
+      if (node.nextNodeIds && node.nextNodeIds.length > 0) {
         const _arr = node.nextNodeIds.filter(
           (item) => item !== node.loopNodeId && item !== node.id,
         );

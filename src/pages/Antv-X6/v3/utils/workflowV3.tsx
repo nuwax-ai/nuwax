@@ -701,11 +701,11 @@ export const createChildNode = (
 export const createEdge = (edge: Edge) => {
   if (edge.source === edge.target) return;
   const parseEndpoint = (endpoint: string, type: string) => {
-    const isLoop = endpoint.includes('in') || endpoint.includes('out');
-    const isNotGraent = endpoint.includes('-');
+    const hasPortSuffix = endpoint.endsWith('-in') || endpoint.endsWith('-out');
+    const hasHyphen = endpoint.includes('-');
     return {
-      cell: isLoop || isNotGraent ? endpoint.split('-')[0] : endpoint,
-      port: isLoop ? endpoint : `${endpoint}-${type}`,
+      cell: hasHyphen ? endpoint.split('-')[0] : endpoint,
+      port: hasPortSuffix ? endpoint : `${endpoint}-${type}`,
     };
   };
 

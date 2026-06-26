@@ -204,12 +204,9 @@ export const useNodeOperations = ({
 
       const isSuccess = await changeNode({ nodeData: params }, noop);
       if (isSuccess) {
-        const sourcePortId = portId.split('-').slice(0, -1).join('-');
-        graphRef.current?.graphCreateNewEdge(
-          sourcePortId,
-          String(newNodeId),
-          isLoop,
-        );
+        // portId 直接传递：parseEndpoint 会根据是否含 'in'/'out' 自动处理；
+        // 剥去 '-out' 再传会导致含 "route" 等子串的端口 ID 被误判，丢失 '-out' 后缀。
+        graphRef.current?.graphCreateNewEdge(portId, String(newNodeId), isLoop);
       }
     },
     [changeNode, graphRef],
@@ -239,12 +236,7 @@ export const useNodeOperations = ({
       });
       const isSuccess = await changeNode({ nodeData: params }, noop);
       if (isSuccess) {
-        const sourcePortId = portId.split('-').slice(0, -1).join('-');
-        graphRef.current?.graphCreateNewEdge(
-          sourcePortId,
-          String(newNodeId),
-          isLoop,
-        );
+        graphRef.current?.graphCreateNewEdge(portId, String(newNodeId), isLoop);
       }
     },
     [changeNode, graphRef],

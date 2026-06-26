@@ -617,7 +617,22 @@ const initGraph = ({
     node.prop('ports/items', updatedPorts);
   });
 
-  graph.on('node:port:click', ({ node, port, e }) => {
+  // node:magnet:click 在 onMouseUp 里直接触发，对所有端口（包括 in port）
+  // 均可靠，不依赖原生 click 穿透 React foreignObject。
+  graph.on('node:magnet:click', ({ node, magnet, e }) => {
+    // 从 magnet 元素向上查找带 port 属性的祖先元素
+    let port: string | null = null;
+    let el: Element | null = magnet;
+    while (el) {
+      const p = el.getAttribute('port');
+      if (p) {
+        port = p;
+        break;
+      }
+      el = el.parentElement;
+    }
+    if (!port) return;
+
     const isLoopNode = node.getData()?.loopNodeId;
     if (isLoopNode) {
       const isIn = port?.includes('in');
@@ -632,7 +647,7 @@ const initGraph = ({
         return;
       }
     }
-    createNodeAndEdge(graph, e, node.getData(), port as string);
+    createNodeAndEdge(graph, e, node.getData(), port);
     graph.select(node);
   });
 
