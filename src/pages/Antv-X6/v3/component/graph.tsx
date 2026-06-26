@@ -1,11 +1,7 @@
 // AntV X6 graph with plugins.
 import PlusIcon from '@/assets/svg/plus_icon.svg';
 import { t } from '@/services/i18nRuntime';
-import {
-  AnswerTypeEnum,
-  FlowKindEnum,
-  NodeTypeEnum,
-} from '@/types/enums/common';
+import { AnswerTypeEnum, NodeTypeEnum } from '@/types/enums/common';
 import {
   NodeUpdateEnum,
   PortGroupEnum,
@@ -32,6 +28,10 @@ import {
 } from '@antv/x6';
 import { message, Modal } from 'antd';
 import StencilContent from '../components/layout/Sidebar';
+import {
+  isStartNode,
+  shouldBlockStartOutgoing,
+} from '../flowKind/flowKindRules';
 import {
   adjustParentSize,
   getPortGroup,
@@ -154,29 +154,21 @@ const initGraph = ({
     // AgentFlow：开始节点输出端口有且仅一条连线，已连出时禁止从端口再加节点
     // （edgeId 存在时为在已有连线上插入节点，不会新增出口，放行）
     if (
-      flowKind === FlowKindEnum.AgentFlow &&
-      sourceNode?.type === NodeTypeEnum.Start &&
-      !edgeId
+      isStartNode(sourceNode?.type) &&
+      !edgeId &&
+      shouldBlockStartOutgoing({
+        graph,
+        flowKind,
+        startCellId: String(sourceNode.id),
+      })
     ) {
-      const startCellId = String(sourceNode.id);
-      const startHasOutgoing = graph.getEdges().some((edge) => {
-        const s = edge.getSource();
-        return (
-          typeof s === 'object' &&
-          s !== null &&
-          'cell' in s &&
-          String((s as { cell: unknown }).cell) === startCellId
-        );
-      });
-      if (startHasOutgoing) {
-        message.warning(
-          t(
-            'PC.Pages.AgentFlowNode.startSingleOutgoingHint',
-            '开始节点只能连接一个后续节点',
-          ),
-        );
-        return;
-      }
+      message.warning(
+        t(
+          'PC.Pages.AgentFlowNode.startSingleOutgoingHint',
+          '开始节点只能连接一个后续节点',
+        ),
+      );
+      return;
     }
     // const eventTarget =
     //   event.originalEvent.originalEvent || event.originalEvent;
@@ -342,24 +334,16 @@ const initGraph = ({
 
         // AgentFlow：开始节点输出端口有且仅一条连线（与 Workflow 多出口不同）
         if (
-          flowKind === FlowKindEnum.AgentFlow &&
-          sourceCell.getData()?.type === NodeTypeEnum.Start
+          isStartNode(sourceCell.getData()?.type) &&
+          shouldBlockStartOutgoing({
+            graph,
+            flowKind,
+            startCellId: String(sourceCell.id),
+            excludeEdgeId: edge ? String(edge.id) : undefined,
+            edges: existingEdges,
+          })
         ) {
-          const startCellId = String(sourceCell.id);
-          const startHasOutgoing = existingEdges.some((e) => {
-            // 排除当前正在拖拽/重连的这条边（首次连线、改接目标都应放行）
-            if (edge && String(e.id) === String(edge.id)) return false;
-            const s = e.getSource();
-            return (
-              typeof s === 'object' &&
-              s !== null &&
-              'cell' in s &&
-              String((s as { cell: unknown }).cell) === startCellId
-            );
-          });
-          if (startHasOutgoing) {
-            return false;
-          }
+          return false;
         }
 
         //   LoopEnd

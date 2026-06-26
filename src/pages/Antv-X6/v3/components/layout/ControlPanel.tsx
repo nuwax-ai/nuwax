@@ -1,7 +1,7 @@
 import { useCanvasFullscreen } from '@/contexts/CanvasFullscreenContext';
-import { useFlowKind } from '@/contexts/FlowKindContext';
+import { useIsAgentFlow } from '@/pages/Antv-X6/v3/flowKind/useFlowKind';
 import { t } from '@/services/i18nRuntime';
-import { FlowKindEnum, NodeTypeEnum } from '@/types/enums/common';
+import { NodeTypeEnum } from '@/types/enums/common';
 import { ChildNode, StencilChildNode } from '@/types/interfaces/graph';
 import {
   CaretRightOutlined,
@@ -73,7 +73,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
   const [open, setOpen] = useState(false);
   const [continueDragCount, setContinueDragCount] = useState(0);
   // AgentFlow 画布不展示「调试 / 试运行」
-  const isAgentFlow = useFlowKind() === FlowKindEnum.AgentFlow;
+  const isAgentFlow = useIsAgentFlow();
   // AgentFlow 内嵌（默认画布大小）时控制条紧凑化；全屏时恢复原始尺寸
   const isFullscreen = useCanvasFullscreen();
   const compact = isAgentFlow && !isFullscreen;

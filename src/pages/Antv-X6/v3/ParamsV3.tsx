@@ -5,12 +5,11 @@ import {
 } from '@/constants/images.constants';
 import { t } from '@/services/i18nRuntime';
 import {
-  FlowKindEnum,
   HitlModeEnum,
   NodeShapeEnum,
   NodeTypeEnum,
 } from '@/types/enums/common';
-import type { StencilList } from '@/types/interfaces/graph';
+import type { StencilChildNode, StencilList } from '@/types/interfaces/graph';
 import {
   InputConfigs,
   asideList as baseAsideList,
@@ -24,34 +23,11 @@ import {
   outPutConfigs,
   tableOptions,
 } from '../params';
+import { assignFlowKinds } from './flowKind/flowKindConfig';
 
-// ── 仅 Workflow 可见的节点类型（AgentFlow 下不展示） ──
-const WORKFLOW_ONLY_TYPES = new Set<NodeTypeEnum>([
-  NodeTypeEnum.LLM,
-  NodeTypeEnum.Code,
-  NodeTypeEnum.Condition,
-  NodeTypeEnum.Loop,
-  NodeTypeEnum.LoopBreak,
-  NodeTypeEnum.LoopContinue,
-  NodeTypeEnum.Knowledge,
-  NodeTypeEnum.KnowledgeInsert,
-  NodeTypeEnum.Variable,
-  NodeTypeEnum.VariableAggregation,
-  NodeTypeEnum.LongTermMemory,
-  NodeTypeEnum.QA,
-  NodeTypeEnum.TextProcessing,
-  NodeTypeEnum.DocumentExtraction,
-  NodeTypeEnum.MCP,
-  NodeTypeEnum.HTTPRequest,
-  NodeTypeEnum.IntentRecognition,
-  NodeTypeEnum.TableDataAdd,
-  NodeTypeEnum.Plugin,
-  NodeTypeEnum.Output,
-  NodeTypeEnum.TableDataDelete,
-  NodeTypeEnum.TableDataUpdate,
-  NodeTypeEnum.TableDataQuery,
-  NodeTypeEnum.TableSQL,
-]);
+/** 给子节点列表统一附加 flowKinds 标记 */
+const tagFlowKinds = (children: StencilChildNode[]) =>
+  children.map(assignFlowKinds);
 
 const buildV3AsideList = (): StencilList[] => {
   const variableNode = baseAsideList
@@ -68,62 +44,32 @@ const buildV3AsideList = (): StencilList[] => {
   };
 
   return baseAsideList.map((group) => {
-    if (group.key !== 'group3') {
-      // 给非 group3 的节点添加 flowKinds 限制
-      return {
-        ...group,
-        children: (group.children || []).map((child) => {
-          if (WORKFLOW_ONLY_TYPES.has(child.type)) {
-            return { ...child, flowKinds: [FlowKindEnum.Workflow] };
-          }
-          return child;
-        }),
-      };
-    }
-
-    // group3: 添加 VariableAggregation，并添加 flowKinds 限制
-    if (
-      (group.children || []).some(
+    // group3 需要额外插入 VariableAggregation 节点
+    if (group.key === 'group3') {
+      const hasAggregation = (group.children || []).some(
         (child) => child.type === NodeTypeEnum.VariableAggregation,
-      )
-    ) {
-      return {
-        ...group,
-        children: (group.children || []).map((child) => {
-          if (WORKFLOW_ONLY_TYPES.has(child.type)) {
-            return { ...child, flowKinds: [FlowKindEnum.Workflow] };
-          }
-          return child;
-        }),
-      };
+      );
+      if (!hasAggregation) {
+        const children = [...(group.children || [])];
+        const variableIndex = children.findIndex(
+          (child) => child.type === NodeTypeEnum.Variable,
+        );
+        const insertIndex =
+          variableIndex >= 0 ? variableIndex + 1 : children.length;
+        children.splice(insertIndex, 0, variableAggregationNode);
+        return { ...group, children: tagFlowKinds(children) };
+      }
     }
 
-    const children = [...(group.children || [])];
-    const variableIndex = children.findIndex(
-      (child) => child.type === NodeTypeEnum.Variable,
-    );
-    const insertIndex =
-      variableIndex >= 0 ? variableIndex + 1 : children.length;
-
-    children.splice(insertIndex, 0, variableAggregationNode);
-
-    return {
-      ...group,
-      children: children.map((child) => {
-        if (WORKFLOW_ONLY_TYPES.has(child.type)) {
-          return { ...child, flowKinds: [FlowKindEnum.Workflow] };
-        }
-        return child;
-      }),
-    };
+    return { ...group, children: tagFlowKinds(group.children || []) };
   });
 };
 
-// ── AgentFlow 处理节点组 ──
+// ── AgentFlow 处理节点组（flowKinds 由 assignFlowKinds 自动附加） ──
 const agentFlowProcessGroup: StencilList = {
   name: t('PC.Pages.AgentFlowParams.groupAgentFlowProcess'),
   key: 'groupAgentFlowProcess',
-  children: [
+  children: tagFlowKinds([
     {
       name: t('PC.Pages.AgentFlowParams.nodeRouteDecisionName'),
       icon: null,
@@ -131,7 +77,6 @@ const agentFlowProcessGroup: StencilList = {
       type: NodeTypeEnum.RouteDecision,
       shape: NodeShapeEnum.General,
       description: t('PC.Pages.AgentFlowParams.nodeRouteDecisionDescription'),
-      flowKinds: [FlowKindEnum.AgentFlow],
     },
     {
       name: t('PC.Pages.AgentFlowParams.nodeAgentName'),
@@ -140,7 +85,6 @@ const agentFlowProcessGroup: StencilList = {
       type: NodeTypeEnum.Agent,
       shape: NodeShapeEnum.General,
       description: t('PC.Pages.AgentFlowParams.nodeAgentDescription'),
-      flowKinds: [FlowKindEnum.AgentFlow],
     },
     {
       name: t('PC.Pages.AgentFlowParams.nodeHumanAskName'),
@@ -149,10 +93,9 @@ const agentFlowProcessGroup: StencilList = {
       type: NodeTypeEnum.HumanInteraction,
       shape: NodeShapeEnum.General,
       description: t('PC.Pages.AgentFlowParams.nodeHumanAskDescription'),
-      flowKinds: [FlowKindEnum.AgentFlow],
       nodeConfig: { hitlMode: HitlModeEnum.Ask } as any,
     },
-  ],
+  ]),
 };
 
 export const asideList: StencilList[] = [

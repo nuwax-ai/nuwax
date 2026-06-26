@@ -9,7 +9,7 @@ import ExpandableInputTextarea from '@/components/ExpandTextArea';
 import { ModelSelected } from '@/components/ModelSetting';
 import { transformToPromptVariables } from '@/components/TiptapVariableInput/utils/variableTransform';
 import { t } from '@/services/i18nRuntime';
-import { AnswerTypeEnum } from '@/types/enums/common';
+import { AnswerTypeEnum, DataTypeEnum } from '@/types/enums/common';
 import { InputItemNameEnum } from '@/types/enums/node';
 import { InputAndOutConfig } from '@/types/interfaces/node';
 import { NodeDisposeProps } from '@/types/interfaces/workflow';
@@ -33,29 +33,33 @@ import './HumanInteractionAskForm.less';
 
 const { TextArea } = Input;
 
+// 表单字段控件类型（对齐后端枚举，写入 Arg.inputType）
 const FORM_FIELD_TYPE_OPTIONS = [
+  {
+    label: t('PC.Pages.AgentFlowNode.formTypeInput', '单行文本'),
+    value: 'text',
+  },
+  {
+    label: t('PC.Pages.AgentFlowNode.formTypeSelect', '下拉单选'),
+    value: 'select',
+  },
   { label: t('PC.Pages.AgentFlowNode.formTypeRadio', '单选'), value: 'radio' },
   {
     label: t('PC.Pages.AgentFlowNode.formTypeCheckbox', '多选'),
-    value: 'checkbox',
-  },
-  {
-    label: t('PC.Pages.AgentFlowNode.formTypeInput', '单行文本'),
-    value: 'input',
+    value: 'checkboxes',
   },
   {
     label: t('PC.Pages.AgentFlowNode.formTypeNumber', '数字'),
     value: 'number',
   },
   {
-    label: t('PC.Pages.AgentFlowNode.formTypeTextarea', '多行文本'),
-    value: 'textarea',
-  },
-  {
     label: t('PC.Pages.AgentFlowNode.formTypeFile', '文件上传'),
     value: 'file',
   },
 ];
+
+/** 需要选项（selectConfig）的控件类型 */
+const CHOICE_INPUT_TYPES = new Set(['select', 'checkboxes', 'radio']);
 
 const HumanInteractionAskForm: React.FC<NodeDisposeProps> = ({ form }) => {
   const { referenceList } = useModel('workflowV3');
@@ -67,8 +71,7 @@ const HumanInteractionAskForm: React.FC<NodeDisposeProps> = ({ form }) => {
   const inputArgs =
     Form.useWatch(InputItemNameEnum.inputArgs, { form, preserve: true }) || [];
 
-  const formFieldTypes =
-    Form.useWatch('formFields', { form, preserve: true }) || [];
+  const formArgs = Form.useWatch('formArgs', { form, preserve: true }) || [];
 
   const promptVariables = transformToPromptVariables(
     (inputArgs as InputAndOutConfig[]).filter(
@@ -170,7 +173,7 @@ const HumanInteractionAskForm: React.FC<NodeDisposeProps> = ({ form }) => {
 
       {answerType === AnswerTypeEnum.FORM && (
         <div className="node-item-style">
-          <Form.List name="formFields">
+          <Form.List name="formArgs">
             {(fields, { add, remove }) => (
               <div className="ask-form-fields">
                 <div className="node-title-style">
@@ -184,12 +187,13 @@ const HumanInteractionAskForm: React.FC<NodeDisposeProps> = ({ form }) => {
                 </div>
 
                 {fields.map(({ key, name }) => {
-                  const fieldType = formFieldTypes[name]?.type || 'input';
+                  const inputType = formArgs[name]?.inputType || 'text';
+                  const isChoice = CHOICE_INPUT_TYPES.has(inputType);
                   return (
                     <div key={key} className="ask-form-field-card">
                       <div className="ask-form-field-card__row">
                         <Form.Item
-                          name={[name, 'label']}
+                          name={[name, 'name']}
                           noStyle
                           rules={[{ required: true }]}
                         >
@@ -202,9 +206,9 @@ const HumanInteractionAskForm: React.FC<NodeDisposeProps> = ({ form }) => {
                           />
                         </Form.Item>
                         <Form.Item
-                          name={[name, 'type']}
+                          name={[name, 'inputType']}
                           noStyle
-                          initialValue="input"
+                          initialValue="text"
                         >
                           <Select
                             className="ask-form-field-card__type"
@@ -212,7 +216,7 @@ const HumanInteractionAskForm: React.FC<NodeDisposeProps> = ({ form }) => {
                           />
                         </Form.Item>
                         <Form.Item
-                          name={[name, 'required']}
+                          name={[name, 'require']}
                           noStyle
                           valuePropName="checked"
                           initialValue={false}
@@ -240,18 +244,26 @@ const HumanInteractionAskForm: React.FC<NodeDisposeProps> = ({ form }) => {
                         />
                       </Form.Item>
 
-                      {(fieldType === 'radio' || fieldType === 'checkbox') && (
+                      {isChoice && (
                         <Form.Item
-                          name={[name, 'options']}
+                          name={[name, 'selectConfig', 'options']}
                           noStyle
                           getValueProps={(value) => ({
                             value: Array.isArray(value)
-                              ? value.join('\n')
-                              : value || '',
+                              ? value
+                                  .map((o: any) =>
+                                    o && typeof o === 'object' ? o.label : o,
+                                  )
+                                  .join('\n')
+                              : '',
                           })}
                           normalize={(value) =>
                             typeof value === 'string'
-                              ? value.split('\n')
+                              ? value
+                                  .split('\n')
+                                  .map((s: string) => s.trim())
+                                  .filter(Boolean)
+                                  .map((s: string) => ({ label: s, value: s }))
                               : value
                           }
                         >
@@ -275,10 +287,13 @@ const HumanInteractionAskForm: React.FC<NodeDisposeProps> = ({ form }) => {
                   className="ask-form-fields__add"
                   onClick={() =>
                     add({
-                      label: '',
-                      type: 'input',
-                      required: false,
+                      key: uuidv4(),
+                      name: '',
+                      inputType: 'text',
+                      require: false,
                       description: '',
+                      dataType: DataTypeEnum.String,
+                      selectConfig: null,
                     })
                   }
                 >

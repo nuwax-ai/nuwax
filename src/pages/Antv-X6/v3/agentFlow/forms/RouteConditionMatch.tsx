@@ -7,14 +7,11 @@
 import InputOrReference from '@/components/FormListItem/InputOrReference';
 import { options as compareOptions } from '@/pages/Antv-X6/params';
 import { t } from '@/services/i18nRuntime';
-import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import { DeleteOutlined } from '@ant-design/icons';
 import type { FormInstance } from 'antd';
-import { Button, Form, Input, Segmented, Select } from 'antd';
+import { Form, Input, Segmented, Select } from 'antd';
 import React, { useCallback } from 'react';
-import {
-  createEmptyConditionArg,
-  syncBranchConditionField,
-} from '../adapters/routeConditionAdapter';
+import { syncBranchConditionField } from '../adapters/routeConditionAdapter';
 
 export interface RouteConditionMatchProps {
   form: FormInstance;
@@ -79,7 +76,7 @@ const RouteConditionMatch: React.FC<RouteConditionMatchProps> = ({
       </div>
 
       <Form.List name={[listFieldName, 'conditionArgs']}>
-        {(fields, { add, remove }) => (
+        {(fields, { remove }) => (
           <>
             {fields.map((field, argIndex) => {
               const base = [
@@ -187,16 +184,6 @@ const RouteConditionMatch: React.FC<RouteConditionMatchProps> = ({
                 </div>
               );
             })}
-
-            <Button
-              type="link"
-              size="small"
-              icon={<PlusOutlined />}
-              className="route-condition-match__add"
-              onClick={() => add(createEmptyConditionArg())}
-            >
-              {t('PC.Pages.AgentFlowNode.routeAddCondition', '添加条件')}
-            </Button>
           </>
         )}
       </Form.List>

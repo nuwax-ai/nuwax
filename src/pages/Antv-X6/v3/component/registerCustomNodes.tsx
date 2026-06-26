@@ -1,7 +1,6 @@
 import EditableTitle from '@/components/editableTitle';
 import { ICON_WORKFLOW_LOOP } from '@/constants/images.constants';
 import useNodeSelection from '@/hooks/useNodeSelection';
-import { isAgentFlowType } from '@/pages/Antv-X6/v3/agentFlow/types';
 import {
   answerTypeMap,
   branchTypeMap,
@@ -9,6 +8,7 @@ import {
   EXCEPTION_HANDLE_OPTIONS,
   optionsMap,
 } from '@/pages/Antv-X6/v3/constants/node.constants';
+import { isAgentFlowType } from '@/pages/Antv-X6/v3/flowKind/flowKindConfig';
 import {
   returnBackgroundColor,
   returnImg,

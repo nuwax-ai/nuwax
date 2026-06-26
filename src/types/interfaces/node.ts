@@ -176,16 +176,7 @@ export interface ContextParamConfig {
   extraParams?: ExtraParam[];
 }
 
-// HumanInteraction:ask 表单字段定义
-export interface FormFieldConfig {
-  label: string;
-  type: 'radio' | 'checkbox' | 'input' | 'number' | 'textarea' | 'file';
-  required: boolean;
-  /** 填写说明：提示用户该字段输入什么内容 */
-  description?: string;
-  /** radio/checkbox 选项数组（后端契约为 string[]；编辑时 UI 仍用「每行一个」录入） */
-  options?: string[];
-}
+// HumanInteraction:ask 表单字段定义见 NodeConfig.formArgs（直接复用 InputAndOutConfig / Arg）
 
 // 节点内部的config
 export interface NodeConfig {
@@ -315,8 +306,8 @@ export interface NodeConfig {
   // HumanInteraction 节点（ask 模式）
   hitlMode?: HitlModeEnum;
   askConfig?: HitlAskConfig;
-  // HITL:ask v2
-  formFields?: FormFieldConfig[];
+  // HITL:ask v2 — 表单字段直接复用 Arg（控件类型走 inputType，单选/多选用 selectConfig）
+  formArgs?: InputAndOutConfig[];
   /** HITL:ask 用户回答写入上下文的键名 */
   contextWriteKey?: string;
   // Plugin/Workflow v2 (AgentFlow-only)

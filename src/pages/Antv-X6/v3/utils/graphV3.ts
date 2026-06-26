@@ -1,11 +1,11 @@
 import { isHitlOptionsBranchMode } from '@/pages/Antv-X6/v3/agentFlow/adapters/qaConfigAdapter';
-import { isAgentFlowType } from '@/pages/Antv-X6/v3/agentFlow/types';
 import {
   DEFAULT_NODE_CONFIG,
   DEFAULT_NODE_CONFIG_MAP,
   EXCEPTION_HANDLE_HIDDEN_TYPES,
   EXCEPTION_NODES_TYPE,
 } from '@/pages/Antv-X6/v3/constants/node.constants';
+import { isAgentFlowType } from '@/pages/Antv-X6/v3/flowKind/flowKindConfig';
 import {
   AnswerTypeEnum,
   ExceptionHandleTypeEnum,

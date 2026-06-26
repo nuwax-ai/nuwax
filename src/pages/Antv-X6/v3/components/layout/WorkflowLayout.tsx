@@ -6,17 +6,17 @@ import PublishComponentModal from '@/components/PublishComponentModal';
 import TestRun from '@/components/TestRun';
 import VersionHistory from '@/components/VersionHistory';
 import { CREATED_TABS } from '@/constants/common.constants';
-import { useFlowKind } from '@/contexts/FlowKindContext';
 import { testRunList } from '@/pages/Antv-X6/v3/constants/node.constants';
+import { AGENTFLOW_UI_CONFIG } from '@/pages/Antv-X6/v3/flowKind/flowKindConfig';
+import {
+  useAgentFlowKind,
+  useIsAgentFlow,
+} from '@/pages/Antv-X6/v3/flowKind/useFlowKind';
 import {
   AgentAddComponentStatusEnum,
   AgentComponentTypeEnum,
 } from '@/types/enums/agent';
-import {
-  CreateUpdateModeEnum,
-  FlowKindEnum,
-  NodeTypeEnum,
-} from '@/types/enums/common';
+import { CreateUpdateModeEnum, NodeTypeEnum } from '@/types/enums/common';
 import { CreatedNodeItem, DefaultObjectType } from '@/types/interfaces/common';
 import {
   ChildNode,
@@ -208,8 +208,8 @@ const WorkflowLayout: React.FC<WorkflowLayoutProps> = ({
   flowControlModel,
   onFlowControlModelChange,
 }) => {
-  const flowKind = useFlowKind();
-  const isAgentFlow = flowKind === FlowKindEnum.AgentFlow;
+  const isAgentFlow = useIsAgentFlow();
+  const agentFlowKind = useAgentFlowKind();
 
   /** AgentFlow 添加智能体节点：Created 仅展示「智能体」Tab，且列表限定当前空间已发布 */
   const createdModalTabs = useMemo(() => {
@@ -271,7 +271,7 @@ const WorkflowLayout: React.FC<WorkflowLayoutProps> = ({
           onClickBlank={handleClickBlank}
           onInit={handleInitLoading}
           onRefresh={handleRefreshGraph}
-          flowKind={isAgentFlow ? flowKind : undefined}
+          flowKind={agentFlowKind}
         />
       </Spin>
 
@@ -336,7 +336,7 @@ const WorkflowLayout: React.FC<WorkflowLayoutProps> = ({
         open={open}
         tabs={createdModalTabs}
         isSpaceOnly={createdIsSpaceOnly}
-        modalZIndex={isAgentFlow ? 1100 : undefined}
+        modalZIndex={isAgentFlow ? AGENTFLOW_UI_CONFIG.modalZIndex : undefined}
         addComponents={[
           {
             type: AgentComponentTypeEnum.Workflow,

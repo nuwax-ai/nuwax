@@ -21,7 +21,7 @@ import {
   BRANCH_PORT_ITEM_HEIGHT,
   BRANCH_PORT_STEP,
 } from '@/pages/Antv-X6/v3/agentFlow/handlers/portLayout';
-import { isAgentFlowType } from '@/pages/Antv-X6/v3/agentFlow/types';
+import { isAgentFlowType } from '@/pages/Antv-X6/v3/flowKind/flowKindConfig';
 import { t } from '@/services/i18nRuntime';
 import { NodeTypeEnum } from '@/types/enums/common';
 import { ChildNode } from '@/types/interfaces/graph';

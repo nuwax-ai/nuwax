@@ -8,7 +8,6 @@ import { createEmptyConditionArg } from '@/pages/Antv-X6/v3/agentFlow/adapters/r
 import {
   AnswerTypeEnum,
   DataTypeEnum,
-  HitlModeEnum,
   NodeShapeEnum,
   NodeTypeEnum,
 } from '@/types/enums/common';
@@ -155,6 +154,7 @@ function createDefaultIntentConfig(): any[] {
       intent: '',
       description: '',
       condition: '',
+      // 对齐条件节点：多条件连接符（前端单条件编辑，默认 AND）
       conditionType: 'AND',
       conditionArgs: [createEmptyConditionArg()],
       nextNodeIds: [],
@@ -453,11 +453,10 @@ export function createDefaultNodeConfig(
     case NodeTypeEnum.HumanInteraction:
       return {
         ...baseConfig,
-        hitlMode: HitlModeEnum.Ask,
         question: '',
         answerType: AnswerTypeEnum.TEXT,
         options: [],
-        formFields: [],
+        formArgs: [],
         contextWriteKey: 'user_reply',
         inputArgs: [],
         outputArgs: [

@@ -8,7 +8,6 @@ import { describe, expect, it } from 'vitest';
 import {
   getHitlOptions,
   isHitlOptionsBranchMode,
-  normalizeFormFieldOptions,
   normalizeHitlNodeConfig,
   serializeHitlNodeConfig,
 } from '../adapters/qaConfigAdapter';
@@ -81,33 +80,49 @@ describe('qaConfigAdapter', () => {
     ).toEqual([{ content: 'flat' }]);
   });
 
-  it('normalizeFormFieldOptions: 字符串/数组均归一化为裁剪后的数组', () => {
-    expect(normalizeFormFieldOptions('退货退款\n换货\n')).toEqual([
-      '退货退款',
-      '换货',
-    ]);
-    expect(normalizeFormFieldOptions([' A ', '', 'B'])).toEqual(['A', 'B']);
-    expect(normalizeFormFieldOptions(undefined)).toEqual([]);
-  });
-
-  it('serialize: 表单字段选项归一化为数组，非选项字段移除 options', () => {
+  it('serialize: 选择类 selectConfig 归一化为 {label,value}[]，其余清空', () => {
     const out = serializeHitlNodeConfig({
       answerType: AnswerTypeEnum.FORM,
-      formFields: [
-        { label: '类型', type: 'radio', required: true, options: '退货\n换货' },
-        { label: '说明', type: 'input', required: false, options: '脏数据' },
+      formArgs: [
+        {
+          name: '类型',
+          inputType: 'select',
+          require: true,
+          selectConfig: { dataSourceType: 'MANUAL', options: '退货\n换货' },
+        },
+        {
+          name: '说明',
+          inputType: 'text',
+          require: false,
+          selectConfig: { dataSourceType: 'MANUAL', options: '脏数据' },
+        },
       ],
     });
-    expect(out.formFields[0].options).toEqual(['退货', '换货']);
-    expect(out.formFields[1].options).toBeUndefined();
+    expect(out.formArgs[0].selectConfig.options).toEqual([
+      { label: '退货', value: '退货' },
+      { label: '换货', value: '换货' },
+    ]);
+    expect(out.formArgs[1].selectConfig).toBeNull();
   });
 
-  it('normalize: 加载时迁移历史「换行字符串」选项为数组', () => {
+  it('normalize: 迁移历史 formFields 为 formArgs (Arg + inputType + selectConfig)', () => {
     const out = normalizeHitlNodeConfig({
       answerType: AnswerTypeEnum.FORM,
-      formFields: [{ label: '类型', type: 'radio', options: 'A\nB' }],
+      formFields: [
+        { label: '类型', type: 'checkbox', required: true, options: 'A\nB' },
+      ],
     });
-    expect(out.formFields[0].options).toEqual(['A', 'B']);
+    expect(out.formFields).toBeUndefined();
+    expect(out.formArgs).toHaveLength(1);
+    expect(out.formArgs[0]).toMatchObject({
+      name: '类型',
+      inputType: 'checkboxes',
+      require: true,
+    });
+    expect(out.formArgs[0].selectConfig.options).toEqual([
+      { label: 'A', value: 'A' },
+      { label: 'B', value: 'B' },
+    ]);
   });
 
   it('isHitlOptionsBranchMode 仅 SELECT 为真', () => {
