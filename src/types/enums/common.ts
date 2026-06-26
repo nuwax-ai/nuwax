@@ -103,11 +103,6 @@ export enum FlowKindEnum {
   AgentFlow = 'AgentFlow',
 }
 
-// HITL 模式（仅 Ask；approve 模式已移除）
-export enum HitlModeEnum {
-  Ask = 'ask',
-}
-
 export enum DataTypeEnum {
   String = 'String', // 文本
   Integer = 'Integer', // 整型数字
@@ -229,21 +224,6 @@ export enum CompareTypeEnum {
 export enum AnswerTypeEnum {
   TEXT = 'TEXT',
   SELECT = 'SELECT',
-  // AgentFlow HumanInteraction: 表单回复模式（扩展自 QA 的 TEXT/SELECT）
-  FORM = 'FORM',
-}
-
-/**
- * HumanInteraction formArgs 表单控件类型（对齐后端 Arg.inputType 枚举名）
- * 可用值：Text / Select / MultipleSelect / Number / File / Radio
- */
-export enum FormArgInputTypeEnum {
-  Text = 'Text',
-  Select = 'Select',
-  MultipleSelect = 'MultipleSelect',
-  Number = 'Number',
-  File = 'File',
-  Radio = 'Radio',
 }
 
 export enum ExceptionHandleTypeEnum {

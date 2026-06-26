@@ -8,6 +8,7 @@ import {
 } from '@/types/enums/common';
 import { FoldFormIdEnum, VariableConfigTypeEnum } from '@/types/enums/node';
 import { ChildNode } from '@/types/interfaces/graph';
+import { HitlAnswerTypeEnum } from '../agentFlow/enums/hitlAnswerType';
 
 // 有试运行的节点
 export const testRunList = [
@@ -104,10 +105,11 @@ export const compareTypeMap = {
   [CompareTypeEnum.NOT_NULL]: '!∅',
 };
 
-export const answerTypeMap = {
+/** 含 Workflow QA（TEXT/SELECT）与 AgentFlow 表单回复（FORM） */
+export const answerTypeMap: Record<string, string> = {
   [AnswerTypeEnum.TEXT]: t('PC.Pages.AntvX6ComplexNode.answerTypeText'),
   [AnswerTypeEnum.SELECT]: t('PC.Pages.AntvX6ComplexNode.answerTypeSelect'),
-  [AnswerTypeEnum.FORM]: t('PC.Pages.AgentFlowNode.replyModeFormReply'),
+  [HitlAnswerTypeEnum.FORM]: t('PC.Pages.AgentFlowNode.replyModeFormReply'),
 };
 export const DEFAULT_NODE_CONFIG = {
   newNodeOffsetX: 100, // 新增节点时，x轴的间距

@@ -4,11 +4,7 @@ import {
   BG_ICON_AGENTFLOW_ROUTE_DECISION,
 } from '@/constants/images.constants';
 import { t } from '@/services/i18nRuntime';
-import {
-  HitlModeEnum,
-  NodeShapeEnum,
-  NodeTypeEnum,
-} from '@/types/enums/common';
+import { NodeShapeEnum, NodeTypeEnum } from '@/types/enums/common';
 import type { StencilChildNode, StencilList } from '@/types/interfaces/graph';
 import {
   InputConfigs,
@@ -23,6 +19,7 @@ import {
   outPutConfigs,
   tableOptions,
 } from '../params';
+import { HitlModeEnum } from './agentFlow/enums/hitlMode';
 import { assignFlowKinds } from './flowKind/flowKindConfig';
 
 /** 给子节点列表统一附加 flowKinds 标记 */

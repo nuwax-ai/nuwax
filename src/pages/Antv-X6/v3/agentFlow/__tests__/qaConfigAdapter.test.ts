@@ -3,11 +3,7 @@
  *
  * answerType 为权威字段（TEXT / SELECT / FORM）
  */
-import {
-  AnswerTypeEnum,
-  FormArgInputTypeEnum,
-  NodeTypeEnum,
-} from '@/types/enums/common';
+import { NodeTypeEnum } from '@/types/enums/common';
 import { describe, expect, it } from 'vitest';
 import {
   coerceFormArgInputType,
@@ -18,16 +14,18 @@ import {
   prepareNodeForBackendSerialize,
   serializeHitlNodeConfig,
 } from '../adapters/qaConfigAdapter';
+import { FormArgInputTypeEnum } from '../enums/formArgInputType';
+import { HitlAnswerTypeEnum } from '../enums/hitlAnswerType';
 
 describe('qaConfigAdapter', () => {
   it('normalize: 补全 answerType 与 formArgs 默认值', () => {
     const out = normalizeHitlNodeConfig({
       question: '你好？',
-      answerType: AnswerTypeEnum.SELECT,
+      answerType: HitlAnswerTypeEnum.SELECT,
       options: [{ uuid: 'o1', content: 'A', nextNodeIds: [] }],
     });
     expect(out.question).toBe('你好？');
-    expect(out.answerType).toBe(AnswerTypeEnum.SELECT);
+    expect(out.answerType).toBe(HitlAnswerTypeEnum.SELECT);
     expect(out.options).toHaveLength(1);
     expect(out.inputArgs).toEqual([]);
     expect(out.formArgs).toEqual([]);
@@ -38,26 +36,26 @@ describe('qaConfigAdapter', () => {
       normalizeHitlNodeConfig({
         formArgs: [{ name: 'x', inputType: FormArgInputTypeEnum.Text }],
       }).answerType,
-    ).toBe(AnswerTypeEnum.FORM);
+    ).toBe(HitlAnswerTypeEnum.FORM);
   });
 
   it('serialize: 保留 answerType', () => {
     const out = serializeHitlNodeConfig({
       question: 'q',
-      answerType: AnswerTypeEnum.TEXT,
+      answerType: HitlAnswerTypeEnum.TEXT,
     });
-    expect(out.answerType).toBe(AnswerTypeEnum.TEXT);
+    expect(out.answerType).toBe(HitlAnswerTypeEnum.TEXT);
   });
 
   it('serialize: SELECT 保留 options 连线，FORM/TEXT 清空', () => {
     const sel = serializeHitlNodeConfig({
-      answerType: AnswerTypeEnum.SELECT,
+      answerType: HitlAnswerTypeEnum.SELECT,
       options: [{ uuid: 'o1', nextNodeIds: [5] }],
     });
     expect(sel.options[0].nextNodeIds).toEqual([5]);
 
     const form = serializeHitlNodeConfig({
-      answerType: AnswerTypeEnum.FORM,
+      answerType: HitlAnswerTypeEnum.FORM,
       options: [{ uuid: 'o1', nextNodeIds: [5] }],
     });
     expect(form.options[0].nextNodeIds).toEqual([]);
@@ -73,7 +71,7 @@ describe('qaConfigAdapter', () => {
 
   it('serialize: 选择类 selectConfig 归一化为 {label,value}[]，其余清空', () => {
     const out = serializeHitlNodeConfig({
-      answerType: AnswerTypeEnum.FORM,
+      answerType: HitlAnswerTypeEnum.FORM,
       formArgs: [
         {
           name: '类型',
@@ -98,7 +96,7 @@ describe('qaConfigAdapter', () => {
 
   it('normalize: formArgs 补全 inputType 与 selectConfig 编辑态', () => {
     const out = normalizeHitlNodeConfig({
-      answerType: AnswerTypeEnum.FORM,
+      answerType: HitlAnswerTypeEnum.FORM,
       formArgs: [
         {
           name: '类型',
@@ -129,15 +127,15 @@ describe('qaConfigAdapter', () => {
   });
 
   it('isHitlOptionsBranchMode 仅 SELECT 为真', () => {
-    expect(isHitlOptionsBranchMode({ answerType: AnswerTypeEnum.SELECT })).toBe(
-      true,
-    );
-    expect(isHitlOptionsBranchMode({ answerType: AnswerTypeEnum.FORM })).toBe(
-      false,
-    );
-    expect(isHitlOptionsBranchMode({ answerType: AnswerTypeEnum.TEXT })).toBe(
-      false,
-    );
+    expect(
+      isHitlOptionsBranchMode({ answerType: HitlAnswerTypeEnum.SELECT }),
+    ).toBe(true);
+    expect(
+      isHitlOptionsBranchMode({ answerType: HitlAnswerTypeEnum.FORM }),
+    ).toBe(false);
+    expect(
+      isHitlOptionsBranchMode({ answerType: HitlAnswerTypeEnum.TEXT }),
+    ).toBe(false);
   });
 
   it('prepareNodeForBackendSerialize: 剥离后端解析的完整 modelConfig（仅保留顶层 modelId）', () => {
@@ -165,7 +163,7 @@ describe('qaConfigAdapter', () => {
       id: 2,
       type: NodeTypeEnum.HumanInteraction,
       nodeConfig: {
-        answerType: AnswerTypeEnum.FORM,
+        answerType: HitlAnswerTypeEnum.FORM,
         modelId: 5,
         modelConfig: { id: 5, name: 'deepseek', creator: {} },
         formArgs: [

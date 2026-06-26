@@ -137,7 +137,7 @@ const HitlAskOptionsNode: React.FC<{ data: ChildNode }> = ({ data }) => {
 const QANode: React.FC<{ data: ChildNode }> = ({ data }) => {
   const inputArgs = data.nodeConfig.inputArgs;
   const question = data.nodeConfig.question;
-  const answerType = data.nodeConfig.answerType as AnswerTypeEnum;
+  const answerType = data.nodeConfig.answerType;
   return (
     <div className="qa-node-content-style">
       <div className="dis-left">
@@ -166,7 +166,7 @@ const QANode: React.FC<{ data: ChildNode }> = ({ data }) => {
         <span className="text-right qa-title-style">
           {t('PC.Pages.AntvX6RegisterNodes.qaType')}
         </span>
-        <span>{answerTypeMap[answerType]}</span>
+        <span>{answerType ? answerTypeMap[answerType] : undefined}</span>
       </div>
       {answerType === AnswerTypeEnum.SELECT &&
         data.nodeConfig.options?.map((item, index) => (

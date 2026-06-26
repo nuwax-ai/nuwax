@@ -9,11 +9,7 @@ import ExpandableInputTextarea from '@/components/ExpandTextArea';
 import { ModelSelected } from '@/components/ModelSetting';
 import { transformToPromptVariables } from '@/components/TiptapVariableInput/utils/variableTransform';
 import { t } from '@/services/i18nRuntime';
-import {
-  AnswerTypeEnum,
-  DataTypeEnum,
-  FormArgInputTypeEnum,
-} from '@/types/enums/common';
+import { DataTypeEnum } from '@/types/enums/common';
 import { InputItemNameEnum } from '@/types/enums/node';
 import { InputAndOutConfig } from '@/types/interfaces/node';
 import { NodeDisposeProps } from '@/types/interfaces/workflow';
@@ -37,6 +33,8 @@ import {
   coerceFormArgInputType,
   isFormArgChoiceInputType,
 } from '../adapters/qaConfigAdapter';
+import { FormArgInputTypeEnum } from '../enums/formArgInputType';
+import { HitlAnswerTypeEnum } from '../enums/hitlAnswerType';
 import './HumanInteractionAskForm.less';
 
 const { TextArea } = Input;
@@ -74,7 +72,7 @@ const HumanInteractionAskForm: React.FC<NodeDisposeProps> = ({ form }) => {
 
   const answerType =
     Form.useWatch('answerType', { form, preserve: true }) ||
-    AnswerTypeEnum.TEXT;
+    HitlAnswerTypeEnum.TEXT;
 
   const inputArgs =
     Form.useWatch(InputItemNameEnum.inputArgs, { form, preserve: true }) || [];
@@ -89,9 +87,9 @@ const HumanInteractionAskForm: React.FC<NodeDisposeProps> = ({ form }) => {
   );
 
   /** 切换回答类型，同步 options（answerType 为权威字段） */
-  const changeAnswerType = (type: AnswerTypeEnum) => {
+  const changeAnswerType = (type: HitlAnswerTypeEnum) => {
     let options = form.getFieldValue('options');
-    if (type === AnswerTypeEnum.SELECT && (!options || !options.length)) {
+    if (type === HitlAnswerTypeEnum.SELECT && (!options || !options.length)) {
       options = [
         { uuid: uuidv4(), index: 0, content: '', nextNodeIds: [] },
         {
@@ -102,7 +100,7 @@ const HumanInteractionAskForm: React.FC<NodeDisposeProps> = ({ form }) => {
         },
       ];
     }
-    if (type !== AnswerTypeEnum.SELECT) {
+    if (type !== HitlAnswerTypeEnum.SELECT) {
       options = options?.map((item: any) => ({
         ...item,
         nextNodeIds: [],
@@ -146,19 +144,19 @@ const HumanInteractionAskForm: React.FC<NodeDisposeProps> = ({ form }) => {
         <Form.Item
           name="answerType"
           label={t('PC.Pages.AgentFlowNode.replyModeLabel', '回复模式')}
-          initialValue={AnswerTypeEnum.TEXT}
+          initialValue={HitlAnswerTypeEnum.TEXT}
         >
           <Radio.Group
             onChange={(e: RadioChangeEvent) => changeAnswerType(e.target.value)}
           >
             <Space direction="vertical">
-              <Radio value={AnswerTypeEnum.TEXT}>
+              <Radio value={HitlAnswerTypeEnum.TEXT}>
                 {t('PC.Pages.AgentFlowNode.replyModeTextReply', '文本回复')}
               </Radio>
-              <Radio value={AnswerTypeEnum.SELECT}>
+              <Radio value={HitlAnswerTypeEnum.SELECT}>
                 {t('PC.Pages.AgentFlowNode.replyModeOptionsReply', '选项回复')}
               </Radio>
-              <Radio value={AnswerTypeEnum.FORM}>
+              <Radio value={HitlAnswerTypeEnum.FORM}>
                 {t('PC.Pages.AgentFlowNode.replyModeFormReply', '表单回复')}
               </Radio>
             </Space>
@@ -166,7 +164,7 @@ const HumanInteractionAskForm: React.FC<NodeDisposeProps> = ({ form }) => {
         </Form.Item>
       </div>
 
-      {answerType === AnswerTypeEnum.SELECT && (
+      {answerType === HitlAnswerTypeEnum.SELECT && (
         <div className="node-item-style">
           <FormList
             title={t('PC.Pages.AgentFlowNode.askOptionsTitle', '选项内容')}
@@ -179,7 +177,7 @@ const HumanInteractionAskForm: React.FC<NodeDisposeProps> = ({ form }) => {
         </div>
       )}
 
-      {answerType === AnswerTypeEnum.FORM && (
+      {answerType === HitlAnswerTypeEnum.FORM && (
         <div className="node-item-style">
           <Form.List name="formArgs">
             {(fields, { add, remove }) => (

@@ -5,7 +5,7 @@
  * - 加载：补全 formArgs 默认值、统一 selectConfig 编辑态结构
  * - 保存：清理废弃字段，序列化为后端 QA 契约
  *
- * answerType（AnswerTypeEnum）为唯一权威字段：
+ * answerType（HitlAnswerTypeEnum）为唯一权威字段：
  *   TEXT=文本回复 / SELECT=选项回复（分支端口）/ FORM=表单回复
  *
  * formArgs 元素直接复用 Arg（InputAndOutConfig）：
@@ -13,17 +13,14 @@
  *   - Select / Radio / MultipleSelect 使用 Arg.selectConfig（MANUAL + options）
  */
 
-import {
-  AnswerTypeEnum,
-  DataTypeEnum,
-  FormArgInputTypeEnum,
-  NodeTypeEnum,
-} from '@/types/enums/common';
+import { DataTypeEnum, NodeTypeEnum } from '@/types/enums/common';
+import { FormArgInputTypeEnum } from '../enums/formArgInputType';
+import { HitlAnswerTypeEnum } from '../enums/hitlAnswerType';
 
 const VALID_ANSWER_TYPES = new Set<string>([
-  AnswerTypeEnum.TEXT,
-  AnswerTypeEnum.SELECT,
-  AnswerTypeEnum.FORM,
+  HitlAnswerTypeEnum.TEXT,
+  HitlAnswerTypeEnum.SELECT,
+  HitlAnswerTypeEnum.FORM,
 ]);
 
 const FORM_ARG_INPUT_TYPE_VALUES = new Set<string>(
@@ -135,18 +132,18 @@ function normalizeFormArgs(formArgs: any): Record<string, any>[] {
 /** 推断 answerType：合法 answerType → formArgs 非空为 FORM → 兜底 TEXT */
 function getHitlAnswerType(
   nc: Record<string, any> | undefined | null,
-): AnswerTypeEnum {
-  if (!nc) return AnswerTypeEnum.TEXT;
+): HitlAnswerTypeEnum {
+  if (!nc) return HitlAnswerTypeEnum.TEXT;
   if (VALID_ANSWER_TYPES.has(nc.answerType)) return nc.answerType;
-  if (nc.formArgs?.length) return AnswerTypeEnum.FORM;
-  return AnswerTypeEnum.TEXT;
+  if (nc.formArgs?.length) return HitlAnswerTypeEnum.FORM;
+  return HitlAnswerTypeEnum.TEXT;
 }
 
 /** 是否处于选项分支模式（供端口/画布逻辑使用） */
 export function isHitlOptionsBranchMode(
   nc: Record<string, any> | undefined | null,
 ): boolean {
-  return getHitlAnswerType(nc) === AnswerTypeEnum.SELECT;
+  return getHitlAnswerType(nc) === HitlAnswerTypeEnum.SELECT;
 }
 
 /** 加载后：补全 HumanInteraction QA 扁平字段默认值 */
@@ -172,8 +169,8 @@ export function serializeHitlNodeConfig(
   const nc = { ...nodeConfig };
   const answerType = getHitlAnswerType(nc);
 
-  if (answerType === AnswerTypeEnum.SELECT) {
-    nc.answerType = AnswerTypeEnum.SELECT;
+  if (answerType === HitlAnswerTypeEnum.SELECT) {
+    nc.answerType = HitlAnswerTypeEnum.SELECT;
     nc.options = getHitlOptions(nc);
   } else {
     nc.answerType = answerType;

@@ -22,9 +22,14 @@ import {
   useImperativeHandle,
   useRef,
 } from 'react';
+import { useAgentFlowExitFullscreenZoomFit } from '../../agentFlow/hooks/useAgentFlowExitFullscreenZoomFit';
 import EventHandlers from '../../component/eventHandlers';
 import InitGraph, { setGraphInitializing } from '../../component/graph';
 import { registerCustomNodes } from '../../component/registerCustomNodes';
+import {
+  CANVAS_ZOOM_TO_FIT_DELAY_MS,
+  zoomGraphToFit,
+} from '../../constants/canvasZoom';
 import {
   LOOP_END_NODE_X_OFFSET,
   LOOP_INNER_NODE_Y_OFFSET,
@@ -73,6 +78,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
     registerCustomNodes();
     const containerRef = useRef<HTMLDivElement>(null);
     const graphRef = useRef<any>(null);
+    useAgentFlowExitFullscreenZoomFit(graphRef);
 
     // 新增一个ref标记是否已初始化
     const hasInitialized = useRef(false);
@@ -531,19 +537,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
 
     // 缩放适配
     const graphChangeZoomToFit = () => {
-      if (!graphRef.current) return;
-      graphRef.current.zoomToFit({
-        padding: {
-          top: 128 + 18,
-          left: 18,
-          right: 18,
-          bottom: 18,
-        },
-        maxScale: 1,
-        minScale: 0.2,
-        preserveAspectRatio: true,
-        useCellGeometry: true,
-      });
+      zoomGraphToFit(graphRef.current);
     };
 
     const drawGraph = () => {
@@ -708,15 +702,8 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
     useEffect(() => {
       if (!isCanvasFullscreen || !graphRef.current) return;
       const timer = setTimeout(() => {
-        // graphRef.current 是 X6 Graph 实例（来自 InitGraph），直接调其 zoomToFit
-        graphRef.current?.zoomToFit({
-          padding: { top: 128 + 18, left: 18, right: 18, bottom: 18 },
-          maxScale: 1,
-          minScale: 0.2,
-          preserveAspectRatio: true,
-          useCellGeometry: true,
-        });
-      }, 200);
+        zoomGraphToFit(graphRef.current);
+      }, CANVAS_ZOOM_TO_FIT_DELAY_MS);
       return () => clearTimeout(timer);
     }, [isCanvasFullscreen]);
 
