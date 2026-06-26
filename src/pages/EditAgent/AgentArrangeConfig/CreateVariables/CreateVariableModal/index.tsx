@@ -18,6 +18,7 @@ import {
   CascaderOption,
   CreatedNodeItem,
   option,
+  UpdateStrategyEnum,
 } from '@/types/interfaces/common';
 import { customizeRequiredMark } from '@/utils/form';
 import { PlusOutlined } from '@ant-design/icons';
@@ -44,6 +45,7 @@ import {
   Input,
   message,
   Radio,
+  Select,
   Tabs,
   TabsProps,
 } from 'antd';
@@ -129,6 +131,24 @@ const CreateVariableModal: React.FC<CreateVariableModalProps> = ({
     [],
   );
 
+  const updateStrategyOptions = useMemo(
+    () => [
+      {
+        value: UpdateStrategyEnum.REPLACE,
+        label: t(
+          'PC.Pages.AgentArrangeCreateVariableModal.updateStrategyReplace',
+        ),
+      },
+      {
+        value: UpdateStrategyEnum.APPEND,
+        label: t(
+          'PC.Pages.AgentArrangeCreateVariableModal.updateStrategyAppend',
+        ),
+      },
+    ],
+    [],
+  );
+
   useEffect(() => {
     if (open) {
       // 绑定组件重置
@@ -137,6 +157,7 @@ const CreateVariableModal: React.FC<CreateVariableModalProps> = ({
       if (mode === CreateUpdateModeEnum.Create) {
         setInputType(InputTypeEnum.Text);
         form.setFieldValue('inputType', InputTypeEnum.Text);
+        form.setFieldValue('updateStrategy', UpdateStrategyEnum.REPLACE);
         setAddComponents([]);
         setActiveTabKey(OptionDataSourceEnum.MANUAL);
         setDataSource([
@@ -155,6 +176,7 @@ const CreateVariableModal: React.FC<CreateVariableModalProps> = ({
           description,
           selectConfig,
           bindValue,
+          updateStrategy,
         } = currentVariable;
         // 输入方式，默认为文本
         setInputType(inputType as InputTypeEnum);
@@ -201,6 +223,7 @@ const CreateVariableModal: React.FC<CreateVariableModalProps> = ({
           require,
           inputType,
           description,
+          updateStrategy,
         });
       }
     }
@@ -399,11 +422,15 @@ const CreateVariableModal: React.FC<CreateVariableModalProps> = ({
     }
 
     // 最新数据
+    const { updateStrategy, ...restValues } = values;
     const newData = {
-      ...values,
+      ...restValues,
       bindValue: _bindValue,
       systemVariable: false,
       selectConfig,
+      ...(inputType === InputTypeEnum.AutoRecognition && updateStrategy
+        ? { updateStrategy }
+        : {}),
     };
 
     let newInputData;
@@ -411,7 +438,11 @@ const CreateVariableModal: React.FC<CreateVariableModalProps> = ({
     if (mode === CreateUpdateModeEnum.Update && currentVariable) {
       newInputData = inputData.map((item) => {
         if (item.key === currentVariable.key) {
-          return { ...item, ...newData };
+          const merged = { ...item, ...newData };
+          if (inputType !== InputTypeEnum.AutoRecognition) {
+            delete merged.updateStrategy;
+          }
+          return merged;
         }
         return item;
       });
@@ -501,6 +532,8 @@ const CreateVariableModal: React.FC<CreateVariableModalProps> = ({
             maxLength={30}
           />
         </Form.Item>
+
+        {/* 描述 */}
         <Form.Item
           name="description"
           label={t('PC.Pages.AgentArrangeCreateVariableModal.description')}
@@ -515,6 +548,8 @@ const CreateVariableModal: React.FC<CreateVariableModalProps> = ({
             autoSize={{ minRows: 3, maxRows: 5 }}
           />
         </Form.Item>
+
+        {/* 输入方式 */}
         <Form.Item
           name="inputType"
           label={t('PC.Pages.AgentArrangeCreateVariableModal.inputType')}
@@ -523,9 +558,35 @@ const CreateVariableModal: React.FC<CreateVariableModalProps> = ({
             className={cx(styles['radio-group'])}
             options={variableInputTypeOptions}
             value={inputType}
-            onChange={(e) => setInputType(e.target.value as InputTypeEnum)}
+            onChange={(e) => {
+              const nextType = e.target.value as InputTypeEnum;
+              setInputType(nextType);
+              if (nextType !== InputTypeEnum.AutoRecognition) {
+                form.setFieldValue(
+                  'updateStrategy',
+                  UpdateStrategyEnum.REPLACE,
+                );
+              }
+            }}
           ></Radio.Group>
         </Form.Item>
+
+        {/* 参数更新策略 */}
+        {inputType === InputTypeEnum.AutoRecognition && (
+          <Form.Item
+            name="updateStrategy"
+            label={t('PC.Pages.AgentArrangeCreateVariableModal.updateStrategy')}
+          >
+            <Select
+              allowClear
+              placeholder={t(
+                'PC.Pages.AgentArrangeCreateVariableModal.updateStrategyPlaceholder',
+              )}
+              options={updateStrategyOptions}
+            />
+          </Form.Item>
+        )}
+
         {/* 单选、多选时显示Tabs */}
         {[InputTypeEnum.Select, InputTypeEnum.MultipleSelect].includes(
           inputType,
@@ -537,6 +598,7 @@ const CreateVariableModal: React.FC<CreateVariableModalProps> = ({
             items={items}
           />
         ) : (
+          // 如果不是单选、多选，则显示默认值
           <Form.Item
             className={cx('mb-16')}
             label={t('PC.Pages.AgentArrangeCreateVariableModal.defaultValue')}
