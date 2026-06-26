@@ -4,18 +4,15 @@ import type {
   RcoderRequestPermissionResponse,
 } from '@/types/interfaces/acpPermission';
 import { CheckOutlined, CloseOutlined } from '@ant-design/icons';
-import { Button, Checkbox, Tag, Typography } from 'antd';
-import React, { useMemo, useState } from 'react';
+import { Button, Tag, Typography } from 'antd';
+import React, { useMemo } from 'react';
 import styles from './index.less';
 
 const { Text } = Typography;
 
 interface AcpPermissionCardProps {
   interaction: RcoderAcpPermissionInteraction;
-  onRespond?: (
-    response: RcoderRequestPermissionResponse,
-    options?: { saveRule?: boolean },
-  ) => void;
+  onRespond?: (response: RcoderRequestPermissionResponse) => void;
 }
 
 const formatJson = (value: unknown): string => {
@@ -38,44 +35,37 @@ const AcpPermissionCard: React.FC<AcpPermissionCardProps> = ({
   interaction,
   onRespond,
 }) => {
-  const [saveRule, setSaveRule] = useState(false);
-  const request = interaction.permission.request_permission_request;
-  const toolCall = request.tool_call;
-  const ruleSuggestion = interaction.permission.save_rule;
+  const request = interaction.intervention.acp.request;
+  const toolCall = request.toolCall || {};
   const isSubmitting = interaction.responseStatus === 'submitting';
   const isSubmitted = interaction.responseStatus === 'submitted';
   const disabled = isSubmitting || isSubmitted || !onRespond;
 
   const rawInputText = useMemo(
-    () => formatJson(toolCall.raw_input),
-    [toolCall.raw_input],
+    () => formatJson(toolCall.rawInput),
+    [toolCall.rawInput],
   );
 
-  const ruleDescription = useMemo(() => {
-    if (!ruleSuggestion) return '';
-    return `${ruleSuggestion.tool_name}: ${ruleSuggestion.suggested_pattern}`;
-  }, [ruleSuggestion]);
-
   const handleSelect = (optionId: string) => {
-    onRespond?.(
-      {
-        outcome: {
-          Selected: {
-            option_id: optionId,
-          },
-        },
+    onRespond?.({
+      outcome: {
+        outcome: 'selected',
+        optionId,
       },
-      { saveRule },
-    );
+    });
   };
 
   const handleCancel = () => {
     onRespond?.({
       outcome: {
-        Cancelled: {},
+        outcome: 'cancelled',
       },
     });
   };
+
+  const toolCallId = toolCall.toolCallId || '';
+  const toolCallKind = toolCall.kind || '';
+  const options = request.options || [];
 
   return (
     <div className={styles.card}>
@@ -89,7 +79,7 @@ const AcpPermissionCard: React.FC<AcpPermissionCardProps> = ({
               t('PC.Components.AcpPermissionCard.defaultTitle')}
           </div>
         </div>
-        {toolCall.kind && <Tag>{toolCall.kind}</Tag>}
+        {toolCallKind && <Tag>{toolCallKind}</Tag>}
       </div>
 
       <div className={styles.meta}>
@@ -97,7 +87,7 @@ const AcpPermissionCard: React.FC<AcpPermissionCardProps> = ({
           {t('PC.Components.AcpPermissionCard.toolCallId')}
         </Text>
         <Text code copyable>
-          {toolCall.tool_call_id || '-'}
+          {toolCallId || '-'}
         </Text>
       </div>
 
@@ -108,41 +98,29 @@ const AcpPermissionCard: React.FC<AcpPermissionCardProps> = ({
         <pre>{rawInputText}</pre>
       </div>
 
-      {!!ruleSuggestion && (
-        <div className={styles.saveRule}>
-          <Checkbox
-            checked={saveRule}
-            disabled={disabled}
-            onChange={(event) => setSaveRule(event.target.checked)}
-          >
-            {t('PC.Components.AcpPermissionCard.saveRule')}
-          </Checkbox>
-          <div className={styles.ruleDescription}>{ruleDescription}</div>
-        </div>
-      )}
-
       <div className={styles.options}>
-        {request.options?.map((option) => (
-          <Button
-            key={option.option_id}
-            type={option.kind.startsWith('allow') ? 'primary' : 'default'}
-            danger={option.kind.startsWith('reject')}
-            icon={
-              option.kind.startsWith('allow') ? (
-                <CheckOutlined />
-              ) : (
-                <CloseOutlined />
-              )
-            }
-            loading={
-              isSubmitting && interaction.selectedOptionId === option.option_id
-            }
-            disabled={disabled}
-            onClick={() => handleSelect(option.option_id)}
-          >
-            {option.name || option.option_id}
-          </Button>
-        ))}
+        {options.map((option) => {
+          const optionId = option.optionId || '';
+          const kind = option.kind || '';
+          const name = option.name || optionId;
+          const isAllow = kind.startsWith('allow');
+          const isReject = kind.startsWith('reject');
+          return (
+            <Button
+              key={optionId}
+              type={isAllow ? 'primary' : 'default'}
+              danger={isReject}
+              icon={isAllow ? <CheckOutlined /> : <CloseOutlined />}
+              loading={
+                isSubmitting && interaction.selectedOptionId === optionId
+              }
+              disabled={disabled}
+              onClick={() => handleSelect(optionId)}
+            >
+              {name}
+            </Button>
+          );
+        })}
         <Button disabled={disabled} onClick={handleCancel}>
           {t('PC.Common.Global.cancel')}
         </Button>
