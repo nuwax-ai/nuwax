@@ -788,6 +788,8 @@ export interface AgentDetailDto extends AgentBaseInfo {
   calledTrialCount?: number;
   /** 总试用次数 */
   trialCount?: number;
+  // 是否允许用户在对话框中选择模式， 1 允许，其他不允许
+  allowChooseMode?: DefaultSelectedEnum;
 }
 
 // 日志查询过滤条件

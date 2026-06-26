@@ -234,7 +234,8 @@ const PromptBox: React.FC<PromptBoxProps> = ({ onSubmit }) => {
         agentType={matchingAgentDetail?.type}
         agentId={matchingAgentDetail?.agentId}
         showAgentModeSelector={
-          !isPageApp && tenantConfigInfo?.enableAgentMode !== 0
+          !isPageApp &&
+          matchingAgentDetail?.allowChooseMode === DefaultSelectedEnum.Yes
         }
         agentMode={agentMode}
         onAgentModeChange={setAgentMode}
