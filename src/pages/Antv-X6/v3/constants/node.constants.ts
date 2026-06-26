@@ -75,6 +75,14 @@ export const EXCEPTION_NODES_TYPE = [
   NodeTypeEnum.HumanInteraction,
 ];
 
+// AgentFlow 中不展示「异常处理」配置的节点：路由决策 / 询问用户。
+// 这两类仍保留在 EXCEPTION_NODES_TYPE 中以维持端口更新（needUpdateNodes）逻辑，
+// 仅在 showExceptionHandle / 异常端口 / 节点高度计算时排除其异常项。
+export const EXCEPTION_HANDLE_HIDDEN_TYPES = [
+  NodeTypeEnum.RouteDecision,
+  NodeTypeEnum.HumanInteraction,
+];
+
 export const RETRY_COUNT_OPTIONS = [
   { label: t('PC.Pages.AntvX6ExceptionItem.noRetry'), value: 0 },
   { label: t('PC.Pages.AntvX6ExceptionItem.retryOnce'), value: 1 },

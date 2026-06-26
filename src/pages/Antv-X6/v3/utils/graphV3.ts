@@ -3,6 +3,7 @@ import { isAgentFlowType } from '@/pages/Antv-X6/v3/agentFlow/types';
 import {
   DEFAULT_NODE_CONFIG,
   DEFAULT_NODE_CONFIG_MAP,
+  EXCEPTION_HANDLE_HIDDEN_TYPES,
   EXCEPTION_NODES_TYPE,
 } from '@/pages/Antv-X6/v3/constants/node.constants';
 import {
@@ -637,6 +638,8 @@ export const isEdgeDeletable = (sourceNode: any, targetNode: any): boolean => {
 };
 
 export const showExceptionHandle = (node: ChildNode): boolean => {
+  // 路由决策 / 询问用户不展示异常处理配置（含异常端口）
+  if (EXCEPTION_HANDLE_HIDDEN_TYPES.includes(node.type)) return false;
   return EXCEPTION_NODES_TYPE.includes(node.type);
 };
 

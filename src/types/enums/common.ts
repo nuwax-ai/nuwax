@@ -108,12 +108,6 @@ export enum HitlModeEnum {
   Ask = 'ask',
 }
 
-// Agent 节点模式
-export enum AgentNodeModeEnum {
-  Platform = 'platform',
-  SubFlow = 'subflow',
-}
-
 export enum DataTypeEnum {
   String = 'String', // 文本
   Integer = 'Integer', // 整型数字

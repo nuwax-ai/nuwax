@@ -8,6 +8,7 @@
  * 仅当智能体为 Flow 子类型（AgentSubTypeEnum.Flow）时由 EditAgent 渲染。
  */
 
+import { CanvasFullscreenProvider } from '@/contexts/CanvasFullscreenContext';
 import { FlowKindProvider } from '@/contexts/FlowKindContext';
 import { registerAgentFlowHandlers } from '@/pages/Antv-X6/v3/agentFlow/register';
 import WorkflowV3 from '@/pages/Antv-X6/v3/indexV3';
@@ -95,12 +96,14 @@ const AgentFlowCanvas: React.FC<AgentFlowCanvasProps> = ({
         {isFullscreen ? <FullscreenExitOutlined /> : <FullscreenOutlined />}
       </button>
       <FlowKindProvider flowKind={FlowKindEnum.AgentFlow}>
-        <div className="agent-flow-canvas-embedded">
-          <WorkflowV3
-            workflowIdOverride={workflowId}
-            spaceIdOverride={spaceId}
-          />
-        </div>
+        <CanvasFullscreenProvider fullscreen={isFullscreen}>
+          <div className="agent-flow-canvas-embedded">
+            <WorkflowV3
+              workflowIdOverride={workflowId}
+              spaceIdOverride={spaceId}
+            />
+          </div>
+        </CanvasFullscreenProvider>
       </FlowKindProvider>
     </div>
   );

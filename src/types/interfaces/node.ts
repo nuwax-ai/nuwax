@@ -1,5 +1,4 @@
 import {
-  AgentNodeModeEnum,
   AnswerTypeEnum,
   DataTypeEnum,
   ExceptionHandleTypeEnum,
@@ -295,7 +294,6 @@ export interface NodeConfig {
 
   // ===== AgentFlow 专用字段 =====
   // Agent 节点
-  agentMode?: AgentNodeModeEnum;
   agentId?: number;
   /** @deprecated v2 不再使用子工作流概念 */
   subFlowId?: number;

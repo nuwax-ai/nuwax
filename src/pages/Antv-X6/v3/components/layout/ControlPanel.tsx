@@ -1,3 +1,4 @@
+import { useCanvasFullscreen } from '@/contexts/CanvasFullscreenContext';
 import { useFlowKind } from '@/contexts/FlowKindContext';
 import { t } from '@/services/i18nRuntime';
 import { FlowKindEnum, NodeTypeEnum } from '@/types/enums/common';
@@ -73,8 +74,9 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
   const [continueDragCount, setContinueDragCount] = useState(0);
   // AgentFlow 画布不展示「调试 / 试运行」
   const isAgentFlow = useFlowKind() === FlowKindEnum.AgentFlow;
-  // AgentFlow 画布控制条紧凑化：缩小整体高度、按钮尺寸与间距
-  const compact = isAgentFlow;
+  // AgentFlow 内嵌（默认画布大小）时控制条紧凑化；全屏时恢复原始尺寸
+  const isFullscreen = useCanvasFullscreen();
+  const compact = isAgentFlow && !isFullscreen;
   const btnSize: 'small' | 'middle' = compact ? 'small' : 'middle';
   const gap = compact ? 4 : 12;
   const handleOpenChange = (newOpen: boolean) => {
@@ -102,32 +104,30 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
             changeGraph(Number(newVal));
           }}
         />
-        <Select
-          options={options}
-          value={`${Math.round(zoomSize * 100)}%`}
-          onChange={(val) => {
-            let newVal;
-            if (typeof val === 'string' && ['+', '-'].includes(val)) {
-              const factor = val === '+' ? 10 : -10;
-              const currentPercent = Math.round(zoomSize * 100);
-              const newPercent = currentPercent + factor;
+        {!compact && (
+          <Select
+            options={options}
+            value={`${Math.round(zoomSize * 100)}%`}
+            onChange={(val) => {
+              let newVal;
+              if (typeof val === 'string' && ['+', '-'].includes(val)) {
+                const factor = val === '+' ? 10 : -10;
+                const currentPercent = Math.round(zoomSize * 100);
+                const newPercent = currentPercent + factor;
 
-              const clampedPercent = Math.max(20, Math.min(300, newPercent));
-              newVal = clampedPercent / 100;
-            } else {
-              newVal = val;
-            }
-            changeGraph(Number(newVal));
-          }}
-          style={{
-            width: compact ? 68 : 80,
-            marginRight: 2,
-            height: compact ? 24 : 28,
-          }}
-          popupMatchSelectWidth={false}
-          optionLabelProp="displayValue"
-          size="small"
-        />
+                const clampedPercent = Math.max(20, Math.min(300, newPercent));
+                newVal = clampedPercent / 100;
+              } else {
+                newVal = val;
+              }
+              changeGraph(Number(newVal));
+            }}
+            style={{ width: 80, marginRight: 2, height: 28 }}
+            popupMatchSelectWidth={false}
+            optionLabelProp="displayValue"
+            size="small"
+          />
+        )}
         <Button
           type="text"
           size={btnSize}
@@ -175,6 +175,7 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
             onOpenChange={handleOpenChange}
           >
             <Button
+              className={compact ? 'add-node-btn-mini' : undefined}
               size={btnSize}
               onMouseEnter={() => setOpen(true)}
               icon={<PlusOutlined />}

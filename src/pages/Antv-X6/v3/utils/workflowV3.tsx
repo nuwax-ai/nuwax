@@ -31,6 +31,7 @@ import {
 } from '@/constants/images.constants';
 import {
   DEFAULT_NODE_CONFIG_MAP,
+  EXCEPTION_HANDLE_HIDDEN_TYPES,
   EXCEPTION_NODES_TYPE,
 } from '@/pages/Antv-X6/v3/constants/node.constants';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
@@ -114,7 +115,9 @@ export const getWidthAndHeight = (node: ChildNode) => {
   const { defaultWidth, defaultHeight } =
     DEFAULT_NODE_CONFIG_MAP[type as keyof typeof DEFAULT_NODE_CONFIG_MAP] ||
     DEFAULT_NODE_CONFIG_MAP.default;
-  const hasExceptionHandleItem = EXCEPTION_NODES_TYPE.includes(type);
+  const hasExceptionHandleItem =
+    EXCEPTION_NODES_TYPE.includes(type) &&
+    !EXCEPTION_HANDLE_HIDDEN_TYPES.includes(type);
   const exceptionHandleItemHeight = 32;
   const extraHeight = hasExceptionHandleItem ? exceptionHandleItemHeight : 0;
   if (
