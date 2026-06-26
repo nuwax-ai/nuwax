@@ -358,6 +358,8 @@ export interface CollapseComponentListProps {
     type: AgentComponentTypeEnum,
     toolName?: string,
   ) => void;
+  /** 是否显示设置图标，默认显示 */
+  showSettings?: boolean;
 }
 
 // 分组MCP组件信息
