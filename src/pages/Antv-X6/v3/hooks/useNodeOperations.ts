@@ -316,17 +316,19 @@ export const useNodeOperations = ({
    * 处理路由决策节点作为「新建/插入节点」时的出边连接
    *
    * 适用场景：边中快捷插入 RouteDecision（A→B 变 A→RouteDecision→B）、
-   * 或在某节点 in 端口上游新建 RouteDecision。两种场景下 RouteDecision 都是
-   * 需要连出一条边到 targetNode 的新节点。
+   * 或在某节点 in 端口上游新建 RouteDecision。
    *
-   * RouteDecision 没有通用 {nodeId}-out 端口，出端口均为分支端口
-   * （route-default-out / route-{uuid}-out）。必须把 targetNode 挂到默认分支端口：
-   * 写入 nodeConfig.defaultNextNodeIds，再以 {nodeId}-route-default-out 作为
-   * source 建边。否则会画出指向不存在的 {nodeId}-out 端口（X6 回退到节点中心 →
-   * 回转连线），且因 getEdges 仅读取 defaultNextNodeIds/intentConfigs，刷新后丢失。
+   * 关键：必须连到 intentConfigs 里真实存在的路由分支端口
+   * （{nodeId}-route-{uuid}-out），不能用 defaultNextNodeIds / route-default-out。
+   * 原因：defaultNextNodeIds 不会被后端 IntentRecognition 持久化，刷新后丢失
+   * （这正是「灰色端口连上又消失」的根因）；而 intentConfigs 端到端持久化
+   * （save 由 computeConnections 从边重建、load 原样保留、表单 hydrate）。
+   * 对照：IntentRecognition 走 handleConditionalNodeConnection→QuicklyCreateEdgeConditionConfig
+   * 连到 intentConfigs[0] 才「没问题」，RouteDecision 须对齐同一机制。
    *
-   * changeNode → graphUpdateNode → generatePorts 会同步重新生成 default 端口
-   * （defaultNextNodeIds 非空后才渲染），故 graphCreateNewEdge 时端口已存在。
+   * 与 IntentRecognition 的差异仅在端口格式：RouteDecision 端口带 route- 前缀
+   * （{nodeId}-route-{uuid}-out），IntentRecognition 是 {nodeId}-{uuid}-out，
+   * 故不能直接复用 QuicklyCreateEdgeConditionConfig，需自行拼端口 id。
    */
   const handleRouteDecisionOutgoingConnection = useCallback(
     async ({
@@ -338,18 +340,22 @@ export const useNodeOperations = ({
       targetNode: ChildNode;
       isLoop: boolean;
     }) => {
-      const defaultPortId = `${newNode.id}-route-default-out`;
-      // 复用 RouteDecision handler 的 handleSpecialNextIndex（route-default 分支）：
-      // 写入 defaultNextNodeIds = [targetNode.id]
+      // 连到首个路由分支（与 IntentRecognition 的 QuicklyCreateEdgeConditionConfig 一致）
+      const firstBranch = (newNode.nodeConfig as any)?.intentConfigs?.[0];
+      // createDefaultIntentConfig 保证至少一条分支；防御性判空
+      if (!firstBranch?.uuid) return;
+
+      // 写入 intentConfigs[0].nextNodeIds（持久化、刷新不丢）；端口用 RouteDecision 专属格式
+      const sourcePortId = `${newNode.id}-route-${firstBranch.uuid}-out`;
       const params = handleSpecialNodesNextIndex(
         newNode,
-        defaultPortId,
+        sourcePortId,
         targetNode.id,
       );
       const isSuccess = await changeNode({ nodeData: params }, noop);
       if (isSuccess) {
         graphRef.current?.graphCreateNewEdge(
-          defaultPortId,
+          sourcePortId,
           String(targetNode.id),
           isLoop,
         );

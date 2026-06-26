@@ -199,3 +199,98 @@ if (node.nextNodeIds && node.nextNodeIds.length > 0) { ... }
 ```
 
 原 else-if 链被拆成独立 if + 早返回，以支持 HumanInteraction options 为空时的自然回落。
+
+---
+
+## 追加修复：RouteDecision 作为「新插入节点」的出边（边中插入 / in 端口上游新建）
+
+### 问题描述
+
+不同于前面「点击 RouteDecision 输出端口往下加节点」，这里是反向场景——**RouteDecision 本身是新节点**，需要连出一条边到下游：
+
+1. **边中快捷插入**：hover 一条边 A→B → 点 `+` → 选 RouteDecision，预期 A→B 变成 A→RouteDecision→B。
+2. **in 端口上游新建**：点某节点 B 的输入端口 → 选 RouteDecision，预期 RouteDecision→B。
+
+两种场景下 RouteDecision 的**输出 port（右）都出现回转（左）连线**，且**刷新后该输出 port 没有连线**。
+
+### 根本原因（两层）
+
+两条路径都进 `handleNodeCreationSuccess`（useNodeOperations.ts），按 `portId` 分发后，最终由连接函数处理「新节点 → 下游」这条出边：
+
+- 边中插入 → `handleTargetNodeConnection`
+- in 端口上游新建 → `handleInputPortConnection`
+
+**第一层：走错分支 → 回转连线。** 两者都用 `isConditionalNode(type)` 判断是否走分支端口，而该函数**只覆盖 Condition / IntentRecognition / QA**，不含 RouteDecision：
+
+```typescript
+const isConditionalNode = (nodeType) =>
+  [
+    NodeTypeEnum.Condition,
+    NodeTypeEnum.IntentRecognition,
+    NodeTypeEnum.QA,
+  ].includes(nodeType);
+```
+
+于是 RouteDecision 落到普通分支 `handleNormalNodeConnection`，画出指向不存在的 `{id}-out` 端口，X6 回退到节点中心 → **回转连线**。
+
+**第二层：写错字段 → 刷新丢失（关键，对照 IntentRecognition 才看清）。**
+
+- **IntentRecognition 为什么没问题**：它命中 `isConditionalNode` → `handleConditionalNodeConnection` → `QuicklyCreateEdgeConditionConfig`，把下游写进 **`intentConfigs[0].nextNodeIds`**，并以 `{id}-{uuid}-out` 建边。`intentConfigs` 端到端持久化（save 的 `computeConnections` 从边重建、load 原样保留 nodeConfig、表单 `hydrateIntentConfigs` 兜底）→ 刷新不丢。
+- **RouteDecision 的坑**：RouteDecision 有两套兜底表达——`defaultNextNodeIds`（灰色 `route-default-out` 端口）与 `intentConfigs` 末尾的「其他意图」分支（橙色端口）。第一版修复误用了 `defaultNextNodeIds`，但该字段**不在后端 IntentRecognition 的 nodeConfig schema 里**，save 虽写入（经 handler 的 `updateConnection`）、前端 `prepareNodeForBackendSerialize` 也未剥离，但后端不回传 → **刷新后丢失**。验证：`defaultNextNodeIds` 在 load/proxy 代码中零引用，仅 `getEdges` 渲染时读，故「灰色端口连上又消失」。
+
+### 修改内容（useNodeOperations.ts）
+
+**① 新增 `handleRouteDecisionOutgoingConnection`**：连到 `intentConfigs[0]` 的真实路由端口（与 IntentRecognition 对齐同一持久化机制），写入 `intentConfigs[0].nextNodeIds`：
+
+```javascript
+const handleRouteDecisionOutgoingConnection = async ({
+  newNode,
+  targetNode,
+  isLoop,
+}) => {
+  const firstBranch = newNode.nodeConfig?.intentConfigs?.[0];
+  if (!firstBranch?.uuid) return; // createDefaultIntentConfig 保证至少一条
+  // 端口用 RouteDecision 专属格式 {id}-route-{uuid}-out（IntentRecognition 是 {id}-{uuid}-out）
+  const sourcePortId = `${newNode.id}-route-${firstBranch.uuid}-out`;
+  // 写入 intentConfigs[0].nextNodeIds（持久化、刷新不丢）
+  const params = handleSpecialNodesNextIndex(
+    newNode,
+    sourcePortId,
+    targetNode.id,
+  );
+  const isSuccess = await changeNode({ nodeData: params }, noop);
+  if (isSuccess) {
+    graphCreateNewEdge(sourcePortId, String(targetNode.id), isLoop);
+  }
+};
+```
+
+> 端口格式不能直接复用 `QuicklyCreateEdgeConditionConfig`：RouteDecision 端口带 `route-` 前缀（`{id}-route-{uuid}-out`），而该函数生成的是 `{id}-{uuid}-out`，会再次命中不了端口 → 回转连线。
+
+**② 两条出边路径前置 RouteDecision 分支**：
+
+```javascript
+// handleTargetNodeConnection（边中插入）
+if (newNode.type === NodeTypeEnum.RouteDecision) {
+  await handleRouteDecisionOutgoingConnection({ newNode, targetNode, isLoop });
+} else if (isConditionalNode(newNode.type) && !isQaTextMode) { ... }
+else { ... }  // 普通节点
+
+// handleInputPortConnection（in 端口上游新建）
+if (newNode.type === NodeTypeEnum.RouteDecision) {
+  await handleRouteDecisionOutgoingConnection({ newNode, targetNode: sourceNode, isLoop });
+  return;
+}
+```
+
+### 端口为何建边时已存在（无死循环）
+
+RouteDecision 的**路由端口**（`route-{uuid}-out`）对每条 `intentConfigs` 都会渲染（不像 `route-default-out` 需 `defaultNextNodeIds` 非空才条件渲染）。新节点经 `graphAddNode` 时 `generatePorts` 已按默认配置 `[NORMAL, OTHER]` 生成 2 个路由端口，故 `graphCreateNewEdge` 时端口已存在；且 `changeNode → graphUpdateNode → generatePorts` 对 RouteDecision 同步重生端口（∈ `EXCEPTION_NODES_TYPE`，`needUpdateNodes` 为 true），双保险。
+
+### 验证
+
+- v3 全量测试通过（含 routeDecision、portLayout）。
+- `useNodeOperations.ts` 无类型错误。
+- 端口 ID `{id}-route-{uuid}-out` 复用本文档「覆盖验证」表中 `endsWith('-out')` 判定，`parseEndpoint` 原样保留 → 命中真实路由端口。
+- 连接写入 `intentConfigs`（而非 `defaultNextNodeIds`）→ 刷新后保留，与 IntentRecognition 行为一致。
+- 与前文「点击 RouteDecision 输出端口往下加节点」是**互补**的不同路径：前者 RouteDecision 是 source、后者 RouteDecision 是 newly inserted node。
