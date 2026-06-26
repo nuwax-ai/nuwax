@@ -74,6 +74,13 @@ export default () => {
         list?.filter((item) => item.id !== conversationId),
       );
       message.success(dict('PC.Toast.Global.deletedSuccessfully'));
+
+      // 派发自定义删除事件通知列表
+      window.dispatchEvent(
+        new CustomEvent('conversation-deleted', {
+          detail: { id: conversationId },
+        }),
+      );
     },
   });
 

@@ -1,0 +1,55 @@
+@import '@/styles/token.less';
+
+@sectionMarginLeft: -16px;
+@sectionMarginTop: -9px;
+@listItemGap: 4px;
+@listMarginRight: -7px;
+
+.new-home-section {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  margin-left: @sectionMarginLeft;
+  margin-top: @sectionMarginTop;
+
+  // 会话列表容器 - 可滚动区域
+  .conversation-list-wrapper {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: hidden; // 默认隐藏原生滚动条
+    padding: 0;
+    scrollbar-gutter: stable; // 始终保留滚动条通道，防止 layout shift
+
+    &:hover {
+      overflow-y: auto; // 鼠标移入时开启滚动，展现与全局一致的原生滚动条样式
+    }
+
+    // 会话列表
+    .conversation-list {
+      display: flex;
+      flex-direction: column;
+      gap: @listItemGap;
+      padding: 0 @paddingXs;
+      margin-right: @listMarginRight;
+
+      // 加载更多提示与无更多提示
+      .load-more,
+      .no-more {
+        padding: @paddingSm 0;
+        text-align: center;
+        font-size: @fontSizeSm;
+        color: @navSecondMenuAdaptiveTextTertiary;
+
+        :global {
+          .ant-typography {
+            color: @navSecondMenuAdaptiveTextTertiary !important;
+          }
+        }
+      }
+    }
+  }
+}

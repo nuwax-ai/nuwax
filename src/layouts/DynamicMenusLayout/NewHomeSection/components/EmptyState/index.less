@@ -1,0 +1,45 @@
+@import '@/styles/token.less';
+
+@emptyStateImgSize: 80px;
+@emptyStateTextMaxWidth: 140px;
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  padding: @paddingLg @paddingXs;
+  text-align: center;
+  line-height: @lineHeight;
+  font-size: @fontSize;
+  color: @navSecondMenuAdaptiveTextTertiary;
+
+  .empty-state-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: @paddingXs;
+
+    .empty-state-img {
+      width: @emptyStateImgSize;
+      height: @emptyStateImgSize;
+    }
+
+    .empty-state-text {
+      font-size: @fontSizeSm;
+      line-height: @lineHeightSm;
+      color: @navSecondMenuAdaptiveTextTertiary;
+      max-width: @emptyStateTextMaxWidth;
+      display: inline-block;
+    }
+  }
+
+  // 如果有子级 typography
+  :global {
+    .ant-typography {
+      color: @navSecondMenuAdaptiveTextTertiary !important;
+    }
+  }
+}

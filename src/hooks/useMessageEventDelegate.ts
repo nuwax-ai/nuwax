@@ -52,10 +52,6 @@ export const useMessageEventDelegate = ({
         handledEventsRef.current.delete(eventKey);
       }, 3000);
 
-      console.log('[Event Delegate] Triggering event:', {
-        eventType,
-        data: dataStr,
-      });
 
       // 解析 data
       let parsedData: Record<string, any> = {};
@@ -78,7 +74,6 @@ export const useMessageEventDelegate = ({
         return;
       }
 
-      console.log('[Event Delegate] Event configuration found:', eventConfig);
 
       // 根据配置类型执行相应动作
       switch (eventConfig.type) {
@@ -114,11 +109,6 @@ export const useMessageEventDelegate = ({
               ? `${eventConfig.basePath}${pageUrl}`
               : `${process.env.BASE_URL}${pageUrl}`;
 
-            console.log('[Event Delegate] Opening page:', {
-              uri: fullUri,
-              params,
-              name: eventConfig.name,
-            });
 
             // 调用页面预览
             showPagePreview({
@@ -146,10 +136,6 @@ export const useMessageEventDelegate = ({
             return;
           }
 
-          console.log(
-            '[Event Delegate] Opening external link:',
-            eventConfig.url,
-          );
           window.open(eventConfig.url, '_blank');
           break;
         }
@@ -201,12 +187,10 @@ export const useMessageEventDelegate = ({
     // 添加事件监听器
     container.addEventListener('click', handleClick);
 
-    console.log('[Event Delegate] Event delegate initialized');
 
     // 清理函数
     return () => {
       container.removeEventListener('click', handleClick);
-      console.log('[Event Delegate] Event delegate cleaned up');
     };
   }, [containerRef, handleEventClick]);
 

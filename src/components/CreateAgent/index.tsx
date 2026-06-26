@@ -78,14 +78,20 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
   const onFinish: FormProps<AgentAddParams>['onFinish'] = (values) => {
     setLoading(true);
     if (mode === CreateUpdateModeEnum.Create) {
-      // AgentFlow 在后端实际类型为 TaskAgent，通过 subType=Flow 区分
+      // AgentFlow / AgentGroup 在后端实际类型为 TaskAgent，通过 subType 区分
       const isAgentFlow = type === AgentTypeEnum.AgentFlow;
+      const isAgentGroup = type === AgentTypeEnum.AgentGroup;
+      const resolveSubType = () => {
+        if (isAgentFlow) return AgentSubTypeEnum.Flow;
+        if (isAgentGroup) return AgentSubTypeEnum.Group;
+        return undefined;
+      };
       runAdd({
         ...values,
         icon: imageUrl,
         spaceId,
-        type: isAgentFlow ? AgentTypeEnum.TaskAgent : type,
-        subType: isAgentFlow ? AgentSubTypeEnum.Flow : undefined,
+        type: isAgentFlow || isAgentGroup ? AgentTypeEnum.TaskAgent : type,
+        subType: resolveSubType(),
       });
     } else {
       // 更新智能体
@@ -121,6 +127,9 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
           break;
         case AgentTypeEnum.AgentFlow:
           typeName = dict('PC.Components.CreateAgent.typeAgentFlow');
+          break;
+        case AgentTypeEnum.AgentGroup:
+          typeName = dict('PC.Components.CreateAgent.typeAgentGroup');
           break;
         default:
           typeName = undefined;

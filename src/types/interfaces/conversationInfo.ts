@@ -322,6 +322,8 @@ export interface ConversationInfo {
   modified: string;
   created: string;
   variables?: Record<string, string | number> | null;
+  // 会话图标
+  icon?: string;
   // Agent信息，已发布过的agent才有此信息
   agent: {
     type: AgentTypeEnum;

@@ -1,3 +1,4 @@
+@import '@/styles/token.less';
 @import '@/styles/color';
 @import '@/styles/theme';
 
@@ -219,5 +220,31 @@
         display: none;
       }
     }
+  }
+}
+
+@agent-avatar-size: 18px;
+
+.agent-info-container {
+  display: flex;
+  align-items: center;
+  margin: @marginXs 0;
+  width: 100%;
+  text-align: left;
+
+  .agent-info-icon {
+    width: @agent-avatar-size;
+    height: @agent-avatar-size;
+    border-radius: 50%;
+    margin-right: @marginXs;
+    display: block;
+    object-fit: cover;
+  }
+
+  .agent-info-name {
+    font-size: @fontSizeSm;
+    color: @colorTextSecondary;
+    font-weight: 500;
+    line-height: @lineHeight;
   }
 }

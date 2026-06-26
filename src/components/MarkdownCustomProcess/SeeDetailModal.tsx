@@ -46,12 +46,14 @@ const SeeDetailModal: React.FC<SeeDetailModalProps> = ({
             title={title}
             placement="topLeft"
             // 与工具栏标题 tooltip 一致：放宽宽度，最多 5 行，超出滚动
-            overlayStyle={{ maxWidth: 380 }}
-            overlayInnerStyle={{
-              maxHeight: '7.5em',
-              overflowY: 'auto',
-              lineHeight: '1.5',
-              overflowWrap: 'break-word',
+            styles={{
+              root: { maxWidth: 380 },
+              body: {
+                maxHeight: '7.5em',
+                overflowY: 'auto',
+                lineHeight: '1.5',
+                overflowWrap: 'break-word',
+              },
             }}
           >
             <div
