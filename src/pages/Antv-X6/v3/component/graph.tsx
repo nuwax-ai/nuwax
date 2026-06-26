@@ -1,7 +1,11 @@
 // AntV X6 graph with plugins.
 import PlusIcon from '@/assets/svg/plus_icon.svg';
 import { t } from '@/services/i18nRuntime';
-import { AnswerTypeEnum, NodeTypeEnum } from '@/types/enums/common';
+import {
+  AnswerTypeEnum,
+  FlowKindEnum,
+  NodeTypeEnum,
+} from '@/types/enums/common';
 import {
   NodeUpdateEnum,
   PortGroupEnum,
@@ -147,6 +151,33 @@ const initGraph = ({
     targetNode?: ChildNode,
     edgeId?: string,
   ) => {
+    // AgentFlow：开始节点输出端口有且仅一条连线，已连出时禁止从端口再加节点
+    // （edgeId 存在时为在已有连线上插入节点，不会新增出口，放行）
+    if (
+      flowKind === FlowKindEnum.AgentFlow &&
+      sourceNode?.type === NodeTypeEnum.Start &&
+      !edgeId
+    ) {
+      const startCellId = String(sourceNode.id);
+      const startHasOutgoing = graph.getEdges().some((edge) => {
+        const s = edge.getSource();
+        return (
+          typeof s === 'object' &&
+          s !== null &&
+          'cell' in s &&
+          String((s as { cell: unknown }).cell) === startCellId
+        );
+      });
+      if (startHasOutgoing) {
+        message.warning(
+          t(
+            'PC.Pages.AgentFlowNode.startSingleOutgoingHint',
+            '开始节点只能连接一个后续节点',
+          ),
+        );
+        return;
+      }
+    }
     // const eventTarget =
     //   event.originalEvent.originalEvent || event.originalEvent;
     const targetRect = event.target.getBoundingClientRect();
@@ -252,6 +283,7 @@ const initGraph = ({
         });
       },
       validateConnection({
+        edge,
         sourceMagnet,
         targetMagnet,
         sourceCell,
@@ -306,6 +338,28 @@ const initGraph = ({
         if (isDuplicateEdge) {
           // ， false
           return false;
+        }
+
+        // AgentFlow：开始节点输出端口有且仅一条连线（与 Workflow 多出口不同）
+        if (
+          flowKind === FlowKindEnum.AgentFlow &&
+          sourceCell.getData()?.type === NodeTypeEnum.Start
+        ) {
+          const startCellId = String(sourceCell.id);
+          const startHasOutgoing = existingEdges.some((e) => {
+            // 排除当前正在拖拽/重连的这条边（首次连线、改接目标都应放行）
+            if (edge && String(e.id) === String(edge.id)) return false;
+            const s = e.getSource();
+            return (
+              typeof s === 'object' &&
+              s !== null &&
+              'cell' in s &&
+              String((s as { cell: unknown }).cell) === startCellId
+            );
+          });
+          if (startHasOutgoing) {
+            return false;
+          }
         }
 
         //   LoopEnd

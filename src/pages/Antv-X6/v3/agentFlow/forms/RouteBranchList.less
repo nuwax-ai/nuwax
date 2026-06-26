@@ -65,17 +65,29 @@
 }
 
 .route-condition-match {
+  &__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+  }
+
   &__label {
     font-size: 12px;
     color: #8c8c8c;
-    margin-bottom: 6px;
+  }
+
+  &__type {
+    width: 72px;
+    flex-shrink: 0;
   }
 
   &__row {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     flex-wrap: wrap;
     gap: 6px;
+    margin-bottom: 6px;
   }
 
   &__var {
@@ -92,13 +104,30 @@
 
   &__segmented {
     flex-shrink: 0;
-    margin-top: 2px;
   }
 
   &__right {
     flex: 1;
     min-width: 72px;
     margin-bottom: 0 !important;
+  }
+
+  &__del {
+    flex-shrink: 0;
+    cursor: pointer;
+    color: #bfbfbf;
+    font-size: 13px;
+
+    &:hover {
+      color: #ff4d4f;
+    }
+  }
+
+  &__add {
+    padding: 0;
+    height: auto;
+    font-size: 12px;
+    margin-top: 2px;
   }
 
   .ant-form-item {

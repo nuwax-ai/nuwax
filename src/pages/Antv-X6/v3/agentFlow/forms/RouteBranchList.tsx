@@ -74,6 +74,7 @@ const RouteBranchList: React.FC<RouteBranchListProps> = ({ form, argMap }) => {
                   intent: '',
                   description: '',
                   condition: '',
+                  conditionType: 'AND',
                   conditionArgs: [createEmptyConditionArg()],
                   nextNodeIds: [],
                 });
@@ -126,6 +127,7 @@ const RouteBranchList: React.FC<RouteBranchListProps> = ({ form, argMap }) => {
 
               <Form.Item name={[name, 'uuid']} hidden preserve />
               <Form.Item name={[name, 'condition']} hidden preserve />
+              <Form.Item name={[name, 'conditionType']} hidden preserve />
               <Form.Item name={[name, 'nextNodeIds']} hidden preserve />
 
               <RouteConditionMatch

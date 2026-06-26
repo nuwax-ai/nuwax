@@ -27,14 +27,6 @@ const COMPARE_SYMBOL_MAP: Record<string, string> = {
   NOT_NULL: 'is not null',
 };
 
-const TEXT_KEYWORD_OPS = new Set([
-  'CONTAINS',
-  'NOT_CONTAINS',
-  'MATCH_REGEX',
-  'IS_NULL',
-  'NOT_NULL',
-]);
-
 /** 创建空的条件匹配项（单条） */
 export function createEmptyConditionArg(): ConditionArgs {
   return {
@@ -80,13 +72,12 @@ function formatRightOperand(
 }
 
 /**
- * conditionArgs → condition 字符串（保存给后端）
+ * 序列化单条条件为子表达式（无值时返回空串）
  */
-export function serializeConditionArg(
-  conditionArgs: ConditionArgs[] | undefined,
+function serializeOneCondition(
+  item: ConditionArgs | undefined,
   argMap?: Record<string, BindConfigWithSub>,
 ): string {
-  const item = conditionArgs?.[0];
   if (!item?.firstArg?.bindValue) return '';
 
   const left = formatReferenceToken(item.firstArg, argMap);
@@ -100,10 +91,24 @@ export function serializeConditionArg(
   const right = formatRightOperand(item.secondArg, argMap);
   if (!right) return '';
 
-  if (TEXT_KEYWORD_OPS.has(compareType)) {
-    return `${left} ${opToken} ${right}`;
-  }
   return `${left} ${opToken} ${right}`;
+}
+
+/**
+ * conditionArgs → condition 字符串（保存给后端）。
+ * 对齐条件节点：同一分支内多条件按 conditionType（AND/OR）连接。
+ */
+export function serializeConditionArg(
+  conditionArgs: ConditionArgs[] | undefined,
+  argMap?: Record<string, BindConfigWithSub>,
+  conditionType: 'AND' | 'OR' = 'AND',
+): string {
+  if (!conditionArgs?.length) return '';
+  const parts = conditionArgs
+    .map((item) => serializeOneCondition(item, argMap))
+    .filter(Boolean);
+  if (!parts.length) return '';
+  return parts.join(conditionType === 'OR' ? ' OR ' : ' AND ');
 }
 
 /**
@@ -229,8 +234,13 @@ export function hydrateIntentConfigs(
           ? resolveFirstArgBindValue(arg.secondArg, argMap)
           : arg.secondArg,
     }));
-    const condition = serializeConditionArg(conditionArgs, argMap);
-    return { ...item, conditionArgs, condition };
+    const conditionType = item.conditionType === 'OR' ? 'OR' : 'AND';
+    const condition = serializeConditionArg(
+      conditionArgs,
+      argMap,
+      conditionType,
+    );
+    return { ...item, conditionArgs, conditionType, condition };
   });
 }
 
@@ -250,7 +260,12 @@ export function syncBranchConditionField(
     branchIndex,
     'conditionArgs',
   ]) as ConditionArgs[] | undefined;
-  const condition = serializeConditionArg(conditionArgs, argMap);
+  const conditionType = form.getFieldValue([
+    'intentConfigs',
+    branchIndex,
+    'conditionType',
+  ]) as 'AND' | 'OR' | undefined;
+  const condition = serializeConditionArg(conditionArgs, argMap, conditionType);
   const prev = form.getFieldValue(['intentConfigs', branchIndex, 'condition']);
   if (prev !== condition) {
     form.setFieldValue(['intentConfigs', branchIndex, 'condition'], condition);

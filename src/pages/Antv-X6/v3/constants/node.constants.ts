@@ -107,6 +107,7 @@ export const compareTypeMap = {
 export const answerTypeMap = {
   [AnswerTypeEnum.TEXT]: t('PC.Pages.AntvX6ComplexNode.answerTypeText'),
   [AnswerTypeEnum.SELECT]: t('PC.Pages.AntvX6ComplexNode.answerTypeSelect'),
+  [AnswerTypeEnum.FORM]: t('PC.Pages.AgentFlowNode.replyModeFormReply'),
 };
 export const DEFAULT_NODE_CONFIG = {
   newNodeOffsetX: 100, // 新增节点时，x轴的间距

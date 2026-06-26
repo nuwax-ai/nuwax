@@ -19,7 +19,6 @@ import { humanInteractionHandler } from '../handlers/humanInteraction';
 const createHitlNode = (
   overrides: Partial<{
     hitlMode: HitlModeEnum;
-    replyMode: 'text' | 'options' | 'form';
     answerType: AnswerTypeEnum;
     options: any[];
   }> = {},
@@ -37,10 +36,7 @@ const createHitlNode = (
     question: '',
     answerType:
       overrides.answerType ??
-      (overrides.replyMode === 'options' || overrides.options?.length
-        ? AnswerTypeEnum.SELECT
-        : AnswerTypeEnum.TEXT),
-    replyMode: overrides.replyMode ?? 'text',
+      (overrides.options?.length ? AnswerTypeEnum.SELECT : AnswerTypeEnum.TEXT),
     options: overrides.options ?? [],
   } as any,
 });
@@ -65,7 +61,7 @@ const ctx = { generatePortConfig: mockGeneratePortConfig };
 describe('HumanInteraction Handler (ask mode)', () => {
   describe('generatePorts', () => {
     it('should generate a single normal out port in ask text mode', () => {
-      const node = createHitlNode({ replyMode: 'text' });
+      const node = createHitlNode({ answerType: AnswerTypeEnum.TEXT });
       const result = humanInteractionHandler.generatePorts!(node, ctx);
 
       expect(result).not.toBeNull();
@@ -76,7 +72,7 @@ describe('HumanInteraction Handler (ask mode)', () => {
 
     it('should generate one option port per option in options mode', () => {
       const node = createHitlNode({
-        replyMode: 'options',
+        answerType: AnswerTypeEnum.SELECT,
         options: [
           { uuid: 'o1', content: 'A' },
           { uuid: 'o2', content: 'B' },
@@ -90,7 +86,10 @@ describe('HumanInteraction Handler (ask mode)', () => {
     });
 
     it('should fall back to a single out port when options list is empty', () => {
-      const node = createHitlNode({ replyMode: 'options', options: [] });
+      const node = createHitlNode({
+        answerType: AnswerTypeEnum.SELECT,
+        options: [],
+      });
       const result = humanInteractionHandler.generatePorts!(node, ctx);
 
       expect(result!.outputPorts).toHaveLength(1);
@@ -98,7 +97,7 @@ describe('HumanInteraction Handler (ask mode)', () => {
     });
 
     it('should always generate one input port', () => {
-      const node = createHitlNode({ replyMode: 'text' });
+      const node = createHitlNode({ answerType: AnswerTypeEnum.TEXT });
       const result = humanInteractionHandler.generatePorts!(node, ctx);
       expect(result!.inputPorts).toHaveLength(1);
     });
@@ -106,7 +105,7 @@ describe('HumanInteraction Handler (ask mode)', () => {
 
   describe('parseSourcePort', () => {
     it('should detect hitl-option-{uuid} port', () => {
-      const node = createHitlNode({ replyMode: 'options' });
+      const node = createHitlNode({ answerType: AnswerTypeEnum.SELECT });
       const result = humanInteractionHandler.parseSourcePort!(
         node,
         '10-hitl-option-o1-out',
@@ -118,14 +117,14 @@ describe('HumanInteraction Handler (ask mode)', () => {
     });
 
     it('should return null for normal out port', () => {
-      const node = createHitlNode({ replyMode: 'text' });
+      const node = createHitlNode({ answerType: AnswerTypeEnum.TEXT });
       const result = humanInteractionHandler.parseSourcePort!(node, '10-out');
 
       expect(result).toBeNull();
     });
 
     it('should return null for an unrelated port pattern', () => {
-      const node = createHitlNode({ replyMode: 'text' });
+      const node = createHitlNode({ answerType: AnswerTypeEnum.TEXT });
       const result = humanInteractionHandler.parseSourcePort!(
         node,
         '10-something-else',
@@ -138,7 +137,7 @@ describe('HumanInteraction Handler (ask mode)', () => {
   describe('updateConnection', () => {
     it('should add targetNodeId to the matched option nextNodeIds', () => {
       const node = createHitlNode({
-        replyMode: 'options',
+        answerType: AnswerTypeEnum.SELECT,
         options: [{ uuid: 'o1', content: 'A', nextNodeIds: [] }],
       });
       const ok = humanInteractionHandler.updateConnection!(
@@ -154,7 +153,7 @@ describe('HumanInteraction Handler (ask mode)', () => {
 
     it('should remove targetNodeId from the matched option nextNodeIds', () => {
       const node = createHitlNode({
-        replyMode: 'options',
+        answerType: AnswerTypeEnum.SELECT,
         options: [{ uuid: 'o1', content: 'A', nextNodeIds: [3, 5] }],
       });
       humanInteractionHandler.updateConnection!(
@@ -169,7 +168,7 @@ describe('HumanInteraction Handler (ask mode)', () => {
 
     it('should not add a duplicate targetNodeId', () => {
       const node = createHitlNode({
-        replyMode: 'options',
+        answerType: AnswerTypeEnum.SELECT,
         options: [{ uuid: 'o1', content: 'A', nextNodeIds: [5] }],
       });
       humanInteractionHandler.updateConnection!(
@@ -183,7 +182,10 @@ describe('HumanInteraction Handler (ask mode)', () => {
     });
 
     it('should return false for an unknown option uuid', () => {
-      const node = createHitlNode({ replyMode: 'options', options: [] });
+      const node = createHitlNode({
+        answerType: AnswerTypeEnum.SELECT,
+        options: [],
+      });
       const ok = humanInteractionHandler.updateConnection!(
         node,
         { type: SpecialPortType.HitlOption, uuid: 'missing' },
@@ -195,7 +197,10 @@ describe('HumanInteraction Handler (ask mode)', () => {
     });
 
     it('should return false for a non-HitlOption port type', () => {
-      const node = createHitlNode({ replyMode: 'options', options: [] });
+      const node = createHitlNode({
+        answerType: AnswerTypeEnum.SELECT,
+        options: [],
+      });
       const ok = humanInteractionHandler.updateConnection!(
         node,
         { type: SpecialPortType.Condition },
@@ -210,7 +215,7 @@ describe('HumanInteraction Handler (ask mode)', () => {
   describe('cleanupNodeReferences', () => {
     it('should remove the deleted node from every option nextNodeIds', () => {
       const node = createHitlNode({
-        replyMode: 'options',
+        answerType: AnswerTypeEnum.SELECT,
         options: [
           { uuid: 'o1', content: 'A', nextNodeIds: [3, 5] },
           { uuid: 'o2', content: 'B', nextNodeIds: [5, 8] },
@@ -224,7 +229,7 @@ describe('HumanInteraction Handler (ask mode)', () => {
 
     it('should be a no-op when the deleted node is not referenced', () => {
       const node = createHitlNode({
-        replyMode: 'options',
+        answerType: AnswerTypeEnum.SELECT,
         options: [{ uuid: 'o1', content: 'A', nextNodeIds: [3] }],
       });
       humanInteractionHandler.cleanupNodeReferences!(node, 9);
@@ -243,14 +248,14 @@ describe('HumanInteraction Handler (ask mode)', () => {
 
   describe('initBranchMap', () => {
     it('should return null in text mode (not a special branch node)', () => {
-      const node = createHitlNode({ replyMode: 'text' });
+      const node = createHitlNode({ answerType: AnswerTypeEnum.TEXT });
       const result = humanInteractionHandler.initBranchMap!(node);
       expect(result).toBeNull();
     });
 
     it('should build a map keyed by hitl-option-{uuid} in options mode', () => {
       const node = createHitlNode({
-        replyMode: 'options',
+        answerType: AnswerTypeEnum.SELECT,
         options: [
           { uuid: 'o1', content: 'A', nextNodeIds: [3] },
           { uuid: 'o2', content: 'B', nextNodeIds: [5] },
@@ -267,7 +272,7 @@ describe('HumanInteraction Handler (ask mode)', () => {
   describe('resetBranchData', () => {
     it('should clear every option nextNodeIds', () => {
       const node = createHitlNode({
-        replyMode: 'options',
+        answerType: AnswerTypeEnum.SELECT,
         options: [{ uuid: 'o1', content: 'A', nextNodeIds: [3, 5] }],
       });
       humanInteractionHandler.resetBranchData!(node);
@@ -296,7 +301,7 @@ describe('HumanInteraction Handler (ask mode)', () => {
   describe('mergeBranchData', () => {
     it('should write option nextNodeIds back from the branch map', () => {
       const node = createHitlNode({
-        replyMode: 'options',
+        answerType: AnswerTypeEnum.SELECT,
         options: [
           { uuid: 'o1', content: 'A', nextNodeIds: [] },
           { uuid: 'o2', content: 'B', nextNodeIds: [] },
@@ -315,12 +320,12 @@ describe('HumanInteraction Handler (ask mode)', () => {
 
   describe('isSpecialBranchNode', () => {
     it('should return true in options mode', () => {
-      const node = createHitlNode({ replyMode: 'options' });
+      const node = createHitlNode({ answerType: AnswerTypeEnum.SELECT });
       expect(humanInteractionHandler.isSpecialBranchNode!(node)).toBe(true);
     });
 
     it('should return false in text mode', () => {
-      const node = createHitlNode({ replyMode: 'text' });
+      const node = createHitlNode({ answerType: AnswerTypeEnum.TEXT });
       expect(humanInteractionHandler.isSpecialBranchNode!(node)).toBe(false);
     });
   });
@@ -328,7 +333,7 @@ describe('HumanInteraction Handler (ask mode)', () => {
   describe('handleSpecialNextIndex', () => {
     it('should add newNodeId to the matched option nextNodeIds', () => {
       const node = createHitlNode({
-        replyMode: 'options',
+        answerType: AnswerTypeEnum.SELECT,
         options: [{ uuid: 'o1', content: 'A', nextNodeIds: [] }],
       });
       const result = humanInteractionHandler.handleSpecialNextIndex!(
@@ -343,7 +348,7 @@ describe('HumanInteraction Handler (ask mode)', () => {
 
     it('should replace an existing targetNode id with newNodeId', () => {
       const node = createHitlNode({
-        replyMode: 'options',
+        answerType: AnswerTypeEnum.SELECT,
         options: [{ uuid: 'o1', content: 'A', nextNodeIds: [3] }],
       });
       const targetNode = { id: 3 } as ChildNode;
@@ -358,7 +363,10 @@ describe('HumanInteraction Handler (ask mode)', () => {
     });
 
     it('should return null for an unknown port pattern', () => {
-      const node = createHitlNode({ replyMode: 'options', options: [] });
+      const node = createHitlNode({
+        answerType: AnswerTypeEnum.SELECT,
+        options: [],
+      });
       const result = humanInteractionHandler.handleSpecialNextIndex!(
         node,
         '10-unknown',
@@ -370,7 +378,7 @@ describe('HumanInteraction Handler (ask mode)', () => {
 
     it('should not mutate the original node', () => {
       const node = createHitlNode({
-        replyMode: 'options',
+        answerType: AnswerTypeEnum.SELECT,
         options: [{ uuid: 'o1', content: 'A', nextNodeIds: [] }],
       });
       const original = [...(node.nodeConfig as any).options[0].nextNodeIds];

@@ -17,7 +17,10 @@ import type {
   PortGeneratorContext,
 } from '../../extensions/types';
 import { SpecialPortType } from '../../types/enums';
-import { getHitlOptions, getHitlReplyMode } from '../adapters/qaConfigAdapter';
+import {
+  getHitlOptions,
+  isHitlOptionsBranchMode,
+} from '../adapters/qaConfigAdapter';
 import { branchPortY, extractPortSuffix } from './portLayout';
 
 export const humanInteractionHandler: BranchNodeHandler = {
@@ -29,8 +32,8 @@ export const humanInteractionHandler: BranchNodeHandler = {
       ctx.generatePortConfig({ group: PortGroupEnum.in, idSuffix: 'in' }),
     ];
 
-    const replyMode = getHitlReplyMode(nc);
-    if (replyMode === 'options') {
+    const isOptionsBranch = isHitlOptionsBranchMode(nc);
+    if (isOptionsBranch) {
       const options = getHitlOptions(nc);
       if (options.length === 0) {
         return {
@@ -130,8 +133,8 @@ export const humanInteractionHandler: BranchNodeHandler = {
 
   initBranchMap(node: ChildNode): Map<string, number[]> | null {
     const nc = node.nodeConfig as any;
-    const replyMode = getHitlReplyMode(nc);
-    if (replyMode === 'options') {
+    const isOptionsBranch = isHitlOptionsBranchMode(nc);
+    if (isOptionsBranch) {
       const branchMap = new Map<string, number[]>();
       const options = getHitlOptions(nc);
       for (const o of options) {
@@ -161,7 +164,7 @@ export const humanInteractionHandler: BranchNodeHandler = {
   },
 
   isSpecialBranchNode(node: ChildNode): boolean {
-    return getHitlReplyMode(node.nodeConfig as any) === 'options';
+    return isHitlOptionsBranchMode(node.nodeConfig as any);
   },
 
   handleSpecialNextIndex(

@@ -229,6 +229,8 @@ export enum CompareTypeEnum {
 export enum AnswerTypeEnum {
   TEXT = 'TEXT',
   SELECT = 'SELECT',
+  // AgentFlow HumanInteraction: 表单回复模式（扩展自 QA 的 TEXT/SELECT）
+  FORM = 'FORM',
 }
 
 export enum ExceptionHandleTypeEnum {

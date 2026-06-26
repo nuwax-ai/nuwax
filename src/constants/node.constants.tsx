@@ -94,6 +94,7 @@ export const compareTypeMap = {
 export const answerTypeMap = {
   [AnswerTypeEnum.TEXT]: dict('PC.Constants.Node.directAnswer'),
   [AnswerTypeEnum.SELECT]: dict('PC.Constants.Node.optionAnswer'),
+  [AnswerTypeEnum.FORM]: dict('PC.Pages.AgentFlowNode.replyModeFormReply'),
 };
 export const DEFAULT_NODE_CONFIG = {
   newNodeOffsetX: 100, // 新增节点时，x轴的间距

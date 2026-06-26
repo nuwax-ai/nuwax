@@ -18,11 +18,11 @@
 
 三个节点都是 AgentFlow 节点。前端在 API 边界**只翻 `type` 字段，`nodeConfig` 原样透传**：
 
-| 前端 type          | 后端 type               | 关系                      |
-| ------------------ | ----------------------- | ------------------------- |
-| `RouteDecision`    | `IntentRecognition`     | 意图识别 + 路由扩展       |
-| `HumanInteraction` | `QA`                    | 问答 + HITL（仅 ask）扩展 |
-| `Agent`            | `Agent`（新增，不映射） | 全新节点                  |
+| 前端 type | 后端 type | 关系 |
+| --- | --- | --- |
+| `RouteDecision` | `IntentRecognition` | 意图识别 + 路由扩展 |
+| `HumanInteraction` | `QA` | 问答扩展（文本 / 选项 / 表单回复） |
+| `Agent` | `Agent`（新增，不映射） | 全新节点 |
 
 > 报错 `Cannot deserialize ... from String "HumanInteraction"/"RouteDecision"` 即未做这层映射所致。
 
@@ -34,6 +34,11 @@
 | 路由决策各分支 | `nodeConfig.intentConfigs[].nextNodeIds` |
 | 路由决策兜底 | `nodeConfig.defaultNextNodeIds` |
 | 询问用户 options 模式各选项 | `nodeConfig.options[].nextNodeIds` |
+
+**AgentFlow 连线规则**（与 Workflow 不同；前端在 `validateConnection` 与「端口加节点」处强制）：
+
+- **开始节点（`Start`）输出端口有且仅一条连线**——已连出后，再次从 Start 端口拖线 / 加节点会被拦截（提示「开始节点只能连接一个后续节点」）；改接目标（重连该条边）允许。
+- 其余节点沿用既有连线规则（普通节点单出口、分支节点多出口等）。
 
 **通用入/出参结构 `Arg`**（`inputArgs` / `outputArgs` 元素，复用既有协议）：
 
@@ -65,7 +70,7 @@ interface Arg {
 
 ## 1. 路由决策 `RouteDecision` → 后端 `IntentRecognition`
 
-在意图识别基础上，**每条 `intentConfigs` 新增 `condition` + `conditionArgs`** 两个字段，其余复用意图识别。
+在意图识别基础上，**每条 `intentConfigs` 新增 `condition`（单条件）字段**，其余复用意图识别。
 
 ### 1.1 `nodeConfig` 字段
 
@@ -87,21 +92,12 @@ interface Arg {
 | `uuid` | `string` | 是 | 前端生成，端口/连线识别用，保存运行需稳定保留 |
 | `intent` | `string` | 是 | 分支名称（复用意图识别 `intent` 字段，≤32 字符） |
 | `description` | `string` | 否 | 分支描述（“什么情况下走这条分支”） |
-| `condition` | `string` | 否 | **【新增】** 条件表达式字符串，**后端以此为执行依据** |
-| `conditionArgs` | `ConditionArgs[]` | 否 | **【新增】** 结构化条件（前端编辑/回显用，当前仅 `conditionArgs[0]` 一条） |
+| `condition` | `string` | 否 | **【新增】** 条件匹配表达式（**单条件**，不支持多条件叠加 / AND / OR），**后端以此为执行依据**；支持 `{{变量}}` 引用，语法见 1.3 |
 | `nextNodeIds` | `number[]` | 否 | 命中该分支后走的节点 |
 
-### 1.3 `ConditionArgs`
+### 1.3 `condition` 表达式语法
 
-```ts
-interface ConditionArgs {
-  compareType: string | null; // 见下方运算符表
-  firstArg: BindConfig | null; // 左值（变量引用）: { name, bindValue, bindValueType:'Reference' }
-  secondArg: BindConfig | null; // 右值（值或变量）: bindValueType:'Input' | 'Reference'
-}
-```
-
-`condition` 由前端从 `conditionArgs[0]` 序列化得到，**建议后端消费 `condition` 字符串**，`conditionArgs` 仅作结构化回显。运算符 → token 映射：
+每条分支**只匹配一个条件**（不支持添加多条件、AND / OR 连接）。表达式形如 `{{左值}} <op> 右值`，运算符 token：
 
 | compareType | token | compareType | token |
 | --- | --- | --- | --- |
@@ -114,7 +110,7 @@ interface ConditionArgs {
 | `LENGTH_GREATER_THAN_OR_EQUAL` | `length>=` | `LENGTH_LESS_THAN` | `length<` |
 | `LENGTH_LESS_THAN_OR_EQUAL` | `length<=` |  |  |
 
-- 变量统一格式化为 `{{name}}`；右值为 Input 时取字面值。
+- 变量统一格式化为 `{{name}}`；右值为字面值（如 `退货`、`60`）或变量（`{{expected}}`）。
 - `IS_NULL` / `NOT_NULL` 无右值，形如 `{{x}} is null`。
 - 示例：`{{userQuery}} contains 退货`、`{{score}} >= 60`、`{{reply}} == {{expected}}`。
 
@@ -134,23 +130,8 @@ interface ConditionArgs {
       {
         "uuid": "r-1",
         "intent": "退货咨询",
-        "description": "用户想退货/退款",
+        "description": "用户提问包含退货关键词",
         "condition": "{{userQuery}} contains 退货",
-        "conditionArgs": [
-          {
-            "compareType": "CONTAINS",
-            "firstArg": {
-              "name": "userQuery",
-              "bindValue": "1.userQuery",
-              "bindValueType": "Reference"
-            },
-            "secondArg": {
-              "name": "",
-              "bindValue": "退货",
-              "bindValueType": "Input"
-            }
-          }
-        ],
         "nextNodeIds": [202]
       }
     ],
@@ -173,25 +154,23 @@ interface ConditionArgs {
 
 ## 2. 询问用户 `HumanInteraction` → 后端 `QA`
 
-在 QA 基础上扩展 `replyMode`、`formFields`、`contextWriteKey`，并固定 `hitlMode=ask`。
+在 QA 基础上扩展 `answerType`（新增 `FORM` 取值）、`formArgs`、`contextWriteKey`。
 
 ### 2.1 `nodeConfig` 字段
 
 | 字段 | 类型 | 必填 | 默认 | 说明 |
 | --- | --- | --- | --- | --- |
-| `hitlMode` | `'ask'` | 是 | `ask` | 固定 ask（approve 模式已下线） |
 | `modelId` | `string` | 否 | 无 | 模型（保留，复用 QA） |
 | `mode` / `temperature` / `topP` / `maxTokens` | — | 否 | 无 | 模型参数（可选） |
 | `inputArgs` | `Arg[]` | 否 | `[]` | 引用变量 |
 | `question` | `string` | 否 | `''` | 提问模版 |
-| `replyMode` | `'text' \| 'options' \| 'form'` | 是 | `text` | **【新增】** 回复模式，前端权威字段 |
-| `answerType` | `'TEXT' \| 'SELECT'` | 是 | `TEXT` | 兼容 QA 老字段，由 replyMode 自动同步 |
-| `options` | `QAOption[]` | `replyMode=options` 时 | `[]` | 选项列表 |
-| `formFields` | `FormFieldConfig[]` | `replyMode=form` 时 | `[]` | **【新增】** 表单字段 |
+| `answerType` | `'TEXT' \| 'SELECT' \| 'FORM'` | 是 | `TEXT` | 权威字段（沿用 QA，扩展 `FORM`）：TEXT=文本 / SELECT=选项(分支) / FORM=表单 |
+| `options` | `QAOption[]` | `answerType=SELECT` 时 | `[]` | 选项列表 |
+| `formArgs` | `Arg[]` | `answerType=FORM` 时 | `[]` | **【新增】** 表单字段（直接复用 `Arg`，控件类型走 `inputType`，见 2.3） |
 | `contextWriteKey` | `string` | 否 | `user_reply` | **【新增】** 用户回答写入上下文的键名 |
 | `outputArgs` | `Arg[]` | 是 | `[answer:String]` | 固定输出 `answer` |
 
-`replyMode` ↔ `answerType` 同步规则：`text`/`form` → `answerType=TEXT`；`options` → `answerType=SELECT`。
+> `answerType` 为唯一权威字段，不再使用 `replyMode`；加载时旧 `replyMode`/嵌套 `askConfig` 会被迁移并清除。
 
 ### 2.2 `QAOption`（`options` 元素，复用 QA）
 
@@ -204,43 +183,83 @@ interface QAOption {
 }
 ```
 
-### 2.3 `FormFieldConfig`（`formFields` 元素，新增）
+### 2.3 `formArgs` 元素（直接复用 `Arg`）
 
-```ts
-interface FormFieldConfig {
-  label: string;
-  type: 'input' | 'number' | 'textarea' | 'radio' | 'checkbox' | 'file';
-  required: boolean;
-  options?: string; // ⚠ radio/checkbox 用，当前为「换行分隔字符串」，尚未拆数组（见待确认项）
-}
-```
+> **作用域**：本节（`formArgs`、`inputType` 取表单控件值、`selectConfig` 选项解析）**仅适用于 AgentFlow 下的「询问用户」(HumanInteraction) 节点**。其他节点（常规 Workflow QA、HTTP 等）的 `inputType` 语义不受影响——HTTP 节点仍用 `Query`/`Body`/`Header`/`Path`。
+
+`formArgs` 元素**直接复用 `inputArgs` 的 `Arg` 结构**（「新增变量」同款），不新增字段：表单控件类型写入 `Arg` 既有的 `inputType`，单选/多选再用 `Arg.selectConfig`。
+
+| `Arg` 字段 | 表单语义 |
+| --- | --- |
+| `key` | 前端生成，唯一标识 |
+| `name` | 字段名称（展示给用户的 label） |
+| `description` | 填写说明（提示用户输入什么内容） |
+| `dataType` | 数据类型（`String` / `Integer` / ...） |
+| `require` | 是否必填 |
+| `inputType` | **【复用】** 表单控件类型，取值见下表 |
+| `selectConfig` | 仅单选（`select`/`radio`）与多选（`checkboxes`）填：`{ dataSourceType: 'MANUAL', options: CascaderOption[] }`；其余类型为 `null` |
+
+**`inputType` 取值**（对齐后端枚举）：
+
+| 后端枚举 | `inputType` 值 | 含义 | 需要 `selectConfig` |
+| --- | --- | --- | --- |
+| Text | `text` | 文本输入（单行/多行均为 `text`） | 否 |
+| Select | `select` | 下拉单选 | 是 |
+| MultipleSelect | `checkboxes` | 多选 | 是 |
+| Number | `number` | 数字 | 否 |
+| File | `file` | 文件上传 | 否 |
+| Radio | `radio` | 单选 | 是 |
+
+**选项解析**：`selectConfig.options` 由「每行一个选项」的文本框按换行符 `\n` 解析得到，每行 → `{ label, value }`（`label` 与 `value` 取相同值）。
+
+> `inputType` 在 HTTP 节点另有 `Query`/`Body`/`Header`/`Path` 取值；表单场景仅用上表取值。旧版自定义 `FormFieldConfig`（`label`/`required`/`type` + `options: string[]`）已废弃；加载时由适配层迁移为 `Arg`（`name`/`require`/`inputType` + `selectConfig`）。
 
 ### 2.4 示例（三种回复模式）
 
 ```json
-// text 模式
+// text 模式（用户输入文本，写入 contextWriteKey；inputArgs 引用变量可在 question 中用 {{name}} 引用）
 {
   "id": 211,
   "type": "HumanInteraction",
   "name": "询问用户",
   "nextNodeIds": [212],
   "nodeConfig": {
-    "hitlMode": "ask",
-    "replyMode": "text",
     "answerType": "TEXT",
-    "inputArgs": [],
-    "question": "请补充订单号",
+    "modelId": "qwen-plus",
+    "inputArgs": [
+      {
+        "key": "orderId",
+        "name": "orderId",
+        "displayName": null,
+        "description": "上游传入的订单号",
+        "dataType": "String",
+        "require": false,
+        "enable": true,
+        "systemVariable": false,
+        "bindValueType": "Reference",
+        "bindValue": "1.orderId",
+        "inputType": null,
+        "selectConfig": null
+      }
+    ],
+    "question": "请补充订单 {{orderId}} 的退款金额",
     "options": [],
-    "formFields": [],
-    "contextWriteKey": "orderNo",
+    "formArgs": [],
+    "contextWriteKey": "refundAmount",
     "outputArgs": [
       {
         "key": "answer",
         "name": "answer",
-        "dataType": "String",
+        "displayName": null,
         "description": "User answer",
+        "dataType": "String",
         "require": true,
-        "systemVariable": true
+        "enable": true,
+        "systemVariable": true,
+        "bindValueType": null,
+        "bindValue": null,
+        "inputType": null,
+        "selectConfig": null
       }
     ]
   }
@@ -255,15 +274,13 @@ interface FormFieldConfig {
   "name": "询问用户",
   "nextNodeIds": [],
   "nodeConfig": {
-    "hitlMode": "ask",
-    "replyMode": "options",
     "answerType": "SELECT",
     "question": "请选择问题类型",
     "options": [
       { "uuid": "o-1", "index": 0, "content": "退货", "nextNodeIds": [212] },
       { "uuid": "o-2", "index": 1, "content": "其他", "nextNodeIds": [213] }
     ],
-    "formFields": [],
+    "formArgs": [],
     "contextWriteKey": "user_reply",
     "outputArgs": [
       {
@@ -279,35 +296,103 @@ interface FormFieldConfig {
 ```
 
 ```json
-// form 模式（单出口走节点级 nextNodeIds）
+// form 模式（answerType=FORM；formArgs 元素即「新增变量」Arg，inputType 指定控件，单选/多选补 selectConfig）
 {
   "id": 211,
   "type": "HumanInteraction",
-  "name": "询问用户",
+  "name": "收集退货信息",
   "nextNodeIds": [212],
   "nodeConfig": {
-    "hitlMode": "ask",
-    "replyMode": "form",
-    "answerType": "TEXT",
-    "question": "请填写工单",
+    "answerType": "FORM",
+    "modelId": "qwen-plus",
+    "inputArgs": [],
+    "question": "请填写退货信息，我们会尽快为您处理",
     "options": [],
-    "formFields": [
-      { "label": "标题", "type": "input", "required": true },
+    "formArgs": [
       {
-        "label": "优先级",
-        "type": "radio",
-        "required": true,
-        "options": "高\n中\n低"
+        "key": "orderNo",
+        "name": "订单号",
+        "displayName": null,
+        "description": "请输入需要退货的订单编号",
+        "dataType": "String",
+        "require": true,
+        "enable": true,
+        "systemVariable": false,
+        "bindValueType": null,
+        "bindValue": null,
+        "inputType": "text",
+        "selectConfig": null
+      },
+      {
+        "key": "returnCount",
+        "name": "退货数量",
+        "displayName": null,
+        "description": "退货件数",
+        "dataType": "Integer",
+        "require": true,
+        "enable": true,
+        "systemVariable": false,
+        "bindValueType": null,
+        "bindValue": null,
+        "inputType": "number",
+        "selectConfig": null
+      },
+      {
+        "key": "returnType",
+        "name": "退货类型",
+        "displayName": null,
+        "description": "请选择退货或换货",
+        "dataType": "String",
+        "require": true,
+        "enable": true,
+        "systemVariable": false,
+        "bindValueType": null,
+        "bindValue": null,
+        "inputType": "select",
+        "selectConfig": {
+          "dataSourceType": "MANUAL",
+          "options": [
+            { "label": "退货退款", "value": "退货退款" },
+            { "label": "换货", "value": "换货" }
+          ]
+        }
+      },
+      {
+        "key": "refundMethod",
+        "name": "退款方式",
+        "displayName": null,
+        "description": "可多选",
+        "dataType": "String",
+        "require": false,
+        "enable": true,
+        "systemVariable": false,
+        "bindValueType": null,
+        "bindValue": null,
+        "inputType": "checkboxes",
+        "selectConfig": {
+          "dataSourceType": "MANUAL",
+          "options": [
+            { "label": "原路退回", "value": "原路退回" },
+            { "label": "退至余额", "value": "退至余额" }
+          ]
+        }
       }
     ],
-    "contextWriteKey": "ticket",
+    "contextWriteKey": "returnForm",
     "outputArgs": [
       {
         "key": "answer",
         "name": "answer",
+        "displayName": null,
+        "description": "User answer",
         "dataType": "String",
         "require": true,
-        "systemVariable": true
+        "enable": true,
+        "systemVariable": true,
+        "bindValueType": null,
+        "bindValue": null,
+        "inputType": null,
+        "selectConfig": null
       }
     ]
   }
@@ -387,5 +472,5 @@ interface FormFieldConfig {
 
 ## 5. 待确认项
 
-1. **询问用户 · 表单字段 `formFields[].options`**：radio/checkbox 的选项当前是「换行分隔字符串」，尚未拆成数组。需后端确认契约（数组 vs 字符串）后，前端再补序列化。
-2. **路由决策 · `condition` vs `conditionArgs`**：建议后端以 `condition` 字符串为执行依据；`conditionArgs` 为前端结构化镜像。
+1. ~~表单字段 `formArgs[].options` 数组 vs 字符串~~ → **已定：选择类字段走 `selectConfig`**（`{ dataSourceType: 'MANUAL', options: [{label, value}] }`，`label`/`value` 传相同值）。前端「每行一个选项」录入，保存时转换为 `{label, value}` 数组；加载时自动迁移历史「换行字符串 / string[]」。
+2. ~~路由决策 · `condition` vs `conditionArgs`~~ → **已定：仅 `condition` 单条件字符串**（每条分支只匹配一个条件，不支持多条件 / AND / OR；已移除 `conditionArgs` / `conditionType`）。

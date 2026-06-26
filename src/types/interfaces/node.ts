@@ -118,8 +118,10 @@ export interface IntentConfigs {
   condition?: string;
   /** 路由决策（RouteDecision）：分支描述（沿用我们的属性面板 UI） */
   description?: string;
-  /** 路由决策（RouteDecision）：结构化条件匹配（前端编辑，保存时同步至 condition） */
+  /** 路由决策（RouteDecision）：结构化条件匹配（前端编辑，保存时同步至 condition；对齐条件节点，支持多条件） */
   conditionArgs?: ConditionArgs[];
+  /** 路由决策（RouteDecision）：多条件连接符（对齐条件节点 conditionType） */
+  conditionType?: 'AND' | 'OR';
 }
 
 export interface Extension {
@@ -179,7 +181,10 @@ export interface FormFieldConfig {
   label: string;
   type: 'radio' | 'checkbox' | 'input' | 'number' | 'textarea' | 'file';
   required: boolean;
-  options?: string;
+  /** 填写说明：提示用户该字段输入什么内容 */
+  description?: string;
+  /** radio/checkbox 选项数组（后端契约为 string[]；编辑时 UI 仍用「每行一个」录入） */
+  options?: string[];
 }
 
 // 节点内部的config
@@ -311,8 +316,9 @@ export interface NodeConfig {
   hitlMode?: HitlModeEnum;
   askConfig?: HitlAskConfig;
   // HITL:ask v2
-  replyMode?: 'text' | 'options' | 'form';
   formFields?: FormFieldConfig[];
+  /** HITL:ask 用户回答写入上下文的键名 */
+  contextWriteKey?: string;
   // Plugin/Workflow v2 (AgentFlow-only)
   inputPassMode?: 'auto' | 'manual';
   triggerMode?: 'sync' | 'async';
