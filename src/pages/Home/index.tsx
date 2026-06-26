@@ -278,6 +278,9 @@ const Home: React.FC = () => {
           selectedModelId={selectedModelId}
           onModelSelect={setSelectedModelId}
           agentType={agentDetail?.type}
+          showAgentModeSelector={
+            agentDetail?.allowChooseMode === DefaultSelectedEnum.Yes
+          }
         />
         <div
           className={cx(

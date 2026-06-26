@@ -14,6 +14,7 @@ import ConditionRender from '@/components/ConditionRender';
 import Created from '@/components/Created';
 import PublishComponentModal from '@/components/PublishComponentModal';
 import VersionHistory from '@/components/VersionHistory';
+import { isAgentVersionControlEnabled } from '@/constants/agent.constants';
 import { ERROR_MESSAGES } from '@/constants/appDevConstants';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { CREATED_TABS } from '@/constants/common.constants';
@@ -1603,7 +1604,11 @@ const AppDevDesign: React.FC = () => {
                   }}
                   gitVersionRecordData={{
                     onOpen: () => setGitVersionPanelOpen((prev) => !prev),
-                    disabled: !hasValidProjectId,
+                    disabled:
+                      !hasValidProjectId ||
+                      !isAgentVersionControlEnabled(
+                        agentConfigInfo?.enableVersionControl,
+                      ),
                   }}
                   // 通用状态
                   isChatLoading={chat.isChatLoading}
@@ -1613,7 +1618,10 @@ const AppDevDesign: React.FC = () => {
               <div className={styles.rightPanelMain}>
                 <div className={styles.contentArea}>
                   <div className={styles.contentRow}>
-                    {gitVersionPanelOpen ? (
+                    {gitVersionPanelOpen &&
+                    isAgentVersionControlEnabled(
+                      agentConfigInfo?.enableVersionControl,
+                    ) ? (
                       <div className={styles.gitVersionPanelCol}>
                         <GitVersionRecordPanel
                           workspace={{
@@ -1632,6 +1640,9 @@ const AppDevDesign: React.FC = () => {
                         {/* FileTreeGitSourceSidebar 组件 */}
                         {activeTab !== 'preview' && (
                           <FileTreeGitSourceSidebar
+                            enableVersionControl={
+                              agentConfigInfo?.enableVersionControl
+                            }
                             // 文件树（含搜索、工具栏、右键菜单）
                             tree={appDevFileTree.tree}
                             treeClassName="w-full"

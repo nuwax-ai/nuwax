@@ -3,7 +3,7 @@ import type {
   FileTreeContainerProps,
   SourceControlProps,
 } from '@/components/business-component/FileTreeGitSourcePanel/types/file-tree-git-source';
-import type { HideDesktopEnum } from '@/types/enums/agent';
+import type { DefaultSelectedEnum, HideDesktopEnum } from '@/types/enums/agent';
 import type { FileNode } from '@/types/interfaces/appDev';
 import type React from 'react';
 import type { FilePathHeaderProps } from './FilePathHeader/type';
@@ -128,6 +128,8 @@ export interface FileTreePreviewViewProps {
   isDynamicTheme?: boolean;
   /** 是否启用 Git status（仅通用型 TaskAgent 智能体） */
   enableGitStatus?: boolean;
+  /** 智能体是否开启版本管理 */
+  enableVersionControl?: DefaultSelectedEnum;
 }
 
 /** 预览 Header 组件 props */
@@ -209,6 +211,8 @@ export interface FileTreePreviewPanelProps {
   sourceControl?: SourceControlProps;
   /** 是否显示源代码管理 Tab */
   showSourceControl?: boolean;
+  /** 智能体是否开启版本管理；为 No 或未开启时隐藏源代码管理 */
+  enableVersionControl?: DefaultSelectedEnum;
   viewMode: 'preview' | 'desktop';
   hideDesktop?: HideDesktopEnum;
   diffFile?: ChangeFileInfo | null;

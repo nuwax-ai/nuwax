@@ -43,7 +43,6 @@ import {
 import useConversation from '@/hooks/useConversation';
 import { ThemeNavigationStyleType } from '@/types/enums/theme';
 import EcosystemMarketSection from './EcosystemMarketSection';
-import HomeSection from './HomeSection';
 import styles from './index.less';
 import NewHomeSection from './NewHomeSection';
 import SpaceSection from './SpaceSection';
@@ -663,15 +662,13 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
     // 主页、系统广场、生态市场特殊处理：直接渲染对应的 Section 组件
     // 主页 homepage: 最近使用 + 会话记录
     // 主页: 使用新版侧栏（会话历史 + 搜索 + 新建会话）
-    if (activeTab === 'homepage') {
-      return <NewHomeSection style={overrideContainerStyle} />;
-    }
     if (
+      activeTab === 'homepage' ||
       activeTab === 'new_conversation' ||
       activeTab === 'my_computer' ||
       activeTab === 'documents'
     ) {
-      return <HomeSection style={overrideContainerStyle} />;
+      return <NewHomeSection style={overrideContainerStyle} />;
     }
 
     // 工作空间

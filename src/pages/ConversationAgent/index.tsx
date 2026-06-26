@@ -16,6 +16,7 @@ import CreateAgent from '@/components/CreateAgent';
 import Loading from '@/components/custom/Loading';
 import PublishComponentModal from '@/components/PublishComponentModal';
 import VersionHistory from '@/components/VersionHistory';
+import { isAgentVersionControlEnabled } from '@/constants/agent.constants';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { useInitProjectMetadata } from '@/hooks/useInitProjectMetadata';
 import { useTerminalWsUrl } from '@/hooks/useTerminalWsUrl';
@@ -251,10 +252,13 @@ const ConversationAgent: React.FC = () => {
   } = useModel('conversationAgent');
 
   /** 常驻工作区工具页签 */
-  const workspaceToolIds = useMemo(
-    (): PreviewToolId[] => ['preview', 'version-control'],
-    [],
-  );
+  const workspaceToolIds = useMemo((): PreviewToolId[] => {
+    const tools: PreviewToolId[] = ['preview'];
+    if (isAgentVersionControlEnabled(agentConfigInfo?.enableVersionControl)) {
+      tools.push('version-control');
+    }
+    return tools;
+  }, [agentConfigInfo?.enableVersionControl]);
 
   /** 新窗口打开智能体高级设置（EditAgent 页面） */
   const handleOpenAdvancedSettings = useCallback(() => {
@@ -1018,8 +1022,10 @@ const ConversationAgent: React.FC = () => {
       hideDesktop: agentConfigInfo?.hideDesktop, // 是否隐藏桌面预览
       /** 静态文件基础路径，用于文件预览资源加载 */
       staticFileBasePath: `/api/computer/static/${queryConversationId}`,
-      /** 仅通用型智能体拉取 Git status */
-      enableGitStatus: agentConfigInfo?.type === AgentTypeEnum.TaskAgent,
+      /** 仅通用型智能体且开启版本管理时拉取 Git status */
+      enableGitStatus:
+        agentConfigInfo?.type === AgentTypeEnum.TaskAgent &&
+        isAgentVersionControlEnabled(agentConfigInfo?.enableVersionControl),
       /** 文件树选中文件时，切换右侧面板为文件预览并打开标签 */
       onFileSelectOpenPreview: (fileId?: string) => {
         closeAgentDesktop();
@@ -1309,8 +1315,11 @@ const ConversationAgent: React.FC = () => {
   );
 
   /** 「版本控制」页签：Git 提交记录 */
-  const versionControlPanel = useMemo(
-    () => (
+  const versionControlPanel = useMemo(() => {
+    if (!isAgentVersionControlEnabled(agentConfigInfo?.enableVersionControl)) {
+      return null;
+    }
+    return (
       <GitVersionRecordPanel
         workspace={{
           workspaceType: 'taskAgent',
@@ -1325,9 +1334,13 @@ const ConversationAgent: React.FC = () => {
           void refreshGitListRef.current?.();
         }}
       />
-    ),
-    [queryConversationId, fileView.gitBranch, handleRefreshFileList],
-  );
+    );
+  }, [
+    agentConfigInfo?.enableVersionControl,
+    queryConversationId,
+    fileView.gitBranch,
+    handleRefreshFileList,
+  ]);
 
   /**
    * 渲染智能体电脑（VNC），占满文件树 + 右侧面板工作区
@@ -1527,6 +1540,7 @@ const ConversationAgent: React.FC = () => {
                   {/* ConversationAgent 中间面板（公共 FileTreeGitSourcePanel，内部渲染文件树） */}
                   <FileTreeGitSourcePanel
                     className={cx(styles['file-tree-sidebar'], 'w-full')}
+                    enableVersionControl={agentConfigInfo?.enableVersionControl}
                     tree={fileView.tree}
                     treeClassName="w-full h-full"
                     sourceControl={{

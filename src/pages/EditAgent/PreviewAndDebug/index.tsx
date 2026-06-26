@@ -504,7 +504,10 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
                 guidQuestionDtos: agentConfigInfo?.guidQuestionDtos,
                 eventBindConfig: agentConfigInfo?.eventBindConfig,
                 hasPermission: conversationInfo?.agent?.hasPermission,
-                sandboxId: conversationInfo?.agent?.sandboxId,
+                sandboxId:
+                  conversationInfo?.sandboxServerId ||
+                  conversationInfo?.agent?.sandboxId,
+                allowChooseMode: agentConfigInfo?.allowChooseMode,
               }}
               onSendMessage={handleMessageSend}
               onClear={handleClear}
@@ -520,7 +523,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
               userFillVariables={userFillVariables}
               isVariablesFilled={true}
               clearLoading={false}
-              isSelectionLocked={false}
+              isSelectionLocked={!!conversationInfo?.sandboxServerId}
               hasUserSentMessage={hasUserSentMessage}
               selectedComputerId={selectedComputerId}
               onComputerSelect={(id) => {

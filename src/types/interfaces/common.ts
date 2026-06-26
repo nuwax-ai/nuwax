@@ -722,6 +722,14 @@ export interface VariableSelectConfig {
   options: CascaderOption[];
 }
 
+// 参数更新策略,可用值:REPLACE,APPEND
+export enum UpdateStrategyEnum {
+  // 替换
+  REPLACE = 'REPLACE',
+  // 追加
+  APPEND = 'APPEND',
+}
+
 export interface BindConfigWithSub {
   key: React.Key;
   // 参数名称，符合函数命名规则
@@ -749,6 +757,8 @@ export interface BindConfigWithSub {
   selectConfig?: VariableSelectConfig;
   loopId?: number;
   children?: BindConfigWithSub[];
+  // 参数更新策略,可用值:REPLACE,APPEND (智能体设置变量，智能识别时使用)
+  updateStrategy?: UpdateStrategyEnum;
   [key: string]: any;
 }
 
