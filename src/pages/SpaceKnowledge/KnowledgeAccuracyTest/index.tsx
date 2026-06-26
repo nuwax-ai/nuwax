@@ -258,7 +258,8 @@ const KnowledgeAccuracyTest: React.FC<KnowledgeAccuracyTestProps> = ({
       title: 'Query',
       dataIndex: 'query',
       key: 'query',
-      width: '55%',
+      width: '50%',
+      ellipsis: true,
       render: (text: string, record: TestHistoryItem) => (
         <a
           onClick={(e) => {
@@ -266,6 +267,8 @@ const KnowledgeAccuracyTest: React.FC<KnowledgeAccuracyTestProps> = ({
             console.log(dict('PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.queryClickEventTriggered'), record);
             handleHistoryClick(record);
           }}
+          className={styles.queryCell}
+          title={text}
           style={{ cursor: 'pointer', color: '#1890FF' }}
         >
           {text}
@@ -276,7 +279,7 @@ const KnowledgeAccuracyTest: React.FC<KnowledgeAccuracyTestProps> = ({
       title: dict('PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.time'),
       dataIndex: 'createTime',
       key: 'createTime',
-      width: '45%',
+      width: '50%',
       render: (text: string) => (
         <div className={styles.timeCell}>{text}</div>
       ),
@@ -337,11 +340,13 @@ const KnowledgeAccuracyTest: React.FC<KnowledgeAccuracyTestProps> = ({
             <div className={styles.configItem}>
               <label className={styles.label}>{dict('PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.testQuery')}：</label>
               <TextArea
-                className={styles.textarea}
+                className={`${styles.textarea} dispose-textarea-count`}
                 placeholder={dict('PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.inputQueryText')}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                rows={4}
+                autoSize={{ minRows: 4, maxRows: 6 }}
+                maxLength={100}
+                showCount
               />
             </div>
 
@@ -359,7 +364,10 @@ const KnowledgeAccuracyTest: React.FC<KnowledgeAccuracyTestProps> = ({
         </Card>
 
         {/* 测试历史区 */}
-        <Card className={styles.testHistory} bordered={false} title={dict('PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.testHistory')}>
+        <Card className={styles.testHistory} bordered={false}>
+          <div className={styles.testHistoryHeader}>
+            <span className={styles.headerTitle}>{dict('PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.testHistory')}</span>
+          </div>
           <Table
             columns={historyColumns}
             dataSource={testHistory}

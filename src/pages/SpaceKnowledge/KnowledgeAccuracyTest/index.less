@@ -123,11 +123,16 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   flex: 1;
 
-  .ant-card-head {
+  .testHistoryHeader {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
     border-bottom: 1px solid #F0F0F0;
   }
 
-  .ant-card-head-title {
+  .headerTitle {
     font-size: 14px;
     font-weight: 500;
     color: #333;
@@ -158,12 +163,15 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px;
+  padding-top: 0px;
+  padding-bottom: 10px;
+  padding-left: 0px;
+  padding-right: 16px;
   border-bottom: 1px solid #F0F0F0;
 }
 
 .resultsTitle {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 500;
   color: #333;
 }
@@ -196,10 +204,30 @@
   border-radius: 8px;
   padding: 16px;
   transition: all 0.3s ease;
+  box-shadow: none !important;
 
   &:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     border-color: #E0E0E0;
+    box-shadow: none !important;
+  }
+}
+
+// 覆盖 antd Card 组件的默认样式
+:global(.ant-card) {
+  padding-top: 14px !important;
+  padding-left: 24px !important;
+  padding-right: 24px !important;
+  padding-bottom: 24px !important;
+}
+
+:global(.ant-card .ant-card-body) {
+  padding-top: 0px !important;
+}
+.ant-card.resultCard {
+  box-shadow: none !important;
+
+  &:hover {
+    box-shadow: none !important;
   }
 }
 
@@ -308,7 +336,7 @@
     align-items: center;
     gap: 12px;
     margin-bottom: 20px;
-    padding-bottom: 16px;
+    padding-bottom: 10px;
     border-bottom: 1px solid #F0F0F0;
   }
 
@@ -411,4 +439,14 @@
   font-size: 13px;
   color: #666;
   line-height: 1.5;
+}
+
+// 测试历史表格Query单元格样式
+.queryCell {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+  max-width: 600px;
 }
