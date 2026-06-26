@@ -21,6 +21,25 @@
   }
 }
 
+.modal-body {
+  display: flex;
+  flex-direction: column;
+  max-height: 70vh;
+  overflow: hidden;
+}
+
+.table-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.modal-action {
+  flex-shrink: 0;
+  padding-top: 10px;
+}
+
 .tag {
   display: inline-block;
   padding: 2px 8px;

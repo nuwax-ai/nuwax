@@ -187,6 +187,7 @@ const CreateHookModal: React.FC<CreateHookModalProps> = ({
   return (
     <CustomFormModal
       form={form}
+      classNames={{ body: styles['modal-body'] }}
       title={title}
       open={open}
       width={560}

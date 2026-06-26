@@ -5,6 +5,7 @@ import { InputTypeEnum, UpdateVariablesTypeEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import type { CreateVariablesProps } from '@/types/interfaces/agentConfig';
 import { BindConfigWithSub } from '@/types/interfaces/common';
+import { modalConfirm } from '@/utils/ant-custom';
 import {
   DeleteOutlined,
   FormOutlined,
@@ -118,7 +119,7 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
   const [variableModalOpen, setVariableModalOpen] = useState<boolean>(false);
   // 是否新增、更新变量了， 如果是，关闭弹窗后，刷新变量列表，如果没有，仅关闭弹窗
   const isAddedNewVariable = useRef<boolean>(false);
-  const tableRef = useRef<any>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   // 缓存输入数据，用于重置父级组件table表单
   const inputDataRef = useRef<BindConfigWithSub[]>([]);
   // 更新变量操作类型
@@ -212,11 +213,16 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
 
   // 删除变量
   const handleDel = (key: string) => {
-    const newInputData = inputData.filter((item) => item.key !== key);
-    inputDataRef.current = newInputData;
-    updateVariablesTypeRef.current = UpdateVariablesTypeEnum.Delete;
-    // 更新变量
-    handleUpdateVariables(newInputData);
+    modalConfirm(
+      t('PC.Common.Global.deleteConfirmTitle'),
+      t('PC.Common.Global.deleteConfirmContent'),
+      () => {
+        const newInputData = inputData.filter((item) => item.key !== key);
+        inputDataRef.current = newInputData;
+        updateVariablesTypeRef.current = UpdateVariablesTypeEnum.Delete;
+        handleUpdateVariables(newInputData);
+      },
+    );
   };
 
   // 入参配置columns
@@ -304,7 +310,7 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
     {
       title: '',
       dataIndex: 'action',
-      width: 100,
+      width: 80,
       fixed: 'right',
       render: (_: string, record: BindConfigWithSub) => (
         <>
@@ -340,9 +346,12 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
 
   // 滚动到底部的函数
   const scrollToBottom = () => {
-    // 滚动到底部
-    tableRef.current?.scrollTo({
-      top: tableRef.current?.scrollHeight,
+    const container = scrollContainerRef.current;
+    if (!container) {
+      return;
+    }
+    container.scrollTo({
+      top: container.scrollHeight,
       behavior: 'smooth',
     });
   };
@@ -409,37 +418,36 @@ const CreateVariables: React.FC<CreateVariablesProps> = ({
       title={t('PC.Pages.AgentArrangeCreateVariables.title')}
       open={open}
       footer={null}
+      classNames={{ body: styles['modal-body'] }}
       onCancel={handleCancel}
     >
-      <DndContext
-        modifiers={[restrictToVerticalAxis]}
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragEnd={handleDragEnd}
-      >
-        <SortableContext
-          items={inputData.map((item) => item.key as string)}
-          strategy={verticalListSortingStrategy}
+      <div className={cx(styles['table-scroll'])} ref={scrollContainerRef}>
+        <DndContext
+          modifiers={[restrictToVerticalAxis]}
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
         >
-          <Table<BindConfigWithSub>
-            ref={tableRef}
-            rowKey="key"
-            components={{ body: { row: Row } }}
-            className={cx(styles['table-container'])}
-            columns={inputColumns}
-            dataSource={inputData}
-            pagination={false}
-            scroll={{
-              y: inputData?.length >= 10 ? 560 : undefined,
-            }}
-            footer={() => (
-              <Button icon={<PlusOutlined />} onClick={handleAddVariable}>
-                {t('PC.Pages.AgentArrangeCreateVariables.add')}
-              </Button>
-            )}
-          />
-        </SortableContext>
-      </DndContext>
+          <SortableContext
+            items={inputData.map((item) => item.key as string)}
+            strategy={verticalListSortingStrategy}
+          >
+            <Table<BindConfigWithSub>
+              rowKey="key"
+              components={{ body: { row: Row } }}
+              className={cx(styles['table-container'])}
+              columns={inputColumns}
+              dataSource={inputData}
+              pagination={false}
+            />
+          </SortableContext>
+        </DndContext>
+      </div>
+      <div className={cx(styles['modal-action'])}>
+        <Button icon={<PlusOutlined />} onClick={handleAddVariable}>
+          {t('PC.Pages.AgentArrangeCreateVariables.add')}
+        </Button>
+      </div>
       <CreateVariableModal
         id={variablesInfo?.id}
         targetId={variablesInfo?.targetId || 0}

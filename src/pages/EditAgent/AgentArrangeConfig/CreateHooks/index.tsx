@@ -5,6 +5,7 @@ import { HookStatusEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import type { HookConfig } from '@/types/interfaces/agent';
 import type { CreateHooksProps } from '@/types/interfaces/agentConfig';
+import { modalConfirm } from '@/utils/ant-custom';
 import {
   DeleteOutlined,
   EditOutlined,
@@ -188,10 +189,16 @@ const CreateHooks: React.FC<CreateHooksProps> = ({
 
   // 删除 Hook
   const handleDeleteHook = (index: number) => {
-    const nextHooks = hookList.filter((_, idx) => idx !== index);
-    persistHooks(
-      nextHooks,
-      t('PC.Pages.AgentArrangeCreateHooks.deleteSuccess'),
+    modalConfirm(
+      t('PC.Common.Global.deleteConfirmTitle'),
+      t('PC.Common.Global.deleteConfirmContent'),
+      () => {
+        const nextHooks = hookList.filter((_, idx) => idx !== index);
+        persistHooks(
+          nextHooks,
+          t('PC.Pages.AgentArrangeCreateHooks.deleteSuccess'),
+        );
+      },
     );
   };
 
@@ -307,7 +314,7 @@ const CreateHooks: React.FC<CreateHooksProps> = ({
         if (!value) {
           return (
             <span className={cx('flex', 'items-center', 'h-full')}>
-              <span className={cx(styles.tag, styles['tag-muted'])}>-</span>
+              <span className={cx(styles['tag-muted'])}>-</span>
             </span>
           );
         }
@@ -387,36 +394,36 @@ const CreateHooks: React.FC<CreateHooksProps> = ({
         open={open}
         footer={null}
         destroyOnHidden
+        classNames={{ body: styles['modal-body'] }}
         onCancel={handleClose}
       >
-        <DndContext
-          modifiers={[restrictToVerticalAxis]}
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-        >
-          <SortableContext
-            items={hookList.map((item) => item.key)}
-            strategy={verticalListSortingStrategy}
+        <div className={cx(styles['table-scroll'])}>
+          <DndContext
+            modifiers={[restrictToVerticalAxis]}
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
           >
-            <Table<HookTableRow>
-              rowKey="key"
-              components={{ body: { row: Row } }}
-              className={cx(styles['table-container'])}
-              columns={columns}
-              dataSource={tableData}
-              pagination={false}
-              scroll={{
-                y: hookList.length >= 10 ? 560 : undefined,
-              }}
-              footer={() => (
-                <Button icon={<PlusOutlined />} onClick={handleAddHook}>
-                  {t('PC.Pages.AgentArrangeCreateHooks.add')}
-                </Button>
-              )}
-            />
-          </SortableContext>
-        </DndContext>
+            <SortableContext
+              items={hookList.map((item) => item.key)}
+              strategy={verticalListSortingStrategy}
+            >
+              <Table<HookTableRow>
+                rowKey="key"
+                components={{ body: { row: Row } }}
+                className={cx(styles['table-container'])}
+                columns={columns}
+                dataSource={tableData}
+                pagination={false}
+              />
+            </SortableContext>
+          </DndContext>
+        </div>
+        <div className={cx(styles['modal-action'])}>
+          <Button icon={<PlusOutlined />} onClick={handleAddHook}>
+            {t('PC.Pages.AgentArrangeCreateHooks.add')}
+          </Button>
+        </div>
       </Modal>
 
       {/* 新建 / 编辑 Hook 弹窗 */}
