@@ -3,14 +3,13 @@
 .table-container {
   :global {
     .ant-table-content .ant-table-thead > tr > th {
-      padding: 8px 12px;
-      font-size: 13px;
+      padding-left: 0;
+      font-size: 14px;
       color: @GRAY05;
-      background: transparent;
     }
 
     .ant-table-content .ant-table-tbody > tr > td {
-      padding: 10px 12px;
+      padding: 10px 10px 10px 0;
       color: @BLANK04;
       font-size: 12px;
     }
@@ -34,6 +33,12 @@
 
 .tag-muted {
   color: @GRAY05;
+}
+
+.matcher-cell {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .action-btn {

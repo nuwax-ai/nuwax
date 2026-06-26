@@ -2,8 +2,10 @@ import CodeEditor from '@/components/CodeEditor';
 import CustomFormModal from '@/components/CustomFormModal';
 import {
   getDefaultHookConfigJson,
+  getHookMatcherFieldConfig,
   HOOK_EVENT_OPTIONS,
   HOOK_TYPE_OPTIONS,
+  HookMatcherPlaceholderType,
 } from '@/constants/hook.constants';
 import { apiAgentComponentHookUpdate } from '@/services/agentConfig';
 import { t } from '@/services/i18nRuntime';
@@ -15,7 +17,7 @@ import type { CreateHookModalProps } from '@/types/interfaces/agentConfig';
 import { customizeRequiredMark } from '@/utils/form';
 import { Form, Input, message, Select } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { useRequest } from 'umi';
 import styles from './index.less';
 
@@ -44,6 +46,42 @@ const CreateHookModal: React.FC<CreateHookModalProps> = ({
 }) => {
   const [form] = Form.useForm<HookFormValues>();
   const pendingHooksRef = useRef<HookConfig[]>([]);
+  const event = Form.useWatch('event', form);
+
+  const matcherFieldConfig = useMemo(
+    () => getHookMatcherFieldConfig(event),
+    [event],
+  );
+
+  const matcherPlaceholder = useMemo(() => {
+    switch (matcherFieldConfig.placeholderType) {
+      case HookMatcherPlaceholderType.NotSupported:
+        return t('PC.Pages.AgentArrangeCreateHookModal.matcherNotSupported');
+      case HookMatcherPlaceholderType.StopFailure:
+        return t(
+          'PC.Pages.AgentArrangeCreateHookModal.matcherStopFailurePlaceholder',
+        );
+      case HookMatcherPlaceholderType.SessionStart:
+        return t(
+          'PC.Pages.AgentArrangeCreateHookModal.matcherSessionStartPlaceholder',
+        );
+      case HookMatcherPlaceholderType.SubagentStart:
+        return t(
+          'PC.Pages.AgentArrangeCreateHookModal.matcherSubagentStartPlaceholder',
+        );
+      case HookMatcherPlaceholderType.ToolName:
+      default:
+        return t('PC.Pages.AgentArrangeCreateHookModal.matcherPlaceholder');
+    }
+  }, [matcherFieldConfig.placeholderType]);
+
+  // 切换 Hook 事件
+  const handleEventChange = (value: string) => {
+    const config = getHookMatcherFieldConfig(value);
+    if (config.disabled) {
+      form.setFieldValue('matcher', '');
+    }
+  };
 
   // 更新 Hook 配置
   const { run: runHookUpdate, loading } = useRequest(
@@ -66,10 +104,12 @@ const CreateHookModal: React.FC<CreateHookModalProps> = ({
 
     // 编辑 Hook
     if (mode === CreateUpdateModeEnum.Update && currentHook) {
+      const eventValue = currentHook.event ?? HOOK_EVENT_OPTIONS[0].value;
+      const matcherConfig = getHookMatcherFieldConfig(eventValue);
       form.setFieldsValue({
         name: currentHook.name ?? '',
-        event: currentHook.event ?? HOOK_EVENT_OPTIONS[0].value,
-        matcher: currentHook.matcher ?? '',
+        event: eventValue,
+        matcher: matcherConfig.disabled ? '' : currentHook.matcher ?? '',
         type: currentHook.type ?? HOOK_TYPE_OPTIONS[0].value,
         config:
           currentHook.config ??
@@ -105,10 +145,13 @@ const CreateHookModal: React.FC<CreateHookModalProps> = ({
       return;
     }
 
+    const matcherConfig = getHookMatcherFieldConfig(values.event);
     const nextHook: HookConfig = {
       name: values.name.trim(),
       event: values.event,
-      matcher: values.matcher?.trim() || undefined,
+      matcher: matcherConfig.disabled
+        ? undefined
+        : values.matcher?.trim() || undefined,
       type: values.type,
       config: parsedConfig,
       status:
@@ -174,6 +217,8 @@ const CreateHookModal: React.FC<CreateHookModalProps> = ({
               placeholder={t(
                 'PC.Pages.AgentArrangeCreateHookModal.namePlaceholder',
               )}
+              maxLength={50}
+              allowClear
             />
           </Form.Item>
           <Form.Item
@@ -189,7 +234,7 @@ const CreateHookModal: React.FC<CreateHookModalProps> = ({
               },
             ]}
           >
-            <Select options={HOOK_EVENT_OPTIONS} />
+            <Select options={HOOK_EVENT_OPTIONS} onChange={handleEventChange} />
           </Form.Item>
         </div>
 
@@ -198,9 +243,10 @@ const CreateHookModal: React.FC<CreateHookModalProps> = ({
           label={t('PC.Pages.AgentArrangeCreateHookModal.matcher')}
         >
           <Input
-            placeholder={t(
-              'PC.Pages.AgentArrangeCreateHookModal.matcherPlaceholder',
-            )}
+            placeholder={matcherPlaceholder}
+            maxLength={200}
+            allowClear
+            disabled={matcherFieldConfig.disabled}
           />
         </Form.Item>
 

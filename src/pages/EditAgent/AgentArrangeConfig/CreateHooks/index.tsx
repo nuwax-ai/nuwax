@@ -1,10 +1,35 @@
+import { EllipsisTooltip } from '@/components/custom/EllipsisTooltip';
 import { apiAgentComponentHookUpdate } from '@/services/agentConfig';
 import { t } from '@/services/i18nRuntime';
 import { HookStatusEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import type { HookConfig } from '@/types/interfaces/agent';
 import type { CreateHooksProps } from '@/types/interfaces/agentConfig';
-import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
+import {
+  DeleteOutlined,
+  EditOutlined,
+  HolderOutlined,
+  PlusOutlined,
+} from '@ant-design/icons';
+import type { DragEndEvent } from '@dnd-kit/core';
+import {
+  closestCenter,
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
+import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import {
   Button,
   message,
@@ -15,12 +40,87 @@ import {
   type TableColumnsType,
 } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useRequest } from 'umi';
+import { v4 as uuidv4 } from 'uuid';
 import CreateHookModal from './CreateHookModal';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
+
+type HookListItem = HookConfig & { key: string };
+
+interface HookTableRow extends HookListItem {
+  _index: number;
+}
+
+interface RowContextProps {
+  setActivatorNodeRef?: (element: HTMLElement | null) => void;
+  listeners?: SyntheticListenerMap;
+}
+
+const RowContext = React.createContext<RowContextProps>({});
+
+const DragHandle: React.FC = () => {
+  const { setActivatorNodeRef, listeners } = useContext(RowContext);
+  return (
+    <Button
+      type="text"
+      size="small"
+      icon={<HolderOutlined />}
+      style={{ cursor: 'move' }}
+      ref={setActivatorNodeRef}
+      {...listeners}
+    />
+  );
+};
+
+interface RowProps extends React.HTMLAttributes<HTMLTableRowElement> {
+  'data-row-key': string;
+}
+
+const Row: React.FC<RowProps> = (props) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    setActivatorNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: props['data-row-key'] });
+
+  const style: React.CSSProperties = {
+    ...props.style,
+    ...(isDragging ? { position: 'relative' } : {}),
+    transform: CSS.Translate.toString(transform),
+    transition,
+    zIndex: isDragging ? 10 : 1,
+    opacity: isDragging ? 0.8 : 1,
+    paddingRight: '10px',
+  };
+
+  const contextValue = useMemo<RowContextProps>(
+    () => ({ setActivatorNodeRef, listeners }),
+    [setActivatorNodeRef, listeners],
+  );
+
+  return (
+    <RowContext.Provider value={contextValue}>
+      <tr {...props} ref={setNodeRef} style={style} {...attributes} />
+    </RowContext.Provider>
+  );
+};
+
+const toHookConfigs = (hooks: HookListItem[]): HookConfig[] =>
+  hooks.map((item) => {
+    const hook = { ...item };
+    delete (hook as Partial<HookListItem>).key;
+    return hook as HookConfig;
+  });
+
+const withHookKeys = (hooks: HookConfig[]): HookListItem[] =>
+  hooks.map((hook) => ({ ...hook, key: uuidv4() }));
 
 /**
  * Hook 管理弹窗：列表、新建 / 编辑 / 删除 / 状态切换
@@ -31,7 +131,7 @@ const CreateHooks: React.FC<CreateHooksProps> = ({
   onCancel,
   onConfirm,
 }) => {
-  const [hookList, setHookList] = useState<HookConfig[]>([]);
+  const [hookList, setHookList] = useState<HookListItem[]>([]);
   const [hookModalOpen, setHookModalOpen] = useState(false);
   const [mode, setMode] = useState<CreateUpdateModeEnum>(
     CreateUpdateModeEnum.Create,
@@ -44,7 +144,7 @@ const CreateHooks: React.FC<CreateHooksProps> = ({
     if (!open) {
       return;
     }
-    setHookList(hooksInfo?.bindConfig?.hooks ?? []);
+    setHookList(withHookKeys(hooksInfo?.bindConfig?.hooks ?? []));
     isUpdatedRef.current = false;
   }, [open, hooksInfo]);
 
@@ -58,11 +158,11 @@ const CreateHooks: React.FC<CreateHooksProps> = ({
   });
 
   // 持久化 Hook 配置
-  const persistHooks = (nextHooks: HookConfig[], successMessage?: string) => {
+  const persistHooks = (nextHooks: HookListItem[], successMessage?: string) => {
     runHookUpdate({
       id: hooksInfo?.id as number,
       targetId: hooksInfo?.targetId ?? -1,
-      bindConfig: { hooks: nextHooks },
+      bindConfig: { hooks: toHookConfigs(nextHooks) },
     });
     setHookList(nextHooks);
     if (successMessage) {
@@ -111,7 +211,19 @@ const CreateHooks: React.FC<CreateHooksProps> = ({
   // 确定 Hook 配置变更
   const handleHookModalConfirm = (nextHooks: HookConfig[]) => {
     setHookModalOpen(false);
-    setHookList(nextHooks);
+    setHookList((prev) =>
+      nextHooks.map((hook, index) => {
+        const existing = prev[index];
+        const sameItem =
+          existing &&
+          existing.name === hook.name &&
+          existing.event === hook.event;
+        return {
+          ...hook,
+          key: sameItem ? existing.key : uuidv4(),
+        };
+      }),
+    );
     isUpdatedRef.current = true;
   };
 
@@ -124,22 +236,65 @@ const CreateHooks: React.FC<CreateHooksProps> = ({
     }
   };
 
+  // 拖拽结束
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const activeIndex = hookList.findIndex((item) => item.key === active.id);
+      const overIndex = hookList.findIndex((item) => item.key === over.id);
+      const nextHooks = arrayMove(hookList, activeIndex, overIndex);
+      persistHooks(nextHooks);
+    }
+  };
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
+
+  const tableData: HookTableRow[] = hookList.map((item, index) => ({
+    ...item,
+    _index: index,
+  }));
+
   // 表格列配置
-  const columns: TableColumnsType<HookConfig & { _index: number }> = [
+  const columns: TableColumnsType<HookTableRow> = [
+    {
+      dataIndex: 'sort',
+      key: 'sort',
+      align: 'center',
+      width: 40,
+      fixed: 'left',
+      render: () => (
+        <span className={cx('flex', 'items-center', 'h-full')}>
+          <DragHandle />
+        </span>
+      ),
+    },
     {
       title: t('PC.Pages.AgentArrangeCreateHooks.columnName'),
       dataIndex: 'name',
       key: 'name',
       width: 140,
-      render: (value: string) => value || '--',
+      fixed: 'left',
+      render: (value: string) => (
+        <div className={cx('flex', 'items-center', 'h-full')}>
+          <span className={cx('text-ellipsis')}>{value || '--'}</span>
+        </div>
+      ),
     },
     {
       title: t('PC.Pages.AgentArrangeCreateHooks.columnEvent'),
       dataIndex: 'event',
       key: 'event',
-      width: 120,
+      width: 160,
       render: (value: string) => (
-        <span className={cx(styles.tag)}>{value || '--'}</span>
+        <span className={cx('flex', 'items-center', 'h-full')}>
+          <span className={cx(styles.tag)}>{value || '--'}</span>
+        </span>
       ),
     },
     {
@@ -147,12 +302,29 @@ const CreateHooks: React.FC<CreateHooksProps> = ({
       dataIndex: 'matcher',
       key: 'matcher',
       ellipsis: true,
-      render: (value: string) =>
-        value ? (
-          <span className={cx(styles.tag)}>{value}</span>
-        ) : (
-          <span className={cx(styles.tag, styles['tag-muted'])}>-</span>
-        ),
+      width: 180,
+      render: (value: string) => {
+        if (!value) {
+          return (
+            <span className={cx('flex', 'items-center', 'h-full')}>
+              <span className={cx(styles.tag, styles['tag-muted'])}>-</span>
+            </span>
+          );
+        }
+
+        return (
+          <span
+            className={cx(
+              'flex',
+              'items-center',
+              'h-full',
+              styles['matcher-cell'],
+            )}
+          >
+            <EllipsisTooltip text={value} className={cx(styles.tag)} />
+          </span>
+        );
+      },
     },
     {
       title: t('PC.Pages.AgentArrangeCreateHooks.columnType'),
@@ -160,7 +332,9 @@ const CreateHooks: React.FC<CreateHooksProps> = ({
       key: 'type',
       width: 100,
       render: (value: string) => (
-        <span className={cx(styles.tag)}>{value || '--'}</span>
+        <span className={cx('flex', 'items-center', 'h-full')}>
+          <span className={cx(styles.tag)}>{value || '--'}</span>
+        </span>
       ),
     },
     {
@@ -170,30 +344,32 @@ const CreateHooks: React.FC<CreateHooksProps> = ({
       width: 80,
       align: 'center',
       render: (value: number | undefined, record) => (
-        <Switch
-          size="small"
-          checked={value !== HookStatusEnum.Disabled}
-          onChange={(checked) => handleToggleStatus(record._index, checked)}
-        />
+        <span
+          className={cx('flex', 'items-center', 'content-center', 'h-full')}
+        >
+          <Switch
+            size="small"
+            checked={value !== HookStatusEnum.Disabled}
+            onChange={(checked) => handleToggleStatus(record._index, checked)}
+          />
+        </span>
       ),
     },
     {
-      title: t('PC.Pages.AgentArrangeCreateHooks.columnAction'),
+      title: '',
       key: 'action',
-      width: 88,
-      align: 'center',
+      width: 80,
+      fixed: 'right',
       render: (_, record) => (
-        <Space size={4}>
+        <Space className={cx('flex', 'content-between', 'items-center')}>
           <Button
             type="text"
-            size="small"
             className={cx(styles['action-btn'])}
             icon={<EditOutlined />}
             onClick={() => handleEditHook(record, record._index)}
           />
           <Button
             type="text"
-            size="small"
             className={cx(styles['action-btn'])}
             icon={<DeleteOutlined />}
             onClick={() => handleDeleteHook(record._index)}
@@ -206,31 +382,41 @@ const CreateHooks: React.FC<CreateHooksProps> = ({
   return (
     <>
       <Modal
-        width={920}
+        width={870}
         title={t('PC.Pages.AgentArrangeCreateHooks.title')}
         open={open}
         footer={null}
         destroyOnHidden
         onCancel={handleClose}
       >
-        <Table
-          rowKey={(record) => `${record.name}-${record.event}-${record._index}`}
-          className={cx(styles['table-container'])}
-          columns={columns}
-          dataSource={hookList.map((item, index) => ({
-            ...item,
-            _index: index,
-          }))}
-          pagination={false}
-          scroll={{
-            y: hookList.length >= 10 ? 560 : undefined,
-          }}
-          footer={() => (
-            <Button icon={<PlusOutlined />} onClick={handleAddHook}>
-              {t('PC.Pages.AgentArrangeCreateHooks.add')}
-            </Button>
-          )}
-        />
+        <DndContext
+          modifiers={[restrictToVerticalAxis]}
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={hookList.map((item) => item.key)}
+            strategy={verticalListSortingStrategy}
+          >
+            <Table<HookTableRow>
+              rowKey="key"
+              components={{ body: { row: Row } }}
+              className={cx(styles['table-container'])}
+              columns={columns}
+              dataSource={tableData}
+              pagination={false}
+              scroll={{
+                y: hookList.length >= 10 ? 560 : undefined,
+              }}
+              footer={() => (
+                <Button icon={<PlusOutlined />} onClick={handleAddHook}>
+                  {t('PC.Pages.AgentArrangeCreateHooks.add')}
+                </Button>
+              )}
+            />
+          </SortableContext>
+        </DndContext>
       </Modal>
 
       {/* 新建 / 编辑 Hook 弹窗 */}
@@ -239,7 +425,7 @@ const CreateHooks: React.FC<CreateHooksProps> = ({
         mode={mode}
         hooksInfo={hooksInfo}
         currentHook={currentHook ?? undefined}
-        hookList={hookList}
+        hookList={toHookConfigs(hookList)}
         editIndex={editIndex}
         onCancel={() => setHookModalOpen(false)}
         onConfirm={handleHookModalConfirm}
