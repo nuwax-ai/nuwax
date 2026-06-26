@@ -110,6 +110,13 @@ const DropdownChangeName: React.FC<Porps> = ({
         });
         message.success(dict('PC.Toast.Global.modifiedSuccessfully'));
 
+        // 派发自定义更新事件通知列表
+        window.dispatchEvent(
+          new CustomEvent('conversation-updated', {
+            detail: { id: conversationInfo.id, topic: result.data.topic },
+          }),
+        );
+
         // 更新左侧历史会话记录列表
         handleUpdateHistory();
 
@@ -132,6 +139,14 @@ const DropdownChangeName: React.FC<Porps> = ({
     onSuccess: (result: RequestResponse<null>) => {
       if (result.success) {
         message.success(dict('PC.Toast.Global.deletedSuccessfully'));
+
+        // 派发自定义删除事件通知列表
+        window.dispatchEvent(
+          new CustomEvent('conversation-deleted', {
+            detail: { id: conversationInfo.id },
+          }),
+        );
+
         // 如果是应用智能体模式，同步更新左侧历史会话记录列表
         if (isAppSidebarMode) {
           // 更新所有智能体的历史记录
@@ -143,7 +158,7 @@ const DropdownChangeName: React.FC<Porps> = ({
         } else {
           // 如果是会话聊天页（chat页），同步更新左侧历史会话记录列表
           handleUpdateHistory();
-          navigate('/', { replace: true });
+          navigate('/home', { replace: true });
         }
       }
     },
