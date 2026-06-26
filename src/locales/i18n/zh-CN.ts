@@ -1488,7 +1488,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.AgentArrangeConfig.allowAtSkill": "允许用户@技能",
   "PC.Pages.AgentArrangeConfig.allowAtSkillDesc": "开启后，用户可以在会话中添加任意技能",
   "PC.Pages.AgentArrangeConfig.allowChooseMode": "允许用户在对话框中选择模式",
-  "PC.Pages.AgentArrangeConfig.allowChooseModeDesc": "开启后用户在对话框下可以选择：自动（Auto）、审批（Approval），关闭后默认使用自动模式。",
+  "PC.Pages.AgentArrangeConfig.allowChooseModeDesc": "开启后，用户在对话框下可以选择：自动（Auto）、审批（Approval），关闭后默认使用自动模式。",
   "PC.Pages.AgentArrangeConfig.allowOtherModel": "允许用户选择自有模型",
   "PC.Pages.AgentArrangeConfig.allowOtherModelDesc": "开启后，用户可以在会话中选择自己的模型",
   "PC.Pages.AgentArrangeConfig.allowPrivateSandbox": "允许用户选择个人电脑",
