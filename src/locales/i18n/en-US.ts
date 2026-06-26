@@ -1527,6 +1527,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.AgentArrangeConfig.referenceNumber": "#Reference Number",
   "PC.Pages.AgentArrangeConfig.skill": "Skill",
   "PC.Pages.AgentArrangeConfig.skills": "Skills",
+  "PC.Pages.AgentArrangeConfig.skillsAndMembers": "Skills and Members",
   "PC.Pages.AgentArrangeConfig.subAgent": "Sub-agent",
   "PC.Pages.AgentArrangeConfig.table": "Data Table",
   "PC.Pages.AgentArrangeConfig.text": "Text",

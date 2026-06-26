@@ -765,7 +765,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     },
   ];
 
-  // 技能
+  // 技能与组员
   const SkillList: CollapseProps['items'] = [
     {
       key: AgentArrangeConfigEnum.Skill,
@@ -1394,7 +1394,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
           {agentConfigInfo?.type === AgentTypeEnum.TaskAgent && (
             <div ref={skillSectionRef}>
               <ConfigOptionsHeader
-                title={t('PC.Pages.AgentArrangeConfig.skills')}
+                title={t('PC.Pages.AgentArrangeConfig.skillsAndMembers')}
               />
               <ConfigOptionCollapse
                 items={SkillList}

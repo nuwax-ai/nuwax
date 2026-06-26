@@ -1389,6 +1389,7 @@ export const ZH_HK: SystemLangMap = {
   "PC.Pages.AgentArrangeConfig.referenceNumber": "#引用編號",
   "PC.Pages.AgentArrangeConfig.skill": "技能",
   "PC.Pages.AgentArrangeConfig.skills": "技能",
+  "PC.Pages.AgentArrangeConfig.skillsAndMembers": "技能與組員",
   "PC.Pages.AgentArrangeConfig.subAgent": "子智能體",
   "PC.Pages.AgentArrangeConfig.table": "數據表",
   "PC.Pages.AgentArrangeConfig.text": "文本",

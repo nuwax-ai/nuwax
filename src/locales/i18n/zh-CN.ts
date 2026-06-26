@@ -1527,6 +1527,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.AgentArrangeConfig.referenceNumber": "#引用编号",
   "PC.Pages.AgentArrangeConfig.skill": "技能",
   "PC.Pages.AgentArrangeConfig.skills": "技能",
+  "PC.Pages.AgentArrangeConfig.skillsAndMembers": "技能与组员",
   "PC.Pages.AgentArrangeConfig.subAgent": "子智能体",
   "PC.Pages.AgentArrangeConfig.table": "数据表",
   "PC.Pages.AgentArrangeConfig.text": "文本",
