@@ -1,9 +1,13 @@
 import { createBuildInPlugin } from 'ds-markdown/plugins';
 import rehypeRaw from 'rehype-raw';
 import rehypeStringify from 'rehype-stringify';
+import classNames from 'classnames';
+import styles from '@/components/MarkdownRenderer/index.less';
 import AppDevProcessGroup from './components/AppDevProcessGroup';
 import PlanProcess from './components/PlanProcess';
 import ToolCallProcess from './components/ToolCallProcess';
+
+const cx = classNames.bind(styles);
 
 /**
  * AppDev 专用自定义插件
@@ -86,6 +90,19 @@ export default () => {
             </div>
           );
         }
+      },
+      // 支持自定义 agent-info 标签
+      'agent-info': (props: any) => {
+        const node = props.node;
+        const properties = node?.properties || {};
+        const name = props.name || properties.name || '';
+        const icon = props.icon || properties.icon || '';
+        return (
+          <div className={cx(styles['agent-info-container'])}>
+            {icon && <img className={cx(styles['agent-info-icon'])} src={icon} alt="" />}
+            {name && <span className={cx(styles['agent-info-name'])}>{name}</span>}
+          </div>
+        );
       },
     },
     id: Symbol('appdev-plugin'),

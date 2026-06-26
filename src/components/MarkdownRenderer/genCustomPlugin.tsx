@@ -134,6 +134,19 @@ export default (conversationId: string | number = '') => {
           </TaskResult>
         );
       },
+      // 支持自定义 agent-info 标签
+      'agent-info': (props: any) => {
+        const node = props.node;
+        const properties = node?.properties || {};
+        const name = props.name || properties.name || '';
+        const icon = props.icon || properties.icon || '';
+        return (
+          <div className={cx(styles['agent-info-container'])}>
+            {icon && <img className={cx(styles['agent-info-icon'])} src={icon} alt="" />}
+            {name && <span className={cx(styles['agent-info-name'])}>{name}</span>}
+          </div>
+        );
+      },
       p: ({ children }: any) => {
         return <div className={styles['markdown-paragraph']}>{children}</div>;
       },

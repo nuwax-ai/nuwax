@@ -461,14 +461,15 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
                 ellipsis={{
                   tooltip: {
                     title: titleText,
-                    // 放宽宽度，减少折行
-                    overlayStyle: { maxWidth: 380 },
-                    overlayInnerStyle: {
-                      // 最多展示 5 行（line-height 1.5 * 5 = 7.5em），超出滚动
-                      maxHeight: '7.5em',
-                      overflowY: 'auto',
-                      lineHeight: '1.5',
-                      overflowWrap: 'break-word',
+                    styles: {
+                      root: { maxWidth: 380 },
+                      body: {
+                        // 最多展示 5 行（line-height 1.5 * 5 = 7.5em），超出滚动
+                        maxHeight: '7.5em',
+                        overflowY: 'auto',
+                        lineHeight: '1.5',
+                        overflowWrap: 'break-word',
+                      },
                     },
                   },
                 }}
