@@ -213,6 +213,7 @@ const PluginChatSession: React.FC<PluginChatSessionProps> = ({
         type: (conversationInfo?.agent?.type || AgentTypeEnum.ChatBot) as any,
         openingChatMsg: conversationInfo?.agent?.openingChatMsg,
         guidQuestionDtos: conversationInfo?.agent?.guidQuestionDtos,
+        allowChooseMode: conversationInfo?.agent?.allowChooseMode,
       }}
       onSendMessage={handleSendMessage}
       onLoadMoreMessage={handleLoadMoreMessage}

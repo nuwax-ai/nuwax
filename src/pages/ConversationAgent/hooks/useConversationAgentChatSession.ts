@@ -245,6 +245,7 @@ export function useConversationAgentChatSession(
       hasPermission: conversationInfo?.agent?.hasPermission,
       // 与左侧聊天区一致，直接使用页面级选中的电脑 ID
       sandboxId: selectedComputerId,
+      allowChooseMode: agentConfigInfo?.allowChooseMode,
     },
     allowOtherModel: agentConfigInfo?.allowOtherModel,
     selectedModelId,
