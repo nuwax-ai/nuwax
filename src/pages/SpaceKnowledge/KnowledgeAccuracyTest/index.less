@@ -450,3 +450,33 @@
   width: 100%;
   max-width: 600px;
 }
+
+// 处理Select下拉选项中的文本溢出
+:global(.ant-select-item-option-content) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%;
+}
+
+// 处理Select选中标签溢出容器
+:global(.ant-select-selection-overflow) {
+  overflow: hidden;
+  width: 100%;
+}
+
+// 处理Select选中标签项
+:global(.ant-select-selection-overflow-item) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+// 处理Select选中标签内部的tag元素
+:global(.ant-select-selection-overflow-item .ant-tag) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
