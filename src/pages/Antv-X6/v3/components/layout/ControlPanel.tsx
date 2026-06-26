@@ -1,6 +1,7 @@
-import { useFlowKind } from '@/contexts/FlowKindContext';
+import { useCanvasFullscreen } from '@/contexts/CanvasFullscreenContext';
+import { useIsAgentFlow } from '@/pages/Antv-X6/v3/flowKind/useFlowKind';
 import { t } from '@/services/i18nRuntime';
-import { FlowKindEnum, NodeTypeEnum } from '@/types/enums/common';
+import { NodeTypeEnum } from '@/types/enums/common';
 import { ChildNode, StencilChildNode } from '@/types/interfaces/graph';
 import {
   CaretRightOutlined,
@@ -72,7 +73,12 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
   const [open, setOpen] = useState(false);
   const [continueDragCount, setContinueDragCount] = useState(0);
   // AgentFlow 画布不展示「调试 / 试运行」
-  const isAgentFlow = useFlowKind() === FlowKindEnum.AgentFlow;
+  const isAgentFlow = useIsAgentFlow();
+  // AgentFlow 内嵌（默认画布大小）时控制条紧凑化；全屏时恢复原始尺寸
+  const isFullscreen = useCanvasFullscreen();
+  const compact = isAgentFlow && !isFullscreen;
+  const btnSize: 'small' | 'middle' = compact ? 'small' : 'middle';
+  const gap = compact ? 4 : 12;
   const handleOpenChange = (newOpen: boolean) => {
     setOpen(newOpen);
     setContinueDragCount(0);
@@ -82,10 +88,11 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
   const showStencil = dragChild && foldWrapItem;
 
   return (
-    <div className="absolute-box">
+    <div className={`absolute-box${compact ? ' absolute-box-compact' : ''}`}>
       <div className="action-section">
         <Button
           type="text"
+          size={btnSize}
           style={{ marginRight: 2 }}
           icon={<MinusOutlined />}
           onClick={() => {
@@ -97,31 +104,34 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
             changeGraph(Number(newVal));
           }}
         />
-        <Select
-          options={options}
-          value={`${Math.round(zoomSize * 100)}%`}
-          onChange={(val) => {
-            let newVal;
-            if (typeof val === 'string' && ['+', '-'].includes(val)) {
-              const factor = val === '+' ? 10 : -10;
-              const currentPercent = Math.round(zoomSize * 100);
-              const newPercent = currentPercent + factor;
+        {!compact && (
+          <Select
+            options={options}
+            value={`${Math.round(zoomSize * 100)}%`}
+            onChange={(val) => {
+              let newVal;
+              if (typeof val === 'string' && ['+', '-'].includes(val)) {
+                const factor = val === '+' ? 10 : -10;
+                const currentPercent = Math.round(zoomSize * 100);
+                const newPercent = currentPercent + factor;
 
-              const clampedPercent = Math.max(20, Math.min(300, newPercent));
-              newVal = clampedPercent / 100;
-            } else {
-              newVal = val;
-            }
-            changeGraph(Number(newVal));
-          }}
-          style={{ width: 80, marginRight: 2, height: 28 }}
-          popupMatchSelectWidth={false}
-          optionLabelProp="displayValue"
-          size="small"
-        />
+                const clampedPercent = Math.max(20, Math.min(300, newPercent));
+                newVal = clampedPercent / 100;
+              } else {
+                newVal = val;
+              }
+              changeGraph(Number(newVal));
+            }}
+            style={{ width: 80, marginRight: 2, height: 28 }}
+            popupMatchSelectWidth={false}
+            optionLabelProp="displayValue"
+            size="small"
+          />
+        )}
         <Button
           type="text"
-          style={{ marginRight: 12 }}
+          size={btnSize}
+          style={{ marginRight: gap }}
           icon={<PlusOutlined />}
           onClick={() => {
             const factor = 10;
@@ -140,7 +150,8 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
         >
           <Button
             type="text"
-            style={{ marginRight: 12 }}
+            size={btnSize}
+            style={{ marginRight: gap }}
             icon={<CompressOutlined />}
             onClick={() => changeGraph(-1)}
           />
@@ -164,6 +175,8 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
             onOpenChange={handleOpenChange}
           >
             <Button
+              className={compact ? 'add-node-btn-mini' : undefined}
+              size={btnSize}
               onMouseEnter={() => setOpen(true)}
               icon={<PlusOutlined />}
               type="primary"

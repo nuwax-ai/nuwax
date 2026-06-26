@@ -1,9 +1,7 @@
 import {
-  AgentNodeModeEnum,
   AnswerTypeEnum,
   DataTypeEnum,
   ExceptionHandleTypeEnum,
-  HitlModeEnum,
   NodeTypeEnum,
 } from '@/types/enums/common';
 import { ConditionBranchTypeEnum, PortGroupEnum } from '@/types/enums/node';
@@ -83,7 +81,7 @@ export interface InputAndOutConfig {
   key: string;
   // 是否开启
   enable?: boolean;
-  // 输入类型
+  // 输入类型（AgentFlow HumanInteraction formArgs，见 agentFlow/enums/formArgInputType）
   inputType?: string;
   // 下拉参数配置
   selectConfig?: VariableSelectConfig;
@@ -112,13 +110,20 @@ export interface ConditionBranchConfigs {
 
 export interface IntentConfigs {
   nextNodeIds: number[];
-  intent: string;
   uuid: string;
+  /** 分支名称（RouteDecision 用；旧 IntentRecognition 用 intent 作分支名） */
+  name?: string;
+  /** IntentRecognition：分支名；RouteDecision：分支描述（由旧 description 迁移而来） */
+  intent?: string;
   intentType?: string;
   /** 路由决策（RouteDecision）：条件比对表达式（在原 intentConfigs 基础上新增） */
   condition?: string;
-  /** 路由决策（RouteDecision）：分支描述（沿用我们的属性面板 UI） */
+  /** 分支描述（旧字段，RouteDecision 已迁移到 intent） */
   description?: string;
+  /** 路由决策（RouteDecision）：结构化条件匹配（前端编辑，保存时同步至 condition；对齐条件节点，支持多条件） */
+  conditionArgs?: ConditionArgs[];
+  /** 路由决策（RouteDecision）：多条件连接符（对齐条件节点 conditionType） */
+  conditionType?: 'AND' | 'OR';
 }
 
 export interface Extension {
@@ -148,38 +153,7 @@ export interface ExceptionHandleConfig {
   exceptionHandleNodeIds?: number[];
 }
 
-// AgentFlow: HITL ask 模式配置
-export interface HitlAskConfig {
-  question: string;
-  answerType: AnswerTypeEnum;
-  options?: QANodeOption[];
-  answerKey: string;
-  required?: boolean;
-}
-
-// ===== AgentFlow v2 新增接口 =====
-
-// Agent 节点上下文参数配置
-export interface ExtraParam {
-  name: string;
-  valueType: 'literal' | 'variable';
-  value?: string;
-  variableRef?: string;
-}
-
-export interface ContextParamConfig {
-  baseParam?: string;
-  upstreamOutputs?: string[];
-  extraParams?: ExtraParam[];
-}
-
-// HumanInteraction:ask 表单字段定义
-export interface FormFieldConfig {
-  label: string;
-  type: 'radio' | 'checkbox' | 'input' | 'number' | 'textarea' | 'file';
-  required: boolean;
-  options?: string;
-}
+// ===== AgentFlow v2 新增接口见 agentFlow/types/ =====
 
 // 节点内部的config
 export interface NodeConfig {
@@ -260,7 +234,8 @@ export interface NodeConfig {
 
   // 问答节点
   question?: string;
-  answerType?: AnswerTypeEnum;
+  // 问答 / HumanInteraction：Workflow QA 为 AnswerTypeEnum；AgentFlow 表单回复为 'FORM'
+  answerType?: AnswerTypeEnum | string;
   extractField?: boolean;
   maxReplyCount?: number;
   options?: QANodeOption[];
@@ -293,26 +268,27 @@ export interface NodeConfig {
 
   // ===== AgentFlow 专用字段 =====
   // Agent 节点
-  agentMode?: AgentNodeModeEnum;
   agentId?: number;
   /** @deprecated v2 不再使用子工作流概念 */
   subFlowId?: number;
   /** @deprecated v2 使用 contextParams.extraParams 替代 */
   agentInputs?: Record<string, string>;
-  // Agent v2: 上下文传递
+  // Agent v2: 上下文传递（结构见 agentFlow/types/agentNodeConfig）
   contextPassMode?: 'auto' | 'manual';
-  contextParams?: ContextParamConfig;
+  contextParams?: Record<string, unknown>;
   // Agent v2: 后端契约字段（补充提示词 / 自身循环次数 / 循环提醒提示词；
   // extraPrompt 亦用于 RouteDecision 的系统提示词）
   extraPrompt?: string;
   selfLoopTimes?: number;
   reminderPrompt?: string;
-  // HumanInteraction 节点（ask 模式）
-  hitlMode?: HitlModeEnum;
-  askConfig?: HitlAskConfig;
-  // HITL:ask v2
-  replyMode?: 'text' | 'options' | 'form';
-  formFields?: FormFieldConfig[];
+  // HumanInteraction 节点（ask 模式；hitlMode 见 agentFlow/enums/hitlMode）
+  hitlMode?: string;
+  /** @deprecated 见 agentFlow/types/hitlAskConfig，运行时代码已扁平化 */
+  askConfig?: Record<string, unknown>;
+  // HITL:ask v2 — 表单字段直接复用 Arg（控件类型走 inputType，单选/多选用 selectConfig）
+  formArgs?: InputAndOutConfig[];
+  /** HITL:ask 用户回答写入上下文的键名 */
+  contextWriteKey?: string;
   // Plugin/Workflow v2 (AgentFlow-only)
   inputPassMode?: 'auto' | 'manual';
   triggerMode?: 'sync' | 'async';

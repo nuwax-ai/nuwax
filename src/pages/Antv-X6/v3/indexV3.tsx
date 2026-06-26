@@ -64,9 +64,9 @@ import { useWorkflowPersistence } from './hooks/useWorkflowPersistence';
 import { useWorkflowValidation } from './hooks/useWorkflowValidation';
 
 // V3 data proxy layer.
-import { useFlowKind } from '@/contexts/FlowKindContext';
 import { WorkflowVersionProvider } from '@/contexts/WorkflowVersionContext';
-import { FlowKindEnum } from '@/types/enums/common';
+import { AGENTFLOW_UI_CONFIG } from '@/pages/Antv-X6/v3/flowKind/flowKindConfig';
+import { useIsAgentFlow } from '@/pages/Antv-X6/v3/flowKind/useFlowKind';
 import { workflowLogger } from '@/utils/logger';
 import { workflowProxy } from './services/workflowProxyV3';
 import { workflowSaveService } from './services/WorkflowSaveService';
@@ -84,8 +84,7 @@ const Workflow: React.FC<WorkflowV3Props> = ({
   workflowIdOverride,
   spaceIdOverride,
 }) => {
-  const flowKind = useFlowKind();
-  const isAgentFlow = flowKind === FlowKindEnum.AgentFlow;
+  const isAgentFlow = useIsAgentFlow();
   // AgentFlow 下「添加智能体」节点需先选择已发布 ChatBot，Created 弹窗需暴露 Agent tab
   const workflowCreatedTabs = CREATED_TABS.filter((item) => {
     const allowedTabs = [
@@ -467,8 +466,9 @@ const Workflow: React.FC<WorkflowV3Props> = ({
   // V3:  Hook（ ref ）
   const nodeOperationsHook = useNodeOperations({
     workflowId,
-    // AgentFlow：拖入/添加节点后不自动选中并弹出属性面板，仅放置到画布
-    focusNewNode: !isAgentFlow,
+    // AgentFlow：拖入/添加节点后不自动选中并弹出属性面板，仅放置到画布；
+    // Workflow 保持原有自动选中行为
+    focusNewNode: isAgentFlow ? AGENTFLOW_UI_CONFIG.focusNewNode : true,
     graphRef,
     currentNodeRef,
     foldWrapItem,

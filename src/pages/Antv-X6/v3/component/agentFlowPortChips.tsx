@@ -13,11 +13,15 @@
  */
 
 import {
+  getHitlOptions,
+  isHitlOptionsBranchMode,
+} from '@/pages/Antv-X6/v3/agentFlow/adapters/qaConfigAdapter';
+import {
   BRANCH_PORT_BASE_Y,
   BRANCH_PORT_ITEM_HEIGHT,
   BRANCH_PORT_STEP,
 } from '@/pages/Antv-X6/v3/agentFlow/handlers/portLayout';
-import { isAgentFlowType } from '@/pages/Antv-X6/v3/agentFlow/types';
+import { isAgentFlowType } from '@/pages/Antv-X6/v3/flowKind/flowKindConfig';
 import { t } from '@/services/i18nRuntime';
 import { NodeTypeEnum } from '@/types/enums/common';
 import { ChildNode } from '@/types/interfaces/graph';
@@ -63,22 +67,20 @@ function buildChips(data: ChildNode): ChipDescriptor[] {
       const routes: any[] = nc.intentConfigs || [];
       // default 端口不渲染 chip；第 1 个 route 实际是 outputPorts 数组下标 1
       return routes.map((r, i) => ({
-        label: r.intent || r.name || `Route ${i + 1}`,
+        label: r.name || r.intent || `Route ${i + 1}`,
         tone: 'route',
         portIndex: i + 1,
       }));
     }
 
     case NodeTypeEnum.HumanInteraction: {
-      // ask options 模式
-      if (nc.replyMode === 'options' || nc.askConfig?.answerType === 'SELECT') {
-        const options: any[] = nc.askConfig?.options || [];
+      if (isHitlOptionsBranchMode(nc)) {
+        const options = getHitlOptions(nc);
         return options.map((o: any, i: number) => ({
           label: o.content || `Option ${i + 1}`,
           tone: 'route' as ChipTone,
         }));
       }
-      // ask text/form 模式：无 chip
       return [];
     }
 

@@ -38,6 +38,7 @@ import {
 import { workflowProxy } from '../services/workflowProxyV3';
 import { getEdges } from '../utils/graphV3';
 import { clearPendingNodeCreateSession } from '../utils/nodeCreateSession';
+import { createDefaultNodeConfig } from '../utils/nodeDefaultConfigFactory';
 import {
   getNodeSize,
   getShape,
@@ -203,12 +204,9 @@ export const useNodeOperations = ({
 
       const isSuccess = await changeNode({ nodeData: params }, noop);
       if (isSuccess) {
-        const sourcePortId = portId.split('-').slice(0, -1).join('-');
-        graphRef.current?.graphCreateNewEdge(
-          sourcePortId,
-          String(newNodeId),
-          isLoop,
-        );
+        // portId 直接传递：parseEndpoint 会根据是否含 'in'/'out' 自动处理；
+        // 剥去 '-out' 再传会导致含 "route" 等子串的端口 ID 被误判，丢失 '-out' 后缀。
+        graphRef.current?.graphCreateNewEdge(portId, String(newNodeId), isLoop);
       }
     },
     [changeNode, graphRef],
@@ -238,12 +236,7 @@ export const useNodeOperations = ({
       });
       const isSuccess = await changeNode({ nodeData: params }, noop);
       if (isSuccess) {
-        const sourcePortId = portId.split('-').slice(0, -1).join('-');
-        graphRef.current?.graphCreateNewEdge(
-          sourcePortId,
-          String(newNodeId),
-          isLoop,
-        );
+        graphRef.current?.graphCreateNewEdge(portId, String(newNodeId), isLoop);
       }
     },
     [changeNode, graphRef],
@@ -320,6 +313,58 @@ export const useNodeOperations = ({
   );
 
   /**
+   * 处理路由决策节点作为「新建/插入节点」时的出边连接
+   *
+   * 适用场景：边中快捷插入 RouteDecision（A→B 变 A→RouteDecision→B）、
+   * 或在某节点 in 端口上游新建 RouteDecision。
+   *
+   * 关键：必须连到 intentConfigs 里真实存在的路由分支端口
+   * （{nodeId}-route-{uuid}-out），不能用 defaultNextNodeIds / route-default-out。
+   * 原因：defaultNextNodeIds 不会被后端 IntentRecognition 持久化，刷新后丢失
+   * （这正是「灰色端口连上又消失」的根因）；而 intentConfigs 端到端持久化
+   * （save 由 computeConnections 从边重建、load 原样保留、表单 hydrate）。
+   * 对照：IntentRecognition 走 handleConditionalNodeConnection→QuicklyCreateEdgeConditionConfig
+   * 连到 intentConfigs[0] 才「没问题」，RouteDecision 须对齐同一机制。
+   *
+   * 与 IntentRecognition 的差异仅在端口格式：RouteDecision 端口带 route- 前缀
+   * （{nodeId}-route-{uuid}-out），IntentRecognition 是 {nodeId}-{uuid}-out，
+   * 故不能直接复用 QuicklyCreateEdgeConditionConfig，需自行拼端口 id。
+   */
+  const handleRouteDecisionOutgoingConnection = useCallback(
+    async ({
+      newNode,
+      targetNode,
+      isLoop,
+    }: {
+      newNode: ChildNode;
+      targetNode: ChildNode;
+      isLoop: boolean;
+    }) => {
+      // 连到首个路由分支（与 IntentRecognition 的 QuicklyCreateEdgeConditionConfig 一致）
+      const firstBranch = (newNode.nodeConfig as any)?.intentConfigs?.[0];
+      // createDefaultIntentConfig 保证至少一条分支；防御性判空
+      if (!firstBranch?.uuid) return;
+
+      // 写入 intentConfigs[0].nextNodeIds（持久化、刷新不丢）；端口用 RouteDecision 专属格式
+      const sourcePortId = `${newNode.id}-route-${firstBranch.uuid}-out`;
+      const params = handleSpecialNodesNextIndex(
+        newNode,
+        sourcePortId,
+        targetNode.id,
+      );
+      const isSuccess = await changeNode({ nodeData: params }, noop);
+      if (isSuccess) {
+        graphRef.current?.graphCreateNewEdge(
+          sourcePortId,
+          String(targetNode.id),
+          isLoop,
+        );
+      }
+    },
+    [changeNode, graphRef],
+  );
+
+  /**
    * 处理普通节点连接
    */
   const handleNormalNodeConnection = useCallback(
@@ -370,6 +415,17 @@ export const useNodeOperations = ({
     }) => {
       const id = portId.split('-')[0];
 
+      // RouteDecision 作为上游新建节点：出边走默认分支端口，避免画到不存在的
+      // {nodeId}-out 端口（回转连线）并在刷新后丢失（见 handleRouteDecisionOutgoingConnection）
+      if (newNode.type === NodeTypeEnum.RouteDecision) {
+        await handleRouteDecisionOutgoingConnection({
+          newNode,
+          targetNode: sourceNode,
+          isLoop,
+        });
+        return;
+      }
+
       if (isConditionalNode(newNode.type)) {
         const { nodeData, sourcePortId } = QuicklyCreateEdgeConditionConfig(
           newNode,
@@ -401,7 +457,13 @@ export const useNodeOperations = ({
         }
       }
     },
-    [isConditionalNode, changeNode, nodeChangeEdge, graphRef],
+    [
+      isConditionalNode,
+      changeNode,
+      nodeChangeEdge,
+      graphRef,
+      handleRouteDecisionOutgoingConnection,
+    ],
   );
 
   /**
@@ -430,7 +492,15 @@ export const useNodeOperations = ({
         newNode.type === NodeTypeEnum.QA &&
         newNode.nodeConfig?.answerType !== 'SELECT';
 
-      if (isConditionalNode(newNode.type) && !isQaTextMode) {
+      // RouteDecision 作为插入节点：出边走默认分支端口，避免画到不存在的 {nodeId}-out
+      // 端口（回转连线）并在刷新后丢失（见 handleRouteDecisionOutgoingConnection）
+      if (newNode.type === NodeTypeEnum.RouteDecision) {
+        await handleRouteDecisionOutgoingConnection({
+          newNode,
+          targetNode,
+          isLoop,
+        });
+      } else if (isConditionalNode(newNode.type) && !isQaTextMode) {
         await handleConditionalNodeConnection({
           newNode,
           targetNode,
@@ -515,6 +585,7 @@ export const useNodeOperations = ({
       isConditionalNode,
       handleConditionalNodeConnection,
       handleNormalNodeConnection,
+      handleRouteDecisionOutgoingConnection,
       nodeChangeEdge,
       changeNode,
       debouncedSaveFullWorkflow,
@@ -785,12 +856,27 @@ export const useNodeOperations = ({
             extension: _params.extension,
           },
         };
+        // name/description 始终以请求值为准：后端 apiAddNodeV3 的回显可能为空或回写后端默认文案
+        //（如 Agent 节点），若不还原，画布节点会丢失名称/描述，进而保存时不传给后端。
+        _params = {
+          ..._params,
+          name: requestedName,
+          description: requestedDescription,
+        };
+        // 仅「类型被映射」的节点（RouteDecision/HumanInteraction）需要把 type 还原为前端语义
         if (wasRemapped) {
-          _params = {
-            ..._params,
-            type: requestedType,
-            name: requestedName,
-            description: requestedDescription,
+          _params = { ..._params, type: requestedType };
+        }
+        // Agent 节点的 outputArgs（output → Agent reply）是前端默认值，后端 apiAddNodeV3
+        // 不会回显；合并后若缺失则补齐，否则下游「变量引用」里看不到智能体节点的输出变量。
+        if (
+          _params.type === NodeTypeEnum.Agent &&
+          (!_params.nodeConfig?.outputArgs ||
+            _params.nodeConfig.outputArgs.length === 0)
+        ) {
+          _params.nodeConfig = {
+            ..._params.nodeConfig,
+            outputArgs: createDefaultNodeConfig(NodeTypeEnum.Agent).outputArgs,
           };
         }
 
@@ -1083,14 +1169,21 @@ export const useNodeOperations = ({
           },
         };
       } else if (val.targetType === AgentComponentTypeEnum.Agent) {
-        // 智能体节点：先弹窗选择已发布 ChatBot 智能体，再创建并绑定 agentId
+        // 智能体节点：弹窗选择当前空间已发布 ChatBot，写入 agentId 及默认配置字段
+        // name/description 缺省回退到智能体节点的类型名/类型描述，保证画布始终有名称与描述
         _child = {
-          name: val.name,
+          name: val.name || t('PC.Pages.AgentFlowParams.nodeAgentName'),
           shape: NodeShapeEnum.General,
-          description: val.description,
+          description:
+            val.description ||
+            t('PC.Pages.AgentFlowParams.nodeAgentDescription'),
           type: NodeTypeEnum.Agent,
           nodeConfig: {
             agentId: val.targetId,
+            inputArgs: [],
+            extraPrompt: '',
+            selfLoopTimes: 0,
+            reminderPrompt: '',
           },
         };
       } else {

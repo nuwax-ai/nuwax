@@ -25,6 +25,23 @@ import type {
 const EXECUTE_EXCEPTION_FLOW = 'EXECUTE_EXCEPTION_FLOW';
 const INDEX_SYSTEM_NAME = 'INDEX';
 
+/**
+ * Agent 节点的固定默认输出（智能体回复 output）。
+ * 后端不一定回传 Agent 的 outputArgs，这里作为兜底，保证下游「变量引用」
+ * 始终能看到智能体节点的输出变量（与 nodeDefaultConfigFactory 的默认 output 对齐）。
+ */
+const AGENT_DEFAULT_OUTPUT_ARGS: InputAndOutConfig[] = [
+  {
+    key: 'output',
+    name: 'output',
+    dataType: DataTypeEnum.String,
+    description: 'Agent reply',
+    require: true,
+    systemVariable: true,
+    bindValue: '',
+  },
+];
+
 // ==================== 工具函数 ====================
 
 /**
@@ -315,6 +332,13 @@ function getNodeOutputArgs(
       if (arg.name?.endsWith('_item')) return false;
       return true;
     });
+  }
+
+  // Agent 节点：output（智能体回复）是前端固定默认输出。后端不一定回传 outputArgs，
+  // 缺失时用默认输出兜底，保证下游可引用（calculateNodePreviousArgs 会在无输出时跳过节点）。
+  if (node.type === NodeTypeEnum.Agent) {
+    const outputs = node.nodeConfig?.outputArgs || [];
+    return outputs.length > 0 ? outputs : AGENT_DEFAULT_OUTPUT_ARGS;
   }
 
   // Variable 节点：补充 isSuccess
