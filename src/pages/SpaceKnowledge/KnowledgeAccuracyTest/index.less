@@ -128,7 +128,7 @@
     align-items: center;
     gap: 12px;
     margin-bottom: 20px;
-    padding-bottom: 16px;
+    padding-bottom: 10px;
     border-bottom: 1px solid #F0F0F0;
   }
 
@@ -164,7 +164,7 @@
   justify-content: space-between;
   align-items: center;
   padding-top: 0px;
-  padding-bottom: 17px;
+  padding-bottom: 10px;
   padding-left: 0px;
   padding-right: 16px;
   border-bottom: 1px solid #F0F0F0;
@@ -213,8 +213,15 @@
 }
 
 // 覆盖 antd Card 组件的默认样式
-.ant-card {
-  padding: 0px !important;
+:global(.ant-card) {
+  padding-top: 14px !important;
+  padding-left: 24px !important;
+  padding-right: 24px !important;
+  padding-bottom: 24px !important;
+}
+
+:global(.ant-card .ant-card-body) {
+  padding-top: 0px !important;
 }
 .ant-card.resultCard {
   box-shadow: none !important;
@@ -329,7 +336,7 @@
     align-items: center;
     gap: 12px;
     margin-bottom: 20px;
-    padding-bottom: 16px;
+    padding-bottom: 10px;
     border-bottom: 1px solid #F0F0F0;
   }
 
