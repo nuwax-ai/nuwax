@@ -83,13 +83,6 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
     // 新增一个ref标记是否已初始化
     const hasInitialized = useRef(false);
 
-    function preWork() {
-      const container = containerRef.current;
-      if (!container) return;
-      const graphContainer = document.createElement('div');
-      graphContainer.id = GRAPH_CONTAINER_ID;
-      container?.appendChild(graphContainer);
-    }
     // 绘制画布
     const addLoopChildNode = (callback: (data: any) => boolean): Node[] => {
       const loopNodeList = graphRef.current.getNodes().filter((item: Node) => {
@@ -663,7 +656,6 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
 
     useEffect(() => {
       if (!containerRef.current) return;
-      preWork();
       graphRef.current = InitGraph({
         containerId: GRAPH_CONTAINER_ID,
         changeDrawer: changeDrawer,

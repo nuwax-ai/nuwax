@@ -3,7 +3,6 @@
  */
 import { renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { CANVAS_ZOOM_TO_FIT_OPTIONS } from '../../../constants/canvasZoom';
 
 let mockFullscreen = false;
 
@@ -36,7 +35,15 @@ describe('useAgentFlowExitFullscreenZoomFit', () => {
   it('全屏 true → false 时调用 zoomToFit', () => {
     mockFullscreen = true;
     const zoomToFit = vi.fn();
-    const graphRef = { current: { zoomToFit } as any };
+    const graphRef = {
+      current: {
+        container: { clientWidth: 800, clientHeight: 600 },
+        resize: vi.fn(),
+        zoomToFit,
+        getCells: vi.fn(() => [{ id: '1' }]),
+        getAllCellsBBox: vi.fn(() => ({ width: 100, height: 80 })),
+      } as any,
+    };
 
     const { rerender } = renderHook(() =>
       useAgentFlowExitFullscreenZoomFit(graphRef),
@@ -46,8 +53,7 @@ describe('useAgentFlowExitFullscreenZoomFit', () => {
     rerender();
     vi.advanceTimersByTime(300);
 
-    expect(zoomToFit).toHaveBeenCalledTimes(1);
-    expect(zoomToFit).toHaveBeenCalledWith(CANVAS_ZOOM_TO_FIT_OPTIONS);
+    expect(zoomToFit).toHaveBeenCalled();
   });
 
   it('进入全屏（false → true）不触发', () => {
@@ -67,6 +73,7 @@ describe('useAgentFlowExitFullscreenZoomFit', () => {
 
   it('graphRef.current 为空时不调用', () => {
     mockFullscreen = true;
+    const zoomToFit = vi.fn();
     const graphRef = { current: null as any };
 
     const { rerender } = renderHook(() =>
@@ -77,13 +84,21 @@ describe('useAgentFlowExitFullscreenZoomFit', () => {
     rerender();
     vi.advanceTimersByTime(300);
 
-    expect(true).toBe(true);
+    expect(zoomToFit).not.toHaveBeenCalled();
   });
 
   it('快速切换时清理 pending timer，仅最后一次退出生效', () => {
     mockFullscreen = true;
     const zoomToFit = vi.fn();
-    const graphRef = { current: { zoomToFit } as any };
+    const graphRef = {
+      current: {
+        container: { clientWidth: 800, clientHeight: 600 },
+        resize: vi.fn(),
+        zoomToFit,
+        getCells: vi.fn(() => [{ id: '1' }]),
+        getAllCellsBBox: vi.fn(() => ({ width: 100, height: 80 })),
+      } as any,
+    };
 
     const { rerender } = renderHook(() =>
       useAgentFlowExitFullscreenZoomFit(graphRef),

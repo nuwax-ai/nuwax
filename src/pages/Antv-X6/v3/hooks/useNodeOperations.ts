@@ -313,6 +313,52 @@ export const useNodeOperations = ({
   );
 
   /**
+   * 处理路由决策节点作为「新建/插入节点」时的出边连接
+   *
+   * 适用场景：边中快捷插入 RouteDecision（A→B 变 A→RouteDecision→B）、
+   * 或在某节点 in 端口上游新建 RouteDecision。两种场景下 RouteDecision 都是
+   * 需要连出一条边到 targetNode 的新节点。
+   *
+   * RouteDecision 没有通用 {nodeId}-out 端口，出端口均为分支端口
+   * （route-default-out / route-{uuid}-out）。必须把 targetNode 挂到默认分支端口：
+   * 写入 nodeConfig.defaultNextNodeIds，再以 {nodeId}-route-default-out 作为
+   * source 建边。否则会画出指向不存在的 {nodeId}-out 端口（X6 回退到节点中心 →
+   * 回转连线），且因 getEdges 仅读取 defaultNextNodeIds/intentConfigs，刷新后丢失。
+   *
+   * changeNode → graphUpdateNode → generatePorts 会同步重新生成 default 端口
+   * （defaultNextNodeIds 非空后才渲染），故 graphCreateNewEdge 时端口已存在。
+   */
+  const handleRouteDecisionOutgoingConnection = useCallback(
+    async ({
+      newNode,
+      targetNode,
+      isLoop,
+    }: {
+      newNode: ChildNode;
+      targetNode: ChildNode;
+      isLoop: boolean;
+    }) => {
+      const defaultPortId = `${newNode.id}-route-default-out`;
+      // 复用 RouteDecision handler 的 handleSpecialNextIndex（route-default 分支）：
+      // 写入 defaultNextNodeIds = [targetNode.id]
+      const params = handleSpecialNodesNextIndex(
+        newNode,
+        defaultPortId,
+        targetNode.id,
+      );
+      const isSuccess = await changeNode({ nodeData: params }, noop);
+      if (isSuccess) {
+        graphRef.current?.graphCreateNewEdge(
+          defaultPortId,
+          String(targetNode.id),
+          isLoop,
+        );
+      }
+    },
+    [changeNode, graphRef],
+  );
+
+  /**
    * 处理普通节点连接
    */
   const handleNormalNodeConnection = useCallback(
@@ -363,6 +409,17 @@ export const useNodeOperations = ({
     }) => {
       const id = portId.split('-')[0];
 
+      // RouteDecision 作为上游新建节点：出边走默认分支端口，避免画到不存在的
+      // {nodeId}-out 端口（回转连线）并在刷新后丢失（见 handleRouteDecisionOutgoingConnection）
+      if (newNode.type === NodeTypeEnum.RouteDecision) {
+        await handleRouteDecisionOutgoingConnection({
+          newNode,
+          targetNode: sourceNode,
+          isLoop,
+        });
+        return;
+      }
+
       if (isConditionalNode(newNode.type)) {
         const { nodeData, sourcePortId } = QuicklyCreateEdgeConditionConfig(
           newNode,
@@ -394,7 +451,13 @@ export const useNodeOperations = ({
         }
       }
     },
-    [isConditionalNode, changeNode, nodeChangeEdge, graphRef],
+    [
+      isConditionalNode,
+      changeNode,
+      nodeChangeEdge,
+      graphRef,
+      handleRouteDecisionOutgoingConnection,
+    ],
   );
 
   /**
@@ -423,7 +486,15 @@ export const useNodeOperations = ({
         newNode.type === NodeTypeEnum.QA &&
         newNode.nodeConfig?.answerType !== 'SELECT';
 
-      if (isConditionalNode(newNode.type) && !isQaTextMode) {
+      // RouteDecision 作为插入节点：出边走默认分支端口，避免画到不存在的 {nodeId}-out
+      // 端口（回转连线）并在刷新后丢失（见 handleRouteDecisionOutgoingConnection）
+      if (newNode.type === NodeTypeEnum.RouteDecision) {
+        await handleRouteDecisionOutgoingConnection({
+          newNode,
+          targetNode,
+          isLoop,
+        });
+      } else if (isConditionalNode(newNode.type) && !isQaTextMode) {
         await handleConditionalNodeConnection({
           newNode,
           targetNode,
@@ -508,6 +579,7 @@ export const useNodeOperations = ({
       isConditionalNode,
       handleConditionalNodeConnection,
       handleNormalNodeConnection,
+      handleRouteDecisionOutgoingConnection,
       nodeChangeEdge,
       changeNode,
       debouncedSaveFullWorkflow,
