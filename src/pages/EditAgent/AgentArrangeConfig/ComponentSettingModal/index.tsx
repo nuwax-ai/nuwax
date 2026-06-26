@@ -32,6 +32,7 @@ import {
 } from '@/types/interfaces/agent';
 import type {
   AsyncRunSaveParams,
+  CallApprovalParams,
   CardBindSaveParams,
   ComponentSettingModalProps,
   ExceptionHandingSaveParams,
@@ -49,6 +50,7 @@ import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useModel } from 'umi';
 import AsyncRun from './AsyncRun';
+import CallApproval from './CallApproval';
 import CardBind from './CardBind';
 import ExceptionHanding from './ExceptionHanding';
 import styles from './index.less';
@@ -193,6 +195,7 @@ const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
       | InvokeTypeSaveParams
       | AsyncRunSaveParams
       | OutputDirectlyParams
+      | CallApprovalParams
       | ParamsSaveParams
       | CardBindSaveParams
       | null,
@@ -307,6 +310,14 @@ const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
             onSaveSet={(data) => handleSaveSetting(data, null, action)}
           />
         );
+      // 调用审批
+      case ComponentSettingEnum.Call_Approval:
+        return (
+          <CallApproval
+            callApproval={componentInfo?.bindConfig?.callApproval}
+            onSaveSet={handleSaveSetting}
+          />
+        );
       // 输出方式
       case ComponentSettingEnum.Output_Way:
         return (
@@ -368,6 +379,19 @@ const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
                     ComponentSettingEnum.Async_Run,
                     ComponentSettingEnum.Exception_Handling,
                   ].includes(item.type)
+                ) {
+                  return null;
+                }
+                // 调用审批仅对工作流、插件、MCP 展示
+                if (
+                  item.type === ComponentSettingEnum.Call_Approval &&
+                  ![
+                    AgentComponentTypeEnum.Workflow,
+                    AgentComponentTypeEnum.Plugin,
+                    AgentComponentTypeEnum.MCP,
+                  ].includes(
+                    currentComponentInfo?.type as AgentComponentTypeEnum,
+                  )
                 ) {
                   return null;
                 }
