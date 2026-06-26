@@ -364,7 +364,10 @@ const KnowledgeAccuracyTest: React.FC<KnowledgeAccuracyTestProps> = ({
         </Card>
 
         {/* 测试历史区 */}
-        <Card className={styles.testHistory} bordered={false} title={dict('PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.testHistory')}>
+        <Card className={styles.testHistory} bordered={false}>
+          <div className={styles.testHistoryHeader}>
+            <span className={styles.headerTitle}>{dict('PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.testHistory')}</span>
+          </div>
           <Table
             columns={historyColumns}
             dataSource={testHistory}

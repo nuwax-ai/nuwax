@@ -123,11 +123,16 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   flex: 1;
 
-  .ant-card-head {
+  .testHistoryHeader {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
     border-bottom: 1px solid #F0F0F0;
   }
 
-  .ant-card-head-title {
+  .headerTitle {
     font-size: 14px;
     font-weight: 500;
     color: #333;
@@ -160,7 +165,7 @@
   align-items: center;
   padding-top: 0px;
   padding-bottom: 17px;
-  padding-left: 16px;
+  padding-left: 0px;
   padding-right: 16px;
   border-bottom: 1px solid #F0F0F0;
 }
@@ -208,6 +213,9 @@
 }
 
 // 覆盖 antd Card 组件的默认样式
+.ant-card {
+  padding: 0px !important;
+}
 .ant-card.resultCard {
   box-shadow: none !important;
 
