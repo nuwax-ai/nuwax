@@ -9,6 +9,7 @@ import PaymentSubscriptionModal from '@/components/business-component/PaymentSub
 import ConditionRender from '@/components/ConditionRender';
 import ResizableSplit from '@/components/ResizableSplit';
 
+import { isAgentVersionControlEnabled } from '@/constants/agent.constants';
 import useAgentDetails from '@/hooks/useAgentDetails';
 import { useConversationScrollDetection } from '@/hooks/useConversationScrollDetection';
 import useExclusivePanels from '@/hooks/useExclusivePanels';
@@ -640,7 +641,9 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     staticFileBasePath: `/api/computer/static/${id}`,
     isDynamicTheme: true,
     enableGitStatus:
-      effectiveAgent?.type === AgentTypeEnum.TaskAgent && hasValidMessageList,
+      effectiveAgent?.type === AgentTypeEnum.TaskAgent &&
+      hasValidMessageList &&
+      isAgentVersionControlEnabled(effectiveAgent?.enableVersionControl),
     onSelectedFileMissing: () => {
       setTaskAgentSelectedFileId('');
     },
@@ -849,6 +852,10 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   ) : null;
 
   /** 文件树侧边栏 props */
+  const isVersionControlEnabled = isAgentVersionControlEnabled(
+    effectiveAgent?.enableVersionControl,
+  );
+
   const fileSidebarProps = useMemo(
     () => ({
       tree: chatFileTree,
@@ -859,8 +866,11 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       gitVersionPanelOpen,
       onToggleGitVersionPanel: handleToggleGitVersionPanel,
       bottomContent: terminalConsole,
+      showSourceControl: isVersionControlEnabled,
+      enableVersionControl: effectiveAgent?.enableVersionControl,
       gitVersionControl:
-        effectiveAgent?.type === AgentTypeEnum.TaskAgent
+        effectiveAgent?.type === AgentTypeEnum.TaskAgent &&
+        isVersionControlEnabled
           ? {
               workspace: {
                 workspaceType: 'taskAgent' as const,
@@ -932,6 +942,8 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       id,
       effectiveAgent?.hideDesktop,
       effectiveAgent?.type,
+      effectiveAgent?.enableVersionControl,
+      isVersionControlEnabled,
       finalSelectedId,
       handleExportProject,
       openPreviewView,
