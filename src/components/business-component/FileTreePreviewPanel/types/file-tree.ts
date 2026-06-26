@@ -1,5 +1,5 @@
 import type { IdleDetectionConfig } from '@/components/business-component/VncPreview/type';
-import type { HideDesktopEnum } from '@/types/enums/agent';
+import type { DefaultSelectedEnum, HideDesktopEnum } from '@/types/enums/agent';
 import type { FileNode } from '@/types/interfaces/appDev';
 import type React from 'react';
 import type {
@@ -92,6 +92,8 @@ export interface FileTreeViewProps {
       >
     >;
   };
+  /** 智能体是否开启版本管理 */
+  enableVersionControl?: DefaultSelectedEnum;
   /** 文件树预览面板底部内容 */
   bottomContent?: React.ReactNode;
 }

@@ -14,6 +14,7 @@ import ConditionRender from '@/components/ConditionRender';
 import Created from '@/components/Created';
 import PublishComponentModal from '@/components/PublishComponentModal';
 import VersionHistory from '@/components/VersionHistory';
+import { isAgentVersionControlEnabled } from '@/constants/agent.constants';
 import { ERROR_MESSAGES } from '@/constants/appDevConstants';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { CREATED_TABS } from '@/constants/common.constants';
@@ -1669,7 +1670,11 @@ const AppDev: React.FC = () => {
                   // 版本记录相关
                   gitVersionRecordData={{
                     onOpen: handleToggleGitVersionPanel,
-                    disabled: !hasValidProjectId,
+                    disabled:
+                      !hasValidProjectId ||
+                      !isAgentVersionControlEnabled(
+                        agentConfigInfo?.enableVersionControl,
+                      ),
                   }}
                   // 通用状态
                   isChatLoading={chat.isChatLoading}
@@ -1683,6 +1688,9 @@ const AppDev: React.FC = () => {
                       {/* FileTreeGitSourceSidebar 组件（版本记录面板打开时仍显示） */}
                       {activeTab !== 'preview' && (
                         <FileTreeGitSourceSidebar
+                          enableVersionControl={
+                            agentConfigInfo?.enableVersionControl
+                          }
                           // 文件树（含搜索、工具栏、右键菜单）
                           tree={appDevFileTree.tree}
                           treeClassName="w-full"
@@ -1726,6 +1734,9 @@ const AppDev: React.FC = () => {
 
                       {/* 版本记录面板：打开且无 diff 选中时占据内容区；选中 diff 时改由 ContentViewer 展示 */}
                       {gitVersionPanelOpen &&
+                      isAgentVersionControlEnabled(
+                        agentConfigInfo?.enableVersionControl,
+                      ) &&
                       !sourceControl.selectedDiffFile ? (
                         <div className={styles.gitVersionPanelCol}>
                           {/* 版本记录 */}
