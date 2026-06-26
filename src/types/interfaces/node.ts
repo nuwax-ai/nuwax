@@ -2,6 +2,7 @@ import {
   AnswerTypeEnum,
   DataTypeEnum,
   ExceptionHandleTypeEnum,
+  FormArgInputTypeEnum,
   HitlModeEnum,
   NodeTypeEnum,
 } from '@/types/enums/common';
@@ -82,8 +83,8 @@ export interface InputAndOutConfig {
   key: string;
   // 是否开启
   enable?: boolean;
-  // 输入类型
-  inputType?: string;
+  // 输入类型（HumanInteraction formArgs 使用 FormArgInputTypeEnum）
+  inputType?: FormArgInputTypeEnum | string;
   // 下拉参数配置
   selectConfig?: VariableSelectConfig;
 }

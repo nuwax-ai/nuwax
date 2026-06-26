@@ -1,12 +1,18 @@
 /**
  * qaConfigAdapter 单元测试
  *
- * answerType 为权威字段（TEXT / SELECT / FORM），兼容历史 askConfig 与旧 replyMode。
+ * answerType 为权威字段（TEXT / SELECT / FORM）
  */
-import { AnswerTypeEnum, NodeTypeEnum } from '@/types/enums/common';
+import {
+  AnswerTypeEnum,
+  FormArgInputTypeEnum,
+  NodeTypeEnum,
+} from '@/types/enums/common';
 import { describe, expect, it } from 'vitest';
 import {
+  coerceFormArgInputType,
   getHitlOptions,
+  isFormArgChoiceInputType,
   isHitlOptionsBranchMode,
   normalizeHitlNodeConfig,
   prepareNodeForBackendSerialize,
@@ -14,47 +20,32 @@ import {
 } from '../adapters/qaConfigAdapter';
 
 describe('qaConfigAdapter', () => {
-  it('normalize: 迁移嵌套 askConfig 为扁平 answerType 并删除废弃字段', () => {
+  it('normalize: 补全 answerType 与 formArgs 默认值', () => {
     const out = normalizeHitlNodeConfig({
-      askConfig: {
-        question: '你好？',
-        answerType: AnswerTypeEnum.SELECT,
-        options: [{ uuid: 'o1', content: 'A', nextNodeIds: [] }],
-      },
+      question: '你好？',
+      answerType: AnswerTypeEnum.SELECT,
+      options: [{ uuid: 'o1', content: 'A', nextNodeIds: [] }],
     });
     expect(out.question).toBe('你好？');
     expect(out.answerType).toBe(AnswerTypeEnum.SELECT);
     expect(out.options).toHaveLength(1);
-    expect(out.askConfig).toBeUndefined();
-    expect(out.replyMode).toBeUndefined();
+    expect(out.inputArgs).toEqual([]);
+    expect(out.formArgs).toEqual([]);
   });
 
-  it('normalize: 兼容旧 replyMode 字段映射到 answerType', () => {
-    expect(
-      normalizeHitlNodeConfig({ replyMode: 'form', formFields: [] }).answerType,
-    ).toBe(AnswerTypeEnum.FORM);
-    expect(normalizeHitlNodeConfig({ replyMode: 'options' }).answerType).toBe(
-      AnswerTypeEnum.SELECT,
-    );
-  });
-
-  it('normalize: formFields 非空推断为 FORM', () => {
+  it('normalize: formArgs 非空推断为 FORM', () => {
     expect(
       normalizeHitlNodeConfig({
-        formFields: [{ label: 'x', type: 'input' }],
+        formArgs: [{ name: 'x', inputType: FormArgInputTypeEnum.Text }],
       }).answerType,
     ).toBe(AnswerTypeEnum.FORM);
   });
 
-  it('serialize: 清理废弃字段并保留 answerType', () => {
+  it('serialize: 保留 answerType', () => {
     const out = serializeHitlNodeConfig({
       question: 'q',
       answerType: AnswerTypeEnum.TEXT,
-      askConfig: { question: 'old' },
-      replyMode: 'text',
     });
-    expect(out.askConfig).toBeUndefined();
-    expect(out.replyMode).toBeUndefined();
     expect(out.answerType).toBe(AnswerTypeEnum.TEXT);
   });
 
@@ -72,11 +63,10 @@ describe('qaConfigAdapter', () => {
     expect(form.options[0].nextNodeIds).toEqual([]);
   });
 
-  it('getHitlOptions 优先读取扁平 options', () => {
+  it('getHitlOptions 读取扁平 options', () => {
     expect(
       getHitlOptions({
         options: [{ content: 'flat' }],
-        askConfig: { options: [{ content: 'nested' }] },
       }),
     ).toEqual([{ content: 'flat' }]);
   });
@@ -87,13 +77,13 @@ describe('qaConfigAdapter', () => {
       formArgs: [
         {
           name: '类型',
-          inputType: 'select',
+          inputType: FormArgInputTypeEnum.Select,
           require: true,
           selectConfig: { dataSourceType: 'MANUAL', options: '退货\n换货' },
         },
         {
           name: '说明',
-          inputType: 'text',
+          inputType: FormArgInputTypeEnum.Text,
           require: false,
           selectConfig: { dataSourceType: 'MANUAL', options: '脏数据' },
         },
@@ -106,22 +96,36 @@ describe('qaConfigAdapter', () => {
     expect(out.formArgs[1].selectConfig).toBeNull();
   });
 
-  it('normalize: 迁移历史 formFields 为 formArgs (Arg + inputType + selectConfig)', () => {
+  it('normalize: formArgs 补全 inputType 与 selectConfig 编辑态', () => {
     const out = normalizeHitlNodeConfig({
       answerType: AnswerTypeEnum.FORM,
-      formFields: [
-        { label: '类型', type: 'checkbox', required: true, options: 'A\nB' },
+      formArgs: [
+        {
+          name: '类型',
+          inputType: FormArgInputTypeEnum.MultipleSelect,
+          require: true,
+          selectConfig: { options: 'A\nB' },
+        },
       ],
     });
-    expect(out.formFields).toBeUndefined();
-    expect(out.formArgs).toHaveLength(1);
     expect(out.formArgs[0]).toMatchObject({
       name: '类型',
-      inputType: 'checkboxes',
+      inputType: FormArgInputTypeEnum.MultipleSelect,
       require: true,
     });
-    // edit 态：options 为多行字符串（表单文本框直接编辑，回车/中文 IME 友好）
     expect(out.formArgs[0].selectConfig.options).toBe('A\nB');
+  });
+
+  it('coerceFormArgInputType: 非法值兜底 Text', () => {
+    expect(coerceFormArgInputType('radio')).toBe(FormArgInputTypeEnum.Text);
+    expect(coerceFormArgInputType(FormArgInputTypeEnum.Radio)).toBe(
+      FormArgInputTypeEnum.Radio,
+    );
+  });
+
+  it('isFormArgChoiceInputType: Select/Radio/MultipleSelect 为真', () => {
+    expect(isFormArgChoiceInputType(FormArgInputTypeEnum.Radio)).toBe(true);
+    expect(isFormArgChoiceInputType(FormArgInputTypeEnum.Text)).toBe(false);
   });
 
   it('isHitlOptionsBranchMode 仅 SELECT 为真', () => {
@@ -137,7 +141,6 @@ describe('qaConfigAdapter', () => {
   });
 
   it('prepareNodeForBackendSerialize: 剥离后端解析的完整 modelConfig（仅保留顶层 modelId）', () => {
-    // 非 HumanInteraction 节点（如 LLM / 路由决策）也应剥离
     const llm = prepareNodeForBackendSerialize({
       id: 1,
       type: NodeTypeEnum.LLM,
@@ -168,7 +171,7 @@ describe('qaConfigAdapter', () => {
         formArgs: [
           {
             name: '类型',
-            inputType: 'select',
+            inputType: FormArgInputTypeEnum.Select,
             selectConfig: { options: 'a\nb' },
           },
         ],
@@ -194,22 +197,18 @@ describe('qaConfigAdapter', () => {
         inputArgs: [],
         outputArgs: [],
       },
-      // 顶层重复散落的配置字段（应被剥掉，只在 nodeConfig 内）
       intentConfigs: [{ uuid: 'r1', intent: '退货' }],
       inputArgs: [],
       modelId: 5,
       modelConfig: { id: 5, name: 'deepseek' },
     } as any);
-    // 节点级字段保留
     expect(out.id).toBe(1);
     expect(out.name).toBe('路由决策');
     expect(out.nextNodeIds).toEqual([2]);
-    // 顶层不再有任何配置字段
     expect((out as any).intentConfigs).toBeUndefined();
     expect((out as any).inputArgs).toBeUndefined();
     expect((out as any).modelId).toBeUndefined();
     expect((out as any).modelConfig).toBeUndefined();
-    // 配置完整保留在 nodeConfig 内（modelConfig 也已整体去除，只留 modelId）
     expect(out.nodeConfig.intentConfigs).toHaveLength(1);
     expect(out.nodeConfig.modelId).toBe(5);
     expect(out.nodeConfig.modelConfig).toBeUndefined();

@@ -9,7 +9,11 @@ import ExpandableInputTextarea from '@/components/ExpandTextArea';
 import { ModelSelected } from '@/components/ModelSetting';
 import { transformToPromptVariables } from '@/components/TiptapVariableInput/utils/variableTransform';
 import { t } from '@/services/i18nRuntime';
-import { AnswerTypeEnum, DataTypeEnum } from '@/types/enums/common';
+import {
+  AnswerTypeEnum,
+  DataTypeEnum,
+  FormArgInputTypeEnum,
+} from '@/types/enums/common';
 import { InputItemNameEnum } from '@/types/enums/node';
 import { InputAndOutConfig } from '@/types/interfaces/node';
 import { NodeDisposeProps } from '@/types/interfaces/workflow';
@@ -29,37 +33,41 @@ import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import { outPutConfigs } from '../../ParamsV3';
 import { FormList, InputAndOut } from '../../component/commonNode';
+import {
+  coerceFormArgInputType,
+  isFormArgChoiceInputType,
+} from '../adapters/qaConfigAdapter';
 import './HumanInteractionAskForm.less';
 
 const { TextArea } = Input;
 
-// 表单字段控件类型（对齐后端枚举，写入 Arg.inputType）
+// 表单字段控件类型（对齐后端 FormArgInputTypeEnum，写入 Arg.inputType）
 const FORM_FIELD_TYPE_OPTIONS = [
   {
     label: t('PC.Pages.AgentFlowNode.formTypeInput', '单行文本'),
-    value: 'text',
+    value: FormArgInputTypeEnum.Text,
   },
   {
     label: t('PC.Pages.AgentFlowNode.formTypeSelect', '下拉单选'),
-    value: 'select',
+    value: FormArgInputTypeEnum.Select,
   },
-  { label: t('PC.Pages.AgentFlowNode.formTypeRadio', '单选'), value: 'radio' },
+  {
+    label: t('PC.Pages.AgentFlowNode.formTypeRadio', '单选'),
+    value: FormArgInputTypeEnum.Radio,
+  },
   {
     label: t('PC.Pages.AgentFlowNode.formTypeCheckbox', '多选'),
-    value: 'checkboxes',
+    value: FormArgInputTypeEnum.MultipleSelect,
   },
   {
     label: t('PC.Pages.AgentFlowNode.formTypeNumber', '数字'),
-    value: 'number',
+    value: FormArgInputTypeEnum.Number,
   },
   {
     label: t('PC.Pages.AgentFlowNode.formTypeFile', '文件上传'),
-    value: 'file',
+    value: FormArgInputTypeEnum.File,
   },
 ];
-
-/** 需要选项（selectConfig）的控件类型 */
-const CHOICE_INPUT_TYPES = new Set(['select', 'checkboxes', 'radio']);
 
 const HumanInteractionAskForm: React.FC<NodeDisposeProps> = ({ form }) => {
   const { referenceList } = useModel('workflowV3');
@@ -187,8 +195,10 @@ const HumanInteractionAskForm: React.FC<NodeDisposeProps> = ({ form }) => {
                 </div>
 
                 {fields.map(({ key, name }) => {
-                  const inputType = formArgs[name]?.inputType || 'text';
-                  const isChoice = CHOICE_INPUT_TYPES.has(inputType);
+                  const inputType = coerceFormArgInputType(
+                    formArgs[name]?.inputType,
+                  );
+                  const isChoice = isFormArgChoiceInputType(inputType);
                   return (
                     <div key={key} className="ask-form-field-card">
                       <div className="ask-form-field-card__row">
@@ -208,7 +218,7 @@ const HumanInteractionAskForm: React.FC<NodeDisposeProps> = ({ form }) => {
                         <Form.Item
                           name={[name, 'inputType']}
                           noStyle
-                          initialValue="text"
+                          initialValue={FormArgInputTypeEnum.Text}
                         >
                           <Select
                             className="ask-form-field-card__type"
@@ -279,7 +289,7 @@ const HumanInteractionAskForm: React.FC<NodeDisposeProps> = ({ form }) => {
                     add({
                       key: uuidv4(),
                       name: '',
-                      inputType: 'text',
+                      inputType: FormArgInputTypeEnum.Text,
                       require: false,
                       description: '',
                       dataType: DataTypeEnum.String,
