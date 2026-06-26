@@ -83,6 +83,11 @@ export const SKILL_METHOD_OPTIONS = [
   },
 ];
 
+/** 智能体是否开启版本管理（Git 源代码管理 / 版本记录） */
+export const isAgentVersionControlEnabled = (
+  enableVersionControl?: DefaultSelectedEnum,
+) => enableVersionControl === DefaultSelectedEnum.Yes;
+
 // 调用方式 - 是否默认选中
 export const CALL_DEFAULT_SELECTED = [
   {

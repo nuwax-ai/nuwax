@@ -1265,6 +1265,9 @@ const EditAgent: React.FC = () => {
                                 cid: devConversationId,
                               },
                             }}
+                            enableVersionControl={
+                              agentConfigInfo?.enableVersionControl
+                            }
                             bottomContent={
                               hasTerminalConsoleRendered ? (
                                 <ConversationBottomConsole

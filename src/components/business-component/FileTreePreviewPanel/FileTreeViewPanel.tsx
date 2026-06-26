@@ -1,3 +1,4 @@
+import { isAgentVersionControlEnabled } from '@/constants/agent.constants';
 import debounce from 'lodash/debounce';
 import {
   forwardRef,
@@ -45,6 +46,7 @@ const FileTreeViewPanel = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       onSaveFiles,
       readOnly = false,
       gitSourceControl,
+      enableVersionControl,
       bottomContent,
       ...fileViewProps
     } = props;
@@ -221,7 +223,10 @@ const FileTreeViewPanel = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       },
     });
 
-    const showSourceControl = Boolean(gitSourceControl);
+    const showSourceControl =
+      Boolean(gitSourceControl) &&
+      (enableVersionControl === undefined ||
+        isAgentVersionControlEnabled(enableVersionControl));
     const [gitVersionPanelOpen, setGitVersionPanelOpen] =
       useState<boolean>(false);
 
@@ -275,6 +280,7 @@ const FileTreeViewPanel = forwardRef<FileTreeViewRef, FileTreeViewProps>(
             : undefined
         }
         showSourceControl={showSourceControl}
+        enableVersionControl={enableVersionControl}
         viewMode={viewMode}
         hideDesktop={hideDesktop}
         diffFile={showSourceControl ? sourceControl.selectedDiffFile : null}

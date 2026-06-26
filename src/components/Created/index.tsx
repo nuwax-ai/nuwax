@@ -104,6 +104,7 @@ const Created: React.FC<CreatedProp> = ({
   hideTop,
   modalZIndex,
   showMoreMenus = true,
+  isGroupAgentPicker = false,
 }) => {
   /**  -----------------  定义一些变量  -----------------   */
   const params = useParams();
@@ -301,10 +302,12 @@ const Created: React.FC<CreatedProp> = ({
         params.dataType = dataTypeRef.current;
       }
 
-      // 如果类型是智能体，则设置targetType和targetSubType，需要过滤掉子类型是网页应用的智能体数据
+      // 如果类型是智能体，则设置 targetType；群组智能体选择器不过滤 ChatBot 子类型
       if (type === AgentComponentTypeEnum.Agent) {
         params.targetType = AgentComponentTypeEnum.Agent;
-        params.targetSubType = 'ChatBot';
+        if (!isGroupAgentPicker) {
+          params.targetSubType = 'ChatBot';
+        }
       }
       const {
         code,

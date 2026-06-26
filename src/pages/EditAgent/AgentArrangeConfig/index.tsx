@@ -148,6 +148,10 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   const [deleteList, setDeleteList] = useState<DeleteComponentInfo[]>([]);
   // 打开、关闭组件选择弹窗
   const [show, setShow] = useState<boolean>(false);
+  /** 组件选择弹窗模式：default 常规组件；groupAgent 群组智能体 */
+  const [createdMode, setCreatedMode] = useState<'default' | 'groupAgent'>(
+    'default',
+  );
   // 打开、关闭页面设置弹窗
   const [openPageModel, setOpenPageModel] = useState<boolean>(false);
   // 智能体组件列表
@@ -158,7 +162,36 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   const [openSubAgentModel, setOpenSubAgentModel] = useState<boolean>(false);
 
   /** 存在 devAgentConversationId 时隐藏子智能体模块 */
-  const hideSubAgent = !!agentConfigInfo?.devAgentConversationId;
+  const hideSubAgent =
+    !!agentConfigInfo?.devAgentConversationId ||
+    agentConfigInfo?.subType === AgentSubTypeEnum.Custom;
+  /** 是否为群组智能体（AgentGroup）子类型 */
+  const isGroupSubType = agentConfigInfo?.subType === AgentSubTypeEnum.Group;
+
+  /** 群组智能体选择弹窗仅展示智能体 Tab */
+  const groupAgentCreatedTabs = useMemo(
+    () =>
+      CREATED_TABS.filter((item) => item.key === AgentComponentTypeEnum.Agent),
+    [],
+  );
+
+  /** 常规组件选择弹窗 Tab 列表 */
+  const defaultCreatedTabs = useMemo(
+    () =>
+      CREATED_TABS.filter((item) => {
+        // 如果是通用型智能体
+        if (agentConfigInfo?.type === AgentTypeEnum.TaskAgent) {
+          return item.key !== AgentComponentTypeEnum.Agent;
+        }
+        return (
+          item.key !== AgentComponentTypeEnum.Agent &&
+          item.key !== AgentComponentTypeEnum.Skill
+        );
+      }),
+    [agentConfigInfo?.type],
+  );
+
+  const isGroupAgentCreatedMode = createdMode === 'groupAgent';
 
   // 各配置块 DOM 引用，用于滚动定位
   const planSectionRef = useRef<HTMLDivElement | null>(null);
@@ -171,44 +204,48 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
 
   // 左侧锚点菜单配置
   const anchorItems = useMemo(
-    () => [
-      {
-        key: 'plan',
-        label: t('PC.Pages.AgentArrangeConfig.plan'),
-        ref: planSectionRef,
-      },
-      {
-        key: 'tool',
-        label: t('PC.Pages.AgentArrangeConfig.tools'),
-        ref: toolSectionRef,
-      },
-      {
-        key: 'skill',
-        label: t('PC.Pages.AgentArrangeConfig.skills'),
-        ref: skillSectionRef,
-      },
-      {
-        key: 'knowledge',
-        label: t('PC.Pages.AgentArrangeConfig.knowledge'),
-        ref: knowledgeSectionRef,
-      },
-      {
-        key: 'memory',
-        label: t('PC.Pages.AgentArrangeConfig.memory'),
-        ref: memorySectionRef,
-      },
-      {
-        key: 'experience',
-        label: t('PC.Pages.AgentArrangeConfig.conversation'),
-        ref: experienceSectionRef,
-      },
-      {
-        key: 'page',
-        label: t('PC.Pages.AgentArrangeConfig.interface'),
-        ref: pageSectionRef,
-      },
-    ],
-    [],
+    () =>
+      [
+        {
+          key: 'plan',
+          label: t('PC.Pages.AgentArrangeConfig.plan'),
+          ref: planSectionRef,
+        },
+        {
+          key: 'tool',
+          label: t('PC.Pages.AgentArrangeConfig.tools'),
+          ref: toolSectionRef,
+        },
+        {
+          key: 'skill',
+          label: t('PC.Pages.AgentArrangeConfig.skills'),
+          ref: skillSectionRef,
+        },
+        {
+          key: 'knowledge',
+          label: t('PC.Pages.AgentArrangeConfig.knowledge'),
+          ref: knowledgeSectionRef,
+        },
+        {
+          key: 'memory',
+          label: t('PC.Pages.AgentArrangeConfig.memory'),
+          ref: memorySectionRef,
+        },
+        {
+          key: 'experience',
+          label: t('PC.Pages.AgentArrangeConfig.conversation'),
+          ref: experienceSectionRef,
+        },
+        {
+          key: 'page',
+          label: t('PC.Pages.AgentArrangeConfig.interface'),
+          ref: pageSectionRef,
+        },
+      ].filter(
+        (item) =>
+          !isGroupSubType || (item.key !== 'tool' && item.key !== 'knowledge'),
+      ),
+    [isGroupSubType],
   );
 
   /**
@@ -358,11 +395,18 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     if (isExistComponent(AgentComponentTypeEnum.Skill)) {
       keys.push(AgentArrangeConfigEnum.Skill);
     }
+
+    // 群组智能体
+    if (isGroupSubType && isExistComponent(AgentComponentTypeEnum.Agent)) {
+      keys.push(AgentArrangeConfigEnum.Group_Agent);
+    }
+
+    // 子智能体
     if (!hideSubAgent && isExistComponent(AgentComponentTypeEnum.SubAgent)) {
       keys.push(AgentArrangeConfigEnum.SubAgent);
     }
     return keys;
-  }, [agentComponentList, hideSubAgent]);
+  }, [agentComponentList, hideSubAgent, agentConfigInfo?.subType]);
 
   // 记忆 - 当前激活 tab 面板的 key
   const memoryActiveKey = useMemo(() => {
@@ -375,12 +419,14 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     if (isExistComponent(AgentComponentTypeEnum.Variable) && _list.length) {
       keyList.push(AgentArrangeConfigEnum.Variable);
     }
-    if (isExistComponent(AgentComponentTypeEnum.Table)) {
+
+    // 群组智能体时不显示数据表组件
+    if (!isGroupSubType && isExistComponent(AgentComponentTypeEnum.Table)) {
       keyList.push(AgentArrangeConfigEnum.Table);
     }
 
     return keyList;
-  }, [agentComponentList]);
+  }, [agentComponentList, variablesInfo, isGroupSubType]);
 
   // 界面配置列表 - 当前激活 tab 面板的 key
   const pageActiveKey = useMemo(() => {
@@ -549,7 +595,16 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     type: AgentComponentTypeEnum,
   ) => {
     e.stopPropagation();
+    setCreatedMode('default');
     setCheckTag(type);
+    setShow(true);
+  };
+
+  /** 打开群组智能体选择弹窗（仅当前空间智能体列表） */
+  const handlerGroupAgentPlus = (e: React.MouseEvent<HTMLElement>) => {
+    e.stopPropagation();
+    setCreatedMode('groupAgent');
+    setCheckTag(AgentComponentTypeEnum.Agent);
     setShow(true);
   };
 
@@ -765,7 +820,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     },
   ];
 
-  // 技能
+  // 技能与组员
   const SkillList: CollapseProps['items'] = [
     {
       key: AgentArrangeConfigEnum.Skill,
@@ -791,7 +846,40 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         body: 'collapse-body',
       },
     },
-    ...(!hideSubAgent
+
+    // 群组智能体（仅 AgentGroup 子类型显示）
+    ...(isGroupSubType
+      ? [
+          {
+            key: AgentArrangeConfigEnum.Group_Agent,
+            label: t('PC.Pages.AgentArrangeConfig.groupAgent'),
+            children: (
+              <CollapseComponentList
+                textClassName={cx(styles.text)}
+                type={AgentComponentTypeEnum.Agent}
+                list={filterList(AgentComponentTypeEnum.Agent)}
+                deleteList={deleteList}
+                onSet={handlePluginSet}
+                onDel={handleAgentComponentDel}
+                showSettings={false}
+              />
+            ),
+            extra: (
+              <TooltipIcon
+                title={t('PC.Pages.AgentArrangeConfig.addGroupAgent')}
+                onClick={handlerGroupAgentPlus}
+              />
+            ),
+            classNames: {
+              header: 'collapse-header',
+              body: 'collapse-body',
+            },
+          },
+        ]
+      : []),
+
+    // 如果是自定义智能体，或者devAgentConversationId存在，则不显示子智能体组件
+    ...(!hideSubAgent && !isGroupSubType
       ? [
           {
             key: AgentArrangeConfigEnum.SubAgent,
@@ -843,30 +931,38 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         body: 'collapse-body',
       },
     },
-    {
-      key: AgentArrangeConfigEnum.Table,
-      label: t('PC.Pages.AgentArrangeConfig.table'),
-      children: (
-        <CollapseComponentList
-          textClassName={cx(styles.text)}
-          type={AgentComponentTypeEnum.Table}
-          list={filterList(AgentComponentTypeEnum.Table)}
-          deleteList={deleteList}
-          onSet={handlePluginSet}
-          onDel={handleAgentComponentDel}
-        />
-      ),
-      extra: (
-        <TooltipIcon
-          title={t('PC.Pages.AgentArrangeConfig.addTable')}
-          onClick={(e) => handlerComponentPlus(e, AgentComponentTypeEnum.Table)}
-        />
-      ),
-      classNames: {
-        header: 'collapse-header',
-        body: 'collapse-body',
-      },
-    },
+
+    // 群组智能体时不显示数据表组件
+    ...(!isGroupSubType
+      ? [
+          {
+            key: AgentArrangeConfigEnum.Table,
+            label: t('PC.Pages.AgentArrangeConfig.table'),
+            children: (
+              <CollapseComponentList
+                textClassName={cx(styles.text)}
+                type={AgentComponentTypeEnum.Table}
+                list={filterList(AgentComponentTypeEnum.Table)}
+                deleteList={deleteList}
+                onSet={handlePluginSet}
+                onDel={handleAgentComponentDel}
+              />
+            ),
+            extra: (
+              <TooltipIcon
+                title={t('PC.Pages.AgentArrangeConfig.addTable')}
+                onClick={(e) =>
+                  handlerComponentPlus(e, AgentComponentTypeEnum.Table)
+                }
+              />
+            ),
+            classNames: {
+              header: 'collapse-header',
+              body: 'collapse-body',
+            },
+          },
+        ]
+      : []),
     {
       key: AgentArrangeConfigEnum.Long_Memory,
       label: t('PC.Pages.AgentArrangeConfig.longMemory'),
@@ -1075,7 +1171,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     // 通用型智能体、AgentFlow、AgentGroup、自定义智能体 才显示 允许用户在对话框中选择模式 按钮
     ...(agentConfigInfo?.subType === AgentSubTypeEnum.General ||
     agentConfigInfo?.subType === AgentSubTypeEnum.Flow ||
-    agentConfigInfo?.subType === AgentSubTypeEnum.Group ||
+    isGroupSubType ||
     agentConfigInfo?.subType === AgentSubTypeEnum.Custom
       ? [
           // 允许用户在对话框中选择模式
@@ -1379,22 +1475,24 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
             <div ref={planSectionRef}>{extraComponent}</div>
           )}
 
-          {/* 工具 */}
-          <div ref={toolSectionRef}>
-            <ConfigOptionsHeader
-              title={t('PC.Pages.AgentArrangeConfig.tools')}
-            />
-            <ConfigOptionCollapse
-              items={ToolList}
-              defaultActiveKey={toolActiveKey}
-            />
-          </div>
+          {/* 工具（群组智能体不显示） */}
+          {!isGroupSubType && (
+            <div ref={toolSectionRef}>
+              <ConfigOptionsHeader
+                title={t('PC.Pages.AgentArrangeConfig.tools')}
+              />
+              <ConfigOptionCollapse
+                items={ToolList}
+                defaultActiveKey={toolActiveKey}
+              />
+            </div>
+          )}
 
           {/* 通用型智能体显示技能 */}
           {agentConfigInfo?.type === AgentTypeEnum.TaskAgent && (
             <div ref={skillSectionRef}>
               <ConfigOptionsHeader
-                title={t('PC.Pages.AgentArrangeConfig.skills')}
+                title={t('PC.Pages.AgentArrangeConfig.skillsAndMembers')}
               />
               <ConfigOptionCollapse
                 items={SkillList}
@@ -1403,16 +1501,18 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
             </div>
           )}
 
-          {/* 知识库 */}
-          <div ref={knowledgeSectionRef}>
-            <ConfigOptionsHeader
-              title={t('PC.Pages.AgentArrangeConfig.knowledge')}
-            />
-            <ConfigOptionCollapse
-              items={KnowledgeList}
-              defaultActiveKey={knowledgeActiveKey}
-            />
-          </div>
+          {/* 知识库（群组智能体不显示） */}
+          {!isGroupSubType && (
+            <div ref={knowledgeSectionRef}>
+              <ConfigOptionsHeader
+                title={t('PC.Pages.AgentArrangeConfig.knowledge')}
+              />
+              <ConfigOptionCollapse
+                items={KnowledgeList}
+                defaultActiveKey={knowledgeActiveKey}
+              />
+            </div>
+          )}
 
           {/* 记忆 */}
           <div ref={memorySectionRef}>
@@ -1451,23 +1551,21 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
           </div>
         </div>
       </div>
-      {/*添加插件、工作流、知识库、数据库弹窗*/}
+      {/* 添加插件、工作流、知识库、群组智能体等弹窗 */}
       <Created
         open={show}
         onCancel={() => setShow(false)}
-        checkTag={checkTag}
+        checkTag={
+          isGroupAgentCreatedMode ? AgentComponentTypeEnum.Agent : checkTag
+        }
         addComponents={addComponents}
         onAdded={handleAddComponent}
-        tabs={CREATED_TABS.filter((item) => {
-          // 如果是通用型智能体
-          if (agentConfigInfo?.type === AgentTypeEnum.TaskAgent) {
-            return item.key !== AgentComponentTypeEnum.Agent;
-          }
-          return (
-            item.key !== AgentComponentTypeEnum.Agent &&
-            item.key !== AgentComponentTypeEnum.Skill
-          );
-        })}
+        tabs={
+          isGroupAgentCreatedMode ? groupAgentCreatedTabs : defaultCreatedTabs
+        }
+        isSpaceOnly={isGroupAgentCreatedMode}
+        isGroupAgentPicker={isGroupAgentCreatedMode}
+        showMoreMenus={!isGroupAgentCreatedMode}
       />
       {/*创建变量弹窗*/}
       <CreateVariables
