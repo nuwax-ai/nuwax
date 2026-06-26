@@ -88,11 +88,24 @@ const NewHomeSection: React.FC<{
 
   useEffect(() => {
     const handleConversationUpdated = (e: Event) => {
-      const customEvent = e as CustomEvent<{ id: number; topic: string }>;
+      const customEvent = e as CustomEvent<{
+        id: number;
+        topic: string;
+        icon?: string;
+      }>;
       if (!customEvent.detail) return;
-      const { id, topic } = customEvent.detail;
+      const { id, topic, icon } = customEvent.detail;
       setLocalList((prev) =>
-        prev.map((item) => (item.id === id ? { ...item, topic } : item)),
+        prev.map((item) => {
+          if (item.id === id) {
+            return {
+              ...item,
+              topic,
+              icon,
+            };
+          }
+          return item;
+        }),
       );
     };
 

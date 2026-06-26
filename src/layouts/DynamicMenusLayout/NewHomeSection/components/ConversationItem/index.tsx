@@ -27,8 +27,8 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
 
   // 渲染智能体圆形头像，缺失或加载失败时使用默认图片兜底
   const renderAvatar = () => {
-    const icon = item.agent?.icon;
-    const name = item.agent?.name || item.topic || '';
+    const icon = item.icon || item.agent?.icon;
+    const name = item.topic || item.agent?.name || '';
 
     return (
       <div className={cx(styles['avatar-container'])}>

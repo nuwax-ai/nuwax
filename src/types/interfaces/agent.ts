@@ -643,6 +643,8 @@ export interface AgentConversationUpdateParams {
   firstMessage?: string;
   // 会话主题
   topic?: string;
+  // 会话图标
+  icon?: string;
 }
 
 // 查询会话消息列表输入参数

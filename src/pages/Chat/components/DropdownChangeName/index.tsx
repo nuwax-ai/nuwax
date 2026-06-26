@@ -1,3 +1,4 @@
+import UploadAvatar from '@/components/UploadAvatar';
 import {
   apiAgentConversationDelete,
   apiAgentConversationUpdate,
@@ -10,7 +11,6 @@ import { useRequest } from 'ahooks';
 import {
   Dropdown,
   Form,
-  FormProps,
   Input,
   MenuProps,
   message,
@@ -38,6 +38,7 @@ interface Porps {
 
 type FieldType = {
   topic?: string;
+  icon?: string;
 };
 
 const DropdownChangeName: React.FC<Porps> = ({
@@ -69,7 +70,7 @@ const DropdownChangeName: React.FC<Porps> = ({
 
   const items: MenuProps['items'] = [
     {
-      label: dict('PC.Pages.Chat.rename'),
+      label: dict('PC.Pages.UserManage.Index.edit'),
       key: 'edit',
       icon: <EditOutlined />,
     },
@@ -106,6 +107,7 @@ const DropdownChangeName: React.FC<Porps> = ({
         setConversationInfo({
           ...conversationInfo,
           topic: result.data.topic,
+          icon: result.data.icon,
           topicUpdated: 1,
         });
         message.success(dict('PC.Toast.Global.modifiedSuccessfully'));
@@ -113,7 +115,11 @@ const DropdownChangeName: React.FC<Porps> = ({
         // 派发自定义更新事件通知列表
         window.dispatchEvent(
           new CustomEvent('conversation-updated', {
-            detail: { id: conversationInfo.id, topic: result.data.topic },
+            detail: {
+              id: conversationInfo.id,
+              topic: result.data.topic,
+              icon: result.data.icon,
+            },
           }),
         );
 
@@ -194,8 +200,14 @@ const DropdownChangeName: React.FC<Porps> = ({
       // 重置表单
       form.resetFields();
       // 填充表单数据
-      form.setFieldsValue({ topic: cachedConversationInfo.topic });
-      setDisabledEdit(false);
+      form.setFieldsValue({
+        topic: cachedConversationInfo.topic,
+        icon:
+          cachedConversationInfo.icon ||
+          cachedConversationInfo.agent?.icon ||
+          '',
+      });
+      setDisabledEdit(true);
       setModalOpenEdit(true);
       return;
     }
@@ -211,15 +223,20 @@ const DropdownChangeName: React.FC<Porps> = ({
     onClick: handleMenuClick,
   };
 
-  const onValuesChange: FormProps<FieldType>['onValuesChange'] = (
-    changedValues,
-  ) => {
-    if (!changedValues.topic) {
-      setDisabledEdit(true);
-      return;
-    }
-    setDisabledEdit(changedValues.topic && changedValues.topic.trim() === '');
+  const iconValue = Form.useWatch('icon', form);
+
+  const onValuesChange = () => {
+    const values = form.getFieldsValue();
+    const hasTopicChanged = values.topic !== cachedConversationInfo.topic;
+    const currentIcon =
+      cachedConversationInfo.icon || cachedConversationInfo.agent?.icon || '';
+    const hasIconChanged = values.icon !== currentIcon;
+
+    // 只有名称非空，且（名称发生改变 或 图标发生改变）时才启用保存按钮
+    const isTopicValid = values.topic && values.topic.trim() !== '';
+    setDisabledEdit(!(isTopicValid && (hasTopicChanged || hasIconChanged)));
   };
+
   const handleSubmit = async () => {
     const values: FieldType = await form.validateFields();
     try {
@@ -227,6 +244,7 @@ const DropdownChangeName: React.FC<Porps> = ({
       await runUpdateTopic({
         id: cachedConversationInfo.id,
         topic: values.topic,
+        icon: values.icon,
       });
       setModalOpenEdit(false);
     } finally {
@@ -249,7 +267,7 @@ const DropdownChangeName: React.FC<Porps> = ({
         </div>
       </Dropdown>
       <Modal
-        title={dict('PC.Pages.Chat.rename')}
+        title={dict('PC.Pages.Chat.editConversationInfo')}
         centered
         okButtonProps={{ disabled: disabledEdit, loading: loadingEdit }}
         open={modalOpenEdit}
@@ -259,15 +277,31 @@ const DropdownChangeName: React.FC<Porps> = ({
         <Form
           form={form}
           name="basic"
-          labelCol={{ span: 0 }}
+          labelCol={{ span: 24 }}
           wrapperCol={{ span: 24 }}
           style={{ maxWidth: 600 }}
           initialValues={{ remember: true }}
           onValuesChange={onValuesChange}
           autoComplete="off"
+          layout="vertical"
         >
+          <Form.Item
+            label={dict('PC.Pages.Chat.conversationIcon')}
+            name="icon"
+            className={cx(styles['avatar-upload-item'])}
+          >
+            <UploadAvatar
+              imageUrl={iconValue || ''}
+              onUploadSuccess={(url) => {
+                form.setFieldsValue({ icon: url });
+                onValuesChange();
+              }}
+              svgIconName="icons-common-plus"
+            />
+          </Form.Item>
+
           <Form.Item<FieldType>
-            label=""
+            label={dict('PC.Pages.Chat.conversationName')}
             name="topic"
             rules={[
               {
