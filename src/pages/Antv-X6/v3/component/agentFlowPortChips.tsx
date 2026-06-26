@@ -67,7 +67,7 @@ function buildChips(data: ChildNode): ChipDescriptor[] {
       const routes: any[] = nc.intentConfigs || [];
       // default 端口不渲染 chip；第 1 个 route 实际是 outputPorts 数组下标 1
       return routes.map((r, i) => ({
-        label: r.intent || r.name || `Route ${i + 1}`,
+        label: r.name || r.intent || `Route ${i + 1}`,
         tone: 'route',
         portIndex: i + 1,
       }));

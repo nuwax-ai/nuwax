@@ -1856,6 +1856,7 @@ export const ZH_HK: SystemLangMap = {
   "PC.Pages.AgentFlowNode.formTypeInput": "單行文字",
   "PC.Pages.AgentFlowNode.formTypeNumber": "數字",
   "PC.Pages.AgentFlowNode.formTypeRadio": "單選",
+  "PC.Pages.AgentFlowNode.formTypeSelect": "下拉單選",
   "PC.Pages.AgentFlowNode.formTypeTextarea": "多行文字",
   "PC.Pages.AgentFlowNode.replyModeLabel": "回覆模式",
   "PC.Pages.AgentFlowParams.groupAgentFlowProcess": "處理節點",

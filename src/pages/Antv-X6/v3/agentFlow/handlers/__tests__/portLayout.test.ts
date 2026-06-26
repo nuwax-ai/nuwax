@@ -12,6 +12,7 @@ import type { ChildNode } from '@/types/interfaces/graph';
 import { describe, expect, it } from 'vitest';
 import {
   BRANCH_PORT_BASE_Y,
+  BRANCH_PORT_DESC_HEIGHT,
   BRANCH_PORT_ITEM_HEIGHT,
   BRANCH_PORT_STEP,
   branchPortY,
@@ -24,6 +25,7 @@ describe('portLayout constants', () => {
     expect(BRANCH_PORT_BASE_Y).toBe(42);
     expect(BRANCH_PORT_ITEM_HEIGHT).toBe(24);
     expect(BRANCH_PORT_STEP).toBe(12);
+    expect(BRANCH_PORT_DESC_HEIGHT).toBe(17);
     expect(ROUTE_DEFAULT_PORT_COLOR).toBe('#bfbfbf');
   });
 });
@@ -89,6 +91,24 @@ describe('branchPortY', () => {
       const { yHeight, offsetY } = branchPortY(i);
       expect(offsetY - yHeight).toBe(BRANCH_PORT_STEP);
     }
+  });
+
+  it('should shift ports down by descHeight when hasDescription:true', () => {
+    for (let i = 0; i < 5; i++) {
+      const without = branchPortY(i);
+      const withDesc = branchPortY(i, { hasDescription: true });
+      expect(withDesc.yHeight).toBe(without.yHeight + BRANCH_PORT_DESC_HEIGHT);
+      expect(withDesc.offsetY).toBe(without.offsetY + BRANCH_PORT_DESC_HEIGHT);
+    }
+    // i=0 带描述：baseY=42+17=59 → yHeight=59+24-12=71
+    const first = branchPortY(0, { hasDescription: true });
+    expect(first.yHeight).toBe(71);
+    expect(first.offsetY).toBe(83);
+  });
+
+  it('should default hasDescription to false (no shift) when options omitted', () => {
+    expect(branchPortY(0)).toEqual(branchPortY(0, { hasDescription: false }));
+    expect(branchPortY(0)).toEqual(branchPortY(0, {}));
   });
 });
 

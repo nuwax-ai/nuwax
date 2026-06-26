@@ -138,8 +138,21 @@ function migrateLegacyFormField(f: any): Record<string, any> {
   return arg;
 }
 
-/** 归一化单个 formArg：补全 inputType、按控件类型同步 dataType、单选/多选补 selectConfig */
-function normalizeOneFormArg(a: any): Record<string, any> {
+/** 选项 → 多行字符串（每行一个选项，用于表单文本框编辑；中文 IME / 回车换行友好） */
+function optionsToMultiline(raw: unknown): string {
+  return toLabelValueOptions(raw)
+    .map((o) => o.label)
+    .join('\n');
+}
+
+/**
+ * 归一化单个 formArg：补全 inputType、按控件类型同步 dataType、单选/多选补 selectConfig。
+ * @param mode 'edit'（默认，加载进表单：options 为多行字符串）/ 'save'（保存给后端：options 为 {label,value}[]）
+ */
+function processFormArg(
+  a: any,
+  mode: 'edit' | 'save' = 'edit',
+): Record<string, any> {
   if (!a) return a;
   const fa: Record<string, any> = { ...a };
   if (!fa.inputType)
@@ -162,7 +175,8 @@ function normalizeOneFormArg(a: any): Record<string, any> {
     const raw = fa.selectConfig?.options ?? fa.options;
     fa.selectConfig = {
       dataSourceType: 'MANUAL',
-      options: toLabelValueOptions(raw),
+      options:
+        mode === 'save' ? toLabelValueOptions(raw) : optionsToMultiline(raw),
     };
   } else {
     fa.selectConfig = null;
@@ -187,7 +201,7 @@ function normalizeFormArgs(
   } else {
     return [];
   }
-  return args.map(normalizeOneFormArg);
+  return args.map((a) => processFormArg(a, 'edit'));
 }
 
 /**
@@ -274,9 +288,9 @@ export function serializeHitlNodeConfig(
       nc.options?.map((item: any) => ({ ...item, nextNodeIds: [] })) || [];
   }
 
-  // 表单字段：复用 normalizeOneFormArg（与加载同款逻辑，避免两处分叉）
+  // 表单字段：保存态（options 转为后端契约 {label,value}[]）
   if (Array.isArray(nc.formArgs) && nc.formArgs.length) {
-    nc.formArgs = nc.formArgs.map(normalizeOneFormArg);
+    nc.formArgs = nc.formArgs.map((a) => processFormArg(a, 'save'));
   }
 
   delete nc.askConfig;
@@ -287,20 +301,38 @@ export function serializeHitlNodeConfig(
 }
 
 /**
- * 保存前节点预处理：HumanInteraction 节点先扁平化 nodeConfig，其余原样返回。
- * 供 WorkflowSaveService / workflowProxyV3 共用，避免两处重复包裹
- * serializeHitlNodeConfig 造成实现漂移。
+ * 保存前节点预处理（供 WorkflowSaveService / workflowProxyV3 共用）：
+ * - HumanInteraction：扁平化 QA 字段（formArgs/selectConfig 等）
+ * - 通用：剥离后端解析的完整 modelConfig（仅展示用，前端只回传顶层 modelId）
+ * - 通用：节点配置只在 nodeConfig 内——剥掉 node 顶层与 nodeConfig 同名的重复字段
+ *   （如 intentConfigs / inputArgs / modelId 等不再散落在 node 顶层）
  */
 export function prepareNodeForBackendSerialize<
   T extends { type?: any; nodeConfig?: any },
 >(node: T): T {
-  if (node.type === NodeTypeEnum.HumanInteraction && node.nodeConfig) {
-    return {
-      ...node,
-      nodeConfig: serializeHitlNodeConfig(
-        node.nodeConfig as Record<string, any>,
-      ),
-    };
+  if (!node.nodeConfig) return node;
+  // 以原始 nodeConfig 的 key 集合判定哪些是「配置字段」，用于剥离 node 顶层重复；
+  // modelConfig 任何情况下都不该出现在顶层（前端只回传 modelId），显式纳入剥离集合。
+  const configKeys = new Set(Object.keys(node.nodeConfig));
+  configKeys.add('modelConfig');
+  // HumanInteraction：扁平化 QA 字段
+  let nc = node.nodeConfig as Record<string, any>;
+  if (node.type === NodeTypeEnum.HumanInteraction) {
+    nc = serializeHitlNodeConfig(nc);
   }
-  return node;
+  // 剥离完整 modelConfig（仅展示用，回传 modelId 即可）
+  if (nc.modelConfig !== undefined) {
+    const rest = { ...nc };
+    delete rest.modelConfig;
+    nc = rest;
+  }
+  // 重建 node：仅保留节点级字段（非配置）+ nodeConfig
+  const cleaned: Record<string, any> = {};
+  for (const [k, v] of Object.entries(node)) {
+    if (k === 'nodeConfig') continue;
+    if (configKeys.has(k)) continue; // 配置字段，已在 nodeConfig，顶层不再重复
+    cleaned[k] = v;
+  }
+  cleaned.nodeConfig = nc;
+  return cleaned as T;
 }

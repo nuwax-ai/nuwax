@@ -10,21 +10,18 @@
  */
 
 import ExpandableInputTextarea from '@/components/ExpandTextArea';
-import CustomTree from '@/components/FormListItem/NestedForm';
 import { transformToPromptVariables } from '@/components/TiptapVariableInput/utils/variableTransform';
 import { t } from '@/services/i18nRuntime';
+import { InputItemNameEnum } from '@/types/enums/node';
 import { InputAndOutConfig } from '@/types/interfaces/node';
 import { NodeDisposeProps } from '@/types/interfaces/workflow';
 import { Form, Input, InputNumber } from 'antd';
 import React from 'react';
 import { useModel } from 'umi';
+import { outPutConfigs } from '../../ParamsV3';
+import { InputAndOut } from '../../component/commonNode';
 
-const AgentNodeForm: React.FC<NodeDisposeProps> = ({
-  form,
-  nodeConfig,
-  id,
-  type,
-}) => {
+const AgentNodeForm: React.FC<NodeDisposeProps> = ({ form, nodeConfig }) => {
   const { referenceList } = useModel('workflowV3');
 
   const inputArgs =
@@ -47,16 +44,12 @@ const AgentNodeForm: React.FC<NodeDisposeProps> = ({
       </Form.Item>
 
       <div className="node-item-style">
-        <Form.Item name="inputArgs">
-          <CustomTree
-            key={`${type}-${id}-inputArgs`}
-            title={t('PC.Pages.AgentFlowNode.agentInputLabel', '入参')}
-            inputItemName="inputArgs"
-            params={nodeConfig?.inputArgs || []}
-            form={form}
-            showCheck
-          />
-        </Form.Item>
+        <InputAndOut
+          title={t('PC.Pages.AgentFlowNode.agentInputLabel', '入参')}
+          fieldConfigs={outPutConfigs}
+          inputItemName={InputItemNameEnum.inputArgs}
+          form={form}
+        />
       </div>
 
       <div className="node-item-style">

@@ -1988,6 +1988,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.AgentFlowNode.formTypeInput": "Text Input",
   "PC.Pages.AgentFlowNode.formTypeNumber": "Number",
   "PC.Pages.AgentFlowNode.formTypeRadio": "Single Select",
+  "PC.Pages.AgentFlowNode.formTypeSelect": "Dropdown",
   "PC.Pages.AgentFlowNode.formTypeTextarea": "Textarea",
   "PC.Pages.AgentFlowNode.replyModeLabel": "Reply Mode",
   "PC.Pages.AgentFlowParams.groupAgentFlowProcess": "Process Nodes",

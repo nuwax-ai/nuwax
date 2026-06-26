@@ -1,101 +1,74 @@
 /**
  * routeConditionAdapter 单元测试
+ *
+ * RouteDecision 用结构化 conditionArgs（多条件 AND/OR）；末尾固定一条
+ * 「其他意图」兜底分支（intentType:OTHER），用户分支 intentType:NORMAL。
  */
 
 import { describe, expect, it } from 'vitest';
 import {
   createEmptyConditionArg,
-  parseConditionToConditionArgs,
-  serializeConditionArg,
+  createOtherIntentBranch,
+  hydrateIntentConfigs,
 } from '../adapters/routeConditionAdapter';
 
 describe('routeConditionAdapter', () => {
-  it('serialize EQUAL with literal value', () => {
-    const args = [
-      {
-        compareType: 'EQUAL',
-        firstArg: {
-          bindValue: 'k1',
-          bindValueType: 'Reference',
-          name: 'userQuery',
-        },
-        secondArg: { bindValue: 'foo', bindValueType: 'Input', name: '' },
-      },
-    ];
-    expect(serializeConditionArg(args as any)).toBe('{{userQuery}} == foo');
+  it('createEmptyConditionArg: 左值=变量、右值=字面值', () => {
+    const arg = createEmptyConditionArg();
+    expect(arg.compareType).toBe('EQUAL');
+    expect(arg.firstArg?.bindValueType).toBe('Reference');
+    expect(arg.secondArg?.bindValueType).toBe('Input');
   });
 
-  it('serialize CONTAINS', () => {
-    const args = [
-      {
-        compareType: 'CONTAINS',
-        firstArg: { bindValue: 'k1', name: 'userQuery' },
-        secondArg: { bindValue: '退货', bindValueType: 'Input' },
-      },
-    ];
-    expect(serializeConditionArg(args as any)).toBe(
-      '{{userQuery}} contains 退货',
-    );
+  it('createOtherIntentBranch: intentType=OTHER、name=其他意图、无条件', () => {
+    const b = createOtherIntentBranch();
+    expect(b.intentType).toBe('OTHER');
+    expect(b.name).toBe('其他意图');
+    expect(b.conditionArgs).toEqual([]);
   });
 
-  it('serialize 多条件默认 AND 连接', () => {
-    const args = [
+  it('hydrateIntentConfigs: 旧字段对齐 intent→name / description→intent，用户分支标 NORMAL，末尾补 OTHER', () => {
+    const out = hydrateIntentConfigs([
       {
-        compareType: 'CONTAINS',
-        firstArg: { bindValue: 'k1', name: 'userQuery' },
-        secondArg: { bindValue: '退货', bindValueType: 'Input' },
+        uuid: 'r-1',
+        intent: '退货',
+        description: '退货描述',
+        condition: '{{x}} == 1', // 废弃，应去除
+        expression: null, // 废弃
+        conditionArgs: [{ compareType: 'EQUAL' }],
+        nextNodeIds: [2],
       },
-      {
-        compareType: 'GREATER_THAN_OR_EQUAL',
-        firstArg: { bindValue: 'k2', name: 'score' },
-        secondArg: { bindValue: '60', bindValueType: 'Input' },
-      },
-    ];
-    expect(serializeConditionArg(args as any)).toBe(
-      '{{userQuery}} contains 退货 AND {{score}} >= 60',
-    );
+    ]);
+    expect(out).toHaveLength(2); // 用户分支 + 末尾兜底
+    expect(out[0]).toMatchObject({
+      uuid: 'r-1',
+      name: '退货',
+      intent: '退货描述',
+      intentType: 'NORMAL',
+      nextNodeIds: [2],
+    });
+    expect(out[0].condition).toBeUndefined();
+    expect(out[0].expression).toBeUndefined();
+    expect(out[0].conditionArgs).toHaveLength(1);
+    expect(out[1].intentType).toBe('OTHER');
+    expect(out[1].name).toBe('其他意图');
   });
 
-  it('serialize 多条件 OR 连接', () => {
-    const args = [
-      {
-        compareType: 'EQUAL',
-        firstArg: { bindValue: 'k1', name: 'a' },
-        secondArg: { bindValue: '1', bindValueType: 'Input' },
-      },
-      {
-        compareType: 'EQUAL',
-        firstArg: { bindValue: 'k2', name: 'b' },
-        secondArg: { bindValue: '2', bindValueType: 'Input' },
-      },
-    ];
-    expect(serializeConditionArg(args as any, undefined, 'OR')).toBe(
-      '{{a}} == 1 OR {{b}} == 2',
-    );
+  it('hydrateIntentConfigs: OTHER 兜底分支挪到末尾，仅保留一条', () => {
+    const out = hydrateIntentConfigs([
+      { uuid: 'a', intentType: 'OTHER', name: '兜底', nextNodeIds: [9] },
+      { uuid: 'b', name: '用户分支', conditionArgs: [] },
+    ]);
+    expect(out).toHaveLength(2);
+    expect(out[0].uuid).toBe('b');
+    expect(out[0].intentType).toBe('NORMAL');
+    expect(out[1].uuid).toBe('a');
+    expect(out[1].intentType).toBe('OTHER');
   });
 
-  it('serialize 过滤未填写的空条件', () => {
-    const args = [
-      {
-        compareType: 'EQUAL',
-        firstArg: { bindValue: 'k1', name: 'a' },
-        secondArg: { bindValue: '1', bindValueType: 'Input' },
-      },
-      createEmptyConditionArg(),
-    ];
-    expect(serializeConditionArg(args as any)).toBe('{{a}} == 1');
-  });
-
-  it('parse contains expression', () => {
-    const parsed = parseConditionToConditionArgs('{{userQuery}} contains 退货');
-    expect(parsed[0].compareType).toBe('CONTAINS');
-    expect(parsed[0].firstArg?.name).toBe('userQuery');
-    expect(parsed[0].secondArg?.bindValue).toBe('退货');
-  });
-
-  it('empty condition returns default arg', () => {
-    expect(parseConditionToConditionArgs('')[0]).toEqual(
-      createEmptyConditionArg(),
-    );
+  it('hydrateIntentConfigs: 无数据时返回单条 OTHER 兜底分支', () => {
+    const out = hydrateIntentConfigs([]);
+    expect(out).toHaveLength(1);
+    expect(out[0].intentType).toBe('OTHER');
   });
 });

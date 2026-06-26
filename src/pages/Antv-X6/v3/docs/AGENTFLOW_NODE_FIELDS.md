@@ -70,7 +70,7 @@ interface Arg {
 
 ## 1. 路由决策 `RouteDecision` → 后端 `IntentRecognition`
 
-在意图识别基础上，**每条 `intentConfigs` 新增 `condition`（单条件）字段**，其余复用意图识别。
+每条 `intentConfigs` 分支用结构化 `conditionArgs`（多条件，按 `conditionType` 用 AND/OR 连接）做条件匹配，对齐条件节点。**不再使用 `condition` 字符串字段**（已废弃 conditionArgs↔condition 互转）。
 
 ### 1.1 `nodeConfig` 字段
 
@@ -90,29 +90,41 @@ interface Arg {
 | 字段 | 类型 | 必填 | 说明 |
 | --- | --- | --- | --- |
 | `uuid` | `string` | 是 | 前端生成，端口/连线识别用，保存运行需稳定保留 |
-| `intent` | `string` | 是 | 分支名称（复用意图识别 `intent` 字段，≤32 字符） |
-| `description` | `string` | 否 | 分支描述（“什么情况下走这条分支”） |
-| `condition` | `string` | 否 | **【新增】** 条件匹配表达式（**单条件**，不支持多条件叠加 / AND / OR），**后端以此为执行依据**；支持 `{{变量}}` 引用，语法见 1.3 |
+| `name` | `string` | 是 | 分支名称（≤32 字符，端口/连线 label 取此） |
+| `intent` | `string` | 否 | 分支描述（“什么情况下走这条分支”） |
+| `intentType` | `'NORMAL' \| 'OTHER'` | 是 | `NORMAL`=用户分支；`OTHER`=末尾兜底分支（见下） |
+| `conditionArgs` | `ConditionArgs[]` | 否 | 结构化条件（支持多条），见 1.3；`OTHER` 分支不用 |
+| `conditionType` | `'AND' \| 'OR'` | 否 | 多条件连接符（默认 `AND`） |
 | `nextNodeIds` | `number[]` | 否 | 命中该分支后走的节点 |
 
-### 1.3 `condition` 表达式语法
+> 字段对齐：旧 `intent`(分支名)→`name`，旧 `description`(描述)→`intent`；加载时由适配层迁移。废弃字段 `condition` / `expression` 会被剥离；`intentType` 规范化为 `NORMAL`/`OTHER`。
 
-每条分支**只匹配一个条件**（不支持添加多条件、AND / OR 连接）。表达式形如 `{{左值}} <op> 右值`，运算符 token：
+**「其他意图」兜底分支（`intentType: OTHER`）**：`intentConfigs` 末尾固定一条，名称固定「其他意图」，**不可删除、始终在最后、不展示条件匹配**（无 `conditionArgs`），命中即走其 `nextNodeIds`。加载时由适配层保证存在且仅一条（缺失则补、多余则仅保留最后一条）。
 
-| compareType | token | compareType | token |
+### 1.3 `ConditionArgs`（结构化条件，对齐条件节点）
+
+### 1.3 `ConditionArgs`（结构化条件，对齐条件节点）
+
+```ts
+interface ConditionArgs {
+  compareType: string; // 运算符，见下表
+  firstArg: BindConfig | null; // 左值（变量引用）：bindValueType:'Reference'
+  secondArg: BindConfig | null; // 右值（字面值）：bindValueType:'Input'
+}
+```
+
+同分支多条 `conditionArgs` 按 `conditionType`（`AND`/`OR`）连接。右操作数固定为**字面值**（前端不再提供「值/变量」切换）。运算符 `compareType` 取值：
+
+| compareType | 含义 | compareType | 含义 |
 | --- | --- | --- | --- |
-| `EQUAL` | `==` | `CONTAINS` | `contains` |
-| `NOT_EQUAL` | `!=` | `NOT_CONTAINS` | `not contains` |
-| `GREATER_THAN` | `>` | `MATCH_REGEX` | `matches` |
-| `GREATER_THAN_OR_EQUAL` | `>=` | `IS_NULL` | `is null` |
-| `LESS_THAN` | `<` | `NOT_NULL` | `is not null` |
-| `LESS_THAN_OR_EQUAL` | `<=` | `LENGTH_GREATER_THAN` | `length>` |
-| `LENGTH_GREATER_THAN_OR_EQUAL` | `length>=` | `LENGTH_LESS_THAN` | `length<` |
-| `LENGTH_LESS_THAN_OR_EQUAL` | `length<=` |  |  |
-
-- 变量统一格式化为 `{{name}}`；右值为字面值（如 `退货`、`60`）或变量（`{{expected}}`）。
-- `IS_NULL` / `NOT_NULL` 无右值，形如 `{{x}} is null`。
-- 示例：`{{userQuery}} contains 退货`、`{{score}} >= 60`、`{{reply}} == {{expected}}`。
+| `EQUAL` | 等于 | `CONTAINS` | 包含 |
+| `NOT_EQUAL` | 不等于 | `NOT_CONTAINS` | 不包含 |
+| `GREATER_THAN` | 大于 | `MATCH_REGEX` | 正则匹配 |
+| `GREATER_THAN_OR_EQUAL` | 大于等于 | `IS_NULL` | 为空 |
+| `LESS_THAN` | 小于 | `NOT_NULL` | 非空 |
+| `LESS_THAN_OR_EQUAL` | 小于等于 | `LENGTH_GREATER_THAN` | 长度大于 |
+| `LENGTH_GREATER_THAN_OR_EQUAL` | 长度大于等于 | `LENGTH_LESS_THAN` | 长度小于 |
+| `LENGTH_LESS_THAN_OR_EQUAL` | 长度小于等于 |  |  |
 
 ### 1.4 示例
 
@@ -129,9 +141,24 @@ interface Arg {
     "intentConfigs": [
       {
         "uuid": "r-1",
-        "intent": "退货咨询",
-        "description": "用户提问包含退货关键词",
-        "condition": "{{userQuery}} contains 退货",
+        "name": "退货咨询",
+        "intent": "用户提问包含退货关键词",
+        "conditionType": "AND",
+        "conditionArgs": [
+          {
+            "compareType": "CONTAINS",
+            "firstArg": {
+              "bindValue": "1.userQuery",
+              "bindValueType": "Reference",
+              "name": "userQuery"
+            },
+            "secondArg": {
+              "bindValue": "退货",
+              "bindValueType": "Input",
+              "name": ""
+            }
+          }
+        ],
         "nextNodeIds": [202]
       }
     ],
@@ -473,4 +500,4 @@ interface QAOption {
 ## 5. 待确认项
 
 1. ~~表单字段 `formArgs[].options` 数组 vs 字符串~~ → **已定：选择类字段走 `selectConfig`**（`{ dataSourceType: 'MANUAL', options: [{label, value}] }`，`label`/`value` 传相同值）。前端「每行一个选项」录入，保存时转换为 `{label, value}` 数组；加载时自动迁移历史「换行字符串 / string[]」。
-2. ~~路由决策 · `condition` vs `conditionArgs`~~ → **已定：仅 `condition` 单条件字符串**（每条分支只匹配一个条件，不支持多条件 / AND / OR；已移除 `conditionArgs` / `conditionType`）。
+2. ~~路由决策 · `condition` vs `conditionArgs`~~ → **已定：用结构化 `conditionArgs`（多条件，按 `conditionType` AND/OR 连接，对齐条件节点），废弃 `condition` 字符串字段及 conditionArgs↔condition 互转逻辑**。字段同步对齐：`intent`→`name`（分支名）、`description`→`intent`（描述）。

@@ -245,37 +245,27 @@ const HumanInteractionAskForm: React.FC<NodeDisposeProps> = ({ form }) => {
                       </Form.Item>
 
                       {isChoice && (
-                        <Form.Item
-                          name={[name, 'selectConfig', 'options']}
-                          noStyle
-                          getValueProps={(value) => ({
-                            value: Array.isArray(value)
-                              ? value
-                                  .map((o: any) =>
-                                    o && typeof o === 'object' ? o.label : o,
-                                  )
-                                  .join('\n')
-                              : '',
-                          })}
-                          normalize={(value) =>
-                            typeof value === 'string'
-                              ? value
-                                  .split('\n')
-                                  .map((s: string) => s.trim())
-                                  .filter(Boolean)
-                                  .map((s: string) => ({ label: s, value: s }))
-                              : value
-                          }
-                        >
-                          <TextArea
-                            className="ask-form-field-card__options"
-                            rows={2}
-                            placeholder={t(
-                              'PC.Pages.AgentFlowNode.formFieldOptionsPlaceholder',
-                              '每行一个选项',
+                        <>
+                          <div className="ask-form-field-card__options-title">
+                            {t(
+                              'PC.Pages.AgentFlowNode.askOptionsTitle',
+                              '选项内容',
                             )}
-                          />
-                        </Form.Item>
+                          </div>
+                          <Form.Item
+                            name={[name, 'selectConfig', 'options']}
+                            noStyle
+                          >
+                            <TextArea
+                              className="ask-form-field-card__options"
+                              rows={3}
+                              placeholder={t(
+                                'PC.Pages.AgentFlowNode.formFieldOptionsPlaceholder',
+                                '每行一个选项',
+                              )}
+                            />
+                          </Form.Item>
+                        </>
                       )}
                     </div>
                   );

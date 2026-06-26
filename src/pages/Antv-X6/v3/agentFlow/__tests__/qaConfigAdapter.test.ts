@@ -3,12 +3,13 @@
  *
  * answerType 为权威字段（TEXT / SELECT / FORM），兼容历史 askConfig 与旧 replyMode。
  */
-import { AnswerTypeEnum } from '@/types/enums/common';
+import { AnswerTypeEnum, NodeTypeEnum } from '@/types/enums/common';
 import { describe, expect, it } from 'vitest';
 import {
   getHitlOptions,
   isHitlOptionsBranchMode,
   normalizeHitlNodeConfig,
+  prepareNodeForBackendSerialize,
   serializeHitlNodeConfig,
 } from '../adapters/qaConfigAdapter';
 
@@ -119,10 +120,8 @@ describe('qaConfigAdapter', () => {
       inputType: 'checkboxes',
       require: true,
     });
-    expect(out.formArgs[0].selectConfig.options).toEqual([
-      { label: 'A', value: 'A' },
-      { label: 'B', value: 'B' },
-    ]);
+    // edit 态：options 为多行字符串（表单文本框直接编辑，回车/中文 IME 友好）
+    expect(out.formArgs[0].selectConfig.options).toBe('A\nB');
   });
 
   it('isHitlOptionsBranchMode 仅 SELECT 为真', () => {
@@ -135,5 +134,84 @@ describe('qaConfigAdapter', () => {
     expect(isHitlOptionsBranchMode({ answerType: AnswerTypeEnum.TEXT })).toBe(
       false,
     );
+  });
+
+  it('prepareNodeForBackendSerialize: 剥离后端解析的完整 modelConfig（仅保留顶层 modelId）', () => {
+    // 非 HumanInteraction 节点（如 LLM / 路由决策）也应剥离
+    const llm = prepareNodeForBackendSerialize({
+      id: 1,
+      type: NodeTypeEnum.LLM,
+      nodeConfig: {
+        modelId: 5,
+        modelConfig: {
+          id: 5,
+          name: 'deepseek',
+          creator: { userId: 1 },
+          tenantId: 1,
+        },
+        temperature: 0.7,
+      },
+    });
+    expect(llm.nodeConfig.modelConfig).toBeUndefined();
+    expect(llm.nodeConfig.modelId).toBe(5);
+    expect(llm.nodeConfig.temperature).toBe(0.7);
+  });
+
+  it('prepareNodeForBackendSerialize: HumanInteraction 同时扁平化并剥离 modelConfig', () => {
+    const out = prepareNodeForBackendSerialize({
+      id: 2,
+      type: NodeTypeEnum.HumanInteraction,
+      nodeConfig: {
+        answerType: AnswerTypeEnum.FORM,
+        modelId: 5,
+        modelConfig: { id: 5, name: 'deepseek', creator: {} },
+        formArgs: [
+          {
+            name: '类型',
+            inputType: 'select',
+            selectConfig: { options: 'a\nb' },
+          },
+        ],
+      },
+    });
+    expect(out.nodeConfig.modelConfig).toBeUndefined();
+    expect(out.nodeConfig.modelId).toBe(5);
+    expect(out.nodeConfig.formArgs[0].selectConfig.options).toEqual([
+      { label: 'a', value: 'a' },
+      { label: 'b', value: 'b' },
+    ]);
+  });
+
+  it('prepareNodeForBackendSerialize: 节点顶层不重复 nodeConfig 字段（配置只在 nodeConfig）', () => {
+    const out = prepareNodeForBackendSerialize({
+      id: 1,
+      name: '路由决策',
+      type: NodeTypeEnum.IntentRecognition,
+      nextNodeIds: [2],
+      nodeConfig: {
+        modelId: 5,
+        intentConfigs: [{ uuid: 'r1', intent: '退货' }],
+        inputArgs: [],
+        outputArgs: [],
+      },
+      // 顶层重复散落的配置字段（应被剥掉，只在 nodeConfig 内）
+      intentConfigs: [{ uuid: 'r1', intent: '退货' }],
+      inputArgs: [],
+      modelId: 5,
+      modelConfig: { id: 5, name: 'deepseek' },
+    } as any);
+    // 节点级字段保留
+    expect(out.id).toBe(1);
+    expect(out.name).toBe('路由决策');
+    expect(out.nextNodeIds).toEqual([2]);
+    // 顶层不再有任何配置字段
+    expect((out as any).intentConfigs).toBeUndefined();
+    expect((out as any).inputArgs).toBeUndefined();
+    expect((out as any).modelId).toBeUndefined();
+    expect((out as any).modelConfig).toBeUndefined();
+    // 配置完整保留在 nodeConfig 内（modelConfig 也已整体去除，只留 modelId）
+    expect(out.nodeConfig.intentConfigs).toHaveLength(1);
+    expect(out.nodeConfig.modelId).toBe(5);
+    expect(out.nodeConfig.modelConfig).toBeUndefined();
   });
 });

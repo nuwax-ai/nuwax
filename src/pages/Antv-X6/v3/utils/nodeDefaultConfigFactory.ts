@@ -4,7 +4,10 @@
  * 用于离线模式下生成节点的默认配置
  */
 
-import { createEmptyConditionArg } from '@/pages/Antv-X6/v3/agentFlow/adapters/routeConditionAdapter';
+import {
+  createEmptyConditionArg,
+  createOtherIntentBranch,
+} from '@/pages/Antv-X6/v3/agentFlow/adapters/routeConditionAdapter';
 import {
   AnswerTypeEnum,
   DataTypeEnum,
@@ -58,10 +61,10 @@ export const NODE_DEFAULT_NAMES: Partial<Record<NodeTypeEnum, string>> = {
   [NodeTypeEnum.LoopCondition]: 'Loop Condition',
   [NodeTypeEnum.Interval]: 'Interval',
   [NodeTypeEnum.TextProcessing]: 'Text Processing',
-  // AgentFlow 专用
-  [NodeTypeEnum.Agent]: 'Agent',
-  [NodeTypeEnum.HumanInteraction]: 'Human Interaction',
-  [NodeTypeEnum.RouteDecision]: 'Route Decision',
+  // AgentFlow 专用（默认名与侧边栏 i18n 名称保持一致）
+  [NodeTypeEnum.Agent]: '智能体',
+  [NodeTypeEnum.HumanInteraction]: '询问用户',
+  [NodeTypeEnum.RouteDecision]: '路由决策',
 };
 
 /**
@@ -151,14 +154,14 @@ function createDefaultIntentConfig(): any[] {
   return [
     {
       uuid: `intent-${generateUuid()}`,
+      name: '',
       intent: '',
-      description: '',
-      condition: '',
-      // 对齐条件节点：多条件连接符（前端单条件编辑，默认 AND）
+      intentType: 'NORMAL',
       conditionType: 'AND',
       conditionArgs: [createEmptyConditionArg()],
       nextNodeIds: [],
     },
+    createOtherIntentBranch(),
   ];
 }
 

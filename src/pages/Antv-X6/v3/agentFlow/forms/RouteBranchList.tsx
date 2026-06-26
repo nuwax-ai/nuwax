@@ -1,5 +1,8 @@
 /**
- * 路由决策 - 路由分支卡片列表（对齐原型：序号徽标 + 标题 + 描述 + 条件匹配）
+ * 路由决策 - 路由分支卡片列表
+ *
+ * 末尾固定一条「其他意图」兜底分支（intentType:OTHER）：不可删、始终在最后、
+ * 不展示描述/条件匹配。其余为用户分支（intentType:NORMAL）。
  */
 
 import { t } from '@/services/i18nRuntime';
@@ -11,7 +14,6 @@ import { v4 as uuidv4 } from 'uuid';
 import {
   createEmptyConditionArg,
   hydrateIntentConfigs,
-  syncBranchConditionField,
 } from '../adapters/routeConditionAdapter';
 import './RouteBranchList.less';
 import RouteConditionMatch from './RouteConditionMatch';
@@ -20,17 +22,14 @@ const { TextArea } = Input;
 
 export interface RouteBranchListProps {
   form: FormInstance;
-  argMap?: Record<string, any>;
 }
 
-const RouteBranchList: React.FC<RouteBranchListProps> = ({ form, argMap }) => {
-  const intentConfigs = Form.useWatch('intentConfigs', {
-    form,
-    preserve: true,
-  });
+const RouteBranchList: React.FC<RouteBranchListProps> = ({ form }) => {
+  const intentConfigs =
+    Form.useWatch('intentConfigs', { form, preserve: true }) || [];
   const hydratedRef = useRef(false);
 
-  /** 加载历史数据：补全 conditionArgs，并同步 condition（仅首次） */
+  /** 加载历史数据：字段对齐 + 补全 conditionArgs + 确保末尾 OTHER 兜底分支（仅首次） */
   useEffect(() => {
     if (hydratedRef.current) return;
     const raw = form.getFieldValue('intentConfigs');
@@ -42,18 +41,9 @@ const RouteBranchList: React.FC<RouteBranchListProps> = ({ form, argMap }) => {
       hydratedRef.current = true;
       return;
     }
-    const hydrated = hydrateIntentConfigs(raw, argMap);
-    form.setFieldsValue({ intentConfigs: hydrated });
+    form.setFieldsValue({ intentConfigs: hydrateIntentConfigs(raw) });
     hydratedRef.current = true;
-  }, [form, argMap]);
-
-  /** 编辑 conditionArgs 时同步 condition 字符串 */
-  useEffect(() => {
-    if (!intentConfigs?.length) return;
-    intentConfigs.forEach((_: unknown, index: number) => {
-      syncBranchConditionField(form, index, argMap);
-    });
-  }, [intentConfigs, form, argMap]);
+  }, [form]);
 
   return (
     <Form.List name="intentConfigs">
@@ -69,74 +59,99 @@ const RouteBranchList: React.FC<RouteBranchListProps> = ({ form, argMap }) => {
               icon={<PlusOutlined />}
               className="route-branch-list__add-btn"
               onClick={() => {
-                add({
-                  uuid: uuidv4(),
-                  intent: '',
-                  description: '',
-                  condition: '',
-                  conditionType: 'AND',
-                  conditionArgs: [createEmptyConditionArg()],
-                  nextNodeIds: [],
-                });
+                // 新增用户分支插到末尾 OTHER 兜底分支之前
+                add(
+                  {
+                    uuid: uuidv4(),
+                    name: '',
+                    intent: '',
+                    intentType: 'NORMAL',
+                    conditionType: 'AND',
+                    conditionArgs: [createEmptyConditionArg()],
+                    nextNodeIds: [],
+                  },
+                  Math.max(0, fields.length - 1),
+                );
               }}
             >
               {t('PC.Pages.AgentFlowNode.routeAddBranch', '添加分支')}
             </Button>
           </div>
 
-          {fields.map(({ key, name }, index) => (
-            <div key={key} className="route-branch-card">
-              <Button
-                type="text"
-                size="small"
-                className="route-branch-card__close"
-                icon={<CloseOutlined />}
-                onClick={() => remove(name)}
-                disabled={fields.length <= 1}
-              />
+          {fields.map(({ key, name }, index) => {
+            const isOther = intentConfigs[name]?.intentType === 'OTHER';
 
-              <div className="route-branch-card__title-row">
-                <span className="route-branch-card__index">{index + 1}</span>
+            // 「其他意图」兜底分支：固定名称、无描述/条件匹配、不可删
+            if (isOther) {
+              return (
+                <div
+                  key={key}
+                  className="route-branch-card route-branch-card--other"
+                >
+                  <div className="route-branch-card__title-row">
+                    <span className="route-branch-card__index">
+                      {index + 1}
+                    </span>
+                    <span className="route-branch-card__other-name">
+                      {t('PC.Pages.AgentFlowNode.routeOtherIntent', '其他意图')}
+                    </span>
+                  </div>
+                  <Form.Item name={[name, 'uuid']} hidden preserve />
+                  <Form.Item name={[name, 'intentType']} hidden preserve />
+                  <Form.Item name={[name, 'nextNodeIds']} hidden preserve />
+                </div>
+              );
+            }
+
+            return (
+              <div key={key} className="route-branch-card">
+                <Button
+                  type="text"
+                  size="small"
+                  className="route-branch-card__close"
+                  icon={<CloseOutlined />}
+                  onClick={() => remove(name)}
+                />
+
+                <div className="route-branch-card__title-row">
+                  <span className="route-branch-card__index">{index + 1}</span>
+                  <Form.Item
+                    name={[name, 'name']}
+                    className="route-branch-card__title-input"
+                    rules={[{ required: true, max: 32 }]}
+                  >
+                    <Input
+                      bordered={false}
+                      placeholder={t(
+                        'PC.Pages.AgentFlowNode.routeDecisionRouteNamePlaceholder',
+                        '分支名称',
+                      )}
+                    />
+                  </Form.Item>
+                </div>
+
                 <Form.Item
                   name={[name, 'intent']}
-                  className="route-branch-card__title-input"
-                  rules={[{ required: true, max: 32 }]}
+                  className="route-branch-card__desc"
                 >
-                  <Input
-                    bordered={false}
+                  <TextArea
+                    rows={2}
                     placeholder={t(
-                      'PC.Pages.AgentFlowNode.routeDecisionRouteNamePlaceholder',
-                      '分支名称',
+                      'PC.Pages.AgentFlowNode.routeDecisionRouteDescriptionPlaceholder',
+                      '什么情况下走这条分支...',
                     )}
                   />
                 </Form.Item>
+
+                <Form.Item name={[name, 'uuid']} hidden preserve />
+                <Form.Item name={[name, 'intentType']} hidden preserve />
+                <Form.Item name={[name, 'conditionType']} hidden preserve />
+                <Form.Item name={[name, 'nextNodeIds']} hidden preserve />
+
+                <RouteConditionMatch form={form} listFieldName={name} />
               </div>
-
-              <Form.Item
-                name={[name, 'description']}
-                className="route-branch-card__desc"
-              >
-                <TextArea
-                  rows={2}
-                  placeholder={t(
-                    'PC.Pages.AgentFlowNode.routeDecisionRouteDescriptionPlaceholder',
-                    '什么情况下走这条分支...',
-                  )}
-                />
-              </Form.Item>
-
-              <Form.Item name={[name, 'uuid']} hidden preserve />
-              <Form.Item name={[name, 'condition']} hidden preserve />
-              <Form.Item name={[name, 'conditionType']} hidden preserve />
-              <Form.Item name={[name, 'nextNodeIds']} hidden preserve />
-
-              <RouteConditionMatch
-                form={form}
-                listFieldName={name}
-                argMap={argMap}
-              />
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </Form.List>

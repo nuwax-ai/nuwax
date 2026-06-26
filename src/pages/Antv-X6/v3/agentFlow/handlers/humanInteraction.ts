@@ -46,8 +46,10 @@ export const humanInteractionHandler: BranchNodeHandler = {
           ],
         };
       }
+      // 节点带描述行时，分支端口整体随条目下移 descHeight，保持圆点与条目对齐
+      const branchOpts = { hasDescription: !!(data as any).description };
       const outputPorts = options.map((opt: any, i: number) => {
-        const y = branchPortY(i);
+        const y = branchPortY(i, branchOpts);
         return ctx.generatePortConfig({
           group: PortGroupEnum.special,
           idSuffix: `hitl-option-${opt.uuid || `o${i}`}-out`,

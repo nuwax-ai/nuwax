@@ -38,6 +38,7 @@ import {
 import { workflowProxy } from '../services/workflowProxyV3';
 import { getEdges } from '../utils/graphV3';
 import { clearPendingNodeCreateSession } from '../utils/nodeCreateSession';
+import { createDefaultNodeConfig } from '../utils/nodeDefaultConfigFactory';
 import {
   getNodeSize,
   getShape,
@@ -785,12 +786,27 @@ export const useNodeOperations = ({
             extension: _params.extension,
           },
         };
+        // name/description 始终以请求值为准：后端 apiAddNodeV3 的回显可能为空或回写后端默认文案
+        //（如 Agent 节点），若不还原，画布节点会丢失名称/描述，进而保存时不传给后端。
+        _params = {
+          ..._params,
+          name: requestedName,
+          description: requestedDescription,
+        };
+        // 仅「类型被映射」的节点（RouteDecision/HumanInteraction）需要把 type 还原为前端语义
         if (wasRemapped) {
-          _params = {
-            ..._params,
-            type: requestedType,
-            name: requestedName,
-            description: requestedDescription,
+          _params = { ..._params, type: requestedType };
+        }
+        // Agent 节点的 outputArgs（output → Agent reply）是前端默认值，后端 apiAddNodeV3
+        // 不会回显；合并后若缺失则补齐，否则下游「变量引用」里看不到智能体节点的输出变量。
+        if (
+          _params.type === NodeTypeEnum.Agent &&
+          (!_params.nodeConfig?.outputArgs ||
+            _params.nodeConfig.outputArgs.length === 0)
+        ) {
+          _params.nodeConfig = {
+            ..._params.nodeConfig,
+            outputArgs: createDefaultNodeConfig(NodeTypeEnum.Agent).outputArgs,
           };
         }
 
@@ -1084,10 +1100,13 @@ export const useNodeOperations = ({
         };
       } else if (val.targetType === AgentComponentTypeEnum.Agent) {
         // 智能体节点：弹窗选择当前空间已发布 ChatBot，写入 agentId 及默认配置字段
+        // name/description 缺省回退到智能体节点的类型名/类型描述，保证画布始终有名称与描述
         _child = {
-          name: val.name,
+          name: val.name || t('PC.Pages.AgentFlowParams.nodeAgentName'),
           shape: NodeShapeEnum.General,
-          description: val.description,
+          description:
+            val.description ||
+            t('PC.Pages.AgentFlowParams.nodeAgentDescription'),
           type: NodeTypeEnum.Agent,
           nodeConfig: {
             agentId: val.targetId,

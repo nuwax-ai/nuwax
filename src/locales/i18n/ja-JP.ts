@@ -1857,6 +1857,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.AgentFlowNode.formTypeInput": "テキスト入力",
   "PC.Pages.AgentFlowNode.formTypeNumber": "数値",
   "PC.Pages.AgentFlowNode.formTypeRadio": "単一選択",
+  "PC.Pages.AgentFlowNode.formTypeSelect": "ドロップダウン",
   "PC.Pages.AgentFlowNode.formTypeTextarea": "テキストエリア",
   "PC.Pages.AgentFlowNode.replyModeLabel": "返信モード",
   "PC.Pages.AgentFlowParams.groupAgentFlowProcess": "処理ノード",

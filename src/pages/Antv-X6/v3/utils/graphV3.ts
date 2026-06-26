@@ -127,7 +127,7 @@ function parseEdgeBranch(
     const sourceData = edge.getSourceNode()?.getData() || {};
     const routes: any[] = (sourceData as any)?.nodeConfig?.intentConfigs || [];
     const found = routes.find((r) => r.uuid === uuid);
-    const label = found?.intent || found?.name || `Route ${uuid.slice(0, 4)}`;
+    const label = found?.name || found?.intent || `Route ${uuid.slice(0, 4)}`;
     return { stroke: BRANCH_PALETTE.route.stroke, label };
   }
   return null;

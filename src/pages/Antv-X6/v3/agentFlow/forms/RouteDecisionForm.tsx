@@ -64,7 +64,7 @@ const RouteDecisionForm: React.FC<NodeDisposeProps> = ({ form }) => {
       </div>
 
       <div className="node-item-style">
-        <RouteBranchList form={form} argMap={referenceList?.argMap} />
+        <RouteBranchList form={form} />
       </div>
     </div>
   );

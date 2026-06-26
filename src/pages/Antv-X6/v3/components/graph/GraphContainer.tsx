@@ -1,3 +1,4 @@
+import { useCanvasFullscreen } from '@/contexts/CanvasFullscreenContext';
 import { NodeTypeEnum, RunResultStatusEnum } from '@/types/enums/common';
 import { NodeSizeGetTypeEnum } from '@/types/enums/node';
 import type {
@@ -67,6 +68,8 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
     ref,
   ) => {
     const { modal, message } = App.useApp();
+    // AgentFlow 画布的全屏状态（仅 AgentFlowCanvas 提供；Workflow 模式恒为 false）
+    const isCanvasFullscreen = useCanvasFullscreen();
     registerCustomNodes();
     const containerRef = useRef<HTMLDivElement>(null);
     const graphRef = useRef<any>(null);
@@ -699,6 +702,16 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         }, 100);
       };
     }, []);
+
+    // AgentFlow 画布切入全屏时，画布尺寸变化：等待容器重排 + X6 autoResize 后再「缩放到适配画布」，
+    // 保证全屏后所有节点都落在视口内。Workflow 模式 isCanvasFullscreen 恒为 false，不会触发。
+    useEffect(() => {
+      if (!isCanvasFullscreen || !graphRef.current) return;
+      const timer = setTimeout(() => {
+        graphRef.current?.graphChangeZoomToFit();
+      }, 200);
+      return () => clearTimeout(timer);
+    }, [isCanvasFullscreen]);
 
     useEffect(() => {
       if (graphParams.nodeList.length === 0) {

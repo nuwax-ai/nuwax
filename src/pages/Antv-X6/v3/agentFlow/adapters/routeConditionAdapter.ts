@@ -1,33 +1,17 @@
 /**
- * 路由决策分支条件：结构化 conditionArgs ↔ 后端 condition 字符串互转
+ * 路由决策分支条件适配
  *
- * 后端契约：intentConfigs[].condition 为表达式字符串（如 {{userQuery}} contains 退货）
- * 前端 UI：用 conditionArgs[0] 承载「变量 + 运算符 + 值/变量」结构化编辑
+ * RouteDecision 的 intentConfigs 直接使用结构化 conditionArgs（多条件，AND/OR 连接），
+ * 对齐条件节点。不再保留 condition 字符串字段。
+ *
+ * 末尾固定一条「其他意图」兜底分支（intentType:'OTHER'）：不可删、始终在最后、无条件匹配。
  */
 
 import type { BindConfigWithSub } from '@/types/interfaces/common';
 import type { ConditionArgs } from '@/types/interfaces/node';
+import { v4 as uuidv4 } from 'uuid';
 
-/** 运算符 → condition 字符串中的符号/关键字 */
-const COMPARE_SYMBOL_MAP: Record<string, string> = {
-  EQUAL: '==',
-  NOT_EQUAL: '!=',
-  GREATER_THAN: '>',
-  GREATER_THAN_OR_EQUAL: '>=',
-  LESS_THAN: '<',
-  LESS_THAN_OR_EQUAL: '<=',
-  LENGTH_GREATER_THAN: 'length>',
-  LENGTH_GREATER_THAN_OR_EQUAL: 'length>=',
-  LENGTH_LESS_THAN: 'length<',
-  LENGTH_LESS_THAN_OR_EQUAL: 'length<=',
-  CONTAINS: 'contains',
-  NOT_CONTAINS: 'not contains',
-  MATCH_REGEX: 'matches',
-  IS_NULL: 'is null',
-  NOT_NULL: 'is not null',
-};
-
-/** 创建空的条件匹配项（单条） */
+/** 创建空的条件匹配项（左值=变量 Reference，右值=字面值 Input） */
 export function createEmptyConditionArg(): ConditionArgs {
   return {
     compareType: 'EQUAL',
@@ -44,230 +28,62 @@ export function createEmptyConditionArg(): ConditionArgs {
   };
 }
 
-/**
- * 将引用参数格式化为 {{name}} 形式
- */
-function formatReferenceToken(
-  arg: BindConfigWithSub | null | undefined,
-  argMap?: Record<string, BindConfigWithSub>,
-): string {
-  if (!arg?.bindValue) return '';
-  const mapped = argMap?.[arg.bindValue];
-  const name = arg.name || mapped?.name || arg.bindValue;
-  return `{{${name}}}`;
+/** 创建「其他意图」兜底分支（intentType:OTHER，无条件匹配） */
+export function createOtherIntentBranch(): Record<string, any> {
+  return {
+    uuid: uuidv4(),
+    name: '其他意图',
+    intent: '',
+    intentType: 'OTHER',
+    conditionArgs: [],
+    conditionType: 'AND',
+    nextNodeIds: [],
+  };
 }
 
 /**
- * 格式化比较右侧：Input 为字面值，Reference 为 {{name}}
- */
-function formatRightOperand(
-  arg: BindConfigWithSub | null | undefined,
-  argMap?: Record<string, BindConfigWithSub>,
-): string {
-  if (!arg?.bindValue) return '';
-  if (arg.bindValueType === 'Reference') {
-    return formatReferenceToken(arg, argMap);
-  }
-  return String(arg.bindValue).trim();
-}
-
-/**
- * 序列化单条条件为子表达式（无值时返回空串）
- */
-function serializeOneCondition(
-  item: ConditionArgs | undefined,
-  argMap?: Record<string, BindConfigWithSub>,
-): string {
-  if (!item?.firstArg?.bindValue) return '';
-
-  const left = formatReferenceToken(item.firstArg, argMap);
-  const compareType = item.compareType || 'EQUAL';
-  const opToken = COMPARE_SYMBOL_MAP[compareType] || '==';
-
-  if (compareType === 'IS_NULL' || compareType === 'NOT_NULL') {
-    return `${left} ${opToken}`.trim();
-  }
-
-  const right = formatRightOperand(item.secondArg, argMap);
-  if (!right) return '';
-
-  return `${left} ${opToken} ${right}`;
-}
-
-/**
- * conditionArgs → condition 字符串（保存给后端）。
- * 对齐条件节点：同一分支内多条件按 conditionType（AND/OR）连接。
- */
-export function serializeConditionArg(
-  conditionArgs: ConditionArgs[] | undefined,
-  argMap?: Record<string, BindConfigWithSub>,
-  conditionType: 'AND' | 'OR' = 'AND',
-): string {
-  if (!conditionArgs?.length) return '';
-  const parts = conditionArgs
-    .map((item) => serializeOneCondition(item, argMap))
-    .filter(Boolean);
-  if (!parts.length) return '';
-  return parts.join(conditionType === 'OR' ? ' OR ' : ' AND ');
-}
-
-/**
- * 从已有 condition 字符串粗解析为 conditionArgs（加载历史数据）
- * 无法解析时返回默认空结构
- */
-export function parseConditionToConditionArgs(
-  condition?: string,
-): ConditionArgs[] {
-  const empty = createEmptyConditionArg();
-  const text = condition?.trim();
-  if (!text) return [empty];
-
-  const nullMatch = text.match(/^\{\{([^}]+)\}\}\s+(is null|is not null)$/i);
-  if (nullMatch) {
-    return [
-      {
-        compareType:
-          nullMatch[2].toLowerCase() === 'is null' ? 'IS_NULL' : 'NOT_NULL',
-        firstArg: {
-          bindValue: '',
-          bindValueType: 'Reference',
-          name: nullMatch[1].trim(),
-        } as BindConfigWithSub,
-        secondArg: null,
-      },
-    ];
-  }
-
-  const keywordMatch = text.match(
-    /^\{\{([^}]+)\}\}\s+(contains|not contains|matches)\s+(.+)$/i,
-  );
-  if (keywordMatch) {
-    const opKey = keywordMatch[2].toLowerCase();
-    const compareType =
-      opKey === 'contains'
-        ? 'CONTAINS'
-        : opKey === 'not contains'
-        ? 'NOT_CONTAINS'
-        : 'MATCH_REGEX';
-    return [
-      {
-        compareType,
-        firstArg: {
-          bindValue: '',
-          bindValueType: 'Reference',
-          name: keywordMatch[1].trim(),
-        } as BindConfigWithSub,
-        secondArg: {
-          bindValue: keywordMatch[3].trim(),
-          bindValueType: 'Input',
-          name: '',
-        } as BindConfigWithSub,
-      },
-    ];
-  }
-
-  const symbolMatch = text.match(
-    /^\{\{([^}]+)\}\}\s*(==|!=|>=|<=|>|<)\s*(.+)$/,
-  );
-  if (symbolMatch) {
-    const op = symbolMatch[2];
-    const rightRaw = symbolMatch[3].trim();
-    const compareType =
-      Object.entries(COMPARE_SYMBOL_MAP).find(([, v]) => v === op)?.[0] ||
-      'EQUAL';
-    const isRef = /^\{\{[^}]+\}\}$/.test(rightRaw);
-    return [
-      {
-        compareType,
-        firstArg: {
-          bindValue: '',
-          bindValueType: 'Reference',
-          name: symbolMatch[1].trim(),
-        } as BindConfigWithSub,
-        secondArg: {
-          bindValue: isRef ? rightRaw.slice(2, -2) : rightRaw,
-          bindValueType: isRef ? 'Reference' : 'Input',
-          name: isRef ? rightRaw.slice(2, -2) : '',
-        } as BindConfigWithSub,
-      },
-    ];
-  }
-
-  return [empty];
-}
-
-/**
- * 根据变量展示名在 argMap 中反查 bindValue（加载解析后的回填）
- */
-function resolveFirstArgBindValue(
-  firstArg: BindConfigWithSub | null | undefined,
-  argMap?: Record<string, BindConfigWithSub>,
-): BindConfigWithSub | null | undefined {
-  if (!firstArg || firstArg.bindValue || !firstArg.name || !argMap) {
-    return firstArg;
-  }
-  const matched = Object.entries(argMap).find(
-    ([, v]) => v?.name === firstArg.name,
-  );
-  if (!matched) return firstArg;
-  return { ...firstArg, bindValue: matched[0] };
-}
-
-/**
- * 为 intentConfigs 补全 conditionArgs，并同步 condition 字段
+ * 加载时归一化 intentConfigs：
+ * - 字段对齐：旧 intent→name（分支名）、旧 description→intent（描述）
+ * - 移除废弃字段：expression / condition
+ * - intentType 规范化：仅 'OTHER'（兜底）/ 'NORMAL'（用户分支）两种；历史脏值统一归 NORMAL
+ * - 非兜底分支确保有 conditionArgs、conditionType 默认 AND
+ * - 末尾固定一条「其他意图」(intentType:OTHER) 兜底分支（缺失则补；多余则仅保留最后一条、其余降级 NORMAL）
  */
 export function hydrateIntentConfigs(
   intentConfigs: Array<Record<string, any>> | undefined,
-  argMap?: Record<string, BindConfigWithSub>,
 ): Array<Record<string, any>> {
-  if (!intentConfigs?.length) return [];
-  return intentConfigs.map((item) => {
-    const conditionArgs = (
-      item.conditionArgs?.length > 0
-        ? item.conditionArgs
-        : parseConditionToConditionArgs(item.condition)
-    ).map((arg: ConditionArgs) => ({
-      ...arg,
-      firstArg: resolveFirstArgBindValue(arg.firstArg, argMap),
-      secondArg:
-        arg.secondArg?.bindValueType === 'Reference'
-          ? resolveFirstArgBindValue(arg.secondArg, argMap)
-          : arg.secondArg,
-    }));
-    const conditionType = item.conditionType === 'OR' ? 'OR' : 'AND';
-    const condition = serializeConditionArg(
-      conditionArgs,
-      argMap,
-      conditionType,
-    );
-    return { ...item, conditionArgs, conditionType, condition };
-  });
-}
+  if (!intentConfigs?.length) return [createOtherIntentBranch()];
 
-/**
- * 同步单条分支的 condition 字段（表单编辑时调用）
- */
-export function syncBranchConditionField(
-  form: {
-    getFieldValue: (n: any) => any;
-    setFieldValue: (n: any, v: any) => void;
-  },
-  branchIndex: number,
-  argMap?: Record<string, BindConfigWithSub>,
-): void {
-  const conditionArgs = form.getFieldValue([
-    'intentConfigs',
-    branchIndex,
-    'conditionArgs',
-  ]) as ConditionArgs[] | undefined;
-  const conditionType = form.getFieldValue([
-    'intentConfigs',
-    branchIndex,
-    'conditionType',
-  ]) as 'AND' | 'OR' | undefined;
-  const condition = serializeConditionArg(conditionArgs, argMap, conditionType);
-  const prev = form.getFieldValue(['intentConfigs', branchIndex, 'condition']);
-  if (prev !== condition) {
-    form.setFieldValue(['intentConfigs', branchIndex, 'condition'], condition);
-  }
+  const mapped = intentConfigs.map((item) => {
+    const isLegacy = item.description !== undefined;
+    const name = isLegacy ? item.intent : item.name ?? '';
+    const intent = isLegacy ? item.description : item.intent;
+    const isOther = item.intentType === 'OTHER';
+    const conditionArgs = isOther
+      ? []
+      : Array.isArray(item.conditionArgs) && item.conditionArgs.length
+      ? item.conditionArgs
+      : [createEmptyConditionArg()];
+    return {
+      uuid: item.uuid,
+      nextNodeIds: item.nextNodeIds ?? [],
+      name,
+      intent,
+      intentType: isOther ? 'OTHER' : 'NORMAL',
+      conditionArgs,
+      conditionType: item.conditionType === 'OR' ? 'OR' : 'AND',
+    };
+  });
+
+  // 末尾仅保留一条 OTHER：其余 OTHER 降级为 NORMAL（留在原位）
+  const lastOtherIdx = mapped.map((b) => b.intentType).lastIndexOf('OTHER');
+  const normalized = mapped.map((b, i) =>
+    b.intentType === 'OTHER' && i !== lastOtherIdx
+      ? { ...b, intentType: 'NORMAL' }
+      : b,
+  );
+  const otherBranch =
+    lastOtherIdx >= 0 ? normalized[lastOtherIdx] : createOtherIntentBranch();
+  const rest = normalized.filter((_, i) => i !== lastOtherIdx);
+  return [...rest, { ...otherBranch, name: otherBranch.name || '其他意图' }];
 }

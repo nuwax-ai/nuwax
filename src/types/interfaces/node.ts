@@ -111,12 +111,15 @@ export interface ConditionBranchConfigs {
 
 export interface IntentConfigs {
   nextNodeIds: number[];
-  intent: string;
   uuid: string;
+  /** 分支名称（RouteDecision 用；旧 IntentRecognition 用 intent 作分支名） */
+  name?: string;
+  /** IntentRecognition：分支名；RouteDecision：分支描述（由旧 description 迁移而来） */
+  intent?: string;
   intentType?: string;
   /** 路由决策（RouteDecision）：条件比对表达式（在原 intentConfigs 基础上新增） */
   condition?: string;
-  /** 路由决策（RouteDecision）：分支描述（沿用我们的属性面板 UI） */
+  /** 分支描述（旧字段，RouteDecision 已迁移到 intent） */
   description?: string;
   /** 路由决策（RouteDecision）：结构化条件匹配（前端编辑，保存时同步至 condition；对齐条件节点，支持多条件） */
   conditionArgs?: ConditionArgs[];

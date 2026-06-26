@@ -59,8 +59,22 @@
     font-size: 12px;
   }
 
-  &__options {
-    margin-top: 6px;
+  &__options-title {
+    margin-top: 8px;
+    margin-bottom: 4px;
     font-size: 12px;
+    font-weight: 600;
+    color: #333;
+  }
+
+  &__options {
+    margin-top: 2px;
+    font-size: 12px;
+    // 撤销面板内 .fold-wrap-style .ant-input { height: 28px } 的全局覆盖
+    //（该规则特异性更高，会把 TextArea 压成单行），恢复 rows={3} 的固定 3 行高度
+    height: auto !important;
+    min-height: 66px;
+    // 固定 3 行高度，超出滚动（不自动撑高）
+    resize: vertical;
   }
 }

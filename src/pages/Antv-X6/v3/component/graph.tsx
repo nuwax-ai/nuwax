@@ -1076,6 +1076,10 @@ const initGraph = ({
 
   registerNodeClickAndDblclick({ graph, changeZIndex, changeDrawer });
 
+  // 将 flowKind 挂到 graph 实例上，供 X6 react-shape 节点组件（GeneralNode）读取。
+  // x6-react-shape 自建 React Root、不传播 host 树 Context，故走实例属性而非 Context。
+  (graph as any).flowKind = flowKind;
+
   return graph; //
 };
 

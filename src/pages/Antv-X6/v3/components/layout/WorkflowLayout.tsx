@@ -286,6 +286,10 @@ const WorkflowLayout: React.FC<WorkflowLayoutProps> = ({
 
       <FoldWrap
         className="fold-wrap-style"
+        // AgentFlow 画布无顶部 Header（由 EditAgent 的 AgentHeader 提供），
+        // 面板无需为 56px Header 预留 top；用内联样式覆盖，与 bottom:12 对称，
+        // 且不依赖 LESS 重新编译（HMR 对内联样式可靠）。
+        style={isAgentFlow ? { top: 12 } : undefined}
         lineMargin
         title={foldWrapItem.name}
         visible={visible}

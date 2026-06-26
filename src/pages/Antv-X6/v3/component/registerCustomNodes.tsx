@@ -8,7 +8,6 @@ import {
   EXCEPTION_HANDLE_OPTIONS,
   optionsMap,
 } from '@/pages/Antv-X6/v3/constants/node.constants';
-import { isAgentFlowType } from '@/pages/Antv-X6/v3/flowKind/flowKindConfig';
 import {
   returnBackgroundColor,
   returnImg,
@@ -16,6 +15,7 @@ import {
 import { t } from '@/services/i18nRuntime';
 import {
   AnswerTypeEnum,
+  FlowKindEnum,
   NodeShapeEnum,
   NodeTypeEnum,
   RunResultStatusEnum,
@@ -101,8 +101,8 @@ const RouteDecisionNode: React.FC<{ data: ChildNode }> = ({ data }) => {
             style={{ backgroundColor: '#fa8c16' }}
           />
           <span className="route-decision-name">
-            {route.intent ||
-              route.name ||
+            {route.name ||
+              route.intent ||
               t('PC.Pages.AgentFlowNode.routeDecisionItemFallback', i + 1)}
           </span>
         </div>
@@ -370,8 +370,9 @@ export const GeneralNode: React.FC<NodeProps> = (props) => {
     NodeTypeEnum.IntentRecognition,
   ].includes(data.type);
   const marginBottom = isSpecialNode ? '10px' : '0';
-  // AgentFlow 节点走白卡片 + 端口 chip；其他节点保留原渐变 + 徽章
-  const isAgentFlow = isAgentFlowType(data.type);
+  // AgentFlow 画布下所有节点统一渲染描述行（flowKind 由 graph 实例携带，见
+  // graph.tsx initGraph）。原 Workflow 模式 flowKind=Workflow，保持不渲染描述。
+  const isAgentFlow = (graph as any)?.flowKind === FlowKindEnum.AgentFlow;
 
   const handleEditingStatusChange = (val: boolean) => {
     // 编辑中不能移动节点

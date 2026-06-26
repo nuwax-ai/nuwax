@@ -1969,6 +1969,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.AgentFlowNode.formTypeInput": "单行文本",
   "PC.Pages.AgentFlowNode.formTypeNumber": "数字",
   "PC.Pages.AgentFlowNode.formTypeRadio": "单选",
+  "PC.Pages.AgentFlowNode.formTypeSelect": "下拉单选",
   "PC.Pages.AgentFlowNode.formTypeTextarea": "多行文本",
   "PC.Pages.AgentFlowNode.replyModeLabel": "回复模式",
   "PC.Pages.AgentFlowNode.replyModeTextReply": "文本回复",
