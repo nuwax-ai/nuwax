@@ -30,10 +30,7 @@ import type {
   BindConfigWithSub,
   UploadFileInfo,
 } from '@/types/interfaces/common';
-import type {
-  RcoderAcpPermissionInteraction,
-  RcoderRequestPermissionResponse,
-} from './acpPermission';
+import type { RcoderAcpPermissionInteraction } from './acpPermission';
 
 // 会话聊天消息
 export interface ConversationChatMessage {
@@ -464,12 +461,6 @@ export interface ChatViewProps {
   showStatusDesc?: boolean;
   // debug 图标显隐控制
   showDebug?: boolean;
-  // ACP 权限审批回调
-  onAcpPermissionRespond?: (
-    interaction: RcoderAcpPermissionInteraction,
-    response: RcoderRequestPermissionResponse,
-    options?: { saveRule?: boolean },
-  ) => void;
 }
 
 // 卡片信息
