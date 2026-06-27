@@ -149,7 +149,7 @@ const RecommendListPage: React.FC<RecommendListPageProps> = ({
         onOk: async () => {
           const res = await apiSystemDeleteDisplayRecommend(record.id);
           if (res?.code === SUCCESS_CODE) {
-            message.success(dict('PC.Common.Global.deletedSuccessfully'));
+            message.success(dict('PC.Common.Global.deleteSuccess'));
             reloadTable();
           }
         },

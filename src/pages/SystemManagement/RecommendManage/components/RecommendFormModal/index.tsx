@@ -135,6 +135,8 @@ const RecommendFormModal: React.FC<RecommendFormModalProps> = ({
   const searchTimerRef = useRef<number>();
   /** 防止滚动加载时重复请求 */
   const fetchingRef = useRef(false);
+  /** 编辑回填时跳过目标选择重置 */
+  const skipTargetResetRef = useRef(false);
 
   /** 官方推荐页：目标类型下拉选项 */
   const officialTargetTypeOptions = useMemo(
@@ -219,6 +221,12 @@ const RecommendFormModal: React.FC<RecommendFormModalProps> = ({
         setTargetOptions((prev) => {
           const merged = append ? [...prev, ...nextOptions] : nextOptions;
           const uniqueMap = new Map<number, TargetSelectOption>();
+          // 保留 prev 中 API 未返回的已选目标（编辑回显）
+          prev.forEach((option) => {
+            if (!merged.some((item) => item.value === option.value)) {
+              uniqueMap.set(option.value, option);
+            }
+          });
           merged.forEach((option) => {
             uniqueMap.set(option.value, option);
           });
@@ -238,29 +246,45 @@ const RecommendFormModal: React.FC<RecommendFormModalProps> = ({
   useEffect(() => {
     if (!open) return;
     if (editingRecord) {
+      skipTargetResetRef.current = true;
+      const editTarget = {
+        targetId: editingRecord.targetId,
+        name: editingRecord.label,
+        icon: editingRecord.icon,
+      } as SquarePublishedItemInfo;
+
       setTargetType(editingRecord.targetType as DisplayRecommendTargetTypeEnum);
       setFunctionType(
         (editingRecord.functionType as DisplayRecommendFunctionTypeEnum) || '',
       );
       setSelectedTargetId(editingRecord.targetId);
-      setSelectedTarget({
-        targetId: editingRecord.targetId,
-        name: editingRecord.label,
-        icon: editingRecord.icon,
-      } as SquarePublishedItemInfo);
+      setSelectedTarget(editTarget);
+      setTargetOptions([
+        {
+          label: editingRecord.label,
+          value: editingRecord.targetId,
+          item: editTarget,
+        },
+      ]);
       return;
     }
     resetForm();
   }, [open, editingRecord, resetForm]);
 
-  /** 新增模式下，目标类型变化时重新加载第一页 */
+  /** 目标类型变化或弹窗打开时加载目标列表 */
   useEffect(() => {
-    if (!open || isEdit) return;
-    setTargetSearchKw('');
-    setSelectedTargetId(undefined);
-    setSelectedTarget(null);
+    if (!open) return;
+
+    if (skipTargetResetRef.current) {
+      skipTargetResetRef.current = false;
+    } else {
+      setTargetSearchKw('');
+      setSelectedTargetId(undefined);
+      setSelectedTarget(null);
+    }
+
     fetchTargets(1, '', false);
-  }, [open, isEdit, targetType, fetchTargets]);
+  }, [open, targetType, fetchTargets]);
 
   /** 卸载时清理搜索防抖定时器 */
   useEffect(() => {
@@ -299,21 +323,24 @@ const RecommendFormModal: React.FC<RecommendFormModalProps> = ({
    * 提交保存
    */
   const handleSubmit = async () => {
-    if (!isEdit && !selectedTarget) {
+    if (!selectedTarget) {
       message.warning(
-        dict('PC.Pages.SystemRecommendManage.selectTargetRequired'),
+        dict(
+          'PC.Pages.SystemRecommendManage.selectTargetRequired',
+          selectTargetLabel,
+        ),
       );
       return;
     }
 
     const payload: DisplayRecommendParams = {
       id: editingRecord?.id,
-      targetType: isEdit ? editingRecord!.targetType : targetType,
-      targetId: isEdit ? editingRecord!.targetId : selectedTarget!.targetId,
+      targetType,
+      targetId: selectedTarget.targetId,
       recType,
       functionType: functionType || '',
-      label: selectedTarget?.name || editingRecord?.label || '',
-      icon: selectedTarget?.icon || editingRecord?.icon || '',
+      label: selectedTarget.name || '',
+      icon: selectedTarget.icon || '',
       placeholder: editingRecord?.placeholder || '',
       sort: editingRecord?.sort ?? defaultSort,
     };
@@ -324,7 +351,13 @@ const RecommendFormModal: React.FC<RecommendFormModalProps> = ({
         ? await apiSystemUpdateDisplayRecommend(payload)
         : await apiSystemSaveDisplayRecommend(payload);
       if (res?.code === SUCCESS_CODE) {
-        message.success(dict('PC.Common.Global.savedSuccessfully'));
+        message.success(
+          dict(
+            isEdit
+              ? 'PC.Pages.SystemRecommendManage.updateSuccess'
+              : 'PC.Pages.SystemRecommendManage.createSuccess',
+          ),
+        );
         onSuccess();
         onCancel();
       }
@@ -346,8 +379,8 @@ const RecommendFormModal: React.FC<RecommendFormModalProps> = ({
       onCancel={onCancel}
       onConfirm={handleSubmit}
     >
-      {/* 对话框智能体：先选 functionType */}
-      {!isEdit && isChatboxPage && (
+      {/* 对话框智能体：选择 functionType */}
+      {isChatboxPage && (
         <div style={{ marginBottom: 16 }}>
           <div style={{ marginBottom: 8 }}>
             {dict('PC.Pages.SystemRecommendManage.colSubType')}
@@ -363,8 +396,8 @@ const RecommendFormModal: React.FC<RecommendFormModalProps> = ({
         </div>
       )}
 
-      {/* 官方推荐：先选目标类型 */}
-      {!isEdit && isOfficialPage && (
+      {/* 官方推荐：选择目标类型 */}
+      {isOfficialPage && (
         <div style={{ marginBottom: 16 }}>
           <div style={{ marginBottom: 8 }}>
             {dict('PC.Pages.SystemRecommendManage.colTargetType')}
@@ -382,47 +415,45 @@ const RecommendFormModal: React.FC<RecommendFormModalProps> = ({
         </div>
       )}
 
-      {/* 新增：从广场已发布列表选择目标（搜索 + 滚动加载） */}
-      {!isEdit && (
-        <div style={{ marginBottom: 16 }}>
-          <div style={{ marginBottom: 8 }}>{selectTargetLabel}</div>
-          <Select
-            showSearch
-            allowClear
-            filterOption={false}
-            style={{ width: '100%' }}
-            placeholder={dict('PC.Common.Global.pleaseSelect')}
-            value={selectedTargetId}
-            options={targetOptions}
-            loading={targetLoading}
-            onSearch={handleTargetSearch}
-            onPopupScroll={handlePopupScroll}
-            notFoundContent={
-              targetLoading ? (
-                <div style={{ textAlign: 'center', padding: 8 }}>
-                  <Spin size="small" />
-                </div>
-              ) : (
-                <Empty
-                  image={Empty.PRESENTED_IMAGE_SIMPLE}
-                  description={dict('PC.Common.Global.emptyData')}
-                />
-              )
+      {/* 从广场已发布列表选择目标（搜索 + 滚动加载） */}
+      <div style={{ marginBottom: 16 }}>
+        <div style={{ marginBottom: 8 }}>{selectTargetLabel}</div>
+        <Select
+          showSearch
+          allowClear
+          filterOption={false}
+          style={{ width: '100%' }}
+          placeholder={dict('PC.Common.Global.pleaseSelect')}
+          value={selectedTargetId}
+          options={targetOptions}
+          loading={targetLoading}
+          onSearch={handleTargetSearch}
+          onPopupScroll={handlePopupScroll}
+          notFoundContent={
+            targetLoading ? (
+              <div style={{ textAlign: 'center', padding: 8 }}>
+                <Spin size="small" />
+              </div>
+            ) : (
+              <Empty
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                description={dict('PC.Common.Global.emptyData')}
+              />
+            )
+          }
+          onChange={(value) => {
+            if (value === undefined || value === null) {
+              setSelectedTargetId(undefined);
+              setSelectedTarget(null);
+              return;
             }
-            onChange={(value) => {
-              if (value === undefined || value === null) {
-                setSelectedTargetId(undefined);
-                setSelectedTarget(null);
-                return;
-              }
-              const option = targetOptions.find((item) => item.value === value);
-              const item = option?.item;
-              setSelectedTargetId(value);
-              setSelectedTarget(item || null);
-            }}
-          />
-        </div>
-      )}
+            const option = targetOptions.find((item) => item.value === value);
+            const item = option?.item;
+            setSelectedTargetId(value);
+            setSelectedTarget(item || null);
+          }}
+        />
+      </div>
     </CustomFormModal>
   );
 };
