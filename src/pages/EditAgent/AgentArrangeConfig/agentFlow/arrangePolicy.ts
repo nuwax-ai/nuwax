@@ -1,7 +1,7 @@
 /**
  * AgentFlow 编排配置策略
  *
- * AgentFlow 的编排即画布本身，不支持外挂「工作流」「数据表」组件。
+ * AgentFlow 的编排即画布本身，不支持外挂插件/MCP/工作流/知识库/数据表等组件。
  * 本模块集中维护 AgentFlow 在 AgentArrangeConfig 中的展示/隐藏规则，避免业务页散落条件判断。
  */
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
@@ -11,6 +11,9 @@ import { AgentArrangeConfigEnum, AgentSubTypeEnum } from '@/types/enums/space';
 const HIDDEN_COMPONENT_TYPES = new Set<AgentComponentTypeEnum>([
   AgentComponentTypeEnum.Workflow,
   AgentComponentTypeEnum.Table,
+  AgentComponentTypeEnum.Knowledge,
+  AgentComponentTypeEnum.Plugin,
+  AgentComponentTypeEnum.MCP,
 ]);
 
 /** 判断是否为 AgentFlow 子类型 */
@@ -20,6 +23,18 @@ export const isAgentFlowSubType = (subType?: AgentSubTypeEnum): boolean =>
 export interface AgentFlowArrangePolicy {
   /** 当前是否为 AgentFlow */
   isFlow: boolean;
+  /** 是否展示整块「工具」区（插件 / 工作流 / MCP） */
+  showToolsSection: boolean;
+  /** 是否展示整块「知识」区 */
+  showKnowledgeSection: boolean;
+  /** 是否展示「子智能体」折叠项 */
+  showSubAgent: boolean;
+  /** 是否展示「长期记忆」折叠项 */
+  showLongMemory: boolean;
+  /** 是否展示「允许用户选择自有模型」 */
+  showAllowOtherModel: boolean;
+  /** 是否展示「Hook 设置」 */
+  showHook: boolean;
   /** 工具区是否展示「工作流」折叠项 */
   showWorkflowTool: boolean;
   /**
@@ -44,6 +59,12 @@ export const getAgentFlowArrangePolicy = (
 
   return {
     isFlow,
+    showToolsSection: !isFlow,
+    showKnowledgeSection: !isFlow,
+    showSubAgent: !isFlow,
+    showLongMemory: !isFlow,
+    showAllowOtherModel: !isFlow,
+    showHook: !isFlow,
     showWorkflowTool: !isFlow,
     showDataTableSection: (isGroupSubType) => !isGroupSubType && !isFlow,
     keepToolCollapseItem: (key) =>
