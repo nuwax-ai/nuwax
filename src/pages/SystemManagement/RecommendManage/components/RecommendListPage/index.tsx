@@ -67,6 +67,8 @@ const RecommendListPage: React.FC<RecommendListPageProps> = ({
   const originalDataRef = useRef<DisplayRecommendInfo[] | null>(null);
 
   const [records, setRecords] = useState<DisplayRecommendInfo[]>([]);
+  /** 列表总条数（按当前 recType 过滤后） */
+  const [listTotal, setListTotal] = useState(0);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editingRecord, setEditingRecord] =
@@ -95,6 +97,12 @@ const RecommendListPage: React.FC<RecommendListPageProps> = ({
   const reloadTable = useCallback(() => {
     actionRef.current?.reload();
   }, []);
+
+  /** 切换推荐类型时重置列表与分页总数 */
+  useEffect(() => {
+    setRecords([]);
+    setListTotal(0);
+  }, [config.recType]);
 
   /** 监听页面状态变化 */
   useEffect(() => {
@@ -132,7 +140,7 @@ const RecommendListPage: React.FC<RecommendListPageProps> = ({
       return {
         data: filtered,
         success: true,
-        total: res.data?.total ?? filtered.length,
+        total: filtered.length,
       };
     },
     [config.recType],
@@ -267,6 +275,20 @@ const RecommendListPage: React.FC<RecommendListPageProps> = ({
     return baseColumns;
   }, [config.recType, getActions]);
 
+  /** 无数据时隐藏分页 footer */
+  const pagination = useMemo(
+    () =>
+      listTotal > 0
+        ? {
+            defaultPageSize: DEFAULT_PAGE_SIZE,
+            showSizeChanger: true,
+            pageSizeOptions: PAGE_SIZE_OPTIONS,
+            total: listTotal,
+          }
+        : false,
+    [listTotal],
+  );
+
   /**
    * 拖拽结束
    */
@@ -351,17 +373,15 @@ const RecommendListPage: React.FC<RecommendListPageProps> = ({
             columns={columns}
             request={tableRequest}
             dataSource={records}
-            pagination={{
-              defaultPageSize: DEFAULT_PAGE_SIZE,
-              showSizeChanger: true,
-              pageSizeOptions: PAGE_SIZE_OPTIONS,
-            }}
+            pagination={pagination}
             search={{ labelWidth: 'auto' }}
             options={false}
             components={{ body: { row: Row } }}
             postData={(data: DisplayRecommendInfo[]) => {
+              const nextRecords = data || [];
               if (!isDraggingRef.current) {
-                setRecords(data || []);
+                setRecords(nextRecords);
+                setListTotal(nextRecords.length);
               }
               return data;
             }}
