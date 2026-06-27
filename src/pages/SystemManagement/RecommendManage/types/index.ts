@@ -1,32 +1,54 @@
 /**
+ * 推荐展示类型
+ */
+export enum DisplayRecTypeEnum {
+  // 智能体推荐
+  Home = 'Home',
+  // 官方推荐
+  Official = 'Official',
+  // 对话框智能体推荐
+  ChatBoxNav = 'ChatBoxNav',
+}
+
+/**
+ * 推荐目标类型
+ */
+export enum DisplayRecommendTargetTypeEnum {
+  Agent = 'Agent',
+  PageApp = 'PageApp',
+  Skill = 'Skill',
+  Plugin = 'Plugin',
+  Workflow = 'Workflow',
+}
+
+/**
+ * 对话框智能体功能子类型
+ */
+export enum DisplayRecommendFunctionTypeEnum {
+  // 智能体开发
+  AgentDev = 'AgentDev',
+  // 网页应用开发
+  PageAppDev = 'PageAppDev',
+  // 技能开发
+  SkillDev = 'SkillDev',
+  // 插件开发
+  PluginDev = 'PluginDev',
+  // 智能体
+  Chat = 'Chat',
+}
+
+/**
  * 编辑推荐参数
  */
 export interface DisplayRecommendParams {
-  /* */
   id?: number;
-
-  /* */
   targetType: string;
-
-  /* */
   targetId: number;
-
-  /* */
   recType: string;
-
-  /* */
   functionType: string;
-
-  /* */
   label?: string;
-
-  /* */
   icon?: string;
-
-  /* */
   placeholder?: string;
-
-  /* */
   sort?: number;
 }
 

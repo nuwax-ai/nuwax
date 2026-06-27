@@ -39,12 +39,30 @@ describe('qaConfigAdapter', () => {
     ).toBe(HitlAnswerTypeEnum.FORM);
   });
 
+  it('normalize: contextWriteKey 迁移到 outputArgs[0].name', () => {
+    const out = normalizeHitlNodeConfig({
+      contextWriteKey: 'user_reply',
+      outputArgs: [
+        {
+          key: 'answer',
+          name: 'answer',
+          dataType: 'String',
+        },
+      ],
+    });
+    expect(out.contextWriteKey).toBeUndefined();
+    expect(out.outputArgs[0].name).toBe('user_reply');
+    expect(out.outputArgs[0].key).toBe('user_reply');
+  });
+
   it('serialize: 保留 answerType', () => {
     const out = serializeHitlNodeConfig({
       question: 'q',
       answerType: HitlAnswerTypeEnum.TEXT,
+      contextWriteKey: 'legacy',
     });
     expect(out.answerType).toBe(HitlAnswerTypeEnum.TEXT);
+    expect(out.contextWriteKey).toBeUndefined();
   });
 
   it('serialize: SELECT 保留 options 连线，FORM/TEXT 清空', () => {

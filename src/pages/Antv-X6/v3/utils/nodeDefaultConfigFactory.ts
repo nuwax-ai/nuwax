@@ -460,7 +460,6 @@ export function createDefaultNodeConfig(
         answerType: AnswerTypeEnum.TEXT,
         options: [],
         formArgs: [],
-        contextWriteKey: 'user_reply',
         inputArgs: [],
         outputArgs: [
           createDefaultArg({
