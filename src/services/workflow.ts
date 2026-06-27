@@ -37,8 +37,6 @@ interface IAddNode {
   type: string;
   loopNodeId?: number;
   typeId?: number;
-  /** Agent 节点：引用的智能体 ID（对齐 Workflow 顶层 typeId，优先于 nodeConfigDto.agentId） */
-  agentId?: number;
   name?: string;
   shape?: string;
   description?: string;

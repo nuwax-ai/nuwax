@@ -32,6 +32,11 @@ import {
   toBackendNodeType,
 } from '../agentFlow/nodeTypeMapping';
 import {
+  buildKnowledgeInsertNodeConfigOnAdd,
+  mergeNodeConfigAfterAddApi,
+  pickKnowledgeInsertBindingForAddDto,
+} from '../component/knowledgeInsert';
+import {
   LOOP_NODE_DEFAULT_HEIGHT,
   LOOP_NODE_DEFAULT_WIDTH,
 } from '../constants/loopNodeConstants';
@@ -802,24 +807,24 @@ export const useNodeOperations = ({
                         _params.nodeConfig.knowledgeBaseConfigs,
                     }
                   : {}),
+                ...(_params.type === NodeTypeEnum.KnowledgeInsert
+                  ? pickKnowledgeInsertBindingForAddDto(_params.nodeConfig) ||
+                    {}
+                  : {}),
               }
             : undefined;
 
-        // Agent 节点：关联智能体 ID 走顶层 agentId（对齐 Workflow 的 typeId）；
-        // 若后端不认 agentId，可改为 typeId: resolvedAgentId。
-        const resolvedAgentId =
+        // Agent 节点：关联智能体 ID 走顶层 typeId（与 Workflow、MCP 一致）
+        const resolvedTypeId =
           _params.type === NodeTypeEnum.Agent
-            ? _params.nodeConfig?.agentId
-            : undefined;
+            ? _params.typeId ?? _params.nodeConfig?.agentId
+            : _params.typeId;
 
         const apiRes = await service.apiAddNodeV3({
           workflowId: workflowId,
           // RouteDecision 复用后端 IntentRecognition 类型收发（见 nodeTypeMapping.ts）
           type: toBackendNodeType(_params.type),
-          typeId: _params.typeId,
-          ...(resolvedAgentId !== undefined && resolvedAgentId !== null
-            ? { agentId: resolvedAgentId }
-            : {}),
+          typeId: resolvedTypeId,
           name: _params.name,
           shape: _params.shape,
           description: _params.description,
@@ -859,23 +864,12 @@ export const useNodeOperations = ({
         _params = {
           ..._params,
           ...apiNodeData,
-          nodeConfig: {
-            ...(requestedType === NodeTypeEnum.Agent
-              ? requestedNodeConfig
-              : {}),
-            ...apiNodeData.nodeConfig,
-            extension: _params.extension,
-            // Agent：后端 add 常不回显 agentId 等字段，以弹窗选定值兜底
-            ...(requestedType === NodeTypeEnum.Agent &&
-            requestedNodeConfig?.agentId !== undefined &&
-            requestedNodeConfig?.agentId !== null
-              ? {
-                  agentId:
-                    apiNodeData.nodeConfig?.agentId ??
-                    requestedNodeConfig.agentId,
-                }
-              : {}),
-          },
+          nodeConfig: mergeNodeConfigAfterAddApi(
+            requestedType,
+            requestedNodeConfig,
+            apiNodeData,
+            _params.extension,
+          ),
         };
         // name/description 始终以请求值为准：后端 apiAddNodeV3 的回显可能为空或回写后端默认文案
         //（如 Agent 节点），若不还原，画布节点会丢失名称/描述，进而保存时不传给后端。
@@ -1137,17 +1131,15 @@ export const useNodeOperations = ({
         val.targetType === AgentComponentTypeEnum.Table
       ) {
         const knowledgeNodeType = sessionStorage.getItem('knowledgeNodeType');
-        const knowledgeBaseConfigs = [
-          {
-            ...val,
-            type:
-              knowledgeNodeType === NodeTypeEnum.KnowledgeInsert
-                ? NodeTypeEnum.KnowledgeInsert
-                : NodeTypeEnum.Knowledge,
-            knowledgeBaseId: val.targetId,
-          },
-        ];
+        const resolvedKnowledgeType =
+          knowledgeNodeType === NodeTypeEnum.KnowledgeInsert
+            ? NodeTypeEnum.KnowledgeInsert
+            : NodeTypeEnum.Knowledge;
         const tableType = sessionStorage.getItem('tableType');
+        const isKnowledgeInsert =
+          val.targetType === AgentComponentTypeEnum.Knowledge &&
+          resolvedKnowledgeType === NodeTypeEnum.KnowledgeInsert;
+
         _child = {
           name: val.name,
           shape: NodeShapeEnum.General,
@@ -1157,10 +1149,18 @@ export const useNodeOperations = ({
               ? ((knowledgeNodeType || NodeTypeEnum.Knowledge) as NodeTypeEnum)
               : ((tableType || NodeTypeEnum.TableDataQuery) as NodeTypeEnum),
           typeId: val.targetId,
-          nodeConfig: {
-            knowledgeBaseConfigs: knowledgeBaseConfigs,
-            extension: {},
-          },
+          nodeConfig: isKnowledgeInsert
+            ? buildKnowledgeInsertNodeConfigOnAdd(val)
+            : {
+                knowledgeBaseConfigs: [
+                  {
+                    ...val,
+                    type: resolvedKnowledgeType,
+                    knowledgeBaseId: val.targetId,
+                  },
+                ],
+                extension: {},
+              },
         };
       } else if (
         val.targetType === AgentComponentTypeEnum.Workflow ||
@@ -1191,7 +1191,7 @@ export const useNodeOperations = ({
         };
       } else if (val.targetType === AgentComponentTypeEnum.Agent) {
         // 智能体节点：弹窗选择当前空间已发布 ChatBot；
-        // add 请求顶层 agentId（对齐 Workflow typeId），nodeConfig.agentId 供面板与整图保存
+        // add 请求顶层 typeId，nodeConfig.agentId 供属性面板与整图保存
         // name/description 缺省回退到智能体节点的类型名/类型描述，保证画布始终有名称与描述
         _child = {
           name: val.name || t('PC.Pages.AgentFlowParams.nodeAgentName'),
@@ -1200,6 +1200,7 @@ export const useNodeOperations = ({
             val.description ||
             t('PC.Pages.AgentFlowParams.nodeAgentDescription'),
           type: NodeTypeEnum.Agent,
+          typeId: val.targetId,
           nodeConfig: {
             agentId: val.targetId,
             inputArgs: [],

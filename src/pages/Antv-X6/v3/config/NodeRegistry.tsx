@@ -7,6 +7,7 @@ import AgentFlowNodes from '../agentFlow/forms';
 import ComplexNode from '../component/complexNode';
 import ConditionNode from '../component/condition';
 import Database from '../component/database';
+import KnowledgeInsertNodePanel from '../component/knowledgeInsert';
 import Library from '../component/library';
 import NodeItem from '../component/nodeItem';
 import ReferenceNode from '../component/pluginNode';
@@ -24,7 +25,7 @@ const {
 } = NodeItem;
 const { ModelNode, IntentionNode, QuestionsNode, HttpToolNode } = ComplexNode;
 const { PluginInNode } = ReferenceNode;
-const { KnowledgeNode, KnowledgeInsertNode } = Library;
+const { KnowledgeNode } = Library;
 const {
   AgentFlowStartNode,
   AgentFlowEndNode,
@@ -97,7 +98,7 @@ const nodeMap: Partial<
   [NodeTypeEnum.QA]: (p) => <QuestionsNode {...p} />,
   [NodeTypeEnum.HTTPRequest]: (p) => <HttpToolNode {...p} />,
   [NodeTypeEnum.Knowledge]: (p) => <KnowledgeNode {...p} />,
-  [NodeTypeEnum.KnowledgeInsert]: (p) => <KnowledgeInsertNode {...p} />,
+  [NodeTypeEnum.KnowledgeInsert]: (p) => <KnowledgeInsertNodePanel {...p} />,
   [NodeTypeEnum.Condition]: (p) => <ConditionNode {...p} />,
   [NodeTypeEnum.IntentRecognition]: (p) => <IntentionNode {...p} />,
   [NodeTypeEnum.LoopBreak]: () => <LoopBreak />,

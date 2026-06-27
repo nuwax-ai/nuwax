@@ -242,6 +242,8 @@ export interface NodeConfig {
 
   // 知识库节点
   knowledgeBaseConfigs?: CreatedNodeItem[];
+  /** 知识库写入：目标知识库 ID（平铺在 nodeConfig，与 name/description/icon 配套） */
+  knowledgeBaseId?: number;
   // 搜索策略
   searchStrategy?: string;
   // 最大召回数量
