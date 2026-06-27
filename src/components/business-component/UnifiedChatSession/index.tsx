@@ -73,6 +73,9 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
   onComputerSelect,
 
   showScrollBtn = false,
+  allowAutoScrollRef,
+  scrollTimeoutRef,
+  setShowScrollBtn,
   renderMessageItem,
   renderEmptyState,
   enableMention = true,
@@ -94,6 +97,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
   loadingConversation,
   isLoadingOtherInterface,
   conversationInfo,
+  interventionHandlers,
 }) => {
   // 滚动管理 Hook
   const {
@@ -111,6 +115,9 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
     isLoading,
     loadingMore,
     externalMessageViewRef,
+    externalAllowAutoScrollRef: allowAutoScrollRef,
+    externalScrollTimeoutRef: scrollTimeoutRef,
+    onScrollBtnVisibleChange: setShowScrollBtn,
     showScrollBtn,
   });
 
@@ -188,6 +195,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
     messageList,
     initialAgentMode,
     onSendMessage: (msg) => messageQueue.rawSend(msg),
+    interventionHandlers,
   });
   agentModeRef.current = interventionLayer.agentMode;
 

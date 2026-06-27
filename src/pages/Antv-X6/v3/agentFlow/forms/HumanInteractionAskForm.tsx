@@ -6,6 +6,7 @@
  */
 
 import ExpandableInputTextarea from '@/components/ExpandTextArea';
+import CustomTree from '@/components/FormListItem/NestedForm';
 import { ModelSelected } from '@/components/ModelSetting';
 import { transformToPromptVariables } from '@/components/TiptapVariableInput/utils/variableTransform';
 import { t } from '@/services/i18nRuntime';
@@ -67,7 +68,12 @@ const FORM_FIELD_TYPE_OPTIONS = [
   },
 ];
 
-const HumanInteractionAskForm: React.FC<NodeDisposeProps> = ({ form }) => {
+const HumanInteractionAskForm: React.FC<NodeDisposeProps> = ({
+  form,
+  nodeConfig,
+  type,
+  id,
+}) => {
   const { referenceList } = useModel('workflowV3');
 
   const answerType =
@@ -303,23 +309,25 @@ const HumanInteractionAskForm: React.FC<NodeDisposeProps> = ({ form }) => {
         </div>
       )}
 
-      <div className="node-item-style">
-        <Form.Item
-          name="contextWriteKey"
-          label={t('PC.Pages.AgentFlowNode.contextWriteKeyLabel', '上下文写入')}
-          tooltip={t(
-            'PC.Pages.AgentFlowNode.contextWriteKeyHint',
-            '输出写入的上下文键名，如 user_reply',
-          )}
-        >
-          <Input
-            placeholder={t(
-              'PC.Pages.AgentFlowNode.contextWriteKeyPlaceholder',
-              '如 user_reply',
-            )}
-          />
-        </Form.Item>
-      </div>
+      {/* 输出：文本回复 / 表单回复均展示（与问答节点「直接回答」一致） */}
+      <Form.Item shouldUpdate noStyle>
+        {() => {
+          const mode = form.getFieldValue('answerType');
+          const showOutput =
+            mode === HitlAnswerTypeEnum.TEXT ||
+            mode === HitlAnswerTypeEnum.FORM;
+          return showOutput ? (
+            <CustomTree
+              key={`${type}-${id}-outputArgs`}
+              title={t('PC.Pages.AntvX6ComplexNode.output')}
+              form={form}
+              params={nodeConfig?.outputArgs || []}
+              inputItemName="outputArgs"
+              showCheck
+            />
+          ) : null;
+        }}
+      </Form.Item>
     </div>
   );
 };

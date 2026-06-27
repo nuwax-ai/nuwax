@@ -244,9 +244,19 @@ const NewHomeSection: React.FC<{
     debouncedSearch(val);
   };
 
-  const handleConversationClick = (id: number, agentId: number) => {
+  const handleConversationClick = (item: ConversationInfo) => {
     handleCloseMobileMenu();
-    history.push('/home/chat/' + id + '/' + agentId);
+    const { id, agentId, devTargetType, devTargetId, devSpaceId } = item;
+
+    if (devTargetType === 'Agent' && devSpaceId && devTargetId) {
+      history.push(
+        `/space/${devSpaceId}/conversation-agent?agentId=${agentId}&conversationId=${devTargetId}`,
+      );
+    } else if (devTargetType === 'PageApp' && devSpaceId && devTargetId) {
+      history.push(`/space/${devSpaceId}/app-dev/${devTargetId}`);
+    } else {
+      history.push('/home/chat/' + id + '/' + agentId);
+    }
   };
 
   const handleNewConversation = () => {
@@ -277,7 +287,7 @@ const NewHomeSection: React.FC<{
               key={item.id}
               item={item}
               isActive={chatId === item.id?.toString()}
-              onClick={() => handleConversationClick(item.id, item.agentId)}
+              onClick={() => handleConversationClick(item)}
             />
           ))}
 

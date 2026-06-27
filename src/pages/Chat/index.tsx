@@ -11,7 +11,6 @@ import ResizableSplit from '@/components/ResizableSplit';
 
 import { isAgentVersionControlEnabled } from '@/constants/agent.constants';
 import useAgentDetails from '@/hooks/useAgentDetails';
-import { useConversationScrollDetection } from '@/hooks/useConversationScrollDetection';
 import useExclusivePanels from '@/hooks/useExclusivePanels';
 import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
 import { useNavigationGuard } from '@/hooks/useNavigationGuard';
@@ -418,14 +417,6 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       handleOpenPreview(targetAgent);
     }
   }, [agentId, defaultAgentDetail, conversationInfo?.agent]);
-
-  // 使用滚动检测 Hook
-  useConversationScrollDetection(
-    messageViewRef,
-    allowAutoScrollRef,
-    scrollTimeoutRef,
-    setShowScrollBtn,
-  );
 
   useEffect(() => {
     if (id) {
@@ -1046,6 +1037,9 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     selectedComputerId: finalSelectedId,
     onComputerSelect: setSelectedComputerId,
     showScrollBtn,
+    allowAutoScrollRef,
+    scrollTimeoutRef,
+    setShowScrollBtn,
     readonly: effectiveAgent?.allowPrivateSandbox === DefaultSelectedEnum.No,
     enableMention:
       effectiveAgent?.type === AgentTypeEnum.TaskAgent &&

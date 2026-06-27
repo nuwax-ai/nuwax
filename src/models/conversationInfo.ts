@@ -11,10 +11,7 @@ import {
 } from '@/constants/common.constants';
 import { EVENT_TYPE } from '@/constants/event.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
-import {
-  isSessionStreamBusy,
-  useExecutingTaskStatusPoll,
-} from '@/hooks/useExecutingTaskStatusPoll';
+import { isSessionStreamBusy } from '@/hooks/useExecutingTaskStatusPoll';
 import { getCustomBlock } from '@/plugins/ds-markdown-process';
 import {
   apiAgentConversation,
@@ -617,15 +614,6 @@ export default () => {
     conversationInfo?.taskStatus,
     syncConversationTaskStatus,
   ]);
-
-  // 流式已结束但 taskStatus 仍为 EXECUTING 时轮询同步（ChatFinished 遗漏 / 后端延迟）
-  useExecutingTaskStatusPoll({
-    conversationId: conversationInfo?.id,
-    taskStatus: conversationInfo?.taskStatus,
-    messageList,
-    onSync: syncConversationTaskStatus,
-    enabled: conversationInfo?.agent?.type === AgentTypeEnum.TaskAgent,
-  });
 
   // 设置所有的详细信息
   const setChatProcessingList = (messageList: MessageInfo[]) => {
