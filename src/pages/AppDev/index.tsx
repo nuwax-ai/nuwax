@@ -1549,6 +1549,7 @@ const AppDev: React.FC = () => {
                 defaultActiveTab={'chat'}
                 hiddenTabs={[]}
                 onDesignModeUnreachable={handleDesignModeUnreachable}
+                onDataTabClick={() => projectInfo.refreshProjectInfo()}
               />
             </div>
 
