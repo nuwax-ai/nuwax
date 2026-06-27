@@ -2754,6 +2754,8 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.EditAgent.SystemTipsWord.optimize": "最適化する",
   "PC.Pages.EditAgent.SystemTipsWord.systemPrompt": "システムプロンプト",
   "PC.Pages.EditAgent.SystemTipsWord.systemPromptPlaceholder": "システムプロンプトを入力してモデルの役割を定義します",
+  "PC.Pages.EditAgent.SystemTipsWord.supplementaryPrompt": "補足プロンプト",
+  "PC.Pages.EditAgent.SystemTipsWord.supplementaryPromptPlaceholder": "補足プロンプトを入力してグループエージェントに追加制約を設定します",
   "PC.Pages.EditAgent.SystemTipsWord.userPrompt": "ユーザープロンプト",
   "PC.Pages.EditAgent.SystemTipsWord.userPromptPlaceholder": "ユーザープロンプト、事前設定された指示、質問またはリクエストを入力します",
   "PC.Pages.EditAgent.uploadSuccess": "アップロードに成功しました",

@@ -2852,6 +2852,8 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.EditAgent.SystemTipsWord.optimize": "Optimize",
   "PC.Pages.EditAgent.SystemTipsWord.systemPrompt": "System Prompt",
   "PC.Pages.EditAgent.SystemTipsWord.systemPromptPlaceholder": "Enter the system prompt to define the model\\'s role",
+  "PC.Pages.EditAgent.SystemTipsWord.supplementaryPrompt": "Supplementary Prompt",
+  "PC.Pages.EditAgent.SystemTipsWord.supplementaryPromptPlaceholder": "Enter a supplementary prompt to add extra constraints for the group agent",
   "PC.Pages.EditAgent.SystemTipsWord.userPrompt": "User Prompt",
   "PC.Pages.EditAgent.SystemTipsWord.userPromptPlaceholder": "Enter user prompt, preset instructions, questions or requests",
   "PC.Pages.EditAgent.VariableDataBinding.pluginOrWorkflowRequired": "Please select a plugin or workflow that meets the standard",

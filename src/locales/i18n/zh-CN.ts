@@ -2852,6 +2852,8 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.EditAgent.SystemTipsWord.optimize": "优化",
   "PC.Pages.EditAgent.SystemTipsWord.systemPrompt": "系统提示词",
   "PC.Pages.EditAgent.SystemTipsWord.systemPromptPlaceholder": "输入系统提示词，对大模型进行角色塑造",
+  "PC.Pages.EditAgent.SystemTipsWord.supplementaryPrompt": "补充提示词",
+  "PC.Pages.EditAgent.SystemTipsWord.supplementaryPromptPlaceholder": "输入补充提示词，对群组智能体进行额外约束",
   "PC.Pages.EditAgent.SystemTipsWord.userPrompt": "用户提示词",
   "PC.Pages.EditAgent.SystemTipsWord.userPromptPlaceholder": "输入用户提示词，预置指令、问题或请求",
   "PC.Pages.EditAgent.VariableDataBinding.pluginOrWorkflowRequired": "请选择符合数据规范的插件或工作流",

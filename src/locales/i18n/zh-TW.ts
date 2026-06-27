@@ -2772,6 +2772,8 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.EditAgent.SystemTipsWord.optimize": "最佳化",
   "PC.Pages.EditAgent.SystemTipsWord.systemPrompt": "系統提示詞",
   "PC.Pages.EditAgent.SystemTipsWord.systemPromptPlaceholder": "輸入系統提示詞，對大模型進行角色塑造",
+  "PC.Pages.EditAgent.SystemTipsWord.supplementaryPrompt": "補充提示詞",
+  "PC.Pages.EditAgent.SystemTipsWord.supplementaryPromptPlaceholder": "輸入補充提示詞，對群組智能體進行額外約束",
   "PC.Pages.EditAgent.SystemTipsWord.userPrompt": "使用者提示詞",
   "PC.Pages.EditAgent.SystemTipsWord.userPromptPlaceholder": "輸入使用者提示詞，預置指令、問題或請求",
   "PC.Pages.EditAgent.uploadSuccess": "上傳成功",

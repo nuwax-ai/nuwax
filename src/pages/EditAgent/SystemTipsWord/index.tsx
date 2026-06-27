@@ -3,7 +3,7 @@ import PromptOptimizeModal from '@/components/PromptOptimizeModal';
 import TiptapVariableInput from '@/components/TiptapVariableInput/TiptapVariableInput';
 import { extractTextFromHTML } from '@/components/TiptapVariableInput/utils/htmlUtils';
 import { dict } from '@/services/i18nRuntime';
-import { AgentTypeEnum } from '@/types/enums/space';
+import { AgentSubTypeEnum, AgentTypeEnum } from '@/types/enums/space';
 import type { SystemUserTipsWordProps } from '@/types/interfaces/space';
 import { Button, Modal, Segmented, theme, Tooltip } from 'antd';
 import classNames from 'classnames';
@@ -53,6 +53,13 @@ const SystemTipsWord = forwardRef<
       'systemPrompt' | 'userPrompt'
     >('systemPrompt');
     const { token } = theme.useToken();
+    const isGroupSubType = agentConfigInfo?.subType === AgentSubTypeEnum.Group;
+    const systemPromptLabel = isGroupSubType
+      ? dict('PC.Pages.EditAgent.SystemTipsWord.supplementaryPrompt')
+      : dict('PC.Pages.EditAgent.SystemTipsWord.systemPrompt');
+    const systemPromptPlaceholder = isGroupSubType
+      ? dict('PC.Pages.EditAgent.SystemTipsWord.supplementaryPromptPlaceholder')
+      : dict('PC.Pages.EditAgent.SystemTipsWord.systemPromptPlaceholder');
 
     /**
      * 在光标位置插入文本
@@ -123,10 +130,10 @@ const SystemTipsWord = forwardRef<
      */
     useImperativeHandle(ref, () => ({
       insertText: (text: string) => {
-        if (valueSegmented === 'userPrompt') {
+        if (!isGroupSubType && valueSegmented === 'userPrompt') {
           insertTextAtCursor(text, editorUserRef, valueUser, onChangeUser);
         }
-        if (valueSegmented === 'systemPrompt') {
+        if (isGroupSubType || valueSegmented === 'systemPrompt') {
           insertTextAtCursor(
             text,
             editorSystemRef,
@@ -152,14 +159,12 @@ const SystemTipsWord = forwardRef<
     const promptInput = useMemo(() => {
       return (
         <div className={'flex-1 scroll-container h-full'}>
-          {valueSegmented === 'systemPrompt' ? (
+          {isGroupSubType || valueSegmented === 'systemPrompt' ? (
             <TiptapVariableInput
               key={'systemPrompt'}
               value={valueSystem}
               onChange={(html) => onChangeSystem(extractTextFromHTML(html))}
-              placeholder={dict(
-                'PC.Pages.EditAgent.SystemTipsWord.systemPromptPlaceholder',
-              )}
+              placeholder={systemPromptPlaceholder}
               getEditor={(editor: any) => {
                 editorSystemRef.current = editor;
               }}
@@ -201,13 +206,16 @@ const SystemTipsWord = forwardRef<
       );
     }, [
       isFullscreen,
+      isGroupSubType,
       valueSegmented,
       valueSystem,
       valueUser,
       variables,
       skills,
+      systemPromptPlaceholder,
       onChangeSystem,
       onChangeUser,
+      agentConfigInfo?.type,
     ]);
 
     /**
@@ -216,8 +224,8 @@ const SystemTipsWord = forwardRef<
     const modalTitle = (
       <div className={cx('flex', 'items-center', 'content-between')}>
         <span>
-          {valueSegmented === 'systemPrompt'
-            ? dict('PC.Pages.EditAgent.SystemTipsWord.systemPrompt')
+          {isGroupSubType || valueSegmented === 'systemPrompt'
+            ? systemPromptLabel
             : dict('PC.Pages.EditAgent.SystemTipsWord.userPrompt')}
         </span>
         <Tooltip
@@ -255,20 +263,26 @@ const SystemTipsWord = forwardRef<
             styles['system-tips-wrapper'],
           )}
         >
-          <Segmented
-            value={valueSegmented}
-            onChange={setValueSegmented}
-            options={[
-              {
-                label: dict('PC.Pages.EditAgent.SystemTipsWord.systemPrompt'),
-                value: 'systemPrompt',
-              },
-              {
-                label: dict('PC.Pages.EditAgent.SystemTipsWord.userPrompt'),
-                value: 'userPrompt',
-              },
-            ]}
-          />
+          {isGroupSubType ? (
+            <span className={cx(styles['prompt-label'])}>
+              {systemPromptLabel}
+            </span>
+          ) : (
+            <Segmented
+              value={valueSegmented}
+              onChange={setValueSegmented}
+              options={[
+                {
+                  label: dict('PC.Pages.EditAgent.SystemTipsWord.systemPrompt'),
+                  value: 'systemPrompt',
+                },
+                {
+                  label: dict('PC.Pages.EditAgent.SystemTipsWord.userPrompt'),
+                  value: 'userPrompt',
+                },
+              ]}
+            />
+          )}
           <div className="flex items-center gap-6">
             <Tooltip
               title={dict('PC.Pages.EditAgent.SystemTipsWord.fullscreenEdit')}
@@ -285,7 +299,7 @@ const SystemTipsWord = forwardRef<
                 onClick={toggleFullscreen}
               />
             </Tooltip>
-            {valueSegmented === 'systemPrompt' && (
+            {(isGroupSubType || valueSegmented === 'systemPrompt') && (
               <Tooltip
                 title={dict(
                   'PC.Pages.EditAgent.SystemTipsWord.autoOptimizeTooltip',
