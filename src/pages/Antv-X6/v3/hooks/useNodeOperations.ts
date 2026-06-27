@@ -802,10 +802,14 @@ export const useNodeOperations = ({
                         _params.nodeConfig.knowledgeBaseConfigs,
                     }
                   : {}),
-                ...(_params.nodeConfig?.agentId
-                  ? { agentId: _params.nodeConfig.agentId }
-                  : {}),
               }
+            : undefined;
+
+        // Agent 节点：关联智能体 ID 走顶层 agentId（对齐 Workflow 的 typeId）；
+        // 若后端不认 agentId，可改为 typeId: resolvedAgentId。
+        const resolvedAgentId =
+          _params.type === NodeTypeEnum.Agent
+            ? _params.nodeConfig?.agentId
             : undefined;
 
         const apiRes = await service.apiAddNodeV3({
@@ -813,6 +817,9 @@ export const useNodeOperations = ({
           // RouteDecision 复用后端 IntentRecognition 类型收发（见 nodeTypeMapping.ts）
           type: toBackendNodeType(_params.type),
           typeId: _params.typeId,
+          ...(resolvedAgentId !== undefined && resolvedAgentId !== null
+            ? { agentId: resolvedAgentId }
+            : {}),
           name: _params.name,
           shape: _params.shape,
           description: _params.description,
@@ -848,12 +855,26 @@ export const useNodeOperations = ({
         const wasRemapped = isFrontendMappedType(requestedType);
         const requestedName = _params.name;
         const requestedDescription = _params.description;
+        const requestedNodeConfig = _params.nodeConfig;
         _params = {
           ..._params,
           ...apiNodeData,
           nodeConfig: {
+            ...(requestedType === NodeTypeEnum.Agent
+              ? requestedNodeConfig
+              : {}),
             ...apiNodeData.nodeConfig,
             extension: _params.extension,
+            // Agent：后端 add 常不回显 agentId 等字段，以弹窗选定值兜底
+            ...(requestedType === NodeTypeEnum.Agent &&
+            requestedNodeConfig?.agentId !== undefined &&
+            requestedNodeConfig?.agentId !== null
+              ? {
+                  agentId:
+                    apiNodeData.nodeConfig?.agentId ??
+                    requestedNodeConfig.agentId,
+                }
+              : {}),
           },
         };
         // name/description 始终以请求值为准：后端 apiAddNodeV3 的回显可能为空或回写后端默认文案
@@ -1169,7 +1190,8 @@ export const useNodeOperations = ({
           },
         };
       } else if (val.targetType === AgentComponentTypeEnum.Agent) {
-        // 智能体节点：弹窗选择当前空间已发布 ChatBot，写入 agentId 及默认配置字段
+        // 智能体节点：弹窗选择当前空间已发布 ChatBot；
+        // add 请求顶层 agentId（对齐 Workflow typeId），nodeConfig.agentId 供面板与整图保存
         // name/description 缺省回退到智能体节点的类型名/类型描述，保证画布始终有名称与描述
         _child = {
           name: val.name || t('PC.Pages.AgentFlowParams.nodeAgentName'),

@@ -1,4 +1,7 @@
-import type { AgentMode } from '@/components/business-component/AgentIntervention';
+import type {
+  AgentInterventionHandlersOverride,
+  AgentMode,
+} from '@/components/business-component/AgentIntervention';
 import useConversation from '@/hooks/useConversation';
 import { dict } from '@/services/i18nRuntime';
 import { ExpandPageAreaEnum, TaskStatus } from '@/types/enums/agent';
@@ -84,6 +87,8 @@ export function useConversationAgentChatSession(
     // 当前会话 ID 与请求 ID
     getCurrentConversationId,
     getCurrentConversationRequestId,
+    respondAcpPermission,
+    respondMcpAsk,
   } = useModel('conversationAgent');
 
   const { hidePagePreview, showPagePreview } = useModel('chat');
@@ -127,7 +132,8 @@ export function useConversationAgentChatSession(
         isSync: false,
         skillIds,
         modelId: modelId || selectedModelId,
-        agentMode: selectedAgentMode,
+        // 与 EditAgent 预览一致：未选中时兜底 yolo
+        agentMode: selectedAgentMode || 'yolo',
       });
     },
     [
@@ -216,6 +222,19 @@ export function useConversationAgentChatSession(
   const agentTaskExecuting =
     conversationInfo?.taskStatus === TaskStatus.EXECUTING;
 
+  const streamActive = agentStreamActive || agentTaskExecuting;
+
+  /** 预览 Tab 使用 conversationAgent model，干预回执需与左侧主会话隔离 */
+  const interventionHandlers = useMemo<AgentInterventionHandlersOverride>(
+    () => ({
+      respondAcpPermission,
+      respondMcpAsk,
+      runStopConversation: (id: string) => runStopConversation(id),
+      isConversationActive: streamActive,
+    }),
+    [respondAcpPermission, respondMcpAsk, runStopConversation, streamActive],
+  );
+
   return {
     conversationId: devConversationId,
     messageList,
@@ -290,5 +309,6 @@ export function useConversationAgentChatSession(
     loadingConversation,
     isLoadingOtherInterface,
     conversationInfo,
+    interventionHandlers,
   };
 }

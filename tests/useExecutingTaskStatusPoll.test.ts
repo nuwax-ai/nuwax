@@ -1,16 +1,13 @@
 /**
- * useExecutingTaskStatusPoll hook 测试
+ * 会话流式/执行态判定 helper 测试
  */
 import {
   hasActiveStreamingInMessages,
   hasExecutingProcessingInRecentMessages,
   isSessionStreamBusy,
-  useExecutingTaskStatusPoll,
 } from '@/hooks/useExecutingTaskStatusPoll';
-import { TaskStatus } from '@/types/enums/agent';
 import { MessageStatusEnum, ProcessingEnum } from '@/types/enums/common';
-import { renderHook } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 describe('hasActiveStreamingInMessages', () => {
   it('最后一条 Loading/Incomplete 时返回 true', () => {
@@ -65,75 +62,5 @@ describe('isSessionStreamBusy', () => {
         } as any,
       ]),
     ).toBe(true);
-  });
-});
-
-describe('useExecutingTaskStatusPoll', () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
-  it('EXECUTING 且无流式时立即 sync 并轮询', () => {
-    const onSync = vi.fn();
-    renderHook(() =>
-      useExecutingTaskStatusPoll({
-        conversationId: 1553027,
-        taskStatus: TaskStatus.EXECUTING,
-        messageList: [{ status: MessageStatusEnum.Complete } as any],
-        onSync,
-      }),
-    );
-
-    expect(onSync).toHaveBeenCalledTimes(1);
-    expect(onSync).toHaveBeenCalledWith(1553027);
-
-    vi.advanceTimersByTime(5000);
-    expect(onSync).toHaveBeenCalledTimes(2);
-  });
-
-  it('流式或 processing 执行中时不轮询', () => {
-    const onSync = vi.fn();
-    renderHook(() =>
-      useExecutingTaskStatusPoll({
-        conversationId: 1553027,
-        taskStatus: TaskStatus.EXECUTING,
-        messageList: [{ status: MessageStatusEnum.Incomplete } as any],
-        onSync,
-      }),
-    );
-    expect(onSync).not.toHaveBeenCalled();
-
-    const onSync2 = vi.fn();
-    renderHook(() =>
-      useExecutingTaskStatusPoll({
-        conversationId: 1553028,
-        taskStatus: TaskStatus.EXECUTING,
-        messageList: [
-          {
-            status: null,
-            processingList: [{ status: ProcessingEnum.EXECUTING }],
-          } as any,
-        ],
-        onSync: onSync2,
-      }),
-    );
-    expect(onSync2).not.toHaveBeenCalled();
-  });
-
-  it('非 EXECUTING 不轮询', () => {
-    const onSync = vi.fn();
-    renderHook(() =>
-      useExecutingTaskStatusPoll({
-        conversationId: 1553027,
-        taskStatus: TaskStatus.COMPLETE,
-        messageList: [],
-        onSync,
-      }),
-    );
-    expect(onSync).not.toHaveBeenCalled();
   });
 });

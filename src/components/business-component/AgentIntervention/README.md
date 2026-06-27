@@ -43,9 +43,12 @@ AgentIntervention/
 
 | 文件 | 职责 |
 | --- | --- |
-| `src/models/conversationInfo.ts` | `processInterventionSsePatch`、`hydrateMcpAskInteractionsInMessageList`、`useAgentInterventionHandlers` |
+| `src/models/conversationInfo.ts` | 主会话：`processInterventionSsePatch`、`hydrateMcpAskInteractionsInMessageList`、`useAgentInterventionHandlers` |
+| `src/models/conversationAgent.ts` | **ConversationAgent 预览 Tab** 隔离会话：同上三项（与 `conversationInfo` 对齐） |
 | `src/pages/Chat/index.tsx` | `useAgentInterventionLayer` + `AgentInterventionChatLayer` |
-| `src/pages/EditAgent/PreviewAndDebug/index.tsx` | 同上（预览调试） |
+| `src/pages/EditAgent/PreviewAndDebug/index.tsx` | 同上（编排预览调试） |
+| `src/pages/ConversationAgent/` | 左侧主聊天气泡区（`conversationInfo`）+ 右侧「预览」Tab（`conversationAgent` + `interventionHandlers` 注入） |
+| `src/components/business-component/UnifiedChatSession` | 统一挂载 `AgentInterventionChatLayer`（DockPanel） |
 | `src/services/agentConfig.ts` | `apiAgentInterventionRespond`（ACP 回执 HTTP） |
 | `src/types/interfaces/conversationInfo.ts` | `MessageInfo.acpPermissionInteractions` / `mcpAskInteractions` |
 
@@ -69,10 +72,25 @@ const { agentMode, chatLayerProps, agentModeInputProps } = useAgentInterventionL
 
 发送消息时在参数中带上 `agentMode: 'ask' | 'yolo'`（见 `AgentMode`）。
 
-**model 侧（`conversationInfo`）必须同时完成：**
+**model 侧必须同时完成：**
 
 1. SSE 循环中优先调用 `processInterventionSsePatch`，命中则替换当前消息并 `return`。
 2. 拉取历史消息后调用 `hydrateMcpAskInteractionsInMessageList`。
+
+`conversationInfo` 与 `conversationAgent` 均已接入上述逻辑。
+
+**ConversationAgent 预览 Tab（`conversationAgent` model）额外要求：**
+
+向 `UnifiedChatSession` 传入 `interventionHandlers`（由 `useConversationAgentChatSession` 组装），避免 Dock 回执误写入全局 `conversationInfo` 的 `messageList`：
+
+```tsx
+<UnifiedChatSession
+  {...chatSessionProps}
+  interventionHandlers={interventionHandlers}
+/>
+```
+
+`interventionHandlers` 类型：`AgentInterventionHandlersOverride`（`respondAcpPermission` / `respondMcpAsk` / `runStopConversation` / `isConversationActive`）。
 
 ## `MessageInfo` 挂载字段
 
@@ -202,8 +220,34 @@ interface MessageInfo {
 - `message_type` / `messageType` 为 `tool_call` 或 `sub_type` / `subType` 为 `tool_call` / `tool_call_update`，且存在 `tool_call_id` / `toolCallId` / `raw_input` / `rawInput`（或 `ext` 内 rawInput）
 - `messageType === 'agentSessionUpdate'` + `tool_call` 子类型（同上）
 - `res.eventType === 'PROCESSING'` 且存在 `executeId` 或 `result.executeId` / `result.input`
+- 后端沙箱 **`Backend.Sandbox.Event.AskQuestion`**：`subEventType === 'ASK_QUESTION'`，表单在 `data.result.input`（与 ToolCall 形态等价，由 `isProcessingToolCallEvent` 识别）
 
 `raw_input` / `rawInput` / `result.input` 经 `parseMcpAskToolInput` 校验通过后写入 `mcpAskInteractions`。同一 `input.requestId` 不重复挂载。
+
+**入参示例（ASK_QUESTION Event，与 demo2.json 对齐）：**
+
+```json
+{
+  "eventType": "PROCESSING",
+  "data": {
+    "name": "Backend.Sandbox.Event.AskQuestion",
+    "type": "Event",
+    "status": "FINISHED",
+    "subEventType": "ASK_QUESTION",
+    "result": {
+      "executeId": "call_272edddbb5e140128d146826",
+      "input": {
+        "requestId": "demo_form_1",
+        "ui": {
+          "version": "nuwax.interaction.v2",
+          "presentation": "inline",
+          "fields": [{ "name": "choice", "title": "选项", "widget": "text" }]
+        }
+      }
+    }
+  }
+}
+```
 
 **入参示例（PROCESSING + executeId）：**
 

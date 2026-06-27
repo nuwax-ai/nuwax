@@ -1,6 +1,14 @@
-import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react';
 import { useConversationScrollDetection } from '@/hooks/useConversationScrollDetection';
 import { MessageStatusEnum } from '@/types/enums/common';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type MutableRefObject,
+  type RefObject,
+} from 'react';
 
 export interface UseUnifiedChatScrollProps {
   messageList?: any[];
@@ -9,6 +17,9 @@ export interface UseUnifiedChatScrollProps {
   isLoading?: boolean;
   loadingMore?: boolean;
   externalMessageViewRef?: RefObject<HTMLDivElement>;
+  externalAllowAutoScrollRef?: MutableRefObject<boolean>;
+  externalScrollTimeoutRef?: MutableRefObject<any>;
+  onScrollBtnVisibleChange?: (visible: boolean) => void;
   showScrollBtn?: boolean;
 }
 
@@ -19,17 +30,31 @@ export function useUnifiedChatScroll({
   isLoading = false,
   loadingMore = false,
   externalMessageViewRef,
+  externalAllowAutoScrollRef,
+  externalScrollTimeoutRef,
+  onScrollBtnVisibleChange,
   showScrollBtn = false,
 }: UseUnifiedChatScrollProps) {
   const [isHoveringChat, setIsHoveringChat] = useState<boolean>(false);
   const internalMessageViewRef = useRef<HTMLDivElement>(null);
   const messageViewRef = externalMessageViewRef || internalMessageViewRef;
-  const allowAutoScrollRef = useRef<boolean>(true);
+  const internalAllowAutoScrollRef = useRef<boolean>(true);
+  const allowAutoScrollRef =
+    externalAllowAutoScrollRef || internalAllowAutoScrollRef;
   const lastMsgCountRef = useRef<number>(0);
   const lastTextLengthRef = useRef<number>(0);
-  const scrollTimeoutRef = useRef<any>(null);
+  const internalScrollTimeoutRef = useRef<any>(null);
+  const scrollTimeoutRef = externalScrollTimeoutRef || internalScrollTimeoutRef;
   const programmaticTimerRef = useRef<any>(null);
-  const [scrollBtnVisible, setScrollBtnVisible] = useState<boolean>(showScrollBtn);
+  const [scrollBtnVisible, setScrollBtnVisibleState] =
+    useState<boolean>(showScrollBtn);
+  const setScrollBtnVisible = useCallback(
+    (visible: boolean) => {
+      setScrollBtnVisibleState(visible);
+      onScrollBtnVisibleChange?.(visible);
+    },
+    [onScrollBtnVisibleChange],
+  );
 
   // 1. 滚动检测逻辑
   useConversationScrollDetection(
@@ -171,7 +196,12 @@ export function useUnifiedChatScroll({
     const wasLoading = prevIsLoadingRef.current;
     prevIsLoadingRef.current = isLoading;
 
-    if (wasLoading && !isLoading && messageList.length > 0 && allowAutoScrollRef.current) {
+    if (
+      wasLoading &&
+      !isLoading &&
+      messageList.length > 0 &&
+      allowAutoScrollRef.current
+    ) {
       const doScroll = () => {
         if (!allowAutoScrollRef.current || !messageViewRef.current) return;
         const el = messageViewRef.current;
@@ -189,9 +219,15 @@ export function useUnifiedChatScroll({
       };
 
       doScroll();
-      const t1 = setTimeout(() => { if (allowAutoScrollRef.current) doScroll(); }, 150);
-      const t2 = setTimeout(() => { if (allowAutoScrollRef.current) doScroll(); }, 400);
-      const t3 = setTimeout(() => { if (allowAutoScrollRef.current) doScroll(); }, 800);
+      const t1 = setTimeout(() => {
+        if (allowAutoScrollRef.current) doScroll();
+      }, 150);
+      const t2 = setTimeout(() => {
+        if (allowAutoScrollRef.current) doScroll();
+      }, 400);
+      const t3 = setTimeout(() => {
+        if (allowAutoScrollRef.current) doScroll();
+      }, 800);
 
       return () => {
         clearTimeout(t1);

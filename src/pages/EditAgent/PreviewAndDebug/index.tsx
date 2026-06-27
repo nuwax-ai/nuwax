@@ -2,7 +2,6 @@ import { UnifiedChatSession } from '@/components/business-component';
 import { type AgentMode } from '@/components/business-component/AgentIntervention';
 import { EVENT_TYPE } from '@/constants/event.constants';
 import useConversation from '@/hooks/useConversation';
-import { useConversationScrollDetection } from '@/hooks/useConversationScrollDetection';
 import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
 import { dict } from '@/services/i18nRuntime';
@@ -194,14 +193,6 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
       },
     };
   }, [agentConfigInfo]);
-
-  // 使用滚动检测 Hook
-  useConversationScrollDetection(
-    messageViewRef,
-    allowAutoScrollRef,
-    scrollTimeoutRef,
-    setShowScrollBtn,
-  );
 
   useEffect(() => {
     // 初始化选中的组件列表
@@ -531,6 +522,9 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
                 onChangeSelectedComputerId?.(id);
               }}
               showScrollBtn={showScrollBtn}
+              allowAutoScrollRef={allowAutoScrollRef}
+              scrollTimeoutRef={scrollTimeoutRef}
+              setShowScrollBtn={setShowScrollBtn}
               readonly={false}
               enableMention={false}
               placeholder={dict(

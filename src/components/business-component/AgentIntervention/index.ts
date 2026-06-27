@@ -3,7 +3,10 @@ export { default as AgentInterventionChatLayer } from './AgentInterventionChatLa
 
 // Hooks
 export { useAgentInterventionHandlers } from './hooks/useAgentInterventionHandlers';
-export { useAgentInterventionLayer } from './hooks/useAgentInterventionLayer';
+export {
+  useAgentInterventionLayer,
+  type AgentInterventionHandlersOverride,
+} from './hooks/useAgentInterventionLayer';
 
 // Utils
 export {

@@ -54,6 +54,9 @@ const SystemTipsWord = forwardRef<
     >('systemPrompt');
     const { token } = theme.useToken();
     const isGroupSubType = agentConfigInfo?.subType === AgentSubTypeEnum.Group;
+    /** AgentFlow 仅展示系统提示词，不展示用户提示词 Tab */
+    const isFlowSubType = agentConfigInfo?.subType === AgentSubTypeEnum.Flow;
+    const showSystemPromptOnly = isGroupSubType || isFlowSubType;
     const systemPromptLabel = isGroupSubType
       ? dict('PC.Pages.EditAgent.SystemTipsWord.supplementaryPrompt')
       : dict('PC.Pages.EditAgent.SystemTipsWord.systemPrompt');
@@ -130,10 +133,10 @@ const SystemTipsWord = forwardRef<
      */
     useImperativeHandle(ref, () => ({
       insertText: (text: string) => {
-        if (!isGroupSubType && valueSegmented === 'userPrompt') {
+        if (!showSystemPromptOnly && valueSegmented === 'userPrompt') {
           insertTextAtCursor(text, editorUserRef, valueUser, onChangeUser);
         }
-        if (isGroupSubType || valueSegmented === 'systemPrompt') {
+        if (showSystemPromptOnly || valueSegmented === 'systemPrompt') {
           insertTextAtCursor(
             text,
             editorSystemRef,
@@ -159,7 +162,7 @@ const SystemTipsWord = forwardRef<
     const promptInput = useMemo(() => {
       return (
         <div className={'flex-1 scroll-container h-full'}>
-          {isGroupSubType || valueSegmented === 'systemPrompt' ? (
+          {showSystemPromptOnly || valueSegmented === 'systemPrompt' ? (
             <TiptapVariableInput
               key={'systemPrompt'}
               value={valueSystem}
@@ -206,7 +209,7 @@ const SystemTipsWord = forwardRef<
       );
     }, [
       isFullscreen,
-      isGroupSubType,
+      showSystemPromptOnly,
       valueSegmented,
       valueSystem,
       valueUser,
@@ -224,7 +227,7 @@ const SystemTipsWord = forwardRef<
     const modalTitle = (
       <div className={cx('flex', 'items-center', 'content-between')}>
         <span>
-          {isGroupSubType || valueSegmented === 'systemPrompt'
+          {showSystemPromptOnly || valueSegmented === 'systemPrompt'
             ? systemPromptLabel
             : dict('PC.Pages.EditAgent.SystemTipsWord.userPrompt')}
         </span>
@@ -263,7 +266,7 @@ const SystemTipsWord = forwardRef<
             styles['system-tips-wrapper'],
           )}
         >
-          {isGroupSubType ? (
+          {showSystemPromptOnly ? (
             <span className={cx(styles['prompt-label'])}>
               {systemPromptLabel}
             </span>
@@ -299,7 +302,7 @@ const SystemTipsWord = forwardRef<
                 onClick={toggleFullscreen}
               />
             </Tooltip>
-            {(isGroupSubType || valueSegmented === 'systemPrompt') && (
+            {(showSystemPromptOnly || valueSegmented === 'systemPrompt') && (
               <Tooltip
                 title={dict(
                   'PC.Pages.EditAgent.SystemTipsWord.autoOptimizeTooltip',
