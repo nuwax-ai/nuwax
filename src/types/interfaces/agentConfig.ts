@@ -8,7 +8,11 @@ import {
   VisibleToLLMEnum,
 } from '@/types/enums/agent';
 import type { CreateUpdateModeEnum } from '@/types/enums/common';
-import type { ComponentSettingEnum, OpenCloseEnum } from '@/types/enums/space';
+import type {
+  AgentSubTypeEnum,
+  ComponentSettingEnum,
+  OpenCloseEnum,
+} from '@/types/enums/space';
 import { ApplicationMoreActionEnum } from '@/types/enums/space';
 import type {
   AgentCardInfo,
@@ -85,6 +89,8 @@ export interface AgentArrangeConfigProps {
 export interface ComponentSettingModalProps {
   open: boolean;
   currentComponentInfo?: AgentComponentInfo;
+  /** 当前智能体 subType，用于控制调用审批等能力可见性 */
+  agentSubType?: AgentSubTypeEnum;
   devConversationId?: number;
   variables?: BindConfigWithSub[];
   settingActionList?: { type: ComponentSettingEnum; label: string }[];
