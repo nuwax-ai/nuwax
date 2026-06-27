@@ -218,7 +218,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         },
         {
           key: 'skill',
-          label: t('PC.Pages.AgentArrangeConfig.skills'),
+          label: t('PC.Pages.AgentArrangeConfig.skill'),
           ref: skillSectionRef,
         },
         {
@@ -1491,8 +1491,13 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
           {/* 通用型智能体显示技能 */}
           {agentConfigInfo?.type === AgentTypeEnum.TaskAgent && (
             <div ref={skillSectionRef}>
+              {/* 群组智能体显示技能与组员，其他显示技能 */}
               <ConfigOptionsHeader
-                title={t('PC.Pages.AgentArrangeConfig.skillsAndMembers')}
+                title={
+                  isGroupSubType
+                    ? t('PC.Pages.AgentArrangeConfig.skillsAndMembers')
+                    : t('PC.Pages.AgentArrangeConfig.skill')
+                }
               />
               <ConfigOptionCollapse
                 items={SkillList}
@@ -1588,6 +1593,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         open={openPluginModel}
         variables={variablesInfo?.bindConfig?.variables || []}
         currentComponentInfo={currentComponentInfo}
+        agentSubType={agentConfigInfo?.subType}
         devConversationId={agentConfigInfo?.devConversationId}
         settingActionList={getSettingActionList(currentComponentInfo?.type)}
         onCancel={() => setOpenPluginModel(false)}

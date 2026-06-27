@@ -20,7 +20,7 @@ import {
   InvokeTypeEnum,
   OutputDirectlyEnum,
 } from '@/types/enums/agent';
-import { ComponentSettingEnum } from '@/types/enums/space';
+import { AgentSubTypeEnum, ComponentSettingEnum } from '@/types/enums/space';
 import {
   AgentCardInfo,
   AgentComponentInfo,
@@ -59,12 +59,19 @@ import OutputWay from './OutputWay';
 
 const cx = classNames.bind(styles);
 
+/** General、Custom 对应 subType：General、Custom */
+const CALL_APPROVAL_SUPPORTED_SUB_TYPES = new Set([
+  AgentSubTypeEnum.General,
+  AgentSubTypeEnum.Custom,
+]);
+
 /**
  * 组件设置弹窗
  */
 const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
   open,
   currentComponentInfo,
+  agentSubType,
   devConversationId,
   variables,
   onCancel,
@@ -79,6 +86,9 @@ const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
   const [agentCardList, setAgentCardList] = useState<AgentCardInfo[]>([]);
   const { setAgentComponentList } = useModel('spaceAgent');
   const { runQueryConversation } = useModel('conversationInfo');
+
+  const isCallApprovalSupportedAgent =
+    !!agentSubType && CALL_APPROVAL_SUPPORTED_SUB_TYPES.has(agentSubType);
 
   useEffect(() => {
     if (currentComponentInfo?.type === AgentComponentTypeEnum.Skill) {
@@ -312,6 +322,9 @@ const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
         );
       // 调用审批
       case ComponentSettingEnum.Call_Approval:
+        if (!isCallApprovalSupportedAgent) {
+          return null;
+        }
         return (
           <CallApproval
             callApproval={componentInfo?.bindConfig?.callApproval}
@@ -382,16 +395,17 @@ const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
                 ) {
                   return null;
                 }
-                // 调用审批仅对工作流、插件、MCP 展示
+                // 调用审批：AgentFlow / AgentGroup（subType 为 Flow、Group）且组件为工作流、插件、MCP
                 if (
                   item.type === ComponentSettingEnum.Call_Approval &&
-                  ![
-                    AgentComponentTypeEnum.Workflow,
-                    AgentComponentTypeEnum.Plugin,
-                    AgentComponentTypeEnum.MCP,
-                  ].includes(
-                    currentComponentInfo?.type as AgentComponentTypeEnum,
-                  )
+                  (!isCallApprovalSupportedAgent ||
+                    ![
+                      AgentComponentTypeEnum.Workflow,
+                      AgentComponentTypeEnum.Plugin,
+                      AgentComponentTypeEnum.MCP,
+                    ].includes(
+                      currentComponentInfo?.type as AgentComponentTypeEnum,
+                    ))
                 ) {
                   return null;
                 }

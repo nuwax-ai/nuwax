@@ -1,17 +1,18 @@
 @import '@/styles/color';
+@import '@/styles/token';
 
 .table-container {
   :global {
     .ant-table-content .ant-table-thead > tr > th {
       padding-left: 0;
-      font-size: 14px;
+      font-size: @fontSize;
       color: @GRAY05;
     }
 
     .ant-table-content .ant-table-tbody > tr > td {
       padding: 10px 10px 10px 0;
       color: @BLANK04;
-      font-size: 12px;
+      font-size: @fontSizeSm;
     }
 
     .ant-table-footer {

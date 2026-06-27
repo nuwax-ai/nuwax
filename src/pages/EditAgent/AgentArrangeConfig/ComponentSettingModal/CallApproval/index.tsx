@@ -1,7 +1,8 @@
 import { t } from '@/services/i18nRuntime';
 import { DefaultSelectedEnum } from '@/types/enums/agent';
 import { CallApprovalProps } from '@/types/interfaces/agentConfig';
-import { Button, Radio, RadioChangeEvent } from 'antd';
+import { ExclamationCircleOutlined } from '@ant-design/icons';
+import { Button, Radio, RadioChangeEvent, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { memo, useEffect, useMemo, useState } from 'react';
 import styles from './index.less';
@@ -53,7 +54,12 @@ const CallApproval: React.FC<CallApprovalProps> = ({
   return (
     <div className={cx(styles.container, 'flex', 'flex-col')}>
       <div className={cx('flex-1', styles.content)}>
-        <h3>{t('PC.Pages.AgentArrangeCallApproval.title')}</h3>
+        <h3 className={cx('gap-6', 'flex', 'items-center')}>
+          <span>{t('PC.Pages.AgentArrangeCallApproval.title')}</span>
+          <Tooltip title={t('PC.Pages.AgentArrangeCallApproval.tooltip')}>
+            <ExclamationCircleOutlined className={cx(styles.icon)} />
+          </Tooltip>
+        </h3>
         <Radio.Group
           options={callApprovalOptions}
           onChange={handleChangeType}
