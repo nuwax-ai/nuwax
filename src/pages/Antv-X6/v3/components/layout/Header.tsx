@@ -1,6 +1,6 @@
 import ConditionRender from '@/components/ConditionRender';
-import { useFlowKind } from '@/contexts/FlowKindContext';
 import { SaveStatusEnum } from '@/models/workflowV3';
+import { useIsAgentFlow } from '@/pages/Antv-X6/v3/flowKind/useFlowKind';
 import { getImg } from '@/pages/Antv-X6/v3/utils/workflowV3';
 import { t } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
@@ -80,8 +80,7 @@ const Header: React.FC<HeaderProp> = ({
   flowControlModel,
   onFlowControlModelChange,
 }) => {
-  const flowKind = useFlowKind();
-  const isAgentFlow = flowKind === FlowKindEnum.AgentFlow;
+  const isAgentFlow = useIsAgentFlow();
   const { spaceId } = useParams();
   const { saveStatus, saveError, lastSaveTime } = useModel('workflowV3');
   const {

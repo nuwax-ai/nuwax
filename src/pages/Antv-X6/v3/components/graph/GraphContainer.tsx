@@ -1,3 +1,4 @@
+import { useCanvasFullscreen } from '@/contexts/CanvasFullscreenContext';
 import { NodeTypeEnum, RunResultStatusEnum } from '@/types/enums/common';
 import { NodeSizeGetTypeEnum } from '@/types/enums/node';
 import type {
@@ -21,9 +22,14 @@ import {
   useImperativeHandle,
   useRef,
 } from 'react';
+import { useAgentFlowExitFullscreenZoomFit } from '../../agentFlow/hooks/useAgentFlowExitFullscreenZoomFit';
 import EventHandlers from '../../component/eventHandlers';
 import InitGraph, { setGraphInitializing } from '../../component/graph';
 import { registerCustomNodes } from '../../component/registerCustomNodes';
+import {
+  CANVAS_ZOOM_TO_FIT_DELAY_MS,
+  zoomGraphToFit,
+} from '../../constants/canvasZoom';
 import {
   LOOP_END_NODE_X_OFFSET,
   LOOP_INNER_NODE_Y_OFFSET,
@@ -67,20 +73,16 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
     ref,
   ) => {
     const { modal, message } = App.useApp();
+    // AgentFlow 画布的全屏状态（仅 AgentFlowCanvas 提供；Workflow 模式恒为 false）
+    const isCanvasFullscreen = useCanvasFullscreen();
     registerCustomNodes();
     const containerRef = useRef<HTMLDivElement>(null);
     const graphRef = useRef<any>(null);
+    useAgentFlowExitFullscreenZoomFit(graphRef);
 
     // 新增一个ref标记是否已初始化
     const hasInitialized = useRef(false);
 
-    function preWork() {
-      const container = containerRef.current;
-      if (!container) return;
-      const graphContainer = document.createElement('div');
-      graphContainer.id = GRAPH_CONTAINER_ID;
-      container?.appendChild(graphContainer);
-    }
     // 绘制画布
     const addLoopChildNode = (callback: (data: any) => boolean): Node[] => {
       const loopNodeList = graphRef.current.getNodes().filter((item: Node) => {
@@ -528,19 +530,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
 
     // 缩放适配
     const graphChangeZoomToFit = () => {
-      if (!graphRef.current) return;
-      graphRef.current.zoomToFit({
-        padding: {
-          top: 128 + 18,
-          left: 18,
-          right: 18,
-          bottom: 18,
-        },
-        maxScale: 1,
-        minScale: 0.2,
-        preserveAspectRatio: true,
-        useCellGeometry: true,
-      });
+      zoomGraphToFit(graphRef.current);
     };
 
     const drawGraph = () => {
@@ -666,7 +656,6 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
 
     useEffect(() => {
       if (!containerRef.current) return;
-      preWork();
       graphRef.current = InitGraph({
         containerId: GRAPH_CONTAINER_ID,
         changeDrawer: changeDrawer,
@@ -699,6 +688,16 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         }, 100);
       };
     }, []);
+
+    // AgentFlow 画布切入全屏时，画布尺寸变化：等待容器重排 + X6 autoResize 后再「缩放到适配画布」，
+    // 保证全屏后所有节点都落在视口内。Workflow 模式 isCanvasFullscreen 恒为 false，不会触发。
+    useEffect(() => {
+      if (!isCanvasFullscreen || !graphRef.current) return;
+      const timer = setTimeout(() => {
+        zoomGraphToFit(graphRef.current);
+      }, CANVAS_ZOOM_TO_FIT_DELAY_MS);
+      return () => clearTimeout(timer);
+    }, [isCanvasFullscreen]);
 
     useEffect(() => {
       if (graphParams.nodeList.length === 0) {

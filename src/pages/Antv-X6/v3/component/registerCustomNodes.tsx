@@ -1,7 +1,6 @@
 import EditableTitle from '@/components/editableTitle';
 import { ICON_WORKFLOW_LOOP } from '@/constants/images.constants';
 import useNodeSelection from '@/hooks/useNodeSelection';
-import { isAgentFlowType } from '@/pages/Antv-X6/v3/agentFlow/types';
 import {
   answerTypeMap,
   branchTypeMap,
@@ -16,6 +15,7 @@ import {
 import { t } from '@/services/i18nRuntime';
 import {
   AnswerTypeEnum,
+  FlowKindEnum,
   NodeShapeEnum,
   NodeTypeEnum,
   RunResultStatusEnum,
@@ -26,6 +26,10 @@ import { ExceptionHandleConfig } from '@/types/interfaces/node';
 import { register } from '@antv/x6-react-shape';
 import { Tag } from 'antd';
 import React, { useCallback, useEffect, useState } from 'react';
+import {
+  getHitlOptions,
+  isHitlOptionsBranchMode,
+} from '../agentFlow/adapters/qaConfigAdapter';
 import '../indexV3.less';
 import { showExceptionHandle } from '../utils/graphV3';
 import './registerCustomNodes.less';
@@ -97,8 +101,8 @@ const RouteDecisionNode: React.FC<{ data: ChildNode }> = ({ data }) => {
             style={{ backgroundColor: '#fa8c16' }}
           />
           <span className="route-decision-name">
-            {route.intent ||
-              route.name ||
+            {route.name ||
+              route.intent ||
               t('PC.Pages.AgentFlowNode.routeDecisionItemFallback', i + 1)}
           </span>
         </div>
@@ -110,7 +114,7 @@ const RouteDecisionNode: React.FC<{ data: ChildNode }> = ({ data }) => {
 // HITL-Ask 人类询问节点（显示选项分支）
 const HitlAskOptionsNode: React.FC<{ data: ChildNode }> = ({ data }) => {
   const nc = data.nodeConfig as any;
-  const options: any[] = nc?.askConfig?.options || [];
+  const options: any[] = getHitlOptions(nc);
 
   return (
     <div className="route-decision-node-content">
@@ -133,7 +137,7 @@ const HitlAskOptionsNode: React.FC<{ data: ChildNode }> = ({ data }) => {
 const QANode: React.FC<{ data: ChildNode }> = ({ data }) => {
   const inputArgs = data.nodeConfig.inputArgs;
   const question = data.nodeConfig.question;
-  const answerType = data.nodeConfig.answerType as AnswerTypeEnum;
+  const answerType = data.nodeConfig.answerType;
   return (
     <div className="qa-node-content-style">
       <div className="dis-left">
@@ -162,7 +166,7 @@ const QANode: React.FC<{ data: ChildNode }> = ({ data }) => {
         <span className="text-right qa-title-style">
           {t('PC.Pages.AntvX6RegisterNodes.qaType')}
         </span>
-        <span>{answerTypeMap[answerType]}</span>
+        <span>{answerType ? answerTypeMap[answerType] : undefined}</span>
       </div>
       {answerType === AnswerTypeEnum.SELECT &&
         data.nodeConfig.options?.map((item, index) => (
@@ -366,8 +370,9 @@ export const GeneralNode: React.FC<NodeProps> = (props) => {
     NodeTypeEnum.IntentRecognition,
   ].includes(data.type);
   const marginBottom = isSpecialNode ? '10px' : '0';
-  // AgentFlow 节点走白卡片 + 端口 chip；其他节点保留原渐变 + 徽章
-  const isAgentFlow = isAgentFlowType(data.type);
+  // AgentFlow 画布下所有节点统一渲染描述行（flowKind 由 graph 实例携带，见
+  // graph.tsx initGraph）。原 Workflow 模式 flowKind=Workflow，保持不渲染描述。
+  const isAgentFlow = (graph as any)?.flowKind === FlowKindEnum.AgentFlow;
 
   const handleEditingStatusChange = (val: boolean) => {
     // 编辑中不能移动节点
@@ -438,8 +443,7 @@ export const GeneralNode: React.FC<NodeProps> = (props) => {
         )}
 
         {data.type === NodeTypeEnum.HumanInteraction &&
-          ((data.nodeConfig as any)?.askConfig?.options?.length > 0 ||
-            (data.nodeConfig as any)?.askConfig?.answerType === 'SELECT') && (
+          isHitlOptionsBranchMode(data.nodeConfig as Record<string, any>) && (
             <HitlAskOptionsNode data={data} />
           )}
 

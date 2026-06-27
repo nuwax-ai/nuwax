@@ -29,6 +29,10 @@ import {
 import { message, Modal } from 'antd';
 import StencilContent from '../components/layout/Sidebar';
 import {
+  isStartNode,
+  shouldBlockStartOutgoing,
+} from '../flowKind/flowKindRules';
+import {
   adjustParentSize,
   getPortGroup,
   handleLoopEdge,
@@ -147,6 +151,25 @@ const initGraph = ({
     targetNode?: ChildNode,
     edgeId?: string,
   ) => {
+    // AgentFlow：开始节点输出端口有且仅一条连线，已连出时禁止从端口再加节点
+    // （edgeId 存在时为在已有连线上插入节点，不会新增出口，放行）
+    if (
+      isStartNode(sourceNode?.type) &&
+      !edgeId &&
+      shouldBlockStartOutgoing({
+        graph,
+        flowKind,
+        startCellId: String(sourceNode.id),
+      })
+    ) {
+      message.warning(
+        t(
+          'PC.Pages.AgentFlowNode.startSingleOutgoingHint',
+          '开始节点只能连接一个后续节点',
+        ),
+      );
+      return;
+    }
     // const eventTarget =
     //   event.originalEvent.originalEvent || event.originalEvent;
     const targetRect = event.target.getBoundingClientRect();
@@ -252,6 +275,7 @@ const initGraph = ({
         });
       },
       validateConnection({
+        edge,
         sourceMagnet,
         targetMagnet,
         sourceCell,
@@ -305,6 +329,20 @@ const initGraph = ({
 
         if (isDuplicateEdge) {
           // ， false
+          return false;
+        }
+
+        // AgentFlow：开始节点输出端口有且仅一条连线（与 Workflow 多出口不同）
+        if (
+          isStartNode(sourceCell.getData()?.type) &&
+          shouldBlockStartOutgoing({
+            graph,
+            flowKind,
+            startCellId: String(sourceCell.id),
+            excludeEdgeId: edge ? String(edge.id) : undefined,
+            edges: existingEdges,
+          })
+        ) {
           return false;
         }
 
@@ -579,7 +617,22 @@ const initGraph = ({
     node.prop('ports/items', updatedPorts);
   });
 
-  graph.on('node:port:click', ({ node, port, e }) => {
+  // node:magnet:click 在 onMouseUp 里直接触发，对所有端口（包括 in port）
+  // 均可靠，不依赖原生 click 穿透 React foreignObject。
+  graph.on('node:magnet:click', ({ node, magnet, e }) => {
+    // 从 magnet 元素向上查找带 port 属性的祖先元素
+    let port: string | null = null;
+    let el: Element | null = magnet;
+    while (el) {
+      const p = el.getAttribute('port');
+      if (p) {
+        port = p;
+        break;
+      }
+      el = el.parentElement;
+    }
+    if (!port) return;
+
     const isLoopNode = node.getData()?.loopNodeId;
     if (isLoopNode) {
       const isIn = port?.includes('in');
@@ -594,7 +647,7 @@ const initGraph = ({
         return;
       }
     }
-    createNodeAndEdge(graph, e, node.getData(), port as string);
+    createNodeAndEdge(graph, e, node.getData(), port);
     graph.select(node);
   });
 
@@ -1037,6 +1090,10 @@ const initGraph = ({
   });
 
   registerNodeClickAndDblclick({ graph, changeZIndex, changeDrawer });
+
+  // 将 flowKind 挂到 graph 实例上，供 X6 react-shape 节点组件（GeneralNode）读取。
+  // x6-react-shape 自建 React Root、不传播 host 树 Context，故走实例属性而非 Context。
+  (graph as any).flowKind = flowKind;
 
   return graph; //
 };

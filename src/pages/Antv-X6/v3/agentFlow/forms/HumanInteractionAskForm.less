@@ -1,0 +1,80 @@
+.ask-form-fields {
+  &__hint {
+    font-size: 11px;
+    color: #999;
+    margin-bottom: 8px;
+  }
+
+  &__add {
+    width: 100%;
+    margin-top: 8px;
+    font-size: 12px;
+  }
+}
+
+.ask-form-field-card {
+  border: 1px solid #e8e8e8;
+  border-radius: 6px;
+  padding: 8px;
+  margin-top: 8px;
+  background: #fafafa;
+
+  &__row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+
+  &__name {
+    flex: 1;
+    font-size: 12px;
+  }
+
+  &__type {
+    width: 100px;
+    flex-shrink: 0;
+  }
+
+  &__required {
+    flex-shrink: 0;
+    font-size: 11px;
+    color: #666;
+    white-space: nowrap;
+  }
+
+  &__del {
+    flex-shrink: 0;
+    cursor: pointer;
+    color: #ccc;
+    font-size: 14px;
+    line-height: 1;
+
+    &:hover {
+      color: #ff4d4f;
+    }
+  }
+
+  &__desc {
+    font-size: 12px;
+  }
+
+  &__options-title {
+    margin-top: 8px;
+    margin-bottom: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #333;
+  }
+
+  &__options {
+    margin-top: 2px;
+    font-size: 12px;
+    // 撤销面板内 .fold-wrap-style .ant-input { height: 28px } 的全局覆盖
+    //（该规则特异性更高，会把 TextArea 压成单行），恢复 rows={3} 的固定 3 行高度
+    height: auto !important;
+    min-height: 66px;
+    // 固定 3 行高度，超出滚动（不自动撑高）
+    resize: vertical;
+  }
+}

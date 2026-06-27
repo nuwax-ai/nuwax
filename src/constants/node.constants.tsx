@@ -91,9 +91,11 @@ export const compareTypeMap = {
   [CompareTypeEnum.NOT_NULL]: '!∅',
 };
 
-export const answerTypeMap = {
+/** 含 Workflow QA（TEXT/SELECT）与 AgentFlow 表单回复（FORM，见 agentFlow/enums/hitlAnswerType） */
+export const answerTypeMap: Record<string, string> = {
   [AnswerTypeEnum.TEXT]: dict('PC.Constants.Node.directAnswer'),
   [AnswerTypeEnum.SELECT]: dict('PC.Constants.Node.optionAnswer'),
+  FORM: dict('PC.Pages.AgentFlowNode.replyModeFormReply'),
 };
 export const DEFAULT_NODE_CONFIG = {
   newNodeOffsetX: 100, // 新增节点时，x轴的间距

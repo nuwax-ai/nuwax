@@ -2,18 +2,20 @@
  * AgentFlow 画布面板
  *
  * 在 EditAgent 编排 tab 内复用 Workflow v3 编辑器，并自带「点击全屏覆盖整页」能力
- * （交互与系统提示词全屏一致：右上角按钮切换、ESC 退出）。全屏状态自洽，EditAgent
- * 无需感知任何画布 UI 细节。
+ *（左上角按钮切换、ESC 退出）。按钮置于左上角，避免与右侧节点属性面板争抢顶部空间，
+ * 让面板可以贴顶渲染。全屏状态自洽，EditAgent 无需感知任何画布 UI 细节。
  *
  * 仅当智能体为 Flow 子类型（AgentSubTypeEnum.Flow）时由 EditAgent 渲染。
  */
 
+import { SvgIcon } from '@/components/base';
+import { CanvasFullscreenProvider } from '@/contexts/CanvasFullscreenContext';
 import { FlowKindProvider } from '@/contexts/FlowKindContext';
 import { registerAgentFlowHandlers } from '@/pages/Antv-X6/v3/agentFlow/register';
 import WorkflowV3 from '@/pages/Antv-X6/v3/indexV3';
 import { dict } from '@/services/i18nRuntime';
 import { FlowKindEnum } from '@/types/enums/common';
-import { FullscreenExitOutlined, FullscreenOutlined } from '@ant-design/icons';
+import { Button, Tooltip } from 'antd';
 import React, { useEffect, useState } from 'react';
 
 import './index.less';
@@ -69,38 +71,41 @@ const AgentFlowCanvas: React.FC<AgentFlowCanvasProps> = ({
             }
       }
     >
-      <button
-        type="button"
-        onClick={() => setIsFullscreen((v) => !v)}
-        title={
-          isFullscreen
-            ? dict('PC.Pages.EditAgent.SystemTipsWord.exitFullscreen')
-            : dict('PC.Pages.EditAgent.SystemTipsWord.fullscreenEdit')
-        }
-        style={{
-          position: 'absolute',
-          top: 8,
-          right: 8,
-          zIndex: 2,
-          border: 'none',
-          background: 'rgba(255, 255, 255, 0.85)',
-          cursor: 'pointer',
-          color: '#666',
-          fontSize: 16,
-          lineHeight: 1,
-          padding: 4,
-          borderRadius: 4,
-        }}
-      >
-        {isFullscreen ? <FullscreenExitOutlined /> : <FullscreenOutlined />}
-      </button>
-      <FlowKindProvider flowKind={FlowKindEnum.AgentFlow}>
-        <div className="agent-flow-canvas-embedded">
-          <WorkflowV3
-            workflowIdOverride={workflowId}
-            spaceIdOverride={spaceId}
+      {/* 全屏切换按钮：图标/交互与「系统提示词」全屏按钮统一（zoom_in / zoom_out）。
+          置于左上角，避免与右侧节点属性面板争抢顶部空间。 */}
+      <div style={{ position: 'absolute', top: 8, left: 8, zIndex: 2 }}>
+        <Tooltip
+          title={
+            isFullscreen
+              ? dict('PC.Pages.EditAgent.SystemTipsWord.exitFullscreen')
+              : dict('PC.Pages.EditAgent.SystemTipsWord.fullscreenEdit')
+          }
+        >
+          <Button
+            type="text"
+            icon={
+              <SvgIcon
+                name={
+                  isFullscreen
+                    ? 'icons-common-zoom_out'
+                    : 'icons-common-zoom_in'
+                }
+                style={{ fontSize: '14px' }}
+              />
+            }
+            onClick={() => setIsFullscreen((v) => !v)}
           />
-        </div>
+        </Tooltip>
+      </div>
+      <FlowKindProvider flowKind={FlowKindEnum.AgentFlow}>
+        <CanvasFullscreenProvider fullscreen={isFullscreen}>
+          <div className="agent-flow-canvas-embedded">
+            <WorkflowV3
+              workflowIdOverride={workflowId}
+              spaceIdOverride={spaceId}
+            />
+          </div>
+        </CanvasFullscreenProvider>
       </FlowKindProvider>
     </div>
   );
