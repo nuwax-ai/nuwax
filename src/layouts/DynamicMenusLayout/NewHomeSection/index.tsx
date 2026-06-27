@@ -97,12 +97,28 @@ const NewHomeSection: React.FC<{
     [hasMore, localList, calcPageSize, searchKeyword],
   );
 
+  const loadListRef = useRef(loadList);
+  useEffect(() => {
+    loadListRef.current = loadList;
+  }, [loadList]);
+
   useEffect(() => {
     if (!initializedRef.current) {
       initializedRef.current = true;
       loadList(true);
     }
   }, []);
+
+  useEffect(() => {
+    if (!initializedRef.current) return;
+
+    if (location.pathname === '/home') {
+      loadListRef.current(true);
+      if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTop = 0;
+      }
+    }
+  }, [location.pathname, location.state]);
 
   useEffect(() => {
     const handleConversationUpdated = (e: Event) => {
