@@ -328,7 +328,7 @@ const CreateHooks: React.FC<CreateHooksProps> = ({
               styles['matcher-cell'],
             )}
           >
-            <EllipsisTooltip text={value} className={cx(styles.tag)} />
+            <EllipsisTooltip text={value} />
           </span>
         );
       },
