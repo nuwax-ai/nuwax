@@ -2,12 +2,12 @@
  * 自定义 Hooks - 文档预览和原文对照相关
  */
 
-import type { DocumentContent, HighlightRange, MatchResult } from './types';
-import { getDocumentType, matchSegmentInDocument } from './PositionMatcher';
 import { message } from 'antd';
-import { useState } from 'react';
-import * as pdfjsLib from 'pdfjs-dist';
 import mammoth from 'mammoth';
+import * as pdfjsLib from 'pdfjs-dist';
+import { useState } from 'react';
+import { getDocumentType, matchSegmentInDocument } from './PositionMatcher';
+import type { DocumentContent, HighlightRange, MatchResult } from './types';
 
 // 配置PDF.js worker - 优先使用本地文件，CDN作为备份
 if (typeof window !== 'undefined') {
@@ -17,7 +17,7 @@ if (typeof window !== 'undefined') {
   console.log('PDF.js worker配置完成:', {
     version: pdfjsLib.version,
     workerSrc: pdfjsLib.GlobalWorkerOptions.workerSrc,
-    source: 'local'
+    source: 'local',
   });
 }
 
@@ -25,61 +25,10 @@ if (typeof window !== 'undefined') {
  * 文档预览 Hook
  */
 export const useDocumentPreview = () => {
-  const [documentContent, setDocumentContent] = useState<DocumentContent | null>(null);
+  const [documentContent, setDocumentContent] =
+    useState<DocumentContent | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-
-  // 加载文档内容
-  const loadDocument = async (documentUrl: string, fileType?: string) => {
-    if (!documentUrl) {
-      setError('文档URL为空');
-      return null;
-    }
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      // 检测文档类型
-      const docType = fileType || getDocumentType(documentUrl);
-
-      if (!docType) {
-        throw new Error('不支持的文档类型');
-      }
-
-      // 根据文档类型提取文本内容
-      let content: DocumentContent | null = null;
-
-      switch (docType) {
-        case 'txt':
-          content = await loadTextDocument(documentUrl);
-          break;
-        case 'md':
-          content = await loadTextDocument(documentUrl);
-          break;
-        case 'pdf':
-          // PDF文档：尝试获取基本信息，实际文本由组件处理
-          content = await loadPdfDocument(documentUrl);
-          break;
-        case 'docx':
-          // Word文档：尝试获取基本信息，实际文本由组件处理
-          content = await loadWordDocument(documentUrl);
-          break;
-        default:
-          throw new Error(`不支持的文档类型: ${docType}`);
-      }
-
-      setDocumentContent(content);
-      return content;
-    } catch (err: any) {
-      const errorMsg = err.message || '加载文档失败';
-      setError(errorMsg);
-      message.error(errorMsg);
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // 加载纯文本文档
   const loadTextDocument = async (url: string): Promise<DocumentContent> => {
@@ -140,7 +89,7 @@ export const useDocumentPreview = () => {
       console.log('PDF文本提取完成:', {
         totalPages: numPages,
         totalTextLength: fullText.length,
-        fileSize: fileSize
+        fileSize: fileSize,
       });
 
       // 如果提取的文本太少，可能是图片PDF
@@ -148,13 +97,25 @@ export const useDocumentPreview = () => {
         console.warn('PDF提取文本过少，可能是扫描版或图片PDF');
       }
 
+      // 标准化PDF文本：移除页码标记，规范化空白字符
+      const normalizedText = fullText
+        .replace(/-\d+-/g, '') // 移除页码如 "-1-", "-2-", "-26-" 等
+        .replace(/\s+/g, ' ') // 将多个空白字符替换为单个空格
+        .trim(); // 移除首尾空白
+
+      console.log('PDF文本标准化完成:', {
+        originalLength: fullText.length,
+        normalizedLength: normalizedText.length,
+        removedChars: fullText.length - normalizedText.length,
+      });
+
       return {
-        text: fullText,
+        text: normalizedText,
         metadata: {
-          wordCount: fullText.length,
+          wordCount: normalizedText.length,
           fileSize: fileSize,
           type: 'pdf',
-          pageCount: numPages
+          pageCount: numPages,
         },
       };
     } catch (err: any) {
@@ -200,7 +161,7 @@ export const useDocumentPreview = () => {
       console.log('Word文档文本提取完成:', {
         textLength: text.length,
         fileSize: fileSize,
-        messages: result.messages
+        messages: result.messages,
       });
 
       // 检查是否有提取警告
@@ -213,12 +174,64 @@ export const useDocumentPreview = () => {
         metadata: {
           wordCount: text.length,
           fileSize: fileSize,
-          type: 'docx'
+          type: 'docx',
         },
       };
     } catch (err: any) {
       console.error('Word文档文本提取失败:', err);
       throw new Error(`加载Word文档失败: ${err.message || '未知错误'}`);
+    }
+  };
+
+  // 加载文档内容
+  const loadDocument = async (documentUrl: string, fileType?: string) => {
+    if (!documentUrl) {
+      setError('文档URL为空');
+      return null;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      // 检测文档类型
+      const docType = fileType || getDocumentType(documentUrl);
+
+      if (!docType) {
+        throw new Error('不支持的文档类型');
+      }
+
+      // 根据文档类型提取文本内容
+      let content: DocumentContent | null = null;
+
+      switch (docType) {
+        case 'txt':
+          content = await loadTextDocument(documentUrl);
+          break;
+        case 'md':
+          content = await loadTextDocument(documentUrl);
+          break;
+        case 'pdf':
+          // PDF文档：尝试获取基本信息，实际文本由组件处理
+          content = await loadPdfDocument(documentUrl);
+          break;
+        case 'docx':
+          // Word文档：尝试获取基本信息，实际文本由组件处理
+          content = await loadWordDocument(documentUrl);
+          break;
+        default:
+          throw new Error(`不支持的文档类型: ${docType}`);
+      }
+
+      setDocumentContent(content);
+      return content;
+    } catch (err: any) {
+      const errorMsg = err.message || '加载文档失败';
+      setError(errorMsg);
+      message.error(errorMsg);
+      return null;
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -243,10 +256,15 @@ export const useDocumentPreview = () => {
  */
 export const useTextHighlight = () => {
   const [highlights, setHighlights] = useState<HighlightRange[]>([]);
-  const [currentSegmentId, setCurrentSegmentId] = useState<string | number | null>(null);
+  const [currentSegmentId, setCurrentSegmentId] = useState<
+    string | number | null
+  >(null);
 
   // 根据分段添加高亮
-  const addHighlight = (matchResult: MatchResult, segmentId: string | number) => {
+  const addHighlight = (
+    matchResult: MatchResult,
+    segmentId: string | number,
+  ) => {
     const newHighlight: HighlightRange = {
       start: matchResult.startOffset,
       end: matchResult.endOffset,
@@ -290,13 +308,17 @@ export const useSegmentMatch = () => {
   const matchSegment = async (
     documentContent: string,
     segmentText: string,
-    options?: any
+    options?: any,
   ) => {
     setIsMatching(true);
     setMatchResult(null);
 
     try {
-      const result = matchSegmentInDocument(documentContent, segmentText, options);
+      const result = matchSegmentInDocument(
+        documentContent,
+        segmentText,
+        options,
+      );
       setMatchResult(result);
       return result;
     } catch (err) {

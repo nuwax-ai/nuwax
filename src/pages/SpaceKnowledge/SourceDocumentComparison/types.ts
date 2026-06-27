@@ -2,7 +2,10 @@
  * 原文对照功能 - 类型定义
  */
 
-import type { KnowledgeDocumentInfo, KnowledgeRawSegmentInfo } from '@/types/interfaces/knowledge';
+import type {
+  KnowledgeDocumentInfo,
+  KnowledgeRawSegmentInfo,
+} from '@/types/interfaces/knowledge';
 
 /**
  * 文档类型枚举
@@ -53,7 +56,6 @@ export interface DocumentPreviewProps {
   documentInfo: KnowledgeDocumentInfo | null;
   documentContent: DocumentContent | null;
   highlights: HighlightRange[];
-  onDocumentLoad?: (content: DocumentContent) => void;
   onHighlightClick?: (range: HighlightRange) => void;
 }
 

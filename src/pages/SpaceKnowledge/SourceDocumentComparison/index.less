@@ -55,11 +55,11 @@
 
   .preview-content {
     flex: 1;
-    overflow: auto;
-    padding: 24px;
+    overflow: hidden; // 改为hidden，让内部子元素处理滚动
+    padding: 0;
     background: #fff;
-    min-height: 600px; // 确保预览内容有足够的最小高度
-    max-height: calc(100vh - 150px); // 限制最大高度，防止超出视口
+    display: flex;
+    flex-direction: column;
   }
 
   .empty-state,
@@ -90,7 +90,7 @@
   &.text-preview {
     background: #fff;
     padding: 16px;
-    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-family: Monaco, Menlo, 'Ubuntu Mono', monospace;
     font-size: 14px;
     line-height: 1.6;
     color: #333;
@@ -117,7 +117,7 @@
   &.active {
     background-color: #91d5ff !important;
     border-color: #1890ff !important;
-    box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2) !important;
+    box-shadow: 0 0 0 2px rgba(24, 144, 255, 20%) !important;
   }
 }
 
