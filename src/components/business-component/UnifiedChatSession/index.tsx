@@ -94,6 +94,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
   loadingConversation,
   isLoadingOtherInterface,
   conversationInfo,
+  interventionHandlers,
 }) => {
   // 滚动管理 Hook
   const {
@@ -188,6 +189,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
     messageList,
     initialAgentMode,
     onSendMessage: (msg) => messageQueue.rawSend(msg),
+    interventionHandlers,
   });
   agentModeRef.current = interventionLayer.agentMode;
 
