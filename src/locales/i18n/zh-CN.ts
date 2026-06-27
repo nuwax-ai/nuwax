@@ -1729,6 +1729,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.AgentArrangeCallApproval.optionNo": "否",
   "PC.Pages.AgentArrangeCallApproval.optionYes": "是",
   "PC.Pages.AgentArrangeCallApproval.title": "是否需要审批",
+  "PC.Pages.AgentArrangeCallApproval.tooltip": "开启后，模型在调用工具前会向用户发送审批通知，同意后可继续执行",
   "PC.Pages.AgentArrangeOutputWay.optionNo": "否",
   "PC.Pages.AgentArrangeOutputWay.optionYes": "是",
   "PC.Pages.AgentArrangeOutputWay.title": "是否直接输出",

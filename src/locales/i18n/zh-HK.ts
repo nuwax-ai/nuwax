@@ -1591,6 +1591,7 @@ export const ZH_HK: SystemLangMap = {
   "PC.Pages.AgentArrangeCallApproval.optionNo": "否",
   "PC.Pages.AgentArrangeCallApproval.optionYes": "是",
   "PC.Pages.AgentArrangeCallApproval.title": "是否需要審批",
+  "PC.Pages.AgentArrangeCallApproval.tooltip": "開啟後，模型在調用工具前會向用戶發送審批通知，同意後可繼續執行",
   "PC.Pages.AgentArrangeOutputWay.optionNo": "否",
   "PC.Pages.AgentArrangeOutputWay.optionYes": "是",
   "PC.Pages.AgentArrangeOutputWay.title": "是否直接輸出",

@@ -1591,6 +1591,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.AgentArrangeCallApproval.optionNo": "いいえ",
   "PC.Pages.AgentArrangeCallApproval.optionYes": "はい",
   "PC.Pages.AgentArrangeCallApproval.title": "承認が必要か",
+  "PC.Pages.AgentArrangeCallApproval.tooltip": "有効にすると、モデルはツールを呼び出す前にユーザーへ承認通知を送信し、同意後に実行を続行します",
   "PC.Pages.AgentArrangeOutputWay.optionNo": "いいえ",
   "PC.Pages.AgentArrangeOutputWay.optionYes": "はい",
   "PC.Pages.AgentArrangeOutputWay.title": "ダイレクト出力",

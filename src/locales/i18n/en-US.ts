@@ -1729,6 +1729,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.AgentArrangeCallApproval.optionNo": "No",
   "PC.Pages.AgentArrangeCallApproval.optionYes": "Yes",
   "PC.Pages.AgentArrangeCallApproval.title": "Approval Required",
+  "PC.Pages.AgentArrangeCallApproval.tooltip": "When enabled, the model sends an approval notification before calling a tool. Execution continues after the user approves.",
   "PC.Pages.AgentArrangeOutputWay.optionNo": "No",
   "PC.Pages.AgentArrangeOutputWay.optionYes": "Yes",
   "PC.Pages.AgentArrangeOutputWay.title": "Direct Output",
