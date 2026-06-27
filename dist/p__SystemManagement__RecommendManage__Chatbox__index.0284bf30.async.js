@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunknuwax_frontend=self.webpackChunknuwax_frontend||[]).push([[8157],{83489:function(a,n,e){e.r(n);var u=e(52676),t=function(){return(0,u.jsx)("div",{children:"ChatboxRecommend"})};n.default=t}}]);
