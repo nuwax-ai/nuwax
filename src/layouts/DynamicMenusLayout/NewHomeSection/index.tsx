@@ -248,9 +248,9 @@ const NewHomeSection: React.FC<{
     handleCloseMobileMenu();
     const { id, agentId, devTargetType, devTargetId, devSpaceId } = item;
 
-    if (devTargetType === 'Agent' && devSpaceId && devTargetId) {
+    if (devTargetType === 'Agent' && devSpaceId && id) {
       history.push(
-        `/space/${devSpaceId}/conversation-agent?agentId=${agentId}&conversationId=${devTargetId}`,
+        `/space/${devSpaceId}/conversation-agent?agentId=${agentId}&conversationId=${id}`,
       );
     } else if (devTargetType === 'PageApp' && devSpaceId && devTargetId) {
       history.push(`/space/${devSpaceId}/app-dev/${devTargetId}`);
