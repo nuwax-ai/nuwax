@@ -36,6 +36,7 @@ const NewHomeSection: React.FC<{
   const listInnerRef = useRef<HTMLDivElement>(null);
   const initializedRef = useRef(false);
   const pageSizeRef = useRef(20);
+  const loadingRef = useRef(false);
 
   const calcPageSize = useCallback(() => {
     const height = scrollContainerRef.current?.clientHeight ?? 0;
@@ -46,7 +47,8 @@ const NewHomeSection: React.FC<{
 
   const loadList = useCallback(
     async (isRefresh = false) => {
-      if (loading || (!hasMore && !isRefresh)) return;
+      if (loadingRef.current || (!hasMore && !isRefresh)) return;
+      loadingRef.current = true;
       setLoading(true);
 
       const pageSize = isRefresh ? calcPageSize() : pageSizeRef.current;
@@ -69,14 +71,30 @@ const NewHomeSection: React.FC<{
         if (isRefresh) {
           setLocalList(data);
         } else {
-          setLocalList((prev) => [...prev, ...data]);
+          setLocalList((prev) => {
+            const merged = [...prev, ...data];
+            const unique: ConversationInfo[] = [];
+            const seen = new Set();
+            for (const item of merged) {
+              if (item && item.id !== undefined && item.id !== null) {
+                if (!seen.has(item.id)) {
+                  seen.add(item.id);
+                  unique.push(item);
+                }
+              } else {
+                unique.push(item);
+              }
+            }
+            return unique;
+          });
         }
         setHasMore(data.length >= pageSize);
       } finally {
+        loadingRef.current = false;
         setLoading(false);
       }
     },
-    [loading, hasMore, localList, calcPageSize, searchKeyword],
+    [hasMore, localList, calcPageSize, searchKeyword],
   );
 
   useEffect(() => {
