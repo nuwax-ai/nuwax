@@ -1394,7 +1394,6 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.AgentArrangeConfig.plugin": "プラグイン",
   "PC.Pages.AgentArrangeConfig.referenceNumber": "#参照番号",
   "PC.Pages.AgentArrangeConfig.skill": "スキル",
-  "PC.Pages.AgentArrangeConfig.skills": "スキル",
   "PC.Pages.AgentArrangeConfig.skillsAndMembers": "スキルとメンバー",
   "PC.Pages.AgentArrangeConfig.groupAgent": "グループエージェント",
   "PC.Pages.AgentArrangeConfig.subAgent": "副代理人",
