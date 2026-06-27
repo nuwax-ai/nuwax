@@ -2,14 +2,14 @@
  * 原文对照主组件 - 集成文档预览和高亮定位功能
  */
 
-import React, { useEffect, useRef } from 'react';
 import { Empty, Spin, message } from 'antd';
 import classNames from 'classnames';
+import React, { useEffect, useRef } from 'react';
 import DocumentPreview from './DocumentPreview';
-import type { SourceDocumentComparisonProps } from './types';
-import { useDocumentPreview, useTextHighlight, useSegmentMatch } from './hooks';
-import { matchSegmentInDocument } from './PositionMatcher';
+import { useDocumentPreview, useTextHighlight } from './hooks';
 import styles from './index.less';
+import { matchSegmentInDocument } from './PositionMatcher';
+import type { SourceDocumentComparisonProps } from './types';
 
 const cx = classNames.bind(styles);
 
@@ -27,7 +27,6 @@ const TEST_DOCUMENT_URLS = {
  * 根据文件扩展名获取测试URL
  */
 const getTestDocumentUrl = (originalUrl: string): string => {
-  
   const extension = originalUrl.split('.').pop()?.toLowerCase();
 
   switch (extension) {
@@ -58,9 +57,9 @@ const SourceDocumentComparison: React.FC<SourceDocumentComparisonProps> = ({
   const previewContainerRef = useRef<HTMLDivElement>(null);
 
   // 使用自定义hooks
-  const { documentContent, loading, error, loadDocument, reset } = useDocumentPreview();
-  const { highlights, currentSegmentId, addHighlight, clearHighlights, updateHighlights } = useTextHighlight();
-  const { matchResult, isMatching, matchSegment } = useSegmentMatch();
+  const { documentContent, loading, error, loadDocument, reset } =
+    useDocumentPreview();
+  const { highlights, addHighlight, clearHighlights } = useTextHighlight();
 
   // 添加布局尺寸监控
   useEffect(() => {
@@ -71,7 +70,7 @@ const SourceDocumentComparison: React.FC<SourceDocumentComparisonProps> = ({
           width: rect.width,
           height: rect.height,
           availWidth: window.innerWidth,
-          availHeight: window.innerHeight
+          availHeight: window.innerHeight,
         });
       }
     };
@@ -89,149 +88,13 @@ const SourceDocumentComparison: React.FC<SourceDocumentComparisonProps> = ({
       console.log('文档URL映射:', {
         original: documentInfo.docUrl,
         test: testUrl,
-        fileType: documentInfo.fileType
+        fileType: documentInfo.fileType,
       });
       loadDocument(testUrl, documentInfo.fileType);
     } else {
       reset();
     }
   }, [documentInfo?.docUrl, documentInfo?.fileType, visible]);
-
-  // 当选中的分段改变时，进行匹配和高亮
-  useEffect(() => {
-    if (selectedSegment && visible) {
-      // 对于PDF文档，即使没有文本内容也要触发匹配过程
-      const isPdfDocument = documentInfo?.fileType === 'pdf' || documentInfo?.docUrl?.endsWith('.pdf');
-      const hasTextContent = documentContent?.text && documentContent.text.length > 0;
-
-      if (hasTextContent || isPdfDocument) {
-        console.log('触发分段匹配:', {
-          hasSegment: !!selectedSegment,
-          isPdfDocument,
-          hasTextContent,
-          fileType: documentInfo?.fileType
-        });
-        handleSegmentMatch(selectedSegment);
-      }
-    } else if (!selectedSegment) {
-      // 清除高亮
-      clearHighlights();
-    }
-  }, [selectedSegment, documentContent, visible]);
-
-  // 匹配分段并添加高亮
-  const handleSegmentMatch = async (segment: any) => {
-    if (!segment?.rawTxt) {
-      return;
-    }
-
-    try {
-      console.log('开始匹配分段:', {
-        hasDocumentContent: !!documentContent,
-        hasText: !!documentContent?.text,
-        segmentTextLength: segment.rawTxt?.length,
-        fileType: documentInfo?.fileType
-      });
-
-      // 判断文档类型
-      const isPdfDocument = documentInfo?.fileType === 'pdf' || documentInfo?.docUrl?.endsWith('.pdf');
-      const isTextDocument = documentContent?.text && documentContent.text.length > 0;
-
-      if (isTextDocument) {
-        // 文本文档：进行精确文本匹配
-        const result = matchSegmentInDocument(documentContent.text, segment.rawTxt, {
-          fuzzyMatch: true,
-          trimWhitespace: true,
-          ignoreCase: false,
-        });
-
-        if (result) {
-          console.log('文本文档匹配成功:', result);
-          // 匹配成功，添加高亮
-          addHighlight(result, segment.id || segment.rawSegmentId);
-          // 滚动到高亮位置
-          scrollToHighlight(result.startOffset);
-        } else {
-          // 匹配失败，但仍显示分段内容
-          message.info('未在文档中找到精确匹配，显示分段内容');
-          const virtualHighlight = {
-            startOffset: 0,
-            endOffset: segment.rawTxt.length,
-            matchedText: segment.rawTxt,
-            confidence: 0
-          };
-          addHighlight(virtualHighlight, segment.id || segment.rawSegmentId);
-        }
-      } else if (isPdfDocument) {
-        // PDF文档：也使用精确文本匹配
-        console.log('PDF文档，使用文本匹配');
-
-        // 使用与文本文档相同的匹配逻辑
-        const result = matchSegmentInDocument(documentContent.text, segment.rawTxt, {
-          fuzzyMatch: true,
-          trimWhitespace: true,
-          ignoreCase: false,
-        });
-
-        if (result) {
-          console.log('PDF文档匹配成功:', result);
-          // 匹配成功，添加高亮
-          addHighlight(result, segment.id || segment.rawSegmentId);
-          // 滚动到高亮位置
-          scrollToHighlight(result.startOffset);
-        } else {
-          // 匹配失败，但仍显示分段内容
-          message.info('未在PDF文档中找到精确匹配，显示分段内容');
-          const virtualHighlight = {
-            startOffset: 0,
-            endOffset: segment.rawTxt.length,
-            matchedText: segment.rawTxt,
-            confidence: 0
-          };
-          addHighlight(virtualHighlight, segment.id || segment.rawSegmentId);
-        }
-      } else {
-        // Word或其他文档：也使用精确文本匹配
-        console.log('Word/其他文档，使用文本匹配');
-
-        const result = matchSegmentInDocument(documentContent.text, segment.rawTxt, {
-          fuzzyMatch: true,
-          trimWhitespace: true,
-          ignoreCase: false,
-        });
-
-        if (result) {
-          console.log('Word/其他文档匹配成功:', result);
-          // 匹配成功，添加高亮
-          addHighlight(result, segment.id || segment.rawSegmentId);
-          // 滚动到高亮位置
-          scrollToHighlight(result.startOffset);
-        } else {
-          // 匹配失败，但仍显示分段内容
-          message.info('未在文档中找到精确匹配，显示分段内容');
-          const fallbackHighlight = {
-            startOffset: 0,
-            endOffset: segment.rawTxt.length,
-            matchedText: segment.rawTxt,
-            confidence: 0
-          };
-          addHighlight(fallbackHighlight, segment.id || segment.rawSegmentId);
-        }
-      }
-    } catch (err) {
-      console.error('分段匹配失败:', err);
-      // 即使匹配失败，也尝试显示分段内容
-      if (segment?.rawTxt) {
-        const fallbackHighlight = {
-          startOffset: 0,
-          endOffset: segment.rawTxt.length,
-          matchedText: segment.rawTxt,
-          confidence: 0
-        };
-        addHighlight(fallbackHighlight, segment.id || segment.rawSegmentId);
-      }
-    }
-  };
 
   // 滚动到高亮位置
   const scrollToHighlight = (offset: number) => {
@@ -257,12 +120,168 @@ const SourceDocumentComparison: React.FC<SourceDocumentComparisonProps> = ({
       }
     } else {
       // 对于PDF/Word文档，滚动到文本内容显示区域
-      const textContentArea = container.querySelector('[style*="overflowY: auto"]');
+      const textContentArea = container.querySelector(
+        '[style*="overflowY: auto"]',
+      );
       if (textContentArea) {
         textContentArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
     }
   };
+
+  // 匹配分段并添加高亮
+  const handleSegmentMatch = async (segment: any) => {
+    if (!segment?.rawTxt) {
+      return;
+    }
+
+    try {
+      console.log('开始匹配分段:', {
+        hasDocumentContent: !!documentContent,
+        hasText: !!documentContent?.text,
+        segmentTextLength: segment.rawTxt?.length,
+        fileType: documentInfo?.fileType,
+      });
+
+      // 判断文档类型
+      const isPdfDocument =
+        documentInfo?.fileType === 'pdf' ||
+        documentInfo?.docUrl?.endsWith('.pdf');
+      const isTextDocument =
+        documentContent?.text && documentContent.text.length > 0;
+
+      if (isTextDocument) {
+        // 文本文档：进行精确文本匹配
+        const result = matchSegmentInDocument(
+          documentContent.text,
+          segment.rawTxt,
+          {
+            fuzzyMatch: true,
+            trimWhitespace: true,
+            ignoreCase: false,
+          },
+        );
+
+        if (result) {
+          console.log('文本文档匹配成功:', result);
+          // 匹配成功，添加高亮
+          addHighlight(result, segment.id || segment.rawSegmentId);
+          // 滚动到高亮位置
+          scrollToHighlight(result.startOffset);
+        } else {
+          // 匹配失败，但仍显示分段内容
+          message.info('未在文档中找到精确匹配，显示分段内容');
+          const virtualHighlight = {
+            startOffset: 0,
+            endOffset: segment.rawTxt.length,
+            matchedText: segment.rawTxt,
+            confidence: 0,
+          };
+          addHighlight(virtualHighlight, segment.id || segment.rawSegmentId);
+        }
+      } else if (isPdfDocument) {
+        // PDF文档：也使用精确文本匹配
+        console.log('PDF文档，使用文本匹配');
+
+        // 使用与文本文档相同的匹配逻辑
+        const result = matchSegmentInDocument(
+          documentContent.text,
+          segment.rawTxt,
+          {
+            fuzzyMatch: true,
+            trimWhitespace: true,
+            ignoreCase: false,
+          },
+        );
+
+        if (result) {
+          console.log('PDF文档匹配成功:', result);
+          // 匹配成功，添加高亮
+          addHighlight(result, segment.id || segment.rawSegmentId);
+          // 滚动到高亮位置
+          scrollToHighlight(result.startOffset);
+        } else {
+          // 匹配失败，但仍显示分段内容
+          message.info('未在PDF文档中找到精确匹配，显示分段内容');
+          const virtualHighlight = {
+            startOffset: 0,
+            endOffset: segment.rawTxt.length,
+            matchedText: segment.rawTxt,
+            confidence: 0,
+          };
+          addHighlight(virtualHighlight, segment.id || segment.rawSegmentId);
+        }
+      } else {
+        // Word或其他文档：也使用精确文本匹配
+        console.log('Word/其他文档，使用文本匹配');
+
+        const result = matchSegmentInDocument(
+          documentContent.text,
+          segment.rawTxt,
+          {
+            fuzzyMatch: true,
+            trimWhitespace: true,
+            ignoreCase: false,
+          },
+        );
+
+        if (result) {
+          console.log('Word/其他文档匹配成功:', result);
+          // 匹配成功，添加高亮
+          addHighlight(result, segment.id || segment.rawSegmentId);
+          // 滚动到高亮位置
+          scrollToHighlight(result.startOffset);
+        } else {
+          // 匹配失败，但仍显示分段内容
+          message.info('未在文档中找到精确匹配，显示分段内容');
+          const fallbackHighlight = {
+            startOffset: 0,
+            endOffset: segment.rawTxt.length,
+            matchedText: segment.rawTxt,
+            confidence: 0,
+          };
+          addHighlight(fallbackHighlight, segment.id || segment.rawSegmentId);
+        }
+      }
+    } catch (err) {
+      console.error('分段匹配失败:', err);
+      // 即使匹配失败，也尝试显示分段内容
+      if (segment?.rawTxt) {
+        const fallbackHighlight = {
+          startOffset: 0,
+          endOffset: segment.rawTxt.length,
+          matchedText: segment.rawTxt,
+          confidence: 0,
+        };
+        addHighlight(fallbackHighlight, segment.id || segment.rawSegmentId);
+      }
+    }
+  };
+
+  // 当选中的分段改变时，进行匹配和高亮
+  useEffect(() => {
+    if (selectedSegment && visible) {
+      // 对于PDF文档，即使没有文本内容也要触发匹配过程
+      const isPdfDocument =
+        documentInfo?.fileType === 'pdf' ||
+        documentInfo?.docUrl?.endsWith('.pdf');
+      const hasTextContent =
+        documentContent?.text && documentContent.text.length > 0;
+
+      if (hasTextContent || isPdfDocument) {
+        console.log('触发分段匹配:', {
+          hasSegment: !!selectedSegment,
+          isPdfDocument,
+          hasTextContent,
+          fileType: documentInfo?.fileType,
+        });
+        handleSegmentMatch(selectedSegment);
+      }
+    } else if (!selectedSegment) {
+      // 清除高亮
+      clearHighlights();
+    }
+  }, [selectedSegment, documentContent, visible]);
 
   // 如果不可见，不渲染
   if (!visible) {
@@ -294,10 +313,14 @@ const SourceDocumentComparison: React.FC<SourceDocumentComparisonProps> = ({
       style={{ width: '52%', minWidth: '500px', flex: '1 1 0%' }}
     >
       <DocumentPreview
-        documentInfo={documentInfo ? {
-          ...documentInfo,
-          docUrl: getTestDocumentUrl(documentInfo.docUrl)
-        } : null}
+        documentInfo={
+          documentInfo
+            ? {
+                ...documentInfo,
+                docUrl: getTestDocumentUrl(documentInfo.docUrl),
+              }
+            : null
+        }
         documentContent={documentContent}
         highlights={highlights}
         onDocumentLoad={(content) => {

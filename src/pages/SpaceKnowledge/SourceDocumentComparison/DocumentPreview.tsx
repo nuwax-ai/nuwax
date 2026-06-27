@@ -2,13 +2,13 @@
  * 文档预览组件 - 支持PDF、Word、Markdown、Text的预览和高亮
  */
 
-import React, { useEffect, useRef, useState } from 'react';
-import { Spin, Empty } from 'antd';
+import { Empty, Spin } from 'antd';
 import classNames from 'classnames';
-import type { DocumentPreviewProps } from './types';
-import { DocumentTypeEnum } from './types';
+import React, { useEffect, useRef, useState } from 'react';
 import { getDocumentType } from './PositionMatcher';
 import styles from './index.less';
+import type { DocumentPreviewProps } from './types';
+import { DocumentTypeEnum } from './types';
 
 const cx = classNames.bind(styles);
 
@@ -26,7 +26,38 @@ const PdfPreview: React.FC<{
   const [error, setError] = useState<string | null>(null);
   const [displayText, setDisplayText] = useState<string>('');
   const containerRef = useRef<HTMLDivElement>(null);
-  const [currentHighlightId, setCurrentHighlightId] = useState<string | number | null>(null);
+  const [currentHighlightId, setCurrentHighlightId] = useState<
+    string | number | null
+  >(null);
+
+  // 滚动到高亮位置的方法
+  const scrollToHighlight = () => {
+    if (!containerRef.current) return;
+
+    const container = containerRef.current;
+    const highlightElements = container.querySelectorAll('.highlight-segment');
+
+    if (highlightElements.length > 0) {
+      const highlightElement = highlightElements[0] as HTMLElement;
+
+      // 计算滚动位置，使高亮元素位于容器中心
+      const containerRect = container.getBoundingClientRect();
+      const highlightRect = highlightElement.getBoundingClientRect();
+
+      const scrollTop =
+        container.scrollTop +
+        (highlightRect.top - containerRect.top) -
+        containerRect.height / 2 +
+        highlightRect.height / 2;
+
+      container.scrollTo({
+        top: Math.max(0, scrollTop),
+        behavior: 'smooth',
+      });
+
+      console.log('PDF滚动到高亮位置完成');
+    }
+  };
 
   // 设置PDF文本内容
   useEffect(() => {
@@ -45,52 +76,28 @@ const PdfPreview: React.FC<{
   // 当高亮变化时，自动滚动到高亮位置
   useEffect(() => {
     if (highlights.length > 0 && containerRef.current) {
-      const highlight = highlights[0];
-      console.log('PDF高亮分段:', highlight);
-      setCurrentHighlightId(highlight.segmentId);
+      console.log('PDF高亮分段:', highlights[0]);
+      setCurrentHighlightId(highlights[0].segmentId);
 
       // 滚动到高亮位置
-      scrollToHighlight(highlight);
+      scrollToHighlight();
     } else {
       setCurrentHighlightId(null);
     }
   }, [highlights]);
 
-  // 滚动到高亮位置的方法
-  const scrollToHighlight = (highlight: any) => {
-    if (!containerRef.current) return;
-
-    const container = containerRef.current;
-    const highlightElements = container.querySelectorAll('.highlight-segment');
-
-    if (highlightElements.length > 0) {
-      const highlightElement = highlightElements[0] as HTMLElement;
-
-      // 计算滚动位置，使高亮元素位于容器中心
-      const containerRect = container.getBoundingClientRect();
-      const highlightRect = highlightElement.getBoundingClientRect();
-
-      const scrollTop = container.scrollTop + (highlightRect.top - containerRect.top) - (containerRect.height / 2) + (highlightRect.height / 2);
-
-      container.scrollTo({
-        top: Math.max(0, scrollTop),
-        behavior: 'smooth'
-      });
-
-      console.log('PDF滚动到高亮位置完成');
-    }
-  };
-
   // 应用高亮的渲染方法
   const renderContent = () => {
     if (!displayText) {
       return (
-        <div style={{
-          padding: '24px',
-          textAlign: 'center',
-          color: '#999',
-          fontSize: '14px'
-        }}>
+        <div
+          style={{
+            padding: '24px',
+            textAlign: 'center',
+            color: '#999',
+            fontSize: '14px',
+          }}
+        >
           <Empty description="PDF文档内容为空或无法提取文本" />
         </div>
       );
@@ -108,25 +115,30 @@ const PdfPreview: React.FC<{
         const after = displayText.substring(end);
 
         return (
-          <pre style={{
-            whiteSpace: 'pre-wrap',
-            wordBreak: 'break-word',
-            fontFamily: 'Monaco, Menlo, Ubuntu Mono, monospace',
-            fontSize: '14px',
-            lineHeight: '1.6',
-            color: '#333',
-            margin: 0,
-            padding: '16px'
-          }}>
+          <pre
+            style={{
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-word',
+              fontFamily: 'Monaco, Menlo, Ubuntu Mono, monospace',
+              fontSize: '14px',
+              lineHeight: '1.6',
+              color: '#333',
+              margin: 0,
+              padding: '16px',
+            }}
+          >
             {before}
             <mark
-              className={cx('highlight-segment', currentHighlightId === highlight.segmentId && 'active')}
+              className={cx(
+                'highlight-segment',
+                currentHighlightId === highlight.segmentId && 'active',
+              )}
               style={{
                 backgroundColor: '#e6f7ff',
                 border: '2px solid #1890ff',
                 borderRadius: '3px',
                 padding: '2px 4px',
-                fontWeight: 'bold'
+                fontWeight: 'bold',
               }}
             >
               {highlighted}
@@ -139,16 +151,18 @@ const PdfPreview: React.FC<{
 
     // 没有高亮时，正常显示文本
     return (
-      <pre style={{
-        whiteSpace: 'pre-wrap',
-        wordBreak: 'break-word',
-        fontFamily: 'Monaco, Menlo, Ubuntu Mono, monospace',
-        fontSize: '14px',
-        lineHeight: '1.6',
-        color: '#333',
-        margin: 0,
-        padding: '16px'
-      }}>
+      <pre
+        style={{
+          whiteSpace: 'pre-wrap',
+          wordBreak: 'break-word',
+          fontFamily: 'Monaco, Menlo, Ubuntu Mono, monospace',
+          fontSize: '14px',
+          lineHeight: '1.6',
+          color: '#333',
+          margin: 0,
+          padding: '16px',
+        }}
+      >
         {displayText}
       </pre>
     );
@@ -179,7 +193,8 @@ const PdfPreview: React.FC<{
         height: '100%',
         overflowY: 'auto',
         scrollBehavior: 'smooth',
-        background: '#fff'
+        background: '#fff',
+        padding: '16px',
       }}
     >
       {renderContent()}
@@ -200,7 +215,38 @@ const DocxPreview: React.FC<{
   const [error, setError] = useState<string | null>(null);
   const [displayText, setDisplayText] = useState<string>('');
   const containerRef = useRef<HTMLDivElement>(null);
-  const [currentHighlightId, setCurrentHighlightId] = useState<string | number | null>(null);
+  const [currentHighlightId, setCurrentHighlightId] = useState<
+    string | number | null
+  >(null);
+
+  // 滚动到高亮位置的方法
+  const scrollToHighlight = () => {
+    if (!containerRef.current) return;
+
+    const container = containerRef.current;
+    const highlightElements = container.querySelectorAll('.highlight-segment');
+
+    if (highlightElements.length > 0) {
+      const highlightElement = highlightElements[0] as HTMLElement;
+
+      // 计算滚动位置，使高亮元素位于容器中心
+      const containerRect = container.getBoundingClientRect();
+      const highlightRect = highlightElement.getBoundingClientRect();
+
+      const scrollTop =
+        container.scrollTop +
+        (highlightRect.top - containerRect.top) -
+        containerRect.height / 2 +
+        highlightRect.height / 2;
+
+      container.scrollTo({
+        top: Math.max(0, scrollTop),
+        behavior: 'smooth',
+      });
+
+      console.log('Word文档滚动到高亮位置完成');
+    }
+  };
 
   // 设置Word文档文本内容
   useEffect(() => {
@@ -219,52 +265,28 @@ const DocxPreview: React.FC<{
   // 当高亮变化时，自动滚动到高亮位置
   useEffect(() => {
     if (highlights.length > 0 && containerRef.current) {
-      const highlight = highlights[0];
-      console.log('Word文档高亮分段:', highlight);
-      setCurrentHighlightId(highlight.segmentId);
+      console.log('Word文档高亮分段:', highlights[0]);
+      setCurrentHighlightId(highlights[0].segmentId);
 
       // 滚动到高亮位置
-      scrollToHighlight(highlight);
+      scrollToHighlight();
     } else {
       setCurrentHighlightId(null);
     }
   }, [highlights]);
 
-  // 滚动到高亮位置的方法
-  const scrollToHighlight = (highlight: any) => {
-    if (!containerRef.current) return;
-
-    const container = containerRef.current;
-    const highlightElements = container.querySelectorAll('.highlight-segment');
-
-    if (highlightElements.length > 0) {
-      const highlightElement = highlightElements[0] as HTMLElement;
-
-      // 计算滚动位置，使高亮元素位于容器中心
-      const containerRect = container.getBoundingClientRect();
-      const highlightRect = highlightElement.getBoundingClientRect();
-
-      const scrollTop = container.scrollTop + (highlightRect.top - containerRect.top) - (containerRect.height / 2) + (highlightRect.height / 2);
-
-      container.scrollTo({
-        top: Math.max(0, scrollTop),
-        behavior: 'smooth'
-      });
-
-      console.log('Word文档滚动到高亮位置完成');
-    }
-  };
-
   // 应用高亮的渲染方法
   const renderContent = () => {
     if (!displayText) {
       return (
-        <div style={{
-          padding: '24px',
-          textAlign: 'center',
-          color: '#999',
-          fontSize: '14px'
-        }}>
+        <div
+          style={{
+            padding: '24px',
+            textAlign: 'center',
+            color: '#999',
+            fontSize: '14px',
+          }}
+        >
           <Empty description="Word文档内容为空或无法提取文本" />
         </div>
       );
@@ -282,25 +304,30 @@ const DocxPreview: React.FC<{
         const after = displayText.substring(end);
 
         return (
-          <pre style={{
-            whiteSpace: 'pre-wrap',
-            wordBreak: 'break-word',
-            fontFamily: 'Monaco, Menlo, Ubuntu Mono, monospace',
-            fontSize: '14px',
-            lineHeight: '1.6',
-            color: '#333',
-            margin: 0,
-            padding: '16px'
-          }}>
+          <pre
+            style={{
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-word',
+              fontFamily: 'Monaco, Menlo, Ubuntu Mono, monospace',
+              fontSize: '14px',
+              lineHeight: '1.6',
+              color: '#333',
+              margin: 0,
+              padding: '16px',
+            }}
+          >
             {before}
             <mark
-              className={cx('highlight-segment', currentHighlightId === highlight.segmentId && 'active')}
+              className={cx(
+                'highlight-segment',
+                currentHighlightId === highlight.segmentId && 'active',
+              )}
               style={{
                 backgroundColor: '#e6f7ff',
                 border: '2px solid #1890ff',
                 borderRadius: '3px',
                 padding: '2px 4px',
-                fontWeight: 'bold'
+                fontWeight: 'bold',
               }}
             >
               {highlighted}
@@ -313,16 +340,18 @@ const DocxPreview: React.FC<{
 
     // 没有高亮时，正常显示文本
     return (
-      <pre style={{
-        whiteSpace: 'pre-wrap',
-        wordBreak: 'break-word',
-        fontFamily: 'Monaco, Menlo, Ubuntu Mono, monospace',
-        fontSize: '14px',
-        lineHeight: '1.6',
-        color: '#333',
-        margin: 0,
-        padding: '16px'
-      }}>
+      <pre
+        style={{
+          whiteSpace: 'pre-wrap',
+          wordBreak: 'break-word',
+          fontFamily: 'Monaco, Menlo, Ubuntu Mono, monospace',
+          fontSize: '14px',
+          lineHeight: '1.6',
+          color: '#333',
+          margin: 0,
+          padding: '16px',
+        }}
+      >
         {displayText}
       </pre>
     );
@@ -353,7 +382,8 @@ const DocxPreview: React.FC<{
         height: '100%',
         overflowY: 'auto',
         scrollBehavior: 'smooth',
-        background: '#fff'
+        background: '#fff',
+        padding: '16px',
       }}
     >
       {renderContent()}
@@ -371,32 +401,12 @@ const TextPreview: React.FC<{
 }> = ({ url, content, highlights }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [displayText, setDisplayText] = useState<string>('');
-  const [isMarkdown, setIsMarkdown] = useState<boolean>(false);
-  const [currentHighlightId, setCurrentHighlightId] = useState<string | number | null>(null);
-
-  useEffect(() => {
-    // 判断是否为Markdown文件
-    const isMd = url.endsWith('.md') || url.includes('markdown');
-    setIsMarkdown(isMd);
-    setDisplayText(content);
-  }, [url, content]);
-
-  // 当高亮变化时，自动滚动到高亮位置
-  useEffect(() => {
-    if (highlights.length > 0 && containerRef.current) {
-      const highlight = highlights[0];
-      console.log('高亮分段:', highlight);
-
-      // 滚动到高亮位置
-      scrollToHighlight(highlight);
-      setCurrentHighlightId(highlight.segmentId);
-    } else {
-      setCurrentHighlightId(null);
-    }
-  }, [highlights]);
+  const [currentHighlightId, setCurrentHighlightId] = useState<
+    string | number | null
+  >(null);
 
   // 滚动到高亮位置的方法
-  const scrollToHighlight = (highlight: any) => {
+  const scrollToHighlight = () => {
     if (!containerRef.current) return;
 
     const container = containerRef.current;
@@ -409,21 +419,46 @@ const TextPreview: React.FC<{
       const containerRect = container.getBoundingClientRect();
       const highlightRect = highlightElement.getBoundingClientRect();
 
-      const scrollTop = container.scrollTop + (highlightRect.top - containerRect.top) - (containerRect.height / 2) + (highlightRect.height / 2);
+      const scrollTop =
+        container.scrollTop +
+        (highlightRect.top - containerRect.top) -
+        containerRect.height / 2 +
+        highlightRect.height / 2;
 
       container.scrollTo({
         top: Math.max(0, scrollTop),
-        behavior: 'smooth'
+        behavior: 'smooth',
       });
 
       console.log('滚动到高亮位置完成');
     }
   };
 
+  useEffect(() => {
+    setDisplayText(content);
+  }, [url, content]);
+
+  // 当高亮变化时，自动滚动到高亮位置
+  useEffect(() => {
+    if (highlights.length > 0 && containerRef.current) {
+      console.log('高亮分段:', highlights[0]);
+
+      // 滚动到高亮位置
+      scrollToHighlight();
+      setCurrentHighlightId(highlights[0].segmentId);
+    } else {
+      setCurrentHighlightId(null);
+    }
+  }, [highlights]);
+
   // 应用高亮的渲染方法
   const renderContent = () => {
     if (!displayText) {
-      return <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{displayText}</pre>;
+      return (
+        <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+          {displayText}
+        </pre>
+      );
     }
 
     // 如果有高亮，分段渲染文本
@@ -438,23 +473,28 @@ const TextPreview: React.FC<{
         const after = displayText.substring(end);
 
         return (
-          <pre style={{
-            whiteSpace: 'pre-wrap',
-            wordBreak: 'break-word',
-            fontFamily: 'Monaco, Menlo, Ubuntu Mono, monospace',
-            fontSize: '14px',
-            lineHeight: '1.6',
-            color: '#333'
-          }}>
+          <pre
+            style={{
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-word',
+              fontFamily: 'Monaco, Menlo, Ubuntu Mono, monospace',
+              fontSize: '14px',
+              lineHeight: '1.6',
+              color: '#333',
+            }}
+          >
             {before}
             <mark
-              className={cx('highlight-segment', currentHighlightId === highlight.segmentId && 'active')}
+              className={cx(
+                'highlight-segment',
+                currentHighlightId === highlight.segmentId && 'active',
+              )}
               style={{
                 backgroundColor: '#e6f7ff',
                 border: '2px solid #1890ff',
                 borderRadius: '3px',
                 padding: '2px 4px',
-                fontWeight: 'bold'
+                fontWeight: 'bold',
               }}
             >
               {highlighted}
@@ -467,14 +507,16 @@ const TextPreview: React.FC<{
 
     // 没有高亮时，正常显示文本
     return (
-      <pre style={{
-        whiteSpace: 'pre-wrap',
-        wordBreak: 'break-word',
-        fontFamily: 'Monaco, Menlo, Ubuntu Mono, monospace',
-        fontSize: '14px',
-        lineHeight: '1.6',
-        color: '#333'
-      }}>
+      <pre
+        style={{
+          whiteSpace: 'pre-wrap',
+          wordBreak: 'break-word',
+          fontFamily: 'Monaco, Menlo, Ubuntu Mono, monospace',
+          fontSize: '14px',
+          lineHeight: '1.6',
+          color: '#333',
+        }}
+      >
         {displayText}
       </pre>
     );
@@ -486,7 +528,7 @@ const TextPreview: React.FC<{
       className={cx('preview-container', 'text-preview')}
       style={{
         overflowY: 'auto',
-        scrollBehavior: 'smooth'
+        scrollBehavior: 'smooth',
       }}
     >
       {renderContent()}
@@ -501,7 +543,6 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({
   documentInfo,
   documentContent,
   highlights = [],
-  onDocumentLoad,
   onHighlightClick,
 }) => {
   const [loading, setLoading] = useState<boolean>(true);
@@ -515,7 +556,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({
         docUrl: documentInfo.docUrl,
         fileType: documentInfo.fileType,
         hasContent: !!documentContent,
-        highlightsCount: highlights.length
+        highlightsCount: highlights.length,
       });
 
       // 检测文档类型
