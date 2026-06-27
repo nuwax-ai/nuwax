@@ -8,6 +8,7 @@ import {
 } from '@/types/enums/common';
 import { FoldFormIdEnum, VariableConfigTypeEnum } from '@/types/enums/node';
 import { ChildNode } from '@/types/interfaces/graph';
+import { HitlAnswerTypeEnum } from '../agentFlow/enums/hitlAnswerType';
 
 // 有试运行的节点
 export const testRunList = [
@@ -59,6 +60,7 @@ export const EXCEPTION_NODES_TYPE = [
   NodeTypeEnum.MCP,
   NodeTypeEnum.Code,
   NodeTypeEnum.IntentRecognition,
+  NodeTypeEnum.RouteDecision,
   NodeTypeEnum.Knowledge,
   NodeTypeEnum.KnowledgeInsert,
   NodeTypeEnum.TableDataQuery,
@@ -71,6 +73,14 @@ export const EXCEPTION_NODES_TYPE = [
   NodeTypeEnum.HTTPRequest,
   // AgentFlow 专用节点
   NodeTypeEnum.Agent,
+  NodeTypeEnum.HumanInteraction,
+];
+
+// AgentFlow 中不展示「异常处理」配置的节点：路由决策 / 询问用户。
+// 这两类仍保留在 EXCEPTION_NODES_TYPE 中以维持端口更新（needUpdateNodes）逻辑，
+// 仅在 showExceptionHandle / 异常端口 / 节点高度计算时排除其异常项。
+export const EXCEPTION_HANDLE_HIDDEN_TYPES = [
+  NodeTypeEnum.RouteDecision,
   NodeTypeEnum.HumanInteraction,
 ];
 
@@ -95,9 +105,11 @@ export const compareTypeMap = {
   [CompareTypeEnum.NOT_NULL]: '!∅',
 };
 
-export const answerTypeMap = {
+/** 含 Workflow QA（TEXT/SELECT）与 AgentFlow 表单回复（FORM） */
+export const answerTypeMap: Record<string, string> = {
   [AnswerTypeEnum.TEXT]: t('PC.Pages.AntvX6ComplexNode.answerTypeText'),
   [AnswerTypeEnum.SELECT]: t('PC.Pages.AntvX6ComplexNode.answerTypeSelect'),
+  [HitlAnswerTypeEnum.FORM]: t('PC.Pages.AgentFlowNode.replyModeFormReply'),
 };
 export const DEFAULT_NODE_CONFIG = {
   newNodeOffsetX: 100, // 新增节点时，x轴的间距

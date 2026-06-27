@@ -25,6 +25,7 @@ const FoldWrap: React.FC<PropsWithChildren<FoldWrapType>> = (props) => {
     changeFoldWrap,
     showNameInput,
     backgroundColor,
+    style,
   } = props;
 
   const styleHide = !visible ? styles.hidden : '';
@@ -79,7 +80,7 @@ const FoldWrap: React.FC<PropsWithChildren<FoldWrapType>> = (props) => {
         styleHide,
         className,
       )}
-      style={{ background: gradientBackground, paddingTop: '3px' }}
+      style={{ background: gradientBackground, paddingTop: '3px', ...style }}
     >
       <div
         className={cx(styles['stand-header'], 'flex', 'items-center')}

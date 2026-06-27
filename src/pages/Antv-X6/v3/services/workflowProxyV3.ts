@@ -22,6 +22,7 @@ import { AnswerTypeEnum, NodeTypeEnum } from '@/types/enums/common';
 import type { ChildNode, Edge } from '@/types/interfaces/graph';
 import { workflowLogger } from '@/utils/logger';
 import cloneDeep from 'lodash/cloneDeep';
+import { prepareNodeForBackendSerialize } from '../agentFlow/adapters/qaConfigAdapter';
 import { serializeNodeForBackend } from '../agentFlow/nodeTypeMapping';
 import { extensionRegistry } from '../extensions/registry';
 import { SpecialPortType } from '../types/enums';
@@ -188,7 +189,7 @@ class WorkflowProxyV3 {
         delete (node as any).systemVariables;
       }
       // RouteDecision 复用后端 IntentRecognition 类型收发（见 nodeTypeMapping.ts）
-      return serializeNodeForBackend(node);
+      return serializeNodeForBackend(prepareNodeForBackendSerialize(node));
     });
 
     const config: IgetDetails & { systemVariables?: any } = {

@@ -78,6 +78,8 @@ export interface FoldWrapType {
     name: string;
     description: string;
   }) => void;
+  // 透传到外层定位容器的内联样式（用于覆盖默认 top/right/bottom 定位）
+  style?: React.CSSProperties;
 }
 
 // 容器组件

@@ -1,7 +1,7 @@
 import {
   ICON_END,
-  ICON_NEW_AGENT,
   ICON_START,
+  ICON_WORKFLOW_AGENT,
   ICON_WORKFLOW_CODE,
   ICON_WORKFLOW_CONDITION,
   ICON_WORKFLOW_DATABASE,
@@ -11,6 +11,7 @@ import {
   ICON_WORKFLOW_DATABASEUPDATE,
   ICON_WORKFLOW_DOCUMENT_EXTRACTION,
   ICON_WORKFLOW_HTTP_REQUEST,
+  ICON_WORKFLOW_HUMAN_ASK,
   ICON_WORKFLOW_INTENT_RECOGNITION,
   ICON_WORKFLOW_KNOWLEDGE_BASE,
   ICON_WORKFLOW_KNOWLEDGE_INSERT,
@@ -30,6 +31,7 @@ import {
 } from '@/constants/images.constants';
 import {
   DEFAULT_NODE_CONFIG_MAP,
+  EXCEPTION_HANDLE_HIDDEN_TYPES,
   EXCEPTION_NODES_TYPE,
 } from '@/pages/Antv-X6/v3/constants/node.constants';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
@@ -113,7 +115,9 @@ export const getWidthAndHeight = (node: ChildNode) => {
   const { defaultWidth, defaultHeight } =
     DEFAULT_NODE_CONFIG_MAP[type as keyof typeof DEFAULT_NODE_CONFIG_MAP] ||
     DEFAULT_NODE_CONFIG_MAP.default;
-  const hasExceptionHandleItem = EXCEPTION_NODES_TYPE.includes(type);
+  const hasExceptionHandleItem =
+    EXCEPTION_NODES_TYPE.includes(type) &&
+    !EXCEPTION_HANDLE_HIDDEN_TYPES.includes(type);
   const exceptionHandleItemHeight = 32;
   const extraHeight = hasExceptionHandleItem ? exceptionHandleItemHeight : 0;
   if (
@@ -233,13 +237,13 @@ export const returnImg = (type: NodeTypeEnum): React.ReactNode => {
     case NodeTypeEnum.MCP:
       return <ICON_WORKFLOW_MCP />;
     case NodeTypeEnum.Agent:
-      return <ICON_NEW_AGENT />;
+      return <ICON_WORKFLOW_AGENT />;
     case NodeTypeEnum.RouteDecision:
       return <ICON_WORKFLOW_ROUTE_DECISION />;
     case NodeTypeEnum.HumanInteraction:
-      return <ICON_WORKFLOW_QA />;
+      return <ICON_WORKFLOW_HUMAN_ASK />;
     default:
-      return <ICON_NEW_AGENT />;
+      return <ICON_WORKFLOW_AGENT />;
   }
 };
 
@@ -697,11 +701,11 @@ export const createChildNode = (
 export const createEdge = (edge: Edge) => {
   if (edge.source === edge.target) return;
   const parseEndpoint = (endpoint: string, type: string) => {
-    const isLoop = endpoint.includes('in') || endpoint.includes('out');
-    const isNotGraent = endpoint.includes('-');
+    const hasPortSuffix = endpoint.endsWith('-in') || endpoint.endsWith('-out');
+    const hasHyphen = endpoint.includes('-');
     return {
-      cell: isLoop || isNotGraent ? endpoint.split('-')[0] : endpoint,
-      port: isLoop ? endpoint : `${endpoint}-${type}`,
+      cell: hasHyphen ? endpoint.split('-')[0] : endpoint,
+      port: hasPortSuffix ? endpoint : `${endpoint}-${type}`,
     };
   };
 

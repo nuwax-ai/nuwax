@@ -1,0 +1,149 @@
+.route-branch-list {
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  &__add-btn {
+    font-size: 12px;
+  }
+}
+
+.route-branch-card {
+  position: relative;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  padding: 12px 12px 10px;
+  margin-bottom: 12px;
+  background: #fff;
+
+  &__close {
+    position: absolute;
+    top: 8px;
+    right: 4px;
+    color: #8c8c8c;
+    z-index: 1;
+  }
+
+  &__title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    padding-right: 24px;
+  }
+
+  &__index {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    line-height: 20px;
+    text-align: center;
+    border-radius: 50%;
+    background: #fa8c16;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  &__title-input {
+    flex: 1;
+    margin-bottom: 0 !important;
+
+    .ant-input {
+      font-weight: 600;
+      font-size: 14px;
+      padding-left: 0;
+    }
+  }
+
+  &__desc {
+    margin-bottom: 10px !important;
+  }
+}
+
+.route-condition-match {
+  &__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+  }
+
+  &__label {
+    font-size: 12px;
+    color: #8c8c8c;
+  }
+
+  &__type {
+    width: 72px;
+    flex-shrink: 0;
+  }
+
+  &__row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+
+  &__var {
+    flex: 1;
+    min-width: 88px;
+    margin-bottom: 0 !important;
+  }
+
+  &__op {
+    width: 54px;
+    margin-bottom: 0 !important;
+    flex-shrink: 0;
+  }
+
+  &__segmented {
+    flex-shrink: 0;
+  }
+
+  &__right {
+    flex: 1;
+    min-width: 72px;
+    margin-bottom: 0 !important;
+  }
+
+  &__del {
+    flex-shrink: 0;
+    cursor: pointer;
+    color: #bfbfbf;
+    font-size: 13px;
+
+    &:hover {
+      color: #ff4d4f;
+    }
+  }
+
+  &__add {
+    padding: 0;
+    height: auto;
+    font-size: 12px;
+    margin-top: 2px;
+  }
+
+  .ant-form-item {
+    margin-bottom: 0;
+  }
+
+  // 「其他意图」兜底分支：固定名称、不可删、始终在最后
+  &--other {
+    padding: 8px 12px;
+    background: #fafafa;
+    border-style: dashed;
+  }
+
+  &__other-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #595959;
+  }
+}

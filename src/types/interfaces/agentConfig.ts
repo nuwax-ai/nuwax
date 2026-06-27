@@ -191,10 +191,21 @@ export interface OutputDirectlyParams {
   directOutput: OutputDirectlyEnum;
 }
 
+// 调用审批保存形参
+export interface CallApprovalParams {
+  callApproval: DefaultSelectedEnum;
+}
+
 // 输出方式组件属性
 export interface OutputWayProps {
   directOutput: OutputDirectlyEnum;
   onSaveSet: (data: OutputDirectlyParams) => void;
+}
+
+// 调用审批组件属性
+export interface CallApprovalProps {
+  callApproval?: DefaultSelectedEnum;
+  onSaveSet: (data: CallApprovalParams) => void;
 }
 
 // 页面是否模型可见组件属性

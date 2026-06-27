@@ -7,6 +7,7 @@ import { ChildNode, Edge } from '@/types/interfaces/graph';
 import { workflowLogger } from '@/utils/logger';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useModel } from 'umi';
+import { normalizeHitlNodeConfig } from '../agentFlow/adapters/qaConfigAdapter';
 import { normalizeLoadedNodes } from '../agentFlow/nodeTypeMapping';
 import { workflowProxy } from '../services/workflowProxyV3';
 import { workflowSaveService } from '../services/WorkflowSaveService';
@@ -76,6 +77,16 @@ export const useWorkflowLifecycle = ({
             'PC.Pages.AntvX6Params.nodeQaDescription',
           ),
         },
+      }).map((node) => {
+        if (isAgentFlow && node.type === NodeTypeEnum.HumanInteraction) {
+          return {
+            ...node,
+            nodeConfig: normalizeHitlNodeConfig(
+              node.nodeConfig as Record<string, any>,
+            ),
+          };
+        }
+        return node;
       });
       const _edgeList = getEdges(_nodeList);
       setGraphParams({ edgeList: _edgeList, nodeList: _nodeList });

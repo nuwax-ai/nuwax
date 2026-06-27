@@ -207,6 +207,8 @@ export enum ComponentSettingEnum {
   Params,
   // 调用方式
   Method_Call,
+  // 调用审批
+  Call_Approval,
   // 输出方式
   Output_Way,
   // 异步运行

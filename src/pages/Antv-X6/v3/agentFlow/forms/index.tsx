@@ -1,21 +1,30 @@
 /**
- * AgentFlow 节点组件集合
+ * AgentFlow 节点属性面板集合
  *
- * 本迭代 AgentFlow 仅支持 4 个节点：工作流(Workflow) / 路由决策(RouteDecision) /
- * 智能体(Agent) / 询问用户(HumanInteraction:Ask)。
- *
- * v2 重构：每种节点独立文件，本文件 re-export 保持 NodeRegistry 导入路径兼容。
- * 使用 default export object 以匹配 NodeRegistry 的解构导入方式。
+ * 6 类节点均在 agentFlow/forms/ 独立维护，与 Workflow 面板零共享。
  */
 
-import './agentFlowPanel.less';
-
+import AgentFlowEndForm from './AgentFlowEndForm';
+import AgentFlowStartForm from './AgentFlowStartForm';
+import AgentFlowWorkflowForm from './AgentFlowWorkflowForm';
 import AgentNodeForm from './AgentNodeForm';
 import HumanInteractionAskForm from './HumanInteractionAskForm';
 import RouteDecisionForm from './RouteDecisionForm';
 
 export default {
+  AgentFlowStartNode: AgentFlowStartForm,
+  AgentFlowEndNode: AgentFlowEndForm,
+  AgentFlowWorkflowNode: AgentFlowWorkflowForm,
   AgentNode: AgentNodeForm,
   HumanInteractionNode: HumanInteractionAskForm,
   RouteDecisionNode: RouteDecisionForm,
+};
+
+export {
+  AgentFlowEndForm,
+  AgentFlowStartForm,
+  AgentFlowWorkflowForm,
+  AgentNodeForm,
+  HumanInteractionAskForm,
+  RouteDecisionForm,
 };

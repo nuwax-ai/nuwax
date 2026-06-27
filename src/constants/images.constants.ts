@@ -38,6 +38,7 @@ import { ReactComponent as ICON_TEXT_FORMAT } from '@/assets/svg/text_format.svg
 import { ReactComponent as ICON_WORD } from '@/assets/svg/word.svg';
 import { ReactComponent as ICON_WORKFLOW } from '@/assets/svg/workflow_icon.svg';
 // 工作流的图片
+import { ReactComponent as ICON_WORKFLOW_AGENT } from '@/assets/workflow/workflow-Agent.svg';
 import { ReactComponent as ICON_WORKFLOW_CODE } from '@/assets/workflow/workflow-Code.svg';
 import { ReactComponent as ICON_WORKFLOW_CONDITION } from '@/assets/workflow/workflow-Condition.svg';
 import { ReactComponent as ICON_WORKFLOW_DATABASE } from '@/assets/workflow/workflow-Database.svg';
@@ -47,6 +48,7 @@ import { ReactComponent as ICON_WORKFLOW_DATABASEQUERY } from '@/assets/workflow
 import { ReactComponent as ICON_WORKFLOW_DATABASEUPDATE } from '@/assets/workflow/workflow-DatabaseUpdate.svg';
 import { ReactComponent as ICON_WORKFLOW_DOCUMENT_EXTRACTION } from '@/assets/workflow/workflow-DocumentExtraction.svg';
 import { ReactComponent as ICON_WORKFLOW_HTTP_REQUEST } from '@/assets/workflow/workflow-HTTPRequest.svg';
+import { ReactComponent as ICON_WORKFLOW_HUMAN_ASK } from '@/assets/workflow/workflow-HumanAsk.svg';
 import { ReactComponent as ICON_WORKFLOW_INTENT_RECOGNITION } from '@/assets/workflow/workflow-IntentRecognition.svg';
 import { ReactComponent as ICON_WORKFLOW_KNOWLEDGE_BASE } from '@/assets/workflow/workflow-Knowledge.svg';
 import { ReactComponent as ICON_WORKFLOW_KNOWLEDGE_INSERT } from '@/assets/workflow/workflow-KnowledgeInsert.svg';
@@ -176,6 +178,7 @@ export {
   ICON_USER,
   ICON_WORD,
   ICON_WORKFLOW,
+  ICON_WORKFLOW_AGENT,
   ICON_WORKFLOW_CODE,
   ICON_WORKFLOW_CONDITION,
   ICON_WORKFLOW_DATABASE,
@@ -185,6 +188,7 @@ export {
   ICON_WORKFLOW_DATABASEUPDATE,
   ICON_WORKFLOW_DOCUMENT_EXTRACTION,
   ICON_WORKFLOW_HTTP_REQUEST,
+  ICON_WORKFLOW_HUMAN_ASK,
   ICON_WORKFLOW_INTENT_RECOGNITION,
   ICON_WORKFLOW_KNOWLEDGE_BASE,
   ICON_WORKFLOW_KNOWLEDGE_INSERT,
