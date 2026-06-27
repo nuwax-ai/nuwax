@@ -8,9 +8,12 @@ import ConversationItem from './components/ConversationItem';
 import EmptyState from './components/EmptyState';
 import SearchHeader from './components/SearchHeader';
 
+import { EVENT_TYPE } from '@/constants/event.constants';
 import { apiAgentConversationList } from '@/services/agentConfig';
 import { dict } from '@/services/i18nRuntime';
+import { TaskStatus } from '@/types/enums/agent';
 import { ConversationInfo } from '@/types/interfaces/conversationInfo';
+import eventBus from '@/utils/eventBus';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -46,10 +49,12 @@ const NewHomeSection: React.FC<{
   }, []);
 
   const loadList = useCallback(
-    async (isRefresh = false) => {
+    async (isRefresh = false, options?: { silent?: boolean }) => {
       if (loadingRef.current || (!hasMore && !isRefresh)) return;
       loadingRef.current = true;
-      setLoading(true);
+      if (!options?.silent) {
+        setLoading(true);
+      }
 
       const pageSize = isRefresh ? calcPageSize() : pageSizeRef.current;
       if (isRefresh) pageSizeRef.current = pageSize;
@@ -91,7 +96,9 @@ const NewHomeSection: React.FC<{
         setHasMore(data.length >= pageSize);
       } finally {
         loadingRef.current = false;
-        setLoading(false);
+        if (!options?.silent) {
+          setLoading(false);
+        }
       }
     },
     [hasMore, localList, calcPageSize, searchKeyword],
@@ -150,8 +157,36 @@ const NewHomeSection: React.FC<{
       setLocalList((prev) => prev.filter((item) => item.id !== id));
     };
 
+    const handleRefreshConversationList = () => {
+      loadListRef.current(true, { silent: true });
+    };
+
+    const handleUpdateConversationListTaskStatus = ({
+      conversationId,
+      taskStatus,
+    }: {
+      conversationId: number | string;
+      taskStatus: TaskStatus;
+    }) => {
+      setLocalList((prev) =>
+        prev.map((item) =>
+          item.id?.toString() === conversationId.toString()
+            ? { ...item, taskStatus }
+            : item,
+        ),
+      );
+    };
+
     window.addEventListener('conversation-updated', handleConversationUpdated);
     window.addEventListener('conversation-deleted', handleConversationDeleted);
+    eventBus.on(
+      EVENT_TYPE.RefreshConversationList,
+      handleRefreshConversationList,
+    );
+    eventBus.on(
+      EVENT_TYPE.UpdateConversationListTaskStatus,
+      handleUpdateConversationListTaskStatus,
+    );
 
     return () => {
       window.removeEventListener(
@@ -161,6 +196,14 @@ const NewHomeSection: React.FC<{
       window.removeEventListener(
         'conversation-deleted',
         handleConversationDeleted,
+      );
+      eventBus.off(
+        EVENT_TYPE.RefreshConversationList,
+        handleRefreshConversationList,
+      );
+      eventBus.off(
+        EVENT_TYPE.UpdateConversationListTaskStatus,
+        handleUpdateConversationListTaskStatus,
       );
     };
   }, []);

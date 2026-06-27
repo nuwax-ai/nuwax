@@ -9,6 +9,7 @@ import {
   CONVERSATION_CONNECTION_URL,
   MESSAGE_PAGE_SIZE,
 } from '@/constants/common.constants';
+import { EVENT_TYPE } from '@/constants/event.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
 import {
   isSessionStreamBusy,
@@ -37,6 +38,7 @@ import {
   HideDesktopEnum,
   MessageModeEnum,
   MessageTypeEnum,
+  TaskStatus,
 } from '@/types/enums/agent';
 import {
   CreateUpdateModeEnum,
@@ -84,6 +86,7 @@ import {
   createSyncConversationTaskStatus,
   subscribeChatFinishedTaskSync,
 } from '@/utils/conversationTaskStatusSync';
+import eventBus from '@/utils/eventBus';
 import { createSSEConnection } from '@/utils/fetchEventSourceConversationInfo';
 import {
   perfTracker,
@@ -534,6 +537,13 @@ export default () => {
             topicUpdated: result.data?.topicUpdated,
             topic: result.data?.topic,
           });
+
+          if (!isAppSidebarMode) {
+            eventBus.emit(EVENT_TYPE.RefreshConversationList, {
+              conversationId: params.conversationId,
+              reason: 'topic-updated',
+            });
+          }
 
           // 如果是应用智能体模式，则同步更新当前智能体的会话记录
           if (isAppSidebarMode) {
@@ -1268,6 +1278,13 @@ export default () => {
         // 主动关闭连接时，禁用会话
         disabledConversationActive();
 
+        if (isSync && !isAppSidebarMode && params.conversationId) {
+          eventBus.emit(EVENT_TYPE.RefreshConversationList, {
+            conversationId: params.conversationId,
+            reason: 'stream-closed',
+          });
+        }
+
         perfLifecycle.onStreamEnd();
         perfLifecycle.onCloseRenderComplete();
       },
@@ -1385,6 +1402,12 @@ export default () => {
     // 消除"发送后会话开始状态"的空窗期（保证队列入队判定及时、停止按钮立即显示）。
     setIsConversationActive(true);
     lastSendAtRef.current = Date.now(); // 触发"发送后保活"，3s 内拒绝置 false
+    if (isSync && !isAppSidebarMode && id) {
+      eventBus.emit(EVENT_TYPE.UpdateConversationListTaskStatus, {
+        conversationId: id,
+        taskStatus: TaskStatus.EXECUTING,
+      });
+    }
 
     // 附件文件
     const attachments: AttachmentFile[] =
