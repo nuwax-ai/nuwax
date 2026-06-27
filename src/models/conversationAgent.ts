@@ -5,6 +5,12 @@
  * 避免 ConversationAgent 与 Chat / EditAgent 等页面共享同一会话状态。
  * 请勿修改 conversationInfo.ts，本文件独立维护。
  */
+import {
+  hydrateMcpAskInteractionsInMessageList,
+  prependAndHydrateMcpAskMessageList,
+  processInterventionSsePatch,
+  useAgentInterventionHandlers,
+} from '@/components/business-component/AgentIntervention';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
   CONVERSATION_CONNECTION_URL,
@@ -102,6 +108,17 @@ export default () => {
   const [loadingMore, setLoadingMore] = useState<boolean>(false);
   // 会话信息
   const [messageList, setMessageList] = useState<MessageInfo[]>([]);
+
+  // 当前会话 ID（用于停止会话、干预回执等操作）
+  const [currentConversationId, setCurrentConversationId] = useState<
+    number | null
+  >(null);
+
+  const { respondAcpPermission, respondMcpAsk } = useAgentInterventionHandlers({
+    setMessageList,
+    conversationId: currentConversationId,
+  });
+
   // 缓存消息列表，用于消息会话错误时，修改消息状态（将当前会话的loading状态的消息改为Error状态）
   const messageListRef = useRef<MessageInfo[]>([]);
   // 会话问题建议
@@ -144,10 +161,6 @@ export default () => {
     AgentManualComponentInfo[]
   >([]);
 
-  // 当前会话 ID（用于停止会话等操作）
-  const [currentConversationId, setCurrentConversationId] = useState<
-    number | null
-  >(null);
   // 当前会话请求 ID（用于停止临时会话等操作）
   const [currentConversationRequestId, setCurrentConversationRequestId] =
     useState<string>('');
@@ -254,8 +267,10 @@ export default () => {
       if (code === SUCCESS_CODE) {
         // 如果查询到的消息数量大于0，则表示有更多消息
         if (!!data?.length) {
-          // 将新消息追加到消息列表前面
-          setMessageList((prev) => [...data, ...prev]);
+          // 将新消息追加到消息列表前面，并重建历史 MCP Ask 交互状态
+          setMessageList((prev) =>
+            prependAndHydrateMcpAskMessageList(data, prev),
+          );
 
           // 如果查询到的消息数量小于20，则表示没有更多消息
           if (data.length < MESSAGE_PAGE_SIZE) {
@@ -282,6 +297,16 @@ export default () => {
     }
   };
 
+  /** 根据最近消息是否含 Loading/Incomplete / processing 执行中 更新流式活跃状态 */
+  const checkConversationActive = useCallback((messages: MessageInfo[]) => {
+    const recentMessages = messages?.slice(-5) || [];
+    setIsConversationActive(isSessionStreamBusy(recentMessages));
+  }, []);
+
+  const disabledConversationActive = () => {
+    setIsConversationActive(false);
+  };
+
   // 查询会话
   const { run: runQueryConversation, loading: loadingConversation } =
     useRequest(apiAgentConversation, {
@@ -302,11 +327,16 @@ export default () => {
         setIsSuggest(data?.agent?.openSuggest === OpenCloseEnum.Open);
         // 可手动选择的组件列表
         setManualComponents(data?.agent?.manualComponents || []);
-        // 消息列表
-        const _messageList = data?.messageList || [];
+        // 消息列表：拉取后重建 MCP Ask 交互（与 conversationInfo 对齐）
+        const _messageList = hydrateMcpAskInteractionsInMessageList(
+          data?.messageList || [],
+        );
         const len = _messageList?.length || 0;
         if (len) {
-          setMessageList(_messageList);
+          setMessageList(() => {
+            checkConversationActive(_messageList);
+            return _messageList;
+          });
           // 最后一条消息为"问答"时，获取问题建议
           const lastMessage = _messageList[len - 1];
           if (
@@ -387,16 +417,6 @@ export default () => {
       debounceWait: 300,
     });
 
-  /** 根据最近消息是否含 Loading/Incomplete / processing 执行中 更新流式活跃状态 */
-  const checkConversationActive = useCallback((messages: MessageInfo[]) => {
-    const recentMessages = messages?.slice(-5) || [];
-    setIsConversationActive(isSessionStreamBusy(recentMessages));
-  }, []);
-
-  const disabledConversationActive = () => {
-    setIsConversationActive(false);
-  };
-
   // 修改消息列表
   const handleChangeMessageList = (
     params: ConversationChatParams,
@@ -428,10 +448,24 @@ export default () => {
 
       let newMessage: any = null;
 
+      // 优先拦截 ACP 权限 / MCP Ask 干预类 SSE，挂载到当前流式消息（DockPanel 数据源）
+      const interventionPatch = processInterventionSsePatch(
+        res,
+        currentMessage,
+      );
+      if (interventionPatch) {
+        list.splice(index, arraySpliceAction, interventionPatch);
+        checkConversationActive(list);
+        return list;
+      }
+
       // 更新UI状态...
       if (eventType === ConversationEventTypeEnum.PROCESSING) {
         const processingResult = data.result || {};
-        data.executeId = processingResult.executeId;
+        // 后端可能仅在 data.result.executeId 提供执行 ID
+        if (!data.executeId && processingResult.executeId) {
+          data.executeId = processingResult.executeId;
+        }
         const processingList = [
           ...(currentMessage?.processingList || []),
         ] as ProcessingInfo[];
@@ -965,5 +999,7 @@ export default () => {
     getCurrentConversationId,
     getCurrentConversationRequestId,
     setCurrentConversationRequestId,
+    respondAcpPermission,
+    respondMcpAsk,
   };
 };

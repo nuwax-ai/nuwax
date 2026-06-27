@@ -2,11 +2,32 @@ import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import { useCallback, useState } from 'react';
 import { useModel } from 'umi';
 import type { AgentInterventionChatLayerProps } from '../AgentInterventionChatLayer';
-import type { AgentMode } from '../types/acpIntervention';
+import type {
+  AcpPermissionInteraction,
+  AcpRequestPermissionResponse,
+  AgentMode,
+} from '../types/acpIntervention';
 import type {
   McpAskInteraction,
   McpAskRespondPayload,
 } from '../types/mcpAskIntervention';
+
+/**
+ * 隔离会话源（如 ConversationAgent 预览 Tab / conversationAgent model）时注入，
+ * 避免干预回执误写入全局 conversationInfo 的 messageList。
+ */
+export interface AgentInterventionHandlersOverride {
+  respondAcpPermission: (
+    interaction: AcpPermissionInteraction,
+    response: AcpRequestPermissionResponse,
+  ) => void | Promise<void>;
+  respondMcpAsk: (
+    interaction: McpAskInteraction,
+    payload: McpAskRespondPayload,
+  ) => Promise<string | null | undefined>;
+  runStopConversation: (conversationId: string) => Promise<unknown>;
+  isConversationActive: boolean;
+}
 
 export interface UseAgentInterventionLayerOptions {
   conversationId?: number | string | null;
@@ -14,6 +35,11 @@ export interface UseAgentInterventionLayerOptions {
   /** 由上层（如新建项目页）透传的初始 Agent 模式，优先于 localStorage 缓存 */
   initialAgentMode?: AgentMode;
   onSendMessage: (message: string) => void;
+  /**
+   * 非 conversationInfo 会话源时传入（如 ConversationAgent 预览 Tab），
+   * 使 Dock 回执与停止会话作用于正确的 model。
+   */
+  interventionHandlers?: AgentInterventionHandlersOverride;
 }
 
 export interface AgentModeInputProps {
@@ -35,8 +61,13 @@ const AGENT_MODE_STORAGE_KEY = 'nuwax_agent_mode_cache';
 export function useAgentInterventionLayer(
   options: UseAgentInterventionLayerOptions,
 ): UseAgentInterventionLayerResult {
-  const { conversationId, messageList, initialAgentMode, onSendMessage } =
-    options;
+  const {
+    conversationId,
+    messageList,
+    initialAgentMode,
+    onSendMessage,
+    interventionHandlers,
+  } = options;
   const [agentMode, setAgentModeState] = useState<AgentMode>(() => {
     // 优先使用透传的初始模式，其次 localStorage 缓存，最后兜底 yolo
     if (initialAgentMode === 'yolo' || initialAgentMode === 'ask') {
@@ -62,12 +93,19 @@ export function useAgentInterventionLayer(
     }
   }, []);
 
-  const {
-    isConversationActive,
-    respondAcpPermission,
-    respondMcpAsk,
-    runStopConversation,
-  } = useModel('conversationInfo');
+  const conversationInfoModel = useModel('conversationInfo');
+
+  const respondAcpPermission =
+    interventionHandlers?.respondAcpPermission ??
+    conversationInfoModel.respondAcpPermission;
+  const respondMcpAsk =
+    interventionHandlers?.respondMcpAsk ?? conversationInfoModel.respondMcpAsk;
+  const runStopConversation =
+    interventionHandlers?.runStopConversation ??
+    conversationInfoModel.runStopConversation;
+  const isConversationActive =
+    interventionHandlers?.isConversationActive ??
+    conversationInfoModel.isConversationActive;
 
   const cancelActiveConversation = useCallback(async () => {
     if (!isConversationActive || !conversationId) {
