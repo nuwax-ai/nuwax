@@ -86,6 +86,9 @@ export interface UnifiedChatSessionProps {
   onComputerSelect?: (id: string) => void;
 
   showScrollBtn?: boolean;
+  allowAutoScrollRef?: React.MutableRefObject<boolean>;
+  scrollTimeoutRef?: React.MutableRefObject<any>;
+  setShowScrollBtn?: (show: boolean) => void;
 
   // 自定义差异化组件渲染插槽 (极高扩展性，用以兼容 AppDev 中特有的 Diff markdown 渲染和空状态)
   renderMessageItem?: (
