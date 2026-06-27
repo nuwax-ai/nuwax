@@ -425,6 +425,12 @@ export interface ConversationInfo {
   hasPermission?: boolean;
   /** 会话关联的智能体电脑是否不可用 */
   isSandboxUnavailable?: boolean;
+  /** 开发空间ID */
+  devSpaceId?: number;
+  /** 开发目标类型，如 Agent, PageApp, Skill, Plugin */
+  devTargetType?: string;
+  /** 开发目标唯一标识 */
+  devTargetId?: string;
 }
 
 // 查询用户历史会话输入参数
