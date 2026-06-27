@@ -496,6 +496,29 @@ const routes = [
             ],
           },
           {
+            path: 'recommend-manage',
+            name: getRouteLabel('PC.Routes.recommendManage'),
+            routes: [
+              {
+                path: 'home',
+                name: getRouteLabel('PC.Routes.homeRecommend'),
+                component:
+                  '@/pages/SystemManagement/RecommendManage/HomeRecommend',
+              },
+              {
+                path: 'official',
+                name: getRouteLabel('PC.Routes.officialRecommend'),
+                component:
+                  '@/pages/SystemManagement/RecommendManage/OfficialRecommend',
+              },
+              {
+                path: 'chatbox',
+                name: getRouteLabel('PC.Routes.chatboxRecommend'),
+                component: '@/pages/SystemManagement/RecommendManage/Chatbox',
+              },
+            ],
+          },
+          {
             path: 'log-query',
             name: getRouteLabel('PC.Routes.logQuery'),
             routes: [

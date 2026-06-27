@@ -1,4 +1,7 @@
-import type { AgentMode } from '@/components/business-component/AgentIntervention';
+import type {
+  AgentInterventionHandlersOverride,
+  AgentMode,
+} from '@/components/business-component/AgentIntervention';
 import type { UnifiedChatQueueContext } from '@/components/business-component/MessageQueue/useUnifiedChatQueue';
 import type { DefaultSelectedEnum } from '@/types/enums/agent';
 import type { ChatInputProps, UploadFileInfo } from '@/types/interfaces/common';
@@ -86,6 +89,9 @@ export interface UnifiedChatSessionProps {
   onComputerSelect?: (id: string) => void;
 
   showScrollBtn?: boolean;
+  allowAutoScrollRef?: React.MutableRefObject<boolean>;
+  scrollTimeoutRef?: React.MutableRefObject<any>;
+  setShowScrollBtn?: (show: boolean) => void;
 
   // 自定义差异化组件渲染插槽 (极高扩展性，用以兼容 AppDev 中特有的 Diff markdown 渲染和空状态)
   renderMessageItem?: (
@@ -131,4 +137,10 @@ export interface UnifiedChatSessionProps {
   isLoadingOtherInterface?: boolean;
   /** 当前会话详情 */
   conversationInfo?: ConversationInfo | null;
+
+  /**
+   * 隔离会话源（如 ConversationAgent 预览 Tab）的干预回执注入；
+   * 未传时默认使用全局 conversationInfo model。
+   */
+  interventionHandlers?: AgentInterventionHandlersOverride;
 }

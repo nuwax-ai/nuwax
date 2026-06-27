@@ -8,9 +8,12 @@ import ConversationItem from './components/ConversationItem';
 import EmptyState from './components/EmptyState';
 import SearchHeader from './components/SearchHeader';
 
+import { EVENT_TYPE } from '@/constants/event.constants';
 import { apiAgentConversationList } from '@/services/agentConfig';
 import { dict } from '@/services/i18nRuntime';
+import { TaskStatus } from '@/types/enums/agent';
 import { ConversationInfo } from '@/types/interfaces/conversationInfo';
+import eventBus from '@/utils/eventBus';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -36,6 +39,7 @@ const NewHomeSection: React.FC<{
   const listInnerRef = useRef<HTMLDivElement>(null);
   const initializedRef = useRef(false);
   const pageSizeRef = useRef(20);
+  const loadingRef = useRef(false);
 
   const calcPageSize = useCallback(() => {
     const height = scrollContainerRef.current?.clientHeight ?? 0;
@@ -45,9 +49,12 @@ const NewHomeSection: React.FC<{
   }, []);
 
   const loadList = useCallback(
-    async (isRefresh = false) => {
-      if (loading || (!hasMore && !isRefresh)) return;
-      setLoading(true);
+    async (isRefresh = false, options?: { silent?: boolean }) => {
+      if (loadingRef.current || (!hasMore && !isRefresh)) return;
+      loadingRef.current = true;
+      if (!options?.silent) {
+        setLoading(true);
+      }
 
       const pageSize = isRefresh ? calcPageSize() : pageSizeRef.current;
       if (isRefresh) pageSizeRef.current = pageSize;
@@ -69,15 +76,38 @@ const NewHomeSection: React.FC<{
         if (isRefresh) {
           setLocalList(data);
         } else {
-          setLocalList((prev) => [...prev, ...data]);
+          setLocalList((prev) => {
+            const merged = [...prev, ...data];
+            const unique: ConversationInfo[] = [];
+            const seen = new Set();
+            for (const item of merged) {
+              if (item && item.id !== undefined && item.id !== null) {
+                if (!seen.has(item.id)) {
+                  seen.add(item.id);
+                  unique.push(item);
+                }
+              } else {
+                unique.push(item);
+              }
+            }
+            return unique;
+          });
         }
         setHasMore(data.length >= pageSize);
       } finally {
-        setLoading(false);
+        loadingRef.current = false;
+        if (!options?.silent) {
+          setLoading(false);
+        }
       }
     },
-    [loading, hasMore, localList, calcPageSize, searchKeyword],
+    [hasMore, localList, calcPageSize, searchKeyword],
   );
+
+  const loadListRef = useRef(loadList);
+  useEffect(() => {
+    loadListRef.current = loadList;
+  }, [loadList]);
 
   useEffect(() => {
     if (!initializedRef.current) {
@@ -85,6 +115,17 @@ const NewHomeSection: React.FC<{
       loadList(true);
     }
   }, []);
+
+  useEffect(() => {
+    if (!initializedRef.current) return;
+
+    if (location.pathname === '/home') {
+      loadListRef.current(true);
+      if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTop = 0;
+      }
+    }
+  }, [location.pathname, location.state]);
 
   useEffect(() => {
     const handleConversationUpdated = (e: Event) => {
@@ -116,8 +157,36 @@ const NewHomeSection: React.FC<{
       setLocalList((prev) => prev.filter((item) => item.id !== id));
     };
 
+    const handleRefreshConversationList = () => {
+      loadListRef.current(true, { silent: true });
+    };
+
+    const handleUpdateConversationListTaskStatus = ({
+      conversationId,
+      taskStatus,
+    }: {
+      conversationId: number | string;
+      taskStatus: TaskStatus;
+    }) => {
+      setLocalList((prev) =>
+        prev.map((item) =>
+          item.id?.toString() === conversationId.toString()
+            ? { ...item, taskStatus }
+            : item,
+        ),
+      );
+    };
+
     window.addEventListener('conversation-updated', handleConversationUpdated);
     window.addEventListener('conversation-deleted', handleConversationDeleted);
+    eventBus.on(
+      EVENT_TYPE.RefreshConversationList,
+      handleRefreshConversationList,
+    );
+    eventBus.on(
+      EVENT_TYPE.UpdateConversationListTaskStatus,
+      handleUpdateConversationListTaskStatus,
+    );
 
     return () => {
       window.removeEventListener(
@@ -127,6 +196,14 @@ const NewHomeSection: React.FC<{
       window.removeEventListener(
         'conversation-deleted',
         handleConversationDeleted,
+      );
+      eventBus.off(
+        EVENT_TYPE.RefreshConversationList,
+        handleRefreshConversationList,
+      );
+      eventBus.off(
+        EVENT_TYPE.UpdateConversationListTaskStatus,
+        handleUpdateConversationListTaskStatus,
       );
     };
   }, []);
@@ -167,9 +244,19 @@ const NewHomeSection: React.FC<{
     debouncedSearch(val);
   };
 
-  const handleConversationClick = (id: number, agentId: number) => {
+  const handleConversationClick = (item: ConversationInfo) => {
     handleCloseMobileMenu();
-    history.push('/home/chat/' + id + '/' + agentId);
+    const { id, agentId, devTargetType, devTargetId, devSpaceId } = item;
+
+    if (devTargetType === 'Agent' && devSpaceId && devTargetId) {
+      history.push(
+        `/space/${devSpaceId}/conversation-agent?agentId=${agentId}&conversationId=${devTargetId}`,
+      );
+    } else if (devTargetType === 'PageApp' && devSpaceId && devTargetId) {
+      history.push(`/space/${devSpaceId}/app-dev/${devTargetId}`);
+    } else {
+      history.push('/home/chat/' + id + '/' + agentId);
+    }
   };
 
   const handleNewConversation = () => {
@@ -200,7 +287,7 @@ const NewHomeSection: React.FC<{
               key={item.id}
               item={item}
               isActive={chatId === item.id?.toString()}
-              onClick={() => handleConversationClick(item.id, item.agentId)}
+              onClick={() => handleConversationClick(item)}
             />
           ))}
 

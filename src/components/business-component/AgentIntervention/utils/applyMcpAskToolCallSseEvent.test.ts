@@ -297,6 +297,50 @@ describe('applyMcpAskToolCallSseEvent', () => {
     );
   });
 
+  it('accepts Backend.Sandbox.Event.AskQuestion ASK_QUESTION PROCESSING event', () => {
+    const patched = applyMcpAskToolCallSseEvent(
+      {
+        eventType: ConversationEventTypeEnum.PROCESSING,
+        data: {
+          targetId: -1,
+          name: 'Backend.Sandbox.Event.AskQuestion',
+          type: 'Event',
+          status: 'FINISHED',
+          subEventType: 'ASK_QUESTION',
+          result: {
+            executeId: 'call_272edddbb5e140128d146826',
+            input: {
+              requestId: 'demo_form_1',
+              sessionId: 'demo_session_1',
+              title: 'nuwax_ask_question 演示',
+              ui: {
+                version: 'nuwax.interaction.v2',
+                presentation: 'inline',
+                title: '演示表单',
+                fields: [
+                  {
+                    name: 'favorite_color',
+                    title: '最喜欢的颜色',
+                    widget: 'radio',
+                    options: [{ value: 'red', label: '红色' }],
+                  },
+                ],
+              },
+            },
+          },
+        },
+      } as any,
+      { id: 'msg-1' } as any,
+    );
+
+    expect(patched?.mcpAskInteractions?.[0]?.toolCallId).toBe(
+      'call_272edddbb5e140128d146826',
+    );
+    expect(patched?.mcpAskInteractions?.[0]?.input.requestId).toBe(
+      'demo_form_1',
+    );
+  });
+
   it('accepts bare v2 input with no schemaVersion/ui.version (agent omits stamp fields)', () => {
     const patched = applyMcpAskToolCallSseEvent(
       {

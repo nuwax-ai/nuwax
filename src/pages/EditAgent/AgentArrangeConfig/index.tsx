@@ -50,6 +50,7 @@ import React, {
   useState,
 } from 'react';
 import { useModel } from 'umi';
+import { getAgentFlowArrangePolicy } from './agentFlow/arrangePolicy';
 import ComponentSettingModal from './ComponentSettingModal';
 import ConfigOptionsHeader from './ConfigOptionsHeader';
 import CreateHooks from './CreateHooks';
@@ -167,6 +168,11 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     agentConfigInfo?.subType === AgentSubTypeEnum.Custom;
   /** 是否为群组智能体（AgentGroup）子类型 */
   const isGroupSubType = agentConfigInfo?.subType === AgentSubTypeEnum.Group;
+  /** AgentFlow 编排策略（工作流/数据表展示规则见 arrangePolicy） */
+  const flowPolicy = useMemo(
+    () => getAgentFlowArrangePolicy(agentConfigInfo?.subType),
+    [agentConfigInfo?.subType],
+  );
 
   /** 群组智能体选择弹窗仅展示智能体 Tab */
   const groupAgentCreatedTabs = useMemo(
@@ -181,14 +187,17 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       CREATED_TABS.filter((item) => {
         // 如果是通用型智能体
         if (agentConfigInfo?.type === AgentTypeEnum.TaskAgent) {
-          return item.key !== AgentComponentTypeEnum.Agent;
+          return (
+            item.key !== AgentComponentTypeEnum.Agent &&
+            flowPolicy.isTaskAgentCreatedTabVisible(item.key)
+          );
         }
         return (
           item.key !== AgentComponentTypeEnum.Agent &&
           item.key !== AgentComponentTypeEnum.Skill
         );
       }),
-    [agentConfigInfo?.type],
+    [agentConfigInfo?.type, flowPolicy],
   );
 
   const isGroupAgentCreatedMode = createdMode === 'groupAgent';
@@ -370,7 +379,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       tool.push(AgentArrangeConfigEnum.Plugin);
     }
     if (
-      agentConfigInfo?.subType !== AgentSubTypeEnum.Flow &&
+      flowPolicy.showWorkflowTool &&
       isExistComponent(AgentComponentTypeEnum.Workflow)
     ) {
       tool.push(AgentArrangeConfigEnum.Workflow);
@@ -379,7 +388,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       tool.push(AgentArrangeConfigEnum.MCP);
     }
     return tool;
-  }, [agentComponentList, agentConfigInfo?.subType]);
+  }, [agentComponentList, flowPolicy]);
 
   // 知识 - 当前激活 tab 面板的 key
   const knowledgeActiveKey = useMemo(() => {
@@ -420,13 +429,15 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       keyList.push(AgentArrangeConfigEnum.Variable);
     }
 
-    // 群组智能体时不显示数据表组件
-    if (!isGroupSubType && isExistComponent(AgentComponentTypeEnum.Table)) {
+    if (
+      flowPolicy.showDataTableSection(isGroupSubType) &&
+      isExistComponent(AgentComponentTypeEnum.Table)
+    ) {
       keyList.push(AgentArrangeConfigEnum.Table);
     }
 
     return keyList;
-  }, [agentComponentList, variablesInfo, isGroupSubType]);
+  }, [agentComponentList, variablesInfo, isGroupSubType, flowPolicy]);
 
   // 界面配置列表 - 当前激活 tab 面板的 key
   const pageActiveKey = useMemo(() => {
@@ -701,7 +712,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     asyncFun(true);
   };
 
-  // 工具列表（AgentFlow 下隐藏「工作流」工具：其编排即画布本身）
+  // 工具列表（AgentFlow 工作流隐藏规则见 flowPolicy）
   const ToolList: CollapseProps['items'] = [
     {
       key: AgentArrangeConfigEnum.Plugin,
@@ -784,13 +795,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         body: 'collapse-body',
       },
     },
-  ].filter(
-    (item) =>
-      !(
-        agentConfigInfo?.subType === AgentSubTypeEnum.Flow &&
-        item?.key === AgentArrangeConfigEnum.Workflow
-      ),
-  );
+  ].filter((item) => flowPolicy.keepToolCollapseItem(item.key));
 
   // 知识库
   const KnowledgeList: CollapseProps['items'] = [
@@ -932,8 +937,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       },
     },
 
-    // 群组智能体时不显示数据表组件
-    ...(!isGroupSubType
+    ...(flowPolicy.showDataTableSection(isGroupSubType)
       ? [
           {
             key: AgentArrangeConfigEnum.Table,
