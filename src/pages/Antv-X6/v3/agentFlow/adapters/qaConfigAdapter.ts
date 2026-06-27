@@ -146,13 +146,44 @@ export function isHitlOptionsBranchMode(
   return getHitlAnswerType(nc) === HitlAnswerTypeEnum.SELECT;
 }
 
+/** 将历史 contextWriteKey 迁移到 outputArgs[0].name（与 QA 输出变量一致） */
+function migrateContextWriteKeyToOutputArgs(
+  nc: Record<string, any>,
+): Record<string, any> {
+  const contextWriteKey =
+    typeof nc.contextWriteKey === 'string' ? nc.contextWriteKey.trim() : '';
+  if (!contextWriteKey) {
+    return nc;
+  }
+  const outputArgs = Array.isArray(nc.outputArgs) ? [...nc.outputArgs] : [];
+  if (!outputArgs.length) {
+    outputArgs.push({
+      key: contextWriteKey,
+      name: contextWriteKey,
+      dataType: DataTypeEnum.String,
+      require: true,
+      systemVariable: true,
+    });
+  } else if (!outputArgs[0]?.name || outputArgs[0].name === 'answer') {
+    outputArgs[0] = {
+      ...outputArgs[0],
+      key: contextWriteKey,
+      name: contextWriteKey,
+    };
+  }
+  const rest = { ...nc };
+  delete rest.contextWriteKey;
+  return { ...rest, outputArgs };
+}
+
 /** 加载后：补全 HumanInteraction QA 扁平字段默认值 */
 export function normalizeHitlNodeConfig(
   nodeConfig: Record<string, any> | undefined | null,
 ): Record<string, any> {
   if (!nodeConfig) return {};
-  const nc = { ...nodeConfig };
+  let nc = { ...nodeConfig };
 
+  nc = migrateContextWriteKeyToOutputArgs(nc);
   nc.answerType = getHitlAnswerType(nc);
   if (!nc.inputArgs) nc.inputArgs = [];
   if (!nc.options) nc.options = [];
@@ -181,6 +212,9 @@ export function serializeHitlNodeConfig(
   if (Array.isArray(nc.formArgs) && nc.formArgs.length) {
     nc.formArgs = nc.formArgs.map((a) => processFormArg(a, 'save'));
   }
+
+  // 输出变量走 outputArgs（与 QA 一致），不再下发 contextWriteKey
+  delete nc.contextWriteKey;
 
   return nc;
 }
