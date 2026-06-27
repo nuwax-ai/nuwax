@@ -98,9 +98,9 @@ const AppContainer: React.FC<{ children: React.ReactElement }> = ({
       sessionStorage.setItem('__chunk_reload', '1');
 
       Modal.confirm({
-        title: dict('PC.App.chunkLoadErrorTitle'),
-        content: dict('PC.App.chunkLoadErrorContent'),
-        okText: dict('PC.App.chunkLoadErrorRefresh'),
+        title: dict('PC.Modal.chunkLoadErrorTitle'),
+        content: dict('PC.Modal.chunkLoadErrorContent'),
+        okText: dict('PC.Modal.chunkLoadErrorRefresh'),
         cancelText: dict('PC.Common.Global.cancel'),
         onOk: () => {
           sessionStorage.removeItem('__chunk_reload');
