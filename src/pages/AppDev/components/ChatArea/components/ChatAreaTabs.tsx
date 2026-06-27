@@ -25,6 +25,8 @@ interface ChatAreaTabsProps {
    * 可返回 Promise，恢复完成（restart + refresh）后再走自动 chat→design 切换。
    */
   onDesignModeUnreachable?: () => void | Promise<void>;
+  /** 切换到数据 Tab 时回调，用于刷新项目详情 */
+  onDataTabClick?: () => void;
 }
 
 const ChatAreaTabs: React.FC<ChatAreaTabsProps> = ({
@@ -33,6 +35,7 @@ const ChatAreaTabs: React.FC<ChatAreaTabsProps> = ({
   isSupportDesignMode,
   hiddenTabs = [],
   onDesignModeUnreachable,
+  onDataTabClick,
 }) => {
   const {
     isIframeLoaded,
@@ -111,6 +114,16 @@ const ChatAreaTabs: React.FC<ChatAreaTabsProps> = ({
       onAckTimeout: onDesignModeUnreachable ? handleAckTimeout : undefined,
     });
 
+  const handleSegmentedChange = useCallback(
+    (value: 'chat' | 'data' | 'design') => {
+      if (value === 'data') {
+        onDataTabClick?.();
+      }
+      handleTabChange(value);
+    },
+    [handleTabChange, onDataTabClick],
+  );
+
   const isOnlyDesignTab =
     hiddenTabs.includes('chat') &&
     hiddenTabs.includes('data') &&
@@ -167,7 +180,7 @@ const ChatAreaTabs: React.FC<ChatAreaTabsProps> = ({
       <Segmented
         value={activeTab}
         onChange={(value) =>
-          handleTabChange(value as 'chat' | 'data' | 'design')
+          handleSegmentedChange(value as 'chat' | 'data' | 'design')
         }
         options={[
           ...(!hiddenTabs.includes('chat')

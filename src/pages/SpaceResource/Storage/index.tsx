@@ -2,17 +2,15 @@ import ButtonToggle from '@/components/ButtonToggle';
 import CreatedItem from '@/components/CreatedItem';
 import UploadImportConfig from '@/components/UploadImportConfig';
 import Loading from '@/components/custom/Loading';
-import { CREATE_LIST, FILTER_STATUS } from '@/constants/space.constants';
+import { CREATE_LIST } from '@/constants/space.constants';
 import { apiTableAdd, apiTableDelete } from '@/services/dataTable';
 import { dict } from '@/services/i18nRuntime';
 import { apiComponentList, apiCopyTable } from '@/services/library';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
-import { PublishStatusEnum } from '@/types/enums/common';
 import {
   ApplicationMoreActionEnum,
   ComponentTypeEnum,
   CreateListEnum,
-  FilterStatusEnum,
 } from '@/types/enums/space';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
 import type { ComponentInfo } from '@/types/interfaces/library';
@@ -43,9 +41,6 @@ const SpaceStorage: React.FC = () => {
   const [openDatabase, setOpenDatabase] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const [status, setStatus] = useState<FilterStatusEnum>(
-    Number(searchParams.get('status')) || FilterStatusEnum.All,
-  );
   const [create, setCreate] = useState<CreateListEnum>(
     Number(searchParams.get('create')) || CreateListEnum.All_Person,
   );
@@ -59,7 +54,6 @@ const SpaceStorage: React.FC = () => {
   };
 
   const handleFilterList = (
-    filterStatus: FilterStatusEnum,
     filterCreate: CreateListEnum,
     filterKeyword: string,
     list = componentAllRef.current,
@@ -67,11 +61,6 @@ const SpaceStorage: React.FC = () => {
     let _list = list.filter((item) =>
       ALLOWED_TYPES.has(item.type as ComponentTypeEnum),
     );
-    if (filterStatus === FilterStatusEnum.Published) {
-      _list = _list.filter(
-        (item) => item.publishStatus === PublishStatusEnum.Published,
-      );
-    }
     if (filterCreate === CreateListEnum.Me) {
       _list = _list.filter((item) => item.creatorId === userInfo.id);
     }
@@ -82,13 +71,11 @@ const SpaceStorage: React.FC = () => {
   };
 
   useEffect(() => {
-    const s = Number(searchParams.get('status')) || FilterStatusEnum.All;
     const c = Number(searchParams.get('create')) || CreateListEnum.All_Person;
     const k = searchParams.get('keyword') || '';
-    setStatus(s);
     setCreate(c);
     setKeyword(k);
-    handleFilterList(s, c, k);
+    handleFilterList(c, k);
   }, [searchParams]);
 
   const { run: runComponent } = useRequest(apiComponentList, {
@@ -96,7 +83,7 @@ const SpaceStorage: React.FC = () => {
     debounceInterval: 300,
     onSuccess: (result: ComponentInfo[]) => {
       componentAllRef.current = result;
-      handleFilterList(status, create, keyword, result);
+      handleFilterList(create, keyword, result);
       setLoading(false);
     },
     onError: () => setLoading(false),
@@ -208,18 +195,8 @@ const SpaceStorage: React.FC = () => {
             onChange={(v) => {
               const _v = v as CreateListEnum;
               setCreate(_v);
-              handleFilterList(status, _v, keyword);
+              handleFilterList(_v, keyword);
               handleChange('create', _v.toString());
-            }}
-          />
-          <ButtonToggle
-            options={FILTER_STATUS}
-            value={status}
-            onChange={(v) => {
-              const _v = v as FilterStatusEnum;
-              setStatus(_v);
-              handleFilterList(_v, create, keyword);
-              handleChange('status', _v.toString());
             }}
           />
         </div>
@@ -231,14 +208,14 @@ const SpaceStorage: React.FC = () => {
             onChange={(e) => {
               const k = e.target.value;
               setKeyword(k);
-              handleFilterList(status, create, k);
+              handleFilterList(create, k);
               handleChange('keyword', k);
             }}
             prefix={<SearchOutlined />}
             allowClear
             onClear={() => {
               setKeyword('');
-              handleFilterList(status, create, '');
+              handleFilterList(create, '');
             }}
             style={{ width: 214 }}
           />
