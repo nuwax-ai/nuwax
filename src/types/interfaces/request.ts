@@ -37,6 +37,18 @@ export interface PageNum<T> {
   pageSize: number;
 }
 
+// 推荐分页响应数据
+export interface PageRecommendNum<T> {
+  // 数据列表
+  records: T[];
+  // 总记录数
+  total: number;
+  // 当前页码
+  pageNo: number;
+  // 每页大小
+  pageSize: number;
+}
+
 /**
  * 表格分页查询参数
  */
