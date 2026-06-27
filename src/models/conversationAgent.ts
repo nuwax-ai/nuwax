@@ -868,6 +868,7 @@ export default () => {
       debug = false,
       skillIds,
       modelId,
+      agentMode = 'yolo',
     } = sendParams;
     // 清除副作用
     handleClearSideEffect();
@@ -956,6 +957,7 @@ export default () => {
       skillIds,
       // 模型ID
       modelId,
+      agentMode,
     };
 
     // 处理会话

@@ -132,7 +132,8 @@ export function useConversationAgentChatSession(
         isSync: false,
         skillIds,
         modelId: modelId || selectedModelId,
-        agentMode: selectedAgentMode,
+        // 与 EditAgent 预览一致：未选中时兜底 yolo
+        agentMode: selectedAgentMode || 'yolo',
       });
     },
     [

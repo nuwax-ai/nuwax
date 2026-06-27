@@ -69,9 +69,12 @@ export function useAgentInterventionLayer(
     interventionHandlers,
   } = options;
   const [agentMode, setAgentModeState] = useState<AgentMode>(() => {
-    // 优先使用透传的初始模式，其次 localStorage 缓存，最后兜底 yolo
     if (initialAgentMode === 'yolo' || initialAgentMode === 'ask') {
       return initialAgentMode;
+    }
+    // ConversationAgent 预览调试（interventionHandlers 注入）：仅内存态，不读写 localStorage
+    if (interventionHandlers) {
+      return 'yolo';
     }
     try {
       const cached = localStorage.getItem(AGENT_MODE_STORAGE_KEY);
@@ -84,14 +87,20 @@ export function useAgentInterventionLayer(
     return 'yolo';
   });
 
-  const setAgentMode = useCallback((mode: AgentMode) => {
-    setAgentModeState(mode);
-    try {
-      localStorage.setItem(AGENT_MODE_STORAGE_KEY, mode);
-    } catch (e) {
-      // ignore localStorage errors
-    }
-  }, []);
+  const setAgentMode = useCallback(
+    (mode: AgentMode) => {
+      setAgentModeState(mode);
+      if (interventionHandlers) {
+        return;
+      }
+      try {
+        localStorage.setItem(AGENT_MODE_STORAGE_KEY, mode);
+      } catch (e) {
+        // ignore localStorage errors
+      }
+    },
+    [interventionHandlers],
+  );
 
   const conversationInfoModel = useModel('conversationInfo');
 
