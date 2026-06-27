@@ -1593,6 +1593,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         open={openPluginModel}
         variables={variablesInfo?.bindConfig?.variables || []}
         currentComponentInfo={currentComponentInfo}
+        agentSubType={agentConfigInfo?.subType}
         devConversationId={agentConfigInfo?.devConversationId}
         settingActionList={getSettingActionList(currentComponentInfo?.type)}
         onCancel={() => setOpenPluginModel(false)}
