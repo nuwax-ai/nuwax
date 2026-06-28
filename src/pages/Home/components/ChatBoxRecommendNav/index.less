@@ -5,7 +5,8 @@
   flex-wrap: wrap;
   justify-content: center;
   align-items: center;
-  gap: @marginSm;
+  row-gap: 8px;
+  column-gap: @marginSm;
   width: 100%;
   margin: 28px auto 0;
 }
@@ -15,14 +16,15 @@
   align-items: center;
   gap: @marginXs;
   max-width: 220px;
-  height: 40px;
+  height: 32px;
   padding: 0 @paddingSm;
   border: @lineWidth @lineType transparent;
-  border-radius: @borderRadiusLg;
+  border-radius: @borderRadius;
   background: @colorFillQuaternary;
   color: @colorTextSecondary;
   font-size: @fontSize;
   font-weight: 500;
+  line-height: 1;
   cursor: pointer;
   transition: all @motionDurationMid @motionEaseOut;
 
@@ -43,6 +45,7 @@
   height: 20px;
   flex-shrink: 0;
   object-fit: contain;
+  display: block;
 }
 
 .label {
@@ -50,8 +53,10 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  line-height: 20px;
+  display: block;
+  transform: translateY(-1px);
 }
-
 @media (max-width: 768px) {
   .recommend-nav {
     margin-top: 20px;

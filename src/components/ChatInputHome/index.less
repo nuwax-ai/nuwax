@@ -79,18 +79,19 @@
     height: 22px;
     padding: 0 6px 0 @paddingXs;
     border: 1px solid @colorPrimaryBorder;
-    border-radius: @borderRadius;
+    border-radius: 6px;
     background: @colorPrimaryBg;
     color: @colorPrimary;
-    font-size: @fontSize;
+    font-size: 12px;
     line-height: 20px;
   }
 
   .tag-close {
     position: relative;
     z-index: 3;
-    display: grid;
-    place-items: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     flex-shrink: 0;
     width: 16px;
     height: 16px;
@@ -100,22 +101,36 @@
     border-radius: 50%;
     background: transparent;
     color: @colorPrimary;
-    font-size: 12px;
-    line-height: 1;
+    opacity: 0.75;
     cursor: pointer;
     pointer-events: auto;
-    transition: color @motionDurationMid @motionEaseOut,
-      background-color @motionDurationMid @motionEaseOut;
+    transition: all @motionDurationMid @motionEaseOut;
+
+    &::before,
+    &::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 8px;
+      height: 1.2px;
+      background-color: currentcolor;
+      border-radius: 1px;
+      transition: background-color @motionDurationMid @motionEaseOut;
+    }
 
     &::before {
-      content: '\00d7';
-      display: block;
-      line-height: 1;
+      transform: translate(-50%, -50%) rotate(45deg);
+    }
+
+    &::after {
+      transform: translate(-50%, -50%) rotate(-45deg);
     }
 
     &:hover {
-      color: @colorPrimaryHover;
-      background: @colorPrimaryBgHover;
+      color: @colorPrimary;
+      background: rgba(0, 0, 0, 8%);
+      opacity: 1;
     }
   }
 
