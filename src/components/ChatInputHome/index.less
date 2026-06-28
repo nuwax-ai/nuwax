@@ -61,6 +61,72 @@
     color: @colorText;
   }
 
+  .input-line {
+    position: relative;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .selected-tag {
+    position: absolute;
+    top: 4px;
+    left: @paddingSm;
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    max-width: 100%;
+    height: 22px;
+    padding: 0 6px 0 @paddingXs;
+    border: 1px solid @colorPrimaryBorder;
+    border-radius: @borderRadius;
+    background: @colorPrimaryBg;
+    color: @colorPrimary;
+    font-size: @fontSize;
+    line-height: 20px;
+  }
+
+  .tag-close {
+    position: relative;
+    z-index: 3;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    margin-left: 2px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: @colorPrimary;
+    font-size: 12px;
+    line-height: 1;
+    cursor: pointer;
+    pointer-events: auto;
+    transition: color @motionDurationMid @motionEaseOut,
+      background-color @motionDurationMid @motionEaseOut;
+
+    &::before {
+      content: '\00d7';
+      display: block;
+      line-height: 1;
+    }
+
+    &:hover {
+      color: @colorPrimaryHover;
+      background: @colorPrimaryBgHover;
+    }
+  }
+
+  .tag-label {
+    min-width: 0;
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   :global {
     .ant-input-outlined:focus,
     .ant-input-outlined:focus-within {

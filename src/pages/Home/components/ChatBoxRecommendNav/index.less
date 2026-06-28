@@ -1,0 +1,64 @@
+@import '@/styles/token.less';
+
+.recommend-nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: @marginSm;
+  width: 100%;
+  margin: 28px auto 0;
+}
+
+.recommend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: @marginXs;
+  max-width: 220px;
+  height: 40px;
+  padding: 0 @paddingSm;
+  border: @lineWidth @lineType transparent;
+  border-radius: @borderRadiusLg;
+  background: @colorFillQuaternary;
+  color: @colorTextSecondary;
+  font-size: @fontSize;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all @motionDurationMid @motionEaseOut;
+
+  &:hover {
+    color: @colorText;
+    background: @colorFillTertiary;
+  }
+
+  &.active {
+    color: @colorPrimary;
+    border-color: @colorPrimaryBorder;
+    background: @colorPrimaryBg;
+  }
+}
+
+.icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  object-fit: contain;
+}
+
+.label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .recommend-nav {
+    margin-top: 20px;
+    gap: @marginXs;
+  }
+
+  .recommend-item {
+    max-width: calc(50vw - 28px);
+  }
+}

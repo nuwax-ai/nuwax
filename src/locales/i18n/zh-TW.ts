@@ -163,6 +163,7 @@ export const ZH_TW: SystemLangMap = {
   "PC.Components.ChatInputHomeMentionPopup.tabAll": "全部",
   "PC.Components.ChatInputHomeMentionPopup.tabFavorite": "我的收藏",
   "PC.Components.ChatInputHomeMentionPopup.tabRecent": "最近使用",
+  "PC.Components.ChatInputHomeSpaceSelector.noAvailableSpace": "暫無可用空間",
   "PC.Components.ChatTitleActions.collect": "收藏",
   "PC.Components.ChatTitleActions.collected": "已新增到收藏",
   "PC.Components.ChatTitleActions.collectFailed": "新增收藏失敗",

@@ -1,3 +1,4 @@
+import type { AgentMode } from '@/components/business-component/AgentIntervention';
 import ChatInputHome from '@/components/ChatInputHome';
 import Loading from '@/components/custom/Loading';
 import useConversation from '@/hooks/useConversation';
@@ -8,8 +9,12 @@ import {
   apiPublishedAgentInfo,
   apiUnCollectAgent,
 } from '@/services/agentDev';
+import { apiDisplayRecommendList } from '@/services/displayRecommend';
 import { dict } from '@/services/i18nRuntime';
-import { DefaultSelectedEnum } from '@/types/enums/agent';
+import {
+  AgentComponentTypeEnum,
+  DefaultSelectedEnum,
+} from '@/types/enums/agent';
 import { AgentTypeEnum } from '@/types/enums/space';
 import type {
   AgentDetailDto,
@@ -23,19 +28,49 @@ import type {
   MessageSourceType,
   UploadFileInfo,
 } from '@/types/interfaces/common';
+import {
+  DisplayRecommendFunctionTypeEnum,
+  type DisplayRecommendInfo,
+} from '@/types/interfaces/displayRecommend';
 import { App, message as antdMessage } from 'antd';
 import classNames from 'classnames';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { history, useModel, useRequest } from 'umi';
+import { createProjectAndNavigate } from '../SpaceCreateProject/utils/projectCreateStrategy';
+import ChatBoxRecommendNav from './components/ChatBoxRecommendNav';
 import DraggableHomeContent from './DraggableHomeContent';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 const EMPTY_MANUAL_COMPONENTS: AgentManualComponentInfo[] = [];
 
+const PROJECT_FUNCTION_TYPE_MAP: Partial<
+  Record<DisplayRecommendFunctionTypeEnum | string, AgentComponentTypeEnum>
+> = {
+  [DisplayRecommendFunctionTypeEnum.AgentDev]: AgentComponentTypeEnum.Agent,
+  [DisplayRecommendFunctionTypeEnum.PageAppDev]: AgentComponentTypeEnum.PageApp,
+  [DisplayRecommendFunctionTypeEnum.SkillDev]: AgentComponentTypeEnum.Skill,
+  [DisplayRecommendFunctionTypeEnum.PluginDev]: AgentComponentTypeEnum.Plugin,
+};
+
+const TASK_AGENT_FUNCTION_TYPES = new Set<string>([
+  DisplayRecommendFunctionTypeEnum.AgentDev,
+  DisplayRecommendFunctionTypeEnum.SkillDev,
+  DisplayRecommendFunctionTypeEnum.PluginDev,
+]);
+
+const SPACE_SELECTOR_FUNCTION_TYPES = new Set<string>([
+  DisplayRecommendFunctionTypeEnum.AgentDev,
+  DisplayRecommendFunctionTypeEnum.PageAppDev,
+  DisplayRecommendFunctionTypeEnum.SkillDev,
+  DisplayRecommendFunctionTypeEnum.PluginDev,
+]);
+
 const Home: React.FC = () => {
   const { message } = App.useApp();
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
+  const { getSpaceId } = useModel('spaceModel');
+  const { setContext } = useModel('pageHandoffContext');
   const { handleCreateConversation } = useConversation();
   const {
     selectedComponentList,
@@ -48,22 +83,40 @@ const Home: React.FC = () => {
   const [selectedComputerId, setSelectedComputerId] =
     useState<string>('remote');
   const [selectedModelId, setSelectedModelId] = useState<number>();
+  const [selectedSpaceId, setSelectedSpaceId] = useState<number>();
   const [activeTab, setActiveTab] = useState<string>();
   const [loading, setLoading] = useState<boolean>(false);
+  const [recommendNavList, setRecommendNavList] = useState<
+    DisplayRecommendInfo[]
+  >([]);
+  const [selectedRecommend, setSelectedRecommend] =
+    useState<DisplayRecommendInfo>();
   const [homeCategoryInfo, setHomeCategoryInfo] =
     useState<HomeAgentCategoryInfo>();
 
-  const currentAgentId =
+  const defaultAgentId =
     isTaskAgentMode && tenantConfigInfo?.defaultTaskAgentId
       ? tenantConfigInfo.defaultTaskAgentId
       : tenantConfigInfo?.defaultAgentId;
+  const currentAgentId = selectedRecommend?.targetId || defaultAgentId;
+  const selectedFunctionType = selectedRecommend?.functionType || '';
+  const selectedProjectType = useMemo(
+    () => PROJECT_FUNCTION_TYPE_MAP[selectedFunctionType],
+    [selectedFunctionType],
+  );
+  const effectiveTaskAgentActive = selectedRecommend
+    ? TASK_AGENT_FUNCTION_TYPES.has(selectedFunctionType)
+    : isTaskAgentMode;
+  const showSpaceSelector = selectedRecommend
+    ? SPACE_SELECTOR_FUNCTION_TYPES.has(selectedFunctionType)
+    : false;
 
   const runDetail = useCallback(async (agentId: number) => {
     try {
       const { data } = await apiPublishedAgentInfo(agentId);
       setAgentDetail(data);
     } catch {
-      // 全局 request errorHandler 已展示用户提示，这里只消费 Promise，避免 dev overlay。
+      setAgentDetail(undefined);
     }
   }, []);
 
@@ -82,6 +135,23 @@ const Home: React.FC = () => {
       setLoading(false);
     } catch {
       setLoading(false);
+    }
+  }, []);
+
+  const runRecommendNavList = useCallback(async () => {
+    try {
+      const result = await apiDisplayRecommendList({ skipErrorHandler: true });
+      if (result?.success === false) {
+        setRecommendNavList([]);
+        return;
+      }
+
+      const list = result?.data?.recChatBoxNav?.Agent || [];
+      setRecommendNavList(
+        [...list].sort((prev, next) => (prev.sort || 0) - (next.sort || 0)),
+      );
+    } catch {
+      setRecommendNavList([]);
     }
   }, []);
 
@@ -104,9 +174,11 @@ const Home: React.FC = () => {
   useEffect(() => {
     setLoading(true);
     runCategoryList();
-  }, [runCategoryList]);
+    runRecommendNavList();
+  }, [runCategoryList, runRecommendNavList]);
 
   useEffect(() => {
+    setAgentDetail(undefined);
     if (currentAgentId) {
       runDetail(currentAgentId);
     }
@@ -116,14 +188,48 @@ const Home: React.FC = () => {
     initSelectedComponentList(agentDetail?.manualComponents);
   }, [agentDetail?.manualComponents]);
 
+  useEffect(() => {
+    setSelectedComputerId(selectedRecommend ? '' : 'remote');
+    setSelectedModelId(undefined);
+    setSelectedSpaceId(undefined);
+  }, [selectedRecommend]);
+
   const handleEnter = async (
     inputMessage: string,
     files?: UploadFileInfo[],
     skillIds?: number[],
     modelId?: number,
+    agentMode?: AgentMode,
   ) => {
     if (!tenantConfigInfo || !currentAgentId) {
       message.warning(dict('PC.Pages.Home.noTenantInfo'));
+      return;
+    }
+
+    if (selectedProjectType) {
+      const spaceId = showSpaceSelector
+        ? selectedSpaceId
+        : Number(getSpaceId());
+      if (!spaceId) {
+        message.warning(dict('PC.Pages.Home.noTenantInfo'));
+        return;
+      }
+
+      await createProjectAndNavigate({
+        payload: {
+          type: selectedProjectType,
+          prompt: inputMessage,
+          files,
+          skillIds,
+          modelId: modelId || selectedModelId,
+          tools: selectedComponentList,
+          computerId: selectedComputerId,
+          agentMode,
+        },
+        spaceId,
+        tenantConfigInfo,
+        setContext,
+      });
       return;
     }
 
@@ -138,6 +244,7 @@ const Home: React.FC = () => {
   };
 
   const showTaskAgentToggle = !!(
+    !selectedRecommend &&
     tenantConfigInfo?.defaultTaskAgentId &&
     tenantConfigInfo.defaultTaskAgentId > 0
   );
@@ -165,6 +272,10 @@ const Home: React.FC = () => {
     history.push(`/agent/${targetId}`);
   };
 
+  const handleRecommendSelect = (item: DisplayRecommendInfo) => {
+    setSelectedRecommend((prev) => (prev?.id === item.id ? undefined : item));
+  };
+
   return (
     <div className={cx(styles.container, 'flex', 'flex-col', 'items-center')}>
       <main className={cx(styles.inputSection)}>
@@ -173,17 +284,17 @@ const Home: React.FC = () => {
           dangerouslySetInnerHTML={{ __html: tenantConfigInfo?.homeSlogan }}
         />
         <ChatInputHome
-          key={`home-${currentAgentId}-${isTaskAgentMode}`}
           className={cx(styles.textarea)}
           onEnter={handleEnter}
           isClearInput={false}
+          placeholder={selectedRecommend?.placeholder || undefined}
           manualComponents={
             agentDetail?.manualComponents || EMPTY_MANUAL_COMPONENTS
           }
           selectedComponentList={selectedComponentList}
           onSelectComponent={handleSelectComponent}
           showTaskAgentToggle={showTaskAgentToggle}
-          isTaskAgentActive={isTaskAgentMode}
+          isTaskAgentActive={effectiveTaskAgentActive}
           onToggleTaskAgent={() => setIsTaskAgentMode((prev) => !prev)}
           selectedComputerId={selectedComputerId}
           onComputerSelect={setSelectedComputerId}
@@ -197,10 +308,26 @@ const Home: React.FC = () => {
           allowOtherModel={agentDetail?.allowOtherModel}
           selectedModelId={selectedModelId}
           onModelSelect={setSelectedModelId}
+          showSpaceSelector={showSpaceSelector}
+          selectedSpaceId={selectedSpaceId}
+          onSpaceSelect={setSelectedSpaceId}
           agentType={agentDetail?.type}
+          selectedTag={
+            selectedRecommend
+              ? {
+                  label: selectedRecommend.label,
+                }
+              : undefined
+          }
+          onClearSelectedTag={() => setSelectedRecommend(undefined)}
           showAgentModeSelector={
             agentDetail?.allowChooseMode === DefaultSelectedEnum.Yes
           }
+        />
+        <ChatBoxRecommendNav
+          items={recommendNavList}
+          selectedId={selectedRecommend?.id}
+          onSelect={handleRecommendSelect}
         />
       </main>
       <section className={cx(styles.recommendSection)}>
