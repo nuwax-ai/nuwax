@@ -215,11 +215,13 @@ export default () => {
       .filter((item) => item.role === AssistantRoleEnum.ASSISTANT)
       .forEach((item) => {
         const componentExecutedList = item?.componentExecutedList || [];
-        // 补充执行ID
-        const _list = componentExecutedList.map((item: any) => ({
-          ...item,
-          executeId: item.result.executeId,
-        }));
+        // 补充执行ID，过滤掉 result 为空或无 executeId 的条目（如 SandboxStart 类型）
+        const _list = componentExecutedList
+          .filter((item: any) => item?.result?.executeId)
+          .map((item: any) => ({
+            ...item,
+            executeId: item.result.executeId,
+          }));
         list.push(..._list);
       });
 
