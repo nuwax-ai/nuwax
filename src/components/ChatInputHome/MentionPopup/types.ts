@@ -215,6 +215,8 @@ export interface MentionEditorProps {
   disabled?: boolean;
   /** 自定义类名 */
   className?: string;
+  /** Width reserved before the first line of text. */
+  inlinePrefixWidth?: number;
   /** 是否启用 @ 提及功能，默认 true */
   enableMention?: boolean;
   /** MentionPopup 弹窗的展示方向：auto | up | down，默认 auto */

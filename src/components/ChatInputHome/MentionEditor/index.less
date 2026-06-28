@@ -29,15 +29,17 @@
   word-break: break-word;
   white-space: pre-wrap;
   caret-color: @colorPrimary;
+  text-indent: var(--mention-inline-prefix-offset, 0);
 
   // 自定义 placeholder，避免 contenteditable 的 :empty 不稳定问题
   &.empty::before {
     content: attr(data-placeholder);
     position: absolute;
     top: 4px;
-    left: @paddingSm;
+    left: calc(@paddingSm + var(--mention-inline-prefix-offset, 0));
     right: @paddingSm;
     color: @colorTextQuaternary;
+    text-indent: 0;
     pointer-events: none;
     display: box;
     -webkit-line-clamp: 2;

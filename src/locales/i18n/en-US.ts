@@ -188,6 +188,7 @@ export const EN_US: SystemLangMap = {
   "PC.Components.ChatInputHomeMentionPopup.tabAll": "All",
   "PC.Components.ChatInputHomeMentionPopup.tabFavorite": "Favorites",
   "PC.Components.ChatInputHomeMentionPopup.tabRecent": "Recent",
+  "PC.Components.ChatInputHomeSpaceSelector.noAvailableSpace": "No available spaces",
   "PC.Components.ChatTitleActions.collect": "Favorite",
   "PC.Components.ChatTitleActions.collectFailed": "Failed to add to favorites",
   "PC.Components.ChatTitleActions.collected": "Added to favorites",

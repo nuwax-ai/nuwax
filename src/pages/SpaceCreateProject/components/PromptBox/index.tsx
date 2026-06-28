@@ -21,20 +21,13 @@ import React, {
   useState,
 } from 'react';
 import { useModel, useParams } from 'umi';
+import type { ProjectCreatePayload } from '../../utils/projectCreateStrategy';
 import TabsList from './components/TabsList';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-export interface SubmitPayload {
-  type: AgentComponentTypeEnum;
-  subType?: string;
-  prompt: string;
-  files?: any[];
-  skillIds?: number[];
-  modelId?: number;
-  tools?: any[];
-  computerId?: string;
+export interface SubmitPayload extends Omit<ProjectCreatePayload, 'agentMode'> {
   agentMode?: AgentMode;
 }
 

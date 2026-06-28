@@ -27,6 +27,7 @@ import classNames from 'classnames';
 import React, {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -40,6 +41,7 @@ import ManualComponentItem from './ManualComponentItem';
 import MentionEditor from './MentionEditor';
 import type { MentionEditorHandle, MentionItem } from './MentionPopup/types';
 import ModelSelector from './ModelSelector';
+import SpaceSelector from './SpaceSelector';
 
 const cx = classNames.bind(styles);
 
@@ -103,9 +105,14 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   selectedModelId,
   /** 模型改变时的回调 */
   onModelSelect,
+  showSpaceSelector = false,
+  selectedSpaceId,
+  onSpaceSelect,
   /** 智能体类型 */
   agentType,
   tabsSlot,
+  selectedTag,
+  onClearSelectedTag,
   prefix,
   agentMode = 'yolo',
   onAgentModeChange,
@@ -182,6 +189,8 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
     useState<boolean>(false);
   // @ 提及编辑器引用
   const mentionEditorRef = useRef<MentionEditorHandle>(null);
+  const selectedTagRef = useRef<HTMLDivElement>(null);
+  const [selectedTagWidth, setSelectedTagWidth] = useState<number>(0);
   // 滚动按钮自身的悬停状态
   const [isHoveringBtn, setIsHoveringBtn] = useState<boolean>(false);
   // 延迟显示的可见性状态，用于处理移出延时
@@ -190,6 +199,31 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
   // 拖拽进入计数，避免 dragenter/dragleave 嵌套元素导致遮罩闪烁
   const dragCounterRef = useRef<number>(0);
   const [isDragging, setIsDragging] = useState<boolean>(false);
+  const selectedTagOffset = selectedTag?.label ? selectedTagWidth + 8 : 0;
+
+  useLayoutEffect(() => {
+    if (!selectedTag?.label || !selectedTagRef.current) {
+      setSelectedTagWidth(0);
+      return;
+    }
+
+    const selectedTagElement = selectedTagRef.current;
+    const updateSelectedTagWidth = () => {
+      setSelectedTagWidth(selectedTagElement.offsetWidth);
+    };
+
+    updateSelectedTagWidth();
+
+    if (typeof ResizeObserver === 'undefined') {
+      const frameId = window.requestAnimationFrame(updateSelectedTagWidth);
+      return () => window.cancelAnimationFrame(frameId);
+    }
+
+    const resizeObserver = new ResizeObserver(updateSelectedTagWidth);
+    resizeObserver.observe(selectedTagElement);
+
+    return () => resizeObserver.disconnect();
+  }, [selectedTag?.label]);
 
   // 处理可见性延迟逻辑
   useEffect(() => {
@@ -752,28 +786,44 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
             <ChatUploadFile files={uploadFiles} onDel={handleDelFile} />
           </ConditionRender>
           {/*输入框 - 使用 MentionEditor 实现 @ 提及功能*/}
-          <MentionEditor
-            ref={mentionEditorRef}
-            className={cx(styles.input)}
-            disabled={wholeDisabled}
-            value={messageInfo}
-            onChange={setMessageInfo}
-            onSkillIdsChange={setSkillIds}
-            // 是否启用 @ 提及功能，默认启用
-            enableMention={enableMention}
-            // @ 弹窗展示方向：auto | up | down
-            mentionPlacement={mentionPlacement}
-            // 回车事件处理
-            onPressEnter={handlePressEnter}
-            // 粘贴事件处理
-            onPaste={handlePaste}
-            placeholder={placeholder}
-            // 默认提及项列表
-            defaultMentions={defaultMentions}
-            enableSubscription={isEnableSubscription}
-            onUnsubscribedSkillSelect={handleUnsubscribedSkillSelect}
-            usageScenarios={usageScenarios}
-          />
+          <div className={cx(styles['input-line'])}>
+            <ConditionRender condition={!!selectedTag?.label}>
+              <div ref={selectedTagRef} className={cx(styles['selected-tag'])}>
+                <span className={cx(styles['tag-label'])}>
+                  {selectedTag?.label}
+                </span>
+                <button
+                  type="button"
+                  className={cx(styles['tag-close'])}
+                  aria-label="Clear selected tag"
+                  onClick={onClearSelectedTag}
+                />
+              </div>
+            </ConditionRender>
+            <MentionEditor
+              ref={mentionEditorRef}
+              className={cx(styles.input)}
+              disabled={wholeDisabled}
+              value={messageInfo}
+              inlinePrefixWidth={selectedTagOffset}
+              onChange={setMessageInfo}
+              onSkillIdsChange={setSkillIds}
+              // 是否启用 @ 提及功能，默认启用
+              enableMention={enableMention}
+              // @ 弹窗展示方向：auto | up | down
+              mentionPlacement={mentionPlacement}
+              // 回车事件处理
+              onPressEnter={handlePressEnter}
+              // 粘贴事件处理
+              onPaste={handlePaste}
+              placeholder={placeholder}
+              // 默认提及项列表
+              defaultMentions={defaultMentions}
+              enableSubscription={isEnableSubscription}
+              onUnsubscribedSkillSelect={handleUnsubscribedSkillSelect}
+              usageScenarios={usageScenarios}
+            />
+          </div>
           <footer className={cx('flex', 'flex-1', styles.footer)}>
             {/* 清空会话记录 */}
             {!!messageList?.filter((item: MessageInfo) => item.id)?.length && (
@@ -974,6 +1024,12 @@ const ChatInputHome: React.FC<ChatInputProps> = ({
                   selectedModelId={selectedModelId}
                   onModelSelect={onModelSelect}
                   agentType={agentType}
+                />
+              )}
+              {showSpaceSelector && (
+                <SpaceSelector
+                  selectedSpaceId={selectedSpaceId}
+                  onSpaceSelect={onSpaceSelect}
                 />
               )}
               {/* 单按钮：活跃且输入框为空时显示「停止」，否则显示「发送」（活跃时点击即加入队列） */}
