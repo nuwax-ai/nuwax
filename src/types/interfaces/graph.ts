@@ -127,6 +127,8 @@ export interface ChangeEdgeProps {
   targetId: string;
   sourceNode: ChildNode;
   id?: string;
+  /** 源端口 ID；分支节点（IntentRecognition/QA/RouteDecision/HumanInteraction 等）连线时必传 */
+  sourcePort?: string;
 }
 export interface CreateNodeByPortOrEdgeProps {
   child: StencilChildNode;

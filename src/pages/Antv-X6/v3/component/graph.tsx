@@ -27,6 +27,11 @@ import {
   Snapline,
 } from '@antv/x6';
 import { message, Modal } from 'antd';
+import {
+  applyAgentFlowBranchEdgeConnect,
+  ensureEdgeOnGraph,
+  isAgentFlowBranchEdgeConnect,
+} from '../agentFlow/edgeConnect';
 import StencilContent from '../components/layout/Sidebar';
 import {
   isStartNode,
@@ -269,7 +274,7 @@ const initGraph = ({
       },
       createEdge() {
         return new Shape.Edge({
-          // shape: 'data-processing-curve', //
+          shape: 'edge',
           attrs: {
             line: {
               strokeDasharray: '5 5', // ：
@@ -1009,16 +1014,29 @@ const initGraph = ({
         nodeData: _params,
         targetNodeId: targetNode.id.toString(),
       });
+    } else if (isAgentFlowBranchEdgeConnect(sourceNode, sourcePort)) {
+      const _params = applyAgentFlowBranchEdgeConnect(
+        sourceNode,
+        targetNode,
+        sourcePort,
+      );
+      if (_params) {
+        changeNodeConfigWithRefresh({
+          nodeData: _params,
+          targetNodeId: targetNode.id.toString(),
+        });
+      }
     } else {
       changeEdgeConfigWithRefresh({
         type: UpdateEdgeType.created,
         targetId: targetNodeId,
         sourceNode,
         id: edge.id,
+        sourcePort,
       });
     }
 
-    graph.addEdge(edge);
+    ensureEdgeOnGraph(graph, edge);
     setEdgeAttributes(edge);
     // edge.toFront()
     setTimeout(() => {
