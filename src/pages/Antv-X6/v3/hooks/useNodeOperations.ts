@@ -8,11 +8,16 @@ import { message } from 'antd';
 import { useCallback } from 'react';
 
 import Constant from '@/constants/codes.constants';
+import { useFlowKind } from '@/contexts/FlowKindContext';
 import { t } from '@/services/i18nRuntime';
 import * as service from '@/services/workflow';
 import { AddNodeResponse } from '@/services/workflow';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
-import { NodeShapeEnum, NodeTypeEnum } from '@/types/enums/common';
+import {
+  FlowKindEnum,
+  NodeShapeEnum,
+  NodeTypeEnum,
+} from '@/types/enums/common';
 import {
   NodeSizeGetTypeEnum,
   PortGroupEnum,
@@ -27,10 +32,12 @@ import {
   StencilChildNode,
 } from '@/types/interfaces/graph';
 
+import { isAgentFlowSelectableAgent } from '../agentFlow/createdPicker';
 import {
   isFrontendMappedType,
   toBackendNodeType,
 } from '../agentFlow/nodeTypeMapping';
+import { resolveAgentFlowWorkflowNodeDescription } from '../agentFlow/resolveNodePresentation';
 import {
   buildKnowledgeInsertNodeConfigOnAdd,
   mergeNodeConfigAfterAddApi,
@@ -172,6 +179,9 @@ export const useNodeOperations = ({
   changeNode,
   nodeChangeEdge,
 }: UseNodeOperationsParams): UseNodeOperationsReturn => {
+  const flowKind = useFlowKind();
+  const isAgentFlow = flowKind === FlowKindEnum.AgentFlow;
+
   /**
    * 检查节点类型是否为条件分支或意图识别节点
    */
@@ -1173,7 +1183,13 @@ export const useNodeOperations = ({
         _child = {
           name: val.name,
           shape: NodeShapeEnum.General,
-          description: val.description,
+          description:
+            isAgentFlow && type === NodeTypeEnum.Workflow
+              ? resolveAgentFlowWorkflowNodeDescription(
+                  val.name,
+                  val.description,
+                )
+              : val.description,
           type,
           typeId: val.targetId,
         };
@@ -1190,6 +1206,15 @@ export const useNodeOperations = ({
           },
         };
       } else if (val.targetType === AgentComponentTypeEnum.Agent) {
+        if (isAgentFlow && !isAgentFlowSelectableAgent(val)) {
+          message.warning(
+            t(
+              'PC.Pages.AgentFlowParams.agentGroupNotAllowed',
+              '智能体不允许选择 AgentGroup',
+            ),
+          );
+          return;
+        }
         // 智能体节点：弹窗选择当前空间已发布 ChatBot；
         // add 请求顶层 typeId，nodeConfig.agentId 供属性面板与整图保存
         // name/description 缺省回退到智能体节点的类型名/类型描述，保证画布始终有名称与描述
@@ -1218,7 +1243,7 @@ export const useNodeOperations = ({
       clearPendingNodeCreateSession();
       setOpen(false);
     },
-    [addNode, dragEvent, setOpen],
+    [addNode, dragEvent, setOpen, isAgentFlow],
   );
 
   /**

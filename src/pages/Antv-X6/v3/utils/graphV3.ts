@@ -2,6 +2,7 @@ import {
   getHitlOptions,
   isHitlOptionsBranchMode,
 } from '@/pages/Antv-X6/v3/agentFlow/adapters/qaConfigAdapter';
+import { shouldUseFixedSideOutPort } from '@/pages/Antv-X6/v3/agentFlow/handlers/portLayout';
 import {
   DEFAULT_NODE_CONFIG,
   DEFAULT_NODE_CONFIG_MAP,
@@ -28,6 +29,7 @@ import { workflowLogger } from '@/utils/logger';
 import { Cell, Edge, Graph, Node } from '@antv/x6';
 import { message } from 'antd';
 import { isEqual, isPlainObject } from 'lodash';
+import { localPointToClient } from './canvasPosition';
 import { getWidthAndHeight } from './workflowV3';
 // 边界检查并调整子节点位置
 // 调整父节点尺寸以包含所有子节点
@@ -567,6 +569,8 @@ export const generatePortGroupConfig = (
     NodeTypeEnum.Start,
     NodeTypeEnum.End,
   ].includes(data.type); //需要固定位置的节点
+  // AgentFlow 单 out：与 in(left) 对称用 right，按节点 bbox 垂直居中；多分支仍用 absolute
+  const useFixedSideOutPort = fixedPortNode || shouldUseFixedSideOutPort(data);
   const magnetRadius = 50;
   const isLoopNode = data.type === NodeTypeEnum.Loop;
   return {
@@ -583,7 +587,7 @@ export const generatePortGroupConfig = (
     },
     out: {
       position: {
-        name: fixedPortNode ? 'right' : 'absolute',
+        name: useFixedSideOutPort ? 'right' : 'absolute',
       },
       attrs: { circle: { r: basePortSize, magnet: true, magnetRadius } },
       connectable: {
@@ -849,10 +853,8 @@ export const calculateNodePosition = ({
     }
   }
 
-  // position 是图本地坐标，转为客户端坐标后 _doAddNode 可以可靠地识别
-  // 并通过 clientToGraph 转换回正确的图坐标，避免坐标范围误判。
-  const clientPos = graph.localToClient(position.x, position.y);
-  return { x: clientPos.x, y: clientPos.y };
+  // position 为 local 坐标，转为 client 后 _doAddNode 可识别并 clientToGraph 回落点
+  return localPointToClient(graph, position);
 };
 // 获取当前画布可视区域中心点
 const getViewportCenter = (

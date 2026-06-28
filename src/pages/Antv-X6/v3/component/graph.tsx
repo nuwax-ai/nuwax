@@ -33,6 +33,10 @@ import {
   shouldBlockStartOutgoing,
 } from '../flowKind/flowKindRules';
 import {
+  clientPointToLocal,
+  resolveQuickAddAnchorClient,
+} from '../utils/canvasPosition';
+import {
   adjustParentSize,
   getPortGroup,
   handleLoopEdge,
@@ -142,6 +146,9 @@ const initGraph = ({
   });
   // Graph.registerEdge('data-processing-curve', Edge, true);
 
+  /**
+   * 快捷添加节点选择框锚点（见 canvasPosition.resolveQuickAddAnchorClient）。
+   */
   const createNodeAndEdge = (
     graph: Graph,
     event: any,
@@ -150,6 +157,7 @@ const initGraph = ({
     portId: string,
     targetNode?: ChildNode,
     edgeId?: string,
+    anchorEl?: Element | null,
   ) => {
     // AgentFlow：开始节点输出端口有且仅一条连线，已连出时禁止从端口再加节点
     // （edgeId 存在时为在已有连线上插入节点，不会新增出口，放行）
@@ -170,16 +178,15 @@ const initGraph = ({
       );
       return;
     }
-    // const eventTarget =
-    //   event.originalEvent.originalEvent || event.originalEvent;
-    const targetRect = event.target.getBoundingClientRect();
-    const centerX = targetRect.left + targetRect.width / 2;
-    const centerY = targetRect.top + targetRect.height / 2;
-
-    const position = graph.clientToLocal({
-      x: centerX,
-      y: centerY,
+    const anchor = resolveQuickAddAnchorClient({
+      graph,
+      nodeId: String(sourceNode.id),
+      portId,
+      event,
+      magnetEl: anchorEl,
     });
+
+    const position = clientPointToLocal(graph, anchor);
     const dragChild = (child: StencilChildNode) => {
       createNodeByPortOrEdge({
         child,
@@ -212,9 +219,11 @@ const initGraph = ({
       width: 260,
       maskClosable: true,
       getContainer: () => document.body,
+      transitionName: '',
+      maskTransitionName: '',
       style: {
         position: 'fixed',
-        left: centerX,
+        left: anchor.x,
       },
     });
   };
@@ -647,7 +656,15 @@ const initGraph = ({
         return;
       }
     }
-    createNodeAndEdge(graph, e, node.getData(), port);
+    createNodeAndEdge(
+      graph,
+      e,
+      node.getData(),
+      port,
+      undefined,
+      undefined,
+      magnet,
+    );
     graph.select(node);
   });
 

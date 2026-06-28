@@ -25,6 +25,7 @@ import { SpecialPortType } from '../../types/enums';
 import {
   branchPortY,
   extractPortSuffix,
+  hasAgentFlowNodeDescription,
   ROUTE_DEFAULT_PORT_COLOR,
 } from './portLayout';
 
@@ -36,7 +37,9 @@ export const routeDecisionHandler: BranchNodeHandler = {
     const routes: any[] = nc?.intentConfigs || [];
     const defaultIds: number[] = nc?.defaultNextNodeIds || [];
     // 节点带描述行时，分支端口整体随条目下移 descHeight，保持圆点与条目对齐
-    const branchOpts = { hasDescription: !!(data as any).description };
+    const branchOpts = {
+      hasDescription: hasAgentFlowNodeDescription(data),
+    };
 
     const inputPorts = [
       ctx.generatePortConfig({ group: PortGroupEnum.in, idSuffix: 'in' }),

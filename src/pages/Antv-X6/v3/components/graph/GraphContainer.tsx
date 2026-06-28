@@ -35,6 +35,7 @@ import {
   LOOP_INNER_NODE_Y_OFFSET,
   LOOP_START_NODE_X_OFFSET,
 } from '../../constants/loopNodeConstants';
+import { isClientCoordinate as isPointInClientSpace } from '../../utils/canvasPosition';
 import {
   adjustParentSize,
   animateRunningEdges,
@@ -180,13 +181,10 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       // - 如果坐标是通过 getGraphArea 计算的视口中心，则已经是图坐标，不需要转换
       // 更可靠的方式是检查坐标是否在画布容器的客户端范围内
       const container = graphRef.current.container;
-      const containerRect = container?.getBoundingClientRect();
-      const isClientCoordinate =
-        containerRect &&
-        e.x >= containerRect.left &&
-        e.x <= containerRect.right &&
-        e.y >= containerRect.top &&
-        e.y <= containerRect.bottom;
+      const isClientCoordinate = isPointInClientSpace(
+        { x: e.x, y: e.y },
+        container,
+      );
 
       const point = isClientCoordinate
         ? graphRef.current.clientToGraph(e.x, e.y)

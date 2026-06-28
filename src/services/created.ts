@@ -15,9 +15,18 @@ const itemList = {
   [key in AgentComponentTypeEnum]: string;
 };
 
+/** AgentFlow 智能体节点选器：仅查询 ChatBot / General / Custom */
+export const AGENT_FLOW_SELECTABLE_AGENT_TYPES = [
+  'ChatBot',
+  'General',
+  'Custom',
+] as const;
+
 export interface IGetList {
   targetType?: AgentComponentTypeEnum;
   targetSubType?: 'ChatBot' | 'PageApp';
+  /** 智能体子类型过滤，如 AgentFlow 节点选器 */
+  agentTypes?: string[];
   page: number;
   pageSize: number;
   category?: string;

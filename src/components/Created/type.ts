@@ -30,6 +30,10 @@ export interface CreatedProp {
   showMoreMenus?: boolean;
   /** 群组智能体选择器：仅查询当前空间智能体，不过滤 ChatBot 子类型 */
   isGroupAgentPicker?: boolean;
+  /**
+   * AgentFlow 智能体节点选器：请求 agentTypes = ChatBot / General / Custom
+   */
+  isAgentFlowAgentPicker?: boolean;
 }
 
 export type MenuItem = Required<MenuProps>['items'][number];
