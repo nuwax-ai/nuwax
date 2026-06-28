@@ -1,60 +1,14 @@
 import WorkspaceLayout from '@/components/WorkspaceLayout';
-import { createAppDevInitialPayloadKey } from '@/hooks/useAppDevInitialAutoSend';
-import { apiProjectCreate } from '@/services/appDev';
 import classNames from 'classnames';
 import React from 'react';
-import { history, useModel, useParams } from 'umi';
+import { useModel, useParams } from 'umi';
 import GreetingHeader from './components/GreetingHeader';
+import type { SubmitPayload } from './components/PromptBox';
 import PromptBox from './components/PromptBox';
 import styles from './index.less';
+import { createProjectAndNavigate } from './utils/projectCreateStrategy';
 
 const cx = classNames.bind(styles);
-
-import { AgentComponentTypeEnum } from '@/types/enums/agent';
-import { AgentSubTypeEnum } from '@/types/enums/space';
-import type { SubmitPayload } from './components/PromptBox';
-
-/**
- * 项目构建与跳转策略接口定义
- * 用于解耦不同项目类型在新建阶段独特的初始化元数据与路由配置
- */
-interface ProjectStrategy {
-  /** 生成跳转的目标路由 URL */
-  getUrl: (params: {
-    spaceId: number;
-    targetId: number;
-    conversationId: number;
-    tenantConfigInfo?: any;
-  }) => string;
-}
-
-/**
- * 各种项目构建跳转的行为策略映射表
- * 后续若接入新的 Tab 类型，在此处横向扩展配置即可，核心流程完全无需修改
- */
-const PROJECT_STRATEGIES: Partial<
-  Record<AgentComponentTypeEnum, ProjectStrategy>
-> = {
-  // 智能体策略
-  [AgentComponentTypeEnum.Agent]: {
-    getUrl: ({ spaceId, targetId, conversationId }) =>
-      `/space/${spaceId}/conversation-agent?agentId=${targetId}&conversationId=${conversationId}`,
-  },
-  // 网页应用策略
-  [AgentComponentTypeEnum.PageApp]: {
-    getUrl: ({ spaceId, targetId }) => `/space/${spaceId}/app-dev/${targetId}`,
-  },
-  // 技能策略
-  [AgentComponentTypeEnum.Skill]: {
-    getUrl: ({ spaceId, targetId, conversationId, tenantConfigInfo }) =>
-      `/space/${spaceId}/skill-details-conversation/${targetId}?agentId=${tenantConfigInfo?.skillDevAgentId}&conversationId=${conversationId}`,
-  },
-  // 插件策略
-  [AgentComponentTypeEnum.Plugin]: {
-    getUrl: ({ spaceId, targetId, conversationId }) =>
-      `/space/${spaceId}/plugin/${targetId}/cloud-tool?conversationId=${conversationId}`,
-  },
-};
 
 const SpaceCreateProject: React.FC = () => {
   const params = useParams();
@@ -62,12 +16,8 @@ const SpaceCreateProject: React.FC = () => {
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
   const { setContext } = useModel('pageHandoffContext');
 
-  /**
-   * 处理新建项目提交逻辑
-   * 基于策略模式，统一控制新建流、AI 元数据初始化以及路由跳转
-   */
   const handleCreateSubmit = async ({
-    type: targetType,
+    type,
     subType,
     prompt,
     files,
@@ -77,61 +27,22 @@ const SpaceCreateProject: React.FC = () => {
     computerId,
     agentMode,
   }: SubmitPayload) => {
-    // 1. 匹配对应策略，未配置的类型直接拦截返回
-    const strategy = PROJECT_STRATEGIES[targetType];
-
-    if (!strategy) {
-      return;
-    }
-
     try {
-      // 2. 调用 API 创建基础项目记录以获取 ID
-      // Flow 子类型用专门的 targetType，后端按此区分创建逻辑
-      const flowTargetType =
-        subType === AgentSubTypeEnum.Flow ? 'AgentFlow' : targetType;
-      const res = await apiProjectCreate({
-        spaceId,
-        targetType: flowTargetType,
-        subType,
-      });
-      const { targetId, conversationId } = res.data;
-
-      // 3. 针对网页应用类型额外设置初始 Context
-      if (targetType === AgentComponentTypeEnum.PageApp) {
-        setContext(createAppDevInitialPayloadKey(targetId), {
-          message: prompt,
+      await createProjectAndNavigate({
+        payload: {
+          type,
+          subType,
+          prompt,
           files,
           skillIds,
           modelId,
-          infos: tools,
-          selectedComputerId: computerId,
+          tools,
+          computerId,
           agentMode,
-        });
-      }
-
-      // 4. 调用策略计算出对应的路由 URL
-      const url = strategy.getUrl({
+        },
         spaceId,
-        targetId,
-        conversationId,
         tenantConfigInfo,
-      });
-
-      // AgentFlow 子类型跳转到智能体编排页面（与普通智能体同路由，EditAgent 按 subType 渲染画布）
-      const finalUrl =
-        subType === AgentSubTypeEnum.Flow
-          ? `/space/${spaceId}/agent/${targetId}`
-          : url;
-
-      // 5. 携带初始状态跳转到工作台详情会话中
-      history.push(finalUrl, {
-        message: prompt,
-        files,
-        skillIds,
-        modelId,
-        infos: tools,
-        selectedComputerId: computerId,
-        agentMode,
+        setContext,
       });
     } catch (error: any) {
       console.error('Failed to create project:', error);
@@ -141,10 +52,7 @@ const SpaceCreateProject: React.FC = () => {
   return (
     <WorkspaceLayout>
       <div className={cx(styles['create-project-wrapper'])}>
-        {/* Dynamic User Greetings */}
         <GreetingHeader />
-
-        {/* Modular Prompt Box */}
         <PromptBox onSubmit={handleCreateSubmit} />
       </div>
     </WorkspaceLayout>

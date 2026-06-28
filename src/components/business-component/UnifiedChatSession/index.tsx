@@ -73,6 +73,9 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
   onComputerSelect,
 
   showScrollBtn = false,
+  allowAutoScrollRef,
+  scrollTimeoutRef,
+  setShowScrollBtn,
   renderMessageItem,
   renderEmptyState,
   enableMention = true,
@@ -112,6 +115,9 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
     isLoading,
     loadingMore,
     externalMessageViewRef,
+    externalAllowAutoScrollRef: allowAutoScrollRef,
+    externalScrollTimeoutRef: scrollTimeoutRef,
+    onScrollBtnVisibleChange: setShowScrollBtn,
     showScrollBtn,
   });
 
