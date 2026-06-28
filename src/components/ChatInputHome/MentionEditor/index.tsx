@@ -333,6 +333,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
       autoFocus = true,
       disabled = false,
       className,
+      inlinePrefixWidth = 0,
       onMentionSelect,
       enableSubscription = false,
       onUnsubscribedSkillSelect,
@@ -1384,10 +1385,13 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
           onCompositionStart={handleCompositionStart}
           /** 输入法组合结束事件 */
           onCompositionEnd={handleCompositionEnd}
-          style={{
-            minHeight: `${minHeight}px`,
-            maxHeight: `${maxHeight}px`,
-          }}
+          style={
+            {
+              minHeight: `${minHeight}px`,
+              maxHeight: `${maxHeight}px`,
+              '--mention-inline-prefix-offset': `${inlinePrefixWidth}px`,
+            } as React.CSSProperties
+          }
           data-placeholder={placeholderText}
           suppressContentEditableWarning
         />

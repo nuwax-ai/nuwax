@@ -160,6 +160,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Components.ChatInputHomeMentionPopup.tabAll": "全て",
   "PC.Components.ChatInputHomeMentionPopup.tabFavorite": "お気に入り",
   "PC.Components.ChatInputHomeMentionPopup.tabRecent": "最近の",
+  "PC.Components.ChatInputHomeSpaceSelector.noAvailableSpace": "利用可能なスペースはありません",
   "PC.Components.ChatTitleActions.collect": "お気に入り",
   "PC.Components.ChatTitleActions.collected": "お気に入りに追加されました",
   "PC.Components.ChatTitleActions.collectFailed": "お気に入りに追加できませんでした",
