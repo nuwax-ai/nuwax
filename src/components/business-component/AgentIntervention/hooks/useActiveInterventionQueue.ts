@@ -58,25 +58,34 @@ export function useActiveInterventionQueue(
       (a, b) => (a.index ?? 0) - (b.index ?? 0),
     );
 
-    // 仅渲染「最新一条消息」上的待审批项：一旦最新消息不再是审批类（来了新的普通消息），
-    // queueItems 即为空，DockPanel 关闭。用「列表末尾元素」判定最新，而非 index——
-    // 流式恢复/发送时的 assistant 占位消息没有 index，按 index 排序会被排到队首导致误判。
-    const rawList = messageList ?? [];
-    const latestMessage = rawList[rawList.length - 1];
-    const latestMessageKey = latestMessage
-      ? String(latestMessage.id ?? latestMessage.index)
-      : null;
+    // 当前焦点 executeId：取【最新一条消息】processingList 末尾（最新产生）的 executeId。
+    // agent 顺序执行，最新 processing 即当前焦点；更早 executeId 的审批已过去，应关闭其卡片。
+    // 一个 turn 可能有多个 executeId（多个工具调用），各自独立判断，互不影响。
+    let focusExecuteId: string | undefined;
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const list = messages[i].processingList;
+      if (list?.length) {
+        for (let j = list.length - 1; j >= 0; j--) {
+          if (list[j].executeId) {
+            focusExecuteId = list[j].executeId;
+            break;
+          }
+        }
+      }
+      if (focusExecuteId) break;
+    }
+
+    // 审批是否过期：有 focusExecuteId 时，自身 executeId 非空且不匹配的算过期（关闭该卡）；
+    // 自身 executeId 为空（历史/事件未带）时保守视为不过期，避免误关。
+    const isExpired = (executeId: string | undefined) =>
+      !!focusExecuteId && !!executeId && executeId !== focusExecuteId;
 
     messages.forEach((message) => {
-      // 仅处理最新一条消息：旧消息上的残留 pending 审批不再顶住 DockPanel
-      if (
-        latestMessageKey !== null &&
-        String(message.id ?? message.index) !== latestMessageKey
-      ) {
-        return;
-      }
       message.acpPermissionInteractions?.forEach((interaction) => {
         if (!isActiveResponseStatus(interaction.responseStatus)) {
+          return;
+        }
+        if (isExpired(interaction.executeId)) {
           return;
         }
         const toolCall = interaction.intervention.acp.request.toolCall;
@@ -91,19 +100,15 @@ export function useActiveInterventionQueue(
     });
 
     messages.forEach((message) => {
-      // 仅处理最新一条消息：旧消息上的残留 pending 审批不再顶住 DockPanel
-      if (
-        latestMessageKey !== null &&
-        String(message.id ?? message.index) !== latestMessageKey
-      ) {
-        return;
-      }
       const messageId = String(message.id ?? message.index);
       const messageIndex = message.index ?? 0;
 
       message.acpPermissionInteractions?.forEach((interaction) => {
         if (!isActiveResponseStatus(interaction.responseStatus)) {
           return;
+        }
+        if (isExpired(interaction.executeId)) {
+          return; // 该 executeId 已过去，关闭其审批卡
         }
         const sortKey =
           interaction.triggeredAt ??
@@ -124,6 +129,9 @@ export function useActiveInterventionQueue(
         }
         if (hasMcpAskResumeMessage(messages, interaction)) {
           return;
+        }
+        if (isExpired(interaction.executeId)) {
+          return; // 该 executeId 已过去，关闭其审批卡
         }
         if (
           permissionPendingToolCallIds.has(interaction.toolCallId) ||
