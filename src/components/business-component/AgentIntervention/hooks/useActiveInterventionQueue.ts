@@ -1,3 +1,4 @@
+import { MessageStatusEnum } from '@/types/enums/common';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import { useMemo } from 'react';
 import type { AcpPermissionInteraction } from '../types/acpIntervention';
@@ -67,6 +68,18 @@ export function useActiveInterventionQueue(
     const latestMessageKey = latestMessage
       ? String(latestMessage.id ?? latestMessage.index)
       : null;
+
+    // 会话已结束(Complete/Error/Stopped)时不显示审批——审批已 resolve 或失效。
+    // 跨页签：别的页签审批后会话结束，本页签 sub 收到 end_turn 使消息变 Complete，
+    // 审批应随之关闭，避免一直显示已失效的卡片。
+    if (
+      latestMessage &&
+      (latestMessage.status === MessageStatusEnum.Complete ||
+        latestMessage.status === MessageStatusEnum.Error ||
+        latestMessage.status === MessageStatusEnum.Stopped)
+    ) {
+      return [];
+    }
 
     // 当前焦点 executeId：取最新消息 processingList 末尾（最新产生）的 executeId。
     // agent 顺序执行，最新 processing 即当前焦点；更早 executeId 的审批已过去，应关闭其卡片。
