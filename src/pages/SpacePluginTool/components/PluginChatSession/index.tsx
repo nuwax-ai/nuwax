@@ -206,6 +206,7 @@ const PluginChatSession: React.FC<PluginChatSessionProps> = ({
         isConversationActive ||
         conversationInfo?.taskStatus === TaskStatus.EXECUTING
       }
+      isLocallyStreaming={isConversationActive}
       messageBottomMode="chat"
       loadingSuggest={false}
       chatSuggestList={chatSuggestList as string[]}

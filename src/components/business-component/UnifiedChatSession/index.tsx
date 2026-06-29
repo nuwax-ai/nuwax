@@ -42,6 +42,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
   loadingMore = false,
   isMoreMessage = false,
   isConversationActive = false,
+  isLocallyStreaming,
   messageBottomMode = 'home',
   showDebug,
   loadingSuggest = false,
@@ -139,7 +140,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
   useConversationStreamResume({
     conversationId,
     taskStatus: conversationInfo?.taskStatus,
-    isLocallyStreaming: isConversationActive,
+    isLocallyStreaming: isLocallyStreaming ?? isConversationActive,
     messageList,
     resumeStream: onResumeConversationStream,
     abortSub: onAbortResumeStream,

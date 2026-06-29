@@ -108,6 +108,7 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
           isConversationActive ||
           conversationInfo?.taskStatus === TaskStatus.EXECUTING
         }
+        isLocallyStreaming={isConversationActive}
         messageBottomMode="chat"
         showDebug={false}
         chatSuggestList={chatSuggestList}

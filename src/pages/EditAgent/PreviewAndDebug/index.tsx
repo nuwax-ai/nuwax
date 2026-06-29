@@ -486,6 +486,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
                 isConversationActive ||
                 conversationInfo?.taskStatus === TaskStatus.EXECUTING
               }
+              isLocallyStreaming={isConversationActive}
               messageBottomMode="chat"
               loadingSuggest={loadingSuggest}
               chatSuggestList={chatSuggestList}

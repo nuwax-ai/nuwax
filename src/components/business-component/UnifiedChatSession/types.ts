@@ -41,6 +41,12 @@ export interface UnifiedChatSessionProps {
    * 与 showTaskExecutingWait 分离：后者仅 taskStatus=EXECUTING 且无流式消息时展示横幅。
    */
   isConversationActive?: boolean;
+  /**
+   * 本地是否正在通过 SSE 发送/接收（model 原始 isConversationActive，【不】含「后台 taskStatus===EXECUTING」）。
+   * 供流式恢复 hook 判断「本地是否在驱动输出」——若混入 taskStatus，EXECUTING 会话会被误判为
+   * 本地流式中，导致既不轮询也不订阅 sub（续不上）。未传时回退到 isConversationActive。
+   */
+  isLocallyStreaming?: boolean;
   messageBottomMode?: 'none' | 'home' | 'chat'; // 消息底部操作栏模式：none | home | chat
   showDebug?: boolean;
   loadingSuggest?: boolean; // 会话建议加载状态

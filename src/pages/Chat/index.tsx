@@ -1002,6 +1002,8 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     isConversationActive:
       isConversationActive ||
       conversationInfo?.taskStatus === TaskStatus.EXECUTING,
+    // 本地是否正在 SSE 发送/接收（纯，不含后台 EXECUTING），供流式恢复 hook 使用
+    isLocallyStreaming: isConversationActive,
     // 会话流式恢复(sub)：刷新页面/新开标签时重建 EXECUTING 会话的流式输出
     onResumeConversationStream: resumeConversationStream,
     onAbortResumeStream: abortResumeStream,
