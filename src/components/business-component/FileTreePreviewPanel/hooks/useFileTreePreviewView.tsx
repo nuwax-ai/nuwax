@@ -8,6 +8,7 @@ import {
   mergeGitStatusFileIds,
 } from '@/components/business-component/FileTreeGitSourcePanel/utils/gitStatusUtils';
 import CodeViewer from '@/components/CodeViewer';
+import Loading from '@/components/custom/Loading';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { ImageViewer } from '@/pages/AppDev/components';
 import { dict } from '@/services/i18nRuntime';
@@ -235,6 +236,11 @@ export function useFileTreePreviewView(
 
   // 备份文件列表，用于判断文件列表是否发生变化
   const filesRef = useRef<FileNode[]>([]);
+  /** TaskResult 等触发的自动选中：文件树刷新完成前暂存，避免 trigger 被过早消费 */
+  const pendingTaskAgentAutoSelectRef = useRef<{
+    fileId: string;
+    trigger?: number | string;
+  } | null>(null);
 
   useEffect(() => {
     filesRef.current = files;
@@ -695,88 +701,135 @@ export function useFileTreePreviewView(
     [handleFileSelectInternal, clearTaskAgentSelectedFileId],
   );
 
-  // 监听 taskAgentSelectedFileId 和 taskAgentSelectTrigger 的变化，执行自动选择
-  // 注意：不依赖 files，避免 files 更新时覆盖用户选择
+  /**
+   * 监听 taskAgentSelectedFileId / taskAgentSelectTrigger，自动定位并打开消息中的目标文件。
+   *
+   * 典型入口：TaskResult、Markdown 内联文件链接点击。
+   * 调用方通常会先 openPreviewView({ forceRefresh: true }) 拉取最新文件树，
+   * 再设置 fileId + trigger；本 effect 负责在树就绪后完成选中，并避免重复请求文件列表。
+   */
   useEffect(() => {
-    // 如果 taskAgentSelectedFileId 被清空，重置记录的值
+    /** 判断目标 fileId 是否已在当前文件树中（含模糊匹配，兼容路径差异） */
+    const isFileInTree = (fileId: string, tree: FileNode[]) => {
+      if (!fileId || !tree?.length) {
+        return false;
+      }
+      if (findFileNode(fileId, tree)) {
+        return true;
+      }
+      if (fileId.includes('.')) {
+        return Boolean(findBestMatchingFileNode(fileId, tree));
+      }
+      return false;
+    };
+
+    /** 执行自动选中，并同步 prev ref，避免同一 trigger 重复处理 */
+    const applyAutoSelect = (fileId: string, tree: FileNode[]) => {
+      void handleFileSelectInternal(fileId);
+      prevTaskAgentSelectedFileIdRef.current = fileId;
+      if (taskAgentSelectTrigger !== undefined) {
+        prevTaskAgentSelectTriggerRef.current = taskAgentSelectTrigger;
+      }
+      filesRef.current = tree;
+      pendingTaskAgentAutoSelectRef.current = null;
+    };
+
+    // 外部清空选中目标时，重置所有自动选择相关状态
     if (!taskAgentSelectedFileId) {
       prevTaskAgentSelectedFileIdRef.current = '';
       prevTaskAgentSelectTriggerRef.current = undefined;
       userSelectedFileRef.current = null;
+      pendingTaskAgentAutoSelectRef.current = null;
       return;
     }
 
-    // 检查 files 是否已准备好
-    if (!files || files.length === 0) {
-      // files 还未准备好，等待下次更新
-      return;
-    }
-
-    // 检查是否需要执行选择（避免重复选择）
-    const hasTriggerChanged =
-      taskAgentSelectTrigger !== undefined
-        ? taskAgentSelectTrigger !== prevTaskAgentSelectTriggerRef.current
-        : taskAgentSelectedFileId !== prevTaskAgentSelectedFileIdRef.current;
-
-    // 如果触发标志或文件ID没有变化，不执行选择
-    if (!hasTriggerChanged) {
-      /**
-       * 如果 taskAgentSelectedFileId 存在，且 prevTaskAgentSelectedFileIdRef.current 为空，则表示首次进入技能页面，默认选择该文件
-       *
-       * 注意：必须同时检查 !prevTaskAgentSelectedFileIdRef.current，避免在文件ID没有变化时重复执行
-       * 如果注释掉这个条件，会导致：
-       * 1. handleFileSelectInternal 可能触发 handleRefreshFileList()，更新 files， 此逻辑已删除
-       * 2. files 更新导致 useEffect 重新执行
-       * 3. 由于 hasTriggerChanged 仍为 false，又会进入这个分支
-       * 4. 形成无限循环
-       * 5、（很重要）存在这样一种情况，先更新了taskAgentSelectTrigger，但是此时文件树数据还未更新，导致此处直接return，导致文件树数据更新后，无法自动选择文件
-       * 而且只能通过判断长度来判断文件列表是否发生变化，因为文件列表中的文件节点可能发生变化，但是文件列表的长度不会发生变化
-       */
-      if (
-        (taskAgentSelectedFileId && !prevTaskAgentSelectedFileIdRef.current) ||
-        filesRef.current?.length !== files?.length
-      ) {
-        prevTaskAgentSelectedFileIdRef.current = taskAgentSelectedFileId;
-        filesRef.current = files;
-        handleFileSelectInternal(taskAgentSelectedFileId);
-      }
-      return;
-    }
-
-    // 如果提供了 taskAgentSelectTrigger 且它变化了，总是执行（允许重复点击同一文件刷新）
-    // 如果没有提供 taskAgentSelectTrigger，则检查用户是否选择了其他文件
+    // 用户重复点击同一文件时，仅靠 fileId 无法触发 effect，需配合 trigger 时间戳
     const isTriggerUpdate =
       taskAgentSelectTrigger !== undefined &&
       taskAgentSelectTrigger !== prevTaskAgentSelectTriggerRef.current;
 
-    // 如果不是触发标志更新，且用户主动选择了其他文件，则不执行自动选择
-    // 这样可以避免用户点击文件树后，因为 files 更新而重新触发 taskAgentSelectedFileId 的选择
-    if (
-      !isTriggerUpdate &&
-      userSelectedFileRef.current &&
-      userSelectedFileRef.current !== taskAgentSelectedFileId
-    ) {
-      // 用户主动选择了其他文件，且不是触发标志更新，不清除 userSelectedFileRef，保持用户的选择
+    const hasSelectionChanged =
+      taskAgentSelectedFileId !== prevTaskAgentSelectedFileIdRef.current;
+
+    const pending = pendingTaskAgentAutoSelectRef.current;
+    /** 上次刷新后仍待选中的同一目标（files 更新后会再次进入本 effect） */
+    const isPendingRetry =
+      pending?.fileId === taskAgentSelectedFileId &&
+      (pending.trigger === undefined ||
+        pending.trigger === taskAgentSelectTrigger);
+
+    const isFileTreeFetchInFlight =
+      Boolean(fileTreeDataLoading) || isRefreshingFileTreeRef.current;
+    /** 父级已拿到 flat 列表，本地 files 可能尚在 originalFiles → tree 的转换中 */
+    const hasFetchedOriginalFiles = Boolean(originalFiles?.length);
+
+    /**
+     * 按需刷新文件树，避免与 openPreviewView.forceRefresh 重复调用同一接口。
+     * - 正在加载 / 刷新中：跳过
+     * - originalFiles 已有数据：等待 files 同步后再选中，不再二次请求
+     */
+    const requestFileTreeRefreshIfNeeded = () => {
+      if (isFileTreeFetchInFlight || hasFetchedOriginalFiles) {
+        return;
+      }
+      void handleRefreshFileList();
+    };
+
+    // 本地树尚未构建：记录 pending，必要时触发一次刷新；files 更新后依赖项变化会重入
+    if (!files?.length) {
+      if (isTriggerUpdate || isPendingRetry || hasSelectionChanged) {
+        pendingTaskAgentAutoSelectRef.current = {
+          fileId: taskAgentSelectedFileId,
+          trigger: taskAgentSelectTrigger,
+        };
+        requestFileTreeRefreshIfNeeded();
+      }
       return;
     }
 
-    // 清除用户选择标记，因为这是通过 taskAgentSelectedFileId 触发的
-    userSelectedFileRef.current = null;
-    prevTaskAgentSelectedFileIdRef.current = taskAgentSelectedFileId;
-    if (taskAgentSelectTrigger !== undefined) {
-      prevTaskAgentSelectTriggerRef.current = taskAgentSelectTrigger;
+    const shouldAutoSelect =
+      isTriggerUpdate ||
+      hasSelectionChanged ||
+      isPendingRetry ||
+      (taskAgentSelectedFileId && !prevTaskAgentSelectedFileIdRef.current) ||
+      filesRef.current?.length !== files.length;
+
+    if (!shouldAutoSelect) {
+      return;
     }
 
-    // 备份文件列表，用于判断文件列表是否发生变化
-    filesRef.current = files;
+    // 用户已在树中手动选了其他文件，且非本次 trigger 驱动时，不覆盖用户选择
+    if (
+      !isTriggerUpdate &&
+      !isPendingRetry &&
+      userSelectedFileRef.current &&
+      userSelectedFileRef.current !== taskAgentSelectedFileId
+    ) {
+      return;
+    }
 
-    // 使用内部函数，不设置用户选择标记
-    handleFileSelectInternal(taskAgentSelectedFileId);
+    userSelectedFileRef.current = null;
+
+    pendingTaskAgentAutoSelectRef.current = {
+      fileId: taskAgentSelectedFileId,
+      trigger: taskAgentSelectTrigger,
+    };
+
+    if (isFileInTree(taskAgentSelectedFileId, files)) {
+      applyAutoSelect(taskAgentSelectedFileId, files);
+      return;
+    }
+
+    // 目标不在当前树中（例如新产出文件）：尝试刷新后再选
+    requestFileTreeRefreshIfNeeded();
   }, [
     taskAgentSelectedFileId,
     taskAgentSelectTrigger,
     handleFileSelectInternal,
+    handleRefreshFileList,
     files,
+    fileTreeDataLoading,
+    originalFiles,
   ]);
 
   useEffect(() => {
@@ -1612,6 +1665,14 @@ export function useFileTreePreviewView(
    * 根据文件类型渲染不同的预览组件
    */
   const renderContent = () => {
+    const isFileTreeLoading =
+      Boolean(fileTreeDataLoading) || isRefreshingFileTree;
+
+    // 文件树为空且正在加载/刷新时，展示 loading
+    if (!files?.length && isFileTreeLoading) {
+      return <Loading className="h-full" />;
+    }
+
     // 如果文件列表为空，则显示空状态
     if (!files?.length) {
       return (
@@ -1848,6 +1909,8 @@ export function useFileTreePreviewView(
       targetId,
       readOnly,
       files,
+      fileTreeDataLoading,
+      isRefreshingFileTree,
       taskAgentSelectedFileId,
       selectedFileNode,
       selectedFileId,
