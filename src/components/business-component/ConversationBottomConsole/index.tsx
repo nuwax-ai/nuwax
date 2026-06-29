@@ -164,9 +164,12 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
   const [isTerminalReconnecting, setIsTerminalReconnecting] =
     useState<boolean>(false);
 
+  /** 是否需要先启动服务再连接终端（由 conversationId 决定） */
+  const requiresServiceStart = Boolean(conversationId);
+
   /**
    * 容器启动状态机：
-   * - idle：未传 conversationId，无需启动容器，终端在有 wsUrl 时直接连接
+   * - idle：未启动 / 未传 conversationId（后者表示无需容器，终端可直接连 WS）
    * - starting：apiEnsurePod 调用中，终端等待
    * - running：容器已就绪，终端可连接，保活轮询中
    * - error：容器启动或保活失败，显示重试按钮，终端不可连接
@@ -335,15 +338,18 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
 
   /**
    * 终端连接开关（完全由内部容器状态控制）：
-   * - idle：未传 conversationId，无需容器，终端在有 wsUrl 时直接连接
-   * - running：容器就绪，终端可连接
-   * - starting / error：容器未就绪，终端不可连接
+   * - 未传 conversationId：无需启动服务，有 wsUrl 且面板可见时直接连接
+   * - 传入 conversationId：仅 containerStatus === 'running' 后连接
+   * - starting / error：服务未就绪，终端不可连接
    * 面板折叠或整体隐藏时不建立连接，避免在 display:none 容器内 init ttyd 导致无法输入
    * 例外：用户已首次展开过终端面板后，即使折叠也保持连接不断
    * 终端重连失败展示重试面板时暂停自动连接
    */
+  const isServiceReadyForTerminal = requiresServiceStart
+    ? containerStatus === 'running'
+    : true;
   const terminalAutoConnect =
-    (containerStatus === 'idle' || containerStatus === 'running') &&
+    isServiceReadyForTerminal &&
     visible &&
     !showTerminalReconnect &&
     (layoutMode !== 'collapsed' || terminalActivatedRef.current);
@@ -389,7 +395,7 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
       !wsUrl ||
       !visible ||
       layoutMode === 'collapsed' ||
-      (conversationId && containerStatus !== 'running')
+      (requiresServiceStart && containerStatus !== 'running')
     ) {
       return;
     }
@@ -402,7 +408,7 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
   }, [
     activeTab,
     containerStatus,
-    conversationId,
+    requiresServiceStart,
     layoutMode,
     syncTerminalLayoutAndFocus,
     wsUrl,
