@@ -20,7 +20,7 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { App, Button } from 'antd';
+import { App, Button, Tabs } from 'antd';
 import React, {
   useCallback,
   useEffect,
@@ -79,6 +79,21 @@ const RecommendListPage: React.FC<RecommendListPageProps> = ({
   );
 
   const isChatboxPage = config.recType === DisplayRecTypeEnum.ChatBoxNav;
+  const isOfficialPage = config.recType === DisplayRecTypeEnum.Official;
+
+  /** 官方推荐：当前目标类型 Tab */
+  const [activeTargetType, setActiveTargetType] =
+    useState<DisplayRecommendTargetTypeEnum>(config.targetTypes[0]);
+
+  /** 官方推荐 Tab 选项 */
+  const officialTabItems = useMemo(
+    () =>
+      config.targetTypes.map((type) => ({
+        key: type,
+        label: getSquareTargetTypeTitle(type),
+      })),
+    [config.targetTypes],
+  );
 
   /** 新增时的默认排序值 */
   const defaultSort = useMemo(() => {
@@ -100,10 +115,11 @@ const RecommendListPage: React.FC<RecommendListPageProps> = ({
     actionRef.current?.reload();
   }, []);
 
-  /** 切换推荐类型时重置列表 */
+  /** 切换推荐类型时重置列表与 Tab */
   useEffect(() => {
     setRecords([]);
-  }, [config.recType]);
+    setActiveTargetType(config.targetTypes[0]);
+  }, [config.recType, config.targetTypes]);
 
   /** 监听页面状态变化 */
   useEffect(() => {
@@ -129,6 +145,7 @@ const RecommendListPage: React.FC<RecommendListPageProps> = ({
         pageSize: LIST_PAGE_SIZE,
         name: params.label || params.name,
         recType: config.recType,
+        ...(isOfficialPage ? { targetType: activeTargetType } : {}),
       });
 
       if (res?.code !== SUCCESS_CODE) {
@@ -143,7 +160,7 @@ const RecommendListPage: React.FC<RecommendListPageProps> = ({
         total: records.length,
       };
     },
-    [config.recType],
+    [activeTargetType, config.recType, isOfficialPage],
   );
 
   /**
@@ -340,27 +357,40 @@ const RecommendListPage: React.FC<RecommendListPageProps> = ({
     }
   };
 
+  /** 打开新增弹窗 */
+  const handleOpenAdd = useCallback(() => {
+    setEditingRecord(null);
+    if (isChatboxPage) {
+      setFormModalOpen(true);
+    } else {
+      setAddModalOpen(true);
+    }
+  }, [isChatboxPage]);
+
+  const addButton = (
+    <Button type="primary" icon={<PlusOutlined />} onClick={handleOpenAdd}>
+      {dict('PC.Pages.SystemRecommendManage.addTitle')}
+    </Button>
+  );
+
   return (
     <WorkspaceLayout
       title={dict(titleKey)}
       hideScroll
-      rightSlot={
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => {
-            setEditingRecord(null);
-            if (isChatboxPage) {
-              setFormModalOpen(true);
-            } else {
-              setAddModalOpen(true);
-            }
-          }}
-        >
-          {dict('PC.Pages.SystemRecommendManage.addTitle')}
-        </Button>
-      }
+      rightSlot={isOfficialPage ? undefined : addButton}
     >
+      {isOfficialPage && (
+        <div key={location.key}>
+          <Tabs
+            activeKey={activeTargetType}
+            items={officialTabItems}
+            tabBarExtraContent={addButton}
+            onChange={(key) =>
+              setActiveTargetType(key as DisplayRecommendTargetTypeEnum)
+            }
+          />
+        </div>
+      )}
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
@@ -372,7 +402,11 @@ const RecommendListPage: React.FC<RecommendListPageProps> = ({
           strategy={verticalListSortingStrategy}
         >
           <XProTable<DisplayRecommendInfo>
-            key={config.recType}
+            key={
+              isOfficialPage
+                ? `${config.recType}-${activeTargetType}`
+                : config.recType
+            }
             actionRef={actionRef}
             rowKey="id"
             columns={columns}
@@ -399,6 +433,7 @@ const RecommendListPage: React.FC<RecommendListPageProps> = ({
           recType={config.recType}
           existingRecords={records}
           defaultSort={defaultSort}
+          defaultTargetType={isOfficialPage ? activeTargetType : undefined}
           onCancel={() => setAddModalOpen(false)}
           onSuccess={reloadTable}
         />

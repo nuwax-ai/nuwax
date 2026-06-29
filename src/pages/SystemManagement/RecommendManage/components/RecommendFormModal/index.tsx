@@ -21,7 +21,6 @@ import {
 } from '../../types';
 import { getChatboxFunctionTypeLabel } from '../../utils/chatboxFunctionTypeLabel';
 import {
-  getFirstAvailableChatboxFunctionType,
   getUsedChatboxSingleInstanceTypes,
   isChatboxFunctionTypeDisabled,
 } from '../../utils/chatboxFunctionTypeRules';
@@ -76,11 +75,7 @@ const RecommendFormModal: React.FC<RecommendFormModalProps> = ({
   /** 功能子类型 */
   const [functionType, setFunctionType] = useState<
     DisplayRecommendFunctionTypeEnum | ''
-  >(
-    () =>
-      RECOMMEND_PAGE_CONFIG_MAP[DisplayRecTypeEnum.ChatBoxNav]
-        .defaultFunctionType || DisplayRecommendFunctionTypeEnum.AgentDev,
-  );
+  >(DisplayRecommendFunctionTypeEnum.Chat);
   /** 已选智能体 */
   const [selectedTarget, setSelectedTarget] =
     useState<SquarePublishedItemInfo | null>(null);
@@ -139,10 +134,10 @@ const RecommendFormModal: React.FC<RecommendFormModalProps> = ({
    * 重置表单（新增模式）
    */
   const resetForm = useCallback(() => {
-    setFunctionType(getFirstAvailableChatboxFunctionType(existingRecords));
+    setFunctionType(DisplayRecommendFunctionTypeEnum.Chat);
     setSelectedTarget(null);
     setIconUrl('');
-  }, [existingRecords]);
+  }, []);
 
   /** 弹窗打开时：编辑回填 / 新增重置 */
   useEffect(() => {

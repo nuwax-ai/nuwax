@@ -1,11 +1,7 @@
-import {
-  CHATBOX_SINGLE_INSTANCE_FUNCTION_TYPES,
-  RECOMMEND_PAGE_CONFIG_MAP,
-} from '../constants';
+import { CHATBOX_SINGLE_INSTANCE_FUNCTION_TYPES } from '../constants';
 import {
   DisplayRecommendFunctionTypeEnum,
   DisplayRecommendInfo,
-  DisplayRecTypeEnum,
 } from '../types';
 
 /**
@@ -49,21 +45,4 @@ export const isChatboxFunctionTypeDisabled = (
     return false;
   }
   return usedTypes.has(type);
-};
-
-/**
- * 获取首个可选的子类型（新增时默认选中）
- */
-export const getFirstAvailableChatboxFunctionType = (
-  records: DisplayRecommendInfo[],
-  excludeRecordId?: number,
-): DisplayRecommendFunctionTypeEnum => {
-  const usedTypes = getUsedChatboxSingleInstanceTypes(records, excludeRecordId);
-  const allTypes =
-    RECOMMEND_PAGE_CONFIG_MAP[DisplayRecTypeEnum.ChatBoxNav].functionTypes ||
-    [];
-  const available = allTypes.find(
-    (type) => !isChatboxFunctionTypeDisabled(type, usedTypes),
-  );
-  return available ?? DisplayRecommendFunctionTypeEnum.Chat;
 };

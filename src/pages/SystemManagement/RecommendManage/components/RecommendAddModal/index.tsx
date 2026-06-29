@@ -70,6 +70,8 @@ export interface RecommendAddModalProps {
     item: SquarePublishedItemInfo,
     targetType: DisplayRecommendTargetTypeEnum,
   ) => void;
+  /** 打开弹窗时默认选中的目标类型 Tab */
+  defaultTargetType?: DisplayRecommendTargetTypeEnum;
 }
 
 /**
@@ -86,6 +88,7 @@ const RecommendAddModal: React.FC<RecommendAddModalProps> = ({
   mode = 'save',
   pickedTargetKeys = [],
   onPick,
+  defaultTargetType,
 }) => {
   const isPickMode = mode === 'pick';
   const pageConfig = RECOMMEND_PAGE_CONFIG_MAP[recType];
@@ -191,14 +194,18 @@ const RecommendAddModal: React.FC<RecommendAddModalProps> = ({
   /** 弹窗打开 / Tab 切换：重置并加载第一页 */
   useEffect(() => {
     if (!open) return;
-    setActiveTargetType(targetTypes[0]);
+    const initialTargetType =
+      defaultTargetType && targetTypes.includes(defaultTargetType)
+        ? defaultTargetType
+        : targetTypes[0];
+    setActiveTargetType(initialTargetType);
     setSearchKw('');
     setList([]);
     setPage(1);
     setTotalPages(0);
     setSessionAddedKeys(new Set());
     addedCountRef.current = 0;
-  }, [open, targetTypes]);
+  }, [open, targetTypes, defaultTargetType]);
 
   useEffect(() => {
     if (!open) return;
