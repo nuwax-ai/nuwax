@@ -41,9 +41,8 @@ const Home: React.FC = () => {
   const [agentDetail, setAgentDetail] = useState<AgentDetailDto>();
   // 通用型智能体模式状态
   const [isTaskAgentMode, setIsTaskAgentMode] = useState<boolean>(false);
-  // 选中的电脑 ID，'remote' 表示远程电脑（默认）
-  const [selectedComputerId, setSelectedComputerId] =
-    useState<string>('remote');
+  // 选中的电脑 ID，'-1' 表示云电脑（默认）
+  const [selectedComputerId, setSelectedComputerId] = useState<string>('-1');
   // 选中的模型 ID
   const [selectedModelId, setSelectedModelId] = useState<number>();
   // 创建智能体会话
@@ -156,6 +155,7 @@ const Home: React.FC = () => {
       files,
       infos: selectedComponentList,
       messageSourceType: 'home' as MessageSourceType,
+      selectedComputerId,
       skillIds,
       modelId: modelId || selectedModelId,
     };
