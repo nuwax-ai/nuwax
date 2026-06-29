@@ -80,8 +80,7 @@ const Home: React.FC = () => {
 
   const [agentDetail, setAgentDetail] = useState<AgentDetailDto>();
   const [isTaskAgentMode, setIsTaskAgentMode] = useState<boolean>(false);
-  const [selectedComputerId, setSelectedComputerId] =
-    useState<string>('remote');
+  const [selectedComputerId, setSelectedComputerId] = useState<string>('-1');
   const [selectedModelId, setSelectedModelId] = useState<number>();
   const [selectedSpaceId, setSelectedSpaceId] = useState<number>();
   const [activeTab, setActiveTab] = useState<string>();
@@ -189,7 +188,7 @@ const Home: React.FC = () => {
   }, [agentDetail?.manualComponents]);
 
   useEffect(() => {
-    setSelectedComputerId(selectedRecommend ? '' : 'remote');
+    setSelectedComputerId(selectedRecommend ? '' : '-1');
     setSelectedModelId(undefined);
     setSelectedSpaceId(undefined);
   }, [selectedRecommend]);
@@ -238,6 +237,7 @@ const Home: React.FC = () => {
       files,
       infos: selectedComponentList,
       messageSourceType: 'home' as MessageSourceType,
+      selectedComputerId,
       skillIds,
       modelId: modelId || selectedModelId,
     });
