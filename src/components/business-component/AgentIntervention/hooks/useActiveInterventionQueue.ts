@@ -58,7 +58,23 @@ export function useActiveInterventionQueue(
       (a, b) => (a.index ?? 0) - (b.index ?? 0),
     );
 
+    // 仅渲染「最新一条消息」上的待审批项：一旦最新消息不再是审批类（来了新的普通消息），
+    // queueItems 即为空，DockPanel 关闭。用「列表末尾元素」判定最新，而非 index——
+    // 流式恢复/发送时的 assistant 占位消息没有 index，按 index 排序会被排到队首导致误判。
+    const rawList = messageList ?? [];
+    const latestMessage = rawList[rawList.length - 1];
+    const latestMessageKey = latestMessage
+      ? String(latestMessage.id ?? latestMessage.index)
+      : null;
+
     messages.forEach((message) => {
+      // 仅处理最新一条消息：旧消息上的残留 pending 审批不再顶住 DockPanel
+      if (
+        latestMessageKey !== null &&
+        String(message.id ?? message.index) !== latestMessageKey
+      ) {
+        return;
+      }
       message.acpPermissionInteractions?.forEach((interaction) => {
         if (!isActiveResponseStatus(interaction.responseStatus)) {
           return;
@@ -75,6 +91,13 @@ export function useActiveInterventionQueue(
     });
 
     messages.forEach((message) => {
+      // 仅处理最新一条消息：旧消息上的残留 pending 审批不再顶住 DockPanel
+      if (
+        latestMessageKey !== null &&
+        String(message.id ?? message.index) !== latestMessageKey
+      ) {
+        return;
+      }
       const messageId = String(message.id ?? message.index);
       const messageIndex = message.index ?? 0;
 

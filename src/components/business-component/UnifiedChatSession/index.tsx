@@ -20,6 +20,7 @@ import type { UploadFileInfo } from '@/types/interfaces/common';
 import type { RoleInfo } from '@/types/interfaces/conversationInfo';
 import ChatContentArea from './components/ChatContentArea';
 import ChatInputHomeIndependent from './components/ChatInputHomeIndependent';
+import { useConversationStreamResume } from './hooks/useConversationStreamResume';
 import { useLoadMoreHistory } from './hooks/useLoadMoreHistory';
 import { useUnifiedChatScroll } from './hooks/useUnifiedChatScroll';
 
@@ -98,6 +99,9 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
   isLoadingOtherInterface,
   conversationInfo,
   interventionHandlers,
+  // 会话流式恢复(sub)
+  onResumeConversationStream,
+  onAbortResumeStream,
 }) => {
   // 滚动管理 Hook
   const {
@@ -128,6 +132,17 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
     isMoreMessage,
     loadingMore,
     onLoadMoreMessage,
+  });
+
+  // 会话流式恢复(sub)：刷新页面 / 新开标签时，重建 EXECUTING 会话的流式输出。
+  // action 未注入（如隔离会话源）时整体不启用。轮询仅标签可见时触发，离开页面自动清轮询 + 断 sub。
+  useConversationStreamResume({
+    conversationId,
+    taskStatus: conversationInfo?.taskStatus,
+    isLocallyStreaming: isConversationActive,
+    messageList,
+    resumeStream: onResumeConversationStream,
+    abortSub: onAbortResumeStream,
   });
 
   const agentModeRef = useRef<AgentMode>('yolo');

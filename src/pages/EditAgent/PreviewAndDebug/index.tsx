@@ -119,6 +119,9 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     // 其它接口加载状态
     isLoadingOtherInterface,
     isConversationActive,
+    // 会话流式恢复(sub)
+    resumeConversationStream,
+    abortResumeStream,
   } = useModel('conversationInfo');
 
   // 获取 chat model 中的页面预览状态
@@ -540,6 +543,9 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
               loadingConversation={loadingConversation}
               isLoadingOtherInterface={isLoadingOtherInterface}
               conversationInfo={conversationInfo}
+              // 会话流式恢复(sub)：刷新页面/新开标签时重建 EXECUTING 会话的流式输出
+              onResumeConversationStream={resumeConversationStream}
+              onAbortResumeStream={abortResumeStream}
             />
           </div>
         </div>

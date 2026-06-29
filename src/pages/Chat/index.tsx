@@ -258,6 +258,9 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     setIsMoreMessage,
     loadingMore,
     handleLoadMoreMessage,
+    // 会话流式恢复(sub)
+    resumeConversationStream,
+    abortResumeStream,
   } = useModel('conversationInfo');
 
   // 页面预览相关状态
@@ -999,6 +1002,9 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     isConversationActive:
       isConversationActive ||
       conversationInfo?.taskStatus === TaskStatus.EXECUTING,
+    // 会话流式恢复(sub)：刷新页面/新开标签时重建 EXECUTING 会话的流式输出
+    onResumeConversationStream: resumeConversationStream,
+    onAbortResumeStream: abortResumeStream,
     loadingSuggest,
     chatSuggestList,
     agentInfo: {

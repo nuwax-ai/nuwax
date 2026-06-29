@@ -227,4 +227,68 @@ describe('useActiveInterventionQueue', () => {
       'mcp_ask',
     ]);
   });
+
+  it('closes the dock when the latest message is no longer an approval', () => {
+    // 旧消息上残留 pending 审批，最新消息为普通文本 → DockPanel 关闭
+    const messageList = [
+      {
+        id: 'assistant-old',
+        index: 1,
+        acpPermissionInteractions: [createAcpPermissionInteraction('pending')],
+      },
+      {
+        id: 'user-new',
+        index: 2,
+        text: '继续聊点别的',
+      },
+    ] as MessageInfo[];
+
+    const { result } = renderHook(() =>
+      useActiveInterventionQueue(messageList),
+    );
+
+    expect(result.current).toHaveLength(0);
+  });
+
+  it('renders the dock only for the latest message carrying a pending approval', () => {
+    // 旧消息与新消息都带 pending 审批，仅渲染最新消息上的那个
+    const messageList = [
+      {
+        id: 'assistant-old',
+        index: 1,
+        acpPermissionInteractions: [createAcpPermissionInteraction('pending')],
+      },
+      {
+        id: 'assistant-new',
+        index: 2,
+        acpPermissionInteractions: [createAcpPermissionInteraction('pending')],
+      },
+    ] as MessageInfo[];
+
+    const { result } = renderHook(() =>
+      useActiveInterventionQueue(messageList),
+    );
+
+    expect(result.current).toHaveLength(1);
+    expect(result.current[0].messageId).toBe('assistant-new');
+  });
+
+  it('closes the dock after the latest approval is answered', () => {
+    // 最新消息的审批已应答(submitted)，不再 pending → DockPanel 关闭
+    const messageList = [
+      {
+        id: 'assistant-new',
+        index: 1,
+        acpPermissionInteractions: [
+          createAcpPermissionInteraction('submitted'),
+        ],
+      },
+    ] as MessageInfo[];
+
+    const { result } = renderHook(() =>
+      useActiveInterventionQueue(messageList),
+    );
+
+    expect(result.current).toHaveLength(0);
+  });
 });

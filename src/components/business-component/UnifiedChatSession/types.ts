@@ -143,4 +143,15 @@ export interface UnifiedChatSessionProps {
    * 未传时默认使用全局 conversationInfo model。
    */
   interventionHandlers?: AgentInterventionHandlersOverride;
+
+  // ===== 会话流式恢复(sub)：刷新页面 / 新开标签时重建 EXECUTING 会话的流式输出 =====
+  // 未注入下列 action 的页面（如隔离会话源）将不启用恢复。
+  /** 订阅 sub 流（model 的 resumeConversationStream） */
+  onResumeConversationStream?: (
+    conversationId: number | string,
+    currentList: MessageInfo[],
+    onClose?: () => void,
+  ) => void;
+  /** 中断 sub 流（model 的 abortResumeStream） */
+  onAbortResumeStream?: () => void;
 }
