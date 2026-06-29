@@ -84,6 +84,10 @@ import { Graph, Node } from '@antv/x6';
 import { FormInstance } from 'antd';
 import isEqual from 'lodash/isEqual';
 
+import {
+  hasAgentFlowNodeDescription,
+  singlePortCenterY,
+} from '../agentFlow/handlers/portLayout';
 import { extensionRegistry } from '../extensions/registry';
 import {
   adjustParentSize,
@@ -337,13 +341,13 @@ const _handleExceptionOutputPort = (
       }),
     ];
   } else if (showExceptionHandle(data) && outputPorts.length >= 1) {
+    const newOffsetY = baseY + itemHeight + NODE_BOTTOM_PADDING_AND_BORDER;
     if (outputPorts.length === 1) {
-      //如果包括异常项 而且只一个输出port，则需要调整port位置
-      outputPorts[outputPorts.length - 1].args.y =
-        (baseY + itemHeight + NODE_BOTTOM_PADDING_AND_BORDER + 1) / 2;
+      // 单 out 端口：按扩展后的节点总高度垂直居中（与 in 侧 left 布局一致）
+      const nodeHeight = newOffsetY + NODE_BOTTOM_PADDING_AND_BORDER;
+      outputPorts[outputPorts.length - 1].args.y = (nodeHeight - 1) / 2 + 1;
     }
-    outputPorts[outputPorts.length - 1].args.offsetY =
-      baseY + itemHeight + NODE_BOTTOM_PADDING_AND_BORDER; //同步offsetY 方便在更新节点高度时使用
+    outputPorts[outputPorts.length - 1].args.offsetY = newOffsetY;
     return outputPorts;
   } else {
     return outputPorts;
@@ -354,14 +358,17 @@ export const generatePorts = (data: ChildNode): PortsConfig => {
   const basePortSize = 3;
   const defaultNodeHeaderHeight = DEFAULT_NODE_CONFIG_MAP.default.defaultHeight;
   const defaultNodeHeaderWidth = getWidthAndHeight(data).width;
+  const centeredPort = singlePortCenterY({
+    hasDescription: hasAgentFlowNodeDescription(data),
+  });
   // 默认端口配置
   const generatePortConfig = ({
     group,
     idSuffix,
     color = PORT_COLOR,
-    yHeight = (defaultNodeHeaderHeight - 1) / 2 + 1,
+    yHeight = centeredPort.yHeight,
     xWidth = idSuffix === 'in' ? 0 : defaultNodeHeaderWidth,
-    offsetY = defaultNodeHeaderHeight - NODE_BOTTOM_PADDING_AND_BORDER,
+    offsetY = centeredPort.offsetY,
     offsetX = xWidth,
   }: PortConfig): outputOrInputPortConfig => {
     return {

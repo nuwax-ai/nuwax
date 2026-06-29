@@ -9,6 +9,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useModel } from 'umi';
 import { normalizeHitlNodeConfig } from '../agentFlow/adapters/qaConfigAdapter';
 import { normalizeLoadedNodes } from '../agentFlow/nodeTypeMapping';
+import { resolveAgentFlowWorkflowNodeDescription } from '../agentFlow/resolveNodePresentation';
 import { workflowProxy } from '../services/workflowProxyV3';
 import { workflowSaveService } from '../services/WorkflowSaveService';
 import { getEdges } from '../utils/graphV3';
@@ -83,6 +84,19 @@ export const useWorkflowLifecycle = ({
             ...node,
             nodeConfig: normalizeHitlNodeConfig(
               node.nodeConfig as Record<string, any>,
+            ),
+          };
+        }
+        if (
+          isAgentFlow &&
+          node.type === NodeTypeEnum.Workflow &&
+          !node.description?.trim()
+        ) {
+          return {
+            ...node,
+            description: resolveAgentFlowWorkflowNodeDescription(
+              node.name,
+              node.description,
             ),
           };
         }

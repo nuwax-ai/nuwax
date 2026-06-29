@@ -127,6 +127,8 @@ export interface ChangeEdgeProps {
   targetId: string;
   sourceNode: ChildNode;
   id?: string;
+  /** 源端口 ID；分支节点（IntentRecognition/QA/RouteDecision/HumanInteraction 等）连线时必传 */
+  sourcePort?: string;
 }
 export interface CreateNodeByPortOrEdgeProps {
   child: StencilChildNode;
@@ -183,7 +185,16 @@ export interface GraphContainerRef {
   // 获取视口中心点（图形坐标）
   getViewportCenterPoint?: () => { x: number; y: number };
   // 新增节点
-  graphAddNode: (e: GraphRect, child: ChildNode) => void;
+  // coordinateSpace：e 的坐标空间。
+  //  - 'model'：e 已是节点模型(local)坐标的左上角（端口/边快捷添加、复制），直接落点，
+  //    不再做 clientToLocal 转换、不做居中。避免用「落点是否在画布容器内」的启发式判断——
+  //    该启发式在落点超出容器边界（如 in 端口向左偏移）或画布平移/缩放时会误判坐标系导致大幅偏移。
+  //  - 'auto'（默认）：保留旧启发式，兼容拖拽落点(client)与视口中心(model 中心)。
+  graphAddNode: (
+    e: GraphRect,
+    child: ChildNode,
+    coordinateSpace?: 'model' | 'auto',
+  ) => void;
   // 修改节点
   graphUpdateNode: (nodeId: string, newData: ChildNode | null) => void;
   // 修改节点通过表单数据
