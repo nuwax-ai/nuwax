@@ -110,6 +110,15 @@ const RecommendListPage: React.FC<RecommendListPageProps> = ({
     [records],
   );
 
+  /**
+   * 表格横向滚动宽度（Ant Design fixed 列要求 scroll.x 为数值）
+   * 排序 72 + 名称 200 + 目标ID 120 + 类型/子类型 120 + 创建/修改 340 + 操作
+   */
+  const tableScrollX = useMemo(() => {
+    const actionWidth = isChatboxPage ? 120 : 80;
+    return 72 + 200 + 120 + 120 + 170 + 170 + actionWidth;
+  }, [isChatboxPage]);
+
   /** 重新加载表格 */
   const reloadTable = useCallback(() => {
     actionRef.current?.reload();
@@ -225,11 +234,13 @@ const RecommendListPage: React.FC<RecommendListPageProps> = ({
         width: 72,
         align: 'center',
         search: false,
+        fixed: 'left',
         render: () => <DragHandle />,
       },
       {
         title: dict('PC.Pages.SystemRecommendManage.colLabel'),
         dataIndex: 'label',
+        width: 200,
         ellipsis: true,
         fieldProps: {
           placeholder: dict('PC.Pages.SystemRecommendManage.searchName'),
@@ -289,9 +300,11 @@ const RecommendListPage: React.FC<RecommendListPageProps> = ({
       },
       {
         title: dict('PC.Pages.SystemRecommendManage.colAction'),
-        valueType: 'option',
-        width: isChatboxPage ? 140 : 80,
+        key: 'action',
+        width: isChatboxPage ? 120 : 80,
         align: 'center',
+        search: false,
+        fixed: 'right',
         render: (_, record) => (
           <TableActions record={record} actions={getActions(record)} />
         ),
@@ -414,6 +427,7 @@ const RecommendListPage: React.FC<RecommendListPageProps> = ({
             dataSource={records}
             pagination={false}
             search={{ labelWidth: 'auto' }}
+            scroll={{ x: tableScrollX }}
             options={false}
             components={{ body: { row: Row } }}
             postData={(data: DisplayRecommendInfo[]) => {
