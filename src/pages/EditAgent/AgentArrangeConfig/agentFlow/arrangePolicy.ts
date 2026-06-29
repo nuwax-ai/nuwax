@@ -21,6 +21,10 @@ const HIDDEN_COMPONENT_TYPES = new Set<AgentComponentTypeEnum>([
 export const isAgentFlowSubType = (subType?: AgentSubTypeEnum): boolean =>
   subType === AgentSubTypeEnum.Flow;
 
+/** 判断是否为 AgentGroup 子类型 */
+export const isAgentGroupSubType = (subType?: AgentSubTypeEnum): boolean =>
+  subType === AgentSubTypeEnum.Group;
+
 export interface AgentFlowArrangePolicy {
   /** 当前是否为 AgentFlow */
   isFlow: boolean;
@@ -28,13 +32,15 @@ export interface AgentFlowArrangePolicy {
   showToolsSection: boolean;
   /** 是否展示整块「知识」区 */
   showKnowledgeSection: boolean;
-  /** 是否展示整块「技能」区 */
+  /** 是否展示整块「技能」区（AgentFlow / AgentGroup 不展示） */
   showSkillSection: boolean;
+  /** 是否展示整块「组员」区（仅 AgentGroup） */
+  showGroupMembersSection: boolean;
   /** 是否展示「子智能体」折叠项 */
   showSubAgent: boolean;
   /** 是否展示「长期记忆」折叠项 */
   showLongMemory: boolean;
-  /** 是否展示「允许用户选择自有模型」 */
+  /** 是否展示「允许用户选择自有模型」（AgentFlow / AgentGroup 不展示） */
   showAllowOtherModel: boolean;
   /** 是否展示「Hook 设置」 */
   showHook: boolean;
@@ -59,15 +65,17 @@ export const getAgentFlowArrangePolicy = (
   subType?: AgentSubTypeEnum,
 ): AgentFlowArrangePolicy => {
   const isFlow = isAgentFlowSubType(subType);
+  const isGroup = isAgentGroupSubType(subType);
 
   return {
     isFlow,
     showToolsSection: !isFlow,
     showKnowledgeSection: !isFlow,
-    showSkillSection: !isFlow,
+    showSkillSection: !isFlow && !isGroup,
+    showGroupMembersSection: isGroup,
     showSubAgent: !isFlow,
     showLongMemory: !isFlow,
-    showAllowOtherModel: !isFlow,
+    showAllowOtherModel: !isFlow && !isGroup,
     showHook: !isFlow,
     showWorkflowTool: !isFlow,
     showDataTableSection: (isGroupSubType) => !isGroupSubType && !isFlow,

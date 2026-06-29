@@ -37,6 +37,7 @@ import {
   AgentComponentTypeEnum,
   HideDesktopEnum,
   MessageTypeEnum,
+  TaskStatus,
 } from '@/types/enums/agent';
 import { CreateUpdateModeEnum, PublishStatusEnum } from '@/types/enums/common';
 import { ModelTypeEnum } from '@/types/enums/modelConfig';
@@ -233,6 +234,7 @@ const ConversationAgent: React.FC = () => {
     resetInit,
     restartVncPod,
     restartAgent,
+    isConversationActive,
   } = useModel('conversationInfo');
 
   /** 关闭远程智能体桌面（切换标签/文件等预览操作时调用） */
@@ -1298,6 +1300,13 @@ const ConversationAgent: React.FC = () => {
   // ==================================== 渲染组件元素 ====================================
 
   /** 「预览」页签：调试对话 */
+  const shouldDisablePreviewChatInput = useMemo(
+    () =>
+      isConversationActive ||
+      conversationInfo?.taskStatus === TaskStatus.EXECUTING,
+    [isConversationActive, conversationInfo?.taskStatus],
+  );
+
   const previewDebugChatPanel = useMemo(
     () => (
       <ConversationAgentChatSession
@@ -1306,9 +1315,15 @@ const ConversationAgent: React.FC = () => {
         onAgentConfigInfo={setAgentConfigInfo}
         selectedComputerId={finalSelectedComputerId}
         onChangeSelectedComputerId={setSelectedComputerId}
+        chatInputDisabled={shouldDisablePreviewChatInput}
       />
     ),
-    [agentId, agentConfigInfo, finalSelectedComputerId],
+    [
+      agentId,
+      agentConfigInfo,
+      finalSelectedComputerId,
+      shouldDisablePreviewChatInput,
+    ],
   );
 
   /** 「版本控制」页签：Git 提交记录 */

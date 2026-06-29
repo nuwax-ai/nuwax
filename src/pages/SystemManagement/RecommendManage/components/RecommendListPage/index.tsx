@@ -20,7 +20,7 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { App, Button } from 'antd';
+import { App, Button, Tabs } from 'antd';
 import React, {
   useCallback,
   useEffect,
@@ -43,6 +43,7 @@ import {
 } from '../../types';
 import { getChatboxFunctionTypeLabel } from '../../utils/chatboxFunctionTypeLabel';
 import { getSquareTargetTypeTitle } from '../../utils/squareTargetTypeLabel';
+import RecommendAddModal from '../RecommendAddModal';
 import RecommendFormModal from '../RecommendFormModal';
 
 export interface RecommendListPageProps {
@@ -50,8 +51,8 @@ export interface RecommendListPageProps {
   config: RecommendPageConfig;
 }
 
-const DEFAULT_PAGE_SIZE = 15;
-const PAGE_SIZE_OPTIONS = [15, 30, 50, 100];
+/** 列表一次性拉取条数（前端不分页，接口仍传分页参数） */
+const LIST_PAGE_SIZE = 1000;
 
 /**
  * 推荐管理通用列表页
@@ -67,15 +68,31 @@ const RecommendListPage: React.FC<RecommendListPageProps> = ({
   const originalDataRef = useRef<DisplayRecommendInfo[] | null>(null);
 
   const [records, setRecords] = useState<DisplayRecommendInfo[]>([]);
-  /** 列表总条数（按当前 recType 过滤后） */
-  const [listTotal, setListTotal] = useState(0);
 
-  const [modalOpen, setModalOpen] = useState(false);
+  const [addModalOpen, setAddModalOpen] = useState(false);
+  const [formModalOpen, setFormModalOpen] = useState(false);
   const [editingRecord, setEditingRecord] =
     useState<DisplayRecommendInfo | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+  );
+
+  const isChatboxPage = config.recType === DisplayRecTypeEnum.ChatBoxNav;
+  const isOfficialPage = config.recType === DisplayRecTypeEnum.Official;
+
+  /** 官方推荐：当前目标类型 Tab */
+  const [activeTargetType, setActiveTargetType] =
+    useState<DisplayRecommendTargetTypeEnum>(config.targetTypes[0]);
+
+  /** 官方推荐 Tab 选项 */
+  const officialTabItems = useMemo(
+    () =>
+      config.targetTypes.map((type) => ({
+        key: type,
+        label: getSquareTargetTypeTitle(type),
+      })),
+    [config.targetTypes],
   );
 
   /** 新增时的默认排序值 */
@@ -93,16 +110,25 @@ const RecommendListPage: React.FC<RecommendListPageProps> = ({
     [records],
   );
 
+  /**
+   * 表格横向滚动宽度（Ant Design fixed 列要求 scroll.x 为数值）
+   * 排序 72 + 名称 200 + 目标ID 120 + 类型/子类型 120 + 创建/修改 340 + 操作
+   */
+  const tableScrollX = useMemo(() => {
+    const actionWidth = isChatboxPage ? 120 : 80;
+    return 72 + 200 + 120 + 120 + 170 + 170 + actionWidth;
+  }, [isChatboxPage]);
+
   /** 重新加载表格 */
   const reloadTable = useCallback(() => {
     actionRef.current?.reload();
   }, []);
 
-  /** 切换推荐类型时重置列表与分页总数 */
+  /** 切换推荐类型时重置列表与 Tab */
   useEffect(() => {
     setRecords([]);
-    setListTotal(0);
-  }, [config.recType]);
+    setActiveTargetType(config.targetTypes[0]);
+  }, [config.recType, config.targetTypes]);
 
   /** 监听页面状态变化 */
   useEffect(() => {
@@ -122,28 +148,28 @@ const RecommendListPage: React.FC<RecommendListPageProps> = ({
       label?: string;
       name?: string;
     }) => {
-      // 查询推荐列表
+      // 查询推荐列表（按当前页面 recType 筛选）
       const res = await apiSystemGetDisplayRecommendList({
-        pageNo: params.current || 1,
-        pageSize: params.pageSize || DEFAULT_PAGE_SIZE,
+        pageNo: 1,
+        pageSize: LIST_PAGE_SIZE,
         name: params.label || params.name,
+        recType: config.recType,
+        ...(isOfficialPage ? { targetType: activeTargetType } : {}),
       });
 
       if (res?.code !== SUCCESS_CODE) {
         return { data: [], success: false, total: 0 };
       }
 
-      const filtered = (res.data?.records || []).filter(
-        (item) => item.recType === config.recType,
-      );
+      const records = res.data?.records || [];
 
       return {
-        data: filtered,
+        data: records,
         success: true,
-        total: filtered.length,
+        total: records.length,
       };
     },
-    [config.recType],
+    [activeTargetType, config.recType, isOfficialPage],
   );
 
   /**
@@ -167,34 +193,40 @@ const RecommendListPage: React.FC<RecommendListPageProps> = ({
   );
 
   /**
-   * 获取操作列
+   * 获取操作列（首页/官方推荐仅删除；对话框智能体支持编辑）
    */
   const getActions = useCallback(
-    (record: DisplayRecommendInfo): ActionItem<DisplayRecommendInfo>[] => [
-      {
-        key: 'edit',
-        label: dict('PC.Common.Global.edit'),
-        onClick: () => {
-          setEditingRecord(record);
-          setModalOpen(true);
-        },
-      },
-      {
+    (record: DisplayRecommendInfo): ActionItem<DisplayRecommendInfo>[] => {
+      const actions: ActionItem<DisplayRecommendInfo>[] = [];
+
+      /* 对话框智能体支持编辑 */
+      if (isChatboxPage) {
+        actions.push({
+          key: 'edit',
+          label: dict('PC.Common.Global.edit'),
+          onClick: () => {
+            setEditingRecord(record);
+            setFormModalOpen(true);
+          },
+        });
+      }
+
+      actions.push({
         key: 'delete',
         label: dict('PC.Common.Global.delete'),
         danger: true,
         onClick: () => handleDelete(record),
-      },
-    ],
-    [handleDelete],
+      });
+
+      return actions;
+    },
+    [handleDelete, isChatboxPage],
   );
 
   /**
    * 表格列定义（对话框智能体页额外展示子类型列）
    */
   const columns: ProColumns<DisplayRecommendInfo>[] = useMemo(() => {
-    const isChatboxPage = config.recType === DisplayRecTypeEnum.ChatBoxNav;
-
     const baseColumns: ProColumns<DisplayRecommendInfo>[] = [
       {
         title: dict('PC.Pages.SystemRoleManage.columnSort'),
@@ -202,11 +234,13 @@ const RecommendListPage: React.FC<RecommendListPageProps> = ({
         width: 72,
         align: 'center',
         search: false,
+        fixed: 'left',
         render: () => <DragHandle />,
       },
       {
         title: dict('PC.Pages.SystemRecommendManage.colLabel'),
         dataIndex: 'label',
+        width: 200,
         ellipsis: true,
         fieldProps: {
           placeholder: dict('PC.Pages.SystemRecommendManage.searchName'),
@@ -219,7 +253,10 @@ const RecommendListPage: React.FC<RecommendListPageProps> = ({
         width: 120,
         search: false,
       },
-      {
+    ];
+
+    if (!isChatboxPage) {
+      baseColumns.push({
         title: dict('PC.Pages.SystemRecommendManage.colTargetType'),
         dataIndex: 'targetType',
         width: 120,
@@ -228,8 +265,8 @@ const RecommendListPage: React.FC<RecommendListPageProps> = ({
           getSquareTargetTypeTitle(
             record.targetType as DisplayRecommendTargetTypeEnum,
           ),
-      },
-    ];
+      });
+    }
 
     if (isChatboxPage) {
       baseColumns.push({
@@ -263,9 +300,11 @@ const RecommendListPage: React.FC<RecommendListPageProps> = ({
       },
       {
         title: dict('PC.Pages.SystemRecommendManage.colAction'),
-        valueType: 'option',
-        width: 140,
+        key: 'action',
+        width: isChatboxPage ? 120 : 80,
         align: 'center',
+        search: false,
+        fixed: 'right',
         render: (_, record) => (
           <TableActions record={record} actions={getActions(record)} />
         ),
@@ -273,21 +312,7 @@ const RecommendListPage: React.FC<RecommendListPageProps> = ({
     );
 
     return baseColumns;
-  }, [config.recType, getActions]);
-
-  /** 无数据时隐藏分页 footer */
-  const pagination = useMemo(
-    () =>
-      listTotal > 0
-        ? {
-            defaultPageSize: DEFAULT_PAGE_SIZE,
-            showSizeChanger: true,
-            pageSizeOptions: PAGE_SIZE_OPTIONS,
-            total: listTotal,
-          }
-        : false,
-    [listTotal],
-  );
+  }, [config.recType, getActions, isChatboxPage]);
 
   /**
    * 拖拽结束
@@ -322,12 +347,18 @@ const RecommendListPage: React.FC<RecommendListPageProps> = ({
     setRecords(reordered);
 
     try {
-      const moved = reordered[newIndex];
-      await apiSystemUpdateDisplayRecommendSort(moved.id, moved.sort);
+      const res = await apiSystemUpdateDisplayRecommendSort({
+        items: reordered.map((item, index) => ({
+          id: item.id,
+          sortIndex: index + 1,
+        })),
+      });
+      if (res?.code !== SUCCESS_CODE) {
+        throw new Error('update sort failed');
+      }
       message.success(dict('PC.Pages.SystemRecommendManage.sortUpdated'));
       originalDataRef.current = null;
     } catch {
-      message.error(dict('PC.Common.Toast.operationFailed'));
       if (originalDataRef.current) {
         setRecords(originalDataRef.current);
         originalDataRef.current = null;
@@ -339,23 +370,40 @@ const RecommendListPage: React.FC<RecommendListPageProps> = ({
     }
   };
 
+  /** 打开新增弹窗 */
+  const handleOpenAdd = useCallback(() => {
+    setEditingRecord(null);
+    if (isChatboxPage) {
+      setFormModalOpen(true);
+    } else {
+      setAddModalOpen(true);
+    }
+  }, [isChatboxPage]);
+
+  const addButton = (
+    <Button type="primary" icon={<PlusOutlined />} onClick={handleOpenAdd}>
+      {dict('PC.Pages.SystemRecommendManage.addTitle')}
+    </Button>
+  );
+
   return (
     <WorkspaceLayout
       title={dict(titleKey)}
       hideScroll
-      rightSlot={
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={() => {
-            setEditingRecord(null);
-            setModalOpen(true);
-          }}
-        >
-          {dict('PC.Pages.SystemRecommendManage.addTitle')}
-        </Button>
-      }
+      rightSlot={isOfficialPage ? undefined : addButton}
     >
+      {isOfficialPage && (
+        <div key={location.key}>
+          <Tabs
+            activeKey={activeTargetType}
+            items={officialTabItems}
+            tabBarExtraContent={addButton}
+            onChange={(key) =>
+              setActiveTargetType(key as DisplayRecommendTargetTypeEnum)
+            }
+          />
+        </div>
+      )}
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
@@ -367,21 +415,24 @@ const RecommendListPage: React.FC<RecommendListPageProps> = ({
           strategy={verticalListSortingStrategy}
         >
           <XProTable<DisplayRecommendInfo>
-            key={config.recType}
+            key={
+              isOfficialPage
+                ? `${config.recType}-${activeTargetType}`
+                : config.recType
+            }
             actionRef={actionRef}
             rowKey="id"
             columns={columns}
             request={tableRequest}
             dataSource={records}
-            pagination={pagination}
+            pagination={false}
             search={{ labelWidth: 'auto' }}
+            scroll={{ x: tableScrollX }}
             options={false}
             components={{ body: { row: Row } }}
             postData={(data: DisplayRecommendInfo[]) => {
-              const nextRecords = data || [];
               if (!isDraggingRef.current) {
-                setRecords(nextRecords);
-                setListTotal(nextRecords.length);
+                setRecords(data || []);
               }
               return data;
             }}
@@ -389,18 +440,33 @@ const RecommendListPage: React.FC<RecommendListPageProps> = ({
         </SortableContext>
       </DndContext>
 
-      {/* 新增/编辑推荐弹窗 */}
-      <RecommendFormModal
-        open={modalOpen}
-        recType={config.recType}
-        editingRecord={editingRecord}
-        defaultSort={defaultSort}
-        onCancel={() => {
-          setModalOpen(false);
-          setEditingRecord(null);
-        }}
-        onSuccess={reloadTable}
-      />
+      {/* 首页/官方推荐：新建弹窗 */}
+      {!isChatboxPage && (
+        <RecommendAddModal
+          open={addModalOpen}
+          recType={config.recType}
+          existingRecords={records}
+          defaultSort={defaultSort}
+          defaultTargetType={isOfficialPage ? activeTargetType : undefined}
+          onCancel={() => setAddModalOpen(false)}
+          onSuccess={reloadTable}
+        />
+      )}
+
+      {/* 对话框智能体：新增 / 编辑推荐弹窗 */}
+      {isChatboxPage && (
+        <RecommendFormModal
+          open={formModalOpen}
+          editingRecord={editingRecord}
+          existingRecords={records}
+          defaultSort={defaultSort}
+          onCancel={() => {
+            setFormModalOpen(false);
+            setEditingRecord(null);
+          }}
+          onSuccess={reloadTable}
+        />
+      )}
     </WorkspaceLayout>
   );
 };

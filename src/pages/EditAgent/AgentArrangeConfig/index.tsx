@@ -206,6 +206,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   const planSectionRef = useRef<HTMLDivElement | null>(null);
   const toolSectionRef = useRef<HTMLDivElement | null>(null);
   const skillSectionRef = useRef<HTMLDivElement | null>(null);
+  const groupMemberSectionRef = useRef<HTMLDivElement | null>(null);
   const knowledgeSectionRef = useRef<HTMLDivElement | null>(null);
   const memorySectionRef = useRef<HTMLDivElement | null>(null);
   const experienceSectionRef = useRef<HTMLDivElement | null>(null);
@@ -229,6 +230,11 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
           key: 'skill',
           label: t('PC.Pages.AgentArrangeConfig.skill'),
           ref: skillSectionRef,
+        },
+        {
+          key: 'member',
+          label: t('PC.Pages.AgentArrangeConfig.groupMembers'),
+          ref: groupMemberSectionRef,
         },
         {
           key: 'knowledge',
@@ -264,6 +270,9 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
           return false;
         }
         if (!flowPolicy.showSkillSection && item.key === 'skill') {
+          return false;
+        }
+        if (!flowPolicy.showGroupMembersSection && item.key === 'member') {
           return false;
         }
         return true;
@@ -415,13 +424,11 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   // 技能 - 当前激活 tab 面板的 key
   const skillActiveKey = useMemo(() => {
     const keys: AgentArrangeConfigEnum[] = [];
-    if (isExistComponent(AgentComponentTypeEnum.Skill)) {
+    if (
+      flowPolicy.showSkillSection &&
+      isExistComponent(AgentComponentTypeEnum.Skill)
+    ) {
       keys.push(AgentArrangeConfigEnum.Skill);
-    }
-
-    // 群组智能体
-    if (isGroupSubType && isExistComponent(AgentComponentTypeEnum.Agent)) {
-      keys.push(AgentArrangeConfigEnum.Group_Agent);
     }
 
     // 子智能体
@@ -434,6 +441,17 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     }
     return keys;
   }, [agentComponentList, hideSubAgent, flowPolicy]);
+
+  // 组员 - 当前激活 tab 面板的 key（仅 AgentGroup）
+  const groupMemberActiveKey = useMemo(() => {
+    if (
+      flowPolicy.showGroupMembersSection &&
+      isExistComponent(AgentComponentTypeEnum.Agent)
+    ) {
+      return [AgentArrangeConfigEnum.Group_Agent];
+    }
+    return [];
+  }, [agentComponentList, flowPolicy]);
 
   // 记忆 - 当前激活 tab 面板的 key
   const memoryActiveKey = useMemo(() => {
@@ -849,54 +867,29 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     },
   ];
 
-  // 技能与组员
+  // 技能
   const SkillList: CollapseProps['items'] = [
-    {
-      key: AgentArrangeConfigEnum.Skill,
-      label: t('PC.Pages.AgentArrangeConfig.skill'),
-      children: (
-        <CollapseComponentList
-          textClassName={cx(styles.text)}
-          type={AgentComponentTypeEnum.Skill}
-          list={filterList(AgentComponentTypeEnum.Skill)}
-          deleteList={deleteList}
-          onSet={handlePluginSet}
-          onDel={handleAgentComponentDel}
-        />
-      ),
-      extra: (
-        <TooltipIcon
-          title={t('PC.Pages.AgentArrangeConfig.addSkill')}
-          onClick={(e) => handlerComponentPlus(e, AgentComponentTypeEnum.Skill)}
-        />
-      ),
-      classNames: {
-        header: 'collapse-header',
-        body: 'collapse-body',
-      },
-    },
-
-    // 群组智能体（仅 AgentGroup 子类型显示）
-    ...(isGroupSubType
+    ...(flowPolicy.showSkillSection
       ? [
           {
-            key: AgentArrangeConfigEnum.Group_Agent,
-            label: t('PC.Pages.AgentArrangeConfig.groupAgent'),
+            key: AgentArrangeConfigEnum.Skill,
+            label: t('PC.Pages.AgentArrangeConfig.skill'),
             children: (
               <CollapseComponentList
                 textClassName={cx(styles.text)}
-                type={AgentComponentTypeEnum.Agent}
-                list={filterList(AgentComponentTypeEnum.Agent)}
+                type={AgentComponentTypeEnum.Skill}
+                list={filterList(AgentComponentTypeEnum.Skill)}
                 deleteList={deleteList}
                 onSet={handlePluginSet}
                 onDel={handleAgentComponentDel}
-                showSettings={false}
               />
             ),
             extra: (
               <TooltipIcon
-                title={t('PC.Pages.AgentArrangeConfig.addGroupAgent')}
-                onClick={handlerGroupAgentPlus}
+                title={t('PC.Pages.AgentArrangeConfig.addSkill')}
+                onClick={(e) =>
+                  handlerComponentPlus(e, AgentComponentTypeEnum.Skill)
+                }
               />
             ),
             classNames: {
@@ -908,7 +901,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       : []),
 
     // 如果是自定义智能体，或者devAgentConversationId存在，则不显示子智能体组件
-    ...(flowPolicy.showSubAgent && !hideSubAgent && !isGroupSubType
+    ...(flowPolicy.showSubAgent && !hideSubAgent
       ? [
           {
             key: AgentArrangeConfigEnum.SubAgent,
@@ -935,6 +928,35 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
           },
         ]
       : []),
+  ];
+
+  // 组员（仅 AgentGroup）
+  const GroupMemberList: CollapseProps['items'] = [
+    {
+      key: AgentArrangeConfigEnum.Group_Agent,
+      label: t('PC.Pages.AgentArrangeConfig.groupAgent'),
+      children: (
+        <CollapseComponentList
+          textClassName={cx(styles.text)}
+          type={AgentComponentTypeEnum.Agent}
+          list={filterList(AgentComponentTypeEnum.Agent)}
+          deleteList={deleteList}
+          onSet={handlePluginSet}
+          onDel={handleAgentComponentDel}
+          showSettings={false}
+        />
+      ),
+      extra: (
+        <TooltipIcon
+          title={t('PC.Pages.AgentArrangeConfig.addGroupAgent')}
+          onClick={handlerGroupAgentPlus}
+        />
+      ),
+      classNames: {
+        header: 'collapse-header',
+        body: 'collapse-body',
+      },
+    },
   ];
 
   // 记忆
@@ -1525,17 +1547,12 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
             </div>
           )}
 
-          {/* 技能（AgentFlow 不显示） */}
+          {/* 通用型智能体显示技能（AgentFlow / AgentGroup 不展示） */}
           {agentConfigInfo?.type === AgentTypeEnum.TaskAgent &&
             flowPolicy.showSkillSection && (
               <div ref={skillSectionRef}>
-                {/* 群组智能体显示技能与组员，其他显示技能 */}
                 <ConfigOptionsHeader
-                  title={
-                    isGroupSubType
-                      ? t('PC.Pages.AgentArrangeConfig.skillsAndMembers')
-                      : t('PC.Pages.AgentArrangeConfig.skill')
-                  }
+                  title={t('PC.Pages.AgentArrangeConfig.skill')}
                 />
                 <ConfigOptionCollapse
                   items={SkillList}
@@ -1543,6 +1560,19 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
                 />
               </div>
             )}
+
+          {/* 组员（仅 AgentGroup） */}
+          {flowPolicy.showGroupMembersSection && (
+            <div ref={groupMemberSectionRef}>
+              <ConfigOptionsHeader
+                title={t('PC.Pages.AgentArrangeConfig.groupMembers')}
+              />
+              <ConfigOptionCollapse
+                items={GroupMemberList}
+                defaultActiveKey={groupMemberActiveKey}
+              />
+            </div>
+          )}
 
           {/* 知识库（群组智能体 / AgentFlow 不显示） */}
           {!isGroupSubType && flowPolicy.showKnowledgeSection && (

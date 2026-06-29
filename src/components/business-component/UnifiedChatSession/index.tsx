@@ -86,6 +86,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
   messageViewRef: externalMessageViewRef,
   className,
   style,
+  chatInputDisabled = false,
   chatInputProps,
   queueMinConsumeInterval,
   queueContext,
@@ -346,7 +347,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
           clearDisabled={!messageList?.length}
           onEnter={handleMessageSend}
           onClear={onClear}
-          wholeDisabled={inputDisabled}
+          wholeDisabled={inputDisabled || chatInputDisabled}
           visible={scrollBtnVisible && isHoveringChat}
           clearLoading={clearLoading}
           manualComponents={manualComponents}
@@ -368,7 +369,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
             !!agentInfo?.sandboxId ||
             isSelectionLocked ||
             hasUserSentMessage ||
-            messageList?.length > 0
+            messageList?.some((message) => Boolean(message?.id))
           }
           isPersonalComputer={!!agentInfo?.sandboxId}
           {...interventionLayer.agentModeInputProps}
