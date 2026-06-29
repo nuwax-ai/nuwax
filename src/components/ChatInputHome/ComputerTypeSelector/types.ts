@@ -4,7 +4,7 @@ import { SandboxSelectDto } from '@/types/interfaces/systemManage';
  * 电脑选项类型
  */
 export interface ComputerOption {
-  /** 电脑 ID，空字符串或'remote'表示远程电脑（默认） */
+  /** 电脑 ID，'-1' 表示云电脑 */
   id: string;
   /** 电脑名称 */
   name: string;
@@ -18,7 +18,7 @@ export interface ComputerOption {
  * ComputerTypeSelector 组件 Props
  */
 export interface ComputerTypeSelectorProps {
-  /** 当前选中的电脑 ID，空字符串或'remote'表示远程电脑 */
+  /** 当前选中的电脑 ID，'-1' 表示云电脑 */
   value?: string;
   /** 选择变化回调 */
   onChange?: (id: string, option: ComputerOption) => void;

@@ -713,7 +713,7 @@ export async function apiGetUserSelectableSandboxList(): Promise<
 /**
  * 保存用户对某个智能体的沙盒选择
  * @param agentId 智能体ID
- * @param sandboxId 选择的沙盒配置ID，空字符串或'remote'表示选择远程电脑
+ * @param sandboxId 选择的沙盒配置ID，'-1' 表示云电脑
  */
 export async function apiSaveSelectedSandbox(
   agentId: number,
