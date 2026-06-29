@@ -2,6 +2,7 @@ import { CONVERSATION_CHAT_SUB_URL } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
 import {
   AssistantRoleEnum,
+  ConversationEventTypeEnum,
   MessageModeEnum,
   MessageTypeEnum,
 } from '@/types/enums/agent';
@@ -124,6 +125,11 @@ export function useResumeStreamHandlers(deps: UseResumeStreamHandlersDeps) {
             res,
             currentMessageId,
           );
+          // 会话执行失败(ERROR)：主动断开 sub，使轮询恢复——FAILED 不属于「执行中」，
+          // 也要继续轮询检测后续重试等状态变化（轮询只在「执行中 / document.hidden」时暂停）
+          if (res?.eventType === ConversationEventTypeEnum.ERROR) {
+            abortResumeStream();
+          }
           // 流式恢复期间跟随自动滚动
           if (allowAutoScrollRef.current) {
             requestAnimationFrame(() => {
