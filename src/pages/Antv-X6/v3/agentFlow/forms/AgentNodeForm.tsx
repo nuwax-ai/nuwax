@@ -52,7 +52,7 @@ const AgentNodeForm: React.FC<NodeDisposeProps> = ({ form, nodeConfig }) => {
         />
       </div>
 
-      <div className="node-item-style" style={{ borderBottom: 'none' }}>
+      <div className="node-item-style">
         <ExpandableInputTextarea
           title={t('PC.Pages.AgentFlowNode.extraPromptLabel', '补充提示词')}
           inputFieldName="extraPrompt"
