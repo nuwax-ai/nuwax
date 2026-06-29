@@ -53,6 +53,27 @@ export interface DisplayRecommendParams {
 }
 
 /**
+ * 更新推荐排序参数
+ */
+export interface UpdateDisplayRecommendSortParams {
+  items: UpdateDisplayRecommendSortItem[];
+}
+
+/**
+ * 更新推荐排序参数项
+ */
+export interface UpdateDisplayRecommendSortItem {
+  /*ID */
+  id: number;
+
+  /*父级ID，0表示根节点，不传则不修改（无层级则忽略） */
+  parentId?: number;
+
+  /*排序索引，不传则不修改 */
+  sortIndex?: number;
+}
+
+/**
  * 查询推荐列表参数
  */
 export interface DisplayRecommendListParams {
@@ -76,6 +97,9 @@ export interface DisplayRecommendListParams {
 
   /*管控条件 */
   accessControl?: number;
+
+  /*推荐类型：Home、Official、ChatBoxNav */
+  recType: DisplayRecTypeEnum;
 }
 
 /**

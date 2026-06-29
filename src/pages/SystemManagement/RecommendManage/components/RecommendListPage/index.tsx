@@ -50,8 +50,8 @@ export interface RecommendListPageProps {
   config: RecommendPageConfig;
 }
 
-const DEFAULT_PAGE_SIZE = 15;
-const PAGE_SIZE_OPTIONS = [15, 30, 50, 100];
+/** 列表一次性拉取条数（前端不分页，接口仍传分页参数） */
+const LIST_PAGE_SIZE = 1000;
 
 /**
  * 推荐管理通用列表页
@@ -67,8 +67,6 @@ const RecommendListPage: React.FC<RecommendListPageProps> = ({
   const originalDataRef = useRef<DisplayRecommendInfo[] | null>(null);
 
   const [records, setRecords] = useState<DisplayRecommendInfo[]>([]);
-  /** 列表总条数（按当前 recType 过滤后） */
-  const [listTotal, setListTotal] = useState(0);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editingRecord, setEditingRecord] =
@@ -98,10 +96,9 @@ const RecommendListPage: React.FC<RecommendListPageProps> = ({
     actionRef.current?.reload();
   }, []);
 
-  /** 切换推荐类型时重置列表与分页总数 */
+  /** 切换推荐类型时重置列表 */
   useEffect(() => {
     setRecords([]);
-    setListTotal(0);
   }, [config.recType]);
 
   /** 监听页面状态变化 */
@@ -122,25 +119,24 @@ const RecommendListPage: React.FC<RecommendListPageProps> = ({
       label?: string;
       name?: string;
     }) => {
-      // 查询推荐列表
+      // 查询推荐列表（按当前页面 recType 筛选）
       const res = await apiSystemGetDisplayRecommendList({
-        pageNo: params.current || 1,
-        pageSize: params.pageSize || DEFAULT_PAGE_SIZE,
+        pageNo: 1,
+        pageSize: LIST_PAGE_SIZE,
         name: params.label || params.name,
+        recType: config.recType,
       });
 
       if (res?.code !== SUCCESS_CODE) {
         return { data: [], success: false, total: 0 };
       }
 
-      const filtered = (res.data?.records || []).filter(
-        (item) => item.recType === config.recType,
-      );
+      const records = res.data?.records || [];
 
       return {
-        data: filtered,
+        data: records,
         success: true,
-        total: filtered.length,
+        total: records.length,
       };
     },
     [config.recType],
@@ -275,20 +271,6 @@ const RecommendListPage: React.FC<RecommendListPageProps> = ({
     return baseColumns;
   }, [config.recType, getActions]);
 
-  /** 无数据时隐藏分页 footer */
-  const pagination = useMemo(
-    () =>
-      listTotal > 0
-        ? {
-            defaultPageSize: DEFAULT_PAGE_SIZE,
-            showSizeChanger: true,
-            pageSizeOptions: PAGE_SIZE_OPTIONS,
-            total: listTotal,
-          }
-        : false,
-    [listTotal],
-  );
-
   /**
    * 拖拽结束
    */
@@ -322,12 +304,18 @@ const RecommendListPage: React.FC<RecommendListPageProps> = ({
     setRecords(reordered);
 
     try {
-      const moved = reordered[newIndex];
-      await apiSystemUpdateDisplayRecommendSort(moved.id, moved.sort);
+      const res = await apiSystemUpdateDisplayRecommendSort({
+        items: reordered.map((item, index) => ({
+          id: item.id,
+          sortIndex: index + 1,
+        })),
+      });
+      if (res?.code !== SUCCESS_CODE) {
+        throw new Error('update sort failed');
+      }
       message.success(dict('PC.Pages.SystemRecommendManage.sortUpdated'));
       originalDataRef.current = null;
     } catch {
-      message.error(dict('PC.Common.Toast.operationFailed'));
       if (originalDataRef.current) {
         setRecords(originalDataRef.current);
         originalDataRef.current = null;
@@ -373,15 +361,13 @@ const RecommendListPage: React.FC<RecommendListPageProps> = ({
             columns={columns}
             request={tableRequest}
             dataSource={records}
-            pagination={pagination}
+            pagination={false}
             search={{ labelWidth: 'auto' }}
             options={false}
             components={{ body: { row: Row } }}
             postData={(data: DisplayRecommendInfo[]) => {
-              const nextRecords = data || [];
               if (!isDraggingRef.current) {
-                setRecords(nextRecords);
-                setListTotal(nextRecords.length);
+                setRecords(data || []);
               }
               return data;
             }}

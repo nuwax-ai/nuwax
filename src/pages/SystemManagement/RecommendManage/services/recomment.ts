@@ -7,6 +7,7 @@ import {
   DisplayRecommendInfo,
   DisplayRecommendListParams,
   DisplayRecommendParams,
+  UpdateDisplayRecommendSortParams,
 } from '../types';
 
 /**
@@ -25,15 +26,11 @@ export async function apiSystemUpdateDisplayRecommend(
  * 更新排序
  */
 export async function apiSystemUpdateDisplayRecommendSort(
-  id: number,
-  sort: number,
+  data: UpdateDisplayRecommendSortParams,
 ): Promise<RequestResponse<null>> {
   return request('/api/system/display/recommend/updateSort', {
     method: 'POST',
-    params: {
-      id,
-      sort,
-    },
+    data,
   });
 }
 
