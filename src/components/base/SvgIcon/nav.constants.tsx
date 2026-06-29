@@ -13,6 +13,7 @@ import { ReactComponent as LogSvgFile } from '@/assets/icons/nav/log.svg';
 import { ReactComponent as LogOperationSvgFile } from '@/assets/icons/nav/log_operation.svg';
 import { ReactComponent as LogRunningSvgFile } from '@/assets/icons/nav/log_running.svg';
 import { ReactComponent as McpSvgFile } from '@/assets/icons/nav/mcp.svg';
+import { ReactComponent as RecommendManageSvgFile } from '@/assets/icons/nav/recommend_manage.svg';
 // 新会话图标
 import { ReactComponent as NewChatSvgFile } from '@/assets/icons/nav/new_chat.svg';
 import { ReactComponent as NotificationSvgFile } from '@/assets/icons/nav/notification.svg';
@@ -75,6 +76,7 @@ const TaskTimeSvg = wrapSvg(TaskTimeSvgFile);
 const TimeSvg = wrapSvg(TimeSvgFile);
 const ComponentsSvg = wrapSvg(ComponentsSvgFile);
 const CubeSvg = wrapSvg(CubeSvgFile);
+const RecommendManageSvg = wrapSvg(RecommendManageSvgFile);
 const DashboardSvg = wrapSvg(DashboardSvgFile);
 const SpaceSquareSvg = wrapSvg(SpaceSquareSvgFile);
 const RobotSvg = wrapSvg(RobotSvgFile);
@@ -118,6 +120,7 @@ export default {
   'icons-nav-time': TimeSvg,
   'icons-nav-components': ComponentsSvg,
   'icons-nav-cube': CubeSvg,
+  'icons-nav-recommend-manage': RecommendManageSvg,
   'icons-nav-dashboard': DashboardSvg,
   'icons-nav-space_square': SpaceSquareSvg,
   'icons-nav-user': UserSvg,
