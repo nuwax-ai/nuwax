@@ -135,10 +135,17 @@ export function useResumeStreamHandlers(deps: UseResumeStreamHandlersDeps) {
             requestAnimationFrame(() => {
               const element = messageViewRef?.current;
               if (element) {
+                // 标记程序滚动,避免被 useConversationScrollDetection 误判为用户滚动
+                // 而把 allowAutoScrollRef 置 false,导致恢复流「滚一半就停」
+                // (与 useUnifiedChatScroll.performScroll 的标志写法保持一致)
+                (element as any).__isProgrammaticScroll = true;
                 element.scrollTo({
                   top: element.scrollHeight,
                   behavior: 'instant',
                 });
+                setTimeout(() => {
+                  (element as any).__isProgrammaticScroll = false;
+                }, 100);
               }
             });
           }
