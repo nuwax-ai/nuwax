@@ -30,13 +30,13 @@ const BasicLayout: React.FC<PropsWithChildren> = ({ children }) => {
           {/*</p>*/}
 
           <p
-            className={cx(styles.title, 'text-ellipsis-2')}
+            className={cx(styles.title)}
             dangerouslySetInnerHTML={{
               __html: tenantConfigInfo?.loginPageText,
             }}
           />
           <p
-            className={cx(styles['sub-title'], 'text-ellipsis-2')}
+            className={cx(styles['sub-title'])}
             dangerouslySetInnerHTML={{
               __html: tenantConfigInfo?.loginPageSubText,
             }}

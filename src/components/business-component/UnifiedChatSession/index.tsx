@@ -349,7 +349,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
             !!agentInfo?.sandboxId ||
             isSelectionLocked ||
             hasUserSentMessage ||
-            messageList?.length > 0
+            messageList?.some((message) => Boolean(message?.id))
           }
           isPersonalComputer={!!agentInfo?.sandboxId}
           {...interventionLayer.agentModeInputProps}
