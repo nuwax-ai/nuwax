@@ -24,6 +24,7 @@ import {
   getUsedChatboxSingleInstanceTypes,
   isChatboxFunctionTypeDisabled,
 } from '../../utils/chatboxFunctionTypeRules';
+import { fetchPublishedAgentByTargetId } from '../../utils/fetchPublishedAgentByTargetId';
 import { getSquareTargetTypeTitle } from '../../utils/squareTargetTypeLabel';
 import RecommendAddModal from '../RecommendAddModal';
 import SelectedAgentCard from './SelectedAgentCard';
@@ -76,11 +77,11 @@ const RecommendFormModal: React.FC<RecommendFormModalProps> = ({
   const [functionType, setFunctionType] = useState<
     DisplayRecommendFunctionTypeEnum | ''
   >(DisplayRecommendFunctionTypeEnum.Chat);
-  /** 已选智能体 */
+  /** 已选智能体（卡片展示用，icon 为智能体自身图标） */
   const [selectedTarget, setSelectedTarget] =
     useState<SquarePublishedItemInfo | null>(null);
-  /** 用户上传的推荐图标 */
-  const [iconUrl, setIconUrl] = useState('');
+  /** 推荐位自定义图标（与已选智能体图标独立） */
+  const [recommendIconUrl, setRecommendIconUrl] = useState('');
   /** 选择智能体弹窗 */
   const [pickModalOpen, setPickModalOpen] = useState(false);
 
@@ -136,8 +137,27 @@ const RecommendFormModal: React.FC<RecommendFormModalProps> = ({
   const resetForm = useCallback(() => {
     setFunctionType(DisplayRecommendFunctionTypeEnum.Chat);
     setSelectedTarget(null);
-    setIconUrl('');
+    setRecommendIconUrl('');
   }, []);
+
+  /** 编辑模式：回填已选智能体（图标来自智能体，不用推荐记录的 icon） */
+  const hydrateEditingSelectedTarget = useCallback(
+    async (record: DisplayRecommendInfo) => {
+      const agent = await fetchPublishedAgentByTargetId(
+        record.targetId,
+        record.label,
+      );
+      setSelectedTarget(
+        agent
+          ? { ...agent, name: record.label || agent.name }
+          : ({
+              targetId: record.targetId,
+              name: record.label,
+            } as SquarePublishedItemInfo),
+      );
+    },
+    [],
+  );
 
   /** 弹窗打开时：编辑回填 / 新增重置 */
   useEffect(() => {
@@ -147,16 +167,12 @@ const RecommendFormModal: React.FC<RecommendFormModalProps> = ({
       setFunctionType(
         (editingRecord.functionType as DisplayRecommendFunctionTypeEnum) || '',
       );
-      setSelectedTarget({
-        targetId: editingRecord.targetId,
-        name: editingRecord.label,
-        icon: editingRecord.icon,
-      } as SquarePublishedItemInfo);
-      setIconUrl(editingRecord.icon || '');
+      setRecommendIconUrl(editingRecord.icon || '');
+      void hydrateEditingSelectedTarget(editingRecord);
       return;
     }
     resetForm();
-  }, [open, editingRecord, resetForm]);
+  }, [open, editingRecord, hydrateEditingSelectedTarget, resetForm]);
 
   /**
    * 提交保存
@@ -179,7 +195,7 @@ const RecommendFormModal: React.FC<RecommendFormModalProps> = ({
       recType: REC_TYPE,
       functionType: functionType || '',
       label: selectedTarget.name || '',
-      icon: iconUrl || '',
+      icon: recommendIconUrl || '',
       placeholder: editingRecord?.placeholder || '',
       sort: editingRecord?.sort ?? defaultSort,
     };
@@ -206,12 +222,17 @@ const RecommendFormModal: React.FC<RecommendFormModalProps> = ({
   };
 
   /**
-   * 从选择弹窗回填智能体（不调用保存接口）
+   * 从选择弹窗回填智能体（不修改推荐图标）
    */
   const handlePickTarget = (item: SquarePublishedItemInfo) => {
     setSelectedTarget(item);
     setPickModalOpen(false);
   };
+
+  /** 更新推荐位图标，不影响 SelectedAgentCard 中的智能体图标 */
+  const handleRecommendIconChange = useCallback((url: string) => {
+    setRecommendIconUrl(url);
+  }, []);
 
   return (
     <>
@@ -232,8 +253,8 @@ const RecommendFormModal: React.FC<RecommendFormModalProps> = ({
             {dict('PC.Components.CreateAgent.iconLabel')}
           </div>
           <UploadAvatar
-            onUploadSuccess={setIconUrl}
-            imageUrl={iconUrl}
+            onUploadSuccess={handleRecommendIconChange}
+            imageUrl={recommendIconUrl}
             defaultImage={agentImage as string}
             svgIconName="icons-workspace-agent"
           />

@@ -306,12 +306,12 @@ const Created: React.FC<CreatedProp> = ({
         params.dataType = dataTypeRef.current;
       }
 
-      // 智能体：默认只查 ChatBot；AgentFlow 选器按 agentTypes 过滤；群组选器拉全量
+      // 智能体：默认只查 ChatBot；AgentFlow / 群组选器按 agentTypes 过滤
       if (type === AgentComponentTypeEnum.Agent) {
         params.targetType = AgentComponentTypeEnum.Agent;
-        if (isAgentFlowAgentPicker) {
+        if (isAgentFlowAgentPicker || isGroupAgentPicker) {
           params.agentTypes = [...AGENT_FLOW_SELECTABLE_AGENT_TYPES];
-        } else if (!isGroupAgentPicker) {
+        } else {
           params.targetSubType = 'ChatBot';
         }
       }
