@@ -3,7 +3,7 @@ import { TaskStatus } from '@/types/enums/agent';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import { fetchConversationTaskStatus } from '@/utils/conversationTaskStatusSync';
 import { useRequest } from 'ahooks';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 /**
  * 会话流式恢复(sub)编排 Hook（model-agnostic，UnifiedChatSession 专用）
@@ -58,8 +58,9 @@ export function useConversationStreamResume(
     abortSub,
   } = options;
 
-  // sub 是否已订阅（开/闭之间）
+  // sub 是否已订阅（开/闭之间）。ref 用于回调闭包安全读取；state 用于驱动 ready 重算（执行中不轮询）
   const isResumeSubscribedRef = useRef(false);
+  const [isResumeSubscribed, setIsResumeSubscribed] = useState(false);
   // 用 ref 保存最新值，避免轮询 onSuccess 闭包过期
   const latestRef = useRef({ taskStatus, isLocallyStreaming, messageList });
   latestRef.current = { taskStatus, isLocallyStreaming, messageList };
@@ -96,8 +97,10 @@ export function useConversationStreamResume(
     resumeStream(id, latestRef.current.messageList || [], () => {
       // sub 自动断开(end_turn/completed/超时)或被 abort 时回调
       isResumeSubscribedRef.current = false;
+      setIsResumeSubscribed(false);
     });
     isResumeSubscribedRef.current = true;
+    setIsResumeSubscribed(true);
   };
 
   // 轮询会话状态：仅标签可见时触发(pollingWhenHidden:false)，复用全局轮询方案
@@ -111,10 +114,10 @@ export function useConversationStreamResume(
       // 屏幕不可见时暂停定时任务（多窗口/多标签仅可见者轮询）
       pollingWhenHidden: false,
       pollingErrorRetryCount: -1,
-      // 在会话页且非本地流式时【持续】轮询：会话结束后也要轮询，以便检测会话再次变为 EXECUTING
-      // （定时任务/其它入口触发同一会话）并自动恢复流式订阅。离开页面时由 cleanup 停止轮询。
-      ready: !!conversationId && !isLocallyStreaming,
-      refreshDeps: [conversationId, isLocallyStreaming],
+      // 执行中（sub 已订阅）不轮询——由 sub 流接管输出；sub 关闭(isResumeSubscribed→false)后自动恢复轮询。
+      // 会话结束/空闲时持续轮询，以便检测会话再次变为 EXECUTING（定时任务/其它入口触发）。
+      ready: !!conversationId && !isLocallyStreaming && !isResumeSubscribed,
+      refreshDeps: [conversationId, isLocallyStreaming, isResumeSubscribed],
       onSuccess: (status) => {
         if (!conversationId) return;
         if (status === TaskStatus.EXECUTING) {
@@ -123,6 +126,7 @@ export function useConversationStreamResume(
             if (isResumeSubscribedRef.current && abortSub) {
               abortSub();
               isResumeSubscribedRef.current = false;
+              setIsResumeSubscribed(false);
             }
             return;
           }
@@ -144,10 +148,20 @@ export function useConversationStreamResume(
           // 非 EXECUTING：任务已结束，兜底中断 sub（end_turn 自动断开应已触发）
           abortSub();
           isResumeSubscribedRef.current = false;
+          setIsResumeSubscribed(false);
         }
       },
     },
   );
+
+  // 切换会话：先重置订阅状态。必须在 entry effect 之前执行，否则 entry subscribe 后会被这里覆盖。
+  // cleanup 里 abortSub 触发的 onClose 有 ~500ms 延迟，这里立即重置 state，
+  // 避免新会话因 isResumeSubscribed 仍为 true 而不轮询。
+  useEffect(() => {
+    isResumeSubscribedRef.current = false;
+    setIsResumeSubscribed(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversationId]);
 
   // 进入会话 / taskStatus 到达 EXECUTING：尝试订阅（subscribe 内部防重入 & 冷却保护）。
   // 不把 isLocallyStreaming 放入依赖，避免「本地发送结束」瞬间触发订阅；
