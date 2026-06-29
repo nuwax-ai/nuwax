@@ -229,4 +229,32 @@ describe('qaConfigAdapter', () => {
     expect(out.nodeConfig.modelId).toBe(5);
     expect(out.nodeConfig.modelConfig).toBeUndefined();
   });
+
+  it('prepareNodeForBackendSerialize: KnowledgeInsert 顶层 name/description 与 nodeConfig 绑定字段并存', () => {
+    const out = prepareNodeForBackendSerialize({
+      id: 10,
+      name: '知识库写入节点',
+      description: '写入产品文档',
+      type: NodeTypeEnum.KnowledgeInsert,
+      nextNodeIds: [11],
+      nodeConfig: {
+        knowledgeBaseId: 99,
+        name: '产品知识库',
+        description: '产品相关文档',
+        icon: 'https://example.com/icon.png',
+        inputArgs: [],
+        outputArgs: [],
+      },
+      knowledgeBaseId: 99,
+      inputArgs: [],
+    } as any);
+    expect(out.name).toBe('知识库写入节点');
+    expect(out.description).toBe('写入产品文档');
+    expect(out.nextNodeIds).toEqual([11]);
+    expect((out as any).knowledgeBaseId).toBeUndefined();
+    expect((out as any).inputArgs).toBeUndefined();
+    expect(out.nodeConfig.knowledgeBaseId).toBe(99);
+    expect(out.nodeConfig.name).toBe('产品知识库');
+    expect(out.nodeConfig.description).toBe('产品相关文档');
+  });
 });

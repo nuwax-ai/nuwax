@@ -37,7 +37,10 @@ import {
   isFrontendMappedType,
   toBackendNodeType,
 } from '../agentFlow/nodeTypeMapping';
-import { resolveAgentFlowWorkflowNodeDescription } from '../agentFlow/resolveNodePresentation';
+import {
+  resolveAgentFlowWorkflowNodeDescription,
+  resolveNodeDescriptionWithNameFallback,
+} from '../agentFlow/resolveNodePresentation';
 import {
   buildKnowledgeInsertNodeConfigOnAdd,
   mergeNodeConfigAfterAddApi,
@@ -1157,11 +1160,14 @@ export const useNodeOperations = ({
         const isKnowledgeInsert =
           val.targetType === AgentComponentTypeEnum.Knowledge &&
           resolvedKnowledgeType === NodeTypeEnum.KnowledgeInsert;
+        const resolvedDescription = isKnowledgeInsert
+          ? resolveNodeDescriptionWithNameFallback(val.name, val.description)
+          : val.description;
 
         _child = {
           name: val.name,
           shape: NodeShapeEnum.General,
-          description: val.description,
+          description: resolvedDescription,
           type:
             val.targetType === AgentComponentTypeEnum.Knowledge
               ? ((knowledgeNodeType || NodeTypeEnum.Knowledge) as NodeTypeEnum)
@@ -1191,8 +1197,9 @@ export const useNodeOperations = ({
         _child = {
           name: val.name,
           shape: NodeShapeEnum.General,
+          // 工作流节点：描述为空时回退到名称，再兜底默认文案
           description:
-            isAgentFlow && type === NodeTypeEnum.Workflow
+            type === NodeTypeEnum.Workflow
               ? resolveAgentFlowWorkflowNodeDescription(
                   val.name,
                   val.description,

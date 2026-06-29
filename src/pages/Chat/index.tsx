@@ -321,15 +321,6 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     pagePreviewData,
   });
 
-  /** 打开文件树时默认折叠终端 */
-  const handleFileTreeVisibleClick = useCallback(() => {
-    const openingFileTree = !isFileTreeVisible;
-    handleFileTreeVisible();
-    if (openingFileTree) {
-      setTerminalConsoleVisible(false);
-    }
-  }, [isFileTreeVisible, handleFileTreeVisible]);
-
   const {
     variableParams,
     setVariableParams,
@@ -641,6 +632,33 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   });
 
   refreshGitListRef.current = fileView.refreshGitList;
+
+  /**
+   * 打开文件预览：无选中文件时默认展开左侧文件树；已有选中文件则保持原有折叠/展开状态
+   */
+  const handleFileTreeVisibleClick = useCallback(() => {
+    const openingFileTree = !isFileTreeVisible;
+    const switchingToPreview = isFileTreeVisible && viewMode !== 'preview';
+    const hasSelectedPreviewFile = Boolean(
+      fileView.tree.selectedFileId || taskAgentSelectedFileId,
+    );
+
+    handleFileTreeVisible();
+
+    if (openingFileTree || switchingToPreview) {
+      setTerminalConsoleVisible(false);
+      if (!hasSelectedPreviewFile) {
+        setIsFileTreePinned(true);
+      }
+    }
+  }, [
+    isFileTreeVisible,
+    viewMode,
+    handleFileTreeVisible,
+    fileView.tree.selectedFileId,
+    taskAgentSelectedFileId,
+    setIsFileTreePinned,
+  ]);
 
   useEffect(
     () => () => {

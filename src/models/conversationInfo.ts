@@ -426,23 +426,29 @@ export default () => {
 
   // 打开预览视图
   const openPreviewView = useCallback(
-    async (cId: number) => {
+    async (cId: number, options?: { forceRefresh?: boolean }) => {
       // 停止保活
       stopKeepalivePodPolling();
 
       // 检查是否需要刷新文件列表
       // 只有在模式发生变化（从 desktop 切换到 preview）或首次打开文件树时才刷新
       const needRefresh =
-        viewModeRef.current !== 'preview' || !isFileTreeVisibleRef.current;
+        options?.forceRefresh ||
+        viewModeRef.current !== 'preview' ||
+        !isFileTreeVisibleRef.current;
 
       // 打开预览视图或远程桌面视图时修改状态值
       openPreviewChangeState('preview');
       // 只在需要时触发文件列表刷新事件
       if (needRefresh) {
-        handleRefreshFileList(cId);
+        if (options?.forceRefresh) {
+          await refreshFileListImmediately(cId);
+        } else {
+          handleRefreshFileList(cId);
+        }
       }
     },
-    [handleRefreshFileList],
+    [handleRefreshFileList, refreshFileListImmediately, openPreviewChangeState],
   );
 
   // 滚动到底部
