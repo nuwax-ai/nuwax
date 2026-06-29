@@ -5611,6 +5611,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.SystemRecommendManage.searchName": "Enter name",
   "PC.Pages.SystemRecommendManage.selectTarget": "Select target",
   "PC.Pages.SystemRecommendManage.selectTargetRequired": "Please select {0}",
+  "PC.Pages.SystemRecommendManage.clickToAddAgent": "Click to add agent",
   "PC.Pages.SystemRecommendManage.sortUpdated": "Sort updated",
   "PC.Pages.SystemRecommendManage.targetType.Agent": "Agent",
   "PC.Pages.SystemRecommendManage.targetType.PageApp": "Application",
