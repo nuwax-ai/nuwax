@@ -80,6 +80,8 @@ export interface AcpPermissionInterventionRequest {
 
 export interface AcpPermissionInteraction {
   intervention: AcpPermissionInterventionRequest;
+  /** 关联的 processing executeId（与 processingList 同源），用于按 executeId 判断审批是否已过期 */
+  executeId?: string;
   responseStatus?: 'pending' | 'submitting' | 'submitted' | 'failed';
   selectedOptionId?: string;
   errorMessage?: string;
