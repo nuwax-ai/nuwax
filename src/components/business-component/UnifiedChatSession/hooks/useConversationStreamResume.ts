@@ -25,6 +25,14 @@ export interface UseConversationStreamResumeOptions {
   isLocallyStreaming?: boolean;
   /** 最新 messageList 快照（用于决定占位：复用末尾半成品 / 追加空白占位） */
   messageList?: MessageInfo[];
+  /**
+   * 刷新历史并返回最新 messageList（model 的 runAsync 包装）。
+   * 多页签/查看中变 EXECUTING 时，先 reload 拿到含最新发送用户消息的列表，再追加 assistant 占位，
+   * 避免 sub 续上后少显示用户消息。未提供则用当前 messageList。
+   */
+  reloadHistoryAsync?: (
+    conversationId: number | string,
+  ) => Promise<MessageInfo[] | undefined | null>;
   /** 订阅 sub 流（model 的 resumeConversationStream）；未提供则整体不启用恢复 */
   resumeStream?: (
     conversationId: number | string,
@@ -46,6 +54,7 @@ export function useConversationStreamResume(
     taskStatus,
     isLocallyStreaming,
     messageList,
+    reloadHistoryAsync,
     resumeStream,
     abortSub,
   } = options;
@@ -84,7 +93,7 @@ export function useConversationStreamResume(
 
   // 订阅 sub 流。续上后立即 stopPolling（同步，不等 ready 异步生效）；
   // sub onClose 时 startPolling 恢复，继续检测会话再次变为 EXECUTING。
-  const subscribe = (id: number | string) => {
+  const subscribe = async (id: number | string) => {
     if (!resumeStream) return; // 未注入 action（页面未启用恢复）
     if (isResumeSubscribedRef.current) return; // 防重复订阅
     if (latestRef.current.isLocallyStreaming) return; // live 正在驱动输出，不重复订阅
@@ -96,17 +105,30 @@ export function useConversationStreamResume(
     ) {
       return;
     }
-    resumeStream(id, latestRef.current.messageList || [], () => {
+    // 先标记订阅 + 停轮询（reload 期间防重入，执行中不轮询）
+    isResumeSubscribedRef.current = true;
+    setIsResumeSubscribed(true);
+    pollingControlsRef.current.stop();
+    // 多页签/查看中变 EXECUTING：先 reload 历史，确保 messageList 含最新发送的用户消息，
+    // 再追加 assistant 占位由 sub 流重建（否则 sub 续上后会少显示那条用户消息）
+    let list = latestRef.current.messageList || [];
+    if (reloadHistoryAsync) {
+      try {
+        const reloaded = await reloadHistoryAsync(id);
+        if (reloaded && reloaded.length) {
+          list = reloaded;
+        }
+      } catch (e) {
+        console.error('[useConversationStreamResume] reloadHistory failed:', e);
+      }
+    }
+    resumeStream(id, list, () => {
       // sub 自动断开(end_turn/completed/超时)或被 abort 时回调
       isResumeSubscribedRef.current = false;
       setIsResumeSubscribed(false);
       // sub 关闭后恢复状态轮询，以便检测会话再次变为 EXECUTING
       pollingControlsRef.current.start();
     });
-    isResumeSubscribedRef.current = true;
-    setIsResumeSubscribed(true);
-    // 已续上 sub：立即停止状态轮询（执行中由 sub 流接管，不该再查状态）
-    pollingControlsRef.current.stop();
   };
 
   // 轮询会话状态：仅标签可见时触发(pollingWhenHidden:false)，复用全局轮询方案。

@@ -160,4 +160,8 @@ export interface UnifiedChatSessionProps {
   ) => void;
   /** 中断 sub 流（model 的 abortResumeStream） */
   onAbortResumeStream?: () => void;
+  /** 刷新历史并返回最新 messageList（model 的 runAsync 包装）；多页签续上时补全用户消息 */
+  onReloadConversationHistoryAsync?: (
+    conversationId: number | string,
+  ) => Promise<MessageInfo[] | undefined | null>;
 }

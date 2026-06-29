@@ -103,6 +103,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
   // 会话流式恢复(sub)
   onResumeConversationStream,
   onAbortResumeStream,
+  onReloadConversationHistoryAsync,
 }) => {
   // 滚动管理 Hook
   const {
@@ -142,6 +143,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
     taskStatus: conversationInfo?.taskStatus,
     isLocallyStreaming: isLocallyStreaming ?? isConversationActive,
     messageList,
+    reloadHistoryAsync: onReloadConversationHistoryAsync,
     resumeStream: onResumeConversationStream,
     abortSub: onAbortResumeStream,
   });

@@ -311,89 +311,91 @@ export default () => {
   };
 
   // 查询会话
-  const { run: runQueryConversation, loading: loadingConversation } =
-    useRequest(apiAgentConversation, {
-      manual: true,
-      debounceWait: 300,
-      loadingDelay: 300, // 300ms内不显示loading
-      onSuccess: (result: RequestResponse<ConversationInfo>) => {
-        setIsLoadingConversation(false);
-        const { data } = result;
-        // 设置所有的详细信息
-        setChatProcessingList(data?.messageList || []);
-        // 设置会话信息
-        setConversationInfo(data);
-        // 记录当前会话 ID（用于停止会话等操作）
-        setCurrentConversationId(data?.id ?? null);
+  const {
+    run: runQueryConversation,
+    runAsync,
+    loading: loadingConversation,
+  } = useRequest(apiAgentConversation, {
+    manual: true,
+    debounceWait: 300,
+    loadingDelay: 300, // 300ms内不显示loading
+    onSuccess: (result: RequestResponse<ConversationInfo>) => {
+      setIsLoadingConversation(false);
+      const { data } = result;
+      // 设置所有的详细信息
+      setChatProcessingList(data?.messageList || []);
+      // 设置会话信息
+      setConversationInfo(data);
+      // 记录当前会话 ID（用于停止会话等操作）
+      setCurrentConversationId(data?.id ?? null);
 
-        // 是否开启用户问题建议
-        setIsSuggest(data?.agent?.openSuggest === OpenCloseEnum.Open);
-        // 可手动选择的组件列表
-        setManualComponents(data?.agent?.manualComponents || []);
-        // 消息列表：拉取后重建 MCP Ask 交互（与 conversationInfo 对齐）
-        const _messageList = hydrateMcpAskInteractionsInMessageList(
-          data?.messageList || [],
-        );
-        const len = _messageList?.length || 0;
-        if (len) {
-          setMessageList(() => {
-            checkConversationActive(_messageList);
-            return _messageList;
-          });
-          // 最后一条消息为"问答"时，获取问题建议
-          const lastMessage = _messageList[len - 1];
-          if (
-            lastMessage.type === MessageModeEnum.QUESTION &&
-            lastMessage.ext?.length
-          ) {
-            // 问题建议列表
-            const suggestList =
-              lastMessage.ext.map((item) => item.content) || [];
-            setChatSuggestList(suggestList);
-          }
-          // 如果消息列表大于1时，说明已开始会话，就不显示预置问题，反之显示
-          else if (len === 1) {
-            const guidQuestionDtos = data?.agent?.guidQuestionDtos || [];
-            // 如果存在预置问题，显示预置问题
-            setChatSuggestList(guidQuestionDtos);
-          }
-
-          // 无论初始返回的 messageList 长度多少，都认为可能有历史消息，
-          // 保证第一次上滑到顶部时始终调用一次列表接口进行确认。
-          if (len > 0) {
-            setIsMoreMessage(true);
-          }
+      // 是否开启用户问题建议
+      setIsSuggest(data?.agent?.openSuggest === OpenCloseEnum.Open);
+      // 可手动选择的组件列表
+      setManualComponents(data?.agent?.manualComponents || []);
+      // 消息列表：拉取后重建 MCP Ask 交互（与 conversationInfo 对齐）
+      const _messageList = hydrateMcpAskInteractionsInMessageList(
+        data?.messageList || [],
+      );
+      const len = _messageList?.length || 0;
+      if (len) {
+        setMessageList(() => {
+          checkConversationActive(_messageList);
+          return _messageList;
+        });
+        // 最后一条消息为"问答"时，获取问题建议
+        const lastMessage = _messageList[len - 1];
+        if (
+          lastMessage.type === MessageModeEnum.QUESTION &&
+          lastMessage.ext?.length
+        ) {
+          // 问题建议列表
+          const suggestList = lastMessage.ext.map((item) => item.content) || [];
+          setChatSuggestList(suggestList);
         }
-        // 不存在会话消息时，才显示开场白预置问题
-        else {
-          setMessageList([]);
+        // 如果消息列表大于1时，说明已开始会话，就不显示预置问题，反之显示
+        else if (len === 1) {
           const guidQuestionDtos = data?.agent?.guidQuestionDtos || [];
           // 如果存在预置问题，显示预置问题
           setChatSuggestList(guidQuestionDtos);
         }
 
-        // 通过 requestAnimationFrame 在接下来的 800ms 内持续并在浏览器每次重绘前强制置底
-        // 能够完美解决由于聊天气泡、Markdown、图片等异步渲染撑开高度，导致的跳闪和未置底问题
-        const startTime = Date.now();
-        const forceScrollToBottom = () => {
-          // 滚动到底部
-          const element = messageViewRef?.current;
-          if (element) {
-            element.scrollTo({
-              top: element.scrollHeight,
-              behavior: 'instant',
-            });
-          }
-          if (Date.now() - startTime < 800) {
-            requestAnimationFrame(forceScrollToBottom);
-          }
-        };
-        requestAnimationFrame(forceScrollToBottom);
-      },
-      onError: () => {
-        setIsLoadingConversation(false);
-      },
-    });
+        // 无论初始返回的 messageList 长度多少，都认为可能有历史消息，
+        // 保证第一次上滑到顶部时始终调用一次列表接口进行确认。
+        if (len > 0) {
+          setIsMoreMessage(true);
+        }
+      }
+      // 不存在会话消息时，才显示开场白预置问题
+      else {
+        setMessageList([]);
+        const guidQuestionDtos = data?.agent?.guidQuestionDtos || [];
+        // 如果存在预置问题，显示预置问题
+        setChatSuggestList(guidQuestionDtos);
+      }
+
+      // 通过 requestAnimationFrame 在接下来的 800ms 内持续并在浏览器每次重绘前强制置底
+      // 能够完美解决由于聊天气泡、Markdown、图片等异步渲染撑开高度，导致的跳闪和未置底问题
+      const startTime = Date.now();
+      const forceScrollToBottom = () => {
+        // 滚动到底部
+        const element = messageViewRef?.current;
+        if (element) {
+          element.scrollTo({
+            top: element.scrollHeight,
+            behavior: 'instant',
+          });
+        }
+        if (Date.now() - startTime < 800) {
+          requestAnimationFrame(forceScrollToBottom);
+        }
+      };
+      requestAnimationFrame(forceScrollToBottom);
+    },
+    onError: () => {
+      setIsLoadingConversation(false);
+    },
+  });
 
   // 智能体会话问题建议
   const { run: runChatSuggest, loading: loadingSuggest } = useRequest(
@@ -992,6 +994,7 @@ export default () => {
     chatSuggestList,
     loadingConversation,
     runQueryConversation,
+    runAsync,
     setIsLoadingConversation,
     loadingSuggest,
     onMessageSend,

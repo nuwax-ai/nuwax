@@ -247,6 +247,9 @@ const PluginChatSession: React.FC<PluginChatSessionProps> = ({
       // 会话流式恢复(sub)：刷新页面/新开标签时重建 EXECUTING 会话的流式输出
       onResumeConversationStream={resumeConversationStream}
       onAbortResumeStream={abortResumeStream}
+      onReloadConversationHistoryAsync={async (id) =>
+        (await runAsync(Number(id)))?.data?.messageList
+      }
     />
   );
 };
