@@ -100,6 +100,9 @@ export interface DisplayRecommendListParams {
 
   /*推荐类型：Home、Official、ChatBoxNav */
   recType: DisplayRecTypeEnum;
+
+  /*目标类型：Agent、PageApp、Skill、Plugin、Workflow */
+  targetType?: DisplayRecommendTargetTypeEnum;
 }
 
 /**

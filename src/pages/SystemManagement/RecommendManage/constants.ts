@@ -50,6 +50,15 @@ export const CHATBOX_RECOMMEND_CONFIG: RecommendPageConfig = {
   defaultFunctionType: DisplayRecommendFunctionTypeEnum.AgentDev,
 };
 
+/** 对话框智能体：每种仅可添加一项的子类型（智能体 Chat 可多项） */
+export const CHATBOX_SINGLE_INSTANCE_FUNCTION_TYPES: DisplayRecommendFunctionTypeEnum[] =
+  [
+    DisplayRecommendFunctionTypeEnum.AgentDev,
+    DisplayRecommendFunctionTypeEnum.PageAppDev,
+    DisplayRecommendFunctionTypeEnum.SkillDev,
+    DisplayRecommendFunctionTypeEnum.PluginDev,
+  ];
+
 /** recType → 页面配置 */
 export const RECOMMEND_PAGE_CONFIG_MAP: Record<
   DisplayRecTypeEnum,

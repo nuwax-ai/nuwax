@@ -4985,6 +4985,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.SystemRecommendManage.searchName": "名称を入力",
   "PC.Pages.SystemRecommendManage.selectTarget": "おすすめ対象を選択",
   "PC.Pages.SystemRecommendManage.selectTargetRequired": "{0}を選択してください",
+  "PC.Pages.SystemRecommendManage.clickToAddAgent": "クリックしてエージェントを追加",
   "PC.Pages.SystemRecommendManage.sortUpdated": "並び順を更新しました",
   "PC.Pages.SystemRecommendManage.targetType.Agent": "エージェント",
   "PC.Pages.SystemRecommendManage.targetType.PageApp": "アプリケーション",

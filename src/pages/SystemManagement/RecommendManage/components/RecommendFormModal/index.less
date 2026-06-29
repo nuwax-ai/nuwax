@@ -1,0 +1,24 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+/** 新增时：点击添加智能体占位区域 */
+.add-agent-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 56px;
+  padding: @padding;
+  box-sizing: border-box;
+  border-radius: @borderRadius;
+  background-color: @colorFillAlter;
+  color: @colorTextSecondary;
+  font-size: @fontSize;
+  cursor: pointer;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: @colorPrimaryBg;
+    color: @colorPrimaryText;
+  }
+}

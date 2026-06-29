@@ -5593,6 +5593,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.SystemRecommendManage.searchName": "请输入名称",
   "PC.Pages.SystemRecommendManage.selectTarget": "选择推荐目标",
   "PC.Pages.SystemRecommendManage.selectTargetRequired": "请选择{0}",
+  "PC.Pages.SystemRecommendManage.clickToAddAgent": "点击添加智能体",
   "PC.Pages.SystemRecommendManage.sortUpdated": "排序已更新",
   "PC.Pages.SystemRecommendManage.targetType.Agent": "智能体",
   "PC.Pages.SystemRecommendManage.targetType.PageApp": "应用",

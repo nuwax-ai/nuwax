@@ -1,0 +1,51 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.card {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  width: 100%;
+  height: 56px;
+  box-sizing: border-box;
+  cursor: pointer;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: @colorFillAlter;
+  }
+}
+
+.icon {
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
+  border-radius: @borderRadius;
+  overflow: hidden;
+  margin-right: @margin;
+  object-fit: cover;
+}
+
+.content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: @marginXxs;
+}
+
+.name {
+  font-size: @fontSize;
+  font-weight: @fontWeightStrong;
+  color: @colorText;
+  line-height: 24px;
+}
+
+.desc {
+  max-height: 22px;
+  word-break: break-word;
+  line-height: 22px;
+  font-size: @fontSize;
+  color: @colorTextSecondary;
+}
