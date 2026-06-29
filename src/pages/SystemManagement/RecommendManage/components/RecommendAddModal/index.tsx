@@ -51,12 +51,25 @@ export interface RecommendAddModalProps {
   recType: DisplayRecTypeEnum;
   /** 当前页已添加的推荐记录，用于展示「已添加」 */
   existingRecords: DisplayRecommendInfo[];
-  /** 新增时的默认排序值 */
+  /** 新增时的默认排序值（save 模式） */
   defaultSort: number;
   /** 取消回调 */
   onCancel: () => void;
-  /** 添加成功回调（刷新列表） */
+  /** 添加成功回调（save 模式，刷新列表） */
   onSuccess: () => void;
+  /**
+   * 交互模式
+   * - save：选中后调用保存接口（列表页新建）
+   * - pick：选中后回调 onPick，不调用接口（表单内选择智能体）
+   */
+  mode?: 'save' | 'pick';
+  /** pick 模式：当前已选 targetKey，用于展示「已添加」 */
+  pickedTargetKeys?: string[];
+  /** pick 模式：选中目标回调 */
+  onPick?: (
+    item: SquarePublishedItemInfo,
+    targetType: DisplayRecommendTargetTypeEnum,
+  ) => void;
 }
 
 /**
@@ -70,7 +83,11 @@ const RecommendAddModal: React.FC<RecommendAddModalProps> = ({
   defaultSort,
   onCancel,
   onSuccess,
+  mode = 'save',
+  pickedTargetKeys = [],
+  onPick,
 }) => {
+  const isPickMode = mode === 'pick';
   const pageConfig = RECOMMEND_PAGE_CONFIG_MAP[recType];
   const targetTypes = pageConfig.targetTypes;
 
@@ -109,9 +126,13 @@ const RecommendAddModal: React.FC<RecommendAddModalProps> = ({
     existingRecords.forEach((item) => {
       keys.add(`${item.targetType}-${item.targetId}`);
     });
+    if (isPickMode) {
+      pickedTargetKeys.forEach((key) => keys.add(key));
+      return keys;
+    }
     sessionAddedKeys.forEach((key) => keys.add(key));
     return keys;
-  }, [existingRecords, sessionAddedKeys]);
+  }, [existingRecords, isPickMode, pickedTargetKeys, sessionAddedKeys]);
 
   // 构建 targetKey
   const buildTargetKey = (
@@ -214,10 +235,16 @@ const RecommendAddModal: React.FC<RecommendAddModalProps> = ({
     fetchList(activeTargetType, 1, kw, false);
   };
 
-  /** 添加推荐 */
+  /** 添加推荐 / 选择目标 */
   const handleAdd = async (item: SquarePublishedItemInfo) => {
     const targetKey = buildTargetKey(activeTargetType, item.targetId);
     if (addedKeySet.has(targetKey) || addingKey === targetKey) return;
+
+    if (isPickMode) {
+      onPick?.(item, activeTargetType);
+      onCancel();
+      return;
+    }
 
     setAddingKey(targetKey);
     try {

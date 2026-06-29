@@ -1,15 +1,12 @@
+import agentImage from '@/assets/images/agent_image.png';
 import CustomFormModal from '@/components/CustomFormModal';
+import UploadAvatar from '@/components/UploadAvatar';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
 import type { SquarePublishedItemInfo } from '@/types/interfaces/square';
-import { Empty, Form, message, Select, Spin } from 'antd';
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import { Form, message, Select } from 'antd';
+import classNames from 'classnames';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { RECOMMEND_PAGE_CONFIG_MAP } from '../../constants';
 import {
   apiSystemSaveDisplayRecommend,
@@ -23,19 +20,28 @@ import {
   DisplayRecTypeEnum,
 } from '../../types';
 import { getChatboxFunctionTypeLabel } from '../../utils/chatboxFunctionTypeLabel';
-import { PUBLISHED_TARGET_SOURCE_MAP } from '../../utils/publishedTargetSource';
+import {
+  getFirstAvailableChatboxFunctionType,
+  getUsedChatboxSingleInstanceTypes,
+  isChatboxFunctionTypeDisabled,
+} from '../../utils/chatboxFunctionTypeRules';
 import { getSquareTargetTypeTitle } from '../../utils/squareTargetTypeLabel';
+import RecommendAddModal from '../RecommendAddModal';
+import SelectedAgentCard from './SelectedAgentCard';
+import styles from './index.less';
+
+const cx = classNames.bind(styles);
 
 /**
- * 推荐表单弹窗 Props
+ * 对话框智能体推荐 - 新增/编辑弹窗 Props
  */
 export interface RecommendFormModalProps {
   /** 弹窗是否可见 */
   open: boolean;
-  /** 推荐展示类型：Home / Official / ChatBoxNav */
-  recType: DisplayRecTypeEnum;
   /** 编辑时的推荐记录，为空表示新增 */
   editingRecord?: DisplayRecommendInfo | null;
+  /** 当前页已有推荐列表（子类型互斥） */
+  existingRecords?: DisplayRecommendInfo[];
   /** 新增时的默认排序值 */
   defaultSort: number;
   /** 取消回调 */
@@ -44,280 +50,118 @@ export interface RecommendFormModalProps {
   onSuccess: () => void;
 }
 
-/** 目标下拉选项结构 */
-interface TargetSelectOption {
-  label: string;
-  value: number;
-  item: SquarePublishedItemInfo;
-}
+/** 对话框智能体固定推荐智能体 */
+const TARGET_TYPE = DisplayRecommendTargetTypeEnum.Agent;
+/** 对话框智能体推荐类型 */
+const REC_TYPE = DisplayRecTypeEnum.ChatBoxNav;
 
-/** 目标列表每页条数 */
-const TARGET_PAGE_SIZE = 20;
-/** 搜索防抖间隔（毫秒） */
-const SEARCH_DEBOUNCE_MS = 300;
-
-/** 首页推荐 / 对话框智能体固定为智能体 */
-const SINGLE_TARGET_TYPE = DisplayRecommendTargetTypeEnum.Agent;
+const buildTargetKey = (targetId: number) => `${TARGET_TYPE}-${targetId}`;
 
 /**
- * 根据 recType 获取新增时的默认目标类型
- */
-const getDefaultTargetType = (
-  recType: DisplayRecTypeEnum,
-): DisplayRecommendTargetTypeEnum => {
-  if (recType === DisplayRecTypeEnum.Official) {
-    return RECOMMEND_PAGE_CONFIG_MAP[DisplayRecTypeEnum.Official]
-      .targetTypes[0];
-  }
-  return SINGLE_TARGET_TYPE;
-};
-
-const getDefaultFunctionType = (
-  recType: DisplayRecTypeEnum,
-): DisplayRecommendFunctionTypeEnum | '' => {
-  if (recType === DisplayRecTypeEnum.ChatBoxNav) {
-    return (
-      RECOMMEND_PAGE_CONFIG_MAP[DisplayRecTypeEnum.ChatBoxNav]
-        .defaultFunctionType || DisplayRecommendFunctionTypeEnum.AgentDev
-    );
-  }
-  return '';
-};
-
-/**
- * 推荐管理 - 新增/编辑弹窗
- *
- * 按 recType 区分交互：
- * - Home：直接选择智能体（apiPublishedAgentList）
- * - Official：先选目标类型，再按类型加载广场列表
- * - ChatBoxNav：先选 functionType，再选择智能体
+ * 对话框智能体推荐 - 新增/编辑弹窗
  */
 const RecommendFormModal: React.FC<RecommendFormModalProps> = ({
   open,
-  recType,
   editingRecord,
+  existingRecords = [],
   defaultSort,
   onCancel,
   onSuccess,
 }) => {
   const [form] = Form.useForm();
   const isEdit = !!editingRecord;
-  const isOfficialPage = recType === DisplayRecTypeEnum.Official;
-  const isChatboxPage = recType === DisplayRecTypeEnum.ChatBoxNav;
 
   /** 提交保存 loading */
   const [loading, setLoading] = useState(false);
-  /** 当前选中的目标类型 */
-  const [targetType, setTargetType] = useState<DisplayRecommendTargetTypeEnum>(
-    () => getDefaultTargetType(recType),
-  );
-  /** 对话框智能体功能子类型 */
+  /** 功能子类型 */
   const [functionType, setFunctionType] = useState<
     DisplayRecommendFunctionTypeEnum | ''
-  >(() => getDefaultFunctionType(recType));
-  /** 目标下拉列表 loading */
-  const [targetLoading, setTargetLoading] = useState(false);
-  /** 目标下拉选项 */
-  const [targetOptions, setTargetOptions] = useState<TargetSelectOption[]>([]);
-  /** 目标列表当前页码 */
-  const [targetPage, setTargetPage] = useState(1);
-  /** 目标列表是否还有下一页 */
-  const [targetHasMore, setTargetHasMore] = useState(false);
-  /** 目标搜索关键词 */
-  const [targetSearchKw, setTargetSearchKw] = useState('');
-  /** 已选目标 ID（受控 Select value） */
-  const [selectedTargetId, setSelectedTargetId] = useState<number>();
-  /** 已选目标完整信息 */
+  >(
+    () =>
+      RECOMMEND_PAGE_CONFIG_MAP[DisplayRecTypeEnum.ChatBoxNav]
+        .defaultFunctionType || DisplayRecommendFunctionTypeEnum.AgentDev,
+  );
+  /** 已选智能体 */
   const [selectedTarget, setSelectedTarget] =
     useState<SquarePublishedItemInfo | null>(null);
+  /** 用户上传的推荐图标 */
+  const [iconUrl, setIconUrl] = useState('');
+  /** 选择智能体弹窗 */
+  const [pickModalOpen, setPickModalOpen] = useState(false);
 
-  /** 搜索防抖定时器 */
-  const searchTimerRef = useRef<number>();
-  /** 防止滚动加载时重复请求 */
-  const fetchingRef = useRef(false);
-  /** 编辑回填时跳过目标选择重置 */
-  const skipTargetResetRef = useRef(false);
+  /** functionType 下拉选项（已占用的单子类型禁用） */
+  const chatboxFunctionTypeOptions = useMemo(() => {
+    const usedTypes = getUsedChatboxSingleInstanceTypes(
+      existingRecords,
+      editingRecord?.id,
+    );
+    const currentFunctionType = editingRecord?.functionType;
 
-  /** 官方推荐页：目标类型下拉选项 */
-  const officialTargetTypeOptions = useMemo(
-    () =>
-      RECOMMEND_PAGE_CONFIG_MAP[DisplayRecTypeEnum.Official].targetTypes.map(
-        (type) => ({
-          value: type,
-          label: getSquareTargetTypeTitle(type),
-        }),
+    const allTypes =
+      RECOMMEND_PAGE_CONFIG_MAP[DisplayRecTypeEnum.ChatBoxNav].functionTypes ||
+      [];
+    const orderedTypes = [
+      DisplayRecommendFunctionTypeEnum.Chat,
+      ...allTypes.filter(
+        (type) => type !== DisplayRecommendFunctionTypeEnum.Chat,
       ),
-    [],
+    ];
+
+    return orderedTypes.map((type) => ({
+      value: type,
+      label: getChatboxFunctionTypeLabel(type),
+      disabled: isChatboxFunctionTypeDisabled(
+        type,
+        usedTypes,
+        currentFunctionType,
+      ),
+    }));
+  }, [existingRecords, editingRecord?.functionType, editingRecord?.id]);
+
+  const selectTargetLabel = getSquareTargetTypeTitle(TARGET_TYPE);
+
+  const pickedTargetKeys = useMemo(
+    () => (selectedTarget ? [buildTargetKey(selectedTarget.targetId)] : []),
+    [selectedTarget],
   );
 
-  /** 对话框智能体：functionType 下拉选项 */
-  const chatboxFunctionTypeOptions = useMemo(
-    () =>
-      (
-        RECOMMEND_PAGE_CONFIG_MAP[DisplayRecTypeEnum.ChatBoxNav]
-          .functionTypes || []
-      ).map((type) => ({
-        value: type,
-        label: getChatboxFunctionTypeLabel(type),
-      })),
-    [],
-  );
-
-  /** 推荐目标选择区 label（官方推荐随目标类型变化；首页/对话框固定为智能体） */
-  const selectTargetLabel = useMemo(() => {
-    if (isOfficialPage) {
-      return getSquareTargetTypeTitle(targetType);
-    }
-    return getSquareTargetTypeTitle(SINGLE_TARGET_TYPE);
-  }, [isOfficialPage, targetType]);
+  /** 选择弹窗：当前子类型下已占用的推荐（用于展示「已添加」） */
+  const pickExistingRecords = useMemo(() => {
+    if (!functionType) return [];
+    return existingRecords.filter((record) => {
+      if (record.functionType !== functionType) return false;
+      if (editingRecord && record.id === editingRecord.id) return false;
+      return true;
+    });
+  }, [existingRecords, functionType, editingRecord]);
 
   /**
-   * 重置目标选择相关状态
-   */
-  const resetTargetSelect = useCallback(() => {
-    setTargetType(getDefaultTargetType(recType));
-    setFunctionType(getDefaultFunctionType(recType));
-    setTargetSearchKw('');
-    setTargetOptions([]);
-    setTargetPage(1);
-    setTargetHasMore(false);
-    setSelectedTargetId(undefined);
-    setSelectedTarget(null);
-  }, [recType]);
-
-  /**
-   * 重置整个表单（新增模式）
+   * 重置表单（新增模式）
    */
   const resetForm = useCallback(() => {
-    resetTargetSelect();
-  }, [resetTargetSelect]);
-
-  /**
-   * 拉取推荐目标列表
-   * @param page 页码
-   * @param kw 搜索关键词
-   * @param append 是否追加到已有选项（滚动加载时为 true）
-   */
-  const fetchTargets = useCallback(
-    async (page: number, kw: string, append: boolean) => {
-      const source = PUBLISHED_TARGET_SOURCE_MAP[targetType];
-      if (!source || fetchingRef.current) return;
-
-      fetchingRef.current = true;
-      setTargetLoading(true);
-      try {
-        const res = await source.fetchApi(
-          source.buildParams(page, TARGET_PAGE_SIZE, kw || undefined),
-        );
-        if (res?.code !== SUCCESS_CODE) return;
-
-        const records = res.data?.records || [];
-        const nextOptions: TargetSelectOption[] = records.map((item) => ({
-          label: item.name,
-          value: item.targetId,
-          item,
-        }));
-
-        setTargetOptions((prev) => {
-          const merged = append ? [...prev, ...nextOptions] : nextOptions;
-          const uniqueMap = new Map<number, TargetSelectOption>();
-          // 保留 prev 中 API 未返回的已选目标（编辑回显）
-          prev.forEach((option) => {
-            if (!merged.some((item) => item.value === option.value)) {
-              uniqueMap.set(option.value, option);
-            }
-          });
-          merged.forEach((option) => {
-            uniqueMap.set(option.value, option);
-          });
-          return Array.from(uniqueMap.values());
-        });
-        setTargetPage(page);
-        setTargetHasMore(page < (res.data?.pages ?? 0));
-      } finally {
-        fetchingRef.current = false;
-        setTargetLoading(false);
-      }
-    },
-    [targetType],
-  );
+    setFunctionType(getFirstAvailableChatboxFunctionType(existingRecords));
+    setSelectedTarget(null);
+    setIconUrl('');
+  }, [existingRecords]);
 
   /** 弹窗打开时：编辑回填 / 新增重置 */
   useEffect(() => {
     if (!open) return;
+    setPickModalOpen(false);
     if (editingRecord) {
-      skipTargetResetRef.current = true;
-      const editTarget = {
-        targetId: editingRecord.targetId,
-        name: editingRecord.label,
-        icon: editingRecord.icon,
-      } as SquarePublishedItemInfo;
-
-      setTargetType(editingRecord.targetType as DisplayRecommendTargetTypeEnum);
       setFunctionType(
         (editingRecord.functionType as DisplayRecommendFunctionTypeEnum) || '',
       );
-      setSelectedTargetId(editingRecord.targetId);
-      setSelectedTarget(editTarget);
-      setTargetOptions([
-        {
-          label: editingRecord.label,
-          value: editingRecord.targetId,
-          item: editTarget,
-        },
-      ]);
+      setSelectedTarget({
+        targetId: editingRecord.targetId,
+        name: editingRecord.label,
+        icon: editingRecord.icon,
+      } as SquarePublishedItemInfo);
+      setIconUrl(editingRecord.icon || '');
       return;
     }
     resetForm();
   }, [open, editingRecord, resetForm]);
-
-  /** 目标类型变化或弹窗打开时加载目标列表 */
-  useEffect(() => {
-    if (!open) return;
-
-    if (skipTargetResetRef.current) {
-      skipTargetResetRef.current = false;
-    } else {
-      setTargetSearchKw('');
-      setSelectedTargetId(undefined);
-      setSelectedTarget(null);
-    }
-
-    fetchTargets(1, '', false);
-  }, [open, targetType, fetchTargets]);
-
-  /** 卸载时清理搜索防抖定时器 */
-  useEffect(() => {
-    return () => {
-      if (searchTimerRef.current) {
-        window.clearTimeout(searchTimerRef.current);
-      }
-    };
-  }, []);
-
-  /**
-   * 目标搜索（服务端搜索，带防抖）
-   */
-  const handleTargetSearch = (value: string) => {
-    setTargetSearchKw(value);
-    if (searchTimerRef.current) {
-      window.clearTimeout(searchTimerRef.current);
-    }
-    searchTimerRef.current = window.setTimeout(() => {
-      fetchTargets(1, value, false);
-    }, SEARCH_DEBOUNCE_MS);
-  };
-
-  /**
-   * 下拉滚动到底部时加载下一页
-   */
-  const handlePopupScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
-    const isNearBottom = scrollHeight - scrollTop - clientHeight < 48;
-    if (isNearBottom && !targetLoading && targetHasMore) {
-      fetchTargets(targetPage + 1, targetSearchKw, true);
-    }
-  };
 
   /**
    * 提交保存
@@ -335,12 +179,12 @@ const RecommendFormModal: React.FC<RecommendFormModalProps> = ({
 
     const payload: DisplayRecommendParams = {
       id: editingRecord?.id,
-      targetType,
+      targetType: TARGET_TYPE,
       targetId: selectedTarget.targetId,
-      recType,
+      recType: REC_TYPE,
       functionType: functionType || '',
       label: selectedTarget.name || '',
-      icon: selectedTarget.icon || '',
+      icon: iconUrl || '',
       placeholder: editingRecord?.placeholder || '',
       sort: editingRecord?.sort ?? defaultSort,
     };
@@ -366,21 +210,39 @@ const RecommendFormModal: React.FC<RecommendFormModalProps> = ({
     }
   };
 
+  /**
+   * 从选择弹窗回填智能体（不调用保存接口）
+   */
+  const handlePickTarget = (item: SquarePublishedItemInfo) => {
+    setSelectedTarget(item);
+    setPickModalOpen(false);
+  };
+
   return (
-    <CustomFormModal
-      form={form}
-      open={open}
-      title={
-        isEdit
-          ? dict('PC.Pages.SystemRecommendManage.editTitle')
-          : dict('PC.Pages.SystemRecommendManage.addTitle')
-      }
-      loading={loading}
-      onCancel={onCancel}
-      onConfirm={handleSubmit}
-    >
-      {/* 对话框智能体：选择 functionType */}
-      {isChatboxPage && (
+    <>
+      <CustomFormModal
+        form={form}
+        open={open}
+        title={
+          isEdit
+            ? dict('PC.Pages.SystemRecommendManage.editTitle')
+            : dict('PC.Pages.SystemRecommendManage.addTitle')
+        }
+        loading={loading}
+        onCancel={onCancel}
+        onConfirm={handleSubmit}
+      >
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ marginBottom: 8 }}>
+            {dict('PC.Components.CreateAgent.iconLabel')}
+          </div>
+          <UploadAvatar
+            onUploadSuccess={setIconUrl}
+            imageUrl={iconUrl}
+            defaultImage={agentImage as string}
+            svgIconName="icons-workspace-agent"
+          />
+        </div>
         <div style={{ marginBottom: 16 }}>
           <div style={{ marginBottom: 8 }}>
             {dict('PC.Pages.SystemRecommendManage.colSubType')}
@@ -389,72 +251,45 @@ const RecommendFormModal: React.FC<RecommendFormModalProps> = ({
             style={{ width: '100%' }}
             value={functionType}
             options={chatboxFunctionTypeOptions}
+            disabled={isEdit}
             onChange={(v) => {
               setFunctionType(v);
             }}
           />
         </div>
-      )}
-
-      {/* 官方推荐：选择目标类型 */}
-      {isOfficialPage && (
         <div style={{ marginBottom: 16 }}>
-          <div style={{ marginBottom: 8 }}>
-            {dict('PC.Pages.SystemRecommendManage.colTargetType')}
-          </div>
-          <Select
-            style={{ width: '100%' }}
-            value={targetType}
-            options={officialTargetTypeOptions}
-            onChange={(v) => {
-              setTargetType(v);
-              setSelectedTargetId(undefined);
-              setSelectedTarget(null);
-            }}
-          />
-        </div>
-      )}
-
-      {/* 从广场已发布列表选择目标（搜索 + 滚动加载） */}
-      <div style={{ marginBottom: 16 }}>
-        <div style={{ marginBottom: 8 }}>{selectTargetLabel}</div>
-        <Select
-          showSearch
-          allowClear
-          filterOption={false}
-          style={{ width: '100%' }}
-          placeholder={dict('PC.Common.Global.pleaseSelect')}
-          value={selectedTargetId}
-          options={targetOptions}
-          loading={targetLoading}
-          onSearch={handleTargetSearch}
-          onPopupScroll={handlePopupScroll}
-          notFoundContent={
-            targetLoading ? (
-              <div style={{ textAlign: 'center', padding: 8 }}>
-                <Spin size="small" />
+          <div style={{ marginBottom: 8 }}>{selectTargetLabel}</div>
+          {selectedTarget ? (
+            <SelectedAgentCard
+              item={selectedTarget}
+              onClick={() => setPickModalOpen(true)}
+            />
+          ) : (
+            !isEdit && (
+              <div
+                className={cx(styles['add-agent-placeholder'])}
+                onClick={() => setPickModalOpen(true)}
+              >
+                {dict('PC.Pages.SystemRecommendManage.clickToAddAgent')}
               </div>
-            ) : (
-              <Empty
-                image={Empty.PRESENTED_IMAGE_SIMPLE}
-                description={dict('PC.Common.Global.emptyData')}
-              />
             )
-          }
-          onChange={(value) => {
-            if (value === undefined || value === null) {
-              setSelectedTargetId(undefined);
-              setSelectedTarget(null);
-              return;
-            }
-            const option = targetOptions.find((item) => item.value === value);
-            const item = option?.item;
-            setSelectedTargetId(value);
-            setSelectedTarget(item || null);
-          }}
-        />
-      </div>
-    </CustomFormModal>
+          )}
+        </div>
+      </CustomFormModal>
+
+      {/* 选择智能体弹窗 */}
+      <RecommendAddModal
+        open={pickModalOpen}
+        recType={REC_TYPE}
+        existingRecords={pickExistingRecords}
+        defaultSort={defaultSort}
+        mode="pick"
+        pickedTargetKeys={pickedTargetKeys}
+        onPick={handlePickTarget}
+        onCancel={() => setPickModalOpen(false)}
+        onSuccess={() => {}}
+      />
+    </>
   );
 };
 

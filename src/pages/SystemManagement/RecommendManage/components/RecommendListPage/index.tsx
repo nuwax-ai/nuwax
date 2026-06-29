@@ -167,26 +167,34 @@ const RecommendListPage: React.FC<RecommendListPageProps> = ({
   );
 
   /**
-   * 获取操作列
+   * 获取操作列（首页/官方推荐仅删除；对话框智能体支持编辑）
    */
   const getActions = useCallback(
-    (record: DisplayRecommendInfo): ActionItem<DisplayRecommendInfo>[] => [
-      {
-        key: 'edit',
-        label: dict('PC.Common.Global.edit'),
-        onClick: () => {
-          setEditingRecord(record);
-          setFormModalOpen(true);
-        },
-      },
-      {
+    (record: DisplayRecommendInfo): ActionItem<DisplayRecommendInfo>[] => {
+      const actions: ActionItem<DisplayRecommendInfo>[] = [];
+
+      /* 对话框智能体支持编辑 */
+      if (isChatboxPage) {
+        actions.push({
+          key: 'edit',
+          label: dict('PC.Common.Global.edit'),
+          onClick: () => {
+            setEditingRecord(record);
+            setFormModalOpen(true);
+          },
+        });
+      }
+
+      actions.push({
         key: 'delete',
         label: dict('PC.Common.Global.delete'),
         danger: true,
         onClick: () => handleDelete(record),
-      },
-    ],
-    [handleDelete],
+      });
+
+      return actions;
+    },
+    [handleDelete, isChatboxPage],
   );
 
   /**
@@ -217,7 +225,10 @@ const RecommendListPage: React.FC<RecommendListPageProps> = ({
         width: 120,
         search: false,
       },
-      {
+    ];
+
+    if (!isChatboxPage) {
+      baseColumns.push({
         title: dict('PC.Pages.SystemRecommendManage.colTargetType'),
         dataIndex: 'targetType',
         width: 120,
@@ -226,8 +237,8 @@ const RecommendListPage: React.FC<RecommendListPageProps> = ({
           getSquareTargetTypeTitle(
             record.targetType as DisplayRecommendTargetTypeEnum,
           ),
-      },
-    ];
+      });
+    }
 
     if (isChatboxPage) {
       baseColumns.push({
@@ -262,7 +273,7 @@ const RecommendListPage: React.FC<RecommendListPageProps> = ({
       {
         title: dict('PC.Pages.SystemRecommendManage.colAction'),
         valueType: 'option',
-        width: 140,
+        width: isChatboxPage ? 140 : 80,
         align: 'center',
         render: (_, record) => (
           <TableActions record={record} actions={getActions(record)} />
@@ -381,28 +392,32 @@ const RecommendListPage: React.FC<RecommendListPageProps> = ({
         </SortableContext>
       </DndContext>
 
-      {/* 首页/官方推荐：新建弹窗（Created 风格） */}
-      <RecommendAddModal
-        open={addModalOpen}
-        recType={config.recType}
-        existingRecords={records}
-        defaultSort={defaultSort}
-        onCancel={() => setAddModalOpen(false)}
-        onSuccess={reloadTable}
-      />
+      {/* 首页/官方推荐：新建弹窗 */}
+      {!isChatboxPage && (
+        <RecommendAddModal
+          open={addModalOpen}
+          recType={config.recType}
+          existingRecords={records}
+          defaultSort={defaultSort}
+          onCancel={() => setAddModalOpen(false)}
+          onSuccess={reloadTable}
+        />
+      )}
 
-      {/* 对话框智能体新增 / 编辑推荐弹窗 */}
-      <RecommendFormModal
-        open={formModalOpen}
-        recType={config.recType}
-        editingRecord={editingRecord}
-        defaultSort={defaultSort}
-        onCancel={() => {
-          setFormModalOpen(false);
-          setEditingRecord(null);
-        }}
-        onSuccess={reloadTable}
-      />
+      {/* 对话框智能体：新增 / 编辑推荐弹窗 */}
+      {isChatboxPage && (
+        <RecommendFormModal
+          open={formModalOpen}
+          editingRecord={editingRecord}
+          existingRecords={records}
+          defaultSort={defaultSort}
+          onCancel={() => {
+            setFormModalOpen(false);
+            setEditingRecord(null);
+          }}
+          onSuccess={reloadTable}
+        />
+      )}
     </WorkspaceLayout>
   );
 };

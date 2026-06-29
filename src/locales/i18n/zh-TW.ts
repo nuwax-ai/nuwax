@@ -5019,6 +5019,7 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.SystemRecommendManage.searchName": "請輸入名稱",
   "PC.Pages.SystemRecommendManage.selectTarget": "選擇推薦目標",
   "PC.Pages.SystemRecommendManage.selectTargetRequired": "請選擇{0}",
+  "PC.Pages.SystemRecommendManage.clickToAddAgent": "點擊添加智能體",
   "PC.Pages.SystemRecommendManage.sortUpdated": "排序已更新",
   "PC.Pages.SystemRecommendManage.targetType.Agent": "智能體",
   "PC.Pages.SystemRecommendManage.targetType.PageApp": "應用",
