@@ -263,6 +263,9 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         if (!flowPolicy.showKnowledgeSection && item.key === 'knowledge') {
           return false;
         }
+        if (!flowPolicy.showSkillSection && item.key === 'skill') {
+          return false;
+        }
         return true;
       }),
     [isGroupSubType, flowPolicy],
@@ -1522,23 +1525,24 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
             </div>
           )}
 
-          {/* 通用型智能体显示技能 */}
-          {agentConfigInfo?.type === AgentTypeEnum.TaskAgent && (
-            <div ref={skillSectionRef}>
-              {/* 群组智能体显示技能与组员，其他显示技能 */}
-              <ConfigOptionsHeader
-                title={
-                  isGroupSubType
-                    ? t('PC.Pages.AgentArrangeConfig.skillsAndMembers')
-                    : t('PC.Pages.AgentArrangeConfig.skill')
-                }
-              />
-              <ConfigOptionCollapse
-                items={SkillList}
-                defaultActiveKey={skillActiveKey}
-              />
-            </div>
-          )}
+          {/* 技能（AgentFlow 不显示） */}
+          {agentConfigInfo?.type === AgentTypeEnum.TaskAgent &&
+            flowPolicy.showSkillSection && (
+              <div ref={skillSectionRef}>
+                {/* 群组智能体显示技能与组员，其他显示技能 */}
+                <ConfigOptionsHeader
+                  title={
+                    isGroupSubType
+                      ? t('PC.Pages.AgentArrangeConfig.skillsAndMembers')
+                      : t('PC.Pages.AgentArrangeConfig.skill')
+                  }
+                />
+                <ConfigOptionCollapse
+                  items={SkillList}
+                  defaultActiveKey={skillActiveKey}
+                />
+              </div>
+            )}
 
           {/* 知识库（群组智能体 / AgentFlow 不显示） */}
           {!isGroupSubType && flowPolicy.showKnowledgeSection && (

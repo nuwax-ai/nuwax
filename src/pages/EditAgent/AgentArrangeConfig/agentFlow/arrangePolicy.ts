@@ -14,6 +14,7 @@ const HIDDEN_COMPONENT_TYPES = new Set<AgentComponentTypeEnum>([
   AgentComponentTypeEnum.Knowledge,
   AgentComponentTypeEnum.Plugin,
   AgentComponentTypeEnum.MCP,
+  AgentComponentTypeEnum.Skill,
 ]);
 
 /** 判断是否为 AgentFlow 子类型 */
@@ -27,6 +28,8 @@ export interface AgentFlowArrangePolicy {
   showToolsSection: boolean;
   /** 是否展示整块「知识」区 */
   showKnowledgeSection: boolean;
+  /** 是否展示整块「技能」区 */
+  showSkillSection: boolean;
   /** 是否展示「子智能体」折叠项 */
   showSubAgent: boolean;
   /** 是否展示「长期记忆」折叠项 */
@@ -61,6 +64,7 @@ export const getAgentFlowArrangePolicy = (
     isFlow,
     showToolsSection: !isFlow,
     showKnowledgeSection: !isFlow,
+    showSkillSection: !isFlow,
     showSubAgent: !isFlow,
     showLongMemory: !isFlow,
     showAllowOtherModel: !isFlow,

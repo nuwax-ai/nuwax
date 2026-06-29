@@ -52,7 +52,7 @@ const AgentNodeForm: React.FC<NodeDisposeProps> = ({ form, nodeConfig }) => {
         />
       </div>
 
-      <div className="node-item-style">
+      <div className="node-item-style" style={{ borderBottom: 'none' }}>
         <ExpandableInputTextarea
           title={t('PC.Pages.AgentFlowNode.extraPromptLabel', '补充提示词')}
           inputFieldName="extraPrompt"
@@ -65,39 +65,45 @@ const AgentNodeForm: React.FC<NodeDisposeProps> = ({ form, nodeConfig }) => {
         />
       </div>
 
-      <div className="node-item-style">
-        <Form.Item
-          name="selfLoopTimes"
-          label={t('PC.Pages.AgentFlowNode.selfLoopTimesLabel', '自身循环次数')}
-          tooltip={t(
-            'PC.Pages.AgentFlowNode.selfLoopTimesTooltip',
-            '智能体自循环执行的次数，0 表示不循环',
-          )}
-          initialValue={0}
-        >
-          <InputNumber
-            min={0}
-            max={100}
-            precision={0}
-            style={{ width: '100%' }}
-          />
-        </Form.Item>
-      </div>
+      {/* 自循环配置暂时隐藏 */}
+      <div style={{ display: 'none' }}>
+        <div className="node-item-style">
+          <Form.Item
+            name="selfLoopTimes"
+            label={t(
+              'PC.Pages.AgentFlowNode.selfLoopTimesLabel',
+              '自身循环次数',
+            )}
+            tooltip={t(
+              'PC.Pages.AgentFlowNode.selfLoopTimesTooltip',
+              '智能体自循环执行的次数，0 表示不循环',
+            )}
+            initialValue={0}
+          >
+            <InputNumber
+              min={0}
+              max={100}
+              precision={0}
+              style={{ width: '100%' }}
+            />
+          </Form.Item>
+        </div>
 
-      <div className="node-item-style">
-        <ExpandableInputTextarea
-          title={t(
-            'PC.Pages.AgentFlowNode.reminderPromptLabel',
-            '循环提醒提示词',
-          )}
-          inputFieldName="reminderPrompt"
-          onExpand
-          placeholder={t(
-            'PC.Pages.AgentFlowNode.reminderPromptPlaceholder',
-            '循环提醒提示词...',
-          )}
-          variables={promptVariables}
-        />
+        <div className="node-item-style">
+          <ExpandableInputTextarea
+            title={t(
+              'PC.Pages.AgentFlowNode.reminderPromptLabel',
+              '循环提醒提示词',
+            )}
+            inputFieldName="reminderPrompt"
+            onExpand
+            placeholder={t(
+              'PC.Pages.AgentFlowNode.reminderPromptPlaceholder',
+              '循环提醒提示词...',
+            )}
+            variables={promptVariables}
+          />
+        </div>
       </div>
     </>
   );
