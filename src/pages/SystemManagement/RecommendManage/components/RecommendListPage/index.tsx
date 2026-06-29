@@ -43,6 +43,7 @@ import {
 } from '../../types';
 import { getChatboxFunctionTypeLabel } from '../../utils/chatboxFunctionTypeLabel';
 import { getSquareTargetTypeTitle } from '../../utils/squareTargetTypeLabel';
+import RecommendAddModal from '../RecommendAddModal';
 import RecommendFormModal from '../RecommendFormModal';
 
 export interface RecommendListPageProps {
@@ -68,13 +69,16 @@ const RecommendListPage: React.FC<RecommendListPageProps> = ({
 
   const [records, setRecords] = useState<DisplayRecommendInfo[]>([]);
 
-  const [modalOpen, setModalOpen] = useState(false);
+  const [addModalOpen, setAddModalOpen] = useState(false);
+  const [formModalOpen, setFormModalOpen] = useState(false);
   const [editingRecord, setEditingRecord] =
     useState<DisplayRecommendInfo | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
   );
+
+  const isChatboxPage = config.recType === DisplayRecTypeEnum.ChatBoxNav;
 
   /** 新增时的默认排序值 */
   const defaultSort = useMemo(() => {
@@ -172,7 +176,7 @@ const RecommendListPage: React.FC<RecommendListPageProps> = ({
         label: dict('PC.Common.Global.edit'),
         onClick: () => {
           setEditingRecord(record);
-          setModalOpen(true);
+          setFormModalOpen(true);
         },
       },
       {
@@ -189,8 +193,6 @@ const RecommendListPage: React.FC<RecommendListPageProps> = ({
    * 表格列定义（对话框智能体页额外展示子类型列）
    */
   const columns: ProColumns<DisplayRecommendInfo>[] = useMemo(() => {
-    const isChatboxPage = config.recType === DisplayRecTypeEnum.ChatBoxNav;
-
     const baseColumns: ProColumns<DisplayRecommendInfo>[] = [
       {
         title: dict('PC.Pages.SystemRoleManage.columnSort'),
@@ -269,7 +271,7 @@ const RecommendListPage: React.FC<RecommendListPageProps> = ({
     );
 
     return baseColumns;
-  }, [config.recType, getActions]);
+  }, [config.recType, getActions, isChatboxPage]);
 
   /**
    * 拖拽结束
@@ -337,7 +339,11 @@ const RecommendListPage: React.FC<RecommendListPageProps> = ({
           icon={<PlusOutlined />}
           onClick={() => {
             setEditingRecord(null);
-            setModalOpen(true);
+            if (isChatboxPage) {
+              setFormModalOpen(true);
+            } else {
+              setAddModalOpen(true);
+            }
           }}
         >
           {dict('PC.Pages.SystemRecommendManage.addTitle')}
@@ -375,14 +381,24 @@ const RecommendListPage: React.FC<RecommendListPageProps> = ({
         </SortableContext>
       </DndContext>
 
-      {/* 新增/编辑推荐弹窗 */}
+      {/* 首页/官方推荐：新建弹窗（Created 风格） */}
+      <RecommendAddModal
+        open={addModalOpen}
+        recType={config.recType}
+        existingRecords={records}
+        defaultSort={defaultSort}
+        onCancel={() => setAddModalOpen(false)}
+        onSuccess={reloadTable}
+      />
+
+      {/* 对话框智能体新增 / 编辑推荐弹窗 */}
       <RecommendFormModal
-        open={modalOpen}
+        open={formModalOpen}
         recType={config.recType}
         editingRecord={editingRecord}
         defaultSort={defaultSort}
         onCancel={() => {
-          setModalOpen(false);
+          setFormModalOpen(false);
           setEditingRecord(null);
         }}
         onSuccess={reloadTable}
