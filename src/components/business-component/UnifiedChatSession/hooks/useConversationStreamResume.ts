@@ -111,12 +111,10 @@ export function useConversationStreamResume(
       // 屏幕不可见时暂停定时任务（多窗口/多标签仅可见者轮询）
       pollingWhenHidden: false,
       pollingErrorRetryCount: -1,
-      // 仅当会话处于 EXECUTING 且非本地流式时才轮询；已结束/空闲会话不轮询，避免无谓请求
-      ready:
-        !!conversationId &&
-        taskStatus === TaskStatus.EXECUTING &&
-        !isLocallyStreaming,
-      refreshDeps: [conversationId],
+      // 在会话页且非本地流式时【持续】轮询：会话结束后也要轮询，以便检测会话再次变为 EXECUTING
+      // （定时任务/其它入口触发同一会话）并自动恢复流式订阅。离开页面时由 cleanup 停止轮询。
+      ready: !!conversationId && !isLocallyStreaming,
+      refreshDeps: [conversationId, isLocallyStreaming],
       onSuccess: (status) => {
         if (!conversationId) return;
         if (status === TaskStatus.EXECUTING) {
