@@ -21,7 +21,11 @@ import {
   getHitlOptions,
   isHitlOptionsBranchMode,
 } from '../adapters/qaConfigAdapter';
-import { branchPortY, extractPortSuffix } from './portLayout';
+import {
+  branchPortY,
+  extractPortSuffix,
+  hasAgentFlowNodeDescription,
+} from './portLayout';
 
 export const humanInteractionHandler: BranchNodeHandler = {
   nodeType: NodeTypeEnum.HumanInteraction,
@@ -47,7 +51,9 @@ export const humanInteractionHandler: BranchNodeHandler = {
         };
       }
       // 节点带描述行时，分支端口整体随条目下移 descHeight，保持圆点与条目对齐
-      const branchOpts = { hasDescription: !!(data as any).description };
+      const branchOpts = {
+        hasDescription: hasAgentFlowNodeDescription(data),
+      };
       const outputPorts = options.map((opt: any, i: number) => {
         const y = branchPortY(i, branchOpts);
         return ctx.generatePortConfig({

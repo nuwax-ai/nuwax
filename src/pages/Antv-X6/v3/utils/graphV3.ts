@@ -2,6 +2,7 @@ import {
   getHitlOptions,
   isHitlOptionsBranchMode,
 } from '@/pages/Antv-X6/v3/agentFlow/adapters/qaConfigAdapter';
+import { shouldUseFixedSideOutPort } from '@/pages/Antv-X6/v3/agentFlow/handlers/portLayout';
 import {
   DEFAULT_NODE_CONFIG,
   DEFAULT_NODE_CONFIG_MAP,
@@ -567,6 +568,8 @@ export const generatePortGroupConfig = (
     NodeTypeEnum.Start,
     NodeTypeEnum.End,
   ].includes(data.type); //需要固定位置的节点
+  // AgentFlow 单 out：与 in(left) 对称用 right，按节点 bbox 垂直居中；多分支仍用 absolute
+  const useFixedSideOutPort = fixedPortNode || shouldUseFixedSideOutPort(data);
   const magnetRadius = 50;
   const isLoopNode = data.type === NodeTypeEnum.Loop;
   return {
@@ -583,7 +586,7 @@ export const generatePortGroupConfig = (
     },
     out: {
       position: {
-        name: fixedPortNode ? 'right' : 'absolute',
+        name: useFixedSideOutPort ? 'right' : 'absolute',
       },
       attrs: { circle: { r: basePortSize, magnet: true, magnetRadius } },
       connectable: {
@@ -812,6 +815,8 @@ export const calculateNodePosition = ({
     // 以节点的 中心来计算
     position.x = position.x - width / 2;
     position.y = position.y - height / 2;
+    // position 全程为模型(local)坐标；此处已是节点左上角，直接返回。
+    // 由 _doAddNode 以 coordinateSpace='model' 直接落点（不再 clientToLocal / 容器范围启发式）。
     return position;
   }
 
@@ -828,31 +833,37 @@ export const calculateNodePosition = ({
   }
 
   const isOut = portId.endsWith('out');
-  const peerPosition = getPeerNodePosition(
-    sourceNodeId,
-    graph,
-    isOut ? 'next' : 'previous',
-  );
+  // 普通 out 端口的 id 恰为 "{nodeId}-out"；其余 out 端口都是动态自定义分支端口
+  // （路由决策 {nodeId}-route-{uuid}-out、询问选项 {nodeId}-hitl-option-{uuid}-out、异常端口等）。
+  // 用「id 是否恰为标准 out 端口」判定，比按 uuid 长度启发式更稳——动态端口 uuid 缺失时会
+  // 回退成 r0/o1 等短串（见 routeDecision/humanInteraction handler），长度启发式会漏判，
+  // 让动态端口误入「普通 out」堆叠分支，导致新节点被堆到 peer（其它分支）上而偏移。
+  const isStandardOutPort = isOut && portId === `${sourceNodeId}-out`;
+
+  // 仅「普通 out 端口」在存在同级后续节点时做防重叠堆叠；其余端口直接落在被点击端口旁：
+  // - in 端口（如结束节点的入边）：peer 取的是「前驱节点」，堆叠会把新节点压到前驱上、
+  //   并偏离被点击的入端口 → 直接放在该入端口左侧。
+  // - 自定义 out 端口（多分支）：peer 取的是「任意分支的后续节点」（与具体分支无关），
+  //   堆叠会把新节点放到其它分支上 → 直接放在被点击分支端口的右侧。
   const theRange = 200;
-  if (isOut) {
+  if (isStandardOutPort) {
+    const peerPosition = getPeerNodePosition(sourceNodeId, graph, 'next');
     position.x = position.x + DEFAULT_NODE_CONFIG.newNodeOffsetX;
     if (peerPosition !== null && peerPosition.x <= position.x + theRange) {
       position.x = peerPosition.x + DEFAULT_NODE_CONFIG.offsetGapX;
       position.y = peerPosition.y + DEFAULT_NODE_CONFIG.offsetGapX;
     }
+  } else if (isOut) {
+    // 自定义 out 端口：直接放在被点击分支端口的右侧（保持该端口的 Y）
+    position.x = position.x + DEFAULT_NODE_CONFIG.newNodeOffsetX;
   } else {
-    // port 为 in 入边，需要向左偏移
+    // in 端口：直接放在被点击入端口的左侧（保持该端口的 Y）
     position.x = position.x - newNodeWidth - DEFAULT_NODE_CONFIG.newNodeOffsetX;
-    if (peerPosition !== null && peerPosition.x >= position.x - theRange) {
-      position.x = peerPosition.x - DEFAULT_NODE_CONFIG.offsetGapX;
-      position.y = peerPosition.y + DEFAULT_NODE_CONFIG.offsetGapX;
-    }
   }
 
-  // position 是图本地坐标，转为客户端坐标后 _doAddNode 可以可靠地识别
-  // 并通过 clientToGraph 转换回正确的图坐标，避免坐标范围误判。
-  const clientPos = graph.localToClient(position.x, position.y);
-  return { x: clientPos.x, y: clientPos.y };
+  // position 全程为模型(local)坐标；此处已是节点左上角，直接返回。
+  // 由 _doAddNode 以 coordinateSpace='model' 直接落点（不再 clientToLocal / 容器范围启发式）。
+  return position;
 };
 // 获取当前画布可视区域中心点
 const getViewportCenter = (
