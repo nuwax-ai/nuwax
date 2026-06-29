@@ -258,6 +258,9 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     setIsMoreMessage,
     loadingMore,
     handleLoadMoreMessage,
+    // 会话流式恢复(sub)
+    resumeConversationStream,
+    abortResumeStream,
   } = useModel('conversationInfo');
 
   // 页面预览相关状态
@@ -459,10 +462,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
             data,
             skillIds,
             modelId: selectedModelId,
-            agentMode:
-              (stateToUse?.agentMode as AgentMode) ||
-              (localStorage.getItem('nuwax_agent_mode_cache') as AgentMode) ||
-              'yolo',
+            agentMode: (stateToUse?.agentMode as AgentMode) || 'yolo',
           };
 
           onMessageSend(sendParams);
@@ -999,6 +999,13 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     isConversationActive:
       isConversationActive ||
       conversationInfo?.taskStatus === TaskStatus.EXECUTING,
+    // 本地是否正在 SSE 发送/接收（纯，不含后台 EXECUTING），供流式恢复 hook 使用
+    isLocallyStreaming: isConversationActive,
+    // 会话流式恢复(sub)：刷新页面/新开标签时重建 EXECUTING 会话的流式输出
+    onResumeConversationStream: resumeConversationStream,
+    onAbortResumeStream: abortResumeStream,
+    onReloadConversationHistoryAsync: async (id) =>
+      (await runAsync(Number(id)))?.data?.messageList,
     loadingSuggest,
     chatSuggestList,
     agentInfo: {
