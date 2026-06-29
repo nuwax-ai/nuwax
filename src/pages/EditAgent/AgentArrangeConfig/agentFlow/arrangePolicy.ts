@@ -31,6 +31,10 @@ export interface AgentFlowArrangePolicy {
   showToolsSection: boolean;
   /** 是否展示整块「知识」区 */
   showKnowledgeSection: boolean;
+  /** 是否展示整块「技能」区（AgentFlow / AgentGroup 不展示） */
+  showSkillSection: boolean;
+  /** 是否展示整块「组员」区（仅 AgentGroup） */
+  showGroupMembersSection: boolean;
   /** 是否展示「子智能体」折叠项 */
   showSubAgent: boolean;
   /** 是否展示「长期记忆」折叠项 */
@@ -66,6 +70,8 @@ export const getAgentFlowArrangePolicy = (
     isFlow,
     showToolsSection: !isFlow,
     showKnowledgeSection: !isFlow,
+    showSkillSection: !isFlow && !isGroup,
+    showGroupMembersSection: isGroup,
     showSubAgent: !isFlow,
     showLongMemory: !isFlow,
     showAllowOtherModel: !isFlow && !isGroup,
