@@ -536,36 +536,6 @@ const routes = [
           },
         ],
       },
-      // 生态市场
-      {
-        path: '/ecosystem',
-        name: getRouteLabel('PC.Routes.ecosystemMarket'),
-        access: 'canAdmin',
-        routes: [
-          {
-            path: '/ecosystem/plugin',
-            name: getRouteLabel('PC.Routes.ecosystemPlugin'),
-            component: '@/pages/EcosystemPlugin',
-            access: 'canAdmin',
-          },
-          {
-            path: '/ecosystem/template',
-            name: getRouteLabel('PC.Routes.ecosystemTemplate'),
-            component: '@/pages/EcosystemTemplate',
-            access: 'canAdmin',
-          },
-          {
-            path: '/ecosystem/mcp',
-            name: 'MCP',
-            component: '@/pages/EcosystemMcp',
-            access: 'canAdmin',
-          },
-          {
-            path: '/ecosystem',
-            redirect: '/ecosystem/mcp',
-          },
-        ],
-      },
     ],
   },
   {
