@@ -29,6 +29,7 @@ const NewHomeSection: React.FC<{
     chatIdParam || location.pathname.match(/\/home\/chat\/([^/]+)/)?.[1];
 
   const { handleCloseMobileMenu } = useModel('layout');
+  const { firstLevelMenus } = useModel('menuModel');
 
   const [localList, setLocalList] = useState<ConversationInfo[]>([]);
   const [loading, setLoading] = useState(false);
@@ -264,6 +265,10 @@ const NewHomeSection: React.FC<{
     history.push('/home');
   };
 
+  const showNewChatButton = firstLevelMenus?.some(
+    (menu: any) => menu?.code === 'new_conversation',
+  );
+
   const noMoreText = dict('PC.Components.HistoryConversationList.noMore');
 
   return (
@@ -272,6 +277,7 @@ const NewHomeSection: React.FC<{
         keyword={keyword}
         onSearchChange={handleSearchChange}
         onNewChat={handleNewConversation}
+        showNewChatButton={showNewChatButton}
       />
 
       {/* 会话记录列表 */}
