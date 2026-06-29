@@ -1,5 +1,6 @@
+import { GLOBAL_POLLING_INTERVAL } from '@/constants/home.constants';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useModel } from 'umi';
 import type { AgentInterventionChatLayerProps } from '../AgentInterventionChatLayer';
 import type {
@@ -101,6 +102,41 @@ export function useAgentInterventionLayer(
     },
     [interventionHandlers],
   );
+
+  // 用 ref 跟踪最新 agentMode，避免同步 effect 依赖它而频繁重建定时器
+  const agentModeRef = useRef(agentMode);
+  agentModeRef.current = agentMode;
+
+  // 模式切换已开启：轮询 + storage 事件把 localStorage 的 agentMode 同步到 state，
+  // 使恢复中的会话使用最新模式（多标签下 A 切换后 B 能及时同步）。
+  // 预览模式（interventionHandlers）仅内存态、不读写 localStorage，跳过。
+  useEffect(() => {
+    if (interventionHandlers) {
+      return;
+    }
+    const syncFromCache = () => {
+      try {
+        const cached = localStorage.getItem(AGENT_MODE_STORAGE_KEY);
+        if (
+          (cached === 'yolo' || cached === 'ask') &&
+          cached !== agentModeRef.current
+        ) {
+          // 仅更新 state，不回写缓存，避免与写入方形成循环
+          setAgentModeState(cached as AgentMode);
+        }
+      } catch (e) {
+        // ignore localStorage errors
+      }
+    };
+    // 跨标签：storage 事件即时同步
+    window.addEventListener('storage', syncFromCache);
+    // 同标签兜底：与全局轮询同频定期读
+    const timer = window.setInterval(syncFromCache, GLOBAL_POLLING_INTERVAL);
+    return () => {
+      window.removeEventListener('storage', syncFromCache);
+      window.clearInterval(timer);
+    };
+  }, [interventionHandlers]);
 
   const conversationInfoModel = useModel('conversationInfo');
 
