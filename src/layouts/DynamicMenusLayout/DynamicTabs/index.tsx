@@ -56,13 +56,15 @@ const DynamicTabs: React.FC<DynamicTabsProps> = ({
 
   // 将 MenuItemDto 转换为 TabItem 所需的格式
   const tabItems = useMemo(() => {
-    return menus.map((menu) => ({
-      menu,
-      type: menu.code,
-      icon: menu.icon,
-      text: menu.name,
-      active: activeTab === menu.code,
-    }));
+    return menus
+      .map((menu) => ({
+        menu,
+        type: menu.code,
+        icon: menu.icon,
+        text: menu.name,
+        active: activeTab === menu.code,
+      }))
+      .filter((item) => item.type !== 'new_conversation');
   }, [menus, activeTab]);
 
   /** 一级栏固定宽度：Style1 60px，Style2 80px（与父级 first-menus 一致） */
