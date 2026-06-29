@@ -106,6 +106,8 @@ export interface UnifiedChatSessionProps {
   messageViewRef?: React.RefObject<HTMLDivElement>;
   className?: string;
   style?: React.CSSProperties;
+  /** 额外禁用输入框，用于跨会话联动控制输入态 */
+  chatInputDisabled?: boolean;
 
   // 输入框属性透传，用于支持展示不同的工具栏、工具列表配置
   chatInputProps?: Partial<ChatInputProps>;
