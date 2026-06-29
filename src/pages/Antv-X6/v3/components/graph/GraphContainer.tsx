@@ -35,6 +35,7 @@ import {
   LOOP_INNER_NODE_Y_OFFSET,
   LOOP_START_NODE_X_OFFSET,
 } from '../../constants/loopNodeConstants';
+import { isClientCoordinate as isPointInClientSpace } from '../../utils/canvasPosition';
 import {
   adjustParentSize,
   animateRunningEdges,
@@ -174,23 +175,34 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       updateEdgeArrows(graphRef.current);
     };
 
-    const _doAddNode = (e: GraphRect, child: ChildNode) => {
-      // 判断坐标是否需要转换：
-      // - 如果坐标是通过拖拽事件（clientX/clientY）获取的，需要 clientToGraph 转换
-      // - 如果坐标是通过 getGraphArea 计算的视口中心，则已经是图坐标，不需要转换
-      // 更可靠的方式是检查坐标是否在画布容器的客户端范围内
+    const _doAddNode = (
+      e: GraphRect,
+      child: ChildNode,
+      coordinateSpace: 'model' | 'auto' = 'auto',
+    ) => {
+      // 坐标系判断：
+      // - 'model'：e 已是节点模型(local)坐标的左上角（端口/边快捷添加、复制），直接落点，
+      //   不做 clientToLocal 转换、不做居中。端口/边路径本就在模型空间算出了精确落点，
+      //   不应再用「落点是否在画布容器内」的启发式判断——该启发式在落点超出容器边界
+      //   （如 in 端口向左偏移，落点常落到容器左边界之外）或画布平移/缩放时会误判坐标系，
+      //   把 client/模型坐标错当另一空间使用，导致新节点大幅偏移（即便不平移画布也会偏，
+      //   因为坐标里夹带了容器相对视口的偏移量）。
+      // - 'auto'（默认）：保留旧启发式，用坐标是否落在画布容器 client 范围内来区分
+      //   client(拖拽落点) 与 model(视口中心)。仅用于无显式声明的旧路径。
+      const isModelSpace = coordinateSpace === 'model';
       const container = graphRef.current.container;
-      const containerRect = container?.getBoundingClientRect();
-      const isClientCoordinate =
-        containerRect &&
-        e.x >= containerRect.left &&
-        e.x <= containerRect.right &&
-        e.y >= containerRect.top &&
-        e.y <= containerRect.bottom;
+      // auto 模式下用启发式判断是否 client 坐标；model 模式恒为「模型左上角」
+      const isClientCoordinate = isModelSpace
+        ? false
+        : isPointInClientSpace({ x: e.x, y: e.y }, container);
 
-      const point = isClientCoordinate
-        ? graphRef.current.clientToGraph(e.x, e.y)
-        : { x: e.x, y: e.y }; // 已经是图坐标，直接使用
+      // X6 命名易误导：node.position 用的是 "local"（模型坐标），故 client→节点位置须用 clientToLocal；
+      // 误用 clientToGraph 会在画布平移/缩放后产生偏移。
+      const point = isModelSpace
+        ? { x: e.x, y: e.y } // 模型(local)坐标左上角，直接用
+        : isClientCoordinate
+        ? graphRef.current.clientToLocal(e.x, e.y) // client 落点 → 模型坐标
+        : { x: e.x, y: e.y }; // 视口中心(model) 直接用
 
       // 先生成端口，再基于端口 offsetY 计算节点高度（AgentFlow 分支节点高度由端口决定）
       const ports = generatePorts(child);
@@ -200,10 +212,12 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         type: NodeSizeGetTypeEnum.create,
       });
 
-      // 如果坐标是视口中心（非客户端坐标），需要将节点中心对齐到该点
-      // 即节点位置 = 中心点 - 节点宽高的一半
-      const nodeX = isClientCoordinate ? point.x : point.x - width / 2;
-      const nodeY = isClientCoordinate ? point.y : point.y - height / 2;
+      // model 左上角 与 client 落点 都按「左上角」放置（端口/边算出的本就是左上角）；
+      // 只有视口中心(auto 且非 client，即 model 中心)需要把节点中心对齐到该点：
+      // 节点位置 = 中心点 - 节点宽高的一半
+      const useAsTopLeft = isModelSpace || isClientCoordinate;
+      const nodeX = useAsTopLeft ? point.x : point.x - width / 2;
+      const nodeY = useAsTopLeft ? point.y : point.y - height / 2;
 
       // 根据情况，动态给予右侧的out连接桩
       const newNode = graphRef.current.addNode({
@@ -257,9 +271,10 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
     const graphAddNode: GraphContainerRef['graphAddNode'] = (
       e: GraphRect,
       child: ChildNode,
+      coordinateSpace: 'model' | 'auto' = 'auto',
     ) => {
       if (!graphRef.current) return;
-      _doAddNode(e, child);
+      _doAddNode(e, child, coordinateSpace);
       // 找出循环节点 子节点如果有就添加
       const LoopNodeList = addLoopChildNode((data) => {
         return data.id === child.id && data.type === 'Loop';

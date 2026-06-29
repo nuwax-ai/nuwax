@@ -5,7 +5,7 @@ import OtherOperations from '@/components/OtherAction';
 import PublishComponentModal from '@/components/PublishComponentModal';
 import TestRun from '@/components/TestRun';
 import VersionHistory from '@/components/VersionHistory';
-import { CREATED_TABS } from '@/constants/common.constants';
+import { resolveAgentFlowCreatedModalTabs } from '@/pages/Antv-X6/v3/agentFlow/createdPicker';
 import { testRunList } from '@/pages/Antv-X6/v3/constants/node.constants';
 import { AGENTFLOW_UI_CONFIG } from '@/pages/Antv-X6/v3/flowKind/flowKindConfig';
 import {
@@ -211,17 +211,21 @@ const WorkflowLayout: React.FC<WorkflowLayoutProps> = ({
   const isAgentFlow = useIsAgentFlow();
   const agentFlowKind = useAgentFlowKind();
 
-  /** AgentFlow 添加智能体节点：Created 仅展示「智能体」Tab，且列表限定当前空间已发布 */
-  const createdModalTabs = useMemo(() => {
-    if (isAgentFlow && createdItem === AgentComponentTypeEnum.Agent) {
-      return CREATED_TABS.filter(
-        (item) => item.key === AgentComponentTypeEnum.Agent,
-      );
-    }
-    return workflowCreatedTabs;
-  }, [isAgentFlow, createdItem, workflowCreatedTabs]);
+  /** AgentFlow 添加智能体/工作流：Created 仅展示对应单一 Tab */
+  const createdModalTabs = useMemo(
+    () =>
+      resolveAgentFlowCreatedModalTabs(
+        isAgentFlow,
+        createdItem,
+        workflowCreatedTabs,
+      ),
+    [isAgentFlow, createdItem, workflowCreatedTabs],
+  );
 
   const createdIsSpaceOnly =
+    isAgentFlow && createdItem === AgentComponentTypeEnum.Agent;
+
+  const createdIsAgentFlowAgentPicker =
     isAgentFlow && createdItem === AgentComponentTypeEnum.Agent;
 
   return (
@@ -340,6 +344,7 @@ const WorkflowLayout: React.FC<WorkflowLayoutProps> = ({
         open={open}
         tabs={createdModalTabs}
         isSpaceOnly={createdIsSpaceOnly}
+        isAgentFlowAgentPicker={createdIsAgentFlowAgentPicker}
         modalZIndex={isAgentFlow ? AGENTFLOW_UI_CONFIG.modalZIndex : undefined}
         addComponents={[
           {

@@ -4,7 +4,10 @@ import { EllipsisTooltip } from '@/components/custom/EllipsisTooltip';
 import Constant, { SUCCESS_CODE } from '@/constants/codes.constants';
 import { CREATED_TABS } from '@/constants/common.constants';
 import useSubscription from '@/hooks/useSubscription';
-import service, { IGetList } from '@/services/created';
+import service, {
+  AGENT_FLOW_SELECTABLE_AGENT_TYPES,
+  IGetList,
+} from '@/services/created';
 import { apiTableAdd } from '@/services/dataTable';
 import { t } from '@/services/i18nRuntime';
 import { apiCustomPageQueryList } from '@/services/pageDev';
@@ -105,6 +108,7 @@ const Created: React.FC<CreatedProp> = ({
   modalZIndex,
   showMoreMenus = true,
   isGroupAgentPicker = false,
+  isAgentFlowAgentPicker = false,
 }) => {
   /**  -----------------  定义一些变量  -----------------   */
   const params = useParams();
@@ -302,10 +306,12 @@ const Created: React.FC<CreatedProp> = ({
         params.dataType = dataTypeRef.current;
       }
 
-      // 如果类型是智能体，则设置 targetType；群组智能体选择器不过滤 ChatBot 子类型
+      // 智能体：默认只查 ChatBot；AgentFlow 选器按 agentTypes 过滤；群组选器拉全量
       if (type === AgentComponentTypeEnum.Agent) {
         params.targetType = AgentComponentTypeEnum.Agent;
-        if (!isGroupAgentPicker) {
+        if (isAgentFlowAgentPicker) {
+          params.agentTypes = [...AGENT_FLOW_SELECTABLE_AGENT_TYPES];
+        } else if (!isGroupAgentPicker) {
           params.targetSubType = 'ChatBot';
         }
       }
@@ -334,8 +340,10 @@ const Created: React.FC<CreatedProp> = ({
         total: data.total,
       }));
 
+      const records = data?.records ?? [];
+
       // 如果statistics为空，则设置为0 避免第一次点击收藏时没有任何效果
-      data?.records?.forEach((item: any) => {
+      records.forEach((item: any) => {
         if (!item.statistics) {
           item.statistics = {
             collectCount: 0,
@@ -345,7 +353,7 @@ const Created: React.FC<CreatedProp> = ({
 
       setList((prev) => {
         const newList =
-          params.page === 1 ? [...data.records] : [...prev, ...data.records];
+          params.page === 1 ? [...records] : [...prev, ...records];
 
         setDoSearching({ ...doSearching, list: newList }); //同步更新缓存列表
         return newList;
@@ -368,7 +376,8 @@ const Created: React.FC<CreatedProp> = ({
       const _type = selected.key?.toLowerCase();
       const _res = await service.collectList(_type, params);
       if (localVersion !== requestVersionRef.current) return;
-      setList([..._res.data]);
+      const records = _res.data ?? [];
+      setList([...records]);
       setLoading(false);
     } catch (error) {
       if (localVersion === requestVersionRef.current) {

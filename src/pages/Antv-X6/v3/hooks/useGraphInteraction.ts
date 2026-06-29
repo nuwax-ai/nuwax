@@ -43,12 +43,16 @@ export const useGraphInteraction = ({
       callback: () => Promise<boolean> | void = () =>
         getReference(getWorkflow('drawerForm').id),
     ) => {
-      const { type, targetId, sourceNode, id } = config;
+      const { type, targetId, sourceNode, id, sourcePort } = config;
       if (!graphRef.current) return false;
 
       if (type === UpdateEdgeType.created) {
-        // 添加边
-        const edgeDef = { source: String(sourceNode.id), target: targetId };
+        // 添加边（分支节点需传 sourcePort，供代理层识别特殊端口）
+        const edgeDef = {
+          source: String(sourceNode.id),
+          target: targetId,
+          ...(sourcePort ? { sourcePort } : {}),
+        };
         const res = workflowProxy.addEdge(edgeDef as any);
 
         if (res.success) {
@@ -89,7 +93,11 @@ export const useGraphInteraction = ({
         }
       } else if (type === UpdateEdgeType.deleted) {
         // 删除边
-        const res = workflowProxy.deleteEdge(String(sourceNode.id), targetId);
+        const res = workflowProxy.deleteEdge(
+          String(sourceNode.id),
+          targetId,
+          sourcePort,
+        );
 
         if (res.success) {
           changeUpdateTime();

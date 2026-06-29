@@ -19,7 +19,15 @@
  * `{ hasDescription: true }` 开启。
  */
 
+import { isHitlOptionsBranchMode } from '@/pages/Antv-X6/v3/agentFlow/adapters/qaConfigAdapter';
+import { isAgentFlowType } from '@/pages/Antv-X6/v3/flowKind/flowKindConfig';
+import { NodeTypeEnum } from '@/types/enums/common';
 import type { ChildNode } from '@/types/interfaces/graph';
+
+/** 与 DEFAULT_NODE_CONFIG_MAP.default.defaultHeight 一致 */
+export const GENERAL_NODE_HEADER_HEIGHT = 32 + 10 + 2;
+
+const NODE_BOTTOM_PADDING_AND_BORDER = 11;
 
 export const BRANCH_PORT_BASE_Y = 42;
 export const BRANCH_PORT_ITEM_HEIGHT = 24;
@@ -48,6 +56,53 @@ export function extractPortSuffix(node: ChildNode, portId: string): string {
     suffix = suffix.substring(0, suffix.length - 4);
   }
   return suffix;
+}
+
+/** AgentFlow 节点是否在 header 展示描述行（仅此时需下移端口） */
+export function hasAgentFlowNodeDescription(data: ChildNode): boolean {
+  if (!isAgentFlowType(data.type)) {
+    return false;
+  }
+  const desc = (data as { description?: string }).description;
+  return typeof desc === 'string' && desc.trim().length > 0;
+}
+
+/**
+ * AgentFlow 单 out 端口是否使用 X6 `right` 侧栏布局（与 `in` 的 `left` 一致，按节点 bbox 垂直居中）。
+ * 多分支节点（路由决策 / 询问选项）仍用 absolute 按 branchPortY 定位。
+ */
+export function shouldUseFixedSideOutPort(data: ChildNode): boolean {
+  if (data.type === NodeTypeEnum.RouteDecision) {
+    return false;
+  }
+  if (
+    data.type === NodeTypeEnum.HumanInteraction &&
+    isHitlOptionsBranchMode(data.nodeConfig as Record<string, any>)
+  ) {
+    return false;
+  }
+  // AgentFlow 画布上的工作流 / 智能体 / 询问用户（文本·表单）均为单 out
+  return (
+    data.type === NodeTypeEnum.Workflow ||
+    data.type === NodeTypeEnum.Agent ||
+    data.type === NodeTypeEnum.HumanInteraction
+  );
+}
+
+/**
+ * 单 in/out 端口纵向居中（相对 header，含可选描述行）
+ * 用于开始/结束/工作流/智能体及分支节点的输入口等。
+ */
+export function singlePortCenterY(options?: { hasDescription?: boolean }): {
+  yHeight: number;
+  offsetY: number;
+} {
+  const descHeight = options?.hasDescription ? BRANCH_PORT_DESC_HEIGHT : 0;
+  const headerHeight = GENERAL_NODE_HEADER_HEIGHT + descHeight;
+  return {
+    yHeight: (headerHeight - 1) / 2 + 1,
+    offsetY: headerHeight - NODE_BOTTOM_PADDING_AND_BORDER,
+  };
 }
 
 /**
