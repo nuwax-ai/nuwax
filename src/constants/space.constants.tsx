@@ -224,14 +224,17 @@ export const APPLICATION_MORE_ACTION = [
     type: ApplicationMoreActionEnum.Analyze,
     label: dict('PC.Constants.Space.analyze'),
   },
+  // 复制到空间
   {
     type: ApplicationMoreActionEnum.Copy_To_Space,
     label: dict('PC.Constants.Space.copyToSpace'),
   },
+  // 迁移
   {
     type: ApplicationMoreActionEnum.Move,
     label: dict('PC.Constants.Space.migrate'),
   },
+  // 临时会话
   {
     type: ApplicationMoreActionEnum.Temporary_Session,
     label: dict('PC.Constants.Space.temporarySession'),
@@ -241,7 +244,9 @@ export const APPLICATION_MORE_ACTION = [
     type: ApplicationMoreActionEnum.Independent_Session,
     label: dict('PC.Constants.Space.independentSession'),
   },
+  // API Key
   { type: ApplicationMoreActionEnum.API_Key, label: 'API Key' },
+  // 导出配置
   {
     type: ApplicationMoreActionEnum.Export_Config,
     label: dict('PC.Constants.Space.exportConfig'),

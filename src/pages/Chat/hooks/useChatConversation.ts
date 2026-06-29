@@ -160,10 +160,7 @@ export const useChatConversation = ({
       sandboxId: effectiveSandboxId || undefined,
       skillIds,
       modelId: modelId || selectedModelId,
-      agentMode:
-        selectedAgentMode ||
-        (localStorage.getItem('nuwax_agent_mode_cache') as AgentMode) ||
-        'yolo',
+      agentMode: selectedAgentMode || 'yolo',
     };
 
     incrementCalledTrialCount();

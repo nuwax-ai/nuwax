@@ -44,6 +44,9 @@ const PluginChatSession: React.FC<PluginChatSessionProps> = ({
     loadingConversation,
     isLoadingOtherInterface,
     isConversationActive,
+    // 会话流式恢复(sub)
+    resumeConversationStream,
+    abortResumeStream,
   } = useModel('conversationInfo');
 
   // 1. 初始化回显从外部跳转传递过来的信息
@@ -203,6 +206,7 @@ const PluginChatSession: React.FC<PluginChatSessionProps> = ({
         isConversationActive ||
         conversationInfo?.taskStatus === TaskStatus.EXECUTING
       }
+      isLocallyStreaming={isConversationActive}
       messageBottomMode="chat"
       loadingSuggest={false}
       chatSuggestList={chatSuggestList as string[]}
@@ -240,6 +244,12 @@ const PluginChatSession: React.FC<PluginChatSessionProps> = ({
       loadingConversation={loadingConversation}
       isLoadingOtherInterface={isLoadingOtherInterface}
       conversationInfo={conversationInfo}
+      // 会话流式恢复(sub)：刷新页面/新开标签时重建 EXECUTING 会话的流式输出
+      onResumeConversationStream={resumeConversationStream}
+      onAbortResumeStream={abortResumeStream}
+      onReloadConversationHistoryAsync={async (id) =>
+        (await runAsync(Number(id)))?.data?.messageList
+      }
     />
   );
 };

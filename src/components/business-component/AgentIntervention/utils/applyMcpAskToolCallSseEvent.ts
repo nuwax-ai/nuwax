@@ -109,6 +109,11 @@ export function applyMcpAskToolCallSseEvent(
       (result?.executeId as string);
   }
 
+  const executeId =
+    (eventData.executeId as string) ||
+    (result?.executeId as string) ||
+    undefined;
+
   const mcpAskInput = parseMcpAskToolInput(rawInput);
 
   if (!mcpAskInput || !toolCallId) {
@@ -129,6 +134,7 @@ export function applyMcpAskToolCallSseEvent(
       {
         input: mcpAskInput,
         toolCallId,
+        executeId,
         responseStatus: 'pending',
         triggeredAt: createInterventionTriggeredAt(),
       },

@@ -14,6 +14,10 @@ export const TENANT_CONFIG_INFO = 'TENANT_CONFIG_INFO';
 // 应用版本号存储 key
 export const APP_VERSION = 'APP_VERSION';
 
+// 全局轮询基准间隔(ms)：useEventPolling(事件收集) 与 useConversationStreamResume(会话流式恢复) 共用，
+// 保持两者轮询频率一致；调整时只改这一处
+export const GLOBAL_POLLING_INTERVAL = 5000;
+
 // 推荐聊天主题
 export const RECOMMEND_TEXT = [
   dict('PC.Constants.Home.exampleQ1'),

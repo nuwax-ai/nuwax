@@ -41,6 +41,12 @@ export interface UnifiedChatSessionProps {
    * 与 showTaskExecutingWait 分离：后者仅 taskStatus=EXECUTING 且无流式消息时展示横幅。
    */
   isConversationActive?: boolean;
+  /**
+   * 本地是否正在通过 SSE 发送/接收（model 原始 isConversationActive，【不】含「后台 taskStatus===EXECUTING」）。
+   * 供流式恢复 hook 判断「本地是否在驱动输出」——若混入 taskStatus，EXECUTING 会话会被误判为
+   * 本地流式中，导致既不轮询也不订阅 sub（续不上）。未传时回退到 isConversationActive。
+   */
+  isLocallyStreaming?: boolean;
   messageBottomMode?: 'none' | 'home' | 'chat'; // 消息底部操作栏模式：none | home | chat
   showDebug?: boolean;
   loadingSuggest?: boolean; // 会话建议加载状态
@@ -145,4 +151,19 @@ export interface UnifiedChatSessionProps {
    * 未传时默认使用全局 conversationInfo model。
    */
   interventionHandlers?: AgentInterventionHandlersOverride;
+
+  // ===== 会话流式恢复(sub)：刷新页面 / 新开标签时重建 EXECUTING 会话的流式输出 =====
+  // 未注入下列 action 的页面（如隔离会话源）将不启用恢复。
+  /** 订阅 sub 流（model 的 resumeConversationStream） */
+  onResumeConversationStream?: (
+    conversationId: number | string,
+    currentList: MessageInfo[],
+    onClose?: () => void,
+  ) => void;
+  /** 中断 sub 流（model 的 abortResumeStream） */
+  onAbortResumeStream?: () => void;
+  /** 刷新历史并返回最新 messageList（model 的 runAsync 包装）；多页签续上时补全用户消息 */
+  onReloadConversationHistoryAsync?: (
+    conversationId: number | string,
+  ) => Promise<MessageInfo[] | undefined | null>;
 }

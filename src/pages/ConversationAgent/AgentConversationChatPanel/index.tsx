@@ -83,6 +83,10 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
     isConversationActive,
     // 其它接口加载状态
     isLoadingOtherInterface,
+    // 会话流式恢复(sub)
+    resumeConversationStream,
+    abortResumeStream,
+    runAsync,
   } = useModel('conversationInfo');
 
   // 监听 isConversationActive 从 true → false，触发会话结束回调
@@ -105,6 +109,7 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
           isConversationActive ||
           conversationInfo?.taskStatus === TaskStatus.EXECUTING
         }
+        isLocallyStreaming={isConversationActive}
         messageBottomMode="chat"
         showDebug={false}
         chatSuggestList={chatSuggestList}
@@ -156,6 +161,12 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
         loadingConversation={loadingConversation}
         isLoadingOtherInterface={isLoadingOtherInterface}
         conversationInfo={conversationInfo}
+        // 会话流式恢复(sub)：刷新页面/新开标签时重建 EXECUTING 会话的流式输出
+        onResumeConversationStream={resumeConversationStream}
+        onAbortResumeStream={abortResumeStream}
+        onReloadConversationHistoryAsync={async (id) =>
+          (await runAsync(Number(id)))?.data?.messageList
+        }
       />
     </div>
   );

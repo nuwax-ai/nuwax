@@ -246,6 +246,8 @@ export function useConversationAgentChatSession(
     loadingMore,
     isMoreMessage,
     isConversationActive: agentStreamActive || agentTaskExecuting,
+    // 本地是否正在 SSE 发送/接收（纯，不含后台 EXECUTING），供流式恢复 hook 使用
+    isLocallyStreaming: agentStreamActive,
     queueContext: {
       streamActive: agentStreamActive,
       taskExecuting: agentTaskExecuting,

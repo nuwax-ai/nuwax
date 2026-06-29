@@ -80,6 +80,10 @@ export function applyAcpPermissionSseEvent(
     (processingInput?.tool_call_id as string) ||
     (toolCall?.toolCallId as string) ||
     (toolCall?.tool_call_id as string);
+  const executeId =
+    (eventData.executeId as string) ||
+    (processingResult?.executeId as string) ||
+    undefined;
 
   if ((!intervention?.id && !sessionId) || !toolCall) {
     return null;
@@ -137,6 +141,7 @@ export function applyAcpPermissionSseEvent(
       ...interactions,
       {
         intervention: normalizedIntervention,
+        executeId,
         responseStatus: 'pending',
         triggeredAt: createInterventionTriggeredAt(),
       },

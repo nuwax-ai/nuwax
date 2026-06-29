@@ -243,6 +243,12 @@ const routes = [
             name: getRouteLabel('PC.Routes.modelPermissions'),
             component: '@/pages/MorePage/ModelPermissions',
           },
+          // 历史会话
+          {
+            path: 'history-conversation',
+            name: getRouteLabel('PC.Routes.historyConversation'),
+            component: '@/pages/HistoryConversation',
+          },
         ],
       },
       // 系统管理统一管理

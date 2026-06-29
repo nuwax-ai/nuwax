@@ -7,6 +7,8 @@ export const UPLOAD_FILE_ACTION = `${process.env.BASE_URL}/api/file/upload`;
 
 // 会话 Connection地址
 export const CONVERSATION_CONNECTION_URL = `${process.env.BASE_URL}/api/agent/conversation/chat`;
+// 会话流式恢复(sub)地址：刷新页面/新开标签时，订阅 EXECUTING 会话的输出流（载荷结构与 chat 一致）
+export const CONVERSATION_CHAT_SUB_URL = `${process.env.BASE_URL}/api/agent/conversation/chat/sub`;
 // 临时会话 Connection地址
 export const TEMP_CONVERSATION_CONNECTION_URL = `${process.env.BASE_URL}/api/temp/chat/completions`;
 
