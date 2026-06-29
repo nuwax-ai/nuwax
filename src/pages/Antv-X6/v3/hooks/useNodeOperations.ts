@@ -613,9 +613,14 @@ export const useNodeOperations = ({
   const handleNodeCreationSuccess = useCallback(
     async (nodeData: AddNodeResponse) => {
       // 添加节点到画布
+      // 端口/边快捷添加（currentNodeRef 已置位）的 extension 是模型(local)坐标的节点左上角
+      // （见 graphV3.calculateNodePosition），显式声明 'model' 直接落点，绕开 _doAddNode 的
+      // 容器范围启发式——该启发式在 in 端口向左偏移（落点落到容器外）或画布平移/缩放时会
+      // 误判坐标系，导致新节点大幅偏移。拖拽落点/视口中心仍走 'auto'。
       graphRef.current?.graphAddNode(
         nodeData.nodeConfig.extension as GraphRect,
         nodeData as unknown as ChildNode,
+        currentNodeRef.current ? 'model' : 'auto',
       );
 
       // 选中新增的节点并打开右侧属性面板。
@@ -1022,9 +1027,12 @@ export const useNodeOperations = ({
           const proxyResult = workflowProxy.addNode(newNode);
           if (proxyResult.success) {
             // 添加节点到画布
+            // 复制节点的 extension 来自源节点保存位置 + 偏移，是模型(local)坐标左上角，
+            // 同样用 'model' 直接落点（与端口/边一致），避免容器范围启发式在画布平移时误判。
             graphRef.current?.graphAddNode(
               newNode.nodeConfig.extension as GraphRect,
               newNode,
+              'model',
             );
 
             // 选中复制出的节点并打开属性面板。

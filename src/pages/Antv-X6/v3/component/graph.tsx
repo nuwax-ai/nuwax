@@ -205,8 +205,10 @@ const initGraph = ({
     const isInLoop = !!(
       sourceNode?.loopNodeId || sourceNode?.type === NodeTypeEnum.Loop
     );
+    // 唯一标记：渲染后据此找到弹层本体(.ant-modal)实测高度并精确定位
+    const popoverFlag = `quick-add-popover-${Date.now()}`;
     const popoverContent = (
-      <div className="confirm-popover">
+      <div className={`confirm-popover ${popoverFlag}`}>
         <StencilContent
           dragChild={(child: StencilChildNode) => {
             dragChild(child);
@@ -217,20 +219,81 @@ const initGraph = ({
         />
       </div>
     );
-    Modal.confirm({
+    // 弹层定位：贴近端口锚点，并按视口夹紧，避免端口贴边时弹层被推出视口而裁切/隐藏
+    const POPOVER_WIDTH = 260;
+    const POPOVER_GAP = 12; // 与端口的间距
+    const POPOVER_MARGIN = 8; // 离视口边缘的安全距离
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    // 水平：默认放端口右侧；右侧放不下（会溢出视口）则翻到左侧，再夹紧
+    let popoverLeft = anchor.x + POPOVER_GAP;
+    if (popoverLeft + POPOVER_WIDTH > vw - POPOVER_MARGIN) {
+      popoverLeft = anchor.x - POPOVER_WIDTH - POPOVER_GAP;
+    }
+    popoverLeft = Math.max(
+      POPOVER_MARGIN,
+      Math.min(popoverLeft, vw - POPOVER_WIDTH - POPOVER_MARGIN),
+    );
+    // 垂直：先以端口为起点（隐藏）渲染，渲染后实测弹层(.ant-modal)高度，把起点夹紧到视口内再显示。
+    // 用内容标记 popoverFlag + closest('.ant-modal') 可靠定位弹层本体（className 不一定落到 .ant-modal）；
+    // 首帧可能未挂载，最多重试 3 帧。这样既不会超出屏幕被裁切，也不需要 maxHeight/overflow（不会出滚动条）。
+    const popoverStyle = {
+      position: 'fixed' as const,
+      left: popoverLeft,
+      top: anchor.y,
+      margin: 0,
+      paddingBottom: 0,
+      visibility: 'hidden' as const,
+    };
+    const modalInstance = Modal.confirm({
       content: popoverContent,
       footer: null,
       icon: null,
-      width: 260,
+      width: POPOVER_WIDTH,
       maskClosable: true,
       getContainer: () => document.body,
       transitionName: '',
       maskTransitionName: '',
-      style: {
-        position: 'fixed',
-        left: anchor.x,
-      },
+      style: popoverStyle,
     });
+    const placePopover = (attempt: number) => {
+      const content = document.querySelector(
+        `.${popoverFlag}`,
+      ) as HTMLElement | null;
+      const el =
+        (content?.closest('.ant-modal') as HTMLElement | null) || content;
+      if (!el) {
+        if (attempt < 3) {
+          requestAnimationFrame(() => placePopover(attempt + 1));
+          return;
+        }
+        // 极端时序兜底：垂直居中显示（保证可见且尽量不裁切）
+        modalInstance.update({
+          style: {
+            ...popoverStyle,
+            top: '50%',
+            transform: 'translateY(-50%)',
+            visibility: 'visible',
+          },
+        });
+        return;
+      }
+      const h = el.offsetHeight;
+      let top: number;
+      if (h > vh - 2 * POPOVER_MARGIN) {
+        // 弹层比可视区还高：顶对齐（极少见，此时无法完全避免裁切）
+        top = POPOVER_MARGIN;
+      } else {
+        // 默认顶端对齐端口；下溢则上移；再夹到 [margin, vh - h - margin]
+        top = anchor.y;
+        if (top + h > vh - POPOVER_MARGIN) top = vh - h - POPOVER_MARGIN;
+        if (top < POPOVER_MARGIN) top = POPOVER_MARGIN;
+      }
+      modalInstance.update({
+        style: { ...popoverStyle, top, visibility: 'visible' },
+      });
+    };
+    requestAnimationFrame(() => placePopover(0));
   };
 
   const graph = new Graph({

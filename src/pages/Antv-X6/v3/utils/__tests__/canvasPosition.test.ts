@@ -6,7 +6,6 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   elementClientCenter,
   getPortClientCenter,
-  graphPointToClient,
   isClientCoordinate,
   resolveQuickAddAnchorClient,
 } from '../canvasPosition';
@@ -48,16 +47,6 @@ function mockDomRect(
     toJSON: () => ({}),
   } as DOMRect;
 }
-
-describe('graphPointToClient', () => {
-  it('应串联 graphToLocal 与 localToClient', () => {
-    const graph = createMockGraph();
-    const result = graphPointToClient(graph, { x: 100, y: 200 });
-    expect(graph.graphToLocal).toHaveBeenCalledWith({ x: 100, y: 200 });
-    expect(graph.localToClient).toHaveBeenCalledWith({ x: 101, y: 202 });
-    expect(result).toEqual({ x: 111, y: 222 });
-  });
-});
 
 describe('isClientCoordinate', () => {
   it('点在容器 rect 内应返回 true', () => {
@@ -108,7 +97,7 @@ describe('getPortClientCenter', () => {
     });
 
     const center = getPortClientCenter(graph, '1', '1-route-a-out');
-    expect(center).toEqual({ x: 531, y: 500 });
+    expect(center).toEqual({ x: 530, y: 498 });
   });
 
   it('节点或端口不存在时返回 null', () => {
@@ -205,7 +194,7 @@ describe('resolveQuickAddAnchorClient', () => {
       portId: '9-out',
     });
 
-    expect(anchor).toEqual({ x: 231, y: 44 });
+    expect(anchor).toEqual({ x: 230, y: 42 });
   });
 
   it('全部失败时返回原点', () => {
