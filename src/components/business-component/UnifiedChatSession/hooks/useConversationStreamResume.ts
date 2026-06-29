@@ -121,8 +121,18 @@ export function useConversationStreamResume(
       // 屏幕不可见时暂停定时任务（多窗口/多标签仅可见者轮询）
       pollingWhenHidden: false,
       pollingErrorRetryCount: -1,
-      ready: !!conversationId && !isLocallyStreaming && !isResumeSubscribed,
-      refreshDeps: [conversationId, isLocallyStreaming, isResumeSubscribed],
+      // resumeStream 未注入（如 ConversationAgent 预览 Tab，dev 调试会话）则整体不启用：不轮询、不订阅
+      ready:
+        !!conversationId &&
+        !isLocallyStreaming &&
+        !isResumeSubscribed &&
+        !!resumeStream,
+      refreshDeps: [
+        conversationId,
+        isLocallyStreaming,
+        isResumeSubscribed,
+        resumeStream,
+      ],
       onSuccess: (status) => {
         if (!conversationId) return;
         if (status === TaskStatus.EXECUTING) {

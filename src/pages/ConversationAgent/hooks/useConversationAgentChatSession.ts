@@ -89,9 +89,6 @@ export function useConversationAgentChatSession(
     getCurrentConversationRequestId,
     respondAcpPermission,
     respondMcpAsk,
-    // 会话流式恢复(sub)
-    resumeConversationStream,
-    abortResumeStream,
   } = useModel('conversationAgent');
 
   const { hidePagePreview, showPagePreview } = useModel('chat');
@@ -315,8 +312,5 @@ export function useConversationAgentChatSession(
     isLoadingOtherInterface,
     conversationInfo,
     interventionHandlers,
-    // 会话流式恢复(sub)：刷新页面/新开标签时重建 EXECUTING 会话的流式输出
-    onResumeConversationStream: resumeConversationStream,
-    onAbortResumeStream: abortResumeStream,
   };
 }
