@@ -37,6 +37,8 @@ export interface UseConversationAgentChatSessionOptions {
   onSelectComponent?: (comp: AgentSelectedComponentInfo) => void;
   /** 是否锁定沙箱选择 */
   isSelectionLocked?: boolean;
+  /** 是否额外禁用输入框（如主会话执行时禁用预览会话输入） */
+  chatInputDisabled?: boolean;
 }
 
 /**
@@ -57,6 +59,7 @@ export function useConversationAgentChatSession(
     selectedComponentList,
     onSelectComponent,
     isSelectionLocked = false,
+    chatInputDisabled = false,
   } = options;
 
   const {
@@ -282,6 +285,7 @@ export function useConversationAgentChatSession(
       onChangeSelectedComputerId?.(id);
     },
     showScrollBtn,
+    chatInputDisabled,
     enableMention,
     placeholder: enableMention
       ? dict('PC.Components.ChatInputHomeMentionEditor.placeholderWithMention')
