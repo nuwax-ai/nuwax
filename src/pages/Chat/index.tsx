@@ -462,10 +462,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
             data,
             skillIds,
             modelId: selectedModelId,
-            agentMode:
-              (stateToUse?.agentMode as AgentMode) ||
-              (localStorage.getItem('nuwax_agent_mode_cache') as AgentMode) ||
-              'yolo',
+            agentMode: (stateToUse?.agentMode as AgentMode) || 'yolo',
           };
 
           onMessageSend(sendParams);

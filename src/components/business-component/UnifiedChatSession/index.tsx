@@ -212,6 +212,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
     conversationId,
     messageList,
     initialAgentMode,
+    allowChooseMode: agentInfo?.allowChooseMode,
     onSendMessage: (msg) => messageQueue.rawSend(msg),
     interventionHandlers,
   });

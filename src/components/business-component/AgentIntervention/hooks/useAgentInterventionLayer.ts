@@ -1,4 +1,5 @@
 import { GLOBAL_POLLING_INTERVAL } from '@/constants/home.constants';
+import { DefaultSelectedEnum } from '@/types/enums/agent';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useModel } from 'umi';
@@ -35,6 +36,12 @@ export interface UseAgentInterventionLayerOptions {
   messageList: MessageInfo[];
   /** 由上层（如新建项目页）透传的初始 Agent 模式，优先于 localStorage 缓存 */
   initialAgentMode?: AgentMode;
+  /**
+   * 是否允许选择 Agent 模式（智能体 allowChooseMode 配置）。仅 === Yes 时启用模式切换：
+   * 读写 localStorage 缓存 + storage 同步；否则 agentMode 固定 yolo，不污染/读取全局缓存，
+   * 避免没展示模式切换的会话框误用别的会话切换留下的 ask。
+   */
+  allowChooseMode?: DefaultSelectedEnum | number;
   onSendMessage: (message: string) => void;
   /**
    * 非 conversationInfo 会话源时传入（如 ConversationAgent 预览 Tab），
@@ -66,15 +73,20 @@ export function useAgentInterventionLayer(
     conversationId,
     messageList,
     initialAgentMode,
+    allowChooseMode,
     onSendMessage,
     interventionHandlers,
   } = options;
+  // 仅当智能体开启了模式切换(allowChooseMode===Yes)且非预览模式时，才读写/同步 localStorage 缓存；
+  // 否则 agentMode 固定 yolo，避免没展示模式切换的会话框误用别的会话切换留下的 ask。
+  const agentModeEnabled = allowChooseMode === DefaultSelectedEnum.Yes;
+  const skipStorage = !!interventionHandlers || !agentModeEnabled;
   const [agentMode, setAgentModeState] = useState<AgentMode>(() => {
     if (initialAgentMode === 'yolo' || initialAgentMode === 'ask') {
       return initialAgentMode;
     }
-    // ConversationAgent 预览调试（interventionHandlers 注入）：仅内存态，不读写 localStorage
-    if (interventionHandlers) {
+    // 未开启模式切换 / 预览模式：仅内存态，固定 yolo，不读写 localStorage
+    if (skipStorage) {
       return 'yolo';
     }
     try {
@@ -91,7 +103,7 @@ export function useAgentInterventionLayer(
   const setAgentMode = useCallback(
     (mode: AgentMode) => {
       setAgentModeState(mode);
-      if (interventionHandlers) {
+      if (skipStorage) {
         return;
       }
       try {
@@ -100,7 +112,7 @@ export function useAgentInterventionLayer(
         // ignore localStorage errors
       }
     },
-    [interventionHandlers],
+    [skipStorage],
   );
 
   // 用 ref 跟踪最新 agentMode，避免同步 effect 依赖它而频繁重建定时器
@@ -109,9 +121,9 @@ export function useAgentInterventionLayer(
 
   // 模式切换已开启：轮询 + storage 事件把 localStorage 的 agentMode 同步到 state，
   // 使恢复中的会话使用最新模式（多标签下 A 切换后 B 能及时同步）。
-  // 预览模式（interventionHandlers）仅内存态、不读写 localStorage，跳过。
+  // 未开启模式切换 / 预览模式：仅内存态、不读写 localStorage，跳过。
   useEffect(() => {
-    if (interventionHandlers) {
+    if (skipStorage) {
       return;
     }
     const syncFromCache = () => {
@@ -136,7 +148,7 @@ export function useAgentInterventionLayer(
       window.removeEventListener('storage', syncFromCache);
       window.clearInterval(timer);
     };
-  }, [interventionHandlers]);
+  }, [skipStorage]);
 
   const conversationInfoModel = useModel('conversationInfo');
 

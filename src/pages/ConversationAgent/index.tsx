@@ -427,10 +427,7 @@ const ConversationAgent: React.FC = () => {
               isSync: false,
               skillIds: state.skillIds,
               modelId: state.modelId,
-              agentMode:
-                (state.agentMode as AgentMode) ||
-                (localStorage.getItem('nuwax_agent_mode_cache') as AgentMode) ||
-                'yolo',
+              agentMode: (state.agentMode as AgentMode) || 'yolo',
               data,
             });
           }
