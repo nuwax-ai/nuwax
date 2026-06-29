@@ -69,17 +69,15 @@ export function useActiveInterventionQueue(
       ? String(latestMessage.id ?? latestMessage.index)
       : null;
 
-    // 会话已结束(Complete/Error/Stopped)时不显示审批——审批已 resolve 或失效。
-    // 跨页签：别的页签审批后会话结束，本页签 sub 收到 end_turn 使消息变 Complete，
-    // 审批应随之关闭，避免一直显示已失效的卡片。
-    if (
-      latestMessage &&
+    // 会话已结束(Complete/Error/Stopped)时，acp 权限审批视为已 resolve/失效。
+    // 跨页签：别的页签审批后会话结束，本页签 sub 收到 end_turn 使消息变 Complete，acp 审批随之关闭。
+    // 但【mcp_ask(ask-question) 不受此影响】——它在用户填表单期间消息可能已是 Complete，
+    // 仍需保持 dockpanel 显示；ask-question 由 responseStatus(submitted/cancelled) 控制关闭。
+    const isMessageTerminal =
+      !!latestMessage &&
       (latestMessage.status === MessageStatusEnum.Complete ||
         latestMessage.status === MessageStatusEnum.Error ||
-        latestMessage.status === MessageStatusEnum.Stopped)
-    ) {
-      return [];
-    }
+        latestMessage.status === MessageStatusEnum.Stopped);
 
     // 当前焦点 executeId：取最新消息 processingList 末尾（最新产生）的 executeId。
     // agent 顺序执行，最新 processing 即当前焦点；更早 executeId 的审批已过去，应关闭其卡片。
@@ -117,6 +115,9 @@ export function useActiveInterventionQueue(
         if (isExpired(interaction.executeId)) {
           return;
         }
+        if (isMessageTerminal) {
+          return; // 会话已结束：acp 权限审批已 resolve，不再用于抑制 mcp_ask
+        }
         const toolCall = interaction.intervention.acp.request.toolCall;
         if (toolCall.toolCallId) {
           permissionPendingToolCallIds.add(toolCall.toolCallId);
@@ -145,6 +146,9 @@ export function useActiveInterventionQueue(
         }
         if (isExpired(interaction.executeId)) {
           return; // 该 executeId 已过去，关闭其审批卡
+        }
+        if (isMessageTerminal) {
+          return; // 会话已结束：acp 权限审批已 resolve/失效，关闭
         }
         const sortKey =
           interaction.triggeredAt ??
