@@ -1668,8 +1668,8 @@ export function useFileTreePreviewView(
     const isFileTreeLoading =
       Boolean(fileTreeDataLoading) || isRefreshingFileTree;
 
-    // 文件树为空且正在加载/刷新时，展示 loading
-    if (!files?.length && isFileTreeLoading) {
+    // 左侧文件树未展示时，在预览区展示 loading；文件树已展开时由其自身 loading 负责
+    if (!files?.length && isFileTreeLoading && !isFileTreeVisible) {
       return <Loading className="h-full" />;
     }
 
@@ -1911,6 +1911,7 @@ export function useFileTreePreviewView(
       files,
       fileTreeDataLoading,
       isRefreshingFileTree,
+      isFileTreeVisible,
       taskAgentSelectedFileId,
       selectedFileNode,
       selectedFileId,
