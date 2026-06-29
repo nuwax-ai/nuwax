@@ -84,6 +84,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
   messageViewRef: externalMessageViewRef,
   className,
   style,
+  chatInputDisabled = false,
   chatInputProps,
   queueMinConsumeInterval,
   queueContext,
@@ -327,7 +328,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
           clearDisabled={!messageList?.length}
           onEnter={handleMessageSend}
           onClear={onClear}
-          wholeDisabled={inputDisabled}
+          wholeDisabled={inputDisabled || chatInputDisabled}
           visible={scrollBtnVisible && isHoveringChat}
           clearLoading={clearLoading}
           manualComponents={manualComponents}
