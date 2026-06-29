@@ -58,12 +58,22 @@ export function useActiveInterventionQueue(
       (a, b) => (a.index ?? 0) - (b.index ?? 0),
     );
 
-    // 当前焦点 executeId：取【最新一条消息】processingList 末尾（最新产生）的 executeId。
+    // 只渲染【最新一条消息】（sub 流的占位 / 当前 turn 的 assistant 消息）上的审批，
+    // 不渲染历史会话消息里的审批——否则历史审批与 sub 重放的审批会同时入队，
+    // 两者 intervention id 相同导致 DockPanel 卡片 key 冲突/反复挂载而闪烁。
+    // 用未排序列表的末尾判定最新（流式占位无 index，按 index 排序会被排到队首）。
+    const rawList = messageList ?? [];
+    const latestMessage = rawList[rawList.length - 1];
+    const latestMessageKey = latestMessage
+      ? String(latestMessage.id ?? latestMessage.index)
+      : null;
+
+    // 当前焦点 executeId：取最新消息 processingList 末尾（最新产生）的 executeId。
     // agent 顺序执行，最新 processing 即当前焦点；更早 executeId 的审批已过去，应关闭其卡片。
     // 一个 turn 可能有多个 executeId（多个工具调用），各自独立判断，互不影响。
     let focusExecuteId: string | undefined;
-    for (let i = messages.length - 1; i >= 0; i--) {
-      const list = messages[i].processingList;
+    if (latestMessage) {
+      const list = latestMessage.processingList;
       if (list?.length) {
         for (let j = list.length - 1; j >= 0; j--) {
           if (list[j].executeId) {
@@ -72,7 +82,6 @@ export function useActiveInterventionQueue(
           }
         }
       }
-      if (focusExecuteId) break;
     }
 
     // 审批是否过期：有 focusExecuteId 时，自身 executeId 非空且不匹配的算过期（关闭该卡）；
@@ -81,6 +90,13 @@ export function useActiveInterventionQueue(
       !!focusExecuteId && !!executeId && executeId !== focusExecuteId;
 
     messages.forEach((message) => {
+      // 仅处理最新一条消息，跳过历史消息上的审批
+      if (
+        latestMessageKey !== null &&
+        String(message.id ?? message.index) !== latestMessageKey
+      ) {
+        return;
+      }
       message.acpPermissionInteractions?.forEach((interaction) => {
         if (!isActiveResponseStatus(interaction.responseStatus)) {
           return;
@@ -100,6 +116,13 @@ export function useActiveInterventionQueue(
     });
 
     messages.forEach((message) => {
+      // 仅处理最新一条消息，跳过历史消息上的审批
+      if (
+        latestMessageKey !== null &&
+        String(message.id ?? message.index) !== latestMessageKey
+      ) {
+        return;
+      }
       const messageId = String(message.id ?? message.index);
       const messageIndex = message.index ?? 0;
 
