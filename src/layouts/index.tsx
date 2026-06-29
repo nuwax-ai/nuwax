@@ -202,6 +202,7 @@ const Layout: React.FC = () => {
         'flex',
         'h-full',
         realHidden && styles['mobile-menu-container-hidden'],
+        // { 'scroll-container': !isMobile },
       ),
     [realHidden],
   );
@@ -284,8 +285,8 @@ const Layout: React.FC = () => {
 
       {/* 主内容区 */}
       <div
-        className={cx(pageContainerClassName, [
-          { 'scroll-container': !isMobile },
+        className={cx(pageContainerClassName, 'overflow-hide', [
+          // { 'scroll-container': !isMobile },
           // 移动端模式下宽度100%
           // { 'w-full': isMobile }, // 存在 BUG 需要注释掉
         ])}
