@@ -1191,8 +1191,9 @@ export const useNodeOperations = ({
         _child = {
           name: val.name,
           shape: NodeShapeEnum.General,
+          // 工作流节点：描述为空时回退到名称，再兜底默认文案
           description:
-            isAgentFlow && type === NodeTypeEnum.Workflow
+            type === NodeTypeEnum.Workflow
               ? resolveAgentFlowWorkflowNodeDescription(
                   val.name,
                   val.description,

@@ -87,11 +87,8 @@ export const useWorkflowLifecycle = ({
             ),
           };
         }
-        if (
-          isAgentFlow &&
-          node.type === NodeTypeEnum.Workflow &&
-          !node.description?.trim()
-        ) {
+        // 工作流节点：加载时描述为空则回退到名称
+        if (node.type === NodeTypeEnum.Workflow && !node.description?.trim()) {
           return {
             ...node,
             description: resolveAgentFlowWorkflowNodeDescription(
