@@ -121,6 +121,8 @@ export type McpAskResponseStatus =
 export interface McpAskInteraction {
   input: McpAskUserToolInput;
   toolCallId: string;
+  /** 关联的 processing executeId（与 processingList 同源），用于按 executeId 判断审批是否已过期 */
+  executeId?: string;
   responseStatus?: McpAskResponseStatus;
   formData?: Record<string, unknown>;
   errorMessage?: string;

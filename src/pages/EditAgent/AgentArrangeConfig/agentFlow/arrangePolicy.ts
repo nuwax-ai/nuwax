@@ -14,6 +14,7 @@ const HIDDEN_COMPONENT_TYPES = new Set<AgentComponentTypeEnum>([
   AgentComponentTypeEnum.Knowledge,
   AgentComponentTypeEnum.Plugin,
   AgentComponentTypeEnum.MCP,
+  AgentComponentTypeEnum.Skill,
 ]);
 
 /** 判断是否为 AgentFlow 子类型 */

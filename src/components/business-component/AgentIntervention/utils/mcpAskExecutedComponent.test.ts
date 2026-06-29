@@ -13,12 +13,14 @@ describe('mcpAskExecutedComponent', () => {
         result: { success: true },
       }),
     ).toBe(true);
+    // component status(SUCCESS/FINISHED)只代表「问」完成,不代表用户已回答;
+    // hydrate 默认 pending(交给 reconcile 按 resume 消息判 submitted),让历史最后一条 ASK_QUESTION 能恢复渲染
     expect(
       resolveMcpAskHydratedResponseStatus({
         status: 'SUCCESS',
         result: { success: true },
       }),
-    ).toBe('submitted');
+    ).toBe('pending');
   });
 
   it('treats EXECUTING components as pending', () => {
