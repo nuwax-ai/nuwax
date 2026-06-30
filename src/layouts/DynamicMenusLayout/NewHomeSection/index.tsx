@@ -251,7 +251,7 @@ const NewHomeSection: React.FC<{
 
     if (devTargetType === 'Agent' && devSpaceId && id) {
       history.push(
-        `/space/${devSpaceId}/conversation-agent?agentId=${agentId}&conversationId=${id}`,
+        `/space/${devSpaceId}/conversation-agent?agentId=${devTargetId}&conversationId=${id}`,
       );
     } else if (devTargetType === 'PageApp' && devSpaceId && devTargetId) {
       history.push(`/space/${devSpaceId}/app-dev/${devTargetId}`);
