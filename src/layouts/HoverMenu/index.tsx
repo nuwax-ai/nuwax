@@ -9,8 +9,7 @@ import classNames from 'classnames';
 import React, { useMemo } from 'react';
 import { useModel } from 'umi';
 import DynamicSecondMenu from '../DynamicMenusLayout/DynamicSecondMenu';
-import EcosystemMarketSection from '../DynamicMenusLayout/EcosystemMarketSection';
-import HomeSection from '../DynamicMenusLayout/HomeSection';
+import NewHomeSection from '../DynamicMenusLayout/NewHomeSection';
 import SpaceSection from '../DynamicMenusLayout/SpaceSection';
 import SquareSection from '../DynamicMenusLayout/SquareSection';
 import styles from './index.less';
@@ -46,14 +45,10 @@ const HoverMenu: React.FC = () => {
     /**
      * 渲染特殊内容区域
      */
-    // 主页、系统广场、生态市场特殊处理：直接渲染对应的 Section 组件
+    // 主页、系统广场特殊处理：直接渲染对应的 Section 组件
     // 主页 homepage: 最近使用 + 会话记录
-    if (
-      hoverMenuType === 'homepage' ||
-      hoverMenuType === 'new_conversation' ||
-      hoverMenuType === 'my_computer'
-    ) {
-      return <HomeSection />;
+    if (hoverMenuType === 'homepage' || hoverMenuType === 'new_conversation') {
+      return <NewHomeSection />;
     }
 
     // 工作空间
@@ -71,10 +66,6 @@ const HoverMenu: React.FC = () => {
       return <SquareSection />;
     }
 
-    // 生态市场
-    if (hoverMenuType === 'eco_market') {
-      return <EcosystemMarketSection />;
-    }
     return <DynamicSecondMenu parentCode={hoverMenuType} />;
   }, [hoverMenuType]);
 

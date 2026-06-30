@@ -253,8 +253,32 @@ function escapedBracketRule(delimiters: any) {
   };
 }
 // 新的数学公式替换函数 - 直接替换为 $$ 分隔符
+//
+// 性能注意：
+// 本函数对文本逐字符扫描，escapedBracketRule 内部还会对每个位置做 slice+startsWith。
+// 当文本里包含 base64 data URL（单张图片可达数 MB）时，复杂度退化为 O(N^2)，
+// 会长时间阻塞主线程导致页面无响应。
+// data URL 内部不可能出现 \(\)/\[\] 数学定界符，因此扫描时整段跳过即可。
+//
+// 字符集说明：base64 编码只用 A-Za-z0-9+/=，中间不会出现空格或换行。
+// 不匹配 \s：否则当两个 data URL 仅用空格分隔时，贪心匹配会把第一个 URL 尾部、
+// 中间分隔空白、以及第二个 URL 的 "data" 前缀一起吞进第一个匹配，破坏后续渲染。
+const DATA_URL_PLACEHOLDER_RE =
+  /data:[a-z0-9.+-]+\/[a-z0-9.+-]+;base64,[A-Za-z0-9+/=]+/gi;
+
 function replaceMathBracket(text: string): string {
-  // 创建只包含非美元符号分隔符的选项
+  if (!text) return '';
+
+  // 1. 先把所有 base64 data URL 抽出，用短占位符替换，避免对超大字符串逐字符扫描
+  const dataUrls: string[] = [];
+  const withoutDataUrl = text.replace(DATA_URL_PLACEHOLDER_RE, (match) => {
+    const idx = dataUrls.length;
+    dataUrls.push(match);
+    // 用 ASCII 控制符区间作为占位符，避免与正文冲突，也不含数学定界符
+    return `\u0000${idx}\u0000`;
+  });
+
+  // 2. 创建只包含非美元符号分隔符的选项
   const nonDollarDelimiters = defaultDelimiters.filter(
     (delimiter) =>
       !delimiter.left.includes('$') && !delimiter.right.includes('$'),
@@ -264,20 +288,28 @@ function replaceMathBracket(text: string): string {
   let result = '';
   let pos = 0;
 
-  while (pos < text.length) {
-    const match = rule(text, pos);
+  while (pos < withoutDataUrl.length) {
+    const match = rule(withoutDataUrl, pos);
     if (match.success) {
       // 添加匹配前的文本
-      result += text.slice(pos, match.start);
+      result += withoutDataUrl.slice(pos, match.start);
       // 替换为 $$ 分隔符
       const delimiter = match.display ? '$$' : '$';
       result += `${delimiter}${match.formula}${delimiter}`;
       pos = match.end;
     } else {
       // 没有匹配，添加当前字符
-      result += text[pos];
+      result += withoutDataUrl[pos];
       pos++;
     }
+  }
+
+  // 3. 把 base64 data URL 还原回去
+  if (dataUrls.length > 0) {
+    result = result.replace(/\u0000(\d+)\u0000/g, (_m, idxStr) => {
+      const idx = Number(idxStr);
+      return dataUrls[idx] ?? '';
+    });
   }
 
   return result;
@@ -295,18 +327,25 @@ function replaceMathBracket(text: string): string {
 function groupMarkdownProcesses(text: string): string {
   if (!text) return '';
 
+  // 快速短路：base64 data URL 内部不可能包含 markdown-custom-process 标签，
+  // 若文本不含任何过程标签，直接返回原文，避免对大文本（如带 base64 图片的消息）做空正则扫描。
+  if (text.indexOf('markdown-custom-process') === -1) {
+    return text;
+  }
+
   // 匹配 markdown-custom-process 标签及其可选的 div/p 包装器
   // 注意：[^>]*? 虽然简单，但在绝大多数情况下足够。如果以后有更复杂的属性需求（如带 > 的属性），再考虑更复杂的正则
   const blockRegex =
     /(?:\s*<(?:div|p)>\s*)?(<markdown-custom-process\b[^>]*?>(?:<\/markdown-custom-process>)?)(?:\s*<\/(?:div|p)>\s*)?/g;
 
-  // 1. 扫描所有匹配项，提取 executeId 并记录它们的位置，以解决 SSE 流式生成 and PROCESSING 阶段追加导致的重复问题
+  // 1. 扫描所有匹配项，提取 executeId、类型并记录位置，以解决重复与连续冗余 Plan 问题
   const matches: {
     index: number;
     endIndex: number;
     executeId: string;
     fullMatch: string;
     tagMatch: string;
+    isPlan: boolean;
   }[] = [];
   let match;
   const lastIndexMap = new Map<string, number>(); // executeId -> last match index
@@ -322,23 +361,60 @@ function groupMarkdownProcesses(text: string): string {
     const executeId = executeIdMatch ? executeIdMatch[1] : null;
 
     if (executeId) {
+      const isPlan = /type=\\?["']Plan\\?["']/i.test(tagMatch);
       matches.push({
         index: match.index,
         endIndex: blockRegex.lastIndex,
         executeId,
         fullMatch,
         tagMatch,
+        isPlan,
       });
       lastIndexMap.set(executeId, match.index);
     }
   }
 
-  // 2. 根据 lastIndexMap 进行过滤，只保留每个 executeId 的最后一项（最新、属性最全的那一项）
+  // 2. 识别过滤项：只保留每个 executeId 的最后一项，且过滤相邻连续的 Plan（只保留连续 Plan 中的最后一个）
+  const ignoreMatchIndices = new Set<number>();
+  for (let i = 0; i < matches.length; i++) {
+    const m = matches[i];
+
+    // 原有的 executeId 去重过滤
+    if (lastIndexMap.get(m.executeId) !== m.index) {
+      ignoreMatchIndices.add(i);
+      continue;
+    }
+
+    // 连续相邻 Plan 过滤
+    if (m.isPlan) {
+      let nextPlanIndex = -1;
+      for (let j = i + 1; j < matches.length; j++) {
+        const next = matches[j];
+        if (next.isPlan) {
+          // 只有当两者之间全是空白字符/换行符时，当前 Plan 才是连续冗余的
+          const middleText = text.slice(m.endIndex, next.index);
+          if (middleText.trim() === '') {
+            nextPlanIndex = j;
+          }
+          break; // 只要遇到任何 Plan，不管连不连续都必须停止向后搜索
+        } else {
+          // 遇到非 Plan 节点，说明它们之间不连续，不能过滤
+          break;
+        }
+      }
+
+      if (nextPlanIndex !== -1) {
+        ignoreMatchIndices.add(i);
+      }
+    }
+  }
+
   let dedupedText = '';
   let lastPos = 0;
 
-  for (const m of matches) {
-    if (lastIndexMap.get(m.executeId) !== m.index) {
+  for (let i = 0; i < matches.length; i++) {
+    const m = matches[i];
+    if (ignoreMatchIndices.has(i)) {
       dedupedText += text.slice(lastPos, m.index);
       lastPos = m.endIndex;
     }
@@ -437,8 +513,10 @@ function groupMarkdownProcesses(text: string): string {
       normalizedTag += '</markdown-custom-process>';
     }
 
-    // 检查是否为“执行计划”
-    const isPlan = /type=["']Plan["']/.test(normalizedTag);
+    // 检查是否为"执行计划"——在归一化之前用原始标签判断，
+    // 否则当 type 排在 name 之后时，归一化会把 type 编码进 name 值，导致 isPlan 漏判、Plan 被误并入 group。
+    // 容忍 SSE 流式产生的转义引号（type=\"Plan\" / type=\'Plan\'）
+    const isPlan = /type=\\?["']Plan\\?["']/i.test(tagMatch);
 
     // 处理匹配项之前的文本
     const textBefore = dedupedText.slice(lastIndex, groupMatch.index);

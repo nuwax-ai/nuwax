@@ -1,0 +1,68 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.table-container {
+  :global {
+    .ant-table-content .ant-table-thead > tr > th {
+      padding-left: 0;
+      font-size: @fontSize;
+      color: @colorTextTertiary;
+    }
+
+    .ant-table-content .ant-table-tbody > tr > td {
+      padding: 10px 10px 10px 0;
+      color: @BLANK04;
+      font-size: @fontSizeSm;
+    }
+
+    .ant-table-footer {
+      padding: 10px 0;
+      background-color: transparent;
+    }
+  }
+}
+
+.modal-body {
+  display: flex;
+  flex-direction: column;
+  max-height: 70vh;
+  overflow: hidden;
+}
+
+.table-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.modal-action {
+  flex-shrink: 0;
+  padding-top: 10px;
+}
+
+.tag {
+  display: inline-block;
+  padding: @borderRadiusXs @paddingXs;
+  font-size: @fontSizeSm;
+  font-family: @fontFamilyCode;
+  color: @GRAY12;
+  background-color: @GRAY01;
+  border-radius: @borderRadiusSm;
+}
+
+.tag-muted {
+  color: @GRAY05;
+}
+
+.matcher-cell {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  font-size: @fontSizeSm;
+  color: @GRAY12;
+}
+
+.action-btn {
+  padding: 0 @paddingXxs;
+}

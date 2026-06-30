@@ -6,7 +6,7 @@
   margin: 0 auto;
   max-width: 800px;
   gap: @marginXxs;
-  padding: @padding @padding @paddingXxs;
+  padding: @padding @padding 12px;
   border-radius: 20px;
   background: @colorBgContainer;
   box-sizing: border-box;
@@ -18,6 +18,22 @@
 
   &.drag-over {
     border-color: @colorPrimary;
+  }
+
+  &.has-tabs {
+    padding: 0;
+    gap: 0;
+
+    .tabs-wrapper {
+      width: 100%;
+    }
+
+    .input-wrapper {
+      padding: @padding @padding @padding;
+      display: flex;
+      flex-direction: column;
+      gap: @marginXxs;
+    }
   }
 
   .drag-overlay {
@@ -45,6 +61,87 @@
     color: @colorText;
   }
 
+  .input-line {
+    position: relative;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .selected-tag {
+    position: absolute;
+    top: 4px;
+    left: @paddingSm;
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    max-width: 100%;
+    height: 22px;
+    padding: 0 6px 0 @paddingXs;
+    border: 1px solid @colorPrimaryBorder;
+    border-radius: 6px;
+    background: @colorPrimaryBg;
+    color: @colorPrimary;
+    font-size: 12px;
+    line-height: 20px;
+  }
+
+  .tag-close {
+    position: relative;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    margin-left: 2px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: @colorPrimary;
+    opacity: 0.75;
+    cursor: pointer;
+    pointer-events: auto;
+    transition: all @motionDurationMid @motionEaseOut;
+
+    &::before,
+    &::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 8px;
+      height: 1.2px;
+      background-color: currentcolor;
+      border-radius: 1px;
+      transition: background-color @motionDurationMid @motionEaseOut;
+    }
+
+    &::before {
+      transform: translate(-50%, -50%) rotate(45deg);
+    }
+
+    &::after {
+      transform: translate(-50%, -50%) rotate(-45deg);
+    }
+
+    &:hover {
+      color: @colorPrimary;
+      background: rgba(0, 0, 0, 8%);
+      opacity: 1;
+    }
+  }
+
+  .tag-label {
+    min-width: 0;
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   :global {
     .ant-input-outlined:focus,
     .ant-input-outlined:focus-within {
@@ -56,6 +153,7 @@
   .footer {
     gap: 6px;
     width: 100%;
+    align-items: center;
 
     .svg-icon {
       color: @colorTextDescription;
@@ -134,6 +232,16 @@
           background-color: @colorBgContainerDisabled;
         }
 
+        // 会话活跃时的入队发送：与停止钮同色，避免主色蓝与停止态来回闪
+        &.send-box-queue:not(.disabled) {
+          background-color: @colorInfoBg;
+          color: @colorPrimary;
+
+          &:hover {
+            background-color: @colorInfoBgHover;
+          }
+        }
+
         // 停止按钮样式
         &.stop-box {
           &.disabled {
@@ -155,7 +263,112 @@
         }
       }
     }
+
+    .agent-mode-select {
+      display: inline-flex;
+      align-items: center;
+      height: 28px;
+
+      .agent-mode-trigger {
+        padding: @paddingXxs @paddingXs;
+        border-radius: @borderRadius;
+        box-sizing: border-box;
+        color: @colorTextSecondary;
+        font-size: @fontSizeSm;
+        transition: background-color ease-in-out 0.3s;
+        word-wrap: normal;
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        cursor: pointer;
+
+        &:hover {
+          background: @colorFillTertiary;
+        }
+
+        .agent-mode-arrow {
+          transition: transform @motionDurationFast ease;
+        }
+      }
+    }
+
+    .right-actions {
+      gap: 4px;
+      margin-left: auto;
+      align-items: center;
+      min-width: 0;
+    }
   }
+}
+
+// 下拉菜单容器
+:global {
+  .agent-mode-dropdown-overlay {
+    z-index: 9999;
+
+    .ant-dropdown-menu {
+      min-width: 280px;
+      max-height: 240px;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    .ant-dropdown-menu-item {
+      background: transparent !important;
+
+      &:hover {
+        background: @colorFillTertiary !important;
+      }
+
+      &.ant-dropdown-menu-item-selected {
+        background: transparent !important;
+
+        &:hover {
+          background: @colorFillTertiary !important;
+        }
+      }
+    }
+  }
+}
+
+.agent-mode-dropdown-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: @marginSm;
+  width: 280px;
+
+  .item-content {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .item-name {
+    display: block;
+    color: @colorTextSecondary;
+    font-size: @fontSizeSm;
+    font-weight: 500;
+    line-height: 20px;
+  }
+
+  .item-desc {
+    display: block;
+    margin-top: 2px;
+    color: @colorTextTertiary;
+    font-size: @fontSizeSm;
+    font-weight: 400;
+    line-height: 18px;
+    white-space: normal;
+  }
+}
+
+.agent-mode-check {
+  flex-shrink: 0;
+  margin-left: 0;
+  color: @colorPrimary;
+  font-size: @fontSizeSm;
 }
 
 // 加载图标样式

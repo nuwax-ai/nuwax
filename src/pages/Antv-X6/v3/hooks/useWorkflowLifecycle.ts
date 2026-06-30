@@ -1,23 +1,36 @@
 import Constant from '@/constants/codes.constants';
+import { useFlowKind } from '@/contexts/FlowKindContext';
+import { dict } from '@/services/i18nRuntime';
 import service, { IgetDetails, IUpdateDetails } from '@/services/workflow';
+import { FlowKindEnum, NodeTypeEnum } from '@/types/enums/common';
 import { ChildNode, Edge } from '@/types/interfaces/graph';
 import { workflowLogger } from '@/utils/logger';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useModel } from 'umi';
+import { normalizeHitlNodeConfig } from '../agentFlow/adapters/qaConfigAdapter';
+import { normalizeLoadedNodes } from '../agentFlow/nodeTypeMapping';
+import {
+  resolveAgentFlowWorkflowNodeDescription,
+  resolveNodeDescriptionWithNameFallback,
+} from '../agentFlow/resolveNodePresentation';
 import { workflowProxy } from '../services/workflowProxyV3';
 import { workflowSaveService } from '../services/WorkflowSaveService';
 import { getEdges } from '../utils/graphV3';
 
 interface UseWorkflowLifecycleProps {
   workflowId: number;
+  spaceId: number;
   handleInitLoading: (loading: boolean) => void;
 }
 
 export const useWorkflowLifecycle = ({
   workflowId,
+  spaceId,
   handleInitLoading,
 }: UseWorkflowLifecycleProps) => {
   const { setSpaceId } = useModel('workflowV3');
+  // AgentFlow 下后端 IntentRecognition 统一渲染为路由决策（RouteDecision 复用意图识别类型）
+  const isAgentFlow = useFlowKind() === FlowKindEnum.AgentFlow;
 
   // 防止 React StrictMode 双重调用
   const isInitializedRef = useRef(false);
@@ -31,40 +44,119 @@ export const useWorkflowLifecycle = ({
     edgeList: Edge[];
   }>({ nodeList: [], edgeList: [] });
 
+  const applyWorkflowDetails = useCallback(
+    (data: IgetDetails, syncInfo: boolean) => {
+      if (syncInfo) {
+        setInfo(data);
+        setSpaceId(data.spaceId);
+      }
+
+      // RouteDecision / HumanInteraction 复用后端类型存储（见 nodeTypeMapping.ts）；
+      // AgentFlow 下统一渲染回前端类型。后端按后端类型建节点会回写其后端默认文案，
+      // 这里把遗留/空默认值修正为前端默认文案。
+      const _nodeList = normalizeLoadedNodes(data.nodes || [], isAgentFlow, {
+        [NodeTypeEnum.IntentRecognition]: {
+          frontendDefaultName: dict(
+            'PC.Pages.AgentFlowParams.nodeRouteDecisionName',
+          ),
+          frontendDefaultDescription: dict(
+            'PC.Pages.AgentFlowParams.nodeRouteDecisionDescription',
+          ),
+          backendDefaultName: dict(
+            'PC.Pages.AntvX6Params.nodeIntentRecognitionName',
+          ),
+          backendDefaultDescription: dict(
+            'PC.Pages.AntvX6Params.nodeIntentRecognitionDescription',
+          ),
+        },
+        [NodeTypeEnum.QA]: {
+          frontendDefaultName: dict(
+            'PC.Pages.AgentFlowParams.nodeHumanAskName',
+          ),
+          frontendDefaultDescription: dict(
+            'PC.Pages.AgentFlowParams.nodeHumanAskDescription',
+          ),
+          backendDefaultName: dict('PC.Pages.AntvX6Params.nodeQaName'),
+          backendDefaultDescription: dict(
+            'PC.Pages.AntvX6Params.nodeQaDescription',
+          ),
+        },
+      }).map((node) => {
+        if (isAgentFlow && node.type === NodeTypeEnum.HumanInteraction) {
+          return {
+            ...node,
+            nodeConfig: normalizeHitlNodeConfig(
+              node.nodeConfig as Record<string, any>,
+            ),
+          };
+        }
+        // 知识库写入：加载时顶层与 nodeConfig 绑定描述为空则回退到名称
+        if (node.type === NodeTypeEnum.KnowledgeInsert) {
+          const bindingName = node.nodeConfig?.name ?? node.name;
+          return {
+            ...node,
+            description: resolveNodeDescriptionWithNameFallback(
+              node.name,
+              node.description,
+            ),
+            nodeConfig: {
+              ...node.nodeConfig,
+              description: resolveNodeDescriptionWithNameFallback(
+                bindingName,
+                node.nodeConfig?.description,
+              ),
+            },
+          };
+        }
+        // 工作流节点：加载时描述为空则回退到名称
+        if (node.type === NodeTypeEnum.Workflow && !node.description?.trim()) {
+          return {
+            ...node,
+            description: resolveAgentFlowWorkflowNodeDescription(
+              node.name,
+              node.description,
+            ),
+          };
+        }
+        return node;
+      });
+      const _edgeList = getEdges(_nodeList);
+      setGraphParams({ edgeList: _edgeList, nodeList: _nodeList });
+
+      workflowProxy.initialize({
+        workflowId,
+        nodes: _nodeList,
+        edges: _edgeList,
+        systemVariables: data.systemVariables,
+        modified: data.modified || new Date().toISOString(),
+      });
+      workflowProxy.setWorkflowInfo(data);
+      workflowSaveService.initialize(data);
+
+      if (data.editVersion !== undefined) {
+        workflowSaveService.setEditVersion(data.editVersion);
+        workflowLogger.log('Edit version updated:', data.editVersion);
+      }
+    },
+    [setSpaceId, workflowId, isAgentFlow],
+  );
+
+  const getWorkflowDetails = useCallback(async () => {
+    const _res = await service.getDetails(workflowId);
+    return _res.code === Constant.success ? _res.data : null;
+  }, [spaceId, workflowId]);
+
   // 刷新画布数据
   const refreshGraphData = useCallback(async () => {
     try {
-      const _res = await service.getDetails(workflowId);
-      if (_res.code === Constant.success) {
-        const data = _res.data;
-        const _nodeList = data.nodes || [];
-        const _edgeList = getEdges(_nodeList);
-        setGraphParams({ edgeList: _edgeList, nodeList: _nodeList });
-
-        // V3: 刷新时同步更新代理层数据（修复还原版本后节点操作报错问题）
-        workflowProxy.initialize({
-          workflowId: workflowId,
-          nodes: _nodeList,
-          edges: _edgeList,
-          systemVariables: data.systemVariables,
-          modified: data.modified || new Date().toISOString(),
-        });
-        workflowProxy.setWorkflowInfo(data);
-        workflowSaveService.initialize(data);
-
-        // V3: 刷新时同步更新版本号
-        if (data.editVersion !== undefined) {
-          workflowSaveService.setEditVersion(data.editVersion);
-          workflowLogger.log(
-            'Edit version updated after refresh:',
-            data.editVersion,
-          );
-        }
+      const data = await getWorkflowDetails();
+      if (data) {
+        applyWorkflowDetails(data, false);
       }
     } catch (error) {
       console.error('Failed to refresh graph data:', error);
     }
-  }, [workflowId]);
+  }, [applyWorkflowDetails, getWorkflowDetails]);
 
   // 修改当前工作流的基础信息（由 CreateWorkflow 组件调用，接口已在组件内调用过）
   const onConfirm = useCallback(
@@ -97,32 +189,9 @@ export const useWorkflowLifecycle = ({
 
       handleInitLoading(true);
       try {
-        // 调用接口，获取当前画布的所有节点和边
-        const _res = await service.getDetails(workflowId);
-
-        if (_res.code === Constant.success) {
-          const data = _res.data;
-          setInfo(data);
-          setSpaceId(data.spaceId);
-
-          const _nodeList = data.nodes || [];
-          const _edgeList = getEdges(_nodeList);
-
-          setGraphParams({ edgeList: _edgeList, nodeList: _nodeList });
-
-          // V3: 初始化代理层数据
-          workflowProxy.initialize({
-            workflowId: workflowId,
-            nodes: _nodeList,
-            edges: _edgeList,
-            systemVariables: data.systemVariables, // 后端返回的系统变量
-            modified: data.modified || new Date().toISOString(),
-          });
-          // V3: 存储完整的工作流信息（用于全量保存）
-          workflowProxy.setWorkflowInfo(data);
-
-          // V3-NEW: 初始化新的保存服务（单一数据源优化）
-          workflowSaveService.initialize(data);
+        const data = await getWorkflowDetails();
+        if (data) {
+          applyWorkflowDetails(data, true);
         }
       } catch (error) {
         console.error('Failed to fetch graph data:', error);
@@ -134,7 +203,7 @@ export const useWorkflowLifecycle = ({
     if (workflowId) {
       initGraphData();
     }
-  }, [workflowId, handleInitLoading, setSpaceId]);
+  }, [applyWorkflowDetails, getWorkflowDetails, handleInitLoading, workflowId]);
 
   return {
     info,

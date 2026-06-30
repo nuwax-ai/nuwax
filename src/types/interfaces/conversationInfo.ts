@@ -1,4 +1,8 @@
 import type {
+  AgentMode,
+  McpAskInteraction,
+} from '@/components/business-component/AgentIntervention';
+import type {
   AssistantRoleEnum,
   ConversationEventTypeEnum,
   ExpandPageAreaEnum,
@@ -26,6 +30,7 @@ import type {
   BindConfigWithSub,
   UploadFileInfo,
 } from '@/types/interfaces/common';
+import type { RcoderAcpPermissionInteraction } from './acpPermission';
 
 // 会话聊天消息
 export interface ConversationChatMessage {
@@ -152,6 +157,8 @@ export interface SendMessageParams {
   skillIds?: number[];
   // 模型ID
   modelId?: number;
+  // Agent mode, 默认 yolo
+  agentMode?: AgentMode;
 }
 
 // 会话参数
@@ -173,6 +180,8 @@ export interface ConversationChatParams {
   skillIds?: number[];
   // 模型ID
   modelId?: number;
+  // Agent mode, 默认 yolo
+  agentMode?: AgentMode;
 }
 
 // 临时会话参数
@@ -285,6 +294,10 @@ export interface MessageInfo extends ChatMessageDto {
   finalResult?: ConversationFinalResult;
   // 消息查询过程信息
   processingList?: ProcessingInfo[];
+  // ACP 权限审批交互
+  acpPermissionInteractions?: RcoderAcpPermissionInteraction[];
+  /** MCP ask/question 交互（toolName: nuwax_ask_question） */
+  mcpAskInteractions?: McpAskInteraction[];
 }
 
 // 查询会话信息
@@ -306,6 +319,8 @@ export interface ConversationInfo {
   modified: string;
   created: string;
   variables?: Record<string, string | number> | null;
+  // 会话图标
+  icon?: string;
   // Agent信息，已发布过的agent才有此信息
   agent: {
     type: AgentTypeEnum;
@@ -381,6 +396,12 @@ export interface ConversationInfo {
     hasPermission?: boolean;
     /** 会话关联的智能体电脑是否不可用 */
     isSandboxUnavailable?: boolean;
+    /** 是否允许用户在对话框中选择 Agent 模式，1 允许，其他不允许 */
+    allowChooseMode?: number;
+    /** 是否开启版本管理，1 开启，其他不开启 */
+    enableVersionControl?: number;
+    /** 允许用户选择自有模型 */
+    allowOtherModel?: number;
   };
   // 会话消息列表，会话列表查询时不会返回该字段值
   messageList: MessageInfo[];
@@ -404,6 +425,12 @@ export interface ConversationInfo {
   hasPermission?: boolean;
   /** 会话关联的智能体电脑是否不可用 */
   isSandboxUnavailable?: boolean;
+  /** 开发空间ID */
+  devSpaceId?: number;
+  /** 开发目标类型，如 Agent, PageApp, Skill, Plugin */
+  devTargetType?: string;
+  /** 开发目标唯一标识 */
+  devTargetId?: string;
 }
 
 // 查询用户历史会话输入参数
@@ -444,6 +471,8 @@ export interface ChatViewProps {
   conversationId?: string | number;
   // 是否显示状态描述
   showStatusDesc?: boolean;
+  // debug 图标显隐控制
+  showDebug?: boolean;
 }
 
 // 卡片信息

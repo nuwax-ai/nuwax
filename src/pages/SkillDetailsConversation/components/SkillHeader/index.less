@@ -1,0 +1,61 @@
+@import '@/styles/color.less';
+@import '@/styles/token.less';
+
+.skill-header-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  box-sizing: border-box;
+  margin-left: -10px;
+
+  .back-btn {
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: @borderRadius;
+    flex-shrink: 0;
+  }
+
+  .info-section {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding-left: 4px;
+
+    .title {
+      max-width: 180px;
+      font-size: 14px;
+      font-weight: @fontWeightStrong;
+      color: @colorText;
+      white-space: nowrap;
+      margin: 0;
+    }
+
+    .edit-btn {
+      color: @colorTextPlaceholder;
+      font-size: 14px;
+      padding: 0;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .published-icon {
+      color: @colorSuccess;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+    }
+  }
+}

@@ -1,11 +1,17 @@
 import agentImage from '@/assets/images/agent_image.png';
 import CardWrapper from '@/components/business-component/CardWrapper';
 import CustomPopover from '@/components/CustomPopover';
+import { AGENT_SUB_TYPE_OPTIONS } from '@/constants/agent.constants';
 import { ICON_MORE, ICON_SUCCESS } from '@/constants/images.constants';
 import { APPLICATION_MORE_ACTION } from '@/constants/space.constants';
 import { dict } from '@/services/i18nRuntime';
 import { PermissionsEnum, PublishStatusEnum } from '@/types/enums/common';
-import { AgentTypeEnum, ApplicationMoreActionEnum } from '@/types/enums/space';
+import {
+  AgentSubTypeEnum,
+  AgentTypeEnum,
+  ApplicationMoreActionEnum,
+} from '@/types/enums/space';
+import type { AgentConfigInfo } from '@/types/interfaces/agent';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
 import type { ApplicationItemProps } from '@/types/interfaces/space';
 import { Button, Tag } from 'antd';
@@ -16,13 +22,58 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
+/** 子类型 Tag 颜色（与原先 type 展示风格对齐） */
+const AGENT_SUB_TYPE_TAG_COLOR: Record<AgentSubTypeEnum, string> = {
+  [AgentSubTypeEnum.ChatBot]: 'green',
+  [AgentSubTypeEnum.General]: 'orange',
+  [AgentSubTypeEnum.Custom]: 'gold',
+  [AgentSubTypeEnum.Flow]: 'purple',
+  [AgentSubTypeEnum.Group]: 'blue',
+};
+
+/** 无 subType 时按 type 兜底，兼容旧数据 */
+const resolveAgentSubType = (
+  agentConfigInfo: AgentConfigInfo,
+): AgentSubTypeEnum | undefined => {
+  if (agentConfigInfo.subType) {
+    return agentConfigInfo.subType;
+  }
+  if (agentConfigInfo.type === AgentTypeEnum.TaskAgent) {
+    return AgentSubTypeEnum.General;
+  }
+  if (agentConfigInfo.type === AgentTypeEnum.AgentFlow) {
+    return AgentSubTypeEnum.Flow;
+  }
+  if (agentConfigInfo.type === AgentTypeEnum.AgentGroup) {
+    return AgentSubTypeEnum.Group;
+  }
+  if (agentConfigInfo.type === AgentTypeEnum.ChatBot) {
+    return AgentSubTypeEnum.ChatBot;
+  }
+  return undefined;
+};
+
+/** Flow / Group / Custom 子类型不展示的操作项 */
+const RESTRICTED_SUB_TYPE_HIDDEN_ACTIONS = new Set<ApplicationMoreActionEnum>([
+  ApplicationMoreActionEnum.Copy_To_Space,
+  ApplicationMoreActionEnum.Move,
+  ApplicationMoreActionEnum.API_Key,
+  ApplicationMoreActionEnum.Export_Config,
+]);
+
+/** 不展示受限操作项的子类型 */
+const RESTRICTED_ACTION_SUB_TYPES = new Set<AgentSubTypeEnum>([
+  AgentSubTypeEnum.Flow,
+  AgentSubTypeEnum.Group,
+  AgentSubTypeEnum.Custom,
+]);
+
 /**
  * 单个应用项
  */
 const ApplicationItem: React.FC<ApplicationItemProps> = ({
   agentConfigInfo,
   onClick,
-  // onCollect,
   onClickMore,
 }) => {
   // 提取权限检查逻辑
@@ -32,8 +83,19 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({
 
   // 更多操作列表
   const actionList = useMemo(() => {
+    const subType = resolveAgentSubType(agentConfigInfo);
+    const shouldHideRestrictedActions =
+      !!subType && RESTRICTED_ACTION_SUB_TYPES.has(subType);
+
     const list: CustomPopoverItem[] = APPLICATION_MORE_ACTION.filter((item) => {
       const type = item.type as ApplicationMoreActionEnum;
+
+      if (
+        shouldHideRestrictedActions &&
+        RESTRICTED_SUB_TYPE_HIDDEN_ACTIONS.has(type)
+      ) {
+        return false;
+      }
 
       switch (type) {
         // 复制到空间
@@ -43,7 +105,8 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({
         case ApplicationMoreActionEnum.Temporary_Session:
           return (
             hasPermission(PermissionsEnum.TempChat) &&
-            agentConfigInfo.type !== AgentTypeEnum.TaskAgent
+            agentConfigInfo.type !== AgentTypeEnum.TaskAgent &&
+            agentConfigInfo.type !== AgentTypeEnum.AgentFlow
           );
         // 独立会话
         case ApplicationMoreActionEnum.Independent_Session:
@@ -70,6 +133,26 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({
     return list;
   }, [agentConfigInfo]);
 
+  // 智能体子类型标签
+  const subTypeTag = useMemo(() => {
+    const subType = resolveAgentSubType(agentConfigInfo);
+    // 如果子类型为空，则不显示标签
+    if (!subType) {
+      return null;
+    }
+    // 根据子类型获取标签
+    const option = AGENT_SUB_TYPE_OPTIONS.find(
+      (item) => item.value === subType,
+    );
+    if (!option) {
+      return null;
+    }
+    return {
+      label: option.label,
+      color: AGENT_SUB_TYPE_TAG_COLOR[subType] ?? 'default',
+    };
+  }, [agentConfigInfo]);
+
   // 点击更多操作
   const handlerClickMore = (item: CustomPopoverItem) => {
     const type = item.type as ApplicationMoreActionEnum;
@@ -86,7 +169,7 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({
       content={agentConfigInfo.description}
       icon={agentConfigInfo.icon}
       defaultIcon={agentImage}
-      onClick={() => onClick(agentConfigInfo.id)}
+      onClick={() => onClick(agentConfigInfo.id, agentConfigInfo.type)}
       extra={
         <>
           <span className={cx('text-ellipsis', 'flex-1')}>
@@ -113,14 +196,8 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({
           <div
             className={cx('flex', 'items-center', 'cursor-pointer', 'gap-10')}
           >
-            {agentConfigInfo.type === AgentTypeEnum.TaskAgent ? (
-              <Tag color="orange">
-                {dict('PC.Pages.SpaceDevelop.ApplicationItem.taskType')}
-              </Tag>
-            ) : (
-              <Tag color="green">
-                {dict('PC.Pages.SpaceDevelop.ApplicationItem.chatType')}
-              </Tag>
+            {subTypeTag && (
+              <Tag color={subTypeTag.color}>{subTypeTag.label}</Tag>
             )}
             {/* 个人电脑 */}
             {agentConfigInfo?.extra?.private && (

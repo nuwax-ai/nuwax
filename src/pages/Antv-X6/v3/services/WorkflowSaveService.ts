@@ -19,7 +19,10 @@ import type { IgetDetails } from '@/services/workflow';
 import { AnswerTypeEnum, NodeTypeEnum } from '@/types/enums/common';
 import type { ChildNode } from '@/types/interfaces/graph';
 import { cloneDeep } from '@/utils/common';
-import { Graph } from '@antv/x6';
+import type { Graph } from '@antv/x6';
+import { prepareNodeForBackendSerialize } from '../agentFlow/adapters/qaConfigAdapter';
+import { serializeNodeForBackend } from '../agentFlow/nodeTypeMapping';
+import { extensionRegistry } from '../extensions/registry';
 import { SpecialPortType as PortType } from '../types/enums';
 import type { EdgeV3 as EdgeData } from '../types/interfaces';
 
@@ -179,7 +182,10 @@ class WorkflowSaveService {
     const payload: IgetDetails = {
       ...this.originalDetails,
       ...this.meta,
-      nodes: nodes,
+      // RouteDecision 复用后端 IntentRecognition 类型收发（见 nodeTypeMapping.ts）
+      nodes: nodes.map((node) =>
+        serializeNodeForBackend(prepareNodeForBackendSerialize(node)),
+      ),
       startNode: startNode || this.originalDetails.startNode,
       endNode: endNode || this.originalDetails.endNode,
       inputArgs:
@@ -357,6 +363,8 @@ class WorkflowSaveService {
     if (node.nodeConfig?.exceptionHandleConfig) {
       node.nodeConfig.exceptionHandleConfig.exceptionHandleNodeIds = [];
     }
+
+    extensionRegistry.get(node.type)?.resetBranchData?.(node);
   }
 
   /**
@@ -378,6 +386,13 @@ class WorkflowSaveService {
     // 循环节点
     if (sourceNode.type === NodeTypeEnum.Loop && sourcePort.includes('-in')) {
       return { type: PortType.Loop };
+    }
+
+    const extensionPort = extensionRegistry
+      .get(sourceNode.type)
+      ?.parseSourcePort?.(sourceNode, sourcePort);
+    if (extensionPort) {
+      return extensionPort;
     }
 
     // 特殊分支节点
@@ -418,6 +433,22 @@ class WorkflowSaveService {
     targetId: number,
     portInfo: { type: PortType; uuid?: string },
   ): boolean {
+    const extensionHandler = extensionRegistry.get(sourceNode.type);
+    if (extensionHandler?.updateConnection) {
+      const handled = extensionHandler.updateConnection(
+        sourceNode,
+        portInfo,
+        targetId,
+        'add',
+      );
+      if (handled) {
+        return true;
+      }
+      if (extensionHandler.getBranchKey?.(portInfo)) {
+        return false;
+      }
+    }
+
     switch (portInfo.type) {
       case PortType.Condition: {
         const configs = sourceNode.nodeConfig?.conditionBranchConfigs;

@@ -1,0 +1,77 @@
+@import '@/styles/color';
+@import '@/styles/token';
+@import '@/styles/scrollbar.less';
+
+@chat-max-width: 800px;
+@zero-value: 0;
+@slide-in-offset: 10px;
+@scroll-btn-bottom-offset: 100px;
+
+.session-container {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: @zero-value;
+  overflow: hidden;
+  height: 100%;
+  position: relative;
+
+  &.only-input {
+    // 隐藏核心展现内容区（针对 hash 化局部类选择器由子组件 index.less 内部 `:global` 实现）
+    .conversation-status-bar,
+    .intervention-dock {
+      display: none !important;
+    }
+  }
+}
+
+// 统一干预固定栏：与 ChatInputHome .chat-container 外框同宽
+.intervention-dock {
+  flex-shrink: 0;
+  position: relative; // 让 z-index 生效，确保 ask/question/审批卡片置于输入框(sticky,z-index:10)之上
+  z-index: 30;
+  width: 100%;
+  max-width: @chat-max-width;
+  margin: @zero-value auto;
+  padding: @zero-value @zero-value @paddingXs;
+  box-sizing: border-box;
+}
+
+// 会话状态栏样式
+.conversation-status-bar {
+  max-width: @chat-max-width;
+  width: 100%;
+  margin: @zero-value auto @paddingXs;
+  animation: slide-in-up 0.3s ease-out;
+}
+
+@keyframes slide-in-up {
+  from {
+    opacity: @zero-value;
+    transform: translateY(@slide-in-offset);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(@zero-value);
+  }
+}
+
+// 统一会话输入框容器
+.chat-input-container {
+  position: sticky;
+  bottom: @zero-value;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  background-color: transparent;
+  border-radius: @borderRadiusLg @borderRadiusLg @zero-value @zero-value;
+  width: 100%;
+  max-width: @chat-max-width;
+  margin: @zero-value auto;
+
+  // 调整滚动按钮位置，让它显示在会话状态栏的上方
+  :global(.chat-action .to-bottom) {
+    bottom: @scroll-btn-bottom-offset !important;
+  }
+}

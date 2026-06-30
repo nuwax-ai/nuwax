@@ -56,23 +56,28 @@ export const LIBRARY_ALL_RESOURCE = [
 ];
 
 // 智能体类型列表
-const AGENT_TYPE_LIST_ALL = [
+export const AGENT_TYPE_LIST = [
   {
     value: AgentTypeEnum.ChatBot,
     label: dict('PC.Constants.Space.chatBotType'),
-    // icon: <ICON_AGENT />,
     tooltip: dict('PC.Constants.Space.chatBotTypeTooltip'),
   },
   {
     value: AgentTypeEnum.TaskAgent,
     label: dict('PC.Constants.Space.taskAgentType'),
-    // icon: <ICON_AGENT />,
     tooltip: dict('PC.Constants.Space.taskAgentTypeTooltip'),
   },
+  {
+    value: AgentTypeEnum.AgentFlow,
+    label: dict('PC.Constants.Space.agentFlowType'),
+    tooltip: dict('PC.Constants.Space.agentFlowTypeTooltip'),
+  },
+  {
+    value: AgentTypeEnum.AgentGroup,
+    label: dict('PC.Constants.Space.agentGroupType'),
+    tooltip: dict('PC.Constants.Space.agentGroupTypeTooltip'),
+  },
 ];
-
-// 兼容旧代码
-export const AGENT_TYPE_LIST = AGENT_TYPE_LIST_ALL;
 
 // 技能库所有资源类型
 export const SKILL_ALL_RESOURCE = [
@@ -187,7 +192,7 @@ export const FILTER_STATUS_DEV = [
   },
 ];
 
-// 智能体开发 - 智能体类型（全部/问答型/通用型）
+// 智能体开发 - 智能体类型（全部/问答型/通用型/AgentFlow）
 export const AGENT_TYPE_LIST_DEV = [
   { value: AgentTypeEnum.All, label: dict('PC.Common.Global.all') },
   {
@@ -197,6 +202,10 @@ export const AGENT_TYPE_LIST_DEV = [
   {
     value: AgentTypeEnum.TaskAgent,
     label: dict('PC.Constants.Space.taskAgentType'),
+  },
+  {
+    value: AgentTypeEnum.AgentFlow,
+    label: dict('PC.Constants.Space.agentFlowType'),
   },
 ];
 
@@ -215,14 +224,17 @@ export const APPLICATION_MORE_ACTION = [
     type: ApplicationMoreActionEnum.Analyze,
     label: dict('PC.Constants.Space.analyze'),
   },
+  // 复制到空间
   {
     type: ApplicationMoreActionEnum.Copy_To_Space,
     label: dict('PC.Constants.Space.copyToSpace'),
   },
+  // 迁移
   {
     type: ApplicationMoreActionEnum.Move,
     label: dict('PC.Constants.Space.migrate'),
   },
+  // 临时会话
   {
     type: ApplicationMoreActionEnum.Temporary_Session,
     label: dict('PC.Constants.Space.temporarySession'),
@@ -232,7 +244,9 @@ export const APPLICATION_MORE_ACTION = [
     type: ApplicationMoreActionEnum.Independent_Session,
     label: dict('PC.Constants.Space.independentSession'),
   },
+  // API Key
   { type: ApplicationMoreActionEnum.API_Key, label: 'API Key' },
+  // 导出配置
   {
     type: ApplicationMoreActionEnum.Export_Config,
     label: dict('PC.Constants.Space.exportConfig'),
@@ -347,6 +361,10 @@ export const COMPONENT_SETTING_ACTIONS = [
   {
     type: ComponentSettingEnum.Method_Call,
     label: dict('PC.Constants.Space.callMethod'),
+  },
+  {
+    type: ComponentSettingEnum.Call_Approval,
+    label: dict('PC.Constants.Space.callApproval'),
   },
   {
     type: ComponentSettingEnum.Output_Way,

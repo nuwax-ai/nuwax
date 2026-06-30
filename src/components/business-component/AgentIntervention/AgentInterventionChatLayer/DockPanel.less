@@ -1,0 +1,65 @@
+@import '@/styles/token.less';
+
+.cardSlot {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* ─── 多干预卡片堆叠 ─────────────────────────────── */
+.stackRoot {
+  position: relative;
+  width: 100%;
+}
+
+.stackBadge {
+  position: absolute;
+  top: 5px;
+  right: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 10px;
+  background: @colorPrimary;
+  color: @colorTextLightSolid;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 10%);
+  pointer-events: none;
+}
+
+.stack {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  width: 100%;
+  padding-top: var(--stack-offset-total, 0);
+  padding-right: var(--stack-offset-total, 0);
+  overflow: visible;
+}
+
+.stackLayer {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.stackLayerFront {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.stackLayerBack {
+  position: absolute;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+}

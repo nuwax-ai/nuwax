@@ -1,6 +1,8 @@
 import workflowIcon from '@/assets/images/workflow_image.png';
+import GuardedFormModal, {
+  GuardedFormModalForm,
+} from '@/components/business-component/GuardedFormModal';
 import ConditionRender from '@/components/ConditionRender';
-import CustomFormModal from '@/components/CustomFormModal';
 import OverrideTextArea from '@/components/OverrideTextArea';
 import UploadAvatar from '@/components/UploadAvatar';
 import { dict } from '@/services/i18nRuntime';
@@ -10,7 +12,7 @@ import {
   apiResourceGroupList,
   apiUpdateWorkflow,
 } from '@/services/library';
-import { CreateUpdateModeEnum } from '@/types/enums/common';
+import { CreateUpdateModeEnum, FlowKindEnum } from '@/types/enums/common';
 import { ComponentTypeEnum } from '@/types/enums/space';
 import type {
   CreateWorkflowProps,
@@ -18,8 +20,10 @@ import type {
   WorkflowBaseInfo,
 } from '@/types/interfaces/library';
 import { customizeRequiredMark } from '@/utils/form';
+import { resolveCreateIcon } from '@/utils/resolveCreateIcon';
+import { buildWorkflowRoute } from '@/utils/router';
 import type { FormProps } from 'antd';
-import { Form, Input, message, Select } from 'antd';
+import { Button, Form, Input, message, Select } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { history, useRequest } from 'umi';
@@ -37,6 +41,7 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
   id,
   icon,
   description,
+  workflowType,
   open,
   onCancel,
   onConfirm,
@@ -46,6 +51,7 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
   const [form] = Form.useForm();
   const [imageUrl, setImageUrl] = useState<string>('');
   const [groupOptions, setGroupOptions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
 
   // 拉取资源分组列表
   useEffect(() => {
@@ -63,11 +69,17 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
     }
   }, [open, type, spaceId]);
 
+  const isAgentFlow = workflowType === FlowKindEnum.AgentFlow;
+
+  // AgentFlow 预设图标列表
+  const AGENT_FLOW_ICONS = ['🤖', '🧠', '💡', '📊', '🔄', '🎯', '💬', '✏️'];
+
   // 新增工作流
   const { run } = useRequest(apiAddWorkflow, {
     manual: true,
     debounceInterval: 300,
     onSuccess: async (result: number) => {
+      setLoading(false);
       // 校验如果用户选择了分组，则先执行移入分组操作
       const targetGroupId = form.getFieldValue('groupId');
       if (targetGroupId) {
@@ -81,7 +93,10 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
 
       message.success(dict('PC.Components.CreateWorkflow.workflowCreated'));
       onCancel();
-      history.push(`/space/${spaceId}/workflow/${result}`);
+      history.push(buildWorkflowRoute(spaceId as number, result, workflowType));
+    },
+    onError: () => {
+      setLoading(false);
     },
   });
 
@@ -90,10 +105,14 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
     manual: true,
     debounceInterval: 300,
     onSuccess: (_: null, params: UpdateWorkflowParams[]) => {
+      setLoading(false);
       message.success(dict('PC.Components.CreateWorkflow.workflowUpdated'));
       const info = params[0];
       onConfirm?.(info as WorkflowBaseInfo);
       onCancel(); // 关闭对话框
+    },
+    onError: () => {
+      setLoading(false);
     },
   });
 
@@ -116,49 +135,175 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
     description: string;
     groupId?: number;
   }>['onFinish'] = async (values) => {
-    const baseParams = {
-      name: values?.name,
-      description: values?.description,
-      icon: imageUrl,
-    };
-
-    if (type === CreateUpdateModeEnum.Create) {
-      run({
-        spaceId,
-        ...baseParams,
-      });
-    } else {
-      // 构建完整的更新参数
-      const updateParams: WorkflowBaseInfo = {
-        id: id as number,
-        spaceId: spaceId as number,
-        ...baseParams,
-        extension: { size: 1 },
+    setLoading(true);
+    try {
+      let icon = imageUrl;
+      let description = values?.description;
+      if (type === CreateUpdateModeEnum.Create) {
+        const resolved = await resolveCreateIcon({
+          imageUrl,
+          name: values?.name,
+          description: values?.description,
+        });
+        icon = resolved.icon;
+        description = resolved.description ?? values?.description;
+      }
+      const baseParams = {
+        name: values?.name,
+        description,
+        icon,
+        ...(workflowType && { workflowType }),
       };
-      // 如果提供了外部更新回调，则使用外部处理
-      if (onUpdate) {
-        const success = await onUpdate(updateParams);
-        if (success) {
-          message.success(dict('PC.Components.CreateWorkflow.workflowUpdated'));
-          onConfirm?.(updateParams);
-          onCancel();
-        }
-      } else {
-        // 否则使用内部接口
-        runUpdate({
-          id: id as number,
+
+      if (type === CreateUpdateModeEnum.Create) {
+        run({
+          spaceId,
           ...baseParams,
         });
+      } else {
+        // 构建完整的更新参数
+        const updateParams: WorkflowBaseInfo = {
+          id: id as number,
+          spaceId: spaceId as number,
+          ...baseParams,
+          extension: { size: 1 },
+        };
+        // 如果提供了外部更新回调，则使用外部处理
+        if (onUpdate) {
+          const success = await onUpdate(updateParams);
+          if (success) {
+            message.success(
+              dict('PC.Components.CreateWorkflow.workflowUpdated'),
+            );
+            onConfirm?.(updateParams);
+            onCancel();
+          }
+          setLoading(false);
+        } else {
+          // 否则使用内部接口
+          runUpdate({
+            id: id as number,
+            ...baseParams,
+          });
+        }
       }
+    } catch {
+      setLoading(false);
     }
   };
 
-  const handlerSubmit = () => {
-    form.submit();
+  // AgentFlow: 跳过按钮处理
+  const handleSkip = () => {
+    onCancel();
+    // 跳过后直接用默认值创建
+    run({
+      spaceId,
+      name: '',
+      description: '',
+      icon: '',
+      ...(workflowType && { workflowType }),
+    });
   };
 
+  // ── AgentFlow 创建 Modal（icon grid + 跳过按钮） ──
+  if (isAgentFlow && type === CreateUpdateModeEnum.Create) {
+    return (
+      <GuardedFormModal
+        form={form}
+        title={dict('PC.Components.CreateWorkflow.createAgentFlow')}
+        classNames={{
+          content: cx(styles.container),
+          header: cx(styles.header),
+        }}
+        open={open}
+        loading={loading}
+        onCancel={onCancel}
+        onConfirm={() => form.submit()}
+        okText={dict('PC.Components.CreateWorkflow.startEditing')}
+        footerExtra={
+          <Button type="default" onClick={handleSkip} disabled={loading}>
+            {dict('PC.Components.CreateWorkflow.skip')}
+          </Button>
+        }
+      >
+        <GuardedFormModalForm
+          form={form}
+          requiredMark={customizeRequiredMark}
+          layout="vertical"
+          onFinish={onFinish}
+          autoComplete="off"
+        >
+          <Form.Item
+            name="name"
+            label={dict('PC.Components.CreateWorkflow.name')}
+            rules={[
+              {
+                required: false, // 跳过模式下非必填
+                message: dict(
+                  'PC.Components.CreateWorkflow.pleaseInputWorkflowName',
+                ),
+              },
+            ]}
+          >
+            <Input
+              placeholder={dict(
+                'PC.Components.CreateWorkflow.placeholderAgentFlowName',
+              )}
+              showCount
+              maxLength={30}
+            />
+          </Form.Item>
+          <OverrideTextArea
+            name="description"
+            label={dict('PC.Components.CreateWorkflow.description')}
+            initialValue={description}
+            placeholder={dict(
+              'PC.Components.CreateWorkflow.placeholderAgentFlowDesc',
+            )}
+            maxLength={10000}
+          />
+          <Form.Item label={dict('PC.Components.CreateWorkflow.icon')}>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(4, 1fr)',
+                gap: 8,
+              }}
+            >
+              {AGENT_FLOW_ICONS.map((emoji, idx) => (
+                <div
+                  key={idx}
+                  onClick={() => setImageUrl(emoji)}
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 22,
+                    cursor: 'pointer',
+                    border:
+                      imageUrl === emoji
+                        ? '2px solid #1677ff'
+                        : '2px solid #d9d9d9',
+                    background: imageUrl === emoji ? '#e6f4ff' : '#f5f5f5',
+                    transition: 'all 0.2s',
+                  }}
+                >
+                  {emoji}
+                </div>
+              ))}
+            </div>
+          </Form.Item>
+        </GuardedFormModalForm>
+      </GuardedFormModal>
+    );
+  }
+
+  // ── 标准 Workflow 创建 Modal ──
   return (
-    <CustomFormModal
+    <GuardedFormModal
       form={form}
       title={
         type === CreateUpdateModeEnum.Create
@@ -170,10 +315,11 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
         header: cx(styles.header),
       }}
       open={open}
+      loading={loading}
       onCancel={onCancel}
-      onConfirm={handlerSubmit}
+      onConfirm={() => form.submit()}
     >
-      <Form
+      <GuardedFormModalForm
         form={form}
         requiredMark={customizeRequiredMark}
         layout="vertical"
@@ -258,8 +404,8 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
             />
           </Form.Item>
         </ConditionRender>
-      </Form>
-    </CustomFormModal>
+      </GuardedFormModalForm>
+    </GuardedFormModal>
   );
 };
 

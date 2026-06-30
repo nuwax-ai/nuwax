@@ -61,7 +61,7 @@ export function useWorkflowDataV3(): UseWorkflowDataV3Return {
     if (fullData) {
       setNodes(fullData.nodes);
       setEdges(fullData.edges);
-      setModified(fullData.modified);
+      setModified(fullData.modified || '');
       setIsDirty(workflowProxy.hasPendingChanges());
     }
   }, []);

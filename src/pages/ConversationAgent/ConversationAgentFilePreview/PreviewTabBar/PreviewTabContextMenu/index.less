@@ -1,0 +1,66 @@
+@import '@/styles/token';
+
+@menu-transition-duration: 0.16s;
+@menu-transition-ease: cubic-bezier(0.2, 0, 0, 1);
+
+.menu {
+  position: fixed;
+  z-index: 1050;
+  min-width: 200px;
+  padding: @paddingXxs 0;
+  background: @colorBgContainer;
+  border-radius: @borderRadius;
+  box-shadow: @boxShadowSecondary;
+  border: @lineWidth solid @colorBorderSecondary;
+  transform-origin: top left;
+  opacity: 0;
+  transform: scale(0.96) translateY(-4px);
+  pointer-events: none;
+  transition: opacity @menu-transition-duration @menu-transition-ease,
+    transform @menu-transition-duration @menu-transition-ease,
+    box-shadow @menu-transition-duration @menu-transition-ease;
+
+  &.menu-expanded {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    pointer-events: auto;
+  }
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: @paddingXs @paddingSm;
+  border: none;
+  background: transparent;
+  font-size: @fontSizeSm;
+  color: @colorText;
+  cursor: pointer;
+  text-align: left;
+  gap: @marginMd;
+  transition: background-color 0.15s ease, color 0.15s ease;
+
+  &:hover {
+    background: @colorFillTertiary;
+  }
+}
+
+.label {
+  flex: 1;
+  min-width: 0;
+}
+
+.shortcut {
+  flex-shrink: 0;
+  font-size: @fontSizeSm;
+  color: @colorTextTertiary;
+  font-family: @fontFamilyCode;
+}
+
+.divider {
+  height: @lineWidth;
+  margin: @marginXxs 0;
+  background: @colorSplit;
+}

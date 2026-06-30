@@ -28,6 +28,12 @@ export interface CreatedProp {
   disableCollect?: boolean; // 是否禁用收藏
   // 是否显示更多菜单，默认显示
   showMoreMenus?: boolean;
+  /** 群组智能体选择器：仅查询当前空间智能体，agentTypes = ChatBot / General / Custom */
+  isGroupAgentPicker?: boolean;
+  /**
+   * AgentFlow 智能体节点选器：请求 agentTypes = ChatBot / General / Custom
+   */
+  isAgentFlowAgentPicker?: boolean;
 }
 
 export type MenuItem = Required<MenuProps>['items'][number];

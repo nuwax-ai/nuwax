@@ -7,6 +7,7 @@ import PluginTryRunModal from '@/components/PluginTryRunModal';
 import PublishComponentModal from '@/components/PublishComponentModal';
 import VersionHistory from '@/components/VersionHistory';
 import { ICON_ADD_TR } from '@/constants/images.constants';
+import { useInitProjectMetadata } from '@/hooks/useInitProjectMetadata';
 import usePluginConfig from '@/hooks/usePluginConfig';
 import { dataTypes } from '@/pages/Antv-X6/params';
 import { dict } from '@/services/i18nRuntime';
@@ -22,8 +23,9 @@ import { DeleteOutlined } from '@ant-design/icons';
 import type { TableColumnsType } from 'antd';
 import { Button, Cascader, Checkbox, Input, Table, Tooltip } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useState } from 'react';
-import { useParams, useRequest } from 'umi';
+import React, { useEffect, useRef, useState } from 'react';
+import { useLocation, useModel, useParams, useRequest } from 'umi';
+import PluginChatSession from '../SpacePluginTool/components/PluginChatSession';
 import styles from './index.less';
 import PluginCodeHeader from './PluginCodeHeader';
 
@@ -35,6 +37,11 @@ const cx = classNames.bind(styles);
 const SpacePluginCloudTool: React.FC = () => {
   const params = useParams();
   const spaceId = Number(params.spaceId);
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const conversationId =
+    Number(searchParams.get('conversationId')) || undefined;
+  const hasConversationId = !!searchParams.get('conversationId');
 
   const [codeMode, setCodeMode] = useState<PluginCodeModeEnum>(
     PluginCodeModeEnum.Metadata,
@@ -96,6 +103,16 @@ const SpacePluginCloudTool: React.FC = () => {
     },
   });
 
+  useInitProjectMetadata({
+    targetType: AgentComponentTypeEnum.Plugin,
+    targetId: pluginId,
+    onSuccess: () => {
+      if (pluginId) runPluginInfo(pluginId);
+    },
+  });
+
+  // ========== 代码保存逻辑 ==========
+
   // 更新代码插件配置接口
   const { run: runUpdate } = useRequest(apiPluginCodeUpdate, {
     manual: true,
@@ -109,6 +126,17 @@ const SpacePluginCloudTool: React.FC = () => {
     runPluginInfo(pluginId);
   }, [pluginId]);
 
+  const { isConversationActive } = useModel('conversationInfo');
+  const prevActiveRef = useRef(false);
+
+  // 每次聊天对话完毕后，主动更新最新的插件配置信息
+  useEffect(() => {
+    if (prevActiveRef.current && !isConversationActive) {
+      runPluginInfo(pluginId);
+    }
+    prevActiveRef.current = isConversationActive;
+  }, [isConversationActive, runPluginInfo, pluginId]);
+
   // Just show the latest item.
   const displayRender = (labels: string[]) => labels[labels.length - 1];
 
@@ -120,6 +148,7 @@ const SpacePluginCloudTool: React.FC = () => {
       ),
       dataIndex: 'name',
       key: 'name',
+      ellipsis: true,
       className: 'flex items-center',
       render: (value, record) => (
         <Input
@@ -137,6 +166,7 @@ const SpacePluginCloudTool: React.FC = () => {
       ),
       dataIndex: 'description',
       key: 'description',
+      ellipsis: true,
       render: (value, record) => (
         <Input
           placeholder={dict(
@@ -155,7 +185,8 @@ const SpacePluginCloudTool: React.FC = () => {
       ),
       dataIndex: 'dataType',
       key: 'dataType',
-      width: 120,
+      ellipsis: true,
+      width: 160,
       render: (value, record) => (
         <Cascader
           rootClassName={styles.select}
@@ -175,6 +206,7 @@ const SpacePluginCloudTool: React.FC = () => {
       title: dict('PC.Pages.SpacePluginCloudTool.isRequired'),
       dataIndex: 'require',
       key: 'require',
+      ellipsis: true,
       width: 100,
       align: 'center',
       render: (value, record) => (
@@ -190,6 +222,7 @@ const SpacePluginCloudTool: React.FC = () => {
       title: dict('PC.Pages.SpacePluginCloudTool.defaultValue'),
       dataIndex: 'bindValue',
       key: 'bindValue',
+      ellipsis: true,
       width: 150,
       render: (value, record) => (
         <Input
@@ -211,6 +244,7 @@ const SpacePluginCloudTool: React.FC = () => {
       title: dict('PC.Pages.SpacePluginCloudTool.enable'),
       dataIndex: 'enable',
       key: 'enable',
+      ellipsis: true,
       width: 70,
       align: 'center',
       render: (value: boolean, record) => (
@@ -234,6 +268,7 @@ const SpacePluginCloudTool: React.FC = () => {
     {
       title: dict('PC.Pages.SpacePluginCloudTool.operation'),
       key: 'action',
+      ellipsis: true,
       width: 66,
       align: 'right',
       render: (_, record) => {
@@ -266,7 +301,8 @@ const SpacePluginCloudTool: React.FC = () => {
       ),
       dataIndex: 'name',
       key: 'name',
-      width: 430,
+      ellipsis: true,
+      width: 200,
       className: 'flex items-center',
       render: (value, record) => (
         <Input
@@ -286,6 +322,7 @@ const SpacePluginCloudTool: React.FC = () => {
       ),
       dataIndex: 'description',
       key: 'description',
+      ellipsis: true,
       render: (value, record) => (
         <Input
           placeholder={dict(
@@ -304,7 +341,8 @@ const SpacePluginCloudTool: React.FC = () => {
       ),
       dataIndex: 'dataType',
       key: 'dataType',
-      width: 120,
+      ellipsis: true,
+      width: 160,
       render: (value, record) => (
         <Cascader
           allowClear={false}
@@ -324,6 +362,7 @@ const SpacePluginCloudTool: React.FC = () => {
       title: dict('PC.Pages.SpacePluginCloudTool.enable'),
       dataIndex: 'enable',
       key: 'enable',
+      ellipsis: true,
       width: 70,
       align: 'center',
       render: (value, record) => (
@@ -338,6 +377,7 @@ const SpacePluginCloudTool: React.FC = () => {
     {
       title: dict('PC.Pages.SpacePluginCloudTool.operation'),
       key: 'action',
+      ellipsis: true,
       width: 66,
       align: 'right',
       render: (_, record) => {
@@ -403,80 +443,110 @@ const SpacePluginCloudTool: React.FC = () => {
   };
 
   return (
-    <div className={cx('flex', 'h-full')}>
-      <div className={cx(styles.container, 'flex', 'flex-col', 'flex-1')}>
-        <PluginCodeHeader
-          codeMode={codeMode}
-          pluginInfo={pluginInfo as PluginInfo}
-          onEdit={() => setOpenPlugin(true)}
-          onChange={handleChangeSegmented}
-          onToggleHistory={() => setVisible(!visible)}
-          onSave={handleSaveConfig}
-          onTryRun={handleTryRun}
-          onPublish={handlePublish}
-        />
-        {codeMode === PluginCodeModeEnum.Metadata ? (
-          <div className={cx(styles['main-container'], 'overflow-y', 'flex-1')}>
-            <PluginConfigTitle
-              title={dict('PC.Pages.SpacePluginCloudTool.inputConfig')}
-              onClick={handleInputConfigAdd}
-            />
-            <Table<BindConfigWithSub>
-              className={cx(
-                styles['table-wrap'],
-                styles['mb-24'],
-                'overflow-hide',
-              )}
-              columns={inputColumns}
-              dataSource={inputConfigArgs}
-              pagination={false}
-              expandable={{
-                childrenColumnName: 'subArgs',
-                defaultExpandAllRows: true,
-                expandedRowKeys: expandedRowKeys,
-                expandIcon: () => null,
-              }}
-            />
-            <PluginConfigTitle
-              title={dict('PC.Pages.SpacePluginCloudTool.outputConfig')}
-              onClick={handleOutputConfigAdd}
-              extra={
-                <Button onClick={handleAutoResolve}>
-                  {dict('PC.Pages.SpacePluginCloudTool.autoAnalyze')}
-                </Button>
-              }
-            />
-            <Table<BindConfigWithSub>
-              className={cx(styles['table-wrap'], 'overflow-hide')}
-              columns={outputColumns}
-              dataSource={outputConfigArgs}
-              pagination={false}
-              expandable={{
-                childrenColumnName: 'subArgs',
-                // 初始时，是否展开所有行
-                defaultExpandAllRows: true,
-                expandedRowKeys: outputExpandedRowKeys,
-                expandIcon: () => null,
-              }}
-            />
-          </div>
-        ) : (
-          <div
-            className={cx(
-              styles['main-container'],
-              styles['code-wrap'],
-              'overflow-y',
-              'flex-1',
-            )}
-          >
-            <CodeEditor
-              value={code}
-              height={'100%'}
-              onChange={setCode}
-              codeLanguage={pluginInfo?.config?.codeLang}
+    <div className={cx(styles['page-container'])}>
+      <PluginCodeHeader
+        codeMode={codeMode}
+        pluginInfo={pluginInfo as PluginInfo}
+        onEdit={() => setOpenPlugin(true)}
+        onChange={handleChangeSegmented}
+        onToggleHistory={() => setVisible(!visible)}
+        onSave={handleSaveConfig}
+        onTryRun={handleTryRun}
+        onPublish={handlePublish}
+      />
+      <div className={cx(styles['layout-wrapper'])}>
+        {/* 左侧：调试聊天会话区域 */}
+        {hasConversationId && (
+          <div className={cx(styles['chat-section'])}>
+            <PluginChatSession
+              conversationId={conversationId}
+              pluginInfo={pluginInfo as PluginInfo}
             />
           </div>
         )}
+
+        {/* 右侧：原有的插件详情和配置表单内容区域 */}
+        <div
+          className={cx(
+            styles['detail-section'],
+            !hasConversationId ? styles['no-chat'] : undefined,
+          )}
+        >
+          <div className={cx('flex', 'h-full')}>
+            <div className={cx(styles.container, 'flex', 'flex-col', 'flex-1')}>
+              {codeMode === PluginCodeModeEnum.Metadata ? (
+                <div
+                  className={cx(
+                    styles['main-container'],
+                    'overflow-y',
+                    'flex-1',
+                  )}
+                >
+                  <PluginConfigTitle
+                    title={dict('PC.Pages.SpacePluginCloudTool.inputConfig')}
+                    onClick={handleInputConfigAdd}
+                  />
+                  <Table<BindConfigWithSub>
+                    className={cx(
+                      styles['table-wrap'],
+                      styles['mb-24'],
+                      'overflow-hide',
+                    )}
+                    columns={inputColumns}
+                    dataSource={inputConfigArgs}
+                    pagination={false}
+                    scroll={{ x: 800 }}
+                    expandable={{
+                      childrenColumnName: 'subArgs',
+                      defaultExpandAllRows: true,
+                      expandedRowKeys: expandedRowKeys,
+                      expandIcon: () => null,
+                    }}
+                  />
+                  <PluginConfigTitle
+                    title={dict('PC.Pages.SpacePluginCloudTool.outputConfig')}
+                    onClick={handleOutputConfigAdd}
+                    extra={
+                      <Button onClick={handleAutoResolve}>
+                        {dict('PC.Pages.SpacePluginCloudTool.autoAnalyze')}
+                      </Button>
+                    }
+                  />
+                  <Table<BindConfigWithSub>
+                    className={cx(styles['table-wrap'], 'overflow-hide')}
+                    columns={outputColumns}
+                    dataSource={outputConfigArgs}
+                    pagination={false}
+                    scroll={{ x: 800 }}
+                    expandable={{
+                      childrenColumnName: 'subArgs',
+                      // 初始时，是否展开所有行
+                      defaultExpandAllRows: true,
+                      expandedRowKeys: outputExpandedRowKeys,
+                      expandIcon: () => null,
+                    }}
+                  />
+                </div>
+              ) : (
+                <div
+                  className={cx(
+                    styles['main-container'],
+                    styles['code-wrap'],
+                    'overflow-y',
+                    'flex-1',
+                  )}
+                >
+                  <CodeEditor
+                    value={code}
+                    height={'100%'}
+                    onChange={setCode}
+                    codeLanguage={pluginInfo?.config?.codeLang}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
       {/*试运行弹窗*/}
       <PluginTryRunModal

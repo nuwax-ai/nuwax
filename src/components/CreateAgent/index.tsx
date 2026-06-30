@@ -1,28 +1,24 @@
 import agentImage from '@/assets/images/agent_image.png';
-import CustomFormModal from '@/components/CustomFormModal';
+import GuardedFormModal, {
+  GuardedFormModalForm,
+} from '@/components/business-component/GuardedFormModal';
 import OverrideTextArea from '@/components/OverrideTextArea';
 import UploadAvatar from '@/components/UploadAvatar';
-// import { ICON_CONFIRM_STAR } from '@/constants/images.constants';
-// import { CREATE_AGENT_LIST } from '@/constants/space.constants';
 import { apiAgentAdd, apiAgentConfigUpdate } from '@/services/agentConfig';
 import { dict } from '@/services/i18nRuntime';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
-import { AgentTypeEnum } from '@/types/enums/space';
+import { AgentSubTypeEnum, AgentTypeEnum } from '@/types/enums/space';
 import type {
   AgentAddParams,
+  AgentAddResult,
   AgentConfigUpdateParams,
 } from '@/types/interfaces/agent';
 import type { CreateAgentProps } from '@/types/interfaces/common';
 import { customizeRequiredMark } from '@/utils/form';
+import { resolveCreateIcon } from '@/utils/resolveCreateIcon';
 import { Form, FormProps, Input, message } from 'antd';
-// import classNames from 'classnames';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useRequest } from 'umi';
-// import styles from './index.less';
-
-// const cx = classNames.bind(styles);
-//
-// const { TextArea } = Input;
 
 const CreateAgent: React.FC<CreateAgentProps> = ({
   type,
@@ -34,10 +30,6 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
   onConfirmCreate,
   onConfirmUpdate,
 }) => {
-  // 分段控制器：标准创建、AI 创建
-  // const [createAgentType, setCreateAgentType] = useState<CreateAgentEnum>(
-  //   CreateAgentEnum.Standard,
-  // );
   const [form] = Form.useForm();
   const [imageUrl, setImageUrl] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
@@ -46,7 +38,7 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
   const { run: runAdd } = useRequest(apiAgentAdd, {
     manual: true,
     debounceInterval: 300,
-    onSuccess: (result: number) => {
+    onSuccess: (result: AgentAddResult) => {
       setImageUrl('');
       onConfirmCreate?.(result);
       message.success(dict('PC.Components.CreateAgent.createSuccess'));
@@ -86,23 +78,42 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
     }
   }, [open, agentConfigInfo]);
 
-  const onFinish: FormProps<AgentAddParams>['onFinish'] = (values) => {
+  const onFinish: FormProps<AgentAddParams>['onFinish'] = async (values) => {
     setLoading(true);
-    if (mode === CreateUpdateModeEnum.Create) {
-      runAdd({
-        ...values,
-        icon: imageUrl,
-        spaceId,
-        type,
-      });
-    } else {
-      // 更新智能体
-      runUpdate({
-        ...values,
-        icon: imageUrl,
-        id: agentConfigInfo?.id,
-        type,
-      });
+    try {
+      if (mode === CreateUpdateModeEnum.Create) {
+        const { icon, description } = await resolveCreateIcon({
+          imageUrl,
+          name: values.name,
+          description: values.description,
+        });
+        // AgentFlow / AgentGroup 在后端实际类型为 TaskAgent，通过 subType 区分
+        const isAgentFlow = type === AgentTypeEnum.AgentFlow;
+        const isAgentGroup = type === AgentTypeEnum.AgentGroup;
+        const resolveSubType = () => {
+          if (isAgentFlow) return AgentSubTypeEnum.Flow;
+          if (isAgentGroup) return AgentSubTypeEnum.Group;
+          return undefined;
+        };
+        runAdd({
+          ...values,
+          description: description ?? values.description,
+          icon,
+          spaceId,
+          type: isAgentFlow || isAgentGroup ? AgentTypeEnum.TaskAgent : type,
+          subType: resolveSubType(),
+        });
+      } else {
+        // 更新智能体
+        runUpdate({
+          ...values,
+          icon: imageUrl,
+          id: agentConfigInfo?.id,
+          type,
+        });
+      }
+    } catch {
+      setLoading(false);
     }
   };
 
@@ -119,21 +130,29 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
   // 获取标题
   const getTitle = useCallback(() => {
     if (type) {
-      const typeMap: Record<
-        AgentTypeEnum.ChatBot | AgentTypeEnum.TaskAgent,
-        string
-      > = {
-        [AgentTypeEnum.ChatBot]: dict('PC.Components.CreateAgent.typeChatBot'),
-        [AgentTypeEnum.TaskAgent]: dict(
-          'PC.Components.CreateAgent.typeTaskAgent',
-        ),
-      };
+      let typeName: string | undefined;
+      switch (type) {
+        case AgentTypeEnum.ChatBot:
+          typeName = dict('PC.Components.CreateAgent.typeChatBot');
+          break;
+        case AgentTypeEnum.TaskAgent:
+          typeName = dict('PC.Components.CreateAgent.typeTaskAgent');
+          break;
+        case AgentTypeEnum.AgentFlow:
+          typeName = dict('PC.Components.CreateAgent.typeAgentFlow');
+          break;
+        case AgentTypeEnum.AgentGroup:
+          typeName = dict('PC.Components.CreateAgent.typeAgentGroup');
+          break;
+        default:
+          typeName = undefined;
+      }
 
-      const typeName =
-        typeMap[type as AgentTypeEnum.ChatBot | AgentTypeEnum.TaskAgent];
-      return mode === CreateUpdateModeEnum.Create
-        ? dict('PC.Components.CreateAgent.createTypeTitle', typeName)
-        : dict('PC.Components.CreateAgent.updateTypeTitle', typeName);
+      if (typeName) {
+        return mode === CreateUpdateModeEnum.Create
+          ? dict('PC.Components.CreateAgent.createTypeTitle', typeName)
+          : dict('PC.Components.CreateAgent.updateTypeTitle', typeName);
+      }
     }
     return mode === CreateUpdateModeEnum.Create
       ? dict('PC.Components.CreateAgent.createTitle')
@@ -141,40 +160,21 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
   }, [type, mode]);
 
   return (
-    <CustomFormModal
+    <GuardedFormModal
       form={form}
       title={getTitle()}
       open={open}
       loading={loading}
-      // okText={createAgentType === CreateAgentEnum.Standard ? '' : '生成'}
-      // okPrefixIcon={
-      //   createAgentType === CreateAgentEnum.Standard ? (
-      //     ''
-      //   ) : (
-      //     <ICON_CONFIRM_STAR />
-      //   )
-      // }
       onCancel={handleCancel}
       onConfirm={handlerSubmit}
     >
-      {/*{mode === CreateUpdateModeEnum.Create && (*/}
-      {/*  <Segmented*/}
-      {/*    className={cx(styles.segment)}*/}
-      {/*    value={createAgentType}*/}
-      {/*    onChange={setCreateAgentType}*/}
-      {/*    block*/}
-      {/*    options={CREATE_AGENT_LIST}*/}
-      {/*  />*/}
-      {/*)}*/}
-      <Form
+      <GuardedFormModalForm
         form={form}
         requiredMark={customizeRequiredMark}
         layout="vertical"
         onFinish={onFinish}
         autoComplete="off"
       >
-        {/*{createAgentType === CreateAgentEnum.Standard ? (*/}
-        {/*  <>*/}
         <Form.Item
           name="name"
           label={dict('PC.Components.CreateAgent.nameLabel')}
@@ -225,23 +225,8 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
             svgIconName="icons-workspace-agent"
           />
         </Form.Item>
-        {/*  </>*/}
-        {/*) : (*/}
-        {/*  <Form.Item*/}
-        {/*    className={cx(styles['text-area'])}*/}
-        {/*    name="description"*/}
-        {/*    rules={[*/}
-        {/*      { required: true, message: '请描述你希望创建一个什么样的智能体' },*/}
-        {/*    ]}*/}
-        {/*  >*/}
-        {/*    <TextArea*/}
-        {/*      placeholder="请描述你希望创建一个什么样的智能体"*/}
-        {/*      autoSize={{ minRows: 4, maxRows: 6 }}*/}
-        {/*    />*/}
-        {/*  </Form.Item>*/}
-        {/*)}*/}
-      </Form>
-    </CustomFormModal>
+      </GuardedFormModalForm>
+    </GuardedFormModal>
   );
 };
 

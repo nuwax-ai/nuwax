@@ -1,8 +1,12 @@
+import type { AgentInterventionRespondRequest } from '@/components/business-component/AgentIntervention';
+import type { RcoderNotifyResolvedRequest } from '@/types/interfaces/acpPermission';
 import {
   AgentAddParams,
+  AgentAddResult,
   AgentCardInfo,
   AgentComponentAddParams,
   AgentComponentEventUpdateParams,
+  AgentComponentHookUpdateParams,
   AgentComponentInfo,
   AgentComponentKnowledgeUpdateParams,
   AgentComponentMcpUpdateParams,
@@ -126,6 +130,16 @@ export async function apiAgentComponentVariableUpdate(
   });
 }
 
+// 更新Hook配置
+export async function apiAgentComponentHookUpdate(
+  data: AgentComponentHookUpdateParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/agent/component/hook/update', {
+    method: 'POST',
+    data,
+  });
+}
+
 // 更新插件组件配置
 export async function apiAgentComponentPluginUpdate(
   data: AgentComponentPluginUpdateParams,
@@ -208,7 +222,7 @@ export async function apiAgentComponentAdd(
 // 新增智能体接口
 export async function apiAgentAdd(
   data: AgentAddParams,
-): Promise<RequestResponse<number>> {
+): Promise<RequestResponse<AgentAddResult>> {
   return request('/api/agent/add', {
     method: 'POST',
     data,
@@ -294,6 +308,48 @@ export async function apiAgentConversationChatStop(
 ): Promise<RequestResponse<null>> {
   return request(`/api/agent/conversation/chat/stop/${requestId}`, {
     method: 'POST',
+  });
+}
+
+// ACP 权限审批结果回调
+export function apiResolveAcpPermission(
+  data: RcoderNotifyResolvedRequest,
+): Promise<RequestResponse<any> | Record<string, any>> {
+  return request('/api/computer/notify-resolved', {
+    method: 'POST',
+    data,
+  });
+}
+
+export function apiAgentInterventionRespond(
+  data: AgentInterventionRespondRequest,
+): Promise<RequestResponse<unknown>> {
+  const permissionRequest = data.permission_resolve_request;
+  const selected = permissionRequest?.request_permission_response.outcome
+    ? 'Selected' in permissionRequest.request_permission_response.outcome
+      ? permissionRequest.request_permission_response.outcome.Selected
+      : null
+    : null;
+  const fallbackOptionId =
+    permissionRequest?.request_permission_response.outcome &&
+    'Cancelled' in permissionRequest.request_permission_response.outcome
+      ? 'reject'
+      : undefined;
+
+  return request('/api/agent/conversation/chat/permission-request/response', {
+    method: 'POST',
+    // 审批结果提交的错误由 respondAcpPermission 自行处理（卡片关闭 + 友好 toast），
+    // 跳过全局 errorHandler 以避免与后端原始 message（如 "permission request not
+    // found or already resolved"）重复弹窗。
+    skipErrorHandler: true,
+    data: {
+      conversationId: data.conversation_id,
+      toolId: permissionRequest?.tool_call_id,
+      option: {
+        optionId: selected?.option_id || fallbackOptionId,
+        outcome: selected ? 'selected' : 'cancelled',
+      },
+    },
   });
 }
 

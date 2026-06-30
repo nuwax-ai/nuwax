@@ -2,24 +2,27 @@ import {
   AgentAddComponentStatusEnum,
   AgentComponentTypeEnum,
   DefaultSelectedEnum,
-  EventListEnum,
   HomeIndexEnum,
   InvokeTypeEnum,
   OutputDirectlyEnum,
   VisibleToLLMEnum,
 } from '@/types/enums/agent';
 import type { CreateUpdateModeEnum } from '@/types/enums/common';
-import type { ComponentSettingEnum, OpenCloseEnum } from '@/types/enums/space';
+import type {
+  AgentSubTypeEnum,
+  ComponentSettingEnum,
+  OpenCloseEnum,
+} from '@/types/enums/space';
 import { ApplicationMoreActionEnum } from '@/types/enums/space';
 import type {
   AgentCardInfo,
-  AgentComponentEventConfig,
   AgentComponentInfo,
   AgentConfigInfo,
   AgentStatisticsInfo,
   ComponentModelBindConfig,
   CreatorInfo,
   GuidQuestionDto,
+  HookConfig,
 } from '@/types/interfaces/agent';
 import type {
   BindConfigWithSub,
@@ -77,10 +80,10 @@ export interface AgentArrangeConfigProps {
     value: string | string[] | number | GuidQuestionDto[],
     attr: string,
   ) => void;
-  // 插入系统提示词
-  onInsertSystemPrompt?: (text: string) => void;
   // 变量列表变化回调，用于同步变量列表到父组件
   onVariablesChange?: (variables: BindConfigWithSub[]) => void;
+  /** 记忆区变量弹窗确认关闭后回调（AgentFlow 用于刷新工作流） */
+  onMemoryVariablesConfirmed?: () => void;
   onToolsChange?: (tools: AgentComponentInfo[]) => void;
 }
 
@@ -88,6 +91,8 @@ export interface AgentArrangeConfigProps {
 export interface ComponentSettingModalProps {
   open: boolean;
   currentComponentInfo?: AgentComponentInfo;
+  /** 当前智能体 subType，用于控制调用审批等能力可见性 */
+  agentSubType?: AgentSubTypeEnum;
   devConversationId?: number;
   variables?: BindConfigWithSub[];
   settingActionList?: { type: ComponentSettingEnum; label: string }[];
@@ -194,10 +199,21 @@ export interface OutputDirectlyParams {
   directOutput: OutputDirectlyEnum;
 }
 
+// 调用审批保存形参
+export interface CallApprovalParams {
+  callApproval: DefaultSelectedEnum;
+}
+
 // 输出方式组件属性
 export interface OutputWayProps {
   directOutput: OutputDirectlyEnum;
   onSaveSet: (data: OutputDirectlyParams) => void;
+}
+
+// 调用审批组件属性
+export interface CallApprovalProps {
+  callApproval?: DefaultSelectedEnum;
+  onSaveSet: (data: CallApprovalParams) => void;
 }
 
 // 页面是否模型可见组件属性
@@ -310,32 +326,11 @@ export interface PagePathSelectOption {
   pageId?: number;
 }
 
-// 事件绑定弹窗Props
-export interface EventBindModalProps {
-  open: boolean;
-  eventsInfo: AgentComponentInfo;
-  currentEventConfig?: AgentComponentEventConfig;
-  pageArgConfigs: PageArgConfig[];
-  onCancel: () => void;
-  onConfirm: () => void;
-}
-
 // 变量列表组件
 export interface VariableListProps {
   textClassName?: string;
   onClick: (e: MouseEvent) => void;
   list: BindConfigWithSub[];
-}
-
-// 事件列表组件
-export interface EventListProps {
-  textClassName?: string;
-  onClick: (
-    item: AgentComponentEventConfig,
-    action: EventListEnum,
-    index: number,
-  ) => void;
-  list: AgentComponentEventConfig[];
 }
 
 // 聊天上传文件列表组件
@@ -382,6 +377,8 @@ export interface CollapseComponentListProps {
     type: AgentComponentTypeEnum,
     toolName?: string,
   ) => void;
+  /** 是否显示设置图标，默认显示 */
+  showSettings?: boolean;
 }
 
 // 分组MCP组件信息
@@ -429,6 +426,33 @@ export interface CreateVariablesProps {
   variablesInfo: AgentComponentInfo;
   onCancel: () => void;
   onConfirm: () => void;
+}
+
+// Hook 列表（折叠面板内）
+export interface HookListProps {
+  textClassName?: string;
+  list: HookConfig[];
+  onClick: (e: MouseEvent) => void;
+}
+
+// Hook 管理弹窗
+export interface CreateHooksProps {
+  open: boolean;
+  hooksInfo: AgentComponentInfo;
+  onCancel: () => void;
+  onConfirm: () => void;
+}
+
+// 新建 / 编辑 Hook 弹窗
+export interface CreateHookModalProps {
+  open: boolean;
+  mode?: CreateUpdateModeEnum;
+  hooksInfo: AgentComponentInfo;
+  currentHook?: HookConfig;
+  hookList: HookConfig[];
+  editIndex?: number;
+  onCancel: () => void;
+  onConfirm: (nextHooks: HookConfig[]) => void;
 }
 
 // 智能体分类信息

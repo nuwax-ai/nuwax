@@ -20,7 +20,7 @@ import {
   InvokeTypeEnum,
   OutputDirectlyEnum,
 } from '@/types/enums/agent';
-import { ComponentSettingEnum } from '@/types/enums/space';
+import { AgentSubTypeEnum, ComponentSettingEnum } from '@/types/enums/space';
 import {
   AgentCardInfo,
   AgentComponentInfo,
@@ -32,6 +32,7 @@ import {
 } from '@/types/interfaces/agent';
 import type {
   AsyncRunSaveParams,
+  CallApprovalParams,
   CardBindSaveParams,
   ComponentSettingModalProps,
   ExceptionHandingSaveParams,
@@ -49,6 +50,7 @@ import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useModel } from 'umi';
 import AsyncRun from './AsyncRun';
+import CallApproval from './CallApproval';
 import CardBind from './CardBind';
 import ExceptionHanding from './ExceptionHanding';
 import styles from './index.less';
@@ -57,12 +59,19 @@ import OutputWay from './OutputWay';
 
 const cx = classNames.bind(styles);
 
+/** General、Custom 对应 subType：General、Custom */
+const CALL_APPROVAL_SUPPORTED_SUB_TYPES = new Set([
+  AgentSubTypeEnum.General,
+  AgentSubTypeEnum.Custom,
+]);
+
 /**
  * 组件设置弹窗
  */
 const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
   open,
   currentComponentInfo,
+  agentSubType,
   devConversationId,
   variables,
   onCancel,
@@ -77,6 +86,9 @@ const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
   const [agentCardList, setAgentCardList] = useState<AgentCardInfo[]>([]);
   const { setAgentComponentList } = useModel('spaceAgent');
   const { runQueryConversation } = useModel('conversationInfo');
+
+  const isCallApprovalSupportedAgent =
+    !!agentSubType && CALL_APPROVAL_SUPPORTED_SUB_TYPES.has(agentSubType);
 
   useEffect(() => {
     if (currentComponentInfo?.type === AgentComponentTypeEnum.Skill) {
@@ -193,6 +205,7 @@ const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
       | InvokeTypeSaveParams
       | AsyncRunSaveParams
       | OutputDirectlyParams
+      | CallApprovalParams
       | ParamsSaveParams
       | CardBindSaveParams
       | null,
@@ -307,6 +320,17 @@ const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
             onSaveSet={(data) => handleSaveSetting(data, null, action)}
           />
         );
+      // 调用审批
+      case ComponentSettingEnum.Call_Approval:
+        if (!isCallApprovalSupportedAgent) {
+          return null;
+        }
+        return (
+          <CallApproval
+            callApproval={componentInfo?.bindConfig?.callApproval}
+            onSaveSet={handleSaveSetting}
+          />
+        );
       // 输出方式
       case ComponentSettingEnum.Output_Way:
         return (
@@ -368,6 +392,20 @@ const ComponentSettingModal: React.FC<ComponentSettingModalProps> = ({
                     ComponentSettingEnum.Async_Run,
                     ComponentSettingEnum.Exception_Handling,
                   ].includes(item.type)
+                ) {
+                  return null;
+                }
+                // 调用审批：AgentFlow / AgentGroup（subType 为 Flow、Group）且组件为工作流、插件、MCP
+                if (
+                  item.type === ComponentSettingEnum.Call_Approval &&
+                  (!isCallApprovalSupportedAgent ||
+                    ![
+                      AgentComponentTypeEnum.Workflow,
+                      AgentComponentTypeEnum.Plugin,
+                      AgentComponentTypeEnum.MCP,
+                    ].includes(
+                      currentComponentInfo?.type as AgentComponentTypeEnum,
+                    ))
                 ) {
                   return null;
                 }

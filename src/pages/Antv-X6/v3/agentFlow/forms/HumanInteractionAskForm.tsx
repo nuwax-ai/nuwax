@@ -1,0 +1,335 @@
+/**
+ * HumanInteraction（询问用户）属性面板
+ *
+ * 独立维护，对照 Workflow QuestionsNode；字段对齐 QA 扁平结构。
+ * 样式对齐 Workflow V3：node-title-style + node-item-style
+ */
+
+import ExpandableInputTextarea from '@/components/ExpandTextArea';
+import CustomTree from '@/components/FormListItem/NestedForm';
+import { ModelSelected } from '@/components/ModelSetting';
+import { transformToPromptVariables } from '@/components/TiptapVariableInput/utils/variableTransform';
+import { t } from '@/services/i18nRuntime';
+import { DataTypeEnum } from '@/types/enums/common';
+import { InputItemNameEnum } from '@/types/enums/node';
+import { InputAndOutConfig } from '@/types/interfaces/node';
+import { NodeDisposeProps } from '@/types/interfaces/workflow';
+import { CloseOutlined, PlusOutlined } from '@ant-design/icons';
+import {
+  Button,
+  Checkbox,
+  Form,
+  Input,
+  Radio,
+  RadioChangeEvent,
+  Select,
+  Space,
+} from 'antd';
+import React from 'react';
+import { useModel } from 'umi';
+import { v4 as uuidv4 } from 'uuid';
+import { outPutConfigs } from '../../ParamsV3';
+import { FormList, InputAndOut } from '../../component/commonNode';
+import {
+  coerceFormArgInputType,
+  isFormArgChoiceInputType,
+} from '../adapters/qaConfigAdapter';
+import { FormArgInputTypeEnum } from '../enums/formArgInputType';
+import { HitlAnswerTypeEnum } from '../enums/hitlAnswerType';
+import './HumanInteractionAskForm.less';
+
+const { TextArea } = Input;
+
+// 表单字段控件类型（对齐后端 FormArgInputTypeEnum，写入 Arg.inputType）
+const FORM_FIELD_TYPE_OPTIONS = [
+  {
+    label: t('PC.Pages.AgentFlowNode.formTypeInput', '单行文本'),
+    value: FormArgInputTypeEnum.Text,
+  },
+  {
+    label: t('PC.Pages.AgentFlowNode.formTypeSelect', '下拉单选'),
+    value: FormArgInputTypeEnum.Select,
+  },
+  {
+    label: t('PC.Pages.AgentFlowNode.formTypeRadio', '单选'),
+    value: FormArgInputTypeEnum.Radio,
+  },
+  {
+    label: t('PC.Pages.AgentFlowNode.formTypeCheckbox', '多选'),
+    value: FormArgInputTypeEnum.MultipleSelect,
+  },
+  {
+    label: t('PC.Pages.AgentFlowNode.formTypeNumber', '数字'),
+    value: FormArgInputTypeEnum.Number,
+  },
+  {
+    label: t('PC.Pages.AgentFlowNode.formTypeFile', '文件上传'),
+    value: FormArgInputTypeEnum.File,
+  },
+];
+
+const HumanInteractionAskForm: React.FC<NodeDisposeProps> = ({
+  form,
+  nodeConfig,
+  type,
+  id,
+}) => {
+  const { referenceList } = useModel('workflowV3');
+
+  const answerType =
+    Form.useWatch('answerType', { form, preserve: true }) ||
+    HitlAnswerTypeEnum.TEXT;
+
+  const inputArgs =
+    Form.useWatch(InputItemNameEnum.inputArgs, { form, preserve: true }) || [];
+
+  const formArgs = Form.useWatch('formArgs', { form, preserve: true }) || [];
+
+  const promptVariables = transformToPromptVariables(
+    (inputArgs as InputAndOutConfig[]).filter(
+      (item) => !['', null, undefined].includes(item.name),
+    ),
+    referenceList?.argMap,
+  );
+
+  /** 切换回答类型，同步 options（answerType 为权威字段） */
+  const changeAnswerType = (type: HitlAnswerTypeEnum) => {
+    let options = form.getFieldValue('options');
+    if (type === HitlAnswerTypeEnum.SELECT && (!options || !options.length)) {
+      options = [
+        { uuid: uuidv4(), index: 0, content: '', nextNodeIds: [] },
+        {
+          uuid: uuidv4(),
+          index: 1,
+          content: t('PC.Pages.AntvX6CommonNode.otherBranchHint'),
+          nextNodeIds: [],
+        },
+      ];
+    }
+    if (type !== HitlAnswerTypeEnum.SELECT) {
+      options = options?.map((item: any) => ({
+        ...item,
+        nextNodeIds: [],
+      }));
+    }
+
+    form.setFieldsValue({
+      answerType: type,
+      options,
+    });
+    form.submit();
+  };
+
+  return (
+    <div className="node-title-style">
+      <ModelSelected form={form} />
+
+      <div className="node-item-style">
+        <InputAndOut
+          title={t('PC.Pages.AgentFlowNode.inputRefVarsLabel', '引用变量')}
+          fieldConfigs={outPutConfigs}
+          inputItemName={InputItemNameEnum.inputArgs}
+          form={form}
+        />
+      </div>
+
+      <div className="node-item-style">
+        <ExpandableInputTextarea
+          title={t('PC.Pages.AgentFlowNode.askQuestionLabel', '提问模版')}
+          inputFieldName="question"
+          onExpand
+          placeholder={t(
+            'PC.Pages.AgentFlowNode.askQuestionPlaceholder',
+            '向用户提出的问题...',
+          )}
+          variables={promptVariables}
+        />
+      </div>
+
+      <div className="node-item-style">
+        <Form.Item
+          name="answerType"
+          label={t('PC.Pages.AgentFlowNode.replyModeLabel', '回复模式')}
+          initialValue={HitlAnswerTypeEnum.TEXT}
+        >
+          <Radio.Group
+            onChange={(e: RadioChangeEvent) => changeAnswerType(e.target.value)}
+          >
+            <Space direction="vertical">
+              <Radio value={HitlAnswerTypeEnum.TEXT}>
+                {t('PC.Pages.AgentFlowNode.replyModeTextReply', '文本回复')}
+              </Radio>
+              <Radio value={HitlAnswerTypeEnum.SELECT}>
+                {t('PC.Pages.AgentFlowNode.replyModeOptionsReply', '选项回复')}
+              </Radio>
+              <Radio value={HitlAnswerTypeEnum.FORM}>
+                {t('PC.Pages.AgentFlowNode.replyModeFormReply', '表单回复')}
+              </Radio>
+            </Space>
+          </Radio.Group>
+        </Form.Item>
+      </div>
+
+      {answerType === HitlAnswerTypeEnum.SELECT && (
+        <div className="node-item-style">
+          <FormList
+            title={t('PC.Pages.AgentFlowNode.askOptionsTitle', '选项内容')}
+            form={form}
+            field="content"
+            inputItemName={InputItemNameEnum.options}
+            hasUuid
+            showIndex
+          />
+        </div>
+      )}
+
+      {answerType === HitlAnswerTypeEnum.FORM && (
+        <div className="node-item-style">
+          <Form.List name="formArgs">
+            {(fields, { add, remove }) => (
+              <div className="ask-form-fields">
+                <div className="node-title-style">
+                  {t('PC.Pages.AgentFlowNode.formFieldsTitle', '表单字段')}
+                </div>
+                <div className="ask-form-fields__hint">
+                  {t(
+                    'PC.Pages.AgentFlowNode.formFieldsHint',
+                    '定义用户需要填写的表单字段',
+                  )}
+                </div>
+
+                {fields.map(({ key, name }) => {
+                  const inputType = coerceFormArgInputType(
+                    formArgs[name]?.inputType,
+                  );
+                  const isChoice = isFormArgChoiceInputType(inputType);
+                  return (
+                    <div key={key} className="ask-form-field-card">
+                      <div className="ask-form-field-card__row">
+                        <Form.Item
+                          name={[name, 'name']}
+                          noStyle
+                          rules={[{ required: true }]}
+                        >
+                          <Input
+                            className="ask-form-field-card__name"
+                            placeholder={t(
+                              'PC.Pages.AgentFlowNode.formFieldLabel',
+                              '字段名称',
+                            )}
+                          />
+                        </Form.Item>
+                        <Form.Item
+                          name={[name, 'inputType']}
+                          noStyle
+                          initialValue={FormArgInputTypeEnum.Text}
+                        >
+                          <Select
+                            className="ask-form-field-card__type"
+                            options={FORM_FIELD_TYPE_OPTIONS}
+                          />
+                        </Form.Item>
+                        <Form.Item
+                          name={[name, 'require']}
+                          noStyle
+                          valuePropName="checked"
+                          initialValue={false}
+                        >
+                          <Checkbox className="ask-form-field-card__required">
+                            {t(
+                              'PC.Pages.AgentFlowNode.formFieldRequired',
+                              '必填',
+                            )}
+                          </Checkbox>
+                        </Form.Item>
+                        <CloseOutlined
+                          className="ask-form-field-card__del"
+                          onClick={() => remove(name)}
+                        />
+                      </div>
+
+                      <Form.Item name={[name, 'description']} noStyle>
+                        <Input
+                          className="ask-form-field-card__desc"
+                          placeholder={t(
+                            'PC.Pages.AgentFlowNode.formFieldDescriptionPlaceholder',
+                            '填写说明（提示用户输入什么内容）',
+                          )}
+                        />
+                      </Form.Item>
+
+                      {isChoice && (
+                        <>
+                          <div className="ask-form-field-card__options-title">
+                            {t(
+                              'PC.Pages.AgentFlowNode.askOptionsTitle',
+                              '选项内容',
+                            )}
+                          </div>
+                          <Form.Item
+                            name={[name, 'selectConfig', 'options']}
+                            noStyle
+                          >
+                            <TextArea
+                              className="ask-form-field-card__options"
+                              rows={3}
+                              placeholder={t(
+                                'PC.Pages.AgentFlowNode.formFieldOptionsPlaceholder',
+                                '每行一个选项',
+                              )}
+                            />
+                          </Form.Item>
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
+
+                <Button
+                  type="dashed"
+                  icon={<PlusOutlined />}
+                  className="ask-form-fields__add"
+                  onClick={() =>
+                    add({
+                      key: uuidv4(),
+                      name: '',
+                      inputType: FormArgInputTypeEnum.Text,
+                      require: false,
+                      description: '',
+                      dataType: DataTypeEnum.String,
+                      selectConfig: null,
+                    })
+                  }
+                >
+                  {t('PC.Pages.AgentFlowNode.formFieldAddBtn', '添加字段')}
+                </Button>
+              </div>
+            )}
+          </Form.List>
+        </div>
+      )}
+
+      {/* 输出：文本回复 / 表单回复均展示（与问答节点「直接回答」一致） */}
+      <Form.Item shouldUpdate noStyle>
+        {() => {
+          const mode = form.getFieldValue('answerType');
+          const showOutput =
+            mode === HitlAnswerTypeEnum.TEXT ||
+            mode === HitlAnswerTypeEnum.FORM;
+          return showOutput ? (
+            <CustomTree
+              key={`${type}-${id}-outputArgs`}
+              title={t('PC.Pages.AntvX6ComplexNode.output')}
+              form={form}
+              params={nodeConfig?.outputArgs || []}
+              inputItemName="outputArgs"
+              showCheck
+            />
+          ) : null;
+        }}
+      </Form.Item>
+    </div>
+  );
+};
+
+export default HumanInteractionAskForm;

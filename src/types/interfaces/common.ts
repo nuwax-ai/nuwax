@@ -1,3 +1,4 @@
+import type { AgentMode } from '@/components/business-component/AgentIntervention';
 import { MentionItem } from '@/components/ChatInputHome/MentionPopup/types';
 import type { ResourcePricingType } from '@/pages/SpaceResource/types/resource';
 import type {
@@ -18,6 +19,7 @@ import { DataTypeEnum, NodeTypeEnum } from '@/types/enums/common';
 import { PluginPublishScopeEnum } from '@/types/enums/plugin';
 import { AgentTypeEnum, ApplicationMoreActionEnum } from '@/types/enums/space';
 import type {
+  AgentAddResult,
   AgentBaseInfo,
   AgentConfigInfo,
   AgentManualComponentInfo,
@@ -76,6 +78,8 @@ export interface FoldWrapType {
     name: string;
     description: string;
   }) => void;
+  // 透传到外层定位容器的内联样式（用于覆盖默认 top/right/bottom 定位）
+  style?: React.CSSProperties;
 }
 
 // 容器组件
@@ -173,7 +177,7 @@ interface ModalClassNames {
 export interface CustomFormModalProps {
   form: FormInstance;
   classNames?: ModalClassNames;
-  title: string;
+  title: React.ReactNode;
   open: boolean;
   loading?: boolean;
   // 确定按钮前缀icon
@@ -375,7 +379,7 @@ export interface CreateAgentProps {
   agentConfigInfo?: AgentConfigInfo;
   open: boolean;
   onCancel: () => void;
-  onConfirmCreate?: (agentId: number) => void;
+  onConfirmCreate?: (result: AgentAddResult) => void;
   onConfirmUpdate?: (info: AgentBaseInfo) => void;
 }
 
@@ -538,6 +542,7 @@ export interface ChatInputProps extends ManualComponentItemProps {
     files: UploadFileInfo[],
     skillIds?: number[],
     modelId?: number,
+    agentMode?: AgentMode,
   ) => void;
   /** 是否启用 @ 提及功能，默认启用 */
   enableMention?: boolean;
@@ -580,12 +585,51 @@ export interface ChatInputProps extends ManualComponentItemProps {
   selectedModelId?: number;
   /** 模型改变时的回调 */
   onModelSelect?: (modelId: number) => void;
+  /** 是否显示空间选择器 */
+  showSpaceSelector?: boolean;
+  /** 当前选中的空间 ID */
+  selectedSpaceId?: number;
+  /** 空间改变时的回调 */
+  onSpaceSelect?: (spaceId: number) => void;
   /** 智能体类型 */
   agentType?: string;
+  /** 当前 Agent mode */
+  agentMode?: AgentMode;
+  /** Agent mode 变化回调 */
+  onAgentModeChange?: (mode: AgentMode) => void;
+  /** 是否展示 Agent mode 选择器 */
+  showAgentModeSelector?: boolean;
   /** 占位符文本 */
   placeholder?: string;
   /** 默认提及项列表（需同时传入 value 文本） */
   defaultMentions?: MentionItem[];
+  /** 插槽：用于完美嵌入和合并头部 Tab 选择组件 */
+  tabsSlot?: React.ReactNode;
+  selectedTag?: {
+    label: string;
+  };
+  onClearSelectedTag?: () => void;
+  /** 可用值:PageApp,TaskAgent */
+  usageScenarios?: AgentTypeEnum[];
+  /**
+   * 隔离会话源时覆盖 model 的流式活跃（Loading/Incomplete）。
+   * 用于 ConversationAgent 预览 Tab，避免与左侧主聊天共用 conversationInfo。
+   */
+  streamActiveOverride?: boolean;
+  /**
+   * 隔离会话源时覆盖 taskStatus===EXECUTING 判定。
+   */
+  taskExecutingOverride?: boolean;
+  /** 隔离会话源时覆盖停止接口使用的会话 ID */
+  stopConversationIdOverride?: number | string;
+  /** 隔离会话源时覆盖停止会话方法 */
+  onStopConversationOverride?: (conversationId: number | string) => void;
+  /** 隔离会话源时覆盖停止按钮 loading */
+  loadingStopConversationOverride?: boolean;
+  /**
+   * 隔离会话源时重置流式活跃（清空/卸载时调用，替代 conversationInfo.disabledConversationActive）
+   */
+  onDisabledStreamActiveOverride?: () => void;
 }
 
 // 聊天框底部更多操作组件
@@ -688,6 +732,14 @@ export interface VariableSelectConfig {
   options: CascaderOption[];
 }
 
+// 参数更新策略,可用值:REPLACE,APPEND
+export enum UpdateStrategyEnum {
+  // 替换
+  REPLACE = 'REPLACE',
+  // 追加
+  APPEND = 'APPEND',
+}
+
 export interface BindConfigWithSub {
   key: React.Key;
   // 参数名称，符合函数命名规则
@@ -715,6 +767,8 @@ export interface BindConfigWithSub {
   selectConfig?: VariableSelectConfig;
   loopId?: number;
   children?: BindConfigWithSub[];
+  // 参数更新策略,可用值:REPLACE,APPEND (智能体设置变量，智能识别时使用)
+  updateStrategy?: UpdateStrategyEnum;
   [key: string]: any;
 }
 

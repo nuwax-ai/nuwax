@@ -15,6 +15,7 @@ import {
 import { t } from '@/services/i18nRuntime';
 import {
   AnswerTypeEnum,
+  FlowKindEnum,
   NodeShapeEnum,
   NodeTypeEnum,
   RunResultStatusEnum,
@@ -22,13 +23,18 @@ import {
 import { ConditionBranchTypeEnum } from '@/types/enums/node';
 import { ChildNode, NodeProps, RunResultItem } from '@/types/interfaces/graph';
 import { ExceptionHandleConfig } from '@/types/interfaces/node';
-import { Path } from '@antv/x6';
 import { register } from '@antv/x6-react-shape';
 import { Tag } from 'antd';
 import React, { useCallback, useEffect, useState } from 'react';
+import {
+  getHitlOptions,
+  isHitlOptionsBranchMode,
+} from '../agentFlow/adapters/qaConfigAdapter';
 import '../indexV3.less';
 import { showExceptionHandle } from '../utils/graphV3';
 import './registerCustomNodes.less';
+// AgentFlowPortChips 已移除 — 对齐 workflow v3 样式
+// import AgentFlowPortChips from './agentFlowPortChips';
 import RunResult from './runResult';
 // 定义那些节点有试运行
 
@@ -81,11 +87,57 @@ const ConditionNode: React.FC<{ data: ChildNode }> = ({ data }) => {
   );
 };
 
+// 路由决策节点（显示路由列表）
+const RouteDecisionNode: React.FC<{ data: ChildNode }> = ({ data }) => {
+  const nc = data.nodeConfig as any;
+  const intentConfigs: any[] = nc?.intentConfigs || [];
+
+  return (
+    <div className="route-decision-node-content">
+      {intentConfigs.map((route, i) => (
+        <div key={route.uuid || i} className="dis-left route-decision-item">
+          <span
+            className="route-decision-dot"
+            style={{ backgroundColor: '#fa8c16' }}
+          />
+          <span className="route-decision-name">
+            {route.name ||
+              route.intent ||
+              t('PC.Pages.AgentFlowNode.routeDecisionItemFallback', i + 1)}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+// HITL-Ask 人类询问节点（显示选项分支）
+const HitlAskOptionsNode: React.FC<{ data: ChildNode }> = ({ data }) => {
+  const nc = data.nodeConfig as any;
+  const options: any[] = getHitlOptions(nc);
+
+  return (
+    <div className="route-decision-node-content">
+      {options.map((opt, i) => (
+        <div key={opt.uuid || i} className="dis-left route-decision-item">
+          <span
+            className="route-decision-dot"
+            style={{ backgroundColor: '#5147FF' }}
+          />
+          <span className="route-decision-name">
+            {opt.content || t('PC.Pages.AgentFlowNode.askOptionIndex', i + 1)}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+};
+
 // 问答节点
 const QANode: React.FC<{ data: ChildNode }> = ({ data }) => {
   const inputArgs = data.nodeConfig.inputArgs;
   const question = data.nodeConfig.question;
-  const answerType = data.nodeConfig.answerType as AnswerTypeEnum;
+  const answerType = data.nodeConfig.answerType;
   return (
     <div className="qa-node-content-style">
       <div className="dis-left">
@@ -114,7 +166,7 @@ const QANode: React.FC<{ data: ChildNode }> = ({ data }) => {
         <span className="text-right qa-title-style">
           {t('PC.Pages.AntvX6RegisterNodes.qaType')}
         </span>
-        <span>{answerTypeMap[answerType]}</span>
+        <span>{answerType ? answerTypeMap[answerType] : undefined}</span>
       </div>
       {answerType === AnswerTypeEnum.SELECT &&
         data.nodeConfig.options?.map((item, index) => (
@@ -318,6 +370,9 @@ export const GeneralNode: React.FC<NodeProps> = (props) => {
     NodeTypeEnum.IntentRecognition,
   ].includes(data.type);
   const marginBottom = isSpecialNode ? '10px' : '0';
+  // AgentFlow 画布下所有节点统一渲染描述行（flowKind 由 graph 实例携带，见
+  // graph.tsx initGraph）。原 Workflow 模式 flowKind=Workflow，保持不渲染描述。
+  const isAgentFlow = (graph as any)?.flowKind === FlowKindEnum.AgentFlow;
 
   const handleEditingStatusChange = (val: boolean) => {
     // 编辑中不能移动节点
@@ -350,7 +405,9 @@ export const GeneralNode: React.FC<NodeProps> = (props) => {
   return (
     <>
       <div
-        className={`general-node ${selected ? 'selected-general-node' : ''}`} // 根据选中状态应用类名
+        className={`general-node ${selected ? 'selected-general-node' : ''} ${
+          isAgentFlow ? 'general-node-agent-flow' : ''
+        }`} // 根据选中状态应用类名
       >
         {/* 节点头部，包含标题、图像和操作菜单 */}
         <div
@@ -358,7 +415,7 @@ export const GeneralNode: React.FC<NodeProps> = (props) => {
           style={{
             background: gradientBackground,
             marginBottom,
-          }} // 应用渐变背景
+          }}
         >
           <div className="dis-left general-node-header-image">
             {returnImg(data.type)}
@@ -371,15 +428,36 @@ export const GeneralNode: React.FC<NodeProps> = (props) => {
             disabled={canNotEditNode}
             onEditingStatusChange={handleEditingStatusChange}
           />
+          {/* AgentFlow 节点描述行（小字灰色，节点原型 header 风格） */}
+          {isAgentFlow && (data as any).description && (
+            <div className="general-node-header-desc">
+              {(data as any).description}
+            </div>
+          )}
         </div>
 
         {data.type === NodeTypeEnum.Condition && <ConditionNode data={data} />}
+
+        {data.type === NodeTypeEnum.RouteDecision && (
+          <RouteDecisionNode data={data} />
+        )}
+
+        {data.type === NodeTypeEnum.HumanInteraction &&
+          isHitlOptionsBranchMode(data.nodeConfig as Record<string, any>) && (
+            <HitlAskOptionsNode data={data} />
+          )}
 
         {data.type === NodeTypeEnum.QA && <QANode data={data} />}
 
         {data.type === NodeTypeEnum.IntentRecognition && (
           <IntentRecognitionNode data={data} />
         )}
+
+        {/* AgentFlow 旧徽章：被 chip 浮层取代。仅当不是 AgentFlow 时保留原徽章逻辑。
+            当前所有使用徽章的 type 都是 AgentFlow 类型，因此整体退役，未来如要回退可恢复。 */}
+
+        {/* AgentFlow 端口 chip 已移除 — 对齐 workflow v3 样式，仅保留端口圆点 */}
+
         {/* 异常处理 */}
         {showException && (
           <ExceptionHandle data={data.nodeConfig.exceptionHandleConfig} />
@@ -493,11 +571,11 @@ export const createCurvePath = (s: Point, e: Point) => {
   const v1 = { x: newStartX + control, y: startY };
   const v2 = { x: newEndX - control, y: endY };
 
-  return Path.normalize(
-    `M ${newStartX} ${startY}
+  return `M ${newStartX} ${startY}
      L ${newStartX + (s.x < e.x ? startOffset : -startOffset)} ${startY}
      C ${v1.x} ${v1.y} ${v2.x} ${v2.y} ${newEndX} ${endY}
      L ${newEndX} ${endY}
-    `,
-  );
+    `
+    .replace(/\s+/g, ' ')
+    .trim();
 };

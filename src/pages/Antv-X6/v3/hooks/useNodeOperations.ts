@@ -8,11 +8,16 @@ import { message } from 'antd';
 import { useCallback } from 'react';
 
 import Constant from '@/constants/codes.constants';
+import { useFlowKind } from '@/contexts/FlowKindContext';
 import { t } from '@/services/i18nRuntime';
 import * as service from '@/services/workflow';
 import { AddNodeResponse } from '@/services/workflow';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
-import { NodeShapeEnum, NodeTypeEnum } from '@/types/enums/common';
+import {
+  FlowKindEnum,
+  NodeShapeEnum,
+  NodeTypeEnum,
+} from '@/types/enums/common';
 import {
   NodeSizeGetTypeEnum,
   PortGroupEnum,
@@ -24,15 +29,41 @@ import {
   CurrentNodeRefProps,
   GraphContainerRef,
   GraphRect,
+  InsertNodeBetweenParams,
   StencilChildNode,
 } from '@/types/interfaces/graph';
 
+import { isAgentFlowSelectableAgent } from '../agentFlow/createdPicker';
+import {
+  purgeEdgeBetween,
+  purgeNodeIncidentEdges,
+} from '../agentFlow/edgeSync';
+import { clearNodeIncidentEdges } from '../agentFlow/middleNodeEdgeCleanup';
+import {
+  isFrontendMappedType,
+  toBackendNodeType,
+} from '../agentFlow/nodeTypeMapping';
+import {
+  resolveAgentFlowWorkflowNodeDescription,
+  resolveNodeDescriptionWithNameFallback,
+} from '../agentFlow/resolveNodePresentation';
+import {
+  buildKnowledgeInsertNodeConfigOnAdd,
+  mergeNodeConfigAfterAddApi,
+  pickKnowledgeInsertBindingForAddDto,
+} from '../component/knowledgeInsert';
 import {
   LOOP_NODE_DEFAULT_HEIGHT,
   LOOP_NODE_DEFAULT_WIDTH,
 } from '../constants/loopNodeConstants';
 import { workflowProxy } from '../services/workflowProxyV3';
-import { getEdges } from '../utils/graphV3';
+import {
+  getEdges,
+  setEdgeAttributes,
+  updateEdgeArrows,
+} from '../utils/graphV3';
+import { clearPendingNodeCreateSession } from '../utils/nodeCreateSession';
+import { createDefaultNodeConfig } from '../utils/nodeDefaultConfigFactory';
 import {
   getNodeSize,
   getShape,
@@ -73,6 +104,12 @@ const noop = () => {};
 
 interface UseNodeOperationsParams {
   workflowId: number;
+  /**
+   * 新增节点后是否自动选中并打开右侧属性面板。
+   * 默认 true（Workflow v3 行为）；AgentFlow 传 false，拖入/添加节点时仅放置到画布，
+   * 不自动弹出属性面板（避免「拖动节点直接弹面板」），需用户点击节点再配置。
+   */
+  focusNewNode?: boolean;
   graphRef: React.RefObject<GraphContainerRef | null>;
   currentNodeRef: React.MutableRefObject<CurrentNodeRefProps | null>;
   foldWrapItem: ChildNode;
@@ -89,6 +126,7 @@ interface UseNodeOperationsParams {
   changeDrawer: (val: any) => void;
   getNodeConfig: (id: number) => void;
   getReference: (id: number) => Promise<boolean>;
+  getWorkflow?: (key: string) => any;
   changeNode: (
     params: { nodeData: any },
     callback?: () => void,
@@ -116,6 +154,8 @@ interface UseNodeOperationsReturn {
     isLoop: boolean;
     portId: string;
   }) => Promise<void>;
+  /** AgentFlow：Start 已有出边时，将 middle 插入 source 与 tail 之间 */
+  insertNodeBetween: (params: InsertNodeBetweenParams) => Promise<void>;
   handleNodeCreationSuccess: (nodeData: AddNodeResponse) => Promise<void>;
   // 核心操作
   addNode: (child: Partial<ChildNode>, dragEvent: GraphRect) => Promise<void>;
@@ -134,6 +174,7 @@ interface UseNodeOperationsReturn {
 
 export const useNodeOperations = ({
   workflowId,
+  focusNewNode = true,
   graphRef,
   currentNodeRef,
   foldWrapItem,
@@ -153,6 +194,9 @@ export const useNodeOperations = ({
   changeNode,
   nodeChangeEdge,
 }: UseNodeOperationsParams): UseNodeOperationsReturn => {
+  const flowKind = useFlowKind();
+  const isAgentFlow = flowKind === FlowKindEnum.AgentFlow;
+
   /**
    * 检查节点类型是否为条件分支或意图识别节点
    */
@@ -190,12 +234,9 @@ export const useNodeOperations = ({
 
       const isSuccess = await changeNode({ nodeData: params }, noop);
       if (isSuccess) {
-        const sourcePortId = portId.split('-').slice(0, -1).join('-');
-        graphRef.current?.graphCreateNewEdge(
-          sourcePortId,
-          String(newNodeId),
-          isLoop,
-        );
+        // portId 直接传递：parseEndpoint 会根据是否含 'in'/'out' 自动处理；
+        // 剥去 '-out' 再传会导致含 "route" 等子串的端口 ID 被误判，丢失 '-out' 后缀。
+        graphRef.current?.graphCreateNewEdge(portId, String(newNodeId), isLoop);
       }
     },
     [changeNode, graphRef],
@@ -225,12 +266,7 @@ export const useNodeOperations = ({
       });
       const isSuccess = await changeNode({ nodeData: params }, noop);
       if (isSuccess) {
-        const sourcePortId = portId.split('-').slice(0, -1).join('-');
-        graphRef.current?.graphCreateNewEdge(
-          sourcePortId,
-          String(newNodeId),
-          isLoop,
-        );
+        graphRef.current?.graphCreateNewEdge(portId, String(newNodeId), isLoop);
       }
     },
     [changeNode, graphRef],
@@ -307,6 +343,58 @@ export const useNodeOperations = ({
   );
 
   /**
+   * 处理路由决策节点作为「新建/插入节点」时的出边连接
+   *
+   * 适用场景：边中快捷插入 RouteDecision（A→B 变 A→RouteDecision→B）、
+   * 或在某节点 in 端口上游新建 RouteDecision。
+   *
+   * 关键：必须连到 intentConfigs 里真实存在的路由分支端口
+   * （{nodeId}-route-{uuid}-out），不能用 defaultNextNodeIds / route-default-out。
+   * 原因：defaultNextNodeIds 不会被后端 IntentRecognition 持久化，刷新后丢失
+   * （这正是「灰色端口连上又消失」的根因）；而 intentConfigs 端到端持久化
+   * （save 由 computeConnections 从边重建、load 原样保留、表单 hydrate）。
+   * 对照：IntentRecognition 走 handleConditionalNodeConnection→QuicklyCreateEdgeConditionConfig
+   * 连到 intentConfigs[0] 才「没问题」，RouteDecision 须对齐同一机制。
+   *
+   * 与 IntentRecognition 的差异仅在端口格式：RouteDecision 端口带 route- 前缀
+   * （{nodeId}-route-{uuid}-out），IntentRecognition 是 {nodeId}-{uuid}-out，
+   * 故不能直接复用 QuicklyCreateEdgeConditionConfig，需自行拼端口 id。
+   */
+  const handleRouteDecisionOutgoingConnection = useCallback(
+    async ({
+      newNode,
+      targetNode,
+      isLoop,
+    }: {
+      newNode: ChildNode;
+      targetNode: ChildNode;
+      isLoop: boolean;
+    }) => {
+      // 连到首个路由分支（与 IntentRecognition 的 QuicklyCreateEdgeConditionConfig 一致）
+      const firstBranch = (newNode.nodeConfig as any)?.intentConfigs?.[0];
+      // createDefaultIntentConfig 保证至少一条分支；防御性判空
+      if (!firstBranch?.uuid) return;
+
+      // 写入 intentConfigs[0].nextNodeIds（持久化、刷新不丢）；端口用 RouteDecision 专属格式
+      const sourcePortId = `${newNode.id}-route-${firstBranch.uuid}-out`;
+      const params = handleSpecialNodesNextIndex(
+        newNode,
+        sourcePortId,
+        targetNode.id,
+      );
+      const isSuccess = await changeNode({ nodeData: params }, noop);
+      if (isSuccess) {
+        graphRef.current?.graphCreateNewEdge(
+          sourcePortId,
+          String(targetNode.id),
+          isLoop,
+        );
+      }
+    },
+    [changeNode, graphRef],
+  );
+
+  /**
    * 处理普通节点连接
    */
   const handleNormalNodeConnection = useCallback(
@@ -357,6 +445,17 @@ export const useNodeOperations = ({
     }) => {
       const id = portId.split('-')[0];
 
+      // RouteDecision 作为上游新建节点：出边走默认分支端口，避免画到不存在的
+      // {nodeId}-out 端口（回转连线）并在刷新后丢失（见 handleRouteDecisionOutgoingConnection）
+      if (newNode.type === NodeTypeEnum.RouteDecision) {
+        await handleRouteDecisionOutgoingConnection({
+          newNode,
+          targetNode: sourceNode,
+          isLoop,
+        });
+        return;
+      }
+
       if (isConditionalNode(newNode.type)) {
         const { nodeData, sourcePortId } = QuicklyCreateEdgeConditionConfig(
           newNode,
@@ -388,7 +487,80 @@ export const useNodeOperations = ({
         }
       }
     },
-    [isConditionalNode, changeNode, nodeChangeEdge, graphRef],
+    [
+      isConditionalNode,
+      changeNode,
+      nodeChangeEdge,
+      graphRef,
+      handleRouteDecisionOutgoingConnection,
+    ],
+  );
+
+  /**
+   * 删除 source → target 直连（快捷插入时拆掉原边）
+   */
+  const removeSourceToTargetEdge = useCallback(
+    async ({
+      sourceNode,
+      targetNode,
+      edgeId,
+      portId,
+    }: {
+      sourceNode: ChildNode;
+      targetNode: ChildNode;
+      edgeId: string;
+      portId: string;
+    }) => {
+      const portSegments = portId.split('-');
+      const hasUuidSegment =
+        portSegments.length >= 3 &&
+        portSegments.slice(1, -1).join('-').length >= 8;
+      const isSpecialPort = hasUuidSegment;
+
+      if (isSpecialPort) {
+        const params = removeFromSpecialNodesNextIndex(
+          sourceNode,
+          portId,
+          targetNode.id,
+        );
+        const isSuccess = await changeNode({ nodeData: params }, noop);
+        if (isSuccess) {
+          graphRef.current?.graphDeleteEdge(edgeId);
+        }
+        return;
+      }
+
+      const isLoopInPort =
+        portId.endsWith('-in') && sourceNode.type === NodeTypeEnum.Loop;
+      const edgeSource = isLoopInPort ? portId : String(sourceNode.id);
+
+      const res = workflowProxy.deleteEdge(
+        edgeSource,
+        targetNode.id.toString(),
+      );
+
+      if (res.success) {
+        graphRef.current?.graphDeleteEdge(edgeId);
+        debouncedSaveFullWorkflow();
+        return;
+      }
+
+      const fallbackRes = workflowProxy.deleteEdge(
+        String(sourceNode.id),
+        targetNode.id.toString(),
+      );
+
+      if (fallbackRes.success) {
+        graphRef.current?.graphDeleteEdge(edgeId);
+        debouncedSaveFullWorkflow();
+      } else {
+        console.warn(
+          '[removeSourceToTargetEdge] Failed to delete edge:',
+          res.message,
+        );
+      }
+    },
+    [changeNode, graphRef, debouncedSaveFullWorkflow],
   );
 
   /**
@@ -402,6 +574,7 @@ export const useNodeOperations = ({
       edgeId,
       isLoop,
       portId,
+      skipSourceTailDelete = false,
     }: {
       newNode: ChildNode;
       targetNode: ChildNode;
@@ -409,6 +582,7 @@ export const useNodeOperations = ({
       edgeId: string;
       isLoop: boolean;
       portId: string;
+      skipSourceTailDelete?: boolean;
     }) => {
       // 建立新边：newNode -> targetNode
       // 注意：QA TEXT 模式应该作为普通节点处理，因为它只有一个普通 out 端口
@@ -417,7 +591,15 @@ export const useNodeOperations = ({
         newNode.type === NodeTypeEnum.QA &&
         newNode.nodeConfig?.answerType !== 'SELECT';
 
-      if (isConditionalNode(newNode.type) && !isQaTextMode) {
+      // RouteDecision 作为插入节点：出边走默认分支端口，避免画到不存在的 {nodeId}-out
+      // 端口（回转连线）并在刷新后丢失（见 handleRouteDecisionOutgoingConnection）
+      if (newNode.type === NodeTypeEnum.RouteDecision) {
+        await handleRouteDecisionOutgoingConnection({
+          newNode,
+          targetNode,
+          isLoop,
+        });
+      } else if (isConditionalNode(newNode.type) && !isQaTextMode) {
         await handleConditionalNodeConnection({
           newNode,
           targetNode,
@@ -432,69 +614,14 @@ export const useNodeOperations = ({
         });
       }
 
-      // V3: 删除原有连接关系 (同步数据模型)
-      // 参考 V1 连线规则：在快捷插入节点时，需要删除原 sourceNode -> targetNode 的关系
-
-      // 检查是否是特殊端口（QA SELECT、条件分支、意图识别）
-      const portSegments = portId.split('-');
-      const hasUuidSegment =
-        portSegments.length >= 3 &&
-        portSegments.slice(1, -1).join('-').length >= 8;
-      const isSpecialPort = hasUuidSegment;
-
-      if (isSpecialPort) {
-        // 特殊端口：需要从源节点的配置中移除目标节点ID
-        // 使用 handleSpecialNodesNextIndex 的反向操作
-        const params = removeFromSpecialNodesNextIndex(
+      // V3: 删除原有 source → target 直连（insertNodeBetween 可能已提前删除）
+      if (!skipSourceTailDelete) {
+        await removeSourceToTargetEdge({
           sourceNode,
+          targetNode,
+          edgeId,
           portId,
-          targetNode.id,
-        );
-        const isSuccess = await changeNode({ nodeData: params }, noop);
-        if (isSuccess) {
-          graphRef.current?.graphDeleteEdge(edgeId);
-        }
-      } else {
-        // 普通端口：删除边
-        // 检测是否是循环节点的内部边（Loop-in -> innerNode）
-        const isLoopInPort =
-          portId.endsWith('-in') && sourceNode.type === NodeTypeEnum.Loop;
-
-        // 使用正确的 source 格式调用 deleteEdge
-        const edgeSource = isLoopInPort ? portId : String(sourceNode.id);
-
-        // 直接调用 workflowProxy.deleteEdge
-        const res = workflowProxy.deleteEdge(
-          edgeSource,
-          targetNode.id.toString(),
-        );
-
-        if (res.success) {
-          // 同步删除画布上的边
-          graphRef.current?.graphDeleteEdge(edgeId);
-          // 触发保存
-          debouncedSaveFullWorkflow();
-        } else {
-          // 如果删除失败，尝试使用纯节点 ID 格式（兼容旧数据）
-          const fallbackRes = workflowProxy.deleteEdge(
-            String(sourceNode.id),
-            targetNode.id.toString(),
-          );
-
-          if (fallbackRes.success) {
-            graphRef.current?.graphDeleteEdge(edgeId);
-            debouncedSaveFullWorkflow();
-          } else {
-            console.warn(
-              '[handleTargetNodeConnection] Failed to delete edge:',
-              res.message,
-              '| source:',
-              edgeSource,
-              '-> target:',
-              targetNode.id,
-            );
-          }
-        }
+        });
       }
     },
     [
@@ -502,9 +629,114 @@ export const useNodeOperations = ({
       isConditionalNode,
       handleConditionalNodeConnection,
       handleNormalNodeConnection,
-      nodeChangeEdge,
-      changeNode,
-      debouncedSaveFullWorkflow,
+      handleRouteDecisionOutgoingConnection,
+      removeSourceToTargetEdge,
+    ],
+  );
+
+  /**
+   * AgentFlow：在 source → tail 之间插入 middle（拖线到已有节点 / 与快捷添加共用拓扑）
+   *
+   * 顺序：① 清理 middle 已有连线 → ② 删 source→tail → ③ source→middle → ④ middle→tail
+   */
+  const insertNodeBetween = useCallback(
+    async ({
+      sourceNode,
+      middleNode,
+      tailNode,
+      oldEdgeId,
+      portId,
+    }: InsertNodeBetweenParams) => {
+      const isLoop = Boolean(middleNode.loopNodeId);
+      const graph = graphRef.current?.getGraphRef();
+      const graphDeleteEdge = (edgeId: string) =>
+        graphRef.current?.graphDeleteEdge(edgeId);
+
+      const sourceId = String(sourceNode.id);
+      const middleId = String(middleNode.id);
+      const tailId = String(tailNode.id);
+
+      // ① 清理中间节点全部残留边（含仅存在于 proxy、画布不可见的边）
+      purgeNodeIncidentEdges({
+        graph,
+        nodeId: middleId,
+        excludeEdgeIds: [oldEdgeId],
+        graphDeleteEdge,
+      });
+
+      if (graph) {
+        await clearNodeIncidentEdges({
+          graph,
+          nodeId: middleId,
+          excludeEdgeIds: [oldEdgeId],
+          deleteEdge: (edge) => {
+            const edgeSourceId = edge.getSourceCellId();
+            const edgeTargetId = edge.getTargetCellId();
+            if (!edgeSourceId || !edgeTargetId) return;
+            workflowProxy.deleteEdge(
+              edgeSourceId,
+              edgeTargetId,
+              edge.getSourcePortId(),
+            );
+            graphDeleteEdge(String(edge.id));
+          },
+        });
+      }
+
+      // ② 幂等清理即将重建的边对，避免来回操作后数据层残留
+      purgeEdgeBetween({
+        graph,
+        sourceCellId: sourceId,
+        targetCellId: tailId,
+        sourcePort: portId,
+        graphDeleteEdge,
+      });
+      purgeEdgeBetween({
+        graph,
+        sourceCellId: sourceId,
+        targetCellId: middleId,
+        graphDeleteEdge,
+      });
+      purgeEdgeBetween({
+        graph,
+        sourceCellId: middleId,
+        targetCellId: tailId,
+        graphDeleteEdge,
+      });
+
+      await removeSourceToTargetEdge({
+        sourceNode,
+        targetNode: tailNode,
+        edgeId: oldEdgeId,
+        portId,
+      });
+
+      await handleOutputPortConnection({
+        newNodeId: middleNode.id as number,
+        sourceNode,
+        isLoop,
+      });
+
+      await handleTargetNodeConnection({
+        newNode: middleNode,
+        targetNode: tailNode,
+        sourceNode,
+        edgeId: oldEdgeId,
+        isLoop,
+        portId,
+        skipSourceTailDelete: true,
+      });
+
+      if (graph) {
+        graph.getEdges().forEach((edge) => setEdgeAttributes(edge));
+        updateEdgeArrows(graph);
+      }
+    },
+    [
+      graphRef,
+      handleOutputPortConnection,
+      handleTargetNodeConnection,
+      removeSourceToTargetEdge,
     ],
   );
 
@@ -514,16 +746,25 @@ export const useNodeOperations = ({
   const handleNodeCreationSuccess = useCallback(
     async (nodeData: AddNodeResponse) => {
       // 添加节点到画布
+      // 端口/边快捷添加（currentNodeRef 已置位）的 extension 是模型(local)坐标的节点左上角
+      // （见 graphV3.calculateNodePosition），显式声明 'model' 直接落点，绕开 _doAddNode 的
+      // 容器范围启发式——该启发式在 in 端口向左偏移（落点落到容器外）或画布平移/缩放时会
+      // 误判坐标系，导致新节点大幅偏移。拖拽落点/视口中心仍走 'auto'。
       graphRef.current?.graphAddNode(
         nodeData.nodeConfig.extension as GraphRect,
         nodeData as unknown as ChildNode,
+        currentNodeRef.current ? 'model' : 'auto',
       );
 
-      // 选中新增的节点
-      graphRef.current?.graphSelectNode(String(nodeData.id));
-
-      // 显式打开右侧属性面板（确保快捷添加节点后面板正确打开）
-      changeDrawer(nodeData as unknown as ChildNode);
+      // 选中新增的节点并打开右侧属性面板。
+      // Workflow v3（focusNewNode=true）：选中节点 + 显式打开面板。
+      // AgentFlow（focusNewNode=false）：拖入/添加节点仅放置到画布，不主动选中、不弹面板——
+      // 面板已改由 node:click 触发（见 registerNodeClickAndDblclick），程序化选中不再自动开面板，
+      // 故此处需显式调用；AgentFlow 下留待用户点击节点再打开。
+      if (focusNewNode) {
+        graphRef.current?.graphSelectNode(String(nodeData.id));
+        changeDrawer(nodeData as unknown as ChildNode);
+      }
 
       // 处理连接桩或边创建的节点
       if (currentNodeRef.current) {
@@ -609,6 +850,7 @@ export const useNodeOperations = ({
     [
       graphRef,
       currentNodeRef,
+      focusNewNode,
       changeDrawer,
       handleSpecialPortConnection,
       handleExceptionPortConnection,
@@ -713,13 +955,24 @@ export const useNodeOperations = ({
                         _params.nodeConfig.knowledgeBaseConfigs,
                     }
                   : {}),
+                ...(_params.type === NodeTypeEnum.KnowledgeInsert
+                  ? pickKnowledgeInsertBindingForAddDto(_params.nodeConfig) ||
+                    {}
+                  : {}),
               }
             : undefined;
 
+        // Agent 节点：关联智能体 ID 走顶层 typeId（与 Workflow、MCP 一致）
+        const resolvedTypeId =
+          _params.type === NodeTypeEnum.Agent
+            ? _params.typeId ?? _params.nodeConfig?.agentId
+            : _params.typeId;
+
         const apiRes = await service.apiAddNodeV3({
           workflowId: workflowId,
-          type: _params.type,
-          typeId: _params.typeId,
+          // RouteDecision 复用后端 IntentRecognition 类型收发（见 nodeTypeMapping.ts）
+          type: toBackendNodeType(_params.type),
+          typeId: resolvedTypeId,
           name: _params.name,
           shape: _params.shape,
           description: _params.description,
@@ -749,14 +1002,46 @@ export const useNodeOperations = ({
       _params.id = nodeId;
 
       if (apiNodeData) {
+        // RouteDecision / HumanInteraction 复用后端类型创建（见 nodeTypeMapping.ts）：
+        // 后端返回的 type/name 会回写成后端类型的默认值，这里按请求值还原前端语义。
+        const requestedType = _params.type;
+        const wasRemapped = isFrontendMappedType(requestedType);
+        const requestedName = _params.name;
+        const requestedDescription = _params.description;
+        const requestedNodeConfig = _params.nodeConfig;
         _params = {
           ..._params,
           ...apiNodeData,
-          nodeConfig: {
-            ...apiNodeData.nodeConfig,
-            extension: _params.extension,
-          },
+          nodeConfig: mergeNodeConfigAfterAddApi(
+            requestedType,
+            requestedNodeConfig,
+            apiNodeData,
+            _params.extension,
+          ),
         };
+        // name/description 始终以请求值为准：后端 apiAddNodeV3 的回显可能为空或回写后端默认文案
+        //（如 Agent 节点），若不还原，画布节点会丢失名称/描述，进而保存时不传给后端。
+        _params = {
+          ..._params,
+          name: requestedName,
+          description: requestedDescription,
+        };
+        // 仅「类型被映射」的节点（RouteDecision/HumanInteraction）需要把 type 还原为前端语义
+        if (wasRemapped) {
+          _params = { ..._params, type: requestedType };
+        }
+        // Agent 节点的 outputArgs（output → Agent reply）是前端默认值，后端 apiAddNodeV3
+        // 不会回显；合并后若缺失则补齐，否则下游「变量引用」里看不到智能体节点的输出变量。
+        if (
+          _params.type === NodeTypeEnum.Agent &&
+          (!_params.nodeConfig?.outputArgs ||
+            _params.nodeConfig.outputArgs.length === 0)
+        ) {
+          _params.nodeConfig = {
+            ..._params.nodeConfig,
+            outputArgs: createDefaultNodeConfig(NodeTypeEnum.Agent).outputArgs,
+          };
+        }
 
         if (_params.type === NodeTypeEnum.Loop) {
           _params.nodeConfig.extension = {
@@ -856,6 +1141,9 @@ export const useNodeOperations = ({
 
           const newNode: ChildNode = {
             ...rest,
+            // RouteDecision / HumanInteraction 复用后端类型：复制返回的 type 为后端类型，
+            // 这里按源节点类型还原前端语义（见 nodeTypeMapping.ts）
+            ...(isFrontendMappedType(child.type) ? { type: child.type } : {}),
             shape: getShape(_res.data.type),
             nodeConfig: {
               ...nodeConfig,
@@ -872,13 +1160,21 @@ export const useNodeOperations = ({
           const proxyResult = workflowProxy.addNode(newNode);
           if (proxyResult.success) {
             // 添加节点到画布
+            // 复制节点的 extension 来自源节点保存位置 + 偏移，是模型(local)坐标左上角，
+            // 同样用 'model' 直接落点（与端口/边一致），避免容器范围启发式在画布平移时误判。
             graphRef.current?.graphAddNode(
               newNode.nodeConfig.extension as GraphRect,
               newNode,
+              'model',
             );
 
-            // 选中新增的节点
-            graphRef.current?.graphSelectNode(String(newNode.id));
+            // 选中复制出的节点并打开属性面板。
+            // 面板打开已从 node:selected 迁移到 node:click，程序化选中不再自动打开，
+            // 故此处显式处理；AgentFlow（focusNewNode=false）下与新增节点一致，仅放置不弹面板。
+            if (focusNewNode) {
+              graphRef.current?.graphSelectNode(String(newNode.id));
+              changeDrawer(newNode);
+            }
             changeUpdateTime();
           } else {
             console.warn(
@@ -896,7 +1192,7 @@ export const useNodeOperations = ({
         message.error(t('PC.Pages.AntvX6NodeOperations.copyNodeNetworkError'));
       }
     },
-    [graphRef, changeUpdateTime],
+    [graphRef, changeUpdateTime, focusNewNode, changeDrawer],
   );
 
   /**
@@ -985,27 +1281,43 @@ export const useNodeOperations = ({
         val.targetType === AgentComponentTypeEnum.Knowledge ||
         val.targetType === AgentComponentTypeEnum.Table
       ) {
-        const knowledgeBaseConfigs = [
-          {
-            ...val,
-            type: NodeTypeEnum.Knowledge,
-            knowledgeBaseId: val.targetId,
-          },
-        ];
+        const knowledgeNodeType = sessionStorage.getItem('knowledgeNodeType');
+        const resolvedKnowledgeType =
+          knowledgeNodeType === NodeTypeEnum.KnowledgeInsert
+            ? NodeTypeEnum.KnowledgeInsert
+            : NodeTypeEnum.Knowledge;
         const tableType = sessionStorage.getItem('tableType');
+        const isKnowledgeInsert =
+          val.targetType === AgentComponentTypeEnum.Knowledge &&
+          resolvedKnowledgeType === NodeTypeEnum.KnowledgeInsert;
+        // 知识库/数据表节点：未填描述时统一回退到节点名（与 KnowledgeInsert 一致），
+        // 避免添加后顶层 description 为空、保存时丢失。
+        const resolvedDescription = resolveNodeDescriptionWithNameFallback(
+          val.name,
+          val.description,
+        );
+
         _child = {
           name: val.name,
           shape: NodeShapeEnum.General,
-          description: val.description,
+          description: resolvedDescription,
           type:
             val.targetType === AgentComponentTypeEnum.Knowledge
-              ? NodeTypeEnum.Knowledge
+              ? ((knowledgeNodeType || NodeTypeEnum.Knowledge) as NodeTypeEnum)
               : ((tableType || NodeTypeEnum.TableDataQuery) as NodeTypeEnum),
           typeId: val.targetId,
-          nodeConfig: {
-            knowledgeBaseConfigs: knowledgeBaseConfigs,
-            extension: {},
-          },
+          nodeConfig: isKnowledgeInsert
+            ? buildKnowledgeInsertNodeConfigOnAdd(val)
+            : {
+                knowledgeBaseConfigs: [
+                  {
+                    ...val,
+                    type: resolvedKnowledgeType,
+                    knowledgeBaseId: val.targetId,
+                  },
+                ],
+                extension: {},
+              },
         };
       } else if (
         val.targetType === AgentComponentTypeEnum.Workflow ||
@@ -1018,7 +1330,18 @@ export const useNodeOperations = ({
         _child = {
           name: val.name,
           shape: NodeShapeEnum.General,
-          description: val.description,
+          // 工作流节点：描述为空时回退到名称，再兜底默认文案；
+          // 插件节点：描述为空时回退到名称
+          description:
+            type === NodeTypeEnum.Workflow
+              ? resolveAgentFlowWorkflowNodeDescription(
+                  val.name,
+                  val.description,
+                )
+              : resolveNodeDescriptionWithNameFallback(
+                  val.name,
+                  val.description,
+                ),
           type,
           typeId: val.targetId,
         };
@@ -1026,12 +1349,44 @@ export const useNodeOperations = ({
         _child = {
           name: val.name,
           shape: NodeShapeEnum.General,
-          description: val.description,
+          description: resolveNodeDescriptionWithNameFallback(
+            val.name,
+            val.description,
+          ),
           type: NodeTypeEnum.MCP,
           typeId: val.targetId,
           nodeConfig: {
             toolName: val.toolName,
             mcpId: val.targetId,
+          },
+        };
+      } else if (val.targetType === AgentComponentTypeEnum.Agent) {
+        if (isAgentFlow && !isAgentFlowSelectableAgent(val)) {
+          message.warning(
+            t(
+              'PC.Pages.AgentFlowParams.agentGroupNotAllowed',
+              '智能体不允许选择 AgentGroup',
+            ),
+          );
+          return;
+        }
+        // 智能体节点：弹窗选择当前空间已发布 ChatBot；
+        // add 请求顶层 typeId，nodeConfig.agentId 供属性面板与整图保存
+        // name/description 缺省回退到智能体节点的类型名/类型描述，保证画布始终有名称与描述
+        _child = {
+          name: val.name || t('PC.Pages.AgentFlowParams.nodeAgentName'),
+          shape: NodeShapeEnum.General,
+          description:
+            val.description ||
+            t('PC.Pages.AgentFlowParams.nodeAgentDescription'),
+          type: NodeTypeEnum.Agent,
+          typeId: val.targetId,
+          nodeConfig: {
+            agentId: val.targetId,
+            inputArgs: [],
+            extraPrompt: '',
+            selfLoopTimes: 0,
+            reminderPrompt: '',
           },
         };
       } else {
@@ -1040,12 +1395,10 @@ export const useNodeOperations = ({
       }
 
       addNode(_child, dragEvent);
-      if (sessionStorage.getItem('tableType')) {
-        sessionStorage.removeItem('tableType');
-      }
+      clearPendingNodeCreateSession();
       setOpen(false);
     },
-    [addNode, dragEvent, setOpen],
+    [addNode, dragEvent, setOpen, isAgentFlow],
   );
 
   /**
@@ -1063,6 +1416,7 @@ export const useNodeOperations = ({
         NodeTypeEnum.Plugin,
         NodeTypeEnum.Workflow,
         NodeTypeEnum.MCP,
+        NodeTypeEnum.Agent,
       ].includes(childType);
 
       const isTableNode = [
@@ -1072,6 +1426,9 @@ export const useNodeOperations = ({
         'TableDataQuery',
         'TableSQL',
       ].includes(childType);
+
+      // 知识库写入：拖入时先弹出知识库选择弹窗（与数据新增选表交互一致）
+      const isKnowledgeInsertNode = childType === NodeTypeEnum.KnowledgeInsert;
 
       const viewGraph = graphRef.current?.getCurrentViewPort();
       if (isSpecialType) {
@@ -1083,6 +1440,11 @@ export const useNodeOperations = ({
         setOpen(true);
         setDragEvent(getCoordinates(position, viewGraph, continueDragCount));
         sessionStorage.setItem('tableType', childType);
+      } else if (isKnowledgeInsertNode) {
+        setCreatedItem(AgentComponentTypeEnum.Knowledge);
+        setOpen(true);
+        setDragEvent(getCoordinates(position, viewGraph, continueDragCount));
+        sessionStorage.setItem('knowledgeNodeType', childType);
       } else {
         const coordinates = getCoordinates(
           position,
@@ -1104,6 +1466,7 @@ export const useNodeOperations = ({
     handleNormalNodeConnection,
     handleInputPortConnection,
     handleTargetNodeConnection,
+    insertNodeBetween,
     handleNodeCreationSuccess,
     addNode,
     copyNode,

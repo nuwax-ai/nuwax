@@ -1,0 +1,339 @@
+@import '@/styles/token.less';
+
+/* ─── Shell ─────────────────────────────────────────── */
+.shell {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  height: auto;
+  max-height: min(440px, 48vh);
+  overflow: hidden;
+  border: 1px solid @colorBorderSecondary;
+  border-radius: @borderRadiusLg;
+  background: @colorBgContainer;
+
+  /* ─── Header ─────────────────────────────────────────── */
+  .header {
+    flex-shrink: 0;
+    display: flex;
+    align-items: flex-start;
+    min-width: 0;
+    gap: @marginXs;
+    padding: @paddingSm @paddingSm @paddingXs;
+    background: @colorBgContainer;
+    border-bottom: 1px solid @colorBorderSecondary;
+    border-radius: @borderRadiusLg @borderRadiusLg 0 0;
+
+    .iconWrap {
+      display: none;
+    }
+
+    .headerMain {
+      flex: 1;
+      min-width: 0;
+
+      .eyebrow {
+        display: block;
+        margin-bottom: @marginXxs;
+        color: @colorTextTertiary;
+        font-size: @fontSizeSm;
+        font-weight: 500;
+        line-height: 1.3;
+      }
+
+      .title {
+        display: block;
+        min-width: 0;
+        max-width: 100%;
+        color: @colorTextBase;
+        font-size: @fontSize;
+        font-weight: 600;
+        line-height: @lineHeight;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .desc {
+        display: block;
+        min-width: 0;
+        max-width: 100%;
+        margin-top: @marginXxs;
+        font-size: @fontSizeSm;
+        color: @colorTextSecondary;
+        line-height: 1.4;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+    }
+
+    .statusTag {
+      flex-shrink: 0;
+      align-self: flex-start;
+      margin: 2px 0 0;
+    }
+  }
+
+  /* ─── Wizard ─────────────────────────────────────────── */
+  .wizardBlock {
+    flex-shrink: 0;
+    padding: @paddingXs @paddingSm 0;
+    border-bottom: 1px solid @colorBorderSecondary;
+
+    .steps {
+      margin-bottom: @marginXs;
+
+      :global {
+        .ant-steps-item-container {
+          display: flex !important;
+          align-items: center !important;
+        }
+
+        .ant-steps-item-icon {
+          display: inline-flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          margin-top: 0 !important;
+          margin-bottom: 0 !important;
+        }
+
+        .ant-steps-item-content {
+          display: inline-flex !important;
+          align-items: center !important;
+        }
+
+        .ant-steps-item-title {
+          font-size: @fontSizeSm !important;
+          line-height: 1 !important;
+          display: inline-flex !important;
+          align-items: center !important;
+          height: 24px !important;
+        }
+
+        .ant-steps-item-description {
+          max-width: 120px;
+          font-size: 11px !important;
+        }
+
+        .ant-steps-item-process .ant-steps-item-icon {
+          background: @colorBgSolid;
+          border-color: @colorBgSolid;
+        }
+      }
+    }
+
+    .stepCallout {
+      margin-bottom: @marginXs;
+      padding: @paddingXxs @paddingXs;
+      border-radius: @borderRadiusSm;
+      background: @colorFillQuaternary;
+
+      .stepCalloutText {
+        font-size: @fontSizeSm;
+        color: @colorTextSecondary;
+        line-height: 1.4;
+      }
+    }
+  }
+
+  /* ─── Form Surface (scrollable) ─────────────────────── */
+  .formSurface {
+    flex: 1;
+    min-height: 0;
+    padding: @paddingXs @paddingSm;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 10%) transparent;
+
+    &::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 10%);
+      border-radius: 4px;
+    }
+
+    .form {
+      margin: 0;
+      min-width: 0;
+
+      :global {
+        .ant-form-item,
+        .ant-form-item-control,
+        .ant-form-item-control-input,
+        .ant-form-item-control-input-content {
+          min-width: 0;
+          max-width: 100%;
+        }
+
+        .ant-form-item {
+          margin-bottom: @marginXs;
+        }
+
+        .ant-form-item:last-child {
+          margin-bottom: 0;
+        }
+
+        .ant-form-item-label > label {
+          color: @colorTextSecondary;
+          font-size: @fontSizeSm;
+          font-weight: 500;
+          padding-bottom: 3px;
+        }
+
+        .ant-form-item-explain-error {
+          font-size: 11px;
+          margin-top: 2px;
+        }
+      }
+    }
+  }
+
+  /* ─── Footer ─────────────────────────────────────────── */
+  .footer {
+    flex-shrink: 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: @marginXs;
+    padding: @paddingXs @paddingSm;
+    border-top: 1px solid @colorBorderSecondary;
+    background: @colorBgContainer;
+    border-radius: 0 0 @borderRadiusLg @borderRadiusLg;
+
+    .stepMeta {
+      font-size: @fontSizeSm;
+      color: @colorTextSecondary;
+    }
+
+    .footerActions {
+      margin-left: auto;
+      max-width: 100%;
+      display: flex;
+      align-items: center;
+      gap: @marginXs;
+      justify-content: flex-end;
+
+      .submit-btn {
+        background: @colorBgSolid !important;
+        border-color: @colorBgSolid !important;
+        color: @colorTextLightSolid !important;
+        border-radius: @borderRadiusLg !important;
+        font-weight: 500;
+
+        &:hover {
+          background: @colorBgSolidHover !important;
+          border-color: @colorBgSolidHover !important;
+        }
+
+        &:disabled {
+          opacity: 0.5;
+        }
+
+        .shortcut {
+          border: 1px solid rgba(255, 255, 255, 25%) !important;
+          background: rgba(255, 255, 255, 15%) !important;
+          color: rgba(255, 255, 255, 75%) !important;
+        }
+      }
+
+      .cancel-btn {
+        border: none !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        color: @colorTextSecondary !important;
+        padding-left: @paddingSm !important; // 增加内边距
+        padding-right: @paddingSm !important; // 增加内边距
+        margin-right: @marginXs; // 增加右侧外边距以和确定按钮拉开距离
+        border-radius: @borderRadiusLg !important;
+
+        &:hover {
+          color: @colorText !important;
+          background: @colorFillTertiary !important;
+        }
+
+        .shortcut {
+          border: 1px solid @colorBorderSecondary !important;
+          background: @colorFillSecondary !important;
+          color: @colorTextSecondary !important;
+        }
+      }
+    }
+  }
+
+  /* ─── Error ─────────────────────────────────────────── */
+  .error {
+    display: block;
+    padding: 0 @paddingSm @paddingXs;
+    font-size: @fontSizeSm;
+  }
+}
+
+/* ─── 通用按钮快捷键角标 ─── */
+.buttonLabel {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  gap: @marginXxs;
+}
+
+.shortcut {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 @paddingXxs;
+  border: 1px solid rgba(255, 255, 255, 25%);
+  border-radius: @borderRadiusSm;
+  background: rgba(255, 255, 255, 15%);
+  color: rgba(255, 255, 255, 75%);
+  font-size: 11px;
+  font-family: inherit;
+  font-weight: 600;
+  line-height: 1;
+  pointer-events: none;
+}
+
+/* ─── 媒体查询响应式 ─── */
+@media screen and (max-width: 520px) {
+  .shell {
+    max-height: min(480px, 58vh);
+
+    .header {
+      align-items: flex-start;
+      gap: @marginXs;
+      padding: @paddingXs @paddingXs @paddingXxs;
+    }
+
+    .wizardBlock,
+    .formSurface {
+      padding-left: @paddingXs;
+      padding-right: @paddingXs;
+    }
+
+    .footer {
+      justify-content: flex-end;
+      padding: @paddingXs @paddingXs;
+
+      .stepMeta {
+        width: 100%;
+      }
+
+      .footerActions {
+        margin-left: 0;
+      }
+    }
+  }
+}

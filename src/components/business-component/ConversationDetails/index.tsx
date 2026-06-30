@@ -10,7 +10,6 @@ import ChatInputHome from '@/components/ChatInputHome';
 import ChatView from '@/components/ChatView';
 import ConditionRender from '@/components/ConditionRender';
 import TooltipIcon from '@/components/custom/TooltipIcon';
-import FileTreeView from '@/components/FileTreeView';
 import NewConversationSet from '@/components/NewConversationSet';
 import RecommendList from '@/components/RecommendList';
 import ResizableSplit from '@/components/ResizableSplit';
@@ -146,14 +145,6 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
   const [urlOtherParams, setUrlOtherParams] = useState<Record<string, unknown>>(
     {},
   );
-
-  const {
-    isFileTreeVisible,
-    closePreviewView,
-    restartVncPod,
-    restartAgent,
-    clearFilePanelInfo,
-  } = useModel('conversationInfo');
 
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
 
@@ -496,8 +487,6 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
       setAgentDetail(null);
       setSelectedComponentList([]);
       setVariables([]);
-      // 清除文件面板信息
-      clearFilePanelInfo();
 
       setOpenPaymentModal(false);
     };
@@ -749,8 +738,6 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
                   }
                   onClick={() => {
                     hidePagePreview();
-                    // 确保打开智能体详情前关闭文件树视图，只展示一个右侧面板
-                    closePreviewView();
                     sidebarRef.current?.open();
                   }}
                 />
@@ -783,11 +770,7 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
         {/* 页面主体: 内容区域 */}
         <div className={cx(styles['main-content-box'])}>
           {/* 聊天内容区域 */}
-          <div
-            className={cx(styles['chat-section'], {
-              [styles['file-tree-visible']]: isFileTreeVisible,
-            })}
-          >
+          <div className={cx(styles['chat-section'])}>
             <div
               className={cx(styles['chat-wrapper-content'], 'scroll-container')}
             >
@@ -853,6 +836,9 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
               agentId={agentId}
               agentSandboxId={agentDetail?.sandboxId}
               hasPermission={agentDetail?.hasPermission}
+              showAgentModeSelector={
+                agentDetail?.allowChooseMode === DefaultSelectedEnum.Yes
+              }
               maskText={t(
                 'PC.Components.ConversationDetails.noAgentPermission',
               )}
@@ -875,38 +861,6 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
               defaultMentions={defaultMentions}
             />
           </div>
-
-          {/* 通用型(TaskAgent)智能体 - 智能体电脑 */}
-          {isFileTreeVisible && (
-            <div
-              className={cx(
-                styles['file-tree-sidebar'],
-                'flex',
-                'w-full',
-                'overflow-hide',
-              )}
-            >
-              <FileTreeView
-                className={cx(styles['file-tree-container'])}
-                targetId={agentDetail?.conversationId?.toString() || ''}
-                viewMode={'desktop'}
-                // 重启容器
-                onRestartServer={() =>
-                  restartVncPod(agentDetail?.conversationId, selectedComputerId)
-                }
-                // 重启智能体
-                onRestartAgent={() => restartAgent(agentDetail?.conversationId)}
-                // 关闭整个面板
-                onClose={closePreviewView}
-                isCanDeleteSkillFile={true}
-                // VNC 空闲检测配置（仅通用型智能体启用）
-                idleDetection={{
-                  enabled: agentDetail?.type === AgentTypeEnum.TaskAgent,
-                  onIdleTimeout: closePreviewView,
-                }}
-              />
-            </div>
-          )}
         </div>
       </div>
     );

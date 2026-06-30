@@ -1,3 +1,4 @@
+import agentImage from '@/assets/images/agent_image.png';
 import databaseImage from '@/assets/images/database_image.png';
 import mcpImage from '@/assets/images/mcp_image.png';
 import pluginImage from '@/assets/images/plugin_image.png';
@@ -21,6 +22,7 @@ const CollapseComponentList: React.FC<CollapseComponentListProps> = ({
   deleteList,
   onSet,
   onDel,
+  showSettings = true,
 }) => {
   const getInfo = (type: AgentComponentTypeEnum) => {
     switch (type) {
@@ -55,6 +57,12 @@ const CollapseComponentList: React.FC<CollapseComponentListProps> = ({
         return {
           text: dict('PC.Components.CollapseComponentList.skillDesc'),
           image: databaseImage,
+        };
+      // 群组智能体
+      case AgentComponentTypeEnum.Agent:
+        return {
+          text: dict('PC.Components.CollapseComponentList.groupAgentDesc'),
+          image: agentImage,
         };
     }
   };
@@ -92,11 +100,13 @@ const CollapseComponentList: React.FC<CollapseComponentListProps> = ({
         defaultImage={getInfo(type)?.image}
         extra={
           <>
-            <TooltipIcon
-              title={dict('PC.Components.CollapseComponentList.settings')}
-              icon={<ICON_SETTING className={'cursor-pointer'} />}
-              onClick={() => onSet(item.id)}
-            />
+            {showSettings && (
+              <TooltipIcon
+                title={dict('PC.Components.CollapseComponentList.settings')}
+                icon={<ICON_SETTING className={'cursor-pointer'} />}
+                onClick={() => onSet(item.id)}
+              />
+            )}
             <TooltipIcon
               title={dict('PC.Components.CollapseComponentList.delete')}
               icon={

@@ -1,3 +1,5 @@
+import { useCanvasFullscreen } from '@/contexts/CanvasFullscreenContext';
+import { useIsAgentFlow } from '@/pages/Antv-X6/v3/flowKind/useFlowKind';
 import { t } from '@/services/i18nRuntime';
 import { NodeTypeEnum } from '@/types/enums/common';
 import { ChildNode, StencilChildNode } from '@/types/interfaces/graph';
@@ -14,7 +16,7 @@ import React, { useState } from 'react';
 import StencilContent from './Sidebar';
 interface ControlPanelProps {
   // 拖拽节点到画布
-  dragChild: (
+  dragChild?: (
     child: StencilChildNode,
     position?: React.DragEvent<HTMLDivElement>,
     continueDragCount?: number,
@@ -26,7 +28,7 @@ interface ControlPanelProps {
   // 当前画布的缩放比例
   zoomSize?: number;
   // 当前正在展示的节点
-  foldWrapItem: ChildNode;
+  foldWrapItem?: ChildNode;
   // 试运行loading
   testRunLoading: boolean;
 }
@@ -70,28 +72,39 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
 }) => {
   const [open, setOpen] = useState(false);
   const [continueDragCount, setContinueDragCount] = useState(0);
+  // AgentFlow 画布不展示「调试 / 试运行」
+  const isAgentFlow = useIsAgentFlow();
+  // AgentFlow 内嵌（默认画布大小）时控制条紧凑化；全屏时恢复原始尺寸
+  const isFullscreen = useCanvasFullscreen();
+  const compact = isAgentFlow && !isFullscreen;
+  const btnSize: 'small' | 'middle' = compact ? 'small' : 'middle';
+  const gap = compact ? 4 : 12;
   const handleOpenChange = (newOpen: boolean) => {
     setOpen(newOpen);
     setContinueDragCount(0);
   };
 
+  // AgentFlow 模式：不渲染 StencilContent Popover（侧边栏已包含）
+  const showStencil = dragChild && foldWrapItem;
+
   return (
-    <>
-      <div className="absolute-box">
-        <div className="action-section">
-          <Button
-            type="text"
-            style={{ marginRight: 2 }}
-            icon={<MinusOutlined />}
-            onClick={() => {
-              const factor = -10;
-              const currentPercent = Math.round(zoomSize * 100);
-              const newPercent = currentPercent + factor;
-              const clampedPercent = Math.max(20, Math.min(300, newPercent));
-              const newVal = clampedPercent / 100;
-              changeGraph(Number(newVal));
-            }}
-          />
+    <div className={`absolute-box${compact ? ' absolute-box-compact' : ''}`}>
+      <div className="action-section">
+        <Button
+          type="text"
+          size={btnSize}
+          style={{ marginRight: 2 }}
+          icon={<MinusOutlined />}
+          onClick={() => {
+            const factor = -10;
+            const currentPercent = Math.round(zoomSize * 100);
+            const newPercent = currentPercent + factor;
+            const clampedPercent = Math.max(20, Math.min(300, newPercent));
+            const newVal = clampedPercent / 100;
+            changeGraph(Number(newVal));
+          }}
+        />
+        {!compact && (
           <Select
             options={options}
             value={`${Math.round(zoomSize * 100)}%`}
@@ -114,32 +127,36 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
             optionLabelProp="displayValue"
             size="small"
           />
+        )}
+        <Button
+          type="text"
+          size={btnSize}
+          style={{ marginRight: gap }}
+          icon={<PlusOutlined />}
+          onClick={() => {
+            const factor = 10;
+            const currentPercent = Math.round(zoomSize * 100);
+            const newPercent = currentPercent + factor;
+            const clampedPercent = Math.max(20, Math.min(300, newPercent));
+            const newVal = clampedPercent / 100;
+            changeGraph(Number(newVal));
+          }}
+        />
+        {/* 添加缩放到适配画布 */}
+        <Popover
+          content={t('PC.Pages.AntvX6ControlPanel.fitCanvas')}
+          trigger={['hover']}
+          mouseEnterDelay={1}
+        >
           <Button
             type="text"
-            style={{ marginRight: 12 }}
-            icon={<PlusOutlined />}
-            onClick={() => {
-              const factor = 10;
-              const currentPercent = Math.round(zoomSize * 100);
-              const newPercent = currentPercent + factor;
-              const clampedPercent = Math.max(20, Math.min(300, newPercent));
-              const newVal = clampedPercent / 100;
-              changeGraph(Number(newVal));
-            }}
+            size={btnSize}
+            style={{ marginRight: gap }}
+            icon={<CompressOutlined />}
+            onClick={() => changeGraph(-1)}
           />
-          {/* 添加缩放到适配画布 */}
-          <Popover
-            content={t('PC.Pages.AntvX6ControlPanel.fitCanvas')}
-            trigger={['hover']}
-            mouseEnterDelay={1}
-          >
-            <Button
-              type="text"
-              style={{ marginRight: 12 }}
-              icon={<CompressOutlined />}
-              onClick={() => changeGraph(-1)}
-            />
-          </Popover>
+        </Popover>
+        {showStencil && (
           <Popover
             content={
               <StencilContent
@@ -150,15 +167,16 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
                 ) => {
                   setContinueDragCount(continueDragCount + 1);
                   dragChild(child, position, continueDragCount);
-                  // setOpen(false);
                 }}
               />
             }
-            trigger={['click']} // 支持 hover 和 click 触发
+            trigger={['click']}
             open={open}
             onOpenChange={handleOpenChange}
           >
             <Button
+              className={compact ? 'add-node-btn-mini' : undefined}
+              size={btnSize}
               onMouseEnter={() => setOpen(true)}
               icon={<PlusOutlined />}
               type="primary"
@@ -167,7 +185,9 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
               {t('PC.Pages.AntvX6ControlPanel.addNode')}
             </Button>
           </Popover>
-        </div>
+        )}
+      </div>
+      {!isAgentFlow && (
         <div className="action-section" style={{ marginLeft: 18 }}>
           <ToolOutlined
             title={t('PC.Pages.AntvX6ControlPanel.debug')}
@@ -183,8 +203,8 @@ const ControlPanel: React.FC<ControlPanelProps> = ({
             {t('PC.Pages.AntvX6ControlPanel.testRun')}
           </Button>
         </div>
-      </div>
-    </>
+      )}
+    </div>
   );
 };
 

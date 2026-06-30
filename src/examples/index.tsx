@@ -6,6 +6,7 @@ import {
   DesktopOutlined,
   ExperimentOutlined,
   EyeOutlined,
+  FormOutlined,
   HeartOutlined,
   InboxOutlined,
   LockOutlined,
@@ -146,6 +147,39 @@ const ExamplesIndex: React.FC = () => {
       icon: <RocketOutlined />,
       path: '/examples/sse-streaming-test',
       featured: true,
+    },
+    {
+      id: 'agent-intervention-demo',
+      title: isChineseLanguage
+        ? 'Agent 干预交互卡片'
+        : 'Agent Intervention Cards',
+      description: isChineseLanguage
+        ? '展示 ACP 权限审批与 MCP Ask 结构化提问卡片的 UI 与交互，包含 radio、wizard、文件上传等多种表单形态（Mock 数据）。'
+        : 'Showcase ACP permission approval and MCP Ask structured question cards with radio, wizard, file upload and more (mock data).',
+      tags: [
+        { text: isChineseLanguage ? 'ACP 权限' : 'ACP', color: 'blue' },
+        { text: isChineseLanguage ? 'MCP Ask' : 'MCP Ask', color: 'green' },
+        {
+          text: isChineseLanguage ? '干预流程' : 'Intervention',
+          color: 'purple',
+        },
+      ],
+      icon: <FormOutlined />,
+      path: '/examples/agent-intervention-demo',
+      featured: true,
+    },
+    {
+      id: 'message-queue-demo',
+      title: isChineseLanguage ? '消息队列' : 'Message Queue',
+      description: isChineseLanguage
+        ? '调试会话活跃期间的待发送消息队列：入队、空闲自动消费、立即发送、编辑回填、删除清空（Mock，不依赖后端）。'
+        : 'Debug the pending message queue during active conversation: enqueue, auto-consume on idle, send now, edit, delete (mock, no backend).',
+      tags: [
+        { text: isChineseLanguage ? '消息队列' : 'Queue', color: 'orange' },
+        { text: isChineseLanguage ? '会话' : 'Session', color: 'blue' },
+      ],
+      icon: <InboxOutlined />,
+      path: '/examples/message-queue-demo',
     },
     {
       id: 'menu-permission-demo',

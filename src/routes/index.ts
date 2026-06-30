@@ -50,6 +50,11 @@ const routes = [
         path: '/space/:spaceId/page-develop',
         component: '@/pages/SpacePageDevelop',
       },
+      // 新建项目
+      {
+        path: '/space/:spaceId/create-project',
+        component: '@/pages/SpaceCreateProject',
+      },
       // 技能管理
       {
         path: '/space/:spaceId/skill-manage',
@@ -68,6 +73,20 @@ const routes = [
       {
         path: '/space/:spaceId/skill-details/:skillId',
         component: '@/pages/SkillDetails',
+      },
+      // 待审核的技能详情
+      {
+        path: '/space/:spaceId/apply/skill-details/:skillId',
+        component: '@/pages/ApplySkillDetails',
+      },
+      // 已发布的技能详情
+      {
+        path: '/space/:spaceId/published/skill-details/:skillId',
+        component: '@/pages/PublishedSkillDetails',
+      },
+      {
+        path: '/space/:spaceId/skill-details-conversation/:skillId',
+        component: '@/pages/SkillDetailsConversation',
       },
       { path: '/space/:spaceId/:agentId/log', component: '@/pages/SpaceLog' },
       { path: '/space/:spaceId/library', component: '@/pages/SpaceLibrary' },
@@ -223,6 +242,12 @@ const routes = [
             path: 'model-permissions',
             name: getRouteLabel('PC.Routes.modelPermissions'),
             component: '@/pages/MorePage/ModelPermissions',
+          },
+          // 历史会话
+          {
+            path: 'history-conversation',
+            name: getRouteLabel('PC.Routes.historyConversation'),
+            component: '@/pages/HistoryConversation',
           },
         ],
       },
@@ -477,6 +502,29 @@ const routes = [
             ],
           },
           {
+            path: 'recommend-manage',
+            name: getRouteLabel('PC.Routes.recommendManage'),
+            routes: [
+              {
+                path: 'home',
+                name: getRouteLabel('PC.Routes.homeRecommend'),
+                component:
+                  '@/pages/SystemManagement/RecommendManage/HomeRecommend',
+              },
+              {
+                path: 'official',
+                name: getRouteLabel('PC.Routes.officialRecommend'),
+                component:
+                  '@/pages/SystemManagement/RecommendManage/OfficialRecommend',
+              },
+              {
+                path: 'chatbox',
+                name: getRouteLabel('PC.Routes.chatboxRecommend'),
+                component: '@/pages/SystemManagement/RecommendManage/Chatbox',
+              },
+            ],
+          },
+          {
             path: 'log-query',
             name: getRouteLabel('PC.Routes.logQuery'),
             routes: [
@@ -491,36 +539,6 @@ const routes = [
                 component: '@/pages/SystemManagement/LogQuery/RunningLog',
               },
             ],
-          },
-        ],
-      },
-      // 生态市场
-      {
-        path: '/ecosystem',
-        name: getRouteLabel('PC.Routes.ecosystemMarket'),
-        access: 'canAdmin',
-        routes: [
-          {
-            path: '/ecosystem/plugin',
-            name: getRouteLabel('PC.Routes.ecosystemPlugin'),
-            component: '@/pages/EcosystemPlugin',
-            access: 'canAdmin',
-          },
-          {
-            path: '/ecosystem/template',
-            name: getRouteLabel('PC.Routes.ecosystemTemplate'),
-            component: '@/pages/EcosystemTemplate',
-            access: 'canAdmin',
-          },
-          {
-            path: '/ecosystem/mcp',
-            name: 'MCP',
-            component: '@/pages/EcosystemMcp',
-            access: 'canAdmin',
-          },
-          {
-            path: '/ecosystem',
-            redirect: '/ecosystem/mcp',
           },
         ],
       },
@@ -547,6 +565,12 @@ const routes = [
   {
     path: '/space/:spaceId/app-dev-design/:projectId',
     component: '@/pages/AppDevDesign',
+    wrappers: ['@/wrappers/authWithLoading'],
+    layout: false,
+  },
+  {
+    path: '/space/:spaceId/conversation-agent',
+    component: '@/pages/ConversationAgent',
     wrappers: ['@/wrappers/authWithLoading'],
     layout: false,
   },
@@ -641,8 +665,18 @@ const routes = [
     layout: false,
   },
   {
+    path: '/examples/message-queue-demo',
+    component: '@/examples/MessageQueueDemo',
+    layout: false,
+  },
+  {
     path: '/examples/menu-permission-demo',
     component: '@/examples/MenuPermissionDemo',
+    layout: false,
+  },
+  {
+    path: '/examples/agent-intervention-demo',
+    component: '@/examples/AgentInterventionDemo',
     layout: false,
   },
 ];

@@ -1,0 +1,146 @@
+@import '@/styles/token.less';
+
+@statusTagFontSize: 11px; // 运行中标签专用字号
+@statusTagPadding: 0 6px; // 运行中标签内边距
+@statusTagLineHeight: 16px; // 运行中标签行高
+@avatarTextWeight: 600;
+@itemContentGap: 2px;
+
+.conversation-item {
+  display: flex;
+  align-items: center;
+  gap: @paddingSm;
+  padding: @paddingXs @paddingXs;
+  border-radius: @borderRadius;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: @navSecondMenuAdaptiveTextSecondary;
+
+  // 头像部分
+  .avatar-container {
+    width: @controlHeight;
+    height: @controlHeight;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    overflow: hidden;
+    position: relative;
+
+    .avatar-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .avatar-text {
+      font-size: @fontSize;
+      font-weight: @avatarTextWeight;
+      text-transform: uppercase;
+    }
+  }
+
+  // 会话详情部分
+  .conversation-item-content {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: @itemContentGap;
+    overflow: hidden;
+
+    .conversation-topic-row {
+      display: flex;
+      align-items: center;
+      gap: @paddingXs;
+      width: 100%;
+
+      .conversation-topic {
+        flex: 1;
+        min-width: 0;
+        font-size: @fontSize;
+        line-height: @lineHeight;
+        color: @navSecondMenuAdaptiveText;
+      }
+
+      .status-tag {
+        font-size: @statusTagFontSize;
+        color: @colorPrimary;
+        background-color: @colorPrimaryBg;
+        padding: @statusTagPadding;
+        border-radius: @borderRadiusXs;
+        line-height: @statusTagLineHeight;
+        flex-shrink: 0;
+      }
+    }
+
+    .conversation-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: @paddingXs;
+
+      .conversation-agent-name {
+        flex: 1;
+        min-width: 0;
+        font-size: @fontSizeSm;
+        line-height: @lineHeightSm;
+        color: @navSecondMenuAdaptiveTextSecondary;
+      }
+
+      .conversation-date {
+        font-size: @fontSizeSm;
+        color: @navSecondMenuAdaptiveTextTertiary;
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+    }
+  }
+
+  &:hover {
+    background-color: @colorBgContainer;
+    box-shadow: @boxShadowTertiary;
+
+    .conversation-item-content {
+      .conversation-topic-row {
+        .conversation-topic {
+          color: @colorText;
+        }
+      }
+
+      .conversation-meta {
+        .conversation-agent-name {
+          color: @colorTextSecondary;
+        }
+
+        .conversation-date {
+          color: @colorTextTertiary;
+        }
+      }
+    }
+  }
+
+  &.active {
+    background-color: @colorBgContainer;
+    box-shadow: @boxShadowTertiary;
+
+    .conversation-item-content {
+      .conversation-topic-row {
+        .conversation-topic {
+          color: @colorPrimaryText;
+        }
+      }
+
+      .conversation-meta {
+        .conversation-agent-name {
+          color: @colorTextSecondary;
+        }
+
+        .conversation-date {
+          color: @colorTextTertiary;
+        }
+      }
+    }
+  }
+}

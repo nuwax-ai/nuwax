@@ -7,8 +7,12 @@ import { dict } from '@/services/i18nRuntime';
 import { TaskStatus } from '@/types/enums/agent';
 import type { AgentInfo } from '@/types/interfaces/agent';
 import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
+import {
+  fetchConversationTaskStatus,
+  type ChatFinishedPayload,
+} from '@/utils/conversationTaskStatusSync';
 import { message } from 'antd';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useRequest } from 'umi';
 
 export default () => {
@@ -70,26 +74,47 @@ export default () => {
         list?.filter((item) => item.id !== conversationId),
       );
       message.success(dict('PC.Toast.Global.deletedSuccessfully'));
+
+      // 派发自定义删除事件通知列表
+      window.dispatchEvent(
+        new CustomEvent('conversation-deleted', {
+          detail: { id: conversationId },
+        }),
+      );
     },
   });
 
-  // 会话状态更新
-  const handleConversationUpdate = (data: { conversationId: string }) => {
-    const { conversationId } = data;
-    const list = conversationList?.map((item: ConversationInfo) => {
-      if (
-        item.id?.toString() === conversationId &&
-        item.taskStatus === TaskStatus.EXECUTING
-      ) {
-        return {
-          ...item,
-          taskStatus: TaskStatus.COMPLETE,
-        };
+  /** 合并 taskStatus 到列表中匹配会话（函数式更新，避免闭包陈旧） */
+  const mergeTaskStatusInList = useCallback(
+    (
+      list: ConversationInfo[] | undefined,
+      conversationId: string,
+      taskStatus: TaskStatus,
+    ) =>
+      list?.map((item) =>
+        item.id?.toString() === conversationId ? { ...item, taskStatus } : item,
+      ),
+    [],
+  );
+
+  /**
+   * ChatFinished 后同步侧栏会话 taskStatus（拉取真实状态，非乐观 COMPLETE）
+   */
+  const handleConversationUpdate = useCallback(
+    async ({ conversationId }: ChatFinishedPayload) => {
+      const taskStatus = await fetchConversationTaskStatus(conversationId);
+      if (taskStatus === undefined) {
+        return;
       }
-      return item;
-    });
-    setConversationList(list);
-  };
+      setConversationList((list) =>
+        mergeTaskStatusInList(list, conversationId, taskStatus),
+      );
+      setConversationListItem((list) =>
+        mergeTaskStatusInList(list, conversationId, taskStatus),
+      );
+    },
+    [mergeTaskStatusInList],
+  );
 
   return {
     usedAgentList,

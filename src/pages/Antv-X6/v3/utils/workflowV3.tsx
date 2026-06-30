@@ -1,7 +1,7 @@
 import {
   ICON_END,
-  ICON_NEW_AGENT,
   ICON_START,
+  ICON_WORKFLOW_AGENT,
   ICON_WORKFLOW_CODE,
   ICON_WORKFLOW_CONDITION,
   ICON_WORKFLOW_DATABASE,
@@ -11,8 +11,10 @@ import {
   ICON_WORKFLOW_DATABASEUPDATE,
   ICON_WORKFLOW_DOCUMENT_EXTRACTION,
   ICON_WORKFLOW_HTTP_REQUEST,
+  ICON_WORKFLOW_HUMAN_ASK,
   ICON_WORKFLOW_INTENT_RECOGNITION,
   ICON_WORKFLOW_KNOWLEDGE_BASE,
+  ICON_WORKFLOW_KNOWLEDGE_INSERT,
   ICON_WORKFLOW_LLM,
   ICON_WORKFLOW_LONG_TERM_MEMORY,
   ICON_WORKFLOW_LOOP,
@@ -22,12 +24,14 @@ import {
   ICON_WORKFLOW_OUTPUT,
   ICON_WORKFLOW_PLUGIN,
   ICON_WORKFLOW_QA,
+  ICON_WORKFLOW_ROUTE_DECISION,
   ICON_WORKFLOW_TEXT_PROCESSING,
   ICON_WORKFLOW_VARIABLE,
   ICON_WORKFLOW_WORKFLOW,
 } from '@/constants/images.constants';
 import {
   DEFAULT_NODE_CONFIG_MAP,
+  EXCEPTION_HANDLE_HIDDEN_TYPES,
   EXCEPTION_NODES_TYPE,
 } from '@/pages/Antv-X6/v3/constants/node.constants';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
@@ -81,6 +85,11 @@ import { FormInstance } from 'antd';
 import isEqual from 'lodash/isEqual';
 
 import {
+  hasAgentFlowNodeDescription,
+  singlePortCenterY,
+} from '../agentFlow/handlers/portLayout';
+import { extensionRegistry } from '../extensions/registry';
+import {
   adjustParentSize,
   generatePortGroupConfig,
   showExceptionHandle,
@@ -95,6 +104,10 @@ export const checkNodeModified = (
     ...currentNode,
     ...formValues,
     name: currentNode.name,
+    // 顶层 description 与 form 解耦（form 可能注册了 description 但值为 null），
+    // 否则 ...formValues 会让 nextNode.description ≠ currentNode.description，
+    // 误判为有改动、进而打开即触发保存接口。
+    description: currentNode.description,
     nodeConfig: {
       ...currentNode.nodeConfig,
       ...formValues,
@@ -110,7 +123,9 @@ export const getWidthAndHeight = (node: ChildNode) => {
   const { defaultWidth, defaultHeight } =
     DEFAULT_NODE_CONFIG_MAP[type as keyof typeof DEFAULT_NODE_CONFIG_MAP] ||
     DEFAULT_NODE_CONFIG_MAP.default;
-  const hasExceptionHandleItem = EXCEPTION_NODES_TYPE.includes(type);
+  const hasExceptionHandleItem =
+    EXCEPTION_NODES_TYPE.includes(type) &&
+    !EXCEPTION_HANDLE_HIDDEN_TYPES.includes(type);
   const exceptionHandleItemHeight = 32;
   const extraHeight = hasExceptionHandleItem ? exceptionHandleItemHeight : 0;
   if (
@@ -194,6 +209,8 @@ export const returnImg = (type: NodeTypeEnum): React.ReactNode => {
       return <ICON_WORKFLOW_INTENT_RECOGNITION />;
     case NodeTypeEnum.Knowledge:
       return <ICON_WORKFLOW_KNOWLEDGE_BASE />;
+    case NodeTypeEnum.KnowledgeInsert:
+      return <ICON_WORKFLOW_KNOWLEDGE_INSERT />;
     case NodeTypeEnum.LLM:
       return <ICON_WORKFLOW_LLM />;
     case NodeTypeEnum.LongTermMemory:
@@ -227,8 +244,14 @@ export const returnImg = (type: NodeTypeEnum): React.ReactNode => {
       return <ICON_WORKFLOW_DATABASE />;
     case NodeTypeEnum.MCP:
       return <ICON_WORKFLOW_MCP />;
+    case NodeTypeEnum.Agent:
+      return <ICON_WORKFLOW_AGENT />;
+    case NodeTypeEnum.RouteDecision:
+      return <ICON_WORKFLOW_ROUTE_DECISION />;
+    case NodeTypeEnum.HumanInteraction:
+      return <ICON_WORKFLOW_HUMAN_ASK />;
     default:
-      return <ICON_NEW_AGENT />;
+      return <ICON_WORKFLOW_AGENT />;
   }
 };
 
@@ -246,6 +269,7 @@ export const returnBackgroundColor = (type: NodeTypeEnum) => {
     case NodeTypeEnum.IntentRecognition:
       return '#ebf9f9';
     case NodeTypeEnum.Knowledge:
+    case NodeTypeEnum.KnowledgeInsert:
     // case 'Database':
     case NodeTypeEnum.Variable:
     case NodeTypeEnum.VariableAggregation:
@@ -257,7 +281,6 @@ export const returnBackgroundColor = (type: NodeTypeEnum) => {
     case NodeTypeEnum.TextProcessing:
     case NodeTypeEnum.HTTPRequest:
       return '#fef9eb';
-
     case NodeTypeEnum.LLM:
       return '#E9EBED';
     case NodeTypeEnum.Plugin:
@@ -266,6 +289,12 @@ export const returnBackgroundColor = (type: NodeTypeEnum) => {
       return '#D0FFDB';
     case NodeTypeEnum.Output:
       return '#E7E1FF';
+    case NodeTypeEnum.Agent:
+      return '#E8F5E9';
+    case NodeTypeEnum.RouteDecision:
+      return '#FFF3E0';
+    case NodeTypeEnum.HumanInteraction:
+      return '#E3F2FD';
     default:
       return '#EEEEFF';
   }
@@ -316,13 +345,13 @@ const _handleExceptionOutputPort = (
       }),
     ];
   } else if (showExceptionHandle(data) && outputPorts.length >= 1) {
+    const newOffsetY = baseY + itemHeight + NODE_BOTTOM_PADDING_AND_BORDER;
     if (outputPorts.length === 1) {
-      //如果包括异常项 而且只一个输出port，则需要调整port位置
-      outputPorts[outputPorts.length - 1].args.y =
-        (baseY + itemHeight + NODE_BOTTOM_PADDING_AND_BORDER + 1) / 2;
+      // 单 out 端口：按扩展后的节点总高度垂直居中（与 in 侧 left 布局一致）
+      const nodeHeight = newOffsetY + NODE_BOTTOM_PADDING_AND_BORDER;
+      outputPorts[outputPorts.length - 1].args.y = (nodeHeight - 1) / 2 + 1;
     }
-    outputPorts[outputPorts.length - 1].args.offsetY =
-      baseY + itemHeight + NODE_BOTTOM_PADDING_AND_BORDER; //同步offsetY 方便在更新节点高度时使用
+    outputPorts[outputPorts.length - 1].args.offsetY = newOffsetY;
     return outputPorts;
   } else {
     return outputPorts;
@@ -333,14 +362,17 @@ export const generatePorts = (data: ChildNode): PortsConfig => {
   const basePortSize = 3;
   const defaultNodeHeaderHeight = DEFAULT_NODE_CONFIG_MAP.default.defaultHeight;
   const defaultNodeHeaderWidth = getWidthAndHeight(data).width;
+  const centeredPort = singlePortCenterY({
+    hasDescription: hasAgentFlowNodeDescription(data),
+  });
   // 默认端口配置
   const generatePortConfig = ({
     group,
     idSuffix,
     color = PORT_COLOR,
-    yHeight = (defaultNodeHeaderHeight - 1) / 2 + 1,
+    yHeight = centeredPort.yHeight,
     xWidth = idSuffix === 'in' ? 0 : defaultNodeHeaderWidth,
-    offsetY = defaultNodeHeaderHeight - NODE_BOTTOM_PADDING_AND_BORDER,
+    offsetY = centeredPort.offsetY,
     offsetX = xWidth,
   }: PortConfig): outputOrInputPortConfig => {
     return {
@@ -412,6 +444,23 @@ export const generatePorts = (data: ChildNode): PortsConfig => {
     generatePortConfig({ group: PortGroupEnum.in, idSuffix: 'in' }),
   ];
   let outputPorts: Array<ReturnType<typeof generatePortConfig>> = [];
+
+  // 扩展点：委托给注册的 handler（AgentFlow 等分支类型）
+  const portHandler = extensionRegistry.get(data.type);
+  if (portHandler?.generatePorts) {
+    const result = portHandler.generatePorts(data, { generatePortConfig });
+    if (result) {
+      outputPorts = _handleExceptionOutputPort(
+        data,
+        result.outputPorts,
+        generatePortConfig,
+      );
+      return {
+        groups: generatePortGroupConfig(basePortSize, data),
+        items: [...result.inputPorts, ...outputPorts],
+      };
+    }
+  }
 
   switch (data.type) {
     case NodeTypeEnum.Start:
@@ -592,8 +641,11 @@ export const createBaseNode = (node: ChildNode): NodeMetadata => {
       'exceptionHandleConfig',
     ];
     propsToHoist.forEach((prop) => {
-      if ((node as any)[prop] === undefined && node.nodeConfig?.[prop]) {
-        (hoistedData as any)[prop] = node.nodeConfig[prop];
+      if (
+        (node as any)[prop] === undefined &&
+        (node.nodeConfig as any)?.[prop]
+      ) {
+        (hoistedData as any)[prop] = (node.nodeConfig as any)[prop];
       }
     });
   }
@@ -660,11 +712,11 @@ export const createChildNode = (
 export const createEdge = (edge: Edge) => {
   if (edge.source === edge.target) return;
   const parseEndpoint = (endpoint: string, type: string) => {
-    const isLoop = endpoint.includes('in') || endpoint.includes('out');
-    const isNotGraent = endpoint.includes('-');
+    const hasPortSuffix = endpoint.endsWith('-in') || endpoint.endsWith('-out');
+    const hasHyphen = endpoint.includes('-');
     return {
-      cell: isLoop || isNotGraent ? endpoint.split('-')[0] : endpoint,
-      port: isLoop ? endpoint : `${endpoint}-${type}`,
+      cell: hasHyphen ? endpoint.split('-')[0] : endpoint,
+      port: hasPortSuffix ? endpoint : `${endpoint}-${type}`,
     };
   };
 
@@ -711,6 +763,13 @@ export const handleSpecialNodesNextIndex = (
   id: number,
   targetNode?: ChildNode,
 ): ChildNode => {
+  // 扩展点：委托给注册的 handler
+  const spHandler = extensionRegistry.get(node.type as NodeTypeEnum);
+  if (spHandler?.handleSpecialNextIndex) {
+    const result = spHandler.handleSpecialNextIndex(node, uuid, id, targetNode);
+    if (result) return result;
+  }
+
   let configs: ConditionBranchConfigs[] | IntentConfigs[] | QANodeOption[];
   switch (node.type) {
     case 'Condition': {
@@ -772,6 +831,16 @@ export const removeFromSpecialNodesNextIndex = (
   portId: string,
   targetId: number,
 ): ChildNode => {
+  // 扩展点：委托给注册的 handler
+  const spHandler = extensionRegistry.get(node.type as NodeTypeEnum);
+  if (spHandler?.parseSourcePort) {
+    const parsed = spHandler.parseSourcePort(node, portId);
+    if (parsed) {
+      spHandler.updateConnection?.(node, parsed, targetId, 'remove');
+      return node;
+    }
+  }
+
   // 从 portId 中提取 uuid（格式: {nodeId}-{uuid}-out）
   const segments = portId.split('-');
   const uuid = segments.slice(1, -1).join('-'); // 移除 nodeId 和 out

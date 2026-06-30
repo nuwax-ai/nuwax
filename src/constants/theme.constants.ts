@@ -140,6 +140,10 @@ export const STYLE_CONFIGS: Record<string, ThemeStyleConfig> = {
       '--xagi-layout-text-disabled': 'rgba(0, 0, 0, 0.25)',
       '--xagi-layout-second-menu-text-color': 'rgba(0, 0, 0, 0.88)',
       '--xagi-layout-second-menu-text-color-secondary': 'rgba(0, 0, 0, 0.65)',
+      '--xagi-layout-second-menu-adaptive-text': 'rgba(0, 0, 0, 0.88)',
+      '--xagi-layout-second-menu-adaptive-text-secondary':
+        'rgba(0, 0, 0, 0.65)',
+      '--xagi-layout-second-menu-adaptive-text-tertiary': 'rgba(0, 0, 0, 0.45)',
       '--xagi-layout-bg-primary': 'rgba(255, 255, 255, 0.95)',
       '--xagi-layout-bg-secondary': 'rgba(255, 255, 255, 0.85)',
       '--xagi-layout-bg-card': 'rgba(255, 255, 255, 0.65)',
@@ -166,6 +170,10 @@ export const STYLE_CONFIGS: Record<string, ThemeStyleConfig> = {
       '--xagi-layout-text-disabled': 'rgba(0, 0, 0, 0.25)',
       '--xagi-layout-second-menu-text-color': 'rgba(0, 0, 0, 0.88)',
       '--xagi-layout-second-menu-text-color-secondary': 'rgba(0, 0, 0, 0.65)',
+      '--xagi-layout-second-menu-adaptive-text': 'rgba(0, 0, 0, 0.88)',
+      '--xagi-layout-second-menu-adaptive-text-secondary':
+        'rgba(0, 0, 0, 0.65)',
+      '--xagi-layout-second-menu-adaptive-text-tertiary': 'rgba(0, 0, 0, 0.45)',
       '--xagi-layout-bg-primary': 'rgba(255, 255, 255, 0.95)',
       '--xagi-layout-bg-secondary': 'rgba(255, 255, 255, 0.85)',
       '--xagi-layout-bg-card': 'rgba(255, 255, 255, 0.65)',
@@ -193,6 +201,11 @@ export const STYLE_CONFIGS: Record<string, ThemeStyleConfig> = {
       '--xagi-layout-second-menu-text-color': 'rgba(255, 255, 255, 1)',
       '--xagi-layout-second-menu-text-color-secondary':
         'rgba(255, 255, 255, 0.8)',
+      '--xagi-layout-second-menu-adaptive-text': 'rgba(255, 255, 255, 1)',
+      '--xagi-layout-second-menu-adaptive-text-secondary':
+        'rgba(255, 255, 255, 0.8)',
+      '--xagi-layout-second-menu-adaptive-text-tertiary':
+        'rgba(255, 255, 255, 0.6)',
       '--xagi-layout-bg-primary': 'rgba(0, 0, 0, 0.85)',
       '--xagi-layout-bg-secondary': 'rgba(0, 0, 0, 0.65)',
       '--xagi-layout-bg-card': 'rgba(0, 0, 0, 0.45)',
@@ -219,6 +232,10 @@ export const STYLE_CONFIGS: Record<string, ThemeStyleConfig> = {
       '--xagi-layout-text-disabled': 'rgba(255, 255, 255, 0.25)',
       '--xagi-layout-second-menu-text-color': 'rgba(0, 0, 0, 0.88)',
       '--xagi-layout-second-menu-text-color-secondary': 'rgba(0, 0, 0, 0.65)',
+      '--xagi-layout-second-menu-adaptive-text': 'rgba(0, 0, 0, 0.88)',
+      '--xagi-layout-second-menu-adaptive-text-secondary':
+        'rgba(0, 0, 0, 0.65)',
+      '--xagi-layout-second-menu-adaptive-text-tertiary': 'rgba(0, 0, 0, 0.45)',
       '--xagi-layout-bg-primary': 'rgba(0, 0, 0, 0.85)',
       '--xagi-layout-bg-secondary': 'rgba(0, 0, 0, 0.85)',
       '--xagi-layout-bg-card': 'rgba(0, 0, 0, 0.45)',

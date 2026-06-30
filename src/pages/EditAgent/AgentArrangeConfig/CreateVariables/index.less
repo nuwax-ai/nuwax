@@ -1,17 +1,18 @@
 @import '@/styles/color';
+@import '@/styles/token';
 
 .table-container {
   :global {
     .ant-table-content .ant-table-thead > tr > th {
       padding-left: 0;
-      font-size: 14px;
+      font-size: @fontSize;
       color: @GRAY05;
     }
 
     .ant-table-content .ant-table-tbody > tr > td {
       padding: 10px 10px 10px 0;
       color: @BLANK04;
-      font-size: 12px;
+      font-size: @fontSizeSm;
     }
 
     .ant-table-footer {
@@ -19,4 +20,23 @@
       background-color: transparent;
     }
   }
+}
+
+.modal-body {
+  display: flex;
+  flex-direction: column;
+  max-height: 70vh;
+  overflow: hidden;
+}
+
+.table-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.modal-action {
+  flex-shrink: 0;
+  padding-top: 10px;
 }

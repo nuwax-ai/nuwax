@@ -1,0 +1,415 @@
+@import '@/styles/token.less';
+
+@button-max-width: 160px;
+
+/* ─── Card Shell ─────────────────────────────────────── */
+.card {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  border: 1px solid @colorBorderSecondary;
+  border-radius: @borderRadiusLg;
+  background: @colorBgContainer;
+  overflow: hidden;
+
+  &.cardDocked {
+    height: auto;
+    max-height: none;
+
+    .title {
+      white-space: normal;
+      overflow: hidden;
+      display: box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
+  }
+
+  /* ─── Header ─────────────────────────────────────────── */
+  .header {
+    flex-shrink: 0;
+    display: flex;
+    align-items: flex-start;
+    gap: @marginXs;
+    padding: @paddingSm @paddingSm @paddingXs;
+    // background: @colorBgContainer;
+
+    .icon {
+      display: none;
+    }
+
+    .iconWrap {
+      display: none;
+    }
+
+    .headerMain {
+      flex: 1;
+      min-width: 0;
+
+      .eyebrow {
+        display: block;
+        margin-bottom: @marginXxs;
+        color: @colorTextTertiary;
+        font-size: @fontSizeSm;
+        font-weight: 500;
+        line-height: 1.3;
+      }
+
+      .title {
+        display: block;
+        min-width: 0;
+        color: @colorTextBase;
+        font-size: @fontSize;
+        font-weight: 600;
+        line-height: @lineHeight;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+    }
+
+    .kindTag {
+      display: none;
+    }
+
+    .statusTag {
+      flex-shrink: 0;
+      align-self: flex-start;
+      margin: 2px 0 0;
+      font-size: @fontSizeSm;
+      line-height: 1.4;
+    }
+  }
+
+  &:not(.cardDocked) .header {
+    padding: @paddingXs @paddingSm;
+    border-bottom: none;
+  }
+
+  /* ─── Body / Options List ─────────────────────────────── */
+  .body {
+    padding: 0;
+
+    .filePreview {
+      display: flex;
+      flex-direction: column;
+      gap: @marginXs;
+      padding: 0 @paddingSm @paddingXs;
+    }
+
+    .filePreviewItem {
+      min-width: 0;
+      border: 1px solid @colorBorderSecondary;
+      border-radius: @borderRadius;
+      overflow: hidden;
+      background: @colorBgContainer;
+    }
+
+    .filePath {
+      display: block;
+      padding: @paddingXxs @paddingXs;
+      border-bottom: 1px solid @colorBorderSecondary;
+      color: @colorTextSecondary;
+      font-family: @fontFamilyCode;
+      font-size: @fontSizeSm;
+      line-height: 1.4;
+      background: @colorFillQuaternary;
+      overflow: hidden;
+    }
+
+    .diffPreview {
+      max-height: 220px;
+      min-height: 80px;
+      overflow: auto;
+    }
+
+    .actions {
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      padding: 0 @paddingSm @paddingXs; // 增加左右边距
+      gap: 6px; // 每一项之间增加微小的间距
+
+      .actionBtn {
+        width: 100%;
+        height: auto;
+        min-height: 30px; // 减少高度
+        padding: 2px @paddingXs; // 减少内边距
+        border: none;
+        border-radius: 10px !important;
+        background: transparent;
+        font-size: @fontSize;
+        font-weight: 400;
+        text-align: left;
+        display: flex;
+        align-items: center;
+        box-shadow: none !important;
+
+        &:hover {
+          background: @colorFillTertiary !important;
+        }
+
+        .buttonLabel {
+          display: inline-flex;
+          align-items: center;
+          font-size: inherit;
+          width: 100%;
+          gap: @marginXxs;
+
+          .option-index {
+            flex-shrink: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: @colorFill;
+            color: @colorTextSecondary;
+            font-size: 11px;
+            font-weight: 600;
+            line-height: 1;
+          }
+
+          .button-text {
+            display: inline-block;
+            flex: 1;
+            min-width: 0;
+            max-width: @button-max-width;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            vertical-align: middle;
+            color: inherit !important;
+          }
+
+          .arrow-indicators {
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+            margin-left: auto;
+            color: @colorTextTertiary;
+            font-size: 11px;
+            flex-shrink: 0;
+
+            .arrowIcon {
+              font-size: 10px;
+            }
+          }
+
+          .shortcutGroup {
+            display: inline-flex;
+            align-items: center;
+            gap: @marginXxs;
+            margin-left: auto;
+            flex-shrink: 0;
+          }
+
+          .multiCheck {
+            display: inline-flex;
+            align-items: center;
+            margin-right: 2px;
+
+            .multiCheckItem {
+              font-size: 11px;
+
+              &:not(:first-child) {
+                margin-left: -6px;
+              }
+            }
+          }
+        }
+
+        &.allowBtn {
+          background-color: transparent !important;
+          border-color: transparent !important;
+          color: @colorText !important;
+
+          &:hover {
+            background-color: @colorFillTertiary !important;
+          }
+
+          .buttonLabel .shortcutGroup .shortcut {
+            border: none;
+            background: rgba(0, 0, 0, 8%);
+            color: @colorTextSecondary;
+          }
+        }
+
+        &.rejectBtn {
+          background-color: transparent !important;
+          border-color: transparent !important;
+          color: @colorTextSecondary !important;
+
+          &:hover {
+            background: @colorFillTertiary !important;
+            color: @colorText !important;
+          }
+
+          .buttonLabel .shortcutGroup .shortcut {
+            border: 1px solid @colorBorderSecondary;
+            background: @colorBgContainer;
+            color: @colorTextTertiary;
+          }
+        }
+
+        &.active-btn {
+          border-radius: 10px !important; // 胶囊形状
+          background-color: @colorFillSecondary !important; // 浅灰背景色
+          color: @colorText !important;
+          border-color: transparent !important;
+
+          &:hover {
+            background-color: @colorFill !important;
+          }
+        }
+      }
+    }
+  }
+
+  .active-btn {
+    .buttonLabel .option-index {
+      background: @colorTextBase !important;
+      color: @colorBgContainer !important;
+    }
+  }
+
+  &:not(.cardDocked) {
+    .body {
+      display: none;
+    }
+
+    .actions {
+      flex-flow: row wrap;
+      gap: @marginXs;
+      padding: @paddingXs @paddingSm;
+      border-top: none;
+
+      .actionBtn {
+        width: auto;
+        height: @controlHeightSm;
+        padding: 0 @paddingSm;
+        border-radius: @borderRadius;
+        font-weight: 500;
+        font-size: @fontSizeSm;
+        border: 1px solid @colorBorder;
+
+        &.allowBtn {
+          background-color: @colorBgSolid !important;
+          border-color: @colorBgSolid !important;
+          color: @colorTextLightSolid !important;
+
+          &:hover {
+            background-color: @colorBgSolidHover !important;
+            border-color: @colorBgSolidHover !important;
+          }
+
+          .buttonLabel .shortcutGroup .shortcut {
+            border: none;
+            background: rgba(255, 255, 255, 20%);
+            color: rgba(255, 255, 255, 80%);
+          }
+        }
+
+        &.rejectBtn {
+          color: @colorError !important;
+          border-color: @colorErrorBorder !important;
+          background-color: @colorBgContainer !important;
+
+          &:hover {
+            background-color: @colorErrorBg !important;
+            border-color: @colorErrorBorderHover !important;
+          }
+        }
+      }
+    }
+  }
+
+  /* ─── Footer ─────────────────────────────────────────── */
+  .footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: @marginXs;
+    padding: @paddingXs @paddingSm;
+    border-top: 1px solid @colorBorderSecondary;
+    background: @colorBgContainer;
+    border-radius: 0 0 @borderRadiusLg @borderRadiusLg;
+
+    .buttonLabel {
+      display: inline-flex;
+      align-items: center;
+      min-width: 0;
+      gap: @marginXxs;
+    }
+
+    .submit-btn {
+      background: @colorBgSolid !important;
+      border-color: @colorBgSolid !important;
+      color: @colorTextLightSolid !important;
+      border-radius: @borderRadiusLg !important;
+      font-weight: 500;
+
+      &:hover {
+        background: @colorBgSolidHover !important;
+        border-color: @colorBgSolidHover !important;
+      }
+
+      &:disabled {
+        opacity: 0.5;
+      }
+
+      .shortcut {
+        border: 1px solid rgba(255, 255, 255, 25%) !important;
+        background: rgba(255, 255, 255, 15%) !important;
+        color: rgba(255, 255, 255, 75%) !important;
+      }
+    }
+
+    .cancel-btn {
+      border: none !important;
+      background: transparent !important;
+      box-shadow: none !important;
+      color: @colorTextSecondary !important;
+      padding-left: @paddingSm !important; // 增加内边距
+      padding-right: @paddingSm !important; // 增加内边距
+      margin-right: @marginXs; // 增加右侧外边距以和确定按钮拉开距离
+      border-radius: @borderRadiusLg !important;
+
+      &:hover {
+        color: @colorText !important;
+        background: @colorFillTertiary !important;
+      }
+
+      .shortcut {
+        border: 1px solid @colorBorderSecondary !important;
+        background: @colorFillSecondary !important;
+        color: @colorTextSecondary !important;
+      }
+    }
+  }
+
+  /* ─── Error ─────────────────────────────────────────── */
+  .error {
+    display: block;
+    padding: 0 @paddingSm @paddingXs;
+    font-size: @fontSizeSm;
+  }
+}
+
+.shortcut {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 @paddingXxs;
+  border-radius: @borderRadiusSm;
+  font-size: 11px;
+  font-family: inherit;
+  font-weight: 600;
+  line-height: 1;
+  pointer-events: none;
+}

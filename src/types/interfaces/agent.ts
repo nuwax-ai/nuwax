@@ -11,6 +11,7 @@ import type {
   HideChatAreaEnum,
   HideDesktopEnum,
   HomeIndexEnum,
+  HookStatusEnum,
   InvokeTypeEnum,
   NoneRecallReplyTypeEnum,
   OutputDirectlyEnum,
@@ -24,6 +25,7 @@ import type {
 } from '@/types/enums/common';
 import type { UpdateModeComponentEnum } from '@/types/enums/library';
 import type {
+  AgentSubTypeEnum,
   AgentTypeEnum,
   HistoryActionTypeEnum,
   OpenCloseEnum,
@@ -59,14 +61,39 @@ export interface AgentInfo extends AgentBaseInfo {
   // 最后一次会话ID
   lastConversationId?: number;
   spaceId: number;
-  // ChatBot、PageApp
-  agentType: 'ChatBot' | 'PageApp' | 'TaskAgent';
+  // ChatBot、PageApp、TaskAgent、AgentFlow
+  agentType: 'ChatBot' | 'PageApp' | 'TaskAgent' | 'AgentFlow';
 }
 
 // 新增智能体输入参数
 export interface AgentAddParams extends AgentBaseInfo {
   spaceId: number;
+  type: AgentTypeEnum;
+  // 智能体子类型
+  subType?: string;
 }
+
+/**
+ * 新增智能体接口的返回结果（对象形式）。
+ *
+ * 不同 AgentTypeEnum 下，后端返回的字段存在差异：
+ * - ChatBot / TaskAgent：通常返回 `agentId`（已存在的智能体 ID）
+ * - AgentFlow：通常返回 `workflowId`（工作流 ID），部分场景下也可能返回 `agentId`
+ * - `id` 为兜底字段，在前两者均缺失时使用
+ *
+ * 调用方应通过 `agentId ?? workflowId ?? id` 的优先级顺序解析，
+ * 不应依赖调用时的 UI 状态（如 currentAgentType）来决定取值。
+ */
+export interface AgentCreateResult {
+  /** 通用主键 ID，作为兜底字段 */
+  id?: number;
+  /** 智能体 ID，ChatBot / TaskAgent 场景下的首选字段 */
+  agentId?: number;
+  /** 工作流 ID，AgentFlow 场景下的首选字段 */
+  workflowId?: number;
+}
+
+export type AgentAddResult = number | AgentCreateResult;
 
 // 智能体发布申请输入参数
 export interface AgentPublishApplyParams {
@@ -150,6 +177,12 @@ export interface AgentConfigUpdateParams extends AgentBaseInfo {
   allowAtSkill: DefaultSelectedEnum;
   // 允许用户选择个人电脑
   allowPrivateSandbox: DefaultSelectedEnum;
+  // 是否开启询问用户， 1 允许，其他不允许
+  enableAskQuestion: DefaultSelectedEnum;
+  // 是否开启版本控制， 1 允许，其他不允许
+  enableVersionControl: DefaultSelectedEnum;
+  // 是否允许用户在对话框中选择模式， 1 允许，其他不允许
+  allowChooseMode: DefaultSelectedEnum;
 }
 
 // 更新智能体页面配置输入参数
@@ -252,6 +285,8 @@ export interface AgentComponentWorkflowUpdateParams
     invokeType: InvokeTypeEnum;
     // 是否直接输出, 0 否，1 是
     directOutput?: OutputDirectlyEnum;
+    // 是否需要审批, 0-否，1-是
+    callApproval?: DefaultSelectedEnum;
     // 是否默认选中，0-否，1-是
     defaultSelected: DefaultSelectedEnum;
     // 技能展示别名
@@ -280,6 +315,35 @@ export interface AgentComponentVariableUpdateParams
   extends AgentComponentBaseInfo {
   bindConfig: {
     variables: BindConfigWithSub[];
+  };
+}
+
+// Hook配置
+export interface HookConfig {
+  /*Hook名称 */
+  name?: string;
+
+  /*Hook事件 */
+  event?: string;
+
+  /*Hook匹配规则 */
+  matcher?: string;
+
+  /*Hook类型 */
+  type?: string;
+
+  /*Hook配置 */
+  config?: string;
+
+  /*Hook状态,1 启用；0 停用 */
+  status?: HookStatusEnum;
+}
+
+// 更新Hook配置输入参数
+export interface AgentComponentHookUpdateParams extends AgentComponentBaseInfo {
+  bindConfig: {
+    // Hook列表
+    hooks: HookConfig[];
   };
 }
 
@@ -458,7 +522,7 @@ export interface AgentConfigInfo {
   // 返回的具体业务数据
   space: SpaceInfo;
   devCollected: boolean;
-  // 会话ID
+  // debug调试会话ID
   devConversationId: number;
   // 发布时间，如果不为空，与当前modified时间做对比，如果发布时间小于modified，则前端显示：有更新未发布
   publishDate: string;
@@ -477,6 +541,8 @@ export interface AgentConfigInfo {
   pageHomeIndex: string;
   // 智能体类型
   type: AgentTypeEnum;
+  // 智能体子类型,ChatBot->ChatBot、PageApp->PageApp, TaskAgent -> General、Custom、Flow、Group
+  subType?: AgentSubTypeEnum;
   // 是否隐藏远程桌面，1 隐藏；0 不隐藏
   hideDesktop: HideDesktopEnum;
   // 允许用户选择自有模型
@@ -496,6 +562,26 @@ export interface AgentConfigInfo {
   hasPermission?: boolean;
   /** 会话关联的智能体电脑是否不可用 */
   isSandboxUnavailable?: boolean;
+  /** 智能体绑定的事件配置 */
+  eventBindConfig?: any;
+  // 开发Agent的会话ID（用于区分不同会话）
+  devAgentConversationId?: number;
+  // 是否允许用户在对话框中选择模式， 1 允许，其他不允许
+  allowChooseMode?: number;
+  // 是否开启询问用户， 1 允许，其他不允许
+  enableAskQuestion: DefaultSelectedEnum;
+  // 是否开启版本控制， 1 允许，其他不允许
+  enableVersionControl: DefaultSelectedEnum;
+  // 发布版本列表
+  publishVersion: {
+    version: string;
+    gitCommit: string;
+    latest: boolean;
+    packages: {
+      platform: string;
+      url: string;
+    }[];
+  }[];
 }
 
 // 智能体历史配置信息
@@ -530,7 +616,7 @@ export interface AgentComponentInfo {
   description: string;
   // 关联的AgentID
   agentId: number;
-  // 组件类型,可用值:Plugin,Workflow,Trigger,Knowledge,Variable,Database,Model,Agent,Table,Mcp,Page,Event
+  // 组件类型,可用值:Plugin,Workflow,Trigger,Knowledge,Variable,Database,Model,Agent,Table,Mcp,Page,Event,Skill,SubAgent,Hook
   type: AgentComponentTypeEnum;
   // 绑定组件配置，不同组件配置不一样
   bindConfig: any;
@@ -559,6 +645,8 @@ export interface AgentConversationUpdateParams {
   firstMessage?: string;
   // 会话主题
   topic?: string;
+  // 会话图标
+  icon?: string;
 }
 
 // 查询会话消息列表输入参数
@@ -702,6 +790,8 @@ export interface AgentDetailDto extends AgentBaseInfo {
   calledTrialCount?: number;
   /** 总试用次数 */
   trialCount?: number;
+  // 是否允许用户在对话框中选择模式， 1 允许，其他不允许
+  allowChooseMode?: DefaultSelectedEnum;
 }
 
 // 日志查询过滤条件

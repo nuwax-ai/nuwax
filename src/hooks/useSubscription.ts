@@ -14,7 +14,7 @@ import { apiGetMySubscription } from '@/services/subscriptionService';
 import { BizTypeEnum } from '@/types/interfaces/subscription';
 import { message } from 'antd';
 import { useCallback, useState } from 'react';
-import { useRequest } from 'umi';
+import useRequestPromiseBridge from './useRequestPromiseBridge';
 
 /**
  * 智能体订阅（套餐列表、「我的订阅」当前智能体数据）
@@ -33,22 +33,20 @@ const useSubscription = () => {
   >([]);
 
   // 查询目标对象定价配置
-  const { run: loadTargetPricing, loading: loadingTargetPricing } = useRequest(
-    apiQueryToolPricing,
-    {
+  const { runWithPromise: loadTargetPricing, loading: loadingTargetPricing } =
+    useRequestPromiseBridge(apiQueryToolPricing, {
       manual: true,
       loadingDelay: 300,
       onSuccess: (data: ResourcePricingConfigInfo) => {
         setTargetSubscriptionPlans(data?.plans || []);
       },
-    },
-  );
+    });
 
   // 查询订阅计划列表
   const {
-    run: loadAgentSubscriptionPlans,
+    runWithPromise: loadAgentSubscriptionPlans,
     loading: loadingAgentSubscriptionPlans,
-  } = useRequest(apiGetAgentSubscriptionPlanList, {
+  } = useRequestPromiseBridge(apiGetAgentSubscriptionPlanList, {
     manual: true,
     loadingDelay: 500,
     onSuccess: (data: SubscriptionPlanInfo[]) =>
@@ -58,9 +56,9 @@ const useSubscription = () => {
   /** 当前智能体、技能套餐维度「我的订阅」 */
   const {
     data: mySubscriptionInfo,
-    run: loadMySubscription,
+    runWithPromise: loadMySubscription,
     loading: loadingMySubscription,
-  } = useRequest(apiGetMySubscription, {
+  } = useRequestPromiseBridge(apiGetMySubscription, {
     manual: true,
     loadingDelay: 500,
   });

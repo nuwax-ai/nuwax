@@ -201,6 +201,15 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
     // 自动分段与清洗
     if (autoSegmentConfigFlag) {
       runDocCustomAdd(data);
+    } else if (isAiSegment) {
+      runDocCustomAdd({
+        ...data,
+        segmentConfig: {
+          segment: 'SMART',
+          ...segmentConfigModelRef.current,
+          isTrim: true,
+        },
+      });
     } else {
       runDocCustomAdd({
         ...data,

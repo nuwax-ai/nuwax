@@ -1,0 +1,27 @@
+@import '@/styles/token';
+
+@context-menu-min-width: 160px;
+@context-menu-item-padding-block: 6px;
+
+.context-menu {
+  background: @colorBgElevated;
+  border: @lineWidth solid @colorBorder;
+  border-radius: @borderRadiusOuter;
+  box-shadow: @boxShadowSecondary;
+  padding: @marginXxs 0;
+  min-width: @context-menu-min-width;
+  z-index: @zIndexPopupBase;
+}
+
+.context-menu-item {
+  padding: @context-menu-item-padding-block @paddingSm;
+  cursor: pointer;
+  font-size: @fontSizeSm;
+  color: @colorText;
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background: @colorPrimaryBg;
+    color: @colorPrimary;
+  }
+}

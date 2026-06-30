@@ -1,6 +1,7 @@
 import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
+import ChangeFileGitDiffView from '@/components/business-component/ChangeFileGitDiffView';
+import type { ChangeFileInfo } from '@/components/business-component/FileTreePreviewPanel/types/file-tree';
 import CodeViewer from '@/components/CodeViewer';
-import { VERSION_CONSTANTS } from '@/constants/appDevConstants';
 import { t } from '@/services/i18nRuntime';
 import { FileNode, ProjectDetailData } from '@/types/interfaces/appDev';
 import {
@@ -24,12 +25,8 @@ interface ContentViewerProps {
   files?: FileNode[];
   /** 显示模式 */
   mode: 'preview' | 'code';
-  /** 是否在版本对比模式 */
-  isComparing: boolean;
   /** 选中的文件ID */
   selectedFileId: string | null;
-  /** 文件节点数据 */
-  fileNode: any;
   /** 文件内容 */
   fileContent: string;
   /** 是否正在加载文件内容 */
@@ -38,8 +35,6 @@ interface ContentViewerProps {
   fileContentError: string | null;
   /** 文件是否被修改 */
   isFileModified: boolean;
-  /** 是否正在保存文件 */
-  isSavingFile: boolean;
   /** 开发服务器URL */
   devServerUrl: string | null;
   /** 是否正在启动 */
@@ -60,10 +55,6 @@ interface ContentViewerProps {
   designViewerRef?: React.RefObject<DesignViewerRef>;
   /** 内容变化回调 */
   onContentChange: (fileId: string, content: string) => void;
-  /** 保存文件回调 */
-  onSaveFile: () => void;
-  /** 取消编辑回调 */
-  onCancelEdit: () => void;
   /** 刷新文件回调 */
   onRefreshFile: () => void;
   /** 查找文件节点方法 */
@@ -95,6 +86,8 @@ interface ContentViewerProps {
     preserveExpandedState?: boolean,
     forceUpdate?: boolean,
   ) => void;
+  /** Git 源代码管理选中的 diff 文件 */
+  gitDiffFile?: ChangeFileInfo | null;
 }
 
 /**
@@ -107,14 +100,11 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
   projectInfo,
   refreshProjectInfo,
   mode,
-  isComparing,
   selectedFileId,
-  fileNode,
   fileContent,
   isLoadingFileContent,
   fileContentError,
   isFileModified,
-  isSavingFile,
   devServerUrl,
   isStarting,
   isRestarting, // 新增
@@ -125,8 +115,6 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
   previewRef,
   designViewerRef, // 新增
   onContentChange,
-  onSaveFile,
-  onCancelEdit,
   onRefreshFile,
   findFileNode,
   isChatLoading = false,
@@ -135,6 +123,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
   onRestartDev,
   onWhiteScreenOrIframeError,
   onRefreshFileTree,
+  gitDiffFile = null,
 }) => {
   // 使用 useMemo 缓存 Preview 组件，避免重新创建
   const previewComponent = useMemo(
@@ -184,6 +173,31 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
 
   // 使用 useMemo 缓存代码编辑器组件
   const codeEditorComponent = useMemo(() => {
+    if (gitDiffFile) {
+      const fileName =
+        gitDiffFile.fileId.split('/').pop() || gitDiffFile.fileId;
+      return (
+        <div className={styles.codeEditorContainer}>
+          <FilePathHeader
+            filePath={gitDiffFile.fileId}
+            isModified
+            isLoading={false}
+            readOnly
+            onRefresh={onRefreshFile}
+          />
+          <div className={styles.fileContentPreview}>
+            {/* 文件修改diff */}
+            <ChangeFileGitDiffView
+              fileId={gitDiffFile.fileId}
+              fileName={fileName}
+              originalContent={gitDiffFile.originalFileContent}
+              modifiedContent={gitDiffFile.fileContent}
+            />
+          </div>
+        </div>
+      );
+    }
+
     if (isLoadingFileContent) {
       return (
         <AppDevEmptyState
@@ -237,10 +251,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
           filePath={currentFileNode?.path || selectedFileId}
           isModified={isFileModified}
           isLoading={isLoadingFileContent}
-          isSaving={isSavingFile}
-          readOnly={isComparing || isChatLoading}
-          onSave={onSaveFile}
-          onCancel={onCancelEdit}
+          readOnly={isChatLoading}
           onRefresh={onRefreshFile}
         />
 
@@ -277,7 +288,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
               fileName={selectedFileId.split('/').pop() || selectedFileId}
               filePath={`app/${selectedFileId}`}
               content={currentFileNode.content}
-              readOnly={isComparing || isChatLoading}
+              readOnly={isChatLoading}
               onContentChange={onContentChange}
             />
           ) : fileContent ? (
@@ -286,7 +297,7 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
               fileName={selectedFileId.split('/').pop() || selectedFileId}
               filePath={`app/${selectedFileId}`}
               content={fileContent}
-              readOnly={isComparing || isChatLoading}
+              readOnly={isChatLoading}
               onContentChange={onContentChange}
             />
           ) : (
@@ -303,126 +314,21 @@ const ContentViewer: React.FC<ContentViewerProps> = ({
       </div>
     );
   }, [
+    gitDiffFile,
     isLoadingFileContent,
     fileContentError,
     selectedFileId,
     findFileNode,
     isFileModified,
-    isSavingFile,
-    isComparing,
     isChatLoading,
     devServerUrl,
     fileContent,
     onContentChange,
-    onSaveFile,
-    onCancelEdit,
     onRefreshFile,
     previewRef,
   ]);
 
-  // 使用 useMemo 缓存版本对比模式下的代码编辑器组件
-  const versionCompareCodeComponent = useMemo(() => {
-    if (!selectedFileId) {
-      return (
-        <AppDevEmptyState
-          type="no-file"
-          title={t('PC.Pages.AppDevContentViewer.noSelectedFileTitle')}
-          description={t(
-            'PC.Pages.AppDevContentViewer.noSelectedFileDescription',
-          )}
-        />
-      );
-    }
-
-    const hasContents =
-      fileNode && fileNode.content && fileNode.content.trim() !== '';
-    const isImage = isImageFile(selectedFileId);
-    const isPreviewable = isPreviewableFile(selectedFileId);
-
-    return (
-      <>
-        {/* 文件路径显示 */}
-        <FilePathHeader
-          filePath={fileNode?.path || selectedFileId}
-          isModified={false}
-          isLoading={false}
-          isSaving={false}
-          readOnly={true}
-          onSave={() => {}}
-          onCancel={() => {}}
-          onRefresh={() => {}}
-        />
-
-        {/* 文件内容显示区域 */}
-        <div className={styles.fileContentPreview}>
-          {!isPreviewable && !hasContents ? (
-            <AppDevEmptyState
-              type="error"
-              title={t('PC.Pages.AppDevContentViewer.unsupportedFileTypeTitle')}
-              description={t(
-                'PC.Pages.AppDevContentViewer.unsupportedFileTypeDescription',
-                selectedFileId.split('.').pop() || selectedFileId,
-              )}
-            />
-          ) : hasContents ? (
-            <CodeViewer
-              fileId={selectedFileId}
-              fileName={selectedFileId.split('/').pop() || selectedFileId}
-              filePath={`app/${selectedFileId}`}
-              content={fileNode.content}
-              readOnly={true || isChatLoading}
-              onContentChange={() => {}}
-            />
-          ) : isImage ? (
-            <ImageViewer
-              imagePath={selectedFileId}
-              imageUrl={processImageContent(
-                fileNode.content,
-                devServerUrl
-                  ? `${devServerUrl}/${selectedFileId}`
-                  : `/${selectedFileId}`,
-              )}
-              alt={selectedFileId}
-              onRefresh={() => {
-                if (previewRef.current) {
-                  previewRef.current.refresh();
-                }
-              }}
-            />
-          ) : (
-            <AppDevEmptyState
-              type="error"
-              title={t('PC.Pages.AppDevContentViewer.unsupportedFileTypeTitle')}
-              description={t(
-                'PC.Pages.AppDevContentViewer.unsupportedFileTypeDescription',
-                selectedFileId,
-              )}
-            />
-          )}
-        </div>
-      </>
-    );
-  }, [selectedFileId, fileNode, devServerUrl, isChatLoading, previewRef]);
-
-  // 版本对比模式 + preview标签页：显示禁用提示
-  if (isComparing && mode === 'preview') {
-    return (
-      <AppDevEmptyState
-        type="no-preview-url"
-        title={VERSION_CONSTANTS.PREVIEW_DISABLED_MESSAGE}
-        description={t(
-          'PC.Pages.AppDevContentViewer.previewDisabledDescription',
-        )}
-      />
-    );
-  }
-
-  // 版本对比模式 + code标签页：使用缓存的版本对比代码组件
-  if (isComparing && mode === 'code') {
-    return versionCompareCodeComponent;
-  }
-
-  // 正常模式：同时渲染两个组件，通过 CSS 控制显示/隐藏
+  // 同时渲染两个组件，通过 CSS 控制显示/隐藏
   return (
     <div className={styles.contentViewerContainer}>
       {/* 预览组件 - 始终存在，通过 CSS 控制显示 */}

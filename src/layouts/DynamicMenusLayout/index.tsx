@@ -42,18 +42,28 @@ import {
 } from '@/constants/menus.constants';
 import useConversation from '@/hooks/useConversation';
 import { ThemeNavigationStyleType } from '@/types/enums/theme';
-import EcosystemMarketSection from './EcosystemMarketSection';
-import HomeSection from './HomeSection';
 import styles from './index.less';
+import NewHomeSection from './NewHomeSection';
 import SpaceSection from './SpaceSection';
 import SquareSection from './SquareSection';
 import {
   handleOpenUrl,
+  isHttpMenuPath,
+  isOpenIframePath,
+  navigateOpenIframePath,
   normalizeMenuPathname,
   removePathUrlFromLocalStorage,
 } from './utils';
 
 const cx = classNames.bind(styles);
+
+/** 使用自定义 Section 的一级菜单，始终展示二级菜单栏 */
+const SECOND_MENU_SECTION_TABS = new Set([
+  'homepage',
+  'space',
+  'workspace',
+  'system_square',
+]);
 
 export interface DynamicMenusLayoutProps {
   /** 覆盖容器样式 */
@@ -125,9 +135,6 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
       // 工作空间特殊处理，menu.path为/space 是工作空间的编码，pathname为/space/:spaceId/develop 是前端路由
       else if (menuPathWithoutQuery === '/space') {
         return normalizedPathname.startsWith(menuPathWithoutQuery);
-      } else if (normalizedPathname.includes('ecosystem')) {
-        // 生态市场特殊处理，pathname为/ecosystem/plugin 是前端路由
-        return menuPathWithoutQuery.startsWith('/ecosystem');
       } else {
         // 通用处理：取第一个斜杠后的路径段进行匹配
         // 例如 pathname 为 /system/demo，menuPathWithoutQuery 为 /system/menu/xxx
@@ -445,7 +452,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
       if (menu.code === 'new_conversation') {
         // 如果用户匹配了路径，则处理路径，否则按照原逻辑创建智能体会话
         if (menu.path) {
-          if (menu.path.includes('http')) {
+          if (isHttpMenuPath(menu.path)) {
             handleOpenUrl(menu);
           } else {
             history.push(menu.path);
@@ -463,8 +470,8 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
 
       // 设置当前激活的菜单
       setActiveTab(menu.code || '');
-      // http开头的路径，直接打开
-      if (menu.path?.includes('http')) {
+      // http 或 %siteUrl% 开头的路径，直接打开
+      if (menu.path && isHttpMenuPath(menu.path)) {
         handleOpenUrl(menu);
         return;
       }
@@ -492,10 +499,14 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
           const hasPath = hasPathUnderFirstLevelMenu(menu.code, pathUrlValue);
           if (hasPath) {
             if (pathUrlValue && !pathUrlValue.includes(':')) {
-              history.push(pathUrlValue, {
-                _t: Date.now(),
-                menuCode: menu.code,
-              });
+              if (isOpenIframePath(pathUrlValue)) {
+                navigateOpenIframePath(pathUrlValue, { menuCode: menu.code });
+              } else {
+                history.push(pathUrlValue, {
+                  _t: Date.now(),
+                  menuCode: menu.code,
+                });
+              }
               return;
             }
           } else {
@@ -506,13 +517,17 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
       } catch {}
 
       if (menu.path) {
-        history.push(menu.path, { _t: Date.now(), menuCode: menu.code });
+        if (isOpenIframePath(menu.path)) {
+          navigateOpenIframePath(menu.path, { menuCode: menu.code });
+        } else {
+          history.push(menu.path, { _t: Date.now(), menuCode: menu.code });
+        }
       } else if (menu.children?.length) {
         // 递归查找第一个有 path 的子菜单
         const firstPathMenu = findFirstChildWithPath(menu);
         if (firstPathMenu) {
-          // http开头的路径，直接打开
-          if (firstPathMenu.path?.includes('http')) {
+          // http 或 %siteUrl% 开头的路径，直接打开
+          if (firstPathMenu.path && isHttpMenuPath(firstPathMenu.path)) {
             handleOpenUrl(firstPathMenu);
             return;
           }
@@ -550,7 +565,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
           break;
         case MENU_CODE_MY_COMPUTER:
           {
-            setActiveTab(code || '');
+            // setActiveTab(code || '');
             history.push('/my-computer-manage', {
               _t: Date.now(),
               menuCode: menu.code,
@@ -584,9 +599,9 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
     if (isClickNewConversation) {
       return dict('PC.Layouts.DynamicMenusLayout.newConversation');
     }
-    if (activeTab === 'my_computer' || activeTab === 'documents') {
-      return dict('PC.Layouts.DynamicMenusLayout.home');
-    }
+    // if (activeTab === 'my_computer' || activeTab === 'documents') {
+    //   return dict('PC.Layouts.DynamicMenusLayout.home');
+    // }
     if (activeTab === 'more_page') {
       return dict('PC.Layouts.DynamicMenusLayout.more');
     }
@@ -595,6 +610,28 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
     );
     return current?.name;
   }, [activeTab, firstLevelMenus, isClickNewConversation]);
+
+  /**
+   * 当前一级菜单是否需要展示二级菜单栏
+   * 无子菜单（children 为 null 或空数组）且非 Section 类菜单时隐藏
+   */
+  const shouldShowSecondMenu = useMemo(() => {
+    if (!activeTab) return false;
+
+    if (SECOND_MENU_SECTION_TABS.has(activeTab)) {
+      return true;
+    }
+
+    const currentMenu =
+      firstLevelMenus.find((m: MenuItemDto) => m.code === activeTab) ||
+      otherMenus.find((m: MenuItemDto) => m.code === activeTab);
+
+    if (!currentMenu) {
+      return false;
+    }
+
+    return !!currentMenu.children?.length;
+  }, [activeTab, firstLevelMenus, otherMenus]);
 
   /**
    * 是否显示标题
@@ -661,13 +698,14 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
      */
     // 主页、系统广场、生态市场特殊处理：直接渲染对应的 Section 组件
     // 主页 homepage: 最近使用 + 会话记录
+    // 主页: 使用新版侧栏（会话历史 + 搜索 + 新建会话）
     if (
       activeTab === 'homepage' ||
-      activeTab === 'new_conversation' ||
-      activeTab === 'my_computer' ||
-      activeTab === 'documents'
+      activeTab === 'new_conversation'
+      // activeTab === 'my_computer' ||
+      // activeTab === 'documents'
     ) {
-      return <HomeSection style={overrideContainerStyle} />;
+      return <NewHomeSection style={overrideContainerStyle} />;
     }
 
     // 工作空间
@@ -682,10 +720,6 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
       return <SquareSection style={overrideContainerStyle} />;
     }
 
-    // 生态市场
-    if (activeTab === 'eco_market') {
-      return <EcosystemMarketSection style={overrideContainerStyle} />;
-    }
     return <DynamicSecondMenu parentCode={activeTab} />;
   }, [activeTab, overrideContainerStyle]);
 
@@ -720,61 +754,67 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
         <User />
       </div>
 
-      {/* 二级导航菜单栏 */}
-      <div
-        className={cx(styles['nav-menus'], 'noselect')}
-        style={{
-          width: isSecondMenuCollapsed
-            ? 0
-            : NAVIGATION_LAYOUT_SIZES.SECOND_MENU_WIDTH,
-          paddingLeft: isSecondMenuCollapsed ? 0 : token.padding,
-          opacity: isSecondMenuCollapsed ? 0 : 1,
-          backgroundColor: secondaryBackgroundColor,
-        }}
-      >
-        <div className={cx(styles['nav-menus-scroll'])}>
-          <HoverScrollbar
-            className={cx('w-full', 'h-full')}
-            bodyWidth={
-              NAVIGATION_LAYOUT_SIZES.SECOND_MENU_WIDTH - token.padding * 2
-            }
-            style={{
-              padding: `${token.paddingSM}px 0`,
-            }}
-          >
-            <div
-              className={cx('flex', 'flex-col', 'h-full')}
-              style={{
-                minHeight: 0,
-              }}
-            >
-              {/* 标题 */}
-              <ConditionRender condition={isShowTitle && currentTitle}>
-                <div style={{ padding: '0 12px 12px' }}>
-                  <Typography.Title
-                    level={5}
-                    style={{ marginBottom: 0 }}
-                    className={cx(styles['menu-title'])}
-                  >
-                    {currentTitle}
-                  </Typography.Title>
+      {/* 二级导航菜单栏：无子菜单的一级菜单不展示 */}
+      {shouldShowSecondMenu && (
+        <div
+          className={cx(styles['nav-menus'], 'noselect')}
+          style={{
+            width: isSecondMenuCollapsed
+              ? 0
+              : NAVIGATION_LAYOUT_SIZES.SECOND_MENU_WIDTH,
+            paddingLeft: isSecondMenuCollapsed ? 0 : token.padding,
+            opacity: isSecondMenuCollapsed ? 0 : 1,
+            backgroundColor: secondaryBackgroundColor,
+          }}
+        >
+          <div className={cx(styles['nav-menus-scroll'])}>
+            {activeTab === 'homepage' ? (
+              renderSecondMenu
+            ) : (
+              <HoverScrollbar
+                className={cx('w-full', 'h-full')}
+                bodyWidth={
+                  NAVIGATION_LAYOUT_SIZES.SECOND_MENU_WIDTH - token.padding * 2
+                }
+                style={{
+                  padding: `${token.paddingSM}px 0`,
+                }}
+              >
+                <div
+                  className={cx('flex', 'flex-col', 'h-full')}
+                  style={{
+                    minHeight: 0,
+                  }}
+                >
+                  {/* 标题 */}
+                  <ConditionRender condition={isShowTitle && currentTitle}>
+                    <div style={{ padding: '0 12px 12px' }}>
+                      <Typography.Title
+                        level={5}
+                        style={{ marginBottom: 0 }}
+                        className={cx(styles['menu-title'])}
+                      >
+                        {currentTitle}
+                      </Typography.Title>
+                    </div>
+                  </ConditionRender>
+
+                  {/* 二级/三级菜单 */}
+                  {renderSecondMenu}
                 </div>
-              </ConditionRender>
+              </HoverScrollbar>
+            )}
+          </div>
 
-              {/* 二级/三级菜单 */}
-              {renderSecondMenu}
-            </div>
-          </HoverScrollbar>
+          {/* 积分相关入口：放到二级导航栏底部固定展示 */}
+          <div className={cx(styles['integral-footer'])}>
+            <CreditsBalance />
+          </div>
         </div>
-
-        {/* 积分相关入口：放到二级导航栏底部固定展示 */}
-        <div className={cx(styles['integral-footer'])}>
-          <CreditsBalance />
-        </div>
-      </div>
+      )}
 
       {/* 收起/展开按钮 */}
-      <CollapseButton />
+      {shouldShowSecondMenu && <CollapseButton />}
     </div>
   );
 };

@@ -1,5 +1,10 @@
-import React, { useEffect, useState } from 'react';
-import { useLocation } from 'umi';
+import SvgIcon from '@/components/base/SvgIcon';
+import ConditionRender from '@/components/ConditionRender';
+import TooltipIcon from '@/components/custom/TooltipIcon';
+import { t } from '@/services/i18nRuntime';
+import classNames from 'classnames';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useLocation, useModel } from 'umi';
 
 /**
  * 打开iframe页面
@@ -9,6 +14,10 @@ const OpenIframePage: React.FC = () => {
   const location = useLocation();
   // url地址
   const [iframeUrl, setIframeUrl] = useState<string>('');
+  /** 重复点击同一菜单时通过 _refresh 参数强制 iframe 重载 */
+  const iframeKey = useMemo(() => {
+    return new URLSearchParams(location.search).get('_refresh') || '0';
+  }, [location.search]);
 
   useEffect(() => {
     const url = new URLSearchParams(window.location.search);
@@ -18,9 +27,39 @@ const OpenIframePage: React.FC = () => {
     }
   }, [location]);
 
+  // 仅在 /app 下 BaseTemplate 组件中渲染时，才支持侧边栏展开操作
+  const isAppShell = location.pathname.startsWith('/app/');
+  const { isAppSidebarVisible, toggleAppSidebarVisible, isAppSidebarMode } =
+    useModel('useOpenApp');
+
   return (
-    <div className="h-full w-full">
+    <div className={classNames('h-full', 'w-full', 'relative')}>
+      {/* 独立会话页面 BaseTemplate 侧边栏隐藏时的展开按钮 */}
+      <ConditionRender
+        condition={isAppShell && isAppSidebarMode && !isAppSidebarVisible}
+      >
+        <div
+          style={{
+            position: 'absolute',
+            top: 16,
+            left: 16,
+            zIndex: 10,
+          }}
+        >
+          <TooltipIcon
+            title={t('PC.Components.ConversationDetails.expandNavigation')}
+            icon={
+              <SvgIcon
+                name="icons-nav-sidebar"
+                style={{ fontSize: 16 }}
+                onClick={toggleAppSidebarVisible}
+              />
+            }
+          />
+        </div>
+      </ConditionRender>
       <iframe
+        key={iframeKey}
         src={iframeUrl}
         width="100%"
         height="100%"

@@ -38,6 +38,7 @@ import { ReactComponent as ICON_TEXT_FORMAT } from '@/assets/svg/text_format.svg
 import { ReactComponent as ICON_WORD } from '@/assets/svg/word.svg';
 import { ReactComponent as ICON_WORKFLOW } from '@/assets/svg/workflow_icon.svg';
 // 工作流的图片
+import { ReactComponent as ICON_WORKFLOW_AGENT } from '@/assets/workflow/workflow-Agent.svg';
 import { ReactComponent as ICON_WORKFLOW_CODE } from '@/assets/workflow/workflow-Code.svg';
 import { ReactComponent as ICON_WORKFLOW_CONDITION } from '@/assets/workflow/workflow-Condition.svg';
 import { ReactComponent as ICON_WORKFLOW_DATABASE } from '@/assets/workflow/workflow-Database.svg';
@@ -47,8 +48,10 @@ import { ReactComponent as ICON_WORKFLOW_DATABASEQUERY } from '@/assets/workflow
 import { ReactComponent as ICON_WORKFLOW_DATABASEUPDATE } from '@/assets/workflow/workflow-DatabaseUpdate.svg';
 import { ReactComponent as ICON_WORKFLOW_DOCUMENT_EXTRACTION } from '@/assets/workflow/workflow-DocumentExtraction.svg';
 import { ReactComponent as ICON_WORKFLOW_HTTP_REQUEST } from '@/assets/workflow/workflow-HTTPRequest.svg';
+import { ReactComponent as ICON_WORKFLOW_HUMAN_ASK } from '@/assets/workflow/workflow-HumanAsk.svg';
 import { ReactComponent as ICON_WORKFLOW_INTENT_RECOGNITION } from '@/assets/workflow/workflow-IntentRecognition.svg';
 import { ReactComponent as ICON_WORKFLOW_KNOWLEDGE_BASE } from '@/assets/workflow/workflow-Knowledge.svg';
+import { ReactComponent as ICON_WORKFLOW_KNOWLEDGE_INSERT } from '@/assets/workflow/workflow-KnowledgeInsert.svg';
 import { ReactComponent as ICON_WORKFLOW_LLM } from '@/assets/workflow/workflow-LLM.svg';
 import { ReactComponent as ICON_WORKFLOW_LONG_TERM_MEMORY } from '@/assets/workflow/workflow-LongTermMemory.svg';
 import { ReactComponent as ICON_WORKFLOW_LOOP } from '@/assets/workflow/workflow-Loop.svg';
@@ -58,6 +61,7 @@ import { ReactComponent as ICON_WORKFLOW_MCP } from '@/assets/workflow/workflow-
 import { ReactComponent as ICON_WORKFLOW_OUTPUT } from '@/assets/workflow/workflow-Output.svg';
 import { ReactComponent as ICON_WORKFLOW_PLUGIN } from '@/assets/workflow/workflow-Plugin.svg';
 import { ReactComponent as ICON_WORKFLOW_QA } from '@/assets/workflow/workflow-QA.svg';
+import { ReactComponent as ICON_WORKFLOW_ROUTE_DECISION } from '@/assets/workflow/workflow-RouteDecision.svg';
 import { ReactComponent as ICON_WORKFLOW_TEXT_PROCESSING } from '@/assets/workflow/workflow-TextProcessing.svg';
 import { ReactComponent as ICON_WORKFLOW_VARIABLE } from '@/assets/workflow/workflow-Variable.svg';
 import { ReactComponent as ICON_WORKFLOW_WORKFLOW } from '@/assets/workflow/workflow-Workflow.svg';
@@ -74,6 +78,7 @@ import BG_ICON_WORKFLOW_DOCUMENT_EXTRACTION from '@/assets/workflow/workflow-Doc
 import BG_ICON_WORKFLOW_HTTP_REQUEST from '@/assets/workflow/workflow-HTTPRequest.svg';
 import BG_ICON_WORKFLOW_INTENT_RECOGNITION from '@/assets/workflow/workflow-IntentRecognition.svg';
 import BG_ICON_WORKFLOW_KNOWLEDGE_BASE from '@/assets/workflow/workflow-Knowledge.svg';
+import BG_ICON_WORKFLOW_KNOWLEDGE_INSERT from '@/assets/workflow/workflow-KnowledgeInsert.svg';
 import BG_ICON_WORKFLOW_LLM from '@/assets/workflow/workflow-LLM.svg';
 import BG_ICON_WORKFLOW_LONG_TERM_MEMORY from '@/assets/workflow/workflow-LongTermMemory.svg';
 import BG_ICON_WORKFLOW_LOOP from '@/assets/workflow/workflow-Loop.svg';
@@ -86,6 +91,10 @@ import BG_ICON_WORKFLOW_QA from '@/assets/workflow/workflow-QA.svg';
 import BG_ICON_WORKFLOW_TEXT_PROCESSING from '@/assets/workflow/workflow-TextProcessing.svg';
 import BG_ICON_WORKFLOW_VARIABLE from '@/assets/workflow/workflow-Variable.svg';
 import BG_ICON_WORKFLOW_WORKFLOW from '@/assets/workflow/workflow-Workflow.svg';
+// AgentFlow 专用图标
+import BG_ICON_AGENTFLOW_AGENT from '@/assets/workflow/workflow-Agent.svg';
+import BG_ICON_AGENTFLOW_HUMAN_ASK from '@/assets/workflow/workflow-HumanAsk.svg';
+import BG_ICON_AGENTFLOW_ROUTE_DECISION from '@/assets/workflow/workflow-RouteDecision.svg';
 // 修改导入语句以正确导入图片
 
 import { ReactComponent as ICON_MORE } from '@/assets/svg/icon_more.svg';
@@ -97,6 +106,10 @@ import { ReactComponent as ICON_MESSAGE } from '@/assets/svg/icon_message.svg';
 import { ReactComponent as ICON_USER } from '@/assets/svg/icon_user.svg';
 
 export {
+  // AgentFlow 专用图标
+  BG_ICON_AGENTFLOW_AGENT,
+  BG_ICON_AGENTFLOW_HUMAN_ASK,
+  BG_ICON_AGENTFLOW_ROUTE_DECISION,
   BG_ICON_WORKFLOW_CODE,
   BG_ICON_WORKFLOW_CONDITION,
   BG_ICON_WORKFLOW_DATABASE,
@@ -108,6 +121,7 @@ export {
   BG_ICON_WORKFLOW_HTTP_REQUEST,
   BG_ICON_WORKFLOW_INTENT_RECOGNITION,
   BG_ICON_WORKFLOW_KNOWLEDGE_BASE,
+  BG_ICON_WORKFLOW_KNOWLEDGE_INSERT,
   BG_ICON_WORKFLOW_LLM,
   BG_ICON_WORKFLOW_LONG_TERM_MEMORY,
   BG_ICON_WORKFLOW_LOOP,
@@ -164,6 +178,7 @@ export {
   ICON_USER,
   ICON_WORD,
   ICON_WORKFLOW,
+  ICON_WORKFLOW_AGENT,
   ICON_WORKFLOW_CODE,
   ICON_WORKFLOW_CONDITION,
   ICON_WORKFLOW_DATABASE,
@@ -173,8 +188,10 @@ export {
   ICON_WORKFLOW_DATABASEUPDATE,
   ICON_WORKFLOW_DOCUMENT_EXTRACTION,
   ICON_WORKFLOW_HTTP_REQUEST,
+  ICON_WORKFLOW_HUMAN_ASK,
   ICON_WORKFLOW_INTENT_RECOGNITION,
   ICON_WORKFLOW_KNOWLEDGE_BASE,
+  ICON_WORKFLOW_KNOWLEDGE_INSERT,
   ICON_WORKFLOW_LLM,
   ICON_WORKFLOW_LONG_TERM_MEMORY,
   ICON_WORKFLOW_LOOP,
@@ -184,6 +201,7 @@ export {
   ICON_WORKFLOW_OUTPUT,
   ICON_WORKFLOW_PLUGIN,
   ICON_WORKFLOW_QA,
+  ICON_WORKFLOW_ROUTE_DECISION,
   ICON_WORKFLOW_SQUARE,
   ICON_WORKFLOW_TEXT_PROCESSING,
   ICON_WORKFLOW_VARIABLE,

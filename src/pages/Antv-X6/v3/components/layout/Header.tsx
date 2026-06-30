@@ -1,12 +1,15 @@
 import ConditionRender from '@/components/ConditionRender';
 import { SaveStatusEnum } from '@/models/workflowV3';
+import { useIsAgentFlow } from '@/pages/Antv-X6/v3/flowKind/useFlowKind';
 import { getImg } from '@/pages/Antv-X6/v3/utils/workflowV3';
 import { t } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
-import { PermissionsEnum } from '@/types/enums/common';
+import { FlowKindEnum, PermissionsEnum } from '@/types/enums/common';
 import { getTime } from '@/utils';
 import { jumpBack } from '@/utils/router';
 import {
+  ApartmentOutlined,
+  CaretRightOutlined,
   CheckCircleFilled,
   ClockCircleOutlined,
   ExclamationCircleFilled,
@@ -15,9 +18,10 @@ import {
   LeftOutlined,
   LoadingOutlined,
   RedoOutlined,
+  SaveOutlined,
   UndoOutlined,
 } from '@ant-design/icons';
-import { Button, Popover, Tag, Tooltip } from 'antd';
+import { Button, Popover, Select, Tag, Tooltip } from 'antd';
 import React, { useMemo } from 'react';
 import { useModel, useParams } from 'umi';
 interface HeaderProp {
@@ -35,6 +39,8 @@ interface HeaderProp {
     description?: string;
     publishDate?: string | null;
     permissions?: PermissionsEnum[];
+    // 流类型：Workflow / AgentFlow
+    workflowType?: string;
   };
   onToggleVersionHistory: () => void;
   showPublish: () => void;
@@ -45,6 +51,12 @@ interface HeaderProp {
   onRedo?: () => void;
   onManualSave?: () => Promise<boolean>;
   onBack?: () => void;
+  // AgentFlow 专用
+  onAutoArrange?: () => void;
+  handleTestRun?: () => void;
+  testRunLoading?: boolean;
+  flowControlModel?: string;
+  onFlowControlModelChange?: (model: string) => void;
 }
 
 const Header: React.FC<HeaderProp> = ({
@@ -61,11 +73,25 @@ const Header: React.FC<HeaderProp> = ({
   onRedo,
   onManualSave,
   onBack,
+  // AgentFlow 专用
+  onAutoArrange,
+  handleTestRun,
+  testRunLoading,
+  flowControlModel,
+  onFlowControlModelChange,
 }) => {
+  const isAgentFlow = useIsAgentFlow();
   const { spaceId } = useParams();
   const { saveStatus, saveError, lastSaveTime } = useModel('workflowV3');
-  const { name, icon, publishStatus, modified, description, publishDate } =
-    info;
+  const {
+    name,
+    icon,
+    publishStatus,
+    modified,
+    description,
+    publishDate,
+    workflowType,
+  } = info;
 
   const isMac = /mac/i.test(navigator.userAgent);
   const undoShortcut = isMac ? 'Cmd+Z' : 'Ctrl+Z';
@@ -220,6 +246,39 @@ const Header: React.FC<HeaderProp> = ({
         <div className="dis-col header-content-style ">
           <div className="dis-left">
             <strong className="header-name-style">{name}</strong>
+            {workflowType === FlowKindEnum.AgentFlow && (
+              <Tag color="purple" bordered={false} style={{ marginLeft: 4 }}>
+                AgentFlow
+              </Tag>
+            )}
+            {/* AgentFlow: 流程控制模型 Dropdown */}
+            {isAgentFlow && (
+              <Select
+                value={flowControlModel || 'qwen-plus'}
+                onChange={onFlowControlModelChange}
+                size="small"
+                style={{ width: 160, marginLeft: 8 }}
+                options={[
+                  { label: 'Qwen3.6-Plus', value: 'qwen3.6-plus' },
+                  { label: 'Qwen3.5-Turbo', value: 'qwen3.5-turbo' },
+                  { label: 'deepseek-v4-flash', value: 'deepseek-v4-flash' },
+                  { label: 'qwen-max', value: 'qwen-max' },
+                  { label: 'qwen-plus', value: 'qwen-plus' },
+                ]}
+              />
+            )}
+            {/* AgentFlow: 自动排列按钮 */}
+            {isAgentFlow && onAutoArrange && (
+              <Tooltip title={t('PC.Pages.AntvX6Header.autoArrange')}>
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<ApartmentOutlined />}
+                  onClick={onAutoArrange}
+                  style={{ marginLeft: 4 }}
+                />
+              </Tooltip>
+            )}
             <Popover content={description}>
               <InfoCircleOutlined
                 className="mr-6"
@@ -297,6 +356,30 @@ const Header: React.FC<HeaderProp> = ({
         className={'ico cursor-pointer'}
         onClick={onToggleVersionHistory}
       />
+      {/* AgentFlow: 保存按钮 */}
+      {isAgentFlow && onManualSave && (
+        <Button
+          type="default"
+          icon={<SaveOutlined />}
+          onClick={() => onManualSave()}
+          size="small"
+        >
+          {t('PC.Pages.AntvX6Header.save')}
+        </Button>
+      )}
+      {/* AgentFlow: 运行按钮 */}
+      {isAgentFlow && handleTestRun && (
+        <Button
+          loading={testRunLoading}
+          icon={<CaretRightOutlined />}
+          variant="solid"
+          color="green"
+          onClick={handleTestRun}
+          size="small"
+        >
+          {t('PC.Pages.AntvX6Header.run')}
+        </Button>
+      )}
       <Button
         disabled={disabledBtn}
         onClick={showPublish}

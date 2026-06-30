@@ -36,7 +36,8 @@ export async function getInitialState(): Promise<InitialStateType> {
     await initI18n();
 
     // 如果不是登录页面，执行获取用户信息和菜单数据
-    if (history.location.pathname !== '/login') {
+    const publicPaths = ['/login', '/examples/agent-intervention-demo'];
+    if (!publicPaths.some((path) => history.location.pathname.includes(path))) {
       const userInfo = await UserService.getUserInfo();
       await syncLangFromUserInfo(userInfo);
 
@@ -97,13 +98,9 @@ const AppContainer: React.FC<{ children: React.ReactElement }> = ({
       sessionStorage.setItem('__chunk_reload', '1');
 
       Modal.confirm({
-        // title: '发现新版本',
-        // content: '系统已更新，请刷新页面以加载最新版本。',
-        // okText: '立即刷新',
-        // cancelText: '稍后再说',
-        title: dict('PC.Hooks.UseEventPolling.newVersionFound'),
-        content: dict('PC.Hooks.UseEventPolling.updatePrompt', ''),
-        okText: dict('PC.Hooks.UseEventPolling.update'),
+        title: dict('PC.Modal.chunkLoadErrorTitle'),
+        content: dict('PC.Modal.chunkLoadErrorContent'),
+        okText: dict('PC.Modal.chunkLoadErrorRefresh'),
         cancelText: dict('PC.Common.Global.cancel'),
         onOk: () => {
           sessionStorage.removeItem('__chunk_reload');

@@ -1,4 +1,7 @@
-import ChatInputHome from '@/components/ChatInputHome';
+import type { AgentMode } from '@/components/business-component/AgentIntervention';
+import ChatInputHome, {
+  type ChatInputHomeRef,
+} from '@/components/ChatInputHome';
 import Loading from '@/components/custom/Loading';
 import useConversation from '@/hooks/useConversation';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
@@ -8,10 +11,17 @@ import {
   apiPublishedAgentInfo,
   apiUnCollectAgent,
 } from '@/services/agentDev';
+import { apiDisplayRecommendList } from '@/services/displayRecommend';
 import { dict } from '@/services/i18nRuntime';
-import { DefaultSelectedEnum } from '@/types/enums/agent';
+import {
+  AgentComponentTypeEnum,
+  DefaultSelectedEnum,
+} from '@/types/enums/agent';
 import { AgentTypeEnum } from '@/types/enums/space';
-import { AgentDetailDto, GuidQuestionDto } from '@/types/interfaces/agent';
+import type {
+  AgentDetailDto,
+  AgentManualComponentInfo,
+} from '@/types/interfaces/agent';
 import type {
   CategoryItemInfo,
   HomeAgentCategoryInfo,
@@ -20,60 +30,140 @@ import type {
   MessageSourceType,
   UploadFileInfo,
 } from '@/types/interfaces/common';
-import { AffixRef, App, message as antdMessage } from 'antd';
+import {
+  DisplayRecommendFunctionTypeEnum,
+  type DisplayRecommendInfo,
+} from '@/types/interfaces/displayRecommend';
+import { App, message as antdMessage } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { history, useModel, useRequest } from 'umi';
+import { createProjectAndNavigate } from '../SpaceCreateProject/utils/projectCreateStrategy';
+import ChatBoxRecommendNav from './components/ChatBoxRecommendNav';
 import DraggableHomeContent from './DraggableHomeContent';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
+const EMPTY_MANUAL_COMPONENTS: AgentManualComponentInfo[] = [];
+
+const PROJECT_FUNCTION_TYPE_MAP: Partial<
+  Record<DisplayRecommendFunctionTypeEnum | string, AgentComponentTypeEnum>
+> = {
+  [DisplayRecommendFunctionTypeEnum.AgentDev]: AgentComponentTypeEnum.Agent,
+  [DisplayRecommendFunctionTypeEnum.PageAppDev]: AgentComponentTypeEnum.PageApp,
+  [DisplayRecommendFunctionTypeEnum.SkillDev]: AgentComponentTypeEnum.Skill,
+  [DisplayRecommendFunctionTypeEnum.PluginDev]: AgentComponentTypeEnum.Plugin,
+};
+
+const TASK_AGENT_FUNCTION_TYPES = new Set<string>([
+  DisplayRecommendFunctionTypeEnum.AgentDev,
+  DisplayRecommendFunctionTypeEnum.SkillDev,
+  DisplayRecommendFunctionTypeEnum.PluginDev,
+]);
+
+const SPACE_SELECTOR_FUNCTION_TYPES = new Set<string>([
+  DisplayRecommendFunctionTypeEnum.AgentDev,
+  DisplayRecommendFunctionTypeEnum.PageAppDev,
+  DisplayRecommendFunctionTypeEnum.SkillDev,
+  DisplayRecommendFunctionTypeEnum.PluginDev,
+]);
 
 const Home: React.FC = () => {
   const { message } = App.useApp();
-  // 配置信息
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
-  const [activeTab, setActiveTab] = useState<string>();
-  const [loading, setLoading] = useState<boolean>(false);
-  const [homeCategoryInfo, setHomeCategoryInfo] =
-    useState<HomeAgentCategoryInfo>();
-  const currentAgentTypeRef = useRef<string>('');
-  const [agentDetail, setAgentDetail] = useState<AgentDetailDto>();
-  // 通用型智能体模式状态
-  const [isTaskAgentMode, setIsTaskAgentMode] = useState<boolean>(false);
-  // 选中的电脑 ID，'remote' 表示远程电脑（默认）
-  const [selectedComputerId, setSelectedComputerId] =
-    useState<string>('remote');
-  // 选中的模型 ID
-  const [selectedModelId, setSelectedModelId] = useState<number>();
-  // 创建智能体会话
+  const { getSpaceId } = useModel('spaceModel');
+  const { setContext } = useModel('pageHandoffContext');
   const { handleCreateConversation } = useConversation();
-  // 会话输入框已选择组件
+  const chatInputRef = useRef<ChatInputHomeRef>(null);
   const {
     selectedComponentList,
     handleSelectComponent,
     initSelectedComponentList,
   } = useSelectedComponent();
 
-  // 常量
-  // const MIN_INPUT_HEIGHT = 432; // 输入框部分最小高度
-  // const RECOMMEND_HEIGHT = 360; // 推荐部分固定高度
+  const [agentDetail, setAgentDetail] = useState<AgentDetailDto>();
+  const [isTaskAgentMode, setIsTaskAgentMode] = useState<boolean>(false);
+  const [selectedComputerId, setSelectedComputerId] = useState<string>('-1');
+  const [selectedModelId, setSelectedModelId] = useState<number>();
+  const [selectedSpaceId, setSelectedSpaceId] = useState<number>();
+  const [agentMode, setAgentMode] = useState<AgentMode>('yolo');
+  const [activeTab, setActiveTab] = useState<string>();
+  const [loading, setLoading] = useState<boolean>(false);
+  const [recommendNavList, setRecommendNavList] = useState<
+    DisplayRecommendInfo[]
+  >([]);
+  const [selectedRecommend, setSelectedRecommend] =
+    useState<DisplayRecommendInfo>();
+  const [homeCategoryInfo, setHomeCategoryInfo] =
+    useState<HomeAgentCategoryInfo>();
 
-  // 主页智能体分类列表
-  const { run: runCategoryList } = useRequest(apiHomeCategoryList, {
-    manual: true,
-    debounceInterval: 300,
-    onSuccess: (result: HomeAgentCategoryInfo) => {
-      setHomeCategoryInfo(result);
-      setActiveTab(result?.categories?.[0]?.type);
-      setLoading(false);
-    },
-    onError: () => {
-      setLoading(false);
-    },
-  });
+  const defaultAgentId =
+    isTaskAgentMode && tenantConfigInfo?.defaultTaskAgentId
+      ? tenantConfigInfo.defaultTaskAgentId
+      : tenantConfigInfo?.defaultAgentId;
+  const currentAgentId = selectedRecommend?.targetId || defaultAgentId;
+  const selectedFunctionType = selectedRecommend?.functionType || '';
+  const selectedProjectType = useMemo(
+    () => PROJECT_FUNCTION_TYPE_MAP[selectedFunctionType],
+    [selectedFunctionType],
+  );
+  const effectiveTaskAgentActive = selectedRecommend
+    ? TASK_AGENT_FUNCTION_TYPES.has(selectedFunctionType)
+    : isTaskAgentMode;
+  const showSpaceSelector = selectedRecommend
+    ? SPACE_SELECTOR_FUNCTION_TYPES.has(selectedFunctionType)
+    : false;
 
-  // 智能体收藏
+  const runDetail = useCallback(async (agentId: number) => {
+    try {
+      const { data } = await apiPublishedAgentInfo(agentId);
+      setAgentDetail(data);
+    } catch {
+      setAgentDetail(undefined);
+    }
+  }, []);
+
+  const runCategoryList = useCallback(async () => {
+    try {
+      const result = await apiHomeCategoryList({ skipErrorHandler: true });
+      if (result?.success === false) {
+        antdMessage.warning(result.message);
+        setLoading(false);
+        return;
+      }
+
+      const { data } = result;
+      setHomeCategoryInfo(data);
+      setActiveTab(data?.categories?.[0]?.type);
+      setLoading(false);
+    } catch {
+      setLoading(false);
+    }
+  }, []);
+
+  const runRecommendNavList = useCallback(async () => {
+    try {
+      const result = await apiDisplayRecommendList({ skipErrorHandler: true });
+      if (result?.success === false) {
+        setRecommendNavList([]);
+        return;
+      }
+
+      const list = result?.data?.recChatBoxNav?.Agent || [];
+      setRecommendNavList(
+        [...list].sort((prev, next) => (prev.sort || 0) - (next.sort || 0)),
+      );
+    } catch {
+      setRecommendNavList([]);
+    }
+  }, []);
+
   const { run: runCollectAgent } = useRequest(apiCollectAgent, {
     manual: true,
     debounceInterval: 300,
@@ -82,7 +172,6 @@ const Home: React.FC = () => {
     },
   });
 
-  // 智能体取消收藏
   const { run: runUnCollectAgent } = useRequest(apiUnCollectAgent, {
     manual: true,
     debounceInterval: 300,
@@ -91,100 +180,90 @@ const Home: React.FC = () => {
     },
   });
 
-  // 已发布的智能体详情接口
-  const { run: runDetail } = useRequest(apiPublishedAgentInfo, {
-    manual: true,
-    debounceInterval: 300,
-    onSuccess: (result: AgentDetailDto) => {
-      setAgentDetail(result);
-    },
-  });
-
   useEffect(() => {
     setLoading(true);
-    // 主页智能体分类列表
     runCategoryList();
-  }, []);
+    runRecommendNavList();
+  }, [runCategoryList, runRecommendNavList]);
 
   useEffect(() => {
-    if (tenantConfigInfo) {
-      // 根据当前模式选择使用哪个智能体ID
-      const agentId =
-        isTaskAgentMode && tenantConfigInfo.defaultTaskAgentId
-          ? tenantConfigInfo.defaultTaskAgentId
-          : tenantConfigInfo.defaultAgentId;
-      runDetail(agentId);
+    setAgentDetail(undefined);
+    if (currentAgentId) {
+      runDetail(currentAgentId);
     }
-  }, [tenantConfigInfo, isTaskAgentMode]);
+  }, [currentAgentId, runDetail]);
 
   useEffect(() => {
-    // 初始化选中的组件列表
     initSelectedComponentList(agentDetail?.manualComponents);
   }, [agentDetail?.manualComponents]);
 
-  /**
-   * 跳转页面
-   * @param _message 传递的消息内容
-   * @param files 传递的附件文件列表
-   * @param skillIds 传递的技能 ID 列表
-   */
+  useEffect(() => {
+    setSelectedComputerId(selectedRecommend ? '' : '-1');
+    setSelectedModelId(undefined);
+    setSelectedSpaceId(undefined);
+  }, [selectedRecommend]);
+
   const handleEnter = async (
-    _message: string,
+    inputMessage: string,
     files?: UploadFileInfo[],
     skillIds?: number[],
     modelId?: number,
+    agentMode?: AgentMode,
   ) => {
-    if (!tenantConfigInfo) {
+    if (!tenantConfigInfo || !currentAgentId) {
       message.warning(dict('PC.Pages.Home.noTenantInfo'));
       return;
     }
 
-    // 根据当前模式选择使用哪个智能体ID
-    const agentId =
-      isTaskAgentMode && tenantConfigInfo.defaultTaskAgentId
-        ? tenantConfigInfo.defaultTaskAgentId
-        : tenantConfigInfo.defaultAgentId;
+    if (selectedProjectType) {
+      const spaceId = showSpaceSelector
+        ? selectedSpaceId
+        : Number(getSpaceId());
+      if (!spaceId) {
+        message.warning(dict('PC.Pages.Home.noTenantInfo'));
+        return;
+      }
 
-    // 传递的参数
-    const attach = {
-      message: _message,
+      await createProjectAndNavigate({
+        payload: {
+          type: selectedProjectType,
+          prompt: inputMessage,
+          files,
+          skillIds,
+          modelId: modelId || selectedModelId,
+          tools: selectedComponentList,
+          computerId: selectedComputerId,
+          agentMode,
+        },
+        spaceId,
+        tenantConfigInfo,
+        setContext,
+      });
+      return;
+    }
+
+    await handleCreateConversation(currentAgentId, {
+      message: inputMessage,
       files,
       infos: selectedComponentList,
       messageSourceType: 'home' as MessageSourceType,
+      selectedComputerId,
       skillIds,
       modelId: modelId || selectedModelId,
-    };
-
-    await handleCreateConversation(agentId, attach);
+    });
   };
 
-  // 切换通用型智能体模式
-  const handleToggleTaskAgent = () => {
-    setIsTaskAgentMode((prev) => !prev);
-  };
-
-  // 是否显示通用型智能体切换按钮
   const showTaskAgentToggle = !!(
+    !selectedRecommend &&
     tenantConfigInfo?.defaultTaskAgentId &&
     tenantConfigInfo.defaultTaskAgentId > 0
   );
 
-  // 处理电脑选择
-  const handleComputerSelect = (id: string) => {
-    setSelectedComputerId(id);
-  };
-
-  // 处理标签点击 - 只更新activeTab状态
   const handleTabClick = (type: string) => {
-    console.log(
-      `🏠 Home Tab click event: ${type}, current activeTab: ${activeTab}`,
-    );
     setActiveTab(type);
   };
 
-  // 切换收藏与取消收藏
-  const handleToggleCollect = (type: string, info: CategoryItemInfo) => {
-    currentAgentTypeRef.current = type;
+  const handleToggleCollect = (_type: string, info: CategoryItemInfo) => {
     if (info.collect) {
       runUnCollectAgent(info.targetId);
     } else {
@@ -192,79 +271,51 @@ const Home: React.FC = () => {
     }
   };
 
-  // 点击单个智能体
-  const handleClick = (agentInfo: CategoryItemInfo) => {
+  const handleAgentClick = (agentInfo: CategoryItemInfo) => {
     const { targetId, lastConversationId } = agentInfo;
 
-    // 如果最后一次会话ID存在，则跳转至最后一次会话
-    if (!!lastConversationId) {
-      const url = `/home/chat/${lastConversationId}/${targetId}`;
-      history.push(url);
+    if (lastConversationId) {
+      history.push(`/home/chat/${lastConversationId}/${targetId}`);
       return;
     }
 
     history.push(`/agent/${targetId}`);
   };
 
-  const affixRef = useRef<AffixRef>(null);
-
-  useEffect(() => {
-    const handler = () => {
-      affixRef.current?.updatePosition();
-    };
-    window.addEventListener('scroll', handler, true);
-    return () => window.removeEventListener('scroll', handler, true);
-  }, []);
-
-  const handleClickItem = (item: GuidQuestionDto) => {
-    // 外部页面
-    if (item.type === 'Link') {
-      // 打开外链
-      if (!item.url) {
-        antdMessage.error(dict('PC.Pages.Home.linkConfigError'));
-        return;
-      }
-      window.open(item.url, '_blank');
-      return;
-    }
-
-    handleEnter(item.info);
+  const handleRecommendSelect = (item: DisplayRecommendInfo) => {
+    setSelectedRecommend((prev) => (prev?.id === item.id ? undefined : item));
+    // 延迟以确保重新渲染后聚焦
+    setTimeout(() => {
+      chatInputRef.current?.focus();
+    }, 0);
   };
 
   return (
     <div className={cx(styles.container, 'flex', 'flex-col', 'items-center')}>
-      {/* 输入框区域 */}
-      <div className={cx(styles.inputSection)}>
+      <main className={cx(styles.inputSection)}>
         <h2
           className={cx(styles.title)}
           dangerouslySetInnerHTML={{ __html: tenantConfigInfo?.homeSlogan }}
         />
-        {/*<div className={cx(styles.title)}>
-          <PureMarkdownRenderer
-            id={`${agentDetail?.agentId}`}
-            className={cx(styles.content)}
-          >
-            {agentDetail?.openingChatMsg as string}
-          </PureMarkdownRenderer>
-        </div>*/}
-
         <ChatInputHome
-          key={`home-${tenantConfigInfo?.defaultAgentId}-${isTaskAgentMode}`}
+          ref={chatInputRef}
           className={cx(styles.textarea)}
           onEnter={handleEnter}
           isClearInput={false}
-          manualComponents={agentDetail?.manualComponents || []}
+          placeholder={selectedRecommend?.placeholder || undefined}
+          manualComponents={
+            agentDetail?.manualComponents || EMPTY_MANUAL_COMPONENTS
+          }
           selectedComponentList={selectedComponentList}
           onSelectComponent={handleSelectComponent}
           showTaskAgentToggle={showTaskAgentToggle}
-          isTaskAgentActive={isTaskAgentMode}
-          onToggleTaskAgent={handleToggleTaskAgent}
+          isTaskAgentActive={effectiveTaskAgentActive}
+          onToggleTaskAgent={() => setIsTaskAgentMode((prev) => !prev)}
           selectedComputerId={selectedComputerId}
-          onComputerSelect={handleComputerSelect}
+          onComputerSelect={setSelectedComputerId}
           agentId={agentDetail?.agentId}
           agentSandboxId={agentDetail?.sandboxId}
           readonly={agentDetail?.allowPrivateSandbox === DefaultSelectedEnum.No}
-          /** 是否启用 @ 提及功能，默认启用 */
           enableMention={
             agentDetail?.type === AgentTypeEnum.TaskAgent &&
             agentDetail?.allowAtSkill === DefaultSelectedEnum.Yes
@@ -272,40 +323,30 @@ const Home: React.FC = () => {
           allowOtherModel={agentDetail?.allowOtherModel}
           selectedModelId={selectedModelId}
           onModelSelect={setSelectedModelId}
+          showSpaceSelector={showSpaceSelector}
+          selectedSpaceId={selectedSpaceId}
+          onSpaceSelect={setSelectedSpaceId}
           agentType={agentDetail?.type}
+          selectedTag={
+            selectedRecommend
+              ? {
+                  label: selectedRecommend.label,
+                }
+              : undefined
+          }
+          onClearSelectedTag={() => setSelectedRecommend(undefined)}
+          agentMode={agentMode}
+          onAgentModeChange={setAgentMode}
+          showAgentModeSelector={
+            agentDetail?.allowChooseMode === DefaultSelectedEnum.Yes
+          }
         />
-        <div
-          className={cx(
-            styles.recommend,
-            'flex',
-            'content-center',
-            'flex-wrap',
-          )}
-        >
-          {agentDetail?.guidQuestionDtos?.map(
-            (item: GuidQuestionDto, index: number) => {
-              return (
-                <div
-                  key={index}
-                  className={cx(
-                    styles['recommend-item'],
-                    'cursor-pointer',
-                    'hover-box',
-                  )}
-                  onClick={() => handleClickItem(item)}
-                >
-                  {item?.icon && (
-                    <img className={cx(styles.icon)} src={item?.icon} />
-                  )}
-                  {item.info}
-                </div>
-              );
-            },
-          )}
-        </div>
-      </div>
-      {/* 推荐区域 */}
-      <div className={cx(styles.recommendSection)}>
+        <ChatBoxRecommendNav
+          items={recommendNavList}
+          onSelect={handleRecommendSelect}
+        />
+      </main>
+      <section className={cx(styles.recommendSection)}>
         <div className={cx(styles.wrapper)}>
           {loading ? (
             <Loading className={cx('h-full')} />
@@ -315,14 +356,14 @@ const Home: React.FC = () => {
                 homeCategoryInfo={homeCategoryInfo}
                 activeTab={activeTab}
                 onTabClick={handleTabClick}
-                onAgentClick={handleClick}
+                onAgentClick={handleAgentClick}
                 onToggleCollect={handleToggleCollect}
                 onDataUpdate={runCategoryList}
               />
             )
           )}
         </div>
-      </div>
+      </section>
     </div>
   );
 };

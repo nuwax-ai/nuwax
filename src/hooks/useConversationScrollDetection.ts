@@ -87,7 +87,9 @@ export const useConversationScrollDetection = (
         // 增加 1px 的阈值补偿，提高触控板滚动的灵敏度
         const isScrollingUp = scrollTop < lastScrollTopRef.current - 1;
 
-        if (isScrollingUp) {
+        // 仅在平滑滚动 (smooth) 过程中允许用户向上滑动打断自动滚动。
+        // 瞬间滚动 (instant) 是一步到位的，其间产生的 scrollTop 减小多为浏览器排版或重绘抖动，忽略打断判定。
+        if (isScrollingUp && isProgrammatic === 'smooth') {
           // 用户试图向上滚动，立即禁用自动滚动
           allowAutoScrollRef.current = false;
           // 清除滚动定时器
@@ -142,13 +144,30 @@ export const useConversationScrollDetection = (
       handleScrollThrottled();
     };
 
+    // 原生滚轮事件监听，一旦滚轮向上滚动，说明用户显式向上操作，立即打断自动置底
+    const wheelHandler = (e: WheelEvent) => {
+      if (e.deltaY < 0) {
+        allowAutoScrollRef.current = false;
+        // 清除滚动定时器
+        if (scrollTimeoutRef.current) {
+          clearTimeout(scrollTimeoutRef.current);
+          scrollTimeoutRef.current = null;
+        }
+        setShowScrollBtn(true);
+      }
+    };
+
     messageView.addEventListener('scroll', scrollHandler, {
+      passive: true,
+    });
+    messageView.addEventListener('wheel', wheelHandler, {
       passive: true,
     });
 
     // 组件卸载时移除滚动事件监听器
     return () => {
       messageView.removeEventListener('scroll', scrollHandler);
+      messageView.removeEventListener('wheel', wheelHandler);
     };
   }, [
     messageViewTarget,

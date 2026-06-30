@@ -49,6 +49,8 @@ export interface WorkflowBaseInfo {
   // 图标地址
   icon: string;
   extension: { size: number };
+  // 流类型：Workflow / AgentFlow
+  workflowType?: string;
 }
 
 // 更新、创建工作流弹窗
@@ -59,6 +61,8 @@ export interface CreateWorkflowProps {
   name?: string;
   description?: string;
   icon?: string;
+  // 流类型：Workflow / AgentFlow
+  workflowType?: string;
   open: boolean;
   onCancel: () => void;
   onConfirm?: (info: WorkflowBaseInfo) => void;
@@ -139,6 +143,8 @@ export interface AddWorkflowParams {
   name: string;
   description: string;
   icon: string;
+  // 流类型：Workflow / AgentFlow
+  workflowType?: string;
 }
 
 // 添加定时任务传入参数
@@ -179,6 +185,8 @@ export interface UpdateWorkflowParams {
   name: string;
   description: string;
   icon: string;
+  // 流类型：Workflow / AgentFlow
+  workflowType?: string;
 }
 
 // 更新定时任务传入参数
@@ -230,6 +238,8 @@ export interface UpdateSkillParams {
 
 // 组件信息
 export interface ComponentInfo {
+  // 开发会话 ID
+  devAgentConversationId?: number;
   // 是否启用
   enabled?: ModelComponentStatusEnum;
   // 组件ID
@@ -257,6 +267,8 @@ export interface ComponentInfo {
   ext: any;
   // 权限列表
   permissions?: PermissionsEnum[];
+  // 流类型：Workflow / AgentFlow
+  workflowType?: string;
   // 分组 ID
   groupId?: number;
 }
@@ -386,6 +398,7 @@ export interface SkillInfo {
   modified: string;
   // 最后修改人 ID
   modifiedId: number;
+  devAgentConversationId?: number;
   // 最后修改人名称
   modifiedName: string;
 }

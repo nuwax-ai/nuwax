@@ -7,7 +7,6 @@ import { COMPONENT_SETTING_ACTIONS } from '@/constants/space.constants';
 import {
   apiAgentComponentAdd,
   apiAgentComponentDelete,
-  apiAgentComponentEventUpdate,
   apiAgentComponentList,
   apiAgentComponentSubAgentUpdate,
   apiAgentVariables,
@@ -17,22 +16,17 @@ import {
   AgentAddComponentStatusEnum,
   AgentComponentTypeEnum,
   DefaultSelectedEnum,
-  EventListEnum,
   ExpandPageAreaEnum,
   HideDesktopEnum,
 } from '@/types/enums/agent';
 import {
   AgentArrangeConfigEnum,
+  AgentSubTypeEnum,
   AgentTypeEnum,
   ComponentSettingEnum,
   OpenCloseEnum,
 } from '@/types/enums/space';
-import type {
-  AgentComponentEventConfig,
-  AgentComponentEventUpdateParams,
-  AgentComponentInfo,
-  SubAgent,
-} from '@/types/interfaces/agent';
+import type { AgentComponentInfo, SubAgent } from '@/types/interfaces/agent';
 import type {
   AgentAddComponentBaseInfo,
   AgentArrangeConfigProps,
@@ -47,7 +41,6 @@ import { loopSetBindValueType } from '@/utils/deepNode';
 import { useRequest } from 'ahooks';
 import { CollapseProps, message, Switch, Tooltip } from 'antd';
 import classNames from 'classnames';
-import cloneDeep from 'lodash/cloneDeep';
 import React, {
   MouseEvent,
   useCallback,
@@ -57,11 +50,12 @@ import React, {
   useState,
 } from 'react';
 import { useModel } from 'umi';
+import { getAgentFlowArrangePolicy } from './agentFlow/arrangePolicy';
 import ComponentSettingModal from './ComponentSettingModal';
 import ConfigOptionsHeader from './ConfigOptionsHeader';
+import CreateHooks from './CreateHooks';
 import CreateVariables from './CreateVariables';
-import EventBindModal from './EventBindModal';
-import EventList from './EventList';
+import HookList from './HookList';
 import styles from './index.less';
 import KnowledgeTextList from './KnowledgeTextList';
 import LongMemoryContent from './LongMemoryContent';
@@ -75,6 +69,52 @@ import VariableList from './VariableList';
 const cx = classNames.bind(styles);
 
 /**
+ * 获取锚点定位应使用的滚动容器
+ *
+ * AgentArrangeConfig 仅用于 EditAgent / ConversationAgent（路由 layout: false，无 Layout 包裹），
+ * 从目标元素向上查找 overflow 容器，到 body 为止，避免使用 scrollIntoView 带动 window 滚动。
+ */
+const getAnchorScrollContainer = (element: HTMLElement): HTMLElement | null => {
+  const candidates: HTMLElement[] = [];
+
+  let parent = element.parentElement;
+  while (parent && parent !== document.body) {
+    const { overflowY } = window.getComputedStyle(parent);
+    if (overflowY === 'auto' || overflowY === 'scroll') {
+      candidates.push(parent);
+    }
+    parent = parent.parentElement;
+  }
+
+  // 优先使用实际可滚动的容器；否则使用最近的 overflow 容器
+  return (
+    candidates.find((el) => el.scrollHeight > el.clientHeight) ??
+    candidates[0] ??
+    null
+  );
+};
+
+/**
+ * 在编排配置区域内部滚动到锚点（不触发 window / 页面级滚动）
+ */
+const scrollAnchorTargetIntoView = (
+  target: HTMLElement,
+  behavior: ScrollBehavior = 'smooth',
+) => {
+  const scrollContainer = getAnchorScrollContainer(target);
+  if (!scrollContainer) {
+    return;
+  }
+
+  const containerRect = scrollContainer.getBoundingClientRect();
+  const targetRect = target.getBoundingClientRect();
+  const nextScrollTop =
+    scrollContainer.scrollTop + targetRect.top - containerRect.top;
+
+  scrollContainer.scrollTo({ top: nextScrollTop, behavior });
+};
+
+/**
  * 智能体编排区域配置
  */
 const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
@@ -82,14 +122,16 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   agentConfigInfo,
   extraComponent,
   onChangeAgent,
-  onInsertSystemPrompt,
   onVariablesChange,
+  onMemoryVariablesConfirmed,
   onToolsChange,
 }) => {
   // 插件弹窗
   const [openPluginModel, setOpenPluginModel] = useState<boolean>(false);
   // 变量弹窗
   const [openVariableModel, setOpenVariableModel] = useState<boolean>(false);
+  // Hook 管理弹窗
+  const [openHookModel, setOpenHookModel] = useState<boolean>(false);
   const [checkTag, setCheckTag] = useState<AgentComponentTypeEnum>(
     AgentComponentTypeEnum.Plugin,
   );
@@ -108,24 +150,64 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   const [deleteList, setDeleteList] = useState<DeleteComponentInfo[]>([]);
   // 打开、关闭组件选择弹窗
   const [show, setShow] = useState<boolean>(false);
-  // 打开、关闭事件绑定弹窗
-  const [openEventBindModel, setOpenEventBindModel] = useState<boolean>(false);
+  /** 组件选择弹窗模式：default 常规组件；groupAgent 群组智能体 */
+  const [createdMode, setCreatedMode] = useState<'default' | 'groupAgent'>(
+    'default',
+  );
   // 打开、关闭页面设置弹窗
   const [openPageModel, setOpenPageModel] = useState<boolean>(false);
   // 智能体组件列表
   const { agentComponentList, setAgentComponentList } = useModel('spaceAgent');
   const { handleVariables } = useModel('conversationInfo');
-  // 点击的当前事件配置
-  const [currentEventConfig, setCurrentEventConfig] =
-    useState<AgentComponentEventConfig>();
 
   // 打开子智能体编辑弹窗
   const [openSubAgentModel, setOpenSubAgentModel] = useState<boolean>(false);
+
+  /** 存在 devAgentConversationId 时隐藏子智能体模块 */
+  const hideSubAgent =
+    !!agentConfigInfo?.devAgentConversationId ||
+    agentConfigInfo?.subType === AgentSubTypeEnum.Custom;
+  /** 是否为群组智能体（AgentGroup）子类型 */
+  const isGroupSubType = agentConfigInfo?.subType === AgentSubTypeEnum.Group;
+  /** AgentFlow 编排策略（工作流/数据表展示规则见 arrangePolicy） */
+  const flowPolicy = useMemo(
+    () => getAgentFlowArrangePolicy(agentConfigInfo?.subType),
+    [agentConfigInfo?.subType],
+  );
+
+  /** 群组智能体选择弹窗仅展示智能体 Tab */
+  const groupAgentCreatedTabs = useMemo(
+    () =>
+      CREATED_TABS.filter((item) => item.key === AgentComponentTypeEnum.Agent),
+    [],
+  );
+
+  /** 常规组件选择弹窗 Tab 列表 */
+  const defaultCreatedTabs = useMemo(
+    () =>
+      CREATED_TABS.filter((item) => {
+        // 如果是通用型智能体
+        if (agentConfigInfo?.type === AgentTypeEnum.TaskAgent) {
+          return (
+            item.key !== AgentComponentTypeEnum.Agent &&
+            flowPolicy.isTaskAgentCreatedTabVisible(item.key)
+          );
+        }
+        return (
+          item.key !== AgentComponentTypeEnum.Agent &&
+          item.key !== AgentComponentTypeEnum.Skill
+        );
+      }),
+    [agentConfigInfo?.type, flowPolicy],
+  );
+
+  const isGroupAgentCreatedMode = createdMode === 'groupAgent';
 
   // 各配置块 DOM 引用，用于滚动定位
   const planSectionRef = useRef<HTMLDivElement | null>(null);
   const toolSectionRef = useRef<HTMLDivElement | null>(null);
   const skillSectionRef = useRef<HTMLDivElement | null>(null);
+  const groupMemberSectionRef = useRef<HTMLDivElement | null>(null);
   const knowledgeSectionRef = useRef<HTMLDivElement | null>(null);
   const memorySectionRef = useRef<HTMLDivElement | null>(null);
   const experienceSectionRef = useRef<HTMLDivElement | null>(null);
@@ -133,60 +215,83 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
 
   // 左侧锚点菜单配置
   const anchorItems = useMemo(
-    () => [
-      {
-        key: 'plan',
-        label: t('PC.Pages.AgentArrangeConfig.plan'),
-        ref: planSectionRef,
-      },
-      {
-        key: 'tool',
-        label: t('PC.Pages.AgentArrangeConfig.tools'),
-        ref: toolSectionRef,
-      },
-      {
-        key: 'skill',
-        label: t('PC.Pages.AgentArrangeConfig.skills'),
-        ref: skillSectionRef,
-      },
-      {
-        key: 'knowledge',
-        label: t('PC.Pages.AgentArrangeConfig.knowledge'),
-        ref: knowledgeSectionRef,
-      },
-      {
-        key: 'memory',
-        label: t('PC.Pages.AgentArrangeConfig.memory'),
-        ref: memorySectionRef,
-      },
-      {
-        key: 'experience',
-        label: t('PC.Pages.AgentArrangeConfig.conversation'),
-        ref: experienceSectionRef,
-      },
-      {
-        key: 'page',
-        label: t('PC.Pages.AgentArrangeConfig.interface'),
-        ref: pageSectionRef,
-      },
-    ],
-    [],
+    () =>
+      [
+        {
+          key: 'plan',
+          label: t('PC.Pages.AgentArrangeConfig.plan'),
+          ref: planSectionRef,
+        },
+        {
+          key: 'tool',
+          label: t('PC.Pages.AgentArrangeConfig.tools'),
+          ref: toolSectionRef,
+        },
+        {
+          key: 'skill',
+          label: t('PC.Pages.AgentArrangeConfig.skill'),
+          ref: skillSectionRef,
+        },
+        {
+          key: 'member',
+          label: t('PC.Pages.AgentArrangeConfig.groupMembers'),
+          ref: groupMemberSectionRef,
+        },
+        {
+          key: 'knowledge',
+          label: t('PC.Pages.AgentArrangeConfig.knowledge'),
+          ref: knowledgeSectionRef,
+        },
+        {
+          key: 'memory',
+          label: t('PC.Pages.AgentArrangeConfig.memory'),
+          ref: memorySectionRef,
+        },
+        {
+          key: 'experience',
+          label: t('PC.Pages.AgentArrangeConfig.conversation'),
+          ref: experienceSectionRef,
+        },
+        {
+          key: 'page',
+          label: t('PC.Pages.AgentArrangeConfig.interface'),
+          ref: pageSectionRef,
+        },
+      ].filter((item) => {
+        if (
+          isGroupSubType &&
+          (item.key === 'tool' || item.key === 'knowledge')
+        ) {
+          return false;
+        }
+        if (!flowPolicy.showToolsSection && item.key === 'tool') {
+          return false;
+        }
+        if (!flowPolicy.showKnowledgeSection && item.key === 'knowledge') {
+          return false;
+        }
+        if (!flowPolicy.showSkillSection && item.key === 'skill') {
+          return false;
+        }
+        if (!flowPolicy.showGroupMembersSection && item.key === 'member') {
+          return false;
+        }
+        return true;
+      }),
+    [isGroupSubType, flowPolicy],
   );
 
   /**
-   * 点击左侧锚点，滚动到对应配置块
+   * 点击左侧锚点，在编排配置区域内滚动到对应配置块（不滚动页面）
    */
-  const handleAnchorClick = (
-    key: string,
-    ref: React.RefObject<HTMLDivElement>,
-  ) => {
-    if (ref.current) {
-      ref.current.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start',
-      });
-    }
-  };
+  const handleAnchorClick = useCallback(
+    (_key: string, ref: React.RefObject<HTMLDivElement>) => {
+      if (ref.current) {
+        scrollAnchorTargetIntoView(ref.current, 'smooth');
+      }
+    },
+    [],
+  );
 
   // 根据组件类型，过滤组件
   const filterList = (type: AgentComponentTypeEnum) => {
@@ -238,10 +343,10 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     );
   }, [agentComponentList]);
 
-  // 绑定的事件信息
-  const eventsInfo = useMemo(() => {
+  // Hook 配置信息
+  const hooksInfo = useMemo(() => {
     return agentComponentList?.find(
-      (item: AgentComponentInfo) => item.type === AgentComponentTypeEnum.Event,
+      (item: AgentComponentInfo) => item.type === AgentComponentTypeEnum.Hook,
     );
   }, [agentComponentList]);
 
@@ -297,14 +402,17 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     if (isExistComponent(AgentComponentTypeEnum.Plugin)) {
       tool.push(AgentArrangeConfigEnum.Plugin);
     }
-    if (isExistComponent(AgentComponentTypeEnum.Workflow)) {
+    if (
+      flowPolicy.showWorkflowTool &&
+      isExistComponent(AgentComponentTypeEnum.Workflow)
+    ) {
       tool.push(AgentArrangeConfigEnum.Workflow);
     }
     if (isExistComponent(AgentComponentTypeEnum.MCP)) {
       tool.push(AgentArrangeConfigEnum.MCP);
     }
     return tool;
-  }, [agentComponentList]);
+  }, [agentComponentList, flowPolicy]);
 
   // 知识 - 当前激活 tab 面板的 key
   const knowledgeActiveKey = useMemo(() => {
@@ -317,14 +425,34 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   // 技能 - 当前激活 tab 面板的 key
   const skillActiveKey = useMemo(() => {
     const keys: AgentArrangeConfigEnum[] = [];
-    if (isExistComponent(AgentComponentTypeEnum.Skill)) {
+    if (
+      flowPolicy.showSkillSection &&
+      isExistComponent(AgentComponentTypeEnum.Skill)
+    ) {
       keys.push(AgentArrangeConfigEnum.Skill);
     }
-    if (isExistComponent(AgentComponentTypeEnum.SubAgent)) {
+
+    // 子智能体
+    if (
+      flowPolicy.showSubAgent &&
+      !hideSubAgent &&
+      isExistComponent(AgentComponentTypeEnum.SubAgent)
+    ) {
       keys.push(AgentArrangeConfigEnum.SubAgent);
     }
     return keys;
-  }, [agentComponentList]);
+  }, [agentComponentList, hideSubAgent, flowPolicy]);
+
+  // 组员 - 当前激活 tab 面板的 key（仅 AgentGroup）
+  const groupMemberActiveKey = useMemo(() => {
+    if (
+      flowPolicy.showGroupMembersSection &&
+      isExistComponent(AgentComponentTypeEnum.Agent)
+    ) {
+      return [AgentArrangeConfigEnum.Group_Agent];
+    }
+    return [];
+  }, [agentComponentList, flowPolicy]);
 
   // 记忆 - 当前激活 tab 面板的 key
   const memoryActiveKey = useMemo(() => {
@@ -337,12 +465,16 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     if (isExistComponent(AgentComponentTypeEnum.Variable) && _list.length) {
       keyList.push(AgentArrangeConfigEnum.Variable);
     }
-    if (isExistComponent(AgentComponentTypeEnum.Table)) {
+
+    if (
+      flowPolicy.showDataTableSection(isGroupSubType) &&
+      isExistComponent(AgentComponentTypeEnum.Table)
+    ) {
       keyList.push(AgentArrangeConfigEnum.Table);
     }
 
     return keyList;
-  }, [agentComponentList]);
+  }, [agentComponentList, variablesInfo, isGroupSubType, flowPolicy]);
 
   // 界面配置列表 - 当前激活 tab 面板的 key
   const pageActiveKey = useMemo(() => {
@@ -352,22 +484,27 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
       keyList.push(AgentArrangeConfigEnum.Page);
     }
 
-    // 事件绑定（通用智能体不显示）
-    if (
-      agentConfigInfo?.type !== AgentTypeEnum.TaskAgent &&
-      isExistComponent(AgentComponentTypeEnum.Event) &&
-      eventsInfo?.bindConfig?.eventConfigs?.length
-    ) {
-      keyList.push(AgentArrangeConfigEnum.Page_Event_Binding);
-    }
-
     // 开场白 (仅通用型智能体展示开场白块)
     if (agentConfigInfo?.type === AgentTypeEnum.TaskAgent) {
       keyList.push(AgentArrangeConfigEnum.Opening_Remarks);
     }
 
+    if (
+      flowPolicy.showHook &&
+      agentConfigInfo?.type === AgentTypeEnum.TaskAgent &&
+      isExistComponent(AgentComponentTypeEnum.Hook) &&
+      hooksInfo?.bindConfig?.hooks?.length
+    ) {
+      keyList.push(AgentArrangeConfigEnum.Hook);
+    }
+
     return keyList;
-  }, [agentComponentList, agentConfigInfo?.type]);
+  }, [
+    agentComponentList,
+    agentConfigInfo?.type,
+    hooksInfo?.bindConfig?.hooks,
+    flowPolicy,
+  ]);
 
   // 查询智能体配置组件列表
   const { runAsync } = useRequest(apiAgentComponentList, {
@@ -512,7 +649,16 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     type: AgentComponentTypeEnum,
   ) => {
     e.stopPropagation();
+    setCreatedMode('default');
     setCheckTag(type);
+    setShow(true);
+  };
+
+  /** 打开群组智能体选择弹窗（仅当前空间智能体列表） */
+  const handlerGroupAgentPlus = (e: React.MouseEvent<HTMLElement>) => {
+    e.stopPropagation();
+    setCreatedMode('groupAgent');
+    setCheckTag(AgentComponentTypeEnum.Agent);
     setShow(true);
   };
 
@@ -520,6 +666,16 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   const handlerVariablePlus = (e: MouseEvent) => {
     e.stopPropagation();
     setOpenVariableModel(true);
+  };
+
+  // 打开 Hook 管理弹窗
+  const handlerHookPlus = (e: MouseEvent) => {
+    e.stopPropagation();
+    if (!hooksInfo) {
+      message.warning(t('PC.Pages.AgentArrangeConfig.hookUnavailable'));
+      return;
+    }
+    setOpenHookModel(true);
   };
 
   // 确定添加、更新变量
@@ -531,6 +687,13 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     const { data } = await runVariables(agentId);
     // 处理变量参数
     handleVariables(data);
+    onMemoryVariablesConfirmed?.();
+  };
+
+  // 确定 Hook 配置变更
+  const handleConfirmHooks = async () => {
+    setOpenHookModel(false);
+    await asyncFun(true);
   };
 
   // 插件、工作流、MCP、数据表设置
@@ -593,7 +756,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     asyncFun(true);
   };
 
-  // 工具列表
+  // 工具列表（AgentFlow 工作流隐藏规则见 flowPolicy）
   const ToolList: CollapseProps['items'] = [
     {
       key: AgentArrangeConfigEnum.Plugin,
@@ -676,7 +839,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         body: 'collapse-body',
       },
     },
-  ];
+  ].filter((item) => flowPolicy.keepToolCollapseItem(item.key));
 
   // 知识库
   const KnowledgeList: CollapseProps['items'] = [
@@ -708,46 +871,87 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
 
   // 技能
   const SkillList: CollapseProps['items'] = [
+    ...(flowPolicy.showSkillSection
+      ? [
+          {
+            key: AgentArrangeConfigEnum.Skill,
+            label: t('PC.Pages.AgentArrangeConfig.skill'),
+            children: (
+              <CollapseComponentList
+                textClassName={cx(styles.text)}
+                type={AgentComponentTypeEnum.Skill}
+                list={filterList(AgentComponentTypeEnum.Skill)}
+                deleteList={deleteList}
+                onSet={handlePluginSet}
+                onDel={handleAgentComponentDel}
+              />
+            ),
+            extra: (
+              <TooltipIcon
+                title={t('PC.Pages.AgentArrangeConfig.addSkill')}
+                onClick={(e) =>
+                  handlerComponentPlus(e, AgentComponentTypeEnum.Skill)
+                }
+              />
+            ),
+            classNames: {
+              header: 'collapse-header',
+              body: 'collapse-body',
+            },
+          },
+        ]
+      : []),
+
+    // 如果是自定义智能体，或者devAgentConversationId存在，则不显示子智能体组件
+    ...(flowPolicy.showSubAgent && !hideSubAgent
+      ? [
+          {
+            key: AgentArrangeConfigEnum.SubAgent,
+            label: t('PC.Pages.AgentArrangeConfig.subAgent'),
+            children: (
+              <SubAgentConfig
+                subAgents={subAgentComponentInfo?.bindConfig?.subAgents}
+                onUpdate={handleSubAgentUpdate}
+              />
+            ),
+            extra: (
+              <TooltipIcon
+                title={t('PC.Pages.AgentArrangeConfig.addSubAgent')}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setOpenSubAgentModel(true);
+                }}
+              />
+            ),
+            classNames: {
+              header: 'collapse-header',
+              body: 'collapse-body',
+            },
+          },
+        ]
+      : []),
+  ];
+
+  // 组员（仅 AgentGroup）
+  const GroupMemberList: CollapseProps['items'] = [
     {
-      key: AgentArrangeConfigEnum.Skill,
-      label: t('PC.Pages.AgentArrangeConfig.skill'),
+      key: AgentArrangeConfigEnum.Group_Agent,
+      label: t('PC.Pages.AgentArrangeConfig.groupAgent'),
       children: (
         <CollapseComponentList
           textClassName={cx(styles.text)}
-          type={AgentComponentTypeEnum.Skill}
-          list={filterList(AgentComponentTypeEnum.Skill)}
+          type={AgentComponentTypeEnum.Agent}
+          list={filterList(AgentComponentTypeEnum.Agent)}
           deleteList={deleteList}
           onSet={handlePluginSet}
           onDel={handleAgentComponentDel}
+          showSettings={false}
         />
       ),
       extra: (
         <TooltipIcon
-          title={t('PC.Pages.AgentArrangeConfig.addSkill')}
-          onClick={(e) => handlerComponentPlus(e, AgentComponentTypeEnum.Skill)}
-        />
-      ),
-      classNames: {
-        header: 'collapse-header',
-        body: 'collapse-body',
-      },
-    },
-    {
-      key: AgentArrangeConfigEnum.SubAgent,
-      label: t('PC.Pages.AgentArrangeConfig.subAgent'),
-      children: (
-        <SubAgentConfig
-          subAgents={subAgentComponentInfo?.bindConfig?.subAgents}
-          onUpdate={handleSubAgentUpdate}
-        />
-      ),
-      extra: (
-        <TooltipIcon
-          title={t('PC.Pages.AgentArrangeConfig.addSubAgent')}
-          onClick={(e) => {
-            e.stopPropagation();
-            setOpenSubAgentModel(true);
-          }}
+          title={t('PC.Pages.AgentArrangeConfig.addGroupAgent')}
+          onClick={handlerGroupAgentPlus}
         />
       ),
       classNames: {
@@ -780,61 +984,108 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         body: 'collapse-body',
       },
     },
-    {
-      key: AgentArrangeConfigEnum.Table,
-      label: t('PC.Pages.AgentArrangeConfig.table'),
-      children: (
-        <CollapseComponentList
-          textClassName={cx(styles.text)}
-          type={AgentComponentTypeEnum.Table}
-          list={filterList(AgentComponentTypeEnum.Table)}
-          deleteList={deleteList}
-          onSet={handlePluginSet}
-          onDel={handleAgentComponentDel}
-        />
-      ),
-      extra: (
-        <TooltipIcon
-          title={t('PC.Pages.AgentArrangeConfig.addTable')}
-          onClick={(e) => handlerComponentPlus(e, AgentComponentTypeEnum.Table)}
-        />
-      ),
-      classNames: {
-        header: 'collapse-header',
-        body: 'collapse-body',
-      },
-    },
-    {
-      key: AgentArrangeConfigEnum.Long_Memory,
-      label: t('PC.Pages.AgentArrangeConfig.longMemory'),
-      children: (
-        <LongMemoryContent
-          textClassName={cx(styles.text)}
-          openLongMemory={agentConfigInfo?.openLongMemory}
-        />
-      ),
-      extra: (
-        <Switch
-          // 阻止冒泡事件
-          value={agentConfigInfo?.openLongMemory === OpenCloseEnum.Open}
-          onClick={(_, e: any) => {
-            e.stopPropagation();
-          }}
-          onChange={(value) =>
-            onChangeAgent(
-              value
-                ? OpenCloseEnum.Open
-                : (OpenCloseEnum.Close as OpenCloseEnum),
-              'openLongMemory',
-            )
-          }
-        />
-      ),
-      classNames: {
-        header: 'collapse-header',
-        body: 'collapse-body',
-      },
-    },
+
+    ...(flowPolicy.showDataTableSection(isGroupSubType)
+      ? [
+          {
+            key: AgentArrangeConfigEnum.Table,
+            label: t('PC.Pages.AgentArrangeConfig.table'),
+            children: (
+              <CollapseComponentList
+                textClassName={cx(styles.text)}
+                type={AgentComponentTypeEnum.Table}
+                list={filterList(AgentComponentTypeEnum.Table)}
+                deleteList={deleteList}
+                onSet={handlePluginSet}
+                onDel={handleAgentComponentDel}
+              />
+            ),
+            extra: (
+              <TooltipIcon
+                title={t('PC.Pages.AgentArrangeConfig.addTable')}
+                onClick={(e) =>
+                  handlerComponentPlus(e, AgentComponentTypeEnum.Table)
+                }
+              />
+            ),
+            classNames: {
+              header: 'collapse-header',
+              body: 'collapse-body',
+            },
+          },
+        ]
+      : []),
+    ...(flowPolicy.showLongMemory
+      ? [
+          {
+            key: AgentArrangeConfigEnum.Long_Memory,
+            label: t('PC.Pages.AgentArrangeConfig.longMemory'),
+            children: (
+              <LongMemoryContent
+                textClassName={cx(styles.text)}
+                openLongMemory={agentConfigInfo?.openLongMemory}
+              />
+            ),
+            extra: (
+              <Switch
+                // 阻止冒泡事件
+                value={agentConfigInfo?.openLongMemory === OpenCloseEnum.Open}
+                onClick={(_, e: any) => {
+                  e.stopPropagation();
+                }}
+                onChange={(value) =>
+                  onChangeAgent(
+                    value
+                      ? OpenCloseEnum.Open
+                      : (OpenCloseEnum.Close as OpenCloseEnum),
+                    'openLongMemory',
+                  )
+                }
+              />
+            ),
+            classNames: {
+              header: 'collapse-header',
+              body: 'collapse-body',
+            },
+          },
+        ]
+      : []),
+
+    // 版本管理：任务型智能体（通用型智能体、AgentFlow、AgentGroup、自定义） 才显示 版本管理 按钮
+    ...(agentConfigInfo?.type === AgentTypeEnum.TaskAgent
+      ? [
+          {
+            key: AgentArrangeConfigEnum.Version_Control,
+            label: t('PC.Pages.AgentArrangeConfig.versionControl'),
+            children: (
+              <p className={cx(styles.text)}>
+                {t('PC.Pages.AgentArrangeConfig.versionControlDesc')}
+              </p>
+            ),
+            extra: (
+              <Switch
+                value={
+                  agentConfigInfo?.enableVersionControl ===
+                  DefaultSelectedEnum.Yes
+                }
+                onClick={(_, e: any) => {
+                  e.stopPropagation();
+                }}
+                onChange={(value) =>
+                  onChangeAgent(
+                    value ? DefaultSelectedEnum.Yes : DefaultSelectedEnum.No,
+                    'enableVersionControl',
+                  )
+                }
+              />
+            ),
+            classNames: {
+              header: 'collapse-header',
+              body: 'collapse-body',
+            },
+          },
+        ]
+      : []),
   ];
 
   // 对话体验
@@ -869,63 +1120,40 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         body: 'collapse-body',
       },
     },
-    {
-      key: AgentArrangeConfigEnum.Open_Scheduled_Task,
-      label: t('PC.Pages.AgentArrangeConfig.scheduledTask'),
-      children: (
-        <p className={cx(styles.text)}>
-          {t('PC.Pages.AgentArrangeConfig.scheduledTaskDescription')}
-        </p>
-      ),
-      extra: (
-        <Switch
-          value={agentConfigInfo?.openScheduledTask === OpenCloseEnum.Open}
-          // 阻止冒泡事件
-          onClick={(_, e: any) => {
-            e.stopPropagation();
-          }}
-          onChange={(value) =>
-            onChangeAgent(
-              value ? OpenCloseEnum.Open : OpenCloseEnum.Close,
-              'openScheduledTask',
-            )
-          }
-        />
-      ),
-      classNames: {
-        header: 'collapse-header',
-        body: 'collapse-body',
-      },
-    },
-    // 允许用户选择自有模型
-    {
-      key: AgentArrangeConfigEnum.Allow_Other_Model,
-      label: t('PC.Pages.AgentArrangeConfig.allowOtherModel'),
-      children: (
-        <p className={cx(styles.text)}>
-          {t('PC.Pages.AgentArrangeConfig.allowOtherModelDesc')}
-        </p>
-      ),
-      extra: (
-        <Switch
-          value={agentConfigInfo?.allowOtherModel === DefaultSelectedEnum.Yes}
-          // 阻止冒泡事件
-          onClick={(_, e: any) => {
-            e.stopPropagation();
-          }}
-          onChange={(value) =>
-            onChangeAgent(
-              value ? DefaultSelectedEnum.Yes : DefaultSelectedEnum.No,
-              'allowOtherModel',
-            )
-          }
-        />
-      ),
-      classNames: {
-        header: 'collapse-header',
-        body: 'collapse-body',
-      },
-    },
+    ...(flowPolicy.showAllowOtherModel
+      ? [
+          {
+            key: AgentArrangeConfigEnum.Allow_Other_Model,
+            label: t('PC.Pages.AgentArrangeConfig.allowOtherModel'),
+            children: (
+              <p className={cx(styles.text)}>
+                {t('PC.Pages.AgentArrangeConfig.allowOtherModelDesc')}
+              </p>
+            ),
+            extra: (
+              <Switch
+                value={
+                  agentConfigInfo?.allowOtherModel === DefaultSelectedEnum.Yes
+                }
+                // 阻止冒泡事件
+                onClick={(_, e: any) => {
+                  e.stopPropagation();
+                }}
+                onChange={(value) =>
+                  onChangeAgent(
+                    value ? DefaultSelectedEnum.Yes : DefaultSelectedEnum.No,
+                    'allowOtherModel',
+                  )
+                }
+              />
+            ),
+            classNames: {
+              header: 'collapse-header',
+              body: 'collapse-body',
+            },
+          },
+        ]
+      : []),
 
     // 允许用户@技能
     ...(agentConfigInfo?.type === AgentTypeEnum.TaskAgent
@@ -1000,6 +1228,74 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
               ]),
         ]
       : []),
+
+    // 通用型智能体、AgentFlow、AgentGroup、自定义智能体 才显示 允许用户在对话框中选择模式 按钮
+    ...(agentConfigInfo?.subType === AgentSubTypeEnum.General ||
+    agentConfigInfo?.subType === AgentSubTypeEnum.Flow ||
+    isGroupSubType ||
+    agentConfigInfo?.subType === AgentSubTypeEnum.Custom
+      ? [
+          // 允许用户在对话框中选择模式
+          {
+            key: AgentArrangeConfigEnum.Allow_Choose_Mode,
+            label: t('PC.Pages.AgentArrangeConfig.allowChooseMode'),
+            children: (
+              <p className={cx(styles.text)}>
+                {t('PC.Pages.AgentArrangeConfig.allowChooseModeDesc')}
+              </p>
+            ),
+            extra: (
+              <Switch
+                value={
+                  agentConfigInfo?.allowChooseMode === DefaultSelectedEnum.Yes
+                }
+                onClick={(_, e: any) => {
+                  e.stopPropagation();
+                }}
+                onChange={(value) =>
+                  onChangeAgent(
+                    value ? DefaultSelectedEnum.Yes : DefaultSelectedEnum.No,
+                    'allowChooseMode',
+                  )
+                }
+              />
+            ),
+            classNames: {
+              header: 'collapse-header',
+              body: 'collapse-body',
+            },
+          },
+        ]
+      : []),
+
+    // 允许询问用户
+    {
+      key: AgentArrangeConfigEnum.Enable_Ask_Question,
+      label: t('PC.Pages.AgentArrangeConfig.enableAskQuestion'),
+      children: (
+        <p className={cx(styles.text)}>
+          {t('PC.Pages.AgentArrangeConfig.enableAskQuestionDesc')}
+        </p>
+      ),
+      extra: (
+        <Switch
+          value={agentConfigInfo?.enableAskQuestion === DefaultSelectedEnum.Yes}
+          onClick={(_, e: any) => {
+            e.stopPropagation();
+          }}
+          onChange={(value) =>
+            onChangeAgent(
+              value ? DefaultSelectedEnum.Yes : DefaultSelectedEnum.No,
+              'enableAskQuestion',
+            )
+          }
+        />
+      ),
+      classNames: {
+        header: 'collapse-header',
+        body: 'collapse-body',
+      },
+    },
   ];
 
   // 界面配置 - 设置
@@ -1009,122 +1305,6 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     );
     setCurrentComponentInfo(componentInfo);
     setOpenPageModel(true);
-  };
-
-  // 添加事件绑定
-  const handleAddEventBinding = (item?: AgentComponentEventConfig) => {
-    setOpenEventBindModel(true);
-    setCurrentEventConfig(item);
-  };
-
-  // 更新事件绑定配置
-  const { runAsync: runEventUpdate } = useRequest(
-    apiAgentComponentEventUpdate,
-    {
-      manual: true,
-      debounceWait: 300,
-    },
-  );
-
-  // 删除事件绑定
-  const handleDeletEventBinding = async (index: number) => {
-    const newEventConfigs = cloneDeep(eventsInfo?.bindConfig?.eventConfigs);
-    newEventConfigs?.splice(index, 1);
-    // 更新事件绑定信息
-    const newEventsInfo = {
-      id: eventsInfo?.id,
-      bindConfig: {
-        eventConfigs: newEventConfigs,
-      },
-    } as AgentComponentEventUpdateParams;
-    await runEventUpdate(newEventsInfo);
-    message.success(t('PC.Pages.AgentArrangeConfig.deleteSuccessSimple'));
-    // 重新查询智能体配置组件列表
-    asyncFun(true);
-  };
-
-  /**
-   * 点击事件绑定项
-   * @param item 点击事件绑定项
-   * @param action 操作事件类型
-   * @param index 事件绑定项索引
-   */
-  const handleClickEventBindingItem = (
-    item: AgentComponentEventConfig,
-    action: EventListEnum,
-    index: number,
-  ) => {
-    switch (action) {
-      // 编辑
-      case EventListEnum.Edit:
-        handleAddEventBinding(item);
-        break;
-      // 插入到提示词
-      case EventListEnum.InsertSystemPrompt:
-        if (onInsertSystemPrompt) {
-          // 格式化事件配置信息
-          // 解析 JSON Schema
-          const jsonSchema = item.argJsonSchema
-            ? JSON.parse(item.argJsonSchema)
-            : { type: 'object', properties: {}, required: [] };
-          const jsonSchemaString = JSON.stringify(jsonSchema, null, 2);
-
-          // 导入转义函数（如果还没有导入，需要在文件顶部添加）
-          // import { escapeHTML } from '@/components/TiptapVariableInput/utils/htmlUtils';
-
-          // 将 JSON Schema 的每一行用 <p> 标签包裹（需要转义内容）
-          const jsonSchemaLines = jsonSchemaString
-            .split('\n')
-            .map(
-              (line) =>
-                `<p>${line
-                  .replace(/&/g, '&amp;')
-                  .replace(/</g, '&lt;')
-                  .replace(/>/g, '&gt;')
-                  .replace(/"/g, '&quot;')
-                  .replace(/'/g, '&#039;')}</p>`,
-            )
-            .join('');
-
-          // 构建事件标签的 HTML（需要转义）
-          const eventTagHtml = `<div class="event" event-type="${
-            item.identification
-          }" data='${t(
-            'PC.Pages.AgentArrangeConfig.dynamicJsonParameter',
-          )}'>[${t('PC.Pages.AgentArrangeConfig.referenceNumber')}]</div>`;
-          const escapedEventTag = eventTagHtml
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;');
-
-          // 转义 identification 字段
-          const escapedIdentification = item.identification
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#039;');
-
-          // 构建完整的 HTML 格式文本
-          const eventText = `<p>${t(
-            'PC.Pages.AgentArrangeConfig.appendReferenceInfo',
-          )}</p><p>${escapedEventTag}</p><p><br class="ProseMirror-trailingBreak"></p><p>${t(
-            'PC.Pages.AgentArrangeConfig.dynamicJsonSchemaPrefix',
-            escapedIdentification,
-          )}</p><p>\`\`\`</p>${jsonSchemaLines}<p>\`\`\`</p>`;
-
-          onInsertSystemPrompt(eventText);
-          message.success(t('PC.Pages.AgentArrangeConfig.insertPromptSuccess'));
-        } else {
-          message.warning(
-            t('PC.Pages.AgentArrangeConfig.insertPromptUnavailable'),
-          );
-        }
-        break;
-      // 删除
-      case EventListEnum.Delete:
-        handleDeletEventBinding(index);
-        break;
-    }
   };
 
   // 界面配置列表
@@ -1244,28 +1424,22 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         body: 'collapse-body',
       },
     },
-    // 通用型智能体不显示 【事件绑定】
-    ...(agentConfigInfo?.type === AgentTypeEnum.TaskAgent
-      ? []
-      : [
+    ...(flowPolicy.showHook && agentConfigInfo?.type === AgentTypeEnum.TaskAgent
+      ? [
           {
-            key: AgentArrangeConfigEnum.Page_Event_Binding,
-            label: t('PC.Pages.AgentArrangeConfig.eventBinding'),
+            key: AgentArrangeConfigEnum.Hook,
+            label: t('PC.Pages.AgentArrangeConfig.hook'),
             children: (
-              // 事件绑定列表
-              <EventList
+              <HookList
                 textClassName={cx(styles.text)}
-                list={eventsInfo?.bindConfig?.eventConfigs || []}
-                onClick={handleClickEventBindingItem}
+                list={hooksInfo?.bindConfig?.hooks || []}
+                onClick={handlerHookPlus}
               />
             ),
             extra: (
               <TooltipIcon
-                title={t('PC.Pages.AgentArrangeConfig.addEventBinding')}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleAddEventBinding();
-                }}
+                title={t('PC.Pages.AgentArrangeConfig.addHook')}
+                onClick={handlerHookPlus}
               />
             ),
             classNames: {
@@ -1273,7 +1447,8 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
               body: 'collapse-body',
             },
           },
-        ]),
+        ]
+      : []),
   ];
 
   // 添加插件、工作流、知识库、数据库、MCP、页面、技能
@@ -1318,13 +1493,6 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     return COMPONENT_SETTING_ACTIONS;
   }, []);
 
-  // 确认事件绑定
-  const handleConfirmEventBinding = () => {
-    setOpenEventBindModel(false);
-    // 重新查询智能体配置组件列表
-    asyncFun(true);
-  };
-
   // 取消页面设置弹窗
   const handleCancelPageModel = () => {
     setOpenPageModel(false);
@@ -1368,40 +1536,58 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
             <div ref={planSectionRef}>{extraComponent}</div>
           )}
 
-          {/* 工具 */}
-          <div ref={toolSectionRef}>
-            <ConfigOptionsHeader
-              title={t('PC.Pages.AgentArrangeConfig.tools')}
-            />
-            <ConfigOptionCollapse
-              items={ToolList}
-              defaultActiveKey={toolActiveKey}
-            />
-          </div>
-
-          {/* 通用型智能体显示技能 */}
-          {agentConfigInfo?.type === AgentTypeEnum.TaskAgent && (
-            <div ref={skillSectionRef}>
+          {/* 工具（群组智能体 / AgentFlow 不显示） */}
+          {!isGroupSubType && flowPolicy.showToolsSection && (
+            <div ref={toolSectionRef}>
               <ConfigOptionsHeader
-                title={t('PC.Pages.AgentArrangeConfig.skills')}
+                title={t('PC.Pages.AgentArrangeConfig.tools')}
               />
               <ConfigOptionCollapse
-                items={SkillList}
-                defaultActiveKey={skillActiveKey}
+                items={ToolList}
+                defaultActiveKey={toolActiveKey}
               />
             </div>
           )}
 
-          {/* 知识库 */}
-          <div ref={knowledgeSectionRef}>
-            <ConfigOptionsHeader
-              title={t('PC.Pages.AgentArrangeConfig.knowledge')}
-            />
-            <ConfigOptionCollapse
-              items={KnowledgeList}
-              defaultActiveKey={knowledgeActiveKey}
-            />
-          </div>
+          {/* 通用型智能体显示技能（AgentFlow / AgentGroup 不展示） */}
+          {agentConfigInfo?.type === AgentTypeEnum.TaskAgent &&
+            flowPolicy.showSkillSection && (
+              <div ref={skillSectionRef}>
+                <ConfigOptionsHeader
+                  title={t('PC.Pages.AgentArrangeConfig.skill')}
+                />
+                <ConfigOptionCollapse
+                  items={SkillList}
+                  defaultActiveKey={skillActiveKey}
+                />
+              </div>
+            )}
+
+          {/* 组员（仅 AgentGroup） */}
+          {flowPolicy.showGroupMembersSection && (
+            <div ref={groupMemberSectionRef}>
+              <ConfigOptionsHeader
+                title={t('PC.Pages.AgentArrangeConfig.groupMembers')}
+              />
+              <ConfigOptionCollapse
+                items={GroupMemberList}
+                defaultActiveKey={groupMemberActiveKey}
+              />
+            </div>
+          )}
+
+          {/* 知识库（群组智能体 / AgentFlow 不显示） */}
+          {!isGroupSubType && flowPolicy.showKnowledgeSection && (
+            <div ref={knowledgeSectionRef}>
+              <ConfigOptionsHeader
+                title={t('PC.Pages.AgentArrangeConfig.knowledge')}
+              />
+              <ConfigOptionCollapse
+                items={KnowledgeList}
+                defaultActiveKey={knowledgeActiveKey}
+              />
+            </div>
+          )}
 
           {/* 记忆 */}
           <div ref={memorySectionRef}>
@@ -1440,23 +1626,21 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
           </div>
         </div>
       </div>
-      {/*添加插件、工作流、知识库、数据库弹窗*/}
+      {/* 添加插件、工作流、知识库、群组智能体等弹窗 */}
       <Created
         open={show}
         onCancel={() => setShow(false)}
-        checkTag={checkTag}
+        checkTag={
+          isGroupAgentCreatedMode ? AgentComponentTypeEnum.Agent : checkTag
+        }
         addComponents={addComponents}
         onAdded={handleAddComponent}
-        tabs={CREATED_TABS.filter((item) => {
-          // 如果是通用型智能体
-          if (agentConfigInfo?.type === AgentTypeEnum.TaskAgent) {
-            return item.key !== AgentComponentTypeEnum.Agent;
-          }
-          return (
-            item.key !== AgentComponentTypeEnum.Agent &&
-            item.key !== AgentComponentTypeEnum.Skill
-          );
-        })}
+        tabs={
+          isGroupAgentCreatedMode ? groupAgentCreatedTabs : defaultCreatedTabs
+        }
+        isSpaceOnly={isGroupAgentCreatedMode}
+        isGroupAgentPicker={isGroupAgentCreatedMode}
+        showMoreMenus={!isGroupAgentCreatedMode}
       />
       {/*创建变量弹窗*/}
       <CreateVariables
@@ -1465,24 +1649,24 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
         onCancel={() => setOpenVariableModel(false)}
         onConfirm={handleConfirmVariables}
       />
+      {/* Hook 管理弹窗 */}
+      {hooksInfo && (
+        <CreateHooks
+          open={openHookModel}
+          hooksInfo={hooksInfo}
+          onCancel={() => setOpenHookModel(false)}
+          onConfirm={handleConfirmHooks}
+        />
+      )}
       {/*组件设置弹窗*/}
       <ComponentSettingModal
         open={openPluginModel}
         variables={variablesInfo?.bindConfig?.variables || []}
         currentComponentInfo={currentComponentInfo}
+        agentSubType={agentConfigInfo?.subType}
         devConversationId={agentConfigInfo?.devConversationId}
         settingActionList={getSettingActionList(currentComponentInfo?.type)}
         onCancel={() => setOpenPluginModel(false)}
-      />
-      {/*事件绑定弹窗*/}
-      <EventBindModal
-        open={openEventBindModel}
-        // 事件绑定 - 更新 这里是当前事件配置
-        eventsInfo={eventsInfo}
-        currentEventConfig={currentEventConfig}
-        pageArgConfigs={pageArgConfigs}
-        onCancel={() => setOpenEventBindModel(false)}
-        onConfirm={handleConfirmEventBinding}
       />
       {/*页面设置弹窗*/}
       <PageSettingModal

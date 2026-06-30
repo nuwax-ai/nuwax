@@ -44,4 +44,8 @@ export enum SpecialPortType {
   QAOption = 'qa_option', // 问答选项端口
   Exception = 'exception', // 异常处理端口
   Loop = 'loop', // 循环节点特殊端口
+  RouteDecisionDefault = 'route_decision_default', // 路由决策默认端口
+  RouteDecisionRoute = 'route_decision_route', // 路由决策路由端口
+  // AgentFlow 动态分支端口
+  HitlOption = 'hitl_option', // HITL ask 选项端口
 }

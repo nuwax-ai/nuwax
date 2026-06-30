@@ -31,6 +31,8 @@ export enum NodeTypeEnum {
   // Database = 'Database',
   // 知识库
   Knowledge = 'Knowledge',
+  // 知识库写入
+  KnowledgeInsert = 'KnowledgeInsert',
   // http
   HTTPRequest = 'HTTPRequest',
   // 问答
@@ -87,6 +89,18 @@ export enum NodeTypeEnum {
   TableSQL = 'TableSQL',
   // mcp
   MCP = 'Mcp',
+  // 智能体（AgentFlow 专用）
+  Agent = 'Agent',
+  // 人类介入：询问（AgentFlow 专用，仅 Ask 模式）
+  HumanInteraction = 'HumanInteraction',
+  // 路由决策：AI 决策走哪条分支（AgentFlow 专用）
+  RouteDecision = 'RouteDecision',
+}
+
+// 流类型：Workflow（严格连线）/ AgentFlow（AI 驱动 + RunContext）
+export enum FlowKindEnum {
+  Workflow = 'Workflow',
+  AgentFlow = 'AgentFlow',
 }
 
 export enum DataTypeEnum {

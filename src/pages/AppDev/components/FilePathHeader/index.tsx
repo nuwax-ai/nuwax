@@ -1,7 +1,7 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import { dict } from '@/services/i18nRuntime';
 import { CheckOutlined } from '@ant-design/icons';
-import { Button, Spin, Tooltip } from 'antd';
+import { Button, Tooltip } from 'antd';
 import React from 'react';
 import styles from './index.less';
 
@@ -13,13 +13,13 @@ interface FilePathHeaderProps {
   /** 是否正在加载 */
   isLoading: boolean;
   /** 是否正在保存 */
-  isSaving: boolean;
+  isSaving?: boolean;
   /** 是否只读模式 */
   readOnly: boolean;
-  /** 保存回调 */
-  onSave: () => void;
-  /** 取消编辑回调 */
-  onCancel: () => void;
+  /** 保存回调（传入时显示保存按钮） */
+  onSave?: () => void;
+  /** 取消编辑回调（传入时显示取消按钮） */
+  onCancel?: () => void;
   /** 刷新回调 */
   onRefresh: () => void;
 }
@@ -32,27 +32,20 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   filePath,
   isModified,
   isLoading,
-  isSaving,
+  isSaving = false,
   readOnly,
   onSave,
   onCancel,
   onRefresh,
 }) => {
+  const showSaveActions = Boolean(onSave && onCancel);
   return (
     <div className={styles.filePathHeader}>
       <div className={styles.filePathInfo}>
-        {/* <FileOutlined className={styles.fileIcon} /> */}
         <span className={styles.filePath}>{filePath}</span>
-        {/* <span className={styles.fileLanguage}>{language}</span> */}
-        {isLoading && <Spin size="small" />}
-        {isModified && !readOnly && (
-          <span className={styles.modifiedIndicator}>
-            {dict('PC.Pages.AppDevFilePathHeader.modified')}
-          </span>
-        )}
       </div>
       <div className={styles.fileActions}>
-        {isModified && !readOnly && (
+        {showSaveActions && isModified && !readOnly && (
           <>
             <Button
               size="small"

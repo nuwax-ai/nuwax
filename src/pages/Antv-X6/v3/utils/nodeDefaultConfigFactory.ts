@@ -5,6 +5,10 @@
  */
 
 import {
+  createEmptyConditionArg,
+  createOtherIntentBranch,
+} from '@/pages/Antv-X6/v3/agentFlow/adapters/routeConditionAdapter';
+import {
   AnswerTypeEnum,
   DataTypeEnum,
   NodeShapeEnum,
@@ -42,6 +46,7 @@ export const NODE_DEFAULT_NAMES: Partial<Record<NodeTypeEnum, string>> = {
   [NodeTypeEnum.VariableAggregation]: 'Variable Aggregation',
   [NodeTypeEnum.DocumentExtraction]: 'Document Extraction',
   [NodeTypeEnum.Knowledge]: 'Knowledge Base',
+  [NodeTypeEnum.KnowledgeInsert]: 'Knowledge Insert',
   [NodeTypeEnum.HTTPRequest]: 'HTTP Request',
   [NodeTypeEnum.Plugin]: 'Plugin',
   [NodeTypeEnum.Workflow]: 'Workflow',
@@ -56,6 +61,10 @@ export const NODE_DEFAULT_NAMES: Partial<Record<NodeTypeEnum, string>> = {
   [NodeTypeEnum.LoopCondition]: 'Loop Condition',
   [NodeTypeEnum.Interval]: 'Interval',
   [NodeTypeEnum.TextProcessing]: 'Text Processing',
+  // AgentFlow 专用（默认名与侧边栏 i18n 名称保持一致）
+  [NodeTypeEnum.Agent]: '智能体',
+  [NodeTypeEnum.HumanInteraction]: '询问用户',
+  [NodeTypeEnum.RouteDecision]: '路由决策',
 };
 
 /**
@@ -145,10 +154,14 @@ function createDefaultIntentConfig(): any[] {
   return [
     {
       uuid: `intent-${generateUuid()}`,
-      intent: 'Intent 1',
-      description: '',
+      name: '',
+      intent: '',
+      intentType: 'NORMAL',
+      conditionType: 'AND',
+      conditionArgs: [createEmptyConditionArg()],
       nextNodeIds: [],
     },
+    createOtherIntentBranch(),
   ];
 }
 
@@ -364,6 +377,23 @@ export function createDefaultNodeConfig(
         ],
       };
 
+    case NodeTypeEnum.KnowledgeInsert:
+      return {
+        ...baseConfig,
+        knowledgeBaseConfigs: [],
+        inputArgs: [],
+        outputArgs: [
+          createDefaultArg({
+            key: 'isSuccess',
+            name: 'isSuccess',
+            dataType: DataTypeEnum.Boolean,
+            description: 'Insert operation succeeded',
+            require: true,
+            systemVariable: true,
+          }),
+        ],
+      };
+
     case NodeTypeEnum.HTTPRequest:
       return {
         ...baseConfig,
@@ -402,6 +432,64 @@ export function createDefaultNodeConfig(
         conditionArgs: [],
         inputArgs: [],
         outputArgs: [],
+      };
+
+    case NodeTypeEnum.Agent:
+      return {
+        ...baseConfig,
+        extraPrompt: '',
+        selfLoopTimes: 0,
+        reminderPrompt: '',
+        inputArgs: [],
+        outputArgs: [
+          createDefaultArg({
+            key: 'output',
+            name: 'output',
+            dataType: DataTypeEnum.String,
+            description: 'Agent reply',
+            require: true,
+            systemVariable: true,
+          }),
+        ],
+      };
+
+    case NodeTypeEnum.HumanInteraction:
+      return {
+        ...baseConfig,
+        question: '',
+        answerType: AnswerTypeEnum.TEXT,
+        options: [],
+        formArgs: [],
+        inputArgs: [],
+        outputArgs: [
+          createDefaultArg({
+            key: 'answer',
+            name: 'answer',
+            dataType: DataTypeEnum.String,
+            description: 'User answer',
+            require: true,
+            systemVariable: true,
+          }),
+        ],
+      };
+
+    case NodeTypeEnum.RouteDecision:
+      return {
+        ...baseConfig,
+        intentConfigs: createDefaultIntentConfig(),
+        extraPrompt: '',
+        modelId: undefined,
+        inputArgs: [],
+        outputArgs: [
+          createDefaultArg({
+            key: 'matchedIntent',
+            name: 'matchedIntent',
+            dataType: DataTypeEnum.String,
+            description: 'Matched intent',
+            require: true,
+            systemVariable: true,
+          }),
+        ],
       };
 
     default:

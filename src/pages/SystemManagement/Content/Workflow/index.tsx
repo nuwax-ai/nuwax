@@ -11,6 +11,7 @@ import {
   apiSystemResourceWorkflowList,
 } from '@/services/systemManage';
 import { SystemWorkflowInfo } from '@/types/interfaces/systemManage';
+import { buildWorkflowRoute } from '@/utils/router';
 import {
   ActionType,
   FormInstance,
@@ -49,7 +50,9 @@ const Workflow: React.FC = () => {
    * 查看工作流详情
    */
   const handleView = useCallback((record: SystemWorkflowInfo) => {
-    window.open(`/space/${record.spaceId}/workflow/${record.id}`);
+    window.open(
+      buildWorkflowRoute(record.spaceId, record.id, record.workflowType),
+    );
   }, []);
 
   /**

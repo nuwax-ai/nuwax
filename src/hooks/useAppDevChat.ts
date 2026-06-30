@@ -77,6 +77,41 @@ interface UseAppDevChatProps {
   onRestartDevServer?: () => Promise<void>; // 新增：重启开发服务器回调
 }
 
+/**
+ * 显式发送消息时的覆盖参数
+ * 用于新建项目页跳转到 AppDev 后自动发送首条消息，避免 setChatInput 后立即发送的状态竞态。
+ */
+interface SendMessageOverrides {
+  /** 本次发送使用的提示词，不传则使用当前输入框内容 */
+  prompt?: string;
+  /** 本次发送使用的编码模型 ID，不传则使用当前选择器模型 */
+  selectedModelId?: number | null;
+  /** 本次发送使用的多模态模型 ID，不传则使用当前选择器模型 */
+  multiModelId?: number | null;
+  /** 本次发送使用的数据源列表，不传则使用当前勾选的数据源 */
+  selectedDataResources?: DataResource[];
+}
+
+/**
+ * 从外部携带完整上下文直接发送消息的参数
+ */
+interface SendMessageWithPromptParams extends SendMessageOverrides {
+  /** 用户提示词 */
+  prompt: string;
+  /** 展示层附件 */
+  attachments?: Attachment[];
+  /** ai-chat 文件附件 */
+  attachmentFiles?: FileStreamAttachment[];
+  /** ai-chat 原型图片附件 */
+  attachmentPrototypeImages?: FileStreamAttachment[];
+  /** @ 提及的文件、目录或数据源 */
+  selectedMentions?: MentionItem[];
+  /** 技能 ID 列表 */
+  skillIds?: number[];
+  /** 请求 ID，用于关联 SSE 流 */
+  requestId?: string;
+}
+
 export const useAppDevChat = ({
   projectId,
   selectedModelId, // 新增
@@ -690,6 +725,14 @@ export const useAppDevChat = ({
                 params.attachments,
                 params.attachment_files,
                 params.attachment_prototype_images,
+                generateRequestId(),
+                undefined,
+                params.skill_ids,
+                {
+                  prompt: params.prompt,
+                  selectedModelId: params.chat_model_id,
+                  multiModelId: params.multi_model_id,
+                },
               ); //继续发送消息
             });
           } else {
@@ -742,12 +785,20 @@ export const useAppDevChat = ({
       requestId: string = generateRequestId(), // 生成临时request_id
       selectedMentions?: MentionItem[], // 新增：@ 提及的项（包含通过 @ 选择的数据源）
       skillIds?: number[], // 新增：@ 提及的技能 ID 列表
+      overrides?: SendMessageOverrides,
     ) => {
       try {
+        const promptText = overrides?.prompt ?? chatInput;
+        const currentSelectedModelId =
+          overrides?.selectedModelId ?? selectedModelId;
+        const currentMultiModelId = overrides?.multiModelId ?? multiModelId;
+        const currentSelectedDataResources =
+          overrides?.selectedDataResources ?? selectedDataResources;
+
         // 数据源数据结构提取
         // 1. 从 props 传入的 selectedDataResources 中提取
         const propsDataSources: DataSourceSelection[] =
-          selectedDataResources
+          currentSelectedDataResources
             .filter((item) => item.isSelected)
             ?.map((resource) => {
               return {
@@ -780,10 +831,10 @@ export const useAppDevChat = ({
         );
 
         const aiChatParams = {
-          prompt: chatInput,
+          prompt: promptText,
           project_id: projectId,
-          chat_model_id: selectedModelId, // 编码模型ID
-          multi_model_id: multiModelId, // 多模态模型ID（视觉模型ID，可选）
+          chat_model_id: currentSelectedModelId, // 编码模型ID
+          multi_model_id: currentMultiModelId, // 多模态模型ID（视觉模型ID，可选）
           attachments,
           // 附件文件列表
           attachment_files: attachmentFiles,
@@ -795,7 +846,7 @@ export const useAppDevChat = ({
 
         // 添加用户消息（包含附件和数据源）
         const userMessage = createUserMessage(
-          chatInput,
+          promptText,
           requestId,
           attachments,
           attachmentPrototypeImages,
@@ -812,7 +863,15 @@ export const useAppDevChat = ({
       } catch (error) {
         if (error && (error as any).code === AGENT_SERVICE_RUNNING) {
           showStopAgentServiceModal(projectId, () => {
-            sendMessageAndConnectSSE(); //继续发送消息
+            sendMessageAndConnectSSE(
+              attachments,
+              attachmentFiles,
+              attachmentPrototypeImages,
+              generateRequestId(),
+              selectedMentions,
+              skillIds,
+              overrides,
+            ); //继续发送消息
           });
         } else {
           setIsChatLoading(false);
@@ -823,6 +882,7 @@ export const useAppDevChat = ({
       chatInput,
       projectId,
       selectedModelId, // 新增：添加 selectedModelId 依赖
+      multiModelId,
       initializeAppDevSSEConnection,
       showStopAgentServiceModal,
       selectedDataResources,
@@ -873,6 +933,46 @@ export const useAppDevChat = ({
       );
     },
     [chatInput, sendMessageAndConnectSSE],
+  );
+
+  /**
+   * 使用外部传入的完整上下文直接发送消息
+   * 主要用于从新建项目页进入 AppDev 后自动发送首条需求，避免依赖输入框异步状态。
+   */
+  const sendMessageWithPrompt = useCallback(
+    async ({
+      prompt,
+      attachments,
+      attachmentFiles,
+      attachmentPrototypeImages,
+      requestId,
+      selectedMentions,
+      skillIds,
+      selectedModelId: overrideSelectedModelId,
+      multiModelId: overrideMultiModelId,
+      selectedDataResources: overrideSelectedDataResources,
+    }: SendMessageWithPromptParams) => {
+      if (!prompt.trim()) {
+        message.warning(t('PC.Pages.AppDevChat.inputMessageRequired'));
+        return;
+      }
+
+      sendMessageAndConnectSSE(
+        attachments,
+        attachmentFiles,
+        attachmentPrototypeImages,
+        requestId,
+        selectedMentions,
+        skillIds,
+        {
+          prompt,
+          selectedModelId: overrideSelectedModelId,
+          multiModelId: overrideMultiModelId,
+          selectedDataResources: overrideSelectedDataResources,
+        },
+      );
+    },
+    [sendMessageAndConnectSSE],
   );
 
   /**
@@ -1020,6 +1120,7 @@ export const useAppDevChat = ({
     setChatMessages, // 新增：设置聊天消息的方法
     sendChat,
     sendMessage, // 新增：支持附件的发送消息方法
+    sendMessageWithPrompt,
     cancelChat,
     cleanupAppDevSSE,
     // loadHistorySession,

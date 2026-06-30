@@ -85,6 +85,8 @@ export interface ChildNode {
 export interface StencilChildNode extends Partial<ChildNode> {
   bgIcon: string;
   type: NodeTypeEnum;
+  // 此节点适用的 flow 类型（缺省视为对所有 flow 可见）
+  flowKinds?: import('@/types/enums/common').FlowKindEnum[];
 }
 /**
  * 定义 StencilList 接口，用于描述模板列表的数据结构。
@@ -125,6 +127,8 @@ export interface ChangeEdgeProps {
   targetId: string;
   sourceNode: ChildNode;
   id?: string;
+  /** 源端口 ID；分支节点（IntentRecognition/QA/RouteDecision/HumanInteraction 等）连线时必传 */
+  sourcePort?: string;
 }
 export interface CreateNodeByPortOrEdgeProps {
   child: StencilChildNode;
@@ -133,6 +137,15 @@ export interface CreateNodeByPortOrEdgeProps {
   position: { x: number; y: number };
   targetNode?: ChildNode;
   edgeId?: string;
+}
+
+/** AgentFlow：在 source → tail 之间插入 middle 节点（拖线或快捷添加共用） */
+export interface InsertNodeBetweenParams {
+  sourceNode: ChildNode;
+  middleNode: ChildNode;
+  tailNode: ChildNode;
+  oldEdgeId: string;
+  portId: string;
 }
 
 export interface GraphContainerProps {
@@ -157,6 +170,10 @@ export interface GraphContainerProps {
   onClickBlank: () => void;
   onRefresh: () => void;
   onInit: () => void;
+  /** 当前流程类型，传递给 port/edge 快捷添加面板 */
+  flowKind?: import('@/types/enums/common').FlowKindEnum;
+  /** AgentFlow：Start 第二条拖线时在原后继前插入中间节点 */
+  insertNodeBetween?: (params: InsertNodeBetweenParams) => Promise<void>;
 }
 
 export interface GraphRect {
@@ -179,7 +196,16 @@ export interface GraphContainerRef {
   // 获取视口中心点（图形坐标）
   getViewportCenterPoint?: () => { x: number; y: number };
   // 新增节点
-  graphAddNode: (e: GraphRect, child: ChildNode) => void;
+  // coordinateSpace：e 的坐标空间。
+  //  - 'model'：e 已是节点模型(local)坐标的左上角（端口/边快捷添加、复制），直接落点，
+  //    不再做 clientToLocal 转换、不做居中。避免用「落点是否在画布容器内」的启发式判断——
+  //    该启发式在落点超出容器边界（如 in 端口向左偏移）或画布平移/缩放时会误判坐标系导致大幅偏移。
+  //  - 'auto'（默认）：保留旧启发式，兼容拖拽落点(client)与视口中心(model 中心)。
+  graphAddNode: (
+    e: GraphRect,
+    child: ChildNode,
+    coordinateSpace?: 'model' | 'auto',
+  ) => void;
   // 修改节点
   graphUpdateNode: (nodeId: string, newData: ChildNode | null) => void;
   // 修改节点通过表单数据
@@ -196,12 +222,12 @@ export interface GraphContainerRef {
   graphSelectNode: (id: string) => void;
   // 删除边
   graphDeleteEdge: (id: string) => void;
-  // 创建新的边
+  // 创建新的边；成功返回 true（节点缺失或画布未就绪时返回 false）
   graphCreateNewEdge: (
     source: string,
     target: string,
     isLoop?: boolean,
-  ) => void;
+  ) => boolean;
   graphChangeZoom: (val: number) => void;
   graphChangeZoomToFit: () => void;
   drawGraph: () => void;
@@ -254,6 +280,10 @@ export interface GraphProp {
   // 通过连接桩或者边创建节点
   createNodeByPortOrEdge: (config: CreateNodeByPortOrEdgeProps) => void;
   onClickBlank: () => void;
+  /** 当前流程类型，用于 port/edge 快捷添加面板的节点过滤 */
+  flowKind?: import('@/types/enums/common').FlowKindEnum;
+  /** AgentFlow：Start 第二条拖线时在原后继前插入中间节点 */
+  insertNodeBetween?: (params: InsertNodeBetweenParams) => Promise<void>;
 }
 
 export interface ExceptionItemProps extends ExceptionHandleConfig {

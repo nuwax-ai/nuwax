@@ -3,8 +3,49 @@
  * AppDev 页面相关工具函数
  */
 
+import { isAgentVersionControlEnabled } from '@/constants/agent.constants';
 import { FILE_CONSTANTS } from '@/constants/appDevConstants';
+import type { DefaultSelectedEnum } from '@/types/enums/agent';
 import type { FileNode } from '@/types/interfaces/appDev';
+
+/** 扁平文件列表项是否指向 .gitignore（根目录或任意路径下的同名文件） */
+export const isGitignoreFlatFile = (file: {
+  name?: string;
+  fileId?: string;
+}): boolean => {
+  const path = (file.fileId ?? file.name ?? '').trim();
+  if (!path) {
+    return false;
+  }
+  const baseName = path.split('/').filter(Boolean).pop() ?? '';
+  return baseName === '.gitignore';
+};
+
+/** 版本管控关闭时从扁平文件列表中移除 .gitignore */
+export const filterGitignoreFromFlatFileList = <
+  T extends { name?: string; fileId?: string },
+>(
+  files: T[],
+): T[] => files.filter((file) => !isGitignoreFlatFile(file));
+
+/**
+ * 按版本管控开关决定是否在构建文件树前过滤 .gitignore
+ * enableVersionControl 为 1（Yes）时保留，否则过滤
+ */
+export const filterFlatFileListForVersionControl = <
+  T extends { name?: string; fileId?: string },
+>(
+  files: T[] | undefined,
+  enableVersionControl?: DefaultSelectedEnum,
+): T[] | undefined => {
+  if (!files?.length) {
+    return files;
+  }
+  if (isAgentVersionControlEnabled(enableVersionControl)) {
+    return files;
+  }
+  return filterGitignoreFromFlatFileList(files);
+};
 
 /**
  * 将扁平的文件列表转换为树形结构

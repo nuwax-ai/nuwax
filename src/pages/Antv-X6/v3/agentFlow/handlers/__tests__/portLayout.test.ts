@@ -1,0 +1,199 @@
+/**
+ * portLayout util 单元测试
+ *
+ * 覆盖：
+ * - 常量值（基线对齐基线：baseY=42, itemHeight=24, step=12）
+ * - extractPortSuffix 边界（带/不带 nodeId 前缀、-out 后缀、嵌套 -out）
+ * - branchPortY(0/1/N) 数值
+ * - 端口 y 与 chip y 对齐不变量（RouteDecision 端口 0 = default, chip[0] 应对齐 port 1）
+ */
+
+import { NodeTypeEnum } from '@/types/enums/common';
+import type { ChildNode } from '@/types/interfaces/graph';
+import { describe, expect, it } from 'vitest';
+import {
+  BRANCH_PORT_BASE_Y,
+  BRANCH_PORT_DESC_HEIGHT,
+  BRANCH_PORT_ITEM_HEIGHT,
+  BRANCH_PORT_STEP,
+  branchPortY,
+  extractPortSuffix,
+  ROUTE_DEFAULT_PORT_COLOR,
+  shouldUseFixedSideOutPort,
+  singlePortCenterY,
+} from '../portLayout';
+
+describe('portLayout constants', () => {
+  it('should match the agreed baseline', () => {
+    expect(BRANCH_PORT_BASE_Y).toBe(42);
+    expect(BRANCH_PORT_ITEM_HEIGHT).toBe(24);
+    expect(BRANCH_PORT_STEP).toBe(12);
+    expect(BRANCH_PORT_DESC_HEIGHT).toBe(17);
+    expect(ROUTE_DEFAULT_PORT_COLOR).toBe('#bfbfbf');
+  });
+});
+
+describe('extractPortSuffix', () => {
+  const makeNode = (id: number | string) => ({ id } as ChildNode);
+
+  it('should strip nodeId prefix and -out suffix', () => {
+    expect(extractPortSuffix(makeNode(10), '10-eval-pass-out')).toBe(
+      'eval-pass',
+    );
+  });
+
+  it('should work with string nodeId', () => {
+    expect(extractPortSuffix(makeNode('abc'), 'abc-route-r1-out')).toBe(
+      'route-r1',
+    );
+  });
+
+  it('should handle portId without nodeId prefix (graceful fallback)', () => {
+    expect(extractPortSuffix(makeNode(10), 'eval-pass-out')).toBe('eval-pass');
+  });
+
+  it('should handle portId without -out suffix', () => {
+    expect(extractPortSuffix(makeNode(10), '10-eval-pass')).toBe('eval-pass');
+  });
+
+  it('should preserve uuid with hyphens in it', () => {
+    expect(extractPortSuffix(makeNode(10), '10-eval-fail-v1-uuid-out')).toBe(
+      'eval-fail-v1-uuid',
+    );
+  });
+});
+
+describe('branchPortY', () => {
+  it('should compute index 0 (first branch port)', () => {
+    const { yHeight, offsetY } = branchPortY(0);
+    // yHeight = 42 + 1*24 - 12 = 54
+    // offsetY = 42 + 1*24 = 66
+    expect(yHeight).toBe(54);
+    expect(offsetY).toBe(66);
+  });
+
+  it('should compute index 1 (second branch port)', () => {
+    const { yHeight, offsetY } = branchPortY(1);
+    expect(yHeight).toBe(42 + 2 * 24 - 12);
+    expect(offsetY).toBe(42 + 2 * 24);
+  });
+
+  it('should compute index N (linear progression)', () => {
+    const n = 5;
+    const { yHeight, offsetY } = branchPortY(n);
+    expect(yHeight).toBe(
+      BRANCH_PORT_BASE_Y + (n + 1) * BRANCH_PORT_ITEM_HEIGHT - BRANCH_PORT_STEP,
+    );
+    expect(offsetY).toBe(
+      BRANCH_PORT_BASE_Y + (n + 1) * BRANCH_PORT_ITEM_HEIGHT,
+    );
+  });
+
+  it('should always have yHeight < offsetY (by exactly step)', () => {
+    for (let i = 0; i < 10; i++) {
+      const { yHeight, offsetY } = branchPortY(i);
+      expect(offsetY - yHeight).toBe(BRANCH_PORT_STEP);
+    }
+  });
+
+  it('should shift ports down by descHeight when hasDescription:true', () => {
+    for (let i = 0; i < 5; i++) {
+      const without = branchPortY(i);
+      const withDesc = branchPortY(i, { hasDescription: true });
+      expect(withDesc.yHeight).toBe(without.yHeight + BRANCH_PORT_DESC_HEIGHT);
+      expect(withDesc.offsetY).toBe(without.offsetY + BRANCH_PORT_DESC_HEIGHT);
+    }
+    // i=0 带描述：baseY=42+17=59 → yHeight=59+24-12=71
+    const first = branchPortY(0, { hasDescription: true });
+    expect(first.yHeight).toBe(71);
+    expect(first.offsetY).toBe(83);
+  });
+
+  it('should default hasDescription to false (no shift) when options omitted', () => {
+    expect(branchPortY(0)).toEqual(branchPortY(0, { hasDescription: false }));
+    expect(branchPortY(0)).toEqual(branchPortY(0, {}));
+  });
+});
+
+describe('shouldUseFixedSideOutPort', () => {
+  it('工作流/智能体等单 out 节点应使用 right 布局', () => {
+    expect(
+      shouldUseFixedSideOutPort({
+        type: NodeTypeEnum.Workflow,
+        nodeConfig: {},
+      } as ChildNode),
+    ).toBe(true);
+    expect(
+      shouldUseFixedSideOutPort({
+        type: NodeTypeEnum.Agent,
+        nodeConfig: {},
+      } as ChildNode),
+    ).toBe(true);
+  });
+
+  it('路由决策与询问选项分支不使用 right 布局', () => {
+    expect(
+      shouldUseFixedSideOutPort({
+        type: NodeTypeEnum.RouteDecision,
+        nodeConfig: { intentConfigs: [] },
+      } as ChildNode),
+    ).toBe(false);
+    expect(
+      shouldUseFixedSideOutPort({
+        type: NodeTypeEnum.HumanInteraction,
+        nodeConfig: { answerType: 'SELECT', options: [{ uuid: '1' }] },
+      } as ChildNode),
+    ).toBe(false);
+  });
+});
+
+describe('singlePortCenterY', () => {
+  it('无描述时 in/out 居中于 44px header', () => {
+    const { yHeight, offsetY } = singlePortCenterY();
+    expect(yHeight).toBeCloseTo(22.5);
+    expect(offsetY).toBe(33);
+  });
+
+  it('有描述时下移 descHeight/2 并增高节点', () => {
+    const without = singlePortCenterY();
+    const withDesc = singlePortCenterY({ hasDescription: true });
+    expect(withDesc.yHeight).toBe(
+      without.yHeight + BRANCH_PORT_DESC_HEIGHT / 2,
+    );
+    expect(withDesc.offsetY).toBe(without.offsetY + BRANCH_PORT_DESC_HEIGHT);
+  });
+});
+
+/**
+ * 端口布局不变量：分支 handler 端口 y = branchPortY(端口下标)
+ * chip 浮层用 buildChips(...).portIndex 也必须调用 branchPortY 同一索引
+ * 这里锁住 "RouteDecision / HITL ask(options) handler 都用同一公式"
+ * 防止后续 handler 改动时分支错位
+ */
+describe('port-layout invariant (handler <-> chip alignment)', () => {
+  it('RouteDecision: 无 default 时 route[i] 用 branchPortY(i)', () => {
+    for (let i = 0; i < 4; i++) {
+      expect(branchPortY(i).yHeight).toBe(
+        BRANCH_PORT_BASE_Y +
+          (i + 1) * BRANCH_PORT_ITEM_HEIGHT -
+          BRANCH_PORT_STEP,
+      );
+    }
+  });
+
+  it('RouteDecision: 有 default 时 route[i] 用 branchPortY(i+1)', () => {
+    for (let i = 0; i < 4; i++) {
+      const routePortY = branchPortY(i + 1).yHeight;
+      const chipTopY =
+        BRANCH_PORT_BASE_Y +
+        (i + 2) * BRANCH_PORT_ITEM_HEIGHT -
+        BRANCH_PORT_STEP;
+      expect(chipTopY).toBe(routePortY);
+    }
+  });
+
+  it('HITL ask(options): option[i] 用 branchPortY(i)', () => {
+    expect(branchPortY(0).yHeight).toBe(54);
+    expect(branchPortY(1).yHeight).toBe(78);
+  });
+});

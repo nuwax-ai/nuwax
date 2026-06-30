@@ -5,7 +5,13 @@ import OtherOperations from '@/components/OtherAction';
 import PublishComponentModal from '@/components/PublishComponentModal';
 import TestRun from '@/components/TestRun';
 import VersionHistory from '@/components/VersionHistory';
+import { resolveAgentFlowCreatedModalTabs } from '@/pages/Antv-X6/v3/agentFlow/createdPicker';
 import { testRunList } from '@/pages/Antv-X6/v3/constants/node.constants';
+import { AGENTFLOW_UI_CONFIG } from '@/pages/Antv-X6/v3/flowKind/flowKindConfig';
+import {
+  useAgentFlowKind,
+  useIsAgentFlow,
+} from '@/pages/Antv-X6/v3/flowKind/useFlowKind';
 import {
   AgentAddComponentStatusEnum,
   AgentComponentTypeEnum,
@@ -23,8 +29,9 @@ import { TestRunParams } from '@/types/interfaces/node';
 import { ErrorParams } from '@/types/interfaces/workflow';
 import { LoadingOutlined } from '@ant-design/icons';
 import { Form, FormInstance, Spin } from 'antd';
-import React, { MutableRefObject } from 'react';
+import React, { MutableRefObject, useMemo } from 'react';
 import VersionAction from '../../../components/VersionAction';
+import { clearPendingNodeCreateSession } from '../../utils/nodeCreateSession';
 import { returnBackgroundColor, returnImg } from '../../utils/workflowV3';
 import GraphContainer from '../graph/GraphContainer';
 import NodePanelDrawer from '../panels/PropertyPanel';
@@ -65,6 +72,9 @@ export interface WorkflowLayoutProps {
   changeZoom: (val: number) => void;
   createNodeByPortOrEdge: (
     config: CreateNodeByPortOrEdgeProps,
+  ) => Promise<void>;
+  insertNodeBetween?: (
+    config: import('@/types/interfaces/graph').InsertNodeBetweenParams,
   ) => Promise<void>;
   handleSaveNode: (data: ChildNode, payload: Partial<ChildNode>) => void;
   handleClickBlank: () => void;
@@ -123,6 +133,12 @@ export interface WorkflowLayoutProps {
   // Version History
   showVersionHistory: boolean;
   onBack?: () => void;
+
+  // AgentFlow Header extensions
+  onAutoArrange?: () => void;
+  handleTestRun?: () => void;
+  flowControlModel?: string;
+  onFlowControlModelChange?: (model: string) => void;
 }
 
 const WorkflowLayout: React.FC<WorkflowLayoutProps> = ({
@@ -152,6 +168,7 @@ const WorkflowLayout: React.FC<WorkflowLayoutProps> = ({
   copyNode,
   changeZoom,
   createNodeByPortOrEdge,
+  insertNodeBetween,
   handleSaveNode,
   handleClickBlank,
   handleInitLoading,
@@ -189,25 +206,60 @@ const WorkflowLayout: React.FC<WorkflowLayoutProps> = ({
   showCreateWorkflow,
   showVersionHistory,
   onBack,
+  // AgentFlow Header extensions
+  onAutoArrange,
+  handleTestRun: handleTestRunProp,
+  flowControlModel,
+  onFlowControlModelChange,
 }) => {
+  const isAgentFlow = useIsAgentFlow();
+  const agentFlowKind = useAgentFlowKind();
+
+  /** AgentFlow 添加智能体/工作流：Created 仅展示对应单一 Tab */
+  const createdModalTabs = useMemo(
+    () =>
+      resolveAgentFlowCreatedModalTabs(
+        isAgentFlow,
+        createdItem,
+        workflowCreatedTabs,
+      ),
+    [isAgentFlow, createdItem, workflowCreatedTabs],
+  );
+
+  const createdIsSpaceOnly =
+    isAgentFlow && createdItem === AgentComponentTypeEnum.Agent;
+
+  const createdIsAgentFlowAgentPicker =
+    isAgentFlow && createdItem === AgentComponentTypeEnum.Agent;
+
   return (
     <div id="container">
-      {/* 顶部的名称和发布等按钮 */}
-      <Header
-        hideBack={hideBack}
-        isValidLoading={isValidLoading}
-        info={info ?? {}}
-        onToggleVersionHistory={() => setShowVersionHistory(true)}
-        setShowCreateWorkflow={() => setShowCreateWorkflow(true)}
-        showPublish={handleShowPublish}
-        canUndo={canUndo}
-        canRedo={canRedo}
-        onUndo={onUndo}
-        onRedo={onRedo}
-        onManualSave={onManualSave}
-        onBack={onBack}
-      />
+      {/* AgentFlow 作为智能体子类型嵌入 EditAgent 时，顶部栏由 EditAgent 的 AgentHeader 提供，
+          不再渲染工作流编辑器自带的 Header（避免出现第二条顶部栏，与 TaskAgent 一致） */}
+      {!isAgentFlow && (
+        <Header
+          hideBack={hideBack}
+          isValidLoading={isValidLoading}
+          info={info ?? {}}
+          onToggleVersionHistory={() => setShowVersionHistory(true)}
+          setShowCreateWorkflow={() => setShowCreateWorkflow(true)}
+          showPublish={handleShowPublish}
+          canUndo={canUndo}
+          canRedo={canRedo}
+          onUndo={onUndo}
+          onRedo={onRedo}
+          onManualSave={onManualSave}
+          onBack={onBack}
+          onAutoArrange={onAutoArrange}
+          handleTestRun={handleTestRunProp}
+          testRunLoading={testRunLoading}
+          flowControlModel={flowControlModel}
+          onFlowControlModelChange={onFlowControlModelChange}
+        />
+      )}
 
+      {/* AgentFlow 与 Workflow v3 共用同一画布布局：满屏画布 + 左下角浮动控制面板
+          （含「添加节点」入口）。AgentFlow 仅多传 flowKind 以渲染分支节点。 */}
       <Spin
         spinning={globalLoadingTime > 0}
         indicator={<LoadingOutlined spin />}
@@ -223,10 +275,12 @@ const WorkflowLayout: React.FC<WorkflowLayoutProps> = ({
           copyNode={copyNode}
           changeZoom={changeZoom}
           createNodeByPortOrEdge={createNodeByPortOrEdge}
+          insertNodeBetween={insertNodeBetween}
           onSaveNode={handleSaveNode}
           onClickBlank={handleClickBlank}
           onInit={handleInitLoading}
           onRefresh={handleRefreshGraph}
+          flowKind={agentFlowKind}
         />
       </Spin>
 
@@ -241,6 +295,10 @@ const WorkflowLayout: React.FC<WorkflowLayoutProps> = ({
 
       <FoldWrap
         className="fold-wrap-style"
+        // AgentFlow 画布无顶部 Header（由 EditAgent 的 AgentHeader 提供），
+        // 面板无需为 56px Header 预留 top；用内联样式覆盖，与 bottom:12 对称，
+        // 且不依赖 LESS 重新编译（HMR 对内联样式可靠）。
+        style={isAgentFlow ? { top: 12 } : undefined}
         lineMargin
         title={foldWrapItem.name}
         visible={visible}
@@ -254,7 +312,7 @@ const WorkflowLayout: React.FC<WorkflowLayoutProps> = ({
         otherAction={
           <OtherOperations
             onChange={handleOperationsChange}
-            testRun={testRunList.includes(foldWrapItem.type)}
+            testRun={!isAgentFlow && testRunList.includes(foldWrapItem.type)}
             nodeType={foldWrapItem.type}
             action={
               foldWrapItem.type !== NodeTypeEnum.Start &&
@@ -289,7 +347,10 @@ const WorkflowLayout: React.FC<WorkflowLayoutProps> = ({
         checkTag={createdItem}
         onAdded={onAdded}
         open={open}
-        tabs={workflowCreatedTabs}
+        tabs={createdModalTabs}
+        isSpaceOnly={createdIsSpaceOnly}
+        isAgentFlowAgentPicker={createdIsAgentFlowAgentPicker}
+        modalZIndex={isAgentFlow ? AGENTFLOW_UI_CONFIG.modalZIndex : undefined}
         addComponents={[
           {
             type: AgentComponentTypeEnum.Workflow,
@@ -297,7 +358,10 @@ const WorkflowLayout: React.FC<WorkflowLayoutProps> = ({
             status: AgentAddComponentStatusEnum.Added,
           },
         ]}
-        onCancel={() => setOpen(false)}
+        onCancel={() => {
+          clearPendingNodeCreateSession();
+          setOpen(false);
+        }}
       />
 
       <TestRun

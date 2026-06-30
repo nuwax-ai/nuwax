@@ -1,8 +1,11 @@
+import ChangeFileGitDiffView, {
+  DiffModeEnum,
+} from '@/components/business-component/ChangeFileGitDiffView';
 import { dict } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { ProcessingEnum } from '@/types/enums/common';
-// import { copyTextToClipboard } from '@/utils/clipboard';
 import { cloneDeep } from '@/utils/common';
+import { normalizeFileDiffItems } from '@/utils/fileChangeDiff';
 import {
   BorderOutlined,
   CheckOutlined,
@@ -15,7 +18,7 @@ import {
   PlusOutlined,
   ProfileOutlined,
 } from '@ant-design/icons';
-import { Button, message, Tooltip } from 'antd';
+import { Button, message, Tooltip, Typography } from 'antd';
 import classNames from 'classnames';
 import { isEqual } from 'lodash';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
@@ -24,6 +27,67 @@ import styles from './index.less';
 import SeeDetailModal from './SeeDetailModal';
 
 const cx = classNames.bind(styles);
+
+/**
+ * 极简、快速且鲁棒的行级差异统计函数（Myers / LCS 基础版）
+ */
+const getDiffStats = (oldStr: string = '', newStr: string = '') => {
+  const splitLines = (value: string) => {
+    if (!value) {
+      return [];
+    }
+    const lines = value.split('\n');
+    if (lines[lines.length - 1] === '') {
+      lines.pop();
+    }
+    return lines;
+  };
+  const oldLines = splitLines(oldStr || '');
+  const newLines = splitLines(newStr || '');
+  const m = oldLines.length;
+  const n = newLines.length;
+
+  const dp = Array.from({ length: m + 1 }, () => new Int32Array(n + 1));
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (oldLines[i - 1] === newLines[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+      }
+    }
+  }
+  const lcs = dp[m][n];
+  const deletions = m - lcs;
+  const additions = n - lcs;
+
+  return { additions, deletions };
+};
+
+interface ProcessDiffViewerProps {
+  item: {
+    path: string;
+    oldText?: string;
+    newText?: string;
+  };
+}
+
+const ProcessDiffViewer: React.FC<ProcessDiffViewerProps> = ({ item }) => {
+  return (
+    <div className={cx(styles['diff-viewer-item'])}>
+      <div className={cx(styles['diff-viewer-item-content'])}>
+        <ChangeFileGitDiffView
+          fileId={item.path}
+          fileName={item.path}
+          originalContent={item.oldText || ''}
+          modifiedContent={item.newText || ''}
+          diffViewMode={DiffModeEnum.Unified}
+        />
+      </div>
+    </div>
+  );
+};
+
 interface MarkdownCustomProcessProps {
   executeId: string;
   name: string;
@@ -70,13 +134,36 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
   const [openModal, setOpenModal] = useState(false);
   // Plan 类型展开/收起状态
   const [isPlanExpanded, setIsPlanExpanded] = useState(true);
+  // Diff 展开/收起状态
+  const [isDiffExpanded, setIsDiffExpanded] = useState(false);
+
+  const diffItems = useMemo(() => {
+    return normalizeFileDiffItems(innerProcessing.result);
+  }, [innerProcessing.result]);
+
+  const hasDiff = diffItems.length > 0;
+
+  // 统计总的 additions 和 deletions
+  const { totalAdditions, totalDeletions } = useMemo(() => {
+    let additions = 0;
+    let deletions = 0;
+    diffItems.forEach((item) => {
+      const stats = getDiffStats(item.oldText || '', item.newText || '');
+      additions += stats.additions;
+      deletions += stats.deletions;
+    });
+    return { totalAdditions: additions, totalDeletions: deletions };
+  }, [diffItems]);
 
   useEffect(() => {
     // if (innerProcessing.status !== ProcessingEnum.EXECUTING) {
     //   // 如果状态不是执行中，则不更新
     //   return;
     // }
-    const processing = getProcessingById(innerProcessing.executeId);
+    const processing = getProcessingById(
+      innerProcessing.executeId,
+      innerProcessing.type,
+    );
     if (
       processing &&
       (processing?.status !== innerProcessing.status ||
@@ -195,14 +282,26 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
     );
   }, [innerProcessing.status, detailData]);
 
-  const handleOpenFileTree = useCallback(() => {
+  const handleOpenFileTree = useCallback(async () => {
     const result = innerProcessing.result as any;
     // 打开文件树
     if (result?.kind === 'edit') {
       const conversationId = props.conversationId;
-      const file_path = result?.input?.file_path;
+      const file_path =
+        result?.input?.file_path ||
+        result?.input?.filePath ||
+        result?.input?.filepath ||
+        result?.locations?.[0]?.path;
 
-      openPreviewView(conversationId);
+      if (
+        !file_path ||
+        conversationId === undefined ||
+        conversationId === null
+      ) {
+        return;
+      }
+
+      await openPreviewView(Number(conversationId), { forceRefresh: true });
       setTaskAgentSelectedFileId(file_path);
       // 每次点击时更新触发标志，确保即使文件ID相同也能触发文件选择
       setTaskAgentSelectTrigger(Date.now());
@@ -350,107 +449,171 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
     return null;
   }
 
+  // 工具栏标题：过长时 tooltip 限高 3 行，超出出现滚动条
+  const processName =
+    innerProcessing?.name || dict('PC.Components.MarkdownCustomProcess.noName');
+  const titleText =
+    hasDiff && diffItems.length === 1
+      ? `${processName} ${diffItems[0].path}`
+      : hasDiff && diffItems.length > 1
+      ? `${processName} ${diffItems[0].path} +${diffItems.length - 1}`
+      : processName;
+
   return (
-    <div
-      className={cx(styles['markdown-custom-process'])}
-      key={props.dataKey}
-      data-key={props.dataKey}
-    >
-      <div className={cx(styles['process-header'])}>
-        <div
-          className={cx(styles['process-title'], {
-            [styles['is-edit']]:
-              (innerProcessing.result as any)?.kind === 'edit',
-          })}
-          onClick={handleOpenFileTree}
-        >
-          {innerProcessing?.name ||
-            dict('PC.Components.MarkdownCustomProcess.noName')}
-        </div>
-        <div className={cx(styles['process-controls'])}>
-          {genStatusDisplay()}
-          <div className={cx(styles['process-controls-actions'])}>
-            <Tooltip
-              title={dict('PC.Components.MarkdownCustomProcess.viewDetail')}
-            >
-              <Button
-                size="small"
-                type="text"
-                disabled={disabled}
-                icon={<ProfileOutlined />}
-                onClick={handleShowDetailModal}
-              />
-            </Tooltip>
-            {isPageType ? (
+    <>
+      <div
+        className={cx(styles['markdown-custom-process'])}
+        key={props.dataKey}
+        data-key={props.dataKey}
+      >
+        <div className={cx(styles['process-header'])}>
+          <div
+            className={cx(styles['process-title'], {
+              [styles['is-edit']]:
+                !hasDiff && (innerProcessing.result as any)?.kind === 'edit',
+              [styles['is-diff']]: hasDiff,
+            })}
+            onClick={
+              hasDiff
+                ? () => setIsDiffExpanded(!isDiffExpanded)
+                : handleOpenFileTree
+            }
+          >
+            <div className={cx(styles['title-left-wrapper'])}>
+              <Typography.Text
+                className={cx(styles['title-text'])}
+                ellipsis={{
+                  tooltip: {
+                    title: titleText,
+                    styles: {
+                      root: { maxWidth: 380 },
+                      body: {
+                        // 最多展示 5 行（line-height 1.5 * 5 = 7.5em），超出滚动
+                        maxHeight: '7.5em',
+                        overflowY: 'auto',
+                        lineHeight: '1.5',
+                        overflowWrap: 'break-word',
+                      },
+                    },
+                  },
+                }}
+              >
+                {titleText}
+              </Typography.Text>
+              {hasDiff && (
+                <span className={cx(styles['diff-badges'])}>
+                  {totalAdditions > 0 && (
+                    <span className={cx(styles['badge-added'])}>
+                      +{totalAdditions}
+                    </span>
+                  )}
+                  {totalDeletions > 0 && (
+                    <span className={cx(styles['badge-deleted'])}>
+                      -{totalDeletions}
+                    </span>
+                  )}
+                </span>
+              )}
+            </div>
+          </div>
+          <div className={cx(styles['process-controls'])}>
+            {genStatusDisplay()}
+            <div className={cx(styles['process-controls-actions'])}>
               <Tooltip
-                title={
-                  pagePreviewData
-                    ? dict('PC.Components.MarkdownCustomProcess.closePreview')
-                    : dict('PC.Components.MarkdownCustomProcess.previewPage')
-                }
-                open={open}
-                onOpenChange={setOpen}
+                title={dict('PC.Components.MarkdownCustomProcess.viewDetail')}
               >
                 <Button
                   size="small"
                   type="text"
                   disabled={disabled}
-                  icon={
-                    pagePreviewData ? <EyeInvisibleOutlined /> : <EyeOutlined />
-                  }
-                  onClick={handlePreviewPage}
-                  onMouseEnter={() => setOpen(true)}
-                  onMouseLeave={() => setOpen(false)}
+                  icon={<ProfileOutlined />}
+                  onClick={handleShowDetailModal}
                 />
               </Tooltip>
-            ) : null}
-            {/* 展开/收起 */}
-            {isPlanType && (
-              <Tooltip
-                title={
-                  isPlanExpanded
-                    ? dict('PC.Components.MarkdownCustomProcess.collapse')
-                    : dict('PC.Components.MarkdownCustomProcess.expand')
-                }
-              >
-                <Button
-                  size="small"
-                  type="text"
-                  icon={isPlanExpanded ? <MinusOutlined /> : <PlusOutlined />}
-                  onClick={() => setIsPlanExpanded(!isPlanExpanded)}
-                  disabled={
-                    !detailData?.response || !Array.isArray(detailData.response)
+              {isPageType ? (
+                <Tooltip
+                  title={
+                    pagePreviewData
+                      ? dict('PC.Components.MarkdownCustomProcess.closePreview')
+                      : dict('PC.Components.MarkdownCustomProcess.previewPage')
                   }
-                />
-              </Tooltip>
-            )}
+                  open={open}
+                  onOpenChange={setOpen}
+                >
+                  <Button
+                    size="small"
+                    type="text"
+                    disabled={disabled}
+                    icon={
+                      pagePreviewData ? (
+                        <EyeInvisibleOutlined />
+                      ) : (
+                        <EyeOutlined />
+                      )
+                    }
+                    onClick={handlePreviewPage}
+                    onMouseEnter={() => setOpen(true)}
+                    onMouseLeave={() => setOpen(false)}
+                  />
+                </Tooltip>
+              ) : null}
+              {/* 展开/收起 */}
+              {isPlanType && (
+                <Tooltip
+                  title={
+                    isPlanExpanded
+                      ? dict('PC.Components.MarkdownCustomProcess.collapse')
+                      : dict('PC.Components.MarkdownCustomProcess.expand')
+                  }
+                >
+                  <Button
+                    size="small"
+                    type="text"
+                    icon={isPlanExpanded ? <MinusOutlined /> : <PlusOutlined />}
+                    onClick={() => setIsPlanExpanded(!isPlanExpanded)}
+                    disabled={
+                      !detailData?.response ||
+                      !Array.isArray(detailData.response)
+                    }
+                  />
+                </Tooltip>
+              )}
 
-            {/*<Tooltip title="复制">*/}
-            {/*  <Button*/}
-            {/*    size="small"*/}
-            {/*    type="text"*/}
-            {/*    icon={<CopyOutlined />}*/}
-            {/*    disabled={disabled}*/}
-            {/*    onClick={handleCopy}*/}
-            {/*  />*/}
-            {/*</Tooltip>*/}
+              {/*<Tooltip title="复制">*/}
+              {/*  <Button*/}
+              {/*    size="small"*/}
+              {/*    type="text"*/}
+              {/*    icon={<CopyOutlined />}*/}
+              {/*    disabled={disabled}*/}
+              {/*    onClick={handleCopy}*/}
+              {/*  />*/}
+              {/*</Tooltip>*/}
+            </div>
           </div>
         </div>
+        {/* 使用 SeeDetailModal 组件 */}
+        <SeeDetailModal
+          key={innerProcessing.executeId}
+          title={
+            innerProcessing.name ||
+            dict('PC.Components.MarkdownCustomProcess.noName')
+          }
+          visible={openModal}
+          onClose={() => setOpenModal(false)}
+          data={detailData}
+        />
       </div>
       {/* Plan 类型展开内容 */}
       {renderPlanDetails()}
-      {/* 使用 SeeDetailModal 组件 */}
-      <SeeDetailModal
-        key={innerProcessing.executeId}
-        title={
-          innerProcessing.name ||
-          dict('PC.Components.MarkdownCustomProcess.noName')
-        }
-        visible={openModal}
-        onClose={() => setOpenModal(false)}
-        data={detailData}
-      />
-    </div>
+      {/* Diff 类型展开内容 */}
+      {hasDiff && isDiffExpanded && (
+        <div className={cx(styles['diff-container'])}>
+          {diffItems.map((item, index) => (
+            <ProcessDiffViewer key={index} item={item} />
+          ))}
+        </div>
+      )}
+    </>
   );
 }
 

@@ -1,0 +1,20 @@
+// AgentFlow 画布嵌入样式
+// 覆盖 WorkflowV3 的 position:absolute 全屏布局，
+// 使其受限于 EditAgent 容器高度
+.agent-flow-canvas-embedded {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+
+  // 覆盖 #container 的 position:absolute
+  #container {
+    position: relative !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    top: auto !important;
+    left: auto !important;
+  }
+}

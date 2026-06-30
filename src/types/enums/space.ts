@@ -17,12 +17,32 @@ export enum CreateSkillWayEnum {
   Import = 'Import',
 }
 
-// 智能体类型枚举
+/**
+ * 智能体类型枚举
+ * All 全部
+ * ChatBot 对话智能体
+ * PageApp 网页应用智能体
+ * TaskAgent 任务型智能体
+ */
 export enum AgentTypeEnum {
   All = 'All',
   ChatBot = 'ChatBot',
   PageApp = 'PageApp',
   TaskAgent = 'TaskAgent',
+
+  // =============================== 自定义枚举值 ===============================
+  AgentFlow = 'AgentFlow',
+  ConversationAgent = 'ConversationAgent',
+  AgentGroup = 'AgentGroup',
+}
+
+// 智能体子类型枚举（创建时区分具体形态）
+export enum AgentSubTypeEnum {
+  ChatBot = 'ChatBot',
+  General = 'General',
+  Custom = 'Custom',
+  Flow = 'Flow',
+  Group = 'Group',
 }
 
 // 过滤状态枚举
@@ -121,6 +141,8 @@ export enum AgentArrangeConfigEnum {
   Table = 'Table',
   // 长期记忆
   Long_Memory = 'Long_Memory',
+  // 版本管理
+  Version_Control = 'Version_Control',
   // 文件盒子
   File_Box = 'File_Box',
   // 用户问题建议
@@ -137,12 +159,16 @@ export enum AgentArrangeConfigEnum {
   Page = 'Page',
   // 默认展开页面区
   Default_Expand_Page_Area = 'Default_Expand_Page_Area',
+  // Hook 设置
+  Hook = 'Hook',
   // 隐藏主会话框
   Hide_Chat_Area = 'Hide_Chat_Area',
   // 界面事件绑定
   Page_Event_Binding = 'Page_Event_Binding',
   // 子智能体
   SubAgent = 'SubAgent',
+  // 群组智能体
+  Group_Agent = 'Group_Agent',
   // 隐藏远程桌面
   Hide_Remote_Desktop = 'Hide_Remote_Desktop',
   // 允许用户选择自有模型
@@ -151,6 +177,10 @@ export enum AgentArrangeConfigEnum {
   Allow_At_Skill = 'Allow_At_Skill',
   // 允许用户选择个人电脑
   Allow_Private_Sandbox = 'Allow_Private_Sandbox',
+  // 允许用户在对话框中选择模式
+  Allow_Choose_Mode = 'Allow_Choose_Mode',
+  // 允许询问用户
+  Enable_Ask_Question = 'Enable_Ask_Question',
 }
 
 // 是否开启问题建议,可用值:Open,Close
@@ -177,6 +207,8 @@ export enum ComponentSettingEnum {
   Params,
   // 调用方式
   Method_Call,
+  // 调用审批
+  Call_Approval,
   // 输出方式
   Output_Way,
   // 异步运行

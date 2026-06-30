@@ -120,6 +120,8 @@ export interface IgetDetails {
   editVersion?: number;
   // 是否强制提交: 0-检测版本冲突, 1-强制提交
   forceCommit?: 0 | 1;
+  // 流类型：Workflow / AgentFlow（AgentFlow 分支专用，旧数据缺省即 Workflow）
+  workflowType?: string;
 }
 
 // 工作流保存请求参数

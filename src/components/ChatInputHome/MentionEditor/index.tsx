@@ -333,6 +333,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
       autoFocus = true,
       disabled = false,
       className,
+      inlinePrefixWidth = 0,
       onMentionSelect,
       enableSubscription = false,
       onUnsubscribedSkillSelect,
@@ -345,6 +346,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
       defaultMentions,
       minRows = 2,
       maxRows = 6,
+      usageScenarios,
     },
     ref,
   ) => {
@@ -736,6 +738,9 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
     useImperativeHandle(ref, () => ({
       clear,
       handleAtIconMentionSelect,
+      focus: () => {
+        editorRef.current?.focus();
+      },
     }));
 
     /**
@@ -1383,10 +1388,13 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
           onCompositionStart={handleCompositionStart}
           /** 输入法组合结束事件 */
           onCompositionEnd={handleCompositionEnd}
-          style={{
-            minHeight: `${minHeight}px`,
-            maxHeight: `${maxHeight}px`,
-          }}
+          style={
+            {
+              minHeight: `${minHeight}px`,
+              maxHeight: `${maxHeight}px`,
+              '--mention-inline-prefix-offset': `${inlinePrefixWidth}px`,
+            } as React.CSSProperties
+          }
           data-placeholder={placeholderText}
           suppressContentEditableWarning
         />
@@ -1403,6 +1411,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
             searchText={mentionSearchText}
             maxHeight={mentionPopupMaxHeight}
             onHeightChange={handlePopupHeightChange}
+            usageScenarios={usageScenarios}
           />
         </div>
       </div>

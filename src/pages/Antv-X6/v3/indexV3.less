@@ -18,6 +18,30 @@
     justify-content: space-between;
     align-items: center;
   }
+
+  // AgentFlow 画布：左下角控制条紧凑化（缩小整体高度与内边距）
+  &.absolute-box-compact {
+    height: 32px;
+    bottom: 8px;
+    left: 8px;
+
+    .action-section {
+      padding: 0 4px;
+    }
+
+    // 「添加节点」按钮再小一号（紧凑态）
+    .ant-btn.add-node-btn-mini {
+      height: 22px;
+      padding: 0 8px;
+      font-size: 12px;
+      line-height: 20px;
+
+      .anticon {
+        font-size: 12px;
+        margin-inline-end: 4px;
+      }
+    }
+  }
 }
 
 .spin-workflow-global-style {
@@ -40,11 +64,11 @@
   }
 }
 
-// 添加节点的样式
+// ── Workflow v3: stencil popover styles ────────────────────
 .stencil-content {
   width: 240px;
-  max-height: calc(100vh - 100px); // 设置最大高度为视口高度减去100px
-  overflow-y: auto; // 内容超出时显示垂直滚动条
+  max-height: calc(100vh - 100px);
+  overflow-y: auto;
 
   .stencil-title {
     color: @GRAY07;
@@ -84,12 +108,6 @@
             width: 20px;
             height: 20px;
             margin-right: 8px;
-
-            svg {
-              width: 20px;
-              height: 20px;
-              border-radius: 6px;
-            }
           }
 
           span {
@@ -102,15 +120,15 @@
   }
 }
 
+// ── Main layout container ─────────────────────────────────
 #container {
   display: flex;
   flex-direction: column;
   position: absolute;
-  // border: 1px solid #dfe3e8;
-  width: 100%; // 改为视窗单位
+  width: 100%;
   height: 100%;
   top: 0;
-  left: 0; // 改为视窗单位
+  left: 0;
   overflow-y: auto;
   overflow-x: hidden;
   min-height: 600px;

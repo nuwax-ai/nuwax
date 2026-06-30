@@ -9,13 +9,17 @@ import {
   Input,
   InputNumber,
   Row,
+  Space,
   Switch,
   Typography,
   message,
 } from 'antd';
+import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useLocation, useModel, useRequest } from 'umi';
 import styles from './index.less';
+
+const cx = classNames.bind(styles);
 
 const { Text } = Typography;
 
@@ -125,14 +129,17 @@ const BasicConfig: React.FC = () => {
                       )}
                     </div>
                     <div className={styles.exchangeLineContent}>
-                      <InputNumber
-                        min={1}
-                        precision={2}
-                        value={1}
-                        disabled
-                        style={{ width: 112 }}
-                        addonBefore="¥"
-                      />
+                      <Space.Compact>
+                        <span className={cx(styles['price-addon'])}>¥</span>
+                        <InputNumber
+                          min={1}
+                          precision={2}
+                          value={1}
+                          disabled
+                          style={{ width: 80 }}
+                          className={cx(styles['price-number-input'])}
+                        />
+                      </Space.Compact>
                       <span className={styles.exchangeEqual}>=</span>
                       <Form.Item name="creditExchangeRate" noStyle>
                         <InputNumber

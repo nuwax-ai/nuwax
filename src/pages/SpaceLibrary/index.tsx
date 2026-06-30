@@ -41,6 +41,7 @@ import type { ComponentInfo } from '@/types/interfaces/library';
 import { modalConfirm } from '@/utils/ant-custom';
 import { exportConfigFile } from '@/utils/exportImportFile';
 import {
+  buildWorkflowRoute,
   jumpTo,
   jumpToPlugin,
   jumpToPluginCloudTool,
@@ -392,11 +393,15 @@ const SpaceLibrary: React.FC = () => {
     id: number,
     spaceId: number,
     type: PluginTypeEnum,
+    devAgentConversationId?: number,
   ): string => {
+    const query = devAgentConversationId
+      ? `?conversationId=${devAgentConversationId}`
+      : '';
     if (type === PluginTypeEnum.CODE) {
-      return `/space/${spaceId}/plugin/${id}/cloud-tool`;
+      return `/space/${spaceId}/plugin/${id}/cloud-tool${query}`;
     } else if (type === PluginTypeEnum.HTTP) {
-      return `/space/${spaceId}/plugin/${id}`;
+      return `/space/${spaceId}/plugin/${id}${query}`;
     }
     return '';
   };
@@ -625,15 +630,24 @@ const SpaceLibrary: React.FC = () => {
 
   // 点击单个资源组件
   const handleClickComponent = (item: ComponentInfo) => {
-    const { type, id, spaceId, ext } = item;
+    const { type, id, spaceId, ext, workflowType } = item;
 
     let url = '';
     switch (type) {
       case ComponentTypeEnum.Workflow:
-        url = `/space/${spaceId}/workflow/${id}`;
+        url = buildWorkflowRoute(
+          spaceId,
+          id,
+          workflowType || ext?.workflowType,
+        );
         break;
       case ComponentTypeEnum.Plugin:
-        url = handlePluginUrl(id, spaceId, ext as PluginTypeEnum);
+        url = handlePluginUrl(
+          id,
+          spaceId,
+          ext as PluginTypeEnum,
+          item.devAgentConversationId,
+        );
         break;
       case ComponentTypeEnum.Knowledge:
         url = `/space/${spaceId}/knowledge/${id}`;

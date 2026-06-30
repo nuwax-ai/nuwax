@@ -13,6 +13,7 @@ import { cloneDeep } from '@/utils/common';
 import { message } from 'antd';
 import { MutableRefObject, useCallback } from 'react';
 import { useModel } from 'umi';
+import { hasGraphEdgeBetween } from '../agentFlow/edgeSync';
 import { workflowProxy } from '../services/workflowProxyV3';
 
 interface UseGraphInteractionProps {
@@ -43,12 +44,16 @@ export const useGraphInteraction = ({
       callback: () => Promise<boolean> | void = () =>
         getReference(getWorkflow('drawerForm').id),
     ) => {
-      const { type, targetId, sourceNode, id } = config;
+      const { type, targetId, sourceNode, id, sourcePort } = config;
       if (!graphRef.current) return false;
 
       if (type === UpdateEdgeType.created) {
-        // 添加边
-        const edgeDef = { source: String(sourceNode.id), target: targetId };
+        // 添加边（分支节点需传 sourcePort，供代理层识别特殊端口）
+        const edgeDef = {
+          source: String(sourceNode.id),
+          target: targetId,
+          ...(sourcePort ? { sourcePort } : {}),
+        };
         const res = workflowProxy.addEdge(edgeDef as any);
 
         if (res.success) {
@@ -79,17 +84,46 @@ export const useGraphInteraction = ({
           // V3: 连线变化后触发全量保存
           debouncedSaveFullWorkflow();
           return newNodeIds;
-        } else {
-          // Rollback visual edge
-          if (id) {
-            graphRef.current.graphDeleteEdge(id);
-          }
-          message.error(res.message);
-          return false;
         }
+
+        // 数据层已有边、画布缺失：补画布边，避免来回插入时报 Edge already exists
+        if (res.message === 'Edge already exists' && graphRef.current) {
+          const graph = graphRef.current.getGraphRef();
+          const sourceCellId = String(sourceNode.id);
+          if (graph && !hasGraphEdgeBetween(graph, sourceCellId, targetId)) {
+            const edgeSource = sourcePort || sourceCellId;
+            const created = graphRef.current.graphCreateNewEdge(
+              edgeSource,
+              targetId,
+              Boolean(sourceNode.loopNodeId),
+            );
+            const synced =
+              created && hasGraphEdgeBetween(graph, sourceCellId, targetId);
+            if (synced) {
+              const updatedNode = workflowProxy.getNodeById(sourceNode.id);
+              const newNodeIds = updatedNode?.nextNodeIds || [];
+              updateCurrentNodeRef('sourceNode', {
+                nextNodeIds: newNodeIds,
+              });
+              debouncedSaveFullWorkflow();
+              return newNodeIds;
+            }
+          }
+        }
+
+        // Rollback visual edge
+        if (id) {
+          graphRef.current.graphDeleteEdge(id);
+        }
+        message.error(res.message);
+        return false;
       } else if (type === UpdateEdgeType.deleted) {
         // 删除边
-        const res = workflowProxy.deleteEdge(String(sourceNode.id), targetId);
+        const res = workflowProxy.deleteEdge(
+          String(sourceNode.id),
+          targetId,
+          sourcePort,
+        );
 
         if (res.success) {
           changeUpdateTime();

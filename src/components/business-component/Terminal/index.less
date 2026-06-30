@@ -1,0 +1,234 @@
+@import '@/styles/token';
+
+.terminalWrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  border-radius: @borderRadius;
+  overflow: hidden;
+  position: relative;
+  background-color: @colorBgContainer;
+
+  // 全屏模式样式
+  &:fullscreen {
+    border: none;
+    border-radius: 0;
+  }
+
+  // ─── 工具栏（保留样式，供外部组合或后续扩展）────────────────
+  .controlsBar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: @paddingXxs @paddingSm;
+    background-color: @colorBgElevated;
+    border-bottom: @lineWidth solid @colorSplit;
+    flex-shrink: 0;
+    min-height: @controlHeightLg;
+    user-select: none;
+
+    .statusArea {
+      display: flex;
+      align-items: center;
+      gap: @marginXs;
+      overflow: hidden;
+      min-width: 0;
+
+      .terminalIcon {
+        font-size: @fontSizeLg;
+        color: @colorTextSecondary;
+        flex-shrink: 0;
+      }
+
+      .title {
+        font-size: @fontSizeSm;
+        font-weight: 500;
+        color: @colorText;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    }
+
+    .actionsArea {
+      flex-shrink: 0;
+    }
+  }
+
+  // ─── 搜索面板 ──────────────────────────────────────────────
+  .searchPanel {
+    display: flex;
+    align-items: center;
+    gap: @marginXxs;
+    padding: @marginXxs @paddingSm;
+    background-color: @colorBgElevated;
+    border-bottom: @lineWidth solid @colorSplit;
+    flex-shrink: 0;
+
+    .searchInput {
+      width: 240px;
+      flex-shrink: 0;
+    }
+
+    .searchOptionActive {
+      background-color: @colorPrimary !important;
+      color: @colorTextLightSolid !important;
+      border-color: @colorPrimary !important;
+    }
+  }
+
+  // ─── 终端视口 ──────────────────────────────────────────────
+  .terminalViewport {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    min-height: 200px;
+
+    // xterm.js 内部样式覆盖
+    :global {
+      .xterm {
+        height: 100%;
+        padding: @marginXxs 0 0 @marginXxs;
+        box-sizing: border-box;
+      }
+
+      .xterm .xterm-viewport {
+        overflow-y: auto !important;
+      }
+    }
+  }
+
+  // ─── 遮罩层 ────────────────────────────────────────────────
+  .placeholderOverlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-color: @colorMask;
+    color: @colorText;
+    z-index: @zIndexPopupBase;
+    gap: @marginXs;
+
+    .placeholderIcon {
+      font-size: @fontSizeHeading1;
+      color: @colorTextTertiary;
+      margin-bottom: @marginXs;
+    }
+
+    .placeholderText {
+      font-size: @fontSize;
+      opacity: 0.7;
+      margin: 0;
+    }
+  }
+
+  .errorOverlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-color: @colorMask;
+    z-index: @zIndexPopupBase;
+  }
+
+  .loadingOverlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-color: @colorMask;
+    color: @colorText;
+    z-index: @zIndexPopupBase;
+    gap: @paddingSm;
+
+    .loadingText {
+      font-size: @fontSize;
+      opacity: 0.8;
+    }
+  }
+
+  /** 嵌入底部面板等场景：无边框、视口随容器伸缩 */
+  &.embedded {
+    border: none;
+    border-radius: 0;
+    min-height: 0;
+
+    .terminalViewport {
+      min-height: 0;
+    }
+  }
+
+  // ─── 浅色主题变体 ──────────────────────────────────────────
+  &.lightTheme {
+    background-color: @colorBgContainer;
+    border-color: @colorBorderSecondary;
+
+    .controlsBar {
+      background-color: @colorBgLayout;
+      border-bottom-color: @colorBorderSecondary;
+
+      .terminalIcon {
+        color: @colorTextSecondary;
+      }
+
+      .title {
+        color: @colorText;
+      }
+    }
+
+    .searchPanel {
+      background-color: @colorBgContainer;
+      border-bottom-color: @colorBorderSecondary;
+
+      .searchInput {
+        :global(.ant-input) {
+          background-color: @colorBgContainer;
+          color: @colorText;
+          border-color: @colorBorder;
+        }
+
+        :global(.ant-input::placeholder) {
+          color: @colorTextPlaceholder;
+        }
+      }
+
+      :global(.ant-btn-text) {
+        color: @colorTextSecondary;
+      }
+    }
+
+    .placeholderOverlay {
+      background-color: @colorMask;
+      color: @colorText;
+
+      .placeholderIcon {
+        color: @colorTextQuaternary;
+      }
+    }
+
+    .errorOverlay {
+      background-color: @colorMask;
+    }
+
+    .loadingOverlay {
+      background-color: @colorMask;
+      color: @colorText;
+    }
+  }
+}

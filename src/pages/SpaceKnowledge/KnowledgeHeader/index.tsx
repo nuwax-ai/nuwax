@@ -34,7 +34,8 @@ const KnowledgeHeader: React.FC<KnowledgeHeaderProps> = ({
   const { spaceId } = useParams();
 
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
-  let isShowGRAPH = tenantConfigInfo.commercialEdition;
+  //let isShowGRAPH = tenantConfigInfo.commercialEdition;
+  let isShowGRAPH = true;
 
   const fileSize = knowledgeInfo?.fileSize
     ? formatBytes(knowledgeInfo.fileSize)
@@ -103,6 +104,9 @@ const KnowledgeHeader: React.FC<KnowledgeHeaderProps> = ({
             {dict('PC.Pages.SpaceKnowledge.KnowledgeHeader.graph')}
           </Radio>
         )}
+        <Radio value={KnowledgeDocTypeEnum.ACCURACYTEST}>
+          {dict('PC.Pages.SpaceKnowledge.KnowledgeHeader.accuracytest')}
+        </Radio>
       </Radio.Group>
       {/* </div> */}
       {/*添加内容*/}
@@ -138,6 +142,8 @@ const KnowledgeHeader: React.FC<KnowledgeHeaderProps> = ({
           <Button type="primary" onClick={onViewAllGraphs}>
             {dict('PC.Pages.SpaceKnowledge.KnowledgeHeader.graph')}
           </Button>
+        ) : docType === KnowledgeDocTypeEnum.ACCURACYTEST ? (
+          null
         ) : null}
       </div>
     </header>

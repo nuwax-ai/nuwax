@@ -42,7 +42,20 @@ const SeeDetailModal: React.FC<SeeDetailModalProps> = ({
       // 自定义 header 渲染内容
       title={
         <div className={cx(styles['see-detail-header'])}>
-          <Tooltip title={title} placement="topLeft">
+          <Tooltip
+            title={title}
+            placement="topLeft"
+            // 与工具栏标题 tooltip 一致：放宽宽度，最多 5 行，超出滚动
+            styles={{
+              root: { maxWidth: 380 },
+              body: {
+                maxHeight: '7.5em',
+                overflowY: 'auto',
+                lineHeight: '1.5',
+                overflowWrap: 'break-word',
+              },
+            }}
+          >
             <div
               className={cx(styles['see-detail-header-title'], 'text-ellipsis')}
             >

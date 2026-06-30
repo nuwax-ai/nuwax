@@ -1,0 +1,90 @@
+@import '@/styles/token';
+
+.modal {
+  :global(.ant-modal-content) {
+    padding: 0;
+    overflow: hidden;
+  }
+
+  :global(.ant-modal-header) {
+    margin: 0;
+    padding: @paddingMd @paddingLg @paddingSm;
+    border-bottom: none;
+  }
+
+  :global(.ant-modal-title) {
+    font-size: @fontSizeLg;
+    font-weight: @fontWeightStrong;
+    line-height: @lineHeightLg;
+  }
+
+  :global(.ant-modal-body) {
+    padding: 0 @paddingLg @paddingMd;
+  }
+
+  :global(.ant-modal-footer) {
+    margin: 0;
+    padding: @paddingSm @paddingLg @paddingMd;
+    border-top: none;
+  }
+}
+
+.summary-card {
+  padding: @paddingSm @paddingMd;
+  border: @lineWidth solid @colorBorderSecondary;
+  border-radius: @borderRadiusLg;
+  background-color: @colorFillQuaternary;
+}
+
+.summary-title {
+  margin-bottom: @marginXxs;
+  font-size: @fontSize;
+  color: @colorText;
+  line-height: @lineHeight;
+
+  strong {
+    font-weight: @fontWeightStrong;
+  }
+}
+
+.summary-meta {
+  font-size: @fontSizeSm;
+  color: @colorTextTertiary;
+  line-height: @lineHeightSm;
+}
+
+.summary-message {
+  margin: @marginXxs 0 0;
+  font-size: @fontSizeSm;
+  color: @colorTextTertiary;
+  line-height: @lineHeightSm;
+  word-break: break-word;
+}
+
+.effects {
+  margin-top: @paddingMd;
+}
+
+.effects-title {
+  margin-bottom: @marginSm;
+  font-size: @fontSize;
+  font-weight: @fontWeightStrong;
+  color: @colorText;
+  line-height: @lineHeight;
+}
+
+.effects-list {
+  margin: 0;
+  padding-left: @paddingMd;
+  font-size: @fontSizeSm;
+  color: @colorTextSecondary;
+  line-height: @lineHeightLg;
+
+  li + li {
+    margin-top: @marginXxs;
+  }
+}
+
+.effects-warning {
+  color: @colorWarning;
+}

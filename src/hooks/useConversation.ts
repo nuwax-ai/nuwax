@@ -27,6 +27,7 @@ const useConversation = () => {
       message: string;
       files?: UploadFileInfo[];
       infos?: AgentSelectedComponentInfo[];
+      selectedComputerId?: string;
       // 默认智能体详情
       defaultAgentDetail?: AgentDetailDto;
       // 变量参数
