@@ -172,12 +172,14 @@ const AcpPermissionCard: React.FC<AcpPermissionCardProps> = ({
           <div className={styles.filePreview}>
             {fileDiffItems.map((item) => (
               <div key={item.path} className={styles.filePreviewItem}>
-                <Text
-                  className={styles.filePath}
-                  ellipsis={{ tooltip: item.path }}
-                >
-                  {item.path}
-                </Text>
+                <div className={styles.filePath}>
+                  <Text
+                    style={{ width: '100%', color: 'inherit', margin: 0 }}
+                    ellipsis={{ tooltip: item.path }}
+                  >
+                    {item.path}
+                  </Text>
+                </div>
                 <div className={styles.diffPreview}>
                   <ChangeFileGitDiffView
                     fileId={`${toolCall.toolCallId || item.path}-${item.path}`}
