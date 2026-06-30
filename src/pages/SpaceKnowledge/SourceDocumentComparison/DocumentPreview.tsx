@@ -40,22 +40,30 @@ const PdfPreview: React.FC<{
     if (highlightElements.length > 0) {
       const highlightElement = highlightElements[0] as HTMLElement;
 
+      // 查找实际的滚动容器 .preview-content
+      const scrollContainer = container.closest('.preview-content') as HTMLElement;
+
+      if (!scrollContainer) {
+        console.warn('未找到 .preview-content 滚动容器');
+        return;
+      }
+
       // 计算滚动位置，使高亮元素位于容器中心
-      const containerRect = container.getBoundingClientRect();
+      const containerRect = scrollContainer.getBoundingClientRect();
       const highlightRect = highlightElement.getBoundingClientRect();
 
       const scrollTop =
-        container.scrollTop +
+        scrollContainer.scrollTop +
         (highlightRect.top - containerRect.top) -
         containerRect.height / 2 +
         highlightRect.height / 2;
 
-      container.scrollTo({
+      scrollContainer.scrollTo({
         top: Math.max(0, scrollTop),
         behavior: 'smooth',
       });
 
-      console.log('PDF滚动到高亮位置完成');
+      console.log('PDF滚动到高亮位置完成', { scrollTop });
     }
   };
 
@@ -103,16 +111,22 @@ const PdfPreview: React.FC<{
       );
     }
 
+    // 标准化显示文本，确保与匹配算法使用相同的文本处理逻辑
+    // 这样高亮位置才能准确对应到显示的文本
+    const normalizedDisplayText = displayText
+      .replace(/-\d+-/g, '')    // 移除PDF页码标记
+      .replace(/\s+/g, ' ')     // 将多个空白字符替换为单个空格，保留基本可读性
+
     // 如果有高亮，分段渲染文本
     if (highlights.length > 0) {
       const highlight = highlights[0];
       const { start, end } = highlight;
 
-      // 验证边界
-      if (start >= 0 && end <= displayText.length && start < end) {
-        const before = displayText.substring(0, start);
-        const highlighted = displayText.substring(start, end);
-        const after = displayText.substring(end);
+      // 使用标准化文本验证边界
+      if (start >= 0 && end <= normalizedDisplayText.length && start < end) {
+        const before = normalizedDisplayText.substring(0, start);
+        const highlighted = normalizedDisplayText.substring(start, end);
+        const after = normalizedDisplayText.substring(end);
 
         return (
           <pre
@@ -149,7 +163,7 @@ const PdfPreview: React.FC<{
       }
     }
 
-    // 没有高亮时，正常显示文本
+    // 没有高亮时，显示标准化后的文本
     return (
       <pre
         style={{
@@ -163,7 +177,7 @@ const PdfPreview: React.FC<{
           padding: '16px',
         }}
       >
-        {displayText}
+        {normalizedDisplayText}
       </pre>
     );
   };
@@ -190,9 +204,7 @@ const PdfPreview: React.FC<{
       className={cx('preview-container', 'pdf-preview')}
       style={{
         width: '100%',
-        height: '100%',
-        overflowY: 'auto',
-        scrollBehavior: 'smooth',
+        minHeight: '100%',
         background: '#fff',
         padding: '16px',
       }}
@@ -229,22 +241,30 @@ const DocxPreview: React.FC<{
     if (highlightElements.length > 0) {
       const highlightElement = highlightElements[0] as HTMLElement;
 
+      // 查找实际的滚动容器 .preview-content
+      const scrollContainer = container.closest('.preview-content') as HTMLElement;
+
+      if (!scrollContainer) {
+        console.warn('未找到 .preview-content 滚动容器');
+        return;
+      }
+
       // 计算滚动位置，使高亮元素位于容器中心
-      const containerRect = container.getBoundingClientRect();
+      const containerRect = scrollContainer.getBoundingClientRect();
       const highlightRect = highlightElement.getBoundingClientRect();
 
       const scrollTop =
-        container.scrollTop +
+        scrollContainer.scrollTop +
         (highlightRect.top - containerRect.top) -
         containerRect.height / 2 +
         highlightRect.height / 2;
 
-      container.scrollTo({
+      scrollContainer.scrollTo({
         top: Math.max(0, scrollTop),
         behavior: 'smooth',
       });
 
-      console.log('Word文档滚动到高亮位置完成');
+      console.log('Word文档滚动到高亮位置完成', { scrollTop });
     }
   };
 
@@ -292,16 +312,21 @@ const DocxPreview: React.FC<{
       );
     }
 
+    // 标准化显示文本，确保与匹配算法使用相同的文本处理逻辑
+    const normalizedDisplayText = displayText
+      .replace(/-\d+-/g, '')    // 移除PDF页码标记
+      .replace(/\s+/g, ' ')     // 将多个空白字符替换为单个空格，保留基本可读性
+
     // 如果有高亮，分段渲染文本
     if (highlights.length > 0) {
       const highlight = highlights[0];
       const { start, end } = highlight;
 
-      // 验证边界
-      if (start >= 0 && end <= displayText.length && start < end) {
-        const before = displayText.substring(0, start);
-        const highlighted = displayText.substring(start, end);
-        const after = displayText.substring(end);
+      // 使用标准化文本验证边界
+      if (start >= 0 && end <= normalizedDisplayText.length && start < end) {
+        const before = normalizedDisplayText.substring(0, start);
+        const highlighted = normalizedDisplayText.substring(start, end);
+        const after = normalizedDisplayText.substring(end);
 
         return (
           <pre
@@ -338,7 +363,7 @@ const DocxPreview: React.FC<{
       }
     }
 
-    // 没有高亮时，正常显示文本
+    // 没有高亮时，显示标准化后的文本
     return (
       <pre
         style={{
@@ -352,7 +377,7 @@ const DocxPreview: React.FC<{
           padding: '16px',
         }}
       >
-        {displayText}
+        {normalizedDisplayText}
       </pre>
     );
   };
@@ -379,9 +404,7 @@ const DocxPreview: React.FC<{
       className={cx('preview-container', 'docx-preview')}
       style={{
         width: '100%',
-        height: '100%',
-        overflowY: 'auto',
-        scrollBehavior: 'smooth',
+        minHeight: '100%',
         background: '#fff',
         padding: '16px',
       }}
@@ -415,22 +438,30 @@ const TextPreview: React.FC<{
     if (highlightElements.length > 0) {
       const highlightElement = highlightElements[0] as HTMLElement;
 
+      // 查找实际的滚动容器 .preview-content
+      const scrollContainer = container.closest('.preview-content') as HTMLElement;
+
+      if (!scrollContainer) {
+        console.warn('未找到 .preview-content 滚动容器');
+        return;
+      }
+
       // 计算滚动位置，使高亮元素位于容器中心
-      const containerRect = container.getBoundingClientRect();
+      const containerRect = scrollContainer.getBoundingClientRect();
       const highlightRect = highlightElement.getBoundingClientRect();
 
       const scrollTop =
-        container.scrollTop +
+        scrollContainer.scrollTop +
         (highlightRect.top - containerRect.top) -
         containerRect.height / 2 +
         highlightRect.height / 2;
 
-      container.scrollTo({
+      scrollContainer.scrollTo({
         top: Math.max(0, scrollTop),
         behavior: 'smooth',
       });
 
-      console.log('滚动到高亮位置完成');
+      console.log('滚动到高亮位置完成', { scrollTop });
     }
   };
 
@@ -461,16 +492,21 @@ const TextPreview: React.FC<{
       );
     }
 
+    // 标准化显示文本，确保与匹配算法使用相同的文本处理逻辑
+    const normalizedDisplayText = displayText
+      .replace(/-\d+-/g, '')    // 移除PDF页码标记
+      .replace(/\s+/g, ' ')     // 将多个空白字符替换为单个空格，保留基本可读性
+
     // 如果有高亮，分段渲染文本
     if (highlights.length > 0) {
       const highlight = highlights[0];
       const { start, end } = highlight;
 
-      // 验证边界
-      if (start >= 0 && end <= displayText.length && start < end) {
-        const before = displayText.substring(0, start);
-        const highlighted = displayText.substring(start, end);
-        const after = displayText.substring(end);
+      // 使用标准化文本验证边界
+      if (start >= 0 && end <= normalizedDisplayText.length && start < end) {
+        const before = normalizedDisplayText.substring(0, start);
+        const highlighted = normalizedDisplayText.substring(start, end);
+        const after = normalizedDisplayText.substring(end);
 
         return (
           <pre
@@ -505,7 +541,7 @@ const TextPreview: React.FC<{
       }
     }
 
-    // 没有高亮时，正常显示文本
+    // 没有高亮时，显示标准化后的文本
     return (
       <pre
         style={{
@@ -517,7 +553,7 @@ const TextPreview: React.FC<{
           color: '#333',
         }}
       >
-        {displayText}
+        {normalizedDisplayText}
       </pre>
     );
   };
@@ -526,10 +562,6 @@ const TextPreview: React.FC<{
     <div
       ref={containerRef}
       className={cx('preview-container', 'text-preview')}
-      style={{
-        overflowY: 'auto',
-        scrollBehavior: 'smooth',
-      }}
     >
       {renderContent()}
     </div>
@@ -640,7 +672,21 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({
       <div className={cx('preview-header')}>
         <h3 className={cx('preview-title')}>原文对照</h3>
       </div>
-      <div className={cx('preview-content')}>{renderPreview()}</div>
+      <div
+        className={cx('preview-content')}
+        style={{
+          flex: 1,
+          overflow: 'auto',
+          padding: 0,
+          background: '#fff',
+          display: 'flex',
+          flexDirection: 'column',
+          maxHeight: 'calc(100vh - 200px)',
+          position: 'relative'
+        }}
+      >
+        {renderPreview()}
+      </div>
     </div>
   );
 };

@@ -15,16 +15,17 @@ const DEFAULT_OPTIONS: MatchOptions = {
 
 /**
  * 标准化文本（处理空格、换行等）
+ * 统一处理所有空白字符，确保文档和分段使用相同的标准化规则
  */
 function normalizeText(text: string, options: MatchOptions): string {
   let normalized = text;
 
   if (options.trimWhitespace) {
-    // 移除PDF页码标记 (如 "-1-", "-2-", "-26-" 等)
+    // 1. 移除PDF页码标记 (如 "-1-", "-2-", "-26-" 等)
     normalized = normalized.replace(/-\d+-/g, '');
 
-    // 移除多余的空白字符，但保留基本结构
-    normalized = normalized.replace(/\s+/g, ' ').trim();
+    // 2. 将多个空白字符替换为单个空格，保留基本可读性
+    normalized = normalized.replace(/\s+/g, ' ');
   }
 
   if (options.ignoreCase) {
@@ -84,17 +85,16 @@ export function matchSegmentInDocument(
   let normalizedIndex = normalizedDoc.indexOf(normalizedSegment);
   if (normalizedIndex !== -1) {
     console.log('标准化后精确匹配成功:', { startIndex: normalizedIndex });
-    // 需要将标准化后的位置映射回原始文档
-    // 这里简化处理，直接使用标准化后的位置（可能略有偏差）
+    // 直接返回标准化文本中的位置，因为显示的也是标准化后的文本
     return {
       startOffset: normalizedIndex,
-      endOffset: normalizedIndex + segmentText.length,
+      endOffset: normalizedIndex + normalizedSegment.length,
       confidence: 0.95,
-      matchedText: segmentText,
+      matchedText: normalizedSegment,
     };
   }
 
-  // 方法3: 使用分段开头和结尾进行匹配（在原始文档中）
+  // 方法3: 使用分段开头和结尾进行匹配（在标准化文档中）
   const segmentLength = segmentText.length;
   const prefixLength = Math.min(100, Math.floor(segmentLength / 3)); // 取前1/3，最多100字符
   const suffixLength = Math.min(100, Math.floor(segmentLength / 3)); // 取后1/3，最多100字符
@@ -109,11 +109,15 @@ export function matchSegmentInDocument(
     suffix: suffix.substring(0, 30) + '...',
   });
 
-  // 在原始文档中查找前缀
+  // 标准化前缀和后缀
+  const normalizedPrefix = normalizeText(prefix, opts);
+  const normalizedSuffix = normalizeText(suffix, opts);
+
+  // 在标准化文档中查找前缀
   const prefixMatches: number[] = [];
   let searchStart = 0;
   while (true) {
-    const foundIndex = documentContent.indexOf(prefix, searchStart);
+    const foundIndex = normalizedDoc.indexOf(normalizedPrefix, searchStart);
     if (foundIndex === -1) break;
     prefixMatches.push(foundIndex);
     searchStart = foundIndex + 1;
@@ -124,14 +128,14 @@ export function matchSegmentInDocument(
 
   // 对每个前缀匹配位置，验证是否能找到对应的后缀
   for (const prefixIndex of prefixMatches) {
-    const searchStartForSuffix = prefixIndex + prefixLength;
+    const searchStartForSuffix = prefixIndex + normalizedPrefix.length;
     const maxSearchDistance = segmentLength * 1.5; // 允许1.5倍的距离来查找后缀
-    const suffixIndex = documentContent.indexOf(suffix, searchStartForSuffix);
+    const suffixIndex = normalizedDoc.indexOf(normalizedSuffix, searchStartForSuffix);
 
     if (suffixIndex !== -1 && suffixIndex - prefixIndex <= maxSearchDistance) {
       // 找到了前缀和后缀，计算完整范围
       const estimatedStart = prefixIndex;
-      const estimatedEnd = suffixIndex + suffix.length;
+      const estimatedEnd = suffixIndex + normalizedSuffix.length;
       const matchedLength = estimatedEnd - estimatedStart;
 
       console.log('前缀+后缀匹配成功:', {
@@ -146,57 +150,60 @@ export function matchSegmentInDocument(
         startOffset: estimatedStart,
         endOffset: estimatedEnd,
         confidence: 0.85, // 使用前缀+后缀匹配，置信度略低
-        matchedText: segmentText,
+        matchedText: normalizedDoc.substring(estimatedStart, estimatedEnd),
       };
     }
   }
 
-  // 方法4: 使用分段的前150个字符进行匹配（在原始文档中）
+  // 方法4: 使用分段的前150个字符进行匹配（在标准化文档中）
   if (segmentLength >= 150) {
     const longPrefix = segmentText.substring(0, 150);
-    const longPrefixIndex = documentContent.indexOf(longPrefix);
+    const normalizedLongPrefix = normalizeText(longPrefix, opts);
+    const longPrefixIndex = normalizedDoc.indexOf(normalizedLongPrefix);
     if (longPrefixIndex !== -1) {
       console.log('长前缀匹配成功:', { startIndex: longPrefixIndex });
       return {
         startOffset: longPrefixIndex,
-        endOffset: longPrefixIndex + segmentLength,
+        endOffset: Math.min(longPrefixIndex + normalizedSegment.length, normalizedDoc.length),
         confidence: 0.75,
-        matchedText: segmentText,
+        matchedText: normalizedDoc.substring(longPrefixIndex, Math.min(longPrefixIndex + normalizedSegment.length, normalizedDoc.length)),
       };
     }
   }
 
-  // 方法5: 使用分段的前80个字符进行匹配（在原始文档中）
+  // 方法5: 使用分段的前80个字符进行匹配（在标准化文档中）
   if (segmentLength >= 80) {
     const mediumPrefix = segmentText.substring(0, 80);
-    const mediumPrefixIndex = documentContent.indexOf(mediumPrefix);
+    const normalizedMediumPrefix = normalizeText(mediumPrefix, opts);
+    const mediumPrefixIndex = normalizedDoc.indexOf(normalizedMediumPrefix);
     if (mediumPrefixIndex !== -1) {
       console.log('中前缀匹配成功:', { startIndex: mediumPrefixIndex });
       return {
         startOffset: mediumPrefixIndex,
-        endOffset: mediumPrefixIndex + segmentLength,
+        endOffset: Math.min(mediumPrefixIndex + normalizedSegment.length, normalizedDoc.length),
         confidence: 0.65,
-        matchedText: segmentText,
+        matchedText: normalizedDoc.substring(mediumPrefixIndex, Math.min(mediumPrefixIndex + normalizedSegment.length, normalizedDoc.length)),
       };
     }
   }
 
-  // 方法6: 使用分段的前50个字符进行匹配（在原始文档中）
+  // 方法6: 使用分段的前50个字符进行匹配（在标准化文档中）
   if (segmentLength >= 50) {
     const shortPrefix = segmentText.substring(0, 50);
-    const shortPrefixIndex = documentContent.indexOf(shortPrefix);
+    const normalizedShortPrefix = normalizeText(shortPrefix, opts);
+    const shortPrefixIndex = normalizedDoc.indexOf(normalizedShortPrefix);
     if (shortPrefixIndex !== -1) {
       console.log('短前缀匹配成功:', { startIndex: shortPrefixIndex });
       return {
         startOffset: shortPrefixIndex,
-        endOffset: shortPrefixIndex + segmentLength,
+        endOffset: Math.min(shortPrefixIndex + normalizedSegment.length, normalizedDoc.length),
         confidence: 0.55,
-        matchedText: segmentText,
+        matchedText: normalizedDoc.substring(shortPrefixIndex, Math.min(shortPrefixIndex + normalizedSegment.length, normalizedDoc.length)),
       };
     }
   }
 
-  // 方法7: 模糊匹配 - 分段为多个小段进行匹配（在原始文档中）
+  // 方法7: 模糊匹配 - 分段为多个小段进行匹配（在标准化文档中）
   if (opts.fuzzyMatch && segmentLength > 200) {
     // 将分段分成多个50字符的小段
     const chunkSize = 50;
@@ -212,12 +219,15 @@ export function matchSegmentInDocument(
 
     console.log(`将分段分成${chunks.length}个小段进行模糊匹配`);
 
+    // 标准化所有小段
+    const normalizedChunks = chunks.map(chunk => normalizeText(chunk, opts));
+
     // 查找每个小段在文档中的位置
     const chunkPositions: Array<{ chunk: string; index: number }> = [];
-    for (const chunk of chunks) {
-      const chunkIndex = documentContent.indexOf(chunk);
+    for (let i = 0; i < normalizedChunks.length; i++) {
+      const chunkIndex = normalizedDoc.indexOf(normalizedChunks[i]);
       if (chunkIndex !== -1) {
-        chunkPositions.push({ chunk, index: chunkIndex });
+        chunkPositions.push({ chunk: normalizedChunks[i], index: chunkIndex });
       }
     }
 
@@ -236,9 +246,9 @@ export function matchSegmentInDocument(
 
       return {
         startOffset: minIndex,
-        endOffset: maxIndex + chunks[chunks.length - 1].length,
+        endOffset: Math.min(maxIndex + normalizedChunks[normalizedChunks.length - 1].length, normalizedDoc.length),
         confidence: 0.45, // 模糊匹配，置信度最低
-        matchedText: segmentText,
+        matchedText: normalizedDoc.substring(minIndex, Math.min(maxIndex + normalizedChunks[normalizedChunks.length - 1].length, normalizedDoc.length)),
       };
     }
   }

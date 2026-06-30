@@ -54,12 +54,14 @@
   }
 
   .preview-content {
-    flex: 1;
-    overflow: hidden; // 改为hidden，让内部子元素处理滚动
-    padding: 0;
-    background: #fff;
-    display: flex;
-    flex-direction: column;
+    flex: 1 !important;
+    overflow: auto !important; // 改为auto，让这个容器处理滚动，使用!important确保优先级
+    padding: 0 !important;
+    background: #fff !important;
+    display: flex !important;
+    flex-direction: column !important;
+    max-height: calc(100vh - 200px) !important; // 设置最大高度确保滚动条显示
+    position: relative !important;
   }
 
   .empty-state,
@@ -75,27 +77,24 @@
 
 // 预览容器
 .preview-container {
-  width: 100%;
-  height: 100%;
-  overflow: auto;
-  position: relative;
-  min-height: 600px; // 确保预览容器有足够的最小高度
+  width: 100% !important;
+  height: auto !important; // 让内容自然撑开高度
+  min-height: 0 !important; // 重置min-height，避免flex布局问题
+  overflow: visible !important; // 不需要overflow，由父容器处理滚动
+  position: relative !important;
 
   &.pdf-preview,
   &.docx-preview {
-    background: #f5f5f5;
-    min-height: 800px; // PDF和Word文档需要更大的显示空间
+    background: #f5f5f5 !important;
   }
 
   &.text-preview {
-    background: #fff;
-    padding: 16px;
+    background: #fff !important;
+    padding: 16px !important;
     font-family: Monaco, Menlo, 'Ubuntu Mono', monospace;
     font-size: 14px;
     line-height: 1.6;
     color: #333;
-    min-height: 600px;
-    overflow-y: auto;
   }
 }
 

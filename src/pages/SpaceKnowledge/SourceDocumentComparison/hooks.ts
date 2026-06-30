@@ -11,13 +11,20 @@ import type { DocumentContent, HighlightRange, MatchResult } from './types';
 
 // 配置PDF.js worker - 优先使用本地文件，CDN作为备份
 if (typeof window !== 'undefined') {
+  // 检测是否是Safari浏览器
+  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
   // 优先使用本地 public 目录中的 worker 文件
-  pdfjsLib.GlobalWorkerOptions.workerSrc = '/libs/pdf.worker.min.mjs';
+  // Safari需要使用.js文件而不是.mjs文件
+  pdfjsLib.GlobalWorkerOptions.workerSrc = isSafari
+    ? '/libs/pdf.worker.min.js'
+    : '/libs/pdf.worker.min.mjs';
 
   console.log('PDF.js worker配置完成:', {
     version: pdfjsLib.version,
     workerSrc: pdfjsLib.GlobalWorkerOptions.workerSrc,
     source: 'local',
+    isSafari,
   });
 }
 
@@ -58,7 +65,9 @@ export const useDocumentPreview = () => {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const arrayBuffer = await response.arrayBuffer();
+      // Safari兼容性处理：使用blob而不是直接使用arrayBuffer
+      const blob = await response.blob();
+      const arrayBuffer = await blob.arrayBuffer();
       const fileSize = arrayBuffer.byteLength;
 
       console.log('开始使用PDF.js提取PDF文本内容');
@@ -97,22 +106,15 @@ export const useDocumentPreview = () => {
         console.warn('PDF提取文本过少，可能是扫描版或图片PDF');
       }
 
-      // 标准化PDF文本：移除页码标记，规范化空白字符
-      const normalizedText = fullText
-        .replace(/-\d+-/g, '') // 移除页码如 "-1-", "-2-", "-26-" 等
-        .replace(/\s+/g, ' ') // 将多个空白字符替换为单个空格
-        .trim(); // 移除首尾空白
-
-      console.log('PDF文本标准化完成:', {
-        originalLength: fullText.length,
-        normalizedLength: normalizedText.length,
-        removedChars: fullText.length - normalizedText.length,
-      });
+      // 保持原始文本，不进行标准化处理
+      // 标准化将在匹配阶段统一处理，避免双重标准化导致的位置偏差
+      console.log('PDF原始文本保存完成，将延迟到匹配时标准化');
 
       return {
-        text: normalizedText,
+        text: fullText, // 保存原始文本
+        html: fullText, // 保存原始文本用于调试
         metadata: {
-          wordCount: normalizedText.length,
+          wordCount: fullText.length,
           fileSize: fileSize,
           type: 'pdf',
           pageCount: numPages,
