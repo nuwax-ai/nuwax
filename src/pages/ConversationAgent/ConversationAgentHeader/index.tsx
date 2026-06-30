@@ -171,7 +171,7 @@ const ConversationAgentHeader: React.FC<ConversationAgentHeaderProps> = ({
           onClick={onToggleFileTreeSidebar}
         />
 
-        {/* 终端按钮 */}
+        {/* 终端按钮（再次点击收起，active 态由父组件互斥控制） */}
         <TooltipIcon
           title={dict('PC.Pages.ConversationAgentTabPicker.terminal')}
           ariaLabel={dict('PC.Pages.ConversationAgentTabPicker.terminal')}

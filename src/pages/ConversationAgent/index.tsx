@@ -161,6 +161,9 @@ const ConversationAgent: React.FC = () => {
   /** 递增后触发底部终端全屏展开（开发工具「终端」入口） */
   const [devConsoleExpandSignal, setDevConsoleExpandSignal] =
     useState<number>(0);
+  /** 递增后折叠底部终端（仅保留头部，不改变 ensure/连接状态） */
+  const [devConsoleCollapseSignal, setDevConsoleCollapseSignal] =
+    useState<number>(0);
   /** 底部控制台当前激活 Tab（用于控制日志轮询） */
   const [devConsoleActiveTab, setDevConsoleActiveTab] = useState<
     'terminal' | 'logs'
@@ -887,12 +890,28 @@ const ConversationAgent: React.FC = () => {
   };
 
   /**
-   * 切换中间文件树栏显隐（仅由 header 图标控制，不受预览面板状态影响）
-   * 远程桌面打开时：先关闭桌面，再展开文件树与右侧工作区
+   * 切换中间文件树栏显隐（与终端全屏、智能体电脑互斥，仅一个图标 active）
    */
   const handleToggleFileTreeSidebar = useCallback(() => {
+    const isTerminalExpanded =
+      devConsoleLayoutMode === 'expanded' && devConsoleActiveTab === 'terminal';
+
     if (isAgentDesktopOpen) {
-      closeAgentDesktop();
+      setIsAgentDesktopOpen(false);
+      setDevConsoleExpandSignal(0);
+      setCanShowFileView(true);
+      if (queryConversationId) {
+        handleRefreshFileList(queryConversationId);
+        void openPreviewView(queryConversationId);
+      }
+      if (isTerminalExpanded) {
+        setDevConsoleCollapseSignal((n) => n + 1);
+      }
+      return;
+    }
+
+    if (isTerminalExpanded) {
+      setDevConsoleCollapseSignal((n) => n + 1);
       setCanShowFileView(true);
       if (queryConversationId) {
         handleRefreshFileList(queryConversationId);
@@ -908,14 +927,16 @@ const ConversationAgent: React.FC = () => {
       return nextVisible;
     });
   }, [
-    isAgentDesktopOpen,
-    closeAgentDesktop,
+    devConsoleActiveTab,
+    devConsoleLayoutMode,
     handleRefreshFileList,
+    isAgentDesktopOpen,
+    openPreviewView,
     queryConversationId,
   ]);
 
   /**
-   * 打开 / 切换智能体电脑（与编排页 PreviewAndDebug 行为一致）
+   * 打开 / 切换智能体电脑（与文件树、终端全屏互斥）
    */
   const handleOpenDesktopPanel = useCallback(async () => {
     const convId = queryConversationId;
@@ -927,11 +948,17 @@ const ConversationAgent: React.FC = () => {
     if (isAgentDesktopOpen) {
       closePreviewView();
       setIsAgentDesktopOpen(false);
+      setDevConsoleExpandSignal(0);
       return;
     }
 
+    // 桌面会卸载底部控制台：重置父级 layout 与信号，避免 remount 后陈旧 collapse 覆盖 expand
+    setDevConsoleLayoutMode('collapsed');
+    setDevConsoleCollapseSignal(0);
+
     await openDesktopView(convId);
     setCanShowFileView(false);
+    setDevConsoleExpandSignal(0);
     setIsAgentDesktopOpen(true);
   }, [
     queryConversationId,
@@ -976,18 +1003,39 @@ const ConversationAgent: React.FC = () => {
     setDevConsoleLayoutResetSignal((n) => n + 1);
   }, []);
 
-  /** 打开底部终端面板：切到终端 Tab 并在右侧内容区全屏展开 */
+  /** 打开 / 收起底部终端全屏（与文件树、智能体电脑互斥；再次点击仅折叠，不影响 ensure/连接） */
   const handleOpenTerminalPanel = useCallback(() => {
-    closeAgentDesktop();
-    setDevConsoleExpandSignal((n) => n + 1);
+    const isTerminalExpanded =
+      devConsoleLayoutMode === 'expanded' && devConsoleActiveTab === 'terminal';
+
+    if (isTerminalExpanded) {
+      setDevConsoleCollapseSignal((n) => n + 1);
+      return;
+    }
+
+    setIsAgentDesktopOpen(false);
     setSelectedChangeFile(null);
     if (queryConversationId) {
-      openPreviewView(queryConversationId);
+      void openPreviewView(queryConversationId);
     }
-  }, [closeAgentDesktop, openPreviewView, queryConversationId]);
+    // 清除陈旧 collapse 信号，避免从智能体电脑切回时 remount 折叠 effect 覆盖 expand
+    setDevConsoleCollapseSignal(0);
+    setDevConsoleExpandSignal((n) => n + 1);
+  }, [
+    devConsoleActiveTab,
+    devConsoleLayoutMode,
+    openPreviewView,
+    queryConversationId,
+  ]);
 
   const isTerminalPanelOpen =
     devConsoleLayoutMode === 'expanded' && devConsoleActiveTab === 'terminal';
+
+  /** 顶部三入口互斥 active：同一时刻仅高亮一个 */
+  const isFileTreeIconActive =
+    canShowFileView && !isTerminalPanelOpen && !isAgentDesktopOpen;
+  const isTerminalIconActive = isTerminalPanelOpen && !isAgentDesktopOpen;
+  const isDesktopIconActive = isAgentDesktopOpen;
 
   // ==================================== 文件视图 & 编排面板 ====================================
   /**
@@ -1539,6 +1587,7 @@ const ConversationAgent: React.FC = () => {
             wsSubprotocols={[...TTYD_TERMINAL_WS_SUBPROTOCOLS]}
             layoutResetSignal={devConsoleLayoutResetSignal}
             expandSignal={devConsoleExpandSignal}
+            collapseSignal={devConsoleCollapseSignal}
             onLayoutModeChange={setDevConsoleLayoutMode}
             onActiveTabChange={(tab) => {
               setDevConsoleActiveTab(tab);
@@ -1588,12 +1637,12 @@ const ConversationAgent: React.FC = () => {
         onEditAgent={() => setOpenEditAgent(true)}
         onPublish={() => setOpen(true)}
         onOpenAdvancedSettings={handleOpenAdvancedSettings}
-        isFileTreeSidebarVisible={canShowFileView}
+        isFileTreeSidebarVisible={isFileTreeIconActive}
         onToggleFileTreeSidebar={handleToggleFileTreeSidebar}
-        isTerminalPanelOpen={isTerminalPanelOpen}
+        isTerminalPanelOpen={isTerminalIconActive}
         onOpenTerminalPanel={handleOpenTerminalPanel}
         isShowDesktop={isShowDesktop}
-        isAgentDesktopOpen={isAgentDesktopOpen}
+        isAgentDesktopOpen={isDesktopIconActive}
         onOpenDesktopPanel={handleOpenDesktopPanel}
       />
 
