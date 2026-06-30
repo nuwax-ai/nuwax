@@ -5597,6 +5597,8 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.SystemRecommendManage.colModified": "Modified At",
   "PC.Pages.SystemRecommendManage.colLabel": "Name",
   "PC.Pages.SystemRecommendManage.colPlaceholder": "Placeholder",
+  "PC.Pages.SystemRecommendManage.dialogHintLabel": "Dialog prompt message",
+  "PC.Pages.SystemRecommendManage.dialogHintPlaceholder": "Please enter the dialog prompt information",
   "PC.Pages.SystemRecommendManage.colTargetId": "Target ID",
   "PC.Pages.SystemRecommendManage.colTargetType": "Type",
   "PC.Pages.SystemRecommendManage.colSubType": "Sub Type",

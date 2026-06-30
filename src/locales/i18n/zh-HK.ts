@@ -5044,6 +5044,8 @@ export const ZH_HK: SystemLangMap = {
   "PC.Pages.SystemRecommendManage.colModified": "修改時間",
   "PC.Pages.SystemRecommendManage.colLabel": "名稱",
   "PC.Pages.SystemRecommendManage.colPlaceholder": "占位提示",
+  "PC.Pages.SystemRecommendManage.dialogHintLabel": "對話框提示信息",
+  "PC.Pages.SystemRecommendManage.dialogHintPlaceholder": "請輸入對話框提示信息",
   "PC.Pages.SystemRecommendManage.colTargetId": "目標ID",
   "PC.Pages.SystemRecommendManage.colTargetType": "類型",
   "PC.Pages.SystemRecommendManage.colSubType": "子類型",

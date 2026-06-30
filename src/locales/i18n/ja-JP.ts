@@ -5052,6 +5052,8 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.SystemRecommendManage.colModified": "更新日時",
   "PC.Pages.SystemRecommendManage.colLabel": "名称",
   "PC.Pages.SystemRecommendManage.colPlaceholder": "プレースホルダー",
+  "PC.Pages.SystemRecommendManage.dialogHintLabel": "ダイアログヒント",
+  "PC.Pages.SystemRecommendManage.dialogHintPlaceholder": "ダイアログヒントを入力してください",
   "PC.Pages.SystemRecommendManage.colTargetId": "ターゲットID",
   "PC.Pages.SystemRecommendManage.colTargetType": "タイプ",
   "PC.Pages.SystemRecommendManage.colSubType": "サブタイプ",
