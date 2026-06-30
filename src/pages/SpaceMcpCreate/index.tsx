@@ -91,6 +91,8 @@ const SpaceMcpCreate: React.FC = () => {
     handleSave,
     withDeployRef,
     collapseList,
+    abortSubmit,
+    isSubmitting,
   } = useMcp();
 
   useEffect(() => {
@@ -133,47 +135,54 @@ const SpaceMcpCreate: React.FC = () => {
     if (installType === McpInstallTypeEnum.COMPONENT) {
       if (!mcpConfigComponentList?.length) {
         message.warning(dict('PC.Pages.SpaceMcpEdit.selectComponent'));
+        abortSubmit();
         return;
       }
     } else if (!serverConfig) {
       message.warning(dict('PC.Pages.SpaceMcpEdit.inputServerConfig'));
+      abortSubmit();
       return;
     }
 
-    // loading状态
     if (withDeployRef.current) {
       setSaveDeployLoading(true);
     } else {
       setSaveLoading(true);
     }
 
-    const { icon, description } = await resolveCreateIcon({
-      imageUrl,
-      name: rest.name,
-      description: rest.description,
-    });
+    try {
+      const { icon, description } = await resolveCreateIcon({
+        imageUrl,
+        name: rest.name,
+        description: rest.description,
+      });
 
-    const mcpConfig =
-      installType === McpInstallTypeEnum.COMPONENT
-        ? {
-            serverConfig: '',
-            components: mcpConfigComponentList,
-          }
-        : {
-            serverConfig,
-            components: [],
-          };
-    const data = {
-      ...rest,
-      description: description ?? rest.description,
-      spaceId,
-      icon,
-      installType: installType!,
-      mcpConfig,
-      withDeploy: withDeployRef.current,
-    };
+      const mcpConfig =
+        installType === McpInstallTypeEnum.COMPONENT
+          ? {
+              serverConfig: '',
+              components: mcpConfigComponentList,
+            }
+          : {
+              serverConfig,
+              components: [],
+            };
+      const data = {
+        ...rest,
+        description: description ?? rest.description,
+        spaceId,
+        icon,
+        installType: installType!,
+        mcpConfig,
+        withDeploy: withDeployRef.current,
+      };
 
-    runCreate(data);
+      runCreate(data);
+    } catch {
+      abortSubmit();
+      setSaveDeployLoading(false);
+      setSaveLoading(false);
+    }
   };
 
   return (
@@ -182,6 +191,8 @@ const SpaceMcpCreate: React.FC = () => {
         spaceId={spaceId}
         saveLoading={saveLoading}
         saveDeployLoading={saveDeployLoading}
+        isSubmitting={isSubmitting}
+        withDeployRef={withDeployRef}
         onCancel={() => jumpBack(`/space/${spaceId}/mcp`)}
         onSave={() => handleSave(false)}
         onSaveAndDeploy={() => handleSave(true)}
@@ -201,6 +212,7 @@ const SpaceMcpCreate: React.FC = () => {
             layout="vertical"
             requiredMark={customizeRequiredMark}
             onFinish={onFinish}
+            onFinishFailed={() => abortSubmit()}
             autoComplete="off"
           >
             <Form.Item

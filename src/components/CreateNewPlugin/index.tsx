@@ -1,4 +1,7 @@
 import pluginIcon from '@/assets/images/plugin_image.png';
+import GuardedFormModal, {
+  GuardedFormModalForm,
+} from '@/components/business-component/GuardedFormModal';
 import ConditionRender from '@/components/ConditionRender';
 import SelectList from '@/components/custom/SelectList';
 import OverrideTextArea from '@/components/OverrideTextArea';
@@ -28,7 +31,6 @@ import { Form, Input, message, Radio, Select } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { history, useRequest } from 'umi';
-import CustomFormModal from '../CustomFormModal';
 
 const cx = classNames;
 
@@ -143,25 +145,29 @@ const CreateNewPlugin: React.FC<CreateNewPluginProps> = ({
     PluginAddParams & { groupId?: number }
   >['onFinish'] = async (values) => {
     setLoading(true);
-    if (mode === CreateUpdateModeEnum.Create) {
-      const { icon, description } = await resolveCreateIcon({
-        imageUrl,
-        name: values.name,
-        description: values.description,
-      });
-      runCreate({
-        ...values,
-        description: description ?? values.description,
-        icon,
-        spaceId,
-      });
-    } else {
-      // 更新HTTP插件配置接口
-      runUpdate({
-        ...values,
-        icon: imageUrl,
-        id,
-      });
+    try {
+      if (mode === CreateUpdateModeEnum.Create) {
+        const { icon, description } = await resolveCreateIcon({
+          imageUrl,
+          name: values.name,
+          description: values.description,
+        });
+        runCreate({
+          ...values,
+          description: description ?? values.description,
+          icon,
+          spaceId,
+        });
+      } else {
+        // 更新HTTP插件配置接口
+        runUpdate({
+          ...values,
+          icon: imageUrl,
+          id,
+        });
+      }
+    } catch {
+      setLoading(false);
     }
   };
 
@@ -177,7 +183,7 @@ const CreateNewPlugin: React.FC<CreateNewPluginProps> = ({
   };
 
   return (
-    <CustomFormModal
+    <GuardedFormModal
       form={form}
       title={
         mode === CreateUpdateModeEnum.Create
@@ -198,7 +204,7 @@ const CreateNewPlugin: React.FC<CreateNewPluginProps> = ({
           defaultImage={pluginIcon as string}
           svgIconName="icons-workspace-plugin"
         />
-        <Form
+        <GuardedFormModalForm
           form={form}
           requiredMark={customizeRequiredMark}
           layout="vertical"
@@ -315,9 +321,9 @@ const CreateNewPlugin: React.FC<CreateNewPluginProps> = ({
               />
             </Form.Item>
           </ConditionRender>
-        </Form>
+        </GuardedFormModalForm>
       </div>
-    </CustomFormModal>
+    </GuardedFormModal>
   );
 };
 
