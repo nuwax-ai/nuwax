@@ -627,6 +627,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       effectiveAgent?.type === AgentTypeEnum.TaskAgent &&
       hasValidMessageList &&
       isAgentVersionControlEnabled(effectiveAgent?.enableVersionControl),
+    enableVersionControl: effectiveAgent?.enableVersionControl,
     onSelectedFileMissing: () => {
       setTaskAgentSelectedFileId('');
     },

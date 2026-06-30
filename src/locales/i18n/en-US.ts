@@ -1554,6 +1554,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.AgentArrangeCreateHooks.deleteSuccess": "Deleted successfully",
   "PC.Pages.AgentArrangeCreateHooks.searchPlaceholder": "Search...",
   "PC.Pages.AgentArrangeCreateHooks.title": "Hook Settings",
+  "PC.Pages.AgentArrangeCreateHooks.titleTooltip": "Events supported by OpenAI protocol models: PreToolUse, PostToolUse, PostToolUseFailure, SessionStart, SessionEnd, Stop",
   "PC.Pages.AgentArrangeCreateHooks.updateSuccess": "Updated successfully",
   "PC.Pages.AgentArrangeConfig.addHook": "Add Hook",
   "PC.Pages.AgentArrangeConfig.hook": "Hook Settings",

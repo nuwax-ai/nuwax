@@ -1,5 +1,7 @@
 import type { AgentMode } from '@/components/business-component/AgentIntervention';
-import ChatInputHome from '@/components/ChatInputHome';
+import ChatInputHome, {
+  type ChatInputHomeRef,
+} from '@/components/ChatInputHome';
 import Loading from '@/components/custom/Loading';
 import useConversation from '@/hooks/useConversation';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
@@ -34,7 +36,13 @@ import {
 } from '@/types/interfaces/displayRecommend';
 import { App, message as antdMessage } from 'antd';
 import classNames from 'classnames';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { history, useModel, useRequest } from 'umi';
 import { createProjectAndNavigate } from '../SpaceCreateProject/utils/projectCreateStrategy';
 import ChatBoxRecommendNav from './components/ChatBoxRecommendNav';
@@ -72,6 +80,7 @@ const Home: React.FC = () => {
   const { getSpaceId } = useModel('spaceModel');
   const { setContext } = useModel('pageHandoffContext');
   const { handleCreateConversation } = useConversation();
+  const chatInputRef = useRef<ChatInputHomeRef>(null);
   const {
     selectedComponentList,
     handleSelectComponent,
@@ -275,6 +284,10 @@ const Home: React.FC = () => {
 
   const handleRecommendSelect = (item: DisplayRecommendInfo) => {
     setSelectedRecommend((prev) => (prev?.id === item.id ? undefined : item));
+    // 延迟以确保重新渲染后聚焦
+    setTimeout(() => {
+      chatInputRef.current?.focus();
+    }, 0);
   };
 
   return (
@@ -285,6 +298,7 @@ const Home: React.FC = () => {
           dangerouslySetInnerHTML={{ __html: tenantConfigInfo?.homeSlogan }}
         />
         <ChatInputHome
+          ref={chatInputRef}
           className={cx(styles.textarea)}
           onEnter={handleEnter}
           isClearInput={false}
@@ -329,7 +343,6 @@ const Home: React.FC = () => {
         />
         <ChatBoxRecommendNav
           items={recommendNavList}
-          selectedId={selectedRecommend?.id}
           onSelect={handleRecommendSelect}
         />
       </main>
