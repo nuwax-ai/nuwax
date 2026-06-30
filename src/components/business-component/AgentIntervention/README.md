@@ -90,7 +90,7 @@ const { agentMode, chatLayerProps, agentModeInputProps } = useAgentInterventionL
 />
 ```
 
-`interventionHandlers` 类型：`AgentInterventionHandlersOverride`（`respondAcpPermission` / `respondMcpAsk` / `runStopConversation` / `isConversationActive`）。
+`interventionHandlers` 类型：`AgentInterventionHandlersOverride`（`respondAcpPermission` / `respondMcpAsk`）。
 
 ## `MessageInfo` 挂载字段
 
