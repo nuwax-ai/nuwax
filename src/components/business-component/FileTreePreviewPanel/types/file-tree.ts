@@ -102,6 +102,4 @@ export interface FileTreeViewProps {
   onSelectedFileMissing?: (fileId: string) => void;
   /** 是否启用 Git status 拉取 */
   enableGitStatus?: boolean;
-  /** 递增时强制刷新 Git status（如版本管控开关保存成功后） */
-  gitStatusRefreshTrigger?: number;
 }
