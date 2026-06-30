@@ -29,10 +29,16 @@ import {
   CurrentNodeRefProps,
   GraphContainerRef,
   GraphRect,
+  InsertNodeBetweenParams,
   StencilChildNode,
 } from '@/types/interfaces/graph';
 
 import { isAgentFlowSelectableAgent } from '../agentFlow/createdPicker';
+import {
+  purgeEdgeBetween,
+  purgeNodeIncidentEdges,
+} from '../agentFlow/edgeSync';
+import { clearNodeIncidentEdges } from '../agentFlow/middleNodeEdgeCleanup';
 import {
   isFrontendMappedType,
   toBackendNodeType,
@@ -51,7 +57,11 @@ import {
   LOOP_NODE_DEFAULT_WIDTH,
 } from '../constants/loopNodeConstants';
 import { workflowProxy } from '../services/workflowProxyV3';
-import { getEdges } from '../utils/graphV3';
+import {
+  getEdges,
+  setEdgeAttributes,
+  updateEdgeArrows,
+} from '../utils/graphV3';
 import { clearPendingNodeCreateSession } from '../utils/nodeCreateSession';
 import { createDefaultNodeConfig } from '../utils/nodeDefaultConfigFactory';
 import {
@@ -144,6 +154,8 @@ interface UseNodeOperationsReturn {
     isLoop: boolean;
     portId: string;
   }) => Promise<void>;
+  /** AgentFlow：Start 已有出边时，将 middle 插入 source 与 tail 之间 */
+  insertNodeBetween: (params: InsertNodeBetweenParams) => Promise<void>;
   handleNodeCreationSuccess: (nodeData: AddNodeResponse) => Promise<void>;
   // 核心操作
   addNode: (child: Partial<ChildNode>, dragEvent: GraphRect) => Promise<void>;
@@ -485,6 +497,73 @@ export const useNodeOperations = ({
   );
 
   /**
+   * 删除 source → target 直连（快捷插入时拆掉原边）
+   */
+  const removeSourceToTargetEdge = useCallback(
+    async ({
+      sourceNode,
+      targetNode,
+      edgeId,
+      portId,
+    }: {
+      sourceNode: ChildNode;
+      targetNode: ChildNode;
+      edgeId: string;
+      portId: string;
+    }) => {
+      const portSegments = portId.split('-');
+      const hasUuidSegment =
+        portSegments.length >= 3 &&
+        portSegments.slice(1, -1).join('-').length >= 8;
+      const isSpecialPort = hasUuidSegment;
+
+      if (isSpecialPort) {
+        const params = removeFromSpecialNodesNextIndex(
+          sourceNode,
+          portId,
+          targetNode.id,
+        );
+        const isSuccess = await changeNode({ nodeData: params }, noop);
+        if (isSuccess) {
+          graphRef.current?.graphDeleteEdge(edgeId);
+        }
+        return;
+      }
+
+      const isLoopInPort =
+        portId.endsWith('-in') && sourceNode.type === NodeTypeEnum.Loop;
+      const edgeSource = isLoopInPort ? portId : String(sourceNode.id);
+
+      const res = workflowProxy.deleteEdge(
+        edgeSource,
+        targetNode.id.toString(),
+      );
+
+      if (res.success) {
+        graphRef.current?.graphDeleteEdge(edgeId);
+        debouncedSaveFullWorkflow();
+        return;
+      }
+
+      const fallbackRes = workflowProxy.deleteEdge(
+        String(sourceNode.id),
+        targetNode.id.toString(),
+      );
+
+      if (fallbackRes.success) {
+        graphRef.current?.graphDeleteEdge(edgeId);
+        debouncedSaveFullWorkflow();
+      } else {
+        console.warn(
+          '[removeSourceToTargetEdge] Failed to delete edge:',
+          res.message,
+        );
+      }
+    },
+    [changeNode, graphRef, debouncedSaveFullWorkflow],
+  );
+
+  /**
    * 处理目标节点连接
    */
   const handleTargetNodeConnection = useCallback(
@@ -495,6 +574,7 @@ export const useNodeOperations = ({
       edgeId,
       isLoop,
       portId,
+      skipSourceTailDelete = false,
     }: {
       newNode: ChildNode;
       targetNode: ChildNode;
@@ -502,6 +582,7 @@ export const useNodeOperations = ({
       edgeId: string;
       isLoop: boolean;
       portId: string;
+      skipSourceTailDelete?: boolean;
     }) => {
       // 建立新边：newNode -> targetNode
       // 注意：QA TEXT 模式应该作为普通节点处理，因为它只有一个普通 out 端口
@@ -533,69 +614,14 @@ export const useNodeOperations = ({
         });
       }
 
-      // V3: 删除原有连接关系 (同步数据模型)
-      // 参考 V1 连线规则：在快捷插入节点时，需要删除原 sourceNode -> targetNode 的关系
-
-      // 检查是否是特殊端口（QA SELECT、条件分支、意图识别）
-      const portSegments = portId.split('-');
-      const hasUuidSegment =
-        portSegments.length >= 3 &&
-        portSegments.slice(1, -1).join('-').length >= 8;
-      const isSpecialPort = hasUuidSegment;
-
-      if (isSpecialPort) {
-        // 特殊端口：需要从源节点的配置中移除目标节点ID
-        // 使用 handleSpecialNodesNextIndex 的反向操作
-        const params = removeFromSpecialNodesNextIndex(
+      // V3: 删除原有 source → target 直连（insertNodeBetween 可能已提前删除）
+      if (!skipSourceTailDelete) {
+        await removeSourceToTargetEdge({
           sourceNode,
+          targetNode,
+          edgeId,
           portId,
-          targetNode.id,
-        );
-        const isSuccess = await changeNode({ nodeData: params }, noop);
-        if (isSuccess) {
-          graphRef.current?.graphDeleteEdge(edgeId);
-        }
-      } else {
-        // 普通端口：删除边
-        // 检测是否是循环节点的内部边（Loop-in -> innerNode）
-        const isLoopInPort =
-          portId.endsWith('-in') && sourceNode.type === NodeTypeEnum.Loop;
-
-        // 使用正确的 source 格式调用 deleteEdge
-        const edgeSource = isLoopInPort ? portId : String(sourceNode.id);
-
-        // 直接调用 workflowProxy.deleteEdge
-        const res = workflowProxy.deleteEdge(
-          edgeSource,
-          targetNode.id.toString(),
-        );
-
-        if (res.success) {
-          // 同步删除画布上的边
-          graphRef.current?.graphDeleteEdge(edgeId);
-          // 触发保存
-          debouncedSaveFullWorkflow();
-        } else {
-          // 如果删除失败，尝试使用纯节点 ID 格式（兼容旧数据）
-          const fallbackRes = workflowProxy.deleteEdge(
-            String(sourceNode.id),
-            targetNode.id.toString(),
-          );
-
-          if (fallbackRes.success) {
-            graphRef.current?.graphDeleteEdge(edgeId);
-            debouncedSaveFullWorkflow();
-          } else {
-            console.warn(
-              '[handleTargetNodeConnection] Failed to delete edge:',
-              res.message,
-              '| source:',
-              edgeSource,
-              '-> target:',
-              targetNode.id,
-            );
-          }
-        }
+        });
       }
     },
     [
@@ -604,9 +630,113 @@ export const useNodeOperations = ({
       handleConditionalNodeConnection,
       handleNormalNodeConnection,
       handleRouteDecisionOutgoingConnection,
-      nodeChangeEdge,
-      changeNode,
-      debouncedSaveFullWorkflow,
+      removeSourceToTargetEdge,
+    ],
+  );
+
+  /**
+   * AgentFlow：在 source → tail 之间插入 middle（拖线到已有节点 / 与快捷添加共用拓扑）
+   *
+   * 顺序：① 清理 middle 已有连线 → ② 删 source→tail → ③ source→middle → ④ middle→tail
+   */
+  const insertNodeBetween = useCallback(
+    async ({
+      sourceNode,
+      middleNode,
+      tailNode,
+      oldEdgeId,
+      portId,
+    }: InsertNodeBetweenParams) => {
+      const isLoop = Boolean(middleNode.loopNodeId);
+      const graph = graphRef.current?.getGraphRef();
+      const graphDeleteEdge = (edgeId: string) =>
+        graphRef.current?.graphDeleteEdge(edgeId);
+
+      const sourceId = String(sourceNode.id);
+      const middleId = String(middleNode.id);
+      const tailId = String(tailNode.id);
+
+      // ① 清理中间节点全部残留边（含仅存在于 proxy、画布不可见的边）
+      purgeNodeIncidentEdges({
+        graph,
+        nodeId: middleId,
+        excludeEdgeIds: [oldEdgeId],
+        graphDeleteEdge,
+      });
+
+      if (graph) {
+        await clearNodeIncidentEdges({
+          graph,
+          nodeId: middleId,
+          excludeEdgeIds: [oldEdgeId],
+          deleteEdge: (edge) => {
+            const edgeSourceId = edge.getSourceCellId();
+            const edgeTargetId = edge.getTargetCellId();
+            if (!edgeSourceId || !edgeTargetId) return;
+            workflowProxy.deleteEdge(
+              edgeSourceId,
+              edgeTargetId,
+              edge.getSourcePortId(),
+            );
+            graphDeleteEdge(String(edge.id));
+          },
+        });
+      }
+
+      // ② 幂等清理即将重建的边对，避免来回操作后数据层残留
+      purgeEdgeBetween({
+        graph,
+        sourceCellId: sourceId,
+        targetCellId: tailId,
+        sourcePort: portId,
+        graphDeleteEdge,
+      });
+      purgeEdgeBetween({
+        graph,
+        sourceCellId: sourceId,
+        targetCellId: middleId,
+        graphDeleteEdge,
+      });
+      purgeEdgeBetween({
+        graph,
+        sourceCellId: middleId,
+        targetCellId: tailId,
+        graphDeleteEdge,
+      });
+
+      await removeSourceToTargetEdge({
+        sourceNode,
+        targetNode: tailNode,
+        edgeId: oldEdgeId,
+        portId,
+      });
+
+      await handleOutputPortConnection({
+        newNodeId: middleNode.id as number,
+        sourceNode,
+        isLoop,
+      });
+
+      await handleTargetNodeConnection({
+        newNode: middleNode,
+        targetNode: tailNode,
+        sourceNode,
+        edgeId: oldEdgeId,
+        isLoop,
+        portId,
+        skipSourceTailDelete: true,
+      });
+
+      if (graph) {
+        graph.getEdges().forEach((edge) => setEdgeAttributes(edge));
+        updateEdgeArrows(graph);
+      }
+    },
+    [
+      graphRef,
+      handleOutputPortConnection,
+      handleTargetNodeConnection,
+      removeSourceToTargetEdge,
     ],
   );
 
@@ -1160,9 +1290,12 @@ export const useNodeOperations = ({
         const isKnowledgeInsert =
           val.targetType === AgentComponentTypeEnum.Knowledge &&
           resolvedKnowledgeType === NodeTypeEnum.KnowledgeInsert;
-        const resolvedDescription = isKnowledgeInsert
-          ? resolveNodeDescriptionWithNameFallback(val.name, val.description)
-          : val.description;
+        // 知识库/数据表节点：未填描述时统一回退到节点名（与 KnowledgeInsert 一致），
+        // 避免添加后顶层 description 为空、保存时丢失。
+        const resolvedDescription = resolveNodeDescriptionWithNameFallback(
+          val.name,
+          val.description,
+        );
 
         _child = {
           name: val.name,
@@ -1197,14 +1330,18 @@ export const useNodeOperations = ({
         _child = {
           name: val.name,
           shape: NodeShapeEnum.General,
-          // 工作流节点：描述为空时回退到名称，再兜底默认文案
+          // 工作流节点：描述为空时回退到名称，再兜底默认文案；
+          // 插件节点：描述为空时回退到名称
           description:
             type === NodeTypeEnum.Workflow
               ? resolveAgentFlowWorkflowNodeDescription(
                   val.name,
                   val.description,
                 )
-              : val.description,
+              : resolveNodeDescriptionWithNameFallback(
+                  val.name,
+                  val.description,
+                ),
           type,
           typeId: val.targetId,
         };
@@ -1212,7 +1349,10 @@ export const useNodeOperations = ({
         _child = {
           name: val.name,
           shape: NodeShapeEnum.General,
-          description: val.description,
+          description: resolveNodeDescriptionWithNameFallback(
+            val.name,
+            val.description,
+          ),
           type: NodeTypeEnum.MCP,
           typeId: val.targetId,
           nodeConfig: {
@@ -1326,6 +1466,7 @@ export const useNodeOperations = ({
     handleNormalNodeConnection,
     handleInputPortConnection,
     handleTargetNodeConnection,
+    insertNodeBetween,
     handleNodeCreationSuccess,
     addNode,
     copyNode,

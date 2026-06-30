@@ -628,8 +628,15 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
               terminalRef.current?.writeln(
                 '\x1b[1;38;2;22;163;74m[Terminal connected]\x1b[0m',
               );
-              window.setTimeout(syncTerminalLayoutAndFocus, 50);
-              window.setTimeout(syncTerminalLayoutAndFocus, 250);
+              terminalRef.current?.fitAndSyncBackend();
+              window.setTimeout(
+                () => terminalRef.current?.fitAndSyncBackend(),
+                50,
+              );
+              window.setTimeout(
+                () => terminalRef.current?.fitAndSyncBackend(),
+                250,
+              );
             }}
             onDisconnect={() => {
               terminalConnectedRef.current = false;

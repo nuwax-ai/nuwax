@@ -46,6 +46,8 @@ interface PreviewAndDebugProps extends PreviewAndDebugHeaderProps {
   onOpenPreview?: () => void;
   onOpenTerminalPanel?: () => void;
   onChangeSelectedComputerId?: (id: string) => void;
+  /** 读取右侧文件树面板当前选中的文件 ID（用于打开预览时判断是否展开文件树） */
+  getSelectedPreviewFileId?: () => string;
 }
 
 /**
@@ -59,6 +61,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
   onOpenPreview,
   onChangeSelectedComputerId,
   onOpenTerminalPanel,
+  getSelectedPreviewFileId,
 }) => {
   const [form] = Form.useForm();
   // 会话ID
@@ -105,6 +108,8 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     openDesktopView,
     closePreviewView,
     isFileTreeVisible,
+    setIsFileTreePinned,
+    taskAgentSelectedFileId,
     // 加载更多消息相关
     isMoreMessage,
     setIsMoreMessage,
@@ -348,6 +353,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
    * - 文件树未打开：打开预览视图
    * - 文件树已打开且当前为 preview：再次点击关闭
    * - 文件树已打开且当前为 desktop：切换为 preview
+   * - 打开预览且无已选中文件时，默认展开左侧文件树
    */
   const handleOpenPreviewPanel = () => {
     const convId = devConversationIdRef.current;
@@ -358,18 +364,27 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
       return;
     }
 
+    const openingFileTree = !isFileTreeVisible;
+    const switchingToPreview = isFileTreeVisible && viewMode !== 'preview';
+    const hasSelectedPreviewFile = Boolean(
+      getSelectedPreviewFileId?.() || taskAgentSelectedFileId,
+    );
+
     // 关闭页面预览
     showPagePreview(null);
 
     if (!isFileTreeVisible) {
       openPreviewView(convId);
-      return;
-    }
-
-    if (viewMode === 'preview') {
+    } else if (viewMode === 'preview') {
       closePreviewView();
     } else {
       openPreviewView(convId);
+    }
+
+    if (openingFileTree || switchingToPreview) {
+      if (!hasSelectedPreviewFile) {
+        setIsFileTreePinned(true);
+      }
     }
   };
 

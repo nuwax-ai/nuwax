@@ -139,6 +139,15 @@ export interface CreateNodeByPortOrEdgeProps {
   edgeId?: string;
 }
 
+/** AgentFlow：在 source → tail 之间插入 middle 节点（拖线或快捷添加共用） */
+export interface InsertNodeBetweenParams {
+  sourceNode: ChildNode;
+  middleNode: ChildNode;
+  tailNode: ChildNode;
+  oldEdgeId: string;
+  portId: string;
+}
+
 export interface GraphContainerProps {
   graphParams: { nodeList: ChildNode[]; edgeList: Edge[] };
   changeDrawer: (child: ChildNode | null) => void;
@@ -163,6 +172,8 @@ export interface GraphContainerProps {
   onInit: () => void;
   /** 当前流程类型，传递给 port/edge 快捷添加面板 */
   flowKind?: import('@/types/enums/common').FlowKindEnum;
+  /** AgentFlow：Start 第二条拖线时在原后继前插入中间节点 */
+  insertNodeBetween?: (params: InsertNodeBetweenParams) => Promise<void>;
 }
 
 export interface GraphRect {
@@ -211,12 +222,12 @@ export interface GraphContainerRef {
   graphSelectNode: (id: string) => void;
   // 删除边
   graphDeleteEdge: (id: string) => void;
-  // 创建新的边
+  // 创建新的边；成功返回 true（节点缺失或画布未就绪时返回 false）
   graphCreateNewEdge: (
     source: string,
     target: string,
     isLoop?: boolean,
-  ) => void;
+  ) => boolean;
   graphChangeZoom: (val: number) => void;
   graphChangeZoomToFit: () => void;
   drawGraph: () => void;
@@ -271,6 +282,8 @@ export interface GraphProp {
   onClickBlank: () => void;
   /** 当前流程类型，用于 port/edge 快捷添加面板的节点过滤 */
   flowKind?: import('@/types/enums/common').FlowKindEnum;
+  /** AgentFlow：Start 第二条拖线时在原后继前插入中间节点 */
+  insertNodeBetween?: (params: InsertNodeBetweenParams) => Promise<void>;
 }
 
 export interface ExceptionItemProps extends ExceptionHandleConfig {

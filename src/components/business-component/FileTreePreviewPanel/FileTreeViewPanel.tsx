@@ -173,7 +173,10 @@ const FileTreeViewPanel = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       isFullscreenPreview,
       onFullscreenPreview,
       readOnly,
-      enableGitStatus: Boolean(gitSourceControl),
+      enableGitStatus:
+        Boolean(gitSourceControl) &&
+        (enableVersionControl === undefined ||
+          isAgentVersionControlEnabled(enableVersionControl)),
       onSaveFiles: handleSaveFiles,
       onSaveFileContent: readOnly
         ? undefined
@@ -244,8 +247,9 @@ const FileTreeViewPanel = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       ref,
       () => ({
         changeFiles: fileView.changeFiles,
+        selectedFileId: fileView.tree.selectedFileId,
       }),
-      [fileView.changeFiles],
+      [fileView.changeFiles, fileView.tree.selectedFileId],
     );
 
     return (
@@ -254,7 +258,10 @@ const FileTreeViewPanel = forwardRef<FileTreeViewRef, FileTreeViewProps>(
         tree={{
           ...fileView.tree,
           handleFileSelect: async (fileId, options) => {
-            setGitVersionPanelOpen(false);
+            if (!options?.selectFolder) {
+              setGitVersionPanelOpen(false);
+              sourceControl.clearSelectedDiff();
+            }
             await fileView.tree.handleFileSelect(fileId, options);
           },
         }}

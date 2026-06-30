@@ -77,12 +77,15 @@ function mergeKnowledgeInsertBinding(
   }
   const api = pickKnowledgeInsertBinding(fromApi);
   const name = api?.name ?? req.name;
+  // 填写的描述去空白；为空（含纯空格）才视为未填写，回退到工作流返回的描述
+  const requestedDescription = req.description?.trim() || '';
   return {
     knowledgeBaseId: api?.knowledgeBaseId ?? req.knowledgeBaseId,
     name,
     description: resolveNodeDescriptionWithNameFallback(
       name,
-      api?.description ?? req.description,
+      // 优先采用填写的（前端绑定）描述，其次工作流（后端）返回的描述，均空再回退名称
+      requestedDescription || fromApi?.description,
     ),
     icon: api?.icon ?? req.icon,
   };

@@ -2,6 +2,7 @@ import {
   ConversationBottomConsole,
   FileTreeViewPanel,
 } from '@/components/business-component';
+import type { FileTreeViewRef } from '@/components/business-component/FileTreePreviewPanel/types/file-tree';
 import CreateAgent from '@/components/CreateAgent';
 import Loading from '@/components/custom/Loading';
 import PublishComponentModal from '@/components/PublishComponentModal';
@@ -107,6 +108,7 @@ const EditAgent: React.FC = () => {
 
   // 系统/用户提示词组件引用
   const systemUserTipsWordRef = useRef<SystemUserTipsWordRef>(null);
+  const fileTreePanelRef = useRef<FileTreeViewRef>(null);
   const spaceId = Number(params.spaceId);
   const agentId = Number(params.agentId);
   const [open, setOpen] = useState<boolean>(false);
@@ -922,6 +924,12 @@ const EditAgent: React.FC = () => {
     showPagePreview,
   ]);
 
+  /** 读取右侧文件树面板当前选中的文件 ID */
+  const getSelectedPreviewFileId = useCallback(
+    () => fileTreePanelRef.current?.selectedFileId ?? '',
+    [],
+  );
+
   /** 打开 / 切换文件树底部终端 */
   const handleOpenTerminalPanel = useCallback(() => {
     if (!devConversationId) {
@@ -1175,6 +1183,7 @@ const EditAgent: React.FC = () => {
                         onChangeSelectedComputerId={
                           setCurrentSelectedComputerId
                         }
+                        getSelectedPreviewFileId={getSelectedPreviewFileId}
                       />
                     )
                   }
@@ -1200,6 +1209,7 @@ const EditAgent: React.FC = () => {
                         >
                           {/*文件树侧边栏 - 只在文件树可见时显示 */}
                           <FileTreeViewPanel
+                            ref={fileTreePanelRef}
                             taskAgentSelectedFileId={taskAgentSelectedFileId}
                             clearTaskAgentSelectedFileId={() =>
                               setTaskAgentSelectedFileId('')
@@ -1271,6 +1281,7 @@ const EditAgent: React.FC = () => {
                             bottomContent={
                               hasTerminalConsoleRendered ? (
                                 <ConversationBottomConsole
+                                  // 在EditAgent中，conversationId 为 devConversationId
                                   conversationId={
                                     finalSelectedComputerId === '-1'
                                       ? devConversationId
