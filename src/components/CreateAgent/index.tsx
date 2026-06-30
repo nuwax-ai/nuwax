@@ -13,6 +13,7 @@ import type {
 } from '@/types/interfaces/agent';
 import type { CreateAgentProps } from '@/types/interfaces/common';
 import { customizeRequiredMark } from '@/utils/form';
+import { resolveCreateIcon } from '@/utils/resolveCreateIcon';
 import { Form, FormProps, Input, message } from 'antd';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useRequest } from 'umi';
@@ -75,9 +76,14 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
     }
   }, [open, agentConfigInfo]);
 
-  const onFinish: FormProps<AgentAddParams>['onFinish'] = (values) => {
+  const onFinish: FormProps<AgentAddParams>['onFinish'] = async (values) => {
     setLoading(true);
     if (mode === CreateUpdateModeEnum.Create) {
+      const { icon, description } = await resolveCreateIcon({
+        imageUrl,
+        name: values.name,
+        description: values.description,
+      });
       // AgentFlow / AgentGroup 在后端实际类型为 TaskAgent，通过 subType 区分
       const isAgentFlow = type === AgentTypeEnum.AgentFlow;
       const isAgentGroup = type === AgentTypeEnum.AgentGroup;
@@ -88,7 +94,8 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
       };
       runAdd({
         ...values,
-        icon: imageUrl,
+        description: description ?? values.description,
+        icon,
         spaceId,
         type: isAgentFlow || isAgentGroup ? AgentTypeEnum.TaskAgent : type,
         subType: resolveSubType(),
