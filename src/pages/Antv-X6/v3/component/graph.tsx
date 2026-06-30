@@ -32,11 +32,12 @@ import {
   ensureEdgeOnGraph,
   isAgentFlowBranchEdgeConnect,
 } from '../agentFlow/edgeConnect';
-import StencilContent from '../components/layout/Sidebar';
 import {
-  isStartNode,
-  shouldBlockStartOutgoing,
-} from '../flowKind/flowKindRules';
+  handleAgentFlowStartDragInsert,
+  resolveStartPortQuickAddRedirect,
+  shouldRejectStartSecondDrag,
+} from '../agentFlow/startInsertHandlers';
+import StencilContent from '../components/layout/Sidebar';
 import {
   clientPointToLocal,
   resolveQuickAddAnchorClient,
@@ -109,6 +110,7 @@ const initGraph = ({
   changeNodeConfigWithRefresh,
   changeZoom,
   createNodeByPortOrEdge,
+  insertNodeBetween,
   onSaveNode,
   onClickBlank,
   flowKind,
@@ -164,17 +166,24 @@ const initGraph = ({
     edgeId?: string,
     anchorEl?: Element | null,
   ) => {
-    // AgentFlow：开始节点输出端口有且仅一条连线，已连出时禁止从端口再加节点
-    // （edgeId 存在时为在已有连线上插入节点，不会新增出口，放行）
-    if (
-      isStartNode(sourceNode?.type) &&
-      !edgeId &&
-      shouldBlockStartOutgoing({
+    const portRedirect = resolveStartPortQuickAddRedirect({
+      graph,
+      flowKind,
+      sourceNode,
+      edgeId,
+    });
+    if (portRedirect.kind === 'redirect') {
+      return createNodeAndEdge(
         graph,
-        flowKind,
-        startCellId: String(sourceNode.id),
-      })
-    ) {
+        event,
+        sourceNode,
+        portRedirect.sourcePort,
+        portRedirect.tailNode,
+        portRedirect.edgeId,
+        anchorEl,
+      );
+    }
+    if (portRedirect.kind === 'blocked') {
       message.warning(
         t(
           'PC.Pages.AgentFlowNode.startSingleOutgoingHint',
@@ -409,13 +418,12 @@ const initGraph = ({
           return false;
         }
 
-        // AgentFlow：开始节点输出端口有且仅一条连线（与 Workflow 多出口不同）
         if (
-          isStartNode(sourceCell.getData()?.type) &&
-          shouldBlockStartOutgoing({
+          shouldRejectStartSecondDrag({
             graph,
             flowKind,
-            startCellId: String(sourceCell.id),
+            sourceCell,
+            targetCell,
             excludeEdgeId: edge ? String(edge.id) : undefined,
             edges: existingEdges,
           })
@@ -1018,6 +1026,23 @@ const initGraph = ({
     const targetNode = edge.getTargetNode()?.getData();
 
     if (!sourceNode || !targetNode || !sourcePort || !targetPort) return;
+
+    if (
+      handleAgentFlowStartDragInsert({
+        graph,
+        flowKind,
+        edge,
+        edges,
+        sourceNode,
+        targetNode,
+        sourcePort,
+        insertNodeBetween,
+        onComplete: () => updateEdgeArrows(graph),
+      })
+    ) {
+      return;
+    }
+
     const result = validateConnect(edge, edges);
     if (result !== false) {
       edge.remove();
