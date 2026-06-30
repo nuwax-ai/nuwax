@@ -55,6 +55,9 @@ const AcpPermissionCard: React.FC<AcpPermissionCardProps> = ({
 
   const handleSelect = useCallback(
     (optionId: string, type: 'confirm' | 'cancel' = 'confirm') => {
+      if (isSubmitting || isSubmitted || !onRespond) {
+        return;
+      }
       setSubmitType(type);
       onRespond?.({
         outcome: {
@@ -63,7 +66,7 @@ const AcpPermissionCard: React.FC<AcpPermissionCardProps> = ({
         },
       });
     },
-    [onRespond],
+    [onRespond, isSubmitting, isSubmitted],
   );
 
   useEffect(() => {
