@@ -50,6 +50,8 @@ export interface EmbeddedConsoleTerminalRef {
   disconnect: () => void;
   /** 重置重连计数后重新连接 */
   reconnect: (url?: string) => void;
+  /** 向 shell 发送空行，触发重新输出命令提示符（重连后使用） */
+  requestShellPrompt: () => void;
 }
 
 export interface EmbeddedConsoleTerminalProps {
@@ -180,6 +182,8 @@ const EmbeddedConsoleTerminal = forwardRef<
     autoConnectRef.current = autoConnect;
     /** 连接成功但尚未成功 focus 时置 true，容器变为可见后补 focus */
     const pendingFocusRef = useRef(false);
+    /** 是否曾成功连通过（用于区分首次连接与自动重连） */
+    const hasEverConnectedRef = useRef(false);
 
     const isViewportMeasurable = useCallback(() => {
       const rect = viewportRef.current?.getBoundingClientRect();
@@ -273,6 +277,23 @@ const EmbeddedConsoleTerminal = forwardRef<
       });
       focusTerminal();
     }, [focusTerminal, isViewportMeasurable, syncBackendSize]);
+
+    /** 向 shell 发送换行，触发 bash 等重新输出 `user@host:path$` 提示符 */
+    const requestShellPrompt = useCallback(() => {
+      const ws = wsRef.current;
+      if (!ws || ws.readyState !== WebSocket.OPEN) {
+        return;
+      }
+      try {
+        if (wireProtocol === 'ttyd') {
+          ws.send(encodeTtydInput('\n'));
+        } else {
+          ws.send('\n');
+        }
+      } catch {
+        /* ignore */
+      }
+    }, [wireProtocol]);
 
     const restoreAfterVisibilityChange = useCallback(() => {
       scheduleFitWhenVisible(
@@ -462,9 +483,11 @@ const EmbeddedConsoleTerminal = forwardRef<
           reconnectCountRef.current = 0;
           clearReconnectTimer();
 
+          const isReconnect = hasEverConnectedRef.current;
+          const term = terminalRef.current;
+
           // ttyd 必须在首包发送 JSON init 才会 fork shell；同步发送，避免 fit 异步竞态
           if (wireProtocol === 'ttyd') {
-            const term = terminalRef.current;
             if (term) {
               let { cols, rows } = term;
               if (cols <= 0 || rows <= 0) {
@@ -474,6 +497,8 @@ const EmbeddedConsoleTerminal = forwardRef<
               ttydInitSentRef.current = true;
             }
           }
+
+          hasEverConnectedRef.current = true;
 
           startHeartbeat();
           scheduleFitWhenVisible(
@@ -497,6 +522,28 @@ const EmbeddedConsoleTerminal = forwardRef<
               }
               focusTerminal();
               onConnectRef.current?.();
+              if (isReconnect) {
+                window.setTimeout(() => {
+                  if (
+                    wsRef.current !== ws ||
+                    ws.readyState !== WebSocket.OPEN
+                  ) {
+                    return;
+                  }
+                  requestShellPrompt();
+                  focusTerminal();
+                }, 80);
+                window.setTimeout(() => {
+                  if (
+                    wsRef.current !== ws ||
+                    ws.readyState !== WebSocket.OPEN
+                  ) {
+                    return;
+                  }
+                  requestShellPrompt();
+                  focusTerminal();
+                }, 280);
+              }
               // 父组件 onConnect 可能写入提示行，延迟再 fit + init + focus 确保重连后可输入
               scheduleFitWhenVisible(
                 () => viewportRef.current,
@@ -628,6 +675,7 @@ const EmbeddedConsoleTerminal = forwardRef<
         connect,
         disconnect,
         reconnect: reconnectTerminal,
+        requestShellPrompt,
       }),
       [
         connect,
@@ -635,6 +683,7 @@ const EmbeddedConsoleTerminal = forwardRef<
         fitAndSyncBackend,
         focusTerminal,
         reconnectTerminal,
+        requestShellPrompt,
         restoreAfterVisibilityChange,
       ],
     );
