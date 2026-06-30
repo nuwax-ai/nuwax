@@ -90,6 +90,8 @@ export interface ConversationBottomConsoleProps {
   expandSignal?: number;
   /** 信号值变化时切到终端 Tab（折叠时恢复默认高度，如点击「终端」图标） */
   terminalSignal?: number;
+  /** 信号值变化时将面板折叠为仅保留头部 */
+  collapseSignal?: number;
   /** 信号值变化时切到日志 Tab（折叠时恢复默认高度，如点击「日志」图标） */
   logsSignal?: number;
   /** 布局模式变化回调（供外部感知折叠/展开状态） */
@@ -128,6 +130,7 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
   layoutResetSignal,
   expandSignal,
   terminalSignal,
+  collapseSignal,
   logsSignal,
   onLayoutModeChange,
   onActiveTabChange,
@@ -370,6 +373,7 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
   const prevLayoutResetSignalRef = useRef(layoutResetSignal);
   const prevExpandSignalRef = useRef(expandSignal);
   const prevTerminalSignalRef = useRef(terminalSignal);
+  const prevCollapseSignalRef = useRef(collapseSignal);
   const prevLogsSignalRef = useRef(logsSignal);
 
   /** 日志 Tab 是否使用结构化日志面板（DevLogPanel） */
@@ -467,6 +471,19 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
     setActiveTab('terminal');
     setLayoutMode((prev) => (prev === 'collapsed' ? 'default' : prev));
   }, [terminalSignal]);
+
+  /** 外部信号：折叠面板（仅保留头部） */
+  useEffect(() => {
+    if (
+      collapseSignal === undefined ||
+      collapseSignal === prevCollapseSignalRef.current
+    ) {
+      return;
+    }
+    prevCollapseSignalRef.current = collapseSignal;
+    if (!collapseSignal) return;
+    setLayoutMode('collapsed');
+  }, [collapseSignal]);
 
   /** 外部信号：切到日志 Tab（折叠时恢复默认高度） */
   useEffect(() => {

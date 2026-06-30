@@ -3,6 +3,7 @@ import {
   apiAgentConfigUpdate,
 } from '@/services/agentConfig';
 import { getProjectInfo } from '@/services/appDev';
+import { apiMcpDetail, apiMcpUpdate } from '@/services/mcp';
 import { apiPageUpdateProject } from '@/services/pageDev';
 import {
   apiPluginCodeUpdate,
@@ -87,6 +88,22 @@ export async function applyGeneratedIcon(
       } else {
         await apiPluginHttpUpdate(payload);
       }
+      break;
+    }
+    case AgentComponentTypeEnum.MCP: {
+      const res = await apiMcpDetail(targetId);
+      const mcp = res?.data;
+      if (!mcp) return;
+      const patch = pickIconAndDescription(meta, mcp.description);
+      if (!patch.icon) return;
+      if (!mcp.mcpConfig) return;
+      await apiMcpUpdate({
+        id: targetId,
+        name: mcp.name,
+        description: patch.description ?? mcp.description,
+        icon: patch.icon,
+        mcpConfig: mcp.mcpConfig,
+      });
       break;
     }
     default:

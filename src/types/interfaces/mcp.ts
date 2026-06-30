@@ -190,6 +190,10 @@ export interface McpHeaderCommonProps {
   spaceId: number;
   saveLoading?: boolean;
   saveDeployLoading?: boolean;
+  /** 提交防重态（含 await 期间 pending） */
+  isSubmitting?: boolean;
+  /** 本次提交是否走「保存并部署」 */
+  withDeployRef?: React.MutableRefObject<boolean>;
   onSave: () => void;
   onSaveAndDeploy: () => void;
 }

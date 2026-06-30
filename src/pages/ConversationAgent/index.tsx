@@ -1326,6 +1326,27 @@ const ConversationAgent: React.FC = () => {
     },
   });
 
+  /** Git status 中 untracked 数组内的文件（走普通文件预览，不走 diff） */
+  const isGitUntrackedFile = useCallback(
+    (fileId: string) =>
+      fileView.changeFiles.some(
+        (item) => item.fileId === fileId && item.unstagedStatus === 'untracked',
+      ),
+    [fileView.changeFiles],
+  );
+
+  /** 源代码管理点击：untracked 走文件预览，其余走 diff */
+  const handleGitDiffFileSelect = useCallback(
+    (fileId: string, section: ChangeListSection) => {
+      if (isGitUntrackedFile(fileId)) {
+        gitSourceControl.handleOpenChangeFile(fileId);
+        return;
+      }
+      gitSourceControl.handleDiffFileSelect(fileId, section);
+    },
+    [isGitUntrackedFile, gitSourceControl],
+  );
+
   /**
    * 顶部预览 Tab 切换：diff 标签需重新拉取 Git diff（与源代码管理点击一致）
    */
@@ -1334,6 +1355,10 @@ const ConversationAgent: React.FC = () => {
       closeAgentDesktop();
       if (tabId.startsWith('diff:')) {
         const fileId = tabId.slice('diff:'.length);
+        if (isGitUntrackedFile(fileId)) {
+          gitSourceControl.handleOpenChangeFile(fileId);
+          return;
+        }
         const changeFile = fileView.changeFiles.find(
           (item) => item.fileId === fileId,
         );
@@ -1350,7 +1375,13 @@ const ConversationAgent: React.FC = () => {
       }
       previewTabs.selectTab(tabId);
     },
-    [closeAgentDesktop, fileView.changeFiles, gitSourceControl, previewTabs],
+    [
+      closeAgentDesktop,
+      fileView.changeFiles,
+      gitSourceControl,
+      isGitUntrackedFile,
+      previewTabs,
+    ],
   );
 
   // ==================================== 渲染组件元素 ====================================
@@ -1618,7 +1649,7 @@ const ConversationAgent: React.FC = () => {
                         fileView.preview.isSavingFiles,
                       isRefreshingGitList: fileView.isRefreshingGitList,
                       onRefreshGitList: fileView.refreshGitList,
-                      onDiffFileSelect: gitSourceControl.handleDiffFileSelect,
+                      onDiffFileSelect: handleGitDiffFileSelect,
                       onOpenChangeFile: gitSourceControl.handleOpenChangeFile,
                       onDiscardChanges: gitSourceControl.handleDiscardChange,
                       onStageChanges: gitSourceControl.handleStageChanges,
