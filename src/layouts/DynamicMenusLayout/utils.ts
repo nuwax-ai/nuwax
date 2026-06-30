@@ -4,6 +4,45 @@ import { OpenTypeEnum } from '@/pages/SystemManagement/MenuPermission/types/menu
 import { MenuItemDto } from '@/types/interfaces/menu';
 import { history } from 'umi';
 
+/** 菜单路径中的站点 origin 占位符，点击时替换为当前 location.origin */
+export const SITE_URL_PLACEHOLDER = '%siteUrl%';
+
+/** 是否为以 %siteUrl% 开头的菜单路径 */
+export const isSiteUrlMenuPath = (path: string): boolean =>
+  path.startsWith(SITE_URL_PLACEHOLDER);
+
+/**
+ * 将 %siteUrl% 替换为当前站点 origin
+ * @example %siteUrl%/docs -> https://example.com/docs
+ */
+export const resolveSiteUrlPath = (
+  path: string,
+  origin: string = typeof window !== 'undefined' ? window.location.origin : '',
+): string => {
+  if (!path || !isSiteUrlMenuPath(path)) {
+    return path;
+  }
+  return path.replace(SITE_URL_PLACEHOLDER, origin);
+};
+
+/** 解析菜单路径中的 %siteUrl% 占位符 */
+export const resolveMenuPath = (menu: MenuItemDto): MenuItemDto => {
+  const { path = '' } = menu;
+  if (!isSiteUrlMenuPath(path)) {
+    return menu;
+  }
+  return {
+    ...menu,
+    path: resolveSiteUrlPath(path),
+  };
+};
+
+/** 是否为 http(s) 菜单路径（含 %siteUrl% 解析后） */
+export const isHttpMenuPath = (path: string): boolean => {
+  if (!path) return false;
+  return resolveSiteUrlPath(path).includes('http');
+};
+
 /**
  * 修改或保存当前路径到本地缓存
  * @param parentCode 父级菜单的 code
@@ -52,7 +91,8 @@ export const removePathUrlFromLocalStorage = (parentCode: string) => {
  * 是否为应用内 iframe 菜单（http 链接且非新标签页打开）
  */
 export const isInAppIframeMenu = (menu: MenuItemDto): boolean => {
-  const { openType = OpenTypeEnum.CurrentTab, path = '' } = menu;
+  const { openType = OpenTypeEnum.CurrentTab, path = '' } =
+    resolveMenuPath(menu);
   return !!path && path.includes('http') && openType !== OpenTypeEnum.NewTab;
 };
 
@@ -87,13 +127,16 @@ export const isOpenIframePath = (path: string): boolean =>
 
 /** 当前页面是否已打开指定菜单的应用内 iframe */
 export const isCurrentOpenIframePage = (menu: MenuItemDto): boolean => {
-  if (!isInAppIframeMenu(menu)) return false;
+  const resolvedMenu = resolveMenuPath(menu);
+  if (!isInAppIframeMenu(resolvedMenu)) return false;
   const parsed = parseOpenIframeLocation(
     history.location.pathname,
     history.location.search,
   );
   if (!parsed) return false;
-  return parsed.menuCode === menu.code && parsed.url === menu.path;
+  return (
+    parsed.menuCode === resolvedMenu.code && parsed.url === resolvedMenu.path
+  );
 };
 
 /** 当前页面是否已打开指定 open-iframe-page 路径 */
@@ -146,16 +189,17 @@ export const navigateOpenIframePath = (
  * @param parentCode 父级菜单的 code, 如果存在，则将当前路径保存到本地缓存中
  */
 export const handleOpenUrl = (menu: MenuItemDto, parentCode?: string) => {
-  const { openType = OpenTypeEnum.CurrentTab, path = '' } = menu;
+  const resolvedMenu = resolveMenuPath(menu);
+  const { openType = OpenTypeEnum.CurrentTab, path = '' } = resolvedMenu;
   if (openType === OpenTypeEnum.NewTab) {
     window.open(path, '_blank');
     return;
   }
-  const resolvedPath = buildOpenIframePath(menu);
+  const resolvedPath = buildOpenIframePath(resolvedMenu);
   if (parentCode) {
     updatePathUrlToLocalStorage(parentCode, resolvedPath);
   }
-  if (isCurrentOpenIframePage(menu)) {
+  if (isCurrentOpenIframePage(resolvedMenu)) {
     refreshOpenIframePath(resolvedPath);
     return;
   }
