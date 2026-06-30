@@ -1148,9 +1148,10 @@ const AppDevDesign: React.FC = () => {
           const { code } = await apiAppDevUploadFiles(params);
 
           if (code === SUCCESS_CODE) {
-            // 与弹窗上传成功后逻辑保持一致
             // 刷新项目详情(刷新版本列表)
             projectInfo.refreshProjectInfo();
+            // refreshGitList 内部会 loadFileTree，勿重复调用 get-project-content
+            await sourceControl.refreshGitList();
           }
         } catch (error) {
           console.error('[AppDev] right-click upload failed', error);
@@ -1168,7 +1169,7 @@ const AppDevDesign: React.FC = () => {
         setIsFileOperating(false);
       };
     },
-    [hasValidProjectId, projectInfo, projectId],
+    [hasValidProjectId, projectInfo, projectId, sourceControl],
   );
 
   /**
