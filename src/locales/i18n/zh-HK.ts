@@ -5724,7 +5724,7 @@ export const ZH_HK: SystemLangMap = {
   "PC.Pages.SystemSubsOrders.detailDeveloperInfo": "開發者信息",
   "PC.Pages.SystemSubsOrders.detailSubscriptionInfo": "訂閱信息",
   "PC.Pages.SystemSubsOrders.drawerTitle": "訂閱詳情",
-  "PC.Pages.SpaceKnowledge.KnowledgeHeader.accuracytest": "測試命中",
+  "PC.Pages.SpaceKnowledge.KnowledgeHeader.accuracytest": "命中測試",
   'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.hitTestConfig': '命中測試配置',
   'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.testScope': '測試範圍',
   'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.selectTestDoc': '選擇測試文檔',

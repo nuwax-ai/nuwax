@@ -5774,7 +5774,7 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.SpaceCreateProject.tabPlugin": "外掛程式",
   "PC.Pages.SpaceCreateProject.placeholderPlugin": "描述你想要的外掛程式工具，例如：幫我對接第三方圖片轉換的HTTP介面外掛程式",
   "PC.Pages.SpaceCreateProject.inputRequiredWarning": "請輸入您的任務描述！",
-  "PC.Pages.SpaceKnowledge.KnowledgeHeader.accuracytest": "測試命中",
+  "PC.Pages.SpaceKnowledge.KnowledgeHeader.accuracytest": "命中測試",
   'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.hitTestConfig': '命中測試配置',
   'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.testScope': '測試範圍',
   'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.selectTestDoc': '選擇測試文檔',

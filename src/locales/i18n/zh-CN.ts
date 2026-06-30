@@ -5844,7 +5844,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.SpaceCreateProject.tabPlugin": "插件",
   "PC.Pages.SpaceCreateProject.placeholderPlugin": "描述你想要的插件工具，例如：帮我对接第三方图片转换的HTTP接口插件",
   "PC.Pages.SpaceCreateProject.inputRequiredWarning": "请输入您的任务描述！",
-  "PC.Pages.SpaceKnowledge.KnowledgeHeader.accuracytest": "测试命中",
+  "PC.Pages.SpaceKnowledge.KnowledgeHeader.accuracytest": "命中测试",
   'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.hitTestConfig': '命中测试配置',
   'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.testScope': '测试范围',
   'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.selectTestDoc': '选择测试文档',
