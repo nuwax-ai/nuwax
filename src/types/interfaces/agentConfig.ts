@@ -82,6 +82,8 @@ export interface AgentArrangeConfigProps {
   ) => void;
   // 变量列表变化回调，用于同步变量列表到父组件
   onVariablesChange?: (variables: BindConfigWithSub[]) => void;
+  /** 记忆区变量弹窗确认关闭后回调（AgentFlow 用于刷新工作流） */
+  onMemoryVariablesConfirmed?: () => void;
   onToolsChange?: (tools: AgentComponentInfo[]) => void;
 }
 
