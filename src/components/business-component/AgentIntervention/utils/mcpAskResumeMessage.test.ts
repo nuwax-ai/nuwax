@@ -14,9 +14,6 @@ const zhCnResumeDict: Record<string, string> = {
   'PC.Components.McpAskQuestionCard.unknownFile': '未知文件',
   'PC.Components.McpAskQuestionCard.file': '文件',
   'PC.Components.McpAskQuestionCard.emptyFormContent': '（无表单内容）',
-  'PC.Components.McpAskQuestionCard.listSeparator': '、',
-  'PC.Components.McpAskQuestionCard.objectEntrySeparator': '，',
-  'PC.Components.McpAskQuestionCard.labelSeparator': '：',
   'PC.Components.McpAskQuestionCard.resumeCancelled': '我取消了「{0}」。',
   'PC.Components.McpAskQuestionCard.resumeSkipped': '我跳过了「{0}」。',
   'PC.Components.McpAskQuestionCard.resumeTimeout':
@@ -34,9 +31,6 @@ const enUsResumeDict: Record<string, string> = {
   'PC.Components.McpAskQuestionCard.unknownFile': 'Unknown file',
   'PC.Components.McpAskQuestionCard.file': 'File',
   'PC.Components.McpAskQuestionCard.emptyFormContent': '(No form content)',
-  'PC.Components.McpAskQuestionCard.listSeparator': ', ',
-  'PC.Components.McpAskQuestionCard.objectEntrySeparator': '; ',
-  'PC.Components.McpAskQuestionCard.labelSeparator': ': ',
   'PC.Components.McpAskQuestionCard.resumeCancelled': 'I cancelled "{0}".',
   'PC.Components.McpAskQuestionCard.resumeSkipped': 'I skipped "{0}".',
   'PC.Components.McpAskQuestionCard.resumeTimeout':
@@ -46,6 +40,7 @@ const enUsResumeDict: Record<string, string> = {
 };
 
 let activeDict = zhCnResumeDict;
+let activeLang = 'zh-CN';
 
 vi.mock('@/services/i18nRuntime', () => ({
   dict: (key: string, ...args: (string | number)[]) => {
@@ -56,6 +51,7 @@ vi.mock('@/services/i18nRuntime', () => ({
       template,
     );
   },
+  getCurrentLang: () => activeLang,
 }));
 
 const baseInteraction: McpAskInteraction = {
@@ -102,6 +98,7 @@ const baseInteraction: McpAskInteraction = {
 describe('buildMcpAskResumeMessage', () => {
   it('formats submitted answers as user-friendly label value lines', () => {
     activeDict = zhCnResumeDict;
+    activeLang = 'zh-CN';
     const message = buildMcpAskResumeMessage(baseInteraction, {
       interventionId: 'ask-1',
       revision: 1,
@@ -129,6 +126,7 @@ describe('buildMcpAskResumeMessage', () => {
 
   it('keeps unknown fields readable without JSON blocks', () => {
     activeDict = zhCnResumeDict;
+    activeLang = 'zh-CN';
     const message = buildMcpAskResumeMessage(baseInteraction, {
       interventionId: 'ask-1',
       revision: 1,
@@ -142,12 +140,13 @@ describe('buildMcpAskResumeMessage', () => {
     });
 
     expect(message).toContain('confirmed：是');
-    expect(message).toContain('extra：owner: alice，retry: 2');
+    expect(message).toContain('extra：owner：alice，retry：2');
     expect(message).not.toContain('```json');
   });
 
   it('uses custom radio input as the field value', () => {
     activeDict = zhCnResumeDict;
+    activeLang = 'zh-CN';
     const message = buildMcpAskResumeMessage(
       {
         ...baseInteraction,
@@ -190,6 +189,7 @@ describe('buildMcpAskResumeMessage', () => {
 
   it('formats cancel, skip, and timeout as normal chat messages', () => {
     activeDict = zhCnResumeDict;
+    activeLang = 'zh-CN';
     const commonPayload = {
       interventionId: 'ask-1',
       revision: 1,
@@ -219,6 +219,7 @@ describe('buildMcpAskResumeMessage', () => {
 
   it('uses English templates when locale dict is English', () => {
     activeDict = enUsResumeDict;
+    activeLang = 'en-US';
     const message = buildMcpAskResumeMessage(baseInteraction, {
       interventionId: 'ask-1',
       revision: 1,
@@ -238,6 +239,7 @@ describe('buildMcpAskResumeMessage', () => {
 describe('isMcpAskResumeMessageForInteraction', () => {
   it('matches resume messages across supported locales and legacy Chinese text', () => {
     activeDict = enUsResumeDict;
+    activeLang = 'en-US';
     const title = '请选择继续方式';
 
     expect(

@@ -3,7 +3,7 @@ import ConditionRender from '@/components/ConditionRender';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import { t } from '@/services/i18nRuntime';
 import classNames from 'classnames';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useModel } from 'umi';
 
 /**
@@ -14,6 +14,10 @@ const OpenIframePage: React.FC = () => {
   const location = useLocation();
   // url地址
   const [iframeUrl, setIframeUrl] = useState<string>('');
+  /** 重复点击同一菜单时通过 _refresh 参数强制 iframe 重载 */
+  const iframeKey = useMemo(() => {
+    return new URLSearchParams(location.search).get('_refresh') || '0';
+  }, [location.search]);
 
   useEffect(() => {
     const url = new URLSearchParams(window.location.search);
@@ -55,6 +59,7 @@ const OpenIframePage: React.FC = () => {
         </div>
       </ConditionRender>
       <iframe
+        key={iframeKey}
         src={iframeUrl}
         width="100%"
         height="100%"
