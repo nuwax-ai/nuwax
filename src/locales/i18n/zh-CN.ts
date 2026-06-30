@@ -80,7 +80,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Components.AcpPermissionCard.allowOnce": "允许一次",
   "PC.Components.AcpPermissionCard.cancelShortcutHint": "取消（Esc）",
   "PC.Components.AcpPermissionCard.defaultTitle": "需要权限确认",
-  "PC.Components.AcpPermissionCard.eyebrow": "ACP 权限审批",
+  "PC.Components.AcpPermissionCard.eyebrow": "审批请求",
   "PC.Components.AcpPermissionCard.rejectOnce": "拒绝",
   "PC.Components.AcpPermissionCard.shortcutHint": "{0}（{1}）",
   "PC.Components.AcpPermissionCard.submitted": "已提交审批结果",
