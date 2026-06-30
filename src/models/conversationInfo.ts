@@ -4,6 +4,7 @@ import {
   processInterventionSsePatch,
   useAgentInterventionHandlers,
 } from '@/components/business-component/AgentIntervention';
+import { reconcileAcpPermissionStatusesInMessageList } from '@/components/business-component/AgentIntervention/utils/reconcileAcpPermissionStatus';
 import { reconcileFinalMessageState } from '@/components/business-component/AgentIntervention/utils/reconcileFinalMessageState';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
@@ -873,11 +874,14 @@ export default () => {
       const interventionPatch = processInterventionSsePatch(
         res,
         currentMessage,
+        list,
       );
       if (interventionPatch) {
         list.splice(index, arraySpliceAction, interventionPatch);
-        checkConversationActive(list);
-        return list;
+        const reconciledList =
+          reconcileAcpPermissionStatusesInMessageList(list);
+        checkConversationActive(reconciledList);
+        return reconciledList;
       }
 
       // 更新UI状态...
@@ -1163,16 +1167,18 @@ export default () => {
         list.splice(index, arraySpliceAction, newMessage as MessageInfo);
       }
 
-      const latestProcessingList = list.flatMap((message) =>
+      const reconciledList = reconcileAcpPermissionStatusesInMessageList(list);
+
+      const latestProcessingList = reconciledList.flatMap((message) =>
         Array.isArray(message.processingList) ? message.processingList : [],
       );
       handleChatProcessingList(latestProcessingList);
 
       // 检查会话状态
-      checkConversationActive(list);
-      messageListRef.current = list;
+      checkConversationActive(reconciledList);
+      messageListRef.current = reconciledList;
 
-      return list;
+      return reconciledList;
     });
   };
 
