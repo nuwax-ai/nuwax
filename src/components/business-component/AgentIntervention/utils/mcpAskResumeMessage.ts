@@ -5,7 +5,7 @@ import {
   MIN_ZH_I18N_MAP,
   MIN_ZH_TW_I18N_MAP,
 } from '@/constants/i18n.constants';
-import { dict } from '@/services/i18nRuntime';
+import { dict, getCurrentLang } from '@/services/i18nRuntime';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import type {
   McpAskInteraction,
@@ -111,6 +111,23 @@ function tMcpAsk(key: string, ...values: (string | number)[]): string {
   return dict(key, ...values);
 }
 
+/** MCP Ask resume 表单展示用标点：英文 locale 用西式标点，其余语系用 CJK 标点 */
+function getMcpAskDisplaySeparators(lang = getCurrentLang()) {
+  const isEnglish = lang.toLowerCase().startsWith('en');
+  if (isEnglish) {
+    return {
+      listSeparator: ', ',
+      objectEntrySeparator: '; ',
+      labelSeparator: ': ',
+    };
+  }
+  return {
+    listSeparator: '、',
+    objectEntrySeparator: '，',
+    labelSeparator: '：',
+  };
+}
+
 function stringifyDisplayValue(value: unknown): string {
   if (value === undefined || value === null || value === '') {
     return tMcpAsk(`${I18N_PREFIX}.notFilled`);
@@ -124,7 +141,8 @@ function stringifyDisplayValue(value: unknown): string {
     return String(value);
   }
 
-  const listSeparator = tMcpAsk(`${I18N_PREFIX}.listSeparator`);
+  const { listSeparator, objectEntrySeparator, labelSeparator } =
+    getMcpAskDisplaySeparators();
 
   if (Array.isArray(value)) {
     if (!value.length) {
@@ -157,9 +175,11 @@ function stringifyDisplayValue(value: unknown): string {
     if (!entries.length) {
       return tMcpAsk(`${I18N_PREFIX}.notFilled`);
     }
-    const objectEntrySeparator = tMcpAsk(`${I18N_PREFIX}.objectEntrySeparator`);
     return entries
-      .map(([key, item]) => `${key}: ${stringifyDisplayValue(item)}`)
+      .map(
+        ([key, item]) =>
+          `${key}${labelSeparator}${stringifyDisplayValue(item)}`,
+      )
       .join(objectEntrySeparator);
   }
   return String(value);
@@ -198,7 +218,7 @@ function formatAskFormData(
     return emptyFormContent;
   }
 
-  const labelSeparator = tMcpAsk(`${I18N_PREFIX}.labelSeparator`);
+  const { labelSeparator } = getMcpAskDisplaySeparators();
   const fields = parseInteractionFields(interaction.input.ui);
   const consumedKeys = new Set<string>();
   const lines = fields
