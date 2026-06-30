@@ -64,6 +64,23 @@ export function useUnifiedChatScroll({
     [onScrollBtnVisibleChange],
   );
 
+  // 程序化瞬间置底：清理上一个置底复位定时器 → 标记程序滚动 → 立即 scrollTo 到底 →
+  // 100ms 后复位标记。供各处置底逻辑（发送、流式、会话结束等）复用，避免同一套实现
+  // 被复制多份后产生不一致（曾出现 4 份近乎相同的副本）。
+  const pinToBottomInstant = useCallback((el: HTMLDivElement) => {
+    if (programmaticTimerRef.current) {
+      clearTimeout(programmaticTimerRef.current);
+    }
+    (el as any).__isProgrammaticScroll = true;
+    el.scrollTo({ top: el.scrollHeight, behavior: 'instant' });
+    programmaticTimerRef.current = setTimeout(() => {
+      if (messageViewRef.current) {
+        (messageViewRef.current as any).__isProgrammaticScroll = false;
+      }
+      programmaticTimerRef.current = null;
+    }, 100);
+  }, []);
+
   // 1. 滚动检测逻辑
   useConversationScrollDetection(
     messageViewRef,
@@ -78,17 +95,7 @@ export function useUnifiedChatScroll({
     setScrollBtnVisible(false);
     const el = messageViewRef.current;
     if (el) {
-      if (programmaticTimerRef.current) {
-        clearTimeout(programmaticTimerRef.current);
-      }
-      (el as any).__isProgrammaticScroll = true;
-      el.scrollTo({ top: el.scrollHeight, behavior: 'instant' });
-      programmaticTimerRef.current = setTimeout(() => {
-        if (messageViewRef.current) {
-          (messageViewRef.current as any).__isProgrammaticScroll = false;
-        }
-        programmaticTimerRef.current = null;
-      }, 100);
+      pinToBottomInstant(el);
     }
   };
 
@@ -155,20 +162,7 @@ export function useUnifiedChatScroll({
         const performScroll = () => {
           const el = messageViewRef.current;
           if (el) {
-            if (programmaticTimerRef.current) {
-              clearTimeout(programmaticTimerRef.current);
-            }
-            (el as any).__isProgrammaticScroll = true;
-            el.scrollTo({
-              top: el.scrollHeight,
-              behavior: 'instant',
-            });
-            programmaticTimerRef.current = setTimeout(() => {
-              if (messageViewRef.current) {
-                (messageViewRef.current as any).__isProgrammaticScroll = false;
-              }
-              programmaticTimerRef.current = null;
-            }, 100);
+            pinToBottomInstant(el);
           }
         };
 
@@ -199,7 +193,7 @@ export function useUnifiedChatScroll({
         }
       }
     }
-  }, [messageList, isConversationActive, chatSuggestList]);
+  }, [messageList, isConversationActive, chatSuggestList, pinToBottomInstant]);
 
   // 组件卸载时清理定时器
   useEffect(() => {
@@ -224,18 +218,7 @@ export function useUnifiedChatScroll({
     ) {
       const doScroll = () => {
         if (!allowAutoScrollRef.current || !messageViewRef.current) return;
-        const el = messageViewRef.current;
-        if (programmaticTimerRef.current) {
-          clearTimeout(programmaticTimerRef.current);
-        }
-        (el as any).__isProgrammaticScroll = true;
-        el.scrollTo({ top: el.scrollHeight, behavior: 'instant' });
-        programmaticTimerRef.current = setTimeout(() => {
-          if (messageViewRef.current) {
-            (messageViewRef.current as any).__isProgrammaticScroll = false;
-          }
-          programmaticTimerRef.current = null;
-        }, 100);
+        pinToBottomInstant(messageViewRef.current);
       };
 
       doScroll();
@@ -255,7 +238,7 @@ export function useUnifiedChatScroll({
         clearTimeout(t3);
       };
     }
-  }, [isLoading, messageList.length]);
+  }, [isLoading, messageList.length, pinToBottomInstant]);
 
   // 会话结束兜底：isConversationActive 从 true → false 时触发多级延迟置底。
   // 关键设计：此 effect 仅依赖 [isConversationActive]，不会被 onClose 中 messageList
@@ -275,17 +258,7 @@ export function useUnifiedChatScroll({
     const doScroll = () => {
       const el = messageViewRef.current;
       if (!el || !allowAutoScrollRef.current) return;
-      if (programmaticTimerRef.current) {
-        clearTimeout(programmaticTimerRef.current);
-      }
-      (el as any).__isProgrammaticScroll = true;
-      el.scrollTo({ top: el.scrollHeight, behavior: 'instant' });
-      programmaticTimerRef.current = setTimeout(() => {
-        if (messageViewRef.current) {
-          (messageViewRef.current as any).__isProgrammaticScroll = false;
-        }
-        programmaticTimerRef.current = null;
-      }, 100);
+      pinToBottomInstant(el);
     };
 
     // 会话结束后 markdown/图片/processingList 等异步渲染会持续撑高 DOM，

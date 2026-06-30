@@ -57,6 +57,7 @@ import './indexV3.less';
 import { useBeforeUnload } from './hooks/useBeforeUnload';
 import { useGraphInteraction } from './hooks/useGraphInteraction';
 import { useNodeOperations } from './hooks/useNodeOperations';
+import { useRegisterWorkflowRefresh } from './hooks/useRegisterWorkflowRefresh';
 import { useTestRun } from './hooks/useTestRun';
 import { useWorkflowHistory } from './hooks/useWorkflowHistory';
 import { useWorkflowLifecycle } from './hooks/useWorkflowLifecycle';
@@ -78,11 +79,14 @@ export interface WorkflowV3Props {
   workflowIdOverride?: number;
   /** 外部注入的 spaceId，优先于路由参数 */
   spaceIdOverride?: number;
+  /** 挂载后注册 refreshGraphData，供 AgentFlowCanvas 等内嵌场景主动刷新 */
+  onRefreshReady?: (refresh: () => Promise<void>) => void;
 }
 
 const Workflow: React.FC<WorkflowV3Props> = ({
   workflowIdOverride,
   spaceIdOverride,
+  onRefreshReady,
 }) => {
   const isAgentFlow = useIsAgentFlow();
   // AgentFlow 下「添加智能体」节点需先选择已发布 ChatBot，Created 弹窗需暴露 Agent tab
@@ -140,6 +144,9 @@ const Workflow: React.FC<WorkflowV3Props> = ({
 
   // Alias refreshGraphData to getDetails for compatibility with existing code
   const getDetails = refreshGraphData;
+
+  // 内嵌场景（AgentFlowCanvas）注册刷新函数，供记忆变量变更后主动拉取工作流
+  useRegisterWorkflowRefresh(refreshGraphData, onRefreshReady);
 
   // Define changeUpdateTime for use in this component and hooks
   const changeUpdateTime = useCallback(() => {

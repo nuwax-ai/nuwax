@@ -25,6 +25,10 @@ export const isAgentFlowSubType = (subType?: AgentSubTypeEnum): boolean =>
 export const isAgentGroupSubType = (subType?: AgentSubTypeEnum): boolean =>
   subType === AgentSubTypeEnum.Group;
 
+/** 判断是否为自定义智能体子类型 */
+export const isAgentCustomSubType = (subType?: AgentSubTypeEnum): boolean =>
+  subType === AgentSubTypeEnum.Custom;
+
 export interface AgentFlowArrangePolicy {
   /** 当前是否为 AgentFlow */
   isFlow: boolean;
@@ -42,7 +46,7 @@ export interface AgentFlowArrangePolicy {
   showLongMemory: boolean;
   /** 是否展示「允许用户选择自有模型」（AgentFlow / AgentGroup 不展示） */
   showAllowOtherModel: boolean;
-  /** 是否展示「Hook 设置」 */
+  /** 是否展示「Hook 设置」（AgentFlow / 自定义智能体不展示） */
   showHook: boolean;
   /** 工具区是否展示「工作流」折叠项 */
   showWorkflowTool: boolean;
@@ -66,6 +70,7 @@ export const getAgentFlowArrangePolicy = (
 ): AgentFlowArrangePolicy => {
   const isFlow = isAgentFlowSubType(subType);
   const isGroup = isAgentGroupSubType(subType);
+  const isCustom = isAgentCustomSubType(subType);
 
   return {
     isFlow,
@@ -76,7 +81,7 @@ export const getAgentFlowArrangePolicy = (
     showSubAgent: !isFlow,
     showLongMemory: !isFlow,
     showAllowOtherModel: !isFlow && !isGroup,
-    showHook: !isFlow,
+    showHook: !isFlow && !isCustom,
     showWorkflowTool: !isFlow,
     showDataTableSection: (isGroupSubType) => !isGroupSubType && !isFlow,
     keepToolCollapseItem: (key) =>
