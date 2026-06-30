@@ -991,11 +991,14 @@ const EditAgent: React.FC = () => {
     if (!terminalConsoleVisible) {
       setTerminalConsoleVisible(true);
       setIsTerminalExpanded(true);
+      setTerminalCollapseSignal(0);
+      setTerminalExpandSignal((n) => n + 1);
       return;
     }
 
     if (!isTerminalExpanded) {
       setIsTerminalExpanded(true);
+      setTerminalCollapseSignal(0);
       setTerminalExpandSignal((n) => n + 1);
       return;
     }
@@ -1023,7 +1026,15 @@ const EditAgent: React.FC = () => {
   const handleCloseTerminalPanel = useCallback(() => {
     setTerminalConsoleVisible(false);
     setIsTerminalExpanded(false);
+    setTerminalCollapseSignal(0);
+    setTerminalExpandSignal(0);
   }, []);
+
+  /** 关闭文件树预览面板时同步清除终端图标选中态 */
+  const handleCloseFileTreeViewPanel = useCallback(() => {
+    handleCloseTerminalPanel();
+    closePreviewView();
+  }, [closePreviewView, handleCloseTerminalPanel]);
 
   useEffect(() => {
     setTerminalConsoleVisible(false);
@@ -1337,7 +1348,7 @@ const EditAgent: React.FC = () => {
                               restartAgent(devConversationId)
                             }
                             // 关闭整个面板
-                            onClose={closePreviewView}
+                            onClose={handleCloseFileTreeViewPanel}
                             // 文件树是否固定（用户点击后固定）
                             isFileTreePinned={isFileTreePinned}
                             // 文件树固定状态变化回调
