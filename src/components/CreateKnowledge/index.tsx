@@ -32,6 +32,7 @@ import type {
 } from '@/types/interfaces/knowledge';
 import { ModelConfigInfo } from '@/types/interfaces/model';
 import { customizeRequiredMark } from '@/utils/form';
+import { resolveCreateIcon } from '@/utils/resolveCreateIcon';
 import { Form, FormProps, Input, message, Select } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
@@ -165,20 +166,31 @@ const CreateKnowledge: React.FC<CreateKnowledgeProps> = ({
     }
   }, [spaceId, open, knowledgeInfo]);
 
-  const onFinish: FormProps<KnowledgeBaseInfo>['onFinish'] = (values) => {
+  const onFinish: FormProps<KnowledgeBaseInfo>['onFinish'] = async (values) => {
+    setLoading(true);
+    let icon = imageUrl;
+    let description = values.description;
+    if (mode === CreateUpdateModeEnum.Create) {
+      const resolved = await resolveCreateIcon({
+        imageUrl,
+        name: values.name,
+        description: values.description,
+      });
+      icon = resolved.icon;
+      description = resolved.description ?? values.description;
+    }
     const params: any = {
       spaceId,
       name: values.name,
-      description: values.description,
+      description,
       embeddingModelId: values.embeddingModelId,
-      icon: imageUrl,
+      icon,
       dataType: resourceFormat,
     };
     if (dataParsingMethod === 'workflow') {
       params.workflowId = dataParsingMethodItem?.id;
     }
 
-    setLoading(true);
     if (mode === CreateUpdateModeEnum.Create) {
       run(params);
     } else {
