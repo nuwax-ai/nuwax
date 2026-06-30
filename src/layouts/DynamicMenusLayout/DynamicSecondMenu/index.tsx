@@ -15,6 +15,8 @@ import { AllowDevelopEnum, SpaceTypeEnum } from '@/types/enums/space';
 import { message } from 'antd';
 import {
   handleOpenUrl,
+  isOpenIframePath,
+  navigateOpenIframePath,
   normalizeMenuPathname,
   updatePathUrlToLocalStorage,
 } from '../utils';
@@ -279,7 +281,11 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
     // 修改或保存当前路径到本地缓存
     updatePathUrlToLocalStorage(parentCode, resolvedPath);
 
-    // 无子菜单，直接路由跳转
+    // 无子菜单，直接路由跳转（应用内 iframe 重复点击时刷新）
+    if (isOpenIframePath(resolvedPath)) {
+      navigateOpenIframePath(resolvedPath, { menuCode: menu.code });
+      return;
+    }
     history.push(resolvedPath, { _t: Date.now(), menuCode: menu.code });
   };
 
