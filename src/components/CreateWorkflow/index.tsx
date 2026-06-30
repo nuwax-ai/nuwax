@@ -18,6 +18,7 @@ import type {
   WorkflowBaseInfo,
 } from '@/types/interfaces/library';
 import { customizeRequiredMark } from '@/utils/form';
+import { resolveCreateIcon } from '@/utils/resolveCreateIcon';
 import { buildWorkflowRoute } from '@/utils/router';
 import type { FormProps } from 'antd';
 import { Button, Form, Input, message, Select } from 'antd';
@@ -123,10 +124,21 @@ const CreateWorkflow: React.FC<CreateWorkflowProps> = ({
     description: string;
     groupId?: number;
   }>['onFinish'] = async (values) => {
+    let icon = imageUrl;
+    let description = values?.description;
+    if (type === CreateUpdateModeEnum.Create) {
+      const resolved = await resolveCreateIcon({
+        imageUrl,
+        name: values?.name,
+        description: values?.description,
+      });
+      icon = resolved.icon;
+      description = resolved.description ?? values?.description;
+    }
     const baseParams = {
       name: values?.name,
-      description: values?.description,
-      icon: imageUrl,
+      description,
+      icon,
       ...(workflowType && { workflowType }),
     };
 

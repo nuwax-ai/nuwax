@@ -14,6 +14,7 @@ import type {
   UpdateSkillParams,
 } from '@/types/interfaces/library';
 import { customizeRequiredMark } from '@/utils/form';
+import { resolveCreateIcon } from '@/utils/resolveCreateIcon';
 import type { FormProps } from 'antd';
 import { Form, Input, message, Select } from 'antd';
 import classNames from 'classnames';
@@ -91,12 +92,23 @@ const CreateSkill: React.FC<CreateSkillProps> = ({
     name: string;
     description: string;
     usageScenarios: string[];
-  }>['onFinish'] = (values) => {
+  }>['onFinish'] = async (values) => {
+    let icon = imageUrl;
+    let description = values?.description;
+    if (type === CreateUpdateModeEnum.Create) {
+      const resolved = await resolveCreateIcon({
+        imageUrl,
+        name: values?.name,
+        description: values?.description,
+      });
+      icon = resolved.icon;
+      description = resolved.description ?? values?.description;
+    }
     const params = {
       name: values?.name,
-      description: values?.description,
+      description,
       usageScenarios: values?.usageScenarios,
-      icon: imageUrl,
+      icon,
     };
     if (type === CreateUpdateModeEnum.Create) {
       run({ spaceId, ...params } as AddSkillParams);

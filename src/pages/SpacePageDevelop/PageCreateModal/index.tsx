@@ -17,6 +17,7 @@ import {
   PageCreateModalProps,
 } from '@/types/interfaces/pageDev';
 import { customizeRequiredMark } from '@/utils/form';
+import { resolveCreateIcon } from '@/utils/resolveCreateIcon';
 import { InboxOutlined } from '@ant-design/icons';
 import {
   Form,
@@ -97,7 +98,8 @@ const PageCreateModal: React.FC<PageCreateModalProps> = ({
   const onFinish: FormProps<any>['onFinish'] = async (values) => {
     // 项目导入
     if (type === PageDevelopCreateTypeEnum.Import_Project) {
-      const { fileList, icon, projectName, projectDesc, coverImg } = values;
+      const { fileList, projectName, projectDesc, coverImg } = values;
+      const formIcon = values.icon;
 
       // 上传文件接口返回的是文件的base64，这里需要转换一下
       const file = fileList?.[0]?.originFileObj;
@@ -120,13 +122,15 @@ const PageCreateModal: React.FC<PageCreateModalProps> = ({
       }
 
       setLoading(true);
-      // 创建formData
+      const { icon: resolvedIcon, description } = await resolveCreateIcon({
+        imageUrl: imageUrl || formIcon || '',
+        name: projectName,
+        description: projectDesc,
+      });
       const formData = new FormData();
-
-      /* 1. 先把“对象”打散成扁平字段，前缀 + 点号 */
-      formData.append('icon', icon || '');
+      formData.append('icon', resolvedIcon || '');
       formData.append('projectName', projectName);
-      formData.append('projectDesc', projectDesc || '');
+      formData.append('projectDesc', description ?? projectDesc ?? '');
       formData.append('spaceId', spaceId.toString());
       if (coverImg) {
         formData.append('coverImg', coverImg);
@@ -142,9 +146,15 @@ const PageCreateModal: React.FC<PageCreateModalProps> = ({
       // 封面图片来源
       const coverImgSourceType = coverImg ? CoverImgSourceTypeEnum.USER : '';
       setLoading(true);
-      // 参数
+      const { icon, description } = await resolveCreateIcon({
+        imageUrl: imageUrl || values.icon || '',
+        name: values.projectName,
+        description: values.projectDesc,
+      });
       const data = {
         ...values,
+        icon,
+        projectDesc: description ?? values.projectDesc,
         spaceId,
         // 如果用户没有上传封面图片，则不设置封面图片来源
         ...(coverImgSourceType ? { coverImgSourceType } : {}),

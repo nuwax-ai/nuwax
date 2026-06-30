@@ -22,6 +22,7 @@ import type {
   PluginHttpUpdateParams,
 } from '@/types/interfaces/plugin';
 import { customizeRequiredMark } from '@/utils/form';
+import { resolveCreateIcon } from '@/utils/resolveCreateIcon';
 import type { FormProps, RadioChangeEvent } from 'antd';
 import { Form, Input, message, Radio, Select } from 'antd';
 import classNames from 'classnames';
@@ -140,12 +141,18 @@ const CreateNewPlugin: React.FC<CreateNewPluginProps> = ({
 
   const onFinish: FormProps<
     PluginAddParams & { groupId?: number }
-  >['onFinish'] = (values) => {
+  >['onFinish'] = async (values) => {
     setLoading(true);
     if (mode === CreateUpdateModeEnum.Create) {
+      const { icon, description } = await resolveCreateIcon({
+        imageUrl,
+        name: values.name,
+        description: values.description,
+      });
       runCreate({
         ...values,
-        icon: imageUrl,
+        description: description ?? values.description,
+        icon,
         spaceId,
       });
     } else {

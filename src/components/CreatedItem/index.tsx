@@ -13,6 +13,7 @@ import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import type { CreateKnowledgeProps } from '@/types/interfaces/common';
 import { customizeRequiredMark } from '@/utils/form';
+import { resolveCreateIcon } from '@/utils/resolveCreateIcon';
 import { Form, Input, Radio } from 'antd';
 import React, { useEffect, useState } from 'react';
 import CustomFormModal from '../CustomFormModal';
@@ -91,8 +92,21 @@ const CreatedItem: React.FC<CreatedItemProp> = ({
   };
 
   // 提交数据
-  const onFinish = (values: any) => {
-    Confirm(values, type, mode);
+  const onFinish = async (values: any) => {
+    if (mode !== CreateUpdateModeEnum.Create) {
+      Confirm(values, type, mode);
+      return;
+    }
+    const { icon, description } = await resolveCreateIcon({
+      imageUrl: form.getFieldValue('icon') || imageUrl,
+      name: values.name,
+      description: values.description,
+    });
+    Confirm(
+      { ...values, icon, description: description ?? values.description },
+      type,
+      mode,
+    );
   };
 
   const handlerSubmit = () => {
