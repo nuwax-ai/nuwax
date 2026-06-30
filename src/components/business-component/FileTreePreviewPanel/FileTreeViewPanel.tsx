@@ -47,6 +47,7 @@ const FileTreeViewPanel = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       readOnly = false,
       gitSourceControl,
       enableVersionControl,
+      enableGitStatus: enableGitStatusProp,
       bottomContent,
       ...fileViewProps
     } = props;
@@ -173,10 +174,12 @@ const FileTreeViewPanel = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       isFullscreenPreview,
       onFullscreenPreview,
       readOnly,
+      enableVersionControl,
       enableGitStatus:
-        Boolean(gitSourceControl) &&
-        (enableVersionControl === undefined ||
-          isAgentVersionControlEnabled(enableVersionControl)),
+        enableGitStatusProp ??
+        (Boolean(gitSourceControl) &&
+          (enableVersionControl === undefined ||
+            isAgentVersionControlEnabled(enableVersionControl))),
       onSaveFiles: handleSaveFiles,
       onSaveFileContent: readOnly
         ? undefined
