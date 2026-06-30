@@ -177,7 +177,7 @@ interface ModalClassNames {
 export interface CustomFormModalProps {
   form: FormInstance;
   classNames?: ModalClassNames;
-  title: string;
+  title: React.ReactNode;
   open: boolean;
   loading?: boolean;
   // 确定按钮前缀icon

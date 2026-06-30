@@ -10,7 +10,7 @@ import { Button, Tag } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, { useMemo } from 'react';
-import { history, useParams } from 'umi';
+import { history } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -70,8 +70,6 @@ const ConversationAgentHeader: React.FC<ConversationAgentHeaderProps> = ({
   isAgentDesktopOpen = false,
   onOpenDesktopPanel,
 }) => {
-  const { spaceId } = useParams();
-
   const displayName =
     agentConfigInfo?.name || dict('PC.Pages.ConversationAgent.prototypeTitle');
 
@@ -99,7 +97,7 @@ const ConversationAgentHeader: React.FC<ConversationAgentHeaderProps> = ({
           name="icons-nav-backward"
           className={cx(styles['icon-backward'])}
           onClick={() => {
-            history.push(`/space/${spaceId}/develop`);
+            history.back();
           }}
         />
       </ConditionRender>

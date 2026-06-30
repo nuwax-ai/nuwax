@@ -19,7 +19,7 @@
 
   pre {
     margin: 0 !important;
-    padding: 0 !important;
+    padding: 0 12px !important;
     background: transparent !important;
     border: none !important;
     font-family: @fontFamilyCode !important;
@@ -31,5 +31,15 @@
     padding: 1px 0 !important;
     line-height: 1.35 !important;
     vertical-align: middle !important;
+    padding-right: 6px !important;
+  }
+
+  /* 限制行号列宽度，防止在某些情况下过宽 */
+  td[class*='diff-line-num'],
+  td[class*='diff-line-old-num'],
+  td[class*='diff-line-new-num'] {
+    width: 40px !important;
+    min-width: 40px !important;
+    max-width: 50px !important;
   }
 }

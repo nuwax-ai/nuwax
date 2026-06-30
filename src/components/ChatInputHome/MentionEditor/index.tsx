@@ -738,6 +738,9 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
     useImperativeHandle(ref, () => ({
       clear,
       handleAtIconMentionSelect,
+      focus: () => {
+        editorRef.current?.focus();
+      },
     }));
 
     /**

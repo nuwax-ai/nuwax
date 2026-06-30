@@ -1,4 +1,5 @@
 import { EllipsisTooltip } from '@/components/custom/EllipsisTooltip';
+import TooltipIcon from '@/components/custom/TooltipIcon';
 import { apiAgentComponentHookUpdate } from '@/services/agentConfig';
 import { t } from '@/services/i18nRuntime';
 import { HookStatusEnum } from '@/types/enums/agent';
@@ -10,6 +11,7 @@ import {
   DeleteOutlined,
   EditOutlined,
   HolderOutlined,
+  InfoCircleOutlined,
   PlusOutlined,
 } from '@ant-design/icons';
 import type { DragEndEvent } from '@dnd-kit/core';
@@ -390,7 +392,15 @@ const CreateHooks: React.FC<CreateHooksProps> = ({
     <>
       <Modal
         width={870}
-        title={t('PC.Pages.AgentArrangeCreateHooks.title')}
+        title={
+          <span className={cx('flex', 'items-center', 'gap-6')}>
+            <span>{t('PC.Pages.AgentArrangeCreateHooks.title')}</span>
+            <TooltipIcon
+              title={t('PC.Pages.AgentArrangeCreateHooks.titleTooltip')}
+              icon={<InfoCircleOutlined />}
+            />
+          </span>
+        }
         open={open}
         footer={null}
         destroyOnHidden

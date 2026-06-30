@@ -11,6 +11,7 @@ import ShowStand from '@/components/ShowStand';
 import type { PromptVariable } from '@/components/TiptapVariableInput/types';
 import { transformToPromptVariables } from '@/components/TiptapVariableInput/utils/variableTransform';
 import VersionHistory from '@/components/VersionHistory';
+import { isAgentVersionControlEnabled } from '@/constants/agent.constants';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { useTerminalWsUrl } from '@/hooks/useTerminalWsUrl';
 import useUnifiedTheme from '@/hooks/useUnifiedTheme';
@@ -28,7 +29,11 @@ import {
   apiUpdateStaticFile,
   apiUploadFiles,
 } from '@/services/vncDesktop';
-import { AgentComponentTypeEnum, HideDesktopEnum } from '@/types/enums/agent';
+import {
+  AgentComponentTypeEnum,
+  DefaultSelectedEnum,
+  HideDesktopEnum,
+} from '@/types/enums/agent';
 import { CreateUpdateModeEnum, PublishStatusEnum } from '@/types/enums/common';
 import { ModelTypeEnum } from '@/types/enums/modelConfig';
 import {
@@ -163,6 +168,8 @@ const EditAgent: React.FC = () => {
   const [openTempChat, setOpenTempChat] = useState<boolean>(false);
   // 顶部分段菜单选中项
   const [headerTab, setHeaderTab] = useState<AgentHeaderTabKey>('arrange');
+  /** 是否允许拉取 Git status（版本管控 API 保存成功后再开启，避免乐观更新误请求） */
+  const [gitStatusEnabled, setGitStatusEnabled] = useState(false);
 
   // 获取 chat model 中的页面预览状态
   const { pagePreviewData, hidePagePreview, showPagePreview } =
@@ -400,6 +407,18 @@ const EditAgent: React.FC = () => {
   // 获取开发会话ID
   const devConversationId = agentConfigInfo?.devConversationId;
   const terminalWsUrl = useTerminalWsUrl(devConversationId);
+
+  /** 智能体配置初次加载后，同步 Git status 开关（不随乐观更新立即变化） */
+  useEffect(() => {
+    if (!agentConfigInfo) {
+      setGitStatusEnabled(false);
+      return;
+    }
+    setGitStatusEnabled(
+      agentConfigInfo.type === AgentTypeEnum.TaskAgent &&
+        isAgentVersionControlEnabled(agentConfigInfo.enableVersionControl),
+    );
+  }, [agentId, agentConfigInfo?.id]);
   /** 文件树预览区底部终端是否显示 */
   const [terminalConsoleVisible, setTerminalConsoleVisible] =
     useState<boolean>(false);
@@ -466,6 +485,14 @@ const EditAgent: React.FC = () => {
             attr,
           );
           return;
+        }
+      }
+
+      // 关闭版本管控时立即禁用 Git status，避免乐观更新触发的重渲染误拉取
+      if (attr === 'enableVersionControl') {
+        const versionControlEnabled = value === DefaultSelectedEnum.Yes;
+        if (!versionControlEnabled) {
+          setGitStatusEnabled(false);
         }
       }
 
@@ -540,6 +567,19 @@ const EditAgent: React.FC = () => {
       // 更新智能体信息
       await runUpdate(params);
 
+      // 版本管控开关保存成功后：刷新文件树；开启时由 enableGitStatus effect 拉取一次 Git status
+      if (attr === 'enableVersionControl' && currentConfig.devConversationId) {
+        const cId = currentConfig.devConversationId;
+        const versionControlEnabled = value === DefaultSelectedEnum.Yes;
+        await refreshFileListImmediately(cId);
+        if (versionControlEnabled) {
+          setGitStatusEnabled(
+            currentConfig.type === AgentTypeEnum.TaskAgent &&
+              versionControlEnabled,
+          );
+        }
+      }
+
       // 获取消息列表长度
       const messageListLength = messageList?.length || 0;
 
@@ -559,7 +599,7 @@ const EditAgent: React.FC = () => {
         }
       }
     },
-    [agentConfigInfo, viewMode], // 添加依赖
+    [agentConfigInfo, viewMode, refreshFileListImmediately],
   );
 
   useEffect(() => {
@@ -1281,6 +1321,10 @@ const EditAgent: React.FC = () => {
                             }}
                             enableVersionControl={
                               agentConfigInfo?.enableVersionControl
+                            }
+                            enableGitStatus={
+                              agentConfigInfo?.type ===
+                                AgentTypeEnum.TaskAgent && gitStatusEnabled
                             }
                             bottomContent={
                               hasTerminalConsoleRendered ? (

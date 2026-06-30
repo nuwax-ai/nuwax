@@ -1051,6 +1051,7 @@ const ConversationAgent: React.FC = () => {
       staticFileBasePath: `/api/computer/static/${queryConversationId}`,
       /** 仅配置加载完成且开启版本管理时拉取 Git status */
       enableGitStatus: isVersionControlEnabled,
+      enableVersionControl: agentConfigInfo?.enableVersionControl,
       /** 文件树选中文件时，切换右侧面板为文件预览并打开标签 */
       onFileSelectOpenPreview: (fileId?: string) => {
         closeAgentDesktop();
@@ -1120,6 +1121,7 @@ const ConversationAgent: React.FC = () => {
     refreshFileListImmediately,
     agentConfigInfo?.type,
     agentConfigInfo?.hideDesktop,
+    agentConfigInfo?.enableVersionControl,
     isVersionControlEnabled,
     openPreviewView,
     resetDevConsoleExpandedLayout,
