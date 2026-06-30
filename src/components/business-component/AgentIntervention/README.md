@@ -459,81 +459,55 @@ sub 流重放历史 SSE 时，已有 resume 消息（步骤 1 加载），`hasMc
 
 ACP 权限审批**不从历史 hydrate**，仅存在于实时流/sub 流消息中。
 
-## DockPanel 显隐规则（`useActiveInterventionQueue`）
+## DockPanel 显隐规则（`useActiveInterventionQueue` + `DockPanel`）
 
-`useActiveInterventionQueue` 从 `messageList` 收集所有 pending 干预，送入 `DockPanel` 堆叠渲染（最新卡在最前）。以下规则须与 Mobile `mcpAskInterventionState.uts` 同步维护。
+`useActiveInterventionQueue` 从 **整个 `messageList`** 收集 `responseStatus` 为 `pending` / `submitting` 的干预项，按 `triggeredAt` / `createdAt` **升序（FIFO）** 排序后送入 `DockPanel`。`DockPanel` 堆叠渲染，**仅 front（最早一项）可交互**，其余 `aria-hidden`；用户逐项审批并调用 `permission-request/response`（→ NuwaClaw `notify-resolved`）。
 
-### 公共前提：只看最新一条消息
+### 队列收集（`useActiveInterventionQueue`）
 
-只处理 `messageList` 最后一条消息（`rawList[rawList.length - 1]`），历史消息上的 pending 审批不进队列，避免历史残留与 sub 重放时卡片 key 冲突 / 重复挂载。
+- **跨消息**：不限于最新一条消息；并行工具可在多条 assistant 消息上各挂审批，统一入队。
+- **ACP**：`pending` / `submitting` 进队；`submitted` / `failed` 不进队（`failed` 不阻塞后续审批）。
+- **MCP Ask 抑制 ACP**（双路）：pending ACP 的 `toolCallId` 或 `rawInput.requestId` 命中时，对应 MCP Ask 不进队。
+- **MCP Ask**：另需 `!hasMcpAskResumeMessage`；**不受**消息 `Complete` 态影响。
 
-### 过期机制（`focusExecuteId` / `isExpired`）
+### sub 恢复 / 跨页签：ACP 已审批判定（`reconcileAcpPermissionStatus`）
 
-`focusExecuteId` = 最新消息 `processingList` 末尾（从后往前）第一个非空 `executeId`，代表 agent 当前正在执行的工具。
+ACP **不从历史 hydrate**；sub 流重放会把 `request_permission` 再次写入为 `pending`。每次 `processInterventionSsePatch` 与 `handleChangeMessageList` 更新后调用 `reconcileAcpPermissionStatusesInMessageList`：
 
-```typescript
-const isExpired = (executeId) =>
-  !!focusExecuteId && !!executeId && executeId !== focusExecuteId;
-```
-
-若 interaction 的 `executeId` 非空且与 `focusExecuteId` 不同，说明 agent 已推进到新工具调用，该卡片过期移出队列。`executeId` 为空时保守不过期，避免误关。
-
-**Mobile 对应**：`processingList.length > processingListLengthAtAdd`（stamp 于事件到来时，作用等价）
-
-### ACP 权限审批（`acpPermissionInteractions`）
-
-**进队条件（全部满足）：**
-
-1. `responseStatus` 为 `pending` 或 `submitting`（`failed` 为终态，不进队）
-2. `!isExpired(interaction.executeId)`
-3. `!isMessageTerminal`（`Complete / Error / Stopped`）
-
-**关闭时机：**
-
-| 原因       | 机制                                         |
-| ---------- | -------------------------------------------- |
-| 用户审批   | `responseStatus` → `submitted`               |
-| Agent 推进 | `focusExecuteId` 换新，`isExpired` 返回 true |
-| 会话结束   | `isMessageTerminal` 为 true                  |
-
-### MCP Ask（`mcpAskInteractions`）
-
-**进队条件（全部满足）：**
-
-1. `responseStatus` 为 `pending` 或 `submitting`
-2. `!isExpired(interaction.executeId)` ← **Mobile 对应**：`processingList.length ≤ processingListLengthAtAdd`
-3. `!hasMcpAskResumeMessage(messages, interaction)`  
-   在 `messageList` 全局搜索该 interaction 的 resume 签名；跨端答题后 resume 消息进入 sub 流，PC 检测到后自动关闭
-4. 未被 pending ACP 抑制（双路，第一轮循环先收集）：
-
-   - **第一路**：`interaction.toolCallId` ∉ `permissionPendingToolCallIds`
-   - **第二路**：`interaction.input.requestId` ∉ `permissionPendingAskRequestIds`（由各 pending ACP 的 `toolCall.rawInput.requestId` 汇集）
-
-   适用场景：ask-question 工具本身需 ACP 授权才能执行，二者共享 toolCallId 或 requestId，此时只显示 ACP
-
-5. **注意**：MCP Ask **不受** `isMessageTerminal` 影响（消息 Complete 后用户仍在填表，由 `responseStatus` 独立控制）
-
-**关闭时机：**
-
-| 原因 | 机制 |
+| 条件 | 动作 |
 | --- | --- |
-| 本端用户提交 | `dismissedMcpAskRequestIds` 立即加入 `requestId`，API 失败可回滚 |
-| Agent 推进 | `isExpired` 返回 true |
-| 跨端感知 | `hasMcpAskResumeMessage` 找到 resume 消息 |
+| 同 `toolCallId` / `executeId` 在 `processingList` 中已为 `FINISHED` | `responseStatus` → `submitted` |
+| 关联 MCP Ask 已有 resume 消息（`hasMcpAskResumeMessage`） | `submitted` |
+| 用户本端审批 API 成功 | `submitted`（`useAgentInterventionHandlers`） |
+| API 返回 permission not found / already resolved | 幂等视为 `submitted` |
+
+### ACP 权限审批关闭时机
+
+| 原因              | 机制                                                    |
+| ----------------- | ------------------------------------------------------- |
+| 用户审批          | `responseStatus` → `submitted`                          |
+| sub 重放 / 跨页签 | `reconcileAcpPermissionStatuses` 根据 processing 完成态 |
+| API 幂等          | Host pending 已不存在 → `submitted`                     |
+
+### MCP Ask 关闭时机
+
+| 原因         | 机制                                                         |
+| ------------ | ------------------------------------------------------------ |
+| 本端用户提交 | `dismissedMcpAskRequestIds` 或 `responseStatus` 更新         |
+| 跨端感知     | `hasMcpAskResumeMessage`                                     |
+| Agent 推进   | 由 `responseStatus` 独立控制（非 ACP 的 executeId 过期逻辑） |
 
 ### 规则速查
 
 ```
-ACP visible  =  pending/submitting
-             && !isExpired(executeId)
-             && !isMessageTerminal
+队列顺序     =  sortKey 升序（FIFO），DockPanel front = items[0]
 
-MCP visible  =  pending/submitting
-             && !isExpired(executeId)
+ACP 进队     =  pending/submitting（failed 不进队）
+
+MCP 进队     =  pending/submitting
              && !hasMcpAskResumeMessage
-             && toolCallId ∉ permissionPendingToolCallIds   // 双路 ACP 抑制
+             && toolCallId ∉ permissionPendingToolCallIds
              && requestId  ∉ permissionPendingAskRequestIds
-             [NOT affected by isMessageTerminal]
 ```
 
 ### Resume 消息签名（`hasMcpAskResumeMessage` 匹配依据）
@@ -558,18 +532,18 @@ MCP visible  =  pending/submitting
 | 跨端感知关闭 | `hasMcpAskResumeMessage` | 同左 |
 | 历史状态恢复 | `hydrateMcpAskInteractionsInMessageList` | `applyMcpAskResumeStatusesInMessageList` |
 | ACP 抑制 MCP Ask | `permissionPendingToolCallIds` + `permissionPendingAskRequestIds` | 同左 |
-| 卡片渲染 | `DockPanel` 堆叠，最新在前 | ACP + MCP Ask 分列 `v-for`，同时有值则并排 |
-| 历史模式过期 | `isExpired`（`executeId` 来自历史数据） | `componentExecutedList` 末项 `subEventType` 判断 |
+| 卡片渲染 | `DockPanel` FIFO 堆叠，最早在前 | ACP + MCP Ask 分列 `v-for`（待 mobile 同步） |
+| ACP sub 恢复 | `reconcileAcpPermissionStatuses` | 待 mobile 同步 |
 
 ## 数据流
 
 ```
 SSE (ConversationChatResponse)
-  → processInterventionSsePatch
+  → processInterventionSsePatch (+ reconcileAcpPermissionStatuses)
     → applyAcpPermissionSseEvent → message.acpPermissionInteractions[]
     → applyMcpAskToolCallSseEvent  → message.mcpAskInteractions[]
-      → useActiveInterventionQueue（仅 pending / submitting 视为活动；submitted / failed 均为终态，卡片关闭）
-        → AgentInterventionChatLayer → DockPanel
+      → useActiveInterventionQueue（FIFO；pending/submitting 进队）
+        → AgentInterventionChatLayer → DockPanel（front 可点，逐个 notify-resolved）
             → AcpPermissionCard / McpAskQuestionCard
             → respondAcpPermission → POST .../permission-request/response
             → respondMcpAsk → buildMcpAskResumeMessage → onSendMessage
@@ -584,4 +558,5 @@ SSE (ConversationChatResponse)
 - `utils/applyAcpPermissionSseEvent.test.ts` — ACP snake_case / PROCESSING / `_meta`
 - `utils/applyMcpAskToolCallSseEvent.test.ts` — MCP tool_call / PROCESSING
 - `utils/parseMcpAskSchema.test.ts` — widget 解析
+- `utils/reconcileAcpPermissionStatus.test.ts` — ACP sub 恢复 reconcile / API 幂等
 - `hooks/useAgentInterventionHandlers.test.ts` — ACP 回执与 MCP resume

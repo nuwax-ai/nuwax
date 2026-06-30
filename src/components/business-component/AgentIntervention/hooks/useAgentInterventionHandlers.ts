@@ -13,6 +13,7 @@ import type {
   McpAskRespondPayload,
 } from '../types/mcpAskIntervention';
 import { buildMcpAskResumeMessage } from '../utils/mcpAskResumeMessage';
+import { isIdempotentAcpPermissionResolveError } from '../utils/reconcileAcpPermissionStatus';
 
 export interface UseAgentInterventionHandlersOptions {
   setMessageList: Dispatch<SetStateAction<MessageInfo[]>>;
@@ -109,8 +110,15 @@ export function useAgentInterventionHandlers({
         });
 
         if (response?.code && response.code !== SUCCESS_CODE) {
+          const apiMessage = response.message || '';
+          if (isIdempotentAcpPermissionResolveError(apiMessage)) {
+            updateAcpPermissionInteraction(intervention.id, {
+              responseStatus: 'submitted',
+            });
+            return;
+          }
           throw new Error(
-            response.message ||
+            apiMessage ||
               dict('PC.Models.ConversationInfo.permissionResponseFailed'),
           );
         }
@@ -119,6 +127,13 @@ export function useAgentInterventionHandlers({
           responseStatus: 'submitted',
         });
       } catch (error) {
+        if (isIdempotentAcpPermissionResolveError(error)) {
+          updateAcpPermissionInteraction(intervention.id, {
+            responseStatus: 'submitted',
+            errorMessage: undefined,
+          });
+          return;
+        }
         const errorMessage =
           error instanceof Error
             ? error.message

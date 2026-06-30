@@ -139,6 +139,6 @@ export function applyMcpAskToolCallSseEvent(
         triggeredAt: createInterventionTriggeredAt(),
       },
     ],
-    status: currentMessage.status || MessageStatusEnum.Loading,
+    status: MessageStatusEnum.Loading,
   };
 }

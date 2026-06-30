@@ -1,4 +1,5 @@
 import { ConversationEventTypeEnum } from '@/types/enums/agent';
+import { MessageStatusEnum } from '@/types/enums/common';
 import { describe, expect, it } from 'vitest';
 import { applyMcpAskToolCallSseEvent } from './applyMcpAskToolCallSseEvent';
 
@@ -39,6 +40,28 @@ describe('applyMcpAskToolCallSseEvent', () => {
     expect(patched?.mcpAskInteractions?.[0]?.input.toolName).toBe(
       'nuwax_ask_question',
     );
+  });
+
+  it('forces the message back to loading for pending ask interactions', () => {
+    const patched = applyMcpAskToolCallSseEvent(
+      {
+        eventType: ConversationEventTypeEnum.PROCESSING,
+        data: {
+          executeId: 'ask-loading',
+          result: {
+            executeId: 'ask-loading',
+            input: {
+              ...baseAskInput,
+              requestId: 'ask-loading',
+              toolName: 'nuwax_ask_question',
+            },
+          },
+        },
+      } as any,
+      { id: 'msg-ask-loading', status: MessageStatusEnum.Complete } as any,
+    );
+
+    expect(patched?.status).toBe(MessageStatusEnum.Loading);
   });
 
   it('defaults missing toolName to nuwax_ask_question', () => {

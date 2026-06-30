@@ -241,6 +241,20 @@ export function useFileTreePreviewView(
     fileId: string;
     trigger?: number | string;
   } | null>(null);
+  /** 是否已发起过文件树拉取（用于区分「初始空数组」与「接口已返回空列表」） */
+  const fileTreeFetchStartedRef = useRef(false);
+  /** 是否已至少完成一次文件树拉取（含成功返回空列表） */
+  const fileTreeFetchResolvedRef = useRef(false);
+
+  useEffect(() => {
+    if (fileTreeDataLoading) {
+      fileTreeFetchStartedRef.current = true;
+      return;
+    }
+    if (fileTreeFetchStartedRef.current) {
+      fileTreeFetchResolvedRef.current = true;
+    }
+  }, [fileTreeDataLoading]);
 
   useEffect(() => {
     filesRef.current = files;
@@ -362,6 +376,31 @@ export function useFileTreePreviewView(
     setSelectedFileId('');
     setSelectedFileNode(null);
   }, []);
+
+  /**
+   * 切换会话 / 工作区（targetId 变化）时重置文件树与预览区本地状态。
+   * Chat 切换历史会话时组件不会卸载，若不清理会残留上一会话的 selectedFileNode 与预览内容。
+   */
+  useEffect(() => {
+    fileTreeFetchStartedRef.current = false;
+    fileTreeFetchResolvedRef.current = false;
+    filesRef.current = [];
+    setFiles([]);
+    clearSelectedFile();
+    setSelectedFolderId('');
+    setRenamingNode(null);
+    setContextMenuVisible(false);
+    setContextMenuTarget(null);
+    setChangeFiles([]);
+    setViewFileType(initViewFileType || 'preview');
+    setFileRefreshTimestamp(Date.now());
+    prevTaskAgentSelectedFileIdRef.current = '';
+    prevTaskAgentSelectTriggerRef.current = undefined;
+    userSelectedFileRef.current = null;
+    pendingSelectFileRef.current = null;
+    pendingTaskAgentAutoSelectRef.current = null;
+    pendingRefreshSelectedAfterFilesUpdateRef.current = false;
+  }, [targetId, clearSelectedFile, initViewFileType]);
 
   /** 通过当前选中文件的 fileProxyUrl 重新拉取文件内容 */
   const refreshSelectedFileContent = useCallback(
@@ -760,13 +799,28 @@ export function useFileTreePreviewView(
 
     const isFileTreeFetchInFlight =
       Boolean(fileTreeDataLoading) || isRefreshingFileTreeRef.current;
-    /** 父级已拿到 flat 列表，本地 files 可能尚在 originalFiles → tree 的转换中 */
-    const hasFetchedOriginalFiles = Boolean(originalFiles?.length);
+    /**
+     * 父级是否已完成至少一次文件树拉取。
+     * 不能只靠 originalFiles.length：接口成功返回空列表时 length 为 0，
+     * 若仍视为「未拉取」会与 isPendingRetry 形成无限 refresh 循环。
+     */
+    const hasFetchedOriginalFiles =
+      Boolean(originalFiles?.length) || fileTreeFetchResolvedRef.current;
+
+    /** 拉取已完成但文件树仍为空，放弃自动选中并通知外部清理 */
+    const abandonAutoSelectWhenTreeEmpty = () => {
+      pendingTaskAgentAutoSelectRef.current = null;
+      prevTaskAgentSelectedFileIdRef.current = taskAgentSelectedFileId;
+      if (taskAgentSelectTrigger !== undefined) {
+        prevTaskAgentSelectTriggerRef.current = taskAgentSelectTrigger;
+      }
+      onSelectedFileMissingRef.current?.(taskAgentSelectedFileId);
+    };
 
     /**
      * 按需刷新文件树，避免与 openPreviewView.forceRefresh 重复调用同一接口。
      * - 正在加载 / 刷新中：跳过
-     * - originalFiles 已有数据：等待 files 同步后再选中，不再二次请求
+     * - 已完成拉取（含空列表）：不再二次请求
      */
     const requestFileTreeRefreshIfNeeded = () => {
       if (isFileTreeFetchInFlight || hasFetchedOriginalFiles) {
@@ -778,6 +832,14 @@ export function useFileTreePreviewView(
     // 本地树尚未构建：记录 pending，必要时触发一次刷新；files 更新后依赖项变化会重入
     if (!files?.length) {
       if (isTriggerUpdate || isPendingRetry || hasSelectionChanged) {
+        if (
+          hasFetchedOriginalFiles &&
+          !originalFiles?.length &&
+          !isFileTreeFetchInFlight
+        ) {
+          abandonAutoSelectWhenTreeEmpty();
+          return;
+        }
         pendingTaskAgentAutoSelectRef.current = {
           fileId: taskAgentSelectedFileId,
           trigger: taskAgentSelectTrigger,
@@ -821,6 +883,10 @@ export function useFileTreePreviewView(
     }
 
     // 目标不在当前树中（例如新产出文件）：尝试刷新后再选
+    if (hasFetchedOriginalFiles) {
+      abandonAutoSelectWhenTreeEmpty();
+      return;
+    }
     requestFileTreeRefreshIfNeeded();
   }, [
     taskAgentSelectedFileId,
@@ -833,16 +899,22 @@ export function useFileTreePreviewView(
   ]);
 
   useEffect(() => {
+    /**
+     * 父级 fileTreeData 为空：同步清空本地树，并清理残留预览。
+     * 典型场景：切换 Chat 历史会话、clearFilePanelInfo、删除全部文件后接口返回 []。
+     * 若不清理 selectedFileNode，右侧预览会继续展示上一会话/已删文件的内容。
+     */
     if (!originalFiles || originalFiles.length === 0) {
       setFiles([]);
-      if (pendingRefreshSelectedAfterFilesUpdateRef.current) {
-        pendingRefreshSelectedAfterFilesUpdateRef.current = false;
-        const currentSelectedFileId =
-          selectedFileIdRef.current || selectedFileId;
-        if (currentSelectedFileId) {
+      filesRef.current = [];
+      const currentSelectedFileId = selectedFileIdRef.current || selectedFileId;
+      if (currentSelectedFileId) {
+        // 仅「主动刷新文件树」场景通知外部（如清除 taskAgentSelectedFileId）
+        if (pendingRefreshSelectedAfterFilesUpdateRef.current) {
+          pendingRefreshSelectedAfterFilesUpdateRef.current = false;
           onSelectedFileMissingRef.current?.(currentSelectedFileId);
-          clearSelectedFile();
         }
+        clearSelectedFile();
       }
       return;
     }
@@ -860,6 +932,7 @@ export function useFileTreePreviewView(
       if (pendingRefreshSelectedAfterFilesUpdateRef.current) {
         pendingRefreshSelectedAfterFilesUpdateRef.current = false;
 
+        /** 刷新完成后，用最新 treeData 校验当前选中项是否仍存在 */
         const currentSelectedFileId =
           selectedFileIdRef.current || selectedFileId;
         if (!currentSelectedFileId) {
@@ -870,12 +943,14 @@ export function useFileTreePreviewView(
           currentSelectedFileId,
           treeData,
         );
+        /** 文件已被删除或路径变更：通知外部并清空预览，避免展示过期内容 */
         if (!nextSelectedFileNode) {
           onSelectedFileMissingRef.current?.(currentSelectedFileId);
           clearSelectedFile();
           return;
         }
 
+        /** 仍存在：同步选中态并重新拉取内容（discard 后需展示磁盘最新版本） */
         selectedFileIdRef.current = nextSelectedFileNode.id;
         setSelectedFileId(nextSelectedFileNode.id);
         setSelectedFileNode(nextSelectedFileNode);

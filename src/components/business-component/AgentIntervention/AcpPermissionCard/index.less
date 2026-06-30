@@ -91,6 +91,38 @@
   .body {
     padding: 0;
 
+    .filePreview {
+      display: flex;
+      flex-direction: column;
+      gap: @marginXs;
+      padding: 0 @paddingSm @paddingXs;
+    }
+
+    .filePreviewItem {
+      min-width: 0;
+      border: 1px solid @colorBorderSecondary;
+      border-radius: @borderRadius;
+      overflow: hidden;
+      background: @colorBgContainer;
+    }
+
+    .filePath {
+      display: block;
+      padding: @paddingXxs @paddingXs;
+      border-bottom: 1px solid @colorBorderSecondary;
+      color: @colorTextSecondary;
+      font-family: @fontFamilyCode;
+      font-size: @fontSizeSm;
+      line-height: 1.4;
+      background: @colorFillQuaternary;
+    }
+
+    .diffPreview {
+      max-height: 220px;
+      min-height: 80px;
+      overflow: auto;
+    }
+
     .actions {
       flex-shrink: 0;
       display: flex;

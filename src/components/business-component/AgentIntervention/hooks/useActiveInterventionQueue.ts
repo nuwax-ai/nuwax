@@ -1,4 +1,3 @@
-import { MessageStatusEnum } from '@/types/enums/common';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import { useMemo } from 'react';
 import type { AcpPermissionInteraction } from '../types/acpIntervention';
@@ -46,11 +45,18 @@ function readMcpAskRequestId(rawInput: unknown): string | undefined {
     : undefined;
 }
 
+function getAcpPermissionInteractions(
+  message: MessageInfo,
+): AcpPermissionInteraction[] {
+  return (message.acpPermissionInteractions ??
+    []) as unknown as AcpPermissionInteraction[];
+}
+
 export function useActiveInterventionQueue(
   messageList: MessageInfo[],
 ): InterventionQueueItem[] {
   return useMemo(() => {
-    const pending: InterventionQueueItem[] = [];
+    const pendingMap = new Map<string, InterventionQueueItem>();
     const permissionPendingToolCallIds = new Set<string>();
     const permissionPendingAskRequestIds = new Set<string>();
     let fallbackSeq = 0;
@@ -59,65 +65,12 @@ export function useActiveInterventionQueue(
       (a, b) => (a.index ?? 0) - (b.index ?? 0),
     );
 
-    // 只渲染【最新一条消息】（sub 流的占位 / 当前 turn 的 assistant 消息）上的审批，
-    // 不渲染历史会话消息里的审批——否则历史审批与 sub 重放的审批会同时入队，
-    // 两者 intervention id 相同导致 DockPanel 卡片 key 冲突/反复挂载而闪烁。
-    // 用未排序列表的末尾判定最新（流式占位无 index，按 index 排序会被排到队首）。
-    const rawList = messageList ?? [];
-    const latestMessage = rawList[rawList.length - 1];
-    const latestMessageKey = latestMessage
-      ? String(latestMessage.id ?? latestMessage.index)
-      : null;
-
-    // 会话已结束(Complete/Error/Stopped)时，acp 权限审批视为已 resolve/失效。
-    // 跨页签：别的页签审批后会话结束，本页签 sub 收到 end_turn 使消息变 Complete，acp 审批随之关闭。
-    // 但【mcp_ask(ask-question) 不受此影响】——它在用户填表单期间消息可能已是 Complete，
-    // 仍需保持 dockpanel 显示；ask-question 由 responseStatus(submitted/cancelled) 控制关闭。
-    const isMessageTerminal =
-      !!latestMessage &&
-      (latestMessage.status === MessageStatusEnum.Complete ||
-        latestMessage.status === MessageStatusEnum.Error ||
-        latestMessage.status === MessageStatusEnum.Stopped);
-
-    // 当前焦点 executeId：取最新消息 processingList 末尾（最新产生）的 executeId。
-    // agent 顺序执行，最新 processing 即当前焦点；更早 executeId 的审批已过去，应关闭其卡片。
-    // 一个 turn 可能有多个 executeId（多个工具调用），各自独立判断，互不影响。
-    let focusExecuteId: string | undefined;
-    if (latestMessage) {
-      const list = latestMessage.processingList;
-      if (list?.length) {
-        for (let j = list.length - 1; j >= 0; j--) {
-          if (list[j].executeId) {
-            focusExecuteId = list[j].executeId;
-            break;
-          }
-        }
-      }
-    }
-
-    // 审批是否过期：有 focusExecuteId 时，自身 executeId 非空且不匹配的算过期（关闭该卡）；
-    // 自身 executeId 为空（历史/事件未带）时保守视为不过期，避免误关。
-    const isExpired = (executeId: string | undefined) =>
-      !!focusExecuteId && !!executeId && executeId !== focusExecuteId;
-
     messages.forEach((message) => {
-      // 仅处理最新一条消息，跳过历史消息上的审批
-      if (
-        latestMessageKey !== null &&
-        String(message.id ?? message.index) !== latestMessageKey
-      ) {
-        return;
-      }
-      message.acpPermissionInteractions?.forEach((interaction) => {
+      getAcpPermissionInteractions(message).forEach((interaction) => {
         if (!isActiveResponseStatus(interaction.responseStatus)) {
           return;
         }
-        if (isExpired(interaction.executeId)) {
-          return;
-        }
-        if (isMessageTerminal) {
-          return; // 会话已结束：acp 权限审批已 resolve，不再用于抑制 mcp_ask
-        }
+
         const toolCall = interaction.intervention.acp.request.toolCall;
         if (toolCall.toolCallId) {
           permissionPendingToolCallIds.add(toolCall.toolCallId);
@@ -130,31 +83,19 @@ export function useActiveInterventionQueue(
     });
 
     messages.forEach((message) => {
-      // 仅处理最新一条消息，跳过历史消息上的审批
-      if (
-        latestMessageKey !== null &&
-        String(message.id ?? message.index) !== latestMessageKey
-      ) {
-        return;
-      }
       const messageId = String(message.id ?? message.index);
       const messageIndex = message.index ?? 0;
 
-      message.acpPermissionInteractions?.forEach((interaction) => {
+      getAcpPermissionInteractions(message).forEach((interaction) => {
         if (!isActiveResponseStatus(interaction.responseStatus)) {
           return;
         }
-        if (isExpired(interaction.executeId)) {
-          return; // 该 executeId 已过去，关闭其审批卡
-        }
-        if (isMessageTerminal) {
-          return; // 会话已结束：acp 权限审批已 resolve/失效，关闭
-        }
+
         const sortKey =
           interaction.triggeredAt ??
           interaction.intervention.createdAt ??
           fallbackSeq++;
-        pending.push({
+        pendingMap.set(`acp-${interaction.intervention.id}`, {
           kind: 'acp_permission',
           messageId,
           messageIndex,
@@ -170,9 +111,7 @@ export function useActiveInterventionQueue(
         if (hasMcpAskResumeMessage(messages, interaction)) {
           return;
         }
-        if (isExpired(interaction.executeId)) {
-          return; // 该 executeId 已过去，关闭其审批卡
-        }
+
         if (
           permissionPendingToolCallIds.has(interaction.toolCallId) ||
           permissionPendingAskRequestIds.has(interaction.input.requestId)
@@ -180,7 +119,7 @@ export function useActiveInterventionQueue(
           return;
         }
         const sortKey = interaction.triggeredAt ?? fallbackSeq++;
-        pending.push({
+        pendingMap.set(`ask-${interaction.input.requestId}`, {
           kind: 'mcp_ask',
           messageId,
           messageIndex,
@@ -190,6 +129,6 @@ export function useActiveInterventionQueue(
       });
     });
 
-    return pending.sort((a, b) => a.sortKey - b.sortKey);
+    return [...pendingMap.values()].sort((a, b) => a.sortKey - b.sortKey);
   }, [messageList]);
 }

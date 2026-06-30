@@ -84,9 +84,7 @@ const DockPanel: React.FC<InterventionDockPanelProps> = ({
 
   const offsetTotal = (stackDepth - 1) * STACK_OFFSET_PX;
 
-  // 反转顺序：最新到来的 intervention 在顶层（front，先处理），符合 unshift 到顶的语义
-  const reversedItems = [...items].reverse();
-
+  // FIFO：items 已按 sortKey 升序，最早触发的在 front（index 0），逐个审批
   return (
     <div
       className={styles.stackRoot}
@@ -95,16 +93,18 @@ const DockPanel: React.FC<InterventionDockPanelProps> = ({
         ['--stack-offset-total' as string]: `${offsetTotal}px`,
       }}
     >
-      <span
-        className={styles.stackBadge}
-        style={{ zIndex: stackDepth + 10 }}
-        aria-hidden
-      >
-        {stackDepth}
-      </span>
+      {stackDepth > 2 ? (
+        <span
+          className={styles.stackBadge}
+          style={{ zIndex: stackDepth + 10 }}
+          aria-hidden
+        >
+          {stackDepth - 1}
+        </span>
+      ) : null}
 
       <div className={styles.stack}>
-        {reversedItems.map((item, index) => {
+        {items.map((item, index) => {
           const isFront = index === 0;
           return (
             <div

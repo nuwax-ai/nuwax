@@ -651,6 +651,9 @@ const Workflow: React.FC<WorkflowV3Props> = ({
         ...currentNode,
         ...currentFormValues, // （ Loop  outputArgs）
         name: currentNode.name,
+        // 顶层 description 显式保留：form 可能注册了 description 字段但值为 null，
+        // ...currentFormValues 会把节点描述覆盖成 null（切换节点保存时描述丢失）。
+        description: currentNode.description,
         nodeConfig: {
           ...currentNode.nodeConfig,
           ...currentFormValues,
