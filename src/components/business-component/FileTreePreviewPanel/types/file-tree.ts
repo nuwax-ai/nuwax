@@ -32,6 +32,8 @@ export type { IdleDetectionConfig };
 /** FileTreeViewPanel 暴露给父组件的 ref */
 export interface FileTreeViewRef {
   changeFiles: ChangeFileInfo[];
+  /** 当前在文件树/预览区选中的文件 ID */
+  selectedFileId: string;
 }
 
 /**

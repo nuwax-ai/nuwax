@@ -1796,6 +1796,24 @@ export function useFileTreePreviewView(
       );
     }
 
+    // 压缩包等不支持预览的文件（如 .zip、.skill、.rar、.7z 等）
+    const selectedFileName =
+      selectedFileNode?.name || selectedFileId?.split('/')?.pop() || '';
+    if (!isPreviewableFile(selectedFileName, true)) {
+      const fileExtension = selectedFileId?.split('.')?.pop() || selectedFileId;
+      return (
+        <AppDevEmptyState
+          type="error"
+          title={dict('PC.Components.FileTreeView.cannotPreviewType')}
+          showButtons={false}
+          description={dict(
+            'PC.Components.FileTreeView.unsupportedFormat',
+            fileExtension,
+          )}
+        />
+      );
+    }
+
     const fileName = selectedFileId?.split('/')?.pop() || '';
     const fileNameLower = fileName?.toLowerCase() || '';
     const isHtmlInCondition = /\.html?($|\?)/i.test(fileNameLower);

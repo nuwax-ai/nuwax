@@ -50,6 +50,8 @@ const StencilContent = ({
     dragChild(child, position);
   };
 
+  const isAgentFlow = flowKind === FlowKindEnum.AgentFlow;
+
   const filteredGroups = useMemo(() => {
     return asideList
       .filter((item) => item.children.some(matchesFlowKind))
@@ -69,32 +71,48 @@ const StencilContent = ({
       .filter((item) => item.children.length > 0);
   }, [asideList, flowKind, isLoop]);
 
-  // 节点选择面板：与 Workflow v3 一致的两列网格样式（AgentFlow 复用同一入口）
+  /** AgentFlow：合并所有分组节点为单一列表，不展示分组标题 */
+  const flatChildren = useMemo(() => {
+    if (!isAgentFlow) return [];
+    return filteredGroups.flatMap((item) => item.children);
+  }, [filteredGroups, isAgentFlow]);
+
+  const renderChildNode = (child: StencilChildNode, childIndex: number) => (
+    <div
+      className="child-content dis-left"
+      draggable="true"
+      key={`${child.type}-${childIndex}`}
+      onDragEnd={(e) => handleDragStart(child, e)}
+      onClick={() => handleDragStart(child)}
+    >
+      {renderIcon(child.bgIcon || '')}
+      <span>{child.name}</span>
+    </div>
+  );
+
+  // 节点选择面板：Workflow 按分组展示；AgentFlow 合并为单一两列网格
   return (
     <div className="stencil-content">
       <p className="stencil-title">
         {t('PC.Pages.AntvX6Stencil.nodeSelectorTitle')}
       </p>
       <div className="stencil-list-style">
-        {filteredGroups.map((item) => (
-          <div className="stencil-list-item" key={item.key}>
-            {item.name && <p className="stencil-list-title">{item.name}</p>}
+        {isAgentFlow ? (
+          <div className="stencil-list-item">
             <div className="stencil-list-content">
-              {item.children.map((child, childIndex) => (
-                <div
-                  className="child-content dis-left"
-                  draggable="true"
-                  key={`${child.type}-${childIndex}`}
-                  onDragEnd={(e) => handleDragStart(child, e)}
-                  onClick={() => handleDragStart(child)}
-                >
-                  {renderIcon(child.bgIcon || '')}
-                  <span>{child.name}</span>
-                </div>
-              ))}
+              {flatChildren.map(renderChildNode)}
             </div>
           </div>
-        ))}
+        ) : (
+          filteredGroups.map((item) => (
+            <div className="stencil-list-item" key={item.key}>
+              {item.name && <p className="stencil-list-title">{item.name}</p>}
+              <div className="stencil-list-content">
+                {item.children.map(renderChildNode)}
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );
