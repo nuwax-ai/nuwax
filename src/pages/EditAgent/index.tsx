@@ -211,7 +211,7 @@ const EditAgent: React.FC = () => {
   const isFlowAgent = agentConfigInfo?.subType === AgentSubTypeEnum.Flow;
   // AgentFlow 画布所需的工作流 ID：优先取 workflowId，回退到组件列表中 Workflow 组件的 targetId
   const agentFlowWorkflowId = useMemo(() => {
-    if (agentConfigInfo?.workflowId) return agentConfigInfo.workflowId;
+    // if (agentConfigInfo?.workflowId) return agentConfigInfo.workflowId;
     const wfComponent = agentConfigInfo?.agentComponentConfigList?.find(
       (c) => c.type === AgentComponentTypeEnum.Workflow,
     );
