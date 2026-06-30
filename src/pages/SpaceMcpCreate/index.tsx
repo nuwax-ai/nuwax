@@ -13,6 +13,7 @@ import { CodeLangEnum } from '@/types/enums/plugin';
 import { McpDetailInfo } from '@/types/interfaces/mcp';
 import { isValidJSON } from '@/utils/common';
 import { customizeRequiredMark } from '@/utils/form';
+import { resolveCreateIcon } from '@/utils/resolveCreateIcon';
 import { jumpBack } from '@/utils/router';
 import { Form, FormProps, Input, message, Radio } from 'antd';
 import classNames from 'classnames';
@@ -126,7 +127,7 @@ const SpaceMcpCreate: React.FC = () => {
     description: string;
     installType: McpInstallTypeEnum;
     serverConfig: string;
-  }>['onFinish'] = (values) => {
+  }>['onFinish'] = async (values) => {
     const { serverConfig, ...rest } = values;
     // 组件库
     if (installType === McpInstallTypeEnum.COMPONENT) {
@@ -146,6 +147,12 @@ const SpaceMcpCreate: React.FC = () => {
       setSaveLoading(true);
     }
 
+    const { icon, description } = await resolveCreateIcon({
+      imageUrl,
+      name: rest.name,
+      description: rest.description,
+    });
+
     const mcpConfig =
       installType === McpInstallTypeEnum.COMPONENT
         ? {
@@ -158,8 +165,10 @@ const SpaceMcpCreate: React.FC = () => {
           };
     const data = {
       ...rest,
+      description: description ?? rest.description,
       spaceId,
-      icon: imageUrl,
+      icon,
+      installType: installType!,
       mcpConfig,
       withDeploy: withDeployRef.current,
     };
