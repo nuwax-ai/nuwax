@@ -91,7 +91,7 @@ import React, {
 import { history, useLocation, useModel, useParams } from 'umi';
 import PagePreviewIframe from '../../components/business-component/PagePreviewIframe';
 import AgentArrangeConfig from './AgentArrangeConfig';
-import AgentFlowCanvas from './AgentFlowCanvas';
+import AgentFlowCanvas, { type AgentFlowCanvasRef } from './AgentFlowCanvas';
 import AgentHeader from './AgentHeader';
 import AgentModelSetting from './AgentModelSetting';
 import ArrangeTitle from './ArrangeTitle';
@@ -124,6 +124,7 @@ const EditAgent: React.FC = () => {
   const [agentConfigInfo, setAgentConfigInfo] = useState<AgentConfigInfo>();
   const [promptVariables, setPromptVariables] = useState<PromptVariable[]>([]);
   const [promptTools, setPromptTools] = useState<AgentComponentInfo[]>([]);
+  const agentFlowCanvasRef = useRef<AgentFlowCanvasRef>(null);
   const {
     cardList,
     showType,
@@ -211,7 +212,7 @@ const EditAgent: React.FC = () => {
   const isFlowAgent = agentConfigInfo?.subType === AgentSubTypeEnum.Flow;
   // AgentFlow 画布所需的工作流 ID：优先取 workflowId，回退到组件列表中 Workflow 组件的 targetId
   const agentFlowWorkflowId = useMemo(() => {
-    if (agentConfigInfo?.workflowId) return agentConfigInfo.workflowId;
+    // if (agentConfigInfo?.workflowId) return agentConfigInfo.workflowId;
     const wfComponent = agentConfigInfo?.agentComponentConfigList?.find(
       (c) => c.type === AgentComponentTypeEnum.Workflow,
     );
@@ -296,6 +297,13 @@ const EditAgent: React.FC = () => {
     },
     [],
   );
+
+  // 记忆区变量弹窗确认后，AgentFlow 重新拉取关联工作流
+  const handleMemoryVariablesConfirmed = useCallback(() => {
+    if (isFlowAgent) {
+      void agentFlowCanvasRef.current?.refreshWorkflow();
+    }
+  }, [isFlowAgent]);
 
   // 处理工具列表变化，同步到 promptTools
   const handleToolsChange = useCallback(
@@ -991,11 +999,14 @@ const EditAgent: React.FC = () => {
     if (!terminalConsoleVisible) {
       setTerminalConsoleVisible(true);
       setIsTerminalExpanded(true);
+      setTerminalCollapseSignal(0);
+      setTerminalExpandSignal((n) => n + 1);
       return;
     }
 
     if (!isTerminalExpanded) {
       setIsTerminalExpanded(true);
+      setTerminalCollapseSignal(0);
       setTerminalExpandSignal((n) => n + 1);
       return;
     }
@@ -1023,7 +1034,15 @@ const EditAgent: React.FC = () => {
   const handleCloseTerminalPanel = useCallback(() => {
     setTerminalConsoleVisible(false);
     setIsTerminalExpanded(false);
+    setTerminalCollapseSignal(0);
+    setTerminalExpandSignal(0);
   }, []);
+
+  /** 关闭文件树预览面板时同步清除终端图标选中态 */
+  const handleCloseFileTreeViewPanel = useCallback(() => {
+    handleCloseTerminalPanel();
+    closePreviewView();
+  }, [closePreviewView, handleCloseTerminalPanel]);
 
   useEffect(() => {
     setTerminalConsoleVisible(false);
@@ -1201,6 +1220,7 @@ const EditAgent: React.FC = () => {
                         {/* AgentFlow 画布（自带全屏）：位于系统提示词之前，与提示词同处编排流 */}
                         {isFlowAgent && agentFlowWorkflowId && (
                           <AgentFlowCanvas
+                            ref={agentFlowCanvasRef}
                             workflowId={agentFlowWorkflowId}
                             spaceId={spaceId}
                           />
@@ -1230,6 +1250,7 @@ const EditAgent: React.FC = () => {
                   agentConfigInfo={agentConfigInfo}
                   onChangeAgent={handleChangeAgent}
                   onVariablesChange={handleVariablesChange}
+                  onMemoryVariablesConfirmed={handleMemoryVariablesConfirmed}
                   onToolsChange={handleToolsChange}
                 />
               </div>
@@ -1337,7 +1358,7 @@ const EditAgent: React.FC = () => {
                               restartAgent(devConversationId)
                             }
                             // 关闭整个面板
-                            onClose={closePreviewView}
+                            onClose={handleCloseFileTreeViewPanel}
                             // 文件树是否固定（用户点击后固定）
                             isFileTreePinned={isFileTreePinned}
                             // 文件树固定状态变化回调

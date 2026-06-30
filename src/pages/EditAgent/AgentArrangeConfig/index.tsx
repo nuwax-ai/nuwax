@@ -123,6 +123,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   extraComponent,
   onChangeAgent,
   onVariablesChange,
+  onMemoryVariablesConfirmed,
   onToolsChange,
 }) => {
   // 插件弹窗
@@ -686,6 +687,7 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
     const { data } = await runVariables(agentId);
     // 处理变量参数
     handleVariables(data);
+    onMemoryVariablesConfirmed?.();
   };
 
   // 确定 Hook 配置变更

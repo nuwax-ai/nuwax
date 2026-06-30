@@ -396,12 +396,12 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
     (layoutMode !== 'collapsed' || terminalActivatedRef.current);
   /** 上一次 visible 值（用于识别「重新打开」时机） */
   const prevVisibleRef = useRef(visible);
-  /** 外部信号上一次值（避免组件 remount 时重复触发） */
-  const prevLayoutResetSignalRef = useRef(layoutResetSignal);
-  const prevExpandSignalRef = useRef(expandSignal);
-  const prevTerminalSignalRef = useRef(terminalSignal);
-  const prevCollapseSignalRef = useRef(collapseSignal);
-  const prevLogsSignalRef = useRef(logsSignal);
+  /** 外部信号上一次值（undefined 表示未消费，避免 lazy mount 时与当前 signal 相同而跳过） */
+  const prevLayoutResetSignalRef = useRef<number | undefined>(undefined);
+  const prevExpandSignalRef = useRef<number | undefined>(undefined);
+  const prevTerminalSignalRef = useRef<number | undefined>(undefined);
+  const prevCollapseSignalRef = useRef<number | undefined>(undefined);
+  const prevLogsSignalRef = useRef<number | undefined>(undefined);
 
   /** 日志 Tab 是否使用结构化日志面板（DevLogPanel） */
   const useDevLogPanel = Boolean(devLog);
