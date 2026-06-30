@@ -9,7 +9,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useModel } from 'umi';
 import { normalizeHitlNodeConfig } from '../agentFlow/adapters/qaConfigAdapter';
 import { normalizeLoadedNodes } from '../agentFlow/nodeTypeMapping';
-import { resolveAgentFlowWorkflowNodeDescription } from '../agentFlow/resolveNodePresentation';
+import {
+  resolveAgentFlowWorkflowNodeDescription,
+  resolveNodeDescriptionWithNameFallback,
+} from '../agentFlow/resolveNodePresentation';
 import { workflowProxy } from '../services/workflowProxyV3';
 import { workflowSaveService } from '../services/WorkflowSaveService';
 import { getEdges } from '../utils/graphV3';
@@ -85,6 +88,24 @@ export const useWorkflowLifecycle = ({
             nodeConfig: normalizeHitlNodeConfig(
               node.nodeConfig as Record<string, any>,
             ),
+          };
+        }
+        // 知识库写入：加载时顶层与 nodeConfig 绑定描述为空则回退到名称
+        if (node.type === NodeTypeEnum.KnowledgeInsert) {
+          const bindingName = node.nodeConfig?.name ?? node.name;
+          return {
+            ...node,
+            description: resolveNodeDescriptionWithNameFallback(
+              node.name,
+              node.description,
+            ),
+            nodeConfig: {
+              ...node.nodeConfig,
+              description: resolveNodeDescriptionWithNameFallback(
+                bindingName,
+                node.nodeConfig?.description,
+              ),
+            },
           };
         }
         // 工作流节点：加载时描述为空则回退到名称

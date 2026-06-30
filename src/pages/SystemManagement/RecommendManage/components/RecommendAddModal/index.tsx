@@ -113,6 +113,8 @@ const RecommendAddModal: React.FC<RecommendAddModalProps> = ({
   const fetchingRef = useRef(false);
   const requestVersionRef = useRef(0);
   const addedCountRef = useRef(0);
+  /** 弹窗打开时由初始化 effect 拉列表，避免 activeTargetType 未同步时重复请求 */
+  const skipNextActiveTypeFetchRef = useRef(false);
 
   const tabOptions = useMemo(
     () =>
@@ -191,13 +193,21 @@ const RecommendAddModal: React.FC<RecommendAddModalProps> = ({
     [],
   );
 
-  /** 弹窗打开 / Tab 切换：重置并加载第一页 */
+  /** 解析弹窗打开时应使用的目标类型 */
+  const resolveInitialTargetType =
+    useCallback((): DisplayRecommendTargetTypeEnum => {
+      if (defaultTargetType && targetTypes.includes(defaultTargetType)) {
+        return defaultTargetType;
+      }
+      return targetTypes[0];
+    }, [defaultTargetType, targetTypes]);
+
+  /** 弹窗打开：同步 Tab 与已添加计数，并按 defaultTargetType 加载列表 */
   useEffect(() => {
     if (!open) return;
-    const initialTargetType =
-      defaultTargetType && targetTypes.includes(defaultTargetType)
-        ? defaultTargetType
-        : targetTypes[0];
+
+    const initialTargetType = resolveInitialTargetType();
+    skipNextActiveTypeFetchRef.current = true;
     setActiveTargetType(initialTargetType);
     setSearchKw('');
     setList([]);
@@ -205,10 +215,17 @@ const RecommendAddModal: React.FC<RecommendAddModalProps> = ({
     setTotalPages(0);
     setSessionAddedKeys(new Set());
     addedCountRef.current = 0;
-  }, [open, targetTypes, defaultTargetType]);
+    fetchList(initialTargetType, 1, '', false);
+  }, [open, resolveInitialTargetType, fetchList]);
 
+  /** 弹窗内 Segmented 切换 Tab：重新加载对应类型列表 */
   useEffect(() => {
     if (!open) return;
+    if (skipNextActiveTypeFetchRef.current) {
+      skipNextActiveTypeFetchRef.current = false;
+      return;
+    }
+
     setSearchKw('');
     setList([]);
     setPage(1);

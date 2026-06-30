@@ -70,6 +70,8 @@ const AcpPermissionCard: React.FC<AcpPermissionCardProps> = ({
 
   const title =
     toolCall.title?.trim() || t('PC.Components.AcpPermissionCard.defaultTitle');
+  const rawCommand = (toolCall.rawInput as any)?.command;
+  const displayTitle = title === 'bash' && rawCommand ? rawCommand : title;
 
   const visibleOptions = useMemo(
     () =>
@@ -118,7 +120,7 @@ const AcpPermissionCard: React.FC<AcpPermissionCardProps> = ({
       })}
       tabIndex={-1}
       role="group"
-      aria-label={title}
+      aria-label={displayTitle}
     >
       <header className={styles.header}>
         {docked ? (
@@ -135,7 +137,7 @@ const AcpPermissionCard: React.FC<AcpPermissionCardProps> = ({
             </span>
           ) : null}
           <Text strong className={styles.title}>
-            {title}
+            {displayTitle}
           </Text>
         </div>
         {toolCall.kind ? (
