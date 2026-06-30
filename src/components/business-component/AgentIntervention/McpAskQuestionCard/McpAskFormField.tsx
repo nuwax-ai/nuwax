@@ -135,7 +135,11 @@ const McpAskFormField: React.FC<McpAskFormFieldProps> = ({
           <Select
             disabled={disabled}
             className={cx(styles['text-control'])}
-            popupClassName={cx(styles['select-dropdown'])}
+            classNames={{
+              popup: {
+                root: cx(styles['select-dropdown']),
+              },
+            }}
             placeholder={options.placeholder || label}
             options={enumValues.map((value, index) => ({
               value,

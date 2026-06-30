@@ -1,4 +1,5 @@
 import { ConversationEventTypeEnum } from '@/types/enums/agent';
+import { MessageStatusEnum } from '@/types/enums/common';
 import { describe, expect, it } from 'vitest';
 import { applyAcpPermissionSseEvent } from './applyAcpPermissionSseEvent';
 
@@ -208,6 +209,42 @@ describe('applyAcpPermissionSseEvent', () => {
     ).toEqual(['once', 'reject']);
   });
 
+  it('forces the message back to loading so the approval card can render', () => {
+    const patched = applyAcpPermissionSseEvent(
+      {
+        eventType: ConversationEventTypeEnum.PROCESSING,
+        data: {
+          result: {
+            input: {
+              request_permission_request: {
+                session_id: 'session-loading',
+                tool_call: {
+                  tool_call_id: 'tool-call-loading',
+                  kind: 'edit',
+                  status: 'pending',
+                  title: '编辑文件',
+                },
+                options: [
+                  {
+                    option_id: 'once',
+                    name: 'Allow once',
+                    kind: 'allow_once',
+                  },
+                ],
+              },
+              tool_call_id: 'tool-call-loading',
+            },
+            executeId: 'tool-call-loading',
+          },
+          subEventType: 'REQUEST_PERMISSION',
+        },
+      } as any,
+      { id: 'msg-loading', status: MessageStatusEnum.Complete } as any,
+    );
+
+    expect(patched?.status).toBe(MessageStatusEnum.Loading);
+  });
+
   it('accepts camelCase ACP request_permission events (ACP standard)', () => {
     const patched = applyAcpPermissionSseEvent(
       {
@@ -278,6 +315,86 @@ describe('applyAcpPermissionSseEvent', () => {
       'allow',
       'reject',
     ]);
+  });
+
+  it('accepts camelCase requestPermissionRequest payloads', () => {
+    const patched = applyAcpPermissionSseEvent(
+      {
+        eventType: ConversationEventTypeEnum.PROCESSING,
+        data: {
+          name: 'Backend.Sandbox.Event.RequestPermission',
+          result: {
+            name: 'Backend.Sandbox.Event.RequestPermission',
+            executeId: 'tool-call-camel-root',
+            input: {
+              requestPermissionRequest: {
+                sessionId: 'session-camel-root',
+                toolCall: {
+                  toolCallId: 'tool-call-camel-root',
+                  title: '写入文件',
+                  kind: 'edit',
+                  status: 'pending',
+                },
+                options: [
+                  {
+                    optionId: 'once',
+                    kind: 'allow_once',
+                    name: 'Allow once',
+                  },
+                ],
+              },
+              toolCallId: 'tool-call-camel-root',
+            },
+          },
+        },
+      } as any,
+      { id: 'msg-camel-root' } as any,
+    );
+
+    const request =
+      patched?.acpPermissionInteractions?.[0]?.intervention.acp.request;
+    expect(request?.sessionId).toBe('session-camel-root');
+    expect(request?.toolCall.toolCallId).toBe('tool-call-camel-root');
+    expect(request?.options[0]?.optionId).toBe('once');
+  });
+
+  it('recognizes RequestPermission events by event name even without subEventType', () => {
+    const patched = applyAcpPermissionSseEvent(
+      {
+        eventType: ConversationEventTypeEnum.PROCESSING,
+        data: {
+          name: 'Backend.Sandbox.Event.RequestPermission',
+          result: {
+            input: {
+              request_permission_request: {
+                session_id: 'session-by-name',
+                tool_call: {
+                  tool_call_id: 'tool-call-by-name',
+                  title: '写入文件',
+                  kind: 'edit',
+                  status: 'pending',
+                },
+                options: [
+                  {
+                    option_id: 'once',
+                    kind: 'allow_once',
+                    name: 'Allow once',
+                  },
+                ],
+              },
+              tool_call_id: 'tool-call-by-name',
+            },
+            executeId: 'tool-call-by-name',
+          },
+        },
+      } as any,
+      { id: 'msg-by-name' } as any,
+    );
+
+    expect(
+      patched?.acpPermissionInteractions?.[0]?.intervention.acp.request.toolCall
+        .toolCallId,
+    ).toBe('tool-call-by-name');
   });
 
   it('normalizes codex-cli engine aliases to codex', () => {

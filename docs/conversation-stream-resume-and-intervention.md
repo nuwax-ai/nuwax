@@ -87,31 +87,35 @@ cleanup:`stopPolling` + `abortSub`。
 
 ## 4. 权限审批 DockPanel(useActiveInterventionQueue)
 
-### 4.1 显示条件(三重 AND)
+### 4.1 队列模式（FIFO）
 
-1. **最新消息过滤**:只渲染 `messageList` 末尾(`rawList[length-1]`,**未排序**,因占位无 index)这条消息上的审批 —— 历史消息的审批不渲染(否则历史 hydrate 的审批与 sub 重放的审批 intervention id 相同,双卡片 key 冲突/反复挂载闪烁)。
-2. **responseStatus active**:`pending` | `submitting`。
-3. **executeId 匹配焦点**:审批自身 `executeId` 匹配最新消息 `processingList` 末尾的 `executeId`(focusExecuteId);过期(被后续 processing 取代)关闭;自身 `executeId` 缺失时保守显示(避免误关)。
+1. **跨消息收集**：`useActiveInterventionQueue` 扫描整个 `messageList`，收集所有 `responseStatus` 为 `pending` / `submitting` 的 ACP / MCP Ask。
+2. **FIFO 排序**：按 `triggeredAt` / `createdAt` 升序；`DockPanel` **front = 最早一项**，仅 front 可交互，逐个调用 `permission-request/response`。
+3. **failed 不进队**：审批 API 失败后 `failed` 不阻塞队列后续项。
 
-### 4.2 关闭条件(任一触发)
+### 4.2 sub 恢复：已审批 vs 待审批
 
-- `responseStatus` 离开 `pending/submitting`(submitted/cancelled/failed)。
-- `executeId` 过期(agent 推进到下一个工具调用)。
-- 下一条消息进入 messageList(最新消息过滤,旧审批自动移除)。
+sub 从头重放时 ACP 会再次 `pending`。`reconcileAcpPermissionStatusesInMessageList` 在每次 SSE patch / `handleChangeMessageList` 后运行：
 
-### 4.3 会话结束态(Complete/Error/Stopped) —— 区分对待
+- 同 `toolCallId` 在 `processingList` 已为 `FINISHED` → `submitted`（Host 已放行并执行完）
+- 关联 MCP Ask 已有 resume 消息 → `submitted`
+- API 返回 permission not found / already resolved → 幂等 `submitted`
 
-- **acp_permission**:`isMessageTerminal=true` → 不显示。会话结束即审批已 resolve/失效。**跨页签**:别的页签审批后本页签 sub 收到 `end_turn` 使消息变 Complete,审批随之关闭。
-- **mcp_ask(ask-question)**:**不受会话结束态影响**。用户填表单期间消息可能已是 Complete,仍需保持显示,由 `responseStatus`/下一条消息/executeId 控制关闭。
+MCP Ask 仍用 `hydrateMcpAskInteractionsInMessageList` + `hasMcpAskResumeMessage`。
+
+### 4.3 关闭条件
+
+- **ACP**：`responseStatus` 离开 `pending/submitting`；或 reconcile 标为 `submitted`。
+- **MCP Ask**：`responseStatus` / `hasMcpAskResumeMessage`；**不受**消息 `Complete` 态单独关闭（与 ACP 不同）。
 
 ### 4.4 acp permission vs ask-question(务必区分)
 
 | 维度 | acp permission | ask-question (mcp_ask) |
 | --- | --- | --- |
 | 等待期间 | 一直 pending | 用户填表单,消息可能 Complete |
-| 提交时 | 后端 resolve | **自己停止会话 + 单独发送表单消息**(作为新消息) |
-| 会话结束态 | 不显示 | 显示(不受影响) |
-| 关闭信号 | responseStatus / 会话结束 / executeId | responseStatus / 下一条消息 / executeId |
+| 提交时 | `permission-request/response` → notify-resolved | 停止会话 + 发送 resume 用户消息 |
+| sub 恢复判定 | `reconcileAcpPermissionStatuses` | `hasMcpAskResumeMessage` / hydrate |
+| 关闭信号 | responseStatus / reconcile / API 幂等 | responseStatus / resume 消息 |
 
 ### 4.5 heartbeat
 
@@ -158,7 +162,8 @@ heartbeat 事件不写 `messageList`(`handleChangeMessageList` 只处理 PROCESS
 | --- | --- |
 | `src/hooks/useResumeStreamHandlers.ts` | sub 订阅 handlers(两 model 共享):resumeConversationStream / abortResumeStream / ensureResumeAssistantPlaceholder |
 | `src/components/business-component/UnifiedChatSession/hooks/useConversationStreamResume.ts` | 轮询/订阅编排状态机(ready、subscribe、stopPolling/startPolling) |
-| `src/components/business-component/AgentIntervention/hooks/useActiveInterventionQueue.ts` | 审批队列:latestMessage 过滤 / executeId 过期 / 会话结束态(acp only) |
+| `src/components/business-component/AgentIntervention/hooks/useActiveInterventionQueue.ts` | 审批队列:跨消息 FIFO / ACP 抑制 MCP Ask |
+| `src/components/business-component/AgentIntervention/utils/reconcileAcpPermissionStatus.ts` | sub 恢复:processing 完成态 / resume 联动 / API 幂等 |
 | `src/components/business-component/AgentIntervention/hooks/useAgentInterventionLayer.ts` | agentMode 同步(storage + 轮询) |
 | `src/models/conversationInfo.ts` / `conversationAgent.ts` | 暴露 resumeConversationStream / abortResumeStream / runAsync |
 | `src/utils/fetchEventSourceConversationInfo.ts` | 通用 SSE 连接器(createSSEConnection) |
@@ -173,7 +178,7 @@ heartbeat 事件不写 `messageList`(`handleChangeMessageList` 只处理 PROCESS
 | 流式 SSE | `createSSEConnection`(fetch-event-source) | `utils/streamRequest.uts` + `sseDataProcessor.uts` |
 | storage | `localStorage` + window `storage` 事件 | `uni.setStorageSync/getStorageSync`;跨页同步用 `uni.$emit`/eventBus 或 storage 轮询 |
 | agentMode key | `nuwax_agent_mode_cache` | `AGENT_MODE`(`constants/common.constants.uts`) |
-| 审批渲染 | DockPanel + 活跃队列(最新消息过滤/executeId) | `components/agent-intervention/`(消息流内联,**需补** latestMessage 过滤 / executeId 过期 / 会话结束态只关 acp 等判定) |
+| 审批渲染 | DockPanel FIFO 堆叠 + reconcile | `components/agent-intervention/`（**待 mobile 同步** FIFO 队列与 reconcile） |
 | 模式切换 | `useAgentInterventionLayer` | `subpackages/components/chat-input-phone`(已有 yolo/ask toggle + AGENT_MODE 缓存,**需补**跨页同步) |
 | handleChangeMessageList 等价 | model 内 | `AgentDetailService.uts` SSE 回调 |
 

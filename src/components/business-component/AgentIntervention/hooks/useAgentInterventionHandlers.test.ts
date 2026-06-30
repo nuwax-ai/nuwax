@@ -165,6 +165,38 @@ describe('useAgentInterventionHandlers', () => {
       expect(updatedInteraction.errorMessage).toBe('失败');
     });
 
+    it('sets responseStatus to submitted when API reports permission already resolved', async () => {
+      mockApiAgentInterventionRespond.mockResolvedValueOnce({
+        code: '9999',
+        message: 'pending permission not found',
+      });
+
+      const existing = [
+        {
+          id: 'msg-1',
+          acpPermissionInteractions: [createAcpInteraction()],
+        },
+      ] as MessageInfo[];
+      const setMessageList = createMockSetMessageList(existing);
+
+      const { result } = renderHook(() =>
+        useAgentInterventionHandlers({ setMessageList, conversationId: 123 }),
+      );
+
+      await result.current.respondAcpPermission(createAcpInteraction(), {
+        outcome: { outcome: 'selected', optionId: 'opt-1' },
+      });
+
+      expect(setMessageList).toHaveBeenCalledTimes(2);
+      const submittedUpdate = setMessageList.mock.calls[1][0] as (
+        list: MessageInfo[],
+      ) => MessageInfo[];
+      expect(
+        submittedUpdate(existing)[0].acpPermissionInteractions![0]
+          .responseStatus,
+      ).toBe('submitted');
+    });
+
     it('sets responseStatus to failed on network error and calls message.error', async () => {
       const { message } = await import('antd');
       mockApiAgentInterventionRespond.mockRejectedValueOnce(

@@ -519,8 +519,9 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   });
 
   useEffect(() => {
-    // 切换会话时立即隐藏预览，防止旧数据重新打开导致闪烁
+    // 切换会话时立即隐藏页面预览，并清除文件面板全局状态（fileTreeData / taskAgentSelectedFileId 等）
     hidePagePreview();
+    clearFilePanelInfo();
 
     // 重置 clearLoading：此时 cleanup 已执行 resetInit() 清空了 conversationInfo，
     // conversationInfo 会无缝接管加载显示，不会出现 AgentChatEmpty 闪现

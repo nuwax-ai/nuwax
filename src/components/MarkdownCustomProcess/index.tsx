@@ -5,6 +5,7 @@ import { dict } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { ProcessingEnum } from '@/types/enums/common';
 import { cloneDeep } from '@/utils/common';
+import { normalizeFileDiffItems } from '@/utils/fileChangeDiff';
 import {
   BorderOutlined,
   CheckOutlined,
@@ -31,8 +32,18 @@ const cx = classNames.bind(styles);
  * 极简、快速且鲁棒的行级差异统计函数（Myers / LCS 基础版）
  */
 const getDiffStats = (oldStr: string = '', newStr: string = '') => {
-  const oldLines = (oldStr || '').split('\n');
-  const newLines = (newStr || '').split('\n');
+  const splitLines = (value: string) => {
+    if (!value) {
+      return [];
+    }
+    const lines = value.split('\n');
+    if (lines[lines.length - 1] === '') {
+      lines.pop();
+    }
+    return lines;
+  };
+  const oldLines = splitLines(oldStr || '');
+  const newLines = splitLines(newStr || '');
   const m = oldLines.length;
   const n = newLines.length;
 
@@ -126,13 +137,8 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
   // Diff 展开/收起状态
   const [isDiffExpanded, setIsDiffExpanded] = useState(false);
 
-  // 提取 data 中的 type === 'diff' 的数据
   const diffItems = useMemo(() => {
-    const data = (innerProcessing.result as any)?.data;
-    if (Array.isArray(data)) {
-      return data.filter((item: any) => item && item.type === 'diff');
-    }
-    return [];
+    return normalizeFileDiffItems(innerProcessing.result);
   }, [innerProcessing.result]);
 
   const hasDiff = diffItems.length > 0;
@@ -281,7 +287,11 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
     // 打开文件树
     if (result?.kind === 'edit') {
       const conversationId = props.conversationId;
-      const file_path = result?.input?.file_path;
+      const file_path =
+        result?.input?.file_path ||
+        result?.input?.filePath ||
+        result?.input?.filepath ||
+        result?.locations?.[0]?.path;
 
       if (
         !file_path ||
@@ -440,8 +450,14 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
   }
 
   // 工具栏标题：过长时 tooltip 限高 3 行，超出出现滚动条
-  const titleText =
+  const processName =
     innerProcessing?.name || dict('PC.Components.MarkdownCustomProcess.noName');
+  const titleText =
+    hasDiff && diffItems.length === 1
+      ? `${processName} ${diffItems[0].path}`
+      : hasDiff && diffItems.length > 1
+      ? `${processName} ${diffItems[0].path} +${diffItems.length - 1}`
+      : processName;
 
   return (
     <>
