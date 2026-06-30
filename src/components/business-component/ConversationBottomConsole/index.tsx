@@ -2,7 +2,11 @@ import { SvgIcon } from '@/components/base';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
-import { apiEnsurePod, apiKeepalivePod } from '@/services/vncDesktop';
+import {
+  apiEnsurePod,
+  apiKeepalivePod,
+  isEnsurePodThrottledError,
+} from '@/services/vncDesktop';
 import type { DevLogEntry } from '@/types/interfaces/appDev';
 import {
   DownOutlined,
@@ -168,6 +172,8 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
     useState<boolean>(false);
   /** 断连后预热容器的防抖定时器（自动重连前尽量 ensurePod） */
   const ensurePodOnDisconnectTimerRef = useRef<number | null>(null);
+  /** ensure 进行中，避免 handleFirstExpand 重复触发 */
+  const ensureInFlightRef = useRef<boolean>(false);
 
   /** 是否需要先启动服务再连接终端（由 conversationId 决定） */
   const requiresServiceStart = Boolean(conversationId);
@@ -182,6 +188,8 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
   const [containerStatus, setContainerStatus] = useState<
     'idle' | 'starting' | 'running' | 'error'
   >('idle');
+  const containerStatusRef = useRef(containerStatus);
+  containerStatusRef.current = containerStatus;
 
   /**
    * 保活轮询（useRequest 自动管理定时器、页面可见性暂停/恢复）
@@ -248,7 +256,15 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
           setContainerStatus('error');
           return false;
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
+        // 智能体电脑等外部刚调过 ensure 时会被 5s 限流，容器已在运行，终端可直接连接
+        if (isEnsurePodThrottledError(error)) {
+          setContainerStatus('running');
+          if (enableKeepalivePolling) {
+            runKeepaliveRef.current(cId);
+          }
+          return true;
+        }
         setContainerStatus('error');
         return false;
       }
@@ -258,6 +274,8 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
 
   /** 挂载时仅清理状态，不自动启动容器；等用户首次展开时触发 */
   useLayoutEffect(() => {
+    ensureInFlightRef.current = false;
+
     if (!conversationId) {
       setContainerStatus('idle');
       terminalConnectedRef.current = false;
@@ -293,11 +311,20 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
   const handleFirstExpand = useCallback(() => {
     terminalActivatedRef.current = true;
 
-    // 云端电脑：容器尚未启动时触发启动
-    if (conversationId && containerStatus === 'idle') {
-      startContainer(conversationId);
+    if (!conversationId || ensureInFlightRef.current) {
+      return;
     }
-  }, [conversationId, containerStatus, startContainer]);
+
+    const status = containerStatusRef.current;
+    if (status === 'starting' || status === 'running') {
+      return;
+    }
+
+    ensureInFlightRef.current = true;
+    void startContainer(conversationId).finally(() => {
+      ensureInFlightRef.current = false;
+    });
+  }, [conversationId, startContainer]);
 
   /** 终端可见后 fit / sync / focus（委托给 EmbeddedConsoleTerminal） */
   const syncTerminalLayoutAndFocus = useCallback(() => {
