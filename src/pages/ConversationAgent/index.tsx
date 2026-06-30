@@ -1470,6 +1470,7 @@ const ConversationAgent: React.FC = () => {
           {/* 底部终端、开发日志合集面板 */}
           {/** 云端电脑传入 conversationId 以启动容器；个人电脑直接通过 wsUrl 连接终端 */}
           <ConversationBottomConsole
+            // 在ConversationAgent中，conversationId 为 queryConversationId
             conversationId={
               finalSelectedComputerId === '-1' ? queryConversationId : undefined
             }
