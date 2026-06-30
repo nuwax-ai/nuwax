@@ -1,5 +1,6 @@
 import CodeEditor from '@/components/CodeEditor';
 import CustomFormModal from '@/components/CustomFormModal';
+import TooltipIcon from '@/components/custom/TooltipIcon';
 import {
   getDefaultHookConfigJson,
   getHookMatcherFieldConfig,
@@ -15,6 +16,7 @@ import { CodeLangEnum } from '@/types/enums/plugin';
 import type { HookConfig } from '@/types/interfaces/agent';
 import type { CreateHookModalProps } from '@/types/interfaces/agentConfig';
 import { customizeRequiredMark } from '@/utils/form';
+import { InfoCircleOutlined } from '@ant-design/icons';
 import { Form, Input, message, Select } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useRef } from 'react';
@@ -179,7 +181,7 @@ const CreateHookModal: React.FC<CreateHookModalProps> = ({
   };
 
   // 弹窗标题
-  const title =
+  const modalTitleText =
     mode === CreateUpdateModeEnum.Update
       ? t('PC.Pages.AgentArrangeCreateHookModal.titleEdit')
       : t('PC.Pages.AgentArrangeCreateHookModal.titleCreate');
@@ -188,7 +190,15 @@ const CreateHookModal: React.FC<CreateHookModalProps> = ({
     <CustomFormModal
       form={form}
       classNames={{ body: styles['modal-body'] }}
-      title={title}
+      title={
+        <span className={cx('flex', 'items-center', 'gap-6')}>
+          <span>{modalTitleText}</span>
+          <TooltipIcon
+            title={t('PC.Pages.AgentArrangeCreateHooks.titleTooltip')}
+            icon={<InfoCircleOutlined />}
+          />
+        </span>
+      }
       open={open}
       width={560}
       loading={loading}
