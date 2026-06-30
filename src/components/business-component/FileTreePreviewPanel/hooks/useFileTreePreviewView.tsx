@@ -17,6 +17,7 @@ import { HideDesktopEnum } from '@/types/enums/agent';
 import { FileNode } from '@/types/interfaces/appDev';
 import { checkFileSizeExceedLimit } from '@/utils';
 import {
+  filterFlatFileListForVersionControl,
   findBestMatchingFileNode,
   findFileNode,
   isAudioFile,
@@ -134,6 +135,8 @@ export function useFileTreePreviewView(
     isDynamicTheme = false,
     /** 是否启用 Git status，仅通用型 TaskAgent 智能体为 true */
     enableGitStatus = false,
+    /** 智能体是否开启版本管理；关闭时文件树不展示 .gitignore */
+    enableVersionControl,
   } = props;
   const isCloudComputer = agentSandboxId === '-1';
   // 文件树数据
@@ -904,7 +907,12 @@ export function useFileTreePreviewView(
      * 典型场景：切换 Chat 历史会话、clearFilePanelInfo、删除全部文件后接口返回 []。
      * 若不清理 selectedFileNode，右侧预览会继续展示上一会话/已删文件的内容。
      */
-    if (!originalFiles || originalFiles.length === 0) {
+    const visibleOriginalFiles = filterFlatFileListForVersionControl(
+      originalFiles,
+      enableVersionControl,
+    );
+
+    if (!visibleOriginalFiles || visibleOriginalFiles.length === 0) {
       setFiles([]);
       filesRef.current = [];
       const currentSelectedFileId = selectedFileIdRef.current || selectedFileId;
@@ -913,19 +921,35 @@ export function useFileTreePreviewView(
         if (pendingRefreshSelectedAfterFilesUpdateRef.current) {
           pendingRefreshSelectedAfterFilesUpdateRef.current = false;
           onSelectedFileMissingRef.current?.(currentSelectedFileId);
+        } else if (originalFiles?.length) {
+          // 接口有数据但过滤后为空（如版本管控关闭时仅剩 .gitignore）
+          onSelectedFileMissingRef.current?.(currentSelectedFileId);
         }
         clearSelectedFile();
       }
       return;
     }
     // 如果文件列表不为空，则转换为树形结构
-    if (Array.isArray(originalFiles) && originalFiles.length > 0) {
+    if (
+      Array.isArray(visibleOriginalFiles) &&
+      visibleOriginalFiles.length > 0
+    ) {
       const treeData: FileNode[] = transformFlatListToTree(
-        originalFiles,
+        visibleOriginalFiles,
         false,
       );
       filesRef.current = treeData;
       setFiles(treeData);
+
+      /** 版本管控关闭后 .gitignore 被过滤，需清理仍选中该文件的预览态 */
+      const currentSelectedFileId = selectedFileIdRef.current || selectedFileId;
+      if (
+        currentSelectedFileId &&
+        !findFileNode(currentSelectedFileId, treeData)
+      ) {
+        onSelectedFileMissingRef.current?.(currentSelectedFileId);
+        clearSelectedFile();
+      }
 
       // discard / 回滚等场景必须基于“刚刷新得到的新文件树”判断当前选中文件。
       // 不再放到独立的 files effect 中，避免同一轮 effect 读取到旧 files。
@@ -957,7 +981,7 @@ export function useFileTreePreviewView(
         void refreshSelectedFileContent(nextSelectedFileNode);
       }
     }
-  }, [originalFiles]);
+  }, [originalFiles, enableVersionControl]);
 
   // 监听 files 变化，当有待选择的文件时自动选择
   useEffect(() => {
