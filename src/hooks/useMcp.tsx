@@ -1,4 +1,5 @@
 import McpCollapseComponentList from '@/components/McpCollapseComponentList';
+import { useGuardedSubmit } from '@/components/business-component/GuardedFormModal';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import { MCP_COLLAPSE_COMPONENT_LIST } from '@/constants/mcp.constants';
 import { dict } from '@/services/i18nRuntime';
@@ -34,9 +35,15 @@ const useMcp = () => {
   const [openAddComponent, setOpenAddComponent] = useState<boolean>(false);
   // 是否部署
   const withDeployRef = useRef<boolean>(false);
+  const { beginSubmit, abortSubmit, isSubmitting } = useGuardedSubmit(
+    saveLoading || saveDeployLoading,
+  );
 
   // 保存MCP服务
   const handleSave = (withDeploy: boolean = false) => {
+    if (!beginSubmit()) {
+      return;
+    }
     withDeployRef.current = withDeploy;
     form.submit();
   };
@@ -181,6 +188,8 @@ const useMcp = () => {
     handleSave,
     withDeployRef,
     collapseList,
+    abortSubmit,
+    isSubmitting,
   };
 };
 
