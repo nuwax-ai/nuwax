@@ -1290,9 +1290,12 @@ export const useNodeOperations = ({
         const isKnowledgeInsert =
           val.targetType === AgentComponentTypeEnum.Knowledge &&
           resolvedKnowledgeType === NodeTypeEnum.KnowledgeInsert;
-        const resolvedDescription = isKnowledgeInsert
-          ? resolveNodeDescriptionWithNameFallback(val.name, val.description)
-          : val.description;
+        // 知识库/数据表节点：未填描述时统一回退到节点名（与 KnowledgeInsert 一致），
+        // 避免添加后顶层 description 为空、保存时丢失。
+        const resolvedDescription = resolveNodeDescriptionWithNameFallback(
+          val.name,
+          val.description,
+        );
 
         _child = {
           name: val.name,
@@ -1327,14 +1330,18 @@ export const useNodeOperations = ({
         _child = {
           name: val.name,
           shape: NodeShapeEnum.General,
-          // 工作流节点：描述为空时回退到名称，再兜底默认文案
+          // 工作流节点：描述为空时回退到名称，再兜底默认文案；
+          // 插件节点：描述为空时回退到名称
           description:
             type === NodeTypeEnum.Workflow
               ? resolveAgentFlowWorkflowNodeDescription(
                   val.name,
                   val.description,
                 )
-              : val.description,
+              : resolveNodeDescriptionWithNameFallback(
+                  val.name,
+                  val.description,
+                ),
           type,
           typeId: val.targetId,
         };
@@ -1342,7 +1349,10 @@ export const useNodeOperations = ({
         _child = {
           name: val.name,
           shape: NodeShapeEnum.General,
-          description: val.description,
+          description: resolveNodeDescriptionWithNameFallback(
+            val.name,
+            val.description,
+          ),
           type: NodeTypeEnum.MCP,
           typeId: val.targetId,
           nodeConfig: {

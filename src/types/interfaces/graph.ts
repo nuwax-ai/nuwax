@@ -222,12 +222,12 @@ export interface GraphContainerRef {
   graphSelectNode: (id: string) => void;
   // 删除边
   graphDeleteEdge: (id: string) => void;
-  // 创建新的边
+  // 创建新的边；成功返回 true（节点缺失或画布未就绪时返回 false）
   graphCreateNewEdge: (
     source: string,
     target: string,
     isLoop?: boolean,
-  ) => void;
+  ) => boolean;
   graphChangeZoom: (val: number) => void;
   graphChangeZoomToFit: () => void;
   drawGraph: () => void;

@@ -89,22 +89,25 @@ export const useGraphInteraction = ({
         // 数据层已有边、画布缺失：补画布边，避免来回插入时报 Edge already exists
         if (res.message === 'Edge already exists' && graphRef.current) {
           const graph = graphRef.current.getGraphRef();
-          if (
-            graph &&
-            !hasGraphEdgeBetween(graph, String(sourceNode.id), targetId)
-          ) {
-            graphRef.current.graphCreateNewEdge(
-              sourcePort || String(sourceNode.id),
+          const sourceCellId = String(sourceNode.id);
+          if (graph && !hasGraphEdgeBetween(graph, sourceCellId, targetId)) {
+            const edgeSource = sourcePort || sourceCellId;
+            const created = graphRef.current.graphCreateNewEdge(
+              edgeSource,
               targetId,
               Boolean(sourceNode.loopNodeId),
             );
-            const updatedNode = workflowProxy.getNodeById(sourceNode.id);
-            const newNodeIds = updatedNode?.nextNodeIds || [];
-            updateCurrentNodeRef('sourceNode', {
-              nextNodeIds: newNodeIds,
-            });
-            debouncedSaveFullWorkflow();
-            return newNodeIds;
+            const synced =
+              created && hasGraphEdgeBetween(graph, sourceCellId, targetId);
+            if (synced) {
+              const updatedNode = workflowProxy.getNodeById(sourceNode.id);
+              const newNodeIds = updatedNode?.nextNodeIds || [];
+              updateCurrentNodeRef('sourceNode', {
+                nextNodeIds: newNodeIds,
+              });
+              debouncedSaveFullWorkflow();
+              return newNodeIds;
+            }
           }
         }
 

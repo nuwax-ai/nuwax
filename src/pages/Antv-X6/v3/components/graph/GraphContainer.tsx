@@ -442,12 +442,14 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       graphRef.current.removeCell(id);
     };
 
-    // 创建边
+    // 创建边；节点不在画布上时返回 false
     const graphCreateNewEdge = (
       source: string,
       target: string,
       isLoop?: boolean,
-    ) => {
+    ): boolean => {
+      if (!graphRef.current) return false;
+
       // 验证源节点和目标节点是否存在
       const sourceId = source.split('-')[0];
       const targetId = target.split('-')[0];
@@ -459,14 +461,12 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         workflowLogger.warn(
           `[GraphContainer] Unable to create edge: source node (${sourceId}) or target node (${targetId}) was not found on canvas`,
         );
-        return;
+        return false;
       }
 
-      // graphRef.current.addEdge({source,target})
       const edge = createEdge({ source, target, zIndex: isLoop ? 25 : 1 });
-
-      if (!graphRef.current) return;
       graphRef.current.addEdge(edge);
+      return true;
     };
 
     // 选中节点 切换节点

@@ -866,18 +866,27 @@ const Workflow: React.FC<WorkflowV3Props> = ({
     name: string;
     description: string;
   }) => {
-    const newValue = { ...foldWrapItem, name, description };
+    // FoldWrap 顶部编辑回调；description 缺省（undefined/空串）时保留原值，
+    // 避免误清空顶层描述、保存后变空。
+    const nextDescription =
+      typeof description === 'string' && description.trim()
+        ? description
+        : foldWrapItem.description;
+    const newValue = { ...foldWrapItem, name, description: nextDescription };
     // 知识库写入节点：FoldWrap 顶部编辑的是顶层 description，而属性面板卡片与
     // Form 的 description 字段读的是 nodeConfig.description。两者不同步会导致
-    // 保存（onSaveWorkflow 用 form 值回填 / buildPayload 从画布取）后再次打开
-    // 仍显示旧值（节点名）。这里把顶层描述同步到 nodeConfig 与 form hidden 字段。
+    // 保存后再次打开仍显示旧值（节点名）。这里把顶层描述同步到 nodeConfig 与 form。
     if (foldWrapItem.type === NodeTypeEnum.KnowledgeInsert) {
       newValue.nodeConfig = {
         ...(newValue.nodeConfig || {}),
-        description,
+        description: nextDescription,
       };
-      form.setFieldsValue({ description });
+      form.setFieldsValue({ description: nextDescription });
     }
+    // 直接同步 drawerForm（onSaveWorkflow 取 getWorkflow('drawerForm')）。
+    // 不调 setFoldWrapItem：避免触发 foldWrapItem effect（form.setFieldsValue 重置表单），
+    // 该副作用会把已写入的描述在保存链路中清空。
+    storeWorkflow('drawerForm', newValue);
     changeNode({ nodeData: newValue });
     setShowNameInput(false);
   };
