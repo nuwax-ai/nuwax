@@ -102,6 +102,12 @@ export async function apiDownloadAllFiles(cId: number): Promise<void> {
 
 let lastEnsurePodTime = 0;
 
+/** ensure 请求被 5s 全局限流（通常因 VNC/终端等刚调过 ensure，容器已在运行） */
+export const isEnsurePodThrottledError = (error: unknown): boolean => {
+  const message = error instanceof Error ? error.message : String(error);
+  return message.includes('too frequent');
+};
+
 // 启动容器
 export async function apiEnsurePod(
   cId: number,

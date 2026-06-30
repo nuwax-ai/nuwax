@@ -211,6 +211,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
   // intervention 响应的 resume 消息走 rawSend 绕过队列拦截，避免回复被错误入队
   const interventionLayer = useAgentInterventionLayer({
     conversationId,
+    agentId: agentInfo?.id,
     messageList,
     initialAgentMode,
     allowChooseMode: agentInfo?.allowChooseMode,

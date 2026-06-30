@@ -33,8 +33,10 @@ export interface AgentInterventionHandlersOverride {
 
 export interface UseAgentInterventionLayerOptions {
   conversationId?: number | string | null;
+  /** 智能体 ID；开启模式切换时按智能体维度读写 Agent 模式缓存 */
+  agentId?: number | string | null;
   messageList: MessageInfo[];
-  /** 由上层（如新建项目页）透传的初始 Agent 模式，优先于 localStorage 缓存 */
+  /** 由上层（如新建项目页）透传的初始 Agent 模式；无智能体缓存时用于初始化 */
   initialAgentMode?: AgentMode;
   /**
    * 是否允许选择 Agent 模式（智能体 allowChooseMode 配置）。仅 === Yes 时启用模式切换：
@@ -66,11 +68,111 @@ export interface UseAgentInterventionLayerResult {
 
 const AGENT_MODE_STORAGE_KEY = 'nuwax_agent_mode_cache';
 
+type AgentModeCacheObject = {
+  version?: number;
+  defaultMode?: AgentMode;
+  agents?: Record<string, AgentMode>;
+};
+
+const isAgentMode = (mode: unknown): mode is AgentMode =>
+  mode === 'yolo' || mode === 'ask';
+
+const normalizeAgentModeCacheAgentId = (
+  agentId?: number | string | null,
+): string | undefined => {
+  if (agentId === undefined || agentId === null) {
+    return undefined;
+  }
+  const normalized = String(agentId).trim();
+  return normalized ? normalized : undefined;
+};
+
+const parseAgentModeCache = (
+  raw: string | null,
+): AgentModeCacheObject | AgentMode | null => {
+  if (!raw) {
+    return null;
+  }
+  if (isAgentMode(raw)) {
+    return raw;
+  }
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === 'object') {
+      return parsed as AgentModeCacheObject;
+    }
+  } catch (e) {
+    // ignore invalid cache
+  }
+  return null;
+};
+
+const readAgentModeCache = (
+  agentId?: number | string | null,
+): AgentMode | null => {
+  const agentKey = normalizeAgentModeCacheAgentId(agentId);
+  const parsed = parseAgentModeCache(
+    localStorage.getItem(AGENT_MODE_STORAGE_KEY),
+  );
+
+  if (isAgentMode(parsed)) {
+    return parsed;
+  }
+
+  if (!parsed) {
+    return null;
+  }
+
+  const agentMode = agentKey ? parsed.agents?.[agentKey] : undefined;
+  if (isAgentMode(agentMode)) {
+    return agentMode;
+  }
+
+  if (!agentKey && isAgentMode(parsed.defaultMode)) {
+    return parsed.defaultMode;
+  }
+
+  return null;
+};
+
+const writeAgentModeCache = (
+  mode: AgentMode,
+  agentId?: number | string | null,
+) => {
+  const agentKey = normalizeAgentModeCacheAgentId(agentId);
+  const parsed = parseAgentModeCache(
+    localStorage.getItem(AGENT_MODE_STORAGE_KEY),
+  );
+  const nextCache: AgentModeCacheObject =
+    parsed && !isAgentMode(parsed)
+      ? {
+          ...parsed,
+          agents: { ...(parsed.agents || {}) },
+        }
+      : {
+          version: 1,
+          defaultMode: isAgentMode(parsed) ? parsed : undefined,
+          agents: {},
+        };
+
+  if (agentKey) {
+    nextCache.agents = {
+      ...(nextCache.agents || {}),
+      [agentKey]: mode,
+    };
+  } else {
+    nextCache.defaultMode = mode;
+  }
+
+  localStorage.setItem(AGENT_MODE_STORAGE_KEY, JSON.stringify(nextCache));
+};
+
 export function useAgentInterventionLayer(
   options: UseAgentInterventionLayerOptions,
 ): UseAgentInterventionLayerResult {
   const {
     conversationId,
+    agentId,
     messageList,
     initialAgentMode,
     allowChooseMode,
@@ -82,20 +184,20 @@ export function useAgentInterventionLayer(
   const agentModeEnabled = allowChooseMode === DefaultSelectedEnum.Yes;
   const skipStorage = !!interventionHandlers || !agentModeEnabled;
   const [agentMode, setAgentModeState] = useState<AgentMode>(() => {
-    if (initialAgentMode === 'yolo' || initialAgentMode === 'ask') {
-      return initialAgentMode;
-    }
     // 未开启模式切换 / 预览模式：仅内存态，固定 yolo，不读写 localStorage
     if (skipStorage) {
       return 'yolo';
     }
     try {
-      const cached = localStorage.getItem(AGENT_MODE_STORAGE_KEY);
-      if (cached === 'yolo' || cached === 'ask') {
-        return cached as AgentMode;
+      const cached = readAgentModeCache(agentId);
+      if (cached) {
+        return cached;
       }
     } catch (e) {
       // ignore localStorage errors
+    }
+    if (initialAgentMode === 'yolo' || initialAgentMode === 'ask') {
+      return initialAgentMode;
     }
     return 'yolo';
   });
@@ -107,12 +209,12 @@ export function useAgentInterventionLayer(
         return;
       }
       try {
-        localStorage.setItem(AGENT_MODE_STORAGE_KEY, mode);
+        writeAgentModeCache(mode, agentId);
       } catch (e) {
         // ignore localStorage errors
       }
     },
-    [skipStorage],
+    [agentId, skipStorage],
   );
 
   // 用 ref 跟踪最新 agentMode，避免同步 effect 依赖它而频繁重建定时器
@@ -128,13 +230,13 @@ export function useAgentInterventionLayer(
     }
     const syncFromCache = () => {
       try {
-        const cached = localStorage.getItem(AGENT_MODE_STORAGE_KEY);
+        const cached = readAgentModeCache(agentId);
         if (
           (cached === 'yolo' || cached === 'ask') &&
           cached !== agentModeRef.current
         ) {
           // 仅更新 state，不回写缓存，避免与写入方形成循环
-          setAgentModeState(cached as AgentMode);
+          setAgentModeState(cached);
         }
       } catch (e) {
         // ignore localStorage errors
@@ -148,7 +250,7 @@ export function useAgentInterventionLayer(
       window.removeEventListener('storage', syncFromCache);
       window.clearInterval(timer);
     };
-  }, [skipStorage]);
+  }, [agentId, skipStorage]);
 
   const conversationInfoModel = useModel('conversationInfo');
 
