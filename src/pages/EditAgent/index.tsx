@@ -1271,6 +1271,7 @@ const EditAgent: React.FC = () => {
                             bottomContent={
                               hasTerminalConsoleRendered ? (
                                 <ConversationBottomConsole
+                                  // 在EditAgent中，conversationId 为 devConversationId
                                   conversationId={
                                     finalSelectedComputerId === '-1'
                                       ? devConversationId
