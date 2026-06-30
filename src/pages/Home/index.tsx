@@ -343,7 +343,6 @@ const Home: React.FC = () => {
         />
         <ChatBoxRecommendNav
           items={recommendNavList}
-          selectedId={selectedRecommend?.id}
           onSelect={handleRecommendSelect}
         />
       </main>
