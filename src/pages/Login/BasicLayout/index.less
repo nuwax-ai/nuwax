@@ -29,17 +29,25 @@
     position: relative;
     flex: 1;
     display: flex;
-    justify-content: center; /* 水平居中 */
-    overflow-y: auto;
+    flex-direction: column;
+
+    .icon {
+      padding: @logoPosition 0 @logoPosition @logoPosition;
+      flex-shrink: 0;
+    }
 
     .logo {
-      position: absolute;
-      left: @logoPosition;
-      top: @logoPosition;
       width: @logoSize;
       height: @logoSize;
       border-radius: @logoBorderRadius;
-      z-index: @logoZIndex;
+    }
+
+    .scroll-area {
+      flex: 1;
+      display: flex;
+      justify-content: center; /* 水平居中 */
+      overflow-y: auto;
+      margin-bottom: 20px;
     }
 
     .left-title-box {

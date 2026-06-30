@@ -163,6 +163,8 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
   /** 手动重连 loading */
   const [isTerminalReconnecting, setIsTerminalReconnecting] =
     useState<boolean>(false);
+  /** 断连后预热容器的防抖定时器（自动重连前尽量 ensurePod） */
+  const ensurePodOnDisconnectTimerRef = useRef<number | null>(null);
 
   /** 是否需要先启动服务再连接终端（由 conversationId 决定） */
   const requiresServiceStart = Boolean(conversationId);
@@ -274,6 +276,15 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
       }
     };
   }, [conversationId, enableKeepalivePolling]);
+
+  useEffect(() => {
+    return () => {
+      if (ensurePodOnDisconnectTimerRef.current) {
+        window.clearTimeout(ensurePodOnDisconnectTimerRef.current);
+        ensurePodOnDisconnectTimerRef.current = null;
+      }
+    };
+  }, [conversationId]);
 
   /** 用户首次展开终端面板时，触发容器启动 / 终端直接连接 */
   const handleFirstExpand = useCallback(() => {
@@ -628,13 +639,14 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
               terminalRef.current?.writeln(
                 '\x1b[1;38;2;22;163;74m[Terminal connected]\x1b[0m',
               );
-              terminalRef.current?.fitAndSyncBackend();
+              // 重连后多轮 restore：fit → ttyd resize/init → focus，避免 idle 断连后无法输入
+              terminalRef.current?.restoreAfterVisibilityChange();
               window.setTimeout(
-                () => terminalRef.current?.fitAndSyncBackend(),
+                () => terminalRef.current?.restoreAfterVisibilityChange(),
                 50,
               );
               window.setTimeout(
-                () => terminalRef.current?.fitAndSyncBackend(),
+                () => terminalRef.current?.restoreAfterVisibilityChange(),
                 250,
               );
             }}
@@ -643,6 +655,28 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
               terminalRef.current?.writeln(
                 '\x1b[1;38;2;220;38;38m[Terminal disconnected]\x1b[0m',
               );
+              // 仅「需先启动容器」模式（传入 conversationId）才在断连后预热服务；
+              // 未传 conversationId 时终端直连 wsUrl，由 EmbeddedConsoleTerminal 自动重连即可
+              if (requiresServiceStart && containerStatus === 'running') {
+                if (ensurePodOnDisconnectTimerRef.current) {
+                  window.clearTimeout(ensurePodOnDisconnectTimerRef.current);
+                }
+                ensurePodOnDisconnectTimerRef.current = window.setTimeout(
+                  () => {
+                    ensurePodOnDisconnectTimerRef.current = null;
+                    if (!conversationId) {
+                      return;
+                    }
+                    void apiEnsurePod(conversationId).catch((error) => {
+                      console.error(
+                        '[ConversationBottomConsole] ensurePod on disconnect failed:',
+                        error,
+                      );
+                    });
+                  },
+                  300,
+                );
+              }
             }}
             onReconnectFailed={() => {
               terminalConnectedRef.current = false;
