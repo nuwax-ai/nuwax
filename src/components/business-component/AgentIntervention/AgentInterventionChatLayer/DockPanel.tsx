@@ -95,13 +95,15 @@ const DockPanel: React.FC<InterventionDockPanelProps> = ({
         ['--stack-offset-total' as string]: `${offsetTotal}px`,
       }}
     >
-      <span
-        className={styles.stackBadge}
-        style={{ zIndex: stackDepth + 10 }}
-        aria-hidden
-      >
-        {stackDepth}
-      </span>
+      {stackDepth > 2 ? (
+        <span
+          className={styles.stackBadge}
+          style={{ zIndex: stackDepth + 10 }}
+          aria-hidden
+        >
+          {stackDepth - 1}
+        </span>
+      ) : null}
 
       <div className={styles.stack}>
         {reversedItems.map((item, index) => {

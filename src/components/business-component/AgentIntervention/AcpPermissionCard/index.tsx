@@ -1,5 +1,9 @@
+import ChangeFileGitDiffView, {
+  DiffModeEnum,
+} from '@/components/business-component/ChangeFileGitDiffView';
 import { EllipsisTooltip } from '@/components/custom/EllipsisTooltip';
 import { t } from '@/services/i18nRuntime';
+import { normalizeFileDiffItems } from '@/utils/fileChangeDiff';
 import {
   ArrowDownOutlined,
   ArrowUpOutlined,
@@ -72,6 +76,14 @@ const AcpPermissionCard: React.FC<AcpPermissionCardProps> = ({
     toolCall.title?.trim() || t('PC.Components.AcpPermissionCard.defaultTitle');
   const rawCommand = (toolCall.rawInput as any)?.command;
   const displayTitle = title === 'bash' && rawCommand ? rawCommand : title;
+  const fileDiffItems = useMemo(
+    () =>
+      normalizeFileDiffItems({
+        input: toolCall.rawInput,
+        locations: toolCall.locations,
+      }),
+    [toolCall.rawInput, toolCall.locations],
+  );
 
   const visibleOptions = useMemo(
     () =>
@@ -153,6 +165,29 @@ const AcpPermissionCard: React.FC<AcpPermissionCardProps> = ({
       </header>
 
       <div className={styles.body}>
+        {fileDiffItems.length ? (
+          <div className={styles.filePreview}>
+            {fileDiffItems.map((item) => (
+              <div key={item.path} className={styles.filePreviewItem}>
+                <Text
+                  className={styles.filePath}
+                  ellipsis={{ tooltip: item.path }}
+                >
+                  {item.path}
+                </Text>
+                <div className={styles.diffPreview}>
+                  <ChangeFileGitDiffView
+                    fileId={`${toolCall.toolCallId || item.path}-${item.path}`}
+                    fileName={item.path}
+                    originalContent={item.oldText}
+                    modifiedContent={item.newText}
+                    diffViewMode={DiffModeEnum.Unified}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : null}
         <div className={styles.actions}>
           {visibleOptions.map((option, index) => {
             const isAllow = option.kind.startsWith('allow');

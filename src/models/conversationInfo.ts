@@ -4,6 +4,7 @@ import {
   processInterventionSsePatch,
   useAgentInterventionHandlers,
 } from '@/components/business-component/AgentIntervention';
+import { reconcileFinalMessageState } from '@/components/business-component/AgentIntervention/utils/reconcileFinalMessageState';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
   CONVERSATION_CONNECTION_URL,
@@ -755,6 +756,7 @@ export default () => {
       if (len) {
         setMessageList(() => {
           checkConversationActive(_messageList);
+          messageListRef.current = _messageList;
           return _messageList;
         });
         // 最后一条消息为"问答"时，获取问题建议
@@ -1117,7 +1119,7 @@ export default () => {
         }
 
         newMessage = {
-          ...currentMessage,
+          ...reconcileFinalMessageState(currentMessage, data),
           status: MessageStatusEnum.Complete,
           finalResult: data,
           requestId: res.requestId,
@@ -1158,8 +1160,14 @@ export default () => {
         list.splice(index, arraySpliceAction, newMessage as MessageInfo);
       }
 
+      const latestProcessingList = list.flatMap((message) =>
+        Array.isArray(message.processingList) ? message.processingList : [],
+      );
+      handleChatProcessingList(latestProcessingList);
+
       // 检查会话状态
       checkConversationActive(list);
+      messageListRef.current = list;
 
       return list;
     });
@@ -1255,8 +1263,16 @@ export default () => {
               // cleanupPendingInteractions(currentMessage);
             }
 
+            const latestProcessingList = copyList.flatMap((message) =>
+              Array.isArray(message.processingList)
+                ? message.processingList
+                : [],
+            );
+            handleChatProcessingList(latestProcessingList);
+
             // 再次调用 checkConversationActive 确保状态同步
             checkConversationActive(copyList);
+            messageListRef.current = copyList;
             return copyList;
           } catch (error) {
             console.error('[onClose] ERROR:', error);
@@ -1310,7 +1326,12 @@ export default () => {
         // 明确终止：打破「发送后 3s 保活」，确保活跃态能立即落 false
         lastSendAtRef.current = 0;
         setMessageList(() => {
+          const latestProcessingList = list.flatMap((message) =>
+            Array.isArray(message.processingList) ? message.processingList : [],
+          );
+          handleChatProcessingList(latestProcessingList);
           disabledConversationActive();
+          messageListRef.current = list;
           return list;
         });
         perfLifecycle.onStreamEnd('error');
