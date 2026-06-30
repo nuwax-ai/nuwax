@@ -867,6 +867,17 @@ const Workflow: React.FC<WorkflowV3Props> = ({
     description: string;
   }) => {
     const newValue = { ...foldWrapItem, name, description };
+    // 知识库写入节点：FoldWrap 顶部编辑的是顶层 description，而属性面板卡片与
+    // Form 的 description 字段读的是 nodeConfig.description。两者不同步会导致
+    // 保存（onSaveWorkflow 用 form 值回填 / buildPayload 从画布取）后再次打开
+    // 仍显示旧值（节点名）。这里把顶层描述同步到 nodeConfig 与 form hidden 字段。
+    if (foldWrapItem.type === NodeTypeEnum.KnowledgeInsert) {
+      newValue.nodeConfig = {
+        ...(newValue.nodeConfig || {}),
+        description,
+      };
+      form.setFieldsValue({ description });
+    }
     changeNode({ nodeData: newValue });
     setShowNameInput(false);
   };
@@ -1102,6 +1113,7 @@ const Workflow: React.FC<WorkflowV3Props> = ({
         copyNode={nodeOperationsHook.copyNode}
         changeZoom={changeZoom}
         createNodeByPortOrEdge={createNodeByPortOrEdge}
+        insertNodeBetween={nodeOperationsHook.insertNodeBetween}
         handleSaveNode={handleSaveNode}
         handleClickBlank={handleClickBlank}
         handleInitLoading={handleInitLoading}

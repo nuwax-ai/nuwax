@@ -73,6 +73,9 @@ export interface WorkflowLayoutProps {
   createNodeByPortOrEdge: (
     config: CreateNodeByPortOrEdgeProps,
   ) => Promise<void>;
+  insertNodeBetween?: (
+    config: import('@/types/interfaces/graph').InsertNodeBetweenParams,
+  ) => Promise<void>;
   handleSaveNode: (data: ChildNode, payload: Partial<ChildNode>) => void;
   handleClickBlank: () => void;
   handleInitLoading: (loading?: boolean) => void;
@@ -165,6 +168,7 @@ const WorkflowLayout: React.FC<WorkflowLayoutProps> = ({
   copyNode,
   changeZoom,
   createNodeByPortOrEdge,
+  insertNodeBetween,
   handleSaveNode,
   handleClickBlank,
   handleInitLoading,
@@ -271,6 +275,7 @@ const WorkflowLayout: React.FC<WorkflowLayoutProps> = ({
           copyNode={copyNode}
           changeZoom={changeZoom}
           createNodeByPortOrEdge={createNodeByPortOrEdge}
+          insertNodeBetween={insertNodeBetween}
           onSaveNode={handleSaveNode}
           onClickBlank={handleClickBlank}
           onInit={handleInitLoading}
