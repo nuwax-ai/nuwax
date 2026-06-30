@@ -27,8 +27,6 @@ export interface AgentInterventionHandlersOverride {
     interaction: McpAskInteraction,
     payload: McpAskRespondPayload,
   ) => Promise<string | null | undefined>;
-  runStopConversation: (conversationId: string) => Promise<unknown>;
-  isConversationActive: boolean;
 }
 
 export interface UseAgentInterventionLayerOptions {
@@ -171,7 +169,6 @@ export function useAgentInterventionLayer(
   options: UseAgentInterventionLayerOptions,
 ): UseAgentInterventionLayerResult {
   const {
-    conversationId,
     agentId,
     messageList,
     initialAgentMode,
@@ -259,29 +256,15 @@ export function useAgentInterventionLayer(
     conversationInfoModel.respondAcpPermission;
   const respondMcpAsk =
     interventionHandlers?.respondMcpAsk ?? conversationInfoModel.respondMcpAsk;
-  const runStopConversation =
-    interventionHandlers?.runStopConversation ??
-    conversationInfoModel.runStopConversation;
-  const isConversationActive =
-    interventionHandlers?.isConversationActive ??
-    conversationInfoModel.isConversationActive;
-
-  const cancelActiveConversation = useCallback(async () => {
-    if (!isConversationActive || !conversationId) {
-      return;
-    }
-    await runStopConversation(String(conversationId));
-  }, [conversationId, isConversationActive, runStopConversation]);
 
   const handleRespondMcpAsk = useCallback(
     async (interaction: McpAskInteraction, payload: McpAskRespondPayload) => {
-      await cancelActiveConversation();
       const resumeMessage = await respondMcpAsk(interaction, payload);
       if (resumeMessage) {
         onSendMessage(resumeMessage);
       }
     },
-    [cancelActiveConversation, respondMcpAsk, onSendMessage],
+    [respondMcpAsk, onSendMessage],
   );
 
   return {

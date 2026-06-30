@@ -225,17 +225,13 @@ export function useConversationAgentChatSession(
   const agentTaskExecuting =
     conversationInfo?.taskStatus === TaskStatus.EXECUTING;
 
-  const streamActive = agentStreamActive || agentTaskExecuting;
-
   /** 预览 Tab 使用 conversationAgent model，干预回执需与左侧主会话隔离 */
   const interventionHandlers = useMemo<AgentInterventionHandlersOverride>(
     () => ({
       respondAcpPermission,
       respondMcpAsk,
-      runStopConversation: (id: string) => runStopConversation(id),
-      isConversationActive: streamActive,
     }),
-    [respondAcpPermission, respondMcpAsk, runStopConversation, streamActive],
+    [respondAcpPermission, respondMcpAsk],
   );
 
   return {

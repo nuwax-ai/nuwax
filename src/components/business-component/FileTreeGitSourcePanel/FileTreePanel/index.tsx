@@ -185,7 +185,9 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
             : () => handleCreateFolder(resolveCreateParentNode())
         }
         onUpload={
-          readOnly ? undefined : () => void handleUploadMultipleFiles(null)
+          readOnly
+            ? undefined
+            : () => void handleUploadMultipleFiles(resolveCreateParentNode())
         }
         onCollapseAll={() => fileTreeRef.current?.collapseAll()}
         onRefresh={
