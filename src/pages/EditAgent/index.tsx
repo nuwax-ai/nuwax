@@ -91,7 +91,7 @@ import React, {
 import { history, useLocation, useModel, useParams } from 'umi';
 import PagePreviewIframe from '../../components/business-component/PagePreviewIframe';
 import AgentArrangeConfig from './AgentArrangeConfig';
-import AgentFlowCanvas from './AgentFlowCanvas';
+import AgentFlowCanvas, { type AgentFlowCanvasRef } from './AgentFlowCanvas';
 import AgentHeader from './AgentHeader';
 import AgentModelSetting from './AgentModelSetting';
 import ArrangeTitle from './ArrangeTitle';
@@ -124,6 +124,7 @@ const EditAgent: React.FC = () => {
   const [agentConfigInfo, setAgentConfigInfo] = useState<AgentConfigInfo>();
   const [promptVariables, setPromptVariables] = useState<PromptVariable[]>([]);
   const [promptTools, setPromptTools] = useState<AgentComponentInfo[]>([]);
+  const agentFlowCanvasRef = useRef<AgentFlowCanvasRef>(null);
   const {
     cardList,
     showType,
@@ -296,6 +297,13 @@ const EditAgent: React.FC = () => {
     },
     [],
   );
+
+  // 记忆区变量弹窗确认后，AgentFlow 重新拉取关联工作流
+  const handleMemoryVariablesConfirmed = useCallback(() => {
+    if (isFlowAgent) {
+      void agentFlowCanvasRef.current?.refreshWorkflow();
+    }
+  }, [isFlowAgent]);
 
   // 处理工具列表变化，同步到 promptTools
   const handleToolsChange = useCallback(
@@ -1212,6 +1220,7 @@ const EditAgent: React.FC = () => {
                         {/* AgentFlow 画布（自带全屏）：位于系统提示词之前，与提示词同处编排流 */}
                         {isFlowAgent && agentFlowWorkflowId && (
                           <AgentFlowCanvas
+                            ref={agentFlowCanvasRef}
                             workflowId={agentFlowWorkflowId}
                             spaceId={spaceId}
                           />
@@ -1241,6 +1250,7 @@ const EditAgent: React.FC = () => {
                   agentConfigInfo={agentConfigInfo}
                   onChangeAgent={handleChangeAgent}
                   onVariablesChange={handleVariablesChange}
+                  onMemoryVariablesConfirmed={handleMemoryVariablesConfirmed}
                   onToolsChange={handleToolsChange}
                 />
               </div>
