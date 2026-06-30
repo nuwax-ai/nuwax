@@ -1475,6 +1475,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.AgentArrangeCreateHooks.deleteSuccess": "削除しました",
   "PC.Pages.AgentArrangeCreateHooks.searchPlaceholder": "検索...",
   "PC.Pages.AgentArrangeCreateHooks.title": "Hook 設定",
+  "PC.Pages.AgentArrangeCreateHooks.titleTooltip": "OpenAI プロトコルモデルがサポートするイベント：PreToolUse、PostToolUse、PostToolUseFailure、SessionStart、SessionEnd、Stop",
   "PC.Pages.AgentArrangeCreateHooks.updateSuccess": "更新しました",
   "PC.Pages.AgentArrangeConfig.addHook": "Hook を追加",
   "PC.Pages.AgentArrangeConfig.hook": "Hook 設定",

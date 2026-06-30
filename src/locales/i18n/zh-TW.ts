@@ -1501,6 +1501,7 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.AgentArrangeCreateHooks.deleteSuccess": "刪除成功",
   "PC.Pages.AgentArrangeCreateHooks.searchPlaceholder": "搜尋...",
   "PC.Pages.AgentArrangeCreateHooks.title": "Hook 設定",
+  "PC.Pages.AgentArrangeCreateHooks.titleTooltip": "OpenAI 協議模型支援的事件範圍：PreToolUse、PostToolUse、PostToolUseFailure、SessionStart、SessionEnd、Stop",
   "PC.Pages.AgentArrangeCreateHooks.updateSuccess": "更新成功",
   "PC.Pages.AgentArrangeConfig.addHook": "新增 Hook",
   "PC.Pages.AgentArrangeConfig.hook": "Hook 設定",
