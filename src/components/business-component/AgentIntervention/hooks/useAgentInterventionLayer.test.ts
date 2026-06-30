@@ -6,8 +6,6 @@ import { useAgentInterventionLayer } from './useAgentInterventionLayer';
 const conversationInfoHandlers = {
   respondAcpPermission: vi.fn(),
   respondMcpAsk: vi.fn().mockResolvedValue('resume-from-conversation-info'),
-  runStopConversation: vi.fn().mockResolvedValue(undefined),
-  isConversationActive: true,
 };
 
 vi.mock('umi', () => ({
@@ -50,7 +48,6 @@ describe('useAgentInterventionLayer', () => {
   it('uses injected interventionHandlers for isolated session sources', async () => {
     const onSendMessage = vi.fn();
     const respondMcpAsk = vi.fn().mockResolvedValue('resume-from-preview');
-    const runStopConversation = vi.fn().mockResolvedValue(undefined);
 
     const { result } = renderHook(() =>
       useAgentInterventionLayer({
@@ -60,8 +57,6 @@ describe('useAgentInterventionLayer', () => {
         interventionHandlers: {
           respondAcpPermission: vi.fn(),
           respondMcpAsk,
-          runStopConversation,
-          isConversationActive: true,
         },
       }),
     );
@@ -79,7 +74,6 @@ describe('useAgentInterventionLayer', () => {
 
     expect(respondMcpAsk).toHaveBeenCalled();
     expect(conversationInfoHandlers.respondMcpAsk).not.toHaveBeenCalled();
-    expect(runStopConversation).toHaveBeenCalledWith('99');
     expect(onSendMessage).toHaveBeenCalledWith('resume-from-preview');
   });
 
