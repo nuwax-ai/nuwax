@@ -83,6 +83,7 @@ const Home: React.FC = () => {
   const [selectedComputerId, setSelectedComputerId] = useState<string>('-1');
   const [selectedModelId, setSelectedModelId] = useState<number>();
   const [selectedSpaceId, setSelectedSpaceId] = useState<number>();
+  const [agentMode, setAgentMode] = useState<AgentMode>('yolo');
   const [activeTab, setActiveTab] = useState<string>();
   const [loading, setLoading] = useState<boolean>(false);
   const [recommendNavList, setRecommendNavList] = useState<
@@ -320,6 +321,8 @@ const Home: React.FC = () => {
               : undefined
           }
           onClearSelectedTag={() => setSelectedRecommend(undefined)}
+          agentMode={agentMode}
+          onAgentModeChange={setAgentMode}
           showAgentModeSelector={
             agentDetail?.allowChooseMode === DefaultSelectedEnum.Yes
           }
