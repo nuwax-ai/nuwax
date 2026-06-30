@@ -1258,6 +1258,10 @@ const EditAgent: React.FC = () => {
                             onRefreshFileTree={() =>
                               refreshFileListImmediately(devConversationId)
                             }
+                            // 刷新后目标文件不存在时，清除会话内待选文件，避免空树死循环
+                            onSelectedFileMissing={() => {
+                              setTaskAgentSelectedFileId('');
+                            }}
                             // VNC 空闲检测配置（仅通用型智能体启用）
                             idleDetection={{
                               enabled:

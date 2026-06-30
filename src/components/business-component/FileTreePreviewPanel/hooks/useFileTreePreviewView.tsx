@@ -241,6 +241,25 @@ export function useFileTreePreviewView(
     fileId: string;
     trigger?: number | string;
   } | null>(null);
+  /** 是否已发起过文件树拉取（用于区分「初始空数组」与「接口已返回空列表」） */
+  const fileTreeFetchStartedRef = useRef(false);
+  /** 是否已至少完成一次文件树拉取（含成功返回空列表） */
+  const fileTreeFetchResolvedRef = useRef(false);
+
+  useEffect(() => {
+    fileTreeFetchStartedRef.current = false;
+    fileTreeFetchResolvedRef.current = false;
+  }, [targetId]);
+
+  useEffect(() => {
+    if (fileTreeDataLoading) {
+      fileTreeFetchStartedRef.current = true;
+      return;
+    }
+    if (fileTreeFetchStartedRef.current) {
+      fileTreeFetchResolvedRef.current = true;
+    }
+  }, [fileTreeDataLoading]);
 
   useEffect(() => {
     filesRef.current = files;
@@ -760,13 +779,28 @@ export function useFileTreePreviewView(
 
     const isFileTreeFetchInFlight =
       Boolean(fileTreeDataLoading) || isRefreshingFileTreeRef.current;
-    /** 父级已拿到 flat 列表，本地 files 可能尚在 originalFiles → tree 的转换中 */
-    const hasFetchedOriginalFiles = Boolean(originalFiles?.length);
+    /**
+     * 父级是否已完成至少一次文件树拉取。
+     * 不能只靠 originalFiles.length：接口成功返回空列表时 length 为 0，
+     * 若仍视为「未拉取」会与 isPendingRetry 形成无限 refresh 循环。
+     */
+    const hasFetchedOriginalFiles =
+      Boolean(originalFiles?.length) || fileTreeFetchResolvedRef.current;
+
+    /** 拉取已完成但文件树仍为空，放弃自动选中并通知外部清理 */
+    const abandonAutoSelectWhenTreeEmpty = () => {
+      pendingTaskAgentAutoSelectRef.current = null;
+      prevTaskAgentSelectedFileIdRef.current = taskAgentSelectedFileId;
+      if (taskAgentSelectTrigger !== undefined) {
+        prevTaskAgentSelectTriggerRef.current = taskAgentSelectTrigger;
+      }
+      onSelectedFileMissingRef.current?.(taskAgentSelectedFileId);
+    };
 
     /**
      * 按需刷新文件树，避免与 openPreviewView.forceRefresh 重复调用同一接口。
      * - 正在加载 / 刷新中：跳过
-     * - originalFiles 已有数据：等待 files 同步后再选中，不再二次请求
+     * - 已完成拉取（含空列表）：不再二次请求
      */
     const requestFileTreeRefreshIfNeeded = () => {
       if (isFileTreeFetchInFlight || hasFetchedOriginalFiles) {
@@ -778,6 +812,14 @@ export function useFileTreePreviewView(
     // 本地树尚未构建：记录 pending，必要时触发一次刷新；files 更新后依赖项变化会重入
     if (!files?.length) {
       if (isTriggerUpdate || isPendingRetry || hasSelectionChanged) {
+        if (
+          hasFetchedOriginalFiles &&
+          !originalFiles?.length &&
+          !isFileTreeFetchInFlight
+        ) {
+          abandonAutoSelectWhenTreeEmpty();
+          return;
+        }
         pendingTaskAgentAutoSelectRef.current = {
           fileId: taskAgentSelectedFileId,
           trigger: taskAgentSelectTrigger,
@@ -821,6 +863,10 @@ export function useFileTreePreviewView(
     }
 
     // 目标不在当前树中（例如新产出文件）：尝试刷新后再选
+    if (hasFetchedOriginalFiles) {
+      abandonAutoSelectWhenTreeEmpty();
+      return;
+    }
     requestFileTreeRefreshIfNeeded();
   }, [
     taskAgentSelectedFileId,
