@@ -43,6 +43,14 @@ export function useUnifiedChatScroll({
     externalAllowAutoScrollRef || internalAllowAutoScrollRef;
   const lastMsgCountRef = useRef<number>(0);
   const lastTextLengthRef = useRef<number>(0);
+  // 记录上一轮最后一条消息是否处于流式（loading/incomplete）状态。
+  // 会话结束时末条消息会从流式态切换到完成态（stopped/complete），
+  // 此时 DOM 高度会因状态切换、processingList 渲染、markdown 排版等再次变化，
+  // 但文本长度已不再增长，需要单独识别这一切换并补触发一次置底。
+  const lastWasStreamingRef = useRef<boolean>(false);
+  // 记录上一轮 isConversationActive，用于检测会话结束的下降沿。
+  // isConversationActive 从 true → false 是会话结束的可靠信号。
+  const prevConvActiveRef = useRef<boolean>(isConversationActive);
   const internalScrollTimeoutRef = useRef<any>(null);
   const scrollTimeoutRef = externalScrollTimeoutRef || internalScrollTimeoutRef;
   const programmaticTimerRef = useRef<any>(null);
@@ -128,8 +136,18 @@ export function useUnifiedChatScroll({
       shouldScroll = true;
     }
 
+    // 会话结束兜底：末条消息从流式态切换到完成态时，文本已不再增长，但 DOM 会因
+    // 状态切换(loading->stopped/complete)、processingList 渲染、markdown 排版等再次撑高，
+    // 此时需要补触发一次置底，避免会话结束后视图停在偏上位置、没有顶到底部。
+    const justFinishedStreaming =
+      lastWasStreamingRef.current && !isStreaming && msgCount > 0;
+    if (justFinishedStreaming) {
+      shouldScroll = true;
+    }
+
     lastMsgCountRef.current = msgCount;
     lastTextLengthRef.current = textLength;
+    lastWasStreamingRef.current = isStreaming;
 
     if (shouldScroll && allowAutoScrollRef.current) {
       const element = messageViewRef.current;
@@ -156,7 +174,9 @@ export function useUnifiedChatScroll({
 
         performScroll();
 
-        if (isFirstMessageLoad) {
+        // 会话结束(isFirstMessageLoad / justFinishedStreaming)时，markdown/图片/processingList
+        // 等异步渲染会持续撑高 DOM，需要多级延迟兜底确保最终顶到底部。
+        if (isFirstMessageLoad || justFinishedStreaming) {
           const t1 = setTimeout(() => {
             if (allowAutoScrollRef.current) performScroll();
           }, 150);
@@ -236,6 +256,53 @@ export function useUnifiedChatScroll({
       };
     }
   }, [isLoading, messageList.length]);
+
+  // 会话结束兜底：isConversationActive 从 true → false 时触发多级延迟置底。
+  // 关键设计：此 effect 仅依赖 [isConversationActive]，不会被 onClose 中 messageList
+  // 变更触发的重渲染 cleanup，确保延迟滚动定时器能完整执行。
+  useEffect(() => {
+    const wasActive = prevConvActiveRef.current;
+    prevConvActiveRef.current = isConversationActive;
+
+    // 仅在活跃→非活跃下降沿、且有消息、且允许自动滚动时触发
+    if (!wasActive || isConversationActive) {
+      return;
+    }
+    if (messageList.length === 0 || !allowAutoScrollRef.current) {
+      return;
+    }
+
+    const doScroll = () => {
+      const el = messageViewRef.current;
+      if (!el || !allowAutoScrollRef.current) return;
+      if (programmaticTimerRef.current) {
+        clearTimeout(programmaticTimerRef.current);
+      }
+      (el as any).__isProgrammaticScroll = true;
+      el.scrollTo({ top: el.scrollHeight, behavior: 'instant' });
+      programmaticTimerRef.current = setTimeout(() => {
+        if (messageViewRef.current) {
+          (messageViewRef.current as any).__isProgrammaticScroll = false;
+        }
+        programmaticTimerRef.current = null;
+      }, 100);
+    };
+
+    // 会话结束后 markdown/图片/processingList 等异步渲染会持续撑高 DOM，
+    // 需要多级延迟兜底确保最终顶到底部
+    doScroll();
+    const delays = [100, 250, 500, 900, 1500];
+    const timers = delays.map((d) =>
+      setTimeout(() => {
+        if (allowAutoScrollRef.current) doScroll();
+      }, d),
+    );
+
+    return () => {
+      timers.forEach(clearTimeout);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isConversationActive]);
 
   // 向上滚动加载更多历史消息时的滚动锁定机制
   const lastScrollHeightRef = useRef<number>(0);
