@@ -104,6 +104,10 @@ export const checkNodeModified = (
     ...currentNode,
     ...formValues,
     name: currentNode.name,
+    // 顶层 description 与 form 解耦（form 可能注册了 description 但值为 null），
+    // 否则 ...formValues 会让 nextNode.description ≠ currentNode.description，
+    // 误判为有改动、进而打开即触发保存接口。
+    description: currentNode.description,
     nodeConfig: {
       ...currentNode.nodeConfig,
       ...formValues,
