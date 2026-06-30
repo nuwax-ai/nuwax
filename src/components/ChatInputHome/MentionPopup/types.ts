@@ -251,4 +251,6 @@ export interface MentionEditorHandle {
   clear: () => void;
   /** 处理从弹窗中选择提及项 */
   handleAtIconMentionSelect: (item: MentionItem) => void;
+  /** 获取焦点 */
+  focus?: () => void;
 }
