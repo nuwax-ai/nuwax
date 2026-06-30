@@ -9,6 +9,10 @@ import {
 
 import type { ITheme } from '@xterm/xterm';
 import {
+  DISABLE_TERMINAL_MOUSE_TRACKING,
+  shouldForwardTerminalInput,
+} from './terminalMouseUtils';
+import {
   DEFAULT_TERMINAL_RECONNECT,
   getTerminalMaxRetries,
   getTerminalReconnectDelay,
@@ -190,16 +194,22 @@ const EmbeddedConsoleTerminal = forwardRef<
         const term = terminalRef.current;
         if (!term || ws.readyState !== WebSocket.OPEN) return;
 
-        if (!isViewportMeasurable()) {
-          return;
-        }
-
         let { cols, rows } = term;
         if (cols <= 0 || rows <= 0) {
-          if (!options?.allowFallbackDimensions) {
-            return;
+          if (isViewportMeasurable()) {
+            try {
+              fitAddonRef.current?.fit();
+            } catch {
+              /* ignore */
+            }
+            ({ cols, rows } = term);
           }
-          ({ cols, rows } = ensureDimensions(term));
+          if (cols <= 0 || rows <= 0) {
+            if (!options?.allowFallbackDimensions) {
+              return;
+            }
+            ({ cols, rows } = ensureDimensions(term));
+          }
         }
 
         if (wireProtocol === 'ttyd') {
@@ -219,21 +229,10 @@ const EmbeddedConsoleTerminal = forwardRef<
       [isViewportMeasurable],
     );
 
-    const fitAndSyncBackend = useCallback(() => {
-      if (!isViewportMeasurable()) {
-        pendingFocusRef.current = true;
-        return;
-      }
-      try {
-        fitAddonRef.current?.fit();
-      } catch {
-        /* ignore */
-      }
-      const ws = wsRef.current;
-      if (ws?.readyState === WebSocket.OPEN) {
-        syncBackendSize(ws, { sendTtydInit: !ttydInitSentRef.current });
-      }
-    }, [isViewportMeasurable, syncBackendSize]);
+    /** 重置 xterm 本地鼠标追踪状态，避免 shell 提示符下点击/滚轮产生乱码输入 */
+    const resetLocalMouseTracking = useCallback(() => {
+      terminalRef.current?.write(DISABLE_TERMINAL_MOUSE_TRACKING);
+    }, []);
 
     const focusTerminal = useCallback(() => {
       const term = terminalRef.current;
@@ -250,6 +249,31 @@ const EmbeddedConsoleTerminal = forwardRef<
       pendingFocusRef.current = false;
     }, []);
 
+    const fitAndSyncBackend = useCallback(() => {
+      const ws = wsRef.current;
+      const term = terminalRef.current;
+      if (!term || ws?.readyState !== WebSocket.OPEN) {
+        if (!isViewportMeasurable()) {
+          pendingFocusRef.current = true;
+        }
+        return;
+      }
+
+      if (isViewportMeasurable()) {
+        try {
+          fitAddonRef.current?.fit();
+        } catch {
+          /* ignore */
+        }
+      }
+
+      syncBackendSize(ws, {
+        sendTtydInit: !ttydInitSentRef.current,
+        allowFallbackDimensions: true,
+      });
+      focusTerminal();
+    }, [focusTerminal, isViewportMeasurable, syncBackendSize]);
+
     const restoreAfterVisibilityChange = useCallback(() => {
       scheduleFitWhenVisible(
         () => viewportRef.current,
@@ -265,7 +289,7 @@ const EmbeddedConsoleTerminal = forwardRef<
           const term = terminalRef.current;
           if (ws?.readyState === WebSocket.OPEN) {
             syncBackendSize(ws, {
-              sendTtydInit: false,
+              sendTtydInit: !ttydInitSentRef.current,
               allowFallbackDimensions: true,
             });
           }
@@ -325,14 +349,21 @@ const EmbeddedConsoleTerminal = forwardRef<
             return;
           }
           try {
-            ws.send(encodeTtydResize(cols, rows));
+            if (!ttydInitSentRef.current) {
+              syncBackendSize(ws, {
+                sendTtydInit: true,
+                allowFallbackDimensions: true,
+              });
+            } else {
+              ws.send(encodeTtydResize(cols, rows));
+            }
           } catch (err) {
             console.warn('[EmbeddedTerminal] Heartbeat send failed:', err);
             ws.close();
           }
         }
       }, interval);
-    }, [isViewportMeasurable, stopHeartbeat, wireProtocol]);
+    }, [isViewportMeasurable, stopHeartbeat, syncBackendSize, wireProtocol]);
 
     const clearReconnectTimer = useCallback(() => {
       if (reconnectTimerRef.current) {
@@ -423,6 +454,7 @@ const EmbeddedConsoleTerminal = forwardRef<
                 sendTtydInit: true,
                 allowFallbackDimensions: true,
               });
+              resetLocalMouseTracking();
               const pending = pendingWritesRef.current.splice(0);
               const term = terminalRef.current;
               if (term && pending.length > 0) {
@@ -432,15 +464,29 @@ const EmbeddedConsoleTerminal = forwardRef<
               }
               focusTerminal();
               onConnectRef.current?.();
-              // 父组件 onConnect 可能写入提示行，延迟再 fit + focus 确保可输入
+              // 父组件 onConnect 可能写入提示行，延迟再 fit + init + focus 确保重连后可输入
               scheduleFitWhenVisible(
                 () => viewportRef.current,
                 () => fitAddonRef.current?.fit(),
                 () => {
-                  syncBackendSize(ws, { sendTtydInit: false });
+                  syncBackendSize(ws, {
+                    sendTtydInit: !ttydInitSentRef.current,
+                    allowFallbackDimensions: true,
+                  });
+                  resetLocalMouseTracking();
                   focusTerminal();
                 },
               );
+              window.setTimeout(() => {
+                if (ws.readyState !== WebSocket.OPEN) {
+                  return;
+                }
+                syncBackendSize(ws, {
+                  sendTtydInit: !ttydInitSentRef.current,
+                  allowFallbackDimensions: true,
+                });
+                focusTerminal();
+              }, 300);
             },
           );
         };
@@ -570,6 +616,10 @@ const EmbeddedConsoleTerminal = forwardRef<
       terminalReadyRef.current = true;
 
       term.onData((data) => {
+        const termInstance = terminalRef.current;
+        if (termInstance && !shouldForwardTerminalInput(termInstance, data)) {
+          return;
+        }
         if (wsRef.current?.readyState === WebSocket.OPEN) {
           if (wireProtocol === 'ttyd') {
             wsRef.current.send(encodeTtydInput(data));
