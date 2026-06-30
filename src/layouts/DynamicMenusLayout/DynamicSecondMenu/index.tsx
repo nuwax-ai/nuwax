@@ -15,9 +15,11 @@ import { AllowDevelopEnum, SpaceTypeEnum } from '@/types/enums/space';
 import { message } from 'antd';
 import {
   handleOpenUrl,
+  isHttpMenuPath,
   isOpenIframePath,
   navigateOpenIframePath,
   normalizeMenuPathname,
+  resolveSiteUrlPath,
   updatePathUrlToLocalStorage,
 } from '../utils';
 
@@ -259,8 +261,8 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
   // 处理路径URL路径跳转
   const handlePathUrl = (menu: MenuItemDto) => {
     const { path = '' } = menu;
-    // http开头的路径，直接打开
-    if (path?.includes('http')) {
+    // http 或 %siteUrl% 开头的路径，直接打开
+    if (isHttpMenuPath(path)) {
       handleOpenUrl(menu, parentCode);
       return;
     }
@@ -324,7 +326,7 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
     (path?: string) => {
       if (!path) return false;
 
-      let targetPath = path;
+      let targetPath = resolveSiteUrlPath(path);
 
       // 如果路径包含 ?url=，则直接比较路径,说明是应用内打开的外部链接
       if (location.search?.includes('?url=')) {
@@ -457,7 +459,7 @@ const DynamicSecondMenu: React.FC<DynamicSecondMenuProps> = ({
           continue;
         }
 
-        const rawMenuPath = stripQueryAndHash(currentPath);
+        const rawMenuPath = stripQueryAndHash(resolveSiteUrlPath(currentPath));
 
         // 1) menu.path 是完整 URL：做“完全匹配”（如果 target 也是 URL）
         if (isHttpUrl(rawMenuPath)) {
