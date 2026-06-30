@@ -48,6 +48,7 @@ import SpaceSection from './SpaceSection';
 import SquareSection from './SquareSection';
 import {
   handleOpenUrl,
+  isHttpMenuPath,
   isOpenIframePath,
   navigateOpenIframePath,
   normalizeMenuPathname,
@@ -451,7 +452,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
       if (menu.code === 'new_conversation') {
         // 如果用户匹配了路径，则处理路径，否则按照原逻辑创建智能体会话
         if (menu.path) {
-          if (menu.path.includes('http')) {
+          if (isHttpMenuPath(menu.path)) {
             handleOpenUrl(menu);
           } else {
             history.push(menu.path);
@@ -469,8 +470,8 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
 
       // 设置当前激活的菜单
       setActiveTab(menu.code || '');
-      // http开头的路径，直接打开
-      if (menu.path?.includes('http')) {
+      // http 或 %siteUrl% 开头的路径，直接打开
+      if (menu.path && isHttpMenuPath(menu.path)) {
         handleOpenUrl(menu);
         return;
       }
@@ -525,8 +526,8 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
         // 递归查找第一个有 path 的子菜单
         const firstPathMenu = findFirstChildWithPath(menu);
         if (firstPathMenu) {
-          // http开头的路径，直接打开
-          if (firstPathMenu.path?.includes('http')) {
+          // http 或 %siteUrl% 开头的路径，直接打开
+          if (firstPathMenu.path && isHttpMenuPath(firstPathMenu.path)) {
             handleOpenUrl(firstPathMenu);
             return;
           }
