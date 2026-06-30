@@ -633,13 +633,17 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
             cursorBlink
             reconnect={DEFAULT_TERMINAL_RECONNECT}
             onConnect={() => {
+              const isReconnect = terminalConnectedOnceRef.current;
               terminalConnectedRef.current = true;
               terminalConnectedOnceRef.current = true;
               setShowTerminalReconnect(false);
+              if (isReconnect) {
+                terminalRef.current?.getTerminal()?.write('\r\n');
+              }
               terminalRef.current?.writeln(
                 '\x1b[1;38;2;22;163;74m[Terminal connected]\x1b[0m',
               );
-              // 重连后多轮 restore：fit → ttyd resize/init → focus，避免 idle 断连后无法输入
+              // 重连后 fit + focus；shell 提示符由 EmbeddedConsoleTerminal 内 requestShellPrompt 补发
               terminalRef.current?.restoreAfterVisibilityChange();
               window.setTimeout(
                 () => terminalRef.current?.restoreAfterVisibilityChange(),
@@ -652,6 +656,7 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
             }}
             onDisconnect={() => {
               terminalConnectedRef.current = false;
+              terminalRef.current?.getTerminal()?.write('\r\n');
               terminalRef.current?.writeln(
                 '\x1b[1;38;2;220;38;38m[Terminal disconnected]\x1b[0m',
               );
