@@ -20,6 +20,14 @@ const cx = classNames.bind(styles);
 
 const ITEM_HEIGHT = 58; // 列表项重构后高度增加
 
+const componentCache = {
+  list: null as ConversationInfo[] | null,
+  hasMore: true,
+  keyword: '',
+  searchKeyword: '',
+  scrollTop: 0,
+};
+
 const NewHomeSection: React.FC<{
   style?: React.CSSProperties;
 }> = ({ style }) => {
@@ -31,11 +39,17 @@ const NewHomeSection: React.FC<{
   const { handleCloseMobileMenu } = useModel('layout');
   const { firstLevelMenus } = useModel('menuModel');
 
-  const [localList, setLocalList] = useState<ConversationInfo[]>([]);
+  const [localList, setLocalList] = useState<ConversationInfo[]>(
+    componentCache.list || [],
+  );
   const [loading, setLoading] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
-  const [keyword, setKeyword] = useState('');
-  const [searchKeyword, setSearchKeyword] = useState('');
+  const [hasMore, setHasMore] = useState(
+    componentCache.list ? componentCache.hasMore : true,
+  );
+  const [keyword, setKeyword] = useState(componentCache.keyword);
+  const [searchKeyword, setSearchKeyword] = useState(
+    componentCache.searchKeyword,
+  );
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const listInnerRef = useRef<HTMLDivElement>(null);
   const initializedRef = useRef(false);
@@ -110,22 +124,54 @@ const NewHomeSection: React.FC<{
     loadListRef.current = loadList;
   }, [loadList]);
 
+  const stateRef = useRef({ localList, hasMore, keyword, searchKeyword });
+  stateRef.current = { localList, hasMore, keyword, searchKeyword };
+
   useEffect(() => {
     if (!initializedRef.current) {
       initializedRef.current = true;
-      loadList(true);
+      if (componentCache.list) {
+        loadList(true, { silent: true });
+        setTimeout(() => {
+          if (scrollContainerRef.current && componentCache.scrollTop) {
+            scrollContainerRef.current.scrollTop = componentCache.scrollTop;
+          }
+        }, 0);
+      } else {
+        loadList(true);
+      }
     }
+
+    return () => {
+      componentCache.list = stateRef.current.localList;
+      componentCache.hasMore = stateRef.current.hasMore;
+      componentCache.keyword = stateRef.current.keyword;
+      componentCache.searchKeyword = stateRef.current.searchKeyword;
+      if (scrollContainerRef.current) {
+        componentCache.scrollTop = scrollContainerRef.current.scrollTop;
+      }
+    };
   }, []);
 
+  const prevPathnameRef = useRef(location.pathname);
   useEffect(() => {
     if (!initializedRef.current) return;
 
+    const isHomeRoute = location.pathname.startsWith('/home');
+    const wasHomeRoute = prevPathnameRef.current.startsWith('/home');
+
     if (location.pathname === '/home') {
-      loadListRef.current(true);
+      // 点击菜单回到首页，静默更新并回到顶部
+      loadListRef.current(true, { silent: true });
       if (scrollContainerRef.current) {
         scrollContainerRef.current.scrollTop = 0;
       }
+    } else if (isHomeRoute && !wasHomeRoute) {
+      // 从其他页面（如 /space）切回到 /home/chat 页面，即使组件未销毁也应当静默更新一次
+      loadListRef.current(true, { silent: true });
     }
+
+    prevPathnameRef.current = location.pathname;
   }, [location.pathname, location.state]);
 
   useEffect(() => {
@@ -209,7 +255,12 @@ const NewHomeSection: React.FC<{
     };
   }, []);
 
+  const isFirstSearchKeywordEffect = useRef(true);
   useEffect(() => {
+    if (isFirstSearchKeywordEffect.current) {
+      isFirstSearchKeywordEffect.current = false;
+      return;
+    }
     if (!initializedRef.current) return;
     setHasMore(true);
     setLocalList([]);
