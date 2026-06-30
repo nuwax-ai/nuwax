@@ -51,29 +51,6 @@ export function isMcpAskFailedComponent(
   );
 }
 
-/**
- * 持久化 tool call 已成功结束，说明 ask-question 已被用户处理过。
- */
-export function isMcpAskCompletedComponent(
-  component: McpAskExecutedComponent,
-): boolean {
-  if (isMcpAskFailedComponent(component)) {
-    return false;
-  }
-
-  const status = readComponentStatus(component).toUpperCase();
-  if (
-    status === 'SUCCESS' ||
-    status === 'FINISHED' ||
-    status === 'COMPLETED' ||
-    status === 'SUCCEEDED'
-  ) {
-    return true;
-  }
-
-  return component.success === true || component.result?.success === true;
-}
-
 export function resolveMcpAskHydratedResponseStatus(
   component: McpAskExecutedComponent,
 ): McpAskInteraction['responseStatus'] {

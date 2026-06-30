@@ -276,14 +276,22 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
     );
   }, [innerProcessing.status, detailData]);
 
-  const handleOpenFileTree = useCallback(() => {
+  const handleOpenFileTree = useCallback(async () => {
     const result = innerProcessing.result as any;
     // 打开文件树
     if (result?.kind === 'edit') {
       const conversationId = props.conversationId;
       const file_path = result?.input?.file_path;
 
-      openPreviewView(conversationId);
+      if (
+        !file_path ||
+        conversationId === undefined ||
+        conversationId === null
+      ) {
+        return;
+      }
+
+      await openPreviewView(Number(conversationId), { forceRefresh: true });
       setTaskAgentSelectedFileId(file_path);
       // 每次点击时更新触发标志，确保即使文件ID相同也能触发文件选择
       setTaskAgentSelectTrigger(Date.now());

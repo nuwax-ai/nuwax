@@ -1,5 +1,20 @@
 import { describe, expect, it } from 'vitest';
-import { resolveAgentFlowWorkflowNodeDescription } from '../resolveNodePresentation';
+import {
+  resolveAgentFlowWorkflowNodeDescription,
+  resolveNodeDescriptionWithNameFallback,
+} from '../resolveNodePresentation';
+
+describe('resolveNodeDescriptionWithNameFallback', () => {
+  it('描述为空时回退到名称', () => {
+    expect(resolveNodeDescriptionWithNameFallback('产品知识库', '')).toBe(
+      '产品知识库',
+    );
+  });
+
+  it('名称与描述均为空时返回空字符串', () => {
+    expect(resolveNodeDescriptionWithNameFallback('', '')).toBe('');
+  });
+});
 
 describe('resolveAgentFlowWorkflowNodeDescription', () => {
   it('优先使用非空描述', () => {

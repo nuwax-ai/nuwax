@@ -220,9 +220,34 @@ export function serializeHitlNodeConfig(
 }
 
 /**
+ * 节点外壳字段：与 nodeConfig 内业务字段同名时仍保留在顶层（如 KnowledgeInsert 的 name/description
+ * 在 nodeConfig 表示知识库绑定，顶层表示节点展示名，二者语义不同不可剥离）。
+ */
+const NODE_ENVELOPE_KEYS = new Set([
+  'id',
+  'name',
+  'description',
+  'workflowId',
+  'type',
+  'shape',
+  'icon',
+  'preNodes',
+  'nextNodes',
+  'nextNodeIds',
+  'innerNodes',
+  'innerStartNodeId',
+  'innerEndNodeId',
+  'unreachableNextNodeIds',
+  'modified',
+  'created',
+  'loopNodeId',
+  'typeId',
+]);
+
+/**
  * 保存前节点预处理（供 WorkflowSaveService / workflowProxyV3 共用）：
  * - HumanInteraction：扁平化 QA 字段（formArgs/selectConfig 等）
- * - 通用：剥离 modelConfig、节点顶层重复配置字段
+ * - 通用：剥离 modelConfig、节点顶层重复配置字段（外壳字段除外）
  */
 export function prepareNodeForBackendSerialize<
   T extends { type?: any; nodeConfig?: any },
@@ -255,7 +280,8 @@ export function prepareNodeForBackendSerialize<
   const cleaned: Record<string, any> = {};
   for (const [k, v] of Object.entries(node)) {
     if (k === 'nodeConfig') continue;
-    if (configKeys.has(k)) continue;
+    // 外壳字段始终保留在顶层；仅剥离误挂在顶层的 nodeConfig 业务字段
+    if (configKeys.has(k) && !NODE_ENVELOPE_KEYS.has(k)) continue;
     cleaned[k] = v;
   }
   cleaned.nodeConfig = nc;

@@ -9,6 +9,7 @@ import type { AddNodeResponse } from '@/services/workflow';
 import { NodeTypeEnum } from '@/types/enums/common';
 import type { CreatedNodeItem } from '@/types/interfaces/common';
 import type { NodeConfig } from '@/types/interfaces/node';
+import { resolveNodeDescriptionWithNameFallback } from '../../agentFlow/resolveNodePresentation';
 
 /** 属性面板 form 需保留的知识库绑定字段（与 nodeConfig 平铺字段一致） */
 export const KNOWLEDGE_INSERT_BINDING_KEYS = [
@@ -45,10 +46,12 @@ export function pickKnowledgeInsertBinding(
 export function buildKnowledgeInsertNodeConfigOnAdd(
   val: CreatedNodeItem,
 ): NodeConfig {
+  const name = val.name;
   return {
     knowledgeBaseId: val.targetId,
-    name: val.name,
-    description: val.description,
+    name,
+    // 知识库未填描述时，绑定信息与节点展示均回退到知识库名称
+    description: resolveNodeDescriptionWithNameFallback(name, val.description),
     icon: val.icon,
     extension: {},
   };
@@ -73,10 +76,14 @@ function mergeKnowledgeInsertBinding(
     return undefined;
   }
   const api = pickKnowledgeInsertBinding(fromApi);
+  const name = api?.name ?? req.name;
   return {
     knowledgeBaseId: api?.knowledgeBaseId ?? req.knowledgeBaseId,
-    name: api?.name ?? req.name,
-    description: api?.description ?? req.description,
+    name,
+    description: resolveNodeDescriptionWithNameFallback(
+      name,
+      api?.description ?? req.description,
+    ),
     icon: api?.icon ?? req.icon,
   };
 }

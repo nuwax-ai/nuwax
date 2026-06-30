@@ -6,6 +6,7 @@ import { ReactComponent as CubeSvgFile } from '@/assets/icons/nav/cube.svg';
 import { ReactComponent as DashboardSvgFile } from '@/assets/icons/nav/dashboard.svg';
 import { ReactComponent as DocSvgFile } from '@/assets/icons/nav/doc.svg';
 import { ReactComponent as EcosystemSvgFile } from '@/assets/icons/nav/ecosystem.svg';
+import { ReactComponent as HistoryConversationSvgFile } from '@/assets/icons/nav/history_conversation.svg';
 import { ReactComponent as HomeSvgFile } from '@/assets/icons/nav/home.svg';
 import { ReactComponent as ModelSvgFile } from '@/assets/icons/nav/icons-nav-model.svg';
 import { ReactComponent as PublishManageSvgFile } from '@/assets/icons/nav/icons-nav-published.svg';
@@ -77,6 +78,7 @@ const TimeSvg = wrapSvg(TimeSvgFile);
 const ComponentsSvg = wrapSvg(ComponentsSvgFile);
 const CubeSvg = wrapSvg(CubeSvgFile);
 const RecommendManageSvg = wrapSvg(RecommendManageSvgFile);
+const HistoryConversationSvg = wrapSvg(HistoryConversationSvgFile);
 const DashboardSvg = wrapSvg(DashboardSvgFile);
 const SpaceSquareSvg = wrapSvg(SpaceSquareSvgFile);
 const RobotSvg = wrapSvg(RobotSvgFile);
@@ -121,6 +123,7 @@ export default {
   'icons-nav-components': ComponentsSvg,
   'icons-nav-cube': CubeSvg,
   'icons-nav-recommend-manage': RecommendManageSvg,
+  'icons-nav-history-conversation': HistoryConversationSvg,
   'icons-nav-dashboard': DashboardSvg,
   'icons-nav-space_square': SpaceSquareSvg,
   'icons-nav-user': UserSvg,
