@@ -7,6 +7,7 @@ import {
 import { type AgentMode } from '@/components/business-component/AgentIntervention';
 import FileTreeGitSourcePanel, {
   useSourceControl,
+  type ChangeListSection,
   type SelectedChangeFile,
 } from '@/components/business-component/FileTreeGitSourcePanel';
 import { useFileTreePreviewView } from '@/components/business-component/FileTreePreviewPanel/hooks/useFileTreePreviewView';
@@ -429,10 +430,7 @@ const ConversationAgent: React.FC = () => {
               isSync: false,
               skillIds: state.skillIds,
               modelId: state.modelId,
-              agentMode:
-                (state.agentMode as AgentMode) ||
-                (localStorage.getItem('nuwax_agent_mode_cache') as AgentMode) ||
-                'yolo',
+              agentMode: (state.agentMode as AgentMode) || 'yolo',
               data,
             });
           }
@@ -1300,6 +1298,33 @@ const ConversationAgent: React.FC = () => {
     },
   });
 
+  /**
+   * 顶部预览 Tab 切换：diff 标签需重新拉取 Git diff（与源代码管理点击一致）
+   */
+  const handlePreviewTabSelect = useCallback(
+    (tabId: string) => {
+      closeAgentDesktop();
+      if (tabId.startsWith('diff:')) {
+        const fileId = tabId.slice('diff:'.length);
+        const changeFile = fileView.changeFiles.find(
+          (item) => item.fileId === fileId,
+        );
+        const section: ChangeListSection =
+          gitSourceControl.selectedChangeFile?.fileId === fileId
+            ? gitSourceControl.selectedChangeFile.section
+            : changeFile?.unstagedStatus
+            ? 'unstaged'
+            : changeFile?.stagedStatus
+            ? 'staged'
+            : 'unstaged';
+        gitSourceControl.handleDiffFileSelect(fileId, section);
+        return;
+      }
+      previewTabs.selectTab(tabId);
+    },
+    [closeAgentDesktop, fileView.changeFiles, gitSourceControl, previewTabs],
+  );
+
   // ==================================== 渲染组件元素 ====================================
 
   /** 「预览」页签：调试对话 */
@@ -1389,10 +1414,7 @@ const ConversationAgent: React.FC = () => {
           // 选中标签 ID
           activeTabId={previewTabs.activeTabId}
           // 选中标签
-          onTabSelect={(tabId) => {
-            closeAgentDesktop();
-            previewTabs.selectTab(tabId);
-          }}
+          onTabSelect={handlePreviewTabSelect}
           // 关闭标签
           onTabClose={previewTabs.closeTab}
           // 关闭其他标签

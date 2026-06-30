@@ -1,4 +1,7 @@
-import { APP_VERSION } from '@/constants/home.constants';
+import {
+  APP_VERSION,
+  GLOBAL_POLLING_INTERVAL,
+} from '@/constants/home.constants';
 import {
   apiClearEvent,
   apiCollectEvent,
@@ -104,7 +107,7 @@ export default function useEventPolling(): React.ReactElement | null {
     apiCollectEvent,
     {
       loading: false,
-      pollingInterval: 5000, // 轮询间隔，单位ms
+      pollingInterval: GLOBAL_POLLING_INTERVAL, // 全局轮询间隔
       // 在屏幕不可见时，暂时暂停定时任务。
       pollingWhenHidden: false,
       // 轮询错误重试次数。如果设置为 -1，则无限次

@@ -12,6 +12,7 @@ import {
 import { EVENT_TYPE } from '@/constants/event.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { isSessionStreamBusy } from '@/hooks/useExecutingTaskStatusPoll';
+import { useResumeStreamHandlers } from '@/hooks/useResumeStreamHandlers';
 import { getCustomBlock } from '@/plugins/ds-markdown-process';
 import {
   apiAgentConversation,
@@ -425,23 +426,29 @@ export default () => {
 
   // 打开预览视图
   const openPreviewView = useCallback(
-    async (cId: number) => {
+    async (cId: number, options?: { forceRefresh?: boolean }) => {
       // 停止保活
       stopKeepalivePodPolling();
 
       // 检查是否需要刷新文件列表
       // 只有在模式发生变化（从 desktop 切换到 preview）或首次打开文件树时才刷新
       const needRefresh =
-        viewModeRef.current !== 'preview' || !isFileTreeVisibleRef.current;
+        options?.forceRefresh ||
+        viewModeRef.current !== 'preview' ||
+        !isFileTreeVisibleRef.current;
 
       // 打开预览视图或远程桌面视图时修改状态值
       openPreviewChangeState('preview');
       // 只在需要时触发文件列表刷新事件
       if (needRefresh) {
-        handleRefreshFileList(cId);
+        if (options?.forceRefresh) {
+          await refreshFileListImmediately(cId);
+        } else {
+          handleRefreshFileList(cId);
+        }
       }
     },
-    [handleRefreshFileList],
+    [handleRefreshFileList, refreshFileListImmediately, openPreviewChangeState],
   );
 
   // 滚动到底部
@@ -1311,8 +1318,25 @@ export default () => {
     });
   };
 
+  // ===== 会话流式恢复(sub)：刷新页面 / 新开标签时，订阅 EXECUTING 会话的输出流 =====
+  // 逻辑收敛到共享 hook（与 conversationAgent model 复用同一份实现，避免双份维护漂移）
+  // 重置会被 handleChangeMessageList 写入的流式状态：恢复流开/关时调用，避免残留 messageIdRef 误插重复行
+  const resetResumeMessageState = useCallback(() => {
+    messageIdRef.current = '';
+  }, []);
+  const { resumeConversationStream, abortResumeStream } =
+    useResumeStreamHandlers({
+      setMessageList,
+      handleChangeMessageList,
+      messageViewRef,
+      allowAutoScrollRef,
+      resetResumeMessageState,
+    });
+
   // 清除副作用
   const handleClearSideEffect = () => {
+    // 中断会话流式恢复(sub)连接（hook 内部同时重置占位记忆），避免离开页面后残留
+    abortResumeStream();
     // 重置消息ID
     messageIdRef.current = '';
     // 重置问题建议列表
@@ -1551,6 +1575,9 @@ export default () => {
     isConversationActive,
     checkConversationActive,
     disabledConversationActive,
+    // 会话流式恢复(sub)
+    resumeConversationStream,
+    abortResumeStream,
     setCurrentConversationRequestId,
     getCurrentConversationRequestId,
     getCurrentConversationId,

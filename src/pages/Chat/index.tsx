@@ -258,6 +258,9 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     setIsMoreMessage,
     loadingMore,
     handleLoadMoreMessage,
+    // 会话流式恢复(sub)
+    resumeConversationStream,
+    abortResumeStream,
   } = useModel('conversationInfo');
 
   // 页面预览相关状态
@@ -317,15 +320,6 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     openDesktopView,
     pagePreviewData,
   });
-
-  /** 打开文件树时默认折叠终端 */
-  const handleFileTreeVisibleClick = useCallback(() => {
-    const openingFileTree = !isFileTreeVisible;
-    handleFileTreeVisible();
-    if (openingFileTree) {
-      setTerminalConsoleVisible(false);
-    }
-  }, [isFileTreeVisible, handleFileTreeVisible]);
 
   const {
     variableParams,
@@ -459,10 +453,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
             data,
             skillIds,
             modelId: selectedModelId,
-            agentMode:
-              (stateToUse?.agentMode as AgentMode) ||
-              (localStorage.getItem('nuwax_agent_mode_cache') as AgentMode) ||
-              'yolo',
+            agentMode: (stateToUse?.agentMode as AgentMode) || 'yolo',
           };
 
           onMessageSend(sendParams);
@@ -641,6 +632,33 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   });
 
   refreshGitListRef.current = fileView.refreshGitList;
+
+  /**
+   * 打开文件预览：无选中文件时默认展开左侧文件树；已有选中文件则保持原有折叠/展开状态
+   */
+  const handleFileTreeVisibleClick = useCallback(() => {
+    const openingFileTree = !isFileTreeVisible;
+    const switchingToPreview = isFileTreeVisible && viewMode !== 'preview';
+    const hasSelectedPreviewFile = Boolean(
+      fileView.tree.selectedFileId || taskAgentSelectedFileId,
+    );
+
+    handleFileTreeVisible();
+
+    if (openingFileTree || switchingToPreview) {
+      setTerminalConsoleVisible(false);
+      if (!hasSelectedPreviewFile) {
+        setIsFileTreePinned(true);
+      }
+    }
+  }, [
+    isFileTreeVisible,
+    viewMode,
+    handleFileTreeVisible,
+    fileView.tree.selectedFileId,
+    taskAgentSelectedFileId,
+    setIsFileTreePinned,
+  ]);
 
   useEffect(
     () => () => {
@@ -999,6 +1017,13 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     isConversationActive:
       isConversationActive ||
       conversationInfo?.taskStatus === TaskStatus.EXECUTING,
+    // 本地是否正在 SSE 发送/接收（纯，不含后台 EXECUTING），供流式恢复 hook 使用
+    isLocallyStreaming: isConversationActive,
+    // 会话流式恢复(sub)：刷新页面/新开标签时重建 EXECUTING 会话的流式输出
+    onResumeConversationStream: resumeConversationStream,
+    onAbortResumeStream: abortResumeStream,
+    onReloadConversationHistoryAsync: async (id) =>
+      (await runAsync(Number(id)))?.data?.messageList,
     loadingSuggest,
     chatSuggestList,
     agentInfo: {

@@ -243,6 +243,12 @@ const routes = [
             name: getRouteLabel('PC.Routes.modelPermissions'),
             component: '@/pages/MorePage/ModelPermissions',
           },
+          // 历史会话
+          {
+            path: 'history-conversation',
+            name: getRouteLabel('PC.Routes.historyConversation'),
+            component: '@/pages/HistoryConversation',
+          },
         ],
       },
       // 系统管理统一管理
@@ -533,36 +539,6 @@ const routes = [
                 component: '@/pages/SystemManagement/LogQuery/RunningLog',
               },
             ],
-          },
-        ],
-      },
-      // 生态市场
-      {
-        path: '/ecosystem',
-        name: getRouteLabel('PC.Routes.ecosystemMarket'),
-        access: 'canAdmin',
-        routes: [
-          {
-            path: '/ecosystem/plugin',
-            name: getRouteLabel('PC.Routes.ecosystemPlugin'),
-            component: '@/pages/EcosystemPlugin',
-            access: 'canAdmin',
-          },
-          {
-            path: '/ecosystem/template',
-            name: getRouteLabel('PC.Routes.ecosystemTemplate'),
-            component: '@/pages/EcosystemTemplate',
-            access: 'canAdmin',
-          },
-          {
-            path: '/ecosystem/mcp',
-            name: 'MCP',
-            component: '@/pages/EcosystemMcp',
-            access: 'canAdmin',
-          },
-          {
-            path: '/ecosystem',
-            redirect: '/ecosystem/mcp',
           },
         ],
       },

@@ -227,4 +227,81 @@ describe('useActiveInterventionQueue', () => {
       'mcp_ask',
     ]);
   });
+
+  it('keeps the approval whose executeId matches the latest processing focus', () => {
+    // 当前焦点 executeId = 最新 processingList 末尾的 executeId；审批 executeId 匹配 → 渲染
+    const interaction = createAcpPermissionInteraction('pending');
+    interaction.executeId = 'exec-1';
+    const messageList = [
+      {
+        id: 'assistant',
+        index: 1,
+        acpPermissionInteractions: [interaction],
+        processingList: [{ executeId: 'exec-1' }] as any,
+      },
+    ] as MessageInfo[];
+
+    const { result } = renderHook(() =>
+      useActiveInterventionQueue(messageList),
+    );
+
+    expect(result.current).toHaveLength(1);
+  });
+
+  it('closes the approval card once its executeId is no longer the focus', () => {
+    // 最新 processing 已推进到另一个 executeId → 旧 executeId 的审批过期，按 executeId
+    // 精确关闭该卡（不影响可能存在的其它 executeId 的审批）
+    const interaction = createAcpPermissionInteraction('pending');
+    interaction.executeId = 'exec-old';
+    const messageList = [
+      {
+        id: 'assistant',
+        index: 1,
+        acpPermissionInteractions: [interaction],
+        processingList: [{ executeId: 'exec-new' }] as any,
+      },
+    ] as MessageInfo[];
+
+    const { result } = renderHook(() =>
+      useActiveInterventionQueue(messageList),
+    );
+
+    expect(result.current).toHaveLength(0);
+  });
+
+  it('keeps an approval with unknown executeId (fallback, no false close)', () => {
+    // 无 processingList / 审批无 executeId 时无法判定过期 → 保守显示，避免误关
+    const messageList = [
+      {
+        id: 'assistant',
+        index: 1,
+        acpPermissionInteractions: [createAcpPermissionInteraction('pending')],
+      },
+    ] as MessageInfo[];
+
+    const { result } = renderHook(() =>
+      useActiveInterventionQueue(messageList),
+    );
+
+    expect(result.current).toHaveLength(1);
+  });
+
+  it('closes the dock after the approval is answered', () => {
+    // 审批已应答(submitted)，不再 pending → DockPanel 关闭
+    const messageList = [
+      {
+        id: 'assistant',
+        index: 1,
+        acpPermissionInteractions: [
+          createAcpPermissionInteraction('submitted'),
+        ],
+      },
+    ] as MessageInfo[];
+
+    const { result } = renderHook(() =>
+      useActiveInterventionQueue(messageList),
+    );
+
+    expect(result.current).toHaveLength(0);
+  });
 });
