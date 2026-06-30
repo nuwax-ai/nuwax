@@ -21,26 +21,28 @@ const BasicLayout: React.FC<PropsWithChildren> = ({ children }) => {
             />
           </ConditionRender>
         </div>
-        <div className={cx(styles['left-title-box'])}>
-          {/*<p>轻松构建部署你</p>*/}
-          {/*<p className={cx(styles.title)}>私有的 Agentic AI 解决方案</p>*/}
-          {/*<p className={cx(styles['sub-title'])}>*/}
-          {/*  提供完善的工作流、插件开发能力，RAG*/}
-          {/*  知识库与数据表存储能力，MCP接入以及开放能力*/}
-          {/*</p>*/}
+        <div className={cx(styles['scroll-area'])}>
+          <div className={cx(styles['left-title-box'])}>
+            {/*<p>轻松构建部署你</p>*/}
+            {/*<p className={cx(styles.title)}>私有的 Agentic AI 解决方案</p>*/}
+            {/*<p className={cx(styles['sub-title'])}>*/}
+            {/*  提供完善的工作流、插件开发能力，RAG*/}
+            {/*  知识库与数据表存储能力，MCP接入以及开放能力*/}
+            {/*</p>*/}
 
-          <p
-            className={cx(styles.title)}
-            dangerouslySetInnerHTML={{
-              __html: tenantConfigInfo?.loginPageText,
-            }}
-          />
-          <p
-            className={cx(styles['sub-title'])}
-            dangerouslySetInnerHTML={{
-              __html: tenantConfigInfo?.loginPageSubText,
-            }}
-          />
+            <p
+              className={cx(styles.title)}
+              dangerouslySetInnerHTML={{
+                __html: tenantConfigInfo?.loginPageText,
+              }}
+            />
+            <p
+              className={cx(styles['sub-title'])}
+              dangerouslySetInnerHTML={{
+                __html: tenantConfigInfo?.loginPageSubText,
+              }}
+            />
+          </div>
         </div>
       </div>
       <div className={cx(styles['right-box'])}>{children}</div>
