@@ -1,5 +1,7 @@
 import agentImage from '@/assets/images/agent_image.png';
-import CustomFormModal from '@/components/CustomFormModal';
+import GuardedFormModal, {
+  GuardedFormModalForm,
+} from '@/components/business-component/GuardedFormModal';
 import OverrideTextArea from '@/components/OverrideTextArea';
 import UploadAvatar from '@/components/UploadAvatar';
 import { apiAgentAdd, apiAgentConfigUpdate } from '@/services/agentConfig';
@@ -78,36 +80,40 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
 
   const onFinish: FormProps<AgentAddParams>['onFinish'] = async (values) => {
     setLoading(true);
-    if (mode === CreateUpdateModeEnum.Create) {
-      const { icon, description } = await resolveCreateIcon({
-        imageUrl,
-        name: values.name,
-        description: values.description,
-      });
-      // AgentFlow / AgentGroup 在后端实际类型为 TaskAgent，通过 subType 区分
-      const isAgentFlow = type === AgentTypeEnum.AgentFlow;
-      const isAgentGroup = type === AgentTypeEnum.AgentGroup;
-      const resolveSubType = () => {
-        if (isAgentFlow) return AgentSubTypeEnum.Flow;
-        if (isAgentGroup) return AgentSubTypeEnum.Group;
-        return undefined;
-      };
-      runAdd({
-        ...values,
-        description: description ?? values.description,
-        icon,
-        spaceId,
-        type: isAgentFlow || isAgentGroup ? AgentTypeEnum.TaskAgent : type,
-        subType: resolveSubType(),
-      });
-    } else {
-      // 更新智能体
-      runUpdate({
-        ...values,
-        icon: imageUrl,
-        id: agentConfigInfo?.id,
-        type,
-      });
+    try {
+      if (mode === CreateUpdateModeEnum.Create) {
+        const { icon, description } = await resolveCreateIcon({
+          imageUrl,
+          name: values.name,
+          description: values.description,
+        });
+        // AgentFlow / AgentGroup 在后端实际类型为 TaskAgent，通过 subType 区分
+        const isAgentFlow = type === AgentTypeEnum.AgentFlow;
+        const isAgentGroup = type === AgentTypeEnum.AgentGroup;
+        const resolveSubType = () => {
+          if (isAgentFlow) return AgentSubTypeEnum.Flow;
+          if (isAgentGroup) return AgentSubTypeEnum.Group;
+          return undefined;
+        };
+        runAdd({
+          ...values,
+          description: description ?? values.description,
+          icon,
+          spaceId,
+          type: isAgentFlow || isAgentGroup ? AgentTypeEnum.TaskAgent : type,
+          subType: resolveSubType(),
+        });
+      } else {
+        // 更新智能体
+        runUpdate({
+          ...values,
+          icon: imageUrl,
+          id: agentConfigInfo?.id,
+          type,
+        });
+      }
+    } catch {
+      setLoading(false);
     }
   };
 
@@ -154,7 +160,7 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
   }, [type, mode]);
 
   return (
-    <CustomFormModal
+    <GuardedFormModal
       form={form}
       title={getTitle()}
       open={open}
@@ -162,7 +168,7 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
       onCancel={handleCancel}
       onConfirm={handlerSubmit}
     >
-      <Form
+      <GuardedFormModalForm
         form={form}
         requiredMark={customizeRequiredMark}
         layout="vertical"
@@ -219,8 +225,8 @@ const CreateAgent: React.FC<CreateAgentProps> = ({
             svgIconName="icons-workspace-agent"
           />
         </Form.Item>
-      </Form>
-    </CustomFormModal>
+      </GuardedFormModalForm>
+    </GuardedFormModal>
   );
 };
 

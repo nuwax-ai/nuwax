@@ -80,7 +80,7 @@ export const EN_US: SystemLangMap = {
   "PC.Components.AcpPermissionCard.allowOnce": "Allow once",
   "PC.Components.AcpPermissionCard.cancelShortcutHint": "Cancel (Esc)",
   "PC.Components.AcpPermissionCard.defaultTitle": "Permission confirmation required",
-  "PC.Components.AcpPermissionCard.eyebrow": "ACP permission approval",
+  "PC.Components.AcpPermissionCard.eyebrow": "Approval Request",
   "PC.Components.AcpPermissionCard.rejectOnce": "Reject",
   "PC.Components.AcpPermissionCard.shortcutHint": "{0} ({1})",
   "PC.Components.AcpPermissionCard.submitted": "Permission response submitted",

@@ -1,4 +1,7 @@
-import CustomFormModal from '@/components/CustomFormModal';
+import GuardedFormModal, {
+  GuardedFormModalForm,
+  useFormModalSubmit,
+} from '@/components/business-component/GuardedFormModal';
 import OverrideTextArea from '@/components/OverrideTextArea';
 import UploadAvatar from '@/components/UploadAvatar';
 import { dict } from '@/services/i18nRuntime';
@@ -19,6 +22,7 @@ import {
 import { customizeRequiredMark } from '@/utils/form';
 import { resolveCreateIcon } from '@/utils/resolveCreateIcon';
 import { InboxOutlined } from '@ant-design/icons';
+import type { FormInstance } from 'antd';
 import {
   Form,
   FormProps,
@@ -28,11 +32,122 @@ import {
   Upload,
   UploadProps,
 } from 'antd';
-import React, { useState } from 'react';
+import React, { PropsWithChildren, useState } from 'react';
 import { useRequest } from 'umi';
 import styles from './index.less';
 
 const { Dragger } = Upload;
+
+interface PageCreateFormProps extends PropsWithChildren {
+  form: FormInstance;
+  type: PageDevelopCreateTypeEnum;
+  spaceId: number;
+  imageUrl: string;
+  setLoading: (loading: boolean) => void;
+  runCreatePageUploadAndStart: (formData: FormData) => void;
+  runCreatePageCreate: (data: Record<string, unknown>) => void;
+  runCreatePageCreateReverseProxy: (data: Record<string, unknown>) => void;
+}
+
+/** 须在 GuardedFormModal 子树内，onFinish 早退时释放提交锁 */
+const PageCreateForm: React.FC<PageCreateFormProps> = ({
+  form,
+  type,
+  spaceId,
+  imageUrl,
+  setLoading,
+  runCreatePageUploadAndStart,
+  runCreatePageCreate,
+  runCreatePageCreateReverseProxy,
+  children,
+}) => {
+  const modalSubmit = useFormModalSubmit();
+
+  const onFinish: FormProps<any>['onFinish'] = async (values) => {
+    if (type === PageDevelopCreateTypeEnum.Import_Project) {
+      const { fileList, projectName, projectDesc, coverImg } = values;
+      const formIcon = values.icon;
+      const file = fileList?.[0]?.originFileObj;
+
+      if (!file) {
+        message.error(
+          dict('PC.Pages.SpacePageDevelop.PageCreateModal.pleaseUploadZip'),
+        );
+        modalSubmit?.abortSubmit();
+        return;
+      }
+
+      const isZip = file.name?.endsWith('.zip');
+      if (!isZip) {
+        message.error(
+          dict('PC.Pages.SpacePageDevelop.PageCreateModal.zipOnly'),
+        );
+        modalSubmit?.abortSubmit();
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const { icon: resolvedIcon, description } = await resolveCreateIcon({
+          imageUrl: imageUrl || formIcon || '',
+          name: projectName,
+          description: projectDesc,
+        });
+        const formData = new FormData();
+        formData.append('icon', resolvedIcon || '');
+        formData.append('projectName', projectName);
+        formData.append('projectDesc', description ?? projectDesc ?? '');
+        formData.append('spaceId', spaceId.toString());
+        if (coverImg) {
+          formData.append('coverImg', coverImg);
+          formData.append('coverImgSourceType', CoverImgSourceTypeEnum.USER);
+        }
+        formData.append('file', file || '');
+        runCreatePageUploadAndStart(formData);
+      } catch {
+        setLoading(false);
+      }
+    } else {
+      const { coverImg } = values;
+      const coverImgSourceType = coverImg ? CoverImgSourceTypeEnum.USER : '';
+      setLoading(true);
+      try {
+        const { icon, description } = await resolveCreateIcon({
+          imageUrl: imageUrl || values.icon || '',
+          name: values.projectName,
+          description: values.projectDesc,
+        });
+        const data = {
+          ...values,
+          icon,
+          projectDesc: description ?? values.projectDesc,
+          spaceId,
+          ...(coverImgSourceType ? { coverImgSourceType } : {}),
+        };
+        if (type === PageDevelopCreateTypeEnum.Online_Develop) {
+          runCreatePageCreate(data);
+        } else if (type === PageDevelopCreateTypeEnum.Reverse_Proxy) {
+          runCreatePageCreateReverseProxy(data);
+        }
+      } catch {
+        setLoading(false);
+      }
+    }
+  };
+
+  return (
+    <GuardedFormModalForm
+      form={form}
+      preserve={false}
+      layout="vertical"
+      requiredMark={customizeRequiredMark}
+      onFinish={onFinish}
+      autoComplete="off"
+    >
+      {children}
+    </GuardedFormModalForm>
+  );
+};
 
 /**
  * 页面创建弹窗
@@ -94,82 +209,6 @@ const PageCreateModal: React.FC<PageCreateModalProps> = ({
     },
   );
 
-  // 创建应用
-  const onFinish: FormProps<any>['onFinish'] = async (values) => {
-    // 项目导入
-    if (type === PageDevelopCreateTypeEnum.Import_Project) {
-      const { fileList, projectName, projectDesc, coverImg } = values;
-      const formIcon = values.icon;
-
-      // 上传文件接口返回的是文件的base64，这里需要转换一下
-      const file = fileList?.[0]?.originFileObj;
-      // 校验文件是否存在
-      if (!file) {
-        message.error(
-          dict('PC.Pages.SpacePageDevelop.PageCreateModal.pleaseUploadZip'),
-        );
-        return;
-      }
-
-      // 校验文件类型
-      const isZip = file.name?.endsWith('.zip');
-
-      if (!isZip) {
-        message.error(
-          dict('PC.Pages.SpacePageDevelop.PageCreateModal.zipOnly'),
-        );
-        return;
-      }
-
-      setLoading(true);
-      const { icon: resolvedIcon, description } = await resolveCreateIcon({
-        imageUrl: imageUrl || formIcon || '',
-        name: projectName,
-        description: projectDesc,
-      });
-      const formData = new FormData();
-      formData.append('icon', resolvedIcon || '');
-      formData.append('projectName', projectName);
-      formData.append('projectDesc', description ?? projectDesc ?? '');
-      formData.append('spaceId', spaceId.toString());
-      if (coverImg) {
-        formData.append('coverImg', coverImg);
-        // 如果用户上传了封面图片，则设置封面图片来源为USER
-        formData.append('coverImgSourceType', CoverImgSourceTypeEnum.USER);
-      }
-      /* 2. 追加文件 */
-      formData.append('file', file || '');
-      runCreatePageUploadAndStart(formData);
-    } else {
-      // 封面图片
-      const { coverImg } = values;
-      // 封面图片来源
-      const coverImgSourceType = coverImg ? CoverImgSourceTypeEnum.USER : '';
-      setLoading(true);
-      const { icon, description } = await resolveCreateIcon({
-        imageUrl: imageUrl || values.icon || '',
-        name: values.projectName,
-        description: values.projectDesc,
-      });
-      const data = {
-        ...values,
-        icon,
-        projectDesc: description ?? values.projectDesc,
-        spaceId,
-        // 如果用户没有上传封面图片，则不设置封面图片来源
-        ...(coverImgSourceType ? { coverImgSourceType } : {}),
-      };
-      // 在线创建
-      if (type === PageDevelopCreateTypeEnum.Online_Develop) {
-        runCreatePageCreate(data);
-      }
-      // 反向代理
-      else if (type === PageDevelopCreateTypeEnum.Reverse_Proxy) {
-        runCreatePageCreateReverseProxy(data);
-      }
-    }
-  };
-
   const handlerConfirm = () => {
     form.submit();
   };
@@ -229,7 +268,7 @@ const PageCreateModal: React.FC<PageCreateModalProps> = ({
   };
 
   return (
-    <CustomFormModal
+    <GuardedFormModal
       form={form}
       open={open}
       title={dict('PC.Pages.SpacePageDevelop.PageCreateModal.createApp')}
@@ -242,13 +281,15 @@ const PageCreateModal: React.FC<PageCreateModalProps> = ({
       onCancel={handleCancel}
       onConfirm={handlerConfirm}
     >
-      <Form
+      <PageCreateForm
         form={form}
-        preserve={false}
-        layout="vertical"
-        requiredMark={customizeRequiredMark}
-        onFinish={onFinish}
-        autoComplete="off"
+        type={type}
+        spaceId={spaceId}
+        imageUrl={imageUrl}
+        setLoading={setLoading}
+        runCreatePageUploadAndStart={runCreatePageUploadAndStart}
+        runCreatePageCreate={runCreatePageCreate}
+        runCreatePageCreateReverseProxy={runCreatePageCreateReverseProxy}
       >
         <Form.Item
           name="projectName"
@@ -343,8 +384,8 @@ const PageCreateModal: React.FC<PageCreateModalProps> = ({
             </Dragger>
           </Form.Item>
         )}
-      </Form>
-    </CustomFormModal>
+      </PageCreateForm>
+    </GuardedFormModal>
   );
 };
 

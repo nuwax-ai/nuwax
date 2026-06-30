@@ -14,10 +14,14 @@ const McpHeader: React.FC<McpHeaderProps> = ({
   spaceId,
   saveLoading,
   saveDeployLoading,
+  isSubmitting,
+  withDeployRef,
   onCancel,
   onSave,
   onSaveAndDeploy,
 }) => {
+  const submitting = Boolean(isSubmitting);
+  const withDeploy = withDeployRef?.current ?? false;
   return (
     <header className={cx('flex', 'items-center', styles.header)}>
       <div
@@ -32,18 +36,22 @@ const McpHeader: React.FC<McpHeaderProps> = ({
 
       <div className={cx('flex-1')}></div>
       <div className={cx('flex', 'items-center', styles['extra-box'])}>
-        <Button onClick={onCancel}>{dict('PC.Common.Global.cancel')}</Button>
+        <Button onClick={onCancel} disabled={submitting}>
+          {dict('PC.Common.Global.cancel')}
+        </Button>
         <Button
           className={cx(styles['save-btn'])}
           onClick={onSave}
-          loading={saveLoading}
+          loading={saveLoading || (submitting && !withDeploy)}
+          disabled={submitting || saveDeployLoading}
         >
           {dict('PC.Pages.SpaceMcpEdit.save')}
         </Button>
         <Button
           type="primary"
           onClick={onSaveAndDeploy}
-          loading={saveDeployLoading}
+          loading={saveDeployLoading || (submitting && withDeploy)}
+          disabled={submitting || saveLoading}
         >
           {dict('PC.Pages.SpaceMcpEdit.saveAndDeploy')}
         </Button>

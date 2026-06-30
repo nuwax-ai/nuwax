@@ -74,6 +74,8 @@ export const ZH_TW: SystemLangMap = {
   "PC.Components.AppDevEmptyState.addDataDescription": "點選“+“新增資料資源",
   "PC.Components.AcpPermissionCard.allowAlways": "始終允許",
   "PC.Components.AcpPermissionCard.allowOnce": "允許一次",
+  "PC.Components.AcpPermissionCard.defaultTitle": "需要權限確認",
+  "PC.Components.AcpPermissionCard.eyebrow": "審批請求",
   "PC.Components.AcpPermissionCard.rejectOnce": "拒絕",
   "PC.Components.AppDevEmptyState.close": "關閉",
   "PC.Components.AppDevEmptyState.conversationEmptyDescription": "向 AI 助手提問，開始你的專案開發",

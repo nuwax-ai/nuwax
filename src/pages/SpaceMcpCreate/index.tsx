@@ -13,6 +13,7 @@ import { CodeLangEnum } from '@/types/enums/plugin';
 import { McpDetailInfo } from '@/types/interfaces/mcp';
 import { isValidJSON } from '@/utils/common';
 import { customizeRequiredMark } from '@/utils/form';
+import { resolveCreateIcon } from '@/utils/resolveCreateIcon';
 import { jumpBack } from '@/utils/router';
 import { Form, FormProps, Input, message, Radio } from 'antd';
 import classNames from 'classnames';
@@ -90,6 +91,8 @@ const SpaceMcpCreate: React.FC = () => {
     handleSave,
     withDeployRef,
     collapseList,
+    abortSubmit,
+    isSubmitting,
   } = useMcp();
 
   useEffect(() => {
@@ -126,45 +129,60 @@ const SpaceMcpCreate: React.FC = () => {
     description: string;
     installType: McpInstallTypeEnum;
     serverConfig: string;
-  }>['onFinish'] = (values) => {
+  }>['onFinish'] = async (values) => {
     const { serverConfig, ...rest } = values;
     // 组件库
     if (installType === McpInstallTypeEnum.COMPONENT) {
       if (!mcpConfigComponentList?.length) {
         message.warning(dict('PC.Pages.SpaceMcpEdit.selectComponent'));
+        abortSubmit();
         return;
       }
     } else if (!serverConfig) {
       message.warning(dict('PC.Pages.SpaceMcpEdit.inputServerConfig'));
+      abortSubmit();
       return;
     }
 
-    // loading状态
     if (withDeployRef.current) {
       setSaveDeployLoading(true);
     } else {
       setSaveLoading(true);
     }
 
-    const mcpConfig =
-      installType === McpInstallTypeEnum.COMPONENT
-        ? {
-            serverConfig: '',
-            components: mcpConfigComponentList,
-          }
-        : {
-            serverConfig,
-            components: [],
-          };
-    const data = {
-      ...rest,
-      spaceId,
-      icon: imageUrl,
-      mcpConfig,
-      withDeploy: withDeployRef.current,
-    };
+    try {
+      const { icon, description } = await resolveCreateIcon({
+        imageUrl,
+        name: rest.name,
+        description: rest.description,
+      });
 
-    runCreate(data);
+      const mcpConfig =
+        installType === McpInstallTypeEnum.COMPONENT
+          ? {
+              serverConfig: '',
+              components: mcpConfigComponentList,
+            }
+          : {
+              serverConfig,
+              components: [],
+            };
+      const data = {
+        ...rest,
+        description: description ?? rest.description,
+        spaceId,
+        icon,
+        installType: installType!,
+        mcpConfig,
+        withDeploy: withDeployRef.current,
+      };
+
+      runCreate(data);
+    } catch {
+      abortSubmit();
+      setSaveDeployLoading(false);
+      setSaveLoading(false);
+    }
   };
 
   return (
@@ -173,6 +191,8 @@ const SpaceMcpCreate: React.FC = () => {
         spaceId={spaceId}
         saveLoading={saveLoading}
         saveDeployLoading={saveDeployLoading}
+        isSubmitting={isSubmitting}
+        withDeployRef={withDeployRef}
         onCancel={() => jumpBack(`/space/${spaceId}/mcp`)}
         onSave={() => handleSave(false)}
         onSaveAndDeploy={() => handleSave(true)}
@@ -192,6 +212,7 @@ const SpaceMcpCreate: React.FC = () => {
             layout="vertical"
             requiredMark={customizeRequiredMark}
             onFinish={onFinish}
+            onFinishFailed={() => abortSubmit()}
             autoComplete="off"
           >
             <Form.Item
