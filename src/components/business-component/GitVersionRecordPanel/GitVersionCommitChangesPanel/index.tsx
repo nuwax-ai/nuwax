@@ -161,6 +161,15 @@ const GitVersionCommitChangesPanel: React.FC<
     return files.filter((file) => matchesSearchKeyword(file, keyword));
   }, [files, searchKeyword, matchesSearchKeyword]);
 
+  /** 仅 1 个变更文件且已展开 diff 时，diff 区域占满剩余高度 */
+  const isSingleFileExpanded = useMemo(() => {
+    if (files.length !== 1) {
+      return false;
+    }
+    const onlyFile = files[0];
+    return Boolean(onlyFile && expandedPaths.has(onlyFile.path));
+  }, [files, expandedPaths]);
+
   /** 确保文件内容已加载 */
   const ensureFileContent = useCallback(
     async (path: string) => {
@@ -210,13 +219,20 @@ const GitVersionCommitChangesPanel: React.FC<
     openRollbackConfirm(commit);
   }, [commit, openRollbackConfirm]);
 
-  const renderFileDiff = (file: GitCommitDiffFileItem) => {
+  const renderFileDiff = (
+    file: GitCommitDiffFileItem,
+    fillRemainingHeight?: boolean,
+  ) => {
     const cached = fileContentMap[file.path] ?? file;
     const isLoadingContent = loadingPaths.has(file.path);
 
     if (isLoadingContent) {
       return (
-        <div className={cx(styles['file-diff-loading'])}>
+        <div
+          className={cx(styles['file-diff-loading'], {
+            [styles['file-diff-loading-fill']]: fillRemainingHeight,
+          })}
+        >
           <Loading />
         </div>
       );
@@ -229,7 +245,9 @@ const GitVersionCommitChangesPanel: React.FC<
         originalContent={cached.oldContent}
         modifiedContent={cached.newContent}
         diffViewMode={diffViewMode}
-        className={styles['file-diff']}
+        className={cx(styles['file-diff'], {
+          [styles['file-diff-fill']]: fillRemainingHeight,
+        })}
       />
     );
   };
@@ -322,7 +340,11 @@ const GitVersionCommitChangesPanel: React.FC<
       </div>
 
       {/* 文件列表 */}
-      <div className={cx(styles['file-list'])}>
+      <div
+        className={cx(styles['file-list'], {
+          [styles['file-list-single-expanded']]: isSingleFileExpanded,
+        })}
+      >
         {loading ? (
           <div className={cx(styles['list-loading'])}>
             <Loading />
@@ -347,7 +369,13 @@ const GitVersionCommitChangesPanel: React.FC<
                   };
 
             return (
-              <div key={file.path} className={cx(styles['file-block'])}>
+              <div
+                key={file.path}
+                className={cx(styles['file-block'], {
+                  [styles['file-block-fill']]:
+                    isSingleFileExpanded && isExpanded,
+                })}
+              >
                 <div
                   className={cx(styles['file-row'])}
                   onClick={() => toggleFileExpand(file.path)}
@@ -403,7 +431,7 @@ const GitVersionCommitChangesPanel: React.FC<
                 </div>
 
                 {/* 文件差异 */}
-                {isExpanded && renderFileDiff(file)}
+                {isExpanded && renderFileDiff(file, isSingleFileExpanded)}
               </div>
             );
           })

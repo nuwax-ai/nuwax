@@ -173,6 +173,13 @@
   padding: 0 @paddingMd @paddingMd;
 }
 
+/** 仅 1 个变更文件且 diff 已展开：列表区交给 diff 占满剩余高度 */
+.file-list-single-expanded {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 .list-loading,
 .list-empty {
   display: flex;
@@ -189,6 +196,14 @@
   background: @colorBgContainer;
 }
 
+.file-block-fill {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  margin-bottom: 0;
+}
+
 .file-row {
   display: flex;
   align-items: center;
@@ -197,6 +212,7 @@
   padding: @paddingSm @paddingMd;
   cursor: pointer;
   transition: background-color 0.2s ease;
+  flex-shrink: 0;
 
   &:hover {
     background-color: @colorFillQuaternary;
@@ -285,9 +301,20 @@
   overflow: auto;
 }
 
+.file-diff-fill {
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+}
+
 .file-diff-loading {
   display: flex;
   align-items: center;
   justify-content: center;
   padding: @paddingMd;
+}
+
+.file-diff-loading-fill {
+  flex: 1;
+  min-height: 0;
 }

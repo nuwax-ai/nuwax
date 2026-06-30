@@ -419,12 +419,18 @@ const EditAgent: React.FC = () => {
         isAgentVersionControlEnabled(agentConfigInfo.enableVersionControl),
     );
   }, [agentId, agentConfigInfo?.id]);
-  /** 文件树预览区底部终端是否显示 */
+  /** 文件树预览区底部终端是否显示（含折叠态） */
   const [terminalConsoleVisible, setTerminalConsoleVisible] =
     useState<boolean>(false);
+  /** 终端是否处于展开态（折叠时为 false，用于头部图标选中态） */
+  const [isTerminalExpanded, setIsTerminalExpanded] = useState<boolean>(false);
   /** 终端首次渲染后保持挂载，避免 wss 反复重连 */
   const [hasTerminalConsoleRendered, setHasTerminalConsoleRendered] =
     useState<boolean>(false);
+  /** 递增时通知终端从折叠恢复默认高度 */
+  const [terminalExpandSignal, setTerminalExpandSignal] = useState(0);
+  /** 递增时通知终端折叠 */
+  const [terminalCollapseSignal, setTerminalCollapseSignal] = useState(0);
 
   // 更新智能体信息
   const handleChangeAgent = useCallback(
@@ -981,12 +987,50 @@ const EditAgent: React.FC = () => {
     showPagePreview(null);
     openPreviewView(devConversationId);
     setHasTerminalConsoleRendered(true);
-    setTerminalConsoleVisible((prev) => !prev);
-  }, [devConversationId, openPreviewView, showPagePreview]);
+
+    if (!terminalConsoleVisible) {
+      setTerminalConsoleVisible(true);
+      setIsTerminalExpanded(true);
+      return;
+    }
+
+    if (!isTerminalExpanded) {
+      setIsTerminalExpanded(true);
+      setTerminalExpandSignal((n) => n + 1);
+      return;
+    }
+
+    setTerminalConsoleVisible(false);
+    setIsTerminalExpanded(false);
+  }, [
+    devConversationId,
+    isTerminalExpanded,
+    openPreviewView,
+    showPagePreview,
+    terminalConsoleVisible,
+  ]);
+
+  /** 折叠底部终端（保留头部，文件预览图标可接管选中态） */
+  const handleCollapseTerminalPanel = useCallback(() => {
+    if (!terminalConsoleVisible) {
+      return;
+    }
+    setIsTerminalExpanded(false);
+    setTerminalCollapseSignal((n) => n + 1);
+  }, [terminalConsoleVisible]);
+
+  /** 关闭底部终端（切换智能体电脑等场景） */
+  const handleCloseTerminalPanel = useCallback(() => {
+    setTerminalConsoleVisible(false);
+    setIsTerminalExpanded(false);
+  }, []);
 
   useEffect(() => {
     setTerminalConsoleVisible(false);
+    setIsTerminalExpanded(false);
     setHasTerminalConsoleRendered(false);
+    setTerminalExpandSignal(0);
+    setTerminalCollapseSignal(0);
   }, [devConversationId]);
 
   useEffect(() => {
@@ -1220,6 +1264,11 @@ const EditAgent: React.FC = () => {
                         onAgentConfigInfo={setAgentConfigInfo}
                         onOpenPreview={handleOpenPreview}
                         onOpenTerminalPanel={handleOpenTerminalPanel}
+                        onCloseTerminalPanel={handleCloseTerminalPanel}
+                        onCollapseTerminalPanel={handleCollapseTerminalPanel}
+                        isTerminalActive={
+                          isTerminalExpanded && viewMode === 'preview'
+                        }
                         onChangeSelectedComputerId={
                           setCurrentSelectedComputerId
                         }
@@ -1336,6 +1385,8 @@ const EditAgent: React.FC = () => {
                                       : undefined
                                   }
                                   visible={terminalConsoleVisible}
+                                  terminalSignal={terminalExpandSignal}
+                                  collapseSignal={terminalCollapseSignal}
                                   wsUrl={terminalWsUrl}
                                   wireProtocol={TTYD_TERMINAL_WIRE_PROTOCOL}
                                   wsSubprotocols={[

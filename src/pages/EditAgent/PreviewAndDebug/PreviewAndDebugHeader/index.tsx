@@ -31,6 +31,8 @@ interface PreviewAndDebugHeaderProps {
   onOpenDesktopPanel?: () => void;
   /** 打开 / 切换到底部终端 */
   onOpenTerminalPanel?: () => void;
+  /** 底部终端面板是否已打开（用于高亮终端图标） */
+  isTerminalActive?: boolean;
 }
 
 /**
@@ -48,6 +50,7 @@ const PreviewAndDebugHeader: React.FC<PreviewAndDebugHeaderProps> = ({
   onOpenPreviewPanel,
   onOpenDesktopPanel,
   onOpenTerminalPanel,
+  isTerminalActive,
 }) => {
   const { showType } = useModel('conversationInfo');
 
@@ -109,7 +112,10 @@ const PreviewAndDebugHeader: React.FC<PreviewAndDebugHeaderProps> = ({
                     )
               }
               className={cx(styles['icon-box'], {
-                [styles['active']]: isFileTreeVisible && viewMode === 'preview',
+                [styles['active']]:
+                  isFileTreeVisible &&
+                  viewMode === 'preview' &&
+                  !isTerminalActive,
               })}
               icon={<SvgIcon name="icons-common-file_preview" />}
               onClick={onOpenPreviewPanel}
@@ -123,7 +129,9 @@ const PreviewAndDebugHeader: React.FC<PreviewAndDebugHeaderProps> = ({
               ariaLabel={dict(
                 'PC.Components.ConversationBottomConsole.tabTerminal',
               )}
-              className={cx(styles['icon-box'])}
+              className={cx(styles['icon-box'], {
+                [styles['active']]: isTerminalActive,
+              })}
               icon={<CodeOutlined style={{ fontSize: 16 }} />}
               onClick={onOpenTerminalPanel}
             />
@@ -142,7 +150,9 @@ const PreviewAndDebugHeader: React.FC<PreviewAndDebugHeaderProps> = ({
                 }
                 className={cx(styles['icon-box'], {
                   [styles['active']]:
-                    isFileTreeVisible && viewMode === 'desktop',
+                    isFileTreeVisible &&
+                    viewMode === 'desktop' &&
+                    !isTerminalActive,
                 })}
                 icon={<SvgIcon name="icons-nav-computer-star" />}
                 onClick={onOpenDesktopPanel}

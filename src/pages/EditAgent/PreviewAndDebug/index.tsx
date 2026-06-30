@@ -45,6 +45,12 @@ interface PreviewAndDebugProps extends PreviewAndDebugHeaderProps {
   onAgentConfigInfo: (info: AgentConfigInfo) => void;
   onOpenPreview?: () => void;
   onOpenTerminalPanel?: () => void;
+  /** 关闭底部终端面板 */
+  onCloseTerminalPanel?: () => void;
+  /** 折叠底部终端面板（保留头部） */
+  onCollapseTerminalPanel?: () => void;
+  /** 底部终端是否处于展开选中态 */
+  isTerminalActive?: boolean;
   onChangeSelectedComputerId?: (id: string) => void;
   /** 读取右侧文件树面板当前选中的文件 ID（用于打开预览时判断是否展开文件树） */
   getSelectedPreviewFileId?: () => string;
@@ -61,6 +67,9 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
   onOpenPreview,
   onChangeSelectedComputerId,
   onOpenTerminalPanel,
+  onCloseTerminalPanel,
+  onCollapseTerminalPanel,
+  isTerminalActive,
   getSelectedPreviewFileId,
 }) => {
   const [form] = Form.useForm();
@@ -373,10 +382,21 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     // 关闭页面预览
     showPagePreview(null);
 
+    // 终端展开中：切换到文件预览，折叠终端但保持文件树
+    if (isFileTreeVisible && viewMode === 'preview' && isTerminalActive) {
+      onCollapseTerminalPanel?.();
+      return;
+    }
+
+    if (isFileTreeVisible && viewMode !== 'preview') {
+      onCloseTerminalPanel?.();
+    }
+
     if (!isFileTreeVisible) {
       openPreviewView(convId);
     } else if (viewMode === 'preview') {
       closePreviewView();
+      onCloseTerminalPanel?.();
     } else {
       openPreviewView(convId);
     }
@@ -401,6 +421,8 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
       message.warning(dict('PC.Pages.PreviewAndDebug.convIdNotFoundDesktop'));
       return;
     }
+
+    onCloseTerminalPanel?.();
 
     if (!isFileTreeVisible) {
       openDesktopView(convId);
@@ -480,6 +502,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
             viewMode={viewMode}
             onOpenPreviewPanel={handleOpenPreviewPanel}
             onOpenTerminalPanel={onOpenTerminalPanel}
+            isTerminalActive={isTerminalActive}
             onOpenDesktopPanel={handleOpenDesktopPanel}
           />
           <div

@@ -11,7 +11,13 @@ import {
 } from '@ant-design/icons';
 import { Button, Tag, Typography } from 'antd';
 import classNames from 'classnames';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import type {
   AcpPermissionInteraction,
   AcpRequestPermissionResponse,
@@ -52,6 +58,26 @@ const AcpPermissionCard: React.FC<AcpPermissionCardProps> = ({
   const [submitType, setSubmitType] = useState<'confirm' | 'cancel' | null>(
     null,
   );
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  // 卡片弹出后自动获取焦点
+  useEffect(() => {
+    if (!disabled) {
+      cardRef.current?.focus();
+    }
+  }, [disabled]);
+
+  // 保持焦点始终在卡片上，防止失焦导致快捷键失效
+  const handleBlur = (e: React.FocusEvent) => {
+    if (
+      !disabled &&
+      cardRef.current &&
+      !cardRef.current.contains(e.relatedTarget)
+    ) {
+      e.preventDefault();
+      cardRef.current.focus();
+    }
+  };
 
   const handleSelect = useCallback(
     (optionId: string, type: 'confirm' | 'cancel' = 'confirm') => {
@@ -130,12 +156,14 @@ const AcpPermissionCard: React.FC<AcpPermissionCardProps> = ({
 
   return (
     <div
+      ref={cardRef}
       className={classNames(styles.card, dockShellClassName, {
         [styles.cardDocked]: docked,
       })}
       tabIndex={-1}
       role="group"
       aria-label={displayTitle}
+      onBlur={handleBlur}
     >
       <header className={styles.header}>
         {docked ? (
