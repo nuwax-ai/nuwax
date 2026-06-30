@@ -48,6 +48,8 @@ import SpaceSection from './SpaceSection';
 import SquareSection from './SquareSection';
 import {
   handleOpenUrl,
+  isOpenIframePath,
+  navigateOpenIframePath,
   normalizeMenuPathname,
   removePathUrlFromLocalStorage,
 } from './utils';
@@ -496,10 +498,14 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
           const hasPath = hasPathUnderFirstLevelMenu(menu.code, pathUrlValue);
           if (hasPath) {
             if (pathUrlValue && !pathUrlValue.includes(':')) {
-              history.push(pathUrlValue, {
-                _t: Date.now(),
-                menuCode: menu.code,
-              });
+              if (isOpenIframePath(pathUrlValue)) {
+                navigateOpenIframePath(pathUrlValue, { menuCode: menu.code });
+              } else {
+                history.push(pathUrlValue, {
+                  _t: Date.now(),
+                  menuCode: menu.code,
+                });
+              }
               return;
             }
           } else {
@@ -510,7 +516,11 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
       } catch {}
 
       if (menu.path) {
-        history.push(menu.path, { _t: Date.now(), menuCode: menu.code });
+        if (isOpenIframePath(menu.path)) {
+          navigateOpenIframePath(menu.path, { menuCode: menu.code });
+        } else {
+          history.push(menu.path, { _t: Date.now(), menuCode: menu.code });
+        }
       } else if (menu.children?.length) {
         // 递归查找第一个有 path 的子菜单
         const firstPathMenu = findFirstChildWithPath(menu);
