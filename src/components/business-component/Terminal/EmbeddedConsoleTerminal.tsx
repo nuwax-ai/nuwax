@@ -387,6 +387,19 @@ const EmbeddedConsoleTerminal = forwardRef<
           return;
         }
 
+        // 关闭尚未完全释放的旧连接，避免 CLOSING 期间新建 WS 后旧 onclose 误清空 wsRef
+        const existingWs = wsRef.current;
+        if (existingWs) {
+          isManualDisconnectRef.current = true;
+          try {
+            existingWs.close();
+          } catch {
+            /* ignore */
+          }
+          wsRef.current = null;
+          isManualDisconnectRef.current = false;
+        }
+
         const scheduleReconnect = () => {
           const reconnectConfig = reconnectConfigRef.current;
           if (
@@ -442,16 +455,36 @@ const EmbeddedConsoleTerminal = forwardRef<
         }
 
         ws.onopen = () => {
+          if (wsRef.current !== ws) {
+            return;
+          }
           console.log('[EmbeddedTerminal] WebSocket connected');
           reconnectCountRef.current = 0;
           clearReconnectTimer();
+
+          // ttyd 必须在首包发送 JSON init 才会 fork shell；同步发送，避免 fit 异步竞态
+          if (wireProtocol === 'ttyd') {
+            const term = terminalRef.current;
+            if (term) {
+              let { cols, rows } = term;
+              if (cols <= 0 || rows <= 0) {
+                ({ cols, rows } = ensureDimensions(term));
+              }
+              ws.send(encodeTtydInit(cols, rows));
+              ttydInitSentRef.current = true;
+            }
+          }
+
           startHeartbeat();
           scheduleFitWhenVisible(
             () => viewportRef.current,
             () => fitAddonRef.current?.fit(),
             () => {
+              if (wsRef.current !== ws) {
+                return;
+              }
               syncBackendSize(ws, {
-                sendTtydInit: true,
+                sendTtydInit: !ttydInitSentRef.current,
                 allowFallbackDimensions: true,
               });
               resetLocalMouseTracking();
@@ -469,6 +502,9 @@ const EmbeddedConsoleTerminal = forwardRef<
                 () => viewportRef.current,
                 () => fitAddonRef.current?.fit(),
                 () => {
+                  if (wsRef.current !== ws) {
+                    return;
+                  }
                   syncBackendSize(ws, {
                     sendTtydInit: !ttydInitSentRef.current,
                     allowFallbackDimensions: true,
@@ -478,7 +514,7 @@ const EmbeddedConsoleTerminal = forwardRef<
                 },
               );
               window.setTimeout(() => {
-                if (ws.readyState !== WebSocket.OPEN) {
+                if (wsRef.current !== ws || ws.readyState !== WebSocket.OPEN) {
                   return;
                 }
                 syncBackendSize(ws, {
@@ -492,6 +528,9 @@ const EmbeddedConsoleTerminal = forwardRef<
         };
 
         ws.onmessage = (event: MessageEvent) => {
+          if (wsRef.current !== ws) {
+            return;
+          }
           const term = terminalRef.current;
           const data =
             wireProtocol === 'ttyd'
@@ -508,6 +547,10 @@ const EmbeddedConsoleTerminal = forwardRef<
         };
 
         ws.onclose = (event: CloseEvent) => {
+          // 忽略已被新连接取代的旧 WebSocket 的 close，防止误清空 wsRef 导致「已连接但无法输入」
+          if (wsRef.current !== ws) {
+            return;
+          }
           stopHeartbeat();
           console.log(
             '[EmbeddedTerminal] WebSocket closed:',
@@ -524,6 +567,9 @@ const EmbeddedConsoleTerminal = forwardRef<
         };
 
         ws.onerror = (event) => {
+          if (wsRef.current !== ws) {
+            return;
+          }
           console.error('[EmbeddedTerminal] WebSocket error:', event);
         };
       },
