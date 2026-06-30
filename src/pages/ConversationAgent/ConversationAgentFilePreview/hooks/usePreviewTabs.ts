@@ -143,6 +143,56 @@ export function usePreviewTabs(options: UsePreviewTabsOptions = {}) {
     );
   }, []);
 
+  /**
+   * workspaceToolIds 变化时同步常驻页签
+   * 例如智能体配置加载后根据 enableVersionControl 增删「版本管控」页签
+   */
+  useEffect(() => {
+    workspaceToolIdsRef.current = resolvedWorkspaceToolIds;
+    setTabs((prev) => {
+      const nonPermanentWorkspaceTabs = prev.filter(
+        (tab) =>
+          tab.type === 'file' ||
+          (tab.type === 'tool' &&
+            tab.toolId &&
+            !WORKSPACE_PREVIEW_TOOL_IDS.includes(tab.toolId)),
+      );
+      const permanentStillOpen = prev.filter(
+        (tab) =>
+          tab.type === 'tool' &&
+          tab.toolId &&
+          WORKSPACE_PREVIEW_TOOL_IDS.includes(tab.toolId) &&
+          resolvedWorkspaceToolIds.includes(tab.toolId),
+      );
+      const workspaceTabs = buildWorkspaceToolTabs(resolvedWorkspaceToolIds);
+      const mergedIds = new Set<string>();
+      const merged: PreviewTab[] = [];
+      for (const tab of [
+        ...workspaceTabs,
+        ...permanentStillOpen,
+        ...nonPermanentWorkspaceTabs,
+      ]) {
+        if (mergedIds.has(tab.id)) {
+          continue;
+        }
+        mergedIds.add(tab.id);
+        merged.push(tab);
+      }
+      return merged;
+    });
+    setActiveTabId((current) => {
+      if (
+        current === getToolTabId('version-control') &&
+        !resolvedWorkspaceToolIds.includes('version-control')
+      ) {
+        return getToolTabId(
+          resolveDefaultWorkspaceToolId(resolvedWorkspaceToolIds),
+        );
+      }
+      return current;
+    });
+  }, [resolvedWorkspaceToolIds]);
+
   /** 激活指定标签并触发对应回调 */
   const activateTab = useCallback(
     (tab: PreviewTab) => {

@@ -650,14 +650,26 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       if (!hasSelectedPreviewFile) {
         setIsFileTreePinned(true);
       }
+      // 展开文件预览且开启版本管控时，刷新 Git 源代码列表
+      if (
+        !isGitStatusRefreshDisabled &&
+        effectiveAgent?.type === AgentTypeEnum.TaskAgent &&
+        isAgentVersionControlEnabled(effectiveAgent?.enableVersionControl)
+      ) {
+        void fileView.refreshGitList();
+      }
     }
   }, [
     isFileTreeVisible,
     viewMode,
     handleFileTreeVisible,
     fileView.tree.selectedFileId,
+    fileView.refreshGitList,
     taskAgentSelectedFileId,
     setIsFileTreePinned,
+    isGitStatusRefreshDisabled,
+    effectiveAgent?.type,
+    effectiveAgent?.enableVersionControl,
   ]);
 
   useEffect(
