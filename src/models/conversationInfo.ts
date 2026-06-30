@@ -416,6 +416,9 @@ export default () => {
     closePreviewView();
     // 清空文件树数据
     setFileTreeData([]);
+    // 清除任务智能体待选文件，避免空文件树 + 残留 fileId 触发无限刷新
+    setTaskAgentSelectedFileId('');
+    setTaskAgentSelectTrigger(0);
     // 设置视图模式为预览
     setViewMode('preview');
     // 更新 ref 值

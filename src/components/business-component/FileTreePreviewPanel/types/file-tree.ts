@@ -98,4 +98,10 @@ export interface FileTreeViewProps {
   enableVersionControl?: DefaultSelectedEnum;
   /** 文件树预览面板底部内容 */
   bottomContent?: React.ReactNode;
+  /** 刷新文件树后，当前选中/待选文件已不存在时回调 */
+  onSelectedFileMissing?: (fileId: string) => void;
+  /** 是否启用 Git status 拉取 */
+  enableGitStatus?: boolean;
+  /** 递增时强制刷新 Git status（如版本管控开关保存成功后） */
+  gitStatusRefreshTrigger?: number;
 }
