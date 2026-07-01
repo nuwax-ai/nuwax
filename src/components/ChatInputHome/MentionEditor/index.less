@@ -16,7 +16,8 @@
 .mention-editor {
   position: relative;
   width: 100%;
-  padding: 4px @paddingSm;
+  padding: 4px @paddingSm 4px
+    calc(@paddingSm + var(--mention-inline-prefix-offset, 0));
   font-size: @fontSize;
   line-height: 1.5;
   color: @colorText;
@@ -29,7 +30,6 @@
   word-break: break-word;
   white-space: pre-wrap;
   caret-color: @colorPrimary;
-  text-indent: var(--mention-inline-prefix-offset, 0);
 
   // 自定义 placeholder，避免 contenteditable 的 :empty 不稳定问题
   &.empty::before {
