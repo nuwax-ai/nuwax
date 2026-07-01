@@ -575,7 +575,7 @@ export const EN_US: SystemLangMap = {
   "PC.Components.McpAskQuestionCard.customInputLabel": "Custom value",
   "PC.Components.McpAskQuestionCard.customInputPlaceholder": "Enter value",
   "PC.Components.McpAskQuestionCard.customOption": "Custom",
-  "PC.Components.McpAskQuestionCard.eyebrow": "Agent question",
+  "PC.Components.McpAskQuestionCard.eyebrow": "Additional Reply",
   "PC.Components.McpAskQuestionCard.fieldRequired": "This field is required",
   "PC.Components.McpAskQuestionCard.multiSelectMin": "Select at least one option",
   "PC.Components.McpAskQuestionCard.nextStep": "Next",
