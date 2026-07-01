@@ -850,7 +850,6 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
                 enableSubscription={isEnableSubscription}
                 onUnsubscribedSkillSelect={handleUnsubscribedSkillSelect}
                 usageScenarios={usageScenarios}
-                minRows={3}
               />
             </div>
             <footer className={cx('flex', 'flex-1', styles.footer)}>
