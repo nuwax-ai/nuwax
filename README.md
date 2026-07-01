@@ -323,3 +323,103 @@ Join the Nuwax AI Agent Platform community for technical support and latest upda
 ## License
 
 Apache 2.0 License - see [LICENSE](LICENSE) for details.
+
+
+## FAQ
+
+### What is Nuwax?
+
+Nuwax is an **enterprise-grade AI Agent Development and Deployment Platform**. It provides a complete ecosystem for building, deploying, and managing private Agentic AI solutions with distributed sandbox capabilities.
+
+### What components make up Nuwax?
+
+| Component | Description |
+|-----------|-------------|
+| Frontend | PC Web, H5, Mini App, IM integrations (Feishu/DingTalk/WeCom/Slack) |
+| Backend Services | Application services, MCP proxy, file server |
+| Agent Computer | Distributed sandbox for agent execution |
+| nuwaclaw | PC Client for macOS, Windows, Docker |
+| nuwaxcode | Agent Engine (opencode-based) |
+| nuwax-cli | CLI deployment and management tool |
+
+### How do I deploy Nuwax locally?
+
+**Quick Start:**
+```bash
+# 1. Install Docker environment
+# Ubuntu recommended, macOS supports OrbStack/Docker Desktop
+
+# 2. Download and run nuwax-cli
+./nuwax-cli docker-service start
+```
+
+**System Requirements:**
+- Ubuntu 22.04 LTS (recommended) or macOS 10.15+
+- 4 cores, 8GB RAM minimum
+- Docker and Docker Compose V2
+
+### What Agent Engines are supported?
+
+| Engine | Description |
+|--------|-------------|
+| claudecode | Anthropic Claude CLI |
+| opencode | Open-source code agent |
+| codex | OpenAI Codex CLI |
+| openclaw | OpenClaw agent runtime |
+| kimicli | Kimi AI CLI |
+
+### What is MCP Integration?
+
+Nuwax supports **Model Context Protocol (MCP)** for tool integration:
+- Built-in MCP proxy service
+- External MCP server connections
+- Tool catalog and management
+
+### What is A2A Protocol?
+
+**Agent-to-Agent (A2A) Protocol** enables:
+- Multi-agent collaboration
+- Task delegation between agents
+- Distributed workflow execution
+- Cross-platform agent communication
+
+### What management commands are available?
+
+| Command | Purpose |
+|---------|---------|
+| `./nuwax-cli docker-service start` | Start services |
+| `./nuwax-cli docker-service stop` | Stop services |
+| `./nuwax-cli docker-service restart` | Restart services |
+| `./nuwax-cli docker-service status` | Check status |
+| `./nuwax-cli auto-backup run` | Create backup |
+| `./nuwax-cli list-backups` | List backups |
+| `./nuwax-cli rollback [ID]` | Restore backup |
+| `./nuwax-cli auto-upgrade-deploy run` | Upgrade services |
+
+### Can I deploy Agent Computer separately?
+
+Yes! Agent Computer (Sandbox) supports **distributed deployment** across multiple servers:
+- Configure multiple sandbox addresses
+- Scale resources independently
+- Cross-server agent execution
+
+### Is Nuwax free?
+
+Nuwax is **open source** with dual licensing:
+- **Apache 2.0 License** for core platform
+- Community edition free for self-hosting
+- Enterprise support available
+
+### How do I contribute?
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines.
+
+### Where can I get help?
+
+| Resource | Link |
+|----------|------|
+| Official Website | [nuwax.com](https://nuwax.com) |
+| Demo | [agent.nuwax.com](https://agent.nuwax.com) |
+| Documentation | [docs/](docs/) |
+| Chinese Docs | [README.zh-CN.md](README.zh-CN.md) |
+| Issues | [GitHub Issues](https://github.com/nuwax-ai/nuwax/issues) |
