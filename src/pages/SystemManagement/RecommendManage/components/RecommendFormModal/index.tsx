@@ -4,7 +4,7 @@ import UploadAvatar from '@/components/UploadAvatar';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
 import type { SquarePublishedItemInfo } from '@/types/interfaces/square';
-import { Form, message, Select } from 'antd';
+import { Form, Input, message, Select } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { RECOMMEND_PAGE_CONFIG_MAP } from '../../constants';
@@ -73,6 +73,8 @@ const RecommendFormModal: React.FC<RecommendFormModalProps> = ({
 
   /** 提交保存 loading */
   const [loading, setLoading] = useState(false);
+  /** 提示信息 placeholder */
+  const [placeholderText, setPlaceholderText] = useState('');
   /** 功能子类型 */
   const [functionType, setFunctionType] = useState<
     DisplayRecommendFunctionTypeEnum | ''
@@ -138,6 +140,7 @@ const RecommendFormModal: React.FC<RecommendFormModalProps> = ({
     setFunctionType(DisplayRecommendFunctionTypeEnum.Chat);
     setSelectedTarget(null);
     setRecommendIconUrl('');
+    setPlaceholderText('');
   }, []);
 
   /** 编辑模式：回填已选智能体（图标来自智能体，不用推荐记录的 icon） */
@@ -168,6 +171,7 @@ const RecommendFormModal: React.FC<RecommendFormModalProps> = ({
         (editingRecord.functionType as DisplayRecommendFunctionTypeEnum) || '',
       );
       setRecommendIconUrl(editingRecord.icon || '');
+      setPlaceholderText(editingRecord.placeholder || '');
       void hydrateEditingSelectedTarget(editingRecord);
       return;
     }
@@ -196,7 +200,7 @@ const RecommendFormModal: React.FC<RecommendFormModalProps> = ({
       functionType: functionType || '',
       label: selectedTarget.name || '',
       icon: recommendIconUrl || '',
-      placeholder: editingRecord?.placeholder || '',
+      placeholder: placeholderText || '',
       sort: editingRecord?.sort ?? defaultSort,
     };
 
@@ -290,6 +294,16 @@ const RecommendFormModal: React.FC<RecommendFormModalProps> = ({
               </div>
             )
           )}
+        </div>
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ marginBottom: 8 }}>
+            {dict('PC.Pages.SystemRecommendManage.colPlaceholder')}
+          </div>
+          <Input
+            placeholder={dict('PC.Pages.SystemRecommendManage.colPlaceholder')}
+            value={placeholderText}
+            onChange={(e) => setPlaceholderText(e.target.value)}
+          />
         </div>
       </CustomFormModal>
 
