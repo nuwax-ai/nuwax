@@ -314,7 +314,7 @@ const SpaceDevelop: React.FC = () => {
       history.push(`/space/${spaceId}/agent/${agentId}`);
     } else if (item?.devAgentConversationId) {
       history.push(
-        `/space/${spaceId}/conversation-agent?agentId=${agentId}&conversationId=${item.devAgentConversationId}`,
+        `/space/${spaceId}/agent-dev?agentId=${agentId}&conversationId=${item.devAgentConversationId}`,
       );
     } else {
       history.push(`/space/${spaceId}/agent/${agentId}`);

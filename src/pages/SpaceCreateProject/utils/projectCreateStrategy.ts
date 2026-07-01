@@ -31,7 +31,7 @@ const PROJECT_STRATEGIES: Partial<
 > = {
   [AgentComponentTypeEnum.Agent]: {
     getUrl: ({ spaceId, targetId, conversationId }) =>
-      `/space/${spaceId}/conversation-agent?agentId=${targetId}&conversationId=${conversationId}`,
+      `/space/${spaceId}/agent-dev?agentId=${targetId}&conversationId=${conversationId}`,
   },
   [AgentComponentTypeEnum.PageApp]: {
     getUrl: ({ spaceId, targetId }) => `/space/${spaceId}/app-dev/${targetId}`,
