@@ -569,7 +569,7 @@ const routes = [
     layout: false,
   },
   {
-    path: '/space/:spaceId/conversation-agent',
+    path: '/space/:spaceId/agent-dev',
     component: '@/pages/ConversationAgent',
     wrappers: ['@/wrappers/authWithLoading'],
     layout: false,
