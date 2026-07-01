@@ -202,6 +202,7 @@ const Home: React.FC = () => {
 
   useEffect(() => {
     setAgentDetail(undefined);
+    chatInputRef.current?.clear();
     if (currentAgentId) {
       runDetail(currentAgentId);
     }
@@ -362,7 +363,11 @@ const Home: React.FC = () => {
                 }
               : undefined
           }
-          onClearSelectedTag={() => setSelectedRecommend(undefined)}
+          onClearSelectedTag={() => {
+            setSelectedRecommend(undefined);
+            chatInputRef.current?.clear();
+            chatInputRef.current?.focus();
+          }}
           agentMode={agentMode}
           onAgentModeChange={handleAgentModeChange}
           showAgentModeSelector={
