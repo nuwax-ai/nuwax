@@ -260,6 +260,7 @@ const Home: React.FC = () => {
           tools: selectedComponentList,
           computerId: selectedComputerId,
           agentMode,
+          agentId: currentAgentId,
         },
         spaceId,
         tenantConfigInfo,
