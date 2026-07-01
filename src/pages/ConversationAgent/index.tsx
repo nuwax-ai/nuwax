@@ -547,14 +547,28 @@ const ConversationAgent: React.FC = () => {
         if (!data.modelComponentConfig) {
           data.modelComponentConfig = {} as any;
         }
-        data.modelComponentConfig.targetId = (location.state as any).modelId;
+        const stateModelId = (location.state as any).modelId;
+        data.modelComponentConfig.targetId = stateModelId;
 
         // 尝试从列表中回显名称
         const matchedModel = originalModelConfigList.find(
-          (m) => m.id === (location.state as any).modelId,
+          (m) => m.id === stateModelId,
         );
         if (matchedModel) {
           data.modelComponentConfig.name = matchedModel.name;
+        }
+
+        // 自动保存绑定模型到后端
+        const componentId = data.modelComponentConfig.id;
+        const bindConfig = data.modelComponentConfig.bindConfig;
+        if (componentId) {
+          void apiAgentComponentModelUpdate({
+            id: componentId,
+            targetId: stateModelId,
+            bindConfig,
+          }).catch((err) => {
+            console.error('Failed to auto save model config to backend:', err);
+          });
         }
       }
       setAgentConfigInfo(data);
