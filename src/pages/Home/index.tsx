@@ -319,7 +319,10 @@ const Home: React.FC = () => {
   };
 
   return (
-    <div className={cx(styles.container, 'flex', 'flex-col', 'items-center')}>
+    <div
+      id="home-container"
+      className={cx(styles.container, 'flex', 'flex-col', 'items-center')}
+    >
       <main className={cx(styles.inputSection)}>
         <div className={cx(styles.titleContainer)}>
           <h2

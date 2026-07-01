@@ -179,7 +179,7 @@ const DraggableHomeContent: React.FC<DraggableHomeContentProps> = ({
   return (
     <div className={styles.draggableContainer}>
       <Affix
-        target={() => document.getElementById('page-container-selector')}
+        target={() => document.getElementById('home-container')}
         offsetTop={0}
         className={cx(
           styles.stickyContainer,
