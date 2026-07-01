@@ -72,9 +72,7 @@ const RecommendFormModal: React.FC<RecommendFormModalProps> = ({
   const isEdit = !!editingRecord;
 
   /** 提交保存 loading */
-  const [loading, setLoading] = useState(false);
-  /** 提示信息 placeholder */
-  const [placeholderText, setPlaceholderText] = useState('');
+  const [loading, setLoading] = useState<boolean>(false);
   /** 功能子类型 */
   const [functionType, setFunctionType] = useState<
     DisplayRecommendFunctionTypeEnum | ''
@@ -83,9 +81,11 @@ const RecommendFormModal: React.FC<RecommendFormModalProps> = ({
   const [selectedTarget, setSelectedTarget] =
     useState<SquarePublishedItemInfo | null>(null);
   /** 推荐位自定义图标（与已选智能体图标独立） */
-  const [recommendIconUrl, setRecommendIconUrl] = useState('');
+  const [recommendIconUrl, setRecommendIconUrl] = useState<string>('');
+  /** 占位提示文案 */
+  const [placeholder, setPlaceholder] = useState<string>('');
   /** 选择智能体弹窗 */
-  const [pickModalOpen, setPickModalOpen] = useState(false);
+  const [pickModalOpen, setPickModalOpen] = useState<boolean>(false);
 
   /** functionType 下拉选项（已占用的单子类型禁用） */
   const chatboxFunctionTypeOptions = useMemo(() => {
@@ -140,7 +140,7 @@ const RecommendFormModal: React.FC<RecommendFormModalProps> = ({
     setFunctionType(DisplayRecommendFunctionTypeEnum.Chat);
     setSelectedTarget(null);
     setRecommendIconUrl('');
-    setPlaceholderText('');
+    setPlaceholder('');
   }, []);
 
   /** 编辑模式：回填已选智能体（图标来自智能体，不用推荐记录的 icon） */
@@ -171,7 +171,7 @@ const RecommendFormModal: React.FC<RecommendFormModalProps> = ({
         (editingRecord.functionType as DisplayRecommendFunctionTypeEnum) || '',
       );
       setRecommendIconUrl(editingRecord.icon || '');
-      setPlaceholderText(editingRecord.placeholder || '');
+      setPlaceholder(editingRecord.placeholder || '');
       void hydrateEditingSelectedTarget(editingRecord);
       return;
     }
@@ -200,7 +200,7 @@ const RecommendFormModal: React.FC<RecommendFormModalProps> = ({
       functionType: functionType || '',
       label: selectedTarget.name || '',
       icon: recommendIconUrl || '',
-      placeholder: placeholderText || '',
+      placeholder: placeholder || '',
       sort: editingRecord?.sort ?? defaultSort,
     };
 
@@ -265,6 +265,21 @@ const RecommendFormModal: React.FC<RecommendFormModalProps> = ({
         </div>
         <div style={{ marginBottom: 16 }}>
           <div style={{ marginBottom: 8 }}>
+            {dict('PC.Pages.SystemRecommendManage.dialogHintLabel')}
+          </div>
+          <Input
+            value={placeholder}
+            placeholder={dict(
+              'PC.Pages.SystemRecommendManage.dialogHintPlaceholder',
+            )}
+            onChange={(e) => setPlaceholder(e.target.value)}
+            maxLength={200}
+            showCount
+            allowClear
+          />
+        </div>
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ marginBottom: 8 }}>
             {dict('PC.Pages.SystemRecommendManage.colSubType')}
           </div>
           <Select
@@ -294,16 +309,6 @@ const RecommendFormModal: React.FC<RecommendFormModalProps> = ({
               </div>
             )
           )}
-        </div>
-        <div style={{ marginBottom: 16 }}>
-          <div style={{ marginBottom: 8 }}>
-            {dict('PC.Pages.SystemRecommendManage.colPlaceholder')}
-          </div>
-          <Input
-            placeholder={dict('PC.Pages.SystemRecommendManage.colPlaceholder')}
-            value={placeholderText}
-            onChange={(e) => setPlaceholderText(e.target.value)}
-          />
         </div>
       </CustomFormModal>
 
