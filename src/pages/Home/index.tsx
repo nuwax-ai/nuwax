@@ -293,10 +293,12 @@ const Home: React.FC = () => {
   return (
     <div className={cx(styles.container, 'flex', 'flex-col', 'items-center')}>
       <main className={cx(styles.inputSection)}>
-        <h2
-          className={cx(styles.title)}
-          dangerouslySetInnerHTML={{ __html: tenantConfigInfo?.homeSlogan }}
-        />
+        <div className={cx(styles.titleContainer)}>
+          <h2
+            className={cx(styles.title)}
+            dangerouslySetInnerHTML={{ __html: tenantConfigInfo?.homeSlogan }}
+          />
+        </div>
         <ChatInputHome
           ref={chatInputRef}
           className={cx(styles.textarea)}

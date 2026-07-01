@@ -75,7 +75,7 @@ export const getTotalMenuWidth = (
 // 常量定义
 export const MOBILE_BREAKPOINT = 768; // 移动端断点
 export const ANIMATION_DURATION = 300; // 动画持续时间
-export const MOBILE_MENU_TOP_PADDING = 32; // 移动端菜单顶部间距
+export const MOBILE_MENU_TOP_PADDING = 0; // 移动端菜单顶部间距
 
 /**
  * 通用表格全局样式：主要用于弹窗中 Table 的间距边距

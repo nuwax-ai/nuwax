@@ -9,7 +9,7 @@ vi.mock('@/services/i18nRuntime', () => ({
       'PC.Common.Global.confirm': '确认',
       'PC.Common.Global.cancel': '取消',
       'PC.Components.McpAskQuestionCard.cancelShortcutHint': '取消（Esc）',
-      'PC.Components.McpAskQuestionCard.eyebrow': 'Agent 提问',
+      'PC.Components.McpAskQuestionCard.eyebrow': '补充回复',
       'PC.Components.McpAskQuestionCard.fieldRequired': '请填写此项',
       'PC.Components.McpAskQuestionCard.multiSelectMin': '请至少选择一项',
       'PC.Components.McpAskQuestionCard.skip': '跳过',

@@ -188,12 +188,10 @@ const MenuPermissionModal: React.FC<MenuPermissionModalProps> = ({
       return menuTree;
     }
 
-    // 用户组：过滤掉 code 为 eco_market 和 system_manage 的菜单
+    // 用户组：过滤掉 code 为 'system_manage' 的菜单
     const filterMenus = (menus: MenuNodeInfo[]): MenuNodeInfo[] => {
       return menus
-        .filter(
-          (menu) => menu.code !== 'eco_market' && menu.code !== 'system_manage',
-        )
+        .filter((menu) => menu.code !== 'system_manage')
         .map((menu) => ({
           ...menu,
           children: menu.children ? filterMenus(menu.children) : undefined,
