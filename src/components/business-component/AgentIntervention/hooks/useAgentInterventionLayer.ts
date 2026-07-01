@@ -105,7 +105,7 @@ const parseAgentModeCache = (
   return null;
 };
 
-const readAgentModeCache = (
+export const readAgentModeCache = (
   agentId?: number | string | null,
 ): AgentMode | null => {
   const agentKey = normalizeAgentModeCacheAgentId(agentId);
@@ -133,7 +133,7 @@ const readAgentModeCache = (
   return null;
 };
 
-const writeAgentModeCache = (
+export const writeAgentModeCache = (
   mode: AgentMode,
   agentId?: number | string | null,
 ) => {
@@ -217,6 +217,27 @@ export function useAgentInterventionLayer(
   // 用 ref 跟踪最新 agentMode，避免同步 effect 依赖它而频繁重建定时器
   const agentModeRef = useRef(agentMode);
   agentModeRef.current = agentMode;
+
+  // 当智能体切换或其模式选择权限发生变化时，重置/更新 agentMode 状态，
+  // 特别是在未开启模式切换时强制回归 'yolo'，避免上一个智能体遗留下来的 'ask' 被错误使用。
+  useEffect(() => {
+    if (!agentModeEnabled) {
+      setAgentModeState('yolo');
+    } else {
+      try {
+        const cached = readAgentModeCache(agentId);
+        if (cached === 'yolo' || cached === 'ask') {
+          setAgentModeState(cached);
+        } else if (initialAgentMode === 'yolo' || initialAgentMode === 'ask') {
+          setAgentModeState(initialAgentMode);
+        } else {
+          setAgentModeState('yolo');
+        }
+      } catch {
+        setAgentModeState('yolo');
+      }
+    }
+  }, [agentId, agentModeEnabled, initialAgentMode]);
 
   // 模式切换已开启：轮询 + storage 事件把 localStorage 的 agentMode 同步到 state，
   // 使恢复中的会话使用最新模式（多标签下 A 切换后 B 能及时同步）。

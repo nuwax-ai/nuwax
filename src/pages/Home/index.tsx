@@ -1,4 +1,8 @@
 import type { AgentMode } from '@/components/business-component/AgentIntervention';
+import {
+  readAgentModeCache,
+  writeAgentModeCache,
+} from '@/components/business-component/AgentIntervention/hooks/useAgentInterventionLayer';
 import ChatInputHome, {
   type ChatInputHomeRef,
 } from '@/components/ChatInputHome';
@@ -108,6 +112,16 @@ const Home: React.FC = () => {
       ? tenantConfigInfo.defaultTaskAgentId
       : tenantConfigInfo?.defaultAgentId;
   const currentAgentId = selectedRecommend?.targetId || defaultAgentId;
+
+  const handleAgentModeChange = useCallback(
+    (mode: AgentMode) => {
+      setAgentMode(mode);
+      if (currentAgentId) {
+        writeAgentModeCache(mode, currentAgentId);
+      }
+    },
+    [currentAgentId],
+  );
   const selectedFunctionType = selectedRecommend?.functionType || '';
   const selectedProjectType = useMemo(
     () => PROJECT_FUNCTION_TYPE_MAP[selectedFunctionType],
@@ -188,10 +202,22 @@ const Home: React.FC = () => {
 
   useEffect(() => {
     setAgentDetail(undefined);
+    chatInputRef.current?.clear();
     if (currentAgentId) {
       runDetail(currentAgentId);
     }
   }, [currentAgentId, runDetail]);
+
+  useEffect(() => {
+    if (agentDetail) {
+      if (agentDetail.allowChooseMode !== DefaultSelectedEnum.Yes) {
+        setAgentMode('yolo');
+      } else {
+        const cached = readAgentModeCache(currentAgentId);
+        setAgentMode(cached || 'yolo');
+      }
+    }
+  }, [agentDetail, currentAgentId]);
 
   useEffect(() => {
     initSelectedComponentList(agentDetail?.manualComponents);
@@ -250,6 +276,7 @@ const Home: React.FC = () => {
       selectedComputerId,
       skillIds,
       modelId: modelId || selectedModelId,
+      agentMode,
     });
   };
 
@@ -336,9 +363,13 @@ const Home: React.FC = () => {
                 }
               : undefined
           }
-          onClearSelectedTag={() => setSelectedRecommend(undefined)}
+          onClearSelectedTag={() => {
+            setSelectedRecommend(undefined);
+            chatInputRef.current?.clear();
+            chatInputRef.current?.focus();
+          }}
           agentMode={agentMode}
-          onAgentModeChange={setAgentMode}
+          onAgentModeChange={handleAgentModeChange}
           showAgentModeSelector={
             agentDetail?.allowChooseMode === DefaultSelectedEnum.Yes
           }
