@@ -59,6 +59,7 @@ const RESTRICTED_SUB_TYPE_HIDDEN_ACTIONS = new Set<ApplicationMoreActionEnum>([
   ApplicationMoreActionEnum.Move,
   ApplicationMoreActionEnum.API_Key,
   ApplicationMoreActionEnum.Export_Config,
+  ApplicationMoreActionEnum.Independent_Session,
 ]);
 
 /** 不展示受限操作项的子类型 */
