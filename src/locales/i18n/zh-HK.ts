@@ -552,7 +552,7 @@ export const ZH_HK: SystemLangMap = {
   "PC.Components.McpAskQuestionCard.uploadDragText": "點擊或拖拽檔案到此區域上傳",
   "PC.Components.McpAskQuestionCard.file": "檔案",
   "PC.Components.McpAskQuestionCard.emptyFormContent": "（無表單內容）",
-  "PC.Components.McpAskQuestionCard.eyebrow": "Agent 提問",
+  "PC.Components.McpAskQuestionCard.eyebrow": "補充回覆",
   "PC.Components.McpAskQuestionCard.fieldRequired": "請填寫此項",
   "PC.Components.McpAskQuestionCard.multiSelectMin": "請至少選擇一項",
   "PC.Components.McpAskQuestionCard.nextStep": "下一步",
