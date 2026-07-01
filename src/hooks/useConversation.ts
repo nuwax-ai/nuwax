@@ -1,3 +1,4 @@
+import type { AgentMode } from '@/components/business-component/AgentIntervention';
 import { apiAgentConversationCreate } from '@/services/agentConfig';
 import {
   AgentDetailDto,
@@ -38,6 +39,8 @@ const useConversation = () => {
       skillIds?: number[];
       // 模型 ID
       modelId?: number;
+      // 智能体模式
+      agentMode?: AgentMode;
     },
   ) => {
     const variableParams = attach?.variableParams;
