@@ -39,16 +39,8 @@ const PROJECT_STRATEGIES: Partial<
     getUrl: ({ spaceId, targetId }) => `/space/${spaceId}/app-dev/${targetId}`,
   },
   [AgentComponentTypeEnum.Skill]: {
-    getUrl: ({
-      spaceId,
-      targetId,
-      conversationId,
-      tenantConfigInfo,
-      agentId,
-    }) =>
-      `/space/${spaceId}/skill-details-conversation/${targetId}?agentId=${
-        agentId || tenantConfigInfo?.skillDevAgentId
-      }&conversationId=${conversationId}`,
+    getUrl: ({ spaceId, targetId, conversationId }) =>
+      `/space/${spaceId}/skill-details-conversation/${targetId}?conversationId=${conversationId}`,
   },
   [AgentComponentTypeEnum.Plugin]: {
     getUrl: ({ spaceId, targetId, conversationId }) =>
