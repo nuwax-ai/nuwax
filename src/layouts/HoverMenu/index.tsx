@@ -48,7 +48,9 @@ const HoverMenu: React.FC = () => {
     // 主页、系统广场特殊处理：直接渲染对应的 Section 组件
     // 主页 homepage: 最近使用 + 会话记录
     if (hoverMenuType === 'homepage' || hoverMenuType === 'new_conversation') {
-      return <NewHomeSection />;
+      return (
+        <NewHomeSection style={{ marginTop: 7, height: 'calc(100% - 7px)' }} />
+      );
     }
 
     // 工作空间
@@ -116,41 +118,45 @@ const HoverMenu: React.FC = () => {
         paddingLeft: token.padding,
       }}
     >
-      <HoverScrollbar
-        className={cx('h-full')}
-        bodyWidth={
-          NAVIGATION_LAYOUT_SIZES.SECOND_MENU_WIDTH - token.padding * 2
-        }
-        style={{
-          width: '100%',
-          padding: '12px 0',
-          // 通过 style 设置 CSS 变量会导致类型报错，推荐通过 className + :root 或 styled 方案实现
-          // 这里临时用 as any 绕过类型检查，实际项目建议将变量写到全局 less 或 css module
-          ...({
-            ['--xagi-layout-second-menu-text-color']: token.colorText, // 悬浮菜单文字颜色 覆写
-            ['--xagi-layout-second-menu-text-color-secondary']:
-              token.colorTextSecondary, // 悬浮菜单文字颜色 覆写
-          } as React.CSSProperties),
-          display: 'flex',
-          flexDirection: 'column',
-          height: '100%',
-          minHeight: 0,
-        }}
-      >
-        {/* 标题 */}
-        <ConditionRender condition={isShowTitle && currentTitle}>
-          <div style={{ padding: '12px 12px 12px' }}>
-            <Typography.Title
-              level={5}
-              style={{ marginBottom: 0 }}
-              className={cx(styles['menu-title'])}
-            >
-              {currentTitle}
-            </Typography.Title>
-          </div>
-        </ConditionRender>
-        <div style={{ flex: 1, minHeight: 0 }}>{renderSecondMenu}</div>
-      </HoverScrollbar>
+      {hoverMenuType === 'homepage' || hoverMenuType === 'new_conversation' ? (
+        renderSecondMenu
+      ) : (
+        <HoverScrollbar
+          className={cx('h-full')}
+          bodyWidth={
+            NAVIGATION_LAYOUT_SIZES.SECOND_MENU_WIDTH - token.padding * 2
+          }
+          style={{
+            width: '100%',
+            padding: '12px 0',
+            // 通过 style 设置 CSS 变量会导致类型报错，推荐通过 className + :root 或 styled 方案实现
+            // 这里临时用 as any 绕过类型检查，实际项目建议将变量写到全局 less 或 css module
+            ...({
+              ['--xagi-layout-second-menu-text-color']: token.colorText, // 悬浮菜单文字颜色 覆写
+              ['--xagi-layout-second-menu-text-color-secondary']:
+                token.colorTextSecondary, // 悬浮菜单文字颜色 覆写
+            } as React.CSSProperties),
+            display: 'flex',
+            flexDirection: 'column',
+            height: '100%',
+            minHeight: 0,
+          }}
+        >
+          {/* 标题 */}
+          <ConditionRender condition={isShowTitle && currentTitle}>
+            <div style={{ padding: '12px 12px 12px' }}>
+              <Typography.Title
+                level={5}
+                style={{ marginBottom: 0 }}
+                className={cx(styles['menu-title'])}
+              >
+                {currentTitle}
+              </Typography.Title>
+            </div>
+          </ConditionRender>
+          <div style={{ flex: 1, minHeight: 0 }}>{renderSecondMenu}</div>
+        </HoverScrollbar>
+      )}
     </div>
   );
 };

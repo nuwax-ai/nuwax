@@ -15,6 +15,7 @@ export interface ProjectCreatePayload {
   tools?: any[];
   computerId?: string;
   agentMode?: string;
+  agentId?: number;
 }
 
 interface ProjectStrategy {
@@ -23,6 +24,7 @@ interface ProjectStrategy {
     targetId: number;
     conversationId: number;
     tenantConfigInfo?: any;
+    agentId?: number;
   }) => string;
 }
 
@@ -37,8 +39,16 @@ const PROJECT_STRATEGIES: Partial<
     getUrl: ({ spaceId, targetId }) => `/space/${spaceId}/app-dev/${targetId}`,
   },
   [AgentComponentTypeEnum.Skill]: {
-    getUrl: ({ spaceId, targetId, conversationId, tenantConfigInfo }) =>
-      `/space/${spaceId}/skill-details-conversation/${targetId}?agentId=${tenantConfigInfo?.skillDevAgentId}&conversationId=${conversationId}`,
+    getUrl: ({
+      spaceId,
+      targetId,
+      conversationId,
+      tenantConfigInfo,
+      agentId,
+    }) =>
+      `/space/${spaceId}/skill-details-conversation/${targetId}?agentId=${
+        agentId || tenantConfigInfo?.skillDevAgentId
+      }&conversationId=${conversationId}`,
   },
   [AgentComponentTypeEnum.Plugin]: {
     getUrl: ({ spaceId, targetId, conversationId }) =>
@@ -91,6 +101,7 @@ export const createProjectAndNavigate = async ({
     targetId,
     conversationId,
     tenantConfigInfo,
+    agentId: payload.agentId,
   });
 
   const finalUrl =

@@ -27,7 +27,7 @@
   resize: none;
   overflow-y: auto;
   word-wrap: break-word;
-  word-break: break-word;
+  word-break: break-all;
   white-space: pre-wrap;
   caret-color: @colorPrimary;
 
@@ -83,12 +83,14 @@
 .mention-popup-wrapper {
   position: relative;
   z-index: 1050;
+  text-indent: 0;
 }
 
 // 已插入编辑器中的 mention 标签
 .mention-chip {
   display: inline-flex;
   align-items: center;
+  text-indent: 0;
   background-color: @colorBgLayout;
   border-radius: @borderRadius;
   padding: 2px 4px 2px 8px;
