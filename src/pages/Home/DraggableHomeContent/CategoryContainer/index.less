@@ -31,25 +31,38 @@
 
     .ant-tabs-tab {
       // 基础样式
-      padding-right: @paddingXs;
-      border-radius: @borderRadius;
+      padding: 8px 16px !important;
+      border-radius: 8px;
       border: none;
-      // font-size: 14px;
+      margin-left: 0 !important;
+      margin-right: 8px !important;
+
       // 未选中状态
       color: @colorTextSecondary;
-      background-color: @colorWhite;
+      background-color: transparent;
       font-size: @fontSizeLg;
       line-height: 24px;
+      transition: all 0.3s;
+
+      .ant-tabs-tab-btn {
+        color: @colorTextSecondary;
+        transition: all 0.3s;
+      }
 
       &:hover {
-        color: @colorTextSecondary;
-        //background-color: @colorFillTertiary;
+        .ant-tabs-tab-btn {
+          color: @colorText;
+        }
       }
 
       // 选中状态
       &.ant-tabs-tab-active {
-        color: @colorPrimary;
-        //background-color: @colorPrimaryBg;
+        background-color: rgba(0, 0, 0, 5%); // 浅灰色背景
+
+        .ant-tabs-tab-btn {
+          color: @colorText !important;
+          font-weight: 500;
+        }
       }
     }
 
