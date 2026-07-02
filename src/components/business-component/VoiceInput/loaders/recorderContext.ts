@@ -65,12 +65,17 @@ export async function ensureWorkletReady(): Promise<AudioContext> {
     workletPromise = null;
     throw e;
   }
-  if (ctx.state === 'suspended') {
+  if (ctx.state !== 'running') {
     try {
       await ctx.resume();
-    } catch {
-      /* noop */
+    } catch (e) {
+      throw new Error(
+        e instanceof Error ? e.message : 'audio-context-resume-failed',
+      );
     }
+  }
+  if ((ctx.state as string) !== 'running') {
+    throw new Error('audio-context-not-running');
   }
   return ctx;
 }

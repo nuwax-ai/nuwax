@@ -17,6 +17,10 @@ export const VOICE_INPUT_DEFAULTS = {
   minDurationSec: 0.5,
   /** STT 接口超时（毫秒） */
   sttTimeoutMs: 30000,
+  /** 录音链路启动超时（毫秒）：AudioWorklet 须在此时间内产出首帧 PCM */
+  startupTimeoutMs: 10000,
+  /** 麦克风预热时长（毫秒）：连续产出足量 PCM 后才进入正式录制 */
+  startupStabilizationMs: 500,
   /** 上传文件大小硬上限（字节），与后端 10MB 约束对齐 */
   maxFileSizeBytes: 10 * 1024 * 1024,
   /**
