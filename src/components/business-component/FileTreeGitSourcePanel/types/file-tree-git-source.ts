@@ -123,6 +123,8 @@ export interface FileTreeContainerProps {
   handleRenameFromMenu: (node: FileNode) => void;
   /** 从右键菜单上传文件到指定目录 */
   handleUploadMultipleFiles: (node: FileNode | null) => Promise<void>;
+  /** 从右键菜单/工具栏上传文件夹到指定目录（保留子目录结构） */
+  handleUploadFolder?: (node: FileNode | null) => Promise<void>;
   /** 在指定父节点下新建文件 */
   handleCreateFile: (parentNode: FileNode | null) => void;
   /** 在指定父节点下新建文件夹 */

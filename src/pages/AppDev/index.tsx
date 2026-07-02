@@ -93,6 +93,12 @@ import PageEditModal from './components/PageEditModal';
 
 import { checkFileSizeExceedLimit } from '@/utils';
 import {
+  buildUploadFilePaths,
+  filterFilesForUpload,
+  isIgnoredUploadRelativePath,
+  resolveFileTreeUploadRelativePath,
+} from '@/utils/appDevUtils';
+import {
   TTYD_TERMINAL_WIRE_PROTOCOL,
   TTYD_TERMINAL_WS_SUBPROTOCOLS,
 } from '@/utils/terminalWsUrl';
@@ -1088,61 +1094,80 @@ const AppDev: React.FC = () => {
   ]);
 
   /**
-   * 处理右键上传（直接调用上传接口，不依赖状态）
+   * 打开文件/文件夹选择器并上传（使用 AppDev 批量上传接口）
+   * @param node 目标目录节点
+   * @param mode files=多文件上传；folder=文件夹上传（保留子目录结构）
    */
-  const handleUploadMultipleFiles = useCallback(
-    async (node: FileNode | null) => {
+  const triggerAppDevFileUpload = useCallback(
+    async (node: FileNode | null, mode: 'files' | 'folder') => {
       if (!hasValidProjectId) {
         message.error(ERROR_MESSAGES.NO_PROJECT_ID);
         return;
       }
-      //两种情况 第一个是文件夹，第二个是文件
-      let relativePath = '';
 
-      if (node) {
-        if (node.type === 'file') {
-          relativePath = node.path.replace(new RegExp(node.name + '$'), ''); //只替换以node.name结尾的部分
-        } else if (node.type === 'folder') {
-          relativePath = node.path + '/';
-        }
+      const relativePath = resolveFileTreeUploadRelativePath(node);
+      const isFolderMode = mode === 'folder';
+
+      if (isIgnoredUploadRelativePath(relativePath)) {
+        message.warning(t('PC.Components.FileContextMenu.uploadTargetInvalid'));
+        return;
       }
 
-      // 创建一个隐藏的文件输入框
       const input = document.createElement('input');
       input.type = 'file';
       input.style.display = 'none';
       input.accept = '*';
-      input.multiple = true;
+      if (isFolderMode) {
+        input.setAttribute('webkitdirectory', '');
+        input.setAttribute('directory', '');
+      } else {
+        input.multiple = true;
+      }
       document.body.appendChild(input);
 
-      // 等待用户选择文件
-      input.click();
+      const cleanupInput = () => {
+        if (input.parentNode) {
+          document.body.removeChild(input);
+        }
+      };
 
       input.onchange = async (e) => {
-        const file = (e.target as HTMLInputElement).files?.[0];
-        if (!file) {
-          document.body.removeChild(input);
+        const selectedFiles = Array.from(
+          (e.target as HTMLInputElement).files || [],
+        );
+        if (selectedFiles.length === 0) {
+          cleanupInput();
           return;
         }
 
-        // 获取上传的文件列表
-        const files = Array.from((e.target as HTMLInputElement).files || []);
-        // 获取上传的文件路径列表
-        const filePaths = files.map((file) => relativePath + file.name);
+        const files = filterFilesForUpload(selectedFiles, isFolderMode);
+        if (files.length === 0) {
+          message.warning(
+            isFolderMode
+              ? t('PC.Components.FileContextMenu.uploadFolderEmpty')
+              : t('PC.Components.FileContextMenu.uploadFileEmpty'),
+          );
+          cleanupInput();
+          return;
+        }
 
-        // 检查文件大小是否超过最大上传文件大小
+        const filePaths = buildUploadFilePaths(
+          files,
+          relativePath,
+          isFolderMode,
+        );
+
         const { isExceedLimitSize, maxFileSize } =
           checkFileSizeExceedLimit(files);
-        // 如果超过最大上传文件大小，则提示错误
         if (isExceedLimitSize) {
           message.error(
             t('PC.Common.Global.uploadFileSizeExceed', String(maxFileSize)),
           );
+          cleanupInput();
           return;
         }
 
         try {
-          // 设置加载状态，与弹窗上传保持一致
           setSingleFileUploadLoading(true);
           setIsFileOperating(true);
 
@@ -1155,28 +1180,42 @@ const AppDev: React.FC = () => {
           const { code } = await apiAppDevUploadFiles(params);
 
           if (code === SUCCESS_CODE) {
-            // 刷新项目详情(刷新版本列表)
             projectInfo.refreshProjectInfo();
-            // refreshGitList 内部会 loadFileTree，勿重复调用 get-project-content
             await sourceControl.refreshGitList();
           }
         } catch (error) {
-          console.error('[AppDev] right-click upload failed', error);
+          console.error('[AppDev] file upload failed', error);
         } finally {
-          // 清理加载状态和DOM
           setSingleFileUploadLoading(false);
-          document.body.removeChild(input);
           setIsFileOperating(false);
+          cleanupInput();
         }
       };
 
-      // 如果用户取消选择，也要清理DOM
       input.oncancel = () => {
-        document.body.removeChild(input);
+        cleanupInput();
         setIsFileOperating(false);
       };
+
+      input.click();
     },
-    [hasValidProjectId, projectInfo, projectId, sourceControl],
+    [hasValidProjectId, projectId, projectInfo, sourceControl],
+  );
+
+  /** 右键/工具栏上传多个文件 */
+  const handleUploadMultipleFiles = useCallback(
+    async (node: FileNode | null) => {
+      await triggerAppDevFileUpload(node, 'files');
+    },
+    [triggerAppDevFileUpload],
+  );
+
+  /** 右键/工具栏上传文件夹（保留 webkitRelativePath 目录结构） */
+  const handleUploadFolder = useCallback(
+    async (node: FileNode | null) => {
+      await triggerAppDevFileUpload(node, 'folder');
+    },
+    [triggerAppDevFileUpload],
   );
 
   /**
@@ -1284,6 +1323,8 @@ const AppDev: React.FC = () => {
     onDeleteFile: handleDeleteClick,
     onRenameFile: handleRenameFile,
     onUploadFiles: handleUploadMultipleFiles,
+    onUploadFolder: handleUploadFolder,
+    isUploadingFiles: singleFileUploadLoading,
     onImportProject: () => setIsUploadModalVisible(true),
     importProjectLabel: t('PC.Pages.AppDevFileTreeContextMenu.importProject'),
     onExportProject: handleExportProject,

@@ -1389,9 +1389,8 @@ const ConversationAgent: React.FC = () => {
       onAfterDiscardChanges: async () => {
         await fileView.tree.handleRefreshFileList();
       },
-      // 提交成功后清空本地修改并关闭 Tab
+      // 提交成功后刷新 Git 状态，不关闭顶部工作区/文件标签
       onCommitSuccess: async () => {
-        previewTabs.clearTabs();
         await fileView.refreshGitList();
       },
       // 刷新 Git 变更列表（git status + 文件树）
