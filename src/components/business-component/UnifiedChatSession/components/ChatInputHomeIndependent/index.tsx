@@ -1,6 +1,7 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import type { AgentMode } from '@/components/business-component/AgentIntervention';
 import PaymentSubscriptionModal from '@/components/business-component/PaymentSubscriptionModal';
+import VoiceInputSlot from '@/components/business-component/VoiceInput';
 import AtMentionIcon from '@/components/ChatInputHome/AtMentionIcon';
 import ComputerTypeSelector from '@/components/ChatInputHome/ComputerTypeSelector';
 import styles from '@/components/ChatInputHome/index.less';
@@ -817,6 +818,11 @@ const ChatInputHomeIndependent: React.FC<ChatInputHomeIndependentProps> = ({
                 </span>
               </Tooltip>
             </Upload>
+            {/*语音输入：录音 -> 识别 -> 自动发送；ENABLE_VOICE_INPUT=false 时不渲染*/}
+            <VoiceInputSlot
+              onSend={confirmSendMessage}
+              disabled={wholeDisabled || isSessionActive}
+            />
             {showAgentModeSelector && (
               <Dropdown
                 menu={{
