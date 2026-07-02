@@ -75,6 +75,7 @@ export const useAudioRecorder = (): UseAudioRecorder => {
   const mountedRef = useRef(true);
   const operationIdRef = useRef(0);
   const startingRef = useRef(false);
+  const abortStartupRef = useRef<((error: RecorderError) => void) | null>(null);
 
   const clearTimer = useCallback(() => {
     if (timerRef.current) {
@@ -89,6 +90,8 @@ export const useAudioRecorder = (): UseAudioRecorder => {
    */
   const releaseRecordingResources = useCallback(() => {
     clearTimer();
+    abortStartupRef.current?.(new RecorderError('aborted'));
+    abortStartupRef.current = null;
     if (nodeRef.current) {
       try {
         nodeRef.current.port.onmessage = null;
@@ -209,9 +212,26 @@ export const useAudioRecorder = (): UseAudioRecorder => {
       pendingRmsRef.current = [];
       waveLevelsRef.current = createEmptyWaveLevels();
       setWaveLevels(createEmptyWaveLevels());
+      const startupSampleTarget = Math.ceil(
+        (ctx.sampleRate * VOICE_INPUT_DEFAULTS.startupStabilizationMs) / 1000,
+      );
+      let startupSampleCount = 0;
+      let recordingReady = false;
+      let resolveStartup: (() => void) | null = null;
+      let startupBoundaryFrame: Float32Array | null = null;
+      let startupCompletedAt = 0;
       node.port.onmessage = (event: MessageEvent) => {
         const frame = event.data as Float32Array | undefined;
         if (frame && frame.length) {
+          if (!recordingReady) {
+            startupSampleCount += frame.length;
+            if (startupSampleCount >= startupSampleTarget) {
+              startupBoundaryFrame = frame;
+              startupCompletedAt = Date.now();
+              resolveStartup?.();
+            }
+            return;
+          }
           chunksRef.current.push(frame);
           pendingRmsRef.current.push(computeFrameRms(frame));
         }
@@ -224,7 +244,49 @@ export const useAudioRecorder = (): UseAudioRecorder => {
       sourceRef.current = source;
       nodeRef.current = node;
       muteGainRef.current = muteGain;
-      startedAtRef.current = Date.now();
+
+      // 节点连通或单个 PCM 帧都不代表设备已经稳定。保持 connecting，直到
+      // worklet 连续产出指定时长的 PCM；预热帧不进入最终录音与波形。
+      await new Promise<void>((resolve, reject) => {
+        let settled = false;
+        let timeout: ReturnType<typeof setTimeout>;
+        const settle = (callback: () => void) => {
+          if (settled) {
+            return;
+          }
+          settled = true;
+          clearTimeout(timeout);
+          abortStartupRef.current = null;
+          resolveStartup = null;
+          callback();
+        };
+        timeout = setTimeout(() => {
+          settle(() =>
+            reject(new RecorderError('unknown', 'recorder startup timeout')),
+          );
+        }, VOICE_INPUT_DEFAULTS.startupTimeoutMs);
+
+        resolveStartup = () => settle(resolve);
+        abortStartupRef.current = (error) => settle(() => reject(error));
+      });
+
+      if (!isOperationActive()) {
+        throw new RecorderError('aborted');
+      }
+      recordingReady = true;
+      const firstRecordingFrame = startupBoundaryFrame ?? new Float32Array(0);
+      chunksRef.current = firstRecordingFrame.length
+        ? [firstRecordingFrame]
+        : [];
+      pendingRmsRef.current = [];
+      waveLevelsRef.current = firstRecordingFrame.length
+        ? appendSmoothedWaveLevel(
+            [],
+            normalizeWaveLevel(computeFrameRms(firstRecordingFrame)),
+          )
+        : createEmptyWaveLevels();
+      setWaveLevels(waveLevelsRef.current);
+      startedAtRef.current = startupCompletedAt || Date.now();
 
       startingRef.current = false;
       setDurationSec(0);
