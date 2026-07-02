@@ -89,8 +89,19 @@ const VoiceButton: React.FC<VoiceButtonProps> = ({
   const isStopping = status === 'stopping';
   const isConnecting = status === 'connecting';
   const [transcribing, setTranscribing] = useState(false);
+  const mountedRef = useRef(true);
+  const transcriptionIdRef = useRef(0);
+  const finishingRef = useRef(false);
 
   const isBusy = disabled || transcribing || isStopping || isConnecting;
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      transcriptionIdRef.current += 1;
+    };
+  }, []);
 
   // 挂载即预热 worklet（真实模式），让首次点击更快、有即时反馈
   useEffect(() => {
@@ -104,47 +115,74 @@ const VoiceButton: React.FC<VoiceButtonProps> = ({
    */
   const finishRecording = useCallback(
     async (mode: VoiceSubmitMode) => {
-      let blob: Blob;
-      try {
-        blob = await recorder.stop();
-      } catch (e) {
-        showError(e);
-        recorder.reset();
+      if (finishingRef.current) {
         return;
       }
+      finishingRef.current = true;
 
-      // 后端 STT 有单文件 10MB 上限；16kHz 下 maxDurationSec 内不会触达，
-      // 此处兜底配置漂移或采样率异常，避免整段录音上传必败
-      if (blob.size > VOICE_INPUT_DEFAULTS.maxFileSizeBytes) {
-        message.error(t(`${I18N_PREFIX}.tooLarge`));
-        recorder.reset();
-        return;
-      }
-
-      setTranscribing(true);
       try {
-        let trimmed: string;
-        if (mock) {
-          await new Promise<void>((resolve) => {
-            setTimeout(resolve, MOCK_STT_DELAY_MS);
-          });
-          trimmed = mockTranscript.trim();
-        } else {
-          const text = await speechToText(blob, {
-            timeoutMs: VOICE_INPUT_DEFAULTS.sttTimeoutMs,
-          });
-          trimmed = text?.trim() ?? '';
+        let blob: Blob;
+        try {
+          blob = await recorder.stop();
+        } catch (e) {
+          if (mountedRef.current) {
+            showError(e);
+            recorder.reset();
+          }
+          return;
         }
-        if (trimmed) {
-          onResult(trimmed, mode);
-        } else {
-          message.error(t(`${I18N_PREFIX}.recognizeFailed`));
+
+        // 后端 STT 有单文件 10MB 上限；16kHz 下 maxDurationSec 内不会触达，
+        // 此处兜底配置漂移或采样率异常，避免整段录音上传必败
+        if (blob.size > VOICE_INPUT_DEFAULTS.maxFileSizeBytes) {
+          if (mountedRef.current) {
+            message.error(t(`${I18N_PREFIX}.tooLarge`));
+            recorder.reset();
+          }
+          return;
         }
-      } catch {
-        message.error(t(`${I18N_PREFIX}.recognizeFailed`));
+
+        if (!mountedRef.current) {
+          return;
+        }
+        const transcriptionId = ++transcriptionIdRef.current;
+        const isTranscriptionActive = () =>
+          mountedRef.current && transcriptionIdRef.current === transcriptionId;
+
+        setTranscribing(true);
+        try {
+          let trimmed: string;
+          if (mock) {
+            await new Promise<void>((resolve) => {
+              setTimeout(resolve, MOCK_STT_DELAY_MS);
+            });
+            trimmed = mockTranscript.trim();
+          } else {
+            const text = await speechToText(blob, {
+              timeoutMs: VOICE_INPUT_DEFAULTS.sttTimeoutMs,
+            });
+            trimmed = text?.trim() ?? '';
+          }
+          if (!isTranscriptionActive()) {
+            return;
+          }
+          if (trimmed) {
+            onResult(trimmed, mode);
+          } else {
+            message.error(t(`${I18N_PREFIX}.recognizeFailed`));
+          }
+        } catch {
+          if (isTranscriptionActive()) {
+            message.error(t(`${I18N_PREFIX}.recognizeFailed`));
+          }
+        } finally {
+          if (isTranscriptionActive()) {
+            setTranscribing(false);
+            recorder.reset();
+          }
+        }
       } finally {
-        setTranscribing(false);
-        recorder.reset();
+        finishingRef.current = false;
       }
     },
     [recorder, onResult, mock, mockTranscript],
@@ -195,9 +233,24 @@ const VoiceButton: React.FC<VoiceButtonProps> = ({
     try {
       await recorder.start();
     } catch (e) {
-      showError(e);
+      if (mountedRef.current) {
+        showError(e);
+      }
     }
   }, [isBusy, isRecording, recorder]);
+
+  // 录音启动后若会话转为禁用态（例如用户同时通过回车发出了消息），
+  // 自动停止并回填，避免继续占用麦克风或绕过最新发送条件。
+  useEffect(() => {
+    if (!disabled) {
+      return;
+    }
+    if (isConnecting) {
+      recorder.reset();
+    } else if (isRecording) {
+      void finishRecording('fill');
+    }
+  }, [disabled, isConnecting, isRecording, recorder, finishRecording]);
 
   // 到达最大时长自动停止并回填（保守默认，用户可再点发送）
   useEffect(() => {
@@ -238,13 +291,16 @@ const VoiceButton: React.FC<VoiceButtonProps> = ({
   }
 
   // 空闲 / 连接中：麦克风入口（连接中图标呼吸闪动；悬停再预热一次，幂等）
+  const buttonLabel = t(
+    `${I18N_PREFIX}.${isConnecting ? 'connecting' : 'startTooltip'}`,
+  );
+
   return (
-    <Tooltip
-      title={t(
-        `${I18N_PREFIX}.${isConnecting ? 'connecting' : 'startTooltip'}`,
-      )}
-    >
-      <span
+    <Tooltip title={buttonLabel}>
+      <button
+        type="button"
+        aria-label={buttonLabel}
+        disabled={isBusy}
         className={`${
           isConnecting ? styles['voice-connecting'] : styles['voice-idle']
         }${className ? ` ${className}` : ''}${
@@ -255,18 +311,14 @@ const VoiceButton: React.FC<VoiceButtonProps> = ({
             warmUpRecorder();
           }
         }}
-        onClick={() => {
-          if (!isBusy) {
-            void handleStartRecording();
-          }
-        }}
+        onClick={() => void handleStartRecording()}
       >
         <SvgIcon
           name="icons-chat-voice"
           style={{ fontSize: 18 }}
           className={styles['voice-icon']}
         />
-      </span>
+      </button>
     </Tooltip>
   );
 };

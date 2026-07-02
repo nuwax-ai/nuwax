@@ -55,8 +55,12 @@ export const VoiceFooterRight: React.FC<VoiceFooterRightProps> = ({
 
   // 转写阶段未被点击的那个按钮置灰
   const phase = voiceControl?.phase;
-  const stopDisabled = phase === 'transcribing' && pendingAction !== 'fill';
-  const sendDisabled = phase === 'transcribing' && pendingAction !== 'send';
+  const stopUnavailable = phase !== 'recording';
+  const sendUnavailable = !!disabled || phase !== 'recording';
+  const stopVisuallyDisabled = stopUnavailable && pendingAction !== 'fill';
+  const sendVisuallyDisabled =
+    (phase !== 'recording' && pendingAction !== 'send') ||
+    (!!disabled && phase === 'recording');
 
   return (
     <div className={rootClass}>
@@ -74,7 +78,10 @@ export const VoiceFooterRight: React.FC<VoiceFooterRightProps> = ({
       {isActive ? (
         <>
           <Tooltip title={t(`${I18N_PREFIX}.stopFillTooltip`)}>
-            <span
+            <button
+              type="button"
+              aria-label={t(`${I18N_PREFIX}.stopFillTooltip`)}
+              disabled={stopUnavailable}
               onClick={() => {
                 if (voiceControl?.phase === 'recording') {
                   setPendingAction('fill');
@@ -83,7 +90,11 @@ export const VoiceFooterRight: React.FC<VoiceFooterRightProps> = ({
               }}
               className={`${styles['voice-footer-action-box']} ${
                 styles['voice-action-stop']
-              }${stopDisabled ? ` ${styles['voice-action-disabled']}` : ''}`}
+              }${
+                stopVisuallyDisabled
+                  ? ` ${styles['voice-action-disabled']}`
+                  : ''
+              }`}
             >
               {voiceControl?.phase === 'transcribing' &&
               pendingAction === 'fill' ? (
@@ -91,10 +102,13 @@ export const VoiceFooterRight: React.FC<VoiceFooterRightProps> = ({
               ) : (
                 <SvgIcon name="icons-chat-stop" />
               )}
-            </span>
+            </button>
           </Tooltip>
           <Tooltip title={t(`${I18N_PREFIX}.stopSendTooltip`)}>
-            <span
+            <button
+              type="button"
+              aria-label={t(`${I18N_PREFIX}.stopSendTooltip`)}
+              disabled={sendUnavailable}
               onClick={() => {
                 if (voiceControl?.phase === 'recording') {
                   setPendingAction('send');
@@ -103,7 +117,11 @@ export const VoiceFooterRight: React.FC<VoiceFooterRightProps> = ({
               }}
               className={`${styles['voice-footer-action-box']} ${
                 styles['voice-action-send']
-              }${sendDisabled ? ` ${styles['voice-action-disabled']}` : ''}`}
+              }${
+                sendVisuallyDisabled
+                  ? ` ${styles['voice-action-disabled']}`
+                  : ''
+              }`}
             >
               {voiceControl?.phase === 'transcribing' &&
               pendingAction === 'send' ? (
@@ -111,7 +129,7 @@ export const VoiceFooterRight: React.FC<VoiceFooterRightProps> = ({
               ) : (
                 <SvgIcon name="icons-chat-send" style={{ fontSize: 14 }} />
               )}
-            </span>
+            </button>
           </Tooltip>
         </>
       ) : (

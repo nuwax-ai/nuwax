@@ -1,7 +1,10 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import type { AgentMode } from '@/components/business-component/AgentIntervention';
 import PaymentSubscriptionModal from '@/components/business-component/PaymentSubscriptionModal';
-import { ChatInputVoiceFooter } from '@/components/business-component/VoiceInput';
+import {
+  ChatInputVoiceFooter,
+  mergeVoiceTranscript,
+} from '@/components/business-component/VoiceInput';
 import ChatUploadFile from '@/components/ChatUploadFile';
 import ConditionRender from '@/components/ConditionRender';
 import PermissionMask from '@/components/PermissionMask';
@@ -856,11 +859,19 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
               />
             </div>
             <VoiceFooter.Provider
-              disabled={wholeDisabled || streamActive}
-              onFill={(text) =>
-                setMessageInfo((prev) => (prev ? `${prev}\n${text}` : text))
+              disabled={
+                wholeDisabled ||
+                isActiveConversation ||
+                loadingConversation ||
+                isLoadingOtherInterface ||
+                isStoppingConversation
               }
-              onSend={confirmSendMessage}
+              onFill={(text) =>
+                setMessageInfo((prev) => mergeVoiceTranscript(prev, text))
+              }
+              onSend={(text) =>
+                confirmSendMessage(mergeVoiceTranscript(messageInfo, text))
+              }
             >
               {(isVoiceActive) => (
                 <footer
