@@ -10,6 +10,7 @@ import {
   MOCK_STT_DELAY_MS,
   useMockAudioRecorder,
 } from '../hooks/useMockAudioRecorder';
+import { warmUpRecorder } from '../loaders/recorderContext';
 import type { VoiceInputControl, VoiceSubmitMode } from '../types';
 import { createEmptyWaveLevels } from '../utils/waveLevels';
 import VoiceRecordingBar from './RecordingBar';
@@ -86,9 +87,17 @@ const VoiceButton: React.FC<VoiceButtonProps> = ({
   const { status, durationSec, waveLevels } = recorder;
   const isRecording = status === 'recording';
   const isStopping = status === 'stopping';
+  const isConnecting = status === 'connecting';
   const [transcribing, setTranscribing] = useState(false);
 
-  const isBusy = disabled || transcribing || isStopping;
+  const isBusy = disabled || transcribing || isStopping || isConnecting;
+
+  // 挂载即预热 worklet（真实模式），让首次点击更快、有即时反馈
+  useEffect(() => {
+    if (!mock) {
+      warmUpRecorder();
+    }
+  }, [mock]);
 
   /**
    * 停止录音 -> STT -> 按模式回填或发送
@@ -104,6 +113,14 @@ const VoiceButton: React.FC<VoiceButtonProps> = ({
         return;
       }
 
+      // 后端 STT 有单文件 10MB 上限；16kHz 下 maxDurationSec 内不会触达，
+      // 此处兜底配置漂移或采样率异常，避免整段录音上传必败
+      if (blob.size > VOICE_INPUT_DEFAULTS.maxFileSizeBytes) {
+        message.error(t(`${I18N_PREFIX}.tooLarge`));
+        recorder.reset();
+        return;
+      }
+
       setTranscribing(true);
       try {
         let trimmed: string;
@@ -113,7 +130,9 @@ const VoiceButton: React.FC<VoiceButtonProps> = ({
           });
           trimmed = mockTranscript.trim();
         } else {
-          const text = await speechToText(blob);
+          const text = await speechToText(blob, {
+            timeoutMs: VOICE_INPUT_DEFAULTS.sttTimeoutMs,
+          });
           trimmed = text?.trim() ?? '';
         }
         if (trimmed) {
@@ -197,9 +216,6 @@ const VoiceButton: React.FC<VoiceButtonProps> = ({
         }`}
       >
         <LoadingOutlined style={{ fontSize: 14 }} />
-        <span className={styles['voice-action-label']}>
-          {t(`${I18N_PREFIX}.transcribing`)}
-        </span>
       </span>
     );
   }
@@ -219,13 +235,24 @@ const VoiceButton: React.FC<VoiceButtonProps> = ({
     );
   }
 
-  // 空闲：麦克风入口
+  // 空闲 / 连接中：麦克风入口（连接中给脉冲反馈；悬停再预热一次，幂等）
   return (
-    <Tooltip title={t(`${I18N_PREFIX}.startTooltip`)}>
+    <Tooltip
+      title={t(
+        `${I18N_PREFIX}.${isConnecting ? 'connecting' : 'startTooltip'}`,
+      )}
+    >
       <span
-        className={`${styles['voice-idle']}${className ? ` ${className}` : ''}${
-          isBusy ? ` ${styles['voice-disabled']}` : ''
+        className={`${
+          isConnecting ? styles['voice-connecting'] : styles['voice-idle']
+        }${className ? ` ${className}` : ''}${
+          isBusy && !isConnecting ? ` ${styles['voice-disabled']}` : ''
         }`}
+        onMouseEnter={() => {
+          if (!mock) {
+            warmUpRecorder();
+          }
+        }}
         onClick={() => {
           if (!isBusy) {
             void handleStartRecording();
@@ -234,7 +261,7 @@ const VoiceButton: React.FC<VoiceButtonProps> = ({
       >
         <SvgIcon
           name="icons-chat-voice"
-          style={{ fontSize: 14 }}
+          style={{ fontSize: 18 }}
           className={styles['voice-icon']}
         />
       </span>

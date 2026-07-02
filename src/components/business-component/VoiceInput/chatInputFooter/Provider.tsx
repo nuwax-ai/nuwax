@@ -33,6 +33,12 @@ export const VoiceFooterProvider: React.FC<VoiceFooterProviderProps> = ({
         onSend(text);
         return;
       }
+      // 回填依赖 MentionEditor 的外部 value 同步，而编辑器聚焦时会跳过该同步：
+      // 若用户在转写期间点回输入框，回填文本只进 state 不上屏、随后被下次输入覆盖。
+      // 回填前先失焦，确保同步生效。
+      if (typeof document !== 'undefined') {
+        (document.activeElement as HTMLElement | null)?.blur?.();
+      }
       onFill(text);
     },
     [onFill, onSend],

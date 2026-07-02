@@ -1,7 +1,7 @@
 @import '@/styles/color';
 @import '@/styles/token';
 
-// 空闲态麦克风：无边框，与发送按钮区图标风格一致
+// 空闲态麦克风：与工具栏其它图标一致的描述色
 .voice-idle {
   display: inline-flex;
   align-items: center;
@@ -24,6 +24,40 @@
 
   &:hover {
     background-color: @colorPrimaryBg;
+  }
+}
+
+// 连接中：已点击麦克风，正在申请权限/复用 worklet，给脉冲反馈避免“点了没反应”
+.voice-connecting {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 16px;
+  cursor: progress;
+  color: @colorTextDescription;
+  font-size: @fontSize;
+  background-color: transparent;
+  user-select: none;
+
+  .voice-icon {
+    color: @colorTextDescription;
+    animation: voice-connecting-pulse 1s ease-in-out infinite;
+  }
+}
+
+@keyframes voice-connecting-pulse {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale(0.9);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
   }
 }
 

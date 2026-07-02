@@ -1,10 +1,6 @@
-import { t } from '@/services/i18nRuntime';
-import { LoadingOutlined } from '@ant-design/icons';
 import React, { useMemo } from 'react';
 import { createEmptyWaveLevels } from '../utils/waveLevels';
 import styles from './index.less';
-
-const I18N_PREFIX = 'PC.Components.VoiceInput';
 
 const WAVE_MIN_PX = 4;
 const WAVE_MAX_PX = 18;
@@ -51,14 +47,11 @@ const VoiceRecordingBar: React.FC<VoiceRecordingBarProps> = ({
     .filter(Boolean)
     .join(' ');
 
+  // 转写中：不展示 loading（由底栏右侧动作按钮承接），仅保留基线维持布局
   if (phase === 'transcribing') {
     return (
       <div className={rootClass}>
         <span className={styles['voice-baseline']} aria-hidden />
-        <LoadingOutlined style={{ fontSize: 14 }} />
-        <span className={styles['voice-action-label']}>
-          {t(`${I18N_PREFIX}.transcribing`)}
-        </span>
       </div>
     );
   }

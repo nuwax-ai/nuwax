@@ -3,7 +3,7 @@ import { ENABLE_VOICE_INPUT } from '@/constants/feature.constants';
 import { t } from '@/services/i18nRuntime';
 import { LoadingOutlined } from '@ant-design/icons';
 import { Tooltip } from 'antd';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import VoiceButton from '../components/Button';
 import { useVoiceFooter } from './context';
 import styles from './index.less';
@@ -35,6 +35,16 @@ export const VoiceFooterRight: React.FC<VoiceFooterRightProps> = ({
     handleVoiceResult,
   } = useVoiceFooter();
 
+  // 转写期间：被点击的按钮展示 loading（保持主题色），另一个置灰
+  const [pendingAction, setPendingAction] = useState<'fill' | 'send' | null>(
+    null,
+  );
+  useEffect(() => {
+    if (voiceControl?.phase !== 'transcribing') {
+      setPendingAction(null);
+    }
+  }, [voiceControl?.phase]);
+
   const rootClass = [
     styles['voice-footer-right'],
     isActive ? styles['voice-footer-right-active'] : '',
@@ -62,36 +72,46 @@ export const VoiceFooterRight: React.FC<VoiceFooterRightProps> = ({
             <span
               onClick={() => {
                 if (voiceControl?.phase === 'recording') {
+                  setPendingAction('fill');
                   voiceControl.submit('fill');
                 }
               }}
               className={`${styles['voice-footer-action-box']} ${
                 styles['voice-action-stop']
               }${
-                voiceControl?.phase === 'transcribing'
+                voiceControl?.phase === 'transcribing' &&
+                pendingAction !== 'fill'
                   ? ` ${styles['voice-action-disabled']}`
                   : ''
               }`}
             >
-              <SvgIcon name="icons-chat-stop" />
+              {voiceControl?.phase === 'transcribing' &&
+              pendingAction === 'fill' ? (
+                <LoadingOutlined style={{ fontSize: 14 }} />
+              ) : (
+                <SvgIcon name="icons-chat-stop" />
+              )}
             </span>
           </Tooltip>
           <Tooltip title={t(`${I18N_PREFIX}.stopSendTooltip`)}>
             <span
               onClick={() => {
                 if (voiceControl?.phase === 'recording') {
+                  setPendingAction('send');
                   voiceControl.submit('send');
                 }
               }}
               className={`${styles['voice-footer-action-box']} ${
                 styles['voice-action-send']
               }${
-                voiceControl?.phase === 'transcribing'
+                voiceControl?.phase === 'transcribing' &&
+                pendingAction !== 'send'
                   ? ` ${styles['voice-action-disabled']}`
                   : ''
               }`}
             >
-              {voiceControl?.phase === 'transcribing' ? (
+              {voiceControl?.phase === 'transcribing' &&
+              pendingAction === 'send' ? (
                 <LoadingOutlined style={{ fontSize: 14 }} />
               ) : (
                 <SvgIcon name="icons-chat-send" style={{ fontSize: 14 }} />
