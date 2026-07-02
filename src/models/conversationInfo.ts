@@ -446,14 +446,10 @@ export default () => {
       openPreviewChangeState('preview');
       // 只在需要时触发文件列表刷新事件
       if (needRefresh) {
-        if (options?.forceRefresh) {
-          await refreshFileListImmediately(cId);
-        } else {
-          handleRefreshFileList(cId);
-        }
+        await refreshFileListImmediately(cId);
       }
     },
-    [handleRefreshFileList, refreshFileListImmediately, openPreviewChangeState],
+    [refreshFileListImmediately, openPreviewChangeState],
   );
 
   // 滚动到底部
@@ -1081,7 +1077,7 @@ export default () => {
             conversationInfoRef.current?.agent?.type === AgentTypeEnum.TaskAgent
           ) {
             // 刷新文件树
-            await handleRefreshFileList(params.conversationId);
+            await refreshFileListImmediately(params.conversationId);
 
             // 同步后台任务状态，确保「智能体正在执行，请稍等」能正确展示/结束
             void syncConversationTaskStatus(params.conversationId);
