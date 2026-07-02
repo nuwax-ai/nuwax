@@ -173,6 +173,8 @@ const VoiceButton: React.FC<VoiceButtonProps> = ({
         submit: (mode) => void finishRecordingRef.current(mode),
       });
     } else {
+      // 连接麦克风阶段不上报 control：底栏保持原布局，
+      // 由麦克风图标自身的呼吸动效反馈“正在启动、稍候再说”
       onControlChange(null);
     }
     return () => onControlChange(null);
@@ -235,7 +237,7 @@ const VoiceButton: React.FC<VoiceButtonProps> = ({
     );
   }
 
-  // 空闲 / 连接中：麦克风入口（连接中给脉冲反馈；悬停再预热一次，幂等）
+  // 空闲 / 连接中：麦克风入口（连接中图标呼吸闪动；悬停再预热一次，幂等）
   return (
     <Tooltip
       title={t(

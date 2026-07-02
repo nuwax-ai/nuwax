@@ -53,6 +53,11 @@ export const VoiceFooterRight: React.FC<VoiceFooterRightProps> = ({
     .filter(Boolean)
     .join(' ');
 
+  // 转写阶段未被点击的那个按钮置灰
+  const phase = voiceControl?.phase;
+  const stopDisabled = phase === 'transcribing' && pendingAction !== 'fill';
+  const sendDisabled = phase === 'transcribing' && pendingAction !== 'send';
+
   return (
     <div className={rootClass}>
       {!isActive && children}
@@ -78,12 +83,7 @@ export const VoiceFooterRight: React.FC<VoiceFooterRightProps> = ({
               }}
               className={`${styles['voice-footer-action-box']} ${
                 styles['voice-action-stop']
-              }${
-                voiceControl?.phase === 'transcribing' &&
-                pendingAction !== 'fill'
-                  ? ` ${styles['voice-action-disabled']}`
-                  : ''
-              }`}
+              }${stopDisabled ? ` ${styles['voice-action-disabled']}` : ''}`}
             >
               {voiceControl?.phase === 'transcribing' &&
               pendingAction === 'fill' ? (
@@ -103,12 +103,7 @@ export const VoiceFooterRight: React.FC<VoiceFooterRightProps> = ({
               }}
               className={`${styles['voice-footer-action-box']} ${
                 styles['voice-action-send']
-              }${
-                voiceControl?.phase === 'transcribing' &&
-                pendingAction !== 'send'
-                  ? ` ${styles['voice-action-disabled']}`
-                  : ''
-              }`}
+              }${sendDisabled ? ` ${styles['voice-action-disabled']}` : ''}`}
             >
               {voiceControl?.phase === 'transcribing' &&
               pendingAction === 'send' ? (

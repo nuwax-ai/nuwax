@@ -9,7 +9,7 @@ export type VoiceSubmitMode = 'fill' | 'send';
  * 语音控件对外暴露的运行时状态（供会话框复用停止/发送按钮）
  */
 export interface VoiceInputControl {
-  /** recording=录音中；transcribing=转写中 */
+  /** recording=录音中；transcribing=转写中（连接麦克风阶段不上报 control） */
   phase: 'recording' | 'transcribing';
   /** 录音已进行秒数（转写中为 0） */
   durationSec: number;
