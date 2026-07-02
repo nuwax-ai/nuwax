@@ -582,7 +582,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Components.McpAskQuestionCard.customInputLabel": "自定义内容",
   "PC.Components.McpAskQuestionCard.customInputPlaceholder": "请输入",
   "PC.Components.McpAskQuestionCard.customOption": "自定义",
-  "PC.Components.McpAskQuestionCard.eyebrow": "Agent 提问",
+  "PC.Components.McpAskQuestionCard.eyebrow": "补充回复",
   "PC.Components.McpAskQuestionCard.fieldRequired": "请填写此项",
   "PC.Components.McpAskQuestionCard.multiSelectMin": "请至少选择一项",
   "PC.Components.McpAskQuestionCard.nextStep": "下一步",

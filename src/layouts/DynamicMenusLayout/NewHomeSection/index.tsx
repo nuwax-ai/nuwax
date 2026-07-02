@@ -1,5 +1,5 @@
 import { useDebounceFn } from 'ahooks';
-import { Spin, Typography } from 'antd';
+import { Spin } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { history, useLocation, useModel, useParams } from 'umi';
@@ -10,7 +10,6 @@ import SearchHeader from './components/SearchHeader';
 
 import { EVENT_TYPE } from '@/constants/event.constants';
 import { apiAgentConversationList } from '@/services/agentConfig';
-import { dict } from '@/services/i18nRuntime';
 import { TaskStatus } from '@/types/enums/agent';
 import { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import eventBus from '@/utils/eventBus';
@@ -302,7 +301,7 @@ const NewHomeSection: React.FC<{
 
     if (devTargetType === 'Agent' && devSpaceId && id) {
       history.push(
-        `/space/${devSpaceId}/conversation-agent?agentId=${devTargetId}&conversationId=${id}`,
+        `/space/${devSpaceId}/agent-dev?agentId=${devTargetId}&conversationId=${id}`,
       );
     } else if (devTargetType === 'PageApp' && devSpaceId && devTargetId) {
       history.push(`/space/${devSpaceId}/app-dev/${devTargetId}`);
@@ -320,7 +319,7 @@ const NewHomeSection: React.FC<{
     (menu: any) => menu?.code === 'new_conversation',
   );
 
-  const noMoreText = dict('PC.Components.HistoryConversationList.noMore');
+  // const noMoreText = dict('PC.Components.HistoryConversationList.noMore');
 
   return (
     <div style={style} className={cx(styles['new-home-section'])}>
@@ -353,11 +352,11 @@ const NewHomeSection: React.FC<{
               <Spin size="small" />
             </div>
           )}
-          {!loading && !hasMore && localList.length > 0 && (
+          {/* {!loading && !hasMore && localList.length > 0 && (
             <div className={cx(styles['no-more'])}>
               <Typography.Text type="secondary">{noMoreText}</Typography.Text>
             </div>
-          )}
+          )} */}
         </div>
       </div>
     </div>

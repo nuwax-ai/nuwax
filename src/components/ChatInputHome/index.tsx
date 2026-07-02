@@ -62,6 +62,7 @@ const AGENT_MODE_I18N: Record<AgentMode, { label: string; desc: string }> = {
 
 export interface ChatInputHomeRef {
   focus: () => void;
+  clear: () => void;
 }
 
 /**
@@ -203,6 +204,9 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
     useImperativeHandle(ref, () => ({
       focus: () => {
         mentionEditorRef.current?.focus?.();
+      },
+      clear: () => {
+        mentionEditorRef.current?.clear?.();
       },
     }));
     const selectedTagRef = useRef<HTMLDivElement>(null);
