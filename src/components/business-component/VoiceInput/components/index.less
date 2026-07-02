@@ -1,0 +1,94 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+// 与 ChatInputHome 工具栏 .plus-box 视觉一致的圆形按钮
+.voice-idle,
+.voice-recording,
+.voice-transcribing {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 32px;
+  min-width: 32px;
+  padding: 0 10px;
+  border-radius: 16px;
+  border: 1px solid @colorSplit;
+  cursor: pointer;
+  color: @colorTextDescription;
+  font-size: @fontSize;
+  transition: color ease-in-out 0.2s, background-color ease-in-out 0.2s,
+    border-color ease-in-out 0.2s;
+  user-select: none;
+
+  .voice-icon {
+    color: @colorTextDescription;
+  }
+
+  &:hover {
+    background-color: @colorPrimaryBg;
+  }
+}
+
+// 录音中：高亮为错误色，提示用户当前正在采集
+.voice-recording {
+  border-color: @colorError;
+  color: @colorError;
+
+  .voice-icon {
+    color: @colorError;
+  }
+
+  &:hover {
+    background-color: @colorErrorBg;
+  }
+}
+
+.voice-transcribing {
+  cursor: progress;
+}
+
+.voice-timer {
+  font-size: @fontSizeSm;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+// 轻量波形动画
+.voice-wave {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  height: 14px;
+
+  i {
+    width: 2px;
+    height: 4px;
+    background-color: @colorError;
+    border-radius: 1px;
+    animation: voice-wave 0.9s ease-in-out infinite;
+  }
+
+  i:nth-child(2) {
+    animation-delay: 0.15s;
+  }
+
+  i:nth-child(3) {
+    animation-delay: 0.3s;
+  }
+
+  i:nth-child(4) {
+    animation-delay: 0.45s;
+  }
+}
+
+@keyframes voice-wave {
+  0%,
+  100% {
+    height: 4px;
+  }
+
+  50% {
+    height: 14px;
+  }
+}
