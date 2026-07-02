@@ -258,17 +258,13 @@ const ConversationAgent: React.FC = () => {
     resetInit: resetAgentConversation,
   } = useModel('conversationAgent');
 
-  /** 是否开启版本管控（配置加载完成且 enableVersionControl 为 1） */
+  /** 是否开启版本管控（会话信息加载完成且 enableVersionControl 为 1） */
+  const enableVersionControl = conversationInfo?.agent?.enableVersionControl;
+
   const isVersionControlEnabled = useMemo(
     () =>
-      !loadingAgentConfigInfo &&
-      agentConfigInfo?.type === AgentTypeEnum.TaskAgent &&
-      isAgentVersionControlEnabled(agentConfigInfo?.enableVersionControl),
-    [
-      loadingAgentConfigInfo,
-      agentConfigInfo?.type,
-      agentConfigInfo?.enableVersionControl,
-    ],
+      !!conversationInfo && isAgentVersionControlEnabled(enableVersionControl),
+    [conversationInfo, enableVersionControl],
   );
 
   /** 常驻工作区工具页签 */
@@ -1130,7 +1126,7 @@ const ConversationAgent: React.FC = () => {
       staticFileBasePath: `/api/computer/static/${queryConversationId}`,
       /** 仅配置加载完成且开启版本管理时拉取 Git status */
       enableGitStatus: isVersionControlEnabled,
-      enableVersionControl: agentConfigInfo?.enableVersionControl,
+      enableVersionControl,
       /** 文件树选中文件时，切换右侧面板为文件预览并打开标签 */
       onFileSelectOpenPreview: (fileId?: string) => {
         closeAgentDesktop();
@@ -1200,7 +1196,7 @@ const ConversationAgent: React.FC = () => {
     refreshFileListImmediately,
     agentConfigInfo?.type,
     agentConfigInfo?.hideDesktop,
-    agentConfigInfo?.enableVersionControl,
+    enableVersionControl,
     isVersionControlEnabled,
     openPreviewView,
     resetDevConsoleExpandedLayout,
@@ -1720,7 +1716,7 @@ const ConversationAgent: React.FC = () => {
                   <FileTreeGitSourcePanel
                     className={cx(styles['file-tree-sidebar'], 'w-full')}
                     showSourceControl={isVersionControlEnabled}
-                    enableVersionControl={agentConfigInfo?.enableVersionControl}
+                    enableVersionControl={enableVersionControl}
                     tree={fileView.tree}
                     treeClassName="w-full h-full"
                     sourceControl={{
