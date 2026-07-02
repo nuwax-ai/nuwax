@@ -155,9 +155,9 @@ function stringifyDisplayValue(value: unknown): string {
         return value
           .map(
             (f: any) =>
+              f.url ||
               f.name ||
               f.fileName ||
-              f.url ||
               tMcpAsk(`${I18N_PREFIX}.unknownFile`),
           )
           .join(listSeparator);
@@ -169,7 +169,9 @@ function stringifyDisplayValue(value: unknown): string {
     // 检查是否为单个文件对象
     const obj = value as any;
     if (obj.name || obj.fileName || obj.url) {
-      return `📎 ${obj.name || obj.fileName || tMcpAsk(`${I18N_PREFIX}.file`)}`;
+      return `📎 ${
+        obj.url || obj.name || obj.fileName || tMcpAsk(`${I18N_PREFIX}.file`)
+      }`;
     }
     const entries = Object.entries(value as Record<string, unknown>);
     if (!entries.length) {

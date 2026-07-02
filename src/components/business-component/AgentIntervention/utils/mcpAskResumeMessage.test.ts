@@ -234,6 +234,86 @@ describe('buildMcpAskResumeMessage', () => {
     expect(message).toContain('I answered "请选择继续方式". Form details:');
     expect(message).toContain('confirmed: Yes');
   });
+
+  it('formats normalized file field URLs in submitted resume message', () => {
+    activeDict = zhCnResumeDict;
+    activeLang = 'zh-CN';
+    const message = buildMcpAskResumeMessage(
+      {
+        ...baseInteraction,
+        input: {
+          ...baseInteraction.input,
+          title: '提交问题截图',
+          ui: {
+            ...baseInteraction.input.ui,
+            title: '提交问题截图',
+            fields: [
+              { name: 'screenshot', title: '截图', widget: 'file' },
+              {
+                name: 'attachments',
+                title: '相关附件',
+                widget: 'file',
+                multiple: true,
+              },
+            ],
+          },
+        },
+      },
+      {
+        interventionId: 'ask-1',
+        revision: 1,
+        source: 'mcp_ask',
+        protocol: 'mcp',
+        action: 'submit',
+        formData: {
+          screenshot: 'https://cdn.example.com/shot.png',
+          attachments: [
+            'https://cdn.example.com/a.pdf',
+            'https://cdn.example.com/b.pdf',
+          ],
+        },
+      },
+    );
+
+    expect(message).toContain('截图：https://cdn.example.com/shot.png');
+    expect(message).toContain(
+      '相关附件：https://cdn.example.com/a.pdf、https://cdn.example.com/b.pdf',
+    );
+  });
+
+  it('prefers remote URL over file name for legacy UploadFileInfo objects', () => {
+    activeDict = zhCnResumeDict;
+    activeLang = 'zh-CN';
+    const message = buildMcpAskResumeMessage(
+      {
+        ...baseInteraction,
+        input: {
+          ...baseInteraction.input,
+          ui: {
+            ...baseInteraction.input.ui,
+            fields: [{ name: 'screenshot', title: '截图', widget: 'file' }],
+          },
+        },
+      },
+      {
+        interventionId: 'ask-1',
+        revision: 1,
+        source: 'mcp_ask',
+        protocol: 'mcp',
+        action: 'submit',
+        formData: {
+          screenshot: [
+            {
+              name: 'shot.png',
+              url: 'https://cdn.example.com/shot.png',
+            },
+          ],
+        },
+      },
+    );
+
+    expect(message).toContain('截图：https://cdn.example.com/shot.png');
+  });
 });
 
 describe('isMcpAskResumeMessageForInteraction', () => {
