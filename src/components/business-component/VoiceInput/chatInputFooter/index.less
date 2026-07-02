@@ -1,0 +1,65 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.voice-footer-right {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.voice-footer-right-active {
+  margin-left: 0;
+}
+
+.voice-input-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+.voice-footer-action-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: @paddingXs;
+  border-radius: @borderRadius;
+}
+
+.voice-action-stop {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  color: @colorPrimary;
+  background-color: @colorPrimaryBg;
+  transition: background-color ease-in-out 0.2s;
+
+  &:hover:not(.voice-action-disabled) {
+    background-color: @colorPrimaryBgHover;
+  }
+}
+
+.voice-action-send {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  color: @colorWhite;
+  background-color: @colorPrimary;
+  transition: background-color ease-in-out 0.2s;
+
+  &:hover:not(.voice-action-disabled) {
+    background-color: @colorPrimaryHover;
+  }
+}
+
+.voice-action-disabled {
+  cursor: not-allowed;
+  color: @colorIcon;
+  background-color: @colorBgContainerDisabled;
+  opacity: 1;
+}

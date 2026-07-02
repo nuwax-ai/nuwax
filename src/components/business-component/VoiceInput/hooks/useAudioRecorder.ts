@@ -1,20 +1,29 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { VOICE_INPUT_DEFAULTS } from '../config';
-import { loadRecorderWorklet } from '../loaders/recorderWorklet';
+import { ensureWorkletReady } from '../loaders/recorderContext';
+import { downsamplePcm } from '../utils/resample';
 import { encodeWav } from '../utils/wavEncoder';
+import {
+  computeFrameRms,
+  createEmptyWaveLevels,
+  normalizeWaveLevel,
+  shiftWaveLevels,
+} from '../utils/waveLevels';
 
-export type RecorderStatus = 'idle' | 'recording' | 'stopping';
+export type RecorderStatus = 'idle' | 'connecting' | 'recording' | 'stopping';
 
 export interface UseAudioRecorder {
   /** 当前状态 */
   status: RecorderStatus;
   /** 已录音时长（秒，整数） */
   durationSec: number;
-  /** 开始录音（申请权限 + 启动 AudioContext + Worklet） */
+  /** 实时波形条高度（0~1） */
+  waveLevels: number[];
+  /** 开始录音（连接中 → 申请权限 + 复用单例 AudioContext/Worklet → 录音） */
   start: () => Promise<void>;
   /** 停止录音并返回 WAV Blob；时长过短抛 RecorderError('too-short') */
   stop: () => Promise<Blob>;
-  /** 重置到 idle，释放资源 */
+  /** 重置到 idle，释放本次录音资源（不断开共享 ctx） */
   reset: () => void;
 }
 
@@ -37,20 +46,27 @@ export class RecorderError extends Error {
 /**
  * 麦克风录音 Hook
  *
- * 通路：getUserMedia -> AudioContext(指定采样率) -> AudioWorklet(recorder-processor)
+ * 通路：getUserMedia -> 共享 AudioContext(指定采样率) -> AudioWorklet(recorder-processor)
  *      -> 主线程累加 Float32 帧 -> 停止时合并并 encodeWav -> WAV Blob
  *
- * 采用 AudioWorklet 而非 MediaRecorder，是为了在 Safari 上也能得到
- * 后端可识别的 WAV（Safari 的 MediaRecorder 只产 mp4，后端格式支持不确定）。
+ * 性能：AudioContext 与 worklet 模块走 loaders/recorderContext 的会话级单例，
+ * 跨录音复用，避免每次点击都重建 ctx 与重新 fetch/compile worklet（这是点击->录音
+ * 延迟的最大块）。麦克风仍按需采集，停止即释放。
+ *
+ * 采用 AudioWorklet 而非 MediaRecorder，是为了在 Safari 上也能得到后端可识别的 WAV。
  */
 export const useAudioRecorder = (): UseAudioRecorder => {
   const [status, setStatus] = useState<RecorderStatus>('idle');
   const [durationSec, setDurationSec] = useState(0);
+  const [waveLevels, setWaveLevels] = useState<number[]>(createEmptyWaveLevels);
 
-  const audioCtxRef = useRef<AudioContext | null>(null);
+  const waveLevelsRef = useRef<number[]>(createEmptyWaveLevels());
+  const pendingRmsRef = useRef<number[]>([]);
+  const rafRef = useRef<number | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const nodeRef = useRef<AudioWorkletNode | null>(null);
+  const muteGainRef = useRef<GainNode | null>(null);
   const chunksRef = useRef<Float32Array[]>([]);
   const sampleRateRef = useRef<number>(VOICE_INPUT_DEFAULTS.sampleRate);
   const startedAtRef = useRef<number>(0);
@@ -63,8 +79,11 @@ export const useAudioRecorder = (): UseAudioRecorder => {
     }
   }, []);
 
-  /** 释放底层资源 */
-  const teardown = useCallback(() => {
+  /**
+   * 释放本次录音的资源：断开节点、停麦克风。
+   * 不关闭共享 AudioContext、不清 worklet 缓存——它们由单例跨录音复用。
+   */
+  const releaseRecordingResources = useCallback(() => {
     clearTimer();
     if (nodeRef.current) {
       try {
@@ -83,17 +102,17 @@ export const useAudioRecorder = (): UseAudioRecorder => {
       }
       sourceRef.current = null;
     }
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop());
-      streamRef.current = null;
-    }
-    if (audioCtxRef.current) {
+    if (muteGainRef.current) {
       try {
-        void audioCtxRef.current.close();
+        muteGainRef.current.disconnect();
       } catch {
         /* noop */
       }
-      audioCtxRef.current = null;
+      muteGainRef.current = null;
+    }
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
     }
   }, [clearTimer]);
 
@@ -110,100 +129,92 @@ export const useAudioRecorder = (): UseAudioRecorder => {
       throw new RecorderError('not-supported');
     }
 
-    // 1. 申请麦克风权限
-    let stream: MediaStream;
+    // 入口即给“连接中”反馈，避免点击后 1-2s 看似无响应
+    setStatus('connecting');
+
     try {
-      stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          channelCount: VOICE_INPUT_DEFAULTS.channelCount,
-          sampleRate: VOICE_INPUT_DEFAULTS.sampleRate,
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-        },
-        video: false,
-      });
-    } catch (e) {
-      const name = (e as DOMException)?.name;
-      if (name === 'NotAllowedError' || name === 'SecurityError') {
-        throw new RecorderError('permission-denied');
-      }
-      if (name === 'NotFoundError' || name === 'OverconstrainedError') {
-        throw new RecorderError('not-supported');
-      }
-      if (name === 'AbortError') {
-        throw new RecorderError('aborted');
-      }
-      throw new RecorderError('unknown', (e as Error)?.message);
-    }
-
-    // 2. 创建 AudioContext（兼容 webkit 前缀）
-    const AudioCtxCtor: typeof AudioContext | undefined =
-      (window as any).AudioContext || (window as any).webkitAudioContext;
-    if (!AudioCtxCtor) {
-      stream.getTracks().forEach((track) => track.stop());
-      throw new RecorderError('not-supported');
-    }
-
-    const ctx: AudioContext = new AudioCtxCtor({
-      sampleRate: VOICE_INPUT_DEFAULTS.sampleRate,
-    });
-    sampleRateRef.current = ctx.sampleRate; // 浏览器实际可能调整采样率
-    if (ctx.state === 'suspended') {
+      // 1. 申请麦克风权限（错误归类到 RecorderError）
+      let stream: MediaStream;
       try {
-        await ctx.resume();
-      } catch {
-        /* noop */
+        stream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            channelCount: VOICE_INPUT_DEFAULTS.channelCount,
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          },
+          video: false,
+        });
+      } catch (e) {
+        const name = (e as DOMException)?.name;
+        if (name === 'NotAllowedError' || name === 'SecurityError') {
+          throw new RecorderError('permission-denied');
+        }
+        if (name === 'NotFoundError' || name === 'OverconstrainedError') {
+          throw new RecorderError('not-supported');
+        }
+        if (name === 'AbortError') {
+          throw new RecorderError('aborted');
+        }
+        throw new RecorderError('unknown', (e as Error)?.message);
       }
-    }
+      streamRef.current = stream;
 
-    // 3. 加载 worklet
-    try {
-      await loadRecorderWorklet(ctx);
-    } catch (e) {
-      stream.getTracks().forEach((track) => track.stop());
+      // 2. 复用共享 AudioContext + 已加载的 worklet（重复点击近乎瞬时）
+      let ctx: AudioContext;
       try {
-        void ctx.close();
-      } catch {
-        /* noop */
+        ctx = await ensureWorkletReady();
+      } catch (e) {
+        throw new RecorderError(
+          'not-supported',
+          e instanceof Error ? e.message : undefined,
+        );
       }
-      throw new RecorderError('not-supported', (e as Error)?.message);
+      sampleRateRef.current = ctx.sampleRate; // 浏览器实际可能调整采样率
+
+      // 3. 建链：source -> recorder-processor -> muteGain -> destination
+      //    连到 destination 以驱动 worklet 拉取样本；静音 GainNode 避免把麦克风外放
+      const source = ctx.createMediaStreamSource(stream);
+      const node = new AudioWorkletNode(ctx, 'recorder-processor');
+      const muteGain = ctx.createGain();
+      muteGain.gain.value = 0;
+
+      chunksRef.current = [];
+      pendingRmsRef.current = [];
+      waveLevelsRef.current = createEmptyWaveLevels();
+      setWaveLevels(createEmptyWaveLevels());
+      node.port.onmessage = (event: MessageEvent) => {
+        const frame = event.data as Float32Array | undefined;
+        if (frame && frame.length) {
+          chunksRef.current.push(frame);
+          pendingRmsRef.current.push(computeFrameRms(frame));
+        }
+      };
+
+      source.connect(node);
+      node.connect(muteGain);
+      muteGain.connect(ctx.destination);
+
+      sourceRef.current = source;
+      nodeRef.current = node;
+      muteGainRef.current = muteGain;
+      startedAtRef.current = Date.now();
+
+      setDurationSec(0);
+      setStatus('recording');
+
+      // 4. 计时
+      clearTimer();
+      timerRef.current = setInterval(() => {
+        setDurationSec(Math.floor((Date.now() - startedAtRef.current) / 1000));
+      }, 1000);
+    } catch (e) {
+      // 任何失败都回退到 idle，并释放本次部分资源（共享 ctx 保留）
+      releaseRecordingResources();
+      setStatus('idle');
+      throw e;
     }
-
-    // 4. 建链：source -> recorder-processor -> muteGain -> destination
-    //    连到 destination 是为了驱动 worklet 拉取样本；通过静音 GainNode 避免把麦克风声音外放
-    const source = ctx.createMediaStreamSource(stream);
-    const node = new AudioWorkletNode(ctx, 'recorder-processor');
-    const muteGain = ctx.createGain();
-    muteGain.gain.value = 0;
-
-    chunksRef.current = [];
-    node.port.onmessage = (event: MessageEvent) => {
-      const frame = event.data as Float32Array | undefined;
-      if (frame && frame.length) {
-        chunksRef.current.push(frame);
-      }
-    };
-
-    source.connect(node);
-    node.connect(muteGain);
-    muteGain.connect(ctx.destination);
-
-    streamRef.current = stream;
-    audioCtxRef.current = ctx;
-    sourceRef.current = source;
-    nodeRef.current = node;
-    startedAtRef.current = Date.now();
-
-    setDurationSec(0);
-    setStatus('recording');
-
-    // 5. 计时
-    clearTimer();
-    timerRef.current = setInterval(() => {
-      setDurationSec(Math.floor((Date.now() - startedAtRef.current) / 1000));
-    }, 1000);
-  }, [status, clearTimer]);
+  }, [status, clearTimer, releaseRecordingResources]);
 
   const stop = useCallback(async (): Promise<Blob> => {
     if (status !== 'recording') {
@@ -225,7 +236,7 @@ export const useAudioRecorder = (): UseAudioRecorder => {
       offset += c.length;
     }
 
-    teardown();
+    releaseRecordingResources();
     chunksRef.current = [];
 
     setStatus('idle');
@@ -236,23 +247,68 @@ export const useAudioRecorder = (): UseAudioRecorder => {
       throw new RecorderError('too-short');
     }
 
-    const wavBuffer = encodeWav(merged, sampleRateRef.current);
+    // 共享 ctx 可能回退到设备默认采样率（如 48kHz）：统一下采样到目标采样率，
+    // 保证上传体积与 16kHz 预期一致（maxDurationSec 的 10MB 预算按 16kHz 计算）
+    const targetRate = VOICE_INPUT_DEFAULTS.sampleRate;
+    const actualRate = sampleRateRef.current;
+    const pcm =
+      actualRate > targetRate
+        ? downsamplePcm(merged, actualRate, targetRate)
+        : merged;
+    const wavBuffer = encodeWav(pcm, Math.min(actualRate, targetRate));
     return new Blob([wavBuffer], { type: 'audio/wav' });
-  }, [status, clearTimer, teardown]);
+  }, [status, clearTimer, releaseRecordingResources]);
 
   const reset = useCallback(() => {
-    teardown();
+    releaseRecordingResources();
     chunksRef.current = [];
+    pendingRmsRef.current = [];
+    waveLevelsRef.current = createEmptyWaveLevels();
+    setWaveLevels(createEmptyWaveLevels());
     setStatus('idle');
     setDurationSec(0);
-  }, [teardown]);
+  }, [releaseRecordingResources]);
 
-  // 组件卸载时释放
+  // 录音中：按帧累积 RMS，rAF 刷新波形（与真实音量同步）
+  useEffect(() => {
+    if (status !== 'recording') {
+      if (rafRef.current !== null) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+      return;
+    }
+
+    const tick = () => {
+      const pending = pendingRmsRef.current;
+      if (pending.length > 0) {
+        const avgRms =
+          pending.reduce((sum, value) => sum + value, 0) / pending.length;
+        pendingRmsRef.current = [];
+        waveLevelsRef.current = shiftWaveLevels(
+          waveLevelsRef.current,
+          normalizeWaveLevel(avgRms),
+        );
+        setWaveLevels([...waveLevelsRef.current]);
+      }
+      rafRef.current = requestAnimationFrame(tick);
+    };
+
+    rafRef.current = requestAnimationFrame(tick);
+    return () => {
+      if (rafRef.current !== null) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+    };
+  }, [status]);
+
+  // 组件卸载：仅释放活动录音资源（共享 ctx 保留给会话复用）
   useEffect(() => {
     return () => {
-      teardown();
+      releaseRecordingResources();
     };
-  }, [teardown]);
+  }, [releaseRecordingResources]);
 
-  return { status, durationSec, start, stop, reset };
+  return { status, durationSec, waveLevels, start, stop, reset };
 };

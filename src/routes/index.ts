@@ -679,6 +679,11 @@ const routes = [
     component: '@/examples/AgentInterventionDemo',
     layout: false,
   },
+  {
+    path: '/examples/voice-input-demo',
+    component: '@/examples/VoiceInputDemo',
+    layout: false,
+  },
 ];
 
 export default routes;
