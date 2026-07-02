@@ -1,24 +1,21 @@
 @import '@/styles/color';
 @import '@/styles/token';
 
-// 与 ChatInputHome 工具栏 .plus-box 视觉一致的圆形按钮
-.voice-idle,
-.voice-recording,
-.voice-transcribing {
+// 空闲态麦克风：与工具栏其它图标一致的描述色
+.voice-idle {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  width: 32px;
   height: 32px;
-  min-width: 32px;
-  padding: 0 10px;
+  padding: 0;
+  border: none;
   border-radius: 16px;
-  border: 1px solid @colorSplit;
   cursor: pointer;
   color: @colorTextDescription;
   font-size: @fontSize;
-  transition: color ease-in-out 0.2s, background-color ease-in-out 0.2s,
-    border-color ease-in-out 0.2s;
+  background-color: transparent;
+  transition: color ease-in-out 0.2s, background-color ease-in-out 0.2s;
   user-select: none;
 
   .voice-icon {
@@ -30,65 +27,139 @@
   }
 }
 
-// 录音中：高亮为错误色，提示用户当前正在采集
-.voice-recording {
-  border-color: @colorError;
-  color: @colorError;
+// 连接中：已点击麦克风，正在申请权限/复用 worklet，给脉冲反馈避免“点了没反应”
+.voice-connecting {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 16px;
+  cursor: progress;
+  color: @colorTextDescription;
+  font-size: @fontSize;
+  background-color: transparent;
+  user-select: none;
 
   .voice-icon {
-    color: @colorError;
+    color: @colorTextDescription;
+    animation: voice-connecting-pulse 1s ease-in-out infinite;
+  }
+}
+
+@keyframes voice-connecting-pulse {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale(0.9);
   }
 
-  &:hover {
-    background-color: @colorErrorBg;
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
   }
 }
 
 .voice-transcribing {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 32px;
+  min-width: 32px;
+  padding: 0 10px;
+  border-radius: 16px;
+  border: none;
   cursor: progress;
+  color: @colorTextDescription;
+  font-size: @fontSize;
+  background-color: transparent;
+  user-select: none;
+}
+
+.voice-disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+
+  &:hover {
+    background-color: transparent;
+  }
+}
+
+.voice-action-label {
+  font-size: @fontSizeSm;
+  color: @colorTextDescription;
+  white-space: nowrap;
+}
+
+// 录音/转写展示条：无背景、无边框
+.voice-recording-bar {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  user-select: none;
+}
+
+.voice-recording-bar-expanded {
+  flex: 1;
+  min-width: 0;
+  justify-content: flex-start;
+  height: 36px;
+  padding: 0 4px 0 0;
+}
+
+// + 号右侧虚线基线
+.voice-baseline {
+  flex: 1;
+  min-width: 16px;
+  max-width: 72px;
+  height: 0;
+  border-bottom: 1px dotted @colorBorderSecondary;
+  align-self: center;
+}
+
+.voice-recording-bar-expanded .voice-baseline {
+  max-width: none;
 }
 
 .voice-timer {
-  font-size: @fontSizeSm;
+  flex-shrink: 0;
+  font-size: @fontSize;
   font-variant-numeric: tabular-nums;
   line-height: 1;
+  color: @colorTextSecondary;
+  min-width: 32px;
 }
 
-// 轻量波形动画
+// 实时波形条（高度由 PCM 音量驱动）
 .voice-wave {
   display: inline-flex;
   align-items: center;
   gap: 2px;
-  height: 14px;
+  height: 18px;
+  flex-shrink: 0;
 
   i {
+    display: block;
     width: 2px;
     height: 4px;
-    background-color: @colorError;
+    background-color: @colorText;
     border-radius: 1px;
-    animation: voice-wave 0.9s ease-in-out infinite;
-  }
-
-  i:nth-child(2) {
-    animation-delay: 0.15s;
-  }
-
-  i:nth-child(3) {
-    animation-delay: 0.3s;
-  }
-
-  i:nth-child(4) {
-    animation-delay: 0.45s;
   }
 }
 
-@keyframes voice-wave {
-  0%,
-  100% {
-    height: 4px;
-  }
+.voice-wave-live i {
+  transition: height 80ms ease-out;
+}
 
-  50% {
-    height: 14px;
-  }
+.voice-recording-bar-expanded .voice-wave {
+  flex: 1;
+  min-width: 0;
+  max-width: 280px;
+  justify-content: flex-start;
 }

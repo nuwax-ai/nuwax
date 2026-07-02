@@ -149,6 +149,26 @@ const ExamplesIndex: React.FC = () => {
       featured: true,
     },
     {
+      id: 'voice-input-demo',
+      title: isChineseLanguage
+        ? 'Agent 会话框语音交互'
+        : 'Agent Chat Voice Input',
+      description: isChineseLanguage
+        ? '使用真实 Agent 会话输入框（UnifiedChatSession）体验语音录制、回填与自动发送交互，本地 Mock 消息，不依赖后端。'
+        : 'Experience voice record, fill and auto-send with the real Agent chat input (UnifiedChatSession), local mock messages only.',
+      tags: [
+        { text: isChineseLanguage ? '语音输入' : 'Voice', color: 'blue' },
+        {
+          text: isChineseLanguage ? 'Agent 会话' : 'Agent Chat',
+          color: 'green',
+        },
+        { text: isChineseLanguage ? 'Mock' : 'Mock', color: 'purple' },
+      ],
+      icon: <FormOutlined />,
+      path: '/examples/voice-input-demo',
+      featured: true,
+    },
+    {
       id: 'agent-intervention-demo',
       title: isChineseLanguage
         ? 'Agent 干预交互卡片'
