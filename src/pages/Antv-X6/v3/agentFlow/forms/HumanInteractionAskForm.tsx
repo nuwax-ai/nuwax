@@ -3,6 +3,8 @@
  *
  * 独立维护，对照 Workflow QuestionsNode；字段对齐 QA 扁平结构。
  * 样式对齐 Workflow V3：node-title-style + node-item-style
+ *
+ * 中文 IME：根节点 composition 监听 + hitlFormImeGuard 延迟画布同步（见 WorkflowLayout）。
  */
 
 import ExpandableInputTextarea from '@/components/ExpandTextArea';
@@ -25,22 +27,22 @@ import {
   Select,
   Space,
 } from 'antd';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
-import { outPutConfigs } from '../../ParamsV3';
 import { FormList, InputAndOut } from '../../component/commonNode';
-import {
-  coerceFormArgInputType,
-  isFormArgChoiceInputType,
-} from '../adapters/qaConfigAdapter';
+import { outPutConfigs } from '../../ParamsV3';
+import { isFormArgChoiceInputType } from '../adapters/qaConfigAdapter';
 import { FormArgInputTypeEnum } from '../enums/formArgInputType';
 import { HitlAnswerTypeEnum } from '../enums/hitlAnswerType';
+import {
+  hitlFormImeCompositionProps,
+  resetHitlFormImeGuard,
+} from './hitlFormImeGuard';
 import './HumanInteractionAskForm.less';
 
 const { TextArea } = Input;
 
-// 表单字段控件类型（对齐后端 FormArgInputTypeEnum，写入 Arg.inputType）
 const FORM_FIELD_TYPE_OPTIONS = [
   {
     label: t('PC.Pages.AgentFlowNode.formTypeInput', '单行文本'),
@@ -83,14 +85,14 @@ const HumanInteractionAskForm: React.FC<NodeDisposeProps> = ({
   const inputArgs =
     Form.useWatch(InputItemNameEnum.inputArgs, { form, preserve: true }) || [];
 
-  const formArgs = Form.useWatch('formArgs', { form, preserve: true }) || [];
-
   const promptVariables = transformToPromptVariables(
     (inputArgs as InputAndOutConfig[]).filter(
       (item) => !['', null, undefined].includes(item.name),
     ),
     referenceList?.argMap,
   );
+
+  useEffect(() => () => resetHitlFormImeGuard(), []);
 
   /** 切换回答类型，同步 options（answerType 为权威字段） */
   const changeAnswerType = (type: HitlAnswerTypeEnum) => {
@@ -121,7 +123,7 @@ const HumanInteractionAskForm: React.FC<NodeDisposeProps> = ({
   };
 
   return (
-    <div className="node-title-style">
+    <div className="node-title-style" {...hitlFormImeCompositionProps}>
       <ModelSelected form={form} />
 
       <div className="node-item-style">
@@ -198,92 +200,102 @@ const HumanInteractionAskForm: React.FC<NodeDisposeProps> = ({
                   )}
                 </div>
 
-                {fields.map(({ key, name }) => {
-                  const inputType = coerceFormArgInputType(
-                    formArgs[name]?.inputType,
-                  );
-                  const isChoice = isFormArgChoiceInputType(inputType);
-                  return (
-                    <div key={key} className="ask-form-field-card">
-                      <div className="ask-form-field-card__row">
-                        <Form.Item
-                          name={[name, 'name']}
-                          noStyle
-                          rules={[{ required: true }]}
-                        >
-                          <Input
-                            className="ask-form-field-card__name"
-                            placeholder={t(
-                              'PC.Pages.AgentFlowNode.formFieldLabel',
-                              '字段名称',
-                            )}
-                          />
-                        </Form.Item>
-                        <Form.Item
-                          name={[name, 'inputType']}
-                          noStyle
-                          initialValue={FormArgInputTypeEnum.Text}
-                        >
-                          <Select
-                            className="ask-form-field-card__type"
-                            options={FORM_FIELD_TYPE_OPTIONS}
-                          />
-                        </Form.Item>
-                        <Form.Item
-                          name={[name, 'require']}
-                          noStyle
-                          valuePropName="checked"
-                          initialValue={false}
-                        >
-                          <Checkbox className="ask-form-field-card__required">
-                            {t(
-                              'PC.Pages.AgentFlowNode.formFieldRequired',
-                              '必填',
-                            )}
-                          </Checkbox>
-                        </Form.Item>
-                        <CloseOutlined
-                          className="ask-form-field-card__del"
-                          onClick={() => remove(name)}
-                        />
-                      </div>
-
-                      <Form.Item name={[name, 'description']} noStyle>
+                {fields.map(({ key, name }) => (
+                  <div key={key} className="ask-form-field-card">
+                    <div className="ask-form-field-card__row">
+                      <Form.Item
+                        name={[name, 'name']}
+                        noStyle
+                        rules={[{ required: true }]}
+                      >
                         <Input
-                          className="ask-form-field-card__desc"
+                          className="ask-form-field-card__name"
                           placeholder={t(
-                            'PC.Pages.AgentFlowNode.formFieldDescriptionPlaceholder',
-                            '填写说明（提示用户输入什么内容）',
+                            'PC.Pages.AgentFlowNode.formFieldLabel',
+                            '字段名称',
                           )}
                         />
                       </Form.Item>
-
-                      {isChoice && (
-                        <>
-                          <div className="ask-form-field-card__options-title">
-                            {t(
-                              'PC.Pages.AgentFlowNode.askOptionsTitle',
-                              '选项内容',
-                            )}
-                          </div>
-                          <Form.Item
-                            name={[name, 'selectConfig', 'options']}
-                            noStyle
-                          >
-                            <TextArea
-                              className="ask-form-field-card__options"
-                              rows={3}
-                              placeholder={t(
-                                'PC.Pages.AgentFlowNode.formFieldOptionsPlaceholder',
-                                '每行一个选项',
-                              )}
-                            />
-                          </Form.Item>
-                        </>
-                      )}
+                      <Form.Item
+                        name={[name, 'inputType']}
+                        noStyle
+                        initialValue={FormArgInputTypeEnum.Text}
+                      >
+                        <Select
+                          className="ask-form-field-card__type"
+                          options={FORM_FIELD_TYPE_OPTIONS}
+                        />
+                      </Form.Item>
+                      <Form.Item
+                        name={[name, 'require']}
+                        noStyle
+                        valuePropName="checked"
+                        initialValue={false}
+                      >
+                        <Checkbox className="ask-form-field-card__required">
+                          {t(
+                            'PC.Pages.AgentFlowNode.formFieldRequired',
+                            '必填',
+                          )}
+                        </Checkbox>
+                      </Form.Item>
+                      <CloseOutlined
+                        className="ask-form-field-card__del"
+                        onClick={() => remove(name)}
+                      />
                     </div>
-                  );
-                })}
+
+                    <Form.Item name={[name, 'description']} noStyle>
+                      <Input
+                        className="ask-form-field-card__desc"
+                        placeholder={t(
+                          'PC.Pages.AgentFlowNode.formFieldDescriptionPlaceholder',
+                          '填写说明（提示用户输入什么内容）',
+                        )}
+                      />
+                    </Form.Item>
+
+                    {/* 仅 inputType 变化时重渲染，避免 name/description 输入触发整表刷新 */}
+                    <Form.Item
+                      noStyle
+                      dependencies={[['formArgs', name, 'inputType']]}
+                    >
+                      {() => {
+                        const inputType = form.getFieldValue([
+                          'formArgs',
+                          name,
+                          'inputType',
+                        ]);
+                        if (!isFormArgChoiceInputType(inputType)) {
+                          return null;
+                        }
+                        return (
+                          <>
+                            <div className="ask-form-field-card__options-title">
+                              {t(
+                                'PC.Pages.AgentFlowNode.askOptionsTitle',
+                                '选项内容',
+                              )}
+                            </div>
+                            <Form.Item
+                              name={[name, 'selectConfig', 'options']}
+                              noStyle
+                            >
+                              <TextArea
+                                className="ask-form-field-card__options"
+                                rows={3}
+                                placeholder={t(
+                                  'PC.Pages.AgentFlowNode.formFieldOptionsPlaceholder',
+                                  '每行一个选项',
+                                )}
+                              />
+                            </Form.Item>
+                          </>
+                        );
+                      }}
+                    </Form.Item>
+                  </div>
+                ))}
 
                 <Button
                   type="dashed"
@@ -309,8 +321,10 @@ const HumanInteractionAskForm: React.FC<NodeDisposeProps> = ({
         </div>
       )}
 
-      {/* 输出：文本回复 / 表单回复均展示（与问答节点「直接回答」一致） */}
-      <Form.Item shouldUpdate noStyle>
+      <Form.Item
+        shouldUpdate={(prev, cur) => prev?.answerType !== cur?.answerType}
+        noStyle
+      >
         {() => {
           const mode = form.getFieldValue('answerType');
           const showOutput =

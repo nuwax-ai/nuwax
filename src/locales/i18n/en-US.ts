@@ -1946,7 +1946,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.AgentFlowNode.routeSelectVariablePlaceholder": "Select variable...",
   "PC.Pages.AgentFlowNode.startEmptyHint": "The start node requires no extra configuration; the flow starts from this node.",
   "PC.Pages.AgentFlowNode.startSingleOutgoingHint": "The start node can connect to only one next node",
-  "PC.Pages.AgentFlowNode.extraPromptPlaceholder": "Add prompts to constrain the agent's output format...",
+  "PC.Pages.AgentFlowNode.extraPromptPlaceholder1": "Enter supplementary prompt to further constrain agent behavior",
   "PC.Pages.AgentFlowNode.reminderPromptLabel": "Loop Reminder Prompt",
   "PC.Pages.AgentFlowNode.reminderPromptPlaceholder": "Loop reminder prompt...",
   "PC.Pages.AgentFlowNode.selfLoopTimesLabel": "Self Loop Count",

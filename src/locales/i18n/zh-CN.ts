@@ -1926,7 +1926,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.AgentFlowNode.routeDecisionItemFallback": "路由 {0}",
   "PC.Pages.AgentFlowNode.askOptionIndex": "选项 {0}",
   "PC.Pages.AgentFlowNode.extraPromptLabel": "补充提示词",
-  "PC.Pages.AgentFlowNode.extraPromptPlaceholder": "可添加提示词约束智能体输出格式...",
+  "PC.Pages.AgentFlowNode.extraPromptPlaceholder1": "请输入补充提示词，进一步对智能体行为进行约束",
   "PC.Pages.AgentFlowNode.reminderPromptLabel": "循环提醒提示词",
   "PC.Pages.AgentFlowNode.reminderPromptPlaceholder": "循环提醒提示词...",
   "PC.Pages.AgentFlowNode.selfLoopTimesLabel": "自身循环次数",
