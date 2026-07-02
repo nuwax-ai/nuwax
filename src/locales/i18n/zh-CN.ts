@@ -2589,6 +2589,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.ConversationAgent.AgentGitVersionRecord.noConversation": "暂无版本记录",
   "PC.Components.FileTreePanel.FileTreeToolbar.projects": "项目",
   "PC.Components.FileTreePanel.FileTreeToolbar.exportProject": "导出项目",
+  "PC.Components.FileTreePanel.FileTreeToolbar.importProject": "导入项目",
   "PC.Components.FileTreePanel.FileTreeToolbar.newFile": "新建文件",
   "PC.Components.FileTreePanel.FileTreeToolbar.newFolder": "新建文件夹",
   "PC.Components.FileTreePanel.FileTreeToolbar.upload": "上传",

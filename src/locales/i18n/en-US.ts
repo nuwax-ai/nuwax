@@ -2589,6 +2589,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.ConversationAgent.AgentGitVersionRecord.noConversation": "No version records",
   "PC.Components.FileTreePanel.FileTreeToolbar.projects": "Projects",
   "PC.Components.FileTreePanel.FileTreeToolbar.exportProject": "Export project",
+  "PC.Components.FileTreePanel.FileTreeToolbar.importProject": "Import project",
   "PC.Components.FileTreePanel.FileTreeToolbar.newFile": "New file",
   "PC.Components.FileTreePanel.FileTreeToolbar.newFolder": "New folder",
   "PC.Components.FileTreePanel.FileTreeToolbar.upload": "Upload",

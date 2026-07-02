@@ -2368,6 +2368,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.ConversationAgent.AgentGitVersionRecord.noConversation": "バージョン記録がありません",
   "PC.Components.FileTreePanel.FileTreeToolbar.projects": "プロジェクト",
   "PC.Components.FileTreePanel.FileTreeToolbar.exportProject": "プロジェクトをエクスポート",
+  "PC.Components.FileTreePanel.FileTreeToolbar.importProject": "プロジェクトをインポート",
   "PC.Components.FileTreePanel.FileTreeToolbar.newFile": "新規ファイル",
   "PC.Components.FileTreePanel.FileTreeToolbar.newFolder": "新規フォルダ",
   "PC.Components.FileTreePanel.FileTreeToolbar.upload": "アップロード",
