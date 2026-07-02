@@ -1920,7 +1920,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.AgentFlowNode.routeSelectVariablePlaceholder": "変数を選択...",
   "PC.Pages.AgentFlowNode.startEmptyHint": "開始ノードは追加設定が不要で、フローはこのノードから開始します。",
   "PC.Pages.AgentFlowNode.startSingleOutgoingHint": "開始ノードは1つの後続ノードにのみ接続できます",
-  "PC.Pages.AgentFlowNode.extraPromptPlaceholder": "エージェントの出力形式を制約するプロンプトを追加...",
+  "PC.Pages.AgentFlowNode.extraPromptPlaceholder": "補足プロンプトを入力し、エージェントの動作をさらに制約してください",
   "PC.Pages.AgentFlowNode.reminderPromptLabel": "ループリマインダープロンプト",
   "PC.Pages.AgentFlowNode.reminderPromptPlaceholder": "ループリマインダープロンプト...",
   "PC.Pages.AgentFlowNode.selfLoopTimesLabel": "自己ループ回数",

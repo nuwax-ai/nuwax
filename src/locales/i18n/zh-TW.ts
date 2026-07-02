@@ -1930,7 +1930,7 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.AgentFlowNode.routeSelectVariablePlaceholder": "選擇變數...",
   "PC.Pages.AgentFlowNode.startEmptyHint": "開始節點無需額外配置，流程從此節點啟動。",
   "PC.Pages.AgentFlowNode.startSingleOutgoingHint": "開始節點只能連接一個後續節點",
-  "PC.Pages.AgentFlowNode.extraPromptPlaceholder": "可新增提示詞約束智能體輸出格式...",
+  "PC.Pages.AgentFlowNode.extraPromptPlaceholder": "請輸入補充提示詞，進一步對智能體行為進行約束",
   "PC.Pages.AgentFlowNode.reminderPromptLabel": "循環提醒提示詞",
   "PC.Pages.AgentFlowNode.reminderPromptPlaceholder": "循環提醒提示詞...",
   "PC.Pages.AgentFlowNode.selfLoopTimesLabel": "自身循環次數",
