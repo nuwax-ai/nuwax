@@ -158,13 +158,12 @@ const LeftContent: React.FC<LeftContentProps> = ({
                 {/* 文件预览视图 */}
                 <TooltipIcon
                   title={
-                    isFileTreeVisible && headerProps.viewMode === 'preview'
+                    headerProps.isFileTreeIconActive
                       ? t('PC.Pages.Chat.closeFilePreview')
                       : t('PC.Pages.Chat.openFilePreview')
                   }
                   className={cx(styles['icon-box'], {
-                    [styles['active']]:
-                      isFileTreeVisible && headerProps.viewMode === 'preview',
+                    [styles['active']]: headerProps.isFileTreeIconActive,
                   })}
                   icon={
                     <SvgIcon
@@ -180,9 +179,11 @@ const LeftContent: React.FC<LeftContentProps> = ({
                   title={t(
                     'PC.Components.ConversationBottomConsole.tabTerminal',
                   )}
-                  className={cx(styles['icon-box'])}
+                  className={cx(styles['icon-box'], {
+                    [styles['active']]: headerProps.isTerminalIconActive,
+                  })}
                   icon={<CodeOutlined style={{ fontSize: 16 }} />}
-                  onClick={headerProps.handleToggleTerminalConsole}
+                  onClick={headerProps.handleOpenTerminalPanel}
                 />
 
                 {/* 智能体电脑视图 */}
@@ -194,13 +195,12 @@ const LeftContent: React.FC<LeftContentProps> = ({
                 >
                   <TooltipIcon
                     title={
-                      isFileTreeVisible && headerProps.viewMode === 'desktop'
+                      headerProps.isDesktopIconActive
                         ? t('PC.Pages.Chat.closeAgentDesktop')
                         : t('PC.Pages.Chat.openAgentDesktop')
                     }
                     className={cx(styles['icon-box'], {
-                      [styles['active']]:
-                        isFileTreeVisible && headerProps.viewMode === 'desktop',
+                      [styles['active']]: headerProps.isDesktopIconActive,
                     })}
                     icon={
                       <SvgIcon
