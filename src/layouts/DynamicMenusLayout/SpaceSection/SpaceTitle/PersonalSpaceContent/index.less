@@ -22,6 +22,22 @@
     margin: @marginSm auto;
   }
 
+  .space-search {
+    padding: 0 16px @marginXs;
+  }
+
+  .input {
+    width: 100%;
+    height: 32px;
+  }
+
+  .empty-search {
+    height: 32px;
+    padding: 0 22px;
+    color: @colorTextSecondary;
+    font-size: @fontSizeSm;
+  }
+
   .team-info {
     height: 32px;
     padding: 0 22px;
@@ -29,9 +45,17 @@
     color: @colorText;
     cursor: pointer;
 
-    &:hover {
+    &:hover,
+    &.team-info-active {
       background-color: @colorBgTextHover;
       border-radius: @borderRadiusSm;
+    }
+  }
+
+  .space-list-keyboard {
+    .team-info:hover:not(.team-info-active) {
+      background-color: transparent;
+      border-radius: 0;
     }
   }
 

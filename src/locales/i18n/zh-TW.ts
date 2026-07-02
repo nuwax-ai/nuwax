@@ -1316,6 +1316,8 @@ export const ZH_TW: SystemLangMap = {
   "PC.Layouts.DynamicMenusLayout.newProject": "新建專案",
   "PC.Layouts.DynamicMenusLayout.SpaceSection.personalSpace": "個人空間",
   "PC.Layouts.DynamicMenusLayout.SpaceSection.recentlyEdited": "最近編輯",
+  "PC.Layouts.DynamicMenusLayout.SpaceSection.searchSpacePlaceholder": "搜尋空間",
+  "PC.Layouts.DynamicMenusLayout.SpaceSection.noSpaceMatch": "未找到符合的空間",
   "PC.Layouts.DynamicMenusLayout.SquareSection.agent": "智慧體",
   "PC.Layouts.DynamicMenusLayout.SquareSection.pageApp": "網頁應用",
   "PC.Layouts.DynamicMenusLayout.SquareSection.plugin": "套件",

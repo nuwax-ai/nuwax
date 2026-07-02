@@ -1305,6 +1305,8 @@ export const JA_JP: SystemLangMap = {
   "PC.Layouts.DynamicMenusLayout.newProject": "新規プロジェクト",
   "PC.Layouts.DynamicMenusLayout.SpaceSection.personalSpace": "パーソナルスペース",
   "PC.Layouts.DynamicMenusLayout.SpaceSection.recentlyEdited": "最近編集したもの",
+  "PC.Layouts.DynamicMenusLayout.SpaceSection.searchSpacePlaceholder": "スペースを検索",
+  "PC.Layouts.DynamicMenusLayout.SpaceSection.noSpaceMatch": "一致するスペースがありません",
   "PC.Layouts.DynamicMenusLayout.SquareSection.agent": "エージェント",
   "PC.Layouts.DynamicMenusLayout.SquareSection.pageApp": "ウェブアプリ",
   "PC.Layouts.DynamicMenusLayout.SquareSection.plugin": "プラグイン",
