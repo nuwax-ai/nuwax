@@ -33,6 +33,8 @@ const PersonalSpaceContent: React.FC<PersonalSpaceContentType> = ({
   // 关闭移动端菜单
   const { handleCloseMobileMenu } = useModel('layout');
 
+  const { hasPermission } = useModel('menuModel');
+
   // 过滤当前工作空间
   const filterSpaceList = useMemo(() => {
     return (
@@ -173,15 +175,19 @@ const PersonalSpaceContent: React.FC<PersonalSpaceContentType> = ({
           </li>
         ))}
       </ul>
-      <div
-        className={cx(styles['create-team'], 'flex', 'cursor-pointer')}
-        onClick={onCreateTeam}
-      >
-        <SvgIcon name="icons-common-plus" style={{ fontSize: 16 }} />
-        <span className={cx('flex-1', 'text-ellipsis')}>
-          {dict('PC.Layouts.DynamicMenusLayout.CreateNewTeam.createTeamSpace')}
-        </span>
-      </div>
+      {hasPermission('space_create') && (
+        <div
+          className={cx(styles['create-team'], 'flex', 'cursor-pointer')}
+          onClick={onCreateTeam}
+        >
+          <SvgIcon name="icons-common-plus" style={{ fontSize: 16 }} />
+          <span className={cx('flex-1', 'text-ellipsis')}>
+            {dict(
+              'PC.Layouts.DynamicMenusLayout.CreateNewTeam.createTeamSpace',
+            )}
+          </span>
+        </div>
+      )}
     </div>
   );
 };
