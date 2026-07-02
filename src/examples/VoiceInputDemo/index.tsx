@@ -9,7 +9,7 @@
 import { UnifiedChatSession } from '@/components/business-component';
 import { DefaultSelectedEnum } from '@/types/enums/agent';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
-import { Alert, Button, message, Space, Typography } from 'antd';
+import { Alert, Button, message, Space, Switch, Typography } from 'antd';
 import React, { useCallback, useState } from 'react';
 import { Link } from 'umi';
 import styles from './index.less';
@@ -26,6 +26,8 @@ const { Title, Paragraph, Text } = Typography;
 const VoiceInputDemoPage: React.FC = () => {
   const [messageList, setMessageList] = useState<MessageInfo[]>([]);
   const [selectedModelId, setSelectedModelId] = useState<number>();
+  // 真实麦克风模式：录音与波形走真实 PCM 音量（需授权麦克风；转写走真实 STT 接口）
+  const [useRealMic, setUseRealMic] = useState(false);
 
   const handleSendMessage = useCallback((text: string) => {
     const trimmed = text?.trim();
@@ -63,12 +65,23 @@ const VoiceInputDemoPage: React.FC = () => {
               路由：<Text code>/examples/voice-input-demo</Text>
             </Paragraph>
           </div>
-          <Button
-            onClick={() => void handleClear()}
-            disabled={!messageList.length}
-          >
-            清空消息
-          </Button>
+          <Space>
+            <Space size={4}>
+              <Text type="secondary">真实麦克风</Text>
+              <Switch
+                checked={useRealMic}
+                onChange={setUseRealMic}
+                checkedChildren="开"
+                unCheckedChildren="关"
+              />
+            </Space>
+            <Button
+              onClick={() => void handleClear()}
+              disabled={!messageList.length}
+            >
+              清空消息
+            </Button>
+          </Space>
         </Space>
         <Alert
           type="info"
@@ -81,7 +94,11 @@ const VoiceInputDemoPage: React.FC = () => {
               <li>
                 录音时底栏仅保留左侧「+」「清空」，中间为波形动效，右侧为停止/发送
               </li>
-              <li>本页消息与语音均为本地模拟，无需麦克风、无需后端接口</li>
+              <li>
+                {useRealMic
+                  ? '当前为真实麦克风模式：波形随你的声音起伏，转写走真实 STT 接口（消息发送仍为本地模拟）'
+                  : '当前为模拟模式：波形为伪随机动效、不访问麦克风；打开右上角「真实麦克风」可体验真实音量驱动'}
+              </li>
             </ul>
           }
         />
@@ -106,7 +123,7 @@ const VoiceInputDemoPage: React.FC = () => {
             enableMention={false}
             placeholder="输入消息，或使用发送按钮左侧的麦克风…"
             showAnnouncement
-            voiceInputMock
+            voiceInputMock={!useRealMic}
           />
         </div>
       </main>

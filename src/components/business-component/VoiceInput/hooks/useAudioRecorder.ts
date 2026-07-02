@@ -4,10 +4,10 @@ import { ensureWorkletReady } from '../loaders/recorderContext';
 import { downsamplePcm } from '../utils/resample';
 import { encodeWav } from '../utils/wavEncoder';
 import {
+  appendSmoothedWaveLevel,
   computeFrameRms,
   createEmptyWaveLevels,
   normalizeWaveLevel,
-  shiftWaveLevels,
 } from '../utils/waveLevels';
 
 export type RecorderStatus = 'idle' | 'connecting' | 'recording' | 'stopping';
@@ -63,6 +63,7 @@ export const useAudioRecorder = (): UseAudioRecorder => {
   const waveLevelsRef = useRef<number[]>(createEmptyWaveLevels());
   const pendingRmsRef = useRef<number[]>([]);
   const rafRef = useRef<number | null>(null);
+  const lastShiftAtRef = useRef(0);
   const streamRef = useRef<MediaStream | null>(null);
   const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const nodeRef = useRef<AudioWorkletNode | null>(null);
@@ -71,6 +72,9 @@ export const useAudioRecorder = (): UseAudioRecorder => {
   const sampleRateRef = useRef<number>(VOICE_INPUT_DEFAULTS.sampleRate);
   const startedAtRef = useRef<number>(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const mountedRef = useRef(true);
+  const operationIdRef = useRef(0);
+  const startingRef = useRef(false);
 
   const clearTimer = useCallback(() => {
     if (timerRef.current) {
@@ -117,7 +121,7 @@ export const useAudioRecorder = (): UseAudioRecorder => {
   }, [clearTimer]);
 
   const start = useCallback(async () => {
-    if (status !== 'idle') {
+    if (status !== 'idle' || startingRef.current) {
       return;
     }
 
@@ -129,12 +133,22 @@ export const useAudioRecorder = (): UseAudioRecorder => {
       throw new RecorderError('not-supported');
     }
 
+    const operationId = ++operationIdRef.current;
+    const isOperationActive = () =>
+      mountedRef.current && operationIdRef.current === operationId;
+    startingRef.current = true;
+
     // 入口即给“连接中”反馈，避免点击后 1-2s 看似无响应
     setStatus('connecting');
 
+    let stream: MediaStream | null = null;
     try {
-      // 1. 申请麦克风权限（错误归类到 RecorderError）
-      let stream: MediaStream;
+      // 1. AudioContext/Worklet 就绪与麦克风申请并行：预热未命中（如页面刚加载
+      //    即点击）时两段耗时不再叠加，最大限度缩短“点击 -> 开录”的丢字窗口
+      const ctxPromise = ensureWorkletReady();
+      // 预挂 handler：若下方 getUserMedia 先失败抛出，此 promise 不产生 unhandledrejection
+      ctxPromise.catch(() => {});
+
       try {
         stream = await navigator.mediaDevices.getUserMedia({
           audio: {
@@ -158,17 +172,29 @@ export const useAudioRecorder = (): UseAudioRecorder => {
         }
         throw new RecorderError('unknown', (e as Error)?.message);
       }
+
+      // 权限弹窗等待期间可能发生路由切换或 reset；新取得的流必须立即释放，
+      // 不能继续挂到已经卸载的组件与共享 AudioContext 上。
+      if (!isOperationActive()) {
+        stream.getTracks().forEach((track) => track.stop());
+        throw new RecorderError('aborted');
+      }
       streamRef.current = stream;
 
-      // 2. 复用共享 AudioContext + 已加载的 worklet（重复点击近乎瞬时）
+      // 2. 等待共享 AudioContext + worklet 就绪（通常已被预热，近乎瞬时）
       let ctx: AudioContext;
       try {
-        ctx = await ensureWorkletReady();
+        ctx = await ctxPromise;
       } catch (e) {
         throw new RecorderError(
           'not-supported',
           e instanceof Error ? e.message : undefined,
         );
+      }
+
+      if (!isOperationActive()) {
+        stream.getTracks().forEach((track) => track.stop());
+        throw new RecorderError('aborted');
       }
       sampleRateRef.current = ctx.sampleRate; // 浏览器实际可能调整采样率
 
@@ -200,6 +226,7 @@ export const useAudioRecorder = (): UseAudioRecorder => {
       muteGainRef.current = muteGain;
       startedAtRef.current = Date.now();
 
+      startingRef.current = false;
       setDurationSec(0);
       setStatus('recording');
 
@@ -209,9 +236,15 @@ export const useAudioRecorder = (): UseAudioRecorder => {
         setDurationSec(Math.floor((Date.now() - startedAtRef.current) / 1000));
       }, 1000);
     } catch (e) {
-      // 任何失败都回退到 idle，并释放本次部分资源（共享 ctx 保留）
-      releaseRecordingResources();
-      setStatus('idle');
+      // 仅当前操作有权修改状态和共享引用；已被 reset/卸载淘汰的异步操作
+      // 只释放自己刚取得的 MediaStream，避免误伤后续录音。
+      if (isOperationActive()) {
+        startingRef.current = false;
+        releaseRecordingResources();
+        setStatus('idle');
+      } else if (stream) {
+        stream.getTracks().forEach((track) => track.stop());
+      }
       throw e;
     }
   }, [status, clearTimer, releaseRecordingResources]);
@@ -260,6 +293,8 @@ export const useAudioRecorder = (): UseAudioRecorder => {
   }, [status, clearTimer, releaseRecordingResources]);
 
   const reset = useCallback(() => {
+    operationIdRef.current += 1;
+    startingRef.current = false;
     releaseRecordingResources();
     chunksRef.current = [];
     pendingRmsRef.current = [];
@@ -269,7 +304,9 @@ export const useAudioRecorder = (): UseAudioRecorder => {
     setDurationSec(0);
   }, [releaseRecordingResources]);
 
-  // 录音中：按帧累积 RMS，rAF 刷新波形（与真实音量同步）
+  // 录音中：按帧累积 RMS，按固定节奏向时间线右端追加一格音量；
+  // 挤满可见长度后最旧的从左端滚出（从右到左的时间线滚动）。
+  // 固定间隔（而非每帧刷新）让滚动节奏肉眼可辨，同时把重渲染频率降到 ~12次/秒
   useEffect(() => {
     if (status !== 'recording') {
       if (rafRef.current !== null) {
@@ -279,17 +316,26 @@ export const useAudioRecorder = (): UseAudioRecorder => {
       return;
     }
 
+    lastShiftAtRef.current = 0;
     const tick = () => {
-      const pending = pendingRmsRef.current;
-      if (pending.length > 0) {
-        const avgRms =
-          pending.reduce((sum, value) => sum + value, 0) / pending.length;
-        pendingRmsRef.current = [];
-        waveLevelsRef.current = shiftWaveLevels(
-          waveLevelsRef.current,
-          normalizeWaveLevel(avgRms),
-        );
-        setWaveLevels([...waveLevelsRef.current]);
+      const now = Date.now();
+      if (
+        now - lastShiftAtRef.current >=
+        VOICE_INPUT_DEFAULTS.waveShiftIntervalMs
+      ) {
+        const pending = pendingRmsRef.current;
+        if (pending.length > 0) {
+          // 间隔内所有帧的平均 RMS 作为这一格的真实音量
+          const avgRms =
+            pending.reduce((sum, value) => sum + value, 0) / pending.length;
+          pendingRmsRef.current = [];
+          waveLevelsRef.current = appendSmoothedWaveLevel(
+            waveLevelsRef.current,
+            normalizeWaveLevel(avgRms),
+          );
+          setWaveLevels(waveLevelsRef.current);
+          lastShiftAtRef.current = now;
+        }
       }
       rafRef.current = requestAnimationFrame(tick);
     };
@@ -305,7 +351,11 @@ export const useAudioRecorder = (): UseAudioRecorder => {
 
   // 组件卸载：仅释放活动录音资源（共享 ctx 保留给会话复用）
   useEffect(() => {
+    mountedRef.current = true;
     return () => {
+      mountedRef.current = false;
+      operationIdRef.current += 1;
+      startingRef.current = false;
       releaseRecordingResources();
     };
   }, [releaseRecordingResources]);

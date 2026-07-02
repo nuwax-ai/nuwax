@@ -19,8 +19,13 @@ export const VOICE_INPUT_DEFAULTS = {
   sttTimeoutMs: 30000,
   /** 上传文件大小硬上限（字节），与后端 10MB 约束对齐 */
   maxFileSizeBytes: 10 * 1024 * 1024,
-  /** 实时波形条数量 */
-  waveBarCount: 14,
+  /**
+   * 波形时间线保留的最大历史条数（数据层上限，约 41s）。
+   * 实际可见条数由展示层按容器宽度自适应裁切，此值只需大于任何屏宽的可见条数
+   */
+  waveBarCount: 512,
+  /** 波形推进间隔（毫秒）：每步新音量从右端进入时间线 */
+  waveShiftIntervalMs: 80,
 } as const;
 
 /** 演示模式默认模拟转写文案 */
