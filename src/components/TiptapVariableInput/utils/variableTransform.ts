@@ -17,10 +17,10 @@ interface VariableConfigItem {
   name: string;
   /** 变量键值（可选，支持多种类型） */
   key?: string | number | bigint | React.Key;
-  /** 数据类型 */
-  dataType?: string;
+  /** 数据类型（兼容 InputAndOutConfig.dataType 的 null） */
+  dataType?: string | null;
   /** 变量描述 */
-  description?: string;
+  description?: string | null;
   /** 子变量（支持 children 或 subArgs） */
   children?: VariableConfigItem[];
   subArgs?: VariableConfigItem[];
