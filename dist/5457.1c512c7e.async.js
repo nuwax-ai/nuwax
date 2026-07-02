@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunknuwax_frontend=self.webpackChunknuwax_frontend||[]).push([[5457],{25457:function(P,E,_){_.d(E,{diagram:function(){return D.vY}});var D=_(85434),O=_(93730),M=_(77209),n=_(31188),R=_(56730),C=_(71673),B=_(62801),I=_(48967),s=_(52429),U=_(73582),W=_(71755),h=_(75536),L=_(95602),m=_(72533),K=_(79655),v=_(90687),j=_(7004),A=_(69849)}}]);
