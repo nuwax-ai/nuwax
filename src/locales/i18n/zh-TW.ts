@@ -133,6 +133,8 @@ export const ZH_TW: SystemLangMap = {
   "PC.Components.ChatInputHome.clearRecord": "清空會話記錄",
   "PC.Components.VoiceInput.startTooltip": "語音輸入",
   "PC.Components.VoiceInput.stopTooltip": "停止錄音並辨識",
+  "PC.Components.VoiceInput.stopFillTooltip": "停止錄音並回填到輸入框",
+  "PC.Components.VoiceInput.stopSendTooltip": "停止錄音並發送",
   "PC.Components.VoiceInput.transcribing": "語音辨識中…",
   "PC.Components.VoiceInput.permissionDenied": "麥克風權限被拒絕，請在瀏覽器設定中允許後重試",
   "PC.Components.VoiceInput.notSupported": "目前環境不支援語音輸入，請使用最新版 Chrome/Edge/Firefox/Safari",

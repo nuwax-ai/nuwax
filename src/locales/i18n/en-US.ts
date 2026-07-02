@@ -157,6 +157,8 @@ export const EN_US: SystemLangMap = {
   "PC.Components.ChatInputHome.clearRecord": "Clear conversation history",
   "PC.Components.VoiceInput.startTooltip": "Voice input",
   "PC.Components.VoiceInput.stopTooltip": "Stop recording and transcribe",
+  "PC.Components.VoiceInput.stopFillTooltip": "Stop and fill input",
+  "PC.Components.VoiceInput.stopSendTooltip": "Stop and send",
   "PC.Components.VoiceInput.transcribing": "Transcribing…",
   "PC.Components.VoiceInput.permissionDenied": "Microphone access was denied. Please allow it in your browser settings and try again.",
   "PC.Components.VoiceInput.notSupported": "Voice input isn't supported in this environment. Please use the latest Chrome/Edge/Firefox/Safari.",

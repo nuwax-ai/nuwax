@@ -18,4 +18,10 @@ export const VOICE_INPUT_DEFAULTS = {
   sttTimeoutMs: 30000,
   /** 上传文件大小硬上限（字节），与后端 10MB 约束对齐 */
   maxFileSizeBytes: 10 * 1024 * 1024,
+  /** 实时波形条数量 */
+  waveBarCount: 14,
 } as const;
+
+/** 演示模式默认模拟转写文案 */
+export const VOICE_INPUT_MOCK_TRANSCRIPT =
+  '这是模拟识别的语音内容，用于预览回填与自动发送交互。';

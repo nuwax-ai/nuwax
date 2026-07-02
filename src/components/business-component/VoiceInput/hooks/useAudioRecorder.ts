@@ -2,6 +2,12 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { VOICE_INPUT_DEFAULTS } from '../config';
 import { loadRecorderWorklet } from '../loaders/recorderWorklet';
 import { encodeWav } from '../utils/wavEncoder';
+import {
+  computeFrameRms,
+  createEmptyWaveLevels,
+  normalizeWaveLevel,
+  shiftWaveLevels,
+} from '../utils/waveLevels';
 
 export type RecorderStatus = 'idle' | 'recording' | 'stopping';
 
@@ -10,6 +16,8 @@ export interface UseAudioRecorder {
   status: RecorderStatus;
   /** 已录音时长（秒，整数） */
   durationSec: number;
+  /** 实时波形条高度（0~1） */
+  waveLevels: number[];
   /** 开始录音（申请权限 + 启动 AudioContext + Worklet） */
   start: () => Promise<void>;
   /** 停止录音并返回 WAV Blob；时长过短抛 RecorderError('too-short') */
@@ -46,8 +54,12 @@ export class RecorderError extends Error {
 export const useAudioRecorder = (): UseAudioRecorder => {
   const [status, setStatus] = useState<RecorderStatus>('idle');
   const [durationSec, setDurationSec] = useState(0);
+  const [waveLevels, setWaveLevels] = useState<number[]>(createEmptyWaveLevels);
 
   const audioCtxRef = useRef<AudioContext | null>(null);
+  const waveLevelsRef = useRef<number[]>(createEmptyWaveLevels());
+  const pendingRmsRef = useRef<number[]>([]);
+  const rafRef = useRef<number | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const nodeRef = useRef<AudioWorkletNode | null>(null);
@@ -178,10 +190,14 @@ export const useAudioRecorder = (): UseAudioRecorder => {
     muteGain.gain.value = 0;
 
     chunksRef.current = [];
+    pendingRmsRef.current = [];
+    waveLevelsRef.current = createEmptyWaveLevels();
+    setWaveLevels(createEmptyWaveLevels());
     node.port.onmessage = (event: MessageEvent) => {
       const frame = event.data as Float32Array | undefined;
       if (frame && frame.length) {
         chunksRef.current.push(frame);
+        pendingRmsRef.current.push(computeFrameRms(frame));
       }
     };
 
@@ -243,9 +259,46 @@ export const useAudioRecorder = (): UseAudioRecorder => {
   const reset = useCallback(() => {
     teardown();
     chunksRef.current = [];
+    pendingRmsRef.current = [];
+    waveLevelsRef.current = createEmptyWaveLevels();
+    setWaveLevels(createEmptyWaveLevels());
     setStatus('idle');
     setDurationSec(0);
   }, [teardown]);
+
+  // 录音中：按帧累积 RMS，rAF 刷新波形（与真实音量同步）
+  useEffect(() => {
+    if (status !== 'recording') {
+      if (rafRef.current !== null) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+      return;
+    }
+
+    const tick = () => {
+      const pending = pendingRmsRef.current;
+      if (pending.length > 0) {
+        const avgRms =
+          pending.reduce((sum, value) => sum + value, 0) / pending.length;
+        pendingRmsRef.current = [];
+        waveLevelsRef.current = shiftWaveLevels(
+          waveLevelsRef.current,
+          normalizeWaveLevel(avgRms),
+        );
+        setWaveLevels([...waveLevelsRef.current]);
+      }
+      rafRef.current = requestAnimationFrame(tick);
+    };
+
+    rafRef.current = requestAnimationFrame(tick);
+    return () => {
+      if (rafRef.current !== null) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+    };
+  }, [status]);
 
   // 组件卸载时释放
   useEffect(() => {
@@ -254,5 +307,5 @@ export const useAudioRecorder = (): UseAudioRecorder => {
     };
   }, [teardown]);
 
-  return { status, durationSec, start, stop, reset };
+  return { status, durationSec, waveLevels, start, stop, reset };
 };

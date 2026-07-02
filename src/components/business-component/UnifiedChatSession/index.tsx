@@ -87,6 +87,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
   className,
   style,
   chatInputDisabled = false,
+  voiceInputMock = false,
   chatInputProps,
   queueMinConsumeInterval,
   queueContext,
@@ -384,6 +385,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
           selectedModelId={selectedModelId}
           onModelSelect={onModelSelect}
           agentType={agentInfo?.type}
+          voiceInputMock={voiceInputMock}
           {...chatInputProps}
           // 传入原 conversationInfo model 数据
           runStopConversation={runStopConversation}
