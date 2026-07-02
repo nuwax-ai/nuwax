@@ -12,12 +12,14 @@ interface SearchHeaderProps {
   keyword: string;
   onSearchChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onNewChat: () => void;
+  showNewChatButton?: boolean;
 }
 
 const SearchHeader: React.FC<SearchHeaderProps> = ({
   keyword,
   onSearchChange,
   onNewChat,
+  showNewChatButton = true,
 }) => {
   const searchPlaceholder = dict(
     'PC.Components.HistoryConversationList.searchPlaceholder',
@@ -37,19 +39,21 @@ const SearchHeader: React.FC<SearchHeaderProps> = ({
           className={cx(styles['search-input'])}
         />
       </div>
-      <Tooltip
-        title={dict('PC.Constants.Menus.newChat')}
-        placement="right"
-        color="white"
-        styles={{ body: { color: 'rgba(0, 0, 0, 0.88)' } }}
-      >
-        <div className={cx(styles['new-chat-btn'])} onClick={onNewChat}>
-          <SvgIcon
-            name="icons-nav-new_chat"
-            className={cx(styles['new-chat-svg'])}
-          />
-        </div>
-      </Tooltip>
+      {showNewChatButton && (
+        <Tooltip
+          title={dict('PC.Constants.Menus.newChat')}
+          placement="right"
+          color="white"
+          styles={{ body: { color: 'rgba(0, 0, 0, 0.88)' } }}
+        >
+          <div className={cx(styles['new-chat-btn'])} onClick={onNewChat}>
+            <SvgIcon
+              name="icons-nav-new_chat"
+              className={cx(styles['new-chat-svg'])}
+            />
+          </div>
+        </Tooltip>
+      )}
     </div>
   );
 };

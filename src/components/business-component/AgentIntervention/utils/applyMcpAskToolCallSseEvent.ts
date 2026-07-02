@@ -69,17 +69,51 @@ export function applyMcpAskToolCallSseEvent(
       (eventData.result as Record<string, unknown> | undefined)?.input
     );
 
-  if (!isToolCallEvent && !isProcessingToolCallEvent) {
+  // 识别 subEventType=ASK_QUESTION 的 PROCESSING 事件。
+  // 此类事件的 result.executeId 和 result.input 均为 null，
+  // MCP Ask 数据在 result.data 中（含 schemaVersion、ui、requestId）。
+  const isAskQuestionEvent =
+    res.eventType === ConversationEventTypeEnum.PROCESSING &&
+    envelope.subEventType === 'ASK_QUESTION';
+
+  if (!isToolCallEvent && !isProcessingToolCallEvent && !isAskQuestionEvent) {
     return null;
   }
 
   const result = eventData.result as Record<string, unknown> | undefined;
-  const toolCallId =
-    (eventData.tool_call_id as string) ||
-    (eventData.toolCallId as string) ||
+
+  // ASK_QUESTION 事件：MCP Ask 数据直接在 result.data 中，
+  // 不遵循 ToolCall 的 result.input 结构。
+  let rawInput: Record<string, unknown> | undefined;
+  let toolCallId: string | undefined;
+
+  if (isAskQuestionEvent && result) {
+    const resultData = result.data as Record<string, unknown> | undefined;
+    if (resultData && typeof resultData === 'object') {
+      rawInput = resultData;
+      toolCallId =
+        (resultData.requestId as string) ||
+        (eventData.executeId as string) ||
+        (result.executeId as string);
+    }
+  }
+
+  if (!rawInput) {
+    rawInput = readRawInput(eventData, result);
+  }
+  if (!toolCallId) {
+    toolCallId =
+      (eventData.tool_call_id as string) ||
+      (eventData.toolCallId as string) ||
+      (eventData.executeId as string) ||
+      (result?.executeId as string);
+  }
+
+  const executeId =
     (eventData.executeId as string) ||
-    (result?.executeId as string);
-  const rawInput = readRawInput(eventData, result);
+    (result?.executeId as string) ||
+    undefined;
+
   const mcpAskInput = parseMcpAskToolInput(rawInput);
 
   if (!mcpAskInput || !toolCallId) {
@@ -100,10 +134,11 @@ export function applyMcpAskToolCallSseEvent(
       {
         input: mcpAskInput,
         toolCallId,
+        executeId,
         responseStatus: 'pending',
         triggeredAt: createInterventionTriggeredAt(),
       },
     ],
-    status: currentMessage.status || MessageStatusEnum.Loading,
+    status: MessageStatusEnum.Loading,
   };
 }

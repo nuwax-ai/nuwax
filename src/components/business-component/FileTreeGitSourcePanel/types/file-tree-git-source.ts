@@ -57,6 +57,12 @@ export interface FileTreeGitSourcePanelProps {
   treeHeaderClassName?: string;
   /** 文件列表为空（且非加载中）时的自定义空态内容 */
   treeEmptyState?: ReactNode;
+  /** 导入项目（空白区域右键菜单，覆盖 tree 内同名配置） */
+  onImportProject?: () => void;
+  /** 导入项目菜单项文案 */
+  importProjectLabel?: string;
+  /** 是否正在导入项目 */
+  isImportingProject?: boolean;
   /** 源代码管理配置 */
   sourceControl: SourceControlProps;
 }
@@ -123,6 +129,8 @@ export interface FileTreeContainerProps {
   handleRenameFromMenu: (node: FileNode) => void;
   /** 从右键菜单上传文件到指定目录 */
   handleUploadMultipleFiles: (node: FileNode | null) => Promise<void>;
+  /** 从右键菜单/工具栏上传文件夹到指定目录（保留子目录结构） */
+  handleUploadFolder?: (node: FileNode | null) => Promise<void>;
   /** 在指定父节点下新建文件 */
   handleCreateFile: (parentNode: FileNode | null) => void;
   /** 在指定父节点下新建文件夹 */

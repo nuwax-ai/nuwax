@@ -1,3 +1,4 @@
+import { useCanvasFullscreen } from '@/contexts/CanvasFullscreenContext';
 import { NodeTypeEnum, RunResultStatusEnum } from '@/types/enums/common';
 import { NodeSizeGetTypeEnum } from '@/types/enums/node';
 import type {
@@ -21,14 +22,20 @@ import {
   useImperativeHandle,
   useRef,
 } from 'react';
+import { useAgentFlowExitFullscreenZoomFit } from '../../agentFlow/hooks/useAgentFlowExitFullscreenZoomFit';
 import EventHandlers from '../../component/eventHandlers';
 import InitGraph, { setGraphInitializing } from '../../component/graph';
 import { registerCustomNodes } from '../../component/registerCustomNodes';
+import {
+  CANVAS_ZOOM_TO_FIT_DELAY_MS,
+  zoomGraphToFit,
+} from '../../constants/canvasZoom';
 import {
   LOOP_END_NODE_X_OFFSET,
   LOOP_INNER_NODE_Y_OFFSET,
   LOOP_START_NODE_X_OFFSET,
 } from '../../constants/loopNodeConstants';
+import { isClientCoordinate as isPointInClientSpace } from '../../utils/canvasPosition';
 import {
   adjustParentSize,
   animateRunningEdges,
@@ -58,6 +65,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       removeNode,
       changeZoom,
       createNodeByPortOrEdge,
+      insertNodeBetween,
       onSaveNode,
       onClickBlank,
       onInit,
@@ -67,20 +75,16 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
     ref,
   ) => {
     const { modal, message } = App.useApp();
+    // AgentFlow 画布的全屏状态（仅 AgentFlowCanvas 提供；Workflow 模式恒为 false）
+    const isCanvasFullscreen = useCanvasFullscreen();
     registerCustomNodes();
     const containerRef = useRef<HTMLDivElement>(null);
     const graphRef = useRef<any>(null);
+    useAgentFlowExitFullscreenZoomFit(graphRef);
 
     // 新增一个ref标记是否已初始化
     const hasInitialized = useRef(false);
 
-    function preWork() {
-      const container = containerRef.current;
-      if (!container) return;
-      const graphContainer = document.createElement('div');
-      graphContainer.id = GRAPH_CONTAINER_ID;
-      container?.appendChild(graphContainer);
-    }
     // 绘制画布
     const addLoopChildNode = (callback: (data: any) => boolean): Node[] => {
       const loopNodeList = graphRef.current.getNodes().filter((item: Node) => {
@@ -172,23 +176,34 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       updateEdgeArrows(graphRef.current);
     };
 
-    const _doAddNode = (e: GraphRect, child: ChildNode) => {
-      // 判断坐标是否需要转换：
-      // - 如果坐标是通过拖拽事件（clientX/clientY）获取的，需要 clientToGraph 转换
-      // - 如果坐标是通过 getGraphArea 计算的视口中心，则已经是图坐标，不需要转换
-      // 更可靠的方式是检查坐标是否在画布容器的客户端范围内
+    const _doAddNode = (
+      e: GraphRect,
+      child: ChildNode,
+      coordinateSpace: 'model' | 'auto' = 'auto',
+    ) => {
+      // 坐标系判断：
+      // - 'model'：e 已是节点模型(local)坐标的左上角（端口/边快捷添加、复制），直接落点，
+      //   不做 clientToLocal 转换、不做居中。端口/边路径本就在模型空间算出了精确落点，
+      //   不应再用「落点是否在画布容器内」的启发式判断——该启发式在落点超出容器边界
+      //   （如 in 端口向左偏移，落点常落到容器左边界之外）或画布平移/缩放时会误判坐标系，
+      //   把 client/模型坐标错当另一空间使用，导致新节点大幅偏移（即便不平移画布也会偏，
+      //   因为坐标里夹带了容器相对视口的偏移量）。
+      // - 'auto'（默认）：保留旧启发式，用坐标是否落在画布容器 client 范围内来区分
+      //   client(拖拽落点) 与 model(视口中心)。仅用于无显式声明的旧路径。
+      const isModelSpace = coordinateSpace === 'model';
       const container = graphRef.current.container;
-      const containerRect = container?.getBoundingClientRect();
-      const isClientCoordinate =
-        containerRect &&
-        e.x >= containerRect.left &&
-        e.x <= containerRect.right &&
-        e.y >= containerRect.top &&
-        e.y <= containerRect.bottom;
+      // auto 模式下用启发式判断是否 client 坐标；model 模式恒为「模型左上角」
+      const isClientCoordinate = isModelSpace
+        ? false
+        : isPointInClientSpace({ x: e.x, y: e.y }, container);
 
-      const point = isClientCoordinate
-        ? graphRef.current.clientToGraph(e.x, e.y)
-        : { x: e.x, y: e.y }; // 已经是图坐标，直接使用
+      // X6 命名易误导：node.position 用的是 "local"（模型坐标），故 client→节点位置须用 clientToLocal；
+      // 误用 clientToGraph 会在画布平移/缩放后产生偏移。
+      const point = isModelSpace
+        ? { x: e.x, y: e.y } // 模型(local)坐标左上角，直接用
+        : isClientCoordinate
+        ? graphRef.current.clientToLocal(e.x, e.y) // client 落点 → 模型坐标
+        : { x: e.x, y: e.y }; // 视口中心(model) 直接用
 
       // 先生成端口，再基于端口 offsetY 计算节点高度（AgentFlow 分支节点高度由端口决定）
       const ports = generatePorts(child);
@@ -198,10 +213,12 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         type: NodeSizeGetTypeEnum.create,
       });
 
-      // 如果坐标是视口中心（非客户端坐标），需要将节点中心对齐到该点
-      // 即节点位置 = 中心点 - 节点宽高的一半
-      const nodeX = isClientCoordinate ? point.x : point.x - width / 2;
-      const nodeY = isClientCoordinate ? point.y : point.y - height / 2;
+      // model 左上角 与 client 落点 都按「左上角」放置（端口/边算出的本就是左上角）；
+      // 只有视口中心(auto 且非 client，即 model 中心)需要把节点中心对齐到该点：
+      // 节点位置 = 中心点 - 节点宽高的一半
+      const useAsTopLeft = isModelSpace || isClientCoordinate;
+      const nodeX = useAsTopLeft ? point.x : point.x - width / 2;
+      const nodeY = useAsTopLeft ? point.y : point.y - height / 2;
 
       // 根据情况，动态给予右侧的out连接桩
       const newNode = graphRef.current.addNode({
@@ -255,9 +272,10 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
     const graphAddNode: GraphContainerRef['graphAddNode'] = (
       e: GraphRect,
       child: ChildNode,
+      coordinateSpace: 'model' | 'auto' = 'auto',
     ) => {
       if (!graphRef.current) return;
-      _doAddNode(e, child);
+      _doAddNode(e, child, coordinateSpace);
       // 找出循环节点 子节点如果有就添加
       const LoopNodeList = addLoopChildNode((data) => {
         return data.id === child.id && data.type === 'Loop';
@@ -424,12 +442,14 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
       graphRef.current.removeCell(id);
     };
 
-    // 创建边
+    // 创建边；节点不在画布上时返回 false
     const graphCreateNewEdge = (
       source: string,
       target: string,
       isLoop?: boolean,
-    ) => {
+    ): boolean => {
+      if (!graphRef.current) return false;
+
       // 验证源节点和目标节点是否存在
       const sourceId = source.split('-')[0];
       const targetId = target.split('-')[0];
@@ -441,14 +461,12 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         workflowLogger.warn(
           `[GraphContainer] Unable to create edge: source node (${sourceId}) or target node (${targetId}) was not found on canvas`,
         );
-        return;
+        return false;
       }
 
-      // graphRef.current.addEdge({source,target})
       const edge = createEdge({ source, target, zIndex: isLoop ? 25 : 1 });
-
-      if (!graphRef.current) return;
       graphRef.current.addEdge(edge);
+      return true;
     };
 
     // 选中节点 切换节点
@@ -528,19 +546,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
 
     // 缩放适配
     const graphChangeZoomToFit = () => {
-      if (!graphRef.current) return;
-      graphRef.current.zoomToFit({
-        padding: {
-          top: 128 + 18,
-          left: 18,
-          right: 18,
-          bottom: 18,
-        },
-        maxScale: 1,
-        minScale: 0.2,
-        preserveAspectRatio: true,
-        useCellGeometry: true,
-      });
+      zoomGraphToFit(graphRef.current);
     };
 
     const drawGraph = () => {
@@ -666,7 +672,6 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
 
     useEffect(() => {
       if (!containerRef.current) return;
-      preWork();
       graphRef.current = InitGraph({
         containerId: GRAPH_CONTAINER_ID,
         changeDrawer: changeDrawer,
@@ -675,6 +680,7 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         changeEdgeConfigWithRefresh,
         changeZoom: changeZoom,
         createNodeByPortOrEdge,
+        insertNodeBetween,
         onSaveNode: onSaveNode,
         onClickBlank: onClickBlank,
         flowKind,
@@ -699,6 +705,16 @@ const GraphContainer = forwardRef<GraphContainerRef, GraphContainerProps>(
         }, 100);
       };
     }, []);
+
+    // AgentFlow 画布切入全屏时，画布尺寸变化：等待容器重排 + X6 autoResize 后再「缩放到适配画布」，
+    // 保证全屏后所有节点都落在视口内。Workflow 模式 isCanvasFullscreen 恒为 false，不会触发。
+    useEffect(() => {
+      if (!isCanvasFullscreen || !graphRef.current) return;
+      const timer = setTimeout(() => {
+        zoomGraphToFit(graphRef.current);
+      }, CANVAS_ZOOM_TO_FIT_DELAY_MS);
+      return () => clearTimeout(timer);
+    }, [isCanvasFullscreen]);
 
     useEffect(() => {
       if (graphParams.nodeList.length === 0) {

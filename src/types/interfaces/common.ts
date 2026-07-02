@@ -78,6 +78,8 @@ export interface FoldWrapType {
     name: string;
     description: string;
   }) => void;
+  // 透传到外层定位容器的内联样式（用于覆盖默认 top/right/bottom 定位）
+  style?: React.CSSProperties;
 }
 
 // 容器组件
@@ -175,7 +177,7 @@ interface ModalClassNames {
 export interface CustomFormModalProps {
   form: FormInstance;
   classNames?: ModalClassNames;
-  title: string;
+  title: React.ReactNode;
   open: boolean;
   loading?: boolean;
   // 确定按钮前缀icon
@@ -583,6 +585,12 @@ export interface ChatInputProps extends ManualComponentItemProps {
   selectedModelId?: number;
   /** 模型改变时的回调 */
   onModelSelect?: (modelId: number) => void;
+  /** 是否显示空间选择器 */
+  showSpaceSelector?: boolean;
+  /** 当前选中的空间 ID */
+  selectedSpaceId?: number;
+  /** 空间改变时的回调 */
+  onSpaceSelect?: (spaceId: number) => void;
   /** 智能体类型 */
   agentType?: string;
   /** 当前 Agent mode */
@@ -597,6 +605,10 @@ export interface ChatInputProps extends ManualComponentItemProps {
   defaultMentions?: MentionItem[];
   /** 插槽：用于完美嵌入和合并头部 Tab 选择组件 */
   tabsSlot?: React.ReactNode;
+  selectedTag?: {
+    label: string;
+  };
+  onClearSelectedTag?: () => void;
   /** 可用值:PageApp,TaskAgent */
   usageScenarios?: AgentTypeEnum[];
   /**

@@ -1,0 +1,35 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.voice-input-demo {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: @colorBgLayout;
+  overflow: hidden;
+}
+
+.voice-input-demo-header {
+  flex-shrink: 0;
+  padding: @paddingMd @paddingLg;
+  border-bottom: 1px solid @colorSplit;
+  background-color: @colorBgContainer;
+}
+
+.voice-input-demo-session {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: @paddingMd @paddingLg @paddingLg;
+}
+
+.voice-input-demo-session-inner {
+  flex: 1;
+  min-height: 0;
+  max-width: 960px;
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+}

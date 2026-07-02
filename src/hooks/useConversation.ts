@@ -1,3 +1,4 @@
+import type { AgentMode } from '@/components/business-component/AgentIntervention';
 import { apiAgentConversationCreate } from '@/services/agentConfig';
 import {
   AgentDetailDto,
@@ -27,6 +28,7 @@ const useConversation = () => {
       message: string;
       files?: UploadFileInfo[];
       infos?: AgentSelectedComponentInfo[];
+      selectedComputerId?: string;
       // 默认智能体详情
       defaultAgentDetail?: AgentDetailDto;
       // 变量参数
@@ -37,6 +39,8 @@ const useConversation = () => {
       skillIds?: number[];
       // 模型 ID
       modelId?: number;
+      // 智能体模式
+      agentMode?: AgentMode;
     },
   ) => {
     const variableParams = attach?.variableParams;

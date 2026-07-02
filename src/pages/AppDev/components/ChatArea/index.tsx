@@ -70,6 +70,8 @@ interface ChatAreaProps {
    * 典型用途：刷新文件树列表和 git 源代码管理 status。
    */
   onChatSessionEnd?: () => void;
+  /** 切换到数据 Tab 时回调，用于刷新项目详情 */
+  onDataTabClick?: () => void;
 }
 
 const ChatArea: React.FC<ChatAreaProps> = ({
@@ -90,6 +92,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   hiddenTabs = [],
   onDesignModeUnreachable,
   onChatSessionEnd,
+  onDataTabClick,
 }) => {
   // 权限检查
   const { hasPermissionByMenuCode } = useModel('menuModel');
@@ -683,6 +686,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         isSupportDesignMode={isSupportDesignMode}
         hiddenTabs={hiddenTabs}
         onDesignModeUnreachable={onDesignModeUnreachable}
+        onDataTabClick={onDataTabClick}
       />
 
       {/* 内容区域 */}

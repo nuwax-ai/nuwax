@@ -285,6 +285,8 @@ export interface AgentComponentWorkflowUpdateParams
     invokeType: InvokeTypeEnum;
     // 是否直接输出, 0 否，1 是
     directOutput?: OutputDirectlyEnum;
+    // 是否需要审批, 0-否，1-是
+    callApproval?: DefaultSelectedEnum;
     // 是否默认选中，0-否，1-是
     defaultSelected: DefaultSelectedEnum;
     // 技能展示别名

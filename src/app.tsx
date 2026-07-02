@@ -98,13 +98,9 @@ const AppContainer: React.FC<{ children: React.ReactElement }> = ({
       sessionStorage.setItem('__chunk_reload', '1');
 
       Modal.confirm({
-        // title: '发现新版本',
-        // content: '系统已更新，请刷新页面以加载最新版本。',
-        // okText: '立即刷新',
-        // cancelText: '稍后再说',
-        title: dict('PC.Hooks.UseEventPolling.newVersionFound'),
-        content: dict('PC.Hooks.UseEventPolling.updatePrompt', ''),
-        okText: dict('PC.Hooks.UseEventPolling.update'),
+        title: dict('PC.Modal.chunkLoadErrorTitle'),
+        content: dict('PC.Modal.chunkLoadErrorContent'),
+        okText: dict('PC.Modal.chunkLoadErrorRefresh'),
         cancelText: dict('PC.Common.Global.cancel'),
         onOk: () => {
           sessionStorage.removeItem('__chunk_reload');

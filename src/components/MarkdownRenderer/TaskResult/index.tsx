@@ -1,8 +1,9 @@
 import classNames from 'classnames';
 
 import { FileTextOutlined, RightOutlined } from '@ant-design/icons';
-import React from 'react';
+import React, { useContext } from 'react';
 import { useModel } from 'umi';
+import { TaskResultContext } from './context';
 import styles from './index.less';
 const cx = classNames.bind(styles);
 
@@ -24,6 +25,8 @@ const TaskResult: React.FC<TaskResultProps> = ({
   node,
   conversationId,
 }) => {
+  const { onTaskResultClick } = useContext(TaskResultContext);
+
   const {
     openPreviewView,
     setTaskAgentSelectedFileId,
@@ -58,13 +61,12 @@ const TaskResult: React.FC<TaskResultProps> = ({
     }
 
     // 点击事件处理
-    const handleClick = () => {
+    const handleClick = async () => {
       /**
        * fileName: /home/user/1465924/workspace/2025-financial-statistics.pptx
        * conversationId: 1465924
        * fileId: workspace/2025-financial-statistics.pptx
        */
-      console.log('Processing TaskResult event in session: ', fileName);
       let fileId = fileName.split(`${conversationId}/`).pop();
 
       // 当点击的是文件夹时，如果文件ID以 / 结尾，则去掉 /
@@ -72,7 +74,17 @@ const TaskResult: React.FC<TaskResultProps> = ({
         fileId = fileId.slice(0, -1);
       }
 
-      openPreviewView(conversationId);
+      if (!fileId || conversationId === undefined || conversationId === null) {
+        return;
+      }
+
+      // 如果外部 Context 提供了拦截器回调且返回了 true（表示拦截），则取消默认行为
+      if (onTaskResultClick && onTaskResultClick(fileId) === true) {
+        return;
+      }
+
+      const cId = Number(conversationId);
+      await openPreviewView(cId, { forceRefresh: true });
       setTaskAgentSelectedFileId(fileId);
       // 每次点击时更新触发标志，确保即使文件ID相同也能触发文件选择
       setTaskAgentSelectTrigger(Date.now());

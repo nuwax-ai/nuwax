@@ -1,4 +1,7 @@
-import type { AgentMode } from '@/components/business-component/AgentIntervention';
+import type {
+  AgentInterventionHandlersOverride,
+  AgentMode,
+} from '@/components/business-component/AgentIntervention';
 import type { UnifiedChatQueueContext } from '@/components/business-component/MessageQueue/useUnifiedChatQueue';
 import type { DefaultSelectedEnum } from '@/types/enums/agent';
 import type { ChatInputProps, UploadFileInfo } from '@/types/interfaces/common';
@@ -38,6 +41,12 @@ export interface UnifiedChatSessionProps {
    * 与 showTaskExecutingWait 分离：后者仅 taskStatus=EXECUTING 且无流式消息时展示横幅。
    */
   isConversationActive?: boolean;
+  /**
+   * 本地是否正在通过 SSE 发送/接收（model 原始 isConversationActive，【不】含「后台 taskStatus===EXECUTING」）。
+   * 供流式恢复 hook 判断「本地是否在驱动输出」——若混入 taskStatus，EXECUTING 会话会被误判为
+   * 本地流式中，导致既不轮询也不订阅 sub（续不上）。未传时回退到 isConversationActive。
+   */
+  isLocallyStreaming?: boolean;
   messageBottomMode?: 'none' | 'home' | 'chat'; // 消息底部操作栏模式：none | home | chat
   showDebug?: boolean;
   loadingSuggest?: boolean; // 会话建议加载状态
@@ -86,6 +95,9 @@ export interface UnifiedChatSessionProps {
   onComputerSelect?: (id: string) => void;
 
   showScrollBtn?: boolean;
+  allowAutoScrollRef?: React.MutableRefObject<boolean>;
+  scrollTimeoutRef?: React.MutableRefObject<any>;
+  setShowScrollBtn?: (show: boolean) => void;
 
   // 自定义差异化组件渲染插槽 (极高扩展性，用以兼容 AppDev 中特有的 Diff markdown 渲染和空状态)
   renderMessageItem?: (
@@ -100,6 +112,10 @@ export interface UnifiedChatSessionProps {
   messageViewRef?: React.RefObject<HTMLDivElement>;
   className?: string;
   style?: React.CSSProperties;
+  /** 额外禁用输入框，用于跨会话联动控制输入态 */
+  chatInputDisabled?: boolean;
+  /** 演示模式：语音输入走本地模拟（示例页预览交互） */
+  voiceInputMock?: boolean;
 
   // 输入框属性透传，用于支持展示不同的工具栏、工具列表配置
   chatInputProps?: Partial<ChatInputProps>;
@@ -131,4 +147,25 @@ export interface UnifiedChatSessionProps {
   isLoadingOtherInterface?: boolean;
   /** 当前会话详情 */
   conversationInfo?: ConversationInfo | null;
+
+  /**
+   * 隔离会话源（如 ConversationAgent 预览 Tab）的干预回执注入；
+   * 未传时默认使用全局 conversationInfo model。
+   */
+  interventionHandlers?: AgentInterventionHandlersOverride;
+
+  // ===== 会话流式恢复(sub)：刷新页面 / 新开标签时重建 EXECUTING 会话的流式输出 =====
+  // 未注入下列 action 的页面（如隔离会话源）将不启用恢复。
+  /** 订阅 sub 流（model 的 resumeConversationStream） */
+  onResumeConversationStream?: (
+    conversationId: number | string,
+    currentList: MessageInfo[],
+    onClose?: () => void,
+  ) => void;
+  /** 中断 sub 流（model 的 abortResumeStream） */
+  onAbortResumeStream?: () => void;
+  /** 刷新历史并返回最新 messageList（model 的 runAsync 包装）；多页签续上时补全用户消息 */
+  onReloadConversationHistoryAsync?: (
+    conversationId: number | string,
+  ) => Promise<MessageInfo[] | undefined | null>;
 }

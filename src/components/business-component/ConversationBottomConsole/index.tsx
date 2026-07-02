@@ -2,7 +2,11 @@ import { SvgIcon } from '@/components/base';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
-import { apiEnsurePod, apiKeepalivePod } from '@/services/vncDesktop';
+import {
+  apiEnsurePod,
+  apiKeepalivePod,
+  isEnsurePodThrottledError,
+} from '@/services/vncDesktop';
 import type { DevLogEntry } from '@/types/interfaces/appDev';
 import {
   DownOutlined,
@@ -90,6 +94,8 @@ export interface ConversationBottomConsoleProps {
   expandSignal?: number;
   /** 信号值变化时切到终端 Tab（折叠时恢复默认高度，如点击「终端」图标） */
   terminalSignal?: number;
+  /** 信号值变化时将面板折叠为仅保留头部 */
+  collapseSignal?: number;
   /** 信号值变化时切到日志 Tab（折叠时恢复默认高度，如点击「日志」图标） */
   logsSignal?: number;
   /** 布局模式变化回调（供外部感知折叠/展开状态） */
@@ -128,6 +134,7 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
   layoutResetSignal,
   expandSignal,
   terminalSignal,
+  collapseSignal,
   logsSignal,
   onLayoutModeChange,
   onActiveTabChange,
@@ -163,10 +170,17 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
   /** 手动重连 loading */
   const [isTerminalReconnecting, setIsTerminalReconnecting] =
     useState<boolean>(false);
+  /** 断连后预热容器的防抖定时器（自动重连前尽量 ensurePod） */
+  const ensurePodOnDisconnectTimerRef = useRef<number | null>(null);
+  /** ensure 进行中，避免 handleFirstExpand 重复触发 */
+  const ensureInFlightRef = useRef<boolean>(false);
+
+  /** 是否需要先启动服务再连接终端（由 conversationId 决定） */
+  const requiresServiceStart = Boolean(conversationId);
 
   /**
    * 容器启动状态机：
-   * - idle：未传 conversationId，无需启动容器，终端在有 wsUrl 时直接连接
+   * - idle：未启动 / 未传 conversationId（后者表示无需容器，终端可直接连 WS）
    * - starting：apiEnsurePod 调用中，终端等待
    * - running：容器已就绪，终端可连接，保活轮询中
    * - error：容器启动或保活失败，显示重试按钮，终端不可连接
@@ -174,6 +188,8 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
   const [containerStatus, setContainerStatus] = useState<
     'idle' | 'starting' | 'running' | 'error'
   >('idle');
+  const containerStatusRef = useRef(containerStatus);
+  containerStatusRef.current = containerStatus;
 
   /**
    * 保活轮询（useRequest 自动管理定时器、页面可见性暂停/恢复）
@@ -240,7 +256,15 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
           setContainerStatus('error');
           return false;
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
+        // 智能体电脑等外部刚调过 ensure 时会被 5s 限流，容器已在运行，终端可直接连接
+        if (isEnsurePodThrottledError(error)) {
+          setContainerStatus('running');
+          if (enableKeepalivePolling) {
+            runKeepaliveRef.current(cId);
+          }
+          return true;
+        }
         setContainerStatus('error');
         return false;
       }
@@ -250,6 +274,8 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
 
   /** 挂载时仅清理状态，不自动启动容器；等用户首次展开时触发 */
   useLayoutEffect(() => {
+    ensureInFlightRef.current = false;
+
     if (!conversationId) {
       setContainerStatus('idle');
       terminalConnectedRef.current = false;
@@ -272,15 +298,33 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
     };
   }, [conversationId, enableKeepalivePolling]);
 
+  useEffect(() => {
+    return () => {
+      if (ensurePodOnDisconnectTimerRef.current) {
+        window.clearTimeout(ensurePodOnDisconnectTimerRef.current);
+        ensurePodOnDisconnectTimerRef.current = null;
+      }
+    };
+  }, [conversationId]);
+
   /** 用户首次展开终端面板时，触发容器启动 / 终端直接连接 */
   const handleFirstExpand = useCallback(() => {
     terminalActivatedRef.current = true;
 
-    // 云端电脑：容器尚未启动时触发启动
-    if (conversationId && containerStatus === 'idle') {
-      startContainer(conversationId);
+    if (!conversationId || ensureInFlightRef.current) {
+      return;
     }
-  }, [conversationId, containerStatus, startContainer]);
+
+    const status = containerStatusRef.current;
+    if (status === 'starting' || status === 'running') {
+      return;
+    }
+
+    ensureInFlightRef.current = true;
+    void startContainer(conversationId).finally(() => {
+      ensureInFlightRef.current = false;
+    });
+  }, [conversationId, startContainer]);
 
   /** 终端可见后 fit / sync / focus（委托给 EmbeddedConsoleTerminal） */
   const syncTerminalLayoutAndFocus = useCallback(() => {
@@ -335,25 +379,29 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
 
   /**
    * 终端连接开关（完全由内部容器状态控制）：
-   * - idle：未传 conversationId，无需容器，终端在有 wsUrl 时直接连接
-   * - running：容器就绪，终端可连接
-   * - starting / error：容器未就绪，终端不可连接
+   * - 未传 conversationId：无需启动服务，有 wsUrl 且面板可见时直接连接
+   * - 传入 conversationId：仅 containerStatus === 'running' 后连接
+   * - starting / error：服务未就绪，终端不可连接
    * 面板折叠或整体隐藏时不建立连接，避免在 display:none 容器内 init ttyd 导致无法输入
    * 例外：用户已首次展开过终端面板后，即使折叠也保持连接不断
    * 终端重连失败展示重试面板时暂停自动连接
    */
+  const isServiceReadyForTerminal = requiresServiceStart
+    ? containerStatus === 'running'
+    : true;
   const terminalAutoConnect =
-    (containerStatus === 'idle' || containerStatus === 'running') &&
+    isServiceReadyForTerminal &&
     visible &&
     !showTerminalReconnect &&
     (layoutMode !== 'collapsed' || terminalActivatedRef.current);
   /** 上一次 visible 值（用于识别「重新打开」时机） */
   const prevVisibleRef = useRef(visible);
-  /** 外部信号上一次值（避免组件 remount 时重复触发） */
-  const prevLayoutResetSignalRef = useRef(layoutResetSignal);
-  const prevExpandSignalRef = useRef(expandSignal);
-  const prevTerminalSignalRef = useRef(terminalSignal);
-  const prevLogsSignalRef = useRef(logsSignal);
+  /** 外部信号上一次值（undefined 表示未消费，避免 lazy mount 时与当前 signal 相同而跳过） */
+  const prevLayoutResetSignalRef = useRef<number | undefined>(undefined);
+  const prevExpandSignalRef = useRef<number | undefined>(undefined);
+  const prevTerminalSignalRef = useRef<number | undefined>(undefined);
+  const prevCollapseSignalRef = useRef<number | undefined>(undefined);
+  const prevLogsSignalRef = useRef<number | undefined>(undefined);
 
   /** 日志 Tab 是否使用结构化日志面板（DevLogPanel） */
   const useDevLogPanel = Boolean(devLog);
@@ -389,7 +437,7 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
       !wsUrl ||
       !visible ||
       layoutMode === 'collapsed' ||
-      (conversationId && containerStatus !== 'running')
+      (requiresServiceStart && containerStatus !== 'running')
     ) {
       return;
     }
@@ -402,7 +450,7 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
   }, [
     activeTab,
     containerStatus,
-    conversationId,
+    requiresServiceStart,
     layoutMode,
     syncTerminalLayoutAndFocus,
     wsUrl,
@@ -450,6 +498,19 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
     setActiveTab('terminal');
     setLayoutMode((prev) => (prev === 'collapsed' ? 'default' : prev));
   }, [terminalSignal]);
+
+  /** 外部信号：折叠面板（仅保留头部） */
+  useEffect(() => {
+    if (
+      collapseSignal === undefined ||
+      collapseSignal === prevCollapseSignalRef.current
+    ) {
+      return;
+    }
+    prevCollapseSignalRef.current = collapseSignal;
+    if (!collapseSignal) return;
+    setLayoutMode('collapsed');
+  }, [collapseSignal]);
 
   /** 外部信号：切到日志 Tab（折叠时恢复默认高度） */
   useEffect(() => {
@@ -616,20 +677,55 @@ const ConversationBottomConsole: React.FC<ConversationBottomConsoleProps> = ({
             cursorBlink
             reconnect={DEFAULT_TERMINAL_RECONNECT}
             onConnect={() => {
+              const isReconnect = terminalConnectedOnceRef.current;
               terminalConnectedRef.current = true;
               terminalConnectedOnceRef.current = true;
               setShowTerminalReconnect(false);
+              if (isReconnect) {
+                terminalRef.current?.getTerminal()?.write('\r\n');
+              }
               terminalRef.current?.writeln(
                 '\x1b[1;38;2;22;163;74m[Terminal connected]\x1b[0m',
               );
-              window.setTimeout(syncTerminalLayoutAndFocus, 50);
-              window.setTimeout(syncTerminalLayoutAndFocus, 250);
+              // 重连后 fit + focus；shell 提示符由 EmbeddedConsoleTerminal 内 requestShellPrompt 补发
+              terminalRef.current?.restoreAfterVisibilityChange();
+              window.setTimeout(
+                () => terminalRef.current?.restoreAfterVisibilityChange(),
+                50,
+              );
+              window.setTimeout(
+                () => terminalRef.current?.restoreAfterVisibilityChange(),
+                250,
+              );
             }}
             onDisconnect={() => {
               terminalConnectedRef.current = false;
+              terminalRef.current?.getTerminal()?.write('\r\n');
               terminalRef.current?.writeln(
                 '\x1b[1;38;2;220;38;38m[Terminal disconnected]\x1b[0m',
               );
+              // 仅「需先启动容器」模式（传入 conversationId）才在断连后预热服务；
+              // 未传 conversationId 时终端直连 wsUrl，由 EmbeddedConsoleTerminal 自动重连即可
+              if (requiresServiceStart && containerStatus === 'running') {
+                if (ensurePodOnDisconnectTimerRef.current) {
+                  window.clearTimeout(ensurePodOnDisconnectTimerRef.current);
+                }
+                ensurePodOnDisconnectTimerRef.current = window.setTimeout(
+                  () => {
+                    ensurePodOnDisconnectTimerRef.current = null;
+                    if (!conversationId) {
+                      return;
+                    }
+                    void apiEnsurePod(conversationId).catch((error) => {
+                      console.error(
+                        '[ConversationBottomConsole] ensurePod on disconnect failed:',
+                        error,
+                      );
+                    });
+                  },
+                  300,
+                );
+              }
             }}
             onReconnectFailed={() => {
               terminalConnectedRef.current = false;

@@ -20,6 +20,7 @@ import type { UploadFileInfo } from '@/types/interfaces/common';
 import type { RoleInfo } from '@/types/interfaces/conversationInfo';
 import ChatContentArea from './components/ChatContentArea';
 import ChatInputHomeIndependent from './components/ChatInputHomeIndependent';
+import { useConversationStreamResume } from './hooks/useConversationStreamResume';
 import { useLoadMoreHistory } from './hooks/useLoadMoreHistory';
 import { useUnifiedChatScroll } from './hooks/useUnifiedChatScroll';
 
@@ -41,6 +42,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
   loadingMore = false,
   isMoreMessage = false,
   isConversationActive = false,
+  isLocallyStreaming,
   messageBottomMode = 'home',
   showDebug,
   loadingSuggest = false,
@@ -73,6 +75,9 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
   onComputerSelect,
 
   showScrollBtn = false,
+  allowAutoScrollRef,
+  scrollTimeoutRef,
+  setShowScrollBtn,
   renderMessageItem,
   renderEmptyState,
   enableMention = true,
@@ -81,6 +86,8 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
   messageViewRef: externalMessageViewRef,
   className,
   style,
+  chatInputDisabled = false,
+  voiceInputMock = false,
   chatInputProps,
   queueMinConsumeInterval,
   queueContext,
@@ -94,6 +101,11 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
   loadingConversation,
   isLoadingOtherInterface,
   conversationInfo,
+  interventionHandlers,
+  // 会话流式恢复(sub)
+  onResumeConversationStream,
+  onAbortResumeStream,
+  onReloadConversationHistoryAsync,
 }) => {
   // 滚动管理 Hook
   const {
@@ -111,6 +123,9 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
     isLoading,
     loadingMore,
     externalMessageViewRef,
+    externalAllowAutoScrollRef: allowAutoScrollRef,
+    externalScrollTimeoutRef: scrollTimeoutRef,
+    onScrollBtnVisibleChange: setShowScrollBtn,
     showScrollBtn,
   });
 
@@ -121,6 +136,18 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
     isMoreMessage,
     loadingMore,
     onLoadMoreMessage,
+  });
+
+  // 会话流式恢复(sub)：刷新页面 / 新开标签时，重建 EXECUTING 会话的流式输出。
+  // action 未注入（如隔离会话源）时整体不启用。轮询仅标签可见时触发，离开页面自动清轮询 + 断 sub。
+  useConversationStreamResume({
+    conversationId,
+    taskStatus: conversationInfo?.taskStatus,
+    isLocallyStreaming: isLocallyStreaming ?? isConversationActive,
+    messageList,
+    reloadHistoryAsync: onReloadConversationHistoryAsync,
+    resumeStream: onResumeConversationStream,
+    abortSub: onAbortResumeStream,
   });
 
   const agentModeRef = useRef<AgentMode>('yolo');
@@ -185,9 +212,12 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
   // intervention 响应的 resume 消息走 rawSend 绕过队列拦截，避免回复被错误入队
   const interventionLayer = useAgentInterventionLayer({
     conversationId,
+    agentId: agentInfo?.id,
     messageList,
     initialAgentMode,
+    allowChooseMode: agentInfo?.allowChooseMode,
     onSendMessage: (msg) => messageQueue.rawSend(msg),
+    interventionHandlers,
   });
   agentModeRef.current = interventionLayer.agentMode;
 
@@ -319,7 +349,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
           clearDisabled={!messageList?.length}
           onEnter={handleMessageSend}
           onClear={onClear}
-          wholeDisabled={inputDisabled}
+          wholeDisabled={inputDisabled || chatInputDisabled}
           visible={scrollBtnVisible && isHoveringChat}
           clearLoading={clearLoading}
           manualComponents={manualComponents}
@@ -341,7 +371,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
             !!agentInfo?.sandboxId ||
             isSelectionLocked ||
             hasUserSentMessage ||
-            messageList?.length > 0
+            messageList?.some((message) => Boolean(message?.id))
           }
           isPersonalComputer={!!agentInfo?.sandboxId}
           {...interventionLayer.agentModeInputProps}
@@ -355,6 +385,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
           selectedModelId={selectedModelId}
           onModelSelect={onModelSelect}
           agentType={agentInfo?.type}
+          voiceInputMock={voiceInputMock}
           {...chatInputProps}
           // 传入原 conversationInfo model 数据
           runStopConversation={runStopConversation}

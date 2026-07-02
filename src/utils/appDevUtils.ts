@@ -3,8 +3,49 @@
  * AppDev 页面相关工具函数
  */
 
+import { isAgentVersionControlEnabled } from '@/constants/agent.constants';
 import { FILE_CONSTANTS } from '@/constants/appDevConstants';
+import type { DefaultSelectedEnum } from '@/types/enums/agent';
 import type { FileNode } from '@/types/interfaces/appDev';
+
+/** 扁平文件列表项是否指向 .gitignore（根目录或任意路径下的同名文件） */
+export const isGitignoreFlatFile = (file: {
+  name?: string;
+  fileId?: string;
+}): boolean => {
+  const path = (file.fileId ?? file.name ?? '').trim();
+  if (!path) {
+    return false;
+  }
+  const baseName = path.split('/').filter(Boolean).pop() ?? '';
+  return baseName === '.gitignore';
+};
+
+/** 版本管控关闭时从扁平文件列表中移除 .gitignore */
+export const filterGitignoreFromFlatFileList = <
+  T extends { name?: string; fileId?: string },
+>(
+  files: T[],
+): T[] => files.filter((file) => !isGitignoreFlatFile(file));
+
+/**
+ * 按版本管控开关决定是否在构建文件树前过滤 .gitignore
+ * enableVersionControl 为 1（Yes）时保留，否则过滤
+ */
+export const filterFlatFileListForVersionControl = <
+  T extends { name?: string; fileId?: string },
+>(
+  files: T[] | undefined,
+  enableVersionControl?: DefaultSelectedEnum,
+): T[] | undefined => {
+  if (!files?.length) {
+    return files;
+  }
+  if (isAgentVersionControlEnabled(enableVersionControl)) {
+    return files;
+  }
+  return filterGitignoreFromFlatFileList(files);
+};
 
 /**
  * 将扁平的文件列表转换为树形结构
@@ -166,6 +207,94 @@ export const findFirstFile = (treeData: FileNode[]): string | null => {
     }
   }
   return null;
+};
+
+/** 上传时跳过的路径段（隐藏目录、依赖目录等） */
+const UPLOAD_IGNORED_PATH_SEGMENTS = new Set(['node_modules']);
+
+/**
+ * 根据文件树节点计算上传目标相对路径前缀
+ * @param node 右键或工具栏上下文节点，null 表示根目录
+ */
+export const resolveFileTreeUploadRelativePath = (
+  node: FileNode | null,
+): string => {
+  if (!node) {
+    return '';
+  }
+  if (node.type === 'file') {
+    return node.path.replace(new RegExp(`${node.name}$`), '');
+  }
+  if (node.type === 'folder') {
+    return `${node.path}/`;
+  }
+  return '';
+};
+
+/**
+ * 判断相对路径是否包含不可上传的目录段
+ */
+export const isIgnoredUploadRelativePath = (relativePath: string): boolean => {
+  const segments = relativePath.split('/').filter(Boolean);
+  return segments.some(
+    (seg) => seg.startsWith('.') || UPLOAD_IGNORED_PATH_SEGMENTS.has(seg),
+  );
+};
+
+/**
+ * 判断单个上传条目的相对路径是否应被过滤
+ */
+export const isIgnoredUploadEntryPath = (entryPath: string): boolean => {
+  const segments = entryPath.split('/').filter(Boolean);
+  if (segments.length === 0) {
+    return true;
+  }
+  const fileName = segments[segments.length - 1];
+  if (
+    FILE_CONSTANTS.IGNORED_FILE_PATTERNS.some((pattern) =>
+      pattern.test(fileName),
+    )
+  ) {
+    return true;
+  }
+  return segments.some(
+    (seg) => seg.startsWith('.') || UPLOAD_IGNORED_PATH_SEGMENTS.has(seg),
+  );
+};
+
+/**
+ * 过滤上传文件列表，剔除隐藏文件、node_modules 等
+ * @param files 原始 File 列表
+ * @param isFolderMode 是否为文件夹上传（使用 webkitRelativePath）
+ */
+export const filterFilesForUpload = (
+  files: File[],
+  isFolderMode: boolean,
+): File[] => {
+  return files.filter((file) => {
+    const entryPath =
+      isFolderMode && file.webkitRelativePath
+        ? file.webkitRelativePath
+        : file.name;
+    return !isIgnoredUploadEntryPath(entryPath);
+  });
+};
+
+/**
+ * 构造批量上传的 filePaths（与 files 一一对应）
+ */
+export const buildUploadFilePaths = (
+  files: File[],
+  relativePath: string,
+  isFolderMode: boolean,
+): string[] => {
+  return files.map((file) => {
+    const entryPath =
+      isFolderMode && file.webkitRelativePath
+        ? file.webkitRelativePath
+        : file.name;
+    return relativePath ? `${relativePath}${entryPath}` : entryPath;
+  });
 };
 
 /**

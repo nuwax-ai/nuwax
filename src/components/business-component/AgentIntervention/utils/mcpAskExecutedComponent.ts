@@ -51,31 +51,14 @@ export function isMcpAskFailedComponent(
   );
 }
 
-/**
- * 持久化 tool call 已成功结束，说明 ask-question 已被用户处理过。
- */
-export function isMcpAskCompletedComponent(
-  component: McpAskExecutedComponent,
-): boolean {
-  if (isMcpAskFailedComponent(component)) {
-    return false;
-  }
-
-  const status = readComponentStatus(component).toUpperCase();
-  if (
-    status === 'SUCCESS' ||
-    status === 'FINISHED' ||
-    status === 'COMPLETED' ||
-    status === 'SUCCEEDED'
-  ) {
-    return true;
-  }
-
-  return component.success === true || component.result?.success === true;
-}
-
 export function resolveMcpAskHydratedResponseStatus(
   component: McpAskExecutedComponent,
 ): McpAskInteraction['responseStatus'] {
-  return isMcpAskCompletedComponent(component) ? 'submitted' : 'pending';
+  if (isMcpAskFailedComponent(component)) {
+    return 'failed';
+  }
+  // ASK_QUESTION 的 component status(FINISHED/EXECUTING/SUCCESS)只代表「问」这一步完成,
+  // 不代表用户已回答——回答由后续 resume 用户消息标志(reconcileMcpAskHydratedStatus 据此判 submitted)。
+  // 默认 pending,让历史最后一条 ASK_QUESTION 能恢复渲染 dockpanel;reconcile 检测到 resume 才置 submitted(关闭)。
+  return 'pending';
 }

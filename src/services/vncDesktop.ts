@@ -102,6 +102,12 @@ export async function apiDownloadAllFiles(cId: number): Promise<void> {
 
 let lastEnsurePodTime = 0;
 
+/** ensure 请求被 5s 全局限流（通常因 VNC/终端等刚调过 ensure，容器已在运行） */
+export const isEnsurePodThrottledError = (error: unknown): boolean => {
+  const message = error instanceof Error ? error.message : String(error);
+  return message.includes('too frequent');
+};
+
 // 启动容器
 export async function apiEnsurePod(
   cId: number,
@@ -176,5 +182,36 @@ export async function apiCheckVncStatus(
     params: {
       cId,
     },
+  });
+}
+
+export interface IImportProjectParams {
+  // 会话ID
+  cId: number;
+  // 文件
+  file: File;
+  // 自定义目标目录
+  customTargetDir?: string;
+}
+
+/**
+ * 导入项目
+ * 上传 zip 包替换工作空间文件，保留 .git/.agents/.claude/.codex/.opencode/.tmp/.logs
+ */
+export async function apiImportProject(
+  params: IImportProjectParams,
+): Promise<RequestResponse<null>> {
+  const { file, cId, customTargetDir } = params;
+  const formData = new FormData();
+  formData.append('cId', cId.toString());
+  formData.append('file', file);
+
+  if (customTargetDir) {
+    formData.append('customTargetDir', customTargetDir);
+  }
+
+  return request('/api/computer/static/import-project', {
+    method: 'POST',
+    data: formData,
   });
 }

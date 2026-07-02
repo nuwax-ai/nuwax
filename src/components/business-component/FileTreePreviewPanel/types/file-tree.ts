@@ -32,6 +32,8 @@ export type { IdleDetectionConfig };
 /** FileTreeViewPanel 暴露给父组件的 ref */
 export interface FileTreeViewRef {
   changeFiles: ChangeFileInfo[];
+  /** 当前在文件树/预览区选中的文件 ID */
+  selectedFileId: string;
 }
 
 /**
@@ -96,4 +98,8 @@ export interface FileTreeViewProps {
   enableVersionControl?: DefaultSelectedEnum;
   /** 文件树预览面板底部内容 */
   bottomContent?: React.ReactNode;
+  /** 刷新文件树后，当前选中/待选文件已不存在时回调 */
+  onSelectedFileMissing?: (fileId: string) => void;
+  /** 是否启用 Git status 拉取 */
+  enableGitStatus?: boolean;
 }

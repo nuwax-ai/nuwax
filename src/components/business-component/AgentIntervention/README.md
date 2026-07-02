@@ -43,9 +43,12 @@ AgentIntervention/
 
 | 文件 | 职责 |
 | --- | --- |
-| `src/models/conversationInfo.ts` | `processInterventionSsePatch`、`hydrateMcpAskInteractionsInMessageList`、`useAgentInterventionHandlers` |
+| `src/models/conversationInfo.ts` | 主会话：`processInterventionSsePatch`、`hydrateMcpAskInteractionsInMessageList`、`useAgentInterventionHandlers` |
+| `src/models/conversationAgent.ts` | **ConversationAgent 预览 Tab** 隔离会话：同上三项（与 `conversationInfo` 对齐） |
 | `src/pages/Chat/index.tsx` | `useAgentInterventionLayer` + `AgentInterventionChatLayer` |
-| `src/pages/EditAgent/PreviewAndDebug/index.tsx` | 同上（预览调试） |
+| `src/pages/EditAgent/PreviewAndDebug/index.tsx` | 同上（编排预览调试） |
+| `src/pages/ConversationAgent/` | 左侧主聊天气泡区（`conversationInfo`）+ 右侧「预览」Tab（`conversationAgent` + `interventionHandlers` 注入） |
+| `src/components/business-component/UnifiedChatSession` | 统一挂载 `AgentInterventionChatLayer`（DockPanel） |
 | `src/services/agentConfig.ts` | `apiAgentInterventionRespond`（ACP 回执 HTTP） |
 | `src/types/interfaces/conversationInfo.ts` | `MessageInfo.acpPermissionInteractions` / `mcpAskInteractions` |
 
@@ -69,10 +72,25 @@ const { agentMode, chatLayerProps, agentModeInputProps } = useAgentInterventionL
 
 发送消息时在参数中带上 `agentMode: 'ask' | 'yolo'`（见 `AgentMode`）。
 
-**model 侧（`conversationInfo`）必须同时完成：**
+**model 侧必须同时完成：**
 
 1. SSE 循环中优先调用 `processInterventionSsePatch`，命中则替换当前消息并 `return`。
 2. 拉取历史消息后调用 `hydrateMcpAskInteractionsInMessageList`。
+
+`conversationInfo` 与 `conversationAgent` 均已接入上述逻辑。
+
+**ConversationAgent 预览 Tab（`conversationAgent` model）额外要求：**
+
+向 `UnifiedChatSession` 传入 `interventionHandlers`（由 `useConversationAgentChatSession` 组装），避免 Dock 回执误写入全局 `conversationInfo` 的 `messageList`：
+
+```tsx
+<UnifiedChatSession
+  {...chatSessionProps}
+  interventionHandlers={interventionHandlers}
+/>
+```
+
+`interventionHandlers` 类型：`AgentInterventionHandlersOverride`（`respondAcpPermission` / `respondMcpAsk`）。
 
 ## `MessageInfo` 挂载字段
 
@@ -202,8 +220,34 @@ interface MessageInfo {
 - `message_type` / `messageType` 为 `tool_call` 或 `sub_type` / `subType` 为 `tool_call` / `tool_call_update`，且存在 `tool_call_id` / `toolCallId` / `raw_input` / `rawInput`（或 `ext` 内 rawInput）
 - `messageType === 'agentSessionUpdate'` + `tool_call` 子类型（同上）
 - `res.eventType === 'PROCESSING'` 且存在 `executeId` 或 `result.executeId` / `result.input`
+- 后端沙箱 **`Backend.Sandbox.Event.AskQuestion`**：`subEventType === 'ASK_QUESTION'`，表单在 `data.result.input`（与 ToolCall 形态等价，由 `isProcessingToolCallEvent` 识别）
 
 `raw_input` / `rawInput` / `result.input` 经 `parseMcpAskToolInput` 校验通过后写入 `mcpAskInteractions`。同一 `input.requestId` 不重复挂载。
+
+**入参示例（ASK_QUESTION Event，与 demo2.json 对齐）：**
+
+```json
+{
+  "eventType": "PROCESSING",
+  "data": {
+    "name": "Backend.Sandbox.Event.AskQuestion",
+    "type": "Event",
+    "status": "FINISHED",
+    "subEventType": "ASK_QUESTION",
+    "result": {
+      "executeId": "call_272edddbb5e140128d146826",
+      "input": {
+        "requestId": "demo_form_1",
+        "ui": {
+          "version": "nuwax.interaction.v2",
+          "presentation": "inline",
+          "fields": [{ "name": "choice", "title": "选项", "widget": "text" }]
+        }
+      }
+    }
+  }
+}
+```
 
 **入参示例（PROCESSING + executeId）：**
 
@@ -366,15 +410,140 @@ POST /api/agent/conversation/chat/permission-request/response
 
 根级 `uiSchema['ui:options'].allowSkip === true` 时显示跳过；文案来自 `ui.skipLabel` 或字段 `skipLabel`。
 
+## 核心数据结构
+
+干预数据挂载在 `MessageInfo` 上：
+
+```typescript
+interface MessageInfo {
+  acpPermissionInteractions?: AcpPermissionInteraction[];
+  mcpAskInteractions?: McpAskInteraction[];
+  processingList?: ProcessingInfo[]; // 累积 PROCESSING 事件（含 Plan/ToolCall，不含 ASK_QUESTION/REQUEST_PERMISSION）
+}
+```
+
+## 数据写入路径
+
+### 实时流（live SSE）
+
+```
+SSE stream → processInterventionSsePatch(chunk, currentMessage)
+  ├─ isAcpPermissionEvent? → applyAcpPermissionSseEvent → message.acpPermissionInteractions.push
+  ├─ isMcpAskToolCallEvent? → applyMcpAskToolCallSseEvent → message.mcpAskInteractions.push
+  └─ else → processingList.push / text 累积 ...
+```
+
+ACP 和 MCP Ask 事件被优先拦截，**不会进入** `processingList`。
+
+### 消息恢复（sub stream）
+
+刷新页面 / 重进会话且任务仍 EXECUTING 时，由 `useConversationStreamResume` 轮询 `taskStatus` 检测后调用 `resumeConversationStream`：
+
+```
+resumeConversationStream(conversationId, currentList)
+  1. 可选 reloadHistoryAsync → 更新 messageList（含 resume 消息）
+  2. 追加占位 assistant message（id=currentMessageId, status=Loading）
+  3. GET /api/agent/conversation/chat/sub/:id
+       → processInterventionSsePatch(chunk, currentMessage)  ← 与 live 复用
+```
+
+sub 流重放历史 SSE 时，已有 resume 消息（步骤 1 加载），`hasMcpAskResumeMessage` 可过滤已回答的 MCP Ask，避免重复弹出。
+
+### 历史消息 hydrate
+
+```
+拉取历史列表后：hydrateMcpAskInteractionsInMessageList(messageList)
+  → 遍历所有 assistant 消息，提取 mcpAskInteractions
+  → 在后续消息中搜索 resume 文本，有则置 responseStatus = 'submitted' / 'cancelled' 等
+```
+
+ACP 权限审批**不从历史 hydrate**，仅存在于实时流/sub 流消息中。
+
+## DockPanel 显隐规则（`useActiveInterventionQueue` + `DockPanel`）
+
+`useActiveInterventionQueue` 从 **整个 `messageList`** 收集 `responseStatus` 为 `pending` / `submitting` 的干预项，按 `triggeredAt` / `createdAt` **升序（FIFO）** 排序后送入 `DockPanel`。`DockPanel` 堆叠渲染，**仅 front（最早一项）可交互**，其余 `aria-hidden`；用户逐项审批并调用 `permission-request/response`（→ NuwaClaw `notify-resolved`）。
+
+### 队列收集（`useActiveInterventionQueue`）
+
+- **跨消息**：不限于最新一条消息；并行工具可在多条 assistant 消息上各挂审批，统一入队。
+- **ACP**：`pending` / `submitting` 进队；`submitted` / `failed` 不进队（`failed` 不阻塞后续审批）。
+- **MCP Ask 抑制 ACP**（双路）：pending ACP 的 `toolCallId` 或 `rawInput.requestId` 命中时，对应 MCP Ask 不进队。
+- **MCP Ask**：另需 `!hasMcpAskResumeMessage`；**不受**消息 `Complete` 态影响。
+
+### sub 恢复 / 跨页签：ACP 已审批判定（`reconcileAcpPermissionStatus`）
+
+ACP **不从历史 hydrate**；sub 流重放会把 `request_permission` 再次写入为 `pending`。每次 `processInterventionSsePatch` 与 `handleChangeMessageList` 更新后调用 `reconcileAcpPermissionStatusesInMessageList`：
+
+| 条件 | 动作 |
+| --- | --- |
+| 同 `toolCallId` / `executeId` 在 `processingList` 中已为 `FINISHED` | `responseStatus` → `submitted` |
+| 关联 MCP Ask 已有 resume 消息（`hasMcpAskResumeMessage`） | `submitted` |
+| 用户本端审批 API 成功 | `submitted`（`useAgentInterventionHandlers`） |
+| API 返回 permission not found / already resolved | 幂等视为 `submitted` |
+
+### ACP 权限审批关闭时机
+
+| 原因              | 机制                                                    |
+| ----------------- | ------------------------------------------------------- |
+| 用户审批          | `responseStatus` → `submitted`                          |
+| sub 重放 / 跨页签 | `reconcileAcpPermissionStatuses` 根据 processing 完成态 |
+| API 幂等          | Host pending 已不存在 → `submitted`                     |
+
+### MCP Ask 关闭时机
+
+| 原因         | 机制                                                         |
+| ------------ | ------------------------------------------------------------ |
+| 本端用户提交 | `dismissedMcpAskRequestIds` 或 `responseStatus` 更新         |
+| 跨端感知     | `hasMcpAskResumeMessage`                                     |
+| Agent 推进   | 由 `responseStatus` 独立控制（非 ACP 的 executeId 过期逻辑） |
+
+### 规则速查
+
+```
+队列顺序     =  sortKey 升序（FIFO），DockPanel front = items[0]
+
+ACP 进队     =  pending/submitting（failed 不进队）
+
+MCP 进队     =  pending/submitting
+             && !hasMcpAskResumeMessage
+             && toolCallId ∉ permissionPendingToolCallIds
+             && requestId  ∉ permissionPendingAskRequestIds
+```
+
+### Resume 消息签名（`hasMcpAskResumeMessage` 匹配依据）
+
+`collectResumeMessageSignatures` 从 5 个语言包（ZH / ZH-TW / ZH-HK / EN / JA）提取模板格式化签名 + legacy 硬编码片段，用 `text.includes(signature)` 匹配：
+
+| 操作    | 中文签名示例                            |
+| ------- | --------------------------------------- |
+| submit  | `我已填写「{title}」，表单内容如下：`   |
+| cancel  | `我取消了「{title}」。`                 |
+| skip    | `我跳过了「{title}」。`                 |
+| timeout | `「{title}」已超时，没有收到表单答案。` |
+
+**变更风险**：修改 `buildMcpAskResumeMessage` 格式或 i18n key 时，须确保新格式前缀仍能被 `collectResumeMessageSignatures` 收集，否则历史 resume 消息无法识别，已回答的卡片会重新出现。
+
+### 与 Mobile 的对应关系
+
+| 机制 | PC（此文件） | Mobile（`mcpAskInterventionState.uts`） |
+| --- | --- | --- |
+| 过期检查 | `isExpired(executeId)` vs `focusExecuteId` | `processingList.length > processingListLengthAtAdd` |
+| 本端提交关闭 | `dismissedMcpAskRequestIds` Set，API 失败可回滚 | `removeMcpAskInteractionFromMessageList` 直接移除 |
+| 跨端感知关闭 | `hasMcpAskResumeMessage` | 同左 |
+| 历史状态恢复 | `hydrateMcpAskInteractionsInMessageList` | `applyMcpAskResumeStatusesInMessageList` |
+| ACP 抑制 MCP Ask | `permissionPendingToolCallIds` + `permissionPendingAskRequestIds` | 同左 |
+| 卡片渲染 | `DockPanel` FIFO 堆叠，最早在前 | ACP + MCP Ask 分列 `v-for`（待 mobile 同步） |
+| ACP sub 恢复 | `reconcileAcpPermissionStatuses` | 待 mobile 同步 |
+
 ## 数据流
 
 ```
 SSE (ConversationChatResponse)
-  → processInterventionSsePatch
+  → processInterventionSsePatch (+ reconcileAcpPermissionStatuses)
     → applyAcpPermissionSseEvent → message.acpPermissionInteractions[]
     → applyMcpAskToolCallSseEvent  → message.mcpAskInteractions[]
-      → useActiveInterventionQueue（仅 pending / submitting 视为活动；submitted / failed 均为终态，卡片关闭）
-        → AgentInterventionChatLayer → DockPanel
+      → useActiveInterventionQueue（FIFO；pending/submitting 进队）
+        → AgentInterventionChatLayer → DockPanel（front 可点，逐个 notify-resolved）
             → AcpPermissionCard / McpAskQuestionCard
             → respondAcpPermission → POST .../permission-request/response
             → respondMcpAsk → buildMcpAskResumeMessage → onSendMessage
@@ -389,4 +558,5 @@ SSE (ConversationChatResponse)
 - `utils/applyAcpPermissionSseEvent.test.ts` — ACP snake_case / PROCESSING / `_meta`
 - `utils/applyMcpAskToolCallSseEvent.test.ts` — MCP tool_call / PROCESSING
 - `utils/parseMcpAskSchema.test.ts` — widget 解析
+- `utils/reconcileAcpPermissionStatus.test.ts` — ACP sub 恢复 reconcile / API 幂等
 - `hooks/useAgentInterventionHandlers.test.ts` — ACP 回执与 MCP resume

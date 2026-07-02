@@ -69,6 +69,10 @@ setInterval(cleanExpiredErrorCache, 5000);
  * @returns 是否应该隐藏错误提示
  */
 const beSilentRequestList = (url: string): boolean => {
+  // 查询会话详情：/api/agent/conversation/{conversationId}，不含 update/list 等固定路径
+  const isConversationDetailRequest =
+    /\/api\/agent\/conversation\/\d+(?:\?|$)/.test(url);
+
   // 不展示错误消息的API路径列表
   const list = [
     '/api/notify/event/collect/batch', // 事件轮询
@@ -86,7 +90,7 @@ const beSilentRequestList = (url: string): boolean => {
     '/api/git/status', // Git status
     // 可以在此添加其他不需要显示错误消息的API
   ];
-  return list.some((api) => url.includes(api));
+  return isConversationDetailRequest || list.some((api) => url.includes(api));
 };
 
 /**

@@ -1,9 +1,15 @@
-import { isAgentFlowType } from '@/pages/Antv-X6/v3/agentFlow/types';
+import {
+  getHitlOptions,
+  isHitlOptionsBranchMode,
+} from '@/pages/Antv-X6/v3/agentFlow/adapters/qaConfigAdapter';
+import { shouldUseFixedSideOutPort } from '@/pages/Antv-X6/v3/agentFlow/handlers/portLayout';
 import {
   DEFAULT_NODE_CONFIG,
   DEFAULT_NODE_CONFIG_MAP,
+  EXCEPTION_HANDLE_HIDDEN_TYPES,
   EXCEPTION_NODES_TYPE,
 } from '@/pages/Antv-X6/v3/constants/node.constants';
+import { isAgentFlowType } from '@/pages/Antv-X6/v3/flowKind/flowKindConfig';
 import {
   AnswerTypeEnum,
   ExceptionHandleTypeEnum,
@@ -125,7 +131,7 @@ function parseEdgeBranch(
     const sourceData = edge.getSourceNode()?.getData() || {};
     const routes: any[] = (sourceData as any)?.nodeConfig?.intentConfigs || [];
     const found = routes.find((r) => r.uuid === uuid);
-    const label = found?.intent || found?.name || `Route ${uuid.slice(0, 4)}`;
+    const label = found?.name || found?.intent || `Route ${uuid.slice(0, 4)}`;
     return { stroke: BRANCH_PALETTE.route.stroke, label };
   }
   return null;
@@ -562,6 +568,8 @@ export const generatePortGroupConfig = (
     NodeTypeEnum.Start,
     NodeTypeEnum.End,
   ].includes(data.type); //需要固定位置的节点
+  // AgentFlow 单 out：与 in(left) 对称用 right，按节点 bbox 垂直居中；多分支仍用 absolute
+  const useFixedSideOutPort = fixedPortNode || shouldUseFixedSideOutPort(data);
   const magnetRadius = 50;
   const isLoopNode = data.type === NodeTypeEnum.Loop;
   return {
@@ -578,7 +586,7 @@ export const generatePortGroupConfig = (
     },
     out: {
       position: {
-        name: fixedPortNode ? 'right' : 'absolute',
+        name: useFixedSideOutPort ? 'right' : 'absolute',
       },
       attrs: { circle: { r: basePortSize, magnet: true, magnetRadius } },
       connectable: {
@@ -636,23 +644,20 @@ export const isEdgeDeletable = (sourceNode: any, targetNode: any): boolean => {
 };
 
 export const showExceptionHandle = (node: ChildNode): boolean => {
+  // 路由决策 / 询问用户不展示异常处理配置（含异常端口）
+  if (EXCEPTION_HANDLE_HIDDEN_TYPES.includes(node.type)) return false;
   return EXCEPTION_NODES_TYPE.includes(node.type);
 };
 
 export const needUpdateNodes = (node: ChildNode): boolean => {
   const isHitlWithOptions =
     node.type === NodeTypeEnum.HumanInteraction &&
-    ((node.nodeConfig as any)?.askConfig?.options?.length > 0 ||
-      (node.nodeConfig as any)?.askConfig?.answerType === 'SELECT');
+    isHitlOptionsBranchMode(node.nodeConfig as Record<string, any>);
   return (
-    [
-      ...EXCEPTION_NODES_TYPE,
-      NodeTypeEnum.Condition,
-      NodeTypeEnum.RouteDecision,
-    ].includes(node.type) ||
+    [...EXCEPTION_NODES_TYPE, NodeTypeEnum.Condition].includes(node.type) ||
     // HITL-Ask options 模式端口数可能变化
     isHitlWithOptions
-  ); // 需要更新端口配置的节点：异常节点 + 条件 + 路由决策 + HITL 询问选项
+  ); // 需要更新端口配置的节点：异常节点（含路由决策）+ 条件 + HITL 询问选项
 };
 
 export const showExceptionPort = (
@@ -810,6 +815,8 @@ export const calculateNodePosition = ({
     // 以节点的 中心来计算
     position.x = position.x - width / 2;
     position.y = position.y - height / 2;
+    // position 全程为模型(local)坐标；此处已是节点左上角，直接返回。
+    // 由 _doAddNode 以 coordinateSpace='model' 直接落点（不再 clientToLocal / 容器范围启发式）。
     return position;
   }
 
@@ -826,28 +833,36 @@ export const calculateNodePosition = ({
   }
 
   const isOut = portId.endsWith('out');
-  const peerPosition = getPeerNodePosition(
-    sourceNodeId,
-    graph,
-    isOut ? 'next' : 'previous',
-  );
+  // 普通 out 端口的 id 恰为 "{nodeId}-out"；其余 out 端口都是动态自定义分支端口
+  // （路由决策 {nodeId}-route-{uuid}-out、询问选项 {nodeId}-hitl-option-{uuid}-out、异常端口等）。
+  // 用「id 是否恰为标准 out 端口」判定，比按 uuid 长度启发式更稳——动态端口 uuid 缺失时会
+  // 回退成 r0/o1 等短串（见 routeDecision/humanInteraction handler），长度启发式会漏判，
+  // 让动态端口误入「普通 out」堆叠分支，导致新节点被堆到 peer（其它分支）上而偏移。
+  const isStandardOutPort = isOut && portId === `${sourceNodeId}-out`;
+
+  // 仅「普通 out 端口」在存在同级后续节点时做防重叠堆叠；其余端口直接落在被点击端口旁：
+  // - in 端口（如结束节点的入边）：peer 取的是「前驱节点」，堆叠会把新节点压到前驱上、
+  //   并偏离被点击的入端口 → 直接放在该入端口左侧。
+  // - 自定义 out 端口（多分支）：peer 取的是「任意分支的后续节点」（与具体分支无关），
+  //   堆叠会把新节点放到其它分支上 → 直接放在被点击分支端口的右侧。
   const theRange = 200;
-  if (isOut) {
-    // port 为 out 出边，需要向右偏移
+  if (isStandardOutPort) {
+    const peerPosition = getPeerNodePosition(sourceNodeId, graph, 'next');
     position.x = position.x + DEFAULT_NODE_CONFIG.newNodeOffsetX;
     if (peerPosition !== null && peerPosition.x <= position.x + theRange) {
       position.x = peerPosition.x + DEFAULT_NODE_CONFIG.offsetGapX;
       position.y = peerPosition.y + DEFAULT_NODE_CONFIG.offsetGapX;
     }
+  } else if (isOut) {
+    // 自定义 out 端口：直接放在被点击分支端口的右侧（保持该端口的 Y）
+    position.x = position.x + DEFAULT_NODE_CONFIG.newNodeOffsetX;
   } else {
-    // port 为 in 入边，需要向左偏移
+    // in 端口：直接放在被点击入端口的左侧（保持该端口的 Y）
     position.x = position.x - newNodeWidth - DEFAULT_NODE_CONFIG.newNodeOffsetX;
-    if (peerPosition !== null && peerPosition.x >= position.x - theRange) {
-      position.x = peerPosition.x - DEFAULT_NODE_CONFIG.offsetGapX;
-      position.y = peerPosition.y + DEFAULT_NODE_CONFIG.offsetGapX;
-    }
   }
 
+  // position 全程为模型(local)坐标；此处已是节点左上角，直接返回。
+  // 由 _doAddNode 以 coordinateSpace='model' 直接落点（不再 clientToLocal / 容器范围启发式）。
   return position;
 };
 // 获取当前画布可视区域中心点
@@ -952,6 +967,20 @@ const handleAgentFlowEdges = (
     });
   }
 
+  if (node.type === NodeTypeEnum.HumanInteraction) {
+    const options: any[] = getHitlOptions(nc);
+    options.forEach((opt: any) => {
+      const optIds: number[] = opt.nextNodeIds || [];
+      optIds.forEach((id) => {
+        edges.push({
+          source: `${node.id}-hitl-option-${opt.uuid}-out`,
+          target: id.toString(),
+          zIndex: z,
+        });
+      });
+    });
+  }
+
   return edges;
 };
 
@@ -1035,11 +1064,23 @@ export const getEdges = (
           node.nodeConfig.answerType === AnswerTypeEnum.SELECT)
       ) {
         return handleSpecialNodes(node, isLoopNode);
-      } else if (node.type === NodeTypeEnum.Loop) {
+      }
+      if (node.type === NodeTypeEnum.Loop) {
         return handleLoopEdges(node);
-      } else if (node.type === NodeTypeEnum.RouteDecision) {
+      }
+      if (node.type === NodeTypeEnum.RouteDecision) {
         return handleAgentFlowEdges(node, isLoopNode);
-      } else if (node.nextNodeIds && node.nextNodeIds.length > 0) {
+      }
+      if (
+        node.type === NodeTypeEnum.HumanInteraction &&
+        isHitlOptionsBranchMode(node.nodeConfig as any)
+      ) {
+        const hitlEdges = handleAgentFlowEdges(node, isLoopNode);
+        // options 数组有内容时直接返回各选项连线；
+        // options 为空（节点刚创建尚未配置选项）时回落到 nextNodeIds 路径。
+        if (hitlEdges.length > 0) return hitlEdges;
+      }
+      if (node.nextNodeIds && node.nextNodeIds.length > 0) {
         const _arr = node.nextNodeIds.filter(
           (item) => item !== node.loopNodeId && item !== node.id,
         );

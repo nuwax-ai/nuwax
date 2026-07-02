@@ -59,6 +59,7 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
     handleDelete,
     handleRenameFromMenu,
     handleUploadMultipleFiles,
+    handleUploadFolder,
     handleCreateFile,
     handleCreateFolder,
     handleDownloadFileByUrl,
@@ -134,6 +135,7 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
         onDelete={handleDelete}
         onRename={handleRenameFromMenu}
         onUploadFiles={handleUploadMultipleFiles}
+        onUploadFolder={handleUploadFolder}
         onCreateFile={handleCreateFile}
         onCreateFolder={handleCreateFolder}
         onImportProject={handleImportProject}
@@ -174,6 +176,10 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
         onExportProject={
           handleExportProject ? () => void handleExportProject() : undefined
         }
+        onImportProject={
+          handleImportProject ? () => void handleImportProject() : undefined
+        }
+        importLoading={isImportingProject}
         onCreateFile={
           readOnly
             ? undefined
@@ -185,7 +191,14 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
             : () => handleCreateFolder(resolveCreateParentNode())
         }
         onUpload={
-          readOnly ? undefined : () => void handleUploadMultipleFiles(null)
+          readOnly
+            ? undefined
+            : () => void handleUploadMultipleFiles(resolveCreateParentNode())
+        }
+        onUploadFolder={
+          readOnly || !handleUploadFolder
+            ? undefined
+            : () => void handleUploadFolder(resolveCreateParentNode())
         }
         onCollapseAll={() => fileTreeRef.current?.collapseAll()}
         onRefresh={

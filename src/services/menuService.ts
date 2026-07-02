@@ -53,6 +53,10 @@ const MENU_ICON_MAP: Record<string, string> = {
   system_log_query: 'icons-nav-log',
   // 内容管理
   content_manage: 'icons-nav-cube',
+  // 推荐管理
+  recommend_manage: 'icons-nav-recommend-manage',
+  // 历史会话
+  history_conversation: 'icons-nav-history-conversation',
   // 支付与收益（开发者）
   dev_payment_earnings: 'icons-nav-my-earnings',
   // 订阅与积分（管理员）

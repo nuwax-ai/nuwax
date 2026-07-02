@@ -74,31 +74,35 @@ export default () => {
     return false;
   };
 
-  const handleChatProcessingList = (processingList: ProcessingInfo[]) => {
-    //先清空
-    setProcessingList([]);
+  const handleChatProcessingList = (incomingList: ProcessingInfo[]) => {
+    // 采用「合并 upsert」而非「清空 + 整体替换」。
+    // 原因：chat model 是全局单例，conversationInfo（主会话）与 conversationAgent
+    // （开发预览/多智能体）等多个 model 都会写入同一个 processingList。
+    // 若每次加载都整体替换，后加载的会话会覆盖先加载会话的执行明细，
+    // 导致被覆盖会话里的 MarkdownCustomProcess 通过 getProcessingById 找不到条目，
+    // 详情数据为空、「查看详情」按钮被禁用、点击无反应。
+    // 改为按 executeId+type 合并后，跨会话/跨 model 的历史明细可共存且不丢失。
+    setProcessingList((prevList) => {
+      // 去重逻辑：同一 executeId+type 仅保留一条；EXECUTING 被最终态替换，
+      // 成功(FINISHED)优先于失败(FAILED)。
+      const processedMap = new Map<string, ProcessingInfo>();
 
-    // 去重逻辑：保留一条，如果status状态不是 EXECUTING，如果成功或者失败都有就仅保留成功
-    const processedMap = new Map<string, ProcessingInfo>();
-
-    processingList.forEach((item) => {
-      const key = `${item.executeId || ''}_${item.type || ''}`;
-      const existing = processedMap.get(key);
-
-      if (!existing) {
-        // 如果不存在，直接添加
-        processedMap.set(key, item);
-      } else {
-        // 如果已存在，根据状态优先级决定保留哪一个
-        const shouldReplace = shouldReplaceProcessingItem(existing, item);
-        if (shouldReplace) {
+      const upsert = (item: ProcessingInfo) => {
+        const key = `${item.executeId || ''}_${item.type || ''}`;
+        const existing = processedMap.get(key);
+        if (!existing) {
+          processedMap.set(key, item);
+        } else if (shouldReplaceProcessingItem(existing, item)) {
           processedMap.set(key, item);
         }
-      }
-    });
+      };
 
-    const newProcessingList = Array.from(processedMap.values());
-    setProcessingList(newProcessingList);
+      // 先放入已有条目（保留历史会话明细），再用本次传入的条目做 upsert 更新
+      prevList.forEach(upsert);
+      incomingList.forEach(upsert);
+
+      return Array.from(processedMap.values());
+    });
   };
   const getProcessingById = useCallback(
     (executeId: string, type?: string) => {

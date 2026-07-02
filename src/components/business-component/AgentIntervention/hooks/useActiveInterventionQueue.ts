@@ -45,11 +45,18 @@ function readMcpAskRequestId(rawInput: unknown): string | undefined {
     : undefined;
 }
 
+function getAcpPermissionInteractions(
+  message: MessageInfo,
+): AcpPermissionInteraction[] {
+  return (message.acpPermissionInteractions ??
+    []) as unknown as AcpPermissionInteraction[];
+}
+
 export function useActiveInterventionQueue(
   messageList: MessageInfo[],
 ): InterventionQueueItem[] {
   return useMemo(() => {
-    const pending: InterventionQueueItem[] = [];
+    const pendingMap = new Map<string, InterventionQueueItem>();
     const permissionPendingToolCallIds = new Set<string>();
     const permissionPendingAskRequestIds = new Set<string>();
     let fallbackSeq = 0;
@@ -59,10 +66,11 @@ export function useActiveInterventionQueue(
     );
 
     messages.forEach((message) => {
-      message.acpPermissionInteractions?.forEach((interaction) => {
+      getAcpPermissionInteractions(message).forEach((interaction) => {
         if (!isActiveResponseStatus(interaction.responseStatus)) {
           return;
         }
+
         const toolCall = interaction.intervention.acp.request.toolCall;
         if (toolCall.toolCallId) {
           permissionPendingToolCallIds.add(toolCall.toolCallId);
@@ -78,15 +86,16 @@ export function useActiveInterventionQueue(
       const messageId = String(message.id ?? message.index);
       const messageIndex = message.index ?? 0;
 
-      message.acpPermissionInteractions?.forEach((interaction) => {
+      getAcpPermissionInteractions(message).forEach((interaction) => {
         if (!isActiveResponseStatus(interaction.responseStatus)) {
           return;
         }
+
         const sortKey =
           interaction.triggeredAt ??
           interaction.intervention.createdAt ??
           fallbackSeq++;
-        pending.push({
+        pendingMap.set(`acp-${interaction.intervention.id}`, {
           kind: 'acp_permission',
           messageId,
           messageIndex,
@@ -102,6 +111,7 @@ export function useActiveInterventionQueue(
         if (hasMcpAskResumeMessage(messages, interaction)) {
           return;
         }
+
         if (
           permissionPendingToolCallIds.has(interaction.toolCallId) ||
           permissionPendingAskRequestIds.has(interaction.input.requestId)
@@ -109,7 +119,7 @@ export function useActiveInterventionQueue(
           return;
         }
         const sortKey = interaction.triggeredAt ?? fallbackSeq++;
-        pending.push({
+        pendingMap.set(`ask-${interaction.input.requestId}`, {
           kind: 'mcp_ask',
           messageId,
           messageIndex,
@@ -119,6 +129,6 @@ export function useActiveInterventionQueue(
       });
     });
 
-    return pending.sort((a, b) => a.sortKey - b.sortKey);
+    return [...pendingMap.values()].sort((a, b) => a.sortKey - b.sortKey);
   }, [messageList]);
 }

@@ -14,7 +14,6 @@ import ConditionRender from '@/components/ConditionRender';
 import Created from '@/components/Created';
 import PublishComponentModal from '@/components/PublishComponentModal';
 import VersionHistory from '@/components/VersionHistory';
-import { isAgentVersionControlEnabled } from '@/constants/agent.constants';
 import { ERROR_MESSAGES } from '@/constants/appDevConstants';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { CREATED_TABS } from '@/constants/common.constants';
@@ -93,6 +92,12 @@ import FileOperatingMask from './components/FileOperatingMask';
 import PageEditModal from './components/PageEditModal';
 
 import { checkFileSizeExceedLimit } from '@/utils';
+import {
+  buildUploadFilePaths,
+  filterFilesForUpload,
+  isIgnoredUploadRelativePath,
+  resolveFileTreeUploadRelativePath,
+} from '@/utils/appDevUtils';
 import {
   TTYD_TERMINAL_WIRE_PROTOCOL,
   TTYD_TERMINAL_WS_SUBPROTOCOLS,
@@ -1089,61 +1094,80 @@ const AppDev: React.FC = () => {
   ]);
 
   /**
-   * 处理右键上传（直接调用上传接口，不依赖状态）
+   * 打开文件/文件夹选择器并上传（使用 AppDev 批量上传接口）
+   * @param node 目标目录节点
+   * @param mode files=多文件上传；folder=文件夹上传（保留子目录结构）
    */
-  const handleUploadMultipleFiles = useCallback(
-    async (node: FileNode | null) => {
+  const triggerAppDevFileUpload = useCallback(
+    async (node: FileNode | null, mode: 'files' | 'folder') => {
       if (!hasValidProjectId) {
         message.error(ERROR_MESSAGES.NO_PROJECT_ID);
         return;
       }
-      //两种情况 第一个是文件夹，第二个是文件
-      let relativePath = '';
 
-      if (node) {
-        if (node.type === 'file') {
-          relativePath = node.path.replace(new RegExp(node.name + '$'), ''); //只替换以node.name结尾的部分
-        } else if (node.type === 'folder') {
-          relativePath = node.path + '/';
-        }
+      const relativePath = resolveFileTreeUploadRelativePath(node);
+      const isFolderMode = mode === 'folder';
+
+      if (isIgnoredUploadRelativePath(relativePath)) {
+        message.warning(t('PC.Components.FileContextMenu.uploadTargetInvalid'));
+        return;
       }
 
-      // 创建一个隐藏的文件输入框
       const input = document.createElement('input');
       input.type = 'file';
       input.style.display = 'none';
       input.accept = '*';
-      input.multiple = true;
+      if (isFolderMode) {
+        input.setAttribute('webkitdirectory', '');
+        input.setAttribute('directory', '');
+      } else {
+        input.multiple = true;
+      }
       document.body.appendChild(input);
 
-      // 等待用户选择文件
-      input.click();
+      const cleanupInput = () => {
+        if (input.parentNode) {
+          document.body.removeChild(input);
+        }
+      };
 
       input.onchange = async (e) => {
-        const file = (e.target as HTMLInputElement).files?.[0];
-        if (!file) {
-          document.body.removeChild(input);
+        const selectedFiles = Array.from(
+          (e.target as HTMLInputElement).files || [],
+        );
+        if (selectedFiles.length === 0) {
+          cleanupInput();
           return;
         }
 
-        // 获取上传的文件列表
-        const files = Array.from((e.target as HTMLInputElement).files || []);
-        // 获取上传的文件路径列表
-        const filePaths = files.map((file) => relativePath + file.name);
+        const files = filterFilesForUpload(selectedFiles, isFolderMode);
+        if (files.length === 0) {
+          message.warning(
+            isFolderMode
+              ? t('PC.Components.FileContextMenu.uploadFolderEmpty')
+              : t('PC.Components.FileContextMenu.uploadFileEmpty'),
+          );
+          cleanupInput();
+          return;
+        }
 
-        // 检查文件大小是否超过最大上传文件大小
+        const filePaths = buildUploadFilePaths(
+          files,
+          relativePath,
+          isFolderMode,
+        );
+
         const { isExceedLimitSize, maxFileSize } =
           checkFileSizeExceedLimit(files);
-        // 如果超过最大上传文件大小，则提示错误
         if (isExceedLimitSize) {
           message.error(
             t('PC.Common.Global.uploadFileSizeExceed', String(maxFileSize)),
           );
+          cleanupInput();
           return;
         }
 
         try {
-          // 设置加载状态，与弹窗上传保持一致
           setSingleFileUploadLoading(true);
           setIsFileOperating(true);
 
@@ -1156,27 +1180,42 @@ const AppDev: React.FC = () => {
           const { code } = await apiAppDevUploadFiles(params);
 
           if (code === SUCCESS_CODE) {
-            // 与弹窗上传成功后逻辑保持一致
-            // 刷新项目详情(刷新版本列表)
             projectInfo.refreshProjectInfo();
+            await sourceControl.refreshGitList();
           }
         } catch (error) {
-          console.error('[AppDev] right-click upload failed', error);
+          console.error('[AppDev] file upload failed', error);
         } finally {
-          // 清理加载状态和DOM
           setSingleFileUploadLoading(false);
-          document.body.removeChild(input);
           setIsFileOperating(false);
+          cleanupInput();
         }
       };
 
-      // 如果用户取消选择，也要清理DOM
       input.oncancel = () => {
-        document.body.removeChild(input);
+        cleanupInput();
         setIsFileOperating(false);
       };
+
+      input.click();
     },
-    [hasValidProjectId, projectInfo, projectId],
+    [hasValidProjectId, projectId, projectInfo, sourceControl],
+  );
+
+  /** 右键/工具栏上传多个文件 */
+  const handleUploadMultipleFiles = useCallback(
+    async (node: FileNode | null) => {
+      await triggerAppDevFileUpload(node, 'files');
+    },
+    [triggerAppDevFileUpload],
+  );
+
+  /** 右键/工具栏上传文件夹（保留 webkitRelativePath 目录结构） */
+  const handleUploadFolder = useCallback(
+    async (node: FileNode | null) => {
+      await triggerAppDevFileUpload(node, 'folder');
+    },
+    [triggerAppDevFileUpload],
   );
 
   /**
@@ -1284,6 +1323,8 @@ const AppDev: React.FC = () => {
     onDeleteFile: handleDeleteClick,
     onRenameFile: handleRenameFile,
     onUploadFiles: handleUploadMultipleFiles,
+    onUploadFolder: handleUploadFolder,
+    isUploadingFiles: singleFileUploadLoading,
     onImportProject: () => setIsUploadModalVisible(true),
     importProjectLabel: t('PC.Pages.AppDevFileTreeContextMenu.importProject'),
     onExportProject: handleExportProject,
@@ -1549,6 +1590,7 @@ const AppDev: React.FC = () => {
                 defaultActiveTab={'chat'}
                 hiddenTabs={[]}
                 onDesignModeUnreachable={handleDesignModeUnreachable}
+                onDataTabClick={() => projectInfo.refreshProjectInfo()}
               />
             </div>
 
@@ -1670,11 +1712,7 @@ const AppDev: React.FC = () => {
                   // 版本记录相关
                   gitVersionRecordData={{
                     onOpen: handleToggleGitVersionPanel,
-                    disabled:
-                      !hasValidProjectId ||
-                      !isAgentVersionControlEnabled(
-                        agentConfigInfo?.enableVersionControl,
-                      ),
+                    disabled: !hasValidProjectId,
                   }}
                   // 通用状态
                   isChatLoading={chat.isChatLoading}
@@ -1688,9 +1726,6 @@ const AppDev: React.FC = () => {
                       {/* FileTreeGitSourceSidebar 组件（版本记录面板打开时仍显示） */}
                       {activeTab !== 'preview' && (
                         <FileTreeGitSourceSidebar
-                          enableVersionControl={
-                            agentConfigInfo?.enableVersionControl
-                          }
                           // 文件树（含搜索、工具栏、右键菜单）
                           tree={appDevFileTree.tree}
                           treeClassName="w-full"
@@ -1734,9 +1769,6 @@ const AppDev: React.FC = () => {
 
                       {/* 版本记录面板：打开且无 diff 选中时占据内容区；选中 diff 时改由 ContentViewer 展示 */}
                       {gitVersionPanelOpen &&
-                      isAgentVersionControlEnabled(
-                        agentConfigInfo?.enableVersionControl,
-                      ) &&
                       !sourceControl.selectedDiffFile ? (
                         <div className={styles.gitVersionPanelCol}>
                           {/* 版本记录 */}
@@ -1842,7 +1874,7 @@ const AppDev: React.FC = () => {
 
                 {/* 底部终端、开发日志合集面板 */}
                 <ConversationBottomConsole
-                  // todo: 需要传入会话ID，后续完善
+                  // 在AppDev中，conversationId 为 projectId
                   conversationId={projectId}
                   enableKeepalivePolling={false}
                   visible={showDevLogConsole}

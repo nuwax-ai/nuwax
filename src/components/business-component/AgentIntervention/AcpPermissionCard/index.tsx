@@ -1,5 +1,9 @@
+import ChangeFileGitDiffView, {
+  DiffModeEnum,
+} from '@/components/business-component/ChangeFileGitDiffView';
 import { EllipsisTooltip } from '@/components/custom/EllipsisTooltip';
 import { t } from '@/services/i18nRuntime';
+import { normalizeFileDiffItems } from '@/utils/fileChangeDiff';
 import {
   ArrowDownOutlined,
   ArrowUpOutlined,
@@ -7,7 +11,13 @@ import {
 } from '@ant-design/icons';
 import { Button, Tag, Typography } from 'antd';
 import classNames from 'classnames';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import type {
   AcpPermissionInteraction,
   AcpRequestPermissionResponse,
@@ -48,9 +58,32 @@ const AcpPermissionCard: React.FC<AcpPermissionCardProps> = ({
   const [submitType, setSubmitType] = useState<'confirm' | 'cancel' | null>(
     null,
   );
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  // 卡片弹出后自动获取焦点
+  useEffect(() => {
+    if (!disabled) {
+      cardRef.current?.focus();
+    }
+  }, [disabled]);
+
+  // 保持焦点始终在卡片上，防止失焦导致快捷键失效
+  const handleBlur = (e: React.FocusEvent) => {
+    if (
+      !disabled &&
+      cardRef.current &&
+      !cardRef.current.contains(e.relatedTarget)
+    ) {
+      e.preventDefault();
+      cardRef.current.focus();
+    }
+  };
 
   const handleSelect = useCallback(
     (optionId: string, type: 'confirm' | 'cancel' = 'confirm') => {
+      if (isSubmitting || isSubmitted || !onRespond) {
+        return;
+      }
       setSubmitType(type);
       onRespond?.({
         outcome: {
@@ -59,7 +92,7 @@ const AcpPermissionCard: React.FC<AcpPermissionCardProps> = ({
         },
       });
     },
-    [onRespond],
+    [onRespond, isSubmitting, isSubmitted],
   );
 
   useEffect(() => {
@@ -70,6 +103,16 @@ const AcpPermissionCard: React.FC<AcpPermissionCardProps> = ({
 
   const title =
     toolCall.title?.trim() || t('PC.Components.AcpPermissionCard.defaultTitle');
+  const rawCommand = (toolCall.rawInput as any)?.command;
+  const displayTitle = title === 'bash' && rawCommand ? rawCommand : title;
+  const fileDiffItems = useMemo(
+    () =>
+      normalizeFileDiffItems({
+        input: toolCall.rawInput,
+        locations: toolCall.locations,
+      }),
+    [toolCall.rawInput, toolCall.locations],
+  );
 
   const visibleOptions = useMemo(
     () =>
@@ -113,12 +156,14 @@ const AcpPermissionCard: React.FC<AcpPermissionCardProps> = ({
 
   return (
     <div
+      ref={cardRef}
       className={classNames(styles.card, dockShellClassName, {
         [styles.cardDocked]: docked,
       })}
       tabIndex={-1}
       role="group"
-      aria-label={title}
+      aria-label={displayTitle}
+      onBlur={handleBlur}
     >
       <header className={styles.header}>
         {docked ? (
@@ -135,7 +180,7 @@ const AcpPermissionCard: React.FC<AcpPermissionCardProps> = ({
             </span>
           ) : null}
           <Text strong className={styles.title}>
-            {title}
+            {displayTitle}
           </Text>
         </div>
         {toolCall.kind ? (
@@ -151,6 +196,31 @@ const AcpPermissionCard: React.FC<AcpPermissionCardProps> = ({
       </header>
 
       <div className={styles.body}>
+        {fileDiffItems.length ? (
+          <div className={styles.filePreview}>
+            {fileDiffItems.map((item) => (
+              <div key={item.path} className={styles.filePreviewItem}>
+                <div className={styles.filePath}>
+                  <Text
+                    style={{ width: '100%', color: 'inherit', margin: 0 }}
+                    ellipsis={{ tooltip: item.path }}
+                  >
+                    {item.path}
+                  </Text>
+                </div>
+                <div className={styles.diffPreview}>
+                  <ChangeFileGitDiffView
+                    fileId={`${toolCall.toolCallId || item.path}-${item.path}`}
+                    fileName={item.path}
+                    originalContent={item.oldText}
+                    modifiedContent={item.newText}
+                    diffViewMode={DiffModeEnum.Unified}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : null}
         <div className={styles.actions}>
           {visibleOptions.map((option, index) => {
             const isAllow = option.kind.startsWith('allow');

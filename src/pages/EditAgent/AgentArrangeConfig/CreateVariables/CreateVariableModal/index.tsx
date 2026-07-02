@@ -479,7 +479,9 @@ const CreateVariableModal: React.FC<CreateVariableModalProps> = ({
       form={form}
       open={open}
       loading={loading}
-      classNames={{ body: cx(styles['modal-body-container']) }}
+      classNames={{
+        body: cx(styles['modal-body-container'], 'scroll-container'),
+      }}
       title={t('PC.Pages.AgentArrangeCreateVariableModal.title')}
       onCancel={onCancel}
       onConfirm={handleConfirm}

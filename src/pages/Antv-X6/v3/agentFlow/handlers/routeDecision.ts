@@ -25,6 +25,7 @@ import { SpecialPortType } from '../../types/enums';
 import {
   branchPortY,
   extractPortSuffix,
+  hasAgentFlowNodeDescription,
   ROUTE_DEFAULT_PORT_COLOR,
 } from './portLayout';
 
@@ -35,6 +36,10 @@ export const routeDecisionHandler: BranchNodeHandler = {
     const nc = data.nodeConfig as any;
     const routes: any[] = nc?.intentConfigs || [];
     const defaultIds: number[] = nc?.defaultNextNodeIds || [];
+    // 节点带描述行时，分支端口整体随条目下移 descHeight，保持圆点与条目对齐
+    const branchOpts = {
+      hasDescription: hasAgentFlowNodeDescription(data),
+    };
 
     const inputPorts = [
       ctx.generatePortConfig({ group: PortGroupEnum.in, idSuffix: 'in' }),
@@ -44,7 +49,7 @@ export const routeDecisionHandler: BranchNodeHandler = {
 
     // 默认兜底端口：仅当 defaultNextNodeIds 有值时才生成
     if (defaultIds.length > 0) {
-      const defaultY = branchPortY(outputPorts.length);
+      const defaultY = branchPortY(outputPorts.length, branchOpts);
       outputPorts.push(
         ctx.generatePortConfig({
           group: PortGroupEnum.special,
@@ -59,7 +64,7 @@ export const routeDecisionHandler: BranchNodeHandler = {
     // 各路由端口
     routes.forEach((item: any) => {
       const uuid = item.uuid || `r${outputPorts.length}`;
-      const y = branchPortY(outputPorts.length);
+      const y = branchPortY(outputPorts.length, branchOpts);
       outputPorts.push(
         ctx.generatePortConfig({
           group: PortGroupEnum.special,

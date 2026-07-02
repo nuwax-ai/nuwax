@@ -8,7 +8,11 @@ import {
   VisibleToLLMEnum,
 } from '@/types/enums/agent';
 import type { CreateUpdateModeEnum } from '@/types/enums/common';
-import type { ComponentSettingEnum, OpenCloseEnum } from '@/types/enums/space';
+import type {
+  AgentSubTypeEnum,
+  ComponentSettingEnum,
+  OpenCloseEnum,
+} from '@/types/enums/space';
 import { ApplicationMoreActionEnum } from '@/types/enums/space';
 import type {
   AgentCardInfo,
@@ -78,6 +82,8 @@ export interface AgentArrangeConfigProps {
   ) => void;
   // 变量列表变化回调，用于同步变量列表到父组件
   onVariablesChange?: (variables: BindConfigWithSub[]) => void;
+  /** 记忆区变量弹窗确认关闭后回调（AgentFlow 用于刷新工作流） */
+  onMemoryVariablesConfirmed?: () => void;
   onToolsChange?: (tools: AgentComponentInfo[]) => void;
 }
 
@@ -85,6 +91,8 @@ export interface AgentArrangeConfigProps {
 export interface ComponentSettingModalProps {
   open: boolean;
   currentComponentInfo?: AgentComponentInfo;
+  /** 当前智能体 subType，用于控制调用审批等能力可见性 */
+  agentSubType?: AgentSubTypeEnum;
   devConversationId?: number;
   variables?: BindConfigWithSub[];
   settingActionList?: { type: ComponentSettingEnum; label: string }[];
@@ -191,10 +199,21 @@ export interface OutputDirectlyParams {
   directOutput: OutputDirectlyEnum;
 }
 
+// 调用审批保存形参
+export interface CallApprovalParams {
+  callApproval: DefaultSelectedEnum;
+}
+
 // 输出方式组件属性
 export interface OutputWayProps {
   directOutput: OutputDirectlyEnum;
   onSaveSet: (data: OutputDirectlyParams) => void;
+}
+
+// 调用审批组件属性
+export interface CallApprovalProps {
+  callApproval?: DefaultSelectedEnum;
+  onSaveSet: (data: CallApprovalParams) => void;
 }
 
 // 页面是否模型可见组件属性

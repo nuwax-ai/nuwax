@@ -135,16 +135,28 @@ export default (conversationId: string | number = '') => {
         );
       },
       // 支持自定义 agent-info 标签
-      'agent-info': (props: any) => {
+      'agent-info': ({ children, ...props }: any) => {
         const node = props.node;
         const properties = node?.properties || {};
         const name = props.name || properties.name || '';
         const icon = props.icon || properties.icon || '';
+        const hasIcon = icon && icon !== 'null';
         return (
-          <div className={cx(styles['agent-info-container'])}>
-            {icon && <img className={cx(styles['agent-info-icon'])} src={icon} alt="" />}
-            {name && <span className={cx(styles['agent-info-name'])}>{name}</span>}
-          </div>
+          <>
+            <div className={cx(styles['agent-info-container'])}>
+              {hasIcon && (
+                <img
+                  className={cx(styles['agent-info-icon'])}
+                  src={icon}
+                  alt=""
+                />
+              )}
+              {name && (
+                <span className={cx(styles['agent-info-name'])}>{name}</span>
+              )}
+            </div>
+            {children}
+          </>
         );
       },
       p: ({ children }: any) => {

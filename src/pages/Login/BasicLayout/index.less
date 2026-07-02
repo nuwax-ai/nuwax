@@ -1,5 +1,18 @@
 @import '@/styles/token';
 
+@logoSize: 40px;
+@logoPosition: 40px;
+@logoBorderRadius: 10px;
+@logoZIndex: 10;
+@titleFontSize: 32px;
+@subTitleLineHeight: 24px;
+@subTitleMarginTop: 28px;
+@containerPaddingTop: 100px;
+@containerPaddingBottom: 100px;
+@boxMaxWidth: 540px;
+@contentPadding: @paddingMd;
+@subTitleFontSize: @fontSizeLg;
+
 .container {
   background-image: @backgroundImage;
   background-size: cover;
@@ -14,43 +27,53 @@
   // 左侧盒子
   .left-box {
     position: relative;
-
-    .logo {
-      position: absolute;
-      left: 40px;
-      top: 40px;
-      width: 40px;
-      height: 40px;
-      border-radius: 10px;
-    }
-
     flex: 1;
     display: flex;
-    justify-content: center; /* 水平居中 */
-    align-items: center; /* 垂直居中 */
+    flex-direction: column;
+
+    .icon {
+      padding: @logoPosition 0 @logoPosition @logoPosition;
+      flex-shrink: 0;
+    }
+
+    .logo {
+      width: @logoSize;
+      height: @logoSize;
+      border-radius: @logoBorderRadius;
+    }
+
+    .scroll-area {
+      flex: 1;
+      display: flex;
+      justify-content: center; /* 水平居中 */
+      overflow-y: auto;
+      margin-bottom: 20px;
+    }
 
     .left-title-box {
+      margin: auto 0;
       width: 100%; /* 宽度自适应 */
-      max-width: 540px; /* 最大宽度 */
-      padding: 20px;
+      max-width: @boxMaxWidth; /* 最大宽度 */
+      padding: @containerPaddingTop @contentPadding @containerPaddingBottom;
       box-sizing: border-box;
       color: @navFirstMenuText;
-      font-size: 32px;
+      font-size: @titleFontSize;
       font-style: normal;
       font-weight: @fontWeightStrong;
-      line-height: 1.5; /* 140% */
-      overflow: auto;
+      line-height: @lineHeightLg;
+      text-align: justify;
+      word-break: break-all;
 
       .title {
         font-weight: @fontWeightStrong;
       }
 
       .sub-title {
-        margin-top: 28px;
-        font-size: 16px;
+        margin-top: @subTitleMarginTop;
+        font-size: @subTitleFontSize;
         font-style: normal;
         font-weight: @fontWeightStrong;
-        line-height: 24px;
+        line-height: @subTitleLineHeight;
         opacity: 0.6;
       }
     }

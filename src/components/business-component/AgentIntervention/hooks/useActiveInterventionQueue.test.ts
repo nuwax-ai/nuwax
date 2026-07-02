@@ -88,7 +88,7 @@ describe('useActiveInterventionQueue', () => {
         index: 2,
         text: '我已填写「毕业论文 PPT 前置信息收集」，表单内容如下：\n\n```json\n{}\n```',
       },
-    ] as MessageInfo[];
+    ] as unknown as MessageInfo[];
 
     const { result } = renderHook(() =>
       useActiveInterventionQueue(messageList),
@@ -110,7 +110,7 @@ describe('useActiveInterventionQueue', () => {
         index: 2,
         mcpAskInteractions: [askInteraction],
       },
-    ] as MessageInfo[];
+    ] as unknown as MessageInfo[];
 
     const { result } = renderHook(() =>
       useActiveInterventionQueue(messageList),
@@ -126,7 +126,7 @@ describe('useActiveInterventionQueue', () => {
         index: 1,
         mcpAskInteractions: [createAskInteraction()],
       },
-    ] as MessageInfo[];
+    ] as unknown as MessageInfo[];
 
     const { result } = renderHook(() =>
       useActiveInterventionQueue(messageList),
@@ -134,6 +134,34 @@ describe('useActiveInterventionQueue', () => {
 
     expect(result.current).toHaveLength(1);
     expect(result.current[0].kind).toBe('mcp_ask');
+  });
+
+  it('prefers the latest message that still has an active intervention', () => {
+    const permission = createAcpPermissionInteraction('pending', {
+      filePath: '/tmp/a.txt',
+    });
+    permission.executeId = 'exec-write-1';
+    const messageList = [
+      {
+        id: 'assistant-with-approval',
+        index: 1,
+        status: 'loading',
+        acpPermissionInteractions: [permission],
+      },
+      {
+        id: 'later-message-without-approval',
+        index: 2,
+        status: 'complete',
+        text: 'later message',
+      },
+    ] as unknown as MessageInfo[];
+
+    const { result } = renderHook(() =>
+      useActiveInterventionQueue(messageList),
+    );
+
+    expect(result.current).toHaveLength(1);
+    expect(result.current[0].kind).toBe('acp_permission');
   });
 
   it('hides ask/question while matching ACP permission is pending', () => {
@@ -144,7 +172,7 @@ describe('useActiveInterventionQueue', () => {
         mcpAskInteractions: [createAskInteraction()],
         acpPermissionInteractions: [createAcpPermissionInteraction('pending')],
       },
-    ] as MessageInfo[];
+    ] as unknown as MessageInfo[];
 
     const { result } = renderHook(() =>
       useActiveInterventionQueue(messageList),
@@ -164,7 +192,7 @@ describe('useActiveInterventionQueue', () => {
           createAcpPermissionInteraction('submitted'),
         ],
       },
-    ] as MessageInfo[];
+    ] as unknown as MessageInfo[];
 
     const { result } = renderHook(() =>
       useActiveInterventionQueue(messageList),
@@ -190,7 +218,7 @@ describe('useActiveInterventionQueue', () => {
         index: 1,
         acpPermissionInteractions: [failed, pending],
       },
-    ] as MessageInfo[];
+    ] as unknown as MessageInfo[];
 
     const { result } = renderHook(() =>
       useActiveInterventionQueue(messageList),
@@ -198,7 +226,9 @@ describe('useActiveInterventionQueue', () => {
 
     // The failed approval must leave the queue; only the later pending one stays.
     expect(result.current).toHaveLength(1);
-    expect(result.current[0].interaction.intervention.id).toBe('itv-pending');
+    expect((result.current[0] as any).interaction.intervention.id).toBe(
+      'itv-pending',
+    );
   });
 
   it('keeps ask/question visible when pending ACP permission is unrelated', () => {
@@ -215,7 +245,7 @@ describe('useActiveInterventionQueue', () => {
         mcpAskInteractions: [createAskInteraction()],
         acpPermissionInteractions: [unrelatedPermission],
       },
-    ] as MessageInfo[];
+    ] as unknown as MessageInfo[];
 
     const { result } = renderHook(() =>
       useActiveInterventionQueue(messageList),
@@ -226,5 +256,176 @@ describe('useActiveInterventionQueue', () => {
       'acp_permission',
       'mcp_ask',
     ]);
+  });
+
+  it('keeps the approval whose executeId matches the latest processing focus', () => {
+    // 当前焦点 executeId = 最新 processingList 末尾的 executeId；审批不再受此影响，始终渲染
+    const interaction = createAcpPermissionInteraction('pending');
+    interaction.executeId = 'exec-1';
+    const messageList = [
+      {
+        id: 'assistant',
+        index: 1,
+        acpPermissionInteractions: [interaction],
+        processingList: [{ executeId: 'exec-1' }] as any,
+      },
+    ] as unknown as MessageInfo[];
+
+    const { result } = renderHook(() =>
+      useActiveInterventionQueue(messageList),
+    );
+
+    expect(result.current).toHaveLength(1);
+  });
+
+  it('keeps the approval card even when its executeId is no longer the focus', () => {
+    // 最新 processing 已推进到另一个 executeId → 仍保留弹窗队列，不再按 executeId 精确关闭
+    const interaction = createAcpPermissionInteraction('pending');
+    interaction.executeId = 'exec-old';
+    const messageList = [
+      {
+        id: 'assistant',
+        index: 1,
+        acpPermissionInteractions: [interaction],
+        processingList: [
+          { executeId: 'exec-old' },
+          { executeId: 'exec-new' },
+        ] as any,
+      },
+    ] as unknown as MessageInfo[];
+
+    const { result } = renderHook(() =>
+      useActiveInterventionQueue(messageList),
+    );
+
+    expect(result.current).toHaveLength(1);
+  });
+
+  it('keeps a fresh approval before its tool processing block arrives', () => {
+    const interaction = createAcpPermissionInteraction('pending');
+    interaction.executeId = 'exec-edit';
+    const messageList = [
+      {
+        id: 'assistant',
+        index: 1,
+        acpPermissionInteractions: [interaction],
+        processingList: [{ executeId: 'exec-previous' }] as any,
+      },
+    ] as unknown as MessageInfo[];
+
+    const { result } = renderHook(() =>
+      useActiveInterventionQueue(messageList),
+    );
+
+    expect(result.current).toHaveLength(1);
+    expect(result.current[0].kind).toBe('acp_permission');
+    if (result.current[0].kind === 'acp_permission') {
+      expect(result.current[0].interaction.executeId).toBe('exec-edit');
+    }
+  });
+
+  it('keeps an approval with unknown executeId (fallback, no false close)', () => {
+    // 无 processingList / 审批无 executeId 时无法判定过期 → 保守显示，避免误关
+    const messageList = [
+      {
+        id: 'assistant',
+        index: 1,
+        acpPermissionInteractions: [createAcpPermissionInteraction('pending')],
+      },
+    ] as unknown as MessageInfo[];
+
+    const { result } = renderHook(() =>
+      useActiveInterventionQueue(messageList),
+    );
+
+    expect(result.current).toHaveLength(1);
+  });
+
+  it('keeps a pending approval visible even if the host message becomes complete', () => {
+    const interaction = createAcpPermissionInteraction('pending');
+    interaction.executeId = 'exec-approval';
+    const messageList = [
+      {
+        id: 'assistant',
+        index: 1,
+        status: 'complete',
+        acpPermissionInteractions: [interaction],
+        processingList: [{ executeId: 'exec-approval' }] as any,
+      },
+    ] as unknown as MessageInfo[];
+
+    const { result } = renderHook(() =>
+      useActiveInterventionQueue(messageList),
+    );
+
+    expect(result.current).toHaveLength(1);
+    expect(result.current[0].kind).toBe('acp_permission');
+  });
+
+  it('keeps multiple pending approvals instead of hiding earlier ones', () => {
+    const first = createAcpPermissionInteraction('pending', {
+      filePath: '/tmp/a.txt',
+    });
+    first.intervention.id = 'itv-first';
+    first.intervention.createdAt = 100;
+    first.intervention.acp.request.toolCall.toolCallId = 'call-first';
+    first.executeId = 'exec-first';
+
+    const second = createAcpPermissionInteraction('pending', {
+      filePath: '/tmp/b.txt',
+    });
+    second.intervention.id = 'itv-second';
+    second.intervention.createdAt = 200;
+    second.intervention.acp.request.toolCall.toolCallId = 'call-second';
+    second.executeId = 'exec-second';
+
+    const messageList = [
+      {
+        id: 'assistant-1',
+        index: 1,
+        status: 'complete',
+        acpPermissionInteractions: [first],
+        processingList: [{ executeId: 'exec-first' }] as any,
+      },
+      {
+        id: 'assistant-2',
+        index: 2,
+        status: 'loading',
+        acpPermissionInteractions: [second],
+        processingList: [{ executeId: 'exec-second' }] as any,
+      },
+    ] as unknown as MessageInfo[];
+
+    const { result } = renderHook(() =>
+      useActiveInterventionQueue(messageList),
+    );
+
+    expect(result.current).toHaveLength(2);
+    expect(
+      result.current.map((item) =>
+        item.kind === 'acp_permission'
+          ? item.interaction.intervention.id
+          : item.interaction.input.requestId,
+      ),
+    ).toEqual(['itv-first', 'itv-second']);
+  });
+
+  it('closes the dock after the approval is answered', () => {
+    // 审批已应答(submitted)，不再 pending → DockPanel 关闭
+    const messageList = [
+      {
+        id: 'assistant',
+        index: 1,
+        acpPermissionInteractions: [
+          createAcpPermissionInteraction('submitted'),
+        ],
+      },
+    ] as unknown as MessageInfo[];
+
+    const { result } = renderHook(() =>
+      useActiveInterventionQueue(messageList),
+    );
+
+    expect(result.current).toHaveLength(0);
   });
 });

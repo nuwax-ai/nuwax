@@ -5,9 +5,12 @@
  */
 
 import {
+  createEmptyConditionArg,
+  createOtherIntentBranch,
+} from '@/pages/Antv-X6/v3/agentFlow/adapters/routeConditionAdapter';
+import {
   AnswerTypeEnum,
   DataTypeEnum,
-  HitlModeEnum,
   NodeShapeEnum,
   NodeTypeEnum,
 } from '@/types/enums/common';
@@ -58,10 +61,10 @@ export const NODE_DEFAULT_NAMES: Partial<Record<NodeTypeEnum, string>> = {
   [NodeTypeEnum.LoopCondition]: 'Loop Condition',
   [NodeTypeEnum.Interval]: 'Interval',
   [NodeTypeEnum.TextProcessing]: 'Text Processing',
-  // AgentFlow 专用
-  [NodeTypeEnum.Agent]: 'Agent',
-  [NodeTypeEnum.HumanInteraction]: 'Human Interaction',
-  [NodeTypeEnum.RouteDecision]: 'Route Decision',
+  // AgentFlow 专用（默认名与侧边栏 i18n 名称保持一致）
+  [NodeTypeEnum.Agent]: '智能体',
+  [NodeTypeEnum.HumanInteraction]: '询问用户',
+  [NodeTypeEnum.RouteDecision]: '路由决策',
 };
 
 /**
@@ -151,10 +154,14 @@ function createDefaultIntentConfig(): any[] {
   return [
     {
       uuid: `intent-${generateUuid()}`,
-      intent: 'Intent 1',
-      description: '',
+      name: '',
+      intent: '',
+      intentType: 'NORMAL',
+      conditionType: 'AND',
+      conditionArgs: [createEmptyConditionArg()],
       nextNodeIds: [],
     },
+    createOtherIntentBranch(),
   ];
 }
 
@@ -430,12 +437,9 @@ export function createDefaultNodeConfig(
     case NodeTypeEnum.Agent:
       return {
         ...baseConfig,
-        // 后端契约字段（Agent 节点数据格式：agentId 选择后写入）
         extraPrompt: '',
         selfLoopTimes: 0,
         reminderPrompt: '',
-        // 前端属性面板字段（上下文传递，沿用我们的 UI）
-        contextPassMode: 'auto',
         inputArgs: [],
         outputArgs: [
           createDefaultArg({
@@ -452,29 +456,40 @@ export function createDefaultNodeConfig(
     case NodeTypeEnum.HumanInteraction:
       return {
         ...baseConfig,
-        hitlMode: HitlModeEnum.Ask,
-        // v1 ask 保留
-        askConfig: {
-          question: '',
-          answerType: AnswerTypeEnum.TEXT,
-          answerKey: 'userAnswer',
-        },
-        // v2 ask 新增
-        replyMode: 'text',
-        formFields: [],
+        question: '',
+        answerType: AnswerTypeEnum.TEXT,
+        options: [],
+        formArgs: [],
         inputArgs: [],
-        outputArgs: [],
+        outputArgs: [
+          createDefaultArg({
+            key: 'answer',
+            name: 'answer',
+            dataType: DataTypeEnum.String,
+            description: 'User answer',
+            require: true,
+            systemVariable: true,
+          }),
+        ],
       };
 
     case NodeTypeEnum.RouteDecision:
       return {
         ...baseConfig,
-        // 复用原意图识别的 intentConfigs 结构，每项新增 condition 条件比对
-        intentConfigs: [],
+        intentConfigs: createDefaultIntentConfig(),
         extraPrompt: '',
         modelId: undefined,
         inputArgs: [],
-        outputArgs: [],
+        outputArgs: [
+          createDefaultArg({
+            key: 'matchedIntent',
+            name: 'matchedIntent',
+            dataType: DataTypeEnum.String,
+            description: 'Matched intent',
+            require: true,
+            systemVariable: true,
+          }),
+        ],
       };
 
     default:

@@ -5,16 +5,22 @@
  * 避免 ConversationAgent 与 Chat / EditAgent 等页面共享同一会话状态。
  * 请勿修改 conversationInfo.ts，本文件独立维护。
  */
+import {
+  hydrateMcpAskInteractionsInMessageList,
+  prependAndHydrateMcpAskMessageList,
+  processInterventionSsePatch,
+  useAgentInterventionHandlers,
+} from '@/components/business-component/AgentIntervention';
+import { reconcileAcpPermissionStatusesInMessageList } from '@/components/business-component/AgentIntervention/utils/reconcileAcpPermissionStatus';
+import { reconcileFinalMessageState } from '@/components/business-component/AgentIntervention/utils/reconcileFinalMessageState';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
   CONVERSATION_CONNECTION_URL,
   MESSAGE_PAGE_SIZE,
 } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
-import {
-  isSessionStreamBusy,
-  useExecutingTaskStatusPoll,
-} from '@/hooks/useExecutingTaskStatusPoll';
+import { isSessionStreamBusy } from '@/hooks/useExecutingTaskStatusPoll';
+import { useResumeStreamHandlers } from '@/hooks/useResumeStreamHandlers';
 import { getCustomBlock } from '@/plugins/ds-markdown-process';
 import {
   apiAgentConversation,
@@ -105,6 +111,17 @@ export default () => {
   const [loadingMore, setLoadingMore] = useState<boolean>(false);
   // 会话信息
   const [messageList, setMessageList] = useState<MessageInfo[]>([]);
+
+  // 当前会话 ID（用于停止会话、干预回执等操作）
+  const [currentConversationId, setCurrentConversationId] = useState<
+    number | null
+  >(null);
+
+  const { respondAcpPermission, respondMcpAsk } = useAgentInterventionHandlers({
+    setMessageList,
+    conversationId: currentConversationId,
+  });
+
   // 缓存消息列表，用于消息会话错误时，修改消息状态（将当前会话的loading状态的消息改为Error状态）
   const messageListRef = useRef<MessageInfo[]>([]);
   // 会话问题建议
@@ -147,10 +164,6 @@ export default () => {
     AgentManualComponentInfo[]
   >([]);
 
-  // 当前会话 ID（用于停止会话等操作）
-  const [currentConversationId, setCurrentConversationId] = useState<
-    number | null
-  >(null);
   // 当前会话请求 ID（用于停止临时会话等操作）
   const [currentConversationRequestId, setCurrentConversationRequestId] =
     useState<string>('');
@@ -205,11 +218,13 @@ export default () => {
       .filter((item) => item.role === AssistantRoleEnum.ASSISTANT)
       .forEach((item) => {
         const componentExecutedList = item?.componentExecutedList || [];
-        // 补充执行ID
-        const _list = componentExecutedList.map((item: any) => ({
-          ...item,
-          executeId: item.result.executeId,
-        }));
+        // 补充执行ID，过滤掉 result 为空或无 executeId 的条目（如 SandboxStart 类型）
+        const _list = componentExecutedList
+          .filter((item: any) => item?.result?.executeId)
+          .map((item: any) => ({
+            ...item,
+            executeId: item.result.executeId,
+          }));
         list.push(..._list);
       });
 
@@ -257,8 +272,10 @@ export default () => {
       if (code === SUCCESS_CODE) {
         // 如果查询到的消息数量大于0，则表示有更多消息
         if (!!data?.length) {
-          // 将新消息追加到消息列表前面
-          setMessageList((prev) => [...data, ...prev]);
+          // 将新消息追加到消息列表前面，并重建历史 MCP Ask 交互状态
+          setMessageList((prev) =>
+            prependAndHydrateMcpAskMessageList(data, prev),
+          );
 
           // 如果查询到的消息数量小于20，则表示没有更多消息
           if (data.length < MESSAGE_PAGE_SIZE) {
@@ -285,85 +302,103 @@ export default () => {
     }
   };
 
+  /** 根据最近消息是否含 Loading/Incomplete / processing 执行中 更新流式活跃状态 */
+  const checkConversationActive = useCallback((messages: MessageInfo[]) => {
+    const recentMessages = messages?.slice(-5) || [];
+    setIsConversationActive(isSessionStreamBusy(recentMessages));
+  }, []);
+
+  const disabledConversationActive = () => {
+    setIsConversationActive(false);
+  };
+
   // 查询会话
-  const { run: runQueryConversation, loading: loadingConversation } =
-    useRequest(apiAgentConversation, {
-      manual: true,
-      debounceWait: 300,
-      loadingDelay: 300, // 300ms内不显示loading
-      onSuccess: (result: RequestResponse<ConversationInfo>) => {
-        setIsLoadingConversation(false);
-        const { data } = result;
-        // 设置所有的详细信息
-        setChatProcessingList(data?.messageList || []);
-        // 设置会话信息
-        setConversationInfo(data);
-        // 记录当前会话 ID（用于停止会话等操作）
-        setCurrentConversationId(data?.id ?? null);
+  const {
+    run: runQueryConversation,
+    runAsync,
+    loading: loadingConversation,
+  } = useRequest(apiAgentConversation, {
+    manual: true,
+    debounceWait: 300,
+    loadingDelay: 300, // 300ms内不显示loading
+    onSuccess: (result: RequestResponse<ConversationInfo>) => {
+      setIsLoadingConversation(false);
+      const { data } = result;
+      // 设置所有的详细信息
+      setChatProcessingList(data?.messageList || []);
+      // 设置会话信息
+      setConversationInfo(data);
+      // 记录当前会话 ID（用于停止会话等操作）
+      setCurrentConversationId(data?.id ?? null);
 
-        // 是否开启用户问题建议
-        setIsSuggest(data?.agent?.openSuggest === OpenCloseEnum.Open);
-        // 可手动选择的组件列表
-        setManualComponents(data?.agent?.manualComponents || []);
-        // 消息列表
-        const _messageList = data?.messageList || [];
-        const len = _messageList?.length || 0;
-        if (len) {
-          setMessageList(_messageList);
-          // 最后一条消息为"问答"时，获取问题建议
-          const lastMessage = _messageList[len - 1];
-          if (
-            lastMessage.type === MessageModeEnum.QUESTION &&
-            lastMessage.ext?.length
-          ) {
-            // 问题建议列表
-            const suggestList =
-              lastMessage.ext.map((item) => item.content) || [];
-            setChatSuggestList(suggestList);
-          }
-          // 如果消息列表大于1时，说明已开始会话，就不显示预置问题，反之显示
-          else if (len === 1) {
-            const guidQuestionDtos = data?.agent?.guidQuestionDtos || [];
-            // 如果存在预置问题，显示预置问题
-            setChatSuggestList(guidQuestionDtos);
-          }
-
-          // 无论初始返回的 messageList 长度多少，都认为可能有历史消息，
-          // 保证第一次上滑到顶部时始终调用一次列表接口进行确认。
-          if (len > 0) {
-            setIsMoreMessage(true);
-          }
+      // 是否开启用户问题建议
+      setIsSuggest(data?.agent?.openSuggest === OpenCloseEnum.Open);
+      // 可手动选择的组件列表
+      setManualComponents(data?.agent?.manualComponents || []);
+      // 消息列表：拉取后重建 MCP Ask 交互（与 conversationInfo 对齐）
+      const _messageList = hydrateMcpAskInteractionsInMessageList(
+        data?.messageList || [],
+      );
+      const len = _messageList?.length || 0;
+      if (len) {
+        setMessageList(() => {
+          checkConversationActive(_messageList);
+          messageListRef.current = _messageList;
+          return _messageList;
+        });
+        // 最后一条消息为"问答"时，获取问题建议
+        const lastMessage = _messageList[len - 1];
+        if (
+          lastMessage.type === MessageModeEnum.QUESTION &&
+          lastMessage.ext?.length
+        ) {
+          // 问题建议列表
+          const suggestList = lastMessage.ext.map((item) => item.content) || [];
+          setChatSuggestList(suggestList);
         }
-        // 不存在会话消息时，才显示开场白预置问题
-        else {
-          setMessageList([]);
+        // 如果消息列表大于1时，说明已开始会话，就不显示预置问题，反之显示
+        else if (len === 1) {
           const guidQuestionDtos = data?.agent?.guidQuestionDtos || [];
           // 如果存在预置问题，显示预置问题
           setChatSuggestList(guidQuestionDtos);
         }
 
-        // 通过 requestAnimationFrame 在接下来的 800ms 内持续并在浏览器每次重绘前强制置底
-        // 能够完美解决由于聊天气泡、Markdown、图片等异步渲染撑开高度，导致的跳闪和未置底问题
-        const startTime = Date.now();
-        const forceScrollToBottom = () => {
-          // 滚动到底部
-          const element = messageViewRef?.current;
-          if (element) {
-            element.scrollTo({
-              top: element.scrollHeight,
-              behavior: 'instant',
-            });
-          }
-          if (Date.now() - startTime < 800) {
-            requestAnimationFrame(forceScrollToBottom);
-          }
-        };
-        requestAnimationFrame(forceScrollToBottom);
-      },
-      onError: () => {
-        setIsLoadingConversation(false);
-      },
-    });
+        // 无论初始返回的 messageList 长度多少，都认为可能有历史消息，
+        // 保证第一次上滑到顶部时始终调用一次列表接口进行确认。
+        if (len > 0) {
+          setIsMoreMessage(true);
+        }
+      }
+      // 不存在会话消息时，才显示开场白预置问题
+      else {
+        setMessageList([]);
+        const guidQuestionDtos = data?.agent?.guidQuestionDtos || [];
+        // 如果存在预置问题，显示预置问题
+        setChatSuggestList(guidQuestionDtos);
+      }
+
+      // 通过 requestAnimationFrame 在接下来的 800ms 内持续并在浏览器每次重绘前强制置底
+      // 能够完美解决由于聊天气泡、Markdown、图片等异步渲染撑开高度，导致的跳闪和未置底问题
+      const startTime = Date.now();
+      const forceScrollToBottom = () => {
+        // 滚动到底部
+        const element = messageViewRef?.current;
+        if (element) {
+          element.scrollTo({
+            top: element.scrollHeight,
+            behavior: 'instant',
+          });
+        }
+        if (Date.now() - startTime < 800) {
+          requestAnimationFrame(forceScrollToBottom);
+        }
+      };
+      requestAnimationFrame(forceScrollToBottom);
+    },
+    onError: () => {
+      setIsLoadingConversation(false);
+    },
+  });
 
   // 智能体会话问题建议
   const { run: runChatSuggest, loading: loadingSuggest } = useRequest(
@@ -389,25 +424,6 @@ export default () => {
       manual: true,
       debounceWait: 300,
     });
-
-  /** 根据最近消息是否含 Loading/Incomplete / processing 执行中 更新流式活跃状态 */
-  const checkConversationActive = useCallback((messages: MessageInfo[]) => {
-    const recentMessages = messages?.slice(-5) || [];
-    setIsConversationActive(isSessionStreamBusy(recentMessages));
-  }, []);
-
-  const disabledConversationActive = () => {
-    setIsConversationActive(false);
-  };
-
-  // 流式已结束但 taskStatus 仍为 EXECUTING 时轮询同步（ChatFinished 遗漏 / 后端延迟）
-  useExecutingTaskStatusPoll({
-    conversationId: conversationInfo?.id,
-    taskStatus: conversationInfo?.taskStatus,
-    messageList,
-    onSync: syncConversationTaskStatus,
-    enabled: conversationInfo?.agent?.type === AgentTypeEnum.TaskAgent,
-  });
 
   // 修改消息列表
   const handleChangeMessageList = (
@@ -440,10 +456,27 @@ export default () => {
 
       let newMessage: any = null;
 
+      // 优先拦截 ACP 权限 / MCP Ask 干预类 SSE，挂载到当前流式消息（DockPanel 数据源）
+      const interventionPatch = processInterventionSsePatch(
+        res,
+        currentMessage,
+        list,
+      );
+      if (interventionPatch) {
+        list.splice(index, arraySpliceAction, interventionPatch);
+        const reconciledList =
+          reconcileAcpPermissionStatusesInMessageList(list);
+        checkConversationActive(reconciledList);
+        return reconciledList;
+      }
+
       // 更新UI状态...
       if (eventType === ConversationEventTypeEnum.PROCESSING) {
         const processingResult = data.result || {};
-        data.executeId = processingResult.executeId;
+        // 后端可能仅在 data.result.executeId 提供执行 ID
+        if (!data.executeId && processingResult.executeId) {
+          data.executeId = processingResult.executeId;
+        }
         const processingList = [
           ...(currentMessage?.processingList || []),
         ] as ProcessingInfo[];
@@ -579,7 +612,7 @@ export default () => {
         }
 
         newMessage = {
-          ...currentMessage,
+          ...reconcileFinalMessageState(currentMessage, data),
           status: MessageStatusEnum.Complete,
           finalResult: data,
           requestId: res.requestId,
@@ -626,10 +659,18 @@ export default () => {
         list.splice(index, arraySpliceAction, newMessage as MessageInfo);
       }
 
-      // 同步更新会话活跃状态
-      checkConversationActive(list);
+      const reconciledList = reconcileAcpPermissionStatusesInMessageList(list);
 
-      return list;
+      const latestProcessingList = reconciledList.flatMap((message) =>
+        Array.isArray(message.processingList) ? message.processingList : [],
+      );
+      handleChatProcessingList(latestProcessingList);
+
+      // 同步更新会话活跃状态
+      checkConversationActive(reconciledList);
+      messageListRef.current = reconciledList;
+
+      return reconciledList;
     });
   };
 
@@ -725,8 +766,16 @@ export default () => {
               // cleanupPendingInteractions(currentMessage);
             }
 
+            const latestProcessingList = copyList.flatMap((message: any) =>
+              Array.isArray(message.processingList)
+                ? message.processingList
+                : [],
+            );
+            handleChatProcessingList(latestProcessingList);
+
             // 再次调用 checkConversationActive 确保状态同步
             checkConversationActive(copyList);
+            messageListRef.current = copyList;
             return copyList;
           } catch (error) {
             console.error('[onClose] ERROR:', error);
@@ -773,7 +822,12 @@ export default () => {
         // 明确终止：打破「发送后 3s 保活」，确保活跃态能立即落 false
         lastSendAtRef.current = 0;
         setMessageList(() => {
+          const latestProcessingList = list.flatMap((message) =>
+            Array.isArray(message.processingList) ? message.processingList : [],
+          );
+          handleChatProcessingList(latestProcessingList);
           disabledConversationActive();
+          messageListRef.current = list;
           return list;
         });
         // setMessageList(list);
@@ -783,8 +837,25 @@ export default () => {
     });
   };
 
+  // ===== 会话流式恢复(sub)：刷新页面 / 新开标签时，订阅 EXECUTING 会话的输出流 =====
+  // 逻辑收敛到共享 hook（与 conversationInfo model 复用同一份实现，避免双份维护漂移）
+  // 重置会被 handleChangeMessageList 写入的流式状态：恢复流开/关时调用，避免残留 messageIdRef 误插重复行
+  const resetResumeMessageState = useCallback(() => {
+    messageIdRef.current = '';
+  }, []);
+  const { resumeConversationStream, abortResumeStream } =
+    useResumeStreamHandlers({
+      setMessageList,
+      handleChangeMessageList,
+      messageViewRef,
+      allowAutoScrollRef,
+      resetResumeMessageState,
+    });
+
   // 清除副作用
   const handleClearSideEffect = () => {
+    // 中断会话流式恢复(sub)连接（hook 内部同时重置占位记忆），避免离开页面后残留
+    abortResumeStream();
     // 重置消息ID
     messageIdRef.current = '';
     suggestGenerationRef.current += 1;
@@ -846,6 +917,7 @@ export default () => {
       debug = false,
       skillIds,
       modelId,
+      agentMode = 'yolo',
     } = sendParams;
     // 清除副作用
     handleClearSideEffect();
@@ -934,6 +1006,7 @@ export default () => {
       skillIds,
       // 模型ID
       modelId,
+      agentMode,
     };
 
     // 处理会话
@@ -948,6 +1021,7 @@ export default () => {
     chatSuggestList,
     loadingConversation,
     runQueryConversation,
+    runAsync,
     setIsLoadingConversation,
     loadingSuggest,
     onMessageSend,
@@ -977,5 +1051,10 @@ export default () => {
     getCurrentConversationId,
     getCurrentConversationRequestId,
     setCurrentConversationRequestId,
+    respondAcpPermission,
+    respondMcpAsk,
+    // 会话流式恢复(sub)
+    resumeConversationStream,
+    abortResumeStream,
   };
 };

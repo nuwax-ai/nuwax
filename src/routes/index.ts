@@ -243,6 +243,12 @@ const routes = [
             name: getRouteLabel('PC.Routes.modelPermissions'),
             component: '@/pages/MorePage/ModelPermissions',
           },
+          // 历史会话
+          {
+            path: 'history-conversation',
+            name: getRouteLabel('PC.Routes.historyConversation'),
+            component: '@/pages/HistoryConversation',
+          },
         ],
       },
       // 系统管理统一管理
@@ -496,6 +502,29 @@ const routes = [
             ],
           },
           {
+            path: 'recommend-manage',
+            name: getRouteLabel('PC.Routes.recommendManage'),
+            routes: [
+              {
+                path: 'home',
+                name: getRouteLabel('PC.Routes.homeRecommend'),
+                component:
+                  '@/pages/SystemManagement/RecommendManage/HomeRecommend',
+              },
+              {
+                path: 'official',
+                name: getRouteLabel('PC.Routes.officialRecommend'),
+                component:
+                  '@/pages/SystemManagement/RecommendManage/OfficialRecommend',
+              },
+              {
+                path: 'chatbox',
+                name: getRouteLabel('PC.Routes.chatboxRecommend'),
+                component: '@/pages/SystemManagement/RecommendManage/Chatbox',
+              },
+            ],
+          },
+          {
             path: 'log-query',
             name: getRouteLabel('PC.Routes.logQuery'),
             routes: [
@@ -510,36 +539,6 @@ const routes = [
                 component: '@/pages/SystemManagement/LogQuery/RunningLog',
               },
             ],
-          },
-        ],
-      },
-      // 生态市场
-      {
-        path: '/ecosystem',
-        name: getRouteLabel('PC.Routes.ecosystemMarket'),
-        access: 'canAdmin',
-        routes: [
-          {
-            path: '/ecosystem/plugin',
-            name: getRouteLabel('PC.Routes.ecosystemPlugin'),
-            component: '@/pages/EcosystemPlugin',
-            access: 'canAdmin',
-          },
-          {
-            path: '/ecosystem/template',
-            name: getRouteLabel('PC.Routes.ecosystemTemplate'),
-            component: '@/pages/EcosystemTemplate',
-            access: 'canAdmin',
-          },
-          {
-            path: '/ecosystem/mcp',
-            name: 'MCP',
-            component: '@/pages/EcosystemMcp',
-            access: 'canAdmin',
-          },
-          {
-            path: '/ecosystem',
-            redirect: '/ecosystem/mcp',
           },
         ],
       },
@@ -570,7 +569,7 @@ const routes = [
     layout: false,
   },
   {
-    path: '/space/:spaceId/conversation-agent',
+    path: '/space/:spaceId/agent-dev',
     component: '@/pages/ConversationAgent',
     wrappers: ['@/wrappers/authWithLoading'],
     layout: false,
@@ -678,6 +677,11 @@ const routes = [
   {
     path: '/examples/agent-intervention-demo',
     component: '@/examples/AgentInterventionDemo',
+    layout: false,
+  },
+  {
+    path: '/examples/voice-input-demo',
+    component: '@/examples/VoiceInputDemo',
     layout: false,
   },
 ];

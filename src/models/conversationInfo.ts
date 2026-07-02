@@ -4,16 +4,17 @@ import {
   processInterventionSsePatch,
   useAgentInterventionHandlers,
 } from '@/components/business-component/AgentIntervention';
+import { reconcileAcpPermissionStatusesInMessageList } from '@/components/business-component/AgentIntervention/utils/reconcileAcpPermissionStatus';
+import { reconcileFinalMessageState } from '@/components/business-component/AgentIntervention/utils/reconcileFinalMessageState';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
   CONVERSATION_CONNECTION_URL,
   MESSAGE_PAGE_SIZE,
 } from '@/constants/common.constants';
+import { EVENT_TYPE } from '@/constants/event.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
-import {
-  isSessionStreamBusy,
-  useExecutingTaskStatusPoll,
-} from '@/hooks/useExecutingTaskStatusPoll';
+import { isSessionStreamBusy } from '@/hooks/useExecutingTaskStatusPoll';
+import { useResumeStreamHandlers } from '@/hooks/useResumeStreamHandlers';
 import { getCustomBlock } from '@/plugins/ds-markdown-process';
 import {
   apiAgentConversation,
@@ -37,6 +38,7 @@ import {
   HideDesktopEnum,
   MessageModeEnum,
   MessageTypeEnum,
+  TaskStatus,
 } from '@/types/enums/agent';
 import {
   CreateUpdateModeEnum,
@@ -84,6 +86,7 @@ import {
   createSyncConversationTaskStatus,
   subscribeChatFinishedTaskSync,
 } from '@/utils/conversationTaskStatusSync';
+import eventBus from '@/utils/eventBus';
 import { createSSEConnection } from '@/utils/fetchEventSourceConversationInfo';
 import {
   perfTracker,
@@ -413,6 +416,9 @@ export default () => {
     closePreviewView();
     // 清空文件树数据
     setFileTreeData([]);
+    // 清除任务智能体待选文件，避免空文件树 + 残留 fileId 触发无限刷新
+    setTaskAgentSelectedFileId('');
+    setTaskAgentSelectTrigger(0);
     // 设置视图模式为预览
     setViewMode('preview');
     // 更新 ref 值
@@ -425,23 +431,25 @@ export default () => {
 
   // 打开预览视图
   const openPreviewView = useCallback(
-    async (cId: number) => {
+    async (cId: number, options?: { forceRefresh?: boolean }) => {
       // 停止保活
       stopKeepalivePodPolling();
 
       // 检查是否需要刷新文件列表
       // 只有在模式发生变化（从 desktop 切换到 preview）或首次打开文件树时才刷新
       const needRefresh =
-        viewModeRef.current !== 'preview' || !isFileTreeVisibleRef.current;
+        options?.forceRefresh ||
+        viewModeRef.current !== 'preview' ||
+        !isFileTreeVisibleRef.current;
 
       // 打开预览视图或远程桌面视图时修改状态值
       openPreviewChangeState('preview');
       // 只在需要时触发文件列表刷新事件
       if (needRefresh) {
-        handleRefreshFileList(cId);
+        await refreshFileListImmediately(cId);
       }
     },
-    [handleRefreshFileList],
+    [refreshFileListImmediately, openPreviewChangeState],
   );
 
   // 滚动到底部
@@ -535,6 +543,13 @@ export default () => {
             topic: result.data?.topic,
           });
 
+          if (!isAppSidebarMode) {
+            eventBus.emit(EVENT_TYPE.RefreshConversationList, {
+              conversationId: params.conversationId,
+              reason: 'topic-updated',
+            });
+          }
+
           // 如果是应用智能体模式，则同步更新当前智能体的会话记录
           if (isAppSidebarMode) {
             // 如果是会话聊天页（chat页），同步更新会话记录
@@ -608,15 +623,6 @@ export default () => {
     syncConversationTaskStatus,
   ]);
 
-  // 流式已结束但 taskStatus 仍为 EXECUTING 时轮询同步（ChatFinished 遗漏 / 后端延迟）
-  useExecutingTaskStatusPoll({
-    conversationId: conversationInfo?.id,
-    taskStatus: conversationInfo?.taskStatus,
-    messageList,
-    onSync: syncConversationTaskStatus,
-    enabled: conversationInfo?.agent?.type === AgentTypeEnum.TaskAgent,
-  });
-
   // 设置所有的详细信息
   const setChatProcessingList = (messageList: MessageInfo[]) => {
     const list: any[] = [];
@@ -624,11 +630,13 @@ export default () => {
       .filter((item) => item.role === AssistantRoleEnum.ASSISTANT)
       .forEach((item) => {
         const componentExecutedList = item?.componentExecutedList || [];
-        // 补充执行ID
-        const _list = componentExecutedList.map((item: any) => ({
-          ...item,
-          executeId: item.result.executeId,
-        }));
+        // 补充执行ID，过滤掉 result 为空或无 executeId 的条目（如 SandboxStart 类型）
+        const _list = componentExecutedList
+          .filter((item: any) => item?.result?.executeId)
+          .map((item: any) => ({
+            ...item,
+            executeId: item.result.executeId,
+          }));
         list.push(..._list);
       });
 
@@ -748,6 +756,7 @@ export default () => {
       if (len) {
         setMessageList(() => {
           checkConversationActive(_messageList);
+          messageListRef.current = _messageList;
           return _messageList;
         });
         // 最后一条消息为"问答"时，获取问题建议
@@ -861,11 +870,14 @@ export default () => {
       const interventionPatch = processInterventionSsePatch(
         res,
         currentMessage,
+        list,
       );
       if (interventionPatch) {
         list.splice(index, arraySpliceAction, interventionPatch);
-        checkConversationActive(list);
-        return list;
+        const reconciledList =
+          reconcileAcpPermissionStatusesInMessageList(list);
+        checkConversationActive(reconciledList);
+        return reconciledList;
       }
 
       // 更新UI状态...
@@ -1065,7 +1077,7 @@ export default () => {
             conversationInfoRef.current?.agent?.type === AgentTypeEnum.TaskAgent
           ) {
             // 刷新文件树
-            await handleRefreshFileList(params.conversationId);
+            await refreshFileListImmediately(params.conversationId);
 
             // 同步后台任务状态，确保「智能体正在执行，请稍等」能正确展示/结束
             void syncConversationTaskStatus(params.conversationId);
@@ -1110,7 +1122,7 @@ export default () => {
         }
 
         newMessage = {
-          ...currentMessage,
+          ...reconcileFinalMessageState(currentMessage, data),
           status: MessageStatusEnum.Complete,
           finalResult: data,
           requestId: res.requestId,
@@ -1151,10 +1163,18 @@ export default () => {
         list.splice(index, arraySpliceAction, newMessage as MessageInfo);
       }
 
-      // 检查会话状态
-      checkConversationActive(list);
+      const reconciledList = reconcileAcpPermissionStatusesInMessageList(list);
 
-      return list;
+      const latestProcessingList = reconciledList.flatMap((message) =>
+        Array.isArray(message.processingList) ? message.processingList : [],
+      );
+      handleChatProcessingList(latestProcessingList);
+
+      // 检查会话状态
+      checkConversationActive(reconciledList);
+      messageListRef.current = reconciledList;
+
+      return reconciledList;
     });
   };
 
@@ -1248,8 +1268,17 @@ export default () => {
               // cleanupPendingInteractions(currentMessage);
             }
 
+            const latestProcessingList = copyList.flatMap(
+              (message: MessageInfo) =>
+                Array.isArray(message.processingList)
+                  ? message.processingList
+                  : [],
+            );
+            handleChatProcessingList(latestProcessingList);
+
             // 再次调用 checkConversationActive 确保状态同步
             checkConversationActive(copyList);
+            messageListRef.current = copyList;
             return copyList;
           } catch (error) {
             console.error('[onClose] ERROR:', error);
@@ -1267,6 +1296,13 @@ export default () => {
 
         // 主动关闭连接时，禁用会话
         disabledConversationActive();
+
+        if (isSync && !isAppSidebarMode && params.conversationId) {
+          eventBus.emit(EVENT_TYPE.RefreshConversationList, {
+            conversationId: params.conversationId,
+            reason: 'stream-closed',
+          });
+        }
 
         perfLifecycle.onStreamEnd();
         perfLifecycle.onCloseRenderComplete();
@@ -1296,7 +1332,12 @@ export default () => {
         // 明确终止：打破「发送后 3s 保活」，确保活跃态能立即落 false
         lastSendAtRef.current = 0;
         setMessageList(() => {
+          const latestProcessingList = list.flatMap((message) =>
+            Array.isArray(message.processingList) ? message.processingList : [],
+          );
+          handleChatProcessingList(latestProcessingList);
           disabledConversationActive();
+          messageListRef.current = list;
           return list;
         });
         perfLifecycle.onStreamEnd('error');
@@ -1304,8 +1345,25 @@ export default () => {
     });
   };
 
+  // ===== 会话流式恢复(sub)：刷新页面 / 新开标签时，订阅 EXECUTING 会话的输出流 =====
+  // 逻辑收敛到共享 hook（与 conversationAgent model 复用同一份实现，避免双份维护漂移）
+  // 重置会被 handleChangeMessageList 写入的流式状态：恢复流开/关时调用，避免残留 messageIdRef 误插重复行
+  const resetResumeMessageState = useCallback(() => {
+    messageIdRef.current = '';
+  }, []);
+  const { resumeConversationStream, abortResumeStream } =
+    useResumeStreamHandlers({
+      setMessageList,
+      handleChangeMessageList,
+      messageViewRef,
+      allowAutoScrollRef,
+      resetResumeMessageState,
+    });
+
   // 清除副作用
   const handleClearSideEffect = () => {
+    // 中断会话流式恢复(sub)连接（hook 内部同时重置占位记忆），避免离开页面后残留
+    abortResumeStream();
     // 重置消息ID
     messageIdRef.current = '';
     // 重置问题建议列表
@@ -1385,6 +1443,12 @@ export default () => {
     // 消除"发送后会话开始状态"的空窗期（保证队列入队判定及时、停止按钮立即显示）。
     setIsConversationActive(true);
     lastSendAtRef.current = Date.now(); // 触发"发送后保活"，3s 内拒绝置 false
+    if (isSync && !isAppSidebarMode && id) {
+      eventBus.emit(EVENT_TYPE.UpdateConversationListTaskStatus, {
+        conversationId: id,
+        taskStatus: TaskStatus.EXECUTING,
+      });
+    }
 
     // 附件文件
     const attachments: AttachmentFile[] =
@@ -1538,6 +1602,9 @@ export default () => {
     isConversationActive,
     checkConversationActive,
     disabledConversationActive,
+    // 会话流式恢复(sub)
+    resumeConversationStream,
+    abortResumeStream,
     setCurrentConversationRequestId,
     getCurrentConversationRequestId,
     getCurrentConversationId,

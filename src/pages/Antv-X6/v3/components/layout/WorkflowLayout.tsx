@@ -5,17 +5,19 @@ import OtherOperations from '@/components/OtherAction';
 import PublishComponentModal from '@/components/PublishComponentModal';
 import TestRun from '@/components/TestRun';
 import VersionHistory from '@/components/VersionHistory';
-import { useFlowKind } from '@/contexts/FlowKindContext';
+import { resolveAgentFlowCreatedModalTabs } from '@/pages/Antv-X6/v3/agentFlow/createdPicker';
+import { runOrDeferHitlFormGraphSync } from '@/pages/Antv-X6/v3/agentFlow/forms/hitlFormImeGuard';
 import { testRunList } from '@/pages/Antv-X6/v3/constants/node.constants';
+import { AGENTFLOW_UI_CONFIG } from '@/pages/Antv-X6/v3/flowKind/flowKindConfig';
+import {
+  useAgentFlowKind,
+  useIsAgentFlow,
+} from '@/pages/Antv-X6/v3/flowKind/useFlowKind';
 import {
   AgentAddComponentStatusEnum,
   AgentComponentTypeEnum,
 } from '@/types/enums/agent';
-import {
-  CreateUpdateModeEnum,
-  FlowKindEnum,
-  NodeTypeEnum,
-} from '@/types/enums/common';
+import { CreateUpdateModeEnum, NodeTypeEnum } from '@/types/enums/common';
 import { CreatedNodeItem, DefaultObjectType } from '@/types/interfaces/common';
 import {
   ChildNode,
@@ -28,7 +30,7 @@ import { TestRunParams } from '@/types/interfaces/node';
 import { ErrorParams } from '@/types/interfaces/workflow';
 import { LoadingOutlined } from '@ant-design/icons';
 import { Form, FormInstance, Spin } from 'antd';
-import React, { MutableRefObject } from 'react';
+import React, { MutableRefObject, useCallback, useMemo } from 'react';
 import VersionAction from '../../../components/VersionAction';
 import { clearPendingNodeCreateSession } from '../../utils/nodeCreateSession';
 import { returnBackgroundColor, returnImg } from '../../utils/workflowV3';
@@ -71,6 +73,9 @@ export interface WorkflowLayoutProps {
   changeZoom: (val: number) => void;
   createNodeByPortOrEdge: (
     config: CreateNodeByPortOrEdgeProps,
+  ) => Promise<void>;
+  insertNodeBetween?: (
+    config: import('@/types/interfaces/graph').InsertNodeBetweenParams,
   ) => Promise<void>;
   handleSaveNode: (data: ChildNode, payload: Partial<ChildNode>) => void;
   handleClickBlank: () => void;
@@ -164,6 +169,7 @@ const WorkflowLayout: React.FC<WorkflowLayoutProps> = ({
   copyNode,
   changeZoom,
   createNodeByPortOrEdge,
+  insertNodeBetween,
   handleSaveNode,
   handleClickBlank,
   handleInitLoading,
@@ -207,8 +213,33 @@ const WorkflowLayout: React.FC<WorkflowLayoutProps> = ({
   flowControlModel,
   onFlowControlModelChange,
 }) => {
-  const flowKind = useFlowKind();
-  const isAgentFlow = flowKind === FlowKindEnum.AgentFlow;
+  const handleFormValuesChange = useCallback(
+    (changedValues: Record<string, unknown>) => {
+      runOrDeferHitlFormGraphSync(() => {
+        throttledHandleGraphUpdate(changedValues, form.getFieldsValue(true));
+      });
+    },
+    [form, throttledHandleGraphUpdate],
+  );
+  const isAgentFlow = useIsAgentFlow();
+  const agentFlowKind = useAgentFlowKind();
+
+  /** AgentFlow 添加智能体/工作流：Created 仅展示对应单一 Tab */
+  const createdModalTabs = useMemo(
+    () =>
+      resolveAgentFlowCreatedModalTabs(
+        isAgentFlow,
+        createdItem,
+        workflowCreatedTabs,
+      ),
+    [isAgentFlow, createdItem, workflowCreatedTabs],
+  );
+
+  const createdIsSpaceOnly =
+    isAgentFlow && createdItem === AgentComponentTypeEnum.Agent;
+
+  const createdIsAgentFlowAgentPicker =
+    isAgentFlow && createdItem === AgentComponentTypeEnum.Agent;
 
   return (
     <div id="container">
@@ -253,11 +284,12 @@ const WorkflowLayout: React.FC<WorkflowLayoutProps> = ({
           copyNode={copyNode}
           changeZoom={changeZoom}
           createNodeByPortOrEdge={createNodeByPortOrEdge}
+          insertNodeBetween={insertNodeBetween}
           onSaveNode={handleSaveNode}
           onClickBlank={handleClickBlank}
           onInit={handleInitLoading}
           onRefresh={handleRefreshGraph}
-          flowKind={isAgentFlow ? flowKind : undefined}
+          flowKind={agentFlowKind}
         />
       </Spin>
 
@@ -272,6 +304,10 @@ const WorkflowLayout: React.FC<WorkflowLayoutProps> = ({
 
       <FoldWrap
         className="fold-wrap-style"
+        // AgentFlow 画布无顶部 Header（由 EditAgent 的 AgentHeader 提供），
+        // 面板无需为 56px Header 预留 top；用内联样式覆盖，与 bottom:12 对称，
+        // 且不依赖 LESS 重新编译（HMR 对内联样式可靠）。
+        style={isAgentFlow ? { top: 12 } : undefined}
         lineMargin
         title={foldWrapItem.name}
         visible={visible}
@@ -285,7 +321,7 @@ const WorkflowLayout: React.FC<WorkflowLayoutProps> = ({
         otherAction={
           <OtherOperations
             onChange={handleOperationsChange}
-            testRun={testRunList.includes(foldWrapItem.type)}
+            testRun={!isAgentFlow && testRunList.includes(foldWrapItem.type)}
             nodeType={foldWrapItem.type}
             action={
               foldWrapItem.type !== NodeTypeEnum.Start &&
@@ -303,10 +339,7 @@ const WorkflowLayout: React.FC<WorkflowLayoutProps> = ({
             key={`${foldWrapItem.type}-${foldWrapItem.id}-form`}
             initialValues={foldWrapItem.nodeConfig}
             clearOnDestroy={true}
-            onValuesChange={(values) => {
-              // 使用节流处理，确保最后一次调用必须触发更新
-              throttledHandleGraphUpdate(values, form.getFieldsValue(true));
-            }}
+            onValuesChange={handleFormValuesChange}
           >
             <NodePanelDrawer
               params={foldWrapItem}
@@ -320,7 +353,10 @@ const WorkflowLayout: React.FC<WorkflowLayoutProps> = ({
         checkTag={createdItem}
         onAdded={onAdded}
         open={open}
-        tabs={workflowCreatedTabs}
+        tabs={createdModalTabs}
+        isSpaceOnly={createdIsSpaceOnly}
+        isAgentFlowAgentPicker={createdIsAgentFlowAgentPicker}
+        modalZIndex={isAgentFlow ? AGENTFLOW_UI_CONFIG.modalZIndex : undefined}
         addComponents={[
           {
             type: AgentComponentTypeEnum.Workflow,

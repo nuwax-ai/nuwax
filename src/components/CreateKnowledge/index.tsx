@@ -1,7 +1,9 @@
 import knowledgeIcon from '@/assets/images/knowledge_image.png';
+import GuardedFormModal, {
+  GuardedFormModalForm,
+} from '@/components/business-component/GuardedFormModal';
 import Created from '@/components/Created';
 import SkillListItem from '@/components/CreateKnowledge/SkillListItem';
-import CustomFormModal from '@/components/CustomFormModal';
 import OverrideTextArea from '@/components/OverrideTextArea';
 import UploadAvatar from '@/components/UploadAvatar';
 import { CREATED_TABS } from '@/constants/common.constants';
@@ -32,6 +34,7 @@ import type {
 } from '@/types/interfaces/knowledge';
 import { ModelConfigInfo } from '@/types/interfaces/model';
 import { customizeRequiredMark } from '@/utils/form';
+import { resolveCreateIcon } from '@/utils/resolveCreateIcon';
 import { Form, FormProps, Input, message, Select } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
@@ -165,27 +168,42 @@ const CreateKnowledge: React.FC<CreateKnowledgeProps> = ({
     }
   }, [spaceId, open, knowledgeInfo]);
 
-  const onFinish: FormProps<KnowledgeBaseInfo>['onFinish'] = (values) => {
-    const params: any = {
-      spaceId,
-      name: values.name,
-      description: values.description,
-      embeddingModelId: values.embeddingModelId,
-      icon: imageUrl,
-      dataType: resourceFormat,
-    };
-    if (dataParsingMethod === 'workflow') {
-      params.workflowId = dataParsingMethodItem?.id;
-    }
-
+  const onFinish: FormProps<KnowledgeBaseInfo>['onFinish'] = async (values) => {
     setLoading(true);
-    if (mode === CreateUpdateModeEnum.Create) {
-      run(params);
-    } else {
-      runUpdate({
-        id: knowledgeInfo?.id,
-        ...params,
-      });
+    try {
+      let icon = imageUrl;
+      let description = values.description;
+      if (mode === CreateUpdateModeEnum.Create) {
+        const resolved = await resolveCreateIcon({
+          imageUrl,
+          name: values.name,
+          description: values.description,
+        });
+        icon = resolved.icon;
+        description = resolved.description ?? values.description;
+      }
+      const params: any = {
+        spaceId,
+        name: values.name,
+        description,
+        embeddingModelId: values.embeddingModelId,
+        icon,
+        dataType: resourceFormat,
+      };
+      if (dataParsingMethod === 'workflow') {
+        params.workflowId = dataParsingMethodItem?.id;
+      }
+
+      if (mode === CreateUpdateModeEnum.Create) {
+        run(params);
+      } else {
+        runUpdate({
+          id: knowledgeInfo?.id,
+          ...params,
+        });
+      }
+    } catch {
+      setLoading(false);
     }
   };
 
@@ -245,7 +263,7 @@ const CreateKnowledge: React.FC<CreateKnowledgeProps> = ({
 
   return (
     <>
-      <CustomFormModal
+      <GuardedFormModal
         form={form}
         title={
           mode === CreateUpdateModeEnum.Create
@@ -257,7 +275,7 @@ const CreateKnowledge: React.FC<CreateKnowledgeProps> = ({
         onCancel={onCancel}
         onConfirm={handlerSubmit}
       >
-        <Form
+        <GuardedFormModalForm
           form={form}
           className={cx('mt-16')}
           requiredMark={customizeRequiredMark}
@@ -371,7 +389,7 @@ const CreateKnowledge: React.FC<CreateKnowledgeProps> = ({
               svgIconName="icons-workspace-knowledge"
             />
           </Form.Item>
-        </Form>
+        </GuardedFormModalForm>
         {/*添加插件、工作流、知识库、数据库弹窗*/}
         <Created
           open={show}
@@ -383,7 +401,7 @@ const CreateKnowledge: React.FC<CreateKnowledgeProps> = ({
             (item) => item.key === AgentComponentTypeEnum.Workflow,
           )}
         />
-      </CustomFormModal>
+      </GuardedFormModal>
     </>
   );
 };

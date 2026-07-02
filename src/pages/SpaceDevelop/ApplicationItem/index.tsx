@@ -44,11 +44,30 @@ const resolveAgentSubType = (
   if (agentConfigInfo.type === AgentTypeEnum.AgentFlow) {
     return AgentSubTypeEnum.Flow;
   }
+  if (agentConfigInfo.type === AgentTypeEnum.AgentGroup) {
+    return AgentSubTypeEnum.Group;
+  }
   if (agentConfigInfo.type === AgentTypeEnum.ChatBot) {
     return AgentSubTypeEnum.ChatBot;
   }
   return undefined;
 };
+
+/** Flow / Group / Custom 子类型不展示的操作项 */
+const RESTRICTED_SUB_TYPE_HIDDEN_ACTIONS = new Set<ApplicationMoreActionEnum>([
+  ApplicationMoreActionEnum.Copy_To_Space,
+  ApplicationMoreActionEnum.Move,
+  ApplicationMoreActionEnum.API_Key,
+  ApplicationMoreActionEnum.Export_Config,
+  ApplicationMoreActionEnum.Independent_Session,
+]);
+
+/** 不展示受限操作项的子类型 */
+const RESTRICTED_ACTION_SUB_TYPES = new Set<AgentSubTypeEnum>([
+  AgentSubTypeEnum.Flow,
+  AgentSubTypeEnum.Group,
+  AgentSubTypeEnum.Custom,
+]);
 
 /**
  * 单个应用项
@@ -65,8 +84,19 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({
 
   // 更多操作列表
   const actionList = useMemo(() => {
+    const subType = resolveAgentSubType(agentConfigInfo);
+    const shouldHideRestrictedActions =
+      !!subType && RESTRICTED_ACTION_SUB_TYPES.has(subType);
+
     const list: CustomPopoverItem[] = APPLICATION_MORE_ACTION.filter((item) => {
       const type = item.type as ApplicationMoreActionEnum;
+
+      if (
+        shouldHideRestrictedActions &&
+        RESTRICTED_SUB_TYPE_HIDDEN_ACTIONS.has(type)
+      ) {
+        return false;
+      }
 
       switch (type) {
         // 复制到空间

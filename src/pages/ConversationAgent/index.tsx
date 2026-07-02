@@ -7,6 +7,7 @@ import {
 import { type AgentMode } from '@/components/business-component/AgentIntervention';
 import FileTreeGitSourcePanel, {
   useSourceControl,
+  type ChangeListSection,
   type SelectedChangeFile,
 } from '@/components/business-component/FileTreeGitSourcePanel';
 import { useFileTreePreviewView } from '@/components/business-component/FileTreePreviewPanel/hooks/useFileTreePreviewView';
@@ -30,6 +31,7 @@ import { dict } from '@/services/i18nRuntime';
 import { apiModelList } from '@/services/modelConfig';
 import {
   apiDownloadAllFiles,
+  apiImportProject,
   apiUpdateStaticFile,
   apiUploadFiles,
 } from '@/services/vncDesktop';
@@ -37,6 +39,7 @@ import {
   AgentComponentTypeEnum,
   HideDesktopEnum,
   MessageTypeEnum,
+  TaskStatus,
 } from '@/types/enums/agent';
 import { CreateUpdateModeEnum, PublishStatusEnum } from '@/types/enums/common';
 import { ModelTypeEnum } from '@/types/enums/modelConfig';
@@ -87,6 +90,7 @@ import {
 import PreviewTabBar from './ConversationAgentFilePreview/PreviewTabBar';
 import ConversationAgentHeader from './ConversationAgentHeader';
 import { useConversationAgentDevLogs } from './hooks/useConversationAgentDevLogs';
+import ImportProjectModal from './ImportProjectModal';
 import styles from './index.less';
 import { apiInstallAgentProjectDependencies } from './services/agent-dev';
 
@@ -159,6 +163,9 @@ const ConversationAgent: React.FC = () => {
   /** 递增后触发底部终端全屏展开（开发工具「终端」入口） */
   const [devConsoleExpandSignal, setDevConsoleExpandSignal] =
     useState<number>(0);
+  /** 递增后折叠底部终端（仅保留头部，不改变 ensure/连接状态） */
+  const [devConsoleCollapseSignal, setDevConsoleCollapseSignal] =
+    useState<number>(0);
   /** 底部控制台当前激活 Tab（用于控制日志轮询） */
   const [devConsoleActiveTab, setDevConsoleActiveTab] = useState<
     'terminal' | 'logs'
@@ -171,11 +178,16 @@ const ConversationAgent: React.FC = () => {
   /** 源代码管理中选中的变更文件（含区块） */
   const [selectedChangeFile, setSelectedChangeFile] =
     useState<SelectedChangeFile | null>(null);
+  /** 导入项目弹窗 */
+  const [openImportProject, setOpenImportProject] = useState<boolean>(false);
+  /** 是否正在导入项目 */
+  const [isImportingProject, setIsImportingProject] = useState<boolean>(false);
   /** 标签选择面板是否展开 */
   /** 预览标签页操作 ref（供 fileViewProviderProps 回调使用） */
   const previewTabsRef = useRef<ReturnType<typeof usePreviewTabs> | null>(null);
   /** 刷新 Git 变更列表（delete 等场景需在 fileView 初始化后调用） */
   const refreshGitListRef = useRef<(() => Promise<void>) | null>(null);
+  const isVersionControlEnabledRef = useRef(false);
   /** 刷新文件树，并在存在当前选中文件时同步刷新文件内容 */
   const refreshFileTreeAndSelectedFileRef = useRef<
     (() => Promise<void>) | null
@@ -233,6 +245,7 @@ const ConversationAgent: React.FC = () => {
     resetInit,
     restartVncPod,
     restartAgent,
+    isConversationActive,
   } = useModel('conversationInfo');
 
   /** 关闭远程智能体桌面（切换标签/文件等预览操作时调用） */
@@ -251,14 +264,33 @@ const ConversationAgent: React.FC = () => {
     resetInit: resetAgentConversation,
   } = useModel('conversationAgent');
 
+  /** 是否开启版本管控（会话信息加载完成且 enableVersionControl 为 1） */
+  const enableVersionControl = conversationInfo?.agent?.enableVersionControl;
+
+  const isVersionControlEnabled = useMemo(
+    () =>
+      !!conversationInfo && isAgentVersionControlEnabled(enableVersionControl),
+    [conversationInfo, enableVersionControl],
+  );
+
   /** 常驻工作区工具页签 */
   const workspaceToolIds = useMemo((): PreviewToolId[] => {
     const tools: PreviewToolId[] = ['preview'];
-    if (isAgentVersionControlEnabled(agentConfigInfo?.enableVersionControl)) {
+    if (isVersionControlEnabled) {
       tools.push('version-control');
     }
     return tools;
-  }, [agentConfigInfo?.enableVersionControl]);
+  }, [isVersionControlEnabled]);
+
+  isVersionControlEnabledRef.current = isVersionControlEnabled;
+
+  /** 仅在开启版本管控时拉取 git status */
+  const refreshGitListIfEnabled = useCallback(() => {
+    if (!isVersionControlEnabledRef.current) {
+      return;
+    }
+    void refreshGitListRef.current?.();
+  }, []);
 
   /** 新窗口打开智能体高级设置（EditAgent 页面） */
   const handleOpenAdvancedSettings = useCallback(() => {
@@ -427,10 +459,7 @@ const ConversationAgent: React.FC = () => {
               isSync: false,
               skillIds: state.skillIds,
               modelId: state.modelId,
-              agentMode:
-                (state.agentMode as AgentMode) ||
-                (localStorage.getItem('nuwax_agent_mode_cache') as AgentMode) ||
-                'yolo',
+              agentMode: (state.agentMode as AgentMode) || 'yolo',
               data,
             });
           }
@@ -459,12 +488,53 @@ const ConversationAgent: React.FC = () => {
   }, [agentIdFromQuery]);
 
   /** 安装项目依赖 */
-  const { run: runInstallProject } = useRequest(
+  const { runAsync: runInstallProject } = useRequest(
     apiInstallAgentProjectDependencies,
     {
       manual: true,
       debounceWait: 300,
     },
+  );
+
+  /** 打开导入项目弹窗 */
+  const handleImportProject = useCallback(async () => {
+    if (!queryConversationId) {
+      return;
+    }
+    setOpenImportProject(true);
+  }, [queryConversationId]);
+
+  /** 确认导入项目：上传 zip、刷新文件树与 Git 列表、安装依赖 */
+  const handleImportProjectConfirm = useCallback(
+    async (file: File) => {
+      if (!queryConversationId) {
+        return;
+      }
+
+      try {
+        setIsImportingProject(true);
+        const { code } = await apiImportProject({
+          cId: queryConversationId,
+          file,
+        });
+
+        if (code === SUCCESS_CODE) {
+          message.success(dict('PC.Pages.AppDevIndex.importProjectSuccess'));
+          setOpenImportProject(false);
+          void refreshFileListImmediately(queryConversationId);
+          await runInstallProject({
+            programmingLanguage: 'typescript',
+            cId: queryConversationId,
+          });
+          void refreshGitListIfEnabled();
+        }
+      } catch (error) {
+        console.error('[ConversationAgent] import project failed', error);
+      } finally {
+        setIsImportingProject(false);
+      }
+    },
+    [queryConversationId, refreshFileListImmediately, refreshGitListIfEnabled],
   );
 
   // 如果 URL 中有 conversationId，通过状态管理器的方法查询当前会话
@@ -520,14 +590,28 @@ const ConversationAgent: React.FC = () => {
         if (!data.modelComponentConfig) {
           data.modelComponentConfig = {} as any;
         }
-        data.modelComponentConfig.targetId = (location.state as any).modelId;
+        const stateModelId = (location.state as any).modelId;
+        data.modelComponentConfig.targetId = stateModelId;
 
         // 尝试从列表中回显名称
         const matchedModel = originalModelConfigList.find(
-          (m) => m.id === (location.state as any).modelId,
+          (m) => m.id === stateModelId,
         );
         if (matchedModel) {
           data.modelComponentConfig.name = matchedModel.name;
+        }
+
+        // 自动保存绑定模型到后端
+        const componentId = data.modelComponentConfig.id;
+        const bindConfig = data.modelComponentConfig.bindConfig;
+        if (componentId) {
+          void apiAgentComponentModelUpdate({
+            id: componentId,
+            targetId: stateModelId,
+            bindConfig,
+          }).catch((err) => {
+            console.error('Failed to auto save model config to backend:', err);
+          });
         }
       }
       setAgentConfigInfo(data);
@@ -558,8 +642,10 @@ const ConversationAgent: React.FC = () => {
   useEffect(() => {
     if (!agentId) {
       setLoadingAgentConfigInfo(false);
+      setAgentConfigInfo(undefined);
       return;
     }
+    setAgentConfigInfo(undefined);
     setLoadingAgentConfigInfo(true);
     runAgentConfigInfo(agentId);
   }, [agentId, runAgentConfigInfo]);
@@ -568,6 +654,23 @@ const ConversationAgent: React.FC = () => {
   useEffect(() => {
     addBaseTarget();
   }, [location]);
+
+  // 任务结果文件点击自定义拦截处理器：跳转至 EditAgent 并携带 file 参数
+  const handleTaskResultClick = useCallback(
+    (fileId: string) => {
+      if (spaceId && agentId) {
+        window.open(
+          `/space/${spaceId}/agent/${agentId}?file=${encodeURIComponent(
+            fileId,
+          )}`,
+          '_blank',
+        );
+        return true; // 拦截默认定位逻辑
+      }
+      return false;
+    },
+    [spaceId, agentId],
+  );
 
   // ==================== 事件处理函数 ====================
 
@@ -590,7 +693,7 @@ const ConversationAgent: React.FC = () => {
     }
 
     // 刷新 Git 源代码管理状态列表
-    void refreshGitListRef.current?.();
+    void refreshGitListIfEnabled();
 
     // 刷新智能体编排等信息（重新拉取完整配置）
     if (agentId) {
@@ -601,6 +704,7 @@ const ConversationAgent: React.FC = () => {
     refreshFileListImmediately,
     agentId,
     runAgentConfigInfo,
+    refreshGitListIfEnabled,
   ]);
 
   /**
@@ -670,7 +774,7 @@ const ConversationAgent: React.FC = () => {
     });
     if (code === SUCCESS_CODE) {
       await handleRefreshFileList(queryConversationId);
-      void refreshGitListRef.current?.();
+      void refreshGitListIfEnabled();
     }
     return code === SUCCESS_CODE;
   };
@@ -754,7 +858,7 @@ const ConversationAgent: React.FC = () => {
     });
     if (code === SUCCESS_CODE) {
       await handleRefreshFileList(queryConversationId);
-      void refreshGitListRef.current?.();
+      void refreshGitListIfEnabled();
     }
     return code === SUCCESS_CODE;
   };
@@ -814,7 +918,7 @@ const ConversationAgent: React.FC = () => {
             files: updatedFilesList as UpdateFileInfo[],
           });
           if (code === SUCCESS_CODE) {
-            void refreshGitListRef.current?.();
+            void refreshGitListIfEnabled();
           }
           return code === SUCCESS_CODE;
         },
@@ -856,16 +960,32 @@ const ConversationAgent: React.FC = () => {
       filePaths,
     });
     await handleRefreshFileList(queryConversationId);
-    void refreshGitListRef.current?.();
+    void refreshGitListIfEnabled();
   };
 
   /**
-   * 切换中间文件树栏显隐（仅由 header 图标控制，不受预览面板状态影响）
-   * 远程桌面打开时：先关闭桌面，再展开文件树与右侧工作区
+   * 切换中间文件树栏显隐（与终端全屏、智能体电脑互斥，仅一个图标 active）
    */
   const handleToggleFileTreeSidebar = useCallback(() => {
+    const isTerminalExpanded =
+      devConsoleLayoutMode === 'expanded' && devConsoleActiveTab === 'terminal';
+
     if (isAgentDesktopOpen) {
-      closeAgentDesktop();
+      setIsAgentDesktopOpen(false);
+      setDevConsoleExpandSignal(0);
+      setCanShowFileView(true);
+      if (queryConversationId) {
+        handleRefreshFileList(queryConversationId);
+        void openPreviewView(queryConversationId);
+      }
+      if (isTerminalExpanded) {
+        setDevConsoleCollapseSignal((n) => n + 1);
+      }
+      return;
+    }
+
+    if (isTerminalExpanded) {
+      setDevConsoleCollapseSignal((n) => n + 1);
       setCanShowFileView(true);
       if (queryConversationId) {
         handleRefreshFileList(queryConversationId);
@@ -881,14 +1001,16 @@ const ConversationAgent: React.FC = () => {
       return nextVisible;
     });
   }, [
-    isAgentDesktopOpen,
-    closeAgentDesktop,
+    devConsoleActiveTab,
+    devConsoleLayoutMode,
     handleRefreshFileList,
+    isAgentDesktopOpen,
+    openPreviewView,
     queryConversationId,
   ]);
 
   /**
-   * 打开 / 切换智能体电脑（与编排页 PreviewAndDebug 行为一致）
+   * 打开 / 切换智能体电脑（与文件树、终端全屏互斥）
    */
   const handleOpenDesktopPanel = useCallback(async () => {
     const convId = queryConversationId;
@@ -900,11 +1022,17 @@ const ConversationAgent: React.FC = () => {
     if (isAgentDesktopOpen) {
       closePreviewView();
       setIsAgentDesktopOpen(false);
+      setDevConsoleExpandSignal(0);
       return;
     }
 
+    // 桌面会卸载底部控制台：重置父级 layout 与信号，避免 remount 后陈旧 collapse 覆盖 expand
+    setDevConsoleLayoutMode('collapsed');
+    setDevConsoleCollapseSignal(0);
+
     await openDesktopView(convId);
     setCanShowFileView(false);
+    setDevConsoleExpandSignal(0);
     setIsAgentDesktopOpen(true);
   }, [
     queryConversationId,
@@ -949,18 +1077,39 @@ const ConversationAgent: React.FC = () => {
     setDevConsoleLayoutResetSignal((n) => n + 1);
   }, []);
 
-  /** 打开底部终端面板：切到终端 Tab 并在右侧内容区全屏展开 */
+  /** 打开 / 收起底部终端全屏（与文件树、智能体电脑互斥；再次点击仅折叠，不影响 ensure/连接） */
   const handleOpenTerminalPanel = useCallback(() => {
-    closeAgentDesktop();
-    setDevConsoleExpandSignal((n) => n + 1);
+    const isTerminalExpanded =
+      devConsoleLayoutMode === 'expanded' && devConsoleActiveTab === 'terminal';
+
+    if (isTerminalExpanded) {
+      setDevConsoleCollapseSignal((n) => n + 1);
+      return;
+    }
+
+    setIsAgentDesktopOpen(false);
     setSelectedChangeFile(null);
     if (queryConversationId) {
-      openPreviewView(queryConversationId);
+      void openPreviewView(queryConversationId);
     }
-  }, [closeAgentDesktop, openPreviewView, queryConversationId]);
+    // 清除陈旧 collapse 信号，避免从智能体电脑切回时 remount 折叠 effect 覆盖 expand
+    setDevConsoleCollapseSignal(0);
+    setDevConsoleExpandSignal((n) => n + 1);
+  }, [
+    devConsoleActiveTab,
+    devConsoleLayoutMode,
+    openPreviewView,
+    queryConversationId,
+  ]);
 
   const isTerminalPanelOpen =
     devConsoleLayoutMode === 'expanded' && devConsoleActiveTab === 'terminal';
+
+  /** 顶部三入口互斥 active：同一时刻仅高亮一个 */
+  const isFileTreeIconActive =
+    canShowFileView && !isTerminalPanelOpen && !isAgentDesktopOpen;
+  const isTerminalIconActive = isTerminalPanelOpen && !isAgentDesktopOpen;
+  const isDesktopIconActive = isAgentDesktopOpen;
 
   // ==================================== 文件视图 & 编排面板 ====================================
   /**
@@ -985,6 +1134,8 @@ const ConversationAgent: React.FC = () => {
           await apiDownloadAllFiles(queryConversationId);
         }
       },
+      onImportProject: handleImportProject,
+      isImportingProject,
       onRestartServer: () => {
         if (queryConversationId) {
           restartVncPod(queryConversationId, finalSelectedComputerId);
@@ -1022,10 +1173,9 @@ const ConversationAgent: React.FC = () => {
       hideDesktop: agentConfigInfo?.hideDesktop, // 是否隐藏桌面预览
       /** 静态文件基础路径，用于文件预览资源加载 */
       staticFileBasePath: `/api/computer/static/${queryConversationId}`,
-      /** 仅通用型智能体且开启版本管理时拉取 Git status */
-      enableGitStatus:
-        agentConfigInfo?.type === AgentTypeEnum.TaskAgent &&
-        isAgentVersionControlEnabled(agentConfigInfo?.enableVersionControl),
+      /** 仅配置加载完成且开启版本管理时拉取 Git status */
+      enableGitStatus: isVersionControlEnabled,
+      enableVersionControl,
       /** 文件树选中文件时，切换右侧面板为文件预览并打开标签 */
       onFileSelectOpenPreview: (fileId?: string) => {
         closeAgentDesktop();
@@ -1067,7 +1217,7 @@ const ConversationAgent: React.FC = () => {
           }
           return current.fileId === fileNode.id ? null : current;
         });
-        void refreshGitListRef.current?.();
+        void refreshGitListIfEnabled();
       },
       /** 刷新文件树后，当前选中文件不存在时关闭对应标签 */
       onSelectedFileMissing: (fileId) => {
@@ -1095,11 +1245,15 @@ const ConversationAgent: React.FC = () => {
     refreshFileListImmediately,
     agentConfigInfo?.type,
     agentConfigInfo?.hideDesktop,
+    enableVersionControl,
+    isVersionControlEnabled,
     openPreviewView,
     resetDevConsoleExpandedLayout,
     closeAgentDesktop,
     restartVncPod,
     restartAgent,
+    handleImportProject,
+    isImportingProject,
   ]);
 
   /** 初始化文件视图 Hook，获取文件树和预览的渲染组件 */
@@ -1286,9 +1440,8 @@ const ConversationAgent: React.FC = () => {
       onAfterDiscardChanges: async () => {
         await fileView.tree.handleRefreshFileList();
       },
-      // 提交成功后清空本地修改并关闭 Tab
+      // 提交成功后刷新 Git 状态，不关闭顶部工作区/文件标签
       onCommitSuccess: async () => {
-        previewTabs.clearTabs();
         await fileView.refreshGitList();
       },
       // 刷新 Git 变更列表（git status + 文件树）
@@ -1298,9 +1451,74 @@ const ConversationAgent: React.FC = () => {
     },
   });
 
+  /** Git status 中 untracked 数组内的文件（走普通文件预览，不走 diff） */
+  const isGitUntrackedFile = useCallback(
+    (fileId: string) =>
+      fileView.changeFiles.some(
+        (item) => item.fileId === fileId && item.unstagedStatus === 'untracked',
+      ),
+    [fileView.changeFiles],
+  );
+
+  /** 源代码管理点击：untracked 走文件预览，其余走 diff */
+  const handleGitDiffFileSelect = useCallback(
+    (fileId: string, section: ChangeListSection) => {
+      if (isGitUntrackedFile(fileId)) {
+        gitSourceControl.handleOpenChangeFile(fileId);
+        return;
+      }
+      gitSourceControl.handleDiffFileSelect(fileId, section);
+    },
+    [isGitUntrackedFile, gitSourceControl],
+  );
+
+  /**
+   * 顶部预览 Tab 切换：diff 标签需重新拉取 Git diff（与源代码管理点击一致）
+   */
+  const handlePreviewTabSelect = useCallback(
+    (tabId: string) => {
+      closeAgentDesktop();
+      if (tabId.startsWith('diff:')) {
+        const fileId = tabId.slice('diff:'.length);
+        if (isGitUntrackedFile(fileId)) {
+          gitSourceControl.handleOpenChangeFile(fileId);
+          return;
+        }
+        const changeFile = fileView.changeFiles.find(
+          (item) => item.fileId === fileId,
+        );
+        const section: ChangeListSection =
+          gitSourceControl.selectedChangeFile?.fileId === fileId
+            ? gitSourceControl.selectedChangeFile.section
+            : changeFile?.unstagedStatus
+            ? 'unstaged'
+            : changeFile?.stagedStatus
+            ? 'staged'
+            : 'unstaged';
+        gitSourceControl.handleDiffFileSelect(fileId, section);
+        return;
+      }
+      previewTabs.selectTab(tabId);
+    },
+    [
+      closeAgentDesktop,
+      fileView.changeFiles,
+      gitSourceControl,
+      isGitUntrackedFile,
+      previewTabs,
+    ],
+  );
+
   // ==================================== 渲染组件元素 ====================================
 
   /** 「预览」页签：调试对话 */
+  const shouldDisablePreviewChatInput = useMemo(
+    () =>
+      isConversationActive ||
+      conversationInfo?.taskStatus === TaskStatus.EXECUTING,
+    [isConversationActive, conversationInfo?.taskStatus],
+  );
+
   const previewDebugChatPanel = useMemo(
     () => (
       <ConversationAgentChatSession
@@ -1309,14 +1527,22 @@ const ConversationAgent: React.FC = () => {
         onAgentConfigInfo={setAgentConfigInfo}
         selectedComputerId={finalSelectedComputerId}
         onChangeSelectedComputerId={setSelectedComputerId}
+        chatInputDisabled={shouldDisablePreviewChatInput}
+        onTaskResultClick={handleTaskResultClick}
       />
     ),
-    [agentId, agentConfigInfo, finalSelectedComputerId],
+    [
+      agentId,
+      agentConfigInfo,
+      finalSelectedComputerId,
+      shouldDisablePreviewChatInput,
+      handleTaskResultClick,
+    ],
   );
 
   /** 「版本控制」页签：Git 提交记录 */
   const versionControlPanel = useMemo(() => {
-    if (!isAgentVersionControlEnabled(agentConfigInfo?.enableVersionControl)) {
+    if (!isVersionControlEnabled) {
       return null;
     }
     return (
@@ -1331,12 +1557,12 @@ const ConversationAgent: React.FC = () => {
             handleRefreshFileList(queryConversationId);
           }
           // 回滚成功后同步刷新 Git 源代码管理状态列表
-          void refreshGitListRef.current?.();
+          void refreshGitListIfEnabled();
         }}
       />
     );
   }, [
-    agentConfigInfo?.enableVersionControl,
+    isVersionControlEnabled,
     queryConversationId,
     fileView.gitBranch,
     handleRefreshFileList,
@@ -1374,10 +1600,7 @@ const ConversationAgent: React.FC = () => {
           // 选中标签 ID
           activeTabId={previewTabs.activeTabId}
           // 选中标签
-          onTabSelect={(tabId) => {
-            closeAgentDesktop();
-            previewTabs.selectTab(tabId);
-          }}
+          onTabSelect={handlePreviewTabSelect}
           // 关闭标签
           onTabClose={previewTabs.closeTab}
           // 关闭其他标签
@@ -1433,6 +1656,7 @@ const ConversationAgent: React.FC = () => {
           {/* 底部终端、开发日志合集面板 */}
           {/** 云端电脑传入 conversationId 以启动容器；个人电脑直接通过 wsUrl 连接终端 */}
           <ConversationBottomConsole
+            // 在ConversationAgent中，conversationId 为 queryConversationId
             conversationId={
               finalSelectedComputerId === '-1' ? queryConversationId : undefined
             }
@@ -1442,6 +1666,7 @@ const ConversationAgent: React.FC = () => {
             wsSubprotocols={[...TTYD_TERMINAL_WS_SUBPROTOCOLS]}
             layoutResetSignal={devConsoleLayoutResetSignal}
             expandSignal={devConsoleExpandSignal}
+            collapseSignal={devConsoleCollapseSignal}
             onLayoutModeChange={setDevConsoleLayoutMode}
             onActiveTabChange={(tab) => {
               setDevConsoleActiveTab(tab);
@@ -1491,12 +1716,12 @@ const ConversationAgent: React.FC = () => {
         onEditAgent={() => setOpenEditAgent(true)}
         onPublish={() => setOpen(true)}
         onOpenAdvancedSettings={handleOpenAdvancedSettings}
-        isFileTreeSidebarVisible={canShowFileView}
+        isFileTreeSidebarVisible={isFileTreeIconActive}
         onToggleFileTreeSidebar={handleToggleFileTreeSidebar}
-        isTerminalPanelOpen={isTerminalPanelOpen}
+        isTerminalPanelOpen={isTerminalIconActive}
         onOpenTerminalPanel={handleOpenTerminalPanel}
         isShowDesktop={isShowDesktop}
-        isAgentDesktopOpen={isAgentDesktopOpen}
+        isAgentDesktopOpen={isDesktopIconActive}
         onOpenDesktopPanel={handleOpenDesktopPanel}
       />
 
@@ -1540,9 +1765,15 @@ const ConversationAgent: React.FC = () => {
                   {/* ConversationAgent 中间面板（公共 FileTreeGitSourcePanel，内部渲染文件树） */}
                   <FileTreeGitSourcePanel
                     className={cx(styles['file-tree-sidebar'], 'w-full')}
-                    enableVersionControl={agentConfigInfo?.enableVersionControl}
+                    showSourceControl={isVersionControlEnabled}
+                    enableVersionControl={enableVersionControl}
                     tree={fileView.tree}
                     treeClassName="w-full h-full"
+                    onImportProject={handleImportProject}
+                    importProjectLabel={dict(
+                      'PC.Pages.AppDevFileTreeContextMenu.importProject',
+                    )}
+                    isImportingProject={isImportingProject}
                     sourceControl={{
                       changeFiles: fileView.changeFiles,
                       selectedChangeFile: gitSourceControl.selectedChangeFile,
@@ -1551,7 +1782,7 @@ const ConversationAgent: React.FC = () => {
                         fileView.preview.isSavingFiles,
                       isRefreshingGitList: fileView.isRefreshingGitList,
                       onRefreshGitList: fileView.refreshGitList,
-                      onDiffFileSelect: gitSourceControl.handleDiffFileSelect,
+                      onDiffFileSelect: handleGitDiffFileSelect,
                       onOpenChangeFile: gitSourceControl.handleOpenChangeFile,
                       onDiscardChanges: gitSourceControl.handleDiscardChange,
                       onStageChanges: gitSourceControl.handleStageChanges,
@@ -1605,6 +1836,13 @@ const ConversationAgent: React.FC = () => {
         open={openEditAgent}
         onCancel={() => setOpenEditAgent(false)}
         onConfirmUpdate={handlerConfirmEditAgent}
+      />
+      {/* 导入项目弹窗 */}
+      <ImportProjectModal
+        open={openImportProject}
+        loading={isImportingProject}
+        onCancel={() => setOpenImportProject(false)}
+        onConfirm={handleImportProjectConfirm}
       />
     </div>
   );

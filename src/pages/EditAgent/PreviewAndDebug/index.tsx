@@ -2,9 +2,9 @@ import { UnifiedChatSession } from '@/components/business-component';
 import { type AgentMode } from '@/components/business-component/AgentIntervention';
 import { EVENT_TYPE } from '@/constants/event.constants';
 import useConversation from '@/hooks/useConversation';
-import { useConversationScrollDetection } from '@/hooks/useConversationScrollDetection';
 import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
+import { useAutoPreviewFile } from '@/pages/Chat/hooks/useAutoPreviewFile';
 import { dict } from '@/services/i18nRuntime';
 import {
   ExpandPageAreaEnum,
@@ -32,7 +32,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { useModel } from 'umi';
+import { useLocation, useModel } from 'umi';
 import styles from './index.less';
 import PreviewAndDebugHeader from './PreviewAndDebugHeader';
 
@@ -46,7 +46,15 @@ interface PreviewAndDebugProps extends PreviewAndDebugHeaderProps {
   onAgentConfigInfo: (info: AgentConfigInfo) => void;
   onOpenPreview?: () => void;
   onOpenTerminalPanel?: () => void;
+  /** 关闭底部终端面板 */
+  onCloseTerminalPanel?: () => void;
+  /** 折叠底部终端面板（保留头部） */
+  onCollapseTerminalPanel?: () => void;
+  /** 底部终端是否处于展开选中态 */
+  isTerminalActive?: boolean;
   onChangeSelectedComputerId?: (id: string) => void;
+  /** 读取右侧文件树面板当前选中的文件 ID（用于打开预览时判断是否展开文件树） */
+  getSelectedPreviewFileId?: () => string;
 }
 
 /**
@@ -60,6 +68,10 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
   onOpenPreview,
   onChangeSelectedComputerId,
   onOpenTerminalPanel,
+  onCloseTerminalPanel,
+  onCollapseTerminalPanel,
+  isTerminalActive,
+  getSelectedPreviewFileId,
 }) => {
   const [form] = Form.useForm();
   // 会话ID
@@ -73,6 +85,14 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
   const [selectedComputerId, setSelectedComputerId] = useState<string>('');
   // 记录用户是否已发送消息（用于锁定电脑选择）
   const [hasUserSentMessage, setHasUserSentMessage] = useState<boolean>(false);
+
+  const location = useLocation();
+  const queryFileParam = useMemo(() => {
+    return new URLSearchParams(location.search).get('file');
+  }, [location.search]);
+
+  const { handleAutoPreviewLastFile } = useAutoPreviewFile();
+  const hasAutoPreviewedRef = useRef(false);
 
   const {
     conversationInfo,
@@ -106,6 +126,10 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     openDesktopView,
     closePreviewView,
     isFileTreeVisible,
+    setIsFileTreePinned,
+    taskAgentSelectedFileId,
+    setTaskAgentSelectedFileId,
+    setTaskAgentSelectTrigger,
     // 加载更多消息相关
     isMoreMessage,
     setIsMoreMessage,
@@ -120,6 +144,10 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     // 其它接口加载状态
     isLoadingOtherInterface,
     isConversationActive,
+    // 会话流式恢复(sub)
+    resumeConversationStream,
+    abortResumeStream,
+    runAsync,
   } = useModel('conversationInfo');
 
   // 获取 chat model 中的页面预览状态
@@ -195,14 +223,6 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     };
   }, [agentConfigInfo]);
 
-  // 使用滚动检测 Hook
-  useConversationScrollDetection(
-    messageViewRef,
-    allowAutoScrollRef,
-    scrollTimeoutRef,
-    setShowScrollBtn,
-  );
-
   useEffect(() => {
     // 初始化选中的组件列表
     initSelectedComponentList(manualComponents);
@@ -216,6 +236,29 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
       // 查询会话
       runQueryConversation(devConversationId);
     }
+  }, [agentConfigInfo?.devConversationId]);
+
+  // 监听会话加载成功，根据参数或 task-result 自动打开文件
+  useEffect(() => {
+    const convId = devConversationIdRef.current;
+    if (convId && messageList?.length > 0 && !hasAutoPreviewedRef.current) {
+      hasAutoPreviewedRef.current = true;
+
+      // 如果 URL 带了 file 参数，直接打开对应文件
+      if (queryFileParam) {
+        openPreviewView(convId);
+        setTaskAgentSelectedFileId(queryFileParam);
+        setTaskAgentSelectTrigger(Date.now());
+      } else {
+        // 否则保持原来逻辑：如果最后一条消息存在 task-result 自动打开
+        handleAutoPreviewLastFile(messageList, convId);
+      }
+    }
+  }, [messageList, queryFileParam]);
+
+  // 切换会话时，重置自动预览的限制状态
+  useEffect(() => {
+    hasAutoPreviewedRef.current = false;
   }, [agentConfigInfo?.devConversationId]);
 
   // 监听会话更新事件，更新会话记录
@@ -353,6 +396,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
    * - 文件树未打开：打开预览视图
    * - 文件树已打开且当前为 preview：再次点击关闭
    * - 文件树已打开且当前为 desktop：切换为 preview
+   * - 打开预览且无已选中文件时，默认展开左侧文件树
    */
   const handleOpenPreviewPanel = () => {
     const convId = devConversationIdRef.current;
@@ -363,18 +407,38 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
       return;
     }
 
+    const openingFileTree = !isFileTreeVisible;
+    const switchingToPreview = isFileTreeVisible && viewMode !== 'preview';
+    const hasSelectedPreviewFile = Boolean(
+      getSelectedPreviewFileId?.() || taskAgentSelectedFileId,
+    );
+
     // 关闭页面预览
     showPagePreview(null);
 
-    if (!isFileTreeVisible) {
-      openPreviewView(convId);
+    // 终端展开中：切换到文件预览，折叠终端但保持文件树
+    if (isFileTreeVisible && viewMode === 'preview' && isTerminalActive) {
+      onCollapseTerminalPanel?.();
       return;
     }
 
-    if (viewMode === 'preview') {
+    if (isFileTreeVisible && viewMode !== 'preview') {
+      onCloseTerminalPanel?.();
+    }
+
+    if (!isFileTreeVisible) {
+      openPreviewView(convId);
+    } else if (viewMode === 'preview') {
       closePreviewView();
+      onCloseTerminalPanel?.();
     } else {
       openPreviewView(convId);
+    }
+
+    if (openingFileTree || switchingToPreview) {
+      if (!hasSelectedPreviewFile) {
+        setIsFileTreePinned(true);
+      }
     }
   };
 
@@ -391,6 +455,8 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
       message.warning(dict('PC.Pages.PreviewAndDebug.convIdNotFoundDesktop'));
       return;
     }
+
+    onCloseTerminalPanel?.();
 
     if (!isFileTreeVisible) {
       openDesktopView(convId);
@@ -470,6 +536,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
             viewMode={viewMode}
             onOpenPreviewPanel={handleOpenPreviewPanel}
             onOpenTerminalPanel={onOpenTerminalPanel}
+            isTerminalActive={isTerminalActive}
             onOpenDesktopPanel={handleOpenDesktopPanel}
           />
           <div
@@ -492,6 +559,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
                 isConversationActive ||
                 conversationInfo?.taskStatus === TaskStatus.EXECUTING
               }
+              isLocallyStreaming={isConversationActive}
               messageBottomMode="chat"
               loadingSuggest={loadingSuggest}
               chatSuggestList={chatSuggestList}
@@ -531,6 +599,9 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
                 onChangeSelectedComputerId?.(id);
               }}
               showScrollBtn={showScrollBtn}
+              allowAutoScrollRef={allowAutoScrollRef}
+              scrollTimeoutRef={scrollTimeoutRef}
+              setShowScrollBtn={setShowScrollBtn}
               readonly={false}
               enableMention={false}
               placeholder={dict(
@@ -546,6 +617,12 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
               loadingConversation={loadingConversation}
               isLoadingOtherInterface={isLoadingOtherInterface}
               conversationInfo={conversationInfo}
+              // 会话流式恢复(sub)：刷新页面/新开标签时重建 EXECUTING 会话的流式输出
+              onResumeConversationStream={resumeConversationStream}
+              onAbortResumeStream={abortResumeStream}
+              onReloadConversationHistoryAsync={async (id) =>
+                (await runAsync(Number(id)))?.data?.messageList
+              }
             />
           </div>
         </div>

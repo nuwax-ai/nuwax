@@ -34,6 +34,18 @@ export function applyAcpPermissionSseEvent(
   const processingInput = processingResult?.input as
     | Record<string, unknown>
     | undefined;
+  const eventName =
+    (eventData.name as string) || (processingResult?.name as string) || '';
+  const eventSubType =
+    (eventData.subEventType as string) ||
+    (envelope.subEventType as string) ||
+    '';
+  const requestPermissionRequest = (eventData.request_permission_request ??
+    eventData.requestPermissionRequest ??
+    processingInput?.request_permission_request ??
+    processingInput?.requestPermissionRequest) as
+    | Record<string, unknown>
+    | undefined;
 
   const isAcpPermissionEvent =
     res.eventType === ConversationEventTypeEnum.ACP_REQUEST_PERMISSION ||
@@ -42,20 +54,18 @@ export function applyAcpPermissionSseEvent(
       (subType === 'AcpRequestPermission' ||
         subType === 'request_permission')) ||
     (res.eventType === ConversationEventTypeEnum.PROCESSING &&
-      (eventData.subEventType === 'REQUEST_PERMISSION' ||
-        !!processingInput?.request_permission_request));
+      (eventSubType === 'REQUEST_PERMISSION' ||
+        eventName === 'Backend.Sandbox.Event.RequestPermission' ||
+        !!requestPermissionRequest));
 
   if (!isAcpPermissionEvent) {
     return null;
   }
 
-  const reqPerm = (eventData.request_permission_request ??
-    processingInput?.request_permission_request) as
-    | Record<string, unknown>
-    | undefined;
-  const requestMeta = (processingInput?._meta ?? eventData._meta) as
-    | Record<string, unknown>
-    | undefined;
+  const reqPerm = requestPermissionRequest;
+  const requestMeta = (reqPerm?._meta ??
+    processingInput?._meta ??
+    eventData._meta) as Record<string, unknown> | undefined;
   const intervention = (eventData._intervention ??
     eventData.interventionRequest) as
     | AcpPermissionInterventionRequest
@@ -66,20 +76,31 @@ export function applyAcpPermissionSseEvent(
     (reqPerm?.sessionId as string) ||
     (reqPerm?.session_id as string) ||
     intervention?.sessionId ||
+    (eventData.sessionId as string) ||
     (eventData.session_id as string);
   const toolCall = (reqPerm?.toolCall ??
     reqPerm?.tool_call ??
+    processingInput?.toolCall ??
+    processingInput?.tool_call ??
     intervention?.acp?.request?.toolCall) as
     | Record<string, unknown>
     | undefined;
-  const options = (reqPerm?.options ?? intervention?.acp?.request?.options) as
+  const options = (reqPerm?.options ??
+    processingInput?.options ??
+    intervention?.acp?.request?.options) as
     | Array<Record<string, unknown>>
     | undefined;
   const toolCallId =
     (eventData.tool_call_id as string) ||
+    (eventData.toolCallId as string) ||
     (processingInput?.tool_call_id as string) ||
+    (processingInput?.toolCallId as string) ||
     (toolCall?.toolCallId as string) ||
     (toolCall?.tool_call_id as string);
+  const executeId =
+    (eventData.executeId as string) ||
+    (processingResult?.executeId as string) ||
+    undefined;
 
   if ((!intervention?.id && !sessionId) || !toolCall) {
     return null;
@@ -137,10 +158,11 @@ export function applyAcpPermissionSseEvent(
       ...interactions,
       {
         intervention: normalizedIntervention,
+        executeId,
         responseStatus: 'pending',
         triggeredAt: createInterventionTriggeredAt(),
       },
     ],
-    status: currentMessage.status || MessageStatusEnum.Loading,
+    status: MessageStatusEnum.Loading,
   };
 }

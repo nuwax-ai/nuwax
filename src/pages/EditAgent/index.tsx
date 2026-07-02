@@ -2,6 +2,7 @@ import {
   ConversationBottomConsole,
   FileTreeViewPanel,
 } from '@/components/business-component';
+import type { FileTreeViewRef } from '@/components/business-component/FileTreePreviewPanel/types/file-tree';
 import CreateAgent from '@/components/CreateAgent';
 import Loading from '@/components/custom/Loading';
 import PublishComponentModal from '@/components/PublishComponentModal';
@@ -10,6 +11,7 @@ import ShowStand from '@/components/ShowStand';
 import type { PromptVariable } from '@/components/TiptapVariableInput/types';
 import { transformToPromptVariables } from '@/components/TiptapVariableInput/utils/variableTransform';
 import VersionHistory from '@/components/VersionHistory';
+import { isAgentVersionControlEnabled } from '@/constants/agent.constants';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { useTerminalWsUrl } from '@/hooks/useTerminalWsUrl';
 import useUnifiedTheme from '@/hooks/useUnifiedTheme';
@@ -27,7 +29,11 @@ import {
   apiUpdateStaticFile,
   apiUploadFiles,
 } from '@/services/vncDesktop';
-import { AgentComponentTypeEnum, HideDesktopEnum } from '@/types/enums/agent';
+import {
+  AgentComponentTypeEnum,
+  DefaultSelectedEnum,
+  HideDesktopEnum,
+} from '@/types/enums/agent';
 import { CreateUpdateModeEnum, PublishStatusEnum } from '@/types/enums/common';
 import { ModelTypeEnum } from '@/types/enums/modelConfig';
 import {
@@ -85,7 +91,7 @@ import React, {
 import { history, useLocation, useModel, useParams } from 'umi';
 import PagePreviewIframe from '../../components/business-component/PagePreviewIframe';
 import AgentArrangeConfig from './AgentArrangeConfig';
-import AgentFlowCanvas from './AgentFlowCanvas';
+import AgentFlowCanvas, { type AgentFlowCanvasRef } from './AgentFlowCanvas';
 import AgentHeader from './AgentHeader';
 import AgentModelSetting from './AgentModelSetting';
 import ArrangeTitle from './ArrangeTitle';
@@ -107,6 +113,7 @@ const EditAgent: React.FC = () => {
 
   // 系统/用户提示词组件引用
   const systemUserTipsWordRef = useRef<SystemUserTipsWordRef>(null);
+  const fileTreePanelRef = useRef<FileTreeViewRef>(null);
   const spaceId = Number(params.spaceId);
   const agentId = Number(params.agentId);
   const [open, setOpen] = useState<boolean>(false);
@@ -117,6 +124,7 @@ const EditAgent: React.FC = () => {
   const [agentConfigInfo, setAgentConfigInfo] = useState<AgentConfigInfo>();
   const [promptVariables, setPromptVariables] = useState<PromptVariable[]>([]);
   const [promptTools, setPromptTools] = useState<AgentComponentInfo[]>([]);
+  const agentFlowCanvasRef = useRef<AgentFlowCanvasRef>(null);
   const {
     cardList,
     showType,
@@ -161,6 +169,8 @@ const EditAgent: React.FC = () => {
   const [openTempChat, setOpenTempChat] = useState<boolean>(false);
   // 顶部分段菜单选中项
   const [headerTab, setHeaderTab] = useState<AgentHeaderTabKey>('arrange');
+  /** 是否允许拉取 Git status（版本管控 API 保存成功后再开启，避免乐观更新误请求） */
+  const [gitStatusEnabled, setGitStatusEnabled] = useState(false);
 
   // 获取 chat model 中的页面预览状态
   const { pagePreviewData, hidePagePreview, showPagePreview } =
@@ -202,7 +212,7 @@ const EditAgent: React.FC = () => {
   const isFlowAgent = agentConfigInfo?.subType === AgentSubTypeEnum.Flow;
   // AgentFlow 画布所需的工作流 ID：优先取 workflowId，回退到组件列表中 Workflow 组件的 targetId
   const agentFlowWorkflowId = useMemo(() => {
-    if (agentConfigInfo?.workflowId) return agentConfigInfo.workflowId;
+    // if (agentConfigInfo?.workflowId) return agentConfigInfo.workflowId;
     const wfComponent = agentConfigInfo?.agentComponentConfigList?.find(
       (c) => c.type === AgentComponentTypeEnum.Workflow,
     );
@@ -287,6 +297,13 @@ const EditAgent: React.FC = () => {
     },
     [],
   );
+
+  // 记忆区变量弹窗确认后，AgentFlow 重新拉取关联工作流
+  const handleMemoryVariablesConfirmed = useCallback(() => {
+    if (isFlowAgent) {
+      void agentFlowCanvasRef.current?.refreshWorkflow();
+    }
+  }, [isFlowAgent]);
 
   // 处理工具列表变化，同步到 promptTools
   const handleToolsChange = useCallback(
@@ -398,12 +415,30 @@ const EditAgent: React.FC = () => {
   // 获取开发会话ID
   const devConversationId = agentConfigInfo?.devConversationId;
   const terminalWsUrl = useTerminalWsUrl(devConversationId);
-  /** 文件树预览区底部终端是否显示 */
+
+  /** 智能体配置初次加载后，同步 Git status 开关（不随乐观更新立即变化） */
+  useEffect(() => {
+    if (!agentConfigInfo) {
+      setGitStatusEnabled(false);
+      return;
+    }
+    setGitStatusEnabled(
+      agentConfigInfo.type === AgentTypeEnum.TaskAgent &&
+        isAgentVersionControlEnabled(agentConfigInfo.enableVersionControl),
+    );
+  }, [agentId, agentConfigInfo?.id]);
+  /** 文件树预览区底部终端是否显示（含折叠态） */
   const [terminalConsoleVisible, setTerminalConsoleVisible] =
     useState<boolean>(false);
+  /** 终端是否处于展开态（折叠时为 false，用于头部图标选中态） */
+  const [isTerminalExpanded, setIsTerminalExpanded] = useState<boolean>(false);
   /** 终端首次渲染后保持挂载，避免 wss 反复重连 */
   const [hasTerminalConsoleRendered, setHasTerminalConsoleRendered] =
     useState<boolean>(false);
+  /** 递增时通知终端从折叠恢复默认高度 */
+  const [terminalExpandSignal, setTerminalExpandSignal] = useState(0);
+  /** 递增时通知终端折叠 */
+  const [terminalCollapseSignal, setTerminalCollapseSignal] = useState(0);
 
   // 更新智能体信息
   const handleChangeAgent = useCallback(
@@ -464,6 +499,14 @@ const EditAgent: React.FC = () => {
             attr,
           );
           return;
+        }
+      }
+
+      // 关闭版本管控时立即禁用 Git status，避免乐观更新触发的重渲染误拉取
+      if (attr === 'enableVersionControl') {
+        const versionControlEnabled = value === DefaultSelectedEnum.Yes;
+        if (!versionControlEnabled) {
+          setGitStatusEnabled(false);
         }
       }
 
@@ -538,6 +581,19 @@ const EditAgent: React.FC = () => {
       // 更新智能体信息
       await runUpdate(params);
 
+      // 版本管控开关保存成功后：刷新文件树；开启时由 enableGitStatus effect 拉取一次 Git status
+      if (attr === 'enableVersionControl' && currentConfig.devConversationId) {
+        const cId = currentConfig.devConversationId;
+        const versionControlEnabled = value === DefaultSelectedEnum.Yes;
+        await refreshFileListImmediately(cId);
+        if (versionControlEnabled) {
+          setGitStatusEnabled(
+            currentConfig.type === AgentTypeEnum.TaskAgent &&
+              versionControlEnabled,
+          );
+        }
+      }
+
       // 获取消息列表长度
       const messageListLength = messageList?.length || 0;
 
@@ -557,7 +613,7 @@ const EditAgent: React.FC = () => {
         }
       }
     },
-    [agentConfigInfo, viewMode], // 添加依赖
+    [agentConfigInfo, viewMode, refreshFileListImmediately],
   );
 
   useEffect(() => {
@@ -922,6 +978,12 @@ const EditAgent: React.FC = () => {
     showPagePreview,
   ]);
 
+  /** 读取右侧文件树面板当前选中的文件 ID */
+  const getSelectedPreviewFileId = useCallback(
+    () => fileTreePanelRef.current?.selectedFileId ?? '',
+    [],
+  );
+
   /** 打开 / 切换文件树底部终端 */
   const handleOpenTerminalPanel = useCallback(() => {
     if (!devConversationId) {
@@ -933,12 +995,61 @@ const EditAgent: React.FC = () => {
     showPagePreview(null);
     openPreviewView(devConversationId);
     setHasTerminalConsoleRendered(true);
-    setTerminalConsoleVisible((prev) => !prev);
-  }, [devConversationId, openPreviewView, showPagePreview]);
+
+    if (!terminalConsoleVisible) {
+      setTerminalConsoleVisible(true);
+      setIsTerminalExpanded(true);
+      setTerminalCollapseSignal(0);
+      setTerminalExpandSignal((n) => n + 1);
+      return;
+    }
+
+    if (!isTerminalExpanded) {
+      setIsTerminalExpanded(true);
+      setTerminalCollapseSignal(0);
+      setTerminalExpandSignal((n) => n + 1);
+      return;
+    }
+
+    setTerminalConsoleVisible(false);
+    setIsTerminalExpanded(false);
+  }, [
+    devConversationId,
+    isTerminalExpanded,
+    openPreviewView,
+    showPagePreview,
+    terminalConsoleVisible,
+  ]);
+
+  /** 折叠底部终端（保留头部，文件预览图标可接管选中态） */
+  const handleCollapseTerminalPanel = useCallback(() => {
+    if (!terminalConsoleVisible) {
+      return;
+    }
+    setIsTerminalExpanded(false);
+    setTerminalCollapseSignal((n) => n + 1);
+  }, [terminalConsoleVisible]);
+
+  /** 关闭底部终端（切换智能体电脑等场景） */
+  const handleCloseTerminalPanel = useCallback(() => {
+    setTerminalConsoleVisible(false);
+    setIsTerminalExpanded(false);
+    setTerminalCollapseSignal(0);
+    setTerminalExpandSignal(0);
+  }, []);
+
+  /** 关闭文件树预览面板时同步清除终端图标选中态 */
+  const handleCloseFileTreeViewPanel = useCallback(() => {
+    handleCloseTerminalPanel();
+    closePreviewView();
+  }, [closePreviewView, handleCloseTerminalPanel]);
 
   useEffect(() => {
     setTerminalConsoleVisible(false);
+    setIsTerminalExpanded(false);
     setHasTerminalConsoleRendered(false);
+    setTerminalExpandSignal(0);
+    setTerminalCollapseSignal(0);
   }, [devConversationId]);
 
   useEffect(() => {
@@ -1109,6 +1220,7 @@ const EditAgent: React.FC = () => {
                         {/* AgentFlow 画布（自带全屏）：位于系统提示词之前，与提示词同处编排流 */}
                         {isFlowAgent && agentFlowWorkflowId && (
                           <AgentFlowCanvas
+                            ref={agentFlowCanvasRef}
                             workflowId={agentFlowWorkflowId}
                             spaceId={spaceId}
                           />
@@ -1138,6 +1250,7 @@ const EditAgent: React.FC = () => {
                   agentConfigInfo={agentConfigInfo}
                   onChangeAgent={handleChangeAgent}
                   onVariablesChange={handleVariablesChange}
+                  onMemoryVariablesConfirmed={handleMemoryVariablesConfirmed}
                   onToolsChange={handleToolsChange}
                 />
               </div>
@@ -1172,9 +1285,15 @@ const EditAgent: React.FC = () => {
                         onAgentConfigInfo={setAgentConfigInfo}
                         onOpenPreview={handleOpenPreview}
                         onOpenTerminalPanel={handleOpenTerminalPanel}
+                        onCloseTerminalPanel={handleCloseTerminalPanel}
+                        onCollapseTerminalPanel={handleCollapseTerminalPanel}
+                        isTerminalActive={
+                          isTerminalExpanded && viewMode === 'preview'
+                        }
                         onChangeSelectedComputerId={
                           setCurrentSelectedComputerId
                         }
+                        getSelectedPreviewFileId={getSelectedPreviewFileId}
                       />
                     )
                   }
@@ -1200,6 +1319,7 @@ const EditAgent: React.FC = () => {
                         >
                           {/*文件树侧边栏 - 只在文件树可见时显示 */}
                           <FileTreeViewPanel
+                            ref={fileTreePanelRef}
                             taskAgentSelectedFileId={taskAgentSelectedFileId}
                             clearTaskAgentSelectedFileId={() =>
                               setTaskAgentSelectedFileId('')
@@ -1238,7 +1358,7 @@ const EditAgent: React.FC = () => {
                               restartAgent(devConversationId)
                             }
                             // 关闭整个面板
-                            onClose={closePreviewView}
+                            onClose={handleCloseFileTreeViewPanel}
                             // 文件树是否固定（用户点击后固定）
                             isFileTreePinned={isFileTreePinned}
                             // 文件树固定状态变化回调
@@ -1248,6 +1368,10 @@ const EditAgent: React.FC = () => {
                             onRefreshFileTree={() =>
                               refreshFileListImmediately(devConversationId)
                             }
+                            // 刷新后目标文件不存在时，清除会话内待选文件，避免空树死循环
+                            onSelectedFileMissing={() => {
+                              setTaskAgentSelectedFileId('');
+                            }}
                             // VNC 空闲检测配置（仅通用型智能体启用）
                             idleDetection={{
                               enabled:
@@ -1268,15 +1392,22 @@ const EditAgent: React.FC = () => {
                             enableVersionControl={
                               agentConfigInfo?.enableVersionControl
                             }
+                            enableGitStatus={
+                              agentConfigInfo?.type ===
+                                AgentTypeEnum.TaskAgent && gitStatusEnabled
+                            }
                             bottomContent={
                               hasTerminalConsoleRendered ? (
                                 <ConversationBottomConsole
+                                  // 在EditAgent中，conversationId 为 devConversationId
                                   conversationId={
                                     finalSelectedComputerId === '-1'
                                       ? devConversationId
                                       : undefined
                                   }
                                   visible={terminalConsoleVisible}
+                                  terminalSignal={terminalExpandSignal}
+                                  collapseSignal={terminalCollapseSignal}
                                   wsUrl={terminalWsUrl}
                                   wireProtocol={TTYD_TERMINAL_WIRE_PROTOCOL}
                                   wsSubprotocols={[

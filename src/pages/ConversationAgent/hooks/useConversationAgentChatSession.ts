@@ -1,4 +1,7 @@
-import type { AgentMode } from '@/components/business-component/AgentIntervention';
+import type {
+  AgentInterventionHandlersOverride,
+  AgentMode,
+} from '@/components/business-component/AgentIntervention';
 import useConversation from '@/hooks/useConversation';
 import { dict } from '@/services/i18nRuntime';
 import { ExpandPageAreaEnum, TaskStatus } from '@/types/enums/agent';
@@ -34,6 +37,8 @@ export interface UseConversationAgentChatSessionOptions {
   onSelectComponent?: (comp: AgentSelectedComponentInfo) => void;
   /** 是否锁定沙箱选择 */
   isSelectionLocked?: boolean;
+  /** 是否额外禁用输入框（如主会话执行时禁用预览会话输入） */
+  chatInputDisabled?: boolean;
 }
 
 /**
@@ -54,6 +59,7 @@ export function useConversationAgentChatSession(
     selectedComponentList,
     onSelectComponent,
     isSelectionLocked = false,
+    chatInputDisabled = false,
   } = options;
 
   const {
@@ -84,6 +90,8 @@ export function useConversationAgentChatSession(
     // 当前会话 ID 与请求 ID
     getCurrentConversationId,
     getCurrentConversationRequestId,
+    respondAcpPermission,
+    respondMcpAsk,
   } = useModel('conversationAgent');
 
   const { hidePagePreview, showPagePreview } = useModel('chat');
@@ -127,7 +135,8 @@ export function useConversationAgentChatSession(
         isSync: false,
         skillIds,
         modelId: modelId || selectedModelId,
-        agentMode: selectedAgentMode,
+        // 与 EditAgent 预览一致：未选中时兜底 yolo
+        agentMode: selectedAgentMode || 'yolo',
       });
     },
     [
@@ -216,6 +225,15 @@ export function useConversationAgentChatSession(
   const agentTaskExecuting =
     conversationInfo?.taskStatus === TaskStatus.EXECUTING;
 
+  /** 预览 Tab 使用 conversationAgent model，干预回执需与左侧主会话隔离 */
+  const interventionHandlers = useMemo<AgentInterventionHandlersOverride>(
+    () => ({
+      respondAcpPermission,
+      respondMcpAsk,
+    }),
+    [respondAcpPermission, respondMcpAsk],
+  );
+
   return {
     conversationId: devConversationId,
     messageList,
@@ -224,6 +242,8 @@ export function useConversationAgentChatSession(
     loadingMore,
     isMoreMessage,
     isConversationActive: agentStreamActive || agentTaskExecuting,
+    // 本地是否正在 SSE 发送/接收（纯，不含后台 EXECUTING），供流式恢复 hook 使用
+    isLocallyStreaming: agentStreamActive,
     queueContext: {
       streamActive: agentStreamActive,
       taskExecuting: agentTaskExecuting,
@@ -263,6 +283,7 @@ export function useConversationAgentChatSession(
       onChangeSelectedComputerId?.(id);
     },
     showScrollBtn,
+    chatInputDisabled,
     enableMention,
     placeholder: enableMention
       ? dict('PC.Components.ChatInputHomeMentionEditor.placeholderWithMention')
@@ -290,5 +311,6 @@ export function useConversationAgentChatSession(
     loadingConversation,
     isLoadingOtherInterface,
     conversationInfo,
+    interventionHandlers,
   };
 }

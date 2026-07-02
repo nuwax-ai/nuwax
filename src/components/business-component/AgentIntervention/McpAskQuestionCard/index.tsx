@@ -2,7 +2,13 @@ import { t } from '@/services/i18nRuntime';
 import { QuestionCircleOutlined } from '@ant-design/icons';
 import { Button, Form, Steps, Tag, Typography } from 'antd';
 import classNames from 'classnames';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useInterventionEscapeKey } from '../hooks/useInterventionEscapeKey';
 import type {
   McpAskInteraction,
@@ -37,6 +43,7 @@ const McpAskQuestionCard: React.FC<McpAskQuestionCardProps> = ({
   const [currentStep, setCurrentStep] = useState(0);
   const { input, toolCallId } = interaction;
   const ui = input.ui;
+  const cardRef = useRef<HTMLDivElement>(null);
 
   const isSubmitting = interaction.responseStatus === 'submitting';
   const isSubmitted = interaction.responseStatus === 'submitted';
@@ -130,6 +137,39 @@ const McpAskQuestionCard: React.FC<McpAskQuestionCardProps> = ({
     onRespond?.(buildPayload('submit', values));
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (disabled) return;
+    if (e.key === 'Enter' && !e.shiftKey && !e.metaKey && !e.ctrlKey) {
+      if (
+        e.target instanceof HTMLElement &&
+        (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'BUTTON')
+      ) {
+        return;
+      }
+      e.preventDefault();
+      void handleSubmit();
+    }
+  };
+
+  // 卡片弹出后自动获取焦点
+  useEffect(() => {
+    if (!disabled) {
+      cardRef.current?.focus();
+    }
+  }, [disabled]);
+
+  // 保持焦点始终在卡片上，防止失焦导致快捷键失效
+  const handleBlur = (e: React.FocusEvent) => {
+    if (
+      !disabled &&
+      cardRef.current &&
+      !cardRef.current.contains(e.relatedTarget)
+    ) {
+      e.preventDefault();
+      cardRef.current.focus();
+    }
+  };
+
   const handleCancel = useCallback(() => {
     onRespond?.({
       interventionId: input.requestId,
@@ -184,9 +224,13 @@ const McpAskQuestionCard: React.FC<McpAskQuestionCardProps> = ({
 
   return (
     <div
+      ref={cardRef}
       className={classNames(styles.shell, dockShellClassName)}
       role="region"
       aria-label={title}
+      tabIndex={-1}
+      onBlur={handleBlur}
+      onKeyDown={handleKeyDown}
     >
       <header className={styles.header}>
         <div className={styles.iconWrap} aria-hidden>

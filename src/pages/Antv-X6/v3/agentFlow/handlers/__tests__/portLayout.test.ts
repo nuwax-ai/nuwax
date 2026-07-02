@@ -8,15 +8,19 @@
  * - 端口 y 与 chip y 对齐不变量（RouteDecision 端口 0 = default, chip[0] 应对齐 port 1）
  */
 
+import { NodeTypeEnum } from '@/types/enums/common';
 import type { ChildNode } from '@/types/interfaces/graph';
 import { describe, expect, it } from 'vitest';
 import {
   BRANCH_PORT_BASE_Y,
+  BRANCH_PORT_DESC_HEIGHT,
   BRANCH_PORT_ITEM_HEIGHT,
   BRANCH_PORT_STEP,
   branchPortY,
   extractPortSuffix,
   ROUTE_DEFAULT_PORT_COLOR,
+  shouldUseFixedSideOutPort,
+  singlePortCenterY,
 } from '../portLayout';
 
 describe('portLayout constants', () => {
@@ -24,6 +28,7 @@ describe('portLayout constants', () => {
     expect(BRANCH_PORT_BASE_Y).toBe(42);
     expect(BRANCH_PORT_ITEM_HEIGHT).toBe(24);
     expect(BRANCH_PORT_STEP).toBe(12);
+    expect(BRANCH_PORT_DESC_HEIGHT).toBe(17);
     expect(ROUTE_DEFAULT_PORT_COLOR).toBe('#bfbfbf');
   });
 });
@@ -90,6 +95,73 @@ describe('branchPortY', () => {
       expect(offsetY - yHeight).toBe(BRANCH_PORT_STEP);
     }
   });
+
+  it('should shift ports down by descHeight when hasDescription:true', () => {
+    for (let i = 0; i < 5; i++) {
+      const without = branchPortY(i);
+      const withDesc = branchPortY(i, { hasDescription: true });
+      expect(withDesc.yHeight).toBe(without.yHeight + BRANCH_PORT_DESC_HEIGHT);
+      expect(withDesc.offsetY).toBe(without.offsetY + BRANCH_PORT_DESC_HEIGHT);
+    }
+    // i=0 带描述：baseY=42+17=59 → yHeight=59+24-12=71
+    const first = branchPortY(0, { hasDescription: true });
+    expect(first.yHeight).toBe(71);
+    expect(first.offsetY).toBe(83);
+  });
+
+  it('should default hasDescription to false (no shift) when options omitted', () => {
+    expect(branchPortY(0)).toEqual(branchPortY(0, { hasDescription: false }));
+    expect(branchPortY(0)).toEqual(branchPortY(0, {}));
+  });
+});
+
+describe('shouldUseFixedSideOutPort', () => {
+  it('工作流/智能体等单 out 节点应使用 right 布局', () => {
+    expect(
+      shouldUseFixedSideOutPort({
+        type: NodeTypeEnum.Workflow,
+        nodeConfig: {},
+      } as ChildNode),
+    ).toBe(true);
+    expect(
+      shouldUseFixedSideOutPort({
+        type: NodeTypeEnum.Agent,
+        nodeConfig: {},
+      } as ChildNode),
+    ).toBe(true);
+  });
+
+  it('路由决策与询问选项分支不使用 right 布局', () => {
+    expect(
+      shouldUseFixedSideOutPort({
+        type: NodeTypeEnum.RouteDecision,
+        nodeConfig: { intentConfigs: [] },
+      } as ChildNode),
+    ).toBe(false);
+    expect(
+      shouldUseFixedSideOutPort({
+        type: NodeTypeEnum.HumanInteraction,
+        nodeConfig: { answerType: 'SELECT', options: [{ uuid: '1' }] },
+      } as ChildNode),
+    ).toBe(false);
+  });
+});
+
+describe('singlePortCenterY', () => {
+  it('无描述时 in/out 居中于 44px header', () => {
+    const { yHeight, offsetY } = singlePortCenterY();
+    expect(yHeight).toBeCloseTo(22.5);
+    expect(offsetY).toBe(33);
+  });
+
+  it('有描述时下移 descHeight/2 并增高节点', () => {
+    const without = singlePortCenterY();
+    const withDesc = singlePortCenterY({ hasDescription: true });
+    expect(withDesc.yHeight).toBe(
+      without.yHeight + BRANCH_PORT_DESC_HEIGHT / 2,
+    );
+    expect(withDesc.offsetY).toBe(without.offsetY + BRANCH_PORT_DESC_HEIGHT);
+  });
 });
 
 /**
@@ -99,12 +171,19 @@ describe('branchPortY', () => {
  * 防止后续 handler 改动时分支错位
  */
 describe('port-layout invariant (handler <-> chip alignment)', () => {
-  it('RouteDecision: default 用 branchPortY(0), route[i] 用 branchPortY(i+1), chip[i] 显式传 portIndex=i+1', () => {
-    // chip[0] 应对齐 default? 错! chip 数组跳过 default, chip[i] 应对齐 route[i]
-    // 即 chip[0].portIndex=1, chip[1].portIndex=2, ...
+  it('RouteDecision: 无 default 时 route[i] 用 branchPortY(i)', () => {
+    for (let i = 0; i < 4; i++) {
+      expect(branchPortY(i).yHeight).toBe(
+        BRANCH_PORT_BASE_Y +
+          (i + 1) * BRANCH_PORT_ITEM_HEIGHT -
+          BRANCH_PORT_STEP,
+      );
+    }
+  });
+
+  it('RouteDecision: 有 default 时 route[i] 用 branchPortY(i+1)', () => {
     for (let i = 0; i < 4; i++) {
       const routePortY = branchPortY(i + 1).yHeight;
-      // chip 公式：(i + 1 + 1) * 24 - 12  注: chip 数组 i 对应 handler 端口下标 i+1
       const chipTopY =
         BRANCH_PORT_BASE_Y +
         (i + 2) * BRANCH_PORT_ITEM_HEIGHT -

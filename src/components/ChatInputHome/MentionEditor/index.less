@@ -17,6 +17,7 @@
   position: relative;
   width: 100%;
   padding: 4px @paddingSm;
+  text-indent: var(--mention-inline-prefix-offset, 0);
   font-size: @fontSize;
   line-height: 1.5;
   color: @colorText;
@@ -26,9 +27,14 @@
   resize: none;
   overflow-y: auto;
   word-wrap: break-word;
-  word-break: break-word;
+  word-break: break-all;
   white-space: pre-wrap;
   caret-color: @colorPrimary;
+
+  & > div,
+  & > p {
+    text-indent: 0;
+  }
 
   // 自定义 placeholder，避免 contenteditable 的 :empty 不稳定问题
   &.empty::before {
@@ -38,6 +44,7 @@
     left: @paddingSm;
     right: @paddingSm;
     color: @colorTextQuaternary;
+    text-indent: var(--mention-inline-prefix-offset, 0);
     pointer-events: none;
     display: box;
     -webkit-line-clamp: 2;
@@ -76,12 +83,14 @@
 .mention-popup-wrapper {
   position: relative;
   z-index: 1050;
+  text-indent: 0;
 }
 
 // 已插入编辑器中的 mention 标签
 .mention-chip {
   display: inline-flex;
   align-items: center;
+  text-indent: 0;
   background-color: @colorBgLayout;
   border-radius: @borderRadius;
   padding: 2px 4px 2px 8px;

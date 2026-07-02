@@ -13,11 +13,14 @@
  */
 
 import {
-  BRANCH_PORT_BASE_Y,
-  BRANCH_PORT_ITEM_HEIGHT,
-  BRANCH_PORT_STEP,
+  getHitlOptions,
+  isHitlOptionsBranchMode,
+} from '@/pages/Antv-X6/v3/agentFlow/adapters/qaConfigAdapter';
+import {
+  branchPortY,
+  hasAgentFlowNodeDescription,
 } from '@/pages/Antv-X6/v3/agentFlow/handlers/portLayout';
-import { isAgentFlowType } from '@/pages/Antv-X6/v3/agentFlow/types';
+import { isAgentFlowType } from '@/pages/Antv-X6/v3/flowKind/flowKindConfig';
 import { t } from '@/services/i18nRuntime';
 import { NodeTypeEnum } from '@/types/enums/common';
 import { ChildNode } from '@/types/interfaces/graph';
@@ -31,7 +34,7 @@ interface AgentFlowPortChipsProps {
 /** 视觉上 chip 距节点右边界的偏移（px） */
 const CHIP_RIGHT_OFFSET = 8;
 
-/** chip 容器顶部偏移补偿 — 节点 header 高度(44) - X6 端口 baseY 锚点 */
+/** chip 容器顶部偏移补偿 — 与 portLayout.branchPortY 公式对齐 */
 const CHIP_TOP_OFFSET = -2;
 
 export type ChipTone = 'pass' | 'fail' | 'route';
@@ -61,24 +64,24 @@ function buildChips(data: ChildNode): ChipDescriptor[] {
   switch (data.type) {
     case NodeTypeEnum.RouteDecision: {
       const routes: any[] = nc.intentConfigs || [];
-      // default 端口不渲染 chip；第 1 个 route 实际是 outputPorts 数组下标 1
+      const defaultIds: number[] = nc.defaultNextNodeIds || [];
+      // default 端口仅在有连线目标时生成；无 default 时 route[i] 对应 branchPortY(i)
+      const routePortOffset = defaultIds.length > 0 ? 1 : 0;
       return routes.map((r, i) => ({
-        label: r.intent || r.name || `Route ${i + 1}`,
+        label: r.name || r.intent || `Route ${i + 1}`,
         tone: 'route',
-        portIndex: i + 1,
+        portIndex: i + routePortOffset,
       }));
     }
 
     case NodeTypeEnum.HumanInteraction: {
-      // ask options 模式
-      if (nc.replyMode === 'options' || nc.askConfig?.answerType === 'SELECT') {
-        const options: any[] = nc.askConfig?.options || [];
+      if (isHitlOptionsBranchMode(nc)) {
+        const options = getHitlOptions(nc);
         return options.map((o: any, i: number) => ({
           label: o.content || `Option ${i + 1}`,
           tone: 'route' as ChipTone,
         }));
       }
-      // ask text/form 模式：无 chip
       return [];
     }
 
@@ -88,18 +91,10 @@ function buildChips(data: ChildNode): ChipDescriptor[] {
 }
 
 /**
- * 计算第 i 个 chip 的 top 值（px）
- *
- * 对齐公式：与 handler 端口 y 坐标一致 —— `baseY + (portIndex+1)*itemHeight - step`
- * portIndex = chip 数组下标 i（默认）或 ChipDescriptor.portIndex（覆盖）
+ * 计算第 i 个 chip 的 top 值（px），与 handler 的 branchPortY 保持一致（含描述行偏移）
  */
-function chipTop(portIndex: number): number {
-  return (
-    BRANCH_PORT_BASE_Y +
-    (portIndex + 1) * BRANCH_PORT_ITEM_HEIGHT -
-    BRANCH_PORT_STEP +
-    CHIP_TOP_OFFSET
-  );
+function chipTop(portIndex: number, hasDescription: boolean): number {
+  return branchPortY(portIndex, { hasDescription }).yHeight + CHIP_TOP_OFFSET;
 }
 
 const AgentFlowPortChips: React.FC<AgentFlowPortChipsProps> = ({ data }) => {
@@ -107,6 +102,7 @@ const AgentFlowPortChips: React.FC<AgentFlowPortChipsProps> = ({ data }) => {
 
   const chips = buildChips(data);
   if (chips.length === 0) return null;
+  const hasDescription = hasAgentFlowNodeDescription(data);
 
   return (
     <div className="agent-flow-port-chip-layer">
@@ -121,7 +117,10 @@ const AgentFlowPortChips: React.FC<AgentFlowPortChipsProps> = ({ data }) => {
           >
             <div
               className={`agent-flow-port-chip ${chip.tone}`}
-              style={{ top: chipTop(portIdx), right: CHIP_RIGHT_OFFSET }}
+              style={{
+                top: chipTop(portIdx, hasDescription),
+                right: CHIP_RIGHT_OFFSET,
+              }}
             >
               {chip.label}
             </div>

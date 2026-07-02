@@ -1,6 +1,5 @@
 @import '@/styles/token.less';
 
-@headerRowHeight: 72px; // 顶部栏专用高度
 @searchWrapperMarginLeft: 3px;
 @newChatIconSize: 18px;
 
@@ -8,10 +7,10 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: @headerRowHeight;
   padding: 0 @paddingXs;
   box-sizing: border-box;
   flex-shrink: 0;
+  margin: 17px 0 10px -3px;
   gap: @paddingXs;
 
   .search-input-wrapper {
@@ -22,7 +21,7 @@
     .search-input {
       font-size: @fontSize;
       border-radius: @borderRadius;
-      background-color: @colorFillAlter;
+      background-color: @colorFillSecondary;
       border: none;
       color: @navSecondMenuAdaptiveText;
 

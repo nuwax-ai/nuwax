@@ -333,6 +333,7 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
       autoFocus = true,
       disabled = false,
       className,
+      inlinePrefixWidth = 0,
       onMentionSelect,
       enableSubscription = false,
       onUnsubscribedSkillSelect,
@@ -387,9 +388,9 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
 
     // ==================== 计算属性 ====================
     /** 编辑器最小高度（基于行数） */
-    const minHeight = minRows * 26;
+    const minHeight = minRows * 32.2;
     /** 编辑器最大高度（基于行数） */
-    const maxHeight = maxRows * 26;
+    const maxHeight = maxRows * 32.2;
 
     // ==================== 暴露给父组件的方法 ====================
 
@@ -737,6 +738,9 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
     useImperativeHandle(ref, () => ({
       clear,
       handleAtIconMentionSelect,
+      focus: () => {
+        editorRef.current?.focus();
+      },
     }));
 
     /**
@@ -1384,10 +1388,13 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
           onCompositionStart={handleCompositionStart}
           /** 输入法组合结束事件 */
           onCompositionEnd={handleCompositionEnd}
-          style={{
-            minHeight: `${minHeight}px`,
-            maxHeight: `${maxHeight}px`,
-          }}
+          style={
+            {
+              minHeight: `${minHeight}px`,
+              maxHeight: `${maxHeight}px`,
+              '--mention-inline-prefix-offset': `${inlinePrefixWidth}px`,
+            } as React.CSSProperties
+          }
           data-placeholder={placeholderText}
           suppressContentEditableWarning
         />
