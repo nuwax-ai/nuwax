@@ -29,6 +29,69 @@ const RESUME_MESSAGE_KEY_BY_ACTION: Record<
 
 const SUBMITTED_HEADER_KEY = `${I18N_PREFIX}.resumeSubmitted`;
 
+/** resume 消息 JSON 块中的 requestId 键（历史 fenced JSON 格式，仍识别） */
+export const MCP_ASK_REQUEST_ID_MARKER_KEY = 'nuwaxMcpAskRequestId';
+
+/** HTML 注释标记前缀，对用户不可见 */
+const MCP_ASK_REQUEST_ID_HTML_PREFIX = 'nuwax-mcp-ask-request-id:';
+
+export interface McpAskResumeMatchOptions {
+  /** 承载该 interaction 的消息在已排序列表中的下标 */
+  containingMessageIndex?: number;
+}
+
+/**
+ * 按会话 message.index 升序排列，与 intervention 队列保持一致。
+ */
+export function sortMessagesByConversationIndex(
+  messages: MessageInfo[],
+): MessageInfo[] {
+  return [...(messages ?? [])].sort((a, b) => (a.index ?? 0) - (b.index ?? 0));
+}
+
+function readMessageOrdinal(message: MessageInfo, fallback = 0): number {
+  return message.index ?? fallback;
+}
+
+/**
+ * 生成附在 resume 消息末尾的 HTML 注释 requestId 标记（聊天 UI 不展示）。
+ */
+export function buildMcpAskRequestIdMarker(requestId: string): string {
+  return `\n<!--${MCP_ASK_REQUEST_ID_HTML_PREFIX}${requestId}-->`;
+}
+
+function messageHasForeignRequestIdMarker(text: string): boolean {
+  return (
+    text.includes(MCP_ASK_REQUEST_ID_HTML_PREFIX) ||
+    text.includes(MCP_ASK_REQUEST_ID_MARKER_KEY)
+  );
+}
+
+/**
+ * 判断文本是否包含指定 requestId 的 resume 标记（HTML 注释或历史 JSON 块）。
+ */
+export function textContainsMcpAskRequestIdMarker(
+  text: string | undefined,
+  requestId: string,
+): boolean {
+  if (!text || !requestId) {
+    return false;
+  }
+  if (text.includes(`<!--${MCP_ASK_REQUEST_ID_HTML_PREFIX}${requestId}-->`)) {
+    return true;
+  }
+  const compact = `"${MCP_ASK_REQUEST_ID_MARKER_KEY}":"${requestId}"`;
+  const spaced = `"${MCP_ASK_REQUEST_ID_MARKER_KEY}": "${requestId}"`;
+  return text.includes(compact) || text.includes(spaced);
+}
+
+function appendMcpAskRequestIdMarker(
+  message: string,
+  requestId: string,
+): string {
+  return `${message}${buildMcpAskRequestIdMarker(requestId)}`;
+}
+
 /** 各语言本地包，用于跨语言匹配历史 resume 消息 */
 const LOCAL_RESUME_MESSAGE_MAPS = [
   MIN_ZH_I18N_MAP,
@@ -267,35 +330,93 @@ export function getMcpAskResumeTitle(interaction: McpAskInteraction): string {
   );
 }
 
+/**
+ * 会话中已有更早（或同条 assistant 消息内）其他同 title 询问时，
+ * 无 marker 的 legacy 标题匹配不可靠，应仅依赖 requestId 标记。
+ */
+function shouldBlockLegacyTitleMatch(
+  sortedMessages: MessageInfo[],
+  containingMessage: MessageInfo | undefined,
+  containingOrdinal: number | undefined,
+  interaction: McpAskInteraction,
+): boolean {
+  if (!containingMessage || containingOrdinal === undefined) {
+    return false;
+  }
+  const title = getMcpAskResumeTitle(interaction);
+
+  return sortedMessages.some((message) => {
+    const ordinal = readMessageOrdinal(message, 0);
+    const isEarlier = ordinal < containingOrdinal;
+    const isSameMessage =
+      (containingMessage.id !== undefined &&
+        message.id === containingMessage.id) ||
+      (containingMessage.index !== undefined &&
+        message.index === containingMessage.index);
+    if (!isEarlier && !isSameMessage) {
+      return false;
+    }
+
+    return (message.mcpAskInteractions ?? []).some(
+      (item) =>
+        item.input.requestId !== interaction.input.requestId &&
+        getMcpAskResumeTitle(item) === title,
+    );
+  });
+}
+
+function resolveContainingMessageIndex(
+  sortedMessages: MessageInfo[],
+  interaction: McpAskInteraction,
+  explicitIndex?: number,
+): number | undefined {
+  if (explicitIndex !== undefined && explicitIndex >= 0) {
+    return explicitIndex;
+  }
+  const autoIndex = sortedMessages.findIndex((message) =>
+    message.mcpAskInteractions?.some(
+      (item) => item.input.requestId === interaction.input.requestId,
+    ),
+  );
+  return autoIndex >= 0 ? autoIndex : undefined;
+}
+
 export function buildMcpAskResumeMessage(
   interaction: McpAskInteraction,
   payload: McpAskRespondPayload,
 ) {
   const title = getMcpAskResumeTitle(interaction);
+  const requestId = interaction.input.requestId;
+  let message: string;
 
   if (payload.action === 'cancel') {
-    return tMcpAsk(RESUME_MESSAGE_KEY_BY_ACTION.cancel, title);
-  }
-  if (payload.action === 'skip') {
-    return tMcpAsk(RESUME_MESSAGE_KEY_BY_ACTION.skip, title);
-  }
-  if (payload.action === 'timeout') {
-    return tMcpAsk(RESUME_MESSAGE_KEY_BY_ACTION.timeout, title);
+    message = tMcpAsk(RESUME_MESSAGE_KEY_BY_ACTION.cancel, title);
+  } else if (payload.action === 'skip') {
+    message = tMcpAsk(RESUME_MESSAGE_KEY_BY_ACTION.skip, title);
+  } else if (payload.action === 'timeout') {
+    message = tMcpAsk(RESUME_MESSAGE_KEY_BY_ACTION.timeout, title);
+  } else {
+    message = [
+      tMcpAsk(SUBMITTED_HEADER_KEY, title),
+      formatAskFormData(interaction, payload.formData),
+    ].join('\n');
   }
 
-  return [
-    tMcpAsk(SUBMITTED_HEADER_KEY, title),
-    formatAskFormData(interaction, payload.formData),
-  ].join('\n');
+  return appendMcpAskRequestIdMarker(message, requestId);
 }
 
-export function isMcpAskResumeMessageForInteraction(
-  text: string | undefined,
+function matchesLegacyTitleResumeMessage(
+  text: string,
   interaction: McpAskInteraction,
 ): boolean {
-  if (!text) {
+  // 带其他 requestId 标记的 resume 不应被同 title 的后续 ask 误匹配
+  if (
+    messageHasForeignRequestIdMarker(text) &&
+    !textContainsMcpAskRequestIdMarker(text, interaction.input.requestId)
+  ) {
     return false;
   }
+
   const title = getMcpAskResumeTitle(interaction);
   const actions: McpAskResumeAction[] = ['submit', 'cancel', 'skip', 'timeout'];
 
@@ -306,23 +427,96 @@ export function isMcpAskResumeMessageForInteraction(
   );
 }
 
-export function hasLaterMcpAskResumeMessage(
-  messages: MessageInfo[],
-  messageIndex: number,
+export function isMcpAskResumeMessageForInteraction(
+  text: string | undefined,
   interaction: McpAskInteraction,
+  options?: { legacyTitleMatch?: boolean },
 ): boolean {
-  return messages
-    .slice(messageIndex + 1)
-    .some((message) =>
-      isMcpAskResumeMessageForInteraction(message.text, interaction),
-    );
+  if (!text) {
+    return false;
+  }
+
+  if (textContainsMcpAskRequestIdMarker(text, interaction.input.requestId)) {
+    return true;
+  }
+
+  if (options?.legacyTitleMatch === false) {
+    return false;
+  }
+
+  return matchesLegacyTitleResumeMessage(text, interaction);
 }
 
 export function hasMcpAskResumeMessage(
   messages: MessageInfo[],
   interaction: McpAskInteraction,
+  options?: McpAskResumeMatchOptions,
 ): boolean {
-  return messages.some((message) =>
-    isMcpAskResumeMessageForInteraction(message.text, interaction),
+  const sortedMessages = sortMessagesByConversationIndex(messages);
+  const containingMessageIndex = resolveContainingMessageIndex(
+    sortedMessages,
+    interaction,
+    options?.containingMessageIndex,
   );
+  const containingMessage =
+    containingMessageIndex !== undefined
+      ? sortedMessages[containingMessageIndex]
+      : undefined;
+  const containingOrdinal = containingMessage
+    ? readMessageOrdinal(containingMessage, containingMessageIndex ?? 0)
+    : undefined;
+
+  if (
+    sortedMessages.some((message) =>
+      textContainsMcpAskRequestIdMarker(
+        message.text,
+        interaction.input.requestId,
+      ),
+    )
+  ) {
+    return true;
+  }
+
+  if (
+    shouldBlockLegacyTitleMatch(
+      sortedMessages,
+      containingMessage,
+      containingOrdinal,
+      interaction,
+    )
+  ) {
+    return false;
+  }
+
+  const matchesLegacy = (text: string | undefined) =>
+    text ? matchesLegacyTitleResumeMessage(text, interaction) : false;
+
+  if (containingOrdinal !== undefined) {
+    const afterMessages = sortedMessages.filter(
+      (message) => readMessageOrdinal(message, 0) > containingOrdinal,
+    );
+    if (afterMessages.some((message) => matchesLegacy(message.text))) {
+      return true;
+    }
+
+    // 历史 hydrate：resume 的 index 可能小于 ask（存储乱序），仅匹配无 marker 的旧消息
+    const beforeMessages = sortedMessages.filter(
+      (message) =>
+        readMessageOrdinal(message, 0) < containingOrdinal &&
+        !messageHasForeignRequestIdMarker(message.text ?? ''),
+    );
+    return beforeMessages.some((message) => matchesLegacy(message.text));
+  }
+
+  return sortedMessages.some((message) => matchesLegacy(message.text));
+}
+
+export function hasLaterMcpAskResumeMessage(
+  messages: MessageInfo[],
+  messageIndex: number,
+  interaction: McpAskInteraction,
+): boolean {
+  return hasMcpAskResumeMessage(messages, interaction, {
+    containingMessageIndex: messageIndex,
+  });
 }

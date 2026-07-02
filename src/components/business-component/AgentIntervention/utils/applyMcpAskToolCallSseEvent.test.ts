@@ -406,4 +406,106 @@ describe('applyMcpAskToolCallSseEvent', () => {
       'nuwax.mcp_ask.v2',
     );
   });
+
+  it('accepts AgentFlow ASK_QUESTION payload with result.data and nuwax.mcp_ask.v1', () => {
+    const patched = applyMcpAskToolCallSseEvent(
+      {
+        eventType: ConversationEventTypeEnum.PROCESSING,
+        data: {
+          name: 'AskQuestion',
+          type: 'Event',
+          status: 'EXECUTING',
+          subEventType: 'ASK_QUESTION',
+          result: {
+            executeId: '733e52ee48a8406b8f148de386092f47',
+            data: {
+              schemaVersion: 'nuwax.mcp_ask.v1',
+              requestId: '13f030d0c07547fe83fd6d43b624f0e0',
+              title: '补充回复',
+              revision: 1,
+              ui: {
+                presentation: 'inline',
+                title: '请选择\n\n',
+                fields: [
+                  { widget: 'text', name: 'name', title: '你的名字' },
+                  {
+                    widget: 'radio',
+                    name: 'ddw',
+                    title: '单选',
+                    options: [
+                      { label: '1', value: '1' },
+                      { label: '2', value: '2' },
+                    ],
+                  },
+                ],
+              },
+            },
+          },
+        },
+      } as any,
+      { id: 'msg-1' } as any,
+    );
+
+    expect(patched?.mcpAskInteractions?.[0]?.toolCallId).toBe(
+      '13f030d0c07547fe83fd6d43b624f0e0',
+    );
+    expect(patched?.mcpAskInteractions?.[0]?.executeId).toBe(
+      '733e52ee48a8406b8f148de386092f47',
+    );
+    expect(patched?.mcpAskInteractions?.[0]?.input.requestId).toBe(
+      '13f030d0c07547fe83fd6d43b624f0e0',
+    );
+    expect(patched?.mcpAskInteractions?.[0]?.input.schemaVersion).toBe(
+      'nuwax.mcp_ask.v2',
+    );
+  });
+
+  it('creates a second ask interaction when requestId differs', () => {
+    const currentMessage = {
+      id: 'msg-1',
+      mcpAskInteractions: [
+        {
+          input: {
+            ...baseAskInput,
+            requestId: '13f030d0c07547fe83fd6d43b624f0e0',
+            title: '补充回复',
+            toolName: 'nuwax_ask_question',
+          },
+          toolCallId: '13f030d0c07547fe83fd6d43b624f0e0',
+          executeId: '733e52ee48a8406b8f148de386092f47',
+          responseStatus: 'submitted',
+        },
+      ],
+    };
+
+    const patched = applyMcpAskToolCallSseEvent(
+      {
+        eventType: ConversationEventTypeEnum.PROCESSING,
+        data: {
+          subEventType: 'ASK_QUESTION',
+          result: {
+            executeId: '449db35f985747bf8cd1645627bc2d8c',
+            data: {
+              schemaVersion: 'nuwax.mcp_ask.v1',
+              requestId: 'ed325c9eec724bce95ca6a05974b42d6',
+              title: '补充回复',
+              revision: 1,
+              ui: {
+                presentation: 'inline',
+                title: '请选择\n\n',
+                fields: [{ widget: 'text', name: 'name', title: '你的名字' }],
+              },
+            },
+          },
+        },
+      } as any,
+      currentMessage as any,
+    );
+
+    expect(patched?.mcpAskInteractions).toHaveLength(2);
+    expect(patched?.mcpAskInteractions?.[1]?.input.requestId).toBe(
+      'ed325c9eec724bce95ca6a05974b42d6',
+    );
+    expect(patched?.mcpAskInteractions?.[1]?.responseStatus).toBe('pending');
+  });
 });

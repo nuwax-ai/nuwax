@@ -2,7 +2,10 @@ import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import { useMemo } from 'react';
 import type { AcpPermissionInteraction } from '../types/acpIntervention';
 import type { McpAskInteraction } from '../types/mcpAskIntervention';
-import { hasMcpAskResumeMessage } from '../utils/mcpAskResumeMessage';
+import {
+  hasMcpAskResumeMessage,
+  sortMessagesByConversationIndex,
+} from '../utils/mcpAskResumeMessage';
 
 export type InterventionQueueKind = 'acp_permission' | 'mcp_ask';
 
@@ -61,9 +64,7 @@ export function useActiveInterventionQueue(
     const permissionPendingAskRequestIds = new Set<string>();
     let fallbackSeq = 0;
 
-    const messages = [...(messageList ?? [])].sort(
-      (a, b) => (a.index ?? 0) - (b.index ?? 0),
-    );
+    const messages = sortMessagesByConversationIndex(messageList ?? []);
 
     messages.forEach((message) => {
       getAcpPermissionInteractions(message).forEach((interaction) => {
@@ -82,9 +83,9 @@ export function useActiveInterventionQueue(
       });
     });
 
-    messages.forEach((message) => {
+    messages.forEach((message, messageIndex) => {
       const messageId = String(message.id ?? message.index);
-      const messageIndex = message.index ?? 0;
+      const messageIndexValue = message.index ?? messageIndex;
 
       getAcpPermissionInteractions(message).forEach((interaction) => {
         if (!isActiveResponseStatus(interaction.responseStatus)) {
@@ -98,7 +99,7 @@ export function useActiveInterventionQueue(
         pendingMap.set(`acp-${interaction.intervention.id}`, {
           kind: 'acp_permission',
           messageId,
-          messageIndex,
+          messageIndex: messageIndexValue,
           interaction,
           sortKey,
         });
@@ -108,7 +109,11 @@ export function useActiveInterventionQueue(
         if (!isActiveResponseStatus(interaction.responseStatus)) {
           return;
         }
-        if (hasMcpAskResumeMessage(messages, interaction)) {
+        if (
+          hasMcpAskResumeMessage(messages, interaction, {
+            containingMessageIndex: messageIndex,
+          })
+        ) {
           return;
         }
 
@@ -122,7 +127,7 @@ export function useActiveInterventionQueue(
         pendingMap.set(`ask-${interaction.input.requestId}`, {
           kind: 'mcp_ask',
           messageId,
-          messageIndex,
+          messageIndex: messageIndexValue,
           interaction,
           sortKey,
         });

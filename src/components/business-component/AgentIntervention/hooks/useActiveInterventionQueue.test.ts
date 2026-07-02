@@ -3,6 +3,7 @@ import { renderHook } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import type { AcpPermissionInteraction } from '../types/acpIntervention';
 import type { McpAskInteraction } from '../types/mcpAskIntervention';
+import { buildMcpAskRequestIdMarker } from '../utils/mcpAskResumeMessage';
 import { useActiveInterventionQueue } from './useActiveInterventionQueue';
 
 function createAskInteraction(
@@ -427,5 +428,114 @@ describe('useActiveInterventionQueue', () => {
     );
 
     expect(result.current).toHaveLength(0);
+  });
+
+  it('keeps a second ask active after the first same-title ask was answered', () => {
+    const sharedTitle = '补充回复';
+    const firstAsk = createAskInteraction({
+      input: {
+        ...createAskInteraction().input,
+        requestId: 'ask-first',
+        title: sharedTitle,
+        ui: {
+          ...createAskInteraction().input.ui,
+          title: sharedTitle,
+        },
+      },
+      responseStatus: 'submitted',
+    });
+    const secondAsk = createAskInteraction({
+      input: {
+        ...createAskInteraction().input,
+        requestId: 'ask-second',
+        title: sharedTitle,
+        ui: {
+          ...createAskInteraction().input.ui,
+          title: sharedTitle,
+        },
+      },
+      toolCallId: 'call-ask-2',
+      responseStatus: 'pending',
+    });
+    const resumeText = `我已填写「${sharedTitle}」，表单内容如下：\n选项：test${buildMcpAskRequestIdMarker(
+      'ask-first',
+    )}`;
+    const messageList = [
+      {
+        id: 'assistant-ask',
+        index: 1,
+        mcpAskInteractions: [firstAsk, secondAsk],
+      },
+      {
+        id: 'user-resume',
+        index: 2,
+        text: resumeText,
+      },
+    ] as unknown as MessageInfo[];
+
+    const { result } = renderHook(() =>
+      useActiveInterventionQueue(messageList),
+    );
+
+    expect(result.current).toHaveLength(1);
+    expect(result.current[0].kind).toBe('mcp_ask');
+    if (result.current[0].kind === 'mcp_ask') {
+      expect(result.current[0].interaction.input.requestId).toBe('ask-second');
+    }
+  });
+
+  it('keeps a later ask active when an earlier assistant message had legacy same-title resume', () => {
+    const sharedTitle = '补充回复';
+    const firstAsk = createAskInteraction({
+      input: {
+        ...createAskInteraction().input,
+        requestId: 'ask-first',
+        title: sharedTitle,
+        ui: {
+          ...createAskInteraction().input.ui,
+          title: sharedTitle,
+        },
+      },
+      responseStatus: 'submitted',
+    });
+    const secondAsk = createAskInteraction({
+      input: {
+        ...createAskInteraction().input,
+        requestId: 'ask-second',
+        title: sharedTitle,
+        ui: {
+          ...createAskInteraction().input.ui,
+          title: sharedTitle,
+        },
+      },
+      toolCallId: 'call-ask-2',
+      responseStatus: 'pending',
+    });
+    const messageList = [
+      {
+        id: 'assistant-ask-1',
+        index: 2,
+        mcpAskInteractions: [firstAsk],
+      },
+      {
+        id: 'user-resume',
+        index: 3,
+        text: `我已填写「${sharedTitle}」，表单内容如下：\n选项：test`,
+      },
+      {
+        id: 'assistant-ask-2',
+        index: 4,
+        mcpAskInteractions: [secondAsk],
+      },
+    ] as unknown as MessageInfo[];
+
+    const { result } = renderHook(() =>
+      useActiveInterventionQueue(messageList),
+    );
+
+    expect(result.current).toHaveLength(1);
+    if (result.current[0].kind === 'mcp_ask') {
+      expect(result.current[0].interaction.input.requestId).toBe('ask-second');
+    }
   });
 });

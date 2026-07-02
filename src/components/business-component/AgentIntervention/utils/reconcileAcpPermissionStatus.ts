@@ -5,7 +5,10 @@ import type {
 } from '@/types/interfaces/conversationInfo';
 import type { AcpPermissionInteraction } from '../types/acpIntervention';
 import type { McpAskInteraction } from '../types/mcpAskIntervention';
-import { hasMcpAskResumeMessage } from './mcpAskResumeMessage';
+import {
+  hasMcpAskResumeMessage,
+  sortMessagesByConversationIndex,
+} from './mcpAskResumeMessage';
 
 function readMcpAskRequestId(rawInput: unknown): string | undefined {
   if (!rawInput || typeof rawInput !== 'object') {
@@ -93,6 +96,7 @@ function shouldMarkAcpPermissionSubmitted(
   interaction: AcpPermissionInteraction,
   message: MessageInfo,
   contextMessageList: MessageInfo[],
+  containingMessageIndex?: number,
 ): boolean {
   const status = interaction.responseStatus ?? 'pending';
   if (status === 'submitted' || status === 'failed') {
@@ -119,7 +123,9 @@ function shouldMarkAcpPermissionSubmitted(
     );
     if (
       syntheticAsk &&
-      hasMcpAskResumeMessage(contextMessageList, syntheticAsk)
+      hasMcpAskResumeMessage(contextMessageList, syntheticAsk, {
+        containingMessageIndex,
+      })
     ) {
       return true;
     }
@@ -141,7 +147,12 @@ export function reconcileMessageAcpPermissionStatuses(
     return message;
   }
 
-  const context = contextMessageList ?? [message];
+  const context = sortMessagesByConversationIndex(
+    contextMessageList ?? [message],
+  );
+  const containingMessageIndex = context.findIndex(
+    (item) => item.id === message.id || item.index === message.index,
+  );
   let changed = false;
   const nextInteractions = interactions.map((interaction) => {
     if (
@@ -149,6 +160,7 @@ export function reconcileMessageAcpPermissionStatuses(
         interaction as AcpPermissionInteraction,
         message,
         context,
+        containingMessageIndex >= 0 ? containingMessageIndex : undefined,
       )
     ) {
       return interaction;
