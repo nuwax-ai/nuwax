@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { VOICE_INPUT_DEFAULTS } from '../config';
 import {
+  appendSmoothedWaveLevel,
   createEmptyWaveLevels,
   normalizeWaveLevel,
-  shiftWaveLevels,
 } from '../utils/waveLevels';
 import type { UseAudioRecorder } from './useAudioRecorder';
 import { RecorderError } from './useAudioRecorder';
@@ -52,15 +52,16 @@ export const useMockAudioRecorder = (): UseAudioRecorder => {
       setDurationSec(Math.floor((Date.now() - startedAtRef.current) / 1000));
     }, 1000);
 
-    // 演示态：用伪随机音量驱动波形，便于预览动效
+    // 演示态：用伪随机音量驱动波形时间线，便于预览动效。
+    // 伪 RMS 覆盖 ~0.004-0.15（约 -48dB~-16dB），配合 dB 感知映射呈现明显高低起伏
     waveTimerRef.current = setInterval(() => {
       const t = Date.now() / 180;
       const pseudoRms =
-        0.06 + Math.abs(Math.sin(t)) * 0.12 + Math.random() * 0.04;
+        0.004 + Math.abs(Math.sin(t)) * 0.1 + Math.random() * 0.05;
       setWaveLevels((prev) =>
-        shiftWaveLevels(prev, normalizeWaveLevel(pseudoRms)),
+        appendSmoothedWaveLevel(prev, normalizeWaveLevel(pseudoRms)),
       );
-    }, 80);
+    }, VOICE_INPUT_DEFAULTS.waveShiftIntervalMs);
   }, [status, clearTimer]);
 
   const stop = useCallback(async (): Promise<Blob> => {

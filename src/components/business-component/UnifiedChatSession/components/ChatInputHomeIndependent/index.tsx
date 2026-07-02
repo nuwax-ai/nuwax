@@ -1,7 +1,10 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import type { AgentMode } from '@/components/business-component/AgentIntervention';
 import PaymentSubscriptionModal from '@/components/business-component/PaymentSubscriptionModal';
-import { ChatInputVoiceFooter } from '@/components/business-component/VoiceInput';
+import {
+  ChatInputVoiceFooter,
+  mergeVoiceTranscript,
+} from '@/components/business-component/VoiceInput';
 import AtMentionIcon from '@/components/ChatInputHome/AtMentionIcon';
 import ComputerTypeSelector from '@/components/ChatInputHome/ComputerTypeSelector';
 import styles from '@/components/ChatInputHome/index.less';
@@ -745,12 +748,20 @@ const ChatInputHomeIndependent: React.FC<ChatInputHomeIndependentProps> = ({
             usageScenarios={usageScenarios}
           />
           <VoiceFooter.Provider
-            disabled={wholeDisabled || isSessionActive}
+            disabled={
+              wholeDisabled ||
+              isSessionActive ||
+              loadingConversation ||
+              isLoadingOtherInterface ||
+              isStoppingConversation
+            }
             mock={voiceInputMock}
             onFill={(text) =>
-              setMessageInfo((prev) => (prev ? `${prev}\n${text}` : text))
+              setMessageInfo((prev) => mergeVoiceTranscript(prev, text))
             }
-            onSend={confirmSendMessage}
+            onSend={(text) =>
+              confirmSendMessage(mergeVoiceTranscript(messageInfo, text))
+            }
           >
             {(isVoiceActive) => (
               <footer

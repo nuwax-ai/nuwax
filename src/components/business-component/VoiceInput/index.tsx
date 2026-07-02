@@ -12,5 +12,6 @@ import { ChatInputVoiceFooter } from './chatInputFooter';
 import VoiceRecordingBar from './components/RecordingBar';
 import type { VoiceInputControl, VoiceSubmitMode } from './types';
 
+export { mergeVoiceTranscript } from './chatInputFooter/Provider';
 export { ChatInputVoiceFooter, VoiceRecordingBar };
 export type { VoiceInputControl, VoiceSubmitMode };
