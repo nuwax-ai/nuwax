@@ -7,6 +7,7 @@ import {
   FileAddOutlined,
   FilePdfOutlined,
   FolderAddOutlined,
+  FolderOpenOutlined,
   ImportOutlined,
   UploadOutlined,
 } from '@ant-design/icons';
@@ -26,6 +27,7 @@ const FileContextMenu: React.FC<FileContextMenuProps> = ({
   onDelete,
   onRename,
   onUploadFiles,
+  onUploadFolder,
   onCreateFile,
   onCreateFolder,
   // 导入项目
@@ -91,6 +93,16 @@ const FileContextMenu: React.FC<FileContextMenuProps> = ({
       onUploadFiles(targetNode);
     });
   }, [targetNode, onUploadFiles, handleMenuItemClick]);
+
+  /**
+   * 处理上传文件夹操作
+   */
+  const handleUploadFolder = useCallback(() => {
+    if (!onUploadFolder) return;
+    handleMenuItemClick(() => {
+      onUploadFolder(targetNode);
+    });
+  }, [targetNode, onUploadFolder, handleMenuItemClick]);
 
   /**
    * 处理新建文件操作
@@ -266,6 +278,18 @@ const FileContextMenu: React.FC<FileContextMenuProps> = ({
             onClick: handleUpload,
             disabled: !onUploadFiles || targetNode?.name?.startsWith('.'),
           },
+          ...(onUploadFolder
+            ? [
+                {
+                  key: 'uploadFolder',
+                  label: dict('PC.Components.FileContextMenu.uploadFolder'),
+                  icon: <FolderOpenOutlined />,
+                  onClick: handleUploadFolder,
+                  disabled:
+                    !onUploadFolder || targetNode?.name?.startsWith('.'),
+                },
+              ]
+            : []),
           {
             key: 'divider2',
             type: 'divider' as const,
@@ -318,6 +342,18 @@ const FileContextMenu: React.FC<FileContextMenuProps> = ({
             onClick: handleUpload,
             disabled: !onUploadFiles || targetNode?.name?.startsWith('.'),
           },
+          ...(onUploadFolder
+            ? [
+                {
+                  key: 'uploadFolder',
+                  label: dict('PC.Components.FileContextMenu.uploadFolder'),
+                  icon: <FolderOpenOutlined />,
+                  onClick: handleUploadFolder,
+                  disabled:
+                    !onUploadFolder || targetNode?.name?.startsWith('.'),
+                },
+              ]
+            : []),
           {
             key: 'divider',
             type: 'divider' as const,
@@ -370,6 +406,17 @@ const FileContextMenu: React.FC<FileContextMenuProps> = ({
           onClick: handleUpload,
           disabled: !onUploadFiles,
         },
+        ...(onUploadFolder
+          ? [
+              {
+                key: 'uploadFolder',
+                label: dict('PC.Components.FileContextMenu.uploadFolder'),
+                icon: <FolderOpenOutlined />,
+                onClick: handleUploadFolder,
+                disabled: !onUploadFolder,
+              },
+            ]
+          : []),
       ];
 
   // 如果对于SKILL.md文件禁用删除功能和重命名功能，过滤掉删除菜单项、重命名菜单项和相关 divider

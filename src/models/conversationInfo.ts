@@ -1268,10 +1268,11 @@ export default () => {
               // cleanupPendingInteractions(currentMessage);
             }
 
-            const latestProcessingList = copyList.flatMap((message) =>
-              Array.isArray(message.processingList)
-                ? message.processingList
-                : [],
+            const latestProcessingList = copyList.flatMap(
+              (message: MessageInfo) =>
+                Array.isArray(message.processingList)
+                  ? message.processingList
+                  : [],
             );
             handleChatProcessingList(latestProcessingList);
 
