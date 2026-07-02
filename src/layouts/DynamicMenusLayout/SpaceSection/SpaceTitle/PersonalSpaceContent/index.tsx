@@ -347,6 +347,8 @@ const PersonalSpaceContent: React.FC<PersonalSpaceContentType> = ({
         </LimitedTooltip>
       </div>
       <Divider className={styles['divider']} />
+
+      {/* 搜索框 */}
       {showSpaceSearch && (
         <div className={cx(styles['space-search'])}>
           <Input
@@ -366,6 +368,8 @@ const PersonalSpaceContent: React.FC<PersonalSpaceContentType> = ({
           />
         </div>
       )}
+
+      {/* 空间列表 */}
       <ul
         className={cx('flex-1', 'overflow-y', {
           [styles['space-list-keyboard']]:
