@@ -17,15 +17,19 @@ import { HideDesktopEnum } from '@/types/enums/agent';
 import { FileNode } from '@/types/interfaces/appDev';
 import { checkFileSizeExceedLimit } from '@/utils';
 import {
+  buildUploadFilePaths,
+  filterFilesForUpload,
   filterFlatFileListForVersionControl,
   findBestMatchingFileNode,
   findFileNode,
   isAudioFile,
   isDocumentFile,
+  isIgnoredUploadRelativePath,
   isImageFile,
   isPreviewableFile,
   isVideoFile,
   processImageContent,
+  resolveFileTreeUploadRelativePath,
   transformFlatListToTree,
 } from '@/utils/appDevUtils';
 import { isMarkdownFile } from '@/utils/common';
@@ -1241,76 +1245,112 @@ export function useFileTreePreviewView(
   };
 
   /**
-   * 处理上传操作（从右键菜单触发）
+   * 打开文件/文件夹选择器并上传
+   * @param node 目标目录节点
+   * @param mode files=多文件上传；folder=文件夹上传（保留子目录结构）
    */
-  const handleUploadMultipleFiles = async (node: FileNode | null) => {
-    // 两种情况 第一个是文件夹，第二个是文件
-    let relativePath = '';
+  const triggerFileUpload = useCallback(
+    async (node: FileNode | null, mode: 'files' | 'folder') => {
+      const relativePath = resolveFileTreeUploadRelativePath(node);
+      const isFolderMode = mode === 'folder';
 
-    if (node) {
-      if (node.type === 'file') {
-        relativePath = node.path.replace(new RegExp(node.name + '$'), ''); //只替换以node.name结尾的部分
-      } else if (node.type === 'folder') {
-        relativePath = node.path + '/';
-      }
-    }
-
-    // 创建一个隐藏的文件输入框
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.style.display = 'none';
-    input.accept = '*';
-    input.multiple = true;
-    document.body.appendChild(input);
-
-    // 等待用户选择文件
-    input.click();
-
-    input.onchange = async (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file) {
-        document.body.removeChild(input);
-        return;
-      }
-
-      // 获取上传的文件列表
-      const files = Array.from((e.target as HTMLInputElement).files || []);
-      // 获取上传的文件路径列表
-      const filePaths = files.map((file) => relativePath + file.name);
-
-      // 检查文件大小是否超过最大上传文件大小
-      const { isExceedLimitSize, maxFileSize } =
-        checkFileSizeExceedLimit(files);
-      // 如果超过最大上传文件大小，则提示错误
-      if (isExceedLimitSize) {
-        message.error(
-          dict('PC.Common.Global.uploadFileSizeExceed', String(maxFileSize)),
+      if (isIgnoredUploadRelativePath(relativePath)) {
+        message.warning(
+          dict('PC.Components.FileContextMenu.uploadTargetInvalid'),
         );
         return;
       }
 
-      setIsUploadingFiles(true);
-
-      try {
-        // 直接调用现有的上传多个文件功能
-        await onUploadFiles?.(files, filePaths);
-
-        setTimeout(() => {
-          setIsUploadingFiles(false);
-        }, 1000);
-      } catch (error) {
-        console.error('Failed to upload file', error);
-        setIsUploadingFiles(false);
-      } finally {
-        document.body.removeChild(input);
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.style.display = 'none';
+      input.accept = '*';
+      if (isFolderMode) {
+        input.setAttribute('webkitdirectory', '');
+        input.setAttribute('directory', '');
+      } else {
+        input.multiple = true;
       }
-    };
+      document.body.appendChild(input);
 
-    // 如果用户取消选择，也要清理DOM
-    input.oncancel = () => {
-      document.body.removeChild(input);
-    };
-  };
+      const cleanupInput = () => {
+        if (input.parentNode) {
+          document.body.removeChild(input);
+        }
+      };
+
+      input.onchange = async (e) => {
+        const selectedFiles = Array.from(
+          (e.target as HTMLInputElement).files || [],
+        );
+        if (selectedFiles.length === 0) {
+          cleanupInput();
+          return;
+        }
+
+        const files = filterFilesForUpload(selectedFiles, isFolderMode);
+        if (files.length === 0) {
+          message.warning(
+            isFolderMode
+              ? dict('PC.Components.FileContextMenu.uploadFolderEmpty')
+              : dict('PC.Components.FileContextMenu.uploadFileEmpty'),
+          );
+          cleanupInput();
+          return;
+        }
+
+        const filePaths = buildUploadFilePaths(
+          files,
+          relativePath,
+          isFolderMode,
+        );
+
+        const { isExceedLimitSize, maxFileSize } =
+          checkFileSizeExceedLimit(files);
+        if (isExceedLimitSize) {
+          message.error(
+            dict('PC.Common.Global.uploadFileSizeExceed', String(maxFileSize)),
+          );
+          cleanupInput();
+          return;
+        }
+
+        setIsUploadingFiles(true);
+
+        try {
+          await onUploadFiles?.(files, filePaths);
+          setTimeout(() => {
+            setIsUploadingFiles(false);
+          }, 1000);
+        } catch (error) {
+          console.error('Failed to upload file', error);
+          setIsUploadingFiles(false);
+        } finally {
+          cleanupInput();
+        }
+      };
+
+      input.oncancel = cleanupInput;
+      input.click();
+    },
+    [onUploadFiles],
+  );
+
+  /** 上传多个文件（扁平，不含子目录） */
+  const handleUploadMultipleFiles = useCallback(
+    async (node: FileNode | null) => {
+      await triggerFileUpload(node, 'files');
+    },
+    [triggerFileUpload],
+  );
+
+  /** 上传文件夹（保留 webkitRelativePath 目录结构） */
+  const handleUploadFolder = useCallback(
+    async (node: FileNode | null) => {
+      await triggerFileUpload(node, 'folder');
+    },
+    [triggerFileUpload],
+  );
 
   /**
    * 处理删除操作
@@ -2080,6 +2120,7 @@ export function useFileTreePreviewView(
       handleDelete,
       handleRenameFromMenu,
       handleUploadMultipleFiles,
+      handleUploadFolder,
       handleCreateFile,
       handleCreateFolder,
       handleDownloadFileByUrl,
