@@ -338,6 +338,10 @@ const Home: React.FC = () => {
             dangerouslySetInnerHTML={{ __html: tenantConfigInfo?.homeSlogan }}
           />
         </div>
+        <ChatBoxRecommendNav
+          items={recommendNavList}
+          onSelect={handleRecommendSelect}
+        />
         <ChatInputHome
           ref={chatInputRef}
           className={cx(styles.textarea)}
@@ -386,10 +390,6 @@ const Home: React.FC = () => {
           showAgentModeSelector={
             agentDetail?.allowChooseMode === DefaultSelectedEnum.Yes
           }
-        />
-        <ChatBoxRecommendNav
-          items={recommendNavList}
-          onSelect={handleRecommendSelect}
         />
       </main>
       <section className={cx(styles.recommendSection)}>
