@@ -4,6 +4,7 @@ import { EVENT_TYPE } from '@/constants/event.constants';
 import useConversation from '@/hooks/useConversation';
 import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
+import { useAutoPreviewFile } from '@/pages/Chat/hooks/useAutoPreviewFile';
 import { dict } from '@/services/i18nRuntime';
 import {
   ExpandPageAreaEnum,
@@ -31,7 +32,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { useModel } from 'umi';
+import { useLocation, useModel } from 'umi';
 import styles from './index.less';
 import PreviewAndDebugHeader from './PreviewAndDebugHeader';
 
@@ -85,6 +86,14 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
   // 记录用户是否已发送消息（用于锁定电脑选择）
   const [hasUserSentMessage, setHasUserSentMessage] = useState<boolean>(false);
 
+  const location = useLocation();
+  const queryFileParam = useMemo(() => {
+    return new URLSearchParams(location.search).get('file');
+  }, [location.search]);
+
+  const { handleAutoPreviewLastFile } = useAutoPreviewFile();
+  const hasAutoPreviewedRef = useRef(false);
+
   const {
     conversationInfo,
     messageList,
@@ -119,6 +128,8 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     isFileTreeVisible,
     setIsFileTreePinned,
     taskAgentSelectedFileId,
+    setTaskAgentSelectedFileId,
+    setTaskAgentSelectTrigger,
     // 加载更多消息相关
     isMoreMessage,
     setIsMoreMessage,
@@ -225,6 +236,29 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
       // 查询会话
       runQueryConversation(devConversationId);
     }
+  }, [agentConfigInfo?.devConversationId]);
+
+  // 监听会话加载成功，根据参数或 task-result 自动打开文件
+  useEffect(() => {
+    const convId = devConversationIdRef.current;
+    if (convId && messageList?.length > 0 && !hasAutoPreviewedRef.current) {
+      hasAutoPreviewedRef.current = true;
+
+      // 如果 URL 带了 file 参数，直接打开对应文件
+      if (queryFileParam) {
+        openPreviewView(convId);
+        setTaskAgentSelectedFileId(queryFileParam);
+        setTaskAgentSelectTrigger(Date.now());
+      } else {
+        // 否则保持原来逻辑：如果最后一条消息存在 task-result 自动打开
+        handleAutoPreviewLastFile(messageList, convId);
+      }
+    }
+  }, [messageList, queryFileParam]);
+
+  // 切换会话时，重置自动预览的限制状态
+  useEffect(() => {
+    hasAutoPreviewedRef.current = false;
   }, [agentConfigInfo?.devConversationId]);
 
   // 监听会话更新事件，更新会话记录

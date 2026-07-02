@@ -608,6 +608,23 @@ const ConversationAgent: React.FC = () => {
     addBaseTarget();
   }, [location]);
 
+  // 任务结果文件点击自定义拦截处理器：跳转至 EditAgent 并携带 file 参数
+  const handleTaskResultClick = useCallback(
+    (fileId: string) => {
+      if (spaceId && agentId) {
+        window.open(
+          `/space/${spaceId}/agent/${agentId}?file=${encodeURIComponent(
+            fileId,
+          )}`,
+          '_blank',
+        );
+        return true; // 拦截默认定位逻辑
+      }
+      return false;
+    },
+    [spaceId, agentId],
+  );
+
   // ==================== 事件处理函数 ====================
 
   /**
@@ -1461,6 +1478,7 @@ const ConversationAgent: React.FC = () => {
         selectedComputerId={finalSelectedComputerId}
         onChangeSelectedComputerId={setSelectedComputerId}
         chatInputDisabled={shouldDisablePreviewChatInput}
+        onTaskResultClick={handleTaskResultClick}
       />
     ),
     [
@@ -1468,6 +1486,7 @@ const ConversationAgent: React.FC = () => {
       agentConfigInfo,
       finalSelectedComputerId,
       shouldDisablePreviewChatInput,
+      handleTaskResultClick,
     ],
   );
 
