@@ -184,3 +184,34 @@ export async function apiCheckVncStatus(
     },
   });
 }
+
+export interface IImportProjectParams {
+  // 会话ID
+  cId: number;
+  // 文件
+  file: File;
+  // 自定义目标目录
+  customTargetDir?: string;
+}
+
+/**
+ * 导入项目
+ * 上传 zip 包替换工作空间文件，保留 .git/.agents/.claude/.codex/.opencode/.tmp/.logs
+ */
+export async function apiImportProject(
+  params: IImportProjectParams,
+): Promise<RequestResponse<null>> {
+  const { file, cId, customTargetDir } = params;
+  const formData = new FormData();
+  formData.append('cId', cId.toString());
+  formData.append('file', file);
+
+  if (customTargetDir) {
+    formData.append('customTargetDir', customTargetDir);
+  }
+
+  return request('/api/computer/static/import-project', {
+    method: 'POST',
+    data: formData,
+  });
+}

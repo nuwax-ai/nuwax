@@ -31,6 +31,7 @@ import { dict } from '@/services/i18nRuntime';
 import { apiModelList } from '@/services/modelConfig';
 import {
   apiDownloadAllFiles,
+  apiImportProject,
   apiUpdateStaticFile,
   apiUploadFiles,
 } from '@/services/vncDesktop';
@@ -89,6 +90,7 @@ import {
 import PreviewTabBar from './ConversationAgentFilePreview/PreviewTabBar';
 import ConversationAgentHeader from './ConversationAgentHeader';
 import { useConversationAgentDevLogs } from './hooks/useConversationAgentDevLogs';
+import ImportProjectModal from './ImportProjectModal';
 import styles from './index.less';
 import { apiInstallAgentProjectDependencies } from './services/agent-dev';
 
@@ -176,6 +178,10 @@ const ConversationAgent: React.FC = () => {
   /** 源代码管理中选中的变更文件（含区块） */
   const [selectedChangeFile, setSelectedChangeFile] =
     useState<SelectedChangeFile | null>(null);
+  /** 导入项目弹窗 */
+  const [openImportProject, setOpenImportProject] = useState<boolean>(false);
+  /** 是否正在导入项目 */
+  const [isImportingProject, setIsImportingProject] = useState<boolean>(false);
   /** 标签选择面板是否展开 */
   /** 预览标签页操作 ref（供 fileViewProviderProps 回调使用） */
   const previewTabsRef = useRef<ReturnType<typeof usePreviewTabs> | null>(null);
@@ -482,12 +488,53 @@ const ConversationAgent: React.FC = () => {
   }, [agentIdFromQuery]);
 
   /** 安装项目依赖 */
-  const { run: runInstallProject } = useRequest(
+  const { runAsync: runInstallProject } = useRequest(
     apiInstallAgentProjectDependencies,
     {
       manual: true,
       debounceWait: 300,
     },
+  );
+
+  /** 打开导入项目弹窗 */
+  const handleImportProject = useCallback(async () => {
+    if (!queryConversationId) {
+      return;
+    }
+    setOpenImportProject(true);
+  }, [queryConversationId]);
+
+  /** 确认导入项目：上传 zip、刷新文件树与 Git 列表、安装依赖 */
+  const handleImportProjectConfirm = useCallback(
+    async (file: File) => {
+      if (!queryConversationId) {
+        return;
+      }
+
+      try {
+        setIsImportingProject(true);
+        const { code } = await apiImportProject({
+          cId: queryConversationId,
+          file,
+        });
+
+        if (code === SUCCESS_CODE) {
+          message.success(dict('PC.Pages.AppDevIndex.importProjectSuccess'));
+          setOpenImportProject(false);
+          void refreshFileListImmediately(queryConversationId);
+          await runInstallProject({
+            programmingLanguage: 'typescript',
+            cId: queryConversationId,
+          });
+          void refreshGitListIfEnabled();
+        }
+      } catch (error) {
+        console.error('[ConversationAgent] import project failed', error);
+      } finally {
+        setIsImportingProject(false);
+      }
+    },
+    [queryConversationId, refreshFileListImmediately, refreshGitListIfEnabled],
   );
 
   // 如果 URL 中有 conversationId，通过状态管理器的方法查询当前会话
@@ -1087,6 +1134,8 @@ const ConversationAgent: React.FC = () => {
           await apiDownloadAllFiles(queryConversationId);
         }
       },
+      onImportProject: handleImportProject,
+      isImportingProject,
       onRestartServer: () => {
         if (queryConversationId) {
           restartVncPod(queryConversationId, finalSelectedComputerId);
@@ -1203,6 +1252,8 @@ const ConversationAgent: React.FC = () => {
     closeAgentDesktop,
     restartVncPod,
     restartAgent,
+    handleImportProject,
+    isImportingProject,
   ]);
 
   /** 初始化文件视图 Hook，获取文件树和预览的渲染组件 */
@@ -1718,6 +1769,11 @@ const ConversationAgent: React.FC = () => {
                     enableVersionControl={enableVersionControl}
                     tree={fileView.tree}
                     treeClassName="w-full h-full"
+                    onImportProject={handleImportProject}
+                    importProjectLabel={dict(
+                      'PC.Pages.AppDevFileTreeContextMenu.importProject',
+                    )}
+                    isImportingProject={isImportingProject}
                     sourceControl={{
                       changeFiles: fileView.changeFiles,
                       selectedChangeFile: gitSourceControl.selectedChangeFile,
@@ -1780,6 +1836,13 @@ const ConversationAgent: React.FC = () => {
         open={openEditAgent}
         onCancel={() => setOpenEditAgent(false)}
         onConfirmUpdate={handlerConfirmEditAgent}
+      />
+      {/* 导入项目弹窗 */}
+      <ImportProjectModal
+        open={openImportProject}
+        loading={isImportingProject}
+        onCancel={() => setOpenImportProject(false)}
+        onConfirm={handleImportProjectConfirm}
       />
     </div>
   );
