@@ -1,7 +1,9 @@
+import { EVENT_TYPE } from '@/constants/event.constants';
 import { GLOBAL_POLLING_INTERVAL } from '@/constants/home.constants';
 import { TaskStatus } from '@/types/enums/agent';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import { fetchConversationTaskStatus } from '@/utils/conversationTaskStatusSync';
+import eventBus from '@/utils/eventBus';
 import { useRequest } from 'ahooks';
 import { useEffect, useRef, useState } from 'react';
 
@@ -109,6 +111,13 @@ export function useConversationStreamResume(
     isResumeSubscribedRef.current = true;
     setIsResumeSubscribed(true);
     pollingControlsRef.current.stop();
+
+    // 触发事件将对应的会话在列表中标记为“执行中”
+    eventBus.emit(EVENT_TYPE.UpdateConversationListTaskStatus, {
+      conversationId: id,
+      taskStatus: TaskStatus.EXECUTING,
+    });
+
     // 多页签/查看中变 EXECUTING：先 reload 历史，确保 messageList 含最新发送的用户消息，
     // 再追加 assistant 占位由 sub 流重建（否则 sub 续上后会少显示那条用户消息）
     let list = latestRef.current.messageList || [];
@@ -122,14 +131,35 @@ export function useConversationStreamResume(
         console.error('[useConversationStreamResume] reloadHistory failed:', e);
       }
     }
-    resumeStream(id, list, () => {
+    resumeStream(id, list, async () => {
       // sub 自动断开(end_turn/completed/超时)或被 abort 时回调
       isResumeSubscribedRef.current = false;
       setIsResumeSubscribed(false);
       // sub 关闭后恢复状态轮询，以便检测会话再次变为 EXECUTING
       pollingControlsRef.current.start();
+
+      // 流式恢复结束后，主动拉取一次最新历史状态以更新本地 model 状态（同步 taskStatus）
+      if (reloadHistoryAsync) {
+        try {
+          await reloadHistoryAsync(id);
+        } catch (e) {
+          console.error(
+            '[useConversationStreamResume] final reloadHistory failed:',
+            e,
+          );
+        }
+      }
+
+      // 发送事件，刷新会话列表以清除“执行中”标记，使其消失
+      eventBus.emit(EVENT_TYPE.RefreshConversationList, {
+        conversationId: id,
+        reason: 'stream-closed',
+      });
     });
   };
+
+  const subscribeRef = useRef(subscribe);
+  subscribeRef.current = subscribe;
 
   // 轮询会话状态：仅标签可见时触发(pollingWhenHidden:false)，复用全局轮询方案。
   // ready 含 !isResumeSubscribed：续上 sub 后不再轮询（subscribe 的 stopPolling 作立即兜底）。
@@ -212,6 +242,29 @@ export function useConversationStreamResume(
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversationId, taskStatus]);
+
+  // 监听浏览器切回前台（页签可见）事件，立即检查是否有任务在执行，并尝试进行流式恢复
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (
+        document.visibilityState === 'visible' &&
+        conversationId &&
+        !isLocallyStreaming &&
+        !isResumeSubscribedRef.current &&
+        resumeStream
+      ) {
+        fetchConversationTaskStatus(conversationId).then((status) => {
+          if (status === TaskStatus.EXECUTING) {
+            subscribeRef.current(conversationId);
+          }
+        });
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [conversationId, isLocallyStreaming, resumeStream]);
 
   // 离开 / 切换会话：清除轮询 + 中断 sub（约束：退出会话页必须清除轮询）
   useEffect(() => {
