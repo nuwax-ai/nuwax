@@ -485,6 +485,8 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
                 ellipsis={{
                   tooltip: {
                     title: titleText,
+                    getPopupContainer: (triggerNode) =>
+                      triggerNode.closest('.scroll-container') || document.body,
                     styles: {
                       root: { maxWidth: 380 },
                       body: {
