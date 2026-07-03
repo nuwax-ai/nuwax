@@ -408,22 +408,30 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   };
 
   useEffect(() => {
-    // 初始化智能体详情信息（优先使用状态中的详情，否则等待 conversationInfo.agent 快照）
-    const targetAgent = conversationInfo?.agent || defaultAgentDetail;
-    if (targetAgent) {
-      setAgentDetail(targetAgent);
-
-      // 如果智能体需要付费，则判断是否已订阅, 未订阅，显示付费弹窗
-      if (targetAgent.paymentRequired && !targetAgent.subscribed) {
-        setOpenPaymentModal(true);
-      } else {
-        setOpenPaymentModal(false);
-      }
-      // 设置应用智能体详情
-      handleSetAppAgentDetail(targetAgent);
-      handleOpenPreview(targetAgent);
+    // 只有当会话信息是属于当前会话，或者默认详情属于当前智能体时，数据才是有效的，过滤掉切换会话时残留的旧数据
+    let targetAgent: any = null;
+    if (conversationInfo && conversationInfo.id === id) {
+      targetAgent = conversationInfo.agent;
+    } else if (defaultAgentDetail && defaultAgentDetail.agentId === agentId) {
+      targetAgent = defaultAgentDetail;
     }
-  }, [agentId, defaultAgentDetail, conversationInfo?.agent]);
+
+    if (!targetAgent) {
+      return;
+    }
+
+    setAgentDetail(targetAgent);
+
+    // 如果智能体需要付费，则判断是否已订阅, 未订阅，显示付费弹窗
+    if (targetAgent.paymentRequired && !targetAgent.subscribed) {
+      setOpenPaymentModal(true);
+    } else {
+      setOpenPaymentModal(false);
+    }
+    // 设置应用智能体详情
+    handleSetAppAgentDetail(targetAgent);
+    handleOpenPreview(targetAgent);
+  }, [agentId, id, defaultAgentDetail, conversationInfo?.agent]);
 
   useEffect(() => {
     if (id) {
@@ -535,6 +543,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     // 切换会话时立即隐藏页面预览，并清除文件面板全局状态（fileTreeData / taskAgentSelectedFileId 等）
     hidePagePreview();
     clearFilePanelInfo();
+    setOpenPaymentModal(false);
 
     // 重置 clearLoading：此时 cleanup 已执行 resetInit() 清空了 conversationInfo，
     // conversationInfo 会无缝接管加载显示，不会出现 AgentChatEmpty 闪现
