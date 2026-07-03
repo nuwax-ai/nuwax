@@ -262,6 +262,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     // 会话流式恢复(sub)
     resumeConversationStream,
     abortResumeStream,
+    refreshGitListRef,
   } = useModel('conversationInfo');
 
   // 页面预览相关状态
@@ -581,8 +582,6 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     containerRef: messageViewRef,
     eventBindConfig: conversationInfo?.agent?.eventBindConfig,
   });
-
-  const refreshGitListRef = useRef<(() => void) | undefined>();
 
   const {
     handleCreateFileNode,
