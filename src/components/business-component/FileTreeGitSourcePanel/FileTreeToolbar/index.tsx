@@ -23,6 +23,10 @@ export interface FileTreeToolbarProps {
   exportLoading?: boolean;
   /** 项目导出 */
   onExportProject?: () => void;
+  /** 项目导入 loading */
+  importLoading?: boolean;
+  /** 项目导入 */
+  onImportProject?: () => void;
   /** 新建文件 */
   onCreateFile?: () => void;
   /** 新建文件夹 */
@@ -49,6 +53,8 @@ const FileTreeToolbar: React.FC<FileTreeToolbarProps> = ({
   disabled = false,
   exportLoading = false,
   onExportProject,
+  importLoading = false,
+  onImportProject,
   onCreateFile,
   onCreateFolder,
   onUpload,
@@ -83,6 +89,25 @@ const FileTreeToolbar: React.FC<FileTreeToolbarProps> = ({
             onClick={onExportProject}
           />
         </Tooltip>
+        {onImportProject && (
+          <Tooltip
+            title={dict(
+              'PC.Components.FileTreePanel.FileTreeToolbar.importProject',
+            )}
+          >
+            <Button
+              type="text"
+              size="small"
+              className={cx(styles['action-btn'])}
+              icon={
+                <SvgIcon name="icons-common-import" style={{ fontSize: 14 }} />
+              }
+              disabled={actionDisabled(onImportProject)}
+              loading={importLoading}
+              onClick={onImportProject}
+            />
+          </Tooltip>
+        )}
         <Tooltip
           title={dict('PC.Components.FileTreePanel.FileTreeToolbar.newFile')}
         >

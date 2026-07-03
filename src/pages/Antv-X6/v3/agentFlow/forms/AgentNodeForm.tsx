@@ -58,8 +58,8 @@ const AgentNodeForm: React.FC<NodeDisposeProps> = ({ form, nodeConfig }) => {
           inputFieldName="extraPrompt"
           onExpand
           placeholder={t(
-            'PC.Pages.AgentFlowNode.extraPromptPlaceholder',
-            '可添加提示词约束智能体输出格式...',
+            'PC.Pages.AgentFlowNode.extraPromptPlaceholder1',
+            '请输入补充提示词，进一步对智能体行为进行约束',
           )}
           variables={promptVariables}
         />

@@ -14,6 +14,10 @@ import {
 } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
+import {
+  limitMcpAskUploadFileList,
+  validateMcpAskRequiredFileField,
+} from '../utils/normalizeMcpAskFormData';
 import type { ParsedMcpAskField } from '../utils/parseMcpAskSchema';
 import { getJsonSchemaPrimaryType } from '../utils/parseMcpAskSchema';
 import styles from './McpAskFormField.less';
@@ -218,16 +222,33 @@ const McpAskFormField: React.FC<McpAskFormFieldProps> = ({
     const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
     const accept = (options as any)?.accept;
     const multiple = (options as any)?.multiple;
+    const fileRules = required
+      ? [
+          {
+            validator: async (_: unknown, value: unknown) => {
+              try {
+                validateMcpAskRequiredFileField(value);
+              } catch {
+                throw new Error(
+                  t('PC.Components.McpAskQuestionCard.fieldRequired'),
+                );
+              }
+            },
+          },
+        ]
+      : [];
 
     return (
       <Form.Item
         name={name}
         label={label}
-        rules={rules}
+        rules={fileRules}
         valuePropName="fileList"
         getValueFromEvent={(e) => {
-          if (Array.isArray(e)) return e;
-          return handleUploadFileList(e?.fileList ?? []);
+          const rawList = Array.isArray(e)
+            ? e
+            : handleUploadFileList(e?.fileList ?? []);
+          return limitMcpAskUploadFileList(rawList, multiple);
         }}
       >
         <Upload.Dragger
@@ -236,6 +257,7 @@ const McpAskFormField: React.FC<McpAskFormFieldProps> = ({
           data={{ type: 'tmp' }}
           disabled={disabled}
           multiple={multiple}
+          maxCount={multiple ? undefined : 1}
           accept={accept}
           listType="picture"
           className={cx(styles['upload-control'])}

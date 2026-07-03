@@ -15,6 +15,10 @@ import type {
   McpAskRespondPayload,
 } from '../types/mcpAskIntervention';
 import {
+  hydrateMcpAskFormValues,
+  normalizeMcpAskFormData,
+} from '../utils/normalizeMcpAskFormData';
+import {
   getInteractionSteps,
   getSkipLabel,
   isSkipAllowed,
@@ -88,8 +92,7 @@ const McpAskQuestionCard: React.FC<McpAskQuestionCardProps> = ({
         ? { ...fieldInitials, ...(interaction.formData ?? {}) }
         : interaction.formData;
     if (initial) {
-      // @ts-ignore
-      form.setFieldsValue(initial);
+      form.setFieldsValue(hydrateMcpAskFormValues(initial, ui));
     }
   }, [form, ui.fields, interaction.formData, input.requestId]);
 
@@ -133,7 +136,7 @@ const McpAskQuestionCard: React.FC<McpAskQuestionCardProps> = ({
     } else {
       await form.validateFields();
     }
-    const values = form.getFieldsValue(true);
+    const values = normalizeMcpAskFormData(form.getFieldsValue(true), ui);
     onRespond?.(buildPayload('submit', values));
   };
 

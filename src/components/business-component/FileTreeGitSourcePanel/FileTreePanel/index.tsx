@@ -176,6 +176,10 @@ const FileTreePanel: React.FC<FileTreePanelProps> = ({
         onExportProject={
           handleExportProject ? () => void handleExportProject() : undefined
         }
+        onImportProject={
+          handleImportProject ? () => void handleImportProject() : undefined
+        }
+        importLoading={isImportingProject}
         onCreateFile={
           readOnly
             ? undefined

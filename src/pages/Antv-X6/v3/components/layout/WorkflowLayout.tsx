@@ -6,6 +6,7 @@ import PublishComponentModal from '@/components/PublishComponentModal';
 import TestRun from '@/components/TestRun';
 import VersionHistory from '@/components/VersionHistory';
 import { resolveAgentFlowCreatedModalTabs } from '@/pages/Antv-X6/v3/agentFlow/createdPicker';
+import { runOrDeferHitlFormGraphSync } from '@/pages/Antv-X6/v3/agentFlow/forms/hitlFormImeGuard';
 import { testRunList } from '@/pages/Antv-X6/v3/constants/node.constants';
 import { AGENTFLOW_UI_CONFIG } from '@/pages/Antv-X6/v3/flowKind/flowKindConfig';
 import {
@@ -29,7 +30,7 @@ import { TestRunParams } from '@/types/interfaces/node';
 import { ErrorParams } from '@/types/interfaces/workflow';
 import { LoadingOutlined } from '@ant-design/icons';
 import { Form, FormInstance, Spin } from 'antd';
-import React, { MutableRefObject, useMemo } from 'react';
+import React, { MutableRefObject, useCallback, useMemo } from 'react';
 import VersionAction from '../../../components/VersionAction';
 import { clearPendingNodeCreateSession } from '../../utils/nodeCreateSession';
 import { returnBackgroundColor, returnImg } from '../../utils/workflowV3';
@@ -212,6 +213,14 @@ const WorkflowLayout: React.FC<WorkflowLayoutProps> = ({
   flowControlModel,
   onFlowControlModelChange,
 }) => {
+  const handleFormValuesChange = useCallback(
+    (changedValues: Record<string, unknown>) => {
+      runOrDeferHitlFormGraphSync(() => {
+        throttledHandleGraphUpdate(changedValues, form.getFieldsValue(true));
+      });
+    },
+    [form, throttledHandleGraphUpdate],
+  );
   const isAgentFlow = useIsAgentFlow();
   const agentFlowKind = useAgentFlowKind();
 
@@ -330,10 +339,7 @@ const WorkflowLayout: React.FC<WorkflowLayoutProps> = ({
             key={`${foldWrapItem.type}-${foldWrapItem.id}-form`}
             initialValues={foldWrapItem.nodeConfig}
             clearOnDestroy={true}
-            onValuesChange={(values) => {
-              // 使用节流处理，确保最后一次调用必须触发更新
-              throttledHandleGraphUpdate(values, form.getFieldsValue(true));
-            }}
+            onValuesChange={handleFormValuesChange}
           >
             <NodePanelDrawer
               params={foldWrapItem}
