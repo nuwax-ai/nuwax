@@ -1,8 +1,13 @@
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import {
   buildMcpAskResumeMessage,
+  buildMcpAskResumeTextDisplay,
+  extractMcpAskResumeDocumentAttachments,
+  extractMcpAskResumeImageAttachments,
   hasMcpAskResumeMessage,
   isMcpAskResumeMessageForInteraction,
+  isRemoteImageUrl,
+  parseMcpAskResumeDisplayContent,
   stripMcpAskResumeDisplayArtifacts,
 } from './mcpAskResumeMessage';
 
@@ -334,6 +339,159 @@ describe('stripMcpAskResumeDisplayArtifacts', () => {
     expect(stripMcpAskResumeDisplayArtifacts(raw)).toBe(
       '我已填写「补充回复」，表单内容如下：\n文件上传：https://cdn.example.com/shot.png',
     );
+  });
+});
+
+describe('parseMcpAskResumeDisplayContent', () => {
+  it('parses single and multiple image fields for structured user display', () => {
+    const raw = [
+      '我已填写「补充回复」，表单内容如下：',
+      '文件上传：https://cdn.example.com/a.png',
+      '相关附件：https://cdn.example.com/1.png、https://cdn.example.com/2.png',
+      '补充说明：先跑关键链路',
+      '<!--nuwax-mcp-ask-request-id:ask-1-->',
+    ].join('\n');
+
+    const parsed = parseMcpAskResumeDisplayContent(raw);
+    expect(parsed.kind).toBe('resume');
+    expect(parsed.preamble).toBe('我已填写「补充回复」，表单内容如下：');
+    expect(parsed.fields).toEqual([
+      {
+        label: '文件上传',
+        imageUrls: ['https://cdn.example.com/a.png'],
+      },
+      {
+        label: '相关附件',
+        imageUrls: [
+          'https://cdn.example.com/1.png',
+          'https://cdn.example.com/2.png',
+        ],
+      },
+      {
+        label: '补充说明',
+        textValue: '先跑关键链路',
+      },
+    ]);
+  });
+
+  it('falls back to plain text for non-resume user messages', () => {
+    expect(parseMcpAskResumeDisplayContent('普通用户消息')).toEqual({
+      kind: 'plain',
+      plainText: '普通用户消息',
+    });
+  });
+
+  it('detects remote image urls by extension', () => {
+    expect(isRemoteImageUrl('https://cdn.example.com/a.PNG')).toBe(true);
+    expect(isRemoteImageUrl('https://cdn.example.com/doc.pdf')).toBe(false);
+  });
+
+  it('parses document file urls separately from images and text', () => {
+    const raw = [
+      '我已填写「补充回复」，表单内容如下：',
+      'PDF 文档：https://cdn.example.com/report.pdf',
+      '混合附件：https://cdn.example.com/a.png、https://cdn.example.com/b.pdf、备注说明',
+      '<!--nuwax-mcp-ask-request-id:ask-1-->',
+    ].join('\n');
+
+    const parsed = parseMcpAskResumeDisplayContent(raw);
+    expect(parsed.fields).toEqual([
+      {
+        label: 'PDF 文档',
+        fileUrls: ['https://cdn.example.com/report.pdf'],
+      },
+      {
+        label: '混合附件',
+        imageUrls: ['https://cdn.example.com/a.png'],
+        fileUrls: ['https://cdn.example.com/b.pdf'],
+        textValue: '备注说明',
+      },
+    ]);
+  });
+});
+
+describe('MCP Ask resume display-only helpers', () => {
+  it('does not change buildMcpAskResumeMessage payload sent to chat', () => {
+    activeDict = zhCnResumeDict;
+    activeLang = 'zh-CN';
+    const sent = buildMcpAskResumeMessage(
+      {
+        ...baseInteraction,
+        input: {
+          ...baseInteraction.input,
+          ui: {
+            ...baseInteraction.input.ui,
+            fields: [{ name: 'screenshot', title: '文件上传', widget: 'file' }],
+          },
+        },
+      },
+      {
+        interventionId: 'ask-1',
+        revision: 1,
+        source: 'mcp_ask',
+        protocol: 'mcp',
+        action: 'submit',
+        formData: {
+          screenshot: 'https://cdn.example.com/a.png',
+        },
+      },
+    );
+
+    expect(sent).toContain('文件上传：https://cdn.example.com/a.png');
+    expect(sent).toContain('<!--nuwax-mcp-ask-request-id:ask-1-->');
+  });
+
+  it('buildMcpAskResumeTextDisplay hides image urls in bubble text only', () => {
+    const raw = [
+      '我已填写「补充回复」，表单内容如下：',
+      '文件上传：https://cdn.example.com/a.png',
+      '相关附件：https://cdn.example.com/1.png、https://cdn.example.com/2.png',
+    ].join('\n');
+
+    expect(buildMcpAskResumeTextDisplay(raw)).toBe(
+      ['我已填写「补充回复」，表单内容如下：', '文件上传：', '相关附件：'].join(
+        '\n',
+      ),
+    );
+    expect(raw).toContain('https://cdn.example.com/a.png');
+  });
+
+  it('buildMcpAskResumeTextDisplay hides document urls in bubble text only', () => {
+    const raw = [
+      '我已填写「补充回复」，表单内容如下：',
+      'PDF 文档：https://cdn.example.com/report.pdf',
+    ].join('\n');
+
+    expect(buildMcpAskResumeTextDisplay(raw)).toBe(
+      ['我已填写「补充回复」，表单内容如下：', 'PDF 文档：'].join('\n'),
+    );
+  });
+
+  it('extractMcpAskResumeDocumentAttachments maps file urls to attachment shape', () => {
+    const raw = [
+      '我已填写「补充回复」，表单内容如下：',
+      'PDF 文档：https://cdn.example.com/report.pdf',
+      '表格：https://cdn.example.com/data.xlsx',
+    ].join('\n');
+
+    const files = extractMcpAskResumeDocumentAttachments(raw);
+    expect(files).toHaveLength(2);
+    expect(files[0].fileName).toBe('report.pdf');
+    expect(files[0].mimeType).toBe('application/pdf');
+    expect(files[1].fileName).toBe('data.xlsx');
+  });
+
+  it('extractMcpAskResumeImageAttachments is display-only virtual attachments', () => {
+    const raw = [
+      '我已填写「补充回复」，表单内容如下：',
+      '相关附件：https://cdn.example.com/1.png、https://cdn.example.com/2.png',
+    ].join('\n');
+
+    const files = extractMcpAskResumeImageAttachments(raw);
+    expect(files).toHaveLength(2);
+    expect(files[0].fileUrl).toBe('https://cdn.example.com/1.png');
+    expect(files[0].mimeType).toBe('image/png');
+    expect(files[1].fileUrl).toBe('https://cdn.example.com/2.png');
   });
 });
 
