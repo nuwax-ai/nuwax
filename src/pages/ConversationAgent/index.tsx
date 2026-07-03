@@ -521,6 +521,10 @@ const ConversationAgent: React.FC = () => {
         if (code === SUCCESS_CODE) {
           message.success(dict('PC.Pages.AppDevIndex.importProjectSuccess'));
           setOpenImportProject(false);
+          // 导入后重置顶部标签栏：仅保留预览、版本管控，关闭已打开的文件/diff 等页签
+          closeAgentDesktop();
+          setSelectedChangeFile(null);
+          previewTabsRef.current?.closeAllTabs();
           void refreshFileListImmediately(queryConversationId);
           await runInstallProject({
             programmingLanguage: 'typescript',
@@ -534,7 +538,12 @@ const ConversationAgent: React.FC = () => {
         setIsImportingProject(false);
       }
     },
-    [queryConversationId, refreshFileListImmediately, refreshGitListIfEnabled],
+    [
+      queryConversationId,
+      refreshFileListImmediately,
+      refreshGitListIfEnabled,
+      closeAgentDesktop,
+    ],
   );
 
   // 如果 URL 中有 conversationId，通过状态管理器的方法查询当前会话
