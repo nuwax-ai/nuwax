@@ -673,39 +673,20 @@ export function getMcpAskResumeTitle(interaction: McpAskInteraction): string {
   );
 }
 
-/**
- * 会话中已有更早（或同条 assistant 消息内）其他同 title 询问时，
- * 无 marker 的 legacy 标题匹配不可靠，应仅依赖 requestId 标记。
- */
+/** 存在其他同 title ask 时，标题兜底无法可靠判断 resume 归属。 */
 function shouldBlockLegacyTitleMatch(
   sortedMessages: MessageInfo[],
-  containingMessage: MessageInfo | undefined,
-  containingOrdinal: number | undefined,
   interaction: McpAskInteraction,
 ): boolean {
-  if (!containingMessage || containingOrdinal === undefined) {
-    return false;
-  }
   const title = getMcpAskResumeTitle(interaction);
 
-  return sortedMessages.some((message) => {
-    const ordinal = readMessageOrdinal(message, 0);
-    const isEarlier = ordinal < containingOrdinal;
-    const isSameMessage =
-      (containingMessage.id !== undefined &&
-        message.id === containingMessage.id) ||
-      (containingMessage.index !== undefined &&
-        message.index === containingMessage.index);
-    if (!isEarlier && !isSameMessage) {
-      return false;
-    }
-
-    return (message.mcpAskInteractions ?? []).some(
+  return sortedMessages.some((message) =>
+    (message.mcpAskInteractions ?? []).some(
       (item) =>
         item.input.requestId !== interaction.input.requestId &&
         getMcpAskResumeTitle(item) === title,
-    );
-  });
+    ),
+  );
 }
 
 function resolveContainingMessageIndex(
@@ -764,8 +745,19 @@ function messageMatchesAnyResumeSignature(
 function collectSameTitleAskOrdinals(
   sortedMessages: MessageInfo[],
   title: string,
-): Array<{ ordinal: number; requestId: string }> {
-  const entries: Array<{ ordinal: number; requestId: string }> = [];
+): Array<{
+  ordinal: number;
+  sequence: number;
+  requestId: string;
+  resolved: boolean;
+}> {
+  const entries: Array<{
+    ordinal: number;
+    sequence: number;
+    requestId: string;
+    resolved: boolean;
+  }> = [];
+  let sequence = 0;
 
   sortedMessages.forEach((message, messageIndex) => {
     const ordinal = readMessageOrdinal(message, messageIndex);
@@ -773,35 +765,56 @@ function collectSameTitleAskOrdinals(
       if (getMcpAskResumeTitle(item) !== title) {
         return;
       }
-      entries.push({ ordinal, requestId: item.input.requestId });
+      const responseStatus = item.responseStatus ?? 'pending';
+      entries.push({
+        ordinal,
+        sequence: sequence++,
+        requestId: item.input.requestId,
+        resolved:
+          responseStatus !== 'pending' && responseStatus !== 'submitting',
+      });
     });
   });
 
-  return entries.sort((left, right) => left.ordinal - right.ordinal);
+  return entries.sort(
+    (left, right) =>
+      left.ordinal - right.ordinal || left.sequence - right.sequence,
+  );
 }
 
 function collectSameTitleResumeOrdinals(
   sortedMessages: MessageInfo[],
   title: string,
-): number[] {
-  const ordinals: number[] = [];
+): Array<{ ordinal: number; sequence: number }> {
+  const entries: Array<{ ordinal: number; sequence: number }> = [];
 
   sortedMessages.forEach((message, messageIndex) => {
     if (message.role !== undefined && message.role !== AssistantRoleEnum.USER) {
       return;
     }
     const text = message.text;
-    if (!messageMatchesAnyResumeSignature(text, title)) {
+    if (
+      !text ||
+      messageHasForeignRequestIdMarker(text) ||
+      !messageMatchesAnyResumeSignature(text, title)
+    ) {
       return;
     }
-    ordinals.push(readMessageOrdinal(message, messageIndex));
+    entries.push({
+      ordinal: readMessageOrdinal(message, messageIndex),
+      sequence: messageIndex,
+    });
   });
 
-  return ordinals.sort((left, right) => left - right);
+  return entries.sort(
+    (left, right) =>
+      left.ordinal - right.ordinal || left.sequence - right.sequence,
+  );
 }
 
 /**
- * 同 title 多次询问时，按消息顺序将第 N 次 ask 与第 N 条 resume 配对。
+ * 同 title 多次询问时，将无 marker 的 resume 配给它之前最可信的 ask：
+ * 已有终态的 ask 优先，否则取位置最近的未配对 ask。
  * 不依赖写入 chat 接口的 HTML 注释 marker。
  */
 function hasOrdinalPairedResumeMessage(
@@ -811,27 +824,39 @@ function hasOrdinalPairedResumeMessage(
   const title = getMcpAskResumeTitle(interaction);
   const asks = collectSameTitleAskOrdinals(sortedMessages, title);
   const resumes = collectSameTitleResumeOrdinals(sortedMessages, title);
-  const askIndex = asks.findIndex(
+  const targetAsk = asks.find(
     (entry) => entry.requestId === interaction.input.requestId,
   );
-
-  if (askIndex < 0 || askIndex >= resumes.length) {
+  if (!targetAsk) {
     return false;
   }
 
-  const askOrdinal = asks[askIndex].ordinal;
-  const resumeOrdinal = resumes[askIndex];
+  const pairedRequestIds = new Set<string>();
+  resumes.forEach((resume) => {
+    const candidates = asks.filter(
+      (ask) =>
+        !pairedRequestIds.has(ask.requestId) &&
+        (ask.ordinal < resume.ordinal ||
+          (ask.ordinal === resume.ordinal && ask.sequence <= resume.sequence)),
+    );
+    if (!candidates.length) {
+      return;
+    }
 
-  if (resumeOrdinal > askOrdinal) {
+    const resolvedCandidate = candidates.find((ask) => ask.resolved);
+    const selectedAsk = resolvedCandidate ?? candidates[candidates.length - 1];
+    pairedRequestIds.add(selectedAsk.requestId);
+  });
+
+  if (pairedRequestIds.has(targetAsk.requestId)) {
     return true;
   }
 
-  // 历史 hydrate：resume 的 index 可能小于 ask（存储乱序），仅在同 title 单 ask 时兜底
+  // 历史 hydrate：单条无 marker resume 的 index 可能小于 ask（存储乱序）
   return (
-    askIndex === 0 &&
     asks.length === 1 &&
     resumes.length === 1 &&
-    resumeOrdinal < askOrdinal
+    resumes[0].ordinal < targetAsk.ordinal
   );
 }
 
@@ -911,14 +936,7 @@ export function hasMcpAskResumeMessage(
     return true;
   }
 
-  if (
-    shouldBlockLegacyTitleMatch(
-      sortedMessages,
-      containingMessage,
-      containingOrdinal,
-      interaction,
-    )
-  ) {
+  if (shouldBlockLegacyTitleMatch(sortedMessages, interaction)) {
     return false;
   }
 

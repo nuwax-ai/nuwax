@@ -549,6 +549,24 @@ describe('MCP Ask resume display-only helpers', () => {
 });
 
 describe('isMcpAskResumeMessageForInteraction', () => {
+  const createSharedTitleInteraction = (
+    requestId: string,
+    responseStatus?: McpAskInteraction['responseStatus'],
+  ): McpAskInteraction => ({
+    ...baseInteraction,
+    toolCallId: `tc-${requestId}`,
+    responseStatus,
+    input: {
+      ...baseInteraction.input,
+      requestId,
+      title: '补充回复',
+      ui: {
+        ...baseInteraction.input.ui,
+        title: '补充回复',
+      },
+    },
+  });
+
   it('matches resume messages across supported locales and legacy Chinese text', () => {
     activeDict = enUsResumeDict;
     activeLang = 'en-US';
@@ -726,5 +744,117 @@ describe('isMcpAskResumeMessageForInteraction', () => {
         containingMessageIndex: 0,
       }),
     ).toBe(true);
+  });
+
+  it('pairs a lone resume with the nearest preceding unresolved same-title ask', () => {
+    const firstInteraction = createSharedTitleInteraction('ask-first');
+    const secondInteraction = createSharedTitleInteraction('ask-second');
+    const resumeText = '我已填写「补充回复」，表单内容如下：\n你的名字：alice';
+    const messageList = [
+      {
+        id: 'assistant-ask-1',
+        index: 0,
+        mcpAskInteractions: [firstInteraction],
+      },
+      {
+        id: 'assistant-ask-2',
+        index: 2,
+        mcpAskInteractions: [secondInteraction],
+      },
+      {
+        id: 'user-resume-2',
+        index: 3,
+        role: AssistantRoleEnum.USER,
+        text: resumeText,
+      },
+    ] as MessageInfo[];
+
+    expect(
+      hasMcpAskResumeMessage(messageList, firstInteraction, {
+        containingMessageIndex: 0,
+      }),
+    ).toBe(false);
+    expect(
+      hasMcpAskResumeMessage(messageList, secondInteraction, {
+        containingMessageIndex: 1,
+      }),
+    ).toBe(true);
+  });
+
+  it('does not pair a foreign marker-era resume with a new same-title ask', () => {
+    const interaction = createSharedTitleInteraction('ask-new');
+    const messageList = [
+      {
+        id: 'user-old-resume',
+        index: 1,
+        role: AssistantRoleEnum.USER,
+        text: [
+          '我已填写「补充回复」，表单内容如下：',
+          '你的名字：alice',
+          '<!--nuwax-mcp-ask-request-id:ask-old-->',
+        ].join('\n'),
+      },
+      {
+        id: 'assistant-new-ask',
+        index: 5,
+        mcpAskInteractions: [interaction],
+      },
+    ] as MessageInfo[];
+
+    expect(
+      hasMcpAskResumeMessage(messageList, interaction, {
+        containingMessageIndex: 1,
+      }),
+    ).toBe(false);
+  });
+
+  it('pairs an ask and resume that share the same conversation index', () => {
+    const interaction = createSharedTitleInteraction('ask-tie');
+    const messageList = [
+      {
+        id: 'assistant-ask',
+        index: 7,
+        mcpAskInteractions: [interaction],
+      },
+      {
+        id: 'user-resume',
+        index: 7,
+        role: AssistantRoleEnum.USER,
+        text: '我已填写「补充回复」，表单内容如下：\n你的名字：alice',
+      },
+    ] as MessageInfo[];
+
+    expect(
+      hasMcpAskResumeMessage(messageList, interaction, {
+        containingMessageIndex: 0,
+      }),
+    ).toBe(true);
+  });
+
+  it('prefers a resolved ask when same-title asks share one message', () => {
+    const firstInteraction = createSharedTitleInteraction(
+      'ask-first',
+      'submitted',
+    );
+    const secondInteraction = createSharedTitleInteraction(
+      'ask-second',
+      'pending',
+    );
+    const messageList = [
+      {
+        id: 'assistant-asks',
+        index: 1,
+        mcpAskInteractions: [firstInteraction, secondInteraction],
+      },
+      {
+        id: 'user-resume',
+        index: 2,
+        role: AssistantRoleEnum.USER,
+        text: '我已填写「补充回复」，表单内容如下：\n你的名字：alice',
+      },
+    ] as MessageInfo[];
+
+    expect(hasMcpAskResumeMessage(messageList, firstInteraction)).toBe(true);
+    expect(hasMcpAskResumeMessage(messageList, secondInteraction)).toBe(false);
   });
 });
