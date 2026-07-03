@@ -8,6 +8,7 @@ import {
 } from '@/services/skill';
 import { PublishStatusEnum } from '@/types/enums/common';
 import type { FileNode } from '@/types/interfaces/appDev';
+import type { RequestResponse } from '@/types/interfaces/request';
 import type {
   SkillDetailInfo,
   SkillFileInfo,
@@ -28,7 +29,7 @@ interface UseSkillFilesProps {
   spaceId: number;
   skillInfo: SkillDetailInfo | null;
   setSkillInfo: React.Dispatch<React.SetStateAction<SkillDetailInfo | null>>;
-  runSkillInfo: (skillId: number) => any;
+  runSkillInfo: (skillId: number) => Promise<RequestResponse<SkillDetailInfo>>;
 }
 
 export const useSkillFiles = ({
@@ -370,7 +371,8 @@ export const useSkillFiles = ({
       if (code === SUCCESS_CODE) {
         message.success(t('PC.Pages.SkillDetails.importSuccess'));
         setOpenImportSkillProject(false);
-        runSkillInfo(skillId);
+        setFileTreeDataLoading(true);
+        await runSkillInfo(skillId);
         setImportProjectTrigger(Date.now());
       }
     } catch (error) {
