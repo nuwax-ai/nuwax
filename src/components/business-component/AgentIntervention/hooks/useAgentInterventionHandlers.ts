@@ -1,6 +1,7 @@
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { apiAgentInterventionRespond } from '@/services/agentConfig';
 import { dict } from '@/services/i18nRuntime';
+import type { UploadFileInfo } from '@/types/interfaces/common';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import { message } from 'antd';
 import { useCallback, type Dispatch, type SetStateAction } from 'react';
@@ -14,6 +15,12 @@ import type {
 } from '../types/mcpAskIntervention';
 import { buildMcpAskResumeMessage } from '../utils/mcpAskResumeMessage';
 import { isIdempotentAcpPermissionResolveError } from '../utils/reconcileAcpPermissionStatus';
+
+/** MCP Ask resume 发送结果：正文 + 可选附件（走 chat attachments） */
+export interface McpAskResumeSendResult {
+  text: string;
+  files?: UploadFileInfo[];
+}
 
 export interface UseAgentInterventionHandlersOptions {
   setMessageList: Dispatch<SetStateAction<MessageInfo[]>>;
@@ -167,7 +174,12 @@ export function useAgentInterventionHandlers({
         responseStatus: resolveStatus(),
         formData: payload.formData,
       });
-      return buildMcpAskResumeMessage(interaction, payload);
+      const text = buildMcpAskResumeMessage(interaction, payload);
+      const files =
+        action === 'submit' && payload.files?.length
+          ? payload.files
+          : undefined;
+      return { text, files };
     },
     [updateMcpAskInteraction],
   );

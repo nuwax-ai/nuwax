@@ -19,6 +19,126 @@ function isUploadFileInfoLike(item: unknown): item is UploadFileInfo {
   );
 }
 
+/** 判断是否为会话附件结构（Mobile AttachmentFile） */
+function isAttachmentFileLike(item: unknown): item is {
+  fileUrl?: string;
+  fileKey?: string;
+  fileName?: string;
+  mimeType?: string;
+  fileSize?: number;
+} {
+  return (
+    !!item &&
+    typeof item === 'object' &&
+    ('fileUrl' in item || 'fileName' in item || 'fileKey' in item)
+  );
+}
+
+function inferFileNameFromUrl(url: string): string {
+  try {
+    const segment = new URL(url).pathname.split('/').filter(Boolean).pop();
+    return segment || 'file';
+  } catch {
+    return 'file';
+  }
+}
+
+/** 将单个远程 URL 转为 Upload 组件可识别的已完成文件项 */
+export function urlToUploadFileInfo(url: string, index = 0): UploadFileInfo {
+  return {
+    uid: `mcp-ask-url-${index}-${url}`,
+    name: inferFileNameFromUrl(url),
+    type: '',
+    size: 0,
+    url,
+    status: UploadFileStatus.done,
+  };
+}
+
+/** 将 UploadFileInfo / AttachmentFile / URL 转为发送消息用的 UploadFileInfo */
+function toUploadFileInfo(item: unknown, index: number): UploadFileInfo | null {
+  if (typeof item === 'string' && isRemoteFileUrl(item)) {
+    return urlToUploadFileInfo(item, index);
+  }
+
+  if (isUploadFileInfoLike(item)) {
+    if (item.status === UploadFileStatus.removed) {
+      return null;
+    }
+    const url = item.url;
+    if (!isRemoteFileUrl(url)) {
+      return null;
+    }
+    return {
+      uid: item.uid || `mcp-ask-file-${index}`,
+      name: item.name || inferFileNameFromUrl(url),
+      type: item.type || '',
+      size: item.size || 0,
+      url,
+      key: item.key,
+      status: item.status ?? UploadFileStatus.done,
+    };
+  }
+
+  if (isAttachmentFileLike(item)) {
+    const url = item.fileUrl;
+    if (!isRemoteFileUrl(url)) {
+      return null;
+    }
+    return {
+      uid: item.fileKey || `mcp-ask-attach-${index}`,
+      name: item.fileName || inferFileNameFromUrl(url),
+      type: item.mimeType || '',
+      size: item.fileSize || 0,
+      url,
+      key: item.fileKey,
+      status: UploadFileStatus.done,
+    };
+  }
+
+  return null;
+}
+
+/**
+ * 从 MCP Ask 表单 file 字段收集已上传附件，供 resume 消息走 chat attachments 发送。
+ * 兼容 UploadFileInfo[]、AttachmentFile[]、URL 字符串及其数组。
+ */
+export function extractMcpAskFormAttachments(
+  formData: Record<string, unknown>,
+  ui: InteractionUiSchema,
+): UploadFileInfo[] {
+  const attachments: UploadFileInfo[] = [];
+
+  parseInteractionFields(ui).forEach((field) => {
+    if (field.widget !== 'file') {
+      return;
+    }
+    if (!Object.prototype.hasOwnProperty.call(formData, field.name)) {
+      return;
+    }
+
+    const rawValue = formData[field.name];
+    const items: unknown[] = [];
+
+    if (typeof rawValue === 'string') {
+      items.push(rawValue);
+    } else if (Array.isArray(rawValue)) {
+      items.push(...rawValue);
+    } else if (rawValue !== undefined && rawValue !== null && rawValue !== '') {
+      items.push(rawValue);
+    }
+
+    items.forEach((item) => {
+      const fileInfo = toUploadFileInfo(item, attachments.length);
+      if (fileInfo) {
+        attachments.push(fileInfo);
+      }
+    });
+  });
+
+  return attachments;
+}
+
 /**
  * 从表单原始值中提取已上传文件的远程 URL 列表。
  * 兼容：已是 URL 字符串、URL 数组、UploadFileInfo 对象或数组。
@@ -37,11 +157,22 @@ export function extractUploadedFileUrls(value: unknown): string[] {
       return value.filter(isRemoteFileUrl);
     }
 
+    if (value.length > 0 && isAttachmentFileLike(value[0])) {
+      return value
+        .filter(isAttachmentFileLike)
+        .map((item) => item.fileUrl)
+        .filter(isRemoteFileUrl);
+    }
+
     return value
       .filter(isUploadFileInfoLike)
       .filter((item) => item.status !== UploadFileStatus.removed)
       .map((item) => item.url)
       .filter(isRemoteFileUrl);
+  }
+
+  if (isAttachmentFileLike(value)) {
+    return isRemoteFileUrl(value.fileUrl) ? [value.fileUrl] : [];
   }
 
   if (isUploadFileInfoLike(value)) {
@@ -100,27 +231,6 @@ export function normalizeMcpAskFormData(
   });
 
   return normalized;
-}
-
-function inferFileNameFromUrl(url: string): string {
-  try {
-    const segment = new URL(url).pathname.split('/').filter(Boolean).pop();
-    return segment || 'file';
-  } catch {
-    return 'file';
-  }
-}
-
-/** 将单个远程 URL 转为 Upload 组件可识别的已完成文件项 */
-export function urlToUploadFileInfo(url: string, index = 0): UploadFileInfo {
-  return {
-    uid: `mcp-ask-url-${index}-${url}`,
-    name: inferFileNameFromUrl(url),
-    type: '',
-    size: 0,
-    url,
-    status: UploadFileStatus.done,
-  };
 }
 
 /**
