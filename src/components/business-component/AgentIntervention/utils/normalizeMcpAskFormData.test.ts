@@ -3,6 +3,7 @@ import type { UploadFileInfo } from '@/types/interfaces/common';
 import { describe, expect, it } from 'vitest';
 import type { InteractionUiSchema } from '../types/mcpAskIntervention';
 import {
+  extractMcpAskFormAttachments,
   extractUploadedFileUrls,
   hydrateMcpAskFileFieldValue,
   hydrateMcpAskFormValues,
@@ -255,5 +256,55 @@ describe('normalizeMcpAskFormData', () => {
 
     expect(limitMcpAskUploadFileList(files, false)).toEqual([files[1]]);
     expect(limitMcpAskUploadFileList(files, true)).toEqual(files);
+  });
+
+  it('extractMcpAskFormAttachments collects file widgets as UploadFileInfo', () => {
+    const ui = fileUi([
+      { name: 'screenshot', title: '截图', widget: 'file' },
+      {
+        name: 'attachments',
+        title: '附件',
+        widget: 'file',
+        multiple: true,
+      },
+    ]);
+
+    const files = extractMcpAskFormAttachments(
+      {
+        screenshot: [
+          {
+            uid: '1',
+            name: 'shot.png',
+            type: 'image/png',
+            size: 10,
+            status: UploadFileStatus.done,
+            url: 'https://cdn.example.com/shot.png',
+            key: 'k1',
+          },
+        ],
+        attachments: [
+          {
+            fileKey: 'k2',
+            fileUrl: 'https://cdn.example.com/doc.pdf',
+            fileName: 'doc.pdf',
+            mimeType: 'application/pdf',
+            fileSize: 20,
+          },
+        ],
+      },
+      ui,
+    );
+
+    expect(files).toHaveLength(2);
+    expect(files[0]).toMatchObject({
+      name: 'shot.png',
+      url: 'https://cdn.example.com/shot.png',
+      key: 'k1',
+    });
+    expect(files[1]).toMatchObject({
+      name: 'doc.pdf',
+      url: 'https://cdn.example.com/doc.pdf',
+      key: 'k2',
+    });
   });
 });

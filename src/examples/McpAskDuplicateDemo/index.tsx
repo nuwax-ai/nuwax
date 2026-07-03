@@ -16,6 +16,7 @@ import {
   hasMcpAskResumeMessage,
   stripMcpAskResumeDisplayArtifacts,
 } from '@/components/business-component/AgentIntervention/utils/mcpAskResumeMessage';
+import { extractMcpAskFormAttachments } from '@/components/business-component/AgentIntervention/utils/normalizeMcpAskFormData';
 import { processInterventionSsePatch } from '@/components/business-component/AgentIntervention/utils/processInterventionSsePatch';
 import { reconcileMcpAskHydratedMessageList } from '@/components/business-component/AgentIntervention/utils/reconcileMcpAskHydratedStatus';
 import { AssistantRoleEnum } from '@/types/enums/agent';
@@ -146,6 +147,18 @@ const McpAskDuplicateDemo: React.FC = () => {
     (interaction: McpAskInteraction, payload: McpAskRespondPayload) => {
       const requestId = interaction.input.requestId;
       const resumeText = buildMcpAskResumeMessage(interaction, payload);
+      const uploadFiles =
+        payload.files ??
+        extractMcpAskFormAttachments(
+          payload.formData ?? {},
+          interaction.input.ui,
+        );
+      const attachments = uploadFiles.map((file) => ({
+        fileKey: file.key || file.uid || '',
+        fileUrl: file.url || '',
+        fileName: file.name || '',
+        mimeType: file.type || '',
+      }));
       const resolveStatus = (): McpAskInteraction['responseStatus'] => {
         if (payload.action === 'cancel') return 'cancelled';
         if (payload.action === 'skip') return 'skipped';
@@ -182,6 +195,7 @@ const McpAskDuplicateDemo: React.FC = () => {
           index: getNextIndex(updated),
           role: AssistantRoleEnum.USER,
           text: resumeText,
+          attachments: attachments.length ? attachments : undefined,
           status: MessageStatusEnum.Complete,
         } as MessageInfo;
 

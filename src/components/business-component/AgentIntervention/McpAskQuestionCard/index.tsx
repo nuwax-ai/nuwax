@@ -15,6 +15,7 @@ import type {
   McpAskRespondPayload,
 } from '../types/mcpAskIntervention';
 import {
+  extractMcpAskFormAttachments,
   hydrateMcpAskFormValues,
   normalizeMcpAskFormData,
 } from '../utils/normalizeMcpAskFormData';
@@ -99,6 +100,7 @@ const McpAskQuestionCard: React.FC<McpAskQuestionCardProps> = ({
   const buildPayload = (
     action: McpAskRespondPayload['action'],
     formData?: Record<string, unknown>,
+    files?: McpAskRespondPayload['files'],
   ): McpAskRespondPayload => ({
     interventionId: input.requestId,
     toolCallId,
@@ -107,6 +109,7 @@ const McpAskQuestionCard: React.FC<McpAskQuestionCardProps> = ({
     protocol: 'mcp',
     action,
     formData,
+    files,
     answeredAt: Date.now(),
     answeredBy: { kind: 'web' },
   });
@@ -136,8 +139,10 @@ const McpAskQuestionCard: React.FC<McpAskQuestionCardProps> = ({
     } else {
       await form.validateFields();
     }
-    const values = normalizeMcpAskFormData(form.getFieldsValue(true), ui);
-    onRespond?.(buildPayload('submit', values));
+    const rawValues = form.getFieldsValue(true);
+    const files = extractMcpAskFormAttachments(rawValues, ui);
+    const values = normalizeMcpAskFormData(rawValues, ui);
+    onRespond?.(buildPayload('submit', values, files));
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

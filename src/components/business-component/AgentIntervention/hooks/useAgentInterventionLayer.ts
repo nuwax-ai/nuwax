@@ -1,5 +1,6 @@
 import { GLOBAL_POLLING_INTERVAL } from '@/constants/home.constants';
 import { DefaultSelectedEnum } from '@/types/enums/agent';
+import type { UploadFileInfo } from '@/types/interfaces/common';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useModel } from 'umi';
@@ -13,6 +14,7 @@ import type {
   McpAskInteraction,
   McpAskRespondPayload,
 } from '../types/mcpAskIntervention';
+import type { McpAskResumeSendResult } from './useAgentInterventionHandlers';
 
 /**
  * 隔离会话源（如 ConversationAgent 预览 Tab / conversationAgent model）时注入，
@@ -26,7 +28,7 @@ export interface AgentInterventionHandlersOverride {
   respondMcpAsk: (
     interaction: McpAskInteraction,
     payload: McpAskRespondPayload,
-  ) => Promise<string | null | undefined>;
+  ) => Promise<McpAskResumeSendResult | null | undefined>;
 }
 
 export interface UseAgentInterventionLayerOptions {
@@ -42,7 +44,7 @@ export interface UseAgentInterventionLayerOptions {
    * 避免没展示模式切换的会话框误用别的会话切换留下的 ask。
    */
   allowChooseMode?: DefaultSelectedEnum | number;
-  onSendMessage: (message: string) => void;
+  onSendMessage: (message: string, files?: UploadFileInfo[]) => void;
   /**
    * 非 conversationInfo 会话源时传入（如 ConversationAgent 预览 Tab），
    * 使 Dock 回执与停止会话作用于正确的 model。
@@ -280,9 +282,9 @@ export function useAgentInterventionLayer(
 
   const handleRespondMcpAsk = useCallback(
     async (interaction: McpAskInteraction, payload: McpAskRespondPayload) => {
-      const resumeMessage = await respondMcpAsk(interaction, payload);
-      if (resumeMessage) {
-        onSendMessage(resumeMessage);
+      const resume = await respondMcpAsk(interaction, payload);
+      if (resume?.text) {
+        onSendMessage(resume.text, resume.files);
       }
     },
     [respondMcpAsk, onSendMessage],

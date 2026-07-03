@@ -5,7 +5,9 @@ import { useAgentInterventionLayer } from './useAgentInterventionLayer';
 
 const conversationInfoHandlers = {
   respondAcpPermission: vi.fn(),
-  respondMcpAsk: vi.fn().mockResolvedValue('resume-from-conversation-info'),
+  respondMcpAsk: vi
+    .fn()
+    .mockResolvedValue({ text: 'resume-from-conversation-info' }),
 };
 
 vi.mock('umi', () => ({
@@ -16,9 +18,9 @@ describe('useAgentInterventionLayer', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
-    conversationInfoHandlers.respondMcpAsk.mockResolvedValue(
-      'resume-from-conversation-info',
-    );
+    conversationInfoHandlers.respondMcpAsk.mockResolvedValue({
+      text: 'resume-from-conversation-info',
+    });
   });
   it('uses conversationInfo handlers by default', async () => {
     const onSendMessage = vi.fn();
@@ -42,12 +44,17 @@ describe('useAgentInterventionLayer', () => {
     });
 
     expect(conversationInfoHandlers.respondMcpAsk).toHaveBeenCalled();
-    expect(onSendMessage).toHaveBeenCalledWith('resume-from-conversation-info');
+    expect(onSendMessage).toHaveBeenCalledWith(
+      'resume-from-conversation-info',
+      undefined,
+    );
   });
 
   it('uses injected interventionHandlers for isolated session sources', async () => {
     const onSendMessage = vi.fn();
-    const respondMcpAsk = vi.fn().mockResolvedValue('resume-from-preview');
+    const respondMcpAsk = vi
+      .fn()
+      .mockResolvedValue({ text: 'resume-from-preview' });
 
     const { result } = renderHook(() =>
       useAgentInterventionLayer({
@@ -74,7 +81,10 @@ describe('useAgentInterventionLayer', () => {
 
     expect(respondMcpAsk).toHaveBeenCalled();
     expect(conversationInfoHandlers.respondMcpAsk).not.toHaveBeenCalled();
-    expect(onSendMessage).toHaveBeenCalledWith('resume-from-preview');
+    expect(onSendMessage).toHaveBeenCalledWith(
+      'resume-from-preview',
+      undefined,
+    );
   });
 
   it('syncs agentMode cache between sessions of the same agent', () => {

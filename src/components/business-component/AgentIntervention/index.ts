@@ -1,9 +1,5 @@
 // Components
 export { default as AgentInterventionChatLayer } from './AgentInterventionChatLayer';
-export {
-  default as McpAskResumeUserDisplay,
-  type McpAskResumeUserDisplayProps,
-} from './McpAskResumeUserDisplay';
 
 // Hooks
 export { useAgentInterventionHandlers } from './hooks/useAgentInterventionHandlers';
