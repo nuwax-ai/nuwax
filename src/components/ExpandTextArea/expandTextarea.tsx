@@ -24,6 +24,7 @@ const ExpandTextArea: React.FC<
   variables,
   skills,
   useTiptap = false,
+  imeSafe,
 }) => {
   return (
     <div
@@ -58,6 +59,7 @@ const ExpandTextArea: React.FC<
             placeholder={placeholder}
             variables={variables}
             skills={skills}
+            imeSafe={imeSafe}
             style={{ height: '100%', minHeight: '400px' }}
           />
         </Form.Item>

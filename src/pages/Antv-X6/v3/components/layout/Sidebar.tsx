@@ -3,6 +3,7 @@ import { t } from '@/services/i18nRuntime';
 import { FlowKindEnum, NodeTypeEnum } from '@/types/enums/common';
 import { StencilChildNode } from '@/types/interfaces/graph';
 import React, { useMemo } from 'react';
+import { AGENT_FLOW_STENCIL_ORDER } from '../../flowKind/flowKindConfig';
 import '../../indexV3.less';
 import { asideList } from '../../ParamsV3';
 
@@ -71,10 +72,18 @@ const StencilContent = ({
       .filter((item) => item.children.length > 0);
   }, [asideList, flowKind, isLoop]);
 
-  /** AgentFlow：合并所有分组节点为单一列表，不展示分组标题 */
+  /** AgentFlow：合并所有分组节点为单一列表，按 AGENT_FLOW_STENCIL_ORDER 排序 */
   const flatChildren = useMemo(() => {
     if (!isAgentFlow) return [];
-    return filteredGroups.flatMap((item) => item.children);
+    const children = filteredGroups.flatMap((item) => item.children);
+    const orderIndex = new Map(
+      AGENT_FLOW_STENCIL_ORDER.map((type, index) => [type, index]),
+    );
+    return [...children].sort((a, b) => {
+      const ai = orderIndex.get(a.type!) ?? Number.MAX_SAFE_INTEGER;
+      const bi = orderIndex.get(b.type!) ?? Number.MAX_SAFE_INTEGER;
+      return ai - bi;
+    });
   }, [filteredGroups, isAgentFlow]);
 
   const renderChildNode = (child: StencilChildNode, childIndex: number) => (
