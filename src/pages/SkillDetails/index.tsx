@@ -77,7 +77,7 @@ const SkillDetails: React.FC = () => {
     isFullscreenPreview,
     setIsFullscreenPreview,
     isImportingProject,
-    importProjectTrigger,
+    taskAgentSelectTrigger,
     openImportSkillProject,
     setOpenImportSkillProject,
     loadingExportProject,
@@ -197,7 +197,7 @@ const SkillDetails: React.FC = () => {
               <FileTreeViewPanel
                 taskAgentSelectedFileId={'SKILL.md'}
                 initViewFileType={'code'}
-                isImportProjectTrigger={importProjectTrigger}
+                taskAgentSelectTrigger={taskAgentSelectTrigger}
                 isProjectSkill={true}
                 ref={fileTreeViewRef}
                 fileTreeDataLoading={fileTreeDataLoading}
