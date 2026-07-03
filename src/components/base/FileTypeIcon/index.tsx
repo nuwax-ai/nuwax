@@ -4,12 +4,51 @@ import mediaIcon from '@/assets/icons/files/media.png';
 import pdfIcon from '@/assets/icons/files/pdf.png';
 import pptIcon from '@/assets/icons/files/ppt.png';
 import { IMAGE_FALLBACK } from '@/constants/images.constants';
+import {
+  FileOutlined,
+  FileTextOutlined,
+  FileZipOutlined,
+} from '@ant-design/icons';
 import { Image } from 'antd';
 import classNames from 'classnames';
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
+
+const ARCHIVE_EXTENSIONS = new Set([
+  'zip',
+  'rar',
+  '7z',
+  'tar',
+  'gz',
+  'bz2',
+  'xz',
+]);
+
+const TEXT_EXTENSIONS = new Set([
+  'txt',
+  'md',
+  'markdown',
+  'log',
+  'json',
+  'xml',
+]);
+
+type AntdFileIcon = typeof FileOutlined;
+
+interface PngFileIconResult {
+  kind: 'png';
+  src: string;
+}
+
+interface AntdFileIconResult {
+  kind: 'antd';
+  Icon: AntdFileIcon;
+  color: string;
+}
+
+type FileIconResult = PngFileIconResult | AntdFileIconResult;
 
 export interface FileTypeIconProps {
   /** 文件MIME类型 */
@@ -47,81 +86,153 @@ const FileTypeIcon: React.FC<FileTypeIconProps> = ({
    * @param fileName 文件名
    * @returns 图标路径
    */
-  const getFileIcon = useCallback((fileType: string, fileName: string) => {
-    // 图片类型直接显示图片
-    if (fileType?.includes('image/')) {
-      return null; // 返回null表示使用原始图片
-    }
+  const getFileIcon = useCallback(
+    (mimeType: string, name: string): FileIconResult | null => {
+      if (mimeType?.includes('image/')) {
+        return null;
+      }
 
-    // 根据文件类型和扩展名判断图标
-    const extension = fileName?.toLowerCase().split('.').pop() || '';
+      const fileName = name?.trim() ?? '';
+      const extension = fileName.includes('.')
+        ? fileName.split('.').pop()?.toLowerCase() ?? ''
+        : '';
+      const normalizedMime = mimeType?.toLowerCase() ?? '';
+      const isGenericMime =
+        !normalizedMime || normalizedMime === 'application/octet-stream';
 
-    // 文档类型
-    if (
-      fileType?.includes('word') ||
-      extension === 'doc' ||
-      extension === 'docx'
-    ) {
-      return docIcon;
-    }
+      if (!extension && isGenericMime) {
+        return { kind: 'antd', Icon: FileOutlined, color: '#bfbfbf' };
+      }
 
-    // 表格类型
-    if (
-      fileType?.includes('excel') ||
-      fileType?.includes('spreadsheet') ||
-      extension === 'xls' ||
-      extension === 'xlsx' ||
-      extension === 'csv'
-    ) {
-      return excelIcon;
-    }
+      if (
+        normalizedMime.includes('zip') ||
+        normalizedMime.includes('rar') ||
+        normalizedMime.includes('compressed') ||
+        ARCHIVE_EXTENSIONS.has(extension)
+      ) {
+        return { kind: 'antd', Icon: FileZipOutlined, color: '#fa8c16' };
+      }
 
-    // 演示文稿类型
-    if (
-      fileType?.includes('powerpoint') ||
-      fileType?.includes('presentation') ||
-      extension === 'ppt' ||
-      extension === 'pptx'
-    ) {
-      return pptIcon;
-    }
+      if (
+        normalizedMime.startsWith('text/') ||
+        TEXT_EXTENSIONS.has(extension)
+      ) {
+        return { kind: 'antd', Icon: FileTextOutlined, color: '#083fa1' };
+      }
 
-    // PDF类型
-    if (fileType?.includes('pdf') || extension === 'pdf') {
-      return pdfIcon;
-    }
+      if (
+        normalizedMime.includes('msword') ||
+        normalizedMime.includes('wordprocessingml') ||
+        extension === 'doc' ||
+        extension === 'docx'
+      ) {
+        return { kind: 'png', src: docIcon as string };
+      }
 
-    // 媒体文件类型
-    if (
-      fileType?.includes('video/') ||
-      fileType?.includes('audio/') ||
-      extension === 'mp4' ||
-      extension === 'avi' ||
-      extension === 'mov' ||
-      extension === 'mp3' ||
-      extension === 'wav' ||
-      extension === 'flac'
-    ) {
-      return mediaIcon;
-    }
+      if (
+        normalizedMime.includes('excel') ||
+        normalizedMime.includes('spreadsheet') ||
+        extension === 'xls' ||
+        extension === 'xlsx' ||
+        extension === 'csv'
+      ) {
+        return { kind: 'png', src: excelIcon as string };
+      }
 
-    // 默认文档图标
-    return docIcon;
-  }, []);
+      if (
+        normalizedMime.includes('powerpoint') ||
+        normalizedMime.includes('presentation') ||
+        extension === 'ppt' ||
+        extension === 'pptx'
+      ) {
+        return { kind: 'png', src: pptIcon as string };
+      }
 
-  const fileIcon = getFileIcon(fileType || '', fileName || '') as string;
+      if (normalizedMime.includes('pdf') || extension === 'pdf') {
+        return { kind: 'png', src: pdfIcon as string };
+      }
+
+      if (
+        normalizedMime.includes('video/') ||
+        normalizedMime.includes('audio/') ||
+        extension === 'mp4' ||
+        extension === 'avi' ||
+        extension === 'mov' ||
+        extension === 'mp3' ||
+        extension === 'wav' ||
+        extension === 'flac'
+      ) {
+        return { kind: 'png', src: mediaIcon as string };
+      }
+
+      return { kind: 'antd', Icon: FileOutlined, color: '#bfbfbf' };
+    },
+    [],
+  );
+
+  const iconResult = useMemo(
+    () => getFileIcon(fileType || '', fileName || ''),
+    [fileName, fileType, getFileIcon],
+  );
   const isImage = fileType?.includes('image/');
 
+  if (isImage) {
+    return (
+      <Image
+        width={size}
+        height={size}
+        src={fileUrl}
+        fallback={IMAGE_FALLBACK}
+        preview={preview}
+        className={cx(styles['file-type-icon'], className)}
+        style={style}
+      />
+    );
+  }
+
+  if (iconResult?.kind === 'antd') {
+    const { Icon, color } = iconResult;
+    return (
+      <span
+        className={cx(
+          styles['file-type-icon'],
+          styles['antd-file-icon'],
+          className,
+        )}
+        style={{ width: size, height: size, ...style }}
+      >
+        <Icon style={{ fontSize: Math.round(size * 0.56), color }} />
+      </span>
+    );
+  }
+
+  if (iconResult?.kind === 'png') {
+    return (
+      <Image
+        width={size}
+        height={size}
+        src={iconResult.src}
+        fallback={IMAGE_FALLBACK}
+        preview={preview}
+        className={cx(styles['file-type-icon'], className)}
+        style={style}
+      />
+    );
+  }
+
   return (
-    <Image
-      width={size}
-      height={size}
-      src={isImage ? fileUrl : fileIcon}
-      fallback={IMAGE_FALLBACK}
-      preview={preview}
-      className={cx(styles['file-type-icon'], className)}
-      style={style}
-    />
+    <span
+      className={cx(
+        styles['file-type-icon'],
+        styles['antd-file-icon'],
+        className,
+      )}
+      style={{ width: size, height: size, ...style }}
+    >
+      <FileOutlined
+        style={{ fontSize: Math.round(size * 0.56), color: '#bfbfbf' }}
+      />
+    </span>
   );
 };
 

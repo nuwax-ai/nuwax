@@ -17,15 +17,19 @@ import { HideDesktopEnum } from '@/types/enums/agent';
 import { FileNode } from '@/types/interfaces/appDev';
 import { checkFileSizeExceedLimit } from '@/utils';
 import {
+  buildUploadFilePaths,
+  filterFilesForUpload,
   filterFlatFileListForVersionControl,
   findBestMatchingFileNode,
   findFileNode,
   isAudioFile,
   isDocumentFile,
+  isIgnoredUploadRelativePath,
   isImageFile,
   isPreviewableFile,
   isVideoFile,
   processImageContent,
+  resolveFileTreeUploadRelativePath,
   transformFlatListToTree,
 } from '@/utils/appDevUtils';
 import { isMarkdownFile } from '@/utils/common';
@@ -76,7 +80,6 @@ export function useFileTreePreviewView(
     taskAgentSelectedFileId,
     clearTaskAgentSelectedFileId,
     taskAgentSelectTrigger,
-    isImportProjectTrigger,
     originalFiles,
     fileTreeDataLoading,
     readOnly = false,
@@ -380,6 +383,13 @@ export function useFileTreePreviewView(
     setSelectedFileNode(null);
   }, []);
 
+  /** 清空文件树选中态（文件 + 文件夹） */
+  const clearSelection = useCallback(() => {
+    clearSelectedFile();
+    setSelectedFolderId('');
+    userSelectedFileRef.current = null;
+  }, [clearSelectedFile]);
+
   /**
    * 切换会话 / 工作区（targetId 变化）时重置文件树与预览区本地状态。
    * Chat 切换历史会话时组件不会卸载，若不清理会残留上一会话的 selectedFileNode 与预览内容。
@@ -584,12 +594,13 @@ export function useFileTreePreviewView(
   // 文件选择（内部函数，执行实际的选择逻辑）
   const handleFileSelectInternal = useCallback(
     async (fileId: string, options?: { selectFolder?: boolean }) => {
+      const currentFiles = filesRef.current;
       // 根据文件ID查找文件节点（精确匹配）
-      let fileNode = findFileNode(fileId, files);
+      let fileNode = findFileNode(fileId, currentFiles);
 
       // 如果仍然没有找到，尝试模糊匹配
       if (!fileNode && fileId && fileId.includes('.')) {
-        fileNode = findBestMatchingFileNode(fileId, files);
+        fileNode = findBestMatchingFileNode(fileId, currentFiles);
       }
 
       if (fileNode) {
@@ -725,7 +736,7 @@ export function useFileTreePreviewView(
         setSelectedFileId('');
       }
     },
-    [files, onFileSelectOpenPreview, initViewFileType],
+    [onFileSelectOpenPreview, initViewFileType],
   );
 
   // 文件选择（对外接口，用于用户主动选择）
@@ -744,6 +755,92 @@ export function useFileTreePreviewView(
   );
 
   /**
+   * 同步 originalFiles → 本地 files / filesRef。
+   * 必须排在 taskAgent 自动选中 effect 之前，确保自动选中读取到最新 fileProxyUrl。
+   */
+  useEffect(() => {
+    /**
+     * 父级 fileTreeData 为空：同步清空本地树，并清理残留预览。
+     * 典型场景：切换 Chat 历史会话、clearFilePanelInfo、删除全部文件后接口返回 []。
+     * 若不清理 selectedFileNode，右侧预览会继续展示上一会话/已删文件的内容。
+     */
+    const visibleOriginalFiles = filterFlatFileListForVersionControl(
+      originalFiles,
+      enableVersionControl,
+    );
+
+    if (!visibleOriginalFiles || visibleOriginalFiles.length === 0) {
+      setFiles([]);
+      filesRef.current = [];
+      const currentSelectedFileId = selectedFileIdRef.current || selectedFileId;
+      if (currentSelectedFileId) {
+        // 仅「主动刷新文件树」场景通知外部（如清除 taskAgentSelectedFileId）
+        if (pendingRefreshSelectedAfterFilesUpdateRef.current) {
+          pendingRefreshSelectedAfterFilesUpdateRef.current = false;
+          onSelectedFileMissingRef.current?.(currentSelectedFileId);
+        } else if (originalFiles?.length) {
+          // 接口有数据但过滤后为空（如版本管控关闭时仅剩 .gitignore）
+          onSelectedFileMissingRef.current?.(currentSelectedFileId);
+        }
+        clearSelectedFile();
+      }
+      return;
+    }
+    // 如果文件列表不为空，则转换为树形结构
+    if (
+      Array.isArray(visibleOriginalFiles) &&
+      visibleOriginalFiles.length > 0
+    ) {
+      const treeData: FileNode[] = transformFlatListToTree(
+        visibleOriginalFiles,
+        false,
+      );
+      filesRef.current = treeData;
+      setFiles(treeData);
+
+      /** 版本管控关闭后 .gitignore 被过滤，需清理仍选中该文件的预览态 */
+      const currentSelectedFileId = selectedFileIdRef.current || selectedFileId;
+      if (
+        currentSelectedFileId &&
+        !findFileNode(currentSelectedFileId, treeData)
+      ) {
+        onSelectedFileMissingRef.current?.(currentSelectedFileId);
+        clearSelectedFile();
+      }
+
+      // discard / 回滚等场景必须基于“刚刷新得到的新文件树”判断当前选中文件。
+      // 不再放到独立的 files effect 中，避免同一轮 effect 读取到旧 files。
+      if (pendingRefreshSelectedAfterFilesUpdateRef.current) {
+        pendingRefreshSelectedAfterFilesUpdateRef.current = false;
+
+        /** 刷新完成后，用最新 treeData 校验当前选中项是否仍存在 */
+        const currentSelectedFileId =
+          selectedFileIdRef.current || selectedFileId;
+        if (!currentSelectedFileId) {
+          return;
+        }
+
+        const nextSelectedFileNode = findFileNode(
+          currentSelectedFileId,
+          treeData,
+        );
+        /** 文件已被删除或路径变更：通知外部并清空预览，避免展示过期内容 */
+        if (!nextSelectedFileNode) {
+          onSelectedFileMissingRef.current?.(currentSelectedFileId);
+          clearSelectedFile();
+          return;
+        }
+
+        /** 仍存在：同步选中态并重新拉取内容（discard 后需展示磁盘最新版本） */
+        selectedFileIdRef.current = nextSelectedFileNode.id;
+        setSelectedFileId(nextSelectedFileNode.id);
+        setSelectedFileNode(nextSelectedFileNode);
+        void refreshSelectedFileContent(nextSelectedFileNode);
+      }
+    }
+  }, [originalFiles, enableVersionControl]);
+
+  /**
    * 监听 taskAgentSelectedFileId / taskAgentSelectTrigger，自动定位并打开消息中的目标文件。
    *
    * 典型入口：TaskResult、Markdown 内联文件链接点击。
@@ -751,28 +848,27 @@ export function useFileTreePreviewView(
    * 再设置 fileId + trigger；本 effect 负责在树就绪后完成选中，并避免重复请求文件列表。
    */
   useEffect(() => {
-    /** 判断目标 fileId 是否已在当前文件树中（含模糊匹配，兼容路径差异） */
-    const isFileInTree = (fileId: string, tree: FileNode[]) => {
-      if (!fileId || !tree?.length) {
+    // 重新导入项目后触发 taskAgentSelectTrigger 时，用最新 filesRef 判断是否可自动选中
+    const isFileInTreeForAutoSelect = (fileId: string) => {
+      if (!fileId || !filesRef.current?.length) {
         return false;
       }
-      if (findFileNode(fileId, tree)) {
+      if (findFileNode(fileId, filesRef.current)) {
         return true;
       }
       if (fileId.includes('.')) {
-        return Boolean(findBestMatchingFileNode(fileId, tree));
+        return Boolean(findBestMatchingFileNode(fileId, filesRef.current));
       }
       return false;
     };
 
     /** 执行自动选中，并同步 prev ref，避免同一 trigger 重复处理 */
-    const applyAutoSelect = (fileId: string, tree: FileNode[]) => {
+    const applyAutoSelect = (fileId: string) => {
       void handleFileSelectInternal(fileId);
       prevTaskAgentSelectedFileIdRef.current = fileId;
       if (taskAgentSelectTrigger !== undefined) {
         prevTaskAgentSelectTriggerRef.current = taskAgentSelectTrigger;
       }
-      filesRef.current = tree;
       pendingTaskAgentAutoSelectRef.current = null;
     };
 
@@ -880,8 +976,8 @@ export function useFileTreePreviewView(
       trigger: taskAgentSelectTrigger,
     };
 
-    if (isFileInTree(taskAgentSelectedFileId, files)) {
-      applyAutoSelect(taskAgentSelectedFileId, files);
+    if (isFileInTreeForAutoSelect(taskAgentSelectedFileId)) {
+      applyAutoSelect(taskAgentSelectedFileId);
       return;
     }
 
@@ -901,88 +997,6 @@ export function useFileTreePreviewView(
     originalFiles,
   ]);
 
-  useEffect(() => {
-    /**
-     * 父级 fileTreeData 为空：同步清空本地树，并清理残留预览。
-     * 典型场景：切换 Chat 历史会话、clearFilePanelInfo、删除全部文件后接口返回 []。
-     * 若不清理 selectedFileNode，右侧预览会继续展示上一会话/已删文件的内容。
-     */
-    const visibleOriginalFiles = filterFlatFileListForVersionControl(
-      originalFiles,
-      enableVersionControl,
-    );
-
-    if (!visibleOriginalFiles || visibleOriginalFiles.length === 0) {
-      setFiles([]);
-      filesRef.current = [];
-      const currentSelectedFileId = selectedFileIdRef.current || selectedFileId;
-      if (currentSelectedFileId) {
-        // 仅「主动刷新文件树」场景通知外部（如清除 taskAgentSelectedFileId）
-        if (pendingRefreshSelectedAfterFilesUpdateRef.current) {
-          pendingRefreshSelectedAfterFilesUpdateRef.current = false;
-          onSelectedFileMissingRef.current?.(currentSelectedFileId);
-        } else if (originalFiles?.length) {
-          // 接口有数据但过滤后为空（如版本管控关闭时仅剩 .gitignore）
-          onSelectedFileMissingRef.current?.(currentSelectedFileId);
-        }
-        clearSelectedFile();
-      }
-      return;
-    }
-    // 如果文件列表不为空，则转换为树形结构
-    if (
-      Array.isArray(visibleOriginalFiles) &&
-      visibleOriginalFiles.length > 0
-    ) {
-      const treeData: FileNode[] = transformFlatListToTree(
-        visibleOriginalFiles,
-        false,
-      );
-      filesRef.current = treeData;
-      setFiles(treeData);
-
-      /** 版本管控关闭后 .gitignore 被过滤，需清理仍选中该文件的预览态 */
-      const currentSelectedFileId = selectedFileIdRef.current || selectedFileId;
-      if (
-        currentSelectedFileId &&
-        !findFileNode(currentSelectedFileId, treeData)
-      ) {
-        onSelectedFileMissingRef.current?.(currentSelectedFileId);
-        clearSelectedFile();
-      }
-
-      // discard / 回滚等场景必须基于“刚刷新得到的新文件树”判断当前选中文件。
-      // 不再放到独立的 files effect 中，避免同一轮 effect 读取到旧 files。
-      if (pendingRefreshSelectedAfterFilesUpdateRef.current) {
-        pendingRefreshSelectedAfterFilesUpdateRef.current = false;
-
-        /** 刷新完成后，用最新 treeData 校验当前选中项是否仍存在 */
-        const currentSelectedFileId =
-          selectedFileIdRef.current || selectedFileId;
-        if (!currentSelectedFileId) {
-          return;
-        }
-
-        const nextSelectedFileNode = findFileNode(
-          currentSelectedFileId,
-          treeData,
-        );
-        /** 文件已被删除或路径变更：通知外部并清空预览，避免展示过期内容 */
-        if (!nextSelectedFileNode) {
-          onSelectedFileMissingRef.current?.(currentSelectedFileId);
-          clearSelectedFile();
-          return;
-        }
-
-        /** 仍存在：同步选中态并重新拉取内容（discard 后需展示磁盘最新版本） */
-        selectedFileIdRef.current = nextSelectedFileNode.id;
-        setSelectedFileId(nextSelectedFileNode.id);
-        setSelectedFileNode(nextSelectedFileNode);
-        void refreshSelectedFileContent(nextSelectedFileNode);
-      }
-    }
-  }, [originalFiles, enableVersionControl]);
-
   // 监听 files 变化，当有待选择的文件时自动选择
   useEffect(() => {
     if (pendingSelectFileRef.current && files && files.length > 0) {
@@ -997,34 +1011,26 @@ export function useFileTreePreviewView(
     }
   }, [files, handleFileSelectInternal]);
 
-  // 监听 files 变化，同步更新 selectedFileNode 的 content（用于重新导入后更新文件内容）
-  // 特别适用于 SkillDetails 页面，其中 fileProxyUrl 为空，内容直接存储在 content 字段中
+  // 技能项目且无 fileProxyUrl：files 更新后同步 content（内容直接来自接口）
   useEffect(() => {
-    // 如果当前有选中的文件，且 files 已更新，需要同步更新 selectedFileNode 的 content
-    if (
-      files &&
-      files.length > 0 &&
-      (isImportProjectTrigger || isProjectSkill)
-    ) {
-      // 优先使用当前选中的 ID，如果没有则尝试使用外部传入的 ID
-      const targetSyncId = selectedFileId || taskAgentSelectedFileId;
-      if (!targetSyncId) return;
-
-      // 从新的 files 中查找对应的文件节点
-      const newFileNode = findFileNode(targetSyncId, files);
-
-      if (newFileNode) {
-        setSelectedFileNode(newFileNode);
-        setSelectedFileId(newFileNode?.id);
-      }
+    if (!isProjectSkill || !files?.length) {
+      return;
     }
-  }, [
-    files,
-    isImportProjectTrigger,
-    isProjectSkill,
-    selectedFileId,
-    taskAgentSelectedFileId,
-  ]);
+
+    const targetSyncId = selectedFileId || taskAgentSelectedFileId;
+    if (!targetSyncId) {
+      return;
+    }
+
+    const newFileNode = findFileNode(targetSyncId, files);
+    if (!newFileNode || newFileNode.fileProxyUrl) {
+      return;
+    }
+
+    setSelectedFileNode(newFileNode);
+    setSelectedFileId(newFileNode.id);
+    selectedFileIdRef.current = newFileNode.id;
+  }, [files, isProjectSkill, selectedFileId, taskAgentSelectedFileId]);
 
   /**
    * 处理右键菜单显示
@@ -1241,76 +1247,112 @@ export function useFileTreePreviewView(
   };
 
   /**
-   * 处理上传操作（从右键菜单触发）
+   * 打开文件/文件夹选择器并上传
+   * @param node 目标目录节点
+   * @param mode files=多文件上传；folder=文件夹上传（保留子目录结构）
    */
-  const handleUploadMultipleFiles = async (node: FileNode | null) => {
-    // 两种情况 第一个是文件夹，第二个是文件
-    let relativePath = '';
+  const triggerFileUpload = useCallback(
+    async (node: FileNode | null, mode: 'files' | 'folder') => {
+      const relativePath = resolveFileTreeUploadRelativePath(node);
+      const isFolderMode = mode === 'folder';
 
-    if (node) {
-      if (node.type === 'file') {
-        relativePath = node.path.replace(new RegExp(node.name + '$'), ''); //只替换以node.name结尾的部分
-      } else if (node.type === 'folder') {
-        relativePath = node.path + '/';
-      }
-    }
-
-    // 创建一个隐藏的文件输入框
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.style.display = 'none';
-    input.accept = '*';
-    input.multiple = true;
-    document.body.appendChild(input);
-
-    // 等待用户选择文件
-    input.click();
-
-    input.onchange = async (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file) {
-        document.body.removeChild(input);
-        return;
-      }
-
-      // 获取上传的文件列表
-      const files = Array.from((e.target as HTMLInputElement).files || []);
-      // 获取上传的文件路径列表
-      const filePaths = files.map((file) => relativePath + file.name);
-
-      // 检查文件大小是否超过最大上传文件大小
-      const { isExceedLimitSize, maxFileSize } =
-        checkFileSizeExceedLimit(files);
-      // 如果超过最大上传文件大小，则提示错误
-      if (isExceedLimitSize) {
-        message.error(
-          dict('PC.Common.Global.uploadFileSizeExceed', String(maxFileSize)),
+      if (isIgnoredUploadRelativePath(relativePath)) {
+        message.warning(
+          dict('PC.Components.FileContextMenu.uploadTargetInvalid'),
         );
         return;
       }
 
-      setIsUploadingFiles(true);
-
-      try {
-        // 直接调用现有的上传多个文件功能
-        await onUploadFiles?.(files, filePaths);
-
-        setTimeout(() => {
-          setIsUploadingFiles(false);
-        }, 1000);
-      } catch (error) {
-        console.error('Failed to upload file', error);
-        setIsUploadingFiles(false);
-      } finally {
-        document.body.removeChild(input);
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.style.display = 'none';
+      input.accept = '*';
+      if (isFolderMode) {
+        input.setAttribute('webkitdirectory', '');
+        input.setAttribute('directory', '');
+      } else {
+        input.multiple = true;
       }
-    };
+      document.body.appendChild(input);
 
-    // 如果用户取消选择，也要清理DOM
-    input.oncancel = () => {
-      document.body.removeChild(input);
-    };
-  };
+      const cleanupInput = () => {
+        if (input.parentNode) {
+          document.body.removeChild(input);
+        }
+      };
+
+      input.onchange = async (e) => {
+        const selectedFiles = Array.from(
+          (e.target as HTMLInputElement).files || [],
+        );
+        if (selectedFiles.length === 0) {
+          cleanupInput();
+          return;
+        }
+
+        const files = filterFilesForUpload(selectedFiles, isFolderMode);
+        if (files.length === 0) {
+          message.warning(
+            isFolderMode
+              ? dict('PC.Components.FileContextMenu.uploadFolderEmpty')
+              : dict('PC.Components.FileContextMenu.uploadFileEmpty'),
+          );
+          cleanupInput();
+          return;
+        }
+
+        const filePaths = buildUploadFilePaths(
+          files,
+          relativePath,
+          isFolderMode,
+        );
+
+        const { isExceedLimitSize, maxFileSize } =
+          checkFileSizeExceedLimit(files);
+        if (isExceedLimitSize) {
+          message.error(
+            dict('PC.Common.Global.uploadFileSizeExceed', String(maxFileSize)),
+          );
+          cleanupInput();
+          return;
+        }
+
+        setIsUploadingFiles(true);
+
+        try {
+          await onUploadFiles?.(files, filePaths);
+          setTimeout(() => {
+            setIsUploadingFiles(false);
+          }, 1000);
+        } catch (error) {
+          console.error('Failed to upload file', error);
+          setIsUploadingFiles(false);
+        } finally {
+          cleanupInput();
+        }
+      };
+
+      input.oncancel = cleanupInput;
+      input.click();
+    },
+    [onUploadFiles],
+  );
+
+  /** 上传多个文件（扁平，不含子目录） */
+  const handleUploadMultipleFiles = useCallback(
+    async (node: FileNode | null) => {
+      await triggerFileUpload(node, 'files');
+    },
+    [triggerFileUpload],
+  );
+
+  /** 上传文件夹（保留 webkitRelativePath 目录结构） */
+  const handleUploadFolder = useCallback(
+    async (node: FileNode | null) => {
+      await triggerFileUpload(node, 'folder');
+    },
+    [triggerFileUpload],
+  );
 
   /**
    * 处理删除操作
@@ -2072,6 +2114,7 @@ export function useFileTreePreviewView(
       hideFileTree,
       showRefreshButton,
       handleFileSelect,
+      clearSelection,
       handleContextMenu,
       closeContextMenu,
       handleRenameFile,
@@ -2080,6 +2123,7 @@ export function useFileTreePreviewView(
       handleDelete,
       handleRenameFromMenu,
       handleUploadMultipleFiles,
+      handleUploadFolder,
       handleCreateFile,
       handleCreateFolder,
       handleDownloadFileByUrl,

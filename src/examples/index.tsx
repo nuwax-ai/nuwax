@@ -149,6 +149,26 @@ const ExamplesIndex: React.FC = () => {
       featured: true,
     },
     {
+      id: 'voice-input-demo',
+      title: isChineseLanguage
+        ? 'Agent 会话框语音交互'
+        : 'Agent Chat Voice Input',
+      description: isChineseLanguage
+        ? '使用真实 Agent 会话输入框（UnifiedChatSession）体验语音录制、回填与自动发送交互，本地 Mock 消息，不依赖后端。'
+        : 'Experience voice record, fill and auto-send with the real Agent chat input (UnifiedChatSession), local mock messages only.',
+      tags: [
+        { text: isChineseLanguage ? '语音输入' : 'Voice', color: 'blue' },
+        {
+          text: isChineseLanguage ? 'Agent 会话' : 'Agent Chat',
+          color: 'green',
+        },
+        { text: isChineseLanguage ? 'Mock' : 'Mock', color: 'purple' },
+      ],
+      icon: <FormOutlined />,
+      path: '/examples/voice-input-demo',
+      featured: true,
+    },
+    {
       id: 'agent-intervention-demo',
       title: isChineseLanguage
         ? 'Agent 干预交互卡片'
@@ -180,6 +200,24 @@ const ExamplesIndex: React.FC = () => {
       ],
       icon: <InboxOutlined />,
       path: '/examples/message-queue-demo',
+    },
+    {
+      id: 'mcp-ask-duplicate-demo',
+      title: isChineseLanguage ? 'MCP Ask 重复询问' : 'MCP Ask Duplicate Title',
+      description: isChineseLanguage
+        ? '用真实 ASK_QUESTION SSE 载荷模拟同 title 两次询问，验证第二次 resume 后 Dock 仍能弹出（Mock，不依赖后端）。'
+        : 'Simulate two ASK_QUESTION SSE events with the same title using real payloads; verify the second ask still opens in the Dock (mock, no backend).',
+      tags: [
+        { text: isChineseLanguage ? 'MCP Ask' : 'MCP Ask', color: 'green' },
+        {
+          text: isChineseLanguage ? '重复询问' : 'Duplicate',
+          color: 'orange',
+        },
+        { text: isChineseLanguage ? 'SSE Mock' : 'SSE Mock', color: 'blue' },
+      ],
+      icon: <ExperimentOutlined />,
+      path: '/examples/mcp-ask-duplicate-demo',
+      featured: true,
     },
     {
       id: 'menu-permission-demo',

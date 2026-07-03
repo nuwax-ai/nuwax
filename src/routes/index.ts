@@ -679,6 +679,16 @@ const routes = [
     component: '@/examples/AgentInterventionDemo',
     layout: false,
   },
+  {
+    path: '/examples/voice-input-demo',
+    component: '@/examples/VoiceInputDemo',
+    layout: false,
+  },
+  {
+    path: '/examples/mcp-ask-duplicate-demo',
+    component: '@/examples/McpAskDuplicateDemo',
+    layout: false,
+  },
 ];
 
 export default routes;

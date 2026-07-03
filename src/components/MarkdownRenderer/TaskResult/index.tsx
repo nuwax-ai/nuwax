@@ -1,8 +1,9 @@
 import classNames from 'classnames';
 
 import { FileTextOutlined, RightOutlined } from '@ant-design/icons';
-import React from 'react';
+import React, { useContext } from 'react';
 import { useModel } from 'umi';
+import { TaskResultContext } from './context';
 import styles from './index.less';
 const cx = classNames.bind(styles);
 
@@ -24,6 +25,8 @@ const TaskResult: React.FC<TaskResultProps> = ({
   node,
   conversationId,
 }) => {
+  const { onTaskResultClick } = useContext(TaskResultContext);
+
   const {
     openPreviewView,
     setTaskAgentSelectedFileId,
@@ -72,6 +75,11 @@ const TaskResult: React.FC<TaskResultProps> = ({
       }
 
       if (!fileId || conversationId === undefined || conversationId === null) {
+        return;
+      }
+
+      // 如果外部 Context 提供了拦截器回调且返回了 true（表示拦截），则取消默认行为
+      if (onTaskResultClick && onTaskResultClick(fileId) === true) {
         return;
       }
 

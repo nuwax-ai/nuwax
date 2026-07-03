@@ -209,6 +209,94 @@ export const findFirstFile = (treeData: FileNode[]): string | null => {
   return null;
 };
 
+/** 上传时跳过的路径段（隐藏目录、依赖目录等） */
+const UPLOAD_IGNORED_PATH_SEGMENTS = new Set(['node_modules']);
+
+/**
+ * 根据文件树节点计算上传目标相对路径前缀
+ * @param node 右键或工具栏上下文节点，null 表示根目录
+ */
+export const resolveFileTreeUploadRelativePath = (
+  node: FileNode | null,
+): string => {
+  if (!node) {
+    return '';
+  }
+  if (node.type === 'file') {
+    return node.path.replace(new RegExp(`${node.name}$`), '');
+  }
+  if (node.type === 'folder') {
+    return `${node.path}/`;
+  }
+  return '';
+};
+
+/**
+ * 判断相对路径是否包含不可上传的目录段
+ */
+export const isIgnoredUploadRelativePath = (relativePath: string): boolean => {
+  const segments = relativePath.split('/').filter(Boolean);
+  return segments.some(
+    (seg) => seg.startsWith('.') || UPLOAD_IGNORED_PATH_SEGMENTS.has(seg),
+  );
+};
+
+/**
+ * 判断单个上传条目的相对路径是否应被过滤
+ */
+export const isIgnoredUploadEntryPath = (entryPath: string): boolean => {
+  const segments = entryPath.split('/').filter(Boolean);
+  if (segments.length === 0) {
+    return true;
+  }
+  const fileName = segments[segments.length - 1];
+  if (
+    FILE_CONSTANTS.IGNORED_FILE_PATTERNS.some((pattern) =>
+      pattern.test(fileName),
+    )
+  ) {
+    return true;
+  }
+  return segments.some(
+    (seg) => seg.startsWith('.') || UPLOAD_IGNORED_PATH_SEGMENTS.has(seg),
+  );
+};
+
+/**
+ * 过滤上传文件列表，剔除隐藏文件、node_modules 等
+ * @param files 原始 File 列表
+ * @param isFolderMode 是否为文件夹上传（使用 webkitRelativePath）
+ */
+export const filterFilesForUpload = (
+  files: File[],
+  isFolderMode: boolean,
+): File[] => {
+  return files.filter((file) => {
+    const entryPath =
+      isFolderMode && file.webkitRelativePath
+        ? file.webkitRelativePath
+        : file.name;
+    return !isIgnoredUploadEntryPath(entryPath);
+  });
+};
+
+/**
+ * 构造批量上传的 filePaths（与 files 一一对应）
+ */
+export const buildUploadFilePaths = (
+  files: File[],
+  relativePath: string,
+  isFolderMode: boolean,
+): string[] => {
+  return files.map((file) => {
+    const entryPath =
+      isFolderMode && file.webkitRelativePath
+        ? file.webkitRelativePath
+        : file.name;
+    return relativePath ? `${relativePath}${entryPath}` : entryPath;
+  });
+};
+
 /**
  * 在文件树中查找文件节点
  */

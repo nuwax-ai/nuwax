@@ -5,6 +5,9 @@ import { DataTypeEnum } from '@/types/enums/common';
 // 文件上传地址
 export const UPLOAD_FILE_ACTION = `${process.env.BASE_URL}/api/file/upload`;
 
+// 语音转文字（STT）接口地址：multipart/form-data 上传音频，返回识别文本
+export const AUDIO_STT_URL = `${process.env.BASE_URL}/api/audio/stt`;
+
 // 会话 Connection地址
 export const CONVERSATION_CONNECTION_URL = `${process.env.BASE_URL}/api/agent/conversation/chat`;
 // 会话流式恢复(sub)地址：刷新页面/新开标签时，订阅 EXECUTING 会话的输出流（载荷结构与 chat 一致）

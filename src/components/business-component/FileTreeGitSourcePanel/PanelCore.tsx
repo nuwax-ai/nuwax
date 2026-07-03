@@ -28,9 +28,22 @@ const FileTreeGitSourcePanel: React.FC<FileTreeGitSourcePanelProps> = ({
   treeClassName,
   treeHeaderClassName,
   treeEmptyState,
+  onImportProject,
+  importProjectLabel,
+  isImportingProject,
   sourceControl,
 }) => {
   const [activeView, setActiveView] = useState<PanelView>('files');
+
+  const mergedTree = useMemo(
+    () => ({
+      ...tree,
+      ...(onImportProject ? { handleImportProject: onImportProject } : {}),
+      ...(importProjectLabel ? { importProjectLabel } : {}),
+      ...(isImportingProject !== undefined ? { isImportingProject } : {}),
+    }),
+    [tree, onImportProject, importProjectLabel, isImportingProject],
+  );
 
   const {
     changeFiles,
@@ -142,7 +155,7 @@ const FileTreeGitSourcePanel: React.FC<FileTreeGitSourcePanelProps> = ({
           // 文件树容器（内部统一渲染 FileTreePanel）
           <div className={cx(styles.fileTreeContainer)}>
             <FileTreePanel
-              tree={tree}
+              tree={mergedTree}
               className={treeClassName}
               headerClassName={treeHeaderClassName}
               emptyState={treeEmptyState}

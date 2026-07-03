@@ -111,6 +111,7 @@ const ChangeFileGitDiffView: React.FC<ChangeFileGitDiffViewProps> = ({
         diffViewTheme={resolvedTheme}
         diffViewHighlight
         diffViewWrap
+        diffViewFontSize={12}
       />
     </div>
   );

@@ -3,6 +3,7 @@ import {
   ConversationBottomConsole,
   CopyToSpaceComponent,
   PagePreviewIframe,
+  type ConsoleLayoutMode,
 } from '@/components/business-component';
 import { type AgentMode } from '@/components/business-component/AgentIntervention';
 import PaymentSubscriptionModal from '@/components/business-component/PaymentSubscriptionModal';
@@ -261,6 +262,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     // 会话流式恢复(sub)
     resumeConversationStream,
     abortResumeStream,
+    refreshGitListRef,
   } = useModel('conversationInfo');
 
   // 页面预览相关状态
@@ -296,6 +298,18 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   /** 文件树预览区底部终端是否已经渲染过，渲染后保持挂载避免 wss 重连 */
   const [hasTerminalConsoleRendered, setHasTerminalConsoleRendered] =
     useState<boolean>(false);
+  /** TaskResult / 消息文件链接打开时，折叠底部终端 */
+  const [terminalConsoleCollapseSignal, setTerminalConsoleCollapseSignal] =
+    useState<number>(0);
+  /** 点击终端入口时全屏展开 */
+  const [terminalConsoleExpandSignal, setTerminalConsoleExpandSignal] =
+    useState<number>(0);
+  /** 底部终端布局与 Tab 状态（用于三入口互斥高亮） */
+  const [terminalConsoleLayoutMode, setTerminalConsoleLayoutMode] =
+    useState<ConsoleLayoutMode>('default');
+  const [terminalConsoleActiveTab, setTerminalConsoleActiveTab] = useState<
+    'terminal' | 'logs'
+  >('terminal');
 
   /** 关闭文件树时同步折叠终端，避免再次打开文件树时终端以展开状态恢复 */
   const handleClosePreviewView = useCallback(() => {
@@ -395,22 +409,30 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   };
 
   useEffect(() => {
-    // 初始化智能体详情信息（优先使用状态中的详情，否则等待 conversationInfo.agent 快照）
-    const targetAgent = conversationInfo?.agent || defaultAgentDetail;
-    if (targetAgent) {
-      setAgentDetail(targetAgent);
-
-      // 如果智能体需要付费，则判断是否已订阅, 未订阅，显示付费弹窗
-      if (targetAgent.paymentRequired && !targetAgent.subscribed) {
-        setOpenPaymentModal(true);
-      } else {
-        setOpenPaymentModal(false);
-      }
-      // 设置应用智能体详情
-      handleSetAppAgentDetail(targetAgent);
-      handleOpenPreview(targetAgent);
+    // 只有当会话信息是属于当前会话，或者默认详情属于当前智能体时，数据才是有效的，过滤掉切换会话时残留的旧数据
+    let targetAgent: any = null;
+    if (conversationInfo && conversationInfo.id === id) {
+      targetAgent = conversationInfo.agent;
+    } else if (defaultAgentDetail && defaultAgentDetail.agentId === agentId) {
+      targetAgent = defaultAgentDetail;
     }
-  }, [agentId, defaultAgentDetail, conversationInfo?.agent]);
+
+    if (!targetAgent) {
+      return;
+    }
+
+    setAgentDetail(targetAgent);
+
+    // 如果智能体需要付费，则判断是否已订阅, 未订阅，显示付费弹窗
+    if (targetAgent.paymentRequired && !targetAgent.subscribed) {
+      setOpenPaymentModal(true);
+    } else {
+      setOpenPaymentModal(false);
+    }
+    // 设置应用智能体详情
+    handleSetAppAgentDetail(targetAgent);
+    handleOpenPreview(targetAgent);
+  }, [agentId, id, defaultAgentDetail, conversationInfo?.agent]);
 
   useEffect(() => {
     if (id) {
@@ -522,6 +544,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     // 切换会话时立即隐藏页面预览，并清除文件面板全局状态（fileTreeData / taskAgentSelectedFileId 等）
     hidePagePreview();
     clearFilePanelInfo();
+    setOpenPaymentModal(false);
 
     // 重置 clearLoading：此时 cleanup 已执行 resetInit() 清空了 conversationInfo，
     // conversationInfo 会无缝接管加载显示，不会出现 AgentChatEmpty 闪现
@@ -560,8 +583,6 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     eventBindConfig: conversationInfo?.agent?.eventBindConfig,
   });
 
-  const refreshGitListRef = useRef<(() => void) | undefined>();
-
   const {
     handleCreateFileNode,
     handleDeleteFile,
@@ -591,6 +612,9 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
 
   /** 无有效消息列表时不允许刷新 Git status，逻辑与进入页面自动拉取 api/git/status 保持一致 */
   const isGitStatusRefreshDisabled = !hasValidMessageList;
+
+  /** TaskResult / 文件树选中等打开预览前，关闭版本记录面板（gitSourceControl 初始化后赋值） */
+  const closeVersionPanelForFilePreviewRef = useRef<() => void>(() => {});
 
   // 文件视图 props
   const fileView = useFileTreePreviewView({
@@ -631,19 +655,68 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     onSelectedFileMissing: () => {
       setTaskAgentSelectedFileId('');
     },
+    onFileSelectOpenPreview: () => {
+      closeVersionPanelForFilePreviewRef.current();
+    },
   });
 
   refreshGitListRef.current = fileView.refreshGitList;
 
+  /** 折叠底部终端，避免遮挡文件预览（终端未展示时不发信号，避免首次打开被误折叠） */
+  const collapseTerminalConsole = useCallback(() => {
+    if (!hasTerminalConsoleRendered || !terminalConsoleVisible) {
+      return;
+    }
+    setTerminalConsoleCollapseSignal((n) => n + 1);
+  }, [hasTerminalConsoleRendered, terminalConsoleVisible]);
+
+  /** TaskResult / Markdown 文件链接选中文件时，折叠终端以便查看预览 */
+  const prevTaskAgentCollapseTriggerRef = useRef<number | string | undefined>(
+    undefined,
+  );
+
+  /** 底部终端是否处于全屏展开且选中终端 Tab */
+  const isTerminalPanelOpen =
+    terminalConsoleVisible &&
+    terminalConsoleLayoutMode === 'expanded' &&
+    terminalConsoleActiveTab === 'terminal';
+
+  /** 顶部三入口互斥 active：同一时刻仅高亮一个 */
+  const isFileTreeIconActive =
+    isFileTreeVisible && viewMode === 'preview' && !isTerminalPanelOpen;
+  const isTerminalIconActive = isTerminalPanelOpen;
+  const isDesktopIconActive = isFileTreeVisible && viewMode === 'desktop';
+
   /**
-   * 打开文件预览：无选中文件时默认展开左侧文件树；已有选中文件则保持原有折叠/展开状态
+   * 打开文件预览：与终端全屏、智能体电脑互斥
    */
   const handleFileTreeVisibleClick = useCallback(() => {
-    const openingFileTree = !isFileTreeVisible;
-    const switchingToPreview = isFileTreeVisible && viewMode !== 'preview';
     const hasSelectedPreviewFile = Boolean(
       fileView.tree.selectedFileId || taskAgentSelectedFileId,
     );
+
+    if (isTerminalPanelOpen) {
+      setTerminalConsoleCollapseSignal((n) => n + 1);
+      setTerminalConsoleVisible(false);
+      setTerminalConsoleLayoutMode('collapsed');
+      if (!isFileTreeVisible) {
+        openPreviewView(id);
+      }
+      if (!hasSelectedPreviewFile) {
+        setIsFileTreePinned(true);
+      }
+      if (
+        !isGitStatusRefreshDisabled &&
+        effectiveAgent?.type === AgentTypeEnum.TaskAgent &&
+        isAgentVersionControlEnabled(effectiveAgent?.enableVersionControl)
+      ) {
+        void fileView.refreshGitList();
+      }
+      return;
+    }
+
+    const openingFileTree = !isFileTreeVisible;
+    const switchingToPreview = isFileTreeVisible && viewMode !== 'preview';
 
     handleFileTreeVisible();
 
@@ -652,7 +725,6 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       if (!hasSelectedPreviewFile) {
         setIsFileTreePinned(true);
       }
-      // 展开文件预览且开启版本管控时，刷新 Git 源代码列表
       if (
         !isGitStatusRefreshDisabled &&
         effectiveAgent?.type === AgentTypeEnum.TaskAgent &&
@@ -662,6 +734,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       }
     }
   }, [
+    isTerminalPanelOpen,
     isFileTreeVisible,
     viewMode,
     handleFileTreeVisible,
@@ -672,7 +745,45 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     isGitStatusRefreshDisabled,
     effectiveAgent?.type,
     effectiveAgent?.enableVersionControl,
+    openPreviewView,
+    id,
   ]);
+
+  /** 打开 / 收起底部终端全屏（与文件预览、智能体电脑互斥） */
+  const handleOpenTerminalPanel = useCallback(() => {
+    if (isTerminalPanelOpen) {
+      setTerminalConsoleCollapseSignal((n) => n + 1);
+      setTerminalConsoleLayoutMode('collapsed');
+      return;
+    }
+
+    sidebarRef.current?.close();
+    setHasTerminalConsoleRendered(true);
+    setTerminalConsoleVisible(true);
+    setTerminalConsoleCollapseSignal(0);
+    // 同步父级布局状态，避免子组件已是 expanded 时不触发 onLayoutModeChange 导致图标未激活
+    setTerminalConsoleLayoutMode('expanded');
+    setTerminalConsoleActiveTab('terminal');
+
+    if (!isFileTreeVisible || viewMode === 'desktop') {
+      openPreviewView(id);
+    }
+
+    setTerminalConsoleExpandSignal((n) => n + 1);
+  }, [isTerminalPanelOpen, isFileTreeVisible, viewMode, id, openPreviewView]);
+
+  /** 打开 / 切换智能体电脑（与文件预览、终端全屏互斥） */
+  const handleOpenDesktopViewClick = useCallback(() => {
+    if (isTerminalPanelOpen) {
+      setTerminalConsoleCollapseSignal((n) => n + 1);
+    }
+    setTerminalConsoleVisible(false);
+    setTerminalConsoleCollapseSignal(0);
+    setTerminalConsoleExpandSignal(0);
+    setTerminalConsoleLayoutMode('collapsed');
+    sidebarRef.current?.close();
+    handleOpenDesktopView();
+  }, [isTerminalPanelOpen, handleOpenDesktopView]);
 
   useEffect(
     () => () => {
@@ -815,10 +926,47 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     setGitVersionPanelOpen((prev) => !prev);
   }, [gitSourceControl.selectedDiffFile, gitSourceControl.clearSelectedDiff]);
 
+  // 关闭版本记录面板
+  closeVersionPanelForFilePreviewRef.current = () => {
+    setGitVersionPanelOpen(false);
+    gitSourceControl.clearSelectedDiff();
+  };
+
+  /**
+   * TaskResult / Markdown 文件链接选中文件时：
+   * 关闭版本记录面板并折叠终端，确保右侧文件预览可见
+   */
+  useEffect(() => {
+    if (!taskAgentSelectedFileId || taskAgentSelectTrigger === undefined) {
+      return;
+    }
+    if (taskAgentSelectTrigger === prevTaskAgentCollapseTriggerRef.current) {
+      return;
+    }
+    prevTaskAgentCollapseTriggerRef.current = taskAgentSelectTrigger;
+
+    closeVersionPanelForFilePreviewRef.current();
+
+    if (!hasTerminalConsoleRendered || !terminalConsoleVisible) {
+      return;
+    }
+    setTerminalConsoleCollapseSignal((n) => n + 1);
+    setTerminalConsoleLayoutMode('collapsed');
+  }, [
+    taskAgentSelectedFileId,
+    taskAgentSelectTrigger,
+    hasTerminalConsoleRendered,
+    terminalConsoleVisible,
+  ]);
+
   useEffect(() => {
     setGitVersionPanelOpen(false);
     setTerminalConsoleVisible(false);
     setHasTerminalConsoleRendered(false);
+    setTerminalConsoleLayoutMode('default');
+    setTerminalConsoleExpandSignal(0);
+    setTerminalConsoleCollapseSignal(0);
+    prevTaskAgentCollapseTriggerRef.current = undefined;
   }, [id]);
 
   useEffect(() => {
@@ -839,6 +987,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
           setTaskAgentSelectedFileId('');
           setGitVersionPanelOpen(false);
           gitSourceControl.setSelectedChangeFile(null);
+          collapseTerminalConsole();
         }
         await fileView.tree.handleFileSelect(fileId, options);
       },
@@ -847,17 +996,9 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       fileView.tree,
       setTaskAgentSelectedFileId,
       gitSourceControl.setSelectedChangeFile,
+      collapseTerminalConsole,
     ],
   );
-
-  /** 切换文件树预览区底部终端 */
-  const handleToggleTerminalConsole = useCallback(() => {
-    setHasTerminalConsoleRendered(true);
-    setTerminalConsoleVisible((prev) => !prev);
-    if (!isFileTreeVisible) {
-      openPreviewView(id);
-    }
-  }, [id, isFileTreeVisible, openPreviewView]);
 
   /** 文件树预览区底部终端，仅显示终端 Tab，不展示日志 */
   const terminalConsole = hasTerminalConsoleRendered ? (
@@ -870,6 +1011,10 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       wsSubprotocols={[...TTYD_TERMINAL_WS_SUBPROTOCOLS]}
       defaultActiveTab="terminal"
       defaultLayoutMode="default"
+      expandSignal={terminalConsoleExpandSignal}
+      collapseSignal={terminalConsoleCollapseSignal}
+      onLayoutModeChange={setTerminalConsoleLayoutMode}
+      onActiveTabChange={setTerminalConsoleActiveTab}
       showLogsTab={false}
     />
   ) : null;
@@ -879,6 +1024,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     effectiveAgent?.enableVersionControl,
   );
 
+  /** 文件树侧边栏 props */
   const fileSidebarProps = useMemo(
     () => ({
       tree: chatFileTree,
@@ -1012,9 +1158,11 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     isShowFilePanel,
     viewMode,
     handleFileTreeVisible: handleFileTreeVisibleClick,
-    terminalConsoleVisible,
-    handleToggleTerminalConsole,
-    handleOpenDesktopView,
+    isFileTreeIconActive,
+    isTerminalIconActive,
+    isDesktopIconActive,
+    handleOpenTerminalPanel,
+    handleOpenDesktopView: handleOpenDesktopViewClick,
     renderTitle,
     renderHeaderRight,
   };

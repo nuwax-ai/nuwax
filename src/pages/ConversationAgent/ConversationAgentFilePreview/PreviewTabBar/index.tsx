@@ -458,7 +458,7 @@ const PreviewTabBar: React.FC<PreviewTabBarProps> = ({
 
     /** 更新标签栏轨道宽度 */
     const updateTrackWidth = () => {
-      setTrackScrollWidth(trackEl.scrollWidth);
+      setTrackScrollWidth(trackEl.scrollWidth - 2); // 此处 -2 为了防止计算宽度不够精确导致内容未撑满的情况下出现滚动条
     };
 
     updateTrackWidth();

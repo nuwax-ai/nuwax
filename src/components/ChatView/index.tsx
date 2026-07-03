@@ -1,9 +1,11 @@
 import agentImage from '@/assets/images/agent_image.png';
 import avatar from '@/assets/images/avatar.png';
 import CopyButton from '@/components/base/CopyButton';
+import { stripMcpAskResumeDisplayArtifacts } from '@/components/business-component/AgentIntervention/utils/mcpAskResumeMessage';
 import AttachFile from '@/components/ChatView/AttachFile';
 import ConditionRender from '@/components/ConditionRender';
 import MarkdownRenderer from '@/components/MarkdownRenderer';
+import { groupMarkdownProcesses } from '@/components/MarkdownRenderer/utils';
 import { USER_INFO } from '@/constants/home.constants';
 import useMarkdownRender from '@/hooks/useMarkdownRender';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
@@ -17,13 +19,11 @@ import type {
 import { message, theme } from 'antd';
 import classNames from 'classnames';
 import { isEqual } from 'lodash';
-import React, { memo, useCallback, useMemo } from 'react';
+import React, { memo, useMemo } from 'react';
 import { useModel } from 'umi';
 import ChatBottomDebug from './ChatBottomDebug';
 import ChatBottomMore from './ChatBottomMore';
 import ChatSampleBottom from './ChatSampleBottom';
-// import RunOver from './RunOver';
-import { groupMarkdownProcesses } from '@/components/MarkdownRenderer/utils';
 import styles from './index.less';
 import RunOver from './RunOver';
 
@@ -48,6 +48,12 @@ const ChatView: React.FC<ChatViewProps> = memo(
     const processedText = useMemo(() => {
       return groupMarkdownProcesses(messageInfo?.text || '');
     }, [messageInfo?.text]);
+
+    const userDisplayText = useMemo(() => {
+      return stripMcpAskResumeDisplayArtifacts(messageInfo?.text);
+    }, [messageInfo?.text]);
+
+    const userCopyText = userDisplayText;
 
     const { markdownRef, messageIdRef } = useMarkdownRender({
       answer: processedText,
@@ -85,10 +91,6 @@ const ChatView: React.FC<ChatViewProps> = memo(
     const handleTextCopy = () => {
       message.success(dict('PC.Toast.Global.copiedSuccessfully'));
     };
-
-    const trim = useCallback((text: string) => {
-      return text.replace(/^\s+|\s+$/g, '');
-    }, []);
 
     const isUser = useMemo(() => {
       return messageInfo?.role === AssistantRoleEnum.USER;
@@ -143,9 +145,7 @@ const ChatView: React.FC<ChatViewProps> = memo(
           {/* USER 角色消息附件 */}
           {!!messageInfo?.attachments?.length && (
             <div className={cx(styles['attach-file-container'])}>
-              <AttachFile
-                files={messageInfo?.attachments as AttachmentFile[]}
-              />
+              <AttachFile files={messageInfo.attachments as AttachmentFile[]} />
             </div>
           )}
 
@@ -166,10 +166,10 @@ const ChatView: React.FC<ChatViewProps> = memo(
               >
                 <div className="ds-markdown-answer">
                   <div
-                    style={{ whiteSpace: 'pre-wrap' }}
                     className="ds-markdown-paragraph ds-typed-answer"
+                    style={{ whiteSpace: 'pre-wrap' }}
                   >
-                    {trim(messageInfo?.text)}
+                    {userDisplayText}
                   </div>
                 </div>
               </div>
@@ -180,10 +180,7 @@ const ChatView: React.FC<ChatViewProps> = memo(
                   'items-center',
                 )}
               >
-                <CopyButton
-                  text={messageInfo.text || ''}
-                  onCopy={handleTextCopy}
-                >
+                <CopyButton text={userCopyText} onCopy={handleTextCopy}>
                   {dict('PC.Components.ChatView.copy')}
                 </CopyButton>
               </div>

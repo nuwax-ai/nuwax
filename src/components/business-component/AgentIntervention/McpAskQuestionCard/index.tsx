@@ -15,6 +15,11 @@ import type {
   McpAskRespondPayload,
 } from '../types/mcpAskIntervention';
 import {
+  extractMcpAskFormAttachments,
+  hydrateMcpAskFormValues,
+  normalizeMcpAskFormData,
+} from '../utils/normalizeMcpAskFormData';
+import {
   getInteractionSteps,
   getSkipLabel,
   isSkipAllowed,
@@ -88,14 +93,14 @@ const McpAskQuestionCard: React.FC<McpAskQuestionCardProps> = ({
         ? { ...fieldInitials, ...(interaction.formData ?? {}) }
         : interaction.formData;
     if (initial) {
-      // @ts-ignore
-      form.setFieldsValue(initial);
+      form.setFieldsValue(hydrateMcpAskFormValues(initial, ui));
     }
   }, [form, ui.fields, interaction.formData, input.requestId]);
 
   const buildPayload = (
     action: McpAskRespondPayload['action'],
     formData?: Record<string, unknown>,
+    files?: McpAskRespondPayload['files'],
   ): McpAskRespondPayload => ({
     interventionId: input.requestId,
     toolCallId,
@@ -104,6 +109,7 @@ const McpAskQuestionCard: React.FC<McpAskQuestionCardProps> = ({
     protocol: 'mcp',
     action,
     formData,
+    files,
     answeredAt: Date.now(),
     answeredBy: { kind: 'web' },
   });
@@ -133,8 +139,10 @@ const McpAskQuestionCard: React.FC<McpAskQuestionCardProps> = ({
     } else {
       await form.validateFields();
     }
-    const values = form.getFieldsValue(true);
-    onRespond?.(buildPayload('submit', values));
+    const rawValues = form.getFieldsValue(true);
+    const files = extractMcpAskFormAttachments(rawValues, ui);
+    const values = normalizeMcpAskFormData(rawValues, ui);
+    onRespond?.(buildPayload('submit', values, files));
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

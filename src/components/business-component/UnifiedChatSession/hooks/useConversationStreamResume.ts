@@ -1,7 +1,9 @@
+import { EVENT_TYPE } from '@/constants/event.constants';
 import { GLOBAL_POLLING_INTERVAL } from '@/constants/home.constants';
 import { TaskStatus } from '@/types/enums/agent';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import { fetchConversationTaskStatus } from '@/utils/conversationTaskStatusSync';
+import eventBus from '@/utils/eventBus';
 import { useRequest } from 'ahooks';
 import { useEffect, useRef, useState } from 'react';
 
@@ -62,9 +64,21 @@ export function useConversationStreamResume(
   // sub 是否已订阅（开/闭之间）。ref 用于回调闭包安全读取；state 用于驱动 ready 重算
   const isResumeSubscribedRef = useRef(false);
   const [isResumeSubscribed, setIsResumeSubscribed] = useState(false);
-  // 用 ref 保存最新值，避免轮询 onSuccess 闭包过期
-  const latestRef = useRef({ taskStatus, isLocallyStreaming, messageList });
-  latestRef.current = { taskStatus, isLocallyStreaming, messageList };
+  // 用 ref 保存最新值，避免轮询 onSuccess / subscribe 异步回调闭包过期
+  // conversationId 一并放入：subscribe 的 await 与 sub onClose 都是异步，需要回调执行时
+  // 能读到「当前会话」以判断本次回调是否仍属于同一会话（防跨会话覆盖/误杀）
+  const latestRef = useRef({
+    conversationId,
+    taskStatus,
+    isLocallyStreaming,
+    messageList,
+  });
+  latestRef.current = {
+    conversationId,
+    taskStatus,
+    isLocallyStreaming,
+    messageList,
+  };
 
   // 轮询启停句柄：subscribe 在 useRequest 之前定义、需要调用其 run/cancel，
   // 用 ref 解耦前向引用（subscribe 调用 pollingControlsRef.current.stop/start，
@@ -109,6 +123,13 @@ export function useConversationStreamResume(
     isResumeSubscribedRef.current = true;
     setIsResumeSubscribed(true);
     pollingControlsRef.current.stop();
+
+    // 触发事件将对应的会话在列表中标记为“执行中”
+    eventBus.emit(EVENT_TYPE.UpdateConversationListTaskStatus, {
+      conversationId: id,
+      taskStatus: TaskStatus.EXECUTING,
+    });
+
     // 多页签/查看中变 EXECUTING：先 reload 历史，确保 messageList 含最新发送的用户消息，
     // 再追加 assistant 占位由 sub 流重建（否则 sub 续上后会少显示那条用户消息）
     let list = latestRef.current.messageList || [];
@@ -122,14 +143,54 @@ export function useConversationStreamResume(
         console.error('[useConversationStreamResume] reloadHistory failed:', e);
       }
     }
-    resumeStream(id, list, () => {
+
+    // await 期间可能已切会话、本地开始流式，或切会话 effect 已重置订阅标记。
+    // 此时再调 resumeStream 会用旧 id 触发 model 级共享 abortResumeStream，误杀新会话 sub。
+    // 放弃本次订阅并回滚乐观标记，由当前会话自身的轮询/订阅逻辑接管。
+    if (
+      latestRef.current.conversationId !== id ||
+      latestRef.current.isLocallyStreaming ||
+      !isResumeSubscribedRef.current
+    ) {
+      isResumeSubscribedRef.current = false;
+      setIsResumeSubscribed(false);
+      return;
+    }
+
+    resumeStream(id, list, async () => {
       // sub 自动断开(end_turn/completed/超时)或被 abort 时回调
       isResumeSubscribedRef.current = false;
       setIsResumeSubscribed(false);
+      // 过期 sub 的延迟关闭（切会话后 cleanup 触发 abort 后回调）：
+      // 不再回写状态，否则 reloadHistoryAsync(旧id) 与 RefreshConversationList 会覆盖/干扰新会话。
+      if (latestRef.current.conversationId !== id) {
+        return;
+      }
       // sub 关闭后恢复状态轮询，以便检测会话再次变为 EXECUTING
       pollingControlsRef.current.start();
+
+      // 流式恢复结束后，主动拉取一次最新历史状态以更新本地 model 状态（同步 taskStatus）
+      if (reloadHistoryAsync) {
+        try {
+          await reloadHistoryAsync(id);
+        } catch (e) {
+          console.error(
+            '[useConversationStreamResume] final reloadHistory failed:',
+            e,
+          );
+        }
+      }
+
+      // 发送事件，刷新会话列表以清除“执行中”标记，使其消失
+      eventBus.emit(EVENT_TYPE.RefreshConversationList, {
+        conversationId: id,
+        reason: 'stream-closed',
+      });
     });
   };
+
+  const subscribeRef = useRef(subscribe);
+  subscribeRef.current = subscribe;
 
   // 轮询会话状态：仅标签可见时触发(pollingWhenHidden:false)，复用全局轮询方案。
   // ready 含 !isResumeSubscribed：续上 sub 后不再轮询（subscribe 的 stopPolling 作立即兜底）。
@@ -212,6 +273,29 @@ export function useConversationStreamResume(
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversationId, taskStatus]);
+
+  // 监听浏览器切回前台（页签可见）事件，立即检查是否有任务在执行，并尝试进行流式恢复
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (
+        document.visibilityState === 'visible' &&
+        conversationId &&
+        !isLocallyStreaming &&
+        !isResumeSubscribedRef.current &&
+        resumeStream
+      ) {
+        fetchConversationTaskStatus(conversationId).then((status) => {
+          if (status === TaskStatus.EXECUTING) {
+            subscribeRef.current(conversationId);
+          }
+        });
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [conversationId, isLocallyStreaming, resumeStream]);
 
   // 离开 / 切换会话：清除轮询 + 中断 sub（约束：退出会话页必须清除轮询）
   useEffect(() => {

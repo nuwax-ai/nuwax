@@ -38,6 +38,10 @@ export interface UseAppDevFileTreeParams {
   onRenameFile?: (node: FileNode, newName: string) => Promise<boolean>;
   /** 上传多个文件回调（node 为 null 表示根目录） */
   onUploadFiles: (node: FileNode | null) => void | Promise<void>;
+  /** 上传文件夹回调（保留子目录结构，node 为 null 表示根目录） */
+  onUploadFolder?: (node: FileNode | null) => void | Promise<void>;
+  /** 文件树批量上传进行中（展示上传提示） */
+  isUploadingFiles?: boolean;
   /** 导入项目回调（空白区域右键菜单） */
   onImportProject?: () => void;
   /** 导入项目菜单项文案 */
@@ -67,6 +71,8 @@ export function useAppDevFileTree(params: UseAppDevFileTreeParams): {
     onDeleteFile,
     onRenameFile,
     onUploadFiles,
+    onUploadFolder,
+    isUploadingFiles = false,
     onImportProject,
     importProjectLabel,
     onExportProject,
@@ -227,12 +233,20 @@ export function useAppDevFileTree(params: UseAppDevFileTreeParams): {
     setRenamingNode(node);
   }, []);
 
-  /** 从右键菜单/工具栏触发上传单个文件 */
+  /** 从右键菜单/工具栏触发上传多个文件 */
   const handleUploadMultipleFiles = useCallback(
     async (node: FileNode | null) => {
       await onUploadFiles(node);
     },
     [onUploadFiles],
+  );
+
+  /** 从右键菜单/工具栏触发上传文件夹 */
+  const handleUploadFolder = useCallback(
+    async (node: FileNode | null) => {
+      await onUploadFolder?.(node);
+    },
+    [onUploadFolder],
   );
 
   /** 刷新文件树：内部维护 loading 状态，避免重复触发 */
@@ -267,7 +281,7 @@ export function useAppDevFileTree(params: UseAppDevFileTreeParams): {
       fileTreeDataLoading: isFileTreeInitializing,
       isCanDeleteSkillFile: true,
       isRefreshingFileTree,
-      isUploadingFiles: false,
+      isUploadingFiles,
       isDownloadingFile: false,
       hideFileTree: false,
       showRefreshButton: true,
@@ -290,6 +304,7 @@ export function useAppDevFileTree(params: UseAppDevFileTreeParams): {
       handleDelete,
       handleRenameFromMenu,
       handleUploadMultipleFiles,
+      handleUploadFolder: onUploadFolder ? handleUploadFolder : undefined,
       handleCreateFile,
       handleCreateFolder,
       handleImportProject: onImportProject,
@@ -307,6 +322,7 @@ export function useAppDevFileTree(params: UseAppDevFileTreeParams): {
       contextMenuVisible,
       isFileTreeInitializing,
       isRefreshingFileTree,
+      isUploadingFiles,
       isChatLoading,
       onFileSelect,
       onImportProject,
@@ -320,6 +336,7 @@ export function useAppDevFileTree(params: UseAppDevFileTreeParams): {
       handleDelete,
       handleRenameFromMenu,
       handleUploadMultipleFiles,
+      handleUploadFolder,
       handleCreateFile,
       handleCreateFolder,
       handleExportProject,

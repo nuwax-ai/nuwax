@@ -45,7 +45,10 @@ const UploadAvatar: React.FC<UploadAvatarProps> = (props) => {
   const beforeUploadDefault = (file: FileType) => {
     const { type, size } = file;
     const isJpgOrPng =
-      type === 'image/jpeg' || type === 'image/jpg' || type === 'image/png';
+      type === 'image/jpeg' ||
+      type === 'image/jpg' ||
+      type === 'image/png' ||
+      type === 'image/svg+xml';
     if (!isJpgOrPng) {
       message.error(dict('PC.Toast.UploadAvatar.invalidType'));
     }

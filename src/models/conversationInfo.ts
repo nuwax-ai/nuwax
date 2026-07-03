@@ -6,6 +6,7 @@ import {
 } from '@/components/business-component/AgentIntervention';
 import { reconcileAcpPermissionStatusesInMessageList } from '@/components/business-component/AgentIntervention/utils/reconcileAcpPermissionStatus';
 import { reconcileFinalMessageState } from '@/components/business-component/AgentIntervention/utils/reconcileFinalMessageState';
+import { isAgentVersionControlEnabled } from '@/constants/agent.constants';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
   CONVERSATION_CONNECTION_URL,
@@ -157,6 +158,8 @@ export default () => {
   const [requestId, setRequestId] = useState<string>('');
   // 会话消息ID
   const messageIdRef = useRef<string>('');
+  /** 刷新 Git 源代码管理列表（由 Chat / ConversationAgent 等页面注入 fileView.refreshGitList） */
+  const refreshGitListRef = useRef<(() => void | Promise<void>) | null>(null);
   // 调试结果
   const [finalResult, setFinalResult] =
     useState<ConversationFinalResult | null>(null);
@@ -446,14 +449,10 @@ export default () => {
       openPreviewChangeState('preview');
       // 只在需要时触发文件列表刷新事件
       if (needRefresh) {
-        if (options?.forceRefresh) {
-          await refreshFileListImmediately(cId);
-        } else {
-          handleRefreshFileList(cId);
-        }
+        await refreshFileListImmediately(cId);
       }
     },
-    [handleRefreshFileList, refreshFileListImmediately, openPreviewChangeState],
+    [refreshFileListImmediately, openPreviewChangeState],
   );
 
   // 滚动到底部
@@ -1081,7 +1080,16 @@ export default () => {
             conversationInfoRef.current?.agent?.type === AgentTypeEnum.TaskAgent
           ) {
             // 刷新文件树
-            await handleRefreshFileList(params.conversationId);
+            await refreshFileListImmediately(params.conversationId);
+
+            // 开启版本管理时，同步刷新 Git 源代码管理列表
+            if (
+              isAgentVersionControlEnabled(
+                conversationInfoRef.current?.agent?.enableVersionControl,
+              )
+            ) {
+              void refreshGitListRef.current?.();
+            }
 
             // 同步后台任务状态，确保「智能体正在执行，请稍等」能正确展示/结束
             void syncConversationTaskStatus(params.conversationId);
@@ -1272,10 +1280,11 @@ export default () => {
               // cleanupPendingInteractions(currentMessage);
             }
 
-            const latestProcessingList = copyList.flatMap((message) =>
-              Array.isArray(message.processingList)
-                ? message.processingList
-                : [],
+            const latestProcessingList = copyList.flatMap(
+              (message: MessageInfo) =>
+                Array.isArray(message.processingList)
+                  ? message.processingList
+                  : [],
             );
             handleChatProcessingList(latestProcessingList);
 
@@ -1634,6 +1643,8 @@ export default () => {
     handleRefreshFileList,
     // 立即刷新文件列表（供手动点击刷新按钮）
     refreshFileListImmediately,
+    /** 刷新 Git 列表回调 ref，页面侧赋值 fileView.refreshGitList */
+    refreshGitListRef,
     openDesktopView,
     openPreviewView,
     // 重启智能体电脑

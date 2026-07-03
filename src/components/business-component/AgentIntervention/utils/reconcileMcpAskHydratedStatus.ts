@@ -1,6 +1,9 @@
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import type { McpAskInteraction } from '../types/mcpAskIntervention';
-import { hasMcpAskResumeMessage } from './mcpAskResumeMessage';
+import {
+  hasMcpAskResumeMessage,
+  sortMessagesByConversationIndex,
+} from './mcpAskResumeMessage';
 
 function isAwaitingUserResponse(
   status: McpAskInteraction['responseStatus'] | undefined,
@@ -16,18 +19,32 @@ function isAwaitingUserResponse(
 export function reconcileMessageMcpAskHydratedStatus(
   message: MessageInfo,
   contextMessageList: MessageInfo[],
+  containingMessageIndex?: number,
 ): MessageInfo {
   const interactions = message.mcpAskInteractions;
   if (!interactions?.length) {
     return message;
   }
 
+  const resolvedContainingMessageIndex =
+    containingMessageIndex ??
+    contextMessageList.findIndex(
+      (item) => item.id === message.id || item.index === message.index,
+    );
+
   let changed = false;
   const nextInteractions = interactions.map((interaction) => {
     if (!isAwaitingUserResponse(interaction.responseStatus)) {
       return interaction;
     }
-    if (!hasMcpAskResumeMessage(contextMessageList, interaction)) {
+    if (
+      !hasMcpAskResumeMessage(contextMessageList, interaction, {
+        containingMessageIndex:
+          resolvedContainingMessageIndex >= 0
+            ? resolvedContainingMessageIndex
+            : undefined,
+      })
+    ) {
       return interaction;
     }
     changed = true;
@@ -51,7 +68,15 @@ export function reconcileMcpAskHydratedMessageList(
   messageList: MessageInfo[],
   contextMessageList: MessageInfo[] = messageList,
 ): MessageInfo[] {
-  return messageList.map((message) =>
-    reconcileMessageMcpAskHydratedStatus(message, contextMessageList),
-  );
+  const sortedContext = sortMessagesByConversationIndex(contextMessageList);
+  return messageList.map((message) => {
+    const containingMessageIndex = sortedContext.findIndex(
+      (item) => item.id === message.id || item.index === message.index,
+    );
+    return reconcileMessageMcpAskHydratedStatus(
+      message,
+      sortedContext,
+      containingMessageIndex >= 0 ? containingMessageIndex : undefined,
+    );
+  });
 }

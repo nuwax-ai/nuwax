@@ -358,17 +358,17 @@ POST /api/agent/conversation/chat/permission-request/response
 
 `McpAskQuestionCard` 构建的 `McpAskRespondPayload`：
 
-| 字段             | 来源                                               |
-| ---------------- | -------------------------------------------------- |
+| 字段 | 来源 |
+| --- | --- |
 | `interventionId` | **`input.requestId`**（非后端 intervention 表 ID） |
-| `toolCallId`     | interaction.`toolCallId`                           |
-| `revision`       | `input.revision`                                   |
-| `source`         | `'mcp_ask'`                                        |
-| `protocol`       | `'mcp'`                                            |
-| `action`         | `'submit' \| 'cancel' \| 'skip' \| 'timeout'`      |
-| `formData`       | 提交时表单值                                       |
-| `answeredBy`     | `{ kind: 'web' }`                                  |
-| `answeredAt`     | `Date.now()`                                       |
+| `toolCallId` | interaction.`toolCallId` |
+| `revision` | `input.revision` |
+| `source` | `'mcp_ask'` |
+| `protocol` | `'mcp'` |
+| `action` | `'submit' \| 'cancel' \| 'skip' \| 'timeout'` |
+| `formData` | 提交时表单值；`file` 字段为统一上传服务返回的 `https://` URL（见 `normalizeMcpAskFormData`） |
+| `answeredBy` | `{ kind: 'web' }` |
+| `answeredAt` | `Date.now()` |
 
 `respondMcpAsk` 更新 `mcpAskInteractions` 状态后，返回 `buildMcpAskResumeMessage` 字符串，由 `useAgentInterventionLayer` 调用 `onSendMessage` 发回会话。
 
@@ -387,17 +387,17 @@ POST /api/agent/conversation/chat/permission-request/response
 
 ### `uiSchema` 已落地 widget
 
-| `ui:widget`         | 渲染                                                |
-| ------------------- | --------------------------------------------------- |
-| `radio`             | Radio.Group                                         |
-| `checkboxes`        | Checkbox.Group（含 items.enum）                     |
-| `select`            | Select                                              |
-| `text`              | Input                                               |
-| `textarea`          | Input.TextArea                                      |
-| `number`            | InputNumber（`minimum` / `maximum` / `multipleOf`） |
-| `radio-with-custom` | Radio + 自定义输入（`otherValue` / `otherField`）   |
-| `list`              | 纵向单选列表                                        |
-| `file`              | 上传（`ui:options.accept`、`multiple`）             |
+| `ui:widget` | 渲染 |
+| --- | --- |
+| `radio` | Radio.Group |
+| `checkboxes` | Checkbox.Group（含 items.enum） |
+| `select` | Select |
+| `text` | Input |
+| `textarea` | Input.TextArea |
+| `number` | InputNumber（`minimum` / `maximum` / `multipleOf`） |
+| `radio-with-custom` | Radio + 自定义输入（`otherValue` / `otherField`） |
+| `list` | 纵向单选列表 |
+| `file` | 上传（`accept`、`multiple`）；走 `/api/file/upload`，**提交值为远程 URL**（单文件 `string`，多文件 `string[]`） |
 
 未写 `ui:widget` 时按 schema 推断（如 `enum` → `radio`，`items.enum` → `checkboxes`，`number`/`integer` → `number`）。
 
@@ -533,6 +533,7 @@ MCP 进队     =  pending/submitting
 | 历史状态恢复 | `hydrateMcpAskInteractionsInMessageList` | `applyMcpAskResumeStatusesInMessageList` |
 | ACP 抑制 MCP Ask | `permissionPendingToolCallIds` + `permissionPendingAskRequestIds` | 同左 |
 | 卡片渲染 | `DockPanel` FIFO 堆叠，最早在前 | ACP + MCP Ask 分列 `v-for`（待 mobile 同步） |
+| MCP Ask `file` 提交 | `normalizeMcpAskFormData` 转为 URL 后写入 `formData` | Mobile 侧 `mcpAskInterventionState.uts` 需同样在上传完成后提交 URL |
 | ACP sub 恢复 | `reconcileAcpPermissionStatuses` | 待 mobile 同步 |
 
 ## 数据流
