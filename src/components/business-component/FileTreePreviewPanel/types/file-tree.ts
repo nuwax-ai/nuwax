@@ -45,7 +45,6 @@ export interface FileTreeViewProps {
   taskAgentSelectedFileId?: string;
   clearTaskAgentSelectedFileId?: () => void;
   taskAgentSelectTrigger?: number | string;
-  isImportProjectTrigger?: number | string;
   originalFiles?: any[];
   fileTreeDataLoading?: boolean;
   readOnly?: boolean;

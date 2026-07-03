@@ -10,11 +10,13 @@ import { apiSkillDetail } from '@/services/skill';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum, PublishStatusEnum } from '@/types/enums/common';
 import { SkillInfo } from '@/types/interfaces/library';
+import type { RequestResponse } from '@/types/interfaces/request';
 import type { SkillDetailInfo } from '@/types/interfaces/skill';
+import { useRequest } from 'ahooks';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, { useEffect, useRef, useState } from 'react';
-import { useParams, useRequest } from 'umi';
+import { useParams } from 'umi';
 import SkillHeader from './components/SkillHeader';
 import { useSkillFiles } from './hooks/useSkillFiles';
 import styles from './index.less';
@@ -42,23 +44,24 @@ const SkillDetails: React.FC = () => {
     () => {},
   );
 
-  // 查询技能信息
-  const { run: runSkillInfo } = useRequest(apiSkillDetail, {
+  // 查询技能信息（ahooks useRequest 的 runAsync 返回 Promise，便于导入后 await 刷新）
+  const { runAsync: runSkillInfo } = useRequest(apiSkillDetail, {
     manual: true,
-    debounceInterval: 300,
-    onSuccess: async (result: SkillDetailInfo) => {
+    debounceWait: 300,
+    onSuccess: (result: RequestResponse<SkillDetailInfo>) => {
       setFileTreeDataLoadingRef.current(false);
-      const { files } = result || {};
+      const data = result?.data;
+      const { files } = data || {};
       if (Array.isArray(files) && files.length > 0) {
-        setSkillInfo(() => ({
-          ...result,
+        setSkillInfo({
+          ...data,
           files: files.map((item) => ({
             ...item,
             fileId: item.name,
           })),
-        }));
+        });
       } else {
-        setSkillInfo(result);
+        setSkillInfo(data ?? null);
       }
     },
     onError: () => {
@@ -74,7 +77,7 @@ const SkillDetails: React.FC = () => {
     isFullscreenPreview,
     setIsFullscreenPreview,
     isImportingProject,
-    importProjectTrigger,
+    taskAgentSelectTrigger,
     openImportSkillProject,
     setOpenImportSkillProject,
     loadingExportProject,
@@ -194,7 +197,7 @@ const SkillDetails: React.FC = () => {
               <FileTreeViewPanel
                 taskAgentSelectedFileId={'SKILL.md'}
                 initViewFileType={'code'}
-                isImportProjectTrigger={importProjectTrigger}
+                taskAgentSelectTrigger={taskAgentSelectTrigger}
                 isProjectSkill={true}
                 ref={fileTreeViewRef}
                 fileTreeDataLoading={fileTreeDataLoading}
