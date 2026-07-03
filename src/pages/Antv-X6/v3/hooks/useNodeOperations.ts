@@ -1008,6 +1008,8 @@ export const useNodeOperations = ({
         const wasRemapped = isFrontendMappedType(requestedType);
         const requestedName = _params.name;
         const requestedDescription = _params.description;
+        const requestedIcon =
+          typeof child.icon === 'string' ? child.icon.trim() : '';
         const requestedNodeConfig = _params.nodeConfig;
         _params = {
           ..._params,
@@ -1025,6 +1027,11 @@ export const useNodeOperations = ({
           ..._params,
           name: requestedName,
           description: requestedDescription,
+          // 后端 addNode 可能不回写 icon，保留选器传入的资源图标供画布渲染
+          icon:
+            (typeof apiNodeData.icon === 'string' && apiNodeData.icon.trim()) ||
+            requestedIcon ||
+            '',
         };
         // 仅「类型被映射」的节点（RouteDecision/HumanInteraction）需要把 type 还原为前端语义
         if (wasRemapped) {
@@ -1344,6 +1351,7 @@ export const useNodeOperations = ({
                 ),
           type,
           typeId: val.targetId,
+          icon: val.icon,
         };
       } else if (val.targetType === AgentComponentTypeEnum.MCP) {
         _child = {
@@ -1381,6 +1389,7 @@ export const useNodeOperations = ({
             t('PC.Pages.AgentFlowParams.nodeAgentDescription'),
           type: NodeTypeEnum.Agent,
           typeId: val.targetId,
+          icon: val.icon,
           nodeConfig: {
             agentId: val.targetId,
             inputArgs: [],
