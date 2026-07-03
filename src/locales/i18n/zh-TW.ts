@@ -4958,6 +4958,7 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.UserManage.UserAuthModal.role": "角色",
   "PC.Pages.UserManage.UserAuthModal.selectAll": "全選",
   "PC.Pages.UserManage.UserAuthModal.userGroup": "使用者組",
+  "PC.Pages.UserManage.UserAuthModal.subscriptionUserGroup": "訂閱關聯使用者組",
   "PC.Pages.UserManage.UserFormModal.addUser": "新增使用者",
   "PC.Pages.UserManage.UserFormModal.admin": "管理員",
   "PC.Pages.UserManage.UserFormModal.editUser": "修改使用者資訊",

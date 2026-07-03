@@ -5129,6 +5129,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.UserManage.UserAuthModal.role": "Role",
   "PC.Pages.UserManage.UserAuthModal.selectAll": "Select All",
   "PC.Pages.UserManage.UserAuthModal.userGroup": "User Group",
+  "PC.Pages.UserManage.UserAuthModal.subscriptionUserGroup": "Subscription User Groups",
   "PC.Pages.UserManage.UserFormModal.addUser": "Add User",
   "PC.Pages.UserManage.UserFormModal.admin": "Admin",
   "PC.Pages.UserManage.UserFormModal.editUser": "Edit User",

@@ -4966,6 +4966,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.UserManage.UserAuthModal.role": "役割",
   "PC.Pages.UserManage.UserAuthModal.selectAll": "すべて選択",
   "PC.Pages.UserManage.UserAuthModal.userGroup": "ユーザーグループ",
+  "PC.Pages.UserManage.UserAuthModal.subscriptionUserGroup": "サブスクリプション関連ユーザーグループ",
   "PC.Pages.UserManage.UserFormModal.addUser": "ユーザーの追加",
   "PC.Pages.UserManage.UserFormModal.admin": "管理者",
   "PC.Pages.UserManage.UserFormModal.editUser": "ユーザーの編集",
