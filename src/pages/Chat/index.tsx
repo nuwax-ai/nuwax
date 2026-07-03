@@ -613,6 +613,9 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   /** 无有效消息列表时不允许刷新 Git status，逻辑与进入页面自动拉取 api/git/status 保持一致 */
   const isGitStatusRefreshDisabled = !hasValidMessageList;
 
+  /** TaskResult / 文件树选中等打开预览前，关闭版本记录面板（gitSourceControl 初始化后赋值） */
+  const closeVersionPanelForFilePreviewRef = useRef<() => void>(() => {});
+
   // 文件视图 props
   const fileView = useFileTreePreviewView({
     taskAgentSelectedFileId,
@@ -652,6 +655,9 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     onSelectedFileMissing: () => {
       setTaskAgentSelectedFileId('');
     },
+    onFileSelectOpenPreview: () => {
+      closeVersionPanelForFilePreviewRef.current();
+    },
   });
 
   refreshGitListRef.current = fileView.refreshGitList;
@@ -668,27 +674,6 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   const prevTaskAgentCollapseTriggerRef = useRef<number | string | undefined>(
     undefined,
   );
-  useEffect(() => {
-    if (!taskAgentSelectedFileId || taskAgentSelectTrigger === undefined) {
-      return;
-    }
-    // 仅在 trigger 变化时折叠，避免打开终端后因依赖变化误触发折叠
-    if (taskAgentSelectTrigger === prevTaskAgentCollapseTriggerRef.current) {
-      return;
-    }
-    prevTaskAgentCollapseTriggerRef.current = taskAgentSelectTrigger;
-
-    if (!hasTerminalConsoleRendered || !terminalConsoleVisible) {
-      return;
-    }
-    setTerminalConsoleCollapseSignal((n) => n + 1);
-    setTerminalConsoleLayoutMode('collapsed');
-  }, [
-    taskAgentSelectedFileId,
-    taskAgentSelectTrigger,
-    hasTerminalConsoleRendered,
-    terminalConsoleVisible,
-  ]);
 
   /** 底部终端是否处于全屏展开且选中终端 Tab */
   const isTerminalPanelOpen =
@@ -940,6 +925,39 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     }
     setGitVersionPanelOpen((prev) => !prev);
   }, [gitSourceControl.selectedDiffFile, gitSourceControl.clearSelectedDiff]);
+
+  // 关闭版本记录面板
+  closeVersionPanelForFilePreviewRef.current = () => {
+    setGitVersionPanelOpen(false);
+    gitSourceControl.clearSelectedDiff();
+  };
+
+  /**
+   * TaskResult / Markdown 文件链接选中文件时：
+   * 关闭版本记录面板并折叠终端，确保右侧文件预览可见
+   */
+  useEffect(() => {
+    if (!taskAgentSelectedFileId || taskAgentSelectTrigger === undefined) {
+      return;
+    }
+    if (taskAgentSelectTrigger === prevTaskAgentCollapseTriggerRef.current) {
+      return;
+    }
+    prevTaskAgentCollapseTriggerRef.current = taskAgentSelectTrigger;
+
+    closeVersionPanelForFilePreviewRef.current();
+
+    if (!hasTerminalConsoleRendered || !terminalConsoleVisible) {
+      return;
+    }
+    setTerminalConsoleCollapseSignal((n) => n + 1);
+    setTerminalConsoleLayoutMode('collapsed');
+  }, [
+    taskAgentSelectedFileId,
+    taskAgentSelectTrigger,
+    hasTerminalConsoleRendered,
+    terminalConsoleVisible,
+  ]);
 
   useEffect(() => {
     setGitVersionPanelOpen(false);
