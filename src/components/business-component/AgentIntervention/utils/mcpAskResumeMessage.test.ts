@@ -1,9 +1,13 @@
-import { describe, expect, it, vi } from 'vitest';
-import type { McpAskInteraction } from '../types/mcpAskIntervention';
+import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import {
   buildMcpAskResumeMessage,
+  hasMcpAskResumeMessage,
   isMcpAskResumeMessageForInteraction,
+  stripMcpAskResumeDisplayArtifacts,
 } from './mcpAskResumeMessage';
+
+import { describe, expect, it, vi } from 'vitest';
+import type { McpAskInteraction } from '../types/mcpAskIntervention';
 
 /** 测试用中文 i18n 字典，与 zh-CN 本地包 resume 相关 key 对齐 */
 const zhCnResumeDict: Record<string, string> = {
@@ -118,10 +122,11 @@ describe('buildMcpAskResumeMessage', () => {
         '选项：先跑测试',
         '补充说明：先跑关键链路',
         '检查项：代码检查、单元测试',
+        '<!--nuwax-mcp-ask-request-id:ask-1-->',
       ].join('\n'),
     );
-    expect(message).not.toContain('```json');
     expect(message).not.toContain('"choice"');
+    expect(message).not.toContain('```json');
   });
 
   it('keeps unknown fields readable without JSON blocks', () => {
@@ -141,7 +146,7 @@ describe('buildMcpAskResumeMessage', () => {
 
     expect(message).toContain('confirmed：是');
     expect(message).toContain('extra：owner：alice，retry：2');
-    expect(message).not.toContain('```json');
+    expect(message).toContain('<!--nuwax-mcp-ask-request-id:ask-1-->');
   });
 
   it('uses custom radio input as the field value', () => {
@@ -202,19 +207,25 @@ describe('buildMcpAskResumeMessage', () => {
         ...commonPayload,
         action: 'cancel',
       }),
-    ).toBe('我取消了「请选择继续方式」。');
+    ).toContain('我取消了「请选择继续方式」。');
     expect(
       buildMcpAskResumeMessage(baseInteraction, {
         ...commonPayload,
         action: 'skip',
       }),
-    ).toBe('我跳过了「请选择继续方式」。');
+    ).toContain('我跳过了「请选择继续方式」。');
     expect(
       buildMcpAskResumeMessage(baseInteraction, {
         ...commonPayload,
         action: 'timeout',
       }),
-    ).toBe('「请选择继续方式」已超时，没有收到表单答案。');
+    ).toContain('「请选择继续方式」已超时，没有收到表单答案。');
+    expect(
+      buildMcpAskResumeMessage(baseInteraction, {
+        ...commonPayload,
+        action: 'cancel',
+      }),
+    ).toContain('<!--nuwax-mcp-ask-request-id:ask-1-->');
   });
 
   it('uses English templates when locale dict is English', () => {
@@ -233,6 +244,96 @@ describe('buildMcpAskResumeMessage', () => {
 
     expect(message).toContain('I answered "请选择继续方式". Form details:');
     expect(message).toContain('confirmed: Yes');
+  });
+
+  it('formats normalized file field URLs in submitted resume message', () => {
+    activeDict = zhCnResumeDict;
+    activeLang = 'zh-CN';
+    const message = buildMcpAskResumeMessage(
+      {
+        ...baseInteraction,
+        input: {
+          ...baseInteraction.input,
+          title: '提交问题截图',
+          ui: {
+            ...baseInteraction.input.ui,
+            title: '提交问题截图',
+            fields: [
+              { name: 'screenshot', title: '截图', widget: 'file' },
+              {
+                name: 'attachments',
+                title: '相关附件',
+                widget: 'file',
+                multiple: true,
+              },
+            ],
+          },
+        },
+      },
+      {
+        interventionId: 'ask-1',
+        revision: 1,
+        source: 'mcp_ask',
+        protocol: 'mcp',
+        action: 'submit',
+        formData: {
+          screenshot: 'https://cdn.example.com/shot.png',
+          attachments: [
+            'https://cdn.example.com/a.pdf',
+            'https://cdn.example.com/b.pdf',
+          ],
+        },
+      },
+    );
+
+    expect(message).toContain('截图：https://cdn.example.com/shot.png');
+    expect(message).toContain(
+      '相关附件：https://cdn.example.com/a.pdf、https://cdn.example.com/b.pdf',
+    );
+  });
+
+  it('prefers remote URL over file name for legacy UploadFileInfo objects', () => {
+    activeDict = zhCnResumeDict;
+    activeLang = 'zh-CN';
+    const message = buildMcpAskResumeMessage(
+      {
+        ...baseInteraction,
+        input: {
+          ...baseInteraction.input,
+          ui: {
+            ...baseInteraction.input.ui,
+            fields: [{ name: 'screenshot', title: '截图', widget: 'file' }],
+          },
+        },
+      },
+      {
+        interventionId: 'ask-1',
+        revision: 1,
+        source: 'mcp_ask',
+        protocol: 'mcp',
+        action: 'submit',
+        formData: {
+          screenshot: [
+            {
+              name: 'shot.png',
+              url: 'https://cdn.example.com/shot.png',
+            },
+          ],
+        },
+      },
+    );
+
+    expect(message).toContain('截图：https://cdn.example.com/shot.png');
+  });
+});
+
+describe('stripMcpAskResumeDisplayArtifacts', () => {
+  it('removes HTML requestId marker from display text', () => {
+    const raw =
+      '我已填写「补充回复」，表单内容如下：\n文件上传：https://cdn.example.com/shot.png\n<!--nuwax-mcp-ask-request-id:ask-1-->';
+    expect(stripMcpAskResumeDisplayArtifacts(raw)).toBe(
+      '我已填写「补充回复」，表单内容如下：\n文件上传：https://cdn.example.com/shot.png',
+    );
   });
 });
 
@@ -269,5 +370,139 @@ describe('isMcpAskResumeMessageForInteraction', () => {
         baseInteraction,
       ),
     ).toBe(false);
+  });
+
+  it('matches resume by requestId marker when multiple asks share the same title', () => {
+    const sharedTitle = '补充回复';
+    const firstInteraction: McpAskInteraction = {
+      ...baseInteraction,
+      input: {
+        ...baseInteraction.input,
+        requestId: 'ask-first',
+        title: sharedTitle,
+        ui: {
+          ...baseInteraction.input.ui,
+          title: sharedTitle,
+        },
+      },
+    };
+    const secondInteraction: McpAskInteraction = {
+      ...firstInteraction,
+      input: {
+        ...firstInteraction.input,
+        requestId: 'ask-second',
+      },
+      toolCallId: 'tc-2',
+    };
+
+    const firstResume = buildMcpAskResumeMessage(firstInteraction, {
+      interventionId: 'ask-first',
+      revision: 1,
+      source: 'mcp_ask',
+      protocol: 'mcp',
+      action: 'submit',
+      formData: { choice: 'test' },
+    });
+
+    const messageList = [
+      { id: 'assistant-ask', index: 0 } as MessageInfo,
+      { id: 'user-resume', index: 1, text: firstResume } as MessageInfo,
+    ];
+
+    expect(
+      isMcpAskResumeMessageForInteraction(firstResume, firstInteraction),
+    ).toBe(true);
+    expect(
+      isMcpAskResumeMessageForInteraction(firstResume, secondInteraction),
+    ).toBe(false);
+    expect(
+      hasMcpAskResumeMessage(messageList, secondInteraction, {
+        containingMessageIndex: 0,
+      }),
+    ).toBe(false);
+    expect(
+      hasMcpAskResumeMessage(messageList, firstInteraction, {
+        containingMessageIndex: 0,
+      }),
+    ).toBe(true);
+  });
+
+  it('matches legacy resume before ask when message indexes are out of storage order', () => {
+    const messageList = [
+      {
+        id: 'user-resume',
+        index: 1,
+        text: '我已填写「请选择继续方式」，表单内容如下：\n选项：先跑测试',
+      },
+      {
+        id: 'assistant-ask',
+        index: 2,
+        mcpAskInteractions: [baseInteraction],
+      },
+    ] as MessageInfo[];
+
+    expect(
+      hasMcpAskResumeMessage(messageList, baseInteraction, {
+        containingMessageIndex: 1,
+      }),
+    ).toBe(true);
+  });
+
+  it('still recognizes legacy fenced JSON requestId markers', () => {
+    const legacyResume =
+      '我已填写「请选择继续方式」，表单内容如下：\n\n```json\n{"nuwaxMcpAskRequestId":"ask-1"}\n```';
+    expect(
+      isMcpAskResumeMessageForInteraction(legacyResume, baseInteraction),
+    ).toBe(true);
+  });
+
+  it('does not legacy-match a later ask when an earlier assistant message had the same title', () => {
+    const sharedTitle = '补充回复';
+    const firstInteraction: McpAskInteraction = {
+      ...baseInteraction,
+      input: {
+        ...baseInteraction.input,
+        requestId: 'ask-first',
+        title: sharedTitle,
+        ui: { ...baseInteraction.input.ui, title: sharedTitle },
+      },
+    };
+    const secondInteraction: McpAskInteraction = {
+      ...firstInteraction,
+      input: { ...firstInteraction.input, requestId: 'ask-second' },
+      toolCallId: 'tc-2',
+    };
+    const messageList = [
+      {
+        id: 'assistant-ask-1',
+        index: 2,
+        mcpAskInteractions: [
+          { ...firstInteraction, responseStatus: 'submitted' as const },
+        ],
+      },
+      {
+        id: 'user-resume',
+        index: 3,
+        text: `我已填写「${sharedTitle}」，表单内容如下：\n选项：test`,
+      },
+      {
+        id: 'assistant-ask-2',
+        index: 4,
+        mcpAskInteractions: [
+          { ...secondInteraction, responseStatus: 'pending' as const },
+        ],
+      },
+    ] as MessageInfo[];
+
+    expect(
+      hasMcpAskResumeMessage(messageList, secondInteraction, {
+        containingMessageIndex: 2,
+      }),
+    ).toBe(false);
+    expect(
+      hasMcpAskResumeMessage(messageList, firstInteraction, {
+        containingMessageIndex: 0,
+      }),
+    ).toBe(true);
   });
 });

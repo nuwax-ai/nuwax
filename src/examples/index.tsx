@@ -202,6 +202,24 @@ const ExamplesIndex: React.FC = () => {
       path: '/examples/message-queue-demo',
     },
     {
+      id: 'mcp-ask-duplicate-demo',
+      title: isChineseLanguage ? 'MCP Ask 重复询问' : 'MCP Ask Duplicate Title',
+      description: isChineseLanguage
+        ? '用真实 ASK_QUESTION SSE 载荷模拟同 title 两次询问，验证第二次 resume 后 Dock 仍能弹出（Mock，不依赖后端）。'
+        : 'Simulate two ASK_QUESTION SSE events with the same title using real payloads; verify the second ask still opens in the Dock (mock, no backend).',
+      tags: [
+        { text: isChineseLanguage ? 'MCP Ask' : 'MCP Ask', color: 'green' },
+        {
+          text: isChineseLanguage ? '重复询问' : 'Duplicate',
+          color: 'orange',
+        },
+        { text: isChineseLanguage ? 'SSE Mock' : 'SSE Mock', color: 'blue' },
+      ],
+      icon: <ExperimentOutlined />,
+      path: '/examples/mcp-ask-duplicate-demo',
+      featured: true,
+    },
+    {
       id: 'menu-permission-demo',
       title: isChineseLanguage ? '菜单权限演示' : 'Menu Permission Demo',
       description: isChineseLanguage

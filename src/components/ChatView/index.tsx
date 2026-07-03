@@ -23,6 +23,7 @@ import ChatBottomDebug from './ChatBottomDebug';
 import ChatBottomMore from './ChatBottomMore';
 import ChatSampleBottom from './ChatSampleBottom';
 // import RunOver from './RunOver';
+import { stripMcpAskResumeDisplayArtifacts } from '@/components/business-component/AgentIntervention/utils/mcpAskResumeMessage';
 import { groupMarkdownProcesses } from '@/components/MarkdownRenderer/utils';
 import styles from './index.less';
 import RunOver from './RunOver';
@@ -47,6 +48,10 @@ const ChatView: React.FC<ChatViewProps> = memo(
 
     const processedText = useMemo(() => {
       return groupMarkdownProcesses(messageInfo?.text || '');
+    }, [messageInfo?.text]);
+
+    const userDisplayText = useMemo(() => {
+      return stripMcpAskResumeDisplayArtifacts(messageInfo?.text);
     }, [messageInfo?.text]);
 
     const { markdownRef, messageIdRef } = useMarkdownRender({
@@ -169,7 +174,7 @@ const ChatView: React.FC<ChatViewProps> = memo(
                     style={{ whiteSpace: 'pre-wrap' }}
                     className="ds-markdown-paragraph ds-typed-answer"
                   >
-                    {trim(messageInfo?.text)}
+                    {trim(userDisplayText)}
                   </div>
                 </div>
               </div>
@@ -180,10 +185,7 @@ const ChatView: React.FC<ChatViewProps> = memo(
                   'items-center',
                 )}
               >
-                <CopyButton
-                  text={messageInfo.text || ''}
-                  onCopy={handleTextCopy}
-                >
+                <CopyButton text={userDisplayText} onCopy={handleTextCopy}>
                   {dict('PC.Components.ChatView.copy')}
                 </CopyButton>
               </div>
