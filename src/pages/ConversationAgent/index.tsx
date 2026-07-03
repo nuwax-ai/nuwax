@@ -185,6 +185,8 @@ const ConversationAgent: React.FC = () => {
   /** 标签选择面板是否展开 */
   /** 预览标签页操作 ref（供 fileViewProviderProps 回调使用） */
   const previewTabsRef = useRef<ReturnType<typeof usePreviewTabs> | null>(null);
+  /** 清空文件树选中态 ref（导入项目等场景使用） */
+  const clearFileTreeSelectionRef = useRef<(() => void) | null>(null);
   /** 刷新 Git 变更列表（delete 等场景需在 fileView 初始化后调用） */
   const refreshGitListRef = useRef<(() => Promise<void>) | null>(null);
   const isVersionControlEnabledRef = useRef(false);
@@ -239,6 +241,7 @@ const ConversationAgent: React.FC = () => {
     openPreviewView,
     taskAgentSelectedFileId,
     taskAgentSelectTrigger,
+    setTaskAgentSelectedFileId,
     setIsLoadingOtherInterface,
     onMessageSend,
     runAsync,
@@ -525,6 +528,8 @@ const ConversationAgent: React.FC = () => {
           closeAgentDesktop();
           setSelectedChangeFile(null);
           previewTabsRef.current?.closeAllTabs();
+          clearFileTreeSelectionRef.current?.();
+          setTaskAgentSelectedFileId('');
           void refreshFileListImmediately(queryConversationId);
           await runInstallProject({
             programmingLanguage: 'typescript',
@@ -543,6 +548,7 @@ const ConversationAgent: React.FC = () => {
       refreshFileListImmediately,
       refreshGitListIfEnabled,
       closeAgentDesktop,
+      setTaskAgentSelectedFileId,
     ],
   );
 
@@ -1268,6 +1274,7 @@ const ConversationAgent: React.FC = () => {
   /** 初始化文件视图 Hook，获取文件树和预览的渲染组件 */
   const fileView = useFileTreePreviewView(fileViewProviderProps);
   refreshGitListRef.current = fileView.refreshGitList;
+  clearFileTreeSelectionRef.current = fileView.tree.clearSelection ?? null;
 
   // 刷新文件树，并在存在当前选中文件时同步刷新文件内容
   refreshFileTreeAndSelectedFileRef.current =

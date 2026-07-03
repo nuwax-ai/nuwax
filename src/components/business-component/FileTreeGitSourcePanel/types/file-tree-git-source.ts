@@ -110,6 +110,8 @@ export interface FileTreeContainerProps {
     fileId: string,
     options?: { selectFolder?: boolean },
   ) => Promise<void>;
+  /** 清空文件树选中态（文件 + 文件夹） */
+  clearSelection?: () => void;
   /** 打开右键菜单 */
   handleContextMenu: (e: React.MouseEvent, node: FileNode | null) => void;
   /** 关闭右键菜单 */

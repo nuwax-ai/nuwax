@@ -383,6 +383,13 @@ export function useFileTreePreviewView(
     setSelectedFileNode(null);
   }, []);
 
+  /** 清空文件树选中态（文件 + 文件夹） */
+  const clearSelection = useCallback(() => {
+    clearSelectedFile();
+    setSelectedFolderId('');
+    userSelectedFileRef.current = null;
+  }, [clearSelectedFile]);
+
   /**
    * 切换会话 / 工作区（targetId 变化）时重置文件树与预览区本地状态。
    * Chat 切换历史会话时组件不会卸载，若不清理会残留上一会话的 selectedFileNode 与预览内容。
@@ -2107,6 +2114,7 @@ export function useFileTreePreviewView(
       hideFileTree,
       showRefreshButton,
       handleFileSelect,
+      clearSelection,
       handleContextMenu,
       closeContextMenu,
       handleRenameFile,
