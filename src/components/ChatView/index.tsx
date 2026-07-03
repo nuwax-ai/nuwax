@@ -1,9 +1,12 @@
 import agentImage from '@/assets/images/agent_image.png';
 import avatar from '@/assets/images/avatar.png';
 import CopyButton from '@/components/base/CopyButton';
+import { McpAskResumeUserDisplay } from '@/components/business-component/AgentIntervention';
+import { stripMcpAskResumeDisplayArtifacts } from '@/components/business-component/AgentIntervention/utils/mcpAskResumeMessage';
 import AttachFile from '@/components/ChatView/AttachFile';
 import ConditionRender from '@/components/ConditionRender';
 import MarkdownRenderer from '@/components/MarkdownRenderer';
+import { groupMarkdownProcesses } from '@/components/MarkdownRenderer/utils';
 import { USER_INFO } from '@/constants/home.constants';
 import useMarkdownRender from '@/hooks/useMarkdownRender';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
@@ -17,14 +20,11 @@ import type {
 import { message, theme } from 'antd';
 import classNames from 'classnames';
 import { isEqual } from 'lodash';
-import React, { memo, useCallback, useMemo } from 'react';
+import React, { memo, useMemo } from 'react';
 import { useModel } from 'umi';
 import ChatBottomDebug from './ChatBottomDebug';
 import ChatBottomMore from './ChatBottomMore';
 import ChatSampleBottom from './ChatSampleBottom';
-// import RunOver from './RunOver';
-import { stripMcpAskResumeDisplayArtifacts } from '@/components/business-component/AgentIntervention/utils/mcpAskResumeMessage';
-import { groupMarkdownProcesses } from '@/components/MarkdownRenderer/utils';
 import styles from './index.less';
 import RunOver from './RunOver';
 
@@ -50,7 +50,8 @@ const ChatView: React.FC<ChatViewProps> = memo(
       return groupMarkdownProcesses(messageInfo?.text || '');
     }, [messageInfo?.text]);
 
-    const userDisplayText = useMemo(() => {
+    const userCopyText = useMemo(() => {
+      // 复制保留完整 URL，仅去掉内部 requestId 标记
       return stripMcpAskResumeDisplayArtifacts(messageInfo?.text);
     }, [messageInfo?.text]);
 
@@ -90,10 +91,6 @@ const ChatView: React.FC<ChatViewProps> = memo(
     const handleTextCopy = () => {
       message.success(dict('PC.Toast.Global.copiedSuccessfully'));
     };
-
-    const trim = useCallback((text: string) => {
-      return text.replace(/^\s+|\s+$/g, '');
-    }, []);
 
     const isUser = useMemo(() => {
       return messageInfo?.role === AssistantRoleEnum.USER;
@@ -145,7 +142,7 @@ const ChatView: React.FC<ChatViewProps> = memo(
             </div>
           )}
 
-          {/* USER 角色消息附件 */}
+          {/* USER 角色消息附件（仅真实 attachments，resume 图片在气泡内联展示） */}
           {!!messageInfo?.attachments?.length && (
             <div className={cx(styles['attach-file-container'])}>
               <AttachFile
@@ -170,11 +167,8 @@ const ChatView: React.FC<ChatViewProps> = memo(
                 )}
               >
                 <div className="ds-markdown-answer">
-                  <div
-                    style={{ whiteSpace: 'pre-wrap' }}
-                    className="ds-markdown-paragraph ds-typed-answer"
-                  >
-                    {trim(userDisplayText)}
+                  <div className="ds-markdown-paragraph ds-typed-answer">
+                    <McpAskResumeUserDisplay text={messageInfo?.text || ''} />
                   </div>
                 </div>
               </div>
@@ -185,7 +179,7 @@ const ChatView: React.FC<ChatViewProps> = memo(
                   'items-center',
                 )}
               >
-                <CopyButton text={userDisplayText} onCopy={handleTextCopy}>
+                <CopyButton text={userCopyText} onCopy={handleTextCopy}>
                   {dict('PC.Components.ChatView.copy')}
                 </CopyButton>
               </div>

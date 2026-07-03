@@ -64,9 +64,21 @@ export function useConversationStreamResume(
   // sub 是否已订阅（开/闭之间）。ref 用于回调闭包安全读取；state 用于驱动 ready 重算
   const isResumeSubscribedRef = useRef(false);
   const [isResumeSubscribed, setIsResumeSubscribed] = useState(false);
-  // 用 ref 保存最新值，避免轮询 onSuccess 闭包过期
-  const latestRef = useRef({ taskStatus, isLocallyStreaming, messageList });
-  latestRef.current = { taskStatus, isLocallyStreaming, messageList };
+  // 用 ref 保存最新值，避免轮询 onSuccess / subscribe 异步回调闭包过期
+  // conversationId 一并放入：subscribe 的 await 与 sub onClose 都是异步，需要回调执行时
+  // 能读到「当前会话」以判断本次回调是否仍属于同一会话（防跨会话覆盖/误杀）
+  const latestRef = useRef({
+    conversationId,
+    taskStatus,
+    isLocallyStreaming,
+    messageList,
+  });
+  latestRef.current = {
+    conversationId,
+    taskStatus,
+    isLocallyStreaming,
+    messageList,
+  };
 
   // 轮询启停句柄：subscribe 在 useRequest 之前定义、需要调用其 run/cancel，
   // 用 ref 解耦前向引用（subscribe 调用 pollingControlsRef.current.stop/start，
@@ -131,10 +143,29 @@ export function useConversationStreamResume(
         console.error('[useConversationStreamResume] reloadHistory failed:', e);
       }
     }
+
+    // await 期间可能已切会话、本地开始流式，或切会话 effect 已重置订阅标记。
+    // 此时再调 resumeStream 会用旧 id 触发 model 级共享 abortResumeStream，误杀新会话 sub。
+    // 放弃本次订阅并回滚乐观标记，由当前会话自身的轮询/订阅逻辑接管。
+    if (
+      latestRef.current.conversationId !== id ||
+      latestRef.current.isLocallyStreaming ||
+      !isResumeSubscribedRef.current
+    ) {
+      isResumeSubscribedRef.current = false;
+      setIsResumeSubscribed(false);
+      return;
+    }
+
     resumeStream(id, list, async () => {
       // sub 自动断开(end_turn/completed/超时)或被 abort 时回调
       isResumeSubscribedRef.current = false;
       setIsResumeSubscribed(false);
+      // 过期 sub 的延迟关闭（切会话后 cleanup 触发 abort 后回调）：
+      // 不再回写状态，否则 reloadHistoryAsync(旧id) 与 RefreshConversationList 会覆盖/干扰新会话。
+      if (latestRef.current.conversationId !== id) {
+        return;
+      }
       // sub 关闭后恢复状态轮询，以便检测会话再次变为 EXECUTING
       pollingControlsRef.current.start();
 
