@@ -54,6 +54,7 @@ const TiptapVariableInputInner: React.FC<TiptapVariableInputProps> = ({
   variableMode = 'text', // 默认使用纯文本模式
   getEditor,
   enableHistory = false, // 默认禁用撤销/重做快捷键
+  imeSafe = false,
 }) => {
   const { token } = theme.useToken();
 
@@ -124,6 +125,19 @@ const TiptapVariableInputInner: React.FC<TiptapVariableInputProps> = ({
   // 保存光标位置的 ref
   const cursorPositionRef = useRef<number | null>(null);
   const isUpdatingFromExternalRef = useRef(false);
+  /** IME 组合输入中：跳过 onChange 与外部 setContent，避免打断中文输入 */
+  const isComposingRef = useRef(false);
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+
+  const flushImeChange = React.useCallback(
+    (editorInstance: Editor) => {
+      if (isUpdatingFromExternalRef.current) return;
+      const html = getNormalizedHtml(editorInstance);
+      onChangeRef.current?.(html);
+    },
+    [getNormalizedHtml],
+  );
 
   // 初始化编辑器
   // 注意：扩展的顺序很重要，Suggestion 插件应该在 AutoCompleteBraces 之后
@@ -183,13 +197,17 @@ const TiptapVariableInputInner: React.FC<TiptapVariableInputProps> = ({
       editable: !readonly && !disabled,
       enableInputRules: enableMarkdown, // 控制 Markdown 快捷语法
       enablePasteRules: enableMarkdown, // 控制 Markdown 粘贴规则
-      onUpdate: ({ editor }) => {
+      onUpdate: ({ editor: editorInstance }) => {
         // 如果是从外部更新，不触发 onChange，避免循环更新
         if (isUpdatingFromExternalRef.current) {
           return;
         }
-        const html = getNormalizedHtml(editor);
-        onChange?.(html);
+        // IME 组合期间不上报，compositionend 后统一 flush
+        if (imeSafe && isComposingRef.current) {
+          return;
+        }
+        const html = getNormalizedHtml(editorInstance);
+        onChangeRef.current?.(html);
       },
       // 监听选择变化，保存光标位置
       onSelectionUpdate: ({ editor }) => {
@@ -234,6 +252,7 @@ const TiptapVariableInputInner: React.FC<TiptapVariableInputProps> = ({
       getNormalizedHtml,
       enableMarkdown,
       enableHistory,
+      imeSafe,
     ],
   );
 
@@ -264,6 +283,10 @@ const TiptapVariableInputInner: React.FC<TiptapVariableInputProps> = ({
   // 同步外部 value 到编辑器
   useEffect(() => {
     if (editor && value !== undefined) {
+      // IME 组合期间跳过外部回写，避免 setContent 打断输入
+      if (imeSafe && isComposingRef.current) {
+        return;
+      }
       const sanitizedValue =
         value === '<p></p>' || value === '<p></p>\n' ? '' : value;
       const currentHtml = editor.getHTML();
@@ -394,7 +417,7 @@ const TiptapVariableInputInner: React.FC<TiptapVariableInputProps> = ({
         });
       }
     }
-  }, [editor, value, disableMentions]);
+  }, [editor, value, disableMentions, enableEditableVariables, imeSafe]);
 
   // 更新变量树（当 variables 或 skills 变化时）
   useEffect(() => {
@@ -514,7 +537,23 @@ const TiptapVariableInputInner: React.FC<TiptapVariableInputProps> = ({
       className={['tiptap-variable-input', className].filter(Boolean).join(' ')}
       style={style}
     >
-      <div className="tiptap-editor-wrapper" data-value={rawValue}>
+      <div
+        className="tiptap-editor-wrapper"
+        data-value={rawValue}
+        {...(imeSafe
+          ? {
+              onCompositionStartCapture: () => {
+                isComposingRef.current = true;
+              },
+              onCompositionEndCapture: () => {
+                isComposingRef.current = false;
+                if (editor) {
+                  flushImeChange(editor);
+                }
+              },
+            }
+          : {})}
+      >
         <EditorContent editor={editor} style={{ height: '100%' }} />
         {!value && (
           <div

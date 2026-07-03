@@ -68,20 +68,20 @@ const agentFlowProcessGroup: StencilList = {
   key: 'groupAgentFlowProcess',
   children: tagFlowKinds([
     {
-      name: t('PC.Pages.AgentFlowParams.nodeRouteDecisionName'),
-      icon: null,
-      bgIcon: BG_ICON_AGENTFLOW_ROUTE_DECISION,
-      type: NodeTypeEnum.RouteDecision,
-      shape: NodeShapeEnum.General,
-      description: t('PC.Pages.AgentFlowParams.nodeRouteDecisionDescription'),
-    },
-    {
       name: t('PC.Pages.AgentFlowParams.nodeAgentName'),
       icon: null,
       bgIcon: BG_ICON_AGENTFLOW_AGENT,
       type: NodeTypeEnum.Agent,
       shape: NodeShapeEnum.General,
       description: t('PC.Pages.AgentFlowParams.nodeAgentDescription'),
+    },
+    {
+      name: t('PC.Pages.AgentFlowParams.nodeRouteDecisionName'),
+      icon: null,
+      bgIcon: BG_ICON_AGENTFLOW_ROUTE_DECISION,
+      type: NodeTypeEnum.RouteDecision,
+      shape: NodeShapeEnum.General,
+      description: t('PC.Pages.AgentFlowParams.nodeRouteDecisionDescription'),
     },
     {
       name: t('PC.Pages.AgentFlowParams.nodeHumanAskName'),

@@ -6,13 +6,18 @@ import PublishComponentModal from '@/components/PublishComponentModal';
 import TestRun from '@/components/TestRun';
 import VersionHistory from '@/components/VersionHistory';
 import { resolveAgentFlowCreatedModalTabs } from '@/pages/Antv-X6/v3/agentFlow/createdPicker';
-import { runOrDeferHitlFormGraphSync } from '@/pages/Antv-X6/v3/agentFlow/forms/hitlFormImeGuard';
+import { V3_FORM_IME_SAFE_ENABLED } from '@/pages/Antv-X6/v3/constants/editorConfig';
 import { testRunList } from '@/pages/Antv-X6/v3/constants/node.constants';
 import { AGENTFLOW_UI_CONFIG } from '@/pages/Antv-X6/v3/flowKind/flowKindConfig';
 import {
   useAgentFlowKind,
   useIsAgentFlow,
 } from '@/pages/Antv-X6/v3/flowKind/useFlowKind';
+import {
+  resetWorkflowFormImeGuard,
+  runOrDeferWorkflowFormGraphSync,
+  workflowFormImeCompositionProps,
+} from '@/pages/Antv-X6/v3/utils/workflowFormImeGuard';
 import {
   AgentAddComponentStatusEnum,
   AgentComponentTypeEnum,
@@ -30,7 +35,12 @@ import { TestRunParams } from '@/types/interfaces/node';
 import { ErrorParams } from '@/types/interfaces/workflow';
 import { LoadingOutlined } from '@ant-design/icons';
 import { Form, FormInstance, Spin } from 'antd';
-import React, { MutableRefObject, useCallback, useMemo } from 'react';
+import React, {
+  MutableRefObject,
+  useCallback,
+  useEffect,
+  useMemo,
+} from 'react';
 import VersionAction from '../../../components/VersionAction';
 import { clearPendingNodeCreateSession } from '../../utils/nodeCreateSession';
 import { returnBackgroundColor, returnImg } from '../../utils/workflowV3';
@@ -213,16 +223,35 @@ const WorkflowLayout: React.FC<WorkflowLayoutProps> = ({
   flowControlModel,
   onFlowControlModelChange,
 }) => {
+  const isAgentFlow = useIsAgentFlow();
+  const agentFlowKind = useAgentFlowKind();
+
   const handleFormValuesChange = useCallback(
     (changedValues: Record<string, unknown>) => {
-      runOrDeferHitlFormGraphSync(() => {
+      const syncGraph = () => {
         throttledHandleGraphUpdate(changedValues, form.getFieldsValue(true));
-      });
+      };
+      if (V3_FORM_IME_SAFE_ENABLED) {
+        runOrDeferWorkflowFormGraphSync(syncGraph);
+      } else {
+        syncGraph();
+      }
     },
     [form, throttledHandleGraphUpdate],
   );
-  const isAgentFlow = useIsAgentFlow();
-  const agentFlowKind = useAgentFlowKind();
+
+  /** 关闭或切换节点面板时重置 IME 守卫 */
+  useEffect(() => {
+    if (!V3_FORM_IME_SAFE_ENABLED) return;
+    if (!visible) {
+      resetWorkflowFormImeGuard();
+    }
+  }, [visible]);
+
+  useEffect(() => {
+    if (!V3_FORM_IME_SAFE_ENABLED) return;
+    resetWorkflowFormImeGuard();
+  }, [foldWrapItem.id, foldWrapItem.type]);
 
   /** AgentFlow 添加智能体/工作流：Created 仅展示对应单一 Tab */
   const createdModalTabs = useMemo(
@@ -340,6 +369,9 @@ const WorkflowLayout: React.FC<WorkflowLayoutProps> = ({
             initialValues={foldWrapItem.nodeConfig}
             clearOnDestroy={true}
             onValuesChange={handleFormValuesChange}
+            {...(V3_FORM_IME_SAFE_ENABLED
+              ? workflowFormImeCompositionProps
+              : {})}
           >
             <NodePanelDrawer
               params={foldWrapItem}

@@ -4,7 +4,7 @@
  * 独立维护，对照 Workflow QuestionsNode；字段对齐 QA 扁平结构。
  * 样式对齐 Workflow V3：node-title-style + node-item-style
  *
- * 中文 IME：根节点 composition 监听 + hitlFormImeGuard 延迟画布同步（见 WorkflowLayout）。
+ * 中文 IME：V3 WorkflowLayout Form 根节点统一挂载 workflowFormImeGuard。
  */
 
 import ExpandableInputTextarea from '@/components/ExpandTextArea';
@@ -27,7 +27,7 @@ import {
   Select,
   Space,
 } from 'antd';
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import { FormList, InputAndOut } from '../../component/commonNode';
@@ -35,10 +35,6 @@ import { outPutConfigs } from '../../ParamsV3';
 import { isFormArgChoiceInputType } from '../adapters/qaConfigAdapter';
 import { FormArgInputTypeEnum } from '../enums/formArgInputType';
 import { HitlAnswerTypeEnum } from '../enums/hitlAnswerType';
-import {
-  hitlFormImeCompositionProps,
-  resetHitlFormImeGuard,
-} from './hitlFormImeGuard';
 import './HumanInteractionAskForm.less';
 
 const { TextArea } = Input;
@@ -92,8 +88,6 @@ const HumanInteractionAskForm: React.FC<NodeDisposeProps> = ({
     referenceList?.argMap,
   );
 
-  useEffect(() => () => resetHitlFormImeGuard(), []);
-
   /** 切换回答类型，同步 options（answerType 为权威字段） */
   const changeAnswerType = (type: HitlAnswerTypeEnum) => {
     let options = form.getFieldValue('options');
@@ -123,7 +117,7 @@ const HumanInteractionAskForm: React.FC<NodeDisposeProps> = ({
   };
 
   return (
-    <div className="node-title-style" {...hitlFormImeCompositionProps}>
+    <div className="node-title-style">
       <ModelSelected form={form} />
 
       <div className="node-item-style">
