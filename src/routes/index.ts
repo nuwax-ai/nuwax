@@ -689,11 +689,6 @@ const routes = [
     component: '@/examples/McpAskDuplicateDemo',
     layout: false,
   },
-  {
-    path: '/examples/mcp-ask-resume-display-demo',
-    component: '@/examples/McpAskResumeDisplayDemo',
-    layout: false,
-  },
 ];
 
 export default routes;

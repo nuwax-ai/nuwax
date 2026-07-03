@@ -220,26 +220,6 @@ const ExamplesIndex: React.FC = () => {
       featured: true,
     },
     {
-      id: 'mcp-ask-resume-display-demo',
-      title: isChineseLanguage
-        ? 'MCP Ask Resume 文件展示'
-        : 'MCP Ask Resume File Display',
-      description: isChineseLanguage
-        ? '验证 MCP Ask resume 用户消息对 png/jpg/gif/webp 等图片与 pdf/doc 等非图片 URL 的展示行为（公开 Mock URL，无需后端）。'
-        : 'Verify MCP Ask resume user message rendering for png/jpg/gif/webp images vs pdf/doc non-image URLs (public mock URLs, no backend).',
-      tags: [
-        { text: isChineseLanguage ? 'MCP Ask' : 'MCP Ask', color: 'green' },
-        {
-          text: isChineseLanguage ? '图片渲染' : 'Image Render',
-          color: 'blue',
-        },
-        { text: isChineseLanguage ? '展示层' : 'Display', color: 'purple' },
-      ],
-      icon: <EyeOutlined />,
-      path: '/examples/mcp-ask-resume-display-demo',
-      featured: true,
-    },
-    {
       id: 'menu-permission-demo',
       title: isChineseLanguage ? '菜单权限演示' : 'Menu Permission Demo',
       description: isChineseLanguage
