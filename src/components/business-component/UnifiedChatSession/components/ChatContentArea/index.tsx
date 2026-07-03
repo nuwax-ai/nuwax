@@ -9,7 +9,10 @@ import * as React from 'react';
 import { MESSAGE_PAGE_SIZE } from '@/constants/common.constants';
 import { dict } from '@/services/i18nRuntime';
 import { AgentTypeEnum } from '@/types/enums/space';
-import type { MessageInfo, RoleInfo } from '@/types/interfaces/conversationInfo';
+import type {
+  MessageInfo,
+  RoleInfo,
+} from '@/types/interfaces/conversationInfo';
 import type { UnifiedAgentInfo } from '../../types';
 
 import styles from './index.less';
@@ -32,7 +35,10 @@ export interface ChatContentAreaProps {
   isMoreMessage?: boolean;
   loadMoreRef: any;
   loadingMore?: boolean;
-  renderMessageItem?: (message: MessageInfo, isLastMessage: boolean) => React.ReactNode;
+  renderMessageItem?: (
+    message: MessageInfo,
+    isLastMessage: boolean,
+  ) => React.ReactNode;
   effectiveRoleInfo: RoleInfo;
   messageBottomMode?: 'none' | 'home' | 'chat';
   showDebug?: boolean;
@@ -71,6 +77,20 @@ export const ChatContentArea: React.FC<ChatContentAreaProps> = ({
   showTaskExecutingWait,
   renderEmptyState,
 }) => {
+  const renderedMessageList = React.useMemo(() => {
+    if (!messageList || messageList.length <= 1) {
+      return messageList;
+    }
+    const isOpeningMessage = (item: MessageInfo) => {
+      return !item.id;
+    };
+    const hasRealMessage = messageList.some((item) => !isOpeningMessage(item));
+    if (hasRealMessage) {
+      return messageList.filter((item) => !isOpeningMessage(item));
+    }
+    return messageList;
+  }, [messageList]);
+
   return (
     <div
       className={cx(styles['chat-wrapper-content'], 'scroll-container')}
@@ -97,11 +117,11 @@ export const ChatContentArea: React.FC<ChatContentAreaProps> = ({
               />
             )}
 
-            {messageList?.length > 0 ? (
+            {renderedMessageList?.length > 0 ? (
               <>
                 {/* 加载历史消息的触发探测节点 */}
                 {isMoreMessage &&
-                  (messageList?.length || 0) >= MESSAGE_PAGE_SIZE && (
+                  (renderedMessageList?.length || 0) >= MESSAGE_PAGE_SIZE && (
                     <div
                       ref={loadMoreRef}
                       className={cx(styles['load-more-container'])}
@@ -116,8 +136,8 @@ export const ChatContentArea: React.FC<ChatContentAreaProps> = ({
                   )}
 
                 {/* 消息渲染列表 */}
-                {messageList?.map((item: MessageInfo, idx: number) => {
-                  const isLastMessage = idx === messageList.length - 1;
+                {renderedMessageList?.map((item: MessageInfo, idx: number) => {
+                  const isLastMessage = idx === renderedMessageList.length - 1;
                   if (renderMessageItem) {
                     return renderMessageItem(item, isLastMessage);
                   }
@@ -155,7 +175,7 @@ export const ChatContentArea: React.FC<ChatContentAreaProps> = ({
               </>
             ) : // 空状态展现
             renderEmptyState ? (
-              renderEmptyState()
+              renderEmptyState?.()
             ) : (
               <AgentChatEmpty
                 className="h-full"
