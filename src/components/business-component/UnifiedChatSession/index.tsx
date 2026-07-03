@@ -216,7 +216,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
     messageList,
     initialAgentMode,
     allowChooseMode: agentInfo?.allowChooseMode,
-    onSendMessage: (msg) => messageQueue.rawSend(msg),
+    onSendMessage: (msg, files) => messageQueue.rawSend(msg, files),
     interventionHandlers,
   });
   agentModeRef.current = interventionLayer.agentMode;

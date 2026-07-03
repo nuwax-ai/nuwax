@@ -7,11 +7,7 @@ import {
 } from '@/constants/i18n.constants';
 import { dict, getCurrentLang } from '@/services/i18nRuntime';
 import { AssistantRoleEnum } from '@/types/enums/agent';
-import type {
-  AttachmentFile,
-  MessageInfo,
-} from '@/types/interfaces/conversationInfo';
-import { isAuthProtectedFileUrl } from '@/utils/authProtectedFileUrl';
+import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import type {
   McpAskInteraction,
   McpAskRespondPayload,
@@ -84,166 +80,6 @@ export function stripMcpAskResumeDisplayArtifacts(
     .replace(/\s+$/, '');
 }
 
-/** 用户消息展示：单字段解析结果 */
-export interface McpAskResumeDisplayField {
-  label: string;
-  /** 非 URL 的纯文本值 */
-  textValue?: string;
-  /** 图片字段的远程 URL 列表（支持多张） */
-  imageUrls?: string[];
-  /** 文档等非图片远程文件 URL 列表（支持多个） */
-  fileUrls?: string[];
-}
-
-/** 用户消息展示：MCP Ask 提交 resume 解析结果 */
-export interface McpAskResumeDisplayContent {
-  kind: 'plain' | 'resume';
-  /** kind=plain 时的完整展示文本 */
-  plainText?: string;
-  preamble?: string;
-  fields?: McpAskResumeDisplayField[];
-}
-
-const REMOTE_IMAGE_URL_RE = /\.(png|jpe?g|gif|webp|bmp|svg|avif)(\?|#|$)/i;
-
-/** 已知文档/压缩包扩展名（与下方 FILE_MIME_BY_EXT 保持一致，仅用于附件判定） */
-const REMOTE_DOCUMENT_URL_RE =
-  /\.(pdf|docx?|xlsx?|pptx?|zip|rar|7z|txt|csv|md)(\?|#|$)/i;
-
-const MCP_ASK_SUBMITTED_PREAMBLE_RE =
-  /^(我已填写「.+」|我已填寫「.+」|I filled out ".+"\.?|I answered ".+"\.)/i;
-
-const MCP_ASK_FIELD_LINE_RE = /^(.+?)[：:]\s*(.+)$/;
-
-/** 安全取出 URL 的 pathname，解析失败时回退为原串 */
-function getUrlPathname(url: string): string {
-  try {
-    return new URL(url).pathname;
-  } catch {
-    return url;
-  }
-}
-
-/**
- * 判断远程 URL 是否指向常见图片资源。
- */
-export function isRemoteImageUrl(url: string): boolean {
-  const trimmed = url.trim();
-  if (!/^https?:\/\//i.test(trimmed)) {
-    return false;
-  }
-  try {
-    return REMOTE_IMAGE_URL_RE.test(new URL(trimmed).pathname);
-  } catch {
-    return REMOTE_IMAGE_URL_RE.test(trimmed);
-  }
-}
-
-/**
- * 判断远程 URL 是否为非图片文件附件：
- * 统一上传服务（/api/f/）返回的受保护文件 URL（即便无扩展名），或 pathname 含已知文档扩展名。
- * 普通网页链接（如 https://github.com/x/y）返回 false，避免被误展示为附件卡片。
- */
-export function isRemoteFileUrl(url: string): boolean {
-  const trimmed = url.trim();
-  if (!/^https?:\/\//i.test(trimmed) || isRemoteImageUrl(trimmed)) {
-    return false;
-  }
-  if (isAuthProtectedFileUrl(trimmed)) {
-    return true;
-  }
-  return REMOTE_DOCUMENT_URL_RE.test(getUrlPathname(trimmed));
-}
-
-function splitResumeFieldValue(value: string): string[] {
-  const trimmed = value.trim();
-  if (!trimmed) {
-    return [];
-  }
-  if (!trimmed.includes('、') && !trimmed.includes(',')) {
-    return [trimmed];
-  }
-  return trimmed.split(/\s*[、,]\s*/).filter(Boolean);
-}
-
-function isMcpAskSubmittedResumePreamble(line: string): boolean {
-  return MCP_ASK_SUBMITTED_PREAMBLE_RE.test(line.trim());
-}
-
-function parseResumeFieldLine(line: string): McpAskResumeDisplayField | null {
-  const match = line.match(MCP_ASK_FIELD_LINE_RE);
-  if (!match) {
-    return null;
-  }
-  const label = match[1].trim();
-  const rawValue = match[2].trim();
-  const parts = splitResumeFieldValue(rawValue);
-  const imageUrls = parts.filter((part) => isRemoteImageUrl(part));
-  const fileUrls = parts.filter((part) => isRemoteFileUrl(part));
-  const textParts = parts.filter(
-    (part) => !isRemoteImageUrl(part) && !isRemoteFileUrl(part),
-  );
-
-  if (imageUrls.length > 0 || fileUrls.length > 0) {
-    return {
-      label,
-      imageUrls: imageUrls.length ? imageUrls : undefined,
-      fileUrls: fileUrls.length ? fileUrls : undefined,
-      textValue: textParts.length ? textParts.join('、') : undefined,
-    };
-  }
-
-  return {
-    label,
-    textValue: rawValue,
-  };
-}
-
-/**
- * 解析 MCP Ask 提交 resume 用户消息，供聊天 UI 结构化展示（含多图预览）。
- * 发给 Agent 的原始 message.text 不变；仅展示层调用。
- */
-export function parseMcpAskResumeDisplayContent(
-  text: string | undefined,
-): McpAskResumeDisplayContent {
-  const stripped = stripMcpAskResumeDisplayArtifacts(text);
-  if (!stripped.trim()) {
-    return { kind: 'plain', plainText: '' };
-  }
-
-  const lines = stripped
-    .split('\n')
-    .map((line) => line.trim())
-    .filter(Boolean);
-
-  if (!lines.length || !isMcpAskSubmittedResumePreamble(lines[0])) {
-    return { kind: 'plain', plainText: stripped };
-  }
-
-  const fields: McpAskResumeDisplayField[] = [];
-  for (let index = 1; index < lines.length; index += 1) {
-    const field = parseResumeFieldLine(lines[index]);
-    if (field) {
-      fields.push(field);
-    }
-  }
-
-  if (!fields.length) {
-    return { kind: 'plain', plainText: stripped };
-  }
-
-  return {
-    kind: 'resume',
-    preamble: lines[0],
-    fields,
-  };
-}
-
-// ---------------------------------------------------------------------------
-// 以下函数仅用于聊天 UI 展示层，不参与 buildMcpAskResumeMessage / 发送链路。
-// message.text 仍保留完整 URL 与 requestId 标记，供 Agent 与 resume 匹配使用。
-// ---------------------------------------------------------------------------
-
 /** MCP Ask resume 表单展示用标点：英文 locale 用西式标点，其余语系用 CJK 标点 */
 function getMcpAskDisplaySeparators(lang = getCurrentLang()) {
   const isEnglish = lang.toLowerCase().startsWith('en');
@@ -261,32 +97,6 @@ function getMcpAskDisplaySeparators(lang = getCurrentLang()) {
   };
 }
 
-const IMAGE_MIME_BY_EXT: Record<string, string> = {
-  png: 'image/png',
-  jpg: 'image/jpeg',
-  jpeg: 'image/jpeg',
-  gif: 'image/gif',
-  webp: 'image/webp',
-  bmp: 'image/bmp',
-  svg: 'image/svg+xml',
-  avif: 'image/avif',
-};
-
-const FILE_MIME_BY_EXT: Record<string, string> = {
-  pdf: 'application/pdf',
-  doc: 'application/msword',
-  docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  xls: 'application/vnd.ms-excel',
-  xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  ppt: 'application/vnd.ms-powerpoint',
-  pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-  zip: 'application/zip',
-  rar: 'application/x-rar-compressed',
-  txt: 'text/plain',
-  csv: 'text/csv',
-  md: 'text/markdown',
-};
-
 function extractFileNameFromUrl(url: string, fallback: string): string {
   try {
     const pathname = new URL(url).pathname;
@@ -294,130 +104,6 @@ function extractFileNameFromUrl(url: string, fallback: string): string {
   } catch {
     return url.split('/').filter(Boolean).pop() || fallback;
   }
-}
-
-/**
- * 从远程 URL 的 pathname 末段提取扩展名（不含 query/hash）。
- * 无后缀时返回空字符串，例如 /api/f/s3/default/20260703/abc123。
- */
-export function getRemoteUrlPathExtension(url: string): string {
-  const fileName = extractFileNameFromUrl(url, '');
-  if (!fileName || !fileName.includes('.')) {
-    return '';
-  }
-  return fileName.split('.').pop()?.toLowerCase() ?? '';
-}
-
-/**
- * 判断远程 URL 是否为 http(s) 且 pathname 末段无文件后缀。
- */
-export function isExtensionlessRemoteUrl(url: string): boolean {
-  const trimmed = url.trim();
-  if (!/^https?:\/\//i.test(trimmed)) {
-    return false;
-  }
-  return !getRemoteUrlPathExtension(trimmed);
-}
-
-function resolveMimeTypeByFileName(fileName: string, fallback: string): string {
-  const ext = fileName.split('.').pop()?.toLowerCase() ?? '';
-  return FILE_MIME_BY_EXT[ext] || IMAGE_MIME_BY_EXT[ext] || fallback;
-}
-
-/** 将 resume 消息中的远程图片 URL 转为会话附件结构，复用用户上传附件展示组件 */
-export function imageUrlToAttachmentFile(
-  url: string,
-  index = 0,
-): AttachmentFile {
-  const fileName =
-    extractFileNameFromUrl(url, `image-${index + 1}`) || `image-${index + 1}`;
-  const ext = fileName.split('.').pop()?.toLowerCase() ?? 'png';
-  return {
-    fileKey: url,
-    fileUrl: url,
-    fileName,
-    mimeType: IMAGE_MIME_BY_EXT[ext] || 'image/png',
-  };
-}
-
-/** 将 resume 消息中的远程文档 URL 转为会话附件结构，供附件卡片展示 */
-export function fileUrlToAttachmentFile(
-  url: string,
-  index = 0,
-): AttachmentFile {
-  const extensionless = isExtensionlessRemoteUrl(url);
-  const pathSegment = extractFileNameFromUrl(url, '');
-  const fileName = extensionless
-    ? pathSegment || `未知文件-${index + 1}`
-    : extractFileNameFromUrl(url, `file-${index + 1}`) || `file-${index + 1}`;
-  return {
-    fileKey: url,
-    fileUrl: url,
-    fileName,
-    mimeType: resolveMimeTypeByFileName(fileName, 'application/octet-stream'),
-  };
-}
-
-/** 提取 MCP Ask resume 消息中的全部图片附件（保持字段顺序，支持多图） */
-export function extractMcpAskResumeImageAttachments(
-  text: string | undefined,
-): AttachmentFile[] {
-  const parsed = parseMcpAskResumeDisplayContent(text);
-  if (parsed.kind !== 'resume' || !parsed.fields?.length) {
-    return [];
-  }
-
-  const attachments: AttachmentFile[] = [];
-  parsed.fields.forEach((field) => {
-    field.imageUrls?.forEach((url) => {
-      attachments.push(imageUrlToAttachmentFile(url, attachments.length));
-    });
-  });
-  return attachments;
-}
-
-/** 提取 MCP Ask resume 消息中的全部文档附件（保持字段顺序） */
-export function extractMcpAskResumeDocumentAttachments(
-  text: string | undefined,
-): AttachmentFile[] {
-  const parsed = parseMcpAskResumeDisplayContent(text);
-  if (parsed.kind !== 'resume' || !parsed.fields?.length) {
-    return [];
-  }
-
-  const attachments: AttachmentFile[] = [];
-  parsed.fields.forEach((field) => {
-    field.fileUrls?.forEach((url) => {
-      attachments.push(fileUrlToAttachmentFile(url, attachments.length));
-    });
-  });
-  return attachments;
-}
-
-/**
- * 构建 MCP Ask resume 的用户可见文本（不含图片/文档 URL，媒体走卡片展示）。
- */
-export function buildMcpAskResumeTextDisplay(text: string | undefined): string {
-  const parsed = parseMcpAskResumeDisplayContent(text);
-  if (parsed.kind !== 'resume') {
-    return stripMcpAskResumeDisplayArtifacts(text);
-  }
-
-  const { labelSeparator } = getMcpAskDisplaySeparators();
-  const lines: string[] = [];
-  if (parsed.preamble) {
-    lines.push(parsed.preamble);
-  }
-  parsed.fields?.forEach((field) => {
-    if (field.textValue) {
-      lines.push(`${field.label}${labelSeparator}${field.textValue}`);
-      return;
-    }
-    if (field.imageUrls?.length || field.fileUrls?.length) {
-      lines.push(`${field.label}${labelSeparator}`);
-    }
-  });
-  return lines.join('\n');
 }
 
 function messageHasForeignRequestIdMarker(text: string): boolean {
@@ -534,19 +220,26 @@ function formatFileFieldDisplayValue(value: unknown): string {
 
   const formatSingle = (item: unknown): string => {
     if (typeof item === 'string') {
-      return item;
+      return /^https?:\/\//i.test(item)
+        ? extractFileNameFromUrl(item, tMcpAsk(`${I18N_PREFIX}.unknownFile`))
+        : item;
     }
     if (typeof item === 'object' && item !== null) {
       const file = item as {
         name?: string;
         fileName?: string;
         url?: string;
+        fileUrl?: string;
       };
       return (
-        file.url ||
         file.name ||
         file.fileName ||
-        tMcpAsk(`${I18N_PREFIX}.unknownFile`)
+        (file.url || file.fileUrl
+          ? extractFileNameFromUrl(
+              file.url || file.fileUrl || '',
+              tMcpAsk(`${I18N_PREFIX}.unknownFile`),
+            )
+          : tMcpAsk(`${I18N_PREFIX}.unknownFile`))
       );
     }
     return String(item);
@@ -586,7 +279,12 @@ function stringifyDisplayValue(value: unknown): string {
     // 检查是否为文件上传数组 (UploadFileInfo[])
     if (value.length > 0 && typeof value[0] === 'object' && value[0] !== null) {
       const first = value[0] as any;
-      if ('name' in first || 'url' in first || 'fileName' in first) {
+      if (
+        'name' in first ||
+        'url' in first ||
+        'fileName' in first ||
+        'fileUrl' in first
+      ) {
         return formatFileFieldDisplayValue(value);
       }
     }
@@ -595,8 +293,8 @@ function stringifyDisplayValue(value: unknown): string {
   if (typeof value === 'object') {
     // 检查是否为单个文件对象
     const obj = value as any;
-    if (obj.name || obj.fileName || obj.url) {
-      return `📎 ${formatFileFieldDisplayValue(value)}`;
+    if (obj.name || obj.fileName || obj.url || obj.fileUrl) {
+      return formatFileFieldDisplayValue(value);
     }
     const entries = Object.entries(value as Record<string, unknown>);
     if (!entries.length) {

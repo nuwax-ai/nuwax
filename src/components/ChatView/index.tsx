@@ -1,7 +1,6 @@
 import agentImage from '@/assets/images/agent_image.png';
 import avatar from '@/assets/images/avatar.png';
 import CopyButton from '@/components/base/CopyButton';
-import { McpAskResumeUserDisplay } from '@/components/business-component/AgentIntervention';
 import { stripMcpAskResumeDisplayArtifacts } from '@/components/business-component/AgentIntervention/utils/mcpAskResumeMessage';
 import AttachFile from '@/components/ChatView/AttachFile';
 import ConditionRender from '@/components/ConditionRender';
@@ -50,10 +49,11 @@ const ChatView: React.FC<ChatViewProps> = memo(
       return groupMarkdownProcesses(messageInfo?.text || '');
     }, [messageInfo?.text]);
 
-    const userCopyText = useMemo(() => {
-      // 复制保留完整 URL，仅去掉内部 requestId 标记
+    const userDisplayText = useMemo(() => {
       return stripMcpAskResumeDisplayArtifacts(messageInfo?.text);
     }, [messageInfo?.text]);
+
+    const userCopyText = userDisplayText;
 
     const { markdownRef, messageIdRef } = useMarkdownRender({
       answer: processedText,
@@ -142,12 +142,10 @@ const ChatView: React.FC<ChatViewProps> = memo(
             </div>
           )}
 
-          {/* USER 角色消息附件（仅真实 attachments，resume 图片在气泡内联展示） */}
+          {/* USER 角色消息附件 */}
           {!!messageInfo?.attachments?.length && (
             <div className={cx(styles['attach-file-container'])}>
-              <AttachFile
-                files={messageInfo?.attachments as AttachmentFile[]}
-              />
+              <AttachFile files={messageInfo.attachments as AttachmentFile[]} />
             </div>
           )}
 
@@ -167,8 +165,11 @@ const ChatView: React.FC<ChatViewProps> = memo(
                 )}
               >
                 <div className="ds-markdown-answer">
-                  <div className="ds-markdown-paragraph ds-typed-answer">
-                    <McpAskResumeUserDisplay text={messageInfo?.text || ''} />
+                  <div
+                    className="ds-markdown-paragraph ds-typed-answer"
+                    style={{ whiteSpace: 'pre-wrap' }}
+                  >
+                    {userDisplayText}
                   </div>
                 </div>
               </div>

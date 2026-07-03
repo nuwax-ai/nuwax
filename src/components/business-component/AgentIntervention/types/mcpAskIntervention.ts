@@ -92,6 +92,8 @@ export interface McpAskUserToolInput {
   priority?: 'normal' | 'high';
 }
 
+import type { UploadFileInfo } from '@/types/interfaces/common';
+
 export type McpAskRespondAction = 'submit' | 'cancel' | 'skip' | 'timeout';
 
 export interface McpAskRespondPayload {
@@ -102,6 +104,8 @@ export interface McpAskRespondPayload {
   protocol: 'mcp';
   action: McpAskRespondAction;
   formData?: Record<string, unknown>;
+  /** submit 时从 file 字段提取的附件，走 chat attachments 发送 */
+  files?: UploadFileInfo[];
   answeredBy?: {
     kind: 'web' | 'mobile';
     userId?: string;
