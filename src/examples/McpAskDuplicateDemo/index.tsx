@@ -59,7 +59,7 @@ function createWelcomeMessage(): MessageInfo {
     role: AssistantRoleEnum.ASSISTANT,
     text: '点击下方「推送第 1 次 AskQuestion」开始模拟。两次询问 title 均为「补充回复」，但 requestId / executeId 不同。',
     status: MessageStatusEnum.Complete,
-  };
+  } as MessageInfo;
 }
 
 function getNextIndex(messages: MessageInfo[]): number {
@@ -100,13 +100,13 @@ const McpAskDuplicateDemo: React.FC = () => {
     (ssePayload: ConversationChatResponse, assistantText: string) => {
       setMessages((prev) => {
         const nextIndex = getNextIndex(prev);
-        const assistantMessage: MessageInfo = {
+        const assistantMessage = {
           id: `msg-assistant-${++messageSeq}`,
           index: nextIndex,
           role: AssistantRoleEnum.ASSISTANT,
           text: assistantText,
           status: MessageStatusEnum.Loading,
-        };
+        } as MessageInfo;
 
         const patched = processInterventionSsePatch(
           ssePayload,
@@ -177,13 +177,13 @@ const McpAskDuplicateDemo: React.FC = () => {
           };
         });
 
-        const userMessage: MessageInfo = {
+        const userMessage = {
           id: `msg-user-resume-${requestId}`,
           index: getNextIndex(updated),
           role: AssistantRoleEnum.USER,
           text: resumeText,
           status: MessageStatusEnum.Complete,
-        };
+        } as MessageInfo;
 
         const merged = [...updated, userMessage];
         return reconcileMcpAskHydratedMessageList(merged, merged);
