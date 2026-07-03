@@ -11,6 +11,7 @@ import type {
   AttachmentFile,
   MessageInfo,
 } from '@/types/interfaces/conversationInfo';
+import { isAuthProtectedFileUrl } from '@/utils/authProtectedFileUrl';
 import type {
   McpAskInteraction,
   McpAskRespondPayload,
@@ -105,10 +106,23 @@ export interface McpAskResumeDisplayContent {
 
 const REMOTE_IMAGE_URL_RE = /\.(png|jpe?g|gif|webp|bmp|svg|avif)(\?|#|$)/i;
 
+/** 已知文档/压缩包扩展名（与下方 FILE_MIME_BY_EXT 保持一致，仅用于附件判定） */
+const REMOTE_DOCUMENT_URL_RE =
+  /\.(pdf|docx?|xlsx?|pptx?|zip|rar|7z|txt|csv|md)(\?|#|$)/i;
+
 const MCP_ASK_SUBMITTED_PREAMBLE_RE =
   /^(我已填写「.+」|我已填寫「.+」|I filled out ".+"\.?|I answered ".+"\.)/i;
 
 const MCP_ASK_FIELD_LINE_RE = /^(.+?)[：:]\s*(.+)$/;
+
+/** 安全取出 URL 的 pathname，解析失败时回退为原串 */
+function getUrlPathname(url: string): string {
+  try {
+    return new URL(url).pathname;
+  } catch {
+    return url;
+  }
+}
 
 /**
  * 判断远程 URL 是否指向常见图片资源。
@@ -126,14 +140,19 @@ export function isRemoteImageUrl(url: string): boolean {
 }
 
 /**
- * 判断远程 URL 是否为非图片文件（http(s) 且非图片扩展名）。
+ * 判断远程 URL 是否为非图片文件附件：
+ * 统一上传服务（/api/f/）返回的受保护文件 URL（即便无扩展名），或 pathname 含已知文档扩展名。
+ * 普通网页链接（如 https://github.com/x/y）返回 false，避免被误展示为附件卡片。
  */
 export function isRemoteFileUrl(url: string): boolean {
   const trimmed = url.trim();
-  if (!/^https?:\/\//i.test(trimmed)) {
+  if (!/^https?:\/\//i.test(trimmed) || isRemoteImageUrl(trimmed)) {
     return false;
   }
-  return !isRemoteImageUrl(trimmed);
+  if (isAuthProtectedFileUrl(trimmed)) {
+    return true;
+  }
+  return REMOTE_DOCUMENT_URL_RE.test(getUrlPathname(trimmed));
 }
 
 function splitResumeFieldValue(value: string): string[] {

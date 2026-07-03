@@ -10,6 +10,7 @@ import {
   hasMcpAskResumeMessage,
   isExtensionlessRemoteUrl,
   isMcpAskResumeMessageForInteraction,
+  isRemoteFileUrl,
   isRemoteImageUrl,
   parseMcpAskResumeDisplayContent,
   stripMcpAskResumeDisplayArtifacts,
@@ -388,6 +389,30 @@ describe('parseMcpAskResumeDisplayContent', () => {
   it('detects remote image urls by extension', () => {
     expect(isRemoteImageUrl('https://cdn.example.com/a.PNG')).toBe(true);
     expect(isRemoteImageUrl('https://cdn.example.com/doc.pdf')).toBe(false);
+  });
+
+  it('classifies upload-service and document-extension urls as files', () => {
+    // 统一上传服务无扩展名 URL（/api/f/）仍判定为文件
+    expect(
+      isRemoteFileUrl(
+        'https://testagent.xspaceagi.com/api/f/s3/default/20260703/abc123',
+      ),
+    ).toBe(true);
+    // 已知文档/压缩包扩展名
+    expect(isRemoteFileUrl('https://cdn.example.com/doc.pdf')).toBe(true);
+    expect(isRemoteFileUrl('https://cdn.example.com/report.DOCX')).toBe(true);
+    expect(isRemoteFileUrl('https://cdn.example.com/archive.zip')).toBe(true);
+  });
+
+  it('does not classify plain webpage links as files', () => {
+    expect(isRemoteFileUrl('https://github.com/nuwax-ai/nuwax')).toBe(false);
+    expect(isRemoteFileUrl('https://example.com')).toBe(false);
+    expect(isRemoteFileUrl('https://example.com/path/to/page')).toBe(false);
+    // 图片走 isRemoteImageUrl，isRemoteFileUrl 应为 false
+    expect(isRemoteFileUrl('https://cdn.example.com/a.png')).toBe(false);
+    // 非 http(s) 不判为文件
+    expect(isRemoteFileUrl('/api/f/s3/abc')).toBe(false);
+    expect(isRemoteFileUrl('not-a-url')).toBe(false);
   });
 
   it('detects extensionless remote urls', () => {
