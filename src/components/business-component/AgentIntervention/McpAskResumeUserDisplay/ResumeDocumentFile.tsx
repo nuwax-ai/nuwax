@@ -1,6 +1,6 @@
-import FileTypeIcon from '@/components/base/FileTypeIcon';
 import type { AttachmentFile } from '@/types/interfaces/conversationInfo';
 import { openRemoteFileUrl } from '@/utils/authProtectedFileUrl';
+import { FileOutlined } from '@ant-design/icons';
 import { message } from 'antd';
 import React, { memo, useCallback } from 'react';
 import styles from './index.less';
@@ -10,7 +10,7 @@ export interface ResumeDocumentFileProps {
 }
 
 /**
- * MCP Ask resume 内联文档：参考 ChatView AttachFile 卡片样式，点击打开/下载。
+ * MCP Ask resume 内联文档：统一灰色通用文件图标，不按类型展示 PDF 等专用图标。
  */
 const ResumeDocumentFile: React.FC<ResumeDocumentFileProps> = memo(
   ({ file }) => {
@@ -32,12 +32,9 @@ const ResumeDocumentFile: React.FC<ResumeDocumentFileProps> = memo(
         }}
         title={file.fileName}
       >
-        <FileTypeIcon
-          fileType={file.mimeType}
-          fileName={file.fileName}
-          size={50}
-          preview={false}
-        />
+        <span className={styles.documentFileIcon} aria-hidden="true">
+          <FileOutlined />
+        </span>
         <span className={styles.documentFileName}>{file.fileName}</span>
       </button>
     );

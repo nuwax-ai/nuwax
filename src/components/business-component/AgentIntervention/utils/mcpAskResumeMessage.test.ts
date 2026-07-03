@@ -1,10 +1,14 @@
+import { AssistantRoleEnum } from '@/types/enums/agent';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import {
   buildMcpAskResumeMessage,
   buildMcpAskResumeTextDisplay,
   extractMcpAskResumeDocumentAttachments,
   extractMcpAskResumeImageAttachments,
+  fileUrlToAttachmentFile,
+  getRemoteUrlPathExtension,
   hasMcpAskResumeMessage,
+  isExtensionlessRemoteUrl,
   isMcpAskResumeMessageForInteraction,
   isRemoteImageUrl,
   parseMcpAskResumeDisplayContent,
@@ -127,9 +131,9 @@ describe('buildMcpAskResumeMessage', () => {
         '选项：先跑测试',
         '补充说明：先跑关键链路',
         '检查项：代码检查、单元测试',
-        '<!--nuwax-mcp-ask-request-id:ask-1-->',
       ].join('\n'),
     );
+    expect(message).not.toContain('nuwax-mcp-ask-request-id');
     expect(message).not.toContain('"choice"');
     expect(message).not.toContain('```json');
   });
@@ -151,7 +155,7 @@ describe('buildMcpAskResumeMessage', () => {
 
     expect(message).toContain('confirmed：是');
     expect(message).toContain('extra：owner：alice，retry：2');
-    expect(message).toContain('<!--nuwax-mcp-ask-request-id:ask-1-->');
+    expect(message).not.toContain('nuwax-mcp-ask-request-id');
   });
 
   it('uses custom radio input as the field value', () => {
@@ -230,7 +234,7 @@ describe('buildMcpAskResumeMessage', () => {
         ...commonPayload,
         action: 'cancel',
       }),
-    ).toContain('<!--nuwax-mcp-ask-request-id:ask-1-->');
+    ).not.toContain('nuwax-mcp-ask-request-id');
   });
 
   it('uses English templates when locale dict is English', () => {
@@ -386,6 +390,55 @@ describe('parseMcpAskResumeDisplayContent', () => {
     expect(isRemoteImageUrl('https://cdn.example.com/doc.pdf')).toBe(false);
   });
 
+  it('detects extensionless remote urls', () => {
+    expect(
+      isExtensionlessRemoteUrl(
+        'https://testagent.xspaceagi.com/api/f/s3/default/20260703/abc123',
+      ),
+    ).toBe(true);
+    expect(getRemoteUrlPathExtension('https://cdn.example.com/a.png')).toBe(
+      'png',
+    );
+    expect(
+      getRemoteUrlPathExtension(
+        'https://testagent.xspaceagi.com/api/f/s3/default/20260703/abc123',
+      ),
+    ).toBe('');
+    expect(isExtensionlessRemoteUrl('https://cdn.example.com/a.png')).toBe(
+      false,
+    );
+    expect(isExtensionlessRemoteUrl('not-a-url')).toBe(false);
+  });
+
+  it('parses extensionless remote urls into fileUrls for fallback document display', () => {
+    const raw = [
+      '我已填写「上传附件」，表单内容如下：',
+      '无后缀文件：https://testagent.xspaceagi.com/api/f/s3/default/20260703/abc123',
+    ].join('\n');
+
+    const parsed = parseMcpAskResumeDisplayContent(raw);
+    expect(parsed.kind).toBe('resume');
+    expect(parsed.fields).toEqual([
+      {
+        label: '无后缀文件',
+        fileUrls: [
+          'https://testagent.xspaceagi.com/api/f/s3/default/20260703/abc123',
+        ],
+      },
+    ]);
+  });
+
+  it('maps extensionless remote urls to unknown attachment fallback', () => {
+    const url =
+      'https://testagent.xspaceagi.com/api/f/s3/default/20260703/abc123';
+    expect(fileUrlToAttachmentFile(url)).toEqual({
+      fileKey: url,
+      fileUrl: url,
+      fileName: 'abc123',
+      mimeType: 'application/octet-stream',
+    });
+  });
+
   it('parses document file urls separately from images and text', () => {
     const raw = [
       '我已填写「补充回复」，表单内容如下：',
@@ -411,7 +464,7 @@ describe('parseMcpAskResumeDisplayContent', () => {
 });
 
 describe('MCP Ask resume display-only helpers', () => {
-  it('does not change buildMcpAskResumeMessage payload sent to chat', () => {
+  it('does not append internal requestId marker to chat payload', () => {
     activeDict = zhCnResumeDict;
     activeLang = 'zh-CN';
     const sent = buildMcpAskResumeMessage(
@@ -438,7 +491,7 @@ describe('MCP Ask resume display-only helpers', () => {
     );
 
     expect(sent).toContain('文件上传：https://cdn.example.com/a.png');
-    expect(sent).toContain('<!--nuwax-mcp-ask-request-id:ask-1-->');
+    expect(sent).not.toContain('nuwax-mcp-ask-request-id');
   });
 
   it('buildMcpAskResumeTextDisplay hides image urls in bubble text only', () => {
@@ -530,7 +583,7 @@ describe('isMcpAskResumeMessageForInteraction', () => {
     ).toBe(false);
   });
 
-  it('matches resume by requestId marker when multiple asks share the same title', () => {
+  it('matches resume by ordinal pairing when multiple asks share the same title', () => {
     const sharedTitle = '补充回复';
     const firstInteraction: McpAskInteraction = {
       ...baseInteraction,
@@ -563,19 +616,30 @@ describe('isMcpAskResumeMessageForInteraction', () => {
     });
 
     const messageList = [
-      { id: 'assistant-ask', index: 0 } as MessageInfo,
-      { id: 'user-resume', index: 1, text: firstResume } as MessageInfo,
+      {
+        id: 'assistant-ask-1',
+        index: 0,
+        mcpAskInteractions: [firstInteraction],
+      } as MessageInfo,
+      {
+        id: 'user-resume',
+        index: 1,
+        role: AssistantRoleEnum.USER,
+        text: firstResume,
+      } as MessageInfo,
+      {
+        id: 'assistant-ask-2',
+        index: 2,
+        mcpAskInteractions: [secondInteraction],
+      } as MessageInfo,
     ];
 
     expect(
       isMcpAskResumeMessageForInteraction(firstResume, firstInteraction),
     ).toBe(true);
     expect(
-      isMcpAskResumeMessageForInteraction(firstResume, secondInteraction),
-    ).toBe(false);
-    expect(
       hasMcpAskResumeMessage(messageList, secondInteraction, {
-        containingMessageIndex: 0,
+        containingMessageIndex: 2,
       }),
     ).toBe(false);
     expect(

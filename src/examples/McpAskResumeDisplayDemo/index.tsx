@@ -27,6 +27,7 @@ import { Link } from 'umi';
 import styles from './index.less';
 import {
   COMBINED_RESUME_MESSAGE,
+  EXTENSIONLESS_CASES,
   SINGLE_TYPE_CASES,
   SUPPORTED_IMAGE_EXTENSIONS,
   UNSUPPORTED_FILE_EXTENSIONS,
@@ -63,7 +64,7 @@ function resolveRenderMode(caseItem: ResumeDisplayCase): string {
 
 const McpAskResumeDisplayDemo: React.FC = () => {
   const tableRows = useMemo<CaseRow[]>(() => {
-    return SINGLE_TYPE_CASES.map((caseItem) => {
+    return [...SINGLE_TYPE_CASES, ...EXTENSIONLESS_CASES].map((caseItem) => {
       const resumeText = buildResumeMessageForCase(caseItem);
       const parsed = parseMcpAskResumeDisplayContent(resumeText);
       return {
@@ -141,6 +142,7 @@ const McpAskResumeDisplayDemo: React.FC = () => {
           <Tag color="purple">
             /api/f/ 受保护 URL 需 Bearer 拉取（见 ResumeAuthImage）
           </Tag>
+          <Tag color="cyan">无后缀 URL：兜底未知附件卡片</Tag>
         </Space>
       </Card>
 
@@ -170,7 +172,7 @@ const McpAskResumeDisplayDemo: React.FC = () => {
           </Card>
         </Col>
 
-        {SINGLE_TYPE_CASES.map((caseItem) => {
+        {SINGLE_TYPE_CASES.concat(EXTENSIONLESS_CASES).map((caseItem) => {
           const resumeText = buildResumeMessageForCase(caseItem);
           const parsed = parseMcpAskResumeDisplayContent(resumeText);
           const renderMode = resolveRenderMode(caseItem);

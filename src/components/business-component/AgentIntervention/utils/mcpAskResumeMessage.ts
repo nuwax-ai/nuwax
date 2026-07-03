@@ -6,6 +6,7 @@ import {
   MIN_ZH_TW_I18N_MAP,
 } from '@/constants/i18n.constants';
 import { dict, getCurrentLang } from '@/services/i18nRuntime';
+import { AssistantRoleEnum } from '@/types/enums/agent';
 import type {
   AttachmentFile,
   MessageInfo,
@@ -276,6 +277,29 @@ function extractFileNameFromUrl(url: string, fallback: string): string {
   }
 }
 
+/**
+ * 从远程 URL 的 pathname 末段提取扩展名（不含 query/hash）。
+ * 无后缀时返回空字符串，例如 /api/f/s3/default/20260703/abc123。
+ */
+export function getRemoteUrlPathExtension(url: string): string {
+  const fileName = extractFileNameFromUrl(url, '');
+  if (!fileName || !fileName.includes('.')) {
+    return '';
+  }
+  return fileName.split('.').pop()?.toLowerCase() ?? '';
+}
+
+/**
+ * 判断远程 URL 是否为 http(s) 且 pathname 末段无文件后缀。
+ */
+export function isExtensionlessRemoteUrl(url: string): boolean {
+  const trimmed = url.trim();
+  if (!/^https?:\/\//i.test(trimmed)) {
+    return false;
+  }
+  return !getRemoteUrlPathExtension(trimmed);
+}
+
 function resolveMimeTypeByFileName(fileName: string, fallback: string): string {
   const ext = fileName.split('.').pop()?.toLowerCase() ?? '';
   return FILE_MIME_BY_EXT[ext] || IMAGE_MIME_BY_EXT[ext] || fallback;
@@ -302,8 +326,11 @@ export function fileUrlToAttachmentFile(
   url: string,
   index = 0,
 ): AttachmentFile {
-  const fileName =
-    extractFileNameFromUrl(url, `file-${index + 1}`) || `file-${index + 1}`;
+  const extensionless = isExtensionlessRemoteUrl(url);
+  const pathSegment = extractFileNameFromUrl(url, '');
+  const fileName = extensionless
+    ? pathSegment || `未知文件-${index + 1}`
+    : extractFileNameFromUrl(url, `file-${index + 1}`) || `file-${index + 1}`;
   return {
     fileKey: url,
     fileUrl: url,
@@ -397,13 +424,6 @@ export function textContainsMcpAskRequestIdMarker(
   const compact = `"${MCP_ASK_REQUEST_ID_MARKER_KEY}":"${requestId}"`;
   const spaced = `"${MCP_ASK_REQUEST_ID_MARKER_KEY}": "${requestId}"`;
   return text.includes(compact) || text.includes(spaced);
-}
-
-function appendMcpAskRequestIdMarker(
-  message: string,
-  requestId: string,
-): string {
-  return `${message}${buildMcpAskRequestIdMarker(requestId)}`;
 }
 
 /** 各语言本地包，用于跨语言匹配历史 resume 消息 */
@@ -709,23 +729,110 @@ export function buildMcpAskResumeMessage(
   payload: McpAskRespondPayload,
 ) {
   const title = getMcpAskResumeTitle(interaction);
-  const requestId = interaction.input.requestId;
-  let message: string;
 
   if (payload.action === 'cancel') {
-    message = tMcpAsk(RESUME_MESSAGE_KEY_BY_ACTION.cancel, title);
-  } else if (payload.action === 'skip') {
-    message = tMcpAsk(RESUME_MESSAGE_KEY_BY_ACTION.skip, title);
-  } else if (payload.action === 'timeout') {
-    message = tMcpAsk(RESUME_MESSAGE_KEY_BY_ACTION.timeout, title);
-  } else {
-    message = [
-      tMcpAsk(SUBMITTED_HEADER_KEY, title),
-      formatAskFormData(interaction, payload.formData),
-    ].join('\n');
+    return tMcpAsk(RESUME_MESSAGE_KEY_BY_ACTION.cancel, title);
+  }
+  if (payload.action === 'skip') {
+    return tMcpAsk(RESUME_MESSAGE_KEY_BY_ACTION.skip, title);
+  }
+  if (payload.action === 'timeout') {
+    return tMcpAsk(RESUME_MESSAGE_KEY_BY_ACTION.timeout, title);
   }
 
-  return appendMcpAskRequestIdMarker(message, requestId);
+  return [
+    tMcpAsk(SUBMITTED_HEADER_KEY, title),
+    formatAskFormData(interaction, payload.formData),
+  ].join('\n');
+}
+
+function messageMatchesAnyResumeSignature(
+  text: string | undefined,
+  title: string,
+): boolean {
+  if (!text?.trim()) {
+    return false;
+  }
+  const actions: McpAskResumeAction[] = ['submit', 'cancel', 'skip', 'timeout'];
+  return actions.some((action) =>
+    collectResumeMessageSignatures(title, action).some((signature) =>
+      text.includes(signature),
+    ),
+  );
+}
+
+function collectSameTitleAskOrdinals(
+  sortedMessages: MessageInfo[],
+  title: string,
+): Array<{ ordinal: number; requestId: string }> {
+  const entries: Array<{ ordinal: number; requestId: string }> = [];
+
+  sortedMessages.forEach((message, messageIndex) => {
+    const ordinal = readMessageOrdinal(message, messageIndex);
+    message.mcpAskInteractions?.forEach((item) => {
+      if (getMcpAskResumeTitle(item) !== title) {
+        return;
+      }
+      entries.push({ ordinal, requestId: item.input.requestId });
+    });
+  });
+
+  return entries.sort((left, right) => left.ordinal - right.ordinal);
+}
+
+function collectSameTitleResumeOrdinals(
+  sortedMessages: MessageInfo[],
+  title: string,
+): number[] {
+  const ordinals: number[] = [];
+
+  sortedMessages.forEach((message, messageIndex) => {
+    if (message.role !== undefined && message.role !== AssistantRoleEnum.USER) {
+      return;
+    }
+    const text = message.text;
+    if (!messageMatchesAnyResumeSignature(text, title)) {
+      return;
+    }
+    ordinals.push(readMessageOrdinal(message, messageIndex));
+  });
+
+  return ordinals.sort((left, right) => left - right);
+}
+
+/**
+ * 同 title 多次询问时，按消息顺序将第 N 次 ask 与第 N 条 resume 配对。
+ * 不依赖写入 chat 接口的 HTML 注释 marker。
+ */
+function hasOrdinalPairedResumeMessage(
+  sortedMessages: MessageInfo[],
+  interaction: McpAskInteraction,
+): boolean {
+  const title = getMcpAskResumeTitle(interaction);
+  const asks = collectSameTitleAskOrdinals(sortedMessages, title);
+  const resumes = collectSameTitleResumeOrdinals(sortedMessages, title);
+  const askIndex = asks.findIndex(
+    (entry) => entry.requestId === interaction.input.requestId,
+  );
+
+  if (askIndex < 0 || askIndex >= resumes.length) {
+    return false;
+  }
+
+  const askOrdinal = asks[askIndex].ordinal;
+  const resumeOrdinal = resumes[askIndex];
+
+  if (resumeOrdinal > askOrdinal) {
+    return true;
+  }
+
+  // 历史 hydrate：resume 的 index 可能小于 ask（存储乱序），仅在同 title 单 ask 时兜底
+  return (
+    askIndex === 0 &&
+    asks.length === 1 &&
+    resumes.length === 1 &&
+    resumeOrdinal < askOrdinal
+  );
 }
 
 function matchesLegacyTitleResumeMessage(
@@ -797,6 +904,10 @@ export function hasMcpAskResumeMessage(
       ),
     )
   ) {
+    return true;
+  }
+
+  if (hasOrdinalPairedResumeMessage(sortedMessages, interaction)) {
     return true;
   }
 

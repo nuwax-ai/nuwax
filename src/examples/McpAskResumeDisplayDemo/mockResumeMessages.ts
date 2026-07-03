@@ -59,16 +59,8 @@ function buildResumeFieldLine(label: string, value: string): string {
   return `${label}：${value}`;
 }
 
-function buildResumeMessage(
-  title: string,
-  fieldLines: string[],
-  requestId = 'demo-display-types',
-): string {
-  const body = [
-    `我已填写「${title}」，表单内容如下：`,
-    ...fieldLines,
-    `<!--nuwax-mcp-ask-request-id:${requestId}-->`,
-  ];
+function buildResumeMessage(title: string, fieldLines: string[]): string {
+  const body = [`我已填写「${title}」，表单内容如下：`, ...fieldLines];
   return body.join('\n');
 }
 
@@ -104,31 +96,40 @@ export function buildSingleTypeCases(): ResumeDisplayCase[] {
   return [...imageCases, ...fileCases];
 }
 
+/** 无后缀 URL 用例：走兜底未知附件卡片 */
+export function buildExtensionlessCases(): ResumeDisplayCase[] {
+  return [
+    {
+      id: 'extensionless-s3',
+      fieldLabel: '无后缀 S3 文件',
+      extension: '(none)',
+      url: 'https://testagent.xspaceagi.com/api/f/s3/default/20260703/abc123',
+      expectedKind: 'document',
+      note: 'pathname 无扩展名，兜底为未知附件卡片（FileOutlined）',
+    },
+  ];
+}
+
 /** 综合用例：单条 resume 含多图、混排与非图片 */
-export const COMBINED_RESUME_MESSAGE = buildResumeMessage(
-  '文件类型综合',
-  [
-    buildResumeFieldLine('PNG 图片', PUBLIC_SAMPLE_URLS.png),
-    buildResumeFieldLine('JPEG 图片', PUBLIC_SAMPLE_URLS.jpg),
-    buildResumeFieldLine('GIF 图片', PUBLIC_SAMPLE_URLS.gif),
-    buildResumeFieldLine('WebP 图片', PUBLIC_SAMPLE_URLS.webp),
-    buildResumeFieldLine(
-      '多图附件',
-      `${PUBLIC_SAMPLE_URLS.png}、${PUBLIC_SAMPLE_URLS.webp}`,
-    ),
-    buildResumeFieldLine('PDF 文档', PUBLIC_SAMPLE_URLS.pdf),
-    buildResumeFieldLine('补充说明', '非 URL 的普通文本字段'),
-  ],
-  'demo-combined',
-);
+export const COMBINED_RESUME_MESSAGE = buildResumeMessage('文件类型综合', [
+  buildResumeFieldLine('PNG 图片', PUBLIC_SAMPLE_URLS.png),
+  buildResumeFieldLine('JPEG 图片', PUBLIC_SAMPLE_URLS.jpg),
+  buildResumeFieldLine('GIF 图片', PUBLIC_SAMPLE_URLS.gif),
+  buildResumeFieldLine('WebP 图片', PUBLIC_SAMPLE_URLS.webp),
+  buildResumeFieldLine(
+    '多图附件',
+    `${PUBLIC_SAMPLE_URLS.png}、${PUBLIC_SAMPLE_URLS.webp}`,
+  ),
+  buildResumeFieldLine('PDF 文档', PUBLIC_SAMPLE_URLS.pdf),
+  buildResumeFieldLine('补充说明', '非 URL 的普通文本字段'),
+]);
 
 /** 为每个单类型用例生成独立 resume 文本 */
 export function buildResumeMessageForCase(caseItem: ResumeDisplayCase): string {
-  return buildResumeMessage(
-    `${caseItem.extension.toUpperCase()} 类型`,
-    [buildResumeFieldLine(caseItem.fieldLabel, caseItem.url)],
-    `demo-${caseItem.id}`,
-  );
+  return buildResumeMessage(`${caseItem.extension.toUpperCase()} 类型`, [
+    buildResumeFieldLine(caseItem.fieldLabel, caseItem.url),
+  ]);
 }
 
 export const SINGLE_TYPE_CASES = buildSingleTypeCases();
+export const EXTENSIONLESS_CASES = buildExtensionlessCases();

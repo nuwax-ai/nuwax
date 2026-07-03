@@ -92,8 +92,17 @@ const FileTypeIcon: React.FC<FileTypeIconProps> = ({
         return null;
       }
 
-      const extension = name?.toLowerCase().split('.').pop() || '';
+      const fileName = name?.trim() ?? '';
+      const extension = fileName.includes('.')
+        ? fileName.split('.').pop()?.toLowerCase() ?? ''
+        : '';
       const normalizedMime = mimeType?.toLowerCase() ?? '';
+      const isGenericMime =
+        !normalizedMime || normalizedMime === 'application/octet-stream';
+
+      if (!extension && isGenericMime) {
+        return { kind: 'antd', Icon: FileOutlined, color: '#bfbfbf' };
+      }
 
       if (
         normalizedMime.includes('zip') ||
@@ -197,16 +206,33 @@ const FileTypeIcon: React.FC<FileTypeIconProps> = ({
     );
   }
 
+  if (iconResult?.kind === 'png') {
+    return (
+      <Image
+        width={size}
+        height={size}
+        src={iconResult.src}
+        fallback={IMAGE_FALLBACK}
+        preview={preview}
+        className={cx(styles['file-type-icon'], className)}
+        style={style}
+      />
+    );
+  }
+
   return (
-    <Image
-      width={size}
-      height={size}
-      src={iconResult?.kind === 'png' ? iconResult.src : (docIcon as string)}
-      fallback={IMAGE_FALLBACK}
-      preview={preview}
-      className={cx(styles['file-type-icon'], className)}
-      style={style}
-    />
+    <span
+      className={cx(
+        styles['file-type-icon'],
+        styles['antd-file-icon'],
+        className,
+      )}
+      style={{ width: size, height: size, ...style }}
+    >
+      <FileOutlined
+        style={{ fontSize: Math.round(size * 0.56), color: '#bfbfbf' }}
+      />
+    </span>
   );
 };
 
