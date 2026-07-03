@@ -35,6 +35,10 @@ export const MCP_ASK_REQUEST_ID_MARKER_KEY = 'nuwaxMcpAskRequestId';
 /** HTML 注释标记前缀，对用户不可见 */
 const MCP_ASK_REQUEST_ID_HTML_PREFIX = 'nuwax-mcp-ask-request-id:';
 
+/** 匹配 resume 消息末尾附带的 HTML 注释 requestId 标记 */
+const MCP_ASK_REQUEST_ID_HTML_COMMENT_RE =
+  /\n?<!--nuwax-mcp-ask-request-id:[^>]+-->/g;
+
 export interface McpAskResumeMatchOptions {
   /** 承载该 interaction 的消息在已排序列表中的下标 */
   containingMessageIndex?: number;
@@ -58,6 +62,21 @@ function readMessageOrdinal(message: MessageInfo, fallback = 0): number {
  */
 export function buildMcpAskRequestIdMarker(requestId: string): string {
   return `\n<!--${MCP_ASK_REQUEST_ID_HTML_PREFIX}${requestId}-->`;
+}
+
+/**
+ * 移除 resume 消息中仅供内部匹配的 requestId 标记，供聊天 UI 展示与复制使用。
+ * 原始 message.text 仍保留标记，以便 hasMcpAskResumeMessage 等逻辑识别。
+ */
+export function stripMcpAskResumeDisplayArtifacts(
+  text: string | undefined,
+): string {
+  if (!text) {
+    return '';
+  }
+  return text
+    .replace(MCP_ASK_REQUEST_ID_HTML_COMMENT_RE, '')
+    .replace(/\s+$/, '');
 }
 
 function messageHasForeignRequestIdMarker(text: string): boolean {
@@ -191,6 +210,42 @@ function getMcpAskDisplaySeparators(lang = getCurrentLang()) {
   };
 }
 
+function formatFileFieldDisplayValue(value: unknown): string {
+  if (value === undefined || value === null || value === '') {
+    return tMcpAsk(`${I18N_PREFIX}.notFilled`);
+  }
+
+  const formatSingle = (item: unknown): string => {
+    if (typeof item === 'string') {
+      return item;
+    }
+    if (typeof item === 'object' && item !== null) {
+      const file = item as {
+        name?: string;
+        fileName?: string;
+        url?: string;
+      };
+      return (
+        file.url ||
+        file.name ||
+        file.fileName ||
+        tMcpAsk(`${I18N_PREFIX}.unknownFile`)
+      );
+    }
+    return String(item);
+  };
+
+  const { listSeparator } = getMcpAskDisplaySeparators();
+  if (Array.isArray(value)) {
+    if (!value.length) {
+      return tMcpAsk(`${I18N_PREFIX}.notFilled`);
+    }
+    return value.map(formatSingle).join(listSeparator);
+  }
+
+  return formatSingle(value);
+}
+
 function stringifyDisplayValue(value: unknown): string {
   if (value === undefined || value === null || value === '') {
     return tMcpAsk(`${I18N_PREFIX}.notFilled`);
@@ -215,15 +270,7 @@ function stringifyDisplayValue(value: unknown): string {
     if (value.length > 0 && typeof value[0] === 'object' && value[0] !== null) {
       const first = value[0] as any;
       if ('name' in first || 'url' in first || 'fileName' in first) {
-        return value
-          .map(
-            (f: any) =>
-              f.url ||
-              f.name ||
-              f.fileName ||
-              tMcpAsk(`${I18N_PREFIX}.unknownFile`),
-          )
-          .join(listSeparator);
+        return formatFileFieldDisplayValue(value);
       }
     }
     return value.map(stringifyDisplayValue).join(listSeparator);
@@ -232,9 +279,7 @@ function stringifyDisplayValue(value: unknown): string {
     // 检查是否为单个文件对象
     const obj = value as any;
     if (obj.name || obj.fileName || obj.url) {
-      return `📎 ${
-        obj.url || obj.name || obj.fileName || tMcpAsk(`${I18N_PREFIX}.file`)
-      }`;
+      return `📎 ${formatFileFieldDisplayValue(value)}`;
     }
     const entries = Object.entries(value as Record<string, unknown>);
     if (!entries.length) {
@@ -305,11 +350,11 @@ function formatAskFormData(
           formData[otherField],
         )}`;
       }
-      const value = formatFieldValue(
-        formData[field.name],
-        field.enumValues,
-        field.enumLabels,
-      );
+      const rawValue = formData[field.name];
+      const value =
+        field.widget === 'file'
+          ? formatFileFieldDisplayValue(rawValue)
+          : formatFieldValue(rawValue, field.enumValues, field.enumLabels);
       return `${label}${labelSeparator}${value}`;
     });
 

@@ -3,6 +3,7 @@ import {
   buildMcpAskResumeMessage,
   hasMcpAskResumeMessage,
   isMcpAskResumeMessageForInteraction,
+  stripMcpAskResumeDisplayArtifacts,
 } from './mcpAskResumeMessage';
 
 import { describe, expect, it, vi } from 'vitest';
@@ -323,6 +324,16 @@ describe('buildMcpAskResumeMessage', () => {
     );
 
     expect(message).toContain('截图：https://cdn.example.com/shot.png');
+  });
+});
+
+describe('stripMcpAskResumeDisplayArtifacts', () => {
+  it('removes HTML requestId marker from display text', () => {
+    const raw =
+      '我已填写「补充回复」，表单内容如下：\n文件上传：https://cdn.example.com/shot.png\n<!--nuwax-mcp-ask-request-id:ask-1-->';
+    expect(stripMcpAskResumeDisplayArtifacts(raw)).toBe(
+      '我已填写「补充回复」，表单内容如下：\n文件上传：https://cdn.example.com/shot.png',
+    );
   });
 });
 
