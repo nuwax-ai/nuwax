@@ -1,7 +1,13 @@
 import CustomFormModal from '@/components/CustomFormModal';
 import Loading from '@/components/custom/Loading';
-import type { MenuNodeInfo } from '@/pages/SystemManagement/MenuPermission/types/menu-manage';
-import type { ResourceTreeNode } from '@/pages/SystemManagement/MenuPermission/types/permission-resources';
+import {
+  MenuBindTypeEnum,
+  type MenuNodeInfo,
+} from '@/pages/SystemManagement/MenuPermission/types/menu-manage';
+import {
+  ResourceBindTypeEnum,
+  type ResourceTreeNode,
+} from '@/pages/SystemManagement/MenuPermission/types/permission-resources';
 import { dict } from '@/services/i18nRuntime';
 import { DownOutlined } from '@ant-design/icons';
 import { Form, Tree } from 'antd';
@@ -49,6 +55,57 @@ const UserViewMenuModal: React.FC<UserViewMenuModalProps> = ({
     manual: true,
   });
 
+  /**
+   * 递归过滤菜单树：移除 menuBindType 为 0（未绑定）的菜单项，
+   * 菜单未绑定时忽略其 resourceTree（即使资源有绑定也不展示）；
+   * 菜单已绑定时，同步过滤 resourceTree 中 resourceBindType 为 0 的资源项；
+   * 若父级菜单未绑定但仍有已绑定的子菜单，则保留该父级节点
+   */
+  const filteredMenuList = useMemo(() => {
+    if (!menuList || menuList.length === 0) {
+      return [];
+    }
+
+    const filterResourceTree = (
+      resources: ResourceTreeNode[],
+    ): ResourceTreeNode[] => {
+      return resources
+        .filter(
+          (resource) =>
+            resource.resourceBindType !== ResourceBindTypeEnum.Unbound,
+        )
+        .map((resource) => ({
+          ...resource,
+          children: resource.children?.length
+            ? filterResourceTree(resource.children)
+            : resource.children,
+        }));
+    };
+
+    const filterMenus = (menus: MenuNodeInfo[]): MenuNodeInfo[] => {
+      return menus
+        .map((menu) => {
+          const isMenuBound = menu.menuBindType !== MenuBindTypeEnum.Unbound;
+          return {
+            ...menu,
+            children: menu.children?.length
+              ? filterMenus(menu.children)
+              : menu.children,
+            resourceTree:
+              isMenuBound && menu.resourceTree?.length
+                ? filterResourceTree(menu.resourceTree)
+                : undefined,
+          };
+        })
+        .filter((menu) => {
+          const hasChildren = menu.children && menu.children.length > 0;
+          return menu.menuBindType !== MenuBindTypeEnum.Unbound || hasChildren;
+        });
+    };
+
+    return filterMenus(menuList);
+  }, [menuList]);
+
   useEffect(() => {
     if (open && userId > 0) {
       runGetMenuList(userId);
@@ -62,7 +119,7 @@ const UserViewMenuModal: React.FC<UserViewMenuModalProps> = ({
 
   // 当菜单列表加载完成后，初始化展开状态（因为 defaultExpandAll 为 true，所以所有菜单和资源树都应该展开）
   useEffect(() => {
-    if (menuList && menuList.length > 0) {
+    if (filteredMenuList.length > 0) {
       const expandedSet = new Set<number>();
       const expandedKeysList: React.Key[] = [];
 
@@ -82,11 +139,11 @@ const UserViewMenuModal: React.FC<UserViewMenuModalProps> = ({
           }
         });
       };
-      collectMenus(menuList);
+      collectMenus(filteredMenuList);
       setExpandedResourceMenus(expandedSet);
       setExpandedKeys(expandedKeysList);
     }
-  }, [menuList]);
+  }, [filteredMenuList]);
 
   /**
    * 将资源树数据转换为Tree组件需要的数据格式（只用于展示）
@@ -176,13 +233,13 @@ const UserViewMenuModal: React.FC<UserViewMenuModalProps> = ({
         });
       };
 
-      if (menuList && menuList.length > 0) {
-        checkMenu(menuList);
+      if (filteredMenuList.length > 0) {
+        checkMenu(filteredMenuList);
       }
 
       setExpandedResourceMenus(newExpandedResourceMenus);
     },
-    [menuList],
+    [filteredMenuList],
   );
 
   // 将菜单数据转换为Tree组件需要的数据格式
@@ -218,21 +275,21 @@ const UserViewMenuModal: React.FC<UserViewMenuModalProps> = ({
         });
     };
 
-    if (!menuList || menuList.length === 0) {
+    if (!filteredMenuList || filteredMenuList.length === 0) {
       return [];
     }
 
     // 如果第一个节点是根节点（id为0），则只返回其子节点
-    if (menuList.length === 1 && menuList[0].id === 0) {
-      const rootNode = menuList[0];
+    if (filteredMenuList.length === 1 && filteredMenuList[0].id === 0) {
+      const rootNode = filteredMenuList[0];
       return rootNode.children?.length
         ? convertToTreeData(rootNode.children)
         : [];
     }
 
     // 否则过滤掉所有 id 为 0 的节点
-    return convertToTreeData(menuList);
-  }, [menuList]);
+    return convertToTreeData(filteredMenuList);
+  }, [filteredMenuList]);
 
   return (
     <CustomFormModal
