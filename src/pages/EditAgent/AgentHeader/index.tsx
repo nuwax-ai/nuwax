@@ -4,7 +4,11 @@ import ConditionRender from '@/components/ConditionRender';
 import { APPLICATION_MORE_ACTION_DETAIL } from '@/constants/space.constants';
 import { dict } from '@/services/i18nRuntime';
 import { PermissionsEnum } from '@/types/enums/common';
-import { AgentTypeEnum, ApplicationMoreActionEnum } from '@/types/enums/space';
+import {
+  AgentSubTypeEnum,
+  AgentTypeEnum,
+  ApplicationMoreActionEnum,
+} from '@/types/enums/space';
 import type {
   AgentHeaderProps,
   AgentHeaderTabKey,
@@ -18,6 +22,13 @@ import { history, useModel, useParams } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
+
+/** 不支持导出配置的智能体子类型 */
+const EXPORT_CONFIG_UNSUPPORTED_SUB_TYPES = new Set<AgentSubTypeEnum>([
+  AgentSubTypeEnum.Flow,
+  AgentSubTypeEnum.Group,
+  AgentSubTypeEnum.Custom,
+]);
 
 /**
  * 编辑智能体顶部header
@@ -63,8 +74,13 @@ const AgentHeader: React.FC<AgentHeaderProps> = ({
             agentConfigInfo?.type !== AgentTypeEnum.TaskAgent
           );
         case ApplicationMoreActionEnum.Export_Config:
-          // 导出配置操作：只有空间创建者、空间管理员和智能体本身的创建者可导出
-          return hasPermission(PermissionsEnum.Export);
+          // 导出配置：Flow / Group / 自定义类型不支持；且需具备导出权限
+          return (
+            hasPermission(PermissionsEnum.Export) &&
+            !EXPORT_CONFIG_UNSUPPORTED_SUB_TYPES.has(
+              agentConfigInfo?.subType as AgentSubTypeEnum,
+            )
+          );
         default:
           // 其他操作默认展示
           return true;
