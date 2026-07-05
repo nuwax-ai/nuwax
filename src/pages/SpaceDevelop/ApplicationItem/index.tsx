@@ -1,7 +1,6 @@
 import agentImage from '@/assets/images/agent_image.png';
 import CardWrapper from '@/components/business-component/CardWrapper';
 import CustomPopover from '@/components/CustomPopover';
-import { AGENT_SUB_TYPE_OPTIONS } from '@/constants/agent.constants';
 import { ICON_MORE, ICON_SUCCESS } from '@/constants/images.constants';
 import { APPLICATION_MORE_ACTION } from '@/constants/space.constants';
 import { dict } from '@/services/i18nRuntime';
@@ -21,6 +20,17 @@ import React, { useMemo } from 'react';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
+
+/** 子类型 i18n key（渲染时调用 dict，避免模块加载时固化英文） */
+const AGENT_SUB_TYPE_I18N_KEY: Record<AgentSubTypeEnum, string> = {
+  [AgentSubTypeEnum.ChatBot]: 'PC.Pages.SpaceDevelop.ApplicationItem.chatType',
+  [AgentSubTypeEnum.General]: 'PC.Pages.SpaceDevelop.ApplicationItem.taskType',
+  [AgentSubTypeEnum.Custom]: 'PC.Pages.SpaceDevelop.ApplicationItem.customType',
+  [AgentSubTypeEnum.Flow]:
+    'PC.Pages.SpaceDevelop.ApplicationItem.agentFlowType',
+  [AgentSubTypeEnum.Group]:
+    'PC.Pages.SpaceDevelop.ApplicationItem.agentGroupType',
+};
 
 /** 子类型 Tag 颜色（与原先 type 展示风格对齐） */
 const AGENT_SUB_TYPE_TAG_COLOR: Record<AgentSubTypeEnum, string> = {
@@ -134,25 +144,11 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({
     return list;
   }, [agentConfigInfo]);
 
-  // 智能体子类型标签
-  const subTypeTag = useMemo(() => {
-    const subType = resolveAgentSubType(agentConfigInfo);
-    // 如果子类型为空，则不显示标签
-    if (!subType) {
-      return null;
-    }
-    // 根据子类型获取标签
-    const option = AGENT_SUB_TYPE_OPTIONS.find(
-      (item) => item.value === subType,
-    );
-    if (!option) {
-      return null;
-    }
-    return {
-      label: option.label,
-      color: AGENT_SUB_TYPE_TAG_COLOR[subType] ?? 'default',
-    };
-  }, [agentConfigInfo]);
+  const subType = useMemo(
+    () => resolveAgentSubType(agentConfigInfo),
+    [agentConfigInfo],
+  );
+  const subTypeI18nKey = subType ? AGENT_SUB_TYPE_I18N_KEY[subType] : undefined;
 
   // 点击更多操作
   const handlerClickMore = (item: CustomPopoverItem) => {
@@ -197,8 +193,10 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({
           <div
             className={cx('flex', 'items-center', 'cursor-pointer', 'gap-10')}
           >
-            {subTypeTag && (
-              <Tag color={subTypeTag.color}>{subTypeTag.label}</Tag>
+            {subType && subTypeI18nKey && (
+              <Tag color={AGENT_SUB_TYPE_TAG_COLOR[subType] ?? 'default'}>
+                {dict(subTypeI18nKey)}
+              </Tag>
             )}
             {/* 个人电脑 */}
             {agentConfigInfo?.extra?.private && (
