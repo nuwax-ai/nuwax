@@ -4,6 +4,7 @@
  */
 
 import { Empty, Spin } from 'antd';
+import { dict } from '@/services/i18nRuntime';
 import React, { useEffect, useRef } from 'react';
 import type { DocumentPreviewProps } from './types';
 
@@ -42,7 +43,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({
   if (loading) {
     return (
       <div className="document-preview loading-state">
-        <Spin tip="加载文档中..." />
+        <Spin tip={dict('PC.Pages.SpaceKnowledge.SourceDocumentComparison.loadingDocument')} />
       </div>
     );
   }
@@ -50,7 +51,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({
   if (!segments || segments.length === 0) {
     return (
       <div className="document-preview empty-state">
-        <Empty description="暂无原文" />
+        <Empty description={dict('PC.Pages.SpaceKnowledge.SourceDocumentComparison.noOriginalDocument')} />
       </div>
     );
   }
@@ -58,7 +59,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({
   return (
     <div className="document-preview">
       <div className="preview-header">
-        <h3 className="preview-title">原文对照</h3>
+        <h3 className="preview-title">{dict('PC.Pages.SpaceKnowledge.SourceDocumentComparison.originalComparison')}</h3>
       </div>
       <div className="preview-content">
         <div className="document-preview-container">
