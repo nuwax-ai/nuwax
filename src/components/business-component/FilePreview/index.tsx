@@ -40,6 +40,68 @@ import { SANDBOX } from '@/constants/common.constants';
 import { t } from '@/services/i18nRuntime';
 import { init as pptxInit } from 'pptx-preview';
 
+/** HTML 预览 iframe 沙盒：不含 allow-top-navigation，避免锚点误导航到主应用 */
+const HTML_PREVIEW_SANDBOX = SANDBOX.replace(
+  'allow-top-navigation ',
+  '',
+).trim();
+
+/**
+ * 在 iframe 内拦截 hash 锚点点击，避免 srcDoc / base 标签导致加载主应用页面
+ */
+const setupHtmlIframeAnchorHandling = (iframe: HTMLIFrameElement) => {
+  const doc = iframe.contentDocument;
+  if (!doc) {
+    return () => {};
+  }
+
+  const handleClick = (event: MouseEvent) => {
+    const anchor = (event.target as Element | null)?.closest('a');
+    if (!anchor) {
+      return;
+    }
+
+    const hrefAttr = anchor.getAttribute('href');
+    if (!hrefAttr) {
+      return;
+    }
+
+    const trimmedHref = hrefAttr.trim();
+    if (!trimmedHref.startsWith('#')) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    const hash = trimmedHref.slice(1);
+    if (!hash) {
+      doc.defaultView?.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    let decodedHash = hash;
+    try {
+      decodedHash = decodeURIComponent(hash);
+    } catch {
+      decodedHash = hash;
+    }
+
+    const targetEl =
+      doc.getElementById(decodedHash) ||
+      doc.querySelector(`a[name="${decodedHash.replace(/"/g, '\\"')}"]`);
+
+    targetEl?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    if (doc.defaultView) {
+      doc.defaultView.location.hash = hash;
+    }
+  };
+
+  doc.addEventListener('click', handleClick, true);
+  return () => doc.removeEventListener('click', handleClick, true);
+};
+
 // File type categories
 export type DocumentType = 'docx' | 'xlsx' | 'pptx' | 'pdf';
 export type ImageType = 'image';
@@ -317,6 +379,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({
   content: propsContent,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const htmlIframeCleanupRef = useRef<(() => void) | null>(null);
   const previewerRef = useRef<any>(null);
   const [status, setStatus] = useState<PreviewStatus>('idle');
   const [errorMessage, setErrorMessage] = useState<string>('');
@@ -382,6 +445,13 @@ const FilePreview: React.FC<FilePreviewProps> = ({
       objectUrls.forEach((url) => URL.revokeObjectURL(url));
     };
   }, [objectUrls]);
+
+  useEffect(() => {
+    return () => {
+      htmlIframeCleanupRef.current?.();
+      htmlIframeCleanupRef.current = null;
+    };
+  }, []);
 
   const imageSources = useMemo(() => {
     if (srcList && srcList.length > 0) {
@@ -490,8 +560,15 @@ const FilePreview: React.FC<FilePreviewProps> = ({
       return;
     }
 
-    // HTML handling
+    // HTML handling：优先使用 src URL，避免 srcDoc 下 hash 锚点解析到主应用路由
     if (type === 'html') {
+      if (typeof src === 'string') {
+        setHtmlUrl(src);
+        setTextContent(propsContent || '');
+        setStatus('success');
+        onRendered?.();
+        return;
+      }
       if (propsContent) {
         setHtmlUrl(null);
         setTextContent(propsContent);
@@ -499,29 +576,22 @@ const FilePreview: React.FC<FilePreviewProps> = ({
         onRendered?.();
         return;
       }
-      if (typeof src === 'string') {
-        setHtmlUrl(src);
-        setTextContent('');
+      setStatus('loading');
+      setHtmlUrl(null);
+      try {
+        let content: string;
+        if (src instanceof File || src instanceof Blob) {
+          content = await src.text();
+        } else {
+          content = new TextDecoder().decode(src as ArrayBuffer);
+        }
+        setTextContent(content);
         setStatus('success');
         onRendered?.();
-      } else {
-        setStatus('loading');
-        setHtmlUrl(null);
-        try {
-          let content: string;
-          if (src instanceof File || src instanceof Blob) {
-            content = await src.text();
-          } else {
-            content = new TextDecoder().decode(src as ArrayBuffer);
-          }
-          setTextContent(content);
-          setStatus('success');
-          onRendered?.();
-        } catch (error: any) {
-          setStatus('error');
-          setErrorMessage(t('PC.Components.FilePreview.errorLoadHtmlContent'));
-          onError?.(error);
-        }
+      } catch (error: any) {
+        setStatus('error');
+        setErrorMessage(t('PC.Components.FilePreview.errorLoadHtmlContent'));
+        onError?.(error);
       }
       return;
     }
@@ -706,6 +776,17 @@ const FilePreview: React.FC<FilePreviewProps> = ({
     );
   };
 
+  /** HTML iframe 加载完成后绑定锚点点击处理 */
+  const handleHtmlIframeLoad = useCallback(
+    (event: React.SyntheticEvent<HTMLIFrameElement>) => {
+      htmlIframeCleanupRef.current?.();
+      htmlIframeCleanupRef.current = setupHtmlIframeAnchorHandling(
+        event.currentTarget,
+      );
+    },
+    [],
+  );
+
   // 统一的图片路径处理函数
   const normalizeImageSrc = useCallback(
     (src: string) => {
@@ -814,9 +895,10 @@ const FilePreview: React.FC<FilePreviewProps> = ({
             <iframe
               src={htmlUrl || undefined}
               srcDoc={htmlUrl ? undefined : textContent}
-              sandbox={SANDBOX}
+              sandbox={HTML_PREVIEW_SANDBOX}
               className={styles.htmlFrame}
               title="HTML Preview"
+              onLoad={handleHtmlIframeLoad}
             />
           </div>
         );
