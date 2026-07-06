@@ -50,4 +50,6 @@ export enum SettingActionEnum {
   Language_Switch,
   // 开发者资料
   Developer_Profile,
+  // 系统版本
+  System_Version,
 }

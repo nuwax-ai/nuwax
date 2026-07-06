@@ -65,11 +65,14 @@ const resolveAgentSubType = (
 
 /** Flow / Group / Custom 子类型不展示的操作项 */
 const RESTRICTED_SUB_TYPE_HIDDEN_ACTIONS = new Set<ApplicationMoreActionEnum>([
+  // 复制到空间
   ApplicationMoreActionEnum.Copy_To_Space,
+  // 迁移
   ApplicationMoreActionEnum.Move,
+  // API Key
   ApplicationMoreActionEnum.API_Key,
+  // 导出配置
   ApplicationMoreActionEnum.Export_Config,
-  ApplicationMoreActionEnum.Independent_Session,
 ]);
 
 /** 不展示受限操作项的子类型 */
@@ -116,8 +119,7 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({
         case ApplicationMoreActionEnum.Temporary_Session:
           return (
             hasPermission(PermissionsEnum.TempChat) &&
-            agentConfigInfo.type !== AgentTypeEnum.TaskAgent &&
-            agentConfigInfo.type !== AgentTypeEnum.AgentFlow
+            agentConfigInfo.type !== AgentTypeEnum.TaskAgent
           );
         // 独立会话
         case ApplicationMoreActionEnum.Independent_Session:
