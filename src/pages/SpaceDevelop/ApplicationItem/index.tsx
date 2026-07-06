@@ -73,8 +73,6 @@ const RESTRICTED_SUB_TYPE_HIDDEN_ACTIONS = new Set<ApplicationMoreActionEnum>([
   ApplicationMoreActionEnum.API_Key,
   // 导出配置
   ApplicationMoreActionEnum.Export_Config,
-  // 独立会话
-  ApplicationMoreActionEnum.Independent_Session,
 ]);
 
 /** 不展示受限操作项的子类型 */
