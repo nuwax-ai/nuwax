@@ -119,8 +119,7 @@ const ApplicationItem: React.FC<ApplicationItemProps> = ({
         case ApplicationMoreActionEnum.Temporary_Session:
           return (
             hasPermission(PermissionsEnum.TempChat) &&
-            agentConfigInfo.type !== AgentTypeEnum.TaskAgent &&
-            agentConfigInfo.type !== AgentTypeEnum.AgentFlow
+            agentConfigInfo.type !== AgentTypeEnum.TaskAgent
           );
         // 独立会话
         case ApplicationMoreActionEnum.Independent_Session:
