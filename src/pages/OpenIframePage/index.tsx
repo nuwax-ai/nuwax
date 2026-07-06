@@ -46,9 +46,9 @@ const OpenIframePage: React.FC = () => {
         return;
       }
 
-      if (e.origin !== 'https://eco.nuwax.com') {
-        return;
-      }
+      // if (e.origin !== 'https://eco.nuwax.com') {
+      //   return;
+      // }
       const { type, api, payload, requestId } = e.data;
       console.log('e.data回调数据: ', e.data, e);
       if (type === 'Request' && api) {
@@ -75,7 +75,7 @@ const OpenIframePage: React.FC = () => {
               status: res.status,
               data,
             },
-            'https://eco.nuwax.com',
+            '*',
           );
         } catch (err) {
           iframe.contentWindow.postMessage(
@@ -85,7 +85,7 @@ const OpenIframePage: React.FC = () => {
               ok: false,
               error: err instanceof Error ? err.message : String(err),
             },
-            'https://eco.nuwax.com',
+            '*',
           );
         }
       }
