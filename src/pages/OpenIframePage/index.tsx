@@ -51,7 +51,7 @@ const OpenIframePage: React.FC = () => {
       }
       const { type, api, payload, requestId } = e.data;
       console.log('e.data回调数据: ', e.data);
-      if (type === 'Request') {
+      if (type === 'Request' && api) {
         try {
           const res = await fetch(api, {
             method: payload.method || 'GET',
