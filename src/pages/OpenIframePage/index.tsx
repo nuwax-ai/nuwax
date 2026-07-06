@@ -75,7 +75,7 @@ const OpenIframePage: React.FC = () => {
               status: res.status,
               data,
             },
-            'https://eco.nuwax.com',
+            '*',
           );
         } catch (err) {
           iframe.contentWindow.postMessage(
@@ -85,7 +85,7 @@ const OpenIframePage: React.FC = () => {
               ok: false,
               error: err instanceof Error ? err.message : String(err),
             },
-            'https://eco.nuwax.com',
+            '*',
           );
         }
       }
