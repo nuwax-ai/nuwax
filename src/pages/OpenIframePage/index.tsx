@@ -31,12 +31,23 @@ const OpenIframePage: React.FC = () => {
   const isAppShell = location.pathname.startsWith('/app/');
   const { isAppSidebarVisible, toggleAppSidebarVisible, isAppSidebarMode } =
     useModel('useOpenApp');
+  const { tenantConfigInfo } = useModel('tenantConfigInfo');
+
+  /** 生态市场页面域名地址，用于 postMessage 来源校验与回传 */
+  const ecoWebOrigin = useMemo(() => {
+    const ecoWebUrl = tenantConfigInfo?.ecoWebUrl;
+    if (!ecoWebUrl) {
+      return '';
+    }
+
+    return ecoWebUrl;
+  }, [tenantConfigInfo?.ecoWebUrl]);
 
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   // 监听 iframe 消息（iframeUrl / iframeKey 变化时重新绑定，handler 内通过 ref 读取最新 iframe）
   useEffect(() => {
-    if (!iframeUrl) {
+    if (!iframeUrl || !ecoWebOrigin) {
       return;
     }
 
@@ -46,9 +57,9 @@ const OpenIframePage: React.FC = () => {
         return;
       }
 
-      // if (e.origin !== 'https://eco.nuwax.com') {
-      //   return;
-      // }
+      if (e.origin !== ecoWebOrigin) {
+        return;
+      }
       const { type, api, payload, requestId } = e.data;
       console.log('e.data回调数据: ', e.data, e);
       if (type === 'Request' && api) {
@@ -75,7 +86,7 @@ const OpenIframePage: React.FC = () => {
               status: res.status,
               data,
             },
-            '*',
+            ecoWebOrigin,
           );
         } catch (err) {
           iframe.contentWindow.postMessage(
@@ -85,7 +96,7 @@ const OpenIframePage: React.FC = () => {
               ok: false,
               error: err instanceof Error ? err.message : String(err),
             },
-            '*',
+            ecoWebOrigin,
           );
         }
       }
@@ -95,7 +106,7 @@ const OpenIframePage: React.FC = () => {
     return () => {
       window.removeEventListener('message', handleMessage);
     };
-  }, [iframeUrl, iframeKey]);
+  }, [iframeUrl, iframeKey, ecoWebOrigin]);
 
   return (
     <div className={classNames('h-full', 'w-full', 'relative')}>
