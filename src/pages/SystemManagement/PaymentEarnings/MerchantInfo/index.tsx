@@ -6,8 +6,8 @@ import {
   apiAddMerchantOnboarding,
   apiGetMerchantOnboardingByTenantId,
   apiUpdateMerchantOnboarding,
+  apiUploadMerchantOnboardingFile,
 } from '@/services/subscriptionService';
-import { apiSystemUploadFile } from '@/services/systemManage';
 import {
   MerchantOnboardingData,
   MerchantOnboardingStatusEnum,
@@ -120,6 +120,9 @@ const MerchantInfo: React.FC = () => {
   );
   const [auditTimeline, setAuditTimeline] = useState<any[]>([]);
   const [isFormDirty, setIsFormDirty] = useState(false);
+  const [currentFileKeys, setCurrentFileKeys] = useState<
+    Record<string, string>
+  >({});
 
   const [upLoadingFront, setUpLoadingFront] = useState(false);
   const [upLoadingBack, setUpLoadingBack] = useState(false);
@@ -200,6 +203,33 @@ const MerchantInfo: React.FC = () => {
                 .replace(/(\d{4})(?=\d)/g, '$1 ')
             : undefined,
         });
+
+        const initialFileKeys: Record<string, string> = {};
+        if (data.orgCertificateFileKey) {
+          initialFileKeys.orgCertificateUrl = data.orgCertificateFileKey;
+        }
+        if (data.legalPersonIdCardFrontFileKey) {
+          initialFileKeys.legalPersonIdCardFrontUrl =
+            data.legalPersonIdCardFrontFileKey;
+        }
+        if (data.legalPersonIdCardBackFileKey) {
+          initialFileKeys.legalPersonIdCardBackUrl =
+            data.legalPersonIdCardBackFileKey;
+        }
+        if (data.photoFinanceRoomFileKey) {
+          initialFileKeys.photoFinanceRoomUrl = data.photoFinanceRoomFileKey;
+        }
+        if (data.photoGateFileKey) {
+          initialFileKeys.photoGateUrl = data.photoGateFileKey;
+        }
+        if (data.photoLandmarkFileKey) {
+          initialFileKeys.photoLandmarkUrl = data.photoLandmarkFileKey;
+        }
+        if (data.bankAccountProofFileKey) {
+          initialFileKeys.bankAccountProofUrl = data.bankAccountProofFileKey;
+        }
+        setCurrentFileKeys(initialFileKeys);
+
         const timeline: any[] = [];
         const currentStatus = data.status;
 
@@ -277,6 +307,7 @@ const MerchantInfo: React.FC = () => {
         form.resetFields();
         setAuditTimeline([]);
         setIsFormDirty(false);
+        setCurrentFileKeys({});
       }
     } catch (error) {
       console.error('Fetch onboarding error:', error);
@@ -314,9 +345,17 @@ const MerchantInfo: React.FC = () => {
     uploadingMap[fieldName]?.setUploading(true);
 
     try {
-      const res = await apiSystemUploadFile(file as File);
-      if (res.success && res.data?.url) {
-        form.setFieldValue(fieldName, res.data.url);
+      const replaceFileKey = currentFileKeys[fieldName];
+      const res = await apiUploadMerchantOnboardingFile(
+        file as File,
+        replaceFileKey,
+      );
+      if (res.success && res.data?.publicUrl) {
+        form.setFieldValue(fieldName, res.data.publicUrl);
+        setCurrentFileKeys((prev) => ({
+          ...prev,
+          [fieldName]: res.data.fileKey,
+        }));
         onSuccess?.(res.data);
       } else {
         throw new Error('Upload failed');
@@ -344,6 +383,14 @@ const MerchantInfo: React.FC = () => {
         id: onboardingId,
         onboardingType: 'TENANT',
         status: targetStatus,
+        orgCertificateFileKey: currentFileKeys.orgCertificateUrl,
+        legalPersonIdCardFrontFileKey:
+          currentFileKeys.legalPersonIdCardFrontUrl,
+        legalPersonIdCardBackFileKey: currentFileKeys.legalPersonIdCardBackUrl,
+        photoFinanceRoomFileKey: currentFileKeys.photoFinanceRoomUrl,
+        photoGateFileKey: currentFileKeys.photoGateUrl,
+        photoLandmarkFileKey: currentFileKeys.photoLandmarkUrl,
+        bankAccountProofFileKey: currentFileKeys.bankAccountProofUrl,
       };
 
       const api = onboardingId

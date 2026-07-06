@@ -244,6 +244,29 @@ export async function apiUpdateMerchantOnboarding(
 }
 
 /**
+ * 上传商户进件影像
+ */
+export async function apiUploadMerchantOnboardingFile(
+  file: File,
+  replaceFileKey?: string,
+): Promise<
+  RequestResponse<{
+    fileKey: string;
+    publicUrl: string;
+    contentType: string;
+    sizeBytes: number;
+  }>
+> {
+  const formData = new FormData();
+  formData.append('file', file);
+  return request('/api/system/pay/merchant-onboarding/upload', {
+    method: 'POST',
+    params: replaceFileKey ? { replaceFileKey } : undefined,
+    data: formData,
+  });
+}
+
+/**
  * 分页查询开发者收款账户（新版）
  */
 export async function apiPageDevPaymentAccounts(data: {

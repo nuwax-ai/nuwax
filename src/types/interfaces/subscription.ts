@@ -446,13 +446,20 @@ export interface MerchantOnboardingData {
   bankReceiptRemark?: string;
   remark?: string;
   orgCertificateUrl?: string; // 营业执照
+  orgCertificateFileKey?: string;
   licenseExpiry?: string; // 营业执照有效期
   legalPersonIdCardFrontUrl?: string; // 身份证正面
+  legalPersonIdCardFrontFileKey?: string;
   legalPersonIdCardBackUrl?: string; // 身份证反面
+  legalPersonIdCardBackFileKey?: string;
   photoFinanceRoomUrl?: string;
+  photoFinanceRoomFileKey?: string;
   photoGateUrl?: string;
+  photoGateFileKey?: string;
   photoLandmarkUrl?: string;
+  photoLandmarkFileKey?: string;
   bankAccountProofUrl?: string;
+  bankAccountProofFileKey?: string;
   created?: string;
   modified?: string;
 }
