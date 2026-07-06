@@ -25,12 +25,19 @@ export function pickIconAndDescription(
   return result;
 }
 
-/** 用名称、描述拼接 generate-info 的 prompt */
+/**
+ * 拼接 generate-info 的 prompt（创建场景）
+ * 优先使用描述，描述为空时才回退到名称
+ */
 export function buildGeneratePrompt(
   name?: string,
   description?: string,
 ): string {
-  return [name?.trim(), description?.trim()].filter(Boolean).join('\n');
+  const desc = description?.trim();
+  if (desc) {
+    return desc;
+  }
+  return name?.trim() || '';
 }
 
 /** 创建弹窗生成图标超时（毫秒），超时后跳过生成 */
