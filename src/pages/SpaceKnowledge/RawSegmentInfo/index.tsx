@@ -60,15 +60,13 @@ const RawSegmentInfo: React.FC<RawSegmentInfoProps> = ({
   // 处理分段点击
   const handleSegmentClick = (segment: KnowledgeRawSegmentInfo) => {
     const newSelectedId = selectedSegmentId === segment.id ? null : segment.id;
-    console.log('分段点击:', {
-      segmentId: segment.id,
-      newSelectedId,
-      currentSelectedId: selectedSegmentId
-    });
     setSelectedSegmentId(newSelectedId);
 
     if (onSegmentSelect) {
-      onSegmentSelect(newSelectedId ? segment : null);
+      // 关键：用 `!== null` 显式判断，不能用 truthy 判断。
+      // 否则当 segment.id 为 0 / "0" 等 falsy 值时，即使选中了分段也会错误地传 null，
+      // 导致父组件 selectedSegment state 永远为 null，右侧原文对照无法高亮（Bug A）。
+      onSegmentSelect(newSelectedId !== null ? segment : null);
     }
   };
 

@@ -1,5 +1,8 @@
 /**
  * 原文对照功能 - 类型定义
+ *
+ * 重构说明：移除 PDF/Word/Markdown 全文提取相关类型（DocumentContent / MatchResult /
+ * MatchOptions / HighlightRange / DocumentTypeEnum 等），统一改为分段拼接模式。
  */
 
 import type {
@@ -8,81 +11,23 @@ import type {
 } from '@/types/interfaces/knowledge';
 
 /**
- * 文档类型枚举
- */
-export enum DocumentTypeEnum {
-  PDF = 'pdf',
-  DOCX = 'docx',
-  MD = 'md',
-  TXT = 'txt',
-}
-
-/**
- * 高亮区域范围
- */
-export interface HighlightRange {
-  start: number; // 起始位置
-  end: number; // 结束位置
-  segmentId: string | number; // 对应的分段ID
-  text?: string; // 匹配的文本内容
-}
-
-/**
- * 文本匹配结果
- */
-export interface MatchResult {
-  startOffset: number; // 起始偏移量
-  endOffset: number; // 结束偏移量
-  confidence: number; // 匹配置信度 (0-1)
-  matchedText: string; // 匹配的文本
-}
-
-/**
- * 文档内容信息
- */
-export interface DocumentContent {
-  text: string; // 纯文本内容
-  html?: string; // HTML内容（用于Word/Markdown）
-  metadata?: {
-    pageCount?: number; // PDF页数
-    wordCount?: number; // 字数
-  };
-}
-
-/**
- * 文档预览组件Props
+ * 文档预览组件 Props（拼接模式）
+ *
+ * - segments: 按顺序的所有分段
+ * - selectedSegmentId: 当前选中的分段 id（与 seg.id 比较，匹配则高亮）
+ * - loading: 是否正在加载分段
  */
 export interface DocumentPreviewProps {
-  documentInfo: KnowledgeDocumentInfo | null;
-  documentContent: DocumentContent | null;
-  highlights: HighlightRange[];
-  onHighlightClick?: (range: HighlightRange) => void;
+  segments: KnowledgeRawSegmentInfo[];
+  selectedSegmentId: string | number | null;
+  loading?: boolean;
 }
 
 /**
- * 位置匹配选项
- */
-export interface MatchOptions {
-  fuzzyMatch?: boolean; // 是否启用模糊匹配
-  ignoreCase?: boolean; // 是否忽略大小写
-  trimWhitespace?: boolean; // 是否忽略空格差异
-}
-
-/**
- * 原文对照主组件Props
+ * 原文对照主组件 Props
  */
 export interface SourceDocumentComparisonProps {
   documentInfo: KnowledgeDocumentInfo | null;
   selectedSegment: KnowledgeRawSegmentInfo | null;
   visible?: boolean;
-}
-
-/**
- * 位置匹配器Props
- */
-export interface PositionMatcherProps {
-  documentContent: string;
-  segmentText: string;
-  options?: MatchOptions;
-  onMatch?: (result: MatchResult) => void;
 }

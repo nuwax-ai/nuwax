@@ -1,691 +1,82 @@
 /**
- * 文档预览组件 - 支持PDF、Word、Markdown、Text的预览和高亮
+ * 文档预览组件 - 把所有分段按从上到下顺序拼接显示，
+ * 点击中间分段时高亮右侧对应分段并自动滚动入视口
  */
 
 import { Empty, Spin } from 'antd';
-import classNames from 'classnames';
-import React, { useEffect, useRef, useState } from 'react';
-import { getDocumentType } from './PositionMatcher';
-import styles from './index.less';
+import React, { useEffect, useRef } from 'react';
 import type { DocumentPreviewProps } from './types';
-import { DocumentTypeEnum } from './types';
-
-const cx = classNames.bind(styles);
 
 /**
- * PDF文档预览组件 - 显示提取的文本内容并支持分段高亮
- * 使用文本提取方式实现PDF内容匹配和定位
- */
-const PdfPreview: React.FC<{
-  url: string;
-  content: string;
-  highlights: any[];
-  onHighlightClick?: (range: any) => void;
-}> = ({ url, content, highlights }) => {
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const [displayText, setDisplayText] = useState<string>('');
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [currentHighlightId, setCurrentHighlightId] = useState<
-    string | number | null
-  >(null);
-
-  // 滚动到高亮位置的方法
-  const scrollToHighlight = () => {
-    if (!containerRef.current) return;
-
-    const container = containerRef.current;
-    const highlightElements = container.querySelectorAll('.highlight-segment');
-
-    if (highlightElements.length > 0) {
-      const highlightElement = highlightElements[0] as HTMLElement;
-
-      // 查找实际的滚动容器 .preview-content
-      const scrollContainer = container.closest('.preview-content') as HTMLElement;
-
-      if (!scrollContainer) {
-        console.warn('未找到 .preview-content 滚动容器');
-        return;
-      }
-
-      // 计算滚动位置，使高亮元素位于容器中心
-      const containerRect = scrollContainer.getBoundingClientRect();
-      const highlightRect = highlightElement.getBoundingClientRect();
-
-      const scrollTop =
-        scrollContainer.scrollTop +
-        (highlightRect.top - containerRect.top) -
-        containerRect.height / 2 +
-        highlightRect.height / 2;
-
-      scrollContainer.scrollTo({
-        top: Math.max(0, scrollTop),
-        behavior: 'smooth',
-      });
-
-      console.log('PDF滚动到高亮位置完成', { scrollTop });
-    }
-  };
-
-  // 设置PDF文本内容
-  useEffect(() => {
-    console.log('PdfPreview组件参数:', { url, hasContent: !!content });
-
-    if (!url) {
-      setError('PDF URL为空');
-      setLoading(false);
-      return;
-    }
-
-    setDisplayText(content);
-    setLoading(false);
-  }, [url, content]);
-
-  // 当高亮变化时，自动滚动到高亮位置
-  useEffect(() => {
-    if (highlights.length > 0 && containerRef.current) {
-      console.log('PDF高亮分段:', highlights[0]);
-      setCurrentHighlightId(highlights[0].segmentId);
-
-      // 滚动到高亮位置
-      scrollToHighlight();
-    } else {
-      setCurrentHighlightId(null);
-    }
-  }, [highlights]);
-
-  // 应用高亮的渲染方法
-  const renderContent = () => {
-    if (!displayText) {
-      return (
-        <div
-          style={{
-            padding: '24px',
-            textAlign: 'center',
-            color: '#999',
-            fontSize: '14px',
-          }}
-        >
-          <Empty description="PDF文档内容为空或无法提取文本" />
-        </div>
-      );
-    }
-
-    // 标准化显示文本，确保与匹配算法使用相同的文本处理逻辑
-    // 这样高亮位置才能准确对应到显示的文本
-    const normalizedDisplayText = displayText
-      .replace(/-\d+-/g, '')    // 移除PDF页码标记
-      .replace(/\s+/g, ' ')     // 将多个空白字符替换为单个空格，保留基本可读性
-
-    // 如果有高亮，分段渲染文本
-    if (highlights.length > 0) {
-      const highlight = highlights[0];
-      const { start, end } = highlight;
-
-      // 使用标准化文本验证边界
-      if (start >= 0 && end <= normalizedDisplayText.length && start < end) {
-        const before = normalizedDisplayText.substring(0, start);
-        const highlighted = normalizedDisplayText.substring(start, end);
-        const after = normalizedDisplayText.substring(end);
-
-        return (
-          <pre
-            style={{
-              whiteSpace: 'pre-wrap',
-              wordBreak: 'break-word',
-              fontFamily: 'Monaco, Menlo, Ubuntu Mono, monospace',
-              fontSize: '14px',
-              lineHeight: '1.6',
-              color: '#333',
-              margin: 0,
-              padding: '16px',
-            }}
-          >
-            {before}
-            <mark
-              className={cx(
-                'highlight-segment',
-                currentHighlightId === highlight.segmentId && 'active',
-              )}
-              style={{
-                backgroundColor: '#e6f7ff',
-                border: '2px solid #1890ff',
-                borderRadius: '3px',
-                padding: '2px 4px',
-                fontWeight: 'bold',
-              }}
-            >
-              {highlighted}
-            </mark>
-            {after}
-          </pre>
-        );
-      }
-    }
-
-    // 没有高亮时，显示标准化后的文本
-    return (
-      <pre
-        style={{
-          whiteSpace: 'pre-wrap',
-          wordBreak: 'break-word',
-          fontFamily: 'Monaco, Menlo, Ubuntu Mono, monospace',
-          fontSize: '14px',
-          lineHeight: '1.6',
-          color: '#333',
-          margin: 0,
-          padding: '16px',
-        }}
-      >
-        {normalizedDisplayText}
-      </pre>
-    );
-  };
-
-  if (error) {
-    return (
-      <div className={cx('preview-container', 'pdf-preview', 'error-state')}>
-        <Empty description={error} />
-      </div>
-    );
-  }
-
-  if (loading) {
-    return (
-      <div className={cx('preview-container', 'pdf-preview', 'loading-state')}>
-        <Spin tip="加载PDF文档中..." />
-      </div>
-    );
-  }
-
-  return (
-    <div
-      ref={containerRef}
-      className={cx('preview-container', 'pdf-preview')}
-      style={{
-        width: '100%',
-        minHeight: '100%',
-        background: '#fff',
-        padding: '16px',
-      }}
-    >
-      {renderContent()}
-    </div>
-  );
-};
-
-/**
- * Word文档预览组件 - 显示提取的文本内容并支持分段高亮
- */
-const DocxPreview: React.FC<{
-  url: string;
-  content: string;
-  highlights: any[];
-  onHighlightClick?: (range: any) => void;
-}> = ({ url, content, highlights }) => {
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const [displayText, setDisplayText] = useState<string>('');
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [currentHighlightId, setCurrentHighlightId] = useState<
-    string | number | null
-  >(null);
-
-  // 滚动到高亮位置的方法
-  const scrollToHighlight = () => {
-    if (!containerRef.current) return;
-
-    const container = containerRef.current;
-    const highlightElements = container.querySelectorAll('.highlight-segment');
-
-    if (highlightElements.length > 0) {
-      const highlightElement = highlightElements[0] as HTMLElement;
-
-      // 查找实际的滚动容器 .preview-content
-      const scrollContainer = container.closest('.preview-content') as HTMLElement;
-
-      if (!scrollContainer) {
-        console.warn('未找到 .preview-content 滚动容器');
-        return;
-      }
-
-      // 计算滚动位置，使高亮元素位于容器中心
-      const containerRect = scrollContainer.getBoundingClientRect();
-      const highlightRect = highlightElement.getBoundingClientRect();
-
-      const scrollTop =
-        scrollContainer.scrollTop +
-        (highlightRect.top - containerRect.top) -
-        containerRect.height / 2 +
-        highlightRect.height / 2;
-
-      scrollContainer.scrollTo({
-        top: Math.max(0, scrollTop),
-        behavior: 'smooth',
-      });
-
-      console.log('Word文档滚动到高亮位置完成', { scrollTop });
-    }
-  };
-
-  // 设置Word文档文本内容
-  useEffect(() => {
-    console.log('DocxPreview组件参数:', { url, hasContent: !!content });
-
-    if (!url) {
-      setError('Word文档URL为空');
-      setLoading(false);
-      return;
-    }
-
-    setDisplayText(content);
-    setLoading(false);
-  }, [url, content]);
-
-  // 当高亮变化时，自动滚动到高亮位置
-  useEffect(() => {
-    if (highlights.length > 0 && containerRef.current) {
-      console.log('Word文档高亮分段:', highlights[0]);
-      setCurrentHighlightId(highlights[0].segmentId);
-
-      // 滚动到高亮位置
-      scrollToHighlight();
-    } else {
-      setCurrentHighlightId(null);
-    }
-  }, [highlights]);
-
-  // 应用高亮的渲染方法
-  const renderContent = () => {
-    if (!displayText) {
-      return (
-        <div
-          style={{
-            padding: '24px',
-            textAlign: 'center',
-            color: '#999',
-            fontSize: '14px',
-          }}
-        >
-          <Empty description="Word文档内容为空或无法提取文本" />
-        </div>
-      );
-    }
-
-    // 标准化显示文本，确保与匹配算法使用相同的文本处理逻辑
-    const normalizedDisplayText = displayText
-      .replace(/-\d+-/g, '')    // 移除PDF页码标记
-      .replace(/\s+/g, ' ')     // 将多个空白字符替换为单个空格，保留基本可读性
-
-    // 如果有高亮，分段渲染文本
-    if (highlights.length > 0) {
-      const highlight = highlights[0];
-      const { start, end } = highlight;
-
-      // 使用标准化文本验证边界
-      if (start >= 0 && end <= normalizedDisplayText.length && start < end) {
-        const before = normalizedDisplayText.substring(0, start);
-        const highlighted = normalizedDisplayText.substring(start, end);
-        const after = normalizedDisplayText.substring(end);
-
-        return (
-          <pre
-            style={{
-              whiteSpace: 'pre-wrap',
-              wordBreak: 'break-word',
-              fontFamily: 'Monaco, Menlo, Ubuntu Mono, monospace',
-              fontSize: '14px',
-              lineHeight: '1.6',
-              color: '#333',
-              margin: 0,
-              padding: '16px',
-            }}
-          >
-            {before}
-            <mark
-              className={cx(
-                'highlight-segment',
-                currentHighlightId === highlight.segmentId && 'active',
-              )}
-              style={{
-                backgroundColor: '#e6f7ff',
-                border: '2px solid #1890ff',
-                borderRadius: '3px',
-                padding: '2px 4px',
-                fontWeight: 'bold',
-              }}
-            >
-              {highlighted}
-            </mark>
-            {after}
-          </pre>
-        );
-      }
-    }
-
-    // 没有高亮时，显示标准化后的文本
-    return (
-      <pre
-        style={{
-          whiteSpace: 'pre-wrap',
-          wordBreak: 'break-word',
-          fontFamily: 'Monaco, Menlo, Ubuntu Mono, monospace',
-          fontSize: '14px',
-          lineHeight: '1.6',
-          color: '#333',
-          margin: 0,
-          padding: '16px',
-        }}
-      >
-        {normalizedDisplayText}
-      </pre>
-    );
-  };
-
-  if (error) {
-    return (
-      <div className={cx('preview-container', 'docx-preview', 'error-state')}>
-        <Empty description={error} />
-      </div>
-    );
-  }
-
-  if (loading) {
-    return (
-      <div className={cx('preview-container', 'docx-preview', 'loading-state')}>
-        <Spin tip="加载Word文档中..." />
-      </div>
-    );
-  }
-
-  return (
-    <div
-      ref={containerRef}
-      className={cx('preview-container', 'docx-preview')}
-      style={{
-        width: '100%',
-        minHeight: '100%',
-        background: '#fff',
-        padding: '16px',
-      }}
-    >
-      {renderContent()}
-    </div>
-  );
-};
-
-/**
- * 文本文档预览组件（支持Markdown和纯文本）- 带高亮和自动定位功能
- */
-const TextPreview: React.FC<{
-  url: string;
-  content: string;
-  highlights: any[];
-}> = ({ url, content, highlights }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [displayText, setDisplayText] = useState<string>('');
-  const [currentHighlightId, setCurrentHighlightId] = useState<
-    string | number | null
-  >(null);
-
-  // 滚动到高亮位置的方法
-  const scrollToHighlight = () => {
-    if (!containerRef.current) return;
-
-    const container = containerRef.current;
-    const highlightElements = container.querySelectorAll('.highlight-segment');
-
-    if (highlightElements.length > 0) {
-      const highlightElement = highlightElements[0] as HTMLElement;
-
-      // 查找实际的滚动容器 .preview-content
-      const scrollContainer = container.closest('.preview-content') as HTMLElement;
-
-      if (!scrollContainer) {
-        console.warn('未找到 .preview-content 滚动容器');
-        return;
-      }
-
-      // 计算滚动位置，使高亮元素位于容器中心
-      const containerRect = scrollContainer.getBoundingClientRect();
-      const highlightRect = highlightElement.getBoundingClientRect();
-
-      const scrollTop =
-        scrollContainer.scrollTop +
-        (highlightRect.top - containerRect.top) -
-        containerRect.height / 2 +
-        highlightRect.height / 2;
-
-      scrollContainer.scrollTo({
-        top: Math.max(0, scrollTop),
-        behavior: 'smooth',
-      });
-
-      console.log('滚动到高亮位置完成', { scrollTop });
-    }
-  };
-
-  useEffect(() => {
-    setDisplayText(content);
-  }, [url, content]);
-
-  // 当高亮变化时，自动滚动到高亮位置
-  useEffect(() => {
-    if (highlights.length > 0 && containerRef.current) {
-      console.log('高亮分段:', highlights[0]);
-
-      // 滚动到高亮位置
-      scrollToHighlight();
-      setCurrentHighlightId(highlights[0].segmentId);
-    } else {
-      setCurrentHighlightId(null);
-    }
-  }, [highlights]);
-
-  // 应用高亮的渲染方法
-  const renderContent = () => {
-    if (!displayText) {
-      return (
-        <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-          {displayText}
-        </pre>
-      );
-    }
-
-    // 标准化显示文本，确保与匹配算法使用相同的文本处理逻辑
-    const normalizedDisplayText = displayText
-      .replace(/-\d+-/g, '')    // 移除PDF页码标记
-      .replace(/\s+/g, ' ')     // 将多个空白字符替换为单个空格，保留基本可读性
-
-    // 如果有高亮，分段渲染文本
-    if (highlights.length > 0) {
-      const highlight = highlights[0];
-      const { start, end } = highlight;
-
-      // 使用标准化文本验证边界
-      if (start >= 0 && end <= normalizedDisplayText.length && start < end) {
-        const before = normalizedDisplayText.substring(0, start);
-        const highlighted = normalizedDisplayText.substring(start, end);
-        const after = normalizedDisplayText.substring(end);
-
-        return (
-          <pre
-            style={{
-              whiteSpace: 'pre-wrap',
-              wordBreak: 'break-word',
-              fontFamily: 'Monaco, Menlo, Ubuntu Mono, monospace',
-              fontSize: '14px',
-              lineHeight: '1.6',
-              color: '#333',
-            }}
-          >
-            {before}
-            <mark
-              className={cx(
-                'highlight-segment',
-                currentHighlightId === highlight.segmentId && 'active',
-              )}
-              style={{
-                backgroundColor: '#e6f7ff',
-                border: '2px solid #1890ff',
-                borderRadius: '3px',
-                padding: '2px 4px',
-                fontWeight: 'bold',
-              }}
-            >
-              {highlighted}
-            </mark>
-            {after}
-          </pre>
-        );
-      }
-    }
-
-    // 没有高亮时，显示标准化后的文本
-    return (
-      <pre
-        style={{
-          whiteSpace: 'pre-wrap',
-          wordBreak: 'break-word',
-          fontFamily: 'Monaco, Menlo, Ubuntu Mono, monospace',
-          fontSize: '14px',
-          lineHeight: '1.6',
-          color: '#333',
-        }}
-      >
-        {normalizedDisplayText}
-      </pre>
-    );
-  };
-
-  return (
-    <div
-      ref={containerRef}
-      className={cx('preview-container', 'text-preview')}
-    >
-      {renderContent()}
-    </div>
-  );
-};
-
-/**
- * 文档预览主组件
+ * 文档预览主组件（拼接模式）
+ *
+ * 新方案：直接渲染 segments[]，不再做 PDF/Word/Markdown 文本提取与匹配。
+ * - 选中分段时通过 ref + scrollIntoView 自动聚焦
+ * - 文本两侧完全一致（来自同一份 segments[]）
+ *
+ * 说明：class 名采用字面量字符串（segment-block / highlight / document-preview-container），
+ * 配合 index.less 中的 :global 声明，便于测试与样式覆盖。
  */
 const DocumentPreview: React.FC<DocumentPreviewProps> = ({
-  documentInfo,
-  documentContent,
-  highlights = [],
-  onHighlightClick,
+  segments,
+  selectedSegmentId,
+  loading = false,
 }) => {
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const [docType, setDocType] = useState<DocumentTypeEnum | null>(null);
+  const highlightRef = useRef<HTMLDivElement>(null);
 
+  // selectedSegmentId 变化时自动滚动到高亮分段
   useEffect(() => {
-    if (documentInfo?.docUrl) {
-      console.log('DocumentPreview主组件参数:', {
-        documentInfo,
-        docUrl: documentInfo.docUrl,
-        fileType: documentInfo.fileType,
-        hasContent: !!documentContent,
-        highlightsCount: highlights.length,
+    if (!highlightRef.current) return;
+    // 用 setTimeout 等待渲染稳定后再滚动，避免分段较多时
+    // ref 已挂载但布局尚未完成导致 scrollIntoView 定位偏差（Bug B 防御性处理）。
+    const t = setTimeout(() => {
+      highlightRef.current?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+        inline: 'nearest',
       });
-
-      // 检测文档类型
-      const type = getDocumentType(documentInfo.docUrl);
-      console.log('检测到文档类型:', type);
-      setDocType(type);
-
-      if (!type) {
-        setError('不支持的文档类型');
-        setLoading(false);
-      } else {
-        setLoading(false);
-        setError(null);
-      }
-    }
-  }, [documentInfo?.docUrl]);
-
-  if (!documentInfo?.docUrl) {
-    return (
-      <div className={cx('document-preview', 'empty-state')}>
-        <Empty description="请选择文档进行预览" />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className={cx('document-preview', 'error-state')}>
-        <Empty description={`预览失败: ${error}`} />
-      </div>
-    );
-  }
+    }, 50);
+    return () => clearTimeout(t);
+  }, [selectedSegmentId]);
 
   if (loading) {
     return (
-      <div className={cx('document-preview', 'loading-state')}>
+      <div className="document-preview loading-state">
         <Spin tip="加载文档中..." />
       </div>
     );
   }
 
-  // 根据文档类型渲染对应的预览组件
-  const renderPreview = () => {
-    switch (docType) {
-      case DocumentTypeEnum.PDF:
-        return (
-          <PdfPreview
-            url={documentInfo.docUrl}
-            content={documentContent?.text || ''}
-            highlights={highlights}
-            onHighlightClick={onHighlightClick}
-          />
-        );
-
-      case DocumentTypeEnum.DOCX:
-        return (
-          <DocxPreview
-            url={documentInfo.docUrl}
-            content={documentContent?.text || ''}
-            highlights={highlights}
-          />
-        );
-
-      case DocumentTypeEnum.MD:
-      case DocumentTypeEnum.TXT:
-        return (
-          <TextPreview
-            url={documentInfo.docUrl}
-            content={documentContent?.text || ''}
-            highlights={highlights}
-          />
-        );
-
-      default:
-        return <Empty description="不支持的文档类型" />;
-    }
-  };
+  if (!segments || segments.length === 0) {
+    return (
+      <div className="document-preview empty-state">
+        <Empty description="暂无原文" />
+      </div>
+    );
+  }
 
   return (
-    <div className={cx('document-preview')}>
-      <div className={cx('preview-header')}>
-        <h3 className={cx('preview-title')}>原文对照</h3>
+    <div className="document-preview">
+      <div className="preview-header">
+        <h3 className="preview-title">原文对照</h3>
       </div>
-      <div
-        className={cx('preview-content')}
-        style={{
-          flex: 1,
-          overflow: 'auto',
-          padding: 0,
-          background: '#fff',
-          display: 'flex',
-          flexDirection: 'column',
-          maxHeight: 'calc(100vh - 200px)',
-          position: 'relative'
-        }}
-      >
-        {renderPreview()}
+      <div className="preview-content">
+        <div className="document-preview-container">
+          {segments.map((seg, idx) => {
+            const isHighlighted = String(seg.id) === String(selectedSegmentId);
+            return (
+              <div
+                key={seg.id ?? idx}
+                ref={isHighlighted ? highlightRef : null}
+                className={`segment-block${isHighlighted ? ' highlight' : ''}`}
+                data-segment-id={seg.id}
+                data-segment-index={idx}
+              >
+                {seg.rawTxt}
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

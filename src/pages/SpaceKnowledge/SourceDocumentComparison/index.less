@@ -1,220 +1,165 @@
 /**
- * 原文对照组件样式
+ * 原文对照组件样式（arrangement10 v2）
+ *
+ * 关键背景：
+ *   umi4 的 AutoCSSModule SWC 插件只对带 specifier 的样式 import 追加 ?modules
+ *   查询参数以激活 CSS Modules（见 node_modules/@umijs/bundler-webpack/dist/
+ *   swcPlugins/autoCSSModules.js 的 visitImportDeclaration：判 specifiers.length）。
+ *   本文件在 index.tsx 中以 `import './index.less'`（side-effect，无 specifier）
+ *   引入，因此走「普通全局 CSS」链路，css-loader 的 modules 配置为 undefined。
+ *
+ *   后果：`:global(.foo)` 不会被剥离为 `.foo`，而是原样输出到 chunk.css，
+ *   浏览器把 :global 当作未知伪类丢弃，所有规则失效（实测 dev server 编译产物
+ *   p__SpaceKnowledge__index.chunk.css 中含 24 处字面 `:global(`，0 条匹配）。
+ *
+ *   方案：本文件直接使用「普通全局选择器」（.foo），不再使用 :global 包裹。
+ *   因为 side-effect 导入的文件本就是全局 CSS，普通选择器即为全局生效，
+ *   能精确匹配 JSX 中的字面量 className（如 className="source-document-comparison"）。
+ *
+ * 滚动设计：
+ *   - 单一滚动容器：.source-document-comparison 自身设 overflow-y: auto。
+ *   - .preview-header 使用 position: sticky 在滚动时悬浮置顶。
+ *   - scrollIntoView 会沿 DOM 树找到 .source-document-comparison 作为滚动祖先。
  */
 
+// ========= 主容器（单一滚动容器） =========
 .source-document-comparison {
-  // 设置原文对照区域宽度为52%，确保有足够的显示空间
   width: 52%;
   min-width: 500px;
   flex: 1;
+  // 高度链：父层 <div class="flex flex-1"> 由更上层 flex column 约束高度
+  // （与左侧 RawSegmentInfo 共享同一高度链，已验证可滚动）。
   height: 100%;
-  display: flex;
-  flex-direction: column;
+  // 关键：覆盖 flex 子项默认 min-height: auto，避免内容撑破高度导致滚动失效。
+  min-height: 0;
   background: #fff;
   border-left: 1px solid #e8e8e8;
-  overflow: hidden;
-
-  &.loading,
-  &.error {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
+  // 单一滚动容器：右侧整体在此滚动（header 通过 sticky 悬浮）。
+  overflow-y: auto;
+  overflow-x: hidden;
+  // 防止滚动链式冒泡到页面（Bug C 防御性处理）。
+  overscroll-behavior: contain;
+  // iOS 触摸惯性平滑滚动。
+  -webkit-overflow-scrolling: touch;
 }
 
-// 文档预览组件
-.document-preview {
-  width: 100%;
-  height: 100%;
+// 加载/错误状态：居中显示对应组件
+.source-document-comparison.loading,
+.source-document-comparison.error {
   display: flex;
-  flex-direction: column;
-  overflow: hidden;
-
-  .preview-header {
-    height: 50px;
-    min-height: 50px;
-    border-bottom: 1px solid #e8e8e8;
-    padding: 0 16px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background: #fafafa;
-
-    .preview-title {
-      font-size: 16px;
-      font-weight: 500;
-      color: #333;
-      margin: 0;
-    }
-
-    .preview-actions {
-      display: flex;
-      gap: 8px;
-    }
-  }
-
-  .preview-content {
-    flex: 1 !important;
-    overflow: auto !important; // 改为auto，让这个容器处理滚动，使用!important确保优先级
-    padding: 0 !important;
-    background: #fff !important;
-    display: flex !important;
-    flex-direction: column !important;
-    max-height: calc(100vh - 200px) !important; // 设置最大高度确保滚动条显示
-    position: relative !important;
-  }
-
-  .empty-state,
-  .error-state,
-  .loading-state {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    width: 100%;
-  }
+  align-items: center;
+  justify-content: center;
 }
 
-// 预览容器
-.preview-container {
-  width: 100% !important;
-  height: auto !important; // 让内容自然撑开高度
-  min-height: 0 !important; // 重置min-height，避免flex布局问题
-  overflow: visible !important; // 不需要overflow，由父容器处理滚动
-  position: relative !important;
-
-  &.pdf-preview,
-  &.docx-preview {
-    background: #f5f5f5 !important;
-  }
-
-  &.text-preview {
-    background: #fff !important;
-    padding: 16px !important;
-    font-family: Monaco, Menlo, 'Ubuntu Mono', monospace;
-    font-size: 14px;
-    line-height: 1.6;
-    color: #333;
-  }
-}
-
-// 文本高亮样式
-.highlight-segment {
-  background-color: #e6f7ff !important;
-  border-radius: 3px;
-  padding: 2px 0;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  border: 1px solid transparent;
-  display: inline;
-  position: relative;
-
-  &:hover {
-    background-color: #91d5ff !important;
-  }
-
-  &.active {
-    background-color: #91d5ff !important;
-    border-color: #1890ff !important;
-    box-shadow: 0 0 0 2px rgba(24, 144, 255, 20%) !important;
-  }
-}
-
-// 自定义滚动条
-.preview-content::-webkit-scrollbar,
-.text-preview::-webkit-scrollbar {
+// 自定义滚动条样式（WebKit 内核浏览器）
+.source-document-comparison::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
-.preview-content::-webkit-scrollbar-track,
-.text-preview::-webkit-scrollbar-track {
+.source-document-comparison::-webkit-scrollbar-track {
   background: #f1f1f1;
   border-radius: 4px;
 }
 
-.preview-content::-webkit-scrollbar-thumb,
-.text-preview::-webkit-scrollbar-thumb {
+.source-document-comparison::-webkit-scrollbar-thumb {
   background: #c1c1c1;
   border-radius: 4px;
-
-  &:hover {
-    background: #a8a8a8;
-  }
 }
 
-// 加载动画
-.loading-state {
-  .ant-spin {
-    .ant-spin-text {
-      margin-top: 12px;
-      color: #666;
-    }
-  }
+.source-document-comparison::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
 }
 
-// PDF和Word预览的占位样式
-.pdf-preview,
-.docx-preview {
-  :global {
-    .ant-spin {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100%;
-    }
-  }
+// ========= 文档预览根容器 =========
+.document-preview {
+  width: 100%;
+  // 不限制高度：让内容自然撑开，由外层 .source-document-comparison 负责滚动。
+  min-height: 100%;
 }
 
-// 响应式设计
-@media (max-width: 1200px) {
-  .source-document-comparison {
-    .preview-header {
-      height: 44px;
-      padding: 0 12px;
-
-      .preview-title {
-        font-size: 14px;
-      }
-    }
-
-    .preview-content {
-      padding: 12px;
-    }
-  }
+.document-preview.loading-state,
+.document-preview.empty-state,
+.document-preview.error-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
 }
 
-// 文档类型标识
-.doc-type-badge {
-  display: inline-block;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 12px;
+// ========= 预览头部（sticky 悬浮） =========
+.document-preview .preview-header {
+  height: 50px;
+  min-height: 50px;
+  border-bottom: 1px solid #e8e8e8;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fafafa;
+  // 滚动时悬浮置顶（z-index 避免 segment-block 高亮色覆盖）。
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.document-preview .preview-header .preview-title {
+  font-size: 16px;
   font-weight: 500;
-  text-transform: uppercase;
+  color: #333;
+  margin: 0;
+}
 
-  &.pdf {
-    background: #fff2e8;
-    color: #fa541c;
-    border: 1px solid #ffbb96;
+// ========= 预览内容容器（不设 overflow，滚动交给外层） =========
+.document-preview .preview-content {
+  padding: 0;
+  background: #fff;
+}
+
+// ========= 分段拼接容器（仅负责 padding） =========
+.document-preview-container {
+  padding: 16px;
+}
+
+// ========= 单个分段块 =========
+.segment-block {
+  padding: 12px 16px;
+  margin-bottom: 8px;
+  border-radius: 4px;
+  line-height: 1.6;
+  font-size: 14px;
+  transition: background-color 0.3s;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+// 选中分段的高亮样式（黄底 + 左侧蓝色边条）
+.segment-block.highlight {
+  //background-color: #fff7c2;
+  background-color: #f8f9ff;
+  //border-left: 3px solid #faad14;
+  border-left: 3px solid #c5d4ff;
+}
+
+// ========= 加载动画 =========
+.loading-state .ant-spin-text {
+  margin-top: 12px;
+  color: #666;
+}
+
+// ========= 响应式 =========
+@media (max-width: 1200px) {
+  .source-document-comparison .preview-header {
+    height: 44px;
+    padding: 0 12px;
   }
 
-  &.docx {
-    background: #e6f7ff;
-    color: #1890ff;
-    border: 1px solid #91d5ff;
+  .source-document-comparison .preview-header .preview-title {
+    font-size: 14px;
   }
 
-  &.md {
-    background: #f6ffed;
-    color: #52c41a;
-    border: 1px solid #b7eb8f;
-  }
-
-  &.txt {
-    background: #f9f0ff;
-    color: #722ed1;
-    border: 1px solid #d9adf7;
+  .source-document-comparison .preview-content {
+    padding: 12px;
   }
 }
