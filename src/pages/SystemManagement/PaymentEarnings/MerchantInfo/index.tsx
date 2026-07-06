@@ -337,45 +337,24 @@ const MerchantInfo: React.FC = () => {
     return true;
   };
 
-  const handleUpload = async (
-    options: UploadRequestOption,
-    fieldName: string,
+  const handleSave = async (
+    targetStatus?: MerchantOnboardingStatusEnum,
+    extraFileKeys?: Record<string, string>,
   ) => {
-    const { file, onSuccess, onError } = options;
-    uploadingMap[fieldName]?.setUploading(true);
-
-    try {
-      const replaceFileKey = currentFileKeys[fieldName];
-      const res = await apiUploadMerchantOnboardingFile(
-        file as File,
-        replaceFileKey,
-      );
-      if (res.success && res.data?.publicUrl) {
-        form.setFieldValue(fieldName, res.data.publicUrl);
-        setCurrentFileKeys((prev) => ({
-          ...prev,
-          [fieldName]: res.data.fileKey,
-        }));
-        onSuccess?.(res.data);
-      } else {
-        throw new Error('Upload failed');
-      }
-    } catch (error) {
-      onError?.(error as any);
-      message.error(dict('PC.Common.Global.error'));
-    } finally {
-      uploadingMap[fieldName]?.setUploading(false);
-    }
-  };
-
-  const handleSave = async (targetStatus?: MerchantOnboardingStatusEnum) => {
     let values;
-    try {
-      values = await form.validateFields();
-    } catch {
-      return;
+    const isDraft = targetStatus === MerchantOnboardingStatusEnum.DRAFT;
+    if (isDraft) {
+      values = form.getFieldsValue();
+    } else {
+      try {
+        values = await form.validateFields();
+      } catch {
+        return;
+      }
     }
     setSaving(true);
+    // 合并 extraFileKeys（上传后 setState 尚未生效时，用传入的最新 key 覆盖）
+    const mergedFileKeys = { ...currentFileKeys, ...extraFileKeys };
     try {
       const payload: Partial<MerchantOnboardingData> = {
         ...values,
@@ -383,14 +362,13 @@ const MerchantInfo: React.FC = () => {
         id: onboardingId,
         onboardingType: 'TENANT',
         status: targetStatus,
-        orgCertificateFileKey: currentFileKeys.orgCertificateUrl,
-        legalPersonIdCardFrontFileKey:
-          currentFileKeys.legalPersonIdCardFrontUrl,
-        legalPersonIdCardBackFileKey: currentFileKeys.legalPersonIdCardBackUrl,
-        photoFinanceRoomFileKey: currentFileKeys.photoFinanceRoomUrl,
-        photoGateFileKey: currentFileKeys.photoGateUrl,
-        photoLandmarkFileKey: currentFileKeys.photoLandmarkUrl,
-        bankAccountProofFileKey: currentFileKeys.bankAccountProofUrl,
+        orgCertificateFileKey: mergedFileKeys.orgCertificateUrl,
+        legalPersonIdCardFrontFileKey: mergedFileKeys.legalPersonIdCardFrontUrl,
+        legalPersonIdCardBackFileKey: mergedFileKeys.legalPersonIdCardBackUrl,
+        photoFinanceRoomFileKey: mergedFileKeys.photoFinanceRoomUrl,
+        photoGateFileKey: mergedFileKeys.photoGateUrl,
+        photoLandmarkFileKey: mergedFileKeys.photoLandmarkUrl,
+        bankAccountProofFileKey: mergedFileKeys.bankAccountProofUrl,
       };
 
       const api = onboardingId
@@ -407,6 +385,42 @@ const MerchantInfo: React.FC = () => {
       console.error('Save onboarding error:', error);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleUpload = async (
+    options: UploadRequestOption,
+    fieldName: string,
+  ) => {
+    const { file, onSuccess, onError } = options;
+    uploadingMap[fieldName]?.setUploading(true);
+
+    try {
+      const replaceFileKey = currentFileKeys[fieldName];
+      const res = await apiUploadMerchantOnboardingFile(
+        file as File,
+        replaceFileKey,
+      );
+      if (res.success && res.data?.publicUrl) {
+        const newFileKey = res.data.fileKey;
+        form.setFieldValue(fieldName, res.data.publicUrl);
+        setCurrentFileKeys((prev) => ({
+          ...prev,
+          [fieldName]: newFileKey,
+        }));
+        onSuccess?.(res.data);
+        // 上传成功后自动保存草稿，需显式传入最新 fileKey，因为 setState 是异步的
+        handleSave(MerchantOnboardingStatusEnum.DRAFT, {
+          [fieldName]: newFileKey,
+        });
+      } else {
+        throw new Error('Upload failed');
+      }
+    } catch (error) {
+      onError?.(error as any);
+      message.error(dict('PC.Common.Global.error'));
+    } finally {
+      uploadingMap[fieldName]?.setUploading(false);
     }
   };
 
