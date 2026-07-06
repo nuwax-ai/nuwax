@@ -7,6 +7,7 @@
 
 const workflowFormImeComposingRef = { current: false };
 let pendingWorkflowFormSync: (() => void) | null = null;
+let pendingWorkflowFormFieldWrite: (() => void) | null = null;
 
 /** 是否处于工作流属性面板的中文组合输入中 */
 export function isWorkflowFormImeComposing(): boolean {
@@ -20,9 +21,12 @@ export const workflowFormImeCompositionProps = {
   },
   onCompositionEndCapture: () => {
     workflowFormImeComposingRef.current = false;
-    const pending = pendingWorkflowFormSync;
+    const pendingSync = pendingWorkflowFormSync;
+    const pendingFieldWrite = pendingWorkflowFormFieldWrite;
     pendingWorkflowFormSync = null;
-    pending?.();
+    pendingWorkflowFormFieldWrite = null;
+    pendingSync?.();
+    pendingFieldWrite?.();
   },
 };
 
@@ -30,6 +34,7 @@ export const workflowFormImeCompositionProps = {
 export function resetWorkflowFormImeGuard(): void {
   workflowFormImeComposingRef.current = false;
   pendingWorkflowFormSync = null;
+  pendingWorkflowFormFieldWrite = null;
 }
 
 /**
@@ -38,6 +43,17 @@ export function resetWorkflowFormImeGuard(): void {
 export function runOrDeferWorkflowFormGraphSync(fn: () => void): void {
   if (workflowFormImeComposingRef.current) {
     pendingWorkflowFormSync = fn;
+    return;
+  }
+  fn();
+}
+
+/**
+ * IME 组合期间延迟执行 setFieldsValue 等表单写回，避免打断中文输入
+ */
+export function runOrDeferWorkflowFormFieldWrite(fn: () => void): void {
+  if (workflowFormImeComposingRef.current) {
+    pendingWorkflowFormFieldWrite = fn;
     return;
   }
   fn();
