@@ -46,9 +46,9 @@ const OpenIframePage: React.FC = () => {
         return;
       }
 
-      // if (e.origin !== 'https://eco.nuwax.com') {
-      //   return;
-      // }
+      if (e.origin !== 'https://eco.nuwax.com') {
+        return;
+      }
       const { type, api, payload, requestId } = e.data;
       console.log('e.data回调数据: ', e.data, e);
       if (type === 'Request' && api) {
