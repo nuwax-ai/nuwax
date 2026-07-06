@@ -3,7 +3,7 @@ import ConditionRender from '@/components/ConditionRender';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import { t } from '@/services/i18nRuntime';
 import classNames from 'classnames';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useModel } from 'umi';
 
 /**
@@ -32,6 +32,71 @@ const OpenIframePage: React.FC = () => {
   const { isAppSidebarVisible, toggleAppSidebarVisible, isAppSidebarMode } =
     useModel('useOpenApp');
 
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  // 监听 iframe 消息（iframeUrl / iframeKey 变化时重新绑定，handler 内通过 ref 读取最新 iframe）
+  useEffect(() => {
+    if (!iframeUrl) {
+      return;
+    }
+
+    const handleMessage = async (e: MessageEvent) => {
+      const iframe = iframeRef.current;
+      if (!iframe?.contentWindow) {
+        return;
+      }
+
+      if (e.origin !== 'https://eco.nuwax.com') {
+        return;
+      }
+      const { type, api, payload, requestId } = e.data;
+      console.log('e.data回调数据: ', e.data);
+      if (type === 'Request' && api) {
+        try {
+          const res = await fetch(api, {
+            method: payload.method || 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              ...payload.headers,
+            },
+            body:
+              payload.method !== 'GET'
+                ? JSON.stringify(payload.body)
+                : undefined,
+            credentials: 'include', // 带父页面的 Cookie
+          });
+          const data = await res.json();
+          // 返回结果
+          iframe.contentWindow.postMessage(
+            {
+              type: 'Response',
+              requestId, // 原样带回，方便 iframe 匹配请求
+              ok: res.ok,
+              status: res.status,
+              data,
+            },
+            'https://eco.nuwax.com',
+          );
+        } catch (err) {
+          iframe.contentWindow.postMessage(
+            {
+              type: 'Response',
+              requestId,
+              ok: false,
+              error: err instanceof Error ? err.message : String(err),
+            },
+            'https://eco.nuwax.com',
+          );
+        }
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => {
+      window.removeEventListener('message', handleMessage);
+    };
+  }, [iframeUrl, iframeKey]);
+
   return (
     <div className={classNames('h-full', 'w-full', 'relative')}>
       {/* 独立会话页面 BaseTemplate 侧边栏隐藏时的展开按钮 */}
@@ -58,13 +123,16 @@ const OpenIframePage: React.FC = () => {
           />
         </div>
       </ConditionRender>
-      <iframe
-        key={iframeKey}
-        src={iframeUrl}
-        width="100%"
-        height="100%"
-        style={{ border: 'none' }}
-      />
+      {iframeUrl && (
+        <iframe
+          ref={iframeRef}
+          key={iframeKey}
+          src={iframeUrl}
+          width="100%"
+          height="100%"
+          style={{ border: 'none' }}
+        />
+      )}
     </div>
   );
 };
