@@ -64,7 +64,7 @@
   &.selected-segment {
     border-color: #1890ff !important;
     background-color: #e6f7ff !important;
-    box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2) !important;
+    // 删除 box-shadow 行——border-color 已表达选中态，避免上/下边双重蓝边（Bug E）
     position: relative;
     z-index: 1;
   }

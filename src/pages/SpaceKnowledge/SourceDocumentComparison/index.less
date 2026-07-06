@@ -129,9 +129,11 @@
   border-radius: 4px;
   line-height: 1.6;
   font-size: 14px;
-  transition: background-color 0.3s;
+  transition: background-color 0.3s, border-left-color 0.3s;
   white-space: pre-wrap;
   word-break: break-word;
+  // 始终预留 3px 边框宽度，避免 highlight 时新增边框导致宽度突变 +3px → 抖动（Bug D）
+  border-left: 3px solid transparent;
 }
 
 // 选中分段的高亮样式（黄底 + 左侧蓝色边条）
@@ -139,7 +141,8 @@
   //background-color: #fff7c2;
   background-color: #f8f9ff;
   //border-left: 3px solid #faad14;
-  border-left: 3px solid #c5d4ff;
+  // 仅切颜色，宽度已由基类预留（Bug D：避免宽度突变触发重排/抖动）
+  border-left-color: #c5d4ff;
 }
 
 // ========= 加载动画 =========
