@@ -65,10 +65,15 @@ const resolveAgentSubType = (
 
 /** Flow / Group / Custom 子类型不展示的操作项 */
 const RESTRICTED_SUB_TYPE_HIDDEN_ACTIONS = new Set<ApplicationMoreActionEnum>([
+  // 复制到空间
   ApplicationMoreActionEnum.Copy_To_Space,
+  // 迁移
   ApplicationMoreActionEnum.Move,
+  // API Key
   ApplicationMoreActionEnum.API_Key,
+  // 导出配置
   ApplicationMoreActionEnum.Export_Config,
+  // 独立会话
   ApplicationMoreActionEnum.Independent_Session,
 ]);
 
