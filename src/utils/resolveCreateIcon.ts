@@ -1,5 +1,6 @@
 import {
   buildGeneratePrompt,
+  CREATE_ICON_GENERATE_TIMEOUT_MS,
   fetchGeneratedMetadata,
   pickIconAndDescription,
 } from '@/utils/generatedMetadata';
@@ -25,7 +26,9 @@ export async function resolveCreateIcon(
   }
 
   try {
-    const meta = await fetchGeneratedMetadata(prompt);
+    const meta = await fetchGeneratedMetadata(prompt, {
+      timeoutMs: CREATE_ICON_GENERATE_TIMEOUT_MS,
+    });
     if (!meta) {
       return { icon: imageUrl, description };
     }
