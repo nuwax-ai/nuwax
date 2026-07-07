@@ -437,7 +437,9 @@ const ChatTemp: React.FC = () => {
               newMessage = {
                 ...currentMessage,
                 text: `${currentMessage.text}${text}`,
-                status: MessageStatusEnum.Incomplete,
+                status: finished
+                  ? MessageStatusEnum.Complete
+                  : MessageStatusEnum.Incomplete,
               };
             }
           }
