@@ -1155,7 +1155,7 @@ export default () => {
         applyTerminalTaskStatus(
           setConversationInfo,
           params.conversationId,
-          resolveTerminalTaskStatus(data?.success, data?.error || res.error),
+          resolveTerminalTaskStatus(data?.success),
         );
 
         // 用户主动取消任务
