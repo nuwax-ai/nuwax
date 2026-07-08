@@ -3,7 +3,7 @@ import type {
   AgentMode,
 } from '@/components/business-component/AgentIntervention';
 import type { UnifiedChatQueueContext } from '@/components/business-component/MessageQueue/useUnifiedChatQueue';
-import type { DefaultSelectedEnum } from '@/types/enums/agent';
+import type { DefaultSelectedEnum, TaskStatus } from '@/types/enums/agent';
 import type { ChatInputProps, UploadFileInfo } from '@/types/interfaces/common';
 import type {
   ConversationInfo,
@@ -168,4 +168,6 @@ export interface UnifiedChatSessionProps {
   onReloadConversationHistoryAsync?: (
     conversationId: number | string,
   ) => Promise<MessageInfo[] | undefined | null>;
+  /** 轮询拿到终态 taskStatus 时写回当前会话 model */
+  onTerminalTaskStatus?: (status: TaskStatus) => void;
 }
