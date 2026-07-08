@@ -513,11 +513,19 @@ const ChatTemp: React.FC = () => {
         });
       },
       onClose: () => {
-        // 将当前会话的loading状态的消息改为Error状态
+        // 将当前会话的loading/incomplete状态的消息改为Error状态
         setMessageList((list) => {
           try {
+            if (!list?.length) return list;
             const copyList = JSON.parse(JSON.stringify(list));
-            copyList[copyList.length - 1].status = MessageStatusEnum.Error;
+            const lastMessage = copyList[copyList.length - 1];
+            if (
+              lastMessage &&
+              (lastMessage.status === MessageStatusEnum.Loading ||
+                lastMessage.status === MessageStatusEnum.Incomplete)
+            ) {
+              lastMessage.status = MessageStatusEnum.Error;
+            }
             return copyList;
           } catch (error) {
             console.error('ERROR:', error);

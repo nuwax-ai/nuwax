@@ -11,7 +11,8 @@
   width: 100%;
 
   .tab-left {
-    width: 760px;
+    flex: 1;
+    min-width: 0;
   }
 
   .tab-right {
@@ -26,7 +27,7 @@
   // 自定义标签页样式
   :global {
     .ant-tabs {
-      width: 760px !important;
+      width: 100% !important;
     }
 
     .ant-tabs-tab {

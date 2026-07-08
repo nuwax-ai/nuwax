@@ -14,7 +14,6 @@ import { isAgentVersionControlEnabled } from '@/constants/agent.constants';
 import useAgentDetails from '@/hooks/useAgentDetails';
 import useExclusivePanels from '@/hooks/useExclusivePanels';
 import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
-import { useNavigationGuard } from '@/hooks/useNavigationGuard';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
 import useSubscription from '@/hooks/useSubscription';
 import useTerminalWsUrl from '@/hooks/useTerminalWsUrl';
@@ -367,16 +366,6 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       wasConversationActiveOnMount.current = false;
     }
   }, [isConversationActive]);
-
-  useNavigationGuard({
-    condition: () => shouldBlockNavigation.current,
-    // 只有通用型智能体在会话活跃时才启用导航拦截，会话型智能体不需要
-    enabled:
-      isConversationActive && effectiveAgent?.type === AgentTypeEnum.TaskAgent,
-    title: t('PC.Pages.Chat.taskExecuting'),
-    message: t('PC.Pages.Chat.leaveTaskWarning'),
-    discardText: t('PC.Pages.Chat.confirmLeave'),
-  });
 
   // 角色信息（名称、头像）
   const roleInfo: RoleInfo = useMemo(() => {
