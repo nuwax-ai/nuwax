@@ -305,9 +305,10 @@ const detectMention = (
   // 获取 @ 后面的文本
   const textAfterAt = text.substring(lastAtIndex + 1);
 
-  // 如果 @ 后面有空格，说明提及已经结束
-  const hasSpaceAfterAt = /\s/.test(textAfterAt);
-  if (hasSpaceAfterAt) {
+  // 如果 @ 后面有空格或特殊符号，则不弹出（短横线 - 和下划线 _ 除外）
+  // 仅允许：字母、数字、中文、短横线 -、下划线 _
+  const hasSpecialChar = /[^a-zA-Z0-9\u4e00-\u9fa5\-_]/.test(textAfterAt);
+  if (hasSpecialChar) {
     return { hasMention: false, searchText: '', atIndex: -1 };
   }
 
