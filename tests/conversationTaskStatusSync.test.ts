@@ -97,42 +97,13 @@ describe('conversationTaskStatusSync', () => {
   });
 
   describe('resolveTerminalTaskStatus', () => {
-    it('success 为 true → COMPLETE', () => {
-      expect(resolveTerminalTaskStatus(true, null)).toBe(TaskStatus.COMPLETE);
-      expect(resolveTerminalTaskStatus(true, undefined)).toBe(
-        TaskStatus.COMPLETE,
-      );
+    it('success=true → COMPLETE', () => {
+      expect(resolveTerminalTaskStatus(true)).toBe(TaskStatus.COMPLETE);
     });
 
-    it('success 优先于 error：true 时即使带 error 也返回 COMPLETE', () => {
-      expect(resolveTerminalTaskStatus(true, '用户主动取消任务')).toBe(
-        TaskStatus.COMPLETE,
-      );
-    });
-
-    it('!success + "用户主动取消任务" → CANCEL', () => {
-      expect(resolveTerminalTaskStatus(false, 'xxx 用户主动取消任务 yyy')).toBe(
-        TaskStatus.CANCEL,
-      );
-    });
-
-    it('!success + "正在执行任务" → EXECUTING（任务冲突，非真正结束）', () => {
-      expect(resolveTerminalTaskStatus(false, 'Agent正在执行任务')).toBe(
-        TaskStatus.EXECUTING,
-      );
-    });
-
-    it('!success + 其他 error → FAILED', () => {
-      expect(resolveTerminalTaskStatus(false, '模型超时')).toBe(
-        TaskStatus.FAILED,
-      );
-    });
-
-    it('!success 且无 error → FAILED', () => {
-      expect(resolveTerminalTaskStatus(false, null)).toBe(TaskStatus.FAILED);
-      expect(resolveTerminalTaskStatus(undefined, undefined)).toBe(
-        TaskStatus.FAILED,
-      );
+    it('success=false / undefined → undefined（不落，交后端轮询兜底）', () => {
+      expect(resolveTerminalTaskStatus(false)).toBeUndefined();
+      expect(resolveTerminalTaskStatus(undefined)).toBeUndefined();
     });
   });
 
