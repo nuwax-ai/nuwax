@@ -79,32 +79,24 @@ export function applyTerminalTaskStatus(
 }
 
 /**
- * 从 FINAL_RESULT 数据解析终态 taskStatus。
+ * 从 FINAL_RESULT 解析终态 taskStatus。
  *
- * FINAL_RESULT（completed:true）是 100% 确定的结束信号，直接据此落终态，
- * 不依赖 onClose 后再轮询后端接口——避免「后端把 COMPLETE 写库有延迟，
- * onClose 瞬间轮询仍返回 EXECUTING」导致本地 taskStatus 固化在 EXECUTING
- * （「智能体正在执行」文案 / 发送按钮进行中长期不消失）。
+ * FINAL_RESULT（completed:true）是确定结束信号，但只在 success=true 时落 COMPLETE——
+ * 正常完成是「后端落库 COMPLETE 有延迟」的高风险场景，直接落终态绕过后端轮询，
+ * 修复 taskStatus 固化 EXECUTING（UI 长期显示「智能体正在执行」/ 发送按钮进行中）。
+ *
+ * success=false（取消/冲突/失败）不在前端据 error 文案猜终态——文案匹配脆弱、
+ * 与后端措辞强耦合。这里返回 undefined，由 applyTerminalTaskStatus 跳过写回，
+ * 交 onClose 的 syncTerminalConversationTaskStatus 拉后端真实 taskStatus；
+ * 此时后端已返回 FINAL_RESULT，终态通常已落库，轮询可拿到正确值。
  *
  * - success === true → COMPLETE
- * - error 含「用户主动取消任务」→ CANCEL
- * - error 含「正在执行任务」→ EXECUTING（任务冲突，上一轮仍在跑，非真正结束，调用方据此跳过写回）
- * - 其余 !success → FAILED
+ * - 其它 → undefined（不落，交后端轮询兜底）
  */
 export function resolveTerminalTaskStatus(
   success: boolean | undefined,
-  error: string | null | undefined,
-): TaskStatus {
-  if (success) {
-    return TaskStatus.COMPLETE;
-  }
-  if (error?.includes('用户主动取消任务')) {
-    return TaskStatus.CANCEL;
-  }
-  if (error?.includes('正在执行任务')) {
-    return TaskStatus.EXECUTING;
-  }
-  return TaskStatus.FAILED;
+): TaskStatus | undefined {
+  return success ? TaskStatus.COMPLETE : undefined;
 }
 
 /**
