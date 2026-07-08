@@ -31,16 +31,23 @@ interface DraggableTabPaneProps extends React.HTMLAttributes<HTMLDivElement> {
 const DraggableTabNode: React.FC<Readonly<DraggableTabPaneProps>> = ({
   ...props
 }) => {
-  const { attributes, listeners, setNodeRef, transform, transition } =
-    useSortable({
-      id: props['data-node-key'],
-    });
+  const {
+    attributes,
+    isDragging,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+  } = useSortable({
+    id: props['data-node-key'],
+  });
 
   const style: React.CSSProperties = {
     ...props.style,
-    transform: CSS.Translate.toString(transform),
+    transform: transform ? CSS.Translate.toString(transform) : undefined,
     transition,
     cursor: 'move',
+    zIndex: isDragging ? 1 : undefined,
   };
 
   return React.cloneElement(props.children as React.ReactElement<any>, {
