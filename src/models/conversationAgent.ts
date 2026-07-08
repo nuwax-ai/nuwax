@@ -55,8 +55,11 @@ import type {
 import { RequestResponse } from '@/types/interfaces/request';
 import { modalConfirm } from '@/utils/ant-custom';
 import {
+  applyTerminalTaskStatus,
   createSyncConversationTaskStatus,
+  resolveTerminalTaskStatus,
   subscribeChatFinishedTaskSync,
+  syncTerminalConversationTaskStatus,
 } from '@/utils/conversationTaskStatusSync';
 import { createSSEConnection } from '@/utils/fetchEventSourceConversationInfo';
 import {
@@ -624,13 +627,15 @@ export default () => {
           runChatSuggest(params as ConversationChatSuggestParams);
         }
 
-        // TaskAgent：同步后台 taskStatus，驱动「智能体正在执行，请稍等」展示/结束
-        if (
-          params.conversationId &&
-          conversationInfoRef.current?.agent?.type === AgentTypeEnum.TaskAgent
-        ) {
-          void syncConversationTaskStatus(params.conversationId);
-        }
+        // 兜底：FINAL_RESULT 是确定结束信号，直接据 data 落终态 taskStatus，
+        // 不依赖 onClose 后的轮询接口（避免后端落库延迟导致 taskStatus 固化 EXECUTING）。
+        // 放在 isSuggest 之后：开启 suggest 时先触发建议拉取，再落终态。
+        // data?.error || res.error：data.error 为空串时回退外层 res.error（任务冲突提示在 res.error 时仍能识别）
+        applyTerminalTaskStatus(
+          setConversationInfo,
+          params.conversationId,
+          resolveTerminalTaskStatus(data?.success, data?.error || res.error),
+        );
 
         // 用户主动取消任务
         if (!data?.success && data?.error?.includes('用户主动取消任务')) {
@@ -787,7 +792,10 @@ export default () => {
           params.conversationId &&
           conversationInfoRef.current?.agent?.type === AgentTypeEnum.TaskAgent
         ) {
-          await syncConversationTaskStatus(params.conversationId);
+          await syncTerminalConversationTaskStatus(
+            params.conversationId,
+            setConversationInfo,
+          );
         }
 
         disabledConversationActive();

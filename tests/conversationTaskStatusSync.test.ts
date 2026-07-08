@@ -30,11 +30,14 @@ vi.mock('@/constants/event.constants', () => ({
 import { apiAgentConversation } from '@/services/agentConfig';
 import { TaskStatus } from '@/types/enums/agent';
 import {
+  applyTerminalTaskStatus,
   createSyncConversationTaskStatus,
   fetchConversationTaskStatus,
   hasExecutingTaskInList,
+  resolveTerminalTaskStatus,
   subscribeChatFinished,
   subscribeChatFinishedTaskSync,
+  syncTerminalConversationTaskStatus,
 } from '@/utils/conversationTaskStatusSync';
 
 describe('conversationTaskStatusSync', () => {
@@ -64,6 +67,75 @@ describe('conversationTaskStatusSync', () => {
     });
   });
 
+  describe('syncTerminalConversationTaskStatus', () => {
+    it('API 返回 EXECUTING 时不写回', async () => {
+      (apiAgentConversation as any).mockResolvedValue({
+        code: '0000',
+        data: { taskStatus: TaskStatus.EXECUTING },
+      });
+
+      const setConversationInfo = vi.fn();
+      await syncTerminalConversationTaskStatus(100, setConversationInfo);
+
+      expect(setConversationInfo).not.toHaveBeenCalled();
+    });
+
+    it('API 返回 COMPLETE 时写回', async () => {
+      (apiAgentConversation as any).mockResolvedValue({
+        code: '0000',
+        data: { taskStatus: TaskStatus.COMPLETE },
+      });
+
+      const setConversationInfo = vi.fn();
+      await syncTerminalConversationTaskStatus(100, setConversationInfo);
+
+      expect(setConversationInfo).toHaveBeenCalled();
+      const updater = setConversationInfo.mock.calls[0][0];
+      const next = updater({ id: 100, taskStatus: TaskStatus.EXECUTING });
+      expect(next.taskStatus).toBe(TaskStatus.COMPLETE);
+    });
+  });
+
+  describe('resolveTerminalTaskStatus', () => {
+    it('success 为 true → COMPLETE', () => {
+      expect(resolveTerminalTaskStatus(true, null)).toBe(TaskStatus.COMPLETE);
+      expect(resolveTerminalTaskStatus(true, undefined)).toBe(
+        TaskStatus.COMPLETE,
+      );
+    });
+
+    it('success 优先于 error：true 时即使带 error 也返回 COMPLETE', () => {
+      expect(resolveTerminalTaskStatus(true, '用户主动取消任务')).toBe(
+        TaskStatus.COMPLETE,
+      );
+    });
+
+    it('!success + "用户主动取消任务" → CANCEL', () => {
+      expect(resolveTerminalTaskStatus(false, 'xxx 用户主动取消任务 yyy')).toBe(
+        TaskStatus.CANCEL,
+      );
+    });
+
+    it('!success + "正在执行任务" → EXECUTING（任务冲突，非真正结束）', () => {
+      expect(resolveTerminalTaskStatus(false, 'Agent正在执行任务')).toBe(
+        TaskStatus.EXECUTING,
+      );
+    });
+
+    it('!success + 其他 error → FAILED', () => {
+      expect(resolveTerminalTaskStatus(false, '模型超时')).toBe(
+        TaskStatus.FAILED,
+      );
+    });
+
+    it('!success 且无 error → FAILED', () => {
+      expect(resolveTerminalTaskStatus(false, null)).toBe(TaskStatus.FAILED);
+      expect(resolveTerminalTaskStatus(undefined, undefined)).toBe(
+        TaskStatus.FAILED,
+      );
+    });
+  });
+
   describe('createSyncConversationTaskStatus', () => {
     it('仅 merge 匹配会话的 taskStatus', async () => {
       (apiAgentConversation as any).mockResolvedValue({
@@ -76,6 +148,54 @@ describe('conversationTaskStatusSync', () => {
       await sync(100);
 
       expect(setConversationInfo).toHaveBeenCalled();
+      const updater = setConversationInfo.mock.calls[0][0];
+      const next = updater({ id: 100, taskStatus: TaskStatus.EXECUTING });
+      expect(next.taskStatus).toBe(TaskStatus.COMPLETE);
+    });
+
+    // 复用 syncTerminal：同样跳过 EXECUTING（避免 ChatFinished 兜底固化 EXECUTING）
+    it('API 返回 EXECUTING 时不写回', async () => {
+      (apiAgentConversation as any).mockResolvedValue({
+        code: '0000',
+        data: { taskStatus: TaskStatus.EXECUTING },
+      });
+
+      const setConversationInfo = vi.fn();
+      const sync = createSyncConversationTaskStatus(setConversationInfo);
+      await sync(100);
+
+      expect(setConversationInfo).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('applyTerminalTaskStatus', () => {
+    it('跳过 undefined / EXECUTING', () => {
+      const setConversationInfo = vi.fn();
+      applyTerminalTaskStatus(setConversationInfo, 100, undefined);
+      applyTerminalTaskStatus(setConversationInfo, 100, TaskStatus.EXECUTING);
+      expect(setConversationInfo).not.toHaveBeenCalled();
+    });
+
+    it('taskStatus 未变化时返回原引用（让 React bail-out）', () => {
+      const setConversationInfo = vi.fn();
+      applyTerminalTaskStatus(setConversationInfo, 100, TaskStatus.COMPLETE);
+      expect(setConversationInfo).toHaveBeenCalledTimes(1);
+      const updater = setConversationInfo.mock.calls[0][0];
+      const prev = { id: 100, taskStatus: TaskStatus.COMPLETE };
+      expect(updater(prev)).toBe(prev);
+    });
+
+    it('会话 id 不匹配时返回原引用', () => {
+      const setConversationInfo = vi.fn();
+      applyTerminalTaskStatus(setConversationInfo, 100, TaskStatus.COMPLETE);
+      const updater = setConversationInfo.mock.calls[0][0];
+      const prev = { id: 999, taskStatus: TaskStatus.EXECUTING };
+      expect(updater(prev)).toBe(prev);
+    });
+
+    it('终态变化时写回新对象', () => {
+      const setConversationInfo = vi.fn();
+      applyTerminalTaskStatus(setConversationInfo, 100, TaskStatus.COMPLETE);
       const updater = setConversationInfo.mock.calls[0][0];
       const next = updater({ id: 100, taskStatus: TaskStatus.EXECUTING });
       expect(next.taskStatus).toBe(TaskStatus.COMPLETE);

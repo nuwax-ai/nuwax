@@ -43,6 +43,10 @@ export interface UseConversationStreamResumeOptions {
   ) => void;
   /** 中断 sub 流（model 的 abortResumeStream）；未提供则跳过中断 */
   abortSub?: () => void;
+  /**
+   * 轮询拿到终态 taskStatus 时写回当前会话 model（仅 COMPLETE/FAILED/CANCEL）
+   */
+  onTerminalTaskStatus?: (status: TaskStatus) => void;
 }
 
 /** 本地流式结束后，订阅 sub 的冷却时间(ms)：等 taskStatus 稳定，避免对刚完成的输出重复重放 */
@@ -59,7 +63,11 @@ export function useConversationStreamResume(
     reloadHistoryAsync,
     resumeStream,
     abortSub,
+    onTerminalTaskStatus,
   } = options;
+
+  const onTerminalTaskStatusRef = useRef(onTerminalTaskStatus);
+  onTerminalTaskStatusRef.current = onTerminalTaskStatus;
 
   // sub 是否已订阅（开/闭之间）。ref 用于回调闭包安全读取；state 用于驱动 ready 重算
   const isResumeSubscribedRef = useRef(false);
@@ -218,6 +226,14 @@ export function useConversationStreamResume(
       ],
       onSuccess: (status) => {
         if (!conversationId) return;
+        // 防跨会话写回：轮询发起后会话可能已切换，丢弃旧会话的 stale 结果
+        if (
+          status !== undefined &&
+          status !== TaskStatus.EXECUTING &&
+          latestRef.current.conversationId === conversationId
+        ) {
+          onTerminalTaskStatusRef.current?.(status);
+        }
         if (status === TaskStatus.EXECUTING) {
           if (latestRef.current.isLocallyStreaming) {
             // 本地正在发送：中断 sub，由 live 驱动输出
@@ -285,6 +301,11 @@ export function useConversationStreamResume(
         resumeStream
       ) {
         fetchConversationTaskStatus(conversationId).then((status) => {
+          // 防跨会话写回：fetch in-flight 期间会话可能已切换，丢弃 stale 结果
+          if (latestRef.current.conversationId !== conversationId) return;
+          if (status !== undefined && status !== TaskStatus.EXECUTING) {
+            onTerminalTaskStatusRef.current?.(status);
+          }
           if (status === TaskStatus.EXECUTING) {
             subscribeRef.current(conversationId);
           }
