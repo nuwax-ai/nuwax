@@ -44,6 +44,7 @@ import { useFileTreePreviewView } from '@/components/business-component/FileTree
 import { apiUpdateStaticFile } from '@/services/vncDesktop';
 import type { UpdateFileInfo } from '@/types/interfaces/fileTree';
 import type { StaticFileInfo } from '@/types/interfaces/vncDesktop';
+import { applyTerminalTaskStatus } from '@/utils/conversationTaskStatusSync';
 import { updateFilesListContent } from '@/utils/fileTree';
 import { jumpToPageDevelop } from '@/utils/router';
 import {
@@ -1186,6 +1187,10 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     onAbortResumeStream: abortResumeStream,
     onReloadConversationHistoryAsync: async (id: number) =>
       (await runAsync(Number(id)))?.data?.messageList,
+    onTerminalTaskStatus: (status: TaskStatus) => {
+      if (!id) return;
+      applyTerminalTaskStatus(setConversationInfo, id, status);
+    },
     loadingSuggest,
     chatSuggestList,
     agentInfo: {
