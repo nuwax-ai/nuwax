@@ -1,3 +1,4 @@
+export { default as AgenticUiPreviewPanel } from './AgenticUiPreviewPanel';
 export { default as AppDevEmptyState } from './AppDevEmptyState';
 export { default as CardWrapper } from './CardWrapper';
 export {

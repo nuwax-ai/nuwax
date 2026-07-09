@@ -16,7 +16,7 @@ import type {
   AttachmentFile,
   ChatViewProps,
 } from '@/types/interfaces/conversationInfo';
-import { message, theme } from 'antd';
+import { Button, message, theme } from 'antd';
 import classNames from 'classnames';
 import { isEqual } from 'lodash';
 import React, { memo, useMemo } from 'react';
@@ -42,6 +42,7 @@ const ChatView: React.FC<ChatViewProps> = memo(
     showDebug = true,
   }) => {
     const { userInfo } = useModel('userInfo');
+    const { showAgenticUiPreview } = useModel('chat');
     const { data } = useUnifiedTheme();
     const isDarkMode = data.antdTheme === 'dark';
 
@@ -91,6 +92,11 @@ const ChatView: React.FC<ChatViewProps> = memo(
     const handleTextCopy = () => {
       message.success(dict('PC.Toast.Global.copiedSuccessfully'));
     };
+
+    const latestAgenticUiSurface = useMemo(() => {
+      const surfaces = messageInfo?.agenticUiSurfaces || [];
+      return surfaces[surfaces.length - 1];
+    }, [messageInfo?.agenticUiSurfaces]);
 
     const isUser = useMemo(() => {
       return messageInfo?.role === AssistantRoleEnum.USER;
@@ -212,6 +218,20 @@ const ChatView: React.FC<ChatViewProps> = memo(
                     status={messageInfo?.status}
                   />
                 </div>
+              </div>
+            )}
+
+            {latestAgenticUiSurface && (
+              <div
+                className={cx(styles['agentic-ui-hint'])}
+                onClick={() => showAgenticUiPreview(latestAgenticUiSurface)}
+              >
+                <div className={cx(styles['agentic-ui-hint-text'])}>
+                  已生成 AI UI 预览
+                </div>
+                <Button size="small" type="link">
+                  打开预览
+                </Button>
               </div>
             )}
 

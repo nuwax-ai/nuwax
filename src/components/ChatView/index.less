@@ -122,6 +122,34 @@
       }
     }
   }
+
+  .agentic-ui-hint {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: @SPACE_SM;
+    max-width: 420px;
+    margin: @SPACE_SM @paddingXs 0;
+    padding: @SPACE_SM @SPACE_BASE;
+    border: 1px solid @colorBorderSecondary;
+    border-radius: @BORDER_RADIUS_BASE;
+    background: @colorFillQuaternary;
+    cursor: pointer;
+    transition: border-color @ANIMATION_DURATION_BASE,
+      background @ANIMATION_DURATION_BASE;
+
+    &:hover {
+      border-color: @colorPrimary;
+      background: @colorPrimaryBg;
+    }
+  }
+
+  .agentic-ui-hint-text {
+    min-width: 0;
+    color: @colorText;
+    font-size: @fontSizeSm;
+    font-weight: 500;
+  }
 }
 
 @media (max-width: @SCREEN_MD) {

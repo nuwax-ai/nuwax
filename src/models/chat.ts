@@ -1,6 +1,8 @@
 import { ExpandPageAreaEnum, HideChatAreaEnum } from '@/types/enums/agent';
 import { ProcessingEnum } from '@/types/enums/common';
+import type { AgenticUiSurface } from '@/types/interfaces/agenticUi';
 import { ProcessingInfo } from '@/types/interfaces/conversationInfo';
+import { mergeAgenticUiSurface } from '@/utils/agenticUi';
 import { useCallback, useState } from 'react';
 
 /**
@@ -31,6 +33,12 @@ export default () => {
   // 页面预览状态管理
   const [pagePreviewData, setPagePreviewData] =
     useState<PagePreviewData | null>(null);
+  // Agentic UI 右侧预览状态
+  const [agenticUiPreviewData, setAgenticUiPreviewData] =
+    useState<AgenticUiSurface | null>(null);
+  const [agenticUiPreviewList, setAgenticUiPreviewList] = useState<
+    AgenticUiSurface[]
+  >([]);
 
   // 页面预览标题
   const [previewPageTitle, setPreviewPageTitle] = useState<string>('');
@@ -117,11 +125,44 @@ export default () => {
   // 显示页面预览
   const showPagePreview = useCallback((data: PagePreviewData) => {
     setPagePreviewData(data);
+    setAgenticUiPreviewData(null);
   }, []);
 
   // 隐藏页面预览
   const hidePagePreview = useCallback(() => {
     setPagePreviewData(null);
+  }, []);
+
+  const showAgenticUiPreview = useCallback((data: AgenticUiSurface) => {
+    setAgenticUiPreviewList((prevList) => {
+      const existingIndex = prevList.findIndex(
+        (surface) => surface.surfaceId === data.surfaceId,
+      );
+      if (existingIndex === -1) {
+        return [...prevList, data];
+      }
+      const nextList = [...prevList];
+      nextList[existingIndex] = mergeAgenticUiSurface(
+        nextList[existingIndex],
+        data,
+      );
+      return nextList;
+    });
+    setAgenticUiPreviewData((prevSurface) =>
+      prevSurface?.surfaceId === data.surfaceId
+        ? mergeAgenticUiSurface(prevSurface, data)
+        : data,
+    );
+    setPagePreviewData(null);
+  }, []);
+
+  const hideAgenticUiPreview = useCallback(() => {
+    setAgenticUiPreviewData(null);
+  }, []);
+
+  const clearAgenticUiPreviews = useCallback(() => {
+    setAgenticUiPreviewData(null);
+    setAgenticUiPreviewList([]);
   }, []);
 
   return {
@@ -132,6 +173,11 @@ export default () => {
     pagePreviewData,
     showPagePreview,
     hidePagePreview,
+    agenticUiPreviewData,
+    agenticUiPreviewList,
+    showAgenticUiPreview,
+    hideAgenticUiPreview,
+    clearAgenticUiPreviews,
     // 智能体页面配置
     agentPageConfig,
     setAgentPageConfig,

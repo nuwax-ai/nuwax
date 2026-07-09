@@ -81,6 +81,12 @@ import {
 } from '@/types/interfaces/vncDesktop';
 import { extractTaskResult } from '@/utils';
 
+import {
+  extractAgenticUiSurfaces,
+  findLatestAgenticUiSurface,
+  hydrateAgenticUiSurfacesInMessageList,
+  mergeAgenticUiSurfaces,
+} from '@/utils/agenticUi';
 import { modalConfirm } from '@/utils/ant-custom';
 import { isEmptyObject } from '@/utils/common';
 import {
@@ -106,7 +112,8 @@ import { appendOutgoingConversationMessages } from './conversationInfoMessageLis
 export default () => {
   // 历史记录
   const { runHistory, runHistoryItem } = useModel('conversationHistory');
-  const { showPagePreview, handleChatProcessingList } = useModel('chat');
+  const { showPagePreview, handleChatProcessingList, showAgenticUiPreview } =
+    useModel('chat');
   // 是否是应用智能体模式
   const { isAppSidebarMode } = useModel('useOpenApp');
   // 会话信息
@@ -689,7 +696,9 @@ export default () => {
         if (!!data?.length) {
           // 将新消息追加到消息列表前面
           setMessageList((messageList: MessageInfo[]) =>
-            prependAndHydrateMcpAskMessageList(data, messageList),
+            hydrateAgenticUiSurfacesInMessageList(
+              prependAndHydrateMcpAskMessageList(data, messageList),
+            ),
           );
 
           // 如果查询到的消息数量小于20，则表示没有更多消息
@@ -755,15 +764,28 @@ export default () => {
       const _messageList = hydrateMcpAskInteractionsInMessageList(
         data?.messageList || [],
       );
-      const len = _messageList?.length || 0;
+      const hydratedMessageList =
+        hydrateAgenticUiSurfacesInMessageList(_messageList);
+      const latestAgenticUiSurface =
+        findLatestAgenticUiSurface(hydratedMessageList);
+      if (latestAgenticUiSurface) {
+        showAgenticUiPreview({
+          ...latestAgenticUiSurface,
+          metadata: {
+            ...latestAgenticUiSurface.metadata,
+            conversationId: data?.id,
+          },
+        });
+      }
+      const len = hydratedMessageList?.length || 0;
       if (len) {
         setMessageList(() => {
-          checkConversationActive(_messageList);
-          messageListRef.current = _messageList;
-          return _messageList;
+          checkConversationActive(hydratedMessageList);
+          messageListRef.current = hydratedMessageList;
+          return hydratedMessageList;
         });
         // 最后一条消息为"问答"时，获取问题建议
-        const lastMessage = _messageList[len - 1];
+        const lastMessage = hydratedMessageList[len - 1];
         if (
           lastMessage.type === MessageModeEnum.QUESTION &&
           lastMessage.ext?.length
@@ -869,6 +891,32 @@ export default () => {
       }
 
       let newMessage: any = null;
+      const agenticUiSurfaces = extractAgenticUiSurfaces(res);
+      const withAgenticUiSurfaces = <T extends MessageInfo>(message: T): T => {
+        const mergedSurfaces = mergeAgenticUiSurfaces(
+          message.agenticUiSurfaces,
+          agenticUiSurfaces,
+        );
+        if (!mergedSurfaces) {
+          return message;
+        }
+        return {
+          ...message,
+          agenticUiSurfaces: mergedSurfaces,
+        };
+      };
+
+      if (agenticUiSurfaces.length) {
+        const latestSurface = agenticUiSurfaces[agenticUiSurfaces.length - 1];
+        showAgenticUiPreview({
+          ...latestSurface,
+          metadata: {
+            ...latestSurface.metadata,
+            requestId: latestSurface.metadata?.requestId || res.requestId,
+            conversationId: params.conversationId,
+          },
+        });
+      }
 
       const interventionPatch = processInterventionSsePatch(
         res,
@@ -910,6 +958,7 @@ export default () => {
           status: MessageStatusEnum.Loading,
           processingList,
         };
+        newMessage = withAgenticUiSurfaces(newMessage);
 
         // 添加处理扩展页面逻辑
         if (data.status === ProcessingEnum.EXECUTING) {
@@ -1028,6 +1077,7 @@ export default () => {
             think: `${currentMessage.think}${text}`,
             status: MessageStatusEnum.Incomplete,
           };
+          newMessage = withAgenticUiSurfaces(newMessage);
         }
         // 问答
         else if (type === MessageModeEnum.QUESTION) {
@@ -1037,6 +1087,7 @@ export default () => {
             // 如果finished为true，则状态为null，此时不会显示运行状态组件，否则为Incomplete
             status: finished ? null : MessageStatusEnum.Incomplete,
           };
+          newMessage = withAgenticUiSurfaces(newMessage);
           if (ext?.length) {
             // 问题建议
             setChatSuggestList(
@@ -1053,6 +1104,7 @@ export default () => {
               text: `${currentMessage.text}${text}`, // 这里需要添加 展示MCP 或者其他工具调用
               status: null, // 隐藏运行状态
             };
+            newMessage = withAgenticUiSurfaces(newMessage);
             // 插入新的消息
             arraySpliceAction = 0;
           } else {
@@ -1065,6 +1117,7 @@ export default () => {
                 ? MessageStatusEnum.Complete
                 : MessageStatusEnum.Incomplete,
             };
+            newMessage = withAgenticUiSurfaces(newMessage);
           }
         }
       }
@@ -1139,6 +1192,7 @@ export default () => {
           finalResult: data,
           requestId: res.requestId,
         };
+        newMessage = withAgenticUiSurfaces(newMessage);
 
         // 调试结果
         setRequestId(res.requestId);

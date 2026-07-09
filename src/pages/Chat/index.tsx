@@ -1,5 +1,6 @@
 import AgentSidebar, { AgentSidebarRef } from '@/components/AgentSidebar';
 import {
+  AgenticUiPreviewPanel,
   ConversationBottomConsole,
   CopyToSpaceComponent,
   PagePreviewIframe,
@@ -28,6 +29,7 @@ import {
   TaskStatus,
 } from '@/types/enums/agent';
 import { AgentTypeEnum } from '@/types/enums/space';
+import type { AgenticUiActionPayload } from '@/types/interfaces/agenticUi';
 import type { MessageSourceType } from '@/types/interfaces/common';
 import type {
   RoleInfo,
@@ -266,8 +268,16 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   } = useModel('conversationInfo');
 
   // 页面预览相关状态
-  const { pagePreviewData, showPagePreview, hidePagePreview } =
-    useModel('chat');
+  const {
+    pagePreviewData,
+    showPagePreview,
+    hidePagePreview,
+    agenticUiPreviewData,
+    agenticUiPreviewList,
+    showAgenticUiPreview,
+    hideAgenticUiPreview,
+    clearAgenticUiPreviews,
+  } = useModel('chat');
 
   // 会话记录
   const { runHistoryItem } = useModel('conversationHistory');
@@ -543,6 +553,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   useEffect(() => {
     // 切换会话时立即隐藏页面预览，并清除文件面板全局状态（fileTreeData / taskAgentSelectedFileId 等）
     hidePagePreview();
+    hideAgenticUiPreview();
     clearFilePanelInfo();
     setOpenPaymentModal(false);
 
@@ -555,6 +566,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       resetInit();
       setSelectedComponentList([]);
       hidePagePreview(); // 组件卸载时主动隐藏预览，避免用户下一次进入时预览还在！
+      hideAgenticUiPreview();
 
       setOpenPaymentModal(false);
     };
@@ -975,6 +987,16 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     }
   }, [viewMode]);
 
+  useEffect(() => {
+    if (!agenticUiPreviewData) {
+      return;
+    }
+    if (isFileTreeVisible) {
+      handleClosePreviewView();
+    }
+    sidebarRef.current?.close();
+  }, [agenticUiPreviewData?.surfaceId]);
+
   // 文件树 props
   const chatFileTree: FileTreeContainerProps = useMemo(
     () => ({
@@ -1124,7 +1146,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   // 设置最小宽度
   useEffect(() => {
     // 设置最小宽度-扩展页面/文件树
-    if (pagePreviewData || isFileTreeVisible) {
+    if (pagePreviewData || agenticUiPreviewData || isFileTreeVisible) {
       document.documentElement.style.minWidth = '1660px';
     } else {
       // 设置最小宽度-调试详情
@@ -1137,7 +1159,13 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     return () => {
       document.documentElement.style.minWidth = 'unset';
     };
-  }, [pagePreviewData, isFileTreeVisible, showSidebar, isSidebarVisible]);
+  }, [
+    pagePreviewData,
+    agenticUiPreviewData,
+    isFileTreeVisible,
+    showSidebar,
+    isSidebarVisible,
+  ]);
 
   // 聊天会话头部相关 props
   const headerProps = {
@@ -1153,6 +1181,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     isSidebarVisible,
     sidebarRef,
     hidePagePreview,
+    hideAgenticUiPreview,
     closePreviewView: handleClosePreviewView,
     handleOpenPreview,
     isShowFilePanel,
@@ -1245,6 +1274,20 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     conversationInfo,
   };
 
+  const handleAgenticUiAction = useCallback(
+    (action: AgenticUiActionPayload) => {
+      handleMessageSend(
+        [
+          '用户在右侧 AI UI 预览中触发了交互动作。',
+          '请根据 actionId、surfaceId 和 payload 继续分析；如果需要更新右侧预览，请再次调用 MCP 工具返回 nuwax.agentic-ui.v1 JSON，可使用 replace、append 或 patch 更新当前 surface。',
+          '',
+          JSON.stringify(action, null, 2),
+        ].join('\n'),
+      );
+    },
+    [handleMessageSend],
+  );
+
   // 加载中
   if (clearLoading || loadingConversation || loadingAsync) {
     return (
@@ -1255,7 +1298,56 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   }
 
   // 是否展开视图
-  const isExpandedView = !!(pagePreviewData || isFileTreeVisible);
+  const isExpandedView = !!(
+    pagePreviewData ||
+    agenticUiPreviewData ||
+    isFileTreeVisible
+  );
+  const rightPreviewContent =
+    !isFileTreeVisible && agenticUiPreviewData ? (
+      <AgenticUiPreviewPanel
+        surface={agenticUiPreviewData}
+        surfaces={agenticUiPreviewList}
+        onSurfaceSelect={showAgenticUiPreview}
+        onAction={handleAgenticUiAction}
+        onClear={clearAgenticUiPreviews}
+        onClose={hideAgenticUiPreview}
+        showCloseButton={!effectiveAgent?.hideChatArea}
+      />
+    ) : pagePreviewData && !isFileTreeVisible ? (
+      <>
+        <PagePreviewIframe
+          pagePreviewData={pagePreviewData}
+          showHeader={true}
+          onClose={hidePagePreview}
+          showCloseButton={!effectiveAgent?.hideChatArea}
+          titleClassName={cx(styles['title-style'])}
+          // 复制模板按钮相关 props
+          showCopyButton={showCopyButton}
+          allowCopy={effectiveAgent?.allowCopy === AllowCopyEnum.Yes}
+          onCopyClick={() => setOpenCopyModal(true)}
+          copyButtonText={t('PC.Pages.Chat.copyTemplate')}
+          copyButtonClassName={styles['copy-btn']}
+        />
+        {/* 复制模板弹窗 */}
+        {showCopyButton && effectiveAgent && pagePreviewData?.uri && (
+          <CopyToSpaceComponent
+            spaceId={effectiveAgent!.spaceId}
+            mode={AgentComponentTypeEnum.Page}
+            componentId={parsePageAppProjectId(pagePreviewData?.uri)}
+            title={''}
+            open={openCopyModal}
+            isTemplate={true}
+            onSuccess={(_: any, targetSpaceId: number) => {
+              setOpenCopyModal(false);
+              // 跳转
+              jumpToPageDevelop(targetSpaceId);
+            }}
+            onCancel={() => setOpenCopyModal(false)}
+          />
+        )}
+      </>
+    ) : null;
 
   return (
     <div
@@ -1271,7 +1363,9 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
         {enableResizable ? (
           <ResizableSplit
             resetTrigger={
-              pagePreviewData || isFileTreeVisible ? 'visible' : 'hidden'
+              pagePreviewData || agenticUiPreviewData || isFileTreeVisible
+                ? 'visible'
+                : 'hidden'
             }
             minLeftWidth={430}
             defaultLeftWidth={37}
@@ -1288,43 +1382,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
                 />
               )
             }
-            right={
-              pagePreviewData &&
-              !isFileTreeVisible && (
-                <>
-                  <PagePreviewIframe
-                    pagePreviewData={pagePreviewData}
-                    showHeader={true}
-                    onClose={hidePagePreview}
-                    showCloseButton={!effectiveAgent?.hideChatArea}
-                    titleClassName={cx(styles['title-style'])}
-                    // 复制模板按钮相关 props
-                    showCopyButton={showCopyButton}
-                    allowCopy={effectiveAgent?.allowCopy === AllowCopyEnum.Yes}
-                    onCopyClick={() => setOpenCopyModal(true)}
-                    copyButtonText={t('PC.Pages.Chat.copyTemplate')}
-                    copyButtonClassName={styles['copy-btn']}
-                  />
-                  {/* 复制模板弹窗 */}
-                  {showCopyButton && effectiveAgent && pagePreviewData?.uri && (
-                    <CopyToSpaceComponent
-                      spaceId={effectiveAgent!.spaceId}
-                      mode={AgentComponentTypeEnum.Page}
-                      componentId={parsePageAppProjectId(pagePreviewData?.uri)}
-                      title={''}
-                      open={openCopyModal}
-                      isTemplate={true}
-                      onSuccess={(_: any, targetSpaceId: number) => {
-                        setOpenCopyModal(false);
-                        // 跳转
-                        jumpToPageDevelop(targetSpaceId);
-                      }}
-                      onCancel={() => setOpenCopyModal(false)}
-                    />
-                  )}
-                </>
-              )
-            }
+            right={rightPreviewContent}
           />
         ) : (
           <div
@@ -1336,7 +1394,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
             {effectiveAgent?.hideChatArea ? null : (
               <div
                 style={{
-                  flex: pagePreviewData && !isFileTreeVisible ? '0 0 50%' : '1',
+                  flex: rightPreviewContent ? '0 0 50%' : '1',
                   minWidth: 0,
                 }}
               >
@@ -1350,35 +1408,9 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
                 />
               </div>
             )}
-            {pagePreviewData && !isFileTreeVisible && (
+            {rightPreviewContent && (
               <div style={{ flex: '1', minWidth: 0 }}>
-                <PagePreviewIframe
-                  pagePreviewData={pagePreviewData}
-                  showHeader={true}
-                  onClose={hidePagePreview}
-                  showCloseButton={!effectiveAgent?.hideChatArea}
-                  titleClassName={cx(styles['title-style'])}
-                  showCopyButton={showCopyButton}
-                  allowCopy={effectiveAgent?.allowCopy === AllowCopyEnum.Yes}
-                  onCopyClick={() => setOpenCopyModal(true)}
-                  copyButtonText={t('PC.Pages.Chat.copyTemplate')}
-                  copyButtonClassName={styles['copy-btn']}
-                />
-                {showCopyButton && effectiveAgent && pagePreviewData?.uri && (
-                  <CopyToSpaceComponent
-                    spaceId={effectiveAgent!.spaceId}
-                    mode={AgentComponentTypeEnum.Page}
-                    componentId={parsePageAppProjectId(pagePreviewData?.uri)}
-                    title={''}
-                    open={openCopyModal}
-                    isTemplate={true}
-                    onSuccess={(_: any, targetSpaceId: number) => {
-                      setOpenCopyModal(false);
-                      jumpToPageDevelop(targetSpaceId);
-                    }}
-                    onCancel={() => setOpenCopyModal(false)}
-                  />
-                )}
+                {rightPreviewContent}
               </div>
             )}
           </div>

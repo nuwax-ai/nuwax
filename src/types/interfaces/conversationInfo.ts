@@ -31,6 +31,7 @@ import type {
   UploadFileInfo,
 } from '@/types/interfaces/common';
 import type { RcoderAcpPermissionInteraction } from './acpPermission';
+import type { AgenticUiSurface } from './agenticUi';
 
 // 会话聊天消息
 export interface ConversationChatMessage {
@@ -298,6 +299,8 @@ export interface MessageInfo extends ChatMessageDto {
   acpPermissionInteractions?: RcoderAcpPermissionInteraction[];
   /** MCP ask/question 交互（toolName: nuwax_ask_question） */
   mcpAskInteractions?: McpAskInteraction[];
+  /** Agentic UI 预览数据，由 MCP 返回的 nuwax.agentic-ui.v1 schema 驱动 */
+  agenticUiSurfaces?: AgenticUiSurface[];
 }
 
 // 查询会话信息
