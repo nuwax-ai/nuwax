@@ -218,6 +218,38 @@ const DeveloperPermissionFormTab: React.FC<DeveloperPermissionFormTabProps> = ({
         <Col span={12}>
           <Form.Item
             label={dict(
+              'PC.Pages.DeveloperPermissionForm.agentComputerStorageLimitGb',
+            )}
+            name="agentComputerStorageLimitGb"
+            tooltip={{
+              icon: <InfoCircleOutlined />,
+              title: dict(
+                'PC.Pages.DeveloperPermissionForm.agentComputerStorageLimitGbTooltip',
+              ),
+            }}
+          >
+            <InputNumber className={cx('w-full')} min={-1} max={100000000} />
+          </Form.Item>
+        </Col>
+        <Col span={12}>
+          <Form.Item
+            label={dict(
+              'PC.Pages.DeveloperPermissionForm.pageAppStorageLimitGb',
+            )}
+            name="pageAppStorageLimitGb"
+            tooltip={{
+              icon: <InfoCircleOutlined />,
+              title: dict(
+                'PC.Pages.DeveloperPermissionForm.pageAppStorageLimitGbTooltip',
+              ),
+            }}
+          >
+            <InputNumber className={cx('w-full')} min={-1} max={100000000} />
+          </Form.Item>
+        </Col>
+        <Col span={12}>
+          <Form.Item
+            label={dict(
               'PC.Pages.DeveloperPermissionForm.agentDailyPromptLimit',
             )}
             name="agentDailyPromptLimit"
