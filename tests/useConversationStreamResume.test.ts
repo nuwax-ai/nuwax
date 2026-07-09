@@ -34,7 +34,13 @@ vi.mock('@/constants/home.constants', () => ({
 
 vi.mock('@/utils/conversationTaskStatusSync', () => ({
   fetchConversationTaskStatus: vi.fn(),
+  resolveTaskStatusFromMessageLists: vi.fn(),
 }));
+
+import {
+  fetchConversationTaskStatus,
+  resolveTaskStatusFromMessageLists,
+} from '@/utils/conversationTaskStatusSync';
 
 describe('useConversationStreamResume', () => {
   let onSuccess: ((status: TaskStatus | undefined) => void) | undefined;
@@ -140,6 +146,93 @@ describe('useConversationStreamResume', () => {
       conversationId: 1555404,
       reason: 'stream-closed',
     });
+  });
+
+  it('sub 关闭后从消息 finalResult 解析终态并写回', async () => {
+    const reloadedList = [
+      {
+        id: 'assistant-1',
+        finalResult: { success: true, outputText: 'done' },
+      },
+    ] as any[];
+    const reloadHistoryAsync = vi.fn().mockResolvedValue(reloadedList);
+    const onTerminalTaskStatus = vi.fn();
+    let subOnClose: (() => void | Promise<void>) | undefined;
+    const resumeStream = vi.fn((_id, _list, onClose) => {
+      subOnClose = onClose;
+    });
+
+    (resolveTaskStatusFromMessageLists as any).mockReturnValue(
+      TaskStatus.COMPLETE,
+    );
+
+    renderHook(() =>
+      useConversationStreamResume({
+        conversationId: 1555404,
+        taskStatus: TaskStatus.EXECUTING,
+        isLocallyStreaming: false,
+        messageList: [],
+        reloadHistoryAsync,
+        resumeStream,
+        onTerminalTaskStatus,
+      }),
+    );
+
+    await act(async () => {
+      onSuccess?.(TaskStatus.EXECUTING);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    await act(async () => {
+      await subOnClose?.();
+    });
+
+    expect(resolveTaskStatusFromMessageLists).toHaveBeenCalledWith(
+      reloadedList,
+      [],
+    );
+    expect(onTerminalTaskStatus).toHaveBeenCalledWith(TaskStatus.COMPLETE);
+    expect(fetchConversationTaskStatus).not.toHaveBeenCalled();
+    expect(runPolling).toHaveBeenCalled();
+  });
+
+  it('sub 关闭后消息解析失败时兜底 fetchConversationTaskStatus', async () => {
+    const reloadHistoryAsync = vi.fn().mockResolvedValue([]);
+    const onTerminalTaskStatus = vi.fn();
+    let subOnClose: (() => void | Promise<void>) | undefined;
+    const resumeStream = vi.fn((_id, _list, onClose) => {
+      subOnClose = onClose;
+    });
+
+    (resolveTaskStatusFromMessageLists as any).mockReturnValue(undefined);
+    (fetchConversationTaskStatus as any).mockResolvedValue(TaskStatus.COMPLETE);
+
+    renderHook(() =>
+      useConversationStreamResume({
+        conversationId: 1555404,
+        taskStatus: TaskStatus.EXECUTING,
+        isLocallyStreaming: false,
+        messageList: [],
+        reloadHistoryAsync,
+        resumeStream,
+        onTerminalTaskStatus,
+      }),
+    );
+
+    await act(async () => {
+      onSuccess?.(TaskStatus.EXECUTING);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    await act(async () => {
+      await subOnClose?.();
+    });
+
+    expect(fetchConversationTaskStatus).toHaveBeenCalledWith(1555404);
+    expect(onTerminalTaskStatus).toHaveBeenCalledWith(TaskStatus.COMPLETE);
+    expect(runPolling).toHaveBeenCalled();
   });
 
   it('本地 live 流式活跃时，即使轮询返回 EXECUTING 也不重复订阅 sub', () => {

@@ -28,12 +28,16 @@ vi.mock('@/constants/event.constants', () => ({
 }));
 
 import { apiAgentConversation } from '@/services/agentConfig';
-import { TaskStatus } from '@/types/enums/agent';
+import { AssistantRoleEnum, TaskStatus } from '@/types/enums/agent';
 import {
   applyTerminalTaskStatus,
   createSyncConversationTaskStatus,
   fetchConversationTaskStatus,
   hasExecutingTaskInList,
+  isTerminalTaskStatus,
+  mergeConversationInfoTaskStatus,
+  resolveTaskStatusFromMessageList,
+  resolveTaskStatusFromMessageLists,
   resolveTerminalTaskStatus,
   subscribeChatFinished,
   subscribeChatFinishedTaskSync,
@@ -93,6 +97,189 @@ describe('conversationTaskStatusSync', () => {
       const updater = setConversationInfo.mock.calls[0][0];
       const next = updater({ id: 100, taskStatus: TaskStatus.EXECUTING });
       expect(next.taskStatus).toBe(TaskStatus.COMPLETE);
+    });
+  });
+
+  describe('resolveTaskStatusFromMessageList', () => {
+    it('最后一条 assistant 含 finalResult.success=true → COMPLETE', () => {
+      const status = resolveTaskStatusFromMessageList([
+        { id: '1', role: AssistantRoleEnum.USER, text: 'hi' } as any,
+        {
+          id: '2',
+          role: AssistantRoleEnum.ASSISTANT,
+          finalResult: { success: true, outputText: 'done' },
+        } as any,
+      ]);
+      expect(status).toBe(TaskStatus.COMPLETE);
+    });
+
+    it('最后一条 assistant 无 finalResult 时返回 undefined（不沿用历史轮次）', () => {
+      expect(
+        resolveTaskStatusFromMessageList([
+          {
+            id: '1',
+            role: AssistantRoleEnum.ASSISTANT,
+            finalResult: { success: true, outputText: 'turn1' },
+          } as any,
+          { id: '2', role: AssistantRoleEnum.USER, text: 'turn2' } as any,
+          {
+            id: '3',
+            role: AssistantRoleEnum.ASSISTANT,
+            text: 'streaming',
+          } as any,
+        ]),
+      ).toBeUndefined();
+    });
+
+    it('无 assistant 消息时返回 undefined', () => {
+      expect(
+        resolveTaskStatusFromMessageList([
+          { id: '1', role: AssistantRoleEnum.USER, text: 'hi' } as any,
+        ]),
+      ).toBeUndefined();
+    });
+  });
+
+  describe('resolveTaskStatusFromMessageLists', () => {
+    it('前者无终态时回退后者', () => {
+      const status = resolveTaskStatusFromMessageLists(
+        [
+          {
+            id: '1',
+            role: AssistantRoleEnum.ASSISTANT,
+            text: 'loading',
+          } as any,
+        ],
+        [
+          {
+            id: '2',
+            role: AssistantRoleEnum.ASSISTANT,
+            finalResult: { success: true, outputText: 'local sub' },
+          } as any,
+        ],
+      );
+      expect(status).toBe(TaskStatus.COMPLETE);
+    });
+  });
+
+  describe('mergeConversationInfoTaskStatus', () => {
+    it('接口 EXECUTING + 消息 finalResult.success=true → COMPLETE', () => {
+      const incoming = {
+        id: 1555524,
+        taskStatus: TaskStatus.EXECUTING,
+        messageList: [
+          {
+            id: 'a1',
+            role: AssistantRoleEnum.ASSISTANT,
+            finalResult: { success: true, outputText: 'ok' },
+          },
+        ],
+      } as any;
+
+      const merged = mergeConversationInfoTaskStatus(null, incoming);
+      expect(merged.taskStatus).toBe(TaskStatus.COMPLETE);
+    });
+
+    it('接口 EXECUTING 且消息无 finalResult 时保持 EXECUTING', () => {
+      const incoming = {
+        id: 1555524,
+        taskStatus: TaskStatus.EXECUTING,
+        messageList: [
+          {
+            id: 'a1',
+            role: AssistantRoleEnum.ASSISTANT,
+            text: 'streaming',
+          },
+        ],
+      } as any;
+
+      const merged = mergeConversationInfoTaskStatus(null, incoming);
+      expect(merged.taskStatus).toBe(TaskStatus.EXECUTING);
+    });
+
+    it('reload 无 finalResult 时可从 prev.messageList 解析终态', () => {
+      const prev = {
+        id: 1555524,
+        taskStatus: TaskStatus.EXECUTING,
+        messageList: [
+          {
+            id: 'a1',
+            role: AssistantRoleEnum.ASSISTANT,
+            finalResult: { success: true, outputText: 'from sub' },
+          },
+        ],
+      } as any;
+      const incoming = {
+        id: 1555524,
+        taskStatus: TaskStatus.EXECUTING,
+        messageList: [
+          {
+            id: 'a1',
+            role: AssistantRoleEnum.ASSISTANT,
+            text: 'api without finalResult',
+          },
+        ],
+      } as any;
+
+      const merged = mergeConversationInfoTaskStatus(prev, incoming);
+      expect(merged.taskStatus).toBe(TaskStatus.COMPLETE);
+    });
+
+    it('解析失败时保留 prev 已落下的终态 taskStatus', () => {
+      const prev = {
+        id: 1555524,
+        taskStatus: TaskStatus.COMPLETE,
+        messageList: [],
+      } as any;
+      const incoming = {
+        id: 1555524,
+        taskStatus: TaskStatus.EXECUTING,
+        messageList: [
+          {
+            id: 'a1',
+            role: AssistantRoleEnum.ASSISTANT,
+            text: 'api stale',
+          },
+        ],
+      } as any;
+
+      const merged = mergeConversationInfoTaskStatus(prev, incoming);
+      expect(merged.taskStatus).toBe(TaskStatus.COMPLETE);
+    });
+
+    it('跨会话时不沿用 prev 的终态或 messageList', () => {
+      const prev = {
+        id: 111,
+        taskStatus: TaskStatus.COMPLETE,
+        messageList: [
+          {
+            id: 'a1',
+            role: AssistantRoleEnum.ASSISTANT,
+            finalResult: { success: true, outputText: 'old conv' },
+          },
+        ],
+      } as any;
+      const incoming = {
+        id: 222,
+        taskStatus: TaskStatus.EXECUTING,
+        messageList: [
+          {
+            id: 'b1',
+            role: AssistantRoleEnum.ASSISTANT,
+            text: 'new conv streaming',
+          },
+        ],
+      } as any;
+
+      const merged = mergeConversationInfoTaskStatus(prev, incoming);
+      expect(merged.taskStatus).toBe(TaskStatus.EXECUTING);
+    });
+  });
+
+  describe('isTerminalTaskStatus', () => {
+    it('识别终态枚举', () => {
+      expect(isTerminalTaskStatus(TaskStatus.COMPLETE)).toBe(true);
+      expect(isTerminalTaskStatus(TaskStatus.EXECUTING)).toBe(false);
     });
   });
 

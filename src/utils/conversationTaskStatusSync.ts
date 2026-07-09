@@ -1,81 +1,33 @@
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { EVENT_TYPE } from '@/constants/event.constants';
 import { apiAgentConversation } from '@/services/agentConfig';
-import { TaskStatus } from '@/types/enums/agent';
-import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
+import { AssistantRoleEnum, TaskStatus } from '@/types/enums/agent';
+import type {
+  ConversationInfo,
+  MessageInfo,
+} from '@/types/interfaces/conversationInfo';
 import eventBus from '@/utils/eventBus';
 import type { Dispatch, SetStateAction } from 'react';
 
 /** ChatFinished 事件载荷 */
 export type ChatFinishedPayload = { conversationId: string };
 
-/**
- * 订阅 ChatFinished 事件
- * @returns 取消订阅函数
- */
-export function subscribeChatFinished(
-  handler: (data: ChatFinishedPayload) => void,
-): () => void {
-  eventBus.on(EVENT_TYPE.ChatFinished, handler);
-  return () => {
-    eventBus.off(EVENT_TYPE.ChatFinished, handler);
-  };
-}
+/** 会话 taskStatus 终态（非 EXECUTING / CREATE） */
+const TERMINAL_TASK_STATUSES = new Set<TaskStatus>([
+  TaskStatus.COMPLETE,
+  TaskStatus.CANCEL,
+  TaskStatus.FAILED,
+]);
 
-/**
- * 列表中是否存在 taskStatus === EXECUTING 的会话
- */
-export function hasExecutingTaskInList(
-  list: Array<{ taskStatus?: TaskStatus }> | undefined | null,
+/** 判断 taskStatus 是否为终态 */
+export function isTerminalTaskStatus(
+  status: TaskStatus | undefined | null,
 ): boolean {
-  return !!list?.some((item) => item.taskStatus === TaskStatus.EXECUTING);
-}
-
-/**
- * 拉取会话当前 taskStatus（轻量查询，不替换 messageList）
- */
-export async function fetchConversationTaskStatus(
-  conversationId: number | string,
-): Promise<TaskStatus | undefined> {
-  try {
-    const result = await apiAgentConversation(Number(conversationId));
-    if (
-      result?.code === SUCCESS_CODE &&
-      result?.data?.taskStatus !== undefined &&
-      result?.data?.taskStatus !== null
-    ) {
-      return result.data.taskStatus;
-    }
-  } catch (error) {
-    console.error('[fetchConversationTaskStatus]', error);
-  }
-  return undefined;
-}
-
-/**
- * 把终态 taskStatus 写回指定会话的统一入口（所有终态写回路径都应经此）。
- *
- * - 跳过 undefined / EXECUTING：非终态，避免后端落库竞态把 EXECUTING 固化到本地；
- * - 仅写 conversationId 匹配的会话，防跨会话覆盖；
- * - taskStatus 未变化时返回原引用 prev，让 React bail-out、不触发 re-render
- *   （空闲态轮询每 5s 拿到同值终态时不再产生无谓重渲染）。
- */
-export function applyTerminalTaskStatus(
-  setConversationInfo: Dispatch<
-    SetStateAction<ConversationInfo | null | undefined>
-  >,
-  conversationId: number | string,
-  taskStatus: TaskStatus | undefined,
-): void {
-  if (taskStatus === undefined || taskStatus === TaskStatus.EXECUTING) {
-    return;
-  }
-  setConversationInfo((prev) => {
-    if (!prev || String(prev.id) !== String(conversationId)) {
-      return prev;
-    }
-    return prev.taskStatus === taskStatus ? prev : { ...prev, taskStatus };
-  });
+  return (
+    status !== undefined &&
+    status !== null &&
+    TERMINAL_TASK_STATUSES.has(status)
+  );
 }
 
 function normalizeTaskStatus(value: unknown): TaskStatus | undefined {
@@ -189,6 +141,145 @@ export function resolveTerminalTaskStatus(
   }
 
   return undefined;
+}
+
+/**
+ * 从消息列表【最后一条 assistant】的 finalResult 解析终态 taskStatus。
+ * 若最后一条 assistant 尚无 finalResult，视为当前轮仍在执行，不沿用历史轮次结果。
+ */
+export function resolveTaskStatusFromMessageList(
+  messageList: MessageInfo[] | undefined | null,
+): TaskStatus | undefined {
+  if (!messageList?.length) {
+    return undefined;
+  }
+  for (let i = messageList.length - 1; i >= 0; i -= 1) {
+    const message = messageList[i];
+    if (message.role !== AssistantRoleEnum.ASSISTANT) {
+      continue;
+    }
+    const { finalResult } = message;
+    if (finalResult) {
+      return resolveTerminalTaskStatus(finalResult.success, finalResult);
+    }
+    // 命中最后一条 assistant 但无 finalResult → 当前轮仍在流式/执行中
+    return undefined;
+  }
+  return undefined;
+}
+
+/**
+ * 依次从多个 messageList 解析终态（前者优先）。
+ * sub onClose 时 reload 列表可能缺 finalResult，需回退本地 sub 重放列表。
+ */
+export function resolveTaskStatusFromMessageLists(
+  ...messageLists: Array<MessageInfo[] | undefined | null>
+): TaskStatus | undefined {
+  for (const list of messageLists) {
+    const status = resolveTaskStatusFromMessageList(list);
+    if (status !== undefined) {
+      return status;
+    }
+  }
+  return undefined;
+}
+
+/**
+ * reload 历史时合并 taskStatus：接口仍返回 EXECUTING 时，优先从消息 finalResult
+ * 经 resolveTerminalTaskStatus 落终态；解析失败则保留 prev 已落下的终态，避免覆盖。
+ */
+export function mergeConversationInfoTaskStatus(
+  prev: ConversationInfo | null | undefined,
+  incoming: ConversationInfo,
+): ConversationInfo {
+  if (incoming.taskStatus !== TaskStatus.EXECUTING) {
+    return incoming;
+  }
+  const sameConversation =
+    prev !== undefined &&
+    prev !== null &&
+    String(prev.id) === String(incoming.id);
+  const resolved =
+    resolveTaskStatusFromMessageList(incoming.messageList) ||
+    (sameConversation
+      ? resolveTaskStatusFromMessageList(prev.messageList)
+      : undefined);
+  if (resolved) {
+    return { ...incoming, taskStatus: resolved };
+  }
+  if (sameConversation && isTerminalTaskStatus(prev.taskStatus)) {
+    return { ...incoming, taskStatus: prev.taskStatus };
+  }
+  return incoming;
+}
+
+/**
+ * 订阅 ChatFinished 事件
+ * @returns 取消订阅函数
+ */
+export function subscribeChatFinished(
+  handler: (data: ChatFinishedPayload) => void,
+): () => void {
+  eventBus.on(EVENT_TYPE.ChatFinished, handler);
+  return () => {
+    eventBus.off(EVENT_TYPE.ChatFinished, handler);
+  };
+}
+
+/**
+ * 列表中是否存在 taskStatus === EXECUTING 的会话
+ */
+export function hasExecutingTaskInList(
+  list: Array<{ taskStatus?: TaskStatus }> | undefined | null,
+): boolean {
+  return !!list?.some((item) => item.taskStatus === TaskStatus.EXECUTING);
+}
+
+/**
+ * 拉取会话当前 taskStatus（轻量查询，不替换 messageList）
+ */
+export async function fetchConversationTaskStatus(
+  conversationId: number | string,
+): Promise<TaskStatus | undefined> {
+  try {
+    const result = await apiAgentConversation(Number(conversationId));
+    if (
+      result?.code === SUCCESS_CODE &&
+      result?.data?.taskStatus !== undefined &&
+      result?.data?.taskStatus !== null
+    ) {
+      return result.data.taskStatus;
+    }
+  } catch (error) {
+    console.error('[fetchConversationTaskStatus]', error);
+  }
+  return undefined;
+}
+
+/**
+ * 把终态 taskStatus 写回指定会话的统一入口（所有终态写回路径都应经此）。
+ *
+ * - 跳过 undefined / EXECUTING：非终态，避免后端落库竞态把 EXECUTING 固化到本地；
+ * - 仅写 conversationId 匹配的会话，防跨会话覆盖；
+ * - taskStatus 未变化时返回原引用 prev，让 React bail-out、不触发 re-render
+ *   （空闲态轮询每 5s 拿到同值终态时不再产生无谓重渲染）。
+ */
+export function applyTerminalTaskStatus(
+  setConversationInfo: Dispatch<
+    SetStateAction<ConversationInfo | null | undefined>
+  >,
+  conversationId: number | string,
+  taskStatus: TaskStatus | undefined,
+): void {
+  if (taskStatus === undefined || taskStatus === TaskStatus.EXECUTING) {
+    return;
+  }
+  setConversationInfo((prev) => {
+    if (!prev || String(prev.id) !== String(conversationId)) {
+      return prev;
+    }
+    return prev.taskStatus === taskStatus ? prev : { ...prev, taskStatus };
+  });
 }
 
 /**
