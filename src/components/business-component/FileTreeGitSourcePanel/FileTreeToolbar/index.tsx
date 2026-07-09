@@ -70,7 +70,7 @@ const FileTreeToolbar: React.FC<FileTreeToolbarProps> = ({
 
   return (
     <div className={cx(styles.toolbar, className)}>
-      <span className={cx(styles.title)}>{title}</span>
+      <span className={cx(styles.title, 'text-ellipsis')}>{title}</span>
       <div className={cx(styles.actions)}>
         <Tooltip
           title={dict(
