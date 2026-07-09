@@ -22,6 +22,7 @@ import { dict } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { PublishStatusEnum } from '@/types/enums/common';
 import {
+  AgentSubTypeEnum,
   AgentTypeEnum,
   ApplicationMoreActionEnum,
   CreateListEnum,
@@ -47,9 +48,36 @@ import CreateApiKeyModal from './CreateApiKeyModal';
 import CreateTempChatModal from './CreateTempChatModal';
 import styles from './index.less';
 
-type IQuery = 'agentType' | 'status' | 'create' | 'keyword';
+type IQuery = 'subType' | 'status' | 'create' | 'keyword';
+
+/** 开发列表筛选用的子类型（All 表示不过滤） */
+type AgentSubTypeFilter = AgentSubTypeEnum | 'All';
 
 const cx = classNames.bind(styles);
+
+/** 无 subType 时按 type 兜底，兼容旧数据 */
+const resolveAgentSubType = (
+  agentConfigInfo: AgentConfigInfo,
+): AgentSubTypeEnum | undefined => {
+  if (agentConfigInfo.subType) {
+    return agentConfigInfo.subType as AgentSubTypeEnum;
+  }
+  if (agentConfigInfo.type === AgentTypeEnum.TaskAgent) {
+    return AgentSubTypeEnum.General;
+  }
+  if (agentConfigInfo.type === AgentTypeEnum.ChatBot) {
+    return AgentSubTypeEnum.ChatBot;
+  }
+  return undefined;
+};
+
+/** 将 URL 中的 subType 解析为筛选值 */
+const parseSubTypeFromSearchParams = (
+  searchParams: URLSearchParams,
+): AgentSubTypeFilter => {
+  const subType = searchParams.get('subType');
+  return subType ? (subType as AgentSubTypeFilter) : 'All';
+};
 
 /**
  * 工作空间 - 应用开发
@@ -83,8 +111,8 @@ const SpaceDevelop: React.FC = () => {
   const [currentAgentInfo, setCurrentAgentInfo] =
     useState<AgentConfigInfo | null>(null);
   const [openCreateAgent, setOpenCreateAgent] = useState<boolean>(false);
-  const [agentType, setAgentType] = useState<AgentTypeEnum>(
-    searchParams.get('agentType') || AgentTypeEnum.All,
+  const [subType, setSubType] = useState<AgentSubTypeFilter>(
+    parseSubTypeFromSearchParams(searchParams),
   );
   const [status, setStatus] = useState<FilterStatusEnum>(
     Number(searchParams.get('status')) || FilterStatusEnum.All,
@@ -120,15 +148,17 @@ const SpaceDevelop: React.FC = () => {
 
   // 过滤筛选智能体列表数据
   const handleFilterList = (
-    filterAgentType: AgentTypeEnum,
+    filterSubType: AgentSubTypeFilter,
     filterStatus: FilterStatusEnum,
     filterCreate: CreateListEnum,
     filterKeyword: string,
     list = agentAllRef.current,
   ) => {
     let _list = list as AgentConfigInfo[];
-    if (filterAgentType !== AgentTypeEnum.All) {
-      _list = _list.filter((item: any) => item.type === filterAgentType);
+    if (filterSubType !== 'All') {
+      _list = _list.filter(
+        (item) => resolveAgentSubType(item) === filterSubType,
+      );
     }
     if (filterStatus === FilterStatusEnum.Published) {
       _list = _list.filter(
@@ -146,19 +176,19 @@ const SpaceDevelop: React.FC = () => {
 
   // ✅ 监听 URL 改变（支持浏览器前进/后退）
   useEffect(() => {
-    const agentType = searchParams.get('agentType') || AgentTypeEnum.All;
+    const nextSubType = parseSubTypeFromSearchParams(searchParams);
 
     const status = Number(searchParams.get('status')) || FilterStatusEnum.All;
     const create =
       Number(searchParams.get('create')) || CreateListEnum.All_Person;
     const keyword = searchParams.get('keyword') || '';
 
-    setAgentType(agentType);
+    setSubType(nextSubType);
     setStatus(status);
     setCreate(create);
     setKeyword(keyword);
 
-    handleFilterList(agentType, status, create, keyword);
+    handleFilterList(nextSubType, status, create, keyword);
   }, [searchParams]);
 
   // 查询空间智能体列表接口
@@ -166,7 +196,7 @@ const SpaceDevelop: React.FC = () => {
     manual: true,
     debounceInterval: 300,
     onSuccess: (result: AgentConfigInfo[]) => {
-      handleFilterList(agentType, status, create, keyword, result);
+      handleFilterList(subType, status, create, keyword, result);
       agentAllRef.current = result;
       setLoading(false);
     },
@@ -255,18 +285,18 @@ const SpaceDevelop: React.FC = () => {
     }
   }, [history.location.state]);
 
-  // 切换智能体类型
-  const handlerChangeAgentType = (value: React.Key) => {
-    const _agentType = value as AgentTypeEnum;
-    setAgentType(_agentType);
-    handleFilterList(_agentType, status, create, keyword);
-    handleChange('agentType', _agentType.toString());
+  // 切换智能体子类型
+  const handlerChangeSubType = (value: React.Key) => {
+    const _subType = value as AgentSubTypeFilter;
+    setSubType(_subType);
+    handleFilterList(_subType, status, create, keyword);
+    handleChange('subType', _subType.toString());
   };
   // 切换状态
   const handlerChangeStatus = (value: React.Key) => {
     const _status = value as FilterStatusEnum;
     setStatus(_status);
-    handleFilterList(agentType, _status, create, keyword);
+    handleFilterList(subType, _status, create, keyword);
     handleChange('status', _status.toString());
   };
 
@@ -274,7 +304,7 @@ const SpaceDevelop: React.FC = () => {
   const handlerChangeCreate = (value: React.Key) => {
     const _create = value as CreateListEnum;
     setCreate(_create);
-    handleFilterList(agentType, status, _create, keyword);
+    handleFilterList(subType, status, _create, keyword);
     handleChange('create', _create.toString());
   };
 
@@ -282,14 +312,14 @@ const SpaceDevelop: React.FC = () => {
   const handleQueryAgent = (e: React.ChangeEvent<HTMLInputElement>) => {
     const _keyword = e.target.value;
     setKeyword(_keyword);
-    handleFilterList(agentType, status, create, _keyword);
+    handleFilterList(subType, status, create, _keyword);
     handleChange('keyword', _keyword);
   };
 
   // 清除关键词
   const handleClearKeyword = () => {
     setKeyword('');
-    handleFilterList(agentType, status, create, '');
+    handleFilterList(subType, status, create, '');
   };
 
   // 确认迁移智能体
@@ -480,9 +510,9 @@ const SpaceDevelop: React.FC = () => {
             {dict('PC.Pages.SpaceDevelop.Index.agentDevelop')}
           </h3>
           <SelectList
-            value={agentType}
+            value={subType}
             options={AGENT_TYPE_LIST_DEV}
-            onChange={handlerChangeAgentType}
+            onChange={handlerChangeSubType}
             size="middle"
           />
           {/* 单选模式 */}
