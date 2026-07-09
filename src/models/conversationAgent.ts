@@ -36,7 +36,7 @@ import {
   MessageTypeEnum,
 } from '@/types/enums/agent';
 import { MessageStatusEnum, ProcessingEnum } from '@/types/enums/common';
-import { AgentTypeEnum, OpenCloseEnum } from '@/types/enums/space';
+import { OpenCloseEnum } from '@/types/enums/space';
 import {
   AgentManualComponentInfo,
   GuidQuestionDto,
@@ -627,14 +627,14 @@ export default () => {
           runChatSuggest(params as ConversationChatSuggestParams);
         }
 
-        // 兜底：FINAL_RESULT 是确定结束信号，直接据 data 落终态 taskStatus，
-        // 不依赖 onClose 后的轮询接口（避免后端落库延迟导致 taskStatus 固化 EXECUTING）。
+        // 兜底：FINAL_RESULT 是确定结束信号；success=true 时直接落 COMPLETE，
+        // 不依赖 onClose 后的轮询接口，避免后端落库延迟导致 taskStatus 固化 EXECUTING。
+        // success=false 只接受结构化终态字段，不根据 error/message 文案猜测。
         // 放在 isSuggest 之后：开启 suggest 时先触发建议拉取，再落终态。
-        // data?.error || res.error：data.error 为空串时回退外层 res.error（任务冲突提示在 res.error 时仍能识别）
         applyTerminalTaskStatus(
           setConversationInfo,
           params.conversationId,
-          resolveTerminalTaskStatus(data?.success),
+          resolveTerminalTaskStatus(data?.success, data, res),
         );
 
         // 用户主动取消任务
@@ -788,10 +788,7 @@ export default () => {
           }
         });
 
-        if (
-          params.conversationId &&
-          conversationInfoRef.current?.agent?.type === AgentTypeEnum.TaskAgent
-        ) {
+        if (params.conversationId) {
           await syncTerminalConversationTaskStatus(
             params.conversationId,
             setConversationInfo,
@@ -1023,6 +1020,7 @@ export default () => {
 
   return {
     conversationInfo,
+    setConversationInfo,
     manualComponents,
     messageList,
     setMessageList,

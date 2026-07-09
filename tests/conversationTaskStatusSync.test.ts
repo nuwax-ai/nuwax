@@ -101,9 +101,86 @@ describe('conversationTaskStatusSync', () => {
       expect(resolveTerminalTaskStatus(true)).toBe(TaskStatus.COMPLETE);
     });
 
-    it('success=false / undefined → undefined（不落，交后端轮询兜底）', () => {
+    it('FINAL_RESULT completed=true 且 data.success=true → COMPLETE', () => {
+      const finalResultPayload = {
+        requestId: 'a76febf9fdda434aad730a8f96f5f97a',
+        eventType: 'FINAL_RESULT',
+        error: null,
+        completed: true,
+        data: {
+          success: true,
+          error: null,
+          outputText: '好的，我来启动项目看看实际效果！',
+        },
+      };
+
+      expect(
+        resolveTerminalTaskStatus(
+          finalResultPayload.data.success,
+          finalResultPayload.data,
+          finalResultPayload,
+        ),
+      ).toBe(TaskStatus.COMPLETE);
+    });
+
+    it('HEART_BEAT completed=false 不产生终态', () => {
+      const heartbeatPayload = {
+        requestId: 'bbdfc4b8734f48a6930ff57d41461616',
+        eventType: 'HEART_BEAT',
+        error: null,
+        data: null,
+        completed: false,
+      };
+
+      expect(
+        resolveTerminalTaskStatus(
+          undefined,
+          heartbeatPayload.data,
+          heartbeatPayload,
+        ),
+      ).toBeUndefined();
+    });
+
+    it('结构化 taskStatus/status 终态 → 对应终态', () => {
+      expect(
+        resolveTerminalTaskStatus(false, { taskStatus: TaskStatus.COMPLETE }),
+      ).toBe(TaskStatus.COMPLETE);
+      expect(resolveTerminalTaskStatus(false, { status: 'CANCEL' })).toBe(
+        TaskStatus.CANCEL,
+      );
+      expect(resolveTerminalTaskStatus(false, { task_status: 'FAILED' })).toBe(
+        TaskStatus.FAILED,
+      );
+    });
+
+    it('结构化 stop_reason/reason 终止原因 → 对应终态', () => {
+      expect(
+        resolveTerminalTaskStatus(false, { stop_reason: 'end_turn' }),
+      ).toBe(TaskStatus.COMPLETE);
+      expect(
+        resolveTerminalTaskStatus(false, { stopReason: 'cancelled' }),
+      ).toBe(TaskStatus.CANCEL);
+      expect(resolveTerminalTaskStatus(false, { reason: 'failed' })).toBe(
+        TaskStatus.FAILED,
+      );
+    });
+
+    it('其它 success=false / undefined → undefined（不落，交后端轮询兜底）', () => {
       expect(resolveTerminalTaskStatus(false)).toBeUndefined();
       expect(resolveTerminalTaskStatus(undefined)).toBeUndefined();
+      expect(
+        resolveTerminalTaskStatus(false, 'Agent正在执行任务'),
+      ).toBeUndefined();
+      expect(
+        resolveTerminalTaskStatus(false, {
+          message: '会话已经结束，无法继续发送消息',
+        }),
+      ).toBeUndefined();
+      expect(
+        resolveTerminalTaskStatus(false, {
+          error: '用户主动取消任务',
+        }),
+      ).toBeUndefined();
     });
   });
 
