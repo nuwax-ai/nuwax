@@ -612,6 +612,21 @@ Collapse
 - 支持用户手动关闭、重新打开、固定某个预览。
 - 支持简单权限和审计记录。
 
+#### 当前落地范围
+
+在不修改后端接口的前提下，第三版先落地前端本地治理能力和 MCP 工具增强：
+
+- 右侧预览支持保存当前 surface 为本地草稿。
+- 右侧预览支持从本地草稿恢复预览。
+- 右侧预览支持导出当前 surface JSON。
+- 右侧预览支持展示最近 Button/Form 交互日志。
+- Button/Form action 会被记录到本地 action log。
+- MCP Server 新增 `nuwax_validate_ui_schema`，用于校验 `nuwax.agentic-ui.v1` JSON。
+- MCP Server 新增 `nuwax_update_ui`，作为自然语言二次更新入口。
+- MCP Server 保留 `nuwax_get_ui_catalog`，供智能体查询 catalog 能力边界。
+
+当前第三版仍不修改后端数据模型，草稿和 action log 使用浏览器 localStorage 保存。后续如果需要跨设备、跨会话长期保存，再升级为后端资源表。
+
 #### 存储建议
 
 第一阶段可以把 surface 挂在消息 metadata 或扩展字段中：

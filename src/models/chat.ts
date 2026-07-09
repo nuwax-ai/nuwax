@@ -1,6 +1,11 @@
 import { ExpandPageAreaEnum, HideChatAreaEnum } from '@/types/enums/agent';
 import { ProcessingEnum } from '@/types/enums/common';
-import type { AgenticUiSurface } from '@/types/interfaces/agenticUi';
+import type {
+  AgenticUiActionLog,
+  AgenticUiActionPayload,
+  AgenticUiDraft,
+  AgenticUiSurface,
+} from '@/types/interfaces/agenticUi';
 import { ProcessingInfo } from '@/types/interfaces/conversationInfo';
 import { mergeAgenticUiSurface } from '@/utils/agenticUi';
 import { useCallback, useState } from 'react';
@@ -23,6 +28,52 @@ export interface AgentPageConfig {
   hideChatArea: HideChatAreaEnum; // 是否隐藏聊天输入区域
 }
 
+const AGENTIC_UI_V3_STORAGE_KEY = 'nuwax.agentic-ui.v3';
+const MAX_ACTION_LOG_COUNT = 20;
+
+interface AgenticUiV3Storage {
+  drafts: AgenticUiDraft[];
+  actionLogs: AgenticUiActionLog[];
+}
+
+const readAgenticUiV3Storage = (): AgenticUiV3Storage => {
+  if (typeof window === 'undefined') {
+    return { drafts: [], actionLogs: [] };
+  }
+
+  try {
+    const rawValue = window.localStorage.getItem(AGENTIC_UI_V3_STORAGE_KEY);
+    if (!rawValue) {
+      return { drafts: [], actionLogs: [] };
+    }
+    const parsedValue = JSON.parse(rawValue) as Partial<AgenticUiV3Storage>;
+    return {
+      drafts: Array.isArray(parsedValue.drafts) ? parsedValue.drafts : [],
+      actionLogs: Array.isArray(parsedValue.actionLogs)
+        ? parsedValue.actionLogs
+        : [],
+    };
+  } catch {
+    return { drafts: [], actionLogs: [] };
+  }
+};
+
+const writeAgenticUiV3Storage = (data: AgenticUiV3Storage) => {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  window.localStorage.setItem(AGENTIC_UI_V3_STORAGE_KEY, JSON.stringify(data));
+};
+
+const createAgenticUiRecordId = (prefix: string) =>
+  `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+const getAgenticUiSurfaceTitle = (surface: AgenticUiSurface) =>
+  typeof surface.root?.props?.title === 'string'
+    ? surface.root.props.title
+    : surface.surfaceId;
+
 /**
  *
  * 使用 会在 chatTemp 中使用
@@ -39,6 +90,12 @@ export default () => {
   const [agenticUiPreviewList, setAgenticUiPreviewList] = useState<
     AgenticUiSurface[]
   >([]);
+  const [agenticUiDraftList, setAgenticUiDraftList] = useState<
+    AgenticUiDraft[]
+  >(() => readAgenticUiV3Storage().drafts);
+  const [agenticUiActionLogs, setAgenticUiActionLogs] = useState<
+    AgenticUiActionLog[]
+  >(() => readAgenticUiV3Storage().actionLogs);
 
   // 页面预览标题
   const [previewPageTitle, setPreviewPageTitle] = useState<string>('');
@@ -156,6 +213,105 @@ export default () => {
     setPagePreviewData(null);
   }, []);
 
+  const persistAgenticUiV3Storage = useCallback(
+    (
+      nextDrafts: AgenticUiDraft[] = agenticUiDraftList,
+      nextActionLogs: AgenticUiActionLog[] = agenticUiActionLogs,
+    ) => {
+      writeAgenticUiV3Storage({
+        drafts: nextDrafts,
+        actionLogs: nextActionLogs,
+      });
+    },
+    [agenticUiActionLogs, agenticUiDraftList],
+  );
+
+  const saveAgenticUiDraft = useCallback(
+    (surface?: AgenticUiSurface | null) => {
+      const targetSurface = surface || agenticUiPreviewData;
+      if (!targetSurface) {
+        return;
+      }
+
+      setAgenticUiDraftList((prevDrafts) => {
+        const now = Date.now();
+        const existingDraft = prevDrafts.find(
+          (draft) => draft.surface.surfaceId === targetSurface.surfaceId,
+        );
+        const nextDraft: AgenticUiDraft = {
+          id: existingDraft?.id || createAgenticUiRecordId('draft'),
+          title: getAgenticUiSurfaceTitle(targetSurface),
+          surface: targetSurface,
+          createdAt: existingDraft?.createdAt || now,
+          updatedAt: now,
+        };
+        const nextDrafts = [
+          nextDraft,
+          ...prevDrafts.filter((draft) => draft.id !== nextDraft.id),
+        ];
+        persistAgenticUiV3Storage(nextDrafts);
+        return nextDrafts;
+      });
+    },
+    [agenticUiPreviewData, persistAgenticUiV3Storage],
+  );
+
+  const restoreAgenticUiDraft = useCallback(
+    (draftId: string) => {
+      const targetDraft = agenticUiDraftList.find(
+        (draft) => draft.id === draftId,
+      );
+      if (!targetDraft) {
+        return;
+      }
+      showAgenticUiPreview(targetDraft.surface);
+    },
+    [agenticUiDraftList, showAgenticUiPreview],
+  );
+
+  const exportAgenticUiSurface = useCallback(
+    (surface?: AgenticUiSurface | null) => {
+      const targetSurface = surface || agenticUiPreviewData;
+      if (!targetSurface || typeof window === 'undefined') {
+        return;
+      }
+
+      const blob = new Blob([JSON.stringify(targetSurface, null, 2)], {
+        type: 'application/json',
+      });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${targetSurface.surfaceId}.json`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    },
+    [agenticUiPreviewData],
+  );
+
+  const recordAgenticUiAction = useCallback(
+    (action: AgenticUiActionPayload) => {
+      setAgenticUiActionLogs((prevLogs) => {
+        const nextLogs = [
+          {
+            id: createAgenticUiRecordId('action'),
+            surfaceId: action.surfaceId,
+            actionId: action.actionId,
+            nodeId: action.nodeId,
+            payload: action.payload,
+            createdAt: Date.now(),
+          },
+          ...prevLogs,
+        ].slice(0, MAX_ACTION_LOG_COUNT);
+        persistAgenticUiV3Storage(undefined, nextLogs);
+        return nextLogs;
+      });
+    },
+    [persistAgenticUiV3Storage],
+  );
+
   const hideAgenticUiPreview = useCallback(() => {
     setAgenticUiPreviewData(null);
   }, []);
@@ -175,9 +331,15 @@ export default () => {
     hidePagePreview,
     agenticUiPreviewData,
     agenticUiPreviewList,
+    agenticUiDraftList,
+    agenticUiActionLogs,
     showAgenticUiPreview,
     hideAgenticUiPreview,
     clearAgenticUiPreviews,
+    saveAgenticUiDraft,
+    restoreAgenticUiDraft,
+    exportAgenticUiSurface,
+    recordAgenticUiAction,
     // 智能体页面配置
     agentPageConfig,
     setAgentPageConfig,

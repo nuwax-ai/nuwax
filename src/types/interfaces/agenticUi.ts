@@ -48,3 +48,20 @@ export interface AgenticUiValidationResult {
   surface: AgenticUiSurface | null;
   error?: string;
 }
+
+export interface AgenticUiDraft {
+  id: string;
+  title: string;
+  surface: AgenticUiSurface;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface AgenticUiActionLog {
+  id: string;
+  surfaceId: string;
+  actionId: string;
+  nodeId?: string;
+  payload?: Record<string, unknown>;
+  createdAt: number;
+}

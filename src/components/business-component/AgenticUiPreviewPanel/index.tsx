@@ -1,5 +1,7 @@
 import type {
+  AgenticUiActionLog,
   AgenticUiActionPayload,
+  AgenticUiDraft,
   AgenticUiNode,
   AgenticUiSurface,
 } from '@/types/interfaces/agenticUi';
@@ -51,8 +53,13 @@ const SUPPORTED_AGENTIC_UI_COMPONENTS = new Set([
 export interface AgenticUiPreviewPanelProps {
   surface: AgenticUiSurface | null;
   surfaces?: AgenticUiSurface[];
+  drafts?: AgenticUiDraft[];
+  actionLogs?: AgenticUiActionLog[];
   onSurfaceSelect?: (surface: AgenticUiSurface) => void;
   onAction?: (action: AgenticUiActionPayload) => void;
+  onSaveDraft?: (surface: AgenticUiSurface) => void;
+  onRestoreDraft?: (draftId: string) => void;
+  onExport?: (surface: AgenticUiSurface) => void;
   onClear?: () => void;
   onClose?: () => void;
   showCloseButton?: boolean;
@@ -71,6 +78,13 @@ const toText = (value: unknown, fallback = ''): string =>
 
 const toNumber = (value: unknown): number | string =>
   typeof value === 'number' || typeof value === 'string' ? value : '-';
+
+const formatTime = (timestamp: number) =>
+  new Date(timestamp).toLocaleTimeString('zh-CN', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
 
 const toRecordArray = (value: unknown): Record<string, unknown>[] =>
   Array.isArray(value) &&
@@ -438,8 +452,13 @@ const AgenticUiRenderer: React.FC<{ node: AgenticUiNode }> = ({ node }) => {
 const AgenticUiPreviewPanel: React.FC<AgenticUiPreviewPanelProps> = ({
   surface,
   surfaces = [],
+  drafts = [],
+  actionLogs = [],
   onSurfaceSelect,
   onAction,
+  onSaveDraft,
+  onRestoreDraft,
+  onExport,
   onClear,
   onClose,
   showCloseButton = true,
@@ -519,6 +538,28 @@ const AgenticUiPreviewPanel: React.FC<AgenticUiPreviewPanelProps> = ({
               {showRaw ? '预览' : 'JSON'}
             </Button>
           ) : null}
+          {surface && onSaveDraft ? (
+            <Button size="small" onClick={() => onSaveDraft(surface)}>
+              保存草稿
+            </Button>
+          ) : null}
+          {surface && onExport ? (
+            <Button size="small" onClick={() => onExport(surface)}>
+              导出
+            </Button>
+          ) : null}
+          {drafts.length && onRestoreDraft ? (
+            <Select
+              size="small"
+              placeholder="恢复草稿"
+              style={{ width: 160 }}
+              options={drafts.map((draft) => ({
+                label: `${draft.title} · ${formatTime(draft.updatedAt)}`,
+                value: draft.id,
+              }))}
+              onChange={onRestoreDraft}
+            />
+          ) : null}
           {onClear ? (
             <Button size="small" onClick={onClear}>
               清空
@@ -576,6 +617,18 @@ const AgenticUiPreviewPanel: React.FC<AgenticUiPreviewPanelProps> = ({
                 <AgenticUiRenderer node={surface.root} />
               </AgenticUiRenderContext.Provider>
             </div>
+            {actionLogs.length ? (
+              <div className={cx(styles['action-log'])}>
+                <div className={cx(styles['action-log-title'])}>交互日志</div>
+                {actionLogs.slice(0, 5).map((log) => (
+                  <div className={cx(styles['action-log-item'])} key={log.id}>
+                    <span>{formatTime(log.createdAt)}</span>
+                    <span>{log.actionId}</span>
+                    <span>{log.surfaceId}</span>
+                  </div>
+                ))}
+              </div>
+            ) : null}
           </>
         )}
       </div>

@@ -38,6 +38,8 @@
 .preview-actions {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 8px;
 }
 
@@ -125,4 +127,26 @@
   border-radius: 6px;
   color: var(--ant-color-text-secondary);
   background: var(--ant-color-fill-quaternary);
+}
+
+.action-log {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--ant-color-border-secondary);
+}
+
+.action-log-title {
+  margin-bottom: 8px;
+  color: var(--ant-color-text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.action-log-item {
+  display: grid;
+  grid-template-columns: 72px minmax(96px, 1fr) minmax(120px, 1fr);
+  gap: 8px;
+  padding: 6px 0;
+  color: var(--ant-color-text-secondary);
+  font-size: 12px;
 }

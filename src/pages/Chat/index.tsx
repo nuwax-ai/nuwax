@@ -274,9 +274,15 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     hidePagePreview,
     agenticUiPreviewData,
     agenticUiPreviewList,
+    agenticUiDraftList,
+    agenticUiActionLogs,
     showAgenticUiPreview,
     hideAgenticUiPreview,
     clearAgenticUiPreviews,
+    saveAgenticUiDraft,
+    restoreAgenticUiDraft,
+    exportAgenticUiSurface,
+    recordAgenticUiAction,
   } = useModel('chat');
 
   // 会话记录
@@ -1276,6 +1282,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
 
   const handleAgenticUiAction = useCallback(
     (action: AgenticUiActionPayload) => {
+      recordAgenticUiAction(action);
       handleMessageSend(
         [
           '用户在右侧 AI UI 预览中触发了交互动作。',
@@ -1285,7 +1292,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
         ].join('\n'),
       );
     },
-    [handleMessageSend],
+    [handleMessageSend, recordAgenticUiAction],
   );
 
   // 加载中
@@ -1308,8 +1315,13 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       <AgenticUiPreviewPanel
         surface={agenticUiPreviewData}
         surfaces={agenticUiPreviewList}
+        drafts={agenticUiDraftList}
+        actionLogs={agenticUiActionLogs}
         onSurfaceSelect={showAgenticUiPreview}
         onAction={handleAgenticUiAction}
+        onSaveDraft={saveAgenticUiDraft}
+        onRestoreDraft={restoreAgenticUiDraft}
+        onExport={exportAgenticUiSurface}
         onClear={clearAgenticUiPreviews}
         onClose={hideAgenticUiPreview}
         showCloseButton={!effectiveAgent?.hideChatArea}
