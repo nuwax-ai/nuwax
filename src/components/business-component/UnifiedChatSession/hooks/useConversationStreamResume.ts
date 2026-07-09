@@ -2,7 +2,10 @@ import { EVENT_TYPE } from '@/constants/event.constants';
 import { GLOBAL_POLLING_INTERVAL } from '@/constants/home.constants';
 import { TaskStatus } from '@/types/enums/agent';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
-import { fetchConversationTaskStatus } from '@/utils/conversationTaskStatusSync';
+import {
+  fetchConversationTaskStatus,
+  resolveTaskStatusFromMessageLists,
+} from '@/utils/conversationTaskStatusSync';
 import eventBus from '@/utils/eventBus';
 import { useRequest } from 'ahooks';
 import { useEffect, useRef, useState } from 'react';
@@ -174,13 +177,14 @@ export function useConversationStreamResume(
       if (latestRef.current.conversationId !== id) {
         return;
       }
-      // sub 关闭后恢复状态轮询，以便检测会话再次变为 EXECUTING
-      pollingControlsRef.current.start();
-
-      // 流式恢复结束后，主动拉取一次最新历史状态以更新本地 model 状态（同步 taskStatus）
+      // sub 关闭后先 reload 历史，再从消息 finalResult 解析终态，最后恢复轮询
+      let reloadedList: MessageInfo[] | undefined;
       if (reloadHistoryAsync) {
         try {
-          await reloadHistoryAsync(id);
+          const reloaded = await reloadHistoryAsync(id);
+          if (reloaded?.length) {
+            reloadedList = reloaded;
+          }
         } catch (e) {
           console.error(
             '[useConversationStreamResume] final reloadHistory failed:',
@@ -188,6 +192,33 @@ export function useConversationStreamResume(
           );
         }
       }
+
+      // reload 列表可能缺 finalResult，回退 sub 重放后的本地 messageList
+      const resolvedFromMessages = resolveTaskStatusFromMessageLists(
+        reloadedList,
+        latestRef.current.messageList,
+      );
+      if (resolvedFromMessages) {
+        onTerminalTaskStatusRef.current?.(resolvedFromMessages);
+      } else {
+        try {
+          const terminalStatus = await fetchConversationTaskStatus(id);
+          if (
+            terminalStatus !== undefined &&
+            terminalStatus !== TaskStatus.EXECUTING
+          ) {
+            onTerminalTaskStatusRef.current?.(terminalStatus);
+          }
+        } catch (e) {
+          console.error(
+            '[useConversationStreamResume] sync terminal taskStatus failed:',
+            e,
+          );
+        }
+      }
+
+      // 终态同步完成后再恢复轮询，避免 EXECUTING 期间误重订阅 sub
+      pollingControlsRef.current.start();
 
       // 发送事件，刷新会话列表以清除“执行中”标记，使其消失
       eventBus.emit(EVENT_TYPE.RefreshConversationList, {
