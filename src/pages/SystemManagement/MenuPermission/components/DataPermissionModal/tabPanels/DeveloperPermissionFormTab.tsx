@@ -274,7 +274,7 @@ const DeveloperPermissionFormTab: React.FC<DeveloperPermissionFormTabProps> = ({
             <InputNumber
               className={cx('w-full')}
               min={-1}
-              max={10000000}
+              max={1000000}
               step={1}
               precision={0}
             />
@@ -297,7 +297,7 @@ const DeveloperPermissionFormTab: React.FC<DeveloperPermissionFormTabProps> = ({
             <InputNumber
               className={cx('w-full')}
               min={-1}
-              max={10000000}
+              max={1000000}
               step={1}
               precision={0}
             />
