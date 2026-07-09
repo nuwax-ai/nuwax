@@ -73,7 +73,13 @@ const DeveloperPermissionFormTab: React.FC<DeveloperPermissionFormTabProps> = ({
               ),
             }}
           >
-            <InputNumber className={cx('w-full')} min={-1} max={100000000} />
+            <InputNumber
+              className={cx('w-full')}
+              min={-1}
+              max={100000000}
+              step={1}
+              precision={0}
+            />
           </Form.Item>
         </Col>
         <Col span={12}>
@@ -87,7 +93,13 @@ const DeveloperPermissionFormTab: React.FC<DeveloperPermissionFormTabProps> = ({
               ),
             }}
           >
-            <InputNumber className={cx('w-full')} min={-1} max={100000000} />
+            <InputNumber
+              className={cx('w-full')}
+              min={-1}
+              max={100000000}
+              step={1}
+              precision={0}
+            />
           </Form.Item>
         </Col>
         <Col span={12}>
@@ -101,7 +113,13 @@ const DeveloperPermissionFormTab: React.FC<DeveloperPermissionFormTabProps> = ({
               ),
             }}
           >
-            <InputNumber className={cx('w-full')} min={-1} max={100000000} />
+            <InputNumber
+              className={cx('w-full')}
+              min={-1}
+              max={100000000}
+              step={1}
+              precision={0}
+            />
           </Form.Item>
         </Col>
         <Col span={12}>
@@ -115,7 +133,13 @@ const DeveloperPermissionFormTab: React.FC<DeveloperPermissionFormTabProps> = ({
               ),
             }}
           >
-            <InputNumber className={cx('w-full')} min={-1} max={100000000} />
+            <InputNumber
+              className={cx('w-full')}
+              min={-1}
+              max={100000000}
+              step={1}
+              precision={0}
+            />
           </Form.Item>
         </Col>
         <Col span={12}>
@@ -162,7 +186,13 @@ const DeveloperPermissionFormTab: React.FC<DeveloperPermissionFormTabProps> = ({
               ),
             }}
           >
-            <InputNumber className={cx('w-full')} min={-1} max={100000000} />
+            <InputNumber
+              className={cx('w-full')}
+              min={-1}
+              max={100000000}
+              step={1}
+              precision={0}
+            />
           </Form.Item>
         </Col>
         <Col span={12}>
@@ -178,7 +208,13 @@ const DeveloperPermissionFormTab: React.FC<DeveloperPermissionFormTabProps> = ({
               ),
             }}
           >
-            <InputNumber className={cx('w-full')} min={-1} max={100000000} />
+            <InputNumber
+              className={cx('w-full')}
+              min={-1}
+              max={100000000}
+              step={1}
+              precision={0}
+            />
           </Form.Item>
         </Col>
         <Col span={12}>
@@ -212,7 +248,59 @@ const DeveloperPermissionFormTab: React.FC<DeveloperPermissionFormTabProps> = ({
               ),
             }}
           >
-            <InputNumber className={cx('w-full')} min={1} max={100000000} />
+            <InputNumber
+              className={cx('w-full')}
+              min={1}
+              max={100000000}
+              step={1}
+              precision={0}
+            />
+          </Form.Item>
+        </Col>
+        <Col span={12}>
+          <Form.Item
+            label={dict(
+              'PC.Pages.DeveloperPermissionForm.agentComputerStorageLimitGb',
+            )}
+            name="agentComputerStorageLimitGb"
+            tooltip={{
+              icon: <InfoCircleOutlined />,
+              title: dict(
+                'PC.Pages.DeveloperPermissionForm.agentComputerStorageLimitGbTooltip',
+              ),
+            }}
+          >
+            {/* 不超过7位数字 */}
+            <InputNumber
+              className={cx('w-full')}
+              min={-1}
+              max={10000000}
+              step={1}
+              precision={0}
+            />
+          </Form.Item>
+        </Col>
+        <Col span={12}>
+          <Form.Item
+            label={dict(
+              'PC.Pages.DeveloperPermissionForm.pageAppStorageLimitGb',
+            )}
+            name="pageAppStorageLimitGb"
+            tooltip={{
+              icon: <InfoCircleOutlined />,
+              title: dict(
+                'PC.Pages.DeveloperPermissionForm.pageAppStorageLimitGbTooltip',
+              ),
+            }}
+          >
+            {/* 不超过7位数字 */}
+            <InputNumber
+              className={cx('w-full')}
+              min={-1}
+              max={10000000}
+              step={1}
+              precision={0}
+            />
           </Form.Item>
         </Col>
         <Col span={12}>
@@ -228,7 +316,13 @@ const DeveloperPermissionFormTab: React.FC<DeveloperPermissionFormTabProps> = ({
               ),
             }}
           >
-            <InputNumber className={cx('w-full')} min={-1} max={100000000} />
+            <InputNumber
+              className={cx('w-full')}
+              min={-1}
+              max={100000000}
+              step={1}
+              precision={0}
+            />
           </Form.Item>
         </Col>
         <Col span={12}>
@@ -244,7 +338,13 @@ const DeveloperPermissionFormTab: React.FC<DeveloperPermissionFormTabProps> = ({
               ),
             }}
           >
-            <InputNumber className={cx('w-full')} min={-1} max={100000000} />
+            <InputNumber
+              className={cx('w-full')}
+              min={-1}
+              max={100000000}
+              step={1}
+              precision={0}
+            />
           </Form.Item>
         </Col>
       </Row>

@@ -2,7 +2,6 @@ import { FileTreeViewPanel } from '@/components/business-component';
 import PublishComponentModal from '@/components/PublishComponentModal';
 import TipsBox from '@/components/TipsBox';
 import VersionHistory from '@/components/VersionHistory';
-import { useNavigationGuard } from '@/hooks/useNavigationGuard';
 import CreateSkill from '@/pages/SpaceSkillManage/CreateSkill';
 import ImportSkillProjectModal from '@/pages/SpaceSkillManage/ImportSkillProjectModal';
 import { t } from '@/services/i18nRuntime';
@@ -82,7 +81,6 @@ const SkillDetails: React.FC = () => {
     setOpenImportSkillProject,
     loadingExportProject,
     handleCheckUnsavedChanges,
-    saveUnsavedFiles,
     handleDeleteFile,
     handleCreateFileNode,
     handleConfirmRenameFile,
@@ -91,7 +89,6 @@ const SkillDetails: React.FC = () => {
     handleExportProject,
     handleImportProject,
     handleImportSkillProjectConfirm,
-    hasUnsavedChanges,
   } = useSkillFiles({
     skillId,
     spaceId,
@@ -102,16 +99,6 @@ const SkillDetails: React.FC = () => {
 
   // 更新 ref 以便在 runSkillInfo 中调用
   setFileTreeDataLoadingRef.current = setFileTreeDataLoading;
-
-  // 拦截离开页面
-  useNavigationGuard({
-    condition: hasUnsavedChanges,
-    onConfirm: saveUnsavedFiles,
-    title: t('PC.Pages.SkillDetails.unsavedTitle'),
-    message: t('PC.Pages.SkillDetails.unsavedLeaveMessage'),
-    confirmText: t('PC.Pages.SkillDetails.saveAndLeave'),
-    discardText: t('PC.Pages.SkillDetails.leaveWithoutSaving'),
-  });
 
   useEffect(() => {
     if (skillId) {

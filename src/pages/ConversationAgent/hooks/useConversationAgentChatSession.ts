@@ -12,6 +12,7 @@ import type {
 } from '@/types/interfaces/agent';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type { RoleInfo } from '@/types/interfaces/conversationInfo';
+import { applyTerminalTaskStatus } from '@/utils/conversationTaskStatusSync';
 import cloneDeep from 'lodash/cloneDeep';
 import { useCallback, useMemo } from 'react';
 import { useModel } from 'umi';
@@ -64,6 +65,7 @@ export function useConversationAgentChatSession(
 
   const {
     conversationInfo,
+    setConversationInfo,
     messageList,
     setMessageList,
     chatSuggestList,
@@ -81,6 +83,7 @@ export function useConversationAgentChatSession(
     isLoadingOtherInterface,
     handleClearSideEffect,
     runQueryConversation,
+    runAsync,
     clearFilePanelInfo,
     isConversationActive: agentStreamActive,
     // 停止会话相关
@@ -90,6 +93,8 @@ export function useConversationAgentChatSession(
     // 当前会话 ID 与请求 ID
     getCurrentConversationId,
     getCurrentConversationRequestId,
+    resumeConversationStream,
+    abortResumeStream,
     respondAcpPermission,
     respondMcpAsk,
   } = useModel('conversationAgent');
@@ -250,6 +255,14 @@ export function useConversationAgentChatSession(
       runStopConversation: (id: number | string) => {
         void runStopConversation(String(id));
       },
+    },
+    onResumeConversationStream: resumeConversationStream,
+    onAbortResumeStream: abortResumeStream,
+    onReloadConversationHistoryAsync: async (id: number | string) =>
+      (await runAsync(Number(id)))?.data?.messageList,
+    onTerminalTaskStatus: (status: TaskStatus) => {
+      if (!devConversationId) return;
+      applyTerminalTaskStatus(setConversationInfo, devConversationId, status);
     },
     messageBottomMode: 'chat' as const,
     loadingSuggest,

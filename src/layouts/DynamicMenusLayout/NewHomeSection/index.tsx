@@ -223,6 +223,21 @@ const NewHomeSection: React.FC<{
       );
     };
 
+    const handleChatFinished = (data: {
+      conversationId: number | string;
+      status: TaskStatus;
+    }) => {
+      if (!data) return;
+      const { conversationId, status } = data;
+      setLocalList((prev) =>
+        prev.map((item) =>
+          item.id?.toString() === conversationId.toString()
+            ? { ...item, taskStatus: status }
+            : item,
+        ),
+      );
+    };
+
     window.addEventListener('conversation-updated', handleConversationUpdated);
     window.addEventListener('conversation-deleted', handleConversationDeleted);
     eventBus.on(
@@ -233,6 +248,7 @@ const NewHomeSection: React.FC<{
       EVENT_TYPE.UpdateConversationListTaskStatus,
       handleUpdateConversationListTaskStatus,
     );
+    eventBus.on(EVENT_TYPE.ChatFinished, handleChatFinished);
 
     return () => {
       window.removeEventListener(
@@ -251,6 +267,7 @@ const NewHomeSection: React.FC<{
         EVENT_TYPE.UpdateConversationListTaskStatus,
         handleUpdateConversationListTaskStatus,
       );
+      eventBus.off(EVENT_TYPE.ChatFinished, handleChatFinished);
     };
   }, []);
 

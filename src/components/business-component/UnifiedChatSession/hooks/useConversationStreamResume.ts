@@ -2,7 +2,10 @@ import { EVENT_TYPE } from '@/constants/event.constants';
 import { GLOBAL_POLLING_INTERVAL } from '@/constants/home.constants';
 import { TaskStatus } from '@/types/enums/agent';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
-import { fetchConversationTaskStatus } from '@/utils/conversationTaskStatusSync';
+import {
+  fetchConversationTaskStatus,
+  resolveTaskStatusFromMessageLists,
+} from '@/utils/conversationTaskStatusSync';
 import eventBus from '@/utils/eventBus';
 import { useRequest } from 'ahooks';
 import { useEffect, useRef, useState } from 'react';
@@ -13,7 +16,7 @@ import { useEffect, useRef, useState } from 'react';
  * 用途：刷新页面 / 新开标签后，重新订阅 EXECUTING 会话的输出流（/api/agent/conversation/chat/sub/:id），
  * 把「执行中的助手消息」重建出来。与 useLoadMoreHistory / useUnifiedChatScroll 同属 UnifiedChatSession
  * 的会话生命周期 hooks 聚合于此。各会话页从自身所属 model（conversationInfo 或 conversationAgent）
- * 注入状态与 action 即可复用；未注入 action 的页面（如隔离会话源）不启用恢复。
+ * 注入状态与 action 即可复用；未注入 action 的页面不启用恢复。
  *
  * 轮询时机：仅在【未订阅 sub】时轮询会话状态——一旦续上 sub（执行中），立即停止状态轮询，
  * 由 sub 流接管输出；sub 关闭后才恢复轮询，继续检测会话再次变为 EXECUTING。
@@ -43,6 +46,10 @@ export interface UseConversationStreamResumeOptions {
   ) => void;
   /** 中断 sub 流（model 的 abortResumeStream）；未提供则跳过中断 */
   abortSub?: () => void;
+  /**
+   * 轮询拿到终态 taskStatus 时写回当前会话 model（仅 COMPLETE/FAILED/CANCEL）
+   */
+  onTerminalTaskStatus?: (status: TaskStatus) => void;
 }
 
 /** 本地流式结束后，订阅 sub 的冷却时间(ms)：等 taskStatus 稳定，避免对刚完成的输出重复重放 */
@@ -59,7 +66,11 @@ export function useConversationStreamResume(
     reloadHistoryAsync,
     resumeStream,
     abortSub,
+    onTerminalTaskStatus,
   } = options;
+
+  const onTerminalTaskStatusRef = useRef(onTerminalTaskStatus);
+  onTerminalTaskStatusRef.current = onTerminalTaskStatus;
 
   // sub 是否已订阅（开/闭之间）。ref 用于回调闭包安全读取；state 用于驱动 ready 重算
   const isResumeSubscribedRef = useRef(false);
@@ -166,13 +177,14 @@ export function useConversationStreamResume(
       if (latestRef.current.conversationId !== id) {
         return;
       }
-      // sub 关闭后恢复状态轮询，以便检测会话再次变为 EXECUTING
-      pollingControlsRef.current.start();
-
-      // 流式恢复结束后，主动拉取一次最新历史状态以更新本地 model 状态（同步 taskStatus）
+      // sub 关闭后先 reload 历史，再从消息 finalResult 解析终态，最后恢复轮询
+      let reloadedList: MessageInfo[] | undefined;
       if (reloadHistoryAsync) {
         try {
-          await reloadHistoryAsync(id);
+          const reloaded = await reloadHistoryAsync(id);
+          if (reloaded?.length) {
+            reloadedList = reloaded;
+          }
         } catch (e) {
           console.error(
             '[useConversationStreamResume] final reloadHistory failed:',
@@ -180,6 +192,33 @@ export function useConversationStreamResume(
           );
         }
       }
+
+      // reload 列表可能缺 finalResult，回退 sub 重放后的本地 messageList
+      const resolvedFromMessages = resolveTaskStatusFromMessageLists(
+        reloadedList,
+        latestRef.current.messageList,
+      );
+      if (resolvedFromMessages) {
+        onTerminalTaskStatusRef.current?.(resolvedFromMessages);
+      } else {
+        try {
+          const terminalStatus = await fetchConversationTaskStatus(id);
+          if (
+            terminalStatus !== undefined &&
+            terminalStatus !== TaskStatus.EXECUTING
+          ) {
+            onTerminalTaskStatusRef.current?.(terminalStatus);
+          }
+        } catch (e) {
+          console.error(
+            '[useConversationStreamResume] sync terminal taskStatus failed:',
+            e,
+          );
+        }
+      }
+
+      // 终态同步完成后再恢复轮询，避免 EXECUTING 期间误重订阅 sub
+      pollingControlsRef.current.start();
 
       // 发送事件，刷新会话列表以清除“执行中”标记，使其消失
       eventBus.emit(EVENT_TYPE.RefreshConversationList, {
@@ -204,7 +243,7 @@ export function useConversationStreamResume(
       // 屏幕不可见时暂停定时任务（多窗口/多标签仅可见者轮询）
       pollingWhenHidden: false,
       pollingErrorRetryCount: -1,
-      // resumeStream 未注入（如 ConversationAgent 预览 Tab，dev 调试会话）则整体不启用：不轮询、不订阅
+      // resumeStream 未注入则整体不启用：不轮询、不订阅
       ready:
         !!conversationId &&
         !isLocallyStreaming &&
@@ -218,6 +257,14 @@ export function useConversationStreamResume(
       ],
       onSuccess: (status) => {
         if (!conversationId) return;
+        // 防跨会话写回：轮询发起后会话可能已切换，丢弃旧会话的 stale 结果
+        if (
+          status !== undefined &&
+          status !== TaskStatus.EXECUTING &&
+          latestRef.current.conversationId === conversationId
+        ) {
+          onTerminalTaskStatusRef.current?.(status);
+        }
         if (status === TaskStatus.EXECUTING) {
           if (latestRef.current.isLocallyStreaming) {
             // 本地正在发送：中断 sub，由 live 驱动输出
@@ -285,6 +332,11 @@ export function useConversationStreamResume(
         resumeStream
       ) {
         fetchConversationTaskStatus(conversationId).then((status) => {
+          // 防跨会话写回：fetch in-flight 期间会话可能已切换，丢弃 stale 结果
+          if (latestRef.current.conversationId !== conversationId) return;
+          if (status !== undefined && status !== TaskStatus.EXECUTING) {
+            onTerminalTaskStatusRef.current?.(status);
+          }
           if (status === TaskStatus.EXECUTING) {
             subscribeRef.current(conversationId);
           }

@@ -90,8 +90,12 @@ import {
 import { modalConfirm } from '@/utils/ant-custom';
 import { isEmptyObject } from '@/utils/common';
 import {
+  applyTerminalTaskStatus,
   createSyncConversationTaskStatus,
+  mergeConversationInfoTaskStatus,
+  resolveTerminalTaskStatus,
   subscribeChatFinishedTaskSync,
+  syncTerminalConversationTaskStatus,
 } from '@/utils/conversationTaskStatusSync';
 import eventBus from '@/utils/eventBus';
 import { createSSEConnection } from '@/utils/fetchEventSourceConversationInfo';
@@ -740,8 +744,10 @@ export default () => {
       const { data } = result;
       // 设置所有的详细信息
       setChatProcessingList(data?.messageList || []);
-      // 设置会话信息
-      setConversationInfo(data);
+      // 设置会话信息（合并 taskStatus，避免 reload 把 FINAL_RESULT 已落的终态盖回 EXECUTING）
+      setConversationInfo((prev) =>
+        mergeConversationInfoTaskStatus(prev, data),
+      );
       // 缓存当前会话ID
       if (data?.id) {
         setCurrentConversationId(data.id);
@@ -1144,9 +1150,6 @@ export default () => {
               void refreshGitListRef.current?.();
             }
 
-            // 同步后台任务状态，确保「智能体正在执行，请稍等」能正确展示/结束
-            void syncConversationTaskStatus(params.conversationId);
-
             const taskResult = extractTaskResult(data.outputText);
             // 如果有任务结果，并且有文件，则打开预览视图
             if (taskResult.hasTaskResult && taskResult.file) {
@@ -1201,6 +1204,16 @@ export default () => {
         if (isSuggest.current) {
           runChatSuggest(params as ConversationChatSuggestParams);
         }
+
+        // 兜底：FINAL_RESULT 是确定结束信号；success=true 时直接落 COMPLETE，
+        // 不依赖 onClose 后的轮询接口，避免后端落库延迟导致 taskStatus 固化 EXECUTING。
+        // success=false 只接受结构化终态字段，不根据 error/message 文案猜测。
+        // 放在 isSuggest 之后：开启 suggest 时先触发建议拉取，再落终态。
+        applyTerminalTaskStatus(
+          setConversationInfo,
+          params.conversationId,
+          resolveTerminalTaskStatus(data?.success, data, res),
+        );
 
         // 用户主动取消任务
         if (!data?.success && data?.error?.includes('用户主动取消任务')) {
@@ -1352,12 +1365,13 @@ export default () => {
           }
         });
 
-        // SSE 结束后兜底同步 taskStatus（通用型智能体后台任务可能仍在执行或刚结束）
-        if (
-          params.conversationId &&
-          conversationInfoRef.current?.agent?.type === AgentTypeEnum.TaskAgent
-        ) {
-          await syncConversationTaskStatus(params.conversationId);
+        // SSE 结束后兜底同步 taskStatus：仅写回终态，避免竞态 EXECUTING 固化本地。
+        // 不限制 Agent 类型；任何携带 taskStatus=EXECUTING 的会话都必须能释放输入态。
+        if (params.conversationId) {
+          await syncTerminalConversationTaskStatus(
+            params.conversationId,
+            setConversationInfo,
+          );
         }
 
         // 主动关闭连接时，禁用会话
