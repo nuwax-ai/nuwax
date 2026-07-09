@@ -78,6 +78,83 @@ export function applyTerminalTaskStatus(
   });
 }
 
+function normalizeTaskStatus(value: unknown): TaskStatus | undefined {
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+  const normalized = value.trim().toUpperCase();
+  if (
+    normalized === TaskStatus.COMPLETE ||
+    normalized === TaskStatus.CANCEL ||
+    normalized === TaskStatus.FAILED
+  ) {
+    return normalized as TaskStatus;
+  }
+  return undefined;
+}
+
+function normalizeStopReason(value: unknown): TaskStatus | undefined {
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+  const normalized = value
+    .trim()
+    .toLowerCase()
+    .replace(/[-_\s]/g, '');
+  if (
+    normalized === 'endturn' ||
+    normalized === 'complete' ||
+    normalized === 'completed' ||
+    normalized === 'success'
+  ) {
+    return TaskStatus.COMPLETE;
+  }
+  if (
+    normalized === 'cancel' ||
+    normalized === 'cancelled' ||
+    normalized === 'canceled'
+  ) {
+    return TaskStatus.CANCEL;
+  }
+  if (
+    normalized === 'error' ||
+    normalized === 'fail' ||
+    normalized === 'failed'
+  ) {
+    return TaskStatus.FAILED;
+  }
+  return undefined;
+}
+
+function resolveStructuredTerminalStatus(
+  signal: unknown,
+): TaskStatus | undefined {
+  const directStatus = normalizeTaskStatus(signal);
+  if (directStatus) {
+    return directStatus;
+  }
+
+  if (!signal || typeof signal !== 'object') {
+    return undefined;
+  }
+
+  const payload = signal as Record<string, unknown>;
+  const status =
+    normalizeTaskStatus(payload.taskStatus) ||
+    normalizeTaskStatus(payload.task_status) ||
+    normalizeTaskStatus(payload.status) ||
+    normalizeTaskStatus(payload.terminalStatus);
+  if (status) {
+    return status;
+  }
+
+  return (
+    normalizeStopReason(payload.stop_reason) ||
+    normalizeStopReason(payload.stopReason) ||
+    normalizeStopReason(payload.reason)
+  );
+}
+
 /**
  * 从 FINAL_RESULT 解析终态 taskStatus。
  *
@@ -85,18 +162,33 @@ export function applyTerminalTaskStatus(
  * 正常完成是「后端落库 COMPLETE 有延迟」的高风险场景，直接落终态绕过后端轮询，
  * 修复 taskStatus 固化 EXECUTING（UI 长期显示「智能体正在执行」/ 发送按钮进行中）。
  *
- * success=false（取消/冲突/失败）不在前端据 error 文案猜终态——文案匹配脆弱、
- * 与后端措辞强耦合。这里返回 undefined，由 applyTerminalTaskStatus 跳过写回，
- * 交 onClose 的 syncTerminalConversationTaskStatus 拉后端真实 taskStatus；
+ * success=false（取消/冲突/失败）不在前端据 error/message 文案猜终态——文案匹配脆弱、
+ * 与后端措辞强耦合。仅接受结构化 taskStatus / stop_reason / reason 等协议字段；
+ * 未命中则返回 undefined，由 applyTerminalTaskStatus 跳过写回，交 onClose 的
+ * syncTerminalConversationTaskStatus 拉后端真实 taskStatus；
  * 此时后端已返回 FINAL_RESULT，终态通常已落库，轮询可拿到正确值。
  *
  * - success === true → COMPLETE
+ * - taskStatus/status/task_status/terminalStatus 为终态枚举 → 对应终态
+ * - stop_reason/stopReason/reason 为协议终止原因枚举 → 对应终态
  * - 其它 → undefined（不落，交后端轮询兜底）
  */
 export function resolveTerminalTaskStatus(
   success: boolean | undefined,
+  ...terminalSignals: unknown[]
 ): TaskStatus | undefined {
-  return success ? TaskStatus.COMPLETE : undefined;
+  if (success) {
+    return TaskStatus.COMPLETE;
+  }
+
+  for (const signal of terminalSignals) {
+    const status = resolveStructuredTerminalStatus(signal);
+    if (status) {
+      return status;
+    }
+  }
+
+  return undefined;
 }
 
 /**

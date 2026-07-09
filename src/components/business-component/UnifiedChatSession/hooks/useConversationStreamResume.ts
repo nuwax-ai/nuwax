@@ -13,7 +13,7 @@ import { useEffect, useRef, useState } from 'react';
  * 用途：刷新页面 / 新开标签后，重新订阅 EXECUTING 会话的输出流（/api/agent/conversation/chat/sub/:id），
  * 把「执行中的助手消息」重建出来。与 useLoadMoreHistory / useUnifiedChatScroll 同属 UnifiedChatSession
  * 的会话生命周期 hooks 聚合于此。各会话页从自身所属 model（conversationInfo 或 conversationAgent）
- * 注入状态与 action 即可复用；未注入 action 的页面（如隔离会话源）不启用恢复。
+ * 注入状态与 action 即可复用；未注入 action 的页面不启用恢复。
  *
  * 轮询时机：仅在【未订阅 sub】时轮询会话状态——一旦续上 sub（执行中），立即停止状态轮询，
  * 由 sub 流接管输出；sub 关闭后才恢复轮询，继续检测会话再次变为 EXECUTING。
@@ -212,7 +212,7 @@ export function useConversationStreamResume(
       // 屏幕不可见时暂停定时任务（多窗口/多标签仅可见者轮询）
       pollingWhenHidden: false,
       pollingErrorRetryCount: -1,
-      // resumeStream 未注入（如 ConversationAgent 预览 Tab，dev 调试会话）则整体不启用：不轮询、不订阅
+      // resumeStream 未注入则整体不启用：不轮询、不订阅
       ready:
         !!conversationId &&
         !isLocallyStreaming &&

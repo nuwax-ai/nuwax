@@ -382,7 +382,12 @@ describe('消息队列功能', () => {
         minConsumeInterval: 1000,
         messageList: [],
       });
-      // 首次消费 lastConsumeAt 初始为 0，elapsed 很大 → setTimeout(0)，推进 1ms 即触发 m1
+      // 从「阻塞解除时刻」起算最小间隔，首次消费也要等待完整 minConsumeInterval
+      act(() => {
+        vi.advanceTimersByTime(999);
+      });
+      expect(sendMessage).not.toHaveBeenCalled();
+
       act(() => {
         vi.advanceTimersByTime(1);
       });
@@ -402,8 +407,7 @@ describe('消息队列功能', () => {
         messageList: [],
       });
 
-      // m2 的 wait ≈ minConsumeInterval - elapsed（距 m1 消费仅 1ms → wait≈999）。
-      // 推进 500ms 不到 wait，m2 不应发送
+      // m2 同样从本轮阻塞解除时刻起算，推进 500ms 不到 wait，不应发送
       act(() => {
         vi.advanceTimersByTime(500);
       });
@@ -426,8 +430,8 @@ describe('消息队列功能', () => {
 
   // ============ 功能5：队列操作 ============
   describe('队列操作：立即发送 / 编辑 / 删除 / 清空', () => {
-    it('立即发送：把目标消息移到队首并停止当前会话', () => {
-      const { result } = setup({ isConversationActive: true });
+    it('立即发送：标记目标消息 sending，停止当前会话，并在空闲后优先消费该项', () => {
+      const { result, rerender } = setup({ isConversationActive: true });
       act(() => {
         result.current.trySend('m1');
         result.current.trySend('m2');
@@ -437,8 +441,31 @@ describe('消息队列功能', () => {
         result.current.sendNow(m2);
       });
       expect(runStopConversation).toHaveBeenCalledWith('conv-1');
-      expect(result.current.queue[0].text).toBe('m2');
+      expect(result.current.queue.map((item) => item.text)).toEqual([
+        'm1',
+        'm2',
+      ]);
+      expect(result.current.queue[1].sending).toBe(true);
       expect(result.current.queue).toHaveLength(2);
+
+      rerender({
+        isConversationActive: false,
+        hasPendingIntervention: false,
+        minConsumeInterval: 500,
+        messageList: [],
+      });
+      act(() => {
+        vi.advanceTimersByTime(500);
+      });
+
+      expect(sendMessage).toHaveBeenCalledWith(
+        'm2',
+        [],
+        undefined,
+        undefined,
+        undefined,
+      );
+      expect(result.current.queue.map((item) => item.text)).toEqual(['m1']);
     });
 
     it('编辑：把消息移出队列以回填输入框', () => {
