@@ -13,9 +13,11 @@
   .tab-left {
     flex: 1;
     min-width: 0;
+    overflow: hidden;
   }
 
   .tab-right {
+    flex: none;
     line-height: 48px;
 
     .icon {
@@ -28,6 +30,28 @@
   :global {
     .ant-tabs {
       width: 100% !important;
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .ant-tabs-nav {
+      min-width: 0;
+      overflow: hidden;
+
+      &::before {
+        display: none;
+      }
+    }
+
+    .ant-tabs-nav-wrap {
+      min-width: 0;
+      overflow: hidden;
+      contain: paint;
+      isolation: isolate;
+    }
+
+    .ant-tabs-nav-list {
+      will-change: transform;
     }
 
     .ant-tabs-tab {
@@ -43,11 +67,11 @@
       background-color: transparent;
       font-size: @fontSize;
       line-height: 24px;
-      transition: all 0.3s;
+      transition: background-color 0.3s, color 0.3s;
 
       .ant-tabs-tab-btn {
         color: @colorTextSecondary;
-        transition: all 0.3s;
+        transition: color 0.3s;
       }
 
       &:hover {
@@ -69,17 +93,6 @@
     // 移除标签栏按钮聚焦样式
     .ant-tabs-tab-btn:focus:not(:focus-visible) {
       color: @colorTextSecondary;
-    }
-
-    // 标签栏容器样式
-    .ant-tabs-nav {
-      // margin-bottom: 0;
-      // border-bottom: none;
-      // background: transparent;
-
-      &::before {
-        display: none;
-      }
     }
   }
 }
