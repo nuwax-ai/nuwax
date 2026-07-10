@@ -7,6 +7,7 @@ import {
   resolveTaskStatusFromMessageLists,
 } from '@/utils/conversationTaskStatusSync';
 import eventBus from '@/utils/eventBus';
+import { conversationPollLogger } from '@/utils/logger';
 import { useRequest } from 'ahooks';
 import { useEffect, useRef, useState } from 'react';
 
@@ -257,10 +258,11 @@ export function useConversationStreamResume(
       ],
       onSuccess: (status) => {
         if (!conversationId) return;
-        // 防跨会话写回：轮询发起后会话可能已切换，丢弃旧会话的 stale 结果
+        // 防跨会话写回；同值终态跳过，避免每轮轮询触发下游 reload 闪烁
         if (
           status !== undefined &&
           status !== TaskStatus.EXECUTING &&
+          latestRef.current.taskStatus !== status &&
           latestRef.current.conversationId === conversationId
         ) {
           onTerminalTaskStatusRef.current?.(status);
@@ -296,8 +298,22 @@ export function useConversationStreamResume(
     },
   );
   // 把 run/cancel 注入 pollingControlsRef，供 subscribe / onClose 调用
-  pollingControlsRef.current.start = run;
-  pollingControlsRef.current.stop = cancel;
+  pollingControlsRef.current.start = () => {
+    conversationPollLogger.info(
+      'resume',
+      latestRef.current.conversationId,
+      latestRef.current.taskStatus,
+    );
+    run();
+  };
+  pollingControlsRef.current.stop = () => {
+    conversationPollLogger.info(
+      'stop',
+      latestRef.current.conversationId,
+      latestRef.current.taskStatus,
+    );
+    cancel();
+  };
 
   // 切换会话：先重置订阅状态。必须在 entry effect 之前执行，否则 entry subscribe 后会被这里覆盖。
   // cleanup 里 abortSub 触发的 onClose 有 ~500ms 延迟，这里立即重置 state，避免新会话卡在「不轮询」。
@@ -321,7 +337,7 @@ export function useConversationStreamResume(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversationId, taskStatus]);
 
-  // 监听浏览器切回前台（页签可见）事件，立即检查是否有任务在执行，并尝试进行流式恢复
+  // 切回可见页签时检查是否有任务在执行；同值终态不写回，避免无变化时触发下游 reload 闪烁
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (
@@ -334,7 +350,11 @@ export function useConversationStreamResume(
         fetchConversationTaskStatus(conversationId).then((status) => {
           // 防跨会话写回：fetch in-flight 期间会话可能已切换，丢弃 stale 结果
           if (latestRef.current.conversationId !== conversationId) return;
-          if (status !== undefined && status !== TaskStatus.EXECUTING) {
+          if (
+            status !== undefined &&
+            status !== TaskStatus.EXECUTING &&
+            latestRef.current.taskStatus !== status
+          ) {
             onTerminalTaskStatusRef.current?.(status);
           }
           if (status === TaskStatus.EXECUTING) {
@@ -352,7 +372,7 @@ export function useConversationStreamResume(
   // 离开 / 切换会话：清除轮询 + 中断 sub（约束：退出会话页必须清除轮询）
   useEffect(() => {
     return () => {
-      cancel();
+      pollingControlsRef.current.stop();
       if (abortSub) {
         abortSub();
       }

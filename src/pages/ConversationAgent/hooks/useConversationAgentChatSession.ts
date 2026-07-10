@@ -260,9 +260,23 @@ export function useConversationAgentChatSession(
     onAbortResumeStream: abortResumeStream,
     onReloadConversationHistoryAsync: async (id: number | string) =>
       (await runAsync(Number(id)))?.data?.messageList,
-    onTerminalTaskStatus: (status: TaskStatus) => {
+    onTerminalTaskStatus: async (status: TaskStatus) => {
       if (!devConversationId) return;
       applyTerminalTaskStatus(setConversationInfo, devConversationId, status);
+      // 终态兜底 reload messageList：dev-agent 经 flow-debugger 等外部写入会话的消息，
+      // 若错过 EXECUTING 窗口（sub 流没接住），这里拉最新历史确保预览可见
+      if (getCurrentConversationId() !== devConversationId) return;
+      try {
+        const list = (await runAsync(devConversationId))?.data?.messageList;
+        if (
+          Array.isArray(list) &&
+          getCurrentConversationId() === devConversationId
+        ) {
+          setMessageList(list);
+        }
+      } catch {
+        // reload 失败不影响终态写回
+      }
     },
     messageBottomMode: 'chat' as const,
     loadingSuggest,
