@@ -1,0 +1,72 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid rgba(5, 5, 5, 6%);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.header {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 56px;
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(5, 5, 5, 6%);
+}
+
+.title {
+  color: rgba(0, 0, 0, 88%);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 22px;
+}
+
+.subtitle {
+  color: rgba(0, 0, 0, 45%);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  background: #fafafa;
+}
+
+.surface-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 100%;
+  padding: 16px;
+}
+
+.a2ui-surface {
+  width: 100%;
+  min-width: 0;
+}
+
+.empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 280px;
+  padding: 24px;
+  color: rgba(0, 0, 0, 45%);
+  font-size: 14px;
+  line-height: 22px;
+  text-align: center;
+}
+
+/* stylelint-disable-next-line selector-class-pattern */
+.body :global(.cpk\:flex) {
+  min-width: 0;
+}

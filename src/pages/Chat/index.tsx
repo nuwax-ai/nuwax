@@ -61,6 +61,7 @@ import React, {
   useState,
 } from 'react';
 import { history, useLocation, useModel, useParams } from 'umi';
+import CopilotKitPanel from './components/CopilotKitPanel';
 import LeftContent from './components/LeftContent';
 import ShowArea from './components/ShowArea';
 import { useAutoPreviewFile } from './hooks/useAutoPreviewFile';
@@ -70,6 +71,10 @@ import { useChatSandbox } from './hooks/useChatSandbox';
 import { useChatVariables } from './hooks/useChatVariables';
 import { useChatViewMode } from './hooks/useChatViewMode';
 import styles from './index.less';
+import {
+  findLatestCopilotKitMcpPayload,
+  type CopilotKitMcpPayload,
+} from './utils/copilotKitMcp';
 
 const cx = classNames.bind(styles);
 export interface ChatCoreProps {
@@ -133,6 +138,11 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   const [openCopyModal, setOpenCopyModal] = useState<boolean>(false);
 
   const [clearLoading, setClearLoading] = useState<boolean>(false);
+  const [isCopilotKitPanelVisible, setIsCopilotKitPanelVisible] =
+    useState<boolean>(false);
+  const [copilotKitPayload, setCopilotKitPayload] =
+    useState<CopilotKitMcpPayload | null>(null);
+  const lastCopilotKitPayloadKeyRef = useRef<string>('');
 
   // 异步查询会话加载状态
   const [loadingAsync, setLoadingAsync] = useState<boolean>(true);
@@ -316,6 +326,43 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     setTerminalConsoleVisible(false);
     closePreviewView();
   }, [closePreviewView]);
+
+  const handleCloseCopilotKitPanel = useCallback(() => {
+    setIsCopilotKitPanelVisible(false);
+  }, []);
+
+  const handleToggleCopilotKitPanel = useCallback(() => {
+    setIsCopilotKitPanelVisible((visible) => {
+      const nextVisible = !visible;
+      if (nextVisible) {
+        sidebarRef.current?.close();
+        hidePagePreview();
+        closePreviewView();
+      }
+      return nextVisible;
+    });
+  }, [closePreviewView, hidePagePreview]);
+
+  useEffect(() => {
+    const latestPayload = findLatestCopilotKitMcpPayload(messageList || []);
+    if (!latestPayload) return;
+
+    const payloadKey = [
+      latestPayload.kind,
+      latestPayload.sourceMessageId,
+      latestPayload.surfaceIds?.join(','),
+      latestPayload.mcpAppsContent?.resourceUri,
+    ].join(':');
+
+    if (payloadKey === lastCopilotKitPayloadKeyRef.current) return;
+
+    lastCopilotKitPayloadKeyRef.current = payloadKey;
+    setCopilotKitPayload(latestPayload);
+    setIsCopilotKitPanelVisible(true);
+    sidebarRef.current?.close();
+    hidePagePreview();
+    closePreviewView();
+  }, [closePreviewView, hidePagePreview, messageList]);
 
   const {
     isShowFilePanel,
@@ -534,6 +581,8 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     // 切换会话时立即隐藏页面预览，并清除文件面板全局状态（fileTreeData / taskAgentSelectedFileId 等）
     hidePagePreview();
     clearFilePanelInfo();
+    setCopilotKitPayload(null);
+    lastCopilotKitPayloadKeyRef.current = '';
     setOpenPaymentModal(false);
 
     // 重置 clearLoading：此时 cleanup 已执行 resetInit() 清空了 conversationInfo，
@@ -545,6 +594,8 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       resetInit();
       setSelectedComponentList([]);
       hidePagePreview(); // 组件卸载时主动隐藏预览，避免用户下一次进入时预览还在！
+      setCopilotKitPayload(null);
+      lastCopilotKitPayloadKeyRef.current = '';
 
       setOpenPaymentModal(false);
     };
@@ -711,6 +762,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     handleFileTreeVisible();
 
     if (openingFileTree || switchingToPreview) {
+      setIsCopilotKitPanelVisible(false);
       setTerminalConsoleVisible(false);
       if (!hasSelectedPreviewFile) {
         setIsFileTreePinned(true);
@@ -748,6 +800,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     }
 
     sidebarRef.current?.close();
+    setIsCopilotKitPanelVisible(false);
     setHasTerminalConsoleRendered(true);
     setTerminalConsoleVisible(true);
     setTerminalConsoleCollapseSignal(0);
@@ -768,6 +821,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       setTerminalConsoleCollapseSignal((n) => n + 1);
     }
     setTerminalConsoleVisible(false);
+    setIsCopilotKitPanelVisible(false);
     setTerminalConsoleCollapseSignal(0);
     setTerminalConsoleExpandSignal(0);
     setTerminalConsoleLayoutMode('collapsed');
@@ -1114,7 +1168,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   // 设置最小宽度
   useEffect(() => {
     // 设置最小宽度-扩展页面/文件树
-    if (pagePreviewData || isFileTreeVisible) {
+    if (pagePreviewData || isFileTreeVisible || isCopilotKitPanelVisible) {
       document.documentElement.style.minWidth = '1660px';
     } else {
       // 设置最小宽度-调试详情
@@ -1127,7 +1181,13 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     return () => {
       document.documentElement.style.minWidth = 'unset';
     };
-  }, [pagePreviewData, isFileTreeVisible, showSidebar, isSidebarVisible]);
+  }, [
+    pagePreviewData,
+    isFileTreeVisible,
+    isCopilotKitPanelVisible,
+    showSidebar,
+    isSidebarVisible,
+  ]);
 
   // 聊天会话头部相关 props
   const headerProps = {
@@ -1153,6 +1213,9 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     isDesktopIconActive,
     handleOpenTerminalPanel,
     handleOpenDesktopView: handleOpenDesktopViewClick,
+    isCopilotKitPanelVisible,
+    handleToggleCopilotKitPanel,
+    closeCopilotKitPanel: handleCloseCopilotKitPanel,
     renderTitle,
     renderHeaderRight,
   };
@@ -1249,7 +1312,19 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   }
 
   // 是否展开视图
-  const isExpandedView = !!(pagePreviewData || isFileTreeVisible);
+  const isExpandedView = !!(
+    pagePreviewData ||
+    isFileTreeVisible ||
+    isCopilotKitPanelVisible
+  );
+
+  const copilotKitPanel = isCopilotKitPanelVisible && !isFileTreeVisible && (
+    <CopilotKitPanel
+      conversationId={id}
+      payload={copilotKitPayload}
+      onClose={handleCloseCopilotKitPanel}
+    />
+  );
 
   return (
     <div
@@ -1265,7 +1340,9 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
         {enableResizable ? (
           <ResizableSplit
             resetTrigger={
-              pagePreviewData || isFileTreeVisible ? 'visible' : 'hidden'
+              pagePreviewData || isFileTreeVisible || isCopilotKitPanelVisible
+                ? 'visible'
+                : 'hidden'
             }
             minLeftWidth={430}
             defaultLeftWidth={37}
@@ -1283,8 +1360,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
               )
             }
             right={
-              pagePreviewData &&
-              !isFileTreeVisible && (
+              pagePreviewData && !isFileTreeVisible ? (
                 <>
                   <PagePreviewIframe
                     pagePreviewData={pagePreviewData}
@@ -1317,6 +1393,8 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
                     />
                   )}
                 </>
+              ) : (
+                copilotKitPanel
               )
             }
           />
@@ -1374,6 +1452,9 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
                   />
                 )}
               </div>
+            )}
+            {!pagePreviewData && copilotKitPanel && (
+              <div style={{ flex: '1', minWidth: 0 }}>{copilotKitPanel}</div>
             )}
           </div>
         )}

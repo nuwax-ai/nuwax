@@ -9,7 +9,7 @@ import DropdownChangeName from '@/pages/Chat/components/DropdownChangeName';
 import { t } from '@/services/i18nRuntime';
 import { HideDesktopEnum } from '@/types/enums/agent';
 import { AgentTypeEnum } from '@/types/enums/space';
-import { CodeOutlined } from '@ant-design/icons';
+import { ApiOutlined, CodeOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import React from 'react';
 import styles from './index.less';
@@ -121,6 +121,7 @@ const LeftContent: React.FC<LeftContentProps> = ({
                   }
                   onClick={() => {
                     headerProps.hidePagePreview();
+                    headerProps.closeCopilotKitPanel?.();
                     // 先关闭文件树
                     headerProps.closePreviewView();
                     // 然后打开 AgentSidebar
@@ -146,6 +147,7 @@ const LeftContent: React.FC<LeftContentProps> = ({
                   }
                   onClick={() => {
                     headerProps.sidebarRef.current?.close();
+                    headerProps.closeCopilotKitPanel?.();
                     headerProps.closePreviewView(); // 关闭文件树
                     headerProps.handleOpenPreview(effectiveAgent);
                   }}
@@ -213,6 +215,19 @@ const LeftContent: React.FC<LeftContentProps> = ({
                 </ConditionRender>
               </>
             )}
+
+            <TooltipIcon
+              title={
+                headerProps.isCopilotKitPanelVisible
+                  ? '关闭 AI UI 生成'
+                  : '打开 AI UI 生成'
+              }
+              className={cx(styles['icon-box'], {
+                [styles['active']]: headerProps.isCopilotKitPanelVisible,
+              })}
+              icon={<ApiOutlined style={{ fontSize: 16 }} />}
+              onClick={headerProps.handleToggleCopilotKitPanel}
+            />
 
             {/* 自定义右侧控件插槽（例如发布组件） */}
             {headerProps.renderHeaderRight?.({ effectiveAgent })}
