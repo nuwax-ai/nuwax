@@ -131,9 +131,6 @@ const SpaceSection: React.FC<{
           ))}
         </div>
       </ConditionRender>
-      {/* 隐藏开发收藏 */}
-      {/* <h3 className={cx(styles['collection-title'])}>开发收藏</h3>
-      <DevCollect /> */}
     </div>
   );
 };
