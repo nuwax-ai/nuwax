@@ -2,7 +2,7 @@ import { ConnectionStatus } from '@/components/business-component/VncPreview/typ
 import { FileNode } from '@/types/interfaces/appDev';
 import type React from 'react';
 
-/** Chat 页文件预览 Header 组件 Props（不含保存/取消） */
+/** Chat 页文件预览 Header 组件 Props */
 export interface FilePathHeaderProps {
   /** 会话ID */
   conversationId: string;
@@ -27,6 +27,14 @@ export interface FilePathHeaderProps {
   isFullscreen?: boolean;
   /** 是否显示全屏图标 */
   showFullscreenIcon?: boolean;
+  /** 保存回调（未开启版本管理、Code 模式手动保存） */
+  onSaveFiles?: () => void;
+  /** 取消保存回调 */
+  onCancelSaveFiles?: () => void;
+  /** 是否存在修改过的文件 */
+  hasModifiedFiles?: boolean;
+  /** 是否正在保存文件 */
+  isSavingFiles?: boolean;
   /** 是否正在导出项目 */
   isExportingProjecting?: boolean;
   /** 是否正在下载文件 */

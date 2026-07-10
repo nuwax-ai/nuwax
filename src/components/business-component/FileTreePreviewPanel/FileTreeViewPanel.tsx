@@ -20,7 +20,7 @@ import type { FileTreeViewProps, FileTreeViewRef } from './types/file-tree';
 /**
  * FileTreeView 替代组件
  * 基于 FileTreePreviewPanel + useFileTreePreviewView，兼容 FileTreeViewProps / ref
- * 文件修改通过 onSaveFileContent 防抖实时保存（与 Chat 页一致），Header 无保存/取消按钮
+ * 开启版本管理时 Code 模式防抖实时保存；未开启时本地暂存，Header 手动保存
  */
 const FileTreeViewPanel = forwardRef<FileTreeViewRef, FileTreeViewProps>(
   (props, ref) => {
@@ -161,6 +161,10 @@ const FileTreeViewPanel = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       [debouncedSaveFileContent],
     );
 
+    /** 单个文件内容变更后实时保存（防抖）；未开启版本管理时不传入，改为 Header 手动保存 */
+    const enableAutoSaveOnCodeEdit =
+      !readOnly && isAgentVersionControlEnabled(enableVersionControl);
+
     const fileView = useFileTreePreviewView({
       ...fileViewProps,
       taskAgentSelectedFileId,
@@ -191,16 +195,16 @@ const FileTreeViewPanel = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           (enableVersionControl === undefined ||
             isAgentVersionControlEnabled(enableVersionControl))),
       onSaveFiles: handleSaveFiles,
-      onSaveFileContent: readOnly
-        ? undefined
-        : async (fileId, content, originalFileContent) => {
+      onSaveFileContent: enableAutoSaveOnCodeEdit
+        ? async (fileId, content, originalFileContent) => {
             const result = await debouncedSaveFileContent(
               fileId,
               content,
               originalFileContent,
             );
             return result ?? false;
-          },
+          }
+        : undefined,
       onFileSelectOpenPreview: () => {
         closeVersionPanelForFilePreviewRef.current();
       },

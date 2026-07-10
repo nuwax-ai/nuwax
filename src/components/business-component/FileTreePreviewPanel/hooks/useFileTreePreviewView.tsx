@@ -141,6 +141,8 @@ export function useFileTreePreviewView(
     /** 智能体是否开启版本管理；关闭时文件树不展示 .gitignore */
     enableVersionControl,
   } = props;
+  /** 未开启版本管理且非只读：Code 模式本地暂存，Header 手动保存 */
+  const enableManualCodeSave = !readOnly && !onSaveFileContent;
   const isCloudComputer = agentSandboxId === '-1';
   // 文件树数据
   const [files, setFiles] = useState<FileNode[]>([]);
@@ -2031,6 +2033,14 @@ export function useFileTreePreviewView(
       viewMode,
       viewFileType,
       onViewFileTypeChange: handleViewFileTypeChange,
+      ...(enableManualCodeSave
+        ? {
+            hasModifiedFiles: changeFiles.length > 0 && viewFileType === 'code',
+            onSaveFiles: saveFiles,
+            onCancelSaveFiles: cancelSaveFiles,
+            isSavingFiles,
+          }
+        : {}),
     }),
     [
       targetId,
@@ -2058,6 +2068,11 @@ export function useFileTreePreviewView(
       viewMode,
       viewFileType,
       handleViewFileTypeChange,
+      enableManualCodeSave,
+      changeFiles.length,
+      isSavingFiles,
+      saveFiles,
+      cancelSaveFiles,
     ],
   );
 

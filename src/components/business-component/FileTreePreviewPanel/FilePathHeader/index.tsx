@@ -26,7 +26,7 @@ const cx = classNames.bind(styles);
 
 /**
  * Chat 页文件预览 Header
- * 基于 FilePathHeader 复制，移除保存/取消按钮逻辑
+ * 未开启版本管理时支持 Code 模式手动保存/取消
  */
 const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   className,
@@ -41,6 +41,10 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   onFullscreen,
   isFullscreen = false,
   showFullscreenIcon = true,
+  onSaveFiles,
+  onCancelSaveFiles,
+  hasModifiedFiles = false,
+  isSavingFiles = false,
   isDownloadingFile = false,
   showMoreActions = true,
   viewFileType = 'preview',
@@ -254,6 +258,22 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
             </div>
           </div>
         )
+      )}
+
+      {hasModifiedFiles && (
+        <div className="flex items-center content-end gap-4">
+          <Button
+            size="small"
+            type="primary"
+            onClick={onSaveFiles}
+            loading={isSavingFiles}
+          >
+            {dict('PC.Common.Global.save')}
+          </Button>
+          <Button size="small" type="default" onClick={onCancelSaveFiles}>
+            {dict('PC.Common.Global.cancel')}
+          </Button>
+        </div>
       )}
 
       <div className={cx('flex', 'items-center', 'gap-16', 'ml-auto')}>
