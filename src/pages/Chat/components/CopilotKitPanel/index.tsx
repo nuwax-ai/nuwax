@@ -27,16 +27,23 @@ const A2UISurfaceView: React.FC<{
   payload: CopilotKitMcpPayload;
 }> = ({ payload }) => {
   const { clearSurfaces, processMessages } = useA2UI();
-  const surfaceIds = payload.surfaceIds?.length
-    ? payload.surfaceIds
-    : ['default'];
+  const surfaceIds = useMemo(
+    () => (payload.surfaceIds?.length ? payload.surfaceIds : ['default']),
+    [payload.surfaceIds],
+  );
+  const opsRef = React.useRef<string>('');
 
   useEffect(() => {
+    const opsKey = JSON.stringify(payload.operations);
+    if (opsKey === opsRef.current) return;
+    opsRef.current = opsKey;
+
     clearSurfaces();
     if (payload.operations?.length) {
       processMessages(payload.operations);
     }
-  }, [clearSurfaces, payload.operations, processMessages]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [payload.operations]);
 
   return (
     <div className={cx(styles['surface-stack'])}>
@@ -92,7 +99,10 @@ const CopilotKitPayloadRenderer: React.FC<{
   }
 
   return (
-    <A2UIProvider theme={a2uiDefaultTheme}>
+    <A2UIProvider
+      key={payload.sourceMessageId || 'a2ui'}
+      theme={a2uiDefaultTheme}
+    >
       <A2UISurfaceView payload={payload} />
     </A2UIProvider>
   );

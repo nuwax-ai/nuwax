@@ -343,8 +343,17 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     });
   }, [closePreviewView, hidePagePreview]);
 
+  // Stable refs for callbacks used in the CopilotKit auto-open effect.
+  // Avoids putting them in the dependency array (which would cause
+  // the effect to re-run on every render if the callbacks change reference).
+  const closePreviewViewRef2 = useRef(closePreviewView);
+  closePreviewViewRef2.current = closePreviewView;
+  const hidePagePreviewRef2 = useRef(hidePagePreview);
+  hidePagePreviewRef2.current = hidePagePreview;
+
   useEffect(() => {
-    const latestPayload = findLatestCopilotKitMcpPayload(messageList || []);
+    const list = messageList || [];
+    const latestPayload = findLatestCopilotKitMcpPayload(list);
     if (!latestPayload) return;
 
     const payloadKey = [
@@ -360,9 +369,9 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     setCopilotKitPayload(latestPayload);
     setIsCopilotKitPanelVisible(true);
     sidebarRef.current?.close();
-    hidePagePreview();
-    closePreviewView();
-  }, [closePreviewView, hidePagePreview, messageList]);
+    hidePagePreviewRef2.current();
+    closePreviewViewRef2.current();
+  }, [messageList]);
 
   const {
     isShowFilePanel,

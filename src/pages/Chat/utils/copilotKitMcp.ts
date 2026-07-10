@@ -218,10 +218,11 @@ const collectPayloads = (
   if (Array.isArray(parsed)) {
     if (parsed.length > 0 && parsed.every(isA2UIOperation)) {
       const operations = normalizeA2UIOperations(parsed);
+      const surfaceIds = uniq(operations.map(getOperationSurfaceId));
       result.push({
         kind: 'a2ui',
         operations,
-        surfaceIds: uniq(operations.map(getOperationSurfaceId)),
+        surfaceIds,
         raw: parsed,
       });
       return;
@@ -262,10 +263,11 @@ const collectPayloads = (
     const validOperations = normalizeA2UIOperations(
       operations.filter(isA2UIOperation),
     );
+    const surfaceIds = uniq(validOperations.map(getOperationSurfaceId));
     result.push({
       kind: 'a2ui',
       operations: validOperations,
-      surfaceIds: uniq(validOperations.map(getOperationSurfaceId)),
+      surfaceIds,
       title: parsed.title || parsed.name,
       raw: parsed,
     });
