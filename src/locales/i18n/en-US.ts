@@ -1324,8 +1324,6 @@ export const EN_US: SystemLangMap = {
   "PC.Layouts.DynamicMenusLayout.CreateNewTeam.pleaseInputTeamName": "Please enter a team name",
   "PC.Layouts.DynamicMenusLayout.CreateNewTeam.teamName": "Team Name",
   "PC.Layouts.DynamicMenusLayout.CreateNewTeam.teamSpaceTips": "By creating a team space, projects, agents, plugins, workflows, and knowledge bases can be collaborated and shared within the team.",
-  "PC.Layouts.DynamicMenusLayout.DevCollect.addByStar": "Click the ⭐️ button to add content here~",
-  "PC.Layouts.DynamicMenusLayout.DevCollect.noCollection": "No favorites yet",
   "PC.Layouts.DynamicMenusLayout.DynamicSecondMenu.pathResolveFailed": "Path resolution failed. Please check if the menu path exists",
   "PC.Layouts.DynamicMenusLayout.HomeSection.conversationHistory": "Conversation History",
   "PC.Layouts.DynamicMenusLayout.HomeSection.exploreSquare": "Go to the square and start your exploration journey~",
