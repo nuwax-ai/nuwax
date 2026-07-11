@@ -178,25 +178,9 @@ export function useConversationStreamResume(
       if (latestRef.current.conversationId !== id) {
         return;
       }
-      // sub 关闭后先 reload 历史，再从消息 finalResult 解析终态，最后恢复轮询
-      let reloadedList: MessageInfo[] | undefined;
-      if (reloadHistoryAsync) {
-        try {
-          const reloaded = await reloadHistoryAsync(id);
-          if (reloaded?.length) {
-            reloadedList = reloaded;
-          }
-        } catch (e) {
-          console.error(
-            '[useConversationStreamResume] final reloadHistory failed:',
-            e,
-          );
-        }
-      }
-
-      // reload 列表可能缺 finalResult，回退 sub 重放后的本地 messageList
+      // sub 关闭后从本地 messageList 的 finalResult 解析终态（FINAL_RESULT 已落本地）；
+      // 不再 reload 历史——reload 会整体覆盖 messageList，正是会话结束闪烁的来源。
       const resolvedFromMessages = resolveTaskStatusFromMessageLists(
-        reloadedList,
         latestRef.current.messageList,
       );
       if (resolvedFromMessages) {

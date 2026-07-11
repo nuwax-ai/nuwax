@@ -141,7 +141,7 @@ describe('useConversationStreamResume', () => {
     });
 
     expect(runPolling).toHaveBeenCalled();
-    expect(reloadHistoryAsync).toHaveBeenCalledTimes(2);
+    expect(reloadHistoryAsync).toHaveBeenCalledTimes(1);
     expect(mockEventBusEmit).toHaveBeenCalledWith('refresh_conversation_list', {
       conversationId: 1555404,
       reason: 'stream-closed',
@@ -149,21 +149,30 @@ describe('useConversationStreamResume', () => {
   });
 
   it('sub 关闭后从消息 finalResult 解析终态并写回', async () => {
-    const reloadedList = [
+    const localMessageList = [
       {
         id: 'assistant-1',
         finalResult: { success: true, outputText: 'done' },
       },
     ] as any[];
-    const reloadHistoryAsync = vi.fn().mockResolvedValue(reloadedList);
+    const reloadHistoryAsync = vi.fn().mockResolvedValue([]);
     const onTerminalTaskStatus = vi.fn();
     let subOnClose: (() => void | Promise<void>) | undefined;
     const resumeStream = vi.fn((_id, _list, onClose) => {
       subOnClose = onClose;
     });
 
-    (resolveTaskStatusFromMessageLists as any).mockReturnValue(
-      TaskStatus.COMPLETE,
+    // 让 mock 反映真实解析契约：列表含 finalResult.success 的 assistant → COMPLETE，
+    // 否则返回 undefined（交由 fetchConversationTaskStatus 兜底）。这样 finalResult 内容真正驱动结果。
+    (resolveTaskStatusFromMessageLists as any).mockImplementation(
+      (...lists: any[]) => {
+        for (const list of lists) {
+          if (list?.some((m: any) => m?.finalResult?.success)) {
+            return TaskStatus.COMPLETE;
+          }
+        }
+        return undefined;
+      },
     );
 
     renderHook(() =>
@@ -171,7 +180,7 @@ describe('useConversationStreamResume', () => {
         conversationId: 1555404,
         taskStatus: TaskStatus.EXECUTING,
         isLocallyStreaming: false,
-        messageList: [],
+        messageList: localMessageList,
         reloadHistoryAsync,
         resumeStream,
         onTerminalTaskStatus,
@@ -189,8 +198,7 @@ describe('useConversationStreamResume', () => {
     });
 
     expect(resolveTaskStatusFromMessageLists).toHaveBeenCalledWith(
-      reloadedList,
-      [],
+      localMessageList,
     );
     expect(onTerminalTaskStatus).toHaveBeenCalledWith(TaskStatus.COMPLETE);
     expect(fetchConversationTaskStatus).not.toHaveBeenCalled();
