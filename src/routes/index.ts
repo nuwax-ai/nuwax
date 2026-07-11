@@ -670,6 +670,11 @@ const routes = [
     layout: false,
   },
   {
+    path: '/examples/session-rendering-demo',
+    component: '@/examples/SessionRenderingDemo',
+    layout: false,
+  },
+  {
     path: '/examples/menu-permission-demo',
     component: '@/examples/MenuPermissionDemo',
     layout: false,
