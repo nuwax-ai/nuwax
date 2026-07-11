@@ -6,6 +6,7 @@ import {
 } from '@/components/business-component/AgentIntervention';
 import { reconcileAcpPermissionStatusesInMessageList } from '@/components/business-component/AgentIntervention/utils/reconcileAcpPermissionStatus';
 import { reconcileFinalMessageState } from '@/components/business-component/AgentIntervention/utils/reconcileFinalMessageState';
+import { isAgentVersionControlEnabled } from '@/constants/agent.constants';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
   CONVERSATION_CONNECTION_URL,
@@ -83,8 +84,12 @@ import { extractTaskResult } from '@/utils';
 import { modalConfirm } from '@/utils/ant-custom';
 import { isEmptyObject } from '@/utils/common';
 import {
+  applyTerminalTaskStatus,
   createSyncConversationTaskStatus,
+  mergeConversationInfoTaskStatus,
+  resolveTerminalTaskStatus,
   subscribeChatFinishedTaskSync,
+  syncTerminalConversationTaskStatus,
 } from '@/utils/conversationTaskStatusSync';
 import eventBus from '@/utils/eventBus';
 import { createSSEConnection } from '@/utils/fetchEventSourceConversationInfo';
@@ -100,7 +105,10 @@ import { throttle } from 'lodash';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
-import { appendOutgoingConversationMessages } from './conversationInfoMessageList';
+import {
+  appendOutgoingConversationMessages,
+  preserveOptimisticMessageTail,
+} from './conversationInfoMessageList';
 
 export default () => {
   // 历史记录
@@ -157,6 +165,8 @@ export default () => {
   const [requestId, setRequestId] = useState<string>('');
   // 会话消息ID
   const messageIdRef = useRef<string>('');
+  /** 刷新 Git 源代码管理列表（由 Chat / ConversationAgent 等页面注入 fileView.refreshGitList） */
+  const refreshGitListRef = useRef<(() => void | Promise<void>) | null>(null);
   // 调试结果
   const [finalResult, setFinalResult] =
     useState<ConversationFinalResult | null>(null);
@@ -728,8 +738,10 @@ export default () => {
       const { data } = result;
       // 设置所有的详细信息
       setChatProcessingList(data?.messageList || []);
-      // 设置会话信息
-      setConversationInfo(data);
+      // 设置会话信息（合并 taskStatus，避免 reload 把 FINAL_RESULT 已落的终态盖回 EXECUTING）
+      setConversationInfo((prev) =>
+        mergeConversationInfoTaskStatus(prev, data),
+      );
       // 缓存当前会话ID
       if (data?.id) {
         setCurrentConversationId(data.id);
@@ -754,10 +766,12 @@ export default () => {
       );
       const len = _messageList?.length || 0;
       if (len) {
-        setMessageList(() => {
-          checkConversationActive(_messageList);
-          messageListRef.current = _messageList;
-          return _messageList;
+        // 保留本地末尾尚未落库的乐观消息（sub 续会话 / 切会话 reload 不再冲掉刚发送的用户消息）
+        setMessageList((prev) => {
+          const merged = preserveOptimisticMessageTail(prev, _messageList);
+          checkConversationActive(merged);
+          messageListRef.current = merged;
+          return merged;
         });
         // 最后一条消息为"问答"时，获取问题建议
         const lastMessage = _messageList[len - 1];
@@ -784,7 +798,12 @@ export default () => {
       }
       // 不存在会话消息时，才显示开场白预置问题
       else {
-        setMessageList([]);
+        // 后端暂返回空时仍保留本地乐观尾巴（避免冲掉刚发送的消息）
+        setMessageList((prev) => {
+          const merged = preserveOptimisticMessageTail(prev, []);
+          messageListRef.current = merged;
+          return merged;
+        });
         const guidQuestionDtos = data?.agent?.guidQuestionDtos || [];
         // 如果存在预置问题，显示预置问题
         setChatSuggestList(guidQuestionDtos);
@@ -1079,8 +1098,14 @@ export default () => {
             // 刷新文件树
             await refreshFileListImmediately(params.conversationId);
 
-            // 同步后台任务状态，确保「智能体正在执行，请稍等」能正确展示/结束
-            void syncConversationTaskStatus(params.conversationId);
+            // 开启版本管理时，同步刷新 Git 源代码管理列表
+            if (
+              isAgentVersionControlEnabled(
+                conversationInfoRef.current?.agent?.enableVersionControl,
+              )
+            ) {
+              void refreshGitListRef.current?.();
+            }
 
             const taskResult = extractTaskResult(data.outputText);
             // 如果有任务结果，并且有文件，则打开预览视图
@@ -1135,6 +1160,16 @@ export default () => {
         if (isSuggest.current) {
           runChatSuggest(params as ConversationChatSuggestParams);
         }
+
+        // 兜底：FINAL_RESULT 是确定结束信号；success=true 时直接落 COMPLETE，
+        // 不依赖 onClose 后的轮询接口，避免后端落库延迟导致 taskStatus 固化 EXECUTING。
+        // success=false 只接受结构化终态字段，不根据 error/message 文案猜测。
+        // 放在 isSuggest 之后：开启 suggest 时先触发建议拉取，再落终态。
+        applyTerminalTaskStatus(
+          setConversationInfo,
+          params.conversationId,
+          resolveTerminalTaskStatus(data?.success, data, res),
+        );
 
         // 用户主动取消任务
         if (!data?.success && data?.error?.includes('用户主动取消任务')) {
@@ -1286,12 +1321,13 @@ export default () => {
           }
         });
 
-        // SSE 结束后兜底同步 taskStatus（通用型智能体后台任务可能仍在执行或刚结束）
-        if (
-          params.conversationId &&
-          conversationInfoRef.current?.agent?.type === AgentTypeEnum.TaskAgent
-        ) {
-          await syncConversationTaskStatus(params.conversationId);
+        // SSE 结束后兜底同步 taskStatus：仅写回终态，避免竞态 EXECUTING 固化本地。
+        // 不限制 Agent 类型；任何携带 taskStatus=EXECUTING 的会话都必须能释放输入态。
+        if (params.conversationId) {
+          await syncTerminalConversationTaskStatus(
+            params.conversationId,
+            setConversationInfo,
+          );
         }
 
         // 主动关闭连接时，禁用会话
@@ -1631,6 +1667,8 @@ export default () => {
     handleRefreshFileList,
     // 立即刷新文件列表（供手动点击刷新按钮）
     refreshFileListImmediately,
+    /** 刷新 Git 列表回调 ref，页面侧赋值 fileView.refreshGitList */
+    refreshGitListRef,
     openDesktopView,
     openPreviewView,
     // 重启智能体电脑

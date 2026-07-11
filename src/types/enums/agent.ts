@@ -114,8 +114,9 @@ export enum NoneRecallReplyTypeEnum {
   CUSTOM = 'CUSTOM',
 }
 
-// 会话事件类型 可用值:PROCESSING,MESSAGE,FINAL_RESULT,ERROR
+// 会话事件类型 可用值:HEART_BEAT,PROCESSING,MESSAGE,FINAL_RESULT,ERROR
 export enum ConversationEventTypeEnum {
+  HEART_BEAT = 'HEART_BEAT',
   PROCESSING = 'PROCESSING',
   MESSAGE = 'MESSAGE',
   FINAL_RESULT = 'FINAL_RESULT',

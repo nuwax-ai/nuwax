@@ -19,6 +19,7 @@ import PublishComponentModal from '@/components/PublishComponentModal';
 import VersionHistory from '@/components/VersionHistory';
 import { isAgentVersionControlEnabled } from '@/constants/agent.constants';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { GLOBAL_POLLING_INTERVAL } from '@/constants/home.constants';
 import { useInitProjectMetadata } from '@/hooks/useInitProjectMetadata';
 import { useTerminalWsUrl } from '@/hooks/useTerminalWsUrl';
 import useUnifiedTheme from '@/hooks/useUnifiedTheme';
@@ -185,8 +186,8 @@ const ConversationAgent: React.FC = () => {
   /** 标签选择面板是否展开 */
   /** 预览标签页操作 ref（供 fileViewProviderProps 回调使用） */
   const previewTabsRef = useRef<ReturnType<typeof usePreviewTabs> | null>(null);
-  /** 刷新 Git 变更列表（delete 等场景需在 fileView 初始化后调用） */
-  const refreshGitListRef = useRef<(() => Promise<void>) | null>(null);
+  /** 清空文件树选中态 ref（导入项目等场景使用） */
+  const clearFileTreeSelectionRef = useRef<(() => void) | null>(null);
   const isVersionControlEnabledRef = useRef(false);
   /** 刷新文件树，并在存在当前选中文件时同步刷新文件内容 */
   const refreshFileTreeAndSelectedFileRef = useRef<
@@ -239,6 +240,7 @@ const ConversationAgent: React.FC = () => {
     openPreviewView,
     taskAgentSelectedFileId,
     taskAgentSelectTrigger,
+    setTaskAgentSelectedFileId,
     setIsLoadingOtherInterface,
     onMessageSend,
     runAsync,
@@ -246,6 +248,7 @@ const ConversationAgent: React.FC = () => {
     restartVncPod,
     restartAgent,
     isConversationActive,
+    refreshGitListRef,
   } = useModel('conversationInfo');
 
   /** 关闭远程智能体桌面（切换标签/文件等预览操作时调用） */
@@ -414,6 +417,26 @@ const ConversationAgent: React.FC = () => {
     runQueryAgentConversation(devConversationId);
   }, [devConversationId]);
 
+  // 轮询 agent 配置，感知后端 devConversationId 变化（flow-debugger `session.sh new` 代建新会话后回写）。
+  // 仅合并 devConversationId 单字段 + 变化守卫，绝不整体覆盖 agentConfigInfo（以免冲掉未保存的编排/模型/提示词编辑）。
+  // 值变化即触发上面的 useEffect → runQueryAgentConversation 自动切到新会话。
+  useRequest(() => apiAgentConfigInfo(agentId), {
+    ready: !!agentId,
+    pollingInterval: GLOBAL_POLLING_INTERVAL,
+    pollingWhenHidden: false,
+    pollingErrorRetryCount: -1,
+    onSuccess: (result: Awaited<ReturnType<typeof apiAgentConfigInfo>>) => {
+      const next = result?.data?.devConversationId;
+      if (next !== null && next !== undefined) {
+        setAgentConfigInfo((prev) =>
+          prev && next !== prev.devConversationId
+            ? { ...prev, devConversationId: next }
+            : prev,
+        );
+      }
+    },
+  });
+
   /**
    * 当页面加载结束且携带了初始消息状态时，自动触发消息发送
    */
@@ -521,6 +544,12 @@ const ConversationAgent: React.FC = () => {
         if (code === SUCCESS_CODE) {
           message.success(dict('PC.Pages.AppDevIndex.importProjectSuccess'));
           setOpenImportProject(false);
+          // 导入后重置顶部标签栏：仅保留预览、版本管控，关闭已打开的文件/diff 等页签
+          closeAgentDesktop();
+          setSelectedChangeFile(null);
+          previewTabsRef.current?.closeAllTabs();
+          clearFileTreeSelectionRef.current?.();
+          setTaskAgentSelectedFileId('');
           void refreshFileListImmediately(queryConversationId);
           await runInstallProject({
             programmingLanguage: 'typescript',
@@ -534,7 +563,13 @@ const ConversationAgent: React.FC = () => {
         setIsImportingProject(false);
       }
     },
-    [queryConversationId, refreshFileListImmediately, refreshGitListIfEnabled],
+    [
+      queryConversationId,
+      refreshFileListImmediately,
+      refreshGitListIfEnabled,
+      closeAgentDesktop,
+      setTaskAgentSelectedFileId,
+    ],
   );
 
   // 如果 URL 中有 conversationId，通过状态管理器的方法查询当前会话
@@ -1259,6 +1294,7 @@ const ConversationAgent: React.FC = () => {
   /** 初始化文件视图 Hook，获取文件树和预览的渲染组件 */
   const fileView = useFileTreePreviewView(fileViewProviderProps);
   refreshGitListRef.current = fileView.refreshGitList;
+  clearFileTreeSelectionRef.current = fileView.tree.clearSelection ?? null;
 
   // 刷新文件树，并在存在当前选中文件时同步刷新文件内容
   refreshFileTreeAndSelectedFileRef.current =

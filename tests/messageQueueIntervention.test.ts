@@ -216,6 +216,11 @@ describe('消息队列与 Intervention 协调', () => {
         messageList: [],
       });
       act(() => {
+        vi.advanceTimersByTime(999);
+      });
+      expect(sendMessage).not.toHaveBeenCalled();
+
+      act(() => {
         vi.advanceTimersByTime(1);
       });
       expect(sendMessage).toHaveBeenCalledTimes(1);
@@ -519,7 +524,7 @@ describe('消息队列与 Intervention 协调', () => {
 
   // ============ 场景6：立即发送与 Intervention 协调 ============
   describe('立即发送与 Intervention 协调', () => {
-    it('Intervention pending 时点击立即发送，停止当前会话', () => {
+    it('Intervention pending 时点击立即发送，停止当前会话并在解除后优先消费该项', () => {
       const { result, rerender } = setup({ isConversationActive: true });
 
       // 入队消息
@@ -543,7 +548,30 @@ describe('消息队列与 Intervention 协调', () => {
       });
 
       expect(runStopConversation).toHaveBeenCalledWith('conv-1');
-      expect(result.current.queue[0].text).toBe('m2');
+      expect(result.current.queue.map((item) => item.text)).toEqual([
+        'm1',
+        'm2',
+      ]);
+      expect(result.current.queue[1].sending).toBe(true);
+
+      rerender({
+        isConversationActive: false,
+        hasPendingIntervention: false,
+        minConsumeInterval: 500,
+        messageList: [],
+      });
+      act(() => {
+        vi.advanceTimersByTime(500);
+      });
+
+      expect(sendMessage).toHaveBeenCalledWith(
+        'm2',
+        [],
+        undefined,
+        undefined,
+        undefined,
+      );
+      expect(result.current.queue.map((item) => item.text)).toEqual(['m1']);
     });
   });
 });

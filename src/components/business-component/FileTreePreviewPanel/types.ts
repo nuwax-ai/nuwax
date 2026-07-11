@@ -31,8 +31,6 @@ export interface FileTreePreviewViewProps {
   clearTaskAgentSelectedFileId?: () => void;
   /** 通用型智能体文件选择触发标志 */
   taskAgentSelectTrigger?: number | string;
-  /** 是否导入了新的项目触发标志 */
-  isImportProjectTrigger?: number | string;
   /** 原始文件列表 */
   originalFiles?: any[];
   /** 文件树数据加载状态 */

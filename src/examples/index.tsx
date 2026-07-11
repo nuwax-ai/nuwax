@@ -202,6 +202,41 @@ const ExamplesIndex: React.FC = () => {
       path: '/examples/message-queue-demo',
     },
     {
+      id: 'session-rendering-demo',
+      title: isChineseLanguage
+        ? '会话交互处理及渲染'
+        : 'Session Interaction Rendering',
+      description: isChineseLanguage
+        ? '用 Mock 数据演示 Agent 会话与 AppDev 会话的核心状态：流式输出、后台执行中、加载更多历史、待发送队列和首条消息透传。'
+        : 'Demonstrate Agent and AppDev session states with mock data: streaming, backend executing, load-more history, message queue and initial payload handoff.',
+      tags: [
+        { text: isChineseLanguage ? '会话渲染' : 'Rendering', color: 'blue' },
+        { text: isChineseLanguage ? 'AppDev' : 'AppDev', color: 'green' },
+        { text: isChineseLanguage ? 'Agent' : 'Agent', color: 'purple' },
+      ],
+      icon: <CodeOutlined />,
+      path: '/examples/session-rendering-demo',
+      featured: true,
+    },
+    {
+      id: 'mcp-ask-duplicate-demo',
+      title: isChineseLanguage ? 'MCP Ask 重复询问' : 'MCP Ask Duplicate Title',
+      description: isChineseLanguage
+        ? '用真实 ASK_QUESTION SSE 载荷模拟同 title 两次询问，验证第二次 resume 后 Dock 仍能弹出（Mock，不依赖后端）。'
+        : 'Simulate two ASK_QUESTION SSE events with the same title using real payloads; verify the second ask still opens in the Dock (mock, no backend).',
+      tags: [
+        { text: isChineseLanguage ? 'MCP Ask' : 'MCP Ask', color: 'green' },
+        {
+          text: isChineseLanguage ? '重复询问' : 'Duplicate',
+          color: 'orange',
+        },
+        { text: isChineseLanguage ? 'SSE Mock' : 'SSE Mock', color: 'blue' },
+      ],
+      icon: <ExperimentOutlined />,
+      path: '/examples/mcp-ask-duplicate-demo',
+      featured: true,
+    },
+    {
       id: 'menu-permission-demo',
       title: isChineseLanguage ? '菜单权限演示' : 'Menu Permission Demo',
       description: isChineseLanguage

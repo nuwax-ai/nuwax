@@ -14,7 +14,6 @@ import { isAgentVersionControlEnabled } from '@/constants/agent.constants';
 import useAgentDetails from '@/hooks/useAgentDetails';
 import useExclusivePanels from '@/hooks/useExclusivePanels';
 import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
-import { useNavigationGuard } from '@/hooks/useNavigationGuard';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
 import useSubscription from '@/hooks/useSubscription';
 import useTerminalWsUrl from '@/hooks/useTerminalWsUrl';
@@ -44,6 +43,7 @@ import { useFileTreePreviewView } from '@/components/business-component/FileTree
 import { apiUpdateStaticFile } from '@/services/vncDesktop';
 import type { UpdateFileInfo } from '@/types/interfaces/fileTree';
 import type { StaticFileInfo } from '@/types/interfaces/vncDesktop';
+import { applyTerminalTaskStatus } from '@/utils/conversationTaskStatusSync';
 import { updateFilesListContent } from '@/utils/fileTree';
 import { jumpToPageDevelop } from '@/utils/router';
 import {
@@ -262,6 +262,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     // 会话流式恢复(sub)
     resumeConversationStream,
     abortResumeStream,
+    refreshGitListRef,
   } = useModel('conversationInfo');
 
   // 页面预览相关状态
@@ -366,16 +367,6 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     }
   }, [isConversationActive]);
 
-  useNavigationGuard({
-    condition: () => shouldBlockNavigation.current,
-    // 只有通用型智能体在会话活跃时才启用导航拦截，会话型智能体不需要
-    enabled:
-      isConversationActive && effectiveAgent?.type === AgentTypeEnum.TaskAgent,
-    title: t('PC.Pages.Chat.taskExecuting'),
-    message: t('PC.Pages.Chat.leaveTaskWarning'),
-    discardText: t('PC.Pages.Chat.confirmLeave'),
-  });
-
   // 角色信息（名称、头像）
   const roleInfo: RoleInfo = useMemo(() => {
     const agent = conversationInfo?.agent;
@@ -408,22 +399,30 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   };
 
   useEffect(() => {
-    // 初始化智能体详情信息（优先使用状态中的详情，否则等待 conversationInfo.agent 快照）
-    const targetAgent = conversationInfo?.agent || defaultAgentDetail;
-    if (targetAgent) {
-      setAgentDetail(targetAgent);
-
-      // 如果智能体需要付费，则判断是否已订阅, 未订阅，显示付费弹窗
-      if (targetAgent.paymentRequired && !targetAgent.subscribed) {
-        setOpenPaymentModal(true);
-      } else {
-        setOpenPaymentModal(false);
-      }
-      // 设置应用智能体详情
-      handleSetAppAgentDetail(targetAgent);
-      handleOpenPreview(targetAgent);
+    // 只有当会话信息是属于当前会话，或者默认详情属于当前智能体时，数据才是有效的，过滤掉切换会话时残留的旧数据
+    let targetAgent: any = null;
+    if (conversationInfo && conversationInfo.id === id) {
+      targetAgent = conversationInfo.agent;
+    } else if (defaultAgentDetail && defaultAgentDetail.agentId === agentId) {
+      targetAgent = defaultAgentDetail;
     }
-  }, [agentId, defaultAgentDetail, conversationInfo?.agent]);
+
+    if (!targetAgent) {
+      return;
+    }
+
+    setAgentDetail(targetAgent);
+
+    // 如果智能体需要付费，则判断是否已订阅, 未订阅，显示付费弹窗
+    if (targetAgent.paymentRequired && !targetAgent.subscribed) {
+      setOpenPaymentModal(true);
+    } else {
+      setOpenPaymentModal(false);
+    }
+    // 设置应用智能体详情
+    handleSetAppAgentDetail(targetAgent);
+    handleOpenPreview(targetAgent);
+  }, [agentId, id, defaultAgentDetail, conversationInfo?.agent]);
 
   useEffect(() => {
     if (id) {
@@ -535,6 +534,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     // 切换会话时立即隐藏页面预览，并清除文件面板全局状态（fileTreeData / taskAgentSelectedFileId 等）
     hidePagePreview();
     clearFilePanelInfo();
+    setOpenPaymentModal(false);
 
     // 重置 clearLoading：此时 cleanup 已执行 resetInit() 清空了 conversationInfo，
     // conversationInfo 会无缝接管加载显示，不会出现 AgentChatEmpty 闪现
@@ -573,8 +573,6 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     eventBindConfig: conversationInfo?.agent?.eventBindConfig,
   });
 
-  const refreshGitListRef = useRef<(() => void) | undefined>();
-
   const {
     handleCreateFileNode,
     handleDeleteFile,
@@ -604,6 +602,9 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
 
   /** 无有效消息列表时不允许刷新 Git status，逻辑与进入页面自动拉取 api/git/status 保持一致 */
   const isGitStatusRefreshDisabled = !hasValidMessageList;
+
+  /** TaskResult / 文件树选中等打开预览前，关闭版本记录面板（gitSourceControl 初始化后赋值） */
+  const closeVersionPanelForFilePreviewRef = useRef<() => void>(() => {});
 
   // 文件视图 props
   const fileView = useFileTreePreviewView({
@@ -644,6 +645,9 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     onSelectedFileMissing: () => {
       setTaskAgentSelectedFileId('');
     },
+    onFileSelectOpenPreview: () => {
+      closeVersionPanelForFilePreviewRef.current();
+    },
   });
 
   refreshGitListRef.current = fileView.refreshGitList;
@@ -660,27 +664,6 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   const prevTaskAgentCollapseTriggerRef = useRef<number | string | undefined>(
     undefined,
   );
-  useEffect(() => {
-    if (!taskAgentSelectedFileId || taskAgentSelectTrigger === undefined) {
-      return;
-    }
-    // 仅在 trigger 变化时折叠，避免打开终端后因依赖变化误触发折叠
-    if (taskAgentSelectTrigger === prevTaskAgentCollapseTriggerRef.current) {
-      return;
-    }
-    prevTaskAgentCollapseTriggerRef.current = taskAgentSelectTrigger;
-
-    if (!hasTerminalConsoleRendered || !terminalConsoleVisible) {
-      return;
-    }
-    setTerminalConsoleCollapseSignal((n) => n + 1);
-    setTerminalConsoleLayoutMode('collapsed');
-  }, [
-    taskAgentSelectedFileId,
-    taskAgentSelectTrigger,
-    hasTerminalConsoleRendered,
-    terminalConsoleVisible,
-  ]);
 
   /** 底部终端是否处于全屏展开且选中终端 Tab */
   const isTerminalPanelOpen =
@@ -933,6 +916,39 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     setGitVersionPanelOpen((prev) => !prev);
   }, [gitSourceControl.selectedDiffFile, gitSourceControl.clearSelectedDiff]);
 
+  // 关闭版本记录面板
+  closeVersionPanelForFilePreviewRef.current = () => {
+    setGitVersionPanelOpen(false);
+    gitSourceControl.clearSelectedDiff();
+  };
+
+  /**
+   * TaskResult / Markdown 文件链接选中文件时：
+   * 关闭版本记录面板并折叠终端，确保右侧文件预览可见
+   */
+  useEffect(() => {
+    if (!taskAgentSelectedFileId || taskAgentSelectTrigger === undefined) {
+      return;
+    }
+    if (taskAgentSelectTrigger === prevTaskAgentCollapseTriggerRef.current) {
+      return;
+    }
+    prevTaskAgentCollapseTriggerRef.current = taskAgentSelectTrigger;
+
+    closeVersionPanelForFilePreviewRef.current();
+
+    if (!hasTerminalConsoleRendered || !terminalConsoleVisible) {
+      return;
+    }
+    setTerminalConsoleCollapseSignal((n) => n + 1);
+    setTerminalConsoleLayoutMode('collapsed');
+  }, [
+    taskAgentSelectedFileId,
+    taskAgentSelectTrigger,
+    hasTerminalConsoleRendered,
+    terminalConsoleVisible,
+  ]);
+
   useEffect(() => {
     setGitVersionPanelOpen(false);
     setTerminalConsoleVisible(false);
@@ -1160,6 +1176,10 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     onAbortResumeStream: abortResumeStream,
     onReloadConversationHistoryAsync: async (id: number) =>
       (await runAsync(Number(id)))?.data?.messageList,
+    onTerminalTaskStatus: (status: TaskStatus) => {
+      if (!id) return;
+      applyTerminalTaskStatus(setConversationInfo, id, status);
+    },
     loadingSuggest,
     chatSuggestList,
     agentInfo: {

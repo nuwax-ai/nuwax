@@ -51,4 +51,54 @@ describe('reconcileMcpAskHydratedMessageList', () => {
 
     expect(reconciled.mcpAskInteractions?.[0].responseStatus).toBe('pending');
   });
+
+  it('does not mark a second same-title ask as submitted by the first resume', () => {
+    const sharedTitle = '补充回复';
+    const firstAsk = {
+      ...askInteraction,
+      input: {
+        ...askInteraction.input,
+        requestId: 'ask-first',
+        title: sharedTitle,
+        ui: {
+          ...askInteraction.input.ui,
+          title: sharedTitle,
+        },
+      },
+      responseStatus: 'pending' as const,
+    };
+    const secondAsk = {
+      ...askInteraction,
+      input: {
+        ...askInteraction.input,
+        requestId: 'ask-second',
+        title: sharedTitle,
+        ui: {
+          ...askInteraction.input.ui,
+          title: sharedTitle,
+        },
+      },
+      toolCallId: 'call-2',
+      responseStatus: 'pending' as const,
+    };
+    const askMessage = {
+      id: 'assistant-ask',
+      index: 1,
+      mcpAskInteractions: [firstAsk, secondAsk],
+    } as MessageInfo;
+
+    const resumeMessage = {
+      id: 'user-resume',
+      index: 2,
+      text: `我已填写「${sharedTitle}」，表单内容如下：\n\n主题：AI\n<!--nuwax-mcp-ask-request-id:ask-first-->`,
+    } as MessageInfo;
+
+    const [reconciled] = reconcileMcpAskHydratedMessageList(
+      [askMessage],
+      [askMessage, resumeMessage],
+    );
+
+    expect(reconciled.mcpAskInteractions?.[0].responseStatus).toBe('submitted');
+    expect(reconciled.mcpAskInteractions?.[1].responseStatus).toBe('pending');
+  });
 });

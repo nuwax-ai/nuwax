@@ -1,13 +1,14 @@
 import type { MarkdownCMDRef } from '@/types/interfaces/markdownRender';
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
 const GAP_TIME = 100;
 
 const handleProcessMessage = (callback: () => void) => {
-  setTimeout(() => {
+  const timer = window.setTimeout(() => {
     callback();
   }, GAP_TIME);
+  return timer;
 };
 
 export default function useMarkdownRender({
@@ -21,14 +22,56 @@ export default function useMarkdownRender({
 }) {
   const markdownRef = useRef<MarkdownCMDRef>(null);
   const messageIdRef = useRef<string>(id ? String(id) : uuidv4());
+  const currentIdRef = useRef<string>(messageIdRef.current);
+  const pendingTimersRef = useRef<number[]>([]);
   const lastTextPos = useRef<{ thinking: number; answer: number }>({
     thinking: 0,
     answer: 0,
   });
   const lastRawAnswer = useRef('');
 
+  const clearPendingTimers = useCallback(() => {
+    pendingTimersRef.current.forEach((timer) => window.clearTimeout(timer));
+    pendingTimersRef.current = [];
+  }, []);
+
+  const resetRenderState = useCallback(() => {
+    lastTextPos.current = {
+      thinking: 0,
+      answer: 0,
+    };
+    lastRawAnswer.current = '';
+  }, []);
+
+  const scheduleProcessMessage = useCallback((callback: () => void) => {
+    const timer = handleProcessMessage(() => {
+      pendingTimersRef.current = pendingTimersRef.current.filter(
+        (item) => item !== timer,
+      );
+      callback();
+    });
+    pendingTimersRef.current.push(timer);
+    return () => {
+      window.clearTimeout(timer);
+      pendingTimersRef.current = pendingTimersRef.current.filter(
+        (item) => item !== timer,
+      );
+    };
+  }, []);
+
   useEffect(() => {
-    handleProcessMessage(() => {
+    const nextId = id ? String(id) : currentIdRef.current;
+    if (nextId && nextId !== currentIdRef.current) {
+      clearPendingTimers();
+      markdownRef.current?.clear();
+      resetRenderState();
+      currentIdRef.current = nextId;
+      messageIdRef.current = nextId;
+    }
+  }, [clearPendingTimers, id, resetRenderState]);
+
+  useEffect(() => {
+    return scheduleProcessMessage(() => {
       if (answer) {
         // 判断是否是增量更新
         // 如果当前 answer 不是以之前的 answer 开头，说明发生了转换（如分组），需要全量更新
@@ -59,10 +102,10 @@ export default function useMarkdownRender({
         lastRawAnswer.current = answer;
       }
     });
-  }, [answer]);
+  }, [answer, scheduleProcessMessage]);
 
   useEffect(() => {
-    handleProcessMessage(() => {
+    return scheduleProcessMessage(() => {
       if (thinking) {
         // 取出差量部分
         const diffText = thinking.slice(lastTextPos.current['thinking']);
@@ -73,24 +116,15 @@ export default function useMarkdownRender({
         }
       }
     });
-  }, [thinking]);
-
-  useEffect(() => {
-    if (id) {
-      messageIdRef.current = String(id);
-    }
-  }, [id]);
+  }, [scheduleProcessMessage, thinking]);
 
   useEffect(() => {
     return () => {
-      markdownRef.current?.clear();
-      lastTextPos.current = {
-        thinking: 0,
-        answer: 0,
-      };
+      clearPendingTimers();
+      resetRenderState();
       messageIdRef.current = '';
     };
-  }, []);
+  }, [clearPendingTimers, resetRenderState]);
 
   return {
     markdownRef,

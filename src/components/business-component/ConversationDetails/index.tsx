@@ -5,6 +5,11 @@ import {
   CopyToSpaceComponent,
   PagePreviewIframe,
 } from '@/components/business-component';
+import type { AgentMode } from '@/components/business-component/AgentIntervention';
+import {
+  readAgentModeCache,
+  writeAgentModeCache,
+} from '@/components/business-component/AgentIntervention/hooks/useAgentInterventionLayer';
 import PaymentSubscriptionModal from '@/components/business-component/PaymentSubscriptionModal';
 import ChatInputHome from '@/components/ChatInputHome';
 import ChatView from '@/components/ChatView';
@@ -50,6 +55,7 @@ import classNames from 'classnames';
 import dayjs from 'dayjs';
 import omit from 'lodash/omit';
 import React, {
+  useCallback,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -182,6 +188,35 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
       setCachedAgentName(agentDetail.name);
     }
   }, [agentDetail?.name]);
+
+  // 智能体模式，自动 (yolo) / 审批 (ask)
+  const [agentMode, setAgentModeState] = useState<AgentMode>('yolo');
+
+  // 当智能体切换时，同步/重置模式状态
+  useEffect(() => {
+    try {
+      const cached = readAgentModeCache(agentId);
+      if (cached === 'yolo' || cached === 'ask') {
+        setAgentModeState(cached);
+      } else {
+        setAgentModeState('yolo');
+      }
+    } catch {
+      setAgentModeState('yolo');
+    }
+  }, [agentId]);
+
+  const handleAgentModeChange = useCallback(
+    (mode: AgentMode) => {
+      setAgentModeState(mode);
+      try {
+        writeAgentModeCache(mode, agentId);
+      } catch (e) {
+        // ignore localStorage errors
+      }
+    },
+    [agentId],
+  );
 
   const values = Form.useWatch([], { form, preserve: true });
 
@@ -588,6 +623,8 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
       skillIds: [...otherSkillIds, ...(skillIds || [])],
       // 模型ID
       modelId: modelId || selectedModelId || otherModelId,
+      // 智能体模式
+      agentMode,
     };
 
     incrementCalledTrialCount();
@@ -839,6 +876,8 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
               showAgentModeSelector={
                 agentDetail?.allowChooseMode === DefaultSelectedEnum.Yes
               }
+              agentMode={agentMode}
+              onAgentModeChange={handleAgentModeChange}
               maskText={t(
                 'PC.Components.ConversationDetails.noAgentPermission',
               )}

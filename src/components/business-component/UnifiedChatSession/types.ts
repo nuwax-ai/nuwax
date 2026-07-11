@@ -3,7 +3,7 @@ import type {
   AgentMode,
 } from '@/components/business-component/AgentIntervention';
 import type { UnifiedChatQueueContext } from '@/components/business-component/MessageQueue/useUnifiedChatQueue';
-import type { DefaultSelectedEnum } from '@/types/enums/agent';
+import type { DefaultSelectedEnum, TaskStatus } from '@/types/enums/agent';
 import type { ChatInputProps, UploadFileInfo } from '@/types/interfaces/common';
 import type {
   ConversationInfo,
@@ -155,7 +155,7 @@ export interface UnifiedChatSessionProps {
   interventionHandlers?: AgentInterventionHandlersOverride;
 
   // ===== 会话流式恢复(sub)：刷新页面 / 新开标签时重建 EXECUTING 会话的流式输出 =====
-  // 未注入下列 action 的页面（如隔离会话源）将不启用恢复。
+  // 未注入下列 action 的页面将不启用恢复。
   /** 订阅 sub 流（model 的 resumeConversationStream） */
   onResumeConversationStream?: (
     conversationId: number | string,
@@ -168,4 +168,6 @@ export interface UnifiedChatSessionProps {
   onReloadConversationHistoryAsync?: (
     conversationId: number | string,
   ) => Promise<MessageInfo[] | undefined | null>;
+  /** 轮询拿到终态 taskStatus 时写回当前会话 model */
+  onTerminalTaskStatus?: (status: TaskStatus) => void;
 }

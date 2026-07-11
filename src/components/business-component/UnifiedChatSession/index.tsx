@@ -106,6 +106,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
   onResumeConversationStream,
   onAbortResumeStream,
   onReloadConversationHistoryAsync,
+  onTerminalTaskStatus,
 }) => {
   // 滚动管理 Hook
   const {
@@ -148,6 +149,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
     reloadHistoryAsync: onReloadConversationHistoryAsync,
     resumeStream: onResumeConversationStream,
     abortSub: onAbortResumeStream,
+    onTerminalTaskStatus,
   });
 
   const agentModeRef = useRef<AgentMode>('yolo');
@@ -216,7 +218,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
     messageList,
     initialAgentMode,
     allowChooseMode: agentInfo?.allowChooseMode,
-    onSendMessage: (msg) => messageQueue.rawSend(msg),
+    onSendMessage: (msg, files) => messageQueue.rawSend(msg, files),
     interventionHandlers,
   });
   agentModeRef.current = interventionLayer.agentMode;

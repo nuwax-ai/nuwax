@@ -3,6 +3,7 @@ import type {
   AgentMode,
 } from '@/components/business-component/AgentIntervention';
 import useConversation from '@/hooks/useConversation';
+import { preserveOptimisticMessageTail } from '@/models/conversationInfoMessageList';
 import { dict } from '@/services/i18nRuntime';
 import { ExpandPageAreaEnum, TaskStatus } from '@/types/enums/agent';
 import { AgentTypeEnum } from '@/types/enums/space';
@@ -11,7 +12,11 @@ import type {
   AgentSelectedComponentInfo,
 } from '@/types/interfaces/agent';
 import type { UploadFileInfo } from '@/types/interfaces/common';
-import type { RoleInfo } from '@/types/interfaces/conversationInfo';
+import type {
+  MessageInfo,
+  RoleInfo,
+} from '@/types/interfaces/conversationInfo';
+import { applyTerminalTaskStatus } from '@/utils/conversationTaskStatusSync';
 import cloneDeep from 'lodash/cloneDeep';
 import { useCallback, useMemo } from 'react';
 import { useModel } from 'umi';
@@ -64,6 +69,7 @@ export function useConversationAgentChatSession(
 
   const {
     conversationInfo,
+    setConversationInfo,
     messageList,
     setMessageList,
     chatSuggestList,
@@ -81,6 +87,7 @@ export function useConversationAgentChatSession(
     isLoadingOtherInterface,
     handleClearSideEffect,
     runQueryConversation,
+    runAsync,
     clearFilePanelInfo,
     isConversationActive: agentStreamActive,
     // 停止会话相关
@@ -90,6 +97,8 @@ export function useConversationAgentChatSession(
     // 当前会话 ID 与请求 ID
     getCurrentConversationId,
     getCurrentConversationRequestId,
+    resumeConversationStream,
+    abortResumeStream,
     respondAcpPermission,
     respondMcpAsk,
   } = useModel('conversationAgent');
@@ -250,6 +259,31 @@ export function useConversationAgentChatSession(
       runStopConversation: (id: number | string) => {
         void runStopConversation(String(id));
       },
+    },
+    onResumeConversationStream: resumeConversationStream,
+    onAbortResumeStream: abortResumeStream,
+    onReloadConversationHistoryAsync: async (id: number | string) =>
+      (await runAsync(Number(id)))?.data?.messageList,
+    onTerminalTaskStatus: async (status: TaskStatus) => {
+      if (!devConversationId) return;
+      applyTerminalTaskStatus(setConversationInfo, devConversationId, status);
+      // 终态兜底 reload messageList：dev-agent 经 flow-debugger 等外部写入会话的消息，
+      // 若错过 EXECUTING 窗口（sub 流没接住），这里拉最新历史确保预览可见
+      if (getCurrentConversationId() !== devConversationId) return;
+      try {
+        const list = (await runAsync(devConversationId))?.data?.messageList;
+        if (
+          Array.isArray(list) &&
+          getCurrentConversationId() === devConversationId
+        ) {
+          // 保留本地乐观尾巴，避免终态兜底 reload 冲掉刚发送但后端尚未落库的消息
+          setMessageList((prev: MessageInfo[]) =>
+            preserveOptimisticMessageTail(prev, list),
+          );
+        }
+      } catch {
+        // reload 失败不影响终态写回
+      }
     },
     messageBottomMode: 'chat' as const,
     loadingSuggest,

@@ -78,6 +78,11 @@ export const logger = createLogger(`[App:${APP_VERSION}]`);
 // V3 专属 logger
 export const workflowLogger = createLogger(`[Workflow:V3:${APP_VERSION}]`);
 
+// 会话流式恢复 taskStatus 轮询 logger（UnifiedChatSession / useConversationStreamResume）
+export const conversationPollLogger = createLogger(
+  '[ConversationStreamResume][Poll]',
+);
+
 // 开发环境下挂载到 window，方便调试
 if (isDev && typeof window !== 'undefined') {
   (window as any).__xagi_logger = {

@@ -6,6 +6,7 @@ import {
   MIN_ZH_TW_I18N_MAP,
 } from '@/constants/i18n.constants';
 import { dict, getCurrentLang } from '@/services/i18nRuntime';
+import { AssistantRoleEnum } from '@/types/enums/agent';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import type {
   McpAskInteraction,
@@ -28,6 +29,107 @@ const RESUME_MESSAGE_KEY_BY_ACTION: Record<
 };
 
 const SUBMITTED_HEADER_KEY = `${I18N_PREFIX}.resumeSubmitted`;
+
+/** resume 消息 JSON 块中的 requestId 键（历史 fenced JSON 格式，仍识别） */
+export const MCP_ASK_REQUEST_ID_MARKER_KEY = 'nuwaxMcpAskRequestId';
+
+/** HTML 注释标记前缀，对用户不可见 */
+const MCP_ASK_REQUEST_ID_HTML_PREFIX = 'nuwax-mcp-ask-request-id:';
+
+/** 匹配 resume 消息末尾附带的 HTML 注释 requestId 标记 */
+const MCP_ASK_REQUEST_ID_HTML_COMMENT_RE =
+  /\n?<!--nuwax-mcp-ask-request-id:[^>]+-->/g;
+
+export interface McpAskResumeMatchOptions {
+  /** 承载该 interaction 的消息在已排序列表中的下标 */
+  containingMessageIndex?: number;
+}
+
+/**
+ * 按会话 message.index 升序排列，与 intervention 队列保持一致。
+ */
+export function sortMessagesByConversationIndex(
+  messages: MessageInfo[],
+): MessageInfo[] {
+  return [...(messages ?? [])].sort((a, b) => (a.index ?? 0) - (b.index ?? 0));
+}
+
+function readMessageOrdinal(message: MessageInfo, fallback = 0): number {
+  return message.index ?? fallback;
+}
+
+/**
+ * 生成附在 resume 消息末尾的 HTML 注释 requestId 标记（聊天 UI 不展示）。
+ */
+export function buildMcpAskRequestIdMarker(requestId: string): string {
+  return `\n<!--${MCP_ASK_REQUEST_ID_HTML_PREFIX}${requestId}-->`;
+}
+
+/**
+ * 移除 resume 消息中仅供内部匹配的 requestId 标记，供聊天 UI 展示与复制使用。
+ * 原始 message.text 仍保留标记，以便 hasMcpAskResumeMessage 等逻辑识别。
+ */
+export function stripMcpAskResumeDisplayArtifacts(
+  text: string | undefined,
+): string {
+  if (!text) {
+    return '';
+  }
+  return text
+    .replace(MCP_ASK_REQUEST_ID_HTML_COMMENT_RE, '')
+    .replace(/\s+$/, '');
+}
+
+/** MCP Ask resume 表单展示用标点：英文 locale 用西式标点，其余语系用 CJK 标点 */
+function getMcpAskDisplaySeparators(lang = getCurrentLang()) {
+  const isEnglish = lang.toLowerCase().startsWith('en');
+  if (isEnglish) {
+    return {
+      listSeparator: ', ',
+      objectEntrySeparator: '; ',
+      labelSeparator: ': ',
+    };
+  }
+  return {
+    listSeparator: '、',
+    objectEntrySeparator: '，',
+    labelSeparator: '：',
+  };
+}
+
+function extractFileNameFromUrl(url: string, fallback: string): string {
+  try {
+    const pathname = new URL(url).pathname;
+    return pathname.split('/').filter(Boolean).pop() || fallback;
+  } catch {
+    return url.split('/').filter(Boolean).pop() || fallback;
+  }
+}
+
+function messageHasForeignRequestIdMarker(text: string): boolean {
+  return (
+    text.includes(MCP_ASK_REQUEST_ID_HTML_PREFIX) ||
+    text.includes(MCP_ASK_REQUEST_ID_MARKER_KEY)
+  );
+}
+
+/**
+ * 判断文本是否包含指定 requestId 的 resume 标记（HTML 注释或历史 JSON 块）。
+ */
+export function textContainsMcpAskRequestIdMarker(
+  text: string | undefined,
+  requestId: string,
+): boolean {
+  if (!text || !requestId) {
+    return false;
+  }
+  if (text.includes(`<!--${MCP_ASK_REQUEST_ID_HTML_PREFIX}${requestId}-->`)) {
+    return true;
+  }
+  const compact = `"${MCP_ASK_REQUEST_ID_MARKER_KEY}":"${requestId}"`;
+  const spaced = `"${MCP_ASK_REQUEST_ID_MARKER_KEY}": "${requestId}"`;
+  return text.includes(compact) || text.includes(spaced);
+}
 
 /** 各语言本地包，用于跨语言匹配历史 resume 消息 */
 const LOCAL_RESUME_MESSAGE_MAPS = [
@@ -111,21 +213,47 @@ function tMcpAsk(key: string, ...values: (string | number)[]): string {
   return dict(key, ...values);
 }
 
-/** MCP Ask resume 表单展示用标点：英文 locale 用西式标点，其余语系用 CJK 标点 */
-function getMcpAskDisplaySeparators(lang = getCurrentLang()) {
-  const isEnglish = lang.toLowerCase().startsWith('en');
-  if (isEnglish) {
-    return {
-      listSeparator: ', ',
-      objectEntrySeparator: '; ',
-      labelSeparator: ': ',
-    };
+function formatFileFieldDisplayValue(value: unknown): string {
+  if (value === undefined || value === null || value === '') {
+    return tMcpAsk(`${I18N_PREFIX}.notFilled`);
   }
-  return {
-    listSeparator: '、',
-    objectEntrySeparator: '，',
-    labelSeparator: '：',
+
+  const formatSingle = (item: unknown): string => {
+    if (typeof item === 'string') {
+      return /^https?:\/\//i.test(item)
+        ? extractFileNameFromUrl(item, tMcpAsk(`${I18N_PREFIX}.unknownFile`))
+        : item;
+    }
+    if (typeof item === 'object' && item !== null) {
+      const file = item as {
+        name?: string;
+        fileName?: string;
+        url?: string;
+        fileUrl?: string;
+      };
+      return (
+        file.name ||
+        file.fileName ||
+        (file.url || file.fileUrl
+          ? extractFileNameFromUrl(
+              file.url || file.fileUrl || '',
+              tMcpAsk(`${I18N_PREFIX}.unknownFile`),
+            )
+          : tMcpAsk(`${I18N_PREFIX}.unknownFile`))
+      );
+    }
+    return String(item);
   };
+
+  const { listSeparator } = getMcpAskDisplaySeparators();
+  if (Array.isArray(value)) {
+    if (!value.length) {
+      return tMcpAsk(`${I18N_PREFIX}.notFilled`);
+    }
+    return value.map(formatSingle).join(listSeparator);
+  }
+
+  return formatSingle(value);
 }
 
 function stringifyDisplayValue(value: unknown): string {
@@ -151,16 +279,13 @@ function stringifyDisplayValue(value: unknown): string {
     // 检查是否为文件上传数组 (UploadFileInfo[])
     if (value.length > 0 && typeof value[0] === 'object' && value[0] !== null) {
       const first = value[0] as any;
-      if ('name' in first || 'url' in first || 'fileName' in first) {
-        return value
-          .map(
-            (f: any) =>
-              f.name ||
-              f.fileName ||
-              f.url ||
-              tMcpAsk(`${I18N_PREFIX}.unknownFile`),
-          )
-          .join(listSeparator);
+      if (
+        'name' in first ||
+        'url' in first ||
+        'fileName' in first ||
+        'fileUrl' in first
+      ) {
+        return formatFileFieldDisplayValue(value);
       }
     }
     return value.map(stringifyDisplayValue).join(listSeparator);
@@ -168,8 +293,8 @@ function stringifyDisplayValue(value: unknown): string {
   if (typeof value === 'object') {
     // 检查是否为单个文件对象
     const obj = value as any;
-    if (obj.name || obj.fileName || obj.url) {
-      return `📎 ${obj.name || obj.fileName || tMcpAsk(`${I18N_PREFIX}.file`)}`;
+    if (obj.name || obj.fileName || obj.url || obj.fileUrl) {
+      return formatFileFieldDisplayValue(value);
     }
     const entries = Object.entries(value as Record<string, unknown>);
     if (!entries.length) {
@@ -240,11 +365,11 @@ function formatAskFormData(
           formData[otherField],
         )}`;
       }
-      const value = formatFieldValue(
-        formData[field.name],
-        field.enumValues,
-        field.enumLabels,
-      );
+      const rawValue = formData[field.name];
+      const value =
+        field.widget === 'file'
+          ? formatFileFieldDisplayValue(rawValue)
+          : formatFieldValue(rawValue, field.enumValues, field.enumLabels);
       return `${label}${labelSeparator}${value}`;
     });
 
@@ -263,6 +388,38 @@ export function getMcpAskResumeTitle(interaction: McpAskInteraction): string {
     interaction.input.ui.title ||
     tMcpAsk(`${I18N_PREFIX}.defaultTitle`)
   );
+}
+
+/** 存在其他同 title ask 时，标题兜底无法可靠判断 resume 归属。 */
+function shouldBlockLegacyTitleMatch(
+  sortedMessages: MessageInfo[],
+  interaction: McpAskInteraction,
+): boolean {
+  const title = getMcpAskResumeTitle(interaction);
+
+  return sortedMessages.some((message) =>
+    (message.mcpAskInteractions ?? []).some(
+      (item) =>
+        item.input.requestId !== interaction.input.requestId &&
+        getMcpAskResumeTitle(item) === title,
+    ),
+  );
+}
+
+function resolveContainingMessageIndex(
+  sortedMessages: MessageInfo[],
+  interaction: McpAskInteraction,
+  explicitIndex?: number,
+): number | undefined {
+  if (explicitIndex !== undefined && explicitIndex >= 0) {
+    return explicitIndex;
+  }
+  const autoIndex = sortedMessages.findIndex((message) =>
+    message.mcpAskInteractions?.some(
+      (item) => item.input.requestId === interaction.input.requestId,
+    ),
+  );
+  return autoIndex >= 0 ? autoIndex : undefined;
 }
 
 export function buildMcpAskResumeMessage(
@@ -287,13 +444,151 @@ export function buildMcpAskResumeMessage(
   ].join('\n');
 }
 
-export function isMcpAskResumeMessageForInteraction(
+function messageMatchesAnyResumeSignature(
   text: string | undefined,
-  interaction: McpAskInteraction,
+  title: string,
 ): boolean {
-  if (!text) {
+  if (!text?.trim()) {
     return false;
   }
+  const actions: McpAskResumeAction[] = ['submit', 'cancel', 'skip', 'timeout'];
+  return actions.some((action) =>
+    collectResumeMessageSignatures(title, action).some((signature) =>
+      text.includes(signature),
+    ),
+  );
+}
+
+function collectSameTitleAskOrdinals(
+  sortedMessages: MessageInfo[],
+  title: string,
+): Array<{
+  ordinal: number;
+  sequence: number;
+  requestId: string;
+  resolved: boolean;
+}> {
+  const entries: Array<{
+    ordinal: number;
+    sequence: number;
+    requestId: string;
+    resolved: boolean;
+  }> = [];
+  let sequence = 0;
+
+  sortedMessages.forEach((message, messageIndex) => {
+    const ordinal = readMessageOrdinal(message, messageIndex);
+    message.mcpAskInteractions?.forEach((item) => {
+      if (getMcpAskResumeTitle(item) !== title) {
+        return;
+      }
+      const responseStatus = item.responseStatus ?? 'pending';
+      entries.push({
+        ordinal,
+        sequence: sequence++,
+        requestId: item.input.requestId,
+        resolved:
+          responseStatus !== 'pending' && responseStatus !== 'submitting',
+      });
+    });
+  });
+
+  return entries.sort(
+    (left, right) =>
+      left.ordinal - right.ordinal || left.sequence - right.sequence,
+  );
+}
+
+function collectSameTitleResumeOrdinals(
+  sortedMessages: MessageInfo[],
+  title: string,
+): Array<{ ordinal: number; sequence: number }> {
+  const entries: Array<{ ordinal: number; sequence: number }> = [];
+
+  sortedMessages.forEach((message, messageIndex) => {
+    if (message.role !== undefined && message.role !== AssistantRoleEnum.USER) {
+      return;
+    }
+    const text = message.text;
+    if (
+      !text ||
+      messageHasForeignRequestIdMarker(text) ||
+      !messageMatchesAnyResumeSignature(text, title)
+    ) {
+      return;
+    }
+    entries.push({
+      ordinal: readMessageOrdinal(message, messageIndex),
+      sequence: messageIndex,
+    });
+  });
+
+  return entries.sort(
+    (left, right) =>
+      left.ordinal - right.ordinal || left.sequence - right.sequence,
+  );
+}
+
+/**
+ * 同 title 多次询问时，将无 marker 的 resume 配给它之前最可信的 ask：
+ * 已有终态的 ask 优先，否则取位置最近的未配对 ask。
+ * 不依赖写入 chat 接口的 HTML 注释 marker。
+ */
+function hasOrdinalPairedResumeMessage(
+  sortedMessages: MessageInfo[],
+  interaction: McpAskInteraction,
+): boolean {
+  const title = getMcpAskResumeTitle(interaction);
+  const asks = collectSameTitleAskOrdinals(sortedMessages, title);
+  const resumes = collectSameTitleResumeOrdinals(sortedMessages, title);
+  const targetAsk = asks.find(
+    (entry) => entry.requestId === interaction.input.requestId,
+  );
+  if (!targetAsk) {
+    return false;
+  }
+
+  const pairedRequestIds = new Set<string>();
+  resumes.forEach((resume) => {
+    const candidates = asks.filter(
+      (ask) =>
+        !pairedRequestIds.has(ask.requestId) &&
+        (ask.ordinal < resume.ordinal ||
+          (ask.ordinal === resume.ordinal && ask.sequence <= resume.sequence)),
+    );
+    if (!candidates.length) {
+      return;
+    }
+
+    const resolvedCandidate = candidates.find((ask) => ask.resolved);
+    const selectedAsk = resolvedCandidate ?? candidates[candidates.length - 1];
+    pairedRequestIds.add(selectedAsk.requestId);
+  });
+
+  if (pairedRequestIds.has(targetAsk.requestId)) {
+    return true;
+  }
+
+  // 历史 hydrate：单条无 marker resume 的 index 可能小于 ask（存储乱序）
+  return (
+    asks.length === 1 &&
+    resumes.length === 1 &&
+    resumes[0].ordinal < targetAsk.ordinal
+  );
+}
+
+function matchesLegacyTitleResumeMessage(
+  text: string,
+  interaction: McpAskInteraction,
+): boolean {
+  // 带其他 requestId 标记的 resume 不应被同 title 的后续 ask 误匹配
+  if (
+    messageHasForeignRequestIdMarker(text) &&
+    !textContainsMcpAskRequestIdMarker(text, interaction.input.requestId)
+  ) {
+    return false;
+  }
+
   const title = getMcpAskResumeTitle(interaction);
   const actions: McpAskResumeAction[] = ['submit', 'cancel', 'skip', 'timeout'];
 
@@ -304,23 +599,93 @@ export function isMcpAskResumeMessageForInteraction(
   );
 }
 
-export function hasLaterMcpAskResumeMessage(
-  messages: MessageInfo[],
-  messageIndex: number,
+export function isMcpAskResumeMessageForInteraction(
+  text: string | undefined,
   interaction: McpAskInteraction,
+  options?: { legacyTitleMatch?: boolean },
 ): boolean {
-  return messages
-    .slice(messageIndex + 1)
-    .some((message) =>
-      isMcpAskResumeMessageForInteraction(message.text, interaction),
-    );
+  if (!text) {
+    return false;
+  }
+
+  if (textContainsMcpAskRequestIdMarker(text, interaction.input.requestId)) {
+    return true;
+  }
+
+  if (options?.legacyTitleMatch === false) {
+    return false;
+  }
+
+  return matchesLegacyTitleResumeMessage(text, interaction);
 }
 
 export function hasMcpAskResumeMessage(
   messages: MessageInfo[],
   interaction: McpAskInteraction,
+  options?: McpAskResumeMatchOptions,
 ): boolean {
-  return messages.some((message) =>
-    isMcpAskResumeMessageForInteraction(message.text, interaction),
+  const sortedMessages = sortMessagesByConversationIndex(messages);
+  const containingMessageIndex = resolveContainingMessageIndex(
+    sortedMessages,
+    interaction,
+    options?.containingMessageIndex,
   );
+  const containingMessage =
+    containingMessageIndex !== undefined
+      ? sortedMessages[containingMessageIndex]
+      : undefined;
+  const containingOrdinal = containingMessage
+    ? readMessageOrdinal(containingMessage, containingMessageIndex ?? 0)
+    : undefined;
+
+  if (
+    sortedMessages.some((message) =>
+      textContainsMcpAskRequestIdMarker(
+        message.text,
+        interaction.input.requestId,
+      ),
+    )
+  ) {
+    return true;
+  }
+
+  if (hasOrdinalPairedResumeMessage(sortedMessages, interaction)) {
+    return true;
+  }
+
+  if (shouldBlockLegacyTitleMatch(sortedMessages, interaction)) {
+    return false;
+  }
+
+  const matchesLegacy = (text: string | undefined) =>
+    text ? matchesLegacyTitleResumeMessage(text, interaction) : false;
+
+  if (containingOrdinal !== undefined) {
+    const afterMessages = sortedMessages.filter(
+      (message) => readMessageOrdinal(message, 0) > containingOrdinal,
+    );
+    if (afterMessages.some((message) => matchesLegacy(message.text))) {
+      return true;
+    }
+
+    // 历史 hydrate：resume 的 index 可能小于 ask（存储乱序），仅匹配无 marker 的旧消息
+    const beforeMessages = sortedMessages.filter(
+      (message) =>
+        readMessageOrdinal(message, 0) < containingOrdinal &&
+        !messageHasForeignRequestIdMarker(message.text ?? ''),
+    );
+    return beforeMessages.some((message) => matchesLegacy(message.text));
+  }
+
+  return sortedMessages.some((message) => matchesLegacy(message.text));
+}
+
+export function hasLaterMcpAskResumeMessage(
+  messages: MessageInfo[],
+  messageIndex: number,
+  interaction: McpAskInteraction,
+): boolean {
+  return hasMcpAskResumeMessage(messages, interaction, {
+    containingMessageIndex: messageIndex,
+  });
 }

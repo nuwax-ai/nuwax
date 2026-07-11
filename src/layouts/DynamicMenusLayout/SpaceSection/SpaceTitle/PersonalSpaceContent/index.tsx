@@ -119,6 +119,12 @@ const PersonalSpaceContent: React.FC<PersonalSpaceContentType> = ({
     );
   }, [filterSpaceList, spaceSearchKeyword]);
 
+  /** 有原始空间且关键词搜索无结果时，展示空态提示 */
+  const showEmptySearchHint =
+    filterSpaceList.length > 0 &&
+    spaceSearchKeyword.trim().length > 0 &&
+    displayedSpaceList.length === 0;
+
   useEffect(() => {
     if (!showSpaceSearch) {
       resetSearchState();
@@ -403,11 +409,11 @@ const PersonalSpaceContent: React.FC<PersonalSpaceContentType> = ({
               </LimitedTooltip>
             </li>
           ))
-        ) : (
+        ) : showEmptySearchHint ? (
           <li className={cx(styles['empty-search'], 'flex', 'items-center')}>
             {dict('PC.Layouts.DynamicMenusLayout.SpaceSection.noSpaceMatch')}
           </li>
-        )}
+        ) : null}
       </ul>
       {hasPermission('space_create') && (
         <div

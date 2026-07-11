@@ -36,7 +36,7 @@ import {
   MessageTypeEnum,
 } from '@/types/enums/agent';
 import { MessageStatusEnum, ProcessingEnum } from '@/types/enums/common';
-import { AgentTypeEnum, OpenCloseEnum } from '@/types/enums/space';
+import { OpenCloseEnum } from '@/types/enums/space';
 import {
   AgentManualComponentInfo,
   GuidQuestionDto,
@@ -55,8 +55,12 @@ import type {
 import { RequestResponse } from '@/types/interfaces/request';
 import { modalConfirm } from '@/utils/ant-custom';
 import {
+  applyTerminalTaskStatus,
   createSyncConversationTaskStatus,
+  mergeConversationInfoTaskStatus,
+  resolveTerminalTaskStatus,
   subscribeChatFinishedTaskSync,
+  syncTerminalConversationTaskStatus,
 } from '@/utils/conversationTaskStatusSync';
 import { createSSEConnection } from '@/utils/fetchEventSourceConversationInfo';
 import {
@@ -70,6 +74,10 @@ import dayjs from 'dayjs';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
+import {
+  appendOutgoingConversationMessages,
+  preserveOptimisticMessageTail,
+} from './conversationInfoMessageList';
 
 export default () => {
   const { showPagePreview, handleChatProcessingList } = useModel('chat');
@@ -326,8 +334,10 @@ export default () => {
       const { data } = result;
       // 设置所有的详细信息
       setChatProcessingList(data?.messageList || []);
-      // 设置会话信息
-      setConversationInfo(data);
+      // 设置会话信息（合并 taskStatus，避免 reload 把 FINAL_RESULT 已落的终态盖回 EXECUTING）
+      setConversationInfo((prev) =>
+        mergeConversationInfoTaskStatus(prev, data),
+      );
       // 记录当前会话 ID（用于停止会话等操作）
       setCurrentConversationId(data?.id ?? null);
 
@@ -341,10 +351,12 @@ export default () => {
       );
       const len = _messageList?.length || 0;
       if (len) {
-        setMessageList(() => {
-          checkConversationActive(_messageList);
-          messageListRef.current = _messageList;
-          return _messageList;
+        // 保留本地末尾尚未落库的乐观消息（sub 续会话 / 切会话 reload 不再冲掉刚发送的用户消息）
+        setMessageList((prev) => {
+          const merged = preserveOptimisticMessageTail(prev, _messageList);
+          checkConversationActive(merged);
+          messageListRef.current = merged;
+          return merged;
         });
         // 最后一条消息为"问答"时，获取问题建议
         const lastMessage = _messageList[len - 1];
@@ -371,7 +383,12 @@ export default () => {
       }
       // 不存在会话消息时，才显示开场白预置问题
       else {
-        setMessageList([]);
+        // 后端暂返回空时仍保留本地乐观尾巴（避免冲掉刚发送的消息）
+        setMessageList((prev) => {
+          const merged = preserveOptimisticMessageTail(prev, []);
+          messageListRef.current = merged;
+          return merged;
+        });
         const guidQuestionDtos = data?.agent?.guidQuestionDtos || [];
         // 如果存在预置问题，显示预置问题
         setChatSuggestList(guidQuestionDtos);
@@ -624,13 +641,15 @@ export default () => {
           runChatSuggest(params as ConversationChatSuggestParams);
         }
 
-        // TaskAgent：同步后台 taskStatus，驱动「智能体正在执行，请稍等」展示/结束
-        if (
-          params.conversationId &&
-          conversationInfoRef.current?.agent?.type === AgentTypeEnum.TaskAgent
-        ) {
-          void syncConversationTaskStatus(params.conversationId);
-        }
+        // 兜底：FINAL_RESULT 是确定结束信号；success=true 时直接落 COMPLETE，
+        // 不依赖 onClose 后的轮询接口，避免后端落库延迟导致 taskStatus 固化 EXECUTING。
+        // success=false 只接受结构化终态字段，不根据 error/message 文案猜测。
+        // 放在 isSuggest 之后：开启 suggest 时先触发建议拉取，再落终态。
+        applyTerminalTaskStatus(
+          setConversationInfo,
+          params.conversationId,
+          resolveTerminalTaskStatus(data?.success, data, res),
+        );
 
         // 用户主动取消任务
         if (!data?.success && data?.error?.includes('用户主动取消任务')) {
@@ -783,11 +802,11 @@ export default () => {
           }
         });
 
-        if (
-          params.conversationId &&
-          conversationInfoRef.current?.agent?.type === AgentTypeEnum.TaskAgent
-        ) {
-          await syncConversationTaskStatus(params.conversationId);
+        if (params.conversationId) {
+          await syncTerminalConversationTaskStatus(
+            params.conversationId,
+            setConversationInfo,
+          );
         }
 
         disabledConversationActive();
@@ -944,7 +963,7 @@ export default () => {
       attachments,
       id: uuidv4(),
       messageType: MessageTypeEnum.USER,
-    };
+    } as MessageInfo;
 
     const currentMessageId = uuidv4();
     const perfLifecycle = perfTracker.createLifecycle(
@@ -966,26 +985,21 @@ export default () => {
       status: MessageStatusEnum.Loading,
     } as MessageInfo;
 
-    // 将Incomplete状态的消息改为Complete状态
-    const completeMessageList =
-      messageList?.map((item: MessageInfo) => {
-        if (item.status === MessageStatusEnum.Incomplete) {
-          item.status = MessageStatusEnum.Complete;
-        }
-        return item;
-      }) || [];
-
-    const newMessageList = [
-      ...completeMessageList,
-      chatMessage,
-      currentMessage,
-    ] as MessageInfo[];
-
-    setMessageList(newMessageList);
-    // 缓存消息列表
-    messageListRef.current = newMessageList;
-    // 同步更新会话活跃状态（用户发送消息后，新消息带有 Loading 状态）
-    checkConversationActive(newMessageList);
+    // 乐观追加 user + assistant 占位：函数式更新 + 不可变（与 conversationInfo 对齐），
+    // 避免就地 mutate 破坏 prev 身份稳定（preserveOptimisticMessageTail 依赖它），
+    // 并消除闭包直传在同 tick 多更新下基于 stale 快照互相覆盖的隐患。
+    setMessageList((prevList) => {
+      const next = appendOutgoingConversationMessages(
+        prevList,
+        chatMessage,
+        currentMessage,
+      );
+      // 缓存消息列表
+      messageListRef.current = next;
+      // 同步更新会话活跃状态（用户发送消息后，新消息带有 Loading 状态）
+      checkConversationActive(next);
+      return next;
+    });
 
     // 允许滚动
     allowAutoScrollRef.current = true;
@@ -1015,6 +1029,7 @@ export default () => {
 
   return {
     conversationInfo,
+    setConversationInfo,
     manualComponents,
     messageList,
     setMessageList,
