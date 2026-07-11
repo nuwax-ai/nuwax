@@ -19,6 +19,7 @@ import PublishComponentModal from '@/components/PublishComponentModal';
 import VersionHistory from '@/components/VersionHistory';
 import { isAgentVersionControlEnabled } from '@/constants/agent.constants';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { GLOBAL_POLLING_INTERVAL } from '@/constants/home.constants';
 import { useInitProjectMetadata } from '@/hooks/useInitProjectMetadata';
 import { useTerminalWsUrl } from '@/hooks/useTerminalWsUrl';
 import useUnifiedTheme from '@/hooks/useUnifiedTheme';
@@ -415,6 +416,26 @@ const ConversationAgent: React.FC = () => {
     }
     runQueryAgentConversation(devConversationId);
   }, [devConversationId]);
+
+  // 轮询 agent 配置，感知后端 devConversationId 变化（flow-debugger `session.sh new` 代建新会话后回写）。
+  // 仅合并 devConversationId 单字段 + 变化守卫，绝不整体覆盖 agentConfigInfo（以免冲掉未保存的编排/模型/提示词编辑）。
+  // 值变化即触发上面的 useEffect → runQueryAgentConversation 自动切到新会话。
+  useRequest(() => apiAgentConfigInfo(agentId), {
+    ready: !!agentId,
+    pollingInterval: GLOBAL_POLLING_INTERVAL,
+    pollingWhenHidden: false,
+    pollingErrorRetryCount: -1,
+    onSuccess: (result: Awaited<ReturnType<typeof apiAgentConfigInfo>>) => {
+      const next = result?.data?.devConversationId;
+      if (next !== null && next !== undefined) {
+        setAgentConfigInfo((prev) =>
+          prev && next !== prev.devConversationId
+            ? { ...prev, devConversationId: next }
+            : prev,
+        );
+      }
+    },
+  });
 
   /**
    * 当页面加载结束且携带了初始消息状态时，自动触发消息发送
