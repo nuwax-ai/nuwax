@@ -265,6 +265,10 @@ const ConversationAgent: React.FC = () => {
   const {
     runQueryConversation: runQueryAgentConversation,
     resetInit: resetAgentConversation,
+    setMessageList: setAgentMessageList,
+    setIsMoreMessage: setAgentIsMoreMessage,
+    setIsLoadingConversation: setAgentIsLoadingConversation,
+    handleClearSideEffect: handleClearAgentConversationSideEffect,
   } = useModel('conversationAgent');
 
   /** 是否开启版本管控（会话信息加载完成且 enableVersionControl 为 1） */
@@ -411,10 +415,18 @@ const ConversationAgent: React.FC = () => {
    * 注意：不要把 runQueryConversation / resetInit 放入依赖，否则 cleanup 会清空 messageList 并导致循环请求
    */
   useEffect(() => {
+    handleClearAgentConversationSideEffect();
+    setAgentMessageList([]);
+    setAgentIsMoreMessage(false);
     if (!devConversationId) {
+      setAgentIsLoadingConversation(false);
       return;
     }
+    setAgentIsLoadingConversation(true);
     runQueryAgentConversation(devConversationId);
+    // 仅由 devConversationId 驱动右侧 preview 调试会话切换；model action 引用会随 render 变化，
+    // 放入依赖会重复清空并循环拉历史。
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [devConversationId]);
 
   // 轮询 agent 配置，感知后端 devConversationId 变化（flow-debugger `session.sh new` 代建新会话后回写）。

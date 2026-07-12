@@ -93,10 +93,18 @@ export function useResumeStreamHandlers(deps: UseResumeStreamHandlersDeps) {
         messageType: MessageTypeEnum.ASSISTANT,
         status: MessageStatusEnum.Loading,
       } as MessageInfo;
-      setMessageList((prev) => [...(prev || []), placeholder]);
+      setMessageList((prev) => {
+        const prevList = prev || [];
+        const baseList =
+          prevList.length > currentList.length ? prevList : currentList;
+        if (baseList.some((m) => m.id === placeholderId)) {
+          return baseList;
+        }
+        return [...baseList, placeholder];
+      });
       return placeholderId;
     },
-    [],
+    [setMessageList],
   );
 
   // 订阅 EXECUTING 会话的流式恢复(sub)接口：用与 live chat 相同的 handleChangeMessageList 重建执行中的助手消息。

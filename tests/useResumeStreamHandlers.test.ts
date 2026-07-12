@@ -69,6 +69,35 @@ describe('useResumeStreamHandlers', () => {
     expect(list[1].status).toBe(MessageStatusEnum.Loading);
   });
 
+  it('基于 reload 后的当前快照追加 assistant 占位，避免挂到旧 prev 尾部', () => {
+    let list: MessageInfo[] = [{ id: 1, text: 'old' } as MessageInfo];
+    const reloaded = [
+      { id: 1, text: 'old' },
+      { id: 2, text: 'external user' },
+    ] as MessageInfo[];
+    const setMessageList = vi.fn((updater) => {
+      list = typeof updater === 'function' ? updater(list) : updater;
+    });
+
+    const { result } = renderHook(() =>
+      useResumeStreamHandlers({
+        setMessageList,
+        handleChangeMessageList: vi.fn(),
+        messageViewRef: { current: null },
+        allowAutoScrollRef: { current: false },
+      } as any),
+    );
+
+    act(() => {
+      result.current.resumeConversationStream(1001, reloaded);
+    });
+
+    expect(list).toHaveLength(3);
+    expect(list[0].id).toBe(1);
+    expect(list[1].id).toBe(2);
+    expect(list[2].status).toBe(MessageStatusEnum.Loading);
+  });
+
   it('把 sub chunk 转发给最新 handleChangeMessageList，并使用恢复占位 id', () => {
     let list: MessageInfo[] = [];
     const setMessageList = vi.fn((updater) => {
