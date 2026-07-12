@@ -3,7 +3,7 @@ import type { MarkdownCMDRef } from '@/types/interfaces/markdownRender';
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const GAP_TIME = 100;
+const FRAME_TIME = 16;
 
 const createMarkdownRefMock = () =>
   ({
@@ -13,10 +13,14 @@ const createMarkdownRefMock = () =>
     stop: vi.fn(),
   } as unknown as MarkdownCMDRef);
 
-const flushMarkdownTimer = () => {
+const advanceMarkdownTimer = (ms: number) => {
   act(() => {
-    vi.advanceTimersByTime(GAP_TIME);
+    vi.advanceTimersByTime(ms);
   });
+};
+
+const flushMarkdownTimer = () => {
+  advanceMarkdownTimer(FRAME_TIME);
 };
 
 describe('useMarkdownRender', () => {
@@ -79,7 +83,7 @@ describe('useMarkdownRender', () => {
     expect(markdownRef.push).toHaveBeenCalledWith('new answer', 'answer');
   });
 
-  it('依赖变化时取消上一轮尚未执行的延迟推送', () => {
+  it('高频 answer 更新不会取消已安排的刷新', () => {
     const { result, rerender } = renderHook(
       ({ answer }) =>
         useMarkdownRender({
@@ -99,6 +103,29 @@ describe('useMarkdownRender', () => {
 
     expect(markdownRef.push).toHaveBeenCalledTimes(1);
     expect(markdownRef.push).toHaveBeenCalledWith('fresh answer', 'answer');
+  });
+
+  it('chunk 间隔小于一帧时仍按帧推送最新内容', () => {
+    const { result, rerender } = renderHook(
+      ({ answer }) =>
+        useMarkdownRender({
+          id: 'message-1',
+          answer,
+          thinking: '',
+        }),
+      {
+        initialProps: { answer: '你' },
+      },
+    );
+    const markdownRef = createMarkdownRefMock();
+    result.current.markdownRef.current = markdownRef;
+
+    advanceMarkdownTimer(FRAME_TIME / 2);
+    rerender({ answer: '你好' });
+    advanceMarkdownTimer(FRAME_TIME / 2);
+
+    expect(markdownRef.push).toHaveBeenCalledTimes(1);
+    expect(markdownRef.push).toHaveBeenCalledWith('你好', 'answer');
   });
 
   it('卸载后取消延迟推送，且不再调用 MarkdownCMD.clear', () => {
