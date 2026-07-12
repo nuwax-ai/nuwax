@@ -21,18 +21,104 @@ export function appendOutgoingConversationMessages(
   return [...completeMessageList, chatMessage, currentMessage];
 }
 
+const isFrontendUuidMessageId = (id: unknown): boolean =>
+  typeof id === 'string' &&
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    id,
+  );
+
 /**
  * 判断消息 id 是否为「乐观（未落库）」消息。
  *
- * 乐观消息由前端 uuidv4() 生成，id 为非空、非数字字面量的 string；后端落库消息
- * id 为 number（或被序列化成数字串，如 "123"）。故用 `Number.isNaN(Number(id))`
- * 排除数字串后端 id，避免它们被误判为乐观尾巴导致合并永不稳定。
- * 空字符串 id（开场白占位等）不算乐观消息。
- * 与代码库既定约定一致：chatUtils.ts、MessageQueue/queueStorage.ts 均用
- * `typeof id === 'string'` 判本地态。
+ * 前端乐观消息由 uuidv4() 生成。agent-dev 预览调试链路里，后端落库 id
+ * 可能是 32 位 hex 字符串；这类 id 必须视为 persisted，不能当成本地尾巴迁移。
  */
-export const isOptimisticMessageId = (id: unknown): boolean =>
-  typeof id === 'string' && id.trim() !== '' && Number.isNaN(Number(id));
+export const isOptimisticMessageId = isFrontendUuidMessageId;
+
+const isIncompleteStatus = (status: unknown): boolean =>
+  status === MessageStatusEnum.Loading ||
+  status === MessageStatusEnum.Incomplete;
+
+const hasStableMessageId = (id: unknown): boolean =>
+  id !== null && id !== undefined && String(id).trim() !== '';
+
+const sameStableId = (left: unknown, right: unknown): boolean =>
+  hasStableMessageId(left) &&
+  hasStableMessageId(right) &&
+  String(left) === String(right);
+
+const completeAssistantPlaceholder = (message: MessageInfo): MessageInfo => {
+  if (isIncompleteStatus(message.status)) {
+    return {
+      ...message,
+      status: MessageStatusEnum.Complete,
+    };
+  }
+  return message;
+};
+
+const isSameMessageSnapshot = (
+  left: MessageInfo | undefined,
+  right: MessageInfo | undefined,
+): boolean => {
+  if (!left || !right) {
+    return false;
+  }
+  return (
+    String(left.id ?? '') === String(right.id ?? '') &&
+    left.role === right.role &&
+    (left.text || '') === (right.text || '') &&
+    (left.think || '') === (right.think || '') &&
+    left.status === right.status
+  );
+};
+
+export function areMessageListsEquivalent(
+  left: MessageInfo[] | undefined | null,
+  right: MessageInfo[] | undefined | null,
+): boolean {
+  const leftList = left || [];
+  const rightList = right || [];
+  if (leftList.length !== rightList.length) {
+    return false;
+  }
+  return leftList.every((item, index) =>
+    isSameMessageSnapshot(item, rightList[index]),
+  );
+}
+
+export function needsTerminalHistoryReload(
+  current: MessageInfo[] | undefined | null,
+  incoming: MessageInfo[] | undefined | null,
+): boolean {
+  const currentList = current || [];
+  const incomingList = incoming || [];
+  if (!incomingList.length) {
+    return false;
+  }
+  if (!currentList.length) {
+    return true;
+  }
+  if (areMessageListsEquivalent(currentList, incomingList)) {
+    return false;
+  }
+
+  const currentIds = new Set(
+    currentList
+      .filter((m) => hasStableMessageId(m.id))
+      .map((m) => String(m.id)),
+  );
+  const hasMissingPersistedMessage = incomingList.some(
+    (m) => hasStableMessageId(m.id) && !currentIds.has(String(m.id)),
+  );
+  if (hasMissingPersistedMessage) {
+    return true;
+  }
+
+  const currentLast = currentList[currentList.length - 1];
+  const incomingLast = incomingList[incomingList.length - 1];
+  return !isSameMessageSnapshot(currentLast, incomingLast);
+}
 
 /**
  * reload / 切会话覆盖 messageList 时，保留本地末尾尚未落库的乐观消息
@@ -95,7 +181,7 @@ export function preserveOptimisticMessageTail(
         !!lastIncoming &&
         lastIncoming.role === AssistantRoleEnum.ASSISTANT &&
         !isOptimisticMessageId(lastIncoming.id) &&
-        lastIncoming.status !== MessageStatusEnum.Loading;
+        !isIncompleteStatus(lastIncoming.status);
       if (assistantPersisted) {
         // 整轮（user+assistant）都已落库 → 丢弃整段尾巴
         return incoming;
@@ -111,11 +197,55 @@ export function preserveOptimisticMessageTail(
   }
 
   // 尾巴仅 assistant 占位：incoming 末条已是落库 assistant（非 Loading）→ 丢弃占位避免重复
+  const assistantTail = tail.filter(
+    (m) => m.role === AssistantRoleEnum.ASSISTANT,
+  );
+  if (assistantTail.length === tail.length && assistantTail.length === 1) {
+    const tailStartIndex = prev.length - tail.length;
+    const anchorUser = [...prev]
+      .slice(0, tailStartIndex)
+      .reverse()
+      .find(
+        (m) =>
+          m.role === AssistantRoleEnum.USER && !isOptimisticMessageId(m.id),
+      );
+    const anchorIndex = incoming.findIndex((m) =>
+      sameStableId(m.id, anchorUser?.id),
+    );
+
+    if (anchorIndex >= 0) {
+      const suffix = incoming.slice(anchorIndex + 1);
+      const firstNextUserIndex = suffix.findIndex(
+        (m) => m.role === AssistantRoleEnum.USER,
+      );
+      const persistedAssistantBeforeNextUser = suffix
+        .slice(0, firstNextUserIndex >= 0 ? firstNextUserIndex : suffix.length)
+        .some(
+          (m) =>
+            m.role === AssistantRoleEnum.ASSISTANT &&
+            !isOptimisticMessageId(m.id) &&
+            !isIncompleteStatus(m.status),
+        );
+
+      if (persistedAssistantBeforeNextUser) {
+        return incoming;
+      }
+
+      if (firstNextUserIndex >= 0) {
+        return [
+          ...incoming.slice(0, anchorIndex + 1),
+          completeAssistantPlaceholder(assistantTail[0]),
+          ...suffix,
+        ];
+      }
+    }
+  }
+
   const lastIncoming = incoming[incoming.length - 1];
   if (
     lastIncoming &&
     lastIncoming.role === AssistantRoleEnum.ASSISTANT &&
-    lastIncoming.status !== MessageStatusEnum.Loading
+    !isIncompleteStatus(lastIncoming.status)
   ) {
     return incoming;
   }

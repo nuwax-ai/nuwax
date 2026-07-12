@@ -4,7 +4,9 @@ import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import { describe, expect, it } from 'vitest';
 import {
   appendOutgoingConversationMessages,
+  areMessageListsEquivalent,
   isOptimisticMessageId,
+  needsTerminalHistoryReload,
   preserveOptimisticMessageTail,
 } from './conversationInfoMessageList';
 
@@ -61,8 +63,10 @@ describe('appendOutgoingConversationMessages', () => {
 });
 
 describe('isOptimisticMessageId', () => {
-  it('treats non-empty string id as optimistic (frontend uuid)', () => {
-    expect(isOptimisticMessageId('uuid-1234')).toBe(true);
+  it('treats frontend uuidv4 id as optimistic', () => {
+    expect(isOptimisticMessageId('11111111-1111-4111-8111-111111111111')).toBe(
+      true,
+    );
   });
 
   it('treats number id as persisted (backend)', () => {
@@ -78,10 +82,54 @@ describe('isOptimisticMessageId', () => {
     expect(isOptimisticMessageId('123')).toBe(false);
     expect(isOptimisticMessageId('100')).toBe(false);
   });
+
+  it('does not classify backend 32-char hex id as optimistic', () => {
+    expect(isOptimisticMessageId('056c255fee9e4a1f8347e022a6c80e1d')).toBe(
+      false,
+    );
+  });
+});
+
+describe('terminal history reload helpers', () => {
+  it('treats equal message snapshots as equivalent', () => {
+    const list = [
+      {
+        id: '056c255fee9e4a1f8347e022a6c80e1d',
+        role: AssistantRoleEnum.ASSISTANT,
+        text: 'done',
+        status: MessageStatusEnum.Complete,
+      },
+    ] as MessageInfo[];
+
+    expect(areMessageListsEquivalent(list, [...list])).toBe(true);
+    expect(needsTerminalHistoryReload(list, [...list])).toBe(false);
+  });
+
+  it('requires terminal reload when incoming contains a missing persisted message', () => {
+    const current = [{ id: 1, role: AssistantRoleEnum.USER, text: 'u1' }];
+    const incoming = [
+      { id: 1, role: AssistantRoleEnum.USER, text: 'u1' },
+      {
+        id: '056c255fee9e4a1f8347e022a6c80e1d',
+        role: AssistantRoleEnum.ASSISTANT,
+        text: 'a1',
+        status: MessageStatusEnum.Complete,
+      },
+    ];
+
+    expect(
+      needsTerminalHistoryReload(
+        current as MessageInfo[],
+        incoming as MessageInfo[],
+      ),
+    ).toBe(true);
+  });
 });
 
 describe('preserveOptimisticMessageTail', () => {
-  // 落库消息 id 用 number；乐观消息 id 用 string uuid（与生产语义一致）
+  // 乐观消息 id 用前端 uuidv4；落库消息 id 可能是 number、数字串或后端 hex 字符串。
+  const optimisticUserId = '11111111-1111-4111-8111-111111111111';
+  const optimisticAsstId = '22222222-2222-4222-8222-222222222222';
   const persistedUser = (text: string, id = 1) =>
     ({ id, role: AssistantRoleEnum.USER, text } as MessageInfo);
   const persistedAsst = (id = 2) =>
@@ -91,12 +139,17 @@ describe('preserveOptimisticMessageTail', () => {
       status: MessageStatusEnum.Complete,
     } as MessageInfo);
   const optimisticUser = (text: string) =>
-    ({ id: 'opt-user', role: AssistantRoleEnum.USER, text } as MessageInfo);
-  const optimisticAsst = () =>
     ({
-      id: 'opt-asst',
+      id: optimisticUserId,
+      role: AssistantRoleEnum.USER,
+      text,
+    } as MessageInfo);
+  const optimisticAsst = (overrides: Partial<MessageInfo> = {}) =>
+    ({
+      id: optimisticAsstId,
       role: AssistantRoleEnum.ASSISTANT,
       status: MessageStatusEnum.Loading,
+      ...overrides,
     } as MessageInfo);
 
   it('returns incoming as-is when prev is empty', () => {
@@ -134,8 +187,8 @@ describe('preserveOptimisticMessageTail', () => {
     ];
     const merged = preserveOptimisticMessageTail(prev, incoming);
     expect(merged).toBe(incoming);
-    expect(merged.some((m) => m.id === 'opt-user')).toBe(false);
-    expect(merged.some((m) => m.id === 'opt-asst')).toBe(false);
+    expect(merged.some((m) => m.id === optimisticUserId)).toBe(false);
+    expect(merged.some((m) => m.id === optimisticAsstId)).toBe(false);
   });
 
   it('keeps assistant placeholder (drops userOpt) when user persisted but assistant still in-flight', () => {
@@ -153,8 +206,8 @@ describe('preserveOptimisticMessageTail', () => {
       persistedUser('hello', 2),
       optimisticAsst(),
     ]);
-    expect(merged.some((m) => m.id === 'opt-user')).toBe(false);
-    expect(merged.some((m) => m.id === 'opt-asst')).toBe(true);
+    expect(merged.some((m) => m.id === optimisticUserId)).toBe(false);
+    expect(merged.some((m) => m.id === optimisticAsstId)).toBe(true);
   });
 
   it('keeps optimistic tail when backend returned empty list (still in flight)', () => {
@@ -177,13 +230,56 @@ describe('preserveOptimisticMessageTail', () => {
     const incoming = [persistedUser('hi', 1), persistedAsst(2)];
     const merged = preserveOptimisticMessageTail(prev, incoming);
     expect(merged).toBe(incoming);
-    expect(merged.some((m) => m.id === 'opt-asst')).toBe(false);
+    expect(merged.some((m) => m.id === optimisticAsstId)).toBe(false);
   });
 
   it('keeps assistant-only placeholder tail when incoming is empty', () => {
     const prev = [optimisticAsst()];
     const merged = preserveOptimisticMessageTail(prev, []);
     expect(merged).toEqual([optimisticAsst()]);
+  });
+
+  it('inserts assistant-only placeholder after its anchor user when backend already has the next user', () => {
+    const asstOpt = optimisticAsst({ text: 'streamed answer' });
+    const prev = [persistedUser('user1', 'u1'), asstOpt];
+    const incoming = [
+      persistedUser('user1', 'u1'),
+      persistedUser('user2', 'u2'),
+    ];
+
+    const merged = preserveOptimisticMessageTail(prev, incoming);
+
+    expect(merged).toEqual([
+      persistedUser('user1', 'u1'),
+      {
+        ...asstOpt,
+        status: MessageStatusEnum.Complete,
+      },
+      persistedUser('user2', 'u2'),
+    ]);
+  });
+
+  it('drops assistant-only placeholder when backend already persisted the anchored assistant before the next user', () => {
+    const prev = [persistedUser('user1', 'u1'), optimisticAsst()];
+    const incoming = [
+      persistedUser('user1', 'u1'),
+      persistedAsst('a1'),
+      persistedUser('user2', 'u2'),
+    ];
+
+    const merged = preserveOptimisticMessageTail(prev, incoming);
+
+    expect(merged).toBe(incoming);
+  });
+
+  it('keeps assistant-only placeholder at the tail for a single in-flight round', () => {
+    const asstOpt = optimisticAsst({ text: 'streaming' });
+    const prev = [persistedUser('user1', 'u1'), asstOpt];
+    const incoming = [persistedUser('user1', 'u1')];
+
+    const merged = preserveOptimisticMessageTail(prev, incoming);
+
+    expect(merged).toEqual([persistedUser('user1', 'u1'), asstOpt]);
   });
 
   it('stops collecting tail at the first persisted message (non-contiguous optimistic msgs not kept)', () => {
@@ -216,5 +312,47 @@ describe('preserveOptimisticMessageTail', () => {
     const merged = preserveOptimisticMessageTail(prev, incoming);
     expect(merged).toBe(incoming);
     expect(merged).toHaveLength(2);
+  });
+
+  it('treats backend hex ids as persisted and does not replay them as optimistic tail', () => {
+    const backendUser = {
+      id: 'd6f9583a51494ad7a7e3f3c7ac7af340',
+      role: AssistantRoleEnum.USER,
+      text: '你好，请简单介绍一下你自己',
+    };
+    const backendAsst = {
+      id: '056c255fee9e4a1f8347e022a6c80e1d',
+      role: AssistantRoleEnum.ASSISTANT,
+      text: '你好！我是基于 LangGraph 工作流图运行的智能助手',
+      status: MessageStatusEnum.Complete,
+    };
+    const prev = [backendUser, backendAsst] as MessageInfo[];
+    const incoming = [backendUser, backendAsst] as MessageInfo[];
+
+    const merged = preserveOptimisticMessageTail(prev, incoming);
+
+    expect(merged).toBe(incoming);
+    expect(merged).toHaveLength(2);
+  });
+
+  it('keeps optimistic assistant placeholder when incoming ends with an incomplete persisted assistant', () => {
+    const prev = [
+      persistedUser('old', 1),
+      optimisticUser('hello'),
+      optimisticAsst(),
+    ];
+    const incoming = [
+      persistedUser('old', 1),
+      persistedUser('hello', 2),
+      {
+        id: 3,
+        role: AssistantRoleEnum.ASSISTANT,
+        status: MessageStatusEnum.Incomplete,
+      } as MessageInfo,
+    ];
+
+    const merged = preserveOptimisticMessageTail(prev, incoming);
+
+    expect(merged).toEqual([...incoming, optimisticAsst()]);
   });
 });

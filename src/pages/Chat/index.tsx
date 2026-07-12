@@ -1176,6 +1176,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     onAbortResumeStream: abortResumeStream,
     onReloadConversationHistoryAsync: async (id: number) =>
       (await runAsync(Number(id)))?.data?.messageList,
+    resumeDebugSource: 'chat:main-agent-session',
     onTerminalTaskStatus: (status: TaskStatus) => {
       if (!id) return;
       applyTerminalTaskStatus(setConversationInfo, id, status);
