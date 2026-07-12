@@ -268,6 +268,7 @@ export function useConversationAgentChatSession(
     onAbortResumeStream: abortResumeStream,
     onReloadConversationHistoryAsync: async (id: number | string) =>
       (await runAsync(Number(id)))?.data?.messageList,
+    resumeDebugSource: 'agent-dev:preview-tab-session',
     onTerminalTaskStatus: async (status: TaskStatus) => {
       if (!devConversationId) return;
       applyTerminalTaskStatus(setConversationInfo, devConversationId, status);
