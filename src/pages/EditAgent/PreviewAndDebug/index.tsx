@@ -648,6 +648,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
               onReloadConversationHistoryAsync={async (id) =>
                 (await runAsync(Number(id)))?.data?.messageList
               }
+              resumeDebugSource="edit-agent:preview-and-debug"
             />
           </div>
         </div>
