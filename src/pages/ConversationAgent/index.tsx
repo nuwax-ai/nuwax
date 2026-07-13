@@ -237,6 +237,7 @@ const ConversationAgent: React.FC = () => {
     setIsFileTreePinned,
     closePreviewView,
     openDesktopView,
+    ensureDesktopConnection,
     fileTreeData,
     fileTreeDataLoading,
     handleRefreshFileList,
@@ -1645,6 +1646,12 @@ const ConversationAgent: React.FC = () => {
           enabled: agentConfigInfo?.type === AgentTypeEnum.TaskAgent,
           onIdleTimeout: closeAgentDesktop,
         }}
+        // 重试前先 ensurePod + 恢复 keepalive，避免容器被回收后仅检测状态永远失败
+        onReconnect={
+          queryConversationId
+            ? () => ensureDesktopConnection(queryConversationId)
+            : undefined
+        }
       />
     </div>
   );

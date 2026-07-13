@@ -42,6 +42,7 @@ export function useFileTreePreviewPanel(
     onRestartAgent,
     onExportProject,
     idleDetection,
+    onReconnect,
     hideDesktop = HideDesktopEnum.No,
     diffFile,
     showGitVersionButton = false,
@@ -138,6 +139,8 @@ export function useFileTreePreviewPanel(
         autoConnect
         className={cx('vnc-preview')}
         idleDetection={wrappedIdleDetection}
+        // 重试前先 ensurePod + 恢复 keepalive，避免容器被回收后仅检测状态永远失败
+        onReconnect={onReconnect}
       />
     ) : diffFile ? (
       <ChangeFileGitDiffView
