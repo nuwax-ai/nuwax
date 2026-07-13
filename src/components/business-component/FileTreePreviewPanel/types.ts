@@ -205,6 +205,8 @@ export interface UseFileTreePreviewPanelParams {
   onToggleGitVersionPanel?: () => void;
   /** Git 版本记录按钮后的额外操作按钮 */
   afterGitVersionActions?: React.ReactNode;
+  /** 终端是否处于展开状态（非隐藏且非折叠） */
+  isTerminalExpanded?: boolean;
 }
 
 /** FileTreePreviewPanel 组件属性 */

@@ -48,6 +48,7 @@ export function useFileTreePreviewPanel(
     showGitVersionButton = false,
     onToggleGitVersionPanel,
     afterGitVersionActions,
+    isTerminalExpanded = true,
   } = params;
 
   const {
@@ -178,7 +179,9 @@ export function useFileTreePreviewPanel(
 
   // 重启容器遮罩
   const restartOverlay =
-    isRestarting && hideDesktop !== HideDesktopEnum.Yes ? (
+    isRestarting &&
+    hideDesktop !== HideDesktopEnum.Yes &&
+    isTerminalExpanded ? (
       <div className={cx('restart-container')}>
         <div className={cx('background-placeholder')} />
         <div className={cx('loading-overlay')}>

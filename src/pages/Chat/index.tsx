@@ -1053,6 +1053,8 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
         onExportProject: handleExportProject,
         // 重试前先 ensurePod + 恢复 keepalive，避免容器被回收后仅检测状态永远失败
         onReconnect: () => ensureDesktopConnection(id),
+        isTerminalExpanded:
+          terminalConsoleVisible && terminalConsoleLayoutMode !== 'collapsed',
         idleDetection: {
           enabled: effectiveAgent?.type === AgentTypeEnum.TaskAgent,
           onIdleTimeout: () => openPreviewView(id),
