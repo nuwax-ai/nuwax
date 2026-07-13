@@ -1050,6 +1050,8 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
         onRestartServer: () => restartVncPod(id, finalSelectedId),
         onRestartAgent: () => restartAgent(id),
         onExportProject: handleExportProject,
+        isTerminalExpanded:
+          terminalConsoleVisible && terminalConsoleLayoutMode !== 'collapsed',
         idleDetection: {
           enabled: effectiveAgent?.type === AgentTypeEnum.TaskAgent,
           onIdleTimeout: () => openPreviewView(id),
