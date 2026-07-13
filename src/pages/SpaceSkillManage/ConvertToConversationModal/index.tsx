@@ -1,7 +1,12 @@
 import CustomFormModal from '@/components/CustomFormModal';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
+import { apiDisplayRecommendList } from '@/services/displayRecommend';
 import { dict } from '@/services/i18nRuntime';
-import { apiGetUserSelectableSandboxList } from '@/services/systemManage';
+import {
+  apiGetUserSelectableSandboxList,
+  apiSaveSelectedSandbox,
+} from '@/services/systemManage';
+import { DisplayRecommendFunctionTypeEnum } from '@/types/interfaces/displayRecommend';
 import { Form, Select, message } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
@@ -33,6 +38,38 @@ const ConvertToConversationModal: React.FC<ConvertToConversationModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [loadingComputers, setLoadingComputers] = useState(false);
   const [computerList, setComputerList] = useState<ComputerOption[]>([]);
+  const [targetId, setTargetId] = useState<number | null>(null);
+
+  // 获取开发智能体 ID
+  const fetchTargetAgentId = async () => {
+    try {
+      const res = await apiDisplayRecommendList();
+      if (res.code === SUCCESS_CODE && res.data) {
+        const { recHome, recChatBoxNav } = res.data;
+        const allList: any[] = [];
+
+        // 收集所有 recommendInfo 列表
+        [recHome, recChatBoxNav].forEach((group) => {
+          if (!group) return;
+          Object.values(group).forEach((list) => {
+            if (Array.isArray(list)) {
+              allList.push(...list);
+            }
+          });
+        });
+
+        const skillDevItem = allList.find(
+          (item: any) =>
+            item.functionType === DisplayRecommendFunctionTypeEnum.SkillDev,
+        );
+        if (skillDevItem && skillDevItem.targetId) {
+          setTargetId(Number(skillDevItem.targetId));
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch recommend list:', error);
+    }
+  };
 
   // 获取电脑列表
   const fetchComputerList = async () => {
@@ -52,7 +89,7 @@ const ConvertToConversationModal: React.FC<ConvertToConversationModalProps> = ({
       message.error(
         dict(
           'PC.Pages.SpaceSkillManage.ConvertToConversationModal.computerLoadFailed',
-        ) || '加载电脑列表失败',
+        ),
       );
     } finally {
       setLoadingComputers(false);
@@ -63,9 +100,26 @@ const ConvertToConversationModal: React.FC<ConvertToConversationModalProps> = ({
     if (open) {
       form.resetFields();
       setLoading(false);
+      setTargetId(null);
       fetchComputerList();
+      fetchTargetAgentId();
     }
   }, [open, form]);
+
+  const handleSelectChange = async (sandboxId: string) => {
+    if (targetId) {
+      try {
+        await apiSaveSelectedSandbox(targetId, sandboxId);
+      } catch (error) {
+        console.error('Failed to save selected sandbox:', error);
+        message.error(
+          dict(
+            'PC.Pages.SpaceSkillManage.ConvertToConversationModal.computerSwitchFailed',
+          ),
+        );
+      }
+    }
+  };
 
   const handleSubmit = async () => {
     try {
@@ -111,6 +165,7 @@ const ConvertToConversationModal: React.FC<ConvertToConversationModalProps> = ({
               )}
               loading={loadingComputers}
               disabled={loading}
+              onChange={handleSelectChange}
             >
               {computerList.map((comp) => (
                 <Select.Option key={comp.id} value={comp.id}>

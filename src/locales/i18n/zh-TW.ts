@@ -3928,6 +3928,8 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.SpaceSkillManage.ConvertToConversationModal.selectComputer": "選擇電腦",
   "PC.Pages.SpaceSkillManage.ConvertToConversationModal.computerPlaceholder": "請選擇電腦",
   "PC.Pages.SpaceSkillManage.ConvertToConversationModal.computerRequired": "電腦不可為空",
+  "PC.Pages.SpaceSkillManage.ConvertToConversationModal.computerLoadFailed": "載入電腦清單失敗",
+  "PC.Pages.SpaceSkillManage.ConvertToConversationModal.computerSwitchFailed": "切換電腦失敗，請重試",
   "PC.Pages.SpaceSquare.agent": "智慧體",
   "PC.Pages.SpaceSquare.confirmOffShelf": "你確定要下架此{0}嗎?",
   "PC.Pages.SpaceSquare.offShelf": "下架",

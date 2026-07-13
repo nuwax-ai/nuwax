@@ -4097,6 +4097,8 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.SpaceSkillManage.ConvertToConversationModal.selectComputer": "选择电脑",
   "PC.Pages.SpaceSkillManage.ConvertToConversationModal.computerPlaceholder": "请选择电脑",
   "PC.Pages.SpaceSkillManage.ConvertToConversationModal.computerRequired": "电脑不能为空",
+  "PC.Pages.SpaceSkillManage.ConvertToConversationModal.computerLoadFailed": "加载电脑列表失败",
+  "PC.Pages.SpaceSkillManage.ConvertToConversationModal.computerSwitchFailed": "切换电脑失败，请重试",
   "PC.Pages.SpaceSquare.agent": "智能体",
   "PC.Pages.SpaceSquare.confirmOffShelf": "你确定要下架此{0}吗?",
   "PC.Pages.SpaceSquare.offShelf": "下架",

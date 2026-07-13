@@ -4098,6 +4098,8 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.SpaceSkillManage.ConvertToConversationModal.selectComputer": "Select Computer",
   "PC.Pages.SpaceSkillManage.ConvertToConversationModal.computerPlaceholder": "Please select a computer",
   "PC.Pages.SpaceSkillManage.ConvertToConversationModal.computerRequired": "Computer is required",
+  "PC.Pages.SpaceSkillManage.ConvertToConversationModal.computerLoadFailed": "Failed to load computer list",
+  "PC.Pages.SpaceSkillManage.ConvertToConversationModal.computerSwitchFailed": "Failed to switch computer, please try again",
   "PC.Pages.SpaceSquare.agent": "Agent",
   "PC.Pages.SpaceSquare.confirmOffShelf": "Are you sure you want to take this {0} offline?",
   "PC.Pages.SpaceSquare.offShelf": "Take Offline",
