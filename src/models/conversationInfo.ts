@@ -31,6 +31,7 @@ import {
   apiKeepalivePod,
   apiRestartAgent,
   apiRestartPod,
+  isEnsurePodThrottledError,
 } from '@/services/vncDesktop';
 import {
   AgentComponentTypeEnum,
@@ -376,6 +377,37 @@ export default () => {
       }
     } catch (error) {
       console.error('Failed to open remote desktop view', error);
+    }
+  }, []);
+
+  /**
+   * 仅 ensurePod + 恢复 keepalive（不做视图切换），供 VncPreview 重连前调用。
+   *
+   * 与 openDesktopView 的区别：ensure 失败 / 节流 / 业务码非成功一律 rethrow，
+   * 让调用方（VncPreview.handleRetry）能区分成功 / 节流 / 真实失败——而不是像
+   * openDesktopView 那样被 console.error 静默吞掉后，让用户对着不存在的容器空等 60s。
+   * 节流（容器刚 ensure 过、仍在运行）时仍恢复 keepalive，避免容器被回收——
+   * 这正是「重连」要解决的回收问题（旧路径在节流/失败时会永久停 keepalive）。
+   */
+  const ensureDesktopConnection = useCallback(async (cId: number) => {
+    try {
+      const { code, data } = await apiEnsurePod(cId);
+      if (code !== SUCCESS_CODE) {
+        // HTTP 200 但业务码非成功（配额/权限/策略等）：抛错让调用方感知
+        throw new Error(`ensurePod failed (code: ${code})`);
+      }
+      setVncContainerInfo(data?.container_info);
+      // 成功：重启 keepalive（先停后启，避免轮询叠加，按新 cId 重启）
+      stopKeepalivePodPolling();
+      runKeepalivePodPolling(cId);
+    } catch (error) {
+      // 节流 = 容器刚 ensure 过、仍在运行：重启 keepalive 后重新抛出，交调用方按节流处理；
+      // 真实失败（网络/业务码/500）则不动 keepalive，避免误停仍在跑的轮询
+      if (isEnsurePodThrottledError(error)) {
+        stopKeepalivePodPolling();
+        runKeepalivePodPolling(cId);
+      }
+      throw error;
     }
   }, []);
 
@@ -1670,6 +1702,8 @@ export default () => {
     /** 刷新 Git 列表回调 ref，页面侧赋值 fileView.refreshGitList */
     refreshGitListRef,
     openDesktopView,
+    /** 仅 ensurePod + keepalive（不做视图切换），供 VncPreview 重连前回调 */
+    ensureDesktopConnection,
     openPreviewView,
     // 重启智能体电脑
     restartVncPod,
