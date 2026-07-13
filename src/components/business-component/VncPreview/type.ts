@@ -64,6 +64,13 @@ export interface VncPreviewProps {
    * 用于在用户长时间无操作时自动断开连接
    */
   idleDetection?: IdleDetectionConfig;
+  /**
+   * 重连前回调（由父级注入）
+   * 应在真正建立 VNC 连接前，确保容器已启动、保活轮询已恢复。
+   * 典型实现：调用 openDesktopView（内部会 apiEnsurePod + runKeepalivePodPolling）。
+   * 未传入时，重试按钮仅执行本地 connect（兼容旧用法）。
+   */
+  onReconnect?: () => Promise<void> | void;
 }
 
 export type ConnectionStatus =
@@ -80,6 +87,11 @@ export interface VncPreviewRef {
    * 连接到智能体电脑
    */
   connect: () => void;
+  /**
+   * 完整重连：先触发 onReconnect（恢复容器与保活），再 connect
+   * 无 onReconnect 时等同于 connect
+   */
+  reconnect: () => Promise<void>;
   /**
    * 断开 VNC 连接
    */
