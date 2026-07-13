@@ -368,6 +368,24 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     }
   }, [agentId, agentConfigInfo, form]);
 
+  /**
+   * 当前生效的沙箱 ID：优先会话已绑定沙箱，其次智能体默认沙箱，最后用户手动选择
+   */
+  const effectiveSandboxId = useMemo(
+    () =>
+      String(
+        conversationInfo?.sandboxServerId ??
+          conversationInfo?.agent?.sandboxId ??
+          selectedComputerId ??
+          '-1',
+      ),
+    [
+      conversationInfo?.sandboxServerId,
+      conversationInfo?.agent?.sandboxId,
+      selectedComputerId,
+    ],
+  );
+
   // 消息发送
   const handleMessageSend = (
     messageInfo: string,
@@ -389,12 +407,6 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     }
     // 标记用户已发送消息
     setHasUserSentMessage(true);
-
-    const effectiveSandboxId = String(
-      conversationInfo?.sandboxServerId ??
-        conversationInfo?.agent?.sandboxId ??
-        selectedComputerId,
-    );
 
     // 发送消息参数
     const sendParams: SendMessageParams = {
@@ -552,7 +564,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
             // 是否显示智能体电脑
             isShowDesktop={
               agentConfigInfo?.hideDesktop === HideDesktopEnum.No &&
-              selectedComputerId === '-1'
+              effectiveSandboxId === '-1'
             }
             // 是否显示文件面板: 通用型智能体 + 文件树未打开
             showFilePanel={isShowFilePanel}

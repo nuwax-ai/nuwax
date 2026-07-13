@@ -1299,15 +1299,34 @@ const AppDev: React.FC = () => {
   /**
    * 切换版本记录面板
    * 若当前在查看 Git diff，再次点击版本按钮应回到版本列表（而非把 open 状态切反）
+   * 打开面板时若处于预览 Tab，需先切换到代码模式
    */
   const handleToggleGitVersionPanel = useCallback(() => {
+    const openPanel = () => {
+      if (activeTab === 'preview') {
+        setActiveTab('code');
+      }
+      setGitVersionPanelOpen(true);
+    };
+
     if (sourceControl.selectedDiffFile) {
       sourceControl.clearSelectedDiff();
-      setGitVersionPanelOpen(true);
+      openPanel();
       return;
     }
-    setGitVersionPanelOpen((prev) => !prev);
-  }, [sourceControl.selectedDiffFile, sourceControl.clearSelectedDiff]);
+
+    if (gitVersionPanelOpen) {
+      setGitVersionPanelOpen(false);
+      return;
+    }
+
+    openPanel();
+  }, [
+    activeTab,
+    gitVersionPanelOpen,
+    sourceControl.selectedDiffFile,
+    sourceControl.clearSelectedDiff,
+  ]);
 
   /**
    * 文件树状态适配：将 fileManagement 与页面回调
