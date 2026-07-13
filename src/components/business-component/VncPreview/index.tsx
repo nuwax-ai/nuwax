@@ -5,7 +5,10 @@ import {
 } from '@/constants/common.constants';
 import { useIdleDetection } from '@/hooks/useIdleDetection';
 import { t } from '@/services/i18nRuntime';
-import { apiCheckVncStatus } from '@/services/vncDesktop';
+import {
+  apiCheckVncStatus,
+  isEnsurePodThrottledError,
+} from '@/services/vncDesktop';
 import { createLogger } from '@/utils/logger';
 import { DesktopOutlined } from '@ant-design/icons';
 import { Alert, Button, message, Spin, Tag } from 'antd';
@@ -36,6 +39,7 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
       style,
       className,
       idleDetection,
+      onReconnect,
     },
     ref,
   ) => {
@@ -152,6 +156,41 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
       setIframeUrl(null);
       setErrorMessage('');
     }, [resetRetry]);
+
+    /**
+     * 完整重连：先由父级恢复容器与保活（onReconnect），再执行本地 connect。
+     * 解决长时间空闲后容器被回收、仅 connect 检测状态永远失败的问题。
+     * 未传入 onReconnect 时行为与 connect 一致，保持向后兼容。
+     */
+    const handleRetry = useCallback(async () => {
+      setStatus('connecting');
+      setErrorMessage('');
+      // 重置重试计时窗口，避免沿用上次 60s 超时累计
+      resetRetry();
+
+      if (onReconnect) {
+        try {
+          await onReconnect();
+        } catch (error) {
+          // ensurePod 5s 本地限流属于正常情况（容器可能已在运行），继续尝试连接
+          if (!isEnsurePodThrottledError(error)) {
+            console.error('[VncPreview] onReconnect failed:', error);
+            setStatus('error');
+            setErrorMessage(
+              error instanceof Error
+                ? error.message
+                : t('PC.Components.VncPreview.cannotEstablish'),
+            );
+            return;
+          }
+          console.log(
+            '[VncPreview] ensurePod throttled during reconnect, continue connect',
+          );
+        }
+      }
+
+      await connect();
+    }, [onReconnect, resetRetry, connect]);
 
     // 组件卸载时清除重试定时器
     useEffect(() => {
@@ -351,12 +390,20 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
       ref,
       () => ({
         connect,
+        reconnect: handleRetry,
         disconnect,
         renderStatusTag,
         getStatus: () => status,
         resetIdleTimer,
       }),
-      [connect, disconnect, renderStatusTag, status, resetIdleTimer],
+      [
+        connect,
+        handleRetry,
+        disconnect,
+        renderStatusTag,
+        status,
+        resetIdleTimer,
+      ],
     );
 
     return (
@@ -405,7 +452,7 @@ const VncPreview = forwardRef<VncPreviewRef, VncPreviewProps>(
                 type="error"
                 showIcon
                 action={
-                  <Button size="small" type="primary" onClick={connect}>
+                  <Button size="small" type="primary" onClick={handleRetry}>
                     {t('PC.Components.VncPreview.retry')}
                   </Button>
                 }
