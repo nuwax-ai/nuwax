@@ -7,13 +7,15 @@ export enum SkillMoreActionEnum {
   Copy_To_Space = 'Copy_To_Space',
   // 导出项目
   Export_Project = 'Export_Project',
+  // 转为对话式开发
+  Convert_To_Conversation = 'Convert_To_Conversation',
   // 删除
   Delete = 'Delete',
 }
 
 /**
  * 技能库更多操作
- * 技能：复制到空间、导出项目、删除
+ * 技能：复制到空间、导出项目、转为对话式开发、删除
  */
 export const SKILL_MORE_ACTION: CustomPopoverItem[] = [
   {
@@ -24,6 +26,11 @@ export const SKILL_MORE_ACTION: CustomPopoverItem[] = [
   {
     action: SkillMoreActionEnum.Export_Project,
     label: dict('PC.Pages.SpaceSkillManage.type.exportSkill'),
+    type: ComponentTypeEnum.Skill,
+  },
+  {
+    action: SkillMoreActionEnum.Convert_To_Conversation,
+    label: dict('PC.Pages.SpaceSkillManage.type.convertToConversation'),
     type: ComponentTypeEnum.Skill,
   },
   {
