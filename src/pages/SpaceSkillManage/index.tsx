@@ -202,16 +202,15 @@ const SpaceSkillManage: React.FC = () => {
     if (!currentComponentInfo) {
       return;
     }
+    console.log('handleConvertToConversationConfirm sandboxId:', sandboxId);
     try {
-      const res = await apiSkillConvertToConversation(
-        currentComponentInfo.id,
-        sandboxId,
-      );
+      const res = await apiSkillConvertToConversation(currentComponentInfo.id);
       if (res.code === SUCCESS_CODE && res.data) {
+        const { conversationId } = res.data;
         setOpenConvertToConversation(false);
         // 跳转到新的对话式技能详情页
         history.push(
-          `/space/${spaceId}/skill-details-conversation/${currentComponentInfo.id}?conversationId=${res.data}`,
+          `/space/${spaceId}/skill-details-conversation/${currentComponentInfo.id}?conversationId=${conversationId}`,
         );
       }
     } catch (error) {
