@@ -194,6 +194,22 @@ const getSerializedEditorText = (element: HTMLElement): string => {
 };
 
 /**
+ * 将光标移动到编辑器内容末尾
+ * 用于撤销/重做后保持光标在文本后面，便于继续输入
+ */
+const placeCaretAtEnd = (element: HTMLElement) => {
+  element.focus();
+  const selection = window.getSelection();
+  if (!selection) return;
+
+  const range = document.createRange();
+  range.selectNodeContents(element);
+  range.collapse(false);
+  selection.removeAllRanges();
+  selection.addRange(range);
+};
+
+/**
  * 获取光标前一个节点
  * 用于判断光标是否紧贴在已插入的 mention chip 后面
  *
@@ -351,9 +367,19 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
     },
     ref,
   ) => {
+    const MAX_UNDO_HISTORY = 100;
+
     // ==================== Refs ====================
     /** 编辑器 DOM 引用 */
     const editorRef = useRef<HTMLDivElement>(null);
+    /** 编辑器内容快照栈（innerHTML），用于撤销/重做 */
+    const undoStackRef = useRef<string[]>(['']);
+    /** 当前快照在栈中的位置 */
+    const undoIndexRef = useRef(0);
+    /** 是否正在应用撤销/重做，避免重复入栈 */
+    const isHistoryActionRef = useRef(false);
+    /** 最近一次由编辑器主动同步给外部的文本 */
+    const lastEmittedValueRef = useRef<string | undefined>(undefined);
     /** MentionPopup 组件引用，用于调用其方法 */
     const mentionPopupRef = useRef<MentionPopupHandle>(null);
     /** 是否正在进行中文输入（IME 输入法） */
@@ -396,14 +422,6 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
     // ==================== 暴露给父组件的方法 ====================
 
     /**
-     * 获取编辑器的纯文本内容
-     */
-    const getTextContent = useCallback((): string => {
-      if (!editorRef.current) return '';
-      return getSerializedEditorText(editorRef.current);
-    }, []);
-
-    /**
      * 同步编辑器空状态
      * 使用序列化后的真实文本，而不是依赖 :empty 伪类
      */
@@ -416,6 +434,185 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
       const serializedText = getSerializedEditorText(editorRef.current);
       setIsEditorEmpty(serializedText.trim().length === 0);
     }, []);
+
+    /** 重置撤销/重做栈 */
+    const resetUndoStack = useCallback((snapshot = '') => {
+      undoStackRef.current = [snapshot];
+      undoIndexRef.current = 0;
+    }, []);
+
+    /** 根据 DOM 同步 mention 选中状态（从 DOM 重建，避免与 setState 竞态） */
+    const syncMentionsFromDom = useCallback(
+      (pendingMention?: MentionItem) => {
+        if (!enableMention || !editorRef.current) return;
+
+        setSelectedMentions((prev) => {
+          const prevMap = new Map(
+            prev.map((mention) => [String(mention.targetId), mention]),
+          );
+          if (pendingMention) {
+            prevMap.set(String(pendingMention.targetId), pendingMention);
+          }
+
+          return Array.from(
+            editorRef.current!.querySelectorAll('[data-mention-id]'),
+          ).map((chip) => {
+            const el = chip as HTMLElement;
+            const mentionId = el.dataset.mentionId!;
+            return (
+              prevMap.get(mentionId) ?? {
+                targetId: Number(mentionId),
+                name: el.dataset.mentionName || '',
+              }
+            );
+          });
+        });
+      },
+      [enableMention],
+    );
+
+    /** 记录当前 DOM 快照到撤销栈 */
+    const recordUndoSnapshot = useCallback(() => {
+      if (!editorRef.current || isHistoryActionRef.current) return;
+
+      const snapshot = editorRef.current.innerHTML;
+      const stack = undoStackRef.current;
+      const index = undoIndexRef.current;
+      if (stack[index] === snapshot) return;
+
+      let nextStack = stack.slice(0, index + 1);
+      nextStack.push(snapshot);
+      if (nextStack.length > MAX_UNDO_HISTORY) {
+        nextStack = nextStack.slice(nextStack.length - MAX_UNDO_HISTORY);
+      }
+      undoStackRef.current = nextStack;
+      undoIndexRef.current = nextStack.length - 1;
+    }, []);
+
+    /** 将 DOM 文本同步到受控 value */
+    const syncEditorStateFromDom = useCallback(
+      (pendingMention?: MentionItem) => {
+        if (!editorRef.current) return '';
+
+        const text = getSerializedEditorText(editorRef.current);
+        lastEmittedValueRef.current = text;
+        setIsEditorEmpty(text.trim().length === 0);
+        onChange?.(text);
+        syncMentionsFromDom(pendingMention);
+        return text;
+      },
+      [onChange, syncMentionsFromDom],
+    );
+
+    /** 关闭提及弹窗并重置相关状态 */
+    const closeMentionPopup = useCallback(() => {
+      setShowMentionPopup(false);
+      setMentionSearchText('');
+      mentionAtIndexRef.current = -1;
+      savedRangeRef.current = null;
+      savedTextNodeRef.current = null;
+      popupAnchorYRef.current = null;
+    }, []);
+
+    /** 检测 @ 并控制弹窗 */
+    const runMentionDetection = useCallback(() => {
+      if (!enableMention || !editorRef.current) return;
+
+      if (isCaretAfterMentionChip(editorRef.current)) {
+        closeMentionPopup();
+        return;
+      }
+
+      const textBeforeCaret = getTextBeforeCaret(editorRef.current);
+      const mentionInfo = detectMention(textBeforeCaret);
+
+      if (mentionInfo.hasMention) {
+        const position = getCaretPosition(
+          mentionPlacement,
+          mentionPopupHeight || undefined,
+        );
+        if (position) {
+          const selection = window.getSelection();
+          if (selection && selection.rangeCount > 0) {
+            savedRangeRef.current = selection.getRangeAt(0).cloneRange();
+            savedTextNodeRef.current = selection.getRangeAt(0).startContainer;
+          }
+
+          const vh =
+            window.innerHeight || document.documentElement.clientHeight || 0;
+          if (position.finalPlacement === 'up') {
+            setMentionPosition({
+              left: position.left,
+              bottom: vh - position.anchorY,
+              top: undefined,
+            });
+          } else {
+            setMentionPosition({
+              left: position.left,
+              top: position.anchorY,
+              bottom: undefined,
+            });
+          }
+          popupAnchorYRef.current = position.anchorY;
+          setMentionSearchText(mentionInfo.searchText);
+          setShowMentionPopup(true);
+          mentionAtIndexRef.current = mentionInfo.atIndex;
+        }
+      } else {
+        closeMentionPopup();
+      }
+    }, [
+      closeMentionPopup,
+      enableMention,
+      mentionPlacement,
+      mentionPopupHeight,
+    ]);
+
+    /** 提交一次编辑变更：入栈 + 同步文本 + mention 检测 */
+    const commitEditorChange = useCallback(
+      (options?: { pendingMention?: MentionItem }) => {
+        if (!editorRef.current || isHistoryActionRef.current) return;
+
+        recordUndoSnapshot();
+        syncEditorStateFromDom(options?.pendingMention);
+        runMentionDetection();
+      },
+      [recordUndoSnapshot, runMentionDetection, syncEditorStateFromDom],
+    );
+
+    /** 应用历史快照 */
+    const applyHistorySnapshot = useCallback(
+      (targetIndex: number) => {
+        if (!editorRef.current) return;
+
+        const snapshot = undoStackRef.current[targetIndex];
+        if (snapshot === undefined) return;
+
+        isHistoryActionRef.current = true;
+        editorRef.current.innerHTML = snapshot;
+        undoIndexRef.current = targetIndex;
+        placeCaretAtEnd(editorRef.current);
+        syncEditorStateFromDom();
+        // 撤销/重做后不自动唤起 @ 弹窗：此时 DOM 刚恢复，光标坐标未稳定，
+        // 且用户意图是回退而非重新选择技能，避免出现错位弹窗
+        closeMentionPopup();
+
+        queueMicrotask(() => {
+          isHistoryActionRef.current = false;
+        });
+      },
+      [closeMentionPopup, syncEditorStateFromDom],
+    );
+
+    const undoEditorHistory = useCallback(() => {
+      if (undoIndexRef.current <= 0) return;
+      applyHistorySnapshot(undoIndexRef.current - 1);
+    }, [applyHistorySnapshot]);
+
+    const redoEditorHistory = useCallback(() => {
+      if (undoIndexRef.current >= undoStackRef.current.length - 1) return;
+      applyHistorySnapshot(undoIndexRef.current + 1);
+    }, [applyHistorySnapshot]);
 
     /**
      * 将当前已选 mention 推导为父组件需要的 skillIds
@@ -530,27 +727,20 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
      * 清空编辑器内容和已选提及
      */
     const clear = useCallback(() => {
-      if (editorRef.current) {
-        editorRef.current.innerHTML = '';
-        setSelectedMentions([]);
-        setIsEditorEmpty(true);
-        onChange?.('');
-      }
-    }, [onChange]);
+      if (!editorRef.current) return;
 
-    // ==================== 弹窗控制方法 ====================
+      isHistoryActionRef.current = true;
+      editorRef.current.innerHTML = '';
+      resetUndoStack('');
+      setSelectedMentions([]);
+      setIsEditorEmpty(true);
+      lastEmittedValueRef.current = '';
+      onChange?.('');
 
-    /**
-     * 关闭提及弹窗并重置相关状态
-     */
-    const closeMentionPopup = useCallback(() => {
-      setShowMentionPopup(false);
-      setMentionSearchText('');
-      mentionAtIndexRef.current = -1;
-      savedRangeRef.current = null;
-      savedTextNodeRef.current = null;
-      popupAnchorYRef.current = null;
-    }, []);
+      queueMicrotask(() => {
+        isHistoryActionRef.current = false;
+      });
+    }, [onChange, resetUndoStack]);
 
     // ==================== Mention Chip 操作方法 ====================
 
@@ -572,19 +762,11 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
         if (mentionChip) {
           // 从 DOM 中移除
           mentionChip.remove();
-          // 从状态中移除
-          setSelectedMentions((prev) =>
-            prev.filter((item) => String(item.targetId) !== mentionId),
-          );
-          // 触发 onChange
-          const newText = getSerializedEditorText(editorRef.current);
-          setIsEditorEmpty(newText.trim().length === 0);
-          onChange?.(newText);
-          // 重新聚焦编辑器
+          commitEditorChange();
           editorRef.current.focus();
         }
       },
-      [onChange],
+      [commitEditorChange],
     );
 
     /**
@@ -597,17 +779,10 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
         if (!editorRef.current) return;
 
         const selection = window.getSelection();
-        const mentionId = mentionNode.dataset.mentionId;
         const previousSibling = mentionNode.previousSibling;
         const nextSibling = mentionNode.nextSibling;
 
         mentionNode.remove();
-
-        if (mentionId) {
-          setSelectedMentions((prev) =>
-            prev.filter((item) => String(item.targetId) !== mentionId),
-          );
-        }
 
         if (selection) {
           const newRange = document.createRange();
@@ -630,11 +805,9 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
           selection.addRange(newRange);
         }
 
-        const serializedText = getSerializedEditorText(editorRef.current);
-        setIsEditorEmpty(serializedText.trim().length === 0);
-        onChange?.(serializedText);
+        commitEditorChange();
       },
-      [onChange],
+      [commitEditorChange],
     );
 
     /**
@@ -721,16 +894,13 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
           container.focus();
         }
 
-        setSelectedMentions((prev) => [...prev, item]);
-        const serializedText = getSerializedEditorText(container);
-        setIsEditorEmpty(serializedText.trim().length === 0);
-        onChange?.(serializedText);
         notifyUnsubscribedSkillSelect(item);
+        commitEditorChange({ pendingMention: item });
       },
       [
+        commitEditorChange,
         createMentionChip,
         enableMention,
-        onChange,
         notifyUnsubscribedSkillSelect,
       ],
     );
@@ -792,8 +962,16 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
       setSelectedMentions(defaultMentions);
       const serializedText = getSerializedEditorText(container);
       setIsEditorEmpty(serializedText.trim().length === 0);
+      lastEmittedValueRef.current = serializedText;
       onChange?.(serializedText);
-    }, [createMentionChip, defaultMentions, enableMention, onChange]);
+      resetUndoStack(container.innerHTML);
+    }, [
+      createMentionChip,
+      defaultMentions,
+      enableMention,
+      onChange,
+      resetUndoStack,
+    ]);
 
     // ==================== 核心事件处理 ====================
 
@@ -890,20 +1068,14 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
           editorRef.current.focus();
         }
 
-        // 更新状态
-        setSelectedMentions((prev) => [...prev, item]);
         onMentionSelect?.(item);
         notifyUnsubscribedSkillSelect(item);
         closeMentionPopup();
-
-        // 触发 onChange
-        const newText = getSerializedEditorText(editorRef.current);
-        setIsEditorEmpty(newText.trim().length === 0);
-        onChange?.(newText);
+        commitEditorChange({ pendingMention: item });
       },
       [
         closeMentionPopup,
-        onChange,
+        commitEditorChange,
         onMentionSelect,
         createMentionChip,
         notifyUnsubscribedSkillSelect,
@@ -911,85 +1083,18 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
     );
 
     /**
-     * 处理输入事件
-     * 检测 @ 符号并控制弹窗显示
+     * 处理输入事件：每次 DOM 变更后入撤销栈并同步受控 value
      */
     const handleInput = useCallback(() => {
-      // 关闭 @ 提及功能时，仅作为普通输入框同步内容，不做 @ 检测和弹窗处理
-      if (!enableMention) {
-        if (!editorRef.current) return;
-        const text = getTextContent();
-        setIsEditorEmpty(text.trim().length === 0);
-        onChange?.(text);
+      if (
+        !editorRef.current ||
+        isComposingRef.current ||
+        isHistoryActionRef.current
+      ) {
         return;
       }
-
-      // 如果正在输入中文，跳过处理
-      if (!editorRef.current || isComposingRef.current) return;
-
-      // 获取当前文本并触发 onChange
-      const text = getTextContent();
-      setIsEditorEmpty(text.trim().length === 0);
-      onChange?.(text);
-
-      // 光标紧贴 mention chip 时，删除后面的空格不应再次触发弹窗
-      if (isCaretAfterMentionChip(editorRef.current)) {
-        closeMentionPopup();
-        return;
-      }
-
-      // 检测光标前的文本是否包含 @
-      const textBeforeCaret = getTextBeforeCaret(editorRef.current);
-      const mentionInfo = detectMention(textBeforeCaret);
-
-      // 是否存在有效的 @ 提及，如果有，则显示弹窗
-      if (mentionInfo.hasMention) {
-        // 检测到有效的 @ 提及
-        const position = getCaretPosition(
-          mentionPlacement,
-          mentionPopupHeight || undefined,
-        );
-        if (position) {
-          // 保存当前的 range 和 textNode，用于后续插入 mention
-          const selection = window.getSelection();
-          if (selection && selection.rangeCount > 0) {
-            savedRangeRef.current = selection.getRangeAt(0).cloneRange();
-            savedTextNodeRef.current = selection.getRangeAt(0).startContainer;
-          }
-
-          // 显示弹窗，并同步 placement / 锚点，供高度变化时固定贴近光标的一边
-          const vh =
-            window.innerHeight || document.documentElement.clientHeight || 0;
-          if (position.finalPlacement === 'up') {
-            setMentionPosition({
-              left: position.left,
-              bottom: vh - position.anchorY,
-              top: undefined,
-            });
-          } else {
-            setMentionPosition({
-              left: position.left,
-              top: position.anchorY,
-              bottom: undefined,
-            });
-          }
-          popupAnchorYRef.current = position.anchorY;
-          setMentionSearchText(mentionInfo.searchText);
-          setShowMentionPopup(true);
-          mentionAtIndexRef.current = mentionInfo.atIndex;
-        }
-      } else {
-        // 没有有效的 @ 提及，关闭弹窗
-        closeMentionPopup();
-      }
-    }, [
-      enableMention,
-      mentionPlacement,
-      getTextContent,
-      onChange,
-      closeMentionPopup,
-      mentionPopupHeight,
-    ]);
+      commitEditorChange();
+    }, [commitEditorChange]);
 
     /**
      * 处理键盘按下事件
@@ -1000,6 +1105,26 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
       (e: React.KeyboardEvent<HTMLDivElement>) => {
         // 中文输入时跳过
         if (isComposingRef.current) return;
+
+        // 撤销/重做：使用组件内快照栈，覆盖输入与粘贴
+        if (e.ctrlKey || e.metaKey) {
+          const key = e.key.toLowerCase();
+          const isUndo = key === 'z' && !e.shiftKey;
+          const isRedo =
+            (key === 'z' && e.shiftKey) ||
+            (key === 'y' && e.ctrlKey && !e.metaKey);
+
+          if (isUndo || isRedo) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (isUndo) {
+              undoEditorHistory();
+            } else {
+              redoEditorHistory();
+            }
+            return;
+          }
+        }
 
         // 弹窗显示时的键盘处理（仅在启用 @ 功能时生效）
         if (enableMention && showMentionPopup) {
@@ -1075,6 +1200,8 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
         closeMentionPopup,
         onPressEnter,
         removeMentionChipNode,
+        undoEditorHistory,
+        redoEditorHistory,
       ],
     );
 
@@ -1130,24 +1257,24 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
 
         if (!editorRef.current) return;
 
-        const selection = window.getSelection();
-        if (!selection || selection.rangeCount === 0) {
-          // 如果没有选区，直接追加到末尾
-          editorRef.current.appendChild(document.createTextNode(text));
-        } else {
-          const range = selection.getRangeAt(0);
-          range.deleteContents();
-          range.insertNode(document.createTextNode(text));
-          range.collapse(false);
-          selection.removeAllRanges();
-          selection.addRange(range);
+        editorRef.current.focus();
+        const inserted = document.execCommand('insertText', false, text);
+        if (!inserted) {
+          const selection = window.getSelection();
+          if (selection && selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            range.deleteContents();
+            range.insertNode(document.createTextNode(text));
+            range.collapse(false);
+            selection.removeAllRanges();
+            selection.addRange(range);
+          } else {
+            editorRef.current.appendChild(document.createTextNode(text));
+          }
+          commitEditorChange();
         }
-
-        const serializedText = getSerializedEditorText(editorRef.current);
-        setIsEditorEmpty(serializedText.trim().length === 0);
-        onChange?.(serializedText);
       },
-      [onChange, onPaste],
+      [commitEditorChange, onPaste],
     );
 
     /**
@@ -1305,17 +1432,18 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
      * 当外部 value 改变且编辑器未聚焦时，更新编辑器内容
      */
     useEffect(() => {
-      if (value !== undefined && editorRef.current) {
-        const currentText = getSerializedEditorText(editorRef.current);
-        if (
-          currentText !== value &&
-          !document.activeElement?.isSameNode(editorRef.current)
-        ) {
-          editorRef.current.textContent = value;
-        }
-        setIsEditorEmpty((value || '').trim().length === 0);
+      if (value === undefined || !editorRef.current) return;
+      if (document.activeElement?.isSameNode(editorRef.current)) return;
+
+      const currentText = getSerializedEditorText(editorRef.current);
+      if (currentText !== value) {
+        editorRef.current.textContent = value;
+        resetUndoStack(editorRef.current.innerHTML);
+        syncMentionsFromDom();
       }
-    }, [value]);
+      setIsEditorEmpty(!(value || '').trim());
+      lastEmittedValueRef.current = value;
+    }, [resetUndoStack, syncMentionsFromDom, value]);
 
     /**
      * 初始化和 DOM 结构变化后的空状态同步
@@ -1381,7 +1509,6 @@ const MentionEditor = React.forwardRef<MentionEditorHandle, MentionEditorProps>(
           onKeyDown={handleKeyDown}
           // 粘贴事件
           onPaste={handlePasteEvent}
-          // 失焦事件
           onBlur={handleBlur}
           // 点击事件
           onClick={handleClick}

@@ -106,6 +106,8 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
   onResumeConversationStream,
   onAbortResumeStream,
   onReloadConversationHistoryAsync,
+  waitForHistoryUserBeforeResume,
+  resumeDebugSource,
   onTerminalTaskStatus,
 }) => {
   // 滚动管理 Hook
@@ -147,6 +149,8 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
     isLocallyStreaming: isLocallyStreaming ?? isConversationActive,
     messageList,
     reloadHistoryAsync: onReloadConversationHistoryAsync,
+    waitForHistoryUserBeforeResume,
+    resumeDebugSource,
     resumeStream: onResumeConversationStream,
     abortSub: onAbortResumeStream,
     onTerminalTaskStatus,

@@ -169,8 +169,9 @@ export function resolveTaskStatusFromMessageList(
 }
 
 /**
- * 依次从多个 messageList 解析终态（前者优先）。
- * sub onClose 时 reload 列表可能缺 finalResult，需回退本地 sub 重放列表。
+ * 依次从传入的 messageList 解析终态（前者优先）。
+ * 取最后一条 assistant 的 finalResult 判定；sub 关闭后传入本地 messageList
+ * （FINAL_RESULT 已落本地）即可解析，无需额外 reload。
  */
 export function resolveTaskStatusFromMessageLists(
   ...messageLists: Array<MessageInfo[] | undefined | null>

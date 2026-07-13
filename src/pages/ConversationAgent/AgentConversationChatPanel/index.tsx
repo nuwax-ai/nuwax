@@ -167,6 +167,7 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
         onReloadConversationHistoryAsync={async (id) =>
           (await runAsync(Number(id)))?.data?.messageList
         }
+        resumeDebugSource="agent-dev:left-dev-agent-session"
       />
     </div>
   );
