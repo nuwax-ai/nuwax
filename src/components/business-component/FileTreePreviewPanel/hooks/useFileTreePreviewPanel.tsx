@@ -42,11 +42,13 @@ export function useFileTreePreviewPanel(
     onRestartAgent,
     onExportProject,
     idleDetection,
+    onReconnect,
     hideDesktop = HideDesktopEnum.No,
     diffFile,
     showGitVersionButton = false,
     onToggleGitVersionPanel,
     afterGitVersionActions,
+    isTerminalExpanded = true,
   } = params;
 
   const {
@@ -137,6 +139,8 @@ export function useFileTreePreviewPanel(
         autoConnect
         className={cx('vnc-preview')}
         idleDetection={wrappedIdleDetection}
+        // 重试前先 ensurePod + 恢复 keepalive，避免容器被回收后仅检测状态永远失败
+        onReconnect={onReconnect}
       />
     ) : diffFile ? (
       <ChangeFileGitDiffView
@@ -175,7 +179,9 @@ export function useFileTreePreviewPanel(
 
   // 重启容器遮罩
   const restartOverlay =
-    isRestarting && hideDesktop !== HideDesktopEnum.Yes ? (
+    isRestarting &&
+    hideDesktop !== HideDesktopEnum.Yes &&
+    isTerminalExpanded ? (
       <div className={cx('restart-container')}>
         <div className={cx('background-placeholder')} />
         <div className={cx('loading-overlay')}>
