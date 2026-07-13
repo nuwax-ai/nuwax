@@ -2,7 +2,8 @@
  * ConversationAgent 隔离会话 hook 测试
  */
 import { useConversationAgentChatSession } from '@/pages/ConversationAgent/hooks/useConversationAgentChatSession';
-import { TaskStatus } from '@/types/enums/agent';
+import { AssistantRoleEnum, TaskStatus } from '@/types/enums/agent';
+import { MessageStatusEnum } from '@/types/enums/common';
 import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -125,7 +126,7 @@ describe('useConversationAgentChatSession', () => {
     expect(model.runAsync).toHaveBeenCalledWith(9001);
   });
 
-  it('onTerminalTaskStatus 只按 devConversationId 写回终态 taskStatus', () => {
+  it('onTerminalTaskStatus 只按 devConversationId 写回终态 taskStatus', async () => {
     const model = createConversationAgentModel();
     mockUseModel.mockImplementation((name: string) => {
       if (name === 'conversationAgent') return model;
@@ -149,8 +150,8 @@ describe('useConversationAgentChatSession', () => {
       }),
     );
 
-    act(() => {
-      result.current.onTerminalTaskStatus?.(TaskStatus.COMPLETE);
+    await act(async () => {
+      await result.current.onTerminalTaskStatus?.(TaskStatus.COMPLETE);
     });
 
     expect(model.setConversationInfo).toHaveBeenCalledWith(
@@ -201,5 +202,62 @@ describe('useConversationAgentChatSession', () => {
     });
 
     expect(model.setConversationInfo).not.toHaveBeenCalled();
+  });
+
+  it('终态 reload 返回等价列表时不替换 messageList，避免结束闪动', async () => {
+    const existingList = [
+      {
+        id: 1,
+        role: AssistantRoleEnum.USER,
+        text: 'hello',
+      },
+      {
+        id: 2,
+        role: AssistantRoleEnum.ASSISTANT,
+        text: 'done',
+        status: MessageStatusEnum.Complete,
+      },
+    ];
+    const model = {
+      ...createConversationAgentModel(),
+      messageList: existingList,
+      runAsync: vi.fn().mockResolvedValue({
+        data: { messageList: [...existingList] },
+      }),
+      getCurrentConversationId: vi.fn().mockReturnValue(9001),
+      setMessageList: vi.fn((updater) =>
+        typeof updater === 'function' ? updater(existingList) : updater,
+      ),
+    };
+    mockUseModel.mockImplementation((name: string) => {
+      if (name === 'conversationAgent') return model;
+      if (name === 'chat') {
+        return {
+          hidePagePreview: mockHidePagePreview,
+          showPagePreview: mockShowPagePreview,
+        };
+      }
+      return {};
+    });
+
+    const { result } = renderHook(() =>
+      useConversationAgentChatSession({
+        agentId: 77,
+        agentConfigInfo: {
+          id: 77,
+          devConversationId: 9001,
+          name: 'Dev Agent',
+        } as any,
+      }),
+    );
+
+    await act(async () => {
+      await result.current.onTerminalTaskStatus?.(TaskStatus.COMPLETE);
+    });
+
+    const updater = model.setMessageList.mock.calls[0][0] as (
+      prev: typeof existingList,
+    ) => typeof existingList;
+    expect(updater(existingList)).toBe(existingList);
   });
 });

@@ -1,10 +1,12 @@
 import { UnifiedChatSession } from '@/components/business-component';
 import { type AgentMode } from '@/components/business-component/AgentIntervention';
 import { EVENT_TYPE } from '@/constants/event.constants';
+import { GLOBAL_POLLING_INTERVAL } from '@/constants/home.constants';
 import useConversation from '@/hooks/useConversation';
 import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
 import { useAutoPreviewFile } from '@/pages/Chat/hooks/useAutoPreviewFile';
+import { apiAgentConfigInfo } from '@/services/agentConfig';
 import { dict } from '@/services/i18nRuntime';
 import {
   ExpandPageAreaEnum,
@@ -32,7 +34,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { useLocation, useModel } from 'umi';
+import { useLocation, useModel, useRequest } from 'umi';
 import styles from './index.less';
 import PreviewAndDebugHeader from './PreviewAndDebugHeader';
 
@@ -237,6 +239,29 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
       runQueryConversation(devConversationId);
     }
   }, [agentConfigInfo?.devConversationId]);
+
+  // 轮询 agent 配置，感知后端 devConversationId 变化（flow-debugger `session.sh new` 代建新会话后回写）。
+  // 仅合并 devConversationId 单字段 + 变化守卫，绝不整体覆盖 agentConfigInfo（以免冲掉未保存的编排/模型/提示词编辑）。
+  // 值变化即触发上面的 useEffect → runQueryConversation 自动切到新会话；组件卸载（hideChatArea）自动停止轮询。
+  useRequest(() => apiAgentConfigInfo(agentId), {
+    ready: !!agentId,
+    pollingInterval: GLOBAL_POLLING_INTERVAL,
+    pollingWhenHidden: false,
+    pollingErrorRetryCount: -1,
+    onSuccess: (result: Awaited<ReturnType<typeof apiAgentConfigInfo>>) => {
+      const next = result?.data?.devConversationId;
+      if (
+        next !== null &&
+        next !== undefined &&
+        agentConfigInfo &&
+        next !== agentConfigInfo.devConversationId
+      ) {
+        const merged = cloneDeep(agentConfigInfo) as AgentConfigInfo;
+        merged.devConversationId = next;
+        onAgentConfigInfo(merged);
+      }
+    },
+  });
 
   // 监听会话加载成功，根据参数或 task-result 自动打开文件
   useEffect(() => {
@@ -623,6 +648,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
               onReloadConversationHistoryAsync={async (id) =>
                 (await runAsync(Number(id)))?.data?.messageList
               }
+              resumeDebugSource="edit-agent:preview-and-debug"
             />
           </div>
         </div>

@@ -161,6 +161,7 @@ export interface UnifiedChatSessionProps {
     conversationId: number | string,
     currentList: MessageInfo[],
     onClose?: () => void,
+    debugSource?: string,
   ) => void;
   /** 中断 sub 流（model 的 abortResumeStream） */
   onAbortResumeStream?: () => void;
@@ -168,6 +169,10 @@ export interface UnifiedChatSessionProps {
   onReloadConversationHistoryAsync?: (
     conversationId: number | string,
   ) => Promise<MessageInfo[] | undefined | null>;
+  /** 订阅 sub 前等待 history 中出现新 user，主要用于 agent-dev 预览 tab 外部写入续流 */
+  waitForHistoryUserBeforeResume?: boolean;
+  /** sub 恢复日志来源：区分左侧开发 Agent 会话、右侧预览 Tab、主调试区等 */
+  resumeDebugSource?: string;
   /** 轮询拿到终态 taskStatus 时写回当前会话 model */
   onTerminalTaskStatus?: (status: TaskStatus) => void;
 }

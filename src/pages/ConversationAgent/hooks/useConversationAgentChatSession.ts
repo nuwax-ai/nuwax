@@ -3,6 +3,11 @@ import type {
   AgentMode,
 } from '@/components/business-component/AgentIntervention';
 import useConversation from '@/hooks/useConversation';
+import {
+  areMessageListsEquivalent,
+  needsTerminalHistoryReload,
+  preserveOptimisticMessageTail,
+} from '@/models/conversationInfoMessageList';
 import { dict } from '@/services/i18nRuntime';
 import { ExpandPageAreaEnum, TaskStatus } from '@/types/enums/agent';
 import { AgentTypeEnum } from '@/types/enums/space';
@@ -11,7 +16,10 @@ import type {
   AgentSelectedComponentInfo,
 } from '@/types/interfaces/agent';
 import type { UploadFileInfo } from '@/types/interfaces/common';
-import type { RoleInfo } from '@/types/interfaces/conversationInfo';
+import type {
+  MessageInfo,
+  RoleInfo,
+} from '@/types/interfaces/conversationInfo';
 import { applyTerminalTaskStatus } from '@/utils/conversationTaskStatusSync';
 import cloneDeep from 'lodash/cloneDeep';
 import { useCallback, useMemo } from 'react';
@@ -260,6 +268,7 @@ export function useConversationAgentChatSession(
     onAbortResumeStream: abortResumeStream,
     onReloadConversationHistoryAsync: async (id: number | string) =>
       (await runAsync(Number(id)))?.data?.messageList,
+    resumeDebugSource: 'agent-dev:preview-tab-session',
     onTerminalTaskStatus: async (status: TaskStatus) => {
       if (!devConversationId) return;
       applyTerminalTaskStatus(setConversationInfo, devConversationId, status);
@@ -272,7 +281,14 @@ export function useConversationAgentChatSession(
           Array.isArray(list) &&
           getCurrentConversationId() === devConversationId
         ) {
-          setMessageList(list);
+          setMessageList((prev: MessageInfo[]) => {
+            if (!needsTerminalHistoryReload(prev, list)) {
+              return prev;
+            }
+            // 保留本地乐观尾巴，避免终态兜底 reload 冲掉刚发送但后端尚未落库的消息
+            const merged = preserveOptimisticMessageTail(prev, list);
+            return areMessageListsEquivalent(prev, merged) ? prev : merged;
+          });
         }
       } catch {
         // reload 失败不影响终态写回

@@ -13,10 +13,91 @@ import type {
   MessageInfo,
 } from '@/types/interfaces/conversationInfo';
 import { createSSEConnection } from '@/utils/fetchEventSourceConversationInfo';
+import { createLogger } from '@/utils/logger';
 import dayjs from 'dayjs';
 import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
 import { useCallback, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
+
+const resumeStreamLogger = createLogger('[ResumeStreamHandlers]');
+
+const isFrontendUuidMessageId = (id: unknown): boolean =>
+  typeof id === 'string' &&
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    id,
+  );
+
+const isIncompleteStatus = (status: unknown): boolean =>
+  status === MessageStatusEnum.Loading ||
+  status === MessageStatusEnum.Incomplete;
+
+const hasVisibleAssistantPayload = (message: MessageInfo): boolean =>
+  !!(
+    message.text ||
+    message.think ||
+    message.finalResult ||
+    message.processingList?.length
+  );
+
+const hasPersistedCompleteAssistantTail = (
+  list: MessageInfo[] | undefined | null,
+): boolean => {
+  const lastMessage = list?.[list.length - 1];
+  return !!(
+    lastMessage &&
+    lastMessage.role === AssistantRoleEnum.ASSISTANT &&
+    !isFrontendUuidMessageId(lastMessage.id) &&
+    !isIncompleteStatus(lastMessage.status) &&
+    hasVisibleAssistantPayload(lastMessage)
+  );
+};
+
+const isResumeUserMessageEvent = (res: ConversationChatResponse): boolean =>
+  res?.eventType === ConversationEventTypeEnum.MESSAGE &&
+  (res.data?.role === AssistantRoleEnum.USER ||
+    res.data?.messageType === MessageTypeEnum.USER);
+
+const isSameUserMessage = (left: MessageInfo, right: MessageInfo): boolean => {
+  if (left.id && right.id) {
+    return String(left.id) === String(right.id);
+  }
+  return (
+    left.role === AssistantRoleEnum.USER &&
+    right.role === AssistantRoleEnum.USER &&
+    (left.text || '').trim() === (right.text || '').trim() &&
+    !!(left.text || right.text)
+  );
+};
+
+const buildResumeUserMessage = (res: ConversationChatResponse): MessageInfo => {
+  const data = res.data || {};
+  return {
+    ...data,
+    role: AssistantRoleEnum.USER,
+    type: data.type || MessageModeEnum.CHAT,
+    text: data.text || '',
+    think: data.think || '',
+    time: data.time || dayjs().toString(),
+    id: data.id || uuidv4(),
+    messageType: MessageTypeEnum.USER,
+    status: MessageStatusEnum.Complete,
+  } as MessageInfo;
+};
+
+const summarizeMessage = (message: MessageInfo | undefined) =>
+  message
+    ? {
+        id: message.id,
+        role: message.role,
+        type: message.type,
+        status: message.status,
+        textLength: (message.text || '').length,
+        thinkLength: (message.think || '').length,
+      }
+    : null;
+
+const summarizeListTail = (list: MessageInfo[] | undefined | null) =>
+  (list || []).slice(-5).map(summarizeMessage);
 
 /**
  * 会话流式恢复(sub)的 SSE 订阅 handlers（共享）
@@ -74,7 +155,7 @@ export function useResumeStreamHandlers(deps: UseResumeStreamHandlersDeps) {
   // 否则会把别的（崩溃/旧）任务残留的 Incomplete 气泡当成占位，把本任务输出合并进去。
   // 按从头重放语义，历史不含执行中消息，故始终追加新占位。
   const ensureResumeAssistantPlaceholder = useCallback(
-    (currentList: MessageInfo[]): string => {
+    (currentList: MessageInfo[], debugSource: string): string => {
       if (
         resumeMessageIdRef.current &&
         currentList.some((m) => m.id === resumeMessageIdRef.current)
@@ -93,10 +174,92 @@ export function useResumeStreamHandlers(deps: UseResumeStreamHandlersDeps) {
         messageType: MessageTypeEnum.ASSISTANT,
         status: MessageStatusEnum.Loading,
       } as MessageInfo;
-      setMessageList((prev) => [...(prev || []), placeholder]);
+      setMessageList((prev) => {
+        const prevList = prev || [];
+        // reload 快照是 sub 恢复前的权威历史，里面可能刚补上外部写入的 user。
+        // 不能因为旧 prev 更长就沿用 prev，否则会把这个 user 丢掉，只显示 assistant 占位。
+        const baseList = currentList.length ? currentList : prevList;
+        if (baseList.some((m) => m.id === placeholderId)) {
+          resumeStreamLogger.info('placeholder exists', {
+            source: debugSource,
+            placeholderId,
+            baseTail: summarizeListTail(baseList),
+          });
+          return baseList;
+        }
+        resumeStreamLogger.info('append assistant placeholder', {
+          source: debugSource,
+          placeholderId,
+          baseTail: summarizeListTail(baseList),
+        });
+        return [...baseList, placeholder];
+      });
       return placeholderId;
     },
-    [],
+    [setMessageList],
+  );
+
+  const upsertResumeUserMessage = useCallback(
+    (
+      res: ConversationChatResponse,
+      assistantPlaceholderId: string,
+      debugSource: string,
+    ) => {
+      const userMessage = buildResumeUserMessage(res);
+      setMessageList((prev) => {
+        const list = prev || [];
+        const existingIndex = list.findIndex((item) =>
+          isSameUserMessage(item, userMessage),
+        );
+        const assistantIndex = list.findIndex(
+          (item) => item.id === assistantPlaceholderId,
+        );
+
+        if (existingIndex >= 0) {
+          // 如果之前误插在 assistant 后面，移动回当前轮 assistant 前，避免 user/assistant 顺序跳错。
+          if (assistantIndex >= 0 && existingIndex > assistantIndex) {
+            const next = [...list];
+            const [existing] = next.splice(existingIndex, 1);
+            const nextAssistantIndex = next.findIndex(
+              (item) => item.id === assistantPlaceholderId,
+            );
+            next.splice(nextAssistantIndex, 0, existing);
+            resumeStreamLogger.info('move existing user before placeholder', {
+              source: debugSource,
+              assistantPlaceholderId,
+              user: summarizeMessage(existing),
+              beforeTail: summarizeListTail(list),
+              afterTail: summarizeListTail(next),
+            });
+            return next;
+          }
+          resumeStreamLogger.info('skip user upsert: already exists', {
+            source: debugSource,
+            assistantPlaceholderId,
+            user: summarizeMessage(userMessage),
+            tail: summarizeListTail(list),
+          });
+          return list;
+        }
+
+        const insertIndex = assistantIndex >= 0 ? assistantIndex : list.length;
+        const next = [
+          ...list.slice(0, insertIndex),
+          userMessage,
+          ...list.slice(insertIndex),
+        ];
+        resumeStreamLogger.info('insert sub user before placeholder', {
+          source: debugSource,
+          assistantPlaceholderId,
+          insertIndex,
+          user: summarizeMessage(userMessage),
+          beforeTail: summarizeListTail(list),
+          afterTail: summarizeListTail(next),
+        });
+        return next;
+      });
+    },
+    [setMessageList],
   );
 
   // 订阅 EXECUTING 会话的流式恢复(sub)接口：用与 live chat 相同的 handleChangeMessageList 重建执行中的助手消息。
@@ -105,11 +268,32 @@ export function useResumeStreamHandlers(deps: UseResumeStreamHandlersDeps) {
       conversationId: number | string,
       currentList: MessageInfo[],
       onClose?: () => void,
+      debugSource = 'unknown',
     ) => {
       abortResumeStream();
+      resumeStreamLogger.info('resume stream:start', {
+        source: debugSource,
+        conversationId,
+        currentTail: summarizeListTail(currentList),
+      });
+      // reload 快照已经带着最新落库 assistant 时，不再创建本地 UUID 占位去接 sub 重放。
+      // 否则会出现一条 persisted assistant + 一条 resume placeholder 的重复气泡。
+      if (hasPersistedCompleteAssistantTail(currentList)) {
+        resumeStreamLogger.info('skip resume: persisted assistant tail', {
+          source: debugSource,
+          conversationId,
+          currentTail: summarizeListTail(currentList),
+        });
+        resetResumeMessageState?.();
+        onClose?.();
+        return;
+      }
       // 开流前重置 model 的流式状态（messageIdRef 等），保证重放从头正确，不受上次残留影响
       resetResumeMessageState?.();
-      const currentMessageId = ensureResumeAssistantPlaceholder(currentList);
+      const currentMessageId = ensureResumeAssistantPlaceholder(
+        currentList,
+        debugSource,
+      );
       const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
       resumeAbortRef.current = createSSEConnection({
         url: `${CONVERSATION_CHAT_SUB_URL}/${conversationId}`,
@@ -119,6 +303,10 @@ export function useResumeStreamHandlers(deps: UseResumeStreamHandlersDeps) {
           Accept: 'application/json, text/plain, */*',
         },
         onMessage: (res: ConversationChatResponse) => {
+          if (isResumeUserMessageEvent(res)) {
+            upsertResumeUserMessage(res, currentMessageId, debugSource);
+            return;
+          }
           // 读 ref.current 取最新的 handleChangeMessageList，避免 stale 闭包
           handleChangeMessageListRef.current(
             { conversationId } as ConversationChatParams,
@@ -162,6 +350,7 @@ export function useResumeStreamHandlers(deps: UseResumeStreamHandlersDeps) {
       abortResumeStream,
       ensureResumeAssistantPlaceholder,
       resetResumeMessageState,
+      upsertResumeUserMessage,
     ],
   );
 
