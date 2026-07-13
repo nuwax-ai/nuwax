@@ -185,3 +185,25 @@ export async function fetchContentFromUrl(url: string): Promise<string> {
     throw error;
   }
 }
+
+/**
+ * 转为对话式开发，创建会话接口（占位，目前返回 Mock 数据）
+ */
+export async function apiSkillConvertToConversation(
+  skillId: number,
+  sandboxId: string,
+): Promise<RequestResponse<string>> {
+  console.log('apiSkillConvertToConversation called with:', {
+    skillId,
+    sandboxId,
+  });
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve({
+        code: 200,
+        message: 'success',
+        data: String(Math.floor(1000000 + Math.random() * 9000000)), // 随机生成 7 位数的会话 id
+      });
+    }, 500);
+  });
+}

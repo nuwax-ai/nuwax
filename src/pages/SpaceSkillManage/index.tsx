@@ -4,7 +4,10 @@ import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
 import { apiDeleteSkill, apiSkillCopyToSpace } from '@/services/library';
-import { apiSkillImport } from '@/services/skill';
+import {
+  apiSkillConvertToConversation,
+  apiSkillImport,
+} from '@/services/skill';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import { ApplicationMoreActionEnum } from '@/types/enums/space';
@@ -19,6 +22,7 @@ import { exportFileViaBrowserDownload } from '@/utils/exportImportFile';
 import { message } from 'antd';
 import { useEffect, useRef, useState } from 'react';
 import { history, useParams, useSearchParams } from 'umi';
+import ConvertToConversationModal from './ConvertToConversationModal';
 import CreateSkill from './CreateSkill';
 import HeaderLeftSlot from './HeaderLeftSlot';
 import HeaderRightSlot from './HeaderRightSlot';
@@ -56,6 +60,10 @@ const SpaceSkillManage: React.FC = () => {
 
   // 导入技能项目弹窗
   const [openImportSkillProject, setOpenImportSkillProject] =
+    useState<boolean>(false);
+
+  // 转为对话式开发弹窗
+  const [openConvertToConversation, setOpenConvertToConversation] =
     useState<boolean>(false);
 
   const handleCreateSkill = () => {
@@ -175,12 +183,39 @@ const SpaceSkillManage: React.FC = () => {
       case SkillMoreActionEnum.Export_Project:
         handleExportProject(info);
         break;
+      // 转为对话式开发
+      case SkillMoreActionEnum.Convert_To_Conversation:
+        setCurrentComponentInfo(info);
+        setOpenConvertToConversation(true);
+        break;
       // 删除
       case SkillMoreActionEnum.Delete:
         handleClickDelete(info);
         break;
       default:
         break;
+    }
+  };
+
+  // 确认转为对话式开发
+  const handleConvertToConversationConfirm = async (sandboxId: string) => {
+    if (!currentComponentInfo) {
+      return;
+    }
+    try {
+      const res = await apiSkillConvertToConversation(
+        currentComponentInfo.id,
+        sandboxId,
+      );
+      if (res.code === SUCCESS_CODE && res.data) {
+        setOpenConvertToConversation(false);
+        // 跳转到新的对话式技能详情页
+        history.push(
+          `/space/${spaceId}/skill-details-conversation/${currentComponentInfo.id}?conversationId=${res.data}`,
+        );
+      }
+    } catch (error) {
+      console.error('Failed to convert skill to conversation:', error);
     }
   };
 
@@ -278,6 +313,13 @@ const SpaceSkillManage: React.FC = () => {
         open={openImportSkillProject}
         onCancel={() => setOpenImportSkillProject(false)}
         onConfirm={handleImportSkillProjectConfirm}
+      />
+
+      {/* 转为对话式开发弹窗 */}
+      <ConvertToConversationModal
+        open={openConvertToConversation}
+        onCancel={() => setOpenConvertToConversation(false)}
+        onConfirm={handleConvertToConversationConfirm}
       />
     </WorkspaceLayout>
   );
