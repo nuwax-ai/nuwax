@@ -192,6 +192,12 @@ export interface UseFileTreePreviewPanelParams {
   onRestartAgent?: () => void;
   onExportProject?: () => Promise<void>;
   idleDetection?: IdleDetectionConfig;
+  /**
+   * VNC 重连前回调：应在建立连接前确保容器已启动、保活轮询已恢复
+   * 典型实现：openDesktopView（内部 apiEnsurePod + runKeepalivePodPolling）
+   * 解决长时间空闲导致容器被回收后，仅重试检测状态永远失败的问题
+   */
+  onReconnect?: () => void | Promise<void>;
   hideDesktop?: HideDesktopEnum;
   /** Git 源代码管理选中的 diff 文件（优先于普通预览） */
   diffFile?: ChangeFileInfo | null;
@@ -199,6 +205,8 @@ export interface UseFileTreePreviewPanelParams {
   onToggleGitVersionPanel?: () => void;
   /** Git 版本记录按钮后的额外操作按钮 */
   afterGitVersionActions?: React.ReactNode;
+  /** 终端是否处于展开状态（非隐藏且非折叠） */
+  isTerminalExpanded?: boolean;
 }
 
 /** FileTreePreviewPanel 组件属性 */

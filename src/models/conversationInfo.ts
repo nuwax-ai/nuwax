@@ -31,6 +31,7 @@ import {
   apiKeepalivePod,
   apiRestartAgent,
   apiRestartPod,
+  isEnsurePodThrottledError,
 } from '@/services/vncDesktop';
 import {
   AgentComponentTypeEnum,
@@ -105,7 +106,10 @@ import { throttle } from 'lodash';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
-import { appendOutgoingConversationMessages } from './conversationInfoMessageList';
+import {
+  appendOutgoingConversationMessages,
+  preserveOptimisticMessageTail,
+} from './conversationInfoMessageList';
 
 export default () => {
   // 历史记录
@@ -373,6 +377,37 @@ export default () => {
       }
     } catch (error) {
       console.error('Failed to open remote desktop view', error);
+    }
+  }, []);
+
+  /**
+   * 仅 ensurePod + 恢复 keepalive（不做视图切换），供 VncPreview 重连前调用。
+   *
+   * 与 openDesktopView 的区别：ensure 失败 / 节流 / 业务码非成功一律 rethrow，
+   * 让调用方（VncPreview.handleRetry）能区分成功 / 节流 / 真实失败——而不是像
+   * openDesktopView 那样被 console.error 静默吞掉后，让用户对着不存在的容器空等 60s。
+   * 节流（容器刚 ensure 过、仍在运行）时仍恢复 keepalive，避免容器被回收——
+   * 这正是「重连」要解决的回收问题（旧路径在节流/失败时会永久停 keepalive）。
+   */
+  const ensureDesktopConnection = useCallback(async (cId: number) => {
+    try {
+      const { code, data } = await apiEnsurePod(cId);
+      if (code !== SUCCESS_CODE) {
+        // HTTP 200 但业务码非成功（配额/权限/策略等）：抛错让调用方感知
+        throw new Error(`ensurePod failed (code: ${code})`);
+      }
+      setVncContainerInfo(data?.container_info);
+      // 成功：重启 keepalive（先停后启，避免轮询叠加，按新 cId 重启）
+      stopKeepalivePodPolling();
+      runKeepalivePodPolling(cId);
+    } catch (error) {
+      // 节流 = 容器刚 ensure 过、仍在运行：重启 keepalive 后重新抛出，交调用方按节流处理；
+      // 真实失败（网络/业务码/500）则不动 keepalive，避免误停仍在跑的轮询
+      if (isEnsurePodThrottledError(error)) {
+        stopKeepalivePodPolling();
+        runKeepalivePodPolling(cId);
+      }
+      throw error;
     }
   }, []);
 
@@ -763,10 +798,12 @@ export default () => {
       );
       const len = _messageList?.length || 0;
       if (len) {
-        setMessageList(() => {
-          checkConversationActive(_messageList);
-          messageListRef.current = _messageList;
-          return _messageList;
+        // 保留本地末尾尚未落库的乐观消息（sub 续会话 / 切会话 reload 不再冲掉刚发送的用户消息）
+        setMessageList((prev) => {
+          const merged = preserveOptimisticMessageTail(prev, _messageList);
+          checkConversationActive(merged);
+          messageListRef.current = merged;
+          return merged;
         });
         // 最后一条消息为"问答"时，获取问题建议
         const lastMessage = _messageList[len - 1];
@@ -793,7 +830,12 @@ export default () => {
       }
       // 不存在会话消息时，才显示开场白预置问题
       else {
-        setMessageList([]);
+        // 后端暂返回空时仍保留本地乐观尾巴（避免冲掉刚发送的消息）
+        setMessageList((prev) => {
+          const merged = preserveOptimisticMessageTail(prev, []);
+          messageListRef.current = merged;
+          return merged;
+        });
         const guidQuestionDtos = data?.agent?.guidQuestionDtos || [];
         // 如果存在预置问题，显示预置问题
         setChatSuggestList(guidQuestionDtos);
@@ -1660,6 +1702,8 @@ export default () => {
     /** 刷新 Git 列表回调 ref，页面侧赋值 fileView.refreshGitList */
     refreshGitListRef,
     openDesktopView,
+    /** 仅 ensurePod + keepalive（不做视图切换），供 VncPreview 重连前回调 */
+    ensureDesktopConnection,
     openPreviewView,
     // 重启智能体电脑
     restartVncPod,

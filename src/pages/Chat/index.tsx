@@ -237,6 +237,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     refreshFileListImmediately,
     openPreviewView,
     openDesktopView,
+    ensureDesktopConnection,
     restartVncPod,
     restartAgent,
     // 通用型智能体会话中点击选中的文件ID
@@ -1050,6 +1051,10 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
         onRestartServer: () => restartVncPod(id, finalSelectedId),
         onRestartAgent: () => restartAgent(id),
         onExportProject: handleExportProject,
+        // 重试前先 ensurePod + 恢复 keepalive，避免容器被回收后仅检测状态永远失败
+        onReconnect: () => ensureDesktopConnection(id),
+        isTerminalExpanded:
+          terminalConsoleVisible && terminalConsoleLayoutMode !== 'collapsed',
         idleDetection: {
           enabled: effectiveAgent?.type === AgentTypeEnum.TaskAgent,
           onIdleTimeout: () => openPreviewView(id),
@@ -1106,6 +1111,8 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       finalSelectedId,
       handleExportProject,
       openPreviewView,
+      openDesktopView,
+      ensureDesktopConnection,
       restartVncPod,
       restartAgent,
     ],
@@ -1176,6 +1183,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     onAbortResumeStream: abortResumeStream,
     onReloadConversationHistoryAsync: async (id: number) =>
       (await runAsync(Number(id)))?.data?.messageList,
+    resumeDebugSource: 'chat:main-agent-session',
     onTerminalTaskStatus: (status: TaskStatus) => {
       if (!id) return;
       applyTerminalTaskStatus(setConversationInfo, id, status);

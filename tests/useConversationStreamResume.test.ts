@@ -2,7 +2,8 @@
  * useConversationStreamResume 轮询终态写回测试
  */
 import { useConversationStreamResume } from '@/components/business-component/UnifiedChatSession/hooks/useConversationStreamResume';
-import { TaskStatus } from '@/types/enums/agent';
+import { AssistantRoleEnum, TaskStatus } from '@/types/enums/agent';
+import { MessageStatusEnum } from '@/types/enums/common';
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -59,6 +60,7 @@ describe('useConversationStreamResume', () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     vi.restoreAllMocks();
   });
 
@@ -97,7 +99,9 @@ describe('useConversationStreamResume', () => {
   });
 
   it('轮询发现 EXECUTING 时先 reload 历史，再订阅 sub，关闭后恢复轮询并刷新列表', async () => {
-    const reloadedList = [{ id: 'user-1', text: 'from other tab' }] as any[];
+    const reloadedList = [
+      { id: 'user-1', role: AssistantRoleEnum.USER, text: 'from other tab' },
+    ] as any[];
     const reloadHistoryAsync = vi.fn().mockResolvedValue(reloadedList);
     let subOnClose: (() => void | Promise<void>) | undefined;
     const resumeStream = vi.fn((_id, _list, onClose) => {
@@ -134,6 +138,7 @@ describe('useConversationStreamResume', () => {
       1555404,
       reloadedList,
       expect.any(Function),
+      'unified-chat-session',
     );
 
     await act(async () => {
@@ -141,29 +146,130 @@ describe('useConversationStreamResume', () => {
     });
 
     expect(runPolling).toHaveBeenCalled();
-    expect(reloadHistoryAsync).toHaveBeenCalledTimes(2);
+    expect(reloadHistoryAsync).toHaveBeenCalledTimes(1);
     expect(mockEventBusEmit).toHaveBeenCalledWith('refresh_conversation_list', {
       conversationId: 1555404,
       reason: 'stream-closed',
     });
   });
 
-  it('sub 关闭后从消息 finalResult 解析终态并写回', async () => {
+  it('开启等待新 user 时，reload 快照未包含新 user 会短暂重试后再订阅 sub', async () => {
+    vi.useFakeTimers();
+    const currentList = [
+      { id: 'old-user', role: 'USER', text: 'old' },
+      { id: 'old-assistant', role: 'ASSISTANT', text: 'old answer' },
+    ] as any[];
+    const staleList = [...currentList];
     const reloadedList = [
+      ...currentList,
+      { id: 'new-user', role: 'USER', text: 'external prompt' },
+    ] as any[];
+    const reloadHistoryAsync = vi
+      .fn()
+      .mockResolvedValueOnce(staleList)
+      .mockResolvedValueOnce(reloadedList);
+    const resumeStream = vi.fn();
+
+    renderHook(() =>
+      useConversationStreamResume({
+        conversationId: 1555404,
+        taskStatus: TaskStatus.COMPLETE,
+        isLocallyStreaming: false,
+        messageList: currentList,
+        reloadHistoryAsync,
+        waitForHistoryUserBeforeResume: true,
+        resumeStream,
+      }),
+    );
+
+    await act(async () => {
+      onSuccess?.(TaskStatus.EXECUTING);
+      await Promise.resolve();
+    });
+
+    expect(resumeStream).not.toHaveBeenCalled();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(150);
+      await Promise.resolve();
+    });
+
+    expect(reloadHistoryAsync).toHaveBeenCalledTimes(2);
+    expect(resumeStream).toHaveBeenCalledWith(
+      1555404,
+      reloadedList,
+      expect.any(Function),
+      'unified-chat-session',
+    );
+  });
+
+  it('默认等待历史 user；重试后仍没有 user 时不订阅 sub，恢复轮询等待下一次 reload', async () => {
+    vi.useFakeTimers();
+    const currentList = [
+      { id: 'old-user', role: AssistantRoleEnum.USER, text: 'old' },
+      {
+        id: 'old-assistant',
+        role: AssistantRoleEnum.ASSISTANT,
+        text: 'old answer',
+        status: MessageStatusEnum.Complete,
+      },
+    ] as any[];
+    const reloadHistoryAsync = vi.fn().mockResolvedValue([...currentList]);
+    const resumeStream = vi.fn();
+
+    renderHook(() =>
+      useConversationStreamResume({
+        conversationId: 1555404,
+        taskStatus: TaskStatus.COMPLETE,
+        isLocallyStreaming: false,
+        messageList: currentList,
+        reloadHistoryAsync,
+        resumeStream,
+      }),
+    );
+
+    await act(async () => {
+      onSuccess?.(TaskStatus.EXECUTING);
+      await Promise.resolve();
+    });
+
+    expect(resumeStream).not.toHaveBeenCalled();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(4950);
+      await Promise.resolve();
+    });
+
+    expect(reloadHistoryAsync).toHaveBeenCalledTimes(7);
+    expect(resumeStream).not.toHaveBeenCalled();
+    expect(runPolling).toHaveBeenCalled();
+  });
+
+  it('sub 关闭后从消息 finalResult 解析终态并写回', async () => {
+    const localMessageList = [
       {
         id: 'assistant-1',
         finalResult: { success: true, outputText: 'done' },
       },
     ] as any[];
-    const reloadHistoryAsync = vi.fn().mockResolvedValue(reloadedList);
+    const reloadHistoryAsync = vi.fn().mockResolvedValue([]);
     const onTerminalTaskStatus = vi.fn();
     let subOnClose: (() => void | Promise<void>) | undefined;
     const resumeStream = vi.fn((_id, _list, onClose) => {
       subOnClose = onClose;
     });
 
-    (resolveTaskStatusFromMessageLists as any).mockReturnValue(
-      TaskStatus.COMPLETE,
+    // 让 mock 反映真实解析契约：列表含 finalResult.success 的 assistant → COMPLETE，
+    // 否则返回 undefined（交由 fetchConversationTaskStatus 兜底）。这样 finalResult 内容真正驱动结果。
+    (resolveTaskStatusFromMessageLists as any).mockImplementation(
+      (...lists: any[]) => {
+        for (const list of lists) {
+          if (list?.some((m: any) => m?.finalResult?.success)) {
+            return TaskStatus.COMPLETE;
+          }
+        }
+        return undefined;
+      },
     );
 
     renderHook(() =>
@@ -171,8 +277,9 @@ describe('useConversationStreamResume', () => {
         conversationId: 1555404,
         taskStatus: TaskStatus.EXECUTING,
         isLocallyStreaming: false,
-        messageList: [],
+        messageList: localMessageList,
         reloadHistoryAsync,
+        waitForHistoryUserBeforeResume: false,
         resumeStream,
         onTerminalTaskStatus,
       }),
@@ -189,8 +296,7 @@ describe('useConversationStreamResume', () => {
     });
 
     expect(resolveTaskStatusFromMessageLists).toHaveBeenCalledWith(
-      reloadedList,
-      [],
+      localMessageList,
     );
     expect(onTerminalTaskStatus).toHaveBeenCalledWith(TaskStatus.COMPLETE);
     expect(fetchConversationTaskStatus).not.toHaveBeenCalled();
@@ -215,6 +321,7 @@ describe('useConversationStreamResume', () => {
         isLocallyStreaming: false,
         messageList: [],
         reloadHistoryAsync,
+        waitForHistoryUserBeforeResume: false,
         resumeStream,
         onTerminalTaskStatus,
       }),

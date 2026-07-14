@@ -1,12 +1,14 @@
 import { EVENT_TYPE } from '@/constants/event.constants';
 import { GLOBAL_POLLING_INTERVAL } from '@/constants/home.constants';
-import { TaskStatus } from '@/types/enums/agent';
+import { AssistantRoleEnum, TaskStatus } from '@/types/enums/agent';
+import { MessageStatusEnum } from '@/types/enums/common';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import {
   fetchConversationTaskStatus,
   resolveTaskStatusFromMessageLists,
 } from '@/utils/conversationTaskStatusSync';
 import eventBus from '@/utils/eventBus';
+import { conversationPollLogger, createLogger } from '@/utils/logger';
 import { useRequest } from 'ahooks';
 import { useEffect, useRef, useState } from 'react';
 
@@ -38,11 +40,20 @@ export interface UseConversationStreamResumeOptions {
   reloadHistoryAsync?: (
     conversationId: number | string,
   ) => Promise<MessageInfo[] | undefined | null>;
+  /**
+   * taskStatus 可能先变 EXECUTING，user 消息稍后才出现在历史里。
+   * 默认开启：订阅 sub 前等待 reload 快照出现可承接的 user，避免 UI 先渲 assistant 流再补 user 导致跳动。
+   * 少数纯测试/特殊恢复场景可显式传 false。
+   */
+  waitForHistoryUserBeforeResume?: boolean;
+  /** sub 恢复日志来源：区分左侧开发 Agent 会话、右侧预览 Tab、主调试区等 */
+  resumeDebugSource?: string;
   /** 订阅 sub 流（model 的 resumeConversationStream）；未提供则整体不启用恢复 */
   resumeStream?: (
     conversationId: number | string,
     currentList: MessageInfo[],
     onClose?: () => void,
+    debugSource?: string,
   ) => void;
   /** 中断 sub 流（model 的 abortResumeStream）；未提供则跳过中断 */
   abortSub?: () => void;
@@ -54,6 +65,68 @@ export interface UseConversationStreamResumeOptions {
 
 /** 本地流式结束后，订阅 sub 的冷却时间(ms)：等 taskStatus 稳定，避免对刚完成的输出重复重放 */
 const RESUME_COOLDOWN_AFTER_LOCAL_MS = 5000;
+const RESUME_HISTORY_USER_RETRY_DELAYS_MS = [150, 300, 600, 900, 1200, 1800];
+const conversationResumeLogger = createLogger('[ConversationStreamResume]');
+
+const sleep = (ms: number): Promise<void> =>
+  new Promise((resolve) => {
+    globalThis.setTimeout(resolve, ms);
+  });
+
+const getUserMessageCount = (list: MessageInfo[] | undefined | null): number =>
+  (list || []).filter((m) => m.role === AssistantRoleEnum.USER).length;
+
+const hasNewUserMessage = (
+  base: MessageInfo[] | undefined | null,
+  incoming: MessageInfo[] | undefined | null,
+): boolean => getUserMessageCount(incoming) > getUserMessageCount(base);
+
+const getLastMessage = (
+  list: MessageInfo[] | undefined | null,
+): MessageInfo | undefined => list?.[list.length - 1];
+
+const summarizeMessage = (message: MessageInfo | undefined) =>
+  message
+    ? {
+        id: message.id,
+        role: message.role,
+        type: message.type,
+        status: message.status,
+        textLength: (message.text || '').length,
+        thinkLength: (message.think || '').length,
+      }
+    : null;
+
+const summarizeMessageList = (list: MessageInfo[] | undefined | null) => ({
+  length: list?.length || 0,
+  userCount: getUserMessageCount(list),
+  tail: (list || []).slice(-4).map(summarizeMessage),
+});
+
+const isIncompleteAssistant = (message: MessageInfo | undefined): boolean =>
+  message?.role === AssistantRoleEnum.ASSISTANT &&
+  (message.status === MessageStatusEnum.Loading ||
+    message.status === MessageStatusEnum.Incomplete);
+
+const hasUserReadyForResume = (
+  base: MessageInfo[] | undefined | null,
+  incoming: MessageInfo[] | undefined | null,
+): boolean => {
+  if (hasNewUserMessage(base, incoming)) {
+    return true;
+  }
+  const lastIncoming = getLastMessage(incoming);
+  if (lastIncoming?.role === AssistantRoleEnum.USER) {
+    return true;
+  }
+  if (isIncompleteAssistant(lastIncoming)) {
+    return true;
+  }
+  const lastBase = getLastMessage(base);
+  return (
+    lastBase?.role === AssistantRoleEnum.USER || isIncompleteAssistant(lastBase)
+  );
+};
 
 export function useConversationStreamResume(
   options: UseConversationStreamResumeOptions,
@@ -64,6 +137,8 @@ export function useConversationStreamResume(
     isLocallyStreaming,
     messageList,
     reloadHistoryAsync,
+    waitForHistoryUserBeforeResume,
+    resumeDebugSource,
     resumeStream,
     abortSub,
     onTerminalTaskStatus,
@@ -71,6 +146,7 @@ export function useConversationStreamResume(
 
   const onTerminalTaskStatusRef = useRef(onTerminalTaskStatus);
   onTerminalTaskStatusRef.current = onTerminalTaskStatus;
+  const debugSource = resumeDebugSource || 'unified-chat-session';
 
   // sub 是否已订阅（开/闭之间）。ref 用于回调闭包安全读取；state 用于驱动 ready 重算
   const isResumeSubscribedRef = useRef(false);
@@ -128,6 +204,11 @@ export function useConversationStreamResume(
       ended.convId === id &&
       Date.now() - ended.at < RESUME_COOLDOWN_AFTER_LOCAL_MS
     ) {
+      conversationResumeLogger.info('skip: local stream cooldown', {
+        source: debugSource,
+        conversationId: id,
+        cooldownMs: Date.now() - ended.at,
+      });
       return;
     }
     // 先标记订阅 + 停轮询（reload 期间防重入，执行中不轮询）
@@ -147,8 +228,58 @@ export function useConversationStreamResume(
     if (reloadHistoryAsync) {
       try {
         const reloaded = await reloadHistoryAsync(id);
+        conversationResumeLogger.info('reload before sub:done', {
+          source: debugSource,
+          conversationId: id,
+          base: summarizeMessageList(latestRef.current.messageList),
+          reloaded: summarizeMessageList(reloaded),
+          userReady: hasUserReadyForResume(
+            latestRef.current.messageList,
+            reloaded,
+          ),
+        });
         if (reloaded && reloaded.length) {
           list = reloaded;
+        }
+        const shouldWaitForHistoryUser = waitForHistoryUserBeforeResume ?? true;
+        if (
+          shouldWaitForHistoryUser &&
+          !hasUserReadyForResume(latestRef.current.messageList, reloaded)
+        ) {
+          for (const delayMs of RESUME_HISTORY_USER_RETRY_DELAYS_MS) {
+            await sleep(delayMs);
+            if (
+              latestRef.current.conversationId !== id ||
+              latestRef.current.isLocallyStreaming ||
+              !isResumeSubscribedRef.current
+            ) {
+              break;
+            }
+            const retryList = await reloadHistoryAsync(id);
+            if (retryList && retryList.length) {
+              list = retryList;
+            }
+            if (
+              hasUserReadyForResume(latestRef.current.messageList, retryList)
+            ) {
+              break;
+            }
+          }
+          if (!hasUserReadyForResume(latestRef.current.messageList, list)) {
+            conversationResumeLogger.info(
+              'skip sub: history user not ready after retries',
+              {
+                source: debugSource,
+                conversationId: id,
+                base: summarizeMessageList(latestRef.current.messageList),
+                finalList: summarizeMessageList(list),
+              },
+            );
+            isResumeSubscribedRef.current = false;
+            setIsResumeSubscribed(false);
+            pollingControlsRef.current.start();
+            return;
+          }
         }
       } catch (e) {
         console.error('[useConversationStreamResume] reloadHistory failed:', e);
@@ -163,69 +294,70 @@ export function useConversationStreamResume(
       latestRef.current.isLocallyStreaming ||
       !isResumeSubscribedRef.current
     ) {
+      conversationResumeLogger.info('skip sub: stale after reload', {
+        source: debugSource,
+        conversationId: id,
+        latestConversationId: latestRef.current.conversationId,
+        isLocallyStreaming: latestRef.current.isLocallyStreaming,
+        isResumeSubscribed: isResumeSubscribedRef.current,
+      });
       isResumeSubscribedRef.current = false;
       setIsResumeSubscribed(false);
       return;
     }
 
-    resumeStream(id, list, async () => {
-      // sub 自动断开(end_turn/completed/超时)或被 abort 时回调
-      isResumeSubscribedRef.current = false;
-      setIsResumeSubscribed(false);
-      // 过期 sub 的延迟关闭（切会话后 cleanup 触发 abort 后回调）：
-      // 不再回写状态，否则 reloadHistoryAsync(旧id) 与 RefreshConversationList 会覆盖/干扰新会话。
-      if (latestRef.current.conversationId !== id) {
-        return;
-      }
-      // sub 关闭后先 reload 历史，再从消息 finalResult 解析终态，最后恢复轮询
-      let reloadedList: MessageInfo[] | undefined;
-      if (reloadHistoryAsync) {
-        try {
-          const reloaded = await reloadHistoryAsync(id);
-          if (reloaded?.length) {
-            reloadedList = reloaded;
-          }
-        } catch (e) {
-          console.error(
-            '[useConversationStreamResume] final reloadHistory failed:',
-            e,
-          );
-        }
-      }
-
-      // reload 列表可能缺 finalResult，回退 sub 重放后的本地 messageList
-      const resolvedFromMessages = resolveTaskStatusFromMessageLists(
-        reloadedList,
-        latestRef.current.messageList,
-      );
-      if (resolvedFromMessages) {
-        onTerminalTaskStatusRef.current?.(resolvedFromMessages);
-      } else {
-        try {
-          const terminalStatus = await fetchConversationTaskStatus(id);
-          if (
-            terminalStatus !== undefined &&
-            terminalStatus !== TaskStatus.EXECUTING
-          ) {
-            onTerminalTaskStatusRef.current?.(terminalStatus);
-          }
-        } catch (e) {
-          console.error(
-            '[useConversationStreamResume] sync terminal taskStatus failed:',
-            e,
-          );
-        }
-      }
-
-      // 终态同步完成后再恢复轮询，避免 EXECUTING 期间误重订阅 sub
-      pollingControlsRef.current.start();
-
-      // 发送事件，刷新会话列表以清除“执行中”标记，使其消失
-      eventBus.emit(EVENT_TYPE.RefreshConversationList, {
-        conversationId: id,
-        reason: 'stream-closed',
-      });
+    conversationResumeLogger.info('resume sub:start', {
+      source: debugSource,
+      conversationId: id,
+      list: summarizeMessageList(list),
     });
+    resumeStream(
+      id,
+      list,
+      async () => {
+        // sub 自动断开(end_turn/completed/超时)或被 abort 时回调
+        isResumeSubscribedRef.current = false;
+        setIsResumeSubscribed(false);
+        // 过期 sub 的延迟关闭（切会话后 cleanup 触发 abort 后回调）：
+        // 不再回写状态，否则 reloadHistoryAsync(旧id) 与 RefreshConversationList 会覆盖/干扰新会话。
+        if (latestRef.current.conversationId !== id) {
+          return;
+        }
+        // sub 关闭后从本地 messageList 的 finalResult 解析终态（FINAL_RESULT 已落本地）；
+        // 不再 reload 历史——reload 会整体覆盖 messageList，正是会话结束闪烁的来源。
+        const resolvedFromMessages = resolveTaskStatusFromMessageLists(
+          latestRef.current.messageList,
+        );
+        if (resolvedFromMessages) {
+          onTerminalTaskStatusRef.current?.(resolvedFromMessages);
+        } else {
+          try {
+            const terminalStatus = await fetchConversationTaskStatus(id);
+            if (
+              terminalStatus !== undefined &&
+              terminalStatus !== TaskStatus.EXECUTING
+            ) {
+              onTerminalTaskStatusRef.current?.(terminalStatus);
+            }
+          } catch (e) {
+            console.error(
+              '[useConversationStreamResume] sync terminal taskStatus failed:',
+              e,
+            );
+          }
+        }
+
+        // 终态同步完成后再恢复轮询，避免 EXECUTING 期间误重订阅 sub
+        pollingControlsRef.current.start();
+
+        // 发送事件，刷新会话列表以清除“执行中”标记，使其消失
+        eventBus.emit(EVENT_TYPE.RefreshConversationList, {
+          conversationId: id,
+          reason: 'stream-closed',
+        });
+      },
+      debugSource,
+    );
   };
 
   const subscribeRef = useRef(subscribe);
@@ -257,10 +389,11 @@ export function useConversationStreamResume(
       ],
       onSuccess: (status) => {
         if (!conversationId) return;
-        // 防跨会话写回：轮询发起后会话可能已切换，丢弃旧会话的 stale 结果
+        // 防跨会话写回；同值终态跳过，避免每轮轮询触发下游 reload 闪烁
         if (
           status !== undefined &&
           status !== TaskStatus.EXECUTING &&
+          latestRef.current.taskStatus !== status &&
           latestRef.current.conversationId === conversationId
         ) {
           onTerminalTaskStatusRef.current?.(status);
@@ -296,8 +429,22 @@ export function useConversationStreamResume(
     },
   );
   // 把 run/cancel 注入 pollingControlsRef，供 subscribe / onClose 调用
-  pollingControlsRef.current.start = run;
-  pollingControlsRef.current.stop = cancel;
+  pollingControlsRef.current.start = () => {
+    conversationPollLogger.info(
+      'resume',
+      latestRef.current.conversationId,
+      latestRef.current.taskStatus,
+    );
+    run();
+  };
+  pollingControlsRef.current.stop = () => {
+    conversationPollLogger.info(
+      'stop',
+      latestRef.current.conversationId,
+      latestRef.current.taskStatus,
+    );
+    cancel();
+  };
 
   // 切换会话：先重置订阅状态。必须在 entry effect 之前执行，否则 entry subscribe 后会被这里覆盖。
   // cleanup 里 abortSub 触发的 onClose 有 ~500ms 延迟，这里立即重置 state，避免新会话卡在「不轮询」。
@@ -321,7 +468,7 @@ export function useConversationStreamResume(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversationId, taskStatus]);
 
-  // 监听浏览器切回前台（页签可见）事件，立即检查是否有任务在执行，并尝试进行流式恢复
+  // 切回可见页签时检查是否有任务在执行；同值终态不写回，避免无变化时触发下游 reload 闪烁
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (
@@ -334,7 +481,11 @@ export function useConversationStreamResume(
         fetchConversationTaskStatus(conversationId).then((status) => {
           // 防跨会话写回：fetch in-flight 期间会话可能已切换，丢弃 stale 结果
           if (latestRef.current.conversationId !== conversationId) return;
-          if (status !== undefined && status !== TaskStatus.EXECUTING) {
+          if (
+            status !== undefined &&
+            status !== TaskStatus.EXECUTING &&
+            latestRef.current.taskStatus !== status
+          ) {
             onTerminalTaskStatusRef.current?.(status);
           }
           if (status === TaskStatus.EXECUTING) {
@@ -352,7 +503,7 @@ export function useConversationStreamResume(
   // 离开 / 切换会话：清除轮询 + 中断 sub（约束：退出会话页必须清除轮询）
   useEffect(() => {
     return () => {
-      cancel();
+      pollingControlsRef.current.stop();
       if (abortSub) {
         abortSub();
       }
