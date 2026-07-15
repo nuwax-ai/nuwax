@@ -215,7 +215,7 @@ export function useGraph(
       });
 
       // 布局完成后通知
-      graph.on('afteranimate', () => {
+      graph.once('afterlayout', () => {
         setTimeout(() => {
           if (graphRef.current === graph && onRenderComplete) {
             onRenderComplete();
