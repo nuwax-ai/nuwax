@@ -3188,6 +3188,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.MorePage.MySubscriptions.renewSuccess": "Renewal Successful",
   "PC.Pages.MorePage.MySubscriptions.standardSupport": "Standard Support",
   "PC.Pages.MorePage.MySubscriptions.statusActive": "Active",
+  "PC.Pages.MorePage.MySubscriptions.statusExpired": "Expired",
   "PC.Pages.MorePage.MySubscriptions.statusHot": "Hot",
   "PC.Pages.MorePage.MySubscriptions.subAmount": "Subscription Amount",
   "PC.Pages.MorePage.MySubscriptions.subscribeNow": "Subscribe",
