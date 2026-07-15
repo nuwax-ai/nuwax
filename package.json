@@ -51,7 +51,7 @@
     "@ant-design/plots": "^2.6.8",
     "@ant-design/pro-components": "3.1.14-2",
     "@ant-design/x": "^2.8.0",
-    "@antv/g6": "^4.8.25",
+    "@antv/g6": "^5.1.1",
     "@antv/x6": "^3.1.7",
     "@antv/x6-react-shape": "^3.0.0",
     "@babel/standalone": "^7.28.4",
