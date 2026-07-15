@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-use-before-define */
 import {
   hydrateMcpAskInteractionsInMessageList,
   prependAndHydrateMcpAskMessageList,
@@ -878,12 +879,87 @@ export default () => {
     },
   );
 
-  // 停止会话
-  const { runAsync: runStopConversation, loading: loadingStopConversation } =
+  // 停止会话请求
+  const { runAsync: runStopConversationReq, loading: loadingStopConversation } =
     useRequest(apiAgentConversationChatStop, {
       manual: true,
       debounceWait: 300,
     });
+
+  // 停止会话
+  const runStopConversation = useCallback(
+    async (conversationId: string | number) => {
+      // 1. 立即清除副作用、中断前端连接
+      handleClearSideEffect();
+      disabledConversationActive();
+
+      // 2. 立即将当前会话的 loading 状态的消息改为 Stopped 状态，并将所有正在执行的 processing 状态更新为 FAILED
+      setMessageList((list) => {
+        try {
+          if (!list?.length) return list;
+          const copyList = JSON.parse(JSON.stringify(list));
+
+          // 从后往前遍历消息列表，修复包含有工具调用的前置消息状态
+          for (let i = copyList.length - 1; i >= 0; i--) {
+            const currentMessage = copyList[i];
+
+            // 1. 仅对列表的最后一条真正的消息，如果处于加载态则强置为 Stopped
+            if (
+              i === copyList.length - 1 &&
+              (currentMessage.status === MessageStatusEnum.Loading ||
+                currentMessage.status === MessageStatusEnum.Incomplete)
+            ) {
+              currentMessage.status = MessageStatusEnum.Stopped;
+            }
+
+            // 2. 遍历所有消息 of processingList，强置其中残余的 EXECUTING 状态为 FAILED
+            if (
+              currentMessage.processingList &&
+              Array.isArray(currentMessage.processingList)
+            ) {
+              currentMessage.processingList = currentMessage.processingList.map(
+                (item: ProcessingInfo) => {
+                  if (item.status === ProcessingEnum.EXECUTING) {
+                    return {
+                      ...item,
+                      status: ProcessingEnum.FAILED,
+                    };
+                  }
+                  return item;
+                },
+              );
+            }
+          }
+
+          const latestProcessingList = copyList.flatMap(
+            (message: MessageInfo) =>
+              Array.isArray(message.processingList)
+                ? message.processingList
+                : [],
+          );
+          handleChatProcessingList(latestProcessingList);
+
+          // 再次调用 checkConversationActive 确保状态同步
+          checkConversationActive(copyList);
+          messageListRef.current = copyList;
+          return copyList;
+        } catch (error) {
+          console.error('[runStopConversation] ERROR:', error);
+          return list;
+        }
+      });
+
+      // 3. 发起后端 stop 请求
+      return runStopConversationReq(String(conversationId));
+    },
+    [
+      runStopConversationReq,
+      handleClearSideEffect,
+      setMessageList,
+      handleChatProcessingList,
+      checkConversationActive,
+    ],
+  );
 
   // 修改消息列表
   const handleChangeMessageList = (
@@ -1429,7 +1505,7 @@ export default () => {
     });
 
   // 清除副作用
-  const handleClearSideEffect = () => {
+  function handleClearSideEffect() {
     // 中断会话流式恢复(sub)连接（hook 内部同时重置占位记忆），避免离开页面后残留
     abortResumeStream();
     // 重置消息ID
@@ -1448,7 +1524,7 @@ export default () => {
       }
       abortConnectionRef.current = null;
     }
-  };
+  }
 
   // 重置初始化
   const resetInit = () => {
