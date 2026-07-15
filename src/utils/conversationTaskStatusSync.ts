@@ -193,7 +193,7 @@ export function mergeConversationInfoTaskStatus(
   prev: ConversationInfo | null | undefined,
   incoming: ConversationInfo,
 ): ConversationInfo {
-  if (incoming.taskStatus !== TaskStatus.EXECUTING) {
+  if (!incoming || incoming.taskStatus !== TaskStatus.EXECUTING) {
     return incoming;
   }
   const sameConversation =

@@ -85,7 +85,7 @@ export const jumpToAgent = (targetSpaceId: number, agentId: number) => {
 };
 
 // 返回上一页，如果没有referrer，则跳转到工作空间（智能体开发）页面
-export const jumpBack = (url?: string) => {
+export const jumpBack = (url?: string, payload?: Record<string, any>) => {
   // document.referrer 属性返回一个字符串，该字符串包含了当前文档的来源文档的 URL。可能为空
   const referrer = document.referrer;
   const historyLength = window.history.length;
@@ -100,6 +100,12 @@ export const jumpBack = (url?: string) => {
     } else {
       jumpTo({ url: '/', method: 'replace' }); // 兜底方案，跳转到首页
     }
+    return;
+  }
+
+  // 如果从appdev跳转过来，则直接跳转到指定页面
+  if (payload?.from === 'appdev' && url) {
+    jumpTo({ url, method: 'replace' });
     return;
   }
 
