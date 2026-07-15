@@ -3188,6 +3188,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.MorePage.MySubscriptions.renewSuccess": "续订成功",
   "PC.Pages.MorePage.MySubscriptions.standardSupport": "标准技术支持",
   "PC.Pages.MorePage.MySubscriptions.statusActive": "使用中",
+  "PC.Pages.MorePage.MySubscriptions.statusExpired": "已过期",
   "PC.Pages.MorePage.MySubscriptions.statusHot": "热门",
   "PC.Pages.MorePage.MySubscriptions.subAmount": "订阅金额",
   "PC.Pages.MorePage.MySubscriptions.subscribeNow": "订阅",

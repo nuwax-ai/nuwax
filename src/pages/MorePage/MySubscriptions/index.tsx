@@ -88,6 +88,8 @@ const MySubscriptions: React.FC<{
             currentPlanId={currentSub?.planId}
             endTime={currentSub?.endTime}
             price={currentSub?.plan?.price}
+            status={currentSub?.status}
+            period={currentSub?.period}
           />
         )}
 
