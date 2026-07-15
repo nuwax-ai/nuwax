@@ -2,8 +2,9 @@ import CustomFormModal from '@/components/CustomFormModal';
 import { apiI18nConfigAddOrUpdate } from '@/services/i18n';
 import { dict } from '@/services/i18nRuntime';
 import type { I18nSlideLangInfo } from '@/types/interfaces/i18n';
+import { message } from '@/utils/antdStatic';
 import { customizeRequiredMark } from '@/utils/form';
-import { Form, Input, Select, Space, message } from 'antd';
+import { Form, Input, Select, Space } from 'antd';
 import React, { useEffect } from 'react';
 import { useRequest } from 'umi';
 

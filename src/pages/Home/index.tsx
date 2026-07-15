@@ -38,7 +38,8 @@ import {
   DisplayRecommendFunctionTypeEnum,
   type DisplayRecommendInfo,
 } from '@/types/interfaces/displayRecommend';
-import { App, message as antdMessage } from 'antd';
+import { message as antdMessage } from '@/utils/antdStatic';
+import { App } from 'antd';
 import classNames from 'classnames';
 import React, {
   useCallback,

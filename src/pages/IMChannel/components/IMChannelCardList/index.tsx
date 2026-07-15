@@ -13,12 +13,13 @@ import {
   apiIMConfigChannelList,
 } from '@/services/imChannel';
 import { IMChannelInfo, IMChannelTypeEnum } from '@/types/interfaces/imChannel';
+import { message } from '@/utils/antdStatic';
 import {
   DeleteOutlined,
   EditOutlined,
   ExclamationCircleOutlined,
 } from '@ant-design/icons';
-import { Button, message, Modal, Tag, Tooltip } from 'antd';
+import { Button, Modal, Tag, Tooltip } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import {

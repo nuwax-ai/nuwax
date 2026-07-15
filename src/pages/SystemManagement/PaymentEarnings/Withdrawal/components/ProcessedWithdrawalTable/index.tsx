@@ -9,8 +9,9 @@ import {
   BillWithdrawRecordInfo,
   BillWithdrawStatusEnum,
 } from '@/types/interfaces/subscription';
+import { message } from '@/utils/antdStatic';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
-import { Tag, message } from 'antd';
+import { Tag } from 'antd';
 import React, { useMemo, useRef, useState } from 'react';
 import PayModal from './components/PayModal';
 import PaymentRemarkModal from './components/PaymentRemarkModal';

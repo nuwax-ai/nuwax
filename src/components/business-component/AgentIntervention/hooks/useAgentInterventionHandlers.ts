@@ -3,7 +3,7 @@ import { apiAgentInterventionRespond } from '@/services/agentConfig';
 import { dict } from '@/services/i18nRuntime';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
-import { message } from 'antd';
+import { message } from '@/utils/antdStatic';
 import { useCallback, type Dispatch, type SetStateAction } from 'react';
 import type {
   AcpPermissionInteraction,

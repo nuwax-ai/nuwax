@@ -1,6 +1,6 @@
 import iframeCopyImage from '@/assets/images/iframe-copy.png';
 import { dict } from '@/services/i18nRuntime';
-import { message } from 'antd';
+import { message } from '@/utils/antdStatic';
 import classNames from 'classnames';
 import React from 'react';
 import CopyToClipboard from 'react-copy-to-clipboard';

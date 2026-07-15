@@ -16,7 +16,8 @@ import type {
   AttachmentFile,
   ChatViewProps,
 } from '@/types/interfaces/conversationInfo';
-import { message, theme } from 'antd';
+import { message } from '@/utils/antdStatic';
+import { theme } from 'antd';
 import classNames from 'classnames';
 import { isEqual } from 'lodash';
 import React, { memo, useMemo } from 'react';

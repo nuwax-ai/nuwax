@@ -2,7 +2,7 @@
  * 多语言配置导出：POST 接收 JSON 文件流（Blob），与 exportImportFile 内逻辑独立，避免改动通用导出工具。
  */
 import { dict } from '@/services/i18nRuntime';
-import { message } from 'antd';
+import { message } from '@/utils/antdStatic';
 import { request } from 'umi';
 
 /** 与通用导出结构一致，仅供本模块与 i18n 导出接口使用 */

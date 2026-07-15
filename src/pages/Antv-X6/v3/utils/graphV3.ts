@@ -25,9 +25,9 @@ import {
 import { ExceptionHandleConfig, NodeConfig } from '@/types/interfaces/node';
 import { isEmptyObject } from '@/utils/index';
 // import { getWidthAndHeight } from '@/utils/updateNode';
+import { message } from '@/utils/antdStatic';
 import { workflowLogger } from '@/utils/logger';
 import { Cell, Edge, Graph, Node } from '@antv/x6';
-import { message } from 'antd';
 import { isEqual, isPlainObject } from 'lodash';
 import { getWidthAndHeight } from './workflowV3';
 // 边界检查并调整子节点位置

@@ -6,6 +6,7 @@ import { CreateUpdateModeEnum } from '@/types/enums/common';
 import type { CreateVariablesProps } from '@/types/interfaces/agentConfig';
 import { BindConfigWithSub } from '@/types/interfaces/common';
 import { modalConfirm } from '@/utils/ant-custom';
+import { message } from '@/utils/antdStatic';
 import {
   DeleteOutlined,
   FormOutlined,
@@ -31,7 +32,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Button, message, Modal, Space, Table, TableColumnsType } from 'antd';
+import { Button, Modal, Space, Table, TableColumnsType } from 'antd';
 import classNames from 'classnames';
 import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useRequest } from 'umi';

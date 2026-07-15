@@ -3,7 +3,8 @@ import {
   apiGetWithdrawConfig,
   apiSaveWithdrawConfig,
 } from '@/services/subscriptionService';
-import { Button, Card, Form, InputNumber, message, Radio, Spin } from 'antd';
+import { message } from '@/utils/antdStatic';
+import { Button, Card, Form, InputNumber, Radio, Spin } from 'antd';
 import React, { useEffect } from 'react';
 import { useRequest } from 'umi';
 import styles from './index.less';

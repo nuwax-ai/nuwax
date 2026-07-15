@@ -83,6 +83,7 @@ import {
 import { extractTaskResult } from '@/utils';
 
 import { modalConfirm } from '@/utils/ant-custom';
+import { message } from '@/utils/antdStatic';
 import { isEmptyObject } from '@/utils/common';
 import {
   applyTerminalTaskStatus,
@@ -100,7 +101,6 @@ import {
 } from '@/utils/nuwaClawBridge/perfTracker';
 import { adjustScrollPositionAfterDOMUpdate } from '@/utils/scrollUtils';
 import { useRequest } from 'ahooks';
-import { message } from 'antd';
 import dayjs from 'dayjs';
 import { throttle } from 'lodash';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';

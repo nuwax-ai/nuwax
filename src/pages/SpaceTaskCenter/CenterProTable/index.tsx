@@ -14,12 +14,13 @@ import {
 } from '@/services/library';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { TaskInfo } from '@/types/interfaces/library';
+import { message } from '@/utils/antdStatic';
 import type {
   ActionType,
   ProColumns,
   ProFormInstance,
 } from '@ant-design/pro-components';
-import { Tag, message } from 'antd';
+import { Tag } from 'antd';
 import {
   forwardRef,
   useCallback,

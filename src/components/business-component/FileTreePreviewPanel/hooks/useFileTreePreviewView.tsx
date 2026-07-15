@@ -16,6 +16,7 @@ import { fetchContentFromUrl } from '@/services/skill';
 import { HideDesktopEnum } from '@/types/enums/agent';
 import { FileNode } from '@/types/interfaces/appDev';
 import { checkFileSizeExceedLimit } from '@/utils';
+import { message } from '@/utils/antdStatic';
 import {
   buildUploadFilePaths,
   filterFilesForUpload,
@@ -39,7 +40,6 @@ import {
   updateFileTreeContent,
   updateFileTreeName,
 } from '@/utils/fileTree';
-import { message } from 'antd';
 import cloneDeep from 'lodash/cloneDeep';
 import React, {
   useCallback,

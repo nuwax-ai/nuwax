@@ -16,6 +16,7 @@ import {
   type I18nLangDto,
 } from '@/types/interfaces/i18n';
 import { modalConfirm } from '@/utils/ant-custom';
+import { message } from '@/utils/antdStatic';
 import { DeleteOutlined, EditOutlined, EyeOutlined } from '@ant-design/icons';
 import type {
   ActionType,
@@ -30,7 +31,7 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { Button, Empty, message, Space, Switch, Tooltip } from 'antd';
+import { Button, Empty, Space, Switch, Tooltip } from 'antd';
 import dayjs from 'dayjs';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { history, useRequest } from 'umi';

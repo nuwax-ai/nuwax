@@ -14,6 +14,7 @@ import {
   ModelUsageScenarioEnum,
 } from '@/types/enums/modelConfig';
 import type { ModelConfigDto } from '@/types/interfaces/systemManage';
+import { message } from '@/utils/antdStatic';
 import { copyTextToClipboard } from '@/utils/clipboard';
 import type {
   ActionType,
@@ -21,7 +22,7 @@ import type {
   ProColumns,
   ProFormInstance,
 } from '@ant-design/pro-components';
-import { Button, message, Segmented, Tooltip, Typography } from 'antd';
+import { Button, Segmented, Tooltip, Typography } from 'antd';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { useModel, useSearchParams } from 'umi';
 import styles from './index.less';

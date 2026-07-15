@@ -4,6 +4,7 @@ import ChangeFileGitDiffView, {
 import { dict } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { ProcessingEnum } from '@/types/enums/common';
+import { message } from '@/utils/antdStatic';
 import { cloneDeep } from '@/utils/common';
 import { normalizeFileDiffItems } from '@/utils/fileChangeDiff';
 import {
@@ -18,7 +19,7 @@ import {
   PlusOutlined,
   ProfileOutlined,
 } from '@ant-design/icons';
-import { Button, message, Tooltip, Typography } from 'antd';
+import { Button, Tooltip, Typography } from 'antd';
 import classNames from 'classnames';
 import { isEqual } from 'lodash';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';

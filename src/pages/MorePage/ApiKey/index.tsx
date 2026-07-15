@@ -3,6 +3,7 @@ import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { apiApiKeyDelete, apiApiKeyList } from '@/services/account';
 import { dict } from '@/services/i18nRuntime';
 import type { ApiKeyInfo } from '@/types/interfaces/account';
+import { message } from '@/utils/antdStatic';
 import { copyTextToClipboard } from '@/utils/clipboard';
 import {
   CopyOutlined,
@@ -11,7 +12,7 @@ import {
   PlusOutlined,
 } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
-import { Button, message, Space, Tag, Tooltip, Typography } from 'antd';
+import { Button, Space, Tag, Tooltip, Typography } from 'antd';
 import dayjs from 'dayjs';
 import React, { useEffect, useRef, useState } from 'react';
 import { history, useLocation } from 'umi';

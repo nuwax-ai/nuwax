@@ -1,7 +1,7 @@
 import useRequestPromiseBridge from '@/hooks/useRequestPromiseBridge';
 import { apiSendCode } from '@/services/account';
 import { dict } from '@/services/i18nRuntime';
-import { message } from 'antd';
+import { message } from '@/utils/antdStatic';
 
 const useSendCode = () => {
   // 发送验证码

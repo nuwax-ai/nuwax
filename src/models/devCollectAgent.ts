@@ -6,7 +6,7 @@ import {
 } from '@/services/agentDev';
 import { dict } from '@/services/i18nRuntime';
 import type { AgentInfo } from '@/types/interfaces/agent';
-import { message } from 'antd';
+import { message } from '@/utils/antdStatic';
 import { debounce } from 'lodash';
 import { useState } from 'react';
 import { useRequest } from 'umi';

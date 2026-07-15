@@ -10,13 +10,14 @@ import { SpaceTypeEnum } from '@/types/enums/space';
 import { ModelOptionDto } from '@/types/interfaces/agent';
 import { SpaceInfo } from '@/types/interfaces/workspace';
 import { modalConfirm } from '@/utils/ant-custom';
+import { message } from '@/utils/antdStatic';
 import {
   CheckOutlined,
   DeleteOutlined,
   EditOutlined,
   PlusOutlined,
 } from '@ant-design/icons';
-import { Button, Dropdown, MenuProps, message, Typography } from 'antd';
+import { Button, Dropdown, MenuProps, Typography } from 'antd';
 import classNames from 'classnames';
 import React, {
   useCallback,

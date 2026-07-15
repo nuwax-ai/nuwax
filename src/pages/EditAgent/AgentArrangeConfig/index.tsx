@@ -37,9 +37,10 @@ import { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
 import type { BindConfigWithSub } from '@/types/interfaces/common';
 import { PageArgConfig } from '@/types/interfaces/pageDev';
 import type { RequestResponse } from '@/types/interfaces/request';
+import { message } from '@/utils/antdStatic';
 import { loopSetBindValueType } from '@/utils/deepNode';
 import { useRequest } from 'ahooks';
-import { CollapseProps, message, Switch, Tooltip } from 'antd';
+import { CollapseProps, Switch, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, {
   MouseEvent,

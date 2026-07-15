@@ -10,13 +10,13 @@ import { dict } from '@/services/i18nRuntime';
 import { apiPublishList } from '@/services/publishManage';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
 import type { PublishListInfo } from '@/types/interfaces/publishManage';
+import { message } from '@/utils/antdStatic';
 import { buildWorkflowRoute } from '@/utils/router';
 import type {
   ActionType,
   ProColumns,
   ProFormInstance,
 } from '@ant-design/pro-components';
-import { message } from 'antd';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useModel } from 'umi';
 import OffshelfModal from './components/OffshelfModal';

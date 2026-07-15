@@ -1,5 +1,6 @@
 import SelectList from '@/components/custom/SelectList';
 import { dict, t } from '@/services/i18nRuntime';
+import { message } from '@/utils/antdStatic';
 import {
   getIframeTargetOrigin,
   isValidIframeMessage,
@@ -10,7 +11,7 @@ import {
   LockOutlined,
   UnlockOutlined,
 } from '@ant-design/icons';
-import { Breadcrumb, Button, Input, message, Select, Tooltip } from 'antd';
+import { Breadcrumb, Button, Input, Select, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, {
   forwardRef,

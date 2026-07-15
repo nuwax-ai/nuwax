@@ -14,9 +14,10 @@ import type {
   AgentConfigUpdateParams,
 } from '@/types/interfaces/agent';
 import type { CreateAgentProps } from '@/types/interfaces/common';
+import { message } from '@/utils/antdStatic';
 import { customizeRequiredMark } from '@/utils/form';
 import { resolveCreateIcon } from '@/utils/resolveCreateIcon';
-import { Form, FormProps, Input, message } from 'antd';
+import { Form, FormProps, Input } from 'antd';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useRequest } from 'umi';
 

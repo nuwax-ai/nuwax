@@ -15,9 +15,10 @@ import {
 import type { CustomPopoverItem } from '@/types/interfaces/common';
 import type { ComponentInfo } from '@/types/interfaces/library';
 import { modalConfirm } from '@/utils/ant-custom';
+import { message } from '@/utils/antdStatic';
 import { exportConfigFile } from '@/utils/exportImportFile';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
-import { Button, Empty, Input, message } from 'antd';
+import { Button, Empty, Input } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
 import { history, useModel, useParams, useRequest, useSearchParams } from 'umi';

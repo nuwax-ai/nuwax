@@ -3,9 +3,10 @@ import {
   apiAgentConversationUpdate,
 } from '@/services/agentConfig';
 import { t } from '@/services/i18nRuntime';
+import { message } from '@/utils/antdStatic';
 import { CloseOutlined, SearchOutlined } from '@ant-design/icons';
 import { useDebounceFn } from 'ahooks';
-import { Input, message, Modal } from 'antd';
+import { Input, Modal } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
 import { history, useLocation, useModel } from 'umi';
 import ConversationList, { ConversationListRef } from './ConversationList';

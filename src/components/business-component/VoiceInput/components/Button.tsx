@@ -1,8 +1,9 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import { speechToText } from '@/services/audio';
 import { t } from '@/services/i18nRuntime';
+import { message } from '@/utils/antdStatic';
 import { LoadingOutlined } from '@ant-design/icons';
-import { message, Tooltip } from 'antd';
+import { Tooltip } from 'antd';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { VOICE_INPUT_DEFAULTS, VOICE_INPUT_MOCK_TRANSCRIPT } from '../config';
 import { RecorderError, useAudioRecorder } from '../hooks/useAudioRecorder';

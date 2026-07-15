@@ -12,7 +12,7 @@ import { history, useLocation, useModel, useParams } from 'umi';
 import { PATH_URL } from '@/constants/home.constants';
 import { RoleEnum } from '@/types/enums/common';
 import { AllowDevelopEnum, SpaceTypeEnum } from '@/types/enums/space';
-import { message } from 'antd';
+import { message } from '@/utils/antdStatic';
 import {
   handleOpenUrl,
   isHttpMenuPath,

@@ -5,6 +5,7 @@ import {
 import { dict } from '@/services/i18nRuntime';
 import { apiSystemUploadFile } from '@/services/systemManage';
 import type { DeveloperAccount } from '@/types/interfaces/developerAccount';
+import { message } from '@/utils/antdStatic';
 import {
   IdcardOutlined,
   LoadingOutlined,
@@ -12,7 +13,7 @@ import {
   UserOutlined,
 } from '@ant-design/icons';
 import type { UploadProps } from 'antd';
-import { Button, Form, Input, Modal, Spin, Upload, message } from 'antd';
+import { Button, Form, Input, Modal, Spin, Upload } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useModel } from 'umi';

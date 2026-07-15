@@ -10,13 +10,14 @@ import type {
   OperationLogQueryFilter,
 } from '@/types/interfaces/agent';
 import type { RequestResponse } from '@/types/interfaces/request';
+import { message } from '@/utils/antdStatic';
 import { createOptionsRequest } from '@/utils/procomponents';
 import type {
   ActionType,
   ProColumns,
   ProFormInstance,
 } from '@ant-design/pro-components';
-import { Button, message } from 'antd';
+import { Button } from 'antd';
 import dayjs from 'dayjs';
 import React, {
   useCallback,

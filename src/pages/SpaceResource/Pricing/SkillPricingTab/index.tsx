@@ -6,9 +6,10 @@ import {
 } from '@/types/enums/agent';
 import type { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
 import { modalConfirm } from '@/utils/ant-custom';
+import { message } from '@/utils/antdStatic';
 import { PlusOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
-import { Button, Switch, message } from 'antd';
+import { Button, Switch } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
 import { useRequest } from 'umi';
 import {

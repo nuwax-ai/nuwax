@@ -5,7 +5,7 @@
 import { DEV_SERVER_CONSTANTS } from '@/constants/appDevConstants';
 import { keepAlive, restartDev, startDev } from '@/services/appDev';
 import { dict } from '@/services/i18nRuntime';
-import { message } from 'antd';
+import { message } from '@/utils/antdStatic';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, useRequest } from 'umi';
 

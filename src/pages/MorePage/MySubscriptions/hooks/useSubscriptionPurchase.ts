@@ -5,7 +5,7 @@ import {
 } from '@/pages/EditAgent/services/agent-subscription-plan';
 import { dict } from '@/services/i18nRuntime';
 import { apiCreateCreditOrder } from '@/services/subscriptionService';
-import { message } from 'antd';
+import { message } from '@/utils/antdStatic';
 import { useEffect, useRef, useState } from 'react';
 import { history, useLocation, useRequest } from 'umi';
 

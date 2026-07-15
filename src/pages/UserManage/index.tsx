@@ -15,6 +15,7 @@ import {
 import styles from '@/styles/systemManage.less';
 import { UserRoleEnum, UserStatusEnum } from '@/types/enums/systemManage';
 import type { SystemUserListInfo } from '@/types/interfaces/systemManage';
+import { message } from '@/utils/antdStatic';
 import { getIntegerOnlyFieldProps } from '@/utils/inputValidation';
 import { PlusOutlined } from '@ant-design/icons';
 import type {
@@ -22,7 +23,7 @@ import type {
   ProColumns,
   ProFormInstance,
 } from '@ant-design/pro-components';
-import { Button, message } from 'antd';
+import { Button } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useModel } from 'umi';

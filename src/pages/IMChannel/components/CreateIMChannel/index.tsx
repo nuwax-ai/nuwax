@@ -15,8 +15,9 @@ import {
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { CreateUpdateModeEnum } from '@/types/enums/common';
 import { IMChannelInfo, IMChannelTypeEnum } from '@/types/interfaces/imChannel';
+import { message } from '@/utils/antdStatic';
 import { ProFormRadio, ProFormSwitch } from '@ant-design/pro-components';
-import { Button, Form, message } from 'antd';
+import { Button, Form } from 'antd';
 import React, { useEffect, useState } from 'react';
 import DynamicChannelForm, {
   PlatformChannel,

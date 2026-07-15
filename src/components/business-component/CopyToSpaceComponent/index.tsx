@@ -7,8 +7,8 @@ import { PageCopyTypeEnum } from '@/types/enums/pageDev';
 import { ApplicationMoreActionEnum } from '@/types/enums/space';
 import { PageCopyParams } from '@/types/interfaces/pageDev';
 import { PublishTemplateCopyParams } from '@/types/interfaces/publish';
+import { message } from '@/utils/antdStatic';
 import { jumpToWorkflow } from '@/utils/router';
-import { message } from 'antd';
 import React, { useState } from 'react';
 import { useLocation, useRequest } from 'umi';
 

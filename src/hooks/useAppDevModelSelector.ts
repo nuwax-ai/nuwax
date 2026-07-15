@@ -10,8 +10,9 @@ import {
   ModelUsageScenarioEnum,
 } from '@/types/enums/modelConfig';
 import type { ModelConfig, ModelLisDto } from '@/types/interfaces/appDev';
+import { message } from '@/utils/antdStatic';
 import { jumpBack } from '@/utils/router';
-import { message, Modal } from 'antd';
+import { Modal } from 'antd';
 import { useCallback, useEffect, useState } from 'react';
 
 export const useAppDevModelSelector = (

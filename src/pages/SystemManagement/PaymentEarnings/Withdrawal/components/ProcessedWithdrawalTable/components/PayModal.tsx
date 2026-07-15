@@ -1,10 +1,11 @@
 import { dict } from '@/services/i18nRuntime';
 import { apiSystemUploadFile } from '@/services/systemManage';
 import type { BillWithdrawRecordInfo } from '@/types/interfaces/subscription';
+import { message } from '@/utils/antdStatic';
 import { LoadingOutlined, PlusOutlined } from '@ant-design/icons';
 import { ModalForm, ProFormTextArea } from '@ant-design/pro-components';
 import type { UploadFile, UploadProps } from 'antd';
-import { Form, Upload, message } from 'antd';
+import { Form, Upload } from 'antd';
 import React, { useState } from 'react';
 
 interface PayModalProps {

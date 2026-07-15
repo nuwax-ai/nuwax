@@ -9,13 +9,13 @@ import type {
   PluginHttpUpdateParams,
   PluginInfo,
 } from '@/types/interfaces/plugin';
+import { message } from '@/utils/antdStatic';
 import {
   addChildNode,
   deleteNode,
   getActiveKeys,
   updateNodeField,
 } from '@/utils/deepNode';
-import { message } from 'antd';
 import dayjs from 'dayjs';
 import cloneDeep from 'lodash/cloneDeep';
 import React, { useRef, useState } from 'react';

@@ -20,7 +20,8 @@ import type {
   MessageSourceType,
   UploadFileInfo,
 } from '@/types/interfaces/common';
-import { AffixRef, App, message as antdMessage } from 'antd';
+import { message as antdMessage } from '@/utils/antdStatic';
+import { AffixRef, App } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { history, useModel, useRequest } from 'umi';

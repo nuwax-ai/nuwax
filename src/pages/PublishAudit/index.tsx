@@ -13,13 +13,13 @@ import styles from '@/styles/systemManage.less';
 import { PublishStatusEnum } from '@/types/enums/common';
 import { SquareAgentTypeEnum } from '@/types/enums/square';
 import type { PublishApplyListInfo } from '@/types/interfaces/publishManage';
+import { message } from '@/utils/antdStatic';
 import { buildWorkflowRoute } from '@/utils/router';
 import type {
   ActionType,
   ProColumns,
   ProFormInstance,
 } from '@ant-design/pro-components';
-import { message } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useModel } from 'umi';

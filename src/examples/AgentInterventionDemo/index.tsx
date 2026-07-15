@@ -15,7 +15,8 @@ import type {
   McpAskInteraction,
   McpAskRespondPayload,
 } from '@/components/business-component/AgentIntervention/types/mcpAskIntervention';
-import { Button, Card, Divider, message, Space, Typography } from 'antd';
+import { message } from '@/utils/antdStatic';
+import { Button, Card, Divider, Space, Typography } from 'antd';
 import React, { useState } from 'react';
 import { Link } from 'umi';
 import { createAcpDemoList, createMcpDemoList } from './mockData';

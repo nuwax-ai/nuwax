@@ -7,9 +7,10 @@ import {
 } from '@/pages/SpaceResource/types/resource';
 import { dict } from '@/services/i18nRuntime';
 import { modalConfirm } from '@/utils/ant-custom';
+import { message } from '@/utils/antdStatic';
 import { getPricingTypeLabel } from '@/utils/resourcePricing';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
-import { Switch, message } from 'antd';
+import { Switch } from 'antd';
 import React, { useState } from 'react';
 import { useRequest } from 'umi';
 import {

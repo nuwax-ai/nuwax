@@ -17,12 +17,12 @@ import {
   apiSystemResourceSpaceList,
 } from '@/services/systemManage';
 import { SystemSpaceInfo } from '@/types/interfaces/systemManage';
+import { message } from '@/utils/antdStatic';
 import {
   ActionType,
   ProColumns,
   ProFormInstance,
 } from '@ant-design/pro-components';
-import { message } from 'antd';
 import { useCallback, useEffect, useRef } from 'react';
 import { useLocation, useModel } from 'umi';
 

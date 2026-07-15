@@ -11,8 +11,9 @@ import type {
   AgentCurrentSubscription,
   AgentSubscriptionPlan,
 } from '@/types/interfaces/subscription';
+import { message } from '@/utils/antdStatic';
 import { CheckCircleFilled, ThunderboltOutlined } from '@ant-design/icons';
-import { Button, message, Modal } from 'antd';
+import { Button, Modal } from 'antd';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'umi';
 import styles from './index.less';

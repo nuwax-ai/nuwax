@@ -6,6 +6,7 @@ import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { dict } from '@/services/i18nRuntime';
 import { UploadFileStatus } from '@/types/enums/common';
 import type { ChatInputProps, UploadFileInfo } from '@/types/interfaces/common';
+import { message } from '@/utils/antdStatic';
 import {
   ArrowDownOutlined,
   ArrowUpOutlined,
@@ -13,7 +14,7 @@ import {
   PlusOutlined,
 } from '@ant-design/icons';
 import type { UploadProps } from 'antd';
-import { Input, message, Upload } from 'antd';
+import { Input, Upload } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo, useState } from 'react';
 import styles from './index.less';

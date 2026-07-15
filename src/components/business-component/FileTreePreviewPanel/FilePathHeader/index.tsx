@@ -3,6 +3,7 @@ import { ConnectionStatus } from '@/components/business-component/VncPreview/typ
 import { USER_INFO } from '@/constants/home.constants';
 import { dict } from '@/services/i18nRuntime';
 import { FileNode } from '@/types/interfaces/appDev';
+import { message } from '@/utils/antdStatic';
 import { formatFileSize } from '@/utils/appDevUtils';
 import { copyTextToClipboard } from '@/utils/clipboard';
 import { isMarkdownFile } from '@/utils/common';
@@ -14,7 +15,7 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
 } from '@ant-design/icons';
-import { Button, ConfigProvider, message, Segmented, Tooltip } from 'antd';
+import { Button, ConfigProvider, Segmented, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo, useState } from 'react';
 import styles from './index.less';

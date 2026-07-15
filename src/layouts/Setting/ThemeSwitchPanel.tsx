@@ -19,7 +19,7 @@ import unifiedThemeService from '@/services/unifiedThemeService';
 import { BackgroundImage } from '@/types/background';
 import { ThemeLayoutColorStyle } from '@/types/enums/theme';
 import { TenantThemeConfig } from '@/types/tenant';
-import { message } from 'antd';
+import { message } from '@/utils/antdStatic';
 import classNames from 'classnames';
 import React, { useCallback, useMemo } from 'react';
 import styles from './ThemeSwitchPanel.less';

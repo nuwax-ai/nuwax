@@ -43,9 +43,10 @@ import type {
 import { CardArgsBindConfigInfo } from '@/types/interfaces/cardInfo';
 import { BindConfigWithSub } from '@/types/interfaces/common';
 import { RequestResponse } from '@/types/interfaces/request';
+import { message } from '@/utils/antdStatic';
 import { CloseOutlined } from '@ant-design/icons';
 import { useRequest } from 'ahooks';
-import { message, Modal } from 'antd';
+import { Modal } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useModel } from 'umi';

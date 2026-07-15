@@ -9,9 +9,10 @@ import {
   apiCheckVncStatus,
   isEnsurePodThrottledError,
 } from '@/services/vncDesktop';
+import { message } from '@/utils/antdStatic';
 import { createLogger } from '@/utils/logger';
 import { DesktopOutlined } from '@ant-design/icons';
-import { Alert, Button, message, Spin, Tag } from 'antd';
+import { Alert, Button, Spin, Tag } from 'antd';
 import {
   forwardRef,
   useCallback,

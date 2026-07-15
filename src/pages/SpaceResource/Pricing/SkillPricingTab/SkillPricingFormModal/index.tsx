@@ -11,9 +11,10 @@ import { dict } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
 import type { CreatedNodeItem } from '@/types/interfaces/common';
+import { message } from '@/utils/antdStatic';
 import { customizeRequiredMark } from '@/utils/form';
 import { createPriceInputNumberProps } from '@/utils/priceInput';
-import { Form, Input, InputNumber, Radio, Switch, message } from 'antd';
+import { Form, Input, InputNumber, Radio, Switch } from 'antd';
 import React, { useEffect, useState } from 'react';
 import styles from './index.less';
 

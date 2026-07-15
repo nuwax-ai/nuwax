@@ -16,6 +16,7 @@ import { dict } from '@/services/i18nRuntime';
 import type { I18nSlideLangInfo } from '@/types/interfaces/i18n';
 import type { Page } from '@/types/interfaces/request';
 import { modalConfirm } from '@/utils/ant-custom';
+import { message } from '@/utils/antdStatic';
 import { createSSEConnection } from '@/utils/fetchEventSourceConversationInfo';
 import { downloadI18nConfigExportBlob } from '@/utils/i18nConfigExportBlob';
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
@@ -24,7 +25,7 @@ import type {
   ProColumns,
   ProFormInstance,
 } from '@ant-design/pro-components';
-import { Button, Progress, Space, Tag, message } from 'antd';
+import { Button, Progress, Space, Tag } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
 import { useParams, useRequest, useSearchParams } from 'umi';
 import AddKeyValueModal from './AddKeyValueModal';

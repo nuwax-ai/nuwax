@@ -8,6 +8,7 @@ import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { t } from '@/services/i18nRuntime';
 import { modalConfirm } from '@/utils/ant-custom';
+import { message } from '@/utils/antdStatic';
 import { DownOutlined, PlusOutlined } from '@ant-design/icons';
 import type {
   ActionType,
@@ -22,7 +23,7 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { Button, Empty, message, Switch } from 'antd';
+import { Button, Empty, Switch } from 'antd';
 import classNames from 'classnames';
 import type { ReactNode } from 'react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
