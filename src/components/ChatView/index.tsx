@@ -26,6 +26,8 @@ import ChatBottomMore from './ChatBottomMore';
 import ChatSampleBottom from './ChatSampleBottom';
 import styles from './index.less';
 import RunOver from './RunOver';
+import SandboxedUiCard from './SandboxedUiCard';
+import type { SandboxedUiArtifact } from './SandboxedUiCard/types';
 
 const cx = classNames.bind(styles);
 
@@ -97,6 +99,23 @@ const ChatView: React.FC<ChatViewProps> = memo(
     }, [messageInfo?.role]);
 
     const { token } = theme.useToken();
+
+    const sandboxedUiArtifacts = useMemo(() => {
+      return (messageInfo?.processingList || [])
+        .filter((processing) => {
+          return (
+            processing?.name === 'generate_sandboxed_ui' &&
+            processing?.result?.success !== false
+          );
+        })
+        .map((processing) => processing?.result?.data as SandboxedUiArtifact)
+        .filter(
+          (artifact): artifact is SandboxedUiArtifact =>
+            !!artifact &&
+            typeof artifact.html === 'string' &&
+            artifact.html.length > 0,
+        );
+    }, [messageInfo?.processingList]);
 
     return (
       <div
@@ -214,6 +233,15 @@ const ChatView: React.FC<ChatViewProps> = memo(
                 </div>
               </div>
             )}
+
+            {sandboxedUiArtifacts.map((artifact, index) => (
+              <div
+                className={cx(styles['inner-container'], contentClassName)}
+                key={artifact.id || index}
+              >
+                <SandboxedUiCard artifact={artifact} />
+              </div>
+            ))}
 
             {/* 底部区域: 复制按钮、运行时间 */}
             <ConditionRender
