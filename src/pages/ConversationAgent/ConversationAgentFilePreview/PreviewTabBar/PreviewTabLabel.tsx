@@ -59,7 +59,7 @@ const PreviewTabLabel: React.FC<PreviewTabLabelProps> = ({
       classNames={{ root: 'tooltip-blank preview-tab-label-tooltip' }}
       styles={{
         root: { pointerEvents: 'auto' },
-        body: {
+        container: {
           maxWidth: 400,
           maxHeight: 280,
           overflowY: 'auto',

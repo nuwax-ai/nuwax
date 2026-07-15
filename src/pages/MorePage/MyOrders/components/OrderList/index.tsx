@@ -7,7 +7,7 @@ import {
   BillOrderInfo,
   BillPayStatusEnum,
 } from '@/types/interfaces/subscription';
-import type { ActionType, FormInstance } from '@ant-design/pro-components';
+import type { ActionType, ProFormInstance } from '@ant-design/pro-components';
 import { ProColumns } from '@ant-design/pro-components';
 import { Button, Tag } from 'antd';
 import React, { useRef } from 'react';
@@ -84,7 +84,7 @@ const columns: ProColumns<BillOrderInfo>[] = [
 
 const OrderList: React.FC = () => {
   const actionRef = useRef<ActionType>();
-  const formRef = useRef<FormInstance>();
+  const formRef = useRef<ProFormInstance>();
 
   const { processingId, handlePayExistingOrder } = useSubscriptionPurchase();
 

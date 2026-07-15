@@ -11,8 +11,8 @@ import { modalConfirm } from '@/utils/ant-custom';
 import { InfoCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import type {
   ActionType,
-  FormInstance,
   ProColumns,
+  ProFormInstance,
 } from '@ant-design/pro-components';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { closestCenter, DndContext } from '@dnd-kit/core';
@@ -88,7 +88,7 @@ const RoleManage: React.FC = () => {
 
   // ProTable refs.
   const actionRef = useRef<ActionType>();
-  const formRef = useRef<FormInstance>();
+  const formRef = useRef<ProFormInstance>();
 
   // Permission check.
   const { hasPermissionByMenuCode } = useModel('menuModel');

@@ -110,7 +110,7 @@ const ServerExportModal: React.FC<ServerExportModalProps> = ({
       width={560}
       title={`${name}-${dict('PC.Pages.SpaceMcpManage.serviceExportTitle')}`}
       classNames={{
-        content: cx(styles.container),
+        root: cx(styles.container),
         header: cx(styles.container),
         body: cx(styles.container),
       }}

@@ -44,7 +44,7 @@ const SearchHeader: React.FC<SearchHeaderProps> = ({
           title={dict('PC.Constants.Menus.newChat')}
           placement="right"
           color="white"
-          styles={{ body: { color: 'rgba(0, 0, 0, 0.88)' } }}
+          styles={{ container: { color: 'rgba(0, 0, 0, 0.88)' } }}
         >
           <div className={cx(styles['new-chat-btn'])} onClick={onNewChat}>
             <SvgIcon

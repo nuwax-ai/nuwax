@@ -48,7 +48,7 @@ const SeeDetailModal: React.FC<SeeDetailModalProps> = ({
             // 与工具栏标题 tooltip 一致：放宽宽度，最多 5 行，超出滚动
             styles={{
               root: { maxWidth: 380 },
-              body: {
+              container: {
                 maxHeight: '7.5em',
                 overflowY: 'auto',
                 lineHeight: '1.5',

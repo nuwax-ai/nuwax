@@ -121,7 +121,7 @@ export const SkillDispose: React.FC<SkillDisposeProps> = ({
                   <Popover
                     content={dict('PC.Components.Skill.enableDesc')}
                     styles={{
-                      body: {
+                      container: {
                         width: '300px',
                       },
                     }}

@@ -317,7 +317,7 @@ const PaymentSubscriptionModal: React.FC<PaymentSubscriptionModalProps> = ({
   return (
     <Modal
       styles={{
-        content: {
+        root: {
           borderRadius: 16,
           padding: 0,
           overflow: 'hidden',

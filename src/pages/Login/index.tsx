@@ -67,7 +67,7 @@ const EllipsisTooltip: React.FC<{ title: string; children: string }> = ({
     <Tooltip
       title={isOverflow ? title : null}
       color="#fff"
-      styles={{ body: { color: '#000' } }}
+      styles={{ container: { color: '#000' } }}
     >
       <div
         ref={textRef}

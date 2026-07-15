@@ -21,8 +21,8 @@ import { downloadI18nConfigExportBlob } from '@/utils/i18nConfigExportBlob';
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import type {
   ActionType,
-  FormInstance,
   ProColumns,
+  ProFormInstance,
 } from '@ant-design/pro-components';
 import { Button, Progress, Space, Tag, message } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
@@ -47,7 +47,7 @@ const LangContent: React.FC = () => {
     null,
   );
   const actionRef = useRef<ActionType>();
-  const formRef = useRef<FormInstance>();
+  const formRef = useRef<ProFormInstance>();
   // 单个翻译 key 的 loading 状态
   const [translateLoadingMap, setTranslateLoadingMap] = useState<
     Record<string, boolean>

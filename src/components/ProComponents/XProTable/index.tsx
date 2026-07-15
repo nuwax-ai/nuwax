@@ -4,8 +4,8 @@ import { dict, getCurrentLang } from '@/services/i18nRuntime';
 import { getUmiLocaleKey } from '@/utils/i18nAdapters';
 import type {
   ActionType,
-  FormInstance,
   ParamsType,
+  ProFormInstance,
   ProTableProps,
 } from '@ant-design/pro-components';
 import { ProConfigProvider, ProTable } from '@ant-design/pro-components';
@@ -75,10 +75,10 @@ function XProTable<
   } as ProTableProps<DataType, Params, ValueType>['scroll'];
 
   // 使用传入的 formRef/actionRef 或内部创建的
-  const internalFormRef = useRef<FormInstance>();
+  const internalFormRef = useRef<ProFormInstance>();
   const internalActionRef = useRef<ActionType>();
   const formRef =
-    (restProps.formRef as React.MutableRefObject<FormInstance>) ||
+    (restProps.formRef as React.MutableRefObject<ProFormInstance>) ||
     internalFormRef;
   const actionRef =
     (restProps.actionRef as React.MutableRefObject<ActionType>) ||

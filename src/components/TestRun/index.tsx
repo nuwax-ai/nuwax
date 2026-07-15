@@ -16,7 +16,7 @@ import {
   returnImg,
 } from '@/utils/workflow';
 import { CaretRightOutlined, CloseOutlined } from '@ant-design/icons';
-import { Bubble, PromptProps, Prompts, Sender } from '@ant-design/x';
+import { Bubble, Prompts, PromptsItemType, Sender } from '@ant-design/x';
 import { Button, Collapse, Empty, Form, FormInstance, Input } from 'antd';
 import { useEffect, useState } from 'react';
 import { useModel } from 'umi';
@@ -74,7 +74,7 @@ const StopWaitNode: React.FC<{
   onChange: (v: string | number | bigint | undefined) => void;
   onSubmit: () => void;
 }> = ({ params, items, value, answerType, onAnswer, onChange, onSubmit }) => {
-  const handleAnswer = (info: { data: PromptProps }) => {
+  const handleAnswer = (info: { data: PromptsItemType }) => {
     onAnswer?.(info.data.description as string);
   };
   return (

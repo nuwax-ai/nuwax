@@ -82,7 +82,7 @@ const TabItem: React.FC<TabItemProps & { isSecondMenuCollapsed?: boolean }> = ({
               title: text,
               placement: 'right',
               color: '#fff',
-              styles: { body: { color: '#000' } },
+              styles: { container: { color: '#000' } },
             },
           }}
         >
@@ -103,7 +103,7 @@ const TabItem: React.FC<TabItemProps & { isSecondMenuCollapsed?: boolean }> = ({
       title={text}
       placement="right"
       color="#fff"
-      styles={{ body: { color: '#000' } }}
+      styles={{ container: { color: '#000' } }}
     >
       {content}
     </Tooltip>

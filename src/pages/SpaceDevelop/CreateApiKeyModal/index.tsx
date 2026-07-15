@@ -249,7 +249,7 @@ const CreateTempChatModal: React.FC<CreateTempChatModalProps> = ({
   return (
     <Modal
       classNames={{
-        content: cx(styles.container),
+        root: cx(styles.container),
         header: cx(styles.container),
         body: cx(styles.container),
       }}

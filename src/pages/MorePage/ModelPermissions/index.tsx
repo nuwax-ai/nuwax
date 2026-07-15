@@ -17,9 +17,9 @@ import type { ModelConfigDto } from '@/types/interfaces/systemManage';
 import { copyTextToClipboard } from '@/utils/clipboard';
 import type {
   ActionType,
-  FormInstance,
   ParamsType,
   ProColumns,
+  ProFormInstance,
 } from '@ant-design/pro-components';
 import { Button, message, Segmented, Tooltip, Typography } from 'antd';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
@@ -135,7 +135,7 @@ const ModelPermissions: React.FC = () => {
   );
 
   const actionRef = useRef<ActionType>();
-  const formRef = useRef<FormInstance>();
+  const formRef = useRef<ProFormInstance>();
 
   /** 模型能力类型 value -> 展示文案，供模态列 Tag 使用 */
   const capabilityTypeLabelMap = useMemo(

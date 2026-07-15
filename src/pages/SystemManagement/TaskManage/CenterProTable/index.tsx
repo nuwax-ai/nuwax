@@ -13,8 +13,8 @@ import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { TaskInfo } from '@/types/interfaces/library';
 import type {
   ActionType,
-  FormInstance,
   ProColumns,
+  ProFormInstance,
 } from '@ant-design/pro-components';
 import { message, Tag } from 'antd';
 import qs from 'qs';
@@ -60,7 +60,7 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
     const isReset = useRef(false);
 
     // 表单引用
-    const formRef = useRef<FormInstance>();
+    const formRef = useRef<ProFormInstance>();
     const location = useLocation();
 
     /**

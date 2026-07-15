@@ -67,7 +67,7 @@ const UserOperateArea: React.FC<UserOperateAreaType> = ({ menus, onClick }) => {
       placement="right"
       color={'#fff'}
       styles={{
-        body: { color: '#000' },
+        container: { color: '#000' },
       }}
       title={item.name}
     >

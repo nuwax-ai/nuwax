@@ -20,7 +20,7 @@ const IntranetServerCommand: React.FC<IntranetServerCommandProps> = ({
       title={dict('PC.Pages.SpaceLibrary.IntranetServerCommand.modalTitle')}
       open={visible}
       classNames={{
-        content: cx(styles.container),
+        root: cx(styles.container),
         header: cx(styles.header),
         body: cx(styles.body),
       }}

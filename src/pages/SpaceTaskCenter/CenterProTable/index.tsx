@@ -16,8 +16,8 @@ import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { TaskInfo } from '@/types/interfaces/library';
 import type {
   ActionType,
-  FormInstance,
   ProColumns,
+  ProFormInstance,
 } from '@ant-design/pro-components';
 import { Tag, message } from 'antd';
 import {
@@ -77,7 +77,7 @@ const CenterProTable = forwardRef<CenterProTableRef, CenterProTableProps>(
     // 标记是否是菜单切换触发的刷新
     const isMenuRefreshRef = useRef<boolean>(false);
     // 表单引用
-    const formRef = useRef<FormInstance>();
+    const formRef = useRef<ProFormInstance>();
 
     /**
      * 状态展示（后端枚举映射）

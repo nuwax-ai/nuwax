@@ -11,8 +11,8 @@ import { modalConfirm } from '@/utils/ant-custom';
 import { DownOutlined, PlusOutlined } from '@ant-design/icons';
 import type {
   ActionType,
-  FormInstance,
   ProColumns,
+  ProFormInstance,
 } from '@ant-design/pro-components';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { closestCenter, DndContext } from '@dnd-kit/core';
@@ -76,7 +76,7 @@ const PermissionResources: React.FC = () => {
 
   // ProTable 的 ref
   const actionRef = useRef<ActionType>();
-  const formRef = useRef<FormInstance>();
+  const formRef = useRef<ProFormInstance>();
 
   // 标记是否正在拖拽，用于防止 postData 覆盖拖拽后的数据
   const isDraggingRef = useRef<boolean>(false);

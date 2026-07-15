@@ -414,7 +414,7 @@ const BindUser: React.FC<BindUserProps> = ({
       title={t('PC.Pages.SystemMenuBindUser.bindUserWithName', name)}
       open={open}
       classNames={{
-        content: cx(styles['add-member-modal-content']),
+        root: cx(styles['add-member-modal-content']),
         body: cx(styles['add-member-modal-body']),
       }}
       destroyOnHidden

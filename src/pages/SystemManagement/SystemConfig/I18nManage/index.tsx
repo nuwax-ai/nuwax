@@ -19,8 +19,8 @@ import { modalConfirm } from '@/utils/ant-custom';
 import { DeleteOutlined, EditOutlined, EyeOutlined } from '@ant-design/icons';
 import type {
   ActionType,
-  FormInstance,
   ProColumns,
+  ProFormInstance,
 } from '@ant-design/pro-components';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { closestCenter, DndContext } from '@dnd-kit/core';
@@ -44,7 +44,7 @@ const I18nManage: React.FC = () => {
   const [langInfo, setLangInfo] = useState<I18nLangDto | null>(null);
   const [draggableData, setDraggableData] = useState<I18nLangDto[]>([]);
   const actionRef = useRef<ActionType>();
-  const formRef = useRef<FormInstance>();
+  const formRef = useRef<ProFormInstance>();
   /** 拖拽过程中避免 postData 覆盖本地顺序 */
   const isDraggingRef = useRef<boolean>(false);
   const originalDragDataRef = useRef<I18nLangDto[] | null>(null);

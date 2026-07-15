@@ -13,8 +13,8 @@ import type { RequestResponse } from '@/types/interfaces/request';
 import { createOptionsRequest } from '@/utils/procomponents';
 import type {
   ActionType,
-  FormInstance,
   ProColumns,
+  ProFormInstance,
 } from '@ant-design/pro-components';
 import { Button, message } from 'antd';
 import dayjs from 'dayjs';
@@ -36,7 +36,7 @@ import LogDetailDrawer from '../LogDetailDrawer';
 const LogProTable: React.FC = () => {
   const location = useLocation();
   const actionRef = useRef<ActionType>();
-  const formRef = useRef<FormInstance>();
+  const formRef = useRef<ProFormInstance>();
 
   const [detailsVisible, setDetailsVisible] = useState<boolean>(false);
   const [currentId, setCurrentId] = useState<string>();

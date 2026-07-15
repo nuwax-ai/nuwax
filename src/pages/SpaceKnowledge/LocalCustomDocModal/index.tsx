@@ -365,7 +365,7 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
       title={dict('PC.Pages.SpaceKnowledge.LocalCustomDocModal.addContent')}
       destroyOnHidden
       classNames={{
-        content: cx(styles.container),
+        root: cx(styles.container),
         header: cx(styles.header),
         body: cx(styles.body),
       }}

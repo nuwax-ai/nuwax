@@ -136,7 +136,7 @@ const User: React.FC<PropsWithChildren<UserProps>> = ({
       placement={placement}
       title={null}
       styles={{
-        body: {
+        container: {
           padding: 0,
         },
       }}

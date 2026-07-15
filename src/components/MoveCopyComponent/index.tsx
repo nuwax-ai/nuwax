@@ -109,7 +109,7 @@ const MoveCopyComponent: React.FC<MoveCopyComponentProps> = ({
       destroyOnHidden
       onCancel={onCancel}
       classNames={{
-        content: cx(styles['modal-container']),
+        root: cx(styles['modal-container']),
         body: styles['modal-body'],
       }}
       centered

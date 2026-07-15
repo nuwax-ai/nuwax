@@ -172,7 +172,7 @@ const FoldWrap: React.FC<PropsWithChildren<FoldWrapType>> = (props) => {
               <Popover
                 title={description}
                 styles={{
-                  body: {
+                  container: {
                     width: '300px',
                   },
                 }}

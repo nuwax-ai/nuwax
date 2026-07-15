@@ -16,8 +16,8 @@ import { getTruncatedLogContent } from '@/utils/logContentUtils';
 import { EyeOutlined } from '@ant-design/icons';
 import type {
   ActionType,
-  FormInstance,
   ProColumns,
+  ProFormInstance,
 } from '@ant-design/pro-components';
 import { message, Tooltip } from 'antd';
 import dayjs from 'dayjs';
@@ -48,7 +48,7 @@ const LogProTable: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const spaceId = Number(params.spaceId);
   const actionRef = useRef<ActionType>();
-  const formRef = useRef<FormInstance>();
+  const formRef = useRef<ProFormInstance>();
 
   const [detailsVisible, setDetailsVisible] = useState<boolean>(false);
   const [currentId, setCurrentId] = useState<string>();

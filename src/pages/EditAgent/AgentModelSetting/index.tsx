@@ -296,7 +296,7 @@ const AgentModelSetting: React.FC<
       <Modal
         title={dict('PC.Pages.EditAgent.AgentModelSetting.modelSetting')}
         classNames={{
-          content: cx(styles['modal-wrapper2']),
+          root: cx(styles['modal-wrapper2']),
         }}
         open={open}
         footer={null}
@@ -325,7 +325,7 @@ const AgentModelSetting: React.FC<
     <Modal
       title={dict('PC.Pages.EditAgent.AgentModelSetting.modelSetting')}
       classNames={{
-        content: cx(styles['modal-wrapper']),
+        root: cx(styles['modal-wrapper']),
       }}
       open={open}
       footer={null}

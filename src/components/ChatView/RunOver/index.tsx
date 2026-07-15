@@ -121,7 +121,7 @@ const RunOver: React.FC<RunOverProps> = ({
     <Popover
       placement="bottomLeft"
       styles={{
-        body: {
+        container: {
           padding: 0,
         },
       }}

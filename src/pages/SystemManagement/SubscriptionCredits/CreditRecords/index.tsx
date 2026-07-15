@@ -5,9 +5,9 @@ import { dict } from '@/services/i18nRuntime';
 import { formatDateTimeYmdHms } from '@/utils/dateUtils';
 import type {
   ActionType,
-  FormInstance,
   ParamsType,
   ProColumns,
+  ProFormInstance,
 } from '@ant-design/pro-components';
 import { Statistic, Tag } from 'antd';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
@@ -72,7 +72,7 @@ const CreditRecords: React.FC = () => {
     1: undefined,
   });
   const queryKeyRef = useRef<string>('');
-  const formRef = useRef<FormInstance>();
+  const formRef = useRef<ProFormInstance>();
   const actionRef = useRef<ActionType>();
 
   /** 重置表单与游标分页，恢复到 URL 对应的 formInitialValues */

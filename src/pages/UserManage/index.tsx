@@ -19,8 +19,8 @@ import { getIntegerOnlyFieldProps } from '@/utils/inputValidation';
 import { PlusOutlined } from '@ant-design/icons';
 import type {
   ActionType,
-  FormInstance,
   ProColumns,
+  ProFormInstance,
 } from '@ant-design/pro-components';
 import { Button, message } from 'antd';
 import classNames from 'classnames';
@@ -42,7 +42,7 @@ const UserManage: React.FC = () => {
   const { hasPermissionByMenuCode } = useModel('menuModel');
 
   const actionRef = useRef<ActionType>();
-  const formRef = useRef<FormInstance>();
+  const formRef = useRef<ProFormInstance>();
   const location = useLocation();
   const [currentUserInfo, setCurrentUserInfo] =
     useState<SystemUserListInfo | null>(null);

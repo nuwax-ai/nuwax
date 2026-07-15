@@ -23,8 +23,8 @@ import { ModelConfigDto } from '@/types/interfaces/systemManage';
 import { PlusOutlined } from '@ant-design/icons';
 import type {
   ActionType,
-  FormInstance,
   ProColumns,
+  ProFormInstance,
 } from '@ant-design/pro-components';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { closestCenter, DndContext } from '@dnd-kit/core';
@@ -47,7 +47,7 @@ import TargetAuthModal from '../SystemManagement/Content/components/TargetAuthMo
 const GlobalModelManage: React.FC = () => {
   const { hasPermission } = useModel('menuModel');
   const actionRef = useRef<ActionType>();
-  const formRef = useRef<FormInstance>();
+  const formRef = useRef<ProFormInstance>();
   const location = useLocation();
   const [visible, setVisible] = useState<boolean>(false);
   const [modelId, setModelId] = useState<number>();

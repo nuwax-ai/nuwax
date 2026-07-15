@@ -5,7 +5,7 @@ import { CREDIT_TYPE_VALUE_ENUM_MAP } from '@/constants/subscription.constants';
 import { dict } from '@/services/i18nRuntime';
 import { apiGetCreditFlows } from '@/services/subscriptionService';
 import { type CreditRecordInfo } from '@/types/interfaces/subscription';
-import type { FormInstance, ProColumns } from '@ant-design/pro-components';
+import type { ProColumns, ProFormInstance } from '@ant-design/pro-components';
 import { Statistic, Tag } from 'antd';
 import React, {
   useCallback,
@@ -30,7 +30,7 @@ const CreditRecords: React.FC<CreditRecordsProps> = ({ onClickBack }) => {
   const lastIdRef = useRef<number | undefined>(undefined);
   const loadingRef = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const formRef = useRef<FormInstance>();
+  const formRef = useRef<ProFormInstance>();
   const lastCheckedLengthRef = useRef(0);
 
   // 获取数据

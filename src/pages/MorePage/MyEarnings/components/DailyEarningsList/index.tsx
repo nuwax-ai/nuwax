@@ -7,8 +7,8 @@ import {
 } from '@/types/interfaces/subscription';
 import type {
   ActionType,
-  FormInstance,
   ProColumns,
+  ProFormInstance,
 } from '@ant-design/pro-components';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
@@ -21,7 +21,7 @@ const cx = classNames.bind(styles);
 const DailyEarningsList: React.FC = () => {
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [selectedDt, setSelectedDt] = useState<string>();
-  const formRef = useRef<FormInstance>();
+  const formRef = useRef<ProFormInstance>();
   const actionRef = useRef<ActionType>();
 
   const statusMap: Record<

@@ -13,8 +13,8 @@ import { AccessControlEnum } from '@/types/enums/systemManage';
 import { SystemAgentInfo } from '@/types/interfaces/systemManage';
 import {
   ActionType,
-  FormInstance,
   ProColumns,
+  ProFormInstance,
 } from '@ant-design/pro-components';
 import { message, Switch } from 'antd';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -28,7 +28,7 @@ import { apiSystemResourceAgentAccess } from '../content-manage';
 const Agent: React.FC = () => {
   const { hasPermission } = useModel('menuModel');
   const actionRef = useRef<ActionType>();
-  const formRef = useRef<FormInstance>();
+  const formRef = useRef<ProFormInstance>();
   const location = useLocation();
   // 管控状态切换 loading 状态
   const [accessControlLoadingMap, setAccessControlLoadingMap] = useState<

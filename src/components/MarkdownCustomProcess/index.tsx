@@ -489,7 +489,7 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
                       triggerNode.closest('.scroll-container') || document.body,
                     styles: {
                       root: { maxWidth: 380 },
-                      body: {
+                      container: {
                         // 最多展示 5 行（line-height 1.5 * 5 = 7.5em），超出滚动
                         maxHeight: '7.5em',
                         overflowY: 'auto',

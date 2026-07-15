@@ -15,8 +15,8 @@ import { AccessControlEnum } from '@/types/enums/systemManage';
 import { SystemKnowledgeInfo } from '@/types/interfaces/systemManage';
 import {
   ActionType,
-  FormInstance,
   ProColumns,
+  ProFormInstance,
 } from '@ant-design/pro-components';
 import { message, Switch } from 'antd';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -26,7 +26,7 @@ import TargetAuthModal from '../components/TargetAuthModal';
 const KnowledgeBase: React.FC = () => {
   const { hasPermission } = useModel('menuModel');
   const actionRef = useRef<ActionType>();
-  const formRef = useRef<FormInstance>();
+  const formRef = useRef<ProFormInstance>();
   const location = useLocation();
   const [accessControlLoadingMap, setAccessControlLoadingMap] = useState<
     Record<number, boolean>

@@ -13,8 +13,8 @@ import type { PublishListInfo } from '@/types/interfaces/publishManage';
 import { buildWorkflowRoute } from '@/utils/router';
 import type {
   ActionType,
-  FormInstance,
   ProColumns,
+  ProFormInstance,
 } from '@ant-design/pro-components';
 import { message } from 'antd';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -27,7 +27,7 @@ import OffshelfModal from './components/OffshelfModal';
 const PublishedManage: React.FC = () => {
   const { hasPermission } = useModel('menuModel');
   const actionRef = useRef<ActionType>();
-  const formRef = useRef<FormInstance>();
+  const formRef = useRef<ProFormInstance>();
   const location = useLocation();
   const [openOffshelfModal, setOpenOffshelfModal] = useState(false);
   const [offshelfId, setOffshelfId] = useState<number>();

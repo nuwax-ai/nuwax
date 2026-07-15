@@ -66,7 +66,7 @@ export const EllipsisTooltip: React.FC<EllipsisTooltipProps> = ({
       placement={placement}
       title={isOverflowed ? displayText : null}
       tooltipStyles={{
-        body: {
+        container: {
           maxWidth,
           maxHeight,
           overflowY: 'auto',

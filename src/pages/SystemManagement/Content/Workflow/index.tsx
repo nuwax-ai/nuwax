@@ -14,8 +14,8 @@ import { SystemWorkflowInfo } from '@/types/interfaces/systemManage';
 import { buildWorkflowRoute } from '@/utils/router';
 import {
   ActionType,
-  FormInstance,
   ProColumns,
+  ProFormInstance,
 } from '@ant-design/pro-components';
 import { message } from 'antd';
 import { useCallback, useEffect, useRef } from 'react';
@@ -24,7 +24,7 @@ import { useLocation, useModel } from 'umi';
 const Workflow: React.FC = () => {
   const { hasPermission } = useModel('menuModel');
   const actionRef = useRef<ActionType>();
-  const formRef = useRef<FormInstance>();
+  const formRef = useRef<ProFormInstance>();
   const location = useLocation();
 
   const handleReset = useCallback(() => {

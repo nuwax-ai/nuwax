@@ -277,7 +277,7 @@ const ParamsSetting: React.FC<ParamsSettingProps> = ({
           <Popover
             content={dict('PC.Components.ParamsSetting.enableTooltip')}
             styles={{
-              body: { width: '300px' },
+              container: { width: '300px' },
             }}
           >
             <ExclamationCircleOutlined className="ml-12" />

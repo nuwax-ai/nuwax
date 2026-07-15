@@ -567,7 +567,7 @@ const CreateModel: React.FC<CreateModelProps> = ({
       maskClosable={false}
       keyboard={false}
       classNames={{
-        content: cx(styles.container),
+        root: cx(styles.container),
         body: cx(styles.body),
       }}
       destroyOnHidden
