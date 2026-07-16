@@ -165,6 +165,7 @@ const McpAskQuestionCard: React.FC<McpAskQuestionCardProps> = ({
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (disabled) return;
+    if (e.nativeEvent.isComposing) return;
     if (e.key === 'Enter' && !e.shiftKey && !e.metaKey && !e.ctrlKey) {
       if (
         e.target instanceof HTMLElement &&
