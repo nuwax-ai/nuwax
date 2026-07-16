@@ -335,7 +335,7 @@ const GlobalModelManage: React.FC = () => {
     },
     {
       title: dict('PC.Pages.GlobalModelManage.columnUpdateTime'),
-      dataIndex: 'created',
+      dataIndex: 'modified',
       width: 200,
       hideInSearch: true,
       valueType: 'dateTime',

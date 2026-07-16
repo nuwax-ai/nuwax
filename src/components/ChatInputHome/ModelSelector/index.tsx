@@ -237,7 +237,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
       ];
     }
 
-    return modelList.map((model) => {
+    const renderMenuItem = (model: ModelOptionDto) => {
       const isSelected = model.id === selectedModelId;
       const isSpaceModel = !isExternalList && model.spaceId !== -1;
       return {
@@ -277,11 +277,51 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
         ),
         onClick: () => handleSelect(model),
       };
+    };
+
+    const tenantModels: ModelOptionDto[] = [];
+    const spaceModels: ModelOptionDto[] = [];
+
+    modelList.forEach((model) => {
+      if (model.scope === 'Tenant') {
+        tenantModels.push(model);
+      } else if (model.scope === 'Space') {
+        spaceModels.push(model);
+      } else {
+        if (model.spaceId !== -1) {
+          spaceModels.push(model);
+        } else {
+          tenantModels.push(model);
+        }
+      }
     });
+
+    const items: MenuProps['items'] = [];
+
+    if (tenantModels.length > 0) {
+      items.push({
+        type: 'group',
+        label: dict('PC.Components.ModelSelector.systemModel'),
+        key: 'tenant-group',
+        children: tenantModels.map(renderMenuItem),
+      });
+    }
+
+    if (spaceModels.length > 0) {
+      items.push({
+        type: 'group',
+        label: dict('PC.Components.ModelSelector.personalSpace'),
+        key: 'space-group',
+        children: spaceModels.map(renderMenuItem),
+      });
+    }
+
+    return items.length > 0 ? items : modelList.map(renderMenuItem);
   }, [
     modelList,
     initialized,
     selectedModelId,
+    isExternalList,
     handleSelect,
     handleEditModel,
     handleDeleteModel,
