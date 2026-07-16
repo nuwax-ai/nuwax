@@ -5874,4 +5874,7 @@ export const JA_JP: SystemLangMap = {
   'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.settingRecallResults': '召回結果を設定',
   'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.parseHistoryResultsFailed': '履歴レコード結果の解析に失敗',
   'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.queryClickEventTriggered': 'クエリクリックイベントが発生',
+  'PC.Pages.SpaceKnowledge.QaTableList.allDocs': 'すべてのドキュメント',
+  'PC.Pages.SpaceKnowledge.QaTableList.docPrefix': 'ドキュメント{0}',
+  'PC.Pages.SpaceKnowledge.QaTableList.manualAddOrBatchImport': '手動追加または一括インポート',
 };

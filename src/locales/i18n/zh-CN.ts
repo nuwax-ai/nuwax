@@ -3188,6 +3188,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.MorePage.MySubscriptions.renewSuccess": "续订成功",
   "PC.Pages.MorePage.MySubscriptions.standardSupport": "标准技术支持",
   "PC.Pages.MorePage.MySubscriptions.statusActive": "使用中",
+  "PC.Pages.MorePage.MySubscriptions.statusExpired": "已过期",
   "PC.Pages.MorePage.MySubscriptions.statusHot": "热门",
   "PC.Pages.MorePage.MySubscriptions.subAmount": "订阅金额",
   "PC.Pages.MorePage.MySubscriptions.subscribeNow": "订阅",
@@ -5906,4 +5907,7 @@ export const ZH_CN: SystemLangMap = {
   'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.settingRecallResults': '设置召回结果',
   'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.parseHistoryResultsFailed': '解析历史记录结果失败',
   'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.queryClickEventTriggered': 'Query点击事件触发',
+  'PC.Pages.SpaceKnowledge.QaTableList.allDocs': '全部文档',
+  'PC.Pages.SpaceKnowledge.QaTableList.docPrefix': '文档{0}',
+  'PC.Pages.SpaceKnowledge.QaTableList.manualAddOrBatchImport': '手动添加或批量导入',
 };
