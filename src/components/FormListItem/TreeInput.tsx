@@ -7,7 +7,7 @@ import {
   PlusOutlined,
 } from '@ant-design/icons';
 import { Button, Popover, Tag, Tree } from 'antd';
-import _ from 'lodash';
+import { isEqual } from 'lodash';
 import React, { useEffect, useState } from 'react';
 import TooltipIcon from '../custom/TooltipIcon';
 import InputOrReferenceFormTree from './InputOrReferenceFormTree';
@@ -27,13 +27,13 @@ const TreeInput: React.FC<TreeInputProps> = ({
   const { setIsModified, referenceList } = useWorkflowModel();
 
   useEffect(() => {
-    if (params && !_.isEqual(params, treeData)) {
+    if (params && !isEqual(params, treeData)) {
       setTreeData(params);
     }
   }, [params]);
 
   const updateTreeData = (newData: InputAndOutConfig[]) => {
-    if (_.isEqual(newData, treeData)) return;
+    if (isEqual(newData, treeData)) return;
     setTreeData(newData);
     form.setFieldValue('inputArgs', newData);
     setIsModified(true);

@@ -390,6 +390,13 @@ export default defineConfig({
         priority: 110,
         reuseExistingChunk: true,
       },
+      dndVendor: {
+        test: /[\\/]node_modules[\\/](@dnd-kit|react-beautiful-dnd)[\\/]/,
+        name: 'dnd-vendor',
+        chunks: 'all',
+        priority: 110,
+        reuseExistingChunk: true,
+      },
     };
 
     config.optimization.splitChunks({
