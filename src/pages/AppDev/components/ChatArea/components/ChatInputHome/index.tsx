@@ -66,12 +66,42 @@ const cx = classNames.bind(styles);
  * 获取模型选项工具函数
  */
 const getModeOptions = (models?: ModelConfig[]) => {
-  return (
-    models?.map((model: ModelConfig) => ({
-      label: model.name,
-      value: model.id,
-    })) || []
-  );
+  if (!models) return [];
+
+  const tenantModels: ModelConfig[] = [];
+  const spaceModels: ModelConfig[] = [];
+
+  models.forEach((model: ModelConfig) => {
+    if (model.scope === 'Tenant') {
+      tenantModels.push(model);
+    } else {
+      spaceModels.push(model);
+    }
+  });
+
+  const options: any[] = [];
+
+  if (tenantModels.length > 0) {
+    options.push({
+      label: t('PC.Pages.AppDevChatInput.systemModel'),
+      options: tenantModels.map((model: ModelConfig) => ({
+        label: model.name,
+        value: model.id,
+      })),
+    });
+  }
+
+  if (spaceModels.length > 0) {
+    options.push({
+      label: t('PC.Pages.AppDevChatInput.personalSpace'),
+      options: spaceModels.map((model: ModelConfig) => ({
+        label: model.name,
+        value: model.id,
+      })),
+    });
+  }
+
+  return options;
 };
 
 // 聊天输入框组件
