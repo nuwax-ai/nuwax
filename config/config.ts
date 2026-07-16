@@ -205,6 +205,8 @@ export default defineConfig({
   jsMinifierOptions: {
     minify: true,
     target: ['es2020'],
+    // 勿在此处设置 format: 'iife'，会破坏 webpack 分包后 ES class 继承链（xterm 报 Super constructor null）
+    // esbuildMinifyIIFE（下方）是 umi 层面的 IIFE 包装，与 esbuild 的 format 输出无关，可安全使用
   },
   esbuildMinifyIIFE: true,
   chainWebpack(config: any) {
