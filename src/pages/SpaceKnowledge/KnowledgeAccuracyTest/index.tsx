@@ -40,7 +40,8 @@ const KnowledgeAccuracyTest: React.FC<KnowledgeAccuracyTestProps> = ({
   const [recallResults, setRecallResults] = useState<RecallResultItem[]>([]);
 
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
-  let isShowGRAPH = tenantConfigInfo.commercialEdition;
+  //let isShowGRAPH = tenantConfigInfo.commercialEdition;
+  let isShowGRAPH = true;
 
   // 搜索参数
   const [topK, setTopK] = useState(10);

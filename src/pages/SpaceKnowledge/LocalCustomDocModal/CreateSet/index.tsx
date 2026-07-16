@@ -36,8 +36,8 @@ const CreateSet: React.FC<CreateSetProps> = ({
   };
 
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
-  let isShowGRAPH = tenantConfigInfo.commercialEdition;
-  isShowGRAPH = true
+  // let isShowGRAPH = tenantConfigInfo.commercialEdition;
+  let isShowGRAPH = true;
   //console.log("2===autoSegmentConfigFlag:" + autoSegmentConfigFlag+",isAiSegment:" + isAiSegment);
 
   return (

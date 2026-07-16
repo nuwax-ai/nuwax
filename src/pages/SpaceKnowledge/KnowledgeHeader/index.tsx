@@ -34,8 +34,8 @@ const KnowledgeHeader: React.FC<KnowledgeHeaderProps> = ({
   const { spaceId } = useParams();
 
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
-  let isShowGRAPH = tenantConfigInfo.commercialEdition;
-  isShowGRAPH = true;
+  //let isShowGRAPH = tenantConfigInfo.commercialEdition;
+  let isShowGRAPH = true;
 
   const fileSize = knowledgeInfo?.fileSize
     ? formatBytes(knowledgeInfo.fileSize)
