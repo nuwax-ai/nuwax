@@ -12,7 +12,7 @@ import {
 import { dict } from '@/services/i18nRuntime';
 import { apiGetMySubscription } from '@/services/subscriptionService';
 import { BizTypeEnum } from '@/types/interfaces/subscription';
-import { message } from 'antd';
+import { message } from '@/utils/antdStatic';
 import { useCallback, useState } from 'react';
 import useRequestPromiseBridge from './useRequestPromiseBridge';
 

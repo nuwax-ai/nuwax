@@ -18,8 +18,8 @@ import {
   type SkillInfo,
 } from '@/types/interfaces/library';
 import { modalConfirm } from '@/utils/ant-custom';
+import { message } from '@/utils/antdStatic';
 import { exportFileViaBrowserDownload } from '@/utils/exportImportFile';
-import { message } from 'antd';
 import { useEffect, useRef, useState } from 'react';
 import { history, useParams, useSearchParams } from 'umi';
 import ConvertToConversationModal from './ConvertToConversationModal';

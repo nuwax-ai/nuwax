@@ -11,8 +11,9 @@ import {
 } from '@/types/enums/agent';
 import type { AgentComponentInfo } from '@/types/interfaces/agent';
 import type { DataResource } from '@/types/interfaces/dataResource';
+import { message } from '@/utils/antdStatic';
 import { DeleteOutlined, LoadingOutlined } from '@ant-design/icons';
-import { message, Modal } from 'antd';
+import { Modal } from 'antd';
 import React, { useState } from 'react';
 import styles from './index.less';
 

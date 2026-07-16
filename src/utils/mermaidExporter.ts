@@ -3,7 +3,7 @@
  * 提供统一的SVG和PNG导出功能
  */
 import { dict } from '@/services/i18nRuntime';
-import { message } from 'antd';
+import { message } from '@/utils/antdStatic';
 import mermaid from 'mermaid';
 
 export interface ExportOptions {

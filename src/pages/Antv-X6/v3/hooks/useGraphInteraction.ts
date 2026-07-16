@@ -9,8 +9,8 @@ import {
   ChildNode,
   GraphContainerRef,
 } from '@/types/interfaces/graph';
+import { message } from '@/utils/antdStatic';
 import { cloneDeep } from '@/utils/common';
-import { message } from 'antd';
 import { MutableRefObject, useCallback } from 'react';
 import { useModel } from 'umi';
 import { hasGraphEdgeBetween } from '../agentFlow/edgeSync';

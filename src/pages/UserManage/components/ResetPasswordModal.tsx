@@ -3,9 +3,10 @@ import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
 import { apiUpdateSystemUser } from '@/services/systemManage';
 import type { SystemUserListInfo } from '@/types/interfaces/systemManage';
+import { message } from '@/utils/antdStatic';
 import { validatePassword } from '@/utils/common';
 import { ProFormText } from '@ant-design/pro-components';
-import { Form, message } from 'antd';
+import { Form } from 'antd';
 import React, { useEffect } from 'react';
 
 interface ResetPasswordModalProps {

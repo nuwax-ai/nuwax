@@ -2,10 +2,11 @@ import ModelPriceTierList from '@/components/business-component/ModelPriceTierLi
 import { TableActions, XProTable } from '@/components/ProComponents';
 import { dict } from '@/services/i18nRuntime';
 import { modalConfirm } from '@/utils/ant-custom';
+import { message } from '@/utils/antdStatic';
 import { getPricingTypeLabel } from '@/utils/resourcePricing';
 import { PlusOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
-import { Button, Form, Switch, message } from 'antd';
+import { Button, Form, Switch } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
 import { useRequest } from 'umi';
 import {

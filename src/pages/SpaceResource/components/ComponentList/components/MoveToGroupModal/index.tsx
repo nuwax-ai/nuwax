@@ -5,7 +5,8 @@ import {
   apiResourceGroupList,
 } from '@/services/library';
 import type { ComponentInfo } from '@/types/interfaces/library';
-import { message, Modal, Select } from 'antd';
+import { message } from '@/utils/antdStatic';
+import { Modal, Select } from 'antd';
 import React, { useEffect, useState } from 'react';
 
 interface MoveToGroupModalProps {

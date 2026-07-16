@@ -2,6 +2,7 @@ import { XModalForm } from '@/components/ProComponents';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { apiAgentConversationShare } from '@/services/agentConfig';
 import { AgentConversationShareParams } from '@/types/interfaces/agent';
+import { message } from '@/utils/antdStatic';
 import { copyTextToClipboard } from '@/utils/clipboard';
 import type { ProFormInstance } from '@ant-design/pro-components';
 import {
@@ -9,7 +10,7 @@ import {
   ProFormSelect,
   ProFormSwitch,
 } from '@ant-design/pro-components';
-import { Alert, message } from 'antd';
+import { Alert } from 'antd';
 import React, { useRef } from 'react';
 
 import { dict } from '@/services/i18nRuntime';

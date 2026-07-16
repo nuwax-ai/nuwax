@@ -24,10 +24,11 @@ import type {
   PluginAddParams,
   PluginHttpUpdateParams,
 } from '@/types/interfaces/plugin';
+import { message } from '@/utils/antdStatic';
 import { customizeRequiredMark } from '@/utils/form';
 import { resolveCreateIcon } from '@/utils/resolveCreateIcon';
 import type { FormProps, RadioChangeEvent } from 'antd';
-import { Form, Input, message, Radio, Select } from 'antd';
+import { Form, Input, Radio, Select } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { history, useRequest } from 'umi';

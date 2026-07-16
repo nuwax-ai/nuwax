@@ -9,8 +9,8 @@
 
 import { t } from '@/services/i18nRuntime';
 import type { GraphContainerRef } from '@/types/interfaces/graph';
+import { message } from '@/utils/antdStatic';
 import { Graph } from '@antv/x6';
-import { message } from 'antd';
 import { useEffect, useState } from 'react';
 import { setHistoryProcessing } from '../component/graph';
 import { workflowProxy } from '../services/workflowProxyV3';

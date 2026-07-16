@@ -11,7 +11,7 @@ import {
 } from '@/types/enums/agent';
 import { AgentTypeEnum } from '@/types/enums/space';
 import { AgentDetailDto, ModelOptionDto } from '@/types/interfaces/agent';
-import { message } from 'antd';
+import { message } from '@/utils/antdStatic';
 import classNames from 'classnames';
 import React, {
   useCallback,

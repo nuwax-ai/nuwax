@@ -1,7 +1,8 @@
 import CustomFormModal from '@/components/CustomFormModal';
 import { dict } from '@/services/i18nRuntime';
+import { message } from '@/utils/antdStatic';
 import { customizeRequiredMark } from '@/utils/form';
-import { Form, Input, InputNumber, Switch, message } from 'antd';
+import { Form, Input, InputNumber, Switch } from 'antd';
 import React, { useEffect, useState } from 'react';
 import {
   apiCreateCreditPackage,

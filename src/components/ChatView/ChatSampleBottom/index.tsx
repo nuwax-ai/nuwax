@@ -1,8 +1,8 @@
 import CopyButton from '@/components/base/CopyButton';
 import { dict } from '@/services/i18nRuntime';
 import { ChatSampleBottomProps } from '@/types/interfaces/conversationInfo';
+import { message } from '@/utils/antdStatic';
 import { formatTimeAgo } from '@/utils/common';
-import { message } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
 import styles from './index.less';

@@ -5,9 +5,10 @@ import { dict } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { SquarePublishedItemInfo } from '@/types/interfaces/square';
 import { getTime } from '@/utils';
+import { message } from '@/utils/antdStatic';
 import { getImg } from '@/utils/workflow';
 import { SearchOutlined } from '@ant-design/icons';
-import { Button, Divider, Empty, Input, message, Modal, Segmented } from 'antd';
+import { Button, Divider, Empty, Input, Modal, Segmented } from 'antd';
 import classNames from 'classnames';
 import React, {
   useCallback,

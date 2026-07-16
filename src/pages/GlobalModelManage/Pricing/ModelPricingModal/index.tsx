@@ -2,10 +2,11 @@ import CustomFormModal from '@/components/CustomFormModal';
 import type { ResourcePricingConfigInfo } from '@/pages/SpaceResource/types/resource';
 import { dict } from '@/services/i18nRuntime';
 import { apiSystemModelList } from '@/services/systemManage';
+import { message } from '@/utils/antdStatic';
 import { customizeRequiredMark } from '@/utils/form';
 import { createPriceInputNumberProps } from '@/utils/priceInput';
 import type { FormInstance } from 'antd';
-import { Button, Form, Input, InputNumber, Select, message } from 'antd';
+import { Button, Form, Input, InputNumber, Select } from 'antd';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   apiSystemCreateModelPricing,

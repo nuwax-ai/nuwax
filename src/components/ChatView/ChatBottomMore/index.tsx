@@ -1,7 +1,7 @@
 import CopyButton from '@/components/base/CopyButton';
 import { dict } from '@/services/i18nRuntime';
 import type { ChatBottomMoreProps } from '@/types/interfaces/common';
-import { message } from 'antd';
+import { message } from '@/utils/antdStatic';
 import classNames from 'classnames';
 import React from 'react';
 import styles from './index.less';

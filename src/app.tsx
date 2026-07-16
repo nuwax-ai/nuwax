@@ -1,5 +1,5 @@
 import { RequestConfig } from '@@/plugin-request/request';
-import { Modal, theme as antdTheme } from 'antd';
+import { App, Modal, theme as antdTheme } from 'antd';
 import React, { useEffect, useRef } from 'react';
 import { history, useAntdConfigSetter } from 'umi';
 import { SUCCESS_CODE } from './constants/codes.constants';
@@ -18,6 +18,7 @@ import { apiQueryMenus } from './services/menuService';
 import { unifiedThemeService } from './services/unifiedThemeService';
 import { UserService } from './services/userService';
 import type { MenuItemDto } from './types/interfaces/menu';
+import { setAntdStaticInstances } from './utils/antdStatic';
 import { getAntdLocale } from './utils/i18nAdapters';
 /**
  * 全局初始状态类型
@@ -54,6 +55,14 @@ export async function getInitialState(): Promise<InitialStateType> {
   }
   return { menuData: [] };
 }
+
+const AntdStaticBridge: React.FC = () => {
+  const { message, notification, modal } = App.useApp();
+  useEffect(() => {
+    setAntdStaticInstances({ message, notification, modal });
+  }, [message, notification, modal]);
+  return null;
+};
 
 /**
  * 全局轮询组件
@@ -281,6 +290,7 @@ const AppContainer: React.FC<{ children: React.ReactElement }> = ({
 
   return (
     <>
+      <AntdStaticBridge />
       {/* 只有用户已登录时才启动事件轮询 */}
       <GlobalEventPolling />
       {children}

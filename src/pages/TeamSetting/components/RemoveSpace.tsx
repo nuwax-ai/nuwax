@@ -2,9 +2,10 @@ import CustomFormModal from '@/components/CustomFormModal';
 import { dict } from '@/services/i18nRuntime';
 import { apiRemoveSpace } from '@/services/teamSetting';
 import styles from '@/styles/teamSetting.less';
+import { message } from '@/utils/antdStatic';
 import { customizeRequiredMark } from '@/utils/form';
 import { useRequest } from 'ahooks';
-import { Form, FormProps, Input, message } from 'antd';
+import { Form, FormProps, Input } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
 

@@ -2,12 +2,13 @@ import XModalForm from '@/components/ProComponents/XModalForm';
 import { apiApiKeyCreate, apiApiKeyUpdate } from '@/services/account';
 import { t } from '@/services/i18nRuntime';
 import type { ApiKeyInfo } from '@/types/interfaces/account';
+import { message } from '@/utils/antdStatic';
 import {
   ProFormDatePicker,
   ProFormRadio,
   ProFormText,
 } from '@ant-design/pro-components';
-import { Form, message } from 'antd';
+import { Form } from 'antd';
 import dayjs from 'dayjs';
 import React, { useEffect } from 'react';
 

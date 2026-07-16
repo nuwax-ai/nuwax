@@ -71,6 +71,7 @@ import {
   TestRunParams,
 } from '@/types/interfaces/node';
 import { ErrorParams } from '@/types/interfaces/workflow';
+import { message } from '@/utils/antdStatic';
 import { cloneDeep, noop } from '@/utils/common';
 import { createSSEConnection } from '@/utils/fetchEventSource';
 import { calculateNodePosition, getCoordinates } from '@/utils/graph';
@@ -97,7 +98,7 @@ import {
 } from '@/utils/workflow';
 import { LoadingOutlined } from '@ant-design/icons';
 import { Graph } from '@antv/x6';
-import { Form, message, Spin } from 'antd';
+import { Form, Spin } from 'antd';
 import React, {
   useCallback,
   useEffect,

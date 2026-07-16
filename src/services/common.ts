@@ -10,9 +10,10 @@ import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { I18N_STORAGE_KEYS } from '@/constants/i18n.constants';
 import { dict } from '@/services/i18nRuntime';
 import type { RequestResponse } from '@/types/interfaces/request';
+import { message } from '@/utils/antdStatic';
 import { redirectToLogin } from '@/utils/router';
 import { RequestConfig } from '@@/plugin-request/request';
-import { message, Modal } from 'antd';
+import { Modal } from 'antd';
 import React from 'react';
 import { clearLoginStatusCache } from './userService';
 

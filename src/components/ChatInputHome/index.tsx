@@ -18,6 +18,7 @@ import { DefaultSelectedEnum, TaskStatus } from '@/types/enums/agent';
 import { UploadFileStatus } from '@/types/enums/common';
 import type { ChatInputProps, UploadFileInfo } from '@/types/interfaces/common';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
+import { message } from '@/utils/antdStatic';
 import eventBus, { EVENT_NAMES } from '@/utils/eventBus';
 import { handleUploadFileList } from '@/utils/upload';
 import {
@@ -26,7 +27,7 @@ import {
   DesktopOutlined,
   LoadingOutlined,
 } from '@ant-design/icons';
-import { Dropdown, message, Tooltip, Upload, UploadProps } from 'antd';
+import { Dropdown, Tooltip, Upload, UploadProps } from 'antd';
 import classNames from 'classnames';
 import React, {
   forwardRef,

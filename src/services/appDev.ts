@@ -23,8 +23,8 @@ import type {
 } from '@/types/interfaces/appDev';
 import { UpdateFileInfo } from '@/types/interfaces/fileTree';
 import type { RequestResponse } from '@/types/interfaces/request';
+import { message } from '@/utils/antdStatic';
 import { exportFileViaBrowserDownload } from '@/utils/exportImportFile';
-import { message } from 'antd';
 import { request } from 'umi';
 
 /**

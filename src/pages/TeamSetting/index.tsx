@@ -10,8 +10,9 @@ import {
   UpdateSpaceTeamParams,
 } from '@/types/interfaces/teamSetting';
 import { SpaceInfo } from '@/types/interfaces/workspace';
+import { message } from '@/utils/antdStatic';
 import { FormOutlined } from '@ant-design/icons';
-import { ConfigProvider, message, Tabs, TabsProps } from 'antd';
+import { ConfigProvider, Tabs, TabsProps } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { history, useModel, useParams, useRequest } from 'umi';

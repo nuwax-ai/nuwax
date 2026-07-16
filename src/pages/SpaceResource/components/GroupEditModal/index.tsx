@@ -8,7 +8,8 @@ import {
 } from '@/services/library';
 import { ComponentTypeEnum } from '@/types/enums/space';
 import type { ResourceGroupInfo } from '@/types/interfaces/library';
-import { Form, Input, message, Modal } from 'antd';
+import { message } from '@/utils/antdStatic';
+import { Form, Input, Modal } from 'antd';
 import React, { useEffect, useState } from 'react';
 
 interface GroupEditModalProps {

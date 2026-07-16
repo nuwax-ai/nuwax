@@ -10,10 +10,11 @@ import {
 import type { AgentAddComponentStatusInfo } from '@/types/interfaces/agentConfig';
 import type { CustomPopoverItem } from '@/types/interfaces/common';
 import { modalConfirm } from '@/utils/ant-custom';
+import { message } from '@/utils/antdStatic';
 import { getToolPricingPeriodLabel } from '@/utils/resourcePricing';
 import { PlusOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
-import { Button, Switch, message } from 'antd';
+import { Button, Switch } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
 import { useRequest } from 'umi';

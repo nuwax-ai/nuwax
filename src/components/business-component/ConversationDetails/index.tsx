@@ -47,10 +47,11 @@ import type {
   MessageInfo,
   RoleInfo,
 } from '@/types/interfaces/conversationInfo';
+import { message } from '@/utils/antdStatic';
 import { arraysContainSameItems, parsePageAppProjectId } from '@/utils/common';
 import { jumpToPageDevelop } from '@/utils/router';
 import { LoadingOutlined } from '@ant-design/icons';
-import { Form, message, Typography } from 'antd';
+import { Form, Typography } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import omit from 'lodash/omit';

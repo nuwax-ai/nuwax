@@ -1,8 +1,9 @@
 /**
  * 编辑弹窗组件
  */
+import { message } from '@/utils/antdStatic';
 import { DeleteOutlined } from '@ant-design/icons';
-import { Button, Input, Modal, Space, message } from 'antd';
+import { Button, Input, Modal, Space } from 'antd';
 import React, { useEffect, useState } from 'react';
 import styles from './EditModal.less';
 import type { EditModalData } from './types/graph';

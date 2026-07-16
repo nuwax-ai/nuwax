@@ -14,13 +14,14 @@ import type {
   ExecuteResultInfo,
 } from '@/types/interfaces/conversationInfo';
 import { LogDetailsProps } from '@/types/interfaces/space';
+import { message } from '@/utils/antdStatic';
 import {
   parseConversationFinalResultJson,
   safeElapsedMsForDict,
   stringifyExecutePayloadForPre,
 } from '@/utils/conversationFinalResult';
 import { CopyOutlined } from '@ant-design/icons';
-import { Empty, message } from 'antd';
+import { Empty } from 'antd';
 import classNames from 'classnames';
 import React, { memo, useEffect, useState } from 'react';
 import { CopyToClipboard } from 'react-copy-to-clipboard';

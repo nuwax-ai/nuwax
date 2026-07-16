@@ -49,11 +49,12 @@ import type {
   TempConversationChatParams,
 } from '@/types/interfaces/conversationInfo';
 import { RequestResponse } from '@/types/interfaces/request';
+import { message } from '@/utils/antdStatic';
 import { addBaseTarget, arraysContainSameItems } from '@/utils/common';
 import { createSSEConnection } from '@/utils/fetchEventSource';
 import { LoadingOutlined } from '@ant-design/icons';
 import { useRequest } from 'ahooks';
-import { Form, message } from 'antd';
+import { Form } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, {

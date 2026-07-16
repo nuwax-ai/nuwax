@@ -15,12 +15,13 @@ import {
   type FileStreamAttachment,
   type UnifiedSessionMessage,
 } from '@/types/interfaces/appDev';
+import { message } from '@/utils/antdStatic';
 import { debounce } from '@/utils/appDevUtils';
 import {
   clearSSESharedTimeout,
   createSSEConnection,
 } from '@/utils/fetchEventSource';
-import { message, Modal } from 'antd';
+import { Modal } from 'antd';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useModel } from 'umi';
 

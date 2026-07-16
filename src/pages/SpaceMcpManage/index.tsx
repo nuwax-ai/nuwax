@@ -23,12 +23,13 @@ import {
 import { CreateListEnum } from '@/types/enums/space';
 import { CustomPopoverItem } from '@/types/interfaces/common';
 import { McpDetailInfo } from '@/types/interfaces/mcp';
+import { message } from '@/utils/antdStatic';
 import {
   ExclamationCircleFilled,
   PlusOutlined,
   SearchOutlined,
 } from '@ant-design/icons';
-import { Button, Empty, Input, message, Modal, Segmented, Space } from 'antd';
+import { Button, Empty, Input, Modal, Segmented, Space } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { history, useModel, useParams, useRequest, useSearchParams } from 'umi';

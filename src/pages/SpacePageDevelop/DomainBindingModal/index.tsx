@@ -9,6 +9,7 @@ import type {
   DomainBindingModalProps,
   DomainInfo,
 } from '@/types/interfaces/pageDev';
+import { message } from '@/utils/antdStatic';
 import {
   CloseOutlined,
   EditOutlined,
@@ -16,7 +17,7 @@ import {
   GlobalOutlined,
   PlusOutlined,
 } from '@ant-design/icons';
-import { Button, Input, message, Modal, Spin } from 'antd';
+import { Button, Input, Modal, Spin } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useRequest } from 'umi';

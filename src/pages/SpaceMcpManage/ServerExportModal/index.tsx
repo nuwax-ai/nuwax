@@ -7,8 +7,9 @@ import {
   apiMcpServerConfigRefresh,
 } from '@/services/mcp';
 import { ServerExportModalProps } from '@/types/interfaces/mcp';
+import { message } from '@/utils/antdStatic';
 import { ExclamationCircleFilled } from '@ant-design/icons';
-import { Button, message, Modal } from 'antd';
+import { Button, Modal } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { CopyToClipboard } from 'react-copy-to-clipboard';

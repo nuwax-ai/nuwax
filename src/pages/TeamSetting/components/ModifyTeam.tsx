@@ -10,9 +10,10 @@ import type {
   TeamDetailInfo,
   UpdateSpaceTeamParams,
 } from '@/types/interfaces/teamSetting';
+import { message } from '@/utils/antdStatic';
 import { customizeRequiredMark } from '@/utils/form';
 import { useRequest } from 'ahooks';
-import { Form, FormProps, Input, message } from 'antd';
+import { Form, FormProps, Input } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useModel } from 'umi';

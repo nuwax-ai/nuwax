@@ -2,8 +2,9 @@ import CustomFormModal from '@/components/CustomFormModal';
 import { SKILL_USAGE_SCENARIO_LIST } from '@/constants/library.constants';
 import { dict } from '@/services/i18nRuntime';
 import { AgentTypeEnum } from '@/types/enums/space';
+import { message } from '@/utils/antdStatic';
 import { UploadOutlined } from '@ant-design/icons';
-import { Form, FormProps, message, Select, Typography, Upload } from 'antd';
+import { Form, FormProps, Select, Typography, Upload } from 'antd';
 import { useCallback, useEffect, useState } from 'react';
 
 interface ImportSkillProjectModalProps {

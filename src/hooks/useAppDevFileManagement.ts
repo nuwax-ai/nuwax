@@ -17,6 +17,7 @@ import type {
   FileNode,
   FileTreeState,
 } from '@/types/interfaces/appDev';
+import { message } from '@/utils/antdStatic';
 import {
   findFileNode,
   isFileModified as isContentModified,
@@ -24,7 +25,6 @@ import {
   transformFlatListToTree,
   treeToFlatList,
 } from '@/utils/appDevUtils';
-import { message } from 'antd';
 import debounce from 'lodash/debounce';
 import { useCallback, useEffect, useRef, useState } from 'react';
 

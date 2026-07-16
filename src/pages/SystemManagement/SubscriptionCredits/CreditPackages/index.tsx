@@ -4,6 +4,7 @@ import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
 import { modalConfirm } from '@/utils/ant-custom';
+import { message } from '@/utils/antdStatic';
 import { PlusOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import type { DragEndEvent } from '@dnd-kit/core';
@@ -14,7 +15,7 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { Button, message, Switch } from 'antd';
+import { Button, Switch } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'umi';
 import {

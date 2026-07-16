@@ -1,6 +1,6 @@
 import { dict } from '@/services/i18nRuntime';
+import { message } from '@/utils/antdStatic';
 import { copyTextToClipboard } from '@/utils/clipboard';
-import { message } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import SvgIcon from '../SvgIcon';

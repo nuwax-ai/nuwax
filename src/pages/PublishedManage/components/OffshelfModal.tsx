@@ -1,9 +1,10 @@
 import CustomFormModal from '@/components/CustomFormModal';
 import { dict } from '@/services/i18nRuntime';
 import { apiOffShelf } from '@/services/publishManage';
+import { message } from '@/utils/antdStatic';
 import { customizeRequiredMark } from '@/utils/form';
 import { useRequest } from 'ahooks';
-import { Form, Input, message } from 'antd';
+import { Form, Input } from 'antd';
 import { useState } from 'react';
 
 interface OffshelfModalProps {

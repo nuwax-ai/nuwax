@@ -1,6 +1,7 @@
 import Loading from '@/components/custom/Loading';
 import { t } from '@/services/i18nRuntime';
-import { Button, Modal, message } from 'antd';
+import { message } from '@/utils/antdStatic';
+import { Button, Modal } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useRequest } from 'umi';

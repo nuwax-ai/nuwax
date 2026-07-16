@@ -5,9 +5,10 @@ import {
   apiGetRevenueStats,
   apiGetUserWithdrawConfig,
 } from '@/services/subscriptionService';
+import { message } from '@/utils/antdStatic';
 import { CalendarOutlined, DownloadOutlined } from '@ant-design/icons';
 import { useRequest } from 'ahooks';
-import { Button, message, Modal, Statistic } from 'antd';
+import { Button, Modal, Statistic } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo, useState } from 'react';
 import { useModel } from 'umi';

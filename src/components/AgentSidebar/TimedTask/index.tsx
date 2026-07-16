@@ -8,7 +8,8 @@ import {
   TimedConversationTaskParams,
   TimedTaskProps,
 } from '@/types/interfaces/agentTask';
-import { Button, message, Tabs, TabsProps, Typography } from 'antd';
+import { message } from '@/utils/antdStatic';
+import { Button, Tabs, TabsProps, Typography } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useModel, useRequest } from 'umi';

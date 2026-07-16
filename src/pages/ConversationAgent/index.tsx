@@ -60,6 +60,7 @@ import { RequestResponse } from '@/types/interfaces/request';
 import { StaticFileInfo } from '@/types/interfaces/vncDesktop';
 import { checkFileSizeExceedLimit } from '@/utils';
 import { modalConfirm } from '@/utils/ant-custom';
+import { message } from '@/utils/antdStatic';
 import { addBaseTarget } from '@/utils/common';
 import { updateFilesListContent, updateFilesListName } from '@/utils/fileTree';
 import { createLogger } from '@/utils/logger';
@@ -68,7 +69,6 @@ import {
   TTYD_TERMINAL_WS_SUBPROTOCOLS,
 } from '@/utils/terminalWsUrl';
 import { useRequest } from 'ahooks';
-import { message } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import debounce from 'lodash/debounce';

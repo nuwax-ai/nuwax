@@ -13,8 +13,9 @@ import {
   PublishOffShelfParams,
   VersionHistoryProps,
 } from '@/types/interfaces/publish';
+import { message } from '@/utils/antdStatic';
 import { ExclamationCircleFilled } from '@ant-design/icons';
-import { Drawer, Empty, message, Modal } from 'antd';
+import { Drawer, Empty, Modal } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';

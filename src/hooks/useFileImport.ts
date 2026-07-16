@@ -1,7 +1,7 @@
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
 import { RequestResponse } from '@/types/interfaces/request';
-import { message } from 'antd';
+import { message } from '@/utils/antdStatic';
 import { useCallback, useState } from 'react';
 
 /**

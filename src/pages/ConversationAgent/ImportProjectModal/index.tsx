@@ -1,7 +1,8 @@
 import CustomFormModal from '@/components/CustomFormModal';
 import { dict, t } from '@/services/i18nRuntime';
+import { message } from '@/utils/antdStatic';
 import { UploadOutlined } from '@ant-design/icons';
-import { Form, FormProps, message, Typography, Upload } from 'antd';
+import { Form, FormProps, Typography, Upload } from 'antd';
 import React, { useCallback, useEffect, useState } from 'react';
 
 const { Text } = Typography;

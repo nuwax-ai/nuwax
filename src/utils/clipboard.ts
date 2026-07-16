@@ -1,5 +1,5 @@
 import { dict } from '@/services/i18nRuntime';
-import { message } from 'antd';
+import { message } from '@/utils/antdStatic';
 
 type CopyCallback = (text: string, result?: boolean) => void;
 

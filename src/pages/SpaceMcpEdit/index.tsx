@@ -24,10 +24,11 @@ import {
   McpToolInfo,
   McpUpdateParams,
 } from '@/types/interfaces/mcp';
+import { message } from '@/utils/antdStatic';
 import { isValidJSON } from '@/utils/common';
 import { getActiveKeys } from '@/utils/deepNode';
 import { customizeRequiredMark } from '@/utils/form';
-import { Form, FormProps, Input, message, Radio } from 'antd';
+import { Form, FormProps, Input, Radio } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
 import { useParams, useRequest } from 'umi';

@@ -12,13 +12,14 @@ import type {
   ResourceStatSummaryDTO,
   StatGroup,
 } from '@/types/interfaces/systemManage';
+import { message } from '@/utils/antdStatic';
 import {
   formatCurrency,
   formatInteger,
   sumBigNumbersToNumber,
 } from '@/utils/numberFormat';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
-import { Button, DatePicker, message } from 'antd';
+import { Button, DatePicker } from 'antd';
 import dayjs, { Dayjs } from 'dayjs';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'umi';

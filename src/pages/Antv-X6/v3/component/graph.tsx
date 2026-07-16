@@ -13,6 +13,7 @@ import {
   StencilChildNode,
 } from '@/types/interfaces/graph';
 import { ExceptionHandleConfig } from '@/types/interfaces/node';
+import { message } from '@/utils/antdStatic';
 import { cloneDeep } from '@/utils/common';
 import {
   Cell,
@@ -26,7 +27,7 @@ import {
   Shape,
   Snapline,
 } from '@antv/x6';
-import { message, Modal } from 'antd';
+import { Modal } from 'antd';
 import {
   applyAgentFlowBranchEdgeConnect,
   ensureEdgeOnGraph,

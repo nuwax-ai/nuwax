@@ -34,6 +34,7 @@
     "setup": "max setup",
     "start": "npm run dev",
     "test": "vitest",
+    "typecheck": "tsc --noEmit",
     "verify-commit": "max verify-commit"
   },
   "lint-staged": {
@@ -71,8 +72,8 @@
     "@tiptap/starter-kit": "^2.27.1",
     "@tiptap/suggestion": "^2.27.1",
     "@types/markdown-it": "^14.1.2",
-    "@umijs/max": "^4.4.2",
-    "@umijs/utils": "^4.4.11",
+    "@umijs/max": "^4.6.75",
+    "@umijs/utils": "^4.6.75",
     "@xterm/addon-attach": "^0.11.0",
     "@xterm/addon-fit": "^0.10.0",
     "@xterm/addon-image": "^0.8.0",
@@ -83,7 +84,7 @@
     "@xterm/addon-web-links": "^0.11.0",
     "@xterm/addon-webgl": "^0.18.0",
     "@xterm/xterm": "5.5.0",
-    "ahooks": "^3.8.4",
+    "ahooks": "^3.9.7",
     "antd": "^5.4.0",
     "bignumber.js": "^11.1.1",
     "classnames": "2.0.0",

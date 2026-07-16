@@ -19,11 +19,12 @@ import type {
   UpdateWorkflowParams,
   WorkflowBaseInfo,
 } from '@/types/interfaces/library';
+import { message } from '@/utils/antdStatic';
 import { customizeRequiredMark } from '@/utils/form';
 import { resolveCreateIcon } from '@/utils/resolveCreateIcon';
 import { buildWorkflowRoute } from '@/utils/router';
 import type { FormProps } from 'antd';
-import { Button, Form, Input, message, Select } from 'antd';
+import { Button, Form, Input, Select } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { history, useRequest } from 'umi';

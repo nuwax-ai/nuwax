@@ -8,9 +8,10 @@ import {
   UserSubscriberStatusEnum,
 } from '@/pages/SystemManagement/SubscriptionCredits/types/subscription';
 import { dict } from '@/services/i18nRuntime';
+import { message } from '@/utils/antdStatic';
 import { formatDateTimeYmdHms } from '@/utils/dateUtils';
 import { formatInteger } from '@/utils/numberFormat';
-import { Table, message } from 'antd';
+import { Table } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useRequest } from 'umi';

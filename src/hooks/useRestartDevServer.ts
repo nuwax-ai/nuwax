@@ -4,7 +4,7 @@
  */
 
 import { dict } from '@/services/i18nRuntime';
-import { message } from 'antd';
+import { message } from '@/utils/antdStatic';
 import { useCallback } from 'react';
 import { useModel } from 'umi';
 

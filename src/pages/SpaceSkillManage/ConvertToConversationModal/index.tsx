@@ -7,7 +7,8 @@ import {
   apiSaveSelectedSandbox,
 } from '@/services/systemManage';
 import { DisplayRecommendFunctionTypeEnum } from '@/types/interfaces/displayRecommend';
-import { Form, Select, message } from 'antd';
+import { message } from '@/utils/antdStatic';
+import { Form, Select } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import styles from './index.less';

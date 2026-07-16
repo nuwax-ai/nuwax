@@ -22,9 +22,10 @@ import {
   RoleInfo,
   SendMessageParams,
 } from '@/types/interfaces/conversationInfo';
+import { message } from '@/utils/antdStatic';
 import { arraysContainSameItems } from '@/utils/common';
 import eventBus from '@/utils/eventBus';
-import { Form, message } from 'antd';
+import { Form } from 'antd';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
 import React, {

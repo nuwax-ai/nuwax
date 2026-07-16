@@ -15,6 +15,7 @@ import {
 } from '@/pages/SystemManagement/SubscriptionCredits/types/subscription';
 import { dict } from '@/services/i18nRuntime';
 import { modalConfirm } from '@/utils/ant-custom';
+import { message } from '@/utils/antdStatic';
 import { PlusOutlined } from '@ant-design/icons';
 import type { DragEndEvent, UniqueIdentifier } from '@dnd-kit/core';
 import {
@@ -26,7 +27,7 @@ import {
 } from '@dnd-kit/core';
 import { arrayMove, SortableContext, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Button, Form, InputNumber, message, Switch } from 'antd';
+import { Button, Form, InputNumber, Switch } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';

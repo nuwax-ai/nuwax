@@ -2,7 +2,8 @@ import Constant from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
 import service from '@/services/workflow';
 import { HistoryData } from '@/types/interfaces/publish';
-import { Button, message } from 'antd';
+import { message } from '@/utils/antdStatic';
+import { Button } from 'antd';
 import { useState } from 'react';
 
 interface VersionActionProps {

@@ -3,7 +3,8 @@ import { apiGetUserGroupList } from '@/pages/SystemManagement/MenuPermission/ser
 import { RoleInfo } from '@/pages/SystemManagement/MenuPermission/types/role-manage';
 import { UserGroupInfo } from '@/pages/SystemManagement/MenuPermission/types/user-group-manage';
 import { t } from '@/services/i18nRuntime';
-import { Button, Checkbox, Empty, message, Modal, Space, Tabs } from 'antd';
+import { message } from '@/utils/antdStatic';
+import { Button, Checkbox, Empty, Modal, Space, Tabs } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { history, useRequest } from 'umi';
