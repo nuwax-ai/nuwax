@@ -205,8 +205,8 @@ export default defineConfig({
   jsMinifierOptions: {
     minify: true,
     target: ['es2020'],
-    // 勿使用 format: 'iife'，会破坏 webpack 分包后 ES class 继承链（xterm 报 Super constructor null）
   },
+  esbuildMinifyIIFE: true,
   chainWebpack(config: any) {
     config.plugin('copy-monaco').use(CopyWebpackPlugin, [
       {
