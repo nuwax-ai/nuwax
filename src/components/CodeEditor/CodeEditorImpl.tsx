@@ -3,7 +3,7 @@ import { ICON_CONFIRM_STAR } from '@/constants/images.constants';
 import { dict } from '@/services/i18nRuntime';
 import { CodeLangEnum } from '@/types/enums/plugin';
 import Editor, { loader } from '@monaco-editor/react';
-import { FloatButton, Form } from 'antd';
+import { FloatButton, Form, Spin } from 'antd';
 import { FormInstance } from 'antd/lib/form/Form';
 import * as monaco from 'monaco-editor';
 import React, { useEffect, useState } from 'react';
@@ -105,7 +105,18 @@ const CodeEditor: React.FC<Props> = ({
   }, []);
 
   if (!isMonacoReady) {
-    return <div>{dict('PC.Components.CodeEditor.loadingEditor')}</div>;
+    return (
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'center',
+          padding: 24,
+          height,
+        }}
+      >
+        <Spin />
+      </div>
+    );
   }
 
   const handleCodeChange = (newValue?: string) => {
