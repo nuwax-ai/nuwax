@@ -6,12 +6,13 @@
 
 ## 1. 改动总览
 
-2 个 commit，212 文件变更：
+3 个 commit，211 文件变更：
 
-| commit    | 说明                                            |
-| --------- | ----------------------------------------------- |
-| `16c2d35` | umi/ahooks 升级 + message 桥接 + typecheck 脚本 |
-| `0c37447` | 8 个重型三方库独立分包                          |
+| commit    | 说明                                               |
+| --------- | -------------------------------------------------- |
+| `16c2d35` | umi/ahooks 升级 + message 桥接 + typecheck 脚本    |
+| `0c37447` | 9 个重型三方库独立分包                             |
+| `a345f23` | dnd-vendor 分包 + lodash 按需导入 + 删除无引用文件 |
 
 ### 不包含（保持原样）
 
@@ -68,11 +69,11 @@
 
 ---
 
-## 3. Commit 2 详细说明
+## 3. Commit 2 + 3 详细说明：分包优化
 
 ### 3.1 分包配置
 
-`config/config.ts` 的 `chainWebpack` 中新增 8 个 `cacheGroup`：
+`config/config.ts` 的 `chainWebpack` 中新增 10 个 `cacheGroup`：
 
 | vendor chunk | 匹配库 | 体积 | 使用场景 |
 | --- | --- | --- | --- |
@@ -82,17 +83,42 @@
 | `x6-vendor` | @antv/x6、x6-react-shape | 536 KB | 工作流可视化编辑器 |
 | `pdf-vendor` | html2canvas、jspdf | 530 KB | 截图 / PDF 导出 |
 | `prompt-editor-vendor` | prompt-kit-editor、@coze-editor | 419 KB | 代码编辑器 |
+| `dnd-vendor` | @dnd-kit、react-beautiful-dnd | 145 KB | 拖拽组件 |
 | `tiptap-vendor` | @tiptap/\* | 106 KB | 富文本编辑器 |
 | `charts-vendor` | @ant-design/charts、plots | 70 KB | 图表 |
 | `markdown-vendor` | react-markdown、rehype、remark | 67 KB | Markdown 渲染 |
 
-**合计 8.3 MB 代码改为按需加载。**
+**合计 8.6 MB 代码改为按需加载。**
 
-### 3.2 效果
+### 3.2 lodash 按需导入
 
-- **Login / Chat / Home 等高频页面**：不再预加载上述 8.3 MB，首屏更快
+修复 2 处 `import _ from 'lodash'` 全量导入，改为按需导入：
+
+```typescript
+// 修复前（打包整个 lodash）
+import _ from 'lodash';
+_.isEqual(a, b);
+
+// 修复后（只打包用到的函数）
+import { isEqual } from 'lodash';
+isEqual(a, b);
+```
+
+### 3.3 清理无引用文件
+
+删除 `src/components/FormListItem/NestedForm copy 2.tsx`（经确认无任何引用）。
+
+### 3.4 无法进一步拆分的大 chunk
+
+| chunk | 体积 | 原因 |
+| --- | --- | --- |
+| `umi.js` | 6.4 MB | antd + react 核心，每页必需，拆出无收益 |
+| 共享 async chunk（含 monaco） | 5.3 MB | MonacoWebpackPlugin 与 splitChunks 冲突，无法用 cacheGroup 拆分；需 React.lazy 重构 15 个文件，侵入性大 |
+
+### 3.5 效果
+
+- **Login / Chat / Home 等高频页面**：不再预加载上述 8.6 MB，首屏更快
 - **vendor chunk 浏览器缓存**：文件名固定（如 `mermaid-vendor.async.js`），版本不变时命中缓存，二次访问零下载
-- `umi.js`（6.4 MB）为 antd + react 核心，每页必需，未进一步拆分
 
 ---
 
@@ -136,7 +162,7 @@ ls -lS dist/*.js | head -15 | awk '{printf "%.0f KB  %s\n", $5/1024, $9}'
 ls dist/*vendor*.js
 ```
 
-**预期**：输出包含 `preview-vendor`、`mermaid-vendor`、`x6-vendor` 等 9 个 vendor 文件。
+**预期**：输出包含 `preview-vendor`、`mermaid-vendor`、`x6-vendor`、`dnd-vendor` 等 10 个 vendor 文件。
 
 ### 4.3 运行时手动回归
 
@@ -155,9 +181,9 @@ ls dist/*vendor*.js
 
 | 页面 | 操作 | 预期 Network |
 | --- | --- | --- |
-| `/login` | 刷新页面 | **不加载** preview-vendor / mermaid-vendor / x6-vendor |
+| `/login` | 刷新页面 | **不加载** preview-vendor / mermaid-vendor / x6-vendor / dnd-vendor |
 | `/home` | 登录后进入首页 | **不加载** preview-vendor / mermaid-vendor |
-| 工作流编辑器 | 打开工作流页面 | **加载** x6-vendor（536 KB） |
+| 工作流编辑器 | 打开工作流页面 | **加载** x6-vendor（536 KB）+ dnd-vendor（145 KB） |
 | 知识库预览 | 预览文档 | **加载** preview-vendor（4.3 MB） |
 | Chat 对话 | 发送含流程图的消息 | **加载** mermaid-vendor（1.6 MB） |
 
@@ -193,6 +219,6 @@ pnpm install
 | 优先级 | 待办 | 说明 |
 | --- | --- | --- |
 | 可选 | antd 6 全家桶升级 | 切换到 `feat/antd6-upgrade` 分支，等 pro-components stable |
-| 可选 | `umi.js` 进一步拆分 | 将 antd 独立为 vendor chunk（但每页都需 antd，收益有限） |
+| 可选 | monaco 懒加载 | 将 CodeEditor 改为 React.lazy，需重构 15 个引用文件，可将 5.3 MB 共享 chunk 拆为按需 |
 | 可选 | 路由级 prefetch | umi `links` 配置关键路由预加载 |
 | 建议 | 补 CI | `install + typecheck + build + test` 最小工作流 |
