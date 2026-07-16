@@ -2298,6 +2298,8 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.AppDevChatInput.uploadPrototypeImage": "Upload Prototype Image",
   "PC.Pages.AppDevChatInput.uploadResultSummary": "{0} images uploaded successfully, {1} failed",
   "PC.Pages.AppDevChatInput.visionModelOptional": "Vision Model (Optional)",
+  "PC.Pages.AppDevChatInput.personalSpace": "Personal Space",
+  "PC.Pages.AppDevChatInput.systemModel": "System Model",
   "PC.Pages.AppDevContentViewer.loadFileFailedTitle": "Failed to load file",
   "PC.Pages.AppDevContentViewer.loadingDescription": "Please wait...",
   "PC.Pages.AppDevContentViewer.loadingFileContentTitle": "Loading file content",

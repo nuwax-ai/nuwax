@@ -2298,6 +2298,8 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.AppDevChatInput.uploadPrototypeImage": "上传原型图片",
   "PC.Pages.AppDevChatInput.uploadResultSummary": "{0}张图片上传成功，{1}张上传失败",
   "PC.Pages.AppDevChatInput.visionModelOptional": "视觉模型（可选）",
+  "PC.Pages.AppDevChatInput.personalSpace": "个人空间",
+  "PC.Pages.AppDevChatInput.systemModel": "系统模型",
   "PC.Pages.AppDevContentViewer.loadFileFailedTitle": "加载文件失败",
   "PC.Pages.AppDevContentViewer.loadingDescription": "请稍候...",
   "PC.Pages.AppDevContentViewer.loadingFileContentTitle": "正在加载文件内容",
