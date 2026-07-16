@@ -5907,4 +5907,7 @@ export const ZH_CN: SystemLangMap = {
   'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.settingRecallResults': '设置召回结果',
   'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.parseHistoryResultsFailed': '解析历史记录结果失败',
   'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.queryClickEventTriggered': 'Query点击事件触发',
+  'PC.Pages.SpaceKnowledge.QaTableList.allDocs': '全部文档',
+  'PC.Pages.SpaceKnowledge.QaTableList.docPrefix': '文档{0}',
+  'PC.Pages.SpaceKnowledge.QaTableList.manualAddOrBatchImport': '手动添加或批量导入',
 };

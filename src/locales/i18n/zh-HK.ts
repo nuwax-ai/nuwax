@@ -5870,4 +5870,7 @@ export const ZH_HK: SystemLangMap = {
   'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.settingRecallResults': '設置召回結果',
   'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.parseHistoryResultsFailed': '解析歷史記錄結果失敗',
   'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.queryClickEventTriggered': 'Query點擊事件觸發',
+  'PC.Pages.SpaceKnowledge.QaTableList.allDocs': '全部文檔',
+  'PC.Pages.SpaceKnowledge.QaTableList.docPrefix': '文檔{0}',
+  'PC.Pages.SpaceKnowledge.QaTableList.manualAddOrBatchImport': '手動添加或批量導入',
 };
