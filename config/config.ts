@@ -322,18 +322,79 @@ export default defineConfig({
       }
     }
 
+    const baseCacheGroups =
+      (config.optimization.get('splitChunks') || {}).cacheGroups || {};
+
+    const vendorGroups = {
+      ...baseCacheGroups,
+      xtermVendor: {
+        test: /[\\/]node_modules[\\/]@xterm[\\/]/,
+        name: 'xterm-vendor',
+        chunks: 'all',
+        priority: 110,
+        enforce: true,
+      },
+      mermaidVendor: {
+        test: /[\\/]node_modules[\\/](mermaid|ds-markdown-mermaid-plugin|ds-markdown)[\\/]/,
+        name: 'mermaid-vendor',
+        chunks: 'all',
+        priority: 110,
+        reuseExistingChunk: true,
+      },
+      chartsVendor: {
+        test: /[\\/]node_modules[\\/](@ant-design[\\/]charts|@ant-design[\\/]plots)[\\/]/,
+        name: 'charts-vendor',
+        chunks: 'all',
+        priority: 110,
+        reuseExistingChunk: true,
+      },
+      tiptapVendor: {
+        test: /[\\/]node_modules[\\/]@tiptap[\\/]/,
+        name: 'tiptap-vendor',
+        chunks: 'all',
+        priority: 110,
+        reuseExistingChunk: true,
+      },
+      markdownVendor: {
+        test: /[\\/]node_modules[\\/](react-markdown|rehype|remark|markdown-it|unified|micromark|mdast|hast)[\\/]/,
+        name: 'markdown-vendor',
+        chunks: 'all',
+        priority: 100,
+        reuseExistingChunk: true,
+      },
+      pdfVendor: {
+        test: /[\\/]node_modules[\\/](html2canvas|jspdf)[\\/]/,
+        name: 'pdf-vendor',
+        chunks: 'all',
+        priority: 110,
+        reuseExistingChunk: true,
+      },
+      previewVendor: {
+        test: /[\\/]node_modules[\\/](@js-preview|pptx-preview)[\\/]/,
+        name: 'preview-vendor',
+        chunks: 'all',
+        priority: 110,
+        reuseExistingChunk: true,
+      },
+      x6Vendor: {
+        test: /[\\/]node_modules[\\/]@antv[\\/](x6|x6-react-shape)[\\/]/,
+        name: 'x6-vendor',
+        chunks: 'all',
+        priority: 110,
+        reuseExistingChunk: true,
+      },
+      promptEditorVendor: {
+        test: /[\\/]node_modules[\\/](prompt-kit-editor|@coze-editor)[\\/]/,
+        name: 'prompt-editor-vendor',
+        chunks: 'all',
+        priority: 110,
+        reuseExistingChunk: true,
+      },
+    };
+
     config.optimization.splitChunks({
       ...(config.optimization.get('splitChunks') || {}),
-      cacheGroups: {
-        ...((config.optimization.get('splitChunks') || {}).cacheGroups || {}),
-        xtermVendor: {
-          test: /[\\/]node_modules[\\/]@xterm[\\/]/,
-          name: 'xterm-vendor',
-          chunks: 'all',
-          priority: 100,
-          enforce: true,
-        },
-      },
+      cacheGroups: vendorGroups,
     });
 
     config.plugin('monaco').use(MonacoWebpackPlugin, [
