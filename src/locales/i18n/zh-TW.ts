@@ -2282,6 +2282,8 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.AppDevChatInput.uploadPrototypeImage": "上傳原型圖片",
   "PC.Pages.AppDevChatInput.uploadResultSummary": "{0}張圖片上傳成功，{1}張上傳失敗",
   "PC.Pages.AppDevChatInput.visionModelOptional": "視覺模型（可選）",
+  "PC.Pages.AppDevChatInput.personalSpace": "個人空間",
+  "PC.Pages.AppDevChatInput.systemModel": "系統模型",
   "PC.Pages.AppDevContentViewer.loadFileFailedTitle": "載入檔案失敗",
   "PC.Pages.AppDevContentViewer.loadingDescription": "請稍候...",
   "PC.Pages.AppDevContentViewer.loadingFileContentTitle": "正在載入檔案內容",

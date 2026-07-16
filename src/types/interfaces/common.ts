@@ -111,7 +111,7 @@ export interface SelectListType {
   placeholder?: string;
   disabled?: boolean;
   allowClear?: boolean;
-  options: option[];
+  options: any[];
   onChange?: (value: React.Key, option: any) => void;
   size?: SizeType;
   style?: React.CSSProperties;
