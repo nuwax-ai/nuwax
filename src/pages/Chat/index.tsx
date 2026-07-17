@@ -270,6 +270,8 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   const { pagePreviewData, showPagePreview, hidePagePreview } =
     useModel('chat');
 
+  const { isMobile } = useModel('layout');
+
   // 会话记录
   const { runHistoryItem } = useModel('conversationHistory');
 
@@ -1120,6 +1122,11 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
 
   // 设置最小宽度
   useEffect(() => {
+    // 移动端不设置最小宽度
+    if (isMobile && !isFileTreeVisible) {
+      document.documentElement.style.minWidth = 'unset';
+      return;
+    }
     // 设置最小宽度-扩展页面/文件树
     if (pagePreviewData || isFileTreeVisible) {
       document.documentElement.style.minWidth = '1660px';
@@ -1134,7 +1141,13 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     return () => {
       document.documentElement.style.minWidth = 'unset';
     };
-  }, [pagePreviewData, isFileTreeVisible, showSidebar, isSidebarVisible]);
+  }, [
+    pagePreviewData,
+    isFileTreeVisible,
+    showSidebar,
+    isSidebarVisible,
+    isMobile,
+  ]);
 
   // 聊天会话头部相关 props
   const headerProps = {
