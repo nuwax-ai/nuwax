@@ -8,8 +8,8 @@
   align-items: center;
 }
 
-/** Safari 滚动条轨道宽 8px */
-@tabs-safari-scrollbar-lane: 8px;
+/** Safari / Firefox 经典滚动条轨道宽 8px */
+@tabs-classic-scrollbar-lane: 8px;
 
 /**
  * 外层：继承一级栏完整宽度（60/80px），不参与滚动
@@ -36,26 +36,29 @@
 }
 
 /**
- * Safari 列表：宽度与偏移由 TS 注入，避免滚动条遮挡选中态
+ * 经典滚动条浏览器列表：宽度与偏移由 TS 注入，避免滚动条遮挡选中态
  */
-.tabs-list-safari {
+.tabs-list-classic {
   box-sizing: border-box;
   flex-shrink: 0;
 }
 
 /**
- * Safari 浮动滚动条：透明轨道 + 圆角滑块，hover 时显示，贴栏右缘
+ * Safari / Firefox 浮动滚动条：透明轨道 + 圆角滑块，hover 时显示，贴栏右缘
  */
-.tabs-scroll-safari {
+.tabs-scroll-classic {
   box-sizing: border-box;
   width: 100%;
   min-height: 0;
   margin: 0;
   padding: 0;
   overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
 
   &::-webkit-scrollbar {
-    width: @tabs-safari-scrollbar-lane;
+    width: @tabs-classic-scrollbar-lane;
     background: transparent;
   }
 
@@ -85,7 +88,7 @@
 }
 
 /**
- * 非 Safari 内层滚动（配合全局 scroll-container）
+ * Chromium 内层滚动（配合全局 scroll-container）
  */
 .tabs-scroll-chrome {
   display: flex;
