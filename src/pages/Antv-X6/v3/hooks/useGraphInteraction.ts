@@ -13,6 +13,10 @@ import { cloneDeep } from '@/utils/common';
 import { message } from 'antd';
 import { MutableRefObject, useCallback } from 'react';
 import { useModel } from 'umi';
+import {
+  applyAgentFlowBranchEdgeDisconnect,
+  isAgentFlowBranchEdgeConnect,
+} from '../agentFlow/edgeConnect';
 import { hasGraphEdgeBetween } from '../agentFlow/edgeSync';
 import { workflowProxy } from '../services/workflowProxyV3';
 
@@ -125,11 +129,10 @@ export const useGraphInteraction = ({
           sourcePort,
         );
 
-        if (res.success) {
+        const finishEdgeDelete = async () => {
           changeUpdateTime();
           await callback();
 
-          // 如果源节点在循环内，也刷新父循环节点的引用（更新循环输出变量列表）
           if (sourceNode.loopNodeId) {
             await getReference(Number(sourceNode.loopNodeId));
           }
@@ -139,13 +142,38 @@ export const useGraphInteraction = ({
           updateCurrentNodeRef('sourceNode', {
             nextNodeIds: newNodeIds,
           });
-          // V3: 连线变化后触发全量保存
           debouncedSaveFullWorkflow();
           return newNodeIds;
-        } else {
-          message.error(res.message);
-          return false;
+        };
+
+        if (res.success) {
+          return finishEdgeDelete();
         }
+
+        // AgentFlow 分支边不在 proxy.edges：回退到 nodeConfig 分支字段删除
+        if (
+          sourcePort &&
+          isAgentFlowBranchEdgeConnect(sourceNode, sourcePort)
+        ) {
+          const updatedNode = applyAgentFlowBranchEdgeDisconnect(
+            sourceNode,
+            Number(targetId),
+            sourcePort,
+          );
+          if (updatedNode) {
+            graphRef.current?.graphUpdateNode(
+              String(updatedNode.id),
+              updatedNode,
+            );
+            const proxyResult = workflowProxy.updateNode(updatedNode);
+            if (proxyResult.success) {
+              return finishEdgeDelete();
+            }
+          }
+        }
+
+        message.error(res.message);
+        return false;
       }
       return false;
     },

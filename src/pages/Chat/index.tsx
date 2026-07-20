@@ -23,6 +23,7 @@ import {
   AgentComponentTypeEnum,
   AllowCopyEnum,
   DefaultSelectedEnum,
+  HideDesktopEnum,
   MessageTypeEnum,
   TaskStatus,
 } from '@/types/enums/agent';
@@ -337,6 +338,26 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     openDesktopView,
     pagePreviewData,
   });
+
+  /**
+   * 是否显示「打开智能体电脑」入口：
+   * 仅通用型智能体 + 未隐藏远程桌面 + 当前为云端电脑（'-1'）时展示；
+   * 个人电脑 / 共享电脑会话不展示该按钮。
+   */
+  const isShowDesktop =
+    isShowFilePanel &&
+    effectiveAgent?.hideDesktop === HideDesktopEnum.No &&
+    finalSelectedId === '-1';
+
+  /**
+   * 切换到非云端电脑时，若当前停留在智能体电脑视图则关闭，
+   * 避免按钮隐藏后仍残留桌面预览。
+   */
+  useEffect(() => {
+    if (finalSelectedId !== '-1' && viewMode === 'desktop') {
+      handleClosePreviewView();
+    }
+  }, [finalSelectedId, viewMode, handleClosePreviewView]);
 
   const {
     variableParams,
@@ -1166,6 +1187,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     closePreviewView: handleClosePreviewView,
     handleOpenPreview,
     isShowFilePanel,
+    isShowDesktop,
     viewMode,
     handleFileTreeVisible: handleFileTreeVisibleClick,
     isFileTreeIconActive,

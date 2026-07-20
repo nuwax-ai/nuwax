@@ -134,6 +134,9 @@ export function useResumeStreamHandlers(deps: UseResumeStreamHandlersDeps) {
 
   // sub 专用 abort 句柄：独立于各 model 的 abortConnectionRef，避免与 live 发送互相覆盖
   const resumeAbortRef = useRef<(() => void) | null>(null);
+  // 当前 sub 订阅的会话 id：同会话重入直接复用，避免无条件 abort 重建
+  //（多实例共享同一 model 单例句柄时，这是防「互相踢线」的兜底）
+  const resumeConversationIdRef = useRef<number | string | null>(null);
   // 本次恢复已追加的占位 id（防重复追加）
   const resumeMessageIdRef = useRef<string | null>(null);
   // 用 ref 持有最新的 handleChangeMessageList：onMessage 是异步回调，若直接闭包捕获会拿到
@@ -147,6 +150,7 @@ export function useResumeStreamHandlers(deps: UseResumeStreamHandlersDeps) {
       resumeAbortRef.current();
       resumeAbortRef.current = null;
     }
+    resumeConversationIdRef.current = null;
     resumeMessageIdRef.current = null;
   }, []);
 
@@ -270,7 +274,20 @@ export function useResumeStreamHandlers(deps: UseResumeStreamHandlersDeps) {
       onClose?: () => void,
       debugSource = 'unknown',
     ) => {
+      // 同会话重入直接复用：连接仍在订阅中时不 abort 重建。
+      // 注意此处不调 onClose——连接还活着，调用方保持「已订阅」标记是正确的。
+      if (
+        resumeAbortRef.current &&
+        resumeConversationIdRef.current === conversationId
+      ) {
+        resumeStreamLogger.info('skip resume: already subscribed', {
+          source: debugSource,
+          conversationId,
+        });
+        return;
+      }
       abortResumeStream();
+      resumeConversationIdRef.current = conversationId;
       resumeStreamLogger.info('resume stream:start', {
         source: debugSource,
         conversationId,
@@ -340,6 +357,7 @@ export function useResumeStreamHandlers(deps: UseResumeStreamHandlersDeps) {
         },
         onClose: () => {
           resumeAbortRef.current = null;
+          resumeConversationIdRef.current = null;
           // 关闭时再次重置，避免恢复流的残留 id 影响后续 live 发送
           resetResumeMessageState?.();
           onClose?.();

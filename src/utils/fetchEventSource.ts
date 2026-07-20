@@ -40,8 +40,10 @@ export async function createSSEConnection<T = any>(
 ): Promise<() => void> {
   const controller = options.abortController || new AbortController();
   let isAborted = false;
-  // 防止 onClose 被多处路径重复触发（abortFunction / onclose / timeout）
+  // 防止 onClose 被多处路径重复触发（abortFunction / onclose / timeout / error）
   let hasClosed = false;
+  // 防止 onError 被 onerror 与外层 catch 重复触发
+  let hasErrorNotified = false;
   // 记录最后一次收到消息的时间戳
   let lastMessageTimestamp: number | null = null;
   // 超时检查定时器
@@ -56,6 +58,14 @@ export async function createSSEConnection<T = any>(
     }
     hasClosed = true;
     options.onClose?.();
+  };
+
+  const safeOnError = (error: Error) => {
+    if (hasErrorNotified) {
+      return;
+    }
+    hasErrorNotified = true;
+    options.onError?.(error);
   };
 
   // 清理定时器并标记中止
@@ -215,7 +225,10 @@ export async function createSSEConnection<T = any>(
         }
         console.error('❌ [SSE Utils] SSE connection error:', error);
         markAborted();
-        options.onError?.(error);
+        safeOnError(error);
+        // 错误路径也必须触发 onClose：与正常关闭对齐，
+        // 保证上层能重置状态、恢复轮询，不会永久卡在「已订阅 / 连接中」
+        safeOnClose();
         controller.abort();
         throw error; // 停止自动重试
       },
@@ -225,7 +238,9 @@ export async function createSSEConnection<T = any>(
       error instanceof Error ? error : new Error(String(error));
     console.error('❌ [SSE Utils] SSE connection anomaly:', normalized);
     markAborted();
-    options.onError?.(normalized);
+    safeOnError(normalized);
+    // 与 onerror 同理：连接异常终止也属于关闭，必须触发 onClose
+    safeOnClose();
   }
 
   return abortFunction;

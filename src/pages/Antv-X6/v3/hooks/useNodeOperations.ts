@@ -14,6 +14,7 @@ import * as service from '@/services/workflow';
 import { AddNodeResponse } from '@/services/workflow';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import {
+  AnswerTypeEnum,
   FlowKindEnum,
   NodeShapeEnum,
   NodeTypeEnum,
@@ -34,9 +35,11 @@ import {
 } from '@/types/interfaces/graph';
 
 import { isAgentFlowSelectableAgent } from '../agentFlow/createdPicker';
+import { isAgentFlowBranchEdgeConnect } from '../agentFlow/edgeConnect';
 import {
   purgeEdgeBetween,
   purgeNodeIncidentEdges,
+  removeEdgeFromDataModel,
 } from '../agentFlow/edgeSync';
 import { clearNodeIncidentEdges } from '../agentFlow/middleNodeEdgeCleanup';
 import {
@@ -511,13 +514,15 @@ export const useNodeOperations = ({
       edgeId: string;
       portId: string;
     }) => {
-      const portSegments = portId.split('-');
-      const hasUuidSegment =
-        portSegments.length >= 3 &&
-        portSegments.slice(1, -1).join('-').length >= 8;
-      const isSpecialPort = hasUuidSegment;
+      // AgentFlow 分支 + Workflow 条件/意图/QA 选项：连线在 nodeConfig 分支字段
+      const isBranchConfigEdge =
+        isAgentFlowBranchEdgeConnect(sourceNode, portId) ||
+        sourceNode.type === NodeTypeEnum.Condition ||
+        sourceNode.type === NodeTypeEnum.IntentRecognition ||
+        (sourceNode.type === NodeTypeEnum.QA &&
+          sourceNode.nodeConfig?.answerType === AnswerTypeEnum.SELECT);
 
-      if (isSpecialPort) {
+      if (isBranchConfigEdge) {
         const params = removeFromSpecialNodesNextIndex(
           sourceNode,
           portId,
@@ -533,21 +538,26 @@ export const useNodeOperations = ({
       const isLoopInPort =
         portId.endsWith('-in') && sourceNode.type === NodeTypeEnum.Loop;
       const edgeSource = isLoopInPort ? portId : String(sourceNode.id);
+      const sourcePortForProxy =
+        !isLoopInPort && portId !== String(sourceNode.id) ? portId : undefined;
 
-      const res = workflowProxy.deleteEdge(
-        edgeSource,
-        targetNode.id.toString(),
-      );
+      const removed = removeEdgeFromDataModel({
+        sourceNode,
+        targetNodeId: targetNode.id,
+        sourcePort: sourcePortForProxy,
+      });
 
-      if (res.success) {
+      if (removed) {
         graphRef.current?.graphDeleteEdge(edgeId);
         debouncedSaveFullWorkflow();
         return;
       }
 
+      // Loop-in 等特殊边：proxy 中 source 可能为 portId 字符串
       const fallbackRes = workflowProxy.deleteEdge(
-        String(sourceNode.id),
+        isLoopInPort ? edgeSource : String(sourceNode.id),
         targetNode.id.toString(),
+        sourcePortForProxy,
       );
 
       if (fallbackRes.success) {
@@ -556,7 +566,7 @@ export const useNodeOperations = ({
       } else {
         console.warn(
           '[removeSourceToTargetEdge] Failed to delete edge:',
-          res.message,
+          fallbackRes.message,
         );
       }
     },
@@ -672,12 +682,20 @@ export const useNodeOperations = ({
           deleteEdge: (edge) => {
             const edgeSourceId = edge.getSourceCellId();
             const edgeTargetId = edge.getTargetCellId();
+            const sourcePort = edge.getSourcePortId() || undefined;
+            const edgeSourceNode = edge.getSourceNode()?.getData() as
+              | ChildNode
+              | undefined;
             if (!edgeSourceId || !edgeTargetId) return;
-            workflowProxy.deleteEdge(
-              edgeSourceId,
-              edgeTargetId,
-              edge.getSourcePortId(),
-            );
+            if (edgeSourceNode) {
+              removeEdgeFromDataModel({
+                sourceNode: edgeSourceNode,
+                targetNodeId: edgeTargetId,
+                sourcePort,
+              });
+            } else {
+              workflowProxy.deleteEdge(edgeSourceId, edgeTargetId, sourcePort);
+            }
             graphDeleteEdge(String(edge.id));
           },
         });
@@ -689,6 +707,7 @@ export const useNodeOperations = ({
         sourceCellId: sourceId,
         targetCellId: tailId,
         sourcePort: portId,
+        sourceNode,
         graphDeleteEdge,
       });
       purgeEdgeBetween({

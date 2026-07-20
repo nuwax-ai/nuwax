@@ -69,9 +69,14 @@
   width: 100%;
   max-width: @chat-max-width;
   margin: @zero-value auto;
+  // 滚到底部按钮相对输入框顶部上浮；队列高度由 JS 写入 --queue-panel-height
+  --scroll-btn-bottom-offset: calc(
+    @scroll-btn-bottom-offset + var(--queue-panel-height, 0px)
+  );
+}
 
-  // 调整滚动按钮位置，让它显示在会话状态栏的上方
-  :global(.chat-action .to-bottom) {
-    bottom: @scroll-btn-bottom-offset !important;
-  }
+// 队列面板高度测量容器（无内容时高度为 0）
+.queue-panel-measure {
+  width: 100%;
+  flex-shrink: 0;
 }

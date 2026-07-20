@@ -6,6 +6,10 @@ import { ExceptionHandleConfig } from '@/types/interfaces/node';
 import { cloneDeep } from '@/utils/common';
 import { Edge } from '@antv/x6';
 import {
+  applyAgentFlowBranchEdgeDisconnect,
+  isAgentFlowBranchEdgeConnect,
+} from '../agentFlow/edgeConnect';
+import {
   getPortGroup,
   isEdgeDeletable,
   showExceptionPort,
@@ -248,7 +252,31 @@ const bindEventHandlers = ({
           }
         }
 
+        const sourcePort = _cell.getSourcePortId() as string;
+        // RouteDecision / HumanInteraction 分支连线存在 nodeConfig，不在 proxy.edges
         if (
+          sourcePort &&
+          isAgentFlowBranchEdgeConnect(sourceNode, sourcePort)
+        ) {
+          const newNodeParams = applyAgentFlowBranchEdgeDisconnect(
+            sourceNode,
+            Number(_targetNodeId),
+            sourcePort,
+          );
+          if (!newNodeParams) {
+            message.error(
+              t(
+                'PC.Pages.AntvX6EventHandlers.deleteEdgeFailed',
+                '删除连线失败',
+              ),
+            );
+            return;
+          }
+          changeNodeConfigWithRefresh({
+            nodeData: newNodeParams,
+            targetNodeId: _targetNodeId?.toString(),
+          });
+        } else if (
           sourceNode.type === NodeTypeEnum.Condition ||
           sourceNode.type === NodeTypeEnum.IntentRecognition ||
           sourceNode.type === NodeTypeEnum.QA
@@ -260,6 +288,7 @@ const bindEventHandlers = ({
             targetId: _targetNodeId as string,
             sourceNode,
             id: '0',
+            sourcePort,
           });
         }
       } else {

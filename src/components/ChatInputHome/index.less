@@ -405,7 +405,8 @@
     width: 44px;
     height: 44px;
     position: absolute;
-    bottom: 24px;
+    // 可由上层（如 UnifiedChatSession）通过 CSS 变量上调，避免与队列面板重叠
+    bottom: var(--scroll-btn-bottom-offset, 24px);
     border: @lineWidth solid @colorSplit;
     background-color: @colorBgContainer;
     border-radius: 50%;
@@ -420,7 +421,8 @@
     z-index: 100;
     opacity: 0;
     visibility: hidden;
-    transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+    transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out,
+      bottom 0.2s ease;
 
     &.visible {
       opacity: 1;

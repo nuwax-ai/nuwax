@@ -70,7 +70,7 @@ export const useMessageQueue = (conversationId?: string | number | null) => {
   /**
    * 立即发送：原地标记指定项 sending（不移到队首、保留原位置与 id，避免组件
    * 卸载重挂导致 loading 态丢失，也使用户始终在点击的那一行看到 loading）。
-   * UI 上立即显示 loading 且不可重复点击，待会话停止、队列消费实际发送后
+   * UI 上立即显示 loading 且不可重复点击，待队列消费实际发送后
    * 随 dequeueFirst 出列移除——loading 的结束与队列出列移除是同一时刻。
    */
   const markSending = useCallback(
