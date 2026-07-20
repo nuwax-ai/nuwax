@@ -283,12 +283,12 @@ const bindEventHandlers = ({
         ) {
           handleSpecialNodeEdge(cells);
         } else {
+          // 普通边不传 sourcePort：历史 proxy.edges 无 port，传 port 会导致精确匹配失败
           changeEdgeConfigWithRefresh({
             type: UpdateEdgeType.deleted,
             targetId: _targetNodeId as string,
             sourceNode,
             id: '0',
-            sourcePort,
           });
         }
       } else {
