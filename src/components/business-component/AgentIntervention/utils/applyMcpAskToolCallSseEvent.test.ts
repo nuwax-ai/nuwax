@@ -364,6 +364,31 @@ describe('applyMcpAskToolCallSseEvent', () => {
     );
   });
 
+  it('accepts snake_case ASK_QUESTION events without an execute ID', () => {
+    const patched = applyMcpAskToolCallSseEvent(
+      {
+        eventType: ConversationEventTypeEnum.PROCESSING,
+        data: {
+          name: 'AskQuestion',
+          sub_event_type: 'ASK_QUESTION',
+          result: {
+            data: {
+              ...baseAskInput,
+              requestId: 'ask-without-execute-id',
+            },
+          },
+        },
+      } as any,
+      { id: 'msg-1' } as any,
+    );
+
+    expect(patched?.mcpAskInteractions?.[0]).toMatchObject({
+      toolCallId: 'ask-without-execute-id',
+      input: { requestId: 'ask-without-execute-id' },
+      responseStatus: 'pending',
+    });
+  });
+
   it('accepts bare v2 input with no schemaVersion/ui.version (agent omits stamp fields)', () => {
     const patched = applyMcpAskToolCallSseEvent(
       {

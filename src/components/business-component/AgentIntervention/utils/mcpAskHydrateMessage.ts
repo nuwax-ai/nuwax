@@ -32,7 +32,7 @@ export function hydrateMcpAskInteractionsFromExecutedComponents(
     }
 
     const input = parseMcpAskToolInput(getMcpAskComponentInput(component));
-    const toolCallId = getMcpAskComponentToolCallId(component);
+    const toolCallId = getMcpAskComponentToolCallId(component, input);
     if (!input || !toolCallId || existingRequestIds.has(input.requestId)) {
       return;
     }
@@ -67,7 +67,13 @@ export function hydrateMcpAskInteractionsInMessageList(
     hydrateMcpAskInteractionsFromExecutedComponents(message),
   );
 
-  return reconcileMcpAskHydratedMessageList(hydratedList, contextMessageList);
+  // 回执匹配依赖完整上下文中同标题 Ask 的数量与顺序。不能把未 hydrate 的
+  // 原始历史传入，否则旧表单的「我已填写…」会误匹配到最新的同标题 Ask。
+  const hydratedContext = contextMessageList.map((message) =>
+    hydrateMcpAskInteractionsFromExecutedComponents(message),
+  );
+
+  return reconcileMcpAskHydratedMessageList(hydratedList, hydratedContext);
 }
 
 /**

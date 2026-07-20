@@ -112,6 +112,13 @@ import {
   preserveOptimisticMessageTail,
 } from './conversationInfoMessageList';
 
+/** 后端漏发结构化干预事件时，等待持久化完成的补偿读取间隔。 */
+const DEFERRED_INTERVENTION_RELOAD_DELAYS = [250, 750, 1500] as const;
+
+/** FINAL_RESULT 中用于标识服务端执行事件的标准 markdown 协议标签。 */
+const FINAL_EVENT_PROCESS_TAG_RE =
+  /<markdown-custom-process\b[^>]*\btype=["']Event["']/i;
+
 export default () => {
   // 历史记录
   const { runHistory, runHistoryItem } = useModel('conversationHistory');
@@ -1196,6 +1203,47 @@ export default () => {
       if (eventType === ConversationEventTypeEnum.FINAL_RESULT) {
         // 重置消息ID
         messageIdRef.current = '';
+
+        // 部分后端流只在 FINAL_RESULT 文案中保留 Event 过程，未下发
+        // PROCESSING/ASK_QUESTION 的表单 schema（本次 SSE 即为此形态）。
+        // 表单会稍后落库到会话详情；自动补偿读取，避免用户必须手动刷新页面。
+        const hasDeferredInterventionProcess =
+          typeof data?.outputText === 'string' &&
+          FINAL_EVENT_PROCESS_TAG_RE.test(data.outputText);
+        if (params.conversationId && hasDeferredInterventionProcess) {
+          void (async () => {
+            for (const delay of DEFERRED_INTERVENTION_RELOAD_DELAYS) {
+              await new Promise<void>((resolve) => {
+                window.setTimeout(resolve, delay);
+              });
+
+              // 切换会话后不再用旧会话的补偿结果覆盖当前页面。
+              if (conversationInfoRef.current?.id !== params.conversationId) {
+                return;
+              }
+
+              try {
+                const result = await runAsync(params.conversationId);
+                const hydratedMessages = hydrateMcpAskInteractionsInMessageList(
+                  result?.data?.messageList || [],
+                );
+                const hasPendingAsk = hydratedMessages.some((message) =>
+                  message.mcpAskInteractions?.some(
+                    (interaction) => interaction.responseStatus === 'pending',
+                  ),
+                );
+                if (hasPendingAsk) {
+                  return;
+                }
+              } catch (error) {
+                console.warn(
+                  '[conversation] Failed to reload deferred Ask interaction',
+                  error,
+                );
+              }
+            }
+          })();
+        }
 
         setTimeout(async () => {
           // 会话结束后，如果是通用型任务，则刷新文件树，避免用户点击生成的文件时，无法定位到文件树中的文件，因为此时文件树未更新
