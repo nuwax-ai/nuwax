@@ -19,11 +19,9 @@ import { useChatMessageQueue } from '@/components/business-component/MessageQueu
 
 describe('消息队列与 Intervention 协调', () => {
   let sendMessage: ReturnType<typeof vi.fn>;
-  let runStopConversation: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     sendMessage = vi.fn();
-    runStopConversation = vi.fn();
     vi.useFakeTimers();
     localStorage.clear();
   });
@@ -45,7 +43,6 @@ describe('消息队列与 Intervention 协调', () => {
           messageList,
           conversationId: 'conv-1',
           sendMessage,
-          runStopConversation,
           hasPendingIntervention,
           minConsumeInterval,
         }),
@@ -524,7 +521,7 @@ describe('消息队列与 Intervention 协调', () => {
 
   // ============ 场景6：立即发送与 Intervention 协调 ============
   describe('立即发送与 Intervention 协调', () => {
-    it('Intervention pending 时点击立即发送，停止当前会话并在解除后优先消费该项', () => {
+    it('Intervention pending 时点击立即发送，不停止会话，解除后优先消费该项', () => {
       const { result, rerender } = setup({ isConversationActive: true });
 
       // 入队消息
@@ -541,13 +538,13 @@ describe('消息队列与 Intervention 协调', () => {
         messageList: [],
       });
 
-      // 立即发送 m2
+      // 立即发送 m2：仅 markSending，不 stop；intervention 期间不会真正发出
       const m2 = result.current.queue[1];
       act(() => {
         result.current.sendNow(m2);
       });
 
-      expect(runStopConversation).toHaveBeenCalledWith('conv-1');
+      expect(sendMessage).not.toHaveBeenCalled();
       expect(result.current.queue.map((item) => item.text)).toEqual([
         'm1',
         'm2',
