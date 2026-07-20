@@ -46,6 +46,7 @@ import QaBatchModal from './QaBatchModal';
 import QaModal from './QaModal';
 import QaTableList, { QaTableListRef } from './QaTableList';
 import RawSegmentInfo from './RawSegmentInfo';
+import KnowledgeAccuracyTest from './KnowledgeAccuracyTest';
 
 const cx = classNames.bind(styles);
 
@@ -638,19 +639,7 @@ const SpaceKnowledge: React.FC = () => {
   const renderQaContent = () => {
     return (
       <div className={cx('flex', 'flex-col', 'w-full')}>
-        <div className={cx(styles.inputSearch)}>
-          <Input.Search
-            placeholder={dict('PC.Pages.SpaceKnowledge.Index.searchQuestion')}
-            value={question}
-            onChange={(e) => handleSearch(e.target.value)}
-            allowClear
-            style={{
-              width: 240,
-            }}
-            onSearch={handleSearch}
-          />
-        </div>
-        {/* 修改为表格 远程加载数据 */}
+        {/* 问题搜索框已下沉到 QaTableList 顶部工具栏，与文档筛选同一行靠左 */}
         <QaTableList
           ref={qaTableListRef}
           spaceId={Number(spaceId)}
@@ -658,9 +647,15 @@ const SpaceKnowledge: React.FC = () => {
           onEdit={handleEditQa}
           onDelete={handleDeleteQa}
           question={question}
+          onQuestionChange={setQuestion}
         />
       </div>
     );
+  };
+
+  // 渲染命中测试内容
+  const renderAccuracyTestContent = () => {
+    return <KnowledgeAccuracyTest knowledgeBaseId={knowledgeId} />;
   };
 
   // 确认QA问答
@@ -724,6 +719,7 @@ const SpaceKnowledge: React.FC = () => {
         {docType === KnowledgeDocTypeEnum.DOC && renderDocContent()}
         {docType === KnowledgeDocTypeEnum.QA && renderQaContent()}
         {docType === KnowledgeDocTypeEnum.GRAPH && renderGraphContent()}
+        {docType === KnowledgeDocTypeEnum.ACCURACYTEST && renderAccuracyTestContent()}
       </div>
 
       {/*本地文档弹窗*/}
