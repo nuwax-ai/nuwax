@@ -33,6 +33,7 @@ const FileTreeViewPanel = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       onRestartServer,
       onRestartAgent,
       onExportProject,
+      onReconnect,
       onImportProject,
       isImportingProject,
       onUploadFiles,
@@ -173,6 +174,7 @@ const FileTreeViewPanel = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       onRestartServer,
       onRestartAgent,
       onExportProject,
+      onReconnect,
       onImportProject,
       isImportingProject,
       onUploadFiles: handleUploadFiles,
@@ -352,6 +354,7 @@ const FileTreeViewPanel = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           onExportProject,
           idleDetection,
           hideDesktop,
+          onReconnect,
         }}
       />
     );
