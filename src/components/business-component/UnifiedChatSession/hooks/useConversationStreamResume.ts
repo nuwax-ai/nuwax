@@ -66,6 +66,13 @@ export interface UseConversationStreamResumeOptions {
 /** 本地流式结束后，订阅 sub 的冷却时间(ms)：等 taskStatus 稳定，避免对刚完成的输出重复重放 */
 const RESUME_COOLDOWN_AFTER_LOCAL_MS = 5000;
 const RESUME_HISTORY_USER_RETRY_DELAYS_MS = [150, 300, 600, 900, 1200, 1800];
+/**
+ * sub 失败退避：存活不足 MIN_ALIVE 视为「秒关/报错」，按连续失败次数指数退避
+ * （BASE 起步、MAX 封顶），切断「sub 被秒关 → onClose → 立即重订阅」的高频循环
+ */
+const RESUME_SUB_MIN_ALIVE_MS = 3000;
+const RESUME_SUB_FAILURE_BASE_DELAY_MS = 2000;
+const RESUME_SUB_FAILURE_MAX_DELAY_MS = 30000;
 const conversationResumeLogger = createLogger('[ConversationStreamResume]');
 
 const sleep = (ms: number): Promise<void> =>
@@ -181,6 +188,14 @@ export function useConversationStreamResume(
     convId: number | string | undefined;
     at: number;
   }>({ convId: undefined, at: 0 });
+
+  // sub 失败退避状态：subOpenedAt 记录本次打开时间，failure 记录连续失败次数与最近失败时间。
+  // 仅当前会话的 onClose 会计数（跨会话延迟关闭不污染），切换会话时重置。
+  const subOpenedAtRef = useRef(0);
+  const subFailureRef = useRef<{ count: number; lastAt: number }>({
+    count: 0,
+    lastAt: 0,
+  });
   const prevLocallyStreamingRef = useRef(false);
   useEffect(() => {
     if (prevLocallyStreamingRef.current && !isLocallyStreaming) {
@@ -210,6 +225,26 @@ export function useConversationStreamResume(
         cooldownMs: Date.now() - ended.at,
       });
       return;
+    }
+    // sub 失败退避：秒关/报错后按连续失败次数指数退避，窗口内跳过。
+    // 注意必须在「标记订阅 + 停轮询」之前 return，让轮询按 5s 节奏自然兜底重试。
+    const failure = subFailureRef.current;
+    if (failure.count > 0) {
+      const backoffMs = Math.min(
+        RESUME_SUB_FAILURE_BASE_DELAY_MS * 2 ** (failure.count - 1),
+        RESUME_SUB_FAILURE_MAX_DELAY_MS,
+      );
+      const elapsedMs = Date.now() - failure.lastAt;
+      if (elapsedMs < backoffMs) {
+        conversationResumeLogger.info('skip: sub failure backoff', {
+          source: debugSource,
+          conversationId: id,
+          failureCount: failure.count,
+          backoffMs,
+          elapsedMs,
+        });
+        return;
+      }
     }
     // 先标记订阅 + 停轮询（reload 期间防重入，执行中不轮询）
     isResumeSubscribedRef.current = true;
@@ -311,6 +346,10 @@ export function useConversationStreamResume(
       conversationId: id,
       list: summarizeMessageList(list),
     });
+    // 记录本次 sub 打开时间：onClose 时按存活时长区分「秒关（失败）」与「长连接后正常关闭」。
+    // 同步 onClose 路径（如 reload 快照已是持久化完整 assistant，未真正建立连接）aliveMs≈0，
+    // 同样计入失败退避，正好切断该路径的同步重订阅循环。
+    subOpenedAtRef.current = Date.now();
     resumeStream(
       id,
       list,
@@ -322,6 +361,22 @@ export function useConversationStreamResume(
         // 不再回写状态，否则 reloadHistoryAsync(旧id) 与 RefreshConversationList 会覆盖/干扰新会话。
         if (latestRef.current.conversationId !== id) {
           return;
+        }
+        // 失败退避计数（仅当前会话）：存活不足阈值视为秒关/报错，累计退避；长连接后关闭则重置
+        const aliveMs = Date.now() - subOpenedAtRef.current;
+        if (aliveMs < RESUME_SUB_MIN_ALIVE_MS) {
+          subFailureRef.current = {
+            count: subFailureRef.current.count + 1,
+            lastAt: Date.now(),
+          };
+          conversationResumeLogger.info('sub short-lived, backoff escalated', {
+            source: debugSource,
+            conversationId: id,
+            aliveMs,
+            failureCount: subFailureRef.current.count,
+          });
+        } else if (subFailureRef.current.count > 0) {
+          subFailureRef.current = { count: 0, lastAt: 0 };
         }
         // sub 关闭后从本地 messageList 的 finalResult 解析终态（FINAL_RESULT 已落本地）；
         // 不再 reload 历史——reload 会整体覆盖 messageList，正是会话结束闪烁的来源。
@@ -451,6 +506,8 @@ export function useConversationStreamResume(
   useEffect(() => {
     isResumeSubscribedRef.current = false;
     setIsResumeSubscribed(false);
+    // 退避状态不跨会话继承：新会话的失败计数从零开始
+    subFailureRef.current = { count: 0, lastAt: 0 };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversationId]);
 

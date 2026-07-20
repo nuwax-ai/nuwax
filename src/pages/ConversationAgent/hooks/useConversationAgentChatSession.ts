@@ -260,9 +260,6 @@ export function useConversationAgentChatSession(
     queueContext: {
       streamActive: agentStreamActive,
       taskExecuting: agentTaskExecuting,
-      runStopConversation: (id: number | string) => {
-        void runStopConversation(String(id));
-      },
     },
     onResumeConversationStream: resumeConversationStream,
     onAbortResumeStream: abortResumeStream,
