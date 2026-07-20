@@ -307,4 +307,49 @@ describe('useResumeStreamHandlers', () => {
     expect(resetResumeMessageState).toHaveBeenCalledTimes(2);
     expect(onClose).toHaveBeenCalled();
   });
+
+  it('同会话重入复用已有 sub 连接不重建；不同会话才 abort 旧连接', () => {
+    let list: MessageInfo[] = [];
+    const setMessageList = vi.fn((updater) => {
+      list = typeof updater === 'function' ? updater(list) : updater;
+    });
+
+    const { result } = renderHook(() =>
+      useResumeStreamHandlers({
+        setMessageList,
+        handleChangeMessageList: vi.fn(),
+        messageViewRef: { current: null },
+        allowAutoScrollRef: { current: false },
+      } as any),
+    );
+
+    act(() => {
+      result.current.resumeConversationStream(1001, list);
+    });
+    expect(mockCreateSSEConnection).toHaveBeenCalledTimes(1);
+
+    // 同会话重入：不 abort 旧连接、不新建连接
+    act(() => {
+      result.current.resumeConversationStream(1001, list);
+    });
+    expect(abortSse).not.toHaveBeenCalled();
+    expect(mockCreateSSEConnection).toHaveBeenCalledTimes(1);
+
+    // 连接关闭后（onClose 清理订阅标记）：同会话可重新订阅
+    const sseOptions = mockCreateSSEConnection.mock.calls[0][0];
+    act(() => {
+      sseOptions.onClose();
+    });
+    act(() => {
+      result.current.resumeConversationStream(1001, list);
+    });
+    expect(mockCreateSSEConnection).toHaveBeenCalledTimes(2);
+
+    // 不同会话：abort 旧连接并新建
+    act(() => {
+      result.current.resumeConversationStream(1002, list);
+    });
+    expect(abortSse).toHaveBeenCalledTimes(1);
+    expect(mockCreateSSEConnection).toHaveBeenCalledTimes(3);
+  });
 });
