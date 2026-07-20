@@ -702,7 +702,7 @@ export default () => {
         }
 
         newMessage = {
-          ...reconcileFinalMessageState(currentMessage, data),
+          ...(reconcileFinalMessageState(currentMessage, data) || {}),
           status: MessageStatusEnum.Complete,
           finalResult: data,
           requestId: res.requestId,

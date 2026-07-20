@@ -49,6 +49,11 @@ export interface FileTreePreviewViewProps {
   onRestartServer?: () => void;
   /** 重启智能体 */
   onRestartAgent?: () => void;
+  /**
+   * VNC 重连前回调：应先 ensurePod 并恢复 keepalive 轮询
+   * 典型实现：ensureDesktopConnection(conversationId)
+   */
+  onReconnect?: () => void | Promise<void>;
   /** 重命名文件回调 */
   onRenameFile?: (node: FileNode, newName: string) => Promise<boolean>;
   /** 创建文件回调 */
