@@ -17,7 +17,10 @@ import {
   applyAgentFlowBranchEdgeDisconnect,
   isAgentFlowBranchEdgeConnect,
 } from '../agentFlow/edgeConnect';
-import { hasGraphEdgeBetween } from '../agentFlow/edgeSync';
+import {
+  hasGraphEdgeBetween,
+  removeEdgeFromDataModel,
+} from '../agentFlow/edgeSync';
 import { workflowProxy } from '../services/workflowProxyV3';
 
 interface UseGraphInteractionProps {
@@ -122,13 +125,6 @@ export const useGraphInteraction = ({
         message.error(res.message);
         return false;
       } else if (type === UpdateEdgeType.deleted) {
-        // 删除边
-        const res = workflowProxy.deleteEdge(
-          String(sourceNode.id),
-          targetId,
-          sourcePort,
-        );
-
         const finishEdgeDelete = async () => {
           changeUpdateTime();
           await callback();
@@ -146,11 +142,7 @@ export const useGraphInteraction = ({
           return newNodeIds;
         };
 
-        if (res.success) {
-          return finishEdgeDelete();
-        }
-
-        // AgentFlow 分支边不在 proxy.edges：回退到 nodeConfig 分支字段删除
+        // AgentFlow 分支边不在 proxy.edges，须先走 nodeConfig 分支字段删除
         if (
           sourcePort &&
           isAgentFlowBranchEdgeConnect(sourceNode, sourcePort)
@@ -170,9 +162,26 @@ export const useGraphInteraction = ({
               return finishEdgeDelete();
             }
           }
+          message.error('删除连线失败');
+          return false;
         }
 
-        message.error(res.message);
+        // 普通边：优先不带 sourcePort 删除，兼容历史 proxy.edges 无 port 的数据
+        const removed = removeEdgeFromDataModel({
+          sourceNode,
+          targetNodeId: targetId,
+          sourcePort,
+        });
+        if (removed) {
+          return finishEdgeDelete();
+        }
+
+        const fallbackRes = workflowProxy.deleteEdge(
+          String(sourceNode.id),
+          targetId,
+          sourcePort,
+        );
+        message.error(fallbackRes.message || 'Edge does not exist');
         return false;
       }
       return false;
