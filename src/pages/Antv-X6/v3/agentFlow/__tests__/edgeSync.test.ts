@@ -138,8 +138,52 @@ describe('edgeSync', () => {
     });
 
     expect(ok).toBe(true);
-    expect(mockDeleteEdge).toHaveBeenCalledWith('3', '9', undefined);
+    expect(mockDeleteEdge).toHaveBeenCalledWith('3', '9');
     expect(mockUpdateNode).not.toHaveBeenCalled();
+  });
+
+  it('removeEdgeFromDataModel：画布有 sourcePort 但 proxy 边无 port 时优先不带 port 删除', () => {
+    mockDeleteEdge
+      .mockReturnValueOnce({ success: true })
+      .mockReturnValueOnce({ success: false, message: 'Edge does not exist' });
+    const node = {
+      id: 5,
+      type: NodeTypeEnum.Agent,
+      nodeConfig: {},
+    } as ChildNode;
+
+    const ok = removeEdgeFromDataModel({
+      sourceNode: node,
+      targetNodeId: 8,
+      sourcePort: '5-out',
+    });
+
+    expect(ok).toBe(true);
+    expect(mockDeleteEdge).toHaveBeenCalledTimes(1);
+    expect(mockDeleteEdge).toHaveBeenCalledWith('5', '8');
+    expect(mockDeleteEdge).not.toHaveBeenCalledWith('5', '8', '5-out');
+  });
+
+  it('removeEdgeFromDataModel：不带 port 失败且提供了 sourcePort 时再精确匹配', () => {
+    mockDeleteEdge
+      .mockReturnValueOnce({ success: false, message: 'Edge does not exist' })
+      .mockReturnValueOnce({ success: true });
+    const node = {
+      id: 6,
+      type: NodeTypeEnum.Agent,
+      nodeConfig: {},
+    } as ChildNode;
+
+    const ok = removeEdgeFromDataModel({
+      sourceNode: node,
+      targetNodeId: 9,
+      sourcePort: '6-out',
+    });
+
+    expect(ok).toBe(true);
+    expect(mockDeleteEdge).toHaveBeenCalledTimes(2);
+    expect(mockDeleteEdge).toHaveBeenNthCalledWith(1, '6', '9');
+    expect(mockDeleteEdge).toHaveBeenNthCalledWith(2, '6', '9', '6-out');
   });
 
   it('purgeEdgeBetween 传入 sourceNode 时清理 HumanInteraction 分支边', () => {

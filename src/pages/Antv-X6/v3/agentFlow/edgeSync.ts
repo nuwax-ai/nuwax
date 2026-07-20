@@ -58,16 +58,15 @@ export function removeEdgeFromDataModel(params: {
     return false;
   }
 
-  const res = workflowProxy.deleteEdge(
-    String(sourceNode.id),
-    target,
-    sourcePort,
-  );
+  // 普通边：历史 workflowProxy.edges 通常不含 sourcePort，优先按 source+target 删除，
+  // 避免画布 edge 带 port 但数据层无 port 时精确匹配报 Edge does not exist
+  const res = workflowProxy.deleteEdge(String(sourceNode.id), target);
   if (res.success) {
     return true;
   }
   if (sourcePort) {
-    return workflowProxy.deleteEdge(String(sourceNode.id), target).success;
+    return workflowProxy.deleteEdge(String(sourceNode.id), target, sourcePort)
+      .success;
   }
   return false;
 }
