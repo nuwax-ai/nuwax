@@ -50,19 +50,22 @@ function patchInterventionsFromExecuteResults(
   currentMessage: MessageInfo,
   finalResult: ConversationFinalResult,
 ): MessageInfo {
-  return (finalResult.componentExecuteResults || []).reduce((message, item) => {
-    const patch = processInterventionSsePatch(
-      {
-        completed: false,
-        data: toProcessingData(item),
-        error: '',
-        eventType: ConversationEventTypeEnum.PROCESSING,
-        requestId: '',
-      } as ConversationChatResponse,
-      message,
-    );
-    return patch || message;
-  }, currentMessage);
+  return (finalResult?.componentExecuteResults ?? []).reduce(
+    (message, item) => {
+      const patch = processInterventionSsePatch(
+        {
+          completed: false,
+          data: toProcessingData(item),
+          error: '',
+          eventType: ConversationEventTypeEnum.PROCESSING,
+          requestId: '',
+        } as ConversationChatResponse,
+        message,
+      );
+      return patch || message;
+    },
+    currentMessage,
+  );
 }
 
 function reconcileProcessingList(
@@ -71,7 +74,7 @@ function reconcileProcessingList(
 ): ProcessingInfo[] {
   const nextList = [...(currentList || [])];
   const resultMap = new Map(
-    (finalResult.componentExecuteResults || [])
+    (finalResult?.componentExecuteResults ?? [])
       .filter((item) => item.executeId)
       .map((item) => [item.executeId as string, item]),
   );
@@ -105,7 +108,7 @@ function reconcileProcessingList(
     }
   }
 
-  resultMap.forEach((executeResult, executeId) => {
+  resultMap?.forEach((executeResult, executeId) => {
     if (seenExecuteIds.has(executeId)) {
       return;
     }
@@ -121,11 +124,15 @@ function reconcileProcessingList(
 export function reconcileFinalMessageState(
   currentMessage: MessageInfo,
   finalResult: ConversationFinalResult,
-): MessageInfo {
+): MessageInfo | null {
   const messageWithInterventions = patchInterventionsFromExecuteResults(
     currentMessage,
     finalResult,
   );
+
+  if (!messageWithInterventions) {
+    return null;
+  }
 
   return {
     ...messageWithInterventions,
