@@ -399,7 +399,9 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
           clearDisabled={!messageList?.length}
           onEnter={handleMessageSend}
           onClear={onClear}
-          wholeDisabled={inputDisabled || chatInputDisabled}
+          wholeDisabled={
+            inputDisabled || chatInputDisabled || hasPendingIntervention
+          }
           visible={scrollBtnVisible && isHoveringChat}
           clearLoading={clearLoading}
           manualComponents={manualComponents}
