@@ -160,6 +160,7 @@ export default () => {
   });
   // 缓存消息列表，用于消息会话错误时，修改消息状态（将当前会话的loading状态的消息改为Error状态）
   const messageListRef = useRef<MessageInfo[]>([]);
+  const messageListRuntimeSyncFrameRef = useRef<number | null>(null);
   // 会话问题建议
   const [chatSuggestList, setChatSuggestList] = useState<
     string[] | GuidQuestionDto[]
@@ -648,6 +649,21 @@ export default () => {
     setIsConversationActive(isSessionStreamBusy(recentMessages));
   }, []);
 
+  const syncMessageListRuntimeState = useCallback(() => {
+    if (messageListRuntimeSyncFrameRef.current !== null) {
+      return;
+    }
+    messageListRuntimeSyncFrameRef.current = requestAnimationFrame(() => {
+      messageListRuntimeSyncFrameRef.current = null;
+      const latestMessageList = messageListRef.current;
+      const latestProcessingList = latestMessageList.flatMap((message) =>
+        Array.isArray(message.processingList) ? message.processingList : [],
+      );
+      handleChatProcessingList(latestProcessingList);
+      checkConversationActive(latestMessageList);
+    });
+  }, [checkConversationActive, handleChatProcessingList]);
+
   const disabledConversationActive = () => {
     setIsConversationActive(false);
   };
@@ -809,7 +825,6 @@ export default () => {
         // 保留本地末尾尚未落库的乐观消息（sub 续会话 / 切会话 reload 不再冲掉刚发送的用户消息）
         setMessageList((prev) => {
           const merged = preserveOptimisticMessageTail(prev, _messageList);
-          checkConversationActive(merged);
           messageListRef.current = merged;
           return merged;
         });
@@ -848,6 +863,8 @@ export default () => {
         // 如果存在预置问题，显示预置问题
         setChatSuggestList(guidQuestionDtos);
       }
+
+      syncMessageListRuntimeState();
 
       // 通过 requestAnimationFrame 在接下来的 800ms 内持续并在浏览器每次重绘前强制置底
       // 能够完美解决由于聊天气泡、Markdown、图片等异步渲染撑开高度，导致的跳闪和未置底问题
@@ -938,16 +955,6 @@ export default () => {
             }
           }
 
-          const latestProcessingList = copyList.flatMap(
-            (message: MessageInfo) =>
-              Array.isArray(message.processingList)
-                ? message.processingList
-                : [],
-          );
-          handleChatProcessingList(latestProcessingList);
-
-          // 再次调用 checkConversationActive 确保状态同步
-          checkConversationActive(copyList);
           messageListRef.current = copyList;
           return copyList;
         } catch (error) {
@@ -955,6 +962,7 @@ export default () => {
           return list;
         }
       });
+      syncMessageListRuntimeState();
 
       // 3. 发起后端 stop 请求
       return runStopConversationReq(String(conversationId));
@@ -982,7 +990,6 @@ export default () => {
     // 这保证了流式输出中的每一个数据包（Chunk）都能被正确拼接，且不会丢失。
     setMessageList((messageList) => {
       if (!messageList?.length) {
-        disabledConversationActive();
         return [];
       }
       // 深拷贝消息列表
@@ -1010,7 +1017,7 @@ export default () => {
         list.splice(index, arraySpliceAction, interventionPatch);
         const reconciledList =
           reconcileAcpPermissionStatusesInMessageList(list);
-        checkConversationActive(reconciledList);
+        messageListRef.current = reconciledList;
         return reconciledList;
       }
 
@@ -1146,12 +1153,10 @@ export default () => {
           // 刷新文件树
           handleRefreshFileList(params.conversationId);
         }
-
-        handleChatProcessingList(processingList);
       }
       // MESSAGE事件
       if (eventType === ConversationEventTypeEnum.MESSAGE) {
-        const { text, type, ext, id, finished } = data;
+        const { text, type, id, finished } = data;
         // 思考think
         if (type === MessageModeEnum.THINK) {
           newMessage = {
@@ -1168,13 +1173,6 @@ export default () => {
             // 如果finished为true，则状态为null，此时不会显示运行状态组件，否则为Incomplete
             status: finished ? null : MessageStatusEnum.Incomplete,
           };
-          if (ext?.length) {
-            // 问题建议
-            setChatSuggestList(
-              ext.map((extItem: MessageQuestionExtInfo) => extItem.content) ||
-                [],
-            );
-          }
         } else {
           // 工作流过程输出
           if (messageIdRef.current && messageIdRef.current !== id && finished) {
@@ -1356,17 +1354,11 @@ export default () => {
 
       const reconciledList = reconcileAcpPermissionStatusesInMessageList(list);
 
-      const latestProcessingList = reconciledList.flatMap((message) =>
-        Array.isArray(message.processingList) ? message.processingList : [],
-      );
-      handleChatProcessingList(latestProcessingList);
-
-      // 检查会话状态
-      checkConversationActive(reconciledList);
       messageListRef.current = reconciledList;
 
       return reconciledList;
     });
+    syncMessageListRuntimeState();
   };
 
   // 会话处理
@@ -1398,6 +1390,15 @@ export default () => {
       },
       onMessage: (res: ConversationChatResponse) => {
         perfLifecycle.onFirstChunk(res?.eventType, res);
+        if (
+          res.eventType === ConversationEventTypeEnum.MESSAGE &&
+          res.data.type === MessageModeEnum.QUESTION &&
+          res.data.ext?.length
+        ) {
+          setChatSuggestList(
+            res.data.ext.map((item: MessageQuestionExtInfo) => item.content),
+          );
+        }
         // 第一次收到消息后更新主题（仅调用一次）
         updateTopicOnce(params, conversationInfo ?? data, isSync);
 
@@ -1459,16 +1460,6 @@ export default () => {
               // cleanupPendingInteractions(currentMessage);
             }
 
-            const latestProcessingList = copyList.flatMap(
-              (message: MessageInfo) =>
-                Array.isArray(message.processingList)
-                  ? message.processingList
-                  : [],
-            );
-            handleChatProcessingList(latestProcessingList);
-
-            // 再次调用 checkConversationActive 确保状态同步
-            checkConversationActive(copyList);
             messageListRef.current = copyList;
             return copyList;
           } catch (error) {
@@ -1476,6 +1467,7 @@ export default () => {
             return list;
           }
         });
+        syncMessageListRuntimeState();
 
         // SSE 结束后兜底同步 taskStatus：仅写回终态，避免竞态 EXECUTING 固化本地。
         // 不限制 Agent 类型；任何携带 taskStatus=EXECUTING 的会话都必须能释放输入态。
@@ -1503,8 +1495,8 @@ export default () => {
         message.error(dict('PC.Models.ConversationInfo.networkTimeoutError'));
         // 将当前会话的 loading 消息改为 Error，并把其 processingList 中执行中的项更新为 FAILED，
         // 否则 isSessionStreamBusy 会因残留 EXECUTING 项持续为 true，导致活跃态/停止按钮/队列消费卡死。
-        const list =
-          messageListRef.current?.map((info: MessageInfo) => {
+        setMessageList((list) => {
+          const updatedList = list.map((info: MessageInfo) => {
             if (info?.id === currentMessageId) {
               const processingList = Array.isArray(info.processingList)
                 ? info.processingList.map((item: ProcessingInfo) =>
@@ -1520,18 +1512,14 @@ export default () => {
               };
             }
             return info;
-          }) || [];
+          });
+          messageListRef.current = updatedList;
+          return updatedList;
+        });
         // 明确终止：打破「发送后 3s 保活」，确保活跃态能立即落 false
         lastSendAtRef.current = 0;
-        setMessageList(() => {
-          const latestProcessingList = list.flatMap((message) =>
-            Array.isArray(message.processingList) ? message.processingList : [],
-          );
-          handleChatProcessingList(latestProcessingList);
-          disabledConversationActive();
-          messageListRef.current = list;
-          return list;
-        });
+        disabledConversationActive();
+        syncMessageListRuntimeState();
         perfLifecycle.onStreamEnd('error');
       },
     });
@@ -1554,6 +1542,10 @@ export default () => {
 
   // 清除副作用
   function handleClearSideEffect() {
+    if (messageListRuntimeSyncFrameRef.current !== null) {
+      cancelAnimationFrame(messageListRuntimeSyncFrameRef.current);
+      messageListRuntimeSyncFrameRef.current = null;
+    }
     // 中断会话流式恢复(sub)连接（hook 内部同时重置占位记忆），避免离开页面后残留
     abortResumeStream();
     // 重置消息ID
@@ -1690,11 +1682,11 @@ export default () => {
         currentMessage,
       );
 
-      checkConversationActive(newMessageList);
       // 缓存消息列表
       messageListRef.current = newMessageList;
       return newMessageList;
     });
+    syncMessageListRuntimeState();
 
     // 允许滚动
     allowAutoScrollRef.current = true;
