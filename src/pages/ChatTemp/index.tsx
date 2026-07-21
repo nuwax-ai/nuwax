@@ -92,11 +92,10 @@ const ChatTemp: React.FC = () => {
 
   // 更新数据流消息列表 - 未显示刷子bug处理
   useEffect(() => {
-    setConversationInfoMessageList([...messageList]);
-  }, [messageList]);
-
-  // 缓存消息列表，用于消息会话错误时，修改消息状态（将当前会话的loading状态的消息改为Error状态）
-  const messageListRef = useRef<MessageInfo[]>([]);
+    const currentList = [...messageList];
+    setConversationInfoMessageList(currentList);
+    checkConversationActive(currentList);
+  }, [checkConversationActive, messageList, setConversationInfoMessageList]);
   // 会话问题建议
   const [chatSuggestList, setChatSuggestList] = useState<
     string[] | GuidQuestionDto[]
@@ -277,7 +276,6 @@ const ChatTemp: React.FC = () => {
         // 存在消息列表时，设置消息列表
         if (len) {
           setMessageList(() => {
-            checkConversationActive(_messageList);
             return _messageList;
           });
 
@@ -316,7 +314,6 @@ const ChatTemp: React.FC = () => {
             messageType: MessageTypeEnum.ASSISTANT,
           } as MessageInfo;
           setMessageList(() => {
-            checkConversationActive([currentMessage]);
             return [currentMessage];
           });
         }
@@ -354,7 +351,6 @@ const ChatTemp: React.FC = () => {
             clearTimeout(timeoutRef.current);
             timeoutRef.current = null;
           }
-          disabledConversationActive();
           return [];
         }
         // 深拷贝消息列表
@@ -385,15 +381,10 @@ const ChatTemp: React.FC = () => {
               data,
             ] as ProcessingInfo[],
           };
-
-          handleChatProcessingList([
-            ...(currentMessage?.processingList || []),
-            { ...data },
-          ] as ProcessingInfo[]);
         }
         // MESSAGE事件
         if (eventType === ConversationEventTypeEnum.MESSAGE) {
-          const { text, type, ext, id, finished } = data;
+          const { text, type, id, finished } = data;
           // 思考think
           if (type === MessageModeEnum.THINK) {
             newMessage = {
@@ -410,13 +401,6 @@ const ChatTemp: React.FC = () => {
               // 如果finished为true，则状态为null，此时不会显示运行状态组件，否则为Incomplete
               status: finished ? null : MessageStatusEnum.Incomplete,
             };
-            if (ext?.length) {
-              // 问题建议
-              setChatSuggestList(
-                ext.map((extItem: MessageQuestionExtInfo) => extItem.content) ||
-                  [],
-              );
-            }
           } else {
             // 工作流过程输出
             if (
@@ -452,7 +436,8 @@ const ChatTemp: React.FC = () => {
             ...currentMessage,
             status: MessageStatusEnum.Complete,
             finalResult: data,
-            id: res.requestId,
+            // 保持本地消息 ID 稳定，避免流结束时重挂载消息和 Markdown 渲染器。
+            requestId: res.requestId,
           };
         }
         // ERROR事件
@@ -467,9 +452,6 @@ const ChatTemp: React.FC = () => {
         if (newMessage) {
           list.splice(index, arraySpliceAction, newMessage as MessageInfo);
         }
-
-        // 检查会话状态
-        checkConversationActive(list);
 
         return list;
       });
@@ -493,6 +475,26 @@ const ChatTemp: React.FC = () => {
       },
       body: params,
       onMessage: (res: ConversationChatResponse) => {
+        const { data, eventType } = res;
+        // 这些更新不能放在 setMessageList 的 updater 中，否则该 updater
+        // 在 React 渲染阶段执行时会同步更新其他 model，触发跨组件更新警告。
+        if (eventType === ConversationEventTypeEnum.PROCESSING) {
+          handleChatProcessingList([
+            {
+              ...data,
+              executeId: data.executeId || data.result?.executeId,
+            },
+          ] as ProcessingInfo[]);
+        }
+        if (
+          eventType === ConversationEventTypeEnum.MESSAGE &&
+          data.type === MessageModeEnum.QUESTION &&
+          data.ext?.length
+        ) {
+          setChatSuggestList(
+            data.ext.map((item: MessageQuestionExtInfo) => item.content),
+          );
+        }
         handleChangeMessageList(res, currentMessageId);
         // 滚动到底部
         handleScrollBottom();
@@ -500,33 +502,35 @@ const ChatTemp: React.FC = () => {
       onError: () => {
         message.error(dict('PC.Pages.ChatTemp.networkTimeout'));
         // 将当前会话的loading状态的消息改为Error状态
-        const list =
-          messageListRef.current?.map((info: MessageInfo) => {
+        setMessageList((list) => {
+          const updatedList = list.map((info: MessageInfo) => {
             if (info?.id === currentMessageId) {
               return { ...info, status: MessageStatusEnum.Error };
             }
             return info;
-          }) || [];
-        setMessageList(() => {
-          disabledConversationActive();
-          return list;
+          });
+          return updatedList;
         });
+        disabledConversationActive();
       },
       onClose: () => {
         // 将当前会话的loading/incomplete状态的消息改为Error状态
         setMessageList((list) => {
           try {
             if (!list?.length) return list;
-            const copyList = JSON.parse(JSON.stringify(list));
-            const lastMessage = copyList[copyList.length - 1];
+            const lastMessage = list[list.length - 1];
             if (
-              lastMessage &&
-              (lastMessage.status === MessageStatusEnum.Loading ||
-                lastMessage.status === MessageStatusEnum.Incomplete)
+              lastMessage?.status !== MessageStatusEnum.Loading &&
+              lastMessage?.status !== MessageStatusEnum.Incomplete
             ) {
-              lastMessage.status = MessageStatusEnum.Error;
+              // 正常完成时保持原数组引用，避免流结束后触发一次无意义重渲染。
+              return list;
             }
-            return copyList;
+            return list.map((item, index) =>
+              index === list.length - 1
+                ? { ...item, status: MessageStatusEnum.Error }
+                : item,
+            );
           } catch (error) {
             console.error('ERROR:', error);
             return list;
@@ -625,11 +629,8 @@ const ChatTemp: React.FC = () => {
     ] as MessageInfo[];
 
     setMessageList(() => {
-      checkConversationActive(newMessageList);
       return newMessageList;
     });
-    // 缓存消息列表
-    messageListRef.current = newMessageList;
 
     // 允许滚动
     allowAutoScrollRef.current = true;
@@ -886,10 +887,10 @@ const ChatTemp: React.FC = () => {
                   />
                   {messageList?.length > 0 ? (
                     <>
-                      {messageList?.map((item: MessageInfo, index: number) => (
+                      {messageList?.map((item: MessageInfo) => (
                         <ChatView
                           className={cx(styles['phone-chat-item'])}
-                          key={index}
+                          key={item.id}
                           messageInfo={item}
                           roleInfo={roleInfo}
                           mode={'home'}
