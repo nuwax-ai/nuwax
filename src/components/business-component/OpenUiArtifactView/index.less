@@ -1,0 +1,51 @@
+@import '@/styles/token.less';
+
+.inlineRenderer {
+  min-width: 0;
+  padding: @paddingSm @padding;
+  border-top: 1px solid @colorBorderSecondary;
+  background: @colorBgContainer;
+  overflow-x: auto;
+
+  :global {
+    [data-openui-root] {
+      max-width: 100%;
+    }
+  }
+}
+
+.renderState {
+  margin: @marginXs @marginSm @marginSm;
+}
+
+.sidecarSummary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: @margin;
+  padding: @paddingSm @padding;
+  border-top: 1px solid @colorBorderSecondary;
+  background: @colorBgLayout;
+}
+
+.sidecarText {
+  min-width: 0;
+}
+
+.sidecarTitle {
+  color: @colorText;
+  font-size: @fontSize;
+  font-weight: @fontWeightStrong;
+}
+
+.sidecarFallback {
+  margin-top: @marginXxs;
+  color: @colorTextSecondary;
+  font-size: @fontSizeSm;
+  line-height: @lineHeightSm;
+  white-space: pre-wrap;
+  display: box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}

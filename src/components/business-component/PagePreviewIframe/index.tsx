@@ -1,5 +1,5 @@
 import SvgIcon from '@/components/base/SvgIcon';
-import { SANDBOX } from '@/constants/common.constants';
+import { OPENUI_SIDECAR_SANDBOX, SANDBOX } from '@/constants/common.constants';
 import { apiAgentComponentPageResultUpdate } from '@/services/agentConfig';
 import { t } from '@/services/i18nRuntime';
 import { copyTextToClipboard } from '@/utils';
@@ -35,6 +35,10 @@ interface PagePreviewData {
   data_type?: 'html' | 'markdown';
   /** 请求 ID */
   request_id?: string;
+  /** 受限预览来源 */
+  source?: 'agent-page' | 'openui';
+  /** iframe 沙箱配置 */
+  sandboxProfile?: 'openui-sidecar-v1';
 }
 
 /**
@@ -138,6 +142,11 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
     setIframeKey(Date.now);
     return `${uri}?${queryString}`;
   }, [pagePreviewData]);
+
+  const iframeSandbox =
+    pagePreviewData?.sandboxProfile === 'openui-sidecar-v1'
+      ? OPENUI_SIDECAR_SANDBOX
+      : SANDBOX;
 
   // iframe 加载完成
   const handleIframeLoad = () => {
@@ -696,7 +705,7 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
           ref={iframeRef}
           key={iframeKey}
           src={pageUrl}
-          sandbox={SANDBOX}
+          sandbox={iframeSandbox}
           className={cx(styles['page-iframe'])}
           onLoad={handleIframeLoad}
           onError={handleIframeError}

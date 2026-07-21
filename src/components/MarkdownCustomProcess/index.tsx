@@ -4,8 +4,10 @@ import ChangeFileGitDiffView, {
 import { dict } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { ProcessingEnum } from '@/types/enums/common';
+import type { OpenUiArtifact } from '@/types/interfaces/openUi';
 import { cloneDeep } from '@/utils/common';
 import { normalizeFileDiffItems } from '@/utils/fileChangeDiff';
+import { resolveOpenUiRenderState } from '@/utils/openUiArtifact';
 import {
   BorderOutlined,
   CheckOutlined,
@@ -21,12 +23,23 @@ import {
 import { Button, message, Tooltip, Typography } from 'antd';
 import classNames from 'classnames';
 import { isEqual } from 'lodash';
-import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  lazy,
+  memo,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 import { useModel } from 'umi';
 import styles from './index.less';
 import SeeDetailModal from './SeeDetailModal';
 
 const cx = classNames.bind(styles);
+const OpenUiArtifactView = lazy(
+  () => import('@/components/business-component/OpenUiArtifactView'),
+);
 
 /**
  * 极简、快速且鲁棒的行级差异统计函数（Myers / LCS 基础版）
@@ -142,6 +155,10 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
   }, [innerProcessing.result]);
 
   const hasDiff = diffItems.length > 0;
+  const openUiState = useMemo(
+    () => resolveOpenUiRenderState(innerProcessing.result),
+    [innerProcessing.result],
+  );
 
   // 统计总的 additions 和 deletions
   const { totalAdditions, totalDeletions } = useMemo(() => {
@@ -433,6 +450,21 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
     openPreviewPage();
   }, [detailData, innerProcessing, showPagePreview, pagePreviewData]);
 
+  const handleOpenUiSidecar = useCallback(
+    (artifact: OpenUiArtifact) => {
+      if (!artifact.page) return;
+      showPagePreview({
+        name: artifact.title,
+        uri: artifact.page.url,
+        params: {},
+        executeId: innerProcessing.executeId || artifact.artifactId,
+        source: 'openui',
+        sandboxProfile: artifact.page.sandboxProfile,
+      });
+    },
+    [innerProcessing.executeId, showPagePreview],
+  );
+
   // 自动打开预览页面功能
   // useEffect(() => {
   //   if (innerProcessing.status === ProcessingEnum.EXECUTING) {
@@ -604,6 +636,22 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
           onClose={() => setOpenModal(false)}
           data={detailData}
         />
+        {openUiState.status !== 'absent' && (
+          <Suspense fallback={null}>
+            <OpenUiArtifactView
+              artifact={openUiState.artifact}
+              blockedReason={
+                openUiState.status === 'expired' ||
+                openUiState.status === 'untrusted'
+                  ? openUiState.status
+                  : undefined
+              }
+              onOpenSidecar={
+                openUiState.status === 'ready' ? handleOpenUiSidecar : undefined
+              }
+            />
+          </Suspense>
+        )}
       </div>
       {/* Plan 类型展开内容 */}
       {renderPlanDetails()}
