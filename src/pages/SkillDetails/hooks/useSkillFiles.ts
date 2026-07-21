@@ -8,6 +8,7 @@ import {
 } from '@/services/skill';
 import { PublishStatusEnum } from '@/types/enums/common';
 import type { FileNode } from '@/types/interfaces/appDev';
+import type { RequestResponse } from '@/types/interfaces/request';
 import type {
   SkillDetailInfo,
   SkillFileInfo,
@@ -28,7 +29,7 @@ interface UseSkillFilesProps {
   spaceId: number;
   skillInfo: SkillDetailInfo | null;
   setSkillInfo: React.Dispatch<React.SetStateAction<SkillDetailInfo | null>>;
-  runSkillInfo: (skillId: number) => any;
+  runSkillInfo: (skillId: number) => Promise<RequestResponse<SkillDetailInfo>>;
 }
 
 export const useSkillFiles = ({
@@ -48,10 +49,20 @@ export const useSkillFiles = ({
     useState<boolean>(false);
   // 是否正在导入项目
   const [isImportingProject, setIsImportingProject] = useState<boolean>(false);
-  // 重新导入项目触发标志，用于强制触发文件选择
-  const [importProjectTrigger, setImportProjectTrigger] = useState<
+  // 导入成功后递增 trigger，驱动 taskAgentSelectedFileId 重新拉取内容
+  const [taskAgentSelectTrigger, setTaskAgentSelectTrigger] = useState<
     number | string
   >(0);
+
+  /** 刷新技能文件树并在树同步后触发默认文件重新拉取 */
+  const refreshSkillFilesAndReselectDefault = async () => {
+    if (!skillId) {
+      return;
+    }
+    setFileTreeDataLoading(true);
+    await runSkillInfo(skillId);
+    setTaskAgentSelectTrigger(Date.now());
+  };
   // 导入技能项目弹窗
   const [openImportSkillProject, setOpenImportSkillProject] =
     useState<boolean>(false);
@@ -315,7 +326,7 @@ export const useSkillFiles = ({
 
       if (code === SUCCESS_CODE) {
         message.success(t('PC.Pages.SkillDetails.uploadSuccess'));
-        runSkillInfo(skillId);
+        await refreshSkillFilesAndReselectDefault();
       }
     } catch (error) {
       console.error('Upload failed:', error);
@@ -370,8 +381,7 @@ export const useSkillFiles = ({
       if (code === SUCCESS_CODE) {
         message.success(t('PC.Pages.SkillDetails.importSuccess'));
         setOpenImportSkillProject(false);
-        runSkillInfo(skillId);
-        setImportProjectTrigger(Date.now());
+        await refreshSkillFilesAndReselectDefault();
       }
     } catch (error) {
       setIsImportingProject(false);
@@ -386,7 +396,7 @@ export const useSkillFiles = ({
     isFullscreenPreview,
     setIsFullscreenPreview,
     isImportingProject,
-    importProjectTrigger,
+    taskAgentSelectTrigger,
     openImportSkillProject,
     setOpenImportSkillProject,
     loadingExportProject,

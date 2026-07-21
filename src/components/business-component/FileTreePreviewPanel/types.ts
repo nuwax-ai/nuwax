@@ -31,8 +31,6 @@ export interface FileTreePreviewViewProps {
   clearTaskAgentSelectedFileId?: () => void;
   /** 通用型智能体文件选择触发标志 */
   taskAgentSelectTrigger?: number | string;
-  /** 是否导入了新的项目触发标志 */
-  isImportProjectTrigger?: number | string;
   /** 原始文件列表 */
   originalFiles?: any[];
   /** 文件树数据加载状态 */
@@ -51,6 +49,11 @@ export interface FileTreePreviewViewProps {
   onRestartServer?: () => void;
   /** 重启智能体 */
   onRestartAgent?: () => void;
+  /**
+   * VNC 重连前回调：应先 ensurePod 并恢复 keepalive 轮询
+   * 典型实现：ensureDesktopConnection(conversationId)
+   */
+  onReconnect?: () => void | Promise<void>;
   /** 重命名文件回调 */
   onRenameFile?: (node: FileNode, newName: string) => Promise<boolean>;
   /** 创建文件回调 */
@@ -194,6 +197,12 @@ export interface UseFileTreePreviewPanelParams {
   onRestartAgent?: () => void;
   onExportProject?: () => Promise<void>;
   idleDetection?: IdleDetectionConfig;
+  /**
+   * VNC 重连前回调：应在建立连接前确保容器已启动、保活轮询已恢复
+   * 典型实现：openDesktopView（内部 apiEnsurePod + runKeepalivePodPolling）
+   * 解决长时间空闲导致容器被回收后，仅重试检测状态永远失败的问题
+   */
+  onReconnect?: () => void | Promise<void>;
   hideDesktop?: HideDesktopEnum;
   /** Git 源代码管理选中的 diff 文件（优先于普通预览） */
   diffFile?: ChangeFileInfo | null;
@@ -201,6 +210,8 @@ export interface UseFileTreePreviewPanelParams {
   onToggleGitVersionPanel?: () => void;
   /** Git 版本记录按钮后的额外操作按钮 */
   afterGitVersionActions?: React.ReactNode;
+  /** 终端是否处于展开状态（非隐藏且非折叠） */
+  isTerminalExpanded?: boolean;
 }
 
 /** FileTreePreviewPanel 组件属性 */

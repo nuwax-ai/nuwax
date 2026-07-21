@@ -14,6 +14,7 @@ import LanguageSwitchPanel from './LanguageSwitchPanel';
 import ResetPassword from './ResetPassword';
 import SettingAccount from './SettingAccount';
 import SettingEmail from './SettingEmail';
+import SystemVersionPanel from './SystemVersionPanel';
 import ThemeSwitchPanel from './ThemeSwitchPanel';
 import UsageStatistics from './UsageStatistics';
 
@@ -53,6 +54,7 @@ const Setting: React.FC = () => {
     setAction(type);
   };
 
+  /** 渲染内容 */
   const renderContent = () => {
     switch (action) {
       case SettingActionEnum.Account:
@@ -83,6 +85,8 @@ const Setting: React.FC = () => {
         return <UsageStatistics />;
       case SettingActionEnum.Developer_Profile:
         return <DeveloperProfile />;
+      case SettingActionEnum.System_Version:
+        return <SystemVersionPanel version={tenantConfigInfo?.version} />;
       default:
         return <SettingAccount />;
     }
@@ -90,6 +94,8 @@ const Setting: React.FC = () => {
 
   // 获取当前登录方式是否为手机登录,如果是手机登录,则为true,否则为false
   const authType = localStorage.getItem('AUTH_TYPE') === '1';
+
+  /** 获取操作标签 */
   const getActionLabel = (type: SettingActionEnum) => {
     switch (type) {
       case SettingActionEnum.Account:
@@ -108,6 +114,11 @@ const Setting: React.FC = () => {
         return dict('PC.Pages.Setting.usageStatistics');
       case SettingActionEnum.Developer_Profile:
         return dict('PC.Pages.Setting.DeveloperProfile.title');
+
+      /** 系统版本 */
+      case SettingActionEnum.System_Version:
+        return dict('PC.Constants.Menus.systemVersion');
+      /** 默认返回空字符串 */
       default:
         return '';
     }

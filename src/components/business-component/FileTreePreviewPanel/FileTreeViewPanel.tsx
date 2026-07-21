@@ -33,6 +33,7 @@ const FileTreeViewPanel = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       onRestartServer,
       onRestartAgent,
       onExportProject,
+      onReconnect,
       onImportProject,
       isImportingProject,
       onUploadFiles,
@@ -49,8 +50,16 @@ const FileTreeViewPanel = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       enableVersionControl,
       enableGitStatus: enableGitStatusProp,
       bottomContent,
+      taskAgentSelectedFileId,
+      taskAgentSelectTrigger,
       ...fileViewProps
     } = props;
+
+    /** TaskResult 等打开文件预览前关闭版本记录面板 */
+    const closeVersionPanelForFilePreviewRef = useRef<() => void>(() => {});
+    const prevTaskAgentSelectTriggerRef = useRef<number | string | undefined>(
+      undefined,
+    );
 
     const onSaveFilesRef = useRef(onSaveFiles);
     onSaveFilesRef.current = onSaveFiles;
@@ -155,6 +164,8 @@ const FileTreeViewPanel = forwardRef<FileTreeViewRef, FileTreeViewProps>(
 
     const fileView = useFileTreePreviewView({
       ...fileViewProps,
+      taskAgentSelectedFileId,
+      taskAgentSelectTrigger,
       className,
       headerClassName,
       viewMode,
@@ -163,6 +174,7 @@ const FileTreeViewPanel = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       onRestartServer,
       onRestartAgent,
       onExportProject,
+      onReconnect,
       onImportProject,
       isImportingProject,
       onUploadFiles: handleUploadFiles,
@@ -191,6 +203,9 @@ const FileTreeViewPanel = forwardRef<FileTreeViewRef, FileTreeViewProps>(
             );
             return result ?? false;
           },
+      onFileSelectOpenPreview: () => {
+        closeVersionPanelForFilePreviewRef.current();
+      },
     });
 
     refreshGitListRef.current = gitSourceControl
@@ -245,6 +260,26 @@ const FileTreeViewPanel = forwardRef<FileTreeViewRef, FileTreeViewProps>(
       }
       setGitVersionPanelOpen((prev) => !prev);
     };
+
+    closeVersionPanelForFilePreviewRef.current = () => {
+      setGitVersionPanelOpen(false);
+      sourceControl.clearSelectedDiff();
+    };
+
+    /**
+     * TaskResult / Markdown 文件链接选中文件时关闭版本记录面板，
+     * 避免版本记录遮挡右侧文件预览。
+     */
+    useEffect(() => {
+      if (!taskAgentSelectedFileId || taskAgentSelectTrigger === undefined) {
+        return;
+      }
+      if (taskAgentSelectTrigger === prevTaskAgentSelectTriggerRef.current) {
+        return;
+      }
+      prevTaskAgentSelectTriggerRef.current = taskAgentSelectTrigger;
+      closeVersionPanelForFilePreviewRef.current();
+    }, [taskAgentSelectedFileId, taskAgentSelectTrigger]);
 
     useImperativeHandle(
       ref,
@@ -319,6 +354,7 @@ const FileTreeViewPanel = forwardRef<FileTreeViewRef, FileTreeViewProps>(
           onExportProject,
           idleDetection,
           hideDesktop,
+          onReconnect,
         }}
       />
     );

@@ -11,6 +11,7 @@ import { dict } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum, InputTypeEnum } from '@/types/enums/agent';
 import { CreateAgentEnum, DataTypeEnum } from '@/types/enums/common';
 import {
+  AgentSubTypeEnum,
   AgentTypeEnum,
   ApplicationMoreActionEnum,
   ComponentSettingEnum,
@@ -192,20 +193,28 @@ export const FILTER_STATUS_DEV = [
   },
 ];
 
-// 智能体开发 - 智能体类型（全部/问答型/通用型/AgentFlow）
+// 智能体开发 - 智能体子类型筛选（全部/问答型/通用型/AgentFlow/AgentGroup/自定义）
 export const AGENT_TYPE_LIST_DEV = [
-  { value: AgentTypeEnum.All, label: dict('PC.Common.Global.all') },
+  { value: 'All', label: dict('PC.Common.Global.all') },
   {
-    value: AgentTypeEnum.ChatBot,
+    value: AgentSubTypeEnum.ChatBot,
     label: dict('PC.Constants.Space.chatBotType'),
   },
   {
-    value: AgentTypeEnum.TaskAgent,
+    value: AgentSubTypeEnum.General,
     label: dict('PC.Constants.Space.taskAgentType'),
   },
   {
-    value: AgentTypeEnum.AgentFlow,
+    value: AgentSubTypeEnum.Flow,
     label: dict('PC.Constants.Space.agentFlowType'),
+  },
+  {
+    value: AgentSubTypeEnum.Group,
+    label: dict('PC.Constants.Space.agentGroupType'),
+  },
+  {
+    value: AgentSubTypeEnum.Custom,
+    label: dict('PC.Pages.SpaceDevelop.ApplicationItem.customType'),
   },
 ];
 

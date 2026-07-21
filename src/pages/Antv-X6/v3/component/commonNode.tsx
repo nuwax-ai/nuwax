@@ -31,7 +31,7 @@ import {
   Tag,
   Tree,
 } from 'antd';
-import React, { useEffect, useState } from 'react';
+import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import '../indexV3.less';
@@ -386,6 +386,71 @@ export const MultiSelectWithCheckbox: React.FC<
   );
 };
 
+const OTHER_BRANCH_HINT = () => t('PC.Pages.AntvX6CommonNode.otherBranchHint');
+
+type FormListItemProps = {
+  form: FormListProps['form'];
+  inputItemName: NonNullable<FormListProps['inputItemName']>;
+  field: string;
+  fieldName: number;
+  index: number;
+  showIndex?: boolean;
+  fieldsLength: number;
+  onRemove: (name: number) => void;
+};
+
+/**
+ * 单条 FormList 行：不订阅整表，依赖 Form.Item 内部订阅更新值；
+ * memo 避免兄弟行输入时整表重渲染打断中文 IME。
+ */
+const FormListItem = memo(function FormListItem({
+  form,
+  inputItemName,
+  field,
+  fieldName,
+  index,
+  showIndex,
+  fieldsLength,
+  onRemove,
+}: FormListItemProps) {
+  const isOtherIntent =
+    form.getFieldValue([inputItemName, fieldName, 'intentType']) === 'OTHER';
+  const isOtherContent =
+    form.getFieldValue([inputItemName, fieldName, 'content']) ===
+    OTHER_BRANCH_HINT();
+  const isDisabled = isOtherIntent || isOtherContent;
+  const canDelete = !isDisabled && fieldsLength > 2;
+
+  const handleRemove = useCallback(() => {
+    onRemove(fieldName);
+  }, [fieldName, onRemove]);
+
+  return (
+    <Form.Item>
+      <div className="dis-left">
+        {showIndex && (
+          <Form.Item noStyle name={[fieldName, 'index']}>
+            <span className="mr-16">{optionsMap[index]}</span>
+          </Form.Item>
+        )}
+        <Form.Item name={[fieldName, field]} className="flex-1">
+          <Input
+            disabled={isDisabled}
+            onBlur={() => {
+              form.submit();
+            }}
+          />
+        </Form.Item>
+        {canDelete && (
+          <Form.Item noStyle>
+            <DeleteOutlined className={'ml-10'} onClick={handleRemove} />
+          </Form.Item>
+        )}
+      </div>
+    </Form.Item>
+  );
+});
+
 // Shared simple form list.
 export const FormList: React.FC<FormListProps> = ({
   form,
@@ -395,96 +460,64 @@ export const FormList: React.FC<FormListProps> = ({
   showIndex,
   limitAddLength = -1,
 }) => {
-  const [disabledAdd, setDisabledAdd] = useState(false);
-  const currentFields = Form.useWatch(inputItemName, {
-    form,
-    preserve: true,
-  });
-  useEffect(() => {
-    if (limitAddLength > -1) {
-      setDisabledAdd((currentFields?.length || 0) >= limitAddLength);
-    }
-  }, [currentFields, form, limitAddLength]);
+  const removeRef = useRef<(name: number) => void>(() => {});
+  const handleRemove = useCallback(
+    (name: number) => {
+      removeRef.current(name);
+      form.submit();
+    },
+    [form],
+  );
 
   return (
     <Form.List name={inputItemName}>
-      {(fields, { add, remove }) => (
-        <>
-          <div className="dis-sb margin-bottom">
-            <span className="node-title-style">{title}</span>
-            <Button
-              icon={<PlusOutlined />}
-              size={'small'}
-              type={'text'}
-              disabled={disabledAdd}
-              onClick={() => {
-                const currentFields = form.getFieldValue(inputItemName) || [];
-                const insertIndex = Math.max(0, currentFields.length - 1);
-                add(
-                  {
-                    [field]: '',
-                    index: currentFields.length,
-                    nextNodeIds: [],
-                    uuid: uuidv4(),
-                  },
-                  insertIndex,
-                );
+      {(fields, { add, remove }) => {
+        removeRef.current = remove;
+        const disabledAdd =
+          limitAddLength > -1 && fields.length >= limitAddLength;
 
-                form.submit();
-              }}
-            ></Button>
-          </div>
-          {fields.map((item, index) => {
-            let fieldData = false;
-            if (
-              form.getFieldValue([inputItemName, item.name, 'intentType']) ===
-              'OTHER'
-            ) {
-              fieldData = true;
-            }
-            if (
-              form.getFieldValue([inputItemName, item.name, 'content']) ===
-              t('PC.Pages.AntvX6CommonNode.otherBranchHint')
-            ) {
-              fieldData = true;
-            }
+        return (
+          <>
+            <div className="dis-sb margin-bottom">
+              <span className="node-title-style">{title}</span>
+              <Button
+                icon={<PlusOutlined />}
+                size={'small'}
+                type={'text'}
+                disabled={disabledAdd}
+                onClick={() => {
+                  const currentFields = form.getFieldValue(inputItemName) || [];
+                  const insertIndex = Math.max(0, currentFields.length - 1);
+                  add(
+                    {
+                      [field]: '',
+                      index: currentFields.length,
+                      nextNodeIds: [],
+                      uuid: uuidv4(),
+                    },
+                    insertIndex,
+                  );
 
-            return (
-              <Form.Item key={item.name + '_' + optionsMap[index]}>
-                <div className="dis-left">
-                  {showIndex && (
-                    <Form.Item noStyle name={[item.name, 'index']}>
-                      <span className="mr-16">{optionsMap[index]}</span>
-                    </Form.Item>
-                  )}
-                  <Form.Item name={[item.name, field]} className="flex-1">
-                    <Input
-                      disabled={fieldData}
-                      onBlur={() => {
-                        form.submit();
-                      }}
-                    />
-                  </Form.Item>
-                  {/* <Form.Item name={[item.name, 'nextNodeIds']} noStyle>
-                    <Input type="hidden"></Input>
-                  </Form.Item> */}
-                  {!fieldData && fields.length > 2 && (
-                    <Form.Item noStyle>
-                      <DeleteOutlined
-                        className={'ml-10'}
-                        onClick={() => {
-                          remove(item.name);
-                          form.submit();
-                        }}
-                      />
-                    </Form.Item>
-                  )}
-                </div>
-              </Form.Item>
-            );
-          })}
-        </>
-      )}
+                  form.submit();
+                }}
+              ></Button>
+            </div>
+            {fields.map((item, index) => (
+              <FormListItem
+                key={item.key}
+                form={form}
+                inputItemName={inputItemName}
+                field={field}
+                fieldName={item.name}
+                index={index}
+                showIndex={showIndex}
+                fieldsLength={fields.length}
+                onRemove={handleRemove}
+              />
+            ))}
+          </>
+        );
+      }}
     </Form.List>
   );
 };

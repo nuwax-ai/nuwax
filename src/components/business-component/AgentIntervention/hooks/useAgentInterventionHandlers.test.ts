@@ -18,6 +18,7 @@ vi.mock('@/services/agentConfig', () => ({
 
 vi.mock('@/services/i18nRuntime', () => ({
   dict: (key: string) => key,
+  getCurrentLang: () => 'zh-CN',
 }));
 
 vi.mock('antd', () => ({
@@ -429,10 +430,44 @@ describe('useAgentInterventionHandlers', () => {
         formData: { name: 'test' },
       };
 
-      const message = await result.current.respondMcpAsk(interaction, payload);
+      const resume = await result.current.respondMcpAsk(interaction, payload);
 
-      expect(typeof message).toBe('string');
-      expect(message).toContain('测试问题');
+      expect(resume?.text).toContain(
+        'PC.Components.McpAskQuestionCard.resumeSubmitted',
+      );
+      expect(resume?.files).toBeUndefined();
+    });
+
+    it('returns files from payload on submit', async () => {
+      const setMessageList = createMockSetMessageList([]);
+
+      const { result } = renderHook(() =>
+        useAgentInterventionHandlers({ setMessageList, conversationId: 123 }),
+      );
+
+      const interaction = createMcpAskInteraction();
+      const payload: McpAskRespondPayload = {
+        interventionId: 'itv-001',
+        revision: 1,
+        source: 'mcp_ask',
+        protocol: 'mcp',
+        action: 'submit',
+        formData: { screenshot: 'https://cdn.example.com/shot.png' },
+        files: [
+          {
+            uid: 'f1',
+            name: 'shot.png',
+            url: 'https://cdn.example.com/shot.png',
+            type: 'image/png',
+            size: 0,
+          },
+        ],
+      };
+
+      const resume = await result.current.respondMcpAsk(interaction, payload);
+
+      expect(resume?.files).toHaveLength(1);
+      expect(resume?.files?.[0].name).toBe('shot.png');
     });
   });
 });

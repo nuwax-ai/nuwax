@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-use-before-define */
 import {
   hydrateMcpAskInteractionsInMessageList,
   prependAndHydrateMcpAskMessageList,
@@ -6,6 +7,7 @@ import {
 } from '@/components/business-component/AgentIntervention';
 import { reconcileAcpPermissionStatusesInMessageList } from '@/components/business-component/AgentIntervention/utils/reconcileAcpPermissionStatus';
 import { reconcileFinalMessageState } from '@/components/business-component/AgentIntervention/utils/reconcileFinalMessageState';
+import { isAgentVersionControlEnabled } from '@/constants/agent.constants';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
   CONVERSATION_CONNECTION_URL,
@@ -30,6 +32,7 @@ import {
   apiKeepalivePod,
   apiRestartAgent,
   apiRestartPod,
+  isEnsurePodThrottledError,
 } from '@/services/vncDesktop';
 import {
   AgentComponentTypeEnum,
@@ -83,8 +86,12 @@ import { extractTaskResult } from '@/utils';
 import { modalConfirm } from '@/utils/ant-custom';
 import { isEmptyObject } from '@/utils/common';
 import {
+  applyTerminalTaskStatus,
   createSyncConversationTaskStatus,
+  mergeConversationInfoTaskStatus,
+  resolveTerminalTaskStatus,
   subscribeChatFinishedTaskSync,
+  syncTerminalConversationTaskStatus,
 } from '@/utils/conversationTaskStatusSync';
 import eventBus from '@/utils/eventBus';
 import { createSSEConnection } from '@/utils/fetchEventSourceConversationInfo';
@@ -100,7 +107,17 @@ import { throttle } from 'lodash';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
-import { appendOutgoingConversationMessages } from './conversationInfoMessageList';
+import {
+  appendOutgoingConversationMessages,
+  preserveOptimisticMessageTail,
+} from './conversationInfoMessageList';
+
+/** 后端漏发结构化干预事件时，等待持久化完成的补偿读取间隔。 */
+const DEFERRED_INTERVENTION_RELOAD_DELAYS = [250, 750, 1500] as const;
+
+/** FINAL_RESULT 中用于标识服务端执行事件的标准 markdown 协议标签。 */
+const FINAL_EVENT_PROCESS_TAG_RE =
+  /<markdown-custom-process\b[^>]*\btype=["']Event["']/i;
 
 export default () => {
   // 历史记录
@@ -157,6 +174,8 @@ export default () => {
   const [requestId, setRequestId] = useState<string>('');
   // 会话消息ID
   const messageIdRef = useRef<string>('');
+  /** 刷新 Git 源代码管理列表（由 Chat / ConversationAgent 等页面注入 fileView.refreshGitList） */
+  const refreshGitListRef = useRef<(() => void | Promise<void>) | null>(null);
   // 调试结果
   const [finalResult, setFinalResult] =
     useState<ConversationFinalResult | null>(null);
@@ -369,6 +388,37 @@ export default () => {
     }
   }, []);
 
+  /**
+   * 仅 ensurePod + 恢复 keepalive（不做视图切换），供 VncPreview 重连前调用。
+   *
+   * 与 openDesktopView 的区别：ensure 失败 / 节流 / 业务码非成功一律 rethrow，
+   * 让调用方（VncPreview.handleRetry）能区分成功 / 节流 / 真实失败——而不是像
+   * openDesktopView 那样被 console.error 静默吞掉后，让用户对着不存在的容器空等 60s。
+   * 节流（容器刚 ensure 过、仍在运行）时仍恢复 keepalive，避免容器被回收——
+   * 这正是「重连」要解决的回收问题（旧路径在节流/失败时会永久停 keepalive）。
+   */
+  const ensureDesktopConnection = useCallback(async (cId: number) => {
+    try {
+      const { code, data } = await apiEnsurePod(cId);
+      if (code !== SUCCESS_CODE) {
+        // HTTP 200 但业务码非成功（配额/权限/策略等）：抛错让调用方感知
+        throw new Error(`ensurePod failed (code: ${code})`);
+      }
+      setVncContainerInfo(data?.container_info);
+      // 成功：重启 keepalive（先停后启，避免轮询叠加，按新 cId 重启）
+      stopKeepalivePodPolling();
+      runKeepalivePodPolling(cId);
+    } catch (error) {
+      // 节流 = 容器刚 ensure 过、仍在运行：重启 keepalive 后重新抛出，交调用方按节流处理；
+      // 真实失败（网络/业务码/500）则不动 keepalive，避免误停仍在跑的轮询
+      if (isEnsurePodThrottledError(error)) {
+        stopKeepalivePodPolling();
+        runKeepalivePodPolling(cId);
+      }
+      throw error;
+    }
+  }, []);
+
   // 重启智能体电脑
   const restartVncPod = useCallback(
     async (cId: number, sandboxId: string) => {
@@ -446,14 +496,10 @@ export default () => {
       openPreviewChangeState('preview');
       // 只在需要时触发文件列表刷新事件
       if (needRefresh) {
-        if (options?.forceRefresh) {
-          await refreshFileListImmediately(cId);
-        } else {
-          handleRefreshFileList(cId);
-        }
+        await refreshFileListImmediately(cId);
       }
     },
-    [handleRefreshFileList, refreshFileListImmediately, openPreviewChangeState],
+    [refreshFileListImmediately, openPreviewChangeState],
   );
 
   // 滚动到底部
@@ -732,8 +778,10 @@ export default () => {
       const { data } = result;
       // 设置所有的详细信息
       setChatProcessingList(data?.messageList || []);
-      // 设置会话信息
-      setConversationInfo(data);
+      // 设置会话信息（合并 taskStatus，避免 reload 把 FINAL_RESULT 已落的终态盖回 EXECUTING）
+      setConversationInfo((prev) =>
+        mergeConversationInfoTaskStatus(prev, data),
+      );
       // 缓存当前会话ID
       if (data?.id) {
         setCurrentConversationId(data.id);
@@ -758,10 +806,12 @@ export default () => {
       );
       const len = _messageList?.length || 0;
       if (len) {
-        setMessageList(() => {
-          checkConversationActive(_messageList);
-          messageListRef.current = _messageList;
-          return _messageList;
+        // 保留本地末尾尚未落库的乐观消息（sub 续会话 / 切会话 reload 不再冲掉刚发送的用户消息）
+        setMessageList((prev) => {
+          const merged = preserveOptimisticMessageTail(prev, _messageList);
+          checkConversationActive(merged);
+          messageListRef.current = merged;
+          return merged;
         });
         // 最后一条消息为"问答"时，获取问题建议
         const lastMessage = _messageList[len - 1];
@@ -788,7 +838,12 @@ export default () => {
       }
       // 不存在会话消息时，才显示开场白预置问题
       else {
-        setMessageList([]);
+        // 后端暂返回空时仍保留本地乐观尾巴（避免冲掉刚发送的消息）
+        setMessageList((prev) => {
+          const merged = preserveOptimisticMessageTail(prev, []);
+          messageListRef.current = merged;
+          return merged;
+        });
         const guidQuestionDtos = data?.agent?.guidQuestionDtos || [];
         // 如果存在预置问题，显示预置问题
         setChatSuggestList(guidQuestionDtos);
@@ -831,12 +886,87 @@ export default () => {
     },
   );
 
-  // 停止会话
-  const { runAsync: runStopConversation, loading: loadingStopConversation } =
+  // 停止会话请求
+  const { runAsync: runStopConversationReq, loading: loadingStopConversation } =
     useRequest(apiAgentConversationChatStop, {
       manual: true,
       debounceWait: 300,
     });
+
+  // 停止会话
+  const runStopConversation = useCallback(
+    async (conversationId: string | number) => {
+      // 1. 立即清除副作用、中断前端连接
+      handleClearSideEffect();
+      disabledConversationActive();
+
+      // 2. 立即将当前会话的 loading 状态的消息改为 Stopped 状态，并将所有正在执行的 processing 状态更新为 FAILED
+      setMessageList((list) => {
+        try {
+          if (!list?.length) return list;
+          const copyList = JSON.parse(JSON.stringify(list));
+
+          // 从后往前遍历消息列表，修复包含有工具调用的前置消息状态
+          for (let i = copyList.length - 1; i >= 0; i--) {
+            const currentMessage = copyList[i];
+
+            // 1. 仅对列表的最后一条真正的消息，如果处于加载态则强置为 Stopped
+            if (
+              i === copyList.length - 1 &&
+              (currentMessage.status === MessageStatusEnum.Loading ||
+                currentMessage.status === MessageStatusEnum.Incomplete)
+            ) {
+              currentMessage.status = MessageStatusEnum.Stopped;
+            }
+
+            // 2. 遍历所有消息 of processingList，强置其中残余的 EXECUTING 状态为 FAILED
+            if (
+              currentMessage.processingList &&
+              Array.isArray(currentMessage.processingList)
+            ) {
+              currentMessage.processingList = currentMessage.processingList.map(
+                (item: ProcessingInfo) => {
+                  if (item.status === ProcessingEnum.EXECUTING) {
+                    return {
+                      ...item,
+                      status: ProcessingEnum.FAILED,
+                    };
+                  }
+                  return item;
+                },
+              );
+            }
+          }
+
+          const latestProcessingList = copyList.flatMap(
+            (message: MessageInfo) =>
+              Array.isArray(message.processingList)
+                ? message.processingList
+                : [],
+          );
+          handleChatProcessingList(latestProcessingList);
+
+          // 再次调用 checkConversationActive 确保状态同步
+          checkConversationActive(copyList);
+          messageListRef.current = copyList;
+          return copyList;
+        } catch (error) {
+          console.error('[runStopConversation] ERROR:', error);
+          return list;
+        }
+      });
+
+      // 3. 发起后端 stop 请求
+      return runStopConversationReq(String(conversationId));
+    },
+    [
+      runStopConversationReq,
+      handleClearSideEffect,
+      setMessageList,
+      handleChatProcessingList,
+      checkConversationActive,
+    ],
+  );
 
   // 修改消息列表
   const handleChangeMessageList = (
@@ -1074,6 +1204,47 @@ export default () => {
         // 重置消息ID
         messageIdRef.current = '';
 
+        // 部分后端流只在 FINAL_RESULT 文案中保留 Event 过程，未下发
+        // PROCESSING/ASK_QUESTION 的表单 schema（本次 SSE 即为此形态）。
+        // 表单会稍后落库到会话详情；自动补偿读取，避免用户必须手动刷新页面。
+        const hasDeferredInterventionProcess =
+          typeof data?.outputText === 'string' &&
+          FINAL_EVENT_PROCESS_TAG_RE.test(data.outputText);
+        if (params.conversationId && hasDeferredInterventionProcess) {
+          void (async () => {
+            for (const delay of DEFERRED_INTERVENTION_RELOAD_DELAYS) {
+              await new Promise<void>((resolve) => {
+                window.setTimeout(resolve, delay);
+              });
+
+              // 切换会话后不再用旧会话的补偿结果覆盖当前页面。
+              if (conversationInfoRef.current?.id !== params.conversationId) {
+                return;
+              }
+
+              try {
+                const result = await runAsync(params.conversationId);
+                const hydratedMessages = hydrateMcpAskInteractionsInMessageList(
+                  result?.data?.messageList || [],
+                );
+                const hasPendingAsk = hydratedMessages.some((message) =>
+                  message.mcpAskInteractions?.some(
+                    (interaction) => interaction.responseStatus === 'pending',
+                  ),
+                );
+                if (hasPendingAsk) {
+                  return;
+                }
+              } catch (error) {
+                console.warn(
+                  '[conversation] Failed to reload deferred Ask interaction',
+                  error,
+                );
+              }
+            }
+          })();
+        }
+
         setTimeout(async () => {
           // 会话结束后，如果是通用型任务，则刷新文件树，避免用户点击生成的文件时，无法定位到文件树中的文件，因为此时文件树未更新
           if (
@@ -1081,10 +1252,16 @@ export default () => {
             conversationInfoRef.current?.agent?.type === AgentTypeEnum.TaskAgent
           ) {
             // 刷新文件树
-            await handleRefreshFileList(params.conversationId);
+            await refreshFileListImmediately(params.conversationId);
 
-            // 同步后台任务状态，确保「智能体正在执行，请稍等」能正确展示/结束
-            void syncConversationTaskStatus(params.conversationId);
+            // 开启版本管理时，同步刷新 Git 源代码管理列表
+            if (
+              isAgentVersionControlEnabled(
+                conversationInfoRef.current?.agent?.enableVersionControl,
+              )
+            ) {
+              void refreshGitListRef.current?.();
+            }
 
             const taskResult = extractTaskResult(data.outputText);
             // 如果有任务结果，并且有文件，则打开预览视图
@@ -1126,7 +1303,7 @@ export default () => {
         }
 
         newMessage = {
-          ...reconcileFinalMessageState(currentMessage, data),
+          ...(reconcileFinalMessageState(currentMessage, data) || {}),
           status: MessageStatusEnum.Complete,
           finalResult: data,
           requestId: res.requestId,
@@ -1139,6 +1316,16 @@ export default () => {
         if (isSuggest.current) {
           runChatSuggest(params as ConversationChatSuggestParams);
         }
+
+        // 兜底：FINAL_RESULT 是确定结束信号；success=true 时直接落 COMPLETE，
+        // 不依赖 onClose 后的轮询接口，避免后端落库延迟导致 taskStatus 固化 EXECUTING。
+        // success=false 只接受结构化终态字段，不根据 error/message 文案猜测。
+        // 放在 isSuggest 之后：开启 suggest 时先触发建议拉取，再落终态。
+        applyTerminalTaskStatus(
+          setConversationInfo,
+          params.conversationId,
+          resolveTerminalTaskStatus(data?.success, data, res),
+        );
 
         // 用户主动取消任务
         if (!data?.success && data?.error?.includes('用户主动取消任务')) {
@@ -1272,10 +1459,11 @@ export default () => {
               // cleanupPendingInteractions(currentMessage);
             }
 
-            const latestProcessingList = copyList.flatMap((message) =>
-              Array.isArray(message.processingList)
-                ? message.processingList
-                : [],
+            const latestProcessingList = copyList.flatMap(
+              (message: MessageInfo) =>
+                Array.isArray(message.processingList)
+                  ? message.processingList
+                  : [],
             );
             handleChatProcessingList(latestProcessingList);
 
@@ -1289,12 +1477,13 @@ export default () => {
           }
         });
 
-        // SSE 结束后兜底同步 taskStatus（通用型智能体后台任务可能仍在执行或刚结束）
-        if (
-          params.conversationId &&
-          conversationInfoRef.current?.agent?.type === AgentTypeEnum.TaskAgent
-        ) {
-          await syncConversationTaskStatus(params.conversationId);
+        // SSE 结束后兜底同步 taskStatus：仅写回终态，避免竞态 EXECUTING 固化本地。
+        // 不限制 Agent 类型；任何携带 taskStatus=EXECUTING 的会话都必须能释放输入态。
+        if (params.conversationId) {
+          await syncTerminalConversationTaskStatus(
+            params.conversationId,
+            setConversationInfo,
+          );
         }
 
         // 主动关闭连接时，禁用会话
@@ -1364,7 +1553,7 @@ export default () => {
     });
 
   // 清除副作用
-  const handleClearSideEffect = () => {
+  function handleClearSideEffect() {
     // 中断会话流式恢复(sub)连接（hook 内部同时重置占位记忆），避免离开页面后残留
     abortResumeStream();
     // 重置消息ID
@@ -1383,7 +1572,7 @@ export default () => {
       }
       abortConnectionRef.current = null;
     }
-  };
+  }
 
   // 重置初始化
   const resetInit = () => {
@@ -1634,7 +1823,11 @@ export default () => {
     handleRefreshFileList,
     // 立即刷新文件列表（供手动点击刷新按钮）
     refreshFileListImmediately,
+    /** 刷新 Git 列表回调 ref，页面侧赋值 fileView.refreshGitList */
+    refreshGitListRef,
     openDesktopView,
+    /** 仅 ensurePod + keepalive（不做视图切换），供 VncPreview 重连前回调 */
+    ensureDesktopConnection,
     openPreviewView,
     // 重启智能体电脑
     restartVncPod,

@@ -88,6 +88,7 @@ const beSilentRequestList = (url: string): boolean => {
     '/api/computer/pod/ensure', // 远程桌面容器触发重启
     '/api/computer/static/file-list', // 刷新文件列表接口
     '/api/git/status', // Git status
+    '/api/agent/generate-info', // AI 生成图标/元数据，失败由业务层静默处理
     // 可以在此添加其他不需要显示错误消息的API
   ];
   return isConversationDetailRequest || list.some((api) => url.includes(api));

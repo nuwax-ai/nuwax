@@ -107,8 +107,8 @@
   .scrollbar-auto-hide();
 }
 
-// 首次出现数据时短暂提示「第一条」的按钮区（其余仍 hover 显示）
-.queue-list.is-hinting > .container:first-child .actions {
+// 第一条消息默认常驻显示按钮区（其余仍 hover 显示），让首要待办始终可操作
+.queue-list > .container:first-child .actions {
   opacity: 1;
   pointer-events: auto;
 }
@@ -239,7 +239,7 @@
 // 按钮区显示时按钮逐个弹入（stagger）：delay 仅挂在触发态，离开时同步收回、不拖沓
 .card:hover .action-btn,
 .card:focus-within .action-btn,
-.queue-list.is-hinting > .container:first-child .action-btn {
+.queue-list > .container:first-child .action-btn {
   opacity: 1;
   transform: none;
 

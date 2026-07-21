@@ -194,3 +194,14 @@ export async function apiGetGroupByCode(
     method: 'GET',
   });
 }
+
+/**
+ * 根据用户ID查询订阅组列表
+ */
+export async function apiGetUserGroupListByUserId(
+  userId: number,
+): Promise<RequestResponse<UserGroupInfo[]>> {
+  return request(`/api/system/group/list-subscription-group/${userId}`, {
+    method: 'GET',
+  });
+}

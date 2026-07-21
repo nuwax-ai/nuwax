@@ -69,18 +69,32 @@ export function applyMcpAskToolCallSseEvent(
       (eventData.result as Record<string, unknown> | undefined)?.input
     );
 
+  const eventSubType =
+    (eventData.subEventType as string) ||
+    (eventData.sub_event_type as string) ||
+    (envelope.subEventType as string) ||
+    (envelope.sub_event_type as string) ||
+    '';
+  const processingResult = eventData.result as
+    | Record<string, unknown>
+    | undefined;
+  const eventName =
+    (eventData.name as string) || (processingResult?.name as string) || '';
+
   // 识别 subEventType=ASK_QUESTION 的 PROCESSING 事件。
   // 此类事件的 result.executeId 和 result.input 均为 null，
   // MCP Ask 数据在 result.data 中（含 schemaVersion、ui、requestId）。
   const isAskQuestionEvent =
     res.eventType === ConversationEventTypeEnum.PROCESSING &&
-    envelope.subEventType === 'ASK_QUESTION';
+    (eventSubType === 'ASK_QUESTION' ||
+      eventName === 'Backend.Sandbox.Event.AskQuestion' ||
+      eventName === 'AskQuestion');
 
   if (!isToolCallEvent && !isProcessingToolCallEvent && !isAskQuestionEvent) {
     return null;
   }
 
-  const result = eventData.result as Record<string, unknown> | undefined;
+  const result = processingResult;
 
   // ASK_QUESTION 事件：MCP Ask 数据直接在 result.data 中，
   // 不遵循 ToolCall 的 result.input 结构。
@@ -115,6 +129,12 @@ export function applyMcpAskToolCallSseEvent(
     undefined;
 
   const mcpAskInput = parseMcpAskToolInput(rawInput);
+
+  // ASK_QUESTION 事件可能没有 executeId/toolCallId；实时与历史恢复均以 requestId
+  // 作为稳定的交互标识，避免卡片因缺少执行 ID 被丢弃。
+  if (!toolCallId && mcpAskInput?.requestId) {
+    toolCallId = mcpAskInput.requestId;
+  }
 
   if (!mcpAskInput || !toolCallId) {
     return null;

@@ -6,7 +6,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import classNames from 'classnames';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState } from 'react';
 import QueuedMessageItem from './QueuedMessageItem';
 import styles from './index.less';
 import type { QueuedMessage } from './types';
@@ -20,7 +20,7 @@ const cx = classNames.bind(styles);
 export interface MessageQueuePanelProps {
   /** 待发送消息列表 */
   queue: QueuedMessage[];
-  /** 立即发送（停止当前会话后发送该消息） */
+  /** 立即发送（标记优先消费；与自动消费对齐，不打断当前轮） */
   onSendNow: (message: QueuedMessage) => void;
   /** 删除某条 */
   onDelete: (id: string) => void;
@@ -45,18 +45,6 @@ const MessageQueuePanel: React.FC<MessageQueuePanelProps> = ({
   onReorder,
 }) => {
   const [collapsed, setCollapsed] = useState(false);
-
-  // 队列从空 → 有数据时，短暂提示按钮区（之后恢复为 hover 显示）
-  const [hinting, setHinting] = useState(false);
-  const prevLengthRef = useRef(0);
-  useEffect(() => {
-    const prev = prevLengthRef.current;
-    prevLengthRef.current = queue.length;
-    if (prev !== 0 || queue.length === 0) return;
-    setHinting(true);
-    const timer = window.setTimeout(() => setHinting(false), 2500);
-    return () => window.clearTimeout(timer);
-  }, [queue.length]);
 
   if (!queue.length) return null;
 
@@ -107,11 +95,7 @@ const MessageQueuePanel: React.FC<MessageQueuePanelProps> = ({
             items={queue.map((q) => q.id)}
             strategy={verticalListSortingStrategy}
           >
-            <div
-              className={cx(styles['queue-list'], {
-                [styles['is-hinting']]: hinting,
-              })}
-            >
+            <div className={cx(styles['queue-list'])}>
               {queue.map((qMsg) => (
                 <QueuedMessageItem
                   key={qMsg.id}

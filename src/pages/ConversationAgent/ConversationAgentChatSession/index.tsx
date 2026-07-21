@@ -1,4 +1,5 @@
 import { UnifiedChatSession } from '@/components/business-component';
+import { TaskResultContext } from '@/components/MarkdownRenderer/TaskResult/context';
 import type { AgentSelectedComponentInfo } from '@/types/interfaces/agent';
 import classNames from 'classnames';
 import React from 'react';
@@ -15,6 +16,7 @@ export interface ConversationAgentChatSessionProps
   className?: string;
   selectedComponentList?: AgentSelectedComponentInfo[];
   onSelectComponent?: (comp: AgentSelectedComponentInfo) => void;
+  onTaskResultClick?: (fileId: string) => boolean | void;
 }
 
 /**
@@ -24,23 +26,25 @@ export interface ConversationAgentChatSessionProps
 const ConversationAgentChatSession: React.FC<
   ConversationAgentChatSessionProps
 > = (props) => {
-  const { className, ...sessionOptions } = props;
+  const { className, onTaskResultClick, ...sessionOptions } = props;
   const chatSessionProps = useConversationAgentChatSession(sessionOptions);
 
   return (
-    <div className={cx(styles.container, className, 'flex', 'h-full')}>
-      <div
-        className={cx(
-          styles['main-content'],
-          'flex-1',
-          'flex',
-          'flex-col',
-          'overflow-hide',
-        )}
-      >
-        <UnifiedChatSession {...chatSessionProps} mentionPlacement="up" />
+    <TaskResultContext.Provider value={{ onTaskResultClick }}>
+      <div className={cx(styles.container, className, 'flex', 'h-full')}>
+        <div
+          className={cx(
+            styles['main-content'],
+            'flex-1',
+            'flex',
+            'flex-col',
+            'overflow-hide',
+          )}
+        >
+          <UnifiedChatSession {...chatSessionProps} mentionPlacement="up" />
+        </div>
       </div>
-    </div>
+    </TaskResultContext.Provider>
   );
 };
 

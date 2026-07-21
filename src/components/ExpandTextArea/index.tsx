@@ -2,6 +2,7 @@ import TiptapVariableInput from '@/components/TiptapVariableInput';
 import { extractTextFromHTML } from '@/components/TiptapVariableInput/utils/htmlUtils';
 import { ICON_OPTIMIZE } from '@/constants/images.constants';
 import { useWorkflowModel } from '@/hooks/useWorkflowModel';
+import { V3_FORM_IME_SAFE_ENABLED } from '@/pages/Antv-X6/v3/constants/editorConfig';
 import { ExpandAltOutlined } from '@ant-design/icons';
 import { Button, Form } from 'antd';
 import classNames from 'classnames';
@@ -34,6 +35,7 @@ export const ExpandableInputTextarea: React.FC<
   onOptimizeClick,
   variables,
   skills,
+  imeSafe = V3_FORM_IME_SAFE_ENABLED,
 }) => {
   const [uuid, setUuid] = useState('');
   const { setExpanded, expanded } = useWorkflowModel(); // 添加本地状态
@@ -86,6 +88,7 @@ export const ExpandableInputTextarea: React.FC<
             placeholder={placeholder}
             variables={variables}
             skills={skills}
+            imeSafe={imeSafe}
             className={cx(styles['prompt-editor-provider'])}
             style={{ minHeight: rows * 24 + 10 }} // 估算高度
           />
@@ -118,6 +121,7 @@ export const ExpandableInputTextarea: React.FC<
             variables={variables}
             skills={skills}
             useTiptap={USE_TIPTAP_EDITOR}
+            imeSafe={imeSafe}
           />
         )}
     </div>

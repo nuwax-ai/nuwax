@@ -3,7 +3,7 @@ import type {
   AgentMode,
 } from '@/components/business-component/AgentIntervention';
 import type { UnifiedChatQueueContext } from '@/components/business-component/MessageQueue/useUnifiedChatQueue';
-import type { DefaultSelectedEnum } from '@/types/enums/agent';
+import type { DefaultSelectedEnum, TaskStatus } from '@/types/enums/agent';
 import type { ChatInputProps, UploadFileInfo } from '@/types/interfaces/common';
 import type {
   ConversationInfo,
@@ -114,6 +114,8 @@ export interface UnifiedChatSessionProps {
   style?: React.CSSProperties;
   /** 额外禁用输入框，用于跨会话联动控制输入态 */
   chatInputDisabled?: boolean;
+  /** 演示模式：语音输入走本地模拟（示例页预览交互） */
+  voiceInputMock?: boolean;
 
   // 输入框属性透传，用于支持展示不同的工具栏、工具列表配置
   chatInputProps?: Partial<ChatInputProps>;
@@ -153,12 +155,13 @@ export interface UnifiedChatSessionProps {
   interventionHandlers?: AgentInterventionHandlersOverride;
 
   // ===== 会话流式恢复(sub)：刷新页面 / 新开标签时重建 EXECUTING 会话的流式输出 =====
-  // 未注入下列 action 的页面（如隔离会话源）将不启用恢复。
+  // 未注入下列 action 的页面将不启用恢复。
   /** 订阅 sub 流（model 的 resumeConversationStream） */
   onResumeConversationStream?: (
     conversationId: number | string,
     currentList: MessageInfo[],
     onClose?: () => void,
+    debugSource?: string,
   ) => void;
   /** 中断 sub 流（model 的 abortResumeStream） */
   onAbortResumeStream?: () => void;
@@ -166,4 +169,10 @@ export interface UnifiedChatSessionProps {
   onReloadConversationHistoryAsync?: (
     conversationId: number | string,
   ) => Promise<MessageInfo[] | undefined | null>;
+  /** 订阅 sub 前等待 history 中出现新 user，主要用于 agent-dev 预览 tab 外部写入续流 */
+  waitForHistoryUserBeforeResume?: boolean;
+  /** sub 恢复日志来源：区分左侧开发 Agent 会话、右侧预览 Tab、主调试区等 */
+  resumeDebugSource?: string;
+  /** 轮询拿到终态 taskStatus 时写回当前会话 model */
+  onTerminalTaskStatus?: (status: TaskStatus) => void;
 }

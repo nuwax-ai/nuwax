@@ -26,6 +26,8 @@ export interface ExpandableInputTextareaProps {
   variables?: any[];
   // 技能列表
   skills?: any[];
+  /** 中文 IME 安全模式（默认开启，工作流长文本输入推荐保持开启） */
+  imeSafe?: boolean;
 }
 
 //
@@ -41,4 +43,5 @@ export interface ExpandableInputTextareaState {
   variables?: any[];
   // 技能列表
   skills?: any[];
+  imeSafe?: boolean;
 }

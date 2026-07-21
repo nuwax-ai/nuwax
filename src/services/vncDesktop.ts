@@ -1,3 +1,4 @@
+import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { t } from '@/services/i18nRuntime';
 import { RequestResponse } from '@/types/interfaces/request';
 import type {
@@ -100,9 +101,14 @@ export async function apiDownloadAllFiles(cId: number): Promise<void> {
   }
 }
 
-let lastEnsurePodTime = 0;
+const ENSURE_POD_THROTTLE_MS = 5000;
+let lastSuccessfulEnsurePod: { cId: number; time: number } | null = null;
+const ensurePodInFlightMap = new Map<
+  number,
+  Promise<RequestResponse<EnsurePodResponse>>
+>();
 
-/** ensure 请求被 5s 全局限流（通常因 VNC/终端等刚调过 ensure，容器已在运行） */
+/** ensure 请求被 5s 限流（通常因 VNC/终端等刚调过 ensure，容器已在运行） */
 export const isEnsurePodThrottledError = (error: unknown): boolean => {
   const message = error instanceof Error ? error.message : String(error);
   return message.includes('too frequent');
@@ -113,20 +119,39 @@ export async function apiEnsurePod(
   cId: number,
 ): Promise<RequestResponse<EnsurePodResponse>> {
   const now = Date.now();
-  if (now - lastEnsurePodTime < 5000) {
+  const inFlightRequest = ensurePodInFlightMap.get(cId);
+  if (inFlightRequest) {
+    return inFlightRequest;
+  }
+
+  if (
+    lastSuccessfulEnsurePod?.cId === cId &&
+    now - lastSuccessfulEnsurePod.time < ENSURE_POD_THROTTLE_MS
+  ) {
     console.log('Requests are too frequent. Please retry after 5s');
     return Promise.reject(
       new Error('Requests are too frequent. Please retry after 5s'),
     );
   }
-  lastEnsurePodTime = now;
 
-  return request('/api/computer/pod/ensure', {
+  const ensureRequest = request('/api/computer/pod/ensure', {
     method: 'POST',
     params: {
       cId,
     },
-  });
+  })
+    .then((result: RequestResponse<EnsurePodResponse>) => {
+      if (result.code === SUCCESS_CODE) {
+        lastSuccessfulEnsurePod = { cId, time: Date.now() };
+      }
+      return result;
+    })
+    .finally(() => {
+      ensurePodInFlightMap.delete(cId);
+    });
+
+  ensurePodInFlightMap.set(cId, ensureRequest);
+  return ensureRequest;
 }
 
 // 重启容器(销毁后重建)
@@ -182,5 +207,36 @@ export async function apiCheckVncStatus(
     params: {
       cId,
     },
+  });
+}
+
+export interface IImportProjectParams {
+  // 会话ID
+  cId: number;
+  // 文件
+  file: File;
+  // 自定义目标目录
+  customTargetDir?: string;
+}
+
+/**
+ * 导入项目
+ * 上传 zip 包替换工作空间文件，保留 .git/.agents/.claude/.codex/.opencode/.tmp/.logs
+ */
+export async function apiImportProject(
+  params: IImportProjectParams,
+): Promise<RequestResponse<null>> {
+  const { file, cId, customTargetDir } = params;
+  const formData = new FormData();
+  formData.append('cId', cId.toString());
+  formData.append('file', file);
+
+  if (customTargetDir) {
+    formData.append('customTargetDir', customTargetDir);
+  }
+
+  return request('/api/computer/static/import-project', {
+    method: 'POST',
+    data: formData,
   });
 }

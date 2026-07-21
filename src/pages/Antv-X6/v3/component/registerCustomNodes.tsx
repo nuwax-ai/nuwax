@@ -9,8 +9,8 @@ import {
   optionsMap,
 } from '@/pages/Antv-X6/v3/constants/node.constants';
 import {
+  renderNodeIcon,
   returnBackgroundColor,
-  returnImg,
 } from '@/pages/Antv-X6/v3/utils/workflowV3';
 import { t } from '@/services/i18nRuntime';
 import {
@@ -418,7 +418,7 @@ export const GeneralNode: React.FC<NodeProps> = (props) => {
           }}
         >
           <div className="dis-left general-node-header-image">
-            {returnImg(data.type)}
+            {renderNodeIcon(data.type, data.icon)}
           </div>
           <EditableTitle
             key={data.id.toString()}

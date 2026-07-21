@@ -290,7 +290,7 @@ const GraphDocTable: React.FC<GraphDocTableProps> = ({
           }}
           onSearch={(value) => onSearch?.(value)}
           allowClear
-          style={{ width: 240, marginRight: 10 }}
+          style={{ width: 240 }}
         />
         <Popconfirm
           title={dict('PC.Pages.SpaceKnowledge.GraphDocTable.batchDelete')}

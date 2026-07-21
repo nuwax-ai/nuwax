@@ -255,6 +255,47 @@ export const returnImg = (type: NodeTypeEnum): React.ReactNode => {
   }
 };
 
+/** 支持展示接口/选器返回自定义图标的节点类型（智能体 / 工作流 / 插件） */
+export const NODE_TYPES_WITH_CUSTOM_ICON: NodeTypeEnum[] = [
+  NodeTypeEnum.Agent,
+  NodeTypeEnum.Workflow,
+  NodeTypeEnum.Plugin,
+];
+
+/**
+ * 解析节点可用的自定义图标 URL。
+ * 仅对智能体 / 工作流 / 插件节点生效，且 icon 须为非空字符串。
+ */
+export const resolveNodeIconUrl = (
+  type: NodeTypeEnum,
+  icon?: string | React.ReactNode | null,
+): string | null => {
+  if (!NODE_TYPES_WITH_CUSTOM_ICON.includes(type)) {
+    return null;
+  }
+  if (!icon || typeof icon !== 'string') {
+    return null;
+  }
+  const trimmed = icon.trim();
+  return trimmed || null;
+};
+
+/**
+ * 渲染画布节点头部图标：优先使用接口/选器返回的 icon URL，否则按 type 回退本地 SVG。
+ */
+export const renderNodeIcon = (
+  type: NodeTypeEnum,
+  icon?: string | React.ReactNode | null,
+): React.ReactNode => {
+  const iconUrl = resolveNodeIconUrl(type, icon);
+  if (iconUrl) {
+    return (
+      <img src={iconUrl} alt="" className="general-node-header-icon-img" />
+    );
+  }
+  return returnImg(type);
+};
+
 // 根据type返回背景色
 export const returnBackgroundColor = (type: NodeTypeEnum) => {
   switch (type) {

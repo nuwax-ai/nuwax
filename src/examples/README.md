@@ -76,6 +76,18 @@
 - 演示主题切换和多语言功能
 - 展示如何在组件中集成全局设置
 
+### 5. 会话交互处理及渲染 (`/examples/session-rendering-demo`)
+
+**功能描述：**
+
+- 使用本地 Mock 数据演示 Agent 会话与 AppDev 会话的核心渲染状态
+- 覆盖完成态、流式中、后端执行中、加载更多历史、消息队列和首条消息透传
+- 便于对照单测验证 `UnifiedChatSession`、`ChatView`、`ChatArea` 和 AppDev 初始自动发送链路
+
+**源码位置：**
+
+`src/examples/SessionRenderingDemo/`
+
 ## 开发指南
 
 ### 添加新的示例页面

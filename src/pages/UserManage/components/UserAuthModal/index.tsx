@@ -1,11 +1,14 @@
 import CustomFormModal from '@/components/CustomFormModal';
 import { apiGetRoleList } from '@/pages/SystemManagement/MenuPermission/services/role-manage';
-import { apiGetUserGroupList } from '@/pages/SystemManagement/MenuPermission/services/user-group-manage';
+import {
+  apiGetUserGroupList,
+  apiGetUserGroupListByUserId,
+} from '@/pages/SystemManagement/MenuPermission/services/user-group-manage';
 import { RoleInfo } from '@/pages/SystemManagement/MenuPermission/types/role-manage';
 import { UserGroupInfo } from '@/pages/SystemManagement/MenuPermission/types/user-group-manage';
 import { dict } from '@/services/i18nRuntime';
 import { UserRoleEnum } from '@/types/enums/systemManage';
-import { Button, Checkbox, Empty, Form, Space, Tabs } from 'antd';
+import { Button, Checkbox, Empty, Form, Space, Tabs, Tag } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { useModel, useRequest } from 'umi';
@@ -57,6 +60,10 @@ const UserAuthModal: React.FC<UserAuthModalProps> = ({
   // 完整的角色列表和用户组列表
   const [roleList, setRoleList] = useState<RoleInfo[]>([]);
   const [groupList, setGroupList] = useState<UserGroupInfo[]>([]);
+  /** 订阅套餐关联的用户组（只读展示） */
+  const [subscriptionGroupList, setSubscriptionGroupList] = useState<
+    UserGroupInfo[]
+  >([]);
 
   // 已选中的角色ID列表和用户组ID列表（用于控制 Checkbox.Group）
   const [selectedRoleIds, setSelectedRoleIds] = useState<number[]>([]);
@@ -112,6 +119,17 @@ const UserAuthModal: React.FC<UserAuthModalProps> = ({
     manual: true,
   });
 
+  // 查询用户订阅套餐关联的用户组列表
+  const { run: runGetSubscriptionGroupList } = useRequest(
+    apiGetUserGroupListByUserId,
+    {
+      manual: true,
+      onSuccess: (data: UserGroupInfo[]) => {
+        setSubscriptionGroupList(data || []);
+      },
+    },
+  );
+
   useEffect(() => {
     if (open) {
       setActiveTab(role === UserRoleEnum.User ? 'group' : 'role');
@@ -127,9 +145,13 @@ const UserAuthModal: React.FC<UserAuthModalProps> = ({
       runGetGroupList();
       // 查询用户绑定的组列表
       runBindedGroupList(targetId);
+
+      // 默认打开用户组 tab 时，加载订阅关联用户组
+      runGetSubscriptionGroupList(targetId);
     } else {
       setRoleList([]);
       setGroupList([]);
+      setSubscriptionGroupList([]);
       setSelectedRoleIds([]);
       setSelectedGroupIds([]);
       setActiveTab('role');
@@ -266,6 +288,20 @@ const UserAuthModal: React.FC<UserAuthModalProps> = ({
       label: dict('PC.Pages.UserManage.UserAuthModal.userGroup'),
       children: (
         <div className={cx(styles.tabContent)}>
+          {subscriptionGroupList?.length > 0 && (
+            <div className={cx(styles.subscriptionGroupSection)}>
+              <div className={cx(styles.subscriptionGroupLabel)}>
+                {dict(
+                  'PC.Pages.UserManage.UserAuthModal.subscriptionUserGroup',
+                )}
+              </div>
+              <Space wrap size={[8, 8]}>
+                {subscriptionGroupList.map((item: UserGroupInfo) => (
+                  <Tag key={item.id}>{item.name}</Tag>
+                ))}
+              </Space>
+            </div>
+          )}
           {groupList && groupList.length > 0 ? (
             <Checkbox.Group
               className={cx(styles.checkboxGroup)}
@@ -293,7 +329,10 @@ const UserAuthModal: React.FC<UserAuthModalProps> = ({
   return (
     <CustomFormModal
       form={dummyForm}
-      title={dict('PC.Pages.UserManage.UserAuthModal.authTitle', userName)}
+      title={dict(
+        'PC.Pages.UserManage.UserAuthModal.authTitle',
+        userName || '',
+      )}
       open={open}
       loading={loading}
       onCancel={onCancel}

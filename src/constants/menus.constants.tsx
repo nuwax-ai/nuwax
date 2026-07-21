@@ -124,6 +124,10 @@ export const SETTING_ACTIONS = [
     type: SettingActionEnum.Usage_Statistics,
     label: dict('PC.Constants.Menus.usageStatistics'),
   },
+  {
+    type: SettingActionEnum.System_Version,
+    label: dict('PC.Constants.Menus.systemVersion'),
+  },
 ];
 
 // 其它需要单独分离的一级菜单 code 类别常量

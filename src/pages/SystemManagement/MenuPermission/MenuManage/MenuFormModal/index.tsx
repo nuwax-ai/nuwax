@@ -1,7 +1,6 @@
 import CustomFormModal from '@/components/CustomFormModal';
 import UploadAvatar from '@/components/UploadAvatar';
 import { t } from '@/services/i18nRuntime';
-import type { FileType } from '@/types/interfaces/common';
 import { customizeRequiredMark } from '@/utils/form';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import {
@@ -15,7 +14,6 @@ import {
   Switch,
   Tree,
   TreeSelect,
-  Upload,
 } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -419,24 +417,6 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
     }
   };
 
-  // 上传图片默认处理
-  const beforeUploadDefault = (file: FileType) => {
-    const { type, size } = file;
-    const isJpgOrPng =
-      type === 'image/jpeg' ||
-      type === 'image/jpg' ||
-      type === 'image/png' ||
-      type === 'image/svg+xml';
-    if (!isJpgOrPng) {
-      message.error(t('PC.Pages.SystemMenuFormModal.imageTypeInvalid'));
-    }
-    const isLt2M = size / 1024 / 1024 < 2;
-    if (!isLt2M) {
-      message.error(t('PC.Pages.SystemMenuFormModal.imageSizeInvalid'));
-    }
-    return (isJpgOrPng && isLt2M) || Upload.LIST_IGNORE;
-  };
-
   return (
     <CustomFormModal
       form={form}
@@ -471,7 +451,6 @@ const MenuFormModal: React.FC<MenuFormModalProps> = ({
             onUploadSuccess={setImageUrl}
             imageUrl={imageUrl}
             svgIconName="icons-workspace-agent"
-            beforeUpload={beforeUploadDefault}
           />
         </Form.Item>
         <Row gutter={16}>

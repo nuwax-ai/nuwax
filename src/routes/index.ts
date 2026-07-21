@@ -670,6 +670,11 @@ const routes = [
     layout: false,
   },
   {
+    path: '/examples/session-rendering-demo',
+    component: '@/examples/SessionRenderingDemo',
+    layout: false,
+  },
+  {
     path: '/examples/menu-permission-demo',
     component: '@/examples/MenuPermissionDemo',
     layout: false,
@@ -677,6 +682,16 @@ const routes = [
   {
     path: '/examples/agent-intervention-demo',
     component: '@/examples/AgentInterventionDemo',
+    layout: false,
+  },
+  {
+    path: '/examples/voice-input-demo',
+    component: '@/examples/VoiceInputDemo',
+    layout: false,
+  },
+  {
+    path: '/examples/mcp-ask-duplicate-demo',
+    component: '@/examples/McpAskDuplicateDemo',
     layout: false,
   },
 ];

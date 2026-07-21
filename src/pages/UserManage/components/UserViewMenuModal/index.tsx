@@ -7,7 +7,7 @@ import { DownOutlined } from '@ant-design/icons';
 import { Form, Tree } from 'antd';
 import type { DataNode } from 'antd/es/tree';
 import classNames from 'classnames';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRequest } from 'umi';
 import { apiSystemUserListMenu } from '../../user-manage';
 import styles from './index.less';
@@ -49,7 +49,7 @@ const UserViewMenuModal: React.FC<UserViewMenuModalProps> = ({
     manual: true,
   });
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (open && userId > 0) {
       runGetMenuList(userId);
     }
@@ -61,7 +61,7 @@ const UserViewMenuModal: React.FC<UserViewMenuModalProps> = ({
   }, [open, userId]);
 
   // 当菜单列表加载完成后，初始化展开状态（因为 defaultExpandAll 为 true，所以所有菜单和资源树都应该展开）
-  React.useEffect(() => {
+  useEffect(() => {
     if (menuList && menuList.length > 0) {
       const expandedSet = new Set<number>();
       const expandedKeysList: React.Key[] = [];

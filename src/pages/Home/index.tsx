@@ -106,6 +106,7 @@ const Home: React.FC = () => {
     useState<DisplayRecommendInfo>();
   const [homeCategoryInfo, setHomeCategoryInfo] =
     useState<HomeAgentCategoryInfo>();
+  const [submitting, setSubmitting] = useState<boolean>(false);
 
   const defaultAgentId =
     isTaskAgentMode && tenantConfigInfo?.defaultTaskAgentId
@@ -236,49 +237,56 @@ const Home: React.FC = () => {
     modelId?: number,
     agentMode?: AgentMode,
   ) => {
+    if (submitting) return;
+
     if (!tenantConfigInfo || !currentAgentId) {
       message.warning(dict('PC.Pages.Home.noTenantInfo'));
       return;
     }
 
-    if (selectedProjectType) {
-      const spaceId = showSpaceSelector
-        ? selectedSpaceId
-        : Number(getSpaceId());
-      if (!spaceId) {
-        message.warning(dict('PC.Pages.Home.noTenantInfo'));
+    setSubmitting(true);
+    try {
+      if (selectedProjectType) {
+        const spaceId = showSpaceSelector
+          ? selectedSpaceId
+          : Number(getSpaceId());
+        if (!spaceId) {
+          message.warning(dict('PC.Pages.Home.noTenantInfo'));
+          return;
+        }
+
+        await createProjectAndNavigate({
+          payload: {
+            type: selectedProjectType,
+            prompt: inputMessage,
+            files,
+            skillIds,
+            modelId: modelId || selectedModelId,
+            tools: selectedComponentList,
+            computerId: selectedComputerId,
+            agentMode,
+            agentId: currentAgentId,
+          },
+          spaceId,
+          tenantConfigInfo,
+          setContext,
+        });
         return;
       }
 
-      await createProjectAndNavigate({
-        payload: {
-          type: selectedProjectType,
-          prompt: inputMessage,
-          files,
-          skillIds,
-          modelId: modelId || selectedModelId,
-          tools: selectedComponentList,
-          computerId: selectedComputerId,
-          agentMode,
-          agentId: currentAgentId,
-        },
-        spaceId,
-        tenantConfigInfo,
-        setContext,
+      await handleCreateConversation(currentAgentId, {
+        message: inputMessage,
+        files,
+        infos: selectedComponentList,
+        messageSourceType: 'home' as MessageSourceType,
+        selectedComputerId,
+        skillIds,
+        modelId: modelId || selectedModelId,
+        agentMode,
       });
-      return;
+    } finally {
+      setSubmitting(false);
     }
-
-    await handleCreateConversation(currentAgentId, {
-      message: inputMessage,
-      files,
-      infos: selectedComponentList,
-      messageSourceType: 'home' as MessageSourceType,
-      selectedComputerId,
-      skillIds,
-      modelId: modelId || selectedModelId,
-      agentMode,
-    });
   };
 
   const showTaskAgentToggle = !!(
@@ -319,7 +327,10 @@ const Home: React.FC = () => {
   };
 
   return (
-    <div className={cx(styles.container, 'flex', 'flex-col', 'items-center')}>
+    <div
+      id="home-container"
+      className={cx(styles.container, 'flex', 'flex-col', 'items-center')}
+    >
       <main className={cx(styles.inputSection)}>
         <div className={cx(styles.titleContainer)}>
           <h2
@@ -327,11 +338,16 @@ const Home: React.FC = () => {
             dangerouslySetInnerHTML={{ __html: tenantConfigInfo?.homeSlogan }}
           />
         </div>
+        <ChatBoxRecommendNav
+          items={recommendNavList}
+          onSelect={handleRecommendSelect}
+        />
         <ChatInputHome
           ref={chatInputRef}
           className={cx(styles.textarea)}
           onEnter={handleEnter}
           isClearInput={false}
+          wholeDisabled={submitting}
           placeholder={selectedRecommend?.placeholder || undefined}
           manualComponents={
             agentDetail?.manualComponents || EMPTY_MANUAL_COMPONENTS
@@ -374,10 +390,6 @@ const Home: React.FC = () => {
           showAgentModeSelector={
             agentDetail?.allowChooseMode === DefaultSelectedEnum.Yes
           }
-        />
-        <ChatBoxRecommendNav
-          items={recommendNavList}
-          onSelect={handleRecommendSelect}
         />
       </main>
       <section className={cx(styles.recommendSection)}>

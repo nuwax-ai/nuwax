@@ -132,7 +132,7 @@ const AppDevHeader: React.FC<AppDevHeaderProps> = ({
     }
 
     // 默认情况下，父容器回退1步
-    jumpBack(`/space/${spaceId}/page-develop`);
+    jumpBack(`/space/${spaceId}/page-develop`, { from: 'appdev' });
   };
 
   return (

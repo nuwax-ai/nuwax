@@ -1,5 +1,7 @@
+import Loading from '@/components/custom/Loading';
 import { useInitProjectMetadata } from '@/hooks/useInitProjectMetadata';
 import { ChatCore } from '@/pages/Chat';
+import { apiAgentConversation } from '@/services/agentConfig';
 import { apiSkillDetail } from '@/services/skill';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { SkillDetailInfo } from '@/types/interfaces/skill';
@@ -17,8 +19,23 @@ const SkillDetailsConversation: React.FC = () => {
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
   const id = Number(searchParams.get('conversationId'));
-  const agentId = Number(searchParams.get('agentId'));
-  const skillId = Number(params.skillId) || agentId;
+  const [agentId, setAgentId] = useState<number>();
+
+  useEffect(() => {
+    if (id) {
+      apiAgentConversation(id)
+        .then((res) => {
+          if (res?.data?.agentId) {
+            setAgentId(res.data.agentId);
+          }
+        })
+        .catch((err) => {
+          console.error('Failed to get conversation details:', err);
+        });
+    }
+  }, [id]);
+
+  const skillId = Number(params.skillId);
 
   const [skillInfo, setSkillInfo] = useState<SkillDetailInfo | null>(null);
 
@@ -83,6 +100,10 @@ const SkillDetailsConversation: React.FC = () => {
       runSkillInfo(skillId);
     }
   }, [fileTreeData, skillId]);
+
+  if (!agentId) {
+    return <Loading />;
+  }
 
   return (
     <ChatCore

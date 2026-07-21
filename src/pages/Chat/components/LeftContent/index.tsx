@@ -7,7 +7,6 @@ import ConditionRender from '@/components/ConditionRender';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import DropdownChangeName from '@/pages/Chat/components/DropdownChangeName';
 import { t } from '@/services/i18nRuntime';
-import { HideDesktopEnum } from '@/types/enums/agent';
 import { AgentTypeEnum } from '@/types/enums/space';
 import { CodeOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
@@ -158,13 +157,12 @@ const LeftContent: React.FC<LeftContentProps> = ({
                 {/* 文件预览视图 */}
                 <TooltipIcon
                   title={
-                    isFileTreeVisible && headerProps.viewMode === 'preview'
+                    headerProps.isFileTreeIconActive
                       ? t('PC.Pages.Chat.closeFilePreview')
                       : t('PC.Pages.Chat.openFilePreview')
                   }
                   className={cx(styles['icon-box'], {
-                    [styles['active']]:
-                      isFileTreeVisible && headerProps.viewMode === 'preview',
+                    [styles['active']]: headerProps.isFileTreeIconActive,
                   })}
                   icon={
                     <SvgIcon
@@ -180,27 +178,23 @@ const LeftContent: React.FC<LeftContentProps> = ({
                   title={t(
                     'PC.Components.ConversationBottomConsole.tabTerminal',
                   )}
-                  className={cx(styles['icon-box'])}
+                  className={cx(styles['icon-box'], {
+                    [styles['active']]: headerProps.isTerminalIconActive,
+                  })}
                   icon={<CodeOutlined style={{ fontSize: 16 }} />}
-                  onClick={headerProps.handleToggleTerminalConsole}
+                  onClick={headerProps.handleOpenTerminalPanel}
                 />
 
-                {/* 智能体电脑视图 */}
-                <ConditionRender
-                  condition={
-                    headerProps.conversationInfo?.agent?.hideDesktop ===
-                    HideDesktopEnum.No
-                  }
-                >
+                {/* 智能体电脑视图：仅云端电脑 + 未隐藏远程桌面时展示 */}
+                <ConditionRender condition={headerProps.isShowDesktop}>
                   <TooltipIcon
                     title={
-                      isFileTreeVisible && headerProps.viewMode === 'desktop'
+                      headerProps.isDesktopIconActive
                         ? t('PC.Pages.Chat.closeAgentDesktop')
                         : t('PC.Pages.Chat.openAgentDesktop')
                     }
                     className={cx(styles['icon-box'], {
-                      [styles['active']]:
-                        isFileTreeVisible && headerProps.viewMode === 'desktop',
+                      [styles['active']]: headerProps.isDesktopIconActive,
                     })}
                     icon={
                       <SvgIcon

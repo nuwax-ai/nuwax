@@ -9,10 +9,12 @@ import { CREATED_TABS } from '@/constants/common.constants';
 import useDisableSaveShortcut from '@/hooks/useDisableSaveShortcut';
 import useDrawerScroll from '@/hooks/useDrawerScroll';
 import { useThrottledCallback } from '@/hooks/useThrottledCallback';
+import { V3_FORM_IME_SAFE_ENABLED } from '@/pages/Antv-X6/v3/constants/editorConfig';
 import {
   DEFAULT_DRAWER_FORM,
   SKILL_FORM_KEY,
 } from '@/pages/Antv-X6/v3/constants/node.constants';
+import { isWorkflowFormImeComposing } from '@/pages/Antv-X6/v3/utils/workflowFormImeGuard';
 import service from '@/services/workflow';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import {
@@ -266,11 +268,15 @@ const Workflow: React.FC<WorkflowV3Props> = ({
     // V3:  foldWrapItem ，
     //  UI
     if (foldWrapItem && foldWrapItem.nodeConfig) {
-      // ， foldWrapItem
-      const currentSkills = form.getFieldValue(SKILL_FORM_KEY);
-      form.setFieldsValue(foldWrapItem.nodeConfig);
-      if (Array.isArray(currentSkills) && currentSkills.length > 0) {
-        form.setFieldValue(SKILL_FORM_KEY, currentSkills);
+      // 中文 IME 组合期间跳过 setFieldsValue，避免外部 foldWrapItem 更新打断输入
+      if (V3_FORM_IME_SAFE_ENABLED && isWorkflowFormImeComposing()) {
+        // skip
+      } else {
+        const currentSkills = form.getFieldValue(SKILL_FORM_KEY);
+        form.setFieldsValue(foldWrapItem.nodeConfig);
+        if (Array.isArray(currentSkills) && currentSkills.length > 0) {
+          form.setFieldValue(SKILL_FORM_KEY, currentSkills);
+        }
       }
     }
 

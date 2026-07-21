@@ -13,7 +13,14 @@ import { cloneDeep } from '@/utils/common';
 import { message } from 'antd';
 import { MutableRefObject, useCallback } from 'react';
 import { useModel } from 'umi';
-import { hasGraphEdgeBetween } from '../agentFlow/edgeSync';
+import {
+  applyAgentFlowBranchEdgeDisconnect,
+  isAgentFlowBranchEdgeConnect,
+} from '../agentFlow/edgeConnect';
+import {
+  hasGraphEdgeBetween,
+  removeEdgeFromDataModel,
+} from '../agentFlow/edgeSync';
 import { workflowProxy } from '../services/workflowProxyV3';
 
 interface UseGraphInteractionProps {
@@ -118,18 +125,10 @@ export const useGraphInteraction = ({
         message.error(res.message);
         return false;
       } else if (type === UpdateEdgeType.deleted) {
-        // 删除边
-        const res = workflowProxy.deleteEdge(
-          String(sourceNode.id),
-          targetId,
-          sourcePort,
-        );
-
-        if (res.success) {
+        const finishEdgeDelete = async () => {
           changeUpdateTime();
           await callback();
 
-          // 如果源节点在循环内，也刷新父循环节点的引用（更新循环输出变量列表）
           if (sourceNode.loopNodeId) {
             await getReference(Number(sourceNode.loopNodeId));
           }
@@ -139,13 +138,51 @@ export const useGraphInteraction = ({
           updateCurrentNodeRef('sourceNode', {
             nextNodeIds: newNodeIds,
           });
-          // V3: 连线变化后触发全量保存
           debouncedSaveFullWorkflow();
           return newNodeIds;
-        } else {
-          message.error(res.message);
+        };
+
+        // AgentFlow 分支边不在 proxy.edges，须先走 nodeConfig 分支字段删除
+        if (
+          sourcePort &&
+          isAgentFlowBranchEdgeConnect(sourceNode, sourcePort)
+        ) {
+          const updatedNode = applyAgentFlowBranchEdgeDisconnect(
+            sourceNode,
+            Number(targetId),
+            sourcePort,
+          );
+          if (updatedNode) {
+            graphRef.current?.graphUpdateNode(
+              String(updatedNode.id),
+              updatedNode,
+            );
+            const proxyResult = workflowProxy.updateNode(updatedNode);
+            if (proxyResult.success) {
+              return finishEdgeDelete();
+            }
+          }
+          message.error('删除连线失败');
           return false;
         }
+
+        // 普通边：优先不带 sourcePort 删除，兼容历史 proxy.edges 无 port 的数据
+        const removed = removeEdgeFromDataModel({
+          sourceNode,
+          targetNodeId: targetId,
+          sourcePort,
+        });
+        if (removed) {
+          return finishEdgeDelete();
+        }
+
+        const fallbackRes = workflowProxy.deleteEdge(
+          String(sourceNode.id),
+          targetId,
+          sourcePort,
+        );
+        message.error(fallbackRes.message || 'Edge does not exist');
+        return false;
       }
       return false;
     },

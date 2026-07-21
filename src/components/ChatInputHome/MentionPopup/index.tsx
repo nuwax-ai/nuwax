@@ -314,6 +314,19 @@ const MentionPopup = React.forwardRef<MentionPopupHandle, MentionPopupProps>(
           const records = pageData.records || [];
           const total = pageData.total || records.length;
 
+          if (page === 1 && records.length === 0) {
+            updateTabDataState('all', (prev) => ({
+              ...prev,
+              loading: false,
+              initialized: true,
+              items: [],
+              total: 0,
+              hasMore: false,
+            }));
+            onClose();
+            return;
+          }
+
           updateTabDataState('all', (prev) => ({
             ...prev,
             items: page === 1 ? records : [...prev.items, ...records],

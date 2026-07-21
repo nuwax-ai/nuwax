@@ -2,6 +2,7 @@ import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { HistoryData } from '@/types/interfaces/publish';
 import { RequestResponse } from '@/types/interfaces/request';
 import {
+  SkillConvertToConversationResponse,
   SkillDetailInfo,
   SkillImportParams,
   SkillUpdateParams,
@@ -184,4 +185,15 @@ export async function fetchContentFromUrl(url: string): Promise<string> {
     console.error('Failed to get file content: ', error);
     throw error;
   }
+}
+
+/**
+ * 将文件服务技能转为 AI 对话式开发技能
+ */
+export async function apiSkillConvertToConversation(
+  skillId: number,
+): Promise<RequestResponse<SkillConvertToConversationResponse>> {
+  return request(`/api/skill/convert-to-ai-dev/${skillId}`, {
+    method: 'POST',
+  });
 }

@@ -412,17 +412,23 @@ const UserManage: React.FC = () => {
         role={currentUserInfo?.role}
         onCancel={() => setOpenAuthModal(false)}
       />
+
+      {/* 查看菜单资源权限 */}
       <UserViewMenuModal
         open={openViewMenuModal}
         userId={currentUserInfo?.id || 0}
         onCancel={() => setOpenViewMenuModal(false)}
       />
+
+      {/* 查看数据权限 */}
       <DataPermissionModal
         open={openDataPermissionModal}
         userId={currentUserInfo?.id || 0}
         userName={currentUserInfo?.userName || currentUserInfo?.nickName}
         onCancel={() => setOpenDataPermissionModal(false)}
       />
+
+      {/* 重置密码 */}
       <ResetPasswordModal
         open={openResetPasswordModal}
         record={currentUserInfo}

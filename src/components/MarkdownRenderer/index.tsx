@@ -91,7 +91,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(
             <MarkdownCMD
               ref={markdownRef}
               timerType="requestAnimationFrame"
-              interval={30}
+              interval={12}
               plugins={plugins}
               codeBlock={{ headerActions }}
               theme={theme}

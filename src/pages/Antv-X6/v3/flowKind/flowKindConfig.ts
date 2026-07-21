@@ -54,6 +54,16 @@ export const AGENT_FLOW_NODE_TYPES: ReadonlySet<NodeTypeEnum> = new Set([
   NodeTypeEnum.RouteDecision,
 ]);
 
+/**
+ * AgentFlow 节点选择面板展示顺序（2×2 网格：从左到右、从上到下）。
+ */
+export const AGENT_FLOW_STENCIL_ORDER: readonly NodeTypeEnum[] = [
+  NodeTypeEnum.Agent,
+  NodeTypeEnum.RouteDecision,
+  NodeTypeEnum.HumanInteraction,
+  NodeTypeEnum.Workflow,
+];
+
 // ──────────────────────────────────────────────
 //  2. AgentFlow 属性面板映射
 // ──────────────────────────────────────────────

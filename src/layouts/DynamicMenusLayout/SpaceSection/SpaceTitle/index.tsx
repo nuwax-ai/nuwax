@@ -32,6 +32,7 @@ const SpaceTitle: React.FC<SpaceTitleProps> = ({ name }) => {
         open={open}
         trigger="click"
         arrow={false}
+        destroyOnHidden
         onOpenChange={setOpen}
         content={
           <PersonalSpaceContent

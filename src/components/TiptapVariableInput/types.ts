@@ -108,6 +108,8 @@ export interface TiptapVariableInputProps {
   getEditor?: (editor: any) => void;
   /** 是否启用撤销/重做快捷键（Cmd+Z / Cmd+Shift+Z），默认不启用 */
   enableHistory?: boolean;
+  /** 中文 IME 组合输入期间跳过受控回写与 onChange（工作流属性面板默认由 ExpandableInputTextarea 开启） */
+  imeSafe?: boolean;
 }
 
 /**

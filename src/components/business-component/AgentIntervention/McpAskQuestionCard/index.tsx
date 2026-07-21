@@ -15,6 +15,11 @@ import type {
   McpAskRespondPayload,
 } from '../types/mcpAskIntervention';
 import {
+  extractMcpAskFormAttachments,
+  hydrateMcpAskFormValues,
+  normalizeMcpAskFormData,
+} from '../utils/normalizeMcpAskFormData';
+import {
   getInteractionSteps,
   getSkipLabel,
   isSkipAllowed,
@@ -88,14 +93,14 @@ const McpAskQuestionCard: React.FC<McpAskQuestionCardProps> = ({
         ? { ...fieldInitials, ...(interaction.formData ?? {}) }
         : interaction.formData;
     if (initial) {
-      // @ts-ignore
-      form.setFieldsValue(initial);
+      form.setFieldsValue(hydrateMcpAskFormValues(initial, ui) as any);
     }
   }, [form, ui.fields, interaction.formData, input.requestId]);
 
   const buildPayload = (
     action: McpAskRespondPayload['action'],
     formData?: Record<string, unknown>,
+    files?: McpAskRespondPayload['files'],
   ): McpAskRespondPayload => ({
     interventionId: input.requestId,
     toolCallId,
@@ -104,6 +109,7 @@ const McpAskQuestionCard: React.FC<McpAskQuestionCardProps> = ({
     protocol: 'mcp',
     action,
     formData,
+    files,
     answeredAt: Date.now(),
     answeredBy: { kind: 'web' },
   });
@@ -117,8 +123,17 @@ const McpAskQuestionCard: React.FC<McpAskQuestionCardProps> = ({
   };
 
   const handleNext = async () => {
-    await validateStepFields(currentStep);
-    setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1));
+    try {
+      await validateStepFields(currentStep);
+      setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1));
+    } catch (errorInfo: any) {
+      if (errorInfo?.errorFields?.length > 0) {
+        form.scrollToField(errorInfo.errorFields[0].name, {
+          block: 'center',
+          behavior: 'smooth',
+        });
+      }
+    }
   };
 
   const handlePrev = () => {
@@ -126,19 +141,31 @@ const McpAskQuestionCard: React.FC<McpAskQuestionCardProps> = ({
   };
 
   const handleSubmit = async () => {
-    if (isWizard) {
-      for (let i = 0; i < steps.length; i += 1) {
-        await validateStepFields(i);
+    try {
+      if (isWizard) {
+        for (let i = 0; i < steps.length; i += 1) {
+          await validateStepFields(i);
+        }
+      } else {
+        await form.validateFields();
       }
-    } else {
-      await form.validateFields();
+      const rawValues = form.getFieldsValue(true);
+      const files = extractMcpAskFormAttachments(rawValues, ui);
+      const values = normalizeMcpAskFormData(rawValues, ui);
+      onRespond?.(buildPayload('submit', values, files));
+    } catch (errorInfo: any) {
+      if (errorInfo?.errorFields?.length > 0) {
+        form.scrollToField(errorInfo.errorFields[0].name, {
+          block: 'center',
+          behavior: 'smooth',
+        });
+      }
     }
-    const values = form.getFieldsValue(true);
-    onRespond?.(buildPayload('submit', values));
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (disabled) return;
+    if (e.nativeEvent.isComposing) return;
     if (e.key === 'Enter' && !e.shiftKey && !e.metaKey && !e.ctrlKey) {
       if (
         e.target instanceof HTMLElement &&
@@ -277,6 +304,7 @@ const McpAskQuestionCard: React.FC<McpAskQuestionCardProps> = ({
           className={styles.form}
           disabled={disabled}
           requiredMark="optional"
+          scrollToFirstError
         >
           {visibleFields.map((field) => (
             <McpAskFormField

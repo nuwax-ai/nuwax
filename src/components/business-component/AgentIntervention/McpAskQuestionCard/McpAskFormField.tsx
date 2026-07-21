@@ -1,21 +1,11 @@
-import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
-import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { t } from '@/services/i18nRuntime';
-import { handleUploadFileList } from '@/utils/upload';
-import { InboxOutlined } from '@ant-design/icons';
-import {
-  Checkbox,
-  Form,
-  Input,
-  InputNumber,
-  Radio,
-  Select,
-  Upload,
-} from 'antd';
+import { Checkbox, Form, Input, InputNumber, Radio, Select } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
+import { validateMcpAskRequiredFileField } from '../utils/normalizeMcpAskFormData';
 import type { ParsedMcpAskField } from '../utils/parseMcpAskSchema';
 import { getJsonSchemaPrimaryType } from '../utils/parseMcpAskSchema';
+import McpAskFileUpload from './McpAskFileUpload';
 import styles from './McpAskFormField.less';
 
 const cx = classNames.bind(styles);
@@ -215,39 +205,31 @@ const McpAskFormField: React.FC<McpAskFormFieldProps> = ({
   }
 
   if (widget === 'file') {
-    const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
     const accept = (options as any)?.accept;
     const multiple = (options as any)?.multiple;
+    const fileRules = required
+      ? [
+          {
+            validator: async (_: unknown, value: unknown) => {
+              try {
+                validateMcpAskRequiredFileField(value);
+              } catch {
+                throw new Error(
+                  t('PC.Components.McpAskQuestionCard.fieldRequired'),
+                );
+              }
+            },
+          },
+        ]
+      : [];
 
     return (
-      <Form.Item
-        name={name}
-        label={label}
-        rules={rules}
-        valuePropName="fileList"
-        getValueFromEvent={(e) => {
-          if (Array.isArray(e)) return e;
-          return handleUploadFileList(e?.fileList ?? []);
-        }}
-      >
-        <Upload.Dragger
-          action={UPLOAD_FILE_ACTION}
-          headers={{ Authorization: token ? `Bearer ${token}` : '' }}
-          data={{ type: 'tmp' }}
+      <Form.Item name={name} label={label} rules={fileRules}>
+        <McpAskFileUpload
           disabled={disabled}
           multiple={multiple}
           accept={accept}
-          listType="picture"
-          className={cx(styles['upload-control'])}
-        >
-          <p className="ant-upload-drag-icon">
-            <InboxOutlined />
-          </p>
-          <p className="ant-upload-text">
-            {t('PC.Components.McpAskQuestionCard.uploadDragText') ||
-              '点击或拖拽文件到此区域上传'}
-          </p>
-        </Upload.Dragger>
+        />
       </Form.Item>
     );
   }

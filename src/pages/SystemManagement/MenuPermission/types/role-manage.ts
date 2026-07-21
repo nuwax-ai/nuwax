@@ -227,6 +227,12 @@ export interface DataPermission {
   // 智能体电脑交换分区(GB)，null表示使用默认值8
   agentComputerSwapGb?: number;
 
+  // 智能体电脑存储上限(GB)，-1表示不限制
+  agentComputerStorageLimitGb?: number;
+
+  // 网页应用存储上限(GB)，-1表示不限制
+  pageAppStorageLimitGb?: number;
+
   /*智能体电脑CPU核心数，null表示使用默认值 */
   agentComputerCpuCores?: number;
 

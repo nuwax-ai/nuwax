@@ -4,7 +4,7 @@ import SelectList from '@/components/custom/SelectList';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import {
   GENERATE_DIVERSITY_OPTION_VALUE,
-  GENERATE_DIVERSITY_OPTIONS,
+  getGenerateDiversityOptions,
 } from '@/constants/agent.constants';
 import { apiAgentComponentModelUpdate } from '@/services/agentConfig';
 // import { AgentEngineEnum } from '@/types/enums/agent';
@@ -420,7 +420,7 @@ const AgentModelSetting: React.FC<
         />
       </h3>
       <Segmented<UpdateModeComponentEnum>
-        options={GENERATE_DIVERSITY_OPTIONS}
+        options={getGenerateDiversityOptions()}
         rootClassName={cx('mb-16')}
         value={componentBindConfig?.mode}
         onChange={handleChangeGenerateDiversity}

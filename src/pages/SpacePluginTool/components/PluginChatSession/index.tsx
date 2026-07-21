@@ -250,6 +250,7 @@ const PluginChatSession: React.FC<PluginChatSessionProps> = ({
       onReloadConversationHistoryAsync={async (id) =>
         (await runAsync(Number(id)))?.data?.messageList
       }
+      resumeDebugSource="space-plugin-tool:chat-session"
     />
   );
 };
