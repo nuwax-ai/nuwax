@@ -2,6 +2,7 @@ import type {
   AgentMode,
   McpAskInteraction,
 } from '@/components/business-component/AgentIntervention';
+import type { OpenUiArtifact } from '@/components/business-component/OpenUiArtifact';
 import type {
   AssistantRoleEnum,
   ConversationEventTypeEnum,
@@ -298,6 +299,8 @@ export interface MessageInfo extends ChatMessageDto {
   acpPermissionInteractions?: RcoderAcpPermissionInteraction[];
   /** MCP ask/question 交互（toolName: nuwax_ask_question） */
   mcpAskInteractions?: McpAskInteraction[];
+  /** OpenUI MCP 生成的会话内组件或工作空间页面。 */
+  openUiArtifacts?: OpenUiArtifact[];
 }
 
 // 查询会话信息

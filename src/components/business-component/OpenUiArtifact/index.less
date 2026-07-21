@@ -1,0 +1,34 @@
+.artifacts {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0 8px 12px;
+}
+
+.inlineArtifact,
+.pageArtifact {
+  overflow: hidden;
+  border: 1px solid var(--ant-color-border-secondary);
+  border-radius: 8px;
+  background: var(--ant-color-bg-container);
+}
+
+.artifactTitle {
+  padding: 8px 12px;
+  color: var(--ant-color-text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  border-bottom: 1px solid var(--ant-color-border-secondary);
+}
+
+.inlineFrame {
+  display: block;
+  width: 100%;
+  min-height: 260px;
+  border: 0;
+  background: transparent;
+}
+
+.pageArtifact {
+  height: min(640px, 70vh);
+}

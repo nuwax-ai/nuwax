@@ -1,4 +1,5 @@
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
+import { hydrateOpenUiArtifactsFromExecutedComponents } from '../../OpenUiArtifact/applyOpenUiToolCallSseEvent';
 import type { McpAskInteraction } from '../types/mcpAskIntervention';
 import { createInterventionTriggeredAt } from './interventionTrigger';
 import {
@@ -64,13 +65,17 @@ export function hydrateMcpAskInteractionsInMessageList(
   contextMessageList: MessageInfo[] = messageList,
 ): MessageInfo[] {
   const hydratedList = messageList.map((message) =>
-    hydrateMcpAskInteractionsFromExecutedComponents(message),
+    hydrateOpenUiArtifactsFromExecutedComponents(
+      hydrateMcpAskInteractionsFromExecutedComponents(message),
+    ),
   );
 
   // 回执匹配依赖完整上下文中同标题 Ask 的数量与顺序。不能把未 hydrate 的
   // 原始历史传入，否则旧表单的「我已填写…」会误匹配到最新的同标题 Ask。
   const hydratedContext = contextMessageList.map((message) =>
-    hydrateMcpAskInteractionsFromExecutedComponents(message),
+    hydrateOpenUiArtifactsFromExecutedComponents(
+      hydrateMcpAskInteractionsFromExecutedComponents(message),
+    ),
   );
 
   return reconcileMcpAskHydratedMessageList(hydratedList, hydratedContext);

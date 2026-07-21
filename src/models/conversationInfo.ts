@@ -119,6 +119,10 @@ const DEFERRED_INTERVENTION_RELOAD_DELAYS = [250, 750, 1500] as const;
 const FINAL_EVENT_PROCESS_TAG_RE =
   /<markdown-custom-process\b[^>]*\btype=["']Event["']/i;
 
+/** OpenUI MCP 也可能仅在 FINAL_RESULT 中保留 ToolCall 标签，工具结果会异步落库。 */
+const FINAL_OPENUI_TOOL_TAG_RE =
+  /<markdown-custom-process\b[^>]*\btype=["']ToolCall["'][^>]*\bname=["'][^"']*nuwax-openui-mcp__render_openui_(?:inline|page)[^"']*["']/i;
+
 export default () => {
   // 历史记录
   const { runHistory, runHistoryItem } = useModel('conversationHistory');
@@ -1209,7 +1213,8 @@ export default () => {
         // 表单会稍后落库到会话详情；自动补偿读取，避免用户必须手动刷新页面。
         const hasDeferredInterventionProcess =
           typeof data?.outputText === 'string' &&
-          FINAL_EVENT_PROCESS_TAG_RE.test(data.outputText);
+          (FINAL_EVENT_PROCESS_TAG_RE.test(data.outputText) ||
+            FINAL_OPENUI_TOOL_TAG_RE.test(data.outputText));
         if (params.conversationId && hasDeferredInterventionProcess) {
           void (async () => {
             for (const delay of DEFERRED_INTERVENTION_RELOAD_DELAYS) {
@@ -1232,7 +1237,10 @@ export default () => {
                     (interaction) => interaction.responseStatus === 'pending',
                   ),
                 );
-                if (hasPendingAsk) {
+                const hasOpenUiArtifact = hydratedMessages.some((message) =>
+                  Boolean(message.openUiArtifacts?.length),
+                );
+                if (hasPendingAsk || hasOpenUiArtifact) {
                   return;
                 }
               } catch (error) {

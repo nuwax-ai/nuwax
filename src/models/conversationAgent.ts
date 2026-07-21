@@ -80,6 +80,10 @@ import {
   preserveOptimisticMessageTail,
 } from './conversationInfoMessageList';
 
+const DEFERRED_INTERVENTION_RELOAD_DELAYS = [250, 750, 1500] as const;
+const FINAL_OPENUI_TOOL_TAG_RE =
+  /<markdown-custom-process\b[^>]*\btype=["']ToolCall["'][^>]*\bname=["'][^"']*nuwax-openui-mcp__render_openui_(?:inline|page)[^"']*["']/i;
+
 export default () => {
   const { showPagePreview, handleChatProcessingList } = useModel('chat');
 
@@ -679,6 +683,40 @@ export default () => {
       if (eventType === ConversationEventTypeEnum.FINAL_RESULT) {
         // 重置消息ID
         messageIdRef.current = '';
+
+        const hasDeferredOpenUiArtifact =
+          typeof data?.outputText === 'string' &&
+          FINAL_OPENUI_TOOL_TAG_RE.test(data.outputText);
+        if (params.conversationId && hasDeferredOpenUiArtifact) {
+          void (async () => {
+            for (const delay of DEFERRED_INTERVENTION_RELOAD_DELAYS) {
+              await new Promise<void>((resolve) => {
+                window.setTimeout(resolve, delay);
+              });
+              if (conversationInfoRef.current?.id !== params.conversationId) {
+                return;
+              }
+              try {
+                const result = await runAsync(params.conversationId);
+                const hydratedMessages = hydrateMcpAskInteractionsInMessageList(
+                  result?.data?.messageList || [],
+                );
+                if (
+                  hydratedMessages.some((message) =>
+                    Boolean(message.openUiArtifacts?.length),
+                  )
+                ) {
+                  return;
+                }
+              } catch (error) {
+                console.warn(
+                  '[conversationAgent] Failed to reload deferred OpenUI artifact',
+                  error,
+                );
+              }
+            }
+          })();
+        }
 
         /**
          * "error":"Agent正在执行任务，请等待当前任务完成后再发送新请求"

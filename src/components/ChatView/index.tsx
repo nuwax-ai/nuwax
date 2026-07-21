@@ -2,6 +2,7 @@ import agentImage from '@/assets/images/agent_image.png';
 import avatar from '@/assets/images/avatar.png';
 import CopyButton from '@/components/base/CopyButton';
 import { stripMcpAskResumeDisplayArtifacts } from '@/components/business-component/AgentIntervention/utils/mcpAskResumeMessage';
+import { OpenUiArtifactRenderer } from '@/components/business-component/OpenUiArtifact';
 import AttachFile from '@/components/ChatView/AttachFile';
 import ConditionRender from '@/components/ConditionRender';
 import MarkdownRenderer from '@/components/MarkdownRenderer';
@@ -214,6 +215,8 @@ const ChatView: React.FC<ChatViewProps> = memo(
                 </div>
               </div>
             )}
+
+            <OpenUiArtifactRenderer artifacts={messageInfo?.openUiArtifacts} />
 
             {/* 底部区域: 复制按钮、运行时间 */}
             <ConditionRender
