@@ -65,6 +65,7 @@
     "@js-preview/pdf": "^2.0.10",
     "@microsoft/fetch-event-source": "^2.0.1",
     "@monaco-editor/react": "^4.6.0",
+    "@nuwax-ai/chat-kit": "file:vendor/nuwax-ai-chat-kit-0.1.0.tgz",
     "@tiptap/core": "^2.27.1",
     "@tiptap/pm": "^2.27.1",
     "@tiptap/react": "^2.27.1",

@@ -1,8 +1,10 @@
+import { toChatKitMessage } from '@/adapters/chatKitAdapter';
 import AgentChatEmpty from '@/components/AgentChatEmpty';
 import ChatView from '@/components/ChatView';
 import NewConversationSet from '@/components/NewConversationSet';
 import RecommendList from '@/components/RecommendList';
 import { LoadingOutlined } from '@ant-design/icons';
+import { ChatMessageList } from '@nuwax-ai/chat-kit/react';
 import classNames from 'classnames';
 import * as React from 'react';
 
@@ -20,6 +22,7 @@ import styles from './index.less';
 const cx = classNames.bind(styles);
 
 export interface ChatContentAreaProps {
+  conversationId?: number | string;
   messageViewRef: React.RefObject<HTMLDivElement>;
   handleMouseEnter: () => void;
   handleMouseLeave: () => void;
@@ -51,6 +54,7 @@ export interface ChatContentAreaProps {
 }
 
 export const ChatContentArea: React.FC<ChatContentAreaProps> = ({
+  conversationId,
   messageViewRef,
   handleMouseEnter,
   handleMouseLeave,
@@ -91,6 +95,25 @@ export const ChatContentArea: React.FC<ChatContentAreaProps> = ({
     return messageList;
   }, [messageList]);
 
+  const sharedMessages = React.useMemo(
+    () =>
+      renderedMessageList.map((message, index) =>
+        toChatKitMessage(message, conversationId ?? 'new', index),
+      ),
+    [conversationId, renderedMessageList],
+  );
+
+  const sourceMessageBySharedId = React.useMemo(
+    () =>
+      new Map(
+        sharedMessages.map((message, index) => [
+          message.id,
+          renderedMessageList[index],
+        ]),
+      ),
+    [renderedMessageList, sharedMessages],
+  );
+
   return (
     <div
       className={cx(styles['chat-wrapper-content'], 'scroll-container')}
@@ -117,84 +140,86 @@ export const ChatContentArea: React.FC<ChatContentAreaProps> = ({
               />
             )}
 
-            {renderedMessageList?.length > 0 ? (
-              <>
-                {/* 加载历史消息的触发探测节点 */}
-                {isMoreMessage &&
-                  (renderedMessageList?.length || 0) >= MESSAGE_PAGE_SIZE && (
-                    <div
-                      ref={loadMoreRef}
-                      className={cx(styles['load-more-container'])}
-                    >
-                      {loadingMore ? (
-                        <span>
-                          <LoadingOutlined style={{ marginRight: 8 }} />
-                          {dict('PC.Pages.Chat.loadingHistoryConversation')}
-                        </span>
-                      ) : null}
-                    </div>
-                  )}
-
-                {/* 消息渲染列表 */}
-                {renderedMessageList?.map((item: MessageInfo, idx: number) => {
-                  const isLastMessage = idx === renderedMessageList.length - 1;
-                  if (renderMessageItem) {
-                    return renderMessageItem(item, isLastMessage);
-                  }
-                  return (
-                    <ChatView
-                      key={`${item.id}-${item?.index || idx}`}
-                      messageInfo={item}
-                      roleInfo={effectiveRoleInfo}
-                      mode={messageBottomMode}
-                      showDebug={showDebug}
-                      showStatusDesc={
-                        agentInfo?.type !== AgentTypeEnum.TaskAgent
-                      }
-                    />
-                  );
-                })}
-
-                {/* 问题建议：仅会话空闲且队列已排空时展示，避免与队列中的下一轮消息割裂 */}
-                {shouldShowSessionSuggest && (
-                  <RecommendList
-                    className={cx(styles['recommend-list-box'])}
-                    loading={loadingSuggest}
-                    chatSuggestList={chatSuggestList || []}
-                    onClick={handleMessageSend}
-                  />
-                )}
-
-                {/* 通用型智能体：后台任务执行中且流式已结束 */}
-                {showTaskExecutingWait && (
-                  <div className={cx(styles['task-executing-container'])}>
-                    <LoadingOutlined />
-                    <span>{dict('PC.Pages.Chat.agentExecutingWait')}</span>
+            <ChatMessageList
+              messages={sharedMessages}
+              className={cx(styles['shared-message-list'])}
+              beforeMessages={
+                isMoreMessage && sharedMessages.length >= MESSAGE_PAGE_SIZE ? (
+                  <div
+                    ref={loadMoreRef}
+                    className={cx(styles['load-more-container'])}
+                  >
+                    {loadingMore ? (
+                      <span>
+                        <LoadingOutlined style={{ marginRight: 8 }} />
+                        {dict('PC.Pages.Chat.loadingHistoryConversation')}
+                      </span>
+                    ) : null}
                   </div>
-                )}
-              </>
-            ) : // 空状态展现
-            renderEmptyState ? (
-              renderEmptyState?.()
-            ) : (
-              <AgentChatEmpty
-                className="h-full"
-                icon={agentInfo?.icon}
-                name={agentInfo?.name as string}
-                extra={
-                  <div className="flex flex-col items-center content-center">
-                    <div className={cx(styles['opening-chat-msg'])}>
-                      {agentInfo?.openingChatMsg}
-                    </div>
-                    <RecommendList
-                      className="mt-16"
-                      chatSuggestList={agentInfo?.guidQuestionDtos || []}
-                      onClick={handleMessageSend}
-                    />
-                  </div>
+                ) : null
+              }
+              renderMessage={(sharedMessage) => {
+                const item = sourceMessageBySharedId.get(sharedMessage.id);
+                if (!item) return null;
+                const index = renderedMessageList.indexOf(item);
+                const isLastMessage = index === renderedMessageList.length - 1;
+                if (renderMessageItem) {
+                  return renderMessageItem(item, isLastMessage);
                 }
-              />
-            )}
+                return (
+                  <ChatView
+                    messageInfo={item}
+                    roleInfo={effectiveRoleInfo}
+                    mode={messageBottomMode}
+                    showDebug={showDebug}
+                    showStatusDesc={agentInfo?.type !== AgentTypeEnum.TaskAgent}
+                  />
+                );
+              }}
+              empty={
+                renderEmptyState ? (
+                  renderEmptyState()
+                ) : (
+                  <AgentChatEmpty
+                    className="h-full"
+                    icon={agentInfo?.icon}
+                    name={agentInfo?.name as string}
+                    extra={
+                      <div className="flex flex-col items-center content-center">
+                        <div className={cx(styles['opening-chat-msg'])}>
+                          {agentInfo?.openingChatMsg}
+                        </div>
+                        <RecommendList
+                          className="mt-16"
+                          chatSuggestList={agentInfo?.guidQuestionDtos || []}
+                          onClick={handleMessageSend}
+                        />
+                      </div>
+                    }
+                  />
+                )
+              }
+              afterMessages={
+                sharedMessages.length > 0 ? (
+                  <>
+                    {shouldShowSessionSuggest && (
+                      <RecommendList
+                        className={cx(styles['recommend-list-box'])}
+                        loading={loadingSuggest}
+                        chatSuggestList={chatSuggestList || []}
+                        onClick={handleMessageSend}
+                      />
+                    )}
+                    {showTaskExecutingWait && (
+                      <div className={cx(styles['task-executing-container'])}>
+                        <LoadingOutlined />
+                        <span>{dict('PC.Pages.Chat.agentExecutingWait')}</span>
+                      </div>
+                    )}
+                  </>
+                ) : null
+              }
+            />
           </>
         )}
       </div>

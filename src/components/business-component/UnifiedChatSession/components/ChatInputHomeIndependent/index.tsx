@@ -40,6 +40,8 @@ import {
   DesktopOutlined,
   LoadingOutlined,
 } from '@ant-design/icons';
+import type { ChatDraft } from '@nuwax-ai/chat-kit/core';
+import { ChatComposer } from '@nuwax-ai/chat-kit/react';
 import { Dropdown, message, Tooltip, Upload, UploadProps } from 'antd';
 import classNames from 'classnames';
 import React, {
@@ -695,6 +697,34 @@ const ChatInputHomeIndependent: React.FC<ChatInputHomeIndependentProps> = ({
     [isEnableSubscription, querySkillSubscriptionPlans],
   );
 
+  const sharedDraft = useMemo<ChatDraft>(
+    () => ({
+      conversationId:
+        ownConversationId === null ? undefined : String(ownConversationId),
+      text: messageInfo,
+      attachments: files.map((file) => ({
+        id: file.uid,
+        key: file.key,
+        url: file.url || '',
+        name: file.name,
+        mimeType: file.type,
+        size: file.size,
+      })),
+      skillIds: skillIds.map(String),
+      modelId:
+        selectedModelId === undefined ? undefined : String(selectedModelId),
+      agentMode,
+    }),
+    [
+      agentMode,
+      files,
+      messageInfo,
+      ownConversationId,
+      selectedModelId,
+      skillIds,
+    ],
+  );
+
   return (
     <div className={cx('w-full', 'relative', className)}>
       <div
@@ -727,25 +757,40 @@ const ChatInputHomeIndependent: React.FC<ChatInputHomeIndependentProps> = ({
         )}
 
         <div className={cx(styles['input-wrapper'])}>
-          <ConditionRender condition={uploadFiles?.length}>
-            <ChatUploadFile files={uploadFiles} onDel={handleDelFile} />
-          </ConditionRender>
-          <MentionEditor
-            ref={mentionEditorRef}
-            className={cx(styles.input)}
+          <ChatComposer
+            className={cx(styles['shared-composer'])}
+            draft={sharedDraft}
+            onDraftChange={(draft) => setMessageInfo(draft.text)}
+            onSend={(draft) => confirmSendMessage(draft.text)}
+            onStop={handleStopConversation}
             disabled={wholeDisabled}
-            value={messageInfo}
-            onChange={setMessageInfo}
-            onSkillIdsChange={setSkillIds}
-            enableMention={enableMention}
-            mentionPlacement={mentionPlacement}
-            onPressEnter={handlePressEnter}
-            onPaste={handlePaste}
-            placeholder={placeholder}
-            defaultMentions={defaultMentions}
-            enableSubscription={isEnableSubscription}
-            onUnsubscribedSkillSelect={handleUnsubscribedSkillSelect}
-            usageScenarios={usageScenarios}
+            streaming={isSessionActive}
+            canSend={!disabledSend}
+            renderEditor={() => (
+              <>
+                <ConditionRender condition={uploadFiles?.length}>
+                  <ChatUploadFile files={uploadFiles} onDel={handleDelFile} />
+                </ConditionRender>
+                <MentionEditor
+                  ref={mentionEditorRef}
+                  className={cx(styles.input)}
+                  disabled={wholeDisabled}
+                  value={messageInfo}
+                  onChange={setMessageInfo}
+                  onSkillIdsChange={setSkillIds}
+                  enableMention={enableMention}
+                  mentionPlacement={mentionPlacement}
+                  onPressEnter={handlePressEnter}
+                  onPaste={handlePaste}
+                  placeholder={placeholder}
+                  defaultMentions={defaultMentions}
+                  enableSubscription={isEnableSubscription}
+                  onUnsubscribedSkillSelect={handleUnsubscribedSkillSelect}
+                  usageScenarios={usageScenarios}
+                />
+              </>
+            )}
+            actions={false}
           />
           <VoiceFooter.Provider
             disabled={
@@ -928,7 +973,9 @@ const ChatInputHomeIndependent: React.FC<ChatInputHomeIndependentProps> = ({
                           styles.box,
                           styles['plus-box'],
                           styles['task-agent-box'],
-                          { [styles['task-agent-active']]: isTaskAgentActive },
+                          {
+                            [styles['task-agent-active']]: isTaskAgentActive,
+                          },
                         )}
                         onClick={onToggleTaskAgent}
                       >

@@ -330,6 +330,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
     <div className={cx(styles['session-container'], className)} style={style}>
       {/* 核心聊天展现内容区 */}
       <ChatContentArea
+        conversationId={conversationId}
         messageViewRef={messageViewRef}
         handleMouseEnter={handleMouseEnter}
         handleMouseLeave={handleMouseLeave}

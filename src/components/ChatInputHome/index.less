@@ -312,6 +312,16 @@
   }
 }
 
+.shared-composer {
+  margin: 0;
+
+  // chat-kit 组件使用 BEM 类名，需绕过项目 selector-class-pattern 校验
+  /* stylelint-disable-next-line selector-class-pattern */
+  :global(.nuwax-chat-composer__input-row) {
+    display: contents;
+  }
+}
+
 // 下拉菜单容器
 :global {
   .agent-mode-dropdown-overlay {

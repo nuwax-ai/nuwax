@@ -1,10 +1,12 @@
+import { toChatKitConversation } from '@/adapters/chatKitAdapter';
 import { dict } from '@/services/i18nRuntime';
 import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import { DeleteOutlined } from '@ant-design/icons';
+import { ChatConversationList } from '@nuwax-ai/chat-kit/react';
 import { Spin } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -82,43 +84,70 @@ function InfiniteList({
     return () => container.removeEventListener('scroll', onScroll);
   }, [loading, hasMore, conversationList]);
 
+  const sharedConversations = useMemo(
+    () => conversationList.map(toChatKitConversation),
+    [conversationList],
+  );
+
+  const sourceById = useMemo(
+    () => new Map(conversationList.map((item) => [String(item.id), item])),
+    [conversationList],
+  );
+
   return (
     <div
       ref={containerRef}
       className={cx(styles.container, 'scroll-container')}
       style={{ height }}
     >
-      {conversationList?.map((item: ConversationInfo) => (
-        <div
-          key={item.id}
-          className={cx(
-            'flex',
-            'items-center',
-            'radius-6',
-            'hover-box',
-            styles.row,
-          )}
-        >
-          <p
-            className={cx('flex-1', 'text-ellipsis', 'cursor-pointer')}
-            onClick={() => handleLink?.(item.id, item.agentId)}
-          >
-            <span style={{ marginRight: 5, width: 75 }}>
-              {dayjs(item.modified).format('MM-DD HH:mm')}
-            </span>
-            {item.topic}
-          </p>
-          <div
-            className={cx(styles.icon, 'cursor-pointer')}
-            onClick={(e) => {
-              e.stopPropagation();
-              runDel?.(item.id);
-            }}
-          >
-            <DeleteOutlined />
-          </div>
-        </div>
-      ))}
+      <ChatConversationList
+        conversations={sharedConversations}
+        onSelect={(conversation) => {
+          const source = sourceById.get(conversation.id);
+          if (source) handleLink?.(source.id, source.agentId);
+        }}
+        rowClassName={cx(
+          'flex',
+          'items-center',
+          'radius-6',
+          'hover-box',
+          styles.row,
+        )}
+        buttonClassName={cx(
+          'flex',
+          'flex-1',
+          'items-center',
+          'text-ellipsis',
+          'cursor-pointer',
+        )}
+        renderContent={(conversation) => {
+          const source = sourceById.get(conversation.id);
+          if (!source) return null;
+          return (
+            <>
+              <span style={{ marginRight: 5, width: 75 }}>
+                {dayjs(source.modified).format('MM-DD HH:mm')}
+              </span>
+              {source.topic}
+            </>
+          );
+        }}
+        renderActions={(conversation) => {
+          const source = sourceById.get(conversation.id);
+          if (!source) return null;
+          return (
+            <div
+              className={cx(styles.icon, 'cursor-pointer')}
+              onClick={(event) => {
+                event.stopPropagation();
+                runDel?.(source.id);
+              }}
+            >
+              <DeleteOutlined />
+            </div>
+          );
+        }}
+      />
       {loading && (
         <div style={{ textAlign: 'center', padding: 16 }}>
           <Spin />
