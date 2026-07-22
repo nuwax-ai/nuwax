@@ -1,12 +1,9 @@
 import type { OpenUiArtifact } from '@/types/interfaces/openUi';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import OpenUiArtifactView from './index';
 
-vi.mock('@/services/i18nRuntime', () => ({
-  dict: (key: string) => key,
-}));
-
+vi.mock('@/services/i18nRuntime', () => ({ dict: (key: string) => key }));
 vi.mock('./index.less', () => ({
   default: new Proxy({}, { get: (_, key) => String(key) }),
 }));
@@ -20,8 +17,7 @@ const baseArtifact: OpenUiArtifact = {
   document: {
     language: 'openui-lang',
     specVersion: '0.5',
-    source:
-      'root = Stack([title, status])\ntitle = TextContent("Deployment", "large-heavy")\nstatus = Callout("success", "Ready", "Deployment completed successfully.")',
+    source: 'root = TextContent("Ready", "large-heavy")',
     digest: `sha256:${'a'.repeat(64)}`,
   },
   bindings: { tools: [] },
@@ -31,74 +27,25 @@ const baseArtifact: OpenUiArtifact = {
 };
 
 describe('OpenUiArtifactView', () => {
-  it('renders inline content with the Renderer by default', async () => {
+  it('uses the frozen iframe runtime for legacy inline artifacts', () => {
     render(<OpenUiArtifactView artifact={baseArtifact} />);
-
-    await waitFor(() => {
-      expect(screen.getByText('Deployment')).toBeInTheDocument();
-      expect(screen.getByText('Ready')).toBeInTheDocument();
-    });
-    expect(
-      document.querySelector('[data-openui-render-mode="renderer"]'),
-    ).toBeInTheDocument();
+    const frame = screen.getByTitle(baseArtifact.title);
+    expect(frame.getAttribute('src')).toContain(
+      '/openui-runtime/index.html?nonce=',
+    );
+    expect(frame).toHaveAttribute('sandbox', 'allow-scripts');
   });
 
-  it('supports the conversation-scoped Runtime iframe for inline content', async () => {
-    const runtimeUrl = `/computer/desktop/2336/openui/pages/${baseArtifact.artifactId}`;
-    render(
-      <OpenUiArtifactView
-        artifact={baseArtifact}
-        runtimeUrl={runtimeUrl}
-        inlineRenderMode="iframe"
-      />,
-    );
-
-    const frame = screen.getByTitle(baseArtifact.title) as HTMLIFrameElement;
-    expect(frame).toHaveAttribute('src', runtimeUrl);
-    expect(
-      screen.getByText('PC.Components.OpenUi.loading'),
-    ).toBeInTheDocument();
-
-    fireEvent(
-      window,
-      new MessageEvent('message', {
-        origin: window.location.origin,
-        source: frame.contentWindow,
-        data: {
-          type: 'OPENUI_READY',
-          protocolVersion: 'nuwax.openui-page/v1',
-          artifactId: baseArtifact.artifactId,
-        },
-      }),
-    );
-    await waitFor(() => {
-      expect(
-        screen.queryByText('PC.Components.OpenUi.loading'),
-      ).not.toBeInTheDocument();
-    });
-  });
-
-  it('opens a sidecar artifact from the existing tool body', () => {
+  it('opens sidecar artifacts through the host preview callback', () => {
     const onOpenSidecar = vi.fn();
-    const sidecarArtifact: OpenUiArtifact = {
+    const sidecar = {
       ...baseArtifact,
-      presentation: { mode: 'sidecar', autoOpen: false },
-      page: {
-        url: 'http://127.0.0.1:8787/openui/pages/550e8400-e29b-41d4-a716-446655440000',
-        expiresAt: baseArtifact.expiresAt,
-        sandboxProfile: 'openui-sidecar-v1',
-      },
+      presentation: { mode: 'sidecar' as const, autoOpen: false },
     };
-
     render(
-      <OpenUiArtifactView
-        artifact={sidecarArtifact}
-        runtimeUrl={`/computer/desktop/2336/openui/pages/${sidecarArtifact.artifactId}`}
-        onOpenSidecar={onOpenSidecar}
-      />,
+      <OpenUiArtifactView artifact={sidecar} onOpenSidecar={onOpenSidecar} />,
     );
     fireEvent.click(screen.getByRole('button'));
-
-    expect(onOpenSidecar).toHaveBeenCalledWith(sidecarArtifact);
+    expect(onOpenSidecar).toHaveBeenCalledWith(sidecar);
   });
 });

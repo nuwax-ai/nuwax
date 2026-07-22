@@ -1,194 +1,239 @@
 import { dict } from '@/services/i18nRuntime';
-import type { OpenUiArtifact } from '@/types/interfaces/openUi';
+import type {
+  OpenUiAction,
+  OpenUiArtifact,
+  OpenUiFile,
+} from '@/types/interfaces/openUi';
+import {
+  isOpenUiArtifactRef,
+  legacyArtifactToOpenUiFile,
+  openUiFileSchema,
+} from '@/utils/openUiArtifact';
 import { ExportOutlined } from '@ant-design/icons';
-import { Renderer } from '@openuidev/react-lang';
-import { openuiLibrary } from '@openuidev/react-ui/genui-lib';
-import '@openuidev/react-ui/layered/styles/index.css';
 import { Alert, Button, Spin } from 'antd';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { getOpenUiActionSender } from './actionRegistry';
 import styles from './index.less';
-import { configureOpenUiValidation } from './openUiValidation';
 
-export type OpenUiInlineRenderMode = 'renderer' | 'iframe';
+const RUNTIME_PROTOCOL = 'nuwax.openui-runtime/v1';
+const RUNTIME_URL = `${(process.env.BASE_URL || '').replace(
+  /\/+$/,
+  '',
+)}/openui-runtime/index.html`;
 
-configureOpenUiValidation();
-
-const defaultInlineRenderMode: OpenUiInlineRenderMode =
-  process.env.OPENUI_INLINE_RENDER_MODE === 'iframe' ? 'iframe' : 'renderer';
-
-interface OpenUiArtifactViewProps {
-  artifact: OpenUiArtifact;
-  runtimeUrl?: string;
-  inlineRenderMode?: OpenUiInlineRenderMode;
-  blockedReason?: 'expired' | 'untrusted';
-  onOpenSidecar?: (artifact: OpenUiArtifact) => void;
+interface OpenUiRuntimeFrameProps {
+  artifact?: OpenUiFile;
+  artifactUrl?: string;
+  expectedArtifactId?: string;
+  expectedDigest?: string;
+  variant?: 'inline' | 'full';
+  fallbackMarkdown?: string;
+  conversationId?: number | string;
 }
 
-const OpenUiArtifactView: React.FC<OpenUiArtifactViewProps> = ({
-  artifact,
-  runtimeUrl,
-  inlineRenderMode = defaultInlineRenderMode,
-  blockedReason,
-  onOpenSidecar,
+async function sha256(value: string): Promise<string> {
+  const bytes = new TextEncoder().encode(value);
+  const digest = await crypto.subtle.digest('SHA-256', bytes);
+  return `sha256:${Array.from(new Uint8Array(digest), (byte) =>
+    byte.toString(16).padStart(2, '0'),
+  ).join('')}`;
+}
+
+export const OpenUiRuntimeFrame: React.FC<OpenUiRuntimeFrameProps> = ({
+  artifact: initialArtifact,
+  artifactUrl,
+  expectedArtifactId,
+  expectedDigest,
+  variant = 'inline',
+  fallbackMarkdown = '',
+  conversationId,
 }) => {
-  const [frameStatus, setFrameStatus] = useState<
-    'loading' | 'ready' | 'failed'
-  >('loading');
-  const [frameKey, setFrameKey] = useState(0);
-  const [frameHeight, setFrameHeight] = useState(320);
+  const nonce = useMemo(
+    () => crypto.randomUUID(),
+    [artifactUrl, expectedDigest],
+  );
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const autoOpenedArtifactId = useRef<string | undefined>(undefined);
-  const isSidecar = artifact.presentation.mode === 'sidecar';
-  const useInlineFrame = !isSidecar && inlineRenderMode === 'iframe';
-  const [renderError, setRenderError] = useState<string | null>(null);
+  const sentActionIds = useRef(new Set<string>());
+  const [artifact, setArtifact] = useState<OpenUiFile | null>(
+    initialArtifact ?? null,
+  );
+  const [status, setStatus] = useState<'loading' | 'ready' | 'failed'>(
+    'loading',
+  );
+  const [error, setError] = useState('');
+  const [height, setHeight] = useState(320);
+  const [frameKey, setFrameKey] = useState(0);
 
   useEffect(() => {
-    setFrameStatus('loading');
-    setFrameHeight(320);
-    setRenderError(null);
-  }, [artifact.artifactId, runtimeUrl, frameKey]);
-
-  useEffect(() => {
-    if (!useInlineFrame || !runtimeUrl || frameStatus !== 'loading') return;
-    const timeout = window.setTimeout(() => setFrameStatus('failed'), 10_000);
-    return () => window.clearTimeout(timeout);
-  }, [frameStatus, runtimeUrl, useInlineFrame]);
-
-  useEffect(() => {
-    if (!useInlineFrame) return;
-    const handleMessage = (event: MessageEvent) => {
-      if (event.source !== iframeRef.current?.contentWindow) return;
-      if (
-        runtimeUrl &&
-        event.origin !== new URL(runtimeUrl, window.location.href).origin
-      ) {
-        return;
+    setArtifact(initialArtifact ?? null);
+    setStatus('loading');
+    setError('');
+    if (!artifactUrl) {
+      if (!initialArtifact) {
+        setStatus('failed');
+        setError('OpenUI artifact data is unavailable.');
       }
-      const data = event.data as Record<string, unknown> | null;
+      return;
+    }
+    const controller = new AbortController();
+    void fetch(artifactUrl, {
+      cache: 'no-store',
+      credentials: 'same-origin',
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        if (!response.ok)
+          throw new Error(`Artifact request failed (${response.status}).`);
+        const parsed = openUiFileSchema.parse(await response.json());
+        if (expectedArtifactId && parsed.artifactId !== expectedArtifactId) {
+          throw new Error('Artifact ID does not match the requested file.');
+        }
+        const actualDigest = await sha256(parsed.document.source);
+        if (
+          actualDigest !== parsed.document.digest ||
+          (expectedDigest && actualDigest !== expectedDigest)
+        ) {
+          throw new Error('Artifact digest verification failed.');
+        }
+        setArtifact(parsed);
+      })
+      .catch((reason: unknown) => {
+        if (!controller.signal.aborted) {
+          setStatus('failed');
+          setError(reason instanceof Error ? reason.message : String(reason));
+        }
+      });
+    return () => controller.abort();
+  }, [
+    artifactUrl,
+    expectedArtifactId,
+    expectedDigest,
+    initialArtifact,
+    frameKey,
+  ]);
+
+  const sendLoad = useCallback(() => {
+    if (!artifact || !iframeRef.current?.contentWindow) return;
+    iframeRef.current.contentWindow.postMessage(
+      {
+        type: 'OPENUI_LOAD',
+        protocolVersion: RUNTIME_PROTOCOL,
+        nonce,
+        artifact,
+        locale: document.documentElement.lang || navigator.language,
+        theme: document.documentElement.dataset.theme || 'light',
+        viewport: window.matchMedia('(max-width: 767px)').matches
+          ? 'mobile'
+          : 'desktop',
+      },
+      '*',
+    );
+  }, [artifact, nonce]);
+
+  useEffect(() => {
+    if (status === 'ready' && artifact) sendLoad();
+  }, [artifact, sendLoad, status]);
+
+  useEffect(() => {
+    const handleMessage = (message: MessageEvent<Record<string, unknown>>) => {
+      if (message.source !== iframeRef.current?.contentWindow) return;
+      const data = message.data;
       if (
         !data ||
-        data.protocolVersion !== 'nuwax.openui-page/v1' ||
-        data.artifactId !== artifact.artifactId
-      ) {
+        data.protocolVersion !== RUNTIME_PROTOCOL ||
+        data.nonce !== nonce
+      )
         return;
-      }
-      if (data.type === 'OPENUI_READY') setFrameStatus('ready');
-      if (data.type === 'OPENUI_RESIZE' && typeof data.height === 'number') {
-        setFrameHeight(Math.min(720, Math.max(180, data.height + 2)));
+      if (data.type === 'OPENUI_READY') {
+        setStatus('ready');
+        sendLoad();
+      } else if (
+        data.type === 'OPENUI_RESIZE' &&
+        variant === 'inline' &&
+        typeof data.height === 'number'
+      ) {
+        setHeight(Math.min(1200, Math.max(180, Math.ceil(data.height) + 2)));
+      } else if (data.type === 'OPENUI_ERROR') {
+        setStatus('failed');
+        setError(
+          typeof data.message === 'string'
+            ? data.message
+            : 'OpenUI render failed.',
+        );
+      } else if (data.type === 'OPENUI_ACTION' && artifact) {
+        const action = data.event as OpenUiAction | undefined;
+        if (
+          !action ||
+          action.type !== 'nuwax.openui-action' ||
+          action.schemaVersion !== 'nuwax.openui-action/v1' ||
+          action.artifactId !== artifact.artifactId ||
+          action.artifactPath !== `data/${artifact.artifactId}.openui.json` ||
+          sentActionIds.current.has(action.actionId)
+        )
+          return;
+        sentActionIds.current.add(action.actionId);
+        const effectiveSender = getOpenUiActionSender(conversationId);
+        Promise.resolve(effectiveSender?.(artifact, action))
+          .then(() =>
+            iframeRef.current?.contentWindow?.postMessage(
+              {
+                type: 'OPENUI_ACTION_RESULT',
+                protocolVersion: RUNTIME_PROTOCOL,
+                nonce,
+                actionId: action.actionId,
+                success: Boolean(effectiveSender),
+                message: effectiveSender
+                  ? undefined
+                  : dict('PC.Components.OpenUi.actionUnavailable'),
+              },
+              '*',
+            ),
+          )
+          .catch((reason: unknown) => {
+            sentActionIds.current.delete(action.actionId);
+            iframeRef.current?.contentWindow?.postMessage(
+              {
+                type: 'OPENUI_ACTION_RESULT',
+                protocolVersion: RUNTIME_PROTOCOL,
+                nonce,
+                actionId: action.actionId,
+                success: false,
+                message:
+                  reason instanceof Error ? reason.message : String(reason),
+              },
+              '*',
+            );
+          });
       }
     };
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [artifact.artifactId, runtimeUrl, useInlineFrame]);
-
-  const retry = useCallback(() => {
-    setFrameStatus('loading');
-    setFrameKey((current) => current + 1);
-  }, []);
+  }, [artifact, conversationId, nonce, sendLoad, variant]);
 
   useEffect(() => {
-    if (
-      isSidecar &&
-      artifact.presentation.autoOpen &&
-      artifact.page &&
-      !blockedReason &&
-      onOpenSidecar &&
-      autoOpenedArtifactId.current !== artifact.artifactId
-    ) {
-      autoOpenedArtifactId.current = artifact.artifactId;
-      onOpenSidecar(artifact);
-    }
-  }, [artifact, blockedReason, isSidecar, onOpenSidecar]);
+    if (status !== 'loading') return;
+    const timer = window.setTimeout(() => {
+      setStatus('failed');
+      setError('OpenUI Runtime timed out.');
+    }, 10_000);
+    return () => window.clearTimeout(timer);
+  }, [status, frameKey]);
 
-  if (blockedReason) {
-    return (
-      <Alert
-        className={styles.renderState}
-        type="warning"
-        showIcon
-        message={dict(
-          blockedReason === 'expired'
-            ? 'PC.Components.OpenUi.expired'
-            : 'PC.Components.OpenUi.untrustedPage',
-        )}
-        description={artifact.fallback.markdown}
-      />
-    );
-  }
-
-  if (isSidecar) {
-    return (
-      <div className={styles.sidecarSummary}>
-        <div className={styles.sidecarText}>
-          <div className={styles.sidecarTitle}>{artifact.title}</div>
-          {artifact.fallback.markdown && (
-            <div className={styles.sidecarFallback}>
-              {artifact.fallback.markdown}
-            </div>
-          )}
-        </div>
-        <Button
-          type="primary"
-          size="small"
-          icon={<ExportOutlined />}
-          disabled={!runtimeUrl || !onOpenSidecar}
-          onClick={() => onOpenSidecar?.(artifact)}
-        >
-          {dict('PC.Components.OpenUi.openPreview')}
-        </Button>
-      </div>
-    );
-  }
-
-  if (!useInlineFrame && renderError) {
+  if (status === 'failed') {
     return (
       <Alert
         className={styles.renderState}
         type="warning"
         showIcon
         message={dict('PC.Components.OpenUi.renderFailed')}
-        description={artifact.fallback.markdown || renderError}
-      />
-    );
-  }
-
-  if (!useInlineFrame) {
-    return (
-      <div
-        className={styles.inlineRenderer}
-        data-openui-artifact={artifact.artifactId}
-        data-openui-render-mode="renderer"
-      >
-        <Renderer
-          library={openuiLibrary}
-          response={artifact.document.source}
-          isStreaming={false}
-          onError={(errors) => {
-            if (errors.length > 0) {
-              setRenderError(
-                errors[0]?.message || dict('PC.Components.OpenUi.renderFailed'),
-              );
-            }
-          }}
-        />
-      </div>
-    );
-  }
-
-  if (!runtimeUrl || frameStatus === 'failed') {
-    return (
-      <Alert
-        className={styles.renderState}
-        type="warning"
-        showIcon
-        message={dict('PC.Components.OpenUi.renderFailed')}
-        description={artifact.fallback.markdown}
+        description={fallbackMarkdown || error}
         action={
-          runtimeUrl ? (
-            <Button size="small" onClick={retry}>
-              {dict('PC.Components.OpenUi.retry')}
-            </Button>
-          ) : undefined
+          <Button
+            size="small"
+            onClick={() => setFrameKey((value) => value + 1)}
+          >
+            {dict('PC.Components.OpenUi.retry')}
+          </Button>
         }
       />
     );
@@ -196,11 +241,11 @@ const OpenUiArtifactView: React.FC<OpenUiArtifactViewProps> = ({
 
   return (
     <div
-      className={styles.inlineFrameHost}
-      data-openui-artifact={artifact.artifactId}
-      data-openui-render-mode="iframe"
+      className={
+        variant === 'inline' ? styles.inlineFrameHost : styles.fullFrameHost
+      }
     >
-      {frameStatus === 'loading' && (
+      {status === 'loading' && (
         <div className={styles.frameLoading}>
           <Spin size="small" />
           <span>{dict('PC.Components.OpenUi.loading')}</span>
@@ -210,14 +255,88 @@ const OpenUiArtifactView: React.FC<OpenUiArtifactViewProps> = ({
         key={frameKey}
         ref={iframeRef}
         className={styles.inlineFrame}
-        src={runtimeUrl}
-        title={artifact.title}
-        sandbox="allow-scripts allow-same-origin allow-forms"
+        src={`${RUNTIME_URL}?nonce=${encodeURIComponent(nonce)}`}
+        title={artifact?.title || 'OpenUI'}
+        sandbox="allow-scripts"
         referrerPolicy="no-referrer"
-        style={{ height: frameHeight }}
-        onError={() => setFrameStatus('failed')}
+        style={{ height: variant === 'inline' ? height : '100%' }}
+        onLoad={sendLoad}
+        onError={() => setStatus('failed')}
       />
     </div>
+  );
+};
+
+interface OpenUiArtifactViewProps {
+  artifact: OpenUiArtifact;
+  artifactUrl?: string;
+  onOpenSidecar?: (artifact: OpenUiArtifact) => void;
+  conversationId?: number | string;
+}
+
+const OpenUiArtifactView: React.FC<OpenUiArtifactViewProps> = ({
+  artifact,
+  artifactUrl,
+  onOpenSidecar,
+  conversationId,
+}) => {
+  const autoOpenedArtifactId = useRef<string>();
+  const isSidecar = artifact.presentation.mode === 'sidecar';
+  const file = isOpenUiArtifactRef(artifact)
+    ? undefined
+    : legacyArtifactToOpenUiFile(artifact);
+
+  useEffect(() => {
+    if (
+      isSidecar &&
+      artifact.presentation.autoOpen &&
+      onOpenSidecar &&
+      autoOpenedArtifactId.current !== artifact.artifactId
+    ) {
+      autoOpenedArtifactId.current = artifact.artifactId;
+      onOpenSidecar(artifact);
+    }
+  }, [artifact, isSidecar, onOpenSidecar]);
+
+  if (isSidecar) {
+    return (
+      <div className={styles.sidecarSummary}>
+        <div className={styles.sidecarText}>
+          <div className={styles.sidecarTitle}>{artifact.title}</div>
+          {!isOpenUiArtifactRef(artifact) && artifact.fallback.markdown ? (
+            <div className={styles.sidecarFallback}>
+              {artifact.fallback.markdown}
+            </div>
+          ) : null}
+        </div>
+        <Button
+          type="primary"
+          size="small"
+          icon={<ExportOutlined />}
+          disabled={!onOpenSidecar}
+          onClick={() => onOpenSidecar?.(artifact)}
+        >
+          {dict('PC.Components.OpenUi.openPreview')}
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <OpenUiRuntimeFrame
+      artifact={file}
+      artifactUrl={artifactUrl}
+      expectedArtifactId={artifact.artifactId}
+      expectedDigest={
+        isOpenUiArtifactRef(artifact)
+          ? artifact.digest
+          : artifact.document.digest
+      }
+      conversationId={conversationId}
+      fallbackMarkdown={
+        isOpenUiArtifactRef(artifact) ? '' : artifact.fallback.markdown
+      }
+    />
   );
 };
 

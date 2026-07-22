@@ -1,7 +1,9 @@
 import SvgIcon from '@/components/base/SvgIcon';
+import { OpenUiRuntimeFrame } from '@/components/business-component/OpenUiArtifactView';
 import { OPENUI_SIDECAR_SANDBOX, SANDBOX } from '@/constants/common.constants';
 import { apiAgentComponentPageResultUpdate } from '@/services/agentConfig';
 import { t } from '@/services/i18nRuntime';
+import type { OpenUiFile } from '@/types/interfaces/openUi';
 import { copyTextToClipboard } from '@/utils';
 import { Button, Spin, Tooltip } from 'antd';
 import classNames from 'classnames';
@@ -39,6 +41,11 @@ interface PagePreviewData {
   source?: 'agent-page' | 'openui';
   /** iframe 沙箱配置 */
   sandboxProfile?: 'openui-sidecar-v1';
+  artifactUrl?: string;
+  artifactId?: string;
+  artifactDigest?: string;
+  conversationId?: number | string;
+  openUiArtifactFile?: OpenUiFile;
 }
 
 /**
@@ -694,26 +701,46 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
 
       {/* iframe 预览区域 */}
       <div className={cx(styles['page-preview-body'])}>
-        {/* 使用独立遮罩保证 loading 始终在区域正中央 */}
-        {showLoading && isLoading && (
-          <div className={cx(styles['page-preview-loading'])}>
-            <Spin size="large" spinning />
-          </div>
-        )}
+        {pagePreviewData.source === 'openui' &&
+        (pagePreviewData.artifactUrl || pagePreviewData.openUiArtifactFile) ? (
+          <OpenUiRuntimeFrame
+            artifact={pagePreviewData.openUiArtifactFile}
+            artifactUrl={
+              pagePreviewData.artifactUrl
+                ? `${pagePreviewData.artifactUrl}${
+                    pagePreviewData.artifactUrl.includes('?') ? '&' : '?'
+                  }refresh=${iframeKey}`
+                : undefined
+            }
+            expectedArtifactId={pagePreviewData.artifactId}
+            expectedDigest={pagePreviewData.artifactDigest}
+            conversationId={pagePreviewData.conversationId}
+            variant="full"
+          />
+        ) : (
+          <>
+            {/* 使用独立遮罩保证 loading 始终在区域正中央 */}
+            {showLoading && isLoading && (
+              <div className={cx(styles['page-preview-loading'])}>
+                <Spin size="large" spinning />
+              </div>
+            )}
 
-        <iframe
-          ref={iframeRef}
-          key={iframeKey}
-          src={pageUrl}
-          sandbox={iframeSandbox}
-          className={cx(styles['page-iframe'])}
-          onLoad={handleIframeLoad}
-          onError={handleIframeError}
-          style={{
-            opacity: isLoading ? 0 : 1,
-            transition: 'opacity 1.5s ease-in-out',
-          }}
-        />
+            <iframe
+              ref={iframeRef}
+              key={iframeKey}
+              src={pageUrl}
+              sandbox={iframeSandbox}
+              className={cx(styles['page-iframe'])}
+              onLoad={handleIframeLoad}
+              onError={handleIframeError}
+              style={{
+                opacity: isLoading ? 0 : 1,
+                transition: 'opacity 1.5s ease-in-out',
+              }}
+            />
+          </>
+        )}
       </div>
     </div>
   );

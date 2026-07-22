@@ -702,6 +702,8 @@ export const ZH_CN: SystemLangMap = {
   "PC.Components.PagePreviewIframe.unableToReadData": "无法读取数据",
   "PC.Components.OpenUi.openPreview": "打开预览",
   "PC.Components.OpenUi.loading": "正在连接本机 OpenUI…",
+  "PC.Components.OpenUi.actionSubmitted": "已提交 OpenUI 表单「{0}」。",
+  "PC.Components.OpenUi.actionUnavailable": "当前预览未连接到会话，无法提交。",
   "PC.Components.OpenUi.retry": "重试",
   "PC.Components.OpenUi.renderFailed": "界面渲染失败",
   "PC.Components.OpenUi.expired": "界面内容已过期",

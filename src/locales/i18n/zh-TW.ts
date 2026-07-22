@@ -674,6 +674,8 @@ export const ZH_TW: SystemLangMap = {
   "PC.Components.PagePreviewIframe.unableToReadData": "無法讀取資料",
   "PC.Components.OpenUi.openPreview": "開啟預覽",
   "PC.Components.OpenUi.loading": "正在連接本機 OpenUI…",
+  "PC.Components.OpenUi.actionSubmitted": "已提交 OpenUI 表單「{0}」。",
+  "PC.Components.OpenUi.actionUnavailable": "目前預覽未連接到對話，無法提交。",
   "PC.Components.OpenUi.retry": "重試",
   "PC.Components.OpenUi.renderFailed": "介面渲染失敗",
   "PC.Components.OpenUi.expired": "介面內容已過期",

@@ -7,6 +7,7 @@ import {
   buildChangeFilesFromGitStatus,
   mergeGitStatusFileIds,
 } from '@/components/business-component/FileTreeGitSourcePanel/utils/gitStatusUtils';
+import { OpenUiRuntimeFrame } from '@/components/business-component/OpenUiArtifactView';
 import CodeViewer from '@/components/CodeViewer';
 import Loading from '@/components/custom/Loading';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
@@ -39,6 +40,7 @@ import {
   updateFileTreeContent,
   updateFileTreeName,
 } from '@/utils/fileTree';
+import { isOpenUiFileName, openUiFileSchema } from '@/utils/openUiArtifact';
 import { message } from 'antd';
 import cloneDeep from 'lodash/cloneDeep';
 import React, {
@@ -1940,6 +1942,33 @@ export function useFileTreePreviewView(
     // 压缩包等不支持预览的文件（如 .zip、.skill、.rar、.7z 等）
     const selectedFileName =
       selectedFileNode?.name || selectedFileId?.split('/')?.pop() || '';
+
+    if (isOpenUiFileName(selectedFileName)) {
+      let inlineArtifact;
+      if (selectedFileNode?.content) {
+        try {
+          inlineArtifact = openUiFileSchema.parse(
+            JSON.parse(String(selectedFileNode.content)),
+          );
+        } catch {
+          inlineArtifact = undefined;
+        }
+      }
+      const conversationId = staticFileBasePath?.match(
+        /\/api\/computer\/static\/(\d+)/,
+      )?.[1];
+      return (
+        <OpenUiRuntimeFrame
+          artifact={inlineArtifact}
+          artifactUrl={fileProxyUrl || undefined}
+          expectedArtifactId={selectedFileName.replace(/\.openui\.json$/i, '')}
+          expectedDigest={inlineArtifact?.document.digest}
+          conversationId={conversationId}
+          variant="full"
+        />
+      );
+    }
+
     if (!isPreviewableFile(selectedFileName, true)) {
       const fileExtension = selectedFileId?.split('.')?.pop() || selectedFileId;
       return (

@@ -1,11 +1,17 @@
 import type {
   OpenUiArtifact,
+  OpenUiArtifactRef,
+  OpenUiFile,
   OpenUiRenderState,
 } from '@/types/interfaces/openUi';
 import { openUiArtifactSchema } from '@nuwax-ai/openui-mcp/contracts';
+import { z } from 'zod';
 
 const MAX_VISITED_VALUES = 128;
 const MAX_JSON_TEXT_LENGTH = 200_000;
+const UUID_PATTERN =
+  '[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}';
+const DIGEST_PATTERN = /^sha256:[a-f0-9]{64}$/;
 const PRIORITY_KEYS = [
   'structuredContent',
   'structured_content',
@@ -18,16 +24,58 @@ const PRIORITY_KEYS = [
   'response',
 ] as const;
 
+const presentationSchema = z.object({
+  mode: z.enum(['inline', 'sidecar']),
+  autoOpen: z.boolean(),
+  preferredWidth: z.enum(['compact', 'normal', 'wide']).optional(),
+});
+
+export const openUiFileSchema: z.ZodType<OpenUiFile> = z.object({
+  type: z.literal('nuwax.openui-file'),
+  schemaVersion: z.literal('nuwax.openui-file/v1'),
+  artifactId: z.string().uuid(),
+  title: z.string(),
+  presentation: presentationSchema,
+  document: z.object({
+    language: z.literal('openui-lang'),
+    specVersion: z.literal('0.5'),
+    source: z.string(),
+    digest: z.string().regex(DIGEST_PATTERN),
+  }),
+  bindings: z.object({ tools: z.array(z.record(z.string(), z.unknown())) }),
+  fallback: z.object({ markdown: z.string() }),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+});
+
+export const openUiArtifactRefSchema: z.ZodType<OpenUiArtifactRef> = z
+  .object({
+    type: z.literal('nuwax.openui-ref'),
+    schemaVersion: z.literal('nuwax.openui-ref/v1'),
+    artifactId: z.string().uuid(),
+    path: z.string(),
+    title: z.string(),
+    presentation: presentationSchema,
+    digest: z.string().regex(DIGEST_PATTERN),
+    operation: z.enum(['created', 'updated']),
+  })
+  .superRefine((value, ctx) => {
+    if (value.path !== `data/${value.artifactId}.openui.json`) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Artifact path does not match artifactId.',
+      });
+    }
+  });
+
 function parseJsonCandidate(value: string): unknown {
   const candidate = value.trim();
   if (
-    candidate.length === 0 ||
+    !candidate ||
     candidate.length > MAX_JSON_TEXT_LENGTH ||
     (!candidate.startsWith('{') && !candidate.startsWith('['))
-  ) {
+  )
     return undefined;
-  }
-
   try {
     return JSON.parse(candidate);
   } catch {
@@ -39,96 +87,83 @@ export function extractOpenUiArtifact(value: unknown): OpenUiArtifact | null {
   const queue: unknown[] = [value];
   const visitedObjects = new WeakSet<object>();
   let visitedValues = 0;
-
-  while (queue.length > 0 && visitedValues < MAX_VISITED_VALUES) {
+  while (queue.length && visitedValues < MAX_VISITED_VALUES) {
     const current = queue.shift();
     visitedValues += 1;
-
-    const parsed = openUiArtifactSchema.safeParse(current);
-    if (parsed.success) return parsed.data;
-
+    const reference = openUiArtifactRefSchema.safeParse(current);
+    if (reference.success) return reference.data;
+    const legacy = openUiArtifactSchema.safeParse(current);
+    if (legacy.success) return legacy.data;
     if (typeof current === 'string') {
       const json = parseJsonCandidate(current);
       if (json !== undefined) queue.push(json);
       continue;
     }
-
-    if (!current || typeof current !== 'object') continue;
-    if (visitedObjects.has(current)) continue;
-    visitedObjects.add(current);
-
-    if (Array.isArray(current)) {
-      queue.push(...current);
+    if (!current || typeof current !== 'object' || visitedObjects.has(current))
       continue;
-    }
-
-    const record = current as Record<string, unknown>;
-    for (const key of PRIORITY_KEYS) {
-      if (key in record) queue.push(record[key]);
-    }
-
-    for (const [key, nestedValue] of Object.entries(record)) {
-      if (!PRIORITY_KEYS.includes(key as (typeof PRIORITY_KEYS)[number])) {
-        queue.push(nestedValue);
+    visitedObjects.add(current);
+    if (Array.isArray(current)) queue.push(...current);
+    else {
+      const record = current as Record<string, unknown>;
+      for (const key of PRIORITY_KEYS)
+        if (key in record) queue.push(record[key]);
+      for (const [key, nested] of Object.entries(record)) {
+        if (!PRIORITY_KEYS.includes(key as (typeof PRIORITY_KEYS)[number]))
+          queue.push(nested);
       }
     }
   }
-
   return null;
-}
-
-export function isTrustedOpenUiSidecarUrl(
-  value: string,
-  artifactId: string,
-): boolean {
-  try {
-    const url = new URL(value);
-    return (
-      url.protocol === 'http:' &&
-      ['127.0.0.1', 'localhost', '[::1]'].includes(url.hostname) &&
-      url.username === '' &&
-      url.password === '' &&
-      url.search === '' &&
-      url.hash === '' &&
-      url.pathname === `/openui/pages/${artifactId}`
-    );
-  } catch {
-    return false;
-  }
 }
 
 export function resolveOpenUiRenderState(value: unknown): OpenUiRenderState {
   const artifact = extractOpenUiArtifact(value);
-  if (!artifact) return { status: 'absent' };
-
-  const pageExpiresAt = artifact.page?.expiresAt;
-  if (
-    Date.parse(artifact.expiresAt) <= Date.now() ||
-    (pageExpiresAt !== undefined && Date.parse(pageExpiresAt) <= Date.now())
-  ) {
-    return { status: 'expired', artifact };
-  }
-
-  if (
-    artifact.presentation.mode === 'sidecar' &&
-    (!artifact.page ||
-      !isTrustedOpenUiSidecarUrl(artifact.page.url, artifact.artifactId))
-  ) {
-    return { status: 'untrusted', artifact };
-  }
-
-  return { status: 'ready', artifact };
+  return artifact ? { status: 'ready', artifact } : { status: 'absent' };
 }
 
-export function buildOpenUiTunnelPageUrl(
+export function isOpenUiArtifactRef(
+  value: OpenUiArtifact,
+): value is OpenUiArtifactRef {
+  return value.type === 'nuwax.openui-ref';
+}
+
+export function buildOpenUiArtifactFileUrl(
   conversationId: number | string,
   artifactId: string,
+  digest?: string,
 ): string | null {
   const normalizedConversationId = String(conversationId).trim();
-  if (!/^\d+$/.test(normalizedConversationId) || !artifactId) return null;
-
+  if (
+    !/^\d+$/.test(normalizedConversationId) ||
+    !new RegExp(`^${UUID_PATTERN}$`, 'i').test(artifactId)
+  )
+    return null;
   const baseUrl = (process.env.BASE_URL || '').replace(/\/+$/, '');
-  return `${baseUrl}/api/computer/static/${encodeURIComponent(
+  const url = `${baseUrl}/api/computer/static/${encodeURIComponent(
     normalizedConversationId,
-  )}/openui/pages/${encodeURIComponent(artifactId)}`;
+  )}/data/${encodeURIComponent(artifactId)}.openui.json`;
+  return digest ? `${url}?digest=${encodeURIComponent(digest)}` : url;
+}
+
+export function legacyArtifactToOpenUiFile(
+  artifact: Exclude<OpenUiArtifact, OpenUiArtifactRef>,
+): OpenUiFile {
+  return {
+    type: 'nuwax.openui-file',
+    schemaVersion: 'nuwax.openui-file/v1',
+    artifactId: artifact.artifactId,
+    title: artifact.title,
+    presentation: artifact.presentation,
+    document: artifact.document,
+    bindings: artifact.bindings,
+    fallback: artifact.fallback,
+    createdAt: artifact.createdAt,
+    updatedAt: artifact.createdAt,
+  };
+}
+
+export function isOpenUiFileName(name: string): boolean {
+  return new RegExp(`^${UUID_PATTERN}\\.openui\\.json$`, 'i').test(
+    name.split('/').pop() || '',
+  );
 }

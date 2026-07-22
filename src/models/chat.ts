@@ -1,6 +1,7 @@
 import { ExpandPageAreaEnum, HideChatAreaEnum } from '@/types/enums/agent';
 import { ProcessingEnum } from '@/types/enums/common';
 import { ProcessingInfo } from '@/types/interfaces/conversationInfo';
+import type { OpenUiFile } from '@/types/interfaces/openUi';
 import { useCallback, useState } from 'react';
 
 /**
@@ -13,6 +14,11 @@ export interface PagePreviewData {
   executeId: string; // 执行ID
   source?: 'agent-page' | 'openui';
   sandboxProfile?: 'openui-sidecar-v1';
+  artifactUrl?: string;
+  artifactId?: string;
+  artifactDigest?: string;
+  conversationId?: number | string;
+  openUiArtifactFile?: OpenUiFile;
 }
 
 /**

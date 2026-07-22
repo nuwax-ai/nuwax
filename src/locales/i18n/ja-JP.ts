@@ -664,6 +664,8 @@ export const JA_JP: SystemLangMap = {
   "PC.Components.PagePreviewIframe.unableToReadData": "データを読み取れません",
   "PC.Components.OpenUi.openPreview": "プレビューを開く",
   "PC.Components.OpenUi.loading": "ローカル OpenUI ランタイムに接続中…",
+  "PC.Components.OpenUi.actionSubmitted": "OpenUIフォーム「{0}」を送信しました。",
+  "PC.Components.OpenUi.actionUnavailable": "このプレビューは会話に接続されていないため送信できません。",
   "PC.Components.OpenUi.retry": "再試行",
   "PC.Components.OpenUi.renderFailed": "インターフェースを表示できません",
   "PC.Components.OpenUi.expired": "インターフェースの有効期限が切れています",

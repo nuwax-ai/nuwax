@@ -8,7 +8,9 @@ import type { OpenUiArtifact } from '@/types/interfaces/openUi';
 import { cloneDeep } from '@/utils/common';
 import { normalizeFileDiffItems } from '@/utils/fileChangeDiff';
 import {
-  buildOpenUiTunnelPageUrl,
+  buildOpenUiArtifactFileUrl,
+  isOpenUiArtifactRef,
+  legacyArtifactToOpenUiFile,
   resolveOpenUiRenderState,
 } from '@/utils/openUiArtifact';
 import {
@@ -455,18 +457,29 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
 
   const handleOpenUiSidecar = useCallback(
     (artifact: OpenUiArtifact) => {
-      const runtimeUrl = buildOpenUiTunnelPageUrl(
-        props.conversationId,
-        artifact.artifactId,
-      );
-      if (!runtimeUrl) return;
+      const artifactUrl = isOpenUiArtifactRef(artifact)
+        ? buildOpenUiArtifactFileUrl(
+            props.conversationId,
+            artifact.artifactId,
+            artifact.digest,
+          )
+        : undefined;
       showPagePreview({
         name: artifact.title,
-        uri: runtimeUrl,
+        uri: '/openui-runtime/index.html',
         params: {},
         executeId: innerProcessing.executeId || artifact.artifactId,
         source: 'openui',
         sandboxProfile: 'openui-sidecar-v1',
+        artifactUrl: artifactUrl || undefined,
+        artifactId: artifact.artifactId,
+        artifactDigest: isOpenUiArtifactRef(artifact)
+          ? artifact.digest
+          : artifact.document.digest,
+        conversationId: props.conversationId,
+        openUiArtifactFile: isOpenUiArtifactRef(artifact)
+          ? undefined
+          : legacyArtifactToOpenUiFile(artifact),
       });
     },
     [innerProcessing.executeId, props.conversationId, showPagePreview],
@@ -647,21 +660,17 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
           <Suspense fallback={null}>
             <OpenUiArtifactView
               artifact={openUiState.artifact}
-              runtimeUrl={
-                buildOpenUiTunnelPageUrl(
-                  props.conversationId,
-                  openUiState.artifact.artifactId,
-                ) || undefined
-              }
-              blockedReason={
-                openUiState.status === 'expired' ||
-                openUiState.status === 'untrusted'
-                  ? openUiState.status
+              artifactUrl={
+                isOpenUiArtifactRef(openUiState.artifact)
+                  ? buildOpenUiArtifactFileUrl(
+                      props.conversationId,
+                      openUiState.artifact.artifactId,
+                      openUiState.artifact.digest,
+                    ) || undefined
                   : undefined
               }
-              onOpenSidecar={
-                openUiState.status === 'ready' ? handleOpenUiSidecar : undefined
-              }
+              conversationId={props.conversationId}
+              onOpenSidecar={handleOpenUiSidecar}
             />
           </Suspense>
         )}

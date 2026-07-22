@@ -8,7 +8,7 @@ vi.mock('@/services/i18nRuntime', () => ({
       'PC.Components.OpenUi.validationRequired': '该项为必填项',
       'PC.Components.OpenUi.validationEmail': '请输入有效的邮箱地址',
     };
-    return values.reduce(
+    return values.reduce<string>(
       (text, value, index) => text.replace(`{${index}}`, String(value)),
       messages[key] || key,
     );

@@ -695,6 +695,8 @@ export const EN_US: SystemLangMap = {
   "PC.Components.PagePreviewIframe.unableToReadData": "Unable to read data",
   "PC.Components.OpenUi.openPreview": "Open preview",
   "PC.Components.OpenUi.loading": "Connecting to the local OpenUI runtime…",
+  "PC.Components.OpenUi.actionSubmitted": "Submitted OpenUI form “{0}”.",
+  "PC.Components.OpenUi.actionUnavailable": "This preview is not connected to a conversation and cannot submit.",
   "PC.Components.OpenUi.retry": "Retry",
   "PC.Components.OpenUi.renderFailed": "Unable to render interface",
   "PC.Components.OpenUi.expired": "This interface has expired",
