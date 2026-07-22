@@ -111,7 +111,8 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(
       prevProps.id === nextProps.id &&
       prevProps.thinking === nextProps.thinking &&
       prevProps.answer === nextProps.answer &&
-      prevProps.status === nextProps.status
+      prevProps.status === nextProps.status &&
+      prevProps.conversationId === nextProps.conversationId
     );
   },
 );
@@ -138,7 +139,7 @@ const PureMarkdownRenderer = memo(
   }) => {
     const plugins = useMemo(
       () => [katexPlugin, genCustomPlugin(conversationId)],
-      [],
+      [conversationId],
     );
     return (
       <div
@@ -171,7 +172,8 @@ const PureMarkdownRenderer = memo(
       prevProps.id === nextProps.id &&
       prevProps.theme === nextProps.theme &&
       prevProps.children === nextProps.children &&
-      prevProps.disableTyping === nextProps.disableTyping
+      prevProps.disableTyping === nextProps.disableTyping &&
+      prevProps.conversationId === nextProps.conversationId
     );
   },
 );

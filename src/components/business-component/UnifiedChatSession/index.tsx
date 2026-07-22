@@ -375,6 +375,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
     >
       {/* 核心聊天展现内容区 */}
       <ChatContentArea
+        conversationId={conversationId}
         messageViewRef={messageViewRef}
         handleMouseEnter={handleMouseEnter}
         handleMouseLeave={handleMouseLeave}

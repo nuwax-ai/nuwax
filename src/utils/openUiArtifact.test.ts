@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   buildOpenUiArtifactFileUrl,
   extractOpenUiArtifact,
+  extractOpenUiRenderInput,
+  getOpenUiArtifactIdFromFileName,
   isOpenUiFileName,
   resolveOpenUiRenderState,
 } from './openUiArtifact';
@@ -25,6 +27,25 @@ describe('OpenUI file artifact references', () => {
     ).toMatchObject({ artifactId });
   });
 
+  it('extracts inline renderer input independently from the durable reference', () => {
+    const source = 'root = TextContent("Ready", "large-heavy")';
+    expect(
+      extractOpenUiRenderInput({
+        rawOutput: JSON.stringify(reference),
+        rawInput: {
+          schemaVersion: 'nuwax.openui/v1',
+          title: 'Inline dashboard',
+          presentation: { mode: 'inline', autoOpen: false },
+          document: {
+            language: 'openui-lang',
+            specVersion: '0.5',
+            source,
+          },
+        },
+      }),
+    ).toMatchObject({ document: { source }, presentation: { mode: 'inline' } });
+  });
+
   it('rejects a reference whose path does not match its artifact ID', () => {
     expect(
       extractOpenUiArtifact({ ...reference, path: 'data/other.openui.json' }),
@@ -43,8 +64,20 @@ describe('OpenUI file artifact references', () => {
     );
   });
 
-  it('recognizes only UUID-based .openui.json files', () => {
+  it('recognizes the dedicated .openui.json suffix for file-tree previews', () => {
     expect(isOpenUiFileName(`${artifactId}.openui.json`)).toBe(true);
-    expect(isOpenUiFileName('dashboard.openui.json')).toBe(false);
+    expect(isOpenUiFileName('dashboard.openui.json')).toBe(true);
+    expect(isOpenUiFileName('data/dashboard.openui.json')).toBe(true);
+    expect(isOpenUiFileName('openui.json')).toBe(false);
+    expect(isOpenUiFileName('dashboard.openui.json.bak')).toBe(false);
+  });
+
+  it('derives an artifact ID only from UUID-based file names', () => {
+    expect(getOpenUiArtifactIdFromFileName(`${artifactId}.openui.json`)).toBe(
+      artifactId,
+    );
+    expect(
+      getOpenUiArtifactIdFromFileName('dashboard.openui.json'),
+    ).toBeUndefined();
   });
 });

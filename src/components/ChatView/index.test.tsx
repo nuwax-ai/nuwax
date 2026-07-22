@@ -50,16 +50,19 @@ vi.mock('@/components/MarkdownRenderer', () => ({
     answer,
     thinking,
     status,
+    conversationId,
   }: {
     answer?: string;
     thinking?: string;
     status?: string;
+    conversationId?: string | number;
   }) => (
     <div
       data-testid="markdown-renderer"
       data-answer={answer}
       data-thinking={thinking}
       data-status={status || ''}
+      data-conversation-id={conversationId ?? ''}
     />
   ),
 }));
@@ -155,5 +158,28 @@ describe('ChatView', () => {
 
     expect(screen.getByTestId('chat-bottom-more')).toBeInTheDocument();
     expect(screen.getByTestId('chat-bottom-debug')).toBeInTheDocument();
+  });
+
+  it('历史消息内容不变时仍应把后到达的 conversationId 传给 MarkdownRenderer', () => {
+    const message = createMessage({
+      text: 'message with openui artifact',
+      status: MessageStatusEnum.Complete,
+    });
+    const { rerender } = render(
+      <ChatView roleInfo={roleInfo} messageInfo={message} conversationId="" />,
+    );
+
+    rerender(
+      <ChatView
+        roleInfo={roleInfo}
+        messageInfo={message}
+        conversationId="1557156"
+      />,
+    );
+
+    expect(screen.getByTestId('markdown-renderer')).toHaveAttribute(
+      'data-conversation-id',
+      '1557156',
+    );
   });
 });

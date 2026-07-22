@@ -4,7 +4,11 @@ import type {
   OpenUiFile,
   OpenUiRenderState,
 } from '@/types/interfaces/openUi';
-import { openUiArtifactSchema } from '@nuwax-ai/openui-mcp/contracts';
+import {
+  openUiArtifactSchema,
+  renderOpenUiInputSchema,
+  type RenderOpenUiInput,
+} from '@nuwax-ai/openui-mcp/contracts';
 import { z } from 'zod';
 
 const MAX_VISITED_VALUES = 128;
@@ -15,6 +19,10 @@ const DIGEST_PATTERN = /^sha256:[a-f0-9]{64}$/;
 const PRIORITY_KEYS = [
   'structuredContent',
   'structured_content',
+  'rawInput',
+  'raw_input',
+  'input',
+  'arguments',
   'rawOutput',
   'raw_output',
   'data',
@@ -121,6 +129,39 @@ export function resolveOpenUiRenderState(value: unknown): OpenUiRenderState {
   return artifact ? { status: 'ready', artifact } : { status: 'absent' };
 }
 
+export function extractOpenUiRenderInput(
+  value: unknown,
+): RenderOpenUiInput | null {
+  const queue: unknown[] = [value];
+  const visitedObjects = new WeakSet<object>();
+  let visitedValues = 0;
+  while (queue.length && visitedValues < MAX_VISITED_VALUES) {
+    const current = queue.shift();
+    visitedValues += 1;
+    const input = renderOpenUiInputSchema.safeParse(current);
+    if (input.success) return input.data;
+    if (typeof current === 'string') {
+      const json = parseJsonCandidate(current);
+      if (json !== undefined) queue.push(json);
+      continue;
+    }
+    if (!current || typeof current !== 'object' || visitedObjects.has(current))
+      continue;
+    visitedObjects.add(current);
+    if (Array.isArray(current)) queue.push(...current);
+    else {
+      const record = current as Record<string, unknown>;
+      for (const key of PRIORITY_KEYS)
+        if (key in record) queue.push(record[key]);
+      for (const [key, nested] of Object.entries(record)) {
+        if (!PRIORITY_KEYS.includes(key as (typeof PRIORITY_KEYS)[number]))
+          queue.push(nested);
+      }
+    }
+  }
+  return null;
+}
+
 export function isOpenUiArtifactRef(
   value: OpenUiArtifact,
 ): value is OpenUiArtifactRef {
@@ -163,7 +204,15 @@ export function legacyArtifactToOpenUiFile(
 }
 
 export function isOpenUiFileName(name: string): boolean {
-  return new RegExp(`^${UUID_PATTERN}\\.openui\\.json$`, 'i').test(
-    name.split('/').pop() || '',
-  );
+  const fileName = name.split(/[\\\\/]/).pop() || '';
+  return /^.+\.openui\.json$/i.test(fileName);
+}
+
+export function getOpenUiArtifactIdFromFileName(
+  name: string,
+): string | undefined {
+  const fileName = name.split(/[\\\\/]/).pop() || '';
+  return new RegExp(`^(${UUID_PATTERN})\\.openui\\.json$`, 'i').exec(
+    fileName,
+  )?.[1];
 }

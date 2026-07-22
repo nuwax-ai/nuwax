@@ -250,7 +250,10 @@ const ChatView: React.FC<ChatViewProps> = memo(
     );
   },
   (prevProps, nextProps) => {
-    return isEqual(prevProps.messageInfo, nextProps.messageInfo);
+    return (
+      isEqual(prevProps.messageInfo, nextProps.messageInfo) &&
+      prevProps.conversationId === nextProps.conversationId
+    );
   },
 );
 

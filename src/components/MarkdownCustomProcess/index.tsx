@@ -9,6 +9,7 @@ import { cloneDeep } from '@/utils/common';
 import { normalizeFileDiffItems } from '@/utils/fileChangeDiff';
 import {
   buildOpenUiArtifactFileUrl,
+  extractOpenUiRenderInput,
   isOpenUiArtifactRef,
   legacyArtifactToOpenUiFile,
   resolveOpenUiRenderState,
@@ -162,6 +163,10 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
   const hasDiff = diffItems.length > 0;
   const openUiState = useMemo(
     () => resolveOpenUiRenderState(innerProcessing.result),
+    [innerProcessing.result],
+  );
+  const openUiRenderInput = useMemo(
+    () => extractOpenUiRenderInput(innerProcessing.result),
     [innerProcessing.result],
   );
 
@@ -660,6 +665,7 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
           <Suspense fallback={null}>
             <OpenUiArtifactView
               artifact={openUiState.artifact}
+              inlineInput={openUiRenderInput || undefined}
               artifactUrl={
                 isOpenUiArtifactRef(openUiState.artifact)
                   ? buildOpenUiArtifactFileUrl(

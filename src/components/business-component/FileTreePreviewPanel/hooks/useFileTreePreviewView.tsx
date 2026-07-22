@@ -40,7 +40,11 @@ import {
   updateFileTreeContent,
   updateFileTreeName,
 } from '@/utils/fileTree';
-import { isOpenUiFileName, openUiFileSchema } from '@/utils/openUiArtifact';
+import {
+  getOpenUiArtifactIdFromFileName,
+  isOpenUiFileName,
+  openUiFileSchema,
+} from '@/utils/openUiArtifact';
 import { message } from 'antd';
 import cloneDeep from 'lodash/cloneDeep';
 import React, {
@@ -1961,7 +1965,10 @@ export function useFileTreePreviewView(
         <OpenUiRuntimeFrame
           artifact={inlineArtifact}
           artifactUrl={fileProxyUrl || undefined}
-          expectedArtifactId={selectedFileName.replace(/\.openui\.json$/i, '')}
+          expectedArtifactId={
+            inlineArtifact?.artifactId ||
+            getOpenUiArtifactIdFromFileName(selectedFileName)
+          }
           expectedDigest={inlineArtifact?.document.digest}
           conversationId={conversationId}
           variant="full"

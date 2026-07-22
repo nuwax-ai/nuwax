@@ -4,6 +4,12 @@ import { describe, expect, it, vi } from 'vitest';
 import OpenUiArtifactView from './index';
 
 vi.mock('@/services/i18nRuntime', () => ({ dict: (key: string) => key }));
+vi.mock('@openuidev/react-lang', () => ({
+  Renderer: ({ response }: { response: string }) => (
+    <div data-testid="openui-renderer" data-response={response} />
+  ),
+}));
+vi.mock('@openuidev/react-ui/genui-lib', () => ({ openuiLibrary: {} }));
 vi.mock('./index.less', () => ({
   default: new Proxy({}, { get: (_, key) => String(key) }),
 }));
@@ -27,13 +33,46 @@ const baseArtifact: OpenUiArtifact = {
 };
 
 describe('OpenUiArtifactView', () => {
-  it('uses the frozen iframe runtime for legacy inline artifacts', () => {
+  it('uses the original Renderer for legacy inline artifacts', () => {
     render(<OpenUiArtifactView artifact={baseArtifact} />);
-    const frame = screen.getByTitle(baseArtifact.title);
-    expect(frame.getAttribute('src')).toContain(
-      '/openui-runtime/index.html?nonce=',
+    expect(screen.getByTestId('openui-renderer')).toHaveAttribute(
+      'data-response',
+      baseArtifact.document.source,
     );
-    expect(frame).toHaveAttribute('sandbox', 'allow-scripts');
+  });
+
+  it('uses tool input with the original Renderer for file-reference inline artifacts', () => {
+    const reference: OpenUiArtifact = {
+      type: 'nuwax.openui-ref',
+      schemaVersion: 'nuwax.openui-ref/v1',
+      artifactId: baseArtifact.artifactId,
+      path: `data/${baseArtifact.artifactId}.openui.json`,
+      title: baseArtifact.title,
+      presentation: baseArtifact.presentation,
+      digest: baseArtifact.document.digest,
+      operation: 'created',
+    };
+    render(
+      <OpenUiArtifactView
+        artifact={reference}
+        inlineInput={{
+          schemaVersion: 'nuwax.openui/v1',
+          title: baseArtifact.title,
+          presentation: baseArtifact.presentation,
+          document: {
+            language: 'openui-lang',
+            specVersion: '0.5',
+            source: baseArtifact.document.source,
+          },
+          bindings: { tools: [] },
+          fallback: baseArtifact.fallback,
+        }}
+      />,
+    );
+    expect(screen.getByTestId('openui-renderer')).toHaveAttribute(
+      'data-response',
+      baseArtifact.document.source,
+    );
   });
 
   it('opens sidecar artifacts through the host preview callback', () => {

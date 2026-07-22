@@ -10,6 +10,10 @@ import {
   openUiFileSchema,
 } from '@/utils/openUiArtifact';
 import { ExportOutlined } from '@ant-design/icons';
+import type { RenderOpenUiInput } from '@nuwax-ai/openui-mcp/contracts';
+import { Renderer } from '@openuidev/react-lang';
+import { openuiLibrary } from '@openuidev/react-ui/genui-lib';
+import '@openuidev/react-ui/layered/styles/index.css';
 import { Alert, Button, Spin } from 'antd';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getOpenUiActionSender } from './actionRegistry';
@@ -269,6 +273,7 @@ export const OpenUiRuntimeFrame: React.FC<OpenUiRuntimeFrameProps> = ({
 
 interface OpenUiArtifactViewProps {
   artifact: OpenUiArtifact;
+  inlineInput?: RenderOpenUiInput;
   artifactUrl?: string;
   onOpenSidecar?: (artifact: OpenUiArtifact) => void;
   conversationId?: number | string;
@@ -276,15 +281,24 @@ interface OpenUiArtifactViewProps {
 
 const OpenUiArtifactView: React.FC<OpenUiArtifactViewProps> = ({
   artifact,
+  inlineInput,
   artifactUrl,
   onOpenSidecar,
   conversationId,
 }) => {
   const autoOpenedArtifactId = useRef<string>();
+  const [renderError, setRenderError] = useState<string | null>(null);
   const isSidecar = artifact.presentation.mode === 'sidecar';
   const file = isOpenUiArtifactRef(artifact)
     ? undefined
     : legacyArtifactToOpenUiFile(artifact);
+  const inlineSource = inlineInput?.document.source ?? file?.document.source;
+  const inlineFallback =
+    inlineInput?.fallback.markdown ?? file?.fallback.markdown ?? '';
+
+  useEffect(() => {
+    setRenderError(null);
+  }, [artifact.artifactId, inlineSource]);
 
   useEffect(() => {
     if (
@@ -318,6 +332,40 @@ const OpenUiArtifactView: React.FC<OpenUiArtifactViewProps> = ({
         >
           {dict('PC.Components.OpenUi.openPreview')}
         </Button>
+      </div>
+    );
+  }
+
+  if (inlineSource) {
+    if (renderError) {
+      return (
+        <Alert
+          className={styles.renderState}
+          type="warning"
+          showIcon
+          message={dict('PC.Components.OpenUi.renderFailed')}
+          description={inlineFallback || renderError}
+        />
+      );
+    }
+    return (
+      <div
+        className={styles.inlineRenderer}
+        data-openui-artifact={artifact.artifactId}
+        data-openui-render-mode="renderer"
+      >
+        <Renderer
+          library={openuiLibrary}
+          response={inlineSource}
+          isStreaming={false}
+          onError={(errors) => {
+            if (errors.length > 0) {
+              setRenderError(
+                errors[0]?.message || dict('PC.Components.OpenUi.renderFailed'),
+              );
+            }
+          }}
+        />
       </div>
     );
   }
