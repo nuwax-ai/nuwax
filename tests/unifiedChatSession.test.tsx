@@ -123,8 +123,15 @@ vi.mock('@/hooks/useIntersectionObserver', () => ({
 
 import { useActiveInterventionQueue } from '@/components/business-component/AgentIntervention/hooks/useActiveInterventionQueue';
 
-// jsdom 未实现 Element.scrollTo，UnifiedChatSession 的滚动 effect 会调用它
+// jsdom 未实现 Element.scrollTo / ResizeObserver
 Element.prototype.scrollTo = vi.fn() as any;
+class ResizeObserverStub {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+// @ts-expect-error jsdom polyfill
+global.ResizeObserver = ResizeObserverStub;
 
 const askItem = (): InterventionQueueItem =>
   ({

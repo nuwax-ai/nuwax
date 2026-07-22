@@ -197,8 +197,31 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
   });
 
   // 滚到底部按钮需避开队列面板：测量队列区域高度写入 CSS 变量
+  const sessionContainerRef = useRef<HTMLDivElement>(null);
   const chatInputContainerRef = useRef<HTMLDivElement>(null);
   const queuePanelMeasureRef = useRef<HTMLDivElement>(null);
+
+  // 审批卡片的可用高度需要扣除输入框，避免输入框变高后覆盖卡片底部。
+  useLayoutEffect(() => {
+    const sessionContainer = sessionContainerRef.current;
+    const inputContainer = chatInputContainerRef.current;
+    if (!sessionContainer || !inputContainer) return;
+
+    const update = () => {
+      sessionContainer.style.setProperty(
+        '--chat-input-height',
+        `${inputContainer.offsetHeight}px`,
+      );
+    };
+
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(inputContainer);
+    return () => {
+      observer.disconnect();
+      sessionContainer.style.removeProperty('--chat-input-height');
+    };
+  }, []);
 
   useLayoutEffect(() => {
     const container = chatInputContainerRef.current;
@@ -345,7 +368,11 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
   );
 
   return (
-    <div className={cx(styles['session-container'], className)} style={style}>
+    <div
+      ref={sessionContainerRef}
+      className={cx(styles['session-container'], className)}
+      style={style}
+    >
       {/* 核心聊天展现内容区 */}
       <ChatContentArea
         messageViewRef={messageViewRef}
