@@ -2966,6 +2966,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.Login.inputEmailRequired": "请输入邮箱",
   "PC.Pages.Login.inputAccountPlaceholder": "请输入邮箱或用户名",
   "PC.Pages.Login.inputAccountRequired": "请输入邮箱或用户名",
+  "PC.Pages.Login.invalidAccountWhitespace": "邮箱或用户名不能包含空格",
   "PC.Pages.Login.inputPasswordPlaceholder": "请输入不少于 6 位的密码",
   "PC.Pages.Login.inputPhonePlaceholder": "请输入手机号",
   "PC.Pages.Login.inputPhoneRequired": "请输入手机号",
