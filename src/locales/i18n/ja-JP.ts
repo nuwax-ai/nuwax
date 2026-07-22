@@ -2980,6 +2980,8 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.Login.codeLoginOrRegister": "コードでサインイン / サインアップ",
   "PC.Pages.Login.inputEmailPlaceholder": "メールアドレスを入力してください",
   "PC.Pages.Login.inputEmailRequired": "メールアドレスを入力してください",
+  "PC.Pages.Login.inputAccountPlaceholder": "メールアドレスまたはユーザー名を入力してください",
+  "PC.Pages.Login.inputAccountRequired": "メールアドレスまたはユーザー名を入力してください",
   "PC.Pages.Login.inputPasswordPlaceholder": "6文字以上のパスワードを入力してください",
   "PC.Pages.Login.inputPhonePlaceholder": "電話番号を入力してください",
   "PC.Pages.Login.inputPhoneRequired": "電話番号を入力してください",

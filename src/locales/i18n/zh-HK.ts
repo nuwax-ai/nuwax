@@ -2960,6 +2960,8 @@ export const ZH_HK: SystemLangMap = {
   "PC.Pages.Login.codeLoginOrRegister": "驗證碼登錄/註冊",
   "PC.Pages.Login.inputEmailPlaceholder": "請輸入郵箱",
   "PC.Pages.Login.inputEmailRequired": "請輸入郵箱",
+  "PC.Pages.Login.inputAccountPlaceholder": "請輸入郵箱或用戶名",
+  "PC.Pages.Login.inputAccountRequired": "請輸入郵箱或用戶名",
   "PC.Pages.Login.inputPasswordPlaceholder": "請輸入不少於 6 位的密碼",
   "PC.Pages.Login.inputPhonePlaceholder": "請輸入手機號",
   "PC.Pages.Login.inputPhoneRequired": "請輸入手機號",
