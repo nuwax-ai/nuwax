@@ -7,7 +7,10 @@ import { ProcessingEnum } from '@/types/enums/common';
 import type { OpenUiArtifact } from '@/types/interfaces/openUi';
 import { cloneDeep } from '@/utils/common';
 import { normalizeFileDiffItems } from '@/utils/fileChangeDiff';
-import { resolveOpenUiRenderState } from '@/utils/openUiArtifact';
+import {
+  buildOpenUiTunnelPageUrl,
+  resolveOpenUiRenderState,
+} from '@/utils/openUiArtifact';
 import {
   BorderOutlined,
   CheckOutlined,
@@ -452,17 +455,21 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
 
   const handleOpenUiSidecar = useCallback(
     (artifact: OpenUiArtifact) => {
-      if (!artifact.page) return;
+      const runtimeUrl = buildOpenUiTunnelPageUrl(
+        props.conversationId,
+        artifact.artifactId,
+      );
+      if (!runtimeUrl) return;
       showPagePreview({
         name: artifact.title,
-        uri: artifact.page.url,
+        uri: runtimeUrl,
         params: {},
         executeId: innerProcessing.executeId || artifact.artifactId,
         source: 'openui',
-        sandboxProfile: artifact.page.sandboxProfile,
+        sandboxProfile: 'openui-sidecar-v1',
       });
     },
-    [innerProcessing.executeId, showPagePreview],
+    [innerProcessing.executeId, props.conversationId, showPagePreview],
   );
 
   // 自动打开预览页面功能
@@ -640,6 +647,12 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
           <Suspense fallback={null}>
             <OpenUiArtifactView
               artifact={openUiState.artifact}
+              runtimeUrl={
+                buildOpenUiTunnelPageUrl(
+                  props.conversationId,
+                  openUiState.artifact.artifactId,
+                ) || undefined
+              }
               blockedReason={
                 openUiState.status === 'expired' ||
                 openUiState.status === 'untrusted'

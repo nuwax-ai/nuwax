@@ -119,3 +119,16 @@ export function resolveOpenUiRenderState(value: unknown): OpenUiRenderState {
 
   return { status: 'ready', artifact };
 }
+
+export function buildOpenUiTunnelPageUrl(
+  conversationId: number | string,
+  artifactId: string,
+): string | null {
+  const normalizedConversationId = String(conversationId).trim();
+  if (!/^\d+$/.test(normalizedConversationId) || !artifactId) return null;
+
+  const baseUrl = (process.env.BASE_URL || '').replace(/\/+$/, '');
+  return `${baseUrl}/api/computer/static/${encodeURIComponent(
+    normalizedConversationId,
+  )}/openui/pages/${encodeURIComponent(artifactId)}`;
+}

@@ -65,7 +65,7 @@
     "@js-preview/pdf": "^2.0.10",
     "@microsoft/fetch-event-source": "^2.0.1",
     "@monaco-editor/react": "^4.6.0",
-    "@nuwax-ai/openui-mcp": "0.1.1",
+    "@nuwax-ai/openui-mcp": "^0.1.9",
     "@openuidev/react-lang": "0.2.8",
     "@openuidev/react-ui": "0.12.1",
     "@tiptap/core": "^2.27.1",

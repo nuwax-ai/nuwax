@@ -31,12 +31,50 @@ const baseArtifact: OpenUiArtifact = {
 };
 
 describe('OpenUiArtifactView', () => {
-  it('renders a validated inline OpenUI document', async () => {
+  it('renders inline content with the Renderer by default', async () => {
     render(<OpenUiArtifactView artifact={baseArtifact} />);
 
     await waitFor(() => {
       expect(screen.getByText('Deployment')).toBeInTheDocument();
       expect(screen.getByText('Ready')).toBeInTheDocument();
+    });
+    expect(
+      document.querySelector('[data-openui-render-mode="renderer"]'),
+    ).toBeInTheDocument();
+  });
+
+  it('supports the conversation-scoped Runtime iframe for inline content', async () => {
+    const runtimeUrl = `/computer/desktop/2336/openui/pages/${baseArtifact.artifactId}`;
+    render(
+      <OpenUiArtifactView
+        artifact={baseArtifact}
+        runtimeUrl={runtimeUrl}
+        inlineRenderMode="iframe"
+      />,
+    );
+
+    const frame = screen.getByTitle(baseArtifact.title) as HTMLIFrameElement;
+    expect(frame).toHaveAttribute('src', runtimeUrl);
+    expect(
+      screen.getByText('PC.Components.OpenUi.loading'),
+    ).toBeInTheDocument();
+
+    fireEvent(
+      window,
+      new MessageEvent('message', {
+        origin: window.location.origin,
+        source: frame.contentWindow,
+        data: {
+          type: 'OPENUI_READY',
+          protocolVersion: 'nuwax.openui-page/v1',
+          artifactId: baseArtifact.artifactId,
+        },
+      }),
+    );
+    await waitFor(() => {
+      expect(
+        screen.queryByText('PC.Components.OpenUi.loading'),
+      ).not.toBeInTheDocument();
     });
   });
 
@@ -55,6 +93,7 @@ describe('OpenUiArtifactView', () => {
     render(
       <OpenUiArtifactView
         artifact={sidecarArtifact}
+        runtimeUrl={`/computer/desktop/2336/openui/pages/${sidecarArtifact.artifactId}`}
         onOpenSidecar={onOpenSidecar}
       />,
     );

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  buildOpenUiTunnelPageUrl,
   extractOpenUiArtifact,
   isTrustedOpenUiSidecarUrl,
   resolveOpenUiRenderState,
@@ -114,5 +115,17 @@ describe('OpenUI sidecar policy', () => {
         },
       }).status,
     ).toBe('expired');
+  });
+});
+
+describe('OpenUI lanproxy runtime URL', () => {
+  it('builds a same-origin page path scoped to the conversation', () => {
+    expect(buildOpenUiTunnelPageUrl(2336, artifact.artifactId)).toBe(
+      `/api/computer/static/2336/openui/pages/${artifact.artifactId}`,
+    );
+  });
+
+  it('rejects an invalid conversation id', () => {
+    expect(buildOpenUiTunnelPageUrl('../2336', artifact.artifactId)).toBeNull();
   });
 });
