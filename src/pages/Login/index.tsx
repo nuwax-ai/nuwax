@@ -207,7 +207,18 @@ const Login: React.FC = () => {
       {
         validator(_: any, value: string) {
           if (!value) return Promise.resolve();
-          if (supportsUsernameLogin) return Promise.resolve();
+          if (supportsUsernameLogin) {
+            if (!value.trim()) {
+              return Promise.reject(
+                new Error(dict('PC.Pages.Login.inputAccountRequired')),
+              );
+            }
+            return /\s/.test(value)
+              ? Promise.reject(
+                  new Error(dict('PC.Pages.Login.invalidAccountWhitespace')),
+                )
+              : Promise.resolve();
+          }
           if (isEmailAuth) {
             return isValidEmail(value)
               ? Promise.resolve()

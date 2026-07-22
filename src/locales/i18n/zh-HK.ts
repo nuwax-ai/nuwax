@@ -2962,6 +2962,7 @@ export const ZH_HK: SystemLangMap = {
   "PC.Pages.Login.inputEmailRequired": "請輸入郵箱",
   "PC.Pages.Login.inputAccountPlaceholder": "請輸入郵箱或用戶名",
   "PC.Pages.Login.inputAccountRequired": "請輸入郵箱或用戶名",
+  "PC.Pages.Login.invalidAccountWhitespace": "郵箱或用戶名不能包含空格",
   "PC.Pages.Login.inputPasswordPlaceholder": "請輸入不少於 6 位的密碼",
   "PC.Pages.Login.inputPhonePlaceholder": "請輸入手機號",
   "PC.Pages.Login.inputPhoneRequired": "請輸入手機號",
