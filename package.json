@@ -107,7 +107,6 @@
     "monaco-editor-webpack-plugin": "7.0.1",
     "pptx-preview": "^1.0.7",
     "prismjs": "^1.30.0",
-    "prompt-kit-editor": "^0.1.3",
     "qs": "^6.14.1",
     "rc-slider-captcha": "^1.7.1",
     "react": "18.3.1",
