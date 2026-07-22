@@ -193,16 +193,21 @@ const Login: React.FC = () => {
 
   const getPhoneOrEmailRules = () => {
     const isEmailAuth = tenantConfigInfo?.authType === 3;
+    const supportsUsernameLogin =
+      isEmailAuth && loginType === LoginTypeEnum.Password;
     return [
       {
         required: true,
-        message: isEmailAuth
+        message: supportsUsernameLogin
+          ? dict('PC.Pages.Login.inputAccountRequired')
+          : isEmailAuth
           ? dict('PC.Pages.Login.inputEmailRequired')
           : dict('PC.Pages.Login.inputPhoneRequired'),
       },
       {
         validator(_: any, value: string) {
           if (!value) return Promise.resolve();
+          if (supportsUsernameLogin) return Promise.resolve();
           if (isEmailAuth) {
             return isValidEmail(value)
               ? Promise.resolve()
@@ -554,7 +559,9 @@ const Login: React.FC = () => {
                       <Input
                         rootClassName={cx(styles.input)}
                         placeholder={dict(
-                          'PC.Pages.Login.inputEmailPlaceholder',
+                          loginType === LoginTypeEnum.Password
+                            ? 'PC.Pages.Login.inputAccountPlaceholder'
+                            : 'PC.Pages.Login.inputEmailPlaceholder',
                         )}
                       />
                     </Form.Item>
