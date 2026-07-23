@@ -1,6 +1,7 @@
 import { dict } from '@/services/i18nRuntime';
 import type {
   OpenUiAction,
+  OpenUiActionArtifact,
   OpenUiArtifact,
   OpenUiFile,
 } from '@/types/interfaces/openUi';
@@ -11,7 +12,7 @@ import {
 } from '@/utils/openUiArtifact';
 import { ExportOutlined } from '@ant-design/icons';
 import type { RenderOpenUiInput } from '@nuwax-ai/openui-mcp/contracts';
-import { Renderer } from '@openuidev/react-lang';
+import { Renderer, type ActionEvent } from '@openuidev/react-lang';
 import { ThemeProvider } from '@openuidev/react-ui';
 import { openuiLibrary } from '@openuidev/react-ui/genui-lib';
 import '@openuidev/react-ui/layered/styles/index.css';
@@ -290,7 +291,10 @@ const OpenUiArtifactView: React.FC<OpenUiArtifactViewProps> = ({
   conversationId,
 }) => {
   const autoOpenedArtifactId = useRef<string>();
+  const formStateRef = useRef<Record<string, unknown>>({});
+  const pendingActionIdRef = useRef<string>();
   const [renderError, setRenderError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const presentation = artifact?.presentation ?? inlineInput?.presentation;
   const artifactId = artifact?.artifactId ?? inlineArtifactId ?? 'inline';
   const isSidecar = presentation?.mode === 'sidecar';
@@ -302,9 +306,63 @@ const OpenUiArtifactView: React.FC<OpenUiArtifactViewProps> = ({
   const inlineSource = inlineInput?.document.source ?? file?.document.source;
   const inlineFallback =
     inlineInput?.fallback.markdown ?? file?.fallback.markdown ?? '';
+  const actionArtifact = useMemo<OpenUiActionArtifact | null>(
+    () =>
+      presentation
+        ? {
+            artifactId,
+            title: artifact?.title ?? inlineInput?.title ?? 'OpenUI',
+            presentation,
+          }
+        : null,
+    [artifact?.title, artifactId, inlineInput?.title, presentation],
+  );
+
+  const handleInlineAction = useCallback(
+    (event: ActionEvent) => {
+      if (pendingActionIdRef.current) return;
+      const sender = getOpenUiActionSender(conversationId);
+      if (!sender || !actionArtifact) {
+        setRenderError(dict('PC.Components.OpenUi.actionUnavailable'));
+        return;
+      }
+      const actionId = crypto.randomUUID();
+      const action: OpenUiAction = {
+        type: 'nuwax.openui-action',
+        schemaVersion: 'nuwax.openui-action/v1',
+        actionId,
+        artifactId: actionArtifact.artifactId,
+        artifactPath: `data/${actionArtifact.artifactId}.openui.json`,
+        actionName: String(event.type),
+        values: event.formState ?? formStateRef.current,
+        formName: event.formName,
+        humanFriendlyMessage: event.humanFriendlyMessage,
+        params: event.params,
+        submittedAt: new Date().toISOString(),
+      };
+      pendingActionIdRef.current = actionId;
+      setIsSubmitting(true);
+      void Promise.resolve(sender(actionArtifact, action))
+        .catch((reason: unknown) => {
+          setRenderError(
+            reason instanceof Error ? reason.message : String(reason),
+          );
+        })
+        .finally(() => {
+          if (pendingActionIdRef.current === actionId) {
+            pendingActionIdRef.current = undefined;
+            setIsSubmitting(false);
+          }
+        });
+    },
+    [actionArtifact, conversationId],
+  );
 
   useEffect(() => {
     setRenderError(null);
+    formStateRef.current = {};
+    pendingActionIdRef.current = undefined;
+    setIsSubmitting(false);
   }, [artifactId, inlineSource]);
 
   useEffect(() => {
@@ -366,7 +424,11 @@ const OpenUiArtifactView: React.FC<OpenUiArtifactViewProps> = ({
           <Renderer
             library={openuiLibrary}
             response={inlineSource}
-            isStreaming={false}
+            isStreaming={isSubmitting}
+            onStateUpdate={(state) => {
+              formStateRef.current = state;
+            }}
+            onAction={handleInlineAction}
             onError={(errors) => {
               if (errors.length > 0) {
                 setRenderError(

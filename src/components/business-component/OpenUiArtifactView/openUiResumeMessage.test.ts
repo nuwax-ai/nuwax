@@ -25,7 +25,7 @@ const artifact: OpenUiFile = {
 };
 
 describe('buildOpenUiResumeMessage', () => {
-  it('builds the same readable + structured + idempotency shape as ask-question', () => {
+  it('builds ask-question-style readable field lines without a JSON block', () => {
     const action: OpenUiAction = {
       type: 'nuwax.openui-action',
       schemaVersion: 'nuwax.openui-action/v1',
@@ -33,12 +33,40 @@ describe('buildOpenUiResumeMessage', () => {
       artifactId: artifact.artifactId,
       artifactPath: `data/${artifact.artifactId}.openui.json`,
       actionName: 'Submit',
-      values: { date: new Date('2026-07-22T00:00:00Z') },
+      values: {
+        orderForm: {
+          date: { value: new Date('2026-07-22T00:00:00Z') },
+          role: { value: 'designer' },
+        },
+      },
+      formName: 'orderForm',
       submittedAt: '2026-07-22T00:00:00.000Z',
     };
     const message = buildOpenUiResumeMessage(artifact, action);
-    expect(message).toContain('Submitted Order form');
-    expect(message).toContain('2026-07-22T00:00:00.000Z');
+    expect(message).toContain(
+      'Submitted Order form\ndate：2026-07-22T00:00:00.000Z\nrole：designer',
+    );
+    expect(message).not.toContain('```json');
+    expect(message).not.toContain('"schemaVersion"');
     expect(message).toContain('<!--nuwax-openui-action-id:action-1-->');
+  });
+
+  it('uses the OpenUI action message as the visible user prompt', () => {
+    const message = buildOpenUiResumeMessage(artifact, {
+      type: 'nuwax.openui-action',
+      schemaVersion: 'nuwax.openui-action/v1',
+      actionId: 'action-2',
+      artifactId: artifact.artifactId,
+      artifactPath: `data/${artifact.artifactId}.openui.json`,
+      actionName: 'ToAssistant',
+      humanFriendlyMessage: '用户提交了 inline 表单',
+      values: { name: '张三' },
+      submittedAt: '2026-07-23T00:00:00.000Z',
+    });
+
+    expect(message.startsWith('我提交了 inline 表单\n')).toBe(true);
+    expect(message).not.toContain('用户提交了');
+    expect(message).toContain('name：张三');
+    expect(message).not.toContain('```json');
   });
 });

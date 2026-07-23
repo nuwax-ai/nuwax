@@ -49,6 +49,11 @@ export interface OpenUiAction {
   submittedAt: string;
 }
 
+export type OpenUiActionArtifact = Pick<
+  OpenUiFile,
+  'artifactId' | 'title' | 'presentation'
+>;
+
 export type OpenUiArtifact = LegacyOpenUiArtifact | OpenUiArtifactRef;
 
 export type OpenUiRenderState =

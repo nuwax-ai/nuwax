@@ -14,7 +14,7 @@ import { z } from 'zod';
 const MAX_VISITED_VALUES = 128;
 const MAX_JSON_TEXT_LENGTH = 200_000;
 const UUID_PATTERN =
-  '[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}';
+  '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}';
 const DIGEST_PATTERN = /^sha256:[a-f0-9]{64}$/;
 const PRIORITY_KEYS = [
   'structuredContent',
@@ -37,6 +37,11 @@ const presentationSchema = z.object({
   autoOpen: z.boolean(),
   preferredWidth: z.enum(['compact', 'normal', 'wide']).optional(),
 });
+
+export function isOpenUiRenderToolName(name: unknown): boolean {
+  if (typeof name !== 'string') return false;
+  return /(?:^|[_-])nuwax_render_openui$/i.test(name.trim());
+}
 
 export const openUiFileSchema: z.ZodType<OpenUiFile> = z.object({
   type: z.literal('nuwax.openui-file'),
@@ -172,6 +177,33 @@ export function resolveOpenUiDisplayState(value: unknown) {
     return { status: 'input-only', renderInput } as const;
   }
   return { status: 'absent' } as const;
+}
+
+export function extractOpenUiArtifactId(value: unknown): string | undefined {
+  const queue: unknown[] = [value];
+  const visitedObjects = new WeakSet<object>();
+  let visitedValues = 0;
+  const pathPattern = new RegExp(
+    `(?:^|[^0-9a-z])data/(${UUID_PATTERN})\\.openui\\.json(?:$|[^0-9a-z])`,
+    'i',
+  );
+  while (queue.length && visitedValues < MAX_VISITED_VALUES) {
+    const current = queue.shift();
+    visitedValues += 1;
+    if (typeof current === 'string') {
+      const match = pathPattern.exec(current);
+      if (match) return match[1];
+      const json = parseJsonCandidate(current);
+      if (json !== undefined) queue.push(json);
+      continue;
+    }
+    if (!current || typeof current !== 'object' || visitedObjects.has(current))
+      continue;
+    visitedObjects.add(current);
+    if (Array.isArray(current)) queue.push(...current);
+    else queue.push(...Object.values(current as Record<string, unknown>));
+  }
+  return undefined;
 }
 
 export function isOpenUiArtifactRef(

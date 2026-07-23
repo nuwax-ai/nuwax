@@ -119,6 +119,33 @@ describe('ChatView', () => {
     );
   });
 
+  it('OpenUI 恢复消息隐藏内部幂等标记', () => {
+    render(
+      <ChatView
+        roleInfo={roleInfo}
+        messageInfo={createMessage({
+          role: AssistantRoleEnum.USER,
+          text: [
+            '用户提交了 inline 表单！',
+            'name：你好',
+            '<!--nuwax-openui-action-id:action-1-->',
+          ].join('\n'),
+        })}
+      />,
+    );
+
+    expect(screen.getByText(/用户提交了 inline 表单！/)).toHaveTextContent(
+      '用户提交了 inline 表单！ name：你好',
+    );
+    expect(
+      screen.queryByText(/nuwax-openui-action-id/),
+    ).not.toBeInTheDocument();
+    expect(screen.getByTestId('copy-button')).toHaveAttribute(
+      'data-copy-text',
+      '用户提交了 inline 表单！\nname：你好',
+    );
+  });
+
   it('助手消息渲染 MarkdownRenderer，并透传 answer/thinking/status', () => {
     render(
       <ChatView

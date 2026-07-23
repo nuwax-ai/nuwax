@@ -2,14 +2,17 @@ import { describe, expect, it } from 'vitest';
 import {
   buildOpenUiArtifactFileUrl,
   extractOpenUiArtifact,
+  extractOpenUiArtifactId,
   extractOpenUiRenderInput,
   getOpenUiArtifactIdFromFileName,
   isOpenUiFileName,
+  isOpenUiRenderToolName,
   resolveOpenUiDisplayState,
   resolveOpenUiRenderState,
 } from './openUiArtifact';
 
 const artifactId = '550e8400-e29b-41d4-a716-446655440000';
+const uuidV6ArtifactId = '3f8b1a2c-4d5e-6f7a-8b9c-0d1e2f3a4b5c';
 const reference = {
   type: 'nuwax.openui-ref',
   schemaVersion: 'nuwax.openui-ref/v1',
@@ -22,6 +25,19 @@ const reference = {
 } as const;
 
 describe('OpenUI file artifact references', () => {
+  it('recognizes OpenUI render tool names without matching reference tools', () => {
+    expect(isOpenUiRenderToolName('nuwax-openui_nuwax_render_openui')).toBe(
+      true,
+    );
+    expect(isOpenUiRenderToolName('nuwax-openui__nuwax_render_openui')).toBe(
+      true,
+    );
+    expect(isOpenUiRenderToolName('nuwax_render_openui')).toBe(true);
+    expect(
+      isOpenUiRenderToolName('nuwax-openui_nuwax_get_openui_reference'),
+    ).toBe(false);
+  });
+
   it('finds a valid reference inside MCP wrapper shapes', () => {
     expect(
       extractOpenUiArtifact({ result: { structuredContent: reference } }),
@@ -75,6 +91,7 @@ describe('OpenUI file artifact references', () => {
       status: 'input-only',
       renderInput: { document: { source } },
     });
+    expect(extractOpenUiArtifactId(payload)).toBe(artifactId);
   });
 
   it('rejects a reference whose path does not match its artifact ID', () => {
@@ -93,6 +110,17 @@ describe('OpenUI file artifact references', () => {
         reference.digest,
       )}`,
     );
+  });
+
+  it('accepts UUID v6 artifact IDs emitted by the MCP input contract', () => {
+    expect(buildOpenUiArtifactFileUrl(2336, uuidV6ArtifactId)).toBe(
+      `/api/computer/static/2336/data/${uuidV6ArtifactId}.openui.json`,
+    );
+    expect(
+      extractOpenUiArtifactId(
+        `OpenUI inline artifact created: data/${uuidV6ArtifactId}.openui.json`,
+      ),
+    ).toBe(uuidV6ArtifactId);
   });
 
   it('recognizes the dedicated .openui.json suffix for file-tree previews', () => {

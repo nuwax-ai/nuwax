@@ -20,7 +20,10 @@ import { MessageStatusEnum } from '@/types/enums/common';
 import { AgentTypeEnum } from '@/types/enums/space';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type { RoleInfo } from '@/types/interfaces/conversationInfo';
-import type { OpenUiAction, OpenUiFile } from '@/types/interfaces/openUi';
+import type {
+  OpenUiAction,
+  OpenUiActionArtifact,
+} from '@/types/interfaces/openUi';
 import ChatContentArea from './components/ChatContentArea';
 import ChatInputHomeIndependent from './components/ChatInputHomeIndependent';
 import { useConversationStreamResume } from './hooks/useConversationStreamResume';
@@ -353,7 +356,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
   );
 
   const respondOpenUiAction = useMemo(
-    () => (artifact: OpenUiFile, action: OpenUiAction) => {
+    () => (artifact: OpenUiActionArtifact, action: OpenUiAction) => {
       messageQueue.rawSend(buildOpenUiResumeMessage(artifact, action));
     },
     [messageQueue.rawSend],

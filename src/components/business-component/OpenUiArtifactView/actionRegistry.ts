@@ -1,7 +1,10 @@
-import type { OpenUiAction, OpenUiFile } from '@/types/interfaces/openUi';
+import type {
+  OpenUiAction,
+  OpenUiActionArtifact,
+} from '@/types/interfaces/openUi';
 
 type Sender = (
-  artifact: OpenUiFile,
+  artifact: OpenUiActionArtifact,
   action: OpenUiAction,
 ) => void | Promise<void>;
 const senders = new Map<string, Sender>();

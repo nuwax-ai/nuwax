@@ -1,13 +1,36 @@
 import type { OpenUiArtifact } from '@/types/interfaces/openUi';
 import { legacyArtifactToOpenUiFile } from '@/utils/openUiArtifact';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
+import { registerOpenUiActionSender } from './actionRegistry';
 import OpenUiArtifactView, { OpenUiRuntimeFrame } from './index';
 
 vi.mock('@/services/i18nRuntime', () => ({ dict: (key: string) => key }));
 vi.mock('@openuidev/react-lang', () => ({
-  Renderer: ({ response }: { response: string }) => (
-    <div data-testid="openui-renderer" data-response={response} />
+  Renderer: ({
+    response,
+    onAction,
+    onStateUpdate,
+  }: {
+    response: string;
+    onAction?: (event: Record<string, unknown>) => void;
+    onStateUpdate?: (state: Record<string, unknown>) => void;
+  }) => (
+    <div data-testid="openui-renderer" data-response={response}>
+      <button
+        type="button"
+        data-testid="openui-submit"
+        onClick={() => {
+          onStateUpdate?.({ test: { name: { value: '张三' } } });
+          onAction?.({
+            type: 'ToAssistant',
+            params: {},
+            humanFriendlyMessage: '用户提交了 inline 表单',
+            formName: 'test',
+          });
+        }}
+      />
+    </div>
   ),
 }));
 vi.mock('@openuidev/react-ui/genui-lib', () => ({ openuiLibrary: {} }));
@@ -109,6 +132,44 @@ describe('OpenUiArtifactView', () => {
     );
   });
 
+  it('forwards an input-only inline form action to the conversation sender', async () => {
+    const sender = vi.fn();
+    const unregister = registerOpenUiActionSender(2336, sender);
+    render(
+      <OpenUiArtifactView
+        conversationId={2336}
+        inlineArtifactId={baseArtifact.artifactId}
+        inlineInput={{
+          artifactId: baseArtifact.artifactId,
+          schemaVersion: 'nuwax.openui/v1',
+          title: 'Inline 表单提交测试',
+          presentation: baseArtifact.presentation,
+          document: {
+            language: 'openui-lang',
+            specVersion: '0.5',
+            source: baseArtifact.document.source,
+          },
+          bindings: { tools: [] },
+          fallback: baseArtifact.fallback,
+        }}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId('openui-submit'));
+
+    await waitFor(() => expect(sender).toHaveBeenCalledTimes(1));
+    expect(sender.mock.calls[0][0]).toMatchObject({
+      artifactId: baseArtifact.artifactId,
+      title: 'Inline 表单提交测试',
+    });
+    expect(sender.mock.calls[0][1]).toMatchObject({
+      artifactId: baseArtifact.artifactId,
+      actionName: 'ToAssistant',
+      values: { test: { name: { value: '张三' } } },
+    });
+    unregister();
+  });
+
   it('opens sidecar artifacts through the host preview callback', () => {
     const onOpenSidecar = vi.fn();
     const sidecar = {
@@ -139,4 +200,54 @@ describe('OpenUiArtifactView', () => {
       '*',
     );
   });
+
+  it.each(['inline', 'full'] as const)(
+    'forwards %s Runtime iframe actions to the conversation sender',
+    async (variant) => {
+      const sender = vi.fn();
+      const unregister = registerOpenUiActionSender(2336, sender);
+      const artifact = legacyArtifactToOpenUiFile(baseArtifact);
+      const { container } = render(
+        <OpenUiRuntimeFrame
+          artifact={artifact}
+          conversationId={2336}
+          variant={variant}
+        />,
+      );
+      const frame = container.querySelector('iframe');
+      const nonce = new URL(
+        frame!.getAttribute('src')!,
+        'http://localhost',
+      ).searchParams.get('nonce');
+      const action = {
+        type: 'nuwax.openui-action',
+        schemaVersion: 'nuwax.openui-action/v1',
+        actionId: `action-${variant}`,
+        artifactId: artifact.artifactId,
+        artifactPath: `data/${artifact.artifactId}.openui.json`,
+        actionName: 'continue_conversation',
+        values: { form: { name: { value: '张三' } } },
+        formName: 'form',
+        humanFriendlyMessage: '用户提交了 inline 表单',
+        submittedAt: '2026-07-23T00:00:00.000Z',
+      };
+
+      window.dispatchEvent(
+        new MessageEvent('message', {
+          source: frame!.contentWindow,
+          data: {
+            type: 'OPENUI_ACTION',
+            protocolVersion: 'nuwax.openui-runtime/v1',
+            nonce,
+            event: action,
+          },
+        }),
+      );
+
+      await waitFor(() =>
+        expect(sender).toHaveBeenCalledWith(artifact, action),
+      );
+      unregister();
+    },
+  );
 });

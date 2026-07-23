@@ -106,6 +106,29 @@ describe('groupMarkdownProcesses', () => {
     expect(result).toContain('markdown-custom-process-group');
   });
 
+  it('OpenUI 渲染调用始终单独成块，不进入默认收起的过程分组', () => {
+    const openUi =
+      '<markdown-custom-process executeId="openui-1" name="nuwax-openui_nuwax_render_openui" type="ToolCall" status="EXECUTING"></markdown-custom-process>';
+    const action =
+      '<markdown-custom-process executeId="action-1" name="read_file" type="ToolCall" status="FINISHED"></markdown-custom-process>';
+    const result = groupMarkdownProcesses(`${openUi}\n${action}`);
+
+    expect(result).not.toContain('markdown-custom-process-group');
+    expect(result).toContain('executeId="openui-1"');
+    expect(result).toContain('executeId="action-1"');
+  });
+
+  it('连续多个 OpenUI 调用均保持独立展开', () => {
+    const first =
+      '<markdown-custom-process executeId="openui-1" name="nuwax-openui_nuwax_render_openui" type="ToolCall" status="FINISHED"></markdown-custom-process>';
+    const second =
+      '<markdown-custom-process executeId="openui-2" name="nuwax-openui__nuwax_render_openui" type="ToolCall" status="EXECUTING"></markdown-custom-process>';
+    const result = groupMarkdownProcesses(`${first}\n${second}`);
+
+    expect(result).not.toContain('markdown-custom-process-group');
+    expect(result.match(/<div><markdown-custom-process/g)).toHaveLength(2);
+  });
+
   it('type=Plan 标签单独成块，type 排在 name 之前时不并入 group', () => {
     const plan =
       '<markdown-custom-process executeId="p1" type="Plan" name="plan"></markdown-custom-process>';

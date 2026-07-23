@@ -9,7 +9,9 @@ import { cloneDeep } from '@/utils/common';
 import { normalizeFileDiffItems } from '@/utils/fileChangeDiff';
 import {
   buildOpenUiArtifactFileUrl,
+  extractOpenUiArtifactId,
   isOpenUiArtifactRef,
+  isOpenUiRenderToolName,
   legacyArtifactToOpenUiFile,
   resolveOpenUiDisplayState,
 } from '@/utils/openUiArtifact';
@@ -172,6 +174,13 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
     openUiDisplayState.status === 'ready'
       ? openUiDisplayState.artifact
       : undefined;
+  const inlineArtifactId =
+    openUiRenderInput?.artifactId ??
+    extractOpenUiArtifactId(innerProcessing.result) ??
+    innerProcessing.executeId;
+  const isOpenUiRenderProcess = isOpenUiRenderToolName(
+    innerProcessing.name || props.name,
+  );
 
   // 统计总的 additions 和 deletions
   const { totalAdditions, totalDeletions } = useMemo(() => {
@@ -509,6 +518,17 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
     return null;
   }
 
+  // 流式 Markdown 有时会残留一条已完成的 OpenUI 工具标记，但对应的
+  // processing input/result 并不存在。它无法渲染任何 UI，继续显示只会形成
+  // 一个和真实 OpenUI 卡片并列的空壳工具条。
+  if (
+    isOpenUiRenderProcess &&
+    innerProcessing.status === ProcessingEnum.FINISHED &&
+    openUiDisplayState.status === 'absent'
+  ) {
+    return null;
+  }
+
   // 工具栏标题：过长时 tooltip 限高 3 行，超出出现滚动条
   const processName =
     innerProcessing?.name || dict('PC.Components.MarkdownCustomProcess.noName');
@@ -669,7 +689,7 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
             <OpenUiArtifactView
               artifact={openUiArtifact}
               inlineInput={openUiRenderInput || undefined}
-              inlineArtifactId={innerProcessing.executeId}
+              inlineArtifactId={inlineArtifactId}
               artifactUrl={
                 openUiArtifact && isOpenUiArtifactRef(openUiArtifact)
                   ? buildOpenUiArtifactFileUrl(

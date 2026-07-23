@@ -517,6 +517,9 @@ function groupMarkdownProcesses(text: string): string {
     // 否则当 type 排在 name 之后时，归一化会把 type 编码进 name 值，导致 isPlan 漏判、Plan 被误并入 group。
     // 容忍 SSE 流式产生的转义引号（type=\"Plan\" / type=\'Plan\'）
     const isPlan = /type=\\?["']Plan\\?["']/i.test(tagMatch);
+    // OpenUI 是对话中的正式交互内容，不是可折叠的执行日志。
+    // 识别原始 name，避免属性归一化后 name 被 URL 编码而漏判。
+    const isOpenUi = /name=\\?["'][^"']*nuwax_render_openui/i.test(tagMatch);
 
     // 处理匹配项之前的文本
     const textBefore = dedupedText.slice(lastIndex, groupMatch.index);
@@ -525,7 +528,7 @@ function groupMarkdownProcesses(text: string): string {
       result += textBefore;
     }
 
-    if (isPlan) {
+    if (isPlan || isOpenUi) {
       flushGroup();
       result += `\n\n<div>${normalizedTag}</div>\n\n`;
     } else {
