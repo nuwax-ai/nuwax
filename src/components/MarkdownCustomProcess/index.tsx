@@ -9,10 +9,9 @@ import { cloneDeep } from '@/utils/common';
 import { normalizeFileDiffItems } from '@/utils/fileChangeDiff';
 import {
   buildOpenUiArtifactFileUrl,
-  extractOpenUiRenderInput,
   isOpenUiArtifactRef,
   legacyArtifactToOpenUiFile,
-  resolveOpenUiRenderState,
+  resolveOpenUiDisplayState,
 } from '@/utils/openUiArtifact';
 import {
   BorderOutlined,
@@ -161,14 +160,18 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
   }, [innerProcessing.result]);
 
   const hasDiff = diffItems.length > 0;
-  const openUiState = useMemo(
-    () => resolveOpenUiRenderState(innerProcessing.result),
+  const openUiDisplayState = useMemo(
+    () => resolveOpenUiDisplayState(innerProcessing.result),
     [innerProcessing.result],
   );
-  const openUiRenderInput = useMemo(
-    () => extractOpenUiRenderInput(innerProcessing.result),
-    [innerProcessing.result],
-  );
+  const openUiRenderInput =
+    openUiDisplayState.status === 'absent'
+      ? null
+      : openUiDisplayState.renderInput;
+  const openUiArtifact =
+    openUiDisplayState.status === 'ready'
+      ? openUiDisplayState.artifact
+      : undefined;
 
   // 统计总的 additions 和 deletions
   const { totalAdditions, totalDeletions } = useMemo(() => {
@@ -661,17 +664,18 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
           onClose={() => setOpenModal(false)}
           data={detailData}
         />
-        {openUiState.status !== 'absent' && (
+        {openUiDisplayState.status !== 'absent' && (
           <Suspense fallback={null}>
             <OpenUiArtifactView
-              artifact={openUiState.artifact}
+              artifact={openUiArtifact}
               inlineInput={openUiRenderInput || undefined}
+              inlineArtifactId={innerProcessing.executeId}
               artifactUrl={
-                isOpenUiArtifactRef(openUiState.artifact)
+                openUiArtifact && isOpenUiArtifactRef(openUiArtifact)
                   ? buildOpenUiArtifactFileUrl(
                       props.conversationId,
-                      openUiState.artifact.artifactId,
-                      openUiState.artifact.digest,
+                      openUiArtifact.artifactId,
+                      openUiArtifact.digest,
                     ) || undefined
                   : undefined
               }

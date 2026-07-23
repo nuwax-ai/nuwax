@@ -162,6 +162,18 @@ export function extractOpenUiRenderInput(
   return null;
 }
 
+export function resolveOpenUiDisplayState(value: unknown) {
+  const artifactState = resolveOpenUiRenderState(value);
+  const renderInput = extractOpenUiRenderInput(value);
+  if (artifactState.status === 'ready') {
+    return { ...artifactState, renderInput } as const;
+  }
+  if (renderInput?.presentation.mode === 'inline') {
+    return { status: 'input-only', renderInput } as const;
+  }
+  return { status: 'absent' } as const;
+}
+
 export function isOpenUiArtifactRef(
   value: OpenUiArtifact,
 ): value is OpenUiArtifactRef {

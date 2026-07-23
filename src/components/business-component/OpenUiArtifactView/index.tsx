@@ -12,6 +12,7 @@ import {
 import { ExportOutlined } from '@ant-design/icons';
 import type { RenderOpenUiInput } from '@nuwax-ai/openui-mcp/contracts';
 import { Renderer } from '@openuidev/react-lang';
+import { ThemeProvider } from '@openuidev/react-ui';
 import { openuiLibrary } from '@openuidev/react-ui/genui-lib';
 import '@openuidev/react-ui/layered/styles/index.css';
 import { Alert, Button, Spin } from 'antd';
@@ -125,7 +126,7 @@ export const OpenUiRuntimeFrame: React.FC<OpenUiRuntimeFrameProps> = ({
         nonce,
         artifact,
         locale: document.documentElement.lang || navigator.language,
-        theme: document.documentElement.dataset.theme || 'light',
+        theme: 'light',
         viewport: window.matchMedia('(max-width: 767px)').matches
           ? 'mobile'
           : 'desktop',
@@ -272,8 +273,9 @@ export const OpenUiRuntimeFrame: React.FC<OpenUiRuntimeFrameProps> = ({
 };
 
 interface OpenUiArtifactViewProps {
-  artifact: OpenUiArtifact;
+  artifact?: OpenUiArtifact;
   inlineInput?: RenderOpenUiInput;
+  inlineArtifactId?: string;
   artifactUrl?: string;
   onOpenSidecar?: (artifact: OpenUiArtifact) => void;
   conversationId?: number | string;
@@ -282,28 +284,33 @@ interface OpenUiArtifactViewProps {
 const OpenUiArtifactView: React.FC<OpenUiArtifactViewProps> = ({
   artifact,
   inlineInput,
+  inlineArtifactId,
   artifactUrl,
   onOpenSidecar,
   conversationId,
 }) => {
   const autoOpenedArtifactId = useRef<string>();
   const [renderError, setRenderError] = useState<string | null>(null);
-  const isSidecar = artifact.presentation.mode === 'sidecar';
-  const file = isOpenUiArtifactRef(artifact)
-    ? undefined
-    : legacyArtifactToOpenUiFile(artifact);
+  const presentation = artifact?.presentation ?? inlineInput?.presentation;
+  const artifactId = artifact?.artifactId ?? inlineArtifactId ?? 'inline';
+  const isSidecar = presentation?.mode === 'sidecar';
+  const file = artifact
+    ? isOpenUiArtifactRef(artifact)
+      ? undefined
+      : legacyArtifactToOpenUiFile(artifact)
+    : undefined;
   const inlineSource = inlineInput?.document.source ?? file?.document.source;
   const inlineFallback =
     inlineInput?.fallback.markdown ?? file?.fallback.markdown ?? '';
 
   useEffect(() => {
     setRenderError(null);
-  }, [artifact.artifactId, inlineSource]);
+  }, [artifactId, inlineSource]);
 
   useEffect(() => {
     if (
       isSidecar &&
-      artifact.presentation.autoOpen &&
+      artifact?.presentation.autoOpen &&
       onOpenSidecar &&
       autoOpenedArtifactId.current !== artifact.artifactId
     ) {
@@ -312,7 +319,7 @@ const OpenUiArtifactView: React.FC<OpenUiArtifactViewProps> = ({
     }
   }, [artifact, isSidecar, onOpenSidecar]);
 
-  if (isSidecar) {
+  if (isSidecar && artifact) {
     return (
       <div className={styles.sidecarSummary}>
         <div className={styles.sidecarText}>
@@ -351,21 +358,25 @@ const OpenUiArtifactView: React.FC<OpenUiArtifactViewProps> = ({
     return (
       <div
         className={styles.inlineRenderer}
-        data-openui-artifact={artifact.artifactId}
+        data-openui-artifact={artifactId}
         data-openui-render-mode="renderer"
+        data-openui-theme="light"
       >
-        <Renderer
-          library={openuiLibrary}
-          response={inlineSource}
-          isStreaming={false}
-          onError={(errors) => {
-            if (errors.length > 0) {
-              setRenderError(
-                errors[0]?.message || dict('PC.Components.OpenUi.renderFailed'),
-              );
-            }
-          }}
-        />
+        <ThemeProvider mode="light">
+          <Renderer
+            library={openuiLibrary}
+            response={inlineSource}
+            isStreaming={false}
+            onError={(errors) => {
+              if (errors.length > 0) {
+                setRenderError(
+                  errors[0]?.message ||
+                    dict('PC.Components.OpenUi.renderFailed'),
+                );
+              }
+            }}
+          />
+        </ThemeProvider>
       </div>
     );
   }
@@ -374,15 +385,17 @@ const OpenUiArtifactView: React.FC<OpenUiArtifactViewProps> = ({
     <OpenUiRuntimeFrame
       artifact={file}
       artifactUrl={artifactUrl}
-      expectedArtifactId={artifact.artifactId}
+      expectedArtifactId={artifact?.artifactId}
       expectedDigest={
-        isOpenUiArtifactRef(artifact)
+        artifact && isOpenUiArtifactRef(artifact)
           ? artifact.digest
-          : artifact.document.digest
+          : artifact?.document.digest
       }
       conversationId={conversationId}
       fallbackMarkdown={
-        isOpenUiArtifactRef(artifact) ? '' : artifact.fallback.markdown
+        !artifact || isOpenUiArtifactRef(artifact)
+          ? ''
+          : artifact.fallback.markdown
       }
     />
   );

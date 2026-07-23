@@ -5,6 +5,7 @@ import {
   extractOpenUiRenderInput,
   getOpenUiArtifactIdFromFileName,
   isOpenUiFileName,
+  resolveOpenUiDisplayState,
   resolveOpenUiRenderState,
 } from './openUiArtifact';
 
@@ -44,6 +45,36 @@ describe('OpenUI file artifact references', () => {
         },
       }),
     ).toMatchObject({ document: { source }, presentation: { mode: 'inline' } });
+  });
+
+  it('keeps inline rendering available when the MCP transport drops structuredContent', () => {
+    const source = 'root = Stack([card], "column", "m")';
+    const payload = {
+      params: {
+        schemaVersion: 'nuwax.openui/v1',
+        title: 'Inline 卡片演示',
+        presentation: { mode: 'inline', preferredWidth: 'compact' },
+        document: {
+          language: 'openui-lang',
+          specVersion: '0.5',
+          source,
+        },
+      },
+      response: [
+        {
+          content: {
+            type: 'text',
+            text: `OpenUI inline artifact created: data/${artifactId}.openui.json`,
+          },
+          type: 'content',
+        },
+      ],
+    };
+
+    expect(resolveOpenUiDisplayState(payload)).toMatchObject({
+      status: 'input-only',
+      renderInput: { document: { source } },
+    });
   });
 
   it('rejects a reference whose path does not match its artifact ID', () => {
