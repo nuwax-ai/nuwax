@@ -13,6 +13,7 @@
         </script>
         <script type="text/javascript" src="https://o.alicdn.com/captcha-frontend/aliyunCaptcha/AliyunCaptcha.js"></script>
         <script src="https://res.wx.qq.com/open/js/jweixin-1.3.2.js"></script>
+        <script src="/static/uni.webview.1.5.5.js"></script>
 
     </head>
     <style>
@@ -144,11 +145,17 @@
 
             function success(captchaVerifyParam) {
                 console.log(captchaVerifyParam);
-                // 通知小程序二次校验参数captchaVerifyParam
-                wx.miniProgram.postMessage({
-                  data: captchaVerifyParam,
-                });
-                wx.miniProgram.navigateBack();
+                // 微信小程序端：维持原有回传与返回逻辑。
+                if (window.wx && window.wx.miniProgram) {
+                    window.wx.miniProgram.postMessage({ data: captchaVerifyParam });
+                    window.wx.miniProgram.navigateBack();
+                    return;
+                }
+
+                // App 端：通过 uni-app x WebView 桥接将校验参数回传原生页面。
+                if (window.uni && window.uni.webView && typeof window.uni.webView.postMessage === 'function') {
+                    window.uni.webView.postMessage({ data: captchaVerifyParam });
+                }
             }
 
             function fail(err) {
