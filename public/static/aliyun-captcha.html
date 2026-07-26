@@ -65,6 +65,7 @@
         <script type="text/javascript">
             var captcha;
             var captchaConfig = null;
+            var captchaResultHandled = false;
 
             // 获取验证码配置
             function fetchCaptchaConfig() {
@@ -103,6 +104,8 @@
                     element: '#captcha-element',
                     button: '#captcha-button',
                     success: success,
+                    captchaVerifyCallback: captchaVerifyCallback,
+                    onBizResultCallback: function() {},
                     fail: fail,
                     getInstance: getInstance,
                     slideStyle: {
@@ -172,8 +175,12 @@
                 showBridgeStatus('验证码通过，但 App 通信未就绪，请关闭后重试。', true);
             }
 
-            function success(captchaVerifyParam) {
-                console.log(captchaVerifyParam);
+            function handleCaptchaSuccess(captchaVerifyParam) {
+                if (captchaResultHandled) {
+                    return;
+                }
+                captchaResultHandled = true;
+                console.log('[AliyunCaptcha] 收到校验参数');
                 // 微信小程序端：维持原有回传与返回逻辑。
                 if (window.wx && window.wx.miniProgram) {
                     window.wx.miniProgram.postMessage({ data: captchaVerifyParam });
@@ -183,6 +190,24 @@
 
                 // App 端：通过 uni-app x WebView 桥接将校验参数回传原生页面。
                 postCaptchaVerifyParamToApp(captchaVerifyParam, 0);
+            }
+
+            // V3 架构在验证通过后调用 success。
+            function success(captchaVerifyParam) {
+                handleCaptchaSuccess(captchaVerifyParam);
+            }
+
+            // V2 架构使用 captchaVerifyCallback，并要求返回业务校验结果。
+            function captchaVerifyCallback(captchaVerifyParam, callback) {
+                handleCaptchaSuccess(captchaVerifyParam);
+                var result = {
+                    captchaResult: true,
+                    bizResult: true,
+                };
+                if (typeof callback === 'function') {
+                    callback(result);
+                }
+                return result;
             }
 
             function fail(err) {
