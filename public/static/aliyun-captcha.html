@@ -144,9 +144,17 @@
                 captcha = instance;
             }
 
+            function showBridgeStatus(message, isError) {
+                var messageElement = document.getElementById('error-message');
+                messageElement.textContent = message;
+                messageElement.style.color = isError ? '#ff4d4f' : '#666';
+                messageElement.style.display = 'block';
+            }
+
             function postCaptchaVerifyParamToApp(captchaVerifyParam, retryCount) {
                 var currentRetryCount = retryCount || 0;
                 if (window.uni && window.uni.webView && typeof window.uni.webView.postMessage === 'function') {
+                    showBridgeStatus('验证码通过，正在回传 App…', false);
                     console.log('[AliyunCaptcha] 通过 uni.webView 回传校验参数');
                     window.uni.webView.postMessage({ data: captchaVerifyParam });
                     return;
@@ -161,6 +169,7 @@
                 }
 
                 console.error('[AliyunCaptcha] uni.webView 桥接未就绪，无法回传校验参数');
+                showBridgeStatus('验证码通过，但 App 通信未就绪，请关闭后重试。', true);
             }
 
             function success(captchaVerifyParam) {
