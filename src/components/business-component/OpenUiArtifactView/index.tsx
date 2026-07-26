@@ -11,6 +11,7 @@ import {
   openUiFileSchema,
 } from '@/utils/openUiArtifact';
 import { ExportOutlined } from '@ant-design/icons';
+import { compactOpenUiTheme } from '@nuwax-ai/openui-mcp/compact-theme';
 import type { RenderOpenUiInput } from '@nuwax-ai/openui-mcp/contracts';
 import { Renderer, type ActionEvent } from '@openuidev/react-lang';
 import { ThemeProvider } from '@openuidev/react-ui';
@@ -420,7 +421,7 @@ const OpenUiArtifactView: React.FC<OpenUiArtifactViewProps> = ({
         data-openui-render-mode="renderer"
         data-openui-theme="light"
       >
-        <ThemeProvider mode="light">
+        <ThemeProvider mode="light" lightTheme={compactOpenUiTheme}>
           <Renderer
             library={openuiLibrary}
             response={inlineSource}
