@@ -66,6 +66,8 @@
             var captcha;
             var captchaConfig = null;
             var captchaResultHandled = false;
+            var webViewEnv = null;
+            var pendingCaptchaVerifyParam = null;
 
             // 获取验证码配置
             function fetchCaptchaConfig() {
@@ -144,24 +146,40 @@
                 captcha = instance;
             }
 
-            function postCaptchaVerifyParam(captchaVerifyParam) {
+            function resolveWebViewEnv() {
                 if (!window.uni || !window.uni.webView || typeof window.uni.webView.getEnv !== 'function') {
                     return;
                 }
                 window.uni.webView.getEnv(function(env) {
-                    if (env.miniprogram && window.wx && window.wx.miniProgram) {
-                        window.wx.miniProgram.postMessage({ data: captchaVerifyParam });
-                        window.wx.miniProgram.navigateBack();
-                        return;
-                    }
-                    if (env.plus && typeof window.uni.webView.postMessage === 'function') {
-                        // Android 的 uni-app x WebView 桥接使用对象承载验证码参数。
-                        window.uni.webView.postMessage({
-                            data: { captchaVerifyParam: captchaVerifyParam },
-                        });
+                    webViewEnv = env;
+                    if (pendingCaptchaVerifyParam !== null) {
+                        var captchaVerifyParam = pendingCaptchaVerifyParam;
+                        pendingCaptchaVerifyParam = null;
+                        postCaptchaVerifyParam(captchaVerifyParam);
                     }
                 });
             }
+
+            function postCaptchaVerifyParam(captchaVerifyParam) {
+                if (webViewEnv === null) {
+                    pendingCaptchaVerifyParam = captchaVerifyParam;
+                    resolveWebViewEnv();
+                    return;
+                }
+                if (webViewEnv.miniprogram && window.wx && window.wx.miniProgram) {
+                        window.wx.miniProgram.postMessage({ data: captchaVerifyParam });
+                        window.wx.miniProgram.navigateBack();
+                        return;
+                }
+                if (webViewEnv.plus && window.uni && window.uni.webView && typeof window.uni.webView.postMessage === 'function') {
+                    // Android 的 uni-app x WebView 桥接使用对象承载验证码参数。
+                    window.uni.webView.postMessage({
+                        data: { captchaVerifyParam: captchaVerifyParam },
+                    });
+                }
+            }
+
+            document.addEventListener('UniAppJSBridgeReady', resolveWebViewEnv);
 
             function handleCaptchaSuccess(captchaVerifyParam) {
                 if (captchaResultHandled) {
