@@ -104,8 +104,6 @@
                     element: '#captcha-element',
                     button: '#captcha-button',
                     success: success,
-                    captchaVerifyCallback: captchaVerifyCallback,
-                    onBizResultCallback: function() {},
                     fail: fail,
                     getInstance: getInstance,
                     slideStyle: {
@@ -182,7 +180,7 @@
                 captchaResultHandled = true;
                 console.log('[AliyunCaptcha] 收到校验参数');
                 // 微信小程序端：维持原有回传与返回逻辑。
-                if (window.wx && window.wx.miniProgram) {
+                if (isWeChatMiniProgram()) {
                     window.wx.miniProgram.postMessage({ data: captchaVerifyParam });
                     window.wx.miniProgram.navigateBack();
                     return;
@@ -197,17 +195,10 @@
                 handleCaptchaSuccess(captchaVerifyParam);
             }
 
-            // V2 架构使用 captchaVerifyCallback，并要求返回业务校验结果。
-            function captchaVerifyCallback(captchaVerifyParam, callback) {
-                handleCaptchaSuccess(captchaVerifyParam);
-                var result = {
-                    captchaResult: true,
-                    bizResult: true,
-                };
-                if (typeof callback === 'function') {
-                    callback(result);
-                }
-                return result;
+            function isWeChatMiniProgram() {
+                return /miniProgram/i.test(navigator.userAgent) &&
+                    window.wx &&
+                    window.wx.miniProgram;
             }
 
             function fail(err) {
