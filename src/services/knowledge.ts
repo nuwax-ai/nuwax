@@ -275,6 +275,16 @@ export async function apiKnowledgeRawSegmentDelete(
   });
 }
 
+// 原文对照 - 根据分段ID查询所属文档的全部分段
+export async function apiKnowledgeSegOriginalText(
+  segmentId: number,
+): Promise<RequestResponse<Page<KnowledgeRawSegmentInfo>>> {
+  return request('/api/knowledge/segOriginalText/list', {
+    method: 'GET',
+    params: { segmentId },
+  });
+}
+
 /**
  * 知识库问答配置接口
  */
