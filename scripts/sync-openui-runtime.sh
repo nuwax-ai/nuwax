@@ -2,7 +2,7 @@
 set -euo pipefail
 
 PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-TARGET_DIR="$PROJECT_ROOT/public/openui-runtime"
+TARGET_DIR="$PROJECT_ROOT/public/static/openui-runtime"
 
 if ! OPENUI_MCP_DIR="$(${NODE_BINARY:-node} --input-type=module -e '
   import path from "node:path";
@@ -32,5 +32,24 @@ PACKAGE_VERSION="$(${NODE_BINARY:-node} --input-type=module -e '
 mkdir -p "$TARGET_DIR"
 cp "$SOURCE_DIR/runtime.js" "$TARGET_DIR/runtime.js"
 cp "$SOURCE_DIR/runtime.css" "$TARGET_DIR/runtime.css"
+
+# 用包版本改写 index.html 的 js/css 查询参数，避免浏览器缓存旧资源
+cat > "$TARGET_DIR/index.html" <<EOF
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="referrer" content="no-referrer" />
+    <title>OpenUI Runtime</title>
+    <!-- v 与 @nuwax-ai/openui-mcp 包版本对齐，由 sync:openui-runtime 自动写入 -->
+    <link rel="stylesheet" href="./runtime.css?v=${PACKAGE_VERSION}" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="./runtime.js?v=${PACKAGE_VERSION}"></script>
+  </body>
+</html>
+EOF
 
 echo "OpenUI Runtime $PACKAGE_VERSION synchronized from installed @nuwax-ai/openui-mcp to $TARGET_DIR"

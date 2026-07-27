@@ -1,3 +1,4 @@
+import { OPENUI_SIDECAR_SANDBOX } from '@/constants/common.constants';
 import { dict } from '@/services/i18nRuntime';
 import type {
   OpenUiAction,
@@ -23,10 +24,11 @@ import { getOpenUiActionSender } from './actionRegistry';
 import styles from './index.less';
 
 const RUNTIME_PROTOCOL = 'nuwax.openui-runtime/v1';
+/** OpenUI 固化运行时入口（与 public/static/openui-runtime 对齐） */
 const RUNTIME_URL = `${(process.env.BASE_URL || '').replace(
   /\/+$/,
   '',
-)}/openui-runtime/index.html`;
+)}/static/openui-runtime/index.html`;
 
 interface OpenUiRuntimeFrameProps {
   artifact?: OpenUiFile;
@@ -264,7 +266,8 @@ export const OpenUiRuntimeFrame: React.FC<OpenUiRuntimeFrameProps> = ({
         className={styles.inlineFrame}
         src={`${RUNTIME_URL}?nonce=${encodeURIComponent(nonce)}`}
         title={artifact?.title || 'OpenUI'}
-        sandbox="allow-scripts"
+        // ES module 在 null origin 下会触发 CORS；与 sidecar 一致启用 allow-same-origin
+        sandbox={OPENUI_SIDECAR_SANDBOX}
         referrerPolicy="no-referrer"
         style={{ height: variant === 'inline' ? height : '100%' }}
         onLoad={sendLoad}

@@ -20,14 +20,14 @@ Nuwax PC Web Host
   ├─ Sidecar
   └─ 文件树预览
                     ↓ postMessage
-public/openui-runtime/
+public/static/openui-runtime/
 ```
 
 最终决策：
 
 1. `.openui.json` 是 OpenUI 的持久数据源，生命周期跟随项目文件，无 TTL。
 2. MCP 不再启动 HTTP 页面服务，不维护内存 Artifact、localhost URL 或 lanproxy 页面转发。
-3. PC 的 inline、sidecar、文件预览统一加载 `public/openui-runtime/index.html`。
+3. PC 的 inline、sidecar、文件预览统一加载 `public/static/openui-runtime/index.html`。
 4. Runtime 只解析可信 Host 通过 `postMessage` 发送的 OpenUI 数据，不自行读取项目文件。
 5. 表单 `onAction` 复用 ask-question 的恢复消息路径，经 `messageQueue.rawSend` 回到原会话。
 6. 本期不修改 `agent-platform`，不实施移动端原生 Renderer。
@@ -76,7 +76,7 @@ NuwaClaw 的 OpenUI 模板不再设置 `persistent`、端口、Host、Base URL �
 Nuwax 仓库固定包含：
 
 ```text
-public/openui-runtime/
+public/static/openui-runtime/
 ├── index.html
 ├── runtime.js
 └── runtime.css
@@ -95,7 +95,7 @@ OPENUI_ACTION_RESULT
 OPENUI_ERROR
 ```
 
-iframe 仅启用 `allow-scripts`。Host 校验 `event.source`、协议版本、随机 nonce、Artifact ID、路径和 Action ID。OpenUI 数据不能作为 HTML 或 `srcDoc` 执行。
+iframe 启用 `allow-scripts allow-same-origin`（ES module 在 null origin 下会触发 CORS，故需同源）。Host 校验 `event.source`、协议版本、随机 nonce、Artifact ID、路径和 Action ID。OpenUI 数据不能作为 HTML 或 `srcDoc` 执行。
 
 高度不保存到 Artifact。Runtime 使用 `ResizeObserver` 测量根节点并发送 `OPENUI_RESIZE`；inline 动态调整 iframe，sidecar 和文件预览铺满宿主容器。
 
