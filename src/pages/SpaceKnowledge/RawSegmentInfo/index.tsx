@@ -242,7 +242,7 @@ const RawSegmentInfo: React.FC<RawSegmentInfoProps> = ({
   return (
     <div
       className={cx('flex-1', 'h-full', 'flex', 'flex-col', 'overflow-hide')}
-      style={{ width: '28%', minWidth: '280px', maxWidth: '400px' }}
+      style={{ minWidth: '360px' }}
     >
       <header className={cx(styles.header, 'flex', 'items-center')}>
         <ConditionRender condition={!!documentInfo}>

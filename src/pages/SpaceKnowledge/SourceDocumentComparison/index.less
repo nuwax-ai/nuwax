@@ -24,8 +24,7 @@
 
 // ========= 主容器（单一滚动容器） =========
 .source-document-comparison {
-  width: 52%;
-  min-width: 500px;
+  min-width: 360px;
   flex: 1;
   // 高度链：父层 <div class="flex flex-1"> 由更上层 flex column 约束高度
   // （与左侧 RawSegmentInfo 共享同一高度链，已验证可滚动）。
@@ -90,8 +89,8 @@
 
 // ========= 预览头部（sticky 悬浮） =========
 .document-preview .preview-header {
-  height: 50px;
-  min-height: 50px;
+  height: 72px;
+  min-height: 72px;
   border-bottom: 1px solid #e8e8e8;
   padding: 0 16px;
   display: flex;
@@ -154,7 +153,7 @@
 // ========= 响应式 =========
 @media (max-width: 1200px) {
   .source-document-comparison .preview-header {
-    height: 44px;
+    height: 72px;
     padding: 0 12px;
   }
 
