@@ -35,11 +35,12 @@ import {
   FileType,
 } from '@/types/interfaces/common';
 import { modalConfirm } from '@/utils/ant-custom';
+import { message } from '@/utils/antdStatic';
 import { copyTextToClipboard } from '@/utils/clipboard';
 import { exportConfigFile } from '@/utils/exportImportFile';
 import { jumpToAgent } from '@/utils/router';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
-import { Button, Empty, Input, message, Upload } from 'antd';
+import { Button, Empty, Input, Upload } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
 import { history, useModel, useParams, useRequest, useSearchParams } from 'umi';

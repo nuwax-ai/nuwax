@@ -1,7 +1,7 @@
 import { dict } from '@/services/i18nRuntime';
 import { EventBindResponseActionEnum } from '@/types/enums/agent';
 import { checkPathParams, fillPathParams } from '@/utils';
-import { message as antdMessage } from 'antd';
+import { message as antdMessage } from '@/utils/antdStatic';
 import { useCallback, useEffect, useRef } from 'react';
 import { useModel } from 'umi';
 
@@ -52,7 +52,6 @@ export const useMessageEventDelegate = ({
         handledEventsRef.current.delete(eventKey);
       }, 3000);
 
-
       // 解析 data
       let parsedData: Record<string, any> = {};
       try {
@@ -73,7 +72,6 @@ export const useMessageEventDelegate = ({
         );
         return;
       }
-
 
       // 根据配置类型执行相应动作
       switch (eventConfig.type) {
@@ -108,7 +106,6 @@ export const useMessageEventDelegate = ({
             const fullUri = eventConfig.basePath
               ? `${eventConfig.basePath}${pageUrl}`
               : `${process.env.BASE_URL}${pageUrl}`;
-
 
             // 调用页面预览
             showPagePreview({
@@ -186,7 +183,6 @@ export const useMessageEventDelegate = ({
 
     // 添加事件监听器
     container.addEventListener('click', handleClick);
-
 
     // 清理函数
     return () => {

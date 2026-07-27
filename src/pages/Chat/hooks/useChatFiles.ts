@@ -12,9 +12,9 @@ import {
   StaticFileInfo,
 } from '@/types/interfaces/vncDesktop';
 import { modalConfirm } from '@/utils/ant-custom';
+import { message } from '@/utils/antdStatic';
 import { updateFilesListContent, updateFilesListName } from '@/utils/fileTree';
 import { checkFileSizeExceedLimit } from '@/utils/index';
-import { message } from 'antd';
 import debounce from 'lodash/debounce';
 import { useMemo, useRef, type MutableRefObject } from 'react';
 

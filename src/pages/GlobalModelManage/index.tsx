@@ -20,6 +20,7 @@ import { ModelCapabilityTypeEnum } from '@/types/enums/modelConfig';
 import { ModelComponentStatusEnum } from '@/types/enums/space';
 import { AccessControlEnum } from '@/types/enums/systemManage';
 import { ModelConfigDto } from '@/types/interfaces/systemManage';
+import { message } from '@/utils/antdStatic';
 import { PlusOutlined } from '@ant-design/icons';
 import type {
   ActionType,
@@ -34,7 +35,7 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { Button, message, Switch } from 'antd';
+import { Button, Switch } from 'antd';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useModel } from 'umi';
 import ModalitiesTagsCell from '../MorePage/ModelPermissions/ModalitiesTagsCell';

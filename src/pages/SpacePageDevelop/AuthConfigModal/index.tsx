@@ -5,8 +5,9 @@ import {
   AuthConfigModalProps,
   PageUpdateParams,
 } from '@/types/interfaces/pageDev';
+import { message } from '@/utils/antdStatic';
 import { customizeRequiredMark } from '@/utils/form';
-import { Form, FormProps, message, Switch } from 'antd';
+import { Form, FormProps, Switch } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
 

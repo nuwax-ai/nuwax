@@ -30,8 +30,9 @@ import type {
   SystemKnowledgeInfo,
   SystemKnowledgePage,
 } from '@/types/interfaces/systemManage';
+import { message } from '@/utils/antdStatic';
 import { InfoCircleOutlined } from '@ant-design/icons';
-import { Form, message, Modal, Tabs, TabsProps, Tooltip } from 'antd';
+import { Form, Modal, Tabs, TabsProps, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useRequest } from 'umi';

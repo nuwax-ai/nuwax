@@ -7,6 +7,7 @@ import { t } from '@/services/i18nRuntime';
 import { apiPageUpdateProject } from '@/services/pageDev';
 import { CoverImgSourceTypeEnum } from '@/types/enums/pageDev';
 import { FileNode, ProjectDetailData } from '@/types/interfaces/appDev';
+import { message } from '@/utils/antdStatic';
 import { treeToFlatList } from '@/utils/appDevUtils';
 import {
   getIframeTargetOrigin,
@@ -18,7 +19,7 @@ import {
   ThunderboltOutlined,
   WarningOutlined,
 } from '@ant-design/icons';
-import { Button, message } from 'antd';
+import { Button } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import html2canvas from 'html2canvas';

@@ -4,8 +4,8 @@ import { apiPublishTemplateCopy } from '@/services/publish';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { ApplicationMoreActionEnum } from '@/types/enums/space';
 import { PublishTemplateCopyParams } from '@/types/interfaces/publish';
+import { message } from '@/utils/antdStatic';
 import { jumpToWorkflow } from '@/utils/router';
-import { message } from 'antd';
 import { useState } from 'react';
 import { useRequest } from 'umi';
 

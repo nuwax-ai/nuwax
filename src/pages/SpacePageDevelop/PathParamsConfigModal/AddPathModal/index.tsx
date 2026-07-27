@@ -6,8 +6,9 @@ import {
   AddPathModalProps,
   PageAddPathParams,
 } from '@/types/interfaces/pageDev';
+import { message } from '@/utils/antdStatic';
 import { customizeRequiredMark } from '@/utils/form';
-import { Form, FormProps, Input, message } from 'antd';
+import { Form, FormProps, Input } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
 

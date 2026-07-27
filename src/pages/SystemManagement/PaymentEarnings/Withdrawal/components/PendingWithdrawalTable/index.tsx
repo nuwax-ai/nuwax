@@ -9,9 +9,9 @@ import {
   BillWithdrawRecordInfo,
   BillWithdrawStatusEnum,
 } from '@/types/interfaces/subscription';
+import { message } from '@/utils/antdStatic';
 import { AlipayCircleFilled, BankFilled } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
-import { message } from 'antd';
 import React, { useRef, useState } from 'react';
 import RejectModal from './components/RejectModal';
 import RevenueDetailModal from './components/RevenueDetailModal';

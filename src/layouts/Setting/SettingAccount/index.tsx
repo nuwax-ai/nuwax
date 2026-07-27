@@ -7,10 +7,11 @@ import type {
   SetUserAccountInfo,
   UserUpdateParams,
 } from '@/types/interfaces/login';
+import { message } from '@/utils/antdStatic';
 import { customizeRequiredNoStarMark } from '@/utils/form';
 import { CopyOutlined, ReloadOutlined } from '@ant-design/icons';
 import type { FormProps } from 'antd';
-import { Button, Form, Input, message, Tooltip } from 'antd';
+import { Button, Form, Input, Tooltip } from 'antd';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
 import React, { useEffect, useState } from 'react';

@@ -13,12 +13,13 @@ import {
 } from '@/services/systemManage';
 import { AccessControlEnum } from '@/types/enums/systemManage';
 import { SystemKnowledgeInfo } from '@/types/interfaces/systemManage';
+import { message } from '@/utils/antdStatic';
 import {
   ActionType,
   FormInstance,
   ProColumns,
 } from '@ant-design/pro-components';
-import { message, Switch } from 'antd';
+import { Switch } from 'antd';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useModel } from 'umi';
 import TargetAuthModal from '../components/TargetAuthModal';

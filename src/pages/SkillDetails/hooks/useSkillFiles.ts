@@ -15,9 +15,9 @@ import type {
   SkillUpdateParams,
 } from '@/types/interfaces/skill';
 import { modalConfirm } from '@/utils/ant-custom';
+import { message } from '@/utils/antdStatic';
 import { exportFileViaBrowserDownload } from '@/utils/exportImportFile';
 import { updateFilesListContent, updateFilesListName } from '@/utils/fileTree';
-import { message } from 'antd';
 import dayjs from 'dayjs';
 import React, { useRef, useState } from 'react';
 

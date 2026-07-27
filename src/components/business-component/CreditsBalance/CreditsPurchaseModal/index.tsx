@@ -4,7 +4,8 @@ import {
   apiPurchaseCredits,
 } from '@/services/subscriptionService';
 import type { CreditPackageInfo } from '@/types/interfaces/subscription';
-import { Button, Modal, Spin, Tag, message } from 'antd';
+import { message } from '@/utils/antdStatic';
+import { Button, Modal, Spin, Tag } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
 

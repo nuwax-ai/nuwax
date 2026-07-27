@@ -7,11 +7,11 @@ import { dict } from '@/services/i18nRuntime';
 import { TaskStatus } from '@/types/enums/agent';
 import type { AgentInfo } from '@/types/interfaces/agent';
 import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
+import { message } from '@/utils/antdStatic';
 import {
   fetchConversationTaskStatus,
   type ChatFinishedPayload,
 } from '@/utils/conversationTaskStatusSync';
-import { message } from 'antd';
 import { useCallback, useState } from 'react';
 import { useRequest } from 'umi';
 

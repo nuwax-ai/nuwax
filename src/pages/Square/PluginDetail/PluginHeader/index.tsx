@@ -21,8 +21,9 @@ import type {
   PublishSkillInfo,
   PublishWorkflowInfo,
 } from '@/types/interfaces/plugin';
+import { message } from '@/utils/antdStatic';
 import { LeftOutlined } from '@ant-design/icons';
-import { message, Space } from 'antd';
+import { Space } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import React, { useState } from 'react';

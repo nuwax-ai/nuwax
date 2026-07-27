@@ -1,8 +1,9 @@
 import { apiI18nLangList } from '@/services/i18n';
 import { dict, fetchAndApplyLangMap } from '@/services/i18nRuntime';
 import { I18nLangDto } from '@/types/interfaces/i18n';
+import { message } from '@/utils/antdStatic';
 import { CheckOutlined, GlobalOutlined } from '@ant-design/icons';
-import { Dropdown, MenuProps, message } from 'antd';
+import { Dropdown, MenuProps } from 'antd';
 import React, { useEffect, useState } from 'react';
 import styles from './index.less';
 

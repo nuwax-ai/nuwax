@@ -4,7 +4,7 @@
  * 从 indexV3.tsx 提取，负责管理节点的增删改操作
  */
 
-import { message } from 'antd';
+import { message } from '@/utils/antdStatic';
 import { useCallback } from 'react';
 
 import Constant from '@/constants/codes.constants';

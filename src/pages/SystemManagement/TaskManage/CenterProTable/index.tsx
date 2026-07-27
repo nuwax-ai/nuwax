@@ -11,12 +11,13 @@ import {
 } from '@/services/systemManage';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import type { TaskInfo } from '@/types/interfaces/library';
+import { message } from '@/utils/antdStatic';
 import type {
   ActionType,
   FormInstance,
   ProColumns,
 } from '@ant-design/pro-components';
-import { message, Tag } from 'antd';
+import { Tag } from 'antd';
 import qs from 'qs';
 import {
   forwardRef,

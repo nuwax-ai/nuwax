@@ -16,10 +16,11 @@ import type {
   CreateSkillProps,
   UpdateSkillParams,
 } from '@/types/interfaces/library';
+import { message } from '@/utils/antdStatic';
 import { customizeRequiredMark } from '@/utils/form';
 import { resolveCreateIcon } from '@/utils/resolveCreateIcon';
 import type { FormInstance, FormProps } from 'antd';
-import { Form, Input, message, Select } from 'antd';
+import { Form, Input, Select } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { history } from 'umi';

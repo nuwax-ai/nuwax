@@ -55,6 +55,7 @@ import type {
 } from '@/types/interfaces/conversationInfo';
 import { RequestResponse } from '@/types/interfaces/request';
 import { modalConfirm } from '@/utils/ant-custom';
+import { message } from '@/utils/antdStatic';
 import {
   applyTerminalTaskStatus,
   createSyncConversationTaskStatus,
@@ -70,7 +71,6 @@ import {
 } from '@/utils/nuwaClawBridge/perfTracker';
 import { adjustScrollPositionAfterDOMUpdate } from '@/utils/scrollUtils';
 import { useRequest } from 'ahooks';
-import { message } from 'antd';
 import dayjs from 'dayjs';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useModel } from 'umi';

@@ -33,9 +33,10 @@ import type {
   KnowledgeInfo,
 } from '@/types/interfaces/knowledge';
 import { ModelConfigInfo } from '@/types/interfaces/model';
+import { message } from '@/utils/antdStatic';
 import { customizeRequiredMark } from '@/utils/form';
 import { resolveCreateIcon } from '@/utils/resolveCreateIcon';
-import { Form, FormProps, Input, message, Select } from 'antd';
+import { Form, FormProps, Input, Select } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useState } from 'react';
 import { flushSync } from 'react-dom';

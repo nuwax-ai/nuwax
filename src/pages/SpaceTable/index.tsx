@@ -21,10 +21,11 @@ import {
   UpdateTableFieldInfo,
 } from '@/types/interfaces/dataTable';
 import { modalConfirm } from '@/utils/ant-custom';
+import { message } from '@/utils/antdStatic';
 import { validateTableName } from '@/utils/common';
 import { exportTableExcel } from '@/utils/exportImportFile';
 import { ExclamationCircleFilled } from '@ant-design/icons';
-import { Button, message, Modal, UploadProps } from 'antd';
+import { Button, Modal, UploadProps } from 'antd';
 import classNames from 'classnames';
 import { Dayjs } from 'dayjs';
 import { cloneDeep, isEqual } from 'lodash';

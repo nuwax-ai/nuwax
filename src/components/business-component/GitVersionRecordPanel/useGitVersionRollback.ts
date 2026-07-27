@@ -5,7 +5,7 @@ import type {
 } from '@/components/business-component/FileTreeGitSourcePanel/types/git-version-management';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
-import { message } from 'antd';
+import { message } from '@/utils/antdStatic';
 import { useCallback, useMemo, useState } from 'react';
 import { commitUncommittedChangesIfAny } from './gitRollbackUtils';
 

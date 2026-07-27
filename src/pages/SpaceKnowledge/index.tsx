@@ -32,7 +32,8 @@ import type {
 import { KnowledgeDocumentStatus } from '@/types/interfaces/knowledge';
 import type { Page } from '@/types/interfaces/request';
 import { modalConfirm } from '@/utils/ant-custom';
-import { Input, message } from 'antd';
+import { message } from '@/utils/antdStatic';
+import { Input } from 'antd';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -40,13 +41,13 @@ import { useParams, useRequest } from 'umi';
 import DocWrap from './DocWrap';
 import GraphDocTable from './GraphDocTable';
 import styles from './index.less';
+import KnowledgeAccuracyTest from './KnowledgeAccuracyTest';
 import KnowledgeHeader from './KnowledgeHeader';
 import LocalDocModal from './LocalCustomDocModal';
 import QaBatchModal from './QaBatchModal';
 import QaModal from './QaModal';
 import QaTableList, { QaTableListRef } from './QaTableList';
 import RawSegmentInfo from './RawSegmentInfo';
-import KnowledgeAccuracyTest from './KnowledgeAccuracyTest';
 
 const cx = classNames.bind(styles);
 
@@ -719,7 +720,8 @@ const SpaceKnowledge: React.FC = () => {
         {docType === KnowledgeDocTypeEnum.DOC && renderDocContent()}
         {docType === KnowledgeDocTypeEnum.QA && renderQaContent()}
         {docType === KnowledgeDocTypeEnum.GRAPH && renderGraphContent()}
-        {docType === KnowledgeDocTypeEnum.ACCURACYTEST && renderAccuracyTestContent()}
+        {docType === KnowledgeDocTypeEnum.ACCURACYTEST &&
+          renderAccuracyTestContent()}
       </div>
 
       {/*本地文档弹窗*/}

@@ -9,7 +9,8 @@
 import { UnifiedChatSession } from '@/components/business-component';
 import { DefaultSelectedEnum } from '@/types/enums/agent';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
-import { Alert, Button, message, Space, Switch, Typography } from 'antd';
+import { message } from '@/utils/antdStatic';
+import { Alert, Button, Space, Switch, Typography } from 'antd';
 import React, { useCallback, useState } from 'react';
 import { Link } from 'umi';
 import styles from './index.less';

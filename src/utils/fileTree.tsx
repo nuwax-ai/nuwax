@@ -15,7 +15,7 @@ import { dict } from '@/services/i18nRuntime';
 import type { FileNode } from '@/types/interfaces/appDev';
 import { SkillFileInfo } from '@/types/interfaces/skill';
 import { StaticFileInfo } from '@/types/interfaces/vncDesktop';
-import { message } from 'antd';
+import { message } from '@/utils/antdStatic';
 import { isMarkdownFile } from './common';
 import { exportFileViaBrowserDownload } from './exportImportFile';
 import { htmlToPdf } from './htmlToPdf';

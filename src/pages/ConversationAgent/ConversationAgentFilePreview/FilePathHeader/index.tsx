@@ -3,10 +3,11 @@ import ShareDesktopModal from '@/components/business-component/FileTreePreviewPa
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import { dict } from '@/services/i18nRuntime';
 import { FileNode } from '@/types/interfaces/appDev';
+import { message } from '@/utils/antdStatic';
 import { formatFileSize } from '@/utils/appDevUtils';
 import { copyTextToClipboard } from '@/utils/clipboard';
 import { FullscreenExitOutlined } from '@ant-design/icons';
-import { Button, ConfigProvider, message, Segmented, Tooltip } from 'antd';
+import { Button, ConfigProvider, Segmented, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useMemo, useState } from 'react';
 import styles from './index.less';

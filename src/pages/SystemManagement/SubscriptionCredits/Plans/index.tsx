@@ -4,6 +4,7 @@ import StatMetricCardList from '@/components/business-component/StatMetricCard';
 import { TableActions, XProTable } from '@/components/ProComponents';
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { dict } from '@/services/i18nRuntime';
+import { message } from '@/utils/antdStatic';
 import { formatDateTimeYmdHms } from '@/utils/dateUtils';
 import { formatInteger } from '@/utils/numberFormat';
 import { PlusOutlined } from '@ant-design/icons';
@@ -22,7 +23,7 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { Button, message, Switch } from 'antd';
+import { Button, Switch } from 'antd';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'umi';
 import {

@@ -4,6 +4,7 @@ import { dict } from '@/services/i18nRuntime';
 import { TableTabsEnum } from '@/types/enums/dataTable';
 import { FileType } from '@/types/interfaces/common';
 import { TableOperationBarProps } from '@/types/interfaces/dataTable';
+import { message } from '@/utils/antdStatic';
 import {
   ClearOutlined,
   DownloadOutlined,
@@ -12,7 +13,7 @@ import {
   SaveOutlined,
   UploadOutlined,
 } from '@ant-design/icons';
-import { Button, Space, Tabs, Upload, message } from 'antd';
+import { Button, Space, Tabs, Upload } from 'antd';
 import classNames from 'classnames';
 import styles from './index.less';
 

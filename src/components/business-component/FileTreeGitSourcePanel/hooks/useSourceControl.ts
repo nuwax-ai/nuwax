@@ -8,8 +8,8 @@ import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { getProjectContent, submitFilesUpdate } from '@/services/appDev';
 import { dict } from '@/services/i18nRuntime';
 import type { FileNode } from '@/types/interfaces/appDev';
+import { message } from '@/utils/antdStatic';
 import { treeToFlatList } from '@/utils/appDevUtils';
-import { message } from 'antd';
 import {
   useCallback,
   useEffect,

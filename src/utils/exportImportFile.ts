@@ -2,7 +2,7 @@ import { apiTemplateExport } from '@/services/agentDev';
 import { apiExportExcel } from '@/services/dataTable';
 import { dict } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
-import { message } from 'antd';
+import { message } from '@/utils/antdStatic';
 import { request } from 'umi';
 
 /**

@@ -69,6 +69,7 @@ import {
 } from '@/types/interfaces/vncDesktop';
 import { checkFileSizeExceedLimit } from '@/utils';
 import { modalConfirm } from '@/utils/ant-custom';
+import { message as messageAntd } from '@/utils/antdStatic';
 import { addBaseTarget } from '@/utils/common';
 import { exportConfigFile } from '@/utils/exportImportFile';
 import { updateFilesListContent, updateFilesListName } from '@/utils/fileTree';
@@ -77,7 +78,6 @@ import {
   TTYD_TERMINAL_WS_SUBPROTOCOLS,
 } from '@/utils/terminalWsUrl';
 import { useRequest } from 'ahooks';
-import { message as messageAntd } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
 import cloneDeep from 'lodash/cloneDeep';

@@ -3,7 +3,8 @@ import { apiI18nConfigBatchAddOrUpdate } from '@/services/i18n';
 import { dict } from '@/services/i18nRuntime';
 import { CodeLangEnum } from '@/types/enums/plugin';
 import type { I18nConfigBatchAddOrUpdateParams } from '@/types/interfaces/i18n';
-import { Modal, message } from 'antd';
+import { message } from '@/utils/antdStatic';
+import { Modal } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { useRequest } from 'umi';
 

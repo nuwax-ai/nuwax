@@ -16,6 +16,7 @@ import {
 import type { CustomPopoverItem } from '@/types/interfaces/common';
 import type { ComponentInfo } from '@/types/interfaces/library';
 import { modalConfirm } from '@/utils/ant-custom';
+import { message } from '@/utils/antdStatic';
 import { exportConfigFile } from '@/utils/exportImportFile';
 import {
   jumpTo,
@@ -23,7 +24,7 @@ import {
   jumpToPluginCloudTool,
   jumpToWorkflow,
 } from '@/utils/router';
-import { Empty, message } from 'antd';
+import { Empty } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
 import { history, useRequest } from 'umi';

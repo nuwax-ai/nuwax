@@ -5,8 +5,9 @@ import type {
   FileType,
   UploadImportConfigProps,
 } from '@/types/interfaces/common';
+import { message } from '@/utils/antdStatic';
 import { UploadOutlined } from '@ant-design/icons';
-import { Button, message, Modal, Upload, UploadProps } from 'antd';
+import { Button, Modal, Upload, UploadProps } from 'antd';
 import React, { useState } from 'react';
 
 /**

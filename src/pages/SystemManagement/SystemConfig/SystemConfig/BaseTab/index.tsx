@@ -10,7 +10,8 @@ import {
   SystemUserConfig,
   TabKey,
 } from '@/types/interfaces/systemManage';
-import { Form, message } from 'antd';
+import { message } from '@/utils/antdStatic';
+import { Form } from 'antd';
 import classNames from 'classnames';
 import { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
 import BaseFormItem from '../BaseFormItem';

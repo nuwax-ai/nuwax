@@ -8,9 +8,10 @@ import {
   AgentPageUpdateParams,
 } from '@/types/interfaces/agent';
 import type { PageSettingModalProps } from '@/types/interfaces/agentConfig';
+import { message } from '@/utils/antdStatic';
 import { CloseOutlined } from '@ant-design/icons';
 import { useRequest } from 'ahooks';
-import { message, Modal } from 'antd';
+import { Modal } from 'antd';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
 import React, { useEffect, useState } from 'react';

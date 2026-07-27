@@ -14,13 +14,14 @@ import type {
   RawSegmentInfoProps,
 } from '@/types/interfaces/knowledge';
 import type { Page } from '@/types/interfaces/request';
+import { message } from '@/utils/antdStatic';
 import {
   DeleteOutlined,
   EditOutlined,
   EyeOutlined,
   FileSearchOutlined,
 } from '@ant-design/icons';
-import { Empty, Tooltip, message } from 'antd';
+import { Empty, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useRequest } from 'umi';

@@ -15,13 +15,14 @@ import type {
 } from '@/types/interfaces/appDev';
 import { UploadFileInfo } from '@/types/interfaces/common';
 import { DataResource } from '@/types/interfaces/dataResource';
+import { message } from '@/utils/antdStatic';
 import {
   convertDataSourceSelectionToAttachment,
   generateAttachmentId,
 } from '@/utils/chatUtils';
 import { adjustScrollPositionAfterDOMUpdate } from '@/utils/scrollUtils';
 import { DownOutlined, LoadingOutlined } from '@ant-design/icons';
-import { Button, Card, message, Spin, Tooltip, Typography } from 'antd';
+import { Button, Card, Spin, Tooltip, Typography } from 'antd';
 import dayjs from 'dayjs';
 import React, {
   useCallback,

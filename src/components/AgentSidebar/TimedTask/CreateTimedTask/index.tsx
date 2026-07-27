@@ -15,8 +15,9 @@ import {
   TaskCronItemDto,
 } from '@/types/interfaces/agentTask';
 import { option } from '@/types/interfaces/common';
+import { message } from '@/utils/antdStatic';
 import { customizeRequiredMark } from '@/utils/form';
-import { Form, FormProps, Input, message, Space } from 'antd';
+import { Form, FormProps, Input, Space } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
 import { useRequest } from 'umi';

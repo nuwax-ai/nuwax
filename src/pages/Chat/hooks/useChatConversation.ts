@@ -8,8 +8,9 @@ import {
   MessageInfo,
   SendMessageParams,
 } from '@/types/interfaces/conversationInfo';
+import { message } from '@/utils/antdStatic';
 import eventBus from '@/utils/eventBus';
-import { FormInstance, message } from 'antd';
+import { FormInstance } from 'antd';
 import React, { useEffect } from 'react';
 
 export interface UseChatConversationProps {

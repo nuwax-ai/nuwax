@@ -31,8 +31,9 @@ import {
   SquarePublishedListParams,
   SquareSearchParams,
 } from '@/types/interfaces/square';
+import { message } from '@/utils/antdStatic';
 import { getToolPricingPeriodLabel } from '@/utils/resourcePricing';
-import { Empty, Input, message, Select, Tag } from 'antd';
+import { Empty, Input, Select, Tag } from 'antd';
 import { SearchProps } from 'antd/es/input';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useRef, useState } from 'react';

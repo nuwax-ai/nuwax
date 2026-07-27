@@ -9,7 +9,7 @@ import {
   DataResourceStatus,
   DataResourceType,
 } from '@/types/interfaces/dataResource';
-import { message } from 'antd';
+import { message } from '@/utils/antdStatic';
 import { useCallback, useState } from 'react';
 
 /**

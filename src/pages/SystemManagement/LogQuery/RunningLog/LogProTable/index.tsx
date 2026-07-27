@@ -11,6 +11,7 @@ import type {
   SpaceLogQueryFilter,
 } from '@/types/interfaces/agent';
 import type { RequestResponse } from '@/types/interfaces/request';
+import { message } from '@/utils/antdStatic';
 import { getIntegerOnlyFieldProps } from '@/utils/inputValidation';
 import { getTruncatedLogContent } from '@/utils/logContentUtils';
 import type {
@@ -18,7 +19,6 @@ import type {
   FormInstance,
   ProColumns,
 } from '@ant-design/pro-components';
-import { message } from 'antd';
 import dayjs from 'dayjs';
 import React, {
   useCallback,

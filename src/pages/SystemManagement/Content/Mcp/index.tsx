@@ -11,12 +11,12 @@ import {
   apiSystemResourceMcpList,
 } from '@/services/systemManage';
 import { SystemMcpInfo } from '@/types/interfaces/systemManage';
+import { message } from '@/utils/antdStatic';
 import {
   ActionType,
   FormInstance,
   ProColumns,
 } from '@ant-design/pro-components';
-import { message } from 'antd';
 import { useCallback, useEffect, useRef } from 'react';
 import { useLocation, useModel } from 'umi';
 

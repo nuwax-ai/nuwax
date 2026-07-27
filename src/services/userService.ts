@@ -1,8 +1,8 @@
 import { REDIRECT_LOGIN, USER_NO_LOGIN } from '@/constants/codes.constants';
 import { USER_INFO } from '@/constants/home.constants';
 import { apiUserInfo } from '@/services/account';
+import { message } from '@/utils/antdStatic';
 import { isChatTemp, redirectToLogin } from '@/utils/router';
-import { message } from 'antd';
 const LOGIN_STATUS_KEY = 'userLoginStatus';
 // ===== 缓存管理方法 =====
 /**

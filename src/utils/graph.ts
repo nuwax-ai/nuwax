@@ -12,10 +12,10 @@ import {
 import { PortGroupEnum } from '@/types/enums/node';
 import { ChildNode, GraphRect, ViewGraphProps } from '@/types/interfaces/graph';
 import { ExceptionHandleConfig, NodeConfig } from '@/types/interfaces/node';
+import { message } from '@/utils/antdStatic';
 import { isEmptyObject } from '@/utils/index';
 import { getWidthAndHeight } from '@/utils/updateNode';
 import { Cell, Edge, Graph, Node } from '@antv/x6';
-import { message } from 'antd';
 import { isEqual, isPlainObject } from 'lodash';
 // 边界检查并调整子节点位置
 // 调整父节点尺寸以包含所有子节点

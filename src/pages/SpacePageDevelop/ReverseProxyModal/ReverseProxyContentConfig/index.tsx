@@ -4,10 +4,11 @@ import {
   ProxyConfig,
   ReverseProxyContentConfigProps,
 } from '@/types/interfaces/pageDev';
+import { message } from '@/utils/antdStatic';
 import { hasDuplicate } from '@/utils/common';
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import type { TableColumnsType } from 'antd';
-import { Button, Input, message, Table } from 'antd';
+import { Button, Input, Table } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useRequest } from 'umi';

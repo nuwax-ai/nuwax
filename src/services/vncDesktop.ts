@@ -9,8 +9,8 @@ import type {
   RestartPodResponse,
   StaticFileListResponse,
 } from '@/types/interfaces/vncDesktop';
+import { message } from '@/utils/antdStatic';
 import { exportFileViaBrowserDownload } from '@/utils/exportImportFile';
-import { message } from 'antd';
 import { request } from 'umi';
 
 // 查询文件列表
