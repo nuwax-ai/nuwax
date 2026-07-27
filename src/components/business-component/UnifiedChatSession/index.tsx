@@ -7,9 +7,11 @@ import { useActiveInterventionQueue } from '@/components/business-component/Agen
 import MessageQueuePanel, {
   useUnifiedChatQueue,
 } from '@/components/business-component/MessageQueue';
+import { registerOpenUiActionSender } from '@/components/business-component/OpenUiArtifactView/actionRegistry';
+import { buildOpenUiResumeMessage } from '@/components/business-component/OpenUiArtifactView/openUiResumeMessage';
 import ConversationStatus from '@/pages/Chat/components/ConversationStatus';
 import classNames from 'classnames';
-import { useLayoutEffect, useMemo, useRef } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 
 import { ENABLE_CHAT_MESSAGE_QUEUE } from '@/constants/feature.constants';
 import { dict } from '@/services/i18nRuntime';
@@ -18,6 +20,10 @@ import { MessageStatusEnum } from '@/types/enums/common';
 import { AgentTypeEnum } from '@/types/enums/space';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type { RoleInfo } from '@/types/interfaces/conversationInfo';
+import type {
+  OpenUiAction,
+  OpenUiActionArtifact,
+} from '@/types/interfaces/openUi';
 import ChatContentArea from './components/ChatContentArea';
 import ChatInputHomeIndependent from './components/ChatInputHomeIndependent';
 import { useConversationStreamResume } from './hooks/useConversationStreamResume';
@@ -349,6 +355,21 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
     [agentInfo?.allowChooseMode],
   );
 
+  const respondOpenUiAction = useMemo(
+    () => (artifact: OpenUiActionArtifact, action: OpenUiAction) => {
+      messageQueue.rawSend(buildOpenUiResumeMessage(artifact, action));
+    },
+    [messageQueue.rawSend],
+  );
+
+  useEffect(
+    () =>
+      conversationId === undefined
+        ? undefined
+        : registerOpenUiActionSender(conversationId, respondOpenUiAction),
+    [conversationId, respondOpenUiAction],
+  );
+
   return (
     <div
       ref={sessionContainerRef}
@@ -357,6 +378,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
     >
       {/* 核心聊天展现内容区 */}
       <ChatContentArea
+        conversationId={conversationId}
         messageViewRef={messageViewRef}
         handleMouseEnter={handleMouseEnter}
         handleMouseLeave={handleMouseLeave}

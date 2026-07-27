@@ -6,23 +6,27 @@ import { V3_FORM_IME_SAFE_ENABLED } from '@/pages/Antv-X6/v3/constants/editorCon
 import { ExpandAltOutlined } from '@ant-design/icons';
 import { Button, Form } from 'antd';
 import classNames from 'classnames';
-import { PromptEditorProvider, PromptEditorRender } from 'prompt-kit-editor';
 import React, { useEffect, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import ExpandTextArea from './expandTextarea';
 import styles from './index.less';
 import { ExpandableInputTextareaProps } from './type';
+
 const cx = classNames.bind(styles);
 
-// 特性开关：是否使用 Tiptap 编辑器
-// 如果遇到问题，将此值设置为 false 可回退到旧版 Input.TextArea
-const USE_TIPTAP_EDITOR = true; //TODO: 先切换回老的版本 下周再切换回来
 /**
- * TODO:周再切换回来
- * 1. 提交后台时要用 rawValue 而不是 value
-
+ * 工作流节点可展开输入框。
+ * 统一使用 TiptapVariableInput（已移除 prompt-kit-editor 回退路径）。
+ *
+ * @param title 字段标题
+ * @param inputFieldName Form 字段名
+ * @param placeholder 占位文案
+ * @param rows 估算行高用的行数
+ * @param onExpand 是否展示展开按钮
+ * @param onOptimize / onOptimizeClick 优化入口
+ * @param variables / skills 变量与技能提及数据
+ * @param imeSafe 中文 IME 安全模式
  */
-
 export const ExpandableInputTextarea: React.FC<
   ExpandableInputTextareaProps
 > = ({
@@ -38,7 +42,8 @@ export const ExpandableInputTextarea: React.FC<
   imeSafe = V3_FORM_IME_SAFE_ENABLED,
 }) => {
   const [uuid, setUuid] = useState('');
-  const { setExpanded, expanded } = useWorkflowModel(); // 添加本地状态
+  const { setExpanded, expanded } = useWorkflowModel();
+
   useEffect(() => {
     setUuid(uuidv4());
     return () => {
@@ -76,54 +81,37 @@ export const ExpandableInputTextarea: React.FC<
           )}
         </div>
       </div>
-      {/* 输入框 */}
-      {USE_TIPTAP_EDITOR ? (
-        <Form.Item
-          name={inputFieldName}
-          getValueFromEvent={(value) =>
-            typeof value === 'string' ? extractTextFromHTML(value) : ''
-          }
-        >
-          <TiptapVariableInput
-            placeholder={placeholder}
-            variables={variables}
-            skills={skills}
-            imeSafe={imeSafe}
-            className={cx(styles['prompt-editor-provider'])}
-            style={{ minHeight: rows * 24 + 10 }} // 估算高度
-          />
-        </Form.Item>
-      ) : (
-        <PromptEditorProvider>
-          <Form.Item name={inputFieldName}>
-            <PromptEditorRender
-              className={cx(
-                styles['prompt-editor-provider'],
-                'scroll-container',
-              )}
-              isControled={true}
-              placeholder={placeholder}
-            />
-          </Form.Item>
-        </PromptEditorProvider>
-      )}
+      {/* 输入框：Tiptap 变量编辑器 */}
+      <Form.Item
+        name={inputFieldName}
+        getValueFromEvent={(value) =>
+          typeof value === 'string' ? extractTextFromHTML(value) : ''
+        }
+      >
+        <TiptapVariableInput
+          placeholder={placeholder}
+          variables={variables}
+          skills={skills}
+          imeSafe={imeSafe}
+          className={cx(styles['prompt-editor-provider'])}
+          style={{ minHeight: rows * 24 + 10 }}
+        />
+      </Form.Item>
 
-      {/* 如果有展开，就要调用展开的组件 */}
-      {expanded &&
-        expanded === uuid && ( // 使用本地状态控制显示
-          <ExpandTextArea
-            title={title as string}
-            inputFieldName={inputFieldName}
-            marginRight={370 + 12 * 2}
-            placeholder={placeholder}
-            visible={expanded === uuid}
-            onClose={() => setExpanded('')}
-            variables={variables}
-            skills={skills}
-            useTiptap={USE_TIPTAP_EDITOR}
-            imeSafe={imeSafe}
-          />
-        )}
+      {/* 展开全屏编辑层 */}
+      {expanded && expanded === uuid && (
+        <ExpandTextArea
+          title={title as string}
+          inputFieldName={inputFieldName}
+          marginRight={370 + 12 * 2}
+          placeholder={placeholder}
+          visible={expanded === uuid}
+          onClose={() => setExpanded('')}
+          variables={variables}
+          skills={skills}
+          imeSafe={imeSafe}
+        />
+      )}
     </div>
   );
 };

@@ -1,0 +1,115 @@
+@import '@/styles/token.less';
+
+.inlineFrameHost {
+  position: relative;
+  min-width: 0;
+  min-height: 180px;
+  margin: @marginXs @marginSm @marginSm;
+  border: 1px solid @colorBorderSecondary;
+  border-radius: @borderRadiusLg;
+  background: @colorBgContainer;
+  overflow: hidden;
+}
+
+.fullFrameHost {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 320px;
+  overflow: hidden;
+  background: @colorBgContainer;
+}
+
+.inlineFrame {
+  display: block;
+  width: 100%;
+  min-height: 180px;
+  border: 0;
+  background: @colorBgContainer;
+  transition: height 160ms ease;
+}
+
+.frameLoading {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: @marginXs;
+  color: @colorTextSecondary;
+  font-size: @fontSizeSm;
+  pointer-events: none;
+  background: @colorBgContainer;
+}
+
+.inlineRenderer {
+  color-scheme: light;
+  min-width: 0;
+  padding: @paddingSm @padding;
+  border-top: 1px solid @colorBorderSecondary;
+  background: @colorBgContainer;
+  overflow-x: auto;
+
+  :global {
+    [data-openui-root] {
+      max-width: 100%;
+    }
+
+    // OpenUI's distributed CSS is layered. The host reset is unlayered and can
+    // otherwise override button colors even with lower selector specificity.
+    button.openui-button-base-primary {
+      color: var(--openui-text-accent-primary);
+    }
+
+    button.openui-button-base-secondary,
+    button.openui-button-base-tertiary {
+      color: var(--openui-text-neutral-primary);
+    }
+
+    button.openui-button-base-destructive-primary {
+      color: var(--openui-text-danger-inverted-primary);
+    }
+
+    button.openui-button-base-destructive-secondary,
+    button.openui-button-base-destructive-tertiary {
+      color: var(--openui-text-danger-primary);
+    }
+  }
+}
+
+.renderState {
+  margin: @marginXs @marginSm @marginSm;
+}
+
+.sidecarSummary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: @margin;
+  padding: @paddingSm @padding;
+  border-top: 1px solid @colorBorderSecondary;
+  background: @colorBgLayout;
+}
+
+.sidecarText {
+  min-width: 0;
+}
+
+.sidecarTitle {
+  color: @colorText;
+  font-size: @fontSize;
+  font-weight: @fontWeightStrong;
+}
+
+.sidecarFallback {
+  margin-top: @marginXxs;
+  color: @colorTextSecondary;
+  font-size: @fontSizeSm;
+  line-height: @lineHeightSm;
+  white-space: pre-wrap;
+  display: box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}

@@ -50,16 +50,19 @@ vi.mock('@/components/MarkdownRenderer', () => ({
     answer,
     thinking,
     status,
+    conversationId,
   }: {
     answer?: string;
     thinking?: string;
     status?: string;
+    conversationId?: string | number;
   }) => (
     <div
       data-testid="markdown-renderer"
       data-answer={answer}
       data-thinking={thinking}
       data-status={status || ''}
+      data-conversation-id={conversationId ?? ''}
     />
   ),
 }));
@@ -116,6 +119,33 @@ describe('ChatView', () => {
     );
   });
 
+  it('OpenUI 恢复消息隐藏内部幂等标记', () => {
+    render(
+      <ChatView
+        roleInfo={roleInfo}
+        messageInfo={createMessage({
+          role: AssistantRoleEnum.USER,
+          text: [
+            '用户提交了 inline 表单！',
+            'name：你好',
+            '<!--nuwax-openui-action-id:action-1-->',
+          ].join('\n'),
+        })}
+      />,
+    );
+
+    expect(screen.getByText(/用户提交了 inline 表单！/)).toHaveTextContent(
+      '用户提交了 inline 表单！ name：你好',
+    );
+    expect(
+      screen.queryByText(/nuwax-openui-action-id/),
+    ).not.toBeInTheDocument();
+    expect(screen.getByTestId('copy-button')).toHaveAttribute(
+      'data-copy-text',
+      '用户提交了 inline 表单！\nname：你好',
+    );
+  });
+
   it('助手消息渲染 MarkdownRenderer，并透传 answer/thinking/status', () => {
     render(
       <ChatView
@@ -155,5 +185,28 @@ describe('ChatView', () => {
 
     expect(screen.getByTestId('chat-bottom-more')).toBeInTheDocument();
     expect(screen.getByTestId('chat-bottom-debug')).toBeInTheDocument();
+  });
+
+  it('历史消息内容不变时仍应把后到达的 conversationId 传给 MarkdownRenderer', () => {
+    const message = createMessage({
+      text: 'message with openui artifact',
+      status: MessageStatusEnum.Complete,
+    });
+    const { rerender } = render(
+      <ChatView roleInfo={roleInfo} messageInfo={message} conversationId="" />,
+    );
+
+    rerender(
+      <ChatView
+        roleInfo={roleInfo}
+        messageInfo={message}
+        conversationId="1557156"
+      />,
+    );
+
+    expect(screen.getByTestId('markdown-renderer')).toHaveAttribute(
+      'data-conversation-id',
+      '1557156',
+    );
   });
 });

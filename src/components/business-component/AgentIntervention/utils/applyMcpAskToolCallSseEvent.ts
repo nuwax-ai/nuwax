@@ -39,6 +39,37 @@ function readRawInput(
   );
 }
 
+function isOpenUiToolCall(
+  eventData: Record<string, unknown>,
+  result: Record<string, unknown> | undefined,
+  rawInput: Record<string, unknown> | undefined,
+): boolean {
+  const names = [
+    eventData.name,
+    eventData.toolName,
+    eventData.tool_name,
+    result?.name,
+    result?.toolName,
+    result?.tool_name,
+    rawInput?.toolName,
+  ];
+  if (
+    names.some(
+      (name) =>
+        typeof name === 'string' && name.includes('nuwax_render_openui'),
+    )
+  ) {
+    return true;
+  }
+
+  return (
+    rawInput?.type === 'nuwax.openui-ref' ||
+    rawInput?.type === 'nuwax.openui-file' ||
+    (typeof rawInput?.schemaVersion === 'string' &&
+      rawInput.schemaVersion.startsWith('nuwax.openui'))
+  );
+}
+
 export function applyMcpAskToolCallSseEvent(
   res: ConversationChatResponse,
   currentMessage: MessageInfo,
@@ -114,6 +145,11 @@ export function applyMcpAskToolCallSseEvent(
 
   if (!rawInput) {
     rawInput = readRawInput(eventData, result);
+  }
+  // OpenUI Artifact 与 ask-question 是两条独立工具链。即使异常输入碰巧带有
+  // ask 的 ui/requestId 形状，也不能进入干预队列或触发 DockPanel。
+  if (isOpenUiToolCall(eventData, result, rawInput)) {
+    return null;
   }
   if (!toolCallId) {
     toolCallId =

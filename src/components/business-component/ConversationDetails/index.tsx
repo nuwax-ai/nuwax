@@ -826,6 +826,7 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
                     {messageList?.map((item: MessageInfo, index: number) => (
                       <ChatView
                         key={index}
+                        conversationId={conversationId || ''}
                         messageInfo={item}
                         roleInfo={roleInfo}
                         contentClassName={styles['chat-inner']}

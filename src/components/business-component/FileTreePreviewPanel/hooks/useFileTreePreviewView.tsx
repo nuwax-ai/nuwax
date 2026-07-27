@@ -7,6 +7,7 @@ import {
   buildChangeFilesFromGitStatus,
   mergeGitStatusFileIds,
 } from '@/components/business-component/FileTreeGitSourcePanel/utils/gitStatusUtils';
+import { OpenUiRuntimeFrame } from '@/components/business-component/OpenUiArtifactView';
 import CodeViewer from '@/components/CodeViewer';
 import Loading from '@/components/custom/Loading';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
@@ -39,6 +40,11 @@ import {
   updateFileTreeContent,
   updateFileTreeName,
 } from '@/utils/fileTree';
+import {
+  getOpenUiArtifactIdFromFileName,
+  isOpenUiFileName,
+  openUiFileSchema,
+} from '@/utils/openUiArtifact';
 import { message } from 'antd';
 import cloneDeep from 'lodash/cloneDeep';
 import React, {
@@ -275,7 +281,7 @@ export function useFileTreePreviewView(
   const [fileRefreshTimestamp, setFileRefreshTimestamp] = useState<number>(
     Date.now(),
   );
-  /** html / md：预览或代码视图 */
+  /** html / md / .openui.json：预览或代码视图，默认预览 */
   const [viewFileType, setViewFileType] = useState<'preview' | 'code'>(
     'preview',
   );
@@ -1940,6 +1946,41 @@ export function useFileTreePreviewView(
     // 压缩包等不支持预览的文件（如 .zip、.skill、.rar、.7z 等）
     const selectedFileName =
       selectedFileNode?.name || selectedFileId?.split('/')?.pop() || '';
+
+    /**
+     * `.openui.json` 与 html / md 共用 viewFileType：
+     * - preview（默认）：加载固化 Runtime 外壳渲染 UI
+     * - code：落入下方 CodeViewer，展示 JSON 源码
+     */
+    if (isOpenUiFileName(selectedFileName) && viewFileType === 'preview') {
+      let inlineArtifact;
+      if (selectedFileNode?.content) {
+        try {
+          inlineArtifact = openUiFileSchema.parse(
+            JSON.parse(String(selectedFileNode.content)),
+          );
+        } catch {
+          inlineArtifact = undefined;
+        }
+      }
+      const conversationId = staticFileBasePath?.match(
+        /\/api\/computer\/static\/(\d+)/,
+      )?.[1];
+      return (
+        <OpenUiRuntimeFrame
+          artifact={inlineArtifact}
+          artifactUrl={fileProxyUrl || undefined}
+          expectedArtifactId={
+            inlineArtifact?.artifactId ||
+            getOpenUiArtifactIdFromFileName(selectedFileName)
+          }
+          expectedDigest={inlineArtifact?.document.digest}
+          conversationId={conversationId}
+          variant="full"
+        />
+      );
+    }
+
     if (!isPreviewableFile(selectedFileName, true)) {
       const fileExtension = selectedFileId?.split('.')?.pop() || selectedFileId;
       return (

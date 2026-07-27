@@ -1,6 +1,7 @@
 import { ExpandPageAreaEnum, HideChatAreaEnum } from '@/types/enums/agent';
 import { ProcessingEnum } from '@/types/enums/common';
 import { ProcessingInfo } from '@/types/interfaces/conversationInfo';
+import type { OpenUiFile } from '@/types/interfaces/openUi';
 import { useCallback, useState } from 'react';
 
 /**
@@ -11,6 +12,13 @@ export interface PagePreviewData {
   uri: string; // 页面路径
   params: Record<string, any>; // URL 参数
   executeId: string; // 执行ID
+  source?: 'agent-page' | 'openui';
+  sandboxProfile?: 'openui-sidecar-v1';
+  artifactUrl?: string;
+  artifactId?: string;
+  artifactDigest?: string;
+  conversationId?: number | string;
+  openUiArtifactFile?: OpenUiFile;
 }
 
 /**
@@ -115,7 +123,7 @@ export default () => {
   );
 
   // 显示页面预览
-  const showPagePreview = useCallback((data: PagePreviewData) => {
+  const showPagePreview = useCallback((data: PagePreviewData | null) => {
     setPagePreviewData(data);
   }, []);
 
