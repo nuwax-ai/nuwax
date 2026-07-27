@@ -101,11 +101,12 @@ iframe 启用 `allow-scripts allow-same-origin`（ES module 在 null origin 下�
 
 ## 5. PC Web 三种入口
 
-| 入口        | 行为                                                        |
-| ----------- | ----------------------------------------------------------- |
-| Chat inline | 在工具消息内加载统一 Runtime，并自动调整高度                |
-| Sidecar     | PagePreview Host 加载统一 Runtime，不再访问本机页面 URL     |
-| 文件预览    | 完整识别 `{uuid}.openui.json`，读取、校验并加载统一 Runtime |
+| 入口 | 行为 |
+| --- | --- |
+| Chat inline | 在工具消息内加载统一 Runtime，并自动调整高度 |
+| Sidecar | PagePreview Host 加载统一 Runtime，不再访问本机页面 URL |
+| 文件预览 | 完整识别 `{uuid}.openui.json`，读取、校验并加载统一 Runtime |
+| 文件分享 | `/static/file-preview.html?sk=` 识别 `.openui.json`，同样校验 digest 后加载 Runtime；分享页只读，表单不可回传会话 |
 
 `.openui.json` 在 Monaco 中按 JSON 高亮，普通 `.json` 不会被识别为 OpenUI。收到 Artifact Ref 后可直接按约定路径加载，不依赖文件树刷新；文件树刷新后也能长期发现 Artifact。
 

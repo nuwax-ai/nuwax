@@ -253,6 +253,24 @@ Agent 调用 nuwax_render_openui  ──▶  写入 data/{artifactId}.openui.jso
 
 ---
 
+### 场景 10 — 文件分享打开 `.openui.json`
+
+**操作：**
+
+1. 在文件树选中某个 `data/{id}.openui.json`
+2. 使用文件分享，复制 `/static/file-preview.html?sk=...` 链接
+3. 在无登录 / 新窗口打开该链接
+
+**预期：**
+
+- 打开后渲染完整 OpenUI 页面，而不是 JSON 源码高亮
+- digest 被篡改时拒绝渲染
+- 页面内表单提交不可回传原会话（只读提示 / 失败结果）
+
+**通过标准：** 分享链接可独立打开 UI；普通 `.json` 分享仍走文本预览。
+
+---
+
 ## 五、已知差异 / 限制
 
 > 以下是当前版本的已知情况，**不是 Bug**，测试时请注意区分。
@@ -276,6 +294,8 @@ Agent 调用 nuwax_render_openui  ──▶  写入 data/{artifactId}.openui.jso
 - [ ] `data/{artifactId}.openui.json` 正确落盘
 - [ ] 重启 / 刷新后历史 UI 可恢复
 - [ ] 文件树点击 `.openui.json` 默认预览 UI，可切换到代码视图
+- [ ] 分享 `.openui.json` 打开 `/static/file-preview.html?sk=` 渲染为 UI（非 JSON 源码）
+- [ ] 分享页表单不可提交回原会话（只读）
 - [ ] `ask_question` 与 `render_openui` 不混淆
 - [ ] 篡改 `.openui.json`（不改 digest）后加载被拦截
 - [ ] 重复生成（复用 artifactId）能更新已有 UI（见场景 9）
@@ -289,6 +309,8 @@ Agent 调用 nuwax_render_openui  ──▶  写入 data/{artifactId}.openui.jso
 | `{项目根}/data/{artifactId}.openui.json` | 生成的 UI 数据（持久化产物） |
 | `public/static/openui-runtime/index.html` | 固化的渲染外壳（sidecar / 文件预览加载） |
 | `public/static/openui-runtime/runtime.js` | 渲染运行时（含样式、解析、组件库） |
+| `public/static/file-preview.html` | 文件分享入口（含 `.openui.json` 特殊渲染） |
+| `public/static/file-preview/file-preview.js` | 分享页识别并 Host 注入 OpenUI Runtime |
 | `nuwax-openui-mcp` | 提供 `nuwax_render_openui` 工具，负责写 `.openui.json` |
 | `nuwax-ask-question-mcp` | 提供 `nuwax_ask_question` 工具，负责提问 |
 
