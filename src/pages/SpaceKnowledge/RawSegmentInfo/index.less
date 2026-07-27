@@ -19,7 +19,12 @@
   padding: 0 30px;
   color: @BLANK11;
   font-size: 14px;
+  border-top: 1px solid @GRAY01;
   border-bottom: 1px solid @GRAY01;
+  // 统一 header 内所有操作图标大小（文件/编辑/预览/删除），避免删除图标偏大
+  :global(.anticon) {
+    font-size: 16px;
+  }
 
   .file-name {
     max-width: 60%;
@@ -35,7 +40,6 @@
 
     .del {
       margin-left: 30px;
-      font-size: 18px;
     }
   }
 }

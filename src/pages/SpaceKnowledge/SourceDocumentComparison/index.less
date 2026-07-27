@@ -91,12 +91,14 @@
 .document-preview .preview-header {
   height: 72px;
   min-height: 72px;
+  border-top: 1px solid #e8e8e8;
   border-bottom: 1px solid #e8e8e8;
   padding: 0 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #fafafa;
+  //background: #fafafa;
+  background: #fff;
   // 滚动时悬浮置顶（z-index 避免 segment-block 高亮色覆盖）。
   position: sticky;
   top: 0;
@@ -104,9 +106,9 @@
 }
 
 .document-preview .preview-header .preview-title {
-  font-size: 16px;
-  font-weight: 500;
-  color: #333;
+  font-size: 14px;
+  font-weight: 400;
+  color: rgba(15, 21, 40, 0.82);
   margin: 0;
 }
 
@@ -122,26 +124,26 @@
 }
 
 // ========= 单个分段块 =========
+// 与中间分段（RawSegmentInfo .line）样式保持一致：字体 14px、文字色、浅蓝紫背景、
+// 蓝紫 1px 边框、圆角 6px、padding 10px、line-height 22px，保证两侧视觉统一。
 .segment-block {
-  padding: 12px 16px;
+  line-height: 22px;
+  padding: 10px;
   margin-bottom: 8px;
-  border-radius: 4px;
-  line-height: 1.6;
   font-size: 14px;
-  transition: background-color 0.3s, border-left-color 0.3s;
-  white-space: pre-wrap;
+  color: rgba(15, 21, 40, 0.82);
+  border: 1px solid rgba(82, 100, 154, 0.13);
+  background-color: rgba(90, 108, 167, 0.04);
+  border-radius: 6px;
   word-break: break-word;
-  // 始终预留 3px 边框宽度，避免 highlight 时新增边框导致宽度突变 +3px → 抖动（Bug D）
-  border-left: 3px solid transparent;
+  white-space: pre-wrap;
+  transition: all 0.3s ease;
 }
 
-// 选中分段的高亮样式（黄底 + 左侧蓝色边条）
+// 选中分段的高亮样式（与中间分段 selected-segment 一致：蓝边 + 浅蓝底）
 .segment-block.highlight {
-  //background-color: #fff7c2;
-  background-color: #f8f9ff;
-  //border-left: 3px solid #faad14;
-  // 仅切颜色，宽度已由基类预留（Bug D：避免宽度突变触发重排/抖动）
-  border-left-color: #c5d4ff;
+  border-color: #1890ff;
+  background-color: #e6f7ff;
 }
 
 // ========= 加载动画 =========
