@@ -7,6 +7,8 @@ import {
   getOpenUiArtifactIdFromFileName,
   isOpenUiFileName,
   isOpenUiRenderToolName,
+  openUiFileSchema,
+  renderInputToOpenUiFile,
   resolveOpenUiDisplayState,
   resolveOpenUiRenderState,
 } from './openUiArtifact';
@@ -138,5 +140,31 @@ describe('OpenUI file artifact references', () => {
     expect(
       getOpenUiArtifactIdFromFileName('dashboard.openui.json'),
     ).toBeUndefined();
+  });
+
+  it('converts an in-memory render input into a schema-valid OpenUiFile for preview', () => {
+    const source = 'root = TextContent("Ready", "large-heavy")';
+    const input = extractOpenUiRenderInput({
+      rawInput: {
+        schemaVersion: 'nuwax.openui/v1',
+        title: 'Inline dashboard',
+        presentation: { mode: 'sidecar', autoOpen: false },
+        document: { language: 'openui-lang', specVersion: '0.5', source },
+      },
+    });
+    if (!input) throw new Error('render input was not extracted');
+
+    // 预览复用内存内容、零拉取：输出必须是合法 OpenUiFile，且 source/digest 正确透传
+    const file = renderInputToOpenUiFile(input, artifactId, reference.digest);
+    expect(openUiFileSchema.safeParse(file).success).toBe(true);
+    expect(file).toMatchObject({
+      type: 'nuwax.openui-file',
+      schemaVersion: 'nuwax.openui-file/v1',
+      artifactId,
+      title: 'Inline dashboard',
+      presentation: { mode: 'sidecar', autoOpen: false },
+      document: { source, digest: reference.digest },
+    });
+    expect(file.createdAt).toBe(file.updatedAt);
   });
 });
