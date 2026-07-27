@@ -13,7 +13,8 @@
         </script>
         <script type="text/javascript" src="https://o.alicdn.com/captcha-frontend/aliyunCaptcha/AliyunCaptcha.js"></script>
         <script src="https://res.wx.qq.com/open/js/jweixin-1.3.2.js"></script>
-
+        <!-- defer 确保 Android WebView 已创建后再初始化 uni-app x 桥接。 -->
+        <script defer src="/static/uni.webview.1.5.5.js"></script>
     </head>
     <style>
         html, body {
@@ -63,6 +64,7 @@
         <script type="text/javascript">
             var captcha;
             var captchaConfig = null;
+            var captchaResultHandled = false;
 
             // 获取验证码配置
             function fetchCaptchaConfig() {
@@ -138,17 +140,56 @@
             }
 
             function getInstance(instance) {
-                console.log(instance)
                 captcha = instance;
             }
 
+
+            function postCaptchaVerifyParamToApp(captchaVerifyParam, retryCount) {
+                var currentRetryCount = retryCount || 0;
+                if (window.uni && window.uni.webView && typeof window.uni.webView.postMessage === 'function') {
+                    // uni-app x Android 的 WebView 桥接仅稳定支持对象消息，顶层字符串会被序列化为空对象。
+                    window.uni.webView.postMessage({
+                        data: { captchaVerifyParam: captchaVerifyParam },
+                    });
+                    return;
+                }
+
+                // uni.webview 脚本会等待 plusready；桥接尚未就绪时短暂重试，避免丢失校验结果。
+                if (currentRetryCount < 20) {
+                    setTimeout(function() {
+                        postCaptchaVerifyParamToApp(captchaVerifyParam, currentRetryCount + 1);
+                    }, 100);
+                    return;
+                }
+
+                console.error('[AliyunCaptcha] uni.webView 桥接未就绪，无法回传校验参数');
+            }
+
+            function handleCaptchaSuccess(captchaVerifyParam) {
+                if (captchaResultHandled) {
+                    return;
+                }
+                captchaResultHandled = true;
+                // 微信小程序端：维持原有回传与返回逻辑。
+                if (isWeChatMiniProgram()) {
+                    window.wx.miniProgram.postMessage({ data: captchaVerifyParam });
+                    window.wx.miniProgram.navigateBack();
+                    return;
+                }
+
+                // App 端：通过 uni-app x WebView 桥接将校验参数回传原生页面。
+                postCaptchaVerifyParamToApp(captchaVerifyParam, 0);
+            }
+
+            // V3 架构在验证通过后调用 success。
             function success(captchaVerifyParam) {
-                console.log(captchaVerifyParam);
-                // 通知小程序二次校验参数captchaVerifyParam
-                wx.miniProgram.postMessage({
-                  data: captchaVerifyParam,
-                });
-                wx.miniProgram.navigateBack();
+                handleCaptchaSuccess(captchaVerifyParam);
+            }
+
+            function isWeChatMiniProgram() {
+                return /miniProgram/i.test(navigator.userAgent) &&
+                    window.wx &&
+                    window.wx.miniProgram;
             }
 
             function fail(err) {

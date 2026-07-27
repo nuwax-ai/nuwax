@@ -2984,6 +2984,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.Login.inputEmailRequired": "Please input email",
   "PC.Pages.Login.inputAccountPlaceholder": "Please enter your email or username",
   "PC.Pages.Login.inputAccountRequired": "Please enter your email or username",
+  "PC.Pages.Login.invalidAccountWhitespace": "Email or username cannot contain spaces",
   "PC.Pages.Login.inputPasswordPlaceholder": "Please enter a password with at least 6 characters",
   "PC.Pages.Login.inputPhonePlaceholder": "Please enter your phone number",
   "PC.Pages.Login.inputPhoneRequired": "Please input phone number",
