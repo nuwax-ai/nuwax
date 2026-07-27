@@ -247,6 +247,32 @@ export function legacyArtifactToOpenUiFile(
   };
 }
 
+/**
+ * 将工具返回中已有的渲染输入（RenderOpenUiInput）转为预览可直接使用的 OpenUiFile。
+ * 预览（sidecar）场景复用该内存内容，避免再次请求 data/{artifactId}.openui.json
+ * （规避静态访问 cookie 失效、并发重复拉取等问题）。
+ * digest 复用 artifact 携带的值（ref.digest 即 document.source 的 sha256）。
+ */
+export function renderInputToOpenUiFile(
+  input: RenderOpenUiInput,
+  artifactId: string,
+  digest: string,
+): OpenUiFile {
+  const now = new Date().toISOString();
+  return {
+    type: 'nuwax.openui-file',
+    schemaVersion: 'nuwax.openui-file/v1',
+    artifactId,
+    title: input.title,
+    presentation: input.presentation,
+    document: { ...input.document, digest },
+    bindings: input.bindings,
+    fallback: input.fallback,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
 export function isOpenUiFileName(name: string): boolean {
   const fileName = name.split(/[\\\\/]/).pop() || '';
   return /^.+\.openui\.json$/i.test(fileName);

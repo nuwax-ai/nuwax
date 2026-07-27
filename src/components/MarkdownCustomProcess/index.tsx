@@ -13,6 +13,7 @@ import {
   isOpenUiArtifactRef,
   isOpenUiRenderToolName,
   legacyArtifactToOpenUiFile,
+  renderInputToOpenUiFile,
   resolveOpenUiDisplayState,
 } from '@/utils/openUiArtifact';
 import {
@@ -474,7 +475,21 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
 
   const handleOpenUiSidecar = useCallback(
     (artifact: OpenUiArtifact) => {
-      const artifactUrl = isOpenUiArtifactRef(artifact)
+      // 预览场景优先复用工具返回中已有的渲染内容（openUiRenderInput），不再请求
+      // data/{artifactId}.openui.json，规避静态访问 cookie(static_sk) 失效及并发重复拉取。
+      const inlineFile = isOpenUiArtifactRef(artifact)
+        ? openUiRenderInput
+          ? renderInputToOpenUiFile(
+              openUiRenderInput,
+              artifact.artifactId,
+              artifact.digest,
+            )
+          : undefined
+        : legacyArtifactToOpenUiFile(artifact);
+      // 仅当内存中没有渲染内容（理论上不应发生）时，才回退到接口拉取
+      const artifactUrl = inlineFile
+        ? undefined
+        : isOpenUiArtifactRef(artifact)
         ? buildOpenUiArtifactFileUrl(
             props.conversationId,
             artifact.artifactId,
@@ -494,12 +509,15 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
           ? artifact.digest
           : artifact.document.digest,
         conversationId: props.conversationId,
-        openUiArtifactFile: isOpenUiArtifactRef(artifact)
-          ? undefined
-          : legacyArtifactToOpenUiFile(artifact),
+        openUiArtifactFile: inlineFile,
       });
     },
-    [innerProcessing.executeId, props.conversationId, showPagePreview],
+    [
+      innerProcessing.executeId,
+      props.conversationId,
+      showPagePreview,
+      openUiRenderInput,
+    ],
   );
 
   // 自动打开预览页面功能
