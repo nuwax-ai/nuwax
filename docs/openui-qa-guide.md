@@ -311,7 +311,8 @@ Agent 调用 nuwax_render_openui  ──▶  写入 data/{artifactId}.openui.jso
 | `public/static/openui-runtime/index.html` | 固化的渲染外壳（sidecar / 文件预览加载） |
 | `public/static/openui-runtime/runtime.js` | 渲染运行时（含样式、解析、组件库） |
 | `public/static/file-preview.html` | 文件分享入口（含 `.openui.json` 特殊渲染） |
-| `public/static/file-preview/file-preview.js` | 分享页识别并 Host 注入 OpenUI Runtime |
+| `public/static/file-preview/file-preview-openui.js` | 分享页 OpenUI：类型识别、digest 校验、Runtime iframe Host |
+| `public/static/file-preview/file-preview.js` | 分享页主流程（调度各类型预览，含调用 OpenUI Host） |
 | `nuwax-openui-mcp` | 提供 `nuwax_render_openui` 工具，负责写 `.openui.json` |
 | `nuwax-ask-question-mcp` | 提供 `nuwax_ask_question` 工具，负责提问 |
 
