@@ -17,11 +17,13 @@ import type { RenderOpenUiInput } from '@nuwax-ai/openui-mcp/contracts';
 import { Renderer, type ActionEvent } from '@openuidev/react-lang';
 import { ThemeProvider } from '@openuidev/react-ui';
 import { openuiLibrary } from '@openuidev/react-ui/genui-lib';
-import '@openuidev/react-ui/layered/styles/index.css';
 import { Alert, Button, Spin } from 'antd';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getOpenUiActionSender } from './actionRegistry';
 import styles from './index.less';
+// OpenUI ↔ ds-markdown 样式隔离（层序 + revert + 宿主复位）；须先于 layered CSS
+import '@openuidev/react-ui/layered/styles/index.css';
+import './openui-host-reset.css';
 
 const RUNTIME_PROTOCOL = 'nuwax.openui-runtime/v1';
 /** OpenUI 固化运行时入口（与 public/static/openui-runtime 对齐） */

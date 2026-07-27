@@ -37,7 +37,7 @@
 | 入口 | 实际渲染方式 |
 | --- | --- |
 | **sidecar** / **文件树预览** | 固化 html 外壳加载 `.openui.json` → `postMessage` 注入 → 渲染 |
-| **inline** | 当前走**内联 Renderer**（尚未统一到固化外壳，见第五节） |
+| **inline** | 同文档内联 Renderer（与 markdown 同树）；通过 CSS Layer / 宿主复位与 `ds-markdown` 样式隔离 |
 
 ### 2.3 三种展示入口
 
@@ -63,7 +63,7 @@ Agent 调用 nuwax_render_openui  ──▶  写入 data/{artifactId}.openui.jso
       │
       ▼
 前端按入口渲染：
-  · inline → 内联 Renderer（当前）
+  · inline → 内联 Renderer（CSS 与 ds-markdown 隔离）
   · sidecar / 文件树预览 → 固化 html 外壳 + 数据
       │
       ▼
@@ -275,8 +275,9 @@ Agent 调用 nuwax_render_openui  ──▶  写入 data/{artifactId}.openui.jso
 
 > 以下是当前版本的已知情况，**不是 Bug**，测试时请注意区分。
 
-- **inline 渲染路径差异**：当前 inline 类型的 UI 使用**内联 Renderer** 渲染，与 sidecar / 文件树预览所走的「固化 html 外壳」路径不同。三类入口的 UI 都能正常展示与交互，仅底层渲染实现暂未完全统一（后续会统一到固化 html）。
-  - 测试时，inline 的通过标准是「能正确展示与交互」，不必要求其与 sidecar 走同一渲染路径。
+- **inline 渲染路径差异**：inline 使用**同文档内联 Renderer**；sidecar / 文件树预览走固化 Runtime iframe。这是有意保留的路径差异（inline 不统一 iframe）。
+  - 样式：inline 宿主隔离集中在 `src/components/business-component/OpenUiArtifactView/openui-host-reset.css`（`@layer ds-markdown` / `@layer openui` 层序、宿主继承切断、对 `[data-openui-render-mode="renderer"]` 子树放行），避免被 `ds-markdown` / ChatArea 宽规则覆盖。
+  - 测试时，inline 的通过标准是「能正确展示与交互，且不受 markdown 排版样式污染」，不必要求与 sidecar 走同一渲染路径。
 - **inline 表单回传兜底**：inline 入口的表单提交已有超时兜底；sidecar / 文件预览（iframe 模式）下的 `onAction` 若 Host 未及时回传结果，UI 可能短暂等待。若遇到 iframe 模式提交后长时间无响应，请记录场景反馈。
 
 ---

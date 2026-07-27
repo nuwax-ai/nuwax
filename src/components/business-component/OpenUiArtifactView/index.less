@@ -44,38 +44,13 @@
 }
 
 .inlineRenderer {
-  color-scheme: light;
   min-width: 0;
   padding: @paddingSm @padding;
   border-top: 1px solid @colorBorderSecondary;
   background: @colorBgContainer;
   overflow-x: auto;
 
-  :global {
-    [data-openui-root] {
-      max-width: 100%;
-    }
-
-    // OpenUI's distributed CSS is layered. The host reset is unlayered and can
-    // otherwise override button colors even with lower selector specificity.
-    button.openui-button-base-primary {
-      color: var(--openui-text-accent-primary);
-    }
-
-    button.openui-button-base-secondary,
-    button.openui-button-base-tertiary {
-      color: var(--openui-text-neutral-primary);
-    }
-
-    button.openui-button-base-destructive-primary {
-      color: var(--openui-text-danger-inverted-primary);
-    }
-
-    button.openui-button-base-destructive-secondary,
-    button.openui-button-base-destructive-tertiary {
-      color: var(--openui-text-danger-primary);
-    }
-  }
+  /* 字体/颜色/按钮色/markdown 中和见 openui-host-reset.css */
 }
 
 .renderState {
