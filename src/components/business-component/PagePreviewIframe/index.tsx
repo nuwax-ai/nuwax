@@ -46,6 +46,8 @@ interface PagePreviewData {
   artifactDigest?: string;
   conversationId?: number | string;
   openUiArtifactFile?: OpenUiFile;
+  /** OpenUI Runtime「自主拉取」模式：/api/computer/static 之后的相对路径 */
+  openUiFilePath?: string;
 }
 
 /**
@@ -702,9 +704,12 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
       {/* iframe 预览区域 */}
       <div className={cx(styles['page-preview-body'])}>
         {pagePreviewData.source === 'openui' &&
-        (pagePreviewData.artifactUrl || pagePreviewData.openUiArtifactFile) ? (
+        (pagePreviewData.artifactUrl ||
+          pagePreviewData.openUiArtifactFile ||
+          pagePreviewData.openUiFilePath) ? (
           <OpenUiRuntimeFrame
             artifact={pagePreviewData.openUiArtifactFile}
+            filePath={pagePreviewData.openUiFilePath}
             artifactUrl={
               pagePreviewData.artifactUrl
                 ? `${pagePreviewData.artifactUrl}${

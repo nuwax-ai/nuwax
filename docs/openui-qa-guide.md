@@ -29,7 +29,7 @@
 
 生成的 UI 由两部分组成，**分别处理**：
 
-- **HTML 外壳**（固化）：`public/static/openui-runtime/index.html` + `runtime.js` + `runtime.css`，带样式与解析能力，是统一的渲染容器。
+- **HTML 外壳**（固化）：`public/static/openui-runtime/index.html` + `file-path-bootstrap.js` + `runtime.js` + `runtime.css`，带样式与解析能力，是统一的渲染容器。
 - **OpenUI 数据**（动态）：`data/{artifactId}.openui.json`，纯结构化数据（组件树、属性、绑定）。
 
 当前各入口的渲染路径（便于区分「Bug」与「已知差异」）：
@@ -309,6 +309,7 @@ Agent 调用 nuwax_render_openui  ──▶  写入 data/{artifactId}.openui.jso
 | --- | --- |
 | `{项目根}/data/{artifactId}.openui.json` | 生成的 UI 数据（持久化产物） |
 | `public/static/openui-runtime/index.html` | 固化的渲染外壳（sidecar / 文件预览加载） |
+| `public/static/openui-runtime/file-path-bootstrap.js` | Runtime 子页 `?file_path=` 同源拉取并 relay（nuwax 自维，不与分享 Host 共用） |
 | `public/static/openui-runtime/runtime.js` | 渲染运行时（含样式、解析、组件库） |
 | `public/static/file-preview.html` | 文件分享入口（含 `.openui.json` 特殊渲染） |
 | `public/static/file-preview/file-preview-openui.js` | 分享页 OpenUI：类型识别、digest 校验、Runtime iframe Host |

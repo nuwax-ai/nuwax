@@ -4,6 +4,9 @@
  *
  * 依赖：无（与主流程通过 hooks 解耦）
  * 加载顺序：file-preview-utils.js → 本文件 → file-preview.js
+ *
+ * 配对：Runtime 子页 file_path 自主拉取见 /static/openui-runtime/file-path-bootstrap.js
+ * （两端不可合并为同一文件：本文件是 parent Host，对方是 iframe/顶层 bootstrap）
  */
 
 // ============================================

@@ -9,6 +9,7 @@ import { cloneDeep } from '@/utils/common';
 import { normalizeFileDiffItems } from '@/utils/fileChangeDiff';
 import {
   buildOpenUiArtifactFileUrl,
+  buildOpenUiFilePath,
   extractOpenUiArtifactId,
   isOpenUiArtifactRef,
   isOpenUiRenderToolName,
@@ -510,6 +511,11 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
           : artifact.document.digest,
         conversationId: props.conversationId,
         openUiArtifactFile: inlineFile,
+        // file_path 自主拉取：iframe 内同源拉取（带得上 cookie），inlineFile 作为 relay 失败时的回退。
+        // conversationId 非法时返回 null → 不传 filePath，回退现有 inlineFile/artifactUrl 模式。
+        openUiFilePath:
+          buildOpenUiFilePath(props.conversationId, artifact.artifactId) ??
+          undefined,
       });
     },
     [

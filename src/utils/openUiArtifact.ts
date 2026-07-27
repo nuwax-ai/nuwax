@@ -230,6 +230,21 @@ export function buildOpenUiArtifactFileUrl(
   return digest ? `${url}?digest=${encodeURIComponent(digest)}` : url;
 }
 
+/**
+ * 构造 OpenUI Runtime「自主拉取」模式所需的 file_path（/api/computer/static 之后的相对地址）。
+ * 用于 index.html?file_path=...：iframe 内 inline script 据此拼 `${origin}/api/computer/static${file_path}` 同源拉取。
+ * 例：conversationId=1557425, artifactId=<uuid> → /1557425/data/<uuid>.openui.json
+ */
+export function buildOpenUiFilePath(
+  conversationId: number | string,
+  artifactId: string,
+): string | null {
+  const normalizedConversationId = String(conversationId).trim();
+  // 与 buildOpenUiArtifactFileUrl 一致：conversationId 必须是纯数字，否则返回 null（调用方回退现有模式）
+  if (!/^\d+$/.test(normalizedConversationId) || !artifactId) return null;
+  return `/${normalizedConversationId}/data/${artifactId}.openui.json`;
+}
+
 export function legacyArtifactToOpenUiFile(
   artifact: Exclude<OpenUiArtifact, OpenUiArtifactRef>,
 ): OpenUiFile {
