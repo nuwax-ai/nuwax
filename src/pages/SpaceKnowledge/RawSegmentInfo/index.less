@@ -16,10 +16,17 @@
 .header {
   gap: 10px;
   height: 72px;
-  padding: 0 30px;
+  // 左右内边距与下方分段块(.line)对齐：左侧 16px 让 file-search 图标对齐分段块左边；
+  // 右侧 24px = #rawSegmentDiv 滚动条宽度(~8px) + 16px padding，让删除(垃圾桶)图标对齐分段块右边。
+  padding: 0 24px 0 16px;
   color: @BLANK11;
   font-size: 14px;
+  border-top: 1px solid @GRAY01;
   border-bottom: 1px solid @GRAY01;
+  // 统一 header 内所有操作图标大小（文件/编辑/预览/删除），避免删除图标偏大
+  :global(.anticon) {
+    font-size: 16px;
+  }
 
   .file-name {
     max-width: 60%;
@@ -35,7 +42,6 @@
 
     .del {
       margin-left: 30px;
-      font-size: 18px;
     }
   }
 }

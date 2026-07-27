@@ -422,7 +422,10 @@ const SpaceKnowledge: React.FC = () => {
   // 文档内容
   const renderDocContent = () => {
     return (
-      <div className={cx('flex', 'flex-1')}>
+      <div
+        className={cx('flex', 'flex-1')}
+        style={{ overflowX: 'auto', overflowY: 'hidden' }}
+      >
         {/*文档列表*/}
         <DocWrap
           currentDocId={currentDocumentInfo?.id}

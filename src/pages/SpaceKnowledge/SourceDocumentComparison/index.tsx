@@ -39,7 +39,7 @@ const SourceDocumentComparison: React.FC<SourceDocumentComparisonProps> = ({
     return (
       <div
         className="source-document-comparison loading"
-        style={{ width: '52%', minWidth: '500px', flex: '1 1 0%' }}
+        style={{ minWidth: '360px', flex: '1 1 0%' }}
       >
         <Spin tip="加载文档中..." />
       </div>
@@ -51,7 +51,7 @@ const SourceDocumentComparison: React.FC<SourceDocumentComparisonProps> = ({
     return (
       <div
         className="source-document-comparison error"
-        style={{ width: '52%', minWidth: '500px', flex: '1 1 0%' }}
+        style={{ minWidth: '360px', flex: '1 1 0%' }}
       >
         <Empty description={error || '请选择文档进行预览'} />
       </div>
@@ -61,7 +61,7 @@ const SourceDocumentComparison: React.FC<SourceDocumentComparisonProps> = ({
   return (
     <div
       className="source-document-comparison"
-      style={{ width: '52%', minWidth: '500px', flex: '1 1 0%' }}
+      style={{ minWidth: '360px', flex: '1 1 0%' }}
     >
       <DocumentPreview
         segments={segments}
