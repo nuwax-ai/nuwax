@@ -221,10 +221,14 @@ export const OpenUiRuntimeFrame: React.FC<OpenUiRuntimeFrameProps> = ({
 
   useEffect(() => {
     if (status !== 'loading') return;
+    // OpenUI Runtime 的 OPENUI_READY 仅在 runtime 挂载时发送一次；
+    // 当 iframe 被切到后台/被节流、或 3.4MB runtime.js 冷启动解析时，
+    // 该信号会延迟到达。这里给一个较宽的安全阈值，避免把“还在加载”误判为失败。
+    // 真正的加载/渲染错误由 iframe onError 与 runtime 的 OPENUI_ERROR 兜底。
     const timer = window.setTimeout(() => {
       setStatus('failed');
       setError('OpenUI Runtime timed out.');
-    }, 10_000);
+    }, 60_000);
     return () => window.clearTimeout(timer);
   }, [status, frameKey]);
 
