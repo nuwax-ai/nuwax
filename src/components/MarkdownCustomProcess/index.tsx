@@ -483,7 +483,7 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
         : undefined;
       showPagePreview({
         name: artifact.title,
-        uri: '/openui-runtime/index.html',
+        uri: '/static/openui-runtime/index.html',
         params: {},
         executeId: innerProcessing.executeId || artifact.artifactId,
         source: 'openui',

@@ -29,7 +29,7 @@
 
 生成的 UI 由两部分组成，**分别处理**：
 
-- **HTML 外壳**（固化）：`public/openui-runtime/index.html` + `runtime.js` + `runtime.css`，带样式与解析能力，是统一的渲染容器。
+- **HTML 外壳**（固化）：`public/static/openui-runtime/index.html` + `runtime.js` + `runtime.css`，带样式与解析能力，是统一的渲染容器。
 - **OpenUI 数据**（动态）：`data/{artifactId}.openui.json`，纯结构化数据（组件树、属性、绑定）。
 
 当前各入口的渲染路径（便于区分「Bug」与「已知差异」）：
@@ -287,8 +287,8 @@ Agent 调用 nuwax_render_openui  ──▶  写入 data/{artifactId}.openui.jso
 | 路径 | 说明 |
 | --- | --- |
 | `{项目根}/data/{artifactId}.openui.json` | 生成的 UI 数据（持久化产物） |
-| `public/openui-runtime/index.html` | 固化的渲染外壳（sidecar / 文件预览加载） |
-| `public/openui-runtime/runtime.js` | 渲染运行时（含样式、解析、组件库） |
+| `public/static/openui-runtime/index.html` | 固化的渲染外壳（sidecar / 文件预览加载） |
+| `public/static/openui-runtime/runtime.js` | 渲染运行时（含样式、解析、组件库） |
 | `nuwax-openui-mcp` | 提供 `nuwax_render_openui` 工具，负责写 `.openui.json` |
 | `nuwax-ask-question-mcp` | 提供 `nuwax_ask_question` 工具，负责提问 |
 
