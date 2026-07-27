@@ -16,7 +16,9 @@
 .header {
   gap: 10px;
   height: 72px;
-  padding: 0 30px;
+  // 左右内边距与下方分段块(.line)对齐：左侧 16px 让 file-search 图标对齐分段块左边；
+  // 右侧 24px = #rawSegmentDiv 滚动条宽度(~8px) + 16px padding，让删除(垃圾桶)图标对齐分段块右边。
+  padding: 0 24px 0 16px;
   color: @BLANK11;
   font-size: 14px;
   border-top: 1px solid @GRAY01;
