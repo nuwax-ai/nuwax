@@ -407,6 +407,7 @@ export interface RawSegmentInfoProps {
   onDel: () => void;
   onSuccessUpdateName: (id: number, name: string) => void;
   documentInfo?: KnowledgeDocumentInfo | null;
+  onSegmentSelect?: (segment: KnowledgeRawSegmentInfo | null) => void;
 }
 
 // 本地文档弹窗组件
