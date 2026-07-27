@@ -6,6 +6,7 @@ import { FileNode } from '@/types/interfaces/appDev';
 import { formatFileSize } from '@/utils/appDevUtils';
 import { copyTextToClipboard } from '@/utils/clipboard';
 import { isMarkdownFile } from '@/utils/common';
+import { isOpenUiFileName } from '@/utils/openUiArtifact';
 import {
   BranchesOutlined,
   CloseOutlined,
@@ -23,6 +24,24 @@ import ShareDesktopModal from './ShareDesktopModal';
 import type { FilePathHeaderProps } from './type';
 
 const cx = classNames.bind(styles);
+
+/**
+ * 是否支持「预览 / 代码」双模式切换。
+ * 与 html、markdown 一致，`.openui.json` 也走同一套 Segmented 切换逻辑。
+ *
+ * @param fileName - 当前选中文件名
+ * @returns 是否展示预览/代码切换按钮
+ */
+const supportsPreviewCodeToggle = (fileName?: string): boolean => {
+  if (!fileName) {
+    return false;
+  }
+  return (
+    fileName.includes('.htm') ||
+    isMarkdownFile(fileName) ||
+    isOpenUiFileName(fileName)
+  );
+};
 
 /**
  * Chat 页文件预览 Header
@@ -107,16 +126,22 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
   const hasFileInfoContent = useMemo(() => {
     if (viewMode === 'preview') {
       const hasFileDetails = !isFileTreeVisible && fileName;
+      // html / md / .openui.json：存在内容或代理 URL 时展示预览/代码切换
       const hasSegmented =
         (targetNode?.fileProxyUrl ||
           (targetNode?.content !== undefined &&
             targetNode?.content !== null)) &&
-        fileName &&
-        (fileName?.includes('.htm') || isMarkdownFile(fileName));
+        supportsPreviewCodeToggle(fileName);
       return hasFileDetails || hasSegmented;
     }
     return true;
-  }, [viewMode, isFileTreeVisible, fileName, targetNode?.fileProxyUrl]);
+  }, [
+    viewMode,
+    isFileTreeVisible,
+    fileName,
+    targetNode?.fileProxyUrl,
+    targetNode?.content,
+  ]);
 
   const showRightActionButtons = useMemo(() => {
     const canShare =
@@ -194,12 +219,11 @@ const FilePathHeader: React.FC<FilePathHeaderProps> = ({
             </div>
           )}
 
-          {/* 只有存在 fileProxyUrl 或 content 时，才显示预览和代码视图切换按钮 */}
+          {/* 只有存在 fileProxyUrl 或 content 时，才显示预览和代码视图切换按钮（html / md / .openui.json） */}
           {(targetNode?.fileProxyUrl ||
             (targetNode?.content !== undefined &&
               targetNode?.content !== null)) &&
-            fileName &&
-            (fileName?.includes('.htm') || isMarkdownFile(fileName)) && (
+            supportsPreviewCodeToggle(fileName) && (
               <ConfigProvider
                 theme={{
                   components: {

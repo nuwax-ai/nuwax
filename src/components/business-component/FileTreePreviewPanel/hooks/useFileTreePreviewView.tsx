@@ -281,7 +281,7 @@ export function useFileTreePreviewView(
   const [fileRefreshTimestamp, setFileRefreshTimestamp] = useState<number>(
     Date.now(),
   );
-  /** html / md：预览或代码视图 */
+  /** html / md / .openui.json：预览或代码视图，默认预览 */
   const [viewFileType, setViewFileType] = useState<'preview' | 'code'>(
     'preview',
   );
@@ -1947,7 +1947,12 @@ export function useFileTreePreviewView(
     const selectedFileName =
       selectedFileNode?.name || selectedFileId?.split('/')?.pop() || '';
 
-    if (isOpenUiFileName(selectedFileName)) {
+    /**
+     * `.openui.json` 与 html / md 共用 viewFileType：
+     * - preview（默认）：加载固化 Runtime 外壳渲染 UI
+     * - code：落入下方 CodeViewer，展示 JSON 源码
+     */
+    if (isOpenUiFileName(selectedFileName) && viewFileType === 'preview') {
       let inlineArtifact;
       if (selectedFileNode?.content) {
         try {
