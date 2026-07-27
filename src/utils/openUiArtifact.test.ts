@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildOpenUiArtifactFileUrl,
+  buildOpenUiFilePath,
   extractOpenUiArtifact,
   extractOpenUiArtifactId,
   extractOpenUiRenderInput,
@@ -166,5 +167,25 @@ describe('OpenUI file artifact references', () => {
       document: { source, digest: reference.digest },
     });
     expect(file.createdAt).toBe(file.updatedAt);
+  });
+});
+
+describe('buildOpenUiFilePath', () => {
+  it('返回 /{conversationId}/data/{artifactId}.openui.json', () => {
+    expect(
+      buildOpenUiFilePath(1557425, 'a1b2c3d4-1234-1234-89ab-aabbccddeeff'),
+    ).toBe('/1557425/data/a1b2c3d4-1234-1234-89ab-aabbccddeeff.openui.json');
+  });
+
+  it('对字符串 conversationId 去空白', () => {
+    expect(buildOpenUiFilePath(' 2336 ', artifactId)).toBe(
+      `/2336/data/${artifactId}.openui.json`,
+    );
+  });
+
+  it('conversationId 为空或非数字时返回 null（调用方回退现有模式）', () => {
+    expect(buildOpenUiFilePath('', artifactId)).toBeNull();
+    expect(buildOpenUiFilePath('   ', artifactId)).toBeNull();
+    expect(buildOpenUiFilePath('abc', artifactId)).toBeNull();
   });
 });

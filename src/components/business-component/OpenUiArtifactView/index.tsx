@@ -17,11 +17,13 @@ import type { RenderOpenUiInput } from '@nuwax-ai/openui-mcp/contracts';
 import { Renderer, type ActionEvent } from '@openuidev/react-lang';
 import { ThemeProvider } from '@openuidev/react-ui';
 import { openuiLibrary } from '@openuidev/react-ui/genui-lib';
-import '@openuidev/react-ui/layered/styles/index.css';
 import { Alert, Button, Spin } from 'antd';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getOpenUiActionSender } from './actionRegistry';
 import styles from './index.less';
+// OpenUI ↔ ds-markdown 样式隔离（层序 + revert + 宿主复位）；须先于 layered CSS
+import '@openuidev/react-ui/layered/styles/index.css';
+import './openui-host-reset.css';
 
 const RUNTIME_PROTOCOL = 'nuwax.openui-runtime/v1';
 /** OpenUI 固化运行时入口（与 public/static/openui-runtime 对齐） */
@@ -33,6 +35,8 @@ const RUNTIME_URL = `${(process.env.BASE_URL || '').replace(
 interface OpenUiRuntimeFrameProps {
   artifact?: OpenUiFile;
   artifactUrl?: string;
+  /** OpenUI Runtime「自主拉取」模式：/api/computer/static 之后的相对路径，传给 iframe 内 inline script */
+  filePath?: string;
   expectedArtifactId?: string;
   expectedDigest?: string;
   variant?: 'inline' | 'full';
@@ -51,6 +55,7 @@ async function sha256(value: string): Promise<string> {
 export const OpenUiRuntimeFrame: React.FC<OpenUiRuntimeFrameProps> = ({
   artifact: initialArtifact,
   artifactUrl,
+  filePath,
   expectedArtifactId,
   expectedDigest,
   variant = 'inline',
@@ -59,12 +64,13 @@ export const OpenUiRuntimeFrame: React.FC<OpenUiRuntimeFrameProps> = ({
 }) => {
   const nonce = useMemo(
     () => crypto.randomUUID(),
-    [artifactUrl, expectedDigest],
+    [filePath, artifactUrl, expectedDigest],
   );
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const sentActionIds = useRef(new Set<string>());
+  // file_path 模式下初始为 null，等 iframe inline script relay 回来的 artifact
   const [artifact, setArtifact] = useState<OpenUiFile | null>(
-    initialArtifact ?? null,
+    filePath ? null : initialArtifact ?? null,
   );
   const [status, setStatus] = useState<'loading' | 'ready' | 'failed'>(
     'loading',
@@ -73,10 +79,32 @@ export const OpenUiRuntimeFrame: React.FC<OpenUiRuntimeFrameProps> = ({
   const [height, setHeight] = useState(320);
   const [frameKey, setFrameKey] = useState(0);
 
+  // 校验拉取/relay 到的 artifact：artifactId 与 digest 与期望一致（fetch 与 OPENUI_FP_ARTIFACT 复用）
+  const validateArtifact = useCallback(
+    async (parsed: OpenUiFile): Promise<void> => {
+      if (expectedArtifactId && parsed.artifactId !== expectedArtifactId) {
+        throw new Error('Artifact ID does not match the requested file.');
+      }
+      const actualDigest = await sha256(parsed.document.source);
+      if (
+        actualDigest !== parsed.document.digest ||
+        (expectedDigest && actualDigest !== expectedDigest)
+      ) {
+        throw new Error('Artifact digest verification failed.');
+      }
+    },
+    [expectedArtifactId, expectedDigest],
+  );
+
   useEffect(() => {
-    setArtifact(initialArtifact ?? null);
+    // file_path 模式：初始 artifact 置空，由 iframe 内 inline script 同源拉取并 relay 回来
+    setArtifact(filePath ? null : initialArtifact ?? null);
     setStatus('loading');
     setError('');
+    if (filePath) {
+      // 由 iframe 自主拉取（inline script），Host 不主动 fetch
+      return;
+    }
     if (!artifactUrl) {
       if (!initialArtifact) {
         setStatus('failed');
@@ -94,16 +122,9 @@ export const OpenUiRuntimeFrame: React.FC<OpenUiRuntimeFrameProps> = ({
         if (!response.ok)
           throw new Error(`Artifact request failed (${response.status}).`);
         const parsed = openUiFileSchema.parse(await response.json());
-        if (expectedArtifactId && parsed.artifactId !== expectedArtifactId) {
-          throw new Error('Artifact ID does not match the requested file.');
-        }
-        const actualDigest = await sha256(parsed.document.source);
-        if (
-          actualDigest !== parsed.document.digest ||
-          (expectedDigest && actualDigest !== expectedDigest)
-        ) {
-          throw new Error('Artifact digest verification failed.');
-        }
+        await validateArtifact(parsed);
+        // validateArtifact 含 sha256（async）；期间 artifactUrl 可能已切换，复查避免提交 stale artifact
+        if (controller.signal.aborted) return;
         setArtifact(parsed);
       })
       .catch((reason: unknown) => {
@@ -114,11 +135,13 @@ export const OpenUiRuntimeFrame: React.FC<OpenUiRuntimeFrameProps> = ({
       });
     return () => controller.abort();
   }, [
+    filePath,
     artifactUrl,
     expectedArtifactId,
     expectedDigest,
     initialArtifact,
     frameKey,
+    validateArtifact,
   ]);
 
   const sendLoad = useCallback(() => {
@@ -153,6 +176,38 @@ export const OpenUiRuntimeFrame: React.FC<OpenUiRuntimeFrameProps> = ({
         data.nonce !== nonce
       )
         return;
+      if (data.type === 'OPENUI_FP_ARTIFACT') {
+        // file_path 模式：iframe inline script 同源拉取成功，relay 回来的 artifact
+        try {
+          const parsed = openUiFileSchema.parse(data.artifact);
+          void validateArtifact(parsed)
+            .then(() => setArtifact(parsed))
+            .catch((reason: unknown) => {
+              setStatus('failed');
+              setError(
+                reason instanceof Error ? reason.message : String(reason),
+              );
+            });
+        } catch (reason) {
+          setStatus('failed');
+          setError(reason instanceof Error ? reason.message : String(reason));
+        }
+        return;
+      }
+      if (data.type === 'OPENUI_FP_ERROR') {
+        // iframe 拉取失败/过期：有内存 inlineFile 则回退下发，否则展示失败
+        const msg =
+          typeof data.message === 'string'
+            ? data.message
+            : 'OpenUI file fetch failed.';
+        if (initialArtifact) {
+          setArtifact(initialArtifact);
+        } else {
+          setStatus('failed');
+          setError(msg);
+        }
+        return;
+      }
       if (data.type === 'OPENUI_READY') {
         setStatus('ready');
         sendLoad();
@@ -217,7 +272,15 @@ export const OpenUiRuntimeFrame: React.FC<OpenUiRuntimeFrameProps> = ({
     };
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [artifact, conversationId, nonce, sendLoad, variant]);
+  }, [
+    artifact,
+    conversationId,
+    nonce,
+    sendLoad,
+    variant,
+    validateArtifact,
+    initialArtifact,
+  ]);
 
   useEffect(() => {
     if (status !== 'loading') return;
@@ -226,6 +289,10 @@ export const OpenUiRuntimeFrame: React.FC<OpenUiRuntimeFrameProps> = ({
     // 该信号会延迟到达。这里给一个较宽的安全阈值，避免把“还在加载”误判为失败。
     // 真正的加载/渲染错误由 iframe onError 与 runtime 的 OPENUI_ERROR 兜底。
     const timer = window.setTimeout(() => {
+      // 60s 仍未 ready：统一判失败（retry 可达）。
+      // 不在此处回退 inlineFile：timer 触发时 status 必为 'loading'（ready/failed 会重置 timer），
+      // 此时即便 setArtifact(inlineFile) 也无法 sendLoad（需 status==='ready'），只会卡住永久 loading，
+      // 且会覆盖 relay 已成功拉取的 fresh artifact。回退改由 message handler 的 OPENUI_FP_ERROR 处理。
       setStatus('failed');
       setError('OpenUI Runtime timed out.');
     }, 60_000);
@@ -268,7 +335,9 @@ export const OpenUiRuntimeFrame: React.FC<OpenUiRuntimeFrameProps> = ({
         key={frameKey}
         ref={iframeRef}
         className={styles.inlineFrame}
-        src={`${RUNTIME_URL}?nonce=${encodeURIComponent(nonce)}`}
+        src={`${RUNTIME_URL}?nonce=${encodeURIComponent(nonce)}${
+          filePath ? `&file_path=${encodeURIComponent(filePath)}` : ''
+        }`}
         title={artifact?.title || 'OpenUI'}
         // ES module 在 null origin 下会触发 CORS；与 sidecar 一致启用 allow-same-origin
         sandbox={OPENUI_SIDECAR_SANDBOX}

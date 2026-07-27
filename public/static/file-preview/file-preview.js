@@ -122,17 +122,10 @@ async function renderHtml(url, container) {
     container.appendChild(iframe);
 }
 
-// ============================================
-// OpenUI Preview（分享/独立预览：加载固化 Runtime）
-// ============================================
-const OPENUI_RUNTIME_PROTOCOL = 'nuwax.openui-runtime/v1';
-const OPENUI_RUNTIME_PATH = '/static/openui-runtime/index.html';
-const OPENUI_FILE_NAME_PATTERN = /\.openui\.json$/i;
-const OPENUI_DIGEST_PATTERN = /^sha256:[a-f0-9]{64}$/;
-
 /**
  * 分享过期：销毁预览并展示友好错误（隐藏下载）
  * 不再使用倒计时定时器；改为在拉取返回过期/失败时由调用方触发。
+ * （OpenUI / 其它分享预览共用；OpenUI 渲染见 file-preview-openui.js）
  */
 function handleShareExpired() {
     if (currentPreviewer && typeof currentPreviewer.destroy === 'function') {
@@ -159,184 +152,6 @@ function handleShareExpired() {
     }
 
     showError(SHARE_EXPIRED_MESSAGE);
-}
-
-/**
- * 判断文件名是否为 OpenUI 产物（复合后缀 .openui.json）
- * @param {string} name
- * @returns {boolean}
- */
-function isOpenUiFileName(name) {
-    const fileName = String(name || '').split(/[\\/]/).pop() || '';
-    return OPENUI_FILE_NAME_PATTERN.test(fileName);
-}
-
-/**
- * 从纯路径解析预览类型；优先识别 .openui.json，避免被拆成 json
- * @param {string} purePath
- * @returns {string}
- */
-function resolvePreviewFileType(purePath) {
-    const fileName = String(purePath || '').split(/[\\/]/).pop() || '';
-    if (isOpenUiFileName(fileName)) {
-        return 'openui';
-    }
-    return (fileName.split('.').pop() || '').toLowerCase();
-}
-
-/**
- * 计算 SHA-256 摘要（格式与 Host 侧一致：sha256:<hex>）
- * @param {string} value
- * @returns {Promise<string>}
- */
-async function sha256Digest(value) {
-    const bytes = new TextEncoder().encode(value);
-    const digest = await crypto.subtle.digest('SHA-256', bytes);
-    const hex = Array.from(new Uint8Array(digest), (byte) =>
-        byte.toString(16).padStart(2, '0'),
-    ).join('');
-    return `sha256:${hex}`;
-}
-
-/**
- * 校验 OpenUI 文件契约（分享页严格拦截损坏/篡改内容）
- * @param {unknown} artifact
- * @returns {Promise<object>}
- */
-async function validateOpenUiArtifact(artifact) {
-    if (!artifact || typeof artifact !== 'object') {
-        throw new Error('OpenUI artifact is empty or invalid.');
-    }
-    const file = /** @type {Record<string, any>} */ (artifact);
-    if (file.type !== 'nuwax.openui-file' || file.schemaVersion !== 'nuwax.openui-file/v1') {
-        throw new Error('Unsupported OpenUI artifact schema.');
-    }
-    if (typeof file.artifactId !== 'string' || !file.artifactId) {
-        throw new Error('OpenUI artifactId is missing.');
-    }
-    if (!file.document || typeof file.document.source !== 'string') {
-        throw new Error('OpenUI document.source is missing.');
-    }
-    if (
-        typeof file.document.digest !== 'string' ||
-        !OPENUI_DIGEST_PATTERN.test(file.document.digest)
-    ) {
-        throw new Error('OpenUI document.digest is missing or invalid.');
-    }
-    const actualDigest = await sha256Digest(file.document.source);
-    if (actualDigest !== file.document.digest) {
-        throw new Error('OpenUI artifact digest verification failed.');
-    }
-    return file;
-}
-
-/**
- * 将 .openui.json 渲染为 OpenUI Runtime 页面（iframe + postMessage）
- * 分享场景无会话连接：表单 onAction 一律回失败，禁止提交回原会话
- * @param {string} url Artifact 文件 URL（可带 sk）
- * @param {HTMLElement} container
- */
-async function renderOpenUi(url, container) {
-    container.className = 'preview-container html-preview';
-
-    const response = await fetch(url, { cache: 'no-store', credentials: 'same-origin' });
-    if (!response.ok) {
-        // 分享链接/静态访问凭据(static_sk)失效：按“已过期”处理，展示友好提示。
-        // 不再使用倒计时定时器，改为依据拉取返回判断。
-        handleShareExpired();
-        return;
-    }
-
-    let parsed;
-    try {
-        parsed = await response.json();
-    } catch (error) {
-        throw new Error('OpenUI artifact is not valid JSON.');
-    }
-
-    const artifact = await validateOpenUiArtifact(parsed);
-    if (typeof artifact.title === 'string' && artifact.title.trim()) {
-        document.title = artifact.title.trim();
-    }
-
-    const nonce = crypto.randomUUID();
-    const iframe = document.createElement('iframe');
-    iframe.className = 'html-preview-iframe';
-    iframe.title = artifact.title || 'OpenUI';
-    iframe.referrerPolicy = 'no-referrer';
-    // 与会话内 OpenUI iframe 一致：ES module 需要同源，故启用 allow-same-origin
-    iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin');
-    iframe.src = `${OPENUI_RUNTIME_PATH}?nonce=${encodeURIComponent(nonce)}`;
-
-    const sendLoad = () => {
-        if (!iframe.contentWindow) return;
-        iframe.contentWindow.postMessage(
-            {
-                type: 'OPENUI_LOAD',
-                protocolVersion: OPENUI_RUNTIME_PROTOCOL,
-                nonce,
-                artifact,
-                locale: document.documentElement.lang || navigator.language,
-                theme: 'light',
-                viewport: window.matchMedia('(max-width: 767px)').matches
-                    ? 'mobile'
-                    : 'desktop',
-            },
-            '*',
-        );
-    };
-
-    const handleMessage = (message) => {
-        if (message.source !== iframe.contentWindow) return;
-        const data = message.data;
-        if (
-            !data ||
-            data.protocolVersion !== OPENUI_RUNTIME_PROTOCOL ||
-            data.nonce !== nonce
-        ) {
-            return;
-        }
-
-        if (data.type === 'OPENUI_READY') {
-            sendLoad();
-            return;
-        }
-
-        // 分享页只读：无会话 sender，表单提交一律拒绝
-        if (data.type === 'OPENUI_ACTION') {
-            const actionId =
-                data.event && typeof data.event.actionId === 'string'
-                    ? data.event.actionId
-                    : '';
-            iframe.contentWindow?.postMessage(
-                {
-                    type: 'OPENUI_ACTION_RESULT',
-                    protocolVersion: OPENUI_RUNTIME_PROTOCOL,
-                    nonce,
-                    actionId,
-                    success: false,
-                    message: 'Share preview is read-only and cannot submit forms.',
-                },
-                '*',
-            );
-        }
-    };
-
-    window.addEventListener('message', handleMessage);
-    currentPreviewer = {
-        destroy() {
-            window.removeEventListener('message', handleMessage);
-        },
-    };
-
-    iframe.onerror = () => {
-        window.removeEventListener('message', handleMessage);
-        throw new Error('Failed to load OpenUI runtime.');
-    };
-
-    container.appendChild(iframe);
-    // iframe onload 时再补发一次，避免 READY 早于监听注册的竞态
-    iframe.addEventListener('load', sendLoad);
 }
 
 // ============================================
@@ -659,9 +474,14 @@ async function startPreview() {
                     await renderHtml(fileUrl, container);
                     break;
 
-                // OpenUI artifact（分享/独立预览走固化 Runtime）
+                // OpenUI artifact（分享/独立预览走固化 Runtime，实现见 file-preview-openui.js）
                 case 'openui':
-                    await renderOpenUi(fileUrl, container);
+                    await renderOpenUi(fileUrl, container, {
+                        onShareExpired: handleShareExpired,
+                        registerPreviewer: (previewer) => {
+                            currentPreviewer = previewer;
+                        },
+                    });
                     break;
 
                 // Code files with syntax highlighting

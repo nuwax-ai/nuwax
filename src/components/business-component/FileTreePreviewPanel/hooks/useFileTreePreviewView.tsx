@@ -1807,6 +1807,23 @@ export function useFileTreePreviewView(
     [taskAgentSelectTrigger, fileRefreshTimestamp],
   );
 
+  // 文件树已加载的 .openui.json 内容：useMemo 稳定化，避免每次渲染重新 parse
+  // 产生新对象引用，导致 OpenUiRuntimeFrame 的拉取 effect 反复触发（多次/重复请求）。
+  // 内容已在内存时直接复用，不再请求 .openui.json（规避 static_k 失败导致的 loading 卡死）。
+  const openUiInlineArtifact = useMemo(() => {
+    const name = selectedFileNode?.name;
+    if (!name || !isOpenUiFileName(name) || !selectedFileNode?.content) {
+      return undefined;
+    }
+    try {
+      return openUiFileSchema.parse(
+        JSON.parse(String(selectedFileNode.content)),
+      );
+    } catch {
+      return undefined;
+    }
+  }, [selectedFileNode?.name, selectedFileNode?.content]);
+
   /**
    * 渲染内容区域
    * 根据文件类型渲染不同的预览组件
@@ -1953,28 +1970,20 @@ export function useFileTreePreviewView(
      * - code：落入下方 CodeViewer，展示 JSON 源码
      */
     if (isOpenUiFileName(selectedFileName) && viewFileType === 'preview') {
-      let inlineArtifact;
-      if (selectedFileNode?.content) {
-        try {
-          inlineArtifact = openUiFileSchema.parse(
-            JSON.parse(String(selectedFileNode.content)),
-          );
-        } catch {
-          inlineArtifact = undefined;
-        }
-      }
       const conversationId = staticFileBasePath?.match(
         /\/api\/computer\/static\/(\d+)/,
       )?.[1];
       return (
         <OpenUiRuntimeFrame
-          artifact={inlineArtifact}
-          artifactUrl={fileProxyUrl || undefined}
+          artifact={openUiInlineArtifact}
+          artifactUrl={
+            openUiInlineArtifact ? undefined : fileProxyUrl || undefined
+          }
           expectedArtifactId={
-            inlineArtifact?.artifactId ||
+            openUiInlineArtifact?.artifactId ||
             getOpenUiArtifactIdFromFileName(selectedFileName)
           }
-          expectedDigest={inlineArtifact?.document.digest}
+          expectedDigest={openUiInlineArtifact?.document.digest}
           conversationId={conversationId}
           variant="full"
         />

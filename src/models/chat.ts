@@ -19,6 +19,8 @@ export interface PagePreviewData {
   artifactDigest?: string;
   conversationId?: number | string;
   openUiArtifactFile?: OpenUiFile;
+  /** OpenUI Runtime「自主拉取」模式：/api/computer/static 之后的相对路径 */
+  openUiFilePath?: string;
 }
 
 /**

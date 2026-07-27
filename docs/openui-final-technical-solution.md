@@ -16,18 +16,16 @@ nuwax-openui-mcp
   └─ data/{artifactId}.openui.json
                     ↓
 Nuwax PC Web Host
-  ├─ Chat inline
-  ├─ Sidecar
-  └─ 文件树预览
-                    ↓ postMessage
-public/static/openui-runtime/
+  ├─ Chat inline（同文档 Renderer + CSS 隔离）
+  ├─ Sidecar → postMessage → openui-runtime
+  └─ 文件树预览 → postMessage → openui-runtime
 ```
 
 最终决策：
 
 1. `.openui.json` 是 OpenUI 的持久数据源，生命周期跟随项目文件，无 TTL。
 2. MCP 不再启动 HTTP 页面服务，不维护内存 Artifact、localhost URL 或 lanproxy 页面转发。
-3. PC 的 inline、sidecar、文件预览统一加载 `public/static/openui-runtime/index.html`。
+3. PC 的 sidecar / 文件预览加载 `public/static/openui-runtime/index.html`；**Chat inline 使用同文档 `@openuidev` Renderer**，并通过 CSS Layer / 宿主隔离避免被 `ds-markdown` 覆盖（不强制统一 iframe）。
 4. Runtime 只解析可信 Host 通过 `postMessage` 发送的 OpenUI 数据，不自行读取项目文件。
 5. 表单 `onAction` 复用 ask-question 的恢复消息路径，经 `messageQueue.rawSend` 回到原会话。
 6. 本期不修改 `agent-platform`，不实施移动端原生 Renderer。
@@ -97,13 +95,13 @@ OPENUI_ERROR
 
 iframe 启用 `allow-scripts allow-same-origin`（ES module 在 null origin 下会触发 CORS，故需同源）。Host 校验 `event.source`、协议版本、随机 nonce、Artifact ID、路径和 Action ID。OpenUI 数据不能作为 HTML 或 `srcDoc` 执行。
 
-高度不保存到 Artifact。Runtime 使用 `ResizeObserver` 测量根节点并发送 `OPENUI_RESIZE`；inline 动态调整 iframe，sidecar 和文件预览铺满宿主容器。
+高度不保存到 Artifact。sidecar / 文件预览的 Runtime 使用 `ResizeObserver` 测量根节点并发送 `OPENUI_RESIZE`，铺满宿主容器。Chat inline 为同文档 Renderer，高度由内容自然撑开。
 
 ## 5. PC Web 三种入口
 
 | 入口 | 行为 |
 | --- | --- |
-| Chat inline | 在工具消息内加载统一 Runtime，并自动调整高度 |
+| Chat inline | 工具消息内挂载同文档 Renderer；CSS 与 `ds-markdown` / 主站 reset 隔离 |
 | Sidecar | PagePreview Host 加载统一 Runtime，不再访问本机页面 URL |
 | 文件预览 | 完整识别 `{uuid}.openui.json`，读取、校验并加载统一 Runtime |
 | 文件分享 | `/static/file-preview.html?sk=` 识别 `.openui.json`，同样校验 digest 后加载 Runtime；分享页只读，表单不可回传会话 |
@@ -136,7 +134,8 @@ messageQueue.rawSend()
 
 - 文件名只允许 UUID 加 `.openui.json`，禁止目录穿越和自定义绝对路径。
 - Host 校验 Schema、Artifact ID 和 SHA-256 digest。
-- Runtime iframe 与主站样式隔离，PC `reset.css` 不会覆盖 OpenUI。
+- Runtime iframe（sidecar / 文件预览）与主站样式隔离，PC `reset.css` 不会覆盖 OpenUI。
+- Chat inline Renderer 与 `ds-markdown` 同文档共存：`ds-markdown` 降入 `@layer ds-markdown`，OpenUI 使用 `@layer openui`；隔离规则集中在 `OpenUiArtifactView/openui-host-reset.css`（层序、revert-layer、宿主继承切断、容器放行）。
 - 文件缺失、损坏、版本不支持、digest 不一致或 Runtime 超时时显示 fallback。
 - Action ID 在单次渲染中去重；发送失败恢复交互状态。
 - 密码等敏感表单内容不得写入浏览器日志。
