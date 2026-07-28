@@ -80,7 +80,7 @@ public/static/openui-runtime/
 └── runtime.css
 ```
 
-Runtime 固化当前 Renderer、Parser、表达式、图表、表单校验、日期规范化、i18n、响应式样式、Action bridge 和错误界面。Nuwax 将 `@nuwax-ai/openui-mcp` 作为固定版本依赖，通过 `pnpm sync:openui-runtime` 从已安装 npm 包的 `dist/web/` 同步 JS/CSS；同步过程不依赖本机存在 `nuwax-openui-mcp` 源码仓库。
+Runtime 固化当前 Renderer、Parser、表达式、图表、表单校验、日期规范化、i18n、响应式样式、Action bridge 和错误界面。Nuwax 将 `@nuwax-ai/openui-runtime` 作为固定版本依赖，通过 `pnpm sync:openui-runtime` 从已安装 npm 包的 `dist/` 同步 JS/CSS；同步过程不依赖本机存在 `nuwax-openui-mcp` 源码仓库。运行时资源独立成包，使 MCP server 包（`@nuwax-ai/openui-mcp`）保持轻量、启动时不再加载 react-dom 等渲染栈。
 
 Host 读取 `.openui.json` 时使用 `cache: no-store` 和 digest 查询参数，校验后发送：
 
