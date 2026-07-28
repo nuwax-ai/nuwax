@@ -4,6 +4,7 @@
 
 import { apiKnowledgeSegOriginalText } from '@/services/knowledge';
 import type { KnowledgeRawSegmentInfo } from '@/types/interfaces/knowledge';
+import { dict } from '@/services/i18nRuntime';
 import { message } from 'antd';
 import { useEffect, useRef, useState } from 'react';
 
@@ -11,54 +12,11 @@ import { useEffect, useRef, useState } from 'react';
  * 模拟数据 - 临时测试用（后端未就绪时使用）
  */
 const getMockData = (segmentId: number): KnowledgeRawSegmentInfo[] => {
-  // 根据不同的 segmentId 返回不同数量的模拟分段
   const mockDataMap: Record<number, KnowledgeRawSegmentInfo[]> = {
     203921: Array.from({ length: 21 }, (_, i) => ({
       id: 203921 + i,
       docId: 3579,
-      rawTxt: `[分段 ${i + 1}] 这是测试文档 3579 的第 ${i + 1} 段内容。\n当后端服务不可用时，此模拟数据用于验证页面渲染、高亮选中、自动滚动定位等核心功能。\n\n包含多行文本以测试换行显示效果。`,
-      kbId: 910,
-      sortIndex: i,
-      spaceId: 910,
-      created: '2024-01-01 00:00:00',
-      creatorId: 1,
-      creatorName: '测试用户',
-      modified: '2024-01-01 00:00:00',
-      modifiedId: 1,
-      modifiedName: '测试用户',
-    })),
-    200239: Array.from({ length: 23 }, (_, i) => ({
-      id: 200239 + i,
-      docId: 3540,
-      rawTxt: `[分段 ${i + 1}] 测试文档 3540 的第 ${i + 1} 段原始文本内容。`,
-      kbId: 910,
-      sortIndex: i,
-      spaceId: 910,
-      created: '2024-01-01 00:00:00',
-      creatorId: 1,
-      creatorName: '测试用户',
-      modified: '2024-01-01 00:00:00',
-      modifiedId: 1,
-      modifiedName: '测试用户',
-    })),
-    199314: Array.from({ length: 23 }, (_, i) => ({
-      id: 199314 + i,
-      docId: 3507,
-      rawTxt: `[分段 ${i + 1}] 测试文档 3507 的内容。`,
-      kbId: 910,
-      sortIndex: i,
-      spaceId: 910,
-      created: '2024-01-01 00:00:00',
-      creatorId: 1,
-      creatorName: '测试用户',
-      modified: '2024-01-01 00:00:00',
-      modifiedId: 1,
-      modifiedName: '测试用户',
-    })),
-    198952: Array.from({ length: 20 }, (_, i) => ({
-      id: 198952 + i,
-      docId: 3489,
-      rawTxt: `[分段 ${i + 1}] 测试文档 3489 的内容。`,
+      rawTxt: `[分段 ${i + 1}] 这是测试文档 3579 的第 ${i + 1} 段内容。`,
       kbId: 910,
       sortIndex: i,
       spaceId: 910,
@@ -80,10 +38,12 @@ const getMockData = (segmentId: number): KnowledgeRawSegmentInfo[] => {
  * - 自动分页拉满
  * - 按 sortIndex 升序排序
  * - 分段 ID 变化时自动重新拉取
- * - API 失败时使用模拟数据（临时测试用）
+ * - 权限错误显示 i18n 提示，不显示假数据
+ * - 其他错误使用 mock 兜底（开发环境）
  */
 export const useOriginalTextSegments = (
   segmentId: number | string | null | undefined,
+  agentId?: number | string | null | undefined,
 ) => {
   const [segments, setSegments] = useState<KnowledgeRawSegmentInfo[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
@@ -98,14 +58,12 @@ export const useOriginalTextSegments = (
       setSegments([]);
       setLoading(false);
       setError(null);
-      setUsingMockData(false);
       return;
     }
 
     let cancelled = false;
     setLoading(true);
     setError(null);
-    setUsingMockData(false);
 
     const fetchAll = async () => {
       try {
@@ -116,7 +74,7 @@ export const useOriginalTextSegments = (
 
         // 循环拉取直到 current >= pages
         while (current <= totalPages) {
-          const res = await apiKnowledgeSegOriginalText(Number(segmentId));
+          const res = await apiKnowledgeSegOriginalText(Number(segmentId), agentId ? Number(agentId) : undefined);
 
           if (cancelled || reqIdRef.current !== currentReqId) {
             return;
@@ -125,6 +83,14 @@ export const useOriginalTextSegments = (
           const page = res?.data;
           if (!page) {
             break;
+          }
+
+          // 权限拒绝：后端返回 permissionDenied=true（不抛异常），用 i18n 在页面持续提示，不兜 mock 假数据
+          if (page.permissionDenied) {
+            setError(dict('PC.Components.AppDevEmptyState.permissionDeniedDescription'));
+            setSegments([]);
+            setUsingMockData(false);
+            return;
           }
 
           if (Array.isArray(page.records)) {
@@ -185,7 +151,7 @@ export const useOriginalTextSegments = (
     return () => {
       cancelled = true;
     };
-  }, [segmentId]);
+  }, [segmentId, agentId]);
 
   const reset = () => {
     reqIdRef.current += 1;

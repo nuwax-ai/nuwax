@@ -158,6 +158,10 @@ const routes = [
         component: '@/pages/SpaceKnowledge',
       },
       {
+        path: '/space/original-text/:segmentId/:agentId',
+        component: '@/pages/SpaceKnowledgeOriginalText',
+      },
+      {
         path: '/space/original-text/:segmentId',
         component: '@/pages/SpaceKnowledgeOriginalText',
       },
