@@ -50,11 +50,13 @@ vi.mock('@/components/MarkdownRenderer', () => ({
     answer,
     thinking,
     status,
+    thinkingFinished,
     conversationId,
   }: {
     answer?: string;
     thinking?: string;
     status?: string;
+    thinkingFinished?: boolean;
     conversationId?: string | number;
   }) => (
     <div
@@ -62,6 +64,7 @@ vi.mock('@/components/MarkdownRenderer', () => ({
       data-answer={answer}
       data-thinking={thinking}
       data-status={status || ''}
+      data-thinking-finished={String(thinkingFinished)}
       data-conversation-id={conversationId ?? ''}
     />
   ),
@@ -168,6 +171,25 @@ describe('ChatView', () => {
     expect(screen.getByTestId('run-over')).toHaveAttribute(
       'data-status',
       MessageStatusEnum.Incomplete,
+    );
+  });
+
+  it('助手消息透传思考流完成状态，不以正文内容推断思考已结束', () => {
+    render(
+      <ChatView
+        roleInfo={roleInfo}
+        messageInfo={createMessage({
+          text: '正文分片已经到达',
+          think: '思考分片仍在到达',
+          status: MessageStatusEnum.Incomplete,
+          thinkingFinished: false,
+        })}
+      />,
+    );
+
+    expect(screen.getByTestId('markdown-renderer')).toHaveAttribute(
+      'data-thinking-finished',
+      'false',
     );
   });
 

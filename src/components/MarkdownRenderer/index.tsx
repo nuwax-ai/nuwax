@@ -37,15 +37,18 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(
     headerActions = true,
     disableTyping = true,
     theme = 'light',
-    answer = '',
     thinking = '',
     status,
+    thinkingFinished,
   }: MarkdownRendererProps) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const hasThinking = !!thinking && thinking.trim() !== '';
+    // 正文与思考流可能交错到达，不能以已有正文作为思考结束依据。
+    // 对旧消息（未携带 thinkingFinished）保留原有终态兼容逻辑。
     const isThinkingFinished =
-      status === MessageStatusEnum.Complete ||
-      (!!answer && answer.trim() !== '');
+      thinkingFinished ??
+      (status !== MessageStatusEnum.Incomplete &&
+        status !== MessageStatusEnum.Loading);
 
     const containerRef = useRef<HTMLDivElement>(null);
     const plugins = useMemo(
@@ -112,6 +115,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(
       prevProps.thinking === nextProps.thinking &&
       prevProps.answer === nextProps.answer &&
       prevProps.status === nextProps.status &&
+      prevProps.thinkingFinished === nextProps.thinkingFinished &&
       prevProps.conversationId === nextProps.conversationId
     );
   },
