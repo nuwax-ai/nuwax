@@ -131,7 +131,7 @@ const routes = [
         component: '@/pages/SpaceKnowledge',
       },
       {
-        path: '/space/original-text/:segmentId',
+        path: '/space/original-text/:segmentId/:agentId',
         component: '@/pages/SpaceKnowledgeOriginalText',
       },
       {

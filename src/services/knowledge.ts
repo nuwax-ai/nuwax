@@ -278,10 +278,11 @@ export async function apiKnowledgeRawSegmentDelete(
 // 原文对照 - 根据分段ID查询所属文档的全部分段
 export async function apiKnowledgeSegOriginalText(
   segmentId: number,
+  agentId?: number | string,
 ): Promise<RequestResponse<Page<KnowledgeRawSegmentInfo>>> {
   return request('/api/knowledge/segOriginalText/list', {
     method: 'GET',
-    params: { segmentId },
+    params: { segmentId, ...(agentId != null && { agentId: Number(agentId) }) },
   });
 }
 

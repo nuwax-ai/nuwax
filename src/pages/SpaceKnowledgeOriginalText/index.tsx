@@ -15,9 +15,10 @@ import './index.less';
  * 原文对照页面组件
  */
 const SpaceKnowledgeOriginalText: React.FC = () => {
-  const { segmentId: routeSegmentId, spaceId } = useParams<{
+  const { segmentId: routeSegmentId, spaceId, agentId: routeAgentId } = useParams<{
     segmentId?: string;
     spaceId?: string;
+    agentId?: string;
   }>();
   const location = useLocation();
 
@@ -45,7 +46,7 @@ const SpaceKnowledgeOriginalText: React.FC = () => {
   }, [routeSegmentId, location.search]);
 
   const highlightRef = useRef<HTMLDivElement>(null);
-  const { segments, loading, error, usingMockData } = useOriginalTextSegments(segmentId);
+  const { segments, loading, error, usingMockData } = useOriginalTextSegments(segmentId, routeAgentId);
 
   // 选中分段变化时自动滚动定位
   // 依赖含 segments：初始进入/切换时 segmentId 已定但分段异步加载，
