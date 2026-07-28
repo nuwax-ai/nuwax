@@ -645,6 +645,7 @@ export default () => {
           newMessage = {
             ...currentMessage,
             think: `${currentMessage.think}${text}`,
+            thinkingFinished: finished === true,
             status: MessageStatusEnum.Incomplete,
           };
         }
@@ -708,6 +709,7 @@ export default () => {
 
         newMessage = {
           ...(reconcileFinalMessageState(currentMessage, data) || {}),
+          thinkingFinished: true,
           status: MessageStatusEnum.Complete,
           finalResult: data,
           requestId: res.requestId,
@@ -747,6 +749,7 @@ export default () => {
       if (eventType === ConversationEventTypeEnum.ERROR) {
         newMessage = {
           ...currentMessage,
+          thinkingFinished: true,
           status: MessageStatusEnum.Error,
         };
       }

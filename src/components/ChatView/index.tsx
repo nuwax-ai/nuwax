@@ -213,6 +213,7 @@ const ChatView: React.FC<ChatViewProps> = memo(
                     answer={processedText}
                     thinking={messageInfo?.think}
                     status={messageInfo?.status}
+                    thinkingFinished={messageInfo?.thinkingFinished}
                   />
                 </div>
               </div>
