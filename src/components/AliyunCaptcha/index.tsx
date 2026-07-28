@@ -4,6 +4,7 @@ import {
   useCallback,
   useEffect,
   useImperativeHandle,
+  useLayoutEffect,
   useRef,
   useState,
 } from 'react';
@@ -198,13 +199,15 @@ const AliyunCaptcha = forwardRef<AliyunCaptchaRef, AliyunCaptchaProps>(
     }, []);
 
     const cleanupCaptchaElements = useCallback(() => {
-      document.getElementById('aliyunCaptcha-mask')?.remove();
-      document.getElementById('aliyunCaptcha-window-popup')?.remove();
-      captchaInstanceRef.current?.destroy?.();
+      // 由 SDK 销毁自己创建的节点。若先手动移除弹窗/遮罩，SDK 的 destroy
+      // 或成功回调收尾仍会访问这些节点，登录跳转时会出现 innerHTML 空引用。
+      const instance = captchaInstanceRef.current;
       captchaInstanceRef.current = null;
+      instance?.destroy?.();
     }, []);
 
-    useEffect(() => {
+    // 确保卸载时 SDK destroy 发生在 React 移除验证码容器之前。
+    useLayoutEffect(() => {
       if (!captchaSceneId || !captchaPrefix || !openCaptcha) return;
       if (captchaInstanceRef.current) return;
 
