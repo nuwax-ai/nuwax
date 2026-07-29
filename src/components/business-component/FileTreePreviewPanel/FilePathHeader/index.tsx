@@ -6,7 +6,7 @@ import { FileNode } from '@/types/interfaces/appDev';
 import { formatFileSize } from '@/utils/appDevUtils';
 import { copyTextToClipboard } from '@/utils/clipboard';
 import { isMarkdownFile } from '@/utils/common';
-import { isOpenUiFileName } from '@/utils/openUiArtifact';
+import { isBareOpenUiFileName, isOpenUiFileName } from '@/utils/openUiArtifact';
 import {
   BranchesOutlined,
   CloseOutlined,
@@ -27,7 +27,7 @@ const cx = classNames.bind(styles);
 
 /**
  * 是否支持「预览 / 代码」双模式切换。
- * 与 html、markdown 一致，`.openui.json` 也走同一套 Segmented 切换逻辑。
+ * 与 html、markdown 一致，`.openui.json`（及内容可嗅探的裸 `.openui`）也走同一套 Segmented。
  *
  * @param fileName - 当前选中文件名
  * @returns 是否展示预览/代码切换按钮
@@ -39,7 +39,8 @@ const supportsPreviewCodeToggle = (fileName?: string): boolean => {
   return (
     fileName.includes('.htm') ||
     isMarkdownFile(fileName) ||
-    isOpenUiFileName(fileName)
+    isOpenUiFileName(fileName) ||
+    isBareOpenUiFileName(fileName)
   );
 };
 

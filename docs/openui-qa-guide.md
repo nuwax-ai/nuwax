@@ -16,21 +16,24 @@
 
 理解以下几点，有助于判断「某个现象是 Bug 还是预期」。
 
-### 2.1 两个 MCP 工具（Agent 调用）
+### 2.1 MCP 工具（Agent 调用）
 
 | 工具 | 作用 | 边界 |
 | --- | --- | --- |
 | `nuwax_render_openui` | **生成/更新 UI**，把界面数据写到项目 `data/{artifactId}.openui.json` | 只负责「渲染可视化界面」 |
+| `nuwax_get_openui_reference` | **写作参考**：OpenUI Lang 语法、组件签名、表格接线示例 | 只读；复杂看板/表单前应先调 |
+| `nuwax_get_openui_update_guide` | **更新指引**：如何改已有 `*.openui.json`（复用 artifactId 或手改 + 维护 digest） | 只读；用户说「改标题/改这个文件」时应先调 |
 | `nuwax_ask_question` | **向用户提问**（弹出表单收集输入/决策） | 只负责「提问」，不渲染 OpenUI |
 
-> 两者互不替代、不可混淆。防混淆的边界声明由 `openui-mcp` 单向承担（在 `nuwax_render_openui` 工具描述里明确「提问请用 `nuwax_ask_question`」）。
+> `render_openui` 与 `ask_question` 互不替代、不可混淆。防混淆的边界声明由 `openui-mcp` 承担。  
+> OpenUI Lang **专用数据源扩展名**是 **`*.openui.json`**（规范路径 `data/{artifactId}.openui.json`）。**不要**落盘裸 `.openui` 或其它后缀冒充 OpenUI 数据源。
 
 ### 2.2 程序与数据分离（关键设计）
 
 生成的 UI 由两部分组成，**分别处理**：
 
 - **HTML 外壳**（固化）：`public/static/openui-runtime/index.html` + `file-path-bootstrap.js` + `runtime.js` + `runtime.css`，带样式与解析能力，是统一的渲染容器。
-- **OpenUI 数据**（动态）：`data/{artifactId}.openui.json`，纯结构化数据（组件树、属性、绑定）。
+- **OpenUI 数据**（动态）：`data/{artifactId}.openui.json`，纯结构化数据（OpenUI Lang `document.source`、digest、展示模式等）。
 
 当前各入口的渲染路径（便于区分「Bug」与「已知差异」）：
 
@@ -47,16 +50,32 @@
 | **sidecar** | 全屏页面预览 | Agent 以 `presentation.mode = sidecar` 生成后，对话内出现摘要卡，点「打开预览」 |
 | **文件树预览** | 点击 `data/` 下的 `.openui.json` 文件；默认预览，可切代码 | 文件树点击 |
 
-### 2.4 持久化与回传
+### 2.4 持久化、digest 与更新方式
 
-- **持久化**：UI 数据落盘到 `{项目根}/data/{artifactId}.openui.json`，文件名即 `artifactId`，特殊后缀 `.openui.json`。重启会话时自动扫描 `data/` 加载，UI 可恢复。
-- **完整性校验**：每个文件带 `digest`（sha256），加载时校验，被篡改会拒绝渲染。
+- **持久化**：UI 数据落盘到 `{项目根}/data/{artifactId}.openui.json`，文件名即 `artifactId`，专用后缀 `.openui.json`。重启会话时自动扫描 `data/` 加载，UI 可恢复。
+- **完整性校验**：每个文件带 `document.digest`（`sha256:` + 64 位十六进制），须与 `document.source` 内容一致；格式非法或与内容不一致时拒绝渲染。
+- **两种合法更新方式**（都不禁止）：
+  1. **推荐**：再调 `nuwax_render_openui`，传入**同一** `artifactId`，由工具重写文件并自动重算 digest。
+  2. **直接编辑** `.openui.json`：可改 `title` / `document.source` 等；若改了 `source`，必须同步更新 `document.digest`，勿删 `type` / `schemaVersion` / `artifactId` 等必填字段。
 - **表单回传**：UI 内的表单提交（`onAction`）→ 经 chat 接口以结构化文本发回 → 作为下一条消息进入原会话 → Agent 据此继续。与 `ask-question` 的回传机制一致。
 
-### 2.5 整体流程
+### 2.5 OpenUI Lang 可达性（Orphaned，易踩坑）
+
+OpenUI Lang 里每个变量（除 `root` 外）必须被引用，且能从 `root` 到达。只定义 `usersData = [...]` 却没接到 `Table` / `Col` / `Stack` 上，工具会报错：
+
+```text
+Orphaned statements: usersData
+```
+
+这是**校验拒绝**（不是「静默丢弃」）。正确路径：数据变量 → `Col` → `Table` → `root`。复杂表格前 Agent 应先调 `nuwax_get_openui_reference`（`profile=dashboard`）。
+
+### 2.6 整体流程
 
 ```
 用户输入（自然语言）
+      │
+      ▼
+（可选）nuwax_get_openui_reference / nuwax_get_openui_update_guide
       │
       ▼
 Agent 调用 nuwax_render_openui  ──▶  写入 data/{artifactId}.openui.json
@@ -78,12 +97,13 @@ Agent 调用 nuwax_render_openui  ──▶  写入 data/{artifactId}.openui.jso
 | --- | --- | --- |
 | 1 | UI 生成与渲染 | Agent 正确生成；三类 UI（卡片/看板/表单）渲染正确、可交互 |
 | 2 | inline / sidecar 展示 | 对话内 inline 正常；sidecar 摘要卡可点「打开预览」进全屏 |
-| 3 | 持久化 | `data/{id}.openui.json` 落盘；重启后 UI 恢复 |
+| 3 | 持久化 | `data/{id}.openui.json` 落盘；重启后 UI 恢复；**无**裸 `.openui` 冒充数据源 |
 | 4 | 文件树预览 | 点击 `.openui.json` 默认加载固化 html 预览；可切到代码视图 |
 | 5 | 表单提交回传 | 提交内容回到原会话；用户气泡干净（无内部标记） |
-| 6 | 工具边界 | `ask_question` 与 `render_openui` 不互替、不混淆 |
-| 7 | 数据完整性 | 篡改 `.openui.json`（不改 digest）后加载被拦截 |
+| 6 | 工具边界 | `ask_question` 与 `render_openui` 不互替；更新前可用 `update_guide` |
+| 7 | 数据完整性 | 篡改 `.openui.json`（不改 digest）后加载被拦截；手改 source 未改 digest 有明确提示 |
 | 8 | 复用更新 | 同一 `artifactId` 再次生成可覆盖已有 UI |
+| 9 | Orphaned / 表格接线 | 员工表类需求不因未引用 `usersData` 反复失败；失败时有可操作提示 |
 
 ---
 
@@ -101,12 +121,12 @@ Agent 调用 nuwax_render_openui  ──▶  写入 data/{artifactId}.openui.jso
 
 **预期：**
 
-- Agent 调用 `nuwax_render_openui`
+- Agent 调用 `nuwax_render_openui`（复杂看板可先调 `nuwax_get_openui_reference`）
 - 对话内出现可交互看板（inline）
 - 指标卡数值展示正常；柱状图坐标轴/柱高/图例正确
-- 项目 `data/` 目录下生成 `{artifactId}.openui.json`
+- 项目 `data/` 目录下生成 `{artifactId}.openui.json`（**不是** `xxx.openui`）
 
-**通过标准：** 看板完整渲染、数据合理、无报错；落盘文件存在。
+**通过标准：** 看板完整渲染、数据合理、无报错；落盘文件存在且后缀为 `.openui.json`。
 
 ---
 
@@ -168,8 +188,9 @@ Agent 调用 nuwax_render_openui  ──▶  写入 data/{artifactId}.openui.jso
 - 落盘文件存在，文件名为 UUID + `.openui.json`
 - 重启后，历史 UI 仍可加载展示（从 `data/` 扫描恢复）
 - 文件树出现该 `.openui.json`
+- **不应**出现仅用于「给人看」的裸 `employee_data.openui` 一类文件作为唯一产物
 
-**通过标准：** 文件落盘；重启后 UI 可恢复。
+**通过标准：** 文件落盘；重启后 UI 可恢复；数据源后缀正确。
 
 ---
 
@@ -189,6 +210,23 @@ Agent 调用 nuwax_render_openui  ──▶  写入 data/{artifactId}.openui.jso
 
 ---
 
+### 场景 5b — 误用裸 `.openui` 的预览表现（回归）
+
+**操作（任选其一）：**
+
+1. 若历史会话里出现过 `employee_data.openui` 之类文件：在文件树点开它
+2. 或临时复制一份合法 `*.openui.json` 内容，另存为 `demo.openui` 再点开
+
+**预期：**
+
+- 若内容是合法 `nuwax.openui-file`：允许嗅探渲染出 UI（或经 URL 拉取后渲染）
+- 若内容不是合法 OpenUI 文件：提示应使用 **`*.openui.json`** 作为 OpenUI Lang 数据源（不要只显示泛化的「不支持 openui」）
+- 切到「代码」仍可查看文件文本
+
+**通过标准：** 错误扩展名有明确指引；合法内容可预览或可看代码。
+
+---
+
 ### 场景 6 — 卡片/内容（basic）
 
 **提示词：**
@@ -205,29 +243,37 @@ Agent 调用 nuwax_render_openui  ──▶  写入 data/{artifactId}.openui.jso
 
 ### 场景 7 — 工具边界（防混淆，重要）
 
-用两组对照提示词，验证两个工具不会被 Agent 用错。
+用对照提示词，验证工具不会被 Agent 用错。
 
 | 提示词 | 预期触发的工具 | 不应出现 |
 | --- | --- | --- |
 | 「我接下来该选 A 方案还是 B 方案？帮我问一下」 | `nuwax_ask_question`（提问表单） | 不应渲染 OpenUI 看板 |
 | 「把上面的数据画成看板」 | `nuwax_render_openui`（渲染 UI） | 不应弹提问表单 |
+| 「把刚才那个看板的标题改成 123」 | 宜先 `nuwax_get_openui_update_guide`，再 `nuwax_render_openui`（同 artifactId） | 不应只手改文件却弄坏 digest 后无法预览 |
 
-**通过标准：** 提问走 `ask_question`，渲染走 `render_openui`，两者不互替。
+**通过标准：** 提问走 `ask_question`，渲染/更新走 `render_openui`；更新路径可预览成功。
 
 ---
 
 ### 场景 8 — 数据完整性（digest 校验）
 
-**操作：**
+**操作 A（源与 digest 不一致）：**
 
 1. 找到某个已生成的 `data/{id}.openui.json`
-2. 手动改坏文件内容（例如改某个字段文案、删掉一段 JSON），**不要**同步改掉文件里的 `digest` 字段
+2. 手动改坏文件内容（例如改 `document.source` 或标题相关字段），**不要**同步改掉文件里的 `digest` 字段
 3. 在文件树重新点开该文件（预览模式），或刷新后再次加载
 
 **预期：**
 
 - digest 校验失败，**拒绝渲染**，不会展示错乱界面
-- 出现明确错误提示（如「界面渲染失败」一类），而不是空白无反馈
+- 出现明确错误提示（如「界面渲染失败」或 digest 契约相关文案），而不是空白无反馈
+
+**操作 B（digest 格式非法）：**
+
+1. 将 `document.digest` 改成非 `sha256:` + 64 位十六进制的值（例如 `"broken"`）
+2. 再点开预览
+
+**预期：** 无法预览，并提示 digest 无效 / 需用 `nuwax_render_openui` 复用 artifactId 重新发布，或按规则重算 digest。
 
 **通过标准：** 篡改后加载被拦截、有明确报错。
 
@@ -245,8 +291,8 @@ Agent 调用 nuwax_render_openui  ──▶  写入 data/{artifactId}.openui.jso
 
 **预期：**
 
-- Agent 调用 `nuwax_render_openui` 时复用同一 `artifactId`（或明确覆盖已有文件）
-- `data/{artifactId}.openui.json` 被原子覆盖（仍是同一文件名），内容已更新
+- Agent 可先调 `nuwax_get_openui_update_guide`，再调 `nuwax_render_openui` 复用同一 `artifactId`
+- `data/{artifactId}.openui.json` 被原子覆盖（仍是同一文件名），内容已更新，`digest` 已刷新
 - 对话内 / 文件树预览看到的是更新后的 UI，而不是另起一个全新文件
 
 **通过标准：** 同名文件被更新；UI 展示新内容；不会无故多出一个无关的 `.openui.json`（允许 Agent 偶发新建，但应以「复用更新」为正确路径）。
@@ -271,6 +317,25 @@ Agent 调用 nuwax_render_openui  ──▶  写入 data/{artifactId}.openui.jso
 
 ---
 
+### 场景 11 — 员工信息表 / Orphaned 回归（高发）
+
+**提示词：**
+
+```
+生成一个员工信息表，约 20 条模拟数据，列包含：姓名、部门、职位、入职日期、状态。
+```
+
+**预期：**
+
+- Agent 成功调用 `nuwax_render_openui`（必要时先 `nuwax_get_openui_reference` profile=dashboard）
+- 对话内出现表格 UI；落盘为 `data/{uuid}.openui.json`
+- **不应**反复出现 `Orphaned statements: usersData`（或同类未引用变量）导致最终无 UI
+- 若某次调用失败，工具错误文案应提示：把变量接到 Table/Col/Stack，或删除未用变量
+
+**通过标准：** 表格能稳定生成并预览；无「只定义数据未接线」导致的最终失败。
+
+---
+
 ## 五、已知差异 / 限制
 
 > 以下是当前版本的已知情况，**不是 Bug**，测试时请注意区分。
@@ -279,6 +344,8 @@ Agent 调用 nuwax_render_openui  ──▶  写入 data/{artifactId}.openui.jso
   - 样式：inline 宿主隔离集中在 `src/components/business-component/OpenUiArtifactView/openui-host-reset.css`（`@layer ds-markdown` / `@layer openui` 层序、宿主继承切断、对 `[data-openui-render-mode="renderer"]` 子树放行），避免被 `ds-markdown` / ChatArea 宽规则覆盖。
   - 测试时，inline 的通过标准是「能正确展示与交互，且不受 markdown 排版样式污染」，不必要求与 sidecar 走同一渲染路径。
 - **inline 表单回传兜底**：inline 入口的表单提交已有超时兜底；sidecar / 文件预览（iframe 模式）下的 `onAction` 若 Host 未及时回传结果，UI 可能短暂等待。若遇到 iframe 模式提交后长时间无响应，请记录场景反馈。
+- **允许直接编辑 `.openui.json`**：手改合法，但改 `source` 必须同步合法 `digest`；否则预览失败属于**操作未按契约**，不是 Runtime 随机坏掉。推荐仍用 `nuwax_render_openui` 复用 `artifactId` 更新。
+- **裸 `.openui` 不是正式数据源**：正式产物永远是 `*.openui.json`。文件树对裸 `.openui` 仅做兼容嗅探/明确提示，不应鼓励 Agent 继续 invent 该后缀。
 
 ---
 
@@ -292,14 +359,18 @@ Agent 调用 nuwax_render_openui  ──▶  写入 data/{artifactId}.openui.jso
 - [ ] sidecar：摘要卡出现后点「打开预览」可进全屏
 - [ ] 表单提交内容回传到原会话
 - [ ] 用户消息气泡干净（无 `<!-- -->` 等内部标记，复制干净）
-- [ ] `data/{artifactId}.openui.json` 正确落盘
+- [ ] `data/{artifactId}.openui.json` 正确落盘（无裸 `.openui` 作为唯一产物）
 - [ ] 重启 / 刷新后历史 UI 可恢复
 - [ ] 文件树点击 `.openui.json` 默认预览 UI，可切换到代码视图
+- [ ] 误用裸 `.openui`：合法内容可嗅探预览或有明确「请用 \*.openui.json」提示
 - [ ] 分享 `.openui.json` 打开 `/static/file-preview.html?sk=` 渲染为 UI（非 JSON 源码）
 - [ ] 分享页表单不可提交回原会话（只读）
 - [ ] `ask_question` 与 `render_openui` 不混淆
+- [ ] 更新已有 UI：可走 update_guide + 同 artifactId render；预览仍可用
 - [ ] 篡改 `.openui.json`（不改 digest）后加载被拦截
+- [ ] digest 格式非法时有明确契约/修复提示
 - [ ] 重复生成（复用 artifactId）能更新已有 UI（见场景 9）
+- [ ] 员工信息表类需求不因 Orphaned statements 最终失败（见场景 11）
 
 ---
 
@@ -307,14 +378,15 @@ Agent 调用 nuwax_render_openui  ──▶  写入 data/{artifactId}.openui.jso
 
 | 路径 | 说明 |
 | --- | --- |
-| `{项目根}/data/{artifactId}.openui.json` | 生成的 UI 数据（持久化产物） |
+| `{项目根}/data/{artifactId}.openui.json` | 生成的 UI 数据（持久化产物；专用数据源后缀） |
 | `public/static/openui-runtime/index.html` | 固化的渲染外壳（sidecar / 文件预览加载） |
 | `public/static/openui-runtime/file-path-bootstrap.js` | Runtime 子页 `?file_path=` 同源拉取并 relay（nuwax 自维，不与分享 Host 共用） |
 | `public/static/openui-runtime/runtime.js` | 渲染运行时（含样式、解析、组件库） |
 | `public/static/file-preview.html` | 文件分享入口（含 `.openui.json` 特殊渲染） |
 | `public/static/file-preview/file-preview-openui.js` | 分享页 OpenUI：类型识别、digest 校验、Runtime iframe Host |
 | `public/static/file-preview/file-preview.js` | 分享页主流程（调度各类型预览，含调用 OpenUI Host） |
-| `nuwax-openui-mcp` | 提供 `nuwax_render_openui` 工具，负责写 `.openui.json` |
+| `src/utils/openUiArtifact.ts` | Host 侧 `.openui.json` / 裸 `.openui` 识别与契约嗅探 |
+| `nuwax-openui-mcp`（≥0.3.1） | `nuwax_render_openui`、`nuwax_get_openui_reference`、`nuwax_get_openui_update_guide` |
 | `nuwax-ask-question-mcp` | 提供 `nuwax_ask_question` 工具，负责提问 |
 
 > 如遇问题，附上：使用的提示词、对应的 `data/*.openui.json` 文件、浏览器控制台报错截图，便于定位。
