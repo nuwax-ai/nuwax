@@ -42,8 +42,10 @@ import {
 } from '@/utils/fileTree';
 import {
   getOpenUiArtifactIdFromFileName,
+  isBareOpenUiFileName,
+  isOpenUiDigestContractFailure,
   isOpenUiFileName,
-  openUiFileSchema,
+  tryParseOpenUiFileContent,
 } from '@/utils/openUiArtifact';
 import { message } from 'antd';
 import cloneDeep from 'lodash/cloneDeep';
@@ -1807,21 +1809,41 @@ export function useFileTreePreviewView(
     [taskAgentSelectTrigger, fileRefreshTimestamp],
   );
 
-  // 文件树已加载的 .openui.json 内容：useMemo 稳定化，避免每次渲染重新 parse
+  // 文件树已加载的 OpenUI 内容：useMemo 稳定化，避免每次渲染重新 parse
   // 产生新对象引用，导致 OpenUiRuntimeFrame 的拉取 effect 反复触发（多次/重复请求）。
   // 内容已在内存时直接复用，不再请求 .openui.json（规避 static_k 失败导致的 loading 卡死）。
+  // 同时对误用的裸 `.openui` 做内容嗅探：合法 nuwax.openui-file 也可内联渲染。
   const openUiInlineArtifact = useMemo(() => {
     const name = selectedFileNode?.name;
-    if (!name || !isOpenUiFileName(name) || !selectedFileNode?.content) {
+    if (
+      !name ||
+      (!isOpenUiFileName(name) && !isBareOpenUiFileName(name)) ||
+      !selectedFileNode?.content
+    ) {
       return undefined;
     }
-    try {
-      return openUiFileSchema.parse(
-        JSON.parse(String(selectedFileNode.content)),
-      );
-    } catch {
+    return tryParseOpenUiFileContent(selectedFileNode.content) ?? undefined;
+  }, [selectedFileNode?.name, selectedFileNode?.content]);
+
+  /**
+   * `.openui.json`（及内容合法的裸 `.openui`）预览契约失败提示：
+   * 常见于手改 source 后未更新 digest。
+   */
+  const openUiContractErrorDescription = useMemo(() => {
+    const name = selectedFileNode?.name;
+    const content = selectedFileNode?.content;
+    if (!name || !content) return undefined;
+    if (!isOpenUiFileName(name) && !isBareOpenUiFileName(name)) {
       return undefined;
     }
+    if (tryParseOpenUiFileContent(content)) return undefined;
+    if (isOpenUiDigestContractFailure(content)) {
+      return dict('PC.Components.FileTreeView.openUiDigestInvalid');
+    }
+    if (isBareOpenUiFileName(name)) {
+      return dict('PC.Components.FileTreeView.openUiWrongExtension');
+    }
+    return dict('PC.Components.FileTreeView.openUiContractInvalid');
   }, [selectedFileNode?.name, selectedFileNode?.content]);
 
   /**
@@ -1965,44 +1987,89 @@ export function useFileTreePreviewView(
       selectedFileNode?.name || selectedFileId?.split('/')?.pop() || '';
 
     /**
-     * `.openui.json` 与 html / md 共用 viewFileType：
-     * - preview（默认）：加载固化 Runtime 外壳渲染 UI
-     * - code：落入下方 CodeViewer，展示 JSON 源码
+     * OpenUI 预览：
+     * - 契约后缀 `*.openui.json`：preview 走 Runtime；内容非法时给出 digest/契约提示
+     * - 误用裸 `.openui`：内容合法则嗅探渲染，否则提示应使用 `*.openui.json`
      */
-    if (isOpenUiFileName(selectedFileName) && viewFileType === 'preview') {
-      const conversationId = staticFileBasePath?.match(
-        /\/api\/computer\/static\/(\d+)/,
-      )?.[1];
-      return (
-        <OpenUiRuntimeFrame
-          artifact={openUiInlineArtifact}
-          artifactUrl={
-            openUiInlineArtifact ? undefined : fileProxyUrl || undefined
-          }
-          expectedArtifactId={
-            openUiInlineArtifact?.artifactId ||
-            getOpenUiArtifactIdFromFileName(selectedFileName)
-          }
-          expectedDigest={openUiInlineArtifact?.document.digest}
-          conversationId={conversationId}
-          variant="full"
-        />
-      );
+    const isCanonicalOpenUi = isOpenUiFileName(selectedFileName);
+    const isBareOpenUi = isBareOpenUiFileName(selectedFileName);
+    if ((isCanonicalOpenUi || isBareOpenUi) && viewFileType === 'preview') {
+      if (openUiContractErrorDescription && !openUiInlineArtifact) {
+        return (
+          <AppDevEmptyState
+            type="error"
+            title={dict('PC.Components.FileTreeView.cannotPreviewType')}
+            showButtons={false}
+            description={openUiContractErrorDescription}
+          />
+        );
+      }
+
+      // 裸 .openui 且无法解析：上面已返回；无内容时也提示正确扩展名
+      if (isBareOpenUi && !openUiInlineArtifact && !fileProxyUrl) {
+        return (
+          <AppDevEmptyState
+            type="error"
+            title={dict('PC.Components.FileTreeView.cannotPreviewType')}
+            showButtons={false}
+            description={dict(
+              'PC.Components.FileTreeView.openUiWrongExtension',
+            )}
+          />
+        );
+      }
+
+      if (isCanonicalOpenUi || openUiInlineArtifact) {
+        const conversationId = staticFileBasePath?.match(
+          /\/api\/computer\/static\/(\d+)/,
+        )?.[1];
+        return (
+          <OpenUiRuntimeFrame
+            artifact={openUiInlineArtifact}
+            artifactUrl={
+              openUiInlineArtifact ? undefined : fileProxyUrl || undefined
+            }
+            expectedArtifactId={
+              openUiInlineArtifact?.artifactId ||
+              getOpenUiArtifactIdFromFileName(selectedFileName)
+            }
+            expectedDigest={openUiInlineArtifact?.document.digest}
+            conversationId={conversationId}
+            variant="full"
+          />
+        );
+      }
     }
 
     if (!isPreviewableFile(selectedFileName, true)) {
       const fileExtension = selectedFileId?.split('.')?.pop() || selectedFileId;
-      return (
-        <AppDevEmptyState
-          type="error"
-          title={dict('PC.Components.FileTreeView.cannotPreviewType')}
-          showButtons={false}
-          description={dict(
-            'PC.Components.FileTreeView.unsupportedFormat',
-            fileExtension,
-          )}
-        />
-      );
+      // 代码视图下允许查看裸 .openui 文本；预览模式才提示正确扩展名
+      if (isBareOpenUiFileName(selectedFileName) && viewFileType === 'code') {
+        // 落入下方 CodeViewer
+      } else if (isBareOpenUiFileName(selectedFileName)) {
+        return (
+          <AppDevEmptyState
+            type="error"
+            title={dict('PC.Components.FileTreeView.cannotPreviewType')}
+            showButtons={false}
+            description={dict(
+              'PC.Components.FileTreeView.openUiWrongExtension',
+            )}
+          />
+        );
+      } else {
+        return (
+          <AppDevEmptyState
+            type="error"
+            title={dict('PC.Components.FileTreeView.cannotPreviewType')}
+            showButtons={false}
+            description={dict(
+              'PC.Components.FileTreeView.unsupportedFormat',
+              fileExtension,
+            )}
+          />
+        );
+      }
     }
 
     const fileName = selectedFileId?.split('/')?.pop() || '';

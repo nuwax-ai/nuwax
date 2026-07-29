@@ -293,6 +293,60 @@ export function isOpenUiFileName(name: string): boolean {
   return /^.+\.openui\.json$/i.test(fileName);
 }
 
+/**
+ * 是否为误用的裸 `.openui` 扩展名（非契约数据源 `*.openui.json`）。
+ *
+ * @param name 文件路径或文件名
+ * @returns 以 `.openui` 结尾且不是 `.openui.json` 时为 true
+ */
+export function isBareOpenUiFileName(name: string): boolean {
+  const fileName = name.split(/[\\\\/]/).pop() || '';
+  return /^.+\.openui$/i.test(fileName) && !/\.openui\.json$/i.test(fileName);
+}
+
+/**
+ * 尝试将文件内容解析为合法的 `nuwax.openui-file/v1` Artifact。
+ * 用于文件树预览：对 `*.openui.json` 与误用的裸 `.openui` 做内容嗅探。
+ *
+ * @param content 文件文本或已解析对象
+ * @returns 合法 OpenUiFile；解析失败返回 null
+ */
+export function tryParseOpenUiFileContent(content: unknown): OpenUiFile | null {
+  if (content === undefined || content === null || content === '') {
+    return null;
+  }
+  try {
+    const raw = typeof content === 'string' ? JSON.parse(content) : content;
+    const parsed = openUiFileSchema.safeParse(raw);
+    return parsed.success ? parsed.data : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * 判断 OpenUI 文件内容契约失败是否像 digest 问题（便于给出定向修复提示）。
+ *
+ * @param content 文件文本或已解析对象
+ * @returns 若 JSON 可解析且 digest 字段不符合 sha256 正则则为 true
+ */
+export function isOpenUiDigestContractFailure(content: unknown): boolean {
+  if (content === undefined || content === null || content === '') {
+    return false;
+  }
+  try {
+    const raw =
+      typeof content === 'string' ? JSON.parse(String(content)) : content;
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return false;
+    const digest = (raw as { document?: { digest?: unknown } }).document
+      ?.digest;
+    if (typeof digest !== 'string') return true;
+    return !DIGEST_PATTERN.test(digest);
+  } catch {
+    return false;
+  }
+}
+
 export function getOpenUiArtifactIdFromFileName(
   name: string,
 ): string | undefined {

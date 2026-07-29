@@ -6,12 +6,15 @@ import {
   extractOpenUiArtifactId,
   extractOpenUiRenderInput,
   getOpenUiArtifactIdFromFileName,
+  isBareOpenUiFileName,
+  isOpenUiDigestContractFailure,
   isOpenUiFileName,
   isOpenUiRenderToolName,
   openUiFileSchema,
   renderInputToOpenUiFile,
   resolveOpenUiDisplayState,
   resolveOpenUiRenderState,
+  tryParseOpenUiFileContent,
 } from './openUiArtifact';
 
 const artifactId = '550e8400-e29b-41d4-a716-446655440000';
@@ -132,6 +135,56 @@ describe('OpenUI file artifact references', () => {
     expect(isOpenUiFileName('data/dashboard.openui.json')).toBe(true);
     expect(isOpenUiFileName('openui.json')).toBe(false);
     expect(isOpenUiFileName('dashboard.openui.json.bak')).toBe(false);
+    expect(isOpenUiFileName('employee_data.openui')).toBe(false);
+  });
+
+  it('detects bare .openui extension used as a mistaken data source name', () => {
+    expect(isBareOpenUiFileName('employee_data.openui')).toBe(true);
+    expect(isBareOpenUiFileName('data/employee_data.openui')).toBe(true);
+    expect(isBareOpenUiFileName(`${artifactId}.openui.json`)).toBe(false);
+    expect(isBareOpenUiFileName('dashboard.json')).toBe(false);
+  });
+
+  it('parses valid openui-file content and detects digest contract failures', () => {
+    const validFile = {
+      type: 'nuwax.openui-file',
+      schemaVersion: 'nuwax.openui-file/v1',
+      artifactId,
+      title: 'Demo',
+      presentation: { mode: 'inline' as const, autoOpen: false },
+      document: {
+        language: 'openui-lang' as const,
+        specVersion: '0.5' as const,
+        source: 'root = Stack([])',
+        digest: reference.digest,
+      },
+      bindings: { tools: [] },
+      fallback: { markdown: '' },
+      createdAt: '2026-07-22T00:00:00.000Z',
+      updatedAt: '2026-07-22T00:00:00.000Z',
+    };
+    expect(tryParseOpenUiFileContent(JSON.stringify(validFile))).toEqual(
+      validFile,
+    );
+    expect(
+      tryParseOpenUiFileContent(
+        JSON.stringify({
+          ...validFile,
+          document: { ...validFile.document, digest: 'not-a-digest' },
+        }),
+      ),
+    ).toBeNull();
+    expect(
+      isOpenUiDigestContractFailure(
+        JSON.stringify({
+          ...validFile,
+          document: { ...validFile.document, digest: 'broken' },
+        }),
+      ),
+    ).toBe(true);
+    expect(isOpenUiDigestContractFailure(JSON.stringify(validFile))).toBe(
+      false,
+    );
   });
 
   it('derives an artifact ID only from UUID-based file names', () => {
