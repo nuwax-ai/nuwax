@@ -72,6 +72,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
   isVariablesFilled,
   isVariablesDisabled,
   clearLoading = false,
+  showClearIcon = true,
   isSelectionLocked = false,
   hasUserSentMessage = false,
   readonly,
@@ -453,6 +454,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
           }
           visible={scrollBtnVisible && isHoveringChat}
           clearLoading={clearLoading}
+          showClearIcon={showClearIcon}
           manualComponents={manualComponents}
           selectedComponentList={selectedComponentList}
           onSelectComponent={onSelectComponent}
