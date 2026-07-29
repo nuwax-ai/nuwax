@@ -110,6 +110,26 @@ const Login: React.FC = () => {
     useModel('tenantConfigInfo');
   const { loadMenus } = useModel('menuModel');
 
+  const redirectAfterCaptchaCallback = (
+    responseRedirectUrl?: string | null,
+  ) => {
+    const redirect = decodeURIComponent(searchParams.get('redirect') || '');
+
+    // 必须在验证码回调返回给 SDK 后再卸载登录页，避免 SDK 的成功收尾访问
+    // 已移除的验证码弹窗节点。setTimeout 会在当前 Promise 回调链结束后执行。
+    window.setTimeout(() => {
+      if (isWeakNumber(redirect)) {
+        history.go(Number(redirect));
+      } else if (responseRedirectUrl?.includes('://')) {
+        window.location.href = responseRedirectUrl;
+      } else if (redirect) {
+        history.replace(redirect);
+      } else {
+        history.replace('/');
+      }
+    }, 0);
+  };
+
   const { runWithPromise: runPasswordLogin, loading } = useRequestPromiseBridge(
     apiLogin,
     {
@@ -129,16 +149,7 @@ const Login: React.FC = () => {
         }
         await loadMenus(true);
         await initI18n(true);
-        const redirect = decodeURIComponent(searchParams.get('redirect') || '');
-        if (isWeakNumber(redirect)) {
-          history.go(Number(redirect));
-        } else if (responseRedirectUrl && responseRedirectUrl.includes('://')) {
-          window.location.href = responseRedirectUrl;
-        } else if (redirect) {
-          history.replace(redirect);
-        } else {
-          history.replace('/');
-        }
+        redirectAfterCaptchaCallback(responseRedirectUrl);
       },
       onError: (error: any) => {
         console.error('[Login] Request Error:', error);
