@@ -104,6 +104,19 @@ describe('groupMarkdownProcesses', () => {
       '<markdown-custom-process executeId="e2" name="b" type="Action"></markdown-custom-process>';
     const result = groupMarkdownProcesses(`${t1}\n${t2}`);
     expect(result).toContain('markdown-custom-process-group');
+    expect(result).toContain('autoCollapse="false"');
+  });
+
+  it('工具调用组后开始输出正文时标记为自动收起', () => {
+    const t1 =
+      '<markdown-custom-process executeId="e1" name="a" type="ToolCall"></markdown-custom-process>';
+    const t2 =
+      '<markdown-custom-process executeId="e2" name="b" type="ToolCall"></markdown-custom-process>';
+    const result = groupMarkdownProcesses(`${t1}\n${t2}\n执行完成后的正文`);
+
+    expect(result).toContain(
+      'markdown-custom-process-group autoCollapse="true"',
+    );
   });
 
   it('OpenUI 渲染调用始终单独成块，不进入默认收起的过程分组', () => {

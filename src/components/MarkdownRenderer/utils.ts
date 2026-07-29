@@ -427,11 +427,13 @@ function groupMarkdownProcesses(text: string): string {
   let currentGroup: string[] = [];
   let groupMatch;
 
-  const flushGroup = () => {
+  // 当过程分组后开始输出正文时，说明这一组工具调用已经结束。
+  // 将状态写入标签，使渲染组件可在流式正文到达时平滑自动收起分组。
+  const flushGroup = (shouldAutoCollapse = false) => {
     if (currentGroup.length > 0) {
       if (currentGroup.length >= 2) {
         // 合并为组标签，增加换行确保不影响后续 markdown 解析，外层嵌套标准块级 div 以防解析为行内 p
-        result += `\n\n<div><markdown-custom-process-group>\n${currentGroup.join(
+        result += `\n\n<div><markdown-custom-process-group autoCollapse="${shouldAutoCollapse}">\n${currentGroup.join(
           '\n',
         )}\n</markdown-custom-process-group></div>\n\n`;
       } else {
@@ -524,7 +526,7 @@ function groupMarkdownProcesses(text: string): string {
     // 处理匹配项之前的文本
     const textBefore = dedupedText.slice(lastIndex, groupMatch.index);
     if (textBefore.trim() !== '') {
-      flushGroup();
+      flushGroup(true);
       result += textBefore;
     }
 
@@ -538,8 +540,11 @@ function groupMarkdownProcesses(text: string): string {
     lastIndex = blockRegex.lastIndex;
   }
 
-  flushGroup();
-  result += dedupedText.slice(lastIndex);
+  // 最后一组工具调用后直接输出正文时，不会再进入下一次循环；
+  // 这里需要检查尾部文本，确保这种最常见的流式完成场景也能触发自动收起。
+  const trailingText = dedupedText.slice(lastIndex);
+  flushGroup(trailingText.trim() !== '');
+  result += trailingText;
 
   return result;
 }
