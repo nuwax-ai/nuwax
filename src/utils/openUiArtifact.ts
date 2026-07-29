@@ -325,10 +325,37 @@ export function tryParseOpenUiFileContent(content: unknown): OpenUiFile | null {
 }
 
 /**
+ * 判断内容是否像 OpenUI Artifact 外壳（避免把任意 JSON 误判为 digest 问题）。
+ *
+ * @param raw 已解析的 JSON 对象
+ * @returns 是否接近 nuwax.openui-file 结构
+ */
+function looksLikeOpenUiFileShell(raw: object): boolean {
+  const record = raw as {
+    type?: unknown;
+    schemaVersion?: unknown;
+    document?: { source?: unknown; digest?: unknown };
+  };
+  if (record.type === 'nuwax.openui-file') return true;
+  if (
+    typeof record.schemaVersion === 'string' &&
+    record.schemaVersion.startsWith('nuwax.openui-file')
+  ) {
+    return true;
+  }
+  return (
+    !!record.document &&
+    typeof record.document === 'object' &&
+    typeof record.document.source === 'string'
+  );
+}
+
+/**
  * 判断 OpenUI 文件内容契约失败是否像 digest 问题（便于给出定向修复提示）。
+ * 仅在内容已像 openui-file 外壳时才归因 digest，避免普通 JSON 误报。
  *
  * @param content 文件文本或已解析对象
- * @returns 若 JSON 可解析且 digest 字段不符合 sha256 正则则为 true
+ * @returns 若接近 openui-file 且 digest 不符合 sha256 正则则为 true
  */
 export function isOpenUiDigestContractFailure(content: unknown): boolean {
   if (content === undefined || content === null || content === '') {
@@ -338,6 +365,7 @@ export function isOpenUiDigestContractFailure(content: unknown): boolean {
     const raw =
       typeof content === 'string' ? JSON.parse(String(content)) : content;
     if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return false;
+    if (!looksLikeOpenUiFileShell(raw)) return false;
     const digest = (raw as { document?: { digest?: unknown } }).document
       ?.digest;
     if (typeof digest !== 'string') return true;

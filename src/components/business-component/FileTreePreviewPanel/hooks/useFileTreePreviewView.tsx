@@ -1988,13 +1988,20 @@ export function useFileTreePreviewView(
 
     /**
      * OpenUI 预览：
-     * - 契约后缀 `*.openui.json`：preview 走 Runtime；内容非法时给出 digest/契约提示
-     * - 误用裸 `.openui`：内容合法则嗅探渲染，否则提示应使用 `*.openui.json`
+     * - 契约后缀 `*.openui.json`：preview 走 Runtime；内容非法且无法 URL 回退时给出 digest/契约提示
+     * - 误用裸 `.openui`：内容合法则嗅探渲染；仅有 fileProxyUrl 时也尝试 Runtime 拉取
      */
     const isCanonicalOpenUi = isOpenUiFileName(selectedFileName);
     const isBareOpenUi = isBareOpenUiFileName(selectedFileName);
     if ((isCanonicalOpenUi || isBareOpenUi) && viewFileType === 'preview') {
-      if (openUiContractErrorDescription && !openUiInlineArtifact) {
+      const canTryRuntime = Boolean(openUiInlineArtifact || fileProxyUrl);
+
+      // 内存契约失败且没有 URL 可回退时，展示定向错误（避免挡住磁盘正确文件的 URL 拉取）
+      if (
+        !canTryRuntime &&
+        openUiContractErrorDescription &&
+        !openUiInlineArtifact
+      ) {
         return (
           <AppDevEmptyState
             type="error"
@@ -2005,40 +2012,39 @@ export function useFileTreePreviewView(
         );
       }
 
-      // 裸 .openui 且无法解析：上面已返回；无内容时也提示正确扩展名
-      if (isBareOpenUi && !openUiInlineArtifact && !fileProxyUrl) {
+      if (!canTryRuntime) {
         return (
           <AppDevEmptyState
             type="error"
             title={dict('PC.Components.FileTreeView.cannotPreviewType')}
             showButtons={false}
             description={dict(
-              'PC.Components.FileTreeView.openUiWrongExtension',
+              isBareOpenUi
+                ? 'PC.Components.FileTreeView.openUiWrongExtension'
+                : 'PC.Components.FileTreeView.openUiContractInvalid',
             )}
           />
         );
       }
 
-      if (isCanonicalOpenUi || openUiInlineArtifact) {
-        const conversationId = staticFileBasePath?.match(
-          /\/api\/computer\/static\/(\d+)/,
-        )?.[1];
-        return (
-          <OpenUiRuntimeFrame
-            artifact={openUiInlineArtifact}
-            artifactUrl={
-              openUiInlineArtifact ? undefined : fileProxyUrl || undefined
-            }
-            expectedArtifactId={
-              openUiInlineArtifact?.artifactId ||
-              getOpenUiArtifactIdFromFileName(selectedFileName)
-            }
-            expectedDigest={openUiInlineArtifact?.document.digest}
-            conversationId={conversationId}
-            variant="full"
-          />
-        );
-      }
+      const conversationId = staticFileBasePath?.match(
+        /\/api\/computer\/static\/(\d+)/,
+      )?.[1];
+      return (
+        <OpenUiRuntimeFrame
+          artifact={openUiInlineArtifact}
+          artifactUrl={
+            openUiInlineArtifact ? undefined : fileProxyUrl || undefined
+          }
+          expectedArtifactId={
+            openUiInlineArtifact?.artifactId ||
+            getOpenUiArtifactIdFromFileName(selectedFileName)
+          }
+          expectedDigest={openUiInlineArtifact?.document.digest}
+          conversationId={conversationId}
+          variant="full"
+        />
+      );
     }
 
     if (!isPreviewableFile(selectedFileName, true)) {

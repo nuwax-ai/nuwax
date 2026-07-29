@@ -185,6 +185,15 @@ describe('OpenUI file artifact references', () => {
     expect(isOpenUiDigestContractFailure(JSON.stringify(validFile))).toBe(
       false,
     );
+    // 普通 JSON / 非 openui 外壳不应误报为 digest 问题
+    expect(isOpenUiDigestContractFailure(JSON.stringify({ foo: 1 }))).toBe(
+      false,
+    );
+    expect(
+      isOpenUiDigestContractFailure(
+        JSON.stringify({ document: { digest: 'broken' } }),
+      ),
+    ).toBe(false);
   });
 
   it('derives an artifact ID only from UUID-based file names', () => {
