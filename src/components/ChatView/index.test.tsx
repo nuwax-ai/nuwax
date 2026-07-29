@@ -193,6 +193,69 @@ describe('ChatView', () => {
     );
   });
 
+  it('流式输出包含多轮思考时可在正在思考与已思考之间重复切换', () => {
+    const { rerender } = render(
+      <ChatView
+        roleInfo={roleInfo}
+        messageInfo={createMessage({
+          think: '第一轮思考',
+          status: MessageStatusEnum.Incomplete,
+          thinkingFinished: false,
+        })}
+      />,
+    );
+
+    expect(screen.getByTestId('markdown-renderer')).toHaveAttribute(
+      'data-thinking-finished',
+      'false',
+    );
+
+    rerender(
+      <ChatView
+        roleInfo={roleInfo}
+        messageInfo={createMessage({
+          think: '第一轮思考',
+          status: MessageStatusEnum.Incomplete,
+          thinkingFinished: true,
+        })}
+      />,
+    );
+    expect(screen.getByTestId('markdown-renderer')).toHaveAttribute(
+      'data-thinking-finished',
+      'true',
+    );
+
+    rerender(
+      <ChatView
+        roleInfo={roleInfo}
+        messageInfo={createMessage({
+          think: '第一轮思考\n第二轮思考',
+          status: MessageStatusEnum.Incomplete,
+          thinkingFinished: false,
+        })}
+      />,
+    );
+    expect(screen.getByTestId('markdown-renderer')).toHaveAttribute(
+      'data-thinking-finished',
+      'false',
+    );
+
+    rerender(
+      <ChatView
+        roleInfo={roleInfo}
+        messageInfo={createMessage({
+          think: '第一轮思考\n第二轮思考',
+          status: MessageStatusEnum.Incomplete,
+          thinkingFinished: true,
+        })}
+      />,
+    );
+    expect(screen.getByTestId('markdown-renderer')).toHaveAttribute(
+      'data-thinking-finished',
+      'true',
+    );
+  });
+
   it('助手消息完成后展示底部操作区', () => {
     render(
       <ChatView
