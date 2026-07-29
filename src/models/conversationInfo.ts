@@ -927,13 +927,17 @@ export default () => {
           for (let i = copyList.length - 1; i >= 0; i--) {
             const currentMessage = copyList[i];
 
-            // 1. 仅对列表的最后一条真正的消息，如果处于加载态则强置为 Stopped
-            if (
-              i === copyList.length - 1 &&
-              (currentMessage.status === MessageStatusEnum.Loading ||
-                currentMessage.status === MessageStatusEnum.Incomplete)
-            ) {
-              currentMessage.status = MessageStatusEnum.Stopped;
+            // 1. 结束最后一条消息的思考态；加载中的消息同时强置为 Stopped
+            if (i === copyList.length - 1) {
+              // 主动停止的是整个任务；即使正文分片已把消息标记为 Complete，
+              // 当前思考阶段也必须立即结束。
+              currentMessage.thinkingFinished = true;
+              if (
+                currentMessage.status === MessageStatusEnum.Loading ||
+                currentMessage.status === MessageStatusEnum.Incomplete
+              ) {
+                currentMessage.status = MessageStatusEnum.Stopped;
+              }
             }
 
             // 2. 遍历所有消息 of processingList，强置其中残余的 EXECUTING 状态为 FAILED
@@ -1162,6 +1166,8 @@ export default () => {
           newMessage = {
             ...currentMessage,
             think: `${currentMessage.think}${text}`,
+            // 每一轮 THINK 都独立更新状态：新分片会将上一轮的“已思考”
+            // 重新切回“正在思考”，本轮 finished=true 后再显示“已思考”。
             thinkingFinished: finished === true,
             status: MessageStatusEnum.Incomplete,
           };
@@ -1433,13 +1439,16 @@ export default () => {
             for (let i = copyList.length - 1; i >= 0; i--) {
               const currentMessage = copyList[i];
 
-              // 1. 仅对列表的最后一条真正的消息，如果处于加载态则强置为 Stopped
-              if (
-                i === copyList.length - 1 &&
-                (currentMessage.status === MessageStatusEnum.Loading ||
-                  currentMessage.status === MessageStatusEnum.Incomplete)
-              ) {
-                currentMessage.status = MessageStatusEnum.Stopped;
+              // 1. 结束最后一条消息的思考态；加载中的消息同时强置为 Stopped
+              if (i === copyList.length - 1) {
+                // 流已关闭，不允许遗留“正在思考”状态。
+                currentMessage.thinkingFinished = true;
+                if (
+                  currentMessage.status === MessageStatusEnum.Loading ||
+                  currentMessage.status === MessageStatusEnum.Incomplete
+                ) {
+                  currentMessage.status = MessageStatusEnum.Stopped;
+                }
               }
 
               // 2. 遍历所有消息 of processingList，强置其中残余的 EXECUTING 状态为 FAILED
