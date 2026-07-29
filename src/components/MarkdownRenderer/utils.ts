@@ -522,12 +522,19 @@ function groupMarkdownProcesses(text: string): string {
     // OpenUI 是对话中的正式交互内容，不是可折叠的执行日志。
     // 识别原始 name，避免属性归一化后 name 被 URL 编码而漏判。
     const isOpenUi = /name=\\?["'][^"']*nuwax_render_openui/i.test(tagMatch);
+    // Event 只用于传递内部状态，渲染层本来也不会展示；不能让它参与工具调用分组计数。
+    const isEvent = /type=\\?["']Event\\?["']/i.test(tagMatch);
 
     // 处理匹配项之前的文本
     const textBefore = dedupedText.slice(lastIndex, groupMatch.index);
     if (textBefore.trim() !== '') {
       flushGroup(true);
       result += textBefore;
+    }
+
+    if (isEvent) {
+      lastIndex = blockRegex.lastIndex;
+      continue;
     }
 
     if (isPlan || isOpenUi) {
