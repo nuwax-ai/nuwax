@@ -104,6 +104,35 @@ describe('groupMarkdownProcesses', () => {
       '<markdown-custom-process executeId="e2" name="b" type="Action"></markdown-custom-process>';
     const result = groupMarkdownProcesses(`${t1}\n${t2}`);
     expect(result).toContain('markdown-custom-process-group');
+    expect(result).toContain('autoCollapse="false"');
+  });
+
+  it('工具调用组后开始输出正文时标记为自动收起', () => {
+    const t1 =
+      '<markdown-custom-process executeId="e1" name="a" type="ToolCall"></markdown-custom-process>';
+    const t2 =
+      '<markdown-custom-process executeId="e2" name="b" type="ToolCall"></markdown-custom-process>';
+    const result = groupMarkdownProcesses(`${t1}\n${t2}\n执行完成后的正文`);
+
+    expect(result).toContain(
+      'markdown-custom-process-group autoCollapse="true"',
+    );
+  });
+
+  it('忽略 Event，避免单条工具调用被错误包装为分组', () => {
+    const toolExecuting =
+      '<markdown-custom-process executeId="tool-1" name="new_page" type="ToolCall" status="EXECUTING"></markdown-custom-process>';
+    const event =
+      '<markdown-custom-process executeId="event-1" name="打开桌面" type="Event" status="FINISHED"></markdown-custom-process>';
+    const toolFinished =
+      '<markdown-custom-process executeId="tool-1" name="new_page" type="ToolCall" status="FINISHED"></markdown-custom-process>';
+    const result = groupMarkdownProcesses(
+      `${toolExecuting}\n${event}\n${toolFinished}`,
+    );
+
+    expect(result).not.toContain('markdown-custom-process-group');
+    expect(result).not.toContain('event-1');
+    expect(result).toContain('status="FINISHED"');
   });
 
   it('OpenUI 渲染调用始终单独成块，不进入默认收起的过程分组', () => {

@@ -60,9 +60,20 @@ export default (conversationId: string | number = '') => {
           />
         );
       },
-      'markdown-custom-process-group': ({ children }: any) => {
+      'markdown-custom-process-group': ({ children, ...props }: any) => {
+        const properties = props.node?.properties || {};
+        const autoCollapse =
+          props.autocollapse ??
+          props.autoCollapse ??
+          properties.autocollapse ??
+          properties.autoCollapse;
+
         return (
-          <MarkdownCustomProcessGroup>{children}</MarkdownCustomProcessGroup>
+          <MarkdownCustomProcessGroup
+            autoCollapse={String(autoCollapse).toLowerCase() === 'true'}
+          >
+            {children}
+          </MarkdownCustomProcessGroup>
         );
       },
       table: ({ children, node }: any) => {

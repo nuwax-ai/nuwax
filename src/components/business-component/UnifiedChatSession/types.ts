@@ -84,6 +84,8 @@ export interface UnifiedChatSessionProps {
   isVariablesFilled?: boolean;
   isVariablesDisabled?: boolean;
   clearLoading?: boolean;
+  /** 是否展示清空会话/小刷子按钮（默认 true） */
+  showClearIcon?: boolean;
   isSelectionLocked?: boolean;
   hasUserSentMessage?: boolean;
   readonly?: boolean;
