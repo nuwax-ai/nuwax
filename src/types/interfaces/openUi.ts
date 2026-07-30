@@ -1,4 +1,10 @@
 import type { OpenUiArtifact as LegacyOpenUiArtifact } from '@nuwax-ai/openui-mcp/contracts';
+import {
+  OPENUI_FILE_SCHEMA_VERSION,
+  OPENUI_FILE_TYPE,
+  OPENUI_REF_SCHEMA_VERSION,
+  OPENUI_REF_TYPE,
+} from '@nuwax-ai/openui-mcp/contracts';
 
 export interface OpenUiPresentation {
   mode: 'inline' | 'sidecar';
@@ -7,8 +13,8 @@ export interface OpenUiPresentation {
 }
 
 export interface OpenUiFile {
-  type: 'nuwax.openui-file';
-  schemaVersion: 'nuwax.openui-file/v1';
+  type: typeof OPENUI_FILE_TYPE;
+  schemaVersion: typeof OPENUI_FILE_SCHEMA_VERSION;
   artifactId: string;
   title: string;
   presentation: OpenUiPresentation;
@@ -25,8 +31,8 @@ export interface OpenUiFile {
 }
 
 export interface OpenUiArtifactRef {
-  type: 'nuwax.openui-ref';
-  schemaVersion: 'nuwax.openui-ref/v1';
+  type: typeof OPENUI_REF_TYPE;
+  schemaVersion: typeof OPENUI_REF_SCHEMA_VERSION;
   artifactId: string;
   path: string;
   title: string;

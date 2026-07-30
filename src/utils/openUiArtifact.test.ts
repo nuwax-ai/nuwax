@@ -39,9 +39,33 @@ describe('OpenUI file artifact references', () => {
       true,
     );
     expect(isOpenUiRenderToolName('nuwax_render_openui')).toBe(true);
+    // 版本后缀 / Claude mcp__ / 点分隔 / URL 编码展示名
+    expect(
+      isOpenUiRenderToolName('nuwax-openui_nuwax_render_openui_v0_3_6'),
+    ).toBe(true);
+    expect(
+      isOpenUiRenderToolName('mcp__nuwax-openui__nuwax_render_openui_v0_3_6'),
+    ).toBe(true);
+    expect(isOpenUiRenderToolName('mcp.nuwax-openui.nuwax_render_openui')).toBe(
+      true,
+    );
+    expect(
+      isOpenUiRenderToolName(
+        '%E7%BB%88%E7%AB%AF%E6%89%A7%E8%A1%8C%20nuwax_render_openui_v0_3_6',
+      ),
+    ).toBe(true);
     expect(
       isOpenUiRenderToolName('nuwax-openui_nuwax_get_openui_reference'),
     ).toBe(false);
+    expect(
+      isOpenUiRenderToolName('nuwax-openui_nuwax_get_openui_reference_v0_3_6'),
+    ).toBe(false);
+    expect(isOpenUiRenderToolName('nuwax_get_openui_update_guide_v0_3_6')).toBe(
+      false,
+    );
+    expect(isOpenUiRenderToolName('mcp.nuwax-openui.read_mcp_resource')).toBe(
+      false,
+    );
   });
 
   it('finds a valid reference inside MCP wrapper shapes', () => {

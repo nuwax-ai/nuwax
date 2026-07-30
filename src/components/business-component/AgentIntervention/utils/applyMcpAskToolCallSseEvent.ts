@@ -4,6 +4,11 @@ import type {
   ConversationChatResponse,
   MessageInfo,
 } from '@/types/interfaces/conversationInfo';
+import { isOpenUiRenderToolName } from '@/utils/openUiArtifact';
+import {
+  isOpenUiPayloadType,
+  isOpenUiRenderInputSchemaVersion,
+} from '@nuwax-ai/openui-mcp/contracts';
 import { extractMcpAskStructuredInputFromResult } from './extractMcpAskStructuredInput';
 import { createInterventionTriggeredAt } from './interventionTrigger';
 import { parseMcpAskToolInput } from './parseMcpAskToolInput';
@@ -45,6 +50,7 @@ function isOpenUiToolCall(
   rawInput: Record<string, unknown> | undefined,
 ): boolean {
   const names = [
+    eventData.title,
     eventData.name,
     eventData.toolName,
     eventData.tool_name,
@@ -53,20 +59,15 @@ function isOpenUiToolCall(
     result?.tool_name,
     rawInput?.toolName,
   ];
-  if (
-    names.some(
-      (name) =>
-        typeof name === 'string' && name.includes('nuwax_render_openui'),
-    )
-  ) {
+  // 与 Host OpenUI 识别共用同一套跨引擎规则（含 title / 版本后缀 / URL 编码）
+  if (names.some((name) => isOpenUiRenderToolName(name))) {
     return true;
   }
 
+  // OpenUI payload type / render schemaVersion 均由 openui-mcp contracts 统一判断
   return (
-    rawInput?.type === 'nuwax.openui-ref' ||
-    rawInput?.type === 'nuwax.openui-file' ||
-    (typeof rawInput?.schemaVersion === 'string' &&
-      rawInput.schemaVersion.startsWith('nuwax.openui'))
+    isOpenUiPayloadType(rawInput?.type) ||
+    isOpenUiRenderInputSchemaVersion(rawInput?.schemaVersion)
   );
 }
 
