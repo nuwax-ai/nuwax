@@ -303,9 +303,21 @@ const SpaceSection: React.FC = () => {
             publishedItemInfo={item}
             extra={getExtra(dict('PC.Pages.SpaceSquare.agent'), item, type)}
             onToggleCollectSuccess={handleToggleCollectSuccess}
-            onClick={() => handleClick(item.targetId, item.targetType, 'space')}
+            onClick={() =>
+              handleClick(
+                item.targetId,
+                item.targetType,
+                'space',
+                item?.ext?.conversationId,
+              )
+            }
             onStartUse={() =>
-              handleClick(item.targetId, item.targetType, 'space')
+              handleClick(
+                item.targetId,
+                item.targetType,
+                'space',
+                item?.ext?.conversationId,
+              )
             }
           />
         );
