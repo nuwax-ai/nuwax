@@ -17,7 +17,7 @@ if ! OPENUI_RUNTIME_DIR="$(${NODE_BINARY:-node} --input-type=module -e '
 fi
 
 SOURCE_DIR="$OPENUI_RUNTIME_DIR/dist"
-for file in runtime.js runtime.css; do
+for file in runtime.js runtime.css uni-webview.js; do
   if [[ ! -f "$SOURCE_DIR/$file" ]]; then
     echo "Missing $SOURCE_DIR/$file. Reinstall @nuwax-ai/openui-runtime." >&2
     exit 1
@@ -34,6 +34,7 @@ PACKAGE_VERSION="$(${NODE_BINARY:-node} --input-type=module -e '
 mkdir -p "$TARGET_DIR"
 cp "$SOURCE_DIR/runtime.js" "$TARGET_DIR/runtime.js"
 cp "$SOURCE_DIR/runtime.css" "$TARGET_DIR/runtime.css"
+cp "$SOURCE_DIR/uni-webview.js" "$TARGET_DIR/uni-webview.js"
 
 # file-path-bootstrap.js 由 nuwax 自维（不在 openui-runtime dist 内），同步时不得覆盖。
 if [[ ! -f "$TARGET_DIR/file-path-bootstrap.js" ]]; then
@@ -58,6 +59,14 @@ cat > "$TARGET_DIR/index.html" <<'HTML_EOF'
     <div id="root"></div>
     <!-- file_path 自主拉取（nuwax 自维）；须在 runtime.js 之前加载 -->
     <script src="./file-path-bootstrap.js?v=__OPENUI_VERSION__"></script>
+    <!-- 仅在 uni-app / App webview 加载 uni webview JSSDK：runtime 经 window.uni.postMessage
+         把 OPENUI_RESIZE 等桥接到 App <web-view> @message；PC web 不需要、不加载（避免 JSSDK
+         把 payload 包进 WEB_INVOKE_APPSERVICE 破坏 Host 直收 OPENUI_*）。 -->
+    <script>
+      if (window.__dcloud_weex_postMessage || window.__dcloud_weex_ || window.plus || /uni-app|Html5Plus|nuwax|nuwa/i.test(navigator.userAgent)) {
+        document.write('<script src="./uni-webview.js?v=__OPENUI_VERSION__"><\/script>');
+      }
+    </script>
     <script type="module" src="./runtime.js?v=__OPENUI_VERSION__"></script>
   </body>
 </html>

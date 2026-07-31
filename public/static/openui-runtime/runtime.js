@@ -101713,7 +101713,10 @@ function lYe({
 }
 const Rae = "nuwax.openui-runtime/v1";
 function ry(e) {
-  window.parent.postMessage({ protocolVersion: Rae, ...e }, "*");
+  const t = { protocolVersion: Rae, ...e };
+  window.parent.postMessage(t, "*");
+  const n = window.uni;
+  n?.postMessage && n.postMessage({ data: [t] });
 }
 function cYe() {
   const e = new URLSearchParams(window.location.search).get("nonce") ?? "", [t, n] = b.useState(null), [r, o] = b.useState(null), [a, i] = b.useState(null), [s, l] = b.useState("light"), [c, d] = b.useState("desktop"), f = b.useRef({}), h = b.useMemo(() => sYe(eYe), []), g = b.useRef(null);
