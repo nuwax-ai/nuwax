@@ -14,11 +14,16 @@ import {
 } from '@/utils/openUiArtifact';
 import { compactOpenUiTheme } from '@nuwax-ai/openui-mcp/compact-theme';
 import type { RenderOpenUiInput } from '@nuwax-ai/openui-mcp/contracts';
+import {
+  createMobileAwareLibrary,
+  MobileLayoutProvider,
+} from '@nuwax-ai/openui-mcp/mobile-layout';
 import { Renderer, type ActionEvent } from '@openuidev/react-lang';
 import { ThemeProvider } from '@openuidev/react-ui';
 import { openuiLibrary } from '@openuidev/react-ui/genui-lib';
 import { Alert, Button, Spin } from 'antd';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useModel } from 'umi';
 import { getOpenUiActionSender } from './actionRegistry';
 import styles from './index.less';
 // OpenUI ↔ ds-markdown 样式隔离（层序 + revert + 宿主复位）；须先于 layered CSS
@@ -63,33 +68,27 @@ export const OpenUiRuntimeFrame: React.FC<OpenUiRuntimeFrameProps> = ({
   conversationId,
 }) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const { isMobile } = useModel('layout');
   const sentActionIds = useRef(new Set<string>());
   /**
    * initialArtifact 仅作 OPENUI_FP_ERROR / 无 URL 时的回退内容。
-   * 用 ref 持有最新值，避免 sidecar 多次「打开预览」生成新对象引用时
-   * 把 status 打回 loading（iframe 不重载则 OPENUI_READY 不会再发，最终 60s 超时）。
+   * 用 ref 持有最新值，供 fetch effect 在 identity 变化时取最新，避免闭包读到旧值。
    */
   const initialArtifactRef = useRef(initialArtifact);
   initialArtifactRef.current = initialArtifact;
-  // 无 filePath 时按内容身份稳定化，供 effect / loadKey 依赖（避免纯引用变化触发重置）
+  // 按 artifactId+digest 识别「内容身份」：仅用于判断是否需要更新 artifact，
+  // 不再触发 iframe 重载（切换 artifact 走 OPENUI_LOAD 增量更新，避免每次重载 3.4MB runtime）。
   const inlineArtifactIdentity = initialArtifact
     ? `${initialArtifact.artifactId}:${initialArtifact.document.digest}`
     : '';
   /**
-   * 内容身份变化时同步重置状态（render 阶段），避免文件树切换时
-   * 仍短暂展示上一文件的 failed（如 OpenUI Runtime timed out）造成闪现。
-   * 纯对象引用变化不改 loadKey，与 sidecar 连点防抖兼容。
+   * 重载世代：仅在需要真正重载 iframe 时递增——
+   * 挂载（初值）、手动 retry、失败后切换到新 artifact（自动恢复）。
+   * artifact 内容 / artifactUrl / expectedDigest 变化不再触发重载，只经 OPENUI_LOAD 更新。
    */
-  const [frameKey, setFrameKey] = useState(0);
-  const loadKey = [
-    filePath ?? '',
-    artifactUrl ?? '',
-    inlineArtifactIdentity,
-    expectedArtifactId ?? '',
-    expectedDigest ?? '',
-    String(frameKey),
-  ].join('\0');
-  const [prevLoadKey, setPrevLoadKey] = useState(loadKey);
+  const [reloadTick, setReloadTick] = useState(0);
+  const reloadKey = `${reloadTick}\0${filePath ?? ''}`;
+  const [prevReloadKey, setPrevReloadKey] = useState(reloadKey);
   // file_path 模式下初始为 null，等 iframe inline script relay 回来的 artifact
   const [artifact, setArtifact] = useState<OpenUiFile | null>(
     filePath ? null : initialArtifact ?? null,
@@ -97,29 +96,29 @@ export const OpenUiRuntimeFrame: React.FC<OpenUiRuntimeFrameProps> = ({
   const [status, setStatus] = useState<'loading' | 'ready' | 'failed'>(
     'loading',
   );
+  const statusRef = useRef(status);
+  statusRef.current = status;
   const [error, setError] = useState('');
   const [height, setHeight] = useState(320);
   /**
-   * 加载世代：loadKey 变化时递增。超时回调比对世代号，忽略过期 timer
-   *（连续切换时 status 可能一直为 loading，仅靠 clearTimeout 不够稳妥）。
+   * 加载世代：reloadKey 变化时递增。超时回调比对世代号，忽略过期 timer。
    */
   const loadGenerationRef = useRef(0);
 
-  // 身份或手动 retry（frameKey）变化：在 paint 前清掉旧 failed/ready，防止闪现
-  if (loadKey !== prevLoadKey) {
-    setPrevLoadKey(loadKey);
+  // 真正重载（reloadTick / filePath 变化）：paint 前清掉旧 failed/ready，回到 loading
+  if (reloadKey !== prevReloadKey) {
+    setPrevReloadKey(reloadKey);
     loadGenerationRef.current += 1;
     setStatus('loading');
     setError('');
     setArtifact(filePath ? null : initialArtifact ?? null);
   }
 
-  // 身份变化时换 nonce，强制 iframe 重握手（OPENUI_READY 只在挂载时发一次）
+  // nonce 随重载世代稳定（不随 artifact 内容变化）——避免每次切换都重载 runtime
   const nonce = useMemo(
     () => crypto.randomUUID(),
-    // inlineArtifactIdentity：文件树切换 artifact 时重启握手；同 identity 引用抖动不换 nonce
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- 有意用 identity 而非对象引用
-    [filePath, artifactUrl, expectedDigest, inlineArtifactIdentity, frameKey],
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- 有意只在重载时换 nonce
+    [reloadTick, filePath],
   );
 
   // 校验拉取/relay 到的 artifact：artifactId 与 digest 与期望一致（fetch 与 OPENUI_FP_ARTIFACT 复用）
@@ -140,11 +139,9 @@ export const OpenUiRuntimeFrame: React.FC<OpenUiRuntimeFrameProps> = ({
   );
 
   useEffect(() => {
-    // file_path 模式：初始 artifact 置空，由 iframe 内 inline script 同源拉取并 relay 回来。
-    // 不依赖 initialArtifact 引用：它只作 FP_ERROR 回退，引用变化不应打断握手。
+    // 仅更新 artifact 状态；不回打 loading/error——切换内容走 OPENUI_LOAD 增量更新，不重载 iframe。
+    // 初始 loading 由 useState 初值提供，retry/恢复由 reloadKey 渲染期 reset 提供。
     setArtifact(filePath ? null : initialArtifactRef.current ?? null);
-    setStatus('loading');
-    setError('');
     if (filePath) {
       // 由 iframe 自主拉取（inline script），Host 不主动 fetch
       return;
@@ -178,7 +175,7 @@ export const OpenUiRuntimeFrame: React.FC<OpenUiRuntimeFrameProps> = ({
         }
       });
     return () => controller.abort();
-    // inlineArtifactIdentity：无 filePath 时按 artifactId+digest 变化才重置，忽略纯引用抖动
+    // inlineArtifactIdentity：按 artifactId+digest 变化重新拉取/更新 artifact（仅 setArtifact，不重载 iframe）
     // eslint-disable-next-line react-hooks/exhaustive-deps -- initialArtifact 经 ref + identity 稳定化
   }, [
     filePath,
@@ -186,7 +183,7 @@ export const OpenUiRuntimeFrame: React.FC<OpenUiRuntimeFrameProps> = ({
     expectedArtifactId,
     expectedDigest,
     inlineArtifactIdentity,
-    frameKey,
+    reloadTick,
     validateArtifact,
   ]);
 
@@ -200,17 +197,31 @@ export const OpenUiRuntimeFrame: React.FC<OpenUiRuntimeFrameProps> = ({
         artifact,
         locale: document.documentElement.lang || navigator.language,
         theme: 'light',
-        viewport: window.matchMedia('(max-width: 767px)').matches
-          ? 'mobile'
-          : 'desktop',
+        viewport: isMobile ? 'mobile' : 'desktop',
       },
       '*',
     );
-  }, [artifact, nonce]);
+  }, [artifact, isMobile, nonce]);
 
   useEffect(() => {
     if (status === 'ready' && artifact) sendLoad();
   }, [artifact, sendLoad, status]);
+
+  // 失败后切换到新 artifact：自动触发一次重载恢复，避免停留在旧失败态。
+  // ready 态切换不重载（经 OPENUI_LOAD 增量更新）；loading 态切换由在途 load 兜底。
+  const prevIdentityRef = useRef(inlineArtifactIdentity);
+  useEffect(() => {
+    const prev = prevIdentityRef.current;
+    prevIdentityRef.current = inlineArtifactIdentity;
+    if (
+      prev &&
+      inlineArtifactIdentity &&
+      prev !== inlineArtifactIdentity &&
+      statusRef.current === 'failed'
+    ) {
+      setReloadTick((tick) => tick + 1);
+    }
+  }, [inlineArtifactIdentity]);
 
   useEffect(() => {
     const handleMessage = (message: MessageEvent<Record<string, unknown>>) => {
@@ -328,8 +339,8 @@ export const OpenUiRuntimeFrame: React.FC<OpenUiRuntimeFrameProps> = ({
     // 该信号会延迟到达。这里给一个较宽的安全阈值，避免把“还在加载”误判为失败。
     // 真正的加载/渲染错误由 iframe onError 与 runtime 的 OPENUI_ERROR 兜底。
     //
-    // 依赖 loadKey：连续切换时 status 常保持 loading，若不绑定 loadKey，
-    // 首轮 60s timer 不会重置，会在后续文件上闪现 OpenUI Runtime timed out。
+    // 依赖 reloadKey：仅在真正重载（reloadTick/filePath）后重置 60s timer；
+    // ready 态切换 artifact 不重载、不重排 timer，故不会误判超时。
     const generation = loadGenerationRef.current;
     const timer = window.setTimeout(() => {
       if (generation !== loadGenerationRef.current) return;
@@ -341,7 +352,7 @@ export const OpenUiRuntimeFrame: React.FC<OpenUiRuntimeFrameProps> = ({
       setError('OpenUI Runtime timed out.');
     }, 60_000);
     return () => window.clearTimeout(timer);
-  }, [status, frameKey, loadKey]);
+  }, [status, reloadTick, reloadKey]);
 
   if (status === 'failed') {
     return (
@@ -354,7 +365,7 @@ export const OpenUiRuntimeFrame: React.FC<OpenUiRuntimeFrameProps> = ({
         action={
           <Button
             size="small"
-            onClick={() => setFrameKey((value) => value + 1)}
+            onClick={() => setReloadTick((value) => value + 1)}
           >
             {dict('PC.Components.OpenUi.retry')}
           </Button>
@@ -376,7 +387,7 @@ export const OpenUiRuntimeFrame: React.FC<OpenUiRuntimeFrameProps> = ({
         </div>
       )}
       <iframe
-        key={frameKey}
+        key={reloadTick}
         ref={iframeRef}
         className={styles.inlineFrame}
         src={`${RUNTIME_URL}?nonce=${encodeURIComponent(nonce)}${
@@ -411,6 +422,9 @@ const OpenUiArtifactView: React.FC<OpenUiArtifactViewProps> = ({
   onOpenSidecar,
   conversationId,
 }) => {
+  const { isMobile } = useModel('layout');
+  // 直连 Renderer 路径复用 web runtime 的移动端感知库（Stack/Card mobile 时横排→竖排）。
+  const library = useMemo(() => createMobileAwareLibrary(openuiLibrary), []);
   const autoOpenedArtifactId = useRef<string>();
   const formStateRef = useRef<Record<string, unknown>>({});
   const pendingActionIdRef = useRef<string>();
@@ -533,23 +547,25 @@ const OpenUiArtifactView: React.FC<OpenUiArtifactViewProps> = ({
         data-openui-theme="light"
       >
         <ThemeProvider mode="light" lightTheme={compactOpenUiTheme}>
-          <Renderer
-            library={openuiLibrary}
-            response={inlineSource}
-            isStreaming={isSubmitting}
-            onStateUpdate={(state) => {
-              formStateRef.current = state;
-            }}
-            onAction={handleInlineAction}
-            onError={(errors) => {
-              if (errors.length > 0) {
-                setRenderError(
-                  errors[0]?.message ||
-                    dict('PC.Components.OpenUi.renderFailed'),
-                );
-              }
-            }}
-          />
+          <MobileLayoutProvider isMobile={isMobile}>
+            <Renderer
+              library={library}
+              response={inlineSource}
+              isStreaming={isSubmitting}
+              onStateUpdate={(state) => {
+                formStateRef.current = state;
+              }}
+              onAction={handleInlineAction}
+              onError={(errors) => {
+                if (errors.length > 0) {
+                  setRenderError(
+                    errors[0]?.message ||
+                      dict('PC.Components.OpenUi.renderFailed'),
+                  );
+                }
+              }}
+            />
+          </MobileLayoutProvider>
         </ThemeProvider>
       </div>
     );

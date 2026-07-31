@@ -2031,8 +2031,9 @@ export function useFileTreePreviewView(
         /\/api\/computer\/static\/(\d+)/,
       )?.[1];
       return (
+        // 不加 key={selectedFileId}：让 openui 文件间复用同一 OpenUiRuntimeFrame 实例，
+        // 切换走 OPENUI_LOAD 增量更新（iframe 只加载一次），避免每文件重载 3.4MB runtime。
         <OpenUiRuntimeFrame
-          key={selectedFileId}
           artifact={openUiInlineArtifact}
           artifactUrl={
             openUiInlineArtifact ? undefined : fileProxyUrl || undefined

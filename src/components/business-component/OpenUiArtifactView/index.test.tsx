@@ -43,6 +43,14 @@ vi.mock('@openuidev/react-ui/genui-lib', () => ({ openuiLibrary: {} }));
 vi.mock('@openuidev/react-ui', () => ({
   ThemeProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
+// OpenUiRuntimeFrame 经 useModel('layout') 取 isMobile、并 import mobile-layout；
+// 后者传递依赖 @umijs/bundler-utils → esbuild，在 vitest 下会崩，须一并 mock。
+vi.mock('umi', () => ({ useModel: () => ({ isMobile: false }) }));
+vi.mock('@nuwax-ai/openui-mcp/mobile-layout', () => ({
+  createMobileAwareLibrary: (library: unknown) => library,
+  MobileLayoutProvider: ({ children }: { children: React.ReactNode }) =>
+    children,
+}));
 vi.mock('./index.less', () => ({
   default: new Proxy({}, { get: (_, key) => String(key) }),
 }));
@@ -343,10 +351,9 @@ describe('OpenUiArtifactView', () => {
     vi.useRealTimers();
   });
 
-  it('resets the timeout clock when switching artifacts while still loading', () => {
-    // 回归：连续切换时 status 一直为 loading，若不绑定 loadKey 重置 timer，
-    // 首轮 60s 会在后续文件上闪现 OpenUI Runtime timed out。
-    vi.useFakeTimers();
+  it('does not reload the iframe when switching artifacts while loading', () => {
+    // 回归：切换 artifact 不再重载 iframe（走 OPENUI_LOAD 增量更新）。
+    // loading 态切换时 iframe 的 nonce/src 应保持不变，避免反复重载 3.4MB runtime。
     const fileA = legacyArtifactToOpenUiFile(baseArtifact);
     const fileB = legacyArtifactToOpenUiFile({
       ...baseArtifact,
@@ -359,7 +366,7 @@ describe('OpenUiArtifactView', () => {
       },
     });
 
-    const { rerender } = render(
+    const { container, rerender } = render(
       <OpenUiRuntimeFrame
         artifact={fileA}
         expectedArtifactId={fileA.artifactId}
@@ -368,10 +375,15 @@ describe('OpenUiArtifactView', () => {
       />,
     );
 
-    // 首轮加载 50s 后切到 B（仍未 READY）
-    act(() => {
-      vi.advanceTimersByTime(50_000);
-    });
+    const frame = container.querySelector('iframe')!;
+    const nonceOf = () =>
+      new URL(frame.getAttribute('src')!, 'http://localhost').searchParams.get(
+        'nonce',
+      );
+    const nonceA = nonceOf();
+    expect(nonceA).toBeTruthy();
+
+    // 切到 B（仍 loading，未派发 OPENUI_READY）——不应重载
     rerender(
       <OpenUiRuntimeFrame
         artifact={fileB}
@@ -380,31 +392,78 @@ describe('OpenUiArtifactView', () => {
         variant="full"
       />,
     );
-    expect(
-      screen.queryByText('OpenUI Runtime timed out.'),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.getByText('PC.Components.OpenUi.loading'),
-    ).toBeInTheDocument();
 
-    // 再过 50s（距首次点击共 100s，但距切换 B 仅 50s）——不应超时
-    act(() => {
-      vi.advanceTimersByTime(50_000);
+    expect(container.querySelector('iframe')).toBe(frame);
+    expect(nonceOf()).toBe(nonceA);
+  });
+
+  it('updates artifact via OPENUI_LOAD without reloading when already ready', () => {
+    // 核心回归：ready 态切换 artifact 时 iframe 不重载，而是经 OPENUI_LOAD 增量更新。
+    const fileA = legacyArtifactToOpenUiFile(baseArtifact);
+    const fileB = legacyArtifactToOpenUiFile({
+      ...baseArtifact,
+      artifactId: '880e8400-e29b-41d4-a716-446655440003',
+      title: 'Board C',
+      document: {
+        ...baseArtifact.document,
+        source: 'root = TextContent("C", "large-heavy")',
+        digest: `sha256:${'d'.repeat(64)}`,
+      },
     });
-    expect(
-      screen.queryByText('OpenUI Runtime timed out.'),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.getByText('PC.Components.OpenUi.loading'),
-    ).toBeInTheDocument();
 
-    // 距切换 B 再满 10s（共 60s）——才应超时
+    const { container, rerender } = render(
+      <OpenUiRuntimeFrame
+        artifact={fileA}
+        expectedArtifactId={fileA.artifactId}
+        expectedDigest={fileA.document.digest}
+        variant="full"
+      />,
+    );
+
+    const frame = container.querySelector('iframe')!;
+    const nonce = new URL(
+      frame.getAttribute('src')!,
+      'http://localhost',
+    ).searchParams.get('nonce');
+
     act(() => {
-      vi.advanceTimersByTime(10_000);
+      window.dispatchEvent(
+        new MessageEvent('message', {
+          source: frame.contentWindow,
+          data: {
+            type: 'OPENUI_READY',
+            protocolVersion: 'nuwax.openui-runtime/v1',
+            nonce,
+          },
+        }),
+      );
     });
-    expect(screen.getByText('OpenUI Runtime timed out.')).toBeInTheDocument();
 
-    vi.useRealTimers();
+    const postMessage = vi.spyOn(frame.contentWindow!, 'postMessage');
+
+    // ready 态切到 B
+    rerender(
+      <OpenUiRuntimeFrame
+        artifact={fileB}
+        expectedArtifactId={fileB.artifactId}
+        expectedDigest={fileB.document.digest}
+        variant="full"
+      />,
+    );
+
+    // 不重载：同一 iframe、nonce 不变
+    expect(container.querySelector('iframe')).toBe(frame);
+    expect(
+      new URL(frame.getAttribute('src')!, 'http://localhost').searchParams.get(
+        'nonce',
+      ),
+    ).toBe(nonce);
+
+    // 且向 runtime 发出带新 artifact 的 OPENUI_LOAD（增量更新）
+    expect(postMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'OPENUI_LOAD', artifact: fileB }),
+      '*',
+    );
   });
 
   it.each(['inline', 'full'] as const)(
