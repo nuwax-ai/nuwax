@@ -551,12 +551,18 @@ export interface AgentConfigInfo {
   allowAtSkill: DefaultSelectedEnum;
   // 允许用户选择个人电脑
   allowPrivateSandbox: DefaultSelectedEnum;
-  // 扩展信息
+  // 扩展信息, 用于存储智能体额外信息, 可以是任何后端返回的额外信息
   extra?: {
     prodProxyMcpId?: number;
     private?: boolean;
     sandboxId?: number;
     devProxyMcpId?: number;
+    deviceId?: string;
+    // 设备类型，例如：DeskBuddy
+    deviceType?: string;
+    // 是否是设备Agent
+    isDeviceAgent?: boolean;
+    [key: string]: any;
   };
   /** 是否有权限使用该智能体 */
   hasPermission?: boolean;
