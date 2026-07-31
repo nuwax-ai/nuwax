@@ -283,10 +283,11 @@ export enum BillPayStatusEnum {
   CLOSED = 'CLOSED',
 }
 
-// 业务类型,可用值:CREDIT_PURCHASE,SUBSCRIPTION
+// 业务类型,可用值:CREDIT_PURCHASE,SUBSCRIPTION,DESK_BUDDY
 export enum BillBizTypeEnum {
   CREDIT_PURCHASE = 'CREDIT_PURCHASE',
   SUBSCRIPTION = 'SUBSCRIPTION',
+  DESK_BUDDY = 'DESK_BUDDY',
 }
 
 // 订单明细
