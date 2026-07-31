@@ -104,8 +104,9 @@ function normalizeUserPerspective(message: string): string {
 }
 
 /**
- * 隐藏仅用于内部幂等识别的 OpenUI actionId。
- * 原始消息仍保留标记，用户气泡和复制内容只展示可读表单答案。
+ * OpenUI actionId 不再拼入用户消息正文（避免泄露到发送给 LLM 的提示词）。
+ * 幂等/关联改由结构化 action 通道 + 客户端 sentActionIds 去重负责。
+ * 本函数仍剥离历史/回显消息里可能残留的标记，作为防御。
  */
 export function stripOpenUiResumeDisplayArtifacts(
   text: string | undefined,
@@ -131,9 +132,5 @@ export function buildOpenUiResumeMessage(
     normalizedAction.values,
     normalizedAction.formName,
   );
-  return [
-    summary,
-    ...fieldLines,
-    `<!--nuwax-openui-action-id:${action.actionId}-->`,
-  ].join('\n');
+  return [summary, ...fieldLines].join('\n');
 }
