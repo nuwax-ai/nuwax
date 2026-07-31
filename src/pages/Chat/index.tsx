@@ -217,6 +217,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     setIsLoadingOtherInterface,
     requiredNameList,
     setConversationInfo,
+    runUpdateTopic,
     variables,
     showType,
     setShowType,
@@ -405,6 +406,36 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       },
     };
   }, [conversationInfo]);
+
+  // =============== 会话 icon 缺失时，补拉会话 icon ===============
+
+  /** 主题已更新但 icon 仍为空时，补拉会话 icon */
+  const conversationIconUpdateRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    conversationIconUpdateRef.current = null;
+  }, [id]);
+
+  useEffect(() => {
+    if (
+      !conversationInfo?.id ||
+      conversationInfo.topicUpdated !== 1 ||
+      conversationInfo.icon !== null ||
+      conversationIconUpdateRef.current === conversationInfo.id
+    ) {
+      return;
+    }
+
+    conversationIconUpdateRef.current = conversationInfo.id;
+    void runUpdateTopic({
+      id: conversationInfo.id,
+      topic: conversationInfo.topic,
+    }).catch(() => {
+      if (conversationIconUpdateRef.current === conversationInfo.id) {
+        conversationIconUpdateRef.current = null;
+      }
+    });
+  }, [conversationInfo, runUpdateTopic]);
 
   // 打开扩展页面
   const handleOpenPreview = (agent: any) => {
