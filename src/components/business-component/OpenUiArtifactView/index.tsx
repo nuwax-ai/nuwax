@@ -1,3 +1,4 @@
+import TaskResultRow from '@/components/MarkdownRenderer/TaskResult/TaskResultRow';
 import { OPENUI_SIDECAR_SANDBOX } from '@/constants/common.constants';
 import { dict } from '@/services/i18nRuntime';
 import type {
@@ -11,7 +12,6 @@ import {
   legacyArtifactToOpenUiFile,
   openUiFileSchema,
 } from '@/utils/openUiArtifact';
-import { ExportOutlined } from '@ant-design/icons';
 import { compactOpenUiTheme } from '@nuwax-ai/openui-mcp/compact-theme';
 import type { RenderOpenUiInput } from '@nuwax-ai/openui-mcp/contracts';
 import { Renderer, type ActionEvent } from '@openuidev/react-lang';
@@ -62,12 +62,34 @@ export const OpenUiRuntimeFrame: React.FC<OpenUiRuntimeFrameProps> = ({
   fallbackMarkdown = '',
   conversationId,
 }) => {
-  const nonce = useMemo(
-    () => crypto.randomUUID(),
-    [filePath, artifactUrl, expectedDigest],
-  );
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const sentActionIds = useRef(new Set<string>());
+  /**
+   * initialArtifact 仅作 OPENUI_FP_ERROR / 无 URL 时的回退内容。
+   * 用 ref 持有最新值，避免 sidecar 多次「打开预览」生成新对象引用时
+   * 把 status 打回 loading（iframe 不重载则 OPENUI_READY 不会再发，最终 60s 超时）。
+   */
+  const initialArtifactRef = useRef(initialArtifact);
+  initialArtifactRef.current = initialArtifact;
+  // 无 filePath 时按内容身份稳定化，供 effect / loadKey 依赖（避免纯引用变化触发重置）
+  const inlineArtifactIdentity = initialArtifact
+    ? `${initialArtifact.artifactId}:${initialArtifact.document.digest}`
+    : '';
+  /**
+   * 内容身份变化时同步重置状态（render 阶段），避免文件树切换时
+   * 仍短暂展示上一文件的 failed（如 OpenUI Runtime timed out）造成闪现。
+   * 纯对象引用变化不改 loadKey，与 sidecar 连点防抖兼容。
+   */
+  const [frameKey, setFrameKey] = useState(0);
+  const loadKey = [
+    filePath ?? '',
+    artifactUrl ?? '',
+    inlineArtifactIdentity,
+    expectedArtifactId ?? '',
+    expectedDigest ?? '',
+    String(frameKey),
+  ].join('\0');
+  const [prevLoadKey, setPrevLoadKey] = useState(loadKey);
   // file_path 模式下初始为 null，等 iframe inline script relay 回来的 artifact
   const [artifact, setArtifact] = useState<OpenUiFile | null>(
     filePath ? null : initialArtifact ?? null,
@@ -77,7 +99,28 @@ export const OpenUiRuntimeFrame: React.FC<OpenUiRuntimeFrameProps> = ({
   );
   const [error, setError] = useState('');
   const [height, setHeight] = useState(320);
-  const [frameKey, setFrameKey] = useState(0);
+  /**
+   * 加载世代：loadKey 变化时递增。超时回调比对世代号，忽略过期 timer
+   *（连续切换时 status 可能一直为 loading，仅靠 clearTimeout 不够稳妥）。
+   */
+  const loadGenerationRef = useRef(0);
+
+  // 身份或手动 retry（frameKey）变化：在 paint 前清掉旧 failed/ready，防止闪现
+  if (loadKey !== prevLoadKey) {
+    setPrevLoadKey(loadKey);
+    loadGenerationRef.current += 1;
+    setStatus('loading');
+    setError('');
+    setArtifact(filePath ? null : initialArtifact ?? null);
+  }
+
+  // 身份变化时换 nonce，强制 iframe 重握手（OPENUI_READY 只在挂载时发一次）
+  const nonce = useMemo(
+    () => crypto.randomUUID(),
+    // inlineArtifactIdentity：文件树切换 artifact 时重启握手；同 identity 引用抖动不换 nonce
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- 有意用 identity 而非对象引用
+    [filePath, artifactUrl, expectedDigest, inlineArtifactIdentity, frameKey],
+  );
 
   // 校验拉取/relay 到的 artifact：artifactId 与 digest 与期望一致（fetch 与 OPENUI_FP_ARTIFACT 复用）
   const validateArtifact = useCallback(
@@ -97,8 +140,9 @@ export const OpenUiRuntimeFrame: React.FC<OpenUiRuntimeFrameProps> = ({
   );
 
   useEffect(() => {
-    // file_path 模式：初始 artifact 置空，由 iframe 内 inline script 同源拉取并 relay 回来
-    setArtifact(filePath ? null : initialArtifact ?? null);
+    // file_path 模式：初始 artifact 置空，由 iframe 内 inline script 同源拉取并 relay 回来。
+    // 不依赖 initialArtifact 引用：它只作 FP_ERROR 回退，引用变化不应打断握手。
+    setArtifact(filePath ? null : initialArtifactRef.current ?? null);
     setStatus('loading');
     setError('');
     if (filePath) {
@@ -106,7 +150,7 @@ export const OpenUiRuntimeFrame: React.FC<OpenUiRuntimeFrameProps> = ({
       return;
     }
     if (!artifactUrl) {
-      if (!initialArtifact) {
+      if (!initialArtifactRef.current) {
         setStatus('failed');
         setError('OpenUI artifact data is unavailable.');
       }
@@ -134,12 +178,14 @@ export const OpenUiRuntimeFrame: React.FC<OpenUiRuntimeFrameProps> = ({
         }
       });
     return () => controller.abort();
+    // inlineArtifactIdentity：无 filePath 时按 artifactId+digest 变化才重置，忽略纯引用抖动
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- initialArtifact 经 ref + identity 稳定化
   }, [
     filePath,
     artifactUrl,
     expectedArtifactId,
     expectedDigest,
-    initialArtifact,
+    inlineArtifactIdentity,
     frameKey,
     validateArtifact,
   ]);
@@ -200,8 +246,9 @@ export const OpenUiRuntimeFrame: React.FC<OpenUiRuntimeFrameProps> = ({
           typeof data.message === 'string'
             ? data.message
             : 'OpenUI file fetch failed.';
-        if (initialArtifact) {
-          setArtifact(initialArtifact);
+        const fallback = initialArtifactRef.current;
+        if (fallback) {
+          setArtifact(fallback);
         } else {
           setStatus('failed');
           setError(msg);
@@ -272,15 +319,7 @@ export const OpenUiRuntimeFrame: React.FC<OpenUiRuntimeFrameProps> = ({
     };
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [
-    artifact,
-    conversationId,
-    nonce,
-    sendLoad,
-    variant,
-    validateArtifact,
-    initialArtifact,
-  ]);
+  }, [artifact, conversationId, nonce, sendLoad, variant, validateArtifact]);
 
   useEffect(() => {
     if (status !== 'loading') return;
@@ -288,7 +327,12 @@ export const OpenUiRuntimeFrame: React.FC<OpenUiRuntimeFrameProps> = ({
     // 当 iframe 被切到后台/被节流、或 3.4MB runtime.js 冷启动解析时，
     // 该信号会延迟到达。这里给一个较宽的安全阈值，避免把“还在加载”误判为失败。
     // 真正的加载/渲染错误由 iframe onError 与 runtime 的 OPENUI_ERROR 兜底。
+    //
+    // 依赖 loadKey：连续切换时 status 常保持 loading，若不绑定 loadKey，
+    // 首轮 60s timer 不会重置，会在后续文件上闪现 OpenUI Runtime timed out。
+    const generation = loadGenerationRef.current;
     const timer = window.setTimeout(() => {
+      if (generation !== loadGenerationRef.current) return;
       // 60s 仍未 ready：统一判失败（retry 可达）。
       // 不在此处回退 inlineFile：timer 触发时 status 必为 'loading'（ready/failed 会重置 timer），
       // 此时即便 setArtifact(inlineFile) 也无法 sendLoad（需 status==='ready'），只会卡住永久 loading，
@@ -297,7 +341,7 @@ export const OpenUiRuntimeFrame: React.FC<OpenUiRuntimeFrameProps> = ({
       setError('OpenUI Runtime timed out.');
     }, 60_000);
     return () => window.clearTimeout(timer);
-  }, [status, frameKey]);
+  }, [status, frameKey, loadKey]);
 
   if (status === 'failed') {
     return (
@@ -455,25 +499,16 @@ const OpenUiArtifactView: React.FC<OpenUiArtifactViewProps> = ({
   }, [artifact, isSidecar, onOpenSidecar]);
 
   if (isSidecar && artifact) {
+    // sidecar 摘要直接复用 TaskResult 的文件摘要行（TaskResultRow），
+    // 点击走 onOpenSidecar（路由到文件树选中 data/{artifactId}.openui.json 预览）。
+    // .task-result 自身只有上下外边距、宽度 100%；sidecar 宿主无内边距会左右贴边，
+    // 故套一层 host 补水平外边距（与 .inlineFrameHost 的水平 inset 一致）。
     return (
-      <div className={styles.sidecarSummary}>
-        <div className={styles.sidecarText}>
-          <div className={styles.sidecarTitle}>{artifact.title}</div>
-          {!isOpenUiArtifactRef(artifact) && artifact.fallback.markdown ? (
-            <div className={styles.sidecarFallback}>
-              {artifact.fallback.markdown}
-            </div>
-          ) : null}
-        </div>
-        <Button
-          type="primary"
-          size="small"
-          icon={<ExportOutlined />}
-          disabled={!onOpenSidecar}
+      <div className={styles.sidecarRowHost}>
+        <TaskResultRow
+          label={artifact.title || dict('PC.Components.OpenUi.openPreview')}
           onClick={() => onOpenSidecar?.(artifact)}
-        >
-          {dict('PC.Components.OpenUi.openPreview')}
-        </Button>
+        />
       </div>
     );
   }

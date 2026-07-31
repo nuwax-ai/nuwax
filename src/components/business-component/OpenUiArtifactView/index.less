@@ -57,34 +57,8 @@
   margin: @marginXs @marginSm @marginSm;
 }
 
-.sidecarSummary {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: @margin;
-  padding: @paddingSm @padding;
-  border-top: 1px solid @colorBorderSecondary;
-  background: @colorBgLayout;
-}
-
-.sidecarText {
-  min-width: 0;
-}
-
-.sidecarTitle {
-  color: @colorText;
-  font-size: @fontSize;
-  font-weight: @fontWeightStrong;
-}
-
-.sidecarFallback {
-  margin-top: @marginXxs;
-  color: @colorTextSecondary;
-  font-size: @fontSizeSm;
-  line-height: @lineHeightSm;
-  white-space: pre-wrap;
-  display: box;
-  overflow: hidden;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
+/* sidecar 宿主无内边距，TaskResultRow 的 .task-result 宽度 100% 会贴边；
+   补水平外边距，与 .inlineFrameHost 的水平 inset 对齐 */
+.sidecarRowHost {
+  margin: 0 @marginSm;
 }

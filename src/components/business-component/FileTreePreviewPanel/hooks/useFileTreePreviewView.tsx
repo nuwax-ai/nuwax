@@ -2032,6 +2032,7 @@ export function useFileTreePreviewView(
       )?.[1];
       return (
         <OpenUiRuntimeFrame
+          key={selectedFileId}
           artifact={openUiInlineArtifact}
           artifactUrl={
             openUiInlineArtifact ? undefined : fileProxyUrl || undefined
