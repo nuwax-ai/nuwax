@@ -21,6 +21,13 @@
     transition: background-color @motionDurationMid @motionEaseInOut;
   }
 
+  // OpenUI inline 渲染：不展示左侧强调边框
+  &.openuiInline {
+    &::before {
+      content: none;
+    }
+  }
+
   &:hover {
     &::before {
       background-color: @colorTextTertiary; // 鼠标移入时高亮左边框
