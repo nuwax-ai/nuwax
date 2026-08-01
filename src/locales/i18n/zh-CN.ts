@@ -581,6 +581,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Components.MarkdownCustomProcess.previewPage": "预览页面",
   "PC.Components.MarkdownCustomProcess.viewDetail": "查看详情",
   "PC.Components.MarkdownRenderer.executedProcesses": "工具调用",
+  "PC.Components.MarkdownRenderer.viewTaskDetails": "点击查看任务详情",
   "PC.Components.MarkdownRenderer.items": "项",
   "PC.Components.MarkdownRenderer.tableCodeBlock": "表格",
   "PC.Components.MarkdownRenderer.thinking": "正在思考",

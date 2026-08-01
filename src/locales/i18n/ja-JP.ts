@@ -5464,6 +5464,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Common.Subscription.Status.expired": "Expired",
   "PC.Components.ChatInputHomeMentionPopup.noData": "No Data",
   "PC.Components.MarkdownRenderer.executedProcesses": "Tool Calls",
+  "PC.Components.MarkdownRenderer.viewTaskDetails": "タスクの詳細を表示",
   "PC.Components.MarkdownRenderer.items": "Items",
   "PC.Constants.Menus.developerProfile": "Developer Profile",
   "PC.Pages.MorePage.CreditRecords.colNote": "Note",
