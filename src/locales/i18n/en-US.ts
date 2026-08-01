@@ -574,6 +574,7 @@ export const EN_US: SystemLangMap = {
   "PC.Components.MarkdownCustomProcess.previewPage": "Preview page",
   "PC.Components.MarkdownCustomProcess.viewDetail": "View details",
   "PC.Components.MarkdownRenderer.executedProcesses": "Tool Calls",
+  "PC.Components.MarkdownRenderer.viewTaskDetails": "View task details",
   "PC.Components.MarkdownRenderer.items": "Items",
   "PC.Components.MarkdownRenderer.tableCodeBlock": "Table",
   "PC.Components.MarkdownRenderer.thinking": "Thinking",
