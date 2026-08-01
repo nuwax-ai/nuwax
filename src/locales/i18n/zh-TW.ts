@@ -5452,6 +5452,7 @@ export const ZH_TW: SystemLangMap = {
   "PC.Common.Subscription.Status.expired": "已過期",
   "PC.Components.ChatInputHomeMentionPopup.noData": "暫無數據",
   "PC.Components.MarkdownRenderer.executedProcesses": "工具調用",
+  "PC.Components.MarkdownRenderer.viewTaskDetails": "點擊查看任務詳情",
   "PC.Components.MarkdownRenderer.items": "項",
   "PC.Constants.Menus.developerProfile": "開發者資料",
   "PC.Pages.MorePage.CreditRecords.colNote": "說明",
