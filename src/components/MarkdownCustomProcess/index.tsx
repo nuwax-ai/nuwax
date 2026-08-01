@@ -502,26 +502,9 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
   //   }
   // }, [innerProcessing]);
 
-  if (
-    !innerProcessing.executeId ||
-    innerProcessing.type === AgentComponentTypeEnum.Event // 所有事件都不显示
-  ) {
-    return null;
-  }
-
-  // 流式 Markdown 有时会残留一条已完成的 OpenUI 工具标记，但对应的
-  // processing input/result 并不存在。它无法渲染任何 UI，继续显示只会形成
-  // 一个和真实 OpenUI 卡片并列的空壳工具条。
-  if (
-    isOpenUiRenderProcess &&
-    innerProcessing.status === ProcessingEnum.FINISHED &&
-    openUiDisplayState.status === 'absent'
-  ) {
-    return null;
-  }
-
-  // 渲染工具（OpenUI）：新逻辑下不展示工具调用卡片，仅渲染 sidecar/inline 产物。
-  // artifact 缺席（EXECUTING 或无 ref/input）时不渲染任何 UI。
+  // 渲染工具（OpenUI）：不展示工具调用卡片，仅渲染 sidecar/inline 产物。
+  // 必须在下方 Event 类型隐藏之前处理——RENDER_UI 历史项 type=Event，否则会被
+  // `type === Event → return null` 直接吞掉。artifact 缺席（EXECUTING / 无 ref/input）不渲染。
   if (isOpenUiRenderProcess) {
     if (openUiDisplayState.status === 'absent') {
       return null;
@@ -552,6 +535,13 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
         </Suspense>
       </div>
     );
+  }
+
+  if (
+    !innerProcessing.executeId ||
+    innerProcessing.type === AgentComponentTypeEnum.Event // 所有（非渲染）事件都不显示
+  ) {
+    return null;
   }
 
   // 工具栏标题：过长时 tooltip 限高 3 行，超出出现滚动条

@@ -85,6 +85,11 @@ function normalizeOpenUiToolName(name: string): string {
 export function isOpenUiRenderToolName(name: unknown): boolean {
   if (typeof name !== 'string') return false;
   const normalized = normalizeOpenUiToolName(name);
+  // RENDER_UI 专用事件名（对齐 ask-question 的 Backend.Sandbox.Event.* 命名），
+  // 如 Backend.Sandbox.Event.renderUI / RenderUI 等。
+  if (normalized === 'renderui' || normalized.endsWith('.renderui')) {
+    return true;
+  }
   if (!normalized.includes(OPENUI_RENDER_TOOL_TOKEN)) return false;
   return !OPENUI_NON_RENDER_TOOL_TOKENS.some((token) =>
     normalized.includes(token),
