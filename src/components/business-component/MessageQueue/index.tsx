@@ -20,7 +20,7 @@ const cx = classNames.bind(styles);
 export interface MessageQueuePanelProps {
   /** 待发送消息列表 */
   queue: QueuedMessage[];
-  /** 立即发送（停止当前会话后发送该消息） */
+  /** 立即发送（标记优先消费；与自动消费对齐，不打断当前轮） */
   onSendNow: (message: QueuedMessage) => void;
   /** 删除某条 */
   onDelete: (id: string) => void;

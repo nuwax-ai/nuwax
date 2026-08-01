@@ -7,7 +7,6 @@ import ConditionRender from '@/components/ConditionRender';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import DropdownChangeName from '@/pages/Chat/components/DropdownChangeName';
 import { t } from '@/services/i18nRuntime';
-import { HideDesktopEnum } from '@/types/enums/agent';
 import { AgentTypeEnum } from '@/types/enums/space';
 import { CodeOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
@@ -186,13 +185,8 @@ const LeftContent: React.FC<LeftContentProps> = ({
                   onClick={headerProps.handleOpenTerminalPanel}
                 />
 
-                {/* 智能体电脑视图 */}
-                <ConditionRender
-                  condition={
-                    headerProps.conversationInfo?.agent?.hideDesktop ===
-                    HideDesktopEnum.No
-                  }
-                >
+                {/* 智能体电脑视图：仅云端电脑 + 未隐藏远程桌面时展示 */}
+                <ConditionRender condition={headerProps.isShowDesktop}>
                   <TooltipIcon
                     title={
                       headerProps.isDesktopIconActive
@@ -228,7 +222,10 @@ const LeftContent: React.FC<LeftContentProps> = ({
             [styles['file-tree-visible']]: isFileTreeVisible,
           })}
         >
-          <UnifiedChatSession {...chatSessionProps} />
+          <UnifiedChatSession
+            {...chatSessionProps}
+            showClearIcon={effectiveAgent?.deviceAgent !== 1}
+          />
         </div>
 
         {/* 通用型(TaskAgent)智能体专用文件树区域 */}

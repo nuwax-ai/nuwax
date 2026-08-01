@@ -35,6 +35,8 @@ interface PagePreviewData {
   data_type?: 'html' | 'markdown';
   /** 请求 ID */
   request_id?: string;
+  /** 受限预览来源 */
+  source?: 'agent-page';
 }
 
 /**
@@ -138,6 +140,8 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
     setIframeKey(Date.now);
     return `${uri}?${queryString}`;
   }, [pagePreviewData]);
+
+  const iframeSandbox = SANDBOX;
 
   // iframe 加载完成
   const handleIframeLoad = () => {
@@ -696,7 +700,7 @@ const PagePreviewIframe: React.FC<PagePreviewIframeProps> = ({
           ref={iframeRef}
           key={iframeKey}
           src={pageUrl}
-          sandbox={SANDBOX}
+          sandbox={iframeSandbox}
           className={cx(styles['page-iframe'])}
           onLoad={handleIframeLoad}
           onError={handleIframeError}

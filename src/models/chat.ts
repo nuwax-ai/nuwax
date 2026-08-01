@@ -11,6 +11,7 @@ export interface PagePreviewData {
   uri: string; // 页面路径
   params: Record<string, any>; // URL 参数
   executeId: string; // 执行ID
+  source?: 'agent-page';
 }
 
 /**
@@ -115,7 +116,7 @@ export default () => {
   );
 
   // 显示页面预览
-  const showPagePreview = useCallback((data: PagePreviewData) => {
+  const showPagePreview = useCallback((data: PagePreviewData | null) => {
     setPagePreviewData(data);
   }, []);
 

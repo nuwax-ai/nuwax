@@ -23,6 +23,7 @@ import {
   AgentComponentTypeEnum,
   AllowCopyEnum,
   DefaultSelectedEnum,
+  HideDesktopEnum,
   MessageTypeEnum,
   TaskStatus,
 } from '@/types/enums/agent';
@@ -216,6 +217,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     setIsLoadingOtherInterface,
     requiredNameList,
     setConversationInfo,
+    runUpdateTopic,
     variables,
     showType,
     setShowType,
@@ -269,6 +271,8 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   // 页面预览相关状态
   const { pagePreviewData, showPagePreview, hidePagePreview } =
     useModel('chat');
+
+  const { isMobile } = useModel('layout');
 
   // 会话记录
   const { runHistoryItem } = useModel('conversationHistory');
@@ -336,6 +340,26 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     pagePreviewData,
   });
 
+  /**
+   * 是否显示「打开智能体电脑」入口：
+   * 仅通用型智能体 + 未隐藏远程桌面 + 当前为云端电脑（'-1'）时展示；
+   * 个人电脑 / 共享电脑会话不展示该按钮。
+   */
+  const isShowDesktop =
+    isShowFilePanel &&
+    effectiveAgent?.hideDesktop === HideDesktopEnum.No &&
+    finalSelectedId === '-1';
+
+  /**
+   * 切换到非云端电脑时，若当前停留在智能体电脑视图则关闭，
+   * 避免按钮隐藏后仍残留桌面预览。
+   */
+  useEffect(() => {
+    if (finalSelectedId !== '-1' && viewMode === 'desktop') {
+      handleClosePreviewView();
+    }
+  }, [finalSelectedId, viewMode, handleClosePreviewView]);
+
   const {
     variableParams,
     setVariableParams,
@@ -382,6 +406,36 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       },
     };
   }, [conversationInfo]);
+
+  // =============== 会话 icon 缺失时，补拉会话 icon ===============
+
+  /** 主题已更新但 icon 仍为空时，补拉会话 icon */
+  const conversationIconUpdateRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    conversationIconUpdateRef.current = null;
+  }, [id]);
+
+  useEffect(() => {
+    if (
+      !conversationInfo?.id ||
+      conversationInfo.topicUpdated !== 1 ||
+      conversationInfo.icon !== null ||
+      conversationIconUpdateRef.current === conversationInfo.id
+    ) {
+      return;
+    }
+
+    conversationIconUpdateRef.current = conversationInfo.id;
+    void runUpdateTopic({
+      id: conversationInfo.id,
+      topic: conversationInfo.topic,
+    }).catch(() => {
+      if (conversationIconUpdateRef.current === conversationInfo.id) {
+        conversationIconUpdateRef.current = null;
+      }
+    });
+  }, [conversationInfo, runUpdateTopic]);
 
   // 打开扩展页面
   const handleOpenPreview = (agent: any) => {
@@ -1120,6 +1174,11 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
 
   // 设置最小宽度
   useEffect(() => {
+    // 移动端不设置最小宽度
+    if (isMobile && !isFileTreeVisible) {
+      document.documentElement.style.minWidth = 'unset';
+      return;
+    }
     // 设置最小宽度-扩展页面/文件树
     if (pagePreviewData || isFileTreeVisible) {
       document.documentElement.style.minWidth = '1660px';
@@ -1134,7 +1193,13 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     return () => {
       document.documentElement.style.minWidth = 'unset';
     };
-  }, [pagePreviewData, isFileTreeVisible, showSidebar, isSidebarVisible]);
+  }, [
+    pagePreviewData,
+    isFileTreeVisible,
+    showSidebar,
+    isSidebarVisible,
+    isMobile,
+  ]);
 
   // 聊天会话头部相关 props
   const headerProps = {
@@ -1153,6 +1218,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     closePreviewView: handleClosePreviewView,
     handleOpenPreview,
     isShowFilePanel,
+    isShowDesktop,
     viewMode,
     handleFileTreeVisible: handleFileTreeVisibleClick,
     isFileTreeIconActive,
@@ -1276,7 +1342,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
               pagePreviewData || isFileTreeVisible ? 'visible' : 'hidden'
             }
             minLeftWidth={430}
-            defaultLeftWidth={37}
+            defaultLeftWidth={40}
             // 当文件树显示时，左侧占满flex-1, 文件树占flex-2
             left={
               effectiveAgent?.hideChatArea ? null : (

@@ -202,6 +202,7 @@ export default defineConfig({
   ],
   // 添加在顶层配置中
   jsMinifier: 'esbuild',
+  esbuildMinifyIIFE: true,
   jsMinifierOptions: {
     minify: true,
     target: ['es2020'],

@@ -81,10 +81,22 @@ export async function apiCollectAgent(
 export async function apiUserUsedAgentList(
   params: ListParams,
 ): Promise<RequestResponse<AgentInfo[]>> {
-  const size = params.size;
-  return request(`/api/user/agent/used/list/${size}`, {
-    method: 'GET',
-  });
+  const { size, pageIndex, keyword } = params;
+  const searchParams = new URLSearchParams();
+  if (pageIndex !== undefined) {
+    searchParams.set('pageIndex', String(pageIndex));
+  }
+  if (keyword) {
+    searchParams.set('kw', keyword);
+  }
+  const query = searchParams.toString();
+
+  return request(
+    `/api/user/agent/used/list/${size}${query ? `?${query}` : ''}`,
+    {
+      method: 'GET',
+    },
+  );
 }
 
 // 查询用户最近编辑的智能体列表

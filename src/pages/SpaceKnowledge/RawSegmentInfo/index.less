@@ -1,12 +1,32 @@
 @import '@/styles/color';
 
+// 设置分段信息区域宽度为28%
+.container {
+  width: 28%;
+  min-width: 280px;
+  max-width: 400px;
+  flex-shrink: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-right: 1px solid @GRAY01;
+}
+
 .header {
   gap: 10px;
   height: 72px;
-  padding: 0 30px;
+  // 左右内边距与下方分段块(.line)对齐：左侧 16px 让 file-search 图标对齐分段块左边；
+  // 右侧 24px = #rawSegmentDiv 滚动条宽度(~8px) + 16px padding，让删除(垃圾桶)图标对齐分段块右边。
+  padding: 0 24px 0 16px;
   color: @BLANK11;
   font-size: 14px;
+  border-top: 1px solid @GRAY01;
   border-bottom: 1px solid @GRAY01;
+  // 统一 header 内所有操作图标大小（文件/编辑/预览/删除），避免删除图标偏大
+  :global(.anticon) {
+    font-size: 16px;
+  }
 
   .file-name {
     max-width: 60%;
@@ -22,7 +42,6 @@
 
     .del {
       margin-left: 30px;
-      font-size: 18px;
     }
   }
 }
@@ -41,8 +60,26 @@
   border: 1px solid @BLANK01;
   background-color: @BLANK27;
   word-break: break-word;
+  cursor: pointer;
+  transition: all 0.3s ease;
 
   &:last-child {
     margin-bottom: 0;
+  }
+
+  &.selected-segment {
+    border-color: #1890ff !important;
+    background-color: #e6f7ff !important;
+    // 删除 box-shadow 行——border-color 已表达选中态，避免上/下边双重蓝边（Bug E）
+    position: relative;
+    z-index: 1;
+  }
+
+  &:hover {
+    background-color: #f5f5f5;
+  }
+
+  &.selected-segment:hover {
+    background-color: #d6f4ff;
   }
 }

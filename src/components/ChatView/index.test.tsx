@@ -50,16 +50,22 @@ vi.mock('@/components/MarkdownRenderer', () => ({
     answer,
     thinking,
     status,
+    thinkingFinished,
+    conversationId,
   }: {
     answer?: string;
     thinking?: string;
     status?: string;
+    thinkingFinished?: boolean;
+    conversationId?: string | number;
   }) => (
     <div
       data-testid="markdown-renderer"
       data-answer={answer}
       data-thinking={thinking}
       data-status={status || ''}
+      data-thinking-finished={String(thinkingFinished)}
+      data-conversation-id={conversationId ?? ''}
     />
   ),
 }));
@@ -116,6 +122,33 @@ describe('ChatView', () => {
     );
   });
 
+  it('OpenUI 恢复消息隐藏内部幂等标记', () => {
+    render(
+      <ChatView
+        roleInfo={roleInfo}
+        messageInfo={createMessage({
+          role: AssistantRoleEnum.USER,
+          text: [
+            '用户提交了 inline 表单！',
+            'name：你好',
+            '<!--nuwax-openui-action-id:action-1-->',
+          ].join('\n'),
+        })}
+      />,
+    );
+
+    expect(screen.getByText(/用户提交了 inline 表单！/)).toHaveTextContent(
+      '用户提交了 inline 表单！ name：你好',
+    );
+    expect(
+      screen.queryByText(/nuwax-openui-action-id/),
+    ).not.toBeInTheDocument();
+    expect(screen.getByTestId('copy-button')).toHaveAttribute(
+      'data-copy-text',
+      '用户提交了 inline 表单！\nname：你好',
+    );
+  });
+
   it('助手消息渲染 MarkdownRenderer，并透传 answer/thinking/status', () => {
     render(
       <ChatView
@@ -141,6 +174,88 @@ describe('ChatView', () => {
     );
   });
 
+  it('助手消息透传思考流完成状态，不以正文内容推断思考已结束', () => {
+    render(
+      <ChatView
+        roleInfo={roleInfo}
+        messageInfo={createMessage({
+          text: '正文分片已经到达',
+          think: '思考分片仍在到达',
+          status: MessageStatusEnum.Incomplete,
+          thinkingFinished: false,
+        })}
+      />,
+    );
+
+    expect(screen.getByTestId('markdown-renderer')).toHaveAttribute(
+      'data-thinking-finished',
+      'false',
+    );
+  });
+
+  it('流式输出包含多轮思考时可在正在思考与已思考之间重复切换', () => {
+    const { rerender } = render(
+      <ChatView
+        roleInfo={roleInfo}
+        messageInfo={createMessage({
+          think: '第一轮思考',
+          status: MessageStatusEnum.Incomplete,
+          thinkingFinished: false,
+        })}
+      />,
+    );
+
+    expect(screen.getByTestId('markdown-renderer')).toHaveAttribute(
+      'data-thinking-finished',
+      'false',
+    );
+
+    rerender(
+      <ChatView
+        roleInfo={roleInfo}
+        messageInfo={createMessage({
+          think: '第一轮思考',
+          status: MessageStatusEnum.Incomplete,
+          thinkingFinished: true,
+        })}
+      />,
+    );
+    expect(screen.getByTestId('markdown-renderer')).toHaveAttribute(
+      'data-thinking-finished',
+      'true',
+    );
+
+    rerender(
+      <ChatView
+        roleInfo={roleInfo}
+        messageInfo={createMessage({
+          think: '第一轮思考\n第二轮思考',
+          status: MessageStatusEnum.Incomplete,
+          thinkingFinished: false,
+        })}
+      />,
+    );
+    expect(screen.getByTestId('markdown-renderer')).toHaveAttribute(
+      'data-thinking-finished',
+      'false',
+    );
+
+    rerender(
+      <ChatView
+        roleInfo={roleInfo}
+        messageInfo={createMessage({
+          think: '第一轮思考\n第二轮思考',
+          status: MessageStatusEnum.Incomplete,
+          thinkingFinished: true,
+        })}
+      />,
+    );
+    expect(screen.getByTestId('markdown-renderer')).toHaveAttribute(
+      'data-thinking-finished',
+      'true',
+    );
+  });
+
   it('助手消息完成后展示底部操作区', () => {
     render(
       <ChatView
@@ -155,5 +270,28 @@ describe('ChatView', () => {
 
     expect(screen.getByTestId('chat-bottom-more')).toBeInTheDocument();
     expect(screen.getByTestId('chat-bottom-debug')).toBeInTheDocument();
+  });
+
+  it('历史消息内容不变时仍应把后到达的 conversationId 传给 MarkdownRenderer', () => {
+    const message = createMessage({
+      text: 'message with openui artifact',
+      status: MessageStatusEnum.Complete,
+    });
+    const { rerender } = render(
+      <ChatView roleInfo={roleInfo} messageInfo={message} conversationId="" />,
+    );
+
+    rerender(
+      <ChatView
+        roleInfo={roleInfo}
+        messageInfo={message}
+        conversationId="1557156"
+      />,
+    );
+
+    expect(screen.getByTestId('markdown-renderer')).toHaveAttribute(
+      'data-conversation-id',
+      '1557156',
+    );
   });
 });

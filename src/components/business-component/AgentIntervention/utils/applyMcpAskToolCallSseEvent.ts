@@ -4,6 +4,11 @@ import type {
   ConversationChatResponse,
   MessageInfo,
 } from '@/types/interfaces/conversationInfo';
+import { isOpenUiRenderToolName } from '@/utils/openUiArtifact';
+import {
+  isOpenUiPayloadType,
+  isOpenUiRenderInputSchemaVersion,
+} from '@nuwax-ai/openui-mcp/contracts';
 import { extractMcpAskStructuredInputFromResult } from './extractMcpAskStructuredInput';
 import { createInterventionTriggeredAt } from './interventionTrigger';
 import { parseMcpAskToolInput } from './parseMcpAskToolInput';
@@ -39,6 +44,33 @@ function readRawInput(
   );
 }
 
+function isOpenUiToolCall(
+  eventData: Record<string, unknown>,
+  result: Record<string, unknown> | undefined,
+  rawInput: Record<string, unknown> | undefined,
+): boolean {
+  const names = [
+    eventData.title,
+    eventData.name,
+    eventData.toolName,
+    eventData.tool_name,
+    result?.name,
+    result?.toolName,
+    result?.tool_name,
+    rawInput?.toolName,
+  ];
+  // 与 Host OpenUI 识别共用同一套跨引擎规则（含 title / 版本后缀 / URL 编码）
+  if (names.some((name) => isOpenUiRenderToolName(name))) {
+    return true;
+  }
+
+  // OpenUI payload type / render schemaVersion 均由 openui-mcp contracts 统一判断
+  return (
+    isOpenUiPayloadType(rawInput?.type) ||
+    isOpenUiRenderInputSchemaVersion(rawInput?.schemaVersion)
+  );
+}
+
 export function applyMcpAskToolCallSseEvent(
   res: ConversationChatResponse,
   currentMessage: MessageInfo,
@@ -69,18 +101,32 @@ export function applyMcpAskToolCallSseEvent(
       (eventData.result as Record<string, unknown> | undefined)?.input
     );
 
+  const eventSubType =
+    (eventData.subEventType as string) ||
+    (eventData.sub_event_type as string) ||
+    (envelope.subEventType as string) ||
+    (envelope.sub_event_type as string) ||
+    '';
+  const processingResult = eventData.result as
+    | Record<string, unknown>
+    | undefined;
+  const eventName =
+    (eventData.name as string) || (processingResult?.name as string) || '';
+
   // 识别 subEventType=ASK_QUESTION 的 PROCESSING 事件。
   // 此类事件的 result.executeId 和 result.input 均为 null，
   // MCP Ask 数据在 result.data 中（含 schemaVersion、ui、requestId）。
   const isAskQuestionEvent =
     res.eventType === ConversationEventTypeEnum.PROCESSING &&
-    envelope.subEventType === 'ASK_QUESTION';
+    (eventSubType === 'ASK_QUESTION' ||
+      eventName === 'Backend.Sandbox.Event.AskQuestion' ||
+      eventName === 'AskQuestion');
 
   if (!isToolCallEvent && !isProcessingToolCallEvent && !isAskQuestionEvent) {
     return null;
   }
 
-  const result = eventData.result as Record<string, unknown> | undefined;
+  const result = processingResult;
 
   // ASK_QUESTION 事件：MCP Ask 数据直接在 result.data 中，
   // 不遵循 ToolCall 的 result.input 结构。
@@ -101,6 +147,11 @@ export function applyMcpAskToolCallSseEvent(
   if (!rawInput) {
     rawInput = readRawInput(eventData, result);
   }
+  // OpenUI Artifact 与 ask-question 是两条独立工具链。即使异常输入碰巧带有
+  // ask 的 ui/requestId 形状，也不能进入干预队列或触发 DockPanel。
+  if (isOpenUiToolCall(eventData, result, rawInput)) {
+    return null;
+  }
   if (!toolCallId) {
     toolCallId =
       (eventData.tool_call_id as string) ||
@@ -115,6 +166,12 @@ export function applyMcpAskToolCallSseEvent(
     undefined;
 
   const mcpAskInput = parseMcpAskToolInput(rawInput);
+
+  // ASK_QUESTION 事件可能没有 executeId/toolCallId；实时与历史恢复均以 requestId
+  // 作为稳定的交互标识，避免卡片因缺少执行 ID 被丢弃。
+  if (!toolCallId && mcpAskInput?.requestId) {
+    toolCallId = mcpAskInput.requestId;
+  }
 
   if (!mcpAskInput || !toolCallId) {
     return null;

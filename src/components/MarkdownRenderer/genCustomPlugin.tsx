@@ -1,9 +1,11 @@
 /* eslint-disable react-hooks/rules-of-hooks */
 import { dict } from '@/services/i18nRuntime';
+import { Button } from 'antd';
 import classNames from 'classnames';
 import { CodeBlockActions, useThemeState } from 'ds-markdown';
 import { createBuildInPlugin } from 'ds-markdown/plugins';
 import rehypeRaw from 'rehype-raw';
+import { history, useModel } from 'umi';
 import MarkdownCustomProcess from '../MarkdownCustomProcess';
 import MarkdownCustomProcessGroup from '../MarkdownCustomProcessGroup';
 import styles from './index.less';
@@ -12,14 +14,72 @@ import TaskResult from './TaskResult';
 import { extractTableToMarkdown } from './utils';
 const cx = classNames.bind(styles);
 
+interface ConversationDetailLinkProps {
+  conversationId?: string | number;
+  agentId?: string | number;
+}
+
+const ConversationDetailLink: React.FC<ConversationDetailLinkProps> = ({
+  conversationId,
+  agentId,
+}) => {
+  const { isAppSidebarMode } = useModel('useOpenApp');
+  const targetConversationId = Number(conversationId);
+  const targetAgentId = Number(agentId);
+
+  if (!targetConversationId || !targetAgentId) {
+    return null;
+  }
+
+  return (
+    <Button
+      type="link"
+      size="small"
+      style={{ paddingInline: 4, verticalAlign: 'baseline' }}
+      onClick={() =>
+        history.push(
+          isAppSidebarMode
+            ? `/app/chat/${targetAgentId}/${targetConversationId}`
+            : `/home/chat/${targetConversationId}/${targetAgentId}`,
+        )
+      }
+    >
+      {dict('PC.Components.MarkdownRenderer.viewTaskDetails')}
+    </Button>
+  );
+};
+
 // 用插件机制传递自定义components
-export default (conversationId: string | number = '') => {
+export default (
+  conversationId: string | number = '',
+  collapseProcessGroups = false,
+) => {
   return createBuildInPlugin({
     rehypePlugin: [rehypeRaw],
     components: {
       style: () => null, // 禁用 style 标签渲染，防止样式污染
       script: () => null, // 禁用 script 标签，增强安全性
       html: ({ children }: any) => <>{children}</>, // 处理可能存在的 html 标签包裹
+      conversation: (props: any) => {
+        const properties = props.node?.properties || {};
+        const targetConversationId =
+          props.id ??
+          props.conversationId ??
+          properties.id ??
+          properties.conversationId;
+        const targetAgentId =
+          props.agentid ??
+          props.agentId ??
+          properties.agentid ??
+          properties.agentId;
+
+        return (
+          <ConversationDetailLink
+            conversationId={targetConversationId}
+            agentId={targetAgentId}
+          />
+        );
+      },
       // 确保使用一致的组件名称格式
       'markdown-custom-process': (props: any) => {
         const node = props.node;
@@ -60,9 +120,21 @@ export default (conversationId: string | number = '') => {
           />
         );
       },
-      'markdown-custom-process-group': ({ children }: any) => {
+      'markdown-custom-process-group': ({ children, ...props }: any) => {
+        const properties = props.node?.properties || {};
+        const autoCollapse =
+          props.autocollapse ??
+          props.autoCollapse ??
+          properties.autocollapse ??
+          properties.autoCollapse;
+
         return (
-          <MarkdownCustomProcessGroup>{children}</MarkdownCustomProcessGroup>
+          <MarkdownCustomProcessGroup
+            autoCollapse={String(autoCollapse).toLowerCase() === 'true'}
+            defaultCollapsed={collapseProcessGroups}
+          >
+            {children}
+          </MarkdownCustomProcessGroup>
         );
       },
       table: ({ children, node }: any) => {

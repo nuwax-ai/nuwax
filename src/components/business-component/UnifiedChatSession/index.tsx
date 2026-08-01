@@ -7,9 +7,11 @@ import { useActiveInterventionQueue } from '@/components/business-component/Agen
 import MessageQueuePanel, {
   useUnifiedChatQueue,
 } from '@/components/business-component/MessageQueue';
+import { registerOpenUiActionSender } from '@/components/business-component/OpenUiArtifactView/actionRegistry';
+import { buildOpenUiResumeMessage } from '@/components/business-component/OpenUiArtifactView/openUiResumeMessage';
 import ConversationStatus from '@/pages/Chat/components/ConversationStatus';
 import classNames from 'classnames';
-import { useMemo, useRef } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 
 import { ENABLE_CHAT_MESSAGE_QUEUE } from '@/constants/feature.constants';
 import { dict } from '@/services/i18nRuntime';
@@ -18,6 +20,10 @@ import { MessageStatusEnum } from '@/types/enums/common';
 import { AgentTypeEnum } from '@/types/enums/space';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type { RoleInfo } from '@/types/interfaces/conversationInfo';
+import type {
+  OpenUiAction,
+  OpenUiActionArtifact,
+} from '@/types/interfaces/openUi';
 import ChatContentArea from './components/ChatContentArea';
 import ChatInputHomeIndependent from './components/ChatInputHomeIndependent';
 import { useConversationStreamResume } from './hooks/useConversationStreamResume';
@@ -66,6 +72,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
   isVariablesFilled,
   isVariablesDisabled,
   clearLoading = false,
+  showClearIcon = true,
   isSelectionLocked = false,
   hasUserSentMessage = false,
   readonly,
@@ -178,6 +185,8 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
   // 是否有待处理的 intervention（ask/question/审批）：有则暂停队列消费并隐藏队列面板
   const activeInterventions = useActiveInterventionQueue(messageList);
   const hasPendingIntervention = activeInterventions.length > 0;
+  /** 是否渲染队列面板区域（用于测量高度，上移滚到底部按钮） */
+  const showQueuePanel = ENABLE_CHAT_MESSAGE_QUEUE && !hasPendingIntervention;
 
   // 消息队列：会话活跃时消息入队，空闲时自动消费（逻辑收敛于 hook）
   const messageQueue = useUnifiedChatQueue({
@@ -190,6 +199,62 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
     hasPendingIntervention,
     queueContext,
   });
+
+  // 滚到底部按钮需避开队列面板：测量队列区域高度写入 CSS 变量
+  const sessionContainerRef = useRef<HTMLDivElement>(null);
+  const chatInputContainerRef = useRef<HTMLDivElement>(null);
+  const queuePanelMeasureRef = useRef<HTMLDivElement>(null);
+
+  // 审批卡片的可用高度需要扣除输入框，避免输入框变高后覆盖卡片底部。
+  useLayoutEffect(() => {
+    const sessionContainer = sessionContainerRef.current;
+    const inputContainer = chatInputContainerRef.current;
+    if (!sessionContainer || !inputContainer) return;
+
+    const update = () => {
+      sessionContainer.style.setProperty(
+        '--chat-input-height',
+        `${inputContainer.offsetHeight}px`,
+      );
+    };
+
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(inputContainer);
+    return () => {
+      observer.disconnect();
+      sessionContainer.style.removeProperty('--chat-input-height');
+    };
+  }, []);
+
+  useLayoutEffect(() => {
+    const container = chatInputContainerRef.current;
+    if (!container) return;
+
+    const setQueueHeight = (height: number) => {
+      container.style.setProperty('--queue-panel-height', `${height}px`);
+    };
+
+    if (!showQueuePanel) {
+      setQueueHeight(0);
+      return;
+    }
+
+    const measureEl = queuePanelMeasureRef.current;
+    if (!measureEl) {
+      setQueueHeight(0);
+      return;
+    }
+
+    const update = () => setQueueHeight(measureEl.offsetHeight);
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(measureEl);
+    return () => {
+      observer.disconnect();
+      setQueueHeight(0);
+    };
+  }, [showQueuePanel, messageQueue.hasQueuedMessages]);
 
   // 消息发送代理：经队列拦截（活跃时入队，否则真正发送）
   const handleMessageSend = (
@@ -291,10 +356,30 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
     [agentInfo?.allowChooseMode],
   );
 
+  const respondOpenUiAction = useMemo(
+    () => (artifact: OpenUiActionArtifact, action: OpenUiAction) => {
+      messageQueue.rawSend(buildOpenUiResumeMessage(artifact, action));
+    },
+    [messageQueue.rawSend],
+  );
+
+  useEffect(
+    () =>
+      conversationId === undefined
+        ? undefined
+        : registerOpenUiActionSender(conversationId, respondOpenUiAction),
+    [conversationId, respondOpenUiAction],
+  );
+
   return (
-    <div className={cx(styles['session-container'], className)} style={style}>
+    <div
+      ref={sessionContainerRef}
+      className={cx(styles['session-container'], className)}
+      style={style}
+    >
       {/* 核心聊天展现内容区 */}
       <ChatContentArea
+        conversationId={conversationId}
         messageViewRef={messageViewRef}
         handleMouseEnter={handleMouseEnter}
         handleMouseLeave={handleMouseLeave}
@@ -338,26 +423,38 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
       />
 
       {/* 统一会话输入框（使用独立版组件，避免与 conversationInfo model 强耦合） */}
-      <div className={cx(styles['chat-input-container'])}>
-        {/* 待发送消息队列面板：功能开关关闭或有待处理 intervention 时隐藏 */}
-        {ENABLE_CHAT_MESSAGE_QUEUE && !hasPendingIntervention && (
-          <MessageQueuePanel
-            queue={messageQueue.queue}
-            onSendNow={messageQueue.sendNow}
-            onDelete={messageQueue.deleteQueued}
-            onEdit={messageQueue.handleEditQueued}
-            onClear={messageQueue.clearQueue}
-            onReorder={messageQueue.reorder}
-          />
+      <div
+        ref={chatInputContainerRef}
+        className={cx(styles['chat-input-container'])}
+      >
+        {/* 待发送消息队列面板：功能开关关闭或有待处理 intervention 时隐藏；
+            外层测量容器供滚到底部按钮按队列高度上移 */}
+        {showQueuePanel && (
+          <div
+            ref={queuePanelMeasureRef}
+            className={cx(styles['queue-panel-measure'])}
+          >
+            <MessageQueuePanel
+              queue={messageQueue.queue}
+              onSendNow={messageQueue.sendNow}
+              onDelete={messageQueue.deleteQueued}
+              onEdit={messageQueue.handleEditQueued}
+              onClear={messageQueue.clearQueue}
+              onReorder={messageQueue.reorder}
+            />
+          </div>
         )}
         <ChatInputHomeIndependent
           key={`chat-input-${conversationId}`}
           clearDisabled={!messageList?.length}
           onEnter={handleMessageSend}
           onClear={onClear}
-          wholeDisabled={inputDisabled || chatInputDisabled}
+          wholeDisabled={
+            inputDisabled || chatInputDisabled || hasPendingIntervention
+          }
           visible={scrollBtnVisible && isHoveringChat}
           clearLoading={clearLoading}
+          showClearIcon={showClearIcon}
           manualComponents={manualComponents}
           selectedComponentList={selectedComponentList}
           onSelectComponent={onSelectComponent}

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-use-before-define */
 import {
   hydrateMcpAskInteractionsInMessageList,
   prependAndHydrateMcpAskMessageList,
@@ -111,6 +112,13 @@ import {
   preserveOptimisticMessageTail,
 } from './conversationInfoMessageList';
 
+/** 后端漏发结构化干预事件时，等待持久化完成的补偿读取间隔。 */
+const DEFERRED_INTERVENTION_RELOAD_DELAYS = [250, 750, 1500] as const;
+
+/** FINAL_RESULT 中用于标识服务端执行事件的标准 markdown 协议标签。 */
+const FINAL_EVENT_PROCESS_TAG_RE =
+  /<markdown-custom-process\b[^>]*\btype=["']Event["']/i;
+
 export default () => {
   // 历史记录
   const { runHistory, runHistoryItem } = useModel('conversationHistory');
@@ -152,6 +160,7 @@ export default () => {
   });
   // 缓存消息列表，用于消息会话错误时，修改消息状态（将当前会话的loading状态的消息改为Error状态）
   const messageListRef = useRef<MessageInfo[]>([]);
+  const messageListRuntimeSyncFrameRef = useRef<number | null>(null);
   // 会话问题建议
   const [chatSuggestList, setChatSuggestList] = useState<
     string[] | GuidQuestionDto[]
@@ -538,6 +547,8 @@ export default () => {
           ({
             ...info,
             topic: result?.data?.topic,
+            icon: result?.data?.icon,
+            topicUpdated: result?.data?.topicUpdated,
           } as ConversationInfo),
       );
     },
@@ -639,6 +650,21 @@ export default () => {
     const recentMessages = messages?.slice(-5) || [];
     setIsConversationActive(isSessionStreamBusy(recentMessages));
   }, []);
+
+  const syncMessageListRuntimeState = useCallback(() => {
+    if (messageListRuntimeSyncFrameRef.current !== null) {
+      return;
+    }
+    messageListRuntimeSyncFrameRef.current = requestAnimationFrame(() => {
+      messageListRuntimeSyncFrameRef.current = null;
+      const latestMessageList = messageListRef.current;
+      const latestProcessingList = latestMessageList.flatMap((message) =>
+        Array.isArray(message.processingList) ? message.processingList : [],
+      );
+      handleChatProcessingList(latestProcessingList);
+      checkConversationActive(latestMessageList);
+    });
+  }, [checkConversationActive, handleChatProcessingList]);
 
   const disabledConversationActive = () => {
     setIsConversationActive(false);
@@ -801,7 +827,6 @@ export default () => {
         // 保留本地末尾尚未落库的乐观消息（sub 续会话 / 切会话 reload 不再冲掉刚发送的用户消息）
         setMessageList((prev) => {
           const merged = preserveOptimisticMessageTail(prev, _messageList);
-          checkConversationActive(merged);
           messageListRef.current = merged;
           return merged;
         });
@@ -841,6 +866,8 @@ export default () => {
         setChatSuggestList(guidQuestionDtos);
       }
 
+      syncMessageListRuntimeState();
+
       // 通过 requestAnimationFrame 在接下来的 800ms 内持续并在浏览器每次重绘前强制置底
       // 能够完美解决由于聊天气泡、Markdown、图片等异步渲染撑开高度，导致的跳闪和未置底问题
       const startTime = Date.now();
@@ -878,12 +905,82 @@ export default () => {
     },
   );
 
-  // 停止会话
-  const { runAsync: runStopConversation, loading: loadingStopConversation } =
+  // 停止会话请求
+  const { runAsync: runStopConversationReq, loading: loadingStopConversation } =
     useRequest(apiAgentConversationChatStop, {
       manual: true,
       debounceWait: 300,
     });
+
+  // 停止会话
+  const runStopConversation = useCallback(
+    async (conversationId: string | number) => {
+      // 1. 立即清除副作用、中断前端连接
+      handleClearSideEffect();
+      disabledConversationActive();
+
+      // 2. 立即将当前会话的 loading 状态的消息改为 Stopped 状态，并将所有正在执行的 processing 状态更新为 FAILED
+      setMessageList((list) => {
+        try {
+          if (!list?.length) return list;
+          const copyList = JSON.parse(JSON.stringify(list));
+
+          // 从后往前遍历消息列表，修复包含有工具调用的前置消息状态
+          for (let i = copyList.length - 1; i >= 0; i--) {
+            const currentMessage = copyList[i];
+
+            // 1. 结束最后一条消息的思考态；加载中的消息同时强置为 Stopped
+            if (i === copyList.length - 1) {
+              // 主动停止的是整个任务；即使正文分片已把消息标记为 Complete，
+              // 当前思考阶段也必须立即结束。
+              currentMessage.thinkingFinished = true;
+              if (
+                currentMessage.status === MessageStatusEnum.Loading ||
+                currentMessage.status === MessageStatusEnum.Incomplete
+              ) {
+                currentMessage.status = MessageStatusEnum.Stopped;
+              }
+            }
+
+            // 2. 遍历所有消息 of processingList，强置其中残余的 EXECUTING 状态为 FAILED
+            if (
+              currentMessage.processingList &&
+              Array.isArray(currentMessage.processingList)
+            ) {
+              currentMessage.processingList = currentMessage.processingList.map(
+                (item: ProcessingInfo) => {
+                  if (item.status === ProcessingEnum.EXECUTING) {
+                    return {
+                      ...item,
+                      status: ProcessingEnum.FAILED,
+                    };
+                  }
+                  return item;
+                },
+              );
+            }
+          }
+
+          messageListRef.current = copyList;
+          return copyList;
+        } catch (error) {
+          console.error('[runStopConversation] ERROR:', error);
+          return list;
+        }
+      });
+      syncMessageListRuntimeState();
+
+      // 3. 发起后端 stop 请求
+      return runStopConversationReq(String(conversationId));
+    },
+    [
+      runStopConversationReq,
+      handleClearSideEffect,
+      setMessageList,
+      handleChatProcessingList,
+      checkConversationActive,
+    ],
+  );
 
   // 修改消息列表
   const handleChangeMessageList = (
@@ -899,7 +996,6 @@ export default () => {
     // 这保证了流式输出中的每一个数据包（Chunk）都能被正确拼接，且不会丢失。
     setMessageList((messageList) => {
       if (!messageList?.length) {
-        disabledConversationActive();
         return [];
       }
       // 深拷贝消息列表
@@ -927,7 +1023,7 @@ export default () => {
         list.splice(index, arraySpliceAction, interventionPatch);
         const reconciledList =
           reconcileAcpPermissionStatusesInMessageList(list);
-        checkConversationActive(reconciledList);
+        messageListRef.current = reconciledList;
         return reconciledList;
       }
 
@@ -1063,17 +1159,18 @@ export default () => {
           // 刷新文件树
           handleRefreshFileList(params.conversationId);
         }
-
-        handleChatProcessingList(processingList);
       }
       // MESSAGE事件
       if (eventType === ConversationEventTypeEnum.MESSAGE) {
-        const { text, type, ext, id, finished } = data;
+        const { text, type, id, finished } = data;
         // 思考think
         if (type === MessageModeEnum.THINK) {
           newMessage = {
             ...currentMessage,
             think: `${currentMessage.think}${text}`,
+            // 每一轮 THINK 都独立更新状态：新分片会将上一轮的“已思考”
+            // 重新切回“正在思考”，本轮 finished=true 后再显示“已思考”。
+            thinkingFinished: finished === true,
             status: MessageStatusEnum.Incomplete,
           };
         }
@@ -1085,13 +1182,6 @@ export default () => {
             // 如果finished为true，则状态为null，此时不会显示运行状态组件，否则为Incomplete
             status: finished ? null : MessageStatusEnum.Incomplete,
           };
-          if (ext?.length) {
-            // 问题建议
-            setChatSuggestList(
-              ext.map((extItem: MessageQuestionExtInfo) => extItem.content) ||
-                [],
-            );
-          }
         } else {
           // 工作流过程输出
           if (messageIdRef.current && messageIdRef.current !== id && finished) {
@@ -1120,6 +1210,47 @@ export default () => {
       if (eventType === ConversationEventTypeEnum.FINAL_RESULT) {
         // 重置消息ID
         messageIdRef.current = '';
+
+        // 部分后端流只在 FINAL_RESULT 文案中保留 Event 过程，未下发
+        // PROCESSING/ASK_QUESTION 的表单 schema（本次 SSE 即为此形态）。
+        // 表单会稍后落库到会话详情；自动补偿读取，避免用户必须手动刷新页面。
+        const hasDeferredInterventionProcess =
+          typeof data?.outputText === 'string' &&
+          FINAL_EVENT_PROCESS_TAG_RE.test(data.outputText);
+        if (params.conversationId && hasDeferredInterventionProcess) {
+          void (async () => {
+            for (const delay of DEFERRED_INTERVENTION_RELOAD_DELAYS) {
+              await new Promise<void>((resolve) => {
+                window.setTimeout(resolve, delay);
+              });
+
+              // 切换会话后不再用旧会话的补偿结果覆盖当前页面。
+              if (conversationInfoRef.current?.id !== params.conversationId) {
+                return;
+              }
+
+              try {
+                const result = await runAsync(params.conversationId);
+                const hydratedMessages = hydrateMcpAskInteractionsInMessageList(
+                  result?.data?.messageList || [],
+                );
+                const hasPendingAsk = hydratedMessages.some((message) =>
+                  message.mcpAskInteractions?.some(
+                    (interaction) => interaction.responseStatus === 'pending',
+                  ),
+                );
+                if (hasPendingAsk) {
+                  return;
+                }
+              } catch (error) {
+                console.warn(
+                  '[conversation] Failed to reload deferred Ask interaction',
+                  error,
+                );
+              }
+            }
+          })();
+        }
 
         setTimeout(async () => {
           // 会话结束后，如果是通用型任务，则刷新文件树，避免用户点击生成的文件时，无法定位到文件树中的文件，因为此时文件树未更新
@@ -1179,7 +1310,8 @@ export default () => {
         }
 
         newMessage = {
-          ...reconcileFinalMessageState(currentMessage, data),
+          ...(reconcileFinalMessageState(currentMessage, data) || {}),
+          thinkingFinished: true,
           status: MessageStatusEnum.Complete,
           finalResult: data,
           requestId: res.requestId,
@@ -1221,6 +1353,7 @@ export default () => {
       if (eventType === ConversationEventTypeEnum.ERROR) {
         newMessage = {
           ...currentMessage,
+          thinkingFinished: true,
           status: MessageStatusEnum.Error,
         };
       }
@@ -1232,17 +1365,11 @@ export default () => {
 
       const reconciledList = reconcileAcpPermissionStatusesInMessageList(list);
 
-      const latestProcessingList = reconciledList.flatMap((message) =>
-        Array.isArray(message.processingList) ? message.processingList : [],
-      );
-      handleChatProcessingList(latestProcessingList);
-
-      // 检查会话状态
-      checkConversationActive(reconciledList);
       messageListRef.current = reconciledList;
 
       return reconciledList;
     });
+    syncMessageListRuntimeState();
   };
 
   // 会话处理
@@ -1274,6 +1401,15 @@ export default () => {
       },
       onMessage: (res: ConversationChatResponse) => {
         perfLifecycle.onFirstChunk(res?.eventType, res);
+        if (
+          res.eventType === ConversationEventTypeEnum.MESSAGE &&
+          res.data.type === MessageModeEnum.QUESTION &&
+          res.data.ext?.length
+        ) {
+          setChatSuggestList(
+            res.data.ext.map((item: MessageQuestionExtInfo) => item.content),
+          );
+        }
         // 第一次收到消息后更新主题（仅调用一次）
         updateTopicOnce(params, conversationInfo ?? data, isSync);
 
@@ -1305,13 +1441,16 @@ export default () => {
             for (let i = copyList.length - 1; i >= 0; i--) {
               const currentMessage = copyList[i];
 
-              // 1. 仅对列表的最后一条真正的消息，如果处于加载态则强置为 Stopped
-              if (
-                i === copyList.length - 1 &&
-                (currentMessage.status === MessageStatusEnum.Loading ||
-                  currentMessage.status === MessageStatusEnum.Incomplete)
-              ) {
-                currentMessage.status = MessageStatusEnum.Stopped;
+              // 1. 结束最后一条消息的思考态；加载中的消息同时强置为 Stopped
+              if (i === copyList.length - 1) {
+                // 流已关闭，不允许遗留“正在思考”状态。
+                currentMessage.thinkingFinished = true;
+                if (
+                  currentMessage.status === MessageStatusEnum.Loading ||
+                  currentMessage.status === MessageStatusEnum.Incomplete
+                ) {
+                  currentMessage.status = MessageStatusEnum.Stopped;
+                }
               }
 
               // 2. 遍历所有消息 of processingList，强置其中残余的 EXECUTING 状态为 FAILED
@@ -1335,16 +1474,6 @@ export default () => {
               // cleanupPendingInteractions(currentMessage);
             }
 
-            const latestProcessingList = copyList.flatMap(
-              (message: MessageInfo) =>
-                Array.isArray(message.processingList)
-                  ? message.processingList
-                  : [],
-            );
-            handleChatProcessingList(latestProcessingList);
-
-            // 再次调用 checkConversationActive 确保状态同步
-            checkConversationActive(copyList);
             messageListRef.current = copyList;
             return copyList;
           } catch (error) {
@@ -1352,6 +1481,7 @@ export default () => {
             return list;
           }
         });
+        syncMessageListRuntimeState();
 
         // SSE 结束后兜底同步 taskStatus：仅写回终态，避免竞态 EXECUTING 固化本地。
         // 不限制 Agent 类型；任何携带 taskStatus=EXECUTING 的会话都必须能释放输入态。
@@ -1379,8 +1509,8 @@ export default () => {
         message.error(dict('PC.Models.ConversationInfo.networkTimeoutError'));
         // 将当前会话的 loading 消息改为 Error，并把其 processingList 中执行中的项更新为 FAILED，
         // 否则 isSessionStreamBusy 会因残留 EXECUTING 项持续为 true，导致活跃态/停止按钮/队列消费卡死。
-        const list =
-          messageListRef.current?.map((info: MessageInfo) => {
+        setMessageList((list) => {
+          const updatedList = list.map((info: MessageInfo) => {
             if (info?.id === currentMessageId) {
               const processingList = Array.isArray(info.processingList)
                 ? info.processingList.map((item: ProcessingInfo) =>
@@ -1396,18 +1526,14 @@ export default () => {
               };
             }
             return info;
-          }) || [];
+          });
+          messageListRef.current = updatedList;
+          return updatedList;
+        });
         // 明确终止：打破「发送后 3s 保活」，确保活跃态能立即落 false
         lastSendAtRef.current = 0;
-        setMessageList(() => {
-          const latestProcessingList = list.flatMap((message) =>
-            Array.isArray(message.processingList) ? message.processingList : [],
-          );
-          handleChatProcessingList(latestProcessingList);
-          disabledConversationActive();
-          messageListRef.current = list;
-          return list;
-        });
+        disabledConversationActive();
+        syncMessageListRuntimeState();
         perfLifecycle.onStreamEnd('error');
       },
     });
@@ -1429,7 +1555,11 @@ export default () => {
     });
 
   // 清除副作用
-  const handleClearSideEffect = () => {
+  function handleClearSideEffect() {
+    if (messageListRuntimeSyncFrameRef.current !== null) {
+      cancelAnimationFrame(messageListRuntimeSyncFrameRef.current);
+      messageListRuntimeSyncFrameRef.current = null;
+    }
     // 中断会话流式恢复(sub)连接（hook 内部同时重置占位记忆），避免离开页面后残留
     abortResumeStream();
     // 重置消息ID
@@ -1448,7 +1578,7 @@ export default () => {
       }
       abortConnectionRef.current = null;
     }
-  };
+  }
 
   // 重置初始化
   const resetInit = () => {
@@ -1566,11 +1696,11 @@ export default () => {
         currentMessage,
       );
 
-      checkConversationActive(newMessageList);
       // 缓存消息列表
       messageListRef.current = newMessageList;
       return newMessageList;
     });
+    syncMessageListRuntimeState();
 
     // 允许滚动
     allowAutoScrollRef.current = true;
@@ -1681,6 +1811,7 @@ export default () => {
     openTimedTask,
     closeTimedTask,
     setConversationInfo,
+    runUpdateTopic,
     // 文件树显隐状态
     isFileTreeVisible,
     // 文件树是否固定（用户点击后固定）

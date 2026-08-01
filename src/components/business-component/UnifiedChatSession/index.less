@@ -1,3 +1,4 @@
+/* stylelint-disable unit-no-unknown */
 @import '@/styles/color';
 @import '@/styles/token';
 @import '@/styles/scrollbar.less';
@@ -15,6 +16,10 @@
   overflow: hidden;
   height: 100%;
   position: relative;
+  container-type: size;
+
+  --chat-input-height: 0;
+  --intervention-max-height: calc(80cqh - var(--chat-input-height) - @marginXs);
 
   &.only-input {
     // 隐藏核心展现内容区（针对 hash 化局部类选择器由子组件 index.less 内部 `:global` 实现）
@@ -35,6 +40,7 @@
   margin: @zero-value auto;
   padding: @zero-value @zero-value @paddingXs;
   box-sizing: border-box;
+  max-height: var(--intervention-max-height);
 }
 
 // 会话状态栏样式
@@ -68,10 +74,15 @@
   border-radius: @borderRadiusLg @borderRadiusLg @zero-value @zero-value;
   width: 100%;
   max-width: @chat-max-width;
-  margin: @zero-value auto;
+  margin: @marginXs auto @zero-value;
+  // 滚到底部按钮相对输入框顶部上浮；队列高度由 JS 写入 --queue-panel-height
+  --scroll-btn-bottom-offset: calc(
+    @scroll-btn-bottom-offset + var(--queue-panel-height, 0px)
+  );
+}
 
-  // 调整滚动按钮位置，让它显示在会话状态栏的上方
-  :global(.chat-action .to-bottom) {
-    bottom: @scroll-btn-bottom-offset !important;
-  }
+// 队列面板高度测量容器（无内容时高度为 0）
+.queue-panel-measure {
+  width: 100%;
+  flex-shrink: 0;
 }

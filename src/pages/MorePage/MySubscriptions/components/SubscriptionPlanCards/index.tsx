@@ -1,12 +1,14 @@
 import { dict } from '@/services/i18nRuntime';
 import {
   MyPlanPeriodEnum,
+  MySubscriptionStatusEnum,
   SystemSubscriptionPlan,
   SystemSubscriptionPlanGroup,
 } from '@/types/interfaces/subscription';
 import { CheckOutlined } from '@ant-design/icons';
 import { Button } from 'antd';
 import classNames from 'classnames';
+import dayjs from 'dayjs';
 import React, { useMemo } from 'react';
 import { useSubscriptionPurchase } from '../../hooks/useSubscriptionPurchase';
 import styles from './index.less';
@@ -29,6 +31,8 @@ interface SubscriptionPlanCardsProps {
   currentPlanId?: number;
   endTime?: string;
   price?: number;
+  status?: MySubscriptionStatusEnum;
+  period?: MyPlanPeriodEnum;
 }
 
 const cx = classNames.bind(styles);
@@ -54,7 +58,7 @@ const StarIcon = ({ color = 'currentColor' }: { color?: string }) => (
 );
 
 const SubscriptionPlanCards: React.FC<SubscriptionPlanCardsProps> = (props) => {
-  const { data = [], currentPlanId, price } = props;
+  const { data = [], currentPlanId, price, endTime, status, period } = props;
   const currentPrice = currentPlanId ? price ?? 0 : 0;
 
   const getActionVerb = (planPrice: number) => {
@@ -214,11 +218,20 @@ const SubscriptionPlanCards: React.FC<SubscriptionPlanCardsProps> = (props) => {
               key={plan.id}
               className={cx(styles['plan-card'], themeClass, {
                 [styles['is-current']]: isCurrent,
+                [styles['is-expired']]:
+                  isCurrent && status === MySubscriptionStatusEnum.Expired,
               })}
             >
               {isCurrent ? (
-                <div className={cx(styles['current-badge'])}>
-                  {dict('PC.Pages.MorePage.MySubscriptions.statusActive')}
+                <div
+                  className={cx(styles['current-badge'], {
+                    [styles['is-expired']]:
+                      status === MySubscriptionStatusEnum.Expired,
+                  })}
+                >
+                  {status === MySubscriptionStatusEnum.Expired
+                    ? dict('PC.Pages.MorePage.MySubscriptions.statusExpired')
+                    : dict('PC.Pages.MorePage.MySubscriptions.statusActive')}
                 </div>
               ) : (
                 plan.isHot && (
@@ -254,6 +267,15 @@ const SubscriptionPlanCards: React.FC<SubscriptionPlanCardsProps> = (props) => {
                       {getPeriodLabel(plan.period)}
                     </span>
                   </span>
+                  {isCurrent &&
+                    endTime &&
+                    period !== MyPlanPeriodEnum.Forever && (
+                      <span className={cx(styles['expire-time'])}>
+                        {dict('PC.Pages.MorePage.MySubscriptions.expireTime')}
+                        {': '}
+                        {dayjs(endTime).format('YYYY-MM-DD')}
+                      </span>
+                    )}
                 </div>
 
                 <Button

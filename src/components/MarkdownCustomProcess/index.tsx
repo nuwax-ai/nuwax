@@ -4,8 +4,16 @@ import ChangeFileGitDiffView, {
 import { dict } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { ProcessingEnum } from '@/types/enums/common';
+import type { OpenUiArtifact } from '@/types/interfaces/openUi';
 import { cloneDeep } from '@/utils/common';
 import { normalizeFileDiffItems } from '@/utils/fileChangeDiff';
+import {
+  buildOpenUiArtifactFileUrl,
+  extractOpenUiArtifactId,
+  isOpenUiArtifactRef,
+  isOpenUiRenderToolName,
+  resolveOpenUiDisplayState,
+} from '@/utils/openUiArtifact';
 import {
   BorderOutlined,
   CheckOutlined,
@@ -21,12 +29,23 @@ import {
 import { Button, message, Tooltip, Typography } from 'antd';
 import classNames from 'classnames';
 import { isEqual } from 'lodash';
-import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  lazy,
+  memo,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 import { useModel } from 'umi';
 import styles from './index.less';
 import SeeDetailModal from './SeeDetailModal';
 
 const cx = classNames.bind(styles);
+const OpenUiArtifactView = lazy(
+  () => import('@/components/business-component/OpenUiArtifactView'),
+);
 
 /**
  * 极简、快速且鲁棒的行级差异统计函数（Myers / LCS 基础版）
@@ -142,6 +161,25 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
   }, [innerProcessing.result]);
 
   const hasDiff = diffItems.length > 0;
+  const openUiDisplayState = useMemo(
+    () => resolveOpenUiDisplayState(innerProcessing.result),
+    [innerProcessing.result],
+  );
+  const openUiRenderInput =
+    openUiDisplayState.status === 'absent'
+      ? null
+      : openUiDisplayState.renderInput;
+  const openUiArtifact =
+    openUiDisplayState.status === 'ready'
+      ? openUiDisplayState.artifact
+      : undefined;
+  const inlineArtifactId =
+    openUiRenderInput?.artifactId ??
+    extractOpenUiArtifactId(innerProcessing.result) ??
+    innerProcessing.executeId;
+  const isOpenUiRenderProcess = isOpenUiRenderToolName(
+    innerProcessing.name || props.name,
+  );
 
   // 统计总的 additions 和 deletions
   const { totalAdditions, totalDeletions } = useMemo(() => {
@@ -433,6 +471,28 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
     openPreviewPage();
   }, [detailData, innerProcessing, showPagePreview, pagePreviewData]);
 
+  const handleOpenUiSidecar = useCallback(
+    async (artifact: OpenUiArtifact) => {
+      const conversationId = props.conversationId;
+      if (conversationId === undefined || conversationId === null) {
+        return;
+      }
+      // sidecar 不再走专用预览面板：直接在文件树中选中 data/{artifactId}.openui.json，
+      // 复用文件树既有的 OpenUiRuntimeFrame 预览（与 handleOpenFileTree 一致）。
+      // forceRefresh 确保刚落盘的 .openui.json 入树；自动选中逻辑对「尚未入树」会 pending+补选。
+      await openPreviewView(Number(conversationId), { forceRefresh: true });
+      setTaskAgentSelectedFileId(`data/${artifact.artifactId}.openui.json`);
+      // 每次点击更新触发标志，确保即使文件ID相同也能强制触发选中
+      setTaskAgentSelectTrigger(Date.now());
+    },
+    [
+      props.conversationId,
+      openPreviewView,
+      setTaskAgentSelectedFileId,
+      setTaskAgentSelectTrigger,
+    ],
+  );
+
   // 自动打开预览页面功能
   // useEffect(() => {
   //   if (innerProcessing.status === ProcessingEnum.EXECUTING) {
@@ -442,9 +502,44 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
   //   }
   // }, [innerProcessing]);
 
+  // 渲染工具（OpenUI）：不展示工具调用卡片，仅渲染 sidecar/inline 产物。
+  // 必须在下方 Event 类型隐藏之前处理——RENDER_UI 历史项 type=Event，否则会被
+  // `type === Event → return null` 直接吞掉。artifact 缺席（EXECUTING / 无 ref/input）不渲染。
+  if (isOpenUiRenderProcess) {
+    if (openUiDisplayState.status === 'absent') {
+      return null;
+    }
+    return (
+      <div
+        className={cx(styles['markdown-custom-process'], styles.openuiInline)}
+        key={props.dataKey}
+        data-key={props.dataKey}
+      >
+        <Suspense fallback={null}>
+          <OpenUiArtifactView
+            artifact={openUiArtifact}
+            inlineInput={openUiRenderInput || undefined}
+            inlineArtifactId={inlineArtifactId}
+            artifactUrl={
+              openUiArtifact && isOpenUiArtifactRef(openUiArtifact)
+                ? buildOpenUiArtifactFileUrl(
+                    props.conversationId,
+                    openUiArtifact.artifactId,
+                    openUiArtifact.digest,
+                  ) || undefined
+                : undefined
+            }
+            conversationId={props.conversationId}
+            onOpenSidecar={handleOpenUiSidecar}
+          />
+        </Suspense>
+      </div>
+    );
+  }
+
   if (
     !innerProcessing.executeId ||
-    innerProcessing.type === AgentComponentTypeEnum.Event // 所有事件都不显示
+    innerProcessing.type === AgentComponentTypeEnum.Event // 所有（非渲染）事件都不显示
   ) {
     return null;
   }
@@ -604,6 +699,26 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
           onClose={() => setOpenModal(false)}
           data={detailData}
         />
+        {openUiDisplayState.status !== 'absent' && (
+          <Suspense fallback={null}>
+            <OpenUiArtifactView
+              artifact={openUiArtifact}
+              inlineInput={openUiRenderInput || undefined}
+              inlineArtifactId={inlineArtifactId}
+              artifactUrl={
+                openUiArtifact && isOpenUiArtifactRef(openUiArtifact)
+                  ? buildOpenUiArtifactFileUrl(
+                      props.conversationId,
+                      openUiArtifact.artifactId,
+                      openUiArtifact.digest,
+                    ) || undefined
+                  : undefined
+              }
+              conversationId={props.conversationId}
+              onOpenSidecar={handleOpenUiSidecar}
+            />
+          </Suspense>
+        )}
       </div>
       {/* Plan 类型展开内容 */}
       {renderPlanDetails()}

@@ -1102,6 +1102,8 @@ export interface ModelConfig {
   isReasonModel: number;
   /** token上限 */
   maxTokens: number;
+  /** 模型范围：Space-个人空间 、 Tenant-系统模型 */
+  scope?: 'Space' | 'Tenant';
 }
 
 /**

@@ -37,6 +37,7 @@ const RawSegmentInfo: React.FC<RawSegmentInfoProps> = ({
   onDel,
   onSuccessUpdateName,
   documentInfo,
+  onSegmentSelect,
 }) => {
   // 知识库文档分段信息
   const [rawSegmentInfoList, setRawSegmentInfoList] = useState<
@@ -53,6 +54,21 @@ const RawSegmentInfo: React.FC<RawSegmentInfoProps> = ({
   const [currentEditItem, setCurrentEditItem] =
     useState<KnowledgeRawSegmentInfo | null>(null);
   const [confirmLoading, setConfirmLoading] = useState<boolean>(false);
+  // 当前选中的分段（用于原文对照）
+  const [selectedSegmentId, setSelectedSegmentId] = useState<string | number | null>(null);
+
+  // 处理分段点击
+  const handleSegmentClick = (segment: KnowledgeRawSegmentInfo) => {
+    const newSelectedId = selectedSegmentId === segment.id ? null : segment.id;
+    setSelectedSegmentId(newSelectedId);
+
+    if (onSegmentSelect) {
+      // 关键：用 `!== null` 显式判断，不能用 truthy 判断。
+      // 否则当 segment.id 为 0 / "0" 等 falsy 值时，即使选中了分段也会错误地传 null，
+      // 导致父组件 selectedSegment state 永远为 null，右侧原文对照无法高亮（Bug A）。
+      onSegmentSelect(newSelectedId !== null ? segment : null);
+    }
+  };
 
   // 滚动容器与内容区域，用于自动补全加载
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -226,6 +242,7 @@ const RawSegmentInfo: React.FC<RawSegmentInfoProps> = ({
   return (
     <div
       className={cx('flex-1', 'h-full', 'flex', 'flex-col', 'overflow-hide')}
+      style={{ minWidth: '360px' }}
     >
       <header className={cx(styles.header, 'flex', 'items-center')}>
         <ConditionRender condition={!!documentInfo}>
@@ -301,8 +318,10 @@ const RawSegmentInfo: React.FC<RawSegmentInfoProps> = ({
                     'relative',
                     'group',
                     'hover:bg-gray-50',
+                    selectedSegmentId === info.id && styles['selected-segment'],
                   )}
                   style={{ position: 'relative' }} // ensure relative for absolute positioning of edit icon
+                  onClick={() => handleSegmentClick(info)}
                   onMouseEnter={(e) => {
                     const target = e.currentTarget.querySelector('.edit-icon');
                     if (target) {
@@ -330,7 +349,10 @@ const RawSegmentInfo: React.FC<RawSegmentInfoProps> = ({
                       borderRadius: '4px',
                       boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
                     }}
-                    onClick={() => handleEdit(info)}
+                    onClick={(e) => {
+                      e.stopPropagation(); // 防止触发分段点击
+                      handleEdit(info);
+                    }}
                   >
                     <Tooltip
                       title={dict(
