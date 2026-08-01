@@ -19,6 +19,20 @@ const openUiRef = {
 };
 const openUiRefUpdated = { ...openUiRef, operation: 'updated' };
 
+/** RENDER_UI 事件携带的 render input（openui-lang 源），无 artifactId/path。 */
+const renderInput = {
+  schemaVersion: 'nuwax.openui/v1',
+  title: 'Nuwax OpenUI 演示',
+  presentation: { mode: 'inline', preferredWidth: 'wide' },
+  document: {
+    language: 'openui-lang',
+    specVersion: '0.5',
+    source: 'root = TextContent("demo", "large-heavy")',
+  },
+  bindings: { tools: [] },
+  fallback: { markdown: '' },
+};
+
 /** 构造一条 RENDER_UI PROCESSING 事件：subEventType=RENDER_UI，openui-ref 在 result.data。 */
 function renderUiEvent(overrides: Record<string, unknown> = {}) {
   return {
@@ -111,6 +125,66 @@ describe('applyOpenUiToolCallSseEvent', () => {
     });
     expect(patched?.text).toContain('markdown-custom-process');
     expect(patched?.text).toContain('executeId="call_openui_1"');
+  });
+
+  it('maps a RENDER_UI event carrying render input (no ref) for inline source render', () => {
+    const patched = applyOpenUiToolCallSseEvent(
+      {
+        eventType: ConversationEventTypeEnum.PROCESSING,
+        data: {
+          subEventType: 'RENDER_UI',
+          status: 'completed',
+          result: {
+            executeId: 'call_input_1',
+            name: 'Backend.Sandbox.Event.renderUI',
+            status: 'completed',
+            data: null,
+            input: renderInput,
+          },
+        },
+      } as any,
+      { id: 'msg-1', text: '', processingList: [] } as any,
+    );
+
+    // 无 ref 但有 render input：不丢弃，建 processing 项并把 input 透传给下游
+    // MarkdownCustomProcess → resolveOpenUiDisplayState（'input-only' inline 源渲染）。
+    expect(patched).not.toBeNull();
+    expect(patched?.processingList?.[0]?.result).toMatchObject({
+      executeId: 'call_input_1',
+      input: renderInput,
+    });
+  });
+
+  // 对齐后端实际报文：openui-ref 作为 JSON 字符串放在 result.data.output，
+  // render input 放在 result.input。BFS 应从 output 字符串里解析出 ref。
+  it('extracts openui-ref from result.data.output JSON string', () => {
+    const patched = applyOpenUiToolCallSseEvent(
+      {
+        eventType: ConversationEventTypeEnum.PROCESSING,
+        data: {
+          subEventType: 'RENDER_UI',
+          status: 'completed',
+          result: {
+            executeId: 'call_output_1',
+            name: 'Backend.Sandbox.Event.renderUI',
+            status: 'completed',
+            data: {
+              output: JSON.stringify(openUiRef),
+              metadata: { truncated: false },
+            },
+            input: renderInput,
+          },
+        },
+      } as any,
+      { id: 'msg-1', text: '', processingList: [] } as any,
+    );
+
+    expect(patched).not.toBeNull();
+    expect(patched?.processingList?.[0]?.status).toBe(ProcessingEnum.FINISHED);
+    expect(patched?.processingList?.[0]?.result).toMatchObject({
+      structuredContent: openUiRef,
+      executeId: 'call_output_1',
+    });
   });
 
   it('reads status from eventData.status when result.status is absent', () => {

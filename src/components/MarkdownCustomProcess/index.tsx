@@ -520,6 +520,40 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
     return null;
   }
 
+  // 渲染工具（OpenUI）：新逻辑下不展示工具调用卡片，仅渲染 sidecar/inline 产物。
+  // artifact 缺席（EXECUTING 或无 ref/input）时不渲染任何 UI。
+  if (isOpenUiRenderProcess) {
+    if (openUiDisplayState.status === 'absent') {
+      return null;
+    }
+    return (
+      <div
+        className={cx(styles['markdown-custom-process'])}
+        key={props.dataKey}
+        data-key={props.dataKey}
+      >
+        <Suspense fallback={null}>
+          <OpenUiArtifactView
+            artifact={openUiArtifact}
+            inlineInput={openUiRenderInput || undefined}
+            inlineArtifactId={inlineArtifactId}
+            artifactUrl={
+              openUiArtifact && isOpenUiArtifactRef(openUiArtifact)
+                ? buildOpenUiArtifactFileUrl(
+                    props.conversationId,
+                    openUiArtifact.artifactId,
+                    openUiArtifact.digest,
+                  ) || undefined
+                : undefined
+            }
+            conversationId={props.conversationId}
+            onOpenSidecar={handleOpenUiSidecar}
+          />
+        </Suspense>
+      </div>
+    );
+  }
+
   // 工具栏标题：过长时 tooltip 限高 3 行，超出出现滚动条
   const processName =
     innerProcessing?.name || dict('PC.Components.MarkdownCustomProcess.noName');

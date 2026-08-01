@@ -20,7 +20,10 @@ import type {
   MessageInfo,
   ProcessingInfo,
 } from '@/types/interfaces/conversationInfo';
-import { extractOpenUiArtifact } from '@/utils/openUiArtifact';
+import {
+  extractOpenUiArtifact,
+  extractOpenUiRenderInput,
+} from '@/utils/openUiArtifact';
 import { OPENUI_RENDER_TOOL_BASE_NAME } from '@nuwax-ai/openui-mcp/contracts';
 import {
   extractEventData,
@@ -100,8 +103,11 @@ export function applyOpenUiToolCallSseEvent(
   }
 
   const result = asRecord(eventData.result);
-  // RENDER_UI 的 openui-ref 直接放在 result.data（对齐 ASK_QUESTION）。
+  // RENDER_UI 事件携带两种产物之一：
+  //   - openui-ref（artifactId/path）在 result.data → 'ready'，按文件渲染；
+  //   - render input（openui-lang source / title / presentation）在 result.input → 'input-only'，inline 源渲染。
   const openUiArtifact = extractOpenUiArtifact(result?.data);
+  const renderInput = extractOpenUiRenderInput(result);
   const processingStatus = mapToolStatus(eventData.status ?? result?.status);
 
   const artifactId = openUiArtifact
@@ -110,8 +116,12 @@ export function applyOpenUiToolCallSseEvent(
   const executeId =
     readString(eventData.executeId, result?.executeId, artifactId) ?? undefined;
 
-  // 完成态必须有 openui-ref；prose-only 完成不建空壳 processing 项
-  if (processingStatus === ProcessingEnum.FINISHED && !openUiArtifact) {
+  // 完成态必须有 openui-ref 或 render input；都没有则不建空壳 processing 项
+  if (
+    processingStatus === ProcessingEnum.FINISHED &&
+    !openUiArtifact &&
+    !renderInput
+  ) {
     return null;
   }
   // 无法定位稳定 executeId 时不能 upsert（执行态无 ref 时至少需要 executeId）
@@ -123,7 +133,8 @@ export function applyOpenUiToolCallSseEvent(
     readString(eventData.name, result?.name) ?? OPENUI_RENDER_TOOL_BASE_NAME;
 
   // 复用旧 tool_call 形态产出的 result 结构：下游 MarkdownCustomProcess →
-  // resolveOpenUiDisplayState 优先读 structuredContent / rawOutput / data，保持不变。
+  // resolveOpenUiDisplayState 优先读 structuredContent / rawOutput / data / input。
+  // render input（无 ref）放进 input / rawOutput，供 'input-only' inline 渲染。
   const resultPayload: Record<string, unknown> = {
     executeId,
     name: toolName,
@@ -131,7 +142,7 @@ export function applyOpenUiToolCallSseEvent(
     success: processingStatus !== ProcessingEnum.FAILED,
     error: '',
     data: openUiArtifact,
-    input: {},
+    input: (result?.input ?? {}) as Record<string, unknown>,
     startTime: Date.now(),
     endTime: Date.now(),
     ...(openUiArtifact
@@ -139,6 +150,8 @@ export function applyOpenUiToolCallSseEvent(
           structuredContent: openUiArtifact,
           rawOutput: { structuredContent: openUiArtifact },
         }
+      : renderInput
+      ? { rawOutput: { input: result?.input } }
       : {}),
   };
 
