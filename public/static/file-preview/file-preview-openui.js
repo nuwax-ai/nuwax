@@ -133,6 +133,8 @@ async function renderOpenUi(url, container, hooks) {
         hooks && typeof hooks.registerPreviewer === 'function'
             ? hooks.registerPreviewer
             : function () {};
+    // 从 chat 打开（带 _ticket，有会话）才允许表单提交转发；分享链接（sk）只读。
+    const isChat = !!(hooks && hooks.isChat);
 
     container.className = 'preview-container html-preview';
 
@@ -238,21 +240,27 @@ async function renderOpenUi(url, container, hooks) {
             return;
         }
 
-        // 分享页只读：无会话 sender，表单提交一律拒绝
+        // OPENUI_ACTION：从 chat 打开（isChat，有会话）→ 经 notifyParent 桥接到 App @message，
+        // 由移动端 file-preview-page 转交 chat 页发送；立即回 success 让 runtime 清掉 pending。
+        // 分享页（sk，只读）→ 一律拒绝。
         if (data.type === 'OPENUI_ACTION') {
             const actionId =
                 data.event && typeof data.event.actionId === 'string'
                     ? data.event.actionId
                     : '';
+            if (isChat) {
+                notifyParent({ type: 'OPENUI_ACTION', event: data.event });
+            }
             iframe.contentWindow?.postMessage(
                 {
                     type: 'OPENUI_ACTION_RESULT',
                     protocolVersion: OPENUI_RUNTIME_PROTOCOL,
                     nonce,
                     actionId,
-                    success: false,
-                    message:
-                        'Share preview is read-only and cannot submit forms.',
+                    success: isChat,
+                    message: isChat
+                        ? undefined
+                        : 'Share preview is read-only and cannot submit forms.',
                 },
                 '*',
             );
