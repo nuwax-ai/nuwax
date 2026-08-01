@@ -493,6 +493,8 @@ export interface PageParams {
 // 查询特定数量输入参数
 export interface ListParams {
   size: number;
+  pageIndex?: number;
+  keyword?: string;
 }
 
 // 插件发布弹窗组件
