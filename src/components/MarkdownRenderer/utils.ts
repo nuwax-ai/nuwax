@@ -521,7 +521,9 @@ function groupMarkdownProcesses(text: string): string {
     const isPlan = /type=\\?["']Plan\\?["']/i.test(tagMatch);
     // OpenUI 是对话中的正式交互内容，不是可折叠的执行日志。
     // 识别原始 name，避免属性归一化后 name 被 URL 编码而漏判。
-    const isOpenUi = /name=\\?["'][^"']*nuwax_render_openui/i.test(tagMatch);
+    const isOpenUi =
+      /name=\\?["'][^"']*nuwax_render_openui/i.test(tagMatch) ||
+      /name=\\?["'][^"']*renderui/i.test(tagMatch);
     // Event 只用于传递内部状态，渲染层本来也不会展示；不能让它参与工具调用分组计数。
     const isEvent = /type=\\?["']Event\\?["']/i.test(tagMatch);
 
@@ -532,7 +534,9 @@ function groupMarkdownProcesses(text: string): string {
       result += textBefore;
     }
 
-    if (isEvent) {
+    // Event 默认只用于传递内部状态、不展示；但 RENDER_UI 专用事件
+    // （type=Event，name=Backend.Sandbox.Event.renderUI）需作为 OpenUI 产物渲染，不能丢弃。
+    if (isEvent && !isOpenUi) {
       lastIndex = blockRegex.lastIndex;
       continue;
     }
