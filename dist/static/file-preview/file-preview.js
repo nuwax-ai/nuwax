@@ -12,6 +12,8 @@ let fileType = '';
 let originalFileType = ''; // Record original file extension for precise notification
 let downloadUrl = ''; // Download API URL
 let fileName = ''; // File name
+const SHARE_EXPIRED_MESSAGE =
+    'The sharing link has expired, please regenerate it';
 const params = getQueryParams();
 
 // Local debugging for development environment (do not delete)!!
@@ -118,6 +120,38 @@ async function renderHtml(url, container) {
     };
 
     container.appendChild(iframe);
+}
+
+/**
+ * 分享过期：销毁预览并展示友好错误（隐藏下载）
+ * 不再使用倒计时定时器；改为在拉取返回过期/失败时由调用方触发。
+ * （OpenUI / 其它分享预览共用；OpenUI 渲染见 file-preview-openui.js）
+ */
+function handleShareExpired() {
+    if (currentPreviewer && typeof currentPreviewer.destroy === 'function') {
+        try {
+            currentPreviewer.destroy();
+        } catch (e) { /* ignore */ }
+        currentPreviewer = null;
+    }
+
+    const container = document.getElementById('previewContainer');
+    if (container) {
+        container.innerHTML = '';
+    }
+
+    const previewDownloadBtn = document.getElementById('previewDownloadBtn');
+    if (previewDownloadBtn) {
+        previewDownloadBtn.classList.add('hidden');
+    }
+
+    // 过期后重试无意义：隐藏 Retry，仅展示说明
+    const retryBtn = document.querySelector('.retry-action-btn');
+    if (retryBtn) {
+        retryBtn.classList.add('hidden');
+    }
+
+    showError(SHARE_EXPIRED_MESSAGE);
 }
 
 // ============================================
@@ -302,7 +336,8 @@ async function startPreview() {
             // Extract file name from path, excluding query parameters
             const purePath = data.content.split('?')[0];
             fileName = purePath.split('/').pop();
-            fileType = purePath.split('.').pop().toLowerCase();
+            // 优先识别 .openui.json，避免被拆成普通 json
+            fileType = resolvePreviewFileType(purePath);
             // Set download URL
             downloadUrl = baseUrl + data.content + '?sk=' + sk;
             
@@ -319,7 +354,7 @@ async function startPreview() {
         // 从路径中提取文件名，排除查询参数
         const purePath = params.fileUrl.split('?')[0];
         fileName = purePath.split('/').pop();
-        fileType = purePath.split('.').pop().toLowerCase();
+        fileType = resolvePreviewFileType(purePath);
         // 设置下载地址
         downloadUrl = params.fileUrl + "?sk=" + params._sk;
     }
@@ -330,23 +365,24 @@ async function startPreview() {
         // 从路径中提取文件名，排除查询参数
         const purePath = params.docUrl.split('?')[0];
         fileName = purePath.split('/').pop();
-        fileType = purePath.split('.').pop().toLowerCase();
+        fileType = resolvePreviewFileType(purePath);
         // 设置下载地址
         downloadUrl = params.docUrl;
     }
 
     // Auto-detect file type from URL if not provided
     if (!fileType && fileUrl) {
-        const ext = fileUrl.split('.').pop().split('?')[0].toLowerCase();
+        const purePath = fileUrl.split('?')[0];
+        const detected = resolvePreviewFileType(purePath);
         const supportedTypes = [
             'docx', 'xlsx', 'xls', 'pdf', 'pptx', 'ppt',
-            'md', 'html', 'css', 'js', 'ts', 'txt', 'json',
+            'md', 'html', 'css', 'js', 'ts', 'txt', 'json', 'openui',
             'png', 'jpg', 'jpeg', 'gif', 'svg', 'py', 'java',
             'mp4', 'webm', 'ogg', 'mov', 'avi',
             'mp3', 'wav', 'm4a', 'aac', 'flac', 'wma'
         ];
-        if (supportedTypes.includes(ext)) {
-            fileType = ext;
+        if (supportedTypes.includes(detected)) {
+            fileType = detected;
         }
     }
 
@@ -436,6 +472,18 @@ async function startPreview() {
                 // HTML (render as webpage)
                 case 'html':
                     await renderHtml(fileUrl, container);
+                    break;
+
+                // OpenUI artifact（分享/独立预览走固化 Runtime，实现见 file-preview-openui.js）
+                case 'openui':
+                    await renderOpenUi(fileUrl, container, {
+                        onShareExpired: handleShareExpired,
+                        registerPreviewer: (previewer) => {
+                            currentPreviewer = previewer;
+                        },
+                        // 从 chat 打开（带 _ticket，有会话）才允许表单提交转发；分享链接（sk）只读。
+                        isChat: !!params._ticket,
+                    });
                     break;
 
                 // Code files with syntax highlighting
