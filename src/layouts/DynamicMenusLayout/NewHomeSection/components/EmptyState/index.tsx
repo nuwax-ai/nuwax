@@ -9,9 +9,13 @@ const cx = classNames.bind(styles);
 
 interface EmptyStateProps {
   keyword: string;
+  type?: 'conversation' | 'recent';
 }
 
-const EmptyState: React.FC<EmptyStateProps> = ({ keyword }) => {
+const EmptyState: React.FC<EmptyStateProps> = ({
+  keyword,
+  type = 'conversation',
+}) => {
   const noSearchResultText = dict(
     'PC.Components.HistoryConversationList.noSearchResult',
   );
@@ -28,7 +32,9 @@ const EmptyState: React.FC<EmptyStateProps> = ({ keyword }) => {
             className={cx(styles['empty-state-img'])}
           />
           <Typography.Text className={cx(styles['empty-state-text'])}>
-            {dict('PC.Components.HistoryConversationList.emptySession')}
+            {type === 'conversation'
+              ? dict('PC.Components.HistoryConversationList.emptySession')
+              : dict('PC.Layouts.DynamicMenusLayout.HomeSection.noAgentUsed')}
           </Typography.Text>
         </div>
       )}
