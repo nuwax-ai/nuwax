@@ -1,88 +1,47 @@
 /**
- * 将 ACP / agentSessionUpdate 的 nuwax_render_openui 完成态映射为
- * processingList + markdown-custom-process，供 MarkdownCustomProcess /
- * OpenUiArtifactView 消费（sidecar / autoOpen）。
+ * 将后端 RENDER_UI 专用 SSE 事件映射为 processingList + markdown-custom-process，
+ * 供 MarkdownCustomProcess / OpenUiArtifactView 消费（sidecar / autoOpen）。
  *
- * 背景：ask-question 靠 rawInput 出 DockPanel；OpenUI sidecar 靠完成态
- * rawOutput.structuredContent（nuwax.openui-ref）。nuwaxcode 1.17.6 已透传
- * structuredContent；Claude 完成态常把 openui-ref 放在 rawOutput 字符串且
- * 缺 title/rawInput。Host 需同时兼容这两种形态。
+ * 设计对齐 ASK_QUESTION：后端把 nuwax_render_openui 的产物作为一等公民事件下发——
+ * `eventType=PROCESSING + subEventType=RENDER_UI`，`nuwax.openui-ref` 放在 `result.data`，
+ * 并携带状态生命周期（EXECUTING → FINISHED → FAILED，operation created/updated）。
+ *
+ * 不再靠工具名 / schemaVersion / 输出通道嗅探识别渲染结果：旧通用 `tool_call` 形态
+ * （title 含 `nuwax_render_openui`、structuredContent / rawOutput 散落）一律不再处理。
  */
 import { getCustomBlock } from '@/plugins/ds-markdown-process';
-import { AgentComponentTypeEnum } from '@/types/enums/agent';
+import {
+  AgentComponentTypeEnum,
+  ConversationEventTypeEnum,
+} from '@/types/enums/agent';
 import { MessageStatusEnum, ProcessingEnum } from '@/types/enums/common';
 import type {
   ConversationChatResponse,
   MessageInfo,
   ProcessingInfo,
 } from '@/types/interfaces/conversationInfo';
-import type { OpenUiArtifact } from '@/types/interfaces/openUi';
 import {
   extractOpenUiArtifact,
-  isOpenUiRenderToolName,
+  extractOpenUiRenderInput,
 } from '@/utils/openUiArtifact';
-import { isOpenUiRenderInputSchemaVersion } from '@nuwax-ai/openui-mcp/contracts';
+import { OPENUI_RENDER_TOOL_BASE_NAME } from '@nuwax-ai/openui-mcp/contracts';
 import {
   extractEventData,
   parseSseEventEnvelope,
 } from './parseSseEventEnvelope';
 
+/** RENDER_UI 事件可能的 eventName 变体（对齐 ASK_QUESTION 的 Backend.Sandbox.Event.* 命名）。 */
+const RENDER_UI_EVENT_NAMES = new Set<string>([
+  'RenderUi',
+  'RenderUI',
+  'Backend.Sandbox.Event.RenderUi',
+  'Backend.Sandbox.Event.RenderUI',
+]);
+
 function asRecord(value: unknown): Record<string, unknown> | undefined {
   return value && typeof value === 'object'
     ? (value as Record<string, unknown>)
     : undefined;
-}
-
-function readToolCallId(
-  eventData: Record<string, unknown>,
-): string | undefined {
-  const id =
-    eventData.toolCallId || eventData.tool_call_id || eventData.executeId;
-  return typeof id === 'string' && id.trim() ? id : undefined;
-}
-
-function readToolName(
-  eventData: Record<string, unknown>,
-  rawInput?: Record<string, unknown>,
-  fallbackName?: string,
-): string {
-  const candidates = [
-    eventData.title,
-    eventData.name,
-    eventData.toolName,
-    eventData.tool_name,
-    rawInput?.toolName,
-    fallbackName,
-  ];
-  for (const name of candidates) {
-    if (typeof name === 'string' && name.trim()) return name.trim();
-  }
-  return 'nuwax_render_openui';
-}
-
-function readRawInput(
-  eventData: Record<string, unknown>,
-): Record<string, unknown> | undefined {
-  return (
-    asRecord(eventData.rawInput) ||
-    asRecord(eventData.raw_input) ||
-    asRecord(asRecord(eventData.ext)?.rawInput) ||
-    asRecord(asRecord(eventData.ext)?.raw_input)
-  );
-}
-
-/**
- * 读取 ACP 完成态输出。nuwaclaw mapper 有时把 rawOutput 映成 `output`；
- * Claude 常把 openui-ref 直接放在字符串 rawOutput 里。
- */
-function readRawOutput(eventData: Record<string, unknown>): unknown {
-  if ('rawOutput' in eventData) return eventData.rawOutput;
-  if ('raw_output' in eventData) return eventData.raw_output;
-  if ('output' in eventData) return eventData.output;
-  const ext = asRecord(eventData.ext);
-  if (ext && 'rawOutput' in ext) return ext.rawOutput;
-  if (ext && 'raw_output' in ext) return ext.raw_output;
-  return undefined;
 }
 
 function mapToolStatus(status: unknown): ProcessingEnum {
@@ -93,68 +52,44 @@ function mapToolStatus(status: unknown): ProcessingEnum {
   return ProcessingEnum.EXECUTING;
 }
 
-/**
- * 仅从完成态输出通道解析 openui-ref，避免对整包 eventData（含巨大 rawInput）
- * 做 BFS——每个非 OpenUI tool_call_update 都会走识别失败兜底。
- */
-function extractOpenUiArtifactFromOutputChannels(
-  eventData: Record<string, unknown>,
-  rawOutput?: unknown,
-): OpenUiArtifact | null {
-  return (
-    extractOpenUiArtifact(rawOutput) ||
-    extractOpenUiArtifact(eventData.content) ||
-    extractOpenUiArtifact(eventData.structuredContent) ||
-    extractOpenUiArtifact(eventData.structured_content) ||
-    null
-  );
-}
-
-/**
- * 是否为 OpenUI render 工具调用（名称、入参契约，或输出通道已是 openui-ref）。
- */
-export function isOpenUiRenderToolCallEvent(
-  eventData: Record<string, unknown>,
-  rawInput?: Record<string, unknown>,
-  rawOutput?: unknown,
-  cachedArtifact?: OpenUiArtifact | null,
-): boolean {
-  const names = [
-    eventData.title,
-    eventData.name,
-    eventData.toolName,
-    eventData.tool_name,
-    rawInput?.toolName,
-  ];
-  if (names.some((name) => isOpenUiRenderToolName(name))) {
-    return true;
+function readString(...candidates: unknown[]): string | undefined {
+  for (const candidate of candidates) {
+    if (typeof candidate === 'string' && candidate.trim()) {
+      return candidate.trim();
+    }
   }
-  // render 入参契约：由 openui-mcp contracts 统一判断 schemaVersion 族
-  if (isOpenUiRenderInputSchemaVersion(rawInput?.schemaVersion)) {
-    return true;
-  }
-  // Claude 完成态常无 title/rawInput，但 rawOutput/content 已是 openui-ref
-  if (cachedArtifact !== undefined) return !!cachedArtifact;
-  return !!extractOpenUiArtifactFromOutputChannels(eventData, rawOutput);
+  return undefined;
 }
 
 /**
- * 已有同 toolCallId 的 OpenUI processing 项时，允许无 title/rawInput 的完成态续写。
+ * 是否为 RENDER_UI 专用 PROCESSING 事件。
+ *
+ * 判别：`eventType === PROCESSING`，且 subEventType 为 `RENDER_UI`，或 eventName 命中
+ * Backend.Sandbox.Event.RenderUi 变体。导出供单测与历史恢复复用判别口径。
  */
-function hasExistingOpenUiProcess(
-  currentMessage: MessageInfo,
-  toolCallId: string,
+export function isRenderUiSseEvent(
+  res: ConversationChatResponse,
+  eventData: Record<string, unknown>,
 ): boolean {
-  const existing = (currentMessage.processingList || []).find(
-    (item) => item.executeId === toolCallId,
+  if (res.eventType !== ConversationEventTypeEnum.PROCESSING) return false;
+  const envelope = parseSseEventEnvelope(res);
+  const subEventType = readString(
+    eventData.subEventType,
+    eventData.sub_event_type,
+    envelope.subEventType,
+    envelope.sub_type,
+    envelope.sub_event_type,
   );
-  if (!existing) return false;
-  if (isOpenUiRenderToolName(existing.name)) return true;
-  return !!extractOpenUiArtifact(existing.result);
+  if (subEventType === 'RENDER_UI') return true;
+  const result = asRecord(eventData.result);
+  const eventName = readString(eventData.name, result?.name);
+  return eventName !== undefined && RENDER_UI_EVENT_NAMES.has(eventName);
 }
 
 /**
- * 从 ACP tool_call_update 构造 / 更新 OpenUI ProcessingInfo。
+ * 从 RENDER_UI 的 PROCESSING 事件构造 / 更新 OpenUI ProcessingInfo。
+ *
+ * 非渲染事件返回 null，交由 ask / acp 等其它 applier 继续判别。
  */
 export function applyOpenUiToolCallSseEvent(
   res: ConversationChatResponse,
@@ -162,103 +97,69 @@ export function applyOpenUiToolCallSseEvent(
 ): MessageInfo | null {
   const envelope = parseSseEventEnvelope(res);
   const eventData = extractEventData(envelope, res);
-  const subType = envelope.subType ?? envelope.sub_type;
 
-  const isToolCallLikeSubType =
-    subType === 'tool_call' || subType === 'tool_call_update';
-  const isToolCallEvent =
-    (envelope.message_type === 'tool_call' ||
-      envelope.messageType === 'tool_call' ||
-      isToolCallLikeSubType) &&
-    !!(
-      eventData.tool_call_id ||
-      eventData.toolCallId ||
-      eventData.raw_input ||
-      eventData.rawInput ||
-      eventData.rawOutput ||
-      eventData.raw_output ||
-      eventData.output ||
-      eventData.title
-    );
-
-  if (!isToolCallEvent) {
+  if (!isRenderUiSseEvent(res, eventData)) {
     return null;
   }
 
-  const toolCallId = readToolCallId(eventData);
-  if (!toolCallId) {
-    return null;
-  }
+  const result = asRecord(eventData.result);
+  // RENDER_UI 事件携带两种产物之一：
+  //   - openui-ref（artifactId/path）在 result.data → 'ready'，按文件渲染；
+  //   - render input（openui-lang source / title / presentation）在 result.input → 'input-only'，inline 源渲染。
+  const openUiArtifact = extractOpenUiArtifact(result?.data);
+  const renderInput = extractOpenUiRenderInput(result);
+  const processingStatus = mapToolStatus(eventData.status ?? result?.status);
 
-  const rawInput = readRawInput(eventData);
-  const rawOutput = readRawOutput(eventData);
-  // 只扫输出通道一次，供识别与写入共用，避免重复 BFS / 扫整包 eventData
-  const openUiArtifact = extractOpenUiArtifactFromOutputChannels(
-    eventData,
-    rawOutput,
-  );
-  const existingOpenUi = hasExistingOpenUiProcess(currentMessage, toolCallId);
+  const artifactId = openUiArtifact
+    ? (openUiArtifact as { artifactId?: unknown }).artifactId
+    : undefined;
+  const executeId =
+    readString(eventData.executeId, result?.executeId, artifactId) ?? undefined;
 
-  // 新事件需能识别为 OpenUI；同 id 续写则放行（Claude 完成态常缺 title）
+  // 完成态必须有 openui-ref 或 render input；都没有则不建空壳 processing 项
   if (
-    !existingOpenUi &&
-    !isOpenUiRenderToolCallEvent(eventData, rawInput, rawOutput, openUiArtifact)
-  ) {
-    return null;
-  }
-
-  const existingItem = (currentMessage.processingList || []).find(
-    (item) => item.executeId === toolCallId,
-  );
-  const toolName = readToolName(eventData, rawInput, existingItem?.name);
-  const processingStatus = mapToolStatus(eventData.status);
-
-  // 完成态必须有 openui-ref；prose-only rawOutput 不建空壳 processing 项
-  if (processingStatus === ProcessingEnum.FINISHED && !openUiArtifact) {
-    return null;
-  }
-
-  // pending / in_progress：无 ref 时需有 rawInput（或已有同 id 项）才记 EXECUTING
-  if (
-    processingStatus === ProcessingEnum.EXECUTING &&
+    processingStatus === ProcessingEnum.FINISHED &&
     !openUiArtifact &&
-    !rawInput &&
-    !existingOpenUi
+    !renderInput
   ) {
     return null;
   }
+  // 无法定位稳定 executeId 时不能 upsert（执行态无 ref 时至少需要 executeId）
+  if (!executeId) {
+    return null;
+  }
 
-  const existingInput = asRecord(
-    asRecord(existingItem?.result as unknown)?.input,
-  );
+  const toolName =
+    readString(eventData.name, result?.name) ?? OPENUI_RENDER_TOOL_BASE_NAME;
+
+  // 复用旧 tool_call 形态产出的 result 结构：下游 MarkdownCustomProcess →
+  // resolveOpenUiDisplayState 优先读 structuredContent / rawOutput / data / input。
+  // render input（无 ref）放进 input / rawOutput，供 'input-only' inline 渲染。
   const resultPayload: Record<string, unknown> = {
-    executeId: toolCallId,
+    executeId,
     name: toolName,
     type: AgentComponentTypeEnum.ToolCall,
     success: processingStatus !== ProcessingEnum.FAILED,
     error: '',
     data: openUiArtifact,
-    input: rawInput || existingInput || {},
+    input: (result?.input ?? {}) as Record<string, unknown>,
     startTime: Date.now(),
     endTime: Date.now(),
-    // MarkdownCustomProcess → resolveOpenUiDisplayState 优先读这些键
     ...(openUiArtifact
       ? {
           structuredContent: openUiArtifact,
-          rawOutput: rawOutput ?? { structuredContent: openUiArtifact },
+          rawOutput: { structuredContent: openUiArtifact },
         }
-      : rawOutput !== undefined
-      ? { rawOutput }
+      : renderInput
+      ? { rawOutput: { input: result?.input } }
       : {}),
   };
 
   const processingItem: ProcessingInfo = {
-    executeId: toolCallId,
+    executeId,
     name: toolName,
     type: AgentComponentTypeEnum.ToolCall,
     status: processingStatus,
-    // ACP 完成态字段与后端 ExecuteResultInfo 不完全同构；下游 extractOpenUiArtifact
-    // 只关心 structuredContent / rawOutput / input，故经 unknown 收窄写入。
     result: resultPayload as unknown as ProcessingInfo['result'],
     targetId: -1,
     cardBindConfig: null as unknown as ProcessingInfo['cardBindConfig'],
@@ -269,7 +170,7 @@ export function applyOpenUiToolCallSseEvent(
     ...(currentMessage.processingList || []),
   ] as ProcessingInfo[];
   const existingIndex = processingList.findIndex(
-    (item) => item.executeId === toolCallId,
+    (item) => item.executeId === executeId,
   );
   if (existingIndex > -1) {
     processingList[existingIndex] = processingItem;

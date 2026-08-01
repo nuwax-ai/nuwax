@@ -502,20 +502,44 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
   //   }
   // }, [innerProcessing]);
 
-  if (
-    !innerProcessing.executeId ||
-    innerProcessing.type === AgentComponentTypeEnum.Event // 所有事件都不显示
-  ) {
-    return null;
+  // 渲染工具（OpenUI）：不展示工具调用卡片，仅渲染 sidecar/inline 产物。
+  // 必须在下方 Event 类型隐藏之前处理——RENDER_UI 历史项 type=Event，否则会被
+  // `type === Event → return null` 直接吞掉。artifact 缺席（EXECUTING / 无 ref/input）不渲染。
+  if (isOpenUiRenderProcess) {
+    if (openUiDisplayState.status === 'absent') {
+      return null;
+    }
+    return (
+      <div
+        className={cx(styles['markdown-custom-process'])}
+        key={props.dataKey}
+        data-key={props.dataKey}
+      >
+        <Suspense fallback={null}>
+          <OpenUiArtifactView
+            artifact={openUiArtifact}
+            inlineInput={openUiRenderInput || undefined}
+            inlineArtifactId={inlineArtifactId}
+            artifactUrl={
+              openUiArtifact && isOpenUiArtifactRef(openUiArtifact)
+                ? buildOpenUiArtifactFileUrl(
+                    props.conversationId,
+                    openUiArtifact.artifactId,
+                    openUiArtifact.digest,
+                  ) || undefined
+                : undefined
+            }
+            conversationId={props.conversationId}
+            onOpenSidecar={handleOpenUiSidecar}
+          />
+        </Suspense>
+      </div>
+    );
   }
 
-  // 流式 Markdown 有时会残留一条已完成的 OpenUI 工具标记，但对应的
-  // processing input/result 并不存在。它无法渲染任何 UI，继续显示只会形成
-  // 一个和真实 OpenUI 卡片并列的空壳工具条。
   if (
-    isOpenUiRenderProcess &&
-    innerProcessing.status === ProcessingEnum.FINISHED &&
-    openUiDisplayState.status === 'absent'
+    !innerProcessing.executeId ||
+    innerProcessing.type === AgentComponentTypeEnum.Event // 所有（非渲染）事件都不显示
   ) {
     return null;
   }

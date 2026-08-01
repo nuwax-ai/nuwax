@@ -54,6 +54,11 @@ describe('OpenUI file artifact references', () => {
         '%E7%BB%88%E7%AB%AF%E6%89%A7%E8%A1%8C%20nuwax_render_openui_v0_3_6',
       ),
     ).toBe(true);
+    // RENDER_UI 专用事件名（Backend.Sandbox.Event.renderUI 等）
+    expect(isOpenUiRenderToolName('Backend.Sandbox.Event.renderUI')).toBe(true);
+    expect(isOpenUiRenderToolName('Backend.Sandbox.Event.RenderUI')).toBe(true);
+    expect(isOpenUiRenderToolName('RenderUI')).toBe(true);
+    expect(isOpenUiRenderToolName('RenderUi')).toBe(true);
     expect(
       isOpenUiRenderToolName('nuwax-openui_nuwax_get_openui_reference'),
     ).toBe(false);

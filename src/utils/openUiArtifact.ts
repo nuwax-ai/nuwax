@@ -5,12 +5,16 @@ import type {
   OpenUiRenderState,
 } from '@/types/interfaces/openUi';
 import {
+  isOpenUiFileType,
   OPENUI_FILE_SCHEMA_PREFIX,
   OPENUI_FILE_SCHEMA_VERSION,
   OPENUI_FILE_TYPE,
   OPENUI_REF_SCHEMA_VERSION,
   OPENUI_REF_TYPE,
-  isOpenUiFileType,
+  OPENUI_REFERENCE_TOOL_BASE_NAME,
+  OPENUI_RENDER_TOOL_BASE_NAME,
+  OPENUI_UPDATE_GUIDE_TOOL_BASE_NAME,
+  OPENUI_VALIDATE_TOOL_BASE_NAME,
   openUiArtifactSchema,
   renderOpenUiInputSchema,
   type RenderOpenUiInput,
@@ -45,13 +49,13 @@ const presentationSchema = z.object({
 });
 
 /** OpenUI MCP 中「真正发布 Host UI」的工具基名（可出现在任意引擎包装名中）。 */
-const OPENUI_RENDER_TOOL_TOKEN = 'nuwax_render_openui';
+const OPENUI_RENDER_TOOL_TOKEN = OPENUI_RENDER_TOOL_BASE_NAME;
 
 /** 同服务器上的非 render 工具，名称里也可能带 openui，必须排除。 */
 const OPENUI_NON_RENDER_TOOL_TOKENS = [
-  'nuwax_get_openui_reference',
-  'nuwax_get_openui_update_guide',
-  'nuwax_validate_openui',
+  OPENUI_REFERENCE_TOOL_BASE_NAME,
+  OPENUI_UPDATE_GUIDE_TOOL_BASE_NAME,
+  OPENUI_VALIDATE_TOOL_BASE_NAME,
 ] as const;
 
 /**
@@ -81,6 +85,11 @@ function normalizeOpenUiToolName(name: string): string {
 export function isOpenUiRenderToolName(name: unknown): boolean {
   if (typeof name !== 'string') return false;
   const normalized = normalizeOpenUiToolName(name);
+  // RENDER_UI 专用事件名（对齐 ask-question 的 Backend.Sandbox.Event.* 命名），
+  // 如 Backend.Sandbox.Event.renderUI / RenderUI 等。
+  if (normalized === 'renderui' || normalized.endsWith('.renderui')) {
+    return true;
+  }
   if (!normalized.includes(OPENUI_RENDER_TOOL_TOKEN)) return false;
   return !OPENUI_NON_RENDER_TOOL_TOKENS.some((token) =>
     normalized.includes(token),
