@@ -9,12 +9,9 @@ import { cloneDeep } from '@/utils/common';
 import { normalizeFileDiffItems } from '@/utils/fileChangeDiff';
 import {
   buildOpenUiArtifactFileUrl,
-  buildOpenUiFilePath,
   extractOpenUiArtifactId,
   isOpenUiArtifactRef,
   isOpenUiRenderToolName,
-  legacyArtifactToOpenUiFile,
-  renderInputToOpenUiFile,
   resolveOpenUiDisplayState,
 } from '@/utils/openUiArtifact';
 import {
@@ -475,54 +472,24 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
   }, [detailData, innerProcessing, showPagePreview, pagePreviewData]);
 
   const handleOpenUiSidecar = useCallback(
-    (artifact: OpenUiArtifact) => {
-      // 预览场景优先复用工具返回中已有的渲染内容（openUiRenderInput），不再请求
-      // data/{artifactId}.openui.json，规避静态访问 cookie(static_sk) 失效及并发重复拉取。
-      const inlineFile = isOpenUiArtifactRef(artifact)
-        ? openUiRenderInput
-          ? renderInputToOpenUiFile(
-              openUiRenderInput,
-              artifact.artifactId,
-              artifact.digest,
-            )
-          : undefined
-        : legacyArtifactToOpenUiFile(artifact);
-      // 仅当内存中没有渲染内容（理论上不应发生）时，才回退到接口拉取
-      const artifactUrl = inlineFile
-        ? undefined
-        : isOpenUiArtifactRef(artifact)
-        ? buildOpenUiArtifactFileUrl(
-            props.conversationId,
-            artifact.artifactId,
-            artifact.digest,
-          )
-        : undefined;
-      showPagePreview({
-        name: artifact.title,
-        uri: '/static/openui-runtime/index.html',
-        params: {},
-        executeId: innerProcessing.executeId || artifact.artifactId,
-        source: 'openui',
-        sandboxProfile: 'openui-sidecar-v1',
-        artifactUrl: artifactUrl || undefined,
-        artifactId: artifact.artifactId,
-        artifactDigest: isOpenUiArtifactRef(artifact)
-          ? artifact.digest
-          : artifact.document.digest,
-        conversationId: props.conversationId,
-        openUiArtifactFile: inlineFile,
-        // file_path 自主拉取：iframe 内同源拉取（带得上 cookie），inlineFile 作为 relay 失败时的回退。
-        // conversationId 非法时返回 null → 不传 filePath，回退现有 inlineFile/artifactUrl 模式。
-        openUiFilePath:
-          buildOpenUiFilePath(props.conversationId, artifact.artifactId) ??
-          undefined,
-      });
+    async (artifact: OpenUiArtifact) => {
+      const conversationId = props.conversationId;
+      if (conversationId === undefined || conversationId === null) {
+        return;
+      }
+      // sidecar 不再走专用预览面板：直接在文件树中选中 data/{artifactId}.openui.json，
+      // 复用文件树既有的 OpenUiRuntimeFrame 预览（与 handleOpenFileTree 一致）。
+      // forceRefresh 确保刚落盘的 .openui.json 入树；自动选中逻辑对「尚未入树」会 pending+补选。
+      await openPreviewView(Number(conversationId), { forceRefresh: true });
+      setTaskAgentSelectedFileId(`data/${artifact.artifactId}.openui.json`);
+      // 每次点击更新触发标志，确保即使文件ID相同也能强制触发选中
+      setTaskAgentSelectTrigger(Date.now());
     },
     [
-      innerProcessing.executeId,
       props.conversationId,
-      showPagePreview,
-      openUiRenderInput,
+      openPreviewView,
+      setTaskAgentSelectedFileId,
+      setTaskAgentSelectTrigger,
     ],
   );
 

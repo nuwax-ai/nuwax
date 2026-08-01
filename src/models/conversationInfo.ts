@@ -547,6 +547,8 @@ export default () => {
           ({
             ...info,
             topic: result?.data?.topic,
+            icon: result?.data?.icon,
+            topicUpdated: result?.data?.topicUpdated,
           } as ConversationInfo),
       );
     },
@@ -1809,6 +1811,7 @@ export default () => {
     openTimedTask,
     closeTimedTask,
     setConversationInfo,
+    runUpdateTopic,
     // 文件树显隐状态
     isFileTreeVisible,
     // 文件树是否固定（用户点击后固定）

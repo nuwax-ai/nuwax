@@ -1,7 +1,6 @@
 import { ExpandPageAreaEnum, HideChatAreaEnum } from '@/types/enums/agent';
 import { ProcessingEnum } from '@/types/enums/common';
 import { ProcessingInfo } from '@/types/interfaces/conversationInfo';
-import type { OpenUiFile } from '@/types/interfaces/openUi';
 import { useCallback, useState } from 'react';
 
 /**
@@ -12,15 +11,7 @@ export interface PagePreviewData {
   uri: string; // 页面路径
   params: Record<string, any>; // URL 参数
   executeId: string; // 执行ID
-  source?: 'agent-page' | 'openui';
-  sandboxProfile?: 'openui-sidecar-v1';
-  artifactUrl?: string;
-  artifactId?: string;
-  artifactDigest?: string;
-  conversationId?: number | string;
-  openUiArtifactFile?: OpenUiFile;
-  /** OpenUI Runtime「自主拉取」模式：/api/computer/static 之后的相对路径 */
-  openUiFilePath?: string;
+  source?: 'agent-page';
 }
 
 /**

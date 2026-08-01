@@ -48,7 +48,8 @@ describe('buildOpenUiResumeMessage', () => {
     );
     expect(message).not.toContain('```json');
     expect(message).not.toContain('"schemaVersion"');
-    expect(message).toContain('<!--nuwax-openui-action-id:action-1-->');
+    // actionId 不再拼入用户消息正文（避免泄露到发送给 LLM 的提示词）。
+    expect(message).not.toContain('<!--nuwax-openui-action-id');
   });
 
   it('uses the OpenUI action message as the visible user prompt', () => {
