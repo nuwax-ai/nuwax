@@ -40,6 +40,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(
     thinking = '',
     status,
     thinkingFinished,
+    collapseProcessGroups = false,
   }: MarkdownRendererProps) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const hasThinking = !!thinking && thinking.trim() !== '';
@@ -52,8 +53,12 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(
 
     const containerRef = useRef<HTMLDivElement>(null);
     const plugins = useMemo(
-      () => [mermaidPlugin, katexPlugin, genCustomPlugin(conversationId)],
-      [conversationId],
+      () => [
+        mermaidPlugin,
+        katexPlugin,
+        genCustomPlugin(conversationId, collapseProcessGroups),
+      ],
+      [conversationId, collapseProcessGroups],
     );
     // 使用导入的 mermaidConfig，而不是重新创建
     const mermaidProvider = useMemo(() => mermaidConfig, []);
@@ -116,6 +121,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(
       prevProps.answer === nextProps.answer &&
       prevProps.status === nextProps.status &&
       prevProps.thinkingFinished === nextProps.thinkingFinished &&
+      prevProps.collapseProcessGroups === nextProps.collapseProcessGroups &&
       prevProps.conversationId === nextProps.conversationId
     );
   },

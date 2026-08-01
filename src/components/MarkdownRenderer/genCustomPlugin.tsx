@@ -13,7 +13,10 @@ import { extractTableToMarkdown } from './utils';
 const cx = classNames.bind(styles);
 
 // 用插件机制传递自定义components
-export default (conversationId: string | number = '') => {
+export default (
+  conversationId: string | number = '',
+  collapseProcessGroups = false,
+) => {
   return createBuildInPlugin({
     rehypePlugin: [rehypeRaw],
     components: {
@@ -71,6 +74,7 @@ export default (conversationId: string | number = '') => {
         return (
           <MarkdownCustomProcessGroup
             autoCollapse={String(autoCollapse).toLowerCase() === 'true'}
+            defaultCollapsed={collapseProcessGroups}
           >
             {children}
           </MarkdownCustomProcessGroup>

@@ -214,6 +214,10 @@ const ChatView: React.FC<ChatViewProps> = memo(
                     thinking={messageInfo?.think}
                     status={messageInfo?.status}
                     thinkingFinished={messageInfo?.thinkingFinished}
+                    collapseProcessGroups={
+                      messageInfo?.status !== MessageStatusEnum.Incomplete &&
+                      messageInfo?.status !== MessageStatusEnum.Loading
+                    }
                   />
                 </div>
               </div>
