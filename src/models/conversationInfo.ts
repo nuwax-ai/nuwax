@@ -1644,6 +1644,7 @@ export default () => {
     if (isSync && !isAppSidebarMode && id) {
       eventBus.emit(EVENT_TYPE.UpdateConversationListTaskStatus, {
         conversationId: id,
+        agentId: conversationInfoRef.current?.agentId,
         taskStatus: TaskStatus.EXECUTING,
       });
     }

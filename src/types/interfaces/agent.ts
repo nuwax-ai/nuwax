@@ -16,6 +16,7 @@ import type {
   NoneRecallReplyTypeEnum,
   OutputDirectlyEnum,
   SearchStrategyEnum,
+  TaskStatus,
   VisibleToLLMEnum,
 } from '@/types/enums/agent';
 import type {
@@ -31,7 +32,6 @@ import type {
   OpenCloseEnum,
 } from '@/types/enums/space';
 import type { BindConfigWithSub } from '@/types/interfaces/common';
-import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import type { SpaceInfo } from '@/types/interfaces/workspace';
 import React from 'react';
 import { CardArgsBindConfigInfo } from './cardInfo';
@@ -51,6 +51,12 @@ export interface AgentBaseInfo {
   description: string;
 }
 
+/** 最近使用智能体中用于展示任务状态的会话信息。 */
+export interface AgentRecentConversationInfo {
+  id: number | string;
+  taskStatus?: TaskStatus;
+}
+
 // 智能体信息
 export interface AgentInfo extends AgentBaseInfo {
   id: number;
@@ -65,7 +71,7 @@ export interface AgentInfo extends AgentBaseInfo {
   // ChatBot、PageApp、TaskAgent、AgentFlow
   agentType: 'ChatBot' | 'PageApp' | 'TaskAgent' | 'AgentFlow';
   // 最近使用列表中的智能体会话，接口可能返回 null
-  conversationList?: ConversationInfo[] | null;
+  conversationList?: AgentRecentConversationInfo[] | null;
 }
 
 // 新增智能体输入参数
