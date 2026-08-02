@@ -535,7 +535,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Components.HistoryConversationList.renameSuccess": "正常に更新されました",
   "PC.Components.HistoryConversationList.renameTitleEmpty": "タイトルを空にすることはできません",
   "PC.Components.HistoryConversationList.renameTitleTooLong": "タイトルの長さは 50 文字を超えることはできません",
-  "PC.Components.HistoryConversationList.searchPlaceholder": "会話履歴を検索する",
+  "PC.Layouts.DynamicMenusLayout.NewHomeSection.searchPlaceholder": "検索",
   "PC.Components.HistoryConversationList.summaryEmpty": "利用可能な要約はありません",
   "PC.Components.MarkdownCustomProcess.closePreview": "プレビューを閉じる",
   "PC.Components.MarkdownCustomProcess.collapse": "崩壊",

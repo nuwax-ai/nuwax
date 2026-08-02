@@ -597,11 +597,9 @@ const NewHomeSection: React.FC<{
     <div style={style} className={cx(styles['new-home-section'])}>
       <SearchHeader
         keyword={activeTab === 'conversation' ? keyword : recentKeyword}
-        placeholder={
-          activeTab === 'conversation'
-            ? dict('PC.Components.HistoryConversationList.searchPlaceholder')
-            : dict('PC.Layouts.DynamicMenusLayout.NewHomeSection.searchAgent')
-        }
+        placeholder={dict(
+          'PC.Layouts.DynamicMenusLayout.NewHomeSection.searchPlaceholder',
+        )}
         onSearchChange={handleSearchChange}
         onSearchSubmit={handleSearchSubmit}
         onNewChat={handleNewConversation}
