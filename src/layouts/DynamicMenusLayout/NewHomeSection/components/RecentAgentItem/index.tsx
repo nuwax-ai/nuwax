@@ -10,11 +10,21 @@ const cx = classNames.bind(styles);
 
 interface RecentAgentItemProps {
   item: AgentInfo;
+  isActive: boolean;
   onClick: () => void;
 }
 
-const RecentAgentItem: React.FC<RecentAgentItemProps> = ({ item, onClick }) => (
-  <div className={cx(styles['conversation-item'])} onClick={onClick}>
+const RecentAgentItem: React.FC<RecentAgentItemProps> = ({
+  item,
+  isActive,
+  onClick,
+}) => (
+  <div
+    className={cx(styles['conversation-item'], {
+      [styles.active]: isActive,
+    })}
+    onClick={onClick}
+  >
     <div className={cx(styles['avatar-container'])}>
       <img
         src={item.icon || agentImage}

@@ -2,6 +2,16 @@ import { dict, getCurrentLang } from '@/services/i18nRuntime';
 import dayjs from 'dayjs';
 
 /**
+ * 从首页智能体详情或会话地址中提取智能体 ID。
+ */
+export const getAgentIdFromHomePathname = (pathname: string) => {
+  const agentDetailMatch = pathname.match(/^\/agent\/([^/]+)/);
+  if (agentDetailMatch) return agentDetailMatch[1];
+
+  return pathname.match(/^\/home\/chat\/[^/]+\/([^/]+)/)?.[1];
+};
+
+/**
  * 格式化会话更新时间，符合设计图逻辑
  * @param timeStr ISO格式时间字符串
  */

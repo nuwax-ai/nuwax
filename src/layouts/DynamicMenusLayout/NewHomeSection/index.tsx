@@ -8,6 +8,7 @@ import ConversationItem from './components/ConversationItem';
 import EmptyState from './components/EmptyState';
 import RecentAgentItem from './components/RecentAgentItem';
 import SearchHeader from './components/SearchHeader';
+import { getAgentIdFromHomePathname } from './utils';
 
 import { EVENT_TYPE } from '@/constants/event.constants';
 import { apiAgentConversationList } from '@/services/agentConfig';
@@ -56,6 +57,7 @@ const NewHomeSection: React.FC<{
   const location = useLocation();
   const chatId =
     chatIdParam || location.pathname.match(/\/home\/chat\/([^/]+)/)?.[1];
+  const currentAgentId = getAgentIdFromHomePathname(location.pathname);
 
   const { handleCloseMobileMenu } = useModel('layout');
   const { firstLevelMenus } = useModel('menuModel');
@@ -603,6 +605,7 @@ const NewHomeSection: React.FC<{
                 <RecentAgentItem
                   key={item.id}
                   item={item}
+                  isActive={currentAgentId === item.agentId?.toString()}
                   onClick={() => handleRecentAgentClick(item)}
                 />
               ))}
