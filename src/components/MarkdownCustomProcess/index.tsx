@@ -511,7 +511,7 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
     }
     return (
       <div
-        className={cx(styles['markdown-custom-process'])}
+        className={cx(styles['markdown-custom-process'], styles.openuiInline)}
         key={props.dataKey}
         data-key={props.dataKey}
       >
