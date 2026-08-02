@@ -65,6 +65,8 @@ const NewHomeSection: React.FC<{
   const chatId =
     chatIdParam || location.pathname.match(/\/home\/chat\/([^/]+)/)?.[1];
   const currentAgentId = getAgentIdFromHomePathname(location.pathname);
+  const currentAgentIdRef = useRef(currentAgentId);
+  currentAgentIdRef.current = currentAgentId;
 
   const { handleCloseMobileMenu } = useModel('layout');
   const { firstLevelMenus } = useModel('menuModel');
@@ -370,9 +372,11 @@ const NewHomeSection: React.FC<{
     const handleUpdateConversationListTaskStatus = ({
       conversationId,
       taskStatus,
+      agentId,
     }: {
       conversationId: number | string;
       taskStatus: TaskStatus;
+      agentId?: number | string;
     }) => {
       setLocalList((prev) =>
         prev.map((item) =>
@@ -380,6 +384,44 @@ const NewHomeSection: React.FC<{
             ? { ...item, taskStatus }
             : item,
         ),
+      );
+
+      const targetAgentId = agentId ?? currentAgentIdRef.current;
+      setRecentList((prev) =>
+        prev.map((item) => {
+          const conversationList = item.conversationList ?? [];
+          const hasConversation = conversationList.some(
+            (conversation) =>
+              conversation.id?.toString() === conversationId.toString(),
+          );
+
+          if (hasConversation) {
+            return {
+              ...item,
+              conversationList: conversationList.map((conversation) =>
+                conversation.id?.toString() === conversationId.toString()
+                  ? { ...conversation, taskStatus }
+                  : conversation,
+              ),
+            };
+          }
+
+          if (
+            taskStatus === TaskStatus.EXECUTING &&
+            targetAgentId !== undefined &&
+            item.agentId.toString() === targetAgentId.toString()
+          ) {
+            return {
+              ...item,
+              conversationList: [
+                ...conversationList,
+                { id: conversationId, taskStatus },
+              ],
+            };
+          }
+
+          return item;
+        }),
       );
     };
 

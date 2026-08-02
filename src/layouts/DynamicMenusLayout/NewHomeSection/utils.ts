@@ -1,6 +1,5 @@
 import { dict, getCurrentLang } from '@/services/i18nRuntime';
 import { TaskStatus } from '@/types/enums/agent';
-import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import dayjs from 'dayjs';
 
 /**
@@ -15,7 +14,7 @@ export const getAgentIdFromHomePathname = (pathname: string) => {
 
 /** 统计智能体会话中正在执行的任务数量。 */
 export const getExecutingConversationCount = (
-  conversationList?: Array<Pick<ConversationInfo, 'taskStatus'>> | null,
+  conversationList?: Array<{ taskStatus?: TaskStatus }> | null,
 ) =>
   conversationList?.filter(
     (conversation) => conversation.taskStatus === TaskStatus.EXECUTING,
