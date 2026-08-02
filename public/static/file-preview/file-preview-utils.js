@@ -116,7 +116,9 @@ function notifyParent(data) {
         if (window.parent === window) {
             var post =
                 window.uni && window.uni.webView && window.uni.webView.postMessage;
-            if (post) post({ data: [data] });
+            // uni-app x Android 仅稳定支持对象 payload；原生 event.detail.data
+            // 会自行包装为消息数组，这里不能再预先包一层数组。
+            if (post) post({ data: data });
         }
     } catch (e) {
         console.warn('[FilePreview] Failed to notify parent:', e);
