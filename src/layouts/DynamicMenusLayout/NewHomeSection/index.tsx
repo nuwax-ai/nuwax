@@ -1,15 +1,23 @@
 import { useDebounceFn } from 'ahooks';
 import { Spin } from 'antd';
 import classNames from 'classnames';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { history, useLocation, useModel, useParams } from 'umi';
 
 import ConversationItem from './components/ConversationItem';
 import EmptyState from './components/EmptyState';
 import RecentAgentItem from './components/RecentAgentItem';
 import SearchHeader from './components/SearchHeader';
+import { getAgentIdFromHomePathname } from './utils';
 
 import { EVENT_TYPE } from '@/constants/event.constants';
+import { useChatFinishedWhenListExecuting } from '@/hooks/useChatFinishedWhenListExecuting';
 import { apiAgentConversationList } from '@/services/agentConfig';
 import { apiUserUsedAgentList } from '@/services/agentDev';
 import { dict } from '@/services/i18nRuntime';
@@ -56,6 +64,7 @@ const NewHomeSection: React.FC<{
   const location = useLocation();
   const chatId =
     chatIdParam || location.pathname.match(/\/home\/chat\/([^/]+)/)?.[1];
+  const currentAgentId = getAgentIdFromHomePathname(location.pathname);
 
   const { handleCloseMobileMenu } = useModel('layout');
   const { firstLevelMenus } = useModel('menuModel');
@@ -168,6 +177,15 @@ const NewHomeSection: React.FC<{
     loadListRef.current = loadList;
   }, [loadList]);
 
+  const handleConversationChatFinished = useCallback(() => {
+    loadListRef.current(true, { silent: true });
+  }, []);
+
+  useChatFinishedWhenListExecuting({
+    conversationList: localList,
+    onChatFinished: handleConversationChatFinished,
+  });
+
   const loadRecentList = useCallback(
     async (
       isRefresh = false,
@@ -211,6 +229,20 @@ const NewHomeSection: React.FC<{
   useEffect(() => {
     loadRecentListRef.current = loadRecentList;
   }, [loadRecentList]);
+
+  const recentConversationList = useMemo(
+    () => recentList.flatMap((item) => item.conversationList ?? []),
+    [recentList],
+  );
+
+  const handleRecentChatFinished = useCallback(() => {
+    loadRecentListRef.current(true, { silent: true });
+  }, []);
+
+  useChatFinishedWhenListExecuting({
+    conversationList: recentConversationList,
+    onChatFinished: handleRecentChatFinished,
+  });
 
   const stateRef = useRef({
     activeTab,
@@ -351,21 +383,6 @@ const NewHomeSection: React.FC<{
       );
     };
 
-    const handleChatFinished = (data: {
-      conversationId: number | string;
-      status: TaskStatus;
-    }) => {
-      if (!data) return;
-      const { conversationId, status } = data;
-      setLocalList((prev) =>
-        prev.map((item) =>
-          item.id?.toString() === conversationId.toString()
-            ? { ...item, taskStatus: status }
-            : item,
-        ),
-      );
-    };
-
     window.addEventListener('conversation-updated', handleConversationUpdated);
     window.addEventListener('conversation-deleted', handleConversationDeleted);
     eventBus.on(
@@ -376,8 +393,6 @@ const NewHomeSection: React.FC<{
       EVENT_TYPE.UpdateConversationListTaskStatus,
       handleUpdateConversationListTaskStatus,
     );
-    eventBus.on(EVENT_TYPE.ChatFinished, handleChatFinished);
-
     return () => {
       window.removeEventListener(
         'conversation-updated',
@@ -395,7 +410,6 @@ const NewHomeSection: React.FC<{
         EVENT_TYPE.UpdateConversationListTaskStatus,
         handleUpdateConversationListTaskStatus,
       );
-      eventBus.off(EVENT_TYPE.ChatFinished, handleChatFinished);
     };
   }, []);
 
@@ -603,6 +617,7 @@ const NewHomeSection: React.FC<{
                 <RecentAgentItem
                   key={item.id}
                   item={item}
+                  isActive={currentAgentId === item.agentId?.toString()}
                   onClick={() => handleRecentAgentClick(item)}
                 />
               ))}

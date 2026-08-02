@@ -26,7 +26,9 @@
           if (!relayReady) return;
           var post = window.uni && window.uni.webView && window.uni.webView.postMessage;
           if (!post) return;
-          while (relayQueue.length) post({ data: [relayQueue.shift()] });
+          // uni-app x Android 仅稳定支持对象 payload；原生 event.detail.data
+          // 会自行包装为消息数组，这里不能再预先包一层数组。
+          while (relayQueue.length) post({ data: relayQueue.shift() });
         }
         window.addEventListener('message', function (ev) {
           var d = ev.data;
