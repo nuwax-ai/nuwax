@@ -194,17 +194,19 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   const defaultCreatedTabs = useMemo(
     () =>
       CREATED_TABS.filter((item) => {
-        // 如果是通用型智能体
-        if (agentConfigInfo?.type === AgentTypeEnum.TaskAgent) {
-          return (
-            item.key !== AgentComponentTypeEnum.Agent &&
-            flowPolicy.isTaskAgentCreatedTabVisible(item.key)
-          );
+        if (item.key === AgentComponentTypeEnum.Agent) {
+          return false;
         }
-        return (
-          item.key !== AgentComponentTypeEnum.Agent &&
-          item.key !== AgentComponentTypeEnum.Skill
-        );
+
+        // TaskAgent / 设备智能体：按编排策略白名单过滤 Tab（设备智能体隐藏数据表、页面等）
+        if (
+          agentConfigInfo?.type === AgentTypeEnum.TaskAgent ||
+          flowPolicy.isDeviceAgent
+        ) {
+          return flowPolicy.isTaskAgentCreatedTabVisible(item.key);
+        }
+
+        return item.key !== AgentComponentTypeEnum.Skill;
       }),
     [agentConfigInfo?.type, flowPolicy],
   );
