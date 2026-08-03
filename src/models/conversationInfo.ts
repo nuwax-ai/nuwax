@@ -1645,6 +1645,7 @@ export default () => {
       eventBus.emit(EVENT_TYPE.UpdateConversationListTaskStatus, {
         conversationId: id,
         agentId: conversationInfoRef.current?.agentId,
+        topic: conversationInfoRef.current?.topic,
         taskStatus: TaskStatus.EXECUTING,
       });
     }
