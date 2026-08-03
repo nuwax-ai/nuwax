@@ -139,6 +139,12 @@ function createDirectHost() {
     expiredCount: () => expiredCount,
     messages,
     post: windowObject.postMessage.bind(windowObject),
+    postFromWebView(message: Record<string, unknown>) {
+      messages.push(message);
+      for (const listener of [...listeners]) {
+        listener({ source: null, data: message });
+      }
+    },
     start,
   };
 }
@@ -205,6 +211,39 @@ describe('OpenUI static runtime behavior', () => {
       },
     });
     await loading;
+    await new Promise((resolve) => {
+      setTimeout(resolve, 0);
+    });
+
+    expect(host.appendedScripts.some((src) => src.includes('runtime.js'))).toBe(
+      true,
+    );
+    expect(
+      host.messages.filter((message) => message.type === 'OPENUI_LOAD'),
+    ).toHaveLength(1);
+  });
+
+  it('accepts same-window runtime messages when WebView omits MessageEvent.source', async () => {
+    const host = createDirectHost();
+    const loading = host.start();
+    host.postFromWebView({
+      type: 'OPENUI_FP_ARTIFACT',
+      protocolVersion: 'nuwax.openui-runtime/v1',
+      nonce: 'test-nonce',
+      artifact: {
+        type: 'nuwax.openui-file',
+        schemaVersion: 'nuwax.openui-file/v1',
+        artifactId: 'demo',
+        title: 'Demo',
+        document: { source: 'abc', digest: nodeDigest('abc') },
+      },
+    });
+    await loading;
+    host.postFromWebView({
+      type: 'OPENUI_READY',
+      protocolVersion: 'nuwax.openui-runtime/v1',
+      nonce: 'test-nonce',
+    });
     await new Promise((resolve) => {
       setTimeout(resolve, 0);
     });

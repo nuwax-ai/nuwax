@@ -35,8 +35,8 @@ describe('OpenUI static preview entry', () => {
 
     expect(source).toContain('filePath || parentManaged');
     expect(source).toContain('loadOpenUiRuntimeDirect(');
-    expect(source).toContain("runtime.type = 'module'");
     expect(source).toContain('/static/openui-runtime/runtime.js');
+    expect(source).not.toContain("runtime.type = 'module'");
     expect(source).toContain("data.type === 'OPENUI_FP_ARTIFACT'");
     expect(source).toContain("data.type === 'OPENUI_FP_ERROR'");
     expect(source).toContain('success: isChat');

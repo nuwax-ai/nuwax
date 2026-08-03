@@ -328,7 +328,10 @@ function loadOpenUiRuntimeDirect(
     };
 
     const handleMessage = (message) => {
-        if (message.source !== window) return;
+        // 部分小程序 / Android WebView 对同窗口 postMessage 不回填 source。
+        // nonce + protocolVersion 已限定为本次 Runtime 会话，因此允许 null；
+        // 有明确 source 时仍只接受当前窗口，避免接收外层页面或其它 frame 的消息。
+        if (message.source && message.source !== window) return;
         const data = message.data;
         if (
             !data ||
@@ -400,7 +403,8 @@ function loadOpenUiRuntimeDirect(
             if (runtimeStarted || destroyed) return;
             runtimeStarted = true;
             const runtime = document.createElement('script');
-            runtime.type = 'module';
+            // runtime.js 是无 import/export 的自执行 bundle。按 classic script 加载，
+            // 兼容不执行动态 type=module 的微信小程序与旧 Android WebView。
             runtime.src = `/static/openui-runtime/runtime.js?v=${OPENUI_RUNTIME_ASSET_VERSION}`;
             runtime.onload = () => resolve();
             runtime.onerror = () =>
