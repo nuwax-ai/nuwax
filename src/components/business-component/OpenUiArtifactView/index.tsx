@@ -31,11 +31,11 @@ import '@openuidev/react-ui/layered/styles/index.css';
 import './openui-host-reset.css';
 
 const RUNTIME_PROTOCOL = 'nuwax.openui-runtime/v1';
-/** OpenUI 统一预览入口；页面识别 openui=1 后按需加载 Runtime 重资源。 */
+/** OpenUI 固化运行时入口（与 public/static/openui-runtime 对齐） */
 const RUNTIME_URL = `${(process.env.BASE_URL || '').replace(
   /\/+$/,
   '',
-)}/static/file-preview.html`;
+)}/static/openui-runtime/index.html`;
 
 interface OpenUiRuntimeFrameProps {
   artifact?: OpenUiFile;
@@ -390,7 +390,7 @@ export const OpenUiRuntimeFrame: React.FC<OpenUiRuntimeFrameProps> = ({
         key={reloadTick}
         ref={iframeRef}
         className={styles.inlineFrame}
-        src={`${RUNTIME_URL}?openui=1&nonce=${encodeURIComponent(nonce)}${
+        src={`${RUNTIME_URL}?nonce=${encodeURIComponent(nonce)}${
           filePath ? `&file_path=${encodeURIComponent(filePath)}` : ''
         }`}
         title={artifact?.title || 'OpenUI'}
