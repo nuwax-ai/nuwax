@@ -25,7 +25,7 @@ Nuwax PC Web Host
 
 1. `.openui.json` 是 OpenUI 的持久数据源，生命周期跟随项目文件，无 TTL。
 2. MCP 不再启动 HTTP 页面服务，不维护内存 Artifact、localhost URL 或 lanproxy 页面转发。
-3. PC sidecar、移动端和文件预览统一加载 `public/static/file-preview.html`，由该页面按需加载 Runtime 资源；**Chat inline 使用同文档 `@openuidev` Renderer**，并通过 CSS Layer / 宿主隔离避免被 `ds-markdown` 覆盖。
+3. PC 的 sidecar / 文件预览加载 `public/static/openui-runtime/index.html`；**Chat inline 使用同文档 `@openuidev` Renderer**，并通过 CSS Layer / 宿主隔离避免被 `ds-markdown` 覆盖（不强制统一 iframe）。
 4. Runtime 只解析可信 Host 通过 `postMessage` 发送的 OpenUI 数据，不自行读取项目文件。
 5. 表单 `onAction` 复用 ask-question 的恢复消息路径，经 `messageQueue.rawSend` 回到原会话。
 6. 本期不修改 `agent-platform`，不实施移动端原生 Renderer。

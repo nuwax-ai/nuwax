@@ -322,19 +322,6 @@ async function renderMarkdown(url, container) {
 // ============================================
 async function startPreview() {
     const sk = params.sk || '';
-    // 统一 OpenUI 页面入口：PC sidecar / mobile inline 直接传 file_path，
-    // file-preview.html 再按需加载 Runtime 资源，不跳转到其它预览 HTML。
-    if (params.file_path) {
-        fileUrl = `${window.location.origin}/api/computer/static${params.file_path}`;
-        const purePath = params.file_path.split('?')[0];
-        fileName = purePath.split('/').pop() || 'OpenUI';
-        fileType = 'openui';
-    } else if (params.openui === '1') {
-        // 无 file_path 时由外层 PC Host 在 OPENUI_READY 后发送 OPENUI_LOAD。
-        fileUrl = window.location.href;
-        fileName = params.title || 'OpenUI';
-        fileType = 'openui';
-    }
     // 1. If sk parameter exists, it's a sharing operation
     if (sk) {
         const response = await fetch(`${baseUrl}/api/agent/conversation/share/detail/${sk}`, {
@@ -402,8 +389,7 @@ async function startPreview() {
     // Save original file type for subsequent precise notification
     originalFileType = fileType;
 
-    // OpenUI 是交互式会话产物，当前只支持预览与表单交互，不提供文件下载。
-    // 提前清空下载地址，确保正常态、错误态和直接调用都不会暴露下载入口。
+    // OpenUI 是交互式会话产物，只提供预览与表单交互，不展示文件下载入口。
     if (fileType === 'openui') {
         downloadUrl = '';
         const previewDownloadButton = document.getElementById('previewDownloadBtn');
@@ -506,8 +492,6 @@ async function startPreview() {
                         },
                         // 从 chat 打开（带 _ticket，有会话）才允许表单提交转发；分享链接（sk）只读。
                         isChat: !!params._ticket,
-                        // PC OpenUiArtifactView 无 file_path 时由外层 Host 直接下发 artifact。
-                        parentManaged: params.openui === '1' && !params.file_path,
                     });
                     break;
 
