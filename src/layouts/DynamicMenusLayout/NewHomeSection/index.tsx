@@ -373,10 +373,12 @@ const NewHomeSection: React.FC<{
       conversationId,
       taskStatus,
       agentId,
+      topic,
     }: {
       conversationId: number | string;
       taskStatus: TaskStatus;
       agentId?: number | string;
+      topic?: string;
     }) => {
       setLocalList((prev) =>
         prev.map((item) =>
@@ -400,7 +402,11 @@ const NewHomeSection: React.FC<{
               ...item,
               conversationList: conversationList.map((conversation) =>
                 conversation.id?.toString() === conversationId.toString()
-                  ? { ...conversation, taskStatus }
+                  ? {
+                      ...conversation,
+                      taskStatus,
+                      ...(topic ? { topic } : {}),
+                    }
                   : conversation,
               ),
             };
@@ -415,7 +421,7 @@ const NewHomeSection: React.FC<{
               ...item,
               conversationList: [
                 ...conversationList,
-                { id: conversationId, taskStatus },
+                { id: conversationId, topic, taskStatus },
               ],
             };
           }
@@ -659,6 +665,12 @@ const NewHomeSection: React.FC<{
                   item={item}
                   isActive={currentAgentId === item.agentId?.toString()}
                   onClick={() => handleRecentAgentClick(item)}
+                  onConversationClick={(conversationId) => {
+                    handleCloseMobileMenu();
+                    history.push(
+                      `/home/chat/${conversationId}/${item.agentId}`,
+                    );
+                  }}
                 />
               ))}
 

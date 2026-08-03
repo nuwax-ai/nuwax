@@ -54,6 +54,7 @@ export interface AgentBaseInfo {
 /** 最近使用智能体中用于展示任务状态的会话信息。 */
 export interface AgentRecentConversationInfo {
   id: number | string;
+  topic?: string | null;
   taskStatus?: TaskStatus;
 }
 
