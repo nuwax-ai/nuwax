@@ -14,6 +14,7 @@ import {
 } from '@/utils/openUiArtifact';
 import { compactOpenUiTheme } from '@nuwax-ai/openui-mcp/compact-theme';
 import type { RenderOpenUiInput } from '@nuwax-ai/openui-mcp/contracts';
+import { createFormFieldSyncLibrary } from '@nuwax-ai/openui-mcp/form-field-sync';
 import {
   createMobileAwareLibrary,
   MobileLayoutProvider,
@@ -423,8 +424,11 @@ const OpenUiArtifactView: React.FC<OpenUiArtifactViewProps> = ({
   conversationId,
 }) => {
   const { isMobile } = useModel('layout');
-  // 直连 Renderer 路径复用 web runtime 的移动端感知库（Stack/Card mobile 时横排→竖排）。
-  const library = useMemo(() => createMobileAwareLibrary(openuiLibrary), []);
+  // 直连 Renderer：先修 Radio/Slider 默认值同步，再套移动端感知库（与 openui-runtime 一致）。
+  const library = useMemo(
+    () => createMobileAwareLibrary(createFormFieldSyncLibrary(openuiLibrary)),
+    [],
+  );
   const autoOpenedArtifactId = useRef<string>();
   const formStateRef = useRef<Record<string, unknown>>({});
   const pendingActionIdRef = useRef<string>();

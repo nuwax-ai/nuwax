@@ -389,6 +389,15 @@ async function startPreview() {
     // Save original file type for subsequent precise notification
     originalFileType = fileType;
 
+    // OpenUI 是交互式会话产物，只提供预览与表单交互，不展示文件下载入口。
+    if (fileType === 'openui') {
+        downloadUrl = '';
+        const previewDownloadButton = document.getElementById('previewDownloadBtn');
+        if (previewDownloadButton) previewDownloadButton.remove();
+        const errorDownloadButton = document.getElementById('errorDownloadBtn');
+        if (errorDownloadButton) errorDownloadButton.remove();
+    }
+
     // Normalize file types for renderer distribution
     if (fileType === 'xls') fileType = 'xlsx';
     if (fileType === 'ppt') fileType = 'pptx';
@@ -517,7 +526,7 @@ async function startPreview() {
             hideLoading();
 
             // Show bottom-right download button only when dl=1
-            if (params.dl === '1' && downloadUrl) {
+            if (fileType !== 'openui' && params.dl === '1' && downloadUrl) {
                 const previewDownloadBtn = document.getElementById('previewDownloadBtn');
                 if (previewDownloadBtn) {
                     previewDownloadBtn.classList.remove('hidden');
@@ -540,6 +549,9 @@ async function startPreview() {
 // Download Function
 // ============================================
 async function downloadFile() {
+    if (fileType === 'openui') {
+        return;
+    }
     if (!downloadUrl) {
         showError('Download URL does not exist');
         return;
