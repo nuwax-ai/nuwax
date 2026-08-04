@@ -106,8 +106,10 @@ const scrollAnchorTargetIntoView = (
     return;
   }
 
+  // 获取滚动容器和目标元素的矩形区域
   const containerRect = scrollContainer.getBoundingClientRect();
   const targetRect = target.getBoundingClientRect();
+  // 计算目标元素距离滚动容器顶部的距离
   const nextScrollTop =
     scrollContainer.scrollTop + targetRect.top - containerRect.top;
 
