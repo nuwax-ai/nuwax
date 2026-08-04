@@ -165,26 +165,57 @@ const Login: React.FC = () => {
     }
   };
 
+  /**
+   * 判断验证码 DOM 节点在页面中是否真正可见
+   */
+  const isElementVisible = (el: HTMLElement | null): boolean => {
+    if (!el) return false;
+    try {
+      const computedStyle = window.getComputedStyle(el);
+      if (
+        computedStyle.display === 'none' ||
+        computedStyle.visibility === 'hidden' ||
+        computedStyle.opacity === '0'
+      ) {
+        return false;
+      }
+      return (
+        el.offsetWidth > 0 ||
+        el.offsetHeight > 0 ||
+        el.getClientRects().length > 0
+      );
+    } catch {
+      return false;
+    }
+  };
+
   const startCaptchaPopupWatcher = () => {
     clearCaptchaPopupWatcher();
     const startedAt = Date.now();
+    let hasBeenVisible = false;
+
     captchaPopupWatcherTimerRef.current = window.setInterval(() => {
-      const hasCaptchaPopup =
-        !!document.getElementById('aliyunCaptcha-window-popup') ||
-        !!document.getElementById('aliyunCaptcha-mask');
+      const popupEl = document.getElementById('aliyunCaptcha-window-popup');
+      const maskEl = document.getElementById('aliyunCaptcha-mask');
 
-      if (!hasCaptchaPopup) {
-        loginTriggerLockRef.current = false;
-        clearCaptchaPopupWatcher();
-        return;
+      const isPopupVisible = isElementVisible(popupEl);
+      const isMaskVisible = isElementVisible(maskEl);
+      const isVisible = isPopupVisible || isMaskVisible;
+
+      if (isVisible) {
+        hasBeenVisible = true;
       }
 
-      // 极端兜底：防止异常情况下 watcher 长驻
-      if (Date.now() - startedAt > 2 * 60 * 1000) {
+      // 弹窗曾经显示过但现在被关闭/隐藏，或者弹出等待超时（3秒内未弹出），或者极端长驻超时（2分钟）
+      const isClosedAfterOpen = hasBeenVisible && !isVisible;
+      const isInitTimeout = !hasBeenVisible && Date.now() - startedAt > 3000;
+      const isMaxTimeout = Date.now() - startedAt > 2 * 60 * 1000;
+
+      if (isClosedAfterOpen || isInitTimeout || isMaxTimeout) {
         loginTriggerLockRef.current = false;
         clearCaptchaPopupWatcher();
       }
-    }, 500);
+    }, 300);
   };
 
   useEffect(() => {
