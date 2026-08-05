@@ -266,13 +266,96 @@ async function renderText(url, container, language = '') {
 }
 
 // ============================================
-// Markdown Preview
+// Markdown Preview (+ KaTeX math)
 // ============================================
+
+/**
+ * 在 marked 解析前抽出公式，避免 $$ 多行块被拆成多个 <p> 导致无法渲染。
+ * 支持 $$...$$ / $...$ / \[...\] / \(...\)
+ */
+function extractMarkdownMath(markdown) {
+    const slots = [];
+    let text = markdown != null ? String(markdown) : '';
+
+    const pushSlot = (tex, displayMode) => {
+        const id = slots.length;
+        slots.push({
+            tex: String(tex).trim(),
+            displayMode: displayMode === true,
+        });
+        // 占位符保持可被 marked 当普通文本处理
+        return `@@KATEX${id}@@`;
+    };
+
+    // 先保护代码块，避免代码里的 $ 被当成公式
+    const codeSlots = [];
+    text = text.replace(/```[\s\S]*?```/g, (block) => {
+        const id = codeSlots.length;
+        codeSlots.push(block);
+        return `@@CODEBLOCK${id}@@`;
+    });
+    text = text.replace(/`[^`\n]+`/g, (block) => {
+        const id = codeSlots.length;
+        codeSlots.push(block);
+        return `@@CODEBLOCK${id}@@`;
+    });
+
+    // 块级公式
+    text = text.replace(/\$\$([\s\S]+?)\$\$/g, (_, tex) => pushSlot(tex, true));
+    text = text.replace(/\\\[([\s\S]+?)\\\]/g, (_, tex) => pushSlot(tex, true));
+    // 行内公式
+    text = text.replace(/\\\(([\s\S]+?)\\\)/g, (_, tex) => pushSlot(tex, false));
+    text = text.replace(/\$([^\$\n]+?)\$/g, (_, tex) => pushSlot(tex, false));
+
+    // 还原代码块
+    text = text.replace(/@@CODEBLOCK(\d+)@@/g, (_, id) => {
+        const block = codeSlots[Number(id)];
+        return block != null ? block : '';
+    });
+
+    return { markdown: text, slots: slots };
+}
+
+function escapeHtmlText(raw) {
+    return String(raw)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+function restoreMarkdownMath(html, slots) {
+    if (typeof katex === 'undefined' || slots == null || slots.length === 0) {
+        return html;
+    }
+    return String(html).replace(/@@KATEX(\d+)@@/g, (_, id) => {
+        const slot = slots[Number(id)];
+        if (slot == null) {
+            return '';
+        }
+        try {
+            return katex.renderToString(slot.tex, {
+                displayMode: slot.displayMode === true,
+                throwOnError: false,
+                strict: 'ignore',
+            });
+        } catch (e) {
+            console.warn('[FilePreview] KaTeX render failed:', e);
+            return slot.displayMode
+                ? `<pre class="katex-error">${escapeHtmlText(slot.tex)}</pre>`
+                : `<code class="katex-error">${escapeHtmlText(slot.tex)}</code>`;
+        }
+    });
+}
+
 async function renderMarkdown(url, container) {
     // Load marked.js for markdown rendering (Local)
     await loadScript('/libs/js-preview/marked.min.js');
     // Load highlight.js for code block syntax highlighting (Local)
     await loadScript('/libs/js-preview/highlight.min.js');
+    // Load KaTeX for math formulas in markdown
+    await loadStylesheet('/libs/js-preview/katex.min.css');
+    await loadScript('/libs/js-preview/katex.min.js');
 
     if (typeof marked === 'undefined') {
         throw new Error('Failed to load Markdown preview library');
@@ -284,6 +367,7 @@ async function renderMarkdown(url, container) {
         throw new Error(`文件下载失败: ${response.status}`);
     }
     const markdown = await response.text();
+    const mathExtract = extractMarkdownMath(markdown);
 
     // Configure marked to use highlight.js
     if (typeof hljs !== 'undefined') {
@@ -306,8 +390,8 @@ async function renderMarkdown(url, container) {
         });
     }
 
-    // Render markdown to HTML
-    const html = marked.parse(markdown);
+    // Render markdown to HTML, then restore KaTeX
+    const html = restoreMarkdownMath(marked.parse(mathExtract.markdown), mathExtract.slots);
 
     container.className = 'preview-container markdown-preview';
     const markdownBody = document.createElement('div');
