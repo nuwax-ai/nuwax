@@ -1,3 +1,4 @@
+import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { AgentSubTypeEnum } from '@/types/enums/space';
 import { describe, expect, it } from 'vitest';
 import { getAgentFlowArrangePolicy } from '../arrangePolicy';
@@ -85,9 +86,18 @@ describe('getAgentFlowArrangePolicy', () => {
     expect(policy.showGroupMembersSection).toBe(true);
     expect(policy.showLongMemory).toBe(true);
     expect(policy.showAllowOtherModel).toBe(true);
-    expect(policy.showAllowChooseMode).toBe(true);
+    expect(policy.showAllowChooseMode).toBe(false);
     expect(policy.showPageSection).toBe(false);
     expect(policy.showMemoryVariable).toBe(false);
     expect(policy.showUserProblemSuggestion).toBe(true);
+    expect(
+      policy.isTaskAgentCreatedTabVisible(AgentComponentTypeEnum.Table),
+    ).toBe(false);
+    expect(
+      policy.isTaskAgentCreatedTabVisible(AgentComponentTypeEnum.Page),
+    ).toBe(false);
+    expect(
+      policy.isTaskAgentCreatedTabVisible(AgentComponentTypeEnum.Plugin),
+    ).toBe(true);
   });
 });

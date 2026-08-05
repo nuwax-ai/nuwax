@@ -51,6 +51,9 @@ vi.mock('@nuwax-ai/openui-mcp/mobile-layout', () => ({
   MobileLayoutProvider: ({ children }: { children: React.ReactNode }) =>
     children,
 }));
+vi.mock('@nuwax-ai/openui-mcp/form-field-sync', () => ({
+  createFormFieldSyncLibrary: (library: unknown) => library,
+}));
 vi.mock('./index.less', () => ({
   default: new Proxy({}, { get: (_, key) => String(key) }),
 }));

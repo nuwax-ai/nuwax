@@ -6,12 +6,14 @@
     <meta name="referrer" content="no-referrer" />
     <title>OpenUI Runtime</title>
     <!-- v 与 @nuwax-ai/openui-runtime 包版本对齐，由 sync:openui-runtime 自动写入 -->
-    <link rel="stylesheet" href="./runtime.css?v=0.3.10" />
+    <link rel="stylesheet" href="./runtime.css?v=0.3.11" />
   </head>
   <body>
     <div id="root"></div>
+    <!-- 微信小程序旧 WebView 可能缺少 crypto.randomUUID；须先于 bootstrap/runtime 加载。 -->
+    <script src="/static/openui-crypto-compat.js?v=2026.8.3"></script>
     <!-- file_path 自主拉取（nuwax 自维）；须在 runtime.js 之前加载 -->
-    <script src="./file-path-bootstrap.js?v=0.3.10"></script>
+    <script src="./file-path-bootstrap.js?v=0.3.11"></script>
     <!-- 官方 uni.webview JSSDK（nuwax 仓 /static/uni.webview.1.5.5.js，全站唯一副本），无条件加载。
          加载本身无害：仅顶层 webview 的 bootstrap relay 会调用 uni.webView.postMessage；iframe 里
          relay 不运行，runtime 经 window.parent.postMessage 直达 Host。runtime 不引用 JSSDK，保持纯粹。 -->
@@ -48,6 +50,6 @@
         else window.setTimeout(openuiMarkReady, 1500);
       }
     </script>
-    <script type="module" src="./runtime.js?v=0.3.10"></script>
+    <script type="module" src="./runtime.js?v=0.3.11"></script>
   </body>
 </html>

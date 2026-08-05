@@ -502,13 +502,10 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
   //   }
   // }, [innerProcessing]);
 
-  // 渲染工具（OpenUI）：不展示工具调用卡片，仅渲染 sidecar/inline 产物。
+  // 渲染工具（OpenUI）：有内联 UI 产物（ready / input-only）时渲染 sidecar/inline 视图；
   // 必须在下方 Event 类型隐藏之前处理——RENDER_UI 历史项 type=Event，否则会被
-  // `type === Event → return null` 直接吞掉。artifact 缺席（EXECUTING / 无 ref/input）不渲染。
-  if (isOpenUiRenderProcess) {
-    if (openUiDisplayState.status === 'absent') {
-      return null;
-    }
+  // `type === Event → return null` 吞掉。若产物缺席（status === 'absent'），则降级向下走标准工具调用卡片渲染。
+  if (isOpenUiRenderProcess && openUiDisplayState.status !== 'absent') {
     return (
       <div
         className={cx(styles['markdown-custom-process'], styles.openuiInline)}

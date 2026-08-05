@@ -106,8 +106,10 @@ const scrollAnchorTargetIntoView = (
     return;
   }
 
+  // 获取滚动容器和目标元素的矩形区域
   const containerRect = scrollContainer.getBoundingClientRect();
   const targetRect = target.getBoundingClientRect();
+  // 计算目标元素距离滚动容器顶部的距离
   const nextScrollTop =
     scrollContainer.scrollTop + targetRect.top - containerRect.top;
 
@@ -194,17 +196,19 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
   const defaultCreatedTabs = useMemo(
     () =>
       CREATED_TABS.filter((item) => {
-        // 如果是通用型智能体
-        if (agentConfigInfo?.type === AgentTypeEnum.TaskAgent) {
-          return (
-            item.key !== AgentComponentTypeEnum.Agent &&
-            flowPolicy.isTaskAgentCreatedTabVisible(item.key)
-          );
+        if (item.key === AgentComponentTypeEnum.Agent) {
+          return false;
         }
-        return (
-          item.key !== AgentComponentTypeEnum.Agent &&
-          item.key !== AgentComponentTypeEnum.Skill
-        );
+
+        // TaskAgent / 设备智能体：按编排策略白名单过滤 Tab（设备智能体隐藏数据表、页面等）
+        if (
+          agentConfigInfo?.type === AgentTypeEnum.TaskAgent ||
+          flowPolicy.isDeviceAgent
+        ) {
+          return flowPolicy.isTaskAgentCreatedTabVisible(item.key);
+        }
+
+        return item.key !== AgentComponentTypeEnum.Skill;
       }),
     [agentConfigInfo?.type, flowPolicy],
   );
@@ -213,8 +217,11 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
 
   // 各配置块 DOM 引用，用于滚动定位
   const planSectionRef = useRef<HTMLDivElement | null>(null);
+  // 工具配置块 DOM 引用
   const toolSectionRef = useRef<HTMLDivElement | null>(null);
+  // 技能配置块 DOM 引用
   const skillSectionRef = useRef<HTMLDivElement | null>(null);
+  // 组员配置块 DOM 引用
   const groupMemberSectionRef = useRef<HTMLDivElement | null>(null);
   const knowledgeSectionRef = useRef<HTMLDivElement | null>(null);
   const memorySectionRef = useRef<HTMLDivElement | null>(null);

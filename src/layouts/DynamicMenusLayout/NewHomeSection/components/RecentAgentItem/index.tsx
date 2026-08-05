@@ -1,7 +1,9 @@
 import agentImage from '@/assets/images/agent_image.png';
 import { dict } from '@/services/i18nRuntime';
+import { TaskStatus } from '@/types/enums/agent';
 import { AgentInfo } from '@/types/interfaces/agent';
-import { Typography } from 'antd';
+import type { MenuProps } from 'antd';
+import { Dropdown, Typography } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import { formatModifiedTime, getExecutingConversationCount } from '../../utils';
@@ -13,16 +15,38 @@ interface RecentAgentItemProps {
   item: AgentInfo;
   isActive: boolean;
   onClick: () => void;
+  onConversationClick: (conversationId: number | string) => void;
 }
 
 const RecentAgentItem: React.FC<RecentAgentItemProps> = ({
   item,
   isActive,
   onClick,
+  onConversationClick,
 }) => {
   const executingCount = getExecutingConversationCount(item.conversationList);
+  const executingConversations = (item.conversationList ?? []).filter(
+    (conversation) => conversation.taskStatus === TaskStatus.EXECUTING,
+  );
+  const menuItems: MenuProps['items'] = executingConversations.map(
+    (conversation) => ({
+      key: conversation.id.toString(),
+      label: (
+        <Typography.Text
+          className={cx(styles['executing-conversation-name'])}
+          ellipsis
+        >
+          {conversation.topic || dict('PC.Utils.ChatUtils.newConversation')}
+        </Typography.Text>
+      ),
+    }),
+  );
+  const handleMenuClick: MenuProps['onClick'] = ({ key, domEvent }) => {
+    domEvent.stopPropagation();
+    onConversationClick(key);
+  };
 
-  return (
+  const content = (
     <div
       className={cx(styles['conversation-item'], {
         [styles.active]: isActive,
@@ -68,6 +92,18 @@ const RecentAgentItem: React.FC<RecentAgentItemProps> = ({
         </div>
       </div>
     </div>
+  );
+
+  if (executingConversations.length === 0) return content;
+
+  return (
+    <Dropdown
+      menu={{ items: menuItems, onClick: handleMenuClick }}
+      placement="rightTop"
+      overlayClassName={cx(styles['executing-conversation-dropdown'])}
+    >
+      {content}
+    </Dropdown>
   );
 };
 

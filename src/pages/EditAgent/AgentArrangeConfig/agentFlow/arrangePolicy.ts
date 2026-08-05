@@ -2,7 +2,7 @@
  * AgentFlow / 设备智能体 编排配置策略
  *
  * AgentFlow 的编排即画布本身，不支持外挂插件/MCP/工作流/知识库/数据表等组件。
- * 设备智能体（extra.isDeviceAgent）仅展示插件、工作流、知识库、MCP、选模型、组员、agentMode、长期记忆等配置。
+ * 设备智能体（extra.isDeviceAgent）仅展示插件、工作流、知识库、MCP、选模型、组员、长期记忆等配置。
  * 本模块集中维护展示/隐藏规则，避免业务页散落条件判断。
  */
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
@@ -122,7 +122,7 @@ const getDeviceAgentArrangePolicy = (): AgentFlowArrangePolicy => ({
   showLongMemory: true,
   showVersionControl: false,
   showAllowOtherModel: true,
-  showAllowChooseMode: true,
+  showAllowChooseMode: false,
   showUserProblemSuggestion: true,
   showAllowAtSkill: false,
   showAllowPrivateSandbox: false,

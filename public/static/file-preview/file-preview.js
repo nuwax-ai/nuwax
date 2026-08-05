@@ -389,6 +389,15 @@ async function startPreview() {
     // Save original file type for subsequent precise notification
     originalFileType = fileType;
 
+    // OpenUI 是交互式会话产物，只提供预览与表单交互，不展示文件下载入口。
+    if (fileType === 'openui') {
+        downloadUrl = '';
+        const previewDownloadButton = document.getElementById('previewDownloadBtn');
+        if (previewDownloadButton) previewDownloadButton.remove();
+        const errorDownloadButton = document.getElementById('errorDownloadBtn');
+        if (errorDownloadButton) errorDownloadButton.remove();
+    }
+
     // Normalize file types for renderer distribution
     if (fileType === 'xls') fileType = 'xlsx';
     if (fileType === 'ppt') fileType = 'pptx';
@@ -481,8 +490,9 @@ async function startPreview() {
                         registerPreviewer: (previewer) => {
                             currentPreviewer = previewer;
                         },
-                        // 从 chat 打开（带 _ticket，有会话）才允许表单提交转发；分享链接（sk）只读。
-                        isChat: !!params._ticket,
+                        // 会话内预览（_ticket 主分支，或 mobile ticket 签发失败回退的 mode=preview）才允许表单提交转发；
+                        // 纯 ?sk=（外部分享）只读。
+                        isChat: !!(params._ticket || params.mode === 'preview'),
                     });
                     break;
 
@@ -517,7 +527,7 @@ async function startPreview() {
             hideLoading();
 
             // Show bottom-right download button only when dl=1
-            if (params.dl === '1' && downloadUrl) {
+            if (fileType !== 'openui' && params.dl === '1' && downloadUrl) {
                 const previewDownloadBtn = document.getElementById('previewDownloadBtn');
                 if (previewDownloadBtn) {
                     previewDownloadBtn.classList.remove('hidden');
@@ -540,6 +550,9 @@ async function startPreview() {
 // Download Function
 // ============================================
 async function downloadFile() {
+    if (fileType === 'openui') {
+        return;
+    }
     if (!downloadUrl) {
         showError('Download URL does not exist');
         return;
