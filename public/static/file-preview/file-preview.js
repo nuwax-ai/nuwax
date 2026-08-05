@@ -490,8 +490,9 @@ async function startPreview() {
                         registerPreviewer: (previewer) => {
                             currentPreviewer = previewer;
                         },
-                        // 从 chat 打开（带 _ticket，有会话）才允许表单提交转发；分享链接（sk）只读。
-                        isChat: !!params._ticket,
+                        // 会话内预览（_ticket 主分支，或 mobile ticket 签发失败回退的 mode=preview）才允许表单提交转发；
+                        // 纯 ?sk=（外部分享）只读。
+                        isChat: !!(params._ticket || params.mode === 'preview'),
                     });
                     break;
 
