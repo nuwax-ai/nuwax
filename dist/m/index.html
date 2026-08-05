@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 
 <head>
-  <link rel="stylesheet" href="/m/assets/uni.63294bc7.css">
+  <link rel="stylesheet" href="/m/assets/uni.e76ed2de.css">
 
 	<meta charset="UTF-8" />
 	<script>
@@ -12,7 +12,7 @@
 			'<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0' +
 			(coverSupport ? ', viewport-fit=cover' : '') + '" />')
 	</script>
-	<title>智能体平台</title>
+	<title>女娲Nuwax</title>
 	<!-- #ifdef H5 || WEB -->
 	<!--2.阿里云验证码-集成主JS-->
     <script defer type="text/javascript" src="https://o.alicdn.com/captcha-frontend/aliyunCaptcha/AliyunCaptcha.js"></script>
@@ -25,9 +25,8 @@
 					return;
 				}
 
-				// 开发模式检测 - 如果是开发环境则不执行跳转
-				if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'development') {
-					console.log('开发模式检测到，跳过双向跳转逻辑');
+				// 本地 umi 开发：桌面访问 /m/ 不跳回 PC
+				if (location.hostname === 'localhost' && location.port === '5173' && location.href.indexOf('/m/') !== -1) {
 					return;
 				}
 
@@ -154,8 +153,8 @@
 				}
 			})();
 	</script>
-  <script type="module" crossorigin src="/m/assets/index-DzFPl3X6.js"></script>
-  <link rel="stylesheet" crossorigin href="/m/assets/index-C2QgYgO6.css">
+  <script type="module" crossorigin src="/m/assets/index-r_r9VbbL.js"></script>
+  <link rel="stylesheet" crossorigin href="/m/assets/index-D4sa1G3a.css">
 </head>
 
 <body>

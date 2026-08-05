@@ -1,0 +1,1 @@
+class s{constructor(){this.agentId=0,this.keyword="",this.timeRange="ALL",this.page=1,this.pageSize=20}}class t{constructor(){this.appAlertEnabled=null,this.smsAlertEnabled=null,this.smsPhones=null}}class e{constructor(){this.title="",this.keywords=[],this.enabled=null}}export{e as A,t as a,s as b};
