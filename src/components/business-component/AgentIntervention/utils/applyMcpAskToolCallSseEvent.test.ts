@@ -18,6 +18,26 @@ const baseAskInput = {
 };
 
 describe('applyMcpAskToolCallSseEvent', () => {
+  it('does not turn an explicit nuwax_render_openui call into an ask-question DockPanel interaction', () => {
+    const patched = applyMcpAskToolCallSseEvent(
+      {
+        eventType: ConversationEventTypeEnum.PROCESSING,
+        data: {
+          executeId: 'openui-call-1',
+          name: 'nuwax_render_openui',
+          result: {
+            executeId: 'openui-call-1',
+            name: 'nuwax_render_openui',
+            input: baseAskInput,
+          },
+        },
+      } as any,
+      { id: 'msg-openui' } as any,
+    );
+
+    expect(patched).toBeNull();
+  });
+
   it('accepts backend PROCESSING tool calls for nuwax_ask_question', () => {
     const patched = applyMcpAskToolCallSseEvent(
       {
@@ -362,6 +382,31 @@ describe('applyMcpAskToolCallSseEvent', () => {
     expect(patched?.mcpAskInteractions?.[0]?.input.requestId).toBe(
       'demo_form_1',
     );
+  });
+
+  it('accepts snake_case ASK_QUESTION events without an execute ID', () => {
+    const patched = applyMcpAskToolCallSseEvent(
+      {
+        eventType: ConversationEventTypeEnum.PROCESSING,
+        data: {
+          name: 'AskQuestion',
+          sub_event_type: 'ASK_QUESTION',
+          result: {
+            data: {
+              ...baseAskInput,
+              requestId: 'ask-without-execute-id',
+            },
+          },
+        },
+      } as any,
+      { id: 'msg-1' } as any,
+    );
+
+    expect(patched?.mcpAskInteractions?.[0]).toMatchObject({
+      toolCallId: 'ask-without-execute-id',
+      input: { requestId: 'ask-without-execute-id' },
+      responseStatus: 'pending',
+    });
   });
 
   it('accepts bare v2 input with no schemaVersion/ui.version (agent omits stamp fields)', () => {

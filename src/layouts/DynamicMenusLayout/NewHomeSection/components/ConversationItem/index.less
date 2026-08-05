@@ -98,6 +98,13 @@
     }
   }
 
+  .conversation-topic-row > .conversation-date {
+    font-size: @fontSizeSm;
+    color: @navSecondMenuAdaptiveTextTertiary;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
   &:hover {
     background-color: @colorBgContainer;
     box-shadow: @boxShadowTertiary;
@@ -142,5 +149,15 @@
         }
       }
     }
+  }
+}
+
+.executing-conversation-dropdown {
+  min-width: 200px;
+  max-width: 320px;
+
+  .executing-conversation-name {
+    display: block;
+    max-width: 280px;
   }
 }

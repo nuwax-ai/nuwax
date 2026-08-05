@@ -415,7 +415,6 @@ const SessionRenderingDemo: React.FC = () => {
                 queueContext={{
                   streamActive: isLocalStreaming,
                   taskExecuting,
-                  runStopConversation: () => void handleStop(),
                 }}
                 chatSuggestList={[
                   '继续补充异常态',

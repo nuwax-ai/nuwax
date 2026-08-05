@@ -10,6 +10,7 @@
 
 import { NodeTypeEnum } from '@/types/enums/common';
 import type { ChildNode } from '@/types/interfaces/graph';
+import { cloneDeep } from '@/utils/common';
 import type { Edge, Graph } from '@antv/x6';
 import { extensionRegistry } from '../extensions/registry';
 import { isHitlOptionsBranchMode } from './adapters/qaConfigAdapter';
@@ -51,6 +52,36 @@ export function applyAgentFlowBranchEdgeConnect(
       targetNode,
     ) ?? null
   );
+}
+
+/**
+ * 删除 AgentFlow 分支端口连线：从 nodeConfig 分支字段移除 targetNodeId。
+ * RouteDecision / HumanInteraction 的连线不在 workflowProxy.edges 中维护，
+ * 删边须走 handler.updateConnection('remove')，不能调用 workflowProxy.deleteEdge。
+ */
+export function applyAgentFlowBranchEdgeDisconnect(
+  sourceNode: ChildNode,
+  targetNodeId: number,
+  sourcePort: string,
+): ChildNode | null {
+  if (!isAgentFlowBranchEdgeConnect(sourceNode, sourcePort)) {
+    return null;
+  }
+
+  const handler = extensionRegistry.get(sourceNode.type as NodeTypeEnum);
+  const parsed = handler?.parseSourcePort?.(sourceNode, sourcePort);
+  if (!parsed) {
+    return null;
+  }
+
+  const nodeCopy = cloneDeep(sourceNode);
+  const handled = handler?.updateConnection?.(
+    nodeCopy,
+    parsed,
+    targetNodeId,
+    'remove',
+  );
+  return handled ? nodeCopy : null;
 }
 
 /**

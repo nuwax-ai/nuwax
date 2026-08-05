@@ -407,6 +407,7 @@ export interface RawSegmentInfoProps {
   onDel: () => void;
   onSuccessUpdateName: (id: number, name: string) => void;
   documentInfo?: KnowledgeDocumentInfo | null;
+  onSegmentSelect?: (segment: KnowledgeRawSegmentInfo | null) => void;
 }
 
 // 本地文档弹窗组件
@@ -469,6 +470,8 @@ export type KnowledgeQaListParams = TablePageRequest<{
   question: string;
   // 知识库ID
   kbId: number;
+  // 文档ID筛选(不传=全部, 0=未关联文档, 具体值=该文档)
+  docId?: number;
 }>;
 
 // 知识库问答 - 数据更新请求参数

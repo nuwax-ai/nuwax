@@ -20,6 +20,7 @@ import styles from './index.less';
 const cx = classNames.bind(styles);
 
 export interface ChatContentAreaProps {
+  conversationId?: number | string;
   messageViewRef: React.RefObject<HTMLDivElement>;
   handleMouseEnter: () => void;
   handleMouseLeave: () => void;
@@ -51,6 +52,7 @@ export interface ChatContentAreaProps {
 }
 
 export const ChatContentArea: React.FC<ChatContentAreaProps> = ({
+  conversationId,
   messageViewRef,
   handleMouseEnter,
   handleMouseLeave,
@@ -144,6 +146,7 @@ export const ChatContentArea: React.FC<ChatContentAreaProps> = ({
                   return (
                     <ChatView
                       key={`${item.id}-${item?.index || idx}`}
+                      conversationId={conversationId}
                       messageInfo={item}
                       roleInfo={effectiveRoleInfo}
                       mode={messageBottomMode}

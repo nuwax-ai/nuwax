@@ -89,9 +89,22 @@
 }
 
 .group-content {
-  // margin: @marginXs 0;
-  // max-height: 400px;
-  // overflow-y: auto;
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition: grid-template-rows @motionDurationMid @motionEaseInOut,
+    opacity @motionDurationFast @motionEaseInOut;
+
+  &.is-expanded {
+    grid-template-rows: 1fr;
+    opacity: 1;
+  }
+
+  .group-content-inner {
+    min-height: 0;
+    overflow: hidden;
+  }
+
   scrollbar-width: thin;
   scrollbar-color: transparent transparent;
 

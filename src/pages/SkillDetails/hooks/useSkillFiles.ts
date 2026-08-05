@@ -19,7 +19,7 @@ import { exportFileViaBrowserDownload } from '@/utils/exportImportFile';
 import { updateFilesListContent, updateFilesListName } from '@/utils/fileTree';
 import { message } from 'antd';
 import dayjs from 'dayjs';
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 
 // 技能项目文件大小限制
 const SKILL_MAX_FILE_SIZE = 20 * 1024 * 1024; // 最大文件大小20MB
@@ -69,60 +69,6 @@ export const useSkillFiles = ({
   // 导出项目加载状态
   const [loadingExportProject, setLoadingExportProject] =
     useState<boolean>(false);
-
-  // 检查是否有未保存的文件修改
-  const hasUnsavedChanges = useCallback(() => {
-    const changeFiles = fileTreeViewRef.current?.changeFiles;
-    return Array.isArray(changeFiles) && changeFiles.length > 0;
-  }, []);
-
-  /**
-   * 如果有未保存的文件修改，则提示用户并返回
-   * @param text 操作文本
-   * @returns {boolean} true-可以继续执行，false-有未保存更改，需要阻止执行
-   */
-  const handleCheckUnsavedChanges = (
-    text: string = t('PC.Pages.SkillDetails.actionPublish'),
-  ): boolean => {
-    const _hasUnsavedChanges = hasUnsavedChanges();
-    if (_hasUnsavedChanges) {
-      message.warning(t('PC.Pages.SkillDetails.saveBeforeAction', text));
-      return false; // 有未保存更改，阻止执行
-    }
-    return true; // 没有未保存更改，可以继续执行
-  };
-
-  // 保存未保存的文件（用于离开保护）
-  const saveUnsavedFiles = useCallback(async () => {
-    const changeFiles = fileTreeViewRef.current?.changeFiles;
-    if (changeFiles && changeFiles.length > 0) {
-      // 更新文件列表(只更新修改过的文件)
-      const updatedFilesList = updateFilesListContent(
-        skillInfo?.files || [],
-        changeFiles,
-        'modify',
-      );
-
-      // 更新技能信息，用于提交更新
-      const newSkillInfo: SkillUpdateParams = {
-        id: skillInfo?.id || 0,
-        files: updatedFilesList,
-      };
-
-      try {
-        const { code } = await apiSkillUpdate(newSkillInfo);
-        if (code === SUCCESS_CODE) {
-          message.success(t('PC.Pages.SkillDetails.saveSuccess'));
-          return true;
-        }
-        return false;
-      } catch (error) {
-        console.error('Failed to save files:', error);
-        return false;
-      }
-    }
-    return true;
-  }, [skillInfo]);
 
   // 删除文件
   const handleDeleteFile = async (fileNode: FileNode): Promise<boolean> => {
@@ -400,8 +346,6 @@ export const useSkillFiles = ({
     openImportSkillProject,
     setOpenImportSkillProject,
     loadingExportProject,
-    handleCheckUnsavedChanges,
-    saveUnsavedFiles,
     handleDeleteFile,
     handleCreateFileNode,
     handleConfirmRenameFile,
@@ -410,6 +354,5 @@ export const useSkillFiles = ({
     handleExportProject,
     handleImportProject,
     handleImportSkillProjectConfirm,
-    hasUnsavedChanges,
   };
 };

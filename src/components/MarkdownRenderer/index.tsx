@@ -37,20 +37,28 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(
     headerActions = true,
     disableTyping = true,
     theme = 'light',
-    answer = '',
     thinking = '',
     status,
+    thinkingFinished,
+    collapseProcessGroups = false,
   }: MarkdownRendererProps) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const hasThinking = !!thinking && thinking.trim() !== '';
+    // 正文与思考流可能交错到达，不能以已有正文作为思考结束依据。
+    // 对旧消息（未携带 thinkingFinished）保留原有终态兼容逻辑。
     const isThinkingFinished =
-      status === MessageStatusEnum.Complete ||
-      (!!answer && answer.trim() !== '');
+      thinkingFinished ??
+      (status !== MessageStatusEnum.Incomplete &&
+        status !== MessageStatusEnum.Loading);
 
     const containerRef = useRef<HTMLDivElement>(null);
     const plugins = useMemo(
-      () => [mermaidPlugin, katexPlugin, genCustomPlugin(conversationId)],
-      [conversationId],
+      () => [
+        mermaidPlugin,
+        katexPlugin,
+        genCustomPlugin(conversationId, collapseProcessGroups),
+      ],
+      [conversationId, collapseProcessGroups],
     );
     // 使用导入的 mermaidConfig，而不是重新创建
     const mermaidProvider = useMemo(() => mermaidConfig, []);
@@ -111,7 +119,10 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(
       prevProps.id === nextProps.id &&
       prevProps.thinking === nextProps.thinking &&
       prevProps.answer === nextProps.answer &&
-      prevProps.status === nextProps.status
+      prevProps.status === nextProps.status &&
+      prevProps.thinkingFinished === nextProps.thinkingFinished &&
+      prevProps.collapseProcessGroups === nextProps.collapseProcessGroups &&
+      prevProps.conversationId === nextProps.conversationId
     );
   },
 );
@@ -138,7 +149,7 @@ const PureMarkdownRenderer = memo(
   }) => {
     const plugins = useMemo(
       () => [katexPlugin, genCustomPlugin(conversationId)],
-      [],
+      [conversationId],
     );
     return (
       <div
@@ -171,7 +182,8 @@ const PureMarkdownRenderer = memo(
       prevProps.id === nextProps.id &&
       prevProps.theme === nextProps.theme &&
       prevProps.children === nextProps.children &&
-      prevProps.disableTyping === nextProps.disableTyping
+      prevProps.disableTyping === nextProps.disableTyping &&
+      prevProps.conversationId === nextProps.conversationId
     );
   },
 );

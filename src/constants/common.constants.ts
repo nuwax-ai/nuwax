@@ -175,6 +175,9 @@ export const COMPONENT_TYPE_NAME_MAP = {
 export const SANDBOX =
   'allow-downloads allow-scripts allow-same-origin allow-forms allow-top-navigation allow-popups allow-modals allow-popups-to-escape-sandbox';
 
+// OpenUI sidecar 只需要执行自身脚本并读取同源 artifact；禁止表单、下载、弹窗和顶层导航。
+export const OPENUI_SIDECAR_SANDBOX = 'allow-scripts allow-same-origin';
+
 /**
  *  子智能体提示词模板
  */

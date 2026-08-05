@@ -62,6 +62,11 @@ export interface FileTreeViewProps {
   agentSandboxName?: string;
   onRestartServer?: () => void;
   onRestartAgent?: () => void;
+  /**
+   * VNC 重连前回调：应先 ensurePod 并恢复 keepalive 轮询
+   * 典型实现：ensureDesktopConnection(conversationId)
+   */
+  onReconnect?: () => void | Promise<void>;
   showMoreActions?: boolean;
   isFullscreenPreview?: boolean;
   onFullscreenPreview?: (isFullscreen: boolean) => void;

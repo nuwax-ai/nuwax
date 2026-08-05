@@ -20,7 +20,7 @@ import {
   Radio,
 } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useRequest } from 'umi';
 
 const cx = classNames.bind(styles);
@@ -53,6 +53,7 @@ const MessageSendModal: React.FC<MessageSendModalProps> = ({
   // 消息内容
   const [content, setContent] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
+  const searchKeywordRef = useRef<string>('');
 
   // 发送消息
   const { run: runMessageSend } = useRequest(apiSystemNotifyMessageSend, {
@@ -166,6 +167,10 @@ const MessageSendModal: React.FC<MessageSendModalProps> = ({
     });
   };
 
+  const triggerSearch = (value?: string) => {
+    handleInputChange(value ?? searchKeywordRef.current);
+  };
+
   useEffect(() => {
     if (!open) {
       return;
@@ -214,18 +219,22 @@ const MessageSendModal: React.FC<MessageSendModalProps> = ({
         />
         {messageScope === MessageScopeEnum.Broadcast && (
           <div style={{ display: 'flex', gap: 20 }}>
-            <div className={cx(styles['add-member-left-column'])}>
+            <div className={cx(styles['add-member-left-column'], 'flex-1')}>
               <Input
                 placeholder={dict(
                   'PC.Pages.UserManage.MessageSendModal.searchUserPlaceholder',
                 )}
-                prefix={<SearchOutlined />}
+                suffix={
+                  <SearchOutlined
+                    style={{ cursor: 'pointer', color: 'rgba(0, 0, 0, 0.45)' }}
+                    onClick={() => triggerSearch()}
+                  />
+                }
+                onChange={(event) => {
+                  searchKeywordRef.current = event.target.value;
+                }}
                 onPressEnter={(event) => {
-                  if (event.key === 'Enter') {
-                    handleInputChange(
-                      (event.currentTarget as HTMLInputElement).value,
-                    );
-                  }
+                  triggerSearch((event.target as HTMLInputElement).value);
                 }}
               />
               <Checkbox
@@ -251,7 +260,7 @@ const MessageSendModal: React.FC<MessageSendModalProps> = ({
               </Checkbox.Group>
             </div>
 
-            <div style={{ width: '300px' }}>
+            <div className={'flex-1'}>
               <h3 style={{ marginBottom: 15 }}>
                 {dict(
                   'PC.Pages.UserManage.MessageSendModal.selectedMembers',

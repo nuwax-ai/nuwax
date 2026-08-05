@@ -1,4 +1,3 @@
-import agentImage from '@/assets/images/agent_image.png';
 import { dict } from '@/services/i18nRuntime';
 import { TaskStatus } from '@/types/enums/agent';
 import { ConversationInfo } from '@/types/interfaces/conversationInfo';
@@ -25,26 +24,6 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
     'PC.Layouts.DynamicMenusLayout.ConversationItem.executing',
   );
 
-  // 渲染智能体圆形头像，缺失或加载失败时使用默认图片兜底
-  const renderAvatar = () => {
-    const icon = item.icon || item.agent?.icon;
-    const name = item.topic || item.agent?.name || '';
-
-    return (
-      <div className={cx(styles['avatar-container'])}>
-        <img
-          src={icon || agentImage}
-          alt={name}
-          className={cx(styles['avatar-img'])}
-          onError={(e) => {
-            e.currentTarget.onerror = null;
-            e.currentTarget.src = agentImage;
-          }}
-        />
-      </div>
-    );
-  };
-
   return (
     <div
       className={cx(styles['conversation-item'], {
@@ -52,7 +31,6 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
       })}
       onClick={onClick}
     >
-      {renderAvatar()}
       <div className={cx(styles['conversation-item-content'])}>
         <div className={cx(styles['conversation-topic-row'])}>
           <Typography.Text

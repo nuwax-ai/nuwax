@@ -290,6 +290,8 @@ export interface MessageInfo extends ChatMessageDto {
   agentId: number;
   // 消息状态，可选值为 loading | incomplete | complete | error
   status?: MessageStatusEnum;
+  /** 思考流是否已收到结束分片；未设置时按历史消息状态兼容处理。 */
+  thinkingFinished?: boolean;
   // 自定义添加字段：chat 会话结果
   finalResult?: ConversationFinalResult;
   // 消息查询过程信息

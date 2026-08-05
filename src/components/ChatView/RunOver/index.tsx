@@ -24,12 +24,18 @@ const RunOver: React.FC<RunOverProps> = ({
   messageInfo,
   showStatusDesc = true,
 }) => {
-  const { finalResult, processingList, think, text } = messageInfo;
+  const { finalResult, processingList, think, status, thinkingFinished } =
+    messageInfo;
 
   // 是否存在思考
   const hasThinking = !!think && think.trim() !== '';
   // 是否思考完毕
-  const isThinkingFinished = !!text && text.trim() !== '';
+  // 正文流可先于思考流结束，必须以思考分片自己的 finished 信号为准。
+  // 历史消息没有该字段时，再以消息终态兼容判断。
+  const isThinkingFinished =
+    thinkingFinished ??
+    (status !== MessageStatusEnum.Incomplete &&
+      status !== MessageStatusEnum.Loading);
   // 是否正在思考
   const isThinking = hasThinking && !isThinkingFinished;
 

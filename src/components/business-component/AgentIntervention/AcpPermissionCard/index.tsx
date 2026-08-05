@@ -117,7 +117,12 @@ const AcpPermissionCard: React.FC<AcpPermissionCardProps> = ({
   const visibleOptions = useMemo(
     () =>
       (request.options ?? [])
-        .filter((option) => !HIDDEN_OPTION_KINDS.has(option.kind))
+        .filter(
+          (option) =>
+            !HIDDEN_OPTION_KINDS.has(option.kind) &&
+            // codex 特有:按命令前缀放行,语义复杂,暂不在 dockpanel 展示
+            option.optionId !== 'accept_execpolicy_amendment',
+        )
         .sort((a, b) => {
           const orderA = getAcpPermissionShortcutHint(a.kind) || '9';
           const orderB = getAcpPermissionShortcutHint(b.kind) || '9';

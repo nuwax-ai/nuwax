@@ -29,7 +29,6 @@ describe('消息队列关闭时的发送拦截', () => {
         messageList: [],
         conversationId: 'conv-1',
         sendMessage,
-        runStopConversation: vi.fn(),
       }),
     );
 
@@ -55,7 +54,6 @@ describe('消息队列关闭时的发送拦截', () => {
         messageList: [],
         conversationId: 'conv-1',
         sendMessage,
-        runStopConversation: vi.fn(),
       }),
     );
 
@@ -74,7 +72,6 @@ describe('消息队列关闭时的发送拦截', () => {
         messageList: [],
         conversationId: 'conv-1',
         sendMessage,
-        runStopConversation: vi.fn(),
       }),
     );
 

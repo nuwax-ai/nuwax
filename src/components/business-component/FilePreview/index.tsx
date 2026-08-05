@@ -46,6 +46,57 @@ const HTML_PREVIEW_SANDBOX = SANDBOX.replace(
   '',
 ).trim();
 
+/** 从 href 解析锚点 id；非本页 hash 链接返回 null */
+const resolveHashFromHref = (href: string): string | null => {
+  const trimmedHref = href.trim();
+  if (trimmedHref.startsWith('#')) {
+    return trimmedHref.slice(1);
+  }
+  try {
+    const url = new URL(trimmedHref, window.location.href);
+    if (
+      url.origin === window.location.origin &&
+      url.pathname === window.location.pathname &&
+      url.hash.length > 0
+    ) {
+      return url.hash.slice(1);
+    }
+  } catch {
+    // ignore invalid URL
+  }
+  return null;
+};
+
+/** 在指定容器内滚动到 hash 对应元素 */
+const scrollContainerToHash = (
+  scrollContainer: HTMLElement,
+  scope: ParentNode,
+  hash: string,
+) => {
+  if (!hash) {
+    scrollContainer.scrollTo({ top: 0, behavior: 'smooth' });
+    return;
+  }
+
+  let decodedHash = hash;
+  try {
+    decodedHash = decodeURIComponent(hash);
+  } catch {
+    decodedHash = hash;
+  }
+
+  const escapedId =
+    typeof CSS !== 'undefined' && typeof CSS.escape === 'function'
+      ? CSS.escape(decodedHash)
+      : decodedHash.replace(/([!"#$%&'()*+,./:;<=>?@[\\\]^`{|}~])/g, '\\$1');
+
+  const targetEl =
+    scope.querySelector(`#${escapedId}`) ||
+    scope.querySelector(`a[name="${decodedHash.replace(/"/g, '\\"')}"]`);
+
+  targetEl?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
+
 /**
  * 在 iframe 内拦截 hash 锚点点击，避免 srcDoc / base 标签导致加载主应用页面
  */
@@ -66,40 +117,66 @@ const setupHtmlIframeAnchorHandling = (iframe: HTMLIFrameElement) => {
       return;
     }
 
-    const trimmedHref = hrefAttr.trim();
-    if (!trimmedHref.startsWith('#')) {
+    const hash = resolveHashFromHref(hrefAttr);
+    if (hash === null) {
       return;
     }
 
     event.preventDefault();
     event.stopPropagation();
 
-    const hash = trimmedHref.slice(1);
-    if (!hash) {
-      doc.defaultView?.scrollTo({ top: 0, behavior: 'smooth' });
-      return;
-    }
+    scrollContainerToHash(doc.documentElement, doc, hash);
 
-    let decodedHash = hash;
-    try {
-      decodedHash = decodeURIComponent(hash);
-    } catch {
-      decodedHash = hash;
-    }
-
-    const targetEl =
-      doc.getElementById(decodedHash) ||
-      doc.querySelector(`a[name="${decodedHash.replace(/"/g, '\\"')}"]`);
-
-    targetEl?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-
-    if (doc.defaultView) {
+    if (doc.defaultView && hash) {
       doc.defaultView.location.hash = hash;
     }
   };
 
   doc.addEventListener('click', handleClick, true);
   return () => doc.removeEventListener('click', handleClick, true);
+};
+
+/**
+ * 拦截 Markdown 预览区 hash 锚点点击，在预览容器内定位，避免改变主应用 URL 或新开页签
+ */
+const setupMarkdownAnchorHandling = (
+  scrollContainer: HTMLElement,
+  contentRoot?: HTMLElement | null,
+) => {
+  const scope = contentRoot ?? scrollContainer;
+
+  const handleAnchorNavigation = (event: MouseEvent) => {
+    const anchor = (event.target as Element | null)?.closest('a');
+    if (!anchor) {
+      return;
+    }
+
+    const hrefAttr = anchor.getAttribute('href');
+    if (!hrefAttr) {
+      return;
+    }
+
+    const hash = resolveHashFromHref(hrefAttr);
+    if (hash === null) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    scrollContainerToHash(scrollContainer, scope, hash);
+  };
+
+  scrollContainer.addEventListener('click', handleAnchorNavigation, true);
+  scrollContainer.addEventListener('auxclick', handleAnchorNavigation, true);
+  return () => {
+    scrollContainer.removeEventListener('click', handleAnchorNavigation, true);
+    scrollContainer.removeEventListener(
+      'auxclick',
+      handleAnchorNavigation,
+      true,
+    );
+  };
 };
 
 // File type categories
@@ -380,6 +457,8 @@ const FilePreview: React.FC<FilePreviewProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const htmlIframeCleanupRef = useRef<(() => void) | null>(null);
+  const markdownScrollRef = useRef<HTMLDivElement>(null);
+  const markdownAnchorCleanupRef = useRef<(() => void) | null>(null);
   const previewerRef = useRef<any>(null);
   const [status, setStatus] = useState<PreviewStatus>('idle');
   const [errorMessage, setErrorMessage] = useState<string>('');
@@ -450,8 +529,36 @@ const FilePreview: React.FC<FilePreviewProps> = ({
     return () => {
       htmlIframeCleanupRef.current?.();
       htmlIframeCleanupRef.current = null;
+      markdownAnchorCleanupRef.current?.();
+      markdownAnchorCleanupRef.current = null;
     };
   }, []);
+
+  useEffect(() => {
+    if (!isMarkdownVisible || !markdownScrollRef.current) {
+      markdownAnchorCleanupRef.current?.();
+      markdownAnchorCleanupRef.current = null;
+      return;
+    }
+
+    const contentRoot =
+      (markdownScrollRef.current.querySelector(
+        '#file-preview-md',
+      ) as HTMLElement | null) ??
+      (markdownScrollRef.current.querySelector(
+        '.ds-markdown',
+      ) as HTMLElement | null);
+
+    markdownAnchorCleanupRef.current = setupMarkdownAnchorHandling(
+      markdownScrollRef.current,
+      contentRoot,
+    );
+
+    return () => {
+      markdownAnchorCleanupRef.current?.();
+      markdownAnchorCleanupRef.current = null;
+    };
+  }, [isMarkdownVisible, textContent]);
 
   const imageSources = useMemo(() => {
     if (srcList && srcList.length > 0) {
@@ -934,6 +1041,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({
             {/* PureMarkdownRenderer 延迟渲染，使用绝对定位和隐藏，避免初始化时影响布局 */}
             {shouldRenderMarkdown && textContent && (
               <div
+                ref={markdownScrollRef}
                 style={{
                   position: 'absolute',
                   top: 0,

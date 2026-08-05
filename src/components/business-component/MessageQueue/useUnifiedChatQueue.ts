@@ -15,8 +15,6 @@ export interface UnifiedChatQueueContext {
   streamActive?: boolean;
   /** 后台任务执行中（taskStatus===EXECUTING），仅参与入队拦截 */
   taskExecuting?: boolean;
-  /** 停止当前会话（立即发送队列消息时调用） */
-  runStopConversation?: (id: number | string) => void;
 }
 
 export interface UseUnifiedChatQueueParams {
@@ -44,8 +42,9 @@ export interface UseUnifiedChatQueueParams {
   /** 当前是否有待处理 intervention（ask/question/审批），为 true 时暂停队列消费 */
   hasPendingIntervention?: boolean;
   /**
-   * 可选：覆盖 conversationInfo model 的活跃/停止上下文。
+   * 可选：覆盖 conversationInfo model 的流式/任务上下文。
    * 预览 Tab 使用 conversationAgent model 时传入，避免与左侧主聊天串扰。
+   * 停止会话仅由输入框停止按钮走 runStopConversation，不再用于队列立即发送。
    */
   queueContext?: UnifiedChatQueueContext;
 }
@@ -68,11 +67,8 @@ export const useUnifiedChatQueue = ({
   hasPendingIntervention,
   queueContext,
 }: UseUnifiedChatQueueParams) => {
-  const {
-    isConversationActive: modelStreamActive,
-    conversationInfo,
-    runStopConversation: modelRunStop,
-  } = useModel('conversationInfo');
+  const { isConversationActive: modelStreamActive, conversationInfo } =
+    useModel('conversationInfo');
 
   const streamActiveByModel = queueContext?.streamActive ?? modelStreamActive;
   const streamActive = streamActiveByModel || isSessionStreamBusy(messageList);
@@ -80,7 +76,6 @@ export const useUnifiedChatQueue = ({
     queueContext?.taskExecuting ??
     conversationInfo?.taskStatus === TaskStatus.EXECUTING;
   const isEnqueueBlocked = streamActive || taskExecuting;
-  const runStopConversation = queueContext?.runStopConversation ?? modelRunStop;
 
   const rawSend = useCallback(
     (
@@ -108,7 +103,6 @@ export const useUnifiedChatQueue = ({
     messageList: messageList || [],
     conversationId,
     sendMessage: rawSend,
-    runStopConversation,
     minConsumeInterval,
     hasPendingIntervention,
   });

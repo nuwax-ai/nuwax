@@ -152,6 +152,7 @@ const EditAgent: React.FC = () => {
     openPreviewView,
     restartVncPod,
     restartAgent,
+    ensureDesktopConnection,
     taskAgentSelectedFileId,
     setTaskAgentSelectedFileId,
     taskAgentSelectTrigger,
@@ -1356,6 +1357,10 @@ const EditAgent: React.FC = () => {
                             // 重启智能体
                             onRestartAgent={() =>
                               restartAgent(devConversationId)
+                            }
+                            // VNC 重连前回调：应先 ensurePod 并恢复 keepalive 轮询
+                            onReconnect={() =>
+                              ensureDesktopConnection(devConversationId)
                             }
                             // 关闭整个面板
                             onClose={handleCloseFileTreeViewPanel}

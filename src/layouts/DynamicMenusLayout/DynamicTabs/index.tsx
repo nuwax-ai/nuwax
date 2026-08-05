@@ -36,22 +36,22 @@ const DynamicTabs: React.FC<DynamicTabsProps> = ({
     useModel('layout');
 
   /**
-   * 判断是否是Safari浏览器
-   * Safari 不支持稳定的 scrollbar-gutter，经典滚动条会挤占布局宽度
+   * 经典滚动条浏览器（Safari / Firefox）
+   * 不支持稳定的 scrollbar-gutter，滚动条会挤占布局宽度导致图标偏左
    */
-  const isSafariBrowser = useMemo(() => {
+  const needsClassicScrollbarFix = useMemo(() => {
     if (typeof navigator === 'undefined') {
       return false;
     }
     const ua = navigator.userAgent.toLowerCase();
+    const isFirefox = ua.includes('firefox') || ua.includes('fxios');
     const isSafari = ua.includes('safari');
     const isOtherWebkitBrowser =
       ua.includes('chrome') ||
       ua.includes('crios') ||
       ua.includes('android') ||
-      ua.includes('edg') ||
-      ua.includes('fxios');
-    return isSafari && !isOtherWebkitBrowser;
+      ua.includes('edg');
+    return isFirefox || (isSafari && !isOtherWebkitBrowser);
   }, []);
 
   // 将 MenuItemDto 转换为 TabItem 所需的格式
@@ -72,24 +72,24 @@ const DynamicTabs: React.FC<DynamicTabsProps> = ({
     ? NAVIGATION_LAYOUT_SIZES.FIRST_MENU_WIDTH.STYLE1
     : NAVIGATION_LAYOUT_SIZES.FIRST_MENU_WIDTH.STYLE2;
 
-  /** Safari：列表收窄 8px 并左移 4px 保持整栏居中，滚动条贴栏右缘 */
-  const safariListStyle = useMemo(() => {
-    if (!isSafariBrowser) return undefined;
+  /** 经典滚动条：列表收窄 8px 并左移 4px 保持整栏居中，滚动条贴栏右缘 */
+  const classicScrollbarListStyle = useMemo(() => {
+    if (!needsClassicScrollbarFix) return undefined;
     const scrollbarSize = 8;
     return {
       width: railWidthPx - scrollbarSize,
       minWidth: railWidthPx - scrollbarSize,
       marginLeft: scrollbarSize / 2,
     };
-  }, [isSafariBrowser, railWidthPx]);
+  }, [needsClassicScrollbarFix, railWidthPx]);
 
   /**
    * 滚动与横向对齐：
-   * - 非 Safari：内层 `scroll-container` + flex-end，Style1 再补 2px。
-   * - Safari：浮动滚动条 hover 显示；列表预留 8px 空间。
+   * - Chromium：内层 `scroll-container` + flex-end，Style1 再补 2px。
+   * - Safari / Firefox：浮动滚动条 hover 显示；列表预留 8px 空间并居中。
    */
   const chromeTabsPaddingClass =
-    !isSafariBrowser && isStyleOne
+    !needsClassicScrollbarFix && isStyleOne
       ? styles['tabs-padding-chrome-compact']
       : null;
 
@@ -98,8 +98,8 @@ const DynamicTabs: React.FC<DynamicTabsProps> = ({
       <div
         className={cx(
           styles['tabs-scroll'],
-          isSafariBrowser
-            ? styles['tabs-scroll-safari']
+          needsClassicScrollbarFix
+            ? styles['tabs-scroll-classic']
             : cx('scroll-container', styles['tabs-scroll-chrome']),
           chromeTabsPaddingClass,
         )}
@@ -109,10 +109,12 @@ const DynamicTabs: React.FC<DynamicTabsProps> = ({
             styles['tabs-list'],
             'flex',
             'flex-col',
-            isSafariBrowser && styles['tabs-list-safari'],
-            isSafariBrowser ? styles['flex-center'] : styles['flex-end'],
+            needsClassicScrollbarFix && styles['tabs-list-classic'],
+            needsClassicScrollbarFix
+              ? styles['flex-center']
+              : styles['flex-end'],
           )}
-          style={safariListStyle}
+          style={classicScrollbarListStyle}
         >
           {tabItems.map((item) => (
             <TabItem

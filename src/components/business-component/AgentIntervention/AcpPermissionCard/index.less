@@ -15,7 +15,9 @@
 
   &.cardDocked {
     height: auto;
-    max-height: none;
+    // cqh 相对于 UnifiedChatSession，会随会话区域高度变化。
+    // vh 作为不支持容器查询单位时的兜底。
+    max-height: var(--intervention-max-height, 80vh);
 
     .title {
       white-space: normal;
@@ -23,6 +25,14 @@
       display: box;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
+    }
+
+    .body {
+      display: flex;
+      flex: 1 1 auto;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
     }
   }
 
@@ -92,10 +102,15 @@
     padding: 0;
 
     .filePreview {
+      flex: 0 1 auto;
+      min-height: 0;
+      // 为标题、审批选项和底部操作区预留空间，超出的文件内容在此处滚动。
+      max-height: calc(var(--intervention-max-height, 80vh) - 220px);
       display: flex;
       flex-direction: column;
       gap: @marginXs;
       padding: 0 @paddingSm @paddingXs;
+      overflow-y: auto;
     }
 
     .filePreviewItem {
@@ -119,9 +134,16 @@
     }
 
     .diffPreview {
-      max-height: 220px;
-      min-height: 80px;
-      overflow: auto;
+      max-height: calc(var(--intervention-max-height, 80vh) - 260px);
+      overflow: hidden;
+
+      // DiffView 根节点原本使用 `height: 100%`，在自适应预览中会随内容继续撑开。
+      // 将最大高度与滚动条直接交给该节点，确保鼠标停在代码区域时也能滚动。
+      > div {
+        height: auto !important;
+        max-height: inherit;
+        overflow: auto !important;
+      }
     }
 
     .actions {

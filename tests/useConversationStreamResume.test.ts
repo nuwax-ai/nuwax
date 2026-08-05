@@ -360,4 +360,126 @@ describe('useConversationStreamResume', () => {
 
     expect(resumeStream).not.toHaveBeenCalled();
   });
+
+  it('sub 秒关后进入失败退避：窗口内跳过重订阅，窗口过后允许，且连续失败指数退避', async () => {
+    vi.useFakeTimers();
+    const reloadHistoryAsync = vi.fn().mockResolvedValue([]);
+    let subOnClose: (() => void | Promise<void>) | undefined;
+    const resumeStream = vi.fn((_id, _list, onClose) => {
+      subOnClose = onClose;
+    });
+    (resolveTaskStatusFromMessageLists as any).mockReturnValue(undefined);
+    (fetchConversationTaskStatus as any).mockResolvedValue(
+      TaskStatus.EXECUTING,
+    );
+
+    renderHook(() =>
+      useConversationStreamResume({
+        conversationId: 1555404,
+        taskStatus: TaskStatus.EXECUTING,
+        isLocallyStreaming: false,
+        messageList: [],
+        reloadHistoryAsync,
+        waitForHistoryUserBeforeResume: false,
+        resumeStream,
+      }),
+    );
+
+    // 第一次订阅建立（t=0）
+    await act(async () => {
+      onSuccess?.(TaskStatus.EXECUTING);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(resumeStream).toHaveBeenCalledTimes(1);
+
+    // 秒关（存活 < 3s）→ 计入失败，基础退避 2s
+    await act(async () => {
+      await subOnClose?.();
+    });
+
+    // 退避窗口内（t≈0 < 2s）轮询再报 EXECUTING → 拦截，不再订阅
+    await act(async () => {
+      onSuccess?.(TaskStatus.EXECUTING);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(resumeStream).toHaveBeenCalledTimes(1);
+
+    // 退避窗口过后（t=2.1s）→ 允许第二次订阅
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2100);
+      onSuccess?.(TaskStatus.EXECUTING);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(resumeStream).toHaveBeenCalledTimes(2);
+
+    // 第二次仍秒关 → 连续失败 count=2，退避指数增长至 4s
+    await act(async () => {
+      await subOnClose?.();
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3900);
+      onSuccess?.(TaskStatus.EXECUTING);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(resumeStream).toHaveBeenCalledTimes(2);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(200);
+      onSuccess?.(TaskStatus.EXECUTING);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(resumeStream).toHaveBeenCalledTimes(3);
+  });
+
+  it('sub 长连接存活后正常关闭不计入失败，可立即重订阅', async () => {
+    vi.useFakeTimers();
+    const reloadHistoryAsync = vi.fn().mockResolvedValue([]);
+    let subOnClose: (() => void | Promise<void>) | undefined;
+    const resumeStream = vi.fn((_id, _list, onClose) => {
+      subOnClose = onClose;
+    });
+    (resolveTaskStatusFromMessageLists as any).mockReturnValue(undefined);
+    (fetchConversationTaskStatus as any).mockResolvedValue(
+      TaskStatus.EXECUTING,
+    );
+
+    renderHook(() =>
+      useConversationStreamResume({
+        conversationId: 1555404,
+        taskStatus: TaskStatus.EXECUTING,
+        isLocallyStreaming: false,
+        messageList: [],
+        reloadHistoryAsync,
+        waitForHistoryUserBeforeResume: false,
+        resumeStream,
+      }),
+    );
+
+    // 第一次订阅建立（t=0）
+    await act(async () => {
+      onSuccess?.(TaskStatus.EXECUTING);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(resumeStream).toHaveBeenCalledTimes(1);
+
+    // 存活 10s 后正常关闭 → 不计失败、无退避
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10000);
+      await subOnClose?.();
+    });
+
+    // 立即再报 EXECUTING → 允许重订阅
+    await act(async () => {
+      onSuccess?.(TaskStatus.EXECUTING);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(resumeStream).toHaveBeenCalledTimes(2);
+  });
 });
