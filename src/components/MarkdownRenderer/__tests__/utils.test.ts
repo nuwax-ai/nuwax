@@ -6,7 +6,12 @@
  * - groupMarkdownProcesses：快速短路（不含过程标签时直接返回）
  */
 import { describe, expect, it } from 'vitest';
-import { groupMarkdownProcesses, replaceMathBracket } from '../utils';
+import {
+  groupMarkdownProcesses,
+  looksLikeLatex,
+  replaceMathBracket,
+  unwrapLatexInlineCode,
+} from '../utils';
 
 /** 构造一个合法的 base64 data URL（仅长度可配置，内容不要求是真实图片） */
 const makeDataUrl = (bodyLen = 100) =>
@@ -66,6 +71,61 @@ describe('replaceMathBracket', () => {
     const url = makeDataUrl(80);
     const text = `![img](${url}) 然后 \\(c = a + b\\)`;
     expect(replaceMathBracket(text)).toBe(`![img](${url}) 然后 $c = a + b$`);
+  });
+
+  it('不误伤已有美元公式中的 [] / ()（立方根、导数等）', () => {
+    const text =
+      "| 3 | `$\\sqrt[3]{x}$` | $\\sqrt[3]{x}$ |\n| 13 | `$f'(x)$` | $f'(x)$ |";
+    expect(replaceMathBracket(text)).toBe(text);
+  });
+
+  it('像 LaTeX 的行内代码会拆成 $...$ 再渲染', () => {
+    const text = "命令 `\\sqrt[3]{x}` 与 `f'(x)` 仅作展示";
+    expect(replaceMathBracket(text)).toBe(
+      "命令 $\\sqrt[3]{x}$ 与 $f'(x)$ 仅作展示",
+    );
+  });
+
+  it('已有 $ 公式与 \\( \\) 混排时只转换括号定界符', () => {
+    const text = '已有 $\\alpha$ 再写 \\(\\beta\\)';
+    expect(replaceMathBracket(text)).toBe('已有 $\\alpha$ 再写 $\\beta$');
+  });
+
+  it('流式会话常见：反引号包住的 LaTeX 命令列表可转为公式', () => {
+    const text =
+      '6. 求和：`\\sum_{i=1}^{n}`\n16. 矩阵：`\\begin{pmatrix} a & b \\\\ c & d \\end{pmatrix}`';
+    expect(replaceMathBracket(text)).toBe(
+      '6. 求和：$\\sum_{i=1}^{n}$\n16. 矩阵：$\\begin{pmatrix} a & b \\\\ c & d \\end{pmatrix}$',
+    );
+  });
+
+  it('普通代码行内片段保持反引号', () => {
+    expect(replaceMathBracket('使用 `const x = 1` 声明')).toBe(
+      '使用 `const x = 1` 声明',
+    );
+  });
+});
+
+describe('looksLikeLatex / unwrapLatexInlineCode', () => {
+  it('识别常见 LaTeX 命令与简单上下标', () => {
+    expect(looksLikeLatex('\\frac{a}{b}')).toBe(true);
+    expect(looksLikeLatex('\\sum_{i=1}^{n}')).toBe(true);
+    expect(looksLikeLatex('\\lim_{x \\to 0}')).toBe(true);
+    expect(looksLikeLatex('x^2')).toBe(true);
+    expect(looksLikeLatex('x_i')).toBe(true);
+    expect(looksLikeLatex("f'(x)")).toBe(true);
+    expect(looksLikeLatex('|x|')).toBe(true);
+  });
+
+  it('排除普通代码', () => {
+    expect(looksLikeLatex('const x = 1')).toBe(false);
+    expect(looksLikeLatex('npm install')).toBe(false);
+    expect(looksLikeLatex('foo.bar.ts')).toBe(false);
+  });
+
+  it('不改动围栏代码块内的反引号内容', () => {
+    const text = '```\\n`\\frac{a}{b}`\\n```'.replace(/\\n/g, '\n');
+    expect(unwrapLatexInlineCode(text)).toBe(text);
   });
 });
 
