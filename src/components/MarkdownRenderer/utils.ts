@@ -267,23 +267,41 @@ const DATA_URL_PLACEHOLDER_RE =
   /data:[a-z0-9.+-]+\/[a-z0-9.+-]+;base64,[A-Za-z0-9+/=]+/gi;
 
 /**
+ * 若行内代码整体就是 $...$ / $$...$$ 公式，返回该公式文本；否则返回 null。
+ * 模型常写成 `` `$a^2$` ``，需去掉反引号才能被 KaTeX 解析。
+ */
+function extractDollarWrappedMath(code: string): string | null {
+  const s = code.trim();
+  if (!s) return null;
+  if (/^\$\$[\s\S]+\$\$$/.test(s)) return s;
+  // 整段被一对 $ 包裹，且中间不再出现未转义的 $
+  if (
+    s.length >= 3 &&
+    s.startsWith('$') &&
+    s.endsWith('$') &&
+    !s.startsWith('$$')
+  ) {
+    const inner = s.slice(1, -1);
+    if (inner.length > 0 && !inner.includes('$')) return s;
+  }
+  return null;
+}
+
+/**
  * 判断行内代码是否更像 LaTeX 公式（模型常把公式误包在反引号里）
  * @param code - 行内代码内容（不含反引号）
  */
 function looksLikeLatex(code: string): boolean {
   const s = code.trim();
   if (!s || s.length > 800) return false;
-  // 已是美元定界或混有 $，留给原有公式/代码逻辑
+  // 整段已是 $...$ 时由 unwrap 直接去反引号；此处不含 $ 的裸 LaTeX
   if (s.includes('$')) return false;
 
   // LaTeX 命令优先（小写，避免 Windows 路径 \Users）
   // 须在编程特征排除之前：`\sum_{i=1}^{n}` 含 `=` 但仍是公式
   if (/\\[a-z]+/.test(s)) return true;
 
-  // 排除明显编程 / URL / 包管理命令（无 LaTeX 命令时）
-  if (/[=;]|=>|:\/\/|\.(js|ts|tsx|jsx|py|json|css|less)\b/i.test(s)) {
-    return false;
-  }
+  // 明显编程 / URL（无 LaTeX 命令时）
   if (
     /\b(const|let|var|function|import|export|return|npm|yarn|pnpm|git)\b/.test(
       s,
@@ -291,8 +309,21 @@ function looksLikeLatex(code: string): boolean {
   ) {
     return false;
   }
+  if (/=>|:\/\/|\.(js|ts|tsx|jsx|py|json|css|less)\b/i.test(s)) {
+    return false;
+  }
 
-  // 简单上下标：x^2、x_i、a^{2}
+  // 代数式上下标：a^2 + b^2、(a+b)^2 = a^2 + 2ab + b^2
+  // 允许 + - = () 空格等；要求出现 ^ / _ 形式的上下标
+  if (
+    /[\^_]/.test(s) &&
+    /^[A-Za-z0-9\s()[\]{}+\-*=.,'<>|\\^_/]+$/.test(s) &&
+    (/\^[A-Za-z0-9{(]/.test(s) || /_[A-Za-z0-9{(]/.test(s))
+  ) {
+    return true;
+  }
+
+  // 简单上下标：x^2、x_i、a^{2}（无运算符时）
   if (
     /^[A-Za-z0-9]+(\^(\{[^}]+\}|[A-Za-z0-9]+)|_(\{[^}]+\}|[A-Za-z0-9]+))+$/.test(
       s,
@@ -305,36 +336,96 @@ function looksLikeLatex(code: string): boolean {
   // 绝对值 |x|
   if (/^\|[^|]{1,40}\|$/.test(s)) return true;
 
+  // 纯赋值类代码：x = 1（无上下标）仍排除
+  if (/[=;]/.test(s)) return false;
+
   return false;
 }
 
 /**
- * 将「像 LaTeX 的行内代码」转为 $...$，以便 KaTeX 渲染。
- * 不处理围栏代码块，避免改写真实代码示例。
+ * 保证分类标题与「7. 8. …」公式列表按块级换行显示。
+ *
+ * CommonMark：有序列表若以非 1 的数字开头，不能打断当前段落。
+ * 因此 `**微积分**\n7. $...$` 会被收成同一段，`\n` 变成空格，全部挤在一行。
+ * 在标题、编号项前补空行，让每条公式成为独立列表项。
  */
-function unwrapLatexInlineCode(text: string): string {
-  if (!text || text.indexOf('`') === -1) return text;
+function ensureBlockFormulaListLayout(text: string): string {
+  if (!text || (!text.includes('**') && !/^\d+\.\s+/m.test(text))) {
+    return text;
+  }
 
+  // 保护围栏代码，避免改写代码里的编号行
   const slots: string[] = [];
   const push = (match: string) => {
     const idx = slots.length;
     slots.push(match);
     return `\u0000${idx}\u0000`;
   };
+  let protectedText = text.replace(/```[\s\S]*?```/g, push);
+  protectedText = protectedText.replace(/~~~[\s\S]*?~~~/g, push);
 
-  // 先保护围栏代码块
-  let next = text.replace(/```[\s\S]*?```/g, push);
-  next = next.replace(/~~~[\s\S]*?~~~/g, push);
+  const lines = protectedText.split('\n');
+  const out: string[] = [];
 
-  next = next.replace(/`([^`\n]+)`/g, (full, code: string) => {
-    if (!looksLikeLatex(code)) return full;
-    return `$${code.trim()}$`;
-  });
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const trimmed = line.trim();
+    const isNumberedItem = /^\d+\.\s+\S/.test(trimmed);
+    const isBoldOnlyHeading = /^\*\*[^*\n]+\*\*$/.test(trimmed);
+    const isAtxHeading = /^#{1,6}\s+\S/.test(trimmed);
+    const needsBlockBreak = isNumberedItem || isBoldOnlyHeading || isAtxHeading;
 
-  return next.replace(/\u0000(\d+)\u0000/g, (_m, idxStr) => {
-    const idx = Number(idxStr);
-    return slots[idx] ?? '';
-  });
+    if (
+      needsBlockBreak &&
+      out.length > 0 &&
+      out[out.length - 1].trim() !== ''
+    ) {
+      out.push('');
+    }
+    out.push(line);
+  }
+
+  return out
+    .join('\n')
+    .replace(/\u0000(\d+)\u0000/g, (_m, idxStr) => slots[Number(idxStr)] ?? '');
+}
+
+/**
+ * 将「像 LaTeX 的行内代码」转为 $...$，以便 KaTeX 渲染。
+ * 不处理围栏代码块，避免改写真实代码示例。
+ * 同时整理「**分类** / 7. 8. …」换行，避免非 1. 列表挤在同一段。
+ */
+function unwrapLatexInlineCode(text: string): string {
+  if (!text) return text;
+
+  let next = text;
+  if (text.indexOf('`') !== -1) {
+    const slots: string[] = [];
+    const push = (match: string) => {
+      const idx = slots.length;
+      slots.push(match);
+      return `\u0000${idx}\u0000`;
+    };
+
+    // 先保护围栏代码块
+    next = next.replace(/```[\s\S]*?```/g, push);
+    next = next.replace(/~~~[\s\S]*?~~~/g, push);
+
+    next = next.replace(/`([^`\n]+)`/g, (full, code: string) => {
+      // `` `$a^2$` `` → $a^2$
+      const dollarWrapped = extractDollarWrappedMath(code);
+      if (dollarWrapped) return dollarWrapped;
+      if (!looksLikeLatex(code)) return full;
+      return `$${code.trim()}$`;
+    });
+
+    next = next.replace(/\u0000(\d+)\u0000/g, (_m, idxStr) => {
+      const idx = Number(idxStr);
+      return slots[idx] ?? '';
+    });
+  }
+
+  return ensureBlockFormulaListLayout(next);
 }
 
 /**
@@ -661,6 +752,7 @@ function groupMarkdownProcesses(text: string): string {
 }
 
 export {
+  ensureBlockFormulaListLayout,
   extractTableToMarkdown,
   groupMarkdownProcesses,
   looksLikeLatex,

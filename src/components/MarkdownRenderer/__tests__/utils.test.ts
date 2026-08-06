@@ -73,10 +73,20 @@ describe('replaceMathBracket', () => {
     expect(replaceMathBracket(text)).toBe(`![img](${url}) 然后 $c = a + b$`);
   });
 
-  it('不误伤已有美元公式中的 [] / ()（立方根、导数等）', () => {
+  it('反引号包住的 $...$ 公式会去掉反引号', () => {
+    const text =
+      '1. `$a^2 + b^2 = c^2$` 平方和\n2. `$\\frac{1}{2} + \\frac{1}{3} = \\frac{5}{6}$` 分式';
+    expect(replaceMathBracket(text)).toBe(
+      '1. $a^2 + b^2 = c^2$ 平方和\n2. $\\frac{1}{2} + \\frac{1}{3} = \\frac{5}{6}$ 分式',
+    );
+  });
+
+  it('表格中反引号包住的 $...$ 也会拆开以便渲染', () => {
     const text =
       "| 3 | `$\\sqrt[3]{x}$` | $\\sqrt[3]{x}$ |\n| 13 | `$f'(x)$` | $f'(x)$ |";
-    expect(replaceMathBracket(text)).toBe(text);
+    expect(replaceMathBracket(text)).toBe(
+      "| 3 | $\\sqrt[3]{x}$ | $\\sqrt[3]{x}$ |\n| 13 | $f'(x)$ | $f'(x)$ |",
+    );
   });
 
   it('像 LaTeX 的行内代码会拆成 $...$ 再渲染', () => {
@@ -115,17 +125,53 @@ describe('looksLikeLatex / unwrapLatexInlineCode', () => {
     expect(looksLikeLatex('x_i')).toBe(true);
     expect(looksLikeLatex("f'(x)")).toBe(true);
     expect(looksLikeLatex('|x|')).toBe(true);
+    // 无反斜杠命令的代数式（此前会被误判成普通代码）
+    expect(looksLikeLatex('a^2 + b^2')).toBe(true);
+    expect(looksLikeLatex('a^2 + b^2 = c^2')).toBe(true);
+    expect(looksLikeLatex('(a+b)^2 = a^2 + 2ab + b^2')).toBe(true);
   });
 
   it('排除普通代码', () => {
     expect(looksLikeLatex('const x = 1')).toBe(false);
     expect(looksLikeLatex('npm install')).toBe(false);
     expect(looksLikeLatex('foo.bar.ts')).toBe(false);
+    expect(looksLikeLatex('x = 1')).toBe(false);
+  });
+
+  it('unwrap 代数式反引号', () => {
+    expect(
+      unwrapLatexInlineCode(
+        '1. 平方和：`a^2 + b^2`\n4. 完全平方：`(a+b)^2 = a^2 + 2ab + b^2`',
+      ),
+    ).toContain('$a^2 + b^2$');
+    expect(
+      unwrapLatexInlineCode('4. 完全平方：`(a+b)^2 = a^2 + 2ab + b^2`'),
+    ).toContain('$(a+b)^2 = a^2 + 2ab + b^2$');
   });
 
   it('不改动围栏代码块内的反引号内容', () => {
     const text = '```\\n`\\frac{a}{b}`\\n```'.replace(/\\n/g, '\n');
     expect(unwrapLatexInlineCode(text)).toBe(text);
+  });
+
+  it('unwrap：`$...$` 去反引号，裸 LaTeX 加 $', () => {
+    expect(unwrapLatexInlineCode('见 `$a^2$` 与 `\\alpha`')).toBe(
+      '见 $a^2$ 与 $\\alpha$',
+    );
+  });
+
+  it('分类标题后的 7. 8. 公式列表会拆成独立块（避免挤成一行）', () => {
+    const input = [
+      '**微积分**',
+      '7. `$\\int_0^1 x^2 dx = \\frac{1}{3}$` 定积分',
+      '8. `$\\frac{d}{dx} e^x = e^x$` 导数',
+      '**三角函数**',
+      '13. `$\\sin^2 \\theta + \\cos^2 \\theta = 1$` 恒等式',
+    ].join('\n');
+    const out = unwrapLatexInlineCode(input);
+    expect(out).toContain('**微积分**\n\n7. $');
+    expect(out).toContain('$ 定积分\n\n8. $');
+    expect(out).toContain('$ 导数\n\n**三角函数**\n\n13. $');
   });
 });
 
