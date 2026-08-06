@@ -266,17 +266,124 @@ function escapedBracketRule(delimiters: any) {
 const DATA_URL_PLACEHOLDER_RE =
   /data:[a-z0-9.+-]+\/[a-z0-9.+-]+;base64,[A-Za-z0-9+/=]+/gi;
 
+/**
+ * 判断行内代码是否更像 LaTeX 公式（模型常把公式误包在反引号里）
+ * @param code - 行内代码内容（不含反引号）
+ */
+function looksLikeLatex(code: string): boolean {
+  const s = code.trim();
+  if (!s || s.length > 800) return false;
+  // 已是美元定界或混有 $，留给原有公式/代码逻辑
+  if (s.includes('$')) return false;
+
+  // LaTeX 命令优先（小写，避免 Windows 路径 \Users）
+  // 须在编程特征排除之前：`\sum_{i=1}^{n}` 含 `=` 但仍是公式
+  if (/\\[a-z]+/.test(s)) return true;
+
+  // 排除明显编程 / URL / 包管理命令（无 LaTeX 命令时）
+  if (/[=;]|=>|:\/\/|\.(js|ts|tsx|jsx|py|json|css|less)\b/i.test(s)) {
+    return false;
+  }
+  if (
+    /\b(const|let|var|function|import|export|return|npm|yarn|pnpm|git)\b/.test(
+      s,
+    )
+  ) {
+    return false;
+  }
+
+  // 简单上下标：x^2、x_i、a^{2}
+  if (
+    /^[A-Za-z0-9]+(\^(\{[^}]+\}|[A-Za-z0-9]+)|_(\{[^}]+\}|[A-Za-z0-9]+))+$/.test(
+      s,
+    )
+  ) {
+    return true;
+  }
+  // 导数 / 函数：f'(x)、f(x)
+  if (/^[A-Za-z][A-Za-z0-9]*'?\([^)]*\)$/.test(s)) return true;
+  // 绝对值 |x|
+  if (/^\|[^|]{1,40}\|$/.test(s)) return true;
+
+  return false;
+}
+
+/**
+ * 将「像 LaTeX 的行内代码」转为 $...$，以便 KaTeX 渲染。
+ * 不处理围栏代码块，避免改写真实代码示例。
+ */
+function unwrapLatexInlineCode(text: string): string {
+  if (!text || text.indexOf('`') === -1) return text;
+
+  const slots: string[] = [];
+  const push = (match: string) => {
+    const idx = slots.length;
+    slots.push(match);
+    return `\u0000${idx}\u0000`;
+  };
+
+  // 先保护围栏代码块
+  let next = text.replace(/```[\s\S]*?```/g, push);
+  next = next.replace(/~~~[\s\S]*?~~~/g, push);
+
+  next = next.replace(/`([^`\n]+)`/g, (full, code: string) => {
+    if (!looksLikeLatex(code)) return full;
+    return `$${code.trim()}$`;
+  });
+
+  return next.replace(/\u0000(\d+)\u0000/g, (_m, idxStr) => {
+    const idx = Number(idxStr);
+    return slots[idx] ?? '';
+  });
+}
+
+/**
+ * 保护不会被 \(...\) / \[...\] 转换逻辑扫描的片段：
+ * - base64 data URL
+ * - Markdown 围栏代码块 / 行内代码（避免代码示例里的括号被改写）
+ * - 已有的 $...$ / $$...$$ 公式（避免 ds-markdown 宽松正则误伤
+ *   如 $\sqrt[3]{x}$、$f'(x)$ 中的 [] / ()）
+ */
+function protectMathBracketSafeRegions(text: string): {
+  text: string;
+  restore: (input: string) => string;
+} {
+  const slots: string[] = [];
+  const push = (match: string) => {
+    const idx = slots.length;
+    slots.push(match);
+    return `\u0000${idx}\u0000`;
+  };
+
+  let next = text.replace(DATA_URL_PLACEHOLDER_RE, push);
+  // 围栏代码块优先于行内代码
+  next = next.replace(/```[\s\S]*?```/g, push);
+  next = next.replace(/~~~[\s\S]*?~~~/g, push);
+  // 行内代码须在 $ 公式之前保护，否则会吃掉 `$...$` 代码示例
+  next = next.replace(/`[^`\n]+`/g, push);
+  // 已有美元定界公式（先块级再行内）
+  next = next.replace(/\$\$[\s\S]+?\$\$/g, push);
+  next = next.replace(/\$[^$\n]+?\$/g, push);
+
+  return {
+    text: next,
+    restore: (input: string) =>
+      input.replace(/\u0000(\d+)\u0000/g, (_m, idxStr) => {
+        const idx = Number(idxStr);
+        return slots[idx] ?? '';
+      }),
+  };
+}
+
 function replaceMathBracket(text: string): string {
   if (!text) return '';
 
-  // 1. 先把所有 base64 data URL 抽出，用短占位符替换，避免对超大字符串逐字符扫描
-  const dataUrls: string[] = [];
-  const withoutDataUrl = text.replace(DATA_URL_PLACEHOLDER_RE, (match) => {
-    const idx = dataUrls.length;
-    dataUrls.push(match);
-    // 用 ASCII 控制符区间作为占位符，避免与正文冲突，也不含数学定界符
-    return `\u0000${idx}\u0000`;
-  });
+  // 0. 模型常把公式包在反引号里，先拆成 $...$ 再走后续定界符逻辑
+  const withUnwrappedLatex = unwrapLatexInlineCode(text);
+
+  // 1. 抽出 data URL / 代码 / 已有 $ 公式，避免误替换与 O(N^2) 扫描大字符串
+  const { text: protectedText, restore } =
+    protectMathBracketSafeRegions(withUnwrappedLatex);
 
   // 2. 创建只包含非美元符号分隔符的选项
   const nonDollarDelimiters = defaultDelimiters.filter(
@@ -288,31 +395,24 @@ function replaceMathBracket(text: string): string {
   let result = '';
   let pos = 0;
 
-  while (pos < withoutDataUrl.length) {
-    const match = rule(withoutDataUrl, pos);
+  while (pos < protectedText.length) {
+    const match = rule(protectedText, pos);
     if (match.success) {
       // 添加匹配前的文本
-      result += withoutDataUrl.slice(pos, match.start);
+      result += protectedText.slice(pos, match.start);
       // 替换为 $$ 分隔符
       const delimiter = match.display ? '$$' : '$';
       result += `${delimiter}${match.formula}${delimiter}`;
       pos = match.end;
     } else {
       // 没有匹配，添加当前字符
-      result += withoutDataUrl[pos];
+      result += protectedText[pos];
       pos++;
     }
   }
 
-  // 3. 把 base64 data URL 还原回去
-  if (dataUrls.length > 0) {
-    result = result.replace(/\u0000(\d+)\u0000/g, (_m, idxStr) => {
-      const idx = Number(idxStr);
-      return dataUrls[idx] ?? '';
-    });
-  }
-
-  return result;
+  // 3. 还原受保护片段
+  return restore(result);
 }
 
 /**
@@ -560,4 +660,10 @@ function groupMarkdownProcesses(text: string): string {
   return result;
 }
 
-export { extractTableToMarkdown, groupMarkdownProcesses, replaceMathBracket };
+export {
+  extractTableToMarkdown,
+  groupMarkdownProcesses,
+  looksLikeLatex,
+  replaceMathBracket,
+  unwrapLatexInlineCode,
+};
