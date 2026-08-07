@@ -1,4 +1,4 @@
-import { AssistantRoleEnum } from '@/types/enums/agent';
+import { AssistantRoleEnum, MessageTypeEnum } from '@/types/enums/agent';
 import { MessageStatusEnum } from '@/types/enums/common';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import { describe, expect, it } from 'vitest';
@@ -156,6 +156,29 @@ describe('terminal history reload helpers', () => {
       incoming[0],
       incoming[1],
     ]);
+  });
+
+  it('deduplicates the id-less synthetic opening message across polls', () => {
+    const opening = (time: string) =>
+      ({
+        id: null,
+        index: null,
+        role: AssistantRoleEnum.ASSISTANT,
+        type: 'CHAT',
+        messageType: MessageTypeEnum.ASSISTANT,
+        text: '这里是通用智能体~~~',
+        time,
+      } as MessageInfo);
+    const current = [
+      opening('2026-08-07T13:51:17.000+00:00'),
+      opening('2026-08-07T13:51:22.000+00:00'),
+    ];
+    const incoming = [opening('2026-08-07T13:51:27.000+00:00')];
+
+    const merged = reconcileConversationSnapshotMessages(current, incoming);
+
+    expect(merged).toHaveLength(1);
+    expect(merged[0]).toBe(current[0]);
   });
 
   it('requires terminal reload when incoming contains a missing persisted message', () => {
