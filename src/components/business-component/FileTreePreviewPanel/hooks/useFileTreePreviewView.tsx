@@ -88,6 +88,8 @@ export function useFileTreePreviewView(
     taskAgentSelectedFileId,
     clearTaskAgentSelectedFileId,
     taskAgentSelectTrigger,
+    // 会话结束文件树刷新后兜底重拉当前打开文件正文的触发标志
+    fileTreeRefreshTrigger,
     originalFiles,
     fileTreeDataLoading,
     readOnly = false,
@@ -241,6 +243,10 @@ export function useFileTreePreviewView(
   // 用于记录上次的 taskAgentSelectedFileId 和 taskAgentSelectTrigger，避免重复选择
   const prevTaskAgentSelectedFileIdRef = useRef<string>('');
   const prevTaskAgentSelectTriggerRef = useRef<number | string | undefined>(
+    undefined,
+  );
+  /** 已处理过的兜底刷新 trigger，避免同一 trigger 重复重拉当前打开文件正文 */
+  const handledFileTreeRefreshTriggerRef = useRef<number | undefined>(
     undefined,
   );
   // 用于记录创建文件成功后需要选择的文件路径
@@ -417,6 +423,7 @@ export function useFileTreePreviewView(
     setFileRefreshTimestamp(Date.now());
     prevTaskAgentSelectedFileIdRef.current = '';
     prevTaskAgentSelectTriggerRef.current = undefined;
+    handledFileTreeRefreshTriggerRef.current = undefined;
     userSelectedFileRef.current = null;
     pendingSelectFileRef.current = null;
     pendingTaskAgentAutoSelectRef.current = null;
@@ -847,6 +854,32 @@ export function useFileTreePreviewView(
       }
     }
   }, [originalFiles, enableVersionControl]);
+
+  /**
+   * 会话结束（FINAL_RESULT）文件树刷新后，兜底重拉当前打开文件的正文。
+   *
+   * 场景：agent 修改了“当前已打开”的文件，但最终输出未携带指向它的
+   * <task-result><file>（或 file 指向其他文件），既有正文刷新路径
+   * （树长度变化 / task-result 命中 / 手动刷新）均未触发，正文停留在旧值。
+   * 模型层在树刷新完成后发出 fileTreeRefreshTrigger，这里监听并在树就绪后重拉内容。
+   *
+   * 声明在原文件列表同步 effect 之后，保证同一轮渲染内 filesRef.current
+   * 已是刷新后的最新树，refreshSelectedFileContent 能基于最新 fileProxyUrl 重拉。
+   */
+  useEffect(() => {
+    // 无触发（初始值 / 切换会话后重置）或同一 trigger 已处理过，避免重复重拉
+    if (!fileTreeRefreshTrigger) {
+      return;
+    }
+
+    if (handledFileTreeRefreshTriggerRef.current === fileTreeRefreshTrigger) {
+      return;
+    }
+    handledFileTreeRefreshTriggerRef.current = fileTreeRefreshTrigger;
+    // 无选中文件时 refreshSelectedFileContent 内部会直接返回，无需在此额外判断
+    void refreshSelectedFileContent();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fileTreeRefreshTrigger]);
 
   /**
    * 监听 taskAgentSelectedFileId / taskAgentSelectTrigger，自动定位并打开消息中的目标文件。

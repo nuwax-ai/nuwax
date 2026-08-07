@@ -1,4 +1,5 @@
 import { RequestConfig } from '@@/plugin-request/request';
+import { OpenUIDevtools } from '@openuidev/devtools';
 import { Modal, theme as antdTheme } from 'antd';
 import React, { useEffect, useRef } from 'react';
 import { history, useAntdConfigSetter } from 'umi';
@@ -281,6 +282,7 @@ const AppContainer: React.FC<{ children: React.ReactElement }> = ({
 
   return (
     <>
+      <OpenUIDevtools enabled={false} />
       {/* 只有用户已登录时才启动事件轮询 */}
       <GlobalEventPolling />
       {children}
