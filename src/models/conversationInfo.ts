@@ -1230,16 +1230,38 @@ export default () => {
               }
 
               try {
-                const result = await runAsync(params.conversationId);
+                // 补偿读取必须保持静默：runAsync 会经过会话详情的 onSuccess，整体
+                // 替换 messageList，使乐观消息切换为落库消息并重挂 ChatView，造成
+                // 会话结束时最后一条助手消息闪烁。这里只读取并补丁缺失的 Ask 表单。
+                const result = await apiAgentConversation(
+                  params.conversationId,
+                );
                 const hydratedMessages = hydrateMcpAskInteractionsInMessageList(
                   result?.data?.messageList || [],
                 );
-                const hasPendingAsk = hydratedMessages.some((message) =>
-                  message.mcpAskInteractions?.some(
-                    (interaction) => interaction.responseStatus === 'pending',
-                  ),
-                );
-                if (hasPendingAsk) {
+                const pendingAskMessage = [...hydratedMessages]
+                  .reverse()
+                  .find((message) =>
+                    message.mcpAskInteractions?.some(
+                      (interaction) => interaction.responseStatus === 'pending',
+                    ),
+                  );
+                if (pendingAskMessage?.mcpAskInteractions?.length) {
+                  setMessageList((list) => {
+                    const targetIndex = list.findIndex(
+                      (message) => message.id === currentMessageId,
+                    );
+                    if (targetIndex < 0) {
+                      return list;
+                    }
+                    const nextList = [...list];
+                    nextList[targetIndex] = {
+                      ...nextList[targetIndex],
+                      mcpAskInteractions: pendingAskMessage.mcpAskInteractions,
+                    };
+                    messageListRef.current = nextList;
+                    return nextList;
+                  });
                   return;
                 }
               } catch (error) {
