@@ -126,6 +126,7 @@ const AppDev: React.FC = () => {
 
   // ⭐ 自动发送消息锁，防止重复调用
   const autoSendLockRef = useRef<boolean>(false);
+  // 自动发送消息定时器
   const autoSendTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // ⭐ 自动错误处理 Hook 引用
