@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { fixCjkAutolinks } from '../remarkFixCjkAutolinks';
 
-const createBareUrlTree = (source: string, url: string) => {
-  const startOffset = source.indexOf(url);
+const createBareUrlTree = (
+  source: string,
+  url: string,
+  displayText: string = url,
+) => {
+  const startOffset = source.indexOf(displayText);
 
   return {
     type: 'root',
@@ -14,10 +18,10 @@ const createBareUrlTree = (source: string, url: string) => {
           {
             type: 'link',
             url,
-            children: [{ type: 'text', value: url }],
+            children: [{ type: 'text', value: displayText }],
             position: {
               start: { offset: startOffset },
-              end: { offset: startOffset + url.length },
+              end: { offset: startOffset + displayText.length },
             },
           },
         ],
@@ -63,6 +67,50 @@ describe('fixCjkAutolinks', () => {
       expect.objectContaining({ url }),
     );
     expect(tree.children[0].children).toHaveLength(2);
+  });
+
+  it('将不带协议地址后的中文标点和正文移出链接', () => {
+    const displayText = 'www.nuwax.com，当前可免费使用';
+    const source = `官网是 ${displayText}`;
+    const tree = createBareUrlTree(
+      source,
+      'http://www.nuwax.com，当前可免费使用',
+      displayText,
+    );
+
+    fixCjkAutolinks(tree, source);
+
+    expect(tree.children[0].children).toEqual([
+      { type: 'text', value: '官网是 ' },
+      expect.objectContaining({
+        type: 'link',
+        url: 'http://www.nuwax.com',
+        children: [expect.objectContaining({ value: 'www.nuwax.com' })],
+      }),
+      { type: 'text', value: '，当前可免费使用' },
+    ]);
+  });
+
+  it('将域名后的数字参考文献尾标移出链接', () => {
+    const displayText = 'www.nuwax.com[1]，更多内容';
+    const source = `参考地址：${displayText}`;
+    const tree = createBareUrlTree(
+      source,
+      'http://www.nuwax.com[1]，更多内容',
+      displayText,
+    );
+
+    fixCjkAutolinks(tree, source);
+
+    expect(tree.children[0].children).toEqual([
+      { type: 'text', value: '参考地址：' },
+      expect.objectContaining({
+        type: 'link',
+        url: 'http://www.nuwax.com',
+        children: [expect.objectContaining({ value: 'www.nuwax.com' })],
+      }),
+      { type: 'text', value: '[1]，更多内容' },
+    ]);
   });
 
   it('不会把国际化域名截断成不完整协议', () => {

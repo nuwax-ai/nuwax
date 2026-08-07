@@ -20,6 +20,41 @@ interface MarkdownFile {
 // GFM 会把紧邻裸 URL 的中日韩正文当作 URL 路径；这些字符应作为正文边界。
 const CJK_URL_BOUNDARY =
   /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}，。！？；：、（）［］【】《》〈〉“”‘’「」『』]/u;
+const URL_REFERENCE_BOUNDARY = /\[\d+(?:\]|$)/;
+
+const isHostOnlyUrl = (url: string): boolean => {
+  try {
+    const parsedUrl = new URL(url);
+    return (
+      ['http:', 'https:'].includes(parsedUrl.protocol) &&
+      !!parsedUrl.host &&
+      (parsedUrl.pathname === '' || parsedUrl.pathname === '/') &&
+      !parsedUrl.search &&
+      !parsedUrl.hash
+    );
+  } catch {
+    return false;
+  }
+};
+
+const findUrlBoundary = (linkText: string, normalizedUrl: string): number => {
+  const cjkBoundary = linkText.search(CJK_URL_BOUNDARY);
+  const referenceMatch = URL_REFERENCE_BOUNDARY.exec(linkText);
+  const referenceBoundary = referenceMatch?.index ?? -1;
+
+  if (referenceBoundary >= 0) {
+    const urlBeforeReference = normalizedUrl.slice(
+      0,
+      normalizedUrl.length - (linkText.length - referenceBoundary),
+    );
+    // 仅把域名后的 [1]、[12] 识别为参考文献尾标；URL 路径中的方括号保持不变。
+    if (isHostOnlyUrl(urlBeforeReference)) {
+      return referenceBoundary;
+    }
+  }
+
+  return cjkBoundary;
+};
 
 const splitBareUrlNode = (
   node: MarkdownNode,
@@ -29,8 +64,7 @@ const splitBareUrlNode = (
     node.type !== 'link' ||
     !node.url?.match(/^https?:\/\//i) ||
     node.children?.length !== 1 ||
-    node.children[0].type !== 'text' ||
-    node.children[0].value !== node.url
+    node.children[0].type !== 'text'
   ) {
     return null;
   }
@@ -40,17 +74,20 @@ const splitBareUrlNode = (
   if (
     typeof startOffset !== 'number' ||
     typeof endOffset !== 'number' ||
-    source.slice(startOffset, endOffset) !== node.url
+    source.slice(startOffset, endOffset) !== node.children[0].value
   ) {
     // 只处理 GFM 裸 URL，避免改写用户显式声明的 Markdown 链接。
     return null;
   }
 
-  const boundaryIndex = node.url.search(CJK_URL_BOUNDARY);
+  const linkText = node.children[0].value;
+  const boundaryIndex = findUrlBoundary(linkText, node.url);
   if (boundaryIndex < 0) return null;
 
-  const url = node.url.slice(0, boundaryIndex);
-  const trailingText = node.url.slice(boundaryIndex);
+  const trailingText = linkText.slice(boundaryIndex);
+  // remark-gfm 会为 www.example.com 补全 http://，不能直接以 URL 的下标切分。
+  const url = node.url.slice(0, node.url.length - trailingText.length);
+  const displayUrl = linkText.slice(0, boundaryIndex);
   if (!url || !trailingText) return null;
 
   try {
@@ -67,7 +104,7 @@ const splitBareUrlNode = (
     {
       ...node,
       url,
-      children: [{ ...node.children[0], value: url }],
+      children: [{ ...node.children[0], value: displayUrl }],
     },
     { type: 'text', value: trailingText },
   ];
