@@ -8,6 +8,7 @@ import {
   isOptimisticMessageId,
   needsTerminalHistoryReload,
   preserveOptimisticMessageTail,
+  reconcileConversationSnapshotMessages,
 } from './conversationInfoMessageList';
 
 describe('appendOutgoingConversationMessages', () => {
@@ -103,6 +104,58 @@ describe('terminal history reload helpers', () => {
 
     expect(areMessageListsEquivalent(list, [...list])).toBe(true);
     expect(needsTerminalHistoryReload(list, [...list])).toBe(false);
+  });
+
+  it('immediately appends persisted messages returned by polling', () => {
+    const current = [{ id: 1, role: AssistantRoleEnum.USER, text: 'u1' }];
+    const incoming = [
+      ...current,
+      {
+        id: 2,
+        role: AssistantRoleEnum.ASSISTANT,
+        text: 'a1',
+        status: MessageStatusEnum.Complete,
+      },
+    ];
+
+    expect(
+      reconcileConversationSnapshotMessages(
+        current as MessageInfo[],
+        incoming as MessageInfo[],
+      ),
+    ).toEqual(incoming);
+  });
+
+  it('keeps the same list reference when a polling snapshot is unchanged', () => {
+    const current = [
+      {
+        id: 1,
+        role: AssistantRoleEnum.ASSISTANT,
+        text: 'done',
+        status: MessageStatusEnum.Complete,
+      },
+    ] as MessageInfo[];
+
+    expect(reconcileConversationSnapshotMessages(current, [...current])).toBe(
+      current,
+    );
+  });
+
+  it('preserves older pages that are absent from the latest polling window', () => {
+    const current = [
+      { id: 1, role: AssistantRoleEnum.USER, text: 'older page' },
+      { id: 2, role: AssistantRoleEnum.ASSISTANT, text: 'current answer' },
+    ] as MessageInfo[];
+    const incoming = [
+      { id: 2, role: AssistantRoleEnum.ASSISTANT, text: 'current answer' },
+      { id: 3, role: AssistantRoleEnum.USER, text: 'new question' },
+    ] as MessageInfo[];
+
+    expect(reconcileConversationSnapshotMessages(current, incoming)).toEqual([
+      current[0],
+      incoming[0],
+      incoming[1],
+    ]);
   });
 
   it('requires terminal reload when incoming contains a missing persisted message', () => {

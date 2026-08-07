@@ -41,6 +41,7 @@ import {
 import { useModel } from 'umi';
 import styles from './index.less';
 import SeeDetailModal from './SeeDetailModal';
+import { usePlanAutoScroll } from './usePlanAutoScroll';
 
 const cx = classNames.bind(styles);
 const OpenUiArtifactView = lazy(
@@ -370,6 +371,12 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
     return innerProcessing.type === AgentComponentTypeEnum.Plan;
   }, [innerProcessing.type]);
 
+  const {
+    containerRef: planTaskListRef,
+    handleScroll: handlePlanScroll,
+    handleWheel: handlePlanWheel,
+  } = usePlanAutoScroll(detailData?.response, isPlanType && isPlanExpanded);
+
   // 获取 Plan 任务状态图标
   const getPlanStatusIcon = useCallback((status: string) => {
     const iconProps = { className: cx(styles['task-icon']) };
@@ -400,7 +407,12 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
 
     return (
       <div className={cx(styles['plan-details'])}>
-        <div className={cx(styles['plan-task-list'])}>
+        <div
+          ref={planTaskListRef}
+          className={cx(styles['plan-task-list'])}
+          onScroll={handlePlanScroll}
+          onWheel={handlePlanWheel}
+        >
           {detailData.response.map((entry: any, index: number) => (
             <div key={index} className={cx(styles['plan-task-item'])}>
               {getPlanStatusIcon(entry.status)}
