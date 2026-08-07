@@ -110,6 +110,7 @@ import { v4 as uuidv4 } from 'uuid';
 import {
   appendOutgoingConversationMessages,
   preserveOptimisticMessageTail,
+  reconcileConversationSnapshotMessages,
 } from './conversationInfoMessageList';
 
 /** 后端漏发结构化干预事件时，等待持久化完成的补偿读取间隔。 */
@@ -710,6 +711,42 @@ export default () => {
 
     handleChatProcessingList(list);
   };
+
+  /** 静默同步轮询/恢复读取到的消息快照，不触发整页 loading 或强制滚动。 */
+  const syncConversationSnapshotMessages = useCallback(
+    (snapshot: ConversationInfo) => {
+      if (
+        !snapshot ||
+        !conversationInfoRef.current ||
+        String(snapshot.id) !== String(conversationInfoRef.current.id)
+      ) {
+        return;
+      }
+
+      const incoming = hydrateMcpAskInteractionsInMessageList(
+        snapshot.messageList || [],
+      );
+      const preview = reconcileConversationSnapshotMessages(
+        messageListRef.current,
+        incoming,
+      );
+      if (preview === messageListRef.current) {
+        return;
+      }
+      messageListRef.current = preview;
+      setMessageList((prev) => {
+        const merged = reconcileConversationSnapshotMessages(prev, incoming);
+        if (merged === prev) {
+          return prev;
+        }
+        messageListRef.current = merged;
+        return merged;
+      });
+      setChatProcessingList(preview);
+      syncMessageListRuntimeState();
+    },
+    [syncMessageListRuntimeState],
+  );
 
   // 查询会话消息列表
   const { runAsync: runQueryConversationMessageList } = useRequest(
@@ -1827,6 +1864,7 @@ export default () => {
     // 会话流式恢复(sub)
     resumeConversationStream,
     abortResumeStream,
+    syncConversationSnapshotMessages,
     setCurrentConversationRequestId,
     getCurrentConversationRequestId,
     getCurrentConversationId,
