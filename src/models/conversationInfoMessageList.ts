@@ -1,4 +1,4 @@
-import { AssistantRoleEnum } from '@/types/enums/agent';
+import { AssistantRoleEnum, MessageTypeEnum } from '@/types/enums/agent';
 import { MessageStatusEnum } from '@/types/enums/common';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import { isEqual } from 'lodash';
@@ -47,6 +47,27 @@ const sameStableId = (left: unknown, right: unknown): boolean =>
   hasStableMessageId(left) &&
   hasStableMessageId(right) &&
   String(left) === String(right);
+
+const getIdlessMessageSignature = (message: MessageInfo): string =>
+  JSON.stringify([
+    message.role || '',
+    message.type || '',
+    message.messageType || '',
+    message.text || '',
+    message.think || '',
+    message.quotedText || '',
+  ]);
+
+const getIdlessMessageKey = (message: MessageInfo): string => {
+  const isSyntheticOpeningMessage =
+    !hasStableMessageId(message.id) &&
+    (message.index === null || message.index === undefined) &&
+    message.role === AssistantRoleEnum.ASSISTANT &&
+    message.messageType === MessageTypeEnum.ASSISTANT;
+  return isSyntheticOpeningMessage
+    ? 'synthetic-opening-message'
+    : `idless:${getIdlessMessageSignature(message)}`;
+};
 
 const completeAssistantPlaceholder = (message: MessageInfo): MessageInfo => {
   if (isIncompleteStatus(message.status)) {
@@ -273,24 +294,34 @@ export function reconcileConversationSnapshotMessages(
   const persisted = currentList.filter(
     (message) => !isOptimisticMessageId(message.id),
   );
-  const indexById = new Map<string, number>(
-    persisted
-      .filter((message) => hasStableMessageId(message.id))
-      .map((message, index) => [String(message.id), index]),
-  );
-  const serverMerged = [...persisted];
-  incomingList.forEach((message) => {
-    const id = hasStableMessageId(message.id) ? String(message.id) : '';
-    const existingIndex = id ? indexById.get(id) : undefined;
+  const indexByIdentity = new Map<string, number>();
+  const serverMerged: MessageInfo[] = [];
+  const upsert = (message: MessageInfo, replaceExisting: boolean) => {
+    const hasId = hasStableMessageId(message.id);
+    const identity = hasId
+      ? `id:${String(message.id)}`
+      : getIdlessMessageKey(message);
+    const existingIndex = indexByIdentity.get(identity);
     if (existingIndex !== undefined) {
-      serverMerged[existingIndex] = message;
+      // 稳定 ID 的服务端消息需要覆盖旧内容；无 ID 合成消息只在语义发生变化时
+      // 替换，从而忽略服务端每轮重新生成的 time 等易变字段。
+      if (
+        replaceExisting &&
+        (hasId ||
+          getIdlessMessageSignature(serverMerged[existingIndex]) !==
+            getIdlessMessageSignature(message))
+      ) {
+        serverMerged[existingIndex] = message;
+      }
       return;
     }
-    if (id) {
-      indexById.set(id, serverMerged.length);
-    }
+    indexByIdentity.set(identity, serverMerged.length);
     serverMerged.push(message);
-  });
+  };
+
+  // 先归并当前列表，可立即清除之前轮询已经累计的重复开场白。
+  persisted.forEach((message) => upsert(message, false));
+  incomingList.forEach((message) => upsert(message, true));
 
   const merged = preserveOptimisticMessageTail(currentList, serverMerged);
   return isEqual(currentList, merged) ? currentList : merged;
