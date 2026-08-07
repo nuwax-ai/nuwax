@@ -218,6 +218,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     setIsLoadingOtherInterface,
     requiredNameList,
     setConversationInfo,
+    syncConversationSnapshotMessages,
     runUpdateTopic,
     variables,
     showType,
@@ -1256,8 +1257,12 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     // 否则 Chat 整页被 Loading 卸载重挂，执行中/思考中会不断闪动。
     onReloadConversationHistoryAsync: async (reloadId: number) => {
       const result = await apiAgentConversation(Number(reloadId));
+      if (result?.data) {
+        syncConversationSnapshotMessages(result.data);
+      }
       return result?.data?.messageList;
     },
+    onConversationSnapshot: syncConversationSnapshotMessages,
     resumeDebugSource: 'chat:main-agent-session',
     onTerminalTaskStatus: (status: TaskStatus) => {
       if (!id) return;

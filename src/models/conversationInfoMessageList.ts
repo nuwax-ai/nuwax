@@ -1,6 +1,7 @@
 import { AssistantRoleEnum } from '@/types/enums/agent';
 import { MessageStatusEnum } from '@/types/enums/common';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
+import { isEqual } from 'lodash';
 
 export function appendOutgoingConversationMessages(
   messageList: MessageInfo[] | undefined,
@@ -251,4 +252,46 @@ export function preserveOptimisticMessageTail(
   }
 
   return [...incoming, ...tail];
+}
+
+/**
+ * 将轮询得到的服务端消息快照合并到本地，同时保留尚未落库的乐观消息。
+ * 没有可见变化时返回原数组引用，避免每次轮询都触发消息区重渲染。
+ */
+export function reconcileConversationSnapshotMessages(
+  current: MessageInfo[] | undefined | null,
+  incoming: MessageInfo[] | undefined | null,
+): MessageInfo[] {
+  const currentList = current || [];
+  const incomingList = incoming || [];
+  if (!incomingList.length) {
+    return currentList;
+  }
+
+  // 会话详情接口可能只返回最近一段消息，不能整体替换，否则用户上滑加载出的
+  // 更早历史会被下一次轮询删除。以稳定消息 id 更新已有项，并把缺失项追加到尾部。
+  const persisted = currentList.filter(
+    (message) => !isOptimisticMessageId(message.id),
+  );
+  const indexById = new Map<string, number>(
+    persisted
+      .filter((message) => hasStableMessageId(message.id))
+      .map((message, index) => [String(message.id), index]),
+  );
+  const serverMerged = [...persisted];
+  incomingList.forEach((message) => {
+    const id = hasStableMessageId(message.id) ? String(message.id) : '';
+    const existingIndex = id ? indexById.get(id) : undefined;
+    if (existingIndex !== undefined) {
+      serverMerged[existingIndex] = message;
+      return;
+    }
+    if (id) {
+      indexById.set(id, serverMerged.length);
+    }
+    serverMerged.push(message);
+  });
+
+  const merged = preserveOptimisticMessageTail(currentList, serverMerged);
+  return isEqual(currentList, merged) ? currentList : merged;
 }

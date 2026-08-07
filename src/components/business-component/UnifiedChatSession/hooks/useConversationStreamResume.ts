@@ -2,8 +2,12 @@ import { EVENT_TYPE } from '@/constants/event.constants';
 import { GLOBAL_POLLING_INTERVAL } from '@/constants/home.constants';
 import { AssistantRoleEnum, TaskStatus } from '@/types/enums/agent';
 import { MessageStatusEnum } from '@/types/enums/common';
-import type { MessageInfo } from '@/types/interfaces/conversationInfo';
+import type {
+  ConversationInfo,
+  MessageInfo,
+} from '@/types/interfaces/conversationInfo';
 import {
+  fetchConversationSnapshot,
   fetchConversationTaskStatus,
   resolveTaskStatusFromMessageLists,
 } from '@/utils/conversationTaskStatusSync';
@@ -57,6 +61,8 @@ export interface UseConversationStreamResumeOptions {
   ) => void;
   /** 中断 sub 流（model 的 abortResumeStream）；未提供则跳过中断 */
   abortSub?: () => void;
+  /** 每次状态轮询拿到的完整会话快照，用于静默同步新增历史消息。 */
+  onConversationSnapshot?: (snapshot: ConversationInfo) => void;
   /**
    * 轮询拿到终态 taskStatus 时写回当前会话 model（仅 COMPLETE/FAILED/CANCEL）
    */
@@ -148,11 +154,14 @@ export function useConversationStreamResume(
     resumeDebugSource,
     resumeStream,
     abortSub,
+    onConversationSnapshot,
     onTerminalTaskStatus,
   } = options;
 
   const onTerminalTaskStatusRef = useRef(onTerminalTaskStatus);
   onTerminalTaskStatusRef.current = onTerminalTaskStatus;
+  const onConversationSnapshotRef = useRef(onConversationSnapshot);
+  onConversationSnapshotRef.current = onConversationSnapshot;
   const debugSource = resumeDebugSource || 'unified-chat-session';
 
   // sub 是否已订阅（开/闭之间）。ref 用于回调闭包安全读取；state 用于驱动 ready 重算
@@ -423,7 +432,7 @@ export function useConversationStreamResume(
   const { run, cancel } = useRequest(
     () =>
       conversationId
-        ? fetchConversationTaskStatus(conversationId)
+        ? fetchConversationSnapshot(conversationId)
         : Promise.resolve(undefined),
     {
       pollingInterval: GLOBAL_POLLING_INTERVAL,
@@ -442,8 +451,12 @@ export function useConversationStreamResume(
         isResumeSubscribed,
         resumeStream,
       ],
-      onSuccess: (status) => {
+      onSuccess: (snapshot) => {
         if (!conversationId) return;
+        if (snapshot && latestRef.current.conversationId === conversationId) {
+          onConversationSnapshotRef.current?.(snapshot);
+        }
+        const status = snapshot?.taskStatus;
         // 防跨会话写回；同值终态跳过，避免每轮轮询触发下游 reload 闪烁
         if (
           status !== undefined &&
@@ -535,9 +548,13 @@ export function useConversationStreamResume(
         !isResumeSubscribedRef.current &&
         resumeStream
       ) {
-        fetchConversationTaskStatus(conversationId).then((status) => {
+        fetchConversationSnapshot(conversationId).then((snapshot) => {
           // 防跨会话写回：fetch in-flight 期间会话可能已切换，丢弃 stale 结果
           if (latestRef.current.conversationId !== conversationId) return;
+          if (snapshot) {
+            onConversationSnapshotRef.current?.(snapshot);
+          }
+          const status = snapshot?.taskStatus;
           if (
             status !== undefined &&
             status !== TaskStatus.EXECUTING &&

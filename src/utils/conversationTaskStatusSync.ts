@@ -237,24 +237,31 @@ export function hasExecutingTaskInList(
 }
 
 /**
+ * 拉取完整会话快照。状态轮询需要同时消费 messageList，避免接口已经返回新消息、
+ * 前端却只读取 taskStatus 而导致历史会话更新滞后。
+ */
+export async function fetchConversationSnapshot(
+  conversationId: number | string,
+): Promise<ConversationInfo | undefined> {
+  try {
+    const result = await apiAgentConversation(Number(conversationId));
+    if (result?.code === SUCCESS_CODE && result?.data) {
+      return result.data;
+    }
+  } catch (error) {
+    console.error('[fetchConversationSnapshot]', error);
+  }
+  return undefined;
+}
+
+/**
  * 拉取会话当前 taskStatus（轻量查询，不替换 messageList）
  */
 export async function fetchConversationTaskStatus(
   conversationId: number | string,
 ): Promise<TaskStatus | undefined> {
-  try {
-    const result = await apiAgentConversation(Number(conversationId));
-    if (
-      result?.code === SUCCESS_CODE &&
-      result?.data?.taskStatus !== undefined &&
-      result?.data?.taskStatus !== null
-    ) {
-      return result.data.taskStatus;
-    }
-  } catch (error) {
-    console.error('[fetchConversationTaskStatus]', error);
-  }
-  return undefined;
+  const snapshot = await fetchConversationSnapshot(conversationId);
+  return snapshot?.taskStatus;
 }
 
 /**
