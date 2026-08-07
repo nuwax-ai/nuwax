@@ -240,6 +240,15 @@ export default () => {
   const [taskAgentSelectTrigger, setTaskAgentSelectTrigger] = useState<
     number | string
   >(0);
+  /**
+   * 会话结束（FINAL_RESULT）文件树刷新完成后，用于兜底重拉当前打开文件正文的触发标志。
+   * 场景：会话中 agent 修改了“当前已打开”的文件，但最终输出未携带指向它的
+   * <task-result><file>（或 file 指向其他文件），既有“树长度变化 / task-result 命中 /
+   * 手动刷新”三条正文刷新路径均未触发，正文停留在旧值。此处通过时间戳通知页面层
+   * 调用 refreshSelectedFileContent，在树刷新完成后同步当前打开文件的内容。
+   */
+  const [fileTreeRefreshTrigger, setFileTreeRefreshTrigger] =
+    useState<number>(0);
   // 文件树数据
   const [fileTreeData, setFileTreeData] = useState<StaticFileInfo[]>([]);
   // 文件树数据加载状态
@@ -471,6 +480,8 @@ export default () => {
     // 清除任务智能体待选文件，避免空文件树 + 残留 fileId 触发无限刷新
     setTaskAgentSelectedFileId('');
     setTaskAgentSelectTrigger(0);
+    // 重置兜底刷新 trigger，避免切换会话后旧 trigger 残留
+    setFileTreeRefreshTrigger(0);
     // 设置视图模式为预览
     setViewMode('preview');
     // 更新 ref 值
@@ -1330,6 +1341,7 @@ export default () => {
             }
 
             const taskResult = extractTaskResult(data.outputText);
+            let selectedFileInTaskResult = false;
             // 如果有任务结果，并且有文件，则打开预览视图
             if (taskResult.hasTaskResult && taskResult.file) {
               // 打开预览视图
@@ -1342,7 +1354,18 @@ export default () => {
                 setTaskAgentSelectedFileId(fileId);
                 // 每次设置文件ID时更新触发标志，确保即使文件ID相同也能触发文件选择
                 setTaskAgentSelectTrigger(Date.now());
+                selectedFileInTaskResult = true;
               }
+            }
+
+            // 兜底：本次最终输出未携带指向当前打开文件的 <task-result><file>
+            // （或 file 指向其他文件），既有“树长度变化 / task-result 命中 / 手动刷新”
+            // 三条正文刷新路径均未触发，文件树刷新完成后正文仍停留在旧内容。
+            // 此处发出 trigger，通知页面层在树刷新完成后重拉当前打开文件的正文。
+            // 仅 FINAL_RESULT 一次性触发，不作用于流式 tool_call 的树刷新路径，
+            // 避免会话输出过程中当前打开文件被高频重拉。
+            if (!selectedFileInTaskResult) {
+              setFileTreeRefreshTrigger(Date.now());
             }
           }
         }, 0);
@@ -1911,6 +1934,8 @@ export default () => {
     // 通用型智能体文件选择触发标志
     taskAgentSelectTrigger,
     setTaskAgentSelectTrigger,
+    // 会话结束文件树刷新后兜底重拉当前打开文件正文的触发标志
+    fileTreeRefreshTrigger,
     isLoadingOtherInterface,
     setIsLoadingOtherInterface,
   };
