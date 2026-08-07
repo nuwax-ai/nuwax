@@ -1,0 +1,1 @@
+import"./index-BAN2H_SB.js";class s{constructor(){this.url="",this.name="",this.type="",this.size=0}}class t{constructor(){this.size=10,this.pageIndex=1,this.keyword=""}}export{t as L,s as U};
