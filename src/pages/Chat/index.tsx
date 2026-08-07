@@ -248,6 +248,8 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     setTaskAgentSelectedFileId,
     // 通用型智能体文件选择触发标志
     taskAgentSelectTrigger,
+    // 会话结束文件树刷新后兜底重拉当前打开文件正文的触发标志
+    fileTreeRefreshTrigger,
     // 会话是否正在进行中（有消息正在处理）
     isConversationActive,
     // 停止会话相关
@@ -666,6 +668,8 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   const fileView = useFileTreePreviewView({
     taskAgentSelectedFileId,
     taskAgentSelectTrigger,
+    // 会话结束文件树刷新后兜底重拉当前打开文件正文
+    fileTreeRefreshTrigger,
     originalFiles: fileTreeData,
     fileTreeDataLoading,
     targetId: id?.toString() || '',
