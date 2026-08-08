@@ -61,7 +61,7 @@ const ChatView: React.FC<ChatViewProps> = memo(
     const { markdownRef, messageIdRef } = useMarkdownRender({
       answer: processedText,
       thinking: messageInfo?.think || '',
-      id: messageInfo?.id || '',
+      id: messageInfo?.clientRenderKey || messageInfo?.id || '',
     });
     const _userInfo =
       userInfo || JSON.parse(localStorage.getItem(USER_INFO) as string);

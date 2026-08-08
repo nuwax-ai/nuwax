@@ -19,7 +19,18 @@ export function appendOutgoingConversationMessages(
       return item;
     }) || [];
 
-  return [...completeMessageList, chatMessage, currentMessage];
+  return [
+    ...completeMessageList,
+    {
+      ...chatMessage,
+      clientRenderKey: chatMessage.clientRenderKey || String(chatMessage.id),
+    },
+    {
+      ...currentMessage,
+      clientRenderKey:
+        currentMessage.clientRenderKey || String(currentMessage.id),
+    },
+  ];
 }
 
 const isFrontendUuidMessageId = (id: unknown): boolean =>
@@ -74,6 +85,18 @@ const findOptimisticRoundStart = (messages: MessageInfo[]): number => {
   );
 };
 
+const findClientRenderRoundStart = (messages: MessageInfo[]): number => {
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    if (
+      messages[index].role === AssistantRoleEnum.USER &&
+      messages[index].clientRenderKey
+    ) {
+      return index;
+    }
+  }
+  return -1;
+};
+
 const getIdlessMessageSignature = (message: MessageInfo): string =>
   JSON.stringify([
     message.role || '',
@@ -93,6 +116,55 @@ const getIdlessMessageKey = (message: MessageInfo): string => {
   return isSyntheticOpeningMessage
     ? 'synthetic-opening-message'
     : `idless:${getIdlessMessageSignature(message)}`;
+};
+
+/** 将最近一轮的客户端渲染标识迁移到对应的服务端消息。 */
+const preserveClientRenderKeys = (
+  clientRound: MessageInfo[],
+  incoming: MessageInfo[],
+): MessageInfo[] => {
+  const clientUser = clientRound[0];
+  if (clientUser?.role !== AssistantRoleEnum.USER) {
+    return incoming;
+  }
+
+  const result = [...incoming];
+  let cursor = -1;
+  for (let index = result.length - 1; index >= 0; index -= 1) {
+    const message = result[index];
+    if (
+      message.role === AssistantRoleEnum.USER &&
+      (message.text || '').trim() === (clientUser.text || '').trim()
+    ) {
+      cursor = index;
+      break;
+    }
+  }
+  if (cursor < 0) {
+    return incoming;
+  }
+
+  clientRound.forEach((clientMessage, clientIndex) => {
+    const matchedIndex = result.findIndex(
+      (message, index) =>
+        index >= cursor &&
+        message.role === clientMessage.role &&
+        (clientIndex !== 0 ||
+          (message.text || '').trim() === (clientMessage.text || '').trim()),
+    );
+    if (matchedIndex < 0) {
+      cursor = result.length;
+      return;
+    }
+
+    result[matchedIndex] = {
+      ...result[matchedIndex],
+      clientRenderKey:
+        clientMessage.clientRenderKey || String(clientMessage.id),
+    };
+    cursor = matchedIndex + 1;
+  });
+  return result;
 };
 
 const completeAssistantPlaceholder = (message: MessageInfo): MessageInfo => {
@@ -330,6 +402,13 @@ export function reconcileConversationSnapshotMessages(
     optimisticRoundStart >= 0
       ? currentList.slice(0, optimisticRoundStart)
       : currentList;
+  const optimisticRound =
+    optimisticRoundStart >= 0 ? currentList.slice(optimisticRoundStart) : [];
+  const clientRoundStart = findClientRenderRoundStart(currentList);
+  const clientRound =
+    clientRoundStart >= 0
+      ? currentList.slice(clientRoundStart)
+      : optimisticRound;
   const persisted = persistedSource.filter(
     (message) => !isOptimisticMessageId(message.id),
   );
@@ -350,7 +429,10 @@ export function reconcileConversationSnapshotMessages(
           getIdlessMessageSignature(serverMerged[existingIndex]) !==
             getIdlessMessageSignature(message))
       ) {
-        serverMerged[existingIndex] = message;
+        const existing = serverMerged[existingIndex];
+        serverMerged[existingIndex] = existing.clientRenderKey
+          ? { ...message, clientRenderKey: existing.clientRenderKey }
+          : message;
       }
       return;
     }
@@ -360,7 +442,9 @@ export function reconcileConversationSnapshotMessages(
 
   // 先归并当前列表，可立即清除之前轮询已经累计的重复开场白。
   persisted.forEach((message) => upsert(message, false));
-  incomingList.forEach((message) => upsert(message, true));
+  preserveClientRenderKeys(clientRound, incomingList).forEach((message) =>
+    upsert(message, true),
+  );
 
   const merged = preserveOptimisticMessageTail(currentList, serverMerged);
   return isEqual(currentList, merged) ? currentList : merged;
