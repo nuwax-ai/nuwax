@@ -65,6 +65,12 @@ const PROJECT_FUNCTION_TYPE_MAP: Partial<
   [DisplayRecommendFunctionTypeEnum.PluginDev]: AgentComponentTypeEnum.Plugin,
 };
 
+const TASK_AGENT_FUNCTION_TYPES = new Set<string>([
+  DisplayRecommendFunctionTypeEnum.AgentDev,
+  DisplayRecommendFunctionTypeEnum.SkillDev,
+  DisplayRecommendFunctionTypeEnum.PluginDev,
+]);
+
 const SPACE_SELECTOR_FUNCTION_TYPES = new Set<string>([
   DisplayRecommendFunctionTypeEnum.AgentDev,
   DisplayRecommendFunctionTypeEnum.PageAppDev,
@@ -86,6 +92,7 @@ const Home: React.FC = () => {
   } = useSelectedComponent();
 
   const [agentDetail, setAgentDetail] = useState<AgentDetailDto>();
+  const [isTaskAgentMode, setIsTaskAgentMode] = useState<boolean>(false);
   const [selectedComputerId, setSelectedComputerId] = useState<string>('-1');
   const [selectedModelId, setSelectedModelId] = useState<number>();
   const [selectedSpaceId, setSelectedSpaceId] = useState<number>();
@@ -101,9 +108,10 @@ const Home: React.FC = () => {
     useState<HomeAgentCategoryInfo>();
   const [submitting, setSubmitting] = useState<boolean>(false);
 
-  const defaultAgentId = tenantConfigInfo?.defaultTaskAgentId
-    ? tenantConfigInfo.defaultTaskAgentId
-    : tenantConfigInfo?.defaultAgentId;
+  const defaultAgentId =
+    isTaskAgentMode && tenantConfigInfo?.defaultTaskAgentId
+      ? tenantConfigInfo.defaultTaskAgentId
+      : tenantConfigInfo?.defaultAgentId;
   const currentAgentId = selectedRecommend?.targetId || defaultAgentId;
 
   const handleAgentModeChange = useCallback(
@@ -120,6 +128,9 @@ const Home: React.FC = () => {
     () => PROJECT_FUNCTION_TYPE_MAP[selectedFunctionType],
     [selectedFunctionType],
   );
+  const effectiveTaskAgentActive = selectedRecommend
+    ? TASK_AGENT_FUNCTION_TYPES.has(selectedFunctionType)
+    : isTaskAgentMode;
   const showSpaceSelector = selectedRecommend
     ? SPACE_SELECTOR_FUNCTION_TYPES.has(selectedFunctionType)
     : false;
@@ -278,6 +289,12 @@ const Home: React.FC = () => {
     }
   };
 
+  const showTaskAgentToggle = !!(
+    !selectedRecommend &&
+    tenantConfigInfo?.defaultTaskAgentId &&
+    tenantConfigInfo.defaultTaskAgentId > 0
+  );
+
   const handleTabClick = (type: string) => {
     setActiveTab(type);
   };
@@ -337,12 +354,14 @@ const Home: React.FC = () => {
           }
           selectedComponentList={selectedComponentList}
           onSelectComponent={handleSelectComponent}
-          isTaskAgentActive={agentDetail?.type === AgentTypeEnum.TaskAgent}
+          showTaskAgentToggle={showTaskAgentToggle}
+          isTaskAgentActive={effectiveTaskAgentActive}
+          onToggleTaskAgent={() => setIsTaskAgentMode((prev) => !prev)}
           selectedComputerId={selectedComputerId}
           onComputerSelect={setSelectedComputerId}
           agentId={agentDetail?.agentId}
           agentSandboxId={agentDetail?.sandboxId}
-          readonly={agentDetail?.allowPrivateSandbox === DefaultSelectedEnum.No}
+          readonly={!agentDetail?.allowPrivateSandbox}
           enableMention={
             agentDetail?.type === AgentTypeEnum.TaskAgent &&
             agentDetail?.allowAtSkill === DefaultSelectedEnum.Yes
