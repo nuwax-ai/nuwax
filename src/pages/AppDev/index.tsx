@@ -186,6 +186,7 @@ const AppDev: React.FC = () => {
   // 单文件上传加载状态
   const [singleFileUploadLoading, setSingleFileUploadLoading] =
     useState<boolean>(false);
+  // 单文件上传路径
   const [singleFilePath, setSingleFilePath] = useState<string>('');
   const [uploadFile, setUploadFile] = useState<File | null>(null);
 
