@@ -317,6 +317,7 @@ const AppDev: React.FC = () => {
   });
 
   useEffect(() => {
+    // 每次 sourceControl.refreshGitList 变化时，更新 refreshGitListAfterSaveRef.current
     refreshGitListAfterSaveRef.current = sourceControl.refreshGitList;
   }, [sourceControl.refreshGitList]);
 
