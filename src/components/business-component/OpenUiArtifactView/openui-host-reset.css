@@ -17,36 +17,40 @@
 @layer ds-markdown, openui;
 
 /* -------------------------------------------------------------------------- */
-/* 2. 撤销 ds-markdown 层对 OpenUI 子树的 h1/a/ul/code/table 等后代规则        */
-/*    追加进同一 @layer ds-markdown，revert-layer 后交给 @layer openui / UA   */
+/* 2. 重置 .ds-markdown 对 OpenUI 子树的 h1/a/ul/code/table 等后代规则         */
 /* -------------------------------------------------------------------------- */
-@layer ds-markdown {
-  .ds-markdown
-    [data-openui-render-mode='renderer']
-    :is(
-      h1,
-      h2,
-      h3,
-      h4,
-      h5,
-      h6,
-      a,
-      ul,
-      ol,
-      li,
-      code,
-      pre,
-      table,
-      th,
-      td,
-      blockquote,
-      p,
-      hr,
-      strong,
-      img
-    ) {
-    all: revert-layer;
-  }
+.ds-markdown
+  [data-openui-render-mode='renderer']
+  :is(
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6,
+    a,
+    ul,
+    ol,
+    li,
+    code,
+    pre,
+    table,
+    th,
+    td,
+    blockquote,
+    p,
+    hr,
+    strong,
+    img
+  ) {
+  margin: initial;
+  padding: initial;
+  font-size: initial;
+  line-height: inherit;
+  font-weight: initial;
+  background-color: transparent;
+  border: initial;
+  box-shadow: none;
 }
 
 /* -------------------------------------------------------------------------- */
