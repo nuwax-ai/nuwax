@@ -270,6 +270,7 @@ const AppDev: React.FC = () => {
   // 获取终端 WebSocket URL
   const terminalWsUrl = useTerminalWsUrl(projectId);
 
+  // 初始化项目元数据
   useInitProjectMetadata({
     targetType: AgentComponentTypeEnum.PageApp,
     targetId: Number(projectId),
