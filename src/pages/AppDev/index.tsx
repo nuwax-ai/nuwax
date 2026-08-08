@@ -144,6 +144,7 @@ const AppDev: React.FC = () => {
 
   // 使用 AppDev 模型来管理状态
   const appDevModel = useModel('appDev');
+  // 获取统一主题
   const { navigationStyle } = useUnifiedTheme();
   const {
     workspace,

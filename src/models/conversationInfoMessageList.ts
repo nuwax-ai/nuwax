@@ -48,6 +48,32 @@ const sameStableId = (left: unknown, right: unknown): boolean =>
   hasStableMessageId(right) &&
   String(left) === String(right);
 
+/**
+ * 找到当前尚未落库轮次的起点。
+ *
+ * 用户消息由前端 UUID 乐观插入，但同轮 assistant 在 SSE 过程中可能提前换成
+ * 服务端格式 ID。因此不能只把末尾连续 UUID 当作乐观尾巴，必须从最后一条
+ * 已落库 user 之后的首条乐观 user 开始，整体保留这一轮。
+ */
+const findOptimisticRoundStart = (messages: MessageInfo[]): number => {
+  let lastPersistedUserIndex = -1;
+  messages.forEach((message, index) => {
+    if (
+      message.role === AssistantRoleEnum.USER &&
+      !isOptimisticMessageId(message.id)
+    ) {
+      lastPersistedUserIndex = index;
+    }
+  });
+
+  return messages.findIndex(
+    (message, index) =>
+      index > lastPersistedUserIndex &&
+      message.role === AssistantRoleEnum.USER &&
+      isOptimisticMessageId(message.id),
+  );
+};
+
 const getIdlessMessageSignature = (message: MessageInfo): string =>
   JSON.stringify([
     message.role || '',
@@ -169,13 +195,19 @@ export function preserveOptimisticMessageTail(
     return incoming;
   }
 
-  // 从末尾向前收集「连续」的乐观消息作为尾巴（通常是 [userOpt, asstOpt] 或仅 [asstOpt]）
-  const tail: MessageInfo[] = [];
-  for (let i = prev.length - 1; i >= 0; i -= 1) {
-    if (isOptimisticMessageId(prev[i].id)) {
-      tail.unshift(prev[i]);
-    } else {
-      break;
+  // SSE assistant 可能已换成服务端格式 ID，优先从乐观 user 开始保留整个未落库轮次。
+  const optimisticRoundStart = findOptimisticRoundStart(prev);
+  const tail: MessageInfo[] =
+    optimisticRoundStart >= 0 ? prev.slice(optimisticRoundStart) : [];
+
+  // 没有乐观 user 时兼容仅 assistant 占位的恢复场景：从末尾收集连续 UUID。
+  if (!tail.length) {
+    for (let i = prev.length - 1; i >= 0; i -= 1) {
+      if (isOptimisticMessageId(prev[i].id)) {
+        tail.unshift(prev[i]);
+      } else {
+        break;
+      }
     }
   }
 
@@ -291,7 +323,14 @@ export function reconcileConversationSnapshotMessages(
 
   // 会话详情接口可能只返回最近一段消息，不能整体替换，否则用户上滑加载出的
   // 更早历史会被下一次轮询删除。以稳定消息 id 更新已有项，并把缺失项追加到尾部。
-  const persisted = currentList.filter(
+  // 未落库 user 后面的 assistant 即使已被 SSE 换成服务端格式 ID，仍属于本地轮次，
+  // 不能提前归入 persisted；否则 preserveOptimisticMessageTail 追加整轮时会重复。
+  const optimisticRoundStart = findOptimisticRoundStart(currentList);
+  const persistedSource =
+    optimisticRoundStart >= 0
+      ? currentList.slice(0, optimisticRoundStart)
+      : currentList;
+  const persisted = persistedSource.filter(
     (message) => !isOptimisticMessageId(message.id),
   );
   const indexByIdentity = new Map<string, number>();

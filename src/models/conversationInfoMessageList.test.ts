@@ -431,4 +431,67 @@ describe('preserveOptimisticMessageTail', () => {
 
     expect(merged).toEqual([...incoming, optimisticAsst()]);
   });
+
+  it('keeps the optimistic user with an SSE assistant that already has a server-shaped id', () => {
+    const streamedAssistant = {
+      id: 'stream-message-id',
+      role: AssistantRoleEnum.ASSISTANT,
+      text: 'streaming answer',
+      status: MessageStatusEnum.Incomplete,
+    } as MessageInfo;
+    const prev = [
+      persistedUser('old', 1),
+      optimisticUser('new question'),
+      streamedAssistant,
+    ];
+    const incoming = [persistedUser('old', 1)];
+
+    expect(preserveOptimisticMessageTail(prev, incoming)).toEqual(prev);
+  });
+
+  it('does not drop or duplicate an optimistic round when polling sees a stale snapshot', () => {
+    const streamedAssistant = {
+      id: 'stream-message-id',
+      role: AssistantRoleEnum.ASSISTANT,
+      text: 'streaming answer',
+      status: MessageStatusEnum.Incomplete,
+    } as MessageInfo;
+    const current = [
+      persistedUser('old', 1),
+      optimisticUser('new question'),
+      streamedAssistant,
+    ];
+    const incoming = [persistedUser('old', 1)];
+
+    const merged = reconcileConversationSnapshotMessages(current, incoming);
+
+    expect(merged).toBe(current);
+    expect(merged).toEqual([
+      persistedUser('old', 1),
+      optimisticUser('new question'),
+      streamedAssistant,
+    ]);
+  });
+
+  it('replaces the optimistic user only after polling returns its persisted copy', () => {
+    const streamedAssistant = {
+      id: 'stream-message-id',
+      role: AssistantRoleEnum.ASSISTANT,
+      text: 'streaming answer',
+      status: MessageStatusEnum.Incomplete,
+    } as MessageInfo;
+    const current = [
+      persistedUser('old', 1),
+      optimisticUser('new question'),
+      streamedAssistant,
+    ];
+    const persistedNewUser = persistedUser('new question', 2);
+
+    expect(
+      reconcileConversationSnapshotMessages(current, [
+        persistedUser('old', 1),
+        persistedNewUser,
+      ]),
+    ).toEqual([persistedUser('old', 1), persistedNewUser, streamedAssistant]);
+  });
 });
