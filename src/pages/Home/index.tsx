@@ -130,7 +130,7 @@ const Home: React.FC = () => {
   );
   const effectiveTaskAgentActive = selectedRecommend
     ? TASK_AGENT_FUNCTION_TYPES.has(selectedFunctionType)
-    : isTaskAgentMode || agentDetail?.type === AgentTypeEnum.TaskAgent;
+    : isTaskAgentMode;
   const showSpaceSelector = selectedRecommend
     ? SPACE_SELECTOR_FUNCTION_TYPES.has(selectedFunctionType)
     : false;

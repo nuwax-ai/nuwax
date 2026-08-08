@@ -16,6 +16,7 @@ import useSubscription from '@/hooks/useSubscription';
 import { t } from '@/services/i18nRuntime';
 import { DefaultSelectedEnum, TaskStatus } from '@/types/enums/agent';
 import { UploadFileStatus } from '@/types/enums/common';
+import { AgentTypeEnum } from '@/types/enums/space';
 import type { ChatInputProps, UploadFileInfo } from '@/types/interfaces/common';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import eventBus, { EVENT_NAMES } from '@/utils/eventBus';
@@ -1135,32 +1136,35 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
                     }
                   >
                     {prefix}
-                    {isTaskAgentActive && !readonly && (
-                      <ComputerTypeSelector
-                        value={
-                          agentSandboxId !== undefined &&
-                          agentSandboxId !== null
-                            ? String(agentSandboxId)
-                            : conversationInfo?.sandboxServerId !== undefined &&
-                              conversationInfo?.sandboxServerId !== null
-                            ? String(conversationInfo.sandboxServerId)
-                            : selectedComputerId
-                        }
-                        onChange={(id: string) => onComputerSelect?.(id)}
-                        disabled={wholeDisabled}
-                        agentId={agentId}
-                        fixedSelection={
-                          fixedSelection ||
-                          streamActive ||
-                          effectiveTaskExecuting
-                        }
-                        unavailable={isSandboxUnavailable}
-                        autoSelect={autoSelectComputer}
-                        saveOnSelect={saveComputerOnSelect}
-                        isPersonalComputer={isPersonalComputer}
-                        readonly={readonly}
-                      />
-                    )}
+                    {(isTaskAgentActive ||
+                      agentType === AgentTypeEnum.TaskAgent) &&
+                      !readonly && (
+                        <ComputerTypeSelector
+                          value={
+                            agentSandboxId !== undefined &&
+                            agentSandboxId !== null
+                              ? String(agentSandboxId)
+                              : conversationInfo?.sandboxServerId !==
+                                  undefined &&
+                                conversationInfo?.sandboxServerId !== null
+                              ? String(conversationInfo.sandboxServerId)
+                              : selectedComputerId
+                          }
+                          onChange={(id: string) => onComputerSelect?.(id)}
+                          disabled={wholeDisabled}
+                          agentId={agentId}
+                          fixedSelection={
+                            fixedSelection ||
+                            streamActive ||
+                            effectiveTaskExecuting
+                          }
+                          unavailable={isSandboxUnavailable}
+                          autoSelect={autoSelectComputer}
+                          saveOnSelect={saveComputerOnSelect}
+                          isPersonalComputer={isPersonalComputer}
+                          readonly={readonly}
+                        />
+                      )}
                     {allowOtherModel === DefaultSelectedEnum.Yes && (
                       <ModelSelector
                         agentId={agentId}
