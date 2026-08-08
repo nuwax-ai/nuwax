@@ -267,6 +267,7 @@ const AppDev: React.FC = () => {
 
   // 使用项目详情 Hook
   const projectInfo = useAppDevProjectInfo(projectId);
+  // 获取终端 WebSocket URL
   const terminalWsUrl = useTerminalWsUrl(projectId);
 
   useInitProjectMetadata({
