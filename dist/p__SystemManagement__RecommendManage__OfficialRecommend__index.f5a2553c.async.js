@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunknuwax_frontend=self.webpackChunknuwax_frontend||[]).push([[4548],{483648:function(a,t,n){n.r(t);var c=n(275271),e=n(685304),f=n(797658),o=n(552676),_=function(){return(0,o.jsx)(e.Z,{titleKey:"PC.Routes.officialRecommend",config:f.rz})};t.default=_}}]);
