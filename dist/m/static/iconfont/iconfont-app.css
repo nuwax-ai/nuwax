@@ -1,6 +1,6 @@
 @font-face {
   font-family: "iconfont";
-  src: url('@/static/iconfont/iconfont.ttf');
+  src: url('/static/iconfont/iconfont.ttf');
 }
 
 .iconfont {
