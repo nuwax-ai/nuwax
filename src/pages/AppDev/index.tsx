@@ -200,6 +200,7 @@ const AppDev: React.FC = () => {
 
   // 删除确认对话框状态
   const [deleteModalVisible, setDeleteModalVisible] = useState<boolean>(false);
+  // 删除节点
   const [nodeToDelete, setNodeToDelete] = useState<any>(null);
   // 文件操作状态，避免多步流程竞争和覆盖
   const [isFileOperating, setIsFileOperating] = useState<boolean>(false);
