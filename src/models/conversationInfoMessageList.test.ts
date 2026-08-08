@@ -61,6 +61,16 @@ describe('appendOutgoingConversationMessages', () => {
     expect(appended[0].status).toBe(MessageStatusEnum.Complete);
     expect(existing.status).toBe(MessageStatusEnum.Incomplete);
   });
+
+  it('assigns stable client render keys when creating an optimistic round', () => {
+    const user = { id: 'user-id' } as MessageInfo;
+    const assistant = { id: 'assistant-id' } as MessageInfo;
+
+    const appended = appendOutgoingConversationMessages([], user, assistant);
+
+    expect(appended[0].clientRenderKey).toBe('user-id');
+    expect(appended[1].clientRenderKey).toBe('assistant-id');
+  });
 });
 
 describe('isOptimisticMessageId', () => {
@@ -492,6 +502,69 @@ describe('preserveOptimisticMessageTail', () => {
         persistedUser('old', 1),
         persistedNewUser,
       ]),
-    ).toEqual([persistedUser('old', 1), persistedNewUser, streamedAssistant]);
+    ).toEqual([
+      persistedUser('old', 1),
+      { ...persistedNewUser, clientRenderKey: optimisticUserId },
+      streamedAssistant,
+    ]);
+  });
+
+  it('preserves optimistic render keys when the first round becomes fully persisted', () => {
+    const current = [
+      optimisticUser('first question'),
+      optimisticAsst({ text: 'first answer' }),
+    ];
+    const incoming = [
+      persistedUser('first question', 101),
+      {
+        id: 102,
+        role: AssistantRoleEnum.SYSTEM,
+        text: 'intermediate event',
+      } as MessageInfo,
+      {
+        id: 103,
+        role: AssistantRoleEnum.ASSISTANT,
+        text: 'first answer',
+        status: MessageStatusEnum.Complete,
+      } as MessageInfo,
+    ];
+
+    const merged = reconcileConversationSnapshotMessages(current, incoming);
+
+    expect(merged).toEqual([
+      { ...incoming[0], clientRenderKey: optimisticUserId },
+      incoming[1],
+      { ...incoming[2], clientRenderKey: optimisticAsstId },
+    ]);
+  });
+
+  it('keeps the assistant render key when user and assistant persist in separate snapshots', () => {
+    const optimisticRound = appendOutgoingConversationMessages(
+      [],
+      optimisticUser('first question'),
+      optimisticAsst({ text: 'first answer' }),
+    );
+    const userSnapshot = [persistedUser('first question', 101)];
+
+    const afterUserPersisted = reconcileConversationSnapshotMessages(
+      optimisticRound,
+      userSnapshot,
+    );
+    const finalSnapshot = [
+      persistedUser('first question', 101),
+      {
+        id: 103,
+        role: AssistantRoleEnum.ASSISTANT,
+        text: 'first answer',
+        status: MessageStatusEnum.Complete,
+      } as MessageInfo,
+    ];
+
+    expect(
+      reconcileConversationSnapshotMessages(afterUserPersisted, finalSnapshot),
+    ).toEqual([
+      { ...finalSnapshot[0], clientRenderKey: optimisticUserId },
+      { ...finalSnapshot[1], clientRenderKey: optimisticAsstId },
+    ]);
   });
 });
