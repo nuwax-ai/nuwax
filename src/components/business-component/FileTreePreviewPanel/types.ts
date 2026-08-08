@@ -31,6 +31,13 @@ export interface FileTreePreviewViewProps {
   clearTaskAgentSelectedFileId?: () => void;
   /** 通用型智能体文件选择触发标志 */
   taskAgentSelectTrigger?: number | string;
+  /**
+   * 会话结束（FINAL_RESULT）文件树刷新完成后，兜底重拉当前打开文件正文的触发标志。
+   * 当最终输出未携带指向当前打开文件的 <task-result><file> 时，既有正文刷新路径
+   * （树长度变化 / task-result 命中 / 手动刷新）均未触发，此处监听该值变化后
+   * 调用 refreshSelectedFileContent 同步当前打开文件的内容。
+   */
+  fileTreeRefreshTrigger?: number;
   /** 原始文件列表 */
   originalFiles?: any[];
   /** 文件树数据加载状态 */

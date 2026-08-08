@@ -19,6 +19,22 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
+/**
+ * 优先使用客户端稳定渲染 ID，历史消息则使用服务端 ID 作为 React key。
+ * 会话终态快照可能为历史消息补齐或调整 index；把 index 拼进 key 会导致整条消息
+ * 被卸载重挂，Markdown 内容在下一帧重新注入时产生可见闪烁。
+ */
+export const getChatMessageRenderKey = (
+  message: MessageInfo,
+  fallbackIndex: number,
+): string => {
+  const id = message.clientRenderKey || message.id;
+  if (id !== null && id !== undefined && String(id).trim() !== '') {
+    return `message-${String(id)}`;
+  }
+  return `message-fallback-${message.role}-${message.index ?? fallbackIndex}`;
+};
+
 export interface ChatContentAreaProps {
   conversationId?: number | string;
   messageViewRef: React.RefObject<HTMLDivElement>;
@@ -145,7 +161,7 @@ export const ChatContentArea: React.FC<ChatContentAreaProps> = ({
                   }
                   return (
                     <ChatView
-                      key={`${item.id}-${item?.index || idx}`}
+                      key={getChatMessageRenderKey(item, idx)}
                       conversationId={conversationId}
                       messageInfo={item}
                       roleInfo={effectiveRoleInfo}

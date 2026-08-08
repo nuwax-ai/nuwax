@@ -138,6 +138,23 @@ describe('looksLikeLatex / unwrapLatexInlineCode', () => {
     expect(looksLikeLatex('x = 1')).toBe(false);
   });
 
+  it('排除 snake_case 标识符（不误判为下标公式）', () => {
+    expect(looksLikeLatex('search_tasks')).toBe(false);
+    expect(looksLikeLatex('cancel_task')).toBe(false);
+    expect(looksLikeLatex('list_running_tasks')).toBe(false);
+    expect(looksLikeLatex('query_progress_or_result')).toBe(false);
+    expect(looksLikeLatex('dispatch')).toBe(false);
+    expect(looksLikeLatex('user_id')).toBe(false);
+    expect(looksLikeLatex('x_axis')).toBe(false);
+  });
+
+  it('识别单字符下标公式（x_i、a_1、a_i + b_j）', () => {
+    expect(looksLikeLatex('x_i')).toBe(true);
+    expect(looksLikeLatex('a_1')).toBe(true);
+    expect(looksLikeLatex('a_i + b_j')).toBe(true);
+    expect(looksLikeLatex('x_{n+1}')).toBe(true);
+  });
+
   it('unwrap 代数式反引号', () => {
     expect(
       unwrapLatexInlineCode(
@@ -158,6 +175,12 @@ describe('looksLikeLatex / unwrapLatexInlineCode', () => {
     expect(unwrapLatexInlineCode('见 `$a^2$` 与 `\\alpha`')).toBe(
       '见 $a^2$ 与 $\\alpha$',
     );
+  });
+
+  it('unwrap：反引号 snake_case 标识符保持原样，不被当成公式', () => {
+    const text =
+      '`search_tasks` / `cancel_task` / `list_running_tasks` / `dispatch` 的 record/append 均一致 ✓，唯独 `query_progress_or_result` 这一个写错了。';
+    expect(unwrapLatexInlineCode(text)).toBe(text);
   });
 
   it('分类标题后的 7. 8. 公式列表会拆成独立块（避免挤成一行）', () => {

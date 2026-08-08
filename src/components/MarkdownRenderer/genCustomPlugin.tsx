@@ -10,6 +10,7 @@ import MarkdownCustomProcess from '../MarkdownCustomProcess';
 import MarkdownCustomProcessGroup from '../MarkdownCustomProcessGroup';
 import styles from './index.less';
 import OptimizedImage from './OptimizedImage';
+import remarkFixCjkAutolinks from './remarkFixCjkAutolinks';
 import TaskResult from './TaskResult';
 import { extractTableToMarkdown } from './utils';
 const cx = classNames.bind(styles);
@@ -55,6 +56,7 @@ export default (
   collapseProcessGroups = false,
 ) => {
   return createBuildInPlugin({
+    remarkPlugin: remarkFixCjkAutolinks,
     rehypePlugin: [rehypeRaw],
     components: {
       style: () => null, // 禁用 style 标签渲染，防止样式污染

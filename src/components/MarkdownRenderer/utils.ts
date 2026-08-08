@@ -314,21 +314,35 @@ function looksLikeLatex(code: string): boolean {
   }
 
   // 代数式上下标：a^2 + b^2、(a+b)^2 = a^2 + 2ab + b^2
-  // 允许 + - = () 空格等；要求出现 ^ / _ 形式的上下标
+  // 允许 + - = () 空格等；上标 ^ 在普通标识符中几乎不出现，作为 LaTeX 强信号。
+  // 仅含下划线的不在此判定，走下方下标规则（避免 snake_case 标识符被误判）
   if (
-    /[\^_]/.test(s) &&
+    /\^/.test(s) &&
     /^[A-Za-z0-9\s()[\]{}+\-*=.,'<>|\\^_/]+$/.test(s) &&
-    (/\^[A-Za-z0-9{(]/.test(s) || /_[A-Za-z0-9{(]/.test(s))
+    /\^[A-Za-z0-9{(]/.test(s)
   ) {
     return true;
   }
 
-  // 简单上下标：x^2、x_i、a^{2}（无运算符时）
+  // 仅下标的 LaTeX（无上标）：
+  // - 花括号下标 x_{i}、x_{n+1}：{ } 不是标识符字符，出现即视为公式
+  // - 裸下标 x_i、a_1、a_i + b_j：仅当每个 _ 两侧都恰好是单个字母/数字，
+  //   从而排除 snake_case 标识符（search_tasks、query_progress_or_result、x_axis）
   if (
-    /^[A-Za-z0-9]+(\^(\{[^}]+\}|[A-Za-z0-9]+)|_(\{[^}]+\}|[A-Za-z0-9]+))+$/.test(
-      s,
-    )
+    s.includes('_') &&
+    !s.includes('^') &&
+    /^[A-Za-z0-9\s()[\]{}+\-*=.,'<>|\\_/]+$/.test(s)
   ) {
+    if (/[A-Za-z0-9]_\{[^}]*\}/.test(s)) return true;
+    const noBraces = s.replace(/[{}]/g, '');
+    // 剥离所有"单字符_单字符"片段（x_i、a_1），要求两侧都不是字母/数字
+    const stripped = noBraces.replace(
+      /(^|[^A-Za-z0-9])[A-Za-z0-9]_[A-Za-z0-9](?![A-Za-z0-9])/g,
+      '$1',
+    );
+    // 残留的 _ 或多字符片段（x_axis 剥离 x_a 后剩 xis）说明是标识符而非公式
+    if (stripped.includes('_')) return false;
+    if (/[A-Za-z0-9]/.test(stripped)) return false;
     return true;
   }
   // 导数 / 函数：f'(x)、f(x)

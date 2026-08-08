@@ -175,6 +175,8 @@ export interface UnifiedChatSessionProps {
   waitForHistoryUserBeforeResume?: boolean;
   /** sub 恢复日志来源：区分左侧开发 Agent 会话、右侧预览 Tab、主调试区等 */
   resumeDebugSource?: string;
+  /** 状态轮询返回完整会话快照时，静默同步新增历史消息 */
+  onConversationSnapshot?: (snapshot: ConversationInfo) => void;
   /** 轮询拿到终态 taskStatus 时写回当前会话 model */
   onTerminalTaskStatus?: (status: TaskStatus) => void;
 }
