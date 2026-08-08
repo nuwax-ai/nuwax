@@ -96,6 +96,12 @@
         flex-shrink: 0;
       }
     }
+
+    // 无描述信息时，单行内容垂直居中并与头像等高
+    &.conversation-item-content-compact {
+      min-height: @controlHeight;
+      justify-content: center;
+    }
   }
 
   .conversation-topic-row > .conversation-date {
