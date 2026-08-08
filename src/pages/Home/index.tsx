@@ -361,7 +361,7 @@ const Home: React.FC = () => {
           onComputerSelect={setSelectedComputerId}
           agentId={agentDetail?.agentId}
           agentSandboxId={agentDetail?.sandboxId}
-          readonly={agentDetail?.allowPrivateSandbox === DefaultSelectedEnum.No}
+          readonly={!agentDetail?.allowPrivateSandbox}
           enableMention={
             agentDetail?.type === AgentTypeEnum.TaskAgent &&
             agentDetail?.allowAtSkill === DefaultSelectedEnum.Yes
