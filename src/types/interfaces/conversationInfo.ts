@@ -277,6 +277,8 @@ export interface ChatMessageDto {
 
 // 会话消息信息
 export interface MessageInfo extends ChatMessageDto {
+  /** 乐观消息落库后仍保持不变的前端渲染标识。 */
+  clientRenderKey?: string;
   index: number;
   // 租户ID
   tenantId: number;
