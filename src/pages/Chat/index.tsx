@@ -1309,7 +1309,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     allowAutoScrollRef,
     scrollTimeoutRef,
     setShowScrollBtn,
-    readonly: effectiveAgent?.allowPrivateSandbox === DefaultSelectedEnum.No,
+    readonly: !effectiveAgent?.allowPrivateSandbox,
     enableMention:
       effectiveAgent?.type === AgentTypeEnum.TaskAgent &&
       effectiveAgent?.allowAtSkill === DefaultSelectedEnum.Yes,
