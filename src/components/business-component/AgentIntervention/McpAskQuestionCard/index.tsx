@@ -46,6 +46,7 @@ const McpAskQuestionCard: React.FC<McpAskQuestionCardProps> = ({
 }) => {
   const [form] = Form.useForm<Record<string, unknown>>();
   const [currentStep, setCurrentStep] = useState(0);
+  const initializedFormKeyRef = useRef<string | undefined>(undefined);
   const { input, toolCallId } = interaction;
   const ui = input.ui;
   const cardRef = useRef<HTMLDivElement>(null);
@@ -81,6 +82,13 @@ const McpAskQuestionCard: React.FC<McpAskQuestionCardProps> = ({
   }, [input.requestId]);
 
   useEffect(() => {
+    // 会话补偿刷新会用同一条 Ask 的服务端快照替换 interaction。
+    // 该快照只包含 schema 默认值，不能覆盖用户尚未提交的本地编辑。
+    const initializationKey = `${input.requestId}:${input.revision ?? ''}`;
+    if (initializedFormKeyRef.current === initializationKey) {
+      return;
+    }
+
     const fieldInitials = (ui.fields ?? []).reduce<Record<string, unknown>>(
       (acc, f) =>
         f.initialValue !== undefined
@@ -95,7 +103,8 @@ const McpAskQuestionCard: React.FC<McpAskQuestionCardProps> = ({
     if (initial) {
       form.setFieldsValue(hydrateMcpAskFormValues(initial, ui) as any);
     }
-  }, [form, ui.fields, interaction.formData, input.requestId]);
+    initializedFormKeyRef.current = initializationKey;
+  }, [form, ui.fields, interaction.formData, input.requestId, input.revision]);
 
   const buildPayload = (
     action: McpAskRespondPayload['action'],
