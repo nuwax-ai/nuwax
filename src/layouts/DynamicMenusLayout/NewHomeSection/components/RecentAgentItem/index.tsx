@@ -25,6 +25,7 @@ const RecentAgentItem: React.FC<RecentAgentItemProps> = ({
   onConversationClick,
 }) => {
   const executingCount = getExecutingConversationCount(item.conversationList);
+  const hasDescription = Boolean(item.description);
   const executingConversations = (item.conversationList ?? []).filter(
     (conversation) => conversation.taskStatus === TaskStatus.EXECUTING,
   );
@@ -66,7 +67,11 @@ const RecentAgentItem: React.FC<RecentAgentItemProps> = ({
           }}
         />
       </div>
-      <div className={cx(styles['conversation-item-content'])}>
+      <div
+        className={cx(styles['conversation-item-content'], {
+          [styles['conversation-item-content-compact']]: !hasDescription,
+        })}
+      >
         <div className={cx(styles['conversation-topic-row'])}>
           <Typography.Text
             className={cx(styles['conversation-topic'])}
@@ -74,11 +79,17 @@ const RecentAgentItem: React.FC<RecentAgentItemProps> = ({
           >
             {item.name}
           </Typography.Text>
-          {executingCount > 0 && (
+          {executingCount > 0 ? (
             <span className={cx(styles['status-tag'])}>
               {dict('PC.Layouts.DynamicMenusLayout.ConversationItem.executing')}
               ({executingCount})
             </span>
+          ) : (
+            !hasDescription && (
+              <span className={cx(styles['conversation-date'])}>
+                {formatModifiedTime(item.modified)}
+              </span>
+            )
           )}
           {!hasDescription && (
             <span className={cx(styles['conversation-date'])}>
