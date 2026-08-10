@@ -46,10 +46,12 @@ const RecentAgentItem: React.FC<RecentAgentItemProps> = ({
     onConversationClick(key);
   };
 
+  const hasDescription = Boolean(item.description && item.description.trim());
+
   const content = (
     <div
       className={cx(styles['conversation-item'], {
-        [styles.active]: isActive,
+        [styles['active']]: isActive,
       })}
       onClick={onClick}
     >
@@ -78,18 +80,25 @@ const RecentAgentItem: React.FC<RecentAgentItemProps> = ({
               ({executingCount})
             </span>
           )}
+          {!hasDescription && (
+            <span className={cx(styles['conversation-date'])}>
+              {formatModifiedTime(item.modified)}
+            </span>
+          )}
         </div>
-        <div className={cx(styles['conversation-meta'])}>
-          <Typography.Text
-            className={cx(styles['conversation-agent-name'])}
-            ellipsis
-          >
-            {item.description || ''}
-          </Typography.Text>
-          <span className={cx(styles['conversation-date'])}>
-            {formatModifiedTime(item.modified)}
-          </span>
-        </div>
+        {hasDescription && (
+          <div className={cx(styles['conversation-meta'])}>
+            <Typography.Text
+              className={cx(styles['conversation-agent-name'])}
+              ellipsis
+            >
+              {item.description}
+            </Typography.Text>
+            <span className={cx(styles['conversation-date'])}>
+              {formatModifiedTime(item.modified)}
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );
