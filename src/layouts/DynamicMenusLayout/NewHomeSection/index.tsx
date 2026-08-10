@@ -34,6 +34,10 @@ const RECENT_PAGE_SIZE = 20;
 const ACTIVE_TAB_STORAGE_KEY = 'PC_HOME_SECTION_ACTIVE_TAB';
 
 type HomeTab = 'conversation' | 'recent';
+type LoadRecentList = (
+  isRefresh?: boolean,
+  options?: { silent?: boolean; keyword?: string },
+) => Promise<void>;
 
 const getInitialActiveTab = (): HomeTab => {
   if (typeof window === 'undefined') return 'recent';
@@ -76,6 +80,8 @@ const NewHomeSection: React.FC<{
     componentCache.activeTab = initialTab;
     return initialTab;
   });
+  const activeTabRef = useRef(activeTab);
+  activeTabRef.current = activeTab;
   const [localList, setLocalList] = useState<ConversationInfo[]>(
     componentCache.list || [],
   );
@@ -106,6 +112,8 @@ const NewHomeSection: React.FC<{
   const loadingRef = useRef(false);
   const recentLoadingRef = useRef(false);
   const recentPageRef = useRef(componentCache.recentPage);
+  const recentAutoLoadFrameRef = useRef<number | null>(null);
+  const loadRecentListRef = useRef<LoadRecentList>(async () => undefined);
 
   const calcPageSize = useCallback(() => {
     const height = scrollContainerRef.current?.clientHeight ?? 0;
@@ -188,6 +196,27 @@ const NewHomeSection: React.FC<{
     onChatFinished: handleConversationChatFinished,
   });
 
+  const scheduleRecentAutoLoad = useCallback((hasNextPage: boolean) => {
+    if (!hasNextPage) return;
+
+    if (recentAutoLoadFrameRef.current !== null) {
+      window.cancelAnimationFrame(recentAutoLoadFrameRef.current);
+    }
+
+    recentAutoLoadFrameRef.current = window.requestAnimationFrame(() => {
+      recentAutoLoadFrameRef.current = null;
+      const container = scrollContainerRef.current;
+      if (
+        activeTabRef.current === 'recent' &&
+        container &&
+        container.clientHeight > 0 &&
+        container.scrollHeight <= container.clientHeight
+      ) {
+        loadRecentListRef.current();
+      }
+    });
+  }, []);
+
   const loadRecentList = useCallback(
     async (
       isRefresh = false,
@@ -199,6 +228,7 @@ const NewHomeSection: React.FC<{
 
       const pageIndex = isRefresh ? 1 : recentPageRef.current + 1;
       const keyword = options?.keyword ?? recentSearchKeyword;
+      let hasNextPage = false;
       try {
         const res = await apiUserUsedAgentList({
           size: RECENT_PAGE_SIZE,
@@ -218,19 +248,30 @@ const NewHomeSection: React.FC<{
           });
         }
         recentPageRef.current = pageIndex;
-        setRecentHasMore(data.length >= RECENT_PAGE_SIZE);
+        hasNextPage = data.length > 0;
+        setRecentHasMore(hasNextPage);
       } finally {
         recentLoadingRef.current = false;
         if (!options?.silent) setLoading(false);
       }
+
+      scheduleRecentAutoLoad(hasNextPage);
     },
-    [recentHasMore, recentSearchKeyword],
+    [recentHasMore, recentSearchKeyword, scheduleRecentAutoLoad],
   );
 
-  const loadRecentListRef = useRef(loadRecentList);
   useEffect(() => {
     loadRecentListRef.current = loadRecentList;
   }, [loadRecentList]);
+
+  useEffect(
+    () => () => {
+      if (recentAutoLoadFrameRef.current !== null) {
+        window.cancelAnimationFrame(recentAutoLoadFrameRef.current);
+      }
+    },
+    [],
+  );
 
   const recentConversationList = useMemo(
     () => recentList.flatMap((item) => item.conversationList ?? []),
