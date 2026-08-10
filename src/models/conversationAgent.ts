@@ -600,6 +600,9 @@ export default () => {
         newMessage = {
           ...currentMessage,
           text: getCustomBlock(currentMessage.text || '', data),
+          // 实际 SSE 不会为 THINK 单独下发 finished=true；PROCESSING 表示模型已从
+          // 当前思考阶段进入工具调用阶段，因此必须在这里结束本轮思考态。
+          thinkingFinished: true,
           status: MessageStatusEnum.Loading,
           processingList,
         };
@@ -660,6 +663,8 @@ export default () => {
           newMessage = {
             ...currentMessage,
             text: `${currentMessage.text}${text}`,
+            // QUESTION/CHAT 是 THINK 阶段之后的输出边界。
+            thinkingFinished: true,
             // 如果finished为true，则状态为null，此时不会显示运行状态组件，否则为Incomplete
             status: finished ? null : MessageStatusEnum.Incomplete,
           };
@@ -670,6 +675,7 @@ export default () => {
               ...currentMessage,
               id,
               text: `${currentMessage.text}${text}`, // 这里需要添加 展示MCP 或者其他工具调用
+              thinkingFinished: true,
               status: null, // 隐藏运行状态
             };
             // 插入新的消息
@@ -679,6 +685,8 @@ export default () => {
             newMessage = {
               ...currentMessage,
               text: `${currentMessage.text}${text}`,
+              // 后端 THINK 分片始终可能为 finished=false；首个正文分片即代表本轮思考结束。
+              thinkingFinished: true,
               // 如果finished为true，则状态为Complete，否则为Incomplete
               status: finished
                 ? MessageStatusEnum.Complete
