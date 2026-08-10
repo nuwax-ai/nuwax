@@ -23,11 +23,12 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
   const executingText = dict(
     'PC.Layouts.DynamicMenusLayout.ConversationItem.executing',
   );
+  const hasAgentName = Boolean(item.agent?.name && item.agent.name.trim());
 
   return (
     <div
       className={cx(styles['conversation-item'], {
-        [styles.active]: isActive,
+        [styles['active']]: isActive,
       })}
       onClick={onClick}
     >
@@ -42,18 +43,25 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
           {item.taskStatus === TaskStatus.EXECUTING && (
             <span className={cx(styles['status-tag'])}>{executingText}</span>
           )}
+          {!hasAgentName && (
+            <span className={cx(styles['conversation-date'])}>
+              {formatModifiedTime(item.modified)}
+            </span>
+          )}
         </div>
-        <div className={cx(styles['conversation-meta'])}>
-          <Typography.Text
-            className={cx(styles['conversation-agent-name'])}
-            ellipsis={true}
-          >
-            {item.agent?.name}
-          </Typography.Text>
-          <span className={cx(styles['conversation-date'])}>
-            {formatModifiedTime(item.modified)}
-          </span>
-        </div>
+        {hasAgentName && (
+          <div className={cx(styles['conversation-meta'])}>
+            <Typography.Text
+              className={cx(styles['conversation-agent-name'])}
+              ellipsis={true}
+            >
+              {item.agent?.name}
+            </Typography.Text>
+            <span className={cx(styles['conversation-date'])}>
+              {formatModifiedTime(item.modified)}
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );

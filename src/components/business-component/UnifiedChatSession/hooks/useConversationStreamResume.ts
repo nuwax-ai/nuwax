@@ -218,7 +218,10 @@ export function useConversationStreamResume(
 
   // 订阅 sub 流。续上后立即 stopPolling（同步，不等 ready 异步生效）；
   // sub onClose 时 startPolling 恢复，继续检测会话再次变为 EXECUTING。
-  const subscribe = async (id: number | string) => {
+  const subscribe = async (
+    id: number | string,
+    polledMessageList?: MessageInfo[],
+  ) => {
     if (!resumeStream) return; // 未注入 action（页面未启用恢复）
     if (isResumeSubscribedRef.current) return; // 防重复订阅
     if (latestRef.current.isLocallyStreaming) return; // live 正在驱动输出，不重复订阅
@@ -266,10 +269,14 @@ export function useConversationStreamResume(
       taskStatus: TaskStatus.EXECUTING,
     });
 
-    // 多页签/查看中变 EXECUTING：先 reload 历史，确保 messageList 含最新发送的用户消息，
-    // 再追加 assistant 占位由 sub 流重建（否则 sub 续上后会少显示那条用户消息）
-    let list = latestRef.current.messageList || [];
-    if (reloadHistoryAsync) {
+    // 多页签/查看中变 EXECUTING：优先复用检测到执行态的轮询快照；没有快照时再 reload，
+    // 确保 messageList 含最新发送的用户消息后，由 sub 流继续重建 assistant 输出。
+    let list = polledMessageList?.length
+      ? polledMessageList
+      : latestRef.current.messageList || [];
+    // 轮询已经返回完整快照时直接复用，避免订阅 sub 前再次查询同一个会话接口。
+    // 没有轮询快照的入口（如首次进入 EXECUTING 会话）仍保留原有 reload 与落库等待。
+    if (polledMessageList === undefined && reloadHistoryAsync) {
       try {
         const reloaded = await reloadHistoryAsync(id);
         conversationResumeLogger.info('reload before sub:done', {
@@ -485,7 +492,19 @@ export function useConversationStreamResume(
             ) {
               return;
             }
-            subscribe(conversationId);
+            const polledMessageList = snapshot?.messageList;
+            // 详情状态可能先于本轮用户消息落库。快照尚未就绪时保持正常轮询，
+            // 不立即发起多次历史重载；下一轮快照就绪后再建立 sub。
+            if (
+              Array.isArray(polledMessageList) &&
+              !hasUserReadyForResume(
+                latestRef.current.messageList,
+                polledMessageList,
+              )
+            ) {
+              return;
+            }
+            subscribe(conversationId, polledMessageList);
           }
         } else if (isResumeSubscribedRef.current && abortSub) {
           // 非 EXECUTING：任务已结束，兜底中断 sub（end_turn 自动断开应已触发）
@@ -563,7 +582,17 @@ export function useConversationStreamResume(
             onTerminalTaskStatusRef.current?.(status);
           }
           if (status === TaskStatus.EXECUTING) {
-            subscribeRef.current(conversationId);
+            const polledMessageList = snapshot?.messageList;
+            if (
+              Array.isArray(polledMessageList) &&
+              !hasUserReadyForResume(
+                latestRef.current.messageList,
+                polledMessageList,
+              )
+            ) {
+              return;
+            }
+            subscribeRef.current(conversationId, polledMessageList);
           }
         });
       }

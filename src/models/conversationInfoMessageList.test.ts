@@ -567,4 +567,129 @@ describe('preserveOptimisticMessageTail', () => {
       { ...finalSnapshot[1], clientRenderKey: optimisticAsstId },
     ]);
   });
+
+  it('keeps locally finalized assistant content when the persisted snapshot differs', () => {
+    const localFinalResult = {
+      success: true,
+      outputText: 'SSE final answer',
+    };
+    const current = appendOutgoingConversationMessages(
+      [],
+      optimisticUser('first question'),
+      optimisticAsst({
+        text: 'SSE final answer',
+        think: 'SSE final thinking',
+        status: MessageStatusEnum.Complete,
+        thinkingFinished: true,
+        finalResult: localFinalResult as MessageInfo['finalResult'],
+        processingList: [
+          { executeId: 'local-execution' },
+        ] as unknown as MessageInfo['processingList'],
+      }),
+    );
+    const incomingAssistant = {
+      id: 103,
+      index: 2,
+      role: AssistantRoleEnum.ASSISTANT,
+      text: 'Persisted answer with a small difference',
+      think: 'Persisted thinking',
+      status: MessageStatusEnum.Incomplete,
+      finalResult: { success: true, outputText: 'Persisted answer' },
+      processingList: [{ executeId: 'persisted-execution' }],
+      mcpAskInteractions: [{ responseStatus: 'submitted' }],
+    } as unknown as MessageInfo;
+
+    const merged = reconcileConversationSnapshotMessages(current, [
+      persistedUser('first question', 101),
+      incomingAssistant,
+    ]);
+
+    expect(merged[1]).toMatchObject({
+      id: 103,
+      index: 2,
+      clientRenderKey: optimisticAsstId,
+      text: 'SSE final answer',
+      think: 'SSE final thinking',
+      status: MessageStatusEnum.Complete,
+      thinkingFinished: true,
+      finalResult: localFinalResult,
+      processingList: [{ executeId: 'local-execution' }],
+      mcpAskInteractions: [{ responseStatus: 'submitted' }],
+    });
+  });
+
+  it('returns the same list after repeated snapshots cannot change finalized content', () => {
+    const current = [
+      {
+        id: 101,
+        index: 1,
+        role: AssistantRoleEnum.USER,
+        clientRenderKey: optimisticUserId,
+        text: 'first question',
+      } as MessageInfo,
+      {
+        id: 103,
+        index: 2,
+        role: AssistantRoleEnum.ASSISTANT,
+        clientRenderKey: optimisticAsstId,
+        text: 'SSE final answer',
+        status: MessageStatusEnum.Complete,
+        finalResult: { success: true, outputText: 'SSE final answer' },
+      } as MessageInfo,
+    ];
+    const incoming = [
+      {
+        ...current[0],
+        clientRenderKey: undefined,
+      },
+      {
+        ...current[1],
+        clientRenderKey: undefined,
+        text: 'Persisted answer with a small difference',
+      },
+    ];
+
+    expect(reconcileConversationSnapshotMessages(current, incoming)).toBe(
+      current,
+    );
+  });
+
+  it('protects only the final assistant when a round contains intermediate messages', () => {
+    const current = appendOutgoingConversationMessages(
+      [],
+      optimisticUser('first question'),
+      optimisticAsst({
+        text: 'SSE final answer',
+        status: MessageStatusEnum.Complete,
+        finalResult: {
+          success: true,
+        } as MessageInfo['finalResult'],
+      }),
+    );
+    current.splice(1, 0, {
+      ...current[1],
+      id: 'stream-intermediate-id',
+      text: 'SSE intermediate output',
+      finalResult: undefined,
+    });
+    const incoming = [
+      persistedUser('first question', 101),
+      {
+        id: 102,
+        role: AssistantRoleEnum.ASSISTANT,
+        text: 'Persisted intermediate output',
+      } as MessageInfo,
+      {
+        id: 103,
+        role: AssistantRoleEnum.ASSISTANT,
+        text: 'Persisted final answer with a difference',
+      } as MessageInfo,
+    ];
+
+    const merged = reconcileConversationSnapshotMessages(current, incoming);
+
+    expect(merged[1].text).toBe('Persisted intermediate output');
+    expect(merged[2].text).toBe('SSE final answer');
+    expect(merged[2].finalResult).toEqual({ success: true });
+  });
 });
