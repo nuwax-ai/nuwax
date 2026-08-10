@@ -1464,6 +1464,9 @@ export default () => {
     data: any = null,
   ) => {
     const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
+    // 当前 SSE 连接是否已从 FINAL_RESULT 解析出明确终态。
+    // 使用连接级闭包隔离并发/前后轮次，避免共享 ref 被新一轮发送覆盖。
+    let hasResolvedTerminalStatus = false;
 
     // 请求即将发起：用于计算前端从发送动作到真正网络发起的耗时。
     perfLifecycle.onHttpStart();
@@ -1483,6 +1486,11 @@ export default () => {
       },
       onMessage: (res: ConversationChatResponse) => {
         perfLifecycle.onFirstChunk(res?.eventType, res);
+        if (res.eventType === ConversationEventTypeEnum.FINAL_RESULT) {
+          hasResolvedTerminalStatus = Boolean(
+            resolveTerminalTaskStatus(res.data?.success, res.data, res),
+          );
+        }
         if (
           res.eventType === ConversationEventTypeEnum.MESSAGE &&
           res.data.type === MessageModeEnum.QUESTION &&
@@ -1565,9 +1573,9 @@ export default () => {
         });
         syncMessageListRuntimeState();
 
-        // SSE 结束后兜底同步 taskStatus：仅写回终态，避免竞态 EXECUTING 固化本地。
-        // 不限制 Agent 类型；任何携带 taskStatus=EXECUTING 的会话都必须能释放输入态。
-        if (params.conversationId) {
+        // FINAL_RESULT 已解析出明确终态时，本地状态已经完成写回，无需重复查询详情。
+        // 未收到 FINAL_RESULT 或终态不明确时，仍保留 onClose 查询作为异常兜底。
+        if (params.conversationId && !hasResolvedTerminalStatus) {
           await syncTerminalConversationTaskStatus(
             params.conversationId,
             setConversationInfo,
