@@ -25,7 +25,7 @@ const RecentAgentItem: React.FC<RecentAgentItemProps> = ({
   onConversationClick,
 }) => {
   const executingCount = getExecutingConversationCount(item.conversationList);
-  const hasDescription = Boolean(item.description);
+  const hasDescription = Boolean(item.description && item.description.trim());
   const executingConversations = (item.conversationList ?? []).filter(
     (conversation) => conversation.taskStatus === TaskStatus.EXECUTING,
   );
@@ -46,8 +46,6 @@ const RecentAgentItem: React.FC<RecentAgentItemProps> = ({
     domEvent.stopPropagation();
     onConversationClick(key);
   };
-
-  const hasDescription = Boolean(item.description && item.description.trim());
 
   const content = (
     <div
@@ -79,17 +77,11 @@ const RecentAgentItem: React.FC<RecentAgentItemProps> = ({
           >
             {item.name}
           </Typography.Text>
-          {executingCount > 0 ? (
+          {executingCount > 0 && (
             <span className={cx(styles['status-tag'])}>
               {dict('PC.Layouts.DynamicMenusLayout.ConversationItem.executing')}
               ({executingCount})
             </span>
-          ) : (
-            !hasDescription && (
-              <span className={cx(styles['conversation-date'])}>
-                {formatModifiedTime(item.modified)}
-              </span>
-            )
           )}
           {!hasDescription && (
             <span className={cx(styles['conversation-date'])}>
@@ -119,7 +111,7 @@ const RecentAgentItem: React.FC<RecentAgentItemProps> = ({
   return (
     <Dropdown
       menu={{ items: menuItems, onClick: handleMenuClick }}
-      placement="rightTop"
+      placement="topRight"
       overlayClassName={cx(styles['executing-conversation-dropdown'])}
     >
       {content}
