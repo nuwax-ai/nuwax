@@ -24,6 +24,9 @@ import React, {
   useState,
 } from 'react';
 import ReactMarkdown from 'react-markdown';
+import rehypeKatex from 'rehype-katex';
+import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
 import styles from './index.less';
 
 // @ts-ignore
@@ -35,16 +38,74 @@ import '@js-preview/excel/lib/index.css';
 // @ts-ignore
 import jsPreviewPdf from '@js-preview/pdf';
 // @ts-ignore
-import { PureMarkdownRenderer } from '@/components/MarkdownRenderer';
+import { unwrapLatexInlineCode } from '@/components/MarkdownRenderer/utils';
 import { SANDBOX } from '@/constants/common.constants';
 import { t } from '@/services/i18nRuntime';
+import 'ds-markdown/katex.css';
 import { init as pptxInit } from 'pptx-preview';
+
+/** 文件预览 Markdown：GFM + KaTeX（静态全文，不走流式打字机） */
+const FILE_PREVIEW_REMARK_PLUGINS = [remarkGfm, remarkMath];
+const FILE_PREVIEW_REHYPE_PLUGINS = [
+  [rehypeKatex, { throwOnError: false, strict: 'ignore' }],
+] as const;
 
 /** HTML 预览 iframe 沙盒：不含 allow-top-navigation，避免锚点误导航到主应用 */
 const HTML_PREVIEW_SANDBOX = SANDBOX.replace(
   'allow-top-navigation ',
   '',
 ).trim();
+
+/** 从 href 解析锚点 id；非本页 hash 链接返回 null */
+const resolveHashFromHref = (href: string): string | null => {
+  const trimmedHref = href.trim();
+  if (trimmedHref.startsWith('#')) {
+    return trimmedHref.slice(1);
+  }
+  try {
+    const url = new URL(trimmedHref, window.location.href);
+    if (
+      url.origin === window.location.origin &&
+      url.pathname === window.location.pathname &&
+      url.hash.length > 0
+    ) {
+      return url.hash.slice(1);
+    }
+  } catch {
+    // ignore invalid URL
+  }
+  return null;
+};
+
+/** 在指定容器内滚动到 hash 对应元素 */
+const scrollContainerToHash = (
+  scrollContainer: HTMLElement,
+  scope: ParentNode,
+  hash: string,
+) => {
+  if (!hash) {
+    scrollContainer.scrollTo({ top: 0, behavior: 'smooth' });
+    return;
+  }
+
+  let decodedHash = hash;
+  try {
+    decodedHash = decodeURIComponent(hash);
+  } catch {
+    decodedHash = hash;
+  }
+
+  const escapedId =
+    typeof CSS !== 'undefined' && typeof CSS.escape === 'function'
+      ? CSS.escape(decodedHash)
+      : decodedHash.replace(/([!"#$%&'()*+,./:;<=>?@[\\\]^`{|}~])/g, '\\$1');
+
+  const targetEl =
+    scope.querySelector(`#${escapedId}`) ||
+    scope.querySelector(`a[name="${decodedHash.replace(/"/g, '\\"')}"]`);
+
+  targetEl?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
 
 /**
  * 在 iframe 内拦截 hash 锚点点击，避免 srcDoc / base 标签导致加载主应用页面
@@ -66,40 +127,66 @@ const setupHtmlIframeAnchorHandling = (iframe: HTMLIFrameElement) => {
       return;
     }
 
-    const trimmedHref = hrefAttr.trim();
-    if (!trimmedHref.startsWith('#')) {
+    const hash = resolveHashFromHref(hrefAttr);
+    if (hash === null) {
       return;
     }
 
     event.preventDefault();
     event.stopPropagation();
 
-    const hash = trimmedHref.slice(1);
-    if (!hash) {
-      doc.defaultView?.scrollTo({ top: 0, behavior: 'smooth' });
-      return;
-    }
+    scrollContainerToHash(doc.documentElement, doc, hash);
 
-    let decodedHash = hash;
-    try {
-      decodedHash = decodeURIComponent(hash);
-    } catch {
-      decodedHash = hash;
-    }
-
-    const targetEl =
-      doc.getElementById(decodedHash) ||
-      doc.querySelector(`a[name="${decodedHash.replace(/"/g, '\\"')}"]`);
-
-    targetEl?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-
-    if (doc.defaultView) {
+    if (doc.defaultView && hash) {
       doc.defaultView.location.hash = hash;
     }
   };
 
   doc.addEventListener('click', handleClick, true);
   return () => doc.removeEventListener('click', handleClick, true);
+};
+
+/**
+ * 拦截 Markdown 预览区 hash 锚点点击，在预览容器内定位，避免改变主应用 URL 或新开页签
+ */
+const setupMarkdownAnchorHandling = (
+  scrollContainer: HTMLElement,
+  contentRoot?: HTMLElement | null,
+) => {
+  const scope = contentRoot ?? scrollContainer;
+
+  const handleAnchorNavigation = (event: MouseEvent) => {
+    const anchor = (event.target as Element | null)?.closest('a');
+    if (!anchor) {
+      return;
+    }
+
+    const hrefAttr = anchor.getAttribute('href');
+    if (!hrefAttr) {
+      return;
+    }
+
+    const hash = resolveHashFromHref(hrefAttr);
+    if (hash === null) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    scrollContainerToHash(scrollContainer, scope, hash);
+  };
+
+  scrollContainer.addEventListener('click', handleAnchorNavigation, true);
+  scrollContainer.addEventListener('auxclick', handleAnchorNavigation, true);
+  return () => {
+    scrollContainer.removeEventListener('click', handleAnchorNavigation, true);
+    scrollContainer.removeEventListener(
+      'auxclick',
+      handleAnchorNavigation,
+      true,
+    );
+  };
 };
 
 // File type categories
@@ -380,6 +467,8 @@ const FilePreview: React.FC<FilePreviewProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const htmlIframeCleanupRef = useRef<(() => void) | null>(null);
+  const markdownScrollRef = useRef<HTMLDivElement>(null);
+  const markdownAnchorCleanupRef = useRef<(() => void) | null>(null);
   const previewerRef = useRef<any>(null);
   const [status, setStatus] = useState<PreviewStatus>('idle');
   const [errorMessage, setErrorMessage] = useState<string>('');
@@ -397,7 +486,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({
 
   const resolvedType = fileType || detectedType;
 
-  // 关键修复：当从 HTML 切换到 Markdown 时，延迟渲染 PureMarkdownRenderer
+  // 性能修复：当从 HTML 切换到 Markdown 时延迟渲染，确保布局稳定
   // 使用 useEffect 延迟渲染，确保 HTML 容器已完全移除且布局稳定
   useEffect(() => {
     if (resolvedType === 'markdown' && textContent) {
@@ -450,8 +539,36 @@ const FilePreview: React.FC<FilePreviewProps> = ({
     return () => {
       htmlIframeCleanupRef.current?.();
       htmlIframeCleanupRef.current = null;
+      markdownAnchorCleanupRef.current?.();
+      markdownAnchorCleanupRef.current = null;
     };
   }, []);
+
+  useEffect(() => {
+    if (!isMarkdownVisible || !markdownScrollRef.current) {
+      markdownAnchorCleanupRef.current?.();
+      markdownAnchorCleanupRef.current = null;
+      return;
+    }
+
+    const contentRoot =
+      (markdownScrollRef.current.querySelector(
+        '#file-preview-md',
+      ) as HTMLElement | null) ??
+      (markdownScrollRef.current.querySelector(
+        '.ds-markdown',
+      ) as HTMLElement | null);
+
+    markdownAnchorCleanupRef.current = setupMarkdownAnchorHandling(
+      markdownScrollRef.current,
+      contentRoot,
+    );
+
+    return () => {
+      markdownAnchorCleanupRef.current?.();
+      markdownAnchorCleanupRef.current = null;
+    };
+  }, [isMarkdownVisible, textContent]);
 
   const imageSources = useMemo(() => {
     if (srcList && srcList.length > 0) {
@@ -819,18 +936,19 @@ const FilePreview: React.FC<FilePreviewProps> = ({
     [staticFileBasePath],
   );
 
-  // 对 Markdown 文本中的图片链接进行统一路径处理
+  // 对 Markdown 文本中的图片链接进行统一路径处理，并拆开反引号包裹的 $...$ / LaTeX
   const processedMarkdown = useMemo(() => {
     if (!textContent) return textContent;
 
     // 仅处理标准图片语法 ![alt](url)
-    return textContent.replace(
+    const withImages = textContent.replace(
       /(!\[[^\]]*\]\()([^)\s]+)(\))/g,
       (match, prefix, url, suffix) => {
         const normalizedUrl = normalizeImageSrc(url);
         return `${prefix}${normalizedUrl}${suffix}`;
       },
     );
+    return unwrapLatexInlineCode(withImages);
   }, [textContent, normalizeImageSrc]);
 
   const renderPreviewContent = () => {
@@ -907,7 +1025,6 @@ const FilePreview: React.FC<FilePreviewProps> = ({
           <div
             className={`${styles.markdownPreview} ${styles['p-16']}`}
             style={{
-              // 关键修复：确保容器尺寸稳定，避免 PureMarkdownRenderer 初始化时导致布局重排
               width: '100%',
               height: '100%',
               minHeight: 0,
@@ -917,23 +1034,10 @@ const FilePreview: React.FC<FilePreviewProps> = ({
               position: 'relative',
             }}
           >
-            {/* 关键修复：延迟渲染 PureMarkdownRenderer，避免从 HTML 切换到 MD 时的闪动 */}
-            {/* 在延迟期间使用 ReactMarkdown 作为占位符，避免空白 */}
-            {!shouldRenderMarkdown && textContent && (
-              <div
-                style={{
-                  padding: '24px',
-                  opacity: 0,
-                  visibility: 'hidden',
-                  pointerEvents: 'none',
-                }}
-              >
-                <ReactMarkdown>{processedMarkdown}</ReactMarkdown>
-              </div>
-            )}
-            {/* PureMarkdownRenderer 延迟渲染，使用绝对定位和隐藏，避免初始化时影响布局 */}
             {shouldRenderMarkdown && textContent && (
               <div
+                ref={markdownScrollRef}
+                className="ds-markdown"
                 style={{
                   position: 'absolute',
                   top: 0,
@@ -942,16 +1046,22 @@ const FilePreview: React.FC<FilePreviewProps> = ({
                   bottom: 0,
                   padding: '24px',
                   overflow: 'auto',
-                  // 通过 state 控制显隐，而不是 callback ref 返回 cleanup（避免 React ref 警告）
                   opacity: isMarkdownVisible ? 1 : 0,
                   visibility: isMarkdownVisible ? 'visible' : 'hidden',
                   pointerEvents: isMarkdownVisible ? 'auto' : 'none',
                   transition: 'opacity 0.3s ease-in-out',
                 }}
               >
-                <PureMarkdownRenderer id="file-preview-md" disableTyping={true}>
+                <ReactMarkdown
+                  remarkPlugins={FILE_PREVIEW_REMARK_PLUGINS}
+                  rehypePlugins={
+                    FILE_PREVIEW_REHYPE_PLUGINS as Parameters<
+                      typeof ReactMarkdown
+                    >[0]['rehypePlugins']
+                  }
+                >
                   {processedMarkdown}
-                </PureMarkdownRenderer>
+                </ReactMarkdown>
               </div>
             )}
           </div>

@@ -1,11 +1,7 @@
-import classNames from 'classnames';
-
-import { FileTextOutlined, RightOutlined } from '@ant-design/icons';
 import React, { useContext } from 'react';
 import { useModel } from 'umi';
 import { TaskResultContext } from './context';
-import styles from './index.less';
-const cx = classNames.bind(styles);
+import TaskResultRow from './TaskResultRow';
 
 /**
  * TaskResult 组件
@@ -91,23 +87,12 @@ const TaskResult: React.FC<TaskResultProps> = ({
     };
 
     return (
-      <div
-        key={taskResultKey}
-        data-key={taskResultKey}
-        className={cx(styles['task-result'])}
+      <TaskResultRow
+        label={fileDescription ? fileDescription : fileName}
+        description={fileDescription}
+        dataKey={taskResultKey}
         onClick={handleClick}
-        title={fileDescription ? fileDescription : fileName}
-      >
-        <span className={cx(styles['task-result-icon'])}>
-          <FileTextOutlined />
-        </span>
-        <span className={cx(styles['task-result-action'])}>
-          {fileDescription ? fileDescription : fileName}
-        </span>
-        <span className={cx(styles['task-result-arrow'])}>
-          <RightOutlined />
-        </span>
-      </div>
+      />
     );
   } catch (error) {
     console.warn('TaskResult error', error);

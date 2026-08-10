@@ -277,6 +277,8 @@ export interface ChatMessageDto {
 
 // 会话消息信息
 export interface MessageInfo extends ChatMessageDto {
+  /** 乐观消息落库后仍保持不变的前端渲染标识。 */
+  clientRenderKey?: string;
   index: number;
   // 租户ID
   tenantId: number;
@@ -290,6 +292,8 @@ export interface MessageInfo extends ChatMessageDto {
   agentId: number;
   // 消息状态，可选值为 loading | incomplete | complete | error
   status?: MessageStatusEnum;
+  /** 思考流是否已收到结束分片；未设置时按历史消息状态兼容处理。 */
+  thinkingFinished?: boolean;
   // 自定义添加字段：chat 会话结果
   finalResult?: ConversationFinalResult;
   // 消息查询过程信息

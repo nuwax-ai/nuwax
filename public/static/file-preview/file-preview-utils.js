@@ -96,12 +96,28 @@ function loadScript(src) {
     });
 }
 
+function loadStylesheet(href) {
+    return new Promise((resolve, reject) => {
+        if (document.querySelector(`link[href="${href}"]`)) {
+            resolve();
+            return;
+        }
+
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = href;
+        link.onload = resolve;
+        link.onerror = () => reject(new Error(`Failed to load: ${href}`));
+        document.head.appendChild(link);
+    });
+}
+
 // ============================================
 // Parent Communication
 // ============================================
 function notifyParent(data) {
     try {
-        // For iframe
+        // For iframe（PC web / H5）：parent 直收
         if (window.parent && window.parent !== window) {
             window.parent.postMessage(data, '*');
         }
@@ -109,6 +125,16 @@ function notifyParent(data) {
         // For WeChat Mini Program WebView
         if (typeof wx !== 'undefined' && wx.miniProgram) {
             wx.miniProgram.postMessage({ data });
+        }
+
+        // For uni-app x / App 顶层 webview（window.parent===window）：经 uni.webView.postMessage
+        // 桥接到 <web-view> @message（JSSDK 由 file-preview.html 无条件加载；未就绪时此分支安全跳过）。
+        if (window.parent === window) {
+            var post =
+                window.uni && window.uni.webView && window.uni.webView.postMessage;
+            // uni-app x Android 仅稳定支持对象 payload；原生 event.detail.data
+            // 会自行包装为消息数组，这里不能再预先包一层数组。
+            if (post) post({ data: data });
         }
     } catch (e) {
         console.warn('[FilePreview] Failed to notify parent:', e);

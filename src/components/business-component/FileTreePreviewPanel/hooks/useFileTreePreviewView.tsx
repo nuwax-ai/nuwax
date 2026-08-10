@@ -7,6 +7,7 @@ import {
   buildChangeFilesFromGitStatus,
   mergeGitStatusFileIds,
 } from '@/components/business-component/FileTreeGitSourcePanel/utils/gitStatusUtils';
+import { OpenUiRuntimeFrame } from '@/components/business-component/OpenUiArtifactView';
 import CodeViewer from '@/components/CodeViewer';
 import Loading from '@/components/custom/Loading';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
@@ -39,6 +40,13 @@ import {
   updateFileTreeContent,
   updateFileTreeName,
 } from '@/utils/fileTree';
+import {
+  getOpenUiArtifactIdFromFileName,
+  isBareOpenUiFileName,
+  isOpenUiDigestContractFailure,
+  isOpenUiFileName,
+  tryParseOpenUiFileContent,
+} from '@/utils/openUiArtifact';
 import { message } from 'antd';
 import cloneDeep from 'lodash/cloneDeep';
 import React, {
@@ -80,6 +88,8 @@ export function useFileTreePreviewView(
     taskAgentSelectedFileId,
     clearTaskAgentSelectedFileId,
     taskAgentSelectTrigger,
+    // 会话结束文件树刷新后兜底重拉当前打开文件正文的触发标志
+    fileTreeRefreshTrigger,
     originalFiles,
     fileTreeDataLoading,
     readOnly = false,
@@ -235,6 +245,10 @@ export function useFileTreePreviewView(
   const prevTaskAgentSelectTriggerRef = useRef<number | string | undefined>(
     undefined,
   );
+  /** 已处理过的兜底刷新 trigger，避免同一 trigger 重复重拉当前打开文件正文 */
+  const handledFileTreeRefreshTriggerRef = useRef<number | undefined>(
+    undefined,
+  );
   // 用于记录创建文件成功后需要选择的文件路径
   const pendingSelectFileRef = useRef<string | null>(null);
   /** 文件树异步刷新完成后，是否需要基于新文件树处理当前选中文件 */
@@ -275,7 +289,7 @@ export function useFileTreePreviewView(
   const [fileRefreshTimestamp, setFileRefreshTimestamp] = useState<number>(
     Date.now(),
   );
-  /** html / md：预览或代码视图 */
+  /** html / md / .openui.json：预览或代码视图，默认预览 */
   const [viewFileType, setViewFileType] = useState<'preview' | 'code'>(
     'preview',
   );
@@ -409,6 +423,7 @@ export function useFileTreePreviewView(
     setFileRefreshTimestamp(Date.now());
     prevTaskAgentSelectedFileIdRef.current = '';
     prevTaskAgentSelectTriggerRef.current = undefined;
+    handledFileTreeRefreshTriggerRef.current = undefined;
     userSelectedFileRef.current = null;
     pendingSelectFileRef.current = null;
     pendingTaskAgentAutoSelectRef.current = null;
@@ -839,6 +854,32 @@ export function useFileTreePreviewView(
       }
     }
   }, [originalFiles, enableVersionControl]);
+
+  /**
+   * 会话结束（FINAL_RESULT）文件树刷新后，兜底重拉当前打开文件的正文。
+   *
+   * 场景：agent 修改了“当前已打开”的文件，但最终输出未携带指向它的
+   * <task-result><file>（或 file 指向其他文件），既有正文刷新路径
+   * （树长度变化 / task-result 命中 / 手动刷新）均未触发，正文停留在旧值。
+   * 模型层在树刷新完成后发出 fileTreeRefreshTrigger，这里监听并在树就绪后重拉内容。
+   *
+   * 声明在原文件列表同步 effect 之后，保证同一轮渲染内 filesRef.current
+   * 已是刷新后的最新树，refreshSelectedFileContent 能基于最新 fileProxyUrl 重拉。
+   */
+  useEffect(() => {
+    // 无触发（初始值 / 切换会话后重置）或同一 trigger 已处理过，避免重复重拉
+    if (!fileTreeRefreshTrigger) {
+      return;
+    }
+
+    if (handledFileTreeRefreshTriggerRef.current === fileTreeRefreshTrigger) {
+      return;
+    }
+    handledFileTreeRefreshTriggerRef.current = fileTreeRefreshTrigger;
+    // 无选中文件时 refreshSelectedFileContent 内部会直接返回，无需在此额外判断
+    void refreshSelectedFileContent();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fileTreeRefreshTrigger]);
 
   /**
    * 监听 taskAgentSelectedFileId / taskAgentSelectTrigger，自动定位并打开消息中的目标文件。
@@ -1801,6 +1842,43 @@ export function useFileTreePreviewView(
     [taskAgentSelectTrigger, fileRefreshTimestamp],
   );
 
+  // 文件树已加载的 OpenUI 内容：useMemo 稳定化，避免每次渲染重新 parse
+  // 产生新对象引用，导致 OpenUiRuntimeFrame 的拉取 effect 反复触发（多次/重复请求）。
+  // 内容已在内存时直接复用，不再请求 .openui.json（规避 static_k 失败导致的 loading 卡死）。
+  // 同时对误用的裸 `.openui` 做内容嗅探：合法 nuwax.openui-file 也可内联渲染。
+  const openUiInlineArtifact = useMemo(() => {
+    const name = selectedFileNode?.name;
+    if (
+      !name ||
+      (!isOpenUiFileName(name) && !isBareOpenUiFileName(name)) ||
+      !selectedFileNode?.content
+    ) {
+      return undefined;
+    }
+    return tryParseOpenUiFileContent(selectedFileNode.content) ?? undefined;
+  }, [selectedFileNode?.name, selectedFileNode?.content]);
+
+  /**
+   * `.openui.json`（及内容合法的裸 `.openui`）预览契约失败提示：
+   * 常见于手改 source 后未更新 digest。
+   */
+  const openUiContractErrorDescription = useMemo(() => {
+    const name = selectedFileNode?.name;
+    const content = selectedFileNode?.content;
+    if (!name || !content) return undefined;
+    if (!isOpenUiFileName(name) && !isBareOpenUiFileName(name)) {
+      return undefined;
+    }
+    if (tryParseOpenUiFileContent(content)) return undefined;
+    if (isOpenUiDigestContractFailure(content)) {
+      return dict('PC.Components.FileTreeView.openUiDigestInvalid');
+    }
+    if (isBareOpenUiFileName(name)) {
+      return dict('PC.Components.FileTreeView.openUiWrongExtension');
+    }
+    return dict('PC.Components.FileTreeView.openUiContractInvalid');
+  }, [selectedFileNode?.name, selectedFileNode?.content]);
+
   /**
    * 渲染内容区域
    * 根据文件类型渲染不同的预览组件
@@ -1940,19 +2018,99 @@ export function useFileTreePreviewView(
     // 压缩包等不支持预览的文件（如 .zip、.skill、.rar、.7z 等）
     const selectedFileName =
       selectedFileNode?.name || selectedFileId?.split('/')?.pop() || '';
-    if (!isPreviewableFile(selectedFileName, true)) {
-      const fileExtension = selectedFileId?.split('.')?.pop() || selectedFileId;
+
+    /**
+     * OpenUI 预览：
+     * - 契约后缀 `*.openui.json`：preview 走 Runtime；内容非法且无法 URL 回退时给出 digest/契约提示
+     * - 误用裸 `.openui`：内容合法则嗅探渲染；仅有 fileProxyUrl 时也尝试 Runtime 拉取
+     */
+    const isCanonicalOpenUi = isOpenUiFileName(selectedFileName);
+    const isBareOpenUi = isBareOpenUiFileName(selectedFileName);
+    if ((isCanonicalOpenUi || isBareOpenUi) && viewFileType === 'preview') {
+      const canTryRuntime = Boolean(openUiInlineArtifact || fileProxyUrl);
+
+      // 内存契约失败且没有 URL 可回退时，展示定向错误（避免挡住磁盘正确文件的 URL 拉取）
+      if (
+        !canTryRuntime &&
+        openUiContractErrorDescription &&
+        !openUiInlineArtifact
+      ) {
+        return (
+          <AppDevEmptyState
+            type="error"
+            title={dict('PC.Components.FileTreeView.cannotPreviewType')}
+            showButtons={false}
+            description={openUiContractErrorDescription}
+          />
+        );
+      }
+
+      if (!canTryRuntime) {
+        return (
+          <AppDevEmptyState
+            type="error"
+            title={dict('PC.Components.FileTreeView.cannotPreviewType')}
+            showButtons={false}
+            description={dict(
+              isBareOpenUi
+                ? 'PC.Components.FileTreeView.openUiWrongExtension'
+                : 'PC.Components.FileTreeView.openUiContractInvalid',
+            )}
+          />
+        );
+      }
+
+      const conversationId = staticFileBasePath?.match(
+        /\/api\/computer\/static\/(\d+)/,
+      )?.[1];
       return (
-        <AppDevEmptyState
-          type="error"
-          title={dict('PC.Components.FileTreeView.cannotPreviewType')}
-          showButtons={false}
-          description={dict(
-            'PC.Components.FileTreeView.unsupportedFormat',
-            fileExtension,
-          )}
+        // 不加 key={selectedFileId}：让 openui 文件间复用同一 OpenUiRuntimeFrame 实例，
+        // 切换走 OPENUI_LOAD 增量更新（iframe 只加载一次），避免每文件重载 3.4MB runtime。
+        <OpenUiRuntimeFrame
+          artifact={openUiInlineArtifact}
+          artifactUrl={
+            openUiInlineArtifact ? undefined : fileProxyUrl || undefined
+          }
+          expectedArtifactId={
+            openUiInlineArtifact?.artifactId ||
+            getOpenUiArtifactIdFromFileName(selectedFileName)
+          }
+          expectedDigest={openUiInlineArtifact?.document.digest}
+          conversationId={conversationId}
+          variant="full"
         />
       );
+    }
+
+    if (!isPreviewableFile(selectedFileName, true)) {
+      const fileExtension = selectedFileId?.split('.')?.pop() || selectedFileId;
+      // 代码视图下允许查看裸 .openui 文本；预览模式才提示正确扩展名
+      if (isBareOpenUiFileName(selectedFileName) && viewFileType === 'code') {
+        // 落入下方 CodeViewer
+      } else if (isBareOpenUiFileName(selectedFileName)) {
+        return (
+          <AppDevEmptyState
+            type="error"
+            title={dict('PC.Components.FileTreeView.cannotPreviewType')}
+            showButtons={false}
+            description={dict(
+              'PC.Components.FileTreeView.openUiWrongExtension',
+            )}
+          />
+        );
+      } else {
+        return (
+          <AppDevEmptyState
+            type="error"
+            title={dict('PC.Components.FileTreeView.cannotPreviewType')}
+            showButtons={false}
+            description={dict(
+              'PC.Components.FileTreeView.unsupportedFormat',
+              fileExtension,
+            )}
+          />
+        );
+      }
     }
 
     const fileName = selectedFileId?.split('/')?.pop() || '';

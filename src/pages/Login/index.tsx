@@ -110,6 +110,26 @@ const Login: React.FC = () => {
     useModel('tenantConfigInfo');
   const { loadMenus } = useModel('menuModel');
 
+  const redirectAfterCaptchaCallback = (
+    responseRedirectUrl?: string | null,
+  ) => {
+    const redirect = decodeURIComponent(searchParams.get('redirect') || '');
+
+    // 必须在验证码回调返回给 SDK 后再卸载登录页，避免 SDK 的成功收尾访问
+    // 已移除的验证码弹窗节点。setTimeout 会在当前 Promise 回调链结束后执行。
+    window.setTimeout(() => {
+      if (isWeakNumber(redirect)) {
+        history.go(Number(redirect));
+      } else if (responseRedirectUrl?.includes('://')) {
+        window.location.href = responseRedirectUrl;
+      } else if (redirect) {
+        history.replace(redirect);
+      } else {
+        history.replace('/');
+      }
+    }, 0);
+  };
+
   const { runWithPromise: runPasswordLogin, loading } = useRequestPromiseBridge(
     apiLogin,
     {
@@ -129,16 +149,7 @@ const Login: React.FC = () => {
         }
         await loadMenus(true);
         await initI18n(true);
-        const redirect = decodeURIComponent(searchParams.get('redirect') || '');
-        if (isWeakNumber(redirect)) {
-          history.go(Number(redirect));
-        } else if (responseRedirectUrl && responseRedirectUrl.includes('://')) {
-          window.location.href = responseRedirectUrl;
-        } else if (redirect) {
-          history.replace(redirect);
-        } else {
-          history.replace('/');
-        }
+        redirectAfterCaptchaCallback(responseRedirectUrl);
       },
       onError: (error: any) => {
         console.error('[Login] Request Error:', error);
@@ -154,26 +165,57 @@ const Login: React.FC = () => {
     }
   };
 
+  /**
+   * 判断验证码 DOM 节点在页面中是否真正可见
+   */
+  const isElementVisible = (el: HTMLElement | null): boolean => {
+    if (!el) return false;
+    try {
+      const computedStyle = window.getComputedStyle(el);
+      if (
+        computedStyle.display === 'none' ||
+        computedStyle.visibility === 'hidden' ||
+        computedStyle.opacity === '0'
+      ) {
+        return false;
+      }
+      return (
+        el.offsetWidth > 0 ||
+        el.offsetHeight > 0 ||
+        el.getClientRects().length > 0
+      );
+    } catch {
+      return false;
+    }
+  };
+
   const startCaptchaPopupWatcher = () => {
     clearCaptchaPopupWatcher();
     const startedAt = Date.now();
+    let hasBeenVisible = false;
+
     captchaPopupWatcherTimerRef.current = window.setInterval(() => {
-      const hasCaptchaPopup =
-        !!document.getElementById('aliyunCaptcha-window-popup') ||
-        !!document.getElementById('aliyunCaptcha-mask');
+      const popupEl = document.getElementById('aliyunCaptcha-window-popup');
+      const maskEl = document.getElementById('aliyunCaptcha-mask');
 
-      if (!hasCaptchaPopup) {
-        loginTriggerLockRef.current = false;
-        clearCaptchaPopupWatcher();
-        return;
+      const isPopupVisible = isElementVisible(popupEl);
+      const isMaskVisible = isElementVisible(maskEl);
+      const isVisible = isPopupVisible || isMaskVisible;
+
+      if (isVisible) {
+        hasBeenVisible = true;
       }
 
-      // 极端兜底：防止异常情况下 watcher 长驻
-      if (Date.now() - startedAt > 2 * 60 * 1000) {
+      // 弹窗曾经显示过但现在被关闭/隐藏，或者弹出等待超时（3秒内未弹出），或者极端长驻超时（2分钟）
+      const isClosedAfterOpen = hasBeenVisible && !isVisible;
+      const isInitTimeout = !hasBeenVisible && Date.now() - startedAt > 3000;
+      const isMaxTimeout = Date.now() - startedAt > 2 * 60 * 1000;
+
+      if (isClosedAfterOpen || isInitTimeout || isMaxTimeout) {
         loginTriggerLockRef.current = false;
         clearCaptchaPopupWatcher();
       }
-    }, 500);
+    }, 300);
   };
 
   useEffect(() => {
@@ -193,16 +235,32 @@ const Login: React.FC = () => {
 
   const getPhoneOrEmailRules = () => {
     const isEmailAuth = tenantConfigInfo?.authType === 3;
+    const supportsUsernameLogin =
+      isEmailAuth && loginType === LoginTypeEnum.Password;
     return [
       {
         required: true,
-        message: isEmailAuth
+        message: supportsUsernameLogin
+          ? dict('PC.Pages.Login.inputAccountRequired')
+          : isEmailAuth
           ? dict('PC.Pages.Login.inputEmailRequired')
           : dict('PC.Pages.Login.inputPhoneRequired'),
       },
       {
         validator(_: any, value: string) {
           if (!value) return Promise.resolve();
+          if (supportsUsernameLogin) {
+            if (!value.trim()) {
+              return Promise.reject(
+                new Error(dict('PC.Pages.Login.inputAccountRequired')),
+              );
+            }
+            return /\s/.test(value)
+              ? Promise.reject(
+                  new Error(dict('PC.Pages.Login.invalidAccountWhitespace')),
+                )
+              : Promise.resolve();
+          }
           if (isEmailAuth) {
             return isValidEmail(value)
               ? Promise.resolve()
@@ -554,7 +612,9 @@ const Login: React.FC = () => {
                       <Input
                         rootClassName={cx(styles.input)}
                         placeholder={dict(
-                          'PC.Pages.Login.inputEmailPlaceholder',
+                          loginType === LoginTypeEnum.Password
+                            ? 'PC.Pages.Login.inputAccountPlaceholder'
+                            : 'PC.Pages.Login.inputEmailPlaceholder',
                         )}
                       />
                     </Form.Item>

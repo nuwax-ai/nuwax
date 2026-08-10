@@ -27,6 +27,7 @@ import useSubscription from '@/hooks/useSubscription';
 import { t } from '@/services/i18nRuntime';
 import { DefaultSelectedEnum, TaskStatus } from '@/types/enums/agent';
 import { UploadFileStatus } from '@/types/enums/common';
+import { AgentTypeEnum } from '@/types/enums/space';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type {
   ConversationInfo,
@@ -80,6 +81,7 @@ export interface ChatInputHomeIndependentProps {
   wholeDisabled?: boolean;
   clearDisabled?: boolean;
   clearLoading?: boolean;
+  showClearIcon?: boolean;
   visible?: boolean;
   isClearInput?: boolean;
   onScrollBottom?: () => void;
@@ -164,6 +166,7 @@ const ChatInputHomeIndependent: React.FC<ChatInputHomeIndependentProps> = ({
   wholeDisabled = false,
   clearDisabled = false,
   clearLoading = false,
+  showClearIcon = true,
   onEnter,
   visible,
   selectedComponentList,
@@ -771,7 +774,7 @@ const ChatInputHomeIndependent: React.FC<ChatInputHomeIndependentProps> = ({
               >
                 {!!messageList?.filter((item: MessageInfo) => item.id)
                   ?.length && (
-                  <ConditionRender condition={!!onClear}>
+                  <ConditionRender condition={showClearIcon && !!onClear}>
                     <Tooltip
                       title={t('PC.Components.ChatInputHome.clearRecord')}
                     >
@@ -1011,27 +1014,30 @@ const ChatInputHomeIndependent: React.FC<ChatInputHomeIndependentProps> = ({
                   }
                 >
                   {prefix}
-                  {isTaskAgentActive && !readonly && (
-                    <ComputerTypeSelector
-                      value={
-                        agentSandboxId !== undefined && agentSandboxId !== null
-                          ? String(agentSandboxId)
-                          : conversationInfo?.sandboxServerId !== undefined &&
-                            conversationInfo?.sandboxServerId !== null
-                          ? String(conversationInfo.sandboxServerId)
-                          : selectedComputerId
-                      }
-                      onChange={(id: string) => onComputerSelect?.(id)}
-                      disabled={wholeDisabled}
-                      agentId={agentId}
-                      fixedSelection={fixedSelection || isSessionActive}
-                      unavailable={isSandboxUnavailable}
-                      autoSelect={autoSelectComputer}
-                      saveOnSelect={saveComputerOnSelect}
-                      isPersonalComputer={isPersonalComputer}
-                      readonly={readonly}
-                    />
-                  )}
+                  {(isTaskAgentActive ||
+                    agentType === AgentTypeEnum.TaskAgent) &&
+                    !readonly && (
+                      <ComputerTypeSelector
+                        value={
+                          agentSandboxId !== undefined &&
+                          agentSandboxId !== null
+                            ? String(agentSandboxId)
+                            : conversationInfo?.sandboxServerId !== undefined &&
+                              conversationInfo?.sandboxServerId !== null
+                            ? String(conversationInfo.sandboxServerId)
+                            : selectedComputerId
+                        }
+                        onChange={(id: string) => onComputerSelect?.(id)}
+                        disabled={wholeDisabled}
+                        agentId={agentId}
+                        fixedSelection={fixedSelection || isSessionActive}
+                        unavailable={isSandboxUnavailable}
+                        autoSelect={autoSelectComputer}
+                        saveOnSelect={saveComputerOnSelect}
+                        isPersonalComputer={isPersonalComputer}
+                        readonly={readonly}
+                      />
+                    )}
                   {allowOtherModel === DefaultSelectedEnum.Yes && (
                     <ModelSelector
                       agentId={agentId}

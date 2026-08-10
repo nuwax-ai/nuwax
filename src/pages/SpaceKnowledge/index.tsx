@@ -47,6 +47,7 @@ import QaModal from './QaModal';
 import QaTableList, { QaTableListRef } from './QaTableList';
 import RawSegmentInfo from './RawSegmentInfo';
 import KnowledgeAccuracyTest from './KnowledgeAccuracyTest';
+import SourceDocumentComparison from './SourceDocumentComparison';
 
 const cx = classNames.bind(styles);
 
@@ -90,6 +91,8 @@ const SpaceKnowledge: React.FC = () => {
   // 根据docType 判断是否显示QA问答
   const [qaOpen, setQaOpen] = useState<boolean>(false);
   const [question, setQuestion] = useState<string>('');
+  // 当前选中的分段（用于原文对照）
+  const [selectedSegment, setSelectedSegment] = useState<any>(null);
 
   // 知识图谱模式的文档状态
   const [graphDocList, setGraphDocList] = useState<
@@ -419,7 +422,10 @@ const SpaceKnowledge: React.FC = () => {
   // 文档内容
   const renderDocContent = () => {
     return (
-      <div className={cx('flex', 'flex-1')}>
+      <div
+        className={cx('flex', 'flex-1')}
+        style={{ overflowX: 'auto', overflowY: 'hidden' }}
+      >
         {/*文档列表*/}
         <DocWrap
           currentDocId={currentDocumentInfo?.id}
@@ -440,6 +446,13 @@ const SpaceKnowledge: React.FC = () => {
           documentInfo={currentDocumentInfo}
           onDel={handleDocDel}
           onSuccessUpdateName={handleSuccessUpdateName}
+          onSegmentSelect={setSelectedSegment}
+        />
+        {/*原文对照 - 新增板块*/}
+        <SourceDocumentComparison
+          documentInfo={currentDocumentInfo}
+          selectedSegment={selectedSegment}
+          visible={true}
         />
       </div>
     );

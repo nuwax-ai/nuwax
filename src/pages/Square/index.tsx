@@ -577,10 +577,20 @@ const Square: React.FC = () => {
                         publishedItemInfo={item}
                         onToggleCollectSuccess={handleToggleCollectSuccess}
                         onClick={() =>
-                          handleClick(item.targetId, item.targetType)
+                          handleClick(
+                            item.targetId,
+                            item.targetType,
+                            'square',
+                            item.ext?.conversationId,
+                          )
                         }
                         onStartUse={() =>
-                          handleClick(item.targetId, item.targetType)
+                          handleClick(
+                            item.targetId,
+                            item.targetType,
+                            'square',
+                            item.ext?.conversationId,
+                          )
                         }
                       />
                     );

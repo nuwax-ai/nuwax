@@ -23,13 +23,20 @@ const cx = classNames.bind(styles);
 const RunOver: React.FC<RunOverProps> = ({
   messageInfo,
   showStatusDesc = true,
+  showTerminalStatus = false,
 }) => {
-  const { finalResult, processingList, think, text } = messageInfo;
+  const { finalResult, processingList, think, status, thinkingFinished } =
+    messageInfo;
 
   // 是否存在思考
   const hasThinking = !!think && think.trim() !== '';
   // 是否思考完毕
-  const isThinkingFinished = !!text && text.trim() !== '';
+  // 正文流可先于思考流结束，必须以思考分片自己的 finished 信号为准。
+  // 历史消息没有该字段时，再以消息终态兼容判断。
+  const isThinkingFinished =
+    thinkingFinished ??
+    (status !== MessageStatusEnum.Incomplete &&
+      status !== MessageStatusEnum.Loading);
   // 是否正在思考
   const isThinking = hasThinking && !isThinkingFinished;
 
@@ -107,9 +114,10 @@ const RunOver: React.FC<RunOverProps> = ({
     );
   }, [processingList, messageInfo?.status, runTime]);
 
-  // 优化：只有在任务已完成（Complete 或 Error）且 processingList 为空时才不显示组件
-  // 如果任务还在执行中（Loading 或 Incomplete），即使 processingList 为空也要显示加载状态
+  // 消息卡片内的终态没有执行步骤时默认隐藏；独立状态栏可显式保留终态文案。
+  // 任务执行中（Loading 或 Incomplete）即使 processingList 为空也始终显示加载状态。
   if (
+    !showTerminalStatus &&
     !lastProcessInfo &&
     (messageInfo?.status === MessageStatusEnum.Complete ||
       messageInfo?.status === MessageStatusEnum.Error)

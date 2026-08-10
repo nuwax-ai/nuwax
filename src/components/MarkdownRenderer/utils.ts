@@ -266,17 +266,229 @@ function escapedBracketRule(delimiters: any) {
 const DATA_URL_PLACEHOLDER_RE =
   /data:[a-z0-9.+-]+\/[a-z0-9.+-]+;base64,[A-Za-z0-9+/=]+/gi;
 
+/**
+ * 若行内代码整体就是 $...$ / $$...$$ 公式，返回该公式文本；否则返回 null。
+ * 模型常写成 `` `$a^2$` ``，需去掉反引号才能被 KaTeX 解析。
+ */
+function extractDollarWrappedMath(code: string): string | null {
+  const s = code.trim();
+  if (!s) return null;
+  if (/^\$\$[\s\S]+\$\$$/.test(s)) return s;
+  // 整段被一对 $ 包裹，且中间不再出现未转义的 $
+  if (
+    s.length >= 3 &&
+    s.startsWith('$') &&
+    s.endsWith('$') &&
+    !s.startsWith('$$')
+  ) {
+    const inner = s.slice(1, -1);
+    if (inner.length > 0 && !inner.includes('$')) return s;
+  }
+  return null;
+}
+
+/**
+ * 判断行内代码是否更像 LaTeX 公式（模型常把公式误包在反引号里）
+ * @param code - 行内代码内容（不含反引号）
+ */
+function looksLikeLatex(code: string): boolean {
+  const s = code.trim();
+  if (!s || s.length > 800) return false;
+  // 整段已是 $...$ 时由 unwrap 直接去反引号；此处不含 $ 的裸 LaTeX
+  if (s.includes('$')) return false;
+
+  // LaTeX 命令优先（小写，避免 Windows 路径 \Users）
+  // 须在编程特征排除之前：`\sum_{i=1}^{n}` 含 `=` 但仍是公式
+  if (/\\[a-z]+/.test(s)) return true;
+
+  // 明显编程 / URL（无 LaTeX 命令时）
+  if (
+    /\b(const|let|var|function|import|export|return|npm|yarn|pnpm|git)\b/.test(
+      s,
+    )
+  ) {
+    return false;
+  }
+  if (/=>|:\/\/|\.(js|ts|tsx|jsx|py|json|css|less)\b/i.test(s)) {
+    return false;
+  }
+
+  // 代数式上下标：a^2 + b^2、(a+b)^2 = a^2 + 2ab + b^2
+  // 允许 + - = () 空格等；上标 ^ 在普通标识符中几乎不出现，作为 LaTeX 强信号。
+  // 仅含下划线的不在此判定，走下方下标规则（避免 snake_case 标识符被误判）
+  if (
+    /\^/.test(s) &&
+    /^[A-Za-z0-9\s()[\]{}+\-*=.,'<>|\\^_/]+$/.test(s) &&
+    /\^[A-Za-z0-9{(]/.test(s)
+  ) {
+    return true;
+  }
+
+  // 仅下标的 LaTeX（无上标）：
+  // - 花括号下标 x_{i}、x_{n+1}：{ } 不是标识符字符，出现即视为公式
+  // - 裸下标 x_i、a_1、a_i + b_j：仅当每个 _ 两侧都恰好是单个字母/数字，
+  //   从而排除 snake_case 标识符（search_tasks、query_progress_or_result、x_axis）
+  if (
+    s.includes('_') &&
+    !s.includes('^') &&
+    /^[A-Za-z0-9\s()[\]{}+\-*=.,'<>|\\_/]+$/.test(s)
+  ) {
+    if (/[A-Za-z0-9]_\{[^}]*\}/.test(s)) return true;
+    const noBraces = s.replace(/[{}]/g, '');
+    // 剥离所有"单字符_单字符"片段（x_i、a_1），要求两侧都不是字母/数字
+    const stripped = noBraces.replace(
+      /(^|[^A-Za-z0-9])[A-Za-z0-9]_[A-Za-z0-9](?![A-Za-z0-9])/g,
+      '$1',
+    );
+    // 残留的 _ 或多字符片段（x_axis 剥离 x_a 后剩 xis）说明是标识符而非公式
+    if (stripped.includes('_')) return false;
+    if (/[A-Za-z0-9]/.test(stripped)) return false;
+    return true;
+  }
+  // 导数 / 函数：f'(x)、f(x)
+  if (/^[A-Za-z][A-Za-z0-9]*'?\([^)]*\)$/.test(s)) return true;
+  // 绝对值 |x|
+  if (/^\|[^|]{1,40}\|$/.test(s)) return true;
+
+  // 纯赋值类代码：x = 1（无上下标）仍排除
+  if (/[=;]/.test(s)) return false;
+
+  return false;
+}
+
+/**
+ * 保证分类标题与「7. 8. …」公式列表按块级换行显示。
+ *
+ * CommonMark：有序列表若以非 1 的数字开头，不能打断当前段落。
+ * 因此 `**微积分**\n7. $...$` 会被收成同一段，`\n` 变成空格，全部挤在一行。
+ * 在标题、编号项前补空行，让每条公式成为独立列表项。
+ */
+function ensureBlockFormulaListLayout(text: string): string {
+  if (!text || (!text.includes('**') && !/^\d+\.\s+/m.test(text))) {
+    return text;
+  }
+
+  // 保护围栏代码，避免改写代码里的编号行
+  const slots: string[] = [];
+  const push = (match: string) => {
+    const idx = slots.length;
+    slots.push(match);
+    return `\u0000${idx}\u0000`;
+  };
+  let protectedText = text.replace(/```[\s\S]*?```/g, push);
+  protectedText = protectedText.replace(/~~~[\s\S]*?~~~/g, push);
+
+  const lines = protectedText.split('\n');
+  const out: string[] = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const trimmed = line.trim();
+    const isNumberedItem = /^\d+\.\s+\S/.test(trimmed);
+    const isBoldOnlyHeading = /^\*\*[^*\n]+\*\*$/.test(trimmed);
+    const isAtxHeading = /^#{1,6}\s+\S/.test(trimmed);
+    const needsBlockBreak = isNumberedItem || isBoldOnlyHeading || isAtxHeading;
+
+    if (
+      needsBlockBreak &&
+      out.length > 0 &&
+      out[out.length - 1].trim() !== ''
+    ) {
+      out.push('');
+    }
+    out.push(line);
+  }
+
+  return out
+    .join('\n')
+    .replace(/\u0000(\d+)\u0000/g, (_m, idxStr) => slots[Number(idxStr)] ?? '');
+}
+
+/**
+ * 将「像 LaTeX 的行内代码」转为 $...$，以便 KaTeX 渲染。
+ * 不处理围栏代码块，避免改写真实代码示例。
+ * 同时整理「**分类** / 7. 8. …」换行，避免非 1. 列表挤在同一段。
+ */
+function unwrapLatexInlineCode(text: string): string {
+  if (!text) return text;
+
+  let next = text;
+  if (text.indexOf('`') !== -1) {
+    const slots: string[] = [];
+    const push = (match: string) => {
+      const idx = slots.length;
+      slots.push(match);
+      return `\u0000${idx}\u0000`;
+    };
+
+    // 先保护围栏代码块
+    next = next.replace(/```[\s\S]*?```/g, push);
+    next = next.replace(/~~~[\s\S]*?~~~/g, push);
+
+    next = next.replace(/`([^`\n]+)`/g, (full, code: string) => {
+      // `` `$a^2$` `` → $a^2$
+      const dollarWrapped = extractDollarWrappedMath(code);
+      if (dollarWrapped) return dollarWrapped;
+      if (!looksLikeLatex(code)) return full;
+      return `$${code.trim()}$`;
+    });
+
+    next = next.replace(/\u0000(\d+)\u0000/g, (_m, idxStr) => {
+      const idx = Number(idxStr);
+      return slots[idx] ?? '';
+    });
+  }
+
+  return ensureBlockFormulaListLayout(next);
+}
+
+/**
+ * 保护不会被 \(...\) / \[...\] 转换逻辑扫描的片段：
+ * - base64 data URL
+ * - Markdown 围栏代码块 / 行内代码（避免代码示例里的括号被改写）
+ * - 已有的 $...$ / $$...$$ 公式（避免 ds-markdown 宽松正则误伤
+ *   如 $\sqrt[3]{x}$、$f'(x)$ 中的 [] / ()）
+ */
+function protectMathBracketSafeRegions(text: string): {
+  text: string;
+  restore: (input: string) => string;
+} {
+  const slots: string[] = [];
+  const push = (match: string) => {
+    const idx = slots.length;
+    slots.push(match);
+    return `\u0000${idx}\u0000`;
+  };
+
+  let next = text.replace(DATA_URL_PLACEHOLDER_RE, push);
+  // 围栏代码块优先于行内代码
+  next = next.replace(/```[\s\S]*?```/g, push);
+  next = next.replace(/~~~[\s\S]*?~~~/g, push);
+  // 行内代码须在 $ 公式之前保护，否则会吃掉 `$...$` 代码示例
+  next = next.replace(/`[^`\n]+`/g, push);
+  // 已有美元定界公式（先块级再行内）
+  next = next.replace(/\$\$[\s\S]+?\$\$/g, push);
+  next = next.replace(/\$[^$\n]+?\$/g, push);
+
+  return {
+    text: next,
+    restore: (input: string) =>
+      input.replace(/\u0000(\d+)\u0000/g, (_m, idxStr) => {
+        const idx = Number(idxStr);
+        return slots[idx] ?? '';
+      }),
+  };
+}
+
 function replaceMathBracket(text: string): string {
   if (!text) return '';
 
-  // 1. 先把所有 base64 data URL 抽出，用短占位符替换，避免对超大字符串逐字符扫描
-  const dataUrls: string[] = [];
-  const withoutDataUrl = text.replace(DATA_URL_PLACEHOLDER_RE, (match) => {
-    const idx = dataUrls.length;
-    dataUrls.push(match);
-    // 用 ASCII 控制符区间作为占位符，避免与正文冲突，也不含数学定界符
-    return `\u0000${idx}\u0000`;
-  });
+  // 0. 模型常把公式包在反引号里，先拆成 $...$ 再走后续定界符逻辑
+  const withUnwrappedLatex = unwrapLatexInlineCode(text);
+
+  // 1. 抽出 data URL / 代码 / 已有 $ 公式，避免误替换与 O(N^2) 扫描大字符串
+  const { text: protectedText, restore } =
+    protectMathBracketSafeRegions(withUnwrappedLatex);
 
   // 2. 创建只包含非美元符号分隔符的选项
   const nonDollarDelimiters = defaultDelimiters.filter(
@@ -288,31 +500,24 @@ function replaceMathBracket(text: string): string {
   let result = '';
   let pos = 0;
 
-  while (pos < withoutDataUrl.length) {
-    const match = rule(withoutDataUrl, pos);
+  while (pos < protectedText.length) {
+    const match = rule(protectedText, pos);
     if (match.success) {
       // 添加匹配前的文本
-      result += withoutDataUrl.slice(pos, match.start);
+      result += protectedText.slice(pos, match.start);
       // 替换为 $$ 分隔符
       const delimiter = match.display ? '$$' : '$';
       result += `${delimiter}${match.formula}${delimiter}`;
       pos = match.end;
     } else {
       // 没有匹配，添加当前字符
-      result += withoutDataUrl[pos];
+      result += protectedText[pos];
       pos++;
     }
   }
 
-  // 3. 把 base64 data URL 还原回去
-  if (dataUrls.length > 0) {
-    result = result.replace(/\u0000(\d+)\u0000/g, (_m, idxStr) => {
-      const idx = Number(idxStr);
-      return dataUrls[idx] ?? '';
-    });
-  }
-
-  return result;
+  // 3. 还原受保护片段
+  return restore(result);
 }
 
 /**
@@ -427,11 +632,13 @@ function groupMarkdownProcesses(text: string): string {
   let currentGroup: string[] = [];
   let groupMatch;
 
-  const flushGroup = () => {
+  // 当过程分组后开始输出正文时，说明这一组工具调用已经结束。
+  // 将状态写入标签，使渲染组件可在流式正文到达时平滑自动收起分组。
+  const flushGroup = (shouldAutoCollapse = false) => {
     if (currentGroup.length > 0) {
       if (currentGroup.length >= 2) {
         // 合并为组标签，增加换行确保不影响后续 markdown 解析，外层嵌套标准块级 div 以防解析为行内 p
-        result += `\n\n<div><markdown-custom-process-group>\n${currentGroup.join(
+        result += `\n\n<div><markdown-custom-process-group autoCollapse="${shouldAutoCollapse}">\n${currentGroup.join(
           '\n',
         )}\n</markdown-custom-process-group></div>\n\n`;
       } else {
@@ -517,15 +724,29 @@ function groupMarkdownProcesses(text: string): string {
     // 否则当 type 排在 name 之后时，归一化会把 type 编码进 name 值，导致 isPlan 漏判、Plan 被误并入 group。
     // 容忍 SSE 流式产生的转义引号（type=\"Plan\" / type=\'Plan\'）
     const isPlan = /type=\\?["']Plan\\?["']/i.test(tagMatch);
+    // OpenUI 是对话中的正式交互内容，不是可折叠的执行日志。
+    // 识别原始 name，避免属性归一化后 name 被 URL 编码而漏判。
+    const isOpenUi =
+      /name=\\?["'][^"']*nuwax_render_openui/i.test(tagMatch) ||
+      /name=\\?["'][^"']*renderui/i.test(tagMatch);
+    // Event 只用于传递内部状态，渲染层本来也不会展示；不能让它参与工具调用分组计数。
+    const isEvent = /type=\\?["']Event\\?["']/i.test(tagMatch);
 
     // 处理匹配项之前的文本
     const textBefore = dedupedText.slice(lastIndex, groupMatch.index);
     if (textBefore.trim() !== '') {
-      flushGroup();
+      flushGroup(true);
       result += textBefore;
     }
 
-    if (isPlan) {
+    // Event 默认只用于传递内部状态、不展示；但 RENDER_UI 专用事件
+    // （type=Event，name=Backend.Sandbox.Event.renderUI）需作为 OpenUI 产物渲染，不能丢弃。
+    if (isEvent && !isOpenUi) {
+      lastIndex = blockRegex.lastIndex;
+      continue;
+    }
+
+    if (isPlan || isOpenUi) {
       flushGroup();
       result += `\n\n<div>${normalizedTag}</div>\n\n`;
     } else {
@@ -535,10 +756,20 @@ function groupMarkdownProcesses(text: string): string {
     lastIndex = blockRegex.lastIndex;
   }
 
-  flushGroup();
-  result += dedupedText.slice(lastIndex);
+  // 最后一组工具调用后直接输出正文时，不会再进入下一次循环；
+  // 这里需要检查尾部文本，确保这种最常见的流式完成场景也能触发自动收起。
+  const trailingText = dedupedText.slice(lastIndex);
+  flushGroup(trailingText.trim() !== '');
+  result += trailingText;
 
   return result;
 }
 
-export { extractTableToMarkdown, groupMarkdownProcesses, replaceMathBracket };
+export {
+  ensureBlockFormulaListLayout,
+  extractTableToMarkdown,
+  groupMarkdownProcesses,
+  looksLikeLatex,
+  replaceMathBracket,
+  unwrapLatexInlineCode,
+};

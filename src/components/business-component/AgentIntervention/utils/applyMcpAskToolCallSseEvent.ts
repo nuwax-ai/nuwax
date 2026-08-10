@@ -4,6 +4,11 @@ import type {
   ConversationChatResponse,
   MessageInfo,
 } from '@/types/interfaces/conversationInfo';
+import { isOpenUiRenderToolName } from '@/utils/openUiArtifact';
+import {
+  isOpenUiPayloadType,
+  isOpenUiRenderInputSchemaVersion,
+} from '@nuwax-ai/openui-mcp/contracts';
 import { extractMcpAskStructuredInputFromResult } from './extractMcpAskStructuredInput';
 import { createInterventionTriggeredAt } from './interventionTrigger';
 import { parseMcpAskToolInput } from './parseMcpAskToolInput';
@@ -36,6 +41,33 @@ function readRawInput(
     nonEmpty((result?.ext as Record<string, unknown> | undefined)?.raw_input) ??
     nonEmpty((result?.ext as Record<string, unknown> | undefined)?.rawInput) ??
     (result?.input as Record<string, unknown> | undefined)
+  );
+}
+
+function isOpenUiToolCall(
+  eventData: Record<string, unknown>,
+  result: Record<string, unknown> | undefined,
+  rawInput: Record<string, unknown> | undefined,
+): boolean {
+  const names = [
+    eventData.title,
+    eventData.name,
+    eventData.toolName,
+    eventData.tool_name,
+    result?.name,
+    result?.toolName,
+    result?.tool_name,
+    rawInput?.toolName,
+  ];
+  // 与 Host OpenUI 识别共用同一套跨引擎规则（含 title / 版本后缀 / URL 编码）
+  if (names.some((name) => isOpenUiRenderToolName(name))) {
+    return true;
+  }
+
+  // OpenUI payload type / render schemaVersion 均由 openui-mcp contracts 统一判断
+  return (
+    isOpenUiPayloadType(rawInput?.type) ||
+    isOpenUiRenderInputSchemaVersion(rawInput?.schemaVersion)
   );
 }
 
@@ -114,6 +146,11 @@ export function applyMcpAskToolCallSseEvent(
 
   if (!rawInput) {
     rawInput = readRawInput(eventData, result);
+  }
+  // OpenUI Artifact 与 ask-question 是两条独立工具链。即使异常输入碰巧带有
+  // ask 的 ui/requestId 形状，也不能进入干预队列或触发 DockPanel。
+  if (isOpenUiToolCall(eventData, result, rawInput)) {
+    return null;
   }
   if (!toolCallId) {
     toolCallId =

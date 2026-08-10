@@ -18,6 +18,26 @@ const baseAskInput = {
 };
 
 describe('applyMcpAskToolCallSseEvent', () => {
+  it('does not turn an explicit nuwax_render_openui call into an ask-question DockPanel interaction', () => {
+    const patched = applyMcpAskToolCallSseEvent(
+      {
+        eventType: ConversationEventTypeEnum.PROCESSING,
+        data: {
+          executeId: 'openui-call-1',
+          name: 'nuwax_render_openui',
+          result: {
+            executeId: 'openui-call-1',
+            name: 'nuwax_render_openui',
+            input: baseAskInput,
+          },
+        },
+      } as any,
+      { id: 'msg-openui' } as any,
+    );
+
+    expect(patched).toBeNull();
+  });
+
   it('accepts backend PROCESSING tool calls for nuwax_ask_question', () => {
     const patched = applyMcpAskToolCallSseEvent(
       {

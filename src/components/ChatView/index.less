@@ -51,12 +51,17 @@
 
   .user-content {
     display: inline-block;
+    max-width: 100%;
 
     .chat-content {
       min-width: 80px;
+      max-width: 100%;
       padding: calc(@padding - 4px) @padding !important;
       background-color: @colorBgLayout !important;
       border-radius: 16px 0 16px 16px;
+      // 保留用户输入中的换行与缩进（粘贴 JSON/代码等）
+      white-space: pre-wrap;
+      word-break: break-word;
     }
   }
 

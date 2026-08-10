@@ -33,9 +33,9 @@ export interface FilePathHeaderProps {
   isDownloadingFile?: boolean;
   /** 是否显示更多操作菜单 */
   showMoreActions?: boolean;
-  /** 文件类型 */
+  /** 文件视图类型：预览或代码（html / md / .openui.json） */
   viewFileType?: 'preview' | 'code';
-  /** 针对html、md文件，切换预览和代码视图 */
+  /** 针对 html、md、.openui.json 文件，切换预览和代码视图 */
   onViewFileTypeChange?: (type: 'preview' | 'code') => void;
   /** 通过URL下载文件回调 */
   onDownloadFileByUrl?: (node: FileNode) => void;

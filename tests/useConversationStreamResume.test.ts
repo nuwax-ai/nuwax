@@ -34,6 +34,7 @@ vi.mock('@/constants/home.constants', () => ({
 }));
 
 vi.mock('@/utils/conversationTaskStatusSync', () => ({
+  fetchConversationSnapshot: vi.fn(),
   fetchConversationTaskStatus: vi.fn(),
   resolveTaskStatusFromMessageLists: vi.fn(),
 }));
@@ -44,7 +45,9 @@ import {
 } from '@/utils/conversationTaskStatusSync';
 
 describe('useConversationStreamResume', () => {
-  let onSuccess: ((status: TaskStatus | undefined) => void) | undefined;
+  let onSuccess:
+    | ((snapshot: { id: number; taskStatus: TaskStatus } | undefined) => void)
+    | undefined;
   let runPolling: ReturnType<typeof vi.fn>;
   let cancelPolling: ReturnType<typeof vi.fn>;
 
@@ -64,6 +67,10 @@ describe('useConversationStreamResume', () => {
     vi.restoreAllMocks();
   });
 
+  const emitPollingStatus = (status: TaskStatus, messageList?: any[]) => {
+    onSuccess?.({ id: 1555404, taskStatus: status, messageList } as any);
+  };
+
   it('轮询 onSuccess 收到 COMPLETE 时调用 onTerminalTaskStatus', () => {
     const onTerminalTaskStatus = vi.fn();
     renderHook(() =>
@@ -76,8 +83,30 @@ describe('useConversationStreamResume', () => {
       }),
     );
 
-    onSuccess?.(TaskStatus.COMPLETE);
+    emitPollingStatus(TaskStatus.COMPLETE);
     expect(onTerminalTaskStatus).toHaveBeenCalledWith(TaskStatus.COMPLETE);
+  });
+
+  it('每次轮询都同步当前会话的完整快照', () => {
+    const onConversationSnapshot = vi.fn();
+    renderHook(() =>
+      useConversationStreamResume({
+        conversationId: 1555404,
+        taskStatus: TaskStatus.COMPLETE,
+        isLocallyStreaming: false,
+        resumeStream: vi.fn(),
+        onConversationSnapshot,
+      }),
+    );
+    const snapshot = {
+      id: 1555404,
+      taskStatus: TaskStatus.COMPLETE,
+      messageList: [{ id: 2, text: 'new message' }],
+    } as any;
+
+    onSuccess?.(snapshot);
+
+    expect(onConversationSnapshot).toHaveBeenCalledWith(snapshot);
   });
 
   it('轮询 onSuccess 收到 EXECUTING 时不写回', () => {
@@ -93,16 +122,16 @@ describe('useConversationStreamResume', () => {
     );
 
     act(() => {
-      onSuccess?.(TaskStatus.EXECUTING);
+      emitPollingStatus(TaskStatus.EXECUTING);
     });
     expect(onTerminalTaskStatus).not.toHaveBeenCalled();
   });
 
-  it('轮询发现 EXECUTING 时先 reload 历史，再订阅 sub，关闭后恢复轮询并刷新列表', async () => {
-    const reloadedList = [
+  it('轮询发现 EXECUTING 时复用快照订阅 sub，不重复 reload 历史', async () => {
+    const polledList = [
       { id: 'user-1', role: AssistantRoleEnum.USER, text: 'from other tab' },
     ] as any[];
-    const reloadHistoryAsync = vi.fn().mockResolvedValue(reloadedList);
+    const reloadHistoryAsync = vi.fn();
     let subOnClose: (() => void | Promise<void>) | undefined;
     const resumeStream = vi.fn((_id, _list, onClose) => {
       subOnClose = onClose;
@@ -120,7 +149,7 @@ describe('useConversationStreamResume', () => {
     );
 
     await act(async () => {
-      onSuccess?.(TaskStatus.EXECUTING);
+      emitPollingStatus(TaskStatus.EXECUTING, polledList);
       await Promise.resolve();
       await Promise.resolve();
     });
@@ -133,10 +162,10 @@ describe('useConversationStreamResume', () => {
         taskStatus: TaskStatus.EXECUTING,
       },
     );
-    expect(reloadHistoryAsync).toHaveBeenCalledWith(1555404);
+    expect(reloadHistoryAsync).not.toHaveBeenCalled();
     expect(resumeStream).toHaveBeenCalledWith(
       1555404,
-      reloadedList,
+      polledList,
       expect.any(Function),
       'unified-chat-session',
     );
@@ -146,11 +175,45 @@ describe('useConversationStreamResume', () => {
     });
 
     expect(runPolling).toHaveBeenCalled();
-    expect(reloadHistoryAsync).toHaveBeenCalledTimes(1);
+    expect(reloadHistoryAsync).not.toHaveBeenCalled();
     expect(mockEventBusEmit).toHaveBeenCalledWith('refresh_conversation_list', {
       conversationId: 1555404,
       reason: 'stream-closed',
     });
+  });
+
+  it('轮询快照尚未包含本轮消息时保持轮询，不触发 reload 或 sub', async () => {
+    const currentList = [
+      { id: 'old-user', role: AssistantRoleEnum.USER, text: 'old' },
+      {
+        id: 'old-assistant',
+        role: AssistantRoleEnum.ASSISTANT,
+        text: 'old answer',
+        status: MessageStatusEnum.Complete,
+      },
+    ] as any[];
+    const reloadHistoryAsync = vi.fn();
+    const resumeStream = vi.fn();
+
+    renderHook(() =>
+      useConversationStreamResume({
+        conversationId: 1555404,
+        taskStatus: TaskStatus.COMPLETE,
+        isLocallyStreaming: false,
+        messageList: currentList,
+        reloadHistoryAsync,
+        resumeStream,
+      }),
+    );
+
+    await act(async () => {
+      emitPollingStatus(TaskStatus.EXECUTING, [...currentList]);
+      await Promise.resolve();
+    });
+
+    expect(cancelPolling).not.toHaveBeenCalled();
+    expect(reloadHistoryAsync).not.toHaveBeenCalled();
+    expect(resumeStream).not.toHaveBeenCalled();
   });
 
   it('开启等待新 user 时，reload 快照未包含新 user 会短暂重试后再订阅 sub', async () => {
@@ -183,7 +246,7 @@ describe('useConversationStreamResume', () => {
     );
 
     await act(async () => {
-      onSuccess?.(TaskStatus.EXECUTING);
+      emitPollingStatus(TaskStatus.EXECUTING);
       await Promise.resolve();
     });
 
@@ -229,7 +292,7 @@ describe('useConversationStreamResume', () => {
     );
 
     await act(async () => {
-      onSuccess?.(TaskStatus.EXECUTING);
+      emitPollingStatus(TaskStatus.EXECUTING);
       await Promise.resolve();
     });
 
@@ -286,7 +349,7 @@ describe('useConversationStreamResume', () => {
     );
 
     await act(async () => {
-      onSuccess?.(TaskStatus.EXECUTING);
+      emitPollingStatus(TaskStatus.EXECUTING);
       await Promise.resolve();
       await Promise.resolve();
     });
@@ -328,7 +391,7 @@ describe('useConversationStreamResume', () => {
     );
 
     await act(async () => {
-      onSuccess?.(TaskStatus.EXECUTING);
+      emitPollingStatus(TaskStatus.EXECUTING);
       await Promise.resolve();
       await Promise.resolve();
     });
@@ -355,7 +418,7 @@ describe('useConversationStreamResume', () => {
     );
 
     act(() => {
-      onSuccess?.(TaskStatus.EXECUTING);
+      emitPollingStatus(TaskStatus.EXECUTING);
     });
 
     expect(resumeStream).not.toHaveBeenCalled();
@@ -387,7 +450,7 @@ describe('useConversationStreamResume', () => {
 
     // 第一次订阅建立（t=0）
     await act(async () => {
-      onSuccess?.(TaskStatus.EXECUTING);
+      emitPollingStatus(TaskStatus.EXECUTING);
       await Promise.resolve();
       await Promise.resolve();
     });
@@ -400,7 +463,7 @@ describe('useConversationStreamResume', () => {
 
     // 退避窗口内（t≈0 < 2s）轮询再报 EXECUTING → 拦截，不再订阅
     await act(async () => {
-      onSuccess?.(TaskStatus.EXECUTING);
+      emitPollingStatus(TaskStatus.EXECUTING);
       await Promise.resolve();
       await Promise.resolve();
     });
@@ -409,7 +472,7 @@ describe('useConversationStreamResume', () => {
     // 退避窗口过后（t=2.1s）→ 允许第二次订阅
     await act(async () => {
       await vi.advanceTimersByTimeAsync(2100);
-      onSuccess?.(TaskStatus.EXECUTING);
+      emitPollingStatus(TaskStatus.EXECUTING);
       await Promise.resolve();
       await Promise.resolve();
     });
@@ -421,7 +484,7 @@ describe('useConversationStreamResume', () => {
     });
     await act(async () => {
       await vi.advanceTimersByTimeAsync(3900);
-      onSuccess?.(TaskStatus.EXECUTING);
+      emitPollingStatus(TaskStatus.EXECUTING);
       await Promise.resolve();
       await Promise.resolve();
     });
@@ -429,7 +492,7 @@ describe('useConversationStreamResume', () => {
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(200);
-      onSuccess?.(TaskStatus.EXECUTING);
+      emitPollingStatus(TaskStatus.EXECUTING);
       await Promise.resolve();
       await Promise.resolve();
     });
@@ -462,7 +525,7 @@ describe('useConversationStreamResume', () => {
 
     // 第一次订阅建立（t=0）
     await act(async () => {
-      onSuccess?.(TaskStatus.EXECUTING);
+      emitPollingStatus(TaskStatus.EXECUTING);
       await Promise.resolve();
       await Promise.resolve();
     });
@@ -476,7 +539,7 @@ describe('useConversationStreamResume', () => {
 
     // 立即再报 EXECUTING → 允许重订阅
     await act(async () => {
-      onSuccess?.(TaskStatus.EXECUTING);
+      emitPollingStatus(TaskStatus.EXECUTING);
       await Promise.resolve();
       await Promise.resolve();
     });

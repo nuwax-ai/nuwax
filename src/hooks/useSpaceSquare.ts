@@ -15,10 +15,17 @@ const useSpaceSquare = () => {
     targetId: number,
     targetType: SquareAgentTypeEnum,
     from: 'space' | 'square' = 'square',
+    conversationId?: number,
   ) => {
     // 智能体
     if (targetType === SquareAgentTypeEnum.Agent) {
-      history.push(`/agent/${targetId}`);
+      if (conversationId) {
+        // 跳转到智能体应用内聊天页面
+        history.push(`/home/chat/${conversationId}/${targetId}`);
+      } else {
+        // 跳转到智能体详情页面
+        history.push(`/agent/${targetId}`);
+      }
     }
     // 插件
     if (targetType === SquareAgentTypeEnum.Plugin) {

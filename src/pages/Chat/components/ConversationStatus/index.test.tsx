@@ -1,0 +1,57 @@
+import { MessageStatusEnum } from '@/types/enums/common';
+import type { MessageInfo } from '@/types/interfaces/conversationInfo';
+import { render, screen } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
+import ConversationStatus from '.';
+
+vi.mock('@/components/ChatView/RunOver', () => ({
+  default: ({
+    messageInfo,
+    showTerminalStatus,
+  }: {
+    messageInfo: MessageInfo;
+    showTerminalStatus?: boolean;
+  }) => (
+    <div
+      data-testid="run-over"
+      data-status={messageInfo.status}
+      data-show-terminal-status={String(showTerminalStatus)}
+    />
+  ),
+}));
+
+const createAssistantMessage = (
+  message: Partial<MessageInfo> = {},
+): MessageInfo =>
+  ({
+    id: 'assistant-message',
+    role: 'ASSISTANT',
+    text: '回复内容',
+    ...message,
+  } as MessageInfo);
+
+describe('ConversationStatus', () => {
+  it('会话结束后助手消息不再携带 status 时仍保留计时栏', () => {
+    const { rerender } = render(
+      <ConversationStatus
+        messageList={[
+          createAssistantMessage({ status: MessageStatusEnum.Complete }),
+        ]}
+      />,
+    );
+
+    expect(screen.getByText('00:00')).toBeInTheDocument();
+
+    rerender(<ConversationStatus messageList={[createAssistantMessage()]} />);
+
+    expect(screen.getByText('00:00')).toBeInTheDocument();
+    expect(screen.getByTestId('run-over')).toHaveAttribute(
+      'data-status',
+      MessageStatusEnum.Complete,
+    );
+    expect(screen.getByTestId('run-over')).toHaveAttribute(
+      'data-show-terminal-status',
+      'true',
+    );
+  });
+});

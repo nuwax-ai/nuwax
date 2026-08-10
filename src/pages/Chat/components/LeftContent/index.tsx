@@ -222,7 +222,10 @@ const LeftContent: React.FC<LeftContentProps> = ({
             [styles['file-tree-visible']]: isFileTreeVisible,
           })}
         >
-          <UnifiedChatSession {...chatSessionProps} />
+          <UnifiedChatSession
+            {...chatSessionProps}
+            showClearIcon={effectiveAgent?.deviceAgent !== 1}
+          />
         </div>
 
         {/* 通用型(TaskAgent)智能体专用文件树区域 */}

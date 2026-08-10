@@ -1,4 +1,4 @@
-import { AssistantRoleEnum } from '@/types/enums/agent';
+import { AssistantRoleEnum, MessageTypeEnum } from '@/types/enums/agent';
 import { MessageStatusEnum } from '@/types/enums/common';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import { describe, expect, it } from 'vitest';
@@ -8,6 +8,7 @@ import {
   isOptimisticMessageId,
   needsTerminalHistoryReload,
   preserveOptimisticMessageTail,
+  reconcileConversationSnapshotMessages,
 } from './conversationInfoMessageList';
 
 describe('appendOutgoingConversationMessages', () => {
@@ -60,6 +61,16 @@ describe('appendOutgoingConversationMessages', () => {
     expect(appended[0].status).toBe(MessageStatusEnum.Complete);
     expect(existing.status).toBe(MessageStatusEnum.Incomplete);
   });
+
+  it('assigns stable client render keys when creating an optimistic round', () => {
+    const user = { id: 'user-id' } as MessageInfo;
+    const assistant = { id: 'assistant-id' } as MessageInfo;
+
+    const appended = appendOutgoingConversationMessages([], user, assistant);
+
+    expect(appended[0].clientRenderKey).toBe('user-id');
+    expect(appended[1].clientRenderKey).toBe('assistant-id');
+  });
 });
 
 describe('isOptimisticMessageId', () => {
@@ -103,6 +114,81 @@ describe('terminal history reload helpers', () => {
 
     expect(areMessageListsEquivalent(list, [...list])).toBe(true);
     expect(needsTerminalHistoryReload(list, [...list])).toBe(false);
+  });
+
+  it('immediately appends persisted messages returned by polling', () => {
+    const current = [{ id: 1, role: AssistantRoleEnum.USER, text: 'u1' }];
+    const incoming = [
+      ...current,
+      {
+        id: 2,
+        role: AssistantRoleEnum.ASSISTANT,
+        text: 'a1',
+        status: MessageStatusEnum.Complete,
+      },
+    ];
+
+    expect(
+      reconcileConversationSnapshotMessages(
+        current as MessageInfo[],
+        incoming as MessageInfo[],
+      ),
+    ).toEqual(incoming);
+  });
+
+  it('keeps the same list reference when a polling snapshot is unchanged', () => {
+    const current = [
+      {
+        id: 1,
+        role: AssistantRoleEnum.ASSISTANT,
+        text: 'done',
+        status: MessageStatusEnum.Complete,
+      },
+    ] as MessageInfo[];
+
+    expect(reconcileConversationSnapshotMessages(current, [...current])).toBe(
+      current,
+    );
+  });
+
+  it('preserves older pages that are absent from the latest polling window', () => {
+    const current = [
+      { id: 1, role: AssistantRoleEnum.USER, text: 'older page' },
+      { id: 2, role: AssistantRoleEnum.ASSISTANT, text: 'current answer' },
+    ] as MessageInfo[];
+    const incoming = [
+      { id: 2, role: AssistantRoleEnum.ASSISTANT, text: 'current answer' },
+      { id: 3, role: AssistantRoleEnum.USER, text: 'new question' },
+    ] as MessageInfo[];
+
+    expect(reconcileConversationSnapshotMessages(current, incoming)).toEqual([
+      current[0],
+      incoming[0],
+      incoming[1],
+    ]);
+  });
+
+  it('deduplicates the id-less synthetic opening message across polls', () => {
+    const opening = (time: string) =>
+      ({
+        id: null,
+        index: null,
+        role: AssistantRoleEnum.ASSISTANT,
+        type: 'CHAT',
+        messageType: MessageTypeEnum.ASSISTANT,
+        text: '这里是通用智能体~~~',
+        time,
+      } as MessageInfo);
+    const current = [
+      opening('2026-08-07T13:51:17.000+00:00'),
+      opening('2026-08-07T13:51:22.000+00:00'),
+    ];
+    const incoming = [opening('2026-08-07T13:51:27.000+00:00')];
+
+    const merged = reconcileConversationSnapshotMessages(current, incoming);
+
+    expect(merged).toHaveLength(1);
+    expect(merged[0]).toBe(current[0]);
   });
 
   it('requires terminal reload when incoming contains a missing persisted message', () => {
@@ -354,5 +440,256 @@ describe('preserveOptimisticMessageTail', () => {
     const merged = preserveOptimisticMessageTail(prev, incoming);
 
     expect(merged).toEqual([...incoming, optimisticAsst()]);
+  });
+
+  it('keeps the optimistic user with an SSE assistant that already has a server-shaped id', () => {
+    const streamedAssistant = {
+      id: 'stream-message-id',
+      role: AssistantRoleEnum.ASSISTANT,
+      text: 'streaming answer',
+      status: MessageStatusEnum.Incomplete,
+    } as MessageInfo;
+    const prev = [
+      persistedUser('old', 1),
+      optimisticUser('new question'),
+      streamedAssistant,
+    ];
+    const incoming = [persistedUser('old', 1)];
+
+    expect(preserveOptimisticMessageTail(prev, incoming)).toEqual(prev);
+  });
+
+  it('does not drop or duplicate an optimistic round when polling sees a stale snapshot', () => {
+    const streamedAssistant = {
+      id: 'stream-message-id',
+      role: AssistantRoleEnum.ASSISTANT,
+      text: 'streaming answer',
+      status: MessageStatusEnum.Incomplete,
+    } as MessageInfo;
+    const current = [
+      persistedUser('old', 1),
+      optimisticUser('new question'),
+      streamedAssistant,
+    ];
+    const incoming = [persistedUser('old', 1)];
+
+    const merged = reconcileConversationSnapshotMessages(current, incoming);
+
+    expect(merged).toBe(current);
+    expect(merged).toEqual([
+      persistedUser('old', 1),
+      optimisticUser('new question'),
+      streamedAssistant,
+    ]);
+  });
+
+  it('replaces the optimistic user only after polling returns its persisted copy', () => {
+    const streamedAssistant = {
+      id: 'stream-message-id',
+      role: AssistantRoleEnum.ASSISTANT,
+      text: 'streaming answer',
+      status: MessageStatusEnum.Incomplete,
+    } as MessageInfo;
+    const current = [
+      persistedUser('old', 1),
+      optimisticUser('new question'),
+      streamedAssistant,
+    ];
+    const persistedNewUser = persistedUser('new question', 2);
+
+    expect(
+      reconcileConversationSnapshotMessages(current, [
+        persistedUser('old', 1),
+        persistedNewUser,
+      ]),
+    ).toEqual([
+      persistedUser('old', 1),
+      { ...persistedNewUser, clientRenderKey: optimisticUserId },
+      streamedAssistant,
+    ]);
+  });
+
+  it('preserves optimistic render keys when the first round becomes fully persisted', () => {
+    const current = [
+      optimisticUser('first question'),
+      optimisticAsst({ text: 'first answer' }),
+    ];
+    const incoming = [
+      persistedUser('first question', 101),
+      {
+        id: 102,
+        role: AssistantRoleEnum.SYSTEM,
+        text: 'intermediate event',
+      } as MessageInfo,
+      {
+        id: 103,
+        role: AssistantRoleEnum.ASSISTANT,
+        text: 'first answer',
+        status: MessageStatusEnum.Complete,
+      } as MessageInfo,
+    ];
+
+    const merged = reconcileConversationSnapshotMessages(current, incoming);
+
+    expect(merged).toEqual([
+      { ...incoming[0], clientRenderKey: optimisticUserId },
+      incoming[1],
+      { ...incoming[2], clientRenderKey: optimisticAsstId },
+    ]);
+  });
+
+  it('keeps the assistant render key when user and assistant persist in separate snapshots', () => {
+    const optimisticRound = appendOutgoingConversationMessages(
+      [],
+      optimisticUser('first question'),
+      optimisticAsst({ text: 'first answer' }),
+    );
+    const userSnapshot = [persistedUser('first question', 101)];
+
+    const afterUserPersisted = reconcileConversationSnapshotMessages(
+      optimisticRound,
+      userSnapshot,
+    );
+    const finalSnapshot = [
+      persistedUser('first question', 101),
+      {
+        id: 103,
+        role: AssistantRoleEnum.ASSISTANT,
+        text: 'first answer',
+        status: MessageStatusEnum.Complete,
+      } as MessageInfo,
+    ];
+
+    expect(
+      reconcileConversationSnapshotMessages(afterUserPersisted, finalSnapshot),
+    ).toEqual([
+      { ...finalSnapshot[0], clientRenderKey: optimisticUserId },
+      { ...finalSnapshot[1], clientRenderKey: optimisticAsstId },
+    ]);
+  });
+
+  it('keeps locally finalized assistant content when the persisted snapshot differs', () => {
+    const localFinalResult = {
+      success: true,
+      outputText: 'SSE final answer',
+    };
+    const current = appendOutgoingConversationMessages(
+      [],
+      optimisticUser('first question'),
+      optimisticAsst({
+        text: 'SSE final answer',
+        think: 'SSE final thinking',
+        status: MessageStatusEnum.Complete,
+        thinkingFinished: true,
+        finalResult: localFinalResult as MessageInfo['finalResult'],
+        processingList: [
+          { executeId: 'local-execution' },
+        ] as unknown as MessageInfo['processingList'],
+      }),
+    );
+    const incomingAssistant = {
+      id: 103,
+      index: 2,
+      role: AssistantRoleEnum.ASSISTANT,
+      text: 'Persisted answer with a small difference',
+      think: 'Persisted thinking',
+      status: MessageStatusEnum.Incomplete,
+      finalResult: { success: true, outputText: 'Persisted answer' },
+      processingList: [{ executeId: 'persisted-execution' }],
+      mcpAskInteractions: [{ responseStatus: 'submitted' }],
+    } as unknown as MessageInfo;
+
+    const merged = reconcileConversationSnapshotMessages(current, [
+      persistedUser('first question', 101),
+      incomingAssistant,
+    ]);
+
+    expect(merged[1]).toMatchObject({
+      id: 103,
+      index: 2,
+      clientRenderKey: optimisticAsstId,
+      text: 'SSE final answer',
+      think: 'SSE final thinking',
+      status: MessageStatusEnum.Complete,
+      thinkingFinished: true,
+      finalResult: localFinalResult,
+      processingList: [{ executeId: 'local-execution' }],
+      mcpAskInteractions: [{ responseStatus: 'submitted' }],
+    });
+  });
+
+  it('returns the same list after repeated snapshots cannot change finalized content', () => {
+    const current = [
+      {
+        id: 101,
+        index: 1,
+        role: AssistantRoleEnum.USER,
+        clientRenderKey: optimisticUserId,
+        text: 'first question',
+      } as MessageInfo,
+      {
+        id: 103,
+        index: 2,
+        role: AssistantRoleEnum.ASSISTANT,
+        clientRenderKey: optimisticAsstId,
+        text: 'SSE final answer',
+        status: MessageStatusEnum.Complete,
+        finalResult: { success: true, outputText: 'SSE final answer' },
+      } as MessageInfo,
+    ];
+    const incoming = [
+      {
+        ...current[0],
+        clientRenderKey: undefined,
+      },
+      {
+        ...current[1],
+        clientRenderKey: undefined,
+        text: 'Persisted answer with a small difference',
+      },
+    ];
+
+    expect(reconcileConversationSnapshotMessages(current, incoming)).toBe(
+      current,
+    );
+  });
+
+  it('protects only the final assistant when a round contains intermediate messages', () => {
+    const current = appendOutgoingConversationMessages(
+      [],
+      optimisticUser('first question'),
+      optimisticAsst({
+        text: 'SSE final answer',
+        status: MessageStatusEnum.Complete,
+        finalResult: {
+          success: true,
+        } as MessageInfo['finalResult'],
+      }),
+    );
+    current.splice(1, 0, {
+      ...current[1],
+      id: 'stream-intermediate-id',
+      text: 'SSE intermediate output',
+      finalResult: undefined,
+    });
+    const incoming = [
+      persistedUser('first question', 101),
+      {
+        id: 102,
+        role: AssistantRoleEnum.ASSISTANT,
+        text: 'Persisted intermediate output',
+      } as MessageInfo,
+      {
+        id: 103,
+        role: AssistantRoleEnum.ASSISTANT,
+        text: 'Persisted final answer with a difference',
+      } as MessageInfo,
+    ];
+
+    const merged = reconcileConversationSnapshotMessages(current, incoming);
+
+    expect(merged[1].text).toBe('Persisted intermediate output');
+    expect(merged[2].text).toBe('SSE final answer');
+    expect(merged[2].finalResult).toEqual({ success: true });
   });
 });

@@ -5,7 +5,10 @@ const { execSync } = require('child_process');
 
 const args = process.argv.slice(2);
 const source = args.includes('gitlab') ? 'gitlab' : 'github';
-const BRANCH = args.find((a) => a !== 'gitlab' && a !== 'github') || 'dev';
+// const BRANCH = args.find((a) => a !== 'gitlab' && a !== 'github') || 'dev';
+const BRANCH =
+  args.find((a) => a !== 'gitlab' && a !== 'github') ||
+  'feat/nuwa-zhuoda-2026.07';
 const TARGET_DIR = 'unpackage/dist/build/web';
 
 let REPO_URL = '';

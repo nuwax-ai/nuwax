@@ -85,12 +85,11 @@ const DynamicChannelForm: React.FC<DynamicChannelFormProps> = ({
   if (platform === IMPlatformEnum.Wework) {
     // 应用
     if (type === 'app') {
-      // ... (omitting unchanged code for brevity)
       return (
         <>
           <ProFormText
-            name={['configData', 'token']}
-            label="Token"
+            name={['configData', 'corpId']}
+            label="CorpId"
             rules={commonRules}
             fieldProps={maxProps}
           />
@@ -101,18 +100,17 @@ const DynamicChannelForm: React.FC<DynamicChannelFormProps> = ({
             fieldProps={maxProps}
           />
           <ProFormText
-            name={['configData', 'corpId']}
-            label="CorpId"
-            rules={commonRules}
-            fieldProps={maxProps}
-          />
-          <ProFormText
             name={['configData', 'corpSecret']}
             label="Secret"
             rules={commonRules}
             fieldProps={maxProps}
           />
-
+          <ProFormText
+            name={['configData', 'token']}
+            label="Token"
+            rules={commonRules}
+            fieldProps={maxProps}
+          />
           <ProFormText
             name={['configData', 'encodingAesKey']}
             label="EncodingAESKey"
@@ -126,8 +124,8 @@ const DynamicChannelForm: React.FC<DynamicChannelFormProps> = ({
     return (
       <>
         <ProFormText
-          name={['configData', 'token']}
-          label="Token"
+          name={['configData', 'corpId']}
+          label="CorpId"
           rules={commonRules}
           fieldProps={maxProps}
         />
@@ -138,14 +136,14 @@ const DynamicChannelForm: React.FC<DynamicChannelFormProps> = ({
           fieldProps={maxProps}
         />
         <ProFormText
-          name={['configData', 'corpId']}
-          label="CorpId"
+          name={['configData', 'corpSecret']}
+          label="Secret"
           rules={commonRules}
           fieldProps={maxProps}
         />
         <ProFormText
-          name={['configData', 'corpSecret']}
-          label="Secret"
+          name={['configData', 'token']}
+          label="Token"
           rules={commonRules}
           fieldProps={maxProps}
         />

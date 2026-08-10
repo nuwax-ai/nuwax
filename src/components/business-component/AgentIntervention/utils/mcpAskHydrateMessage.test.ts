@@ -64,6 +64,61 @@ describe('hydrateMcpAskInteractionsFromExecutedComponents', () => {
     });
   });
 
+  // 历史会话接口偶发把 ASK_QUESTION 的 result.data 序列化成 JSON 字符串
+  // （外层 wrapper: status/requestId/message + input 表单），不 parse 则 DockPanel 无法恢复。
+  it('restores ASK_QUESTION when result.data is a JSON string wrapper', () => {
+    const message = hydrateMcpAskInteractionsFromExecutedComponents({
+      id: 'msg-ask-result-data-string',
+      componentExecutedList: [
+        {
+          name: '补充询问',
+          status: 'FINISHED',
+          subEventType: 'ASK_QUESTION',
+          type: 'Event',
+          result: {
+            data: JSON.stringify({
+              status: 'pending',
+              requestId: askInput.requestId,
+              revision: 1,
+              message:
+                'The question has been presented to the user. Stop this turn now.',
+              input: { ...askInput, toolName: 'nuwax_ask_question' },
+            }),
+            executeId: 'call_3a798dc3162b4f63bdfaa183',
+            success: true,
+            type: 'Event',
+          },
+        },
+      ],
+    } as any);
+
+    expect(message.mcpAskInteractions).toHaveLength(1);
+    expect(message.mcpAskInteractions?.[0]).toMatchObject({
+      toolCallId: 'call_3a798dc3162b4f63bdfaa183',
+      responseStatus: 'pending',
+      input: { requestId: askInput.requestId },
+    });
+  });
+
+  it('ignores non-JSON string result.data and falls back to result.input', () => {
+    const message = hydrateMcpAskInteractionsFromExecutedComponents({
+      id: 'msg-ask-result-data-plain-string',
+      componentExecutedList: [
+        {
+          status: 'FINISHED',
+          result: {
+            data: 'not-a-json-payload',
+            input: { ...askInput, toolName: 'nuwax_ask_question' },
+          },
+        },
+      ],
+    } as any);
+
+    expect(message.mcpAskInteractions?.[0]?.input.requestId).toBe(
+      askInput.requestId,
+    );
+  });
+
   it('uses result.input when result.data is ordinary tool output', () => {
     const message = hydrateMcpAskInteractionsFromExecutedComponents({
       id: 'msg-tool-output',

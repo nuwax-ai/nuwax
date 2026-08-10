@@ -34,14 +34,38 @@ function getMcpAskInputCandidate(
 }
 
 /**
- * 历史接口中的 ASK_QUESTION 与实时 SSE 的数据形态并不完全一致：
- * - ToolCall 通常将输入存入 input；
- * - ASK_QUESTION 通常将表单直接存入 result.data，部分旧记录则以 JSON 文本包在 data[].content.text 中。
+ * 尝试将 result.data 解析为 Ask 表单候选。
+ * 历史接口偶发把整个 payload 存成 JSON 字符串（外层常包 status/message + input），
+ * 需先 parse 再走 candidate；非法字符串忽略，避免 hydrate 抛错。
  */
-function getMcpAskInputFromResultData(data: unknown): unknown {
-  const directInput = getMcpAskInputCandidate(data);
+function getMcpAskInputFromMaybeJson(value: unknown): unknown {
+  const directInput = getMcpAskInputCandidate(value);
   if (directInput) {
     return directInput;
+  }
+
+  if (typeof value !== 'string' || !value.trim()) {
+    return undefined;
+  }
+
+  try {
+    return getMcpAskInputCandidate(JSON.parse(value));
+  } catch {
+    // 非 JSON 文本不是 Ask 表单
+    return undefined;
+  }
+}
+
+/**
+ * 历史接口中的 ASK_QUESTION 与实时 SSE 的数据形态并不完全一致：
+ * - ToolCall 通常将输入存入 input；
+ * - ASK_QUESTION 通常将表单直接存入 result.data（object，或整段 JSON 字符串）；
+ * - 部分旧记录则以 JSON 文本包在 data[].content.text 中。
+ */
+function getMcpAskInputFromResultData(data: unknown): unknown {
+  const directOrStringInput = getMcpAskInputFromMaybeJson(data);
+  if (directOrStringInput) {
+    return directOrStringInput;
   }
 
   if (!Array.isArray(data)) {
@@ -53,14 +77,9 @@ function getMcpAskInputFromResultData(data: unknown): unknown {
     if (content?.type !== 'text' || typeof content.text !== 'string') {
       continue;
     }
-    try {
-      const parsed = JSON.parse(content.text);
-      const parsedInput = getMcpAskInputCandidate(parsed);
-      if (parsedInput) {
-        return parsedInput;
-      }
-    } catch {
-      // 非 JSON 的工具输出不是 Ask 表单，继续检查下一项。
+    const parsedInput = getMcpAskInputFromMaybeJson(content.text);
+    if (parsedInput) {
+      return parsedInput;
     }
   }
 
