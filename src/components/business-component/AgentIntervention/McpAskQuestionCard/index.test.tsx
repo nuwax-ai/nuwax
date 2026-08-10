@@ -76,6 +76,56 @@ const interaction: McpAskInteraction = {
 };
 
 describe('McpAskQuestionCard', () => {
+  it('keeps an unsubmitted choice when the same ask is refreshed', () => {
+    const defaultedInteraction: McpAskInteraction = {
+      ...interaction,
+      input: {
+        ...interaction.input,
+        ui: {
+          ...interaction.input.ui,
+          fields: interaction.input.ui.fields.map((field) =>
+            field.name === 'choice'
+              ? { ...field, initialValue: 'deploy' }
+              : { ...field },
+          ),
+        },
+      },
+    };
+    const { rerender } = render(
+      <McpAskQuestionCard
+        interaction={defaultedInteraction}
+        keyboardShortcutsEnabled={false}
+      />,
+    );
+
+    const deploy = screen.getByRole('radio', { name: '鐩存帴閮ㄧ讲' });
+    const test = screen.getByRole('radio', { name: '鍏堣窇娴嬭瘯' });
+    expect(deploy).toBeChecked();
+
+    fireEvent.click(test);
+    expect(test).toBeChecked();
+
+    rerender(
+      <McpAskQuestionCard
+        interaction={{
+          ...defaultedInteraction,
+          input: {
+            ...defaultedInteraction.input,
+            ui: {
+              ...defaultedInteraction.input.ui,
+              fields: defaultedInteraction.input.ui.fields.map((field) => ({
+                ...field,
+              })),
+            },
+          },
+        }}
+        keyboardShortcutsEnabled={false}
+      />,
+    );
+
+    expect(test).toBeChecked();
+  });
+
   it('renders MCP Ask fields and submits form data as a normal response payload', async () => {
     const onRespond = vi.fn();
     render(
