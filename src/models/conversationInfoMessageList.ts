@@ -167,6 +167,60 @@ const preserveClientRenderKeys = (
   return result;
 };
 
+/**
+ * 已收到 FINAL_RESULT 的本地消息，其可见内容由当前 SSE 结果持有到页面离开。
+ *
+ * 会话快照仍可补齐服务端 id/index 以及 ACP/MCP 交互状态，但不能用落库过程中
+ * 存在细微差异的 text/think/processing 等字段覆盖当前内容，否则 Markdown 会在
+ * 会话结束后再次渲染，产生肉眼可见的闪烁。
+ */
+const preserveFinalizedMessagePresentation = (
+  current: MessageInfo[],
+  incomingList: MessageInfo[],
+  incoming: MessageInfo,
+  incomingIndex: number,
+): MessageInfo => {
+  if (!incoming.clientRenderKey) {
+    return incoming;
+  }
+
+  // 同一轮工作流可能产生多条复用 clientRenderKey 的 assistant 消息；FINAL_RESULT
+  // 属于该 key 的最后一条，只保护服务端对应的最后一条，避免污染前置过程消息。
+  for (let index = incomingList.length - 1; index > incomingIndex; index -= 1) {
+    if (incomingList[index].clientRenderKey === incoming.clientRenderKey) {
+      return incoming;
+    }
+  }
+
+  let finalized: MessageInfo | undefined;
+  for (let index = current.length - 1; index >= 0; index -= 1) {
+    const message = current[index];
+    if (
+      message.clientRenderKey === incoming.clientRenderKey &&
+      message.finalResult
+    ) {
+      finalized = message;
+      break;
+    }
+  }
+  if (!finalized) {
+    return incoming;
+  }
+
+  return {
+    ...incoming,
+    clientRenderKey: finalized.clientRenderKey,
+    text: finalized.text,
+    think: finalized.think,
+    attachments: finalized.attachments,
+    requestId: finalized.requestId,
+    status: finalized.status,
+    thinkingFinished: finalized.thinkingFinished,
+    finalResult: finalized.finalResult,
+    processingList: finalized.processingList,
+  };
+};
+
 const completeAssistantPlaceholder = (message: MessageInfo): MessageInfo => {
   if (isIncompleteStatus(message.status)) {
     return {
@@ -442,9 +496,20 @@ export function reconcileConversationSnapshotMessages(
 
   // 先归并当前列表，可立即清除之前轮询已经累计的重复开场白。
   persisted.forEach((message) => upsert(message, false));
-  preserveClientRenderKeys(clientRound, incomingList).forEach((message) =>
-    upsert(message, true),
+  const incomingWithRenderKeys = preserveClientRenderKeys(
+    clientRound,
+    incomingList,
   );
+  incomingWithRenderKeys
+    .map((message, index) =>
+      preserveFinalizedMessagePresentation(
+        currentList,
+        incomingWithRenderKeys,
+        message,
+        index,
+      ),
+    )
+    .forEach((message) => upsert(message, true));
 
   const merged = preserveOptimisticMessageTail(currentList, serverMerged);
   return isEqual(currentList, merged) ? currentList : merged;
