@@ -166,6 +166,7 @@ vi.mock('@/components/ChatView', () => ({
       data-message-id={String(messageInfo.id ?? '')}
       data-status={String(messageInfo.status ?? '')}
       data-think={messageInfo.think || ''}
+      data-thinking-finished={String(messageInfo.thinkingFinished)}
     >
       {messageInfo.text}
     </div>
@@ -522,9 +523,10 @@ describe('ChatTemp', () => {
       expect(el?.getAttribute('data-status')).toBe(
         MessageStatusEnum.Incomplete,
       );
+      expect(el?.getAttribute('data-thinking-finished')).toBe('false');
     });
 
-    // 普通文本 finished
+    // 真实流中的 CHAT 分片仍为 finished=false，但已代表上一轮 THINK 结束
     await act(async () => {
       sseHandlers.onMessage?.({
         requestId: 'r1',
@@ -533,7 +535,7 @@ describe('ChatTemp', () => {
           text: 'answer',
           type: MessageModeEnum.CHAT,
           id: 'chat-1',
-          finished: true,
+          finished: false,
         },
       } as ConversationChatResponse);
       await vi.advanceTimersByTimeAsync(250);
@@ -544,7 +546,10 @@ describe('ChatTemp', () => {
         .getAllByTestId('chat-view')
         .find((node) => node.getAttribute('data-message-id') === assistantId);
       expect(el?.textContent).toContain('answer');
-      expect(el?.getAttribute('data-status')).toBe(MessageStatusEnum.Complete);
+      expect(el?.getAttribute('data-status')).toBe(
+        MessageStatusEnum.Incomplete,
+      );
+      expect(el?.getAttribute('data-thinking-finished')).toBe('true');
     });
 
     // FINAL_RESULT
@@ -588,6 +593,16 @@ describe('ChatTemp', () => {
     await act(async () => {
       sseHandlers.onMessage?.({
         requestId: 'rp',
+        eventType: ConversationEventTypeEnum.MESSAGE,
+        data: {
+          text: 'thinking before tool',
+          type: MessageModeEnum.THINK,
+          id: 'think-before-tool',
+          finished: false,
+        },
+      } as ConversationChatResponse);
+      sseHandlers.onMessage?.({
+        requestId: 'rp',
         eventType: ConversationEventTypeEnum.PROCESSING,
         data: {
           type: 'ToolCall',
@@ -604,6 +619,7 @@ describe('ChatTemp', () => {
         .getAllByTestId('chat-view')
         .find((node) => node.getAttribute('data-message-id') === assistantId);
       expect(el?.getAttribute('data-status')).toBe(MessageStatusEnum.Loading);
+      expect(el?.getAttribute('data-thinking-finished')).toBe('true');
     });
     expect(mockHandleChatProcessingList).toHaveBeenCalled();
 
