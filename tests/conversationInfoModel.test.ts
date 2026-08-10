@@ -526,6 +526,48 @@ describe('conversationInfo model', () => {
     expect(assistant?.requestId).toBe('req-final');
   });
 
+  it('SSE FINAL_RESULT 已解析出终态时，onClose 不重复查询会话状态', async () => {
+    const { result } = renderHook(() => useConversationInfo());
+    await sendAndGetAssistantId(result);
+
+    await act(async () => {
+      sseHandlers.onMessage?.({
+        requestId: 'req-final-terminal',
+        eventType: ConversationEventTypeEnum.FINAL_RESULT,
+        data: {
+          success: true,
+          outputText: 'done',
+        },
+      } as ConversationChatResponse);
+      await sseHandlers.onClose?.();
+    });
+
+    expect(mockSyncTerminalConversationTaskStatus).not.toHaveBeenCalled();
+  });
+
+  it('SSE FINAL_RESULT 未提供明确失败终态时，onClose 保留兜底查询', async () => {
+    const { result } = renderHook(() => useConversationInfo());
+    await sendAndGetAssistantId(result);
+
+    await act(async () => {
+      sseHandlers.onMessage?.({
+        requestId: 'req-final-unknown',
+        eventType: ConversationEventTypeEnum.FINAL_RESULT,
+        data: {
+          success: false,
+          outputText: 'unknown failure',
+        },
+      } as ConversationChatResponse);
+      await sseHandlers.onClose?.();
+    });
+
+    expect(mockSyncTerminalConversationTaskStatus).toHaveBeenCalledTimes(1);
+    expect(mockSyncTerminalConversationTaskStatus).toHaveBeenCalledWith(
+      1001,
+      expect.any(Function),
+    );
+  });
+
   it('SSE ERROR：当前助手消息置为 Error', async () => {
     const { result } = renderHook(() => useConversationInfo());
     const assistantId = await sendAndGetAssistantId(result);
