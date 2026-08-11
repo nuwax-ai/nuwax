@@ -206,8 +206,24 @@ const serializeEditorNode = (node: Node): string => {
  * @returns 去除控制字符后的纯文本（保留换行）
  */
 const getSerializedEditorText = (element: HTMLElement): string => {
-  const text = Array.from(element.childNodes)
-    .map((node) => serializeEditorNode(node))
+  const children = Array.from(element.childNodes);
+  const text = children
+    .map((node, index) => {
+      let part = serializeEditorNode(node);
+      // 粘贴/回车多行内容时，Chrome 会把首行留作根级裸文本、后续行包进块级节点。
+      // 裸文本自身不会补换行，导致序列化后首行与下一行被拼在一起。
+      // 若其下一个兄弟是块级节点（BR 已自带 \n，需排除避免重复），则视为独立一行补 \n。
+      const nextNode = children[index + 1];
+      if (
+        part &&
+        !part.endsWith('\n') &&
+        nextNode instanceof HTMLElement &&
+        BLOCK_ELEMENT_RE.test(nextNode.tagName)
+      ) {
+        part += '\n';
+      }
+      return part;
+    })
     .join('')
     .replace(/\u200B/g, '')
     // 末尾块级节点会多一个换行，发送前去掉，避免消息尾部多余空行
