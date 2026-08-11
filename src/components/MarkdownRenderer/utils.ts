@@ -288,6 +288,80 @@ function extractDollarWrappedMath(code: string): string | null {
 }
 
 /**
+ * 常见 LaTeX 命令白名单（不含前导反斜杠）。
+ * looksLikeLatex 只把「命中白名单的反斜杠命令」当作公式信号，
+ * 避免 `\mycomputer`（Windows 路径目录段）、`\n`（JSON 转义）、
+ * `\d+`（正则）等形似命令的普通文本被误判为 LaTeX。
+ */
+const LATEX_COMMANDS = new Set([
+  // 希腊字母（含大写变体）
+  'alpha', 'beta', 'gamma', 'delta', 'epsilon', 'varepsilon', 'zeta', 'eta',
+  'theta', 'vartheta', 'iota', 'kappa', 'lambda', 'mu', 'nu', 'xi', 'omicron',
+  'pi', 'varpi', 'rho', 'varrho', 'sigma', 'varsigma', 'tau', 'upsilon', 'phi',
+  'varphi', 'chi', 'psi', 'omega',
+  'Gamma', 'Delta', 'Theta', 'Lambda', 'Xi', 'Pi', 'Sigma', 'Upsilon', 'Phi',
+  'Psi', 'Omega',
+  // 大运算符 / 积分 / 极限
+  'sum', 'prod', 'coprod', 'int', 'iint', 'iiint', 'oint', 'bigcap', 'bigcup',
+  'bigsqcup', 'bigvee', 'bigwedge', 'bigodot', 'bigotimes', 'bigoplus',
+  'biguplus',
+  'lim', 'limsup', 'liminf', 'sup', 'inf', 'max', 'min', 'gcd', 'det', 'dim',
+  'ker', 'deg', 'exp', 'ln', 'log', 'lg', 'arg', 'mod', 'bmod', 'pmod',
+  // 初等函数
+  'sin', 'cos', 'tan', 'cot', 'sec', 'csc', 'arcsin', 'arccos', 'arctan',
+  'sinh', 'cosh', 'tanh', 'coth',
+  // 分式 / 根式 / 组合
+  'frac', 'dfrac', 'tfrac', 'cfrac', 'sqrt', 'root', 'binom', 'choose', 'over',
+  'atop', 'overline', 'underline', 'overbrace', 'underbrace',
+  // 箭头
+  'to', 'gets', 'rightarrow', 'leftarrow', 'leftrightarrow', 'uparrow',
+  'downarrow', 'updownarrow', 'Rightarrow', 'Leftarrow', 'Leftrightarrow',
+  'mapsto', 'longrightarrow', 'longleftarrow', 'longleftrightarrow',
+  'Longrightarrow', 'Longleftarrow', 'rightleftharpoons', 'hookrightarrow',
+  'hookleftarrow', 'nearrow', 'searrow', 'swarrow', 'nwarrow',
+  // 关系符
+  'leq', 'leqq', 'geq', 'geqq', 'neq', 'ne', 'equiv', 'sim', 'simeq', 'cong',
+  'approx', 'propto', 'asymp', 'subset', 'supset', 'subseteq', 'supseteq',
+  'subsetneq', 'supsetneq', 'in', 'notin', 'ni', 'prec', 'succ', 'preceq',
+  'succeq', 'll', 'gg', 'lesssim', 'gtrsim', 'nless', 'ngtr',
+  // 集合 / 逻辑
+  'cup', 'cap', 'setminus', 'uplus', 'sqcup', 'sqcap', 'vee', 'wedge', 'oplus',
+  'ominus', 'otimes', 'oslash', 'odot', 'circledast', 'circ', 'bullet',
+  'forall', 'exists', 'nexists', 'neg', 'lnot', 'land', 'lor', 'top', 'bot',
+  'perp', 'parallel', 'mid', 'nmid', 'emptyset', 'varnothing',
+  // 符号常量
+  'infty', 'partial', 'nabla', 'aleph', 'hbar', 'imath', 'jmath', 'ell', 'wp',
+  'Re', 'Im', 'mho', 'prime', 'angle', 'measuredangle', 'because', 'therefore',
+  // 点 / 星号 / 分隔符
+  'cdots', 'ldots', 'vdots', 'ddots', 'dots', 'cdot', 'times', 'div', 'pm',
+  'mp', 'ast', 'star', 'dagger', 'ddagger', 'diamond', 'triangle', 'square',
+  'clubsuit', 'diamondsuit', 'heartsuit', 'spadesuit',
+  'langle', 'rangle', 'lceil', 'rceil', 'lfloor', 'rfloor', 'lbrace', 'rbrace',
+  'vert', 'Vert',
+  // 动态尺寸括号
+  'left', 'right', 'middle', 'big', 'Big', 'bigg', 'Bigg', 'bigl', 'bigr',
+  'Bigl', 'Bigr', 'biggl', 'biggr', 'Biggl', 'Biggr',
+  // 矩阵 / 环境
+  'begin', 'end', 'array', 'matrix', 'pmatrix', 'bmatrix', 'vmatrix', 'Vmatrix',
+  'cases', 'aligned', 'align', 'alignat', 'gathered', 'gather', 'split',
+  'equation', 'multline', 'substack',
+  // 字体 / 文本
+  'text', 'mbox', 'mathrm', 'mathbf', 'mathit', 'mathcal', 'mathscr',
+  'mathfrak', 'mathbb', 'mathsf', 'mathtt', 'boldsymbol', 'bm',
+  'operatorname', 'textbf', 'textit', 'textrm', 'textsf', 'texttt',
+  'textup', 'textnormal', 'emph',
+  // 重音 / 堆叠
+  'hat', 'widehat', 'check', 'tilde', 'widetilde', 'acute', 'grave', 'dot',
+  'ddot', 'breve', 'bar', 'vec', 'overset', 'underset', 'stackrel', 'limits',
+  'nolimits', 'displaystyle', 'textstyle', 'scriptstyle',
+  // 间距 / 其他
+  'quad', 'qquad', 'enspace', 'thinspace', 'medspace', 'thickspace', 'hspace',
+  'vspace', 'phantom', 'hphantom', 'vphantom', 'newline', 'tag', 'label',
+  'ref', 'eqref', 'pageref', 'cite', 'not', 'colon',
+  'coloneqq', 'triangleq', 'doteq', 'fallingdotseq', 'risingdotseq',
+]);
+
+/**
  * 判断行内代码是否更像 LaTeX 公式（模型常把公式误包在反引号里）
  * @param code - 行内代码内容（不含反引号）
  */
@@ -297,9 +371,17 @@ function looksLikeLatex(code: string): boolean {
   // 整段已是 $...$ 时由 unwrap 直接去反引号；此处不含 $ 的裸 LaTeX
   if (s.includes('$')) return false;
 
-  // LaTeX 命令优先（小写，避免 Windows 路径 \Users）
-  // 须在编程特征排除之前：`\sum_{i=1}^{n}` 含 `=` 但仍是公式
-  if (/\\[a-z]+/.test(s)) return true;
+  // Windows 盘符 / UNC 路径不是公式（D:\xxx、\\server\share）
+  if (/^[A-Za-z]:[\\/]/.test(s)) return false;
+  if (s.startsWith('\\\\')) return false;
+
+  // LaTeX 命令优先（须在编程特征排除之前：`\sum_{i=1}^{n}` 含 `=` 但仍是公式）
+  // 只认白名单内的命令，避免 `\mycomputer`、`\n`、`\d+` 等形似命令的
+  // 路径 / 转义 / 正则被误判为公式。
+  const commands = s.match(/\\[a-zA-Z]+/g);
+  if (commands && commands.some((c) => LATEX_COMMANDS.has(c.slice(1)))) {
+    return true;
+  }
 
   // 明显编程 / URL（无 LaTeX 命令时）
   if (
