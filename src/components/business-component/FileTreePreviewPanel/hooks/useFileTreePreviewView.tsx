@@ -711,7 +711,16 @@ export function useFileTreePreviewView(
 
           const fileNameLower = (fileNode?.name || '').toLowerCase();
           const _isMarkdownFile = isMarkdownFile(fileNameLower);
-          if (_isMarkdownFile && !initViewFileType) {
+          const isHtmlFile = /\.html?$/i.test(fileNameLower);
+
+          /**
+           * HTML 预览由 iframe 直接加载 fileProxyUrl，无需提前 fetch 正文：
+           * - 提前 fetch 会与 iframe 形成两条相同文件请求；
+           * - fetch 完成后会更新 fileRefreshTimestamp，使带时间戳 key 的 FilePreview
+           *   被重新挂载，iframe 再次加载并造成预览区闪烁。
+           * Markdown 同理由 FilePreview 自己按需加载；代码视图仍走下方正文请求。
+           */
+          if ((_isMarkdownFile || isHtmlFile) && !initViewFileType) {
             setSelectedFileNode({
               ...fileNode,
               content: '',
