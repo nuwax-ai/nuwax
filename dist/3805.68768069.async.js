@@ -1,1 +1,0 @@
-"use strict";(self.webpackChunknuwax_frontend=self.webpackChunknuwax_frontend||[]).push([[3805],{413805:function(u,n,_){_.d(n,{createTreemapServices:function(){return e.K}});var e=_(764995),c=_(879985)}}]);
