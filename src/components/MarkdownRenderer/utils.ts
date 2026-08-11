@@ -345,8 +345,11 @@ function looksLikeLatex(code: string): boolean {
     if (/[A-Za-z0-9]/.test(stripped)) return false;
     return true;
   }
-  // 导数 / 函数：f'(x)、f(x)
-  if (/^[A-Za-z][A-Za-z0-9]*'?\([^)]*\)$/.test(s)) return true;
+  // 导数 / 函数：f'(x)、f(x)、sin(x)
+  // 函数名限短：单字母可带撇号（导数），或 2-4 位小写初等函数名；
+  // 参数限单一简单变量。避免 appendToolResult(mctx, "check_progress", ...)
+  // 这类真实代码调用（长名 + 逗号/引号/空格参数）被误判为公式。
+  if (/^(?:[A-Za-z]'{0,2}|[a-z]{2,4})\([A-Za-z0-9_]+\)$/.test(s)) return true;
   // 绝对值 |x|
   if (/^\|[^|]{1,40}\|$/.test(s)) return true;
 
