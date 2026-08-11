@@ -140,3 +140,12 @@
 .ds-markdown [data-openui-render-mode='renderer'] code {
   background: unset;
 }
+
+/* -------------------------------------------------------------------------- */
+/* 8. 恢复被宿主 th/td 重置覆盖的 OpenUI 表格单元格内边距                    */
+/* -------------------------------------------------------------------------- */
+.ds-markdown
+  [data-openui-render-mode='renderer']
+  :is(.openui-table-head, .openui-table-cell) {
+  padding: var(--openui-space-m);
+}
