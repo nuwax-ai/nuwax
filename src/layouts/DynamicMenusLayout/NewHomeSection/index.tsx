@@ -30,7 +30,7 @@ import styles from './index.less';
 const cx = classNames.bind(styles);
 
 const ITEM_HEIGHT = 58; // 列表项重构后高度增加
-const RECENT_PAGE_SIZE = 20;
+const RECENT_PAGE_SIZE = 30;
 const ACTIVE_TAB_STORAGE_KEY = 'PC_HOME_SECTION_ACTIVE_TAB';
 
 type HomeTab = 'conversation' | 'recent';
@@ -108,7 +108,7 @@ const NewHomeSection: React.FC<{
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const listInnerRef = useRef<HTMLDivElement>(null);
   const initializedRef = useRef(false);
-  const pageSizeRef = useRef(20);
+  const pageSizeRef = useRef(30);
   const loadingRef = useRef(false);
   const recentLoadingRef = useRef(false);
   const recentPageRef = useRef(componentCache.recentPage);
@@ -117,7 +117,7 @@ const NewHomeSection: React.FC<{
 
   const calcPageSize = useCallback(() => {
     const height = scrollContainerRef.current?.clientHeight ?? 0;
-    if (!height) return 20;
+    if (!height) return 30;
     const count = Math.ceil(height / ITEM_HEIGHT);
     return Math.max(count, 10);
   }, []);

@@ -114,6 +114,12 @@ describe('replaceMathBracket', () => {
       '使用 `const x = 1` 声明',
     );
   });
+
+  it('Windows 路径反引号保持原样，不被拆成 $...$ 公式', () => {
+    const text =
+      '工作目录 `D:\\mycomputer\\computer-project-workspace\\1754545591\\1560129`';
+    expect(replaceMathBracket(text)).toBe(text);
+  });
 });
 
 describe('looksLikeLatex / unwrapLatexInlineCode', () => {
@@ -146,6 +152,22 @@ describe('looksLikeLatex / unwrapLatexInlineCode', () => {
     expect(looksLikeLatex('dispatch')).toBe(false);
     expect(looksLikeLatex('user_id')).toBe(false);
     expect(looksLikeLatex('x_axis')).toBe(false);
+  });
+
+  it('不把 Windows 路径误判为公式（\mycomputer 等小写目录段形似 LaTeX 命令）', () => {
+    expect(
+      looksLikeLatex(
+        'D:\\mycomputer\\computer-project-workspace\\1754545591\\1560129',
+      ),
+    ).toBe(false);
+    expect(looksLikeLatex('C:\\Users\\Public\\Desktop')).toBe(false);
+    expect(looksLikeLatex('\\mycomputer\\project\\src')).toBe(false);
+  });
+
+  it('不把 JSON 转义 / 正则等反斜杠文本误判为公式', () => {
+    expect(looksLikeLatex('\\n')).toBe(false);
+    expect(looksLikeLatex('\\d+')).toBe(false);
+    expect(looksLikeLatex('\\mycomputer')).toBe(false);
   });
 
   it('识别单字符下标公式（x_i、a_1、a_i + b_j）', () => {

@@ -149,3 +149,16 @@
   :is(.openui-table-head, .openui-table-cell) {
   padding: var(--openui-space-m);
 }
+
+/* -------------------------------------------------------------------------- */
+/* 9. 补 @openuidev/react-ui@0.13.2 掏空的 .openui-card-card（与 openui-runtime
+   sidecar.css 对齐，保证 inline 与预览一致）。0.13.2 把该规则删成仅
+   {box-shadow:none}，Card 丢失 padding/border-radius/border-color/background，
+   几乎无样式。按 0.12.1 完整声明补回；本规则非 layered，优先级高于 @layer openui。 */
+/* -------------------------------------------------------------------------- */
+.openui-card-card {
+  padding: var(--openui-space-l);
+  border-radius: var(--openui-radius-3xl);
+  border-color: var(--openui-border-default);
+  background-color: var(--openui-foreground);
+}
