@@ -1827,28 +1827,22 @@ export function useFileTreePreviewView(
       fileProxyUrl: string,
       selectedFileId: string,
     ): { key: string; url: string } => {
-      // 构建 key：同时包含两个值，确保任何一个变化都能触发重新渲染
-      const triggerPart =
-        taskAgentSelectTrigger !== undefined
-          ? `trigger-${taskAgentSelectTrigger}`
-          : 'trigger-none';
+      /**
+       * taskAgentSelectTrigger 只负责驱动自动选中 effect；真正选中文件时会统一更新
+       * fileRefreshTimestamp。若两者都参与 key，一次消息文件点击会先因 trigger 重建，
+       * 再因 timestamp 重建，导致 Markdown 等资源连续请求两次。
+       */
       const timestampPart = `timestamp-${fileRefreshTimestamp}`;
-      const fileKey = `${fileType}-${selectedFileId}-${triggerPart}-${timestampPart}`;
+      const fileKey = `${fileType}-${selectedFileId}-${timestampPart}`;
 
-      // 构建 URL 参数：使用组合值，确保任何一个变化都会导致 URL 变化
-      // 优先使用 taskAgentSelectTrigger，如果不存在则使用时间戳 ref
-      const triggerValue =
-        taskAgentSelectTrigger !== undefined
-          ? taskAgentSelectTrigger
-          : fileRefreshTimestamp;
       const separator = fileProxyUrl.includes('?') ? '&' : '?';
-      const fileUrl = triggerValue
-        ? `${fileProxyUrl}${separator}t=${triggerValue}`
+      const fileUrl = fileRefreshTimestamp
+        ? `${fileProxyUrl}${separator}t=${fileRefreshTimestamp}`
         : fileProxyUrl;
 
       return { key: fileKey, url: fileUrl };
     },
-    [taskAgentSelectTrigger, fileRefreshTimestamp],
+    [fileRefreshTimestamp],
   );
 
   // 文件树已加载的 OpenUI 内容：useMemo 稳定化，避免每次渲染重新 parse
