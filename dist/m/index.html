@@ -16,6 +16,13 @@
 	<!-- #ifdef H5 || WEB -->
 	<!--2.阿里云验证码-集成主JS-->
     <script defer type="text/javascript" src="https://o.alicdn.com/captcha-frontend/aliyunCaptcha/AliyunCaptcha.js"></script>
+	<!-- vConsole 调试面板（H5）：手机浏览器排查语音播报等线上问题用 -->
+	<script src="./static/vconsole/vconsole.min.js"></script>
+	<script>
+		if (typeof window !== 'undefined' && window.VConsole) {
+			window.__vConsole = new window.VConsole();
+		}
+	</script>
 	<!-- #endif -->
 	<!--preload-links-->
 	<!--app-context-->
@@ -153,7 +160,7 @@
 				}
 			})();
 	</script>
-  <script type="module" crossorigin src="/m/assets/index-Bc7gC8_O.js"></script>
+  <script type="module" crossorigin src="/m/assets/index-DoDOdopb.js"></script>
   <link rel="stylesheet" crossorigin href="/m/assets/index-DQDNzq8-.css">
 </head>
 
