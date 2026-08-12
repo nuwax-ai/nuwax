@@ -1021,6 +1021,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     prevTaskAgentCollapseTriggerRef.current = undefined;
   }, [id]);
 
+  // 切换视图时，关闭 Git 版本记录面板
   useEffect(() => {
     if (viewMode === 'desktop') {
       setGitVersionPanelOpen(false);
