@@ -711,6 +711,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     },
   });
 
+  // 刷新 Git 列表
   refreshGitListRef.current = fileView.refreshGitList;
 
   /** 折叠底部终端，避免遮挡文件预览（终端未展示时不发信号，避免首次打开被误折叠） */
