@@ -168,6 +168,7 @@ export const ChatContentArea: React.FC<ChatContentAreaProps> = ({
                 }
                 return (
                   <ChatView
+                    conversationId={conversationId}
                     messageInfo={item}
                     roleInfo={effectiveRoleInfo}
                     mode={messageBottomMode}

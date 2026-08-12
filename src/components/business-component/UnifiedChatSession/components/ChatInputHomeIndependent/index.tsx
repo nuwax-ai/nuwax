@@ -82,6 +82,7 @@ export interface ChatInputHomeIndependentProps {
   wholeDisabled?: boolean;
   clearDisabled?: boolean;
   clearLoading?: boolean;
+  showClearIcon?: boolean;
   visible?: boolean;
   isClearInput?: boolean;
   onScrollBottom?: () => void;
@@ -166,6 +167,7 @@ const ChatInputHomeIndependent: React.FC<ChatInputHomeIndependentProps> = ({
   wholeDisabled = false,
   clearDisabled = false,
   clearLoading = false,
+  showClearIcon = true,
   onEnter,
   visible,
   selectedComponentList,
@@ -816,7 +818,7 @@ const ChatInputHomeIndependent: React.FC<ChatInputHomeIndependentProps> = ({
               >
                 {!!messageList?.filter((item: MessageInfo) => item.id)
                   ?.length && (
-                  <ConditionRender condition={!!onClear}>
+                  <ConditionRender condition={showClearIcon && !!onClear}>
                     <Tooltip
                       title={t('PC.Components.ChatInputHome.clearRecord')}
                     >

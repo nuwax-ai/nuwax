@@ -7,9 +7,11 @@ import { useActiveInterventionQueue } from '@/components/business-component/Agen
 import MessageQueuePanel, {
   useUnifiedChatQueue,
 } from '@/components/business-component/MessageQueue';
+import { registerOpenUiActionSender } from '@/components/business-component/OpenUiArtifactView/actionRegistry';
+import { buildOpenUiResumeMessage } from '@/components/business-component/OpenUiArtifactView/openUiResumeMessage';
 import ConversationStatus from '@/pages/Chat/components/ConversationStatus';
 import classNames from 'classnames';
-import { useLayoutEffect, useMemo, useRef } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 
 import { ENABLE_CHAT_MESSAGE_QUEUE } from '@/constants/feature.constants';
 import { dict } from '@/services/i18nRuntime';
@@ -18,6 +20,10 @@ import { MessageStatusEnum } from '@/types/enums/common';
 import { AgentTypeEnum } from '@/types/enums/space';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type { RoleInfo } from '@/types/interfaces/conversationInfo';
+import type {
+  OpenUiAction,
+  OpenUiActionArtifact,
+} from '@/types/interfaces/openUi';
 import ChatContentArea from './components/ChatContentArea';
 import ChatInputHomeIndependent from './components/ChatInputHomeIndependent';
 import { useConversationStreamResume } from './hooks/useConversationStreamResume';
@@ -66,6 +72,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
   isVariablesFilled,
   isVariablesDisabled,
   clearLoading = false,
+  showClearIcon = true,
   isSelectionLocked = false,
   hasUserSentMessage = false,
   readonly,
@@ -194,8 +201,31 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
   });
 
   // 滚到底部按钮需避开队列面板：测量队列区域高度写入 CSS 变量
+  const sessionContainerRef = useRef<HTMLDivElement>(null);
   const chatInputContainerRef = useRef<HTMLDivElement>(null);
   const queuePanelMeasureRef = useRef<HTMLDivElement>(null);
+
+  // 审批卡片的可用高度需要扣除输入框，避免输入框变高后覆盖卡片底部。
+  useLayoutEffect(() => {
+    const sessionContainer = sessionContainerRef.current;
+    const inputContainer = chatInputContainerRef.current;
+    if (!sessionContainer || !inputContainer) return;
+
+    const update = () => {
+      sessionContainer.style.setProperty(
+        '--chat-input-height',
+        `${inputContainer.offsetHeight}px`,
+      );
+    };
+
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(inputContainer);
+    return () => {
+      observer.disconnect();
+      sessionContainer.style.removeProperty('--chat-input-height');
+    };
+  }, []);
 
   useLayoutEffect(() => {
     const container = chatInputContainerRef.current;
@@ -326,8 +356,27 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
     [agentInfo?.allowChooseMode],
   );
 
+  const respondOpenUiAction = useMemo(
+    () => (artifact: OpenUiActionArtifact, action: OpenUiAction) => {
+      messageQueue.rawSend(buildOpenUiResumeMessage(artifact, action));
+    },
+    [messageQueue.rawSend],
+  );
+
+  useEffect(
+    () =>
+      conversationId === undefined
+        ? undefined
+        : registerOpenUiActionSender(conversationId, respondOpenUiAction),
+    [conversationId, respondOpenUiAction],
+  );
+
   return (
-    <div className={cx(styles['session-container'], className)} style={style}>
+    <div
+      ref={sessionContainerRef}
+      className={cx(styles['session-container'], className)}
+      style={style}
+    >
       {/* 核心聊天展现内容区 */}
       <ChatContentArea
         conversationId={conversationId}
@@ -405,6 +454,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
           }
           visible={scrollBtnVisible && isHoveringChat}
           clearLoading={clearLoading}
+          showClearIcon={showClearIcon}
           manualComponents={manualComponents}
           selectedComponentList={selectedComponentList}
           onSelectComponent={onSelectComponent}

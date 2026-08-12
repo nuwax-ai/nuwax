@@ -2,19 +2,31 @@ import { dict } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { DownOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
-import React, { memo, useState } from 'react';
+import React, { memo, useEffect, useRef, useState } from 'react';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
 interface MarkdownCustomProcessGroupProps {
   children: React.ReactNode;
+  /** 正文开始输出时由 Markdown 转换层标记，用于自动收起已完成的工具调用组。 */
+  autoCollapse?: boolean;
 }
 
 const MarkdownCustomProcessGroup: React.FC<MarkdownCustomProcessGroupProps> = ({
   children,
+  autoCollapse = false,
 }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
+  const wasAutoCollapseRef = useRef(false);
+
+  useEffect(() => {
+    // 只响应从“执行中”到“正文已输出”的一次状态变化，之后保留用户的手动展开选择。
+    if (autoCollapse && !wasAutoCollapseRef.current) {
+      setIsExpanded(false);
+    }
+    wasAutoCollapseRef.current = autoCollapse;
+  }, [autoCollapse]);
 
   // 递归寻找并获取真正的 type 属性以适配可能被 div 等标签包装的子节点
   const findProcessType = (node: React.ReactNode): string | undefined => {
@@ -94,9 +106,15 @@ const MarkdownCustomProcessGroup: React.FC<MarkdownCustomProcessGroupProps> = ({
           </div>
         </div>
       </div>
-      {isExpanded && (
-        <div className={cx(styles['group-content'])}>{filteredChildren}</div>
-      )}
+      <div
+        className={cx(styles['group-content'], {
+          [styles['is-expanded']]: isExpanded,
+        })}
+      >
+        <div className={cx(styles['group-content-inner'])}>
+          {filteredChildren}
+        </div>
+      </div>
     </>
   );
 };

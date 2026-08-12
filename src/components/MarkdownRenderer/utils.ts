@@ -427,11 +427,13 @@ function groupMarkdownProcesses(text: string): string {
   let currentGroup: string[] = [];
   let groupMatch;
 
-  const flushGroup = () => {
+  // 当过程分组后开始输出正文时，说明这一组工具调用已经结束。
+  // 将状态写入标签，使渲染组件可在流式正文到达时平滑自动收起分组。
+  const flushGroup = (shouldAutoCollapse = false) => {
     if (currentGroup.length > 0) {
       if (currentGroup.length >= 2) {
         // 合并为组标签，增加换行确保不影响后续 markdown 解析，外层嵌套标准块级 div 以防解析为行内 p
-        result += `\n\n<div><markdown-custom-process-group>\n${currentGroup.join(
+        result += `\n\n<div><markdown-custom-process-group autoCollapse="${shouldAutoCollapse}">\n${currentGroup.join(
           '\n',
         )}\n</markdown-custom-process-group></div>\n\n`;
       } else {
@@ -517,15 +519,25 @@ function groupMarkdownProcesses(text: string): string {
     // 否则当 type 排在 name 之后时，归一化会把 type 编码进 name 值，导致 isPlan 漏判、Plan 被误并入 group。
     // 容忍 SSE 流式产生的转义引号（type=\"Plan\" / type=\'Plan\'）
     const isPlan = /type=\\?["']Plan\\?["']/i.test(tagMatch);
+    // OpenUI 是对话中的正式交互内容，不是可折叠的执行日志。
+    // 识别原始 name，避免属性归一化后 name 被 URL 编码而漏判。
+    const isOpenUi = /name=\\?["'][^"']*nuwax_render_openui/i.test(tagMatch);
+    // Event 只用于传递内部状态，渲染层本来也不会展示；不能让它参与工具调用分组计数。
+    const isEvent = /type=\\?["']Event\\?["']/i.test(tagMatch);
 
     // 处理匹配项之前的文本
     const textBefore = dedupedText.slice(lastIndex, groupMatch.index);
     if (textBefore.trim() !== '') {
-      flushGroup();
+      flushGroup(true);
       result += textBefore;
     }
 
-    if (isPlan) {
+    if (isEvent) {
+      lastIndex = blockRegex.lastIndex;
+      continue;
+    }
+
+    if (isPlan || isOpenUi) {
       flushGroup();
       result += `\n\n<div>${normalizedTag}</div>\n\n`;
     } else {
@@ -535,8 +547,11 @@ function groupMarkdownProcesses(text: string): string {
     lastIndex = blockRegex.lastIndex;
   }
 
-  flushGroup();
-  result += dedupedText.slice(lastIndex);
+  // 最后一组工具调用后直接输出正文时，不会再进入下一次循环；
+  // 这里需要检查尾部文本，确保这种最常见的流式完成场景也能触发自动收起。
+  const trailingText = dedupedText.slice(lastIndex);
+  flushGroup(trailingText.trim() !== '');
+  result += trailingText;
 
   return result;
 }

@@ -4,8 +4,19 @@ import ChangeFileGitDiffView, {
 import { dict } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { ProcessingEnum } from '@/types/enums/common';
+import type { OpenUiArtifact } from '@/types/interfaces/openUi';
 import { cloneDeep } from '@/utils/common';
 import { normalizeFileDiffItems } from '@/utils/fileChangeDiff';
+import {
+  buildOpenUiArtifactFileUrl,
+  buildOpenUiFilePath,
+  extractOpenUiArtifactId,
+  isOpenUiArtifactRef,
+  isOpenUiRenderToolName,
+  legacyArtifactToOpenUiFile,
+  renderInputToOpenUiFile,
+  resolveOpenUiDisplayState,
+} from '@/utils/openUiArtifact';
 import {
   BorderOutlined,
   CheckOutlined,
@@ -21,12 +32,23 @@ import {
 import { Button, message, Tooltip, Typography } from 'antd';
 import classNames from 'classnames';
 import { isEqual } from 'lodash';
-import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  lazy,
+  memo,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 import { useModel } from 'umi';
 import styles from './index.less';
 import SeeDetailModal from './SeeDetailModal';
 
 const cx = classNames.bind(styles);
+const OpenUiArtifactView = lazy(
+  () => import('@/components/business-component/OpenUiArtifactView'),
+);
 
 /**
  * 极简、快速且鲁棒的行级差异统计函数（Myers / LCS 基础版）
@@ -142,6 +164,25 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
   }, [innerProcessing.result]);
 
   const hasDiff = diffItems.length > 0;
+  const openUiDisplayState = useMemo(
+    () => resolveOpenUiDisplayState(innerProcessing.result),
+    [innerProcessing.result],
+  );
+  const openUiRenderInput =
+    openUiDisplayState.status === 'absent'
+      ? null
+      : openUiDisplayState.renderInput;
+  const openUiArtifact =
+    openUiDisplayState.status === 'ready'
+      ? openUiDisplayState.artifact
+      : undefined;
+  const inlineArtifactId =
+    openUiRenderInput?.artifactId ??
+    extractOpenUiArtifactId(innerProcessing.result) ??
+    innerProcessing.executeId;
+  const isOpenUiRenderProcess = isOpenUiRenderToolName(
+    innerProcessing.name || props.name,
+  );
 
   // 统计总的 additions 和 deletions
   const { totalAdditions, totalDeletions } = useMemo(() => {
@@ -433,6 +474,58 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
     openPreviewPage();
   }, [detailData, innerProcessing, showPagePreview, pagePreviewData]);
 
+  const handleOpenUiSidecar = useCallback(
+    (artifact: OpenUiArtifact) => {
+      // 预览场景优先复用工具返回中已有的渲染内容（openUiRenderInput），不再请求
+      // data/{artifactId}.openui.json，规避静态访问 cookie(static_sk) 失效及并发重复拉取。
+      const inlineFile = isOpenUiArtifactRef(artifact)
+        ? openUiRenderInput
+          ? renderInputToOpenUiFile(
+              openUiRenderInput,
+              artifact.artifactId,
+              artifact.digest,
+            )
+          : undefined
+        : legacyArtifactToOpenUiFile(artifact);
+      // 仅当内存中没有渲染内容（理论上不应发生）时，才回退到接口拉取
+      const artifactUrl = inlineFile
+        ? undefined
+        : isOpenUiArtifactRef(artifact)
+        ? buildOpenUiArtifactFileUrl(
+            props.conversationId,
+            artifact.artifactId,
+            artifact.digest,
+          )
+        : undefined;
+      showPagePreview({
+        name: artifact.title,
+        uri: '/static/openui-runtime/index.html',
+        params: {},
+        executeId: innerProcessing.executeId || artifact.artifactId,
+        source: 'openui',
+        sandboxProfile: 'openui-sidecar-v1',
+        artifactUrl: artifactUrl || undefined,
+        artifactId: artifact.artifactId,
+        artifactDigest: isOpenUiArtifactRef(artifact)
+          ? artifact.digest
+          : artifact.document.digest,
+        conversationId: props.conversationId,
+        openUiArtifactFile: inlineFile,
+        // file_path 自主拉取：iframe 内同源拉取（带得上 cookie），inlineFile 作为 relay 失败时的回退。
+        // conversationId 非法时返回 null → 不传 filePath，回退现有 inlineFile/artifactUrl 模式。
+        openUiFilePath:
+          buildOpenUiFilePath(props.conversationId, artifact.artifactId) ??
+          undefined,
+      });
+    },
+    [
+      innerProcessing.executeId,
+      props.conversationId,
+      showPagePreview,
+      openUiRenderInput,
+    ],
+  );
+
   // 自动打开预览页面功能
   // useEffect(() => {
   //   if (innerProcessing.status === ProcessingEnum.EXECUTING) {
@@ -445,6 +538,17 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
   if (
     !innerProcessing.executeId ||
     innerProcessing.type === AgentComponentTypeEnum.Event // 所有事件都不显示
+  ) {
+    return null;
+  }
+
+  // 流式 Markdown 有时会残留一条已完成的 OpenUI 工具标记，但对应的
+  // processing input/result 并不存在。它无法渲染任何 UI，继续显示只会形成
+  // 一个和真实 OpenUI 卡片并列的空壳工具条。
+  if (
+    isOpenUiRenderProcess &&
+    innerProcessing.status === ProcessingEnum.FINISHED &&
+    openUiDisplayState.status === 'absent'
   ) {
     return null;
   }
@@ -604,6 +708,26 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
           onClose={() => setOpenModal(false)}
           data={detailData}
         />
+        {openUiDisplayState.status !== 'absent' && (
+          <Suspense fallback={null}>
+            <OpenUiArtifactView
+              artifact={openUiArtifact}
+              inlineInput={openUiRenderInput || undefined}
+              inlineArtifactId={inlineArtifactId}
+              artifactUrl={
+                openUiArtifact && isOpenUiArtifactRef(openUiArtifact)
+                  ? buildOpenUiArtifactFileUrl(
+                      props.conversationId,
+                      openUiArtifact.artifactId,
+                      openUiArtifact.digest,
+                    ) || undefined
+                  : undefined
+              }
+              conversationId={props.conversationId}
+              onOpenSidecar={handleOpenUiSidecar}
+            />
+          </Suspense>
+        )}
       </div>
       {/* Plan 类型展开内容 */}
       {renderPlanDetails()}

@@ -62,7 +62,7 @@ import { checkFileSizeExceedLimit } from '@/utils';
 import { modalConfirm } from '@/utils/ant-custom';
 import { addBaseTarget } from '@/utils/common';
 import { updateFilesListContent, updateFilesListName } from '@/utils/fileTree';
-import { createLogger } from '@/utils/logger';
+// import { createLogger } from '@/utils/logger';
 import {
   TTYD_TERMINAL_WIRE_PROTOCOL,
   TTYD_TERMINAL_WS_SUBPROTOCOLS,
@@ -97,9 +97,9 @@ import styles from './index.less';
 import { apiInstallAgentProjectDependencies } from './services/agent-dev';
 
 const cx = classNames.bind(styles);
-const devConversationPollLogger = createLogger(
-  '[ConversationAgent][DevConversationPoll]',
-);
+// const devConversationPollLogger = createLogger(
+//   '[ConversationAgent][DevConversationPoll]',
+// );
 
 /**
  * ConversationAgent — 智能体对话开发页面（核心页面组件）
@@ -446,15 +446,15 @@ const ConversationAgent: React.FC = () => {
     pollingErrorRetryCount: -1,
     onSuccess: (result: Awaited<ReturnType<typeof apiAgentConfigInfo>>) => {
       const next = result?.data?.devConversationId;
-      devConversationPollLogger.info('agent config poll result', {
-        agentId,
-        previousDevConversationId: devConversationIdRef.current,
-        nextDevConversationId: next,
-        changed:
-          next !== null &&
-          next !== undefined &&
-          next !== devConversationIdRef.current,
-      });
+      // devConversationPollLogger.info('agent config poll result', {
+      //   agentId,
+      //   previousDevConversationId: devConversationIdRef.current,
+      //   nextDevConversationId: next,
+      //   changed:
+      //     next !== null &&
+      //     next !== undefined &&
+      //     next !== devConversationIdRef.current,
+      // });
       if (next !== null && next !== undefined) {
         setAgentConfigInfo((prev) =>
           prev && next !== prev.devConversationId

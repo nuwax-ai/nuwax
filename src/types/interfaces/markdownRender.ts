@@ -19,4 +19,6 @@ export interface MarkdownRendererProps {
   thinking?: string;
   /** 消息状态 */
   status?: string;
+  /** 思考流是否已结束 */
+  thinkingFinished?: boolean;
 }
