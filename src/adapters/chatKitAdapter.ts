@@ -97,7 +97,9 @@ export function toChatKitMessage(
 
   const sourceIndex = message.index ?? fallbackIndex;
   return {
-    id: `${asId(message.id, 'opening')}:${sourceIndex}`,
+    // 有真实 id 时直接用作稳定 key，避免终态快照补齐 index 后 id 变化导致节点重挂/闪烁；
+    // 仅无 id 的 opening 消息用 `opening:index` 消歧（index 仍可通过 metadata.sourceIndex 取得）。
+    id: message.id ? String(message.id) : `opening:${sourceIndex}`,
     conversationId: String(conversationId),
     role: toRole(message.role),
     status: toStatus(message.status),
