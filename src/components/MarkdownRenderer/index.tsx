@@ -18,7 +18,7 @@ import 'ds-markdown/katex.css';
 import { katexPlugin } from 'ds-markdown/plugins'; // 新增：引入插件创建方法
 import './ds-markdown.css';
 import genCustomPlugin from './genCustomPlugin';
-import { replaceMathBracket } from './utils';
+import { replaceMathBracket, unwrapLatexInlineCode } from './utils';
 
 const cx = classNames.bind(styles);
 /**
@@ -40,6 +40,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(
     thinking = '',
     status,
     thinkingFinished,
+    collapseProcessGroups = false,
   }: MarkdownRendererProps) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const hasThinking = !!thinking && thinking.trim() !== '';
@@ -52,8 +53,12 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(
 
     const containerRef = useRef<HTMLDivElement>(null);
     const plugins = useMemo(
-      () => [mermaidPlugin, katexPlugin, genCustomPlugin(conversationId)],
-      [conversationId],
+      () => [
+        mermaidPlugin,
+        katexPlugin,
+        genCustomPlugin(conversationId, collapseProcessGroups),
+      ],
+      [conversationId, collapseProcessGroups],
     );
     // 使用导入的 mermaidConfig，而不是重新创建
     const mermaidProvider = useMemo(() => mermaidConfig, []);
@@ -116,6 +121,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = memo(
       prevProps.answer === nextProps.answer &&
       prevProps.status === nextProps.status &&
       prevProps.thinkingFinished === nextProps.thinkingFinished &&
+      prevProps.collapseProcessGroups === nextProps.collapseProcessGroups &&
       prevProps.conversationId === nextProps.conversationId
     );
   },
@@ -145,6 +151,11 @@ const PureMarkdownRenderer = memo(
       () => [katexPlugin, genCustomPlugin(conversationId)],
       [conversationId],
     );
+    // 文件预览：拆开反引号包着的 LaTeX，再按 $ 定界符渲染
+    const markdownChildren = useMemo(
+      () => unwrapLatexInlineCode(children),
+      [children],
+    );
     return (
       <div
         key={`${requestId}`}
@@ -160,12 +171,13 @@ const PureMarkdownRenderer = memo(
             plugins={plugins}
             codeBlock={{ headerActions: false }}
             theme={theme}
+            // 文件预览 MD 通常直接写 $...$ / $$...$$，用 dollar 模式跳过括号预处理，
+            // 避免误伤 $\sqrt[3]{x}$、$f'(x)$ 等含 [] / () 的公式
             math={{
-              splitSymbol: 'bracket',
-              replaceMathBracket,
+              splitSymbol: 'dollar',
             }}
           >
-            {children}
+            {markdownChildren}
           </DsMarkdown>
         </ConfigProvider>
       </div>

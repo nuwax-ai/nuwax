@@ -88,6 +88,8 @@ export function useFileTreePreviewView(
     taskAgentSelectedFileId,
     clearTaskAgentSelectedFileId,
     taskAgentSelectTrigger,
+    // 会话结束文件树刷新后兜底重拉当前打开文件正文的触发标志
+    fileTreeRefreshTrigger,
     originalFiles,
     fileTreeDataLoading,
     readOnly = false,
@@ -241,6 +243,10 @@ export function useFileTreePreviewView(
   // 用于记录上次的 taskAgentSelectedFileId 和 taskAgentSelectTrigger，避免重复选择
   const prevTaskAgentSelectedFileIdRef = useRef<string>('');
   const prevTaskAgentSelectTriggerRef = useRef<number | string | undefined>(
+    undefined,
+  );
+  /** 已处理过的兜底刷新 trigger，避免同一 trigger 重复重拉当前打开文件正文 */
+  const handledFileTreeRefreshTriggerRef = useRef<number | undefined>(
     undefined,
   );
   // 用于记录创建文件成功后需要选择的文件路径
@@ -417,6 +423,7 @@ export function useFileTreePreviewView(
     setFileRefreshTimestamp(Date.now());
     prevTaskAgentSelectedFileIdRef.current = '';
     prevTaskAgentSelectTriggerRef.current = undefined;
+    handledFileTreeRefreshTriggerRef.current = undefined;
     userSelectedFileRef.current = null;
     pendingSelectFileRef.current = null;
     pendingTaskAgentAutoSelectRef.current = null;
@@ -704,7 +711,16 @@ export function useFileTreePreviewView(
 
           const fileNameLower = (fileNode?.name || '').toLowerCase();
           const _isMarkdownFile = isMarkdownFile(fileNameLower);
-          if (_isMarkdownFile && !initViewFileType) {
+          const isHtmlFile = /\.html?$/i.test(fileNameLower);
+
+          /**
+           * HTML 预览由 iframe 直接加载 fileProxyUrl，无需提前 fetch 正文：
+           * - 提前 fetch 会与 iframe 形成两条相同文件请求；
+           * - fetch 完成后会更新 fileRefreshTimestamp，使带时间戳 key 的 FilePreview
+           *   被重新挂载，iframe 再次加载并造成预览区闪烁。
+           * Markdown 同理由 FilePreview 自己按需加载；代码视图仍走下方正文请求。
+           */
+          if ((_isMarkdownFile || isHtmlFile) && !initViewFileType) {
             setSelectedFileNode({
               ...fileNode,
               content: '',
@@ -847,6 +863,32 @@ export function useFileTreePreviewView(
       }
     }
   }, [originalFiles, enableVersionControl]);
+
+  /**
+   * 会话结束（FINAL_RESULT）文件树刷新后，兜底重拉当前打开文件的正文。
+   *
+   * 场景：agent 修改了“当前已打开”的文件，但最终输出未携带指向它的
+   * <task-result><file>（或 file 指向其他文件），既有正文刷新路径
+   * （树长度变化 / task-result 命中 / 手动刷新）均未触发，正文停留在旧值。
+   * 模型层在树刷新完成后发出 fileTreeRefreshTrigger，这里监听并在树就绪后重拉内容。
+   *
+   * 声明在原文件列表同步 effect 之后，保证同一轮渲染内 filesRef.current
+   * 已是刷新后的最新树，refreshSelectedFileContent 能基于最新 fileProxyUrl 重拉。
+   */
+  useEffect(() => {
+    // 无触发（初始值 / 切换会话后重置）或同一 trigger 已处理过，避免重复重拉
+    if (!fileTreeRefreshTrigger) {
+      return;
+    }
+
+    if (handledFileTreeRefreshTriggerRef.current === fileTreeRefreshTrigger) {
+      return;
+    }
+    handledFileTreeRefreshTriggerRef.current = fileTreeRefreshTrigger;
+    // 无选中文件时 refreshSelectedFileContent 内部会直接返回，无需在此额外判断
+    void refreshSelectedFileContent();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fileTreeRefreshTrigger]);
 
   /**
    * 监听 taskAgentSelectedFileId / taskAgentSelectTrigger，自动定位并打开消息中的目标文件。
@@ -1785,28 +1827,22 @@ export function useFileTreePreviewView(
       fileProxyUrl: string,
       selectedFileId: string,
     ): { key: string; url: string } => {
-      // 构建 key：同时包含两个值，确保任何一个变化都能触发重新渲染
-      const triggerPart =
-        taskAgentSelectTrigger !== undefined
-          ? `trigger-${taskAgentSelectTrigger}`
-          : 'trigger-none';
+      /**
+       * taskAgentSelectTrigger 只负责驱动自动选中 effect；真正选中文件时会统一更新
+       * fileRefreshTimestamp。若两者都参与 key，一次消息文件点击会先因 trigger 重建，
+       * 再因 timestamp 重建，导致 Markdown 等资源连续请求两次。
+       */
       const timestampPart = `timestamp-${fileRefreshTimestamp}`;
-      const fileKey = `${fileType}-${selectedFileId}-${triggerPart}-${timestampPart}`;
+      const fileKey = `${fileType}-${selectedFileId}-${timestampPart}`;
 
-      // 构建 URL 参数：使用组合值，确保任何一个变化都会导致 URL 变化
-      // 优先使用 taskAgentSelectTrigger，如果不存在则使用时间戳 ref
-      const triggerValue =
-        taskAgentSelectTrigger !== undefined
-          ? taskAgentSelectTrigger
-          : fileRefreshTimestamp;
       const separator = fileProxyUrl.includes('?') ? '&' : '?';
-      const fileUrl = triggerValue
-        ? `${fileProxyUrl}${separator}t=${triggerValue}`
+      const fileUrl = fileRefreshTimestamp
+        ? `${fileProxyUrl}${separator}t=${fileRefreshTimestamp}`
         : fileProxyUrl;
 
       return { key: fileKey, url: fileUrl };
     },
-    [taskAgentSelectTrigger, fileRefreshTimestamp],
+    [fileRefreshTimestamp],
   );
 
   // 文件树已加载的 OpenUI 内容：useMemo 稳定化，避免每次渲染重新 parse
@@ -2031,6 +2067,8 @@ export function useFileTreePreviewView(
         /\/api\/computer\/static\/(\d+)/,
       )?.[1];
       return (
+        // 不加 key={selectedFileId}：让 openui 文件间复用同一 OpenUiRuntimeFrame 实例，
+        // 切换走 OPENUI_LOAD 增量更新（iframe 只加载一次），避免每文件重载 3.4MB runtime。
         <OpenUiRuntimeFrame
           artifact={openUiInlineArtifact}
           artifactUrl={

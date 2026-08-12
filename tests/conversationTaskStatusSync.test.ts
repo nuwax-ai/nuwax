@@ -32,6 +32,7 @@ import { AssistantRoleEnum, TaskStatus } from '@/types/enums/agent';
 import {
   applyTerminalTaskStatus,
   createSyncConversationTaskStatus,
+  fetchConversationSnapshot,
   fetchConversationTaskStatus,
   hasExecutingTaskInList,
   isTerminalTaskStatus,
@@ -54,6 +55,20 @@ describe('conversationTaskStatusSync', () => {
   });
 
   describe('fetchConversationTaskStatus', () => {
+    it('可返回包含最新消息的完整会话快照', async () => {
+      const data = {
+        id: 1553050,
+        taskStatus: TaskStatus.COMPLETE,
+        messageList: [{ id: 2, text: 'new message' }],
+      };
+      (apiAgentConversation as any).mockResolvedValue({
+        code: '0000',
+        data,
+      });
+
+      await expect(fetchConversationSnapshot(1553050)).resolves.toBe(data);
+    });
+
     it('成功时返回 taskStatus', async () => {
       (apiAgentConversation as any).mockResolvedValue({
         code: '0000',

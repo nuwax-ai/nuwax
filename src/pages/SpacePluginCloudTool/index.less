@@ -44,7 +44,9 @@
 
 .container {
   padding: 0 5px;
-  width: 100%;
+  // 不要写死 width: 100%，否则版本历史展开时无法与内容区并排收缩，会被 overflow 裁掉
+  min-width: 0;
+  overflow: hidden;
 
   .main-container {
     padding: 16px 20px;
@@ -52,6 +54,8 @@
     // 代码模式
     &.code-wrap {
       background-color: @WHITE;
+      min-width: 0;
+      overflow: hidden;
     }
 
     .title {

@@ -2,8 +2,12 @@ import { EVENT_TYPE } from '@/constants/event.constants';
 import { GLOBAL_POLLING_INTERVAL } from '@/constants/home.constants';
 import { AssistantRoleEnum, TaskStatus } from '@/types/enums/agent';
 import { MessageStatusEnum } from '@/types/enums/common';
-import type { MessageInfo } from '@/types/interfaces/conversationInfo';
+import type {
+  ConversationInfo,
+  MessageInfo,
+} from '@/types/interfaces/conversationInfo';
 import {
+  fetchConversationSnapshot,
   fetchConversationTaskStatus,
   resolveTaskStatusFromMessageLists,
 } from '@/utils/conversationTaskStatusSync';
@@ -57,6 +61,8 @@ export interface UseConversationStreamResumeOptions {
   ) => void;
   /** 中断 sub 流（model 的 abortResumeStream）；未提供则跳过中断 */
   abortSub?: () => void;
+  /** 每次状态轮询拿到的完整会话快照，用于静默同步新增历史消息。 */
+  onConversationSnapshot?: (snapshot: ConversationInfo) => void;
   /**
    * 轮询拿到终态 taskStatus 时写回当前会话 model（仅 COMPLETE/FAILED/CANCEL）
    */
@@ -148,11 +154,14 @@ export function useConversationStreamResume(
     resumeDebugSource,
     resumeStream,
     abortSub,
+    onConversationSnapshot,
     onTerminalTaskStatus,
   } = options;
 
   const onTerminalTaskStatusRef = useRef(onTerminalTaskStatus);
   onTerminalTaskStatusRef.current = onTerminalTaskStatus;
+  const onConversationSnapshotRef = useRef(onConversationSnapshot);
+  onConversationSnapshotRef.current = onConversationSnapshot;
   const debugSource = resumeDebugSource || 'unified-chat-session';
 
   // sub 是否已订阅（开/闭之间）。ref 用于回调闭包安全读取；state 用于驱动 ready 重算
@@ -209,7 +218,10 @@ export function useConversationStreamResume(
 
   // 订阅 sub 流。续上后立即 stopPolling（同步，不等 ready 异步生效）；
   // sub onClose 时 startPolling 恢复，继续检测会话再次变为 EXECUTING。
-  const subscribe = async (id: number | string) => {
+  const subscribe = async (
+    id: number | string,
+    polledMessageList?: MessageInfo[],
+  ) => {
     if (!resumeStream) return; // 未注入 action（页面未启用恢复）
     if (isResumeSubscribedRef.current) return; // 防重复订阅
     if (latestRef.current.isLocallyStreaming) return; // live 正在驱动输出，不重复订阅
@@ -257,10 +269,14 @@ export function useConversationStreamResume(
       taskStatus: TaskStatus.EXECUTING,
     });
 
-    // 多页签/查看中变 EXECUTING：先 reload 历史，确保 messageList 含最新发送的用户消息，
-    // 再追加 assistant 占位由 sub 流重建（否则 sub 续上后会少显示那条用户消息）
-    let list = latestRef.current.messageList || [];
-    if (reloadHistoryAsync) {
+    // 多页签/查看中变 EXECUTING：优先复用检测到执行态的轮询快照；没有快照时再 reload，
+    // 确保 messageList 含最新发送的用户消息后，由 sub 流继续重建 assistant 输出。
+    let list = polledMessageList?.length
+      ? polledMessageList
+      : latestRef.current.messageList || [];
+    // 轮询已经返回完整快照时直接复用，避免订阅 sub 前再次查询同一个会话接口。
+    // 没有轮询快照的入口（如首次进入 EXECUTING 会话）仍保留原有 reload 与落库等待。
+    if (polledMessageList === undefined && reloadHistoryAsync) {
       try {
         const reloaded = await reloadHistoryAsync(id);
         conversationResumeLogger.info('reload before sub:done', {
@@ -423,7 +439,7 @@ export function useConversationStreamResume(
   const { run, cancel } = useRequest(
     () =>
       conversationId
-        ? fetchConversationTaskStatus(conversationId)
+        ? fetchConversationSnapshot(conversationId)
         : Promise.resolve(undefined),
     {
       pollingInterval: GLOBAL_POLLING_INTERVAL,
@@ -442,8 +458,12 @@ export function useConversationStreamResume(
         isResumeSubscribed,
         resumeStream,
       ],
-      onSuccess: (status) => {
+      onSuccess: (snapshot) => {
         if (!conversationId) return;
+        if (snapshot && latestRef.current.conversationId === conversationId) {
+          onConversationSnapshotRef.current?.(snapshot);
+        }
+        const status = snapshot?.taskStatus;
         // 防跨会话写回；同值终态跳过，避免每轮轮询触发下游 reload 闪烁
         if (
           status !== undefined &&
@@ -472,7 +492,19 @@ export function useConversationStreamResume(
             ) {
               return;
             }
-            subscribe(conversationId);
+            const polledMessageList = snapshot?.messageList;
+            // 详情状态可能先于本轮用户消息落库。快照尚未就绪时保持正常轮询，
+            // 不立即发起多次历史重载；下一轮快照就绪后再建立 sub。
+            if (
+              Array.isArray(polledMessageList) &&
+              !hasUserReadyForResume(
+                latestRef.current.messageList,
+                polledMessageList,
+              )
+            ) {
+              return;
+            }
+            subscribe(conversationId, polledMessageList);
           }
         } else if (isResumeSubscribedRef.current && abortSub) {
           // 非 EXECUTING：任务已结束，兜底中断 sub（end_turn 自动断开应已触发）
@@ -535,9 +567,13 @@ export function useConversationStreamResume(
         !isResumeSubscribedRef.current &&
         resumeStream
       ) {
-        fetchConversationTaskStatus(conversationId).then((status) => {
+        fetchConversationSnapshot(conversationId).then((snapshot) => {
           // 防跨会话写回：fetch in-flight 期间会话可能已切换，丢弃 stale 结果
           if (latestRef.current.conversationId !== conversationId) return;
+          if (snapshot) {
+            onConversationSnapshotRef.current?.(snapshot);
+          }
+          const status = snapshot?.taskStatus;
           if (
             status !== undefined &&
             status !== TaskStatus.EXECUTING &&
@@ -546,7 +582,17 @@ export function useConversationStreamResume(
             onTerminalTaskStatusRef.current?.(status);
           }
           if (status === TaskStatus.EXECUTING) {
-            subscribeRef.current(conversationId);
+            const polledMessageList = snapshot?.messageList;
+            if (
+              Array.isArray(polledMessageList) &&
+              !hasUserReadyForResume(
+                latestRef.current.messageList,
+                polledMessageList,
+              )
+            ) {
+              return;
+            }
+            subscribeRef.current(conversationId, polledMessageList);
           }
         });
       }

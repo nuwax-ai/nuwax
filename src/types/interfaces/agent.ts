@@ -16,6 +16,7 @@ import type {
   NoneRecallReplyTypeEnum,
   OutputDirectlyEnum,
   SearchStrategyEnum,
+  TaskStatus,
   VisibleToLLMEnum,
 } from '@/types/enums/agent';
 import type {
@@ -50,6 +51,13 @@ export interface AgentBaseInfo {
   description: string;
 }
 
+/** 最近使用智能体中用于展示任务状态的会话信息。 */
+export interface AgentRecentConversationInfo {
+  id: number | string;
+  topic?: string | null;
+  taskStatus?: TaskStatus;
+}
+
 // 智能体信息
 export interface AgentInfo extends AgentBaseInfo {
   id: number;
@@ -63,6 +71,8 @@ export interface AgentInfo extends AgentBaseInfo {
   spaceId: number;
   // ChatBot、PageApp、TaskAgent、AgentFlow
   agentType: 'ChatBot' | 'PageApp' | 'TaskAgent' | 'AgentFlow';
+  // 最近使用列表中的智能体会话，接口可能返回 null
+  conversationList?: AgentRecentConversationInfo[] | null;
 }
 
 // 新增智能体输入参数
@@ -551,12 +561,18 @@ export interface AgentConfigInfo {
   allowAtSkill: DefaultSelectedEnum;
   // 允许用户选择个人电脑
   allowPrivateSandbox: DefaultSelectedEnum;
-  // 扩展信息
+  // 扩展信息, 用于存储智能体额外信息, 可以是任何后端返回的额外信息
   extra?: {
     prodProxyMcpId?: number;
     private?: boolean;
     sandboxId?: number;
     devProxyMcpId?: number;
+    deviceId?: string;
+    // 设备类型，例如：DeskBuddy
+    deviceType?: string;
+    // 是否是设备Agent
+    isDeviceAgent?: boolean;
+    [key: string]: any;
   };
   /** 是否有权限使用该智能体 */
   hasPermission?: boolean;

@@ -11,13 +11,16 @@ interface MarkdownCustomProcessGroupProps {
   children: React.ReactNode;
   /** 正文开始输出时由 Markdown 转换层标记，用于自动收起已完成的工具调用组。 */
   autoCollapse?: boolean;
+  /** 历史消息中的工具调用组初始保持收起。 */
+  defaultCollapsed?: boolean;
 }
 
 const MarkdownCustomProcessGroup: React.FC<MarkdownCustomProcessGroupProps> = ({
   children,
   autoCollapse = false,
+  defaultCollapsed = false,
 }) => {
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(!defaultCollapsed);
   const wasAutoCollapseRef = useRef(false);
 
   useEffect(() => {

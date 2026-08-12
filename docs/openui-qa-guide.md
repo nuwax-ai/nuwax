@@ -191,24 +191,25 @@ Agent 调用 nuwax_render_openui  ──▶  写入 data/{artifactId}.openui.jso
 
 ### 场景 3 — sidecar 全屏页面
 
-> 注意：sidecar **不是**从 inline 卡片上再点一次打开。只有 Agent 以 `presentation.mode = sidecar` 生成时，对话里才会出现摘要卡 +「打开预览」。
+> 注意：sidecar **不是**从 inline 卡片上再点一次打开。只有 Agent 以 `presentation.mode = sidecar` 生成时，对话里才会出现摘要卡 +「打开预览」。 **通过前提：** 工具列表里必须出现 `nuwax_render_openui`（代理后常见名如 `nuwax-openui__nuwax_render_openui`）。仅 `nuwax_validate_openui` / `nuwax_get_openui_update_guide` **不算**渲染成功，Host 不会出任何 UI。
 
 **提示词：**
 
 ```
-帮我做一页全屏销售数据看板（要用 sidecar / 全屏页面预览，不要塞在对话气泡里）：包含总营收、订单数两个指标，再加一个 Top5 产品销量柱状图。
+帮我做一页全屏销售数据看板（要用 sidecar / 全屏页面预览，不要塞在对话气泡里）：包含总营收、订单数两个指标，再加一个 Top5 产品销量柱状图
 ```
 
-**操作：** 对话内出现摘要卡后，点击「打开预览」。
+**操作：** 确认工具调用含 `nuwax_render_openui` 且 `presentation.mode=sidecar`、`autoOpen=true`；若未自动弹出，点摘要卡「打开预览」。
 
 **预期：**
 
+- 工具轨迹含 `nuwax_render_openui`（不是只 validate）
 - 对话内出现 sidecar 摘要卡（标题 +「打开预览」按钮），而不是直接塞满对话的大块 inline UI
-- 点击「打开预览」后进入全屏页面预览
+- `autoOpen: true` 时 Host 应自动打开全屏预览；否则点击「打开预览」后进入全屏页面预览
 - UI 完整加载，布局/样式正常
 - 页面内交互（筛选、点击、表单）正常
 
-**通过标准：** 摘要卡入口正确；全屏页面能加载并正常交互。
+**通过标准：** 必须有 render 工具调用；摘要卡入口正确；全屏页面能加载并正常交互。仅 validate 通过不算本场景通过。
 
 ---
 
@@ -488,7 +489,7 @@ Agent 调用 nuwax_render_openui  ──▶  写入 data/{artifactId}.openui.jso
 | `public/static/file-preview/file-preview-openui.js` | 分享页 OpenUI：类型识别、digest 校验、Runtime iframe Host |
 | `public/static/file-preview/file-preview.js` | 分享页主流程（调度各类型预览，含调用 OpenUI Host） |
 | `src/utils/openUiArtifact.ts` | Host 侧 `.openui.json` / 裸 `.openui` 识别与契约嗅探 |
-| `nuwax-openui-mcp`（≥0.3.1） | `nuwax_render_openui`、`nuwax_get_openui_reference`、`nuwax_get_openui_update_guide` |
+| `nuwax-openui-mcp`（≥0.3.4） | `nuwax_render_openui`、`nuwax_validate_openui`、`nuwax_get_openui_reference`、`nuwax_get_openui_update_guide` |
 | `nuwax-ask-question-mcp` | 提供 `nuwax_ask_question` 工具，负责提问 |
 
 > 如遇问题，附上：使用的提示词、对应的 `data/*.openui.json` 文件、浏览器控制台报错截图，便于定位。

@@ -1,5 +1,24 @@
 import { dict, getCurrentLang } from '@/services/i18nRuntime';
+import { TaskStatus } from '@/types/enums/agent';
 import dayjs from 'dayjs';
+
+/**
+ * 从首页智能体详情或会话地址中提取智能体 ID。
+ */
+export const getAgentIdFromHomePathname = (pathname: string) => {
+  const agentDetailMatch = pathname.match(/^\/agent\/([^/]+)/);
+  if (agentDetailMatch) return agentDetailMatch[1];
+
+  return pathname.match(/^\/home\/chat\/[^/]+\/([^/]+)/)?.[1];
+};
+
+/** 统计智能体会话中正在执行的任务数量。 */
+export const getExecutingConversationCount = (
+  conversationList?: Array<{ taskStatus?: TaskStatus }> | null,
+) =>
+  conversationList?.filter(
+    (conversation) => conversation.taskStatus === TaskStatus.EXECUTING,
+  ).length ?? 0;
 
 /**
  * 格式化会话更新时间，符合设计图逻辑

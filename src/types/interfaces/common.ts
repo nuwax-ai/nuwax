@@ -493,6 +493,8 @@ export interface PageParams {
 // 查询特定数量输入参数
 export interface ListParams {
   size: number;
+  pageIndex?: number;
+  keyword?: string;
 }
 
 // 插件发布弹窗组件
@@ -645,7 +647,10 @@ export interface ChatBottomDebugProps {
 }
 
 // 运行状态组件：进行中、运行完毕
-export type RunOverProps = ChatBottomMoreProps;
+export interface RunOverProps extends ChatBottomMoreProps {
+  /** 终态没有执行步骤时是否仍展示状态文案 */
+  showTerminalStatus?: boolean;
+}
 
 // 'Tooltip省略号'组件
 export interface EllipsisTooltipProps {

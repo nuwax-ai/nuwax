@@ -9,12 +9,9 @@ import { cloneDeep } from '@/utils/common';
 import { normalizeFileDiffItems } from '@/utils/fileChangeDiff';
 import {
   buildOpenUiArtifactFileUrl,
-  buildOpenUiFilePath,
   extractOpenUiArtifactId,
   isOpenUiArtifactRef,
   isOpenUiRenderToolName,
-  legacyArtifactToOpenUiFile,
-  renderInputToOpenUiFile,
   resolveOpenUiDisplayState,
 } from '@/utils/openUiArtifact';
 import {
@@ -44,6 +41,7 @@ import {
 import { useModel } from 'umi';
 import styles from './index.less';
 import SeeDetailModal from './SeeDetailModal';
+import { usePlanAutoScroll } from './usePlanAutoScroll';
 
 const cx = classNames.bind(styles);
 const OpenUiArtifactView = lazy(
@@ -373,6 +371,12 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
     return innerProcessing.type === AgentComponentTypeEnum.Plan;
   }, [innerProcessing.type]);
 
+  const {
+    containerRef: planTaskListRef,
+    handleScroll: handlePlanScroll,
+    handleWheel: handlePlanWheel,
+  } = usePlanAutoScroll(detailData?.response, isPlanType && isPlanExpanded);
+
   // 获取 Plan 任务状态图标
   const getPlanStatusIcon = useCallback((status: string) => {
     const iconProps = { className: cx(styles['task-icon']) };
@@ -403,7 +407,12 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
 
     return (
       <div className={cx(styles['plan-details'])}>
-        <div className={cx(styles['plan-task-list'])}>
+        <div
+          ref={planTaskListRef}
+          className={cx(styles['plan-task-list'])}
+          onScroll={handlePlanScroll}
+          onWheel={handlePlanWheel}
+        >
           {detailData.response.map((entry: any, index: number) => (
             <div key={index} className={cx(styles['plan-task-item'])}>
               {getPlanStatusIcon(entry.status)}
@@ -475,54 +484,24 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
   }, [detailData, innerProcessing, showPagePreview, pagePreviewData]);
 
   const handleOpenUiSidecar = useCallback(
-    (artifact: OpenUiArtifact) => {
-      // 预览场景优先复用工具返回中已有的渲染内容（openUiRenderInput），不再请求
-      // data/{artifactId}.openui.json，规避静态访问 cookie(static_sk) 失效及并发重复拉取。
-      const inlineFile = isOpenUiArtifactRef(artifact)
-        ? openUiRenderInput
-          ? renderInputToOpenUiFile(
-              openUiRenderInput,
-              artifact.artifactId,
-              artifact.digest,
-            )
-          : undefined
-        : legacyArtifactToOpenUiFile(artifact);
-      // 仅当内存中没有渲染内容（理论上不应发生）时，才回退到接口拉取
-      const artifactUrl = inlineFile
-        ? undefined
-        : isOpenUiArtifactRef(artifact)
-        ? buildOpenUiArtifactFileUrl(
-            props.conversationId,
-            artifact.artifactId,
-            artifact.digest,
-          )
-        : undefined;
-      showPagePreview({
-        name: artifact.title,
-        uri: '/static/openui-runtime/index.html',
-        params: {},
-        executeId: innerProcessing.executeId || artifact.artifactId,
-        source: 'openui',
-        sandboxProfile: 'openui-sidecar-v1',
-        artifactUrl: artifactUrl || undefined,
-        artifactId: artifact.artifactId,
-        artifactDigest: isOpenUiArtifactRef(artifact)
-          ? artifact.digest
-          : artifact.document.digest,
-        conversationId: props.conversationId,
-        openUiArtifactFile: inlineFile,
-        // file_path 自主拉取：iframe 内同源拉取（带得上 cookie），inlineFile 作为 relay 失败时的回退。
-        // conversationId 非法时返回 null → 不传 filePath，回退现有 inlineFile/artifactUrl 模式。
-        openUiFilePath:
-          buildOpenUiFilePath(props.conversationId, artifact.artifactId) ??
-          undefined,
-      });
+    async (artifact: OpenUiArtifact) => {
+      const conversationId = props.conversationId;
+      if (conversationId === undefined || conversationId === null) {
+        return;
+      }
+      // sidecar 不再走专用预览面板：直接在文件树中选中 data/{artifactId}.openui.json，
+      // 复用文件树既有的 OpenUiRuntimeFrame 预览（与 handleOpenFileTree 一致）。
+      // forceRefresh 确保刚落盘的 .openui.json 入树；自动选中逻辑对「尚未入树」会 pending+补选。
+      await openPreviewView(Number(conversationId), { forceRefresh: true });
+      setTaskAgentSelectedFileId(`data/${artifact.artifactId}.openui.json`);
+      // 每次点击更新触发标志，确保即使文件ID相同也能强制触发选中
+      setTaskAgentSelectTrigger(Date.now());
     },
     [
-      innerProcessing.executeId,
       props.conversationId,
-      showPagePreview,
-      openUiRenderInput,
+      openPreviewView,
+      setTaskAgentSelectedFileId,
+      setTaskAgentSelectTrigger,
     ],
   );
 
@@ -535,20 +514,41 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
   //   }
   // }, [innerProcessing]);
 
-  if (
-    !innerProcessing.executeId ||
-    innerProcessing.type === AgentComponentTypeEnum.Event // 所有事件都不显示
-  ) {
-    return null;
+  // 渲染工具（OpenUI）：有内联 UI 产物（ready / input-only）时渲染 sidecar/inline 视图；
+  // 必须在下方 Event 类型隐藏之前处理——RENDER_UI 历史项 type=Event，否则会被
+  // `type === Event → return null` 吞掉。若产物缺席（status === 'absent'），则降级向下走标准工具调用卡片渲染。
+  if (isOpenUiRenderProcess && openUiDisplayState.status !== 'absent') {
+    return (
+      <div
+        className={cx(styles['markdown-custom-process'], styles.openuiInline)}
+        key={props.dataKey}
+        data-key={props.dataKey}
+      >
+        <Suspense fallback={null}>
+          <OpenUiArtifactView
+            artifact={openUiArtifact}
+            inlineInput={openUiRenderInput || undefined}
+            inlineArtifactId={inlineArtifactId}
+            artifactUrl={
+              openUiArtifact && isOpenUiArtifactRef(openUiArtifact)
+                ? buildOpenUiArtifactFileUrl(
+                    props.conversationId,
+                    openUiArtifact.artifactId,
+                    openUiArtifact.digest,
+                  ) || undefined
+                : undefined
+            }
+            conversationId={props.conversationId}
+            onOpenSidecar={handleOpenUiSidecar}
+          />
+        </Suspense>
+      </div>
+    );
   }
 
-  // 流式 Markdown 有时会残留一条已完成的 OpenUI 工具标记，但对应的
-  // processing input/result 并不存在。它无法渲染任何 UI，继续显示只会形成
-  // 一个和真实 OpenUI 卡片并列的空壳工具条。
   if (
-    isOpenUiRenderProcess &&
-    innerProcessing.status === ProcessingEnum.FINISHED &&
-    openUiDisplayState.status === 'absent'
+    !innerProcessing.executeId ||
+    innerProcessing.type === AgentComponentTypeEnum.Event // 所有（非渲染）事件都不显示
   ) {
     return null;
   }

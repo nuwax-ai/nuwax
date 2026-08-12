@@ -13,6 +13,45 @@
   margin-left: @sectionMarginLeft;
   margin-top: @sectionMarginTop;
 
+  .tabs {
+    display: flex;
+    flex-shrink: 0;
+    border-bottom: 1px solid @colorBorderSecondary;
+    margin: 0 @paddingXs @paddingXs;
+
+    .tab {
+      position: relative;
+      flex: 1;
+      height: @controlHeightLg;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: @navSecondMenuAdaptiveTextSecondary;
+      font-size: @fontSize;
+      cursor: pointer;
+
+      &::after {
+        position: absolute;
+        right: 0;
+        bottom: -1px;
+        left: 0;
+        height: 1px;
+        border-radius: 2px;
+        background: transparent;
+        content: '';
+      }
+
+      &.active {
+        color: @navSecondMenuAdaptiveText;
+        font-weight: @fontWeightStrong;
+
+        &::after {
+          background: @colorPrimary;
+        }
+      }
+    }
+  }
+
   // 会话列表容器 - 可滚动区域
   .conversation-list-wrapper {
     display: flex;

@@ -1,6 +1,7 @@
-import { AssistantRoleEnum } from '@/types/enums/agent';
+import { AssistantRoleEnum, MessageTypeEnum } from '@/types/enums/agent';
 import { MessageStatusEnum } from '@/types/enums/common';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
+import { isEqual } from 'lodash';
 
 export function appendOutgoingConversationMessages(
   messageList: MessageInfo[] | undefined,
@@ -18,7 +19,18 @@ export function appendOutgoingConversationMessages(
       return item;
     }) || [];
 
-  return [...completeMessageList, chatMessage, currentMessage];
+  return [
+    ...completeMessageList,
+    {
+      ...chatMessage,
+      clientRenderKey: chatMessage.clientRenderKey || String(chatMessage.id),
+    },
+    {
+      ...currentMessage,
+      clientRenderKey:
+        currentMessage.clientRenderKey || String(currentMessage.id),
+    },
+  ];
 }
 
 const isFrontendUuidMessageId = (id: unknown): boolean =>
@@ -46,6 +58,168 @@ const sameStableId = (left: unknown, right: unknown): boolean =>
   hasStableMessageId(left) &&
   hasStableMessageId(right) &&
   String(left) === String(right);
+
+/**
+ * 找到当前尚未落库轮次的起点。
+ *
+ * 用户消息由前端 UUID 乐观插入，但同轮 assistant 在 SSE 过程中可能提前换成
+ * 服务端格式 ID。因此不能只把末尾连续 UUID 当作乐观尾巴，必须从最后一条
+ * 已落库 user 之后的首条乐观 user 开始，整体保留这一轮。
+ */
+const findOptimisticRoundStart = (messages: MessageInfo[]): number => {
+  let lastPersistedUserIndex = -1;
+  messages.forEach((message, index) => {
+    if (
+      message.role === AssistantRoleEnum.USER &&
+      !isOptimisticMessageId(message.id)
+    ) {
+      lastPersistedUserIndex = index;
+    }
+  });
+
+  return messages.findIndex(
+    (message, index) =>
+      index > lastPersistedUserIndex &&
+      message.role === AssistantRoleEnum.USER &&
+      isOptimisticMessageId(message.id),
+  );
+};
+
+const findClientRenderRoundStart = (messages: MessageInfo[]): number => {
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    if (
+      messages[index].role === AssistantRoleEnum.USER &&
+      messages[index].clientRenderKey
+    ) {
+      return index;
+    }
+  }
+  return -1;
+};
+
+const getIdlessMessageSignature = (message: MessageInfo): string =>
+  JSON.stringify([
+    message.role || '',
+    message.type || '',
+    message.messageType || '',
+    message.text || '',
+    message.think || '',
+    message.quotedText || '',
+  ]);
+
+const getIdlessMessageKey = (message: MessageInfo): string => {
+  const isSyntheticOpeningMessage =
+    !hasStableMessageId(message.id) &&
+    (message.index === null || message.index === undefined) &&
+    message.role === AssistantRoleEnum.ASSISTANT &&
+    message.messageType === MessageTypeEnum.ASSISTANT;
+  return isSyntheticOpeningMessage
+    ? 'synthetic-opening-message'
+    : `idless:${getIdlessMessageSignature(message)}`;
+};
+
+/** 将最近一轮的客户端渲染标识迁移到对应的服务端消息。 */
+const preserveClientRenderKeys = (
+  clientRound: MessageInfo[],
+  incoming: MessageInfo[],
+): MessageInfo[] => {
+  const clientUser = clientRound[0];
+  if (clientUser?.role !== AssistantRoleEnum.USER) {
+    return incoming;
+  }
+
+  const result = [...incoming];
+  let cursor = -1;
+  for (let index = result.length - 1; index >= 0; index -= 1) {
+    const message = result[index];
+    if (
+      message.role === AssistantRoleEnum.USER &&
+      (message.text || '').trim() === (clientUser.text || '').trim()
+    ) {
+      cursor = index;
+      break;
+    }
+  }
+  if (cursor < 0) {
+    return incoming;
+  }
+
+  clientRound.forEach((clientMessage, clientIndex) => {
+    const matchedIndex = result.findIndex(
+      (message, index) =>
+        index >= cursor &&
+        message.role === clientMessage.role &&
+        (clientIndex !== 0 ||
+          (message.text || '').trim() === (clientMessage.text || '').trim()),
+    );
+    if (matchedIndex < 0) {
+      cursor = result.length;
+      return;
+    }
+
+    result[matchedIndex] = {
+      ...result[matchedIndex],
+      clientRenderKey:
+        clientMessage.clientRenderKey || String(clientMessage.id),
+    };
+    cursor = matchedIndex + 1;
+  });
+  return result;
+};
+
+/**
+ * 已收到 FINAL_RESULT 的本地消息，其可见内容由当前 SSE 结果持有到页面离开。
+ *
+ * 会话快照仍可补齐服务端 id/index 以及 ACP/MCP 交互状态，但不能用落库过程中
+ * 存在细微差异的 text/think/processing 等字段覆盖当前内容，否则 Markdown 会在
+ * 会话结束后再次渲染，产生肉眼可见的闪烁。
+ */
+const preserveFinalizedMessagePresentation = (
+  current: MessageInfo[],
+  incomingList: MessageInfo[],
+  incoming: MessageInfo,
+  incomingIndex: number,
+): MessageInfo => {
+  if (!incoming.clientRenderKey) {
+    return incoming;
+  }
+
+  // 同一轮工作流可能产生多条复用 clientRenderKey 的 assistant 消息；FINAL_RESULT
+  // 属于该 key 的最后一条，只保护服务端对应的最后一条，避免污染前置过程消息。
+  for (let index = incomingList.length - 1; index > incomingIndex; index -= 1) {
+    if (incomingList[index].clientRenderKey === incoming.clientRenderKey) {
+      return incoming;
+    }
+  }
+
+  let finalized: MessageInfo | undefined;
+  for (let index = current.length - 1; index >= 0; index -= 1) {
+    const message = current[index];
+    if (
+      message.clientRenderKey === incoming.clientRenderKey &&
+      message.finalResult
+    ) {
+      finalized = message;
+      break;
+    }
+  }
+  if (!finalized) {
+    return incoming;
+  }
+
+  return {
+    ...incoming,
+    clientRenderKey: finalized.clientRenderKey,
+    text: finalized.text,
+    think: finalized.think,
+    attachments: finalized.attachments,
+    requestId: finalized.requestId,
+    status: finalized.status,
+    thinkingFinished: finalized.thinkingFinished,
+    finalResult: finalized.finalResult,
+    processingList: finalized.processingList,
+  };
+};
 
 const completeAssistantPlaceholder = (message: MessageInfo): MessageInfo => {
   if (isIncompleteStatus(message.status)) {
@@ -147,13 +321,19 @@ export function preserveOptimisticMessageTail(
     return incoming;
   }
 
-  // 从末尾向前收集「连续」的乐观消息作为尾巴（通常是 [userOpt, asstOpt] 或仅 [asstOpt]）
-  const tail: MessageInfo[] = [];
-  for (let i = prev.length - 1; i >= 0; i -= 1) {
-    if (isOptimisticMessageId(prev[i].id)) {
-      tail.unshift(prev[i]);
-    } else {
-      break;
+  // SSE assistant 可能已换成服务端格式 ID，优先从乐观 user 开始保留整个未落库轮次。
+  const optimisticRoundStart = findOptimisticRoundStart(prev);
+  const tail: MessageInfo[] =
+    optimisticRoundStart >= 0 ? prev.slice(optimisticRoundStart) : [];
+
+  // 没有乐观 user 时兼容仅 assistant 占位的恢复场景：从末尾收集连续 UUID。
+  if (!tail.length) {
+    for (let i = prev.length - 1; i >= 0; i -= 1) {
+      if (isOptimisticMessageId(prev[i].id)) {
+        tail.unshift(prev[i]);
+      } else {
+        break;
+      }
     }
   }
 
@@ -251,4 +431,86 @@ export function preserveOptimisticMessageTail(
   }
 
   return [...incoming, ...tail];
+}
+
+/**
+ * 将轮询得到的服务端消息快照合并到本地，同时保留尚未落库的乐观消息。
+ * 没有可见变化时返回原数组引用，避免每次轮询都触发消息区重渲染。
+ */
+export function reconcileConversationSnapshotMessages(
+  current: MessageInfo[] | undefined | null,
+  incoming: MessageInfo[] | undefined | null,
+): MessageInfo[] {
+  const currentList = current || [];
+  const incomingList = incoming || [];
+  if (!incomingList.length) {
+    return currentList;
+  }
+
+  // 会话详情接口可能只返回最近一段消息，不能整体替换，否则用户上滑加载出的
+  // 更早历史会被下一次轮询删除。以稳定消息 id 更新已有项，并把缺失项追加到尾部。
+  // 未落库 user 后面的 assistant 即使已被 SSE 换成服务端格式 ID，仍属于本地轮次，
+  // 不能提前归入 persisted；否则 preserveOptimisticMessageTail 追加整轮时会重复。
+  const optimisticRoundStart = findOptimisticRoundStart(currentList);
+  const persistedSource =
+    optimisticRoundStart >= 0
+      ? currentList.slice(0, optimisticRoundStart)
+      : currentList;
+  const optimisticRound =
+    optimisticRoundStart >= 0 ? currentList.slice(optimisticRoundStart) : [];
+  const clientRoundStart = findClientRenderRoundStart(currentList);
+  const clientRound =
+    clientRoundStart >= 0
+      ? currentList.slice(clientRoundStart)
+      : optimisticRound;
+  const persisted = persistedSource.filter(
+    (message) => !isOptimisticMessageId(message.id),
+  );
+  const indexByIdentity = new Map<string, number>();
+  const serverMerged: MessageInfo[] = [];
+  const upsert = (message: MessageInfo, replaceExisting: boolean) => {
+    const hasId = hasStableMessageId(message.id);
+    const identity = hasId
+      ? `id:${String(message.id)}`
+      : getIdlessMessageKey(message);
+    const existingIndex = indexByIdentity.get(identity);
+    if (existingIndex !== undefined) {
+      // 稳定 ID 的服务端消息需要覆盖旧内容；无 ID 合成消息只在语义发生变化时
+      // 替换，从而忽略服务端每轮重新生成的 time 等易变字段。
+      if (
+        replaceExisting &&
+        (hasId ||
+          getIdlessMessageSignature(serverMerged[existingIndex]) !==
+            getIdlessMessageSignature(message))
+      ) {
+        const existing = serverMerged[existingIndex];
+        serverMerged[existingIndex] = existing.clientRenderKey
+          ? { ...message, clientRenderKey: existing.clientRenderKey }
+          : message;
+      }
+      return;
+    }
+    indexByIdentity.set(identity, serverMerged.length);
+    serverMerged.push(message);
+  };
+
+  // 先归并当前列表，可立即清除之前轮询已经累计的重复开场白。
+  persisted.forEach((message) => upsert(message, false));
+  const incomingWithRenderKeys = preserveClientRenderKeys(
+    clientRound,
+    incomingList,
+  );
+  incomingWithRenderKeys
+    .map((message, index) =>
+      preserveFinalizedMessagePresentation(
+        currentList,
+        incomingWithRenderKeys,
+        message,
+        index,
+      ),
+    )
+    .forEach((message) => upsert(message, true));
+
+  const merged = preserveOptimisticMessageTail(currentList, serverMerged);
+  return isEqual(currentList, merged) ? currentList : merged;
 }

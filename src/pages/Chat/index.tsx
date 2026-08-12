@@ -41,6 +41,7 @@ import {
 } from '@/components/business-component/FileTreeGitSourcePanel';
 import type { FileTreeContainerProps } from '@/components/business-component/FileTreeGitSourcePanel/types/file-tree-git-source';
 import { useFileTreePreviewView } from '@/components/business-component/FileTreePreviewPanel/hooks/useFileTreePreviewView';
+import { apiAgentConversation } from '@/services/agentConfig';
 import { apiUpdateStaticFile } from '@/services/vncDesktop';
 import type { UpdateFileInfo } from '@/types/interfaces/fileTree';
 import type { StaticFileInfo } from '@/types/interfaces/vncDesktop';
@@ -217,6 +218,8 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     setIsLoadingOtherInterface,
     requiredNameList,
     setConversationInfo,
+    syncConversationSnapshotMessages,
+    runUpdateTopic,
     variables,
     showType,
     setShowType,
@@ -246,6 +249,8 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     setTaskAgentSelectedFileId,
     // 通用型智能体文件选择触发标志
     taskAgentSelectTrigger,
+    // 会话结束文件树刷新后兜底重拉当前打开文件正文的触发标志
+    fileTreeRefreshTrigger,
     // 会话是否正在进行中（有消息正在处理）
     isConversationActive,
     // 停止会话相关
@@ -405,6 +410,36 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       },
     };
   }, [conversationInfo]);
+
+  // =============== 会话 icon 缺失时，补拉会话 icon ===============
+
+  /** 主题已更新但 icon 仍为空时，补拉会话 icon */
+  const conversationIconUpdateRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    conversationIconUpdateRef.current = null;
+  }, [id]);
+
+  useEffect(() => {
+    if (
+      !conversationInfo?.id ||
+      conversationInfo.topicUpdated !== 1 ||
+      conversationInfo.icon !== null ||
+      conversationIconUpdateRef.current === conversationInfo.id
+    ) {
+      return;
+    }
+
+    conversationIconUpdateRef.current = conversationInfo.id;
+    void runUpdateTopic({
+      id: conversationInfo.id,
+      topic: conversationInfo.topic,
+    }).catch(() => {
+      if (conversationIconUpdateRef.current === conversationInfo.id) {
+        conversationIconUpdateRef.current = null;
+      }
+    });
+  }, [conversationInfo, runUpdateTopic]);
 
   // 打开扩展页面
   const handleOpenPreview = (agent: any) => {
@@ -634,6 +669,8 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   const fileView = useFileTreePreviewView({
     taskAgentSelectedFileId,
     taskAgentSelectTrigger,
+    // 会话结束文件树刷新后兜底重拉当前打开文件正文
+    fileTreeRefreshTrigger,
     originalFiles: fileTreeData,
     fileTreeDataLoading,
     targetId: id?.toString() || '',
@@ -1216,8 +1253,16 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     // 会话流式恢复(sub)：刷新页面/新开标签时重建 EXECUTING 会话的流式输出
     onResumeConversationStream: resumeConversationStream,
     onAbortResumeStream: abortResumeStream,
-    onReloadConversationHistoryAsync: async (id: number) =>
-      (await runAsync(Number(id)))?.data?.messageList,
+    // 流式恢复拉历史必须静默：不要走 model 的 runAsync（会置 loadingConversation），
+    // 否则 Chat 整页被 Loading 卸载重挂，执行中/思考中会不断闪动。
+    onReloadConversationHistoryAsync: async (reloadId: number) => {
+      const result = await apiAgentConversation(Number(reloadId));
+      if (result?.data) {
+        syncConversationSnapshotMessages(result.data);
+      }
+      return result?.data?.messageList;
+    },
+    onConversationSnapshot: syncConversationSnapshotMessages,
     resumeDebugSource: 'chat:main-agent-session',
     onTerminalTaskStatus: (status: TaskStatus) => {
       if (!id) return;
@@ -1264,7 +1309,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     allowAutoScrollRef,
     scrollTimeoutRef,
     setShowScrollBtn,
-    readonly: effectiveAgent?.allowPrivateSandbox === DefaultSelectedEnum.No,
+    readonly: !effectiveAgent?.allowPrivateSandbox,
     enableMention:
       effectiveAgent?.type === AgentTypeEnum.TaskAgent &&
       effectiveAgent?.allowAtSkill === DefaultSelectedEnum.Yes,
@@ -1282,8 +1327,9 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     conversationInfo,
   };
 
-  // 加载中
-  if (clearLoading || loadingConversation || loadingAsync) {
+  // 仅首屏/切会话（loadingAsync）使用整页 Loading。
+  // 不要把 loadingConversation 算进来：流式恢复若误走 runAsync，会反复卸载聊天区导致闪动。
+  if (clearLoading || loadingAsync) {
     return (
       <div className={cx(styles['chat-loading-container'])}>
         <LoadingOutlined />

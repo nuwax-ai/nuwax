@@ -5,6 +5,16 @@ import type {
   OpenUiRenderState,
 } from '@/types/interfaces/openUi';
 import {
+  isOpenUiFileType,
+  OPENUI_FILE_SCHEMA_PREFIX,
+  OPENUI_FILE_SCHEMA_VERSION,
+  OPENUI_FILE_TYPE,
+  OPENUI_REF_SCHEMA_VERSION,
+  OPENUI_REF_TYPE,
+  OPENUI_REFERENCE_TOOL_BASE_NAME,
+  OPENUI_RENDER_TOOL_BASE_NAME,
+  OPENUI_UPDATE_GUIDE_TOOL_BASE_NAME,
+  OPENUI_VALIDATE_TOOL_BASE_NAME,
   openUiArtifactSchema,
   renderOpenUiInputSchema,
   type RenderOpenUiInput,
@@ -38,14 +48,57 @@ const presentationSchema = z.object({
   preferredWidth: z.enum(['compact', 'normal', 'wide']).optional(),
 });
 
+/** OpenUI MCP 中「真正发布 Host UI」的工具基名（可出现在任意引擎包装名中）。 */
+const OPENUI_RENDER_TOOL_TOKEN = OPENUI_RENDER_TOOL_BASE_NAME;
+
+/** 同服务器上的非 render 工具，名称里也可能带 openui，必须排除。 */
+const OPENUI_NON_RENDER_TOOL_TOKENS = [
+  OPENUI_REFERENCE_TOOL_BASE_NAME,
+  OPENUI_UPDATE_GUIDE_TOOL_BASE_NAME,
+  OPENUI_VALIDATE_TOOL_BASE_NAME,
+] as const;
+
+/**
+ * 规范化工具名：trim、小写、尝试 decodeURIComponent（Codex/部分 Host 会 URL 编码中文前缀）。
+ */
+function normalizeOpenUiToolName(name: string): string {
+  const trimmed = name.trim();
+  if (!trimmed) return '';
+  try {
+    return decodeURIComponent(trimmed).toLowerCase();
+  } catch {
+    return trimmed.toLowerCase();
+  }
+}
+
+/**
+ * 识别 nuwax_render_openui 工具名——跨引擎通用，不绑定具体前缀/分隔符/版本后缀。
+ *
+ * 命中策略：规范化后包含 `nuwax_render_openui`，且不是 reference / update_guide /
+ * validate。覆盖例如：
+ * - nuwax_render_openui
+ * - nuwax-openui_nuwax_render_openui_v0_3_6
+ * - mcp__nuwax-openui__nuwax_render_openui_v0_3_6
+ * - mcp.nuwax-openui.nuwax_render_openui
+ * - URL 编码的展示名里夹带该 token
+ */
 export function isOpenUiRenderToolName(name: unknown): boolean {
   if (typeof name !== 'string') return false;
-  return /(?:^|[_-])nuwax_render_openui$/i.test(name.trim());
+  const normalized = normalizeOpenUiToolName(name);
+  // RENDER_UI 专用事件名（对齐 ask-question 的 Backend.Sandbox.Event.* 命名），
+  // 如 Backend.Sandbox.Event.renderUI / RenderUI 等。
+  if (normalized === 'renderui' || normalized.endsWith('.renderui')) {
+    return true;
+  }
+  if (!normalized.includes(OPENUI_RENDER_TOOL_TOKEN)) return false;
+  return !OPENUI_NON_RENDER_TOOL_TOKENS.some((token) =>
+    normalized.includes(token),
+  );
 }
 
 export const openUiFileSchema: z.ZodType<OpenUiFile> = z.object({
-  type: z.literal('nuwax.openui-file'),
-  schemaVersion: z.literal('nuwax.openui-file/v1'),
+  type: z.literal(OPENUI_FILE_TYPE),
+  schemaVersion: z.literal(OPENUI_FILE_SCHEMA_VERSION),
   artifactId: z.string().uuid(),
   title: z.string(),
   presentation: presentationSchema,
@@ -63,8 +116,8 @@ export const openUiFileSchema: z.ZodType<OpenUiFile> = z.object({
 
 export const openUiArtifactRefSchema: z.ZodType<OpenUiArtifactRef> = z
   .object({
-    type: z.literal('nuwax.openui-ref'),
-    schemaVersion: z.literal('nuwax.openui-ref/v1'),
+    type: z.literal(OPENUI_REF_TYPE),
+    schemaVersion: z.literal(OPENUI_REF_SCHEMA_VERSION),
     artifactId: z.string().uuid(),
     path: z.string(),
     title: z.string(),
@@ -209,7 +262,7 @@ export function extractOpenUiArtifactId(value: unknown): string | undefined {
 export function isOpenUiArtifactRef(
   value: OpenUiArtifact,
 ): value is OpenUiArtifactRef {
-  return value.type === 'nuwax.openui-ref';
+  return value.type === OPENUI_REF_TYPE;
 }
 
 export function buildOpenUiArtifactFileUrl(
@@ -249,8 +302,8 @@ export function legacyArtifactToOpenUiFile(
   artifact: Exclude<OpenUiArtifact, OpenUiArtifactRef>,
 ): OpenUiFile {
   return {
-    type: 'nuwax.openui-file',
-    schemaVersion: 'nuwax.openui-file/v1',
+    type: OPENUI_FILE_TYPE,
+    schemaVersion: OPENUI_FILE_SCHEMA_VERSION,
     artifactId: artifact.artifactId,
     title: artifact.title,
     presentation: artifact.presentation,
@@ -275,8 +328,8 @@ export function renderInputToOpenUiFile(
 ): OpenUiFile {
   const now = new Date().toISOString();
   return {
-    type: 'nuwax.openui-file',
-    schemaVersion: 'nuwax.openui-file/v1',
+    type: OPENUI_FILE_TYPE,
+    schemaVersion: OPENUI_FILE_SCHEMA_VERSION,
     artifactId,
     title: input.title,
     presentation: input.presentation,
@@ -336,10 +389,10 @@ function looksLikeOpenUiFileShell(raw: object): boolean {
     schemaVersion?: unknown;
     document?: { source?: unknown; digest?: unknown };
   };
-  if (record.type === 'nuwax.openui-file') return true;
+  if (isOpenUiFileType(record.type)) return true;
   if (
     typeof record.schemaVersion === 'string' &&
-    record.schemaVersion.startsWith('nuwax.openui-file')
+    record.schemaVersion.startsWith(OPENUI_FILE_SCHEMA_PREFIX)
   ) {
     return true;
   }

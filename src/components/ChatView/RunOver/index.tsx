@@ -23,6 +23,7 @@ const cx = classNames.bind(styles);
 const RunOver: React.FC<RunOverProps> = ({
   messageInfo,
   showStatusDesc = true,
+  showTerminalStatus = false,
 }) => {
   const { finalResult, processingList, think, status, thinkingFinished } =
     messageInfo;
@@ -113,9 +114,10 @@ const RunOver: React.FC<RunOverProps> = ({
     );
   }, [processingList, messageInfo?.status, runTime]);
 
-  // 优化：只有在任务已完成（Complete 或 Error）且 processingList 为空时才不显示组件
-  // 如果任务还在执行中（Loading 或 Incomplete），即使 processingList 为空也要显示加载状态
+  // 消息卡片内的终态没有执行步骤时默认隐藏；独立状态栏可显式保留终态文案。
+  // 任务执行中（Loading 或 Incomplete）即使 processingList 为空也始终显示加载状态。
   if (
+    !showTerminalStatus &&
     !lastProcessInfo &&
     (messageInfo?.status === MessageStatusEnum.Complete ||
       messageInfo?.status === MessageStatusEnum.Error)

@@ -110,6 +110,7 @@ import { v4 as uuidv4 } from 'uuid';
 import {
   appendOutgoingConversationMessages,
   preserveOptimisticMessageTail,
+  reconcileConversationSnapshotMessages,
 } from './conversationInfoMessageList';
 
 /** 后端漏发结构化干预事件时，等待持久化完成的补偿读取间隔。 */
@@ -239,6 +240,15 @@ export default () => {
   const [taskAgentSelectTrigger, setTaskAgentSelectTrigger] = useState<
     number | string
   >(0);
+  /**
+   * 会话结束（FINAL_RESULT）文件树刷新完成后，用于兜底重拉当前打开文件正文的触发标志。
+   * 场景：会话中 agent 修改了“当前已打开”的文件，但最终输出未携带指向它的
+   * <task-result><file>（或 file 指向其他文件），既有“树长度变化 / task-result 命中 /
+   * 手动刷新”三条正文刷新路径均未触发，正文停留在旧值。此处通过时间戳通知页面层
+   * 调用 refreshSelectedFileContent，在树刷新完成后同步当前打开文件的内容。
+   */
+  const [fileTreeRefreshTrigger, setFileTreeRefreshTrigger] =
+    useState<number>(0);
   // 文件树数据
   const [fileTreeData, setFileTreeData] = useState<StaticFileInfo[]>([]);
   // 文件树数据加载状态
@@ -470,6 +480,8 @@ export default () => {
     // 清除任务智能体待选文件，避免空文件树 + 残留 fileId 触发无限刷新
     setTaskAgentSelectedFileId('');
     setTaskAgentSelectTrigger(0);
+    // 重置兜底刷新 trigger，避免切换会话后旧 trigger 残留
+    setFileTreeRefreshTrigger(0);
     // 设置视图模式为预览
     setViewMode('preview');
     // 更新 ref 值
@@ -547,6 +559,8 @@ export default () => {
           ({
             ...info,
             topic: result?.data?.topic,
+            icon: result?.data?.icon,
+            topicUpdated: result?.data?.topicUpdated,
           } as ConversationInfo),
       );
     },
@@ -708,6 +722,42 @@ export default () => {
 
     handleChatProcessingList(list);
   };
+
+  /** 静默同步轮询/恢复读取到的消息快照，不触发整页 loading 或强制滚动。 */
+  const syncConversationSnapshotMessages = useCallback(
+    (snapshot: ConversationInfo) => {
+      if (
+        !snapshot ||
+        !conversationInfoRef.current ||
+        String(snapshot.id) !== String(conversationInfoRef.current.id)
+      ) {
+        return;
+      }
+
+      const incoming = hydrateMcpAskInteractionsInMessageList(
+        snapshot.messageList || [],
+      );
+      const preview = reconcileConversationSnapshotMessages(
+        messageListRef.current,
+        incoming,
+      );
+      if (preview === messageListRef.current) {
+        return;
+      }
+      messageListRef.current = preview;
+      setMessageList((prev) => {
+        const merged = reconcileConversationSnapshotMessages(prev, incoming);
+        if (merged === prev) {
+          return prev;
+        }
+        messageListRef.current = merged;
+        return merged;
+      });
+      setChatProcessingList(preview);
+      syncMessageListRuntimeState();
+    },
+    [syncMessageListRuntimeState],
+  );
 
   // 查询会话消息列表
   const { runAsync: runQueryConversationMessageList } = useRequest(
@@ -1049,6 +1099,9 @@ export default () => {
         newMessage = {
           ...currentMessage,
           text: getCustomBlock(currentMessage.text || '', data),
+          // 实际 SSE 不会为 THINK 单独下发 finished=true；PROCESSING 表示模型已从
+          // 当前思考阶段进入工具调用阶段，因此必须在这里结束本轮思考态。
+          thinkingFinished: true,
           status: MessageStatusEnum.Loading,
           processingList,
         };
@@ -1177,6 +1230,8 @@ export default () => {
           newMessage = {
             ...currentMessage,
             text: `${currentMessage.text}${text}`,
+            // QUESTION/CHAT 是 THINK 阶段之后的输出边界。
+            thinkingFinished: true,
             // 如果finished为true，则状态为null，此时不会显示运行状态组件，否则为Incomplete
             status: finished ? null : MessageStatusEnum.Incomplete,
           };
@@ -1187,6 +1242,7 @@ export default () => {
               ...currentMessage,
               id,
               text: `${currentMessage.text}${text}`, // 这里需要添加 展示MCP 或者其他工具调用
+              thinkingFinished: true,
               status: null, // 隐藏运行状态
             };
             // 插入新的消息
@@ -1196,6 +1252,8 @@ export default () => {
             newMessage = {
               ...currentMessage,
               text: `${currentMessage.text}${text}`,
+              // 后端 THINK 分片始终可能为 finished=false；首个正文分片即代表本轮思考结束。
+              thinkingFinished: true,
               // 如果finished为true，则状态为Complete，否则为Incomplete
               status: finished
                 ? MessageStatusEnum.Complete
@@ -1228,16 +1286,38 @@ export default () => {
               }
 
               try {
-                const result = await runAsync(params.conversationId);
+                // 补偿读取必须保持静默：runAsync 会经过会话详情的 onSuccess，整体
+                // 替换 messageList，使乐观消息切换为落库消息并重挂 ChatView，造成
+                // 会话结束时最后一条助手消息闪烁。这里只读取并补丁缺失的 Ask 表单。
+                const result = await apiAgentConversation(
+                  params.conversationId,
+                );
                 const hydratedMessages = hydrateMcpAskInteractionsInMessageList(
                   result?.data?.messageList || [],
                 );
-                const hasPendingAsk = hydratedMessages.some((message) =>
-                  message.mcpAskInteractions?.some(
-                    (interaction) => interaction.responseStatus === 'pending',
-                  ),
-                );
-                if (hasPendingAsk) {
+                const pendingAskMessage = [...hydratedMessages]
+                  .reverse()
+                  .find((message) =>
+                    message.mcpAskInteractions?.some(
+                      (interaction) => interaction.responseStatus === 'pending',
+                    ),
+                  );
+                if (pendingAskMessage?.mcpAskInteractions?.length) {
+                  setMessageList((list) => {
+                    const targetIndex = list.findIndex(
+                      (message) => message.id === currentMessageId,
+                    );
+                    if (targetIndex < 0) {
+                      return list;
+                    }
+                    const nextList = [...list];
+                    nextList[targetIndex] = {
+                      ...nextList[targetIndex],
+                      mcpAskInteractions: pendingAskMessage.mcpAskInteractions,
+                    };
+                    messageListRef.current = nextList;
+                    return nextList;
+                  });
                   return;
                 }
               } catch (error) {
@@ -1269,6 +1349,7 @@ export default () => {
             }
 
             const taskResult = extractTaskResult(data.outputText);
+            let selectedFileInTaskResult = false;
             // 如果有任务结果，并且有文件，则打开预览视图
             if (taskResult.hasTaskResult && taskResult.file) {
               // 打开预览视图
@@ -1281,7 +1362,18 @@ export default () => {
                 setTaskAgentSelectedFileId(fileId);
                 // 每次设置文件ID时更新触发标志，确保即使文件ID相同也能触发文件选择
                 setTaskAgentSelectTrigger(Date.now());
+                selectedFileInTaskResult = true;
               }
+            }
+
+            // 兜底：本次最终输出未携带指向当前打开文件的 <task-result><file>
+            // （或 file 指向其他文件），既有“树长度变化 / task-result 命中 / 手动刷新”
+            // 三条正文刷新路径均未触发，文件树刷新完成后正文仍停留在旧内容。
+            // 此处发出 trigger，通知页面层在树刷新完成后重拉当前打开文件的正文。
+            // 仅 FINAL_RESULT 一次性触发，不作用于流式 tool_call 的树刷新路径，
+            // 避免会话输出过程中当前打开文件被高频重拉。
+            if (!selectedFileInTaskResult) {
+              setFileTreeRefreshTrigger(Date.now());
             }
           }
         }, 0);
@@ -1380,6 +1472,9 @@ export default () => {
     data: any = null,
   ) => {
     const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
+    // 当前 SSE 连接是否已从 FINAL_RESULT 解析出明确终态。
+    // 使用连接级闭包隔离并发/前后轮次，避免共享 ref 被新一轮发送覆盖。
+    let hasResolvedTerminalStatus = false;
 
     // 请求即将发起：用于计算前端从发送动作到真正网络发起的耗时。
     perfLifecycle.onHttpStart();
@@ -1399,6 +1494,11 @@ export default () => {
       },
       onMessage: (res: ConversationChatResponse) => {
         perfLifecycle.onFirstChunk(res?.eventType, res);
+        if (res.eventType === ConversationEventTypeEnum.FINAL_RESULT) {
+          hasResolvedTerminalStatus = Boolean(
+            resolveTerminalTaskStatus(res.data?.success, res.data, res),
+          );
+        }
         if (
           res.eventType === ConversationEventTypeEnum.MESSAGE &&
           res.data.type === MessageModeEnum.QUESTION &&
@@ -1481,9 +1581,9 @@ export default () => {
         });
         syncMessageListRuntimeState();
 
-        // SSE 结束后兜底同步 taskStatus：仅写回终态，避免竞态 EXECUTING 固化本地。
-        // 不限制 Agent 类型；任何携带 taskStatus=EXECUTING 的会话都必须能释放输入态。
-        if (params.conversationId) {
+        // FINAL_RESULT 已解析出明确终态时，本地状态已经完成写回，无需重复查询详情。
+        // 未收到 FINAL_RESULT 或终态不明确时，仍保留 onClose 查询作为异常兜底。
+        if (params.conversationId && !hasResolvedTerminalStatus) {
           await syncTerminalConversationTaskStatus(
             params.conversationId,
             setConversationInfo,
@@ -1642,6 +1742,8 @@ export default () => {
     if (isSync && !isAppSidebarMode && id) {
       eventBus.emit(EVENT_TYPE.UpdateConversationListTaskStatus, {
         conversationId: id,
+        agentId: conversationInfoRef.current?.agentId,
+        topic: conversationInfoRef.current?.topic,
         taskStatus: TaskStatus.EXECUTING,
       });
     }
@@ -1801,6 +1903,7 @@ export default () => {
     // 会话流式恢复(sub)
     resumeConversationStream,
     abortResumeStream,
+    syncConversationSnapshotMessages,
     setCurrentConversationRequestId,
     getCurrentConversationRequestId,
     getCurrentConversationId,
@@ -1809,6 +1912,7 @@ export default () => {
     openTimedTask,
     closeTimedTask,
     setConversationInfo,
+    runUpdateTopic,
     // 文件树显隐状态
     isFileTreeVisible,
     // 文件树是否固定（用户点击后固定）
@@ -1846,6 +1950,8 @@ export default () => {
     // 通用型智能体文件选择触发标志
     taskAgentSelectTrigger,
     setTaskAgentSelectTrigger,
+    // 会话结束文件树刷新后兜底重拉当前打开文件正文的触发标志
+    fileTreeRefreshTrigger,
     isLoadingOtherInterface,
     setIsLoadingOtherInterface,
   };
