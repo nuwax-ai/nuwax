@@ -1009,7 +1009,8 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     hasTerminalConsoleRendered,
     terminalConsoleVisible,
   ]);
-
+  
+  // 切换会话时，重置 Git 版本记录面板和终端状态
   useEffect(() => {
     setGitVersionPanelOpen(false);
     setTerminalConsoleVisible(false);
