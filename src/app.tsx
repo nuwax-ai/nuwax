@@ -36,6 +36,15 @@ export async function getInitialState(): Promise<InitialStateType> {
   try {
     await initI18n();
 
+    // nuwaclaw 客户端：启动时从宿主 bridge 恢复 ACCESS_TOKEN（重启免登）。
+    // 浏览器环境无 bridge，跳过；须在 UserService.getUserInfo 之前执行，确保首个鉴权请求带 token。
+    try {
+      const token = await window.NuwaClawBridge?.auth?.getToken?.();
+      if (token) localStorage.setItem(ACCESS_TOKEN, token);
+    } catch (e) {
+      console.warn('getInitialState: restore token from bridge failed', e);
+    }
+
     // 如果不是登录页面，执行获取用户信息和菜单数据
     const publicPaths = ['/login', '/examples/agent-intervention-demo'];
     if (!publicPaths.some((path) => history.location.pathname.includes(path))) {

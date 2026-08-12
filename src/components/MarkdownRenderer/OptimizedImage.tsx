@@ -40,6 +40,18 @@ const OptimizedImage: React.FC<OptimizedImageProps> = memo(
       // 这里可以扩展错误处理逻辑
     }, []);
 
+    // nuwaclaw 客户端：右键另存图片（仅宿主 bridge 存在时拦截；浏览器端保持默认行为）
+    const handleContextMenu = useCallback(
+      (e: React.MouseEvent) => {
+        const saveImage = window.NuwaClawBridge?.native?.saveImage;
+        if (saveImage && src) {
+          e.preventDefault();
+          void saveImage(src).catch(() => {});
+        }
+      },
+      [src],
+    );
+
     const containerClassName = useMemo(() => {
       if (containerClassNames) {
         return Array.isArray(containerClassNames)
@@ -68,6 +80,7 @@ const OptimizedImage: React.FC<OptimizedImageProps> = memo(
         onClick={() => {
           setShowPreview(true);
         }}
+        onContextMenu={handleContextMenu}
       >
         <Image
           src={src}

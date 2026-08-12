@@ -48,6 +48,8 @@ const User: React.FC<PropsWithChildren<UserProps>> = ({
     debounceInterval: 300,
     onSuccess: () => {
       localStorage.clear();
+      // nuwaclaw 客户端：联动清除宿主持久化 token（忽略 bridge 缺失/失败）
+      window.NuwaClawBridge?.auth?.clear?.()?.catch(() => {});
       // 清除菜单信息
       clearMenuInfo();
 

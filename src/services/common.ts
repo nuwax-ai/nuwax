@@ -155,6 +155,8 @@ const errorHandler = (error: any, opts: any) => {
         // 用户未登录，跳转到登录页
         case USER_NO_LOGIN:
           localStorage.clear();
+          // nuwaclaw 客户端：联动清除宿主持久化 token
+          window.NuwaClawBridge?.auth?.clear?.()?.catch(() => {});
           clearLoginStatusCache();
           redirectToLogin(-1);
           break;
