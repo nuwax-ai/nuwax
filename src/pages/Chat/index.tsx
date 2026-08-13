@@ -430,6 +430,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       return;
     }
 
+    // 更新会话 icon，如果更新失败，则重置 conversationIconUpdateRef
     conversationIconUpdateRef.current = conversationInfo.id;
     void runUpdateTopic({
       id: conversationInfo.id,
