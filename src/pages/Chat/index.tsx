@@ -706,6 +706,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     onSelectedFileMissing: () => {
       setTaskAgentSelectedFileId('');
     },
+    /** 文件树选中文件时，关闭 Git 版本记录面板 */
     onFileSelectOpenPreview: () => {
       closeVersionPanelForFilePreviewRef.current();
     },
