@@ -46,7 +46,13 @@ const ConversationStatus: React.FC<ConversationStatusProps> = ({
     if (!messageList || messageList.length === 0) {
       return undefined;
     }
-    return [...messageList].reverse().find((msg) => msg.role === 'ASSISTANT');
+    return [...messageList]
+      .reverse()
+      .find(
+        (msg) =>
+          msg.role === 'ASSISTANT' &&
+          (!!msg.id || !!msg.status || !!msg.finalResult),
+      );
   }, [messageList]);
 
   // 提取关键值用于依赖项（避免对象引用变化导致 useEffect 频繁触发）
@@ -70,11 +76,7 @@ const ConversationStatus: React.FC<ConversationStatusProps> = ({
     }
 
     // 检查是否有 finalResult。结束后的落库消息可能没有 status，仍需读取其最终耗时。
-    const lastAssistant = [...messageList]
-      .reverse()
-      .find((msg) => msg.role === 'ASSISTANT');
-
-    const finalTimes = parseFinalResultTimes(lastAssistant?.finalResult);
+    const finalTimes = parseFinalResultTimes(lastAssistantMessage?.finalResult);
     if (finalTimes) {
       return {
         isRunning: false,
@@ -128,7 +130,7 @@ const ConversationStatus: React.FC<ConversationStatusProps> = ({
       finalEndTime: null,
       isStopped: false,
     };
-  }, [messageList]);
+  }, [lastAssistantMessage, messageList]);
 
   // 清理定时器的函数
   const clearTimer = useCallback(() => {
