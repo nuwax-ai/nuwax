@@ -93,8 +93,13 @@ export const ROUTE_CONTROL_CONFIG: Record<
   'more-page': {
     // 租户未开启订阅时隐藏该多级菜单组
     shouldHide: (config) => config?.enableSubscription === 0,
-    // 始终保留并允许用户正常访问“API Key/密钥设置”与“历史会话”子页面
-    excludePaths: ['api-key', 'history-conversation'],
+    // 始终保留不依赖积分订阅能力的子页面
+    excludePaths: [
+      'api-key',
+      'usage-stats',
+      'model-permissions',
+      'history-conversation',
+    ],
   },
 };
 

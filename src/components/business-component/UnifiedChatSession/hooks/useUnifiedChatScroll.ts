@@ -42,7 +42,9 @@ export function useUnifiedChatScroll({
   const allowAutoScrollRef =
     externalAllowAutoScrollRef || internalAllowAutoScrollRef;
   const lastMsgCountRef = useRef<number>(0);
-  const lastTextLengthRef = useRef<number>(0);
+  // 记录上一次 messageList 引用，用于识别“内容是否发生变化”（含新增、流式分片、
+  // 原地更新、轮询快照合并等），避免仅比较条数/文本长度时漏触发置底。
+  const prevMessageListRef = useRef<any[] | null>(null);
   // 记录上一轮最后一条消息是否处于流式（loading/incomplete）状态。
   // 会话结束时末条消息会从流式态切换到完成态（stopped/complete），
   // 此时 DOM 高度会因状态切换、processingList 渲染、markdown 排版等再次变化，
@@ -122,78 +124,70 @@ export function useUnifiedChatScroll({
     setScrollBtnVisible(false);
   };
 
-  // 大模型流式输出或更新时自动平滑滚动置底
+  // 大模型流式输出 / 轮询同步 / 原地更新时自动贴底。
+  // 触发条件以「messageList 引用变化」为准（覆盖新增消息、流式分片、原地更新、轮询快照合并），
+  // 而非仅比较条数/文本长度：后者在轮询同步原地更新末尾消息时会漏触发，导致不置底。
+  // 异步渲染（Markdown/图片/processingList）通过多级延迟兜底保证最终顶到底部。
   useEffect(() => {
+    const listChanged = messageList !== prevMessageListRef.current;
+    prevMessageListRef.current = messageList;
+
     const lastMessage = messageList[messageList.length - 1];
     const isStreaming =
       lastMessage?.status === MessageStatusEnum.Loading ||
       lastMessage?.status === MessageStatusEnum.Incomplete ||
       isConversationActive;
-    const textLength = lastMessage?.text?.length || 0;
     const msgCount = messageList.length;
 
     const isFirstMessageLoad =
       lastMsgCountRef.current === 0 && msgCount > 0 && !isStreaming;
-
-    let shouldScroll = false;
-
-    if (msgCount > lastMsgCountRef.current) {
-      shouldScroll = true;
-    } else if (isStreaming && textLength > lastTextLengthRef.current) {
-      shouldScroll = true;
-    }
 
     // 会话结束兜底：末条消息从流式态切换到完成态时，文本已不再增长，但 DOM 会因
     // 状态切换(loading->stopped/complete)、processingList 渲染、markdown 排版等再次撑高，
     // 此时需要补触发一次置底，避免会话结束后视图停在偏上位置、没有顶到底部。
     const justFinishedStreaming =
       lastWasStreamingRef.current && !isStreaming && msgCount > 0;
-    if (justFinishedStreaming) {
-      shouldScroll = true;
-    }
 
     lastMsgCountRef.current = msgCount;
-    lastTextLengthRef.current = textLength;
     lastWasStreamingRef.current = isStreaming;
 
-    if (shouldScroll && allowAutoScrollRef.current) {
-      const element = messageViewRef.current;
-      if (element) {
-        const performScroll = () => {
-          const el = messageViewRef.current;
-          if (el) {
-            pinToBottomInstant(el);
-          }
-        };
+    const shouldScroll =
+      listChanged || isFirstMessageLoad || justFinishedStreaming;
 
-        performScroll();
-
-        // 会话结束(isFirstMessageLoad / justFinishedStreaming)时，markdown/图片/processingList
-        // 等异步渲染会持续撑高 DOM，需要多级延迟兜底确保最终顶到底部。
-        if (isFirstMessageLoad || justFinishedStreaming) {
-          const t1 = setTimeout(() => {
-            if (allowAutoScrollRef.current) performScroll();
-          }, 150);
-          const t2 = setTimeout(() => {
-            if (allowAutoScrollRef.current) performScroll();
-          }, 400);
-          const t3 = setTimeout(() => {
-            if (allowAutoScrollRef.current) performScroll();
-          }, 800);
-          return () => {
-            clearTimeout(t1);
-            clearTimeout(t2);
-            clearTimeout(t3);
-          };
-        } else {
-          const timer = setTimeout(performScroll, 60);
-          return () => {
-            clearTimeout(timer);
-          };
-        }
-      }
+    // 加载更多历史时不贴底：此时是向前读取历史，需要保持视口位置不变。
+    // 用户向上滚动打断自动滚动时（allowAutoScrollRef=false）同样不置底。
+    if (!shouldScroll || loadingMore || !allowAutoScrollRef.current) {
+      return;
     }
-  }, [messageList, isConversationActive, chatSuggestList, pinToBottomInstant]);
+
+    const performScroll = () => {
+      const el = messageViewRef.current;
+      if (el && allowAutoScrollRef.current) {
+        pinToBottomInstant(el);
+      }
+    };
+
+    performScroll();
+
+    // 统一多级延迟兜底：轮询同步到的完整消息此前只给 60ms，图片/Markdown 异步撑高后
+    // 无法顶到底；这里与首次加载/流式结束保持一致的兜底强度。
+    const delays = [60, 150, 400, 800];
+    const timers = delays.map((d) =>
+      setTimeout(() => {
+        if (allowAutoScrollRef.current) performScroll();
+      }, d),
+    );
+
+    return () => {
+      timers.forEach(clearTimeout);
+    };
+  }, [
+    messageList,
+    isConversationActive,
+    chatSuggestList,
+    loadingMore,
+    pinToBottomInstant,
+  ]);
 
   // 组件卸载时清理定时器
   useEffect(() => {
