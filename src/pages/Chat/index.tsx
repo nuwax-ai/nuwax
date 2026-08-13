@@ -453,6 +453,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
         executeId: '',
       });
     } else {
+      // 关闭页面预览
       showPagePreview(null);
     }
   };
