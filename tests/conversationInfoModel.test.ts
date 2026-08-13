@@ -568,6 +568,27 @@ describe('conversationInfo model', () => {
     );
   });
 
+  it('SSE onClose：终态查询未返回时也立即释放本地活跃态', async () => {
+    let resolveTerminalSync: (() => void) | undefined;
+    mockSyncTerminalConversationTaskStatus.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveTerminalSync = resolve;
+        }),
+    );
+    const { result } = renderHook(() => useConversationInfo());
+    await sendAndGetAssistantId(result);
+    expect(result.current.isConversationActive).toBe(true);
+
+    await act(async () => {
+      await sseHandlers.onClose?.();
+    });
+
+    expect(mockSyncTerminalConversationTaskStatus).toHaveBeenCalledTimes(1);
+    expect(result.current.isConversationActive).toBe(false);
+    resolveTerminalSync?.();
+  });
+
   it('SSE ERROR：当前助手消息置为 Error', async () => {
     const { result } = renderHook(() => useConversationInfo());
     const assistantId = await sendAndGetAssistantId(result);
