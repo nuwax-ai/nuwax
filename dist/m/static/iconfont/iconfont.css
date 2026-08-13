@@ -11,6 +11,10 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+.icon-face:before {
+  content: "\e65d";
+}
+
 .icon-VideoCamera:before {
   content: "\e6d4";
 }
