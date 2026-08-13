@@ -1527,7 +1527,7 @@ export default () => {
           });
         }
       },
-      onClose: async () => {
+      onClose: () => {
         // 明确的流结束信号：打破「发送后 3s 保活」，确保活跃态能落 false（停止/快速结束场景）
         lastSendAtRef.current = 0;
         // 将当前会话的loading状态的消息改为Stopped状态，并将所有正在执行的 processing 状态更新为 FAILED
@@ -1581,17 +1581,20 @@ export default () => {
         });
         syncMessageListRuntimeState();
 
+        // SSE 已经关闭时先释放本地流式态，不能让后端终态查询阻塞输入框恢复。
+        // 否则详情接口响应慢或挂起时，即使回复已经结束，页面仍会一直显示停止按钮。
+        disabledConversationActive();
+
         // FINAL_RESULT 已解析出明确终态时，本地状态已经完成写回，无需重复查询详情。
-        // 未收到 FINAL_RESULT 或终态不明确时，仍保留 onClose 查询作为异常兜底。
+        // 未收到 FINAL_RESULT 或终态不明确时，异步查询后端状态作为兜底；查询失败不影响本地收尾。
         if (params.conversationId && !hasResolvedTerminalStatus) {
-          await syncTerminalConversationTaskStatus(
+          void syncTerminalConversationTaskStatus(
             params.conversationId,
             setConversationInfo,
-          );
+          ).catch((error) => {
+            console.error('[onClose] sync terminal taskStatus failed:', error);
+          });
         }
-
-        // 主动关闭连接时，禁用会话
-        disabledConversationActive();
 
         if (isSync && !isAppSidebarMode && params.conversationId) {
           eventBus.emit(EVENT_TYPE.RefreshConversationList, {
