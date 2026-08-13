@@ -343,6 +343,7 @@ const AppDev: React.FC = () => {
 
   // Preview组件的ref，用于触发刷新
   const previewRef = useRef<PreviewRef>(null);
+  // designViewer 组件的 ref，用于触发刷新
   const designViewerRef = useRef<DesignViewerRef>(null);
 
   // 老项目首次进入 design 模式时 iframe 不响应 TOGGLE_DESIGN_MODE，restart 一次 dev server 即可恢复。
