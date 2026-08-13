@@ -8,6 +8,7 @@ import React, {
 } from 'react';
 
 import { IMAGE_FALLBACK } from '@/constants/images.constants';
+import { nuwaClawHost } from '@/utils/nuwaClawBridge';
 import stylesInner from './index.less';
 
 /**
@@ -40,13 +41,12 @@ const OptimizedImage: React.FC<OptimizedImageProps> = memo(
       // 这里可以扩展错误处理逻辑
     }, []);
 
-    // nuwaclaw 客户端：右键另存图片（仅宿主 bridge 存在时拦截；浏览器端保持默认行为）
+    // nuwaclaw 客户端：右键另存图片（仅桌面宿主拦截；浏览器端保持默认行为）
     const handleContextMenu = useCallback(
       (e: React.MouseEvent) => {
-        const saveImage = window.NuwaClawBridge?.native?.saveImage;
-        if (saveImage && src) {
+        if (src && nuwaClawHost.isNuwaClaw()) {
           e.preventDefault();
-          void saveImage(src).catch(() => {});
+          void nuwaClawHost.native.saveImage(src);
         }
       },
       [src],

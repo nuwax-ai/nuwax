@@ -14,6 +14,7 @@ import {
   isWeakNumber,
   validatePassword,
 } from '@/utils/common';
+import { nuwaClawHost } from '@/utils/nuwaClawBridge';
 import { DownOutlined, ExclamationCircleFilled } from '@ant-design/icons';
 import {
   Button,
@@ -139,12 +140,8 @@ const Login: React.FC = () => {
       onSuccess: async (result: ILoginResult, params: LoginFieldType[]) => {
         const { expireDate, token, redirect: responseRedirectUrl } = result;
         localStorage.setItem(ACCESS_TOKEN, token);
-        // nuwaclaw 客户端：登录后持久化 token 到宿主（重启免登）
-        try {
-          await window.NuwaClawBridge?.auth?.persistToken?.(token);
-        } catch (e) {
-          console.warn('[Login] persist token to bridge failed', e);
-        }
+        // nuwaclaw 客户端：登录后持久化 token 到宿主（重启免登）；无桥自动跳过
+        await nuwaClawHost.auth.persistToken(token);
         localStorage.setItem(EXPIRE_DATE, expireDate);
         localStorage.setItem(PHONE, params[0].phoneOrEmail);
         try {

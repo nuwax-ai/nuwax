@@ -10,6 +10,7 @@ import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { I18N_STORAGE_KEYS } from '@/constants/i18n.constants';
 import { dict } from '@/services/i18nRuntime';
 import type { RequestResponse } from '@/types/interfaces/request';
+import { nuwaClawHost } from '@/utils/nuwaClawBridge';
 import { redirectToLogin } from '@/utils/router';
 import { RequestConfig } from '@@/plugin-request/request';
 import { message, Modal } from 'antd';
@@ -155,8 +156,8 @@ const errorHandler = (error: any, opts: any) => {
         // 用户未登录，跳转到登录页
         case USER_NO_LOGIN:
           localStorage.clear();
-          // nuwaclaw 客户端：联动清除宿主持久化 token
-          window.NuwaClawBridge?.auth?.clear?.()?.catch(() => {});
+          // nuwaclaw 客户端：联动清除宿主持久化 token（无桥/失败自动忽略）
+          void nuwaClawHost.auth.clear();
           clearLoginStatusCache();
           redirectToLogin(-1);
           break;
