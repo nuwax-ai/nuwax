@@ -31,6 +31,26 @@ const createAssistantMessage = (
   } as MessageInfo);
 
 describe('ConversationStatus', () => {
+  it('只有未开始会话的开场白时不显示任务完成状态栏', () => {
+    const { container } = render(
+      <ConversationStatus
+        messageList={[
+          createAssistantMessage({
+            id: null as unknown as string,
+            index: null as unknown as number,
+            text: '嗨 xiedaokun，有什么需要帮忙的吗？',
+            finished: false,
+            finishReason: undefined,
+            componentExecutedList: null as unknown as [],
+          }),
+        ]}
+      />,
+    );
+
+    expect(container).toBeEmptyDOMElement();
+    expect(screen.queryByTestId('run-over')).not.toBeInTheDocument();
+  });
+
   it('会话结束后助手消息不再携带 status 时仍保留计时栏', () => {
     const { rerender } = render(
       <ConversationStatus
