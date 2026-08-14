@@ -46,6 +46,12 @@ export const NUWACLAW_LIGHT_STYLE_OVERRIDE: Record<string, string> = {
   // 菜单背景（token.less 的 @navFirstMenuBg/@navSecondMenuBg 消费）：米白实色替代半透明
   '--xagi-color-bg-container': '#EAE7DE', // 一级菜单（style2 二级菜单同源）
   '--xagi-color-bg-layout': '#E7E4DA', // 二级菜单（style1）
+  // 菜单项 hover/选中高亮（token @navItem*Bg/@navSecondItemActiveBg 消费）：
+  // 米白"浮起"色替代原纯白，在米灰菜单底上清晰可辨且不突兀
+  '--xagi-nav-item-hover-bg': '#F3F1EA',
+  '--xagi-nav-item-active-bg': '#FBFAF6',
+  '--xagi-nav-item-selected-bg': '#FBFAF6',
+  '--xagi-nav-second-item-active-bg': '#FBFAF6',
 };
 
 /** nuwaclaw 专属覆盖的 CSS 变量集（主色 + 亮色布局实色） */

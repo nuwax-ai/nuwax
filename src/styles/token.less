@@ -536,10 +536,16 @@
   rgba(0, 0, 0, 0.45)
 );
 
-// 导航交互状态颜色（使用主题色）
-@navItemHoverBg: #ffffff;
-@navItemActiveBg: #ffffff;
-@navItemSelectedBg: #ffffff;
+// 导航交互状态颜色（使用主题色；可被布局主题覆盖，默认纯白保持原行为）
+@navItemHoverBg: var(--xagi-nav-item-hover-bg, #ffffff);
+@navItemActiveBg: var(--xagi-nav-item-active-bg, #ffffff);
+@navItemSelectedBg: var(--xagi-nav-item-selected-bg, #ffffff);
+
+// 二级菜单项 hover/选中背景（默认回落容器底色，保持原行为）
+@navSecondItemActiveBg: var(
+  --xagi-nav-second-item-active-bg,
+  var(--xagi-color-bg-container)
+);
 
 // 导航边框和分割线（使用独立的布局风格变量）
 @navBorderColor: var(--xagi-layout-border-primary, rgba(0, 0, 0, 0.15));

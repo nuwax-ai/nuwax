@@ -112,6 +112,13 @@ describe('nuwaClawTheme · nuwaclaw 桌面专属主题适配', () => {
     expect(root.style.getPropertyValue('--xagi-color-bg-container')).toBe(
       '#EAE7DE',
     );
+    // 菜单项高亮：米白浮起色替代原纯白（@navItem*Bg/@navSecondItemActiveBg 消费）
+    expect(root.style.getPropertyValue('--xagi-nav-item-active-bg')).toBe(
+      '#FBFAF6',
+    );
+    expect(
+      root.style.getPropertyValue('--xagi-nav-second-item-active-bg'),
+    ).toBe('#FBFAF6');
   });
 
   it('nuwaclaw + 用户已显式设主色 → 不生效（不锁）：active=false，覆盖变量不写入', () => {
