@@ -28,30 +28,30 @@ export const NUWACLAW_BACKGROUND_ID = 'bg-solid';
 
 /**
  * nuwaclaw 桌面专属亮色布局变量覆盖
- * 在通用 light-style1（半透明白 + 背景图）基础上，改为「米白纯色（带黄加灰）、不用背景图」：
- * 米白基调底色 + 白卡片层次 + 实色菜单背景（替代半透明叠图）。仅桌面端且当前
- * 亮色时生效；切 dark 走通用 dark-style1。
+ * 在通用 light-style1（半透明白 + 背景图）基础上，改为「中性浅灰纯色、不用背景图」：
+ * 以 rgb(243,244,246)（#F3F4F6）为基色 + 白卡片层次 + 实色菜单背景（替代半透明叠图）。
+ * 仅桌面端且当前亮色时生效；切 dark 走通用 dark-style1。
  */
 export const NUWACLAW_LIGHT_STYLE_OVERRIDE: Record<string, string> = {
-  '--xagi-layout-bg-primary': '#F5F3EE', // 主内容区（米白基调：带黄加灰，整体调亮）
-  '--xagi-layout-bg-secondary': '#EDEAE2', // 侧栏/次面板（更深米灰）
-  '--xagi-layout-bg-container': '#F5F3EE', // 主内容区面板（token @pageContainerBg 消费；漏配曾致内容区始终白）
-  '--xagi-layout-bg-card': '#FFFFFF', // 卡片（白卡浮于米白底，保层次）
+  '--xagi-layout-bg-primary': '#F3F4F6', // 主内容区（用户指定基色 rgb(243,244,246)，中性冷灰）
+  '--xagi-layout-bg-secondary': '#EAEBEF', // 侧栏/次面板（深一档）
+  '--xagi-layout-bg-container': '#F3F4F6', // 主内容区面板（token @pageContainerBg 消费；漏配曾致内容区始终白）
+  '--xagi-layout-bg-card': '#FFFFFF', // 卡片（白卡浮于灰底，保层次）
   '--xagi-layout-bg-input': '#FFFFFF', // 输入框
-  '--xagi-layout-border-primary': '#D6D2C6', // 主描边（暖灰调，保证二级菜单左边框在米白底上可见）
-  '--xagi-layout-border-secondary': '#E5E1D6', // 次描边
+  '--xagi-layout-border-primary': '#D3D5DC', // 主描边（保证二级菜单左边框在灰底上可见）
+  '--xagi-layout-border-secondary': '#E2E4E9', // 次描边
   '--xagi-layout-text-primary': '#1F2329', // 主文字
   '--xagi-layout-text-secondary': '#646A73', // 次文字
-  '--xagi-layout-shadow': 'rgba(41, 37, 28, 0.08)', // 淡阴影（暖黑，米白底上托层次）
-  // 菜单背景（token.less 的 @navFirstMenuBg/@navSecondMenuBg 消费）：米白实色替代半透明
-  '--xagi-color-bg-container': '#F0EEE6', // 一级菜单（style2 二级菜单同源）
-  '--xagi-color-bg-layout': '#EDEAE2', // 二级菜单（style1）
+  '--xagi-layout-shadow': 'rgba(15, 23, 42, 0.06)', // 淡阴影（冷黑，灰底上托层次）
+  // 菜单背景（token.less 的 @navFirstMenuBg/@navSecondMenuBg 消费）：实色替代半透明
+  '--xagi-color-bg-container': '#EEEFF2', // 一级菜单（style2 二级菜单同源）
+  '--xagi-color-bg-layout': '#EAEBEF', // 二级菜单（style1）
   // 菜单项 hover/选中高亮（token @navItem*Bg/@navSecondItemActiveBg 消费）：
-  // 米白"浮起"色替代原纯白，在米灰菜单底上清晰可辨且不突兀
-  '--xagi-nav-item-hover-bg': '#F7F5F0',
-  '--xagi-nav-item-active-bg': '#FDFCF9',
-  '--xagi-nav-item-selected-bg': '#FDFCF9',
-  '--xagi-nav-second-item-active-bg': '#FDFCF9',
+  // 贴近菜单底的浅灰浮起（选中项另有品牌蓝文字/图标标识，背景弱化不突兀）
+  '--xagi-nav-item-hover-bg': '#F2F3F6',
+  '--xagi-nav-item-active-bg': '#F5F6F8',
+  '--xagi-nav-item-selected-bg': '#F5F6F8',
+  '--xagi-nav-second-item-active-bg': '#F5F6F8',
 };
 
 /** nuwaclaw 专属覆盖的 CSS 变量集（主色 + 亮色布局实色） */
