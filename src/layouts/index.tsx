@@ -295,8 +295,10 @@ const Layout: React.FC = () => {
         style={{
           // Windows/Linux 桌面端：主内容区顶部避让壳自绘的窗口控制三键
           // （CtrlButton，贴右上角 46×32）与工具栏浮层；mac 壳红绿灯在左上
-          // （菜单列已另行避让）、独立窗口带系统标题栏、浏览器无壳，均不加
-          paddingTop: isWinLinuxShell() ? shellAvoid.TOP : undefined,
+          // （菜单列已另行避让）、独立窗口带系统标题栏、浏览器无壳，均不加。
+          // 用 marginTop 而非 paddingTop：margin 下移整个容器，不用 padding
+          // 压缩内容区（padding 曾致列表页可视高度变小被误伤 revert）
+          marginTop: isWinLinuxShell() ? shellAvoid.TOP : undefined,
         }}
       >
         <Outlet />
