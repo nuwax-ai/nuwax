@@ -6,33 +6,45 @@
  * - 通用主题常量 theme.constants.ts 不掺入任何 nuwaclaw 专属定义；
  * - nuwaclaw 的「品牌蓝主色 + 白底浅灰布局」常量与覆盖逻辑全部内聚在本模块。
  *
- * 机制：作为一层独立覆盖挂到主题变化监听——仅当桌面端且用户未显式定制主题
- * （配置来源 source=default）时叠加；用户一旦切过主色/背景/dark，source 变 user，
- * 覆盖自动让位（不锁）。antd 运行时主色由 app.tsx applyThemeConfig 据
- * isNuwaClawThemeActive() 条件传入；CSS 变量覆盖由 syncNuwaClawCssOverride 维护。
+ * 机制：「女娲主题」注册进主题切换维度（ThemeColorPanel 在桌面端追加「女娲蓝」
+ * 选项）。本层作为独立覆盖挂到主题变化监听：
+ * - 桌面端未显式定制主题 → init 时把「女娲蓝 + 纯色背景」写入正式主题配置
+ *   （unifiedThemeService.updateData，面板自然高亮），灰白布局随覆盖层生效；
+ * - 用户显式选了「女娲蓝」且布局为浅色 → 女娲主题保持生效；
+ * - 用户切其他主色/背景图/深色布局 → 覆盖自动让位（随时可切回）。
+ * antd 运行时主色由 app.tsx applyThemeConfig 据 isNuwaClawThemeActive() 条件传入；
+ * CSS 变量覆盖由 syncNuwaClawCssOverride 维护。
  */
 import { STORAGE_KEYS } from '@/constants/theme.constants';
 import { unifiedThemeService } from '@/services/unifiedThemeService';
+import { ThemeLayoutColorStyle } from '@/types/enums/theme';
 import { isNuwaClaw } from '@/utils/nuwaClawBridge';
 
 /** nuwaclaw 专属品牌主色（现代专业开发工具风品牌蓝） */
 export const NUWACLAW_PRIMARY = '#2563EB';
 
+/** 女娲主题绑定的背景选项 id（theme.constants 注册的「纯色」背景，无图浅色） */
+export const NUWACLAW_BACKGROUND_ID = 'bg-solid';
+
 /**
  * nuwaclaw 桌面专属亮色布局变量覆盖
- * 在通用 light-style1（半透明白）基础上，把背景/描边/文字/阴影改为参考图的实色
- * （白底浅灰 + 精确描边 + 高对比文字）。仅桌面端且当前亮色时生效；切 dark 走通用 dark-style1。
+ * 在通用 light-style1（半透明白 + 背景图）基础上，改为「灰白纯色、不用背景图」：
+ * 灰白基调底色 + 白卡片层次 + 实色菜单背景（替代半透明叠图）。仅桌面端且当前
+ * 亮色时生效；切 dark 走通用 dark-style1。
  */
 export const NUWACLAW_LIGHT_STYLE_OVERRIDE: Record<string, string> = {
-  '--xagi-layout-bg-primary': '#FFFFFF', // 主内容区
-  '--xagi-layout-bg-secondary': '#F7F8FA', // 侧栏/次面板浅灰
-  '--xagi-layout-bg-card': '#FFFFFF', // 卡片
+  '--xagi-layout-bg-primary': '#EFF1F6', // 主内容区（灰白基调，深一档避免过白）
+  '--xagi-layout-bg-secondary': '#E5E8EF', // 侧栏/次面板（更深灰白）
+  '--xagi-layout-bg-card': '#FFFFFF', // 卡片（白卡浮于灰底，保层次）
   '--xagi-layout-bg-input': '#FFFFFF', // 输入框
-  '--xagi-layout-border-primary': '#ECEEF1', // 主描边
-  '--xagi-layout-border-secondary': '#F0F1F3', // 次描边
+  '--xagi-layout-border-primary': '#C9CFDC', // 主描边（随底色加深，保证二级菜单左边框可见）
+  '--xagi-layout-border-secondary': '#DFE3EC', // 次描边
   '--xagi-layout-text-primary': '#1F2329', // 主文字
   '--xagi-layout-text-secondary': '#646A73', // 次文字
-  '--xagi-layout-shadow': 'rgba(31, 35, 41, 0.06)', // 极淡阴影
+  '--xagi-layout-shadow': 'rgba(31, 35, 41, 0.08)', // 淡阴影（灰底上稍加强层次）
+  // 菜单背景（token.less 的 @navFirstMenuBg/@navSecondMenuBg 消费）：灰白实色替代半透明
+  '--xagi-color-bg-container': '#E9EBF1', // 一级菜单（style2 二级菜单同源）
+  '--xagi-color-bg-layout': '#E5E8EF', // 二级菜单（style1）
 };
 
 /** nuwaclaw 专属覆盖的 CSS 变量集（主色 + 亮色布局实色） */
@@ -42,17 +54,27 @@ const NUWACLAW_CSS_VARS: Record<string, string> = {
 };
 
 /**
- * 是否存在用户/租户显式主题配置（命中 default 层则两者皆无）。
+ * 是否存在用户/租户「主题相关」的显式配置（命中 default 层则两者皆无）。
  * 直接探测存储而非 currentData.source——app.tsx 初始化的 updateData 会把 source 置 'user'，
  * 致 source 不可靠；此处复刻 loadConfiguration 的 user>tenant>default 探测逻辑。
+ * 只认主题相关字段（主色/背景图/租户模板）：GLOBAL_SETTINGS 仅存语言等非主题项时
+ * 不算显式定制，桌面端默认（女娲主题）依旧生效。
  */
 function hasExplicitThemeConfig(): boolean {
   try {
-    if (
-      localStorage.getItem(STORAGE_KEYS.USER_THEME_CONFIG) ||
-      localStorage.getItem(STORAGE_KEYS.GLOBAL_SETTINGS)
-    ) {
-      return true;
+    const userStr = localStorage.getItem(STORAGE_KEYS.USER_THEME_CONFIG);
+    if (userStr) {
+      const config = JSON.parse(userStr);
+      if (config?.selectedThemeColor || config?.selectedBackgroundId) {
+        return true;
+      }
+    }
+    const globalStr = localStorage.getItem(STORAGE_KEYS.GLOBAL_SETTINGS);
+    if (globalStr) {
+      const settings = JSON.parse(globalStr);
+      if (settings?.primaryColor || settings?.backgroundImageId) {
+        return true;
+      }
     }
     const tenantStr = localStorage.getItem(STORAGE_KEYS.TENANT_CONFIG_INFO);
     if (tenantStr) {
@@ -66,24 +88,45 @@ function hasExplicitThemeConfig(): boolean {
 }
 
 /**
- * nuwaclaw 专属默认主题是否生效：桌面端 + 用户/租户均未显式定制（命中 default 层）。
- * 用户在主题设置里切过主色/背景/dark → 写 USER_THEME_CONFIG → 返回 false → 覆盖自动让位（不锁）。
+ * 女娲主题是否生效：
+ * - 桌面端 + 用户/租户均未显式定制主题 → 默认即女娲主题；
+ * - 桌面端 + 用户显式选了「女娲蓝」（主色 = NUWACLAW_PRIMARY）且布局为浅色 → 生效；
+ * - 切其他主色 / 深色布局 / 租户模板 → 让位（用户在主题切换里可随时切回）。
+ * 背景图不作为判定条件：女娲主题本身就禁用背景图，选中即覆盖展示。
  */
 export function isNuwaClawThemeActive(): boolean {
-  return isNuwaClaw() && !hasExplicitThemeConfig();
+  if (!isNuwaClaw()) return false;
+  if (!hasExplicitThemeConfig()) return true;
+  const data = unifiedThemeService.getCurrentData();
+  return (
+    data.primaryColor === NUWACLAW_PRIMARY &&
+    data.layoutStyle === ThemeLayoutColorStyle.LIGHT
+  );
 }
 
-/** 同步 nuwaclaw 亮色覆盖变量到 documentElement（生效则叠加，否则移除） */
+/** 桌面端禁用背景图的变量名（单独处理，不并入 NUWACLAW_CSS_VARS 的移除集） */
+const BG_IMAGE_VAR = '--xagi-background-image';
+
+/**
+ * 同步 nuwaclaw 亮色覆盖变量到 documentElement（生效则叠加，否则移除）。
+ * 背景图单独处理：让位时不能无脑 removeProperty——那会连带删掉 unifiedThemeService
+ * 刚按用户 backgroundId 设置的背景图；仅当当前值是自己设的 'none' 时才移除。
+ */
 function syncNuwaClawCssOverride(): void {
   if (typeof document === 'undefined') return;
   const root = document.documentElement;
-  const shouldApply =
-    isNuwaClawThemeActive() &&
-    unifiedThemeService.getCurrentData().antdTheme === 'light';
+  // 生效判定已内含「浅色布局」约束（灰白变量仅浅色下有意义），无需再叠加 antdTheme 判断
+  const shouldApply = isNuwaClawThemeActive();
   Object.keys(NUWACLAW_CSS_VARS).forEach((key) => {
     if (shouldApply) root.style.setProperty(key, NUWACLAW_CSS_VARS[key]);
     else root.style.removeProperty(key);
   });
+  // 桌面端不用背景图（灰白纯色）；让位时仅回收自己设的 'none'，不动用户图
+  if (shouldApply) {
+    root.style.setProperty(BG_IMAGE_VAR, 'none');
+  } else if (root.style.getPropertyValue(BG_IMAGE_VAR) === 'none') {
+    root.style.removeProperty(BG_IMAGE_VAR);
+  }
 }
 
 /**
@@ -92,6 +135,15 @@ function syncNuwaClawCssOverride(): void {
  */
 export function initNuwaClawTheme(): () => void {
   if (!isNuwaClaw()) return () => {};
+  // 桌面端默认切换到女娲主题：用户/租户均未显式定制主题时，把「女娲蓝 + 纯色背景」
+  // 写入正式主题配置（走服务统一的存储/DOM 应用链路，主题切换面板因此自然高亮
+  // 女娲蓝与纯色两项）。用户此后切任何主题都构成显式配置，此写入不再重复。
+  if (!hasExplicitThemeConfig()) {
+    unifiedThemeService.updateData({
+      primaryColor: NUWACLAW_PRIMARY,
+      backgroundId: NUWACLAW_BACKGROUND_ID,
+    });
+  }
   syncNuwaClawCssOverride();
   unifiedThemeService.addListener(syncNuwaClawCssOverride);
   return () => unifiedThemeService.removeListener(syncNuwaClawCssOverride);

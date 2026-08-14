@@ -68,6 +68,14 @@ export const DEFAULT_THEME_CONFIG = {
  * 根据背景图的明暗程度来确定适合的布局风格
  */
 export const THEME_BACKGROUND_CONFIGS: ThemeBackgroundConfig[] = [
+  // 纯色背景（无图）：url 为空串，applyToDOM 显式置 --xagi-background-image:none
+  {
+    id: 'bg-solid',
+    name: dict('PC.Constants.Theme.bgSolid'),
+    url: '',
+    layoutStyle: ThemeLayoutColorStyle.LIGHT,
+    description: dict('PC.Constants.Theme.bgSolidDesc'),
+  },
   {
     id: 'bg-variant-1',
     name: dict('PC.Constants.Theme.bgStarryNight'),

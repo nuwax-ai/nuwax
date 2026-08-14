@@ -3,6 +3,7 @@ import { NAVIGATION_LAYOUT_SIZES } from '@/constants/layout.constants';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { dict } from '@/services/i18nRuntime';
 import { ThemeNavigationStyleType } from '@/types/enums/theme';
+import { isNuwaClaw } from '@/utils/nuwaClawBridge';
 import { Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect } from 'react';
@@ -59,6 +60,8 @@ const CollapseButton: React.FC = () => {
 
   // 初始化菜单状态（三级优先级）
   useEffect(() => {
+    // 桌面端：收起能力转移到 nuwaclaw 工具栏，跳过 sessionStorage/URL 初始化，保持 model 初值（false）
+    if (isNuwaClaw()) return;
     // 优先级1: 检查用户操作记录
     const userPreference = getUserPreference();
     if (userPreference !== null) {
@@ -98,6 +101,9 @@ const CollapseButton: React.FC = () => {
     // 更新状态
     setIsSecondMenuCollapsed(newState);
   };
+
+  // 桌面端：收起按钮隐藏，能力转移到 nuwaclaw 工具栏
+  if (isNuwaClaw()) return null;
 
   return (
     <Tooltip

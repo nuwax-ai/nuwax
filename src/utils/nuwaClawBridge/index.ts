@@ -81,7 +81,29 @@ export const native = {
   },
 };
 
+/**
+ * 宿主入站事件（host→guest）：nuwaclaw 工具栏等触发的命令经 webviewPerfBridge
+ * 转发到 nuwax；浏览器无桥时 no-op。命令协议见 global.d.ts 的 HostCommand。
+ */
+export const events = {
+  /**
+   * 注册宿主命令处理器。传 null 注销。返回是否注册成功（无桥/无能力则 false）。
+   * 由 nuwaClawHostEvents 在桌面端启动时调用一次。
+   */
+  onHostCommand(cb: ((payload: HostCommand) => void) | null): boolean {
+    try {
+      const handler = getBridge()?.events?.onHostCommand;
+      if (!handler) return false;
+      handler(cb);
+      return true;
+    } catch (e) {
+      console.warn('[nuwaClawHost] register onHostCommand failed', e);
+      return false;
+    }
+  },
+};
+
 /** 统一对外聚合对象（与 perfTracker 风格一致）。 */
-export const nuwaClawHost = { isNuwaClaw, auth, native };
+export const nuwaClawHost = { isNuwaClaw, auth, native, events };
 
 export default nuwaClawHost;

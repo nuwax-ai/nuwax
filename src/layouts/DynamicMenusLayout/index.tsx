@@ -12,7 +12,9 @@ import ConditionRender from '@/components/ConditionRender';
 import { NAVIGATION_LAYOUT_SIZES } from '@/constants/layout.constants';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { dict } from '@/services/i18nRuntime';
+import { initNuwaClawHostEvents } from '@/services/nuwaClawHostEvents';
 import type { MenuItemDto } from '@/types/interfaces/menu';
+import { isNuwaClaw } from '@/utils/nuwaClawBridge';
 import { theme, Typography } from 'antd';
 import classNames from 'classnames';
 import React, {
@@ -56,7 +58,7 @@ import {
 } from './utils';
 
 const cx = classNames.bind(styles);
-
+const NUWA_CLAW_PADDING_TOP = 36; // 桌面端沉浸式：一级菜单顶部下移避让 macOS 红绿灯（trafficLightPosition {16,16}）
 /** 使用自定义 Section 的一级菜单，始终展示二级菜单栏 */
 const SECOND_MENU_SECTION_TABS = new Set([
   'homepage',
@@ -83,8 +85,12 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
   const params = useParams();
   const { token } = theme.useToken();
   const { navigationStyle, layoutStyle } = useUnifiedTheme();
-  const { isSecondMenuCollapsed, setOpenMessage, handleCloseMobileMenu } =
-    useModel('layout');
+  const {
+    isSecondMenuCollapsed,
+    setIsSecondMenuCollapsed,
+    setOpenMessage,
+    handleCloseMobileMenu,
+  } = useModel('layout');
 
   // 判断指定一级菜单及其所有子菜单中，是否存在与传入路径匹配的菜单
   const { firstLevelMenus, otherMenus, hasPathUnderFirstLevelMenu } =
@@ -290,6 +296,13 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
     // 强制刷新获取用户信息
     refreshUserInfo();
   }, []);
+
+  // nuwaclaw 桌面端：注册宿主命令监听（工具栏「收起二级菜单」等经此通道下发）
+  useEffect(() => {
+    return initNuwaClawHostEvents({
+      setSecondMenuCollapsed: setIsSecondMenuCollapsed,
+    });
+  }, [setIsSecondMenuCollapsed]);
 
   // 新对话菜单特殊处理
   const handleNewConversation = useCallback(() => {
@@ -736,6 +749,8 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
         style={{
           width: firstMenuWidth,
           background: firstMenuBackground,
+          // 桌面端沉浸式：一级菜单顶部下移避让 macOS 红绿灯（trafficLightPosition {16,16}）
+          ...(isNuwaClaw() ? { paddingTop: NUWA_CLAW_PADDING_TOP } : {}),
         }}
       >
         <Header />
@@ -762,11 +777,29 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
             width: isSecondMenuCollapsed
               ? 0
               : NAVIGATION_LAYOUT_SIZES.SECOND_MENU_WIDTH,
+            // 桌面端沉浸式：顶部留白避让 nuwaclaw 红绿灯工具栏（与 first-menus 对齐）；
+            // 左边框不贯穿避让区（改为下方内部竖线，顶端对齐搜索/新建会话栏）；
+            // 浏览器端 undefined 走 less 默认 padding-top / border-left
+            paddingTop: isNuwaClaw() ? NUWA_CLAW_PADDING_TOP : undefined,
+            borderLeft: isNuwaClaw() ? 'none' : undefined,
             paddingLeft: isSecondMenuCollapsed ? 0 : token.padding,
             opacity: isSecondMenuCollapsed ? 0 : 1,
             backgroundColor: secondaryBackgroundColor,
           }}
         >
+          {/* 桌面端沉浸式：替代 border-left 的竖线，从避让区下沿（搜索/新建会话栏顶部）开始 */}
+          {isNuwaClaw() && (
+            <div
+              style={{
+                position: 'absolute',
+                top: NUWA_CLAW_PADDING_TOP + 8, // 与上方 paddingTop 避让高度一致
+                bottom: 0,
+                left: 0,
+                width: 'var(--xagi-line-width)', // 与 less @lineWidth 同源
+                background: 'var(--xagi-layout-border-primary)',
+              }}
+            />
+          )}
           <div className={cx(styles['nav-menus-scroll'])}>
             {activeTab === 'homepage' ? (
               renderSecondMenu
