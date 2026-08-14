@@ -5,6 +5,7 @@ import {
 } from '@/constants/layout.constants';
 import useCategory from '@/hooks/useCategory';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
+import { isWinLinuxShell, shellAvoid } from '@/utils/nuwaClawBridge';
 import { theme } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
@@ -291,6 +292,12 @@ const Layout: React.FC = () => {
           // { 'w-full': isMobile }, // 存在 BUG 需要注释掉
         ])}
         id="page-container-selector"
+        style={{
+          // Windows/Linux 桌面端：主内容区顶部避让壳自绘的窗口控制三键
+          // （CtrlButton，贴右上角 46×32）与工具栏浮层；mac 壳红绿灯在左上
+          // （菜单列已另行避让）、独立窗口带系统标题栏、浏览器无壳，均不加
+          paddingTop: isWinLinuxShell() ? shellAvoid.TOP : undefined,
+        }}
       >
         <Outlet />
       </div>

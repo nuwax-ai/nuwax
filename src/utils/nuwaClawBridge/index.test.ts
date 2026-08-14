@@ -5,6 +5,7 @@ import {
   isMac,
   isNuwaClaw,
   isShellWindow,
+  isWinLinuxShell,
   native,
   needsTopRightAvoid,
   nuwaClawHost,
@@ -106,6 +107,7 @@ describe('nuwaClawHost（统一对外接入层）', () => {
       vi.stubGlobal('navigator', { platform: 'Win32' });
       (window as any).NuwaClawBridge = { auth: {} };
       expect(isMac()).toBe(false);
+      expect(isWinLinuxShell()).toBe(true);
       expect(needsTopRightAvoid()).toBe(true);
     });
     it('Windows 浏览器（无桥）→ 不需要避让', () => {

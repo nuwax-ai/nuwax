@@ -55,12 +55,20 @@ export function isMac(): boolean {
 }
 
 /**
- * 是否需要右上角避让：沉浸式主窗口且非 mac（右上角有壳自绘的
- * 最小化/最大化/关闭 三键）。mac 壳红绿灯在左上、独立窗口带系统标题栏、
- * 浏览器无壳，均不用避让。
+ * 是否 Windows/Linux 沉浸式主窗口：右上角有壳自绘的窗口控制三键（CtrlButton）。
+ * 右上角浮层避让（登录页语言切换等）与主内容区顶部避让（page-container）
+ * 均以此判定；mac 壳红绿灯在左上（菜单列另行避让）、独立窗口带系统标题栏、
+ * 浏览器无壳，均 false。
+ */
+export function isWinLinuxShell(): boolean {
+  return isImmersiveShell() && !isMac();
+}
+
+/**
+ * 是否需要右上角避让：右上角浮层让位壳自绘三键（CtrlButton）。
  */
 export function needsTopRightAvoid(): boolean {
-  return isImmersiveShell() && !isMac();
+  return isWinLinuxShell();
 }
 
 /**
@@ -210,6 +218,7 @@ export const nuwaClawHost = {
   isShellWindow,
   isImmersiveShell,
   isMac,
+  isWinLinuxShell,
   needsTopRightAvoid,
   shellAvoid,
   auth,
