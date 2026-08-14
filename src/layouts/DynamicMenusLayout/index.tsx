@@ -59,7 +59,8 @@ import {
 
 const cx = classNames.bind(styles);
 /** 桌面端沉浸式：顶部下移避让 nuwaclaw 工具栏（macOS 红绿灯在其左；Win/Linux 左侧自绘按钮组）。
- *  一级菜单/二级菜单/主内容区（含二级页面返回栏）统一用此值对齐。 */
+ *  一级/二级菜单列与 layout:false 全屏路由的避让 wrapper（@/wrappers/nuwaclawAvoid）共用此值。
+ *  注意：走 @/layouts 的主内容区（page-container）不加避让——列表页内容会被整体压低（曾误伤）。 */
 export const NUWA_CLAW_PADDING_TOP = 36;
 /** 使用自定义 Section 的一级菜单，始终展示二级菜单栏 */
 const SECOND_MENU_SECTION_TABS = new Set([
