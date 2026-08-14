@@ -100,6 +100,12 @@ describe('nuwaClawTheme · nuwaclaw 桌面专属主题适配', () => {
     expect(root.style.getPropertyValue('--xagi-layout-bg-secondary')).toBe(
       '#E5E8EF',
     );
+    // 主内容区面板（token @pageContainerBg 消费；漏配曾致内容区始终白）
+    expect(root.style.getPropertyValue('--xagi-layout-bg-container')).toBe(
+      '#EFF1F6',
+    );
+    // html 灰底兜住 style1 浮动面板的缝隙（jsdom 会把颜色规范化成 rgb() 形式）
+    expect(root.style.backgroundColor).toBe('rgb(229, 232, 239)');
     // 桌面端不用背景图（灰白纯色）
     expect(root.style.getPropertyValue('--xagi-background-image')).toBe('none');
     // 菜单背景实色（@navFirstMenuBg/@navSecondMenuBg 消费的变量）
@@ -123,6 +129,8 @@ describe('nuwaClawTheme · nuwaclaw 桌面专属主题适配', () => {
     expect(root.style.getPropertyValue('--xagi-layout-bg-primary')).toBe('');
     // 让位时未写背景图禁用（不碰 unifiedThemeService 可能设置的用户图）
     expect(root.style.getPropertyValue('--xagi-background-image')).toBe('');
+    // 让位时 html 灰底一并回收（回落 global.less 的 #fff）
+    expect(root.style.backgroundColor).toBe('');
   });
 
   it('nuwaclaw + 用户显式选「女娲蓝」+ 浅色布局 → 生效（注册进主题切换维度的正式选项）', () => {

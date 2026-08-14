@@ -35,6 +35,7 @@ export const NUWACLAW_BACKGROUND_ID = 'bg-solid';
 export const NUWACLAW_LIGHT_STYLE_OVERRIDE: Record<string, string> = {
   '--xagi-layout-bg-primary': '#EFF1F6', // 主内容区（灰白基调，深一档避免过白）
   '--xagi-layout-bg-secondary': '#E5E8EF', // 侧栏/次面板（更深灰白）
+  '--xagi-layout-bg-container': '#EFF1F6', // 主内容区面板（token @pageContainerBg 消费；漏配曾致内容区始终白）
   '--xagi-layout-bg-card': '#FFFFFF', // 卡片（白卡浮于灰底，保层次）
   '--xagi-layout-bg-input': '#FFFFFF', // 输入框
   '--xagi-layout-border-primary': '#C9CFDC', // 主描边（随底色加深，保证二级菜单左边框可见）
@@ -107,6 +108,10 @@ export function isNuwaClawThemeActive(): boolean {
 /** 桌面端禁用背景图的变量名（单独处理，不并入 NUWACLAW_CSS_VARS 的移除集） */
 const BG_IMAGE_VAR = '--xagi-background-image';
 
+/** 桌面主题生效时给 html 铺的灰底（style1 主内容是带边距的浮动圆角面板，缝隙会露出 html 白底） */
+const NUWACLAW_HTML_BG =
+  NUWACLAW_LIGHT_STYLE_OVERRIDE['--xagi-layout-bg-secondary'];
+
 /**
  * 同步 nuwaclaw 亮色覆盖变量到 documentElement（生效则叠加，否则移除）。
  * 背景图单独处理：让位时不能无脑 removeProperty——那会连带删掉 unifiedThemeService
@@ -121,11 +126,16 @@ function syncNuwaClawCssOverride(): void {
     if (shouldApply) root.style.setProperty(key, NUWACLAW_CSS_VARS[key]);
     else root.style.removeProperty(key);
   });
-  // 桌面端不用背景图（灰白纯色）；让位时仅回收自己设的 'none'，不动用户图
+  // 桌面端不用背景图（灰白纯色）；html 铺灰底兜住面板缝隙/滚动区。
+  // 让位时仅回收自己设的 'none' 与灰底，不动用户图（灰底清空回落 global.less 的 #fff）
   if (shouldApply) {
     root.style.setProperty(BG_IMAGE_VAR, 'none');
-  } else if (root.style.getPropertyValue(BG_IMAGE_VAR) === 'none') {
-    root.style.removeProperty(BG_IMAGE_VAR);
+    root.style.backgroundColor = NUWACLAW_HTML_BG;
+  } else {
+    root.style.backgroundColor = '';
+    if (root.style.getPropertyValue(BG_IMAGE_VAR) === 'none') {
+      root.style.removeProperty(BG_IMAGE_VAR);
+    }
   }
 }
 
