@@ -1,6 +1,7 @@
 import { apiI18nLangList } from '@/services/i18n';
 import { dict, fetchAndApplyLangMap } from '@/services/i18nRuntime';
 import { I18nLangDto } from '@/types/interfaces/i18n';
+import { needsTopRightAvoid, shellAvoid } from '@/utils/nuwaClawBridge';
 import { CheckOutlined, GlobalOutlined } from '@ant-design/icons';
 import { Dropdown, MenuProps, message } from 'antd';
 import React, { useEffect, useState } from 'react';
@@ -8,7 +9,9 @@ import styles from './index.less';
 
 /**
  * 登录页专用语言切换组件
- * 悬浮在右上角，点击后直接切换并刷新页面
+ * 悬浮在右上角，点击后直接切换并刷新页面；
+ * Windows/Linux 的 nuwaclaw 壳内右移避让壳自绘的窗口控制三键
+ * （判定与避让尺寸统一收口在 nuwaClawBridge 的 needsTopRightAvoid / shellAvoid）
  */
 const LoginLangSwitcher: React.FC = () => {
   const [languages, setLanguages] = useState<I18nLangDto[]>([]);
@@ -90,7 +93,10 @@ const LoginLangSwitcher: React.FC = () => {
     languages.find((l) => l.lang === selectedLang)?.name || 'Language';
 
   return (
-    <div className={styles.switcherContainer}>
+    <div
+      className={styles.switcherContainer}
+      style={needsTopRightAvoid() ? { right: shellAvoid.RIGHT } : undefined}
+    >
       <Dropdown
         menu={{
           items: menuItems,

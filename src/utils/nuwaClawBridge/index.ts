@@ -46,6 +46,35 @@ export function isImmersiveShell(): boolean {
 }
 
 /**
+ * 是否 macOS 平台（浏览器 / mac 壳均算）。
+ * 判定写法与 nuwaclaw 壳 TrafficLightToolbar 保持同款，保证两侧一致——
+ * 「壳画自绘窗口三键的场合」恰好是「guest 需右上避让的场合」。
+ */
+export function isMac(): boolean {
+  return typeof navigator !== 'undefined' && /mac/i.test(navigator.platform);
+}
+
+/**
+ * 是否需要右上角避让：沉浸式主窗口且非 mac（右上角有壳自绘的
+ * 最小化/最大化/关闭 三键）。mac 壳红绿灯在左上、独立窗口带系统标题栏、
+ * 浏览器无壳，均不用避让。
+ */
+export function needsTopRightAvoid(): boolean {
+  return isImmersiveShell() && !isMac();
+}
+
+/**
+ * 壳层沉浸式 UI 避让尺寸：与 nuwaclaw 壳 TrafficLightToolbar 的自绘布局对应，
+ * 壳侧改版时同步维护这里——两侧布局避让的唯一事实来源，避免散点魔法数。
+ */
+export const shellAvoid = {
+  /** mac 红绿灯 {16,16} + 沉浸工具栏条：壳内一级/二级菜单等顶部下移量。 */
+  TOP: 36,
+  /** Win/Linux 自绘三键贴死右上角（46×3=138px）：右上角浮层避让宽度（含间隙）。 */
+  RIGHT: 150,
+};
+
+/**
  * 鉴权态同步：ACCESS_TOKEN 在 nuwax 与 nuwaclaw 宿主之间的双向同步（重启免登）。
  * 浏览器环境无桥，各方法均为 no-op / 返回空值，不影响 nuwax 自身流程。
  */
@@ -180,6 +209,9 @@ export const nuwaClawHost = {
   isNuwaClaw,
   isShellWindow,
   isImmersiveShell,
+  isMac,
+  needsTopRightAvoid,
+  shellAvoid,
   auth,
   native,
   events,

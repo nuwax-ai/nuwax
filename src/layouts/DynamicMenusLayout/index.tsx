@@ -14,7 +14,7 @@ import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { dict } from '@/services/i18nRuntime';
 import { initNuwaClawHostEvents } from '@/services/nuwaClawHostEvents';
 import type { MenuItemDto } from '@/types/interfaces/menu';
-import { isImmersiveShell, nuwaClawHost } from '@/utils/nuwaClawBridge';
+import { isImmersiveShell, nuwaClawHost, shellAvoid } from '@/utils/nuwaClawBridge';
 import { jumpTo } from '@/utils/router';
 import { theme, Typography } from 'antd';
 import classNames from 'classnames';
@@ -61,8 +61,10 @@ import {
 const cx = classNames.bind(styles);
 /** 桌面端沉浸式：顶部下移避让 nuwaclaw 工具栏（macOS 红绿灯在其左；Win/Linux 左侧自绘按钮组）。
  *  仅一级/二级菜单列使用。注意：走 @/layouts 的主内容区（page-container）不加避让——
- *  列表页内容会被整体压低（曾误伤）；layout:false 全屏页不做内嵌避让，走新开窗口打开。 */
-export const NUWA_CLAW_PADDING_TOP = 36;
+ *  列表页内容会被整体压低（曾误伤）；layout:false 全屏页不做内嵌避让，走新开窗口打开。
+ *  尺寸单一来源在 nuwaClawBridge 的 shellAvoid.TOP（与右上角三键避让同源管理），
+ *  NUWA_CLAW_PADDING_TOP 保留为兼容导出别名（外部导入点仍引用此名）。 */
+export const NUWA_CLAW_PADDING_TOP = shellAvoid.TOP;
 /** 使用自定义 Section 的一级菜单，始终展示二级菜单栏 */
 const SECOND_MENU_SECTION_TABS = new Set([
   'homepage',
@@ -762,7 +764,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
           width: firstMenuWidth,
           background: firstMenuBackground,
           // 桌面端沉浸式：一级菜单顶部下移避让 macOS 红绿灯（trafficLightPosition {16,16}）
-          ...(isImmersiveShell() ? { paddingTop: NUWA_CLAW_PADDING_TOP } : {}),
+          ...(isImmersiveShell() ? { paddingTop: shellAvoid.TOP } : {}),
         }}
       >
         <Header />
@@ -792,7 +794,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
             // 桌面端沉浸式：顶部留白避让 nuwaclaw 红绿灯工具栏（与 first-menus 对齐）；
             // 左边框不贯穿避让区（改为下方内部竖线，顶端对齐搜索/新建会话栏）；
             // 浏览器端 undefined 走 less 默认 padding-top / border-left
-            paddingTop: isImmersiveShell() ? NUWA_CLAW_PADDING_TOP : undefined,
+            paddingTop: isImmersiveShell() ? shellAvoid.TOP : undefined,
             borderLeft: isImmersiveShell() ? 'none' : undefined,
             paddingLeft: isSecondMenuCollapsed ? 0 : token.padding,
             opacity: isSecondMenuCollapsed ? 0 : 1,
@@ -804,7 +806,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
             <div
               style={{
                 position: 'absolute',
-                top: NUWA_CLAW_PADDING_TOP + 8, // 与上方 paddingTop 避让高度一致
+                top: shellAvoid.TOP + 8, // 与上方 paddingTop 避让高度一致
                 bottom: 0,
                 left: 0,
                 width: 'var(--xagi-line-width)', // 与 less @lineWidth 同源
