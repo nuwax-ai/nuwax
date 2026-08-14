@@ -691,6 +691,7 @@ const ConversationAgent: React.FC = () => {
     },
   });
 
+  /** 初始化项目元数据 */
   useInitProjectMetadata({
     targetType: AgentComponentTypeEnum.Agent,
     targetId: agentId,
