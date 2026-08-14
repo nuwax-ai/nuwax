@@ -348,6 +348,7 @@ const ConversationAgent: React.FC = () => {
   // ==================== 计算属性 ====================
   /** 开发会话 ID，用于聊天历史查询 */
   const devConversationId = agentConfigInfo?.devConversationId;
+  /** 开发会话 ID 的 ref，用于存储当前的开发会话 ID */
   const devConversationIdRef = useRef(devConversationId);
   devConversationIdRef.current = devConversationId;
 
