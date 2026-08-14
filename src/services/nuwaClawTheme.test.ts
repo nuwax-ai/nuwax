@@ -95,22 +95,22 @@ describe('nuwaClawTheme · nuwaclaw 桌面专属主题适配', () => {
       NUWACLAW_PRIMARY,
     );
     expect(root.style.getPropertyValue('--xagi-layout-bg-primary')).toBe(
-      '#EFF1F6',
+      '#F1EFE9',
     );
     expect(root.style.getPropertyValue('--xagi-layout-bg-secondary')).toBe(
-      '#E5E8EF',
+      '#E7E4DA',
     );
     // 主内容区面板（token @pageContainerBg 消费；漏配曾致内容区始终白）
     expect(root.style.getPropertyValue('--xagi-layout-bg-container')).toBe(
-      '#EFF1F6',
+      '#F1EFE9',
     );
-    // html 灰底兜住 style1 浮动面板的缝隙（jsdom 会把颜色规范化成 rgb() 形式）
-    expect(root.style.backgroundColor).toBe('rgb(229, 232, 239)');
-    // 桌面端不用背景图（灰白纯色）
+    // html 米灰底兜住 style1 浮动面板的缝隙（jsdom 会把颜色规范化成 rgb() 形式）
+    expect(root.style.backgroundColor).toBe('rgb(231, 228, 218)');
+    // 桌面端不用背景图（米白纯色）
     expect(root.style.getPropertyValue('--xagi-background-image')).toBe('none');
     // 菜单背景实色（@navFirstMenuBg/@navSecondMenuBg 消费的变量）
     expect(root.style.getPropertyValue('--xagi-color-bg-container')).toBe(
-      '#E9EBF1',
+      '#EAE7DE',
     );
   });
 
@@ -150,7 +150,7 @@ describe('nuwaClawTheme · nuwaclaw 桌面专属主题适配', () => {
       NUWACLAW_PRIMARY,
     );
     expect(root.style.getPropertyValue('--xagi-layout-bg-primary')).toBe(
-      '#EFF1F6',
+      '#F1EFE9',
     );
     expect(root.style.getPropertyValue('--xagi-background-image')).toBe('none');
   });

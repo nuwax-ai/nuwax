@@ -28,24 +28,24 @@ export const NUWACLAW_BACKGROUND_ID = 'bg-solid';
 
 /**
  * nuwaclaw 桌面专属亮色布局变量覆盖
- * 在通用 light-style1（半透明白 + 背景图）基础上，改为「灰白纯色、不用背景图」：
- * 灰白基调底色 + 白卡片层次 + 实色菜单背景（替代半透明叠图）。仅桌面端且当前
+ * 在通用 light-style1（半透明白 + 背景图）基础上，改为「米白纯色（带黄加灰）、不用背景图」：
+ * 米白基调底色 + 白卡片层次 + 实色菜单背景（替代半透明叠图）。仅桌面端且当前
  * 亮色时生效；切 dark 走通用 dark-style1。
  */
 export const NUWACLAW_LIGHT_STYLE_OVERRIDE: Record<string, string> = {
-  '--xagi-layout-bg-primary': '#EFF1F6', // 主内容区（灰白基调，深一档避免过白）
-  '--xagi-layout-bg-secondary': '#E5E8EF', // 侧栏/次面板（更深灰白）
-  '--xagi-layout-bg-container': '#EFF1F6', // 主内容区面板（token @pageContainerBg 消费；漏配曾致内容区始终白）
-  '--xagi-layout-bg-card': '#FFFFFF', // 卡片（白卡浮于灰底，保层次）
+  '--xagi-layout-bg-primary': '#F1EFE9', // 主内容区（米白基调：带黄加灰）
+  '--xagi-layout-bg-secondary': '#E7E4DA', // 侧栏/次面板（更深米灰）
+  '--xagi-layout-bg-container': '#F1EFE9', // 主内容区面板（token @pageContainerBg 消费；漏配曾致内容区始终白）
+  '--xagi-layout-bg-card': '#FFFFFF', // 卡片（白卡浮于米白底，保层次）
   '--xagi-layout-bg-input': '#FFFFFF', // 输入框
-  '--xagi-layout-border-primary': '#C9CFDC', // 主描边（随底色加深，保证二级菜单左边框可见）
-  '--xagi-layout-border-secondary': '#DFE3EC', // 次描边
+  '--xagi-layout-border-primary': '#CFCBBE', // 主描边（暖灰调，保证二级菜单左边框在米白底上可见）
+  '--xagi-layout-border-secondary': '#E0DCCF', // 次描边
   '--xagi-layout-text-primary': '#1F2329', // 主文字
   '--xagi-layout-text-secondary': '#646A73', // 次文字
-  '--xagi-layout-shadow': 'rgba(31, 35, 41, 0.08)', // 淡阴影（灰底上稍加强层次）
-  // 菜单背景（token.less 的 @navFirstMenuBg/@navSecondMenuBg 消费）：灰白实色替代半透明
-  '--xagi-color-bg-container': '#E9EBF1', // 一级菜单（style2 二级菜单同源）
-  '--xagi-color-bg-layout': '#E5E8EF', // 二级菜单（style1）
+  '--xagi-layout-shadow': 'rgba(41, 37, 28, 0.08)', // 淡阴影（暖黑，米白底上托层次）
+  // 菜单背景（token.less 的 @navFirstMenuBg/@navSecondMenuBg 消费）：米白实色替代半透明
+  '--xagi-color-bg-container': '#EAE7DE', // 一级菜单（style2 二级菜单同源）
+  '--xagi-color-bg-layout': '#E7E4DA', // 二级菜单（style1）
 };
 
 /** nuwaclaw 专属覆盖的 CSS 变量集（主色 + 亮色布局实色） */
