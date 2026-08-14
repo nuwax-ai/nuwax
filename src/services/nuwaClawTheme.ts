@@ -47,11 +47,12 @@ export const NUWACLAW_LIGHT_STYLE_OVERRIDE: Record<string, string> = {
   '--xagi-color-bg-container': '#EEEFF2', // 一级菜单（style2 二级菜单同源）
   '--xagi-color-bg-layout': '#EAEBEF', // 二级菜单（style1）
   // 菜单项 hover/选中高亮（token @navItem*Bg/@navSecondItemActiveBg 消费）：
-  // 贴近菜单底的浅灰浮起（选中项另有品牌蓝文字/图标标识，背景弱化不突兀）
-  '--xagi-nav-item-hover-bg': '#F2F3F6',
-  '--xagi-nav-item-active-bg': '#F5F6F8',
-  '--xagi-nav-item-selected-bg': '#F5F6F8',
-  '--xagi-nav-second-item-active-bg': '#F5F6F8',
+  // 贴近菜单底的极浅浮起（选中项另有品牌蓝文字/图标标识，背景弱化不突兀）。
+  // 一级菜单底 #EEEFF2 → hover +2 / 选中 +4；二级菜单底 #EAEBEF → 选中 +4
+  '--xagi-nav-item-hover-bg': '#F0F1F5',
+  '--xagi-nav-item-active-bg': '#F2F3F6',
+  '--xagi-nav-item-selected-bg': '#F2F3F6',
+  '--xagi-nav-second-item-active-bg': '#EEF0F3',
 };
 
 /** nuwaclaw 专属覆盖的 CSS 变量集（主色 + 亮色布局实色） */

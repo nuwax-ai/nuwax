@@ -119,11 +119,11 @@ describe('nuwaClawTheme · nuwaclaw 桌面专属主题适配', () => {
     );
     // 菜单项高亮：米白浮起色替代原纯白（@navItem*Bg/@navSecondItemActiveBg 消费）
     expect(root.style.getPropertyValue('--xagi-nav-item-active-bg')).toBe(
-      '#F5F6F8',
+      '#F2F3F6',
     );
     expect(
       root.style.getPropertyValue('--xagi-nav-second-item-active-bg'),
-    ).toBe('#F5F6F8');
+    ).toBe('#EEF0F3');
     // 生效时把同套调色板推给壳（原生侧统一米白效果的唯一来源）
     expect(syncTheme).toHaveBeenCalledWith(
       expect.objectContaining({ active: true, primary: NUWACLAW_PRIMARY }),
