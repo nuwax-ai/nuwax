@@ -829,6 +829,7 @@ const ConversationAgent: React.FC = () => {
       return false;
     }
     const parentPath = fileNode.parentPath || '';
+    // 文件夹路径拼接
     const newPath = parentPath ? `${parentPath}/${trimmedName}` : trimmedName;
     const newFile: UpdateFileInfo = {
       name: newPath,
