@@ -350,6 +350,7 @@ const ConversationAgent: React.FC = () => {
   const devConversationId = agentConfigInfo?.devConversationId;
   /** 开发会话 ID 的 ref，用于存储当前的开发会话 ID */
   const devConversationIdRef = useRef(devConversationId);
+  /** 开发会话 ID 的 ref，用于存储当前的开发会话 ID */
   devConversationIdRef.current = devConversationId;
 
   /**
