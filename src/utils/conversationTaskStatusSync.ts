@@ -291,8 +291,32 @@ export function applyTerminalTaskStatus(
 }
 
 /**
+ * 把终态 taskStatus 同步到「最近使用/会话记录」列表（本地补丁，不发网络请求）。
+ *
+ * 场景：会话执行完毕后，侧栏列表可能因后端落库延迟，在重新拉取后仍返回 EXECUTING，
+ * 导致列表显示「执行中」。当前会话页的轮询会反复观察到终态并补发本事件，由列表
+ * 处理器幂等合并——任何一次落在轮询之后的 stale 刷新都会在下个轮询周期内被纠正。
+ *
+ * - undefined / EXECUTING 跳过：非终态，避免把执行中状态固化到列表；
+ * - 仅由终态（COMPLETE / CANCEL / FAILED）触发本地补丁。
+ */
+export function emitConversationListTaskStatus(
+  conversationId: number | string,
+  taskStatus: TaskStatus | undefined,
+): void {
+  if (taskStatus === undefined || taskStatus === TaskStatus.EXECUTING) {
+    return;
+  }
+  eventBus.emit(EVENT_TYPE.UpdateConversationListTaskStatus, {
+    conversationId,
+    taskStatus,
+  });
+}
+
+/**
  * SSE onClose / ChatFinished 兜底：拉取后端 taskStatus 并写回终态。
  * 经 applyTerminalTaskStatus，自动跳过 EXECUTING（避免固化）且未变化不重渲染。
+ * 后端已确认终态时，同时补偿「最近使用/会话记录」列表，避免其停留在执行中。
  */
 export async function syncTerminalConversationTaskStatus(
   conversationId: number | string,
@@ -302,6 +326,7 @@ export async function syncTerminalConversationTaskStatus(
 ): Promise<void> {
   const taskStatus = await fetchConversationTaskStatus(conversationId);
   applyTerminalTaskStatus(setConversationInfo, conversationId, taskStatus);
+  emitConversationListTaskStatus(conversationId, taskStatus);
 }
 
 /**
