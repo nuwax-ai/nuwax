@@ -5,11 +5,14 @@ import {
 } from '@/constants/layout.constants';
 import useCategory from '@/hooks/useCategory';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
+import { isNuwaClaw } from '@/utils/nuwaClawBridge';
 import { theme } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { Outlet, useModel } from 'umi';
-import DynamicMenusLayout from './DynamicMenusLayout';
+import DynamicMenusLayout, {
+  NUWA_CLAW_PADDING_TOP,
+} from './DynamicMenusLayout';
 import HoverMenu from './HoverMenu';
 import styles from './index.less';
 import Message from './Message';
@@ -291,6 +294,12 @@ const Layout: React.FC = () => {
           // { 'w-full': isMobile }, // 存在 BUG 需要注释掉
         ])}
         id="page-container-selector"
+        style={{
+          // 桌面端沉浸式：主内容区顶部下移避让 nuwaclaw 工具栏浮层
+          //（macOS 左侧红绿灯 + Win/Linux 左侧自绘按钮组/右侧更新入口），
+          // 覆盖所有二级页面的返回栏，与一级/二级菜单避让值对齐；浏览器端不生效
+          paddingTop: isNuwaClaw() ? NUWA_CLAW_PADDING_TOP : undefined,
+        }}
       >
         <Outlet />
       </div>

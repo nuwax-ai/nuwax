@@ -58,7 +58,9 @@ import {
 } from './utils';
 
 const cx = classNames.bind(styles);
-const NUWA_CLAW_PADDING_TOP = 36; // 桌面端沉浸式：一级菜单顶部下移避让 macOS 红绿灯（trafficLightPosition {16,16}）
+/** 桌面端沉浸式：顶部下移避让 nuwaclaw 工具栏（macOS 红绿灯在其左；Win/Linux 左侧自绘按钮组）。
+ *  一级菜单/二级菜单/主内容区（含二级页面返回栏）统一用此值对齐。 */
+export const NUWA_CLAW_PADDING_TOP = 36;
 /** 使用自定义 Section 的一级菜单，始终展示二级菜单栏 */
 const SECOND_MENU_SECTION_TABS = new Set([
   'homepage',
