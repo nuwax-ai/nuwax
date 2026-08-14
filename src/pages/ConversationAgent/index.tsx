@@ -325,6 +325,7 @@ const ConversationAgent: React.FC = () => {
       if (!componentId || !agentConfigInfo) {
         return;
       }
+      // 更新模型组件配置
       const bindConfig = agentConfigInfo.modelComponentConfig
         ?.bindConfig as ComponentModelBindConfig;
       await apiAgentComponentModelUpdate({
