@@ -263,6 +263,7 @@ const ConversationAgent: React.FC = () => {
 
   /** 文件树数据 ref，供防抖保存读取最新列表 */
   const fileTreeDataRef = useRef(fileTreeData);
+  /** 文件树数据 ref，供防抖保存读取最新列表 */
   fileTreeDataRef.current = fileTreeData;
 
   /** conversationAgent model：页面独立聊天会话（与 conversationInfo 隔离） */
