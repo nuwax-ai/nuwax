@@ -477,6 +477,7 @@ const ConversationAgent: React.FC = () => {
     // 优先使用路由参数中指定的 conversationId
     const id = queryConversationId;
 
+    // 如果 id 存在，则自动触发消息发送
     if (id) {
       const state = (location.state || history.location.state) as any;
       if (
