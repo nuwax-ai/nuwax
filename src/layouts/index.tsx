@@ -306,7 +306,7 @@ const Layout: React.FC = () => {
           marginTop:
             isWinLinuxShell() ||
             (isImmersiveShell() && isMac() && isSecondMenuCollapsed)
-              ? shellAvoid.TOP
+              ? shellAvoid.TOP + 8
               : undefined,
         }}
       >
