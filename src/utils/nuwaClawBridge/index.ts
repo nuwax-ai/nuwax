@@ -103,7 +103,23 @@ export const events = {
   },
 };
 
+/**
+ * 主题同步（guest→host）：把女娲主题状态推给 nuwaclaw 壳，壳侧给自己的
+ * antd tokens / CSS 变量叠加同套调色板，让原生 UI（设置弹窗等）与 nuwax 统一。
+ * 浏览器无桥 / 壳旧版本无此能力均为 no-op。
+ */
+export const theme = {
+  /** 推送主题状态（fire-and-forget，失败静默——不影响 nuwax 自身主题应用）。 */
+  syncTheme(payload: ShellThemePayload): void {
+    try {
+      getBridge()?.theme?.syncTheme?.(payload);
+    } catch {
+      /* 宿主缺失或调用失败均忽略 */
+    }
+  },
+};
+
 /** 统一对外聚合对象（与 perfTracker 风格一致）。 */
-export const nuwaClawHost = { isNuwaClaw, auth, native, events };
+export const nuwaClawHost = { isNuwaClaw, auth, native, events, theme };
 
 export default nuwaClawHost;

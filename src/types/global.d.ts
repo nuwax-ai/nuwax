@@ -31,6 +31,31 @@ interface HostCommand {
   collapsed: boolean;
 }
 
+/**
+ * nuwax → nuwaclaw 壳的主题同步协议（guest→host 通道）。
+ * 女娲主题生效/让位时由 nuwaClawTheme 推送，壳侧据此给自己的 antd tokens /
+ * CSS 变量叠加米白调色板，实现「原生侧（设置弹窗等）与 nuwax 统一效果」。
+ * 让位时 active=false，壳回落自身 light/dark 主题。
+ */
+interface ShellThemePayload {
+  /** 女娲主题是否生效 */
+  active: boolean;
+  /** 品牌主色（女娲蓝） */
+  primary?: string;
+  /** 主内容/容器底色 */
+  bgContent?: string;
+  /** 菜单/侧栏底色 */
+  bgMenu?: string;
+  /** 浮起面底色（菜单项 hover/选中） */
+  bgElevated?: string;
+  /** 主描边 */
+  border?: string;
+  /** 次描边 */
+  borderSecondary?: string;
+  /** 菜单项 hover 底色 */
+  bgItemHover?: string;
+}
+
 // 扩展全局作用域（本文件为全局脚本，顶层声明直接合并到全局类型，
 // 故 interface Window 不需要 declare global 包裹）
 interface Window {
@@ -62,6 +87,11 @@ interface Window {
     events?: {
       /** 注册/注销宿主命令回调（传 null 注销）。 */
       onHostCommand?: (cb: ((payload: HostCommand) => void) | null) => void;
+    };
+    // nuwax→nuwaclaw 壳主题同步通道（女娲主题生效/让位时推送，壳侧统一原生 UI 效果）
+    theme?: {
+      /** 推送主题状态给壳（fire-and-forget，失败静默）。 */
+      syncTheme?: (payload: ShellThemePayload) => void;
     };
   };
 }

@@ -18,7 +18,7 @@
 import { STORAGE_KEYS } from '@/constants/theme.constants';
 import { unifiedThemeService } from '@/services/unifiedThemeService';
 import { ThemeLayoutColorStyle } from '@/types/enums/theme';
-import { isNuwaClaw } from '@/utils/nuwaClawBridge';
+import { isNuwaClaw, nuwaClawHost } from '@/utils/nuwaClawBridge';
 
 /** nuwaclaw 专属品牌主色（现代专业开发工具风品牌蓝） */
 export const NUWACLAW_PRIMARY = '#2563EB';
@@ -119,6 +119,26 @@ const NUWACLAW_HTML_BG =
   NUWACLAW_LIGHT_STYLE_OVERRIDE['--xagi-layout-bg-secondary'];
 
 /**
+ * 组装推送给 nuwaclaw 壳的主题状态（guest→host 通道）。
+ * 壳侧据此给自己的 antd tokens / CSS 变量叠加同套调色板，让设置弹窗等原生 UI
+ * 与 nuwax 统一。色值全部引用 NUWACLAW_LIGHT_STYLE_OVERRIDE，单一来源不另立色板。
+ */
+function buildShellThemePayload(active: boolean): ShellThemePayload {
+  if (!active) return { active: false };
+  return {
+    active: true,
+    primary: NUWACLAW_PRIMARY,
+    bgContent: NUWACLAW_LIGHT_STYLE_OVERRIDE['--xagi-layout-bg-primary'],
+    bgMenu: NUWACLAW_LIGHT_STYLE_OVERRIDE['--xagi-color-bg-container'],
+    bgElevated: NUWACLAW_LIGHT_STYLE_OVERRIDE['--xagi-nav-item-active-bg'],
+    border: NUWACLAW_LIGHT_STYLE_OVERRIDE['--xagi-layout-border-primary'],
+    borderSecondary:
+      NUWACLAW_LIGHT_STYLE_OVERRIDE['--xagi-layout-border-secondary'],
+    bgItemHover: NUWACLAW_LIGHT_STYLE_OVERRIDE['--xagi-nav-item-hover-bg'],
+  };
+}
+
+/**
  * 同步 nuwaclaw 亮色覆盖变量到 documentElement（生效则叠加，否则移除）。
  * 背景图单独处理：让位时不能无脑 removeProperty——那会连带删掉 unifiedThemeService
  * 刚按用户 backgroundId 设置的背景图；仅当当前值是自己设的 'none' 时才移除。
@@ -143,6 +163,8 @@ function syncNuwaClawCssOverride(): void {
       root.style.removeProperty(BG_IMAGE_VAR);
     }
   }
+  // 同步主题状态给壳（fire-and-forget）：壳的原生 UI（设置弹窗等）跟随统一/回落
+  nuwaClawHost.theme.syncTheme(buildShellThemePayload(shouldApply));
 }
 
 /**

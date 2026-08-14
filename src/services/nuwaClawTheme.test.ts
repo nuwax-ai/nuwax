@@ -82,7 +82,12 @@ describe('nuwaClawTheme · nuwaclaw 桌面专属主题适配', () => {
   });
 
   it('nuwaclaw（有桥）+ 无用户/租户配置 → 生效：写入女娲主题为正式默认配置 + 叠加亮色布局变量', () => {
-    (window as any).NuwaClawBridge = { auth: {}, native: {} };
+    const syncTheme = vi.fn();
+    (window as any).NuwaClawBridge = {
+      auth: {},
+      native: {},
+      theme: { syncTheme },
+    };
     expect(isNuwaClawThemeActive()).toBe(true);
     dispose = initNuwaClawTheme();
     // 桌面端默认切换：把「女娲蓝 + 纯色背景」写进正式主题配置（面板自然高亮）
@@ -119,10 +124,19 @@ describe('nuwaClawTheme · nuwaclaw 桌面专属主题适配', () => {
     expect(
       root.style.getPropertyValue('--xagi-nav-second-item-active-bg'),
     ).toBe('#FDFCF9');
+    // 生效时把同套调色板推给壳（原生侧统一米白效果的唯一来源）
+    expect(syncTheme).toHaveBeenCalledWith(
+      expect.objectContaining({ active: true, primary: NUWACLAW_PRIMARY }),
+    );
   });
 
   it('nuwaclaw + 用户已显式设主色 → 不生效（不锁）：active=false，覆盖变量不写入', () => {
-    (window as any).NuwaClawBridge = { auth: {}, native: {} };
+    const syncTheme = vi.fn();
+    (window as any).NuwaClawBridge = {
+      auth: {},
+      native: {},
+      theme: { syncTheme },
+    };
     localStorage.setItem(
       STORAGE_KEYS_MOCK.USER_THEME_CONFIG,
       JSON.stringify({ selectedThemeColor: '#ff4d4f' }),
@@ -138,6 +152,8 @@ describe('nuwaClawTheme · nuwaclaw 桌面专属主题适配', () => {
     expect(root.style.getPropertyValue('--xagi-background-image')).toBe('');
     // 让位时 html 灰底一并回收（回落 global.less 的 #fff）
     expect(root.style.backgroundColor).toBe('');
+    // 让位时通知壳回落自身主题（active:false，不带调色板）
+    expect(syncTheme).toHaveBeenCalledWith({ active: false });
   });
 
   it('nuwaclaw + 用户显式选「女娲蓝」+ 浅色布局 → 生效（注册进主题切换维度的正式选项）', () => {
