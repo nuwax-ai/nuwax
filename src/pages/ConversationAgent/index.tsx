@@ -230,7 +230,6 @@ const ConversationAgent: React.FC = () => {
     showType,
     setShowType,
     messageList,
-    // setIsLoadingConversation,
     runQueryConversation,
     conversationInfo,
     isFileTreePinned,
