@@ -295,6 +295,7 @@ const ConversationAgent: React.FC = () => {
     return tools;
   }, [isVersionControlEnabled]);
 
+  // 版本管控是否开启的 ref
   isVersionControlEnabledRef.current = isVersionControlEnabled;
 
   /** 仅在开启版本管控时拉取 git status */
