@@ -496,6 +496,7 @@ const ConversationAgent: React.FC = () => {
             );
           }
 
+          // 会话消息列表
           const list = data?.messageList || [];
           const len = list?.length || 0;
           // 会话消息列表为空或者只有一条消息并且此消息时开场白时，可以发送消息
