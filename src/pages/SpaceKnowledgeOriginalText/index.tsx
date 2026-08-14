@@ -46,7 +46,7 @@ const SpaceKnowledgeOriginalText: React.FC = () => {
   }, [routeSegmentId, location.search]);
 
   const highlightRef = useRef<HTMLDivElement>(null);
-  const { segments, loading, error, usingMockData } = useOriginalTextSegments(segmentId, routeAgentId);
+  const { segments, loading, error, usingMockData, docName } = useOriginalTextSegments(segmentId, routeAgentId);
 
   // 选中分段变化时自动滚动定位
   // 依赖含 segments：初始进入/切换时 segmentId 已定但分段异步加载，
@@ -98,7 +98,10 @@ const SpaceKnowledgeOriginalText: React.FC = () => {
   return (
     <div className="original-text-page">
       <div className="preview-header">
-        <h3 className="preview-title">{dict('PC.Pages.SpaceKnowledge.SourceDocumentComparison.originalComparison')}</h3>
+        <h3 className="preview-title">
+          {dict('PC.Pages.SpaceKnowledge.SourceDocumentComparison.originalComparison')}
+          {docName ? `：${docName}` : ''}
+        </h3>
         {usingMockData && (
           <span className="mock-data-badge">模拟数据</span>
         )}
