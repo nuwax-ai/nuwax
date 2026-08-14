@@ -109,6 +109,14 @@ const HistoryConversationList: React.FC<HistoryConversationListProps> = ({
           agentId,
           limit,
         });
+
+        // 派发自定义更新事件，通知侧栏「会话记录 / 最近使用」列表及时同步名称
+        window.dispatchEvent(
+          new CustomEvent('conversation-updated', {
+            detail: { id: currentRenameId, topic: trimmedTopic },
+          }),
+        );
+
         message.success(
           t('PC.Components.HistoryConversationList.renameSuccess'),
         );
