@@ -841,6 +841,7 @@ const ConversationAgent: React.FC = () => {
       operation: 'create',
       isDir: fileNode.type === 'folder',
     };
+    // 创建文件
     const { code } = await apiUpdateStaticFile({
       cId: queryConversationId,
       files: [newFile],
