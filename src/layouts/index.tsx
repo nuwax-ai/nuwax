@@ -5,7 +5,12 @@ import {
 } from '@/constants/layout.constants';
 import useCategory from '@/hooks/useCategory';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
-import { isWinLinuxShell, shellAvoid } from '@/utils/nuwaClawBridge';
+import {
+  isImmersiveShell,
+  isMac,
+  isWinLinuxShell,
+  shellAvoid,
+} from '@/utils/nuwaClawBridge';
 import { theme } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
@@ -293,12 +298,16 @@ const Layout: React.FC = () => {
         ])}
         id="page-container-selector"
         style={{
-          // Windows/Linux 桌面端：主内容区顶部避让壳自绘的窗口控制三键
-          // （CtrlButton，贴右上角 46×32）与工具栏浮层；mac 壳红绿灯在左上
-          // （菜单列已另行避让）、独立窗口带系统标题栏、浏览器无壳，均不加。
-          // 用 marginTop 而非 paddingTop：margin 下移整个容器，不用 padding
-          // 压缩内容区（padding 曾致列表页可视高度变小被误伤 revert）
-          marginTop: isWinLinuxShell() ? shellAvoid.TOP : undefined,
+          // 顶部避让（marginTop 而非 paddingTop：下移整个容器，不压缩内容可视高度）：
+          // - Win/Linux 桌面端恒避让（右上自绘三键 + 工具栏浮层）；
+          // - mac 展开态无需避让（二级菜单列顶着工具栏 icon 组），但收起二级菜单后
+          //   内容区左移顶到工具栏 icon 组（x≈80-240）下方，需与 Win/Linux 同样下移；
+          // - 独立窗口（系统标题栏）与浏览器不避让。
+          marginTop:
+            isWinLinuxShell() ||
+            (isImmersiveShell() && isMac() && isSecondMenuCollapsed)
+              ? shellAvoid.TOP
+              : undefined,
         }}
       >
         <Outlet />

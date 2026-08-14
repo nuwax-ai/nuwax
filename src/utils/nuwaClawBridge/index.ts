@@ -210,6 +210,14 @@ export const layout = {
       /* 宿主缺失或调用失败均忽略 */
     }
   },
+  /** 同步二级菜单真实收起态给壳（fire-and-forget，失败静默）。 */
+  setSecondMenuCollapsed(collapsed: boolean): void {
+    try {
+      getBridge()?.layout?.setSecondMenuCollapsed?.(collapsed);
+    } catch {
+      /* 宿主缺失或调用失败均忽略 */
+    }
+  },
 };
 
 /** 统一对外聚合对象（与 perfTracker 风格一致）。 */

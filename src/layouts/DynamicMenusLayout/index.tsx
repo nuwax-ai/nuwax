@@ -14,7 +14,11 @@ import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { dict } from '@/services/i18nRuntime';
 import { initNuwaClawHostEvents } from '@/services/nuwaClawHostEvents';
 import type { MenuItemDto } from '@/types/interfaces/menu';
-import { isImmersiveShell, nuwaClawHost, shellAvoid } from '@/utils/nuwaClawBridge';
+import {
+  isImmersiveShell,
+  nuwaClawHost,
+  shellAvoid,
+} from '@/utils/nuwaClawBridge';
 import { jumpTo } from '@/utils/router';
 import { theme, Typography } from 'antd';
 import classNames from 'classnames';
@@ -659,6 +663,13 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
     nuwaClawHost.layout.setSecondMenuAvailable(shouldShowSecondMenu);
     return () => nuwaClawHost.layout.setSecondMenuAvailable(false);
   }, [shouldShowSecondMenu]);
+
+  // 桌面端：把二级菜单真实收起态同步给壳（壳工具栏 icon 以此为准）。
+  // webview reload 后壳本地态不重置、且 reload 瞬间的 toggle 命令可能丢失——
+  // 推送真实值可校正失同步（toggle 后本 effect 也会随状态变化即时回推）。
+  useEffect(() => {
+    nuwaClawHost.layout.setSecondMenuCollapsed(isSecondMenuCollapsed);
+  }, [isSecondMenuCollapsed]);
 
   /**
    * 是否显示标题
