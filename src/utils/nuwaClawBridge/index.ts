@@ -119,7 +119,23 @@ export const theme = {
   },
 };
 
+/**
+ * 布局状态同步（guest→host）：把 nuwax 当前布局状态推给 nuwaclaw 壳。
+ * 如「当前页是否存在可收起的二级菜单」——壳工具栏据此显隐收起按钮
+ * （无二级菜单的页面按钮无意义）。浏览器无桥 no-op。
+ */
+export const layout = {
+  /** 告知壳当前页是否有二级菜单可收起（fire-and-forget，失败静默）。 */
+  setSecondMenuAvailable(available: boolean): void {
+    try {
+      getBridge()?.layout?.setSecondMenuAvailable?.(available);
+    } catch {
+      /* 宿主缺失或调用失败均忽略 */
+    }
+  },
+};
+
 /** 统一对外聚合对象（与 perfTracker 风格一致）。 */
-export const nuwaClawHost = { isNuwaClaw, auth, native, events, theme };
+export const nuwaClawHost = { isNuwaClaw, auth, native, events, theme, layout };
 
 export default nuwaClawHost;

@@ -93,5 +93,10 @@ interface Window {
       /** 推送主题状态给壳（fire-and-forget，失败静默）。 */
       syncTheme?: (payload: ShellThemePayload) => void;
     };
+    // nuwax→nuwaclaw 壳布局状态同步通道（如当前页是否有二级菜单，壳据此显隐收起按钮）
+    layout?: {
+      /** 告知壳当前页是否存在可收起的二级菜单（fire-and-forget，失败静默）。 */
+      setSecondMenuAvailable?: (available: boolean) => void;
+    };
   };
 }

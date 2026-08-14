@@ -14,7 +14,7 @@ import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { dict } from '@/services/i18nRuntime';
 import { initNuwaClawHostEvents } from '@/services/nuwaClawHostEvents';
 import type { MenuItemDto } from '@/types/interfaces/menu';
-import { isNuwaClaw } from '@/utils/nuwaClawBridge';
+import { isNuwaClaw, nuwaClawHost } from '@/utils/nuwaClawBridge';
 import { theme, Typography } from 'antd';
 import classNames from 'classnames';
 import React, {
@@ -645,6 +645,14 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
 
     return !!currentMenu.children?.length;
   }, [activeTab, firstLevelMenus, otherMenus]);
+
+  // 桌面端：把「当前页是否有二级菜单」同步给 nuwaclaw 壳，工具栏据此显隐收起按钮
+  //（无二级菜单的页面按钮无意义）。布局卸载（如 /Login 等无布局页）时推 false。
+  // 浏览器端接入层 no-op。路由切换间 cleanup→mount 的瞬时 false 会被新值立即覆盖。
+  useEffect(() => {
+    nuwaClawHost.layout.setSecondMenuAvailable(shouldShowSecondMenu);
+    return () => nuwaClawHost.layout.setSecondMenuAvailable(false);
+  }, [shouldShowSecondMenu]);
 
   /**
    * 是否显示标题
