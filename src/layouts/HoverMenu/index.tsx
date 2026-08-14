@@ -4,6 +4,7 @@ import { NAVIGATION_LAYOUT_SIZES } from '@/constants/layout.constants';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { ThemeNavigationStyleType } from '@/types/enums/theme';
 import { MenuItemDto } from '@/types/interfaces/menu';
+import { isImmersiveShell, shellAvoid } from '@/utils/nuwaClawBridge';
 import { theme, Typography } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo } from 'react';
@@ -116,6 +117,12 @@ const HoverMenu: React.FC = () => {
         width: NAVIGATION_LAYOUT_SIZES.SECOND_MENU_WIDTH,
         left: firstMenuWidth,
         paddingLeft: token.padding,
+        // 桌面端沉浸式：悬浮二级菜单顶部避让 nuwaclaw 工具栏浮层
+        //（mac 左侧红绿灯+icon 组 / Win·Linux 左侧自绘按钮组，悬浮面板恰在其下方）。
+        // top 下移 + height 收缩对应量，底部不溢出；浏览器/独立窗口不受影响。
+        ...(isImmersiveShell()
+          ? { top: shellAvoid.TOP, height: `calc(100% - ${shellAvoid.TOP}px)` }
+          : {}),
       }}
     >
       {hoverMenuType === 'homepage' || hoverMenuType === 'new_conversation' ? (
