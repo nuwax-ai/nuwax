@@ -7,6 +7,7 @@ import type {
   MessageInfo,
 } from '@/types/interfaces/conversationInfo';
 import eventBus from '@/utils/eventBus';
+import { conversationErrorTerminalLogger } from '@/utils/logger';
 import type { Dispatch, SetStateAction } from 'react';
 
 /** ChatFinished 事件载荷 */
@@ -280,13 +281,38 @@ export function applyTerminalTaskStatus(
   taskStatus: TaskStatus | undefined,
 ): void {
   if (taskStatus === undefined || taskStatus === TaskStatus.EXECUTING) {
+    // undefined / EXECUTING 跳过是设计行为；不打日志，避免轮询/兜底刷屏
     return;
   }
   setConversationInfo((prev) => {
     if (!prev || String(prev.id) !== String(conversationId)) {
+      if (taskStatus === TaskStatus.FAILED) {
+        conversationErrorTerminalLogger.warn('applyTerminalTaskStatus skip', {
+          conversationId,
+          taskStatus,
+          reason: !prev ? 'no_conversationInfo' : 'conversationId_mismatch',
+          prevId: prev?.id,
+        });
+      }
       return prev;
     }
-    return prev.taskStatus === taskStatus ? prev : { ...prev, taskStatus };
+    if (prev.taskStatus === taskStatus) {
+      if (taskStatus === TaskStatus.FAILED) {
+        conversationErrorTerminalLogger.warn('applyTerminalTaskStatus noop', {
+          conversationId,
+          taskStatus,
+          reason: 'unchanged',
+          prev: prev.taskStatus,
+        });
+      }
+      return prev;
+    }
+    conversationErrorTerminalLogger.warn('applyTerminalTaskStatus', {
+      conversationId,
+      prev: prev.taskStatus,
+      next: taskStatus,
+    });
+    return { ...prev, taskStatus };
   });
 }
 
@@ -306,6 +332,13 @@ export function emitConversationListTaskStatus(
 ): void {
   if (taskStatus === undefined || taskStatus === TaskStatus.EXECUTING) {
     return;
+  }
+  // 仅 FAILED 打验证日志：轮询会对 COMPLETE 等终态反复 emit，避免刷屏
+  if (taskStatus === TaskStatus.FAILED) {
+    conversationErrorTerminalLogger.warn('emitConversationListTaskStatus', {
+      conversationId,
+      taskStatus,
+    });
   }
   eventBus.emit(EVENT_TYPE.UpdateConversationListTaskStatus, {
     conversationId,
