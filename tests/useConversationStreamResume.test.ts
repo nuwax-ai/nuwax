@@ -25,8 +25,11 @@ vi.mock('@/utils/logger', () => {
   };
   return {
     createLogger: () => noopLogger,
+    createAlwaysLogger: () => noopLogger,
     logger: noopLogger,
+    conversationResumeLogger: noopLogger,
     conversationPollLogger: { ...noopLogger, info: mockPollLoggerInfo },
+    conversationErrorTerminalLogger: noopLogger,
   };
 });
 

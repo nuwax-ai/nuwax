@@ -1,14 +1,15 @@
 /**
  * 全局日志管理器
  *
- * 仅在开发环境下输出调试日志，生产环境自动禁用
+ * 默认 logger：仅开发环境输出 log/info/debug，生产环境自动禁用
+ * always logger：打包后仍输出（用于会话竞态 / 出错落终态等需线上自证的日志）
  *
  * 使用方式：
- * import { logger, createLogger } from '@/utils/logger';
- * logger.log('消息');           // 默认 [App] 前缀
+ * import { logger, createLogger, createAlwaysLogger } from '@/utils/logger';
+ * logger.log('消息');           // 默认 [App] 前缀，仅开发环境
  *
  * const myLogger = createLogger('[MyModule]');
- * myLogger.log('消息');         // 自定义前缀
+ * myLogger.log('消息');         // 自定义前缀，仅开发环境
  */
 
 import { APP_VERSION } from '@/constants/version';
@@ -72,19 +73,46 @@ export const createLogger = (prefix: string) => ({
   },
 });
 
+/**
+ * 创建打包后仍输出的 logger（不受 NODE_ENV / disableLogger 影响）
+ * 仅用于需要线上自证的会话关键路径，勿滥用以免污染生产控制台
+ */
+export const createAlwaysLogger = (prefix: string) => ({
+  get log() {
+    return console.log.bind(console, prefix);
+  },
+  get warn() {
+    return console.warn.bind(console, prefix);
+  },
+  get error() {
+    return console.error.bind(console, prefix);
+  },
+  get info() {
+    return console.info.bind(console, prefix);
+  },
+  get debug() {
+    return console.debug.bind(console, prefix);
+  },
+});
+
 // 默认 logger
 export const logger = createLogger(`[App:${APP_VERSION}]`);
 
 // V3 专属 logger
 export const workflowLogger = createLogger(`[Workflow:V3:${APP_VERSION}]`);
 
-// 会话流式恢复 taskStatus 轮询 logger（UnifiedChatSession / useConversationStreamResume）
-export const conversationPollLogger = createLogger(
+// 会话流式恢复（sub / 冷却 / 退避）—— 生产环境也输出，便于线上确认续接行为
+export const conversationResumeLogger = createAlwaysLogger(
+  '[ConversationStreamResume]',
+);
+
+// 会话流式恢复 taskStatus 轮询 —— 生产环境也输出，便于确认竞态丢弃是否生效
+export const conversationPollLogger = createAlwaysLogger(
   '[ConversationStreamResume][Poll]',
 );
 
-// 会话出错落终态验证 logger（ERROR / onError → taskStatus FAILED）
-export const conversationErrorTerminalLogger = createLogger(
+// 会话出错落终态验证 —— 生产环境也输出，便于确认 ERROR → FAILED 是否落地
+export const conversationErrorTerminalLogger = createAlwaysLogger(
   '[ConversationErrorTerminal]',
 );
 

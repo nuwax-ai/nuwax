@@ -13,7 +13,10 @@ import {
   resolveTaskStatusFromMessageLists,
 } from '@/utils/conversationTaskStatusSync';
 import eventBus from '@/utils/eventBus';
-import { conversationPollLogger, createLogger } from '@/utils/logger';
+import {
+  conversationPollLogger,
+  conversationResumeLogger,
+} from '@/utils/logger';
 import { useRequest } from 'ahooks';
 import { useEffect, useRef, useState } from 'react';
 
@@ -80,7 +83,6 @@ const RESUME_HISTORY_USER_RETRY_DELAYS_MS = [150, 300, 600, 900, 1200, 1800];
 const RESUME_SUB_MIN_ALIVE_MS = 3000;
 const RESUME_SUB_FAILURE_BASE_DELAY_MS = 2000;
 const RESUME_SUB_FAILURE_MAX_DELAY_MS = 30000;
-const conversationResumeLogger = createLogger('[ConversationStreamResume]');
 
 const sleep = (ms: number): Promise<void> =>
   new Promise((resolve) => {
