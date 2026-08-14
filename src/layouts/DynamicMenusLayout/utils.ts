@@ -195,12 +195,18 @@ export const handleOpenUrl = (menu: MenuItemDto, parentCode?: string) => {
   // 桌面端主窗口：文档等导航一律新开独立窗口（外链直接开窗，站内页走同源开窗）。
   // 独立窗口内 isImmersiveShell=false，回落浏览器式行为。
   if (isImmersiveShell()) {
+    // 开窗失败（旧壳无 handler 等）回落浏览器式行为，保证点击有响应
     if (openType === OpenTypeEnum.NewTab && /^https?:\/\//i.test(path)) {
-      void nuwaClawHost.native.openWindow(path);
+      void nuwaClawHost.native.openWindow(path).then((res) => {
+        if (!res.success) window.open(path, '_blank');
+      });
       return;
     }
     if (openType !== OpenTypeEnum.NewTab) {
-      void nuwaClawHost.native.openWindow(buildOpenIframePath(resolvedMenu));
+      const shellPath = buildOpenIframePath(resolvedMenu);
+      void nuwaClawHost.native.openWindow(shellPath).then((res) => {
+        if (!res.success) history.push(shellPath, { _t: Date.now() });
+      });
       return;
     }
   }

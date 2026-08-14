@@ -21,6 +21,16 @@ function shouldOpenInShellWindow(url: string): boolean {
   return SHELL_NEW_WINDOW_ROUTES.some((re) => re.test(url.split('?')[0]));
 }
 
+/**
+ * 请求宿主新开独立窗口；失败（旧壳无 handler / 被安全校验拒绝 / 桥异常）
+ * 时回落页内导航，保证点击永远有响应。
+ */
+function openShellWindowOrNavigate(url: string): void {
+  void nuwaClawHost.native.openWindow(url).then((res) => {
+    if (!res.success) history.push(url);
+  });
+}
+
 type JumpToProps =
   | {
       url: string | number;
@@ -40,7 +50,7 @@ export const jumpTo = (params: JumpToProps) => {
     return;
   } else if (typeof params === 'string') {
     if (shouldOpenInShellWindow(params)) {
-      void nuwaClawHost.native.openWindow(params);
+      openShellWindowOrNavigate(params);
       return;
     }
     history.push(params);
@@ -49,8 +59,9 @@ export const jumpTo = (params: JumpToProps) => {
   if (typeof params === 'object' && 'url' in params) {
     const { url, method = 'push', state } = params;
     if (typeof url === 'string' && shouldOpenInShellWindow(url)) {
-      // 独立窗口是全新页面加载，SPA 路由 state 无法携带（各目标页均不依赖 state）
-      void nuwaClawHost.native.openWindow(url);
+      // 独立窗口是全新页面加载，SPA 路由 state 无法携带（各目标页均不依赖 state）；
+      // 开窗失败回落页内导航（不带 state，目标页均不依赖）
+      openShellWindowOrNavigate(url);
       return;
     }
     if (state) return history[method](url, state);
