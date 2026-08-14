@@ -95,30 +95,30 @@ describe('nuwaClawTheme · nuwaclaw 桌面专属主题适配', () => {
       NUWACLAW_PRIMARY,
     );
     expect(root.style.getPropertyValue('--xagi-layout-bg-primary')).toBe(
-      '#F1EFE9',
+      '#F5F3EE',
     );
     expect(root.style.getPropertyValue('--xagi-layout-bg-secondary')).toBe(
-      '#E7E4DA',
+      '#EDEAE2',
     );
     // 主内容区面板（token @pageContainerBg 消费；漏配曾致内容区始终白）
     expect(root.style.getPropertyValue('--xagi-layout-bg-container')).toBe(
-      '#F1EFE9',
+      '#F5F3EE',
     );
     // html 米灰底兜住 style1 浮动面板的缝隙（jsdom 会把颜色规范化成 rgb() 形式）
-    expect(root.style.backgroundColor).toBe('rgb(231, 228, 218)');
+    expect(root.style.backgroundColor).toBe('rgb(237, 234, 226)');
     // 桌面端不用背景图（米白纯色）
     expect(root.style.getPropertyValue('--xagi-background-image')).toBe('none');
     // 菜单背景实色（@navFirstMenuBg/@navSecondMenuBg 消费的变量）
     expect(root.style.getPropertyValue('--xagi-color-bg-container')).toBe(
-      '#EAE7DE',
+      '#F0EEE6',
     );
     // 菜单项高亮：米白浮起色替代原纯白（@navItem*Bg/@navSecondItemActiveBg 消费）
     expect(root.style.getPropertyValue('--xagi-nav-item-active-bg')).toBe(
-      '#FBFAF6',
+      '#FDFCF9',
     );
     expect(
       root.style.getPropertyValue('--xagi-nav-second-item-active-bg'),
-    ).toBe('#FBFAF6');
+    ).toBe('#FDFCF9');
   });
 
   it('nuwaclaw + 用户已显式设主色 → 不生效（不锁）：active=false，覆盖变量不写入', () => {
@@ -157,7 +157,7 @@ describe('nuwaClawTheme · nuwaclaw 桌面专属主题适配', () => {
       NUWACLAW_PRIMARY,
     );
     expect(root.style.getPropertyValue('--xagi-layout-bg-primary')).toBe(
-      '#F1EFE9',
+      '#F5F3EE',
     );
     expect(root.style.getPropertyValue('--xagi-background-image')).toBe('none');
   });

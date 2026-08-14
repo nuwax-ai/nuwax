@@ -33,25 +33,25 @@ export const NUWACLAW_BACKGROUND_ID = 'bg-solid';
  * 亮色时生效；切 dark 走通用 dark-style1。
  */
 export const NUWACLAW_LIGHT_STYLE_OVERRIDE: Record<string, string> = {
-  '--xagi-layout-bg-primary': '#F1EFE9', // 主内容区（米白基调：带黄加灰）
-  '--xagi-layout-bg-secondary': '#E7E4DA', // 侧栏/次面板（更深米灰）
-  '--xagi-layout-bg-container': '#F1EFE9', // 主内容区面板（token @pageContainerBg 消费；漏配曾致内容区始终白）
+  '--xagi-layout-bg-primary': '#F5F3EE', // 主内容区（米白基调：带黄加灰，整体调亮）
+  '--xagi-layout-bg-secondary': '#EDEAE2', // 侧栏/次面板（更深米灰）
+  '--xagi-layout-bg-container': '#F5F3EE', // 主内容区面板（token @pageContainerBg 消费；漏配曾致内容区始终白）
   '--xagi-layout-bg-card': '#FFFFFF', // 卡片（白卡浮于米白底，保层次）
   '--xagi-layout-bg-input': '#FFFFFF', // 输入框
-  '--xagi-layout-border-primary': '#CFCBBE', // 主描边（暖灰调，保证二级菜单左边框在米白底上可见）
-  '--xagi-layout-border-secondary': '#E0DCCF', // 次描边
+  '--xagi-layout-border-primary': '#D6D2C6', // 主描边（暖灰调，保证二级菜单左边框在米白底上可见）
+  '--xagi-layout-border-secondary': '#E5E1D6', // 次描边
   '--xagi-layout-text-primary': '#1F2329', // 主文字
   '--xagi-layout-text-secondary': '#646A73', // 次文字
   '--xagi-layout-shadow': 'rgba(41, 37, 28, 0.08)', // 淡阴影（暖黑，米白底上托层次）
   // 菜单背景（token.less 的 @navFirstMenuBg/@navSecondMenuBg 消费）：米白实色替代半透明
-  '--xagi-color-bg-container': '#EAE7DE', // 一级菜单（style2 二级菜单同源）
-  '--xagi-color-bg-layout': '#E7E4DA', // 二级菜单（style1）
+  '--xagi-color-bg-container': '#F0EEE6', // 一级菜单（style2 二级菜单同源）
+  '--xagi-color-bg-layout': '#EDEAE2', // 二级菜单（style1）
   // 菜单项 hover/选中高亮（token @navItem*Bg/@navSecondItemActiveBg 消费）：
   // 米白"浮起"色替代原纯白，在米灰菜单底上清晰可辨且不突兀
-  '--xagi-nav-item-hover-bg': '#F3F1EA',
-  '--xagi-nav-item-active-bg': '#FBFAF6',
-  '--xagi-nav-item-selected-bg': '#FBFAF6',
-  '--xagi-nav-second-item-active-bg': '#FBFAF6',
+  '--xagi-nav-item-hover-bg': '#F7F5F0',
+  '--xagi-nav-item-active-bg': '#FDFCF9',
+  '--xagi-nav-item-selected-bg': '#FDFCF9',
+  '--xagi-nav-second-item-active-bg': '#FDFCF9',
 };
 
 /** nuwaclaw 专属覆盖的 CSS 变量集（主色 + 亮色布局实色） */
