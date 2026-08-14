@@ -1,5 +1,5 @@
 import ConditionRender from '@/components/ConditionRender';
-import { isNuwaClaw } from '@/utils/nuwaClawBridge';
+import { isImmersiveShell } from '@/utils/nuwaClawBridge';
 import classNames from 'classnames';
 import React from 'react';
 import { useModel } from 'umi';
@@ -11,7 +11,7 @@ const Header: React.FC = () => {
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
 
   // 桌面端沉浸式：隐藏 logo（红绿灯避让由一级菜单 padding-top 下移 + nuwaclaw 工具栏承载）
-  if (isNuwaClaw()) return null;
+  if (isImmersiveShell()) return null;
 
   return (
     <ConditionRender condition={!!tenantConfigInfo?.siteLogo}>

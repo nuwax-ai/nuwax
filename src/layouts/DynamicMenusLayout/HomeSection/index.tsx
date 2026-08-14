@@ -4,6 +4,7 @@ import { useChatFinishedWhenListExecuting } from '@/hooks/useChatFinishedWhenLis
 import { dict } from '@/services/i18nRuntime';
 import { AgentInfo } from '@/types/interfaces/agent';
 import { ConversationInfo } from '@/types/interfaces/conversationInfo';
+import { jumpTo } from '@/utils/router';
 import { RightOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import React, { useEffect } from 'react';
@@ -43,7 +44,7 @@ const HomeSection: React.FC<{
       return;
     }
 
-    history.push(`/agent/${agentId}`);
+    jumpTo(`/agent/${agentId}`);
   };
 
   // 会话跳转

@@ -2,6 +2,7 @@ import { PATH_URL } from '@/constants/home.constants';
 import { MENU_PATH_NORMALIZATION_MAP } from '@/constants/menus.constants';
 import { OpenTypeEnum } from '@/pages/SystemManagement/MenuPermission/types/menu-manage';
 import { MenuItemDto } from '@/types/interfaces/menu';
+import { isImmersiveShell, nuwaClawHost } from '@/utils/nuwaClawBridge';
 import { history } from 'umi';
 
 /** 菜单路径中的站点 origin 占位符，点击时替换为当前 location.origin */
@@ -191,6 +192,18 @@ export const navigateOpenIframePath = (
 export const handleOpenUrl = (menu: MenuItemDto, parentCode?: string) => {
   const resolvedMenu = resolveMenuPath(menu);
   const { openType = OpenTypeEnum.CurrentTab, path = '' } = resolvedMenu;
+  // 桌面端主窗口：文档等导航一律新开独立窗口（外链直接开窗，站内页走同源开窗）。
+  // 独立窗口内 isImmersiveShell=false，回落浏览器式行为。
+  if (isImmersiveShell()) {
+    if (openType === OpenTypeEnum.NewTab && /^https?:\/\//i.test(path)) {
+      void nuwaClawHost.native.openWindow(path);
+      return;
+    }
+    if (openType !== OpenTypeEnum.NewTab) {
+      void nuwaClawHost.native.openWindow(buildOpenIframePath(resolvedMenu));
+      return;
+    }
+  }
   if (openType === OpenTypeEnum.NewTab) {
     window.open(path, '_blank');
     return;

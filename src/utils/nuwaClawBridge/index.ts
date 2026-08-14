@@ -24,6 +24,28 @@ export function isNuwaClaw(): boolean {
 }
 
 /**
+ * 是否为经 native.openWindow 新开的独立窗口（URL 带 _shell=1 标记，由宿主追加）。
+ * 独立窗口带系统标题栏（无沉浸式工具栏浮层），沉浸式专属布局不适用。
+ */
+export function isShellWindow(): boolean {
+  try {
+    if (typeof window === 'undefined') return false;
+    return new URLSearchParams(window.location.search).get('_shell') === '1';
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * 是否为 nuwaclaw 主窗口的沉浸式形态（桌面端且非独立窗口）。
+ * 菜单避让/隐藏 logo 等沉浸式专属门控一律用本判定；桌面独立窗口返回 false，
+ * 恢复浏览器式布局（系统标题栏已承担顶部空间，无需避让）。
+ */
+export function isImmersiveShell(): boolean {
+  return isNuwaClaw() && !isShellWindow();
+}
+
+/**
  * 鉴权态同步：ACCESS_TOKEN 在 nuwax 与 nuwaclaw 宿主之间的双向同步（重启免登）。
  * 浏览器环境无桥，各方法均为 no-op / 返回空值，不影响 nuwax 自身流程。
  */
@@ -72,6 +94,24 @@ export const native = {
     if (!save) return { success: false };
     try {
       return await save(url, filename);
+    } catch (e) {
+      return {
+        success: false,
+        error: e instanceof Error ? e.message : String(e),
+      };
+    }
+  },
+  /**
+   * 新开独立窗口打开站内页面（全屏页承载，见 router.ts 的新窗口路由清单）。
+   * 浏览器端无桥：返回 {success:false}，调用方（jumpTo 分流）会回落到页内导航。
+   */
+  async openWindow(
+    path: string,
+  ): Promise<{ success: boolean; error?: string }> {
+    const open = getBridge()?.native?.openWindow;
+    if (!open) return { success: false };
+    try {
+      return await open(path);
     } catch (e) {
       return {
         success: false,
@@ -136,6 +176,15 @@ export const layout = {
 };
 
 /** 统一对外聚合对象（与 perfTracker 风格一致）。 */
-export const nuwaClawHost = { isNuwaClaw, auth, native, events, theme, layout };
+export const nuwaClawHost = {
+  isNuwaClaw,
+  isShellWindow,
+  isImmersiveShell,
+  auth,
+  native,
+  events,
+  theme,
+  layout,
+};
 
 export default nuwaClawHost;

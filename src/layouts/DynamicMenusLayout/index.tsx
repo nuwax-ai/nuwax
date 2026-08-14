@@ -14,7 +14,8 @@ import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { dict } from '@/services/i18nRuntime';
 import { initNuwaClawHostEvents } from '@/services/nuwaClawHostEvents';
 import type { MenuItemDto } from '@/types/interfaces/menu';
-import { isNuwaClaw, nuwaClawHost } from '@/utils/nuwaClawBridge';
+import { isImmersiveShell, nuwaClawHost } from '@/utils/nuwaClawBridge';
+import { jumpTo } from '@/utils/router';
 import { theme, Typography } from 'antd';
 import classNames from 'classnames';
 import React, {
@@ -582,9 +583,9 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
         case MENU_CODE_MY_COMPUTER:
           {
             // setActiveTab(code || '');
-            history.push('/my-computer-manage', {
-              _t: Date.now(),
-              menuCode: menu.code,
+            jumpTo({
+              url: '/my-computer-manage',
+              state: { _t: Date.now(), menuCode: menu.code },
             });
           }
           break;
@@ -761,7 +762,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
           width: firstMenuWidth,
           background: firstMenuBackground,
           // 桌面端沉浸式：一级菜单顶部下移避让 macOS 红绿灯（trafficLightPosition {16,16}）
-          ...(isNuwaClaw() ? { paddingTop: NUWA_CLAW_PADDING_TOP } : {}),
+          ...(isImmersiveShell() ? { paddingTop: NUWA_CLAW_PADDING_TOP } : {}),
         }}
       >
         <Header />
@@ -791,15 +792,15 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
             // 桌面端沉浸式：顶部留白避让 nuwaclaw 红绿灯工具栏（与 first-menus 对齐）；
             // 左边框不贯穿避让区（改为下方内部竖线，顶端对齐搜索/新建会话栏）；
             // 浏览器端 undefined 走 less 默认 padding-top / border-left
-            paddingTop: isNuwaClaw() ? NUWA_CLAW_PADDING_TOP : undefined,
-            borderLeft: isNuwaClaw() ? 'none' : undefined,
+            paddingTop: isImmersiveShell() ? NUWA_CLAW_PADDING_TOP : undefined,
+            borderLeft: isImmersiveShell() ? 'none' : undefined,
             paddingLeft: isSecondMenuCollapsed ? 0 : token.padding,
             opacity: isSecondMenuCollapsed ? 0 : 1,
             backgroundColor: secondaryBackgroundColor,
           }}
         >
           {/* 桌面端沉浸式：替代 border-left 的竖线，从避让区下沿（搜索/新建会话栏顶部）开始 */}
-          {isNuwaClaw() && (
+          {isImmersiveShell() && (
             <div
               style={{
                 position: 'absolute',

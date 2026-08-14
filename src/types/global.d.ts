@@ -76,12 +76,16 @@ interface Window {
       persistToken?: (token: string) => Promise<boolean>;
       clear?: () => Promise<boolean>;
     };
-    // nuwaclaw 客户端宿主注入：原生能力（右键另存图片等）
+    // nuwaclaw 客户端宿主注入：原生能力（右键另存图片、新开独立窗口等）
     native?: {
       saveImage?: (
         url: string,
         filename?: string,
       ) => Promise<{ success: boolean; path?: string; error?: string }>;
+      /** 新开独立窗口打开站内页面（全屏页承载：智能体详情/工作流/网页应用开发/我的电脑等）。 */
+      openWindow?: (
+        path: string,
+      ) => Promise<{ success: boolean; error?: string }>;
     };
     // nuwaclaw 宿主→nuwax 入站命令通道（contextBridge 注册回调；host 触发时 cb 在 guest 上下文执行）
     events?: {

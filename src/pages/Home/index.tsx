@@ -38,6 +38,7 @@ import {
   DisplayRecommendFunctionTypeEnum,
   type DisplayRecommendInfo,
 } from '@/types/interfaces/displayRecommend';
+import { jumpTo } from '@/utils/router';
 import { App, message as antdMessage } from 'antd';
 import classNames from 'classnames';
 import React, {
@@ -315,7 +316,7 @@ const Home: React.FC = () => {
       return;
     }
 
-    history.push(`/agent/${targetId}`);
+    jumpTo(`/agent/${targetId}`);
   };
 
   const handleRecommendSelect = (item: DisplayRecommendInfo) => {

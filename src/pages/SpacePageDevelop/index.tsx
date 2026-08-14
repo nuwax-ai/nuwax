@@ -34,6 +34,7 @@ import {
   CustomPageDto,
 } from '@/types/interfaces/pageDev';
 import { modalConfirm } from '@/utils/ant-custom';
+import { jumpTo } from '@/utils/router';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Empty, Input, message } from 'antd';
 import classNames from 'classnames';
@@ -286,7 +287,7 @@ const SpacePageDevelop: React.FC = () => {
       case PageDevelopCreateTypeEnum.Import_Project:
       case PageDevelopCreateTypeEnum.Online_Develop:
         // 跳转到开发页面
-        history.push(`/space/${spaceId}/app-dev/${result.projectId}`);
+        jumpTo(`/space/${spaceId}/app-dev/${result.projectId}`);
         break;
       case PageDevelopCreateTypeEnum.Reverse_Proxy:
         setOpenReverseProxyModal(true);
@@ -301,7 +302,7 @@ const SpacePageDevelop: React.FC = () => {
     // 根据页面类型（页面创建模式）导入项目、在线创建，判断是否需要打开调试智能体绑定弹窗，反向代理，打开路径参数配置弹窗
     if (item.projectType === PageProjectTypeEnum.ONLINE_DEPLOY) {
       // 跳转到开发页面
-      history.push(`/space/${spaceId}/app-dev/${item.projectId}`);
+      jumpTo(`/space/${spaceId}/app-dev/${item.projectId}`);
     }
     // 反向代理
     else if (item.projectType === PageProjectTypeEnum.REVERSE_PROXY) {

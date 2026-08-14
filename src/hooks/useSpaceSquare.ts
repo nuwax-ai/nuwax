@@ -1,5 +1,6 @@
 import { SquareAgentTypeEnum } from '@/types/enums/square';
 import { SquarePublishedItemInfo } from '@/types/interfaces/square';
+import { jumpTo } from '@/utils/router';
 import { useState } from 'react';
 import { history } from 'umi';
 
@@ -24,7 +25,7 @@ const useSpaceSquare = () => {
         history.push(`/home/chat/${conversationId}/${targetId}`);
       } else {
         // 跳转到智能体详情页面
-        history.push(`/agent/${targetId}`);
+        jumpTo(`/agent/${targetId}`);
       }
     }
     // 插件

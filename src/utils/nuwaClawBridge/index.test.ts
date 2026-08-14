@@ -1,5 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { auth, isNuwaClaw, native, nuwaClawHost } from './index';
+import {
+  auth,
+  isImmersiveShell,
+  isNuwaClaw,
+  isShellWindow,
+  native,
+  nuwaClawHost,
+} from './index';
 
 /**
  * nuwaClawHost 统一对外接入层单测：
@@ -28,6 +35,56 @@ describe('nuwaClawHost（统一对外接入层）', () => {
     it('桥缺失 → false', () => {
       delete (window as any).NuwaClawBridge;
       expect(isNuwaClaw()).toBe(false);
+    });
+  });
+
+  describe('isShellWindow / isImmersiveShell（独立窗口标记）', () => {
+    const originalHref = window.location.href;
+    afterEach(() => {
+      window.history.replaceState(null, '', originalHref);
+    });
+    it('URL 带 _shell=1 → 独立窗口；桌面端下沉浸式判定为 false（恢复浏览器式布局）', () => {
+      (window as any).NuwaClawBridge = { auth: {}, native: {} };
+      window.history.replaceState(null, '', '/agent/123?_shell=1');
+      expect(isShellWindow()).toBe(true);
+      expect(isImmersiveShell()).toBe(false);
+    });
+    it('无 _shell 标记 + 有桥 → 沉浸式主窗口', () => {
+      (window as any).NuwaClawBridge = { auth: {}, native: {} };
+      window.history.replaceState(null, '', '/home');
+      expect(isShellWindow()).toBe(false);
+      expect(isImmersiveShell()).toBe(true);
+    });
+    it('浏览器端（无桥）即使误带 _shell → isImmersiveShell 仍 false', () => {
+      delete (window as any).NuwaClawBridge;
+      window.history.replaceState(null, '', '/home?_shell=1');
+      expect(isImmersiveShell()).toBe(false);
+    });
+  });
+
+  describe('native.openWindow（新开独立窗口）', () => {
+    it('桥返回 success → 透传', async () => {
+      const openWindow = vi.fn().mockResolvedValue({ success: true });
+      (window as any).NuwaClawBridge = { native: { openWindow } };
+      await expect(native.openWindow('/agent/123')).resolves.toEqual({
+        success: true,
+      });
+      expect(openWindow).toHaveBeenCalledWith('/agent/123');
+    });
+    it('无桥 → {success:false}（jumpTo 分流据此回落页内导航）', async () => {
+      delete (window as any).NuwaClawBridge;
+      await expect(native.openWindow('/agent/123')).resolves.toEqual({
+        success: false,
+      });
+    });
+    it('桥抛错 → 降级 {success:false} 且 warn', async () => {
+      (window as any).NuwaClawBridge = {
+        native: { openWindow: vi.fn().mockRejectedValue(new Error('boom')) },
+      };
+      await expect(native.openWindow('/agent/123')).resolves.toEqual({
+        success: false,
+        error: 'boom',
+      });
     });
   });
 
