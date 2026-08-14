@@ -618,7 +618,7 @@ describe('preserveOptimisticMessageTail', () => {
     });
   });
 
-  it('returns the same list after repeated snapshots cannot change finalized content', () => {
+  it('keeps locally finalized content unchanged across repeated snapshots', () => {
     const current = [
       {
         id: 101,
@@ -649,12 +649,14 @@ describe('preserveOptimisticMessageTail', () => {
       },
     ];
 
-    expect(reconcileConversationSnapshotMessages(current, incoming)).toBe(
+    // toEqual 而非 toBe：冻结本地呈现后合并结果是一份新列表，
+    // 但内容必须与本地终态完全一致（vitest toEqual 忽略 undefined 值属性）。
+    expect(reconcileConversationSnapshotMessages(current, incoming)).toEqual(
       current,
     );
   });
 
-  it('protects only the final assistant when a round contains intermediate messages', () => {
+  it('protects locally finalized intermediate and final assistant messages within a round', () => {
     const current = appendOutgoingConversationMessages(
       [],
       optimisticUser('first question'),
@@ -688,8 +690,61 @@ describe('preserveOptimisticMessageTail', () => {
 
     const merged = reconcileConversationSnapshotMessages(current, incoming);
 
-    expect(merged[1].text).toBe('Persisted intermediate output');
+    // 中间过程消息同样保留本地呈现，不再被快照覆盖（避免会话结束后轮询闪烁）
+    expect(merged[1].text).toBe('SSE intermediate output');
+    expect(merged[1].clientRenderKey).toBe(optimisticAsstId);
+    expect(merged[1].status).toBe(MessageStatusEnum.Complete);
     expect(merged[2].text).toBe('SSE final answer');
     expect(merged[2].finalResult).toEqual({ success: true });
+  });
+
+  it('protects earlier persisted rounds by stable id from polling overwrites', () => {
+    const current = [
+      {
+        id: 101,
+        index: 1,
+        role: AssistantRoleEnum.USER,
+        clientRenderKey: optimisticUserId,
+        text: 'earlier question',
+      } as MessageInfo,
+      {
+        id: 102,
+        index: 2,
+        role: AssistantRoleEnum.ASSISTANT,
+        clientRenderKey: optimisticAsstId,
+        text: 'SSE earlier answer',
+        think: 'SSE earlier thinking',
+        status: MessageStatusEnum.Complete,
+        thinkingFinished: true,
+      } as MessageInfo,
+    ];
+    const incoming = [
+      {
+        id: 101,
+        index: 1,
+        role: AssistantRoleEnum.USER,
+        text: 'earlier question',
+      },
+      {
+        id: 102,
+        index: 2,
+        role: AssistantRoleEnum.ASSISTANT,
+        text: 'Persisted earlier answer with a difference',
+        think: 'Persisted earlier thinking',
+        status: MessageStatusEnum.Complete,
+      },
+    ] as MessageInfo[];
+
+    const merged = reconcileConversationSnapshotMessages(current, incoming);
+
+    expect(merged[1]).toMatchObject({
+      id: 102,
+      index: 2,
+      clientRenderKey: optimisticAsstId,
+      text: 'SSE earlier answer',
+      think: 'SSE earlier thinking',
+      status: MessageStatusEnum.Complete,
+      thinkingFinished: true,
+    });
   });
 });

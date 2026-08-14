@@ -111,7 +111,7 @@ const RecentAgentItem: React.FC<RecentAgentItemProps> = ({
   return (
     <Dropdown
       menu={{ items: menuItems, onClick: handleMenuClick }}
-      placement="topRight"
+      placement="rightTop"
       overlayClassName={cx(styles['executing-conversation-dropdown'])}
     >
       {content}

@@ -379,24 +379,57 @@ const NewHomeSection: React.FC<{
   useEffect(() => {
     const handleConversationUpdated = (e: Event) => {
       const customEvent = e as CustomEvent<{
-        id: number;
-        topic: string;
+        id: number | string;
+        topic?: string;
         icon?: string;
       }>;
       if (!customEvent.detail) return;
       const { id, topic, icon } = customEvent.detail;
+      const targetId = String(id);
+
+      // 同步「会话记录」列表中的名称/图标
       setLocalList((prev) =>
         prev.map((item) => {
-          if (item.id === id) {
+          if (String(item.id) === targetId) {
             return {
               ...item,
-              topic,
-              icon,
+              ...(topic !== undefined ? { topic } : {}),
+              ...(icon !== undefined ? { icon } : {}),
             };
           }
           return item;
         }),
       );
+
+      // 同步「最近使用」列表中的会话名称（执行中下拉展示 topic）
+      if (topic !== undefined) {
+        setRecentList((prev) =>
+          prev.map((item) => {
+            const conversationList = item.conversationList ?? [];
+            if (
+              !conversationList.some(
+                (conversation) => String(conversation.id) === targetId,
+              )
+            ) {
+              return item;
+            }
+            return {
+              ...item,
+              conversationList: conversationList.map((conversation) =>
+                String(conversation.id) === targetId
+                  ? { ...conversation, topic }
+                  : conversation,
+              ),
+            };
+          }),
+        );
+      }
+
+      // 补一次静默重新查询与后端对齐：本地补丁是最快路径，但列表未加载、
+      // id 未命中或组件刚挂载等场景下补丁会落空，重新查询可确保接口
+      // 返回的最新 topic/icon 真正应用到「会话记录 / 最近使用」两个列表
+      loadListRef.current(true, { silent: true });
+      loadRecentListRef.current(true, { silent: true });
     };
 
     const handleConversationDeleted = (e: Event) => {
@@ -407,7 +440,10 @@ const NewHomeSection: React.FC<{
     };
 
     const handleRefreshConversationList = () => {
+      // 会话结束（SSE 关闭）/主题更新时：两个 Tab 都静默刷新，
+      // 让「最近使用」的执行中角标与话题名称也能及时同步
       loadListRef.current(true, { silent: true });
+      loadRecentListRef.current(true, { silent: true });
     };
 
     const handleUpdateConversationListTaskStatus = ({
@@ -430,6 +466,18 @@ const NewHomeSection: React.FC<{
       );
 
       const targetAgentId = agentId ?? currentAgentIdRef.current;
+      const targetConversationId = String(conversationId);
+
+      // 「最近使用」当前快照中是否已包含该智能体或该会话：
+      // 发起会话的智能体不在最近列表时，乐观追加无处可挂，静默刷新兜底
+      const foundInRecentList = (stateRef.current.recentList ?? []).some(
+        (item) =>
+          item.agentId.toString() === targetAgentId?.toString() ||
+          (item.conversationList ?? []).some(
+            (conversation) => String(conversation.id) === targetConversationId,
+          ),
+      );
+
       setRecentList((prev) =>
         prev.map((item) => {
           const conversationList = item.conversationList ?? [];
@@ -470,6 +518,15 @@ const NewHomeSection: React.FC<{
           return item;
         }),
       );
+
+      // 新智能体首次发起会话：最近列表尚未包含该智能体时，静默刷新让其及时出现
+      if (
+        taskStatus === TaskStatus.EXECUTING &&
+        targetAgentId !== undefined &&
+        !foundInRecentList
+      ) {
+        loadRecentListRef.current(true, { silent: true });
+      }
     };
 
     window.addEventListener('conversation-updated', handleConversationUpdated);
