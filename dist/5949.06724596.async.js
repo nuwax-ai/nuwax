@@ -1,1 +1,0 @@
-"use strict";(self.webpackChunknuwax_frontend=self.webpackChunknuwax_frontend||[]).push([[5949],{825949:function(e,n,_){_.d(n,{createCynefinServices:function(){return u.z}});var u=_(266399),c=_(65030)}}]);
