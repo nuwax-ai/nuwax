@@ -828,6 +828,7 @@ const ConversationAgent: React.FC = () => {
     if (!trimmedName) {
       return false;
     }
+    // 如果文件夹名称与父节点名称相同，则提示错误
     const parentPath = fileNode.parentPath || '';
     // 文件夹路径拼接
     const newPath = parentPath ? `${parentPath}/${trimmedName}` : trimmedName;
