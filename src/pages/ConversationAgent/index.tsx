@@ -279,6 +279,7 @@ const ConversationAgent: React.FC = () => {
   /** 是否开启版本管控（会话信息加载完成且 enableVersionControl 为 1） */
   const enableVersionControl = conversationInfo?.agent?.enableVersionControl;
 
+  /** 是否开启版本管控 */
   const isVersionControlEnabled = useMemo(
     () =>
       !!conversationInfo && isAgentVersionControlEnabled(enableVersionControl),
