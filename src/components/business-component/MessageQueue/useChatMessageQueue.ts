@@ -1,5 +1,4 @@
 import { isSessionStreamBusy } from '@/hooks/useExecutingTaskStatusPoll';
-import { MessageStatusEnum } from '@/types/enums/common';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
@@ -88,8 +87,6 @@ export const useChatMessageQueue = ({
   const awaitStreamWatchdogRef = useRef<number | null>(null);
   const consumeTimerRef = useRef<number | null>(null);
   const releaseTimerRef = useRef<number | null>(null);
-  const messageListRef = useRef(messageList);
-  messageListRef.current = messageList;
   /** 边沿 effect 内读取，避免把 hasQueuedMessages 放进依赖导致 dequeue 重跑误触发 */
   const hasQueuedMessagesRef = useRef(messageQueue.hasQueuedMessages);
   hasQueuedMessagesRef.current = messageQueue.hasQueuedMessages;
@@ -154,11 +151,8 @@ export const useChatMessageQueue = ({
     if (awaitingStreamEndRef.current) {
       return false;
     }
-    const lastMessage =
-      messageListRef.current?.[messageListRef.current.length - 1];
-    if (lastMessage?.status === MessageStatusEnum.Error) {
-      return false;
-    }
+    // 末条为 Error 时仍允许继续消费：UI 保留「运行错误」展示，不把 Error 当永久阻断。
+    // 用户主动停止仍由 userPausedRef 暂停。
     return true;
   }, [messageQueue.hasQueuedMessages]);
 

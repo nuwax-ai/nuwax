@@ -83,6 +83,11 @@ export const conversationPollLogger = createLogger(
   '[ConversationStreamResume][Poll]',
 );
 
+// 会话出错落终态验证 logger（ERROR / onError → taskStatus FAILED）
+export const conversationErrorTerminalLogger = createLogger(
+  '[ConversationErrorTerminal]',
+);
+
 // 开发环境下挂载到 window，方便调试
 if (isDev && typeof window !== 'undefined') {
   (window as any).__xagi_logger = {
