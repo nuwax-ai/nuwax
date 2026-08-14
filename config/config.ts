@@ -5,45 +5,6 @@ import path from 'path';
 import { defineConfig } from 'umi';
 import routes from '../src/routes';
 
-/** 无需顶部避让的全屏路由（登录/验证/临时会话/错误页/示例页：无返回栏或桌面端不用） */
-const SHELL_AVOID_EXCLUDED_PATHS = [
-  '/login',
-  '/verify-code',
-  '/set-password',
-  '/chat-temp',
-  '/license-expired',
-  '/*',
-  '/examples',
-];
-
-/**
- * nuwaclaw 桌面端沉浸式：给「layout:false 的全屏业务路由」自动注入顶部避让 wrapper。
- * 这些路由不走 @/layouts（其主内容区避让覆盖不到），返回栏顶到窗口上沿会被
- * nuwaclaw 工具栏浮层遮挡。注意排除 component === '@/layouts' 的根路由（它也标了
- * layout:false，但菜单/内容已有各自的避让，再叠加会整体错位）。
- * wrapper 内部 isNuwaClaw() 门控，浏览器端零影响；判断规则收敛在此一处——
- * 新增 layout:false 业务路由自动获得避让，无需逐个配置。
- */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const withNuwaclawShellAvoid = (rs: any[]): any[] =>
-  rs.map((route) => {
-    const item = { ...route } as any;
-    const excluded = SHELL_AVOID_EXCLUDED_PATHS.some(
-      (p) =>
-        item.path === p ||
-        (typeof item.path === 'string' && item.path.startsWith(p)),
-    );
-    if (
-      item.layout === false &&
-      item.component &&
-      item.component !== '@/layouts' &&
-      !excluded
-    ) {
-      item.wrappers = ['@/wrappers/nuwaclawAvoid', ...(item.wrappers ?? [])];
-    }
-    return item;
-  });
-
 export default defineConfig({
   // 优先从环境变量读取（需要创建 .env 文件）
   // publicPath: process.env.UMI_PUBLIC_PATH || '/',
@@ -73,7 +34,7 @@ export default defineConfig({
   model: {},
   initialState: {},
   request: {},
-  routes: withNuwaclawShellAvoid(routes),
+  routes,
   npmClient: 'pnpm',
   // 排除不兼容模块联邦的包
   // mfsu: {
