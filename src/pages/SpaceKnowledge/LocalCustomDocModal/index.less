@@ -1,5 +1,13 @@
 @import '@/styles/color';
 
+// 防重复提交时,确认按钮禁用样式(参考 SubmitButton 浅蓝禁用)
+.confirm-btn[disabled] {
+  background-color: @GRAY03;
+  color: @WHITE;
+  border-color: transparent;
+  cursor: not-allowed;
+}
+
 .container {
   width: 560px;
   background-color: @WHITE12 !important;

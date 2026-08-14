@@ -80,6 +80,8 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
     useState<boolean>(true);
   // 智能分段标识(新增)
   const [isAiSegment, setIsAiSegment] = useState<boolean>(false);
+  // 提交防重:提交中禁用按钮,避免重复请求
+  const [submitting, setSubmitting] = useState<boolean>(false);
   const fileConfigRef = useRef<{
     name: string;
     fileContent: string;
@@ -105,6 +107,7 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
     form.resetFields();
     formText.resetFields();
     segmentConfigModelRef.current = null;
+    setSubmitting(false);
   };
 
   // 知识库文档配置 - 数据新增接口
@@ -112,11 +115,15 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
     manual: true,
     debounceInterval: 300,
     onSuccess: () => {
+      setSubmitting(false);
       message.success(
         dict('PC.Pages.SpaceKnowledge.LocalCustomDocModal.docAddSuccess'),
       );
       handleClear();
       onConfirm();
+    },
+    onError: () => {
+      setSubmitting(false);
     },
   });
 
@@ -125,16 +132,23 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
     manual: true,
     debounceInterval: 300,
     onSuccess: () => {
+      setSubmitting(false);
       message.success(
         dict('PC.Pages.SpaceKnowledge.LocalCustomDocModal.docAddSuccess'),
       );
       handleClear();
       onConfirm();
     },
+    onError: () => {
+      setSubmitting(false);
+    },
   });
 
   // 本地文档 - 确认事件
   const handleOk = async () => {
+    // 防重复提交
+    if (submitting) return;
+    setSubmitting(true);
     const fileList =
       uploadFileList?.map((info) => ({
         name: info.name,
@@ -193,6 +207,9 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
 
   // 自定义文档 - 确认事件
   const handleCustomDocOk = async () => {
+    // 防重复提交
+    if (submitting) return;
+    setSubmitting(true);
     const data = {
       kbId: id,
       ...fileConfigRef.current,
@@ -323,6 +340,9 @@ const LocalCustomDocModal: React.FC<LocalCustomDocModalProps> = ({
                   : handleCustomDocOk
               }
               type="primary"
+              className={cx(submitting && styles['confirm-btn'])}
+              loading={submitting}
+              disabled={submitting}
             >
               {dict('PC.Common.Global.confirm')}
             </Button>
