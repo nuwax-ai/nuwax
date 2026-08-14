@@ -7,10 +7,28 @@ import { MessageStatusEnum } from '@/types/enums/common';
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { mockUseRequest, mockEventBusEmit } = vi.hoisted(() => ({
-  mockUseRequest: vi.fn(),
-  mockEventBusEmit: vi.fn(),
-}));
+const { mockUseRequest, mockEventBusEmit, mockPollLoggerInfo } = vi.hoisted(
+  () => ({
+    mockUseRequest: vi.fn(),
+    mockEventBusEmit: vi.fn(),
+    mockPollLoggerInfo: vi.fn(),
+  }),
+);
+
+vi.mock('@/utils/logger', () => {
+  const noopLogger = {
+    log: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+  };
+  return {
+    createLogger: () => noopLogger,
+    logger: noopLogger,
+    conversationPollLogger: { ...noopLogger, info: mockPollLoggerInfo },
+  };
+});
 
 vi.mock('ahooks', () => ({
   useRequest: (...args: unknown[]) => mockUseRequest(...args),
@@ -34,12 +52,14 @@ vi.mock('@/constants/home.constants', () => ({
 }));
 
 vi.mock('@/utils/conversationTaskStatusSync', () => ({
+  emitConversationListTaskStatus: vi.fn(),
   fetchConversationSnapshot: vi.fn(),
   fetchConversationTaskStatus: vi.fn(),
   resolveTaskStatusFromMessageLists: vi.fn(),
 }));
 
 import {
+  fetchConversationSnapshot,
   fetchConversationTaskStatus,
   resolveTaskStatusFromMessageLists,
 } from '@/utils/conversationTaskStatusSync';
@@ -107,6 +127,79 @@ describe('useConversationStreamResume', () => {
     onSuccess?.(snapshot);
 
     expect(onConversationSnapshot).toHaveBeenCalledWith(snapshot);
+  });
+
+  it('轮询在途时开始发送会取消轮询并丢弃旧回包', () => {
+    const onConversationSnapshot = vi.fn();
+    const onTerminalTaskStatus = vi.fn();
+    const { rerender } = renderHook(
+      ({ streaming }) =>
+        useConversationStreamResume({
+          conversationId: 1555404,
+          taskStatus: TaskStatus.COMPLETE,
+          isLocallyStreaming: streaming,
+          resumeStream: vi.fn(),
+          onConversationSnapshot,
+          onTerminalTaskStatus,
+        }),
+      { initialProps: { streaming: false } },
+    );
+
+    rerender({ streaming: true });
+    emitPollingStatus(TaskStatus.COMPLETE, [{ id: 2, text: 'stale message' }]);
+
+    expect(cancelPolling).toHaveBeenCalled();
+    expect(onConversationSnapshot).not.toHaveBeenCalled();
+    expect(onTerminalTaskStatus).not.toHaveBeenCalled();
+
+    // 两条关键日志用于线上/开发环境自证：取消轮询 + 丢弃旧回包
+    const loggedMessages = mockPollLoggerInfo.mock.calls.map(([msg]) => msg);
+    expect(loggedMessages).toContain('cancel polling: local send started');
+    expect(loggedMessages).toContain('discard stale snapshot');
+  });
+
+  it('可见性恢复请求在途时开始发送会丢弃旧回包', async () => {
+    let resolveSnapshot!: (snapshot: any) => void;
+    const snapshotPromise = new Promise<any>((resolve) => {
+      resolveSnapshot = resolve;
+    });
+    (fetchConversationSnapshot as any).mockReturnValueOnce(snapshotPromise);
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
+
+    const onConversationSnapshot = vi.fn();
+    const onTerminalTaskStatus = vi.fn();
+    const resumeStream = vi.fn();
+    const { rerender } = renderHook(
+      ({ streaming }) =>
+        useConversationStreamResume({
+          conversationId: 1555404,
+          taskStatus: TaskStatus.COMPLETE,
+          isLocallyStreaming: streaming,
+          resumeStream,
+          onConversationSnapshot,
+          onTerminalTaskStatus,
+        }),
+      { initialProps: { streaming: false } },
+    );
+
+    act(() => {
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    expect(fetchConversationSnapshot).toHaveBeenCalledWith(1555404);
+
+    rerender({ streaming: true });
+    await act(async () => {
+      resolveSnapshot({
+        id: 1555404,
+        taskStatus: TaskStatus.COMPLETE,
+        messageList: [{ id: 2, text: 'stale message' }],
+      });
+      await snapshotPromise;
+    });
+
+    expect(onConversationSnapshot).not.toHaveBeenCalled();
+    expect(onTerminalTaskStatus).not.toHaveBeenCalled();
+    expect(resumeStream).not.toHaveBeenCalled();
   });
 
   it('轮询 onSuccess 收到 EXECUTING 时不写回', () => {
