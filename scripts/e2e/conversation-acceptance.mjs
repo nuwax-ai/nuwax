@@ -20,6 +20,10 @@ const CHAT_URL =
 const TASKAGENT_URL =
   process.env.E2E_TASKAGENT_URL ||
   `${APP_BASE}/home/chat/1560607/1596`;
+/** 预览 Tab（EditAgent 编排页左侧 PreviewAndDebug 面板；agentId 3994 的 space=57） */
+const PREVIEW_TAB_URL =
+  process.env.E2E_PREVIEW_TAB_URL ||
+  `${APP_BASE}/space/57/agent/3994`;
 const FLAG_PARAM = 'conversationRuntime=1';
 const MSG_PREFIX = '[E2E验收]';
 const TASK_SPACE = 'conversation e2e acceptance';
@@ -232,6 +236,29 @@ await scenario('E2E-07 TaskAgent（runtime 线）：发送 + 思考流 + 收尾'
   await wait(2);
   const settled = await waitForStreamSettled(60);
   expect(!settled.executing, 'TaskAgent 收尾后不应残留执行中');
+});
+
+// E2E-08 预览 Tab（EditAgent 编排页 PreviewAndDebug 面板 = 隔离入口）
+await scenario('E2E-08 预览 Tab（隔离入口 runtime 线）：探针 + 发送流式 + 收尾', async () => {
+  const url =
+    PREVIEW_TAB_URL +
+    (PREVIEW_TAB_URL.includes('?') ? '&' : '?') +
+    FLAG_PARAM;
+  await gotoAndWait(url, { timeout: 60 });
+  await wait(10); // 编排页较重，等待面板与 dev 会话就绪
+  expect((await probeLine()) === 'RUNTIME', '预览 Tab flag=1 应为 RUNTIME');
+  const before = await countMessages();
+  const stamp = Date.now().toString().slice(-6);
+  await sendMessage(`${MSG_PREFIX}${stamp} 预览Tab 请回复收到`);
+  await wait(3);
+  const immediate = await countMessages();
+  expect(
+    immediate >= before + 2,
+    `预览 Tab 乐观追加失败：before=${before} immediate=${immediate}`,
+  );
+  const settled = await waitForStreamSettled(60);
+  expect(!settled.executing, '预览 Tab 收尾后不应残留执行中');
+  expect((await probeLine()) === 'RUNTIME', '预览 Tab 流后线归属漂移');
 });
 
 // ---------- 汇总 ----------
