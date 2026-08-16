@@ -25,9 +25,7 @@ import {
   finalizeOwnedMessageOnStaleClose,
   markOwnedMessageStreamError,
 } from '@/features/conversation/domain/messageLifecycle';
-import { reduceMessageEvent } from '@/features/conversation/domain/reduceMessageEvent';
-import { reduceProcessingEvent } from '@/features/conversation/domain/reduceProcessingEvent';
-import { reduceTerminalEvent } from '@/features/conversation/domain/reduceTerminalEvent';
+import { reduceConversationEvent } from '@/features/conversation/domain/reduceConversationEvent';
 import { isSessionStreamBusy } from '@/features/conversation/domain/runtimeSelectors';
 import { mergeConversationInfoTaskStatus } from '@/features/conversation/domain/taskStatus';
 import { useResumeStreamHandlers } from '@/hooks/useResumeStreamHandlers';
@@ -526,8 +524,6 @@ export default () => {
       // 深拷贝消息列表
       let list: any[] = [...messageList];
       const index = list.findIndex((item) => item.id === currentMessageId);
-      // 数组splice方法的第二个参数表示删除的数量，这里我们只需要删除一个元素，所以设置为1， 如果为0，则表示不删除元素。
-      let arraySpliceAction = 1;
       // 当前消息
       const currentMessage = list.find(
         (item) => item.id === currentMessageId,
@@ -537,8 +533,6 @@ export default () => {
         return messageList;
       }
 
-      let newMessage: any = null;
-
       // 优先拦截 ACP 权限 / MCP Ask 干预类 SSE，挂载到当前流式消息（DockPanel 数据源）
       const interventionPatch = processInterventionSsePatch(
         res,
@@ -546,23 +540,32 @@ export default () => {
         list,
       );
       if (interventionPatch) {
-        list.splice(index, arraySpliceAction, interventionPatch);
+        list.splice(index, 1, interventionPatch);
         const reconciledList =
           reconcileAcpPermissionStatusesInMessageList(list);
         messageListRef.current = reconciledList;
         return reconciledList;
       }
 
+      const eventReduction = reduceConversationEvent(
+        {
+          messages: list,
+          activeOutputMessageId: messageIdRef.current,
+        },
+        currentMessageId,
+        res,
+        {
+          renderProcessingBlock: getCustomBlock,
+          reconcileFinalMessage: reconcileFinalMessageState,
+        },
+      );
+      list = eventReduction.messages;
+      messageIdRef.current = eventReduction.activeOutputMessageId;
+
       // 更新UI状态...
       if (eventType === ConversationEventTypeEnum.PROCESSING) {
-        const reduction = reduceProcessingEvent(
-          currentMessage,
-          data,
-          getCustomBlock,
-        );
-        data = reduction.processing;
+        data = eventReduction.processing || data;
         const processingResult = data.result || {};
-        newMessage = reduction.message;
 
         // 添加处理扩展页面逻辑
         if (data.status === ProcessingEnum.EXECUTING) {
@@ -601,22 +604,8 @@ export default () => {
           }
         }
       }
-      // MESSAGE事件
-      if (eventType === ConversationEventTypeEnum.MESSAGE) {
-        const reduction = reduceMessageEvent(
-          list,
-          currentMessageId,
-          messageIdRef.current,
-          data,
-        );
-        list = reduction.messages;
-        messageIdRef.current = reduction.activeOutputMessageId;
-      }
       // FINAL_RESULT事件
       if (eventType === ConversationEventTypeEnum.FINAL_RESULT) {
-        // 重置消息ID
-        messageIdRef.current = '';
-
         /**
          * "error":"Agent正在执行任务，请等待当前任务完成后再发送新请求"
          */
@@ -638,14 +627,6 @@ export default () => {
           );
         }
 
-        const terminalReduction = reduceTerminalEvent(
-          list,
-          currentMessageId,
-          res,
-          reconcileFinalMessageState,
-        );
-        list = terminalReduction.messages;
-
         // 是否开启问题建议,可用值:Open,Close
         if (isSuggest.current) {
           pendingSuggestGenerationRef.current = suggestGenerationRef.current;
@@ -659,18 +640,11 @@ export default () => {
         applyTerminalTaskStatus(
           setConversationInfo,
           params.conversationId,
-          terminalReduction.taskStatus,
+          eventReduction.taskStatus,
         );
       }
       // ERROR事件
       if (eventType === ConversationEventTypeEnum.ERROR) {
-        const terminalReduction = reduceTerminalEvent(
-          list,
-          currentMessageId,
-          res,
-          reconcileFinalMessageState,
-        );
-        list = terminalReduction.messages;
         // 会话出错即终态：立即把会话 taskStatus 落为 FAILED（等同已停止），
         // 否则本地会固化在 EXECUTING，导致停止按钮常驻、队列因 taskExecuting 永不消费。
         // 同步补偿侧栏「最近使用/会话记录」列表，清除其「执行中」标记。
@@ -690,11 +664,6 @@ export default () => {
             TaskStatus.FAILED,
           );
         }
-      }
-
-      // 会话事件兼容处理，防止消息为空时，页面渲染报length错误
-      if (newMessage) {
-        list.splice(index, arraySpliceAction, newMessage as MessageInfo);
       }
 
       const reconciledList = reconcileAcpPermissionStatusesInMessageList(list);
