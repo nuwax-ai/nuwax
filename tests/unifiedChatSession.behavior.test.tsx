@@ -379,6 +379,43 @@ describe('UnifiedChatSession 行为', () => {
     ).toBeInTheDocument();
   });
 
+  it('注入 sessionView（Facade Props）时覆盖内部派生：原始字段不满足也按注入视图展示', () => {
+    render(
+      <UnifiedChatSession
+        messageList={
+          [
+            {
+              id: 'a1',
+              text: 'streaming',
+              status: MessageStatusEnum.Loading,
+            },
+          ] as MessageInfo[]
+        }
+        conversationInfo={{ taskStatus: TaskStatus.EXECUTING } as any}
+        sessionView={{
+          phase: 'streaming',
+          canSendNow: false,
+          shouldEnqueue: true,
+          canPollSnapshot: false,
+          shouldShowStop: true,
+          shouldShowTaskWait: true,
+          shouldShowSuggest: false,
+          queueGate: {
+            streamActive: true,
+            taskExecuting: true,
+            enqueueBlocked: true,
+            consumeBlocked: true,
+          },
+        }}
+      />,
+    );
+    // 内部派生（末条 Loading）应为 false；注入视图置 true 后以注入值为准
+    expect(screen.getByTestId('show-task-wait')).toHaveTextContent('true');
+    expect(
+      screen.getByText('PC.Pages.Chat.agentExecutingWait'),
+    ).toBeInTheDocument();
+  });
+
   it('优先使用外部 roleInfo', () => {
     const roleInfo: RoleInfo = {
       assistant: { name: 'ExternalBot', avatar: 'a.png' },

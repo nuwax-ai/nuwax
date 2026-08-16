@@ -14,10 +14,7 @@ import classNames from 'classnames';
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 
 import { ENABLE_CHAT_MESSAGE_QUEUE } from '@/constants/feature.constants';
-import {
-  shouldShowSessionSuggest as selectShouldShowSessionSuggest,
-  shouldShowTaskExecutingWait as selectShouldShowTaskExecutingWait,
-} from '@/features/conversation/domain/runtimeSelectors';
+import { selectConversationSessionView } from '@/features/conversation/domain/sessionView';
 import { dict } from '@/services/i18nRuntime';
 import { DefaultSelectedEnum, TaskStatus } from '@/types/enums/agent';
 import { AgentTypeEnum } from '@/types/enums/space';
@@ -102,6 +99,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
   chatInputProps,
   queueMinConsumeInterval,
   queueContext,
+  sessionView,
 
   // 原 ChatInputHome 中 useModel('conversationInfo') 数据
   runStopConversation,
@@ -211,6 +209,34 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
       taskExecuting: conversationInfo?.taskStatus === TaskStatus.EXECUTING,
     },
   });
+
+  // Facade sessionView（方案 §6.4）：入口注入的语义化视图优先；未注入时以现有
+  // props 内部派生（兼容并存）。内部派生不含 resumeSubscribed（sub 订阅态在
+  // useConversationStreamResume 内部，其轮询门禁自持真实值）。
+  const session = useMemo(
+    () =>
+      sessionView ??
+      selectConversationSessionView({
+        conversationId,
+        modelStreamActive: isLocallyStreaming ?? isConversationActive,
+        awaitingChatTerminal: isAwaitingChatTerminal,
+        taskStatus: conversationInfo?.taskStatus,
+        messageList,
+        hasQueuedMessages: messageQueue.hasQueuedMessages,
+        hasPendingIntervention,
+      }),
+    [
+      sessionView,
+      conversationId,
+      isLocallyStreaming,
+      isConversationActive,
+      isAwaitingChatTerminal,
+      conversationInfo?.taskStatus,
+      messageList,
+      messageQueue.hasQueuedMessages,
+      hasPendingIntervention,
+    ],
+  );
 
   // 滚到底部按钮需避开队列面板：测量队列区域高度写入 CSS 变量
   const sessionContainerRef = useRef<HTMLDivElement>(null);
@@ -323,29 +349,15 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
   /**
    * 「智能体正在执行，请稍等」仅在后端 taskStatus=EXECUTING 且流式已结束时展示。
    * 不用 isConversationActive：队列自动发送会乐观置活跃，末条仍为 Complete 时会误显示。
+   * 语义统一由 session 视图提供（§5.6：页面不再用原始字段重新推导）。
    */
-  const showTaskExecutingWait = useMemo(() => {
-    return selectShouldShowTaskExecutingWait(
-      conversationInfo?.taskStatus,
-      messageList,
-    );
-  }, [conversationInfo?.taskStatus, messageList]);
+  const showTaskExecutingWait = session.shouldShowTaskWait;
 
   /**
    * 会话 suggest 仅在整轮结束且队列已排空时展示。
    * 队列自动消费下一条时，上一轮 suggest 若仍挂在底部会与新一轮消息割裂成两块。
    */
-  const shouldShowSessionSuggest = useMemo(() => {
-    return selectShouldShowSessionSuggest(
-      messageList,
-      messageQueue.hasQueuedMessages,
-      isConversationActive,
-    );
-  }, [
-    messageList?.length,
-    messageQueue.hasQueuedMessages,
-    isConversationActive,
-  ]);
+  const shouldShowSessionSuggest = session.shouldShowSuggest;
 
   /** Agent 模式选择器：由智能体 allowChooseMode 配置控制 */
   const showAgentModeSelector = useMemo(

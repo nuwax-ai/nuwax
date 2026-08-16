@@ -3,6 +3,7 @@ import type {
   AgentMode,
 } from '@/components/business-component/AgentIntervention';
 import type { UnifiedChatQueueContext } from '@/components/business-component/MessageQueue/useUnifiedChatQueue';
+import type { ConversationSessionView } from '@/features/conversation/domain/sessionView';
 import type { DefaultSelectedEnum, TaskStatus } from '@/types/enums/agent';
 import type { ChatInputProps, UploadFileInfo } from '@/types/interfaces/common';
 import type {
@@ -135,6 +136,14 @@ export interface UnifiedChatSessionProps {
    * 构造默认上下文——不再读取全局 conversationInfo model（方案 Phase 6）。
    */
   queueContext?: UnifiedChatQueueContext;
+  /**
+   * Facade Props（方案 §6.4「session/actions/presentation」三对象之首）：
+   * 语义化会话视图，由入口层（或未来的 ConversationSessionProvider）注入。
+   * 未传时组件内部以 selectConversationSessionView 从现有 props 派生（兼容并存，
+   * 逐入口迁移后内部派生将删除）。内部派生不含 resumeSubscribed（sub 订阅态在
+   * useConversationStreamResume 内部，轮询门禁由该 hook 自持真实值）。
+   */
+  sessionView?: ConversationSessionView;
   // ===== 原 ChatInputHome 中 useModel('conversationInfo') 数据，改为从外部传入 =====
   /** 停止会话的异步函数 */
   runStopConversation?: (id: string) => Promise<any>;
