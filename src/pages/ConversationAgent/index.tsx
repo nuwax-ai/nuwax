@@ -824,6 +824,7 @@ const ConversationAgent: React.FC = () => {
     if (!queryConversationId) {
       return false;
     }
+    // 去除空格
     const trimmedName = newName.trim();
     if (!trimmedName) {
       return false;
