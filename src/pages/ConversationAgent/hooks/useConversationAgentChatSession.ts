@@ -2,6 +2,7 @@ import type {
   AgentInterventionHandlersOverride,
   AgentMode,
 } from '@/components/business-component/AgentIntervention';
+import { createConversationSessionModel } from '@/features/conversation/react/createConversationSessionModel';
 import useConversation from '@/hooks/useConversation';
 import {
   areMessageListsEquivalent,
@@ -248,6 +249,15 @@ export function useConversationAgentChatSession(
     [respondAcpPermission, respondMcpAsk],
   );
 
+  // 入口级会话构建器（方案 §4）：消除入口自行组合的 active/task 判断（§2.3）
+  const sessionModel = createConversationSessionModel({
+    conversationId: devConversationId,
+    messageList,
+    isConversationActive: agentStreamActive,
+    isAwaitingChatTerminal,
+    taskStatus: conversationInfo?.taskStatus,
+  });
+
   return {
     conversationId: devConversationId,
     messageList,
@@ -255,12 +265,12 @@ export function useConversationAgentChatSession(
     isLoading: loadingConversation,
     loadingMore,
     isMoreMessage,
-    isConversationActive: agentStreamActive || agentTaskExecuting,
-    // 本地是否正在 SSE 发送/接收（纯，不含后台 EXECUTING），供流式恢复 hook 使用
-    isLocallyStreaming: agentStreamActive,
-    isAwaitingChatTerminal,
+    // 完整活跃（本地流式 + 后台任务执行中）与纯本地流式由构建器统一合成
+    isConversationActive: sessionModel.isConversationActive,
+    isLocallyStreaming: sessionModel.isLocallyStreaming,
+    isAwaitingChatTerminal: sessionModel.isAwaitingChatTerminal,
     queueContext: {
-      streamActive: agentStreamActive,
+      streamActive: sessionModel.isLocallyStreaming,
       taskExecuting: agentTaskExecuting,
     },
     onResumeConversationStream: resumeConversationStream,

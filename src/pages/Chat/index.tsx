@@ -18,6 +18,7 @@ import useSelectedComponent from '@/hooks/useSelectedComponent';
 import useSubscription from '@/hooks/useSubscription';
 import useTerminalWsUrl from '@/hooks/useTerminalWsUrl';
 
+import { createConversationSessionModel } from '@/features/conversation/react/createConversationSessionModel';
 import { t } from '@/services/i18nRuntime';
 import {
   AgentComponentTypeEnum,
@@ -1238,6 +1239,15 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   };
 
   // 聊天会话相关 props
+  // 入口级会话构建器（方案 §4）：消除页面自行组合的 active/task 判断（§2.3）
+  const sessionModel = createConversationSessionModel({
+    conversationId: id,
+    messageList,
+    isConversationActive,
+    isAwaitingChatTerminal,
+    taskStatus: conversationInfo?.taskStatus,
+  });
+
   const chatSessionProps = {
     conversationId: id,
     messageList,
@@ -1245,13 +1255,10 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     isLoading: loadingConversation,
     loadingMore,
     isMoreMessage,
-    // 流式输出中 + 后台 taskStatus 执行中，驱动停止按钮与「智能体执行中」提示
-    isConversationActive:
-      isConversationActive ||
-      conversationInfo?.taskStatus === TaskStatus.EXECUTING,
-    // 本地是否正在 SSE 发送/接收（纯，不含后台 EXECUTING），供流式恢复 hook 使用
-    isLocallyStreaming: isConversationActive,
-    isAwaitingChatTerminal,
+    // 完整活跃（本地流式 + 后台任务执行中）与纯本地流式由构建器统一合成
+    isConversationActive: sessionModel.isConversationActive,
+    isLocallyStreaming: sessionModel.isLocallyStreaming,
+    isAwaitingChatTerminal: sessionModel.isAwaitingChatTerminal,
     // 会话流式恢复(sub)：刷新页面/新开标签时重建 EXECUTING 会话的流式输出
     onResumeConversationStream: resumeConversationStream,
     onAbortResumeStream: abortResumeStream,
