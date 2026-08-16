@@ -662,7 +662,9 @@ npm run e2e:conversation
 npm run verify:conversation
 ```
 
-E2E 场景与断言见 `scripts/e2e/conversation-acceptance.mjs`（双线 flag 探针、乐观上屏、流式收尾、加载更多）；环境可用 `E2E_BASE_URL`/`E2E_CHAT_URL`/`E2E_TASKAGENT_URL` 覆盖。双线切换方案与进度见 `docs/conversation-dual-track-plan.md`。
+E2E 场景与断言见 `scripts/e2e/conversation-acceptance.mjs`（双线 flag 探针、乐观上屏、流式收尾、加载更多）；环境可用 `E2E_BASE_URL`/`E2E_CHAT_URL`/`E2E_TASKAGENT_URL` 覆盖。
+
+维护必读：[docs/conversation-maintenance-guide.md](./docs/conversation-maintenance-guide.md)——架构速查、常见维护任务（新增副作用/入口/E2E 场景）、双线 flag 运维与切默认检查单、已知边界（tsc 预存噪音、umi 传递依赖坑）。
 
 ## 项目命名规范
 
