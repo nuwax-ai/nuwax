@@ -13,7 +13,7 @@
 | Phase 1 Domain Kernel | 已完成 | taskStatus、消息清理、PROCESSING/MESSAGE/FINAL/ERROR reducer、selectors |
 | Phase 2 连接所有权 | 已完成 | 通用 run Controller；live/sub 旧 message、close、error 回调隔离 |
 | Phase 3 历史一致性 | 核心策略已完成 | snapshot generation/visibility 单飞/USER 尾拒绝、历史 USER 等待、5 秒冷却、sub 退避、终态 fallback |
-| Phase 4 Runtime Factory | 进行中 | 主/隔离 model 已创建独立 Runtime 实例；Runtime 已拥有输出身份、live 连接所有权与 sub(resume) 连接所有权 |
+| Phase 4 Runtime Factory | 进行中 | 主/隔离 model 已创建独立 Runtime 实例；Runtime 已拥有输出身份、live/sub 连接所有权；resumeController 已迁入 runtime/ |
 | Phase 5 Effects Adapter | 未开始 | recent/topic/suggest/page/file/Git/perf 仍由旧 model Adapter 执行 |
 | Phase 6 React Interface | 未开始 | `UnifiedChatSession` 仍使用兼容 Props；轮询编排仍在 Resume Hook |
 | Phase 7 清理固化 | 未开始 | 双 model 外壳、兼容导出与临时诊断仍保留 |
@@ -22,9 +22,9 @@
 
 ### 0.1 最新纵切记录（2026-08-16）
 
-- Runtime 新增 `resumeConnection`（`resumeConnectionController.ts`，语义化 Adapter 镜像 live）：sub 恢复流的 runId/abort 所有权从 `useResumeStreamHandlers` 的 hook 实例迁入 Runtime 实例，与 live 连接同生命周期。
-- `useResumeStreamHandlers` 改为消费 `runtime`：删除内部自建 `ConnectionRunController` 与 `resetResumeMessageState` 兼容 dep（投影重置改由 hook 直接调用 `runtime.resetStreamProjection()`）；主/隔离 model 各传自身 Runtime，对外 Interface 不变。
-- 合同测试新增：同一实例内 live 与 resume 槽位互不干扰（abort live 不杀 sub、abort sub 不杀 live）；不同 Runtime 实例的 sub 连接所有权隔离；sub 开/关/中断时的投影重置计数保持原合同。
+- `useResumeStreamHandlers` 从 `src/hooks/` 迁入 `runtime/resumeController.ts`（对齐 §4 目标目录）并去 React 化：纯闭包工厂 `createResumeController`，无 useState/useRef/useCallback；「事件回调读最新 handleChangeMessageList」合同改由 `setHandler` 显式承接（model 每 render 刷新闭包）。主/隔离 model 惰性创建各自 Controller 实例，对外 `resumeConversationStream`/`abortResumeStream` 行为不变。
+- Runtime 新增 `resumeConnection`（`resumeConnectionController.ts`，语义化 Adapter 镜像 live）：sub 恢复流的 runId/abort 所有权从 hook 实例迁入 Runtime 实例，与 live 连接同生命周期；删除内部自建 `ConnectionRunController` 与 `resetResumeMessageState` 兼容 dep。
+- 合同测试：新增同一实例内 live 与 resume 槽位互不干扰（abort live 不杀 sub、abort sub 不杀 live）、不同 Runtime 实例的 sub 连接所有权隔离；`tests/useResumeStreamHandlers.test.ts` 更名 `tests/resumeController.test.ts`，去掉 renderHook/act（Controller 可脱离 React 直接构造），rerender 场景改为 `setHandler` 断言。
 - 已知预存失败（非本轮引入）：`tests/messageQueueDisabled.test.ts` 2 例在干净 HEAD 上同样失败，待单独排查。
 
 ## 1. 执行结论
