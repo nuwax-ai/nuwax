@@ -433,6 +433,93 @@ export function useConversationStreamResume(
       : 'discard-stale-snapshot';
   };
 
+  const applySnapshotDecision = (decision: SnapshotDecision) => {
+    const decisionConversationId = decision.token.conversationId;
+    if (isStaleSnapshotDecision(decision)) {
+      const logMessage =
+        decision.token.trigger === 'visibility'
+          ? 'discard stale visibility snapshot'
+          : 'discard stale snapshot';
+      conversationPollLogger.info(logMessage, {
+        conversationId: decisionConversationId,
+        reason:
+          decision.type === 'snapshot.rejected' ? decision.reason : undefined,
+        requestGeneration: decision.token.generation,
+        currentGeneration: consistencyControllerRef.current.getGeneration(),
+        latestConversationId: latestRef.current.conversationId,
+        isLocallyStreaming: latestRef.current.isLocallyStreaming,
+        snapshotTaskStatus: decision.snapshot?.taskStatus,
+      });
+      logConversationSnapshotConsume({
+        source: debugSource,
+        conversationId: decisionConversationId,
+        outcome: getSnapshotOutcome(decision),
+        snapshot: decision.snapshot,
+        localMessageList: latestRef.current.messageList,
+        hasSnapshotConsumer: !!onConversationSnapshotRef.current,
+      });
+      return;
+    }
+
+    const localMessageListBeforeSnapshot = latestRef.current.messageList;
+    if (decision.type === 'snapshot.accepted') {
+      onConversationSnapshotRef.current?.(decision.snapshot);
+    }
+    logConversationSnapshotConsume({
+      source: debugSource,
+      conversationId: decisionConversationId,
+      outcome: getSnapshotOutcome(decision),
+      snapshot: decision.snapshot,
+      localMessageList: localMessageListBeforeSnapshot,
+      hasSnapshotConsumer: !!onConversationSnapshotRef.current,
+    });
+
+    const status = decision.observedTaskStatus;
+    if (
+      status !== undefined &&
+      status !== TaskStatus.EXECUTING &&
+      latestRef.current.taskStatus !== status
+    ) {
+      onTerminalTaskStatusRef.current?.(status);
+    }
+    if (status !== undefined && status !== TaskStatus.EXECUTING) {
+      emitConversationListTaskStatus(decisionConversationId, status);
+    }
+    if (status === TaskStatus.EXECUTING) {
+      if (latestRef.current.isLocallyStreaming) {
+        if (isResumeSubscribedRef.current && abortSub) {
+          abortSub();
+          isResumeSubscribedRef.current = false;
+          setIsResumeSubscribed(false);
+        }
+        return;
+      }
+      if (isResumeSubscribedRef.current) return;
+      if (
+        !resumeConsistencyControllerRef.current.evaluateGate(
+          decisionConversationId,
+        ).allowed
+      ) {
+        return;
+      }
+      const polledMessageList = decision.resumeMessageList;
+      if (
+        Array.isArray(polledMessageList) &&
+        !resumeConsistencyControllerRef.current.isHistoryUserReady(
+          latestRef.current.messageList,
+          polledMessageList,
+        )
+      ) {
+        return;
+      }
+      subscribeRef.current(decisionConversationId, polledMessageList);
+    } else if (isResumeSubscribedRef.current && abortSub) {
+      abortSub();
+      isResumeSubscribedRef.current = false;
+      setIsResumeSubscribed(false);
+    }
+  };
+
   const isPollingReady =
     !!conversationId &&
     !isLocallyStreaming &&
@@ -502,93 +589,7 @@ export function useConversationStreamResume(
           },
           snapshot,
         );
-        if (isStaleSnapshotDecision(decision)) {
-          conversationPollLogger.info('discard stale snapshot', {
-            conversationId,
-            reason:
-              decision.type === 'snapshot.rejected'
-                ? decision.reason
-                : undefined,
-            requestGeneration: requestToken.generation,
-            currentGeneration: consistencyControllerRef.current.getGeneration(),
-            isLocallyStreaming: latestRef.current.isLocallyStreaming,
-            snapshotTaskStatus: snapshot?.taskStatus,
-          });
-          return;
-        }
-        const snapshotOutcome = getSnapshotOutcome(decision);
-        const localMessageListBeforeSnapshot = latestRef.current.messageList;
-        if (decision.type === 'snapshot.accepted') {
-          onConversationSnapshotRef.current?.(decision.snapshot);
-        }
-        const status = decision.observedTaskStatus;
-        // 防跨会话写回；同值终态跳过，避免每轮轮询触发下游 reload 闪烁
-        if (
-          status !== undefined &&
-          status !== TaskStatus.EXECUTING &&
-          latestRef.current.taskStatus !== status &&
-          latestRef.current.conversationId === conversationId
-        ) {
-          onTerminalTaskStatusRef.current?.(status);
-        }
-        logConversationSnapshotConsume({
-          source: debugSource,
-          conversationId,
-          outcome: snapshotOutcome,
-          snapshot,
-          localMessageList: localMessageListBeforeSnapshot,
-          hasSnapshotConsumer: !!onConversationSnapshotRef.current,
-        });
-        // 轮询补偿侧栏列表：会话已执行完毕(终态)时，把终态同步到「最近使用/会话记录」。
-        // 不依赖本地 taskStatus 是否已变化——列表可能在本轮轮询之间被重新拉取，且后端
-        // 尚未落库终态(仍返回 EXECUTING)，因此每次观察到终态都补发一次，由列表处理器
-        // 幂等合并（无变化时返回原引用，不产生无谓重渲染）。
-        if (
-          status !== undefined &&
-          status !== TaskStatus.EXECUTING &&
-          latestRef.current.conversationId === conversationId
-        ) {
-          emitConversationListTaskStatus(conversationId, status);
-        }
-        if (status === TaskStatus.EXECUTING) {
-          if (latestRef.current.isLocallyStreaming) {
-            // 本地正在发送：中断 sub，由 live 驱动输出
-            if (isResumeSubscribedRef.current && abortSub) {
-              abortSub();
-              isResumeSubscribedRef.current = false;
-              setIsResumeSubscribed(false);
-            }
-            return;
-          }
-          if (!isResumeSubscribedRef.current) {
-            // 同一会话内，本地流式刚结束的冷却窗口内跳过，等 taskStatus 稳定后再决定
-            if (
-              !resumeConsistencyControllerRef.current.evaluateGate(
-                conversationId,
-              ).allowed
-            ) {
-              return;
-            }
-            const polledMessageList = decision.resumeMessageList;
-            // 详情状态可能先于本轮用户消息落库。快照尚未就绪时保持正常轮询，
-            // 不立即发起多次历史重载；下一轮快照就绪后再建立 sub。
-            if (
-              Array.isArray(polledMessageList) &&
-              !resumeConsistencyControllerRef.current.isHistoryUserReady(
-                latestRef.current.messageList,
-                polledMessageList,
-              )
-            ) {
-              return;
-            }
-            subscribe(conversationId, polledMessageList);
-          }
-        } else if (isResumeSubscribedRef.current && abortSub) {
-          // 非 EXECUTING：任务已结束，兜底中断 sub（end_turn 自动断开应已触发）
-          abortSub();
-          isResumeSubscribedRef.current = false;
-          setIsResumeSubscribed(false);
-        }
+        applySnapshotDecision(decision);
       },
     },
   );
@@ -721,68 +722,7 @@ export function useConversationStreamResume(
               },
               snapshot,
             );
-            if (isStaleSnapshotDecision(decision)) {
-              conversationPollLogger.info('discard stale visibility snapshot', {
-                conversationId,
-                reason:
-                  decision.type === 'snapshot.rejected'
-                    ? decision.reason
-                    : undefined,
-                requestGeneration: requestToken.generation,
-                currentGeneration:
-                  consistencyControllerRef.current.getGeneration(),
-                latestConversationId: latestRef.current.conversationId,
-                isLocallyStreaming: latestRef.current.isLocallyStreaming,
-                snapshotTaskStatus: snapshot?.taskStatus,
-              });
-              logConversationSnapshotConsume({
-                source: debugSource,
-                conversationId,
-                outcome: 'discard-stale-visibility-snapshot',
-                snapshot,
-                localMessageList: latestRef.current.messageList,
-                hasSnapshotConsumer: !!onConversationSnapshotRef.current,
-              });
-              return;
-            }
-            const localMessageListBeforeSnapshot =
-              latestRef.current.messageList;
-            if (decision.type === 'snapshot.accepted') {
-              onConversationSnapshotRef.current?.(decision.snapshot);
-            }
-            logConversationSnapshotConsume({
-              source: debugSource,
-              conversationId,
-              outcome: getSnapshotOutcome(decision),
-              snapshot,
-              localMessageList: localMessageListBeforeSnapshot,
-              hasSnapshotConsumer: !!onConversationSnapshotRef.current,
-            });
-            const status = decision.observedTaskStatus;
-            if (
-              status !== undefined &&
-              status !== TaskStatus.EXECUTING &&
-              latestRef.current.taskStatus !== status
-            ) {
-              onTerminalTaskStatusRef.current?.(status);
-            }
-            // 可见性恢复后同样补偿侧栏列表：观察到终态即同步「最近使用/会话记录」
-            if (status !== undefined && status !== TaskStatus.EXECUTING) {
-              emitConversationListTaskStatus(conversationId, status);
-            }
-            if (status === TaskStatus.EXECUTING) {
-              const polledMessageList = decision.resumeMessageList;
-              if (
-                Array.isArray(polledMessageList) &&
-                !resumeConsistencyControllerRef.current.isHistoryUserReady(
-                  latestRef.current.messageList,
-                  polledMessageList,
-                )
-              ) {
-                return;
-              }
-              subscribeRef.current(conversationId, polledMessageList);
-            }
+            applySnapshotDecision(decision);
           })
           .finally(() => {
             consistencyControllerRef.current.release(requestToken);
