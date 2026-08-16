@@ -1554,18 +1554,15 @@ export default () => {
   };
 
   // ===== 会话流式恢复(sub)：刷新页面 / 新开标签时，订阅 EXECUTING 会话的输出流 =====
-  // 逻辑收敛到共享 hook（与 conversationAgent model 复用同一份实现，避免双份维护漂移）
-  // 重置 Runtime 的跨 chunk 输出身份：恢复流开/关时调用，避免旧输出 id 误插重复行
-  const resetResumeMessageState = useCallback(() => {
-    conversationRuntime.resetStreamProjection();
-  }, [conversationRuntime]);
+  // 逻辑收敛到共享 hook（与 conversationAgent model 复用同一份实现，避免双份维护漂移）。
+  // sub 连接所有权与流式投影重置均由传入的 Runtime 实例持有（恢复流开/关时重置跨 chunk 输出身份）
   const { resumeConversationStream, abortResumeStream } =
     useResumeStreamHandlers({
+      runtime: conversationRuntime,
       setMessageList,
       handleChangeMessageList,
       messageViewRef,
       allowAutoScrollRef,
-      resetResumeMessageState,
     });
 
   // 清除副作用

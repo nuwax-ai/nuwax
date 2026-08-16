@@ -1,9 +1,6 @@
 import { CONVERSATION_CHAT_SUB_URL } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
-import {
-  createConnectionRunController,
-  type ConnectionRunController,
-} from '@/features/conversation/runtime/connectionRunController';
+import type { ConversationRuntime } from '@/features/conversation/runtime/createConversationRuntime';
 import {
   AssistantRoleEnum,
   ConversationEventTypeEnum,
@@ -109,10 +106,13 @@ const summarizeListTail = (list: MessageInfo[] | undefined | null) =>
  * conversationInfo / conversationAgent 两个 model 的状态是隔离的，但「订阅 sub 流、
  * 用 handleChangeMessageList 重建执行中的助手消息」这段逻辑完全相同，集中在此避免双份维护漂移。
  *
- * 各 model 只需把自身的 setMessageList / handleChangeMessageList / messageViewRef /
- * allowAutoScrollRef / resetResumeMessageState 传入即可。refs（abort 句柄、占位 id）由本 hook 持有。
+ * 各 model 只需把自身的 conversationRuntime / setMessageList / handleChangeMessageList /
+ * messageViewRef / allowAutoScrollRef 传入即可。sub 连接所有权（runId/abort）由 Runtime 的
+ * resumeConnection 持有；refs（abort 句柄、占位 id）由本 hook 持有。
  */
 export interface UseResumeStreamHandlersDeps {
+  /** 所属会话 Runtime：提供 sub 连接所有权（resumeConnection）与流式投影重置。 */
+  runtime: ConversationRuntime;
   setMessageList: Dispatch<SetStateAction<MessageInfo[]>>;
   handleChangeMessageList: (
     params: ConversationChatParams,
@@ -121,27 +121,13 @@ export interface UseResumeStreamHandlersDeps {
   ) => void;
   messageViewRef: MutableRefObject<HTMLDivElement | null>;
   allowAutoScrollRef: MutableRefObject<boolean>;
-  /**
-   * 重置 model 内会被 handleChangeMessageList 写入的流式状态（如 messageIdRef）。
-   * 在 sub 开/关时调用，避免恢复流的工作流多步骤输出因上次残留 id 误插重复行。
-   */
-  resetResumeMessageState?: () => void;
 }
 
 export function useResumeStreamHandlers(deps: UseResumeStreamHandlersDeps) {
-  const {
-    setMessageList,
-    messageViewRef,
-    allowAutoScrollRef,
-    resetResumeMessageState,
-  } = deps;
+  const { runtime, setMessageList, messageViewRef, allowAutoScrollRef } = deps;
 
   // sub 专用 abort 句柄：独立于各 model 的 abortConnectionRef，避免与 live 发送互相覆盖
   const resumeAbortRef = useRef<(() => void) | null>(null);
-  const resumeRunControllerRef = useRef<ConnectionRunController | null>(null);
-  if (!resumeRunControllerRef.current) {
-    resumeRunControllerRef.current = createConnectionRunController('resume');
-  }
   // 当前 sub 订阅的会话 id：同会话重入直接复用，避免无条件 abort 重建
   //（多实例共享同一 model 单例句柄时，这是防「互相踢线」的兜底）
   const resumeConversationIdRef = useRef<number | string | null>(null);
@@ -154,11 +140,11 @@ export function useResumeStreamHandlers(deps: UseResumeStreamHandlersDeps) {
 
   // 中断会话流式恢复(sub)连接，并重置占位记忆
   const abortResumeStream = useCallback(() => {
-    resumeRunControllerRef.current?.abortCurrent();
+    runtime.resumeConnection.abortCurrent();
     resumeAbortRef.current = null;
     resumeConversationIdRef.current = null;
     resumeMessageIdRef.current = null;
-  }, []);
+  }, [runtime]);
 
   // 追加一条空白 assistant 占位消息用于接收 sub 流式重建，返回其 id。
   // 仅复用「本次恢复已追加的占位」（resumeMessageIdRef 记忆），【不】复用历史里的任何消息——
@@ -307,17 +293,17 @@ export function useResumeStreamHandlers(deps: UseResumeStreamHandlersDeps) {
           conversationId,
           currentTail: summarizeListTail(currentList),
         });
-        resetResumeMessageState?.();
+        runtime.resetStreamProjection();
         onClose?.();
         return;
       }
-      // 开流前重置 model 的流式状态（messageIdRef 等），保证重放从头正确，不受上次残留影响
-      resetResumeMessageState?.();
+      // 开流前重置 Runtime 的流式投影（activeOutputMessageId 等），保证重放从头正确，不受上次残留影响
+      runtime.resetStreamProjection();
       const currentMessageId = ensureResumeAssistantPlaceholder(
         currentList,
         debugSource,
       );
-      const runController = resumeRunControllerRef.current!;
+      const runController = runtime.resumeConnection;
       const runId = runController.startRun();
       const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
       const abortConnection = createSSEConnection({
@@ -383,7 +369,7 @@ export function useResumeStreamHandlers(deps: UseResumeStreamHandlersDeps) {
           resumeAbortRef.current = null;
           resumeConversationIdRef.current = null;
           // 关闭时再次重置，避免恢复流的残留 id 影响后续 live 发送
-          resetResumeMessageState?.();
+          runtime.resetStreamProjection();
           onClose?.();
         },
       });
@@ -394,7 +380,7 @@ export function useResumeStreamHandlers(deps: UseResumeStreamHandlersDeps) {
     [
       abortResumeStream,
       ensureResumeAssistantPlaceholder,
-      resetResumeMessageState,
+      runtime,
       upsertResumeUserMessage,
     ],
   );

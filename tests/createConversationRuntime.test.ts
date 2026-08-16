@@ -58,4 +58,33 @@ describe('createConversationRuntime', () => {
     first.liveConnection.abortCurrent();
     expect(second.liveConnection.isCurrent(secondRun)).toBe(true);
   });
+
+  it('同一实例内 live 与 resume 连接槽位互相独立', () => {
+    const runtime = createRuntime();
+    runtime.liveConnection.startRun();
+    const resumeRun = runtime.resumeConnection.startRun();
+
+    // 中断 live 发送不影响 sub 恢复订阅
+    runtime.liveConnection.abortCurrent();
+    expect(runtime.resumeConnection.isCurrent(resumeRun)).toBe(true);
+
+    // 中断 sub 恢复也不影响新一轮 live run 的所有权
+    const nextLiveRun = runtime.liveConnection.startRun();
+    runtime.resumeConnection.abortCurrent();
+    expect(runtime.liveConnection.isCurrent(nextLiveRun)).toBe(true);
+    expect(runtime.resumeConnection.isSuperseded(resumeRun)).toBe(false);
+  });
+
+  it('不同 Runtime 实例的 sub 连接所有权隔离', () => {
+    const first = createRuntime();
+    const second = createRuntime();
+    const firstRun = first.resumeConnection.startRun();
+    const secondRun = second.resumeConnection.startRun();
+
+    expect(first.resumeConnection.isCurrent(firstRun)).toBe(true);
+    expect(second.resumeConnection.isCurrent(secondRun)).toBe(true);
+    first.resumeConnection.abortCurrent();
+    expect(second.resumeConnection.isCurrent(secondRun)).toBe(true);
+    expect(first.resumeConnection.isCurrent(firstRun)).toBe(false);
+  });
 });

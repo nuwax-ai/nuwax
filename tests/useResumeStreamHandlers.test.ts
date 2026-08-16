@@ -1,6 +1,7 @@
 /**
  * useResumeStreamHandlers sub 流式恢复 handlers 测试
  */
+import { createConversationRuntime } from '@/features/conversation/runtime/createConversationRuntime';
 import { useResumeStreamHandlers } from '@/hooks/useResumeStreamHandlers';
 import {
   AssistantRoleEnum,
@@ -27,6 +28,16 @@ vi.mock('@/constants/home.constants', () => ({
   ACCESS_TOKEN: 'ACCESS_TOKEN',
 }));
 
+/** 构建真实 Runtime 实例（含 reduceStreamEvent 所需 adapter mock），并 spy 投影重置。 */
+const createTestRuntime = () => {
+  const runtime = createConversationRuntime({
+    renderProcessingBlock: vi.fn(() => 'block'),
+    reconcileFinalMessage: vi.fn((message) => message),
+  });
+  const resetProjectionSpy = vi.spyOn(runtime, 'resetStreamProjection');
+  return { runtime, resetProjectionSpy };
+};
+
 describe('useResumeStreamHandlers', () => {
   let abortSse: ReturnType<typeof vi.fn>;
 
@@ -49,15 +60,15 @@ describe('useResumeStreamHandlers', () => {
       list = typeof updater === 'function' ? updater(list) : updater;
     });
     const handleChangeMessageList = vi.fn();
-    const resetResumeMessageState = vi.fn();
+    const { runtime, resetProjectionSpy } = createTestRuntime();
 
     const { result } = renderHook(() =>
       useResumeStreamHandlers({
+        runtime,
         setMessageList,
         handleChangeMessageList,
         messageViewRef: { current: null },
         allowAutoScrollRef: { current: false },
-        resetResumeMessageState,
       } as any),
     );
 
@@ -65,7 +76,7 @@ describe('useResumeStreamHandlers', () => {
       result.current.resumeConversationStream(1001, list);
     });
 
-    expect(resetResumeMessageState).toHaveBeenCalledTimes(1);
+    expect(resetProjectionSpy).toHaveBeenCalledTimes(1);
     expect(list).toHaveLength(2);
     expect(list[0].id).toBe('old-incomplete');
     expect(list[1].id).not.toBe('old-incomplete');
@@ -84,6 +95,7 @@ describe('useResumeStreamHandlers', () => {
 
     const { result } = renderHook(() =>
       useResumeStreamHandlers({
+        runtime: createTestRuntime().runtime,
         setMessageList,
         handleChangeMessageList: vi.fn(),
         messageViewRef: { current: null },
@@ -121,6 +133,7 @@ describe('useResumeStreamHandlers', () => {
 
     const { result } = renderHook(() =>
       useResumeStreamHandlers({
+        runtime: createTestRuntime().runtime,
         setMessageList,
         handleChangeMessageList: vi.fn(),
         messageViewRef: { current: null },
@@ -164,6 +177,7 @@ describe('useResumeStreamHandlers', () => {
 
     const { result } = renderHook(() =>
       useResumeStreamHandlers({
+        runtime: createTestRuntime().runtime,
         setMessageList,
         handleChangeMessageList: vi.fn(),
         messageViewRef: { current: null },
@@ -191,6 +205,7 @@ describe('useResumeStreamHandlers', () => {
     const { result, rerender } = renderHook(
       ({ handleChangeMessageList }) =>
         useResumeStreamHandlers({
+          runtime: createTestRuntime().runtime,
           setMessageList,
           handleChangeMessageList,
           messageViewRef: { current: null },
@@ -234,6 +249,7 @@ describe('useResumeStreamHandlers', () => {
 
     const { result } = renderHook(() =>
       useResumeStreamHandlers({
+        runtime: createTestRuntime().runtime,
         setMessageList,
         handleChangeMessageList,
         messageViewRef: { current: null },
@@ -276,16 +292,16 @@ describe('useResumeStreamHandlers', () => {
     const setMessageList = vi.fn((updater) => {
       list = typeof updater === 'function' ? updater(list) : updater;
     });
-    const resetResumeMessageState = vi.fn();
     const onClose = vi.fn();
+    const { runtime, resetProjectionSpy } = createTestRuntime();
 
     const { result } = renderHook(() =>
       useResumeStreamHandlers({
+        runtime,
         setMessageList,
         handleChangeMessageList: vi.fn(),
         messageViewRef: { current: null },
         allowAutoScrollRef: { current: false },
-        resetResumeMessageState,
       } as any),
     );
 
@@ -304,7 +320,7 @@ describe('useResumeStreamHandlers', () => {
       sseOptions.onClose();
     });
 
-    expect(resetResumeMessageState).toHaveBeenCalledTimes(2);
+    expect(resetProjectionSpy).toHaveBeenCalledTimes(2);
     expect(onClose).toHaveBeenCalled();
   });
 
@@ -316,6 +332,7 @@ describe('useResumeStreamHandlers', () => {
 
     const { result } = renderHook(() =>
       useResumeStreamHandlers({
+        runtime: createTestRuntime().runtime,
         setMessageList,
         handleChangeMessageList: vi.fn(),
         messageViewRef: { current: null },
@@ -363,6 +380,7 @@ describe('useResumeStreamHandlers', () => {
 
     const { result } = renderHook(() =>
       useResumeStreamHandlers({
+        runtime: createTestRuntime().runtime,
         setMessageList,
         handleChangeMessageList,
         messageViewRef: { current: null },
@@ -406,18 +424,18 @@ describe('useResumeStreamHandlers', () => {
     const setMessageList = vi.fn((updater) => {
       list = typeof updater === 'function' ? updater(list) : updater;
     });
-    const resetResumeMessageState = vi.fn();
     const firstOnClose = vi.fn();
     const secondOnClose = vi.fn();
+    const { runtime, resetProjectionSpy } = createTestRuntime();
     mockCreateSSEConnection.mockImplementation(() => vi.fn());
 
     const { result } = renderHook(() =>
       useResumeStreamHandlers({
+        runtime,
         setMessageList,
         handleChangeMessageList: vi.fn(),
         messageViewRef: { current: null },
         allowAutoScrollRef: { current: false },
-        resetResumeMessageState,
       } as any),
     );
 
@@ -438,13 +456,13 @@ describe('useResumeStreamHandlers', () => {
     expect(firstOnClose).not.toHaveBeenCalled();
     expect(secondOnClose).not.toHaveBeenCalled();
     expect(mockCreateSSEConnection).toHaveBeenCalledTimes(2);
-    expect(resetResumeMessageState).toHaveBeenCalledTimes(2);
+    expect(resetProjectionSpy).toHaveBeenCalledTimes(2);
 
     act(() => {
       secondOptions.onClose();
     });
 
     expect(secondOnClose).toHaveBeenCalledTimes(1);
-    expect(resetResumeMessageState).toHaveBeenCalledTimes(3);
+    expect(resetProjectionSpy).toHaveBeenCalledTimes(3);
   });
 });

@@ -11,9 +11,14 @@ import {
   createLiveConnectionController,
   type LiveConnectionController,
 } from './liveConnectionController';
+import {
+  createResumeConnectionController,
+  type ResumeConnectionController,
+} from './resumeConnectionController';
 
 export interface ConversationRuntime {
   readonly liveConnection: LiveConnectionController;
+  readonly resumeConnection: ResumeConnectionController;
   reduceStreamEvent(
     messages: MessageInfo[],
     ownerMessageId: string,
@@ -26,7 +31,7 @@ export interface ConversationRuntime {
 /**
  * 会话 Runtime Factory 的第一条纵切。
  *
- * Runtime 隐藏跨事件的 activeOutputMessageId，并与 live 连接所有权绑定为同一实例状态。
+ * Runtime 隐藏跨事件的 activeOutputMessageId，并与 live/sub 连接所有权绑定为同一实例状态。
  * React model 仍暂时拥有 messageList 与 effects，后续迁移可在不改变调用方 Interface 的前提下
  * 继续把一致性与 effect Adapter 收入该实例。
  */
@@ -35,9 +40,11 @@ export function createConversationRuntime(
 ): ConversationRuntime {
   let activeOutputMessageId = '';
   const liveConnection = createLiveConnectionController();
+  const resumeConnection = createResumeConnectionController();
 
   return {
     liveConnection,
+    resumeConnection,
 
     reduceStreamEvent(messages, ownerMessageId, event) {
       const reduction = reduceConversationEvent(
