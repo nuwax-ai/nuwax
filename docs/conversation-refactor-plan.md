@@ -2,7 +2,7 @@
 
 > 日期：2026-08-16  
 > 输入基线：[conversation-business-logic-baseline.md](./conversation-business-logic-baseline.md)  
-> 当前阶段：渐进迁移中（Phase 0-3 已建立合同与核心 Module，Phase 4 Runtime Factory 纵切进行中）  
+> 当前阶段：Phase 0-6 已完成，Phase 7 清理进行中（ADR/依赖规则已落地，eventBus 兼容 payload 与诊断下线为收尾项）  
 > 最高约束：任何业务逻辑丢失、时序改变或入口能力退化都不可接受
 
 ## 0. 实施进度（2026-08-16）

@@ -1,6 +1,5 @@
 import { UnifiedChatSession } from '@/components/business-component';
 import { type AgentMode } from '@/components/business-component/AgentIntervention';
-import { EVENT_TYPE } from '@/constants/event.constants';
 import { GLOBAL_POLLING_INTERVAL } from '@/constants/home.constants';
 import { ConversationSessionProvider } from '@/features/conversation/react/ConversationSessionProvider';
 import { createConversationSessionModel } from '@/features/conversation/react/createConversationSessionModel';
@@ -16,12 +15,10 @@ import { AgentConfigInfo } from '@/types/interfaces/agent';
 import type { PreviewAndDebugHeaderProps } from '@/types/interfaces/agentConfig';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import {
-  MessageInfo,
   RoleInfo,
   SendMessageParams,
 } from '@/types/interfaces/conversationInfo';
 import { arraysContainSameItems } from '@/utils/common';
-import eventBus from '@/utils/eventBus';
 import { Form, message } from 'antd';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
@@ -115,7 +112,6 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     loadingSuggest,
     onMessageSend,
     messageViewRef,
-    messageViewScrollToBottom,
     allowAutoScrollRef,
     scrollTimeoutRef,
     handleClearSideEffect,
@@ -337,29 +333,10 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     hasAutoPreviewedRef.current = false;
   }, [agentConfigInfo?.devConversationId]);
 
-  // 监听会话更新事件，更新会话记录
-  const handleConversationUpdate = (data: {
-    conversationId: string;
-    message: MessageInfo;
-  }) => {
-    const { conversationId, message } = data;
-    if (devConversationIdRef.current === Number(conversationId)) {
-      setMessageList((list: MessageInfo[]) => [...list, message]);
-      // 当用户手动滚动时，暂停自动滚动
-      if (allowAutoScrollRef.current) {
-        // 滚动到底部
-        messageViewScrollToBottom();
-      }
-    }
-  };
-
+  // RefreshChatMessage 事件已无发射方（死事件，随 Phase 7 清理删除监听与 msg/message
+  // 兼容 payload）。卸载时仍需重置全局会话状态，防止污染其他页面（如临时会话页面）。
   useEffect(() => {
-    // 监听新消息事件
-    eventBus.on(EVENT_TYPE.RefreshChatMessage, handleConversationUpdate);
-
     return () => {
-      eventBus.off(EVENT_TYPE.RefreshChatMessage, handleConversationUpdate);
-      // 组件卸载时重置全局会话状态，防止污染其他页面（如临时会话页面）
       resetInit();
     };
   }, []);

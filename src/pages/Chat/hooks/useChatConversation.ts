@@ -1,6 +1,5 @@
 import type { AgentMode } from '@/components/business-component/AgentIntervention';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
-import { EVENT_TYPE } from '@/constants/event.constants';
 import { apiAgentConversationCreate } from '@/services/agentConfig';
 import { t } from '@/services/i18nRuntime';
 import type { UploadFileInfo } from '@/types/interfaces/common';
@@ -8,9 +7,8 @@ import {
   MessageInfo,
   SendMessageParams,
 } from '@/types/interfaces/conversationInfo';
-import eventBus from '@/utils/eventBus';
 import { FormInstance, message } from 'antd';
-import React, { useEffect } from 'react';
+import React from 'react';
 
 export interface UseChatConversationProps {
   id: number;
@@ -61,8 +59,6 @@ export const useChatConversation = ({
   setHasUserSentMessage,
   setIsLoadingOtherInterface,
   onMessageSend,
-  allowAutoScrollRef,
-  messageViewRef,
   incrementCalledTrialCount,
   selectedComponentList,
   selectedModelId,
@@ -166,38 +162,6 @@ export const useChatConversation = ({
     incrementCalledTrialCount();
     onMessageSend(sendParams);
   };
-
-  // 监听会话更新事件，更新会话记录
-  useEffect(() => {
-    const handleConversationUpdate = (data: {
-      conversationId: string;
-      message: MessageInfo;
-    }) => {
-      const { conversationId, msg } = data as any;
-      // 注意：历史代码中有时传递的是 msg，这里做一下兼容
-      const targetMessage = data.message || msg;
-
-      if (Number(id) === Number(conversationId)) {
-        setMessageList((list: MessageInfo[]) => [...list, targetMessage]);
-        // 当用户手动滚动时，暂停自动滚动
-        if (allowAutoScrollRef.current) {
-          // 在流式输出/高频更新时，使用强制即时置底，避免 smooth 滚动的堆积和抖动
-          const element = messageViewRef.current;
-          if (element) {
-            element.scrollTo({
-              top: element.scrollHeight,
-              behavior: 'instant',
-            });
-          }
-        }
-      }
-    };
-
-    eventBus.on(EVENT_TYPE.RefreshChatMessage, handleConversationUpdate);
-    return () => {
-      eventBus.off(EVENT_TYPE.RefreshChatMessage, handleConversationUpdate);
-    };
-  }, [id, setMessageList, allowAutoScrollRef, messageViewRef]);
 
   return {
     handleClear,
