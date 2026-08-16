@@ -195,13 +195,12 @@ export default () => {
         reconcileFinalMessage: reconcileFinalMessageState,
       },
       {
-        // Phase 5：recent/taskStatus 已切 live；suggest.fetch 当前 shadow——旧 runChatSuggest
-        // 直调继续执行，Runtime.effects 只记录计划，对照一致后切 live 并删旧路径。
+        // Phase 5：recent/taskStatus 与 suggest.fetch 均已切 live，
+        // 副作用统一经 Runtime.effects → 入口 Adapter 执行。
         effectsAdapter: createMainChatEffectsAdapter({
           fetchSuggest: (params) => runChatSuggestRef.current?.(params),
         }),
         effectDispatchMode: 'live',
-        shadowEffectTypes: ['suggest.fetch'],
       },
     );
   }
@@ -1333,7 +1332,6 @@ export default () => {
         setFinalResult(data as ConversationFinalResult);
         // 是否开启问题建议,可用值:Open,Close
         if (isSuggest.current) {
-          runChatSuggest(params as ConversationChatSuggestParams);
           conversationRuntime.effects.dispatch({
             type: 'suggest.fetch',
             params: params as ConversationChatSuggestParams,

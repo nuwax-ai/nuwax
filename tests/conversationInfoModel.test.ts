@@ -594,7 +594,7 @@ describe('conversationInfo model', () => {
     ]);
   });
 
-  it('Phase5 shadow：FINAL_RESULT 后建议拉取记录计划 effect，旧 runChatSuggest 仍执行', async () => {
+  it('Phase5 live：FINAL_RESULT 后建议拉取经 Runtime.effects 分发并保持原参数', async () => {
     const { result } = renderHook(() => useConversationInfo());
     await act(async () => {
       result.current.setIsSuggest(true);
@@ -615,7 +615,7 @@ describe('conversationInfo model', () => {
       } as ConversationChatResponse);
     });
 
-    // 新路径只记录计划（shadow 名单防与旧 runChatSuggest 双发）
+    // 分发计划与参数保持原语义；Adapter → fetchSuggest 的转发由 conversationEffects 单测覆盖
     const planned = mockLogEffectDispatch.mock.calls.map(
       ([entry]) => entry.effect,
     );
@@ -626,7 +626,6 @@ describe('conversationInfo model', () => {
         message: 'hello',
       }),
     });
-    // 旧路径执行与 Adapter 转发的等价性由 conversationEffects 单测覆盖
   });
 
   it('checkConversationActive：无忙碌消息时置为非活跃', async () => {
