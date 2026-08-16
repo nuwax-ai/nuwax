@@ -1,7 +1,7 @@
 import agentImage from '@/assets/images/agent_image.png';
 import { UnifiedChatSession } from '@/components/business-component';
+import { createConversationSessionModel } from '@/features/conversation/react/createConversationSessionModel';
 import { dict } from '@/services/i18nRuntime';
-import { TaskStatus } from '@/types/enums/agent';
 import { AgentTypeEnum } from '@/types/enums/space';
 import type { PluginInfo } from '@/types/interfaces/plugin';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -195,6 +195,15 @@ const PluginChatSession: React.FC<PluginChatSessionProps> = ({
     });
   };
 
+  // 入口级会话构建器（方案 §4）：消除入口自行组合的 active/task 判断（§2.3）
+  const pluginSessionModel = createConversationSessionModel({
+    conversationId,
+    messageList,
+    isConversationActive,
+    isAwaitingChatTerminal,
+    taskStatus: conversationInfo?.taskStatus,
+  });
+
   return (
     <UnifiedChatSession
       conversationId={conversationId}
@@ -203,11 +212,8 @@ const PluginChatSession: React.FC<PluginChatSessionProps> = ({
       isLoading={loadingAsync}
       loadingMore={loadingMore}
       isMoreMessage={isMoreMessage}
-      isConversationActive={
-        isConversationActive ||
-        conversationInfo?.taskStatus === TaskStatus.EXECUTING
-      }
-      isLocallyStreaming={isConversationActive}
+      isConversationActive={pluginSessionModel.isConversationActive}
+      isLocallyStreaming={pluginSessionModel.isLocallyStreaming}
       isAwaitingChatTerminal={isAwaitingChatTerminal}
       messageBottomMode="chat"
       loadingSuggest={false}

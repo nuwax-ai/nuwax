@@ -2,17 +2,14 @@ import { UnifiedChatSession } from '@/components/business-component';
 import { type AgentMode } from '@/components/business-component/AgentIntervention';
 import { EVENT_TYPE } from '@/constants/event.constants';
 import { GLOBAL_POLLING_INTERVAL } from '@/constants/home.constants';
+import { createConversationSessionModel } from '@/features/conversation/react/createConversationSessionModel';
 import useConversation from '@/hooks/useConversation';
 import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
 import { useAutoPreviewFile } from '@/pages/Chat/hooks/useAutoPreviewFile';
 import { apiAgentConfigInfo } from '@/services/agentConfig';
 import { dict } from '@/services/i18nRuntime';
-import {
-  ExpandPageAreaEnum,
-  HideDesktopEnum,
-  TaskStatus,
-} from '@/types/enums/agent';
+import { ExpandPageAreaEnum, HideDesktopEnum } from '@/types/enums/agent';
 import { AgentTypeEnum, EditAgentShowType } from '@/types/enums/space';
 import { AgentConfigInfo } from '@/types/interfaces/agent';
 import type { PreviewAndDebugHeaderProps } from '@/types/interfaces/agentConfig';
@@ -614,6 +611,15 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     return true;
   }, [agentConfigInfo?.type, messageList]);
 
+  // 入口级会话构建器（方案 §4）：消除入口自行组合的 active/task 判断（§2.3）
+  const previewSessionModel = createConversationSessionModel({
+    conversationId: devConversationIdRef.current,
+    messageList,
+    isConversationActive,
+    isAwaitingChatTerminal,
+    taskStatus: conversationInfo?.taskStatus,
+  });
+
   return (
     <div className={cx(styles.container, 'flex', 'h-full')}>
       {/* 主内容区域 */}
@@ -662,11 +668,8 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
               isLoading={isConversationTransitioning}
               loadingMore={loadingMore}
               isMoreMessage={isMoreMessage}
-              isConversationActive={
-                isConversationActive ||
-                conversationInfo?.taskStatus === TaskStatus.EXECUTING
-              }
-              isLocallyStreaming={isConversationActive}
+              isConversationActive={previewSessionModel.isConversationActive}
+              isLocallyStreaming={previewSessionModel.isLocallyStreaming}
               isAwaitingChatTerminal={isAwaitingChatTerminal}
               messageBottomMode="chat"
               loadingSuggest={loadingSuggest}
