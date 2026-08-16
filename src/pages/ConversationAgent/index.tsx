@@ -848,6 +848,7 @@ const ConversationAgent: React.FC = () => {
       files: [newFile],
     });
     if (code === SUCCESS_CODE) {
+      // 刷新文件树
       await handleRefreshFileList(queryConversationId);
       void refreshGitListIfEnabled();
     }
