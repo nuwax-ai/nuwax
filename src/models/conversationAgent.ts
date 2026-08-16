@@ -20,6 +20,7 @@ import {
   MESSAGE_PAGE_SIZE,
 } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
+import { createPreviewEffectsAdapter } from '@/features/conversation/adapters/previewEffectsAdapter';
 import {
   finalizeMessagesOnStreamClose,
   finalizeOwnedMessageOnStaleClose,
@@ -158,10 +159,18 @@ export default () => {
   const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const conversationRuntimeRef = useRef<ConversationRuntime | null>(null);
   if (!conversationRuntimeRef.current) {
-    conversationRuntimeRef.current = createConversationRuntime({
-      renderProcessingBlock: getCustomBlock,
-      reconcileFinalMessage: reconcileFinalMessageState,
-    });
+    conversationRuntimeRef.current = createConversationRuntime(
+      {
+        renderProcessingBlock: getCustomBlock,
+        reconcileFinalMessage: reconcileFinalMessageState,
+      },
+      {
+        // Phase 5 shadow observation：旧 eventBus 路径继续执行，Runtime.effects 只记录计划
+        // effect；测试对照一致后切 live 并删除旧路径。隔离入口注入 Preview 子集 Adapter。
+        effectsAdapter: createPreviewEffectsAdapter(),
+        effectDispatchMode: 'shadow',
+      },
+    );
   }
   const conversationRuntime = conversationRuntimeRef.current;
   const liveConnectionController = conversationRuntime.liveConnection;
@@ -668,6 +677,11 @@ export default () => {
             params.conversationId,
             TaskStatus.FAILED,
           );
+          conversationRuntime.effects.dispatch({
+            type: 'recent.status.patch',
+            conversationId: params.conversationId,
+            status: TaskStatus.FAILED,
+          });
         }
       }
 
@@ -841,6 +855,11 @@ export default () => {
             params.conversationId,
             TaskStatus.FAILED,
           );
+          conversationRuntime.effects.dispatch({
+            type: 'recent.status.patch',
+            conversationId: params.conversationId,
+            status: TaskStatus.FAILED,
+          });
         }
         // 明确终止：打破「发送后 3s 保活」，确保活跃态能立即落 false
         lastSendAtRef.current = 0;

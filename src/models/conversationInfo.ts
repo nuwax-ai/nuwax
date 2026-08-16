@@ -15,6 +15,7 @@ import {
 } from '@/constants/common.constants';
 import { EVENT_TYPE } from '@/constants/event.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
+import { createMainChatEffectsAdapter } from '@/features/conversation/adapters/mainChatEffectsAdapter';
 import {
   finalizeMessagesOnStreamClose,
   finalizeOwnedMessageOnStaleClose,
@@ -185,10 +186,18 @@ export default () => {
   const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const conversationRuntimeRef = useRef<ConversationRuntime | null>(null);
   if (!conversationRuntimeRef.current) {
-    conversationRuntimeRef.current = createConversationRuntime({
-      renderProcessingBlock: getCustomBlock,
-      reconcileFinalMessage: reconcileFinalMessageState,
-    });
+    conversationRuntimeRef.current = createConversationRuntime(
+      {
+        renderProcessingBlock: getCustomBlock,
+        reconcileFinalMessage: reconcileFinalMessageState,
+      },
+      {
+        // Phase 5 shadow observation：旧 eventBus 路径继续执行，Runtime.effects 只记录计划
+        // effect；测试对照一致后切 live 并删除旧路径。
+        effectsAdapter: createMainChatEffectsAdapter(),
+        effectDispatchMode: 'shadow',
+      },
+    );
   }
   const conversationRuntime = conversationRuntimeRef.current;
   const liveConnectionController = conversationRuntime.liveConnection;
@@ -1349,6 +1358,11 @@ export default () => {
             params.conversationId,
             TaskStatus.FAILED,
           );
+          conversationRuntime.effects.dispatch({
+            type: 'recent.status.patch',
+            conversationId: params.conversationId,
+            status: TaskStatus.FAILED,
+          });
         }
       }
 
@@ -1496,6 +1510,11 @@ export default () => {
             conversationId: params.conversationId,
             reason: 'stream-closed',
           });
+          conversationRuntime.effects.dispatch({
+            type: 'recent.list.refresh',
+            conversationId: params.conversationId,
+            reason: 'stream-closed',
+          });
         }
 
         perfLifecycle.onStreamEnd();
@@ -1545,6 +1564,11 @@ export default () => {
             params.conversationId,
             TaskStatus.FAILED,
           );
+          conversationRuntime.effects.dispatch({
+            type: 'recent.status.patch',
+            conversationId: params.conversationId,
+            status: TaskStatus.FAILED,
+          });
         }
         // 明确终止：打破「发送后 3s 保活」，确保活跃态能立即落 false
         lastSendAtRef.current = 0;
@@ -1665,6 +1689,15 @@ export default () => {
         agentId: conversationInfoRef.current?.agentId,
         topic: conversationInfoRef.current?.topic,
         taskStatus: TaskStatus.EXECUTING,
+      });
+      conversationRuntime.effects.dispatch({
+        type: 'recent.status.patch',
+        conversationId: id,
+        status: TaskStatus.EXECUTING,
+        context: {
+          agentId: conversationInfoRef.current?.agentId,
+          topic: conversationInfoRef.current?.topic,
+        },
       });
     }
 

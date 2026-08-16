@@ -8,6 +8,7 @@
  * - handleChangeMessageList：PROCESSING / MESSAGE / FINAL_RESULT / ERROR
  * - SSE onError / onClose 收尾状态
  */
+import { EVENT_TYPE } from '@/constants/event.constants';
 import {
   ConversationEventTypeEnum,
   MessageModeEnum,
@@ -37,6 +38,7 @@ const {
   mockShowPagePreview,
   mockEventBusEmit,
   mockSyncTerminalConversationTaskStatus,
+  mockLogEffectDispatch,
 } = vi.hoisted(() => ({
   mockUseModel: vi.fn(),
   mockCreateSSEConnection: vi.fn(),
@@ -52,6 +54,7 @@ const {
   mockShowPagePreview: vi.fn(),
   mockEventBusEmit: vi.fn(),
   mockSyncTerminalConversationTaskStatus: vi.fn().mockResolvedValue(undefined),
+  mockLogEffectDispatch: vi.fn(),
 }));
 
 vi.mock('umi', () => ({
@@ -156,6 +159,11 @@ vi.mock('@/utils/conversationTaskStatusSync', async (importOriginal) => {
 
 vi.mock('@/utils/ant-custom', () => ({
   modalConfirm: vi.fn(),
+}));
+
+vi.mock('@/utils/conversationEffectsDiagnostics', () => ({
+  logConversationEffectDispatch: (...args: unknown[]) =>
+    mockLogEffectDispatch(...args),
 }));
 
 vi.mock('@/utils/nuwaClawBridge/perfTracker', () => ({
@@ -470,6 +478,120 @@ describe('conversationInfo model', () => {
       ];
     expect(isolatedAssistant.status).toBe(MessageStatusEnum.Stopped);
     expect(mainAssistant.status).toBe(MessageStatusEnum.Loading);
+  });
+
+  it('Phase5 shadow：主实例计划 recent effect 与旧路径 eventBus 发射逐条一致', async () => {
+    const { result } = renderHook(() => useConversationInfo());
+    await act(async () => {
+      await result.current.onMessageSend({ id: 1001, messageInfo: 'hello' });
+    });
+    await act(async () => {
+      sseHandlers.onMessage?.({
+        eventType: ConversationEventTypeEnum.ERROR,
+      } as ConversationChatResponse);
+    });
+    await act(async () => {
+      await sseHandlers.onClose?.();
+    });
+
+    // 新路径（Runtime.effects，shadow 只记录）的计划序列
+    const planned = mockLogEffectDispatch.mock.calls.map(
+      ([entry]) => entry.effect,
+    );
+    expect(planned).toEqual([
+      {
+        type: 'recent.status.patch',
+        conversationId: 1001,
+        status: TaskStatus.EXECUTING,
+        context: { agentId: undefined, topic: undefined },
+      },
+      {
+        type: 'recent.status.patch',
+        conversationId: 1001,
+        status: TaskStatus.FAILED,
+      },
+      {
+        type: 'recent.list.refresh',
+        conversationId: 1001,
+        reason: 'stream-closed',
+      },
+    ]);
+
+    // 旧路径（直接 eventBus 发射）的实际序列须与计划一致（shadow observation 的对照合同）
+    const actual = mockEventBusEmit.mock.calls
+      .filter(
+        ([type]) =>
+          type === EVENT_TYPE.UpdateConversationListTaskStatus ||
+          type === EVENT_TYPE.RefreshConversationList,
+      )
+      .map(([type, payload]) => ({ type, ...payload }));
+    expect(actual).toEqual([
+      {
+        type: EVENT_TYPE.UpdateConversationListTaskStatus,
+        conversationId: 1001,
+        agentId: undefined,
+        topic: undefined,
+        taskStatus: TaskStatus.EXECUTING,
+      },
+      {
+        type: EVENT_TYPE.UpdateConversationListTaskStatus,
+        conversationId: 1001,
+        taskStatus: TaskStatus.FAILED,
+      },
+      {
+        type: EVENT_TYPE.RefreshConversationList,
+        conversationId: 1001,
+        reason: 'stream-closed',
+      },
+    ]);
+  });
+
+  it('Phase5 shadow：隔离实例只计划终态补丁，无乐观标记与列表刷新', async () => {
+    const isolated = renderHook(() => useConversationAgent());
+    await act(async () => {
+      await isolated.result.current.onMessageSend({
+        id: 3001,
+        messageInfo: 'iso-q',
+      });
+    });
+    const isolatedHandlers = mockCreateSSEConnection.mock.calls.at(-1)?.[0] as
+      | SseHandlers
+      | undefined;
+
+    // 发送阶段：隔离入口不做乐观标记（无计划、无发射）
+    expect(mockLogEffectDispatch.mock.calls).toEqual([]);
+    expect(
+      mockEventBusEmit.mock.calls.filter(
+        ([type]) => type === EVENT_TYPE.UpdateConversationListTaskStatus,
+      ),
+    ).toEqual([]);
+
+    await act(async () => {
+      isolatedHandlers?.onMessage?.({
+        eventType: ConversationEventTypeEnum.ERROR,
+      } as ConversationChatResponse);
+    });
+
+    const planned = mockLogEffectDispatch.mock.calls.map(
+      ([entry]) => entry.effect,
+    );
+    expect(planned).toEqual([
+      {
+        type: 'recent.status.patch',
+        conversationId: 3001,
+        status: TaskStatus.FAILED,
+      },
+    ]);
+    expect(
+      mockEventBusEmit.mock.calls.filter(
+        ([type]) => type === EVENT_TYPE.UpdateConversationListTaskStatus,
+      ),
+    ).toEqual([
+      [
+        EVENT_TYPE.UpdateConversationListTaskStatus,
+        { conversationId: 3001, taskStatus: TaskStatus.FAILED },
+      ],
+    ]);
   });
 
   it('checkConversationActive：无忙碌消息时置为非活跃', async () => {
