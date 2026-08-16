@@ -15,7 +15,7 @@
 | Phase 3 历史一致性 | 核心策略已完成 | snapshot generation/visibility 单飞/USER 尾拒绝、历史 USER 等待、5 秒冷却、sub 退避、终态 fallback |
 | Phase 4 Runtime Factory | 核心纵切已完成 | 主/隔离 model 已创建独立 Runtime 实例；Runtime 已拥有输出身份、live/sub 连接所有权；resumeController 已迁入 runtime/；双实例合同测试覆盖投影一致与交叉隔离 |
 | Phase 5 Effects Adapter | 已完成（5/6 项迁移，1 项决策不迁移） | recent/taskStatus、suggest.fetch、topic.update、page/card/desktop 与 file/Git/task-result：ConversationEffect + 主/隔离双 Adapter + Runtime.effects 分发已切 live，旧直调路径已删除；perf/scroll 经 deletion test 判定为不迁移项（见 0.2） |
-| Phase 6 React Interface | 未开始 | `UnifiedChatSession` 仍使用兼容 Props；轮询编排仍在 Resume Hook |
+| Phase 6 React Interface | 进行中（前两纵切已落地） | `ConversationSessionView` 聚合选择器已落地（domain/sessionView.ts + 合同测试）；`useUnifiedChatQueue` 已删除对全局 model 的默认读取（由 UnifiedChatSession 以自身 props 构造默认队列上下文）；Facade Props 并存、逐入口迁移、轮询移出 View 未开始 |
 | Phase 7 清理固化 | 未开始 | 双 model 外壳、兼容导出与临时诊断仍保留 |
 
 当前迁移保持旧 model 对外 Interface 不变。Phase 3 的策略已经集中，但 snapshot 的最终写权限仍通过兼容回调进入 model；该部分将在 Runtime 接管 message state 后删除，不能提前机械搬移。
@@ -25,6 +25,9 @@
 - Phase 5 第五片（file/Git/task-result）完成 shadow→live 闭环：新增 `preview.file.refresh`（throttled=ToolCall 节流 / immediate=FINAL_RESULT 立即）与 `taskResult.settle`（保序组合体：立即刷树 → 按需 Git 刷新 → task-result 文件选中并打开预览 → 未命中发兜底正文重拉 trigger）。时序依赖（文件选中依赖树刷新完成）使其不按 §5.5 清单拆成独立 git.refresh/taskResult.file.open——保序优先，为清单的工程化取舍（已在 effect 类型注释记录）。切 live 后删除 setTimeout 段旧执行体与 ToolCall 旧刷新直调；三个刷新/打开句柄经 ref 转发。隔离入口无文件树/Git/task-result（Preview Adapter 忽略）。
 
 ### 0.2 迁移决策记录（2026-08-16）
+
+- Phase 6 第一纵切：`domain/sessionView.ts` 落地方案 §5.6 的 `ConversationSessionView` 聚合选择器（phase/canSendNow/shouldEnqueue/canPollSnapshot/shouldShowStop/shouldShowTaskWait/shouldShowSuggest/queueGate），聚合既有 runtimeSelectors，10 条合同测试冻结语义（Interface 即测试 Surface）。纯新增，页面未切换——为 Facade Props 并存铺路。
+- Phase 6 第二纵切（§6.3 / Phase 6 第 3 项）：`useUnifiedChatQueue` 删除 `useModel('conversationInfo')` 默认读取，队列上下文由 UnifiedChatSession 以自身 props 构造默认值（isLocallyStreaming ?? isConversationActive 与 conversationInfo?.taskStatus），隔离入口仍显式传 queueContext 覆盖。数据流不变，来源从「全局 model 兜底」改为「页面注入」。
 
 - **perf/scroll 不作为 Effects Adapter 迁移项**（Phase 5 第 5 项的调整）：盘点确认两个 model 的 perf 埋点（onSendClick/onHttpStart/onSseConnect/onFirstChunk/onStreamEnd/onCloseRenderComplete）与流式 rAF 滚动调用点完全对称，双入口无子集差异——按 §11 deletion test（无第二个行为不同的 Adapter 即假设性抽象）不建 Seam；且 onHttpStart/onSseConnect 是连接编排的时序标记，effect 化会引入分发间接层、损失埋点时序精度。其归宿为 §4 目标目录的 `runtime/trace.ts`：Phase 6/7 Runtime 接管连接编排时随 live/sub 连接生命周期统一收编（届时 Queue/页面消费语义化 selectors，滚动作为 View 行为由会话视图层承接）。
 - Phase 5 第四片（page/card/desktop）完成 shadow→live 闭环：新增 `preview.page.open` / `preview.link.open` / `card.result.apply`（LIST 过滤空对象/单卡、append 由调用点以 requestId 判定）/ `desktop.open`；主 model Runtime 创建移至全部 Adapter 依赖声明之后（消除 setState/openDesktopView 的 TDZ，ref 转发仅用于跨 render 变化句柄）。双入口子集：主 Chat 全量，隔离 Preview 执行 page/link（无卡片/桌面状态）。切 live 后删除两 model 的 showPagePreview/window.open/setCardList 卡片块/openDesktopView 直调及 BindCardStyleEnum 等无用 import。isEmptyObject 在 Adapter 内联（utils/common 经 i18nRuntime 引入 umi 传递依赖，会破坏 vitest 可导入性）。
