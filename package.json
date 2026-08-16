@@ -36,7 +36,9 @@
     "start": "npm run dev",
     "sync:openui-runtime": "./scripts/sync-openui-runtime.sh",
     "test": "vitest",
-    "verify-commit": "max verify-commit"
+    "test:conversation": "vitest run tests/conversation tests/chatConversation tests/createConversation tests/liveConnection tests/resume tests/snapshot tests/terminal tests/runtimeLine tests/messageQueue tests/queueStorage tests/unifiedChatSession tests/useConversation tests/useExecutingTaskStatusPoll tests/useChatFinishedWhenListExecuting tests/interventionDock",
+    "verify-commit": "max verify-commit",
+    "verify:conversation": "npm run test:conversation && npm run e2e:conversation"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [

@@ -646,6 +646,24 @@ const CustomPreview: React.FC<CustomPreviewProps> = ({
 
 通过持续的技术创新和功能完善，AppDev Web IDE 将成为开发者进行 Web 应用开发的强大工具，为用户提供更加智能、高效的开发体验。
 
+## 会话模块回归验证（必须遵守）
+
+任何涉及会话模块（`src/models/conversation*`、`src/features/conversation/**`、`src/components/business-component/UnifiedChatSession/**`、`src/components/business-component/MessageQueue/**`、`src/pages/Chat/**` 等会话相关路径）的代码调整，完成后必须跑两网验证，全绿才算完成：
+
+```bash
+# ① 合同网（秒级）：292 条会话合同/双轨 digest/副作用测试
+npm run test:conversation
+
+# ② 真实页面 E2E（分钟级）：7 场景浏览器验收（需先起 dev server + ego-browser 登录态）
+npm run dev          # 另一个终端
+npm run e2e:conversation
+
+# 一键组合（合同网 + E2E）
+npm run verify:conversation
+```
+
+E2E 场景与断言见 `scripts/e2e/conversation-acceptance.mjs`（双线 flag 探针、乐观上屏、流式收尾、加载更多）；环境可用 `E2E_BASE_URL`/`E2E_CHAT_URL`/`E2E_TASKAGENT_URL` 覆盖。双线切换方案与进度见 `docs/conversation-dual-track-plan.md`。
+
 ## 项目命名规范
 
 ### 文件命名规范

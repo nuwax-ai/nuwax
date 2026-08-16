@@ -24,6 +24,30 @@ const FLAG_PARAM = 'conversationRuntime=1';
 const MSG_PREFIX = '[E2E验收]';
 const TASK_SPACE = 'conversation e2e acceptance';
 
+// ---------- 前置探测：dev server 未启动时给出清晰指引 ----------
+{
+  const { default: http } = await import('node:http');
+  const reachable = await new Promise((resolve) => {
+    const req = http.get(APP_BASE, { timeout: 3000 }, (res) => {
+      res.resume();
+      resolve(true);
+    });
+    req.on('error', () => resolve(false));
+    req.on('timeout', () => {
+      req.destroy();
+      resolve(false);
+    });
+  });
+  if (!reachable) {
+    cliLog(
+      `❌ dev server 未启动（${APP_BASE} 不可达）。\n` +
+        `   请先运行: npm run dev\n` +
+        `   或通过环境变量指定已运行的地址: E2E_BASE_URL=http://<host:port> npm run e2e:conversation`,
+    );
+    throw new Error('dev server unreachable');
+  }
+}
+
 // ---------- 断言与报告 ----------
 const results = [];
 const pass = (name) => results.push({ name, ok: true });
