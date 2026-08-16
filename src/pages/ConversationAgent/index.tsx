@@ -1063,6 +1063,7 @@ const ConversationAgent: React.FC = () => {
       return;
     }
 
+    // 如果终端全屏，则折叠终端，并打开文件树
     if (isTerminalExpanded) {
       setDevConsoleCollapseSignal((n) => n + 1);
       setCanShowFileView(true);
