@@ -174,6 +174,7 @@ vi.mock('@/constants/agent.constants', () => ({
   isAgentVersionControlEnabled: () => false,
 }));
 
+import useConversationAgent from '@/models/conversationAgent';
 import useConversationInfo from '@/models/conversationInfo';
 
 /** 捕获最近一次 createSSEConnection 入参，便于喂 SSE 事件 */
@@ -268,6 +269,91 @@ describe('conversationInfo model', () => {
     });
 
     expect(result.current.isConversationActive).toBe(true);
+  });
+
+  it('T18：主会话与 ConversationAgent 对同一核心 SSE Trace 保持消息投影一致', async () => {
+    const main = renderHook(() => useConversationInfo());
+    await act(async () => {
+      await main.result.current.onMessageSend({
+        id: 1001,
+        messageInfo: 'hello',
+      });
+    });
+    const mainHandlers = mockCreateSSEConnection.mock.calls.at(-1)?.[0] as
+      | SseHandlers
+      | undefined;
+
+    uuidSeq = 0;
+    const isolated = renderHook(() => useConversationAgent());
+    await act(async () => {
+      await isolated.result.current.onMessageSend({
+        id: 1001,
+        messageInfo: 'hello',
+      });
+    });
+    const isolatedHandlers = mockCreateSSEConnection.mock.calls.at(-1)?.[0] as
+      | SseHandlers
+      | undefined;
+
+    const trace = [
+      {
+        requestId: 'request-parity',
+        eventType: ConversationEventTypeEnum.PROCESSING,
+        data: {
+          type: 'ToolCall',
+          name: 'tool',
+          status: ProcessingEnum.EXECUTING,
+          result: { executeId: 'execute-parity' },
+        },
+      },
+      {
+        requestId: 'request-parity',
+        eventType: ConversationEventTypeEnum.MESSAGE,
+        data: {
+          id: 'output-parity',
+          type: MessageModeEnum.CHAT,
+          text: 'answer',
+          finished: true,
+        },
+      },
+      {
+        requestId: 'request-parity',
+        eventType: ConversationEventTypeEnum.FINAL_RESULT,
+        data: {
+          success: true,
+          outputText: 'answer',
+          error: '',
+          componentExecuteResults: [],
+        },
+      },
+    ] as ConversationChatResponse[];
+
+    for (const streamEvent of trace) {
+      await act(async () => {
+        mainHandlers?.onMessage?.(streamEvent);
+        isolatedHandlers?.onMessage?.(streamEvent);
+      });
+    }
+
+    const digest = (messages: MessageInfo[]) =>
+      messages.map((item) => ({
+        id: item.id,
+        role: item.role,
+        text: item.text,
+        think: item.think,
+        status: item.status,
+        thinkingFinished: item.thinkingFinished,
+        requestId: item.requestId,
+        finalSuccess: item.finalResult?.success,
+        processing: item.processingList?.map((processing) => ({
+          executeId: processing.executeId,
+          status: processing.status,
+        })),
+      }));
+
+    expect(digest(isolated.result.current.messageList)).toEqual(
+      digest(main.result.current.messageList),
+    );
   });
 
   it('checkConversationActive：无忙碌消息时置为非活跃', async () => {
