@@ -107,8 +107,9 @@ vi.mock('@/services/vncDesktop', () => ({
   isEnsurePodThrottledError: vi.fn(() => false),
 }));
 
-vi.mock('@/hooks/useResumeStreamHandlers', () => ({
-  useResumeStreamHandlers: () => ({
+vi.mock('@/features/conversation/runtime/resumeController', () => ({
+  createResumeController: () => ({
+    setHandler: vi.fn(),
     resumeConversationStream: mockResumeConversationStream,
     abortResumeStream: mockAbortResumeStream,
   }),

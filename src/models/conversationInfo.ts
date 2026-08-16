@@ -29,7 +29,10 @@ import {
   createConversationRuntime,
   type ConversationRuntime,
 } from '@/features/conversation/runtime/createConversationRuntime';
-import { useResumeStreamHandlers } from '@/hooks/useResumeStreamHandlers';
+import {
+  createResumeController,
+  type ResumeController,
+} from '@/features/conversation/runtime/resumeController';
 import { getCustomBlock } from '@/plugins/ds-markdown-process';
 import {
   apiAgentConversation,
@@ -1554,16 +1557,22 @@ export default () => {
   };
 
   // ===== 会话流式恢复(sub)：刷新页面 / 新开标签时，订阅 EXECUTING 会话的输出流 =====
-  // 逻辑收敛到共享 hook（与 conversationAgent model 复用同一份实现，避免双份维护漂移）。
-  // sub 连接所有权与流式投影重置均由传入的 Runtime 实例持有（恢复流开/关时重置跨 chunk 输出身份）
-  const { resumeConversationStream, abortResumeStream } =
-    useResumeStreamHandlers({
+  // 逻辑收敛到 Runtime 侧共享 Controller（与 conversationAgent model 复用同一份实现，避免双份维护漂移）。
+  // sub 连接所有权与流式投影重置由 Runtime 持有；每 render 同步最新 handleChangeMessageList 闭包。
+  const resumeControllerRef = useRef<ResumeController | null>(null);
+  if (!resumeControllerRef.current) {
+    resumeControllerRef.current = createResumeController({
       runtime: conversationRuntime,
       setMessageList,
       handleChangeMessageList,
       messageViewRef,
       allowAutoScrollRef,
     });
+  }
+  const resumeController = resumeControllerRef.current;
+  // onMessage 是异步回调，直接闭包捕获会拿到创建时的旧版本；render 期刷新为最新闭包
+  resumeController.setHandler(handleChangeMessageList);
+  const { resumeConversationStream, abortResumeStream } = resumeController;
 
   // 清除副作用
   function handleClearSideEffect() {
