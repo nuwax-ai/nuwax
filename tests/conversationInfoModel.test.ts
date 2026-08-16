@@ -11,6 +11,7 @@
 import {
   ConversationEventTypeEnum,
   MessageModeEnum,
+  TaskStatus,
 } from '@/types/enums/agent';
 import { MessageStatusEnum, ProcessingEnum } from '@/types/enums/common';
 import type {
@@ -19,6 +20,7 @@ import type {
 } from '@/types/interfaces/conversationInfo';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { createConversationTraceRecorder } from './helpers/conversationTraceHarness';
 
 const {
   mockUseModel,
@@ -342,6 +344,104 @@ describe('conversationInfo model', () => {
       expect.objectContaining({
         conversationId: 1001,
         message: 'hello world',
+      }),
+    );
+  });
+
+  it('T01/T02：成功轮次 Trace 保持 MESSAGE finished 与协议终态分离', async () => {
+    const { result } = renderHook(() => useConversationInfo());
+    const trace = createConversationTraceRecorder();
+
+    await act(async () => {
+      result.current.setConversationInfo({
+        id: 1001,
+        taskStatus: TaskStatus.EXECUTING,
+      } as any);
+      await result.current.onMessageSend({
+        id: 1001,
+        messageInfo: 'trace hello',
+      });
+    });
+    trace.record('user', 'send.requested', result.current);
+
+    await act(async () => {
+      sseHandlers.onMessage?.({
+        eventType: ConversationEventTypeEnum.MESSAGE,
+        requestId: 'req-trace',
+        completed: false,
+        error: '',
+        data: {
+          id: 'assistant-server-id',
+          type: MessageModeEnum.CHAT,
+          text: 'trace answer',
+          finished: true,
+        },
+      });
+    });
+    trace.record('live', 'message.finished', result.current);
+
+    await act(async () => {
+      sseHandlers.onMessage?.({
+        eventType: ConversationEventTypeEnum.FINAL_RESULT,
+        requestId: 'req-trace',
+        completed: true,
+        error: '',
+        data: {
+          success: true,
+          outputText: 'trace answer',
+        },
+      });
+    });
+    trace.record('live', 'final-result', result.current);
+
+    await act(async () => {
+      await sseHandlers.onClose?.();
+    });
+    trace.record('live', 'connection.closed', result.current);
+
+    expect(trace.snapshot()).toEqual([
+      expect.objectContaining({
+        seq: 1,
+        event: 'send.requested',
+        state: expect.objectContaining({
+          isConversationActive: true,
+          isAwaitingChatTerminal: true,
+          taskStatus: TaskStatus.EXECUTING,
+        }),
+      }),
+      expect.objectContaining({
+        seq: 2,
+        event: 'message.finished',
+        state: expect.objectContaining({
+          isAwaitingChatTerminal: true,
+          taskStatus: TaskStatus.EXECUTING,
+        }),
+      }),
+      expect.objectContaining({
+        seq: 3,
+        event: 'final-result',
+        state: expect.objectContaining({
+          isAwaitingChatTerminal: false,
+          taskStatus: TaskStatus.COMPLETE,
+        }),
+      }),
+      expect.objectContaining({
+        seq: 4,
+        event: 'connection.closed',
+        state: expect.objectContaining({
+          isConversationActive: false,
+          isAwaitingChatTerminal: false,
+          taskStatus: TaskStatus.COMPLETE,
+        }),
+      }),
+    ]);
+
+    const finalMessage = trace.snapshot()[2].state.messages.at(-1);
+    expect(finalMessage).toEqual(
+      expect.objectContaining({
+        text: 'trace answer',
+        status: MessageStatusEnum.Complete,
+        hasFinalResult: true,
       }),
     );
   });

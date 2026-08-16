@@ -3,15 +3,19 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { mockEventBusOn, mockEventBusOff } = vi.hoisted(() => ({
-  mockEventBusOn: vi.fn(),
-  mockEventBusOff: vi.fn(),
-}));
+const { mockEventBusOn, mockEventBusOff, mockEventBusEmit } = vi.hoisted(
+  () => ({
+    mockEventBusOn: vi.fn(),
+    mockEventBusOff: vi.fn(),
+    mockEventBusEmit: vi.fn(),
+  }),
+);
 
 vi.mock('@/utils/eventBus', () => ({
   default: {
     on: mockEventBusOn,
     off: mockEventBusOff,
+    emit: mockEventBusEmit,
   },
 }));
 
@@ -24,7 +28,10 @@ vi.mock('@/constants/codes.constants', () => ({
 }));
 
 vi.mock('@/constants/event.constants', () => ({
-  EVENT_TYPE: { ChatFinished: 'chat_finished' },
+  EVENT_TYPE: {
+    ChatFinished: 'chat_finished',
+    UpdateConversationListTaskStatus: 'update_conversation_list_task_status',
+  },
 }));
 
 import { apiAgentConversation } from '@/services/agentConfig';
@@ -112,6 +119,10 @@ describe('conversationTaskStatusSync', () => {
       const updater = setConversationInfo.mock.calls[0][0];
       const next = updater({ id: 100, taskStatus: TaskStatus.EXECUTING });
       expect(next.taskStatus).toBe(TaskStatus.COMPLETE);
+      expect(mockEventBusEmit).toHaveBeenCalledWith(
+        'update_conversation_list_task_status',
+        { conversationId: 100, taskStatus: TaskStatus.COMPLETE },
+      );
     });
   });
 
