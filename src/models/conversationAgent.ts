@@ -32,6 +32,7 @@ import {
   createConversationRuntime,
   type ConversationRuntime,
 } from '@/features/conversation/runtime/createConversationRuntime';
+import type { PagePreviewPayload } from '@/features/conversation/runtime/effectDispatcher';
 import {
   createResumeController,
   type ResumeController,
@@ -160,6 +161,11 @@ export default () => {
   const runChatSuggestRef = useRef<
     ((params: ConversationChatSuggestParams) => void) | null
   >(null);
+  // 扩展页面预览句柄经 ref 转发给 Effects Adapter（useModel 'chat' 句柄跨 render 变化）
+  const showPagePreviewRef = useRef<
+    ((preview: PagePreviewPayload) => void) | null
+  >(null);
+  showPagePreviewRef.current = showPagePreview;
   const conversationRuntimeRef = useRef<ConversationRuntime | null>(null);
   if (!conversationRuntimeRef.current) {
     conversationRuntimeRef.current = createConversationRuntime(
@@ -168,12 +174,14 @@ export default () => {
         reconcileFinalMessage: reconcileFinalMessageState,
       },
       {
-        // Phase 5：recent/taskStatus 与 suggest.fetch 均已切 live，
-        // 副作用统一经 Runtime.effects → 入口 Adapter 执行。
+        // Phase 5：recent/taskStatus 与 suggest.fetch 已切 live；page/link 当前 shadow——
+        // 旧直调继续执行，只记录计划，对照后切 live。
         effectsAdapter: createPreviewEffectsAdapter({
           fetchSuggest: (params) => runChatSuggestRef.current?.(params),
+          showPagePreview: (preview) => showPagePreviewRef.current?.(preview),
         }),
         effectDispatchMode: 'live',
+        shadowEffectTypes: ['preview.page.open', 'preview.link.open'],
       },
     );
   }
@@ -609,6 +617,10 @@ export default () => {
               // console.log('CHART', previewData);
               // 显示页面预览
               showPagePreview(previewData);
+              conversationRuntime.effects.dispatch({
+                type: 'preview.page.open',
+                preview: previewData as PagePreviewPayload,
+              });
             }
 
             // 链接类型
@@ -621,6 +633,10 @@ export default () => {
               ).toString();
               const pageUrl = `${input.uri}?${queryString}`;
               window.open(pageUrl, '_blank');
+              conversationRuntime.effects.dispatch({
+                type: 'preview.link.open',
+                url: pageUrl,
+              });
             }
           }
         }

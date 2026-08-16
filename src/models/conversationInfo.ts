@@ -29,6 +29,7 @@ import {
   createConversationRuntime,
   type ConversationRuntime,
 } from '@/features/conversation/runtime/createConversationRuntime';
+import type { PagePreviewPayload } from '@/features/conversation/runtime/effectDispatcher';
 import {
   createResumeController,
   type ResumeController,
@@ -202,32 +203,10 @@ export default () => {
     runHistoryItem,
   });
   topicContextRef.current = { isAppSidebarMode, runHistory, runHistoryItem };
-  const conversationRuntimeRef = useRef<ConversationRuntime | null>(null);
-  if (!conversationRuntimeRef.current) {
-    conversationRuntimeRef.current = createConversationRuntime(
-      {
-        renderProcessingBlock: getCustomBlock,
-        reconcileFinalMessage: reconcileFinalMessageState,
-      },
-      {
-        // Phase 5：recent/taskStatus、suggest.fetch 与 topic.update 均已切 live，
-        // 副作用统一经 Runtime.effects → 入口 Adapter 执行。
-        effectsAdapter: createMainChatEffectsAdapter({
-          fetchSuggest: (params) => runChatSuggestRef.current?.(params),
-          updateTopic: (input) =>
-            runUpdateTopicRef.current?.(input) ??
-            // ref 未就绪的兜底（实际不可达：dispatch 只发生在 render 完成后）
-            Promise.resolve({} as unknown as RequestResponse<ConversationInfo>),
-          setConversationInfo,
-          needUpdateTopicRef,
-          getTopicContext: () => topicContextRef.current,
-        }),
-        effectDispatchMode: 'live',
-      },
-    );
-  }
-  const conversationRuntime = conversationRuntimeRef.current;
-  const liveConnectionController = conversationRuntime.liveConnection;
+  // 扩展页面预览句柄经 ref 转发给 Effects Adapter（useModel 'chat' 句柄跨 render 变化）
+  const showPagePreviewRef = useRef<
+    ((preview: PagePreviewPayload) => void) | null
+  >(null);
   const [showType, setShowType] = useState<EditAgentShowType>(
     EditAgentShowType.Hide,
   );
@@ -627,6 +606,46 @@ export default () => {
   });
   // render 期刷新 ref，供 Effects Adapter 的 topic.update 执行体读取最新句柄
   runUpdateTopicRef.current = runUpdateTopic;
+  // render 期刷新页面预览句柄
+  showPagePreviewRef.current = showPagePreview;
+
+  // 会话 Runtime（在全部 Adapter 依赖声明后创建）：主 Chat 入口注入全量 Effects Adapter。
+  const conversationRuntimeRef = useRef<ConversationRuntime | null>(null);
+  if (!conversationRuntimeRef.current) {
+    conversationRuntimeRef.current = createConversationRuntime(
+      {
+        renderProcessingBlock: getCustomBlock,
+        reconcileFinalMessage: reconcileFinalMessageState,
+      },
+      {
+        // Phase 5：recent/taskStatus、suggest.fetch 与 topic.update 已切 live；
+        // page/card/desktop 当前 shadow——旧直调继续执行，只记录计划，对照后切 live。
+        effectsAdapter: createMainChatEffectsAdapter({
+          fetchSuggest: (params) => runChatSuggestRef.current?.(params),
+          updateTopic: (input) =>
+            runUpdateTopicRef.current?.(input) ??
+            // ref 未就绪的兜底（实际不可达：dispatch 只发生在 render 完成后）
+            Promise.resolve({} as unknown as RequestResponse<ConversationInfo>),
+          setConversationInfo,
+          needUpdateTopicRef,
+          getTopicContext: () => topicContextRef.current,
+          showPagePreview: (preview) => showPagePreviewRef.current?.(preview),
+          openDesktop: openDesktopView,
+          setCardList,
+          setShowType,
+        }),
+        effectDispatchMode: 'live',
+        shadowEffectTypes: [
+          'preview.page.open',
+          'preview.link.open',
+          'card.result.apply',
+          'desktop.open',
+        ],
+      },
+    );
+  }
+  const conversationRuntime = conversationRuntimeRef.current;
+  const liveConnectionController = conversationRuntime.liveConnection;
 
   // 处理变量参数
   const handleVariables = (_variables: BindConfigWithSub[]) => {
@@ -1052,6 +1071,10 @@ export default () => {
               // console.log('CHART', previewData);
               // 显示页面预览
               showPagePreview(previewData);
+              conversationRuntime.effects.dispatch({
+                type: 'preview.page.open',
+                preview: previewData as PagePreviewPayload,
+              });
             }
 
             // 链接类型
@@ -1064,6 +1087,10 @@ export default () => {
               ).toString();
               const pageUrl = `${input.uri}?${queryString}`;
               window.open(pageUrl, '_blank');
+              conversationRuntime.effects.dispatch({
+                type: 'preview.link.open',
+                url: pageUrl,
+              });
             }
           }
         }
@@ -1074,6 +1101,13 @@ export default () => {
           data?.cardBindConfig &&
           data?.cardData
         ) {
+          conversationRuntime.effects.dispatch({
+            type: 'card.result.apply',
+            cardBindConfig: data.cardBindConfig,
+            cardData: data.cardData,
+            // 如果是同一次会话请求，则追加，否则更新
+            append: res.requestId === requestId,
+          });
           // 卡片列表
           setCardList((cardList) => {
             // 竖向列表
@@ -1122,6 +1156,10 @@ export default () => {
         ) {
           // 打开远程桌面
           openDesktopView(params.conversationId);
+          conversationRuntime.effects.dispatch({
+            type: 'desktop.open',
+            conversationId: params.conversationId,
+          });
         }
 
         // 通用型任务处理(刷新文件树)

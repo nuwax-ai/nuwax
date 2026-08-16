@@ -22,10 +22,14 @@ const {
   mockEventBusEmit,
   mockEmitConversationListTaskStatus,
   mockFetchSuggest,
+  mockShowPagePreview,
+  mockOpenDesktop,
 } = vi.hoisted(() => ({
   mockEventBusEmit: vi.fn(),
   mockEmitConversationListTaskStatus: vi.fn(),
   mockFetchSuggest: vi.fn(),
+  mockShowPagePreview: vi.fn(),
+  mockOpenDesktop: vi.fn(),
 }));
 
 vi.mock('@/utils/eventBus', () => ({
@@ -91,10 +95,17 @@ const createMainAdapter = () =>
       runHistory: vi.fn(),
       runHistoryItem: vi.fn(),
     }),
+    showPagePreview: mockShowPagePreview,
+    openDesktop: mockOpenDesktop,
+    setCardList: vi.fn(),
+    setShowType: vi.fn(),
   });
 
 const createPreviewAdapter = () =>
-  createPreviewEffectsAdapter({ fetchSuggest: mockFetchSuggest });
+  createPreviewEffectsAdapter({
+    fetchSuggest: mockFetchSuggest,
+    showPagePreview: mockShowPagePreview,
+  });
 
 /** 构建带主题更新依赖的 mainChat Adapter（成功/失败与两种侧栏模式可配） */
 const createTopicAdapter = (
@@ -122,6 +133,10 @@ const createTopicAdapter = (
       runHistory,
       runHistoryItem,
     }),
+    showPagePreview: mockShowPagePreview,
+    openDesktop: mockOpenDesktop,
+    setCardList: vi.fn(),
+    setShowType: vi.fn(),
   });
   return {
     adapter,
@@ -311,6 +326,105 @@ describe('mainChatEffectsAdapter', () => {
       ),
     ).toEqual([]);
   });
+
+  it('preview.page.open 交给页面预览句柄；preview.link.open 打开新窗口', () => {
+    const openSpy = vi.spyOn(window, 'open').mockReturnValue(null);
+
+    createMainAdapter().dispatch({
+      type: 'preview.page.open',
+      preview: {
+        uri: '/page',
+        params: { a: 1 },
+        executeId: 'exec-1',
+      },
+    });
+    createMainAdapter().dispatch({
+      type: 'preview.link.open',
+      url: 'https://example.com?a=1',
+    });
+
+    expect(mockShowPagePreview).toHaveBeenCalledWith({
+      uri: '/page',
+      params: { a: 1 },
+      executeId: 'exec-1',
+    });
+    expect(openSpy).toHaveBeenCalledWith('https://example.com?a=1', '_blank');
+    openSpy.mockRestore();
+  });
+
+  it('card.result.apply LIST 样式过滤空对象、按 append 决定追加或替换', () => {
+    const setCardList = vi.fn((updater: (prev: unknown[]) => unknown[]) =>
+      updater([{ cardKey: 'old' }]),
+    );
+    const setShowType = vi.fn();
+    const adapter = createMainChatEffectsAdapter({
+      fetchSuggest: mockFetchSuggest,
+      updateTopic: vi.fn(),
+      setConversationInfo: vi.fn(),
+      needUpdateTopicRef: { current: true },
+      getTopicContext: () => ({
+        isAppSidebarMode: false,
+        runHistory: vi.fn(),
+        runHistoryItem: vi.fn(),
+      }),
+      showPagePreview: mockShowPagePreview,
+      openDesktop: mockOpenDesktop,
+      setCardList: setCardList as never,
+      setShowType: setShowType as never,
+    });
+
+    adapter.dispatch({
+      type: 'card.result.apply',
+      cardBindConfig: { bindCardStyle: 'LIST', cardKey: 'card-key' },
+      cardData: [{ a: 1 }, {}, { a: 2 }] as never,
+      append: true,
+    });
+
+    expect(setShowType).toHaveBeenCalled();
+    expect(setCardList).toHaveReturnedWith([
+      { cardKey: 'old' },
+      { a: 1, cardKey: 'card-key' },
+      { a: 2, cardKey: 'card-key' },
+    ]);
+  });
+
+  it('card.result.apply 单卡样式写入单元素列表（append=false 时替换）', () => {
+    const setCardList = vi.fn((updater: (prev: unknown[]) => unknown[]) =>
+      updater([{ cardKey: 'old' }]),
+    );
+    const adapter = createMainChatEffectsAdapter({
+      fetchSuggest: mockFetchSuggest,
+      updateTopic: vi.fn(),
+      setConversationInfo: vi.fn(),
+      needUpdateTopicRef: { current: true },
+      getTopicContext: () => ({
+        isAppSidebarMode: false,
+        runHistory: vi.fn(),
+        runHistoryItem: vi.fn(),
+      }),
+      showPagePreview: mockShowPagePreview,
+      openDesktop: mockOpenDesktop,
+      setCardList: setCardList as never,
+      setShowType: vi.fn(),
+    });
+
+    adapter.dispatch({
+      type: 'card.result.apply',
+      cardBindConfig: { cardKey: 'solo' },
+      cardData: { title: '单卡' } as never,
+      append: false,
+    });
+
+    expect(setCardList).toHaveReturnedWith([
+      { title: '单卡', cardKey: 'solo' },
+    ]);
+  });
+
+  it('desktop.open 交给打开远程桌面句柄', () => {
+    createMainAdapter().dispatch({ type: 'desktop.open', conversationId: 77 });
+
+    expect(mockOpenDesktop).toHaveBeenCalledWith(77);
+  });
 });
 
 describe('previewEffectsAdapter', () => {
@@ -334,13 +448,49 @@ describe('previewEffectsAdapter', () => {
     expect(mockFetchSuggest).toHaveBeenCalledWith(suggestFetch.params);
   });
 
-  it('忽略乐观标记、列表刷新与主题更新（隔离子集）', () => {
+  it('执行页面与链接预览（隔离面板同样支持）', () => {
+    const openSpy = vi.spyOn(window, 'open').mockReturnValue(null);
+
+    createPreviewAdapter().dispatch({
+      type: 'preview.page.open',
+      preview: { uri: '/p', params: {}, executeId: 'e' },
+    });
+    createPreviewAdapter().dispatch({
+      type: 'preview.link.open',
+      url: 'https://example.com',
+    });
+
+    expect(mockShowPagePreview).toHaveBeenCalledWith({
+      uri: '/p',
+      params: {},
+      executeId: 'e',
+    });
+    expect(openSpy).toHaveBeenCalledWith('https://example.com', '_blank');
+    openSpy.mockRestore();
+  });
+
+  it('忽略乐观标记、列表刷新、主题更新、卡片与桌面（隔离子集）', () => {
+    const setCardList = vi.fn();
+    const adapter = createPreviewEffectsAdapter({
+      fetchSuggest: mockFetchSuggest,
+      showPagePreview: mockShowPagePreview,
+    });
+
     createPreviewAdapter().dispatch(optimisticPatch);
     createPreviewAdapter().dispatch(listRefresh);
     createPreviewAdapter().dispatch(topicUpdate);
+    adapter.dispatch({
+      type: 'card.result.apply',
+      cardBindConfig: { cardKey: 'k' },
+      cardData: {} as never,
+      append: true,
+    });
+    adapter.dispatch({ type: 'desktop.open', conversationId: 1 });
 
     expect(mockEmitConversationListTaskStatus).not.toHaveBeenCalled();
     expect(mockEventBusEmit).not.toHaveBeenCalled();
+    expect(setCardList).not.toHaveBeenCalled();
+    expect(mockOpenDesktop).not.toHaveBeenCalled();
   });
 });
 

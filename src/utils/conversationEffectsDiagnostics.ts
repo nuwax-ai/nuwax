@@ -31,6 +31,27 @@ const summarizeEffect = (effect: ConversationEffect) => {
       topicUpdated: effect.currentInfo?.topicUpdated,
     };
   }
+  if (effect.type === 'card.result.apply') {
+    return {
+      type: effect.type,
+      bindCardStyle: effect.cardBindConfig?.bindCardStyle,
+      append: effect.append,
+      cardCount: Array.isArray(effect.cardData) ? effect.cardData.length : 1,
+    };
+  }
+  if (effect.type === 'desktop.open') {
+    return { type: effect.type, conversationId: effect.conversationId };
+  }
+  if (effect.type === 'preview.page.open') {
+    return {
+      type: effect.type,
+      executeId: effect.preview?.executeId,
+      hasParams: !!effect.preview?.params,
+    };
+  }
+  if (effect.type === 'preview.link.open') {
+    return { type: effect.type, urlLength: (effect.url || '').length };
+  }
   return {
     type: effect.type,
     conversationId: effect.conversationId,

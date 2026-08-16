@@ -2,8 +2,13 @@ import { EVENT_TYPE } from '@/constants/event.constants';
 import type {
   ConversationEffect,
   ConversationEffectsAdapter,
+  PagePreviewPayload,
 } from '@/features/conversation/runtime/effectDispatcher';
+import { BindCardStyleEnum } from '@/types/enums/plugin';
+import { EditAgentShowType } from '@/types/enums/space';
+import type { CardDataInfo } from '@/types/interfaces/cardInfo';
 import type {
+  CardInfo,
   ConversationChatSuggestParams,
   ConversationInfo,
 } from '@/types/interfaces/conversationInfo';
@@ -11,6 +16,11 @@ import type { RequestResponse } from '@/types/interfaces/request';
 import { emitConversationListTaskStatus } from '@/utils/conversationTaskStatusSync';
 import eventBus from '@/utils/eventBus';
 import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
+
+// 判断对象是否为空（与 utils/common 的 isEmptyObject 同语义；内联以避免
+// 该模块经 i18nRuntime 引入 umi 传递依赖，破坏非 umi 环境的测试可导入性）
+const isEmptyObject = (obj: Record<string, any>) =>
+  obj && typeof obj === 'object' && Object.keys(obj).length === 0;
 
 export interface MainChatTopicContext {
   isAppSidebarMode: boolean;
@@ -40,6 +50,14 @@ export interface MainChatEffectsAdapterDeps {
   needUpdateTopicRef: MutableRefObject<boolean>;
   /** 每 render 刷新的上下文读取器（侧栏模式与历史列表句柄，防 stale 闭包）。 */
   getTopicContext: () => MainChatTopicContext;
+  /** 显示扩展页面预览（useModel 'chat' 句柄，经 ref 转发保持最新闭包）。 */
+  showPagePreview: (preview: PagePreviewPayload) => void;
+  /** 打开远程桌面视图（model 的 openDesktopView，useCallback 空依赖、引用稳定）。 */
+  openDesktop: (conversationId: number) => void;
+  /** 展示台卡片列表 state 写回。 */
+  setCardList: Dispatch<SetStateAction<CardInfo[]>>;
+  /** 展示台展开状态写回。 */
+  setShowType: Dispatch<SetStateAction<EditAgentShowType>>;
 }
 
 /**
@@ -126,6 +144,51 @@ export function createMainChatEffectsAdapter(
           })();
           return;
         }
+        case 'preview.page.open':
+          deps.showPagePreview(effect.preview);
+          return;
+        case 'preview.link.open':
+          window.open(effect.url, '_blank');
+          return;
+        case 'card.result.apply': {
+          const { cardBindConfig, cardData, append } = effect;
+          deps.setCardList((cardList) => {
+            // 竖向列表
+            if (cardBindConfig?.bindCardStyle === BindCardStyleEnum.LIST) {
+              // 过滤掉空对象, 因为cardData中可能存在空对象
+              const source = Array.isArray(cardData) ? cardData : [];
+              const _cardData = source.filter((item) => !isEmptyObject(item));
+              // 如果卡片列表不为空，则自动展开展示台
+              if (_cardData?.length) {
+                deps.setShowType(EditAgentShowType.Show_Stand);
+              }
+              const cardDataList =
+                _cardData?.map((item: CardDataInfo) => ({
+                  ...item,
+                  cardKey: cardBindConfig.cardKey,
+                })) || [];
+              // 如果是同一次会话请求，则追加，否则更新
+              return (
+                append ? [...cardList, ...cardDataList] : [...cardDataList]
+              ) as CardInfo[];
+            }
+            // 自动展开展示台
+            deps.setShowType(EditAgentShowType.Show_Stand);
+            // 单张卡片
+            const cardInfo = {
+              ...(cardData as unknown as CardDataInfo),
+              cardKey: cardBindConfig?.cardKey,
+            };
+            // 如果是同一次会话请求，则追加，否则更新
+            return (
+              append ? [...cardList, cardInfo] : [cardInfo]
+            ) as CardInfo[];
+          });
+          return;
+        }
+        case 'desktop.open':
+          deps.openDesktop(effect.conversationId);
+          return;
       }
     },
   };

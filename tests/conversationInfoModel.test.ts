@@ -675,6 +675,39 @@ describe('conversationInfo model', () => {
     );
   });
 
+  it('Phase5 shadow：PROCESSING Page 组件计划页面预览，旧 showPagePreview 仍执行', async () => {
+    const { result } = renderHook(() => useConversationInfo());
+    await sendAndGetAssistantId(result);
+
+    await act(async () => {
+      sseHandlers.onMessage?.({
+        requestId: 'req-page',
+        eventType: ConversationEventTypeEnum.PROCESSING,
+        data: {
+          type: 'Page',
+          status: ProcessingEnum.EXECUTING,
+          executeId: 'exec-page',
+          result: {
+            executeId: 'exec-page',
+            input: { uri: '/chart', method: 'get', arguments: { a: 1 } },
+          },
+        },
+      } as ConversationChatResponse);
+    });
+
+    const planned = mockLogEffectDispatch.mock.calls.map(
+      ([entry]) => entry.effect,
+    );
+    expect(planned).toContainEqual({
+      type: 'preview.page.open',
+      preview: expect.objectContaining({ executeId: 'exec-page' }),
+    });
+    // 旧路径执行（shadow 名单内不经 Adapter，防双发）
+    expect(mockShowPagePreview).toHaveBeenCalledWith(
+      expect.objectContaining({ executeId: 'exec-page' }),
+    );
+  });
+
   it('checkConversationActive：无忙碌消息时置为非活跃', async () => {
     const { result } = renderHook(() => useConversationInfo());
 

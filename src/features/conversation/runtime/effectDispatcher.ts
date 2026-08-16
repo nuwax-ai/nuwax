@@ -1,9 +1,20 @@
 import type { TaskStatus } from '@/types/enums/agent';
+import type { CardDataInfo } from '@/types/interfaces/cardInfo';
 import type {
   ConversationChatSuggestParams,
   ConversationInfo,
 } from '@/types/interfaces/conversationInfo';
 import { logConversationEffectDispatch } from '@/utils/conversationEffectsDiagnostics';
+
+/** PROCESSING Page 组件的预览载荷（调用点构造，Adapter 透传给页面预览）。 */
+export interface PagePreviewPayload {
+  uri?: string;
+  params: Record<string, unknown>;
+  executeId: string;
+  method?: string;
+  request_id?: string | number;
+  data_type?: string;
+}
 
 /**
  * Phase 5 第一片（recent/taskStatus）的 effect 描述子集。
@@ -38,6 +49,29 @@ export type ConversationEffect =
       firstMessage: string;
       /** 发起时的会话信息快照：成功后以此快照为基底合并主题字段（保持原有覆盖语义）。 */
       currentInfo: ConversationInfo;
+    }
+  | {
+      type: 'preview.page.open';
+      preview: PagePreviewPayload;
+    }
+  | {
+      type: 'preview.link.open';
+      url: string;
+    }
+  | {
+      type: 'card.result.apply';
+      cardBindConfig: {
+        bindCardStyle?: string | number;
+        cardKey?: string;
+      };
+      /** SSE 原始载荷：LIST 为数组、单卡为对象（运行时形状宽松，Adapter 负责归一） */
+      cardData: CardDataInfo[] | Record<string, unknown>;
+      /** 同一次会话请求则追加，否则替换（调用点以 requestId 判定） */
+      append: boolean;
+    }
+  | {
+      type: 'desktop.open';
+      conversationId: number;
     };
 
 /** 入口注入的副作用执行器：主 Chat 全量执行，隔离 Preview 执行允许子集。 */
