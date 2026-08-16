@@ -13,7 +13,6 @@ import {
   CONVERSATION_CONNECTION_URL,
   MESSAGE_PAGE_SIZE,
 } from '@/constants/common.constants';
-import { EVENT_TYPE } from '@/constants/event.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { createMainChatEffectsAdapter } from '@/features/conversation/adapters/mainChatEffectsAdapter';
 import {
@@ -107,7 +106,6 @@ import {
   subscribeChatFinishedTaskSync,
   syncTerminalConversationTaskStatus,
 } from '@/utils/conversationTaskStatusSync';
-import eventBus from '@/utils/eventBus';
 import { createSSEConnection } from '@/utils/fetchEventSourceConversationInfo';
 import { conversationErrorTerminalLogger } from '@/utils/logger';
 import {
@@ -192,7 +190,7 @@ export default () => {
   // 主题更新句柄经 ref 转发给 Effects Adapter（runUpdateTopic 在下方定义，render 期刷新）
   const runUpdateTopicRef = useRef<
     | ((input: {
-        id: number | string;
+        id: number;
         firstMessage: string;
       }) => Promise<RequestResponse<ConversationInfo>>)
     | null
@@ -212,21 +210,19 @@ export default () => {
         reconcileFinalMessage: reconcileFinalMessageState,
       },
       {
-        // Phase 5：recent/taskStatus 与 suggest.fetch 已切 live；topic.update 当前 shadow——
-        // 旧 updateTopicOnce 继续执行，Runtime.effects 只记录计划，对照一致后切 live 并删旧路径。
+        // Phase 5：recent/taskStatus、suggest.fetch 与 topic.update 均已切 live，
+        // 副作用统一经 Runtime.effects → 入口 Adapter 执行。
         effectsAdapter: createMainChatEffectsAdapter({
           fetchSuggest: (params) => runChatSuggestRef.current?.(params),
           updateTopic: (input) =>
             runUpdateTopicRef.current?.(input) ??
-            Promise.resolve({
-              data: undefined,
-            } as RequestResponse<ConversationInfo>),
+            // ref 未就绪的兜底（实际不可达：dispatch 只发生在 render 完成后）
+            Promise.resolve({} as unknown as RequestResponse<ConversationInfo>),
           setConversationInfo,
           needUpdateTopicRef,
           getTopicContext: () => topicContextRef.current,
         }),
         effectDispatchMode: 'live',
-        shadowEffectTypes: ['topic.update'],
       },
     );
   }
@@ -631,85 +627,6 @@ export default () => {
   });
   // render 期刷新 ref，供 Effects Adapter 的 topic.update 执行体读取最新句柄
   runUpdateTopicRef.current = runUpdateTopic;
-
-  /**
-   * 更新会话主题（仅在会话开始时调用一次）
-   * @param params - 会话参数
-   * @param currentInfo - 当前会话信息
-   * @param isSync - 是否同步会话记录
-   * @description 该方法用于在会话开始时更新主题，通过 needUpdateTopicRef 确保只调用一次
-   */
-  const updateTopicOnce = useCallback(
-    async (
-      params: ConversationChatParams,
-      currentInfo: ConversationInfo | null | undefined,
-      isSync: boolean,
-    ) => {
-      // 检查是否需要更新主题：必须满足以下条件
-      // 1. isSync 为 true（需要同步）
-      // 2. conversationInfo 存在
-      // 3. topicUpdated 不等于 1（主题未更新过）
-      // 4. needUpdateTopicRef.current 为 true（允许更新）
-      if (
-        isSync &&
-        currentInfo &&
-        currentInfo?.topicUpdated !== 1 &&
-        needUpdateTopicRef.current
-      ) {
-        // 标记已更新，防止重复调用
-        needUpdateTopicRef.current = false;
-
-        try {
-          // 调用更新主题接口
-          const result: RequestResponse<ConversationInfo> =
-            await runUpdateTopic({
-              id: params.conversationId,
-              firstMessage: params.message,
-            });
-
-          // 更新会话信息
-          setConversationInfo({
-            ...currentInfo,
-            topicUpdated: result.data?.topicUpdated,
-            topic: result.data?.topic,
-          });
-
-          if (!isAppSidebarMode) {
-            eventBus.emit(EVENT_TYPE.RefreshConversationList, {
-              conversationId: params.conversationId,
-              reason: 'topic-updated',
-            });
-          }
-
-          // 如果是应用智能体模式，则同步更新当前智能体的会话记录
-          if (isAppSidebarMode) {
-            // 如果是会话聊天页（chat页），同步更新会话记录
-            runHistory({
-              agentId: currentInfo.agentId,
-              limit: 8,
-            });
-          } else {
-            // 如果是会话聊天页（chat页），同步更新会话记录
-            runHistory({
-              agentId: null,
-              limit: 5,
-            });
-
-            // 获取当前智能体的历史记录
-            runHistoryItem({
-              agentId: currentInfo.agentId,
-              limit: 20,
-            });
-          }
-        } catch (error) {
-          console.error('Failed to update session theme:', error);
-          // 更新失败时重置标志，允许下次重试
-          needUpdateTopicRef.current = true;
-        }
-      }
-    },
-    [runUpdateTopic, runHistory, runHistoryItem, isAppSidebarMode],
-  );
 
   // 处理变量参数
   const handleVariables = (_variables: BindConfigWithSub[]) => {
@@ -1460,9 +1377,9 @@ export default () => {
             res.data.ext.map((item: MessageQuestionExtInfo) => item.content),
           );
         }
-        // 第一次收到消息后更新主题（仅调用一次）
-        // 新路径先分发：shadow 只记录计划（不置「仅一次」标记）；切 live 后由 Adapter
-        // 置标记并执行，旧 updateTopicOnce 的 gate 随之不通过——天然防双发，随后删除。
+        // 第一次收到消息后更新主题（仅调用一次）：gate 在调用点判定，执行经
+        // Runtime.effects → mainChat Adapter（置「仅一次」标记、HTTP、写回快照、
+        // 列表/历史刷新；失败回滚标记允许重试）。
         const topicSnapshot = conversationInfo ?? data;
         if (
           isSync &&
@@ -1477,7 +1394,6 @@ export default () => {
             currentInfo: topicSnapshot,
           });
         }
-        updateTopicOnce(params, conversationInfo ?? data, isSync);
 
         // 现在逻辑已重构为同步，按序处理所有包，包括带有 finished: true 的结束包。
         handleChangeMessageList(params, res, currentMessageId);

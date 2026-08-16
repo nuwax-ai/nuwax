@@ -628,7 +628,7 @@ describe('conversationInfo model', () => {
     });
   });
 
-  it('Phase5 shadow：首轮消息触发主题更新计划，与旧 updateTopicOnce 行为一致', async () => {
+  it('Phase5 live：首轮消息经 Runtime.effects 触发主题更新，行为与原路径一致', async () => {
     const { result } = renderHook(() => useConversationInfo());
     // 设置未更新过主题的会话信息（gate 通过）
     await act(async () => {
@@ -654,7 +654,7 @@ describe('conversationInfo model', () => {
       } as ConversationChatResponse);
     });
 
-    // 新路径记录 topic.update 计划（shadow：不执行，防与旧路径双发）
+    // 新路径分发 topic.update 计划（携带发起时快照）
     const planned = mockLogEffectDispatch.mock.calls.map(
       ([entry]) => entry.effect,
     );
@@ -664,7 +664,7 @@ describe('conversationInfo model', () => {
       firstMessage: '你好',
       currentInfo: expect.objectContaining({ id: 1001, topicUpdated: 0 }),
     });
-    // 旧路径执行：成功后刷新侧栏列表（topic-updated），与计划语义一致
+    // Adapter 执行：成功后刷新侧栏列表（topic-updated），与原路径行为一致
     await act(async () => {
       await Promise.resolve();
       await Promise.resolve();

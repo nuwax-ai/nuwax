@@ -81,7 +81,17 @@ const topicUpdate: ConversationEffect = {
 };
 
 const createMainAdapter = () =>
-  createMainChatEffectsAdapter({ fetchSuggest: mockFetchSuggest });
+  createMainChatEffectsAdapter({
+    fetchSuggest: mockFetchSuggest,
+    updateTopic: vi.fn(),
+    setConversationInfo: vi.fn(),
+    needUpdateTopicRef: { current: true },
+    getTopicContext: () => ({
+      isAppSidebarMode: false,
+      runHistory: vi.fn(),
+      runHistoryItem: vi.fn(),
+    }),
+  });
 
 const createPreviewAdapter = () =>
   createPreviewEffectsAdapter({ fetchSuggest: mockFetchSuggest });

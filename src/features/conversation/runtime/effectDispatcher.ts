@@ -34,7 +34,7 @@ export type ConversationEffect =
     }
   | {
       type: 'topic.update';
-      conversationId: number | string;
+      conversationId: number;
       firstMessage: string;
       /** 发起时的会话信息快照：成功后以此快照为基底合并主题字段（保持原有覆盖语义）。 */
       currentInfo: ConversationInfo;

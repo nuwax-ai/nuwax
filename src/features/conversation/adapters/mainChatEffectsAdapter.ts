@@ -29,7 +29,7 @@ export interface MainChatEffectsAdapterDeps {
   fetchSuggest: (params: ConversationChatSuggestParams) => void;
   /** 更新会话主题（model 的 useRequest runAsync 句柄，经 ref 转发保持最新闭包）。 */
   updateTopic: (input: {
-    id: number | string;
+    id: number;
     firstMessage: string;
   }) => Promise<RequestResponse<ConversationInfo>>;
   /** 写回会话信息（React setState，稳定引用）。 */
