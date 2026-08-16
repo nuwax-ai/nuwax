@@ -62,6 +62,8 @@ vi.mock('@/utils/conversationTaskStatusSync', () => ({
 
 vi.mock('@/features/conversation/domain/taskStatus', () => ({
   resolveTaskStatusFromMessageLists: vi.fn(),
+  isTerminalTaskStatus: (status: TaskStatus | undefined) =>
+    status !== undefined && status !== TaskStatus.EXECUTING,
 }));
 
 import { resolveTaskStatusFromMessageLists } from '@/features/conversation/domain/taskStatus';

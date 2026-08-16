@@ -1,12 +1,12 @@
 import { EVENT_TYPE } from '@/constants/event.constants';
 import { GLOBAL_POLLING_INTERVAL } from '@/constants/home.constants';
-import { resolveTaskStatusFromMessageLists } from '@/features/conversation/domain/taskStatus';
 import { createResumeConsistencyController } from '@/features/conversation/runtime/resumeConsistencyController';
 import {
   createSnapshotConsistencyController,
   type SnapshotDecision,
   type SnapshotRequestToken,
 } from '@/features/conversation/runtime/snapshotConsistencyController';
+import { createTerminalConsistencyController } from '@/features/conversation/runtime/terminalConsistencyController';
 import { AssistantRoleEnum, TaskStatus } from '@/types/enums/agent';
 import type {
   ConversationInfo,
@@ -163,6 +163,11 @@ export function useConversationStreamResume(
   );
   const resumeConsistencyControllerRef = useRef(
     createResumeConsistencyController(),
+  );
+  const terminalConsistencyControllerRef = useRef(
+    createTerminalConsistencyController({
+      fetchTaskStatus: (id) => fetchConversationTaskStatus(id),
+    }),
   );
   const scheduledRequestTokenRef = useRef<SnapshotRequestToken | undefined>();
   const prevLocallyStreamingForPollRef = useRef(!!isLocallyStreaming);
@@ -369,30 +374,21 @@ export function useConversationStreamResume(
         }
         // sub 关闭后从本地 messageList 的 finalResult 解析终态（FINAL_RESULT 已落本地）；
         // 不再 reload 历史——reload 会整体覆盖 messageList，正是会话结束闪烁的来源。
-        const resolvedFromMessages = resolveTaskStatusFromMessageLists(
-          latestRef.current.messageList,
-        );
-        if (resolvedFromMessages) {
-          onTerminalTaskStatusRef.current?.(resolvedFromMessages);
-          // 终态已确认：同步补偿「最近使用/会话记录」列表（本地补丁）
-          emitConversationListTaskStatus(id, resolvedFromMessages);
-        } else {
-          try {
-            const terminalStatus = await fetchConversationTaskStatus(id);
-            if (
-              terminalStatus !== undefined &&
-              terminalStatus !== TaskStatus.EXECUTING
-            ) {
-              onTerminalTaskStatusRef.current?.(terminalStatus);
-              // 终态已确认：同步补偿「最近使用/会话记录」列表（本地补丁）
-              emitConversationListTaskStatus(id, terminalStatus);
-            }
-          } catch (e) {
-            console.error(
-              '[useConversationStreamResume] sync terminal taskStatus failed:',
-              e,
+        try {
+          const terminalDecision =
+            await terminalConsistencyControllerRef.current.confirmAfterStreamClose(
+              id,
+              latestRef.current.messageList,
             );
+          if (terminalDecision.type === 'terminal.confirmed') {
+            onTerminalTaskStatusRef.current?.(terminalDecision.status);
+            emitConversationListTaskStatus(id, terminalDecision.status);
           }
+        } catch (e) {
+          console.error(
+            '[useConversationStreamResume] sync terminal taskStatus failed:',
+            e,
+          );
         }
 
         // 终态同步完成后再恢复轮询，避免 EXECUTING 期间误重订阅 sub
