@@ -69,11 +69,58 @@ const suggestFetch: ConversationEffect = {
   params: { conversationId: 1001, message: 'hello' } as never,
 };
 
+const topicUpdate: ConversationEffect = {
+  type: 'topic.update',
+  conversationId: 1001,
+  firstMessage: '你好',
+  currentInfo: {
+    id: 1001,
+    agentId: 9,
+    topicUpdated: 0,
+  } as never,
+};
+
 const createMainAdapter = () =>
   createMainChatEffectsAdapter({ fetchSuggest: mockFetchSuggest });
 
 const createPreviewAdapter = () =>
   createPreviewEffectsAdapter({ fetchSuggest: mockFetchSuggest });
+
+/** 构建带主题更新依赖的 mainChat Adapter（成功/失败与两种侧栏模式可配） */
+const createTopicAdapter = (
+  overrides: {
+    updateTopicResult?: Promise<unknown>;
+    isAppSidebarMode?: boolean;
+  } = {},
+) => {
+  const setConversationInfo = vi.fn();
+  const needUpdateTopicRef = { current: true };
+  const runHistory = vi.fn();
+  const runHistoryItem = vi.fn();
+  const adapter = createMainChatEffectsAdapter({
+    fetchSuggest: mockFetchSuggest,
+    updateTopic: vi.fn().mockReturnValue(
+      overrides.updateTopicResult ??
+        Promise.resolve({
+          data: { topic: '新主题', topicUpdated: 1 },
+        }),
+    ) as never,
+    setConversationInfo: setConversationInfo as never,
+    needUpdateTopicRef: needUpdateTopicRef as never,
+    getTopicContext: () => ({
+      isAppSidebarMode: overrides.isAppSidebarMode ?? false,
+      runHistory,
+      runHistoryItem,
+    }),
+  });
+  return {
+    adapter,
+    setConversationInfo,
+    needUpdateTopicRef,
+    runHistory,
+    runHistoryItem,
+  };
+};
 
 describe('effectDispatcher', () => {
   beforeEach(() => {
@@ -185,6 +232,75 @@ describe('mainChatEffectsAdapter', () => {
     expect(mockFetchSuggest).toHaveBeenCalledWith(suggestFetch.params);
     expect(mockEventBusEmit).not.toHaveBeenCalled();
   });
+
+  it('topic.update 成功后写回快照、刷新列表与历史，并落下「仅一次」标记', async () => {
+    const {
+      adapter,
+      setConversationInfo,
+      needUpdateTopicRef,
+      runHistory,
+      runHistoryItem,
+    } = createTopicAdapter();
+
+    adapter.dispatch(topicUpdate);
+    // 异步执行体：等待 updateTopic promise 链
+    await vi.waitFor(() => {
+      expect(setConversationInfo).toHaveBeenCalled();
+    });
+
+    expect(setConversationInfo).toHaveBeenCalledWith({
+      id: 1001,
+      agentId: 9,
+      topicUpdated: 1,
+      topic: '新主题',
+    });
+    // 非侧栏模式：刷新侧栏列表 + 双历史拉取
+    expect(mockEventBusEmit).toHaveBeenCalledWith(
+      EVENT_TYPE.RefreshConversationList,
+      { conversationId: 1001, reason: 'topic-updated' },
+    );
+    expect(runHistory).toHaveBeenCalledWith({ agentId: null, limit: 5 });
+    expect(runHistoryItem).toHaveBeenCalledWith({ agentId: 9, limit: 20 });
+    expect(needUpdateTopicRef.current).toBe(false);
+  });
+
+  it('topic.update 应用侧栏模式走单历史分支且不发列表刷新', async () => {
+    const { adapter, runHistory, runHistoryItem } = createTopicAdapter({
+      isAppSidebarMode: true,
+    });
+
+    adapter.dispatch(topicUpdate);
+    await vi.waitFor(() => {
+      expect(runHistory).toHaveBeenCalled();
+    });
+
+    expect(runHistory).toHaveBeenCalledWith({ agentId: 9, limit: 8 });
+    expect(runHistoryItem).not.toHaveBeenCalled();
+    expect(
+      mockEventBusEmit.mock.calls.filter(
+        ([type]) => type === EVENT_TYPE.RefreshConversationList,
+      ),
+    ).toEqual([]);
+  });
+
+  it('topic.update 失败时回滚「仅一次」标记允许重试', async () => {
+    const { adapter, needUpdateTopicRef, setConversationInfo } =
+      createTopicAdapter({
+        updateTopicResult: Promise.reject(new Error('network')),
+      });
+
+    adapter.dispatch(topicUpdate);
+    await vi.waitFor(() => {
+      expect(needUpdateTopicRef.current).toBe(true);
+    });
+
+    expect(setConversationInfo).not.toHaveBeenCalled();
+    expect(
+      mockEventBusEmit.mock.calls.filter(
+        ([type]) => type === EVENT_TYPE.RefreshConversationList,
+      ),
+    ).toEqual([]);
+  });
 });
 
 describe('previewEffectsAdapter', () => {
@@ -208,9 +324,10 @@ describe('previewEffectsAdapter', () => {
     expect(mockFetchSuggest).toHaveBeenCalledWith(suggestFetch.params);
   });
 
-  it('忽略乐观标记与列表刷新（隔离子集）', () => {
+  it('忽略乐观标记、列表刷新与主题更新（隔离子集）', () => {
     createPreviewAdapter().dispatch(optimisticPatch);
     createPreviewAdapter().dispatch(listRefresh);
+    createPreviewAdapter().dispatch(topicUpdate);
 
     expect(mockEmitConversationListTaskStatus).not.toHaveBeenCalled();
     expect(mockEventBusEmit).not.toHaveBeenCalled();

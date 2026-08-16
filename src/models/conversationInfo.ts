@@ -183,10 +183,27 @@ export default () => {
   >([]);
   const messageViewRef = useRef<HTMLDivElement | null>(null);
   const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // 是否需要更新主题（提前声明：Effects Adapter 的 topic.update 执行体持有该标记）
+  const needUpdateTopicRef = useRef<boolean>(true);
   // 建议拉取句柄经 ref 转发给 Effects Adapter（useRequest 句柄在下方定义，render 期刷新）
   const runChatSuggestRef = useRef<
     ((params: ConversationChatSuggestParams) => void) | null
   >(null);
+  // 主题更新句柄经 ref 转发给 Effects Adapter（runUpdateTopic 在下方定义，render 期刷新）
+  const runUpdateTopicRef = useRef<
+    | ((input: {
+        id: number | string;
+        firstMessage: string;
+      }) => Promise<RequestResponse<ConversationInfo>>)
+    | null
+  >(null);
+  // 主题更新成功后的列表/历史刷新上下文（侧栏模式与历史句柄跨 render 变化，render 期刷新）
+  const topicContextRef = useRef({
+    isAppSidebarMode,
+    runHistory,
+    runHistoryItem,
+  });
+  topicContextRef.current = { isAppSidebarMode, runHistory, runHistoryItem };
   const conversationRuntimeRef = useRef<ConversationRuntime | null>(null);
   if (!conversationRuntimeRef.current) {
     conversationRuntimeRef.current = createConversationRuntime(
@@ -195,12 +212,21 @@ export default () => {
         reconcileFinalMessage: reconcileFinalMessageState,
       },
       {
-        // Phase 5：recent/taskStatus 与 suggest.fetch 均已切 live，
-        // 副作用统一经 Runtime.effects → 入口 Adapter 执行。
+        // Phase 5：recent/taskStatus 与 suggest.fetch 已切 live；topic.update 当前 shadow——
+        // 旧 updateTopicOnce 继续执行，Runtime.effects 只记录计划，对照一致后切 live 并删旧路径。
         effectsAdapter: createMainChatEffectsAdapter({
           fetchSuggest: (params) => runChatSuggestRef.current?.(params),
+          updateTopic: (input) =>
+            runUpdateTopicRef.current?.(input) ??
+            Promise.resolve({
+              data: undefined,
+            } as RequestResponse<ConversationInfo>),
+          setConversationInfo,
+          needUpdateTopicRef,
+          getTopicContext: () => topicContextRef.current,
         }),
         effectDispatchMode: 'live',
+        shadowEffectTypes: ['topic.update'],
       },
     );
   }
@@ -217,8 +243,6 @@ export default () => {
   // 调试结果
   const [finalResult, setFinalResult] =
     useState<ConversationFinalResult | null>(null);
-  // 是否需要更新主题
-  const needUpdateTopicRef = useRef<boolean>(true);
   // 展示台卡片列表
   const [cardList, setCardList] = useState<CardInfo[]>([]);
   // 是否正在加载会话
@@ -605,6 +629,8 @@ export default () => {
       );
     },
   });
+  // render 期刷新 ref，供 Effects Adapter 的 topic.update 执行体读取最新句柄
+  runUpdateTopicRef.current = runUpdateTopic;
 
   /**
    * 更新会话主题（仅在会话开始时调用一次）
@@ -1435,6 +1461,22 @@ export default () => {
           );
         }
         // 第一次收到消息后更新主题（仅调用一次）
+        // 新路径先分发：shadow 只记录计划（不置「仅一次」标记）；切 live 后由 Adapter
+        // 置标记并执行，旧 updateTopicOnce 的 gate 随之不通过——天然防双发，随后删除。
+        const topicSnapshot = conversationInfo ?? data;
+        if (
+          isSync &&
+          topicSnapshot &&
+          topicSnapshot?.topicUpdated !== 1 &&
+          needUpdateTopicRef.current
+        ) {
+          conversationRuntime.effects.dispatch({
+            type: 'topic.update',
+            conversationId: params.conversationId,
+            firstMessage: params.message,
+            currentInfo: topicSnapshot,
+          });
+        }
         updateTopicOnce(params, conversationInfo ?? data, isSync);
 
         // 现在逻辑已重构为同步，按序处理所有包，包括带有 finished: true 的结束包。

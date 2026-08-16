@@ -23,6 +23,14 @@ const summarizeEffect = (effect: ConversationEffect) => {
       messageLength: (effect.params?.message || '').length,
     };
   }
+  if (effect.type === 'topic.update') {
+    return {
+      type: effect.type,
+      conversationId: effect.conversationId,
+      firstMessageLength: (effect.firstMessage || '').length,
+      topicUpdated: effect.currentInfo?.topicUpdated,
+    };
+  }
   return {
     type: effect.type,
     conversationId: effect.conversationId,

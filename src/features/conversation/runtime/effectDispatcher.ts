@@ -31,6 +31,13 @@ export type ConversationEffect =
   | {
       type: 'suggest.fetch';
       params: ConversationChatSuggestParams;
+    }
+  | {
+      type: 'topic.update';
+      conversationId: number | string;
+      firstMessage: string;
+      /** 发起时的会话信息快照：成功后以此快照为基底合并主题字段（保持原有覆盖语义）。 */
+      currentInfo: ConversationInfo;
     };
 
 /** 入口注入的副作用执行器：主 Chat 全量执行，隔离 Preview 执行允许子集。 */

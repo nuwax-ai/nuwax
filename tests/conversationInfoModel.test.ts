@@ -628,6 +628,53 @@ describe('conversationInfo model', () => {
     });
   });
 
+  it('Phase5 shadow：首轮消息触发主题更新计划，与旧 updateTopicOnce 行为一致', async () => {
+    const { result } = renderHook(() => useConversationInfo());
+    // 设置未更新过主题的会话信息（gate 通过）
+    await act(async () => {
+      result.current.setConversationInfo({
+        id: 1001,
+        agentId: 9,
+        topicUpdated: 0,
+      } as never);
+    });
+    await act(async () => {
+      await result.current.onMessageSend({ id: 1001, messageInfo: '你好' });
+    });
+    await act(async () => {
+      sseHandlers.onMessage?.({
+        requestId: 'req-topic',
+        eventType: ConversationEventTypeEnum.MESSAGE,
+        data: {
+          id: 'output-topic',
+          type: MessageModeEnum.CHAT,
+          text: '答',
+          finished: false,
+        },
+      } as ConversationChatResponse);
+    });
+
+    // 新路径记录 topic.update 计划（shadow：不执行，防与旧路径双发）
+    const planned = mockLogEffectDispatch.mock.calls.map(
+      ([entry]) => entry.effect,
+    );
+    expect(planned).toContainEqual({
+      type: 'topic.update',
+      conversationId: 1001,
+      firstMessage: '你好',
+      currentInfo: expect.objectContaining({ id: 1001, topicUpdated: 0 }),
+    });
+    // 旧路径执行：成功后刷新侧栏列表（topic-updated），与计划语义一致
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(mockEventBusEmit).toHaveBeenCalledWith(
+      EVENT_TYPE.RefreshConversationList,
+      { conversationId: 1001, reason: 'topic-updated' },
+    );
+  });
+
   it('checkConversationActive：无忙碌消息时置为非活跃', async () => {
     const { result } = renderHook(() => useConversationInfo());
 
