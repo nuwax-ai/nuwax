@@ -5,7 +5,7 @@ import {
   hasActiveStreamingInMessages,
   hasExecutingProcessingInRecentMessages,
   isSessionStreamBusy,
-} from '@/hooks/useExecutingTaskStatusPoll';
+} from '@/features/conversation/domain/runtimeSelectors';
 import { MessageStatusEnum, ProcessingEnum } from '@/types/enums/common';
 import { describe, expect, it } from 'vitest';
 

@@ -58,13 +58,16 @@ vi.mock('@/utils/conversationTaskStatusSync', () => ({
   emitConversationListTaskStatus: vi.fn(),
   fetchConversationSnapshot: vi.fn(),
   fetchConversationTaskStatus: vi.fn(),
+}));
+
+vi.mock('@/features/conversation/domain/taskStatus', () => ({
   resolveTaskStatusFromMessageLists: vi.fn(),
 }));
 
+import { resolveTaskStatusFromMessageLists } from '@/features/conversation/domain/taskStatus';
 import {
   fetchConversationSnapshot,
   fetchConversationTaskStatus,
-  resolveTaskStatusFromMessageLists,
 } from '@/utils/conversationTaskStatusSync';
 
 describe('useConversationStreamResume', () => {

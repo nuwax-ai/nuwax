@@ -1,5 +1,5 @@
 import type { AgentMode } from '@/components/business-component/AgentIntervention';
-import { isSessionStreamBusy } from '@/hooks/useExecutingTaskStatusPoll';
+import { isSessionStreamBusy } from '@/features/conversation/domain/runtimeSelectors';
 import { TaskStatus } from '@/types/enums/agent';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';

@@ -1,4 +1,4 @@
-import { isSessionStreamBusy } from '@/hooks/useExecutingTaskStatusPoll';
+import { isSessionStreamBusy } from '@/features/conversation/domain/runtimeSelectors';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import { useCallback, useEffect, useMemo, useRef } from 'react';

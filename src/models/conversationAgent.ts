@@ -20,7 +20,11 @@ import {
   MESSAGE_PAGE_SIZE,
 } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
-import { isSessionStreamBusy } from '@/hooks/useExecutingTaskStatusPoll';
+import { isSessionStreamBusy } from '@/features/conversation/domain/runtimeSelectors';
+import {
+  mergeConversationInfoTaskStatus,
+  resolveTerminalTaskStatus,
+} from '@/features/conversation/domain/taskStatus';
 import { useResumeStreamHandlers } from '@/hooks/useResumeStreamHandlers';
 import { getCustomBlock } from '@/plugins/ds-markdown-process';
 import {
@@ -60,8 +64,6 @@ import {
   applyTerminalTaskStatus,
   createSyncConversationTaskStatus,
   emitConversationListTaskStatus,
-  mergeConversationInfoTaskStatus,
-  resolveTerminalTaskStatus,
   subscribeChatFinishedTaskSync,
   syncTerminalConversationTaskStatus,
 } from '@/utils/conversationTaskStatusSync';

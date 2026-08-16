@@ -34,6 +34,13 @@ vi.mock('@/constants/event.constants', () => ({
   },
 }));
 
+import {
+  isTerminalTaskStatus,
+  mergeConversationInfoTaskStatus,
+  resolveTaskStatusFromMessageList,
+  resolveTaskStatusFromMessageLists,
+  resolveTerminalTaskStatus,
+} from '@/features/conversation/domain/taskStatus';
 import { apiAgentConversation } from '@/services/agentConfig';
 import { AssistantRoleEnum, TaskStatus } from '@/types/enums/agent';
 import {
@@ -42,11 +49,6 @@ import {
   fetchConversationSnapshot,
   fetchConversationTaskStatus,
   hasExecutingTaskInList,
-  isTerminalTaskStatus,
-  mergeConversationInfoTaskStatus,
-  resolveTaskStatusFromMessageList,
-  resolveTaskStatusFromMessageLists,
-  resolveTerminalTaskStatus,
   subscribeChatFinished,
   subscribeChatFinishedTaskSync,
   syncTerminalConversationTaskStatus,

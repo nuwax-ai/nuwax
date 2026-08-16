@@ -11,7 +11,7 @@ import PermissionMask from '@/components/PermissionMask';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
-import { isSessionStreamBusy } from '@/hooks/useExecutingTaskStatusPoll';
+import { isSessionStreamBusy } from '@/features/conversation/domain/runtimeSelectors';
 import useSubscription from '@/hooks/useSubscription';
 import { t } from '@/services/i18nRuntime';
 import { DefaultSelectedEnum, TaskStatus } from '@/types/enums/agent';

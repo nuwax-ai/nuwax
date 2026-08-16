@@ -1,5 +1,6 @@
 import { EVENT_TYPE } from '@/constants/event.constants';
 import { GLOBAL_POLLING_INTERVAL } from '@/constants/home.constants';
+import { resolveTaskStatusFromMessageLists } from '@/features/conversation/domain/taskStatus';
 import { AssistantRoleEnum, TaskStatus } from '@/types/enums/agent';
 import { MessageStatusEnum } from '@/types/enums/common';
 import type {
@@ -16,7 +17,6 @@ import {
   emitConversationListTaskStatus,
   fetchConversationSnapshot,
   fetchConversationTaskStatus,
-  resolveTaskStatusFromMessageLists,
 } from '@/utils/conversationTaskStatusSync';
 import eventBus from '@/utils/eventBus';
 import {
