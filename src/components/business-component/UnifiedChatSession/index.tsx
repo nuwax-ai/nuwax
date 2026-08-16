@@ -15,6 +15,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 
 import { ENABLE_CHAT_MESSAGE_QUEUE } from '@/constants/feature.constants';
 import { selectConversationSessionView } from '@/features/conversation/domain/sessionView';
+import { useConversationStreamResume } from '@/features/conversation/react/useConversationStreamResume';
 import { dict } from '@/services/i18nRuntime';
 import { DefaultSelectedEnum, TaskStatus } from '@/types/enums/agent';
 import { AgentTypeEnum } from '@/types/enums/space';
@@ -26,7 +27,6 @@ import type {
 } from '@/types/interfaces/openUi';
 import ChatContentArea from './components/ChatContentArea';
 import ChatInputHomeIndependent from './components/ChatInputHomeIndependent';
-import { useConversationStreamResume } from './hooks/useConversationStreamResume';
 import { useLoadMoreHistory } from './hooks/useLoadMoreHistory';
 import { useUnifiedChatScroll } from './hooks/useUnifiedChatScroll';
 

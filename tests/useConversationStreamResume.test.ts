@@ -1,7 +1,7 @@
 /**
  * useConversationStreamResume 轮询终态写回测试
  */
-import { useConversationStreamResume } from '@/components/business-component/UnifiedChatSession/hooks/useConversationStreamResume';
+import { useConversationStreamResume } from '@/features/conversation/react/useConversationStreamResume';
 import { AssistantRoleEnum, TaskStatus } from '@/types/enums/agent';
 import { MessageStatusEnum } from '@/types/enums/common';
 import { act, renderHook } from '@testing-library/react';

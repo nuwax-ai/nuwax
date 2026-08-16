@@ -204,12 +204,9 @@ vi.mock(
   }),
 );
 
-vi.mock(
-  '@/components/business-component/UnifiedChatSession/hooks/useConversationStreamResume',
-  () => ({
-    useConversationStreamResume: vi.fn(),
-  }),
-);
+vi.mock('@/features/conversation/react/useConversationStreamResume', () => ({
+  useConversationStreamResume: vi.fn(),
+}));
 
 class ResizeObserverStub {
   observe() {}
