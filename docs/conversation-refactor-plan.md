@@ -15,8 +15,8 @@
 | Phase 3 历史一致性 | 核心策略已完成 | snapshot generation/visibility 单飞/USER 尾拒绝、历史 USER 等待、5 秒冷却、sub 退避、终态 fallback |
 | Phase 4 Runtime Factory | 核心纵切已完成 | 主/隔离 model 已创建独立 Runtime 实例；Runtime 已拥有输出身份、live/sub 连接所有权；resumeController 已迁入 runtime/；双实例合同测试覆盖投影一致与交叉隔离 |
 | Phase 5 Effects Adapter | 已完成（5/6 项迁移，1 项决策不迁移） | recent/taskStatus、suggest.fetch、topic.update、page/card/desktop 与 file/Git/task-result：ConversationEffect + 主/隔离双 Adapter + Runtime.effects 分发已切 live，旧直调路径已删除；perf/scroll 经 deletion test 判定为不迁移项（见 0.2） |
-| Phase 6 React Interface | 进行中（前四纵切已落地） | `ConversationSessionView` 聚合选择器已落地（domain/sessionView.ts + 合同测试）；`useUnifiedChatQueue` 已删除对全局 model 的默认读取；Facade `sessionView` Props 已并存（注入优先、未注入内部派生，两处 UI 推导已切 session 字段）；轮询编排 `useConversationStreamResume` 已迁出 View（features/conversation/react/）。剩余：Provider/队列与干预状态上提、逐入口迁移、Intervention handler Facade、删旧 Props |
-| Phase 7 清理固化 | 未开始 | 双 model 外壳、兼容导出与临时诊断仍保留 |
+| Phase 6 React Interface | 进行中（第 1-4 项已完成） | Session View selectors、Queue 全局读取删除、Facade sessionView 并存、轮询编排迁出 View、五入口 `createConversationSessionModel` 统一状态组合、Intervention handler 全入口显式注入（layer 不再读全局 model）均已落地。剩余：queue/intervention 状态上提 Provider（sessionView 完整注入）、删旧 Props |
+| Phase 7 清理固化 | 未开始 | 双 model 外壳、shadow 诊断通道（分片迁移机制，保留供后续片使用）、ADR 与依赖规则待做 |
 
 当前迁移保持旧 model 对外 Interface 不变。Phase 3 的策略已经集中，但 snapshot 的最终写权限仍通过兼容回调进入 model；该部分将在 Runtime 接管 message state 后删除，不能提前机械搬移。
 
@@ -27,6 +27,8 @@
 ### 0.2 迁移决策记录（2026-08-16）
 
 - Phase 6 第一纵切：`domain/sessionView.ts` 落地方案 §5.6 的 `ConversationSessionView` 聚合选择器（phase/canSendNow/shouldEnqueue/canPollSnapshot/shouldShowStop/shouldShowTaskWait/shouldShowSuggest/queueGate），聚合既有 runtimeSelectors，10 条合同测试冻结语义（Interface 即测试 Surface）。纯新增，页面未切换——为 Facade Props 并存铺路。
+- Phase 6 第五纵切（第 2 项逐入口迁移）：`react/createConversationSessionModel.ts` 入口级会话构建器落地（吸收 Chat 页的「完整活跃 = 本地流式 || 后台 EXECUTING」合成规则，§2.3 状态组合不再泄漏给页面）；五个渲染入口（Chat/LeftContent、ConversationAgent 预览 Tab、AgentConversationChatPanel、EditAgent/PreviewAndDebug、Plugin/SpacePluginTool）全部切换消费，各自删除内联合成。
+- Phase 6 第六纵切（第 4 项 Intervention Facade）：五个入口显式注入 `interventionHandlers`（各归属 model 的 respondAcpPermission/respondMcpAsk），`useAgentInterventionLayer` 删除 `useModel('conversationInfo')` 默认读取——干预回执来源全部由入口声明，未注入场景为显式 noop。
 - Phase 6 第三纵切（第 1 项 Facade Props 并存）：UnifiedChatSession 新增可选 `sessionView` prop（§6.4 三对象之首），注入优先、未注入时内部以 selectConversationSessionView 派生（兼容并存）；`showTaskExecutingWait`/`shouldShowSessionSuggest` 两处 UI 推导改为读 session 语义字段，删除组件内 selector 组合。组件级测试新增「注入覆盖内部派生」合同。注意：入口完整注入 sessionView 依赖队列/干预状态上提（Provider 化），属 Phase 6 后半工程。
 - Phase 6 第四纵切（第 5 项轮询移出 View 前半）：`useConversationStreamResume` 从 UnifiedChatSession/hooks 迁至 `features/conversation/react/`（§4 react 层；§5.4 轮询归一致性域），View 不再拥有轮询编排文件，import 与测试同步更新（行为零变化）。
 - Phase 6 第二纵切（§6.3 / Phase 6 第 3 项）：`useUnifiedChatQueue` 删除 `useModel('conversationInfo')` 默认读取，队列上下文由 UnifiedChatSession 以自身 props 构造默认值（isLocallyStreaming ?? isConversationActive 与 conversationInfo?.taskStatus），隔离入口仍显式传 queueContext 覆盖。数据流不变，来源从「全局 model 兜底」改为「页面注入」。
