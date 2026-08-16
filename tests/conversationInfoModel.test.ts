@@ -709,7 +709,7 @@ describe('conversationInfo model', () => {
     );
   });
 
-  it('Phase5 shadow：TaskAgent 终局计划保序后处理，旧路径仍执行', async () => {
+  it('Phase5 live：TaskAgent 终局经 Runtime.effects 分发保序后处理', async () => {
     const { result } = renderHook(() => useConversationInfo());
     // 设置 TaskAgent 会话（gate 通过）
     await act(async () => {

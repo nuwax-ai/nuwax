@@ -629,8 +629,8 @@ export default () => {
         reconcileFinalMessage: reconcileFinalMessageState,
       },
       {
-        // Phase 5：recent/taskStatus、suggest.fetch、topic.update 与
-        // page/card/desktop 均已切 live，副作用统一经 Runtime.effects → 入口 Adapter。
+        // Phase 5：recent/taskStatus、suggest.fetch、topic.update、page/card/desktop
+        // 与 file/Git/task-result 均已切 live，副作用统一经 Runtime.effects → 入口 Adapter。
         effectsAdapter: createMainChatEffectsAdapter({
           fetchSuggest: (params) => runChatSuggestRef.current?.(params),
           updateTopic: (input) =>
@@ -657,7 +657,6 @@ export default () => {
           setFileTreeRefreshTrigger,
         }),
         effectDispatchMode: 'live',
-        shadowEffectTypes: ['preview.file.refresh', 'taskResult.settle'],
       },
     );
   }
@@ -1140,7 +1139,7 @@ export default () => {
           });
         }
 
-        // 通用型任务处理(刷新文件树)
+        // 通用型任务处理(刷新文件树)：经 Runtime.effects → 入口 Adapter 节流刷新
         if (
           data.type === AgentComponentTypeEnum.ToolCall &&
           isFileTreeVisibleRef.current && // 是否已经打开文件预览窗口
@@ -1148,13 +1147,11 @@ export default () => {
           // 使用当前会话请求的 conversationId，避免闭包中 conversationInfo 还是旧值
           params.conversationId
         ) {
-          // 刷新文件树（新路径 shadow 计划 + 旧路径执行）
           conversationRuntime.effects.dispatch({
             type: 'preview.file.refresh',
             conversationId: params.conversationId,
             mode: 'throttled',
           });
-          handleRefreshFileList(params.conversationId);
         }
       }
       // FINAL_RESULT事件
@@ -1223,12 +1220,13 @@ export default () => {
         }
 
         setTimeout(async () => {
-          // 会话结束后，如果是通用型任务，则刷新文件树，避免用户点击生成的文件时，无法定位到文件树中的文件，因为此时文件树未更新
+          // 会话结束后，如果是通用型任务，则刷新文件树，避免用户点击生成的文件时，无法定位到文件树中的文件，因为此时文件树未更新。
+          // 保序后处理（立即刷树 → Git → 文件选中/打开 → 兜底 trigger）经 Runtime.effects
+          // → 入口 Adapter 执行，时序与原路径逐行等价。
           if (
             params.conversationId &&
             conversationInfoRef.current?.agent?.type === AgentTypeEnum.TaskAgent
           ) {
-            // 新路径（shadow）：只记录保序后处理计划（立即刷树 → Git → 文件选中/打开 → 兜底 trigger）
             conversationRuntime.effects.dispatch({
               type: 'taskResult.settle',
               conversationId: params.conversationId,
@@ -1237,46 +1235,6 @@ export default () => {
                 conversationInfoRef.current?.agent?.enableVersionControl,
               ),
             });
-
-            // 刷新文件树
-            await refreshFileListImmediately(params.conversationId);
-
-            // 开启版本管理时，同步刷新 Git 源代码管理列表
-            if (
-              isAgentVersionControlEnabled(
-                conversationInfoRef.current?.agent?.enableVersionControl,
-              )
-            ) {
-              void refreshGitListRef.current?.();
-            }
-
-            const taskResult = extractTaskResult(data.outputText);
-            let selectedFileInTaskResult = false;
-            // 如果有任务结果，并且有文件，则打开预览视图
-            if (taskResult.hasTaskResult && taskResult.file) {
-              // 打开预览视图
-              openPreviewView(params.conversationId);
-              const fileId = taskResult.file
-                ?.split(`${params.conversationId}/`)
-                .pop();
-              // 如果文件ID存在，则设置文件ID
-              if (fileId) {
-                setTaskAgentSelectedFileId(fileId);
-                // 每次设置文件ID时更新触发标志，确保即使文件ID相同也能触发文件选择
-                setTaskAgentSelectTrigger(Date.now());
-                selectedFileInTaskResult = true;
-              }
-            }
-
-            // 兜底：本次最终输出未携带指向当前打开文件的 <task-result><file>
-            // （或 file 指向其他文件），既有“树长度变化 / task-result 命中 / 手动刷新”
-            // 三条正文刷新路径均未触发，文件树刷新完成后正文仍停留在旧内容。
-            // 此处发出 trigger，通知页面层在树刷新完成后重拉当前打开文件的正文。
-            // 仅 FINAL_RESULT 一次性触发，不作用于流式 tool_call 的树刷新路径，
-            // 避免会话输出过程中当前打开文件被高频重拉。
-            if (!selectedFileInTaskResult) {
-              setFileTreeRefreshTrigger(Date.now());
-            }
           }
         }, 0);
 
