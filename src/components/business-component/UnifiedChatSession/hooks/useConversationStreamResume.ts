@@ -1,6 +1,11 @@
 import { EVENT_TYPE } from '@/constants/event.constants';
 import { GLOBAL_POLLING_INTERVAL } from '@/constants/home.constants';
 import { resolveTaskStatusFromMessageLists } from '@/features/conversation/domain/taskStatus';
+import {
+  createSnapshotConsistencyController,
+  type SnapshotDecision,
+  type SnapshotRequestToken,
+} from '@/features/conversation/runtime/snapshotConsistencyController';
 import { AssistantRoleEnum, TaskStatus } from '@/types/enums/agent';
 import { MessageStatusEnum } from '@/types/enums/common';
 import type {
@@ -198,14 +203,13 @@ export function useConversationStreamResume(
   };
   // 轮询代际：本地开始发送时递增。已在途的旧轮询回包必须整段丢弃，
   // 避免旧快照覆盖新发送消息，或误触发 sub 恢复。
-  const pollGenerationRef = useRef(0);
-  const requestGenerationRef = useRef(0);
-  const visibilityRequestInFlightRef = useRef<
-    Promise<ConversationInfo | undefined> | undefined
-  >();
+  const consistencyControllerRef = useRef(
+    createSnapshotConsistencyController(),
+  );
+  const scheduledRequestTokenRef = useRef<SnapshotRequestToken | undefined>();
   const prevLocallyStreamingForPollRef = useRef(!!isLocallyStreaming);
   if (isLocallyStreaming && !prevLocallyStreamingForPollRef.current) {
-    pollGenerationRef.current += 1;
+    consistencyControllerRef.current.invalidateGeneration();
   }
   prevLocallyStreamingForPollRef.current = !!isLocallyStreaming;
 
@@ -470,6 +474,32 @@ export function useConversationStreamResume(
   const subscribeRef = useRef(subscribe);
   subscribeRef.current = subscribe;
 
+  const isStaleSnapshotDecision = (decision: SnapshotDecision): boolean =>
+    decision.type === 'snapshot.rejected' &&
+    (decision.reason === 'stale-generation' ||
+      decision.reason === 'conversation-changed' ||
+      decision.reason === 'local-stream-active');
+
+  const getSnapshotOutcome = (decision: SnapshotDecision): string => {
+    if (decision.type === 'snapshot.accepted') {
+      return decision.token.trigger === 'visibility'
+        ? 'dispatch-visibility-snapshot'
+        : 'dispatch-snapshot';
+    }
+    if (decision.token.trigger === 'visibility') {
+      return decision.reason === 'empty-snapshot'
+        ? 'empty-visibility-snapshot'
+        : decision.reason === 'user-tail-not-persisted'
+        ? 'discard-user-tail-visibility-snapshot'
+        : 'discard-stale-visibility-snapshot';
+    }
+    return decision.reason === 'empty-snapshot'
+      ? 'empty-snapshot'
+      : decision.reason === 'user-tail-not-persisted'
+      ? 'discard-user-tail-not-persisted'
+      : 'discard-stale-snapshot';
+  };
+
   const isPollingReady =
     !!conversationId &&
     !isLocallyStreaming &&
@@ -481,13 +511,21 @@ export function useConversationStreamResume(
   // ready 含 !isResumeSubscribed：续上 sub 后不再轮询（subscribe 的 stopPolling 作立即兜底）。
   const { run, cancel } = useRequest(
     () => {
-      requestGenerationRef.current = pollGenerationRef.current;
+      const requestToken = conversationId
+        ? consistencyControllerRef.current.beginRequest(
+            'scheduled',
+            conversationId,
+          )
+        : undefined;
+      scheduledRequestTokenRef.current = requestToken;
       return traceConversationSnapshotRequest({
         source: debugSource,
         trigger: 'scheduled-or-ready-refresh',
         conversationId,
-        requestGeneration: requestGenerationRef.current,
-        currentGeneration: pollGenerationRef.current,
+        requestGeneration:
+          requestToken?.generation ??
+          consistencyControllerRef.current.getGeneration(),
+        currentGeneration: consistencyControllerRef.current.getGeneration(),
         isLocallyStreaming: !!latestRef.current.isLocallyStreaming,
         isAwaitingChatTerminal: !!latestRef.current.isAwaitingChatTerminal,
         isResumeSubscribed: !!isResumeSubscribedRef.current,
@@ -515,39 +553,42 @@ export function useConversationStreamResume(
       ],
       onSuccess: (snapshot) => {
         if (!conversationId) return;
-        // ready/cancel 只能阻止后续轮询，已在途请求仍可能返回。
-        // 发送后代际已变化，或当前正由 live chat 驱动时，旧结果不允许产生任何副作用。
-        if (
-          requestGenerationRef.current !== pollGenerationRef.current ||
-          latestRef.current.isLocallyStreaming
-        ) {
+        const requestToken =
+          scheduledRequestTokenRef.current ||
+          consistencyControllerRef.current.beginRequest(
+            'scheduled',
+            conversationId,
+          );
+        scheduledRequestTokenRef.current = undefined;
+        if (!requestToken) return;
+        const decision = consistencyControllerRef.current.consume(
+          requestToken,
+          {
+            conversationId: latestRef.current.conversationId,
+            isLocallyStreaming: !!latestRef.current.isLocallyStreaming,
+          },
+          snapshot,
+        );
+        if (isStaleSnapshotDecision(decision)) {
           conversationPollLogger.info('discard stale snapshot', {
             conversationId,
-            requestGeneration: requestGenerationRef.current,
-            currentGeneration: pollGenerationRef.current,
+            reason:
+              decision.type === 'snapshot.rejected'
+                ? decision.reason
+                : undefined,
+            requestGeneration: requestToken.generation,
+            currentGeneration: consistencyControllerRef.current.getGeneration(),
             isLocallyStreaming: latestRef.current.isLocallyStreaming,
             snapshotTaskStatus: snapshot?.taskStatus,
           });
           return;
         }
-        const snapshotOutcome = !snapshot
-          ? 'empty-snapshot'
-          : getLastMessage(snapshot.messageList)?.role ===
-            AssistantRoleEnum.USER
-          ? 'discard-user-tail-not-persisted'
-          : latestRef.current.conversationId === conversationId
-          ? 'dispatch-snapshot'
-          : 'discard-conversation-changed';
+        const snapshotOutcome = getSnapshotOutcome(decision);
         const localMessageListBeforeSnapshot = latestRef.current.messageList;
-        if (
-          snapshot &&
-          getLastMessage(snapshot.messageList)?.role !==
-            AssistantRoleEnum.USER &&
-          latestRef.current.conversationId === conversationId
-        ) {
-          onConversationSnapshotRef.current?.(snapshot);
+        if (decision.type === 'snapshot.accepted') {
+          onConversationSnapshotRef.current?.(decision.snapshot);
         }
-        const status = snapshot?.taskStatus;
+        const status = decision.observedTaskStatus;
         // 防跨会话写回；同值终态跳过，避免每轮轮询触发下游 reload 闪烁
         if (
           status !== undefined &&
@@ -595,7 +636,7 @@ export function useConversationStreamResume(
             ) {
               return;
             }
-            const polledMessageList = snapshot?.messageList;
+            const polledMessageList = decision.resumeMessageList;
             // 详情状态可能先于本轮用户消息落库。快照尚未就绪时保持正常轮询，
             // 不立即发起多次历史重载；下一轮快照就绪后再建立 sub。
             if (
@@ -671,8 +712,8 @@ export function useConversationStreamResume(
     if (isLocallyStreaming) {
       conversationPollLogger.info('cancel polling: local send started', {
         conversationId,
-        pollGeneration: pollGenerationRef.current,
-        inFlightRequestGeneration: requestGenerationRef.current,
+        pollGeneration: consistencyControllerRef.current.getGeneration(),
+        inFlightRequestGeneration: scheduledRequestTokenRef.current?.generation,
       });
       cancel();
     }
@@ -713,20 +754,23 @@ export function useConversationStreamResume(
         !isResumeSubscribedRef.current &&
         resumeStream
       ) {
-        if (visibilityRequestInFlightRef.current) {
+        const requestToken = consistencyControllerRef.current.beginRequest(
+          'visibility',
+          conversationId,
+        );
+        if (!requestToken) {
           conversationPollLogger.info(
             'skip visibility snapshot: request in flight',
             { conversationId },
           );
           return;
         }
-        const requestGeneration = pollGenerationRef.current;
         const requestPromise = traceConversationSnapshotRequest({
           source: debugSource,
           trigger: 'visibility-resume',
           conversationId,
-          requestGeneration,
-          currentGeneration: pollGenerationRef.current,
+          requestGeneration: requestToken.generation,
+          currentGeneration: consistencyControllerRef.current.getGeneration(),
           isLocallyStreaming: !!latestRef.current.isLocallyStreaming,
           isAwaitingChatTerminal: !!latestRef.current.isAwaitingChatTerminal,
           isResumeSubscribed: !!isResumeSubscribedRef.current,
@@ -734,20 +778,26 @@ export function useConversationStreamResume(
           messageList: latestRef.current.messageList,
           request: () => fetchConversationSnapshot(conversationId),
         });
-        visibilityRequestInFlightRef.current = requestPromise;
         requestPromise
           .then((snapshot) => {
-            // fetch in-flight 期间可能已切换会话或开始本地发送，
-            // 在任何写回/sub 恢复前丢弃 stale 结果。
-            if (
-              latestRef.current.conversationId !== conversationId ||
-              requestGeneration !== pollGenerationRef.current ||
-              latestRef.current.isLocallyStreaming
-            ) {
+            const decision = consistencyControllerRef.current.consume(
+              requestToken,
+              {
+                conversationId: latestRef.current.conversationId,
+                isLocallyStreaming: !!latestRef.current.isLocallyStreaming,
+              },
+              snapshot,
+            );
+            if (isStaleSnapshotDecision(decision)) {
               conversationPollLogger.info('discard stale visibility snapshot', {
                 conversationId,
-                requestGeneration,
-                currentGeneration: pollGenerationRef.current,
+                reason:
+                  decision.type === 'snapshot.rejected'
+                    ? decision.reason
+                    : undefined,
+                requestGeneration: requestToken.generation,
+                currentGeneration:
+                  consistencyControllerRef.current.getGeneration(),
                 latestConversationId: latestRef.current.conversationId,
                 isLocallyStreaming: latestRef.current.isLocallyStreaming,
                 snapshotTaskStatus: snapshot?.taskStatus,
@@ -764,25 +814,18 @@ export function useConversationStreamResume(
             }
             const localMessageListBeforeSnapshot =
               latestRef.current.messageList;
-            const snapshotTailIsUser =
-              getLastMessage(snapshot?.messageList)?.role ===
-              AssistantRoleEnum.USER;
-            if (snapshot && !snapshotTailIsUser) {
-              onConversationSnapshotRef.current?.(snapshot);
+            if (decision.type === 'snapshot.accepted') {
+              onConversationSnapshotRef.current?.(decision.snapshot);
             }
             logConversationSnapshotConsume({
               source: debugSource,
               conversationId,
-              outcome: !snapshot
-                ? 'empty-visibility-snapshot'
-                : snapshotTailIsUser
-                ? 'discard-user-tail-visibility-snapshot'
-                : 'dispatch-visibility-snapshot',
+              outcome: getSnapshotOutcome(decision),
               snapshot,
               localMessageList: localMessageListBeforeSnapshot,
               hasSnapshotConsumer: !!onConversationSnapshotRef.current,
             });
-            const status = snapshot?.taskStatus;
+            const status = decision.observedTaskStatus;
             if (
               status !== undefined &&
               status !== TaskStatus.EXECUTING &&
@@ -795,7 +838,7 @@ export function useConversationStreamResume(
               emitConversationListTaskStatus(conversationId, status);
             }
             if (status === TaskStatus.EXECUTING) {
-              const polledMessageList = snapshot?.messageList;
+              const polledMessageList = decision.resumeMessageList;
               if (
                 Array.isArray(polledMessageList) &&
                 !hasUserReadyForResume(
@@ -809,9 +852,7 @@ export function useConversationStreamResume(
             }
           })
           .finally(() => {
-            if (visibilityRequestInFlightRef.current === requestPromise) {
-              visibilityRequestInFlightRef.current = undefined;
-            }
+            consistencyControllerRef.current.release(requestToken);
           });
       }
     };
