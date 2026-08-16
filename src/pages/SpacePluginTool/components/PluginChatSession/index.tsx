@@ -1,5 +1,6 @@
 import agentImage from '@/assets/images/agent_image.png';
 import { UnifiedChatSession } from '@/components/business-component';
+import { useConversationRuntimeSession } from '@/features/conversation/react/useConversationRuntimeSession';
 import { dict } from '@/services/i18nRuntime';
 import { TaskStatus } from '@/types/enums/agent';
 import { AgentTypeEnum } from '@/types/enums/space';
@@ -195,8 +196,16 @@ const PluginChatSession: React.FC<PluginChatSessionProps> = ({
     });
   };
 
+  // 双线分派（docs/conversation-dual-track-plan.md）：flag 开启时新线会话面 props 覆盖；
+  // 关闭（默认）为空对象，旧线原值原行为。
+  const runtimeLine = useConversationRuntimeSession({
+    conversationId,
+    effectsResources: {}, // plugin 入口无 chat model 资源；页面预览类 effect 静默忽略
+  });
+
   return (
     <UnifiedChatSession
+      {...(runtimeLine?.conversationProps ?? {})}
       conversationId={conversationId}
       messageList={messageList}
       roleInfo={roleInfo}

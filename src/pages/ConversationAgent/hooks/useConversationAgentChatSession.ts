@@ -2,6 +2,7 @@ import type {
   AgentInterventionHandlersOverride,
   AgentMode,
 } from '@/components/business-component/AgentIntervention';
+import { useConversationRuntimeSession } from '@/features/conversation/react/useConversationRuntimeSession';
 import useConversation from '@/hooks/useConversation';
 import {
   areMessageListsEquivalent,
@@ -248,7 +249,15 @@ export function useConversationAgentChatSession(
     [respondAcpPermission, respondMcpAsk],
   );
 
+  // 双线分派（docs/conversation-dual-track-plan.md）：flag 开启时新线会话面 props 覆盖；
+  // 关闭（默认）为空对象，旧线原值原行为。隔离入口注入空资源（隔离子集语义）。
+  const runtimeLine = useConversationRuntimeSession({
+    conversationId: devConversationId,
+    effectsResources: {},
+  });
+
   return {
+    ...(runtimeLine?.conversationProps ?? {}),
     conversationId: devConversationId,
     messageList,
     roleInfo,

@@ -41,6 +41,10 @@ export interface RuntimeSessionSendInput {
   isSync?: boolean;
   /** 发起时的会话信息快照（topic.update / 冲突提示等 gate 使用） */
   currentInfo?: ConversationInfo | null;
+  /** 会话是否开启问题建议（FINAL 后拉取） */
+  isSuggestEnabled?: boolean;
+  /** topic 更新 gate（isSync=false 时跳过） */
+  topicGate?: { isSync: boolean };
 }
 
 /** session 上报给 React 绑定层的非消息状态变化（R4 绑定消费） */
@@ -165,6 +169,13 @@ export function createConversationRuntimeSession(
   const applyStreamEvent = (
     res: ConversationChatResponse,
     ownerMessageId: string,
+    context?: {
+      isSuggestEnabled?: boolean;
+      topicSnapshot?: ConversationInfo | null;
+      topicSync?: boolean;
+      firstEventOfConnection?: boolean;
+      lastMessage?: string;
+    },
   ) => {
     currentRequestId = res.requestId || '';
     const reduction = runtime.reduceStreamEvent(
@@ -174,12 +185,87 @@ export function createConversationRuntimeSession(
     );
     store.applyStreamReduction(reduction.messages);
 
-    if (res.eventType === 'ERROR' && currentConversationId !== null) {
-      runtime.effects.dispatch({
-        type: 'recent.status.patch',
-        conversationId: currentConversationId,
-        status: TaskStatus.FAILED,
-      });
+    const data = (res.data ?? {}) as Record<string, unknown>;
+    const conversationId = currentConversationId;
+
+    if (res.eventType === 'ERROR') {
+      if (conversationId !== null) {
+        runtime.effects.dispatch({
+          type: 'recent.status.patch',
+          conversationId,
+          status: TaskStatus.FAILED,
+        });
+      }
+      return;
+    }
+
+    if (res.eventType === 'PROCESSING' && conversationId !== null) {
+      const processing = (reduction.processing ?? data) as Record<string, any>;
+      const input = processing?.result?.input ?? {};
+      // 页面预览 / 链接打开（对齐旧线 PROCESSING 分支）
+      if (processing?.status === 'EXECUTING' && data.type === 'Page') {
+        const uriType = input.uri_type ?? 'Page';
+        if (!uriType || uriType === 'Page') {
+          runtime.effects.dispatch({
+            type: 'preview.page.open',
+            preview: {
+              uri: input.uri,
+              params: input.arguments || {},
+              executeId: processing.executeId || data.executeId || '',
+              method: input.method,
+              request_id: input.request_id,
+              data_type: input.data_type,
+            },
+          });
+        }
+        if (uriType === 'Link') {
+          const queryString = new URLSearchParams(input.arguments).toString();
+          runtime.effects.dispatch({
+            type: 'preview.link.open',
+            url: `${input.uri}?${queryString}`,
+          });
+        }
+      }
+      // 卡片
+      if (
+        processing?.status === 'FINISHED' &&
+        processing?.cardBindConfig &&
+        processing?.cardData
+      ) {
+        runtime.effects.dispatch({
+          type: 'card.result.apply',
+          cardBindConfig: processing.cardBindConfig,
+          cardData: processing.cardData,
+          append: res.requestId === currentRequestId,
+        });
+      }
+      return;
+    }
+
+    if (res.eventType === 'FINAL_RESULT' && conversationId !== null) {
+      // 建议：会话开启时拉取
+      if (context?.isSuggestEnabled) {
+        runtime.effects.dispatch({
+          type: 'suggest.fetch',
+          params: { conversationId } as never,
+        });
+      }
+      // 首轮消息后更新主题（gate：快照未更新过 && 本次连接收到过事件）
+      if (
+        context?.topicSnapshot &&
+        context.topicSnapshot.topicUpdated !== 1 &&
+        context.topicSync !== false &&
+        context.firstEventOfConnection &&
+        context.lastMessage
+      ) {
+        runtime.effects.dispatch({
+          type: 'topic.update',
+          conversationId: conversationId as number,
+          firstMessage: context.lastMessage,
+          currentInfo: context.topicSnapshot,
+        });
+      }
+      return;
     }
   };
 
@@ -280,6 +366,7 @@ export function createConversationRuntimeSession(
 
     // 连接级终态解析记忆（与旧线 hasResolvedTerminalStatus 一致）
     let hasResolvedTerminalStatus = false;
+    let firstEventOfConnection = true;
     const liveRunId = runtime.liveConnection.startRun();
 
     const abortConnection = openLiveConversationStream(params, {
@@ -295,8 +382,15 @@ export function createConversationRuntimeSession(
         }
 
         notifyState();
-        // 消息投影 + ERROR 终态补丁（live 与 sub 恢复共用）
-        applyStreamEvent(res, currentMessageId);
+        // 消息投影 + 事件分支副作用（live 与 sub 恢复共用）
+        applyStreamEvent(res, currentMessageId, {
+          isSuggestEnabled: input.isSuggestEnabled,
+          topicSnapshot: input.currentInfo,
+          topicSync: input.topicGate?.isSync,
+          firstEventOfConnection,
+          lastMessage: message,
+        });
+        firstEventOfConnection = false;
       },
       onClose: () => {
         // 过期连接：只清理自己的消息，不触碰新一轮（与旧线 superseded 保护一致）

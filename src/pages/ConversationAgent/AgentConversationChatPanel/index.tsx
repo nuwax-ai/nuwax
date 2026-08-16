@@ -1,5 +1,6 @@
 import { UnifiedChatSession } from '@/components/business-component';
 import type { AgentMode } from '@/components/business-component/AgentIntervention';
+import { useConversationRuntimeSession } from '@/features/conversation/react/useConversationRuntimeSession';
 import { TaskStatus } from '@/types/enums/agent';
 import classNames from 'classnames';
 import React, { useEffect, useRef, useState } from 'react';
@@ -98,9 +99,17 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
     prevIsActiveRef.current = isConversationActive;
   }, [isConversationActive, onConversationEnd]);
 
+  // 双线分派（docs/conversation-dual-track-plan.md）：flag 开启时新线会话面 props 覆盖；
+  // 关闭（默认）为空对象，旧线原值原行为。
+  const runtimeLine = useConversationRuntimeSession({
+    conversationId: conversationInfo?.id,
+    effectsResources: {}, // 面板入口无 chat model 资源；页面预览类 effect 静默忽略
+  });
+
   return (
     <div className={classNames('flex', 'flex-col', 'h-full', className)}>
       <UnifiedChatSession
+        {...(runtimeLine?.conversationProps ?? {})}
         conversationId={conversationInfo?.id}
         messageList={messageList}
         isLoading={loadingConversation}
