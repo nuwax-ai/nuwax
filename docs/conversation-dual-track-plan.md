@@ -1,6 +1,6 @@
 # 会话双线切换实施方案（Runtime 接管 message state + feature flag）
 
-> 日期：2026-08-16 状态：待评审（评审通过后动代码）前置：[conversation-refactor-plan.md](./conversation-refactor-plan.md)（Phase 0-7 已实施完成）、[adr/conversation-runtime-refactor.md](./adr/conversation-runtime-refactor.md) 最高约束：**这是已上线项目。重构全程不得影响线上业务；任何时刻必须可整体切换回旧线、可代码级回滚。**
+> 日期：2026-08-16 实施完成：2026-08-17（R1-R5 已落地于分支 refactor/conversation-dual-track，基于基线 c710ab296）前置：[conversation-refactor-plan.md](./conversation-refactor-plan.md)（Phase 0-7 已实施完成）、[adr/conversation-runtime-refactor.md](./adr/conversation-runtime-refactor.md) 最高约束：**这是已上线项目。重构全程不得影响线上业务；任何时刻必须可整体切换回旧线、可代码级回滚。**
 
 ## 1. 目标
 
@@ -107,6 +107,17 @@ Phase 0-7 完成后，新体系（domain/runtime/adapters/react）已拥有：�
 | R4 | `useConversationRuntimeSession` + flag 工具 + Chat 入口接线（`?conversationRuntime=1` 可试）+ 运行时 shadow 对照 | 零 | 首个入口可切换 |
 | R5 | 其余四入口接线 + 测试双轨固化 + 浏览器验证清单（连续发送/长回答/工具/多输出/多页签/stop/Ask/ACP） | 零 | 五入口均可切换 |
 | R6 | 默认值决策（切 runtime）→ 观察期 → **另立决策**删除旧 model 会话职责 | 届时评审 | 终态 |
+
+## 9. 实施进度（2026-08-17，分支 refactor/conversation-dual-track）
+
+- **R1 ✅** messageStore（update/replaceFromHistory 含 setState 形状兼容）+ transport（live/sub）+ 9 条合同测试。
+- **R2 ✅** runtimeSession send 核心环（乐观 →transport→ 投影 →recent effects→stop/close/error 收尾，3s 保活与 superseded 保护对齐旧线）。
+- **R3 ✅** load（loadRequest 注入 + 乐观尾保留 + 过期丢弃）/ applySnapshot（会话门禁）/ stopRequest 注入 / resumeController 挂载（live 与 sub 共用 applyStreamEvent）/ 事件分支 effects dispatch（page/link/card/suggest/topic gate）。
+- **R4 ✅** `conversationRuntimeFlag`（URL>localStorage>默认 legacy，5 条优先级合同）+ `useConversationRuntimeSession` 绑定层（useSyncExternalStore 订阅、conversationProps 与旧线会话面同形状）+ `runtimeLineHttp`（services 单点 + effects adapter 组装：recent/list 自足、suggest/topic 直调、页面资源经 effectsResources 注入缺省忽略）+ Chat 入口接线。
+- **R5 ✅** 其余四入口接线（PreviewAndDebug / PluginChatSession / AgentConversationChatPanel / ConversationAgentChatSession hook）+ `tests/conversationDualTrackParity.test.ts` 双轨 digest 对照（T01 核心 Trace）。
+- **旧线零改动持续验证**：`src/models/` 与基线 diff 为 0；入口仅增量 flag 分派（展开空对象=原值原行为）。
+- **已知差异**（新线 flag 开启时，R6 前需收口）：suggest 无防抖且列表未写回 UI；ERROR 时 conversationInfo.taskStatus 写回未接（taskExecuting 提示缺失）；「正在执行任务」冲突 modal 未迁；隔离入口 isSync=false 语义未透传（会发乐观列表标记）；load 的变量/预置问题/滚动 UI 面未接。
+- **R6 待办**：收口上述已知差异 → 浏览器全场景验证 → 默认值决策。
 
 R6 明确不在本方案内一次完成：删旧线是独立发布动作，且 model 内非会话职责（文件树/VNC/变量/定时任务）需先行拆分，另案处理。
 
