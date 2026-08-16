@@ -18,6 +18,7 @@ import useSelectedComponent from '@/hooks/useSelectedComponent';
 import useSubscription from '@/hooks/useSubscription';
 import useTerminalWsUrl from '@/hooks/useTerminalWsUrl';
 
+import { useConversationRuntimeSession } from '@/features/conversation/react/useConversationRuntimeSession';
 import { t } from '@/services/i18nRuntime';
 import {
   AgentComponentTypeEnum,
@@ -209,6 +210,10 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     loadingSuggest,
     onMessageSend,
     messageViewRef,
+    // 双线分支：新线 effects 所需页面资源补充解构（单份共享注入；其余基线已解构）
+    setCardList,
+    setTaskAgentSelectTrigger,
+    setFileTreeRefreshTrigger,
     allowAutoScrollRef,
     scrollTimeoutRef,
     showScrollBtn,
@@ -280,7 +285,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   const { isMobile } = useModel('layout');
 
   // 会话记录
-  const { runHistoryItem } = useModel('conversationHistory');
+  const { runHistory, runHistoryItem } = useModel('conversationHistory');
 
   // 统一 Agent 数据源：优先使用会话关联的智能体快照，兜底使用详情接口数据
   const effectiveAgent = useMemo(() => {
@@ -1238,7 +1243,33 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   };
 
   // 聊天会话相关 props
+  // 双线分派（docs/conversation-dual-track-plan.md）：flag 开启时新线 session 的
+  // 会话面 props 覆盖旧线字段；flag 关闭（默认）时 conversationProps 为空对象，
+  // 旧线路径原值原行为。页面资源（卡片/桌面/文件树等）单份共享注入新线 effects。
+  const runtimeLine = useConversationRuntimeSession({
+    conversationId: id,
+    messageViewRef,
+    allowAutoScrollRef,
+    effectsResources: {
+      isAppSidebarMode,
+      runHistory,
+      runHistoryItem,
+      showPagePreview,
+      openDesktopView,
+      setCardList,
+      setShowType,
+      refreshFileListThrottled: handleRefreshFileList,
+      refreshFileListImmediately,
+      refreshGitListRef,
+      openPreviewView,
+      setTaskAgentSelectedFileId,
+      setTaskAgentSelectTrigger,
+      setFileTreeRefreshTrigger,
+    },
+  });
+
   const chatSessionProps = {
+    ...(runtimeLine?.conversationProps ?? {}),
     conversationId: id,
     messageList,
     roleInfo,
