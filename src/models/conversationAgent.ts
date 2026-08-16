@@ -25,13 +25,12 @@ import {
   finalizeOwnedMessageOnStaleClose,
   markOwnedMessageStreamError,
 } from '@/features/conversation/domain/messageLifecycle';
-import { reduceConversationEvent } from '@/features/conversation/domain/reduceConversationEvent';
 import { isSessionStreamBusy } from '@/features/conversation/domain/runtimeSelectors';
 import { mergeConversationInfoTaskStatus } from '@/features/conversation/domain/taskStatus';
 import {
-  createLiveConnectionController,
-  type LiveConnectionController,
-} from '@/features/conversation/runtime/liveConnectionController';
+  createConversationRuntime,
+  type ConversationRuntime,
+} from '@/features/conversation/runtime/createConversationRuntime';
 import { useResumeStreamHandlers } from '@/hooks/useResumeStreamHandlers';
 import { getCustomBlock } from '@/plugins/ds-markdown-process';
 import {
@@ -154,15 +153,16 @@ export default () => {
   const pendingSuggestGenerationRef = useRef(0);
   const messageViewRef = useRef<HTMLDivElement | null>(null);
   const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const liveConnectionControllerRef = useRef<LiveConnectionController | null>(
-    null,
-  );
-  if (!liveConnectionControllerRef.current) {
-    liveConnectionControllerRef.current = createLiveConnectionController();
+  const conversationRuntimeRef = useRef<ConversationRuntime | null>(null);
+  if (!conversationRuntimeRef.current) {
+    conversationRuntimeRef.current = createConversationRuntime({
+      renderProcessingBlock: getCustomBlock,
+      reconcileFinalMessage: reconcileFinalMessageState,
+    });
   }
-  const liveConnectionController = liveConnectionControllerRef.current;
+  const conversationRuntime = conversationRuntimeRef.current;
+  const liveConnectionController = conversationRuntime.liveConnection;
   // 会话消息ID
-  const messageIdRef = useRef<string>('');
   // 是否正在加载会话
   const [, setIsLoadingConversation] = useState<boolean>(false);
 
@@ -557,20 +557,12 @@ export default () => {
         return reconciledList;
       }
 
-      const eventReduction = reduceConversationEvent(
-        {
-          messages: list,
-          activeOutputMessageId: messageIdRef.current,
-        },
+      const eventReduction = conversationRuntime.reduceStreamEvent(
+        list,
         currentMessageId,
         res,
-        {
-          renderProcessingBlock: getCustomBlock,
-          reconcileFinalMessage: reconcileFinalMessageState,
-        },
       );
       list = eventReduction.messages;
-      messageIdRef.current = eventReduction.activeOutputMessageId;
 
       // 更新UI状态...
       if (eventType === ConversationEventTypeEnum.PROCESSING) {
@@ -859,10 +851,10 @@ export default () => {
 
   // ===== 会话流式恢复(sub)：刷新页面 / 新开标签时，订阅 EXECUTING 会话的输出流 =====
   // 逻辑收敛到共享 hook（与 conversationInfo model 复用同一份实现，避免双份维护漂移）
-  // 重置会被 handleChangeMessageList 写入的流式状态：恢复流开/关时调用，避免残留 messageIdRef 误插重复行
+  // 重置 Runtime 的跨 chunk 输出身份：恢复流开/关时调用，避免旧输出 id 误插重复行
   const resetResumeMessageState = useCallback(() => {
-    messageIdRef.current = '';
-  }, []);
+    conversationRuntime.resetStreamProjection();
+  }, [conversationRuntime]);
   const { resumeConversationStream, abortResumeStream } =
     useResumeStreamHandlers({
       setMessageList,
@@ -881,7 +873,7 @@ export default () => {
     // 中断会话流式恢复(sub)连接（hook 内部同时重置占位记忆），避免离开页面后残留
     abortResumeStream();
     // 重置消息ID
-    messageIdRef.current = '';
+    conversationRuntime.resetStreamProjection();
     suggestGenerationRef.current += 1;
     // 重置问题建议列表
     setChatSuggestList([]);
