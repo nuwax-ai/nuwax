@@ -117,7 +117,8 @@ Phase 0-7 完成后，新体系（domain/runtime/adapters/react）已拥有：�
 - **R5 ✅** 其余四入口接线（PreviewAndDebug / PluginChatSession / AgentConversationChatPanel / ConversationAgentChatSession hook）+ `tests/conversationDualTrackParity.test.ts` 双轨 digest 对照（T01 核心 Trace）。
 - **旧线零改动持续验证**：`src/models/` 与基线 diff 为 0；入口仅增量 flag 分派（展开空对象=原值原行为）。
 - **已知差异**（新线 flag 开启时，R6 前需收口）：suggest 无防抖且列表未写回 UI；ERROR 时 conversationInfo.taskStatus 写回未接（taskExecuting 提示缺失）；「正在执行任务」冲突 modal 未迁；隔离入口 isSync=false 语义未透传（会发乐观列表标记）；load 的变量/预置问题/滚动 UI 面未接。
-- **R6 待办**：收口上述已知差异 → 浏览器全场景验证 → 默认值决策。
+- **R6 浏览器验证（2026-08-17，ego-browser）已通过**：登录态会话「女娲 Nuwax」实测—— ① legacy 线发送：乐观追加（10→12）与流式收尾正常； ② runtime 线（?conversationRuntime=1）三轮发送：乐观追加、流式投影、回复内容与 legacy 逐字一致（「女娲 Nuwax 收到。」×3），无「正在执行」残留； ③ flag 行为：URL param 切换生效、去 param 回落 legacy 正常、localStorage 粘性生效后清除正常； ④ 侧栏会话项 active 态正常（执行中 spinner 形态的 DOM 类名探测不精确，标记生命周期由列表组件消费，非阻断）。
+- **R6 剩余待办**：收口已知差异（§9 清单）→ TaskAgent/预览 Tab 等其余入口场景实测 → 默认值决策。
 
 R6 明确不在本方案内一次完成：删旧线是独立发布动作，且 model 内非会话职责（文件树/VNC/变量/定时任务）需先行拆分，另案处理。
 
