@@ -22,6 +22,7 @@ import {
 } from '@/features/conversation/domain/messageLifecycle';
 import { reduceMessageEvent } from '@/features/conversation/domain/reduceMessageEvent';
 import { reduceProcessingEvent } from '@/features/conversation/domain/reduceProcessingEvent';
+import { reduceTerminalEvent } from '@/features/conversation/domain/reduceTerminalEvent';
 import { isSessionStreamBusy } from '@/features/conversation/domain/runtimeSelectors';
 import {
   mergeConversationInfoTaskStatus,
@@ -1316,13 +1317,13 @@ export default () => {
           );
         }
 
-        newMessage = {
-          ...(reconcileFinalMessageState(currentMessage, data) || {}),
-          thinkingFinished: true,
-          status: MessageStatusEnum.Complete,
-          finalResult: data,
-          requestId: res.requestId,
-        };
+        const terminalReduction = reduceTerminalEvent(
+          list,
+          currentMessageId,
+          res,
+          reconcileFinalMessageState,
+        );
+        list = terminalReduction.messages;
 
         // 调试结果
         setRequestId(res.requestId);
@@ -1339,30 +1340,18 @@ export default () => {
         applyTerminalTaskStatus(
           setConversationInfo,
           params.conversationId,
-          resolveTerminalTaskStatus(data?.success, data, res),
+          terminalReduction.taskStatus,
         );
-
-        // 用户主动取消任务
-        if (!data?.success && data?.error?.includes('用户主动取消任务')) {
-          // 如果没有输出文本，删除最后一条消息，不显示流式输出内容
-          if (!newMessage?.text && !data.outputText) {
-            // 将 newMessage 设置为 null，并保持 arraySpliceAction 为 1
-            // 这样会在后续的 splice 操作中删除当前消息而不是替换
-            newMessage = null;
-            // 确保删除操作生效：直接从列表中移除当前消息
-            list.splice(index, 1);
-            // 标记已处理，跳过后续的 splice 逻辑
-            // arraySpliceAction = 0;
-          }
-        }
       }
       // ERROR事件
       if (eventType === ConversationEventTypeEnum.ERROR) {
-        newMessage = {
-          ...currentMessage,
-          thinkingFinished: true,
-          status: MessageStatusEnum.Error,
-        };
+        const terminalReduction = reduceTerminalEvent(
+          list,
+          currentMessageId,
+          res,
+          reconcileFinalMessageState,
+        );
+        list = terminalReduction.messages;
         // 会话出错即终态：立即把会话 taskStatus 落为 FAILED（等同已停止），
         // 否则本地会固化在 EXECUTING，导致停止按钮常驻、队列因 taskExecuting 永不消费。
         // 同步补偿侧栏「最近使用/会话记录」列表，清除其「执行中」标记。
