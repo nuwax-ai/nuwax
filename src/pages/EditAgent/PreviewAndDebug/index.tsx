@@ -153,6 +153,8 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     // 其它接口加载状态
     isLoadingOtherInterface,
     isConversationActive,
+    respondAcpPermission,
+    respondMcpAsk,
     isAwaitingChatTerminal,
     // 会话流式恢复(sub)
     resumeConversationStream,
@@ -611,6 +613,12 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     return true;
   }, [agentConfigInfo?.type, messageList]);
 
+  /** 干预回执（Ask/ACP）显式注入：Intervention 层不再默认读全局 model（方案 Phase 6） */
+  const interventionHandlers = useMemo(
+    () => ({ respondAcpPermission, respondMcpAsk }),
+    [respondAcpPermission, respondMcpAsk],
+  );
+
   // 入口级会话构建器（方案 §4）：消除入口自行组合的 active/task 判断（§2.3）
   const previewSessionModel = createConversationSessionModel({
     conversationId: devConversationIdRef.current,
@@ -671,6 +679,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
               isConversationActive={previewSessionModel.isConversationActive}
               isLocallyStreaming={previewSessionModel.isLocallyStreaming}
               isAwaitingChatTerminal={isAwaitingChatTerminal}
+              interventionHandlers={interventionHandlers}
               messageBottomMode="chat"
               loadingSuggest={loadingSuggest}
               chatSuggestList={chatSuggestList}

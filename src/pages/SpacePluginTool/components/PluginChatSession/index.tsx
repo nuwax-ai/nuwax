@@ -44,6 +44,8 @@ const PluginChatSession: React.FC<PluginChatSessionProps> = ({
     loadingConversation,
     isLoadingOtherInterface,
     isConversationActive,
+    respondAcpPermission,
+    respondMcpAsk,
     isAwaitingChatTerminal,
     // 会话流式恢复(sub)
     resumeConversationStream,
@@ -195,6 +197,12 @@ const PluginChatSession: React.FC<PluginChatSessionProps> = ({
     });
   };
 
+  /** 干预回执（Ask/ACP）显式注入：Intervention 层不再默认读全局 model（方案 Phase 6） */
+  const interventionHandlers = useMemo(
+    () => ({ respondAcpPermission, respondMcpAsk }),
+    [respondAcpPermission, respondMcpAsk],
+  );
+
   // 入口级会话构建器（方案 §4）：消除入口自行组合的 active/task 判断（§2.3）
   const pluginSessionModel = createConversationSessionModel({
     conversationId,
@@ -215,6 +223,7 @@ const PluginChatSession: React.FC<PluginChatSessionProps> = ({
       isConversationActive={pluginSessionModel.isConversationActive}
       isLocallyStreaming={pluginSessionModel.isLocallyStreaming}
       isAwaitingChatTerminal={isAwaitingChatTerminal}
+      interventionHandlers={interventionHandlers}
       messageBottomMode="chat"
       loadingSuggest={false}
       chatSuggestList={chatSuggestList as string[]}

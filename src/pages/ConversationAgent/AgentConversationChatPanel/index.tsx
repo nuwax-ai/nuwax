@@ -1,8 +1,8 @@
 import { UnifiedChatSession } from '@/components/business-component';
 import type { AgentMode } from '@/components/business-component/AgentIntervention';
-import { TaskStatus } from '@/types/enums/agent';
+import { createConversationSessionModel } from '@/features/conversation/react/createConversationSessionModel';
 import classNames from 'classnames';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { history, useLocation, useModel } from 'umi';
 
 /**
@@ -88,7 +88,24 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
     resumeConversationStream,
     abortResumeStream,
     runAsync,
+    respondAcpPermission,
+    respondMcpAsk,
   } = useModel('conversationInfo');
+
+  // 入口级会话构建器（方案 §4）：消除入口自行组合的 active/task 判断（§2.3）
+  const sessionModel = createConversationSessionModel({
+    conversationId: conversationInfo?.id,
+    messageList,
+    isConversationActive,
+    isAwaitingChatTerminal,
+    taskStatus: conversationInfo?.taskStatus,
+  });
+
+  /** 干预回执（Ask/ACP）显式注入：Intervention 层不再默认读全局 model（方案 Phase 6） */
+  const interventionHandlers = useMemo(
+    () => ({ respondAcpPermission, respondMcpAsk }),
+    [respondAcpPermission, respondMcpAsk],
+  );
 
   // 监听 isConversationActive 从 true → false，触发会话结束回调
   useEffect(() => {
@@ -106,12 +123,10 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
         isLoading={loadingConversation}
         loadingMore={loadingMore}
         isMoreMessage={isMoreMessage}
-        isConversationActive={
-          isConversationActive ||
-          conversationInfo?.taskStatus === TaskStatus.EXECUTING
-        }
-        isLocallyStreaming={isConversationActive}
-        isAwaitingChatTerminal={isAwaitingChatTerminal}
+        isConversationActive={sessionModel.isConversationActive}
+        isLocallyStreaming={sessionModel.isLocallyStreaming}
+        isAwaitingChatTerminal={sessionModel.isAwaitingChatTerminal}
+        interventionHandlers={interventionHandlers}
         messageBottomMode="chat"
         showDebug={false}
         chatSuggestList={chatSuggestList}

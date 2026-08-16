@@ -3,7 +3,6 @@ import { DefaultSelectedEnum } from '@/types/enums/agent';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useModel } from 'umi';
 import type { AgentInterventionChatLayerProps } from '../AgentInterventionChatLayer';
 import type {
   AcpPermissionInteraction,
@@ -272,13 +271,13 @@ export function useAgentInterventionLayer(
     };
   }, [agentId, skipStorage]);
 
-  const conversationInfoModel = useModel('conversationInfo');
-
+  // 干预回执由调用方（UnifiedChatSession 入口）显式注入；本层不再默认读全局
+  // conversationInfo model（方案 Phase 6 第 4 项）。五个入口均已显式传入；
+  // 未注入（如纯展示场景）视为不支持回执，静默空操作。
   const respondAcpPermission =
-    interventionHandlers?.respondAcpPermission ??
-    conversationInfoModel.respondAcpPermission;
+    interventionHandlers?.respondAcpPermission ?? (() => Promise.resolve());
   const respondMcpAsk =
-    interventionHandlers?.respondMcpAsk ?? conversationInfoModel.respondMcpAsk;
+    interventionHandlers?.respondMcpAsk ?? (() => Promise.resolve());
 
   const handleRespondMcpAsk = useCallback(
     async (interaction: McpAskInteraction, payload: McpAskRespondPayload) => {

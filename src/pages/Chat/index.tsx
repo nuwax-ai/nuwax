@@ -219,6 +219,8 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     setIsLoadingOtherInterface,
     requiredNameList,
     setConversationInfo,
+    respondAcpPermission,
+    respondMcpAsk,
     syncConversationSnapshotMessages,
     runUpdateTopic,
     variables,
@@ -1248,6 +1250,12 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     taskStatus: conversationInfo?.taskStatus,
   });
 
+  /** 干预回执（Ask/ACP）显式注入：Intervention 层不再默认读全局 model（方案 Phase 6） */
+  const interventionHandlers = useMemo(
+    () => ({ respondAcpPermission, respondMcpAsk }),
+    [respondAcpPermission, respondMcpAsk],
+  );
+
   const chatSessionProps = {
     conversationId: id,
     messageList,
@@ -1259,6 +1267,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     isConversationActive: sessionModel.isConversationActive,
     isLocallyStreaming: sessionModel.isLocallyStreaming,
     isAwaitingChatTerminal: sessionModel.isAwaitingChatTerminal,
+    interventionHandlers,
     // 会话流式恢复(sub)：刷新页面/新开标签时重建 EXECUTING 会话的流式输出
     onResumeConversationStream: resumeConversationStream,
     onAbortResumeStream: abortResumeStream,
