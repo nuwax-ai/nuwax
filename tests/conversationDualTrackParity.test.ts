@@ -152,3 +152,90 @@ describe('conversation dual track parity', () => {
     expect(params.message).toBe('参数面');
   });
 });
+
+describe('dual track parity 扩展（T03/T05）', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  const startSend = () => {
+    const session = createConversationRuntimeSession({
+      adapters: {
+        renderProcessingBlock: vi.fn(() => 'block'),
+        reconcileFinalMessage: vi.fn((message) => message),
+      },
+      effectsAdapter: { dispatch: () => {} } as ConversationEffectsAdapter,
+    });
+    session.send({ conversationId: 1001, message: '双轨' });
+    const callbacks = mockOpenLive.mock.calls.at(-1)![1] as {
+      onMessage: (res: ConversationChatResponse) => void;
+      onClose: () => void;
+      onError: () => void;
+    };
+    return { session, callbacks };
+  };
+
+  it('T03 多输出：占位保留 + 新 id 插行（与旧线「工作流多段」合同一致）', () => {
+    const { session, callbacks } = startSend();
+    const placeholderId = session.store.getSnapshot()[1].id;
+
+    callbacks.onMessage({
+      requestId: 'r',
+      eventType: ConversationEventTypeEnum.MESSAGE,
+      data: {
+        id: 'wf-1',
+        type: MessageModeEnum.CHAT,
+        text: 'part1',
+        finished: false,
+      },
+    } as ConversationChatResponse);
+    const lenBefore = session.store.getSnapshot().length;
+    callbacks.onMessage({
+      requestId: 'r',
+      eventType: ConversationEventTypeEnum.MESSAGE,
+      data: {
+        id: 'wf-2',
+        type: MessageModeEnum.CHAT,
+        text: ' part2',
+        finished: true,
+      },
+    } as ConversationChatResponse);
+
+    const messages = session.store.getSnapshot();
+    expect(messages.length).toBe(lenBefore + 1);
+    expect(messages.some((m) => m.id === placeholderId)).toBe(true);
+    expect(messages.some((m) => m.id === 'wf-2')).toBe(true);
+  });
+
+  it('T05 ERROR：消息 Error + 终态补丁 effects（与旧线 ERROR 合同一致）', () => {
+    const dispatched: unknown[] = [];
+    const session = createConversationRuntimeSession({
+      adapters: {
+        renderProcessingBlock: vi.fn(() => 'block'),
+        reconcileFinalMessage: vi.fn((message) => message),
+      },
+      effectsAdapter: {
+        dispatch: (effect: unknown) => {
+          dispatched.push(effect);
+        },
+      } as ConversationEffectsAdapter,
+    });
+    session.send({ conversationId: 1001, message: '双轨' });
+    const callbacks = mockOpenLive.mock.calls.at(-1)![1] as {
+      onMessage: (res: ConversationChatResponse) => void;
+      onError: () => void;
+    };
+
+    callbacks.onMessage({ eventType: 'ERROR' } as ConversationChatResponse);
+    // 触发 onError 完成收尾（旧线 ERROR 后网络层 error 路径）
+    callbacks.onError();
+
+    const tail = session.store.getSnapshot().at(-1)!;
+    expect(tail.status).toBe(MessageStatusEnum.Error);
+    expect(dispatched).toContainEqual({
+      type: 'recent.status.patch',
+      conversationId: 1001,
+      status: 'FAILED',
+    });
+  });
+});

@@ -87,11 +87,13 @@ const persisted = {
 const messageEvent = (
   text: string,
   finished = false,
+  id = 'server-output',
+  requestId = 'req-1',
 ): ConversationChatResponse =>
   ({
-    requestId: 'req-1',
+    requestId,
     eventType: ConversationEventTypeEnum.MESSAGE,
-    data: { id: 'server-output', type: MessageModeEnum.CHAT, text, finished },
+    data: { id, type: MessageModeEnum.CHAT, text, finished },
   } as ConversationChatResponse);
 
 describe('conversationRuntimeSession', () => {
@@ -427,5 +429,125 @@ describe('conversationRuntimeSession R6 收口', () => {
     expect(params.modelId).toBe(7);
     expect(params.agentMode).toBe('yolo');
     expect(params.skillIds).toEqual([3, 5]);
+  });
+});
+
+describe('conversationRuntimeSession 关键业务场景（T03/T04/T06）', () => {
+  const createSessionWith = () => {
+    const dispatched: unknown[] = [];
+    const session = createConversationRuntimeSession({
+      adapters: {
+        renderProcessingBlock: vi.fn(() => 'block'),
+        reconcileFinalMessage: vi.fn((message) => message),
+      },
+      effectsAdapter: {
+        dispatch: (effect: unknown) => {
+          dispatched.push(effect);
+        },
+      } as never,
+    });
+    return { session, dispatched };
+  };
+  const getCallbacks = (n = -1) =>
+    mockOpenLive.mock.calls.at(n)![1] as {
+      onMessage: (res: ConversationChatResponse) => void;
+      onClose: () => void;
+      onError: () => void;
+    };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockSyncTerminal.mockResolvedValue(undefined);
+  });
+
+  it('T03 多 assistant 输出（真实形态：首段 unfinished，后续新 id + finished 插行）', () => {
+    const { session } = createSessionWith();
+    mockOpenLive.mockReturnValue(vi.fn());
+    session.send({ conversationId: 1001, message: '多段' });
+    const placeholderId = session.store.getSnapshot()[1].id;
+
+    // 首段：未结束，累积进占位（对齐旧线「工作流多段」输入形态）
+    getCallbacks().onMessage(messageEvent('第一段', false, 'out-1'));
+    // 第二段：新 id + finished → 插入新行（replaceCount=0，占位保留）
+    getCallbacks().onMessage(messageEvent(' 第二段', true, 'out-2'));
+
+    const messages = session.store.getSnapshot();
+    // user + 占位 + 新插入行
+    expect(messages).toHaveLength(3);
+    // 占位仍在且持有首段文本
+    expect(messages.some((m) => m.id === placeholderId)).toBe(true);
+    // 新行使用后端 id
+    expect(messages.some((m) => m.id === 'out-2')).toBe(true);
+    const inserted = messages.find((m) => m.id === 'out-2');
+    expect(inserted?.text).toBe('第一段 第二段');
+  });
+
+  it('T04 工具调用：PROCESSING 写入 processingList，同 executeId 更新不重复', () => {
+    const { session } = createSessionWith();
+    mockOpenLive.mockReturnValue(vi.fn());
+    session.send({ conversationId: 1001, message: '调工具' });
+
+    const toolEvent = (status: string) =>
+      ({
+        requestId: 'req-t04',
+        eventType: ConversationEventTypeEnum.PROCESSING,
+        data: {
+          type: 'ToolCall',
+          name: 'search',
+          executeId: 'exec-t04',
+          status,
+          result: { executeId: 'exec-t04' },
+        },
+      } as ConversationChatResponse);
+
+    getCallbacks().onMessage(toolEvent('EXECUTING'));
+    getCallbacks().onMessage(toolEvent('FINISHED'));
+
+    const assistant = session.store.getSnapshot()[1];
+    expect(assistant.processingList).toHaveLength(1); // 同 id 更新非追加
+    expect(assistant.processingList?.[0].status).toBe('FINISHED');
+  });
+
+  it('T06 网络 reject：onError 后迟到的 onClose 不重复收尾（exactly-once）', async () => {
+    const { session } = createSessionWith();
+    mockOpenLive.mockReturnValue(vi.fn());
+    session.send({ conversationId: 1001, message: 'x' });
+    const callbacks = getCallbacks();
+
+    callbacks.onError();
+    const statusAfterError = session.store.getSnapshot()[1].status;
+    // 迟到的 close：不应把已 Error 的消息再改 Stopped
+    callbacks.onClose();
+
+    expect(session.store.getSnapshot()[1].status).toBe(statusAfterError);
+    expect(session.getState().isAwaitingChatTerminal).toBe(false);
+  });
+
+  it('T04 页面组件：PROCESSING Page dispatch preview.page.open（资源路由）', () => {
+    const { session, dispatched } = createSessionWith();
+    mockOpenLive.mockReturnValue(vi.fn());
+    session.send({ conversationId: 1001, message: '页面' });
+
+    getCallbacks().onMessage({
+      requestId: 'req-page',
+      eventType: ConversationEventTypeEnum.PROCESSING,
+      data: {
+        type: 'Page',
+        status: 'EXECUTING',
+        executeId: 'exec-page',
+        result: {
+          executeId: 'exec-page',
+          input: { uri: '/chart', method: 'get', arguments: { a: 1 } },
+        },
+      },
+    } as ConversationChatResponse);
+
+    expect(dispatched).toContainEqual({
+      type: 'preview.page.open',
+      preview: expect.objectContaining({
+        executeId: 'exec-page',
+        uri: '/chart',
+      }),
+    });
   });
 });
