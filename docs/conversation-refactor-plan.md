@@ -2,7 +2,7 @@
 
 > 日期：2026-08-16  
 > 输入基线：[conversation-business-logic-baseline.md](./conversation-business-logic-baseline.md)  
-> 当前阶段：Phase 0-6 已完成，Phase 7 清理进行中（ADR/依赖规则已落地，eventBus 兼容 payload 与诊断下线为收尾项）  
+> 当前阶段：重构方案已实施完成（Phase 0-7；诊断模块下线为独立运营决策保留项）。后续演进（Runtime 接管 message state、三对象 Props 终态收窄、trace 收编 perf）见 ADR 待办  
 > 最高约束：任何业务逻辑丢失、时序改变或入口能力退化都不可接受
 
 ## 0. 实施进度（2026-08-16）
@@ -16,7 +16,7 @@
 | Phase 4 Runtime Factory | 核心纵切已完成 | 主/隔离 model 已创建独立 Runtime 实例；Runtime 已拥有输出身份、live/sub 连接所有权；resumeController 已迁入 runtime/；双实例合同测试覆盖投影一致与交叉隔离 |
 | Phase 5 Effects Adapter | 已完成（5/6 项迁移，1 项决策不迁移） | recent/taskStatus、suggest.fetch、topic.update、page/card/desktop 与 file/Git/task-result：ConversationEffect + 主/隔离双 Adapter + Runtime.effects 分发已切 live，旧直调路径已删除；perf/scroll 经 deletion test 判定为不迁移项（见 0.2） |
 | Phase 6 React Interface | 已完成（第 6 项以兼容并存形态收口） | Session View selectors、Queue 全局读取删除、Facade sessionView 并存、轮询编排迁出 View、五入口 `createConversationSessionModel` 统一状态组合、Intervention handler 全入口显式注入、`ConversationSessionProvider` 落地（队列/干预态/Session View 上提；组件 outer 检测外层 Provider、无则自包兜底，五入口全部外提）。Props 完整收窄为 session/actions/presentation 三对象受 Runtime 接管 message state 前置约束（§5.2/文档 0.2），当前兼容并存为方案设计的中间态 |
-| Phase 7 清理固化 | 进行中（2/5 完成，1 项前置覆盖） | ADR（docs/adr/conversation-runtime-refactor.md）✅；依赖规则（eslint no-restricted-imports，页面禁入 domain/runtime/adapters）✅；conversationAgent 复制实现删除已由 Phase 4 完成 ✅；剩余：eventBus 兼容 payload 清理、临时终态轮询诊断模块下线（现役排障用途，独立决策） |
+| Phase 7 清理固化 | 已完成（4/5 完成，1 项决策保留） | ADR ✅；依赖规则（eslint no-restricted-imports）✅；conversationAgent 复制实现删除（Phase 4 前置完成）✅；eventBus 兼容 payload 清理 ✅（`RefreshChatMessage` 为无发射方死事件，两处监听与 msg/message 双读兼容随之删除，连带移除对应死合同测试）；临时终态轮询诊断模块保留（现役线上排障，下线为独立运营决策，非重构阻塞项） |
 
 当前迁移保持旧 model 对外 Interface 不变。Phase 3 的策略已经集中，但 snapshot 的最终写权限仍通过兼容回调进入 model；该部分将在 Runtime 接管 message state 后删除，不能提前机械搬移。
 
