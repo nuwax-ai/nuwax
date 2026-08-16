@@ -3,10 +3,7 @@ import {
   type AgentMode,
   useAgentInterventionLayer,
 } from '@/components/business-component/AgentIntervention';
-import { useActiveInterventionQueue } from '@/components/business-component/AgentIntervention/hooks/useActiveInterventionQueue';
-import MessageQueuePanel, {
-  useUnifiedChatQueue,
-} from '@/components/business-component/MessageQueue';
+import MessageQueuePanel from '@/components/business-component/MessageQueue';
 import { registerOpenUiActionSender } from '@/components/business-component/OpenUiArtifactView/actionRegistry';
 import { buildOpenUiResumeMessage } from '@/components/business-component/OpenUiArtifactView/openUiResumeMessage';
 import ConversationStatus from '@/pages/Chat/components/ConversationStatus';
@@ -14,10 +11,13 @@ import classNames from 'classnames';
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 
 import { ENABLE_CHAT_MESSAGE_QUEUE } from '@/constants/feature.constants';
-import { selectConversationSessionView } from '@/features/conversation/domain/sessionView';
+import {
+  ConversationSessionProvider,
+  useConversationSession,
+} from '@/features/conversation/react/ConversationSessionProvider';
 import { useConversationStreamResume } from '@/features/conversation/react/useConversationStreamResume';
 import { dict } from '@/services/i18nRuntime';
-import { DefaultSelectedEnum, TaskStatus } from '@/types/enums/agent';
+import { DefaultSelectedEnum } from '@/types/enums/agent';
 import { AgentTypeEnum } from '@/types/enums/space';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type { RoleInfo } from '@/types/interfaces/conversationInfo';
@@ -40,7 +40,11 @@ const DEFAULT_ROLE_INFO: RoleInfo = {
   system: { name: 'System', avatar: '' },
 };
 
-const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
+/**
+ * Inner：只消费会话 Session Context（队列/干预派生态/Session View/agentModeRef 由
+ * Provider 创建）。sessionView prop（Facade 注入）优先于 ctx 派生值。
+ */
+const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
   conversationId,
   messageList = [],
   roleInfo,
@@ -56,7 +60,6 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
   chatSuggestList = [],
   agentInfo = {},
   initialAgentMode,
-  onSendMessage,
   onClear,
   onLoadMoreMessage,
   selectedModelId,
@@ -97,8 +100,6 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
   chatInputDisabled = false,
   voiceInputMock = false,
   chatInputProps,
-  queueMinConsumeInterval,
-  queueContext,
   sessionView,
 
   // 原 ChatInputHome 中 useModel('conversationInfo') 数据
@@ -168,8 +169,6 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
     onTerminalTaskStatus,
   });
 
-  const agentModeRef = useRef<AgentMode>('yolo');
-
   // 角色信息（名称、头像）默认逻辑：优先使用外部传入，其次根据传入的 agentInfo 自适应组装，最后使用 DEFAULT_ROLE_INFO 兜底
   const effectiveRoleInfo = useMemo<RoleInfo>(() => {
     if (roleInfo && roleInfo !== DEFAULT_ROLE_INFO) {
@@ -188,55 +187,22 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
   }, [roleInfo, agentInfo?.name, agentInfo?.icon]);
 
   // 是否有待处理的 intervention（ask/question/审批）：有则暂停队列消费并隐藏队列面板
-  const activeInterventions = useActiveInterventionQueue(messageList);
-  const hasPendingIntervention = activeInterventions.length > 0;
+  const sessionContext = useConversationSession()!;
+  const {
+    sessionView: derivedSessionView,
+    messageQueue,
+    hasPendingIntervention,
+    agentModeRef,
+  } = sessionContext;
   /** 是否渲染队列面板区域（用于测量高度，上移滚到底部按钮） */
   const showQueuePanel = ENABLE_CHAT_MESSAGE_QUEUE && !hasPendingIntervention;
 
-  // 消息队列：会话活跃时消息入队，空闲时自动消费（逻辑收敛于 hook）。
-  // 队列上下文默认以自身 props 构造（主入口数据由页面注入），不再读全局 model；
-  // 隔离入口（预览 Tab）显式传入 queueContext 覆盖，避免与主聊天串扰。
-  const messageQueue = useUnifiedChatQueue({
-    conversationId,
-    messageList,
-    selectedModelId,
-    agentModeRef,
-    onSendMessage,
-    minConsumeInterval: queueMinConsumeInterval,
-    hasPendingIntervention,
-    queueContext: queueContext ?? {
-      streamActive: isLocallyStreaming ?? isConversationActive,
-      taskExecuting: conversationInfo?.taskStatus === TaskStatus.EXECUTING,
-    },
-  });
+  // 消息队列由 Session Provider 统一创建（方案 Phase 6：队列/干预态上提后，
+  // sessionView 可由入口完整注入）；inner 仅消费。
 
-  // Facade sessionView（方案 §6.4）：入口注入的语义化视图优先；未注入时以现有
-  // props 内部派生（兼容并存）。内部派生不含 resumeSubscribed（sub 订阅态在
-  // useConversationStreamResume 内部，其轮询门禁自持真实值）。
-  const session = useMemo(
-    () =>
-      sessionView ??
-      selectConversationSessionView({
-        conversationId,
-        modelStreamActive: isLocallyStreaming ?? isConversationActive,
-        awaitingChatTerminal: isAwaitingChatTerminal,
-        taskStatus: conversationInfo?.taskStatus,
-        messageList,
-        hasQueuedMessages: messageQueue.hasQueuedMessages,
-        hasPendingIntervention,
-      }),
-    [
-      sessionView,
-      conversationId,
-      isLocallyStreaming,
-      isConversationActive,
-      isAwaitingChatTerminal,
-      conversationInfo?.taskStatus,
-      messageList,
-      messageQueue.hasQueuedMessages,
-      hasPendingIntervention,
-    ],
-  );
+  // Facade sessionView（方案 §6.4）：入口注入 > ctx 派生（Provider 以入口原始字段
+  // + 队列/干预态派生；resumeSubscribed 仍在恢复 hook 内部，其轮询门禁自持真实值）。
+  const session = sessionView ?? derivedSessionView;
 
   // 滚到底部按钮需避开队列面板：测量队列区域高度写入 CSS 变量
   const sessionContainerRef = useRef<HTMLDivElement>(null);
@@ -400,7 +366,7 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
         isVariablesFilled={isVariablesFilled}
         isVariablesDisabled={isVariablesDisabled}
         variableParams={variableParams}
-        messageList={messageList}
+        messageList={messageList ?? []}
         isMoreMessage={isMoreMessage}
         loadMoreRef={loadMoreRef}
         loadingMore={loadingMore}
@@ -514,6 +480,47 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
         />
       </div>
     </div>
+  );
+};
+
+/**
+ * UnifiedChatSession（outer）：会话 Session Context 的消费入口。
+ *
+ * - 外层已有 ConversationSessionProvider（入口外提模式）时直接渲染 inner；
+ * - 否则以自身 props 自包 Provider 兜底（队列/干预态/Session View 在兜底
+ *   Provider 内创建，行为与上提前的组件内创建等价）——入口可逐个外提切换。
+ */
+const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = (props) => {
+  const outerSession = useConversationSession();
+  if (outerSession) {
+    return <UnifiedChatSessionInner {...props} />;
+  }
+  const {
+    conversationId,
+    messageList,
+    selectedModelId,
+    onSendMessage,
+    queueMinConsumeInterval,
+    queueContext,
+    isConversationActive,
+    isLocallyStreaming,
+    isAwaitingChatTerminal,
+    conversationInfo,
+  } = props;
+  return (
+    <ConversationSessionProvider
+      conversationId={conversationId}
+      messageList={messageList ?? []}
+      modelStreamActive={isLocallyStreaming ?? isConversationActive}
+      awaitingChatTerminal={isAwaitingChatTerminal}
+      taskStatus={conversationInfo?.taskStatus}
+      selectedModelId={selectedModelId}
+      onSendMessage={onSendMessage}
+      minConsumeInterval={queueMinConsumeInterval}
+      queueContext={queueContext}
+    >
+      <UnifiedChatSessionInner {...props} />
+    </ConversationSessionProvider>
   );
 };
 
