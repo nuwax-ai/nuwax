@@ -2,8 +2,23 @@
 
 > 日期：2026-08-16  
 > 输入基线：[conversation-business-logic-baseline.md](./conversation-business-logic-baseline.md)  
-> 当前阶段：设计与迁移规划，不修改现有业务行为  
+> 当前阶段：渐进迁移中（Phase 0-3 已建立合同与核心 Module，Phase 4 Runtime Factory 纵切进行中）  
 > 最高约束：任何业务逻辑丢失、时序改变或入口能力退化都不可接受
+
+## 0. 实施进度（2026-08-16）
+
+| 阶段 | 状态 | 已落地内容 |
+| --- | --- | --- |
+| Phase 0 合同冻结 | 已完成 | 业务基线、Trace、错误/停止/队列/多输出与主-隔离 parity 测试 |
+| Phase 1 Domain Kernel | 已完成 | taskStatus、消息清理、PROCESSING/MESSAGE/FINAL/ERROR reducer、selectors |
+| Phase 2 连接所有权 | 已完成 | 通用 run Controller；live/sub 旧 message、close、error 回调隔离 |
+| Phase 3 历史一致性 | 核心策略已完成 | snapshot generation/visibility 单飞/USER 尾拒绝、历史 USER 等待、5 秒冷却、sub 退避、终态 fallback |
+| Phase 4 Runtime Factory | 进行中 | 主/隔离 model 已创建独立 Runtime 实例；Runtime 已拥有输出身份与 live 连接所有权 |
+| Phase 5 Effects Adapter | 未开始 | recent/topic/suggest/page/file/Git/perf 仍由旧 model Adapter 执行 |
+| Phase 6 React Interface | 未开始 | `UnifiedChatSession` 仍使用兼容 Props；轮询编排仍在 Resume Hook |
+| Phase 7 清理固化 | 未开始 | 双 model 外壳、兼容导出与临时诊断仍保留 |
+
+当前迁移保持旧 model 对外 Interface 不变。Phase 3 的策略已经集中，但 snapshot 的最终写权限仍通过兼容回调进入 model；该部分将在 Runtime 接管 message state 后删除，不能提前机械搬移。
 
 ## 1. 执行结论
 
