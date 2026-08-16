@@ -14,9 +14,12 @@ import classNames from 'classnames';
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 
 import { ENABLE_CHAT_MESSAGE_QUEUE } from '@/constants/feature.constants';
+import {
+  shouldShowSessionSuggest as selectShouldShowSessionSuggest,
+  shouldShowTaskExecutingWait as selectShouldShowTaskExecutingWait,
+} from '@/features/conversation/domain/runtimeSelectors';
 import { dict } from '@/services/i18nRuntime';
-import { DefaultSelectedEnum, TaskStatus } from '@/types/enums/agent';
-import { MessageStatusEnum } from '@/types/enums/common';
+import { DefaultSelectedEnum } from '@/types/enums/agent';
 import { AgentTypeEnum } from '@/types/enums/space';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type { RoleInfo } from '@/types/interfaces/conversationInfo';
@@ -312,42 +315,27 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
     return false;
   }, [requiredNameList, variableParams]);
 
-  // 是否有活跃的流式消息（即最后一条消息正在加载或未完成）
-  const hasActiveStreamingMessage = useMemo(() => {
-    if (!messageList || messageList.length === 0) return false;
-    const lastMessage = messageList[messageList.length - 1];
-    return (
-      lastMessage.status === MessageStatusEnum.Loading ||
-      lastMessage.status === MessageStatusEnum.Incomplete
-    );
-  }, [messageList]);
-
   /**
    * 「智能体正在执行，请稍等」仅在后端 taskStatus=EXECUTING 且流式已结束时展示。
    * 不用 isConversationActive：队列自动发送会乐观置活跃，末条仍为 Complete 时会误显示。
    */
   const showTaskExecutingWait = useMemo(() => {
-    return (
-      conversationInfo?.taskStatus === TaskStatus.EXECUTING &&
-      !hasActiveStreamingMessage
+    return selectShouldShowTaskExecutingWait(
+      conversationInfo?.taskStatus,
+      messageList,
     );
-  }, [conversationInfo?.taskStatus, hasActiveStreamingMessage]);
+  }, [conversationInfo?.taskStatus, messageList]);
 
   /**
    * 会话 suggest 仅在整轮结束且队列已排空时展示。
    * 队列自动消费下一条时，上一轮 suggest 若仍挂在底部会与新一轮消息割裂成两块。
    */
   const shouldShowSessionSuggest = useMemo(() => {
-    if (!messageList?.length) {
-      return false;
-    }
-    if (messageQueue.hasQueuedMessages) {
-      return false;
-    }
-    if (isConversationActive) {
-      return false;
-    }
-    return true;
+    return selectShouldShowSessionSuggest(
+      messageList,
+      messageQueue.hasQueuedMessages,
+      isConversationActive,
+    );
   }, [
     messageList?.length,
     messageQueue.hasQueuedMessages,
