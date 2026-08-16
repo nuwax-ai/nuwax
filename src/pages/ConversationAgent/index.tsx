@@ -1055,6 +1055,7 @@ const ConversationAgent: React.FC = () => {
         handleRefreshFileList(queryConversationId);
         void openPreviewView(queryConversationId);
       }
+      // 如果终端全屏，则折叠终端
       if (isTerminalExpanded) {
         setDevConsoleCollapseSignal((n) => n + 1);
       }
