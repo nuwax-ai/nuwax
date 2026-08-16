@@ -15,8 +15,8 @@
 | Phase 3 历史一致性 | 核心策略已完成 | snapshot generation/visibility 单飞/USER 尾拒绝、历史 USER 等待、5 秒冷却、sub 退避、终态 fallback |
 | Phase 4 Runtime Factory | 核心纵切已完成 | 主/隔离 model 已创建独立 Runtime 实例；Runtime 已拥有输出身份、live/sub 连接所有权；resumeController 已迁入 runtime/；双实例合同测试覆盖投影一致与交叉隔离 |
 | Phase 5 Effects Adapter | 已完成（5/6 项迁移，1 项决策不迁移） | recent/taskStatus、suggest.fetch、topic.update、page/card/desktop 与 file/Git/task-result：ConversationEffect + 主/隔离双 Adapter + Runtime.effects 分发已切 live，旧直调路径已删除；perf/scroll 经 deletion test 判定为不迁移项（见 0.2） |
-| Phase 6 React Interface | 进行中（第 1-4 项已完成） | Session View selectors、Queue 全局读取删除、Facade sessionView 并存、轮询编排迁出 View、五入口 `createConversationSessionModel` 统一状态组合、Intervention handler 全入口显式注入（layer 不再读全局 model）均已落地。剩余：queue/intervention 状态上提 Provider（sessionView 完整注入）、删旧 Props |
-| Phase 7 清理固化 | 未开始 | 双 model 外壳、shadow 诊断通道（分片迁移机制，保留供后续片使用）、ADR 与依赖规则待做 |
+| Phase 6 React Interface | 已完成（第 6 项以兼容并存形态收口） | Session View selectors、Queue 全局读取删除、Facade sessionView 并存、轮询编排迁出 View、五入口 `createConversationSessionModel` 统一状态组合、Intervention handler 全入口显式注入、`ConversationSessionProvider` 落地（队列/干预态/Session View 上提；组件 outer 检测外层 Provider、无则自包兜底，五入口全部外提）。Props 完整收窄为 session/actions/presentation 三对象受 Runtime 接管 message state 前置约束（§5.2/文档 0.2），当前兼容并存为方案设计的中间态 |
+| Phase 7 清理固化 | 进行中（2/5 完成，1 项前置覆盖） | ADR（docs/adr/conversation-runtime-refactor.md）✅；依赖规则（eslint no-restricted-imports，页面禁入 domain/runtime/adapters）✅；conversationAgent 复制实现删除已由 Phase 4 完成 ✅；剩余：eventBus 兼容 payload 清理、临时终态轮询诊断模块下线（现役排障用途，独立决策） |
 
 当前迁移保持旧 model 对外 Interface 不变。Phase 3 的策略已经集中，但 snapshot 的最终写权限仍通过兼容回调进入 model；该部分将在 Runtime 接管 message state 后删除，不能提前机械搬移。
 
@@ -25,6 +25,9 @@
 - Phase 5 第五片（file/Git/task-result）完成 shadow→live 闭环：新增 `preview.file.refresh`（throttled=ToolCall 节流 / immediate=FINAL_RESULT 立即）与 `taskResult.settle`（保序组合体：立即刷树 → 按需 Git 刷新 → task-result 文件选中并打开预览 → 未命中发兜底正文重拉 trigger）。时序依赖（文件选中依赖树刷新完成）使其不按 §5.5 清单拆成独立 git.refresh/taskResult.file.open——保序优先，为清单的工程化取舍（已在 effect 类型注释记录）。切 live 后删除 setTimeout 段旧执行体与 ToolCall 旧刷新直调；三个刷新/打开句柄经 ref 转发。隔离入口无文件树/Git/task-result（Preview Adapter 忽略）。
 
 ### 0.2 迁移决策记录（2026-08-16）
+
+- Phase 6 收口纵切（Provider 上提）：`react/ConversationSessionProvider.tsx` 落地（§4 命名）——队列、干预派生态、Session View、agentModeRef 的唯一创建点，下发 Context；`UnifiedChatSession` 拆 outer（外层 Provider 优先，无则以自身 props 自包兜底，hook 全部无条件）+ inner（纯消费 Context，Facade sessionView 注入仍优先于 ctx 派生值）；五个渲染入口全部外提 Provider。自包兜底与外提双路行为等价（同一 Provider 实现），兜底保留为兼容保险。
+- Phase 7 已完成项：ADR（关键决策/后果/验证基线入档）；eslint 依赖规则（页面层 `no-restricted-imports` 禁入 `features/conversation/{domain,runtime,adapters}`，当前零违规即生效）。
 
 - Phase 6 第一纵切：`domain/sessionView.ts` 落地方案 §5.6 的 `ConversationSessionView` 聚合选择器（phase/canSendNow/shouldEnqueue/canPollSnapshot/shouldShowStop/shouldShowTaskWait/shouldShowSuggest/queueGate），聚合既有 runtimeSelectors，10 条合同测试冻结语义（Interface 即测试 Surface）。纯新增，页面未切换——为 Facade Props 并存铺路。
 - Phase 6 第五纵切（第 2 项逐入口迁移）：`react/createConversationSessionModel.ts` 入口级会话构建器落地（吸收 Chat 页的「完整活跃 = 本地流式 || 后台 EXECUTING」合成规则，§2.3 状态组合不再泄漏给页面）；五个渲染入口（Chat/LeftContent、ConversationAgent 预览 Tab、AgentConversationChatPanel、EditAgent/PreviewAndDebug、Plugin/SpacePluginTool）全部切换消费，各自删除内联合成。
