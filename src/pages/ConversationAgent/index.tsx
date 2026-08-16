@@ -901,6 +901,7 @@ const ConversationAgent: React.FC = () => {
             files: updatedFilesList,
           });
           if (code === SUCCESS_CODE) {
+            // 刷新文件树
             handleRefreshFileList(queryConversationId);
             resolve(true);
           } else {
