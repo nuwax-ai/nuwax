@@ -20,6 +20,7 @@ import {
   finalizeOwnedMessageOnStaleClose,
   markOwnedMessageStreamError,
 } from '@/features/conversation/domain/messageLifecycle';
+import { reduceMessageEvent } from '@/features/conversation/domain/reduceMessageEvent';
 import { isSessionStreamBusy } from '@/features/conversation/domain/runtimeSelectors';
 import {
   mergeConversationInfoTaskStatus,
@@ -1188,54 +1189,14 @@ export default () => {
       }
       // MESSAGE事件
       if (eventType === ConversationEventTypeEnum.MESSAGE) {
-        const { text, type, id, finished } = data;
-        // 思考think
-        if (type === MessageModeEnum.THINK) {
-          newMessage = {
-            ...currentMessage,
-            think: `${currentMessage.think}${text}`,
-            // 每一轮 THINK 都独立更新状态：新分片会将上一轮的“已思考”
-            // 重新切回“正在思考”，本轮 finished=true 后再显示“已思考”。
-            thinkingFinished: finished === true,
-            status: MessageStatusEnum.Incomplete,
-          };
-        }
-        // 问答
-        else if (type === MessageModeEnum.QUESTION) {
-          newMessage = {
-            ...currentMessage,
-            text: `${currentMessage.text}${text}`,
-            // QUESTION/CHAT 是 THINK 阶段之后的输出边界。
-            thinkingFinished: true,
-            // 如果finished为true，则状态为null，此时不会显示运行状态组件，否则为Incomplete
-            status: finished ? null : MessageStatusEnum.Incomplete,
-          };
-        } else {
-          // 工作流过程输出
-          if (messageIdRef.current && messageIdRef.current !== id && finished) {
-            newMessage = {
-              ...currentMessage,
-              id,
-              text: `${currentMessage.text}${text}`, // 这里需要添加 展示MCP 或者其他工具调用
-              thinkingFinished: true,
-              status: null, // 隐藏运行状态
-            };
-            // 插入新的消息
-            arraySpliceAction = 0;
-          } else {
-            messageIdRef.current = id;
-            newMessage = {
-              ...currentMessage,
-              text: `${currentMessage.text}${text}`,
-              // 后端 THINK 分片始终可能为 finished=false；首个正文分片即代表本轮思考结束。
-              thinkingFinished: true,
-              // 如果finished为true，则状态为Complete，否则为Incomplete
-              status: finished
-                ? MessageStatusEnum.Complete
-                : MessageStatusEnum.Incomplete,
-            };
-          }
-        }
+        const reduction = reduceMessageEvent(
+          list,
+          currentMessageId,
+          messageIdRef.current,
+          data,
+        );
+        list = reduction.messages;
+        messageIdRef.current = reduction.activeOutputMessageId;
       }
       // FINAL_RESULT事件
       if (eventType === ConversationEventTypeEnum.FINAL_RESULT) {
