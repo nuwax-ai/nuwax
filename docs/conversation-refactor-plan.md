@@ -14,7 +14,7 @@
 | Phase 2 连接所有权 | 已完成 | 通用 run Controller；live/sub 旧 message、close、error 回调隔离 |
 | Phase 3 历史一致性 | 核心策略已完成 | snapshot generation/visibility 单飞/USER 尾拒绝、历史 USER 等待、5 秒冷却、sub 退避、终态 fallback |
 | Phase 4 Runtime Factory | 核心纵切已完成 | 主/隔离 model 已创建独立 Runtime 实例；Runtime 已拥有输出身份、live/sub 连接所有权；resumeController 已迁入 runtime/；双实例合同测试覆盖投影一致与交叉隔离 |
-| Phase 5 Effects Adapter | 进行中（第 1-5 片已切 live） | recent/taskStatus、suggest.fetch、topic.update、page/card/desktop 与 file/Git/task-result：ConversationEffect + 主/隔离双 Adapter + Runtime.effects 分发已切 live，旧直调路径已删除；perf/scroll 仍由旧 model 执行 |
+| Phase 5 Effects Adapter | 已完成（5/6 项迁移，1 项决策不迁移） | recent/taskStatus、suggest.fetch、topic.update、page/card/desktop 与 file/Git/task-result：ConversationEffect + 主/隔离双 Adapter + Runtime.effects 分发已切 live，旧直调路径已删除；perf/scroll 经 deletion test 判定为不迁移项（见 0.2） |
 | Phase 6 React Interface | 未开始 | `UnifiedChatSession` 仍使用兼容 Props；轮询编排仍在 Resume Hook |
 | Phase 7 清理固化 | 未开始 | 双 model 外壳、兼容导出与临时诊断仍保留 |
 
@@ -23,6 +23,10 @@
 ### 0.1 最新纵切记录（2026-08-16）
 
 - Phase 5 第五片（file/Git/task-result）完成 shadow→live 闭环：新增 `preview.file.refresh`（throttled=ToolCall 节流 / immediate=FINAL_RESULT 立即）与 `taskResult.settle`（保序组合体：立即刷树 → 按需 Git 刷新 → task-result 文件选中并打开预览 → 未命中发兜底正文重拉 trigger）。时序依赖（文件选中依赖树刷新完成）使其不按 §5.5 清单拆成独立 git.refresh/taskResult.file.open——保序优先，为清单的工程化取舍（已在 effect 类型注释记录）。切 live 后删除 setTimeout 段旧执行体与 ToolCall 旧刷新直调；三个刷新/打开句柄经 ref 转发。隔离入口无文件树/Git/task-result（Preview Adapter 忽略）。
+
+### 0.2 迁移决策记录（2026-08-16）
+
+- **perf/scroll 不作为 Effects Adapter 迁移项**（Phase 5 第 5 项的调整）：盘点确认两个 model 的 perf 埋点（onSendClick/onHttpStart/onSseConnect/onFirstChunk/onStreamEnd/onCloseRenderComplete）与流式 rAF 滚动调用点完全对称，双入口无子集差异——按 §11 deletion test（无第二个行为不同的 Adapter 即假设性抽象）不建 Seam；且 onHttpStart/onSseConnect 是连接编排的时序标记，effect 化会引入分发间接层、损失埋点时序精度。其归宿为 §4 目标目录的 `runtime/trace.ts`：Phase 6/7 Runtime 接管连接编排时随 live/sub 连接生命周期统一收编（届时 Queue/页面消费语义化 selectors，滚动作为 View 行为由会话视图层承接）。
 - Phase 5 第四片（page/card/desktop）完成 shadow→live 闭环：新增 `preview.page.open` / `preview.link.open` / `card.result.apply`（LIST 过滤空对象/单卡、append 由调用点以 requestId 判定）/ `desktop.open`；主 model Runtime 创建移至全部 Adapter 依赖声明之后（消除 setState/openDesktopView 的 TDZ，ref 转发仅用于跨 render 变化句柄）。双入口子集：主 Chat 全量，隔离 Preview 执行 page/link（无卡片/桌面状态）。切 live 后删除两 model 的 showPagePreview/window.open/setCardList 卡片块/openDesktopView 直调及 BindCardStyleEnum 等无用 import。isEmptyObject 在 Adapter 内联（utils/common 经 i18nRuntime 引入 umi 传递依赖，会破坏 vitest 可导入性）。
 - Phase 5 第三片（topic.update）完成 shadow→live 闭环：`topic.update` 携带发起时会话信息快照（保持「以快照为基底合并主题」的原覆盖语义）；mainChat Adapter 注入 updateTopic（ref 转发）/setConversationInfo/needUpdateTopicRef/getTopicContext（侧栏模式与历史句柄 render 期刷新），执行体含成功写回快照、列表/历史双分支刷新、失败回滚「仅一次」标记。gate 留在调用点；dispatch 置于旧调用之前——shadow 下两路互不干扰，切 live 后 Adapter 先置标记、旧路径 gate 自动不通过（天然防双发）。切 live 后删除 `updateTopicOnce` 整函数与 model 内全部 eventBus 直发（主 model 不再 import eventBus/EVENT_TYPE）。隔离入口无主题更新（Preview Adapter 忽略）。
 - Phase 5 第二片（suggest.fetch）完成 shadow→live 闭环：`ConversationEffect` 新增 `suggest.fetch`；dispatcher 支持 `shadowEffectTypes` 分片 shadow 通道（live runtime 中新迁移类型只记录不执行，防止与旧路径双发）；双 Adapter 注入 `fetchSuggest`（model 的 useRequest 句柄经 `runChatSuggestRef` render 期刷新转发，防 stale 闭包）。隔离入口的 suggest 代际记录（pendingSuggestGenerationRef）留在调用点、属 model ref 语义。shadow 对照（Adapter 转发单测 + model 计划断言）通过后切 live，删除两处旧 `runChatSuggest` 直调。
