@@ -1,4 +1,8 @@
-import { isSessionStreamBusy } from '@/hooks/useExecutingTaskStatusPoll';
+import {
+  selectQueueGate,
+  selectSessionStreamActive,
+} from '@/features/conversation/domain/runtimeSelectors';
+import { TaskStatus } from '@/types/enums/agent';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
@@ -50,13 +54,19 @@ export const useChatMessageQueue = ({
 
   /** 以 messageList 为准兜底，避免 model isConversationActive 与真实流式状态脱节 */
   const streamActive = useMemo(
-    () => isConversationActive || isSessionStreamBusy(messageList),
+    () => selectSessionStreamActive(isConversationActive, messageList),
     [isConversationActive, messageList],
   );
 
   const enqueueBlocked = useMemo(
-    () => isEnqueueBlocked ?? (streamActive || isTaskExecuting),
-    [isEnqueueBlocked, streamActive, isTaskExecuting],
+    () =>
+      isEnqueueBlocked ??
+      selectQueueGate(
+        streamActive,
+        messageList,
+        isTaskExecuting ? TaskStatus.EXECUTING : undefined,
+      ).enqueueBlocked,
+    [isEnqueueBlocked, streamActive, isTaskExecuting, messageList],
   );
 
   /** 队列消费阻塞：流式 OR 后台任务 OR intervention，须全部解除后才可 auto-consume */

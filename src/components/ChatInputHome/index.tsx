@@ -11,7 +11,10 @@ import PermissionMask from '@/components/PermissionMask';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
-import { isSessionStreamBusy } from '@/hooks/useExecutingTaskStatusPoll';
+import {
+  selectSessionActive,
+  selectSessionStreamActive,
+} from '@/features/conversation/domain/runtimeSelectors';
 import useSubscription from '@/hooks/useSubscription';
 import { t } from '@/services/i18nRuntime';
 import { DefaultSelectedEnum, TaskStatus } from '@/types/enums/agent';
@@ -302,10 +305,14 @@ const ChatInputHome = forwardRef<ChatInputHomeRef, ChatInputProps>(
      * model 流式信号 + messageList 兜底 + 后台 taskStatus
      */
     const streamActive = useMemo(
-      () => isConversationActive || isSessionStreamBusy(messageList),
+      () => selectSessionStreamActive(isConversationActive, messageList),
       [isConversationActive, messageList],
     );
-    const isActiveConversation = streamActive || effectiveTaskExecuting;
+    const isActiveConversation = selectSessionActive(
+      streamActive,
+      messageList,
+      effectiveTaskExecuting ? TaskStatus.EXECUTING : undefined,
+    );
 
     /** 按钮区活跃态（延迟回落）：吸收 model / taskStatus 短暂抖动，避免停止钮与发送钮来回闪 */
     const BUTTON_SLOT_RELEASE_MS = 800;

@@ -12,6 +12,8 @@ vi.mock('@/utils/eventBus', () => ({
   default: {
     on: mockEventBusOn,
     off: mockEventBusOff,
+    // 新版 util 在终态同步时补偿侧栏列表（emit）；基线断言不涉及，仅补齐 mock 面
+    emit: vi.fn(),
   },
 }));
 

@@ -1,5 +1,5 @@
 import type { AgentMode } from '@/components/business-component/AgentIntervention';
-import { isSessionStreamBusy } from '@/hooks/useExecutingTaskStatusPoll';
+import { selectQueueGate } from '@/features/conversation/domain/runtimeSelectors';
 import { TaskStatus } from '@/types/enums/agent';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
@@ -42,9 +42,9 @@ export interface UseUnifiedChatQueueParams {
   /** 当前是否有待处理 intervention（ask/question/审批），为 true 时暂停队列消费 */
   hasPendingIntervention?: boolean;
   /**
-   * 可选：覆盖 conversationInfo model 的流式/任务上下文。
-   * 预览 Tab 使用 conversationAgent model 时传入，避免与左侧主聊天串扰。
-   * 停止会话仅由输入框停止按钮走 runStopConversation，不再用于队列立即发送。
+   * 队列的流式/任务上下文（必传语义：由 UnifiedChatSession 以自身 props 构造默认值，
+   * 隔离入口（预览 Tab 等）显式传入 conversationAgent model 的上下文避免串扰）。
+   * 本 hook 不再默认读取全局 conversationInfo model（方案 Phase 6）。
    */
   queueContext?: UnifiedChatQueueContext;
 }
@@ -67,15 +67,21 @@ export const useUnifiedChatQueue = ({
   hasPendingIntervention,
   queueContext,
 }: UseUnifiedChatQueueParams) => {
+  // 双线分支语义：queueContext（新线 Provider / 隔离入口）显式注入优先；
+  // 未提供时保持基线行为——回落全局 conversationInfo model（旧线入口零改动）。
   const { isConversationActive: modelStreamActive, conversationInfo } =
     useModel('conversationInfo');
 
-  const streamActiveByModel = queueContext?.streamActive ?? modelStreamActive;
-  const streamActive = streamActiveByModel || isSessionStreamBusy(messageList);
-  const taskExecuting =
-    queueContext?.taskExecuting ??
-    conversationInfo?.taskStatus === TaskStatus.EXECUTING;
-  const isEnqueueBlocked = streamActive || taskExecuting;
+  const queueGate = selectQueueGate(
+    queueContext?.streamActive ?? modelStreamActive,
+    messageList,
+    queueContext?.taskExecuting === undefined
+      ? conversationInfo?.taskStatus
+      : queueContext.taskExecuting
+      ? TaskStatus.EXECUTING
+      : undefined,
+    hasPendingIntervention,
+  );
 
   const rawSend = useCallback(
     (
@@ -97,9 +103,9 @@ export const useUnifiedChatQueue = ({
   );
 
   const messageQueueCtrl = useChatMessageQueue({
-    isConversationActive: streamActive,
-    isEnqueueBlocked,
-    isTaskExecuting: taskExecuting,
+    isConversationActive: queueGate.streamActive,
+    isEnqueueBlocked: queueGate.enqueueBlocked,
+    isTaskExecuting: queueGate.taskExecuting,
     messageList: messageList || [],
     conversationId,
     sendMessage: rawSend,
