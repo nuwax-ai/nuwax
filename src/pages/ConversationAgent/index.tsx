@@ -1051,6 +1051,7 @@ const ConversationAgent: React.FC = () => {
       setIsAgentDesktopOpen(false);
       setDevConsoleExpandSignal(0);
       setCanShowFileView(true);
+      // 刷新文件树
       if (queryConversationId) {
         handleRefreshFileList(queryConversationId);
         void openPreviewView(queryConversationId);
