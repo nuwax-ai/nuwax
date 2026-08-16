@@ -1046,7 +1046,7 @@ const ConversationAgent: React.FC = () => {
   const handleToggleFileTreeSidebar = useCallback(() => {
     const isTerminalExpanded =
       devConsoleLayoutMode === 'expanded' && devConsoleActiveTab === 'terminal';
-
+    // 如果智能体电脑打开，则关闭智能体电脑，并打开文件树
     if (isAgentDesktopOpen) {
       setIsAgentDesktopOpen(false);
       setDevConsoleExpandSignal(0);
