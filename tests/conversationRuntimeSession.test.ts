@@ -15,13 +15,17 @@ import type {
 } from '@/types/interfaces/conversationInfo';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { mockOpenLive, mockSyncTerminal } = vi.hoisted(() => ({
-  mockOpenLive: vi.fn(),
-  mockSyncTerminal: vi.fn().mockResolvedValue(undefined),
-}));
+const { mockOpenLive, mockOpenResume, mockSyncTerminal, mockCreateSSE } =
+  vi.hoisted(() => ({
+    mockOpenLive: vi.fn(),
+    mockOpenResume: vi.fn(),
+    mockSyncTerminal: vi.fn().mockResolvedValue(undefined),
+    mockCreateSSE: vi.fn(),
+  }));
 
 vi.mock('@/features/conversation/runtime/conversationTransport', () => ({
   openLiveConversationStream: (...args: unknown[]) => mockOpenLive(...args),
+  openResumeConversationStream: (...args: unknown[]) => mockOpenResume(...args),
 }));
 
 vi.mock('@/utils/conversationTaskStatusSync', () => ({
@@ -31,7 +35,18 @@ vi.mock('@/utils/conversationTaskStatusSync', () => ({
 }));
 
 vi.mock('@/utils/fetchEventSourceConversationInfo', () => ({
-  createSSEConnection: vi.fn(),
+  createSSEConnection: (...args: unknown[]) => mockCreateSSE(...args),
+}));
+
+// 基线版 common/home.constants 经 i18nRuntime→umi 传递依赖破坏非 umi 测试环境
+//（与 resumeController.test 同法 mock）
+vi.mock('@/constants/common.constants', () => ({
+  CONVERSATION_CONNECTION_URL: '/api/agent/conversation/chat',
+  CONVERSATION_CHAT_SUB_URL: '/api/agent/conversation/chat/sub',
+  MESSAGE_PAGE_SIZE: 20,
+}));
+vi.mock('@/constants/home.constants', () => ({
+  ACCESS_TOKEN: 'ACCESS_TOKEN',
 }));
 
 type LiveCallbacks = {
@@ -40,7 +55,11 @@ type LiveCallbacks = {
   onError: () => void;
 };
 
-const createSession = () => {
+const createSession = (
+  extraConfig: Partial<
+    Parameters<typeof createConversationRuntimeSession>[0]
+  > = {},
+) => {
   const dispatched: unknown[] = [];
   const effectsAdapter: ConversationEffectsAdapter = {
     dispatch: (effect) => {
@@ -53,9 +72,17 @@ const createSession = () => {
       reconcileFinalMessage: vi.fn((message) => message),
     },
     effectsAdapter,
+    ...extraConfig,
   });
   return { session, dispatched };
 };
+
+/** 已落库的历史消息 */
+const persisted = {
+  id: 'persisted-1',
+  text: '历史',
+  status: MessageStatusEnum.Complete,
+} as never;
 
 const messageEvent = (
   text: string,
@@ -217,5 +244,77 @@ describe('conversationRuntimeSession', () => {
     expect(session.store.getSnapshot()[1].status).toBe(
       MessageStatusEnum.Stopped,
     );
+  });
+
+  it('R3 load：详情加载整体替换并保留乐观尾，过期返回丢弃', async () => {
+    const loadRequest = vi
+      .fn()
+      .mockResolvedValue({ data: { id: 1001, messageList: [persisted] } });
+    const { session } = createSession({ loadRequest });
+    // 先有本地乐观轮次
+    mockOpenLive.mockReturnValue(vi.fn());
+    session.send({ conversationId: 1001, message: '本地' });
+
+    const data = await session.load(1001);
+
+    expect(loadRequest).toHaveBeenCalledWith(1001);
+    expect(data?.id).toBe(1001);
+    // 乐观 user/assistant 保留在尾部，persisted 在前
+    const messages = session.store.getSnapshot();
+    expect(messages[0].id).toBe('persisted-1');
+    expect(messages.some((message) => message.text === '本地')).toBe(true);
+
+    // 过期丢弃：慢请求挂起期间发起了新会话的 load（currentConversationId 已切换）
+    let resolveLate: (value: unknown) => void;
+    loadRequest.mockReturnValue(
+      new Promise((resolve) => {
+        resolveLate = resolve;
+      }),
+    );
+    const late = session.load(1001);
+    loadRequest.mockResolvedValue({ data: { id: 2002, messageList: [] } });
+    void session.load(2002); // 同步置 currentConversationId = 2002
+    resolveLate!({ data: { id: 1001, messageList: [] } });
+    expect(await late).toBeUndefined();
+  });
+
+  it('R3 applySnapshot：会话门禁——不匹配的快照丢弃', () => {
+    const { session } = createSession();
+    mockOpenLive.mockReturnValue(vi.fn());
+    session.send({ conversationId: 1001, message: '你好' });
+    const before = session.store.getSnapshot();
+
+    session.applySnapshot(9999, [{ id: 'other', text: '别家会话' } as never]);
+
+    expect(session.store.getSnapshot()).toBe(before);
+
+    session.applySnapshot(1001, [{ id: 's1', text: '本会话快照' } as never]);
+    expect(session.store.getSnapshot().length).toBeGreaterThan(before.length);
+  });
+
+  it('R3 resume：sub 订阅追加 assistant 占位并共用事件投影', () => {
+    const { session } = createSession();
+    const abort = vi.fn();
+    mockCreateSSE.mockReturnValue(abort);
+
+    session.resumeConversationStream(1001, [], undefined, 'test');
+
+    // resumeController 直用 createSSEConnection 建立 sub 流
+    expect(mockCreateSSE).toHaveBeenCalledTimes(1);
+    expect(mockCreateSSE.mock.calls[0][0].url).toContain('/sub/1001');
+    // 占位已追加
+    const messages = session.store.getSnapshot();
+    expect(messages).toHaveLength(1);
+    expect(messages[0].status).toBe(MessageStatusEnum.Loading);
+
+    // sub chunk 投影进占位（与 live 共用 applyStreamEvent）
+    const resumeCallbacks = mockCreateSSE.mock.calls[0][0];
+    resumeCallbacks.onMessage(messageEvent('恢复'));
+
+    expect(session.store.getSnapshot()[0].text).toBe('恢复');
+    expect(session.getState().currentRequestId).toBe('req-1');
+
+    resumeCallbacks.onClose();
+    expect(mockCreateSSE).toHaveBeenCalledTimes(1);
   });
 });

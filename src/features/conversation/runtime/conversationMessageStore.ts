@@ -5,6 +5,7 @@ import {
 } from '@/features/conversation/domain/messageLifecycle';
 import {
   appendOutgoingConversationMessages,
+  preserveOptimisticMessageTail,
   reconcileConversationSnapshotMessages,
 } from '@/models/conversationInfoMessageList';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
@@ -29,11 +30,18 @@ export interface ConversationMessageStore {
   /** SSE 投影写入（reducer 产出后的新列表），引用相同则跳过 */
   applyStreamReduction(messages: MessageInfo[]): MessageInfo[];
   /**
+   * 函数式更新（React setState 形状兼容）：供 resumeController 等
+   * 以 Dispatch<SetStateAction<MessageInfo[]>> 为 deps 的既有件接入新线。
+   */
+  update(updater: (prev: MessageInfo[]) => MessageInfo[]): MessageInfo[];
+  /**
    * 轮询/恢复快照归并（乐观尾保留规则由纯函数承载）。
    * 返回是否产生了新引用（reconcile 纯函数总是构造新数组；内容等价的归并
    * 仍会触发一次通知，与旧线 model 的 reconcile 调用模式一致）。
    */
   mergeSnapshot(incoming: MessageInfo[]): boolean;
+  /** 历史加载整体替换（保留本地末尾乐观消息，规则由纯函数承载） */
+  replaceFromHistory(incoming: MessageInfo[]): MessageInfo[];
   /** 流结束：Loading/Incomplete → Stopped，执行中 processing → FAILED */
   finalizeOnClose(): void;
   /** 网络错误：owner 消息 → Error，其执行中 processing → FAILED */
@@ -83,11 +91,19 @@ export function createConversationMessageStore(
       return commit(next);
     },
 
+    update(updater) {
+      return commit(updater(messages));
+    },
+
     mergeSnapshot(incoming) {
       const merged = reconcileConversationSnapshotMessages(messages, incoming);
       const changed = merged !== messages;
       commit(merged);
       return changed;
+    },
+
+    replaceFromHistory(incoming) {
+      return commit(preserveOptimisticMessageTail(messages, incoming));
     },
 
     finalizeOnClose() {

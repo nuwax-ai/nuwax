@@ -26,6 +26,10 @@ import {
   type ConversationRuntime,
 } from './createConversationRuntime';
 import type { ConversationEffectsAdapter } from './effectDispatcher';
+import {
+  createResumeController,
+  type ResumeController,
+} from './resumeController';
 
 /** 新线发送输入（对齐旧线 SendMessageParams 的会话面） */
 export interface RuntimeSessionSendInput {
@@ -45,17 +49,46 @@ export interface RuntimeSessionListener {
   onStateChanged?: () => void;
 }
 
+/** 绑定层注入的外部句柄（R3）：HTTP 与视图资源不进 session 核心，保持可测试性 */
+export interface RuntimeSessionConfig {
+  adapters: ConversationEventReducerAdapters;
+  effectsAdapter: ConversationEffectsAdapter;
+  /** 后端 stop 请求句柄 */
+  stopRequest?: (conversationId: string) => Promise<unknown>;
+  /** 会话详情查询句柄（load 用；返回 hydrate 后的消息列表由绑定层负责） */
+  loadRequest?: (
+    conversationId: number,
+  ) => Promise<{ data?: ConversationInfo } | undefined>;
+}
+
 export interface ConversationRuntimeSession {
   readonly store: ConversationMessageStore;
   readonly runtime: ConversationRuntime;
   send(input: RuntimeSessionSendInput): void;
   stop(conversationId: number | string): void;
-  /** 当前连接是否已过期（迟到回调只清理自己的消息） */
+  /** 加载会话详情：消息整体替换（保留乐观尾）；返回会话数据供绑定层消费 */
+  load(conversationId: number): Promise<ConversationInfo | undefined>;
+  /** 轮询/恢复快照归并（conversationId 门禁，与旧线兼容回调同规则） */
+  applySnapshot(conversationId: number | string, incoming: MessageInfo[]): void;
+  /** sub 流式恢复（resumeController 编排，投影与 live 共用同一事件处理） */
+  resumeConversationStream(
+    conversationId: number | string,
+    currentList: MessageInfo[],
+    onClose?: () => void,
+    debugSource?: string,
+  ): void;
+  abortResumeStream(): void;
+  /** 绑定层注入滚动 refs（resumeController 的滚动跟随） */
+  setViewRefs(
+    messageViewRef: { current: HTMLDivElement | null },
+    allowAutoScrollRef: { current: boolean },
+  ): void;
   dispose(): void;
   getState(): {
     isConversationActive: boolean;
     isAwaitingChatTerminal: boolean;
     currentRequestId: string;
+    currentConversationId: number | string | null;
   };
   subscribeState(listener: RuntimeSessionListener): () => void;
 }
@@ -71,10 +104,9 @@ const SEND_KEEPALIVE_MS = 3000;
  * 的消息面），差异仅：写入经 store、副作用经 effects、连接经 transport。
  * load/snapshot/干预/恢复编排在 R3 片补全。
  */
-export function createConversationRuntimeSession(config: {
-  adapters: ConversationEventReducerAdapters;
-  effectsAdapter: ConversationEffectsAdapter;
-}): ConversationRuntimeSession {
+export function createConversationRuntimeSession(
+  config: RuntimeSessionConfig,
+): ConversationRuntimeSession {
   const runtime = createConversationRuntime(config.adapters, {
     effectsAdapter: config.effectsAdapter,
     effectDispatchMode: 'live',
@@ -85,6 +117,7 @@ export function createConversationRuntimeSession(config: {
   let isConversationActive = false;
   let isAwaitingChatTerminal = false;
   let currentRequestId = '';
+  let currentConversationId: number | string | null = null;
   let lastSendAt = 0;
   const stateListeners = new Set<RuntimeSessionListener>();
 
@@ -117,8 +150,69 @@ export function createConversationRuntimeSession(config: {
     store.finalizeOnClose();
     // 3. 活跃态：与旧线 stop 路径一致——受「发送后 3s 保活」窗口约束（不强制落 false）
     setConversationActive(false);
-    // 4. 后端 stop 请求（绑定层注入的 HTTP 句柄在 R3 片接入；本片先落消息面）
-    void conversationId;
+    // 4. 后端 stop 请求（绑定层注入句柄）
+    if (config.stopRequest) {
+      void config.stopRequest(String(conversationId)).catch((error) => {
+        console.error('[runtimeSession] stop request failed:', error);
+      });
+    }
+  };
+
+  /**
+   * 流事件投影（live 与 sub 恢复共用）：reducer 归并 → store 写入 +
+   * requestId 记录 + ERROR 终态的 FAILED 补丁。旧线 handleChangeMessageList 的消息面。
+   */
+  const applyStreamEvent = (
+    res: ConversationChatResponse,
+    ownerMessageId: string,
+  ) => {
+    currentRequestId = res.requestId || '';
+    const reduction = runtime.reduceStreamEvent(
+      store.getSnapshot(),
+      ownerMessageId,
+      res,
+    );
+    store.applyStreamReduction(reduction.messages);
+
+    if (res.eventType === 'ERROR' && currentConversationId !== null) {
+      runtime.effects.dispatch({
+        type: 'recent.status.patch',
+        conversationId: currentConversationId,
+        status: TaskStatus.FAILED,
+      });
+    }
+  };
+
+  const load = async (conversationId: number) => {
+    currentConversationId = conversationId;
+    notifyState();
+    if (!config.loadRequest) {
+      return undefined;
+    }
+    const result = await config.loadRequest(conversationId);
+    const data = result?.data;
+    // 切换会话后丢弃过期返回（与旧线 reload 门禁同语义）
+    if (currentConversationId !== conversationId) {
+      return undefined;
+    }
+    if (data?.messageList) {
+      store.replaceFromHistory(data.messageList);
+    }
+    return data;
+  };
+
+  const applySnapshot = (
+    conversationId: number | string,
+    incoming: MessageInfo[],
+  ) => {
+    // 会话不匹配时丢弃（与旧线 syncConversationSnapshotMessages 门禁一致）
+    if (
+      currentConversationId === null ||
+      String(currentConversationId) !== String(conversationId)
+    ) {
+      return;
+    }
+    store.mergeSnapshot(incoming);
   };
 
   const send = (input: RuntimeSessionSendInput) => {
@@ -126,6 +220,7 @@ export function createConversationRuntimeSession(config: {
     // 取代上一轮连接：中断、重置投影
     runtime.liveConnection.abortCurrent();
     runtime.resetStreamProjection();
+    currentConversationId = conversationId;
 
     isAwaitingChatTerminal = true;
     isConversationActive = true;
@@ -199,26 +294,9 @@ export function createConversationRuntimeSession(config: {
           );
         }
 
-        currentRequestId = res.requestId || '';
         notifyState();
-
-        // 消息投影：reducer 归并 → store 写入（旧线 handleChangeMessageList 的消息面）
-        const reduction = runtime.reduceStreamEvent(
-          store.getSnapshot(),
-          currentMessageId,
-          res,
-        );
-        store.applyStreamReduction(reduction.messages);
-
-        // 错误终态：侧栏列表 FAILED 补丁（经 effects）。
-        // 会话信息 taskStatus 写回通道（setConversationInfo）在 R3 片接入绑定层。
-        if (res.eventType === 'ERROR' && conversationId) {
-          runtime.effects.dispatch({
-            type: 'recent.status.patch',
-            conversationId,
-            status: TaskStatus.FAILED,
-          });
-        }
+        // 消息投影 + ERROR 终态补丁（live 与 sub 恢复共用）
+        applyStreamEvent(res, currentMessageId);
       },
       onClose: () => {
         // 过期连接：只清理自己的消息，不触碰新一轮（与旧线 superseded 保护一致）
@@ -278,11 +356,73 @@ export function createConversationRuntimeSession(config: {
     runtime.liveConnection.attach(liveRunId, abortConnection);
   };
 
+  // sub 恢复编排（resumeController）：消息写入经 store.update（setState 形状兼容），
+  // 事件投影与 live 共用 applyStreamEvent；滚动 refs 由绑定层经 setViewRefs 注入。
+  let resumeMessageViewRef: { current: HTMLDivElement | null } = {
+    current: null,
+  };
+  let resumeAllowAutoScrollRef: { current: boolean } = { current: true };
+  const resumeController: ResumeController = createResumeController({
+    runtime,
+    setMessageList: (action) => {
+      if (typeof action === 'function') {
+        store.update(action as (prev: MessageInfo[]) => MessageInfo[]);
+      }
+    },
+    handleChangeMessageList: (_params, res, ownerMessageId) => {
+      applyStreamEvent(res, ownerMessageId);
+    },
+    messageViewRef: (() => ({
+      get current() {
+        return resumeMessageViewRef.current;
+      },
+      set current(value) {
+        resumeMessageViewRef.current = value;
+      },
+    }))(),
+    allowAutoScrollRef: (() => ({
+      get current() {
+        return resumeAllowAutoScrollRef.current;
+      },
+      set current(value) {
+        resumeAllowAutoScrollRef.current = value;
+      },
+    }))(),
+  });
+
   return {
     store,
     runtime,
     send,
     stop,
+    load,
+    applySnapshot,
+    resumeConversationStream: (
+      conversationId,
+      currentList,
+      onClose,
+      debugSource,
+    ) => {
+      currentConversationId = conversationId;
+      notifyState();
+      resumeController.resumeConversationStream(
+        conversationId,
+        currentList,
+        onClose,
+        debugSource,
+      );
+    },
+    abortResumeStream: () => {
+      resumeController.abortResumeStream();
+    },
+    /** 绑定层注入滚动 refs（resumeController 的滚动跟随） */
+    setViewRefs(
+      messageViewRef: { current: HTMLDivElement | null },
+      allowAutoScrollRef: { current: boolean },
+    ) {
+      resumeMessageViewRef = messageViewRef;
+      resumeAllowAutoScrollRef = allowAutoScrollRef;
+    },
     dispose() {
       runtime.liveConnection.abortCurrent();
       runtime.resetStreamProjection();
@@ -294,6 +434,7 @@ export function createConversationRuntimeSession(config: {
       isConversationActive,
       isAwaitingChatTerminal,
       currentRequestId,
+      currentConversationId,
     }),
     subscribeState(listener) {
       stateListeners.add(listener);
