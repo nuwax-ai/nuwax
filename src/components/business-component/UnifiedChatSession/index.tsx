@@ -19,7 +19,7 @@ import {
   shouldShowTaskExecutingWait as selectShouldShowTaskExecutingWait,
 } from '@/features/conversation/domain/runtimeSelectors';
 import { dict } from '@/services/i18nRuntime';
-import { DefaultSelectedEnum } from '@/types/enums/agent';
+import { DefaultSelectedEnum, TaskStatus } from '@/types/enums/agent';
 import { AgentTypeEnum } from '@/types/enums/space';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type { RoleInfo } from '@/types/interfaces/conversationInfo';
@@ -195,7 +195,9 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
   /** 是否渲染队列面板区域（用于测量高度，上移滚到底部按钮） */
   const showQueuePanel = ENABLE_CHAT_MESSAGE_QUEUE && !hasPendingIntervention;
 
-  // 消息队列：会话活跃时消息入队，空闲时自动消费（逻辑收敛于 hook）
+  // 消息队列：会话活跃时消息入队，空闲时自动消费（逻辑收敛于 hook）。
+  // 队列上下文默认以自身 props 构造（主入口数据由页面注入），不再读全局 model；
+  // 隔离入口（预览 Tab）显式传入 queueContext 覆盖，避免与主聊天串扰。
   const messageQueue = useUnifiedChatQueue({
     conversationId,
     messageList,
@@ -204,7 +206,10 @@ const UnifiedChatSession: React.FC<UnifiedChatSessionProps> = ({
     onSendMessage,
     minConsumeInterval: queueMinConsumeInterval,
     hasPendingIntervention,
-    queueContext,
+    queueContext: queueContext ?? {
+      streamActive: isLocallyStreaming ?? isConversationActive,
+      taskExecuting: conversationInfo?.taskStatus === TaskStatus.EXECUTING,
+    },
   });
 
   // 滚到底部按钮需避开队列面板：测量队列区域高度写入 CSS 变量

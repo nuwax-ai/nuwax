@@ -5,7 +5,6 @@ import type { UploadFileInfo } from '@/types/interfaces/common';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import eventBus, { EVENT_NAMES } from '@/utils/eventBus';
 import { useCallback } from 'react';
-import { useModel } from 'umi';
 import type { QueuedMessage } from './types';
 import { useChatMessageQueue } from './useChatMessageQueue';
 
@@ -42,9 +41,9 @@ export interface UseUnifiedChatQueueParams {
   /** 当前是否有待处理 intervention（ask/question/审批），为 true 时暂停队列消费 */
   hasPendingIntervention?: boolean;
   /**
-   * 可选：覆盖 conversationInfo model 的流式/任务上下文。
-   * 预览 Tab 使用 conversationAgent model 时传入，避免与左侧主聊天串扰。
-   * 停止会话仅由输入框停止按钮走 runStopConversation，不再用于队列立即发送。
+   * 队列的流式/任务上下文（必传语义：由 UnifiedChatSession 以自身 props 构造默认值，
+   * 隔离入口（预览 Tab 等）显式传入 conversationAgent model 的上下文避免串扰）。
+   * 本 hook 不再默认读取全局 conversationInfo model（方案 Phase 6）。
    */
   queueContext?: UnifiedChatQueueContext;
 }
@@ -67,20 +66,12 @@ export const useUnifiedChatQueue = ({
   hasPendingIntervention,
   queueContext,
 }: UseUnifiedChatQueueParams) => {
-  const { isConversationActive: modelStreamActive, conversationInfo } =
-    useModel('conversationInfo');
-
-  const streamActiveByModel = queueContext?.streamActive ?? modelStreamActive;
-  const queueTaskStatus =
-    queueContext?.taskExecuting === undefined
-      ? conversationInfo?.taskStatus
-      : queueContext.taskExecuting
-      ? TaskStatus.EXECUTING
-      : undefined;
+  // 队列上下文由调用方（UnifiedChatSession）显式注入：主入口以自身 props 构造，
+  // 隔离入口传入独立 model 的上下文。未提供时按空闲处理（无流式/任务阻塞）。
   const queueGate = selectQueueGate(
-    streamActiveByModel,
+    queueContext?.streamActive ?? false,
     messageList,
-    queueTaskStatus,
+    queueContext?.taskExecuting ? TaskStatus.EXECUTING : undefined,
     hasPendingIntervention,
   );
 

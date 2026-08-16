@@ -131,7 +131,8 @@ export interface UnifiedChatSessionProps {
 
   /**
    * 消息队列上下文覆盖（预览 Tab 等隔离会话源场景）。
-   * 未传时使用全局 conversationInfo model。
+   * 未传时以本组件 props（isLocallyStreaming/isConversationActive 与 conversationInfo?.taskStatus）
+   * 构造默认上下文——不再读取全局 conversationInfo model（方案 Phase 6）。
    */
   queueContext?: UnifiedChatQueueContext;
   // ===== 原 ChatInputHome 中 useModel('conversationInfo') 数据，改为从外部传入 =====
