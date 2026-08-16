@@ -14,7 +14,7 @@
 | Phase 2 连接所有权 | 已完成 | 通用 run Controller；live/sub 旧 message、close、error 回调隔离 |
 | Phase 3 历史一致性 | 核心策略已完成 | snapshot generation/visibility 单飞/USER 尾拒绝、历史 USER 等待、5 秒冷却、sub 退避、终态 fallback |
 | Phase 4 Runtime Factory | 核心纵切已完成 | 主/隔离 model 已创建独立 Runtime 实例；Runtime 已拥有输出身份、live/sub 连接所有权；resumeController 已迁入 runtime/；双实例合同测试覆盖投影一致与交叉隔离 |
-| Phase 5 Effects Adapter | 未开始 | recent/topic/suggest/page/file/Git/perf 仍由旧 model Adapter 执行 |
+| Phase 5 Effects Adapter | 进行中（第一片 shadow 已建立） | recent/taskStatus 子集已定义 ConversationEffect 并接入主/隔离双 Adapter，Runtime.effects 以 shadow 模式只记录计划；topic/suggest/page/file/Git/perf 仍由旧 model 执行 |
 | Phase 6 React Interface | 未开始 | `UnifiedChatSession` 仍使用兼容 Props；轮询编排仍在 Resume Hook |
 | Phase 7 清理固化 | 未开始 | 双 model 外壳、兼容导出与临时诊断仍保留 |
 
@@ -22,6 +22,7 @@
 
 ### 0.1 最新纵切记录（2026-08-16）
 
+- Phase 5 第一片（recent/taskStatus）shadow observation 起步：`runtime/effectDispatcher.ts` 定义 `ConversationEffect` 子集（`recent.status.patch`（可选乐观 context）/`recent.list.refresh`）与 shadow/live 双模式 dispatcher（默认 shadow 只记录 + 诊断日志 `conversationEffectsDiagnostics`）；`adapters/mainChatEffectsAdapter`（全量：乐观标记/终态补丁/列表刷新）与 `adapters/previewEffectsAdapter`（隔离子集：仅终态补丁）构成两个真实 Adapter；Runtime 组合为 `runtime.effects`。主 model 4 处、隔离 model 2 处旧 eventBus 路径保持执行并并行 shadow 记录；model 级测试断言「计划 effect 序列 == 旧路径实际发射序列」。切 live 并删旧路径前不得改变任何发射行为。
 - 双实例合同测试补全（Phase 4 第 6 项）：在投影一致性（同 Trace）之外新增交叉隔离合同——主/隔离实例对不同会话同时发送，消息与 requestId 互不串扰；停止隔离实例只中断自己的 live 连接、消息终态只作用于自己，主实例连接与 Loading 态不受影响。活跃态因「发送后 3s 保活」窗口不作跨实例断言（冻结合同，未顺手改）。
 - `useResumeStreamHandlers` 从 `src/hooks/` 迁入 `runtime/resumeController.ts`（对齐 §4 目标目录）并去 React 化：纯闭包工厂 `createResumeController`，无 useState/useRef/useCallback；「事件回调读最新 handleChangeMessageList」合同改由 `setHandler` 显式承接（model 每 render 刷新闭包）。主/隔离 model 惰性创建各自 Controller 实例，对外 `resumeConversationStream`/`abortResumeStream` 行为不变。
 - Runtime 新增 `resumeConnection`（`resumeConnectionController.ts`，语义化 Adapter 镜像 live）：sub 恢复流的 runId/abort 所有权从 hook 实例迁入 Runtime 实例，与 live 连接同生命周期；删除内部自建 `ConnectionRunController` 与 `resetResumeMessageState` 兼容 dep。
