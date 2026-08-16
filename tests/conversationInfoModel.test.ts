@@ -675,7 +675,7 @@ describe('conversationInfo model', () => {
     );
   });
 
-  it('Phase5 shadow：PROCESSING Page 组件计划页面预览，旧 showPagePreview 仍执行', async () => {
+  it('Phase5 live：PROCESSING Page 组件经 Runtime.effects 分发页面预览', async () => {
     const { result } = renderHook(() => useConversationInfo());
     await sendAndGetAssistantId(result);
 
@@ -702,7 +702,7 @@ describe('conversationInfo model', () => {
       type: 'preview.page.open',
       preview: expect.objectContaining({ executeId: 'exec-page' }),
     });
-    // 旧路径执行（shadow 名单内不经 Adapter，防双发）
+    // Adapter 经 ref 转发执行（与原路径行为一致）
     expect(mockShowPagePreview).toHaveBeenCalledWith(
       expect.objectContaining({ executeId: 'exec-page' }),
     );

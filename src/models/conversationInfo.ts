@@ -65,7 +65,6 @@ import {
   MessageStatusEnum,
   ProcessingEnum,
 } from '@/types/enums/common';
-import { BindCardStyleEnum } from '@/types/enums/plugin';
 import {
   AgentTypeEnum,
   EditAgentShowType,
@@ -75,7 +74,6 @@ import {
   AgentManualComponentInfo,
   GuidQuestionDto,
 } from '@/types/interfaces/agent';
-import { CardDataInfo } from '@/types/interfaces/cardInfo';
 import type { BindConfigWithSub } from '@/types/interfaces/common';
 import type {
   AttachmentFile,
@@ -100,7 +98,6 @@ import {
 import { extractTaskResult } from '@/utils';
 
 import { modalConfirm } from '@/utils/ant-custom';
-import { isEmptyObject } from '@/utils/common';
 import {
   applyTerminalTaskStatus,
   createSyncConversationTaskStatus,
@@ -618,8 +615,8 @@ export default () => {
         reconcileFinalMessage: reconcileFinalMessageState,
       },
       {
-        // Phase 5：recent/taskStatus、suggest.fetch 与 topic.update 已切 live；
-        // page/card/desktop 当前 shadow——旧直调继续执行，只记录计划，对照后切 live。
+        // Phase 5：recent/taskStatus、suggest.fetch、topic.update 与
+        // page/card/desktop 均已切 live，副作用统一经 Runtime.effects → 入口 Adapter。
         effectsAdapter: createMainChatEffectsAdapter({
           fetchSuggest: (params) => runChatSuggestRef.current?.(params),
           updateTopic: (input) =>
@@ -635,12 +632,6 @@ export default () => {
           setShowType,
         }),
         effectDispatchMode: 'live',
-        shadowEffectTypes: [
-          'preview.page.open',
-          'preview.link.open',
-          'card.result.apply',
-          'desktop.open',
-        ],
       },
     );
   }
@@ -1069,8 +1060,7 @@ export default () => {
                 data_type: input.data_type,
               };
               // console.log('CHART', previewData);
-              // 显示页面预览
-              showPagePreview(previewData);
+              // 显示页面预览（经 Runtime.effects → 入口 Adapter 执行）
               conversationRuntime.effects.dispatch({
                 type: 'preview.page.open',
                 preview: previewData as PagePreviewPayload,
@@ -1086,7 +1076,7 @@ export default () => {
                 input.arguments,
               ).toString();
               const pageUrl = `${input.uri}?${queryString}`;
-              window.open(pageUrl, '_blank');
+              // 经 Runtime.effects → 入口 Adapter 打开新窗口
               conversationRuntime.effects.dispatch({
                 type: 'preview.link.open',
                 url: pageUrl,
@@ -1095,7 +1085,7 @@ export default () => {
           }
         }
 
-        // 已调用完毕后, 处理卡片信息
+        // 已调用完毕后, 处理卡片信息（经 Runtime.effects → 入口 Adapter 执行）
         if (
           data?.status === ProcessingEnum.FINISHED &&
           data?.cardBindConfig &&
@@ -1108,45 +1098,9 @@ export default () => {
             // 如果是同一次会话请求，则追加，否则更新
             append: res.requestId === requestId,
           });
-          // 卡片列表
-          setCardList((cardList) => {
-            // 竖向列表
-            if (data.cardBindConfig?.bindCardStyle === BindCardStyleEnum.LIST) {
-              // 过滤掉空对象, 因为cardData中可能存在空对象
-              const _cardData =
-                data?.cardData?.filter(
-                  (item: CardDataInfo) => !isEmptyObject(item),
-                ) || [];
-              // 如果卡片列表不为空，则自动展开展示台
-              if (_cardData?.length) {
-                // 自动展开展示台
-                setShowType(EditAgentShowType.Show_Stand);
-              }
-              const cardDataList =
-                _cardData?.map((item: CardDataInfo) => ({
-                  ...item,
-                  cardKey: data.cardBindConfig.cardKey,
-                })) || [];
-              // 如果是同一次会话请求，则追加，否则更新
-              return res.requestId === requestId
-                ? [...cardList, ...cardDataList]
-                : [...cardDataList];
-            }
-            // 自动展开展示台
-            setShowType(EditAgentShowType.Show_Stand);
-            // 单张卡片
-            const cardInfo = {
-              ...data?.cardData,
-              cardKey: data.cardBindConfig?.cardKey,
-            };
-            // 如果是同一次会话请求，则追加，否则更新
-            return (
-              res.requestId === requestId ? [...cardList, cardInfo] : [cardInfo]
-            ) as CardInfo[];
-          });
         }
 
-        // 通用型任务处理(打开远程桌面)
+        // 通用型任务处理(打开远程桌面)：gate 后经 Runtime.effects → 入口 Adapter 执行
         if (
           data.type === AgentComponentTypeEnum.Event &&
           data.subEventType === 'OPEN_DESKTOP' &&
@@ -1154,8 +1108,6 @@ export default () => {
           params.conversationId &&
           conversationInfo?.agent?.hideDesktop !== HideDesktopEnum.Yes
         ) {
-          // 打开远程桌面
-          openDesktopView(params.conversationId);
           conversationRuntime.effects.dispatch({
             type: 'desktop.open',
             conversationId: params.conversationId,

@@ -174,14 +174,13 @@ export default () => {
         reconcileFinalMessage: reconcileFinalMessageState,
       },
       {
-        // Phase 5：recent/taskStatus 与 suggest.fetch 已切 live；page/link 当前 shadow——
-        // 旧直调继续执行，只记录计划，对照后切 live。
+        // Phase 5：recent/taskStatus、suggest.fetch 与 page/link 均已切 live，
+        // 副作用统一经 Runtime.effects → 入口 Adapter 执行（隔离子集）。
         effectsAdapter: createPreviewEffectsAdapter({
           fetchSuggest: (params) => runChatSuggestRef.current?.(params),
           showPagePreview: (preview) => showPagePreviewRef.current?.(preview),
         }),
         effectDispatchMode: 'live',
-        shadowEffectTypes: ['preview.page.open', 'preview.link.open'],
       },
     );
   }
@@ -615,8 +614,7 @@ export default () => {
                 data_type: input.data_type,
               };
               // console.log('CHART', previewData);
-              // 显示页面预览
-              showPagePreview(previewData);
+              // 显示页面预览（经 Runtime.effects → 入口 Adapter 执行）
               conversationRuntime.effects.dispatch({
                 type: 'preview.page.open',
                 preview: previewData as PagePreviewPayload,
@@ -632,7 +630,7 @@ export default () => {
                 input.arguments,
               ).toString();
               const pageUrl = `${input.uri}?${queryString}`;
-              window.open(pageUrl, '_blank');
+              // 经 Runtime.effects → 入口 Adapter 打开新窗口
               conversationRuntime.effects.dispatch({
                 type: 'preview.link.open',
                 url: pageUrl,
