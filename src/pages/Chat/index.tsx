@@ -253,6 +253,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     fileTreeRefreshTrigger,
     // 会话是否正在进行中（有消息正在处理）
     isConversationActive,
+    isAwaitingChatTerminal,
     // 停止会话相关
     runStopConversation,
     loadingStopConversation,
@@ -1250,6 +1251,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       conversationInfo?.taskStatus === TaskStatus.EXECUTING,
     // 本地是否正在 SSE 发送/接收（纯，不含后台 EXECUTING），供流式恢复 hook 使用
     isLocallyStreaming: isConversationActive,
+    isAwaitingChatTerminal,
     // 会话流式恢复(sub)：刷新页面/新开标签时重建 EXECUTING 会话的流式输出
     onResumeConversationStream: resumeConversationStream,
     onAbortResumeStream: abortResumeStream,

@@ -81,6 +81,7 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
     disabledConversationActive,
     // SSE 流式交互状态
     isConversationActive,
+    isAwaitingChatTerminal,
     // 其它接口加载状态
     isLoadingOtherInterface,
     // 会话流式恢复(sub)
@@ -110,6 +111,7 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
           conversationInfo?.taskStatus === TaskStatus.EXECUTING
         }
         isLocallyStreaming={isConversationActive}
+        isAwaitingChatTerminal={isAwaitingChatTerminal}
         messageBottomMode="chat"
         showDebug={false}
         chatSuggestList={chatSuggestList}
