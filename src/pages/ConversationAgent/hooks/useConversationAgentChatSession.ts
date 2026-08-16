@@ -254,6 +254,8 @@ export function useConversationAgentChatSession(
   const runtimeLine = useConversationRuntimeSession({
     conversationId: devConversationId,
     effectsResources: {},
+    // 隔离入口与旧线一致：不同步会话记录（不发乐观列表标记、不更新主题）
+    isSync: false,
   });
 
   return {

@@ -318,3 +318,114 @@ describe('conversationRuntimeSession', () => {
     expect(mockCreateSSE).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('conversationRuntimeSession R6 收口', () => {
+  const createSessionWith = (
+    extraConfig: Partial<
+      Parameters<typeof createConversationRuntimeSession>[0]
+    > = {},
+  ) => {
+    const dispatched: unknown[] = [];
+    const appliedStatuses: Array<[unknown, unknown]> = [];
+    const session = createConversationRuntimeSession({
+      adapters: {
+        renderProcessingBlock: vi.fn(() => 'block'),
+        reconcileFinalMessage: vi.fn((message) => message),
+      },
+      effectsAdapter: {
+        dispatch: (effect: unknown) => {
+          dispatched.push(effect);
+        },
+      } as never,
+      ...extraConfig,
+      applyTaskStatus: (id, status) => {
+        appliedStatuses.push([id, status]);
+        extraConfig.applyTaskStatus?.(id, status);
+      },
+    });
+    return { session, dispatched, appliedStatuses };
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockSyncTerminal.mockResolvedValue(undefined);
+  });
+
+  it('isSync=false：不发乐观「执行中」标记', () => {
+    const { session, dispatched } = createSessionWith();
+    mockOpenLive.mockReturnValue(vi.fn());
+    session.send({
+      conversationId: 1001,
+      message: 'x',
+      topicGate: { isSync: false },
+    });
+    expect(
+      dispatched.filter(
+        (e) =>
+          (e as { type: string; status?: string }).type ===
+          'recent.status.patch',
+      ),
+    ).toEqual([]);
+  });
+
+  it('ERROR 事件：taskStatus 经 applyTaskStatus 写回', () => {
+    const { session, appliedStatuses } = createSessionWith();
+    mockOpenLive.mockReturnValue(vi.fn());
+    session.send({ conversationId: 1001, message: 'x' });
+    const callbacks = mockOpenLive.mock.calls[0][1];
+    callbacks.onMessage({ eventType: 'ERROR' } as never);
+    expect(appliedStatuses).toContainEqual([1001, 'FAILED']);
+  });
+
+  it('FINAL 冲突文案：dispatch conflict.confirmStop；成功终态：写回 taskStatus', () => {
+    const { session, dispatched, appliedStatuses } = createSessionWith();
+    mockOpenLive.mockReturnValue(vi.fn());
+    session.send({ conversationId: 1001, message: 'x' });
+    const callbacks = mockOpenLive.mock.calls[0][1];
+
+    callbacks.onMessage({
+      eventType: 'FINAL_RESULT',
+      error: 'Agent正在执行任务，请等待当前任务完成后再发送新请求',
+    } as never);
+    expect(dispatched).toContainEqual({
+      type: 'conflict.confirmStop',
+      conversationId: 1001,
+    });
+
+    callbacks.onMessage({
+      eventType: 'FINAL_RESULT',
+      data: {
+        success: true,
+        outputText: 'ok',
+        error: '',
+        componentExecuteResults: [],
+      },
+    } as never);
+    expect(appliedStatuses.length).toBeGreaterThan(0);
+  });
+
+  it('onError：taskStatus 写回 FAILED', () => {
+    const { session, appliedStatuses } = createSessionWith();
+    mockOpenLive.mockReturnValue(vi.fn());
+    session.send({ conversationId: 1001, message: 'x' });
+    const callbacks = mockOpenLive.mock.calls[0][1];
+    callbacks.onError();
+    expect(appliedStatuses).toContainEqual([1001, 'FAILED']);
+  });
+
+  it('参数面：modelId/agentMode/skillIds 透传请求体', () => {
+    const { session } = createSessionWith();
+    mockOpenLive.mockReturnValue(vi.fn());
+    session.send({
+      conversationId: 1001,
+      message: 'x',
+      modelId: 7,
+      agentMode: 'yolo',
+      skillIds: [3, 5],
+    });
+    const params = mockOpenLive.mock.calls.at(-1)![0];
+    expect(params.modelId).toBe(7);
+    expect(params.agentMode).toBe('yolo');
+    expect(params.skillIds).toEqual([3, 5]);
+  });
+});

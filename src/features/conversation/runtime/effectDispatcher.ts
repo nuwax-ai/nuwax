@@ -80,6 +80,10 @@ export type ConversationEffect =
       mode: 'throttled' | 'immediate';
     }
   | {
+      type: 'conflict.confirmStop';
+      conversationId: number;
+    }
+  | {
       /**
        * TaskAgent FINAL_RESULT 后处理（保序组合体）：立即刷新文件树 → 按需刷新 Git →
        * task-result 文件选中并打开预览 → 未命中时发兜底正文重拉 trigger。

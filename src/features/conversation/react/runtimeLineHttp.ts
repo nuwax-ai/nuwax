@@ -56,10 +56,17 @@ export interface RuntimeLineEffectsResources {
   setTaskAgentSelectedFileId?: Dispatch<SetStateAction<string>>;
   setTaskAgentSelectTrigger?: Dispatch<SetStateAction<number | string>>;
   setFileTreeRefreshTrigger?: Dispatch<SetStateAction<number>>;
+  /** 建议列表写回（绑定层 setChatSuggestList） */
+  onSuggestLoaded?: (list: string[]) => void;
+  /** 「正在执行任务」冲突确认（绑定层实现 modalConfirm + 停止） */
+  confirmStop?: (conversationId: number) => void;
 }
 
-const noop = () => {};
 const asyncNoop = async () => {};
+
+/** 建议拉取防抖（对齐旧线 useRequest debounceWait: 300） */
+const SUGGEST_DEBOUNCE_MS = 300;
+let suggestDebounceTimer: ReturnType<typeof setTimeout> | undefined;
 
 export function createRuntimeLineEffectsAdapter(deps: {
   setConversationInfo: Dispatch<
@@ -94,13 +101,27 @@ export function createRuntimeLineEffectsAdapter(deps: {
             reason: effect.reason,
           });
           return;
-        case 'suggest.fetch':
-          // services 直调：建议列表写回经资源注入（未注入时仅触发拉取）
-          void apiAgentConversationChatSuggest(effect.params as never).then(
-            () => {
-              noop();
-            },
-          );
+        case 'suggest.fetch': {
+          // 与旧线对齐：300ms trailing 防抖（连续 FINAL 只发最后一次）
+          if (suggestDebounceTimer !== undefined) {
+            clearTimeout(suggestDebounceTimer);
+          }
+          suggestDebounceTimer = setTimeout(() => {
+            suggestDebounceTimer = undefined;
+            void apiAgentConversationChatSuggest(effect.params as never)
+              .then((result) => {
+                resources.onSuggestLoaded?.(
+                  ((result as { data?: string[] })?.data ?? []) as string[],
+                );
+              })
+              .catch(() => {
+                // 建议拉取失败静默（与旧线 useRequest onError 静默一致）
+              });
+          }, SUGGEST_DEBOUNCE_MS);
+          return;
+        }
+        case 'conflict.confirmStop':
+          resources.confirmStop?.(effect.conversationId);
           return;
         case 'topic.update': {
           if (!needUpdateTopic) {

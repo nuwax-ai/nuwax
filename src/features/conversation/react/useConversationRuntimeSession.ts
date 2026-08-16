@@ -12,11 +12,13 @@ import {
   type ConversationRuntimeSession,
 } from '@/features/conversation/runtime/createConversationRuntimeSession';
 import { getCustomBlock } from '@/plugins/ds-markdown-process';
+import { dict } from '@/services/i18nRuntime';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type {
   ConversationInfo,
   MessageInfo,
 } from '@/types/interfaces/conversationInfo';
+import { modalConfirm } from '@/utils/ant-custom';
 import { isConversationRuntimeEnabled } from '@/utils/conversationRuntimeFlag';
 import {
   useCallback,
@@ -55,6 +57,8 @@ export interface RuntimeSessionLineOptions {
   /** 滚动 refs（resumeController 滚动跟随） */
   messageViewRef?: { current: HTMLDivElement | null };
   allowAutoScrollRef?: { current: boolean };
+  /** 是否同步会话记录（隔离入口传 false：不发乐观列表标记、不更新主题） */
+  isSync?: boolean;
 }
 
 export interface UseConversationRuntimeSessionResult {
@@ -82,8 +86,15 @@ export function useConversationRuntimeSession(
     ConversationInfo | null | undefined
   >(null);
   const [loadingStopConversation, setLoadingStopConversation] = useState(false);
+  const [chatSuggestList, setChatSuggestList] = useState<string[]>([]);
+  const [loadingSuggest, setLoadingSuggest] = useState(false);
   const conversationInfoRef = useRef<ConversationInfo | null | undefined>(null);
   conversationInfoRef.current = conversationInfo;
+  /** 会话是否开启建议（对齐旧线 isSuggest：agent.openSuggest === Open） */
+  const isSuggestEnabledRef = useRef(false);
+  isSuggestEnabledRef.current =
+    (conversationInfo as never as { agent?: { openSuggest?: number } })?.agent
+      ?.openSuggest === 1;
 
   const sessionRef = useRef<ConversationRuntimeSession | null>(null);
   if (enabled && !sessionRef.current) {
@@ -94,7 +105,26 @@ export function useConversationRuntimeSession(
       },
       effectsAdapter: createRuntimeLineEffectsAdapter({
         setConversationInfo,
-        resources: effectsResources as never,
+        resources: {
+          ...(effectsResources as never as Record<string, unknown>),
+          onSuggestLoaded: (list: string[]) => {
+            setLoadingSuggest(false);
+            setChatSuggestList(list);
+          },
+          confirmStop: (conversationId: number) => {
+            // 对齐旧线「正在执行任务」冲突确认：确认后停止本会话
+            modalConfirm(
+              dict('PC.Models.ConversationInfo.taskConflictTitle'),
+              dict('PC.Models.ConversationInfo.taskConflictContent'),
+              () => {
+                sessionRef.current?.stop(conversationId);
+                return new Promise((resolve) => {
+                  setTimeout(resolve, 2000);
+                });
+              },
+            );
+          },
+        } as never,
       }),
       stopRequest: async (id) => {
         setLoadingStopConversation(true);
@@ -105,6 +135,9 @@ export function useConversationRuntimeSession(
         }
       },
       loadRequest: (id) => runtimeLineHttp.loadConversation(id),
+      applyTaskStatus: (conversationId, status) => {
+        applyTerminalTaskStatus(setConversationInfo, conversationId, status);
+      },
     });
   }
   const session = sessionRef.current;
@@ -115,13 +148,26 @@ export function useConversationRuntimeSession(
       return;
     }
     setConversationInfo(null);
+    setChatSuggestList([]);
     session.store.reset();
     void session.load(conversationId).then((data) => {
       if (data) {
         setConversationInfo(data);
       }
+      // 会话加载后置底（对齐旧线 load 后强制置底；rAF 连续 800ms）
+      const startTime = Date.now();
+      const forceScrollToBottom = () => {
+        const element = messageViewRef?.current;
+        if (element) {
+          element.scrollTo({ top: element.scrollHeight, behavior: 'instant' });
+        }
+        if (Date.now() - startTime < 800) {
+          requestAnimationFrame(forceScrollToBottom);
+        }
+      };
+      requestAnimationFrame(forceScrollToBottom);
     });
-  }, [session, conversationId]);
+  }, [session, conversationId, messageViewRef]);
 
   // 滚动 refs 注入
   useEffect(() => {
@@ -153,24 +199,30 @@ export function useConversationRuntimeSession(
     (
       messageInfo: string,
       files?: UploadFileInfo[],
-      _skillIds?: number[],
+      skillIds?: number[],
       modelId?: number,
       agentMode?: AgentMode,
     ) => {
       if (!session || conversationId === undefined) {
         return;
       }
+      const isSync = options.isSync !== false;
+      // 建议拉取置 loading（结果经 effect 写回；对齐旧线 loadingSuggest）
+      setLoadingSuggest(true);
       session.send({
         conversationId,
         message: messageInfo,
         files: files as never,
         currentInfo: conversationInfoRef.current,
         debug: false,
+        isSuggestEnabled: isSuggestEnabledRef.current,
+        topicGate: { isSync },
+        skillIds,
+        modelId,
+        agentMode,
       });
-      void modelId;
-      void agentMode;
     },
-    [session, conversationId],
+    [session, conversationId, options.isSync],
   );
 
   const runStopConversation = useCallback(
@@ -243,6 +295,8 @@ export function useConversationRuntimeSession(
     onConversationSnapshot,
     onTerminalTaskStatus,
     conversationInfo,
+    chatSuggestList,
+    loadingSuggest,
     isLoadingOtherInterface: false,
     getCurrentConversationId: () =>
       session.getState().currentConversationId as number | null,

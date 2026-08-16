@@ -59,6 +59,9 @@ const summarizeEffect = (effect: ConversationEffect) => {
       mode: effect.mode,
     };
   }
+  if (effect.type === 'conflict.confirmStop') {
+    return { type: effect.type, conversationId: effect.conversationId };
+  }
   if (effect.type === 'taskResult.settle') {
     return {
       type: effect.type,

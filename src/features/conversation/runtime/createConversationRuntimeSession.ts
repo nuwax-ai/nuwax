@@ -43,8 +43,14 @@ export interface RuntimeSessionSendInput {
   currentInfo?: ConversationInfo | null;
   /** 会话是否开启问题建议（FINAL 后拉取） */
   isSuggestEnabled?: boolean;
-  /** topic 更新 gate（isSync=false 时跳过） */
+  /** isSync 语义（false = 隔离入口：不发乐观列表标记、不更新主题） */
   topicGate?: { isSync: boolean };
+  /** 附加参数面（透传 chat 请求体，与旧线 SendMessageParams 对齐） */
+  modelId?: number;
+  agentMode?: string;
+  skillIds?: number[];
+  sandboxId?: string;
+  infos?: unknown[];
 }
 
 /** session 上报给 React 绑定层的非消息状态变化（R4 绑定消费） */
@@ -63,6 +69,14 @@ export interface RuntimeSessionConfig {
   loadRequest?: (
     conversationId: number,
   ) => Promise<{ data?: ConversationInfo } | undefined>;
+  /**
+   * 终态 taskStatus 写回通道（绑定层注入：写 conversationInfo）。
+   * ERROR 事件 / onError / onClose 兜底查询统一经此写回，与旧线一致。
+   */
+  applyTaskStatus?: (
+    conversationId: number | string,
+    status: TaskStatus,
+  ) => void;
 }
 
 export interface ConversationRuntimeSession {
@@ -190,6 +204,7 @@ export function createConversationRuntimeSession(
 
     if (res.eventType === 'ERROR') {
       if (conversationId !== null) {
+        config.applyTaskStatus?.(conversationId, TaskStatus.FAILED);
         runtime.effects.dispatch({
           type: 'recent.status.patch',
           conversationId,
@@ -243,6 +258,26 @@ export function createConversationRuntimeSession(
     }
 
     if (res.eventType === 'FINAL_RESULT' && conversationId !== null) {
+      // 「正在执行任务」冲突：确认后停止（对齐旧线 modalConfirm 分支，执行体经 effect）
+      const errorText =
+        (res.error as string | undefined) ??
+        (data as { error?: string }).error ??
+        '';
+      if (errorText.includes('正在执行任务')) {
+        runtime.effects.dispatch({
+          type: 'conflict.confirmStop',
+          conversationId: conversationId as number,
+        });
+      }
+      // FINAL 明确终态写回（对齐旧线 applyTerminalTaskStatus(eventReduction.taskStatus)）
+      const terminalStatus = resolveTerminalTaskStatus(
+        (data as { success?: boolean }).success,
+        data,
+        res,
+      );
+      if (terminalStatus) {
+        config.applyTaskStatus?.(conversationId, terminalStatus);
+      }
       // 建议：会话开启时拉取
       if (context?.isSuggestEnabled) {
         runtime.effects.dispatch({
@@ -313,8 +348,9 @@ export function createConversationRuntimeSession(
     lastSendAt = Date.now();
     notifyState();
 
-    // 乐观「执行中」标记（经 effects；旧线 eventBus 直发等价）
-    if (input.isSync !== false) {
+    // 乐观「执行中」标记（经 effects；旧线 eventBus 直发等价）。
+    // isSync 语义统一经 topicGate 携带（false = 隔离入口：不同步会话记录）
+    if (input.topicGate?.isSync !== false) {
       runtime.effects.dispatch({
         type: 'recent.status.patch',
         conversationId,
@@ -362,6 +398,11 @@ export function createConversationRuntimeSession(
       message,
       attachments,
       debug: input.debug,
+      selectedComponents: input.infos,
+      sandboxId: input.sandboxId,
+      skillIds: input.skillIds,
+      modelId: input.modelId,
+      agentMode: input.agentMode,
     } as unknown as ConversationChatParams;
 
     // 连接级终态解析记忆（与旧线 hasResolvedTerminalStatus 一致）
@@ -404,8 +445,15 @@ export function createConversationRuntimeSession(
 
         // FINAL 已解析出明确终态时不重复查询；否则异步兜底（与旧线一致）
         if (conversationId && !hasResolvedTerminalStatus) {
-          // 终态兜底查询：taskStatus 写回通道在 R3 接入（本片完成后释放等终态标记）
-          void syncTerminalConversationTaskStatus(conversationId, () => {})
+          // 终态兜底查询：taskStatus 写回经绑定层注入通道（与旧线 onClose 兜底一致）
+          void syncTerminalConversationTaskStatus(conversationId, ((
+            updater: unknown,
+          ) => {
+            const next = (updater as { taskStatus?: TaskStatus }).taskStatus;
+            if (next) {
+              config.applyTaskStatus?.(conversationId, next);
+            }
+          }) as never)
             .catch((error) => {
               console.error(
                 '[runtimeSession] sync terminal taskStatus failed:',
@@ -421,7 +469,7 @@ export function createConversationRuntimeSession(
           notifyState();
         }
 
-        if (input.isSync !== false && conversationId) {
+        if (input.topicGate?.isSync !== false && conversationId) {
           runtime.effects.dispatch({
             type: 'recent.list.refresh',
             conversationId,
@@ -437,6 +485,7 @@ export function createConversationRuntimeSession(
         store.markStreamError(currentMessageId);
         isAwaitingChatTerminal = false;
         if (conversationId) {
+          config.applyTaskStatus?.(conversationId, TaskStatus.FAILED);
           runtime.effects.dispatch({
             type: 'recent.status.patch',
             conversationId,
