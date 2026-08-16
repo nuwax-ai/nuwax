@@ -72,7 +72,6 @@ import { modalConfirm } from '@/utils/ant-custom';
 import {
   applyTerminalTaskStatus,
   createSyncConversationTaskStatus,
-  emitConversationListTaskStatus,
   subscribeChatFinishedTaskSync,
   syncTerminalConversationTaskStatus,
 } from '@/utils/conversationTaskStatusSync';
@@ -165,10 +164,10 @@ export default () => {
         reconcileFinalMessage: reconcileFinalMessageState,
       },
       {
-        // Phase 5 shadow observation：旧 eventBus 路径继续执行，Runtime.effects 只记录计划
-        // effect；测试对照一致后切 live 并删除旧路径。隔离入口注入 Preview 子集 Adapter。
+        // Phase 5：recent/taskStatus 副作用已切换为 Runtime.effects 统一分发（live），
+        // 旧直调路径已删除；隔离入口注入 Preview 子集 Adapter。
         effectsAdapter: createPreviewEffectsAdapter(),
-        effectDispatchMode: 'shadow',
+        effectDispatchMode: 'live',
       },
     );
   }
@@ -673,10 +672,6 @@ export default () => {
             params.conversationId,
             TaskStatus.FAILED,
           );
-          emitConversationListTaskStatus(
-            params.conversationId,
-            TaskStatus.FAILED,
-          );
           conversationRuntime.effects.dispatch({
             type: 'recent.status.patch',
             conversationId: params.conversationId,
@@ -848,10 +843,6 @@ export default () => {
           });
           applyTerminalTaskStatus(
             setConversationInfo,
-            params.conversationId,
-            TaskStatus.FAILED,
-          );
-          emitConversationListTaskStatus(
             params.conversationId,
             TaskStatus.FAILED,
           );

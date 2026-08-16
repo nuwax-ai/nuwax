@@ -480,7 +480,7 @@ describe('conversationInfo model', () => {
     expect(mainAssistant.status).toBe(MessageStatusEnum.Loading);
   });
 
-  it('Phase5 shadow：主实例计划 recent effect 与旧路径 eventBus 发射逐条一致', async () => {
+  it('Phase5 live：主实例 recent effect 经 Runtime.effects 分发，发射序列与原路径一致', async () => {
     const { result } = renderHook(() => useConversationInfo());
     await act(async () => {
       await result.current.onMessageSend({ id: 1001, messageInfo: 'hello' });
@@ -494,7 +494,7 @@ describe('conversationInfo model', () => {
       await sseHandlers.onClose?.();
     });
 
-    // 新路径（Runtime.effects，shadow 只记录）的计划序列
+    // 新路径（Runtime.effects live 分发）的计划序列
     const planned = mockLogEffectDispatch.mock.calls.map(
       ([entry]) => entry.effect,
     );
@@ -517,7 +517,7 @@ describe('conversationInfo model', () => {
       },
     ]);
 
-    // 旧路径（直接 eventBus 发射）的实际序列须与计划一致（shadow observation 的对照合同）
+    // Adapter 执行产生的实际发射序列须与计划一致（切换执行权后的行为保持合同）
     const actual = mockEventBusEmit.mock.calls
       .filter(
         ([type]) =>
@@ -546,7 +546,7 @@ describe('conversationInfo model', () => {
     ]);
   });
 
-  it('Phase5 shadow：隔离实例只计划终态补丁，无乐观标记与列表刷新', async () => {
+  it('Phase5 live：隔离实例只分发终态补丁，无乐观标记与列表刷新', async () => {
     const isolated = renderHook(() => useConversationAgent());
     await act(async () => {
       await isolated.result.current.onMessageSend({

@@ -104,7 +104,6 @@ import { isEmptyObject } from '@/utils/common';
 import {
   applyTerminalTaskStatus,
   createSyncConversationTaskStatus,
-  emitConversationListTaskStatus,
   subscribeChatFinishedTaskSync,
   syncTerminalConversationTaskStatus,
 } from '@/utils/conversationTaskStatusSync';
@@ -192,10 +191,10 @@ export default () => {
         reconcileFinalMessage: reconcileFinalMessageState,
       },
       {
-        // Phase 5 shadow observation：旧 eventBus 路径继续执行，Runtime.effects 只记录计划
-        // effect；测试对照一致后切 live 并删除旧路径。
+        // Phase 5：recent/taskStatus 副作用已切换为 Runtime.effects 统一分发（live），
+        // 旧 eventBus 直调路径已删除；Adapter 内保持原发射行为。
         effectsAdapter: createMainChatEffectsAdapter(),
-        effectDispatchMode: 'shadow',
+        effectDispatchMode: 'live',
       },
     );
   }
@@ -1354,10 +1353,6 @@ export default () => {
             params.conversationId,
             TaskStatus.FAILED,
           );
-          emitConversationListTaskStatus(
-            params.conversationId,
-            TaskStatus.FAILED,
-          );
           conversationRuntime.effects.dispatch({
             type: 'recent.status.patch',
             conversationId: params.conversationId,
@@ -1506,10 +1501,6 @@ export default () => {
         }
 
         if (isSync && !isAppSidebarMode && params.conversationId) {
-          eventBus.emit(EVENT_TYPE.RefreshConversationList, {
-            conversationId: params.conversationId,
-            reason: 'stream-closed',
-          });
           conversationRuntime.effects.dispatch({
             type: 'recent.list.refresh',
             conversationId: params.conversationId,
@@ -1557,10 +1548,6 @@ export default () => {
           });
           applyTerminalTaskStatus(
             setConversationInfo,
-            params.conversationId,
-            TaskStatus.FAILED,
-          );
-          emitConversationListTaskStatus(
             params.conversationId,
             TaskStatus.FAILED,
           );
@@ -1684,12 +1671,6 @@ export default () => {
     setIsConversationActive(true);
     lastSendAtRef.current = Date.now(); // 触发"发送后保活"，3s 内拒绝置 false
     if (isSync && !isAppSidebarMode && id) {
-      eventBus.emit(EVENT_TYPE.UpdateConversationListTaskStatus, {
-        conversationId: id,
-        agentId: conversationInfoRef.current?.agentId,
-        topic: conversationInfoRef.current?.topic,
-        taskStatus: TaskStatus.EXECUTING,
-      });
       conversationRuntime.effects.dispatch({
         type: 'recent.status.patch',
         conversationId: id,
