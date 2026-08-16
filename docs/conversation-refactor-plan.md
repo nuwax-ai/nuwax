@@ -14,7 +14,7 @@
 | Phase 2 连接所有权 | 已完成 | 通用 run Controller；live/sub 旧 message、close、error 回调隔离 |
 | Phase 3 历史一致性 | 核心策略已完成 | snapshot generation/visibility 单飞/USER 尾拒绝、历史 USER 等待、5 秒冷却、sub 退避、终态 fallback |
 | Phase 4 Runtime Factory | 核心纵切已完成 | 主/隔离 model 已创建独立 Runtime 实例；Runtime 已拥有输出身份、live/sub 连接所有权；resumeController 已迁入 runtime/；双实例合同测试覆盖投影一致与交叉隔离 |
-| Phase 5 Effects Adapter | 进行中（第 1-2 片已切 live） | recent/taskStatus 与 suggest.fetch：ConversationEffect + 主/隔离双 Adapter + Runtime.effects 分发已切 live，旧直调路径已删除；topic.update/page/file/Git/perf 仍由旧 model 执行 |
+| Phase 5 Effects Adapter | 进行中（第 1-3 片已切 live） | recent/taskStatus、suggest.fetch 与 topic.update：ConversationEffect + 主/隔离双 Adapter + Runtime.effects 分发已切 live，旧直调路径（含 updateTopicOnce、model 内全部 eventBus 发射）已删除；page/card/desktop、file/Git/task-result、perf 仍由旧 model 执行 |
 | Phase 6 React Interface | 未开始 | `UnifiedChatSession` 仍使用兼容 Props；轮询编排仍在 Resume Hook |
 | Phase 7 清理固化 | 未开始 | 双 model 外壳、兼容导出与临时诊断仍保留 |
 
@@ -22,6 +22,7 @@
 
 ### 0.1 最新纵切记录（2026-08-16）
 
+- Phase 5 第三片（topic.update）完成 shadow→live 闭环：`topic.update` 携带发起时会话信息快照（保持「以快照为基底合并主题」的原覆盖语义）；mainChat Adapter 注入 updateTopic（ref 转发）/setConversationInfo/needUpdateTopicRef/getTopicContext（侧栏模式与历史句柄 render 期刷新），执行体含成功写回快照、列表/历史双分支刷新、失败回滚「仅一次」标记。gate 留在调用点；dispatch 置于旧调用之前——shadow 下两路互不干扰，切 live 后 Adapter 先置标记、旧路径 gate 自动不通过（天然防双发）。切 live 后删除 `updateTopicOnce` 整函数与 model 内全部 eventBus 直发（主 model 不再 import eventBus/EVENT_TYPE）。隔离入口无主题更新（Preview Adapter 忽略）。
 - Phase 5 第二片（suggest.fetch）完成 shadow→live 闭环：`ConversationEffect` 新增 `suggest.fetch`；dispatcher 支持 `shadowEffectTypes` 分片 shadow 通道（live runtime 中新迁移类型只记录不执行，防止与旧路径双发）；双 Adapter 注入 `fetchSuggest`（model 的 useRequest 句柄经 `runChatSuggestRef` render 期刷新转发，防 stale 闭包）。隔离入口的 suggest 代际记录（pendingSuggestGenerationRef）留在调用点、属 model ref 语义。shadow 对照（Adapter 转发单测 + model 计划断言）通过后切 live，删除两处旧 `runChatSuggest` 直调。
 - Phase 5 第一片（recent/taskStatus）切换执行权：两个 model 的 `effectDispatchMode` 由 shadow 切 live，删除 6 处旧 eventBus 直调（主 4：发送乐观标记 / ERROR / onError / onClose 列表刷新；隔离 2：ERROR / onError），并清理 `emitConversationListTaskStatus` 无用 import。model 级对照测试改为断言「计划 effect 序列 == Adapter 实际发射序列」，发射行为与切换前逐条一致（218 条会话测试全绿）。
 - Phase 5 第一片（recent/taskStatus）shadow observation 起步：`runtime/effectDispatcher.ts` 定义 `ConversationEffect` 子集（`recent.status.patch`（可选乐观 context）/`recent.list.refresh`）与 shadow/live 双模式 dispatcher（默认 shadow 只记录 + 诊断日志 `conversationEffectsDiagnostics`）；`adapters/mainChatEffectsAdapter`（全量：乐观标记/终态补丁/列表刷新）与 `adapters/previewEffectsAdapter`（隔离子集：仅终态补丁）构成两个真实 Adapter；Runtime 组合为 `runtime.effects`。shadow 阶段测试已证明「计划 effect 序列 == 旧路径实际发射序列」后切换。
