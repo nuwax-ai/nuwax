@@ -28,6 +28,10 @@ import {
 import { reduceConversationEvent } from '@/features/conversation/domain/reduceConversationEvent';
 import { isSessionStreamBusy } from '@/features/conversation/domain/runtimeSelectors';
 import { mergeConversationInfoTaskStatus } from '@/features/conversation/domain/taskStatus';
+import {
+  createLiveConnectionController,
+  type LiveConnectionController,
+} from '@/features/conversation/runtime/liveConnectionController';
 import { useResumeStreamHandlers } from '@/hooks/useResumeStreamHandlers';
 import { getCustomBlock } from '@/plugins/ds-markdown-process';
 import {
@@ -150,7 +154,13 @@ export default () => {
   const pendingSuggestGenerationRef = useRef(0);
   const messageViewRef = useRef<HTMLDivElement | null>(null);
   const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const abortConnectionRef = useRef<unknown>();
+  const liveConnectionControllerRef = useRef<LiveConnectionController | null>(
+    null,
+  );
+  if (!liveConnectionControllerRef.current) {
+    liveConnectionControllerRef.current = createLiveConnectionController();
+  }
+  const liveConnectionController = liveConnectionControllerRef.current;
   // 会话消息ID
   const messageIdRef = useRef<string>('');
   // 是否正在加载会话
@@ -686,6 +696,7 @@ export default () => {
     // 请求即将发起：用于计算前端从发送动作到真正网络发起的耗时。
     perfLifecycle.onHttpStart();
 
+    const liveRunId = liveConnectionController.startRun();
     // 启动连接（不传 abortController，让 createSSEConnection 内部创建）
     const abortConnection = createSSEConnection({
       url: CONVERSATION_CONNECTION_URL,
@@ -749,10 +760,7 @@ export default () => {
         // 标记 Stopped / 清保活 / 关活跃态 / 终态同步」等全局收尾——否则会误停新一轮消息、
         // 使 streamActive 假性回落 → 队列提前消费下一条 → 新一轮
         // /api/agent/conversation/chat 被 handleClearSideEffect 意外 abort（高频发送必现）。
-        if (
-          abortConnectionRef.current &&
-          abortConnectionRef.current !== abortConnection
-        ) {
+        if (liveConnectionController.isSuperseded(liveRunId)) {
           setMessageList((list) => {
             const updatedList = finalizeOwnedMessageOnStaleClose(
               list,
@@ -797,10 +805,7 @@ export default () => {
       onError: () => {
         // 过期连接保护：与 onClose 一致。上一轮连接的延迟错误回调只清理自己的消息，
         // 不弹错误提示、不清保活、不关活跃态，避免污染新一轮消息状态。
-        if (
-          abortConnectionRef.current &&
-          abortConnectionRef.current !== abortConnection
-        ) {
+        if (liveConnectionController.isSuperseded(liveRunId)) {
           setMessageList((list) => {
             const updatedList = markOwnedMessageStreamError(
               list,
@@ -849,8 +854,7 @@ export default () => {
         perfLifecycle.onStreamEnd('error');
       },
     });
-    // 保存本次连接的 abort 句柄（供下一轮发送/停止时中断；onClose/onError 用它做过期连接识别）
-    abortConnectionRef.current = abortConnection;
+    liveConnectionController.attach(liveRunId, abortConnection);
   };
 
   // ===== 会话流式恢复(sub)：刷新页面 / 新开标签时，订阅 EXECUTING 会话的输出流 =====
@@ -885,14 +889,8 @@ export default () => {
       clearTimeout(scrollTimeoutRef.current);
       scrollTimeoutRef.current = null;
     }
-    // 主动关闭连接
-    if (abortConnectionRef.current) {
-      // 确保 abortConnectionRef.current 是一个可调用的函数
-      if (typeof abortConnectionRef.current === 'function') {
-        abortConnectionRef.current();
-      }
-      abortConnectionRef.current = null;
-    }
+    // 主动关闭当前 live 流；Controller 保证 abort exactly-once。
+    liveConnectionController.abortCurrent();
   }
 
   // 清除文件面板信息, 并关闭文件面板
