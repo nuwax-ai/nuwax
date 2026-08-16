@@ -1073,6 +1073,7 @@ const ConversationAgent: React.FC = () => {
       return;
     }
 
+    // 切换文件树显隐
     setCanShowFileView((prev) => {
       const nextVisible = !prev;
       if (nextVisible && queryConversationId) {
