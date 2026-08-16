@@ -26,6 +26,7 @@ import {
   markOwnedMessageStreamError,
 } from '@/features/conversation/domain/messageLifecycle';
 import { reduceMessageEvent } from '@/features/conversation/domain/reduceMessageEvent';
+import { reduceProcessingEvent } from '@/features/conversation/domain/reduceProcessingEvent';
 import { isSessionStreamBusy } from '@/features/conversation/domain/runtimeSelectors';
 import {
   mergeConversationInfoTaskStatus,
@@ -61,7 +62,6 @@ import type {
   ConversationInfo,
   MessageInfo,
   MessageQuestionExtInfo,
-  ProcessingInfo,
   SendMessageParams,
 } from '@/types/interfaces/conversationInfo';
 import { RequestResponse } from '@/types/interfaces/request';
@@ -516,7 +516,8 @@ export default () => {
     // 自定义随机id
     currentMessageId: string,
   ) => {
-    const { data, eventType } = res;
+    const { eventType } = res;
+    let { data } = res;
 
     // 立即执行同步更新：React 18 会自动处理批量更新合并，无需手动防抖。
     // 这保证了流式输出中的每一个数据包（Chunk）都能被正确拼接，且不会丢失。
@@ -556,32 +557,14 @@ export default () => {
 
       // 更新UI状态...
       if (eventType === ConversationEventTypeEnum.PROCESSING) {
-        const processingResult = data.result || {};
-        // 后端可能仅在 data.result.executeId 提供执行 ID
-        if (!data.executeId && processingResult.executeId) {
-          data.executeId = processingResult.executeId;
-        }
-        const processingList = [
-          ...(currentMessage?.processingList || []),
-        ] as ProcessingInfo[];
-        const existingIndex = processingList.findIndex(
-          (item) => item.executeId === data.executeId,
+        const reduction = reduceProcessingEvent(
+          currentMessage,
+          data,
+          getCustomBlock,
         );
-        if (existingIndex > -1) {
-          processingList[existingIndex] = data;
-        } else {
-          processingList.push(data);
-        }
-
-        newMessage = {
-          ...currentMessage,
-          text: getCustomBlock(currentMessage.text || '', data),
-          // 实际 SSE 不会为 THINK 单独下发 finished=true；PROCESSING 表示模型已从
-          // 当前思考阶段进入工具调用阶段，因此必须在这里结束本轮思考态。
-          thinkingFinished: true,
-          status: MessageStatusEnum.Loading,
-          processingList,
-        };
+        data = reduction.processing;
+        const processingResult = data.result || {};
+        newMessage = reduction.message;
 
         // 添加处理扩展页面逻辑
         if (data.status === ProcessingEnum.EXECUTING) {
