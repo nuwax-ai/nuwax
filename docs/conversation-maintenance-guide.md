@@ -13,6 +13,8 @@ npm run e2e:conversation        # 真实页面 7 场景（发版前/合入前）
 npm run verify:conversation     # 两网组合
 ```
 
+**CI**：`.github/workflows/conversation-tests.yml` 在 PR/push 触及会话相关路径时自动跑合同网（pnpm 10.27 + Node 20 + frozen-lockfile，失败阻断合入）。E2E 需登录态不进 CI。仓库托管在 gitee：Gitee Go / Jenkins 可直接照抄 workflow 里的三个步骤（checkout → pnpm install → npm run test:conversation）。
+
 该约定已写入 `CLAUDE.md`（AI 协作同样受约束）。两网全绿 = 会话功能未受影响。
 
 ## 2. 架构速查（改哪里）

@@ -1,0 +1,79 @@
+# 会话模块合同网 CI（docs/conversation-maintenance-guide.md §1）
+#
+# 作用：PR / push 涉及会话相关路径时自动跑 `npm run test:conversation`
+#      （33 文件 ~292 条，秒级，无浏览器/登录态依赖），失败即阻断合入。
+# 真实页面 E2E（e2e:conversation）需要 dev server 与登录态，不进 CI，
+# 按 CLAUDE.md 约定在本地 / 发版前执行。
+#
+# 注：仓库托管在 gitee。gitee 的 Gitee Go 与 Jenkins 均可直接照抄本文件的
+# 三个步骤（checkout → pnpm install → npm run test:conversation）；
+# 若使用 GitHub 亦即开即用。
+
+name: conversation-tests
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'src/models/conversation*'
+      - 'src/models/conversationInfoMessageList*'
+      - 'src/features/conversation/**'
+      - 'src/components/business-component/UnifiedChatSession/**'
+      - 'src/components/business-component/MessageQueue/**'
+      - 'src/components/business-component/AgentIntervention/**'
+      - 'src/components/ChatInputHome/**'
+      - 'src/pages/Chat/**'
+      - 'src/pages/ConversationAgent/**'
+      - 'src/pages/EditAgent/PreviewAndDebug/**'
+      - 'src/pages/SpacePluginTool/components/PluginChatSession/**'
+      - 'src/utils/conversation*'
+      - 'src/utils/eventBus*'
+      - 'tests/**'
+      - 'scripts/e2e/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/conversation-tests.yml'
+  pull_request:
+    paths:
+      - 'src/models/conversation*'
+      - 'src/models/conversationInfoMessageList*'
+      - 'src/features/conversation/**'
+      - 'src/components/business-component/UnifiedChatSession/**'
+      - 'src/components/business-component/MessageQueue/**'
+      - 'src/components/business-component/AgentIntervention/**'
+      - 'src/components/ChatInputHome/**'
+      - 'src/pages/Chat/**'
+      - 'src/pages/ConversationAgent/**'
+      - 'src/pages/EditAgent/PreviewAndDebug/**'
+      - 'src/pages/SpacePluginTool/components/PluginChatSession/**'
+      - 'src/utils/conversation*'
+      - 'src/utils/eventBus*'
+      - 'tests/**'
+      - 'scripts/e2e/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/conversation-tests.yml'
+
+jobs:
+  conversation-contract-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.27.0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run conversation contract tests
+        run: npm run test:conversation
