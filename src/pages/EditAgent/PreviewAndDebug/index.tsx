@@ -682,7 +682,6 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
             )}
           >
             <UnifiedChatSession
-              {...(runtimeLine?.conversationProps ?? {})}
               conversationId={devConversationIdRef.current}
               messageList={messageList}
               roleInfo={roleInfo}
@@ -760,6 +759,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
                 (await runAsync(Number(id)))?.data?.messageList
               }
               resumeDebugSource="edit-agent:preview-and-debug"
+              {...(runtimeLine?.conversationProps ?? {})}
             />
           </div>
         </div>

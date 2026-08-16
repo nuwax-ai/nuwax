@@ -109,7 +109,6 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
   return (
     <div className={classNames('flex', 'flex-col', 'h-full', className)}>
       <UnifiedChatSession
-        {...(runtimeLine?.conversationProps ?? {})}
         conversationId={conversationInfo?.id}
         messageList={messageList}
         isLoading={loadingConversation}
@@ -179,6 +178,7 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
           (await runAsync(Number(id)))?.data?.messageList
         }
         resumeDebugSource="agent-dev:left-dev-agent-session"
+        {...(runtimeLine?.conversationProps ?? {})}
       />
     </div>
   );

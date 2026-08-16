@@ -259,7 +259,6 @@ export function useConversationAgentChatSession(
   });
 
   return {
-    ...(runtimeLine?.conversationProps ?? {}),
     conversationId: devConversationId,
     messageList,
     roleInfo,
@@ -365,5 +364,7 @@ export function useConversationAgentChatSession(
     isLoadingOtherInterface,
     conversationInfo,
     interventionHandlers,
+    // 双线分派：新线会话面在末尾展开覆盖（flag off 时空对象不影响旧线值）
+    ...(runtimeLine?.conversationProps ?? {}),
   };
 }

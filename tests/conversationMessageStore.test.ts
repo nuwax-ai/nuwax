@@ -134,6 +134,27 @@ describe('conversationMessageStore', () => {
     expect(store.getSnapshot()[1].mcpAskInteractions).toEqual([]);
   });
 
+  it('prependFromHistory：前插更早历史页，空页不动', () => {
+    const store = createConversationMessageStore();
+    store.applyOptimisticRound(userRound, assistantRound);
+    const listener = vi.fn();
+    store.subscribe(listener);
+
+    store.prependFromHistory([]);
+    expect(listener).not.toHaveBeenCalled();
+
+    store.prependFromHistory([
+      {
+        id: 'early-1',
+        text: '更早',
+        status: MessageStatusEnum.Complete,
+      } as MessageInfo,
+    ]);
+    expect(store.getSnapshot()[0].id).toBe('early-1');
+    expect(store.getSnapshot()).toHaveLength(3);
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
+
   it('reset：清空并通知', () => {
     const store = createConversationMessageStore();
     store.applyOptimisticRound(userRound, assistantRound);

@@ -42,6 +42,8 @@ export interface ConversationMessageStore {
   mergeSnapshot(incoming: MessageInfo[]): boolean;
   /** 历史加载整体替换（保留本地末尾乐观消息，规则由纯函数承载） */
   replaceFromHistory(incoming: MessageInfo[]): MessageInfo[];
+  /** 上滑分页：前插更早的历史页（hydrate 由绑定层负责） */
+  prependFromHistory(incoming: MessageInfo[]): MessageInfo[];
   /** 流结束：Loading/Incomplete → Stopped，执行中 processing → FAILED */
   finalizeOnClose(): void;
   /** 网络错误：owner 消息 → Error，其执行中 processing → FAILED */
@@ -104,6 +106,13 @@ export function createConversationMessageStore(
 
     replaceFromHistory(incoming) {
       return commit(preserveOptimisticMessageTail(messages, incoming));
+    },
+
+    prependFromHistory(incoming) {
+      if (!incoming.length) {
+        return messages;
+      }
+      return commit([...incoming, ...messages]);
     },
 
     finalizeOnClose() {

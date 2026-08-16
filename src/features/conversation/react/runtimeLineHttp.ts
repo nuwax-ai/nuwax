@@ -14,6 +14,7 @@ import {
   apiAgentConversation,
   apiAgentConversationChatStop,
   apiAgentConversationChatSuggest,
+  apiAgentConversationMessageList,
   apiAgentConversationUpdate,
 } from '@/services/agentConfig';
 import { TaskStatus } from '@/types/enums/agent';
@@ -32,6 +33,8 @@ export const runtimeLineHttp = {
     apiAgentConversationChatStop(conversationId),
   loadConversation: (conversationId: number) =>
     apiAgentConversation(conversationId),
+  fetchMessagePage: (conversationId: number, index: number, size: number) =>
+    apiAgentConversationMessageList({ conversationId, index, size }),
 };
 
 /** 页面资源注入面（缺省项以安全 noop 兜底；见 mainChatEffectsAdapter deps） */

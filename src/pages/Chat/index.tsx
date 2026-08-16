@@ -1269,7 +1269,6 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   });
 
   const chatSessionProps = {
-    ...(runtimeLine?.conversationProps ?? {}),
     conversationId: id,
     messageList,
     roleInfo,
@@ -1358,6 +1357,8 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     loadingConversation,
     isLoadingOtherInterface,
     conversationInfo,
+    // 双线分派：新线会话面在末尾展开覆盖（flag off 时空对象不影响旧线值）
+    ...(runtimeLine?.conversationProps ?? {}),
   };
 
   // 仅首屏/切会话（loadingAsync）使用整页 Loading。

@@ -205,7 +205,6 @@ const PluginChatSession: React.FC<PluginChatSessionProps> = ({
 
   return (
     <UnifiedChatSession
-      {...(runtimeLine?.conversationProps ?? {})}
       conversationId={conversationId}
       messageList={messageList}
       roleInfo={roleInfo}
@@ -262,6 +261,7 @@ const PluginChatSession: React.FC<PluginChatSessionProps> = ({
         (await runAsync(Number(id)))?.data?.messageList
       }
       resumeDebugSource="space-plugin-tool:chat-session"
+      {...(runtimeLine?.conversationProps ?? {})}
     />
   );
 };

@@ -1,12 +1,20 @@
 import type { AgentMode } from '@/components/business-component/AgentIntervention';
-import { hydrateMcpAskInteractionsInMessageList } from '@/components/business-component/AgentIntervention';
+import {
+  hydrateMcpAskInteractionsInMessageList,
+  prependAndHydrateMcpAskMessageList,
+  useAgentInterventionHandlers,
+} from '@/components/business-component/AgentIntervention';
 import { reconcileFinalMessageState } from '@/components/business-component/AgentIntervention/utils/reconcileFinalMessageState';
+import { MESSAGE_PAGE_SIZE } from '@/constants/common.constants';
 import {
   applyTerminalTaskStatus,
   createRuntimeLineEffectsAdapter,
   runtimeLineHttp,
 } from '@/features/conversation/react/runtimeLineHttp';
-import type { ConversationMessageStore } from '@/features/conversation/runtime/conversationMessageStore';
+import {
+  createConversationMessageStore,
+  type ConversationMessageStore,
+} from '@/features/conversation/runtime/conversationMessageStore';
 import {
   createConversationRuntimeSession,
   type ConversationRuntimeSession,
@@ -23,6 +31,7 @@ import { isConversationRuntimeEnabled } from '@/utils/conversationRuntimeFlag';
 import {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   useSyncExternalStore,
@@ -88,6 +97,8 @@ export function useConversationRuntimeSession(
   const [loadingStopConversation, setLoadingStopConversation] = useState(false);
   const [chatSuggestList, setChatSuggestList] = useState<string[]>([]);
   const [loadingSuggest, setLoadingSuggest] = useState(false);
+  const [isMoreMessage, setIsMoreMessage] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const conversationInfoRef = useRef<ConversationInfo | null | undefined>(null);
   conversationInfoRef.current = conversationInfo;
   /** 会话是否开启建议（对齐旧线 isSuggest：agent.openSuggest === Open） */
@@ -154,6 +165,8 @@ export function useConversationRuntimeSession(
       if (data) {
         setConversationInfo(data);
       }
+      // 有历史则允许首次上滑确认（对齐旧线：len > 0 → isMoreMessage = true）
+      setIsMoreMessage((data?.messageList?.length ?? 0) > 0);
       // 会话加载后置底（对齐旧线 load 后强制置底；rAF 连续 800ms）
       const startTime = Date.now();
       const forceScrollToBottom = () => {
@@ -189,6 +202,21 @@ export function useConversationRuntimeSession(
     });
   }, [session]);
 
+  // 干预回执（Ask/ACP）：写入走新线 store（flag off 时落到空 store，无副作用）
+  const fallbackStoreRef = useRef<ConversationMessageStore | null>(null);
+  if (!fallbackStoreRef.current) {
+    fallbackStoreRef.current = createConversationMessageStore();
+  }
+  const interventionStore = session?.store ?? fallbackStoreRef.current;
+  const interventionSetMessageList = useMemo(
+    () => storeAsDispatch(interventionStore),
+    [interventionStore],
+  );
+  const { respondAcpPermission, respondMcpAsk } = useAgentInterventionHandlers({
+    setMessageList: interventionSetMessageList,
+    conversationId,
+  });
+
   const emptyList = useRef<MessageInfo[]>([]);
   const messageList = useSyncExternalStore(
     (listener) => (session ? session.store.subscribe(listener) : () => {}),
@@ -223,6 +251,41 @@ export function useConversationRuntimeSession(
       });
     },
     [session, conversationId, options.isSync],
+  );
+
+  const onLoadMoreMessage = useCallback(
+    async (targetConversationId: number) => {
+      if (!session || loadingMore || !isMoreMessage) {
+        return;
+      }
+      const list = session.store.getSnapshot();
+      if (!list.length) {
+        return;
+      }
+      const currentIndex = (list[0] as { index?: number }).index || 0;
+      setLoadingMore(true);
+      try {
+        const result = await runtimeLineHttp.fetchMessagePage(
+          targetConversationId,
+          currentIndex,
+          MESSAGE_PAGE_SIZE,
+        );
+        const page = (result?.data ?? []) as MessageInfo[];
+        if (page.length) {
+          session.store.prependFromHistory(
+            prependAndHydrateMcpAskMessageList(page, []),
+          );
+          setIsMoreMessage(page.length >= MESSAGE_PAGE_SIZE);
+        } else {
+          setIsMoreMessage(false);
+        }
+      } catch (error) {
+        console.error('[runtimeLine] load more failed:', error);
+      } finally {
+        setLoadingMore(false);
+      }
+    },
+    [session, loadingMore, isMoreMessage],
   );
 
   const runStopConversation = useCallback(
@@ -297,6 +360,10 @@ export function useConversationRuntimeSession(
     conversationInfo,
     chatSuggestList,
     loadingSuggest,
+    isMoreMessage,
+    loadingMore,
+    onLoadMoreMessage,
+    interventionHandlers: { respondAcpPermission, respondMcpAsk },
     isLoadingOtherInterface: false,
     getCurrentConversationId: () =>
       session.getState().currentConversationId as number | null,
