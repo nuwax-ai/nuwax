@@ -1,5 +1,6 @@
 import { UnifiedChatSession } from '@/components/business-component';
 import { TaskResultContext } from '@/components/MarkdownRenderer/TaskResult/context';
+import { ConversationSessionProvider } from '@/features/conversation/react/ConversationSessionProvider';
 import type { AgentSelectedComponentInfo } from '@/types/interfaces/agent';
 import classNames from 'classnames';
 import React from 'react';
@@ -41,7 +42,18 @@ const ConversationAgentChatSession: React.FC<
             'overflow-hide',
           )}
         >
-          <UnifiedChatSession {...chatSessionProps} mentionPlacement="up" />
+          <ConversationSessionProvider
+            conversationId={chatSessionProps.conversationId}
+            messageList={chatSessionProps.messageList ?? []}
+            modelStreamActive={chatSessionProps.isLocallyStreaming}
+            awaitingChatTerminal={chatSessionProps.isAwaitingChatTerminal}
+            taskStatus={chatSessionProps.conversationInfo?.taskStatus}
+            selectedModelId={chatSessionProps.selectedModelId}
+            onSendMessage={chatSessionProps.onSendMessage}
+            queueContext={chatSessionProps.queueContext}
+          >
+            <UnifiedChatSession {...chatSessionProps} mentionPlacement="up" />
+          </ConversationSessionProvider>
         </div>
       </div>
     </TaskResultContext.Provider>

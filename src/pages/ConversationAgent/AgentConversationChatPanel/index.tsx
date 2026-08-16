@@ -1,5 +1,6 @@
 import { UnifiedChatSession } from '@/components/business-component';
 import type { AgentMode } from '@/components/business-component/AgentIntervention';
+import { ConversationSessionProvider } from '@/features/conversation/react/ConversationSessionProvider';
 import { createConversationSessionModel } from '@/features/conversation/react/createConversationSessionModel';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -117,75 +118,83 @@ const AgentConversationChatPanel: React.FC<AgentConversationChatPanelProps> = ({
 
   return (
     <div className={classNames('flex', 'flex-col', 'h-full', className)}>
-      <UnifiedChatSession
+      <ConversationSessionProvider
         conversationId={conversationInfo?.id}
         messageList={messageList}
-        isLoading={loadingConversation}
-        loadingMore={loadingMore}
-        isMoreMessage={isMoreMessage}
-        isConversationActive={sessionModel.isConversationActive}
-        isLocallyStreaming={sessionModel.isLocallyStreaming}
-        isAwaitingChatTerminal={sessionModel.isAwaitingChatTerminal}
-        interventionHandlers={interventionHandlers}
-        messageBottomMode="chat"
-        showDebug={false}
-        chatSuggestList={chatSuggestList}
-        agentInfo={{
-          ...conversationInfo?.agent,
-          id: conversationInfo?.agent?.agentId,
-          sandboxId: selectedComputerId,
-        }}
-        allowOtherModel={conversationInfo?.agent?.allowOtherModel}
-        initialAgentMode={initialAgentMode}
-        selectedModelId={selectedModelId}
-        onModelSelect={setSelectedModelId}
-        isSelectionLocked={isSelectionLocked}
-        onSendMessage={(
-          messageInfo,
-          files,
-          skillIds,
-          modelId,
-          selectedAgentMode,
-        ) => {
-          const id = conversationInfo?.id;
-          if (id) {
-            onMessageSend({
-              id,
-              messageInfo,
-              files,
-              infos: manualComponents,
-              sandboxId: selectedComputerId,
-              debug: true,
-              isSync: false,
-              skillIds,
-              modelId: modelId || selectedModelId,
-              agentMode: selectedAgentMode,
-            });
+        modelStreamActive={sessionModel.isLocallyStreaming}
+        awaitingChatTerminal={sessionModel.isAwaitingChatTerminal}
+        taskStatus={conversationInfo?.taskStatus}
+      >
+        <UnifiedChatSession
+          conversationId={conversationInfo?.id}
+          messageList={messageList}
+          isLoading={loadingConversation}
+          loadingMore={loadingMore}
+          isMoreMessage={isMoreMessage}
+          isConversationActive={sessionModel.isConversationActive}
+          isLocallyStreaming={sessionModel.isLocallyStreaming}
+          isAwaitingChatTerminal={sessionModel.isAwaitingChatTerminal}
+          interventionHandlers={interventionHandlers}
+          messageBottomMode="chat"
+          showDebug={false}
+          chatSuggestList={chatSuggestList}
+          agentInfo={{
+            ...conversationInfo?.agent,
+            id: conversationInfo?.agent?.agentId,
+            sandboxId: selectedComputerId,
+          }}
+          allowOtherModel={conversationInfo?.agent?.allowOtherModel}
+          initialAgentMode={initialAgentMode}
+          selectedModelId={selectedModelId}
+          onModelSelect={setSelectedModelId}
+          isSelectionLocked={isSelectionLocked}
+          onSendMessage={(
+            messageInfo,
+            files,
+            skillIds,
+            modelId,
+            selectedAgentMode,
+          ) => {
+            const id = conversationInfo?.id;
+            if (id) {
+              onMessageSend({
+                id,
+                messageInfo,
+                files,
+                infos: manualComponents,
+                sandboxId: selectedComputerId,
+                debug: true,
+                isSync: false,
+                skillIds,
+                modelId: modelId || selectedModelId,
+                agentMode: selectedAgentMode,
+              });
+            }
+          }}
+          onLoadMoreMessage={handleLoadMoreMessage}
+          manualComponents={manualComponents}
+          selectedComputerId={selectedComputerId}
+          onComputerSelect={(id) => {
+            onChangeSelectedComputerId?.(id);
+          }}
+          // 原 conversationInfo model 数据，传给独立版输入组件
+          runStopConversation={runStopConversation}
+          loadingStopConversation={loadingStopConversation}
+          getCurrentConversationId={getCurrentConversationId}
+          getCurrentConversationRequestId={getCurrentConversationRequestId}
+          disabledConversationActive={disabledConversationActive}
+          loadingConversation={loadingConversation}
+          isLoadingOtherInterface={isLoadingOtherInterface}
+          conversationInfo={conversationInfo}
+          // 会话流式恢复(sub)：刷新页面/新开标签时重建 EXECUTING 会话的流式输出
+          onResumeConversationStream={resumeConversationStream}
+          onAbortResumeStream={abortResumeStream}
+          onReloadConversationHistoryAsync={async (id) =>
+            (await runAsync(Number(id)))?.data?.messageList
           }
-        }}
-        onLoadMoreMessage={handleLoadMoreMessage}
-        manualComponents={manualComponents}
-        selectedComputerId={selectedComputerId}
-        onComputerSelect={(id) => {
-          onChangeSelectedComputerId?.(id);
-        }}
-        // 原 conversationInfo model 数据，传给独立版输入组件
-        runStopConversation={runStopConversation}
-        loadingStopConversation={loadingStopConversation}
-        getCurrentConversationId={getCurrentConversationId}
-        getCurrentConversationRequestId={getCurrentConversationRequestId}
-        disabledConversationActive={disabledConversationActive}
-        loadingConversation={loadingConversation}
-        isLoadingOtherInterface={isLoadingOtherInterface}
-        conversationInfo={conversationInfo}
-        // 会话流式恢复(sub)：刷新页面/新开标签时重建 EXECUTING 会话的流式输出
-        onResumeConversationStream={resumeConversationStream}
-        onAbortResumeStream={abortResumeStream}
-        onReloadConversationHistoryAsync={async (id) =>
-          (await runAsync(Number(id)))?.data?.messageList
-        }
-        resumeDebugSource="agent-dev:left-dev-agent-session"
-      />
+          resumeDebugSource="agent-dev:left-dev-agent-session"
+        />
+      </ConversationSessionProvider>
     </div>
   );
 };

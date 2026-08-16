@@ -1,5 +1,6 @@
 import agentImage from '@/assets/images/agent_image.png';
 import { UnifiedChatSession } from '@/components/business-component';
+import { ConversationSessionProvider } from '@/features/conversation/react/ConversationSessionProvider';
 import { createConversationSessionModel } from '@/features/conversation/react/createConversationSessionModel';
 import { dict } from '@/services/i18nRuntime';
 import { AgentTypeEnum } from '@/types/enums/space';
@@ -213,62 +214,70 @@ const PluginChatSession: React.FC<PluginChatSessionProps> = ({
   });
 
   return (
-    <UnifiedChatSession
+    <ConversationSessionProvider
       conversationId={conversationId}
       messageList={messageList}
-      roleInfo={roleInfo}
-      isLoading={loadingAsync}
-      loadingMore={loadingMore}
-      isMoreMessage={isMoreMessage}
-      isConversationActive={pluginSessionModel.isConversationActive}
-      isLocallyStreaming={pluginSessionModel.isLocallyStreaming}
-      isAwaitingChatTerminal={isAwaitingChatTerminal}
-      interventionHandlers={interventionHandlers}
-      messageBottomMode="chat"
-      loadingSuggest={false}
-      chatSuggestList={chatSuggestList as string[]}
-      agentInfo={{
-        id: conversationInfo?.agent?.agentId,
-        name: conversationInfo?.agent?.name,
-        icon: conversationInfo?.agent?.icon,
-        type: (conversationInfo?.agent?.type || AgentTypeEnum.ChatBot) as any,
-        openingChatMsg: conversationInfo?.agent?.openingChatMsg,
-        guidQuestionDtos: conversationInfo?.agent?.guidQuestionDtos,
-        allowChooseMode: conversationInfo?.agent?.allowChooseMode,
-      }}
-      onSendMessage={handleSendMessage}
-      onLoadMoreMessage={handleLoadMoreMessage}
-      initialAgentMode={(location.state as any)?.agentMode}
-      readonly={false}
-      enableMention={true}
-      allowOtherModel={conversationInfo?.agent?.allowOtherModel}
-      selectedComputerId={selectedComputerId}
-      onComputerSelect={setSelectedComputerId}
-      selectedModelId={selectedModelId}
-      onModelSelect={setSelectedModelId}
-      selectedComponentList={selectedComponentList}
-      onSelectComponent={setSelectedComponentList}
-      placeholder={dict(
-        'PC.Components.ChatInputHomeMentionEditor.placeholderWithoutMention',
-      )}
-      messageViewRef={messageViewRef}
-      // 原 conversationInfo model 数据，传给独立版输入组件
-      runStopConversation={runStopConversation}
-      loadingStopConversation={loadingStopConversation}
-      getCurrentConversationId={getCurrentConversationId}
-      getCurrentConversationRequestId={getCurrentConversationRequestId}
-      disabledConversationActive={disabledConversationActive}
-      loadingConversation={loadingConversation}
-      isLoadingOtherInterface={isLoadingOtherInterface}
-      conversationInfo={conversationInfo}
-      // 会话流式恢复(sub)：刷新页面/新开标签时重建 EXECUTING 会话的流式输出
-      onResumeConversationStream={resumeConversationStream}
-      onAbortResumeStream={abortResumeStream}
-      onReloadConversationHistoryAsync={async (id) =>
-        (await runAsync(Number(id)))?.data?.messageList
-      }
-      resumeDebugSource="space-plugin-tool:chat-session"
-    />
+      modelStreamActive={pluginSessionModel.isLocallyStreaming}
+      awaitingChatTerminal={pluginSessionModel.isAwaitingChatTerminal}
+      taskStatus={conversationInfo?.taskStatus}
+    >
+      <UnifiedChatSession
+        conversationId={conversationId}
+        messageList={messageList}
+        roleInfo={roleInfo}
+        isLoading={loadingAsync}
+        loadingMore={loadingMore}
+        isMoreMessage={isMoreMessage}
+        isConversationActive={pluginSessionModel.isConversationActive}
+        isLocallyStreaming={pluginSessionModel.isLocallyStreaming}
+        isAwaitingChatTerminal={isAwaitingChatTerminal}
+        interventionHandlers={interventionHandlers}
+        messageBottomMode="chat"
+        loadingSuggest={false}
+        chatSuggestList={chatSuggestList as string[]}
+        agentInfo={{
+          id: conversationInfo?.agent?.agentId,
+          name: conversationInfo?.agent?.name,
+          icon: conversationInfo?.agent?.icon,
+          type: (conversationInfo?.agent?.type || AgentTypeEnum.ChatBot) as any,
+          openingChatMsg: conversationInfo?.agent?.openingChatMsg,
+          guidQuestionDtos: conversationInfo?.agent?.guidQuestionDtos,
+          allowChooseMode: conversationInfo?.agent?.allowChooseMode,
+        }}
+        onSendMessage={handleSendMessage}
+        onLoadMoreMessage={handleLoadMoreMessage}
+        initialAgentMode={(location.state as any)?.agentMode}
+        readonly={false}
+        enableMention={true}
+        allowOtherModel={conversationInfo?.agent?.allowOtherModel}
+        selectedComputerId={selectedComputerId}
+        onComputerSelect={setSelectedComputerId}
+        selectedModelId={selectedModelId}
+        onModelSelect={setSelectedModelId}
+        selectedComponentList={selectedComponentList}
+        onSelectComponent={setSelectedComponentList}
+        placeholder={dict(
+          'PC.Components.ChatInputHomeMentionEditor.placeholderWithoutMention',
+        )}
+        messageViewRef={messageViewRef}
+        // 原 conversationInfo model 数据，传给独立版输入组件
+        runStopConversation={runStopConversation}
+        loadingStopConversation={loadingStopConversation}
+        getCurrentConversationId={getCurrentConversationId}
+        getCurrentConversationRequestId={getCurrentConversationRequestId}
+        disabledConversationActive={disabledConversationActive}
+        loadingConversation={loadingConversation}
+        isLoadingOtherInterface={isLoadingOtherInterface}
+        conversationInfo={conversationInfo}
+        // 会话流式恢复(sub)：刷新页面/新开标签时重建 EXECUTING 会话的流式输出
+        onResumeConversationStream={resumeConversationStream}
+        onAbortResumeStream={abortResumeStream}
+        onReloadConversationHistoryAsync={async (id) =>
+          (await runAsync(Number(id)))?.data?.messageList
+        }
+        resumeDebugSource="space-plugin-tool:chat-session"
+      />
+    </ConversationSessionProvider>
   );
 };
 

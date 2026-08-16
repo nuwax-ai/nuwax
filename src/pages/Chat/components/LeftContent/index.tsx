@@ -5,6 +5,7 @@ import FileTreePreviewPanel, {
 import UnifiedChatSession from '@/components/business-component/UnifiedChatSession';
 import ConditionRender from '@/components/ConditionRender';
 import TooltipIcon from '@/components/custom/TooltipIcon';
+import { ConversationSessionProvider } from '@/features/conversation/react/ConversationSessionProvider';
 import DropdownChangeName from '@/pages/Chat/components/DropdownChangeName';
 import { t } from '@/services/i18nRuntime';
 import { AgentTypeEnum } from '@/types/enums/space';
@@ -222,10 +223,23 @@ const LeftContent: React.FC<LeftContentProps> = ({
             [styles['file-tree-visible']]: isFileTreeVisible,
           })}
         >
-          <UnifiedChatSession
-            {...chatSessionProps}
-            showClearIcon={effectiveAgent?.deviceAgent !== 1}
-          />
+          {/* 会话 Session Provider 外提（方案 Phase 6）：队列/干预态/Session View
+              在入口层创建，UnifiedChatSession 消费 Context（无需自包兜底） */}
+          <ConversationSessionProvider
+            conversationId={chatSessionProps.conversationId}
+            messageList={chatSessionProps.messageList ?? []}
+            modelStreamActive={chatSessionProps.isLocallyStreaming}
+            awaitingChatTerminal={chatSessionProps.isAwaitingChatTerminal}
+            taskStatus={chatSessionProps.conversationInfo?.taskStatus}
+            selectedModelId={chatSessionProps.selectedModelId}
+            onSendMessage={chatSessionProps.onSendMessage}
+            minConsumeInterval={chatSessionProps.queueMinConsumeInterval}
+          >
+            <UnifiedChatSession
+              {...chatSessionProps}
+              showClearIcon={effectiveAgent?.deviceAgent !== 1}
+            />
+          </ConversationSessionProvider>
         </div>
 
         {/* 通用型(TaskAgent)智能体专用文件树区域 */}

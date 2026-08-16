@@ -2,6 +2,7 @@ import { UnifiedChatSession } from '@/components/business-component';
 import { type AgentMode } from '@/components/business-component/AgentIntervention';
 import { EVENT_TYPE } from '@/constants/event.constants';
 import { GLOBAL_POLLING_INTERVAL } from '@/constants/home.constants';
+import { ConversationSessionProvider } from '@/features/conversation/react/ConversationSessionProvider';
 import { createConversationSessionModel } from '@/features/conversation/react/createConversationSessionModel';
 import useConversation from '@/hooks/useConversation';
 import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
@@ -669,83 +670,93 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
               'overflow-hide',
             )}
           >
-            <UnifiedChatSession
+            <ConversationSessionProvider
               conversationId={devConversationIdRef.current}
               messageList={messageList}
-              roleInfo={roleInfo}
-              isLoading={isConversationTransitioning}
-              loadingMore={loadingMore}
-              isMoreMessage={isMoreMessage}
-              isConversationActive={previewSessionModel.isConversationActive}
-              isLocallyStreaming={previewSessionModel.isLocallyStreaming}
-              isAwaitingChatTerminal={isAwaitingChatTerminal}
-              interventionHandlers={interventionHandlers}
-              messageBottomMode="chat"
-              loadingSuggest={loadingSuggest}
-              chatSuggestList={chatSuggestList}
-              agentInfo={{
-                id: agentId,
-                name: agentConfigInfo?.name,
-                icon: agentConfigInfo?.icon,
-                type: agentConfigInfo?.type,
-                openingChatMsg: agentConfigInfo?.openingChatMsg,
-                guidQuestionDtos: agentConfigInfo?.guidQuestionDtos,
-                eventBindConfig: agentConfigInfo?.eventBindConfig,
-                hasPermission: conversationInfo?.agent?.hasPermission,
-                sandboxId:
-                  conversationInfo?.sandboxServerId ||
-                  conversationInfo?.agent?.sandboxId,
-                allowChooseMode: agentConfigInfo?.allowChooseMode,
-              }}
-              onSendMessage={handleMessageSend}
-              onClear={handleClear}
-              onLoadMoreMessage={handleLoadMoreMessage}
-              selectedModelId={undefined}
-              manualComponents={manualComponents}
-              selectedComponentList={selectedComponentList}
-              onSelectComponent={handleSelectComponent}
-              requiredNameList={requiredNameList}
-              variableParams={variableParams}
-              form={form}
-              variables={variables}
-              userFillVariables={userFillVariables}
-              isVariablesFilled={true}
-              clearLoading={isConversationTransitioning}
-              chatInputDisabled={isConversationTransitioning}
-              isSelectionLocked={!!conversationInfo?.sandboxServerId}
-              hasUserSentMessage={hasUserSentMessage}
-              selectedComputerId={selectedComputerId}
-              onComputerSelect={(id) => {
-                setSelectedComputerId(id);
-                onChangeSelectedComputerId?.(id);
-              }}
-              showScrollBtn={showScrollBtn}
-              allowAutoScrollRef={allowAutoScrollRef}
-              scrollTimeoutRef={scrollTimeoutRef}
-              setShowScrollBtn={setShowScrollBtn}
-              readonly={false}
-              enableMention={false}
-              placeholder={dict(
-                'PC.Components.ChatInputHomeMentionEditor.placeholderWithoutMention',
-              )}
-              messageViewRef={messageViewRef}
-              // 原 conversationInfo model 数据，传给独立版输入组件
-              runStopConversation={runStopConversation}
-              loadingStopConversation={loadingStopConversation}
-              getCurrentConversationId={getCurrentConversationId}
-              getCurrentConversationRequestId={getCurrentConversationRequestId}
-              disabledConversationActive={disabledConversationActive}
-              loadingConversation={loadingConversation}
-              isLoadingOtherInterface={isLoadingOtherInterface}
-              conversationInfo={conversationInfo}
-              // 会话流式恢复(sub)：刷新页面/新开标签时重建 EXECUTING 会话的流式输出
-              onResumeConversationStream={resumeConversationStream}
-              onAbortResumeStream={abortResumeStream}
-              onReloadConversationHistoryAsync={async (id) =>
-                (await runAsync(Number(id)))?.data?.messageList
-              }
-              resumeDebugSource="edit-agent:preview-and-debug"
-            />
+              modelStreamActive={previewSessionModel.isLocallyStreaming}
+              awaitingChatTerminal={previewSessionModel.isAwaitingChatTerminal}
+              taskStatus={conversationInfo?.taskStatus}
+            >
+              <UnifiedChatSession
+                conversationId={devConversationIdRef.current}
+                messageList={messageList}
+                roleInfo={roleInfo}
+                isLoading={isConversationTransitioning}
+                loadingMore={loadingMore}
+                isMoreMessage={isMoreMessage}
+                isConversationActive={previewSessionModel.isConversationActive}
+                isLocallyStreaming={previewSessionModel.isLocallyStreaming}
+                isAwaitingChatTerminal={isAwaitingChatTerminal}
+                interventionHandlers={interventionHandlers}
+                messageBottomMode="chat"
+                loadingSuggest={loadingSuggest}
+                chatSuggestList={chatSuggestList}
+                agentInfo={{
+                  id: agentId,
+                  name: agentConfigInfo?.name,
+                  icon: agentConfigInfo?.icon,
+                  type: agentConfigInfo?.type,
+                  openingChatMsg: agentConfigInfo?.openingChatMsg,
+                  guidQuestionDtos: agentConfigInfo?.guidQuestionDtos,
+                  eventBindConfig: agentConfigInfo?.eventBindConfig,
+                  hasPermission: conversationInfo?.agent?.hasPermission,
+                  sandboxId:
+                    conversationInfo?.sandboxServerId ||
+                    conversationInfo?.agent?.sandboxId,
+                  allowChooseMode: agentConfigInfo?.allowChooseMode,
+                }}
+                onSendMessage={handleMessageSend}
+                onClear={handleClear}
+                onLoadMoreMessage={handleLoadMoreMessage}
+                selectedModelId={undefined}
+                manualComponents={manualComponents}
+                selectedComponentList={selectedComponentList}
+                onSelectComponent={handleSelectComponent}
+                requiredNameList={requiredNameList}
+                variableParams={variableParams}
+                form={form}
+                variables={variables}
+                userFillVariables={userFillVariables}
+                isVariablesFilled={true}
+                clearLoading={isConversationTransitioning}
+                chatInputDisabled={isConversationTransitioning}
+                isSelectionLocked={!!conversationInfo?.sandboxServerId}
+                hasUserSentMessage={hasUserSentMessage}
+                selectedComputerId={selectedComputerId}
+                onComputerSelect={(id) => {
+                  setSelectedComputerId(id);
+                  onChangeSelectedComputerId?.(id);
+                }}
+                showScrollBtn={showScrollBtn}
+                allowAutoScrollRef={allowAutoScrollRef}
+                scrollTimeoutRef={scrollTimeoutRef}
+                setShowScrollBtn={setShowScrollBtn}
+                readonly={false}
+                enableMention={false}
+                placeholder={dict(
+                  'PC.Components.ChatInputHomeMentionEditor.placeholderWithoutMention',
+                )}
+                messageViewRef={messageViewRef}
+                // 原 conversationInfo model 数据，传给独立版输入组件
+                runStopConversation={runStopConversation}
+                loadingStopConversation={loadingStopConversation}
+                getCurrentConversationId={getCurrentConversationId}
+                getCurrentConversationRequestId={
+                  getCurrentConversationRequestId
+                }
+                disabledConversationActive={disabledConversationActive}
+                loadingConversation={loadingConversation}
+                isLoadingOtherInterface={isLoadingOtherInterface}
+                conversationInfo={conversationInfo}
+                // 会话流式恢复(sub)：刷新页面/新开标签时重建 EXECUTING 会话的流式输出
+                onResumeConversationStream={resumeConversationStream}
+                onAbortResumeStream={abortResumeStream}
+                onReloadConversationHistoryAsync={async (id) =>
+                  (await runAsync(Number(id)))?.data?.messageList
+                }
+                resumeDebugSource="edit-agent:preview-and-debug"
+              />
+            </ConversationSessionProvider>
           </div>
         </div>
       )}
