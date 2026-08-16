@@ -20,6 +20,11 @@ import {
   MESSAGE_PAGE_SIZE,
 } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
+import {
+  finalizeMessagesOnStreamClose,
+  finalizeOwnedMessageOnStaleClose,
+  markOwnedMessageStreamError,
+} from '@/features/conversation/domain/messageLifecycle';
 import { isSessionStreamBusy } from '@/features/conversation/domain/runtimeSelectors';
 import {
   mergeConversationInfoTaskStatus,
@@ -482,47 +487,9 @@ export default () => {
       // 2. 立即将当前会话的 loading 状态的消息改为 Stopped 状态，并将所有正在执行 of processing 状态更新为 FAILED
       setMessageList((list) => {
         try {
-          if (!list?.length) return list;
-          const copyList = JSON.parse(JSON.stringify(list));
-
-          // 从后往前遍历消息列表，修复包含有工具调用的前置消息状态
-          for (let i = copyList.length - 1; i >= 0; i--) {
-            const currentMessage = copyList[i];
-
-            // 1. 结束最后一条消息的思考态；加载中的消息同时强置为 Stopped
-            if (i === copyList.length - 1) {
-              // 主动停止的是整个任务；即使正文分片已把消息标记为 Complete，
-              // 当前思考阶段也必须立即结束。
-              currentMessage.thinkingFinished = true;
-              if (
-                currentMessage.status === MessageStatusEnum.Loading ||
-                currentMessage.status === MessageStatusEnum.Incomplete
-              ) {
-                currentMessage.status = MessageStatusEnum.Stopped;
-              }
-            }
-
-            // 2. 遍历所有消息 of processingList，强置其中残余的 EXECUTING 状态为 FAILED
-            if (
-              currentMessage.processingList &&
-              Array.isArray(currentMessage.processingList)
-            ) {
-              currentMessage.processingList = currentMessage.processingList.map(
-                (item: ProcessingInfo) => {
-                  if (item.status === ProcessingEnum.EXECUTING) {
-                    return {
-                      ...item,
-                      status: ProcessingEnum.FAILED,
-                    };
-                  }
-                  return item;
-                },
-              );
-            }
-          }
-
-          messageListRef.current = copyList;
-          return copyList;
+          const updatedList = finalizeMessagesOnStreamClose(list);
+          messageListRef.current = updatedList;
+          return updatedList;
         } catch (error) {
           console.error('[runStopConversation] ERROR:', error);
           return list;
@@ -888,28 +855,10 @@ export default () => {
           abortConnectionRef.current !== abortConnection
         ) {
           setMessageList((list) => {
-            const updatedList = list.map((info: MessageInfo) => {
-              if (info.id !== currentMessageId) {
-                return info;
-              }
-              const processingList = Array.isArray(info.processingList)
-                ? info.processingList.map((item: ProcessingInfo) =>
-                    item.status === ProcessingEnum.EXECUTING
-                      ? { ...item, status: ProcessingEnum.FAILED }
-                      : item,
-                  )
-                : info.processingList;
-              return {
-                ...info,
-                thinkingFinished: true,
-                status:
-                  info.status === MessageStatusEnum.Loading ||
-                  info.status === MessageStatusEnum.Incomplete
-                    ? MessageStatusEnum.Stopped
-                    : info.status,
-                processingList,
-              };
-            });
+            const updatedList = finalizeOwnedMessageOnStaleClose(
+              list,
+              currentMessageId,
+            );
             messageListRef.current = updatedList;
             return updatedList;
           });
@@ -921,47 +870,9 @@ export default () => {
         // 将当前会话的loading状态的消息改为Stopped状态，并将所有正在执行的 processing 状态更新为 FAILED
         setMessageList((list) => {
           try {
-            const copyList = JSON.parse(JSON.stringify(list));
-
-            // 从后往前遍历消息列表，修复包含有工具调用的前置消息状态
-            for (let i = copyList.length - 1; i >= 0; i--) {
-              const currentMessage = copyList[i];
-
-              // 1. 结束最后一条消息的思考态；加载中的消息同时强置为 Stopped
-              if (i === copyList.length - 1) {
-                // 流已关闭，不允许遗留“正在思考”状态。
-                currentMessage.thinkingFinished = true;
-                if (
-                  currentMessage.status === MessageStatusEnum.Loading ||
-                  currentMessage.status === MessageStatusEnum.Incomplete
-                ) {
-                  currentMessage.status = MessageStatusEnum.Stopped;
-                }
-              }
-
-              // 2. 遍历所有消息 of processingList，强置其中残余的 EXECUTING 状态为 FAILED
-              if (
-                currentMessage.processingList &&
-                Array.isArray(currentMessage.processingList)
-              ) {
-                currentMessage.processingList =
-                  currentMessage.processingList.map((item: ProcessingInfo) => {
-                    if (item.status === ProcessingEnum.EXECUTING) {
-                      return {
-                        ...item,
-                        status: ProcessingEnum.FAILED,
-                      };
-                    }
-                    return item;
-                  });
-              }
-
-              // 3. 将悬挂状态的权限审批与提问弹窗关闭
-              // cleanupPendingInteractions(currentMessage);
-            }
-
-            messageListRef.current = copyList;
-            return copyList;
+            const updatedList = finalizeMessagesOnStreamClose(list);
+            messageListRef.current = updatedList;
+            return updatedList;
           } catch (error) {
             console.error('[onClose] ERROR:', error);
             return list;
@@ -992,23 +903,10 @@ export default () => {
           abortConnectionRef.current !== abortConnection
         ) {
           setMessageList((list) => {
-            const updatedList = list.map((info: MessageInfo) => {
-              if (info.id !== currentMessageId) {
-                return info;
-              }
-              const processingList = Array.isArray(info.processingList)
-                ? info.processingList.map((item: ProcessingInfo) =>
-                    item.status === ProcessingEnum.EXECUTING
-                      ? { ...item, status: ProcessingEnum.FAILED }
-                      : item,
-                  )
-                : info.processingList;
-              return {
-                ...info,
-                status: MessageStatusEnum.Error,
-                processingList,
-              };
-            });
+            const updatedList = markOwnedMessageStreamError(
+              list,
+              currentMessageId,
+            );
             messageListRef.current = updatedList;
             return updatedList;
           });
@@ -1020,23 +918,10 @@ export default () => {
         // 将当前会话的 loading 消息改为 Error，并把其 processingList 中执行中的项更新为 FAILED，
         // 否则 isSessionStreamBusy 会因残留 EXECUTING 项持续为 true，导致活跃态/停止按钮/队列消费卡死。
         setMessageList((list) => {
-          const updatedList = list.map((info: MessageInfo) => {
-            if (info?.id === currentMessageId) {
-              const processingList = Array.isArray(info.processingList)
-                ? info.processingList.map((item: ProcessingInfo) =>
-                    item.status === ProcessingEnum.EXECUTING
-                      ? { ...item, status: ProcessingEnum.FAILED }
-                      : item,
-                  )
-                : info.processingList;
-              return {
-                ...info,
-                status: MessageStatusEnum.Error,
-                processingList,
-              };
-            }
-            return info;
-          });
+          const updatedList = markOwnedMessageStreamError(
+            list,
+            currentMessageId,
+          );
           messageListRef.current = updatedList;
           return updatedList;
         });
