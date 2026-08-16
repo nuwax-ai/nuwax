@@ -15,6 +15,14 @@ const summarizeEffect = (effect: ConversationEffect) => {
       hasContext: !!effect.context,
     };
   }
+  if (effect.type === 'suggest.fetch') {
+    // 诊断不保存用户正文（§9.1），只记录定位字段
+    return {
+      type: effect.type,
+      conversationId: effect.params?.conversationId,
+      messageLength: (effect.params?.message || '').length,
+    };
+  }
   return {
     type: effect.type,
     conversationId: effect.conversationId,

@@ -156,6 +156,10 @@ export default () => {
   const pendingSuggestGenerationRef = useRef(0);
   const messageViewRef = useRef<HTMLDivElement | null>(null);
   const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // 建议拉取句柄经 ref 转发给 Effects Adapter（useRequest 句柄在下方定义，render 期刷新）
+  const runChatSuggestRef = useRef<
+    ((params: ConversationChatSuggestParams) => void) | null
+  >(null);
   const conversationRuntimeRef = useRef<ConversationRuntime | null>(null);
   if (!conversationRuntimeRef.current) {
     conversationRuntimeRef.current = createConversationRuntime(
@@ -164,10 +168,13 @@ export default () => {
         reconcileFinalMessage: reconcileFinalMessageState,
       },
       {
-        // Phase 5：recent/taskStatus 副作用已切换为 Runtime.effects 统一分发（live），
-        // 旧直调路径已删除；隔离入口注入 Preview 子集 Adapter。
-        effectsAdapter: createPreviewEffectsAdapter(),
+        // Phase 5：recent/taskStatus 已切 live；suggest.fetch 当前 shadow——旧 runChatSuggest
+        // 直调继续执行，Runtime.effects 只记录计划，对照一致后切 live 并删旧路径。
+        effectsAdapter: createPreviewEffectsAdapter({
+          fetchSuggest: (params) => runChatSuggestRef.current?.(params),
+        }),
         effectDispatchMode: 'live',
+        shadowEffectTypes: ['suggest.fetch'],
       },
     );
   }
@@ -487,6 +494,8 @@ export default () => {
       },
     },
   );
+  // render 期刷新 ref，供 Effects Adapter 的 suggest.fetch 执行体读取最新句柄
+  runChatSuggestRef.current = runChatSuggest;
 
   // 停止会话请求
   const { runAsync: runStopConversationReq, loading: loadingStopConversation } =
@@ -644,6 +653,10 @@ export default () => {
         if (isSuggest.current) {
           pendingSuggestGenerationRef.current = suggestGenerationRef.current;
           runChatSuggest(params as ConversationChatSuggestParams);
+          conversationRuntime.effects.dispatch({
+            type: 'suggest.fetch',
+            params: params as ConversationChatSuggestParams,
+          });
         }
 
         // 兜底：FINAL_RESULT 是确定结束信号；success=true 时直接落 COMPLETE，

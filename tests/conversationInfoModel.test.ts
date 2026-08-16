@@ -594,6 +594,41 @@ describe('conversationInfo model', () => {
     ]);
   });
 
+  it('Phase5 shadow：FINAL_RESULT 后建议拉取记录计划 effect，旧 runChatSuggest 仍执行', async () => {
+    const { result } = renderHook(() => useConversationInfo());
+    await act(async () => {
+      result.current.setIsSuggest(true);
+    });
+    await act(async () => {
+      await result.current.onMessageSend({ id: 1001, messageInfo: 'hello' });
+    });
+    await act(async () => {
+      sseHandlers.onMessage?.({
+        requestId: 'req-suggest',
+        eventType: ConversationEventTypeEnum.FINAL_RESULT,
+        data: {
+          success: true,
+          outputText: 'answer',
+          error: '',
+          componentExecuteResults: [],
+        },
+      } as ConversationChatResponse);
+    });
+
+    // 新路径只记录计划（shadow 名单防与旧 runChatSuggest 双发）
+    const planned = mockLogEffectDispatch.mock.calls.map(
+      ([entry]) => entry.effect,
+    );
+    expect(planned).toContainEqual({
+      type: 'suggest.fetch',
+      params: expect.objectContaining({
+        conversationId: 1001,
+        message: 'hello',
+      }),
+    });
+    // 旧路径执行与 Adapter 转发的等价性由 conversationEffects 单测覆盖
+  });
+
   it('checkConversationActive：无忙碌消息时置为非活跃', async () => {
     const { result } = renderHook(() => useConversationInfo());
 

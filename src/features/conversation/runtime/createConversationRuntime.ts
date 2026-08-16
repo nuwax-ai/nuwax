@@ -9,6 +9,7 @@ import type {
 } from '@/types/interfaces/conversationInfo';
 import {
   createEffectDispatcher,
+  type ConversationEffect,
   type ConversationEffectsAdapter,
   type EffectDispatcher,
   type EffectDispatchMode,
@@ -30,6 +31,8 @@ export interface ConversationRuntimeOptions {
    * Phase 5 每片对照一致后切 live，再删除旧路径。
    */
   effectDispatchMode?: EffectDispatchMode;
+  /** live 模式下仍只记录不执行的类型名单（新迁移类型的独立 shadow 通道）。 */
+  shadowEffectTypes?: ConversationEffect['type'][];
 }
 
 export interface ConversationRuntime {
@@ -62,6 +65,7 @@ export function createConversationRuntime(
   const effects = createEffectDispatcher({
     adapter: options?.effectsAdapter ?? { dispatch: () => {} },
     mode: options?.effectDispatchMode,
+    shadowEffectTypes: options?.shadowEffectTypes,
   });
 
   return {

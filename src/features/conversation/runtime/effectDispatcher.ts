@@ -1,5 +1,8 @@
 import type { TaskStatus } from '@/types/enums/agent';
-import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
+import type {
+  ConversationChatSuggestParams,
+  ConversationInfo,
+} from '@/types/interfaces/conversationInfo';
 import { logConversationEffectDispatch } from '@/utils/conversationEffectsDiagnostics';
 
 /**
@@ -24,6 +27,10 @@ export type ConversationEffect =
       type: 'recent.list.refresh';
       conversationId: number | string;
       reason: string;
+    }
+  | {
+      type: 'suggest.fetch';
+      params: ConversationChatSuggestParams;
     };
 
 /** 入口注入的副作用执行器：主 Chat 全量执行，隔离 Preview 执行允许子集。 */
@@ -44,20 +51,36 @@ export interface EffectDispatcher extends ConversationEffectsAdapter {
   clearJournal(): void;
 }
 
-export function createEffectDispatcher(options: {
+export interface CreateEffectDispatcherOptions {
   adapter: ConversationEffectsAdapter;
   mode?: EffectDispatchMode;
-}): EffectDispatcher {
+  /**
+   * live 模式下仍只记录不执行的类型名单（Phase 5 每片独立走 shadow→live：
+   * 已切 live 的类型不受影响，新迁移类型在名单内继续 shadow 对照）。
+   */
+  shadowEffectTypes?: ConversationEffect['type'][];
+}
+
+export function createEffectDispatcher(
+  options: CreateEffectDispatcherOptions,
+): EffectDispatcher {
   const mode: EffectDispatchMode = options.mode ?? 'shadow';
   const journal: ConversationEffect[] = [];
+  const isShadowed = (effect: ConversationEffect) =>
+    mode === 'shadow' ||
+    (options.shadowEffectTypes?.includes(effect.type) ?? false);
 
   return {
     mode,
 
     dispatch(effect) {
       journal.push(effect);
-      logConversationEffectDispatch({ mode, effect });
-      if (mode === 'live') {
+      const shadowed = isShadowed(effect);
+      logConversationEffectDispatch({
+        mode: shadowed ? 'shadow' : 'live',
+        effect,
+      });
+      if (!shadowed) {
         options.adapter.dispatch(effect);
       }
     },

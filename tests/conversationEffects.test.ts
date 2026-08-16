@@ -18,12 +18,15 @@ import {
 import { TaskStatus } from '@/types/enums/agent';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { mockEventBusEmit, mockEmitConversationListTaskStatus } = vi.hoisted(
-  () => ({
-    mockEventBusEmit: vi.fn(),
-    mockEmitConversationListTaskStatus: vi.fn(),
-  }),
-);
+const {
+  mockEventBusEmit,
+  mockEmitConversationListTaskStatus,
+  mockFetchSuggest,
+} = vi.hoisted(() => ({
+  mockEventBusEmit: vi.fn(),
+  mockEmitConversationListTaskStatus: vi.fn(),
+  mockFetchSuggest: vi.fn(),
+}));
 
 vi.mock('@/utils/eventBus', () => ({
   default: {
@@ -60,6 +63,17 @@ const listRefresh: ConversationEffect = {
   conversationId: 1001,
   reason: 'stream-closed',
 };
+
+const suggestFetch: ConversationEffect = {
+  type: 'suggest.fetch',
+  params: { conversationId: 1001, message: 'hello' } as never,
+};
+
+const createMainAdapter = () =>
+  createMainChatEffectsAdapter({ fetchSuggest: mockFetchSuggest });
+
+const createPreviewAdapter = () =>
+  createPreviewEffectsAdapter({ fetchSuggest: mockFetchSuggest });
 
 describe('effectDispatcher', () => {
   beforeEach(() => {
@@ -107,6 +121,23 @@ describe('effectDispatcher', () => {
     dispatcher.clearJournal();
     expect(dispatcher.getJournal()).toEqual([]);
   });
+
+  it('live 模式下 shadowEffectTypes 名单内的类型只记录不执行（分片 shadow 通道）', () => {
+    const adapter: ConversationEffectsAdapter = { dispatch: vi.fn() };
+    const dispatcher = createEffectDispatcher({
+      adapter,
+      mode: 'live',
+      shadowEffectTypes: ['suggest.fetch'],
+    });
+
+    dispatcher.dispatch(suggestFetch);
+    dispatcher.dispatch(terminalPatch);
+
+    // 名单内：不执行（防与旧路径双发）；名单外：正常执行
+    expect(adapter.dispatch).toHaveBeenCalledTimes(1);
+    expect(adapter.dispatch).toHaveBeenCalledWith(terminalPatch);
+    expect(dispatcher.getJournal()).toEqual([suggestFetch, terminalPatch]);
+  });
 });
 
 describe('mainChatEffectsAdapter', () => {
@@ -115,7 +146,7 @@ describe('mainChatEffectsAdapter', () => {
   });
 
   it('无 context 的终态补丁经领域守卫入口 emitConversationListTaskStatus', () => {
-    createMainChatEffectsAdapter().dispatch(terminalPatch);
+    createMainAdapter().dispatch(terminalPatch);
 
     expect(mockEmitConversationListTaskStatus).toHaveBeenCalledWith(
       1001,
@@ -125,7 +156,7 @@ describe('mainChatEffectsAdapter', () => {
   });
 
   it('带 context 的乐观「执行中」标记直接发射事件（不经终态守卫）', () => {
-    createMainChatEffectsAdapter().dispatch(optimisticPatch);
+    createMainAdapter().dispatch(optimisticPatch);
 
     expect(mockEventBusEmit).toHaveBeenCalledWith(
       EVENT_TYPE.UpdateConversationListTaskStatus,
@@ -140,12 +171,19 @@ describe('mainChatEffectsAdapter', () => {
   });
 
   it('recent.list.refresh 发射侧栏列表刷新', () => {
-    createMainChatEffectsAdapter().dispatch(listRefresh);
+    createMainAdapter().dispatch(listRefresh);
 
     expect(mockEventBusEmit).toHaveBeenCalledWith(
       EVENT_TYPE.RefreshConversationList,
       { conversationId: 1001, reason: 'stream-closed' },
     );
+  });
+
+  it('suggest.fetch 交给注入的建议拉取句柄', () => {
+    createMainAdapter().dispatch(suggestFetch);
+
+    expect(mockFetchSuggest).toHaveBeenCalledWith(suggestFetch.params);
+    expect(mockEventBusEmit).not.toHaveBeenCalled();
   });
 });
 
@@ -155,7 +193,7 @@ describe('previewEffectsAdapter', () => {
   });
 
   it('执行无 context 的终态补丁', () => {
-    createPreviewEffectsAdapter().dispatch(terminalPatch);
+    createPreviewAdapter().dispatch(terminalPatch);
 
     expect(mockEmitConversationListTaskStatus).toHaveBeenCalledWith(
       1001,
@@ -164,9 +202,15 @@ describe('previewEffectsAdapter', () => {
     expect(mockEventBusEmit).not.toHaveBeenCalled();
   });
 
+  it('执行 suggest.fetch（隔离面板同样拉取建议）', () => {
+    createPreviewAdapter().dispatch(suggestFetch);
+
+    expect(mockFetchSuggest).toHaveBeenCalledWith(suggestFetch.params);
+  });
+
   it('忽略乐观标记与列表刷新（隔离子集）', () => {
-    createPreviewEffectsAdapter().dispatch(optimisticPatch);
-    createPreviewEffectsAdapter().dispatch(listRefresh);
+    createPreviewAdapter().dispatch(optimisticPatch);
+    createPreviewAdapter().dispatch(listRefresh);
 
     expect(mockEmitConversationListTaskStatus).not.toHaveBeenCalled();
     expect(mockEventBusEmit).not.toHaveBeenCalled();

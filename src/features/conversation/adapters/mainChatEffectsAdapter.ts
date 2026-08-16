@@ -3,19 +3,28 @@ import type {
   ConversationEffect,
   ConversationEffectsAdapter,
 } from '@/features/conversation/runtime/effectDispatcher';
+import type { ConversationChatSuggestParams } from '@/types/interfaces/conversationInfo';
 import { emitConversationListTaskStatus } from '@/utils/conversationTaskStatusSync';
 import eventBus from '@/utils/eventBus';
 
+export interface MainChatEffectsAdapterDeps {
+  /** 拉取问题建议（model 的 useRequest 句柄，经 ref 转发保持最新闭包）。 */
+  fetchSuggest: (params: ConversationChatSuggestParams) => void;
+}
+
 /**
- * 主 Chat 入口的 Effects Adapter：执行 recent/taskStatus 全部副作用。
+ * 主 Chat 入口的 Effects Adapter：执行 recent/taskStatus 与 suggest 副作用。
  *
  * - 带 context 的 recent.status.patch：发送时的乐观「执行中」标记（新会话入列表），
  *   直接发射事件，不经过终态守卫（EXECUTING 是本路径的目标态）；
  * - 无 context 的 recent.status.patch：终态补丁，经 emitConversationListTaskStatus
  *   的领域守卫（跳过 undefined / EXECUTING，仅终态落列表）；
- * - recent.list.refresh：流结束后刷新侧栏列表。
+ * - recent.list.refresh：流结束后刷新侧栏列表；
+ * - suggest.fetch：FINAL_RESULT 后按会话配置拉取问题建议。
  */
-export function createMainChatEffectsAdapter(): ConversationEffectsAdapter {
+export function createMainChatEffectsAdapter(
+  deps: MainChatEffectsAdapterDeps,
+): ConversationEffectsAdapter {
   return {
     dispatch(effect: ConversationEffect) {
       switch (effect.type) {
@@ -37,6 +46,9 @@ export function createMainChatEffectsAdapter(): ConversationEffectsAdapter {
             conversationId: effect.conversationId,
             reason: effect.reason,
           });
+          return;
+        case 'suggest.fetch':
+          deps.fetchSuggest(effect.params);
           return;
       }
     },
