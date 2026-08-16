@@ -1,13 +1,13 @@
 import { EVENT_TYPE } from '@/constants/event.constants';
 import { GLOBAL_POLLING_INTERVAL } from '@/constants/home.constants';
 import { resolveTaskStatusFromMessageLists } from '@/features/conversation/domain/taskStatus';
+import { createResumeConsistencyController } from '@/features/conversation/runtime/resumeConsistencyController';
 import {
   createSnapshotConsistencyController,
   type SnapshotDecision,
   type SnapshotRequestToken,
 } from '@/features/conversation/runtime/snapshotConsistencyController';
 import { AssistantRoleEnum, TaskStatus } from '@/types/enums/agent';
-import { MessageStatusEnum } from '@/types/enums/common';
 import type {
   ConversationInfo,
   MessageInfo,
@@ -86,17 +86,6 @@ export interface UseConversationStreamResumeOptions {
   onTerminalTaskStatus?: (status: TaskStatus) => void;
 }
 
-/** 本地流式结束后，订阅 sub 的冷却时间(ms)：等 taskStatus 稳定，避免对刚完成的输出重复重放 */
-const RESUME_COOLDOWN_AFTER_LOCAL_MS = 5000;
-const RESUME_HISTORY_USER_RETRY_DELAYS_MS = [150, 300, 600, 900, 1200, 1800];
-/**
- * sub 失败退避：存活不足 MIN_ALIVE 视为「秒关/报错」，按连续失败次数指数退避
- * （BASE 起步、MAX 封顶），切断「sub 被秒关 → onClose → 立即重订阅」的高频循环
- */
-const RESUME_SUB_MIN_ALIVE_MS = 3000;
-const RESUME_SUB_FAILURE_BASE_DELAY_MS = 2000;
-const RESUME_SUB_FAILURE_MAX_DELAY_MS = 30000;
-
 const sleep = (ms: number): Promise<void> =>
   new Promise((resolve) => {
     globalThis.setTimeout(resolve, ms);
@@ -104,15 +93,6 @@ const sleep = (ms: number): Promise<void> =>
 
 const getUserMessageCount = (list: MessageInfo[] | undefined | null): number =>
   (list || []).filter((m) => m.role === AssistantRoleEnum.USER).length;
-
-const hasNewUserMessage = (
-  base: MessageInfo[] | undefined | null,
-  incoming: MessageInfo[] | undefined | null,
-): boolean => getUserMessageCount(incoming) > getUserMessageCount(base);
-
-const getLastMessage = (
-  list: MessageInfo[] | undefined | null,
-): MessageInfo | undefined => list?.[list.length - 1];
 
 const summarizeMessage = (message: MessageInfo | undefined) =>
   message
@@ -131,31 +111,6 @@ const summarizeMessageList = (list: MessageInfo[] | undefined | null) => ({
   userCount: getUserMessageCount(list),
   tail: (list || []).slice(-4).map(summarizeMessage),
 });
-
-const isIncompleteAssistant = (message: MessageInfo | undefined): boolean =>
-  message?.role === AssistantRoleEnum.ASSISTANT &&
-  (message.status === MessageStatusEnum.Loading ||
-    message.status === MessageStatusEnum.Incomplete);
-
-const hasUserReadyForResume = (
-  base: MessageInfo[] | undefined | null,
-  incoming: MessageInfo[] | undefined | null,
-): boolean => {
-  if (hasNewUserMessage(base, incoming)) {
-    return true;
-  }
-  const lastIncoming = getLastMessage(incoming);
-  if (lastIncoming?.role === AssistantRoleEnum.USER) {
-    return true;
-  }
-  if (isIncompleteAssistant(lastIncoming)) {
-    return true;
-  }
-  const lastBase = getLastMessage(base);
-  return (
-    lastBase?.role === AssistantRoleEnum.USER || isIncompleteAssistant(lastBase)
-  );
-};
 
 export function useConversationStreamResume(
   options: UseConversationStreamResumeOptions,
@@ -206,6 +161,9 @@ export function useConversationStreamResume(
   const consistencyControllerRef = useRef(
     createSnapshotConsistencyController(),
   );
+  const resumeConsistencyControllerRef = useRef(
+    createResumeConsistencyController(),
+  );
   const scheduledRequestTokenRef = useRef<SnapshotRequestToken | undefined>();
   const prevLocallyStreamingForPollRef = useRef(!!isLocallyStreaming);
   if (isLocallyStreaming && !prevLocallyStreamingForPollRef.current) {
@@ -221,20 +179,6 @@ export function useConversationStreamResume(
     stop: () => void;
   }>({ start: () => {}, stop: () => {} });
 
-  // 记录最近一次本地流式结束的 {会话, 时间}：冷却仅对同一会话生效，切换会话不继承，
-  // 避免离开一个刚发完消息的会话、进入另一个 EXECUTING 会话时被误抑制。
-  const localStreamEndedAtRef = useRef<{
-    convId: number | string | undefined;
-    at: number;
-  }>({ convId: undefined, at: 0 });
-
-  // sub 失败退避状态：subOpenedAt 记录本次打开时间，failure 记录连续失败次数与最近失败时间。
-  // 仅当前会话的 onClose 会计数（跨会话延迟关闭不污染），切换会话时重置。
-  const subOpenedAtRef = useRef(0);
-  const subFailureRef = useRef<{ count: number; lastAt: number }>({
-    count: 0,
-    lastAt: 0,
-  });
   const prevLocallyStreamingRef = useRef(false);
   useEffect(() => {
     logLocalStreamState({
@@ -244,10 +188,9 @@ export function useConversationStreamResume(
       messageList: latestRef.current.messageList || [],
     });
     if (prevLocallyStreamingRef.current && !isLocallyStreaming) {
-      localStreamEndedAtRef.current = {
-        convId: conversationId,
-        at: Date.now(),
-      };
+      resumeConsistencyControllerRef.current.recordLocalStreamEnded(
+        conversationId,
+      );
     }
     prevLocallyStreamingRef.current = !!isLocallyStreaming;
   }, [isLocallyStreaming, conversationId]);
@@ -262,37 +205,24 @@ export function useConversationStreamResume(
     if (isResumeSubscribedRef.current) return; // 防重复订阅
     if (latestRef.current.isLocallyStreaming) return; // live 正在驱动输出，不重复订阅
     // 同一会话内，本地流式刚结束的冷却窗口内不订阅（等待 taskStatus 稳定后再由轮询决定）
-    const ended = localStreamEndedAtRef.current;
-    if (
-      ended.convId === id &&
-      Date.now() - ended.at < RESUME_COOLDOWN_AFTER_LOCAL_MS
-    ) {
-      conversationResumeLogger.info('skip: local stream cooldown', {
-        source: debugSource,
-        conversationId: id,
-        cooldownMs: Date.now() - ended.at,
-      });
-      return;
-    }
-    // sub 失败退避：秒关/报错后按连续失败次数指数退避，窗口内跳过。
-    // 注意必须在「标记订阅 + 停轮询」之前 return，让轮询按 5s 节奏自然兜底重试。
-    const failure = subFailureRef.current;
-    if (failure.count > 0) {
-      const backoffMs = Math.min(
-        RESUME_SUB_FAILURE_BASE_DELAY_MS * 2 ** (failure.count - 1),
-        RESUME_SUB_FAILURE_MAX_DELAY_MS,
-      );
-      const elapsedMs = Date.now() - failure.lastAt;
-      if (elapsedMs < backoffMs) {
+    const resumeGate = resumeConsistencyControllerRef.current.evaluateGate(id);
+    if (!resumeGate.allowed) {
+      if (resumeGate.reason === 'local-stream-cooldown') {
+        conversationResumeLogger.info('skip: local stream cooldown', {
+          source: debugSource,
+          conversationId: id,
+          cooldownMs: resumeGate.elapsedMs,
+        });
+      } else {
         conversationResumeLogger.info('skip: sub failure backoff', {
           source: debugSource,
           conversationId: id,
-          failureCount: failure.count,
-          backoffMs,
-          elapsedMs,
+          failureCount: resumeGate.failureCount,
+          backoffMs: resumeGate.backoffMs,
+          elapsedMs: resumeGate.elapsedMs,
         });
-        return;
       }
+      return;
     }
     // 先标记订阅 + 停轮询（reload 期间防重入，执行中不轮询）
     isResumeSubscribedRef.current = true;
@@ -320,7 +250,7 @@ export function useConversationStreamResume(
           conversationId: id,
           base: summarizeMessageList(latestRef.current.messageList),
           reloaded: summarizeMessageList(reloaded),
-          userReady: hasUserReadyForResume(
+          userReady: resumeConsistencyControllerRef.current.isHistoryUserReady(
             latestRef.current.messageList,
             reloaded,
           ),
@@ -331,9 +261,13 @@ export function useConversationStreamResume(
         const shouldWaitForHistoryUser = waitForHistoryUserBeforeResume ?? true;
         if (
           shouldWaitForHistoryUser &&
-          !hasUserReadyForResume(latestRef.current.messageList, reloaded)
+          !resumeConsistencyControllerRef.current.isHistoryUserReady(
+            latestRef.current.messageList,
+            reloaded,
+          )
         ) {
-          for (const delayMs of RESUME_HISTORY_USER_RETRY_DELAYS_MS) {
+          for (const delayMs of resumeConsistencyControllerRef.current
+            .historyUserRetryDelaysMs) {
             await sleep(delayMs);
             if (
               latestRef.current.conversationId !== id ||
@@ -347,12 +281,20 @@ export function useConversationStreamResume(
               list = retryList;
             }
             if (
-              hasUserReadyForResume(latestRef.current.messageList, retryList)
+              resumeConsistencyControllerRef.current.isHistoryUserReady(
+                latestRef.current.messageList,
+                retryList,
+              )
             ) {
               break;
             }
           }
-          if (!hasUserReadyForResume(latestRef.current.messageList, list)) {
+          if (
+            !resumeConsistencyControllerRef.current.isHistoryUserReady(
+              latestRef.current.messageList,
+              list,
+            )
+          ) {
             conversationResumeLogger.info(
               'skip sub: history user not ready after retries',
               {
@@ -401,7 +343,7 @@ export function useConversationStreamResume(
     // 记录本次 sub 打开时间：onClose 时按存活时长区分「秒关（失败）」与「长连接后正常关闭」。
     // 同步 onClose 路径（如 reload 快照已是持久化完整 assistant，未真正建立连接）aliveMs≈0，
     // 同样计入失败退避，正好切断该路径的同步重订阅循环。
-    subOpenedAtRef.current = Date.now();
+    resumeConsistencyControllerRef.current.recordOpened();
     resumeStream(
       id,
       list,
@@ -415,20 +357,15 @@ export function useConversationStreamResume(
           return;
         }
         // 失败退避计数（仅当前会话）：存活不足阈值视为秒关/报错，累计退避；长连接后关闭则重置
-        const aliveMs = Date.now() - subOpenedAtRef.current;
-        if (aliveMs < RESUME_SUB_MIN_ALIVE_MS) {
-          subFailureRef.current = {
-            count: subFailureRef.current.count + 1,
-            lastAt: Date.now(),
-          };
+        const closeResult =
+          resumeConsistencyControllerRef.current.recordClosed();
+        if (closeResult.shortLived) {
           conversationResumeLogger.info('sub short-lived, backoff escalated', {
             source: debugSource,
             conversationId: id,
-            aliveMs,
-            failureCount: subFailureRef.current.count,
+            aliveMs: closeResult.aliveMs,
+            failureCount: closeResult.failureCount,
           });
-        } else if (subFailureRef.current.count > 0) {
-          subFailureRef.current = { count: 0, lastAt: 0 };
         }
         // sub 关闭后从本地 messageList 的 finalResult 解析终态（FINAL_RESULT 已落本地）；
         // 不再 reload 历史——reload 会整体覆盖 messageList，正是会话结束闪烁的来源。
@@ -629,10 +566,10 @@ export function useConversationStreamResume(
           }
           if (!isResumeSubscribedRef.current) {
             // 同一会话内，本地流式刚结束的冷却窗口内跳过，等 taskStatus 稳定后再决定
-            const ended = localStreamEndedAtRef.current;
             if (
-              ended.convId === conversationId &&
-              Date.now() - ended.at < RESUME_COOLDOWN_AFTER_LOCAL_MS
+              !resumeConsistencyControllerRef.current.evaluateGate(
+                conversationId,
+              ).allowed
             ) {
               return;
             }
@@ -641,7 +578,7 @@ export function useConversationStreamResume(
             // 不立即发起多次历史重载；下一轮快照就绪后再建立 sub。
             if (
               Array.isArray(polledMessageList) &&
-              !hasUserReadyForResume(
+              !resumeConsistencyControllerRef.current.isHistoryUserReady(
                 latestRef.current.messageList,
                 polledMessageList,
               )
@@ -725,7 +662,7 @@ export function useConversationStreamResume(
     isResumeSubscribedRef.current = false;
     setIsResumeSubscribed(false);
     // 退避状态不跨会话继承：新会话的失败计数从零开始
-    subFailureRef.current = { count: 0, lastAt: 0 };
+    resumeConsistencyControllerRef.current.resetFailureBackoff();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversationId]);
 
@@ -841,7 +778,7 @@ export function useConversationStreamResume(
               const polledMessageList = decision.resumeMessageList;
               if (
                 Array.isArray(polledMessageList) &&
-                !hasUserReadyForResume(
+                !resumeConsistencyControllerRef.current.isHistoryUserReady(
                   latestRef.current.messageList,
                   polledMessageList,
                 )
