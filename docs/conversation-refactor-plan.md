@@ -14,7 +14,7 @@
 | Phase 2 连接所有权 | 已完成 | 通用 run Controller；live/sub 旧 message、close、error 回调隔离 |
 | Phase 3 历史一致性 | 核心策略已完成 | snapshot generation/visibility 单飞/USER 尾拒绝、历史 USER 等待、5 秒冷却、sub 退避、终态 fallback |
 | Phase 4 Runtime Factory | 核心纵切已完成 | 主/隔离 model 已创建独立 Runtime 实例；Runtime 已拥有输出身份、live/sub 连接所有权；resumeController 已迁入 runtime/；双实例合同测试覆盖投影一致与交叉隔离 |
-| Phase 5 Effects Adapter | 进行中（第一片已切 live） | recent/taskStatus 子集：ConversationEffect + 主/隔离双 Adapter + Runtime.effects 分发已切 live，旧 eventBus 直调路径已删除；topic/suggest/page/file/Git/perf 仍由旧 model 执行 |
+| Phase 5 Effects Adapter | 进行中（第 1-2 片已切 live） | recent/taskStatus 与 suggest.fetch：ConversationEffect + 主/隔离双 Adapter + Runtime.effects 分发已切 live，旧直调路径已删除；topic.update/page/file/Git/perf 仍由旧 model 执行 |
 | Phase 6 React Interface | 未开始 | `UnifiedChatSession` 仍使用兼容 Props；轮询编排仍在 Resume Hook |
 | Phase 7 清理固化 | 未开始 | 双 model 外壳、兼容导出与临时诊断仍保留 |
 
@@ -22,6 +22,7 @@
 
 ### 0.1 最新纵切记录（2026-08-16）
 
+- Phase 5 第二片（suggest.fetch）完成 shadow→live 闭环：`ConversationEffect` 新增 `suggest.fetch`；dispatcher 支持 `shadowEffectTypes` 分片 shadow 通道（live runtime 中新迁移类型只记录不执行，防止与旧路径双发）；双 Adapter 注入 `fetchSuggest`（model 的 useRequest 句柄经 `runChatSuggestRef` render 期刷新转发，防 stale 闭包）。隔离入口的 suggest 代际记录（pendingSuggestGenerationRef）留在调用点、属 model ref 语义。shadow 对照（Adapter 转发单测 + model 计划断言）通过后切 live，删除两处旧 `runChatSuggest` 直调。
 - Phase 5 第一片（recent/taskStatus）切换执行权：两个 model 的 `effectDispatchMode` 由 shadow 切 live，删除 6 处旧 eventBus 直调（主 4：发送乐观标记 / ERROR / onError / onClose 列表刷新；隔离 2：ERROR / onError），并清理 `emitConversationListTaskStatus` 无用 import。model 级对照测试改为断言「计划 effect 序列 == Adapter 实际发射序列」，发射行为与切换前逐条一致（218 条会话测试全绿）。
 - Phase 5 第一片（recent/taskStatus）shadow observation 起步：`runtime/effectDispatcher.ts` 定义 `ConversationEffect` 子集（`recent.status.patch`（可选乐观 context）/`recent.list.refresh`）与 shadow/live 双模式 dispatcher（默认 shadow 只记录 + 诊断日志 `conversationEffectsDiagnostics`）；`adapters/mainChatEffectsAdapter`（全量：乐观标记/终态补丁/列表刷新）与 `adapters/previewEffectsAdapter`（隔离子集：仅终态补丁）构成两个真实 Adapter；Runtime 组合为 `runtime.effects`。shadow 阶段测试已证明「计划 effect 序列 == 旧路径实际发射序列」后切换。
 - 双实例合同测试补全（Phase 4 第 6 项）：在投影一致性（同 Trace）之外新增交叉隔离合同——主/隔离实例对不同会话同时发送，消息与 requestId 互不串扰；停止隔离实例只中断自己的 live 连接、消息终态只作用于自己，主实例连接与 Loading 态不受影响。活跃态因「发送后 3s 保活」窗口不作跨实例断言（冻结合同，未顺手改）。
