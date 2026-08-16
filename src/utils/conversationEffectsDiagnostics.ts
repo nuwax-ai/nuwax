@@ -52,6 +52,22 @@ const summarizeEffect = (effect: ConversationEffect) => {
   if (effect.type === 'preview.link.open') {
     return { type: effect.type, urlLength: (effect.url || '').length };
   }
+  if (effect.type === 'preview.file.refresh') {
+    return {
+      type: effect.type,
+      conversationId: effect.conversationId,
+      mode: effect.mode,
+    };
+  }
+  if (effect.type === 'taskResult.settle') {
+    return {
+      type: effect.type,
+      conversationId: effect.conversationId,
+      hasTaskResult: effect.taskResult?.hasTaskResult,
+      hasFile: !!effect.taskResult?.file,
+      enableVersionControl: effect.enableVersionControl,
+    };
+  }
   return {
     type: effect.type,
     conversationId: effect.conversationId,

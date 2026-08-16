@@ -24,12 +24,18 @@ const {
   mockFetchSuggest,
   mockShowPagePreview,
   mockOpenDesktop,
+  mockRefreshFileListThrottled,
+  mockRefreshGitList,
+  mockOpenPreviewView,
 } = vi.hoisted(() => ({
   mockEventBusEmit: vi.fn(),
   mockEmitConversationListTaskStatus: vi.fn(),
   mockFetchSuggest: vi.fn(),
   mockShowPagePreview: vi.fn(),
   mockOpenDesktop: vi.fn(),
+  mockRefreshFileListThrottled: vi.fn(),
+  mockRefreshGitList: vi.fn(),
+  mockOpenPreviewView: vi.fn(),
 }));
 
 vi.mock('@/utils/eventBus', () => ({
@@ -84,22 +90,37 @@ const topicUpdate: ConversationEffect = {
   } as never,
 };
 
-const createMainAdapter = () =>
-  createMainChatEffectsAdapter({
-    fetchSuggest: mockFetchSuggest,
-    updateTopic: vi.fn(),
-    setConversationInfo: vi.fn(),
-    needUpdateTopicRef: { current: true },
-    getTopicContext: () => ({
-      isAppSidebarMode: false,
-      runHistory: vi.fn(),
-      runHistoryItem: vi.fn(),
-    }),
-    showPagePreview: mockShowPagePreview,
-    openDesktop: mockOpenDesktop,
-    setCardList: vi.fn(),
-    setShowType: vi.fn(),
-  });
+/** mainChat Adapter 依赖构造器（默认全 mock，按用例覆盖） */
+const createMainDeps = (
+  overrides: Record<string, unknown> = {},
+): Parameters<typeof createMainChatEffectsAdapter>[0] => ({
+  fetchSuggest: mockFetchSuggest,
+  updateTopic: vi.fn(),
+  setConversationInfo: vi.fn(),
+  needUpdateTopicRef: { current: true },
+  getTopicContext: () => ({
+    isAppSidebarMode: false,
+    runHistory: vi.fn(),
+    runHistoryItem: vi.fn(),
+  }),
+  showPagePreview: mockShowPagePreview,
+  openDesktop: mockOpenDesktop,
+  setCardList: vi.fn(),
+  setShowType: vi.fn(),
+  refreshFileListThrottled: mockRefreshFileListThrottled,
+  refreshFileListImmediately: vi
+    .fn()
+    .mockReturnValue(Promise.resolve()) as never,
+  refreshGitListRef: { current: mockRefreshGitList },
+  openPreviewView: mockOpenPreviewView,
+  setTaskAgentSelectedFileId: vi.fn(),
+  setTaskAgentSelectTrigger: vi.fn(),
+  setFileTreeRefreshTrigger: vi.fn(),
+  ...overrides,
+});
+
+const createMainAdapter = (overrides: Record<string, unknown> = {}) =>
+  createMainChatEffectsAdapter(createMainDeps(overrides));
 
 const createPreviewAdapter = () =>
   createPreviewEffectsAdapter({
@@ -118,26 +139,23 @@ const createTopicAdapter = (
   const needUpdateTopicRef = { current: true };
   const runHistory = vi.fn();
   const runHistoryItem = vi.fn();
-  const adapter = createMainChatEffectsAdapter({
-    fetchSuggest: mockFetchSuggest,
-    updateTopic: vi.fn().mockReturnValue(
-      overrides.updateTopicResult ??
-        Promise.resolve({
-          data: { topic: '新主题', topicUpdated: 1 },
-        }),
-    ) as never,
-    setConversationInfo: setConversationInfo as never,
-    needUpdateTopicRef: needUpdateTopicRef as never,
-    getTopicContext: () => ({
-      isAppSidebarMode: overrides.isAppSidebarMode ?? false,
-      runHistory,
-      runHistoryItem,
+  const adapter = createMainChatEffectsAdapter(
+    createMainDeps({
+      updateTopic: vi.fn().mockReturnValue(
+        overrides.updateTopicResult ??
+          Promise.resolve({
+            data: { topic: '新主题', topicUpdated: 1 },
+          }),
+      ) as never,
+      setConversationInfo: setConversationInfo as never,
+      needUpdateTopicRef: needUpdateTopicRef as never,
+      getTopicContext: () => ({
+        isAppSidebarMode: overrides.isAppSidebarMode ?? false,
+        runHistory,
+        runHistoryItem,
+      }),
     }),
-    showPagePreview: mockShowPagePreview,
-    openDesktop: mockOpenDesktop,
-    setCardList: vi.fn(),
-    setShowType: vi.fn(),
-  });
+  );
   return {
     adapter,
     setConversationInfo,
@@ -357,18 +375,7 @@ describe('mainChatEffectsAdapter', () => {
       updater([{ cardKey: 'old' }]),
     );
     const setShowType = vi.fn();
-    const adapter = createMainChatEffectsAdapter({
-      fetchSuggest: mockFetchSuggest,
-      updateTopic: vi.fn(),
-      setConversationInfo: vi.fn(),
-      needUpdateTopicRef: { current: true },
-      getTopicContext: () => ({
-        isAppSidebarMode: false,
-        runHistory: vi.fn(),
-        runHistoryItem: vi.fn(),
-      }),
-      showPagePreview: mockShowPagePreview,
-      openDesktop: mockOpenDesktop,
+    const adapter = createMainAdapter({
       setCardList: setCardList as never,
       setShowType: setShowType as never,
     });
@@ -392,20 +399,8 @@ describe('mainChatEffectsAdapter', () => {
     const setCardList = vi.fn((updater: (prev: unknown[]) => unknown[]) =>
       updater([{ cardKey: 'old' }]),
     );
-    const adapter = createMainChatEffectsAdapter({
-      fetchSuggest: mockFetchSuggest,
-      updateTopic: vi.fn(),
-      setConversationInfo: vi.fn(),
-      needUpdateTopicRef: { current: true },
-      getTopicContext: () => ({
-        isAppSidebarMode: false,
-        runHistory: vi.fn(),
-        runHistoryItem: vi.fn(),
-      }),
-      showPagePreview: mockShowPagePreview,
-      openDesktop: mockOpenDesktop,
+    const adapter = createMainAdapter({
       setCardList: setCardList as never,
-      setShowType: vi.fn(),
     });
 
     adapter.dispatch({
@@ -424,6 +419,73 @@ describe('mainChatEffectsAdapter', () => {
     createMainAdapter().dispatch({ type: 'desktop.open', conversationId: 77 });
 
     expect(mockOpenDesktop).toHaveBeenCalledWith(77);
+  });
+
+  it('preview.file.refresh 按模式路由节流/立即刷新', () => {
+    const refreshFileListImmediately = vi
+      .fn()
+      .mockReturnValue(Promise.resolve());
+    const adapter = createMainAdapter({ refreshFileListImmediately });
+
+    adapter.dispatch({
+      type: 'preview.file.refresh',
+      conversationId: 1001,
+      mode: 'throttled',
+    });
+    adapter.dispatch({
+      type: 'preview.file.refresh',
+      conversationId: 1001,
+      mode: 'immediate',
+    });
+
+    expect(mockRefreshFileListThrottled).toHaveBeenCalledWith(1001);
+    expect(refreshFileListImmediately).toHaveBeenCalledWith(1001);
+  });
+
+  it('taskResult.settle 保序：立即刷树 → Git → 文件选中打开，未命中发兜底 trigger', async () => {
+    const setTaskAgentSelectedFileId = vi.fn();
+    const setTaskAgentSelectTrigger = vi.fn();
+    const setFileTreeRefreshTrigger = vi.fn();
+    const adapter = createMainAdapter({
+      setTaskAgentSelectedFileId,
+      setTaskAgentSelectTrigger,
+      setFileTreeRefreshTrigger,
+    });
+
+    adapter.dispatch({
+      type: 'taskResult.settle',
+      conversationId: 1001,
+      taskResult: { hasTaskResult: true, file: '1001/src/app.tsx' },
+      enableVersionControl: true,
+    });
+
+    await vi.waitFor(() => {
+      expect(setTaskAgentSelectedFileId).toHaveBeenCalled();
+    });
+    expect(mockOpenPreviewView).toHaveBeenCalledWith(1001);
+    expect(mockRefreshGitList).toHaveBeenCalled();
+    expect(setTaskAgentSelectedFileId).toHaveBeenCalledWith('src/app.tsx');
+    expect(setTaskAgentSelectTrigger).toHaveBeenCalledWith(expect.any(Number));
+    // 命中 task-result 文件：不发兜底 trigger
+    expect(setFileTreeRefreshTrigger).not.toHaveBeenCalled();
+  });
+
+  it('taskResult.settle 未命中文件或未开版本管理时的分支', async () => {
+    const setFileTreeRefreshTrigger = vi.fn();
+    const adapter = createMainAdapter({ setFileTreeRefreshTrigger });
+
+    adapter.dispatch({
+      type: 'taskResult.settle',
+      conversationId: 1001,
+      taskResult: { hasTaskResult: false },
+      enableVersionControl: false,
+    });
+
+    await vi.waitFor(() => {
+      expect(setFileTreeRefreshTrigger).toHaveBeenCalled();
+    });
+    expect(mockRefreshGitList).not.toHaveBeenCalled();
+    expect(mockOpenPreviewView).not.toHaveBeenCalled();
   });
 });
 

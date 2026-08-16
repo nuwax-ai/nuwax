@@ -204,6 +204,16 @@ export default () => {
   const showPagePreviewRef = useRef<
     ((preview: PagePreviewPayload) => void) | null
   >(null);
+  // 文件树刷新（节流/立即）与预览视图打开句柄经 ref 转发给 Effects Adapter（render 期刷新）
+  const refreshFileListThrottledRef = useRef<
+    ((conversationId: number) => void) | null
+  >(null);
+  const refreshFileListImmediatelyRef = useRef<
+    ((conversationId: number) => Promise<unknown>) | null
+  >(null);
+  const openPreviewViewRef = useRef<
+    ((conversationId: number) => Promise<void> | void) | null
+  >(null);
   const [showType, setShowType] = useState<EditAgentShowType>(
     EditAgentShowType.Hide,
   );
@@ -550,6 +560,10 @@ export default () => {
     },
     [refreshFileListImmediately, openPreviewChangeState],
   );
+  // render 期刷新文件树/预览视图句柄 ref，供 Effects Adapter 读取最新闭包
+  refreshFileListThrottledRef.current = handleRefreshFileList;
+  refreshFileListImmediatelyRef.current = refreshFileListImmediately;
+  openPreviewViewRef.current = openPreviewView;
 
   // 滚动到底部
   const messageViewScrollToBottom = () => {
@@ -630,8 +644,20 @@ export default () => {
           openDesktop: openDesktopView,
           setCardList,
           setShowType,
+          refreshFileListThrottled: (conversationId) =>
+            refreshFileListThrottledRef.current?.(conversationId),
+          refreshFileListImmediately: (conversationId) =>
+            refreshFileListImmediatelyRef.current?.(conversationId) ??
+            Promise.resolve(),
+          refreshGitListRef,
+          openPreviewView: (conversationId) =>
+            openPreviewViewRef.current?.(conversationId),
+          setTaskAgentSelectedFileId,
+          setTaskAgentSelectTrigger,
+          setFileTreeRefreshTrigger,
         }),
         effectDispatchMode: 'live',
+        shadowEffectTypes: ['preview.file.refresh', 'taskResult.settle'],
       },
     );
   }
@@ -1122,7 +1148,12 @@ export default () => {
           // 使用当前会话请求的 conversationId，避免闭包中 conversationInfo 还是旧值
           params.conversationId
         ) {
-          // 刷新文件树
+          // 刷新文件树（新路径 shadow 计划 + 旧路径执行）
+          conversationRuntime.effects.dispatch({
+            type: 'preview.file.refresh',
+            conversationId: params.conversationId,
+            mode: 'throttled',
+          });
           handleRefreshFileList(params.conversationId);
         }
       }
@@ -1197,6 +1228,16 @@ export default () => {
             params.conversationId &&
             conversationInfoRef.current?.agent?.type === AgentTypeEnum.TaskAgent
           ) {
+            // 新路径（shadow）：只记录保序后处理计划（立即刷树 → Git → 文件选中/打开 → 兜底 trigger）
+            conversationRuntime.effects.dispatch({
+              type: 'taskResult.settle',
+              conversationId: params.conversationId,
+              taskResult: extractTaskResult(data.outputText),
+              enableVersionControl: isAgentVersionControlEnabled(
+                conversationInfoRef.current?.agent?.enableVersionControl,
+              ),
+            });
+
             // 刷新文件树
             await refreshFileListImmediately(params.conversationId);
 

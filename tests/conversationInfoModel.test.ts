@@ -15,6 +15,7 @@ import {
   TaskStatus,
 } from '@/types/enums/agent';
 import { MessageStatusEnum, ProcessingEnum } from '@/types/enums/common';
+import { AgentTypeEnum } from '@/types/enums/space';
 import type {
   ConversationChatResponse,
   MessageInfo,
@@ -706,6 +707,54 @@ describe('conversationInfo model', () => {
     expect(mockShowPagePreview).toHaveBeenCalledWith(
       expect.objectContaining({ executeId: 'exec-page' }),
     );
+  });
+
+  it('Phase5 shadow：TaskAgent 终局计划保序后处理，旧路径仍执行', async () => {
+    const { result } = renderHook(() => useConversationInfo());
+    // 设置 TaskAgent 会话（gate 通过）
+    await act(async () => {
+      result.current.setConversationInfo({
+        id: 1001,
+        agentId: 9,
+        topicUpdated: 1,
+        agent: { type: AgentTypeEnum.TaskAgent },
+      } as never);
+    });
+    await act(async () => {
+      await result.current.onMessageSend({ id: 1001, messageInfo: '生成文件' });
+    });
+    await act(async () => {
+      sseHandlers.onMessage?.({
+        requestId: 'req-task',
+        eventType: ConversationEventTypeEnum.FINAL_RESULT,
+        data: {
+          success: true,
+          outputText:
+            '<task-result><file>1001/src/app.tsx</file></task-result>',
+          error: '',
+          componentExecuteResults: [],
+        },
+      } as ConversationChatResponse);
+    });
+    // 旧路径在 setTimeout(0) 内执行，等一个宏任务
+    await act(async () => {
+      await new Promise<void>((resolve) => {
+        setTimeout(resolve, 0);
+      });
+    });
+
+    const planned = mockLogEffectDispatch.mock.calls.map(
+      ([entry]) => entry.effect,
+    );
+    expect(planned).toContainEqual({
+      type: 'taskResult.settle',
+      conversationId: 1001,
+      taskResult: expect.objectContaining({
+        hasTaskResult: true,
+        file: '1001/src/app.tsx',
+      }),
+      enableVersionControl: false,
+    });
   });
 
   it('checkConversationActive：无忙碌消息时置为非活跃', async () => {

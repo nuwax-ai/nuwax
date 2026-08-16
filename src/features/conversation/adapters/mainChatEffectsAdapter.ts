@@ -58,6 +58,20 @@ export interface MainChatEffectsAdapterDeps {
   setCardList: Dispatch<SetStateAction<CardInfo[]>>;
   /** 展示台展开状态写回。 */
   setShowType: Dispatch<SetStateAction<EditAgentShowType>>;
+  /** 节流刷新文件树（流式 ToolCall 场景，经 ref 转发保持最新闭包）。 */
+  refreshFileListThrottled: (conversationId: number) => void;
+  /** 立即刷新文件树（FINAL_RESULT 场景，经 ref 转发保持最新闭包）。 */
+  refreshFileListImmediately: (conversationId: number) => Promise<unknown>;
+  /** 刷新 Git 源代码管理列表（页面注入 fileView.refreshGitList 的 ref）。 */
+  refreshGitListRef: MutableRefObject<(() => void | Promise<void>) | null>;
+  /** 打开预览视图（经 ref 转发保持最新闭包）。 */
+  openPreviewView: (conversationId: number) => Promise<void> | void;
+  /** 任务智能体选中文件写回。 */
+  setTaskAgentSelectedFileId: Dispatch<SetStateAction<string>>;
+  /** 任务智能体文件选择触发标志写回。 */
+  setTaskAgentSelectTrigger: Dispatch<SetStateAction<number | string>>;
+  /** 文件树刷新后兜底重拉当前文件正文的触发标志写回。 */
+  setFileTreeRefreshTrigger: Dispatch<SetStateAction<number>>;
 }
 
 /**
@@ -189,6 +203,46 @@ export function createMainChatEffectsAdapter(
         case 'desktop.open':
           deps.openDesktop(effect.conversationId);
           return;
+        case 'preview.file.refresh':
+          if (effect.mode === 'throttled') {
+            deps.refreshFileListThrottled(effect.conversationId);
+            return;
+          }
+          void deps.refreshFileListImmediately(effect.conversationId);
+          return;
+        case 'taskResult.settle': {
+          void (async () => {
+            // 1. 立即刷新文件树（后续文件选中/Git 刷新依赖树的新状态）
+            await deps.refreshFileListImmediately(effect.conversationId);
+
+            // 2. 开启版本管理时，同步刷新 Git 源代码管理列表
+            if (effect.enableVersionControl) {
+              void deps.refreshGitListRef.current?.();
+            }
+
+            // 3. 有任务结果文件时：打开预览视图并选中该文件
+            let selectedFileInTaskResult = false;
+            if (effect.taskResult.hasTaskResult && effect.taskResult.file) {
+              deps.openPreviewView(effect.conversationId);
+              const fileId = effect.taskResult.file
+                ?.split(`${effect.conversationId}/`)
+                .pop();
+              if (fileId) {
+                deps.setTaskAgentSelectedFileId(fileId);
+                // 每次设置文件ID时更新触发标志，确保即使文件ID相同也能触发文件选择
+                deps.setTaskAgentSelectTrigger(Date.now());
+                selectedFileInTaskResult = true;
+              }
+            }
+
+            // 4. 兜底：本次最终输出未携带指向当前打开文件的 task-result file，
+            //    发出 trigger 通知页面层在树刷新完成后重拉当前打开文件的正文
+            if (!selectedFileInTaskResult) {
+              deps.setFileTreeRefreshTrigger(Date.now());
+            }
+          })();
+          return;
+        }
       }
     },
   };

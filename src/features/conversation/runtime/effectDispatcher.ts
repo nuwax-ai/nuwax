@@ -72,6 +72,23 @@ export type ConversationEffect =
   | {
       type: 'desktop.open';
       conversationId: number;
+    }
+  | {
+      type: 'preview.file.refresh';
+      conversationId: number;
+      /** throttled：流式 ToolCall 的节流刷新；immediate：FINAL_RESULT 后的立即刷新 */
+      mode: 'throttled' | 'immediate';
+    }
+  | {
+      /**
+       * TaskAgent FINAL_RESULT 后处理（保序组合体）：立即刷新文件树 → 按需刷新 Git →
+       * task-result 文件选中并打开预览 → 未命中时发兜底正文重拉 trigger。
+       * 时序上依赖树刷新完成，故不拆分为独立 effect（方案 §5.5 清单的工程化取舍）。
+       */
+      type: 'taskResult.settle';
+      conversationId: number;
+      taskResult: { hasTaskResult: boolean; file?: string };
+      enableVersionControl: boolean;
     };
 
 /** 入口注入的副作用执行器：主 Chat 全量执行，隔离 Preview 执行允许子集。 */
