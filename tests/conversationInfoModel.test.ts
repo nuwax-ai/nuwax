@@ -357,6 +357,121 @@ describe('conversationInfo model', () => {
     );
   });
 
+  it('T18：主/隔离实例对不同会话同时发送，消息与 requestId 互不串扰', async () => {
+    const main = renderHook(() => useConversationInfo());
+    const isolated = renderHook(() => useConversationAgent());
+
+    await act(async () => {
+      await main.result.current.onMessageSend({
+        id: 2001,
+        messageInfo: 'main-q',
+      });
+    });
+    const mainHandlers = mockCreateSSEConnection.mock.calls.at(-1)?.[0] as
+      | SseHandlers
+      | undefined;
+    const connectionCountAfterMain = mockCreateSSEConnection.mock.calls.length;
+
+    await act(async () => {
+      await isolated.result.current.onMessageSend({
+        id: 3001,
+        messageInfo: 'iso-q',
+      });
+    });
+    const isolatedHandlers = mockCreateSSEConnection.mock.calls.at(-1)?.[0] as
+      | SseHandlers
+      | undefined;
+    // 两实例各自建立独立 live 连接
+    expect(mockCreateSSEConnection.mock.calls.length).toBe(
+      connectionCountAfterMain + 1,
+    );
+
+    await act(async () => {
+      mainHandlers?.onMessage?.({
+        requestId: 'main-request',
+        eventType: ConversationEventTypeEnum.MESSAGE,
+        data: {
+          id: 'main-output',
+          type: MessageModeEnum.CHAT,
+          text: 'main-a',
+          finished: true,
+        },
+      } as ConversationChatResponse);
+      isolatedHandlers?.onMessage?.({
+        requestId: 'iso-request',
+        eventType: ConversationEventTypeEnum.MESSAGE,
+        data: {
+          id: 'iso-output',
+          type: MessageModeEnum.CHAT,
+          text: 'iso-a',
+          finished: true,
+        },
+      } as ConversationChatResponse);
+    });
+
+    // 各实例只包含自己会话的 user/assistant 消息
+    expect(main.result.current.messageList.map((item) => item.text)).toEqual([
+      'main-q',
+      'main-a',
+    ]);
+    expect(
+      isolated.result.current.messageList.map((item) => item.text),
+    ).toEqual(['iso-q', 'iso-a']);
+    // requestId 不串
+    expect(main.result.current.getCurrentConversationRequestId()).toBe(
+      'main-request',
+    );
+    expect(isolated.result.current.getCurrentConversationRequestId()).toBe(
+      'iso-request',
+    );
+  });
+
+  it('T18：停止隔离实例只中断自己的 live 连接，不误杀主实例', async () => {
+    // 每条连接返回独立 abort，便于区分「谁的连接被中断」
+    const aborts: Array<ReturnType<typeof vi.fn>> = [];
+    mockCreateSSEConnection.mockImplementation(() => {
+      const abort = vi.fn();
+      aborts.push(abort);
+      return abort;
+    });
+
+    const main = renderHook(() => useConversationInfo());
+    const isolated = renderHook(() => useConversationAgent());
+
+    await act(async () => {
+      await main.result.current.onMessageSend({
+        id: 2001,
+        messageInfo: 'main-q',
+      });
+    });
+    await act(async () => {
+      await isolated.result.current.onMessageSend({
+        id: 3001,
+        messageInfo: 'iso-q',
+      });
+    });
+    expect(aborts).toHaveLength(2);
+
+    await act(async () => {
+      await isolated.result.current.runStopConversation(3001);
+    });
+
+    // 隔离实例的连接被中断；主实例的 live 连接不受影响
+    expect(aborts[1]).toHaveBeenCalledTimes(1);
+    expect(aborts[0]).not.toHaveBeenCalled();
+    // 消息终态只作用于隔离实例（活跃态受「发送后 3s 保活」窗口约束，不作跨实例断言）
+    const isolatedAssistant =
+      isolated.result.current.messageList[
+        isolated.result.current.messageList.length - 1
+      ];
+    const mainAssistant =
+      main.result.current.messageList[
+        main.result.current.messageList.length - 1
+      ];
+    expect(isolatedAssistant.status).toBe(MessageStatusEnum.Stopped);
+    expect(mainAssistant.status).toBe(MessageStatusEnum.Loading);
+  });
+
   it('checkConversationActive：无忙碌消息时置为非活跃', async () => {
     const { result } = renderHook(() => useConversationInfo());
 
