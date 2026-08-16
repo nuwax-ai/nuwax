@@ -1,6 +1,10 @@
 import { CONVERSATION_CHAT_SUB_URL } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
 import {
+  createConnectionRunController,
+  type ConnectionRunController,
+} from '@/features/conversation/runtime/connectionRunController';
+import {
   AssistantRoleEnum,
   ConversationEventTypeEnum,
   MessageModeEnum,
@@ -134,6 +138,10 @@ export function useResumeStreamHandlers(deps: UseResumeStreamHandlersDeps) {
 
   // sub 专用 abort 句柄：独立于各 model 的 abortConnectionRef，避免与 live 发送互相覆盖
   const resumeAbortRef = useRef<(() => void) | null>(null);
+  const resumeRunControllerRef = useRef<ConnectionRunController | null>(null);
+  if (!resumeRunControllerRef.current) {
+    resumeRunControllerRef.current = createConnectionRunController('resume');
+  }
   // 当前 sub 订阅的会话 id：同会话重入直接复用，避免无条件 abort 重建
   //（多实例共享同一 model 单例句柄时，这是防「互相踢线」的兜底）
   const resumeConversationIdRef = useRef<number | string | null>(null);
@@ -146,10 +154,8 @@ export function useResumeStreamHandlers(deps: UseResumeStreamHandlersDeps) {
 
   // 中断会话流式恢复(sub)连接，并重置占位记忆
   const abortResumeStream = useCallback(() => {
-    if (resumeAbortRef.current) {
-      resumeAbortRef.current();
-      resumeAbortRef.current = null;
-    }
+    resumeRunControllerRef.current?.abortCurrent();
+    resumeAbortRef.current = null;
     resumeConversationIdRef.current = null;
     resumeMessageIdRef.current = null;
   }, []);
@@ -311,8 +317,10 @@ export function useResumeStreamHandlers(deps: UseResumeStreamHandlersDeps) {
         currentList,
         debugSource,
       );
+      const runController = resumeRunControllerRef.current!;
+      const runId = runController.startRun();
       const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
-      resumeAbortRef.current = createSSEConnection({
+      const abortConnection = createSSEConnection({
         url: `${CONVERSATION_CHAT_SUB_URL}/${conversationId}`,
         method: 'GET',
         headers: {
@@ -320,6 +328,14 @@ export function useResumeStreamHandlers(deps: UseResumeStreamHandlersDeps) {
           Accept: 'application/json, text/plain, */*',
         },
         onMessage: (res: ConversationChatResponse) => {
+          if (!runController.isCurrent(runId)) {
+            resumeStreamLogger.info('ignore stale resume message', {
+              source: debugSource,
+              conversationId,
+              runId,
+            });
+            return;
+          }
           if (isResumeUserMessageEvent(res)) {
             upsertResumeUserMessage(res, currentMessageId, debugSource);
             return;
@@ -356,6 +372,14 @@ export function useResumeStreamHandlers(deps: UseResumeStreamHandlersDeps) {
           }
         },
         onClose: () => {
+          if (!runController.complete(runId)) {
+            resumeStreamLogger.info('ignore stale resume close', {
+              source: debugSource,
+              conversationId,
+              runId,
+            });
+            return;
+          }
           resumeAbortRef.current = null;
           resumeConversationIdRef.current = null;
           // 关闭时再次重置，避免恢复流的残留 id 影响后续 live 发送
@@ -363,6 +387,9 @@ export function useResumeStreamHandlers(deps: UseResumeStreamHandlersDeps) {
           onClose?.();
         },
       });
+      if (runController.attach(runId, abortConnection)) {
+        resumeAbortRef.current = abortConnection;
+      }
     },
     [
       abortResumeStream,

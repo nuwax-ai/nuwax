@@ -34,4 +34,17 @@ describe('liveConnectionController', () => {
     expect(controller.attach(first, staleAbort)).toBe(false);
     expect(staleAbort).toHaveBeenCalledTimes(1);
   });
+
+  it('消息只由当前 run 消费，旧 run 的收尾不能结束新 run', () => {
+    const controller = createLiveConnectionController();
+    const first = controller.startRun();
+    const second = controller.startRun();
+
+    expect(controller.isCurrent(first)).toBe(false);
+    expect(controller.isCurrent(second)).toBe(true);
+    expect(controller.complete(first)).toBe(false);
+    expect(controller.isCurrent(second)).toBe(true);
+    expect(controller.complete(second)).toBe(true);
+    expect(controller.isCurrent(second)).toBe(false);
+  });
 });

@@ -352,4 +352,99 @@ describe('useResumeStreamHandlers', () => {
     expect(abortSse).toHaveBeenCalledTimes(1);
     expect(mockCreateSSEConnection).toHaveBeenCalledTimes(3);
   });
+
+  it('切换 sub run 后忽略旧连接迟到的 message，只消费当前 run', () => {
+    let list: MessageInfo[] = [];
+    const setMessageList = vi.fn((updater) => {
+      list = typeof updater === 'function' ? updater(list) : updater;
+    });
+    const handleChangeMessageList = vi.fn();
+    mockCreateSSEConnection.mockImplementation(() => vi.fn());
+
+    const { result } = renderHook(() =>
+      useResumeStreamHandlers({
+        setMessageList,
+        handleChangeMessageList,
+        messageViewRef: { current: null },
+        allowAutoScrollRef: { current: false },
+      } as any),
+    );
+
+    act(() => {
+      result.current.resumeConversationStream(1001, list);
+    });
+    const firstOptions = mockCreateSSEConnection.mock.calls[0][0];
+
+    act(() => {
+      result.current.resumeConversationStream(1002, list);
+    });
+    const secondOptions = mockCreateSSEConnection.mock.calls[1][0];
+
+    const staleChunk = {
+      eventType: ConversationEventTypeEnum.MESSAGE,
+      data: { text: 'stale' },
+    };
+    const currentChunk = {
+      eventType: ConversationEventTypeEnum.MESSAGE,
+      data: { text: 'current' },
+    };
+    act(() => {
+      firstOptions.onMessage(staleChunk);
+      secondOptions.onMessage(currentChunk);
+    });
+
+    expect(handleChangeMessageList).toHaveBeenCalledTimes(1);
+    expect(handleChangeMessageList).toHaveBeenCalledWith(
+      { conversationId: 1002 },
+      currentChunk,
+      expect.any(String),
+    );
+  });
+
+  it('旧 sub 的迟到 close 不清除新连接所有权，也不触发旧会话收尾', () => {
+    let list: MessageInfo[] = [];
+    const setMessageList = vi.fn((updater) => {
+      list = typeof updater === 'function' ? updater(list) : updater;
+    });
+    const resetResumeMessageState = vi.fn();
+    const firstOnClose = vi.fn();
+    const secondOnClose = vi.fn();
+    mockCreateSSEConnection.mockImplementation(() => vi.fn());
+
+    const { result } = renderHook(() =>
+      useResumeStreamHandlers({
+        setMessageList,
+        handleChangeMessageList: vi.fn(),
+        messageViewRef: { current: null },
+        allowAutoScrollRef: { current: false },
+        resetResumeMessageState,
+      } as any),
+    );
+
+    act(() => {
+      result.current.resumeConversationStream(1001, list, firstOnClose);
+    });
+    const firstOptions = mockCreateSSEConnection.mock.calls[0][0];
+    act(() => {
+      result.current.resumeConversationStream(1002, list, secondOnClose);
+    });
+    const secondOptions = mockCreateSSEConnection.mock.calls[1][0];
+
+    act(() => {
+      firstOptions.onClose();
+      result.current.resumeConversationStream(1002, list, secondOnClose);
+    });
+
+    expect(firstOnClose).not.toHaveBeenCalled();
+    expect(secondOnClose).not.toHaveBeenCalled();
+    expect(mockCreateSSEConnection).toHaveBeenCalledTimes(2);
+    expect(resetResumeMessageState).toHaveBeenCalledTimes(2);
+
+    act(() => {
+      secondOptions.onClose();
+    });
+
+    expect(secondOnClose).toHaveBeenCalledTimes(1);
+    expect(resetResumeMessageState).toHaveBeenCalledTimes(3);
+  });
 });
