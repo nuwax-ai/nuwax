@@ -1183,6 +1183,7 @@ const ConversationAgent: React.FC = () => {
     queryConversationId,
   ]);
 
+  /** 是否打开终端面板 */
   const isTerminalPanelOpen =
     devConsoleLayoutMode === 'expanded' && devConsoleActiveTab === 'terminal';
 
