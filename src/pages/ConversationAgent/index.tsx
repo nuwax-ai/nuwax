@@ -1231,6 +1231,7 @@ const ConversationAgent: React.FC = () => {
           restartAgent(queryConversationId);
         }
       },
+      /** 重命名文件 */
       onRenameFile: handleConfirmRenameFile,
       onCreateFileNode: handleCreateFileNode,
       onDeleteFile: handleDeleteFile,
