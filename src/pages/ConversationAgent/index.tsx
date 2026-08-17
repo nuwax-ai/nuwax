@@ -1223,6 +1223,7 @@ const ConversationAgent: React.FC = () => {
           restartVncPod(queryConversationId, finalSelectedComputerId);
         }
       },
+      /** 重启智能体 */
       onRestartAgent: () => {
         if (queryConversationId) {
           restartAgent(queryConversationId);
