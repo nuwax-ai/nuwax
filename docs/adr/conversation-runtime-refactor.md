@@ -1,6 +1,6 @@
 # ADR：会话运行时重构（绞合式 Phase 0-7 + 双线切换）
 
-> 日期：2026-08-16 ~ 2026-08-17 状态：**已全部完成**（Phase 0-7 + 双线 R1-R6 + 回归网 + CI）关联：[conversation-dual-track-plan.md](../conversation-dual-track-plan.md)、[conversation-maintenance-guide.md](../conversation-maintenance-guide.md)
+> 📚 文档总入口：[conversation-docs-index.md](../conversation-docs-index.md) 日期：2026-08-16 ~ 2026-08-17 状态：**已全部完成**（Phase 0-7 + 双线 R1-R6 + 回归网 + CI）关联：[conversation-dual-track-plan.md](../conversation-dual-track-plan.md)、[conversation-maintenance-guide.md](../conversation-maintenance-guide.md)
 
 ## 背景与动机
 

@@ -1,6 +1,6 @@
 # 会话双线切换方案（Runtime 接管 message state + feature flag）
 
-> 日期：2026-08-16 ~ 2026-08-17（已全部实施）分支：`refactor/conversation-dual-track`（基于基线 `c710ab296`）架构决策：[adr/conversation-runtime-refactor.md](./adr/conversation-runtime-refactor.md) 维护操作：[conversation-maintenance-guide.md](./conversation-maintenance-guide.md) 最高约束：**已上线项目，重构全程不得影响线上业务，任何时刻可整体切换/回退。**
+> 📚 文档总入口：[conversation-docs-index.md](./conversation-docs-index.md) 日期：2026-08-16 ~ 2026-08-17（已全部实施）分支：`refactor/conversation-dual-track`（基于基线 `c710ab296`）架构决策：[adr/conversation-runtime-refactor.md](./adr/conversation-runtime-refactor.md) 维护操作：[conversation-maintenance-guide.md](./conversation-maintenance-guide.md) 最高约束：**已上线项目，重构全程不得影响线上业务，任何时刻可整体切换/回退。**
 
 ## 1. 架构
 

@@ -1,6 +1,6 @@
 # Agent 会话运行加载逻辑回归对齐文档
 
-> 面向 PC 端智能体会话逻辑回归。本文把一次 agent 会话从页面加载、消息发送、SSE 流式合并、队列、权限审批、MCP ASK_QUESTION、resume 恢复到 suggest 展示的链路串成一份可核对文档。
+> 📚 文档总入口:[conversation-docs-index.md](./conversation-docs-index.md) · 验收底稿:[conversation-business-logic-checklist.md](./conversation-business-logic-checklist.md) 面向 PC 端智能体会话逻辑回归。本文把一次 agent 会话从页面加载、消息发送、SSE 流式合并、队列、权限审批、MCP ASK_QUESTION、resume 恢复到 suggest 展示的链路串成一份可核对文档。
 
 ## 1. 适用范围与关键入口
 

@@ -664,7 +664,7 @@ npm run verify:conversation
 
 E2E 场景与断言见 `scripts/e2e/conversation-acceptance.mjs`（双线 flag 探针、乐观上屏、流式收尾、加载更多、TaskAgent、预览 Tab）；环境可用 `E2E_BASE_URL`/`E2E_CHAT_URL`/`E2E_TASKAGENT_URL`/`E2E_PREVIEW_TAB_URL` 覆盖。
 
-维护必读：[docs/conversation-maintenance-guide.md](./docs/conversation-maintenance-guide.md)——架构速查、常见维护任务、双线 flag 运维与切默认检查单、已知边界。方案概要：[docs/conversation-dual-track-plan.md](./docs/conversation-dual-track-plan.md)；架构决策：[docs/adr/conversation-runtime-refactor.md](./docs/adr/conversation-runtime-refactor.md)。
+维护必读：[docs/conversation-maintenance-guide.md](./docs/conversation-maintenance-guide.md)——架构速查、常见维护任务、双线 flag 运维与切默认检查单、已知边界。方案概要：[docs/conversation-dual-track-plan.md](./docs/conversation-dual-track-plan.md)；架构决策：[docs/adr/conversation-runtime-refactor.md](./docs/adr/conversation-runtime-refactor.md)；**文档总入口（含验收清单/测试回归方案与更新约定）：[docs/conversation-docs-index.md](./docs/conversation-docs-index.md)**。
 
 ## 项目命名规范
 
