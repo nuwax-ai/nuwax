@@ -156,6 +156,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     // 其它接口加载状态
     isLoadingOtherInterface,
     isConversationActive,
+    isAwaitingChatTerminal,
     // 会话流式恢复(sub)
     resumeConversationStream,
     abortResumeStream,
@@ -658,7 +659,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
               conversationId={devConversationIdRef.current}
               messageList={messageList}
               roleInfo={roleInfo}
-              isLoading={isConversationTransitioning || loadingConversation}
+              isLoading={isConversationTransitioning}
               loadingMore={loadingMore}
               isMoreMessage={isMoreMessage}
               isConversationActive={
@@ -666,6 +667,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
                 conversationInfo?.taskStatus === TaskStatus.EXECUTING
               }
               isLocallyStreaming={isConversationActive}
+              isAwaitingChatTerminal={isAwaitingChatTerminal}
               messageBottomMode="chat"
               loadingSuggest={loadingSuggest}
               chatSuggestList={chatSuggestList}

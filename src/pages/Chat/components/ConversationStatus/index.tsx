@@ -39,14 +39,20 @@ const ConversationStatus: React.FC<ConversationStatusProps> = ({
   // 保存当前是否正在计时
   const isTimingRef = useRef<boolean>(false);
 
-  // 最近一条助手消息（用于状态展示）
+  // 最近一条助手消息（用于状态展示）。
+  // 会话结束后的历史消息可能不再携带临时 status 字段，不能因此卸载整条状态栏，
+  // 否则计时器占用的高度会突然消失并造成页面抖动。
   const lastAssistantMessage = useMemo(() => {
     if (!messageList || messageList.length === 0) {
       return undefined;
     }
     return [...messageList]
       .reverse()
-      .find((msg) => msg.role === 'ASSISTANT' && msg.status);
+      .find(
+        (msg) =>
+          msg.role === 'ASSISTANT' &&
+          (!!msg.id || !!msg.status || !!msg.finalResult),
+      );
   }, [messageList]);
 
   // 提取关键值用于依赖项（避免对象引用变化导致 useEffect 频繁触发）
@@ -69,12 +75,8 @@ const ConversationStatus: React.FC<ConversationStatusProps> = ({
       };
     }
 
-    // 检查是否有 finalResult
-    const lastAssistant = [...messageList]
-      .reverse()
-      .find((msg) => msg.role === 'ASSISTANT' && msg.status);
-
-    const finalTimes = parseFinalResultTimes(lastAssistant?.finalResult);
+    // 检查是否有 finalResult。结束后的落库消息可能没有 status，仍需读取其最终耗时。
+    const finalTimes = parseFinalResultTimes(lastAssistantMessage?.finalResult);
     if (finalTimes) {
       return {
         isRunning: false,
@@ -128,7 +130,7 @@ const ConversationStatus: React.FC<ConversationStatusProps> = ({
       finalEndTime: null,
       isStopped: false,
     };
-  }, [messageList]);
+  }, [lastAssistantMessage, messageList]);
 
   // 清理定时器的函数
   const clearTimer = useCallback(() => {
@@ -230,6 +232,21 @@ const ConversationStatus: React.FC<ConversationStatusProps> = ({
       .padStart(2, '0')}`;
   }, [elapsedTime, finalElapsedTime]);
 
+  // 流式结束后，落库消息可能不再携带临时 status 字段。
+  // 状态栏仍需展示明确终态；有最终结果时按 success 区分，否则按正常完成兼容。
+  const statusMessage = useMemo<MessageInfo>(() => {
+    if (lastAssistantMessage?.status) {
+      return lastAssistantMessage;
+    }
+    return {
+      ...lastAssistantMessage,
+      status:
+        lastAssistantMessage?.finalResult?.success === false
+          ? MessageStatusEnum.Error
+          : MessageStatusEnum.Complete,
+    } as MessageInfo;
+  }, [lastAssistantMessage]);
+
   if (!lastAssistantMessage) {
     return null;
   }
@@ -241,7 +258,7 @@ const ConversationStatus: React.FC<ConversationStatusProps> = ({
     >
       {/* 状态标签：复用 ChatView 中的 RunOver 组件，保证与消息列表状态展示一致 */}
       <div className={cx(styles.statusBadge, 'flex-1')}>
-        <RunOver messageInfo={lastAssistantMessage} />
+        <RunOver messageInfo={statusMessage} showTerminalStatus />
       </div>
 
       {/* 计时器 */}

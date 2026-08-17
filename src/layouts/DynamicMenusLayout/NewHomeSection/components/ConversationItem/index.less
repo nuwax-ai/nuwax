@@ -5,6 +5,9 @@
 @statusTagLineHeight: 16px; // 运行中标签行高
 @avatarTextWeight: 600;
 @itemContentGap: 2px;
+@dropdownMinWidth: 200px;
+@dropdownMaxWidth: 320px;
+@dropdownNameMaxWidth: 280px;
 
 .conversation-item {
   display: flex;
@@ -73,6 +76,13 @@
         line-height: @statusTagLineHeight;
         flex-shrink: 0;
       }
+
+      .conversation-date {
+        font-size: @fontSizeSm;
+        color: @navSecondMenuAdaptiveTextTertiary;
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
     }
 
     .conversation-meta {
@@ -96,13 +106,12 @@
         flex-shrink: 0;
       }
     }
-  }
 
-  .conversation-topic-row > .conversation-date {
-    font-size: @fontSizeSm;
-    color: @navSecondMenuAdaptiveTextTertiary;
-    white-space: nowrap;
-    flex-shrink: 0;
+    // 无描述信息时，单行内容垂直居中并与头像等高
+    &.conversation-item-content-compact {
+      min-height: @controlHeight;
+      justify-content: center;
+    }
   }
 
   &:hover {
@@ -113,6 +122,10 @@
       .conversation-topic-row {
         .conversation-topic {
           color: @colorText;
+        }
+
+        .conversation-date {
+          color: @colorTextTertiary;
         }
       }
 
@@ -137,6 +150,10 @@
         .conversation-topic {
           color: @colorPrimaryText;
         }
+
+        .conversation-date {
+          color: @colorTextTertiary;
+        }
       }
 
       .conversation-meta {
@@ -153,11 +170,11 @@
 }
 
 .executing-conversation-dropdown {
-  min-width: 200px;
-  max-width: 320px;
+  min-width: @dropdownMinWidth;
+  max-width: @dropdownMaxWidth;
 
   .executing-conversation-name {
     display: block;
-    max-width: 280px;
+    max-width: @dropdownNameMaxWidth;
   }
 }

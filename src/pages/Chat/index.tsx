@@ -41,6 +41,7 @@ import {
 } from '@/components/business-component/FileTreeGitSourcePanel';
 import type { FileTreeContainerProps } from '@/components/business-component/FileTreeGitSourcePanel/types/file-tree-git-source';
 import { useFileTreePreviewView } from '@/components/business-component/FileTreePreviewPanel/hooks/useFileTreePreviewView';
+import { apiAgentConversation } from '@/services/agentConfig';
 import { apiUpdateStaticFile } from '@/services/vncDesktop';
 import type { UpdateFileInfo } from '@/types/interfaces/fileTree';
 import type { StaticFileInfo } from '@/types/interfaces/vncDesktop';
@@ -217,6 +218,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     setIsLoadingOtherInterface,
     requiredNameList,
     setConversationInfo,
+    syncConversationSnapshotMessages,
     runUpdateTopic,
     variables,
     showType,
@@ -247,8 +249,11 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     setTaskAgentSelectedFileId,
     // 通用型智能体文件选择触发标志
     taskAgentSelectTrigger,
+    // 会话结束文件树刷新后兜底重拉当前打开文件正文的触发标志
+    fileTreeRefreshTrigger,
     // 会话是否正在进行中（有消息正在处理）
     isConversationActive,
+    isAwaitingChatTerminal,
     // 停止会话相关
     runStopConversation,
     loadingStopConversation,
@@ -426,6 +431,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       return;
     }
 
+    // 更新会话 icon，如果更新失败，则重置 conversationIconUpdateRef
     conversationIconUpdateRef.current = conversationInfo.id;
     void runUpdateTopic({
       id: conversationInfo.id,
@@ -449,6 +455,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
         executeId: '',
       });
     } else {
+      // 关闭页面预览
       showPagePreview(null);
     }
   };
@@ -665,6 +672,8 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   const fileView = useFileTreePreviewView({
     taskAgentSelectedFileId,
     taskAgentSelectTrigger,
+    // 会话结束文件树刷新后兜底重拉当前打开文件正文
+    fileTreeRefreshTrigger,
     originalFiles: fileTreeData,
     fileTreeDataLoading,
     targetId: id?.toString() || '',
@@ -700,11 +709,13 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     onSelectedFileMissing: () => {
       setTaskAgentSelectedFileId('');
     },
+    /** 文件树选中文件时，关闭 Git 版本记录面板 */
     onFileSelectOpenPreview: () => {
       closeVersionPanelForFilePreviewRef.current();
     },
   });
 
+  // 刷新 Git 列表
   refreshGitListRef.current = fileView.refreshGitList;
 
   /** 折叠底部终端，避免遮挡文件预览（终端未展示时不发信号，避免首次打开被误折叠） */
@@ -1003,7 +1014,8 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     hasTerminalConsoleRendered,
     terminalConsoleVisible,
   ]);
-
+  
+  // 切换会话时，重置 Git 版本记录面板和终端状态
   useEffect(() => {
     setGitVersionPanelOpen(false);
     setTerminalConsoleVisible(false);
@@ -1014,6 +1026,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     prevTaskAgentCollapseTriggerRef.current = undefined;
   }, [id]);
 
+  // 切换视图时，关闭 Git 版本记录面板
   useEffect(() => {
     if (viewMode === 'desktop') {
       setGitVersionPanelOpen(false);
@@ -1244,11 +1257,20 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       conversationInfo?.taskStatus === TaskStatus.EXECUTING,
     // 本地是否正在 SSE 发送/接收（纯，不含后台 EXECUTING），供流式恢复 hook 使用
     isLocallyStreaming: isConversationActive,
+    isAwaitingChatTerminal,
     // 会话流式恢复(sub)：刷新页面/新开标签时重建 EXECUTING 会话的流式输出
     onResumeConversationStream: resumeConversationStream,
     onAbortResumeStream: abortResumeStream,
-    onReloadConversationHistoryAsync: async (id: number) =>
-      (await runAsync(Number(id)))?.data?.messageList,
+    // 流式恢复拉历史必须静默：不要走 model 的 runAsync（会置 loadingConversation），
+    // 否则 Chat 整页被 Loading 卸载重挂，执行中/思考中会不断闪动。
+    onReloadConversationHistoryAsync: async (reloadId: number) => {
+      const result = await apiAgentConversation(Number(reloadId));
+      if (result?.data) {
+        syncConversationSnapshotMessages(result.data);
+      }
+      return result?.data?.messageList;
+    },
+    onConversationSnapshot: syncConversationSnapshotMessages,
     resumeDebugSource: 'chat:main-agent-session',
     onTerminalTaskStatus: (status: TaskStatus) => {
       if (!id) return;
@@ -1295,7 +1317,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     allowAutoScrollRef,
     scrollTimeoutRef,
     setShowScrollBtn,
-    readonly: effectiveAgent?.allowPrivateSandbox === DefaultSelectedEnum.No,
+    readonly: !effectiveAgent?.allowPrivateSandbox,
     enableMention:
       effectiveAgent?.type === AgentTypeEnum.TaskAgent &&
       effectiveAgent?.allowAtSkill === DefaultSelectedEnum.Yes,
@@ -1313,8 +1335,9 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     conversationInfo,
   };
 
-  // 加载中
-  if (clearLoading || loadingConversation || loadingAsync) {
+  // 仅首屏/切会话（loadingAsync）使用整页 Loading。
+  // 不要把 loadingConversation 算进来：流式恢复若误走 runAsync，会反复卸载聊天区导致闪动。
+  if (clearLoading || loadingAsync) {
     return (
       <div className={cx(styles['chat-loading-container'])}>
         <LoadingOutlined />

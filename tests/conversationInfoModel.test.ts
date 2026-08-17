@@ -336,6 +336,7 @@ describe('conversationInfo model', () => {
       MessageStatusEnum.Loading,
     );
     expect(result.current.isConversationActive).toBe(true);
+    expect(result.current.isAwaitingChatTerminal).toBe(true);
     expect(mockCreateSSEConnection).toHaveBeenCalledTimes(1);
     expect(mockCreateSSEConnection.mock.calls[0][0].body).toEqual(
       expect.objectContaining({
@@ -408,6 +409,7 @@ describe('conversationInfo model', () => {
     );
     expect(assistant?.text).toContain('done');
     expect(assistant?.status).toBe(MessageStatusEnum.Complete);
+    expect(result.current.isAwaitingChatTerminal).toBe(true);
   });
 
   it('SSE MESSAGE QUESTION：finished=true 时 status 为 null', async () => {
@@ -524,6 +526,70 @@ describe('conversationInfo model', () => {
       expect.objectContaining({ success: true, outputText: 'final answer' }),
     );
     expect(assistant?.requestId).toBe('req-final');
+    expect(result.current.isAwaitingChatTerminal).toBe(false);
+  });
+
+  it('SSE FINAL_RESULT 已解析出终态时，onClose 不重复查询会话状态', async () => {
+    const { result } = renderHook(() => useConversationInfo());
+    await sendAndGetAssistantId(result);
+
+    await act(async () => {
+      sseHandlers.onMessage?.({
+        requestId: 'req-final-terminal',
+        eventType: ConversationEventTypeEnum.FINAL_RESULT,
+        data: {
+          success: true,
+          outputText: 'done',
+        },
+      } as ConversationChatResponse);
+      await sseHandlers.onClose?.();
+    });
+
+    expect(mockSyncTerminalConversationTaskStatus).not.toHaveBeenCalled();
+  });
+
+  it('SSE FINAL_RESULT 未提供明确失败终态时，onClose 保留兜底查询', async () => {
+    const { result } = renderHook(() => useConversationInfo());
+    await sendAndGetAssistantId(result);
+
+    await act(async () => {
+      sseHandlers.onMessage?.({
+        requestId: 'req-final-unknown',
+        eventType: ConversationEventTypeEnum.FINAL_RESULT,
+        data: {
+          success: false,
+          outputText: 'unknown failure',
+        },
+      } as ConversationChatResponse);
+      await sseHandlers.onClose?.();
+    });
+
+    expect(mockSyncTerminalConversationTaskStatus).toHaveBeenCalledTimes(1);
+    expect(mockSyncTerminalConversationTaskStatus).toHaveBeenCalledWith(
+      1001,
+      expect.any(Function),
+    );
+  });
+
+  it('SSE onClose：终态查询未返回时也立即释放本地活跃态', async () => {
+    let resolveTerminalSync: (() => void) | undefined;
+    mockSyncTerminalConversationTaskStatus.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveTerminalSync = resolve;
+        }),
+    );
+    const { result } = renderHook(() => useConversationInfo());
+    await sendAndGetAssistantId(result);
+    expect(result.current.isConversationActive).toBe(true);
+
+    await act(async () => {
+      await sseHandlers.onClose?.();
+    });
+
+    expect(mockSyncTerminalConversationTaskStatus).toHaveBeenCalledTimes(1);
+    expect(result.current.isConversationActive).toBe(false);
+    resolveTerminalSync?.();
   });
 
   it('SSE ERROR：当前助手消息置为 Error', async () => {
@@ -542,6 +608,7 @@ describe('conversationInfo model', () => {
       result.current.messageList.find((item) => item.id === assistantId)
         ?.status,
     ).toBe(MessageStatusEnum.Error);
+    expect(result.current.isAwaitingChatTerminal).toBe(false);
   });
 
   it('SSE onError：Loading 消息改 Error，processing EXECUTING→FAILED', async () => {
@@ -667,5 +734,127 @@ describe('conversationInfo model', () => {
     expect(result.current.chatSuggestList).toEqual([]);
     expect(abortFn).toHaveBeenCalled();
     expect(mockAbortResumeStream).toHaveBeenCalled();
+  });
+
+  /**
+   * 高频连续发送回归：发送 A 后紧接发送 B（B 会 abort A 的连接），
+   * A 的延迟 onClose(500ms) 触发时只应清理 A 自己的消息，不得误停 B、误关活跃态。
+   * 否则 streamActive 假性回落会让队列提前消费下一条，进而 abort 正在流式中的
+   * /api/agent/conversation/chat（接口被意外取消）。
+   */
+  it('高频连续发送：上一轮连接的延迟 onClose 只清理自己的消息，不影响新一轮', async () => {
+    // 每次 createSSEConnection 返回独立 abort 句柄，并分别捕获 handlers，
+    // 模拟「发送 A（连接1）→ 发送 B（连接2，abort 连接1）→ A 的延迟 onClose 触发」时序
+    const connectionHandlers: SseHandlers[] = [];
+    const connectionAborts: Array<ReturnType<typeof vi.fn>> = [];
+    mockCreateSSEConnection.mockImplementation((options: SseHandlers) => {
+      const abort = vi.fn();
+      connectionHandlers.push(options);
+      connectionAborts.push(abort);
+      return abort;
+    });
+
+    const { result } = renderHook(() => useConversationInfo());
+
+    // 发送 A：连接1；user=msg-uuid-1，assistant=msg-uuid-2
+    await act(async () => {
+      await result.current.onMessageSend({ id: 1001, messageInfo: 'first' });
+    });
+    const firstAssistantId = 'msg-uuid-2';
+
+    // A 流式中产生一个 EXECUTING 处理块
+    await act(async () => {
+      connectionHandlers[0].onMessage?.({
+        requestId: 'req-a',
+        eventType: ConversationEventTypeEnum.PROCESSING,
+        data: {
+          type: 'ToolCall',
+          executeId: 'exec-a',
+          status: ProcessingEnum.EXECUTING,
+          result: { executeId: 'exec-a' },
+        },
+      } as ConversationChatResponse);
+    });
+
+    // 高频第二发 B：先 abort 连接1，再建立连接2；user=msg-uuid-3，assistant=msg-uuid-4
+    await act(async () => {
+      await result.current.onMessageSend({ id: 1001, messageInfo: 'second' });
+    });
+    expect(connectionAborts[0]).toHaveBeenCalled();
+    const secondAssistantId = 'msg-uuid-4';
+
+    // 模拟 A 的延迟 onClose（abort 500ms 后）打到 B 已追加的时刻
+    await act(async () => {
+      await connectionHandlers[0].onClose?.();
+    });
+
+    // B 的助手消息不受 A 过期 onClose 影响：仍是 Loading，未被置 Stopped
+    const secondAssistant = result.current.messageList.find(
+      (item) => item.id === secondAssistantId,
+    );
+    expect(secondAssistant?.status).toBe(MessageStatusEnum.Loading);
+    // 活跃态不被误关（保活/活跃态未被 A 的过期 onClose 破坏）
+    expect(result.current.isConversationActive).toBe(true);
+    // A 自己的消息被清理：Stopped + EXECUTING→FAILED（不残留 busy 信号卡队列）
+    const firstAssistant = result.current.messageList.find(
+      (item) => item.id === firstAssistantId,
+    );
+    expect(firstAssistant?.status).toBe(MessageStatusEnum.Stopped);
+    expect(firstAssistant?.processingList?.[0]?.status).toBe(
+      ProcessingEnum.FAILED,
+    );
+    // 过期 onClose 不触发终态兜底查询
+    expect(mockSyncTerminalConversationTaskStatus).not.toHaveBeenCalled();
+
+    // B 的连接仍是当前连接：其 onClose 正常走全局收尾
+    await act(async () => {
+      await connectionHandlers[1].onClose?.();
+    });
+    expect(
+      result.current.messageList.find((item) => item.id === secondAssistantId)
+        ?.status,
+    ).toBe(MessageStatusEnum.Stopped);
+    expect(result.current.isConversationActive).toBe(false);
+  });
+
+  it('高频连续发送：上一轮连接的延迟 onError 不弹错、不误关活跃态', async () => {
+    const connectionHandlers: SseHandlers[] = [];
+    const connectionAborts: Array<ReturnType<typeof vi.fn>> = [];
+    mockCreateSSEConnection.mockImplementation((options: SseHandlers) => {
+      const abort = vi.fn();
+      connectionHandlers.push(options);
+      connectionAborts.push(abort);
+      return abort;
+    });
+
+    const { result } = renderHook(() => useConversationInfo());
+
+    // 发送 A：连接1；assistant=msg-uuid-2
+    await act(async () => {
+      await result.current.onMessageSend({ id: 1001, messageInfo: 'first' });
+    });
+    const firstAssistantId = 'msg-uuid-2';
+
+    // 高频第二发 B：abort 连接1，建立连接2；assistant=msg-uuid-4
+    await act(async () => {
+      await result.current.onMessageSend({ id: 1001, messageInfo: 'second' });
+    });
+    const secondAssistantId = 'msg-uuid-4';
+
+    // A 的延迟 onError：只清理 A 自己的消息，不弹全局错误、不清活跃态
+    await act(async () => {
+      connectionHandlers[0].onError?.();
+    });
+
+    const firstAssistant = result.current.messageList.find(
+      (item) => item.id === firstAssistantId,
+    );
+    expect(firstAssistant?.status).toBe(MessageStatusEnum.Error);
+    const secondAssistant = result.current.messageList.find(
+      (item) => item.id === secondAssistantId,
+    );
+    expect(secondAssistant?.status).toBe(MessageStatusEnum.Loading);
+    expect(result.current.isConversationActive).toBe(true);
+    expect(mockMessageError).not.toHaveBeenCalled();
   });
 });

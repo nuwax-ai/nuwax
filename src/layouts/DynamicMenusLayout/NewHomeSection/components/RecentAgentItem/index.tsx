@@ -25,6 +25,7 @@ const RecentAgentItem: React.FC<RecentAgentItemProps> = ({
   onConversationClick,
 }) => {
   const executingCount = getExecutingConversationCount(item.conversationList);
+  const hasDescription = Boolean(item.description && item.description.trim());
   const executingConversations = (item.conversationList ?? []).filter(
     (conversation) => conversation.taskStatus === TaskStatus.EXECUTING,
   );
@@ -49,7 +50,7 @@ const RecentAgentItem: React.FC<RecentAgentItemProps> = ({
   const content = (
     <div
       className={cx(styles['conversation-item'], {
-        [styles.active]: isActive,
+        [styles['active']]: isActive,
       })}
       onClick={onClick}
     >
@@ -64,7 +65,11 @@ const RecentAgentItem: React.FC<RecentAgentItemProps> = ({
           }}
         />
       </div>
-      <div className={cx(styles['conversation-item-content'])}>
+      <div
+        className={cx(styles['conversation-item-content'], {
+          [styles['conversation-item-content-compact']]: !hasDescription,
+        })}
+      >
         <div className={cx(styles['conversation-topic-row'])}>
           <Typography.Text
             className={cx(styles['conversation-topic'])}
@@ -78,18 +83,25 @@ const RecentAgentItem: React.FC<RecentAgentItemProps> = ({
               ({executingCount})
             </span>
           )}
+          {!hasDescription && (
+            <span className={cx(styles['conversation-date'])}>
+              {formatModifiedTime(item.modified)}
+            </span>
+          )}
         </div>
-        <div className={cx(styles['conversation-meta'])}>
-          <Typography.Text
-            className={cx(styles['conversation-agent-name'])}
-            ellipsis
-          >
-            {item.description || ''}
-          </Typography.Text>
-          <span className={cx(styles['conversation-date'])}>
-            {formatModifiedTime(item.modified)}
-          </span>
-        </div>
+        {hasDescription && (
+          <div className={cx(styles['conversation-meta'])}>
+            <Typography.Text
+              className={cx(styles['conversation-agent-name'])}
+              ellipsis
+            >
+              {item.description}
+            </Typography.Text>
+            <span className={cx(styles['conversation-date'])}>
+              {formatModifiedTime(item.modified)}
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );

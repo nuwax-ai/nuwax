@@ -88,6 +88,7 @@ import { isEmptyObject } from '@/utils/common';
 import {
   applyTerminalTaskStatus,
   createSyncConversationTaskStatus,
+  emitConversationListTaskStatus,
   mergeConversationInfoTaskStatus,
   resolveTerminalTaskStatus,
   subscribeChatFinishedTaskSync,
@@ -95,6 +96,7 @@ import {
 } from '@/utils/conversationTaskStatusSync';
 import eventBus from '@/utils/eventBus';
 import { createSSEConnection } from '@/utils/fetchEventSourceConversationInfo';
+import { conversationErrorTerminalLogger } from '@/utils/logger';
 import {
   perfTracker,
   type MessagePerfLifecycle,
@@ -110,6 +112,7 @@ import { v4 as uuidv4 } from 'uuid';
 import {
   appendOutgoingConversationMessages,
   preserveOptimisticMessageTail,
+  reconcileConversationSnapshotMessages,
 } from './conversationInfoMessageList';
 
 /** 后端漏发结构化干预事件时，等待持久化完成的补偿读取间隔。 */
@@ -195,6 +198,10 @@ export default () => {
   // 会话是否正在进行中（有消息正在处理）
   const [isConversationActive, setIsConversationActiveRaw] =
     useState<boolean>(false);
+  // 本地 chat 已发起但协议终态尚未到达。不能用 isConversationActive 代替：
+  // 普通 MESSAGE finished=true 可能先让活跃态下降，FINAL_RESULT 仍会稍后到达。
+  const [isAwaitingChatTerminal, setIsAwaitingChatTerminal] =
+    useState<boolean>(false);
   // 发送后会话活跃保活：发送后 3s 内拒绝置 false，避免停止 SSE 回流 / messageList
   // 状态切换间隙的 false 覆盖乐观 true（消除"发出后长时间无状态"的空窗）
   const lastSendAtRef = useRef(0);
@@ -239,6 +246,15 @@ export default () => {
   const [taskAgentSelectTrigger, setTaskAgentSelectTrigger] = useState<
     number | string
   >(0);
+  /**
+   * 会话结束（FINAL_RESULT）文件树刷新完成后，用于兜底重拉当前打开文件正文的触发标志。
+   * 场景：会话中 agent 修改了“当前已打开”的文件，但最终输出未携带指向它的
+   * <task-result><file>（或 file 指向其他文件），既有“树长度变化 / task-result 命中 /
+   * 手动刷新”三条正文刷新路径均未触发，正文停留在旧值。此处通过时间戳通知页面层
+   * 调用 refreshSelectedFileContent，在树刷新完成后同步当前打开文件的内容。
+   */
+  const [fileTreeRefreshTrigger, setFileTreeRefreshTrigger] =
+    useState<number>(0);
   // 文件树数据
   const [fileTreeData, setFileTreeData] = useState<StaticFileInfo[]>([]);
   // 文件树数据加载状态
@@ -470,6 +486,8 @@ export default () => {
     // 清除任务智能体待选文件，避免空文件树 + 残留 fileId 触发无限刷新
     setTaskAgentSelectedFileId('');
     setTaskAgentSelectTrigger(0);
+    // 重置兜底刷新 trigger，避免切换会话后旧 trigger 残留
+    setFileTreeRefreshTrigger(0);
     // 设置视图模式为预览
     setViewMode('preview');
     // 更新 ref 值
@@ -710,6 +728,42 @@ export default () => {
 
     handleChatProcessingList(list);
   };
+
+  /** 静默同步轮询/恢复读取到的消息快照，不触发整页 loading 或强制滚动。 */
+  const syncConversationSnapshotMessages = useCallback(
+    (snapshot: ConversationInfo) => {
+      if (
+        !snapshot ||
+        !conversationInfoRef.current ||
+        String(snapshot.id) !== String(conversationInfoRef.current.id)
+      ) {
+        return;
+      }
+
+      const incoming = hydrateMcpAskInteractionsInMessageList(
+        snapshot.messageList || [],
+      );
+      const preview = reconcileConversationSnapshotMessages(
+        messageListRef.current,
+        incoming,
+      );
+      if (preview === messageListRef.current) {
+        return;
+      }
+      messageListRef.current = preview;
+      setMessageList((prev) => {
+        const merged = reconcileConversationSnapshotMessages(prev, incoming);
+        if (merged === prev) {
+          return prev;
+        }
+        messageListRef.current = merged;
+        return merged;
+      });
+      setChatProcessingList(preview);
+      syncMessageListRuntimeState();
+    },
+    [syncMessageListRuntimeState],
+  );
 
   // 查询会话消息列表
   const { runAsync: runQueryConversationMessageList } = useRequest(
@@ -1051,6 +1105,9 @@ export default () => {
         newMessage = {
           ...currentMessage,
           text: getCustomBlock(currentMessage.text || '', data),
+          // 实际 SSE 不会为 THINK 单独下发 finished=true；PROCESSING 表示模型已从
+          // 当前思考阶段进入工具调用阶段，因此必须在这里结束本轮思考态。
+          thinkingFinished: true,
           status: MessageStatusEnum.Loading,
           processingList,
         };
@@ -1179,6 +1236,8 @@ export default () => {
           newMessage = {
             ...currentMessage,
             text: `${currentMessage.text}${text}`,
+            // QUESTION/CHAT 是 THINK 阶段之后的输出边界。
+            thinkingFinished: true,
             // 如果finished为true，则状态为null，此时不会显示运行状态组件，否则为Incomplete
             status: finished ? null : MessageStatusEnum.Incomplete,
           };
@@ -1189,6 +1248,7 @@ export default () => {
               ...currentMessage,
               id,
               text: `${currentMessage.text}${text}`, // 这里需要添加 展示MCP 或者其他工具调用
+              thinkingFinished: true,
               status: null, // 隐藏运行状态
             };
             // 插入新的消息
@@ -1198,6 +1258,8 @@ export default () => {
             newMessage = {
               ...currentMessage,
               text: `${currentMessage.text}${text}`,
+              // 后端 THINK 分片始终可能为 finished=false；首个正文分片即代表本轮思考结束。
+              thinkingFinished: true,
               // 如果finished为true，则状态为Complete，否则为Incomplete
               status: finished
                 ? MessageStatusEnum.Complete
@@ -1230,16 +1292,38 @@ export default () => {
               }
 
               try {
-                const result = await runAsync(params.conversationId);
+                // 补偿读取必须保持静默：runAsync 会经过会话详情的 onSuccess，整体
+                // 替换 messageList，使乐观消息切换为落库消息并重挂 ChatView，造成
+                // 会话结束时最后一条助手消息闪烁。这里只读取并补丁缺失的 Ask 表单。
+                const result = await apiAgentConversation(
+                  params.conversationId,
+                );
                 const hydratedMessages = hydrateMcpAskInteractionsInMessageList(
                   result?.data?.messageList || [],
                 );
-                const hasPendingAsk = hydratedMessages.some((message) =>
-                  message.mcpAskInteractions?.some(
-                    (interaction) => interaction.responseStatus === 'pending',
-                  ),
-                );
-                if (hasPendingAsk) {
+                const pendingAskMessage = [...hydratedMessages]
+                  .reverse()
+                  .find((message) =>
+                    message.mcpAskInteractions?.some(
+                      (interaction) => interaction.responseStatus === 'pending',
+                    ),
+                  );
+                if (pendingAskMessage?.mcpAskInteractions?.length) {
+                  setMessageList((list) => {
+                    const targetIndex = list.findIndex(
+                      (message) => message.id === currentMessageId,
+                    );
+                    if (targetIndex < 0) {
+                      return list;
+                    }
+                    const nextList = [...list];
+                    nextList[targetIndex] = {
+                      ...nextList[targetIndex],
+                      mcpAskInteractions: pendingAskMessage.mcpAskInteractions,
+                    };
+                    messageListRef.current = nextList;
+                    return nextList;
+                  });
                   return;
                 }
               } catch (error) {
@@ -1271,6 +1355,7 @@ export default () => {
             }
 
             const taskResult = extractTaskResult(data.outputText);
+            let selectedFileInTaskResult = false;
             // 如果有任务结果，并且有文件，则打开预览视图
             if (taskResult.hasTaskResult && taskResult.file) {
               // 打开预览视图
@@ -1283,7 +1368,18 @@ export default () => {
                 setTaskAgentSelectedFileId(fileId);
                 // 每次设置文件ID时更新触发标志，确保即使文件ID相同也能触发文件选择
                 setTaskAgentSelectTrigger(Date.now());
+                selectedFileInTaskResult = true;
               }
+            }
+
+            // 兜底：本次最终输出未携带指向当前打开文件的 <task-result><file>
+            // （或 file 指向其他文件），既有“树长度变化 / task-result 命中 / 手动刷新”
+            // 三条正文刷新路径均未触发，文件树刷新完成后正文仍停留在旧内容。
+            // 此处发出 trigger，通知页面层在树刷新完成后重拉当前打开文件的正文。
+            // 仅 FINAL_RESULT 一次性触发，不作用于流式 tool_call 的树刷新路径，
+            // 避免会话输出过程中当前打开文件被高频重拉。
+            if (!selectedFileInTaskResult) {
+              setFileTreeRefreshTrigger(Date.now());
             }
           }
         }, 0);
@@ -1356,6 +1452,25 @@ export default () => {
           thinkingFinished: true,
           status: MessageStatusEnum.Error,
         };
+        // 会话出错即终态：立即把会话 taskStatus 落为 FAILED（等同已停止），
+        // 否则本地会固化在 EXECUTING，导致停止按钮常驻、队列因 taskExecuting 永不消费。
+        // 同步补偿侧栏「最近使用/会话记录」列表，清除其「执行中」标记。
+        if (params.conversationId) {
+          conversationErrorTerminalLogger.warn('sse-error-event apply FAILED', {
+            conversationId: params.conversationId,
+            messageId: currentMessage?.id ?? currentMessageId,
+            prevTaskStatus: conversationInfoRef.current?.taskStatus,
+          });
+          applyTerminalTaskStatus(
+            setConversationInfo,
+            params.conversationId,
+            TaskStatus.FAILED,
+          );
+          emitConversationListTaskStatus(
+            params.conversationId,
+            TaskStatus.FAILED,
+          );
+        }
       }
 
       // 会话事件兼容处理，防止消息为空时，页面渲染报length错误
@@ -1382,12 +1497,15 @@ export default () => {
     data: any = null,
   ) => {
     const token = localStorage.getItem(ACCESS_TOKEN) ?? '';
+    // 当前 SSE 连接是否已从 FINAL_RESULT 解析出明确终态。
+    // 使用连接级闭包隔离并发/前后轮次，避免共享 ref 被新一轮发送覆盖。
+    let hasResolvedTerminalStatus = false;
 
     // 请求即将发起：用于计算前端从发送动作到真正网络发起的耗时。
     perfLifecycle.onHttpStart();
 
     // 启动连接（不传 abortController，让 createSSEConnection 内部创建）
-    abortConnectionRef.current = createSSEConnection({
+    const abortConnection = createSSEConnection({
       url: CONVERSATION_CONNECTION_URL,
       method: 'POST',
       headers: {
@@ -1401,6 +1519,17 @@ export default () => {
       },
       onMessage: (res: ConversationChatResponse) => {
         perfLifecycle.onFirstChunk(res?.eventType, res);
+        if (
+          res.eventType === ConversationEventTypeEnum.FINAL_RESULT ||
+          res.eventType === ConversationEventTypeEnum.ERROR
+        ) {
+          setIsAwaitingChatTerminal(false);
+        }
+        if (res.eventType === ConversationEventTypeEnum.FINAL_RESULT) {
+          hasResolvedTerminalStatus = Boolean(
+            resolveTerminalTaskStatus(res.data?.success, res.data, res),
+          );
+        }
         if (
           res.eventType === ConversationEventTypeEnum.MESSAGE &&
           res.data.type === MessageModeEnum.QUESTION &&
@@ -1429,7 +1558,46 @@ export default () => {
           });
         }
       },
-      onClose: async () => {
+      onClose: () => {
+        // 过期连接保护：本连接被新一轮发送取代（handleClearSideEffect 先 abort 再置 null，
+        // 随后新一轮 handleConversation 写入新句柄）时，其 abort 触发的延迟 onClose(500ms)
+        // 会在新消息已追加后回调。此时只清理【本连接自己】的消息与执行态，跳过「按列表尾
+        // 标记 Stopped / 清保活 / 关活跃态 / 终态同步」等全局收尾——否则会误停新一轮消息、
+        // 使 streamActive 假性回落 → 队列提前消费下一条 → 新一轮
+        // /api/agent/conversation/chat 被 handleClearSideEffect 意外 abort（高频发送必现）。
+        if (
+          abortConnectionRef.current &&
+          abortConnectionRef.current !== abortConnection
+        ) {
+          setMessageList((list) => {
+            const updatedList = list.map((info: MessageInfo) => {
+              if (info.id !== currentMessageId) {
+                return info;
+              }
+              const processingList = Array.isArray(info.processingList)
+                ? info.processingList.map((item: ProcessingInfo) =>
+                    item.status === ProcessingEnum.EXECUTING
+                      ? { ...item, status: ProcessingEnum.FAILED }
+                      : item,
+                  )
+                : info.processingList;
+              return {
+                ...info,
+                thinkingFinished: true,
+                status:
+                  info.status === MessageStatusEnum.Loading ||
+                  info.status === MessageStatusEnum.Incomplete
+                    ? MessageStatusEnum.Stopped
+                    : info.status,
+                processingList,
+              };
+            });
+            messageListRef.current = updatedList;
+            return updatedList;
+          });
+          syncMessageListRuntimeState();
+          return;
+        }
         // 明确的流结束信号：打破「发送后 3s 保活」，确保活跃态能落 false（停止/快速结束场景）
         lastSendAtRef.current = 0;
         // 将当前会话的loading状态的消息改为Stopped状态，并将所有正在执行的 processing 状态更新为 FAILED
@@ -1483,17 +1651,29 @@ export default () => {
         });
         syncMessageListRuntimeState();
 
-        // SSE 结束后兜底同步 taskStatus：仅写回终态，避免竞态 EXECUTING 固化本地。
-        // 不限制 Agent 类型；任何携带 taskStatus=EXECUTING 的会话都必须能释放输入态。
-        if (params.conversationId) {
-          await syncTerminalConversationTaskStatus(
+        // SSE 已经关闭时先释放本地流式态，不能让后端终态查询阻塞输入框恢复。
+        // 否则详情接口响应慢或挂起时，即使回复已经结束，页面仍会一直显示停止按钮。
+        disabledConversationActive();
+
+        // FINAL_RESULT 已解析出明确终态时，本地状态已经完成写回，无需重复查询详情。
+        // 未收到 FINAL_RESULT 或终态不明确时，异步查询后端状态作为兜底；查询失败不影响本地收尾。
+        if (params.conversationId && !hasResolvedTerminalStatus) {
+          void syncTerminalConversationTaskStatus(
             params.conversationId,
             setConversationInfo,
-          );
+          )
+            .catch((error) => {
+              console.error(
+                '[onClose] sync terminal taskStatus failed:',
+                error,
+              );
+            })
+            .finally(() => {
+              setIsAwaitingChatTerminal(false);
+            });
+        } else if (!params.conversationId) {
+          setIsAwaitingChatTerminal(false);
         }
-
-        // 主动关闭连接时，禁用会话
-        disabledConversationActive();
 
         if (isSync && !isAppSidebarMode && params.conversationId) {
           eventBus.emit(EVENT_TYPE.RefreshConversationList, {
@@ -1506,7 +1686,38 @@ export default () => {
         perfLifecycle.onCloseRenderComplete();
       },
       onError: () => {
+        // 过期连接保护：与 onClose 一致。上一轮连接的延迟错误回调只清理自己的消息，
+        // 不弹错误提示、不清保活、不关活跃态，避免污染新一轮消息状态。
+        if (
+          abortConnectionRef.current &&
+          abortConnectionRef.current !== abortConnection
+        ) {
+          setMessageList((list) => {
+            const updatedList = list.map((info: MessageInfo) => {
+              if (info.id !== currentMessageId) {
+                return info;
+              }
+              const processingList = Array.isArray(info.processingList)
+                ? info.processingList.map((item: ProcessingInfo) =>
+                    item.status === ProcessingEnum.EXECUTING
+                      ? { ...item, status: ProcessingEnum.FAILED }
+                      : item,
+                  )
+                : info.processingList;
+              return {
+                ...info,
+                status: MessageStatusEnum.Error,
+                processingList,
+              };
+            });
+            messageListRef.current = updatedList;
+            return updatedList;
+          });
+          syncMessageListRuntimeState();
+          return;
+        }
         message.error(dict('PC.Models.ConversationInfo.networkTimeoutError'));
+        setIsAwaitingChatTerminal(false);
         // 将当前会话的 loading 消息改为 Error，并把其 processingList 中执行中的项更新为 FAILED，
         // 否则 isSessionStreamBusy 会因残留 EXECUTING 项持续为 true，导致活跃态/停止按钮/队列消费卡死。
         setMessageList((list) => {
@@ -1530,6 +1741,24 @@ export default () => {
           messageListRef.current = updatedList;
           return updatedList;
         });
+        // 网络错误即终态：把会话 taskStatus 落为 FAILED（等同已停止），并同步侧栏列表，
+        // 避免本地固化 EXECUTING 造成停止按钮常驻、队列 taskExecuting 永不消费。
+        if (params.conversationId) {
+          conversationErrorTerminalLogger.warn('sse-on-error apply FAILED', {
+            conversationId: params.conversationId,
+            messageId: currentMessageId,
+            prevTaskStatus: conversationInfoRef.current?.taskStatus,
+          });
+          applyTerminalTaskStatus(
+            setConversationInfo,
+            params.conversationId,
+            TaskStatus.FAILED,
+          );
+          emitConversationListTaskStatus(
+            params.conversationId,
+            TaskStatus.FAILED,
+          );
+        }
         // 明确终止：打破「发送后 3s 保活」，确保活跃态能立即落 false
         lastSendAtRef.current = 0;
         disabledConversationActive();
@@ -1537,6 +1766,8 @@ export default () => {
         perfLifecycle.onStreamEnd('error');
       },
     });
+    // 保存本次连接的 abort 句柄（供下一轮发送/停止时中断；onClose/onError 用它做过期连接识别）
+    abortConnectionRef.current = abortConnection;
   };
 
   // ===== 会话流式恢复(sub)：刷新页面 / 新开标签时，订阅 EXECUTING 会话的输出流 =====
@@ -1583,6 +1814,7 @@ export default () => {
   // 重置初始化
   const resetInit = () => {
     handleClearSideEffect();
+    setIsAwaitingChatTerminal(false);
     // 重置是否还有更多消息
     setIsMoreMessage(false);
     // 重置加载更多消息的状态
@@ -1636,6 +1868,9 @@ export default () => {
     } = sendParams;
     // 清除副作用
     handleClearSideEffect();
+
+    // 独立记录协议终态；MESSAGE finished 只能表示消息块结束，不能放行详情轮询。
+    setIsAwaitingChatTerminal(true);
 
     // 乐观标记会话活跃：发送瞬间即置为活跃，不依赖 messageList 出现 Loading 消息的延迟，
     // 消除"发送后会话开始状态"的空窗期（保证队列入队判定及时、停止按钮立即显示）。
@@ -1800,11 +2035,13 @@ export default () => {
     loadingStopConversation,
     respondMcpAsk,
     isConversationActive,
+    isAwaitingChatTerminal,
     checkConversationActive,
     disabledConversationActive,
     // 会话流式恢复(sub)
     resumeConversationStream,
     abortResumeStream,
+    syncConversationSnapshotMessages,
     setCurrentConversationRequestId,
     getCurrentConversationRequestId,
     getCurrentConversationId,
@@ -1851,6 +2088,8 @@ export default () => {
     // 通用型智能体文件选择触发标志
     taskAgentSelectTrigger,
     setTaskAgentSelectTrigger,
+    // 会话结束文件树刷新后兜底重拉当前打开文件正文的触发标志
+    fileTreeRefreshTrigger,
     isLoadingOtherInterface,
     setIsLoadingOtherInterface,
   };

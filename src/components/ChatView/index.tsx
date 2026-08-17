@@ -61,7 +61,7 @@ const ChatView: React.FC<ChatViewProps> = memo(
     const { markdownRef, messageIdRef } = useMarkdownRender({
       answer: processedText,
       thinking: messageInfo?.think || '',
-      id: messageInfo?.id || '',
+      id: messageInfo?.clientRenderKey || messageInfo?.id || '',
     });
     const _userInfo =
       userInfo || JSON.parse(localStorage.getItem(USER_INFO) as string);
@@ -104,7 +104,9 @@ const ChatView: React.FC<ChatViewProps> = memo(
     return (
       <div
         className={cx(styles.container, 'flex', className)}
-        data-message-id={messageInfo?.id}
+        // 与 React key 使用同一客户端稳定标识；服务端快照补齐 id 时不再让 DOM 身份跳变。
+        data-message-id={messageInfo?.clientRenderKey || messageInfo?.id}
+        data-server-message-id={messageInfo?.id}
       >
         <div
           className={cx('flex-1', 'overflow-hide', {

@@ -156,8 +156,16 @@ const getTextBeforeCaret = (element: HTMLElement): string => {
 };
 
 /**
+ * 块级标签：contenteditable 中回车/粘贴多行时，浏览器通常会拆成这些节点
+ * （Chrome 多为 DIV，部分场景为 P）
+ */
+const BLOCK_ELEMENT_RE =
+  /^(DIV|P|LI|H[1-6]|TR|SECTION|ARTICLE|BLOCKQUOTE|PRE)$/i;
+
+/**
  * 序列化编辑器内容
- * 将 mention chip 转成 @名称，同时忽略删除按钮的 × 文本
+ * 将 mention chip 转成 @名称，同时忽略删除按钮的 × 文本；
+ * 保留 BR / 块级节点带来的换行，避免粘贴格式化代码后变成「一坨字符串」
  *
  * @param node - 需要序列化的节点
  * @returns 纯文本结果
@@ -175,22 +183,53 @@ const serializeEditorNode = (node: Node): string => {
     return `@${node.dataset.mentionName}`;
   }
 
-  return Array.from(node.childNodes)
+  if (node.tagName === 'BR') {
+    return '\n';
+  }
+
+  let text = Array.from(node.childNodes)
     .map((childNode) => serializeEditorNode(childNode))
     .join('');
+
+  // 块级节点视为一行：内容末尾补换行（若子节点已是 BR 结尾则不再重复）
+  if (BLOCK_ELEMENT_RE.test(node.tagName) && !text.endsWith('\n')) {
+    text += '\n';
+  }
+
+  return text;
 };
 
 /**
  * 获取编辑器的序列化纯文本
  *
  * @param element - 编辑器 DOM 元素
- * @returns 去除控制字符后的纯文本
+ * @returns 去除控制字符后的纯文本（保留换行）
  */
 const getSerializedEditorText = (element: HTMLElement): string => {
-  return Array.from(element.childNodes)
-    .map((node) => serializeEditorNode(node))
+  const children = Array.from(element.childNodes);
+  const text = children
+    .map((node, index) => {
+      let part = serializeEditorNode(node);
+      // 粘贴/回车多行内容时，Chrome 会把首行留作根级裸文本、后续行包进块级节点。
+      // 裸文本自身不会补换行，导致序列化后首行与下一行被拼在一起。
+      // 若其下一个兄弟是块级节点（BR 已自带 \n，需排除避免重复），则视为独立一行补 \n。
+      const nextNode = children[index + 1];
+      if (
+        part &&
+        !part.endsWith('\n') &&
+        nextNode instanceof HTMLElement &&
+        BLOCK_ELEMENT_RE.test(nextNode.tagName)
+      ) {
+        part += '\n';
+      }
+      return part;
+    })
     .join('')
-    .replace(/\u200B/g, '');
+    .replace(/\u200B/g, '')
+    // 末尾块级节点会多一个换行，发送前去掉，避免消息尾部多余空行
+    .replace(/\n$/, '');
+  // 仅空白/换行时仍视为空，与改前空编辑器行为一致（placeholder、发送按钮禁用）
+  return text.trim() ? text : '';
 };
 
 /**

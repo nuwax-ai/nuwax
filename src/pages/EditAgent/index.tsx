@@ -148,6 +148,7 @@ const EditAgent: React.FC = () => {
     viewMode,
     // 处理文件列表刷新事件
     handleRefreshFileList,
+    // 是否立即刷新文件列表
     refreshFileListImmediately,
     openPreviewView,
     restartVncPod,

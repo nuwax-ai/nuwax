@@ -7,6 +7,7 @@ import type {
   MessageInfo,
 } from '@/types/interfaces/conversationInfo';
 import eventBus from '@/utils/eventBus';
+import { conversationErrorTerminalLogger } from '@/utils/logger';
 import type { Dispatch, SetStateAction } from 'react';
 
 /** ChatFinished 事件载荷 */
@@ -237,24 +238,31 @@ export function hasExecutingTaskInList(
 }
 
 /**
+ * 拉取完整会话快照。状态轮询需要同时消费 messageList，避免接口已经返回新消息、
+ * 前端却只读取 taskStatus 而导致历史会话更新滞后。
+ */
+export async function fetchConversationSnapshot(
+  conversationId: number | string,
+): Promise<ConversationInfo | undefined> {
+  try {
+    const result = await apiAgentConversation(Number(conversationId));
+    if (result?.code === SUCCESS_CODE && result?.data) {
+      return result.data;
+    }
+  } catch (error) {
+    console.error('[fetchConversationSnapshot]', error);
+  }
+  return undefined;
+}
+
+/**
  * 拉取会话当前 taskStatus（轻量查询，不替换 messageList）
  */
 export async function fetchConversationTaskStatus(
   conversationId: number | string,
 ): Promise<TaskStatus | undefined> {
-  try {
-    const result = await apiAgentConversation(Number(conversationId));
-    if (
-      result?.code === SUCCESS_CODE &&
-      result?.data?.taskStatus !== undefined &&
-      result?.data?.taskStatus !== null
-    ) {
-      return result.data.taskStatus;
-    }
-  } catch (error) {
-    console.error('[fetchConversationTaskStatus]', error);
-  }
-  return undefined;
+  const snapshot = await fetchConversationSnapshot(conversationId);
+  return snapshot?.taskStatus;
 }
 
 /**
@@ -273,19 +281,75 @@ export function applyTerminalTaskStatus(
   taskStatus: TaskStatus | undefined,
 ): void {
   if (taskStatus === undefined || taskStatus === TaskStatus.EXECUTING) {
+    // undefined / EXECUTING 跳过是设计行为；不打日志，避免轮询/兜底刷屏
     return;
   }
   setConversationInfo((prev) => {
     if (!prev || String(prev.id) !== String(conversationId)) {
+      if (taskStatus === TaskStatus.FAILED) {
+        conversationErrorTerminalLogger.warn('applyTerminalTaskStatus skip', {
+          conversationId,
+          taskStatus,
+          reason: !prev ? 'no_conversationInfo' : 'conversationId_mismatch',
+          prevId: prev?.id,
+        });
+      }
       return prev;
     }
-    return prev.taskStatus === taskStatus ? prev : { ...prev, taskStatus };
+    if (prev.taskStatus === taskStatus) {
+      if (taskStatus === TaskStatus.FAILED) {
+        conversationErrorTerminalLogger.warn('applyTerminalTaskStatus noop', {
+          conversationId,
+          taskStatus,
+          reason: 'unchanged',
+          prev: prev.taskStatus,
+        });
+      }
+      return prev;
+    }
+    conversationErrorTerminalLogger.warn('applyTerminalTaskStatus', {
+      conversationId,
+      prev: prev.taskStatus,
+      next: taskStatus,
+    });
+    return { ...prev, taskStatus };
+  });
+}
+
+/**
+ * 把终态 taskStatus 同步到「最近使用/会话记录」列表（本地补丁，不发网络请求）。
+ *
+ * 场景：会话执行完毕后，侧栏列表可能因后端落库延迟，在重新拉取后仍返回 EXECUTING，
+ * 导致列表显示「执行中」。当前会话页的轮询会反复观察到终态并补发本事件，由列表
+ * 处理器幂等合并——任何一次落在轮询之后的 stale 刷新都会在下个轮询周期内被纠正。
+ *
+ * - undefined / EXECUTING 跳过：非终态，避免把执行中状态固化到列表；
+ * - 仅由终态（COMPLETE / CANCEL / FAILED）触发本地补丁。
+ */
+export function emitConversationListTaskStatus(
+  conversationId: number | string,
+  taskStatus: TaskStatus | undefined,
+): void {
+  if (taskStatus === undefined || taskStatus === TaskStatus.EXECUTING) {
+    return;
+  }
+  // 仅 FAILED 打验证日志：轮询会对 COMPLETE 等终态反复 emit，避免刷屏
+  if (taskStatus === TaskStatus.FAILED) {
+    conversationErrorTerminalLogger.warn('emitConversationListTaskStatus', {
+      conversationId,
+      taskStatus,
+    });
+  }
+  eventBus.emit(EVENT_TYPE.UpdateConversationListTaskStatus, {
+    conversationId,
+    taskStatus,
   });
 }
 
 /**
  * SSE onClose / ChatFinished 兜底：拉取后端 taskStatus 并写回终态。
  * 经 applyTerminalTaskStatus，自动跳过 EXECUTING（避免固化）且未变化不重渲染。
+ * 后端已确认终态时，同时补偿「最近使用/会话记录」列表，避免其停留在执行中。
  */
 export async function syncTerminalConversationTaskStatus(
   conversationId: number | string,
@@ -295,6 +359,7 @@ export async function syncTerminalConversationTaskStatus(
 ): Promise<void> {
   const taskStatus = await fetchConversationTaskStatus(conversationId);
   applyTerminalTaskStatus(setConversationInfo, conversationId, taskStatus);
+  emitConversationListTaskStatus(conversationId, taskStatus);
 }
 
 /**

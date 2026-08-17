@@ -50,6 +50,8 @@ export const useOriginalTextSegments = (
   const [error, setError] = useState<string | null>(null);
   const reqIdRef = useRef<number>(0);
   const [usingMockData, setUsingMockData] = useState(false);
+  // 后端新增的文档名称字段（knowledge_document.name），用于标题展示
+  const [docName, setDocName] = useState<string>('');
 
   useEffect(() => {
     const currentReqId = ++reqIdRef.current;
@@ -58,12 +60,14 @@ export const useOriginalTextSegments = (
       setSegments([]);
       setLoading(false);
       setError(null);
+      setDocName('');
       return;
     }
 
     let cancelled = false;
     setLoading(true);
     setError(null);
+    setDocName('');
 
     const fetchAll = async () => {
       try {
@@ -95,6 +99,10 @@ export const useOriginalTextSegments = (
 
           if (Array.isArray(page.records)) {
             all.push(...page.records);
+          }
+          // 取后端返回的文档名称（任意一页返回即可）
+          if (page.docname) {
+            setDocName(page.docname);
           }
           totalPages = page.pages || 1;
           current += 1;
@@ -159,6 +167,7 @@ export const useOriginalTextSegments = (
     setLoading(false);
     setError(null);
     setUsingMockData(false);
+    setDocName('');
   };
 
   return {
@@ -167,5 +176,6 @@ export const useOriginalTextSegments = (
     error,
     reset,
     usingMockData,
+    docName,
   };
 };

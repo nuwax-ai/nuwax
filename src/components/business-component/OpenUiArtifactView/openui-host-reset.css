@@ -17,36 +17,40 @@
 @layer ds-markdown, openui;
 
 /* -------------------------------------------------------------------------- */
-/* 2. 撤销 ds-markdown 层对 OpenUI 子树的 h1/a/ul/code/table 等后代规则        */
-/*    追加进同一 @layer ds-markdown，revert-layer 后交给 @layer openui / UA   */
+/* 2. 重置 .ds-markdown 对 OpenUI 子树的 h1/a/ul/code/table 等后代规则         */
 /* -------------------------------------------------------------------------- */
-@layer ds-markdown {
-  .ds-markdown
-    [data-openui-render-mode='renderer']
-    :is(
-      h1,
-      h2,
-      h3,
-      h4,
-      h5,
-      h6,
-      a,
-      ul,
-      ol,
-      li,
-      code,
-      pre,
-      table,
-      th,
-      td,
-      blockquote,
-      p,
-      hr,
-      strong,
-      img
-    ) {
-    all: revert-layer;
-  }
+.ds-markdown
+  [data-openui-render-mode='renderer']
+  :is(
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6,
+    a,
+    ul,
+    ol,
+    li,
+    code,
+    pre,
+    table,
+    th,
+    td,
+    blockquote,
+    p,
+    hr,
+    strong,
+    img
+  ) {
+  margin: initial;
+  padding: initial;
+  font-size: initial;
+  line-height: inherit;
+  font-weight: initial;
+  background-color: transparent;
+  border: initial;
+  box-shadow: none;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -135,4 +139,26 @@
 /* -------------------------------------------------------------------------- */
 .ds-markdown [data-openui-render-mode='renderer'] code {
   background: unset;
+}
+
+/* -------------------------------------------------------------------------- */
+/* 8. 恢复被宿主 th/td 重置覆盖的 OpenUI 表格单元格内边距                    */
+/* -------------------------------------------------------------------------- */
+.ds-markdown
+  [data-openui-render-mode='renderer']
+  :is(.openui-table-head, .openui-table-cell) {
+  padding: var(--openui-space-m);
+}
+
+/* -------------------------------------------------------------------------- */
+/* 9. 补 @openuidev/react-ui@0.13.2 掏空的 .openui-card-card（与 openui-runtime
+   sidecar.css 对齐，保证 inline 与预览一致）。0.13.2 把该规则删成仅
+   {box-shadow:none}，Card 丢失 padding/border-radius/border-color/background，
+   几乎无样式。按 0.12.1 完整声明补回；本规则非 layered，优先级高于 @layer openui。 */
+/* -------------------------------------------------------------------------- */
+.openui-card-card {
+  padding: var(--openui-space-l);
+  border-radius: var(--openui-radius-3xl);
+  border-color: var(--openui-border-default);
+  background-color: var(--openui-foreground);
 }

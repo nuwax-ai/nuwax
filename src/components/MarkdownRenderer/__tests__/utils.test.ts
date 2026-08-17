@@ -6,7 +6,12 @@
  * - groupMarkdownProcesses：快速短路（不含过程标签时直接返回）
  */
 import { describe, expect, it } from 'vitest';
-import { groupMarkdownProcesses, replaceMathBracket } from '../utils';
+import {
+  groupMarkdownProcesses,
+  looksLikeLatex,
+  replaceMathBracket,
+  unwrapLatexInlineCode,
+} from '../utils';
 
 /** 构造一个合法的 base64 data URL（仅长度可配置，内容不要求是真实图片） */
 const makeDataUrl = (bodyLen = 100) =>
@@ -66,6 +71,152 @@ describe('replaceMathBracket', () => {
     const url = makeDataUrl(80);
     const text = `![img](${url}) 然后 \\(c = a + b\\)`;
     expect(replaceMathBracket(text)).toBe(`![img](${url}) 然后 $c = a + b$`);
+  });
+
+  it('反引号包住的 $...$ 公式会去掉反引号', () => {
+    const text =
+      '1. `$a^2 + b^2 = c^2$` 平方和\n2. `$\\frac{1}{2} + \\frac{1}{3} = \\frac{5}{6}$` 分式';
+    expect(replaceMathBracket(text)).toBe(
+      '1. $a^2 + b^2 = c^2$ 平方和\n2. $\\frac{1}{2} + \\frac{1}{3} = \\frac{5}{6}$ 分式',
+    );
+  });
+
+  it('表格中反引号包住的 $...$ 也会拆开以便渲染', () => {
+    const text =
+      "| 3 | `$\\sqrt[3]{x}$` | $\\sqrt[3]{x}$ |\n| 13 | `$f'(x)$` | $f'(x)$ |";
+    expect(replaceMathBracket(text)).toBe(
+      "| 3 | $\\sqrt[3]{x}$ | $\\sqrt[3]{x}$ |\n| 13 | $f'(x)$ | $f'(x)$ |",
+    );
+  });
+
+  it('像 LaTeX 的行内代码会拆成 $...$ 再渲染', () => {
+    const text = "命令 `\\sqrt[3]{x}` 与 `f'(x)` 仅作展示";
+    expect(replaceMathBracket(text)).toBe(
+      "命令 $\\sqrt[3]{x}$ 与 $f'(x)$ 仅作展示",
+    );
+  });
+
+  it('已有 $ 公式与 \\( \\) 混排时只转换括号定界符', () => {
+    const text = '已有 $\\alpha$ 再写 \\(\\beta\\)';
+    expect(replaceMathBracket(text)).toBe('已有 $\\alpha$ 再写 $\\beta$');
+  });
+
+  it('流式会话常见：反引号包住的 LaTeX 命令列表可转为公式', () => {
+    const text =
+      '6. 求和：`\\sum_{i=1}^{n}`\n16. 矩阵：`\\begin{pmatrix} a & b \\\\ c & d \\end{pmatrix}`';
+    expect(replaceMathBracket(text)).toBe(
+      '6. 求和：$\\sum_{i=1}^{n}$\n16. 矩阵：$\\begin{pmatrix} a & b \\\\ c & d \\end{pmatrix}$',
+    );
+  });
+
+  it('普通代码行内片段保持反引号', () => {
+    expect(replaceMathBracket('使用 `const x = 1` 声明')).toBe(
+      '使用 `const x = 1` 声明',
+    );
+  });
+
+  it('Windows 路径反引号保持原样，不被拆成 $...$ 公式', () => {
+    const text =
+      '工作目录 `D:\\mycomputer\\computer-project-workspace\\1754545591\\1560129`';
+    expect(replaceMathBracket(text)).toBe(text);
+  });
+});
+
+describe('looksLikeLatex / unwrapLatexInlineCode', () => {
+  it('识别常见 LaTeX 命令与简单上下标', () => {
+    expect(looksLikeLatex('\\frac{a}{b}')).toBe(true);
+    expect(looksLikeLatex('\\sum_{i=1}^{n}')).toBe(true);
+    expect(looksLikeLatex('\\lim_{x \\to 0}')).toBe(true);
+    expect(looksLikeLatex('x^2')).toBe(true);
+    expect(looksLikeLatex('x_i')).toBe(true);
+    expect(looksLikeLatex("f'(x)")).toBe(true);
+    expect(looksLikeLatex('|x|')).toBe(true);
+    // 无反斜杠命令的代数式（此前会被误判成普通代码）
+    expect(looksLikeLatex('a^2 + b^2')).toBe(true);
+    expect(looksLikeLatex('a^2 + b^2 = c^2')).toBe(true);
+    expect(looksLikeLatex('(a+b)^2 = a^2 + 2ab + b^2')).toBe(true);
+  });
+
+  it('排除普通代码', () => {
+    expect(looksLikeLatex('const x = 1')).toBe(false);
+    expect(looksLikeLatex('npm install')).toBe(false);
+    expect(looksLikeLatex('foo.bar.ts')).toBe(false);
+    expect(looksLikeLatex('x = 1')).toBe(false);
+  });
+
+  it('排除 snake_case 标识符（不误判为下标公式）', () => {
+    expect(looksLikeLatex('search_tasks')).toBe(false);
+    expect(looksLikeLatex('cancel_task')).toBe(false);
+    expect(looksLikeLatex('list_running_tasks')).toBe(false);
+    expect(looksLikeLatex('query_progress_or_result')).toBe(false);
+    expect(looksLikeLatex('dispatch')).toBe(false);
+    expect(looksLikeLatex('user_id')).toBe(false);
+    expect(looksLikeLatex('x_axis')).toBe(false);
+  });
+
+  it('不把 Windows 路径误判为公式（\mycomputer 等小写目录段形似 LaTeX 命令）', () => {
+    expect(
+      looksLikeLatex(
+        'D:\\mycomputer\\computer-project-workspace\\1754545591\\1560129',
+      ),
+    ).toBe(false);
+    expect(looksLikeLatex('C:\\Users\\Public\\Desktop')).toBe(false);
+    expect(looksLikeLatex('\\mycomputer\\project\\src')).toBe(false);
+  });
+
+  it('不把 JSON 转义 / 正则等反斜杠文本误判为公式', () => {
+    expect(looksLikeLatex('\\n')).toBe(false);
+    expect(looksLikeLatex('\\d+')).toBe(false);
+    expect(looksLikeLatex('\\mycomputer')).toBe(false);
+  });
+
+  it('识别单字符下标公式（x_i、a_1、a_i + b_j）', () => {
+    expect(looksLikeLatex('x_i')).toBe(true);
+    expect(looksLikeLatex('a_1')).toBe(true);
+    expect(looksLikeLatex('a_i + b_j')).toBe(true);
+    expect(looksLikeLatex('x_{n+1}')).toBe(true);
+  });
+
+  it('unwrap 代数式反引号', () => {
+    expect(
+      unwrapLatexInlineCode(
+        '1. 平方和：`a^2 + b^2`\n4. 完全平方：`(a+b)^2 = a^2 + 2ab + b^2`',
+      ),
+    ).toContain('$a^2 + b^2$');
+    expect(
+      unwrapLatexInlineCode('4. 完全平方：`(a+b)^2 = a^2 + 2ab + b^2`'),
+    ).toContain('$(a+b)^2 = a^2 + 2ab + b^2$');
+  });
+
+  it('不改动围栏代码块内的反引号内容', () => {
+    const text = '```\\n`\\frac{a}{b}`\\n```'.replace(/\\n/g, '\n');
+    expect(unwrapLatexInlineCode(text)).toBe(text);
+  });
+
+  it('unwrap：`$...$` 去反引号，裸 LaTeX 加 $', () => {
+    expect(unwrapLatexInlineCode('见 `$a^2$` 与 `\\alpha`')).toBe(
+      '见 $a^2$ 与 $\\alpha$',
+    );
+  });
+
+  it('unwrap：反引号 snake_case 标识符保持原样，不被当成公式', () => {
+    const text =
+      '`search_tasks` / `cancel_task` / `list_running_tasks` / `dispatch` 的 record/append 均一致 ✓，唯独 `query_progress_or_result` 这一个写错了。';
+    expect(unwrapLatexInlineCode(text)).toBe(text);
+  });
+
+  it('分类标题后的 7. 8. 公式列表会拆成独立块（避免挤成一行）', () => {
+    const input = [
+      '**微积分**',
+      '7. `$\\int_0^1 x^2 dx = \\frac{1}{3}$` 定积分',
+      '8. `$\\frac{d}{dx} e^x = e^x$` 导数',
+      '**三角函数**',
+      '13. `$\\sin^2 \\theta + \\cos^2 \\theta = 1$` 恒等式',
+    ].join('\n');
+    const out = unwrapLatexInlineCode(input);
+    expect(out).toContain('**微积分**\n\n7. $');
+    expect(out).toContain('$ 定积分\n\n8. $');
+    expect(out).toContain('$ 导数\n\n**三角函数**\n\n13. $');
   });
 });
 

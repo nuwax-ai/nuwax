@@ -47,6 +47,8 @@ export interface UnifiedChatSessionProps {
    * 本地流式中，导致既不轮询也不订阅 sub（续不上）。未传时回退到 isConversationActive。
    */
   isLocallyStreaming?: boolean;
+  /** 本地消息已发送，但当前 chat SSE 尚未收到协议终态。 */
+  isAwaitingChatTerminal?: boolean;
   messageBottomMode?: 'none' | 'home' | 'chat'; // 消息底部操作栏模式：none | home | chat
   showDebug?: boolean;
   loadingSuggest?: boolean; // 会话建议加载状态
@@ -175,6 +177,8 @@ export interface UnifiedChatSessionProps {
   waitForHistoryUserBeforeResume?: boolean;
   /** sub 恢复日志来源：区分左侧开发 Agent 会话、右侧预览 Tab、主调试区等 */
   resumeDebugSource?: string;
+  /** 状态轮询返回完整会话快照时，静默同步新增历史消息 */
+  onConversationSnapshot?: (snapshot: ConversationInfo) => void;
   /** 轮询拿到终态 taskStatus 时写回当前会话 model */
   onTerminalTaskStatus?: (status: TaskStatus) => void;
 }
