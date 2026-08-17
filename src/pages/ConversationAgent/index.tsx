@@ -1351,6 +1351,7 @@ const ConversationAgent: React.FC = () => {
   const fileView = useFileTreePreviewView(fileViewProviderProps);
   // 刷新 Git 列表
   refreshGitListRef.current = fileView.refreshGitList;
+  // 清空文件树选中
   clearFileTreeSelectionRef.current = fileView.tree.clearSelection ?? null;
 
   // 刷新文件树，并在存在当前选中文件时同步刷新文件内容
