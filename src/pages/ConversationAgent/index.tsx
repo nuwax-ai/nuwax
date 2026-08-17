@@ -1237,6 +1237,7 @@ const ConversationAgent: React.FC = () => {
       onCreateFileNode: handleCreateFileNode,
       /** 删除文件 */
       onDeleteFile: handleDeleteFile,
+      /** 保存文件 */
       onSaveFiles: handleSaveFiles,
       onSaveFileContent: async (fileId, content, originalFileContent) => {
         const result = await handleSaveFileContent(
