@@ -336,6 +336,7 @@ describe('conversationInfo model', () => {
       MessageStatusEnum.Loading,
     );
     expect(result.current.isConversationActive).toBe(true);
+    expect(result.current.isAwaitingChatTerminal).toBe(true);
     expect(mockCreateSSEConnection).toHaveBeenCalledTimes(1);
     expect(mockCreateSSEConnection.mock.calls[0][0].body).toEqual(
       expect.objectContaining({
@@ -408,6 +409,7 @@ describe('conversationInfo model', () => {
     );
     expect(assistant?.text).toContain('done');
     expect(assistant?.status).toBe(MessageStatusEnum.Complete);
+    expect(result.current.isAwaitingChatTerminal).toBe(true);
   });
 
   it('SSE MESSAGE QUESTION：finished=true 时 status 为 null', async () => {
@@ -524,6 +526,7 @@ describe('conversationInfo model', () => {
       expect.objectContaining({ success: true, outputText: 'final answer' }),
     );
     expect(assistant?.requestId).toBe('req-final');
+    expect(result.current.isAwaitingChatTerminal).toBe(false);
   });
 
   it('SSE FINAL_RESULT 已解析出终态时，onClose 不重复查询会话状态', async () => {
@@ -605,6 +608,7 @@ describe('conversationInfo model', () => {
       result.current.messageList.find((item) => item.id === assistantId)
         ?.status,
     ).toBe(MessageStatusEnum.Error);
+    expect(result.current.isAwaitingChatTerminal).toBe(false);
   });
 
   it('SSE onError：Loading 消息改 Error，processing EXECUTING→FAILED', async () => {

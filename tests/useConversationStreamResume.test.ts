@@ -73,13 +73,16 @@ describe('useConversationStreamResume', () => {
     | undefined;
   let runPolling: ReturnType<typeof vi.fn>;
   let cancelPolling: ReturnType<typeof vi.fn>;
+  let useRequestOptions: any;
 
   beforeEach(() => {
     vi.clearAllMocks();
     onSuccess = undefined;
+    useRequestOptions = undefined;
     runPolling = vi.fn();
     cancelPolling = vi.fn();
     mockUseRequest.mockImplementation((_service, options) => {
+      useRequestOptions = options;
       onSuccess = options?.onSuccess;
       return { run: runPolling, cancel: cancelPolling };
     });
@@ -130,6 +133,50 @@ describe('useConversationStreamResume', () => {
     onSuccess?.(snapshot);
 
     expect(onConversationSnapshot).toHaveBeenCalledWith(snapshot);
+  });
+
+  it('本地流已结束但聊天终态未到时仍禁止轮询', () => {
+    const { rerender } = renderHook(
+      ({ awaitingTerminal }) =>
+        useConversationStreamResume({
+          conversationId: 1555404,
+          taskStatus: TaskStatus.COMPLETE,
+          isLocallyStreaming: false,
+          isAwaitingChatTerminal: awaitingTerminal,
+          resumeStream: vi.fn(),
+        }),
+      { initialProps: { awaitingTerminal: true } },
+    );
+
+    expect(useRequestOptions.ready).toBe(false);
+
+    rerender({ awaitingTerminal: false });
+
+    expect(useRequestOptions.ready).toBe(true);
+  });
+
+  it('历史快照最后一条为 USER 时不覆盖当前消息列表', () => {
+    const onConversationSnapshot = vi.fn();
+    renderHook(() =>
+      useConversationStreamResume({
+        conversationId: 1555404,
+        taskStatus: TaskStatus.COMPLETE,
+        isLocallyStreaming: false,
+        isAwaitingChatTerminal: false,
+        resumeStream: vi.fn(),
+        onConversationSnapshot,
+      }),
+    );
+
+    emitPollingStatus(TaskStatus.COMPLETE, [
+      {
+        id: 'persisted-user',
+        role: AssistantRoleEnum.USER,
+        text: '尚未落库 assistant 的用户消息',
+      },
+    ]);
+
+    expect(onConversationSnapshot).not.toHaveBeenCalled();
   });
 
   it('轮询在途时开始发送会取消轮询并丢弃旧回包', () => {
@@ -203,6 +250,41 @@ describe('useConversationStreamResume', () => {
     expect(onConversationSnapshot).not.toHaveBeenCalled();
     expect(onTerminalTaskStatus).not.toHaveBeenCalled();
     expect(resumeStream).not.toHaveBeenCalled();
+  });
+
+  it('可见性恢复请求在途时忽略重复 visibilitychange', async () => {
+    let resolveSnapshot!: (snapshot: any) => void;
+    const snapshotPromise = new Promise<any>((resolve) => {
+      resolveSnapshot = resolve;
+    });
+    (fetchConversationSnapshot as any).mockReturnValue(snapshotPromise);
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
+
+    renderHook(() =>
+      useConversationStreamResume({
+        conversationId: 1555404,
+        taskStatus: TaskStatus.COMPLETE,
+        isLocallyStreaming: false,
+        isAwaitingChatTerminal: false,
+        resumeStream: vi.fn(),
+      }),
+    );
+
+    act(() => {
+      document.dispatchEvent(new Event('visibilitychange'));
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+
+    expect(fetchConversationSnapshot).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      resolveSnapshot({
+        id: 1555404,
+        taskStatus: TaskStatus.COMPLETE,
+        messageList: [],
+      });
+      await snapshotPromise;
+    });
   });
 
   it('轮询 onSuccess 收到 EXECUTING 时不写回', () => {
