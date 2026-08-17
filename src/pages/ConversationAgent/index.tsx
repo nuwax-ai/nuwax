@@ -1233,6 +1233,7 @@ const ConversationAgent: React.FC = () => {
       },
       /** 重命名文件 */
       onRenameFile: handleConfirmRenameFile,
+      /** 创建文件 */
       onCreateFileNode: handleCreateFileNode,
       onDeleteFile: handleDeleteFile,
       onSaveFiles: handleSaveFiles,
