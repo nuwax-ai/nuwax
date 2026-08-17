@@ -1,6 +1,7 @@
 // src/utils/sse.ts 仅仅在智能体会话中使用!!!!
 // src/models/conversationInfo.ts 仅仅在智能体会话中使用!!!!
 import { dict } from '@/services/i18nRuntime';
+import { logChatSseBoundary } from '@/utils/conversationPollingDiagnostics';
 import {
   EventSourceMessage,
   fetchEventSource,
@@ -193,6 +194,7 @@ export function createSSEConnection<T = any>(
               (data as { completed?: boolean; subType?: string }) ?? {};
 
             options.onMessage(data, event);
+            logChatSseBoundary(options.body, data);
 
             // 页面开发结束标志 subType   = 'end_turn'
             // 聊天对话结束标志 completed = true
