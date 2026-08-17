@@ -1,4 +1,4 @@
-# 会话模块合同网 CI（docs/conversation-maintenance-guide.md §1）
+# 会话模块合同网 CI（docs/conversation/conversation-maintenance-guide.md §1）
 #
 # 作用：PR / push 涉及会话相关路径时自动跑 `npm run test:conversation`
 #      （33 文件 ~292 条，秒级，无浏览器/登录态依赖），失败即阻断合入。

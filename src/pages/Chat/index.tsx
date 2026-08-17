@@ -1243,7 +1243,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   };
 
   // 聊天会话相关 props
-  // 双线分派（docs/conversation-dual-track-plan.md）：flag 开启时新线 session 的
+  // 双线分派（docs/conversation/conversation-dual-track-plan.md）：flag 开启时新线 session 的
   // 会话面 props 覆盖旧线字段；flag 关闭（默认）时 conversationProps 为空对象，
   // 旧线路径原值原行为。页面资源（卡片/桌面/文件树等）单份共享注入新线 effects。
   const runtimeLine = useConversationRuntimeSession({

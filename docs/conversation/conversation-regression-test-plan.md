@@ -1,6 +1,6 @@
 # 会话模块测试回归方案(双轨重构提测)
 
-> 📚 文档总入口:[conversation-docs-index.md](./conversation-docs-index.md) 提测基线:commit `cf5ab966c`(2026-08-17,分支 `refactor/conversation-dual-track`)。读者:**测试同学**。开发/维护视角的行为底稿见 [conversation-business-logic-checklist.md](./conversation-business-logic-checklist.md)(两文共用一套条目 ID,如 `C8`、`D8`,报缺陷请引用 ID)。用法:先读 §1 改动点、§2 影响范围定测试广度;按 §3 策略分层执行 §4 用例;§5 是不用报缺陷的已知边界。
+> 📚 文档总入口:[README.md](./README.md) 提测基线:commit `cf5ab966c`(2026-08-17,分支 `refactor/conversation-dual-track`)。读者:**测试同学**。开发/维护视角的行为底稿见 [conversation-business-logic-checklist.md](./conversation-business-logic-checklist.md)(两文共用一套条目 ID,如 `C8`、`D8`,报缺陷请引用 ID)。用法:先读 §1 改动点、§2 影响范围定测试广度;按 §3 策略分层执行 §4 用例;§5 是不用报缺陷的已知边界。
 
 ---
 

@@ -1,5 +1,5 @@
 /**
- * 双轨对照（docs/conversation-dual-track-plan.md §4）：同一 Trace 驱动新线 session，
+ * 双轨对照（docs/conversation/conversation-dual-track-plan.md §4）：同一 Trace 驱动新线 session，
  * 断言消息 digest 与旧线合同一致。旧线基准断言见 tests/conversationInfoModel.test.ts
  * 的「T01/T02：成功轮次 Trace」「SSE MESSAGE 普通文本」「SSE onClose 收尾」用例——
  * 两轨断言值同源（本文件的期望即旧线期望），任何一轨变更须同步本文件。

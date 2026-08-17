@@ -7,7 +7,7 @@
  *   3. npm run e2e:conversation
  *      等价于 ego-browser nodejs < scripts/e2e/conversation-acceptance.mjs
  *
- * 场景对应 docs/conversation-refactor-plan.md §9.2 的页面级断言
+ * 场景对应 docs/conversation/conversation-dual-track-plan.md §9.2 的页面级断言
  * （Browser 层：乐观上屏、流式收尾、DOM 行数、flag 双线切换、加载更多、TaskAgent）。
  * 全部通过 exit 0；任一失败 exit 1（可接 CI / 本地回归）。
  */

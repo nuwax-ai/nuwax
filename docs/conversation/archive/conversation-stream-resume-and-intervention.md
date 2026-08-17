@@ -1,6 +1,6 @@
 # 会话流式恢复(sub)与权限审批交互 —— 需求与逻辑梳理
 
-> ⚠️ **本文档已过时(2026-06-30 后未随双轨重构更新)**:§3 轮询暂停条件(已增加 isAwaitingChatTerminal/代际丢弃)、§2 恢复流程(已增加冷却/退避/等历史 user/persisted 尾去重)、§5 agentMode 缓存(已升级为按 agentId 的 versioned 对象)、§7 关键文件(缺 features/conversation 新线)均与现状不符。 📚 文档总入口:[conversation-docs-index.md](./conversation-docs-index.md)。现行口径以 [conversation-business-logic-checklist.md](./conversation-business-logic-checklist.md)(D/E/G/H/I 域)与 [agent-session-runtime-regression.md](./agent-session-runtime-regression.md) 为准;本文件保留作历史参考,待更新或归档。
+> ⚠️ **本文档已过时(2026-06-30 后未随双轨重构更新)**:§3 轮询暂停条件(已增加 isAwaitingChatTerminal/代际丢弃)、§2 恢复流程(已增加冷却/退避/等历史 user/persisted 尾去重)、§5 agentMode 缓存(已升级为按 agentId 的 versioned 对象)、§7 关键文件(缺 features/conversation 新线)均与现状不符。 📚 文档总入口:[README.md](../README.md)。现行口径以 [conversation-business-logic-checklist.md](../conversation-business-logic-checklist.md)(D/E/G/H/I 域)与 [agent-session-runtime-regression.md](../agent-session-runtime-regression.md) 为准;本文件保留作历史参考,待更新或归档。
 
 > 本文档梳理 nuwax(PC) 的「EXECUTING 会话流式恢复 + 权限审批 DockPanel 显示/关闭 + agentMode 同步」完整逻辑，供 nuwax-mobile 同步开发参考。
 

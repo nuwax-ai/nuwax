@@ -621,7 +621,7 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     return true;
   }, [agentConfigInfo?.type, messageList]);
 
-  // 双线分派（docs/conversation-dual-track-plan.md）：flag 开启时新线会话面 props 覆盖；
+  // 双线分派（docs/conversation/conversation-dual-track-plan.md）：flag 开启时新线会话面 props 覆盖；
   // 关闭（默认）为空对象，旧线原值原行为。
   const runtimeLine = useConversationRuntimeSession({
     conversationId: devConversationIdRef.current || undefined,

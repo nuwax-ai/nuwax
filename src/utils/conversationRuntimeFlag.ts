@@ -1,5 +1,5 @@
 /**
- * 会话双线切换 flag（docs/conversation-dual-track-plan.md §3.3）。
+ * 会话双线切换 flag（docs/conversation/conversation-dual-track-plan.md §3.3）。
  *
  * 优先级：URL param > localStorage > 构建常量默认。
  * 默认 legacy（false）：不启用时线上行为与旧线完全一致，新线代码不被入口消费。

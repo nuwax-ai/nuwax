@@ -1,6 +1,6 @@
 # Agent 会话运行加载逻辑回归对齐文档
 
-> 📚 文档总入口:[conversation-docs-index.md](./conversation-docs-index.md) · 验收底稿:[conversation-business-logic-checklist.md](./conversation-business-logic-checklist.md) 面向 PC 端智能体会话逻辑回归。本文把一次 agent 会话从页面加载、消息发送、SSE 流式合并、队列、权限审批、MCP ASK_QUESTION、resume 恢复到 suggest 展示的链路串成一份可核对文档。
+> 📚 文档总入口:[README.md](./README.md) · 验收底稿:[conversation-business-logic-checklist.md](./conversation-business-logic-checklist.md) 面向 PC 端智能体会话逻辑回归。本文把一次 agent 会话从页面加载、消息发送、SSE 流式合并、队列、权限审批、MCP ASK_QUESTION、resume 恢复到 suggest 展示的链路串成一份可核对文档。
 
 ## 1. 适用范围与关键入口
 
@@ -343,7 +343,7 @@ ASK_QUESTION 不是单独渲染的普通消息，而是作为 intervention 写�
 
 刷新页面、新开标签、或别处触发同一会话继续执行时，用 `/api/agent/conversation/chat/sub/:conversationId` 重建正在执行的 assistant 输出。
 
-专题文档见：`docs/conversation-stream-resume-and-intervention.md`。
+专题文档见：`docs/conversation/archive/conversation-stream-resume-and-intervention.md`。
 
 ### 7.2 编排 hook
 
@@ -590,6 +590,6 @@ SSE completed 后会延迟 abort，`FINAL_RESULT` 应先把消息置为 `Complet
 
 ## 12. 相关专题文档
 
-- `docs/conversation-stream-resume-and-intervention.md`
-- `docs/message-queue-design.md`
+- `docs/conversation/archive/conversation-stream-resume-and-intervention.md`
+- `docs/conversation/message-queue-design.md`
 - `docs/ch/SSE-Implementation-Guide.md`

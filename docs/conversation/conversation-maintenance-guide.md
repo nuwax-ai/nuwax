@@ -1,6 +1,6 @@
 # 会话模块维护指南（面向前端团队）
 
-> 📚 文档总入口：[conversation-docs-index.md](./conversation-docs-index.md) 读者：维护会话模块的前端工程师。架构决策：[adr/conversation-runtime-refactor.md](./adr/conversation-runtime-refactor.md) 方案概要：[conversation-dual-track-plan.md](./conversation-dual-track-plan.md) 业务逻辑验收底稿（逐条 ID，含自动/人工验收映射）：[conversation-business-logic-checklist.md](./conversation-business-logic-checklist.md) 测试回归方案（提测/QA 用，含影响范围与改动点）：[conversation-regression-test-plan.md](./conversation-regression-test-plan.md) 本文只讲"怎么维护"。
+> 📚 文档总入口：[README.md](./README.md) 读者：维护会话模块的前端工程师。架构决策：[adr/conversation-runtime-refactor.md](./adr/conversation-runtime-refactor.md) 方案概要：[conversation-dual-track-plan.md](./conversation-dual-track-plan.md) 业务逻辑验收底稿（逐条 ID，含自动/人工验收映射）：[conversation-business-logic-checklist.md](./conversation-business-logic-checklist.md) 测试回归方案（提测/QA 用，含影响范围与改动点）：[conversation-regression-test-plan.md](./conversation-regression-test-plan.md) 本文只讲"怎么维护"。
 
 ## 1. 验证约定（必须遵守）
 

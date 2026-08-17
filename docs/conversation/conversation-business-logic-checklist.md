@@ -1,6 +1,6 @@
 # 会话模块业务逻辑验收清单(双轨重构后)
 
-> 📚 文档总入口:[conversation-docs-index.md](./conversation-docs-index.md) · 测试同学请直接用:[conversation-regression-test-plan.md](./conversation-regression-test-plan.md) 基线:commit `cf5ab966c`(2026-08-17,`refactor/conversation-dual-track`)。用途:① 逐条真实验收、避免遗漏;② 维护同学之间互相认领、快速对齐接手。架构背景:[adr/conversation-runtime-refactor.md](./adr/conversation-runtime-refactor.md) · [conversation-dual-track-plan.md](./conversation-dual-track-plan.md) · 日常维护:[conversation-maintenance-guide.md](./conversation-maintenance-guide.md) · 行为细节:[agent-session-runtime-regression.md](./agent-session-runtime-regression.md)。本文是**验收底稿**:行为描述以当前代码为准,验收一项更新一项状态;发现清单与代码不符,以代码为准并回来改清单。
+> 📚 文档总入口:[README.md](./README.md) · 测试同学请直接用:[conversation-regression-test-plan.md](./conversation-regression-test-plan.md) 基线:commit `cf5ab966c`(2026-08-17,`refactor/conversation-dual-track`)。用途:① 逐条真实验收、避免遗漏;② 维护同学之间互相认领、快速对齐接手。架构背景:[adr/conversation-runtime-refactor.md](./adr/conversation-runtime-refactor.md) · [conversation-dual-track-plan.md](./conversation-dual-track-plan.md) · 日常维护:[conversation-maintenance-guide.md](./conversation-maintenance-guide.md) · 行为细节:[agent-session-runtime-regression.md](./agent-session-runtime-regression.md)。本文是**验收底稿**:行为描述以当前代码为准,验收一项更新一项状态;发现清单与代码不符,以代码为准并回来改清单。
 
 ## 0. 使用约定
 
@@ -265,7 +265,7 @@ E2E 场景(环境变量可覆盖:`E2E_BASE_URL`/`E2E_CHAT_URL`/`E2E_TASKAGENT_UR
 - [conversation-regression-test-plan.md](./conversation-regression-test-plan.md) — **测试同学用的回归方案**(同一套条目 ID,含影响范围/改动点/优先级分层/出口标准)
 - [conversation-maintenance-guide.md](./conversation-maintenance-guide.md) — 日常维护/双线 flag 运维
 - [agent-session-runtime-regression.md](./agent-session-runtime-regression.md) — 行为细节全量对齐文档(§10 高风险点、§11 建议回归清单为本文前身)
-- [conversation-stream-resume-and-intervention.md](./conversation-stream-resume-and-intervention.md) — ⚠️ 2026-06-30 后未更新,轮询条件/agentMode 缓存结构/恢复节律已过时,以本文 D/E/I 域为准
+- [archive/conversation-stream-resume-and-intervention.md](./archive/conversation-stream-resume-and-intervention.md) — ⚠️ 2026-06-30 后未更新,轮询条件/agentMode 缓存结构/恢复节律已过时,以本文 D/E/I 域为准
 - [chat-terminal-polling-flash-qa-report.md](./chat-terminal-polling-flash-qa-report.md) — C8 收尾闪烁专项(含 §6 十项人工场景)
 - [poll-send-race-stale-snapshot-fix.md](./poll-send-race-stale-snapshot-fix.md) — E3 竞态专项
 - [conversation-error-taskstatus-stuck-fix.md](./conversation-error-taskstatus-stuck-fix.md) — C4 终态固化专项
