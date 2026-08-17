@@ -8,9 +8,12 @@
 	<script>
 		var coverSupport = 'CSS' in window && typeof CSS.supports === 'function' && (CSS.supports('top: env(a)') ||
 			CSS.supports('top: constant(a)'))
+		// interactive-widget=resizes-content：Android WebView 键盘弹出时收缩「布局视口」（等价原生 adjustResize），
+		// 沉浸式全屏窗口下 position:fixed 的导航栏才会重新锚定到键盘上方的视口顶部、不被键盘顶出屏幕；
+		// 浏览器/老 WebView 不识别该属性时忽略，无副作用（iOS Safari 亦忽略）。
 		document.write(
 			'<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0' +
-			(coverSupport ? ', viewport-fit=cover' : '') + '" />')
+			(coverSupport ? ', viewport-fit=cover' : '') + ', interactive-widget=resizes-content" />')
 	</script>
 	<title>女娲Nuwax</title>
 	<!-- #ifdef H5 || WEB -->
@@ -153,7 +156,7 @@
 				}
 			})();
 	</script>
-  <script type="module" crossorigin src="/m/assets/index-B-S7hSND.js"></script>
+  <script type="module" crossorigin src="/m/assets/index-DBRfZusR.js"></script>
   <link rel="stylesheet" crossorigin href="/m/assets/index-BWao_TWx.css">
 </head>
 

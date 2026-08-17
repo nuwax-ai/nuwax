@@ -1,1 +1,0 @@
-import{d as e,y as s,o as t,c as a,f as n,b as l,h as o,cU as r}from"./index-B-S7hSND.js";const u=e({__name:"safety-zone",props:{addHeight:{type:Number,default:0}},setup(e){const u=r();return(r=null,d=null)=>{const p=o;return s(u)>0?(t(),a(p,new UTSJSONObject({key:0,style:n({height:s(u)+e.addHeight+"px"})}),null,8,["style"])):l("",!0)}}});export{u as _};
