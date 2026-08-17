@@ -1218,6 +1218,7 @@ const ConversationAgent: React.FC = () => {
       },
       /** 导入项目 */
       onImportProject: handleImportProject,
+      /** 是否正在导入项目 */
       isImportingProject,
       onRestartServer: () => {
         if (queryConversationId) {
