@@ -1235,6 +1235,7 @@ const ConversationAgent: React.FC = () => {
       onRenameFile: handleConfirmRenameFile,
       /** 创建文件 */
       onCreateFileNode: handleCreateFileNode,
+      /** 删除文件 */
       onDeleteFile: handleDeleteFile,
       onSaveFiles: handleSaveFiles,
       onSaveFileContent: async (fileId, content, originalFileContent) => {
