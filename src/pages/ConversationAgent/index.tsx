@@ -1253,6 +1253,7 @@ const ConversationAgent: React.FC = () => {
       onClose: handleClosePreviewPanel, // 关闭预览回调
       isFileTreePinned, // 文件树是否固定
       onFileTreePinnedChange: setIsFileTreePinned,
+      /** 文件树侧栏是否可见 */
       isFileTreeSidebarVisible: canShowFileView,
       isCanDeleteSkillFile: true, // 是否允许删除技能文件
       onRefreshFileTree: async () => {
