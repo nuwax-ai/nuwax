@@ -44,6 +44,7 @@ const PluginChatSession: React.FC<PluginChatSessionProps> = ({
     loadingConversation,
     isLoadingOtherInterface,
     isConversationActive,
+    isAwaitingChatTerminal,
     // 会话流式恢复(sub)
     resumeConversationStream,
     abortResumeStream,
@@ -207,6 +208,7 @@ const PluginChatSession: React.FC<PluginChatSessionProps> = ({
         conversationInfo?.taskStatus === TaskStatus.EXECUTING
       }
       isLocallyStreaming={isConversationActive}
+      isAwaitingChatTerminal={isAwaitingChatTerminal}
       messageBottomMode="chat"
       loadingSuggest={false}
       chatSuggestList={chatSuggestList as string[]}

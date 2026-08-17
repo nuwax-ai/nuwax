@@ -159,6 +159,9 @@ export default () => {
   // 会话是否正在进行中（有消息正在流式处理 Loading/Incomplete）
   const [isConversationActive, setIsConversationActiveRaw] =
     useState<boolean>(false);
+  // 本地 chat 已发起但协议终态尚未到达；与流式 UI 活跃态分离。
+  const [isAwaitingChatTerminal, setIsAwaitingChatTerminal] =
+    useState<boolean>(false);
   // 发送后 3s 内拒绝置 false，避免 SSE 回流间隙覆盖乐观 true
   const lastSendAtRef = useRef(0);
   const setIsConversationActive = useCallback((v: boolean) => {
@@ -834,6 +837,13 @@ export default () => {
         perfLifecycle.onFirstChunk(res?.eventType, res);
 
         if (
+          res.eventType === ConversationEventTypeEnum.FINAL_RESULT ||
+          res.eventType === ConversationEventTypeEnum.ERROR
+        ) {
+          setIsAwaitingChatTerminal(false);
+        }
+
+        if (
           res.eventType === ConversationEventTypeEnum.MESSAGE &&
           res.data.type === MessageModeEnum.QUESTION &&
           res.data.ext?.length
@@ -963,6 +973,7 @@ export default () => {
             setConversationInfo,
           );
         }
+        setIsAwaitingChatTerminal(false);
 
         disabledConversationActive();
 
@@ -1003,6 +1014,7 @@ export default () => {
           return;
         }
         message.error(dict('PC.Models.ConversationInfo.networkTimeoutError'));
+        setIsAwaitingChatTerminal(false);
         // 将当前会话的 loading 消息改为 Error，并把其 processingList 中执行中的项更新为 FAILED，
         // 否则 isSessionStreamBusy 会因残留 EXECUTING 项持续为 true，导致活跃态/停止按钮/队列消费卡死。
         setMessageList((list) => {
@@ -1104,6 +1116,7 @@ export default () => {
   // 重置初始化
   const resetInit = () => {
     handleClearSideEffect();
+    setIsAwaitingChatTerminal(false);
     // 重置是否还有更多消息
     setIsMoreMessage(false);
     // 重置加载更多消息的状态
@@ -1143,6 +1156,7 @@ export default () => {
     } = sendParams;
     // 清除副作用
     handleClearSideEffect();
+    setIsAwaitingChatTerminal(true);
 
     // 乐观标记流式活跃，保证停止按钮与队列入队判定及时
     setIsConversationActive(true);
@@ -1262,6 +1276,7 @@ export default () => {
     loadingStopConversation,
     // 会话活跃状态（SSE 流式交互中）
     isConversationActive,
+    isAwaitingChatTerminal,
     disabledConversationActive,
     checkConversationActive,
     // 当前会话 ID 与请求 ID

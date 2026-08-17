@@ -496,6 +496,7 @@ const ConversationAgent: React.FC = () => {
             );
           }
 
+          // 会话消息列表
           const list = data?.messageList || [];
           const len = list?.length || 0;
           // 会话消息列表为空或者只有一条消息并且此消息时开场白时，可以发送消息
@@ -690,6 +691,7 @@ const ConversationAgent: React.FC = () => {
     },
   });
 
+  /** 初始化项目元数据 */
   useInitProjectMetadata({
     targetType: AgentComponentTypeEnum.Agent,
     targetId: agentId,
@@ -822,11 +824,14 @@ const ConversationAgent: React.FC = () => {
     if (!queryConversationId) {
       return false;
     }
+    // 去除空格
     const trimmedName = newName.trim();
     if (!trimmedName) {
       return false;
     }
+    // 如果文件夹名称与父节点名称相同，则提示错误
     const parentPath = fileNode.parentPath || '';
+    // 文件夹路径拼接
     const newPath = parentPath ? `${parentPath}/${trimmedName}` : trimmedName;
     const newFile: UpdateFileInfo = {
       name: newPath,
@@ -837,11 +842,13 @@ const ConversationAgent: React.FC = () => {
       operation: 'create',
       isDir: fileNode.type === 'folder',
     };
+    // 创建文件
     const { code } = await apiUpdateStaticFile({
       cId: queryConversationId,
       files: [newFile],
     });
     if (code === SUCCESS_CODE) {
+      // 刷新文件树
       await handleRefreshFileList(queryConversationId);
       void refreshGitListIfEnabled();
     }
@@ -894,6 +901,7 @@ const ConversationAgent: React.FC = () => {
             files: updatedFilesList,
           });
           if (code === SUCCESS_CODE) {
+            // 刷新文件树
             handleRefreshFileList(queryConversationId);
             resolve(true);
           } else {
@@ -1038,21 +1046,24 @@ const ConversationAgent: React.FC = () => {
   const handleToggleFileTreeSidebar = useCallback(() => {
     const isTerminalExpanded =
       devConsoleLayoutMode === 'expanded' && devConsoleActiveTab === 'terminal';
-
+    // 如果智能体电脑打开，则关闭智能体电脑，并打开文件树
     if (isAgentDesktopOpen) {
       setIsAgentDesktopOpen(false);
       setDevConsoleExpandSignal(0);
       setCanShowFileView(true);
+      // 刷新文件树
       if (queryConversationId) {
         handleRefreshFileList(queryConversationId);
         void openPreviewView(queryConversationId);
       }
+      // 如果终端全屏，则折叠终端
       if (isTerminalExpanded) {
         setDevConsoleCollapseSignal((n) => n + 1);
       }
       return;
     }
 
+    // 如果终端全屏，则折叠终端，并打开文件树
     if (isTerminalExpanded) {
       setDevConsoleCollapseSignal((n) => n + 1);
       setCanShowFileView(true);
@@ -1062,6 +1073,7 @@ const ConversationAgent: React.FC = () => {
       return;
     }
 
+    // 切换文件树显隐
     setCanShowFileView((prev) => {
       const nextVisible = !prev;
       if (nextVisible && queryConversationId) {
@@ -1171,6 +1183,7 @@ const ConversationAgent: React.FC = () => {
     queryConversationId,
   ]);
 
+  /** 是否打开终端面板 */
   const isTerminalPanelOpen =
     devConsoleLayoutMode === 'expanded' && devConsoleActiveTab === 'terminal';
 
@@ -1203,20 +1216,26 @@ const ConversationAgent: React.FC = () => {
           await apiDownloadAllFiles(queryConversationId);
         }
       },
+      /** 导入项目 */
       onImportProject: handleImportProject,
+      /** 是否正在导入项目 */
       isImportingProject,
       onRestartServer: () => {
         if (queryConversationId) {
           restartVncPod(queryConversationId, finalSelectedComputerId);
         }
       },
+      /** 重启智能体 */
       onRestartAgent: () => {
         if (queryConversationId) {
           restartAgent(queryConversationId);
         }
       },
+      /** 重命名文件 */
       onRenameFile: handleConfirmRenameFile,
+      /** 创建文件 */
       onCreateFileNode: handleCreateFileNode,
+      /** 删除文件 */
       onDeleteFile: handleDeleteFile,
       onSaveFiles: handleSaveFiles,
       onSaveFileContent: async (fileId, content, originalFileContent) => {

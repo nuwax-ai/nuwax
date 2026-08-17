@@ -198,6 +198,10 @@ export default () => {
   // 会话是否正在进行中（有消息正在处理）
   const [isConversationActive, setIsConversationActiveRaw] =
     useState<boolean>(false);
+  // 本地 chat 已发起但协议终态尚未到达。不能用 isConversationActive 代替：
+  // 普通 MESSAGE finished=true 可能先让活跃态下降，FINAL_RESULT 仍会稍后到达。
+  const [isAwaitingChatTerminal, setIsAwaitingChatTerminal] =
+    useState<boolean>(false);
   // 发送后会话活跃保活：发送后 3s 内拒绝置 false，避免停止 SSE 回流 / messageList
   // 状态切换间隙的 false 覆盖乐观 true（消除"发出后长时间无状态"的空窗）
   const lastSendAtRef = useRef(0);
@@ -1515,6 +1519,12 @@ export default () => {
       },
       onMessage: (res: ConversationChatResponse) => {
         perfLifecycle.onFirstChunk(res?.eventType, res);
+        if (
+          res.eventType === ConversationEventTypeEnum.FINAL_RESULT ||
+          res.eventType === ConversationEventTypeEnum.ERROR
+        ) {
+          setIsAwaitingChatTerminal(false);
+        }
         if (res.eventType === ConversationEventTypeEnum.FINAL_RESULT) {
           hasResolvedTerminalStatus = Boolean(
             resolveTerminalTaskStatus(res.data?.success, res.data, res),
@@ -1651,9 +1661,18 @@ export default () => {
           void syncTerminalConversationTaskStatus(
             params.conversationId,
             setConversationInfo,
-          ).catch((error) => {
-            console.error('[onClose] sync terminal taskStatus failed:', error);
-          });
+          )
+            .catch((error) => {
+              console.error(
+                '[onClose] sync terminal taskStatus failed:',
+                error,
+              );
+            })
+            .finally(() => {
+              setIsAwaitingChatTerminal(false);
+            });
+        } else if (!params.conversationId) {
+          setIsAwaitingChatTerminal(false);
         }
 
         if (isSync && !isAppSidebarMode && params.conversationId) {
@@ -1698,6 +1717,7 @@ export default () => {
           return;
         }
         message.error(dict('PC.Models.ConversationInfo.networkTimeoutError'));
+        setIsAwaitingChatTerminal(false);
         // 将当前会话的 loading 消息改为 Error，并把其 processingList 中执行中的项更新为 FAILED，
         // 否则 isSessionStreamBusy 会因残留 EXECUTING 项持续为 true，导致活跃态/停止按钮/队列消费卡死。
         setMessageList((list) => {
@@ -1794,6 +1814,7 @@ export default () => {
   // 重置初始化
   const resetInit = () => {
     handleClearSideEffect();
+    setIsAwaitingChatTerminal(false);
     // 重置是否还有更多消息
     setIsMoreMessage(false);
     // 重置加载更多消息的状态
@@ -1847,6 +1868,9 @@ export default () => {
     } = sendParams;
     // 清除副作用
     handleClearSideEffect();
+
+    // 独立记录协议终态；MESSAGE finished 只能表示消息块结束，不能放行详情轮询。
+    setIsAwaitingChatTerminal(true);
 
     // 乐观标记会话活跃：发送瞬间即置为活跃，不依赖 messageList 出现 Loading 消息的延迟，
     // 消除"发送后会话开始状态"的空窗期（保证队列入队判定及时、停止按钮立即显示）。
@@ -2011,6 +2035,7 @@ export default () => {
     loadingStopConversation,
     respondMcpAsk,
     isConversationActive,
+    isAwaitingChatTerminal,
     checkConversationActive,
     disabledConversationActive,
     // 会话流式恢复(sub)

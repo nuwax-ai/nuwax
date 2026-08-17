@@ -94,6 +94,7 @@ export function useConversationAgentChatSession(
     runAsync,
     clearFilePanelInfo,
     isConversationActive: agentStreamActive,
+    isAwaitingChatTerminal,
     // 停止会话相关
     runStopConversation,
     loadingStopConversation,
@@ -257,6 +258,7 @@ export function useConversationAgentChatSession(
     isConversationActive: agentStreamActive || agentTaskExecuting,
     // 本地是否正在 SSE 发送/接收（纯，不含后台 EXECUTING），供流式恢复 hook 使用
     isLocallyStreaming: agentStreamActive,
+    isAwaitingChatTerminal,
     queueContext: {
       streamActive: agentStreamActive,
       taskExecuting: agentTaskExecuting,
