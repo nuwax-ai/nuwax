@@ -370,8 +370,10 @@
           /** 渲染单条公式并返回结果对象（不 postMessage） */
           async katexRenderToResult(item, slotIndex = 0) {
             const id = item != null && item.id != null ? item.id : '';
-            let pureMathText = item != null && item.pureMathText != null ? item.pureMathText : '';
-            pureMathText = pureMathText.replace(/\\\\/g, '\\');
+            // 勿对 pureMathText 做 \\→\ 折叠：矩阵/换行等合法 LaTeX 依赖双反斜杠
+            // （如 \begin{pmatrix}a&b\\c&d\end{pmatrix}）。桥接已 JSON 编解码，再折叠会变成 \c 红字。
+            const pureMathText =
+              item != null && item.pureMathText != null ? item.pureMathText : '';
             const useDisplayMode = item == null || item.displayMode !== false;
             const resultHtml = katex.renderToString(pureMathText, {
               throwOnError: false,
