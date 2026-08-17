@@ -1349,6 +1349,7 @@ const ConversationAgent: React.FC = () => {
 
   /** 初始化文件视图 Hook，获取文件树和预览的渲染组件 */
   const fileView = useFileTreePreviewView(fileViewProviderProps);
+  // 刷新 Git 列表
   refreshGitListRef.current = fileView.refreshGitList;
   clearFileTreeSelectionRef.current = fileView.tree.clearSelection ?? null;
 
