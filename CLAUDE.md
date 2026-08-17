@@ -651,10 +651,10 @@ const CustomPreview: React.FC<CustomPreviewProps> = ({
 任何涉及会话模块（`src/models/conversation*`、`src/features/conversation/**`、`src/components/business-component/UnifiedChatSession/**`、`src/components/business-component/MessageQueue/**`、`src/pages/Chat/**` 等会话相关路径）的代码调整，完成后必须跑两网验证，全绿才算完成：
 
 ```bash
-# ① 合同网（秒级）：292 条会话合同/双轨 digest/副作用测试
+# ① 合同网（秒级）：33 文件 292 条会话合同/双轨 digest/副作用测试
 npm run test:conversation
 
-# ② 真实页面 E2E（分钟级）：7 场景浏览器验收（需先起 dev server + ego-browser 登录态）
+# ② 真实页面 E2E（分钟级）：8 场景浏览器验收（需先起 dev server + ego-browser 登录态）
 npm run dev          # 另一个终端
 npm run e2e:conversation
 
@@ -662,9 +662,9 @@ npm run e2e:conversation
 npm run verify:conversation
 ```
 
-E2E 场景与断言见 `scripts/e2e/conversation-acceptance.mjs`（双线 flag 探针、乐观上屏、流式收尾、加载更多）；环境可用 `E2E_BASE_URL`/`E2E_CHAT_URL`/`E2E_TASKAGENT_URL` 覆盖。
+E2E 场景与断言见 `scripts/e2e/conversation-acceptance.mjs`（双线 flag 探针、乐观上屏、流式收尾、加载更多、TaskAgent、预览 Tab）；环境可用 `E2E_BASE_URL`/`E2E_CHAT_URL`/`E2E_TASKAGENT_URL`/`E2E_PREVIEW_TAB_URL` 覆盖。
 
-维护必读：[docs/conversation-maintenance-guide.md](./docs/conversation-maintenance-guide.md)——架构速查、常见维护任务（新增副作用/入口/E2E 场景）、双线 flag 运维与切默认检查单、已知边界（tsc 预存噪音、umi 传递依赖坑）。
+维护必读：[docs/conversation-maintenance-guide.md](./docs/conversation-maintenance-guide.md)——架构速查、常见维护任务、双线 flag 运维与切默认检查单、已知边界。方案概要：[docs/conversation-dual-track-plan.md](./docs/conversation-dual-track-plan.md)；架构决策：[docs/adr/conversation-runtime-refactor.md](./docs/adr/conversation-runtime-refactor.md)。
 
 ## 项目命名规范
 
