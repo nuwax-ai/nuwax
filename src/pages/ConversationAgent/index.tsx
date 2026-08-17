@@ -1216,6 +1216,7 @@ const ConversationAgent: React.FC = () => {
           await apiDownloadAllFiles(queryConversationId);
         }
       },
+      /** 导入项目 */
       onImportProject: handleImportProject,
       isImportingProject,
       onRestartServer: () => {
