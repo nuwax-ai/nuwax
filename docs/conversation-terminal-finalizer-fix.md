@@ -92,7 +92,7 @@ sub 死亡 → 无人收尾其占位消息（停留 Loading/Incomplete）
 → blockedBy: ["local-stream-active"] → 详情轮询永堵
 ```
 
-修复：sub 关闭时（`useResumeStreamHandlers` onClose → `onStreamClosed` 回调）把本次恢复的占位落为 Stopped（EXECUTING processing → FAILED）并重算活跃态——列表不再 busy → active 回落 → 详情轮询恢复，由快照决定重挂 sub 续流或落终态。poll-gate 的 `blockedBy` 字段可直接验证：修复后该场景在 sub 死后一拍变为空数组、`ready: true`（已实测断网恢复通过）。
+修复：sub 关闭时（`useResumeStreamHandlers` onClose → `onStreamClosed` 回调）把本次恢复的占位落为 Stopped（EXECUTING processing → FAILED）并重算活跃态——列表不再 busy → active 回落 → 详情轮询恢复，由快照决定重挂 sub 续流或落终态。验证方式：console 出现 `[ConversationTerminalSweep] finalize streaming placeholder` 后轮询恢复、断网重连自动收敛（已实测通过；定位期使用的 `conversationPollingDiagnostics` 临时诊断模块已随修复完成整体删除）。
 
 ---
 
