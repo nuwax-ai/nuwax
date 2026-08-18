@@ -139,6 +139,12 @@ export interface UseResumeStreamHandlersDeps {
    * （1560798 复现）。未提供则跳过。
    */
   onStreamClosed?: (placeholderId: string | null) => void;
+  /**
+   * sub 网络错误时回调（区别于正常关闭）：model 应按本地 chat 连接 onError 的同款
+   * 处置收敛——占位落 Error、taskStatus 落 FAILED，统一两种连接在同一网络故障下的
+   * 页面表现（否则 sub 场景会停留在「智能体正在执行，请稍等」+ 会话中按钮）。
+   */
+  onStreamError?: (placeholderId: string | null) => void;
 }
 
 export function useResumeStreamHandlers(deps: UseResumeStreamHandlersDeps) {
@@ -165,6 +171,8 @@ export function useResumeStreamHandlers(deps: UseResumeStreamHandlersDeps) {
   onTerminalEventRef.current = deps.onTerminalEvent;
   const onStreamClosedRef = useRef(deps.onStreamClosed);
   onStreamClosedRef.current = deps.onStreamClosed;
+  const onStreamErrorRef = useRef(deps.onStreamError);
+  onStreamErrorRef.current = deps.onStreamError;
 
   // 中断会话流式恢复(sub)连接，并重置占位记忆
   const abortResumeStream = useCallback(() => {
@@ -384,6 +392,11 @@ export function useResumeStreamHandlers(deps: UseResumeStreamHandlersDeps) {
               }
             });
           }
+        },
+        // 网络错误与正常关闭区别处置：错误按 chat onError 同款收敛（占位 Error + FAILED）；
+        // 随后工具层仍会触发 onClose → onStreamClosed（占位已是 Error，幂等 noop + 活跃态重算）
+        onError: () => {
+          onStreamErrorRef.current?.(resumeMessageIdRef.current);
         },
         onClose: () => {
           resumeAbortRef.current = null;
