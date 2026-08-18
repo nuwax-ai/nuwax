@@ -122,6 +122,16 @@ export interface UseResumeStreamHandlersDeps {
    * 在 sub 开/关时调用，避免恢复流的工作流多步骤输出因上次残留 id 误插重复行。
    */
   resetResumeMessageState?: () => void;
+  /**
+   * 终态事件（FINAL_RESULT / ERROR）回调：sub 重放送达终态时收敛 model 状态机。
+   * 关键场景：本地发送连接已静默死亡（ERR_NETWORK_CHANGED 安静变体），FINAL_RESULT
+   * 只能经 sub 的 pub/sub 重放到达——不清算 isAwaitingChatTerminal/活跃态/末条消息，
+   * 停止按钮常驻、轮询永久停摆（1677549 复现）。
+   */
+  onTerminalEvent?: (
+    conversationId: number | string,
+    res: ConversationChatResponse,
+  ) => void;
 }
 
 export function useResumeStreamHandlers(deps: UseResumeStreamHandlersDeps) {
@@ -143,6 +153,9 @@ export function useResumeStreamHandlers(deps: UseResumeStreamHandlersDeps) {
   // 首次渲染的旧版本（其读取的 conversationInfo?.agent?.hideDesktop 等会过期）。改读 ref.current。
   const handleChangeMessageListRef = useRef(deps.handleChangeMessageList);
   handleChangeMessageListRef.current = deps.handleChangeMessageList;
+  // onTerminalEvent 同理：异步回调里读 ref.current，避免 stale 闭包
+  const onTerminalEventRef = useRef(deps.onTerminalEvent);
+  onTerminalEventRef.current = deps.onTerminalEvent;
 
   // 中断会话流式恢复(sub)连接，并重置占位记忆
   const abortResumeStream = useCallback(() => {
@@ -330,6 +343,14 @@ export function useResumeStreamHandlers(deps: UseResumeStreamHandlersDeps) {
             res,
             currentMessageId,
           );
+          // 终态事件 → model 统一清算（sub 重放送达的 FINAL_RESULT 同样有效，
+          // 不能只依赖已死的本地连接回调来收敛状态机）
+          if (
+            res?.eventType === ConversationEventTypeEnum.FINAL_RESULT ||
+            res?.eventType === ConversationEventTypeEnum.ERROR
+          ) {
+            onTerminalEventRef.current?.(conversationId, res);
+          }
           // 会话执行失败(ERROR)：主动断开 sub，使轮询恢复——FAILED 不属于「执行中」，
           // 也要继续轮询检测后续重试等状态变化（轮询只在「执行中 / document.hidden」时暂停）
           if (res?.eventType === ConversationEventTypeEnum.ERROR) {
