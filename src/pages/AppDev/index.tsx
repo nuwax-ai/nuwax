@@ -416,6 +416,7 @@ const AppDev: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    // 如果没有权限，则不进行模型选择
     if (!projectInfo.hasPermission) {
       return;
     }
