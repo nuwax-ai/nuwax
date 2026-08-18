@@ -20,6 +20,7 @@ import {
   MESSAGE_PAGE_SIZE,
 } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
+import { useConversationTerminalFinalizer } from '@/hooks/useConversationTerminalFinalizer';
 import { isSessionStreamBusy } from '@/hooks/useExecutingTaskStatusPoll';
 import { useResumeStreamHandlers } from '@/hooks/useResumeStreamHandlers';
 import { getCustomBlock } from '@/plugins/ds-markdown-process';
@@ -346,6 +347,22 @@ export default () => {
   const disabledConversationActive = () => {
     setIsConversationActive(false);
   };
+
+  // ===== 统一终态清算 =====
+  // 终态无论从哪条路径到达（chat SSE / sub 重放 / 轮询快照）一次性收敛状态机，
+  // 打破「状态绑定在原发送连接回调」的卡死链（1677549 复现）。
+  // 完整背景与守卫说明见 useConversationTerminalFinalizer。
+  const { finalizeConversationTerminal, finalizeChatTerminalEvent } =
+    useConversationTerminalFinalizer({
+      source: 'conversationAgent',
+      conversationInfoRef,
+      lastSendAtRef,
+      setConversationInfo,
+      setMessageList,
+      messageListRef,
+      setIsAwaitingChatTerminal,
+      setIsConversationActive,
+    });
 
   // 查询会话
   const {
@@ -860,6 +877,8 @@ export default () => {
 
         // 现在逻辑已重构为同步，按序处理所有包，包括带有 finished: true 的结束包。
         handleChangeMessageList(params, res, currentMessageId);
+        // 终态事件即清算：不依赖本连接后续的 onClose（连接静默死亡时 onClose 永不触发）
+        finalizeChatTerminalEvent(params.conversationId, res);
         // 滚动到底部：在流式输出期间，使用 'instant' 以避免抖动，且只有在允许自动滚动时才触发
         if (allowAutoScrollRef.current) {
           // 使用 raf 确保在 DOM 更新后立即执行，且不带平滑动画以防指令堆积
@@ -1080,6 +1099,8 @@ export default () => {
       messageViewRef,
       allowAutoScrollRef,
       resetResumeMessageState,
+      // sub 重放送达终态时统一清算（本地连接静默死亡场景的唯一终态到达路径）
+      onTerminalEvent: finalizeChatTerminalEvent,
     });
 
   // 清除副作用
@@ -1279,6 +1300,10 @@ export default () => {
     isAwaitingChatTerminal,
     disabledConversationActive,
     checkConversationActive,
+    // 统一终态清算入口：终态确认后一次性收敛 taskStatus + awaiting + 活跃态 + 末条消息
+    finalizeConversationTerminal,
+    // SSE 终态事件（FINAL_RESULT/ERROR）→ 统一终态清算（sub 恢复流经 useResumeStreamHandlers 复用）
+    finalizeChatTerminalEvent,
     // 当前会话 ID 与请求 ID
     getCurrentConversationId,
     getCurrentConversationRequestId,
