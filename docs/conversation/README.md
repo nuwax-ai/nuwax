@@ -38,6 +38,7 @@ graph TD
         F1["错误终态固化修复"]
         F2["轮询竞态修复"]
         F3["收尾闪烁 QA 报告"]
+        F4["终态统一收敛修复<br/>(1654471/1677549/1560798)"]
     end
 
     subgraph STALE["过时/初版(谨慎引用)"]
@@ -78,6 +79,7 @@ graph TD
 | [conversation-error-taskstatus-stuck-fix.md](./conversation-error-taskstatus-stuck-fix.md) | 专项 | 🟢 留存 | 错误时 taskStatus 固化 EXECUTING 的根因与修复(mobile 追齐用) | 修复合入后一次性留存 |
 | [poll-send-race-stale-snapshot-fix.md](./poll-send-race-stale-snapshot-fix.md) | 专项 | 🟢 留存 | 轮询与发消息竞态:generation 丢弃在途旧快照 | 同上 |
 | [chat-terminal-polling-flash-qa-report.md](./chat-terminal-polling-flash-qa-report.md) | 专项 | 🟢 留存 | 收尾闪烁修复提测报告(含 §6 十项人工场景 = 清单 C8) | 同上 |
+| [conversation-terminal-finalizer-fix.md](./conversation-terminal-finalizer-fix.md) | 专项 | 🟢 留存 | 终态经任一路径到达统一收敛 + sub 占位收尾/网络错误对齐(断网卡死三案例) | 同上 |
 | [archive/conversation-stream-resume-and-intervention.md](./archive/conversation-stream-resume-and-intervention.md) | 专项 | 🔴 **已过时(已入 archive)** | sub 恢复与审批交互初版梳理(2026-06-30);轮询条件/agentMode 缓存/恢复节律均与现状不符,以清单 D/E/I 域为准 | 已归档,不再维护 |
 | [message-queue-design.md](./message-queue-design.md) | 专项 | 🟡 初版已演进 | 消息队列最初设计稿;实现已大幅演进(立即发送不 stop/防双发/参数快照),以清单 F 域+代码为准 | 同上 |
 

@@ -13,12 +13,6 @@ import type {
   MessageInfo,
 } from '@/types/interfaces/conversationInfo';
 import {
-  logConversationPollGate,
-  logConversationSnapshotConsume,
-  logLocalStreamState,
-  traceConversationSnapshotRequest,
-} from '@/utils/conversationPollingDiagnostics';
-import {
   emitConversationListTaskStatus,
   fetchConversationSnapshot,
   fetchConversationTaskStatus,
@@ -186,12 +180,6 @@ export function useConversationStreamResume(
 
   const prevLocallyStreamingRef = useRef(false);
   useEffect(() => {
-    logLocalStreamState({
-      conversationId,
-      isActive: !!isLocallyStreaming,
-      taskStatus: latestRef.current.taskStatus,
-      messageList: latestRef.current.messageList || [],
-    });
     if (prevLocallyStreamingRef.current && !isLocallyStreaming) {
       resumeConsistencyControllerRef.current.recordLocalStreamEnded(
         conversationId,
@@ -413,26 +401,6 @@ export function useConversationStreamResume(
       decision.reason === 'conversation-changed' ||
       decision.reason === 'local-stream-active');
 
-  const getSnapshotOutcome = (decision: SnapshotDecision): string => {
-    if (decision.type === 'snapshot.accepted') {
-      return decision.token.trigger === 'visibility'
-        ? 'dispatch-visibility-snapshot'
-        : 'dispatch-snapshot';
-    }
-    if (decision.token.trigger === 'visibility') {
-      return decision.reason === 'empty-snapshot'
-        ? 'empty-visibility-snapshot'
-        : decision.reason === 'user-tail-not-persisted'
-        ? 'discard-user-tail-visibility-snapshot'
-        : 'discard-stale-visibility-snapshot';
-    }
-    return decision.reason === 'empty-snapshot'
-      ? 'empty-snapshot'
-      : decision.reason === 'user-tail-not-persisted'
-      ? 'discard-user-tail-not-persisted'
-      : 'discard-stale-snapshot';
-  };
-
   const applySnapshotDecision = (decision: SnapshotDecision) => {
     const decisionConversationId = decision.token.conversationId;
     if (isStaleSnapshotDecision(decision)) {
@@ -450,29 +418,12 @@ export function useConversationStreamResume(
         isLocallyStreaming: latestRef.current.isLocallyStreaming,
         snapshotTaskStatus: decision.snapshot?.taskStatus,
       });
-      logConversationSnapshotConsume({
-        source: debugSource,
-        conversationId: decisionConversationId,
-        outcome: getSnapshotOutcome(decision),
-        snapshot: decision.snapshot,
-        localMessageList: latestRef.current.messageList,
-        hasSnapshotConsumer: !!onConversationSnapshotRef.current,
-      });
       return;
     }
 
-    const localMessageListBeforeSnapshot = latestRef.current.messageList;
     if (decision.type === 'snapshot.accepted') {
       onConversationSnapshotRef.current?.(decision.snapshot);
     }
-    logConversationSnapshotConsume({
-      source: debugSource,
-      conversationId: decisionConversationId,
-      outcome: getSnapshotOutcome(decision),
-      snapshot: decision.snapshot,
-      localMessageList: localMessageListBeforeSnapshot,
-      hasSnapshotConsumer: !!onConversationSnapshotRef.current,
-    });
 
     const status = decision.observedTaskStatus;
     if (
@@ -538,24 +489,9 @@ export function useConversationStreamResume(
           )
         : undefined;
       scheduledRequestTokenRef.current = requestToken;
-      return traceConversationSnapshotRequest({
-        source: debugSource,
-        trigger: 'scheduled-or-ready-refresh',
-        conversationId,
-        requestGeneration:
-          requestToken?.generation ??
-          consistencyControllerRef.current.getGeneration(),
-        currentGeneration: consistencyControllerRef.current.getGeneration(),
-        isLocallyStreaming: !!latestRef.current.isLocallyStreaming,
-        isAwaitingChatTerminal: !!latestRef.current.isAwaitingChatTerminal,
-        isResumeSubscribed: !!isResumeSubscribedRef.current,
-        taskStatus: latestRef.current.taskStatus,
-        messageList: latestRef.current.messageList,
-        request: () =>
-          conversationId
-            ? fetchConversationSnapshot(conversationId)
-            : Promise.resolve(undefined),
-      });
+      return conversationId
+        ? fetchConversationSnapshot(conversationId)
+        : Promise.resolve(undefined);
     },
     {
       pollingInterval: GLOBAL_POLLING_INTERVAL,
@@ -594,34 +530,6 @@ export function useConversationStreamResume(
     },
   );
 
-  useEffect(() => {
-    logConversationPollGate({
-      source: debugSource,
-      conversationId,
-      ready: isPollingReady,
-      blockedBy: [
-        !conversationId ? 'missing-conversation-id' : null,
-        isLocallyStreaming ? 'local-stream-active' : null,
-        isAwaitingChatTerminal ? 'chat-terminal-pending' : null,
-        isResumeSubscribed ? 'resume-sub-active' : null,
-        !resumeStream ? 'resume-stream-unavailable' : null,
-      ],
-      isLocallyStreaming: !!isLocallyStreaming,
-      isAwaitingChatTerminal,
-      isResumeSubscribed,
-      taskStatus,
-      messageList: latestRef.current.messageList,
-    });
-  }, [
-    conversationId,
-    debugSource,
-    isLocallyStreaming,
-    isAwaitingChatTerminal,
-    isPollingReady,
-    isResumeSubscribed,
-    resumeStream,
-    taskStatus,
-  ]);
   // 把 run/cancel 注入 pollingControlsRef，供 subscribe / onClose 调用
   pollingControlsRef.current.start = () => {
     conversationPollLogger.info(
@@ -699,19 +607,7 @@ export function useConversationStreamResume(
           );
           return;
         }
-        const requestPromise = traceConversationSnapshotRequest({
-          source: debugSource,
-          trigger: 'visibility-resume',
-          conversationId,
-          requestGeneration: requestToken.generation,
-          currentGeneration: consistencyControllerRef.current.getGeneration(),
-          isLocallyStreaming: !!latestRef.current.isLocallyStreaming,
-          isAwaitingChatTerminal: !!latestRef.current.isAwaitingChatTerminal,
-          isResumeSubscribed: !!isResumeSubscribedRef.current,
-          taskStatus: latestRef.current.taskStatus,
-          messageList: latestRef.current.messageList,
-          request: () => fetchConversationSnapshot(conversationId),
-        });
+        const requestPromise = fetchConversationSnapshot(conversationId);
         requestPromise
           .then((snapshot) => {
             const decision = consistencyControllerRef.current.consume(
