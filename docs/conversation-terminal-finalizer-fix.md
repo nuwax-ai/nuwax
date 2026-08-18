@@ -94,6 +94,8 @@ sub 死亡 → 无人收尾其占位消息（停留 Loading/Incomplete）
 
 修复：sub 关闭时（`useResumeStreamHandlers` onClose → `onStreamClosed` 回调）把本次恢复的占位落为 Stopped（EXECUTING processing → FAILED）并重算活跃态——列表不再 busy → active 回落 → 详情轮询恢复，由快照决定重挂 sub 续流或落终态。验证方式：console 出现 `[ConversationTerminalSweep] finalize streaming placeholder` 后轮询恢复、断网重连自动收敛（已实测通过；定位期使用的 `conversationPollingDiagnostics` 临时诊断模块已随修复完成整体删除）。
 
+sub 的处置再按死亡形态细分，与本地 chat 连接对齐：**网络错误**（onError → `onStreamError`）按 chat onError 同款收敛——占位落 Error、taskStatus 落 FAILED 并同步侧栏，页面直接回可发送态（否则会停留在「智能体正在执行，请稍等」横幅 + 会话中按钮的混合态）；**正常关闭/看门狗超时**（onClose）维持 Stopped 语义等轮询定夺。FAILED 为本地乐观值，网络恢复后轮询看到 EXECUTING 会重挂 sub 续流，真实终态到达时 sweep 纠正。
+
 ---
 
 ## 4. 改动清单
