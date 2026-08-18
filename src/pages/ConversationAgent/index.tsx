@@ -1231,10 +1231,15 @@ const ConversationAgent: React.FC = () => {
           restartAgent(queryConversationId);
         }
       },
+      /** 重命名文件 */
       onRenameFile: handleConfirmRenameFile,
+      /** 创建文件 */
       onCreateFileNode: handleCreateFileNode,
+      /** 删除文件 */
       onDeleteFile: handleDeleteFile,
+      /** 保存文件 */
       onSaveFiles: handleSaveFiles,
+      /** 保存单个文件 */
       onSaveFileContent: async (fileId, content, originalFileContent) => {
         const result = await handleSaveFileContent(
           fileId,
@@ -1248,6 +1253,7 @@ const ConversationAgent: React.FC = () => {
       onClose: handleClosePreviewPanel, // 关闭预览回调
       isFileTreePinned, // 文件树是否固定
       onFileTreePinnedChange: setIsFileTreePinned,
+      /** 文件树侧栏是否可见 */
       isFileTreeSidebarVisible: canShowFileView,
       isCanDeleteSkillFile: true, // 是否允许删除技能文件
       onRefreshFileTree: async () => {
@@ -1343,7 +1349,9 @@ const ConversationAgent: React.FC = () => {
 
   /** 初始化文件视图 Hook，获取文件树和预览的渲染组件 */
   const fileView = useFileTreePreviewView(fileViewProviderProps);
+  // 刷新 Git 列表
   refreshGitListRef.current = fileView.refreshGitList;
+  // 清空文件树选中
   clearFileTreeSelectionRef.current = fileView.tree.clearSelection ?? null;
 
   // 刷新文件树，并在存在当前选中文件时同步刷新文件内容
