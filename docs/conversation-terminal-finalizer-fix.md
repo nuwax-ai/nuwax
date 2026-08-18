@@ -82,16 +82,28 @@ const { finalizeConversationTerminal, finalizeChatTerminalEvent } =
 
 > 注意：hook 内部含 setState，禁止在 `setMessageList` updater 等渲染期回调中调用。model 内 `handleChangeMessageList` 的 in-updater `applyTerminalTaskStatus` 保留不动（幂等第一层），本 hook 只在事件回调层触发（第二层）。
 
+### 3.1 流式占位收尾（finalizeStreamingPlaceholder，1560798 复现后追加）
+
+终态清算只覆盖「终态会到达」的场景；若**会话全程只有 sub 一条连接**（无本地发送）且 sub 中途死亡（网络切换），任务后端仍在执行、终态永远不达，卡死链变为：
+
+```text
+sub 死亡 → 无人收尾其占位消息（停留 Loading/Incomplete）
+→ isSessionStreamBusy 永真 → isConversationActive 每次重算被顶回 true
+→ blockedBy: ["local-stream-active"] → 详情轮询永堵
+```
+
+修复：sub 关闭时（`useResumeStreamHandlers` onClose → `onStreamClosed` 回调）把本次恢复的占位落为 Stopped（EXECUTING processing → FAILED）并重算活跃态——列表不再 busy → active 回落 → 详情轮询恢复，由快照决定重挂 sub 续流或落终态。poll-gate 的 `blockedBy` 字段可直接验证：修复后该场景在 sub 死后一拍变为空数组、`ready: true`（已实测断网恢复通过）。
+
 ---
 
 ## 4. 改动清单
 
 | 文件 | 改动 | 职责 |
 | --- | --- | --- |
-| `src/hooks/useConversationTerminalFinalizer.ts` | 新增 | P0 全部逻辑内聚：sweep 实现 + 两个入口 + 防跨会话守卫 |
-| `src/hooks/useResumeStreamHandlers.ts` | +21 | sub onMessage 新增可选 `onTerminalEvent`——重放终态触发清算（本地连接静默死亡场景的唯一终态到达路径） |
-| `src/models/conversationInfo.ts` | +26 | hook 调用 + chat onMessage 终态即清算 + 导出 + 传 `onTerminalEvent` |
-| `src/models/conversationAgent.ts` | +25 | 同上镜像（预览 Tab 链路同款缺陷） |
+| `src/hooks/useConversationTerminalFinalizer.ts` | 新增 | 终态清算 + 流式占位收尾（3.1）+ 防跨会话守卫 |
+| `src/hooks/useResumeStreamHandlers.ts` | +33 | sub onMessage 新增可选 `onTerminalEvent`（重放终态触发清算）；onClose 新增 `onStreamClosed`（占位收尾） |
+| `src/models/conversationInfo.ts` | +35 | hook 调用 + chat onMessage 终态即清算 + 导出 + 传两个回调 |
+| `src/models/conversationAgent.ts` | +34 | 同上镜像（预览 Tab 链路同款缺陷） |
 | `src/pages/Chat/index.tsx` | +4/-4 | `onTerminalTaskStatus` 改走 `finalizeConversationTerminal` |
 | `src/pages/ConversationAgent/hooks/useConversationAgentChatSession.ts` | +4/-4 | 同上 |
 

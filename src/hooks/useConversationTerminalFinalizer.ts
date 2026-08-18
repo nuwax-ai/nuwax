@@ -1,3 +1,4 @@
+import { isSessionStreamBusy } from '@/hooks/useExecutingTaskStatusPoll';
 import { ConversationEventTypeEnum, TaskStatus } from '@/types/enums/agent';
 import { MessageStatusEnum, ProcessingEnum } from '@/types/enums/common';
 import type {
@@ -190,5 +191,72 @@ export function useConversationTerminalFinalizer(
     [finalizeConversationTerminal],
   );
 
-  return { finalizeConversationTerminal, finalizeChatTerminalEvent };
+  /**
+   * 收尾流式占位消息：sub 恢复流中途死亡（网络切换 ERR_NETWORK_CHANGED 等）时，
+   * 其占位消息停留 Loading/Incomplete——isSessionStreamBusy 永真 → isConversationActive
+   * 被每次重算顶回 true → 详情轮询被 blockedBy: local-stream-active 永久挂住
+   * （1560798 复现：该会话全程只有 sub 一条连接，终态永远不达，sweep 无从触发）。
+   * 标记占位为 Stopped 并重算活跃态，让「流死亡 → 活跃态回落 → 详情轮询接管」闭环。
+   */
+  const finalizeStreamingPlaceholder = useCallback(
+    (messageId: string | null | undefined) => {
+      if (!messageId) {
+        return;
+      }
+      setMessageList((prev) => {
+        if (!prev?.length) {
+          return prev;
+        }
+        const index = prev.findIndex((item) => item.id === messageId);
+        if (index < 0) {
+          return prev;
+        }
+        const target = prev[index];
+        const isIncomplete =
+          target.status === MessageStatusEnum.Loading ||
+          target.status === MessageStatusEnum.Incomplete;
+        const processingList = Array.isArray(target.processingList)
+          ? target.processingList.map((item) =>
+              item.status === ProcessingEnum.EXECUTING
+                ? { ...item, status: ProcessingEnum.FAILED }
+                : item,
+            )
+          : target.processingList;
+        const processingChanged = processingList !== target.processingList;
+        if (!isIncomplete && !processingChanged) {
+          return prev;
+        }
+        const next = prev.slice();
+        next[index] = {
+          ...target,
+          thinkingFinished: true,
+          status: isIncomplete ? MessageStatusEnum.Stopped : target.status,
+          processingList,
+        };
+        messageListRef.current = next;
+        return next;
+      });
+      // 占位收尾后重算活跃态（复用 model 的 rAF 同步模式）：列表不再 busy →
+      // active 回落 → 详情轮询恢复，由快照决定重挂 sub 续流或落终态。
+      // 流死亡是确定性结束信号，与 onClose 一致先打破 3s 发送保活。
+      requestAnimationFrame(() => {
+        const busy = isSessionStreamBusy(messageListRef.current);
+        conversationTerminalSweepLogger.info(
+          'finalize streaming placeholder, re-derive active',
+          { source, messageId, busy },
+        );
+        lastSendAtRef.current = 0;
+        setIsConversationActive(busy);
+      });
+    },
+    // 稳定引用（与 sweep 相同）：useState setter / ref
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+
+  return {
+    finalizeConversationTerminal,
+    finalizeChatTerminalEvent,
+    finalizeStreamingPlaceholder,
+  };
 }

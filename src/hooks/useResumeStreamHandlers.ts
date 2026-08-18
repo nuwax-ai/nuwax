@@ -132,6 +132,13 @@ export interface UseResumeStreamHandlersDeps {
     conversationId: number | string,
     res: ConversationChatResponse,
   ) => void;
+  /**
+   * sub 关闭时收尾本次恢复的占位消息（Loading/Incomplete → Stopped 并重算活跃态）。
+   * 关键场景：sub 中途死亡（网络切换）且本地 chat 连接不存在时，占位残留 incomplete
+   * → isSessionStreamBusy 永真 → 详情轮询被 blockedBy: local-stream-active 永堵
+   * （1560798 复现）。未提供则跳过。
+   */
+  onStreamClosed?: (placeholderId: string | null) => void;
 }
 
 export function useResumeStreamHandlers(deps: UseResumeStreamHandlersDeps) {
@@ -156,6 +163,8 @@ export function useResumeStreamHandlers(deps: UseResumeStreamHandlersDeps) {
   // onTerminalEvent 同理：异步回调里读 ref.current，避免 stale 闭包
   const onTerminalEventRef = useRef(deps.onTerminalEvent);
   onTerminalEventRef.current = deps.onTerminalEvent;
+  const onStreamClosedRef = useRef(deps.onStreamClosed);
+  onStreamClosedRef.current = deps.onStreamClosed;
 
   // 中断会话流式恢复(sub)连接，并重置占位记忆
   const abortResumeStream = useCallback(() => {
@@ -379,6 +388,9 @@ export function useResumeStreamHandlers(deps: UseResumeStreamHandlersDeps) {
         onClose: () => {
           resumeAbortRef.current = null;
           resumeConversationIdRef.current = null;
+          // 收尾本次恢复的占位：sub 中途死亡（网络切换等）且本地 chat 连接不存在时，
+          // 占位残留 Loading/Incomplete → 活跃态永真 → 详情轮询被 local-stream-active 永堵
+          onStreamClosedRef.current?.(resumeMessageIdRef.current);
           // 关闭时再次重置，避免恢复流的残留 id 影响后续 live 发送
           resetResumeMessageState?.();
           onClose?.();

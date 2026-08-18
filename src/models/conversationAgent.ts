@@ -352,17 +352,20 @@ export default () => {
   // 终态无论从哪条路径到达（chat SSE / sub 重放 / 轮询快照）一次性收敛状态机，
   // 打破「状态绑定在原发送连接回调」的卡死链（1677549 复现）。
   // 完整背景与守卫说明见 useConversationTerminalFinalizer。
-  const { finalizeConversationTerminal, finalizeChatTerminalEvent } =
-    useConversationTerminalFinalizer({
-      source: 'conversationAgent',
-      conversationInfoRef,
-      lastSendAtRef,
-      setConversationInfo,
-      setMessageList,
-      messageListRef,
-      setIsAwaitingChatTerminal,
-      setIsConversationActive,
-    });
+  const {
+    finalizeConversationTerminal,
+    finalizeChatTerminalEvent,
+    finalizeStreamingPlaceholder,
+  } = useConversationTerminalFinalizer({
+    source: 'conversationAgent',
+    conversationInfoRef,
+    lastSendAtRef,
+    setConversationInfo,
+    setMessageList,
+    messageListRef,
+    setIsAwaitingChatTerminal,
+    setIsConversationActive,
+  });
 
   // 查询会话
   const {
@@ -1101,6 +1104,8 @@ export default () => {
       resetResumeMessageState,
       // sub 重放送达终态时统一清算（本地连接静默死亡场景的唯一终态到达路径）
       onTerminalEvent: finalizeChatTerminalEvent,
+      // sub 关闭时收尾占位，活跃态回落 → 详情轮询恢复（1560798 复现的 local-stream-active 永堵）
+      onStreamClosed: finalizeStreamingPlaceholder,
     });
 
   // 清除副作用
