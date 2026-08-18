@@ -30,6 +30,11 @@
 					return;
 				}
 
+				// m-shim 实验目录：不参与任何 PC/M 跳转（否则 /m-shim/ 会落入末尾兜底 replace 到 /m/）
+				if (location.pathname.indexOf('/m-shim/') !== -1) {
+					return;
+				}
+
 				// 应用详情页路径
 				const appDetailsPathMobile = '/subpackages/pages/app-details/app-details';
 
