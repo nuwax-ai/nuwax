@@ -1810,6 +1810,9 @@ export default () => {
       onTerminalEvent: finalizeChatTerminalEvent,
       // sub 关闭时收尾占位，活跃态回落 → 详情轮询恢复（1560798 复现的 local-stream-active 永堵）
       onStreamClosed: finalizeStreamingPlaceholder,
+      // sub 网络错误按 chat onError 同款收敛（占位 Error + FAILED），统一断网时的页面表现
+      onStreamError: (placeholderId) =>
+        finalizeStreamingPlaceholder(placeholderId, 'error'),
     });
 
   // 清除副作用

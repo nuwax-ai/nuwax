@@ -8,6 +8,7 @@ import type {
 } from '@/types/interfaces/conversationInfo';
 import {
   applyTerminalTaskStatus,
+  emitConversationListTaskStatus,
   resolveTerminalTaskStatus,
 } from '@/utils/conversationTaskStatusSync';
 import { createLogger } from '@/utils/logger';
@@ -196,13 +197,26 @@ export function useConversationTerminalFinalizer(
    * 其占位消息停留 Loading/Incomplete——isSessionStreamBusy 永真 → isConversationActive
    * 被每次重算顶回 true → 详情轮询被 blockedBy: local-stream-active 永久挂住
    * （1560798 复现：该会话全程只有 sub 一条连接，终态永远不达，sweep 无从触发）。
-   * 标记占位为 Stopped 并重算活跃态，让「流死亡 → 活跃态回落 → 详情轮询接管」闭环。
+   *
+   * - outcome='stopped'（sub 正常关闭/看门狗超时）：占位落 Stopped，taskStatus 不动
+   *   （后端可能仍在执行，等详情轮询拿真实状态决定重挂 sub 或落终态）
+   * - outcome='error'（sub 网络错误）：与本地 chat 连接的 onError 处置对齐——占位落
+   *   Error、taskStatus 落 FAILED 并同步侧栏列表。统一两种连接在同一网络故障下的
+   * 页面表现：直接回到可发送态，网络恢复后由轮询/重挂 sub 自动续上（后端若真在
+   * 执行，终态到达时 sweep 会纠正 FAILED → 真实终态）。
    */
   const finalizeStreamingPlaceholder = useCallback(
-    (messageId: string | null | undefined) => {
+    (
+      messageId: string | null | undefined,
+      outcome: 'stopped' | 'error' = 'stopped',
+    ) => {
       if (!messageId) {
         return;
       }
+      const messageTerminalStatus =
+        outcome === 'error'
+          ? MessageStatusEnum.Error
+          : MessageStatusEnum.Stopped;
       setMessageList((prev) => {
         if (!prev?.length) {
           return prev;
@@ -230,12 +244,20 @@ export function useConversationTerminalFinalizer(
         next[index] = {
           ...target,
           thinkingFinished: true,
-          status: isIncomplete ? MessageStatusEnum.Stopped : target.status,
+          status: isIncomplete ? messageTerminalStatus : target.status,
           processingList,
         };
         messageListRef.current = next;
         return next;
       });
+      if (outcome === 'error') {
+        // 与 chat onError 对齐：网络错误即终态，落 FAILED 清「执行中/会话中」展示
+        const cid = conversationInfoRef.current?.id;
+        if (cid !== undefined && cid !== null) {
+          applyTerminalTaskStatus(setConversationInfo, cid, TaskStatus.FAILED);
+          emitConversationListTaskStatus(cid, TaskStatus.FAILED);
+        }
+      }
       // 占位收尾后重算活跃态（复用 model 的 rAF 同步模式）：列表不再 busy →
       // active 回落 → 详情轮询恢复，由快照决定重挂 sub 续流或落终态。
       // 流死亡是确定性结束信号，与 onClose 一致先打破 3s 发送保活。
@@ -243,7 +265,7 @@ export function useConversationTerminalFinalizer(
         const busy = isSessionStreamBusy(messageListRef.current);
         conversationTerminalSweepLogger.info(
           'finalize streaming placeholder, re-derive active',
-          { source, messageId, busy },
+          { source, messageId, outcome, busy },
         );
         lastSendAtRef.current = 0;
         setIsConversationActive(busy);
