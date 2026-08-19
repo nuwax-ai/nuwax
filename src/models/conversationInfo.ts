@@ -667,8 +667,9 @@ export default () => {
 
   // 检查会话是否正在进行中（有消息正在处理）
   const checkConversationActive = useCallback((messages: MessageInfo[]) => {
-    const recentMessages = messages?.slice(-5) || [];
-    setIsConversationActive(isSessionStreamBusy(recentMessages));
+    // 不做 slice 截断——isSessionStreamBusy 内部用 findCurrentRoundStart
+    // 精确到当前轮次边界，预截断会使深轮次前面的 EXECUTING 残留对检查不可见
+    setIsConversationActive(isSessionStreamBusy(messages));
   }, []);
 
   const syncMessageListRuntimeState = useCallback(() => {

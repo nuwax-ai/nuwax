@@ -322,8 +322,9 @@ export default () => {
 
   /** 根据最近消息是否含 Loading/Incomplete / processing 执行中 更新流式活跃状态 */
   const checkConversationActive = useCallback((messages: MessageInfo[]) => {
-    const recentMessages = messages?.slice(-5) || [];
-    setIsConversationActive(isSessionStreamBusy(recentMessages));
+    // 不做 slice 截断——isSessionStreamBusy 内部用 findCurrentRoundStart
+    // 精确到当前轮次边界，预截断会使深轮次前面的 EXECUTING 残留对检查不可见
+    setIsConversationActive(isSessionStreamBusy(messages));
   }, []);
 
   /**
