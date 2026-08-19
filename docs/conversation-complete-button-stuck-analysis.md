@@ -65,28 +65,32 @@ if (isCurrentMessageTerminal && !messageIdRef.current) { ...整条丢弃... }
 
 发起时间反向定位：轮询请求发出时刻 19:02:32.367 = `startedDateTime`（HAR entry[75]，文件第 127746 行）；ahooks 的 `ready` 翻 true 是**立即自动执行**（不等 5s interval），故上游触发（流中状态清空）≈ 同一瞬间。chat 响应头 `date: 11:01:22 GMT` 是流打开时刻，与终态无关。
 
-完整调用链（执行者 = 终态清算 sweep 本身）：
+完整调用链（**执行者 = 连接级 onerror 全量收尾路径**，由 1678724 console 的 FAILED 转变调用栈逐帧定案）：
 
 ```
-某 ERROR 型事件到达 chat 流 onMessage（载体不明：HAR body 8832 事件中无 ERROR）
-│
-├─ models/conversationInfo.ts:1546  eventType===ERROR → setIsAwaitingChatTerminal(false)   ← 门条件①
-├─ models/conversationInfo.ts:1569  finalizeChatTerminalEvent(cid, res)（预览 Tab 镜像 :884）
-│    └─ hooks/useConversationTerminalFinalizer.ts:187  ERROR → TaskStatus.FAILED
-│         └─ sweepConversationTerminal（:75 起）：
-│              ① :96  applyTerminalTaskStatus(FAILED)                ← console COMPLETE→FAILED 来源
-│              ② :99  setIsAwaitingChatTerminal(false)               ← 门条件①（双重）
-│              ③ :103 lastSendAtRef=0; setIsConversationActive(false) ← 门条件② isLocallyStreaming
-│              ④ :118 setMessageList 末条消息置 Error
-└─ useConversationStreamResume.ts:461  isPollingReady 两条件均已清除 → 门全开
-     → ready 翻 true → 立即自动执行 → 19:02:32.367 轮询发出（+45ms 返回 EXECUTING，被守卫丢弃）
+console FAILED 转变的调用栈（自底向上）：
+  React 提交 → 队列消费发送链（ur/na/oa @ 6712、ne @ p__Chat）
+  → onMessageSend（umi:66）
+  → createSSEConnection（umi:124）
+  → fetch-event-source 内部 await 抛异常（await in D @ umi:61）
+  → fetch-event-source 的 onerror 回调（umi:124）
+  → safeOnError（te @ 124）
+  → model onError 全量路径（umi:66）：
+       ① toast 网络错误
+       ② setIsAwaitingChatTerminal(false)                        ← 门条件①
+       ③ 末条消息置 Error + processing→FAILED
+       ④ applyTerminalTaskStatus(FAILED)                          ← console COMPLETE→FAILED 来源
+       ⑤ emitConversationListTaskStatus（eventBus 分发，Ym.835643.F.forEach @ 209）
+       ⑥ lastSendAtRef=0; setIsConversationActive(false)          ← 门条件② isLocallyStreaming
+  → isPollingReady 两条件均已清除（useConversationStreamResume:461）→ 门全开
+  → ready 翻 true → 立即自动执行 → 19:02:32.367 轮询发出（+45ms 返回 EXECUTING，被守卫丢弃）
 随后 MESSAGE 分片继续到达 → 消息从 Error 拉回 Incomplete → isSessionStreamBusy 复活
 → checkConversationActive 重算 → active 顶回 true → 门再关（console "假发送" gen3，无第三次 POST）
 ```
 
-> 行号基准：`cf5adca1a`（= 线上部署的确切代码，19:02:32 时刻实际执行的就是这些行）。
+**与"ERROR 型事件"的区分（重要）**：HAR body 8832 事件中零 ERROR——触发源不是 SSE 事件，是 **fetch-event-source 的连接错误回调**。前版 §0.3 将执行者归为 sweep（ERROR 事件触发）是错误定性，已修正；据此设计的"ERROR 降级"方案也已撤回（§6.1）。
 
-**设计问题定性**：sweep 对终态事件**没有校验轮次边界**——它假设「ERROR/FINAL_RESULT 到达 = 本轮结束」即全清，但本案 ERROR 在流进行中到达（之后还有 80+ 秒、几千分片、正常 FINAL_RESULT）。与终态守卫修的「清算后被分片回退」是同一枚硬币的两面：**「未终态就被清算」与「终态后被回退」，根子都是事件缺轮次归属校验**。
+**待解矛盾（受控复现目标）**：onerror 的 handler 会执行 `controller.abort()` 杀掉连接，而 HAR 显示该流活满 153 秒且 body 完整——**一次 onerror 之后流为什么还活着**。复现目标：队列自动消费场景下观察 onerror 触发与流存活的时序关系；候选解释含 fetch-event-source 重连语义（isAborted 守卫 return 不 throw → 自动重试）等，需一手数据裁决。
 
 轮询双防线自检（本案均按设计工作）：请求级 `isPollingReady` 门控 + 发送时主动 cancel；响应级四重丢弃守卫（本地流式 / user 尾未落库 / 会话切换 / 代际过期）——19:02:32 的响应被守卫丢弃、零副作用。问题不在轮询，在门被异常打开。
 
@@ -136,7 +140,7 @@ RunOver 显示运行完毕**不能证明 FINAL_RESULT 到达**——取证易错
 | M2-sub：并行 sub 流投递回退 | **排除（本案）** | 全量 HAR 零 `/chat/sub` 请求 |
 | M3：终态未送达 | **排除** | §2：FINAL_RESULT 在流末到达 |
 | M4：终态后快照落库回打 | **不成立（本案）** | 终态后详情轮询零请求——M4 的前提（轮询在跑）不存在 |
-| **M5（现行）：流中 ERROR 型事件触发 sweep 全清（轮次边界缺失）** | **成立（§0.3 定性），事件载体不明** | 19:02:32.367 轮询重启 = 门被开过的铁证；chat body 无 ERROR → 载体待受控复现 |
+| **M5（现行，栈帧定案）：连接级 onerror 在流存活期间执行全量收尾** | **执行路径已定案（§0.3），物理触发待受控复现** | FAILED 转变调用栈：fetch-event-source onerror → model onError 全量（清 awaiting/active + 写 FAILED）→ 门开 → 19:02:32.367 轮询 |
 
 ## 4. 取证记录（均已完成）
 
@@ -148,7 +152,7 @@ RunOver 显示运行完毕**不能证明 FINAL_RESULT 到达**——取证易错
 | 4 | 轮次特征 | 第二轮（队列自动消费发起）、153.7s 长任务 |
 | 5 | 请求发起链 | chat POST = 队列消费（call stack）；19:02:32 详情 = 轮询 interval（call stack） |
 
-**已收敛的判定**：流干净（§2）→ 卡死在流外（§0.3 的流中清门 + 终态后残留）→ 前端状态机问题，与后端无关（后端唯一关联 = 那个载体不明的 ERROR 型事件的来源，若复现确认后端下发再立工单）。
+**已收敛的判定**：流干净（§2）→ 卡死在流外（§0.3 的流中清门 + 终态后残留）→ 前端状态机问题，与后端无关（后端唯一可能关联 = 若复现确认 onerror 由后端连接异常引起，再立工单）。
 
 ## 5. 取证能力漏洞（本次发现）
 
