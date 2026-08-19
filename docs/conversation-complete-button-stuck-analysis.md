@@ -161,14 +161,100 @@ RunOver 显示运行完毕**不能证明 FINAL_RESULT 到达**——取证易错
 
 ---
 
-## 6. 修复方向（按当前定性更新）
+## 6. 修复方案详述与影响分析（commit `452094f28` = A、`f0d7068cf` = B）
 
-| 方向 | 内容 | 状态 |
+### 6.1 方案 A：ERROR 型 SSE 事件降级处理（`452094f28`）
+
+**改动位置**：`src/hooks/useConversationTerminalFinalizer.ts` 的 `finalizeChatTerminalEvent`（chat onMessage 与 sub onTerminalEvent 共用入口）。
+
+**Before → After**：
+
+```ts
+// Before：ERROR 与 FINAL_RESULT 同权，一律进 sweep 全清
+const status = res.eventType === ERROR ? FAILED : resolveTerminalTaskStatus(...);
+finalizeConversationTerminal(conversationId, status);   // sweep：清 awaiting + 破保活清活跃态 + 末条落 Error
+
+// After：ERROR 降级——只写终态，不动状态机
+if (res.eventType === ERROR) {
+  防跨会话守卫;
+  log('terminal-event ERROR degraded: skip sweep');     // always-on 观测
+  applyTerminalTaskStatus(setConversationInfo, cid, FAILED);
+  emitConversationListTaskStatus(cid, FAILED);          // 侧栏同步
+  return;                                               // ← 不再触发 sweep
+}
+const status = resolveTerminalTaskStatus(...);          // FINAL_RESULT 才走 sweep
+finalizeConversationTerminal(conversationId, status);
+```
+
+**确立的不变式**：`isAwaitingChatTerminal` / `isConversationActive` 的清除权只属于**连接生命周期事件（onClose/onError）与 FINAL_RESULT**；ERROR 型内容事件无权做会话级全清（实证：可在流中到达且流继续）。
+
+**影响面推演**：
+
+| 场景 | 修复前 | 修复后 |
 | --- | --- | --- |
-| **A. sweep 轮次边界校验（M5 对症）** | 终态清算前校验事件属于当前轮（如 requestId/代际比对）：本地流仍在进行时，ERROR 型事件不得触发全清（可降级为消息级 Error 标记而不动会话状态机） | **待设计**——定案路径中的受控复现应先确认 ERROR 载体 |
-| **B. 终态守卫（已实现，stash 中）** | `shouldDropLateMessageChunk`：已终态消息不接受分片状态回退（含 messageIdRef 多步轮判据 + 三场景单测） | 代码在 `stash@{0}` 待 review——防"终态后被回退"，与 A 互补（一个防未终态被清算、一个防终态后被回退） |
-| C. P1 内容看门狗 / P2 本地发送中断 sub | 历史遗留项 | 暂缓（本案 HAR 已排除 sub 参与） |
-| D. 后端工单 | ERROR 型事件来源（若受控复现确认后端在流中下发） | 待复现结果 |
+| 流中 ERROR 后流继续（1678724 本案） | sweep 全清 → 门开 → 轮询重启 → 分片打回 → 终态后卡死 | 只记 FAILED，门不开（active 是主锁，流式中 busy 列表顶住）→ FINAL_RESULT 正常收敛 ✓ |
+| ERROR 后流即关闭（真错误终局） | sweep 清 + onClose 再清（双份） | ERROR 记 FAILED，紧随的 onClose 全套收尾（清 active/awaiting + 拉终态）✓ |
+| 网络错误（连接级 onError） | chat onError 全套 | 不变（onError 本就不是事件路径）✓ |
+| sub 收到 ERROR | onTerminalEvent → sweep → abort | 降级记 FAILED → abort → sub onClose 收尾 ✓ |
+| 按钮态显示 | ERROR 事件即回发送态（过早——流可能还在跑） | 流结束（onClose/FINAL_RESULT）才回——与真实生命周期一致 ✓ |
+
+**有意保留**：`conversationInfo.ts:1546` 的 `eventType===ERROR → setIsAwaitingChatTerminal(false)` 不动——awaiting 单独被清不破门（门的主锁是 isLocallyStreaming=active），且对 FINAL_RESULT 的同名清理是正确行为。
+
+**风险**：若后端存在"只发 ERROR 事件、之后流悬死不关"的形态，降级后该轮 awaiting/active 由 60s 断线看门狗兜底（onClose 全套）——较修复前的立即清晚最多 60s，换取的是本案类卡死的根治；此形态本身是后端缺陷（发错误终态却不终结流）。
+
+### 6.2 方案 B：终态守卫丢弃迟到 MESSAGE 分片（`f0d7068cf`）
+
+**改动位置**：`conversationInfoMessageList.ts` 新增共享谓词 `shouldDropLateMessageChunk`（判定+日志+注释收敛于此，vitest 可测）；两个 model 的 `handleChangeMessageList` MESSAGE 分支入口各 10 行调用。
+
+**判定逻辑**：
+
+```ts
+!messageIdRef.current && status ∈ {Complete, Error, Stopped} → 整条丢弃（不回退状态、不拼接内容）
+```
+
+- `messageIdRef` 为空 = 本轮终态已处理（FINAL_RESULT 分支既有行为会重置它）→ 迟到分片丢弃
+- `messageIdRef` 非空 = 多步输出中间步边界（本步 finished=true 已置 Complete，下一步分片需走工作流插新消息逻辑）→ 放行
+- 消息非终态（Loading/Incomplete）→ 不触发
+
+**关键实现约束**：守卫位于 `setMessageList` updater 内，命中必须 `return list`（返回未变更列表）——裸 return 会使 updater 返回 undefined 摧毁 messageList。
+
+**影响面**：
+
+| 场景 | 行为 |
+| --- | --- |
+| 终态后迟到/乱序分片（任何通道：连接缓冲冲刷、事件乱序） | 丢弃 + always-on 日志（状态与内容均不受污染） |
+| 多步输出轮次（工作流/多消息 agent） | 中间步边界放行，插新消息逻辑照常（messageIdRef 判据保护） |
+| 正常流式 | 不触发（消息非终态） |
+| 内容完整性 | 迟到分片本是异常投递的碎片（内容已在正常分片或 FINAL_RESULT.outputText 中），丢弃不损失 |
+
+**单测**（41 条全过，其中 3 条为本守卫）：终态后丢弃（Complete/Error/Stopped × messageIdRef 空）/ 多步边界放行 / 流式中放行。
+
+### 6.3 观测能力（随修复落地）
+
+- sweep 日志 `finalize terminal` 升级 always-on（`createLogger` → `createAlwaysLogger`，每轮 1 条）
+- A 降级路径专属日志 `terminal-event ERROR degraded: skip sweep`
+- B 守卫日志 `drop late MESSAGE chunk`（既有 always-on）
+- 验证表见 §7.1
+
+### 6.4 两方案的互补关系
+
+同一根因（事件缺轮次归属校验）的两面，各堵一半：
+
+```
+A（防"未终态就被清算"）：ERROR 在流中到达 → 不再全清状态机 → 门不开 → 无中途轮询/状态打回
+B（防"终态后被回退"）：终态后迟到分片 → 丢弃 → 状态不被拉回
+组合效果：状态机只在真实轮次边界（onClose/onError/FINAL_RESULT）发生迁移，
+任何乱序/异常事件都无法把会话状态推入无人收敛的死区
+```
+
+### 6.5 遗留与不做的事
+
+| 项 | 决策 |
+| --- | --- |
+| 流中 ERROR 事件的载体（chat body 无 ERROR 事件） | 待受控复现确认；若确认后端在流中下发 ERROR，立后端工单 |
+| P1 内容看门狗 / P2 本地发送中断 sub | 暂缓（本案 HAR 已排除 sub 参与；A 落地后"连接活任务死"的假运行态已有 sweep 兜底） |
+| `conversationInfo.ts:1546` ERROR 清 awaiting | 有意保留（见 6.1） |
+| dual-track 分支同步 | 待主分支验证后 cherry-pick |
 
 ## 7. 当前行动项
 
