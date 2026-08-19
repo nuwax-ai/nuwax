@@ -53,7 +53,9 @@ describe('hasExecutingProcessingInMessages', () => {
 });
 
 describe('isSessionStreamBusy', () => {
-  it('status 为 null 但 processing 执行中时仍视为忙碌', () => {
+  // 1f8c77bd9 架构解耦：工具状态（processingList EXECUTING）不再驱动会话 busy——
+  // 单个工具 FINISHED 丢失不再卡死按钮（1678835）。工具状态仅影响 UI 展示。
+  it('processing 仍在执行但不参与 busy 判定（末条非流式即空闲）', () => {
     expect(
       isSessionStreamBusy([
         {
@@ -61,6 +63,12 @@ describe('isSessionStreamBusy', () => {
           processingList: [{ status: ProcessingEnum.EXECUTING }],
         } as any,
       ]),
+    ).toBe(false);
+  });
+
+  it('末条 Loading/Incomplete 时仍视为忙碌（流式信号）', () => {
+    expect(
+      isSessionStreamBusy([{ status: MessageStatusEnum.Incomplete } as any]),
     ).toBe(true);
   });
 });
