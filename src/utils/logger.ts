@@ -124,9 +124,7 @@ export const conversationPollLogger = createAlwaysLogger(
 );
 
 // 会话出错落终态验证 —— 生产环境也输出，便于确认 ERROR → FAILED 是否落地
-export const conversationErrorTerminalLogger = createAlwaysLogger(
-  '[ConversationErrorTerminal]',
-);
+export const conversationErrorTerminalLogger = createAlwaysLogger('[ConvET]');
 
 // 开发环境下挂载到 window，方便调试
 if (isDev && typeof window !== 'undefined') {
