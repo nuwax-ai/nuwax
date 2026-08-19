@@ -1,12 +1,12 @@
 # 「消息运行完毕但会话框按钮一直会话中」分析文档
 
-> 状态：**部分定案——终态后状态残留属实，根因载体已修正**（2026-08-19 二次修订，撤销前版"迟到分片定案"）。用户反馈：会话输出正常结束、RunOver 显示「运行完毕」，但会话框按钮（会话中/停止）不结束；出现在第 N 轮长任务。前置：终态统一收敛修复已上线生产（`da11719f1`/`12a161bd4`/`cf5adca1a` 及 dual-track 对应 commit）。
+> 状态：**已定案——终态后状态残留属实，触发源为连接级 onerror 全量收尾（§0.3 调用栈定案）**（2026-08-19）。用户反馈：会话输出正常结束、RunOver 显示「运行完毕」，但会话框按钮（会话中/停止）不结束；出现在第 N 轮长任务。前置：终态统一收敛修复已上线生产（`da11719f1`/`12a161bd4`/`cf5adca1a` 及 dual-track 对应 commit）。
 
 ---
 
 ## 0. 当前结论（2026-08-19 二次修订）
 
-**前版"迟到 154 秒分片"结论撤回**：系误读取证粘贴（书签式的首/尾两条事件被误读为乱序）。HAR 全量数据复验后的事实：
+HAR 全量数据事实：
 
 1. 该轮 chat 流**完全有序**——HAR body（单行存储，8832 事件）中 FINAL_RESULT 是第 8832/8832 条即最后一条，其后无任何事件；首条分片「我来」在流开始时刻（11:01:21.455）正常到达
 2. 全量 HAR（10:59:19–11:07:59）**无任何 `/chat/sub` 请求**——sub 双流假设在本案不成立
@@ -33,11 +33,11 @@ if (isCurrentMessageTerminal && !messageIdRef.current) { ...整条丢弃... }
 
 | 场景 | status | messageIdRef | 结果 |
 | --- | --- | --- | --- |
-| 终态后迟到分片（本案） | 终态 | `''` | 丢弃 ✓ |
+| 终态后迟到分片 | 终态 | `''` | 丢弃 ✓ |
 | 多步轮中间步边界 | Complete | 非空（当前步 id） | 放行，工作流插新消息逻辑照跑 ✓ |
 | 轮初 THINK（id=null） | Loading | `''` | 不触发（status 非终态）✓ |
 
-**后端关联待查**：前版"首分片延迟 154 秒"已撤回（误读）；仍待查的是流中那次来源不明的 FAILED 转变（chat body 无 ERROR 事件）——若最终定位为后端下发了 ERROR 型消息或事件投递异常，再立后端工单。
+**后端关联待查**：连接级 onerror 的物理触发源（onerror 后流仍存活 153 秒的矛盾，§0.3）——若复现确认为后端连接异常引起，再立工单。
 
 ### 0.2 完整调用时间线（会话 1678724，证据归档）
 
@@ -55,7 +55,7 @@ if (isCurrentMessageTerminal && !messageIdRef.current) { ...整条丢弃... }
 | 11:02:3x | 后续 MESSAGE 分片把消息从 Error 拉回 Incomplete → busy 复活 → active 顶回 true → 轮询门再关 | console：「local send started」pollGeneration 3 且 **无第三次 POST**（假发送=活跃态重算） |
 | ~11:03:54–55 | **FINAL_RESULT 到达**（success=true, completed=true）→ 消息 Complete + taskStatus=COMPLETE（console `FAILED→COMPLETE`） | console + SSE 导出 |
 | 11:03:55.117 | 连接结束（153.7s 走完） | HAR time |
-| 11:03:55.125 | ~~前版记载的"迟到分片"~~ **已撤回**：HAR body 证明「我来」是流首事件（11:01:21.455 到达），11:03:55.125 是 FINAL_RESULT 的到达时刻；流内 FINAL_RESULT 之后无任何事件 | HAR body 事件序（8832 条） |
+| 11:03:55.125 | FINAL_RESULT 到达（流内最后一个事件） | HAR body 事件序（8832 条） |
 | 11:03:55.133 | `conversation/list` 刷新（onClose 触发 RefreshConversationList） | HAR |
 | 11:03:55 之后 | ★ **详情轮询再未恢复**（HAR 覆盖至 11:07:59，4 分钟零请求）→ `isPollingReady` 卡死；按钮停留「会话中」；页面其余功能存活（notify/credit 每 5s 正常） | HAR + 用户观察 |
 
@@ -88,7 +88,7 @@ console FAILED 转变的调用栈（自底向上）：
 → checkConversationActive 重算 → active 顶回 true → 门再关（console "假发送" gen3，无第三次 POST）
 ```
 
-**与"ERROR 型事件"的区分（重要）**：HAR body 8832 事件中零 ERROR——触发源不是 SSE 事件，是 **fetch-event-source 的连接错误回调**。前版 §0.3 将执行者归为 sweep（ERROR 事件触发）是错误定性，已修正；据此设计的"ERROR 降级"方案也已撤回（§6.1）。
+**与"ERROR 型事件"的区分（重要）**：HAR body 8832 事件中零 ERROR——触发源不是 SSE 事件，是 **fetch-event-source 的连接错误回调**。触发路径详见图上方调用链。
 
 **待解矛盾（受控复现目标）**：onerror 的 handler 会执行 `controller.abort()` 杀掉连接，而 HAR 显示该流活满 153 秒且 body 完整——**一次 onerror 之后流为什么还活着**。复现目标：队列自动消费场景下观察 onerror 触发与流存活的时序关系；候选解释含 fetch-event-source 重连语义（isAborted 守卫 return 不 throw → 自动重试）等，需一手数据裁决。
 
@@ -120,7 +120,7 @@ RunOver 显示运行完毕**不能证明 FINAL_RESULT 到达**——取证易错
 | 检查项 | 结果 | 推论 |
 | --- | --- | --- |
 | 事件分布 | MESSAGE 8734 / HEART_BEAT 15 / PROCESSING 82 / **FINAL_RESULT 1（第 8832/8832，流的最末）** | 事件序正确 |
-| 首分片位置 | 独立「我来」分片 = **第 1/8832 个事件**（finished=false），流开始即达 | 无乱序（前版"迟到分片"撤回的依据） |
+| 首分片位置 | 独立「我来」分片 = **第 1/8832 个事件**（finished=false），流开始即达 | 流内无乱序 |
 | FINAL_RESULT 载荷 | `success: true`、`completed: true`、`error: null` | **M1 排除**：`resolveTerminalTaskStatus` 必返回 COMPLETE |
 | 终态后杂散事件 | 无 | **M2 chat 流变体排除** |
 | 终态是否送达 | 送达且在流末（19:03:55.125，与流结束 19:03:55.117 吻合） | **M3 排除** |
@@ -167,17 +167,11 @@ RunOver 显示运行完毕**不能证明 FINAL_RESULT 到达**——取证易错
 
 ## 6. 修复方案详述与影响分析（commit `452094f28` = A、`f0d7068cf` = B）
 
-### 6.1 ~~方案 A：ERROR 降级~~ → 已撤回，ERROR 恢复与 FINAL_RESULT 同权（完整清算）
+### 6.1 ERROR 恢复与 FINAL_RESULT 同权完整清算（`cb91f4418`）
 
-**撤回原因（2026-08-19 复盘修正）**：
+**协议依据**：ERROR 与 FINAL_RESULT 同为轮次终止态——后端出错时 `sessionPromptEnd(error)` → `sink.error` → ERROR 事件 + 流必然关闭。到达即完整清算（FAILED + 全清 + 末条 Error），无延迟。
 
-1. **协议语义**：ERROR 与 FINAL_RESULT 同为轮次终止态——后端出错时 `sessionPromptEnd(error)` → `sink.error` → ERROR 事件 + **流必然关闭**。到达即完整清算（FAILED + 全清 + 末条 Error）是正确语义；降级把协议终止态降成了二等公民（真终止时状态机清理延迟 200-500ms 等 onClose，若后端异常未关流则要等 60s 看门狗）。
-2. **降级前提不成立**：「ERROR 可能在流中到达且流继续」从未被观测到——它建立在已撤回的"迟到分片"理论之上。HAR body 8832 事件中零 ERROR 事件。
-3. **真凶另有所在**：1678724 流中清门的触发源经调用栈逐帧定位是**连接级 onerror**（fetch-event-source 错误回调 → model onError 全量收尾），与事件路径无关——A 拦错了对象。
-
-**当前代码状态**：`finalizeChatTerminalEvent` 已恢复 ERROR → `TaskStatus.FAILED` → 完整 sweep（与 FINAL_RESULT 同权）；always-on 的 `finalize terminal` 日志保留。降级日志（`terminal-event ERROR degraded`）随撤回移除。
-
-**本案的真正修复对象（待复现确认后设计）**：连接级 onError 路径——1678724 中它在流存活期间执行了全量收尾（含写 FAILED + 清状态 → 门开）。待解矛盾：onerror 后 handler 自己 `controller.abort()` 应杀连接，而该流活满 153 秒且 body 完整。受控复现目标：队列自动消费场景下观察 onerror 与流存活的时序关系；候选修复：onError 全量路径执行前校验连接确实终结，及此前发现的两个守卫缺口（工具层 catch 补 isAborted、model 过期守卫补 null 窗口）。
+**本案的真正修复对象（待复现确认后设计）**：连接级 onError 路径——1678724 中它在流存活期间执行了全量收尾（含写 FAILED + 清状态 → 门开）。待解矛盾：onerror 后 handler 自己 `controller.abort()` 应杀连接，而该流活满 153 秒且 body 完整。受控复现目标：队列自动消费场景下观察 onerror 与流存活的时序关系。
 
 ### 6.2 方案 B：终态守卫丢弃迟到 MESSAGE 分片（`f0d7068cf`）
 
@@ -213,7 +207,7 @@ RunOver 显示运行完毕**不能证明 FINAL_RESULT 到达**——取证易错
 - B 守卫日志 `drop late MESSAGE chunk`（既有 always-on）
 - 验证表见 §7.1
 
-### 6.4 修复版图（A 撤回后）
+### 6.4 修复版图
 
 ```
 ✅ B（已合入 f0d7068cf）：终态守卫——已终态消息不接受分片状态回退（防"终态后被回退"）
