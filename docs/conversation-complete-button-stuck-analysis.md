@@ -249,13 +249,24 @@ B 与事件路径的关系不变：无论终态由 FINAL_RESULT 还是 ERROR 事
 - [ ] review `stash@{0}` 的终态守卫（§6-B，与 A 互补）
 - [ ] 修复验证后发版；生产验证按下表日志标志
 
-### 7.1 生效验证的日志标志（发版后生产 console 直接可判）
+### 7.1 验收日志体系（发版后生产 console 直接可判）
 
-| 日志（均 always-on） | 出现时机 | 说明什么 |
-| --- | --- | --- |
-| `[ConversationTerminalSweep] finalize terminal {conversationId, taskStatus}` | 每轮正常完成/终态到达 | **方案 A 生效**：终态完整收敛（sweep 日志已升 always-on） |
-| `drop late MESSAGE chunk: message already terminal {messageId, chunkType}` | 已终态消息收到迟到分片 | **方案 B 生效**：守卫丢弃了回退分片 |
-| `applyTerminalTaskStatus {prev, next}` | 任意终态写回 | 既有日志：状态迁移轨迹（含降级路径的 → FAILED） |
-| （Network 层）流进行中无详情轮询请求 | 全程 | A 的行为验证：19:02:32 那种"流中轮询重启"应消失 |
+所有 always-on 日志统一前缀 `Conv:`（三个子域），`createAlwaysLogger` 自动带 ISO 时间戳。console 过滤 `[Conv:` 即可拉出全部会话相关日志。
 
-**反向判定（未生效/回归）**：流中 ERROR 后出现 `cancel polling: local send started`（无对应 POST 的"假发送"）或流中出现详情轮询请求 = A 未生效；已终态后消息状态回 Incomplete = B 未生效。
+| 前缀 | 子域 | 日志 | 验证什么 |
+| --- | --- | --- | --- |
+| `[Conv:TS]` | Terminal Sweep | `finalize terminal {source, origin, conversationId, taskStatus}` | 终态收敛（origin: FINAL_RESULT / ERROR / poll-snapshot） |
+| `[Conv:TS]` | Terminal Sweep | `finalize streaming placeholder {source, messageId, outcome, busy}` | sub 占位收尾 + 活跃态重算 |
+| `[Conv:ET]` | Error Terminal | `drop late MESSAGE chunk {messageId, chunkType, chunkText}` | **守卫 B**：终态后迟到分片被丢弃 |
+| `[Conv:ET]` | Error Terminal | `applyTerminalTaskStatus {conversationId, prev, next}` | 状态迁移轨迹 |
+| `[Conv:ET]` | Error Terminal | `sse-on-close {conversationId, hasResolvedTerminalStatus, isStale}` | onClose 触发时机 |
+| `[Conv:ET]` | Error Terminal | `sse-on-error apply FAILED {conversationId, messageId, prevTaskStatus}` | 连接级 onError 全量收尾 |
+| `[Conv:ET]` | Error Terminal | `sse-error-event apply FAILED {conversationId, ...}` | ERROR 事件终止态处理 |
+| `[Conv:ET]` | Error Terminal | `emitConversationListTaskStatus` / `skip` / `noop` | 侧栏同步 / 守卫边界 |
+| `[Conv:SR]` | Stream Resume | `resume sub:start` / `reload before sub:done` | sub 恢复流建立 |
+| `[Conv:SR]` | Stream Resume | `skip: local stream cooldown` / `skip: sub failure backoff` / `sub short-lived` | sub 退避/冷却 |
+| `[Conv:SR]` | Stream Resume（轮询） | `resume` / `stop` / `cancel polling: local send started` / `discard stale snapshot` | 轮询启停/丢弃 |
+
+**验收操作**：出问题会话 → F12 console 过滤 `[Conv:` → 按时间戳排 → 读 origin/prev→next/isStale/hasResolvedTerminalStatus/drop late 字段 → 完整还原终态链路调用顺序。不需要 HAR、不需要后端日志。
+
+**反向判定（未生效/回归）**：终态后消息状态回 Incomplete（无 `drop late` 日志）= B 未生效；`applyTerminalTaskStatus` 出现 EXECUTING→EXECUTING noop 死循环 = 轮询在打但后端状态不动；`sse-on-close` 后无 `resume` = 轮询门卡死。**反向判定（未生效/回归）**：流中 ERROR 后出现 `cancel polling: local send started`（无对应 POST 的"假发送"）或流中出现详情轮询请求 = A 未生效；已终态后消息状态回 Incomplete = B 未生效。
