@@ -120,29 +120,45 @@ export function useConversationTerminalFinalizer(
         if (!prev?.length) {
           return prev;
         }
+        // 与 isSessionStreamBusy 的检查窗口对齐：末条状态 + 最近 5 条的
+        // EXECUTING processing 残留都要收敛，否则任一残留都会让 busy 持续为
+        // true → 活跃态被 rAF 重算顶回 true → 按钮卡「会话中」。
+        const RECENT_WINDOW = 5;
         const lastIndex = prev.length - 1;
-        const tail = prev[lastIndex];
-        const tailIncomplete =
-          tail.status === MessageStatusEnum.Loading ||
-          tail.status === MessageStatusEnum.Incomplete;
-        const processingList = Array.isArray(tail.processingList)
-          ? tail.processingList.map((item) =>
-              item.status === ProcessingEnum.EXECUTING
-                ? { ...item, status: processingTerminalStatus }
-                : item,
-            )
-          : tail.processingList;
-        const processingChanged = processingList !== tail.processingList;
-        if (!tailIncomplete && !processingChanged) {
+        const firstRecent = Math.max(0, lastIndex - RECENT_WINDOW + 1);
+        const next = prev.slice();
+        let changed = false;
+
+        for (let i = lastIndex; i >= firstRecent; i -= 1) {
+          const message = next[i];
+          const isTail = i === lastIndex;
+          const incomplete =
+            isTail &&
+            (message.status === MessageStatusEnum.Loading ||
+              message.status === MessageStatusEnum.Incomplete);
+          const processingList = Array.isArray(message.processingList)
+            ? message.processingList.map((item) =>
+                item.status === ProcessingEnum.EXECUTING
+                  ? { ...item, status: processingTerminalStatus }
+                  : item,
+              )
+            : message.processingList;
+          const processingChanged = processingList !== message.processingList;
+          if (!incomplete && !processingChanged) {
+            continue;
+          }
+          next[i] = {
+            ...message,
+            thinkingFinished: isTail ? true : message.thinkingFinished,
+            status: incomplete ? messageTerminalStatus : message.status,
+            processingList,
+          };
+          changed = true;
+        }
+
+        if (!changed) {
           return prev;
         }
-        const next = prev.slice();
-        next[lastIndex] = {
-          ...tail,
-          thinkingFinished: true,
-          status: tailIncomplete ? messageTerminalStatus : tail.status,
-          processingList,
-        };
         messageListRef.current = next;
         return next;
       });
