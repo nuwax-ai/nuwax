@@ -114,13 +114,14 @@ export const logger = createLogger(`[App:${APP_VERSION}]`);
 export const workflowLogger = createLogger(`[Workflow:V3:${APP_VERSION}]`);
 
 // 会话流式恢复（sub / 冷却 / 退避）—— 生产环境也输出，便于线上确认续接行为
-export const conversationResumeLogger = createAlwaysLogger('[Conv:SR]');
+export const conversationResumeLogger = createAlwaysLogger('[Conv:Resume]');
 
 // 会话流式恢复 taskStatus 轮询 —— 与 sub 恢复共用前缀 [ConvSR]
 export const conversationPollLogger = conversationResumeLogger;
 
 // 会话出错落终态验证 —— 生产环境也输出，便于确认 ERROR → FAILED 是否落地
-export const conversationErrorTerminalLogger = createAlwaysLogger('[Conv:ET]');
+export const conversationErrorTerminalLogger =
+  createAlwaysLogger('[Conv:Status]');
 
 // 开发环境下挂载到 window，方便调试
 if (isDev && typeof window !== 'undefined') {

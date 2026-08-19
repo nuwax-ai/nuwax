@@ -16,7 +16,7 @@ import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
 import { useCallback, useMemo } from 'react';
 
 // always-on：终态收敛/降级是会话卡死类问题的核心生产观测点（每轮会话仅 1-2 条，无噪音）
-const conversationTerminalSweepLogger = createAlwaysLogger('[Conv:TS]');
+const conversationTerminalSweepLogger = createAlwaysLogger('[Conv:Terminal]');
 
 export interface UseConversationTerminalFinalizerOptions {
   /** 日志来源：区分主会话 model 与预览 Tab model */
@@ -191,6 +191,16 @@ export function useConversationTerminalFinalizer(
       res: ConversationChatResponse | undefined,
     ) => {
       if (!conversationId || !res) {
+        return;
+      }
+      // 只处理终态事件类型（FINAL_RESULT / ERROR）——其他事件（PROCESSING/
+      // MESSAGE/HEART_BEAT 等）一律不进清算。实测 PROCESSING 事件的载荷可能含
+      // resolveTerminalTaskStatus 可解析的字段，误触发完整清算后，守卫 B 会把
+      // 后续正常 CHAT 分片全部丢弃（1560859 实证：内容丢失）。
+      if (
+        res.eventType !== ConversationEventTypeEnum.FINAL_RESULT &&
+        res.eventType !== ConversationEventTypeEnum.ERROR
+      ) {
         return;
       }
       const status =
