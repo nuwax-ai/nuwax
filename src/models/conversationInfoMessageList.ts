@@ -118,14 +118,24 @@ const getIdlessMessageKey = (message: MessageInfo): string => {
     : `idless:${getIdlessMessageSignature(message)}`;
 };
 
-/** 将最近一轮的客户端渲染标识迁移到对应的服务端消息。 */
+/**
+ * 将最近一轮的客户端渲染标识迁移到对应的服务端消息，并返回
+ * 「服务端消息下标 → 对应本地客户端消息」的映射。
+ *
+ * 该映射供终态快照合并时使用：乐观 uuid 消息在服务端快照中无法按 id 定位，
+ * 需要借由轮次内的顺序对应关系，精确定位应保留本地呈现的消息。
+ */
 const preserveClientRenderKeys = (
   clientRound: MessageInfo[],
   incoming: MessageInfo[],
-): MessageInfo[] => {
+): {
+  list: MessageInfo[];
+  localByIncomingIndex: Map<number, MessageInfo>;
+} => {
+  const localByIncomingIndex = new Map<number, MessageInfo>();
   const clientUser = clientRound[0];
   if (clientUser?.role !== AssistantRoleEnum.USER) {
-    return incoming;
+    return { list: incoming, localByIncomingIndex };
   }
 
   const result = [...incoming];
@@ -141,7 +151,7 @@ const preserveClientRenderKeys = (
     }
   }
   if (cursor < 0) {
-    return incoming;
+    return { list: incoming, localByIncomingIndex };
   }
 
   clientRound.forEach((clientMessage, clientIndex) => {
@@ -162,62 +172,89 @@ const preserveClientRenderKeys = (
       clientRenderKey:
         clientMessage.clientRenderKey || String(clientMessage.id),
     };
+    localByIncomingIndex.set(matchedIndex, clientMessage);
     cursor = matchedIndex + 1;
   });
-  return result;
+  return { list: result, localByIncomingIndex };
 };
 
 /**
- * 已收到 FINAL_RESULT 的本地消息，其可见内容由当前 SSE 结果持有到页面离开。
+ * 会话终态快照（轮询/恢复读取）合并时，保留本地消息的可见呈现。
  *
- * 会话快照仍可补齐服务端 id/index 以及 ACP/MCP 交互状态，但不能用落库过程中
- * 存在细微差异的 text/think/processing 等字段覆盖当前内容，否则 Markdown 会在
- * 会话结束后再次渲染，产生肉眼可见的闪烁。
+ * 本地 SSE 流式渲染的 text/think/processingList 与后端落库快照可能存在细微
+ * 差异；若直接用快照覆盖，Markdown/思考区会重新渲染，产生肉眼可见的闪烁。
+ * 会话结束后轮询仍在继续，因此需要冻结「本地已终态」消息的呈现字段。
+ *
+ * 匹配优先级：
+ * 1. 稳定服务端 id（更早轮次已落库消息、SSE 中已换服务端 id 的中间过程消息）；
+ * 2. 客户端轮次映射（乐观 uuid 消息按轮次内顺序对应）；
+ * 3. clientRenderKey + finalResult（历史兼容兜底：仅最终结果消息）。
+ *
+ * 只有「本地已终态（非 loading/incomplete）」的消息才保留本地呈现；
+ * 流式中的消息仍允许快照更新补齐。保留范围仅呈现字段，id/index 与
+ * mcpAsk/ACP 等交互元数据仍取自服务端快照。
  */
 const preserveFinalizedMessagePresentation = (
   current: MessageInfo[],
   incomingList: MessageInfo[],
   incoming: MessageInfo,
   incomingIndex: number,
+  localByIncomingIndex: Map<number, MessageInfo>,
 ): MessageInfo => {
-  if (!incoming.clientRenderKey) {
+  let local: MessageInfo | undefined;
+
+  // 1) 精确匹配：已落库 / 中间过程消息都有服务端稳定 id，按 id 找本地对应消息
+  if (hasStableMessageId(incoming.id)) {
+    local = current.find((message) => sameStableId(message.id, incoming.id));
+  }
+
+  // 2) 乐观 uuid 消息（尚未落库）按客户端轮次映射对应
+  if (!local) {
+    local = localByIncomingIndex.get(incomingIndex);
+  }
+
+  // 3) 兜底：带 finalResult 的最终消息（历史兼容路径）
+  if (!local && incoming.clientRenderKey) {
+    // 同一轮工作流可能产生多条复用 clientRenderKey 的 assistant 消息；FINAL_RESULT
+    // 属于该 key 的最后一条，仅兜底保护该条，避免污染前置过程消息。
+    for (
+      let index = incomingList.length - 1;
+      index > incomingIndex;
+      index -= 1
+    ) {
+      if (incomingList[index].clientRenderKey === incoming.clientRenderKey) {
+        return incoming;
+      }
+    }
+    local = current.find(
+      (message) =>
+        message.clientRenderKey === incoming.clientRenderKey &&
+        message.finalResult,
+    );
+  }
+
+  // 纯后端加载的消息（本地无客户端渲染标识）本地 == 快照，无需保留
+  if (!local || !local.clientRenderKey) {
     return incoming;
   }
 
-  // 同一轮工作流可能产生多条复用 clientRenderKey 的 assistant 消息；FINAL_RESULT
-  // 属于该 key 的最后一条，只保护服务端对应的最后一条，避免污染前置过程消息。
-  for (let index = incomingList.length - 1; index > incomingIndex; index -= 1) {
-    if (incomingList[index].clientRenderKey === incoming.clientRenderKey) {
-      return incoming;
-    }
-  }
-
-  let finalized: MessageInfo | undefined;
-  for (let index = current.length - 1; index >= 0; index -= 1) {
-    const message = current[index];
-    if (
-      message.clientRenderKey === incoming.clientRenderKey &&
-      message.finalResult
-    ) {
-      finalized = message;
-      break;
-    }
-  }
-  if (!finalized) {
+  // 流式中的消息（loading/incomplete）仍以快照为准；已终态
+  // （Complete/Error/Stopped/null）才冻结本地呈现，避免结束后的轮询覆盖闪烁。
+  if (!local.finalResult && isIncompleteStatus(local.status)) {
     return incoming;
   }
 
   return {
     ...incoming,
-    clientRenderKey: finalized.clientRenderKey,
-    text: finalized.text,
-    think: finalized.think,
-    attachments: finalized.attachments,
-    requestId: finalized.requestId,
-    status: finalized.status,
-    thinkingFinished: finalized.thinkingFinished,
-    finalResult: finalized.finalResult,
-    processingList: finalized.processingList,
+    clientRenderKey: local.clientRenderKey,
+    text: local.text,
+    think: local.think,
+    attachments: local.attachments,
+    requestId: local.requestId,
+    status: local.status,
+    thinkingFinished: local.thinkingFinished,
+    finalResult: local.finalResult,
+    processingList: local.processingList,
   };
 };
 
@@ -496,10 +533,8 @@ export function reconcileConversationSnapshotMessages(
 
   // 先归并当前列表，可立即清除之前轮询已经累计的重复开场白。
   persisted.forEach((message) => upsert(message, false));
-  const incomingWithRenderKeys = preserveClientRenderKeys(
-    clientRound,
-    incomingList,
-  );
+  const { list: incomingWithRenderKeys, localByIncomingIndex } =
+    preserveClientRenderKeys(clientRound, incomingList);
   incomingWithRenderKeys
     .map((message, index) =>
       preserveFinalizedMessagePresentation(
@@ -507,6 +542,7 @@ export function reconcileConversationSnapshotMessages(
         incomingWithRenderKeys,
         message,
         index,
+        localByIncomingIndex,
       ),
     )
     .forEach((message) => upsert(message, true));

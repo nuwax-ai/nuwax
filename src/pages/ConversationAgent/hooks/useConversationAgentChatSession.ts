@@ -20,7 +20,6 @@ import type {
   MessageInfo,
   RoleInfo,
 } from '@/types/interfaces/conversationInfo';
-import { applyTerminalTaskStatus } from '@/utils/conversationTaskStatusSync';
 import cloneDeep from 'lodash/cloneDeep';
 import { useCallback, useMemo } from 'react';
 import { useModel } from 'umi';
@@ -73,7 +72,6 @@ export function useConversationAgentChatSession(
 
   const {
     conversationInfo,
-    setConversationInfo,
     messageList,
     setMessageList,
     chatSuggestList,
@@ -94,6 +92,9 @@ export function useConversationAgentChatSession(
     runAsync,
     clearFilePanelInfo,
     isConversationActive: agentStreamActive,
+    isAwaitingChatTerminal,
+    // 统一终态清算入口（终态确认后一次性收敛 taskStatus + awaiting + 活跃态 + 末条消息）
+    finalizeConversationTerminal,
     // 停止会话相关
     runStopConversation,
     loadingStopConversation,
@@ -257,6 +258,7 @@ export function useConversationAgentChatSession(
     isConversationActive: agentStreamActive || agentTaskExecuting,
     // 本地是否正在 SSE 发送/接收（纯，不含后台 EXECUTING），供流式恢复 hook 使用
     isLocallyStreaming: agentStreamActive,
+    isAwaitingChatTerminal,
     queueContext: {
       streamActive: agentStreamActive,
       taskExecuting: agentTaskExecuting,
@@ -268,7 +270,9 @@ export function useConversationAgentChatSession(
     resumeDebugSource: 'agent-dev:preview-tab-session',
     onTerminalTaskStatus: async (status: TaskStatus) => {
       if (!devConversationId) return;
-      applyTerminalTaskStatus(setConversationInfo, devConversationId, status);
+      // 统一终态清算：轮询/sub 关闭路径拿到的终态同样要收敛状态机，
+      // 不能只写 taskStatus（1677549 复现：taskStatus 落了 COMPLETE 页面仍卡「会话中」）
+      finalizeConversationTerminal(devConversationId, status);
       // 终态兜底 reload messageList：dev-agent 经 flow-debugger 等外部写入会话的消息，
       // 若错过 EXECUTING 窗口（sub 流没接住），这里拉最新历史确保预览可见
       if (getCurrentConversationId() !== devConversationId) return;

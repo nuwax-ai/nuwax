@@ -7,10 +7,31 @@ import { MessageStatusEnum } from '@/types/enums/common';
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { mockUseRequest, mockEventBusEmit } = vi.hoisted(() => ({
-  mockUseRequest: vi.fn(),
-  mockEventBusEmit: vi.fn(),
-}));
+const { mockUseRequest, mockEventBusEmit, mockPollLoggerInfo } = vi.hoisted(
+  () => ({
+    mockUseRequest: vi.fn(),
+    mockEventBusEmit: vi.fn(),
+    mockPollLoggerInfo: vi.fn(),
+  }),
+);
+
+vi.mock('@/utils/logger', () => {
+  const noopLogger = {
+    log: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+  };
+  return {
+    createLogger: () => noopLogger,
+    createAlwaysLogger: () => noopLogger,
+    logger: noopLogger,
+    conversationResumeLogger: noopLogger,
+    conversationPollLogger: { ...noopLogger, info: mockPollLoggerInfo },
+    conversationErrorTerminalLogger: noopLogger,
+  };
+});
 
 vi.mock('ahooks', () => ({
   useRequest: (...args: unknown[]) => mockUseRequest(...args),
@@ -34,12 +55,14 @@ vi.mock('@/constants/home.constants', () => ({
 }));
 
 vi.mock('@/utils/conversationTaskStatusSync', () => ({
+  emitConversationListTaskStatus: vi.fn(),
   fetchConversationSnapshot: vi.fn(),
   fetchConversationTaskStatus: vi.fn(),
   resolveTaskStatusFromMessageLists: vi.fn(),
 }));
 
 import {
+  fetchConversationSnapshot,
   fetchConversationTaskStatus,
   resolveTaskStatusFromMessageLists,
 } from '@/utils/conversationTaskStatusSync';
@@ -50,13 +73,16 @@ describe('useConversationStreamResume', () => {
     | undefined;
   let runPolling: ReturnType<typeof vi.fn>;
   let cancelPolling: ReturnType<typeof vi.fn>;
+  let useRequestOptions: any;
 
   beforeEach(() => {
     vi.clearAllMocks();
     onSuccess = undefined;
+    useRequestOptions = undefined;
     runPolling = vi.fn();
     cancelPolling = vi.fn();
     mockUseRequest.mockImplementation((_service, options) => {
+      useRequestOptions = options;
       onSuccess = options?.onSuccess;
       return { run: runPolling, cancel: cancelPolling };
     });
@@ -107,6 +133,158 @@ describe('useConversationStreamResume', () => {
     onSuccess?.(snapshot);
 
     expect(onConversationSnapshot).toHaveBeenCalledWith(snapshot);
+  });
+
+  it('本地流已结束但聊天终态未到时仍禁止轮询', () => {
+    const { rerender } = renderHook(
+      ({ awaitingTerminal }) =>
+        useConversationStreamResume({
+          conversationId: 1555404,
+          taskStatus: TaskStatus.COMPLETE,
+          isLocallyStreaming: false,
+          isAwaitingChatTerminal: awaitingTerminal,
+          resumeStream: vi.fn(),
+        }),
+      { initialProps: { awaitingTerminal: true } },
+    );
+
+    expect(useRequestOptions.ready).toBe(false);
+
+    rerender({ awaitingTerminal: false });
+
+    expect(useRequestOptions.ready).toBe(true);
+  });
+
+  it('历史快照最后一条为 USER 时不覆盖当前消息列表', () => {
+    const onConversationSnapshot = vi.fn();
+    renderHook(() =>
+      useConversationStreamResume({
+        conversationId: 1555404,
+        taskStatus: TaskStatus.COMPLETE,
+        isLocallyStreaming: false,
+        isAwaitingChatTerminal: false,
+        resumeStream: vi.fn(),
+        onConversationSnapshot,
+      }),
+    );
+
+    emitPollingStatus(TaskStatus.COMPLETE, [
+      {
+        id: 'persisted-user',
+        role: AssistantRoleEnum.USER,
+        text: '尚未落库 assistant 的用户消息',
+      },
+    ]);
+
+    expect(onConversationSnapshot).not.toHaveBeenCalled();
+  });
+
+  it('轮询在途时开始发送会取消轮询并丢弃旧回包', () => {
+    const onConversationSnapshot = vi.fn();
+    const onTerminalTaskStatus = vi.fn();
+    const { rerender } = renderHook(
+      ({ streaming }) =>
+        useConversationStreamResume({
+          conversationId: 1555404,
+          taskStatus: TaskStatus.COMPLETE,
+          isLocallyStreaming: streaming,
+          resumeStream: vi.fn(),
+          onConversationSnapshot,
+          onTerminalTaskStatus,
+        }),
+      { initialProps: { streaming: false } },
+    );
+
+    rerender({ streaming: true });
+    emitPollingStatus(TaskStatus.COMPLETE, [{ id: 2, text: 'stale message' }]);
+
+    expect(cancelPolling).toHaveBeenCalled();
+    expect(onConversationSnapshot).not.toHaveBeenCalled();
+    expect(onTerminalTaskStatus).not.toHaveBeenCalled();
+
+    // 两条关键日志用于线上/开发环境自证：取消轮询 + 丢弃旧回包
+    const loggedMessages = mockPollLoggerInfo.mock.calls.map(([msg]) => msg);
+    expect(loggedMessages).toContain('cancel polling: local send started');
+    expect(loggedMessages).toContain('discard stale snapshot');
+  });
+
+  it('可见性恢复请求在途时开始发送会丢弃旧回包', async () => {
+    let resolveSnapshot!: (snapshot: any) => void;
+    const snapshotPromise = new Promise<any>((resolve) => {
+      resolveSnapshot = resolve;
+    });
+    (fetchConversationSnapshot as any).mockReturnValueOnce(snapshotPromise);
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
+
+    const onConversationSnapshot = vi.fn();
+    const onTerminalTaskStatus = vi.fn();
+    const resumeStream = vi.fn();
+    const { rerender } = renderHook(
+      ({ streaming }) =>
+        useConversationStreamResume({
+          conversationId: 1555404,
+          taskStatus: TaskStatus.COMPLETE,
+          isLocallyStreaming: streaming,
+          resumeStream,
+          onConversationSnapshot,
+          onTerminalTaskStatus,
+        }),
+      { initialProps: { streaming: false } },
+    );
+
+    act(() => {
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    expect(fetchConversationSnapshot).toHaveBeenCalledWith(1555404);
+
+    rerender({ streaming: true });
+    await act(async () => {
+      resolveSnapshot({
+        id: 1555404,
+        taskStatus: TaskStatus.COMPLETE,
+        messageList: [{ id: 2, text: 'stale message' }],
+      });
+      await snapshotPromise;
+    });
+
+    expect(onConversationSnapshot).not.toHaveBeenCalled();
+    expect(onTerminalTaskStatus).not.toHaveBeenCalled();
+    expect(resumeStream).not.toHaveBeenCalled();
+  });
+
+  it('可见性恢复请求在途时忽略重复 visibilitychange', async () => {
+    let resolveSnapshot!: (snapshot: any) => void;
+    const snapshotPromise = new Promise<any>((resolve) => {
+      resolveSnapshot = resolve;
+    });
+    (fetchConversationSnapshot as any).mockReturnValue(snapshotPromise);
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
+
+    renderHook(() =>
+      useConversationStreamResume({
+        conversationId: 1555404,
+        taskStatus: TaskStatus.COMPLETE,
+        isLocallyStreaming: false,
+        isAwaitingChatTerminal: false,
+        resumeStream: vi.fn(),
+      }),
+    );
+
+    act(() => {
+      document.dispatchEvent(new Event('visibilitychange'));
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+
+    expect(fetchConversationSnapshot).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      resolveSnapshot({
+        id: 1555404,
+        taskStatus: TaskStatus.COMPLETE,
+        messageList: [],
+      });
+      await snapshotPromise;
+    });
   });
 
   it('轮询 onSuccess 收到 EXECUTING 时不写回', () => {

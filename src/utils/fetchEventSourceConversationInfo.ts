@@ -127,11 +127,6 @@ export function createSSEConnection<T = any>(
       // 计算距离最后一次消息的时间间隔（毫秒）
       const timeSinceLastMessage = Date.now() - lastMessageTimestamp;
       const timeoutThreshold = 60 * 1000; // 60秒超时阈值
-      console.log(
-        `⏰ [SSE Utils] 未收到消息，距离上次消息时间: ${Math.round(
-          timeSinceLastMessage / 1000,
-        )}秒`,
-      );
 
       // 如果超过60秒未收到消息，主动断开连接
       if (timeSinceLastMessage >= timeoutThreshold) {

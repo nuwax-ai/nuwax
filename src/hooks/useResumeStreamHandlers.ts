@@ -122,6 +122,29 @@ export interface UseResumeStreamHandlersDeps {
    * 在 sub 开/关时调用，避免恢复流的工作流多步骤输出因上次残留 id 误插重复行。
    */
   resetResumeMessageState?: () => void;
+  /**
+   * 终态事件（FINAL_RESULT / ERROR）回调：sub 重放送达终态时收敛 model 状态机。
+   * 关键场景：本地发送连接已静默死亡（ERR_NETWORK_CHANGED 安静变体），FINAL_RESULT
+   * 只能经 sub 的 pub/sub 重放到达——不清算 isAwaitingChatTerminal/活跃态/末条消息，
+   * 停止按钮常驻、轮询永久停摆（1677549 复现）。
+   */
+  onTerminalEvent?: (
+    conversationId: number | string,
+    res: ConversationChatResponse,
+  ) => void;
+  /**
+   * sub 关闭时收尾本次恢复的占位消息（Loading/Incomplete → Stopped 并重算活跃态）。
+   * 关键场景：sub 中途死亡（网络切换）且本地 chat 连接不存在时，占位残留 incomplete
+   * → isSessionStreamBusy 永真 → 详情轮询被 blockedBy: local-stream-active 永堵
+   * （1560798 复现）。未提供则跳过。
+   */
+  onStreamClosed?: (placeholderId: string | null) => void;
+  /**
+   * sub 网络错误时回调（区别于正常关闭）：model 应按本地 chat 连接 onError 的同款
+   * 处置收敛——占位落 Error、taskStatus 落 FAILED，统一两种连接在同一网络故障下的
+   * 页面表现（否则 sub 场景会停留在「智能体正在执行，请稍等」+ 会话中按钮）。
+   */
+  onStreamError?: (placeholderId: string | null) => void;
 }
 
 export function useResumeStreamHandlers(deps: UseResumeStreamHandlersDeps) {
@@ -143,6 +166,13 @@ export function useResumeStreamHandlers(deps: UseResumeStreamHandlersDeps) {
   // 首次渲染的旧版本（其读取的 conversationInfo?.agent?.hideDesktop 等会过期）。改读 ref.current。
   const handleChangeMessageListRef = useRef(deps.handleChangeMessageList);
   handleChangeMessageListRef.current = deps.handleChangeMessageList;
+  // onTerminalEvent 同理：异步回调里读 ref.current，避免 stale 闭包
+  const onTerminalEventRef = useRef(deps.onTerminalEvent);
+  onTerminalEventRef.current = deps.onTerminalEvent;
+  const onStreamClosedRef = useRef(deps.onStreamClosed);
+  onStreamClosedRef.current = deps.onStreamClosed;
+  const onStreamErrorRef = useRef(deps.onStreamError);
+  onStreamErrorRef.current = deps.onStreamError;
 
   // 中断会话流式恢复(sub)连接，并重置占位记忆
   const abortResumeStream = useCallback(() => {
@@ -330,6 +360,14 @@ export function useResumeStreamHandlers(deps: UseResumeStreamHandlersDeps) {
             res,
             currentMessageId,
           );
+          // 终态事件 → model 统一清算（sub 重放送达的 FINAL_RESULT 同样有效，
+          // 不能只依赖已死的本地连接回调来收敛状态机）
+          if (
+            res?.eventType === ConversationEventTypeEnum.FINAL_RESULT ||
+            res?.eventType === ConversationEventTypeEnum.ERROR
+          ) {
+            onTerminalEventRef.current?.(conversationId, res);
+          }
           // 会话执行失败(ERROR)：主动断开 sub，使轮询恢复——FAILED 不属于「执行中」，
           // 也要继续轮询检测后续重试等状态变化（轮询只在「执行中 / document.hidden」时暂停）
           if (res?.eventType === ConversationEventTypeEnum.ERROR) {
@@ -355,9 +393,17 @@ export function useResumeStreamHandlers(deps: UseResumeStreamHandlersDeps) {
             });
           }
         },
+        // 网络错误与正常关闭区别处置：错误按 chat onError 同款收敛（占位 Error + FAILED）；
+        // 随后工具层仍会触发 onClose → onStreamClosed（占位已是 Error，幂等 noop + 活跃态重算）
+        onError: () => {
+          onStreamErrorRef.current?.(resumeMessageIdRef.current);
+        },
         onClose: () => {
           resumeAbortRef.current = null;
           resumeConversationIdRef.current = null;
+          // 收尾本次恢复的占位：sub 中途死亡（网络切换等）且本地 chat 连接不存在时，
+          // 占位残留 Loading/Incomplete → 活跃态永真 → 详情轮询被 local-stream-active 永堵
+          onStreamClosedRef.current?.(resumeMessageIdRef.current);
           // 关闭时再次重置，避免恢复流的残留 id 影响后续 live 发送
           resetResumeMessageState?.();
           onClose?.();

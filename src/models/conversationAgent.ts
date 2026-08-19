@@ -20,6 +20,7 @@ import {
   MESSAGE_PAGE_SIZE,
 } from '@/constants/common.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
+import { useConversationTerminalFinalizer } from '@/hooks/useConversationTerminalFinalizer';
 import { isSessionStreamBusy } from '@/hooks/useExecutingTaskStatusPoll';
 import { useResumeStreamHandlers } from '@/hooks/useResumeStreamHandlers';
 import { getCustomBlock } from '@/plugins/ds-markdown-process';
@@ -35,6 +36,7 @@ import {
   ConversationEventTypeEnum,
   MessageModeEnum,
   MessageTypeEnum,
+  TaskStatus,
 } from '@/types/enums/agent';
 import { MessageStatusEnum, ProcessingEnum } from '@/types/enums/common';
 import { OpenCloseEnum } from '@/types/enums/space';
@@ -58,12 +60,14 @@ import { modalConfirm } from '@/utils/ant-custom';
 import {
   applyTerminalTaskStatus,
   createSyncConversationTaskStatus,
+  emitConversationListTaskStatus,
   mergeConversationInfoTaskStatus,
   resolveTerminalTaskStatus,
   subscribeChatFinishedTaskSync,
   syncTerminalConversationTaskStatus,
 } from '@/utils/conversationTaskStatusSync';
 import { createSSEConnection } from '@/utils/fetchEventSourceConversationInfo';
+import { conversationErrorTerminalLogger } from '@/utils/logger';
 import {
   perfTracker,
   type MessagePerfLifecycle,
@@ -155,6 +159,9 @@ export default () => {
 
   // 会话是否正在进行中（有消息正在流式处理 Loading/Incomplete）
   const [isConversationActive, setIsConversationActiveRaw] =
+    useState<boolean>(false);
+  // 本地 chat 已发起但协议终态尚未到达；与流式 UI 活跃态分离。
+  const [isAwaitingChatTerminal, setIsAwaitingChatTerminal] =
     useState<boolean>(false);
   // 发送后 3s 内拒绝置 false，避免 SSE 回流间隙覆盖乐观 true
   const lastSendAtRef = useRef(0);
@@ -340,6 +347,25 @@ export default () => {
   const disabledConversationActive = () => {
     setIsConversationActive(false);
   };
+
+  // ===== 统一终态清算 =====
+  // 终态无论从哪条路径到达（chat SSE / sub 重放 / 轮询快照）一次性收敛状态机，
+  // 打破「状态绑定在原发送连接回调」的卡死链（1677549 复现）。
+  // 完整背景与守卫说明见 useConversationTerminalFinalizer。
+  const {
+    finalizeConversationTerminal,
+    finalizeChatTerminalEvent,
+    finalizeStreamingPlaceholder,
+  } = useConversationTerminalFinalizer({
+    source: 'conversationAgent',
+    conversationInfoRef,
+    lastSendAtRef,
+    setConversationInfo,
+    setMessageList,
+    messageListRef,
+    setIsAwaitingChatTerminal,
+    setIsConversationActive,
+  });
 
   // 查询会话
   const {
@@ -766,6 +792,25 @@ export default () => {
           thinkingFinished: true,
           status: MessageStatusEnum.Error,
         };
+        // 会话出错即终态：立即把会话 taskStatus 落为 FAILED（等同已停止），
+        // 否则本地会固化在 EXECUTING，导致停止按钮常驻、队列因 taskExecuting 永不消费。
+        // 同步补偿侧栏「最近使用/会话记录」列表，清除其「执行中」标记。
+        if (params.conversationId) {
+          conversationErrorTerminalLogger.warn('sse-error-event apply FAILED', {
+            conversationId: params.conversationId,
+            messageId: currentMessage?.id ?? currentMessageId,
+            prevTaskStatus: conversationInfoRef.current?.taskStatus,
+          });
+          applyTerminalTaskStatus(
+            setConversationInfo,
+            params.conversationId,
+            TaskStatus.FAILED,
+          );
+          emitConversationListTaskStatus(
+            params.conversationId,
+            TaskStatus.FAILED,
+          );
+        }
       }
 
       // 会话事件兼容处理，防止消息为空时，页面渲染报length错误
@@ -794,7 +839,7 @@ export default () => {
     perfLifecycle.onHttpStart();
 
     // 启动连接（不传 abortController，让 createSSEConnection 内部创建）
-    abortConnectionRef.current = createSSEConnection({
+    const abortConnection = createSSEConnection({
       url: CONVERSATION_CONNECTION_URL,
       method: 'POST',
       headers: {
@@ -810,6 +855,13 @@ export default () => {
         // 将 chunk 的实际载荷也传给 perfTracker，避免只依赖 eventType 误判”首包”
         // 传入整个响应对象：若其中存在 subType（例如 unified 会话流），perfTracker 可据此判断”真正消息块”。
         perfLifecycle.onFirstChunk(res?.eventType, res);
+
+        if (
+          res.eventType === ConversationEventTypeEnum.FINAL_RESULT ||
+          res.eventType === ConversationEventTypeEnum.ERROR
+        ) {
+          setIsAwaitingChatTerminal(false);
+        }
 
         if (
           res.eventType === ConversationEventTypeEnum.MESSAGE &&
@@ -828,6 +880,8 @@ export default () => {
 
         // 现在逻辑已重构为同步，按序处理所有包，包括带有 finished: true 的结束包。
         handleChangeMessageList(params, res, currentMessageId);
+        // 终态事件即清算：不依赖本连接后续的 onClose（连接静默死亡时 onClose 永不触发）
+        finalizeChatTerminalEvent(params.conversationId, res);
         // 滚动到底部：在流式输出期间，使用 'instant' 以避免抖动，且只有在允许自动滚动时才触发
         if (allowAutoScrollRef.current) {
           // 使用 raf 确保在 DOM 更新后立即执行，且不带平滑动画以防指令堆积
@@ -843,6 +897,45 @@ export default () => {
         }
       },
       onClose: async () => {
+        // 过期连接保护：本连接被新一轮发送取代（handleClearSideEffect 先 abort 再置 null，
+        // 随后新一轮 handleConversation 写入新句柄）时，其 abort 触发的延迟 onClose(500ms)
+        // 会在新消息已追加后回调。此时只清理【本连接自己】的消息与执行态，跳过「按列表尾
+        // 标记 Stopped / 清保活 / 关活跃态 / 终态同步」等全局收尾——否则会误停新一轮消息、
+        // 使 streamActive 假性回落 → 队列提前消费下一条 → 新一轮
+        // /api/agent/conversation/chat 被 handleClearSideEffect 意外 abort（高频发送必现）。
+        if (
+          abortConnectionRef.current &&
+          abortConnectionRef.current !== abortConnection
+        ) {
+          setMessageList((list) => {
+            const updatedList = list.map((info: MessageInfo) => {
+              if (info.id !== currentMessageId) {
+                return info;
+              }
+              const processingList = Array.isArray(info.processingList)
+                ? info.processingList.map((item: ProcessingInfo) =>
+                    item.status === ProcessingEnum.EXECUTING
+                      ? { ...item, status: ProcessingEnum.FAILED }
+                      : item,
+                  )
+                : info.processingList;
+              return {
+                ...info,
+                thinkingFinished: true,
+                status:
+                  info.status === MessageStatusEnum.Loading ||
+                  info.status === MessageStatusEnum.Incomplete
+                    ? MessageStatusEnum.Stopped
+                    : info.status,
+                processingList,
+              };
+            });
+            messageListRef.current = updatedList;
+            return updatedList;
+          });
+          syncMessageListRuntimeState();
+          return;
+        }
         // 明确的流结束信号：打破「发送后 3s 保活」，确保活跃态能落 false（停止/快速结束场景）
         lastSendAtRef.current = 0;
         // 将当前会话的loading状态的消息改为Stopped状态，并将所有正在执行的 processing 状态更新为 FAILED
@@ -902,6 +995,7 @@ export default () => {
             setConversationInfo,
           );
         }
+        setIsAwaitingChatTerminal(false);
 
         disabledConversationActive();
 
@@ -911,7 +1005,38 @@ export default () => {
         disabledConversationActive();
       },
       onError: () => {
+        // 过期连接保护：与 onClose 一致。上一轮连接的延迟错误回调只清理自己的消息，
+        // 不弹错误提示、不清保活、不关活跃态，避免污染新一轮消息状态。
+        if (
+          abortConnectionRef.current &&
+          abortConnectionRef.current !== abortConnection
+        ) {
+          setMessageList((list) => {
+            const updatedList = list.map((info: MessageInfo) => {
+              if (info.id !== currentMessageId) {
+                return info;
+              }
+              const processingList = Array.isArray(info.processingList)
+                ? info.processingList.map((item: ProcessingInfo) =>
+                    item.status === ProcessingEnum.EXECUTING
+                      ? { ...item, status: ProcessingEnum.FAILED }
+                      : item,
+                  )
+                : info.processingList;
+              return {
+                ...info,
+                status: MessageStatusEnum.Error,
+                processingList,
+              };
+            });
+            messageListRef.current = updatedList;
+            return updatedList;
+          });
+          syncMessageListRuntimeState();
+          return;
+        }
         message.error(dict('PC.Models.ConversationInfo.networkTimeoutError'));
+        setIsAwaitingChatTerminal(false);
         // 将当前会话的 loading 消息改为 Error，并把其 processingList 中执行中的项更新为 FAILED，
         // 否则 isSessionStreamBusy 会因残留 EXECUTING 项持续为 true，导致活跃态/停止按钮/队列消费卡死。
         setMessageList((list) => {
@@ -935,6 +1060,24 @@ export default () => {
           messageListRef.current = updatedList;
           return updatedList;
         });
+        // 网络错误即终态：把会话 taskStatus 落为 FAILED（等同已停止），并同步侧栏列表，
+        // 避免本地固化 EXECUTING 造成停止按钮常驻、队列 taskExecuting 永不消费。
+        if (params.conversationId) {
+          conversationErrorTerminalLogger.warn('sse-on-error apply FAILED', {
+            conversationId: params.conversationId,
+            messageId: currentMessageId,
+            prevTaskStatus: conversationInfoRef.current?.taskStatus,
+          });
+          applyTerminalTaskStatus(
+            setConversationInfo,
+            params.conversationId,
+            TaskStatus.FAILED,
+          );
+          emitConversationListTaskStatus(
+            params.conversationId,
+            TaskStatus.FAILED,
+          );
+        }
         // 明确终止：打破「发送后 3s 保活」，确保活跃态能立即落 false
         lastSendAtRef.current = 0;
         disabledConversationActive();
@@ -942,6 +1085,8 @@ export default () => {
         perfLifecycle.onStreamEnd('error');
       },
     });
+    // 保存本次连接的 abort 句柄（供下一轮发送/停止时中断；onClose/onError 用它做过期连接识别）
+    abortConnectionRef.current = abortConnection;
   };
 
   // ===== 会话流式恢复(sub)：刷新页面 / 新开标签时，订阅 EXECUTING 会话的输出流 =====
@@ -957,6 +1102,13 @@ export default () => {
       messageViewRef,
       allowAutoScrollRef,
       resetResumeMessageState,
+      // sub 重放送达终态时统一清算（本地连接静默死亡场景的唯一终态到达路径）
+      onTerminalEvent: finalizeChatTerminalEvent,
+      // sub 关闭时收尾占位，活跃态回落 → 详情轮询恢复（1560798 复现的 local-stream-active 永堵）
+      onStreamClosed: finalizeStreamingPlaceholder,
+      // sub 网络错误按 chat onError 同款收敛（占位 Error + FAILED），统一断网时的页面表现
+      onStreamError: (placeholderId) =>
+        finalizeStreamingPlaceholder(placeholderId, 'error'),
     });
 
   // 清除副作用
@@ -993,6 +1145,7 @@ export default () => {
   // 重置初始化
   const resetInit = () => {
     handleClearSideEffect();
+    setIsAwaitingChatTerminal(false);
     // 重置是否还有更多消息
     setIsMoreMessage(false);
     // 重置加载更多消息的状态
@@ -1032,6 +1185,7 @@ export default () => {
     } = sendParams;
     // 清除副作用
     handleClearSideEffect();
+    setIsAwaitingChatTerminal(true);
 
     // 乐观标记流式活跃，保证停止按钮与队列入队判定及时
     setIsConversationActive(true);
@@ -1151,8 +1305,13 @@ export default () => {
     loadingStopConversation,
     // 会话活跃状态（SSE 流式交互中）
     isConversationActive,
+    isAwaitingChatTerminal,
     disabledConversationActive,
     checkConversationActive,
+    // 统一终态清算入口：终态确认后一次性收敛 taskStatus + awaiting + 活跃态 + 末条消息
+    finalizeConversationTerminal,
+    // SSE 终态事件（FINAL_RESULT/ERROR）→ 统一终态清算（sub 恢复流经 useResumeStreamHandlers 复用）
+    finalizeChatTerminalEvent,
     // 当前会话 ID 与请求 ID
     getCurrentConversationId,
     getCurrentConversationRequestId,

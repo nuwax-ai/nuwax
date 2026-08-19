@@ -7,12 +7,16 @@ import type {
   MessageInfo,
 } from '@/types/interfaces/conversationInfo';
 import {
+  emitConversationListTaskStatus,
   fetchConversationSnapshot,
   fetchConversationTaskStatus,
   resolveTaskStatusFromMessageLists,
 } from '@/utils/conversationTaskStatusSync';
 import eventBus from '@/utils/eventBus';
-import { conversationPollLogger, createLogger } from '@/utils/logger';
+import {
+  conversationPollLogger,
+  conversationResumeLogger,
+} from '@/utils/logger';
 import { useRequest } from 'ahooks';
 import { useEffect, useRef, useState } from 'react';
 
@@ -34,6 +38,8 @@ export interface UseConversationStreamResumeOptions {
   taskStatus?: TaskStatus;
   /** 本地是否正在流式发送（model 的 isConversationActive） */
   isLocallyStreaming?: boolean;
+  /** 本地聊天已发起，但本轮尚未收到 FINAL_RESULT / ERROR 等协议终态。 */
+  isAwaitingChatTerminal?: boolean;
   /** 最新 messageList 快照（用于决定占位：复用末尾半成品 / 追加空白占位） */
   messageList?: MessageInfo[];
   /**
@@ -79,7 +85,6 @@ const RESUME_HISTORY_USER_RETRY_DELAYS_MS = [150, 300, 600, 900, 1200, 1800];
 const RESUME_SUB_MIN_ALIVE_MS = 3000;
 const RESUME_SUB_FAILURE_BASE_DELAY_MS = 2000;
 const RESUME_SUB_FAILURE_MAX_DELAY_MS = 30000;
-const conversationResumeLogger = createLogger('[ConversationStreamResume]');
 
 const sleep = (ms: number): Promise<void> =>
   new Promise((resolve) => {
@@ -148,6 +153,7 @@ export function useConversationStreamResume(
     conversationId,
     taskStatus,
     isLocallyStreaming,
+    isAwaitingChatTerminal = false,
     messageList,
     reloadHistoryAsync,
     waitForHistoryUserBeforeResume,
@@ -174,14 +180,28 @@ export function useConversationStreamResume(
     conversationId,
     taskStatus,
     isLocallyStreaming,
+    isAwaitingChatTerminal,
     messageList,
   });
   latestRef.current = {
     conversationId,
     taskStatus,
     isLocallyStreaming,
+    isAwaitingChatTerminal,
     messageList,
   };
+  // 轮询代际：本地开始发送时递增。已在途的旧轮询回包必须整段丢弃，
+  // 避免旧快照覆盖新发送消息，或误触发 sub 恢复。
+  const pollGenerationRef = useRef(0);
+  const requestGenerationRef = useRef(0);
+  const visibilityRequestInFlightRef = useRef<
+    Promise<ConversationInfo | undefined> | undefined
+  >();
+  const prevLocallyStreamingForPollRef = useRef(!!isLocallyStreaming);
+  if (isLocallyStreaming && !prevLocallyStreamingForPollRef.current) {
+    pollGenerationRef.current += 1;
+  }
+  prevLocallyStreamingForPollRef.current = !!isLocallyStreaming;
 
   // 轮询启停句柄：subscribe 在 useRequest 之前定义、需要调用其 run/cancel，
   // 用 ref 解耦前向引用（subscribe 调用 pollingControlsRef.current.stop/start，
@@ -350,7 +370,7 @@ export function useConversationStreamResume(
         conversationId: id,
         latestConversationId: latestRef.current.conversationId,
         isLocallyStreaming: latestRef.current.isLocallyStreaming,
-        isResumeSubscribed: isResumeSubscribedRef.current,
+        isResumeSubscribed: !!isResumeSubscribedRef.current,
       });
       isResumeSubscribedRef.current = false;
       setIsResumeSubscribed(false);
@@ -401,6 +421,8 @@ export function useConversationStreamResume(
         );
         if (resolvedFromMessages) {
           onTerminalTaskStatusRef.current?.(resolvedFromMessages);
+          // 终态已确认：同步补偿「最近使用/会话记录」列表（本地补丁）
+          emitConversationListTaskStatus(id, resolvedFromMessages);
         } else {
           try {
             const terminalStatus = await fetchConversationTaskStatus(id);
@@ -409,6 +431,8 @@ export function useConversationStreamResume(
               terminalStatus !== TaskStatus.EXECUTING
             ) {
               onTerminalTaskStatusRef.current?.(terminalStatus);
+              // 终态已确认：同步补偿「最近使用/会话记录」列表（本地补丁）
+              emitConversationListTaskStatus(id, terminalStatus);
             }
           } catch (e) {
             console.error(
@@ -434,33 +458,59 @@ export function useConversationStreamResume(
   const subscribeRef = useRef(subscribe);
   subscribeRef.current = subscribe;
 
+  const isPollingReady =
+    !!conversationId &&
+    !isLocallyStreaming &&
+    !isAwaitingChatTerminal &&
+    !isResumeSubscribed &&
+    !!resumeStream;
+
   // 轮询会话状态：仅标签可见时触发(pollingWhenHidden:false)，复用全局轮询方案。
   // ready 含 !isResumeSubscribed：续上 sub 后不再轮询（subscribe 的 stopPolling 作立即兜底）。
   const { run, cancel } = useRequest(
-    () =>
-      conversationId
+    () => {
+      requestGenerationRef.current = pollGenerationRef.current;
+      return conversationId
         ? fetchConversationSnapshot(conversationId)
-        : Promise.resolve(undefined),
+        : Promise.resolve(undefined);
+    },
     {
       pollingInterval: GLOBAL_POLLING_INTERVAL,
       // 屏幕不可见时暂停定时任务（多窗口/多标签仅可见者轮询）
       pollingWhenHidden: false,
       pollingErrorRetryCount: -1,
       // resumeStream 未注入则整体不启用：不轮询、不订阅
-      ready:
-        !!conversationId &&
-        !isLocallyStreaming &&
-        !isResumeSubscribed &&
-        !!resumeStream,
+      ready: isPollingReady,
       refreshDeps: [
         conversationId,
         isLocallyStreaming,
+        isAwaitingChatTerminal,
         isResumeSubscribed,
         resumeStream,
       ],
       onSuccess: (snapshot) => {
         if (!conversationId) return;
-        if (snapshot && latestRef.current.conversationId === conversationId) {
+        // ready/cancel 只能阻止后续轮询，已在途请求仍可能返回。
+        // 发送后代际已变化，或当前正由 live chat 驱动时，旧结果不允许产生任何副作用。
+        if (
+          requestGenerationRef.current !== pollGenerationRef.current ||
+          latestRef.current.isLocallyStreaming
+        ) {
+          conversationPollLogger.info('discard stale snapshot', {
+            conversationId,
+            requestGeneration: requestGenerationRef.current,
+            currentGeneration: pollGenerationRef.current,
+            isLocallyStreaming: latestRef.current.isLocallyStreaming,
+            snapshotTaskStatus: snapshot?.taskStatus,
+          });
+          return;
+        }
+        if (
+          snapshot &&
+          getLastMessage(snapshot.messageList)?.role !==
+            AssistantRoleEnum.USER &&
+          latestRef.current.conversationId === conversationId
+        ) {
           onConversationSnapshotRef.current?.(snapshot);
         }
         const status = snapshot?.taskStatus;
@@ -472,6 +522,17 @@ export function useConversationStreamResume(
           latestRef.current.conversationId === conversationId
         ) {
           onTerminalTaskStatusRef.current?.(status);
+        }
+        // 轮询补偿侧栏列表：会话已执行完毕(终态)时，把终态同步到「最近使用/会话记录」。
+        // 不依赖本地 taskStatus 是否已变化——列表可能在本轮轮询之间被重新拉取，且后端
+        // 尚未落库终态(仍返回 EXECUTING)，因此每次观察到终态都补发一次，由列表处理器
+        // 幂等合并（无变化时返回原引用，不产生无谓重渲染）。
+        if (
+          status !== undefined &&
+          status !== TaskStatus.EXECUTING &&
+          latestRef.current.conversationId === conversationId
+        ) {
+          emitConversationListTaskStatus(conversationId, status);
         }
         if (status === TaskStatus.EXECUTING) {
           if (latestRef.current.isLocallyStreaming) {
@@ -515,6 +576,7 @@ export function useConversationStreamResume(
       },
     },
   );
+
   // 把 run/cancel 注入 pollingControlsRef，供 subscribe / onClose 调用
   pollingControlsRef.current.start = () => {
     conversationPollLogger.info(
@@ -532,6 +594,19 @@ export function useConversationStreamResume(
     );
     cancel();
   };
+
+  // 本地发送开始时立即暂停并取消轮询；ready 的重算需要等渲染完成，
+  // 这里主动 cancel，避免该窗口继续发出下一轮请求。
+  useEffect(() => {
+    if (isLocallyStreaming) {
+      conversationPollLogger.info('cancel polling: local send started', {
+        conversationId,
+        pollGeneration: pollGenerationRef.current,
+        inFlightRequestGeneration: requestGenerationRef.current,
+      });
+      cancel();
+    }
+  }, [isLocallyStreaming, cancel, conversationId]);
 
   // 切换会话：先重置订阅状态。必须在 entry effect 之前执行，否则 entry subscribe 后会被这里覆盖。
   // cleanup 里 abortSub 触发的 onClose 有 ~500ms 延迟，这里立即重置 state，避免新会话卡在「不轮询」。
@@ -564,44 +639,88 @@ export function useConversationStreamResume(
         document.visibilityState === 'visible' &&
         conversationId &&
         !isLocallyStreaming &&
+        !isAwaitingChatTerminal &&
         !isResumeSubscribedRef.current &&
         resumeStream
       ) {
-        fetchConversationSnapshot(conversationId).then((snapshot) => {
-          // 防跨会话写回：fetch in-flight 期间会话可能已切换，丢弃 stale 结果
-          if (latestRef.current.conversationId !== conversationId) return;
-          if (snapshot) {
-            onConversationSnapshotRef.current?.(snapshot);
-          }
-          const status = snapshot?.taskStatus;
-          if (
-            status !== undefined &&
-            status !== TaskStatus.EXECUTING &&
-            latestRef.current.taskStatus !== status
-          ) {
-            onTerminalTaskStatusRef.current?.(status);
-          }
-          if (status === TaskStatus.EXECUTING) {
-            const polledMessageList = snapshot?.messageList;
+        if (visibilityRequestInFlightRef.current) {
+          conversationPollLogger.info(
+            'skip visibility snapshot: request in flight',
+            { conversationId },
+          );
+          return;
+        }
+        const requestGeneration = pollGenerationRef.current;
+        const requestPromise = fetchConversationSnapshot(conversationId);
+        visibilityRequestInFlightRef.current = requestPromise;
+        requestPromise
+          .then((snapshot) => {
+            // fetch in-flight 期间可能已切换会话或开始本地发送，
+            // 在任何写回/sub 恢复前丢弃 stale 结果。
             if (
-              Array.isArray(polledMessageList) &&
-              !hasUserReadyForResume(
-                latestRef.current.messageList,
-                polledMessageList,
-              )
+              latestRef.current.conversationId !== conversationId ||
+              requestGeneration !== pollGenerationRef.current ||
+              latestRef.current.isLocallyStreaming
             ) {
+              conversationPollLogger.info('discard stale visibility snapshot', {
+                conversationId,
+                requestGeneration,
+                currentGeneration: pollGenerationRef.current,
+                latestConversationId: latestRef.current.conversationId,
+                isLocallyStreaming: latestRef.current.isLocallyStreaming,
+                snapshotTaskStatus: snapshot?.taskStatus,
+              });
               return;
             }
-            subscribeRef.current(conversationId, polledMessageList);
-          }
-        });
+            const snapshotTailIsUser =
+              getLastMessage(snapshot?.messageList)?.role ===
+              AssistantRoleEnum.USER;
+            if (snapshot && !snapshotTailIsUser) {
+              onConversationSnapshotRef.current?.(snapshot);
+            }
+            const status = snapshot?.taskStatus;
+            if (
+              status !== undefined &&
+              status !== TaskStatus.EXECUTING &&
+              latestRef.current.taskStatus !== status
+            ) {
+              onTerminalTaskStatusRef.current?.(status);
+            }
+            // 可见性恢复后同样补偿侧栏列表：观察到终态即同步「最近使用/会话记录」
+            if (status !== undefined && status !== TaskStatus.EXECUTING) {
+              emitConversationListTaskStatus(conversationId, status);
+            }
+            if (status === TaskStatus.EXECUTING) {
+              const polledMessageList = snapshot?.messageList;
+              if (
+                Array.isArray(polledMessageList) &&
+                !hasUserReadyForResume(
+                  latestRef.current.messageList,
+                  polledMessageList,
+                )
+              ) {
+                return;
+              }
+              subscribeRef.current(conversationId, polledMessageList);
+            }
+          })
+          .finally(() => {
+            if (visibilityRequestInFlightRef.current === requestPromise) {
+              visibilityRequestInFlightRef.current = undefined;
+            }
+          });
       }
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [conversationId, isLocallyStreaming, resumeStream]);
+  }, [
+    conversationId,
+    isAwaitingChatTerminal,
+    isLocallyStreaming,
+    resumeStream,
+  ]);
 
   // 离开 / 切换会话：清除轮询 + 中断 sub（约束：退出会话页必须清除轮询）
   useEffect(() => {

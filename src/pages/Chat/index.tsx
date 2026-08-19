@@ -45,7 +45,7 @@ import { apiAgentConversation } from '@/services/agentConfig';
 import { apiUpdateStaticFile } from '@/services/vncDesktop';
 import type { UpdateFileInfo } from '@/types/interfaces/fileTree';
 import type { StaticFileInfo } from '@/types/interfaces/vncDesktop';
-import { applyTerminalTaskStatus } from '@/utils/conversationTaskStatusSync';
+
 import { updateFilesListContent } from '@/utils/fileTree';
 import { jumpToPageDevelop } from '@/utils/router';
 import {
@@ -253,6 +253,9 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     fileTreeRefreshTrigger,
     // 会话是否正在进行中（有消息正在处理）
     isConversationActive,
+    isAwaitingChatTerminal,
+    // 统一终态清算入口（终态确认后一次性收敛 taskStatus + awaiting + 活跃态 + 末条消息）
+    finalizeConversationTerminal,
     // 停止会话相关
     runStopConversation,
     loadingStopConversation,
@@ -1250,6 +1253,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       conversationInfo?.taskStatus === TaskStatus.EXECUTING,
     // 本地是否正在 SSE 发送/接收（纯，不含后台 EXECUTING），供流式恢复 hook 使用
     isLocallyStreaming: isConversationActive,
+    isAwaitingChatTerminal,
     // 会话流式恢复(sub)：刷新页面/新开标签时重建 EXECUTING 会话的流式输出
     onResumeConversationStream: resumeConversationStream,
     onAbortResumeStream: abortResumeStream,
@@ -1266,7 +1270,9 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     resumeDebugSource: 'chat:main-agent-session',
     onTerminalTaskStatus: (status: TaskStatus) => {
       if (!id) return;
-      applyTerminalTaskStatus(setConversationInfo, id, status);
+      // 统一终态清算：轮询/sub 关闭路径拿到的终态同样要收敛状态机，
+      // 不能只写 taskStatus（1677549 复现：taskStatus 落了 COMPLETE 页面仍卡「会话中」）
+      finalizeConversationTerminal(id, status);
     },
     loadingSuggest,
     chatSuggestList,
