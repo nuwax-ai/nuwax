@@ -17,6 +17,28 @@ import { isEqual } from 'lodash';
  * 命中时打 always-on warn（生产取证标记）。调用方位于 setMessageList updater 内，
  * 命中后须 `return list` 返回未变更列表（绝不能裸 return）。
  */
+/**
+ * 找到当前轮次的起始索引：最后一条 USER 消息的**下一条**。
+ * 当前轮 = 最后一条 user 之后的所有 assistant 消息（多步输出可产生多条）。
+ * 没找到 USER（异常情况）时返回 0（全列表视为当前轮）。
+ *
+ * 用途：isSessionStreamBusy 的检查范围与 sweep 的清理范围共用此边界，
+ * 替代此前的固定窗口（PROCESSING_RECENT_WINDOW=5），精确覆盖任意深度的多步轮次。
+ */
+export function findCurrentRoundStart(
+  messageList: MessageInfo[] | undefined | null,
+): number {
+  if (!messageList?.length) {
+    return 0;
+  }
+  for (let i = messageList.length - 1; i >= 0; i -= 1) {
+    if (messageList[i].role === AssistantRoleEnum.USER) {
+      return i + 1;
+    }
+  }
+  return 0;
+}
+
 export function shouldDropLateMessageChunk(
   currentMessage: MessageInfo | undefined,
   currentMessageId: string,
