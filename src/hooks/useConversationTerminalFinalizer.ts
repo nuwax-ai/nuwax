@@ -11,13 +11,12 @@ import {
   emitConversationListTaskStatus,
   resolveTerminalTaskStatus,
 } from '@/utils/conversationTaskStatusSync';
-import { createLogger } from '@/utils/logger';
+import { createAlwaysLogger } from '@/utils/logger';
 import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
 import { useCallback, useMemo } from 'react';
 
-const conversationTerminalSweepLogger = createLogger(
-  '[ConversationTerminalSweep]',
-);
+// always-on：终态收敛/降级是会话卡死类问题的核心生产观测点（每轮会话仅 1-2 条，无噪音）
+const conversationTerminalSweepLogger = createAlwaysLogger('[Conv:TS]');
 
 export interface UseConversationTerminalFinalizerOptions {
   /** 日志来源：区分主会话 model 与预览 Tab model */
@@ -76,6 +75,7 @@ export function useConversationTerminalFinalizer(
     return (
       conversationId: number | string | undefined,
       taskStatus: TaskStatus | undefined,
+      origin?: string,
     ): void => {
       // 非终态不动状态机：undefined / EXECUTING 跳过
       if (
@@ -88,6 +88,7 @@ export function useConversationTerminalFinalizer(
 
       conversationTerminalSweepLogger.info('finalize terminal', {
         source,
+        origin,
         conversationId,
         taskStatus,
       });
@@ -155,6 +156,7 @@ export function useConversationTerminalFinalizer(
     (
       conversationId: number | string | undefined,
       taskStatus: TaskStatus | undefined,
+      origin?: string,
     ) => {
       // 旧会话的迟到终态不得误清当前会话的活跃态（conversationInfoRef 未就绪时放行）
       const currentId = conversationInfoRef.current?.id;
@@ -165,15 +167,23 @@ export function useConversationTerminalFinalizer(
       ) {
         return;
       }
-      sweepConversationTerminal(conversationId, taskStatus);
+      sweepConversationTerminal(conversationId, taskStatus, origin);
     },
     [sweepConversationTerminal, conversationInfoRef],
   );
 
   /**
-   * SSE 终态事件（FINAL_RESULT / ERROR）→ 统一终态清算。
-   * 本地 chat 与 sub 恢复流共用：ERROR 一律 FAILED；FINAL_RESULT 仅在解析出结构化
-   * 终态时清算（「任务冲突」型 FINAL_RESULT 解析不出终态，自动跳过，不误清活跃态）。
+   * SSE 终态事件入口（FINAL_RESULT / ERROR，二者同权）。
+   *
+   * 协议语义：ERROR 与 FINAL_RESULT 一样是轮次终止态——后端出错时
+   * sessionPromptEnd(error) → sink.error → ERROR 事件 + 流必然关闭。到达即完整
+   * 清算（ERROR → FAILED；FINAL_RESULT 解析结构化终态，「任务冲突」型解析不出
+   * 则自动跳过，不误清仍在执行的旧任务）。
+   *
+   * 1678724 复盘修正：此前的"ERROR 降级"版本建立在"ERROR 可能在流中到达且流
+   * 继续"的推测上——该场景从未被观测到（HAR body 无 ERROR 事件），本案实际
+   * 触发源是连接级 onerror（fetch-event-source 错误回调 → model onError 全量
+   * 收尾），与事件路径无关。降级反而损害真终止场景的收敛时效，故恢复同权。
    */
   const finalizeChatTerminalEvent = useCallback(
     (
@@ -187,7 +197,7 @@ export function useConversationTerminalFinalizer(
         res.eventType === ConversationEventTypeEnum.ERROR
           ? TaskStatus.FAILED
           : resolveTerminalTaskStatus(res.data?.success, res.data, res);
-      finalizeConversationTerminal(conversationId, status);
+      finalizeConversationTerminal(conversationId, status, res.eventType);
     },
     [finalizeConversationTerminal],
   );
