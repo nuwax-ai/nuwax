@@ -507,6 +507,7 @@ const AppDev: React.FC = () => {
     },
   });
 
+  // 初始化自动发送
   useAppDevInitialAutoSend({
     projectId: projectId || '',
     hasValidProjectId,
