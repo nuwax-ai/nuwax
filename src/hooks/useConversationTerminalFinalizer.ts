@@ -1,7 +1,5 @@
-import {
-  isSessionStreamBusy,
-  PROCESSING_RECENT_WINDOW,
-} from '@/hooks/useExecutingTaskStatusPoll';
+import { isSessionStreamBusy } from '@/hooks/useExecutingTaskStatusPoll';
+import { findCurrentRoundStart } from '@/models/conversationInfoMessageList';
 import { ConversationEventTypeEnum, TaskStatus } from '@/types/enums/agent';
 import { MessageStatusEnum, ProcessingEnum } from '@/types/enums/common';
 import type {
@@ -123,12 +121,12 @@ export function useConversationTerminalFinalizer(
         if (!prev?.length) {
           return prev;
         }
-        // 与 isSessionStreamBusy 的检查窗口对齐（共享常量 PROCESSING_RECENT_WINDOW）：
-        // 末条状态 + 近窗口内 EXECUTING processing 残留都要收敛，否则任一残留都会
-        // 让 busy 持续为 true → 活跃态被 rAF 重算顶回 true → 按钮卡「会话中」。
-        const RECENT_WINDOW = PROCESSING_RECENT_WINDOW;
+        // 与 isSessionStreamBusy 的检查范围对齐（共享 findCurrentRoundStart）：
+        // 当前轮次（最后一条 USER 之后）的所有 assistant 消息的 EXECUTING
+        // processing 残留都要收敛，否则任一残留都会让 busy 持续为 true
+        // → 活跃态被 rAF 重算顶回 true → 按钮卡「会话中」。
         const lastIndex = prev.length - 1;
-        const firstRecent = Math.max(0, lastIndex - RECENT_WINDOW + 1);
+        const firstRecent = findCurrentRoundStart(prev);
         const next = prev.slice();
         let changed = false;
 

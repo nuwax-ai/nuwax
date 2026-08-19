@@ -1,10 +1,8 @@
+import { findCurrentRoundStart } from '@/models/conversationInfoMessageList';
 import { MessageStatusEnum, ProcessingEnum } from '@/types/enums/common';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 
 /** 默认检查最近 N 条消息中的 processing 执行态 */
-// 检查/清理共用常量：sweep 的 processing 残留清理窗口必须与此对齐
-export const PROCESSING_RECENT_WINDOW = 5;
-const DEFAULT_RECENT_MESSAGE_COUNT = PROCESSING_RECENT_WINDOW;
 
 /** 消息列表末尾是否仍在流式输出（Loading / Incomplete） */
 export function hasActiveStreamingInMessages(
@@ -24,15 +22,17 @@ export function hasActiveStreamingInMessages(
  * 最近若干条消息中是否存在 processingList 仍在 EXECUTING 的块。
  * 流式 chunk 间 message.status 可能短暂为 null，但工具/页面调用仍在执行。
  */
-export function hasExecutingProcessingInRecentMessages(
+export function hasExecutingProcessingInMessages(
   messageList: MessageInfo[] | undefined | null,
-  recentCount = DEFAULT_RECENT_MESSAGE_COUNT,
 ): boolean {
   if (!messageList?.length) {
     return false;
   }
-  const recentMessages = messageList.slice(-recentCount);
-  return recentMessages.some((message) =>
+  // 精确到当前轮次：从最后一条 USER 之后的所有 assistant 消息检查
+  // EXECUTING 残留——覆盖任意深度的多步输出，替代此前的固定 5 条窗口
+  const roundStart = findCurrentRoundStart(messageList);
+  const roundMessages = messageList.slice(roundStart);
+  return roundMessages.some((message) =>
     message.processingList?.some(
       (item) => item.status === ProcessingEnum.EXECUTING,
     ),
@@ -47,6 +47,6 @@ export function isSessionStreamBusy(
 ): boolean {
   return (
     hasActiveStreamingInMessages(messageList) ||
-    hasExecutingProcessingInRecentMessages(messageList)
+    hasExecutingProcessingInMessages(messageList)
   );
 }
