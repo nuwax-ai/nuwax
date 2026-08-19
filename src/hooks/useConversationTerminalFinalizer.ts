@@ -26,6 +26,13 @@ export interface UseConversationTerminalFinalizerOptions {
   conversationInfoRef: MutableRefObject<ConversationInfo | null>;
   /** 发送保活时间戳 ref：清算时置 0 打破「发送后 3s 拒绝置 false」的保活 */
   lastSendAtRef: MutableRefObject<number>;
+  /**
+   * 轮次终态 ack（乐观终态）：FINAL_RESULT/ERROR 到达即置 true，新一轮发送清零。
+   * 消费方为 model 的 rAF 活跃态重算——ack 置位后派生信号（末条 Loading/Incomplete
+   * 复活、processing 残留等）不得再把 isConversationActive 顶回 true（会话框按钮/
+   * 队列消费/详情轮询三者共用该信号，1678881 复现：终态日志全绿但三者齐卡）。
+   */
+  roundTerminalAckRef: MutableRefObject<boolean>;
   setConversationInfo: Dispatch<
     SetStateAction<ConversationInfo | null | undefined>
   >;
@@ -33,8 +40,8 @@ export interface UseConversationTerminalFinalizerOptions {
   /** model 的 messageListRef：随 updater 同步写，保持 rAF 同步等既有读取路径拿到终态列表 */
   messageListRef: MutableRefObject<MessageInfo[]>;
   setIsAwaitingChatTerminal: Dispatch<SetStateAction<boolean>>;
-  /** model 的活跃态 setter（经 3s 保活包装的那个） */
-  setIsConversationActive: (v: boolean) => void;
+  /** model 的活跃态 setter（经 3s 保活包装的那个；source 用于变迁日志溯源） */
+  setIsConversationActive: (v: boolean, source?: string) => void;
 }
 
 /**
@@ -65,6 +72,7 @@ export function useConversationTerminalFinalizer(
     source,
     conversationInfoRef,
     lastSendAtRef,
+    roundTerminalAckRef,
     setConversationInfo,
     setMessageList,
     messageListRef,
@@ -94,18 +102,19 @@ export function useConversationTerminalFinalizer(
         taskStatus,
       });
 
-      // 1. taskStatus 终态写回（含幂等/防跨会话守卫，沿用既有入口）
+      // 1. 【兜底优先】终态事件一到，先把会话框状态落死：清「会话中」（打破发送后
+      //    3s 保活）+ 封死派生信号复活通路（ack）+ 恢复轮询资格（awaiting）。
+      //    放在最前的原因：即便后续 taskStatus 写回 / 消息收敛任一步异常，
+      //    按钮/队列消费/详情轮询已经恢复——用户可见状态以 SSE 终态事件为准
+      lastSendAtRef.current = 0;
+      setIsConversationActive(false, 'terminal-sweep');
+      setIsAwaitingChatTerminal(false);
+      roundTerminalAckRef.current = true;
+
+      // 2. taskStatus 终态写回（含幂等/防跨会话守卫，沿用既有入口）
       applyTerminalTaskStatus(setConversationInfo, conversationId, taskStatus);
 
-      // 2. 协议终态已确认：清 awaiting，恢复轮询资格（isPollingReady）
-      setIsAwaitingChatTerminal(false);
-
-      // 3. 强制清活跃态：打破「发送后 3s 保活」再落 false——终态已确认，
-      //    活跃态必须立即可清（否则 3s 内到达的终态被保活吞掉，1654471 二次卡死成因）
-      lastSendAtRef.current = 0;
-      setIsConversationActive(false);
-
-      // 4. 末条消息兜底落终态：流式占位（Loading/Incomplete）→ Complete/Error，
+      // 3. 末条消息兜底落终态：流式占位（Loading/Incomplete）→ Complete/Error，
       //    残留 EXECUTING 的 processing 块 → FINISHED/FAILED。
       //    正常路径 handleChangeMessageList 已处理时此处为幂等 noop。
       const messageTerminalStatus =
@@ -305,7 +314,12 @@ export function useConversationTerminalFinalizer(
           { source, messageId, outcome, busy },
         );
         lastSendAtRef.current = 0;
-        setIsConversationActive(busy);
+        // 与 checkConversationActive 同款 ack 门控：终态已 ack 的轮次，占位收尾的
+        // 重算不得把活跃态顶回 true（两处重算口径必须一致）
+        setIsConversationActive(
+          busy && !roundTerminalAckRef.current,
+          'placeholder-recompute',
+        );
       });
     },
     // 稳定引用（与 sweep 相同）：useState setter / ref

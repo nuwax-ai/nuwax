@@ -4,7 +4,6 @@
 import { useConversationAgentChatSession } from '@/pages/ConversationAgent/hooks/useConversationAgentChatSession';
 import { AssistantRoleEnum, TaskStatus } from '@/types/enums/agent';
 import { MessageStatusEnum } from '@/types/enums/common';
-import type { ConversationInfo } from '@/types/interfaces/conversationInfo';
 import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -73,6 +72,8 @@ describe('useConversationAgentChatSession', () => {
     abortResumeStream: vi.fn(),
     respondAcpPermission: vi.fn(),
     respondMcpAsk: vi.fn(),
+    // 统一终态清算入口（useConversationAgentChatSession 的 onTerminalTaskStatus 调用）
+    finalizeConversationTerminal: vi.fn(),
   });
 
   beforeEach(() => {
@@ -154,24 +155,13 @@ describe('useConversationAgentChatSession', () => {
       await result.current.onTerminalTaskStatus?.(TaskStatus.COMPLETE);
     });
 
-    expect(model.setConversationInfo).toHaveBeenCalledWith(
-      expect.any(Function),
+    // 1677549 后终态写回统一走 model 的 finalizeConversationTerminal
+    //（taskStatus + awaiting + 活跃态 + 消息残留一次性收敛），不再直调 setConversationInfo
+    expect(model.finalizeConversationTerminal).toHaveBeenCalledWith(
+      9001,
+      TaskStatus.COMPLETE,
+      'poll-snapshot',
     );
-    const updater = model.setConversationInfo.mock.calls[0][0] as (
-      prev: ConversationInfo,
-    ) => ConversationInfo;
-    expect(
-      updater({
-        id: 9001,
-        taskStatus: TaskStatus.EXECUTING,
-      } as ConversationInfo).taskStatus,
-    ).toBe(TaskStatus.COMPLETE);
-    expect(
-      updater({
-        id: 9002,
-        taskStatus: TaskStatus.EXECUTING,
-      } as ConversationInfo).taskStatus,
-    ).toBe(TaskStatus.EXECUTING);
   });
 
   it('没有 devConversationId 时不写回终态 taskStatus', () => {
