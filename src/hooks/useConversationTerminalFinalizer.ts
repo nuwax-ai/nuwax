@@ -172,17 +172,17 @@ export function useConversationTerminalFinalizer(
   );
 
   /**
-   * SSE 终态事件入口（FINAL_RESULT / ERROR）。
+   * SSE 终态事件入口（FINAL_RESULT / ERROR，二者同权）。
    *
-   * 不变式（1678724 定案）：isAwaitingChatTerminal / isConversationActive 的清除权
-   * 只属于连接生命周期事件（onClose/onError）与 FINAL_RESULT。ERROR 型事件可能在
-   * 流进行中到达且流继续（实证：流第 70.9s 到达后仍续跑 80+ 秒并正常 FINAL_RESULT），
-   * 无权做会话级全清——否则轮询门中途打开、后续分片把状态打回，终态后无人再清
-   * （会话中永久卡死）。故：
-   * - FINAL_RESULT：解析出结构化终态 → 完整 sweep（「任务冲突」型解析不出则跳过）
-   * - ERROR：降级处理——仅 taskStatus 落 FAILED + 侧栏同步；消息级 Error 由
-   *   handleChangeMessageList 的 ERROR 分支处理；收尾由紧随的 onClose（连接关闭）
-   * 全套兜底，连接级 onError（网络错误）亦不变
+   * 协议语义：ERROR 与 FINAL_RESULT 一样是轮次终止态——后端出错时
+   * sessionPromptEnd(error) → sink.error → ERROR 事件 + 流必然关闭。到达即完整
+   * 清算（ERROR → FAILED；FINAL_RESULT 解析结构化终态，「任务冲突」型解析不出
+   * 则自动跳过，不误清仍在执行的旧任务）。
+   *
+   * 1678724 复盘修正：此前的"ERROR 降级"版本建立在"ERROR 可能在流中到达且流
+   * 继续"的推测上——该场景从未被观测到（HAR body 无 ERROR 事件），本案实际
+   * 触发源是连接级 onerror（fetch-event-source 错误回调 → model onError 全量
+   * 收尾），与事件路径无关。降级反而损害真终止场景的收敛时效，故恢复同权。
    */
   const finalizeChatTerminalEvent = useCallback(
     (
@@ -192,37 +192,13 @@ export function useConversationTerminalFinalizer(
       if (!conversationId || !res) {
         return;
       }
-      if (res.eventType === ConversationEventTypeEnum.ERROR) {
-        // 防跨会话守卫（与 finalizeConversationTerminal 同判据）
-        const currentId = conversationInfoRef.current?.id;
-        if (
-          currentId !== undefined &&
-          String(currentId) !== String(conversationId)
-        ) {
-          return;
-        }
-        if (currentId !== undefined && currentId !== null) {
-          conversationTerminalSweepLogger.info(
-            'terminal-event ERROR degraded: skip sweep (stream may continue)',
-            { conversationId },
-          );
-          applyTerminalTaskStatus(
-            setConversationInfo,
-            conversationId,
-            TaskStatus.FAILED,
-          );
-          emitConversationListTaskStatus(conversationId, TaskStatus.FAILED);
-        }
-        return;
-      }
-      const status = resolveTerminalTaskStatus(
-        res.data?.success,
-        res.data,
-        res,
-      );
+      const status =
+        res.eventType === ConversationEventTypeEnum.ERROR
+          ? TaskStatus.FAILED
+          : resolveTerminalTaskStatus(res.data?.success, res.data, res);
       finalizeConversationTerminal(conversationId, status);
     },
-    [finalizeConversationTerminal, conversationInfoRef, setConversationInfo],
+    [finalizeConversationTerminal],
   );
 
   /**

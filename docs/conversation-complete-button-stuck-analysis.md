@@ -163,44 +163,17 @@ RunOver 显示运行完毕**不能证明 FINAL_RESULT 到达**——取证易错
 
 ## 6. 修复方案详述与影响分析（commit `452094f28` = A、`f0d7068cf` = B）
 
-### 6.1 方案 A：ERROR 型 SSE 事件降级处理（`452094f28`）
+### 6.1 ~~方案 A：ERROR 降级~~ → 已撤回，ERROR 恢复与 FINAL_RESULT 同权（完整清算）
 
-**改动位置**：`src/hooks/useConversationTerminalFinalizer.ts` 的 `finalizeChatTerminalEvent`（chat onMessage 与 sub onTerminalEvent 共用入口）。
+**撤回原因（2026-08-19 复盘修正）**：
 
-**Before → After**：
+1. **协议语义**：ERROR 与 FINAL_RESULT 同为轮次终止态——后端出错时 `sessionPromptEnd(error)` → `sink.error` → ERROR 事件 + **流必然关闭**。到达即完整清算（FAILED + 全清 + 末条 Error）是正确语义；降级把协议终止态降成了二等公民（真终止时状态机清理延迟 200-500ms 等 onClose，若后端异常未关流则要等 60s 看门狗）。
+2. **降级前提不成立**：「ERROR 可能在流中到达且流继续」从未被观测到——它建立在已撤回的"迟到分片"理论之上。HAR body 8832 事件中零 ERROR 事件。
+3. **真凶另有所在**：1678724 流中清门的触发源经调用栈逐帧定位是**连接级 onerror**（fetch-event-source 错误回调 → model onError 全量收尾），与事件路径无关——A 拦错了对象。
 
-```ts
-// Before：ERROR 与 FINAL_RESULT 同权，一律进 sweep 全清
-const status = res.eventType === ERROR ? FAILED : resolveTerminalTaskStatus(...);
-finalizeConversationTerminal(conversationId, status);   // sweep：清 awaiting + 破保活清活跃态 + 末条落 Error
+**当前代码状态**：`finalizeChatTerminalEvent` 已恢复 ERROR → `TaskStatus.FAILED` → 完整 sweep（与 FINAL_RESULT 同权）；always-on 的 `finalize terminal` 日志保留。降级日志（`terminal-event ERROR degraded`）随撤回移除。
 
-// After：ERROR 降级——只写终态，不动状态机
-if (res.eventType === ERROR) {
-  防跨会话守卫;
-  log('terminal-event ERROR degraded: skip sweep');     // always-on 观测
-  applyTerminalTaskStatus(setConversationInfo, cid, FAILED);
-  emitConversationListTaskStatus(cid, FAILED);          // 侧栏同步
-  return;                                               // ← 不再触发 sweep
-}
-const status = resolveTerminalTaskStatus(...);          // FINAL_RESULT 才走 sweep
-finalizeConversationTerminal(conversationId, status);
-```
-
-**确立的不变式**：`isAwaitingChatTerminal` / `isConversationActive` 的清除权只属于**连接生命周期事件（onClose/onError）与 FINAL_RESULT**；ERROR 型内容事件无权做会话级全清（实证：可在流中到达且流继续）。
-
-**影响面推演**：
-
-| 场景 | 修复前 | 修复后 |
-| --- | --- | --- |
-| 流中 ERROR 后流继续（1678724 本案） | sweep 全清 → 门开 → 轮询重启 → 分片打回 → 终态后卡死 | 只记 FAILED，门不开（active 是主锁，流式中 busy 列表顶住）→ FINAL_RESULT 正常收敛 ✓ |
-| ERROR 后流即关闭（真错误终局） | sweep 清 + onClose 再清（双份） | ERROR 记 FAILED，紧随的 onClose 全套收尾（清 active/awaiting + 拉终态）✓ |
-| 网络错误（连接级 onError） | chat onError 全套 | 不变（onError 本就不是事件路径）✓ |
-| sub 收到 ERROR | onTerminalEvent → sweep → abort | 降级记 FAILED → abort → sub onClose 收尾 ✓ |
-| 按钮态显示 | ERROR 事件即回发送态（过早——流可能还在跑） | 流结束（onClose/FINAL_RESULT）才回——与真实生命周期一致 ✓ |
-
-**有意保留**：`conversationInfo.ts:1546` 的 `eventType===ERROR → setIsAwaitingChatTerminal(false)` 不动——awaiting 单独被清不破门（门的主锁是 isLocallyStreaming=active），且对 FINAL_RESULT 的同名清理是正确行为。
-
-**风险**：若后端存在"只发 ERROR 事件、之后流悬死不关"的形态，降级后该轮 awaiting/active 由 60s 断线看门狗兜底（onClose 全套）——较修复前的立即清晚最多 60s，换取的是本案类卡死的根治；此形态本身是后端缺陷（发错误终态却不终结流）。
+**本案的真正修复对象（待复现确认后设计）**：连接级 onError 路径——1678724 中它在流存活期间执行了全量收尾（含写 FAILED + 清状态 → 门开）。待解矛盾：onerror 后 handler 自己 `controller.abort()` 应杀连接，而该流活满 153 秒且 body 完整。受控复现目标：队列自动消费场景下观察 onerror 与流存活的时序关系；候选修复：onError 全量路径执行前校验连接确实终结，及此前发现的两个守卫缺口（工具层 catch 补 isAborted、model 过期守卫补 null 窗口）。
 
 ### 6.2 方案 B：终态守卫丢弃迟到 MESSAGE 分片（`f0d7068cf`）
 
@@ -236,18 +209,16 @@ finalizeConversationTerminal(conversationId, status);
 - B 守卫日志 `drop late MESSAGE chunk`（既有 always-on）
 - 验证表见 §7.1
 
-### 6.4 两方案的互补关系
-
-同一根因（事件缺轮次归属校验）的两面，各堵一半：
+### 6.4 修复版图（A 撤回后）
 
 ```
-A（防"未终态就被清算"）：ERROR 在流中到达 → 不再全清状态机 → 门不开 → 无中途轮询/状态打回
-B（防"终态后被回退"）：终态后迟到分片 → 丢弃 → 状态不被拉回
-组合效果：状态机只在真实轮次边界（onClose/onError/FINAL_RESULT）发生迁移，
-任何乱序/异常事件都无法把会话状态推入无人收敛的死区
+✅ B（已合入 f0d7068cf）：终态守卫——已终态消息不接受分片状态回退（防"终态后被回退"）
+✅ ERROR/FINAL_RESULT 同权完整清算（协议正确性，本轮恢复）
+⬜ 待复现 → 设计：连接级 onError 路径的真凶修复（1678724 的实际触发源）
+⬜ 顺带修补：工具层 catch 的 isAborted 守卫 + model 过期守卫的 null 窗口（独立缺口）
 ```
 
-### 6.6 边界场景 Q&A：会话已结束才收到迟到的详情轮询响应（chat 前/chat 中发起）
+B 与事件路径的关系不变：无论终态由 FINAL_RESULT 还是 ERROR 事件宣告，B 守卫保护清算成果不被后续分片回退。### 6.6 边界场景 Q&A：会话已结束才收到迟到的详情轮询响应（chat 前/chat 中发起）
 
 场景：终态已处理（sweep 已收敛），一个此前发起（空闲期或流中）的 `POST /api/agent/conversation/{id}` 响应悬挂多秒后才返回。逐层推演（行号基准 cf5adca1a）：
 
@@ -276,7 +247,7 @@ B（防"终态后被回退"）：终态后迟到分片 → 丢弃 → 状态不�
 - [x] HAR 全量分析定案：流有序/无 sub/轮询双防线正常/卡死=流中清门+终态残留（§0–§4）
 - [x] 线上版本鉴定 = cf5adca1a（§0.4）
 - [x] 门打开瞬间的代码映射与行号核验（§0.3，基准 cf5adca1a）
-- [ ] **受控复现**（本地 dev + 全量日志）：复现流中 ERROR 载体（重点观察流开始后 ~70s）→ 确认后按 §6-A 设计轮次边界校验
+- [ ] **受控复现**（本地 dev + 全量日志）：抓连接级 onerror 与流存活的时序（重点流开始后 ~70s 窗口）→ 按 §6.1 设计 onError 路径修复
 - [ ] review `stash@{0}` 的终态守卫（§6-B，与 A 互补）
 - [ ] 修复验证后发版；生产验证按下表日志标志
 
@@ -285,7 +256,6 @@ B（防"终态后被回退"）：终态后迟到分片 → 丢弃 → 状态不�
 | 日志（均 always-on） | 出现时机 | 说明什么 |
 | --- | --- | --- |
 | `[ConversationTerminalSweep] finalize terminal {conversationId, taskStatus}` | 每轮正常完成/终态到达 | **方案 A 生效**：终态完整收敛（sweep 日志已升 always-on） |
-| `[ConversationTerminalSweep] terminal-event ERROR degraded: skip sweep (stream may continue)` | 流中收到 ERROR 型事件 | **方案 A 生效的直接证据**：ERROR 降级、不再全清（本案 19:02:32 场景修复后的预期输出） |
 | `drop late MESSAGE chunk: message already terminal {messageId, chunkType}` | 已终态消息收到迟到分片 | **方案 B 生效**：守卫丢弃了回退分片 |
 | `applyTerminalTaskStatus {prev, next}` | 任意终态写回 | 既有日志：状态迁移轨迹（含降级路径的 → FAILED） |
 | （Network 层）流进行中无详情轮询请求 | 全程 | A 的行为验证：19:02:32 那种"流中轮询重启"应消失 |
