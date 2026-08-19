@@ -114,6 +114,7 @@ import {
   appendOutgoingConversationMessages,
   preserveOptimisticMessageTail,
   reconcileConversationSnapshotMessages,
+  shouldDropLateMessageChunk,
 } from './conversationInfoMessageList';
 
 /** 后端漏发结构化干预事件时，等待持久化完成的补偿读取间隔。 */
@@ -1240,6 +1241,19 @@ export default () => {
       // MESSAGE事件
       if (eventType === ConversationEventTypeEnum.MESSAGE) {
         const { text, type, id, finished } = data;
+        // 终态守卫（判定与日志收敛于 shouldDropLateMessageChunk，详见其注释）：
+        // 丢弃轮终态后迟到的乱序分片。本分支位于 setMessageList updater 内，
+        // 命中后必须 return list（返回未变更列表，裸 return 会摧毁 messageList）。
+        if (
+          shouldDropLateMessageChunk(
+            currentMessage,
+            currentMessageId,
+            messageIdRef.current,
+            { type, text },
+          )
+        ) {
+          return list;
+        }
         // 思考think
         if (type === MessageModeEnum.THINK) {
           newMessage = {
@@ -1674,6 +1688,13 @@ export default () => {
         });
         syncMessageListRuntimeState();
 
+        conversationErrorTerminalLogger.warn('sse-on-close', {
+          conversationId: params.conversationId,
+          hasResolvedTerminalStatus,
+          isStale:
+            abortConnectionRef.current !== undefined &&
+            abortConnectionRef.current !== abortConnection,
+        });
         // SSE 已经关闭时先释放本地流式态，不能让后端终态查询阻塞输入框恢复。
         // 否则详情接口响应慢或挂起时，即使回复已经结束，页面仍会一直显示停止按钮。
         disabledConversationActive();

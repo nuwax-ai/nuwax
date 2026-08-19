@@ -488,6 +488,7 @@ const AppDev: React.FC = () => {
     devLogsRefresh: () => devLogs.resetStartLine(),
   });
 
+  /** 聊天 */
   const chat = useAppDevChat({
     projectId: projectId || '',
     selectedModelId: modelSelector.selectedModelId, // 新增：传递选中的模型ID
@@ -506,6 +507,7 @@ const AppDev: React.FC = () => {
     },
   });
 
+  // 初始化自动发送
   useAppDevInitialAutoSend({
     projectId: projectId || '',
     hasValidProjectId,
@@ -659,6 +661,7 @@ const AppDev: React.FC = () => {
     }
   }, [projectInfo.projectInfoState?.projectInfo, projectInfo.hasPermission]);
 
+  /** 数据源管理 */
   useEffect(() => {
     if (dataResourceManagement.resources?.length > 0) {
       const _selectedDataResources: DataResource[] =
