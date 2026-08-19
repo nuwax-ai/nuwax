@@ -45,8 +45,11 @@ export function hasExecutingProcessingInMessages(
 export function isSessionStreamBusy(
   messageList: MessageInfo[] | undefined | null,
 ): boolean {
-  return (
-    hasActiveStreamingInMessages(messageList) ||
-    hasExecutingProcessingInMessages(messageList)
-  );
+  // 架构决策：工具调用状态（processingList EXECUTING）不驱动会话按钮状态。
+  // 按钮由三层信号决定：连接生命周期（isConversationActive）、消息流状态
+  // （末条 Loading/Incomplete）、后端权威状态（taskStatus===EXECUTING）。
+  // 工具状态仅影响 UI 展示（RunOver 进度指示），不参与 busy 判定——
+  // 否则单个工具的 FINISHED 事件丢失就会导致按钮永久卡死（1678835 案例），
+  // 且需要 sweep 精确对齐检查范围（轮次边界），增加不必要的耦合。
+  return hasActiveStreamingInMessages(messageList);
 }

@@ -3,7 +3,7 @@
  */
 import {
   hasActiveStreamingInMessages,
-  hasExecutingProcessingInRecentMessages,
+  hasExecutingProcessingInMessages,
   isSessionStreamBusy,
 } from '@/hooks/useExecutingTaskStatusPoll';
 import { MessageStatusEnum, ProcessingEnum } from '@/types/enums/common';
@@ -29,10 +29,10 @@ describe('hasActiveStreamingInMessages', () => {
   });
 });
 
-describe('hasExecutingProcessingInRecentMessages', () => {
+describe('hasExecutingProcessingInMessages', () => {
   it('最近消息含 EXECUTING processing 时返回 true', () => {
     expect(
-      hasExecutingProcessingInRecentMessages([
+      hasExecutingProcessingInMessages([
         {
           processingList: [{ status: ProcessingEnum.EXECUTING }],
         } as any,
@@ -42,7 +42,7 @@ describe('hasExecutingProcessingInRecentMessages', () => {
 
   it('无执行中 processing 时返回 false', () => {
     expect(
-      hasExecutingProcessingInRecentMessages([
+      hasExecutingProcessingInMessages([
         {
           status: null,
           processingList: [{ status: ProcessingEnum.FINISHED }],
