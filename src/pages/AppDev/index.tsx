@@ -661,6 +661,7 @@ const AppDev: React.FC = () => {
     }
   }, [projectInfo.projectInfoState?.projectInfo, projectInfo.hasPermission]);
 
+  /** 数据源管理 */
   useEffect(() => {
     if (dataResourceManagement.resources?.length > 0) {
       const _selectedDataResources: DataResource[] =
