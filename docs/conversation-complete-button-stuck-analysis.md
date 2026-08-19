@@ -205,6 +205,23 @@ sweep 此前只清理**末条**的 processingList。倒数第 2~5 条消息若�
 
 **诊断特征**：终态日志完整 + 按钮不动 = 检查窗口不匹配（本案例）；终态日志缺失 = 终态事件未到达（此前各案例）。
 
+**后续升级（`092c9960a`）：固定 5 条窗口 → 轮次边界**
+
+固定 `PROCESSING_RECENT_WINDOW = 5` 是对"当前轮消息数"的近似启发值，多步轮次超过 5 条时第 6+ 条的 EXECUTING 残留查不到也清不掉。升级为精确轮次边界：
+
+```ts
+// conversationInfoMessageList.ts
+export function findCurrentRoundStart(messageList): number {
+  // 最后一条 USER 消息的下一条索引 = 当前轮次起始
+  for (let i = messageList.length - 1; i >= 0; i -= 1) {
+    if (messageList[i].role === USER) return i + 1;
+  }
+  return 0; // 无 USER 时全列表视为当前轮
+}
+```
+
+`isSessionStreamBusy` 的检查范围与 sweep 的清理范围共用此函数——检查到什么范围就清理到什么范围，天然同步，不受消息数量限制。
+
 ### 6.2 方案 B：终态守卫丢弃迟到 MESSAGE 分片（`f0d7068cf`）
 
 **改动位置**：`conversationInfoMessageList.ts` 新增共享谓词 `shouldDropLateMessageChunk`（判定+日志+注释收敛于此，vitest 可测）；两个 model 的 `handleChangeMessageList` MESSAGE 分支入口各 10 行调用。
