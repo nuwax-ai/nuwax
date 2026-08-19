@@ -77,6 +77,7 @@ export function useConversationTerminalFinalizer(
     return (
       conversationId: number | string | undefined,
       taskStatus: TaskStatus | undefined,
+      origin?: string,
     ): void => {
       // 非终态不动状态机：undefined / EXECUTING 跳过
       if (
@@ -89,6 +90,7 @@ export function useConversationTerminalFinalizer(
 
       conversationTerminalSweepLogger.info('finalize terminal', {
         source,
+        origin,
         conversationId,
         taskStatus,
       });
@@ -156,6 +158,7 @@ export function useConversationTerminalFinalizer(
     (
       conversationId: number | string | undefined,
       taskStatus: TaskStatus | undefined,
+      origin?: string,
     ) => {
       // 旧会话的迟到终态不得误清当前会话的活跃态（conversationInfoRef 未就绪时放行）
       const currentId = conversationInfoRef.current?.id;
@@ -166,7 +169,7 @@ export function useConversationTerminalFinalizer(
       ) {
         return;
       }
-      sweepConversationTerminal(conversationId, taskStatus);
+      sweepConversationTerminal(conversationId, taskStatus, origin);
     },
     [sweepConversationTerminal, conversationInfoRef],
   );
@@ -196,7 +199,7 @@ export function useConversationTerminalFinalizer(
         res.eventType === ConversationEventTypeEnum.ERROR
           ? TaskStatus.FAILED
           : resolveTerminalTaskStatus(res.data?.success, res.data, res);
-      finalizeConversationTerminal(conversationId, status);
+      finalizeConversationTerminal(conversationId, status, res.eventType);
     },
     [finalizeConversationTerminal],
   );
