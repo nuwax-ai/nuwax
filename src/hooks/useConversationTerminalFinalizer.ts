@@ -11,11 +11,12 @@ import {
   emitConversationListTaskStatus,
   resolveTerminalTaskStatus,
 } from '@/utils/conversationTaskStatusSync';
-import { createLogger } from '@/utils/logger';
+import { createAlwaysLogger } from '@/utils/logger';
 import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
 import { useCallback, useMemo } from 'react';
 
-const conversationTerminalSweepLogger = createLogger(
+// always-on：终态收敛/降级是会话卡死类问题的核心生产观测点（每轮会话仅 1-2 条，无噪音）
+const conversationTerminalSweepLogger = createAlwaysLogger(
   '[ConversationTerminalSweep]',
 );
 
@@ -171,9 +172,17 @@ export function useConversationTerminalFinalizer(
   );
 
   /**
-   * SSE 终态事件（FINAL_RESULT / ERROR）→ 统一终态清算。
-   * 本地 chat 与 sub 恢复流共用：ERROR 一律 FAILED；FINAL_RESULT 仅在解析出结构化
-   * 终态时清算（「任务冲突」型 FINAL_RESULT 解析不出终态，自动跳过，不误清活跃态）。
+   * SSE 终态事件入口（FINAL_RESULT / ERROR）。
+   *
+   * 不变式（1678724 定案）：isAwaitingChatTerminal / isConversationActive 的清除权
+   * 只属于连接生命周期事件（onClose/onError）与 FINAL_RESULT。ERROR 型事件可能在
+   * 流进行中到达且流继续（实证：流第 70.9s 到达后仍续跑 80+ 秒并正常 FINAL_RESULT），
+   * 无权做会话级全清——否则轮询门中途打开、后续分片把状态打回，终态后无人再清
+   * （会话中永久卡死）。故：
+   * - FINAL_RESULT：解析出结构化终态 → 完整 sweep（「任务冲突」型解析不出则跳过）
+   * - ERROR：降级处理——仅 taskStatus 落 FAILED + 侧栏同步；消息级 Error 由
+   *   handleChangeMessageList 的 ERROR 分支处理；收尾由紧随的 onClose（连接关闭）
+   * 全套兜底，连接级 onError（网络错误）亦不变
    */
   const finalizeChatTerminalEvent = useCallback(
     (
@@ -183,13 +192,37 @@ export function useConversationTerminalFinalizer(
       if (!conversationId || !res) {
         return;
       }
-      const status =
-        res.eventType === ConversationEventTypeEnum.ERROR
-          ? TaskStatus.FAILED
-          : resolveTerminalTaskStatus(res.data?.success, res.data, res);
+      if (res.eventType === ConversationEventTypeEnum.ERROR) {
+        // 防跨会话守卫（与 finalizeConversationTerminal 同判据）
+        const currentId = conversationInfoRef.current?.id;
+        if (
+          currentId !== undefined &&
+          String(currentId) !== String(conversationId)
+        ) {
+          return;
+        }
+        if (currentId !== undefined && currentId !== null) {
+          conversationTerminalSweepLogger.info(
+            'terminal-event ERROR degraded: skip sweep (stream may continue)',
+            { conversationId },
+          );
+          applyTerminalTaskStatus(
+            setConversationInfo,
+            conversationId,
+            TaskStatus.FAILED,
+          );
+          emitConversationListTaskStatus(conversationId, TaskStatus.FAILED);
+        }
+        return;
+      }
+      const status = resolveTerminalTaskStatus(
+        res.data?.success,
+        res.data,
+        res,
+      );
       finalizeConversationTerminal(conversationId, status);
     },
-    [finalizeConversationTerminal],
+    [finalizeConversationTerminal, conversationInfoRef, setConversationInfo],
   );
 
   /**
