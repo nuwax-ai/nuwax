@@ -247,7 +247,22 @@ B（防"终态后被回退"）：终态后迟到分片 → 丢弃 → 状态不�
 任何乱序/异常事件都无法把会话状态推入无人收敛的死区
 ```
 
-### 6.5 遗留与不做的事
+### 6.6 边界场景 Q&A：会话已结束才收到迟到的详情轮询响应（chat 前/chat 中发起）
+
+场景：终态已处理（sweep 已收敛），一个此前发起（空闲期或流中）的 `POST /api/agent/conversation/{id}` 响应悬挂多秒后才返回。逐层推演（行号基准 cf5adca1a）：
+
+| 层 | 守卫 | 拦截条件 | 结果 |
+| --- | --- | --- | --- |
+| 1 | 代际守卫（`useConversationStreamResume` onSuccess） | 请求发起后有过新发送（pollGeneration 已递增） | **chat 前发起的在途请求整段丢弃** ✓ |
+| 2 | user 尾守卫（onSuccess dispatch 条件） | 快照末条是 USER（assistant 未落库） | 丢弃、不 dispatch ✓（19:02:32 那拍即此形态） |
+| 3 | **呈现冻结**（`conversationInfoMessageList` `preserveFinalizedMessagePresentation:240`） | 本地消息已终态（非 Loading/Incomplete） | **stale 落库 Loading 不覆盖本地终态呈现** ✓——这是 B 守卫在快照路径的孪生实现（B 拦事件分片回退、它拦快照合并回退，同一不变式两条路径） |
+| 4 | taskStatus 写回守卫（onSuccess 终态写回） | 快照 taskStatus=EXECUTING | 跳过写回——不会把本地 COMPLETE 打回 EXECUTING ✓；终态快照则幂等 |
+
+结论：该场景安全。chat 中发起、悬挂到终态后才返回的响应（层 1 放行）由层 2/3/4 兜住，`isSessionStreamBusy` 不复活。
+
+**残留理论窄缝**：本地已终态消息与快照消息身份映射完全失配（稳定 id / clientRenderKey / 轮次映射三者全不中）时，stale Loading 会作为新消息插入 → 重复气泡 + busy 复活。需同时满足「后端持久化 Loading 态 assistant」且「本地终态轮次不可识别」，概率极窄且症状可见（重复气泡）；真出现时在 merge 层加同款终态冻结即可，暂不预置。
+
+### 6.7 遗留与不做的事
 
 | 项 | 决策 |
 | --- | --- |
