@@ -20,6 +20,8 @@ export interface UseConversationActiveStateOptions {
   messageListRuntimeSyncFrameRef: MutableRefObject<number | null>;
   /** chat model 的 processing 列表同步（rAF 重算时一并派发） */
   handleChatProcessingList: (list: ProcessingInfo[]) => void;
+  /** 日志溯源：model 身份（'conversationInfo' 主会话 / 'conversationAgent' 预览 Tab） */
+  modelSource: string;
 }
 
 /**
@@ -43,6 +45,7 @@ export function useConversationActiveState({
   messageListRef,
   messageListRuntimeSyncFrameRef,
   handleChatProcessingList,
+  modelSource,
 }: UseConversationActiveStateOptions) {
   // 会话是否正在进行中（有消息正在流式处理 Loading/Incomplete）
   const [isConversationActive, setIsConversationActiveRaw] =
@@ -59,6 +62,9 @@ export function useConversationActiveState({
   const lastActiveAppliedRef = useRef(false);
   // 上次已生效的 awaiting 值：同值 noop 不打日志
   const lastAwaitingAppliedRef = useRef(false);
+  // rising-blocked 日志节流：终态后尾随事件（如流式节奏的迟到 PROCESSING/MESSAGE）
+  // 会以事件节奏连续命中拦截，每秒至多记 1 条并携带末条现场，避免刷屏
+  const lastRisingBlockedLogAtRef = useRef(0);
 
   /**
    * awaiting 变迁留痕（`awaiting-change`）：轮询门 isPollingReady 的另一半条件，
@@ -74,6 +80,7 @@ export function useConversationActiveState({
           : action;
       if (next !== lastAwaitingAppliedRef.current) {
         conversationErrorTerminalLogger.info('awaiting-change', {
+          model: modelSource,
           prev: lastAwaitingAppliedRef.current,
           next,
         });
@@ -89,6 +96,7 @@ export function useConversationActiveState({
       if (!v && Date.now() - lastSendAtRef.current < SEND_KEEPALIVE_MS) {
         // 被发送保活拦截的置 false 也留痕——历史静默路径之一
         conversationErrorTerminalLogger.info('active-blocked', {
+          model: modelSource,
           source,
           reason: 'send-keepalive<3s',
           prev: lastActiveAppliedRef.current,
@@ -100,6 +108,7 @@ export function useConversationActiveState({
       }
       // 会话框「会话中」状态的每次翻转都带来源留痕：定位"哪个变化导致的"
       conversationErrorTerminalLogger.info('active-change', {
+        model: modelSource,
         source,
         prev: lastActiveAppliedRef.current,
         next: v,
@@ -119,9 +128,20 @@ export function useConversationActiveState({
       // 乐观终态 ack：本轮 FINAL_RESULT/ERROR 已到达时，派生信号（末条 Loading/
       // Incomplete 复活）不得再把活跃态顶回 true——只封上升沿，下降方向不受限
       if (busy && roundTerminalAckRef.current) {
-        conversationErrorTerminalLogger.info('active-rising-blocked-by-ack', {
-          source: 'raf-recompute',
-        });
+        const now = Date.now();
+        if (now - lastRisingBlockedLogAtRef.current >= 1000) {
+          lastRisingBlockedLogAtRef.current = now;
+          const tail = messages[messages.length - 1];
+          conversationErrorTerminalLogger.info('active-rising-blocked-by-ack', {
+            model: modelSource,
+            source: 'raf-recompute',
+            // 现场自证：末条是什么状态在被反复写回 busy——常见为终态后尾随
+            // PROCESSING 事件把末条写回 Loading（守卫 B 只拦 MESSAGE 分片）
+            tailId: tail?.id,
+            tailStatus: tail?.status,
+            listLength: messages.length,
+          });
+        }
         return;
       }
       setIsConversationActive(busy, 'raf-recompute');
