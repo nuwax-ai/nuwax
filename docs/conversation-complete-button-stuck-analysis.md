@@ -59,7 +59,7 @@ if (isCurrentMessageTerminal && !messageIdRef.current) { ...整条丢弃... }
 | 11:03:55.133 | `conversation/list` 刷新（onClose 触发 RefreshConversationList） | HAR |
 | 11:03:55 之后 | ★ **详情轮询再未恢复**（HAR 覆盖至 11:07:59，4 分钟零请求）→ `isPollingReady` 卡死；按钮停留「会话中」；页面其余功能存活（notify/credit 每 5s 正常） | HAR + 用户观察 |
 
-关键推论：**按钮卡会话中 + 轮询门卡死 + 页面存活**三者并存的唯一公共变量是 `isConversationActive` 卡 true（既直接撑按钮，又经 `isLocallyStreaming` 挡死轮询），而它被谁顶着——`isSessionStreamBusy(messageList)` 的残留（末条状态回退或近 5 条 processingList 残留，具体字段待受控复现确认）。
+关键推论：**按钮卡会话中 + 轮询门卡死 + 页面存活**三者并存的唯一公共变量是 `isConversationActive` 卡 true（既直接撑按钮，又经 `isLocallyStreaming` 挡死轮询），而它被谁顶着——`isSessionStreamBusy(messageList)` 的残留（末条状态回退或当前轮次 processingList 残留）。
 
 ### 0.3 「门打开瞬间」的代码映射（19:02:32.3x，流开始后第 70.9 秒）
 
@@ -181,46 +181,42 @@ RunOver 显示运行完毕**不能证明 FINAL_RESULT 到达**——取证易错
 
 **日志体系价值体现**：`origin` 字段直接暴露了异常来源（PROCESSING 不该出现在 finalize terminal 日志中），一段 console 定位 + 一行守卫修复。
 
-### 6.1.2 sweep processing 残留清理扩展到近 5 条（`8a7156e7c`，线上 1678835 发现）
+### 6.1.2 sweep processing 残留清理：轮次边界（`8a7156e7c` → `092c9960a`，线上 1678835 发现）
 
 **问题**：终态日志全部干净（`finalize terminal {origin: 'FINAL_RESULT'}` + `sse-on-close` + `applyTerminalTaskStatus COMPLETE`）但按钮仍卡「会话中」——DOM 确认 `stop-box-active` 类残留。
 
 **根因**：`isSessionStreamBusy` 由两个子检查驱动：
 
 ```
-hasActiveStreamingInMessages        → 只看末条 status（Loading/Incomplete）
-hasExecutingProcessingInRecentMessages → 看最近 5 条的 processingList 有无 EXECUTING 残留
+hasActiveStreamingInMessages      → 只看末条 status（Loading/Incomplete）
+hasExecutingProcessingInMessages → 看当前轮次的 processingList 有无 EXECUTING 残留
 ```
 
-sweep 此前只清理**末条**的 processingList。倒数第 2~5 条消息若有工具调用的 PROCESSING 事件未收到 FINISHED（流程中途的中间步骤），那些消息的 processingList 残留 EXECUTING 项 → `isSessionStreamBusy` 持续 true → `checkConversationActive` 的 rAF 重算把 `isConversationActive` 顶回 true → 按钮卡死。
+sweep 此前只清理**末条**的 processingList。当前轮次若有工具调用的 PROCESSING 事件未收到 FINISHED（流程中途的中间步骤消息），那些消息的 processingList 残留 EXECUTING 项 → `isSessionStreamBusy` 持续 true → `checkConversationActive` 的 rAF 重算把 `isConversationActive` 顶回 true → 按钮卡死。
 
-**修复**：sweep 的 `setMessageList` 清理范围从仅末条扩展到**最近 5 条**（与 `hasExecutingProcessingInRecentMessages` 的检查窗口精确对齐）：
-
-```ts
-// Before：只处理 prev[prev.length - 1]
-// After：遍历从 lastIndex 到 max(0, lastIndex - 4) 的所有消息
-//   - 末条：status + processingList 都收敛
-//   - 近 5 条非末条：只收敛 processingList 的 EXECUTING 残留
-```
-
-**诊断特征**：终态日志完整 + 按钮不动 = 检查窗口不匹配（本案例）；终态日志缺失 = 终态事件未到达（此前各案例）。
-
-**后续升级（`092c9960a`）：固定 5 条窗口 → 轮次边界**
-
-固定 `PROCESSING_RECENT_WINDOW = 5` 是对"当前轮消息数"的近似启发值，多步轮次超过 5 条时第 6+ 条的 EXECUTING 残留查不到也清不掉。升级为精确轮次边界：
+**修复**：检查与清理共用 `findCurrentRoundStart`（最后一条 USER 消息的下一条索引）作为当前轮次边界——检查到什么范围就清理到什么范围，天然同步：
 
 ```ts
 // conversationInfoMessageList.ts
 export function findCurrentRoundStart(messageList): number {
-  // 最后一条 USER 消息的下一条索引 = 当前轮次起始
   for (let i = messageList.length - 1; i >= 0; i -= 1) {
     if (messageList[i].role === USER) return i + 1;
   }
   return 0; // 无 USER 时全列表视为当前轮
 }
+
+// isSessionStreamBusy → hasExecutingProcessingInMessages(messageList)
+//   从 findCurrentRoundStart 到末尾，检查所有 assistant 消息的 EXECUTING 残留
+
+// sweep setMessageList
+//   从 findCurrentRoundStart 到末尾，收敛所有 EXECUTING processing 残留
 ```
 
-`isSessionStreamBusy` 的检查范围与 sweep 的清理范围共用此函数——检查到什么范围就清理到什么范围，天然同步，不受消息数量限制。
+**设计理由**：固定窗口（如"近 5 条"）是对"当前轮消息数"的近似，多步轮次超出窗口时残留既查不到也清不掉。轮次边界是语义精确实现——覆盖任意深度、短轮次零浪费、检查与清理共用同一函数不可能不同步。
+
+**风险**：极深轮次（50+ 步工作流）的检查为 O(轮次长度)，实际无感（< 1ms）；hooks → models/conversationInfoMessageList 的层依赖方向可留意（该文件实为纯函数工具模块）。
+
+**诊断特征**：终态日志完整 + 按钮不动 = 检查/清理范围不匹配（本案例）；终态日志缺失 = 终态事件未到达（此前各案例）。
 
 ### 6.2 方案 B：终态守卫丢弃迟到 MESSAGE 分片（`f0d7068cf`）
 
