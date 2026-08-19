@@ -4,6 +4,12 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import ConversationStatus from '.';
 
+// vitest 不为非 .module.less 生成类名导出(默认导出为 undefined),
+// 组件内 styles.xxx 会崩;用恒等映射兜底,仅测逻辑不测样式
+vi.mock('./index.less', () => ({
+  default: new Proxy({}, { get: (_target, key: string) => key }),
+}));
+
 vi.mock('@/components/ChatView/RunOver', () => ({
   default: ({
     messageInfo,
