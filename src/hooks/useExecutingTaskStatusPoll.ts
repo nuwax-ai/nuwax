@@ -2,7 +2,9 @@ import { MessageStatusEnum, ProcessingEnum } from '@/types/enums/common';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 
 /** 默认检查最近 N 条消息中的 processing 执行态 */
-const DEFAULT_RECENT_MESSAGE_COUNT = 5;
+// 检查/清理共用常量：sweep 的 processing 残留清理窗口必须与此对齐
+export const PROCESSING_RECENT_WINDOW = 5;
+const DEFAULT_RECENT_MESSAGE_COUNT = PROCESSING_RECENT_WINDOW;
 
 /** 消息列表末尾是否仍在流式输出（Loading / Incomplete） */
 export function hasActiveStreamingInMessages(
