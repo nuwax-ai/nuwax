@@ -1688,6 +1688,13 @@ export default () => {
         });
         syncMessageListRuntimeState();
 
+        conversationErrorTerminalLogger.warn('sse-on-close', {
+          conversationId: params.conversationId,
+          hasResolvedTerminalStatus,
+          isStale:
+            abortConnectionRef.current !== undefined &&
+            abortConnectionRef.current !== abortConnection,
+        });
         // SSE 已经关闭时先释放本地流式态，不能让后端终态查询阻塞输入框恢复。
         // 否则详情接口响应慢或挂起时，即使回复已经结束，页面仍会一直显示停止按钮。
         disabledConversationActive();

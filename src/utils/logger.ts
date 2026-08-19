@@ -79,19 +79,31 @@ export const createLogger = (prefix: string) => ({
  */
 export const createAlwaysLogger = (prefix: string) => ({
   get log() {
-    return console.log.bind(console, prefix);
+    return console.log.bind(console, `[${new Date().toISOString()}] ${prefix}`);
   },
   get warn() {
-    return console.warn.bind(console, prefix);
+    return console.warn.bind(
+      console,
+      `[${new Date().toISOString()}] ${prefix}`,
+    );
   },
   get error() {
-    return console.error.bind(console, prefix);
+    return console.error.bind(
+      console,
+      `[${new Date().toISOString()}] ${prefix}`,
+    );
   },
   get info() {
-    return console.info.bind(console, prefix);
+    return console.info.bind(
+      console,
+      `[${new Date().toISOString()}] ${prefix}`,
+    );
   },
   get debug() {
-    return console.debug.bind(console, prefix);
+    return console.debug.bind(
+      console,
+      `[${new Date().toISOString()}] ${prefix}`,
+    );
   },
 });
 

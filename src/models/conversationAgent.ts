@@ -1009,6 +1009,9 @@ export default () => {
             setConversationInfo,
           );
         }
+        conversationErrorTerminalLogger.warn('sse-on-close', {
+          conversationId: params.conversationId,
+        });
         setIsAwaitingChatTerminal(false);
 
         disabledConversationActive();
