@@ -181,6 +181,30 @@ RunOver 显示运行完毕**不能证明 FINAL_RESULT 到达**——取证易错
 
 **日志体系价值体现**：`origin` 字段直接暴露了异常来源（PROCESSING 不该出现在 finalize terminal 日志中），一段 console 定位 + 一行守卫修复。
 
+### 6.1.2 sweep processing 残留清理扩展到近 5 条（`8a7156e7c`，线上 1678835 发现）
+
+**问题**：终态日志全部干净（`finalize terminal {origin: 'FINAL_RESULT'}` + `sse-on-close` + `applyTerminalTaskStatus COMPLETE`）但按钮仍卡「会话中」——DOM 确认 `stop-box-active` 类残留。
+
+**根因**：`isSessionStreamBusy` 由两个子检查驱动：
+
+```
+hasActiveStreamingInMessages        → 只看末条 status（Loading/Incomplete）
+hasExecutingProcessingInRecentMessages → 看最近 5 条的 processingList 有无 EXECUTING 残留
+```
+
+sweep 此前只清理**末条**的 processingList。倒数第 2~5 条消息若有工具调用的 PROCESSING 事件未收到 FINISHED（流程中途的中间步骤），那些消息的 processingList 残留 EXECUTING 项 → `isSessionStreamBusy` 持续 true → `checkConversationActive` 的 rAF 重算把 `isConversationActive` 顶回 true → 按钮卡死。
+
+**修复**：sweep 的 `setMessageList` 清理范围从仅末条扩展到**最近 5 条**（与 `hasExecutingProcessingInRecentMessages` 的检查窗口精确对齐）：
+
+```ts
+// Before：只处理 prev[prev.length - 1]
+// After：遍历从 lastIndex 到 max(0, lastIndex - 4) 的所有消息
+//   - 末条：status + processingList 都收敛
+//   - 近 5 条非末条：只收敛 processingList 的 EXECUTING 残留
+```
+
+**诊断特征**：终态日志完整 + 按钮不动 = 检查窗口不匹配（本案例）；终态日志缺失 = 终态事件未到达（此前各案例）。
+
 ### 6.2 方案 B：终态守卫丢弃迟到 MESSAGE 分片（`f0d7068cf`）
 
 **改动位置**：`conversationInfoMessageList.ts` 新增共享谓词 `shouldDropLateMessageChunk`（判定+日志+注释收敛于此，vitest 可测）；两个 model 的 `handleChangeMessageList` MESSAGE 分支入口各 10 行调用。
