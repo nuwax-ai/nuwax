@@ -279,7 +279,6 @@ After（架构解耦）：
 ### 6.3 观测能力（随修复落地）
 
 - sweep 日志 `finalize terminal` 升级 always-on（`createLogger` → `createAlwaysLogger`，每轮 1 条）
-- A 降级路径专属日志 `terminal-event ERROR degraded: skip sweep`
 - B 守卫日志 `drop late MESSAGE chunk`（既有 always-on）
 - 验证表见 §7.1
 
@@ -327,21 +326,21 @@ B 与事件路径的关系不变：无论终态由 FINAL_RESULT 还是 ERROR 事
 
 ### 7.1 验收日志体系（发版后生产 console 直接可判）
 
-所有 always-on 日志统一前缀 `Conv:`（三个子域），`createAlwaysLogger` 自动带 ISO 时间戳。console 过滤 `[Conv:` 即可拉出全部会话相关日志。
+所有 always-on 日志统一前缀 `Conv:`（三个子域），`createAlwaysLogger` 自动带 ISO 时间戳前缀。console 过滤 `[Conv:` 即可拉出全部会话相关日志。
 
 | 前缀 | 子域 | 日志 | 验证什么 |
 | --- | --- | --- | --- |
-| `[Conv:TS]` | Terminal Sweep | `finalize terminal {source, origin, conversationId, taskStatus}` | 终态收敛（origin: FINAL_RESULT / ERROR / poll-snapshot） |
-| `[Conv:TS]` | Terminal Sweep | `finalize streaming placeholder {source, messageId, outcome, busy}` | sub 占位收尾 + 活跃态重算 |
-| `[Conv:ET]` | Error Terminal | `drop late MESSAGE chunk {messageId, chunkType, chunkText}` | **守卫 B**：终态后迟到分片被丢弃 |
-| `[Conv:ET]` | Error Terminal | `applyTerminalTaskStatus {conversationId, prev, next}` | 状态迁移轨迹 |
-| `[Conv:ET]` | Error Terminal | `sse-on-close {conversationId, hasResolvedTerminalStatus, isStale}` | onClose 触发时机 |
-| `[Conv:ET]` | Error Terminal | `sse-on-error apply FAILED {conversationId, messageId, prevTaskStatus}` | 连接级 onError 全量收尾 |
-| `[Conv:ET]` | Error Terminal | `sse-error-event apply FAILED {conversationId, ...}` | ERROR 事件终止态处理 |
-| `[Conv:ET]` | Error Terminal | `emitConversationListTaskStatus` / `skip` / `noop` | 侧栏同步 / 守卫边界 |
-| `[Conv:SR]` | Stream Resume | `resume sub:start` / `reload before sub:done` | sub 恢复流建立 |
-| `[Conv:SR]` | Stream Resume | `skip: local stream cooldown` / `skip: sub failure backoff` / `sub short-lived` | sub 退避/冷却 |
-| `[Conv:SR]` | Stream Resume（轮询） | `resume` / `stop` / `cancel polling: local send started` / `discard stale snapshot` | 轮询启停/丢弃 |
+| `[Conv:Terminal]` | Terminal Sweep | `finalize terminal {source, origin, conversationId, taskStatus}` | 终态收敛（origin: FINAL_RESULT / ERROR / poll-snapshot） |
+| `[Conv:Terminal]` | Terminal Sweep | `finalize streaming placeholder {source, messageId, outcome, busy}` | sub 占位收尾 + 活跃态重算 |
+| `[Conv:Status]` | Status | `drop late MESSAGE chunk {messageId, chunkType, chunkText}` | **守卫 B**：终态后迟到分片被丢弃 |
+| `[Conv:Status]` | Status | `applyTerminalTaskStatus {conversationId, prev, next}` | 状态迁移轨迹 |
+| `[Conv:Status]` | Status | `sse-on-close {conversationId, hasResolvedTerminalStatus, isStale}` | onClose 触发时机 |
+| `[Conv:Status]` | Status | `sse-on-error apply FAILED {conversationId, messageId, prevTaskStatus}` | 连接级 onError 全量收尾 |
+| `[Conv:Status]` | Status | `sse-error-event apply FAILED {conversationId, ...}` | ERROR 事件终止态处理 |
+| `[Conv:Status]` | Status | `emitConversationListTaskStatus` / `skip` / `noop` | 侧栏同步 / 守卫边界 |
+| `[Conv:Resume]` | Resume | `resume sub:start` / `reload before sub:done` | sub 恢复流建立 |
+| `[Conv:Resume]` | Resume | `skip: local stream cooldown` / `skip: sub failure backoff` / `sub short-lived` | sub 退避/冷却 |
+| `[Conv:Resume]` | Resume（轮询） | `resume` / `stop` / `cancel polling: local send started` / `discard stale snapshot` | 轮询启停/丢弃 |
 
 **验收操作**：出问题会话 → F12 console 过滤 `[Conv:` → 按时间戳排 → 读 origin/prev→next/isStale/hasResolvedTerminalStatus/drop late 字段 → 完整还原终态链路调用顺序。不需要 HAR、不需要后端日志。
 
