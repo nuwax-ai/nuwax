@@ -114,6 +114,7 @@ import {
   appendOutgoingConversationMessages,
   preserveOptimisticMessageTail,
   reconcileConversationSnapshotMessages,
+  shouldDropLateMessageChunk,
 } from './conversationInfoMessageList';
 
 /** 后端漏发结构化干预事件时，等待持久化完成的补偿读取间隔。 */
@@ -1240,6 +1241,19 @@ export default () => {
       // MESSAGE事件
       if (eventType === ConversationEventTypeEnum.MESSAGE) {
         const { text, type, id, finished } = data;
+        // 终态守卫（判定与日志收敛于 shouldDropLateMessageChunk，详见其注释）：
+        // 丢弃轮终态后迟到的乱序分片。本分支位于 setMessageList updater 内，
+        // 命中后必须 return list（返回未变更列表，裸 return 会摧毁 messageList）。
+        if (
+          shouldDropLateMessageChunk(
+            currentMessage,
+            currentMessageId,
+            messageIdRef.current,
+            { type, text },
+          )
+        ) {
+          return list;
+        }
         // 思考think
         if (type === MessageModeEnum.THINK) {
           newMessage = {
