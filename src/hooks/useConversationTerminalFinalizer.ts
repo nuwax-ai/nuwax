@@ -193,6 +193,16 @@ export function useConversationTerminalFinalizer(
       if (!conversationId || !res) {
         return;
       }
+      // 只处理终态事件类型（FINAL_RESULT / ERROR）——其他事件（PROCESSING/
+      // MESSAGE/HEART_BEAT 等）一律不进清算。实测 PROCESSING 事件的载荷可能含
+      // resolveTerminalTaskStatus 可解析的字段，误触发完整清算后，守卫 B 会把
+      // 后续正常 CHAT 分片全部丢弃（1560859 实证：内容丢失）。
+      if (
+        res.eventType !== ConversationEventTypeEnum.FINAL_RESULT &&
+        res.eventType !== ConversationEventTypeEnum.ERROR
+      ) {
+        return;
+      }
       const status =
         res.eventType === ConversationEventTypeEnum.ERROR
           ? TaskStatus.FAILED
