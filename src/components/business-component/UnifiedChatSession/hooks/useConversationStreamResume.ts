@@ -7,12 +7,6 @@ import type {
   MessageInfo,
 } from '@/types/interfaces/conversationInfo';
 import {
-  logConversationPollGate,
-  logConversationSnapshotConsume,
-  logLocalStreamState,
-  traceConversationSnapshotRequest,
-} from '@/utils/conversationPollingDiagnostics';
-import {
   emitConversationListTaskStatus,
   fetchConversationSnapshot,
   fetchConversationTaskStatus,
@@ -233,12 +227,6 @@ export function useConversationStreamResume(
   });
   const prevLocallyStreamingRef = useRef(false);
   useEffect(() => {
-    logLocalStreamState({
-      conversationId,
-      isActive: !!isLocallyStreaming,
-      taskStatus: latestRef.current.taskStatus,
-      messageList: latestRef.current.messageList || [],
-    });
     if (prevLocallyStreamingRef.current && !isLocallyStreaming) {
       localStreamEndedAtRef.current = {
         convId: conversationId,
@@ -482,22 +470,9 @@ export function useConversationStreamResume(
   const { run, cancel } = useRequest(
     () => {
       requestGenerationRef.current = pollGenerationRef.current;
-      return traceConversationSnapshotRequest({
-        source: debugSource,
-        trigger: 'scheduled-or-ready-refresh',
-        conversationId,
-        requestGeneration: requestGenerationRef.current,
-        currentGeneration: pollGenerationRef.current,
-        isLocallyStreaming: !!latestRef.current.isLocallyStreaming,
-        isAwaitingChatTerminal: !!latestRef.current.isAwaitingChatTerminal,
-        isResumeSubscribed: !!isResumeSubscribedRef.current,
-        taskStatus: latestRef.current.taskStatus,
-        messageList: latestRef.current.messageList,
-        request: () =>
-          conversationId
-            ? fetchConversationSnapshot(conversationId)
-            : Promise.resolve(undefined),
-      });
+      return conversationId
+        ? fetchConversationSnapshot(conversationId)
+        : Promise.resolve(undefined);
     },
     {
       pollingInterval: GLOBAL_POLLING_INTERVAL,
@@ -530,15 +505,6 @@ export function useConversationStreamResume(
           });
           return;
         }
-        const snapshotOutcome = !snapshot
-          ? 'empty-snapshot'
-          : getLastMessage(snapshot.messageList)?.role ===
-            AssistantRoleEnum.USER
-          ? 'discard-user-tail-not-persisted'
-          : latestRef.current.conversationId === conversationId
-          ? 'dispatch-snapshot'
-          : 'discard-conversation-changed';
-        const localMessageListBeforeSnapshot = latestRef.current.messageList;
         if (
           snapshot &&
           getLastMessage(snapshot.messageList)?.role !==
@@ -557,14 +523,6 @@ export function useConversationStreamResume(
         ) {
           onTerminalTaskStatusRef.current?.(status);
         }
-        logConversationSnapshotConsume({
-          source: debugSource,
-          conversationId,
-          outcome: snapshotOutcome,
-          snapshot,
-          localMessageList: localMessageListBeforeSnapshot,
-          hasSnapshotConsumer: !!onConversationSnapshotRef.current,
-        });
         // 轮询补偿侧栏列表：会话已执行完毕(终态)时，把终态同步到「最近使用/会话记录」。
         // 不依赖本地 taskStatus 是否已变化——列表可能在本轮轮询之间被重新拉取，且后端
         // 尚未落库终态(仍返回 EXECUTING)，因此每次观察到终态都补发一次，由列表处理器
@@ -619,34 +577,6 @@ export function useConversationStreamResume(
     },
   );
 
-  useEffect(() => {
-    logConversationPollGate({
-      source: debugSource,
-      conversationId,
-      ready: isPollingReady,
-      blockedBy: [
-        !conversationId ? 'missing-conversation-id' : null,
-        isLocallyStreaming ? 'local-stream-active' : null,
-        isAwaitingChatTerminal ? 'chat-terminal-pending' : null,
-        isResumeSubscribed ? 'resume-sub-active' : null,
-        !resumeStream ? 'resume-stream-unavailable' : null,
-      ],
-      isLocallyStreaming: !!isLocallyStreaming,
-      isAwaitingChatTerminal,
-      isResumeSubscribed,
-      taskStatus,
-      messageList: latestRef.current.messageList,
-    });
-  }, [
-    conversationId,
-    debugSource,
-    isLocallyStreaming,
-    isAwaitingChatTerminal,
-    isPollingReady,
-    isResumeSubscribed,
-    resumeStream,
-    taskStatus,
-  ]);
   // 把 run/cancel 注入 pollingControlsRef，供 subscribe / onClose 调用
   pollingControlsRef.current.start = () => {
     conversationPollLogger.info(
@@ -721,19 +651,7 @@ export function useConversationStreamResume(
           return;
         }
         const requestGeneration = pollGenerationRef.current;
-        const requestPromise = traceConversationSnapshotRequest({
-          source: debugSource,
-          trigger: 'visibility-resume',
-          conversationId,
-          requestGeneration,
-          currentGeneration: pollGenerationRef.current,
-          isLocallyStreaming: !!latestRef.current.isLocallyStreaming,
-          isAwaitingChatTerminal: !!latestRef.current.isAwaitingChatTerminal,
-          isResumeSubscribed: !!isResumeSubscribedRef.current,
-          taskStatus: latestRef.current.taskStatus,
-          messageList: latestRef.current.messageList,
-          request: () => fetchConversationSnapshot(conversationId),
-        });
+        const requestPromise = fetchConversationSnapshot(conversationId);
         visibilityRequestInFlightRef.current = requestPromise;
         requestPromise
           .then((snapshot) => {
@@ -752,36 +670,14 @@ export function useConversationStreamResume(
                 isLocallyStreaming: latestRef.current.isLocallyStreaming,
                 snapshotTaskStatus: snapshot?.taskStatus,
               });
-              logConversationSnapshotConsume({
-                source: debugSource,
-                conversationId,
-                outcome: 'discard-stale-visibility-snapshot',
-                snapshot,
-                localMessageList: latestRef.current.messageList,
-                hasSnapshotConsumer: !!onConversationSnapshotRef.current,
-              });
               return;
             }
-            const localMessageListBeforeSnapshot =
-              latestRef.current.messageList;
             const snapshotTailIsUser =
               getLastMessage(snapshot?.messageList)?.role ===
               AssistantRoleEnum.USER;
             if (snapshot && !snapshotTailIsUser) {
               onConversationSnapshotRef.current?.(snapshot);
             }
-            logConversationSnapshotConsume({
-              source: debugSource,
-              conversationId,
-              outcome: !snapshot
-                ? 'empty-visibility-snapshot'
-                : snapshotTailIsUser
-                ? 'discard-user-tail-visibility-snapshot'
-                : 'dispatch-visibility-snapshot',
-              snapshot,
-              localMessageList: localMessageListBeforeSnapshot,
-              hasSnapshotConsumer: !!onConversationSnapshotRef.current,
-            });
             const status = snapshot?.taskStatus;
             if (
               status !== undefined &&

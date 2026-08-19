@@ -363,6 +363,7 @@ const AppDev: React.FC = () => {
 
   // Preview 状态跟踪
   const [previewIsLoading, setPreviewIsLoading] = useState<boolean>(false);
+  // Preview 最后刷新时间
   const [previewLastRefreshed, setPreviewLastRefreshed] = useState<Date | null>(
     null,
   );
@@ -415,6 +416,7 @@ const AppDev: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    // 如果没有权限，则不进行模型选择
     if (!projectInfo.hasPermission) {
       return;
     }
@@ -486,6 +488,7 @@ const AppDev: React.FC = () => {
     devLogsRefresh: () => devLogs.resetStartLine(),
   });
 
+  /** 聊天 */
   const chat = useAppDevChat({
     projectId: projectId || '',
     selectedModelId: modelSelector.selectedModelId, // 新增：传递选中的模型ID
@@ -504,6 +507,7 @@ const AppDev: React.FC = () => {
     },
   });
 
+  // 初始化自动发送
   useAppDevInitialAutoSend({
     projectId: projectId || '',
     hasValidProjectId,
@@ -657,6 +661,7 @@ const AppDev: React.FC = () => {
     }
   }, [projectInfo.projectInfoState?.projectInfo, projectInfo.hasPermission]);
 
+  /** 数据源管理 */
   useEffect(() => {
     if (dataResourceManagement.resources?.length > 0) {
       const _selectedDataResources: DataResource[] =
