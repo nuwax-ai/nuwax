@@ -218,6 +218,37 @@ export function findCurrentRoundStart(messageList): number {
 
 **诊断特征**：终态日志完整 + 按钮不动 = 检查/清理范围不匹配（本案例）；终态日志缺失 = 终态事件未到达（此前各案例）。
 
+### 6.1.3 架构解耦：工具状态不驱动会话按钮（`1f8c77bd9`）
+
+**架构决策**：`isSessionStreamBusy` 移除 `hasExecutingProcessingInMessages` 检查——工具调用状态（processingList EXECUTING）不再参与会话按钮状态判定。
+
+```
+Before（架构耦合）：
+  按钮 ← isSessionStreamBusy ← 工具 EXECUTING 残留（任何丢失都卡死）
+
+After（架构解耦）：
+  按钮 ← ① isConversationActive（连接生命周期：发送→FINAL_RESULT/onClose/onError）
+       ← ② hasActiveStreamingInMessages（末条 Loading/Incomplete）
+       ← ③ taskStatus === EXECUTING（后端权威）
+
+  工具状态 → 仅 UI 展示（RunOver 进度指示），与按钮无关
+```
+
+**效果**：整类「工具 FINISHED 事件丢失 → 按钮永久卡死」的 bug 在架构上不可能发生——工具状态与按钮之间不再有通路。sweep 的 processingList 清理从"必须与检查精确对齐否则卡死"降级为"数据卫生"。
+
+**三要素冗余覆盖**：
+
+| 场景     | ① 活跃态   | ② 末条流式    | ③ 后端状态 | 按钮              |
+| -------- | ---------- | ------------- | ---------- | ----------------- |
+| 流式中   | true       | Incomplete    | EXECUTING  | 停止 ✓            |
+| 多步间隙 | true       | 上步 Complete | EXECUTING  | 停止 ✓（①③ 兜住） |
+| 终态后   | false      | Complete      | COMPLETE   | 发送 ✓            |
+| 连接断死 | onClose 清 | false         | 轮询兜底   | 恢复 ✓            |
+
+无单点故障——任何一路信号异常，另外两路仍能正确驱动按钮。
+
+**消费方安全验证**：`isSessionStreamBusy` 的全部消费方（checkConversationActive 双 model / 消息队列 useUnifiedChatQueue + useChatMessageQueue / 旧版 ChatInputHome / sweep 占位收尾）逐一检查——移除工具状态后均有冗余信号覆盖（isConversationActive 或 taskExecuting），无破坏。
+
 ### 6.2 方案 B：终态守卫丢弃迟到 MESSAGE 分片（`f0d7068cf`）
 
 **改动位置**：`conversationInfoMessageList.ts` 新增共享谓词 `shouldDropLateMessageChunk`（判定+日志+注释收敛于此，vitest 可测）；两个 model 的 `handleChangeMessageList` MESSAGE 分支入口各 10 行调用。
