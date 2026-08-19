@@ -1,6 +1,8 @@
 # 「消息运行完毕但会话框按钮一直会话中」分析文档
 
 > 状态：**已定案——终态后状态残留属实，触发源为连接级 onerror 全量收尾（§0.3 调用栈定案）**（2026-08-19）。用户反馈：会话输出正常结束、RunOver 显示「运行完毕」，但会话框按钮（会话中/停止）不结束；出现在第 N 轮长任务。前置：终态统一收敛修复已上线生产（`da11719f1`/`12a161bd4`/`cf5adca1a` 及 dual-track 对应 commit）。
+>
+> **2026-08-20 增补（§8）**：复现 #3（1678881）推翻「onerror 是唯一触发源」——本次终态日志全绿（零 onerror）仍三卡死（按钮/队列/轮询），定案为线上版本缺口（v1.1.19/1.1.20 不含 08-20 凌晨三修复）+ 派生信号顶回机制；已落 roundTerminalAck 乐观终态修复（SSE FINAL_RESULT/ERROR 直接驱动会话框终止态）+ 活跃态变迁溯源日志。
 
 ---
 
@@ -287,7 +289,12 @@ After（架构解耦）：
 ```
 ✅ B（已合入 f0d7068cf）：终态守卫——已终态消息不接受分片状态回退（防"终态后被回退"）
 ✅ ERROR/FINAL_RESULT 同权完整清算（协议正确性，本轮恢复）
-⬜ 待复现 → 设计：连接级 onError 路径的真凶修复（1678724 的实际触发源）
+✅ 092c9960a / f73b15ce8 / 1f8c77bd9（08-20 凌晨：sweep 轮次边界 / 预截断移除 / busy 架构解耦）
+   ——已合入分支但未发版；v1.1.19/1.1.20 缺口即 §8 复现 #3 的主因
+✅ roundTerminalAck 乐观终态（08-20，§8.3）：SSE FINAL_RESULT/ERROR 直接驱动会话框终止态
+   + 活跃态变迁溯源日志（active-change 系列）
+⬜ 连接级 onError 路径修复（1678724 的触发源）：§8 后优先级降低——主因已转版本缺口，
+   且 onError 全量收尾已与终态事件同权（sweep + ack）兜底
 ⬜ 顺带修补：工具层 catch 的 isAborted 守卫 + model 过期守卫的 null 窗口（独立缺口）
 ```
 
@@ -320,9 +327,9 @@ B 与事件路径的关系不变：无论终态由 FINAL_RESULT 还是 ERROR 事
 - [x] HAR 全量分析定案：流有序/无 sub/轮询双防线正常/卡死=流中清门+终态残留（§0–§4）
 - [x] 线上版本鉴定 = cf5adca1a（§0.4）
 - [x] 门打开瞬间的代码映射与行号核验（§0.3，基准 cf5adca1a）
-- [ ] **受控复现**（本地 dev + 全量日志）：抓连接级 onerror 与流存活的时序（重点流开始后 ~70s 窗口）→ 按 §6.1 设计 onError 路径修复
-- [ ] review `stash@{0}` 的终态守卫（§6-B，与 A 互补）
-- [ ] 修复验证后发版；生产验证按下表日志标志
+- [x] **受控复现**（2026-08-20，用户两次复现 + 新 HAR，1678881）：终态日志全绿仍三卡死——**推翻 onerror 单因论**，主因转版本缺口 + 派生信号顶回（§8）
+- [x] review 终态守卫（§6-B）：已随 f0d7068cf 合入并经 561025ac7 精化、88520e591 收敛（§0.1）
+- [ ] 发版 v1.1.21（含 092c9960a/f73b15ce8/1f8c77bd9 + §8 全部修复）；生产验证按 §7.1 + §8.3 日志标志
 
 ### 7.1 验收日志体系（发版后生产 console 直接可判）
 
@@ -345,3 +352,105 @@ B 与事件路径的关系不变：无论终态由 FINAL_RESULT 还是 ERROR 事
 **验收操作**：出问题会话 → F12 console 过滤 `[Conv:` → 按时间戳排 → 读 origin/prev→next/isStale/hasResolvedTerminalStatus/drop late 字段 → 完整还原终态链路调用顺序。不需要 HAR、不需要后端日志。
 
 **反向判定（未生效/回归）**：终态后消息状态回 Incomplete（无 `drop late` 日志）= B 未生效；`applyTerminalTaskStatus` 出现 EXECUTING→EXECUTING noop 死循环 = 轮询在打但后端状态不动；`sse-on-close` 后无 `resume` = 轮询门卡死。**反向判定（未生效/回归）**：流中 ERROR 后出现 `cancel polling: local send started`（无对应 POST 的"假发送"）或流中出现详情轮询请求 = A 未生效；已终态后消息状态回 Incomplete = B 未生效。
+
+---
+
+## 8. 复现 #3（1678881，2026-08-20 01:23–01:58）：终态日志全绿 + 三卡死
+
+### 8.1 现场证据（截图 ×3 + console + HAR `agent.nuwax.com.har`）
+
+**Console 时间线（5+ 轮全部干净收敛）**：每轮完整序列 `cancel polling: local send started` → `✓ SSE connection established` → `[Conv:Terminal] finalize terminal {origin: FINAL_RESULT, taskStatus: COMPLETE}` → `disconnecting completed:true` → `⚫ SSE connection closed` → `⚠ sse-on-close {hasResolvedTerminalStatus: true, isStale: false}`。**全程无 onerror、无 FAILED 转变、无 ERROR 事件**——与 1678724 的 onerror 路径是两条独立失败路径。
+
+**HAR 硬证据**（轮询与发送的网络层鉴定）：
+
+| 检查项 | 结果 |
+| --- | --- |
+| 轮 1 终态后轮询 | +113ms 恢复（`/conversation/1678881` 每 5s）——门机制健康时正常 |
+| 最后一轮终态后 | **5 分钟零详情请求**——轮询门卡死 |
+| 队列消息的 chat POST | **从未发出**（终态后无任何 `/chat`） |
+| 页面存活 | list 刷新每 15s± 照常 |
+
+**UI 症状**：RunOver「运行完毕 ✓ 01:07」（对上末轮 66.3s）+ 「待发送 1」badge 挂着（内容「html 和 pptx 无法预览」）+ 按钮卡「会话中」。另观测 `TaskResult error TypeError: c?.filter is not a function` ×3（渲染防御问题，见 §8.4）。
+
+**三症状公共变量**：model `isConversationActive` 卡 true——按钮（`ChatInputHomeIndependent:290` 三项 OR）、队列（`useUnifiedChatQueue:74` streamActive）、轮询门（`isPollingReady` 含 `!isLocallyStreaming`）共用。
+
+### 8.2 根因定案：版本缺口 + 派生信号顶回
+
+**线上版本缺口**（`git merge-base --is-ancestor` 考证）：线上 = v1.1.19（8f0cf4e21）/ v1.1.20（685873bcf，08-19 23:56 bump），**不含** 08-20 凌晨三修复：
+
+| 修复      | 内容                                                 | v1.1.20 |
+| --------- | ---------------------------------------------------- | ------- |
+| 092c9960a | sweep 轮次边界（findCurrentRoundStart）              | ✗       |
+| f73b15ce8 | checkConversationActive 移除 slice(-5) 预截断        | ✗       |
+| 1f8c77bd9 | isSessionStreamBusy 移除 processing 检查（架构解耦） | ✗       |
+
+线上 busy 检查仍含 processing EXECUTING 残留（近 5 条窗口）→ `syncMessageListRuntimeState` 的 rAF 重算把 active 顶回 true → 三卡死。与 §6.1.2（1678835）同签名：**终态日志完整 + 按钮不动 = 检查/清理范围不匹配**。finalizer 本体日志后无守卫、四步清算无条件执行（已逐行核实）——卡死在清算后状态被顶回，非清算未跑。**发版即解主诉。**
+
+**队列独立冻结缺陷（HEAD 仍存，本次延后）**：取证期间在 `useChatMessageQueue.ts` 逐行核实四条冻结路径——(a) 消费纯靠 `consumeBlocked` 下降沿，边沿到来时 `canAttemptConsume` 因 userPaused/consumeLock 拒绝即静默丢失永不再来；(c) 消费锁泄漏链：发出后锁不释放 + 发送被 `useChatConversation.ts:142` 的 `isChatInputDisabled` 静默吞（零日志）→ 流永不启动 → 5s 看门狗被锁拒绝 → 永久冻结且消息已 dequeue 丢失；(d) timer 火时遇忙丢弃不重排；(e) 整个 MessageQueue 目录零日志。**本案不是它们触发的**（badge 在、消息在队列、无 dequeue 痕迹；卡的是 blocked 信号本身），故延后。**判别特征**：若发版后仍出现「终态日志全绿 + active-change 日志正常回落 + badge 仍不动」→ 队列内部缺陷实锤，届时落安全网轮询 + 看门狗放锁 + `[Conv:Queue]` 日志体系。
+
+**持久化断链考古（产品回归，待决策）**：`d61c5585e`（6/18「消息队列按会话持久化」）的 `useMessageQueue(conversationId)` 在同日 merge `f6f333c3e` 冲突解决中被静默丢弃，`loadQueue/saveQueue` 全程拿 undefined——**排队消息刷新页面即丢**。若恢复接线必须与队列安全网同落（否则 24h TTL 的消息会在用户无感知时自动发出）。
+
+### 8.3 修复：roundTerminalAck 乐观终态（用户指定方向）
+
+**方向**（用户拍板）：优先使用 SSE 会话消息中的 ERROR / FINAL_RESULT 事件（乐观）做会话框上的会话终止状态——终态事件一到，busy 必须终止，不允许派生信号顶回。
+
+**实现**（`useConversationTerminalFinalizer.ts` + 双 model 镜像）：
+
+- 每 model 持有 `roundTerminalAckRef`（ref 不用 state——消费者只有 model 内 rAF 回调，不触发渲染）。
+- **置 true**：sweep 内与 `setIsAwaitingChatTerminal(false)` 同点位（FINAL_RESULT/ERROR/轮询快照终态均经此）；onError 全量收尾路径（连接级错误 = 本轮终止，同权）。sweep 开头「解析不出终态枚举」早退在置位之前——任务冲突型不 ack（旧任务还在跑）。sweep 步骤顺序（08-20 调整）：**会话框状态最先落死**（清活跃态 + ack + 清 awaiting）→ taskStatus 写回 → 消息收敛——终态一到按钮立即恢复，后续任一步异常不拖累用户可见状态。
+- **置 false**：两 model `handleClearSideEffect` 函数体首行——一处覆盖三场景：新发送（onMessageSend）、用户停止（runStopConversation）、会话切换/卸载（resetInit）。
+- **`checkConversationActive` 只封上升沿**：`busy && ack → return`（下降方向不受限，幂等）。`finalizeStreamingPlaceholder` 的 rAF 重算同款 gate（两处口径必须一致）。
+- 效果：终态事件到达后按钮/队列/轮询门全部自动痊愈；新一轮发送立即复位，流式语义不变。
+
+**活跃态变迁溯源日志**（应「要清楚知道哪个变化导致的」；完整状态机参考已独立成文档 `conversation-active-state-machine.md`）：`setIsConversationActive` 包装器带 `source` 标签，`[Conv:Status]` always-on：
+
+| 日志 | 触发 | 字段 |
+| --- | --- | --- |
+| `active-change` | 活跃态真实翻转 | `source`（send-optimistic / raf-recompute / terminal-sweep / placeholder-recompute / sse-on-close / sse-on-error / user-stop / reset-init / query-on-error / disable）+ `prev → next` |
+| `active-blocked` | 置 false 被发送保活（<3s）拦截 | `source` + `reason: send-keepalive<3s` |
+| `active-rising-blocked-by-ack` | 乐观终态 ack 封住上升沿（新机制生效证据） | `source: raf-recompute` |
+| `awaiting-change` | awaiting（轮询门另一半）翻转 | `prev → next` |
+
+同值 noop 不打日志（流式中 rAF 高频命中同值）。验收：出问题会话 console 过滤 `active-` 即可还原「会话中」状态的完整翻转链与每次来源。
+
+**已知窄缝（记录不修）**：sweep 防跨会话守卫只比对 conversationId 不比对轮次——新一轮发送后上一轮陈旧终态若挤入（poll 悬挂响应/sub 迟到，§6.6 四层防线使窗口极窄），ack 会把流式中的一轮打成空闲且 rAF 无法自愈。判别特征：终态后消息回 Incomplete 且无 drop late 日志 + 按钮误显可发送。
+
+### 8.4 附带修复
+
+- **TaskResult 渲染防御**（`MarkdownRenderer/TaskResult/index.tsx`）：children 为单个元素（非数组）时 `(children as React.ReactNode[])?.filter` 抛 `c?.filter is not a function`——改 `React.Children.toArray` + `props?.children ?? ''`，附 colocated 测试。
+- **vitest 环境**：vitest@4 的 peer 要求 vite≥6 与仓库 vite@4.5.2 冲突（启动即 `ERR_PACKAGE_PATH_NOT_EXPORTED: vite/module-runner`，本地早已不可跑），降级 `^2.1.9` 恢复。
+- **存量断言滞后修正**：`useExecutingTaskStatusPoll.test.ts`（1f8c77bd9 后 processing 不再参与 busy）、`useConversationAgentChatSession.test.ts`（终态写回早已改走 `finalizeConversationTerminal`，mock 与断言滞后）。
+
+### 8.5 §7.1 勘误（本次取证实测）
+
+- `applyTerminalTaskStatus` 日志**条件打印**（仅状态真实变化；skip/noop 仅 FAILED）——「无此日志 ≠ 写回缺失」
+- `emitConversationListTaskStatus` 仅 FAILED 打——COMPLETE 路径静默属设计
+- `resume` 仅 sub 关闭后显式重启路径打——纯本地发送（无 sub）的会话从头到尾不会有 `resume`，**「sse-on-close 后无 resume = 轮询卡死」对 live-send 路径不成立**（轮询经 `isPollingReady` ready 翻转静默重启）
+- 新增 `active-change` / `active-blocked` / `active-rising-blocked-by-ack`（§8.3 表）
+
+### 8.6 行动项增量
+
+- [x] 复现 #3 取证定案（版本缺口 + 派生信号顶回，§8.1–8.2）
+- [x] roundTerminalAck 乐观终态 + 双 model 镜像 + 单测（§8.3）
+- [x] 活跃态变迁溯源日志（active-change 系列，§8.3）
+- [x] 双 model 重复实现收敛为共享 hook `useConversationActiveState`（§8.7）
+- [x] TaskResult 渲染防御 + vitest 环境 + 存量断言修正（§8.4）
+- [ ] 发版 v1.1.21（含 092c9960a/f73b15ce8/1f8c77bd9 + 本节全部修复）
+- [ ] 发版后按 §8.3 验收日志观察；若再现「终态全绿 + active 正常回落 + badge 不动」→ 落队列安全网（§8.2 判别特征）
+- [ ] 队列持久化断链产品决策（§8.2 考古）
+
+### 8.7 落地与验证状态（2026-08-20 04:20）
+
+**代码状态**（用户指示暂缓提交，均在工作区未 commit）：
+
+| 改动 | 文件 | 状态 |
+| --- | --- | --- |
+| roundTerminalAck 乐观终态 | `src/hooks/useConversationTerminalFinalizer.ts`（sweep 置 ack / 占位重算同款 gate）+ 两 model 的 onError 收尾置位、handleClearSideEffect 复位 | 工作区 |
+| **活跃态状态机收敛**：乐观终态 ack + 发送保活 + 变迁溯源日志（active-change / active-blocked / active-rising-blocked-by-ack）+ rAF 派生重算调度，四职责合一 | **新增 `src/hooks/useConversationActiveState.ts`**（与 useConversationTerminalFinalizer 同款「双 model 共用 hook」收敛模式）；`conversationInfo.ts` / `conversationAgent.ts` 各删 ~75 行重复实现改为接线消费 | 工作区 |
+| TaskResult 渲染防御 + colocated 测试 ×3 | `src/components/MarkdownRenderer/TaskResult/` | 工作区 |
+| 单测：roundTerminalAck ×5 + 存量断言修正 ×2（useExecutingTaskStatusPoll / useConversationAgentChatSession） | `tests/` | 工作区 |
+| vitest 环境修复（@4 → ^2.1.9）+ busy 断言修正 | `package.json` + `tests/useExecutingTaskStatusPoll.test.ts` | **已本地提交 db71314df（未推送）** |
+
+**验证记录**：受影响 8 个测试文件 103 条全过（含 8 条新增）；eslint 干净；tsc 报错均为 AgentIntervention 域存量类型噪音（与本次改动无关）。队列域存量红灯（messageQueue:210 / messageQueueDisabled / messageQueueIntervention / conversationTaskStatusSync 的 eventBus mock）为既有滞后，随队列自愈延后处理（§8.2）。
+
+**待办**：review 后提交工作区改动 → 发版 v1.1.21 → 生产按 §8.3 验收（console 过滤 `active-` / `[Conv:`）。
