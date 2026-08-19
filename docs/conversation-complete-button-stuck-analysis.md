@@ -173,6 +173,14 @@ RunOver 显示运行完毕**不能证明 FINAL_RESULT 到达**——取证易错
 
 **本案的真正修复对象（待复现确认后设计）**：连接级 onError 路径——1678724 中它在流存活期间执行了全量收尾（含写 FAILED + 清状态 → 门开）。待解矛盾：onerror 后 handler 自己 `controller.abort()` 应杀连接，而该流活满 153 秒且 body 完整。受控复现目标：队列自动消费场景下观察 onerror 与流存活的时序关系。
 
+### 6.1.1 事件类型白名单（`c3399c9af`，线上 1560859 发现）
+
+**问题**：PROCESSING 事件的载荷含 `resolveTerminalTaskStatus` 可解析的字段，误触发完整清算——日志实证 `finalize terminal {origin: 'PROCESSING', taskStatus: 'FAILED'}`，消息提前标记终态后，守卫 B 把后续正常 CHAT 分片全部丢弃（内容丢失："side Se al 中 有个 属性 重复 的 笔 误 ， 修复 ：" 等碎片全被拦截）。
+
+**修复**：`finalizeChatTerminalEvent` 入口增加白名单——只有 `FINAL_RESULT` 和 `ERROR` 事件类型能进入终态清算，其他（PROCESSING/MESSAGE/HEART_BEAT 等）一律 return。
+
+**日志体系价值体现**：`origin` 字段直接暴露了异常来源（PROCESSING 不该出现在 finalize terminal 日志中），一段 console 定位 + 一行守卫修复。
+
 ### 6.2 方案 B：终态守卫丢弃迟到 MESSAGE 分片（`f0d7068cf`）
 
 **改动位置**：`conversationInfoMessageList.ts` 新增共享谓词 `shouldDropLateMessageChunk`（判定+日志+注释收敛于此，vitest 可测）；两个 model 的 `handleChangeMessageList` MESSAGE 分支入口各 10 行调用。
