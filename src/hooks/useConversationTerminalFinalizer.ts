@@ -16,7 +16,7 @@ import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
 import { useCallback, useMemo } from 'react';
 
 // always-on：终态收敛/降级是会话卡死类问题的核心生产观测点（每轮会话仅 1-2 条，无噪音）
-const conversationTerminalSweepLogger = createAlwaysLogger('[Conv:TS]');
+const conversationTerminalSweepLogger = createAlwaysLogger('[Conv:终态]');
 
 export interface UseConversationTerminalFinalizerOptions {
   /** 日志来源：区分主会话 model 与预览 Tab model */
