@@ -79,11 +79,11 @@ E2E 场景(环境变量可覆盖:`E2E_BASE_URL`/`E2E_CHAT_URL`/`E2E_TASKAGENT_UR
 
 ### C. 停止与终态同步
 
-核心文件:旧线 `conversationInfo.ts`(runStopConversation/onClose/onError)、共享 `utils/conversationTaskStatusSync.ts`、新线 `createConversationRuntimeSession.ts`(stop/onClose)+ `runtime/terminalConsistencyController.ts`。修复背景:[conversation-error-taskstatus-stuck-fix.md](./conversation-error-taskstatus-stuck-fix.md)、[chat-terminal-polling-flash-qa-report.md](./chat-terminal-polling-flash-qa-report.md)。
+核心文件:旧线 `conversationInfo.ts`(runStopConversation/onClose/onError)、统一清算 `useConversationTerminalFinalizer.ts`(sweep/终态守卫入口)、共享 `conversationInfoMessageList.ts`(findCurrentRoundStart + shouldDropLateMessageChunk)、`utils/conversationTaskStatusSync.ts`、新线 `createConversationRuntimeSession.ts`(stop/onClose)+ `runtime/terminalConsistencyController.ts`。修复背景:[conversation-error-taskstatus-stuck-fix.md](./conversation-error-taskstatus-stuck-fix.md)、[chat-terminal-polling-flash-qa-report.md](./chat-terminal-polling-flash-qa-report.md)。
 
 | ID | 业务行为 | 预期结果 | 自动验收 | 人工验收要点 | 负责人/状态 |
 | --- | --- | --- | --- | --- | --- |
-| C1 | 〔双〕停止按钮显示 | 合成活跃=model isConversationActive ‖ 末条 Loading/Incomplete ‖ 近 5 条含 EXECUTING processing ‖ taskStatus===EXECUTING | runtimeSelectors · createConversationSessionModel · conversationSessionView | 后台任务执行中(无流式)也显示停止按钮 | ➖ |
+| C1 | 〔双〕停止按钮显示 | 合成活跃=model isConversationActive ‖ 末条 Loading/Incomplete ‖ taskStatus===EXECUTING（工具状态不参与——架构解耦 `1f8c77bd9`） | runtimeSelectors · createConversationSessionModel · conversationSessionView | 后台任务执行中(无流式)也显示停止按钮;终态后按钮立即恢复 | ➖ |
 | C2 | 〔双〕停止链路 | abort live+sub→ 本地尾消息 Stopped、EXECUTING processing→FAILED→ 调后端 stop;isStopping 防重 | conversationInfoModel · conversationRuntimeSession | 流式中点停止 → 立即停、消息标已停止、可继续发送 | ➖ |
 | C3 | 〔双〕取消无输出删空气泡 | 用户主动取消且消息无文本 →splice 删除,不显示空气泡 | conversationTerminalEvent | 秒停场景不留空 Loading 气泡 | ➖ |
 | C4 | ERROR/onError 落终态 | SSE ERROR 与网络 onError 都立刻 taskStatus=FAILED+侧栏清除执行中(历史 bug:只改消息不落会话态) | conversationInfoModel · conversationRuntimeSession(R6) | 拔网/断流 → 输入区不卡停止按钮 | ➖ |
@@ -92,6 +92,12 @@ E2E 场景(环境变量可覆盖:`E2E_BASE_URL`/`E2E_CHAT_URL`/`E2E_TASKAGENT_UR
 | C7 | 侧栏终态补偿 | 轮询/sub 收尾观察到终态即 emitConversationListTaskStatus(幂等合并) | conversationInfoModel · useConversationStreamResume | 会话结束后侧栏「执行中」消失、终态正确 | ➖ |
 | C8 | ❗〔双〕收尾不闪烁 | `isAwaitingChatTerminal` 门禁:MESSAGE finished 到 FINAL_RESULT 之间不轮询;USER 尾快照丢弃;`data-message-id` 用 clientRenderKey 保持稳定 | useConversationStreamResume · conversationInfoModel | 🖐 QA 报告 §6 十项(长回答/工具密集/快速多轮/停止/切后台/错误/刷新续接/四入口/侧栏同步/DOM 身份) | ➖ |
 | C9 | 高频连续发送 | 上一轮连接延迟 onClose/onError 只清理自己的消息,不误停新一轮、不误弹错 | conversationInfoModel(2 条) · conversationRuntimeSession · liveConnectionController | 快速连发 3-5 轮无错乱 | ➖ |
+| C10 | ❗〔双〕终态统一收敛 sweep | FINAL_RESULT/ERROR 到达 → taskStatus 落终态 + 清 awaiting + 破 3s 保活清活跃态 + 末条消息/当前轮 processing 收敛(一次完成,无论哪条路径到达) | conversationInfoModel · conversationRuntimeSession | 🖐 长任务正常完成后按钮立即回发送态、轮询恢复 | ➖ |
+| C11 | 事件类型白名单 | finalizeChatTerminalEvent 只处理 FINAL_RESULT/ERROR;PROCESSING 载荷不误触发终态清算 | conversationInfoModel | PROCESSING 密集型 agent(如 PPT 生成)不出现内容丢失 | ➖ |
+| C12 | 终态守卫(迟到分片丢弃) | 已终态消息(Complete/Error/Stopped)收到 MESSAGE 分片 → 整条丢弃,不回退状态;多步轮中间步边界放行(messageIdRef 判据) | conversationInfoMessageList(3 条) | 多步 agent 每步输出完整;终态后无状态回退 | ➖ |
+| C13 | 轮次边界(检查与清理共用) | findCurrentRoundStart = 最后一条 USER 之后;isSessionStreamBusy 检查范围与 sweep 清理范围共用此边界 | conversationInfoMessageList · useExecutingTaskStatusPoll | 深工作流(>5 步)终态后按钮正确恢复 | ➖ |
+| C14 | 工具状态架构解耦 | isSessionStreamBusy 不检查 processingList EXECUTING;工具状态仅影响 RunOver UI 展示 | useExecutingTaskStatusPoll | 单个工具 FINISHED 丢失不导致按钮卡死 | ➖ |
+| C15 | Stopped/Error 复制按钮 | 终态消息(Stopped/Error/Complete/null)均可复制,无 status 限制 | ChatView | 停止/出错消息有完整输出时可复制 | ➖ |
 
 ### D. sub 流式恢复(刷新/新开标签)
 
@@ -111,6 +117,9 @@ E2E 场景(环境变量可覆盖:`E2E_BASE_URL`/`E2E_CHAT_URL`/`E2E_TASKAGENT_UR
 | D10 | 〔双〕sub ERROR 主动断 | 收到 ERROR 事件 → 主动 abort→ 触发 onClose→ 恢复轮询继续检测重试 | resumeController · useResumeStreamHandlers(网外) | — | ➖ |
 | D11 | sub 关闭终态确认 | 优先从本地 messageList finalResult 解析终态(**不 reload**,防结束闪烁);解析不到才 fetchConversationTaskStatus 兜底;终态同步完成后才恢复轮询 | terminalConsistencyController · useConversationStreamResume | 🖐 sub 恢复自然结束后页面不闪、侧栏状态正确 | ➖ |
 | D12 | 本地发送打断 sub | 本地发消息 → 立即 abort sub,由 live 接管,无双流 | useConversationStreamResume | — | ➖ |
+| D13 | sub 终态事件回调 | sub onMessage 收到 FINAL_RESULT/ERROR → finalizeChatTerminalEvent 完整清算(终态不依赖本地连接存活) | useResumeStreamHandlers | 🖐 本地连接断网后 sub 重放终态仍能恢复按钮 | ➖ |
+| D14 | sub 关闭占位收尾 | sub onClose → 占位落 Stopped + rAF 重算活跃态 → 轮询恢复(由快照决定续挂或终态) | useResumeStreamHandlers · useConversationTerminalFinalizer | sub 恢复自然关闭后按钮不卡 | ➖ |
+| D15 | sub 网络错误对齐 | sub onerror → 占位落 Error + taskStatus FAILED + 侧栏同步(与 chat onError 同款) | useResumeStreamHandlers | 断网时 sub 与 chat 表现一致 | ➖ |
 
 ### E. 状态轮询与竞态防护
 
@@ -274,3 +283,10 @@ E2E 场景(环境变量可覆盖:`E2E_BASE_URL`/`E2E_CHAT_URL`/`E2E_TASKAGENT_UR
 ## 变更记录
 
 - 2026-08-17:首版,基于 `cf5ab966c` 全量梳理(合同网 33 文件 292 条 + E2E 8 场景 + QA 报告 + 代码走查)。
+
+### 2026-08-20 终态收敛体系修复同步
+
+- C1 按钮公式更新:移除"近 5 条 EXECUTING processing"(架构解耦 `1f8c77bd9`)
+- 新增 C10~C15:终态统一收敛 sweep / 事件类型白名单 / 终态守卫 / 轮次边界 / 工具状态解耦 / 复制按钮
+- 新增 D13~D15:sub 终态回调 / sub 关闭占位收尾 / sub 网络错误对齐
+- 修复文档: [terminal-convergence-fix-summary.md](./terminal-convergence-fix-summary.md)
