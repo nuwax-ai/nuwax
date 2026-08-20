@@ -41,15 +41,18 @@ const TaskResult: React.FC<TaskResultProps> = ({
   }
 
   try {
+    // children 可能是单个元素而非数组（task-result 标签只包一个子节点时），
+    // 直接 .filter 会抛 "c?.filter is not a function"——统一 toArray 后再过滤
+    const childItems = React.Children.toArray(children);
     // 有文件描述显示文件描述
-    const fileDescription = (children as React.ReactNode[])
-      ?.filter((item: any) => item.type === 'description')
-      .map((item: any) => item.props.children)
+    const fileDescription = childItems
+      .filter((item: any) => item.type === 'description')
+      .map((item: any) => item.props?.children ?? '')
       .join('');
     // 有文件名显示文件名
-    const fileName = (children as React.ReactNode[])
-      ?.filter((item: any) => item.type === 'file')
-      .map((item: any) => item.props.children)
+    const fileName = childItems
+      .filter((item: any) => item.type === 'file')
+      .map((item: any) => item.props?.children ?? '')
       .join('');
     // 没有文件名不显示组件
     if (!fileName) {
