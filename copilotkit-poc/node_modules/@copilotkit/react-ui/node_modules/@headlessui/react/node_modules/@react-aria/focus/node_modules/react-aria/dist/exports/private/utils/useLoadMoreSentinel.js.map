@@ -1,0 +1,1 @@
+{"mappings":"","sources":["packages/react-aria/exports/private/utils/useLoadMoreSentinel.ts"],"sourcesContent":["export {\n  type LoadMoreSentinelProps,\n  useLoadMoreSentinel\n} from '../../../src/utils/useLoadMoreSentinel';\n"],"names":[],"version":3,"file":"useLoadMoreSentinel.js.map"}

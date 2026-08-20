@@ -1,0 +1,1 @@
+{"mappings":";AAAA,4BAAiB;IAAG,oBAAoB,CAAC,4GAAkF,CAAC;AAC5H","sources":["packages/react-aria/intl/menu/lt-LT.json"],"sourcesContent":["{\n  \"longPressMessage\": \"Norėdami atidaryti meniu, nuspaudę palaikykite arba paspauskite „Alt + ArrowDown“.\"\n}\n"],"names":[],"version":3,"file":"lt-LT.mjs.map"}

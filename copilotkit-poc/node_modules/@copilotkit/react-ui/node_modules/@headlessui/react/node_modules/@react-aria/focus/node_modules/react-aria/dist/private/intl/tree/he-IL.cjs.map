@@ -1,0 +1,1 @@
+{"mappings":"AAAA,iBAAiB;IAAG,YAAY,CAAC,4BAAI,CAAC;IACpC,UAAU,CAAC,4BAAI,CAAC;AAClB","sources":["packages/react-aria/intl/tree/he-IL.json"],"sourcesContent":["{\n  \"collapse\": \"כווץ\",\n  \"expand\": \"הרחב\"\n}\n"],"names":[],"version":3,"file":"he-IL.cjs.map"}

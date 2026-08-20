@@ -1,0 +1,1 @@
+{"mappings":"AAAA,iBAAiB;IAAG,YAAY,CAAC,QAAQ,CAAC;IACxC,UAAU,CAAC,OAAO,CAAC;AACrB","sources":["packages/react-aria/intl/tree/es-ES.json"],"sourcesContent":["{\n  \"collapse\": \"Contraer\",\n  \"expand\": \"Ampliar\"\n}\n"],"names":[],"version":3,"file":"es-ES.cjs.map"}

@@ -1,0 +1,1 @@
+{"mappings":"","sources":["packages/react-aria/exports/private/virtualizer/useVirtualizerItem.ts"],"sourcesContent":["export {\n  useVirtualizerItem,\n  type VirtualizerItemOptions\n} from '../../../src/virtualizer/useVirtualizerItem';\n"],"names":[],"version":3,"file":"useVirtualizerItem.js.map"}

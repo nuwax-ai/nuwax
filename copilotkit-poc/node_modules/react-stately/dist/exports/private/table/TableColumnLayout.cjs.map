@@ -1,0 +1,1 @@
+{"mappings":"","sources":["packages/react-stately/exports/private/table/TableColumnLayout.ts"],"sourcesContent":["export {TableColumnLayout} from '../../../src/table/TableColumnLayout';\n"],"names":[],"version":3,"file":"TableColumnLayout.cjs.map"}

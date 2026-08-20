@@ -1,0 +1,1 @@
+{"mappings":";AAAA,4BAAiB;IAAG,YAAY,CAAC,MAAM,CAAC;IACtC,UAAU,CAAC,cAAQ,CAAC;AACtB","sources":["packages/react-aria/intl/tree/tr-TR.json"],"sourcesContent":["{\n  \"collapse\": \"Daralt\",\n  \"expand\": \"Genişlet\"\n}\n"],"names":[],"version":3,"file":"tr-TR.mjs.map"}

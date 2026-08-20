@@ -1,0 +1,11 @@
+arch:
+ - amd64
+ - ppc64le
+language: "node_js"
+node_js:
+  - 6
+  - 8
+  - 10
+branches:
+  only:
+    - master

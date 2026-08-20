@@ -1,0 +1,1 @@
+{"mappings":";AAAA,4BAAiB;IAAG,qBAAqB,CAAC,KAAK,CAAC;IAC9C,qBAAqB,CAAC,yCAAmC,CAAC;AAC5D","sources":["packages/react-aria/intl/tag/nb-NO.json"],"sourcesContent":["{\n  \"removeButtonLabel\": \"Fjern\",\n  \"removeDescription\": \"Trykk på Slett for å fjerne taggen.\"\n}\n"],"names":[],"version":3,"file":"nb-NO.mjs.map"}

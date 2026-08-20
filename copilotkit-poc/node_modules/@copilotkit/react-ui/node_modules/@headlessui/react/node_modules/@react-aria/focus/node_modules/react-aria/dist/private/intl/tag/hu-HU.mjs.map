@@ -1,0 +1,1 @@
+{"mappings":";AAAA,4BAAiB;IAAG,qBAAqB,CAAC,oBAAW,CAAC;IACpD,qBAAqB,CAAC,4EAAuD,CAAC;AAChF","sources":["packages/react-aria/intl/tag/hu-HU.json"],"sourcesContent":["{\n  \"removeButtonLabel\": \"Eltávolítás\",\n  \"removeDescription\": \"Nyomja meg a Delete billentyűt a címke eltávolításához.\"\n}\n"],"names":[],"version":3,"file":"hu-HU.mjs.map"}

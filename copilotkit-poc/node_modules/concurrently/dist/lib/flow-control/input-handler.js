@@ -1,0 +1,68 @@
+import Rx from 'rxjs';
+import { map } from 'rxjs/operators';
+import * as defaults from '../defaults.js';
+/**
+ * Sends input from concurrently through to commands.
+ *
+ * Input can start with a command identifier, in which case it will be sent to that specific command.
+ * For instance, `0:bla` will send `bla` to command at index `0`, and `server:stop` will send `stop`
+ * to command with name `server`.
+ *
+ * If the input doesn't start with a command identifier, it is then always sent to the default target.
+ */
+export class InputHandler {
+    logger;
+    defaultInputTarget;
+    inputStream;
+    pauseInputStreamOnFinish;
+    constructor({ defaultInputTarget, inputStream, pauseInputStreamOnFinish, logger, }) {
+        this.logger = logger;
+        this.defaultInputTarget = defaultInputTarget || defaults.defaultInputTarget;
+        this.inputStream = inputStream;
+        this.pauseInputStreamOnFinish = pauseInputStreamOnFinish !== false;
+    }
+    handle(commands) {
+        const { inputStream } = this;
+        if (!inputStream) {
+            return { commands };
+        }
+        const commandsMap = new Map();
+        for (const command of commands) {
+            commandsMap.set(command.index.toString(), command);
+            commandsMap.set(command.name, command);
+        }
+        Rx.fromEvent(inputStream, 'data')
+            .pipe(map((data) => String(data)))
+            .subscribe((data) => {
+            const dataParts = data.split(/:(.+)/s);
+            let target = dataParts[0];
+            let command = commandsMap.get(target);
+            let input;
+            if (dataParts.length > 1 && command) {
+                input = dataParts[1];
+            }
+            else {
+                // If `target` does not match a registered command,
+                // fallback to `defaultInputTarget` and forward the whole input data
+                target = this.defaultInputTarget.toString();
+                command = commandsMap.get(target);
+                input = data;
+            }
+            if (command?.stdin) {
+                command.stdin.write(input);
+            }
+            else {
+                this.logger.logGlobalEvent(`Unable to find command "${target}", or it has no stdin open\n`);
+            }
+        });
+        return {
+            commands,
+            onFinish: () => {
+                if (this.pauseInputStreamOnFinish) {
+                    // https://github.com/kimmobrunfeldt/concurrently/issues/252
+                    inputStream.pause();
+                }
+            },
+        };
+    }
+}

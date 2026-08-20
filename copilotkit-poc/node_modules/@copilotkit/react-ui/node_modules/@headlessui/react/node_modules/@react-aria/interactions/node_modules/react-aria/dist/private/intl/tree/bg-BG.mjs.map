@@ -1,0 +1,1 @@
+{"mappings":";AAAA,4BAAiB;IAAG,YAAY,CAAC,iDAAO,CAAC;IACvC,UAAU,CAAC,6EAAW,CAAC;AACzB","sources":["packages/react-aria/intl/tree/bg-BG.json"],"sourcesContent":["{\n  \"collapse\": \"Свиване\",\n  \"expand\": \"Разширяване\"\n}\n"],"names":[],"version":3,"file":"bg-BG.mjs.map"}

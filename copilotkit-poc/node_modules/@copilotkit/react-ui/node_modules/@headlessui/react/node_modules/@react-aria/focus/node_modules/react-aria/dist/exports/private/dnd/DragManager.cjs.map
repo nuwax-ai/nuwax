@@ -1,0 +1,1 @@
+{"mappings":"","sources":["packages/react-aria/exports/private/dnd/DragManager.ts"],"sourcesContent":["export {isVirtualDragging} from '../../../src/dnd/DragManager';\n"],"names":[],"version":3,"file":"DragManager.cjs.map"}

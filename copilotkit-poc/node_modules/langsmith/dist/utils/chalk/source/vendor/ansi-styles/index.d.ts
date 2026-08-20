@@ -1,0 +1,58 @@
+export declare const modifierNames: string[];
+export declare const foregroundColorNames: string[];
+export declare const backgroundColorNames: string[];
+export declare const colorNames: string[];
+declare const ansiStyles: {
+    modifier: {
+        reset: number[];
+        bold: number[];
+        dim: number[];
+        italic: number[];
+        underline: number[];
+        overline: number[];
+        inverse: number[];
+        hidden: number[];
+        strikethrough: number[];
+    };
+    color: {
+        black: number[];
+        red: number[];
+        green: number[];
+        yellow: number[];
+        blue: number[];
+        magenta: number[];
+        cyan: number[];
+        white: number[];
+        blackBright: number[];
+        gray: number[];
+        grey: number[];
+        redBright: number[];
+        greenBright: number[];
+        yellowBright: number[];
+        blueBright: number[];
+        magentaBright: number[];
+        cyanBright: number[];
+        whiteBright: number[];
+    };
+    bgColor: {
+        bgBlack: number[];
+        bgRed: number[];
+        bgGreen: number[];
+        bgYellow: number[];
+        bgBlue: number[];
+        bgMagenta: number[];
+        bgCyan: number[];
+        bgWhite: number[];
+        bgBlackBright: number[];
+        bgGray: number[];
+        bgGrey: number[];
+        bgRedBright: number[];
+        bgGreenBright: number[];
+        bgYellowBright: number[];
+        bgBlueBright: number[];
+        bgMagentaBright: number[];
+        bgCyanBright: number[];
+        bgWhiteBright: number[];
+    };
+};
+export default ansiStyles;

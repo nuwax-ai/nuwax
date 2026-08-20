@@ -1,0 +1,1 @@
+{"mappings":"","sources":["packages/react-aria/exports/private/interactions/useScrollWheel.ts"],"sourcesContent":["export {useScrollWheel, type ScrollWheelProps} from '../../../src/interactions/useScrollWheel';\n"],"names":[],"version":3,"file":"useScrollWheel.cjs.map"}

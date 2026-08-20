@@ -1,0 +1,55 @@
+{
+  "name": "rehype-harden",
+  "version": "1.1.8",
+  "type": "module",
+  "description": "A security-focused rehype plugin that filters URLs based on allowed prefixes",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "keywords": [
+    "rehype",
+    "markdown",
+    "security",
+    "url-filtering",
+    "xss-protection"
+  ],
+  "author": "S. Elliott Johnson",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vercel-labs/markdown-sanitizers.git",
+    "directory": "rehype-harden"
+  },
+  "bugs": {
+    "url": "https://github.com/vercel-labs/markdown-sanitizers/issues"
+  },
+  "homepage": "https://github.com/vercel-labs/markdown-sanitizers#readme",
+  "dependencies": {
+    "unist-util-visit": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/hast": "^3.0.4",
+    "remark-parse": "^11.0.0",
+    "remark-rehype": "^11.1.1",
+    "rehype-stringify": "^10.0.1",
+    "typescript": "^5",
+    "unified": "^11.0.5",
+    "vite": "^7.0.6",
+    "vitest": "^3.2.4"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "check": "tsc --noEmit",
+    "build": "tsc",
+    "test": "vitest --run",
+    "test:watch": "vitest --watch",
+    "test:ui": "vitest --ui"
+  }
+}

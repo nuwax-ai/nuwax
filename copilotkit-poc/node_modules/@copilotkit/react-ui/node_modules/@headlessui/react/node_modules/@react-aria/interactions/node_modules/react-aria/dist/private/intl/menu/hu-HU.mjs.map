@@ -1,0 +1,1 @@
+{"mappings":";AAAA,4BAAiB;IAAG,oBAAoB,CAAC,gGAAoF,CAAC;AAC9H","sources":["packages/react-aria/intl/menu/hu-HU.json"],"sourcesContent":["{\n  \"longPressMessage\": \"Nyomja meg hosszan, vagy nyomja meg az Alt + lefele nyíl gombot a menü megnyitásához\"\n}\n"],"names":[],"version":3,"file":"hu-HU.mjs.map"}

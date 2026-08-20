@@ -1,0 +1,1 @@
+{"mappings":"AAAA,iBAAiB;IAAG,oBAAoB,CAAC,wZAAwE,CAAC;AAClH","sources":["packages/react-aria/intl/menu/ru-RU.json"],"sourcesContent":["{\n  \"longPressMessage\": \"Нажмите и удерживайте или нажмите Alt + Стрелка вниз, чтобы открыть меню\"\n}\n"],"names":[],"version":3,"file":"ru-RU.cjs.map"}

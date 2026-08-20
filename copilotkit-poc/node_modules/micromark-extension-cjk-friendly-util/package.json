@@ -1,0 +1,65 @@
+{
+  "name": "micromark-extension-cjk-friendly-util",
+  "version": "2.1.1",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
+  "repository": {
+    "url": "https://github.com/tats-u/markdown-cjk-friendly"
+  },
+  "license": "MIT",
+  "author": "Tatsunori Uchino <tats.u@live.jp> (https://github.com/tats-u)",
+  "bugs": "https://github.com/tats-u/markdown-cjk-friendly/issues",
+  "keywords": [
+    "micromark-extension",
+    "micromark",
+    "markdown",
+    "japanese",
+    "chinese",
+    "korean",
+    "cjk"
+  ],
+  "description": "common library for micromark-extension-cjk-friendly and its related packages",
+  "sideEffects": false,
+  "dependencies": {
+    "get-east-asian-width": "^1.3.0",
+    "micromark-util-character": "^2.1.1",
+    "micromark-util-symbol": "^2.0.1"
+  },
+  "devDependencies": {
+    "micromark-util-types": "^2.0.2"
+  },
+  "peerDependenciesMeta": {
+    "micromark-util-types": {
+      "optional": true
+    }
+  },
+  "engines": {
+    "node": ">=16"
+  },
+  "scripts": {
+    "build:rslib": "rslib build",
+    "build": "tsup",
+    "build:lib": "tsup",
+    "dev:rslib": "rslib build --watch",
+    "dev": "tsup --watch",
+    "dev:lib": "tsup --watch",
+    "test": "vitest run",
+    "test:lib": "vitest run",
+    "test:up": "vitest -u",
+    "test:watch": "vitest watch",
+    "test:lib:watch": "vitest watch",
+    "lint:type": "tsc --noEmit"
+  }
+}

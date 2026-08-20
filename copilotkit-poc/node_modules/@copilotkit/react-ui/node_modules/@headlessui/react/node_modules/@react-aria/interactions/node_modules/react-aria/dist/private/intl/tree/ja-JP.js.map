@@ -1,0 +1,1 @@
+{"mappings":";AAAA,4BAAiB;IAAG,YAAY,CAAC,wCAAK,CAAC;IACrC,UAAU,CAAC,gBAAE,CAAC;AAChB","sources":["packages/react-aria/intl/tree/ja-JP.json"],"sourcesContent":["{\n  \"collapse\": \"折りたたむ\",\n  \"expand\": \"展開\"\n}\n"],"names":[],"version":3,"file":"ja-JP.js.map"}

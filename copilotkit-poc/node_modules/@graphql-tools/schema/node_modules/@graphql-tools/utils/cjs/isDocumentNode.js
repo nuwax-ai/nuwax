@@ -1,0 +1,7 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.isDocumentNode = isDocumentNode;
+const graphql_1 = require("graphql");
+function isDocumentNode(object) {
+    return object && typeof object === 'object' && 'kind' in object && object.kind === graphql_1.Kind.DOCUMENT;
+}

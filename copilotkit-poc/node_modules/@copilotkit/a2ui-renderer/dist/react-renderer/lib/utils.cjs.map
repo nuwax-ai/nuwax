@@ -1,0 +1,1 @@
+{"version":3,"file":"utils.cjs","names":[],"sources":["../../../src/react-renderer/lib/utils.ts"],"sourcesContent":["import { clsx, type ClassValue } from \"clsx\";\n\n/**\n * Utility function to merge class names.\n */\nexport function cn(...inputs: ClassValue[]): string {\n  return clsx(inputs);\n}\n"],"mappings":";;;;;;;AAKA,SAAgB,GAAG,GAAG,QAA8B;AAClD,uBAAY,OAAO"}

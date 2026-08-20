@@ -1,0 +1,1 @@
+{"mappings":"","sources":["packages/react-aria/exports/private/utils/isScrollable.ts"],"sourcesContent":["export {isScrollable} from '../../../src/utils/isScrollable';\n"],"names":[],"version":3,"file":"isScrollable.js.map"}

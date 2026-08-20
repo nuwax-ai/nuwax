@@ -1,0 +1,1 @@
+{"mappings":";AAAA,4BAAiB;IAAG,oBAAoB,CAAC,yEAAyE,CAAC;AACnH","sources":["packages/react-aria/intl/menu/sr-SP.json"],"sourcesContent":["{\n  \"longPressMessage\": \"Dugo pritisnite ili pritisnite Alt + strelicu prema dole da otvorite meni\"\n}\n"],"names":[],"version":3,"file":"sr-SP.js.map"}

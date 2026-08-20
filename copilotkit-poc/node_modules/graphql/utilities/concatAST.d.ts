@@ -1,0 +1,21 @@
+/** @category AST Utilities */
+import type { DocumentNode } from '../language/ast';
+/**
+ * Provided a collection of ASTs, presumably each from different files,
+ * concatenate the ASTs together into batched AST, useful for validating many
+ * GraphQL source files which together represent one conceptual application.
+ * @param documents - Document ASTs to concatenate.
+ * @returns A document AST containing all definitions from the provided documents.
+ * @example
+ * ```ts
+ * import { parse } from 'graphql/language';
+ * import { concatAST } from 'graphql/utilities';
+ *
+ * const document = concatAST([parse('type Query { a: String }'), parse('type User { id: ID }')]);
+ *
+ * document.definitions.length; // => 2
+ * ```
+ */
+export declare function concatAST(
+  documents: ReadonlyArray<DocumentNode>,
+): DocumentNode;

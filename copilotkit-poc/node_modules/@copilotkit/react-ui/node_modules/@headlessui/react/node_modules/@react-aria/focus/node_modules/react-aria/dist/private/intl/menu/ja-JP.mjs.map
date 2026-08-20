@@ -1,0 +1,1 @@
+{"mappings":";AAAA,4BAAiB;IAAG,oBAAoB,CAAC,6JAAwB,CAAC;AAClE","sources":["packages/react-aria/intl/menu/ja-JP.json"],"sourcesContent":["{\n  \"longPressMessage\": \"長押しまたは Alt+下矢印キーでメニューを開く\"\n}\n"],"names":[],"version":3,"file":"ja-JP.mjs.map"}

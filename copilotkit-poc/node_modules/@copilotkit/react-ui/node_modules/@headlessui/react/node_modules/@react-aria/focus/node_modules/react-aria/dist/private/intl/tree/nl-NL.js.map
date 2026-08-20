@@ -1,0 +1,1 @@
+{"mappings":";AAAA,4BAAiB;IAAG,YAAY,CAAC,WAAW,CAAC;IAC3C,UAAU,CAAC,SAAS,CAAC;AACvB","sources":["packages/react-aria/intl/tree/nl-NL.json"],"sourcesContent":["{\n  \"collapse\": \"Samenvouwen\",\n  \"expand\": \"Uitvouwen\"\n}\n"],"names":[],"version":3,"file":"nl-NL.js.map"}

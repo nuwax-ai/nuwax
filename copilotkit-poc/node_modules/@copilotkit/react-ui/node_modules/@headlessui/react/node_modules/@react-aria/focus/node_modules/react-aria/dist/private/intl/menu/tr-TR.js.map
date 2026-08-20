@@ -1,0 +1,1 @@
+{"mappings":";AAAA,4BAAiB;IAAG,oBAAoB,CAAC,6GAA6D,CAAC;AACvG","sources":["packages/react-aria/intl/menu/tr-TR.json"],"sourcesContent":["{\n  \"longPressMessage\": \"Menüyü açmak için uzun basın veya Alt + Aşağı Ok tuşuna basın\"\n}\n"],"names":[],"version":3,"file":"tr-TR.js.map"}

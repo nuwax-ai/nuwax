@@ -1,0 +1,186 @@
+import $7hc54$intlStringsmjs from "./intlStrings.mjs";
+import {mergeValidation as $fd2148440a13ec26$export$75ee7c75d68f5b0e, VALID_VALIDITY_STATE as $fd2148440a13ec26$export$aca958c65c314e6c} from "../form/useFormValidationState.mjs";
+import {DateFormatter as $7hc54$DateFormatter, Time as $7hc54$Time, toCalendar as $7hc54$toCalendar, now as $7hc54$now, getLocalTimeZone as $7hc54$getLocalTimeZone, toCalendarDate as $7hc54$toCalendarDate, toCalendarDateTime as $7hc54$toCalendarDateTime} from "@internationalized/date";
+import {LocalizedStringDictionary as $7hc54$LocalizedStringDictionary, LocalizedStringFormatter as $7hc54$LocalizedStringFormatter} from "@internationalized/string";
+import {useState as $7hc54$useState} from "react";
+
+
+function $parcel$interopDefault(a) {
+  return a && a.__esModule ? a.default : a;
+}
+/*
+ * Copyright 2020 Adobe. All rights reserved.
+ * This file is licensed to you under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License. You may obtain a copy
+ * of the License at http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under
+ * the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTATIONS
+ * OF ANY KIND, either express or implied. See the License for the specific language
+ * governing permissions and limitations under the License.
+ */ 
+
+
+
+
+const $8b141f2f71e88f85$var$dictionary = new (0, $7hc54$LocalizedStringDictionary)((0, ($parcel$interopDefault($7hc54$intlStringsmjs))));
+function $8b141f2f71e88f85$var$getLocale() {
+    // Match browser language setting here, NOT react-aria's I18nProvider, so that we match other browser-provided
+    // validation messages, which to not respect our provider's language.
+    let locale = // @ts-ignore
+    typeof navigator !== 'undefined' && (navigator.language || navigator.userLanguage) || 'en-US';
+    try {
+        Intl.DateTimeFormat.supportedLocalesOf([
+            locale
+        ]);
+    } catch  {
+        locale = 'en-US';
+    }
+    return locale;
+}
+function $8b141f2f71e88f85$export$f18627323ab57ac0(value, minValue, maxValue, isDateUnavailable, options) {
+    let rangeOverflow = value != null && maxValue != null && value.compare(maxValue) > 0;
+    let rangeUnderflow = value != null && minValue != null && value.compare(minValue) < 0;
+    let isUnavailable = value != null && isDateUnavailable?.(value) || false;
+    let isInvalid = rangeOverflow || rangeUnderflow || isUnavailable;
+    let errors = [];
+    if (isInvalid) {
+        let locale = $8b141f2f71e88f85$var$getLocale();
+        let strings = (0, $7hc54$LocalizedStringDictionary).getGlobalDictionaryForPackage('@react-stately/datepicker') || $8b141f2f71e88f85$var$dictionary;
+        let formatter = new (0, $7hc54$LocalizedStringFormatter)(locale, strings);
+        let dateFormatter = new (0, $7hc54$DateFormatter)(locale, $8b141f2f71e88f85$export$7e319ea407e63bc0({}, options));
+        let timeZone = dateFormatter.resolvedOptions().timeZone;
+        if (rangeUnderflow && minValue != null) errors.push(formatter.format('rangeUnderflow', {
+            minValue: dateFormatter.format(minValue.toDate(timeZone))
+        }));
+        if (rangeOverflow && maxValue != null) errors.push(formatter.format('rangeOverflow', {
+            maxValue: dateFormatter.format(maxValue.toDate(timeZone))
+        }));
+        if (isUnavailable) errors.push(formatter.format('unavailableDate'));
+    }
+    return {
+        isInvalid: isInvalid,
+        validationErrors: errors,
+        validationDetails: {
+            badInput: isUnavailable,
+            customError: false,
+            patternMismatch: false,
+            rangeOverflow: rangeOverflow,
+            rangeUnderflow: rangeUnderflow,
+            stepMismatch: false,
+            tooLong: false,
+            tooShort: false,
+            typeMismatch: false,
+            valueMissing: false,
+            valid: !isInvalid
+        }
+    };
+}
+function $8b141f2f71e88f85$export$80ff8fc0ae339c13(value, minValue, maxValue, isDateUnavailable, options) {
+    let startValidation = $8b141f2f71e88f85$export$f18627323ab57ac0(value?.start ?? null, minValue, maxValue, isDateUnavailable, options);
+    let endValidation = $8b141f2f71e88f85$export$f18627323ab57ac0(value?.end ?? null, minValue, maxValue, isDateUnavailable, options);
+    let result = (0, $fd2148440a13ec26$export$75ee7c75d68f5b0e)(startValidation, endValidation);
+    if (value?.end != null && value.start != null && value.end.compare(value.start) < 0) {
+        let strings = (0, $7hc54$LocalizedStringDictionary).getGlobalDictionaryForPackage('@react-stately/datepicker') || $8b141f2f71e88f85$var$dictionary;
+        result = (0, $fd2148440a13ec26$export$75ee7c75d68f5b0e)(result, {
+            isInvalid: true,
+            validationErrors: [
+                strings.getStringForLocale('rangeReversed', $8b141f2f71e88f85$var$getLocale())
+            ],
+            validationDetails: {
+                ...(0, $fd2148440a13ec26$export$aca958c65c314e6c),
+                rangeUnderflow: true,
+                rangeOverflow: true,
+                valid: false
+            }
+        });
+    }
+    return result;
+}
+const $8b141f2f71e88f85$var$DEFAULT_FIELD_OPTIONS = {
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    second: '2-digit'
+};
+const $8b141f2f71e88f85$var$TWO_DIGIT_FIELD_OPTIONS = {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+};
+function $8b141f2f71e88f85$export$7e319ea407e63bc0(fieldOptions, options) {
+    let defaultFieldOptions = options.shouldForceLeadingZeros ? $8b141f2f71e88f85$var$TWO_DIGIT_FIELD_OPTIONS : $8b141f2f71e88f85$var$DEFAULT_FIELD_OPTIONS;
+    fieldOptions = {
+        ...defaultFieldOptions,
+        ...fieldOptions
+    };
+    let granularity = options.granularity || 'minute';
+    let keys = Object.keys(fieldOptions);
+    let startIdx = keys.indexOf(options.maxGranularity ?? 'year');
+    if (startIdx < 0) startIdx = 0;
+    let endIdx = keys.indexOf(granularity);
+    if (endIdx < 0) endIdx = 2;
+    if (startIdx > endIdx) throw new Error('maxGranularity must be greater than granularity');
+    let opts = keys.slice(startIdx, endIdx + 1).reduce((opts, key)=>{
+        opts[key] = fieldOptions[key];
+        return opts;
+    }, {});
+    if (options.hourCycle != null) opts.hour12 = options.hourCycle === 12;
+    opts.timeZone = options.timeZone || 'UTC';
+    let hasTime = granularity === 'hour' || granularity === 'minute' || granularity === 'second';
+    if (hasTime && options.timeZone && !options.hideTimeZone) opts.timeZoneName = 'short';
+    if (options.showEra && startIdx === 0) opts.era = 'short';
+    return opts;
+}
+function $8b141f2f71e88f85$export$c5221a78ef73c5e9(placeholderValue) {
+    if (placeholderValue && 'hour' in placeholderValue) return placeholderValue;
+    return new (0, $7hc54$Time)();
+}
+function $8b141f2f71e88f85$export$61a490a80c552550(value, calendar) {
+    if (value === null) return null;
+    if (!value) return undefined;
+    return (0, $7hc54$toCalendar)(value, calendar);
+}
+function $8b141f2f71e88f85$export$66aa2b09de4b1ea5(placeholderValue, granularity, calendar, timeZone) {
+    if (placeholderValue) return $8b141f2f71e88f85$export$61a490a80c552550(placeholderValue, calendar);
+    let date = (0, $7hc54$toCalendar)((0, $7hc54$now)(timeZone ?? (0, $7hc54$getLocalTimeZone)()).set({
+        hour: 0,
+        minute: 0,
+        second: 0,
+        millisecond: 0
+    }), calendar);
+    if (granularity === 'year' || granularity === 'month' || granularity === 'day') return (0, $7hc54$toCalendarDate)(date);
+    if (!timeZone) return (0, $7hc54$toCalendarDateTime)(date);
+    return date;
+}
+function $8b141f2f71e88f85$export$2440da353cedad43(v, granularity) {
+    // Compute default granularity and time zone from the value. If the value becomes null, keep the last values.
+    let defaultTimeZone = v && 'timeZone' in v ? v.timeZone : undefined;
+    let defaultGranularity = v && 'minute' in v ? 'minute' : 'day';
+    // props.granularity must actually exist in the value if one is provided.
+    if (v && granularity && !(granularity in v)) throw new Error('Invalid granularity ' + granularity + ' for value ' + v.toString());
+    let [lastValue, setLastValue] = (0, $7hc54$useState)([
+        defaultGranularity,
+        defaultTimeZone
+    ]);
+    // If the granularity or time zone changed, update the last value.
+    if (v && (lastValue[0] !== defaultGranularity || lastValue[1] !== defaultTimeZone)) setLastValue([
+        defaultGranularity,
+        defaultTimeZone
+    ]);
+    if (!granularity) granularity = v ? defaultGranularity : lastValue[0];
+    let timeZone = v ? defaultTimeZone : lastValue[1];
+    return [
+        granularity,
+        timeZone
+    ];
+}
+
+
+export {$8b141f2f71e88f85$export$f18627323ab57ac0 as getValidationResult, $8b141f2f71e88f85$export$7e319ea407e63bc0 as getFormatOptions, $8b141f2f71e88f85$export$80ff8fc0ae339c13 as getRangeValidationResult, $8b141f2f71e88f85$export$c5221a78ef73c5e9 as getPlaceholderTime, $8b141f2f71e88f85$export$61a490a80c552550 as convertValue, $8b141f2f71e88f85$export$66aa2b09de4b1ea5 as createPlaceholderDate, $8b141f2f71e88f85$export$2440da353cedad43 as useDefaultProps};
+//# sourceMappingURL=utils.mjs.map

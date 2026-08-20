@@ -1,0 +1,1 @@
+{"mappings":"","sources":["packages/react-aria/exports/private/utils/openLink.ts"],"sourcesContent":["export {\n  RouterProvider,\n  openLink,\n  getSyntheticLinkProps,\n  useSyntheticLinkProps,\n  shouldClientNavigate,\n  useRouter,\n  useLinkProps,\n  handleLinkClick\n} from '../../../src/utils/openLink';\n"],"names":[],"version":3,"file":"openLink.js.map"}

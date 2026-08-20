@@ -1,0 +1,1 @@
+{"mappings":"AAAA,iBAAiB;IAAG,YAAY,CAAC,cAAE,CAAC;IAClC,UAAU,CAAC,mCAAK,CAAC;AACnB","sources":["packages/react-aria/intl/tree/ar-AE.json"],"sourcesContent":["{\n  \"collapse\": \"طي\",\n  \"expand\": \"تمديد\"\n}\n"],"names":[],"version":3,"file":"ar-AE.cjs.map"}

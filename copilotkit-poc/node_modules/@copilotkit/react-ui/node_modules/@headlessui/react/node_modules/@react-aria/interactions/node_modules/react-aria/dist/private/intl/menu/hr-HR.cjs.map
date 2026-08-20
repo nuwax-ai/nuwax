@@ -1,0 +1,1 @@
+{"mappings":"AAAA,iBAAiB;IAAG,oBAAoB,CAAC,gFAAgF,CAAC;AAC1H","sources":["packages/react-aria/intl/menu/hr-HR.json"],"sourcesContent":["{\n  \"longPressMessage\": \"Dugo pritisnite ili pritisnite Alt + strelicu prema dolje za otvaranje izbornika\"\n}\n"],"names":[],"version":3,"file":"hr-HR.cjs.map"}

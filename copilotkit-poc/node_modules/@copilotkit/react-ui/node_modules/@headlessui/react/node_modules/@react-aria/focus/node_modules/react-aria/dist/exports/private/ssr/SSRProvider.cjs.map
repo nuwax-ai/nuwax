@@ -1,0 +1,1 @@
+{"mappings":"","sources":["packages/react-aria/exports/private/ssr/SSRProvider.ts"],"sourcesContent":["export {useSSRSafeId} from '../../../src/ssr/SSRProvider';\n"],"names":[],"version":3,"file":"SSRProvider.cjs.map"}

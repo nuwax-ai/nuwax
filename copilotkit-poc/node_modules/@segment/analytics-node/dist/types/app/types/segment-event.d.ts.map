@@ -1,0 +1,1 @@
+{"version":3,"file":"segment-event.d.ts","sourceRoot":"","sources":["../../../../src/app/types/segment-event.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,gBAAgB,EAAE,MAAM,yBAAyB,CAAA;AAE/D,KAAK,gBAAgB,GAAG,OAAO,GAAG,MAAM,GAAG,UAAU,GAAG,OAAO,GAAG,QAAQ,CAAA;AAE1E,MAAM,WAAW,YAAa,SAAQ,gBAAgB;IACpD,IAAI,EAAE,gBAAgB,CAAA;CACvB"}

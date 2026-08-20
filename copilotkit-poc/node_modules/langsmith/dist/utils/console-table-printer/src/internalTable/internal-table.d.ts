@@ -1,0 +1,31 @@
+import { CharLengthDict, Dictionary, Row } from '../models/common.js';
+import { ColumnOptionsRaw, ComplexOptions, ComputedColumn, DefaultColumnOptions, RowFilterFunction, RowSortFunction, Valuetransform } from '../models/external-table.js';
+import { Column, TableStyleDetails } from '../models/internal-table.js';
+import { ColorMap } from '../utils/colored-console-line.js';
+import { RowOptions } from '../utils/table-helpers.js';
+declare class TableInternal {
+    title?: string;
+    tableStyle: TableStyleDetails;
+    columns: Column[];
+    rows: Row[];
+    filterFunction: RowFilterFunction;
+    sortFunction: RowSortFunction;
+    enabledColumns: string[];
+    disabledColumns: string[];
+    computedColumns: ComputedColumn[];
+    rowSeparator: boolean;
+    colorMap: ColorMap;
+    charLength: CharLengthDict;
+    defaultColumnOptions?: DefaultColumnOptions;
+    transforms?: Record<string, Valuetransform>;
+    initSimple(columns: string[]): void;
+    initDetailed(options: ComplexOptions): void;
+    constructor(options?: ComplexOptions | string[]);
+    createColumnFromRow(text: Dictionary): void;
+    addColumn(textOrObj: string | ComputedColumn | ColumnOptionsRaw): void;
+    addColumns(toBeInsertedColumns: string[] | ColumnOptionsRaw[]): void;
+    addRow(text: Dictionary, options?: RowOptions): void;
+    addRows(toBeInsertedRows: Dictionary[], options?: RowOptions): void;
+    renderTable(): string;
+}
+export default TableInternal;

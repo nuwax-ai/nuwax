@@ -1,0 +1,1 @@
+{"mappings":"","sources":["packages/react-aria/exports/private/selection/useTypeSelect.ts"],"sourcesContent":["export {\n  useTypeSelect,\n  type AriaTypeSelectOptions,\n  type TypeSelectAria\n} from '../../../src/selection/useTypeSelect';\n"],"names":[],"version":3,"file":"useTypeSelect.cjs.map"}

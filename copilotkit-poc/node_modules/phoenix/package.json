@@ -1,0 +1,46 @@
+{
+  "name": "phoenix",
+  "version": "1.8.8",
+  "description": "The official JavaScript client for the Phoenix web framework.",
+  "license": "MIT",
+  "module": "./priv/static/phoenix.mjs",
+  "main": "./priv/static/phoenix.cjs.js",
+  "unpkg": "./priv/static/phoenix.min.js",
+  "jsdelivr": "./priv/static/phoenix.min.js",
+  "exports": {
+    "import": "./priv/static/phoenix.mjs",
+    "require": "./priv/static/phoenix.cjs.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/phoenixframework/phoenix.git"
+  },
+  "author": "Chris McCord <chris@chrismccord.com> (https://www.phoenixframework.org)",
+  "files": [
+    "README.md",
+    "LICENSE.md",
+    "package.json",
+    "priv/static/*",
+    "assets/js/phoenix/*"
+  ],
+  "devDependencies": {
+    "@babel/cli": "7.28.6",
+    "@babel/core": "7.29.0",
+    "@babel/preset-env": "7.29.3",
+    "@eslint/js": "^10.0.1",
+    "@stylistic/eslint-plugin": "^5.0.0",
+    "documentation": "^14.0.3",
+    "eslint": "10.2.1",
+    "eslint-plugin-jest": "29.15.2",
+    "jest": "^30.0.0",
+    "jest-environment-jsdom": "^30.0.0",
+    "jsdom": "^29.0.1",
+    "mock-socket": "^9.3.1"
+  },
+  "scripts": {
+    "test": "jest",
+    "test.coverage": "jest --coverage",
+    "test.watch": "jest --watch",
+    "docs": "documentation build assets/js/phoenix/index.js -f html -o doc/js"
+  }
+}

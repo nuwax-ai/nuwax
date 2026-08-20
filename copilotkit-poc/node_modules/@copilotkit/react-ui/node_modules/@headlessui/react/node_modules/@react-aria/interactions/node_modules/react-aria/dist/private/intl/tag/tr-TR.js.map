@@ -1,0 +1,1 @@
+{"mappings":";AAAA,4BAAiB;IAAG,qBAAqB,CAAC,YAAM,CAAC;IAC/C,qBAAqB,CAAC,6DAAwC,CAAC;AACjE","sources":["packages/react-aria/intl/tag/tr-TR.json"],"sourcesContent":["{\n  \"removeButtonLabel\": \"Kaldır\",\n  \"removeDescription\": \"Etiketi kaldırmak için Sil tuşuna basın.\"\n}\n"],"names":[],"version":3,"file":"tr-TR.js.map"}

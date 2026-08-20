@@ -1,0 +1,1 @@
+{"mappings":"","sources":["packages/react-aria/exports/private/collections/BaseCollection.ts"],"sourcesContent":["export {\n  CollectionNode,\n  HeaderNode,\n  ItemNode,\n  LoaderNode,\n  SectionNode,\n  BaseCollection,\n  FilterableNode\n} from '../../../src/collections/BaseCollection';\n"],"names":[],"version":3,"file":"BaseCollection.js.map"}

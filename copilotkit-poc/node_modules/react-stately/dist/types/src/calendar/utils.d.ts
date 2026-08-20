@@ -1,0 +1,10 @@
+import { CalendarDate, DateDuration } from '@internationalized/date';
+import { DateValue } from './types';
+export declare function isInvalid(date: DateValue, minValue?: DateValue | null, maxValue?: DateValue | null): boolean;
+export declare function alignCenter(date: CalendarDate, duration: DateDuration, locale: string, minValue?: DateValue | null, maxValue?: DateValue | null): CalendarDate;
+export declare function alignStart(date: CalendarDate, duration: DateDuration, locale: string, minValue?: DateValue | null, maxValue?: DateValue | null): CalendarDate;
+export declare function alignEnd(date: CalendarDate, duration: DateDuration, locale: string, minValue?: DateValue | null, maxValue?: DateValue | null): CalendarDate;
+export declare function constrainStart(date: CalendarDate, aligned: CalendarDate, duration: DateDuration, locale: string, minValue?: DateValue | null, maxValue?: DateValue | null): CalendarDate;
+export declare function constrainValue(date: CalendarDate, minValue?: DateValue | null, maxValue?: DateValue | null): CalendarDate;
+export declare function previousAvailableDate(date: CalendarDate, minValue: DateValue, isDateUnavailable?: (date: CalendarDate) => boolean): CalendarDate | null;
+export declare function isEqualDuration(a: DateDuration, b: DateDuration): boolean;

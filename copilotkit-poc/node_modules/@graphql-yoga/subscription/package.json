@@ -1,0 +1,66 @@
+{
+  "name": "@graphql-yoga/subscription",
+  "version": "5.0.5",
+  "description": "",
+  "sideEffects": true,
+  "dependencies": {
+    "@repeaterjs/repeater": "^3.0.4",
+    "@whatwg-node/events": "^0.1.0",
+    "tslib": "^2.8.1",
+    "@graphql-yoga/typed-event-target": "^3.0.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/graphql-hive/graphql-yoga.git",
+    "directory": "packages/subscription"
+  },
+  "keywords": [
+    "pubsub",
+    "graphql",
+    "event",
+    "subscription"
+  ],
+  "author": "Laurin Quast <laurinquast@googlemail.com>",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "main": "cjs/index.js",
+  "module": "esm/index.js",
+  "typings": "typings/index.d.ts",
+  "typescript": {
+    "definition": "typings/index.d.ts"
+  },
+  "type": "module",
+  "exports": {
+    ".": {
+      "require": {
+        "types": "./typings/index.d.cts",
+        "default": "./cjs/index.js"
+      },
+      "import": {
+        "types": "./typings/index.d.ts",
+        "default": "./esm/index.js"
+      },
+      "default": {
+        "types": "./typings/index.d.ts",
+        "default": "./esm/index.js"
+      }
+    },
+    "./*": {
+      "require": {
+        "types": "./typings/*.d.cts",
+        "default": "./cjs/*.js"
+      },
+      "import": {
+        "types": "./typings/*.d.ts",
+        "default": "./esm/*.js"
+      },
+      "default": {
+        "types": "./typings/*.d.ts",
+        "default": "./esm/*.js"
+      }
+    },
+    "./package.json": "./package.json"
+  }
+}

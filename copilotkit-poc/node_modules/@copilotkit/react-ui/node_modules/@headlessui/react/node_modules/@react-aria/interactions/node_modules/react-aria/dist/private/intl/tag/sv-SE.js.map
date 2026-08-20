@@ -1,0 +1,1 @@
+{"mappings":";AAAA,4BAAiB;IAAG,qBAAqB,CAAC,OAAO,CAAC;IAChD,qBAAqB,CAAC,6CAAuC,CAAC;AAChE","sources":["packages/react-aria/intl/tag/sv-SE.json"],"sourcesContent":["{\n  \"removeButtonLabel\": \"Ta bort\",\n  \"removeDescription\": \"Tryck på Radera för att ta bort taggen.\"\n}\n"],"names":[],"version":3,"file":"sv-SE.js.map"}

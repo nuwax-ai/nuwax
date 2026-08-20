@@ -1,0 +1,1 @@
+{"mappings":";AAAA,4BAAiB;IAAG,qBAAqB,CAAC,KAAK,CAAC;IAC9C,qBAAqB,CAAC,kCAA+B,CAAC;AACxD","sources":["packages/react-aria/intl/tag/da-DK.json"],"sourcesContent":["{\n  \"removeButtonLabel\": \"Fjern\",\n  \"removeDescription\": \"Tryk på Slet for at fjerne tag.\"\n}\n"],"names":[],"version":3,"file":"da-DK.js.map"}

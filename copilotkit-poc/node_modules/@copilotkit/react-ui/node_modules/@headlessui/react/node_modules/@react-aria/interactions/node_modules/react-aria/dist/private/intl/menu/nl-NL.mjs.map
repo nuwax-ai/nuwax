@@ -1,0 +1,1 @@
+{"mappings":";AAAA,4BAAiB;IAAG,oBAAoB,CAAC,mEAAmE,CAAC;AAC7G","sources":["packages/react-aria/intl/menu/nl-NL.json"],"sourcesContent":["{\n  \"longPressMessage\": \"Druk lang op Alt + pijl-omlaag of druk op Alt om het menu te openen\"\n}\n"],"names":[],"version":3,"file":"nl-NL.mjs.map"}

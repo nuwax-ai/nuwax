@@ -1,0 +1,1 @@
+{"mappings":";AAAA,4BAAiB;IAAG,qBAAqB,CAAC,mCAAK,CAAC;IAC9C,qBAAqB,CAAC,6KAAmC,CAAC;AAC5D","sources":["packages/react-aria/intl/tag/ar-AE.json"],"sourcesContent":["{\n  \"removeButtonLabel\": \"إزالة\",\n  \"removeDescription\": \"اضغط على مفتاح DELETE لإزالة علامة.\"\n}\n"],"names":[],"version":3,"file":"ar-AE.mjs.map"}

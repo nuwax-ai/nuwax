@@ -1,0 +1,1 @@
+{"mappings":"AAAA,iBAAiB;IAAG,YAAY,CAAC,wDAAQ,CAAC;IACxC,UAAU,CAAC,sEAAU,CAAC;AACxB","sources":["packages/react-aria/intl/tree/uk-UA.json"],"sourcesContent":["{\n  \"collapse\": \"Згорнути\",\n  \"expand\": \"Розгорнути\"\n}\n"],"names":[],"version":3,"file":"uk-UA.cjs.map"}

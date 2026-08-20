@@ -1,0 +1,1 @@
+{"mappings":"AAAA,iBAAiB;IAAG,qBAAqB,CAAC,wDAAQ,CAAC;IACjD,qBAAqB,CAAC,6KAAmC,CAAC;AAC5D","sources":["packages/react-aria/intl/tag/uk-UA.json"],"sourcesContent":["{\n  \"removeButtonLabel\": \"Вилучити\",\n  \"removeDescription\": \"Натисніть Delete, щоб вилучити тег.\"\n}\n"],"names":[],"version":3,"file":"uk-UA.cjs.map"}

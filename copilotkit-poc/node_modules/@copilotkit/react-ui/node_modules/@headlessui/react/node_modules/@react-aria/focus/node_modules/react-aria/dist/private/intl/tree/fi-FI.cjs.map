@@ -1,0 +1,1 @@
+{"mappings":"AAAA,iBAAiB;IAAG,YAAY,CAAC,WAAQ,CAAC;IACxC,UAAU,CAAC,QAAQ,CAAC;AACtB","sources":["packages/react-aria/intl/tree/fi-FI.json"],"sourcesContent":["{\n  \"collapse\": \"Pienennä\",\n  \"expand\": \"Laajenna\"\n}\n"],"names":[],"version":3,"file":"fi-FI.cjs.map"}

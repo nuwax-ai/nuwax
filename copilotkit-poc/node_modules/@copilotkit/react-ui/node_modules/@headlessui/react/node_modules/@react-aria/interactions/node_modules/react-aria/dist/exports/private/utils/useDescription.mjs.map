@@ -1,0 +1,1 @@
+{"mappings":"","sources":["packages/react-aria/exports/private/utils/useDescription.ts"],"sourcesContent":["export {useDescription} from '../../../src/utils/useDescription';\n"],"names":[],"version":3,"file":"useDescription.mjs.map"}

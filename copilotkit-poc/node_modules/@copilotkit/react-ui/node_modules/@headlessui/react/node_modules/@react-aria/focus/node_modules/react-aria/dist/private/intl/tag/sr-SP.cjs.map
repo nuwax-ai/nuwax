@@ -1,0 +1,1 @@
+{"mappings":"AAAA,iBAAiB;IAAG,qBAAqB,CAAC,MAAM,CAAC;IAC/C,qBAAqB,CAAC,iDAA2C,CAAC;AACpE","sources":["packages/react-aria/intl/tag/sr-SP.json"],"sourcesContent":["{\n  \"removeButtonLabel\": \"Ukloni\",\n  \"removeDescription\": \"Pritisnite Obriši da biste uklonili oznaku.\"\n}\n"],"names":[],"version":3,"file":"sr-SP.cjs.map"}

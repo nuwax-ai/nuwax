@@ -1,0 +1,1 @@
+{"mappings":"","sources":["packages/react-aria/exports/private/focus/virtualFocus.ts"],"sourcesContent":["export {\n  moveVirtualFocus,\n  dispatchVirtualBlur,\n  dispatchVirtualFocus,\n  getVirtuallyFocusedElement\n} from '../../../src/focus/virtualFocus';\n"],"names":[],"version":3,"file":"virtualFocus.cjs.map"}

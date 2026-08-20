@@ -1,0 +1,1 @@
+{"mappings":"AAAA,iBAAiB;IAAG,YAAY,CAAC,KAAK,CAAC;IACrC,UAAU,CAAC,KAAK,CAAC;AACnB","sources":["packages/react-aria/intl/tree/da-DK.json"],"sourcesContent":["{\n  \"collapse\": \"Skjul\",\n  \"expand\": \"Udvid\"\n}\n"],"names":[],"version":3,"file":"da-DK.cjs.map"}

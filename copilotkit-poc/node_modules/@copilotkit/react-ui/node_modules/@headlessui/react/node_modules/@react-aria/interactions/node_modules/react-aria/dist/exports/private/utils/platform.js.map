@@ -1,0 +1,1 @@
+{"mappings":"","sources":["packages/react-aria/exports/private/utils/platform.ts"],"sourcesContent":["export {\n  isWebKit,\n  isMac,\n  isIPhone,\n  isIPad,\n  isIOS,\n  isAppleDevice,\n  isChrome,\n  isAndroid,\n  isFirefox\n} from '../../../src/utils/platform';\n"],"names":[],"version":3,"file":"platform.js.map"}

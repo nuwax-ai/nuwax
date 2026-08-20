@@ -1,0 +1,1 @@
+{"mappings":";AAAA,4BAAiB;IAAG,oBAAoB,CAAC,oKAA+B,CAAC;AACzE","sources":["packages/react-aria/intl/menu/ko-KR.json"],"sourcesContent":["{\n  \"longPressMessage\": \"길게 누르거나 Alt + 아래쪽 화살표를 눌러 메뉴 열기\"\n}\n"],"names":[],"version":3,"file":"ko-KR.mjs.map"}

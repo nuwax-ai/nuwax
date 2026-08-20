@@ -1,0 +1,1 @@
+{"mappings":";AAAA,4BAAiB;IAAG,qBAAqB,CAAC,gBAAE,CAAC;IAC3C,qBAAqB,CAAC,wEAAgB,CAAC;AACzC","sources":["packages/react-aria/intl/tag/zh-TW.json"],"sourcesContent":["{\n  \"removeButtonLabel\": \"移除\",\n  \"removeDescription\": \"按 Delete 鍵以移除標記。\"\n}\n"],"names":[],"version":3,"file":"zh-TW.mjs.map"}

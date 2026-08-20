@@ -1,0 +1,80 @@
+{
+  "name": "@repeaterjs/repeater",
+  "version": "3.1.0",
+  "description": "The missing constructor function for creating safe async iterators",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/repeaterjs/repeater.git"
+  },
+  "devDependencies": {
+    "@b9g/libuild": "^0.1.24",
+    "@types/sinon": "^21.0.1",
+    "bun-types": "^1.3.14",
+    "fast-check": "^4.8.0",
+    "sinon": "^22.0.0",
+    "typescript": "^5.9.3"
+  },
+  "type": "module",
+  "types": "src/index.d.ts",
+  "main": "src/index.cjs",
+  "module": "src/index.js",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "import": "./src/index.js",
+      "require": "./src/index.cjs"
+    },
+    "./core": {
+      "types": "./src/core.d.ts",
+      "import": "./src/core.js",
+      "require": "./src/core.cjs"
+    },
+    "./core.js": {
+      "types": "./src/core.d.ts",
+      "import": "./src/core.js",
+      "require": "./src/core.cjs"
+    },
+    "./index": {
+      "types": "./src/index.d.ts",
+      "import": "./src/index.js",
+      "require": "./src/index.cjs"
+    },
+    "./index.js": {
+      "types": "./src/index.d.ts",
+      "import": "./src/index.js",
+      "require": "./src/index.cjs"
+    },
+    "./limiters": {
+      "types": "./src/limiters.d.ts",
+      "import": "./src/limiters.js",
+      "require": "./src/limiters.cjs"
+    },
+    "./limiters.js": {
+      "types": "./src/limiters.d.ts",
+      "import": "./src/limiters.js",
+      "require": "./src/limiters.cjs"
+    },
+    "./timers": {
+      "types": "./src/timers.d.ts",
+      "import": "./src/timers.js",
+      "require": "./src/timers.cjs"
+    },
+    "./timers.js": {
+      "types": "./src/timers.d.ts",
+      "import": "./src/timers.js",
+      "require": "./src/timers.cjs"
+    },
+    "./package.json": "./package.json",
+    "./combinators": {
+      "types": "./src/combinators.d.ts",
+      "import": "./src/combinators.js",
+      "require": "./src/combinators.cjs"
+    },
+    "./combinators.js": {
+      "types": "./src/combinators.d.ts",
+      "import": "./src/combinators.js",
+      "require": "./src/combinators.cjs"
+    }
+  }
+}

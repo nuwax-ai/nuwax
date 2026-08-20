@@ -1,0 +1,1 @@
+{"mappings":";AAAA,4BAAiB;IAAG,qBAAqB,CAAC,MAAM,CAAC;IAC/C,qBAAqB,CAAC,6CAA6C,CAAC;AACtE","sources":["packages/react-aria/intl/tag/fi-FI.json"],"sourcesContent":["{\n  \"removeButtonLabel\": \"Poista\",\n  \"removeDescription\": \"Poista tunniste painamalla Poista-painiketta.\"\n}\n"],"names":[],"version":3,"file":"fi-FI.js.map"}

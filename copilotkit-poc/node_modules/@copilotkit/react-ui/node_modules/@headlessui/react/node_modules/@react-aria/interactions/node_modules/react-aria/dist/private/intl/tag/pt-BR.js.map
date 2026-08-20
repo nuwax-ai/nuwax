@@ -1,0 +1,1 @@
+{"mappings":";AAAA,4BAAiB;IAAG,qBAAqB,CAAC,OAAO,CAAC;IAChD,qBAAqB,CAAC,oCAAoC,CAAC;AAC7D","sources":["packages/react-aria/intl/tag/pt-BR.json"],"sourcesContent":["{\n  \"removeButtonLabel\": \"Remover\",\n  \"removeDescription\": \"Pressione Delete para remover a tag.\"\n}\n"],"names":[],"version":3,"file":"pt-BR.js.map"}

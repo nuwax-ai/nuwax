@@ -1,0 +1,19 @@
+var $237b063e672c0a93$exports = {};
+$237b063e672c0a93$exports = {
+    "previous": `Previous`,
+    "next": `Next`,
+    "selectedDateDescription": (args)=>`Selected Date: ${args.date}`,
+    "selectedRangeDescription": (args)=>`Selected Range: ${args.dateRange}`,
+    "todayDate": (args)=>`Today, ${args.date}`,
+    "todayDateSelected": (args)=>`Today, ${args.date} selected`,
+    "dateSelected": (args)=>`${args.date} selected`,
+    "startRangeSelectionPrompt": `Click to start selecting date range`,
+    "finishRangeSelectionPrompt": `Click to finish selecting date range`,
+    "minimumDate": `First available date`,
+    "maximumDate": `Last available date`,
+    "dateRange": (args)=>`${args.startDate} to ${args.endDate}`
+};
+
+
+export {$237b063e672c0a93$exports as default};
+//# sourceMappingURL=en-US.mjs.map

@@ -1,0 +1,1 @@
+{"mappings":";AAAA,4BAAiB;IAAG,YAAY,CAAC,KAAK,CAAC;IACrC,UAAU,CAAC,KAAK,CAAC;AACnB","sources":["packages/react-aria/intl/tree/nb-NO.json"],"sourcesContent":["{\n  \"collapse\": \"Skjul\",\n  \"expand\": \"Utvid\"\n}\n"],"names":[],"version":3,"file":"nb-NO.mjs.map"}

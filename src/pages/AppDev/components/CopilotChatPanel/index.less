@@ -1,0 +1,111 @@
+.copilotChatWrap {
+  width: 380px;
+  height: 100%;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid rgba(0, 0, 0, 10%);
+  overflow: hidden;
+}
+
+.copilotChat {
+  flex: 1;
+  min-height: 0;
+}
+
+// --- Generative UI diff card ---
+.diffCard {
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+  margin: 8px 0;
+  font-size: 12px;
+}
+
+.diffHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 10px;
+  background: #f5f5f5;
+  font-weight: 600;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.diffStats {
+  font-size: 11px;
+  color: #888;
+  font-weight: normal;
+}
+
+.diffBody {
+  margin: 0;
+  padding: 8px 0;
+  max-height: 300px;
+  overflow: auto;
+  font-family: 'SF Mono', 'Monaco', 'Menlo', monospace;
+  background: #fafafa;
+  line-height: 1.5;
+}
+
+.line_add {
+  background: #e6ffec;
+  color: #22863a;
+  padding: 0 10px;
+}
+
+.line_del {
+  background: #ffebe9;
+  color: #cb2431;
+  padding: 0 10px;
+}
+
+.line_ctx {
+  color: #555;
+  padding: 0 10px;
+}
+
+.diffActions {
+  display: flex;
+  gap: 8px;
+  padding: 8px 10px;
+  background: #f5f5f5;
+  border-top: 1px solid #e0e0e0;
+}
+
+.btnConfirm {
+  padding: 4px 12px;
+  border: none;
+  border-radius: 4px;
+  background: #1677ff;
+  color: #fff;
+  cursor: pointer;
+  font-size: 12px;
+
+  &:hover {
+    background: #4096ff;
+  }
+}
+
+.btnCancel {
+  padding: 4px 12px;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  background: #fff;
+  color: #666;
+  cursor: pointer;
+  font-size: 12px;
+
+  &:hover {
+    border-color: #4096ff;
+    color: #4096ff;
+  }
+}
+
+.applied {
+  padding: 8px 10px;
+  font-size: 12px;
+  color: #52c41a;
+  background: #f6ffed;
+  border-top: 1px solid #e0e0e0;
+}

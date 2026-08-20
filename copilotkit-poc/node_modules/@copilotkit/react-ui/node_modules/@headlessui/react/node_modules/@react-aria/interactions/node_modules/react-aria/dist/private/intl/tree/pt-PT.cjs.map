@@ -1,0 +1,1 @@
+{"mappings":"AAAA,iBAAiB;IAAG,YAAY,CAAC,QAAQ,CAAC;IACxC,UAAU,CAAC,QAAQ,CAAC;AACtB","sources":["packages/react-aria/intl/tree/pt-PT.json"],"sourcesContent":["{\n  \"collapse\": \"Colapsar\",\n  \"expand\": \"Expandir\"\n}\n"],"names":[],"version":3,"file":"pt-PT.cjs.map"}

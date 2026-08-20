@@ -1,0 +1,1 @@
+{"mappings":";AAAA,4BAAiB;IAAG,oBAAoB,CAAC,iZAAuE,CAAC;AACjH","sources":["packages/react-aria/intl/menu/el-GR.json"],"sourcesContent":["{\n  \"longPressMessage\": \"Πιέστε παρατεταμένα ή πατήστε Alt + κάτω βέλος για να ανοίξετε το μενού\"\n}\n"],"names":[],"version":3,"file":"el-GR.mjs.map"}

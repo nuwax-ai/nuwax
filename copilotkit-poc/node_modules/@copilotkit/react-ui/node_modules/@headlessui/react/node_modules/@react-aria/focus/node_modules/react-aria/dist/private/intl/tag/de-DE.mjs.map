@@ -1,0 +1,1 @@
+{"mappings":";AAAA,4BAAiB;IAAG,qBAAqB,CAAC,SAAS,CAAC;IAClD,qBAAqB,CAAC,mEAA+C,CAAC;AACxE","sources":["packages/react-aria/intl/tag/de-DE.json"],"sourcesContent":["{\n  \"removeButtonLabel\": \"Entfernen\",\n  \"removeDescription\": \"Auf „Löschen“ drücken, um das Tag zu entfernen.\"\n}\n"],"names":[],"version":3,"file":"de-DE.mjs.map"}

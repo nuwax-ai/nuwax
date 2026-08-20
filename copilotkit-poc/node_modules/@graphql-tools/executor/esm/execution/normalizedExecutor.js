@@ -1,0 +1,33 @@
+import { getOperationAST } from 'graphql';
+import { memoize1, } from '@graphql-tools/utils';
+import { handleMaybePromise } from '@whatwg-node/promise-helpers';
+import { execute, flattenIncrementalResults, isIncrementalResults, subscribe, } from './execute.js';
+export function normalizedExecutor(args) {
+    const operationAST = getOperationAST(args.document, args.operationName);
+    if (operationAST == null) {
+        throw new Error('Must provide an operation.');
+    }
+    if (operationAST.operation === 'subscription') {
+        return subscribe(args);
+    }
+    return handleMaybePromise(() => execute(args), result => {
+        if (isIncrementalResults(result)) {
+            return flattenIncrementalResults(result);
+        }
+        return result;
+    });
+}
+export const executorFromSchema = memoize1(function executorFromSchema(schema) {
+    return function schemaExecutor(request) {
+        return normalizedExecutor({
+            schema,
+            document: request.document,
+            variableValues: request.variables,
+            operationName: request.operationName,
+            rootValue: request.rootValue,
+            contextValue: request.context,
+            signal: request.signal || request.info?.signal,
+            schemaCoordinateInErrors: request.schemaCoordinateInErrors,
+        });
+    };
+});

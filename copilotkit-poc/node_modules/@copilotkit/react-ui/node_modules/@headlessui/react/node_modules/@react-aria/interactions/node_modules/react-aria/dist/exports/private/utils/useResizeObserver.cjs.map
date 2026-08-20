@@ -1,0 +1,1 @@
+{"mappings":"","sources":["packages/react-aria/exports/private/utils/useResizeObserver.ts"],"sourcesContent":["export {useResizeObserver} from '../../../src/utils/useResizeObserver';\n"],"names":[],"version":3,"file":"useResizeObserver.cjs.map"}

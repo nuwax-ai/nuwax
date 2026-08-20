@@ -1,0 +1,1 @@
+{"mappings":";AAAA,4BAAiB;IAAG,qBAAqB,CAAC,gBAAE,CAAC;IAC3C,qBAAqB,CAAC,uJAAyB,CAAC;AAClD","sources":["packages/react-aria/intl/tag/ja-JP.json"],"sourcesContent":["{\n  \"removeButtonLabel\": \"削除\",\n  \"removeDescription\": \"タグを削除するには、Delete キーを押します。\"\n}\n"],"names":[],"version":3,"file":"ja-JP.js.map"}

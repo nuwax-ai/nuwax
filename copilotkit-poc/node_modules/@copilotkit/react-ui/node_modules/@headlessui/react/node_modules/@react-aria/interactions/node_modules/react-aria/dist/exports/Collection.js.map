@@ -1,0 +1,1 @@
+{"mappings":"","sources":["packages/react-aria/exports/Collection.ts"],"sourcesContent":["export {Collection, type CollectionProps} from '../src/collections/CollectionBuilder';\n"],"names":[],"version":3,"file":"Collection.js.map"}

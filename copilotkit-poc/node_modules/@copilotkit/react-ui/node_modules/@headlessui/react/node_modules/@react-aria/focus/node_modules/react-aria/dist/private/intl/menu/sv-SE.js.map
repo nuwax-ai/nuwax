@@ -1,0 +1,1 @@
+{"mappings":";AAAA,4BAAiB;IAAG,oBAAoB,CAAC,gFAAiE,CAAC;AAC3G","sources":["packages/react-aria/intl/menu/sv-SE.json"],"sourcesContent":["{\n  \"longPressMessage\": \"Håll nedtryckt eller tryck på Alt + pil nedåt för att öppna menyn\"\n}\n"],"names":[],"version":3,"file":"sv-SE.js.map"}

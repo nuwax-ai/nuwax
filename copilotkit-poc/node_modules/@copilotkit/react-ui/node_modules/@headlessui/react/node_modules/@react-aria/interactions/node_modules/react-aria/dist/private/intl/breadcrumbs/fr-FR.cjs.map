@@ -1,0 +1,1 @@
+{"mappings":"AAAA,iBAAiB;IAAG,eAAe,CAAC,oBAAoB,CAAC;AACzD","sources":["packages/react-aria/intl/breadcrumbs/fr-FR.json"],"sourcesContent":["{\n  \"breadcrumbs\": \"Chemin de navigation\"\n}\n"],"names":[],"version":3,"file":"fr-FR.cjs.map"}

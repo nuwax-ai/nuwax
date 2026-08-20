@@ -1,0 +1,1 @@
+{"mappings":";AAAA,4BAAiB;IAAG,oBAAoB,CAAC,4eAAoF,CAAC;AAC9H","sources":["packages/react-aria/intl/menu/uk-UA.json"],"sourcesContent":["{\n  \"longPressMessage\": \"Довго або звичайно натисніть комбінацію клавіш Alt і стрілка вниз, щоб відкрити меню\"\n}\n"],"names":[],"version":3,"file":"uk-UA.mjs.map"}

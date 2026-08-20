@@ -1,0 +1,44 @@
+var $f7492ce78db8051b$exports = {};
+$f7492ce78db8051b$exports = {
+    "alpha": `Alfa`,
+    "black": `svart`,
+    "blue": `Bl\xe5`,
+    "blue purple": `bl\xe5lilla`,
+    "brightness": `Lysstyrke`,
+    "brown": `brun`,
+    "brown yellow": `brungul`,
+    "colorName": (args)=>`${args.lightness} ${args.chroma} ${args.hue}`,
+    "cyan": `cyan`,
+    "cyan blue": `cyanbl\xe5`,
+    "dark": `m\xf8rk`,
+    "gray": `gr\xe5`,
+    "grayish": `gr\xe5aktig`,
+    "green": `Gr\xf8nn`,
+    "green cyan": `gr\xf8nncyan`,
+    "hue": `Fargetone`,
+    "light": `lys`,
+    "lightness": `Lyshet`,
+    "magenta": `magenta`,
+    "magenta pink": `magentarosa`,
+    "orange": `oransje`,
+    "orange yellow": `oransjegul`,
+    "pale": `blek`,
+    "pink": `rosa`,
+    "pink red": `rosar\xf8d`,
+    "purple": `lilla`,
+    "purple magenta": `lillamagenta`,
+    "red": `R\xf8d`,
+    "red orange": `r\xf8doransje`,
+    "saturation": `Metning`,
+    "transparentColorName": (args)=>`${args.lightness} ${args.chroma} ${args.hue}, ${args.percentTransparent} gjennomsiktig`,
+    "very dark": `sv\xe6rt m\xf8rk`,
+    "very light": `sv\xe6rt lys`,
+    "vibrant": `levende`,
+    "white": `hvit`,
+    "yellow": `gul`,
+    "yellow green": `gulgr\xf8nn`
+};
+
+
+export {$f7492ce78db8051b$exports as default};
+//# sourceMappingURL=nb-NO.mjs.map

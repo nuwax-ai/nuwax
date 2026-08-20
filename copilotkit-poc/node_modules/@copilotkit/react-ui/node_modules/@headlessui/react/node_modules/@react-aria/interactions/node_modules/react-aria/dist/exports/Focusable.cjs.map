@@ -1,0 +1,1 @@
+{"mappings":"","sources":["packages/react-aria/exports/Focusable.ts"],"sourcesContent":["export {Focusable} from '../src/interactions/useFocusable';\nexport type {FocusableComponentProps as FocusableProps} from '../src/interactions/useFocusable';\n"],"names":[],"version":3,"file":"Focusable.cjs.map"}

@@ -1,0 +1,19 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.NoExplicitTypeError = void 0;
+class NoExplicitTypeError extends Error {
+    constructor(typeName, propertyKey, parameterIndex, argName) {
+        let errorMessage = `Unable to infer GraphQL type from TypeScript reflection system. ` +
+            `You need to provide explicit type for `;
+        if (argName) {
+            errorMessage += `argument named '${argName}' of `;
+        }
+        else if (parameterIndex !== undefined) {
+            errorMessage += `parameter #${parameterIndex} of `;
+        }
+        errorMessage += `'${propertyKey}' of '${typeName}' class.`;
+        super(errorMessage);
+        Object.setPrototypeOf(this, new.target.prototype);
+    }
+}
+exports.NoExplicitTypeError = NoExplicitTypeError;

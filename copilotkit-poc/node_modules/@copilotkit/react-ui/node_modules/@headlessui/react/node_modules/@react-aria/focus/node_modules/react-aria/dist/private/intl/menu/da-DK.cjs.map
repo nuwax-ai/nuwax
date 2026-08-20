@@ -1,0 +1,1 @@
+{"mappings":"AAAA,iBAAiB;IAAG,oBAAoB,CAAC,+DAAyD,CAAC;AACnG","sources":["packages/react-aria/intl/menu/da-DK.json"],"sourcesContent":["{\n  \"longPressMessage\": \"Langt tryk eller tryk på Alt + pil ned for at åbne menuen\"\n}\n"],"names":[],"version":3,"file":"da-DK.cjs.map"}

@@ -1,0 +1,1 @@
+{"mappings":"AAAA,iBAAiB;IAAG,oBAAoB,CAAC,sFAA0E,CAAC;AACpH","sources":["packages/react-aria/intl/menu/de-DE.json"],"sourcesContent":["{\n  \"longPressMessage\": \"Drücken Sie lange oder drücken Sie Alt + Nach-unten, um das Menü zu öffnen\"\n}\n"],"names":[],"version":3,"file":"de-DE.cjs.map"}

@@ -1,0 +1,78 @@
+import {
+  type GroundingMetadataSchema,
+  type PromptFeedbackSchema,
+  type UrlContextMetadataSchema,
+  type UsageMetadataSchema,
+  type SafetyRatingSchema,
+} from './google-generative-ai-language-model';
+
+export type GoogleGenerativeAIPrompt = {
+  systemInstruction?: GoogleGenerativeAISystemInstruction;
+  contents: Array<GoogleGenerativeAIContent>;
+};
+
+export type GoogleGenerativeAISystemInstruction = {
+  parts: Array<{ text: string }>;
+};
+
+export type GoogleGenerativeAIContent = {
+  role: 'user' | 'model';
+  parts: Array<GoogleGenerativeAIContentPart>;
+};
+
+export type GoogleGenerativeAIContentPart =
+  | { text: string; thought?: boolean; thoughtSignature?: string }
+  | { inlineData: { mimeType: string; data: string } }
+  | {
+      functionCall: { id?: string; name: string; args: unknown };
+      thoughtSignature?: string;
+    }
+  | {
+      functionResponse: {
+        id?: string;
+        name: string;
+        response: unknown;
+        parts?: Array<GoogleGenerativeAIFunctionResponsePart>;
+      };
+    }
+  | { fileData: { mimeType: string; fileUri: string } }
+  | {
+      toolCall: {
+        toolType: string;
+        args?: unknown;
+        id: string;
+      };
+      thoughtSignature?: string;
+    }
+  | {
+      toolResponse: {
+        toolType: string;
+        response?: unknown;
+        id: string;
+      };
+      thoughtSignature?: string;
+    };
+
+export type GoogleGenerativeAIFunctionResponsePart = {
+  inlineData: { mimeType: string; data: string };
+};
+
+export type GoogleGenerativeAIGroundingMetadata = GroundingMetadataSchema;
+
+export type GoogleGenerativeAIUrlContextMetadata = UrlContextMetadataSchema;
+
+export type GoogleGenerativeAISafetyRating = SafetyRatingSchema;
+
+export type GoogleGenerativeAIPromptFeedback = PromptFeedbackSchema;
+
+export type GoogleGenerativeAIUsageMetadata = UsageMetadataSchema;
+
+export interface GoogleGenerativeAIProviderMetadata {
+  promptFeedback: GoogleGenerativeAIPromptFeedback | null;
+  groundingMetadata: GoogleGenerativeAIGroundingMetadata | null;
+  urlContextMetadata: GoogleGenerativeAIUrlContextMetadata | null;
+  safetyRatings: GoogleGenerativeAISafetyRating[] | null;
+  usageMetadata: GoogleGenerativeAIUsageMetadata | null;
+  finishMessage: string | null;
+  serviceTier: string | null;
+}

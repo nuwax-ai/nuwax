@@ -1,0 +1,1 @@
+{"mappings":"AAAA,iBAAiB;IAAG,YAAY,CAAC,aAAO,CAAC;IACvC,UAAU,CAAC,aAAO,CAAC;AACrB","sources":["packages/react-aria/intl/tree/lv-LV.json"],"sourcesContent":["{\n  \"collapse\": \"Sakļaut\",\n  \"expand\": \"Izvērst\"\n}\n"],"names":[],"version":3,"file":"lv-LV.cjs.map"}

@@ -1,0 +1,1 @@
+{"mappings":"AAAA,iBAAiB;IAAG,mBAAmB,CAAC,WAAW,CAAC;AACpD","sources":["packages/react-aria/intl/autocomplete/fr-FR.json"],"sourcesContent":["{\n  \"collectionLabel\": \"Suggestions\"\n}\n"],"names":[],"version":3,"file":"fr-FR.cjs.map"}

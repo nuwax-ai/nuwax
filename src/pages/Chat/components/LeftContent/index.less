@@ -215,3 +215,33 @@
     transform: translateY(0);
   }
 }
+
+.chat-mode-toggle {
+  display: flex;
+  gap: 0;
+  padding: 4px 8px;
+  border-bottom: 1px solid rgba(0, 0, 0, 8%);
+  flex-shrink: 0;
+}
+
+.mode-btn {
+  flex: 1;
+  padding: 4px 0;
+  font-size: 12px;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  color: #999;
+  font-weight: 500;
+  border-radius: 6px;
+  transition: all 0.2s;
+
+  &:hover {
+    color: #666;
+  }
+
+  &.mode-btn-active {
+    background: #f3f0ff;
+    color: #722ed1;
+  }
+}

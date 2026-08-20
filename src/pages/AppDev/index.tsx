@@ -83,6 +83,7 @@ import {
   FileTreeGitSourceSidebar,
 } from './components';
 import ChatArea from './components/ChatArea';
+import CopilotChatPanel from './components/CopilotChatPanel';
 import { type DesignViewerRef } from './components/DesignViewer';
 import EditorHeaderRight from './components/EditorHeaderRight';
 import FileOperatingMask from './components/FileOperatingMask';
@@ -153,6 +154,7 @@ const AppDev: React.FC = () => {
   // 组件内部状态
   const [missingProjectId, setMissingProjectId] = useState(false);
   const [activeTab, setActiveTab] = useState<'preview' | 'code'>('preview');
+  const [chatMode, setChatMode] = useState<'native' | 'copilot'>('native');
   const [isUploadModalVisible, setIsUploadModalVisible] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [showDevLogConsole, setShowDevLogConsole] = useState(false);
@@ -1436,7 +1438,57 @@ const AppDev: React.FC = () => {
           <div className={styles.mainRow}>
             {/* 左侧AI助手面板 */}
             <div className={styles.leftPanel}>
-              {/* 对话 Tab */}
+              {/* 聊天模式切换：native SSE / CopilotKit AG-UI */}
+              <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid rgba(0,0,0,10%)' }}>
+                <button
+                  onClick={() => setChatMode('native')}
+                  style={{
+                    flex: 1, padding: '6px 0', fontSize: 12, cursor: 'pointer',
+                    border: 'none', background: chatMode === 'native' ? '#1677ff' : 'transparent',
+                    color: chatMode === 'native' ? '#fff' : '#666', fontWeight: 500,
+                  }}
+                >
+                  Native Chat
+                </button>
+                <button
+                  onClick={() => setChatMode('copilot')}
+                  style={{
+                    flex: 1, padding: '6px 0', fontSize: 12, cursor: 'pointer',
+                    border: 'none', background: chatMode === 'copilot' ? '#1677ff' : 'transparent',
+                    color: chatMode === 'copilot' ? '#fff' : '#666', fontWeight: 500,
+                  }}
+                >
+                  CopilotKit
+                </button>
+              </div>
+              {chatMode === 'copilot' ? (
+                <CopilotChatPanel
+                  files={stableCurrentFiles}
+                  activeFileId={fileManagement.fileContentState.selectedFile}
+                  activeFileContent={fileManagement.fileContentState.fileContent}
+                  projectId={projectId || undefined}
+                 onCreateFile={(fileName, content) => {
+                    fileManagement.createFileItem(
+                      {
+                        path: '/' + fileName,
+                        name: fileName,
+                        type: 'file',
+                        content,
+                      } as any,
+                      fileName,
+                    );
+                  }}
+                  onUpdateFile={(filePath, content) => {
+                    const target = stableCurrentFiles.find(
+                      (f) => f.path === filePath || f.name === filePath.split('/').pop(),
+                    );
+                    if (target) {
+                      fileManagement.updateFileContent(target.id, content);
+                      fileManagement.saveFile({ fileId: target.id, content });
+                    }
+                  }}
+                />
+              ) : (
               <ChatArea
                 chat={chat}
                 projectId={projectId || ''}
@@ -1463,6 +1515,7 @@ const AppDev: React.FC = () => {
                 hiddenTabs={[]}
                 onDesignModeUnreachable={handleDesignModeUnreachable}
               />
+              )}
             </div>
 
             {/* 右侧代码编辑器区域 */}

@@ -1,0 +1,1 @@
+{"mappings":";AAAA,4BAAiB;IAAG,qBAAqB,CAAC,iDAAO,CAAC;IAChD,qBAAqB,CAAC,sKAAkC,CAAC;AAC3D","sources":["packages/react-aria/intl/tag/ru-RU.json"],"sourcesContent":["{\n  \"removeButtonLabel\": \"Удалить\",\n  \"removeDescription\": \"Нажмите DELETE, чтобы удалить тег.\"\n}\n"],"names":[],"version":3,"file":"ru-RU.js.map"}

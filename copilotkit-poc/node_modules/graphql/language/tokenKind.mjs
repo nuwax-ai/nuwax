@@ -1,0 +1,43 @@
+/** @category Lexing */
+
+/**
+ * An exported enum describing the different kinds of tokens that the
+ * lexer emits.
+ */
+var TokenKind;
+
+(function (TokenKind) {
+  TokenKind['SOF'] = '<SOF>';
+  TokenKind['EOF'] = '<EOF>';
+  TokenKind['BANG'] = '!';
+  TokenKind['DOLLAR'] = '$';
+  TokenKind['AMP'] = '&';
+  TokenKind['PAREN_L'] = '(';
+  TokenKind['PAREN_R'] = ')';
+  TokenKind['DOT'] = '.';
+  TokenKind['SPREAD'] = '...';
+  TokenKind['COLON'] = ':';
+  TokenKind['EQUALS'] = '=';
+  TokenKind['AT'] = '@';
+  TokenKind['BRACKET_L'] = '[';
+  TokenKind['BRACKET_R'] = ']';
+  TokenKind['BRACE_L'] = '{';
+  TokenKind['PIPE'] = '|';
+  TokenKind['BRACE_R'] = '}';
+  TokenKind['NAME'] = 'Name';
+  TokenKind['INT'] = 'Int';
+  TokenKind['FLOAT'] = 'Float';
+  TokenKind['STRING'] = 'String';
+  TokenKind['BLOCK_STRING'] = 'BlockString';
+  TokenKind['COMMENT'] = 'Comment';
+})(TokenKind || (TokenKind = {}));
+
+export { TokenKind };
+/**
+ * Deprecated legacy alias for the enum type representing token kind values.
+ * This alias will be removed in v17. In v17, `TokenKind` is exported as the
+ * single public symbol for both the runtime object and the corresponding
+ * TypeScript type.
+ * @deprecated Will be removed in v17. In v17, use `TokenKind` as both the
+ * runtime value and the type.
+ */

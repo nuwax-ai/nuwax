@@ -1,0 +1,1 @@
+{"mappings":"AAAA,iBAAiB;IAAG,qBAAqB,CAAC,gBAAE,CAAC;IAC3C,qBAAqB,CAAC,gGAAY,CAAC;AACrC","sources":["packages/react-aria/intl/tag/zh-CN.json"],"sourcesContent":["{\n  \"removeButtonLabel\": \"删除\",\n  \"removeDescription\": \"按下“删除”以删除标记。\"\n}\n"],"names":[],"version":3,"file":"zh-CN.cjs.map"}

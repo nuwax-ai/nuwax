@@ -1,0 +1,1 @@
+{"mappings":";AAAA,4BAAiB;IAAG,qBAAqB,CAAC,WAAW,CAAC;IACpD,qBAAqB,CAAC,6CAA6C,CAAC;AACtE","sources":["packages/react-aria/intl/tag/nl-NL.json"],"sourcesContent":["{\n  \"removeButtonLabel\": \"Verwijderen\",\n  \"removeDescription\": \"Druk op Verwijderen om de tag te verwijderen.\"\n}\n"],"names":[],"version":3,"file":"nl-NL.js.map"}

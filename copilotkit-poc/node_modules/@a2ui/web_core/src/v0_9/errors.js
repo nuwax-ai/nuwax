@@ -1,0 +1,69 @@
+/*
+ * Copyright 2025 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/**
+ * Base class for all A2UI specific errors.
+ *
+ * Includes a machine-readable `code` for categorical handling and ensures
+ * proper stack trace capturing.
+ */
+export class A2uiError extends Error {
+    constructor(message, code = 'UNKNOWN_ERROR') {
+        super(message);
+        this.name = this.constructor.name;
+        this.code = code;
+        // Maintains proper stack trace for where our error was thrown (only available on V8)
+        if (Error.captureStackTrace) {
+            Error.captureStackTrace(this, this.constructor);
+        }
+    }
+}
+/**
+ * Thrown when JSON validation fails or schemas are mismatched.
+ */
+export class A2uiValidationError extends A2uiError {
+    constructor(message, details) {
+        super(message, 'VALIDATION_ERROR');
+        this.details = details;
+    }
+}
+/**
+ * Thrown during DataModel mutations (invalid paths, type mismatches).
+ */
+export class A2uiDataError extends A2uiError {
+    constructor(message, path) {
+        super(message, 'DATA_ERROR');
+        this.path = path;
+    }
+}
+/**
+ * Thrown during string interpolation and function evaluation.
+ */
+export class A2uiExpressionError extends A2uiError {
+    constructor(message, expression, details) {
+        super(message, 'EXPRESSION_ERROR');
+        this.expression = expression;
+        this.details = details;
+    }
+}
+/**
+ * Thrown for structural issues in the UI tree (missing surfaces, duplicate components).
+ */
+export class A2uiStateError extends A2uiError {
+    constructor(message) {
+        super(message, 'STATE_ERROR');
+    }
+}
+//# sourceMappingURL=errors.js.map

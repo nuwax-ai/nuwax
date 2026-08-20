@@ -1,0 +1,9 @@
+export declare const isMac: () => boolean;
+export declare const isIPhone: () => boolean;
+export declare const isIPad: () => boolean;
+export declare const isIOS: () => boolean;
+export declare const isAppleDevice: () => boolean;
+export declare const isWebKit: () => boolean;
+export declare const isChrome: () => boolean;
+export declare const isAndroid: () => boolean;
+export declare const isFirefox: () => boolean;

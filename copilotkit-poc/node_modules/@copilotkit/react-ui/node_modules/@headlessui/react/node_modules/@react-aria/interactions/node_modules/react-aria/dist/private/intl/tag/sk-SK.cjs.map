@@ -1,0 +1,1 @@
+{"mappings":"AAAA,iBAAiB;IAAG,qBAAqB,CAAC,kBAAS,CAAC;IAClD,qBAAqB,CAAC,0EAAkD,CAAC;AAC3E","sources":["packages/react-aria/intl/tag/sk-SK.json"],"sourcesContent":["{\n  \"removeButtonLabel\": \"Odstrániť\",\n  \"removeDescription\": \"Ak chcete odstrániť značku, stlačte kláves Delete.\"\n}\n"],"names":[],"version":3,"file":"sk-SK.cjs.map"}

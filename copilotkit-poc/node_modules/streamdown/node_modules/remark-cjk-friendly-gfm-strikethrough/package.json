@@ -1,0 +1,76 @@
+{
+  "name": "remark-cjk-friendly-gfm-strikethrough",
+  "version": "1.2.3",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
+  "repository": {
+    "url": "https://github.com/tats-u/markdown-cjk-friendly"
+  },
+  "license": "MIT",
+  "author": "Tatsunori Uchino <tats.u@live.jp> (https://github.com/tats-u)",
+  "bugs": "https://github.com/tats-u/markdown-cjk-friendly/issues",
+  "keywords": [
+    "remark-plugin",
+    "remark",
+    "markdown",
+    "japanese",
+    "chinese",
+    "korean",
+    "cjk",
+    "mdast",
+    "unified"
+  ],
+  "description": "remark plugin to make Markdown strikethrough (`~~`) in GFM more friendly with Chinese, Japanese, and Korean (CJK)",
+  "sideEffects": false,
+  "dependencies": {
+    "micromark-extension-cjk-friendly-gfm-strikethrough": "1.2.3"
+  },
+  "devDependencies": {
+    "@mdx-js/mdx": "^3.1.0",
+    "rehype-stringify": "10.0.1",
+    "remark": "^15.0.1",
+    "remark-gfm": "^4.0.1",
+    "remark-parse": "^11.0.0",
+    "remark-rehype": "^11.1.2",
+    "unified": "^11.0.5",
+    "remark-cjk-friendly": "1.2.3"
+  },
+  "peerDependencies": {
+    "@types/mdast": "^4.0.0",
+    "unified": "^11.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@types/mdast": {
+      "optional": true
+    }
+  },
+  "engines": {
+    "node": ">=16"
+  },
+  "scripts": {
+    "build:rslib": "rslib build",
+    "build": "tsup",
+    "build:lib": "tsup",
+    "dev:rslib": "rslib build --watch",
+    "dev": "tsup --watch",
+    "dev:lib": "tsup --watch",
+    "test": "vitest run",
+    "test:lib": "vitest run",
+    "test:up": "vitest -u",
+    "test:watch": "vitest watch",
+    "test:lib:watch": "vitest watch",
+    "lint:type": "tsc --noEmit"
+  }
+}

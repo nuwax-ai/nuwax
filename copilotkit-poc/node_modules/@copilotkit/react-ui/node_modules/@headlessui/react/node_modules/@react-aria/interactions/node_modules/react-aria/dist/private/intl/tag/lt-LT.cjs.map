@@ -1,0 +1,1 @@
+{"mappings":"AAAA,iBAAiB;IAAG,qBAAqB,CAAC,eAAS,CAAC;IAClD,qBAAqB,CAAC,wGAAsD,CAAC;AAC/E","sources":["packages/react-aria/intl/tag/lt-LT.json"],"sourcesContent":["{\n  \"removeButtonLabel\": \"Pašalinti\",\n  \"removeDescription\": \"Norėdami pašalinti žymą, paspauskite „Delete“ klavišą.\"\n}\n"],"names":[],"version":3,"file":"lt-LT.cjs.map"}

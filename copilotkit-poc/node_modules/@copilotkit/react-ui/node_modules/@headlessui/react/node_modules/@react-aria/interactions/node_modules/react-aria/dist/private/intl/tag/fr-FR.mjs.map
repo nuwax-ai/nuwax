@@ -1,0 +1,1 @@
+{"mappings":";AAAA,4BAAiB;IAAG,qBAAqB,CAAC,SAAS,CAAC;IAClD,qBAAqB,CAAC,2DAAiD,CAAC;AAC1E","sources":["packages/react-aria/intl/tag/fr-FR.json"],"sourcesContent":["{\n  \"removeButtonLabel\": \"Supprimer\",\n  \"removeDescription\": \"Appuyez sur Supprimer pour supprimer l’étiquette.\"\n}\n"],"names":[],"version":3,"file":"fr-FR.mjs.map"}

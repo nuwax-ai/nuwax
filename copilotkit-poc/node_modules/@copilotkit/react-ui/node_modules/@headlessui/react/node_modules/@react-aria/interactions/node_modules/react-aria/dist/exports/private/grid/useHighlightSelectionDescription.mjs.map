@@ -1,0 +1,1 @@
+{"mappings":"","sources":["packages/react-aria/exports/private/grid/useHighlightSelectionDescription.ts"],"sourcesContent":["export {\n  useHighlightSelectionDescription,\n  type HighlightSelectionDescriptionProps\n} from '../../../src/grid/useHighlightSelectionDescription';\n"],"names":[],"version":3,"file":"useHighlightSelectionDescription.mjs.map"}

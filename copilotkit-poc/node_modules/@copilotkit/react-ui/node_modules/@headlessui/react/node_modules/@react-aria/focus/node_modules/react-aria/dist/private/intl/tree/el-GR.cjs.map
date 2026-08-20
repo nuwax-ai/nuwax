@@ -1,0 +1,1 @@
+{"mappings":"AAAA,iBAAiB;IAAG,YAAY,CAAC,wDAAQ,CAAC;IACxC,UAAU,CAAC,wDAAQ,CAAC;AACtB","sources":["packages/react-aria/intl/tree/el-GR.json"],"sourcesContent":["{\n  \"collapse\": \"Σύμπτυξη\",\n  \"expand\": \"Ανάπτυξη\"\n}\n"],"names":[],"version":3,"file":"el-GR.cjs.map"}

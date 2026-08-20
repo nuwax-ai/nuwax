@@ -1,0 +1,1 @@
+{"mappings":"","sources":["packages/react-aria/exports/useInteractOutside.ts"],"sourcesContent":["export {\n  useInteractOutside,\n  type InteractOutsideProps\n} from '../src/interactions/useInteractOutside';\n"],"names":[],"version":3,"file":"useInteractOutside.cjs.map"}

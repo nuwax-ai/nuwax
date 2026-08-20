@@ -1,0 +1,1 @@
+{"mappings":";AAAA,4BAAiB;IAAG,YAAY,CAAC,wDAAQ,CAAC;IACxC,UAAU,CAAC,sEAAU,CAAC;AACxB","sources":["packages/react-aria/intl/tree/ru-RU.json"],"sourcesContent":["{\n  \"collapse\": \"Свернуть\",\n  \"expand\": \"Развернуть\"\n}\n"],"names":[],"version":3,"file":"ru-RU.js.map"}

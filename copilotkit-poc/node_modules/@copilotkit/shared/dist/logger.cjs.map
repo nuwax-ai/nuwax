@@ -1,0 +1,1 @@
+{"version":3,"file":"logger.cjs","names":[],"sources":["../src/logger.ts"],"sourcesContent":["export const logger = console;\n"],"mappings":";;AAAA,MAAa,SAAS"}

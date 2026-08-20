@@ -1,0 +1,1 @@
+{"mappings":"AAAA,iBAAiB;IAAG,qBAAqB,CAAC,sEAAU,CAAC;IACnD,qBAAqB,CAAC,+NAA2C,CAAC;AACpE","sources":["packages/react-aria/intl/tag/bg-BG.json"],"sourcesContent":["{\n  \"removeButtonLabel\": \"Премахване\",\n  \"removeDescription\": \"Натиснете Delete, за да премахнете маркера.\"\n}\n"],"names":[],"version":3,"file":"bg-BG.cjs.map"}

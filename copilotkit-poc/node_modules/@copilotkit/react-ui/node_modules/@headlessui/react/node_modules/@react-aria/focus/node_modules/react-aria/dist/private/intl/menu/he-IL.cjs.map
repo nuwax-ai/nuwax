@@ -1,0 +1,1 @@
+{"mappings":"AAAA,iBAAiB;IAAG,oBAAoB,CAAC,sQAA0D,CAAC;AACpG","sources":["packages/react-aria/intl/menu/he-IL.json"],"sourcesContent":["{\n  \"longPressMessage\": \"לחץ לחיצה ארוכה או הקש Alt + ArrowDown כדי לפתוח את התפריט\"\n}\n"],"names":[],"version":3,"file":"he-IL.cjs.map"}

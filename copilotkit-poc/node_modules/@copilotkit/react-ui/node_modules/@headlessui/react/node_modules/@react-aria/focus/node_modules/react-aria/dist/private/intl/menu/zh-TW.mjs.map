@@ -1,0 +1,1 @@
+{"mappings":";AAAA,4BAAiB;IAAG,oBAAoB,CAAC,6GAAkB,CAAC;AAC5D","sources":["packages/react-aria/intl/menu/zh-TW.json"],"sourcesContent":["{\n  \"longPressMessage\": \"長按或按 Alt+向下鍵以開啟功能表\"\n}\n"],"names":[],"version":3,"file":"zh-TW.mjs.map"}

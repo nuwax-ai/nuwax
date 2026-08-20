@@ -1,0 +1,1 @@
+{"mappings":"AAAA,iBAAiB;IAAG,YAAY,CAAC,gBAAE,CAAC;IAClC,UAAU,CAAC,wBAAG,CAAC;AACjB","sources":["packages/react-aria/intl/tree/ko-KR.json"],"sourcesContent":["{\n  \"collapse\": \"접기\",\n  \"expand\": \"펼치기\"\n}\n"],"names":[],"version":3,"file":"ko-KR.cjs.map"}

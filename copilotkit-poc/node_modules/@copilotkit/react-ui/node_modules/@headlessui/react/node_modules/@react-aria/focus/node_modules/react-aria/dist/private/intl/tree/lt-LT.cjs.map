@@ -1,0 +1,1 @@
+{"mappings":"AAAA,iBAAiB;IAAG,YAAY,CAAC,SAAS,CAAC;IACzC,UAAU,CAAC,gBAAU,CAAC;AACxB","sources":["packages/react-aria/intl/tree/lt-LT.json"],"sourcesContent":["{\n  \"collapse\": \"Sutraukti\",\n  \"expand\": \"Išskleisti\"\n}\n"],"names":[],"version":3,"file":"lt-LT.cjs.map"}

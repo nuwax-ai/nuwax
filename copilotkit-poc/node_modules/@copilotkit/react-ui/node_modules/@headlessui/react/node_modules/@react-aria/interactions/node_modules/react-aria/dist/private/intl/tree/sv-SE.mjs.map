@@ -1,0 +1,1 @@
+{"mappings":";AAAA,4BAAiB;IAAG,YAAY,CAAC,OAAI,CAAC;IACpC,UAAU,CAAC,SAAS,CAAC;AACvB","sources":["packages/react-aria/intl/tree/sv-SE.json"],"sourcesContent":["{\n  \"collapse\": \"Dölj\",\n  \"expand\": \"Expandera\"\n}\n"],"names":[],"version":3,"file":"sv-SE.mjs.map"}

@@ -1,0 +1,1 @@
+{"mappings":"","sources":["packages/react-aria/exports/private/focus/FocusScope.ts"],"sourcesContent":["export {\n  getFocusableTreeWalker,\n  createFocusManager,\n  isElementInChildOfActiveScope\n} from '../../../src/focus/FocusScope';\n"],"names":[],"version":3,"file":"FocusScope.cjs.map"}

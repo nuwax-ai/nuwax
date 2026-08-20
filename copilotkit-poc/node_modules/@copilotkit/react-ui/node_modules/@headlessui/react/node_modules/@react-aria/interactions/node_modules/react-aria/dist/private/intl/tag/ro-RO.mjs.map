@@ -1,0 +1,1 @@
+{"mappings":";AAAA,4BAAiB;IAAG,qBAAqB,CAAC,0BAAW,CAAC;IACpD,qBAAqB,CAAC,yEAAuD,CAAC;AAChF","sources":["packages/react-aria/intl/tag/ro-RO.json"],"sourcesContent":["{\n  \"removeButtonLabel\": \"Îndepărtaţi\",\n  \"removeDescription\": \"Apăsați pe Delete (Ștergere) pentru a elimina eticheta.\"\n}\n"],"names":[],"version":3,"file":"ro-RO.mjs.map"}

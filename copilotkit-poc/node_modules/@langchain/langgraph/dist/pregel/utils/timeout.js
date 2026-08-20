@@ -1,0 +1,34 @@
+//#region src/pregel/utils/timeout.ts
+function _coerceTimeoutMs(value, field) {
+	if (value === void 0 || value === null) return;
+	if (typeof value !== "number" || Number.isNaN(value) || value <= 0) throw new Error(`${field} must be greater than 0`);
+	return value;
+}
+/**
+* Normalize a timeout value into a {@link TimeoutPolicy} with positive
+* millisecond fields, or `undefined` if no timeout is configured.
+*
+* A bare number (or `undefined`) is treated as a hard {@link
+* TimeoutPolicy.runTimeout}. Throws if any configured timeout is not greater
+* than 0, or if `refreshOn` is not `"auto"` or `"heartbeat"`.
+*
+* @internal
+*/
+function coerceTimeoutPolicy(value) {
+	if (value === void 0 || value === null) return;
+	const policy = typeof value === "number" ? { runTimeout: value } : value;
+	const refreshOn = policy.refreshOn ?? "auto";
+	if (refreshOn !== "auto" && refreshOn !== "heartbeat") throw new Error("refreshOn must be \"auto\" or \"heartbeat\"");
+	const runTimeout = _coerceTimeoutMs(policy.runTimeout, "runTimeout");
+	const idleTimeout = _coerceTimeoutMs(policy.idleTimeout, "idleTimeout");
+	if (runTimeout === void 0 && idleTimeout === void 0) return;
+	return {
+		runTimeout,
+		idleTimeout,
+		refreshOn
+	};
+}
+//#endregion
+export { coerceTimeoutPolicy };
+
+//# sourceMappingURL=timeout.js.map

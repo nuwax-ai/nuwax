@@ -1,0 +1,1 @@
+{"mappings":"AAAA,iBAAiB;IAAG,qBAAqB,CAAC,2BAA2B,CAAC;IACpE,qBAAqB,CAAC,MAAM,CAAC;AAC/B","sources":["packages/react-aria/intl/tag/en-US.json"],"sourcesContent":["{\n  \"removeDescription\": \"Press Delete to remove tag.\",\n  \"removeButtonLabel\": \"Remove\"\n}\n"],"names":[],"version":3,"file":"en-US.cjs.map"}

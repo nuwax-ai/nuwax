@@ -1,0 +1,80 @@
+{
+  "name": "streamdown",
+  "version": "1.6.11",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "homepage": "https://streamdown.ai",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vercel/streamdown.git",
+    "directory": "packages/streamdown"
+  },
+  "author": "Hayden Bleasel <hayden.bleasel@vercel.com>",
+  "license": "Apache-2.0",
+  "description": "A drop-in replacement for react-markdown, designed for AI-powered streaming.",
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.8.0",
+    "@testing-library/react": "^16.3.0",
+    "@types/hast": "^3.0.4",
+    "@types/react": "^19.1.12",
+    "@types/react-dom": "^19.1.9",
+    "@vitejs/plugin-react": "^5.0.2",
+    "@vitest/coverage-v8": "^3.2.4",
+    "jsdom": "^26.1.0",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "react-markdown": "^10.1.0",
+    "tsup": "^8.5.0",
+    "vitest": "^3.2.4"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0 || ^19.0.0"
+  },
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "hast": "^1.0.0",
+    "hast-util-to-jsx-runtime": "^2.3.6",
+    "html-url-attributes": "^3.0.1",
+    "katex": "^0.16.22",
+    "lucide-react": "^0.542.0",
+    "marked": "^16.2.1",
+    "mermaid": "^11.11.0",
+    "rehype-harden": "^1.1.6",
+    "rehype-katex": "^7.0.1",
+    "rehype-raw": "^7.0.0",
+    "rehype-sanitize": "^6.0.0",
+    "remark-cjk-friendly": "^1.2.3",
+    "remark-cjk-friendly-gfm-strikethrough": "^1.2.3",
+    "remark-gfm": "^4.0.1",
+    "remark-math": "^6.0.0",
+    "remark-parse": "^11.0.0",
+    "remark-rehype": "^11.1.2",
+    "shiki": "^3.12.2",
+    "tailwind-merge": "^3.3.1",
+    "unified": "^11.0.5",
+    "unist-util-visit": "^5.0.0",
+    "remend": "1.0.1"
+  },
+  "scripts": {
+    "build": "tsup",
+    "postbuild": "node scripts/postbuild.js",
+    "test": "vitest run",
+    "test:ui": "vitest --ui run",
+    "test:coverage": "vitest --coverage run",
+    "bench": "vitest bench --run > results.txt",
+    "bench:ui": "vitest bench --ui --run"
+  }
+}

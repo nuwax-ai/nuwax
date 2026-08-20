@@ -5,11 +5,12 @@ import TooltipIcon from '@/components/custom/TooltipIcon';
 import type { ChatFileTreeSidebarProps } from '@/pages/Chat/components/ChatFileTreeSidebar';
 import ChatFileTreeSidebar from '@/pages/Chat/components/ChatFileTreeSidebar';
 import DropdownChangeName from '@/pages/Chat/components/DropdownChangeName';
+import CopilotKitChat from '@/pages/Chat/components/CopilotKitChat';
 import { t } from '@/services/i18nRuntime';
 import { HideDesktopEnum } from '@/types/enums/agent';
 import { AgentTypeEnum } from '@/types/enums/space';
 import classNames from 'classnames';
-import React from 'react';
+import React, { useState } from 'react';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -33,6 +34,12 @@ const LeftContent: React.FC<LeftContentProps> = ({
   chatSessionProps,
   fileSidebarProps,
 }) => {
+  const [chatMode, setChatMode] = useState<'native' | 'copilot'>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('chatMode') === 'native' ? 'native' : 'copilot';
+    }
+    return 'copilot';
+  });
   return (
     <div
       className={cx('flex-1', 'flex', 'flex-col', styles['main-content'], {
@@ -223,7 +230,40 @@ const LeftContent: React.FC<LeftContentProps> = ({
             [styles['file-tree-visible']]: isFileTreeVisible,
           })}
         >
-          <UnifiedChatSession {...chatSessionProps} />
+          {/* CopilotKit / Native Chat toggle */}
+          <div className={cx(styles['chat-mode-toggle'])}>
+            <button
+              className={cx(styles['mode-btn'], {
+                [styles['mode-btn-active']]: chatMode === 'native',
+              })}
+              onClick={() => { setChatMode('native'); localStorage.setItem('chatMode', 'native'); }}
+            >
+              {t('PC.Pages.Chat.nativeChat') || 'Chat'}
+            </button>
+            <button
+              className={cx(styles['mode-btn'], {
+                [styles['mode-btn-active']]: chatMode === 'copilot',
+              })}
+              onClick={() => { setChatMode('copilot'); localStorage.setItem('chatMode', 'copilot'); }}
+            >
+              CopilotKit
+            </button>
+          </div>
+          {chatMode === 'copilot' ? (
+            <CopilotKitChat
+              agentId={chatSessionProps.agentInfo?.id}
+              conversationId={chatSessionProps.conversationId}
+              agentInfo={chatSessionProps.agentInfo}
+              messageList={chatSessionProps.messageList}
+              selectedModelId={chatSessionProps.selectedModelId}
+              onSendMessage={(text) =>
+                chatSessionProps.onSendMessage?.(text)
+              }
+              onClearContext={chatSessionProps.onClear}
+            />
+          ) : (
+            <UnifiedChatSession {...chatSessionProps} />
+          )}
         </div>
 
         {/* 通用型(TaskAgent)智能体专用文件树区域 */}

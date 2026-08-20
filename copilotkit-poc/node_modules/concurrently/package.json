@@ -1,0 +1,87 @@
+{
+  "name": "concurrently",
+  "type": "module",
+  "version": "10.0.3",
+  "description": "Run commands concurrently",
+  "author": "Kimmo Brunfeldt",
+  "license": "MIT",
+  "funding": "https://github.com/open-cli-tools/concurrently?sponsor=1",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/open-cli-tools/concurrently.git"
+  },
+  "keywords": [
+    "bash",
+    "concurrent",
+    "parallel",
+    "concurrently",
+    "command",
+    "sh"
+  ],
+  "exports": {
+    ".": "./dist/lib/index.js",
+    "./package.json": "./package.json"
+  },
+  "types": "./dist/lib/index.d.ts",
+  "bin": {
+    "concurrently": "./dist/bin/index.js",
+    "conc": "./dist/bin/index.js"
+  },
+  "files": [
+    "!**/*.spec.d.ts",
+    "!**/*.spec.js",
+    "!**/__fixtures__",
+    "dist",
+    "dist/tsconfig.tsbuildinfo",
+    "docs"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "chalk": "5.6.2",
+    "rxjs": "7.8.2",
+    "shell-quote": "1.8.4",
+    "supports-color": "10.2.2",
+    "tree-kill": "1.2.2",
+    "yargs": "18.0.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@hirez_io/observer-spy": "^2.2.0",
+    "@types/node": "^20.19.41",
+    "@types/shell-quote": "^1.7.5",
+    "@types/yargs": "^17.0.35",
+    "@vitest/coverage-v8": "^4.1.6",
+    "@vitest/eslint-plugin": "^1.6.17",
+    "ctrlc-wrapper": "^0.0.5",
+    "eslint": "^10.4.0",
+    "eslint-config-flat-gitignore": "^2.3.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-import-lite": "^0.6.0",
+    "eslint-plugin-prettier": "^5.5.5",
+    "eslint-plugin-simple-import-sort": "^13.0.0",
+    "globals": "^17.6.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.5",
+    "prettier": "^3.8.3",
+    "safe-publish-latest": "^2.0.0",
+    "string-argv": "^0.3.2",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.59.3",
+    "vitest": "^4.1.6"
+  },
+  "lint-staged": {
+    "*.{js,ts}": "eslint --fix",
+    "*.{json,y?(a)ml,md}": "prettier --write"
+  },
+  "scripts": {
+    "build": "tsc --build",
+    "postbuild": "chmod +x dist/bin/index.js",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --check '**/*.{json,y?(a)ml,md}'",
+    "lint": "eslint",
+    "test": "vitest --project unit",
+    "test:smoke": "vitest run --project smoke"
+  }
+}

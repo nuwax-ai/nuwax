@@ -1,0 +1,1 @@
+{"mappings":";AAAA,4BAAiB;IAAG,qBAAqB,CAAC,OAAO,CAAC;IAChD,qBAAqB,CAAC,uDAA2C,CAAC;AACpE","sources":["packages/react-aria/intl/tag/cs-CZ.json"],"sourcesContent":["{\n  \"removeButtonLabel\": \"Odebrat\",\n  \"removeDescription\": \"Stisknutím klávesy Delete odeberete značku.\"\n}\n"],"names":[],"version":3,"file":"cs-CZ.js.map"}

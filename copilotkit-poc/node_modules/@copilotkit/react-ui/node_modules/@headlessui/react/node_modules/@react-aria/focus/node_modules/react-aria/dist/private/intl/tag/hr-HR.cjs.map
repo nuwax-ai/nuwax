@@ -1,0 +1,1 @@
+{"mappings":"AAAA,iBAAiB;IAAG,qBAAqB,CAAC,MAAM,CAAC;IAC/C,qBAAqB,CAAC,uCAAuC,CAAC;AAChE","sources":["packages/react-aria/intl/tag/hr-HR.json"],"sourcesContent":["{\n  \"removeButtonLabel\": \"Ukloni\",\n  \"removeDescription\": \"Pritisnite Delete za uklanjanje oznake.\"\n}\n"],"names":[],"version":3,"file":"hr-HR.cjs.map"}

@@ -1,0 +1,1 @@
+{"mappings":";AAAA,4BAAiB;IAAG,qBAAqB,CAAC,gBAAE,CAAC;IAC3C,qBAAqB,CAAC,mIAA0B,CAAC;AACnD","sources":["packages/react-aria/intl/tag/ko-KR.json"],"sourcesContent":["{\n  \"removeButtonLabel\": \"제거\",\n  \"removeDescription\": \"태그를 제거하려면 Delete 키를 누르십시오.\"\n}\n"],"names":[],"version":3,"file":"ko-KR.js.map"}

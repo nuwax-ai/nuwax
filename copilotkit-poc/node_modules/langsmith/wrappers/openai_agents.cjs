@@ -1,0 +1,1 @@
+module.exports = require('../dist/wrappers/openai_agents.cjs');

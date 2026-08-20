@@ -1,0 +1,1 @@
+{"mappings":"","sources":["packages/react-stately/exports/private/collections/useCollection.ts"],"sourcesContent":["export {useCollection} from '../../../src/collections/useCollection';\n"],"names":[],"version":3,"file":"useCollection.cjs.map"}

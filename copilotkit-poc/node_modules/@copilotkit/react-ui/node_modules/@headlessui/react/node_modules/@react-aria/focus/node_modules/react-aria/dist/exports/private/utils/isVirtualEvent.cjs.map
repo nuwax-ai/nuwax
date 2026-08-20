@@ -1,0 +1,1 @@
+{"mappings":"","sources":["packages/react-aria/exports/private/utils/isVirtualEvent.ts"],"sourcesContent":["export {isVirtualClick, isVirtualPointerEvent} from '../../../src/utils/isVirtualEvent';\n"],"names":[],"version":3,"file":"isVirtualEvent.cjs.map"}

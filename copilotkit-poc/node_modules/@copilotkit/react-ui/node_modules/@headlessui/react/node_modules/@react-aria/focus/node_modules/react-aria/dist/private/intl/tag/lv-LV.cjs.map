@@ -1,0 +1,1 @@
+{"mappings":"AAAA,iBAAiB;IAAG,qBAAqB,CAAC,YAAM,CAAC;IAC/C,qBAAqB,CAAC,wDAA4C,CAAC;AACrE","sources":["packages/react-aria/intl/tag/lv-LV.json"],"sourcesContent":["{\n  \"removeButtonLabel\": \"Noņemt\",\n  \"removeDescription\": \"Nospiediet Delete [Dzēst], lai noņemtu tagu.\"\n}\n"],"names":[],"version":3,"file":"lv-LV.cjs.map"}

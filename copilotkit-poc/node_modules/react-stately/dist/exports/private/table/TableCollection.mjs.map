@@ -1,0 +1,1 @@
+{"mappings":"","sources":["packages/react-stately/exports/private/table/TableCollection.ts"],"sourcesContent":["export {\n  buildHeaderRows,\n  type ITableCollection,\n  TableCollection\n} from '../../../src/table/TableCollection';\n"],"names":[],"version":3,"file":"TableCollection.mjs.map"}

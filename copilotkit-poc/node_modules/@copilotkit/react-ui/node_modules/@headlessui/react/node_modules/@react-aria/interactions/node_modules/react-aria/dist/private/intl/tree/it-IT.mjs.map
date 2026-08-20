@@ -1,0 +1,1 @@
+{"mappings":";AAAA,4BAAiB;IAAG,YAAY,CAAC,QAAQ,CAAC;IACxC,UAAU,CAAC,OAAO,CAAC;AACrB","sources":["packages/react-aria/intl/tree/it-IT.json"],"sourcesContent":["{\n  \"collapse\": \"Comprimi\",\n  \"expand\": \"Espandi\"\n}\n"],"names":[],"version":3,"file":"it-IT.mjs.map"}

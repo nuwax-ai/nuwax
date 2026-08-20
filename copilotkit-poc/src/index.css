@@ -1,0 +1,253 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #1a1a1a;
+  background: #f5f5f5;
+}
+
+body {
+  height: 100vh;
+  overflow: hidden;
+}
+
+#root {
+  height: 100vh;
+}
+
+/* --- AppDev layout --- */
+.appdev-layout {
+  display: flex;
+  height: 100vh;
+  width: 100%;
+}
+
+.appdev-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: #ffffff;
+}
+
+.appdev-header {
+  height: 48px;
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  border-bottom: 1px solid #e8e8e8;
+  background: #fff;
+  gap: 12px;
+}
+
+.appdev-header h1 {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.appdev-header .badge {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: #6366f1;
+  color: #fff;
+  font-weight: 500;
+}
+
+.appdev-body {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+/* --- File tree --- */
+.file-tree {
+  width: 240px;
+  border-right: 1px solid #e8e8e8;
+  overflow-y: auto;
+  background: #fafafa;
+  flex-shrink: 0;
+}
+
+.file-tree-header {
+  padding: 10px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.file-tree-item {
+  padding: 6px 14px;
+  cursor: pointer;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #444;
+  transition: background 0.1s;
+}
+
+.file-tree-item:hover {
+  background: #eef0f3;
+}
+
+.file-tree-item.active {
+  background: #e0e7ff;
+  color: #4338ca;
+  font-weight: 500;
+}
+
+.file-tree-item .icon {
+  width: 16px;
+  text-align: center;
+}
+
+/* --- Editor --- */
+.editor-pane {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.editor-tab-bar {
+  display: flex;
+  border-bottom: 1px solid #e8e8e8;
+  background: #fafafa;
+  overflow-x: auto;
+}
+
+.editor-tab {
+  padding: 8px 16px;
+  font-size: 13px;
+  cursor: pointer;
+  border-right: 1px solid #e8e8e8;
+  white-space: nowrap;
+  color: #666;
+  transition: all 0.1s;
+}
+
+.editor-tab.active {
+  background: #fff;
+  color: #1a1a1a;
+  border-bottom: 2px solid #6366f1;
+}
+
+.editor-content {
+  flex: 1;
+  overflow: auto;
+  position: relative;
+}
+
+.editor-textarea {
+  width: 100%;
+  height: 100%;
+  border: none;
+  outline: none;
+  padding: 16px;
+  font-family: 'SF Mono', 'Fira Code', Menlo, Monaco, Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  resize: none;
+  background: #fff;
+  color: #1a1a1a;
+  tab-size: 2;
+}
+
+/* --- Info banner --- */
+.integration-banner {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 480px;
+  padding: 6px 16px;
+  background: #1e1b4b;
+  color: #c7d2fe;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 100;
+}
+
+/* --- Generative UI in chat --- */
+.gen-ui-card {
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 12px;
+  margin: 8px 0;
+  background: #fafafa;
+}
+
+.gen-ui-card .gen-ui-title {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.gen-ui-diff {
+  font-family: 'SF Mono', Menlo, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  background: #1e1e1e;
+  border-radius: 6px;
+  padding: 12px;
+  overflow-x: auto;
+}
+
+.gen-ui-diff .line-add {
+  color: #4ade80;
+}
+
+.gen-ui-diff .line-del {
+  color: #f87171;
+}
+
+.gen-ui-diff .line-ctx {
+  color: #888;
+}
+
+.gen-ui-hitl {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.gen-ui-hitl button {
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: none;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.gen-ui-hitl .btn-confirm {
+  background: #6366f1;
+  color: #fff;
+}
+
+.gen-ui-hitl .btn-cancel {
+  background: #e8e8e8;
+  color: #555;
+}
+
+.file-count-badge {
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 10px;
+  background: #e0e7ff;
+  color: #4338ca;
+  margin-left: auto;
+}

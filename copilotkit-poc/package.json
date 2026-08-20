@@ -1,0 +1,21 @@
+{
+  "name": "copilotkit-poc",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:client": "vite --port 5174",
+    "dev:server": "tsx watch server/index.ts --port 4001",
+    "build": "tsc -b && vite build"
+  },
+  "dependencies": {
+    "@copilotkit/react-core": "^1.60.1",
+    "@copilotkit/react-ui": "^1.60.1",
+    "@copilotkit/runtime": "^1.60.1",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "nanoid": "^5.1.11",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  }
+}

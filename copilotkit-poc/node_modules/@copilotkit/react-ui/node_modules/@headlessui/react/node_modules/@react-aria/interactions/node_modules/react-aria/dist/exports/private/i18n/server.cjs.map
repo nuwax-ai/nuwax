@@ -1,0 +1,1 @@
+{"mappings":"","sources":["packages/react-aria/exports/private/i18n/server.ts"],"sourcesContent":["export {PackageLocalizationProvider, getPackageLocalizationScript} from '../../../src/i18n/server';\n"],"names":[],"version":3,"file":"server.cjs.map"}

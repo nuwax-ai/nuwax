@@ -1,0 +1,1 @@
+{"mappings":";AAAA,4BAAiB;IAAG,oBAAoB,CAAC,sdAAgF,CAAC;AAC1H","sources":["packages/react-aria/intl/menu/bg-BG.json"],"sourcesContent":["{\n  \"longPressMessage\": \"Натиснете продължително или натиснете Alt+ стрелка надолу, за да отворите менюто\"\n}\n"],"names":[],"version":3,"file":"bg-BG.js.map"}

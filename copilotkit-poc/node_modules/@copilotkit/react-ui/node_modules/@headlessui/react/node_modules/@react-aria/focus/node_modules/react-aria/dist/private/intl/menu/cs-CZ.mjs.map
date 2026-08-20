@@ -1,0 +1,1 @@
+{"mappings":";AAAA,4BAAiB;IAAG,oBAAoB,CAAC,sGAAwE,CAAC;AAClH","sources":["packages/react-aria/intl/menu/cs-CZ.json"],"sourcesContent":["{\n  \"longPressMessage\": \"Dlouhým stiskem nebo stisknutím kláves Alt + šipka dolů otevřete nabídku\"\n}\n"],"names":[],"version":3,"file":"cs-CZ.mjs.map"}

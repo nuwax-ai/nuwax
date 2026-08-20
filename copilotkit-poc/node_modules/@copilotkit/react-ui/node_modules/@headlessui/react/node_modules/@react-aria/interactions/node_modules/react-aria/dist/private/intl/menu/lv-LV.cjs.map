@@ -1,0 +1,1 @@
+{"mappings":"AAAA,iBAAiB;IAAG,oBAAoB,CAAC,6IAAmG,CAAC;AAC7I","sources":["packages/react-aria/intl/menu/lv-LV.json"],"sourcesContent":["{\n  \"longPressMessage\": \"Lai atvērtu izvēlni, turiet nospiestu vai nospiediet taustiņu kombināciju Alt + lejupvērstā bultiņa\"\n}\n"],"names":[],"version":3,"file":"lv-LV.cjs.map"}

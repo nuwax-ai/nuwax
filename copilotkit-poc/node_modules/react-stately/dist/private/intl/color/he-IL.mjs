@@ -1,0 +1,44 @@
+var $a1a6ebcfb4e36dca$exports = {};
+$a1a6ebcfb4e36dca$exports = {
+    "alpha": `\u{5D0}\u{5DC}\u{5E4}\u{5D0}`,
+    "black": `\u{5E9}\u{5D7}\u{5D5}\u{5E8}`,
+    "blue": `\u{5DB}\u{5D7}\u{5D5}\u{5DC}`,
+    "blue purple": `\u{5DB}\u{5D7}\u{5D5}\u{5DC} \u{5E1}\u{5D2}\u{5D5}\u{5DC}`,
+    "brightness": `\u{5D1}\u{5D4}\u{5D9}\u{5E8}\u{5D5}\u{5EA}`,
+    "brown": `\u{5D7}\u{5D5}\u{5DD}`,
+    "brown yellow": `\u{5D7}\u{5D5}\u{5DD} \u{5E6}\u{5D4}\u{5D5}\u{5D1}`,
+    "colorName": (args)=>`${args.lightness} ${args.chroma} ${args.hue}`,
+    "cyan": `\u{5D8}\u{5D5}\u{5E8}\u{5E7}\u{5D9}\u{5D6}`,
+    "cyan blue": `\u{5DB}\u{5D7}\u{5D5}\u{5DC} \u{5E6}\u{5D9}\u{5D0}\u{5DF}`,
+    "dark": `\u{5DB}\u{5D4}\u{5D4}`,
+    "gray": `\u{5D0}\u{5E4}\u{5D5}\u{5E8}`,
+    "grayish": `\u{5D0}\u{5E4}\u{5E8}\u{5E4}\u{5E8}`,
+    "green": `\u{5D9}\u{5E8}\u{5D5}\u{5E7}`,
+    "green cyan": `\u{5E6}\u{5D9}\u{5D0}\u{5DF} \u{5D9}\u{5E8}\u{5D5}\u{5E7}`,
+    "hue": `\u{5D2}\u{5D5}\u{5D5}\u{5DF}`,
+    "light": `\u{5D0}\u{5D5}\u{5E8}`,
+    "lightness": `\u{5DB}\u{5DE}\u{5D5}\u{5EA} \u{5D0}\u{5D5}\u{5E8}`,
+    "magenta": `\u{5DE}\u{5D2}'\u{5E0}\u{5D8}\u{5D4}`,
+    "magenta pink": `\u{5D5}\u{5E8}\u{5D5}\u{5D3} \u{5DE}\u{5D2}'\u{5E0}\u{5D8}\u{5D4}`,
+    "orange": `\u{5DB}\u{5EA}\u{5D5}\u{5DD}`,
+    "orange yellow": `\u{5DB}\u{5EA}\u{5D5}\u{5DD} \u{5E6}\u{5D4}\u{5D5}\u{5D1}`,
+    "pale": `\u{5D7}\u{5D9}\u{5D5}\u{5D5}\u{5E8}`,
+    "pink": `\u{5D5}\u{5E8}\u{5D5}\u{5D3}`,
+    "pink red": `\u{5D5}\u{5E8}\u{5D5}\u{5D3} \u{5D0}\u{5D3}\u{5D5}\u{5DD}`,
+    "purple": `\u{5E1}\u{5D2}\u{5D5}\u{5DC}`,
+    "purple magenta": `\u{5DE}\u{5D2}'\u{5E0}\u{5D8}\u{5D4} \u{5E1}\u{5D2}\u{5D5}\u{5DC}`,
+    "red": `\u{5D0}\u{5D3}\u{5D5}\u{5DD}`,
+    "red orange": `\u{5DB}\u{5EA}\u{5D5}\u{5DD} \u{5D0}\u{5D3}\u{5D5}\u{5DD}`,
+    "saturation": `\u{5E8}\u{5D5}\u{5D5}\u{5D9}\u{5D4}`,
+    "transparentColorName": (args)=>`${args.lightness} ${args.chroma} ${args.hue}, ${args.percentTransparent} \u{5E9}\u{5E7}\u{5D5}\u{5E3}`,
+    "very dark": `\u{5DB}\u{5D4}\u{5D4} \u{5DE}\u{5D0}\u{5D5}\u{5D3}`,
+    "very light": `\u{5D1}\u{5D4}\u{5D9}\u{5E8} \u{5DE}\u{5D0}\u{5D5}\u{5D3}`,
+    "vibrant": `\u{5EA}\u{5D5}\u{5E1}\u{5E1}`,
+    "white": `\u{5DC}\u{5D1}\u{5DF}`,
+    "yellow": `\u{5E6}\u{5D4}\u{5D5}\u{5D1}`,
+    "yellow green": `\u{5E6}\u{5D4}\u{5D5}\u{5D1} \u{5D9}\u{5E8}\u{5D5}\u{5E7}`
+};
+
+
+export {$a1a6ebcfb4e36dca$exports as default};
+//# sourceMappingURL=he-IL.mjs.map

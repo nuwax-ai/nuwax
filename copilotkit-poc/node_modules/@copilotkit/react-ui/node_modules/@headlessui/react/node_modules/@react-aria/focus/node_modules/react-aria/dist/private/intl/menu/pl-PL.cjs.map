@@ -1,0 +1,1 @@
+{"mappings":"AAAA,iBAAiB;IAAG,oBAAoB,CAAC,qHAAoF,CAAC;AAC9H","sources":["packages/react-aria/intl/menu/pl-PL.json"],"sourcesContent":["{\n  \"longPressMessage\": \"Naciśnij i przytrzymaj lub naciśnij klawisze Alt + Strzałka w dół, aby otworzyć menu\"\n}\n"],"names":[],"version":3,"file":"pl-PL.cjs.map"}

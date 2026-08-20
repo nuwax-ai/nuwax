@@ -1,0 +1,207 @@
+//#region src/stream/stream-channel.ts
+/**
+* StreamChannel — projection channel for local or remote streaming.
+*
+* A `StreamChannel<T>` is an append-only async stream with independent
+* cursors. Local channels stay in-process only. Remote channels declare a
+* protocol channel name; when registered with a {@link StreamMux} (via a
+* transformer's `init()` return value), every {@link push} is automatically
+* forwarded as a {@link ProtocolEvent} on `custom:<channelName>` — making the
+* data available both in-process (via `run.extensions`) and to remote clients
+* (via `session.subscribe("custom:<channelName>")`).
+*
+* Lifecycle (`close` / `fail`) is managed by the mux automatically;
+* transformers do not need to call them.
+*/
+/**
+* Branded symbol placed on every {@link StreamChannel} instance.
+*
+* Uses `Symbol.for` so the same symbol is shared across multiple
+* copies of this package that may coexist in a dependency graph
+* (e.g. when a user app imports `@langchain/langgraph` directly and a
+* wrapping library like `langchain` bundles its own copy). Using a
+* symbol brand instead of `instanceof` lets channels created against
+* one copy of the class be recognised by a mux from another.
+* @internal
+*/
+const STREAM_CHANNEL_BRAND = Symbol.for("langgraph.stream_channel");
+/**
+* A projection channel for {@link StreamTransformer}s.
+*
+* Implements `AsyncIterable<T>` so it can be iterated directly by
+* in-process consumers via `run.extensions.<key>`. Channels created with
+* {@link StreamChannel.remote} or `new StreamChannel(name)` are also
+* auto-forwarded to remote clients.
+*
+* @typeParam T - The type of items pushed into the channel.
+*/
+var StreamChannel = class StreamChannel {
+	/** @internal Brand used by {@link StreamChannel.isInstance}. */
+	[STREAM_CHANNEL_BRAND] = true;
+	/** Protocol channel name used for auto-forwarded events, if remote. */
+	channelName;
+	#items = [];
+	#waiters = [];
+	#done = false;
+	#error;
+	#onPush;
+	constructor(name) {
+		this.channelName = name;
+	}
+	/**
+	* Create an in-process-only channel.  Values remain available through
+	* `run.extensions.<key>` but are not forwarded to remote clients.
+	*/
+	static local() {
+		return new StreamChannel();
+	}
+	/**
+	* Create a channel whose pushes are forwarded to remote clients under
+	* the given protocol channel name.
+	*/
+	static remote(name) {
+		return new StreamChannel(name);
+	}
+	/**
+	* Brand-based type guard that recognises any {@link StreamChannel}
+	* instance, even ones originating from a different copy of this
+	* package. Prefer this over `instanceof StreamChannel` when code
+	* may observe channels that were constructed elsewhere.
+	*/
+	static isInstance(value) {
+		return typeof value === "object" && value !== null && STREAM_CHANNEL_BRAND in value && value[STREAM_CHANNEL_BRAND] === true;
+	}
+	/**
+	* Append an item to the channel.  If this is a remote channel wired to a
+	* mux, the item is also injected into the main protocol event stream under
+	* {@link channelName}.
+	*/
+	push(item) {
+		this.#items.push(item);
+		this.#wake();
+		this.#onPush?.(item);
+	}
+	/**
+	* Returns an async iterator starting at position {@link startAt}. Each call
+	* returns an independent cursor so multiple consumers can iterate the same
+	* channel concurrently.
+	*/
+	iterate(startAt = 0) {
+		let cursor = startAt;
+		return { next: async () => {
+			while (true) {
+				if (cursor < this.#items.length) return {
+					value: this.#items[cursor++],
+					done: false
+				};
+				if (this.#done) {
+					if (this.#error) throw this.#error;
+					return {
+						value: void 0,
+						done: true
+					};
+				}
+				await new Promise((resolve) => this.#waiters.push(resolve));
+			}
+		} };
+	}
+	/**
+	* Creates an {@link AsyncIterable} backed by this channel, starting from
+	* {@link startAt}.
+	*/
+	toAsyncIterable(startAt = 0) {
+		return { [Symbol.asyncIterator]: () => this.iterate(startAt) };
+	}
+	/**
+	* Creates a web {@link ReadableStream} that emits channel items as
+	* Server-Sent Events. Useful for returning a channel directly from
+	* `new Response(channel.toEventStream())`.
+	*/
+	toEventStream(options = {}) {
+		const encoder = new TextEncoder();
+		const iterator = this.iterate(options.startAt);
+		const event = options.event ?? this.channelName;
+		const serialize = options.serialize ?? ((item) => JSON.stringify(item) ?? "null");
+		return new ReadableStream({
+			async pull(controller) {
+				try {
+					const next = await iterator.next();
+					if (next.done) {
+						controller.close();
+						return;
+					}
+					const lines = [];
+					if (event != null) lines.push(`event: ${event}`);
+					for (const line of serialize(next.value).split(/\r\n|\r|\n/)) lines.push(`data: ${line}`);
+					controller.enqueue(encoder.encode(`${lines.join("\n")}\n\n`));
+				} catch (error) {
+					controller.error(error);
+				}
+			},
+			async cancel() {
+				await iterator.return?.();
+			}
+		});
+	}
+	/**
+	* Returns the item at the given zero-based index.
+	*
+	* @throws {RangeError} If the index is out of bounds.
+	*/
+	get(index) {
+		if (index < 0 || index >= this.#items.length) throw new RangeError(`StreamChannel index ${index} out of bounds (size=${this.#items.length})`);
+		return this.#items[index];
+	}
+	/** The number of items currently buffered in the channel. */
+	get size() {
+		return this.#items.length;
+	}
+	/** Whether the channel has been closed or failed. */
+	get done() {
+		return this.#done;
+	}
+	/** Mark the channel as complete after all buffered items are consumed. */
+	close() {
+		this.#done = true;
+		this.#wake();
+	}
+	/** Mark the channel as failed after all buffered items are consumed. */
+	fail(err) {
+		this.#error = err;
+		this.#done = true;
+		this.#wake();
+	}
+	/** @internal Called by the mux to wire auto-forwarding. */
+	_wire(fn) {
+		this.#onPush = fn;
+	}
+	/** @internal Called by the mux on normal completion. */
+	_close() {
+		this.close();
+	}
+	/** @internal Called by the mux on failure. */
+	_fail(err) {
+		this.fail(err);
+	}
+	[Symbol.asyncIterator]() {
+		return this.iterate();
+	}
+	#wake() {
+		const waiters = this.#waiters.splice(0);
+		for (const w of waiters) w();
+	}
+};
+/**
+* Type guard that tests whether a value is a {@link StreamChannel}.
+*
+* Uses a symbol brand rather than `instanceof` so channels built
+* against a different copy of this package (e.g. one bundled by the
+* `langchain` umbrella package) are still recognised.
+*/
+function isStreamChannel(value) {
+	return StreamChannel.isInstance(value);
+}
+//#endregion
+export { StreamChannel, isStreamChannel };
+
+//# sourceMappingURL=stream-channel.js.map

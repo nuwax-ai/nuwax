@@ -1,0 +1,399 @@
+import type * as http from 'node:http'
+import type * as http2 from 'node:http2'
+
+import type { ClientAddress, ErrorHandler, FetchHandler } from './fetch-handler.ts'
+import { createLazyRequestFactory } from './lazy-request.ts'
+
+// "Internal Server Error"
+const internalServerErrorBody = [
+  73, 110, 116, 101, 114, 110, 97, 108, 32, 83, 101, 114, 118, 101, 114, 32, 69, 114, 114, 111, 114,
+]
+
+/**
+ * Options for creating a Node.js request listener.
+ */
+export interface RequestListenerOptions {
+  /**
+   * Overrides the host portion of the incoming request URL. By default the request URL host is
+   * derived from the HTTP `Host` header.
+   *
+   * For example, if you have a `$HOST` environment variable that contains the hostname of your
+   * server, you can use it to set the host of all incoming request URLs like so:
+   *
+   * ```ts
+   * createRequestListener(handler, { host: process.env.HOST })
+   * ```
+   */
+  host?: string
+  /**
+   * An error handler that determines the response when the request handler throws an error. By
+   * default a 500 Internal Server Error response will be sent.
+   */
+  onError?: ErrorHandler
+  /**
+   * Overrides the protocol of the incoming request URL. By default the request URL protocol is
+   * derived from the connection protocol. So e.g. when serving over HTTPS (using
+   * `https.createServer()`), the request URL will begin with `https:`.
+   */
+  protocol?: string
+}
+
+/**
+ * Wraps a fetch handler in a Node.js request listener that can be used with:
+ *
+ * - [`http.createServer()`](https://nodejs.org/api/http.html#httpcreateserveroptions-requestlistener)
+ * - [`https.createServer()`](https://nodejs.org/api/https.html#httpscreateserveroptions-requestlistener)
+ * - [`http2.createServer()`](https://nodejs.org/api/http2.html#http2createserveroptions-onrequesthandler)
+ * - [`http2.createSecureServer()`](https://nodejs.org/api/http2.html#http2createsecureserveroptions-onrequesthandler)
+ *
+ * Example:
+ *
+ * ```ts
+ * import * as http from 'node:http';
+ * import { createRequestListener } from 'remix/node-fetch-server';
+ *
+ * async function handler(request) {
+ *   return new Response('Hello, world!');
+ * }
+ *
+ * let server = http.createServer(
+ *   createRequestListener(handler)
+ * );
+ *
+ * server.listen(3000);
+ * ```
+ *
+ * @param handler The fetch handler to use for processing incoming requests
+ * @param options Request listener options
+ * @returns A Node.js request listener function
+ */
+export function createRequestListener(
+  handler: FetchHandler,
+  options?: RequestListenerOptions,
+): http.RequestListener {
+  let onError = options?.onError ?? defaultErrorHandler
+  let createLazyRequest = createLazyRequestFactory(options, createRequest, createHeaders)
+
+  if (handler.length === 0) {
+    let handlerWithoutArgs = handler as () => Response | Promise<Response>
+
+    return async (_req, res) => {
+      let isResponseClosed = observeResponseClose(res)
+      let response: Response
+      try {
+        response = await handlerWithoutArgs()
+      } catch (error) {
+        response = await createErrorResponse(onError, error)
+      }
+
+      await sendResponseIfOpen(res, response, isResponseClosed)
+    }
+  }
+
+  if (handler.length === 1) {
+    let requestHandler = handler as (request: Request) => Response | Promise<Response>
+
+    return (req, res) => {
+      let isResponseClosed = observeResponseClose(res)
+      let request = createLazyRequest(req, res)
+
+      let response: Response | Promise<Response>
+      try {
+        response = requestHandler(request)
+      } catch (error) {
+        void sendErrorResponseForRequest(res, request, onError, error, isResponseClosed)
+        return
+      }
+
+      if (isPromiseLike(response)) {
+        void response.then(
+          (response) => {
+            void sendResponseForRequest(res, response, request, onError, isResponseClosed)
+          },
+          (error) => {
+            if (isRequestAbortError(request, error)) return
+            void sendErrorResponseForRequest(res, request, onError, error, isResponseClosed)
+          },
+        )
+      } else {
+        void sendResponseForRequest(res, response, request, onError, isResponseClosed)
+      }
+    }
+  }
+
+  return async (req, res) => {
+    let isResponseClosed = observeResponseClose(res)
+    let request = createLazyRequest(req, res)
+    let client = {
+      address: req.socket.remoteAddress!,
+      family: req.socket.remoteFamily! as ClientAddress['family'],
+      port: req.socket.remotePort!,
+    }
+
+    let response: Response
+    try {
+      response = await handler(request, client)
+    } catch (error) {
+      if (isRequestAbortError(request, error)) return
+      response = await createErrorResponse(onError, error)
+    }
+
+    await sendResponseForRequest(res, response, request, onError, isResponseClosed)
+  }
+}
+
+function observeResponseClose(res: http.ServerResponse | http2.Http2ServerResponse): () => boolean {
+  let responseClosed = false
+  res.once('close', () => {
+    responseClosed = true
+  })
+  return () => responseClosed || res.destroyed
+}
+
+async function sendResponseIfOpen(
+  res: http.ServerResponse | http2.Http2ServerResponse,
+  response: Response,
+  isResponseClosed: () => boolean,
+): Promise<void> {
+  if (isResponseClosed()) return
+  await sendResponse(res, response)
+}
+
+async function sendErrorResponseForRequest(
+  res: http.ServerResponse | http2.Http2ServerResponse,
+  request: Request,
+  onError: ErrorHandler,
+  error: unknown,
+  isResponseClosed: () => boolean,
+): Promise<void> {
+  let response = await createErrorResponse(onError, error)
+  if (isResponseClosed() || request.signal.aborted) return
+  await sendResponse(res, response)
+}
+
+async function sendResponseForRequest(
+  res: http.ServerResponse | http2.Http2ServerResponse,
+  response: Response,
+  request: Request,
+  onError: ErrorHandler,
+  isResponseClosed: () => boolean,
+): Promise<void> {
+  if (isResponseClosed() || request.signal.aborted) return
+  try {
+    await sendResponse(res, response)
+  } catch (error) {
+    if (isResponseClosed()) return
+    if (isRequestAbortError(request, error)) return
+    await sendErrorResponseForRequest(res, request, onError, error, isResponseClosed)
+  }
+}
+
+async function createErrorResponse(onError: ErrorHandler, error: unknown): Promise<Response> {
+  try {
+    return (await onError(error)) ?? internalServerError()
+  } catch (error) {
+    console.error(`There was an error in the error handler: ${error}`)
+    return internalServerError()
+  }
+}
+
+function defaultErrorHandler(error: unknown): Response {
+  console.error(error)
+  return internalServerError()
+}
+
+function internalServerError(): Response {
+  return new Response(new Uint8Array(internalServerErrorBody), {
+    status: 500,
+    headers: {
+      'Content-Type': 'text/plain',
+    },
+  })
+}
+
+function isPromiseLike<value>(value: value | PromiseLike<value>): value is PromiseLike<value> {
+  return typeof (value as { then?: unknown }).then === 'function'
+}
+
+function isRequestAbortError(request: Request, error: unknown): boolean {
+  return request.signal.aborted && error === request.signal.reason
+}
+
+/**
+ * Options for creating a `Request` from a Node.js incoming message.
+ */
+export type RequestOptions = Omit<RequestListenerOptions, 'onError'>
+
+/**
+ * Creates a [`Request`](https://developer.mozilla.org/en-US/docs/Web/API/Request) object from
+ *
+ * - a [`http.IncomingMessage`](https://nodejs.org/api/http.html#class-httpincomingmessage)/[`http.ServerResponse`](https://nodejs.org/api/http.html#class-httpserverresponse) pair
+ * - a [`http2.Http2ServerRequest`](https://nodejs.org/api/http2.html#class-http2http2serverrequest)/[`http2.Http2ServerResponse`](https://nodejs.org/api/http2.html#class-http2http2serverresponse) pair
+ *
+ * @param req The incoming request object
+ * @param res The server response object
+ * @param options Options for creating the request
+ * @returns A `Request` object
+ */
+export function createRequest(
+  req: http.IncomingMessage | http2.Http2ServerRequest,
+  res: http.ServerResponse | http2.Http2ServerResponse,
+  options?: RequestOptions,
+): Request {
+  let controller: AbortController | null = new AbortController()
+
+  // Abort once we can no longer write a response if we have
+  // not yet sent a response (i.e., `close` without `finish`)
+  // `finish` -> done rendering the response
+  // `close` -> response can no longer be written to
+  res.once('close', () => controller?.abort())
+  res.once('finish', () => (controller = null))
+
+  let method = req.method ?? 'GET'
+  let headers = createHeaders(req)
+
+  let protocol =
+    options?.protocol ?? ('encrypted' in req.socket && req.socket.encrypted ? 'https:' : 'http:')
+  let host = options?.host ?? headers.get('Host') ?? req.headers[':authority'] ?? 'localhost'
+  let url = `${protocol}//${host}${req.url}`
+
+  let init: RequestInit = { method, headers, signal: controller.signal }
+
+  if (method !== 'GET' && method !== 'HEAD') {
+    init.body = new ReadableStream({
+      start(controller) {
+        req.on('data', (chunk) => {
+          controller.enqueue(new Uint8Array(chunk.buffer, chunk.byteOffset, chunk.byteLength))
+        })
+        req.on('end', () => {
+          controller.close()
+        })
+      },
+    })
+
+    // init.duplex = 'half' must be set when body is a ReadableStream, and Node follows the spec.
+    // However, this property is not defined in the TypeScript types for RequestInit, so we have
+    // to cast it here in order to set it without a type error.
+    // See https://fetch.spec.whatwg.org/#dom-requestinit-duplex
+    ;(init as { duplex: 'half' }).duplex = 'half'
+  }
+
+  return new Request(url, init)
+}
+
+/**
+ * Creates a [`Headers`](https://developer.mozilla.org/en-US/docs/Web/API/Headers) object from the headers in a Node.js
+ * [`http.IncomingMessage`](https://nodejs.org/api/http.html#class-httpincomingmessage)/[`http2.Http2ServerRequest`](https://nodejs.org/api/http2.html#class-http2http2serverrequest).
+ *
+ * @param req The incoming request object
+ * @returns A `Headers` object
+ */
+export function createHeaders(req: http.IncomingMessage | http2.Http2ServerRequest): Headers {
+  let headers: Record<string, string> = {}
+
+  for (let [key, value] of Object.entries(req.headers)) {
+    if (key.startsWith(':') || value == null) continue
+    headers[key] = Array.isArray(value) ? value.join(', ') : value
+  }
+
+  return new Headers(headers)
+}
+
+/**
+ * Sends a [`Response`](https://developer.mozilla.org/en-US/docs/Web/API/Response) to the client using a Node.js
+ * [`http.ServerResponse`](https://nodejs.org/api/http.html#class-httpserverresponse)/[`http2.Http2ServerResponse`](https://nodejs.org/api/http2.html#class-http2http2serverresponse)
+ * object.
+ *
+ * @param res The server response object
+ * @param response The response to send
+ */
+export async function sendResponse(
+  res: http.ServerResponse | http2.Http2ServerResponse,
+  response: Response,
+): Promise<void> {
+  // Iterate over response.headers so we are sure to send multiple Set-Cookie headers correctly.
+  // These would incorrectly be merged into a single header if we tried to use
+  // `Object.fromEntries(response.headers.entries())`.
+  let headers: Record<string, string | string[]> = {}
+  for (let [key, value] of response.headers) {
+    if (key in headers) {
+      if (Array.isArray(headers[key])) {
+        headers[key].push(value)
+      } else {
+        headers[key] = [headers[key] as string, value]
+      }
+    } else {
+      headers[key] = value
+    }
+  }
+
+  if (res.req.httpVersionMajor === 1) {
+    ;(res as http.ServerResponse).writeHead(response.status, response.statusText, headers)
+  } else {
+    // HTTP/2 doesn't support status messages
+    // https://datatracker.ietf.org/doc/html/rfc7540#section-8.1.2.4
+    //
+    // HTTP2 `res.writeHead()` will safely ignore the statusText parameter, but
+    // it will emit a warning which we want to avoid.
+    // https://nodejs.org/docs/latest-v22.x/api/http2.html#responsewriteheadstatuscode-statusmessage-headers
+    ;(res as http2.Http2ServerResponse).writeHead(response.status, headers)
+  }
+
+  if (response.body != null && res.req.method !== 'HEAD') {
+    let reader = response.body.getReader()
+    let responseClosed = false
+
+    function cancelBody() {
+      responseClosed = true
+      void reader.cancel().catch(() => undefined)
+    }
+
+    res.once('close', cancelBody)
+
+    try {
+      while (!responseClosed) {
+        let result = await reader.read()
+        if (result.done) break
+
+        // @ts-expect-error - Node typings for http2 require a 2nd parameter to write but it's optional
+        if (res.write(result.value) === false) {
+          await waitForDrainOrClose(res)
+          if (responseClosed || res.destroyed) return
+        }
+      }
+    } finally {
+      res.removeListener('close', cancelBody)
+      reader.releaseLock()
+    }
+
+    if (responseClosed) return
+  }
+
+  res.end()
+}
+
+async function waitForDrainOrClose(
+  res: http.ServerResponse | http2.Http2ServerResponse,
+): Promise<void> {
+  if (res.destroyed) return
+
+  await new Promise<void>((resolve) => {
+    function cleanup() {
+      res.removeListener('close', onClose)
+      res.removeListener('drain', onDrain)
+    }
+
+    function onClose() {
+      cleanup()
+      resolve()
+    }
+
+    function onDrain() {
+      cleanup()
+      resolve()
+    }
+
+    res.once('close', onClose)
+    res.once('drain', onDrain)
+  })
+}

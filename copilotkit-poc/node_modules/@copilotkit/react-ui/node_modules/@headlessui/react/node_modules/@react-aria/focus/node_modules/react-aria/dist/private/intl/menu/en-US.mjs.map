@@ -1,0 +1,1 @@
+{"mappings":";AAAA,4BAAiB;IAAG,oBAAoB,CAAC,gDAAgD,CAAC;AAC1F","sources":["packages/react-aria/intl/menu/en-US.json"],"sourcesContent":["{\n  \"longPressMessage\": \"Long press or press Alt + ArrowDown to open menu\"\n}\n"],"names":[],"version":3,"file":"en-US.mjs.map"}

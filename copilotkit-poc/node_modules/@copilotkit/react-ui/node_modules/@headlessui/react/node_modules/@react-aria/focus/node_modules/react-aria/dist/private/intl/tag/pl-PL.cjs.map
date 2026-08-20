@@ -1,0 +1,1 @@
+{"mappings":"AAAA,iBAAiB;IAAG,qBAAqB,CAAC,UAAI,CAAC;IAC7C,qBAAqB,CAAC,2DAAmC,CAAC;AAC5D","sources":["packages/react-aria/intl/tag/pl-PL.json"],"sourcesContent":["{\n  \"removeButtonLabel\": \"Usuń\",\n  \"removeDescription\": \"Naciśnij Usuń, aby usunąć znacznik.\"\n}\n"],"names":[],"version":3,"file":"pl-PL.cjs.map"}

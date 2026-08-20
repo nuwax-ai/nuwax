@@ -1,0 +1,1 @@
+{"mappings":"","sources":["packages/react-stately/exports/private/flags/flags.ts"],"sourcesContent":["export {\n  enableShadowDOM,\n  shadowDOM,\n  enableTableNestedRows,\n  tableNestedRows\n} from '../../../src/flags/flags';\n"],"names":[],"version":3,"file":"flags.cjs.map"}

@@ -1,0 +1,1 @@
+{"mappings":"AAAA,iBAAiB;IAAG,mBAAmB,CAAC,UAAU,CAAC;AACnD","sources":["packages/react-aria/intl/autocomplete/fi-FI.json"],"sourcesContent":["{\n  \"collectionLabel\": \"Ehdotukset\"\n}\n"],"names":[],"version":3,"file":"fi-FI.cjs.map"}

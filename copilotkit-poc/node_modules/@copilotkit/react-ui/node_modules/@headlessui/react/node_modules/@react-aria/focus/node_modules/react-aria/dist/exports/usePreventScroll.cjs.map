@@ -1,0 +1,1 @@
+{"mappings":"","sources":["packages/react-aria/exports/usePreventScroll.ts"],"sourcesContent":["export {usePreventScroll} from '../src/overlays/usePreventScroll';\n"],"names":[],"version":3,"file":"usePreventScroll.cjs.map"}

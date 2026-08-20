@@ -1,0 +1,1 @@
+{"mappings":"","sources":["packages/react-aria/exports/private/grid/useGridSelectionAnnouncement.ts"],"sourcesContent":["export {\n  useGridSelectionAnnouncement,\n  type GridSelectionAnnouncementProps\n} from '../../../src/grid/useGridSelectionAnnouncement';\n"],"names":[],"version":3,"file":"useGridSelectionAnnouncement.js.map"}

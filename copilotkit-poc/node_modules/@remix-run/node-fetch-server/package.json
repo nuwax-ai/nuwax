@@ -1,0 +1,53 @@
+{
+  "name": "@remix-run/node-fetch-server",
+  "version": "0.13.3",
+  "description": "Build servers for Node.js using the web fetch API",
+  "author": "Michael Jackson <mjijackson@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/remix-run/remix.git",
+    "directory": "packages/node-fetch-server"
+  },
+  "homepage": "https://github.com/remix-run/remix/tree/main/packages/node-fetch-server#readme",
+  "license": "MIT",
+  "files": [
+    "LICENSE",
+    "README.md",
+    "dist",
+    "src",
+    "!src/**/*.test.ts"
+  ],
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./test": {
+      "types": "./dist/test.d.ts",
+      "default": "./dist/test.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "devDependencies": {
+    "@types/node": "^24.6.0",
+    "@typescript/native-preview": "7.0.0-dev.20251125.1"
+  },
+  "keywords": [
+    "http",
+    "server",
+    "request",
+    "response",
+    "fetch",
+    "web"
+  ],
+  "scripts": {
+    "bench": "bash ./bench/runner.sh",
+    "bench:typecheck": "tsgo --noEmit -p ./bench/tsconfig.json",
+    "bench:update-readme": "node ./bench/update-readme.ts",
+    "build": "tsgo -p tsconfig.build.json",
+    "clean": "git clean -fdX",
+    "test": "node --disable-warning=ExperimentalWarning --test './src/**/*.test.ts'",
+    "typecheck": "tsgo --noEmit"
+  }
+}

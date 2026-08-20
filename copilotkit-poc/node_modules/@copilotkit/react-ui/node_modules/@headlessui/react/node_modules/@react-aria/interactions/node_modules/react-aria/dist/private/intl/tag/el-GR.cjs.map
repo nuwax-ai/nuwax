@@ -1,0 +1,1 @@
+{"mappings":"AAAA,iBAAiB;IAAG,qBAAqB,CAAC,+DAAS,CAAC;IAClD,qBAAqB,CAAC,sSAAgD,CAAC;AACzE","sources":["packages/react-aria/intl/tag/el-GR.json"],"sourcesContent":["{\n  \"removeButtonLabel\": \"Κατάργηση\",\n  \"removeDescription\": \"Πατήστε Διαγραφή για να καταργήσετε την ετικέτα.\"\n}\n"],"names":[],"version":3,"file":"el-GR.cjs.map"}

@@ -1,0 +1,1 @@
+{"mappings":";AAAA,4BAAiB;IAAG,YAAY,CAAC,gBAAE,CAAC;IAClC,UAAU,CAAC,gBAAE,CAAC;AAChB","sources":["packages/react-aria/intl/tree/zh-TW.json"],"sourcesContent":["{\n  \"collapse\": \"收合\",\n  \"expand\": \"展開\"\n}\n"],"names":[],"version":3,"file":"zh-TW.mjs.map"}
