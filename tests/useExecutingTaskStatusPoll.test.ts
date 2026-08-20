@@ -2,15 +2,17 @@
  * 会话流式/执行态判定 helper 测试
  */
 import {
-  hasActiveStreamingInMessages,
-  hasExecutingProcessingInMessages,
-  isSessionStreamBusy,
   isTaskExecuting,
   selectQueueGate,
   selectSessionActive,
   shouldShowSessionSuggest,
   shouldShowTaskExecutingWait,
 } from '@/features/conversation/domain/runtimeSelectors';
+import {
+  hasActiveStreamingInMessages,
+  hasExecutingProcessingInMessages,
+  isSessionStreamBusy,
+} from '@/hooks/useExecutingTaskStatusPoll';
 import { TaskStatus } from '@/types/enums/agent';
 import { MessageStatusEnum, ProcessingEnum } from '@/types/enums/common';
 import { describe, expect, it } from 'vitest';

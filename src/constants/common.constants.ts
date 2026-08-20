@@ -8,10 +8,16 @@ export const UPLOAD_FILE_ACTION = `${process.env.BASE_URL}/api/file/upload`;
 // 语音转文字（STT）接口地址：multipart/form-data 上传音频，返回识别文本
 export const AUDIO_STT_URL = `${process.env.BASE_URL}/api/audio/stt`;
 
+// 开发验收页必须走同源 Umi mock；其它页面仍使用配置的后端地址。
+const conversationApiOrigin =
+  typeof window !== 'undefined' && window.location.pathname === '/mock-chat'
+    ? ''
+    : process.env.BASE_URL;
+
 // 会话 Connection地址
-export const CONVERSATION_CONNECTION_URL = `${process.env.BASE_URL}/api/agent/conversation/chat`;
+export const CONVERSATION_CONNECTION_URL = `${conversationApiOrigin}/api/agent/conversation/chat`;
 // 会话流式恢复(sub)地址：刷新页面/新开标签时，订阅 EXECUTING 会话的输出流（载荷结构与 chat 一致）
-export const CONVERSATION_CHAT_SUB_URL = `${process.env.BASE_URL}/api/agent/conversation/chat/sub`;
+export const CONVERSATION_CHAT_SUB_URL = `${conversationApiOrigin}/api/agent/conversation/chat/sub`;
 // 临时会话 Connection地址
 export const TEMP_CONVERSATION_CONNECTION_URL = `${process.env.BASE_URL}/api/temp/chat/completions`;
 

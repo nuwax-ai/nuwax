@@ -154,6 +154,9 @@ const errorHandler = (error: any, opts: any) => {
       switch (code) {
         // 用户未登录，跳转到登录页
         case USER_NO_LOGIN:
+          if (window.location.pathname === '/mock-chat') {
+            return;
+          }
           localStorage.clear();
           clearLoginStatusCache();
           redirectToLogin(-1);
@@ -161,6 +164,9 @@ const errorHandler = (error: any, opts: any) => {
 
         // 重定向到登录页
         case REDIRECT_LOGIN:
+          if (window.location.pathname === '/mock-chat') {
+            return;
+          }
           clearLoginStatusCache();
           window.location.href = errorMessage;
           break;
@@ -234,7 +240,8 @@ const errorHandler = (error: any, opts: any) => {
 const requestInterceptors = [
   // 添加基础URL
   (url: string, options: any) => {
-    const newUrl = process.env.BASE_URL + url;
+    // 调用方显式传入绝对地址时保持原样；Mock 页用它绕过远端 BASE_URL。
+    const newUrl = /^https?:\/\//.test(url) ? url : process.env.BASE_URL + url;
     return { url: newUrl, options };
   },
 

@@ -6,6 +6,9 @@ import { EN_US } from '../locales/i18n/en-US';
  * 因此路由名称统一从本地静态词典读取，缺失时回退为 key 本身。
  */
 const getRouteLabel = (key: string): string => EN_US[key] || key;
+const isDevelopment =
+  process.env.UMI_ENV === 'development' ||
+  process.env.NODE_ENV === 'development';
 
 const routes = [
   {
@@ -619,6 +622,15 @@ const routes = [
     component: '@/pages/403',
     layout: false,
   },
+  ...(isDevelopment
+    ? [
+        {
+          path: '/mock-chat',
+          component: '@/pages/MockChat',
+          layout: false,
+        },
+      ]
+    : []),
   {
     path: '/*',
     component: '@/pages/404',

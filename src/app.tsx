@@ -37,8 +37,17 @@ export async function getInitialState(): Promise<InitialStateType> {
     await initI18n();
 
     // 如果不是登录页面，执行获取用户信息和菜单数据
-    const publicPaths = ['/login', '/examples/agent-intervention-demo'];
-    if (!publicPaths.some((path) => history.location.pathname.includes(path))) {
+    const publicPaths = [
+      '/login',
+      '/examples/agent-intervention-demo',
+      // 路由本身仅在 development 注册，避免 Mock 验收页触发用户信息请求后跳登录。
+      '/mock-chat',
+    ];
+    const initialPathname =
+      typeof window === 'undefined'
+        ? history.location.pathname
+        : window.location.pathname;
+    if (!publicPaths.some((path) => initialPathname.includes(path))) {
       const userInfo = await UserService.getUserInfo();
       await syncLangFromUserInfo(userInfo);
 
