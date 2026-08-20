@@ -208,6 +208,14 @@ useResumeStreamHandlers({
   - `conversationErrorTerminalLogger` = `'[Conv:Status]'`
   - `conversationTerminalSweepLogger` = `'[Conv:Terminal]'`（定义在 finalizer hook 内）
 
+### 2.4a `src/hooks/useConversationActiveState.ts`（PR 合入 `381374062`）
+
+状态机日志增强（纯观测，不动行为）：
+
+- 四条日志（active-change / active-blocked / active-rising-blocked-by-ack / awaiting-change）补 `model` 字段——区分主会话与预览 Tab 两个 model
+- `active-rising-blocked-by-ack` 节流：每秒至多 1 条（原以流式节奏 ~150-250ms 刷屏）
+- 拦截日志补末条现场：`tailId` / `tailStatus` / `listLength`（自证什么状态在被反复写回 busy）
+
 ### 2.5 `src/pages/Chat/index.tsx` + `useConversationAgentChatSession.ts`
 
 轮询终态回调改走完整清算：
@@ -275,6 +283,7 @@ isSessionActive = isConversationActive           ← ① 连接生命周期
 | `[Conv:Status]` | `applyTerminalTaskStatus {prev, next}` | 状态迁移 |
 | `[Conv:Status]` | `sse-on-close {hasResolvedTerminalStatus}` | onClose 时机 |
 | `[Conv:Status]` | `sse-on-error apply FAILED` | 连接级 onError |
+| `[Conv:Status]` | `active-change` / `active-blocked` / `active-rising-blocked-by-ack` / `awaiting-change` | 状态机翻转（含 model 标识、末条现场 tailId/tailStatus、节流 1 条/s） |
 | `[Conv:Resume]` | `cancel polling` / `resume` / `discard stale` | 轮询/恢复生命周期 |
 
 ---
