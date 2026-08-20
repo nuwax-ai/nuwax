@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 import {
   appendOutgoingConversationMessages,
   areMessageListsEquivalent,
+  findCurrentRoundStart,
   isOptimisticMessageId,
   needsTerminalHistoryReload,
   preserveOptimisticMessageTail,
@@ -747,6 +748,50 @@ describe('preserveOptimisticMessageTail', () => {
       status: MessageStatusEnum.Complete,
       thinkingFinished: true,
     });
+  });
+});
+
+describe('findCurrentRoundStart 轮次边界', () => {
+  it('空列表/undefined 返回 0', () => {
+    expect(findCurrentRoundStart([])).toBe(0);
+    expect(findCurrentRoundStart(undefined)).toBe(0);
+    expect(findCurrentRoundStart(null)).toBe(0);
+  });
+
+  it('无 USER 消息时返回 0（全列表视为当前轮）', () => {
+    const list = [
+      { role: AssistantRoleEnum.ASSISTANT, text: 'a' },
+      { role: AssistantRoleEnum.ASSISTANT, text: 'b' },
+    ] as MessageInfo[];
+    expect(findCurrentRoundStart(list)).toBe(0);
+  });
+
+  it('最后一条 USER 之后有消息 → 返回 USER 下一条索引', () => {
+    const list = [
+      { role: AssistantRoleEnum.USER, text: '问' },
+      { role: AssistantRoleEnum.ASSISTANT, text: '步1' },
+      { role: AssistantRoleEnum.ASSISTANT, text: '步2' },
+    ] as MessageInfo[];
+    expect(findCurrentRoundStart(list)).toBe(1);
+  });
+
+  it('多轮对话 → 返回最后一条 USER 的下一条（不是第一条）', () => {
+    const list = [
+      { role: AssistantRoleEnum.USER, text: '第1轮' },
+      { role: AssistantRoleEnum.ASSISTANT, text: '回答1' },
+      { role: AssistantRoleEnum.USER, text: '第2轮' },
+      { role: AssistantRoleEnum.ASSISTANT, text: '步1' },
+      { role: AssistantRoleEnum.ASSISTANT, text: '步2' },
+    ] as MessageInfo[];
+    expect(findCurrentRoundStart(list)).toBe(3);
+  });
+
+  it('USER 是末条（刚发送无回复）→ 返回列表长度', () => {
+    const list = [
+      { role: AssistantRoleEnum.ASSISTANT, text: '前轮' },
+      { role: AssistantRoleEnum.USER, text: '新消息' },
+    ] as MessageInfo[];
+    expect(findCurrentRoundStart(list)).toBe(2);
   });
 });
 
