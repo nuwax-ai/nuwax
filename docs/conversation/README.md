@@ -46,6 +46,7 @@ console 过滤 `[Conv:` 即可拉出全部会话日志（均 always-on + ISO 时
 
 | 文档 | 内容 |
 | --- | --- |
+| [terminal-convergence-fix-summary.md](./terminal-convergence-fix-summary.md) | **修复代码实现总结**：按文件组织的改动清单 + 按钮架构 + 验收日志 |
 | [conversation-complete-button-stuck-analysis.md](./conversation-complete-button-stuck-analysis.md) | 本轮排查主文档：HAR 实据 → 时间线 → 代码映射 → 修复方案 → 架构决策 → 验证表 |
 | [conversation-terminal-finalizer-fix.md](./conversation-terminal-finalizer-fix.md) | 终态统一收敛修复说明（P0/占位收尾/网络错误对齐） |
 | [conversation-error-taskstatus-stuck-fix.md](./conversation-error-taskstatus-stuck-fix.md) | 错误终态固化修复（早期） |
