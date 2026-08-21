@@ -25,6 +25,11 @@ let conversationMessages: Array<Record<string, unknown>> = [];
 let emittedEvents: MockSseEvent[] = [];
 let pollCount = 0;
 let speed = 1;
+/** 同一场景的 chat 连接轮次（POST /scenario 重置）。runtime 线审批/问答回执
+ * 带 resume-send——会再开 chat 连接；生产中服务端继续剩余输出，不会整轮重演。 */
+let chatConnectionRound = 0;
+/** 在飞的回放连接数（keep-open 挂起的不归还）——status 据此报告 replaySettled */
+let replayPendingCount = 0;
 
 const currentScenario = (): MockScenario =>
   getScenario(currentScenarioId) || getScenario('NORMAL_SINGLE')!;
@@ -54,15 +59,61 @@ const openSse = (res: any) => {
   res.flushHeaders?.();
 };
 
+/**
+ * 干预卡事件的稳定标识（权限审批 / ask-question / OpenUI）。
+ * 生产语义：审批/问答回执后 agent 继续剩余输出，不会对同一 toolCallId 再次
+ * 发起审批。runtime 线审批后 resume-send 会再开 chat 连接，若重放全量脚本
+ * 会让干预卡无限重现——跨连接按标识去重（POST /scenario 重置 emittedEvents
+ * 时天然清空，新场景从头开始）。
+ * 注意：REQUEST_PERMISSION 事件 status 为 FINISHED（事件即回执形态），标识
+ * 在 data.executeId / result.input.toolCallId；ask/openui 卡为 EXECUTING+name。
+ */
+const interventionEventId = (event: MockSseEvent): string | null => {
+  if (event.eventType !== 'PROCESSING' || !event.data) return null;
+  const data = event.data;
+  if (data.subEventType === 'REQUEST_PERMISSION') {
+    const result = data.result as
+      | { input?: { toolCallId?: unknown } }
+      | undefined;
+    const id = data.executeId ?? result?.input?.toolCallId;
+    return id !== null && id !== undefined && String(id) ? String(id) : null;
+  }
+  const name = String(data.name || '');
+  if (
+    data.status === 'EXECUTING' &&
+    (name.includes('ask_question') || name.includes('render_openui'))
+  ) {
+    return data.toolCallId !== null &&
+      data.toolCallId !== undefined &&
+      String(data.toolCallId)
+      ? String(data.toolCallId)
+      : null;
+  }
+  return null;
+};
+
 const replay = (
   res: any,
   scenario: MockScenario,
   options: { sub?: boolean } = {},
 ) => {
+  // 续连（runtime 审批回执 resume-send 等）：第 2 轮起只回放终态事件，
+  // 模拟「服务端无剩余输出、直接终态」，阻断无状态的整轮重演。
+  // keep-open 场景的续连不打断悬挂任务——直接挂起（对齐「任务仍在执行」）
+  const isContinuation = !options.sub && chatConnectionRound > 1;
+  if (isContinuation && scenario.transport === 'keep-open') {
+    replayPendingCount += 1;
+    res.on('close', () => {
+      replayPendingCount = Math.max(0, replayPendingCount - 1);
+    });
+    return;
+  }
   let index = 0;
   let cancelled = false;
+  replayPendingCount += 1;
   res.on('close', () => {
     if (!res.writableEnded) cancelled = true;
+    replayPendingCount = Math.max(0, replayPendingCount - 1);
   });
 
   const next = () => {
@@ -90,9 +141,22 @@ const replay = (
     }
 
     const event = scenario.events[index++];
+    if (isContinuation && event.eventType !== 'FINAL_RESULT') {
+      next();
+      return;
+    }
     const baseDelay = event.delayMs ?? (options.sub ? 50 : 100);
     setTimeout(() => {
       if (cancelled) return;
+      // 干预卡事件已发出过（跨连接去重）：跳过继续回放剩余输出
+      const eventId = interventionEventId(event);
+      if (
+        eventId &&
+        emittedEvents.some((prev) => interventionEventId(prev) === eventId)
+      ) {
+        next();
+        return;
+      }
       writeEvent(res, event);
       next();
     }, Math.max(0, Math.round(baseDelay * speed)));
@@ -120,6 +184,8 @@ export default {
     conversationMessages = [...(scenario.initialMessages || [])];
     emittedEvents = [];
     pollCount = 0;
+    chatConnectionRound = 0;
+    replayPendingCount = 0;
     speed = Number(req.body?.speed) || 1;
     res.json(S({ scenario: currentScenarioId, speed }));
   },
@@ -138,6 +204,8 @@ export default {
           hasFinalResult: scenario.events.some(
             (event) => event.eventType === 'FINAL_RESULT',
           ),
+          // 真实时长场景（60~154s）：E2E 仅在 E2E_REAL_TIMING=1 时纳入矩阵
+          realTiming: Boolean(scenario.realTiming),
         })),
       ),
     );
@@ -150,6 +218,13 @@ export default {
         taskStatus: currentTaskStatus,
         pollCount,
         emittedEvents,
+        // 事件脚本总数：E2E 据此判定「回放完毕」，防止终态事件后仍有
+        // 未到达事件（如 LATE_CHUNK_SLOW 的迟到分片还在心跳路上）时提前收尾
+        scriptLength: currentScenario().events.length,
+        // 全部回放连接已落定（无在飞/悬挂）：终态场景的回放完毕信号——
+        // 续连轮只发 FINAL_RESULT 时 emittedCount 永远到不了 scriptLength，
+        // 以此为准而非计数比较
+        replaySettled: replayPendingCount === 0,
       }),
     );
   },
@@ -157,6 +232,7 @@ export default {
   'POST /api/agent/conversation/chat': (req: any, res: any) => {
     const scenario = currentScenario();
     openSse(res);
+    chatConnectionRound += 1;
     currentTaskStatus = 'EXECUTING';
     conversationMessages.push({
       id: `mock-user-${Date.now()}`,
@@ -200,6 +276,21 @@ export default {
 
   'POST /api/agent/conversation/chat/suggest': (_req: any, res: any) =>
     res.json(S([])),
+
+  // 上传/STT（M3）：multipart 正文不解析——mock 页只需接口形状与同源可达，
+  // 固定返回即可覆盖「附件上传回填 url/name」与「语音转写回填文本」链路
+  'POST /api/file/upload': (req: any, res: any) =>
+    res.json(
+      S({
+        url: 'https://mock.localhost/files/mock-upload.bin',
+        key: 'mock-upload-key',
+        fileName: 'mock-upload.bin',
+        mimeType: req.headers?.['content-type'] || 'application/octet-stream',
+      }),
+    ),
+
+  'POST /api/audio/stt': (_req: any, res: any) =>
+    res.json(S({ text: '这是语音转写 Mock 文本' })),
 
   'POST /api/agent/conversation/message/list': (_req: any, res: any) =>
     res.json(S([])),

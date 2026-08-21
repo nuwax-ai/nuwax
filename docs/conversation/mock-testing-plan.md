@@ -354,7 +354,7 @@ npm run dev  # 打开 /mock-chat → 选场景 → 播放 → 看断言
 
 Umi mock 只 watch `mock/` 目录：**修改 `mock/conversationScenarios.ts` 后必须 touch `mock/conversationMock.ts`（或重启 dev server）**，否则新场景报 `MOCK_SCENARIO_NOT_FOUND`（HTTP 400），验收页会给出该提示。
 
-### 32 场景清单
+### 32+2 场景清单
 
 | 类别 | 场景 |
 | --- | --- |
@@ -364,8 +364,9 @@ Umi mock 只 watch `mock/` 目录：**修改 `mock/conversationScenarios.ts` 后
 | 渲染全景 | RENDER_SHOWCASE（Plan 推进 + 11 种 process type + diff + OpenUI inline + group/conversation/task-result） |
 | 恢复/轮询 | SESSION_RESUME（EXECUTING 半途快照 + sub 续接 + 轮询同步）、IDLE_POLL_TERMINAL、EMPTY_CONVERSATION、DEEP_HISTORY |
 | 干预 | PERMISSION_REQUEST/DENY/TIMEOUT、ASK_QUESTION/UNANSWERED、OPENUI_RENDER/INTERACTIVE、INTERVENTION_MIXED、ASK_DUPLICATE（真实载荷双卡）、INTERVENTION_STACK（四选项/编辑类/堆叠） |
-| 队列/停止 | USER_CANCEL、TASK_CONFLICT、MESSAGE_QUEUE_HOLDING |
+| 队列/停止 | USER_CANCEL、TASK_CONFLICT、MESSAGE_QUEUE_HOLDING（交互型专属） |
+| 真实时长（E2E_REAL_TIMING=1） | HEARTBEAT_REAL（80s 心跳窗看门狗）、LATE_CHUNK_SLOW（154s 迟到分片 + 心跳维活，对齐 1654471 事故） |
 
 ### 后续优化
 
-见 [mock-optimization-plan.md](./mock-optimization-plan.md)（v3：M0 双轨、M2 断言型 E2E 已落地，M1 侵入单点化完成，M3 交互型 E2E 进行中）。
+见 [mock-optimization-plan.md](./mock-optimization-plan.md)（v3：M0 双轨、M1 侵入单点化、M2 断言型 E2E、M3 交互型 E2E + 真实时长子集 + 上传/STT 同源均已落地；CI 接入待独立评估）。

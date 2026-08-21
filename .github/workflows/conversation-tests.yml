@@ -77,3 +77,14 @@ jobs:
 
       - name: Run conversation contract tests
         run: npm run test:conversation
+
+# ── mock 场景 E2E 接入说明（M3，独立决策点）──────────────────────────────
+# e2e:mock-chat 无登录态依赖，进 CI 仅需 dev server（~2min 首编）：
+#   1. Install 后台起 dev server：nohup npm run dev >/tmp/dev.log 2>&1 &
+#      并轮询 curl http://localhost:3000/api/mock/conversation/scenarios 至就绪
+#   2. 安装 ego-browser（npm i -g ego-browser，需图形环境或 headless 方案）
+#   3. npm run e2e:mock-chat（exit 0/1 可直接作门禁；断言型 33 场景 × 双轨 +
+#      交互型 5 用例 × 双轨，日常约 8~12min；E2E_REAL_TIMING=1 真实时长子集
+#      仅发版前本地跑，勿进日常 CI）
+# gitee Go / Jenkins 照抄这三步即可（scripts/e2e/ego-run.mjs 负责 env 桥接）。
+# 待 mock E2E 稳定运行若干轮后再评估正式接入本 workflow。

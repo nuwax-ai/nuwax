@@ -1,23 +1,29 @@
 /**
- * /mock-chat 断言型全场景回归套件（ego-browser 驱动，无登录态依赖）
+ * /mock-chat 断言型 + 交互型全场景回归套件（ego-browser 驱动，无登录态依赖）
  *
  * 用法：
  *   1. 启动 dev server（npm run dev，默认 localhost:3000）
  *   2. npm run e2e:mock-chat
- *      等价于 ego-browser nodejs < scripts/e2e/mock-chat-acceptance.mjs
+ *      等价于 ego-browser nodejs < scripts/e2e/mock-chat-acceptance.mjs（经
+ *      ego-run.mjs 桥接 env）
  *
- * 过滤变量（经 scripts/e2e/ego-run.mjs 桥接——ego-browser 沙箱不透传 env）：
+ * 过滤/门控变量（经 scripts/e2e/ego-run.mjs 桥接——ego-browser 沙箱不透传 env）：
  *   E2E_SCENARIOS=NORMAL_SINGLE,SESSION_RESUME   只跑指定场景（逗号分隔）
  *   E2E_LINE=legacy|runtime|both                  只跑指定轨（默认 both）
  *   E2E_TIMEOUT=30                                单场景收尾超时秒数（默认 30）
  *   E2E_SPEED=0.05                                场景回放速度（默认 0.05 瞬间档）
+ *   E2E_REAL_TIMING=1                             追加真实时长子集（60~154s/场景）
  *
- * 设计（docs/conversation/mock-optimization-plan.md M2）：
+ * 设计（docs/conversation/mock-optimization-plan.md M2/M3）：
  *   - 断言单源：页面算（window.__MOCK_CHAT_ASSERTIONS__），本脚本只读；
  *   - 单标签串行：mock server 的场景状态是模块级单例，并行多 tab 会互相覆盖；
  *   - 收尾门控：先确认「已开流」（emittedCount>0 且 messageCount>0）再判收，
- *     防止无 FINAL_RESULT 场景在开播前断言 t=0 全真的误收；
- *   - 非空转证明：全程未见活跃态（sawActive）即视为断言空转，判失败。
+ *     防止无 FINAL_RESULT 场景在开播前断言 t=0 全真的误收；终态场景额外等
+ *     emittedCount ≥ scriptLength（回放完毕），防迟到事件未发完提前收尾；
+ *   - 非空转证明：全程未见活跃态（sawActive）即视为断言空转，判失败；
+ *   - console 观测：收尾断言零 [Conv:Status] 级 console.error；
+ *   - 交互型（M3）：干预卡双击审批 / ask 填表提交 / 堆叠逐卡 / 队列面板，
+ *     交互等待窗靠 speed 放大（如 PERMISSION_REQUEST 用 speed=5 → 10s 窗）。
  */
 
 import { existsSync, readFileSync } from 'node:fs';
@@ -42,13 +48,10 @@ const SPEED = E2E.E2E_SPEED || '0.05'; // 瞬间档：压缩脚本内延迟
 const TIMEOUT_SEC = Number(E2E.E2E_TIMEOUT) || 30;
 /** 无终态场景的稳定窗口：事件/消息/断言快照持续不变视为悬挂收敛 */
 const STABLE_WINDOW_MS = 3000;
-/** M3 交互型场景：需要点击/填表/停止驱动，断言型矩阵不覆盖 */
-const M3_SCENARIOS = new Set(['MESSAGE_QUEUE_HOLDING']);
-/**
- * 已知真实行为差异（mock-optimization-plan.md 风险表）：
- * runtime resume 投影不清理快照 EXECUTING 残留，SESSION_RESUME 断言 4 在
- * runtime 轨为红。单独立项修复，期间标 KNOWN-FAIL 不计入退出码。
- */
+/** 真实时长场景（HEARTBEAT_REAL ~80s / LATE_CHUNK_SLOW ~154s）的收尾预算 */
+const REAL_TIMING_TIMEOUT_SEC = 360;
+/** 已知真实行为差异（mock-optimization-plan.md 风险表）：不算失败但醒目报告。
+ * interactive: true 仅匹配交互型用例（断言型快照层不受该缺口影响照常跑） */
 const KNOWN_ISSUES = [
   {
     scenario: 'SESSION_RESUME',
@@ -56,26 +59,78 @@ const KNOWN_ISSUES = [
     reason:
       'runtime 续接不清快照 EXECUTING（mock-optimization-plan.md 风险表，另行立项）',
   },
+  // runtime 轨干预/OpenUI 渲染缺口（M3 探针确证：事件全发、消息投影正常，
+  // 但 dockExists=false、OpenUI inline 无 DOM——干预事件未桥接
+  // AgentIntervention dock 数据源。R6 默认切换前的阻塞级修复项）
+  {
+    scenario: 'PERMISSION_REQUEST',
+    line: 'runtime',
+    interactive: true,
+    reason:
+      'runtime 轨干预 dock 未渲染（ask 模式审批卡不出，事件已到但 DOM 无卡）——runtime 干预桥接另行立项',
+  },
+  {
+    scenario: 'ASK_QUESTION',
+    line: 'runtime',
+    interactive: true,
+    reason: 'runtime 轨干预 dock 未渲染（同 PERMISSION_REQUEST 桥接缺口）',
+  },
+  {
+    scenario: 'INTERVENTION_STACK',
+    line: 'runtime',
+    interactive: true,
+    reason: 'runtime 轨干预 dock 未渲染（同 PERMISSION_REQUEST 桥接缺口）',
+  },
+  {
+    scenario: 'OPENUI_RENDER',
+    line: 'runtime',
+    interactive: true,
+    reason:
+      'runtime 轨 OpenUI inline 组件未渲染（消息投影未接 OpenUI applier，legacy 正常）——另行立项',
+  },
+  // 终态守卫在 154s 真实时长（心跳维活）场景未丢弃迟到分片（两轨一致，
+  // 消息列表渲染了迟到文本）——压缩版 LATE_CHUNK 的断言只查 EXECUTING 残留
+  // 从未验证守卫证据，M3 真实时长首次暴露。初步定位：shouldDropLateMessageChunk
+  // 的 messageIdRefCurrent 非空分支或消息 status 判定在终态后放行。终态收敛线
+  // 专项修复，修后移除本条目。
+  {
+    scenario: 'LATE_CHUNK_SLOW',
+    line: 'legacy',
+    reason:
+      '终态守卫未丢弃 154s 迟到分片（两轨一致，真实 bug 首次暴露）——终态收敛线专项修复',
+  },
+  {
+    scenario: 'LATE_CHUNK_SLOW',
+    line: 'runtime',
+    reason: '终态守卫未丢弃 154s 迟到分片（同 legacy，两轨一致）——终态收敛线专项修复',
+  },
 ];
 
 // ---------- 前置探测：dev server / mock 层未就绪时给出清晰指引 ----------
 {
   const { default: http } = await import('node:http');
-  const reachable = await new Promise((resolve) => {
-    const req = http.get(APP_BASE, { timeout: 3000 }, (res) => {
-      res.resume();
-      resolve(true);
+  const probeOnce = () =>
+    new Promise((resolve) => {
+      // 编译期响应可能超过单次预算，给 8s 并在失败后重试
+      const req = http.get(APP_BASE, { timeout: 8000 }, (res) => {
+        res.resume();
+        resolve(true);
+      });
+      req.on('error', () => resolve(false));
+      req.on('timeout', () => {
+        req.destroy();
+        resolve(false);
+      });
     });
-    req.on('error', () => resolve(false));
-    req.on('timeout', () => {
-      req.destroy();
-      resolve(false);
-    });
-  });
+  let reachable = false;
+  for (let attempt = 0; attempt < 3 && !reachable; attempt++) {
+    reachable = await probeOnce();
+    if (!reachable) await new Promise((r) => setTimeout(r, 5000));
+  }
   if (!reachable) {
     cliLog(
-      `❌ dev server 未启动（${APP_BASE} 不可达）。\n` +
-        `   请先运行: npm run dev\n` +
+      `❌ dev server 未启动或编译未完成（${APP_BASE} 不可达）。\n` +
+        `   请先运行: npm run dev（等待首次 Compiled 完成后再跑套件）\n` +
         `   或通过环境变量指定已运行的地址: E2E_BASE_URL=http://<host:port> npm run e2e:mock-chat`,
     );
     throw new Error('dev server unreachable');
@@ -93,29 +148,6 @@ if (!Array.isArray(scenariosResponse?.data) || !scenariosResponse.data.length) {
 }
 const allScenarios = scenariosResponse.data;
 
-// ---------- 过滤 ----------
-const scenarioFilter = E2E.E2E_SCENARIOS
-  ? new Set(E2E.E2E_SCENARIOS.split(',').map((s) => s.trim()))
-  : null;
-const lineFilter = E2E.E2E_LINE || 'both';
-const scenarios = allScenarios.filter(
-  (meta) =>
-    !M3_SCENARIOS.has(meta.id) &&
-    (!scenarioFilter || scenarioFilter.has(meta.id)),
-);
-if (scenarioFilter) {
-  const missing = [...scenarioFilter].filter(
-    (id) => !allScenarios.some((meta) => meta.id === id),
-  );
-  if (missing.length) {
-    throw new Error(`E2E_SCENARIOS 含未知场景: ${missing.join(', ')}`);
-  }
-}
-const lines = lineFilter === 'both' ? ['legacy', 'runtime'] : [lineFilter];
-if (!['legacy', 'runtime', 'both'].includes(lineFilter)) {
-  throw new Error(`E2E_LINE 仅支持 legacy|runtime|both，收到: ${lineFilter}`);
-}
-
 // ---------- 断言与报告 ----------
 const results = [];
 const knownFails = [];
@@ -126,13 +158,35 @@ const expect = (condition, message) => {
   if (!condition) throw new Error(message);
 };
 
+/**
+ * ego 调用（js/click/doubleClick 等）无内建超时，页面导航窗口期的
+ * evaluate 可能永久 pending——统一包超时兜底，防单次挂起卡死整套
+ */
+const withTimeout = (promise, ms, label) =>
+  Promise.race([
+    promise,
+    new Promise((_, reject) =>
+      setTimeout(
+        () => reject(new Error(`ego 调用超时（${label}，${ms}ms）`)),
+        ms,
+      ),
+    ),
+  ]);
+
+const pageJs = (code, label = 'js') => withTimeout(js(code), 10000, label);
+
+/** ego 的 wait() 也走串行通道——同受队列堵塞影响，包超时兜底 */
+const pause = (seconds) => withTimeout(wait(seconds), 15000, `wait ${seconds}s`);
+
 /** 轨归属决定性探针（选择器放宽为属性包含，避免 CSS module 哈希脆弱） */
 const probeLine = async () => {
   // 输入区随会话详情加载延迟挂载，首屏 1s 内可能不存在——先等元素
-  await waitForElement('[class*="mention-editor"]', { timeout: 15000 }).catch(
-    () => {},
-  );
-  return js(String.raw`(() => {
+  await withTimeout(
+    waitForElement('[class*="mention-editor"]', { timeout: 15000 }),
+    20000,
+    'waitForElement editor',
+  ).catch(() => {});
+  return pageJs(String.raw`(() => {
     const editor = document.querySelector('[class*="mention-editor"]');
     if (!editor) return 'NO_EDITOR';
     const fiberKey = Object.keys(editor).find(k => k.startsWith('__reactFiber$'));
@@ -151,22 +205,23 @@ const probeLine = async () => {
 };
 
 const readSnapshot = async () =>
-  js(String.raw`window.__MOCK_CHAT_ASSERTIONS__ || null`);
+  pageJs(String.raw`window.__MOCK_CHAT_ASSERTIONS__ || null`, 'readSnapshot');
 
 /**
  * 收尾判定（带开流门控）：
  * - 门控：playing 且 emittedCount>0 且 messageCount>0（开播前断言 t=0 全真防误收）
- * - 终态场景（hasFinalResult）：等 FINAL_RESULT 已发 且 断言全绿 即收
+ * - 终态场景（hasFinalResult）：等 FINAL_RESULT 已发 且 断言全绿 且 回放完毕
+ *   （emittedCount ≥ scriptLength，防 LATE_CHUNK 类迟到事件未发完提前收尾）
  * - 无终态场景（悬挂/错误收尾）：等断言全绿 且 状态快照稳定 STABLE_WINDOW_MS
  */
-const waitForSettled = async (meta) => {
-  const deadline = Date.now() + TIMEOUT_SEC * 1000;
+const waitForSettled = async (meta, timeoutSec = TIMEOUT_SEC) => {
+  const deadline = Date.now() + timeoutSec * 1000;
   let lastFingerprint = '';
   let stableSince = 0;
   let lastSnapshot = null;
 
   while (Date.now() < deadline) {
-    await wait(0.5);
+    await pause(0.5);
     const snapshot = await readSnapshot();
     if (!snapshot || !snapshot.playing) continue;
     lastSnapshot = snapshot;
@@ -175,8 +230,15 @@ const waitForSettled = async (meta) => {
     if (!started) continue;
 
     const allPassed = snapshot.assertions.every((a) => a.passed);
+    // 回放完毕：优先 mock 的 replaySettled（续连轮只发终态时 emitted 计数
+    // 永远到不了 scriptLength）；快照字段缺失时退回计数比较（兼容）
+    const replayDone =
+      snapshot.replaySettled === undefined
+        ? !snapshot.scriptLength ||
+          snapshot.emittedCount >= snapshot.scriptLength
+        : snapshot.replaySettled;
     if (meta.hasFinalResult) {
-      if (allPassed && snapshot.hasFinalResult) return snapshot;
+      if (allPassed && snapshot.hasFinalResult && replayDone) return snapshot;
       continue;
     }
 
@@ -198,7 +260,7 @@ const waitForSettled = async (meta) => {
   }
 
   const detail = lastSnapshot
-    ? `（最终快照：messages=${lastSnapshot.messageCount} emitted=${lastSnapshot.emittedCount} ` +
+    ? `（最终快照：messages=${lastSnapshot.messageCount} emitted=${lastSnapshot.emittedCount}/${lastSnapshot.scriptLength} ` +
       `hasFinalResult=${lastSnapshot.hasFinalResult} active=${lastSnapshot.streamActive}；` +
       lastSnapshot.assertions
         .filter((a) => !a.passed)
@@ -208,14 +270,340 @@ const waitForSettled = async (meta) => {
       '）'
     : '（页面断言快照始终未出现——页面可能未进入播放态）';
   throw new Error(
-    `场景 ${meta.id} 未在 ${TIMEOUT_SEC}s 内收尾${detail}`.slice(0, 500),
+    `场景 ${meta.id} 未在 ${timeoutSec}s 内收尾${detail}`.slice(0, 500),
   );
+};
+
+/** console 观测（M3）：会话路径零 [Conv:Status] 级 console.error */
+const checkConsole = (snapshot) => {
+  const convErrors = (snapshot.consoleErrors || []).filter((e) =>
+    e.includes('Conv:Status'),
+  );
+  expect(
+    convErrors.length === 0,
+    `[Conv:Status] 级 console.error ×${convErrors.length}，首条：${(
+      convErrors[0] || ''
+    ).slice(0, 180)}`,
+  );
+};
+
+// ---------- 交互 helpers（M3） ----------
+const E2E_ATTR = 'data-e2e-target';
+
+/** 按文本给目标元素打临时标记属性，转成稳定选择器供 click/doubleClick 用 */
+const markByText = async (selector, text) =>
+  pageJs(
+    `(() => {
+    const el = [...document.querySelectorAll(${JSON.stringify(selector)})]
+      .find(e => (e.textContent || '').includes(${JSON.stringify(text)}));
+    if (!el) return false;
+    el.setAttribute('${E2E_ATTR}', '1');
+    return true;
+  })()`,
+  );
+
+const clearMark = async () =>
+  pageJs(
+    `document.querySelectorAll('[${E2E_ATTR}]').forEach(e => e.removeAttribute('${E2E_ATTR}'))`,
+  );
+
+const clickText = async (selector, text, label) => {
+  const marked = await markByText(selector, text);
+  if (!marked) throw new Error(`未找到元素：${selector} 含「${text}」`);
+  await withTimeout(
+    click(`[${E2E_ATTR}]`, { label: label || `click ${text}` }),
+    15000,
+    `click ${text}`,
+  );
+  await clearMark();
+};
+
+const doubleClickText = async (selector, text, label) => {
+  const marked = await markByText(selector, text);
+  if (!marked) throw new Error(`未找到元素：${selector} 含「${text}」`);
+  await withTimeout(
+    doubleClick(`[${E2E_ATTR}]`, { label: label || `dblclick ${text}` }),
+    15000,
+    `dblclick ${text}`,
+  );
+  await clearMark();
+};
+
+const textVisible = async (text) =>
+  pageJs(`document.body.textContent.includes(${JSON.stringify(text)})`, 'textVisible');
+
+const waitForText = async (text, timeoutSec = 6) => {
+  const deadline = Date.now() + timeoutSec * 1000;
+  while (Date.now() < deadline) {
+    if (await textVisible(text)) return;
+    await pause(0.5);
+  }
+  throw new Error(`等待文本「${text}」超时（${timeoutSec}s）`);
+};
+
+const waitForTextGone = async (text, timeoutSec = 6) => {
+  const deadline = Date.now() + timeoutSec * 1000;
+  while (Date.now() < deadline) {
+    if (!(await textVisible(text))) return;
+    await pause(0.5);
+  }
+  throw new Error(`等待文本「${text}」消失超时（${timeoutSec}s）`);
+};
+
+// ---------- 交互驱动（M3） ----------
+const DOCK = '[data-agent-intervention-dock]';
+
+/**
+ * 干预卡处理生效断言。生效形态（实测）：
+ * - 卡片直接移除/堆叠重排（单卡场景 dock 清空；堆叠场景 front 卡消失）
+ * - 部分形态保留「已提交」Tag
+ * DockPanel 只给 front 卡渲染完整 role 结构（back 卡为迷你预览），故用
+ * dock 内容签名（卡片 aria-label 集合）变化而非卡片计数判定
+ */
+const dockSignature = async () =>
+  pageJs(String.raw`(() => {
+    const dock = document.querySelector('[data-agent-intervention-dock]');
+    if (!dock) return '';
+    return [...dock.querySelectorAll('[aria-label]')]
+      .map(e => e.getAttribute('aria-label'))
+      .filter(l => l && !l.startsWith('arrow'))
+      .sort().join('|');
+  })()`);
+
+const waitForCardHandled = async (baselineSignature, timeoutSec = 6) => {
+  const deadline = Date.now() + timeoutSec * 1000;
+  while (Date.now() < deadline) {
+    const signature = await dockSignature();
+    const submitted = await textVisible('已提交');
+    if (signature !== baselineSignature || submitted) return signature;
+    await pause(0.5);
+  }
+  throw new Error(
+    `干预卡处理后未生效（dock 签名未变化，基线「${baselineSignature.slice(0, 120)}」）`,
+  );
+};
+
+/**
+ * 权限卡快捷键提交：useAcpPermissionShortcuts（数字 1/2/3 选中选项、Enter
+ * 提交，window 级 capture）。键盘路径不依赖元素点击稳定性——doubleClick
+ * 在卡片重渲染窗口会永久 pending 并堵塞 ego 串行队列（实测），权限交互
+ * 统一走键盘
+ */
+const submitPermissionViaKeyboard = async (label) => {
+  await withTimeout(pressKey('1'), 10000, `${label} 按键 1 选中允许一次`);
+  await pause(0.2);
+  await withTimeout(pressKey('Enter'), 10000, `${label} 按键 Enter 提交`);
+};
+
+/** 权限卡：快捷键「1 + Enter」允许一次 → 断言处理生效 */
+const drivePermissionAllow = async () => {
+  await withTimeout(waitForElement(DOCK, { timeout: 10000 }), 15000, 'waitForDock').catch(
+    () => {},
+  );
+  const baseline = await dockSignature();
+  await submitPermissionViaKeyboard('权限卡');
+  await waitForCardHandled(baseline);
+};
+
+/** ask 卡：点 radio 选方案 → 点「确认」提交（Enter 在 radio 焦点下不触发卡提交，实测） */
+const driveAskSubmit = async () => {
+  await withTimeout(
+    waitForElement(`${DOCK} [role="region"]`, { timeout: 10000 }),
+    15000,
+    'waitForAskRegion',
+  ).catch(() => {});
+  const baseline = await dockSignature();
+  await clickText('.ant-radio-wrapper', '方案A', '选择方案A');
+  await pause(0.2);
+  await clickText('[role="region"] button', '确认', '提交问答表单');
+  await waitForCardHandled(baseline);
+};
+
+/**
+ * 堆叠逐卡 FIFO（场景 3 张卡：权限 ×2 + ask ×1）：循环处理 front 可交互卡
+ * （权限卡快捷键允许；ask 卡选 radio + 确认），直到 dock 清空。
+ * 实测一次 Enter 可能连续提交两张权限卡（第一张关闭瞬间第二张转 front，
+ * 全局快捷键重复命中）——处理轮数与卡片数非 1:1，以 dock 清空为成功判定
+ */
+const driveInterventionStack = async () => {
+  // dock 必须真实出现过（runtime 桥接缺失时 dock 恒无，循环会把「无 dock」
+  // 误判为 EMPTY 假绿——先验证存在再进入清空循环）
+  await withTimeout(waitForElement(DOCK, { timeout: 10000 }), 15000, 'waitForDock');
+  for (let round = 0; round < 8; round++) {
+    const state = await pageJs(String.raw`(() => {
+      const dock = document.querySelector('[data-agent-intervention-dock]');
+      if (!dock || !dock.textContent.trim()) return 'EMPTY';
+      if ([...dock.querySelectorAll('button')].some(b => !b.disabled && b.textContent.includes('允许一次'))) return 'PERMISSION';
+      if (dock.querySelector('.ant-radio-wrapper')) return 'ASK';
+      return 'PENDING';
+    })()`);
+    if (state === 'EMPTY') return; // 全部卡片处理完毕（dock 清空）
+    if (state === 'PENDING') {
+      await pause(1); // 卡片轮转间隙
+      continue;
+    }
+    const baseline = await dockSignature();
+    if (state === 'PERMISSION') {
+      await submitPermissionViaKeyboard(`堆叠权限卡（第 ${round + 1} 轮）`);
+    } else {
+      await clickText('.ant-radio-wrapper', '全部变更', '选择执行范围');
+      await pause(0.2);
+      await clickText('[role="region"] button', '确认', '提交执行范围');
+    }
+    await waitForCardHandled(baseline);
+    await pause(0.5);
+  }
+  throw new Error('堆叠卡 8 轮内未清空（FIFO 轮转异常）');
+};
+
+/**
+ * 队列：流式执行中连发 2 条（第一条执行中 → 后续排队）→ 断言「待发送」
+ * 面板出现 → 「清空全部」→ 断言面板消失
+ */
+const driveQueueHolding = async () => {
+  for (let i = 0; i < 20; i++) {
+    const snapshot = await readSnapshot();
+    if (snapshot && snapshot.emittedCount > 0) break;
+    await pause(0.5);
+  }
+  await withTimeout(
+    click('[class*="mention-editor"]', { label: '聚焦输入框' }),
+    15000,
+    '聚焦输入框',
+  );
+  await pause(0.3);
+  await withTimeout(typeText('E2E 排队消息 2'), 15000, '输入排队消息 2');
+  await withTimeout(pressKey('Enter'), 15000, '回车发送 2');
+  await pause(0.6);
+  await withTimeout(typeText('E2E 排队消息 3'), 15000, '输入排队消息 3');
+  await withTimeout(pressKey('Enter'), 15000, '回车发送 3');
+  await waitForText('待发送', 10);
+  await clickText('button', '清空全部', '清空待发送队列');
+  await waitForTextGone('待发送', 10);
+};
+
+/** OpenUI 容器挂载：断言组件渲染证据（value 文本 + 容器节点；title 走样式层不在 textContent） */
+const driveOpenuiRender = async () => {
+  await waitForText('结果数值：42', 15);
+  const nodes = await pageJs(String.raw`document.querySelectorAll('[class*="openui"], [class*="open-ui"], iframe').length`, 'openui nodes');
+  expect(nodes > 0, `未见 OpenUI 容器节点（openui/iframe 选择器 ×0）`);
+};
+
+/**
+ * 交互型用例：speed 放大留出点击窗口（delayMs × speed = 等待窗）；
+ * 干预类走 ask 模式（审批 DockPanel 的业务门禁——会话框开启审批才出现）
+ */
+const INTERACTIVE_CASES = [
+  {
+    id: 'PERMISSION_REQUEST',
+    speed: 5,
+    drive: drivePermissionAllow,
+    agentMode: 'ask',
+  },
+  { id: 'ASK_QUESTION', speed: 5, drive: driveAskSubmit, agentMode: 'ask' },
+  {
+    id: 'INTERVENTION_STACK',
+    speed: 0.25,
+    drive: driveInterventionStack,
+    agentMode: 'ask',
+  },
+  { id: 'MESSAGE_QUEUE_HOLDING', speed: 0.25, drive: driveQueueHolding },
+  { id: 'OPENUI_RENDER', speed: 0.05, drive: driveOpenuiRender },
+];
+
+// ---------- 过滤 ----------
+const interactiveIds = new Set(INTERACTIVE_CASES.map((c) => c.id));
+const scenarioFilter = E2E.E2E_SCENARIOS
+  ? new Set(E2E.E2E_SCENARIOS.split(',').map((s) => s.trim()))
+  : null;
+const lineFilter = E2E.E2E_LINE || 'both';
+if (!['legacy', 'runtime', 'both'].includes(lineFilter)) {
+  throw new Error(`E2E_LINE 仅支持 legacy|runtime|both，收到: ${lineFilter}`);
+}
+const lines = lineFilter === 'both' ? ['legacy', 'runtime'] : [lineFilter];
+// MESSAGE_QUEUE_HOLDING 无 autoplay 断言型意义（单发不排队），仅交互段覆盖
+const scenarios = allScenarios.filter(
+  (meta) =>
+    meta.id !== 'MESSAGE_QUEUE_HOLDING' &&
+    !meta.realTiming &&
+    (!scenarioFilter || scenarioFilter.has(meta.id)),
+);
+if (scenarioFilter) {
+  const missing = [...scenarioFilter].filter(
+    (id) => !allScenarios.some((meta) => meta.id === id),
+  );
+  if (missing.length) {
+    throw new Error(`E2E_SCENARIOS 含未知场景: ${missing.join(', ')}`);
+  }
+}
+
+// ---------- 通用 case 执行 ----------
+const runCase = async (
+  meta,
+  line,
+  { speed = SPEED, timeoutSec, drive, agentMode } = {},
+) => {
+  const url =
+    `${APP_BASE}${PAGE_PATH}?scenario=${encodeURIComponent(meta.id)}` +
+    `&speed=${speed}&autoplay=1&conversationRuntime=${line === 'runtime' ? 1 : 0}` +
+    (agentMode ? `&agentMode=${agentMode}` : '');
+  await withTimeout(gotoAndWait(url, { timeout: 40 }), 60000, 'gotoAndWait');
+  await pause(1);
+
+  const probed = await probeLine();
+  expect(
+    probed === (line === 'runtime' ? 'RUNTIME' : 'LEGACY'),
+    `轨归属探针期望 ${line.toUpperCase()}，实际 ${probed}`,
+  );
+
+  // 交互驱动先于收尾判定：审批/填表需在场景等待窗内完成，交互后流继续
+  if (drive) await drive();
+
+  const snapshot = await waitForSettled(meta, timeoutSec);
+  expect(
+    snapshot.scenarioId === meta.id,
+    `断言快照场景不符：期望 ${meta.id}，实际 ${snapshot.scenarioId}`,
+  );
+  expect(
+    snapshot.line === line,
+    `断言快照轨不符：期望 ${line}，实际 ${snapshot.line}`,
+  );
+  expect(
+    snapshot.sawActive,
+    '疑似断言空转：全程未见流式活跃态（sawActive=false）',
+  );
+  checkConsole(snapshot);
+  return snapshot;
+};
+
+const runNamedCase = async (name, meta, line, options = {}) => {
+  try {
+    const snapshot = await runCase(meta, line, options);
+    cliLog(`✅ ${name}（messages=${snapshot.messageCount}）`);
+    results.push({ name, ok: true });
+  } catch (error) {
+    const isInteractive = name.includes('交互');
+    const known = KNOWN_ISSUES.find(
+      (k) =>
+        k.scenario === meta.id &&
+        k.line === line &&
+        Boolean(k.interactive) === isInteractive,
+    );
+    if (known) {
+      cliLog(`⚠️  KNOWN-FAIL ${name} — ${known.reason}`);
+      knownFails.push({ name, reason: known.reason, error: String(error) });
+    } else {
+      cliLog(`❌ ${name} — ${String(error).slice(0, 220)}`);
+      fail(name, error);
+    }
+  }
 };
 
 // ---------- 单标签串行矩阵 ----------
 cliLog(
-  `场景 ${scenarios.length}/${allScenarios.length} 个 × 轨 ${lines.join('/')}，` +
-    `speed=${SPEED}，单场景超时 ${TIMEOUT_SEC}s`,
+  `断言型 ${scenarios.length}/${allScenarios.length} 场景 × 轨 ${lines.join('/')}，` +
+    `交互型 ${INTERACTIVE_CASES.length} 用例，speed=${SPEED}，超时 ${TIMEOUT_SEC}s` +
+    (E2E.E2E_REAL_TIMING === '1' ? '，含真实时长子集' : ''),
 );
 
 // ego-browser 的 tab 按 task space 隔离：套件独占一个空间，跑完即焚
@@ -223,53 +611,92 @@ const task = await useOrCreateTaskSpace('mock chat e2e acceptance');
 await openOrReuseTab(APP_BASE, { wait: true, timeout: 40 });
 
 let index = 0;
+const total =
+  scenarios.length * lines.length + INTERACTIVE_CASES.length * lines.length;
+
+// 断言型矩阵
 for (const meta of scenarios) {
   for (const line of lines) {
     index += 1;
-    const name = `[${index}/${scenarios.length * lines.length}] ${meta.id} · ${line}`;
-    try {
-      const url =
-        `${APP_BASE}${PAGE_PATH}?scenario=${encodeURIComponent(meta.id)}` +
-        `&speed=${SPEED}&autoplay=1&conversationRuntime=${line === 'runtime' ? 1 : 0}`;
-      await gotoAndWait(url, { timeout: 40 });
-      await wait(1);
+    await runNamedCase(
+      `[${index}/${total}] ${meta.id} · ${line}`,
+      meta,
+      line,
+    );
+  }
+}
 
-      const probed = await probeLine();
-      expect(
-        probed === (line === 'runtime' ? 'RUNTIME' : 'LEGACY'),
-        `轨归属探针期望 ${line.toUpperCase()}，实际 ${probed}`,
-      );
+// 交互型用例（M3）：goto → 交互驱动 → 收尾判定
+for (const line of lines) {
+  for (const testCase of INTERACTIVE_CASES) {
+    index += 1;
+    await runNamedCase(
+      `[${index}/${total}] ${testCase.id} · ${line} · 交互`,
+      allScenarios.find((meta) => meta.id === testCase.id),
+      line,
+      { speed: testCase.speed, drive: testCase.drive, agentMode: testCase.agentMode },
+    );
+  }
+}
 
-      const snapshot = await waitForSettled(meta);
-
-      expect(
-        snapshot.scenarioId === meta.id,
-        `断言快照场景不符：期望 ${meta.id}，实际 ${snapshot.scenarioId}`,
+// 真实时长子集（M3）：默认不跑，E2E_REAL_TIMING=1 时以真实速度追加
+if (E2E.E2E_REAL_TIMING === '1') {
+  const realTimingScenarios = allScenarios.filter((meta) => meta.realTiming);
+  for (const meta of realTimingScenarios) {
+    for (const line of lines) {
+      index += 1;
+      await runNamedCase(
+        `[${index}] ${meta.id} · ${line} · 真实时长`,
+        meta,
+        line,
+        { speed: 1, timeoutSec: REAL_TIMING_TIMEOUT_SEC },
       );
-      expect(
-        snapshot.line === line,
-        `断言快照轨不符：期望 ${line}，实际 ${snapshot.line}`,
-      );
-      // 非空转证明：全程必须出现过活跃态，否则「终态后已释放」类断言恒真假绿
-      expect(
-        snapshot.sawActive,
-        '疑似断言空转：全程未见流式活跃态（sawActive=false）',
-      );
-
-      cliLog(`✅ ${name}（messages=${snapshot.messageCount}）`);
-      results.push({ name, ok: true });
-    } catch (error) {
-      const known = KNOWN_ISSUES.find(
-        (k) => k.scenario === meta.id && k.line === line,
-      );
-      if (known) {
-        cliLog(`⚠️  KNOWN-FAIL ${name} — ${known.reason}`);
-        knownFails.push({ name, reason: known.reason, error: String(error) });
-      } else {
-        cliLog(`❌ ${name} — ${String(error).slice(0, 220)}`);
-        fail(name, error);
+      // LATE_CHUNK_SLOW 守卫证据：迟到分片不得上屏（终态守卫丢弃）。
+      // 限定消息列表区域——mock 页右侧「SSE 事件」面板会展示服务端发出的
+      // 全部事件文本（含迟到分片），查整个 body 会误报
+      if (meta.id === 'LATE_CHUNK_SLOW') {
+        const leaked = await pageJs(
+          String.raw`(() => {
+            const items = [...document.querySelectorAll(
+              '[class*="message-item"], [class*="chat-message"], [data-message-id]'
+            )];
+            return items.some(el => el.textContent.includes('迟到分片'));
+          })()`,
+          '守卫证据消息区探查',
+        );
+        try {
+          expect(
+            !leaked,
+            '迟到分片未被终态守卫丢弃（消息列表出现「迟到分片」文本）',
+          );
+          cliLog(`✅ [${index}] LATE_CHUNK_SLOW 守卫证据 · ${line}（迟到分片已丢弃）`);
+          results.push({
+            name: `[${index}] LATE_CHUNK_SLOW 守卫证据 · ${line}`,
+            ok: true,
+          });
+        } catch (error) {
+          const known = KNOWN_ISSUES.find(
+            (k) => k.scenario === 'LATE_CHUNK_SLOW' && k.line === line,
+          );
+          if (known) {
+            cliLog(`⚠️  KNOWN-FAIL [${index}] LATE_CHUNK_SLOW 守卫证据 · ${line} — ${known.reason}`);
+            knownFails.push({
+              name: `[${index}] LATE_CHUNK_SLOW 守卫证据 · ${line}`,
+              reason: known.reason,
+              error: String(error),
+            });
+          } else {
+            cliLog(`❌ [${index}] LATE_CHUNK_SLOW 守卫证据 · ${line} — ${error}`);
+            fail(`[${index}] LATE_CHUNK_SLOW 守卫证据 · ${line}`, error);
+          }
+        }
       }
     }
+  }
+} else {
+  const skipped = allScenarios.filter((meta) => meta.realTiming).length;
+  if (skipped) {
+    cliLog(`⏭️  真实时长场景 ×${skipped} 已跳过（E2E_REAL_TIMING=1 启用）`);
   }
 }
 

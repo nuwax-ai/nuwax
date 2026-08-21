@@ -50,11 +50,17 @@ type MockChatAssertionSnapshot = {
   streamActive: boolean;
   messageCount: number;
   emittedCount: number;
+  /** 事件脚本总数（mock status 透传）：E2E 判定回放完毕，防终态后事件未发完提前收尾 */
+  scriptLength: number;
+  /** 全部回放连接已落定（mock status 透传）：续连轮只发终态时 emitted 永达不到 scriptLength，以此为准 */
+  replaySettled?: boolean;
   hasFinalResult: boolean;
   serverTaskStatus: string;
   /** 全程出现过活跃态 / EXECUTING 工具——断言非空转证明 */
   sawActive: boolean;
   sawExecutingTools: boolean;
+  /** 页面运行期 console.error 文本（截尾）——E2E 断言零 [Conv:Status] 级错误输出 */
+  consoleErrors: string[];
   lastError: string;
 };
 
@@ -68,6 +74,8 @@ type MockServerStatus = {
   scenario: string;
   taskStatus: TaskStatus;
   pollCount: number;
+  scriptLength?: number;
+  replaySettled?: boolean;
   emittedEvents: Array<{ eventType: string; data?: Record<string, unknown> }>;
 };
 
@@ -99,6 +107,21 @@ const initialUrlParams = new URLSearchParams(window.location.search);
 const initialScenarioFromUrl = initialUrlParams.get('scenario') || '';
 const initialSpeedFromUrl = Number(initialUrlParams.get('speed'));
 const AUTOPLAY = initialUrlParams.get('autoplay') === '1';
+// 审批 DockPanel 的业务门禁：会话框 ask 模式（审批）下权限/问答卡才走真实
+// 路径。干预类用例以 ?agentMode=ask 注入——写入智能体模式缓存（模块级执行
+// 早于 interventionLayer hook 初始化；initialAgentMode prop 仅无缓存时生效）
+const INITIAL_AGENT_MODE =
+  initialUrlParams.get('agentMode') === 'ask' ? 'ask' : 'yolo';
+if (typeof window !== 'undefined' && INITIAL_AGENT_MODE === 'ask') {
+  try {
+    localStorage.setItem(
+      'nuwax_agent_mode_cache',
+      JSON.stringify({ version: 1, agents: { '44': 'ask' } }),
+    );
+  } catch {
+    // localStorage 不可用（隐私模式等）：回落默认 yolo
+  }
+}
 
 const MockChat: React.FC = () => {
   const model = useModel('conversationInfo');
@@ -120,6 +143,26 @@ const MockChat: React.FC = () => {
   const playingRef = useRef(false);
   const sawActiveRef = useRef(false);
   const sawExecutingToolsRef = useRef(false);
+  // console.error 收集（M3）：E2E 断言会话路径零 [Conv:Status] 级错误输出
+  const consoleErrorsRef = useRef<string[]>([]);
+  useEffect(() => {
+    const originalError = console.error;
+    console.error = (...args: unknown[]) => {
+      consoleErrorsRef.current.push(
+        args
+          .map((arg) => String(arg))
+          .join(' ')
+          .slice(0, 300),
+      );
+      if (consoleErrorsRef.current.length > 50) {
+        consoleErrorsRef.current.shift();
+      }
+      originalError(...args);
+    };
+    return () => {
+      console.error = originalError;
+    };
+  }, []);
   // 桥接初始 effect 与下方声明的 play（避免 use-before-define）
   const playRef = useRef<() => Promise<void>>(async () => {});
 
@@ -181,7 +224,7 @@ const MockChat: React.FC = () => {
       model.abortResumeStream();
       model.handleClearSideEffect();
     },
-    /** 发送用户消息 */
+    /** 发送用户消息（agentMode 与 URL 注入模式一致，ask 下走审批路径） */
     send: (text: string): void => {
       if (runtimeLine) {
         (runtimeProps.onSendMessage as typeof sendMessage)(
@@ -189,7 +232,7 @@ const MockChat: React.FC = () => {
           undefined,
           undefined,
           undefined,
-          'yolo',
+          INITIAL_AGENT_MODE,
         );
         return;
       }
@@ -199,7 +242,7 @@ const MockChat: React.FC = () => {
         sandboxId: 'mock-sandbox',
         debug: false,
         isSync: false,
-        agentMode: 'yolo',
+        agentMode: INITIAL_AGENT_MODE,
       });
     },
     /** 停止会话 */
@@ -403,7 +446,7 @@ const MockChat: React.FC = () => {
         sandboxId: 'mock-sandbox',
         debug: false,
         isSync: false,
-        agentMode: selectedAgentMode || 'yolo',
+        agentMode: selectedAgentMode || INITIAL_AGENT_MODE,
       });
     },
     [model],
@@ -486,10 +529,13 @@ const MockChat: React.FC = () => {
       streamActive: lineIsConversationActive,
       messageCount: messageList.length,
       emittedCount: serverStatus?.emittedEvents.length ?? 0,
+      scriptLength: serverStatus?.scriptLength ?? 0,
+      replaySettled: serverStatus?.replaySettled,
       hasFinalResult,
       serverTaskStatus: serverStatus?.taskStatus ?? '',
       sawActive: sawActiveRef.current,
       sawExecutingTools: sawExecutingToolsRef.current,
+      consoleErrors: [...consoleErrorsRef.current],
       lastError,
     };
   });

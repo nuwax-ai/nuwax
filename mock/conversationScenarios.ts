@@ -37,7 +37,9 @@ export type MockScenarioId =
   | 'INTERVENTION_STACK'
   | 'MESSAGE_QUEUE_HOLDING'
   | 'HEARTBEAT_ONLY'
-  | 'CANCELLED_BY_BACKEND';
+  | 'CANCELLED_BY_BACKEND'
+  | 'HEARTBEAT_REAL'
+  | 'LATE_CHUNK_SLOW';
 
 export interface MockSseEvent {
   eventType: string;
@@ -66,6 +68,11 @@ export interface MockScenario {
   initialMessages?: Array<Record<string, unknown>>;
   /** 详情接口在读取指定次数后切换到终态。 */
   pollTerminalAfter?: number;
+  /**
+   * 真实时长场景（M3）：事件 delayMs 为真实事故时长（60~154s），仅
+   * E2E_REAL_TIMING=1 时进回归矩阵；日常回归跑压缩版（HEARTBEAT_ONLY 等）。
+   */
+  realTiming?: boolean;
 }
 
 // ── 工具函数 ──
@@ -1175,6 +1182,50 @@ export const MOCK_SCENARIOS: MockScenario[] = [
     events: [
       chat('正在执行', false),
       finalResult(false, '', { stop_reason: 'cancelled', reason: 'cancelled' }),
+    ],
+  },
+  {
+    // 真实时长版 HEARTBEAT_ONLY：80s 空闲窗（20s × 4 心跳）超过 60s 看门狗
+    // 阈值（fetchEventSourceConversationInfo：60s 空闲断连、5s 检查），
+    // 验证心跳维活下看门狗不误杀。
+    id: 'HEARTBEAT_REAL',
+    label: '真实心跳（80s 空闲）',
+    description: '真实时长：80s 空闲期仅心跳（间隔 20s），看门狗不应断连',
+    verifies: '看门狗不误杀（真实 60s+ 空闲窗）',
+    realTiming: true,
+    events: [
+      think('收到，开始执行需要较长时间的任务。'),
+      heartbeat(),
+      { ...heartbeat(), delayMs: 20_000 },
+      { ...heartbeat(), delayMs: 20_000 },
+      { ...heartbeat(), delayMs: 20_000 },
+      { ...heartbeat(), delayMs: 20_000 },
+      chat('长时间任务执行完成。', true),
+      finalResult(true, '长时间任务执行完成。'),
+    ],
+  },
+  {
+    // 对齐 1654471 事故形态：FINAL_RESULT 后服务端不关连接、以心跳维活，
+    // 154s 后送达迟到 MESSAGE 分片。若不补心跳，60s 看门狗会 abort 连接，
+    // 迟到分片永远送不到 shouldDropLateMessageChunk 守卫——测到的只是看门狗。
+    // 迟到分片带标记文本，E2E 断言其不出现在页面（守卫丢弃证据）。
+    id: 'LATE_CHUNK_SLOW',
+    label: '迟到分片（真实 154s）',
+    description:
+      '真实时长：FINAL_RESULT 后心跳维活 150s，迟到 MESSAGE 分片应被终态守卫丢弃',
+    verifies: 'shouldDropLateMessageChunk（真实看门狗环境下）',
+    realTiming: true,
+    events: [
+      chat('主体输出完成。', true),
+      finalResult(true, '主体输出完成。'),
+      heartbeat(),
+      { ...heartbeat(), delayMs: 25_000 },
+      { ...heartbeat(), delayMs: 25_000 },
+      { ...heartbeat(), delayMs: 25_000 },
+      { ...heartbeat(), delayMs: 25_000 },
+      { ...heartbeat(), delayMs: 25_000 },
+      { ...heartbeat(), delayMs: 25_000 },
+      chat('[迟到分片-应被守卫丢弃]', false),
     ],
   },
 ];

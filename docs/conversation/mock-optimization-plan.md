@@ -91,11 +91,36 @@
 - **验证**：全量矩阵 62 项 = 61 通过 + 1 KNOWN-FAIL，exit 0；`test:conversation` 325 用例全绿；tsc 改动文件零新增；`/app/mock-chat` 嵌入形态 autoplay 验证通过（M0 风险表待测项闭环）
 - **已知边界**：`src/models/conversationAgent.ts` 是 ConversationAgent 页的独立 fork（SSE 处理整份拷贝），不在本矩阵内；该页已有两个 runtime 接入点——R6 切换若需覆盖此 fork 线，另行立项
 
+## M3 实施记录（2026-08-21，已落地）
+
+- **console 观测**：页面 dev-only patch `console.error` 收集进断言快照（`consoleErrors`）；E2E 每 case 收尾断言零 `[Conv:Status]` 级 error 输出。
+- **审批模式门禁（业务规则）**：审批 DockPanel 仅在会话框 ask 模式下出现。页面支持 `?agentMode=ask`（模块级写智能体模式缓存 `nuwax_agent_mode_cache`，早于 intervention hook 初始化）；`lineApi.send` 的 agentMode 与注入一致。干预类交互用例统一 ask 模式播放。
+- **交互型用例**（5 用例 × 双轨，speed 放大留点击窗口，如 PERMISSION_REQUEST speed=5 → 审批等待窗 10s）：
+  - `PERMISSION_REQUEST`：**快捷键「1 + Enter」**（useAcpPermissionShortcuts，window capture）——双击路径在卡片重渲染窗口会永久 pending 并堵塞 ego 串行队列（实测），键盘路径不依赖元素点击稳定性
+  - `ASK_QUESTION`：点 radio 方案 A → 点「确认」按钮（Enter 在 radio 焦点下不触发卡提交，实测）
+  - `INTERVENTION_STACK`：循环处理 front 卡至 dock 清空；**实测一次 Enter 可能连续提交两张权限卡**（第一张关闭瞬间第二张转 front、全局快捷键重复命中）——处理轮数与卡片数非 1:1，以 dock 清空为成功判定
+  - `MESSAGE_QUEUE_HOLDING`：流式中连发 2 条 → 「待发送」面板出现 → 「清空全部」→ 面板消失
+  - `OPENUI_RENDER`：断言组件渲染证据（「结果数值：42」文本 + 容器节点；DSL 的 title 走样式层不在 textContent）
+  - **处理生效判定**（实测形态）：dock 签名（卡片 aria-label 集合）变化或「已提交」Tag；DockPanel 只给 front 卡渲染完整 role 结构，卡片计数不可靠
+- **ego 通道健壮性**（踩坑记录）：ego-browser 的 js/click//waitForElement 无内建超时，页面导航窗口期的调用会永久 pending 且**堵塞串行队列**（后续所有调用挂起、套件僵死零输出）——全部调用统一 `withTimeout` 兜底（`pageJs`/`pause`/click 包装）；后台重定向下 cliLog 全缓冲，进度监控走 mock status 而非日志尾部
+- **runtime resume-send 语义适配**（mock server）：runtime 线审批/问答回执会再开 chat 连接（resume-send），无状态 replay 会整轮重演致干预卡无限循环——mock 侧补全生产语义：
+  - 干预卡事件跨连接去重（`interventionEventId`：REQUEST_PERMISSION 按 `data.executeId`，事件 status 为 FINISHED；ask/openui 按 EXECUTING+name）
+  - 续连（第 2 轮 chat）只回放 FINAL_RESULT（「服务端无剩余输出直接终态」）；keep-open 场景续连直接挂起不打断悬挂任务
+  - status 新增 `replaySettled`（在飞回放连接归零）：终态场景的回放完毕信号——续连只发终态时 `emittedCount` 永达不到 `scriptLength`，计数比较失效
+- **🔴 runtime 轨干预/OpenUI 渲染缺口（R6 阻塞项，探针确证）**：ask 模式下 runtime 轨事件全部发出、消息投影正常，但 **干预 dock 完全不渲染**（`dockExists=false`——事件未桥接 AgentIntervention dock 数据源）、**OpenUI inline 组件不渲染**（消息投影未接 OpenUI applier）。legacy 轨全部正常。E2E 以 KNOWN-FAIL 显式跟踪（PERMISSION_REQUEST / ASK_QUESTION / INTERVENTION_STACK / OPENUI_RENDER 的 runtime 交互用例），断言型（快照层）不受影响照常跑。**R6 默认切换前必须修复**。
+- **真实时长子集**（`E2E_REAL_TIMING=1`，speed=1 + 360s 超时，默认跳过）：`HEARTBEAT_REAL`（80s 空闲心跳窗验看门狗，**双轨通过**）、`LATE_CHUNK_SLOW`（FINAL_RESULT 后心跳维活 150s 送迟到分片，场景断言双轨通过）；**守卫证据用例发现真实 bug**：两轨消息列表均渲染了迟到分片——`shouldDropLateMessageChunk` 在真实时长下未生效（见风险表，KNOWN-FAIL 跟踪）
+- **上传/STT 纳入 mock**：`UPLOAD_FILE_ACTION` / `AUDIO_STT_URL` 切 `conversationApiOrigin` 同源分支；mock 补 `/api/file/upload`（url/key/fileName/mimeType）与 `/api/audio/stt`（`{text}`）——multipart 正文不解析，避免打到远端测试域名
+- **CI 接入注释**：`conversation-tests.yml` 尾注三步接法，待稳定后独立评估
+
 ## 风险与待办
 
 | 项 | 风险 | 处理 |
 | --- | --- | --- |
 | runtime 续接不清快照 EXECUTING | SESSION_RESUME 断言 4 红 | runtime resume 投影修复（upsert 快照 loading 消息或 finalize 尾巴），另行立项；M2 起以 E2E KNOWN-FAIL 显式跟踪 |
+| **runtime 干预 dock / OpenUI 不渲染** | **R6 阻塞项**：ask 模式审批卡不出、OpenUI inline 无 DOM（事件已到、消息投影正常） | runtime 线干预事件桥接 AgentIntervention dock 数据源 + OpenUI applier 接入消息投影，另行立项；E2E 以 KNOWN-FAIL 显式跟踪（4 个 runtime 交互用例） |
+| **终态守卫未丢弃 154s 迟到分片** | LATE_CHUNK_SLOW 真实时长场景消息列表渲染了迟到文本（**两轨一致**，压缩版 LATE_CHUNK 断言只查 EXECUTING 残留从未验证守卫证据——M3 首次暴露） | 初步定位 `shouldDropLateMessageChunk` 的 `messageIdRefCurrent` 非空分支或 status 判定在终态后放行；终态收敛线专项修复，E2E 以 KNOWN-FAIL 跟踪（双轨守卫证据用例） |
+| runtime resume-send 循环 | 审批回执再开 chat 连接，无状态 replay 整轮重演 | M3 已解：mock 干预事件跨连接去重 + 续连只发终态 + replaySettled 判收 |
+| ego E2E 通道堵塞 | 单次 pending 调用堵死串行队列（套件僵死零输出） | M3 已解：全部 ego 调用 withTimeout 兜底；后台跑时用 mock status 监控进度（cliLog 全缓冲） |
 | M0 编排分派 | runtime session API 与 legacy model 行为差异 | 对照 `useConversationAgentChatSession.ts` 现成用法；M0 验证覆盖 4 类代表场景 |
 | M0 断言空转 | 按轨取源不彻底 → 假绿 | 验收要求终态场景先出现 EXECUTING 再收敛（非空转证明）；M2 起由 E2E `sawActive` 硬门控自动把关 |
 | `/app/mock-chat` | `useOpenApp` 视口同步操作不存在 DOM | 已验证（2026-08-21）：autoplay + 断言全绿，风险关闭 |

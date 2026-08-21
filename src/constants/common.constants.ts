@@ -3,17 +3,17 @@ import { AgentComponentTypeEnum, BindValueType } from '@/types/enums/agent';
 import { DataTypeEnum } from '@/types/enums/common';
 import { isConversationMockPage } from '@/utils/isConversationMockPage';
 
-// 文件上传地址
-export const UPLOAD_FILE_ACTION = `${process.env.BASE_URL}/api/file/upload`;
-
-// 语音转文字（STT）接口地址：multipart/form-data 上传音频，返回识别文本
-export const AUDIO_STT_URL = `${process.env.BASE_URL}/api/audio/stt`;
-
 // 开发验收页（含 /app/mock-chat 应用形态变体）必须走同源 Umi mock；
 // 其它页面仍使用配置的后端地址（模块加载期一次求值，与页面 chunk 加载时序一致）。
 const conversationApiOrigin = isConversationMockPage()
   ? ''
   : process.env.BASE_URL;
+
+// 文件上传地址（mock 页同源，multipart handler 见 mock/conversationMock.ts）
+export const UPLOAD_FILE_ACTION = `${conversationApiOrigin}/api/file/upload`;
+
+// 语音转文字（STT）接口地址：multipart/form-data 上传音频，返回识别文本（mock 页同源）
+export const AUDIO_STT_URL = `${conversationApiOrigin}/api/audio/stt`;
 
 // 会话 Connection地址
 export const CONVERSATION_CONNECTION_URL = `${conversationApiOrigin}/api/agent/conversation/chat`;
