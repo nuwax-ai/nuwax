@@ -20,6 +20,7 @@ import { unifiedThemeService } from './services/unifiedThemeService';
 import { UserService } from './services/userService';
 import type { MenuItemDto } from './types/interfaces/menu';
 import { getAntdLocale } from './utils/i18nAdapters';
+import { isConversationMockPage } from './utils/isConversationMockPage';
 /**
  * 全局初始状态类型
  */
@@ -37,17 +38,16 @@ export async function getInitialState(): Promise<InitialStateType> {
     await initI18n();
 
     // 如果不是登录页面，执行获取用户信息和菜单数据
-    const publicPaths = [
-      '/login',
-      '/examples/agent-intervention-demo',
-      // 路由本身仅在 development 注册，避免 Mock 验收页触发用户信息请求后跳登录。
-      '/mock-chat',
-    ];
+    const publicPaths = ['/login', '/examples/agent-intervention-demo'];
     const initialPathname =
       typeof window === 'undefined'
         ? history.location.pathname
         : window.location.pathname;
-    if (!publicPaths.some((path) => initialPathname.includes(path))) {
+    // Mock 验收页（dev-only 路由）跳过用户信息请求，避免未登录时被重定向
+    if (
+      !publicPaths.some((path) => initialPathname.includes(path)) &&
+      !isConversationMockPage()
+    ) {
       const userInfo = await UserService.getUserInfo();
       await syncLangFromUserInfo(userInfo);
 

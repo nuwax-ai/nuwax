@@ -1,6 +1,7 @@
 import { dict } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum, BindValueType } from '@/types/enums/agent';
 import { DataTypeEnum } from '@/types/enums/common';
+import { isConversationMockPage } from '@/utils/isConversationMockPage';
 
 // 文件上传地址
 export const UPLOAD_FILE_ACTION = `${process.env.BASE_URL}/api/file/upload`;
@@ -9,12 +10,10 @@ export const UPLOAD_FILE_ACTION = `${process.env.BASE_URL}/api/file/upload`;
 export const AUDIO_STT_URL = `${process.env.BASE_URL}/api/audio/stt`;
 
 // 开发验收页（含 /app/mock-chat 应用形态变体）必须走同源 Umi mock；
-// 其它页面仍使用配置的后端地址。
-const conversationApiOrigin =
-  typeof window !== 'undefined' &&
-  window.location.pathname.includes('mock-chat')
-    ? ''
-    : process.env.BASE_URL;
+// 其它页面仍使用配置的后端地址（模块加载期一次求值，与页面 chunk 加载时序一致）。
+const conversationApiOrigin = isConversationMockPage()
+  ? ''
+  : process.env.BASE_URL;
 
 // 会话 Connection地址
 export const CONVERSATION_CONNECTION_URL = `${conversationApiOrigin}/api/agent/conversation/chat`;

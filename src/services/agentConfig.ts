@@ -38,14 +38,12 @@ import type {
   ShareFileInfo,
 } from '@/types/interfaces/conversationInfo';
 import type { RequestResponse } from '@/types/interfaces/request';
+import { isConversationMockPage } from '@/utils/isConversationMockPage';
 import { request } from 'umi';
 
 /** 开发验收页（含 /app/mock-chat）的会话接口走同源 Umi mock，不受全局远端 baseURL 影响。 */
 const conversationApiUrl = (path: string) =>
-  typeof window !== 'undefined' &&
-  window.location.pathname.includes('mock-chat')
-    ? `${window.location.origin}${path}`
-    : path;
+  isConversationMockPage() ? `${window.location.origin}${path}` : path;
 
 // 智能体迁移接口
 export function apiAgentTransfer(

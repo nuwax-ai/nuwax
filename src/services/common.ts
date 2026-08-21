@@ -10,6 +10,7 @@ import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { I18N_STORAGE_KEYS } from '@/constants/i18n.constants';
 import { dict } from '@/services/i18nRuntime';
 import type { RequestResponse } from '@/types/interfaces/request';
+import { isConversationMockPage } from '@/utils/isConversationMockPage';
 import { redirectToLogin } from '@/utils/router';
 import { RequestConfig } from '@@/plugin-request/request';
 import { message, Modal } from 'antd';
@@ -154,7 +155,7 @@ const errorHandler = (error: any, opts: any) => {
       switch (code) {
         // 用户未登录，跳转到登录页
         case USER_NO_LOGIN:
-          if (window.location.pathname.includes('mock-chat')) {
+          if (isConversationMockPage()) {
             return;
           }
           localStorage.clear();
@@ -164,7 +165,7 @@ const errorHandler = (error: any, opts: any) => {
 
         // 重定向到登录页
         case REDIRECT_LOGIN:
-          if (window.location.pathname.includes('mock-chat')) {
+          if (isConversationMockPage()) {
             return;
           }
           clearLoginStatusCache();

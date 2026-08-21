@@ -33,6 +33,8 @@ docs/conversation/
 | 业务逻辑逐条验收 | [dual-track/conversation-business-logic-checklist.md](./dual-track/conversation-business-logic-checklist.md) |
 | 测试回归跑什么 | [dual-track/conversation-regression-test-plan.md](./dual-track/conversation-regression-test-plan.md) |
 | 日常维护 / 排查 | [dual-track/conversation-maintenance-guide.md](./dual-track/conversation-maintenance-guide.md) |
+| Mock 故障注入验收（/mock-chat） | [mock-testing-plan.md](./mock-testing-plan.md)（含实施现状与热重载坑） |
+| Mock 体系优化与 E2E 自动化 | [mock-optimization-plan.md](./mock-optimization-plan.md) |
 
 ### 排查按钮卡「会话中」
 

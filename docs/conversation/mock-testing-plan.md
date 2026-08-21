@@ -330,3 +330,40 @@ npm run dev  # 打开 /mock-chat → 选场景 → 播放 → 看断言
 1. **第一层**（修现有测试 + 补单元测试）——半天，覆盖 80% 修复逻辑
 2. **第二层**（hook 直接测试）——半天，覆盖边界
 3. **第三层**（mock 页面）——1-2 天，覆盖端到端故障注入
+
+---
+
+## 实施现状（2026-08-21，第三层已落地并持续演进）
+
+### 目录与数据流（规范迁移后）
+
+- **场景定义单点**：`mock/conversationScenarios.ts`（32 个场景，SSE 事件脚本 + helper）
+- **mock 服务端**：`mock/conversationMock.ts`（Umi dev-server，SSE 回放 + 12 个接口）
+- **验收页**：`src/examples/MockChat`（经 `GET /api/mock/conversation/scenarios` 拉元数据， `src` 业务代码零依赖 mock 数据）
+- **合同测试**：`tests/interventionDockScenarios.test.ts`（11 用例，按 model 消费方式回放场景锁定 applier 判别对齐；runtime 线复用同一 applier，两轨同受益）
+
+### 入口
+
+- `/mock-chat`：普通形态（dev-only 路由）
+- `/app/mock-chat`：应用内嵌形态（`/app` 前缀由 useOpenApp 自动识别）
+- `?conversationRuntime=1`：runtime 轨（M0 双轨接入，页面头部显示当前轨）
+
+### ⚠️ mock 层热重载坑
+
+Umi mock 只 watch `mock/` 目录：**修改 `mock/conversationScenarios.ts` 后必须 touch `mock/conversationMock.ts`（或重启 dev server）**，否则新场景报 `MOCK_SCENARIO_NOT_FOUND`（HTTP 400），验收页会给出该提示。
+
+### 32 场景清单
+
+| 类别 | 场景 |
+| --- | --- |
+| 基础终态 | NORMAL_SINGLE、NORMAL_MULTI_STEP、ERROR_MID_STREAM、LATE_CHUNK、CANCELLED_BY_BACKEND、HEARTBEAT_ONLY |
+| 传输故障 | SUB_ONLY_RECOVERY、NETWORK_ERROR、SUB_NETWORK_ERROR |
+| processing | PROCESSING_STORM、PROCESSING_UNFINISHED、MULTI_TOOL_ONE_MSG、QUESTION_TYPE、PLAN_PROCESSING（真实抓包 7 步） |
+| 渲染全景 | RENDER_SHOWCASE（Plan 推进 + 11 种 process type + diff + OpenUI inline + group/conversation/task-result） |
+| 恢复/轮询 | SESSION_RESUME（EXECUTING 半途快照 + sub 续接 + 轮询同步）、IDLE_POLL_TERMINAL、EMPTY_CONVERSATION、DEEP_HISTORY |
+| 干预 | PERMISSION_REQUEST/DENY/TIMEOUT、ASK_QUESTION/UNANSWERED、OPENUI_RENDER/INTERACTIVE、INTERVENTION_MIXED、ASK_DUPLICATE（真实载荷双卡）、INTERVENTION_STACK（四选项/编辑类/堆叠） |
+| 队列/停止 | USER_CANCEL、TASK_CONFLICT、MESSAGE_QUEUE_HOLDING |
+
+### 后续优化
+
+见 [mock-optimization-plan.md](./mock-optimization-plan.md)（v3：M0 双轨已落地， M1 侵入单点化、M2/M3 E2E 自动化与真实时长场景进行中）。
