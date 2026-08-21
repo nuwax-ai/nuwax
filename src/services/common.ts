@@ -154,7 +154,7 @@ const errorHandler = (error: any, opts: any) => {
       switch (code) {
         // 用户未登录，跳转到登录页
         case USER_NO_LOGIN:
-          if (window.location.pathname === '/mock-chat') {
+          if (window.location.pathname.includes('mock-chat')) {
             return;
           }
           localStorage.clear();
@@ -164,7 +164,7 @@ const errorHandler = (error: any, opts: any) => {
 
         // 重定向到登录页
         case REDIRECT_LOGIN:
-          if (window.location.pathname === '/mock-chat') {
+          if (window.location.pathname.includes('mock-chat')) {
             return;
           }
           clearLoginStatusCache();

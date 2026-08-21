@@ -8,9 +8,11 @@ export const UPLOAD_FILE_ACTION = `${process.env.BASE_URL}/api/file/upload`;
 // 语音转文字（STT）接口地址：multipart/form-data 上传音频，返回识别文本
 export const AUDIO_STT_URL = `${process.env.BASE_URL}/api/audio/stt`;
 
-// 开发验收页必须走同源 Umi mock；其它页面仍使用配置的后端地址。
+// 开发验收页（含 /app/mock-chat 应用形态变体）必须走同源 Umi mock；
+// 其它页面仍使用配置的后端地址。
 const conversationApiOrigin =
-  typeof window !== 'undefined' && window.location.pathname === '/mock-chat'
+  typeof window !== 'undefined' &&
+  window.location.pathname.includes('mock-chat')
     ? ''
     : process.env.BASE_URL;
 

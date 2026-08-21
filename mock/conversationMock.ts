@@ -1,17 +1,20 @@
 /**
  * 会话 Mock：使用 Umi dev-server 回放真实 SSE 协议。
  *
- * 仅供 /mock-chat 开发验收页使用；场景定义与页面选择器共享同一份数据源。
+ * 仅供 /mock-chat（及 /app/mock-chat）开发验收页使用；场景定义在
+ * mock/conversationScenarios.ts，页面通过 /api/mock/conversation/scenarios
+ * 拉取元数据，不在业务代码 src 内依赖 mock 数据。
  *
- * 注意：Umi mock 层只 watch mock/ 目录。修改 src/mocks/conversationScenarios.ts
+ * 注意：Umi mock 层只 watch mock/ 目录。修改 mock/conversationScenarios.ts
  * 后需重启 dev server，或 touch 本文件触发 mock 层重载，否则新场景会报
  * MOCK_SCENARIO_NOT_FOUND（HTTP 400）。
  */
 import {
   getScenario,
+  MOCK_SCENARIOS,
   type MockScenario,
   type MockSseEvent,
-} from '../src/mocks/conversationScenarios';
+} from './conversationScenarios';
 import { S } from './utils';
 
 const MOCK_CONVERSATION_ID = 999999;
@@ -110,6 +113,25 @@ export default {
     pollCount = 0;
     speed = Number(req.body?.speed) || 1;
     res.json(S({ scenario: currentScenarioId, speed }));
+  },
+
+  'GET /api/mock/conversation/scenarios': (_req: any, res: any) => {
+    // 页面只消费元数据（不含 events/initialMessages 全量），保持数据源单点在 mock/
+    res.json(
+      S(
+        MOCK_SCENARIOS.map((scenario) => ({
+          id: scenario.id,
+          label: scenario.label,
+          description: scenario.description,
+          verifies: scenario.verifies,
+          transport: scenario.transport,
+          entry: scenario.entry,
+          hasFinalResult: scenario.events.some(
+            (event) => event.eventType === 'FINAL_RESULT',
+          ),
+        })),
+      ),
+    );
   },
 
   'GET /api/mock/conversation/status': (_req: any, res: any) => {

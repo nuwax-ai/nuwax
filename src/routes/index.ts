@@ -626,7 +626,13 @@ const routes = [
     ? [
         {
           path: '/mock-chat',
-          component: '@/pages/MockChat',
+          component: '@/examples/MockChat',
+          layout: false,
+        },
+        {
+          // /app 前缀让 useOpenApp 自动进入应用内嵌形态，验收 app 侧渲染分支
+          path: '/app/mock-chat',
+          component: '@/examples/MockChat',
           layout: false,
         },
       ]

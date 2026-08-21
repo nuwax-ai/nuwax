@@ -40,9 +40,10 @@ import type {
 import type { RequestResponse } from '@/types/interfaces/request';
 import { request } from 'umi';
 
-/** 开发验收页的会话接口走同源 Umi mock，不受全局远端 baseURL 影响。 */
+/** 开发验收页（含 /app/mock-chat）的会话接口走同源 Umi mock，不受全局远端 baseURL 影响。 */
 const conversationApiUrl = (path: string) =>
-  typeof window !== 'undefined' && window.location.pathname === '/mock-chat'
+  typeof window !== 'undefined' &&
+  window.location.pathname.includes('mock-chat')
     ? `${window.location.origin}${path}`
     : path;
 

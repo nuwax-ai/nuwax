@@ -1,14 +1,15 @@
 /**
  * 会话终态收敛开发验收页。
  *
- * 场景控制走 Umi mock，消息处理和 UI 则完整复用 conversationInfo model 与
- * UnifiedChatSession，确保手工验收覆盖生产路径而非另一套演示实现。
+ * 场景控制走 Umi mock（数据源单点在 mock/conversationScenarios.ts，页面经
+ * /api/mock/conversation/scenarios 拉取元数据，业务代码不依赖 mock 数据），
+ * 消息处理和 UI 则完整复用 conversationInfo model 与 UnifiedChatSession，
+ * 确保手工验收覆盖生产路径而非另一套演示实现。
+ *
+ * 应用内嵌形态：访问 /app/mock-chat（/app 前缀由 useOpenApp 自动识别）。
  */
 import { UnifiedChatSession } from '@/components/business-component';
-import {
-  MOCK_SCENARIOS,
-  type MockScenarioId,
-} from '@/mocks/conversationScenarios';
+import { useConversationRuntimeSession } from '@/features/conversation/react/useConversationRuntimeSession';
 import { apiAgentConversation } from '@/services/agentConfig';
 import { DefaultSelectedEnum, TaskStatus } from '@/types/enums/agent';
 import { ProcessingEnum } from '@/types/enums/common';
@@ -22,7 +23,6 @@ import {
   Segmented,
   Select,
   Space,
-  Switch,
   Tag,
   Typography,
 } from 'antd';
@@ -39,10 +39,21 @@ const { Paragraph, Text, Title } = Typography;
 const MOCK_CONVERSATION_ID = 999999;
 
 type MockServerStatus = {
-  scenario: MockScenarioId;
+  scenario: string;
   taskStatus: TaskStatus;
   pollCount: number;
   emittedEvents: Array<{ eventType: string; data?: Record<string, unknown> }>;
+};
+
+/** 场景元数据（由 mock 接口下发，页面不 import mock 目录数据）。 */
+type ScenarioMeta = {
+  id: string;
+  label: string;
+  description: string;
+  verifies: string;
+  transport?: string;
+  entry?: string;
+  hasFinalResult: boolean;
 };
 
 const speedOptions = [
@@ -58,28 +69,29 @@ const isTerminal = (status?: TaskStatus) =>
 
 const MockChat: React.FC = () => {
   const model = useModel('conversationInfo');
-  const { setIsAppSidebarMode } = useModel('useOpenApp');
-  const [scenarioId, setScenarioId] = useState<MockScenarioId>('NORMAL_SINGLE');
+  const [scenarioId, setScenarioId] = useState('NORMAL_SINGLE');
   const [speed, setSpeed] = useState(0.25);
-  const [appSidebarMode, setAppSidebarMode] = useState(false);
   const [preparing, setPreparing] = useState(false);
+  const [scenarios, setScenarios] = useState<ScenarioMeta[]>([]);
   const [serverStatus, setServerStatus] = useState<MockServerStatus>();
   const [lastError, setLastError] = useState('');
   const subTimerRef = useRef<ReturnType<typeof setTimeout>>();
   const didInitialPrepareRef = useRef(false);
 
-  // 「应用内嵌模式」：生产中由 /app/* 路由前缀驱动（useOpenApp 的
-  // useLayoutEffect），此处手动切换以覆盖 app 形态下的会话渲染分支；
-  // 卸载时复位，避免污染同路由下的其它页面。
-  useEffect(() => {
-    setIsAppSidebarMode(appSidebarMode);
-  }, [appSidebarMode, setIsAppSidebarMode]);
-  useEffect(() => () => setIsAppSidebarMode(false), [setIsAppSidebarMode]);
-
-  const scenario = useMemo(
-    () => MOCK_SCENARIOS.find((item) => item.id === scenarioId)!,
-    [scenarioId],
-  );
+  // ── 双轨接入（M0）：flag 开启（?conversationRuntime=1）时挂 runtime 线，
+  // conversationProps 于 JSX 尾部展开覆盖旧线字段；编排与断言按轨分派。──
+  const runtimeMessageViewRef = useRef<HTMLDivElement | null>(null);
+  const runtimeAllowAutoScrollRef = useRef(true);
+  const runtimeLine = useConversationRuntimeSession({
+    conversationId: MOCK_CONVERSATION_ID,
+    // runtime 轨滚动跟随（resumeController 置底）需要自己的容器 ref
+    messageViewRef: runtimeMessageViewRef,
+    allowAutoScrollRef: runtimeAllowAutoScrollRef,
+    // effectsResources 留空：TaskAgent 文件树/预览类 effect 在 mock 页静默忽略
+    // （可选契约，先例 AgentConversationChatPanel/index.tsx:104）
+  });
+  const isRuntimeLine = Boolean(runtimeLine);
+  const runtimeProps = runtimeLine?.conversationProps ?? {};
 
   const refreshServerStatus = useCallback(async () => {
     try {
@@ -91,6 +103,129 @@ const MockChat: React.FC = () => {
     }
   }, []);
 
+  // ── 轨感知状态选择器（断言与编排共用；runtime 线不写旧 model）──
+  const lineConversationInfo = (
+    isRuntimeLine ? runtimeProps.conversationInfo : model.conversationInfo
+  ) as typeof model.conversationInfo;
+  const lineIsConversationActive = (
+    isRuntimeLine
+      ? runtimeProps.isConversationActive
+      : model.isConversationActive
+  ) as boolean;
+  const lineMessageList = (
+    isRuntimeLine ? runtimeLine?.messageList : model.messageList || []
+  ) as MessageInfo[];
+
+  /** 按轨分派的编排 API（legacy 走 conversationInfo model，runtime 走 session） */
+  const lineApi = {
+    /** 重置并装载会话详情（prepareScenario 用） */
+    resetAndLoad: async (): Promise<void> => {
+      if (runtimeLine) {
+        runtimeLine.session.store.reset();
+        await runtimeLine.session.load(MOCK_CONVERSATION_ID);
+        return;
+      }
+      await model.runAsync(MOCK_CONVERSATION_ID);
+    },
+    /** 清理上一场景连接（prepare / 卸载用） */
+    abortStreams: (): void => {
+      if (runtimeLine) {
+        runtimeLine.session.abortResumeStream();
+        return;
+      }
+      model.abortResumeStream();
+      model.handleClearSideEffect();
+    },
+    /** 发送用户消息 */
+    send: (text: string): void => {
+      if (runtimeLine) {
+        (runtimeProps.onSendMessage as typeof sendMessage)(
+          text,
+          undefined,
+          undefined,
+          undefined,
+          'yolo',
+        );
+        return;
+      }
+      void model.onMessageSend({
+        id: MOCK_CONVERSATION_ID,
+        messageInfo: text,
+        sandboxId: 'mock-sandbox',
+        debug: false,
+        isSync: false,
+        agentMode: 'yolo',
+      });
+    },
+    /** 停止会话 */
+    stop: async (): Promise<void> => {
+      if (runtimeLine) {
+        (runtimeProps.runStopConversation as (id: string) => void)(
+          String(
+            (runtimeProps.getCurrentConversationId as () => number | null)() ??
+              MOCK_CONVERSATION_ID,
+          ),
+        );
+        return;
+      }
+      await model.runStopConversation(
+        model.getCurrentConversationRequestId() || MOCK_CONVERSATION_ID,
+      );
+    },
+    /** sub 流续接（两轨签名一致：id, currentList, onClose, debugSource） */
+    resume: (debugSource: string): void => {
+      const resume = (
+        isRuntimeLine
+          ? runtimeProps.onResumeConversationStream
+          : model.resumeConversationStream
+      ) as typeof model.resumeConversationStream;
+      resume(
+        MOCK_CONVERSATION_ID,
+        lineMessageList,
+        refreshServerStatus,
+        debugSource,
+      );
+    },
+    /** 快照归并（轮询详情） */
+    applySnapshot: (
+      snapshot: NonNullable<
+        Awaited<ReturnType<typeof apiAgentConversation>>['data']
+      >,
+    ): void => {
+      if (runtimeLine) {
+        (runtimeProps.onConversationSnapshot as (s: unknown) => void)(snapshot);
+        return;
+      }
+      model.syncConversationSnapshotMessages(snapshot);
+    },
+    /** 终态落定 */
+    applyTerminal: (status: TaskStatus): void => {
+      if (runtimeLine) {
+        (runtimeProps.onTerminalTaskStatus as (s: TaskStatus) => void)(status);
+        return;
+      }
+      model.finalizeConversationTerminal(
+        MOCK_CONVERSATION_ID,
+        status,
+        'mock-poll-snapshot',
+      );
+    },
+  };
+
+  useEffect(() => {
+    fetch('/api/mock/conversation/scenarios')
+      .then((response) => response.json())
+      .then((result) => setScenarios(result.data || []))
+      .catch((error) =>
+        setLastError(error instanceof Error ? error.message : String(error)),
+      );
+  }, []);
+
+  const scenario = useMemo(
+    () => scenarios.find((item) => item.id === scenarioId) || scenarios[0],
+    [scenarios, scenarioId],
+  );
+
   useEffect(() => {
     const timer = window.setInterval(refreshServerStatus, 250);
     return () => window.clearInterval(timer);
@@ -99,10 +234,9 @@ const MockChat: React.FC = () => {
   useEffect(
     () => () => {
       if (subTimerRef.current) clearTimeout(subTimerRef.current);
-      model.abortResumeStream();
-      model.handleClearSideEffect();
+      lineApi.abortStreams();
     },
-    // model 是 Umi 动态对象；这里只在页面卸载时清理连接。
+    // 轨归属在首帧定型（flag 初始化读一次），卸载时清理当前轨连接。
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   );
@@ -111,10 +245,14 @@ const MockChat: React.FC = () => {
     setPreparing(true);
     setLastError('');
     try {
-      model.abortResumeStream();
-      model.handleClearSideEffect();
-      model.setMessageList([]);
-      model.setConversationInfo(null);
+      // 清理上一场景连接与消息（按轨），再重置 mock 服务端场景
+      lineApi.abortStreams();
+      if (runtimeLine) {
+        runtimeLine.session.store.reset();
+      } else {
+        model.setMessageList([]);
+        model.setConversationInfo(null);
+      }
 
       const response = await fetch('/api/mock/conversation/scenario', {
         method: 'POST',
@@ -134,7 +272,7 @@ const MockChat: React.FC = () => {
         );
       }
 
-      await model.runAsync(MOCK_CONVERSATION_ID);
+      await lineApi.resetAndLoad();
       await refreshServerStatus();
     } catch (error) {
       setLastError(error instanceof Error ? error.message : String(error));
@@ -142,7 +280,9 @@ const MockChat: React.FC = () => {
     } finally {
       setPreparing(false);
     }
-  }, [model, refreshServerStatus, scenarioId, speed]);
+    // lineApi 每帧重建但轨归属恒定（flag 初始化读一次），依赖收敛到稳定项
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scenarioId, speed, refreshServerStatus]);
 
   useEffect(() => {
     if (didInitialPrepareRef.current) return;
@@ -157,38 +297,22 @@ const MockChat: React.FC = () => {
     } catch {
       return; // 初始化失败已展示在 Alert，不再继续发送
     }
+    if (!scenario) return; // 元数据未加载（mock 未就绪）
 
     // 会话续接：不发送新消息——详情快照（EXECUTING 半途消息）装载后
     // 直接 sub 续接剩余输出，模拟刷新/重进会话的恢复链路
     if (scenario.entry === 'resume') {
       subTimerRef.current = setTimeout(() => {
-        model.resumeConversationStream(
-          MOCK_CONVERSATION_ID,
-          model.messageList || [],
-          refreshServerStatus,
-          `mock:${scenario.id}`,
-        );
+        lineApi.resume(`mock:${scenario.id}`);
       }, 400);
       return;
     }
 
-    await model.onMessageSend({
-      id: MOCK_CONVERSATION_ID,
-      messageInfo: `执行 Mock 场景：${scenario.label}`,
-      sandboxId: 'mock-sandbox',
-      debug: false,
-      isSync: false,
-      agentMode: 'yolo',
-    });
+    lineApi.send(`执行 Mock 场景：${scenario.label}`);
 
     if (scenario.transport === 'sub-only') {
       subTimerRef.current = setTimeout(() => {
-        model.resumeConversationStream(
-          MOCK_CONVERSATION_ID,
-          model.messageList || [],
-          refreshServerStatus,
-          `mock:${scenario.id}`,
-        );
+        lineApi.resume(`mock:${scenario.id}`);
       }, 400);
     }
 
@@ -196,19 +320,17 @@ const MockChat: React.FC = () => {
       subTimerRef.current = setTimeout(async () => {
         const result = await apiAgentConversation(MOCK_CONVERSATION_ID);
         if (result?.data) {
-          model.syncConversationSnapshotMessages(result.data);
+          lineApi.applySnapshot(result.data);
           if (isTerminal(result.data.taskStatus)) {
-            model.finalizeConversationTerminal(
-              MOCK_CONVERSATION_ID,
-              result.data.taskStatus,
-              'mock-poll-snapshot',
-            );
+            lineApi.applyTerminal(result.data.taskStatus);
           }
         }
         await refreshServerStatus();
       }, 600);
     }
-  }, [model, prepareScenario, refreshServerStatus, scenario]);
+    // lineApi 依赖当前轨的闭包（轨归属恒定）；收敛到稳定依赖项
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prepareScenario, refreshServerStatus, scenario]);
 
   const sendMessage = useCallback(
     (
@@ -234,13 +356,13 @@ const MockChat: React.FC = () => {
   );
 
   const stop = useCallback(async () => {
-    await model.runStopConversation(
-      model.getCurrentConversationRequestId() || MOCK_CONVERSATION_ID,
-    );
+    await lineApi.stop();
     await refreshServerStatus();
-  }, [model, refreshServerStatus]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshServerStatus]);
 
-  const messageList = (model.messageList || []) as MessageInfo[];
+  // 断言与展示统一走轨感知选择器（runtime 线不写旧 model，直读 model 会假绿）
+  const messageList = lineMessageList;
   const executingProcessingCount = messageList.reduce(
     (count, message) =>
       count +
@@ -254,14 +376,14 @@ const MockChat: React.FC = () => {
       (event) => event.eventType === 'FINAL_RESULT',
     ),
   );
-  const terminalExpected = scenario.events.some(
-    (event) => event.eventType === 'FINAL_RESULT',
-  );
-  const hangingExpected = scenario.transport === 'keep-open';
+  const terminalExpected = scenario?.hasFinalResult ?? false;
+  const hangingExpected = scenario?.transport === 'keep-open';
   const assertions = [
     {
-      label: '真实会话模型已加载 Mock 会话',
-      passed: model.conversationInfo?.id === MOCK_CONVERSATION_ID,
+      label: `当前轨（${
+        isRuntimeLine ? 'runtime' : 'legacy'
+      }）已加载 Mock 会话`,
+      passed: lineConversationInfo?.id === MOCK_CONVERSATION_ID,
     },
     {
       label: terminalExpected
@@ -274,7 +396,7 @@ const MockChat: React.FC = () => {
         ? '悬挂场景保持活跃，等待用户处理'
         : '终态后本地流式状态已释放',
       passed: hangingExpected
-        ? model.isConversationActive
+        ? lineIsConversationActive
         : terminalExpected
         ? !hasFinalResult || !model.isConversationActive
         : !model.isConversationActive,
@@ -290,6 +412,14 @@ const MockChat: React.FC = () => {
     },
   ];
 
+  if (!scenario) {
+    return (
+      <Card size="small" loading={scenarios.length === 0}>
+        {lastError ? <Alert type="error" showIcon message={lastError} /> : null}
+      </Card>
+    );
+  }
+
   return (
     <div style={{ minHeight: '100vh', background: '#f5f6f8', padding: 16 }}>
       <Space direction="vertical" size={12} style={{ width: '100%' }}>
@@ -298,17 +428,25 @@ const MockChat: React.FC = () => {
             <div>
               <Title level={4} style={{ margin: 0 }}>
                 会话终态收敛 Mock 验收
+                <Tag
+                  color={isRuntimeLine ? 'geekblue' : 'default'}
+                  style={{ marginLeft: 12 }}
+                >
+                  {isRuntimeLine ? 'runtime 轨' : 'legacy 轨'}
+                </Tag>
               </Title>
               <Text type="secondary">
-                {MOCK_SCENARIOS.length} 个故障注入场景，复用生产会话模型与 UI。
+                {scenarios.length} 个故障注入场景，复用生产会话模型与
+                UI；应用内嵌 形态访问 /app/mock-chat，runtime 轨加
+                ?conversationRuntime=1。
               </Text>
             </div>
             <Select
               showSearch
               style={{ width: 400 }}
-              value={scenarioId}
+              value={scenario.id}
               onChange={setScenarioId}
-              options={MOCK_SCENARIOS.map((item) => ({
+              options={scenarios.map((item) => ({
                 value: item.id,
                 label: `${item.id} · ${item.label}`,
               }))}
@@ -318,14 +456,6 @@ const MockChat: React.FC = () => {
               value={speed}
               onChange={(value) => setSpeed(Number(value))}
             />
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Text type="secondary">应用内嵌模式</Text>
-              <Switch
-                size="small"
-                checked={appSidebarMode}
-                onChange={setAppSidebarMode}
-              />
-            </div>
             <Button
               type="primary"
               loading={preparing}
@@ -367,7 +497,7 @@ const MockChat: React.FC = () => {
               <UnifiedChatSession
                 conversationId={MOCK_CONVERSATION_ID}
                 messageList={messageList}
-                isLoading={model.loadingConversation}
+                isLoading={isRuntimeLine ? false : model.loadingConversation}
                 loadingMore={model.loadingMore}
                 isMoreMessage={model.isMoreMessage}
                 isConversationActive={model.isConversationActive}
@@ -412,12 +542,35 @@ const MockChat: React.FC = () => {
                   )
                 }
                 resumeDebugSource={`mock:${scenario.id}`}
-                messageViewRef={model.messageViewRef}
-                allowAutoScrollRef={model.allowAutoScrollRef}
+                messageViewRef={
+                  isRuntimeLine
+                    ? runtimeMessageViewRef
+                    : (model.messageViewRef as never)
+                }
+                allowAutoScrollRef={
+                  isRuntimeLine
+                    ? runtimeAllowAutoScrollRef
+                    : (model.allowAutoScrollRef as never)
+                }
                 scrollTimeoutRef={model.scrollTimeoutRef}
                 enableMention={false}
                 showClearIcon={false}
                 showAnnouncement={false}
+                queueContext={
+                  isRuntimeLine
+                    ? {
+                        // 队列门控按轨取源：未注入时会回落 legacy model（恒假）
+                        streamActive: Boolean(runtimeProps.isLocallyStreaming),
+                        taskExecuting:
+                          (
+                            runtimeProps.conversationInfo as {
+                              taskStatus?: TaskStatus;
+                            }
+                          )?.taskStatus === TaskStatus.EXECUTING,
+                      }
+                    : undefined
+                }
+                {...runtimeProps}
               />
             </div>
           </Card>

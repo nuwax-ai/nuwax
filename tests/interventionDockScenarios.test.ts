@@ -7,15 +7,15 @@
  * 消费方式回放场景事件流，锁定场景载荷与 applier 判别口径的对齐。
  */
 import { processInterventionSsePatch } from '@/components/business-component/AgentIntervention/utils/processInterventionSsePatch';
-import {
-  MOCK_SCENARIOS,
-  type MockScenario,
-} from '@/mocks/conversationScenarios';
 import { getCustomBlock } from '@/plugins/ds-markdown-process';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import { extractTaskResult } from '@/utils';
 import { normalizeFileDiffItems } from '@/utils/fileChangeDiff';
 import { describe, expect, it, vi } from 'vitest';
+import {
+  MOCK_SCENARIOS,
+  type MockScenario,
+} from '../mock/conversationScenarios';
 
 // reconcile 链经 i18nRuntime → services/i18n → umi request 引入 esbuild 传递依赖，
 // 非 umi 测试环境下崩溃；mock 掉字典读取即可（对齐 conversationInfoModel.test 做法）。

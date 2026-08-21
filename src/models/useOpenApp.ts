@@ -172,8 +172,6 @@ const useOpenApp = () => {
 
   return {
     isAppSidebarMode,
-    // 仅供 /mock-chat 验收页手动切换 app 形态（生产由 /app/* 路由前缀驱动）
-    setIsAppSidebarMode,
     isAppSidebarVisible,
     toggleAppSidebarVisible,
     closeAppSidebar,
