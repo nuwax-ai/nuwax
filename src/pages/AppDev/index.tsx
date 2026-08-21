@@ -679,6 +679,7 @@ const AppDev: React.FC = () => {
             isSelected: false,
           };
         });
+      // 如果数据源列表为空，则不进行选择
       setSelectedDataResources(_selectedDataResources);
       selectedDataResourcesRef.current = _selectedDataResources;
     }
