@@ -2,6 +2,10 @@
  * 会话 Mock：使用 Umi dev-server 回放真实 SSE 协议。
  *
  * 仅供 /mock-chat 开发验收页使用；场景定义与页面选择器共享同一份数据源。
+ *
+ * 注意：Umi mock 层只 watch mock/ 目录。修改 src/mocks/conversationScenarios.ts
+ * 后需重启 dev server，或 touch 本文件触发 mock 层重载，否则新场景会报
+ * MOCK_SCENARIO_NOT_FOUND（HTTP 400）。
  */
 import {
   getScenario,
@@ -97,10 +101,10 @@ export default {
     }
 
     currentScenarioId = scenario.id;
+    // sub-only 传输的场景初始即为 EXECUTING：详情接口直接报告执行中，
+    // 页面刷新/重进后据此触发 sub 流续接。
     currentTaskStatus =
-      scenario.id === 'SUB_ONLY_RECOVERY' || scenario.id === 'SUB_NETWORK_ERROR'
-        ? 'EXECUTING'
-        : 'CREATE';
+      scenario.transport === 'sub-only' ? 'EXECUTING' : 'CREATE';
     conversationMessages = [...(scenario.initialMessages || [])];
     emittedEvents = [];
     pollCount = 0;

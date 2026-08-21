@@ -22,6 +22,7 @@ import {
   Segmented,
   Select,
   Space,
+  Switch,
   Tag,
   Typography,
 } from 'antd';
@@ -57,13 +58,23 @@ const isTerminal = (status?: TaskStatus) =>
 
 const MockChat: React.FC = () => {
   const model = useModel('conversationInfo');
+  const { setIsAppSidebarMode } = useModel('useOpenApp');
   const [scenarioId, setScenarioId] = useState<MockScenarioId>('NORMAL_SINGLE');
   const [speed, setSpeed] = useState(0.25);
+  const [appSidebarMode, setAppSidebarMode] = useState(false);
   const [preparing, setPreparing] = useState(false);
   const [serverStatus, setServerStatus] = useState<MockServerStatus>();
   const [lastError, setLastError] = useState('');
   const subTimerRef = useRef<ReturnType<typeof setTimeout>>();
   const didInitialPrepareRef = useRef(false);
+
+  // 「应用内嵌模式」：生产中由 /app/* 路由前缀驱动（useOpenApp 的
+  // useLayoutEffect），此处手动切换以覆盖 app 形态下的会话渲染分支；
+  // 卸载时复位，避免污染同路由下的其它页面。
+  useEffect(() => {
+    setIsAppSidebarMode(appSidebarMode);
+  }, [appSidebarMode, setIsAppSidebarMode]);
+  useEffect(() => () => setIsAppSidebarMode(false), [setIsAppSidebarMode]);
 
   const scenario = useMemo(
     () => MOCK_SCENARIOS.find((item) => item.id === scenarioId)!,
@@ -110,8 +121,18 @@ const MockChat: React.FC = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ scenario: scenarioId, speed }),
       });
-      if (!response.ok)
-        throw new Error(`场景初始化失败：HTTP ${response.status}`);
+      if (!response.ok) {
+        // 服务端 400 会带 code/message（如 MOCK_SCENARIO_NOT_FOUND），
+        // 多为 dev-server mock 层未重载场景表，提示重启
+        const detail = await response.json().catch(() => null);
+        throw new Error(
+          `场景初始化失败：HTTP ${response.status}` +
+            (detail?.message ? `（${detail.code}: ${detail.message}）` : '') +
+            (detail?.code === 'MOCK_SCENARIO_NOT_FOUND'
+              ? '；mock 场景表未热重载，请重启 dev server 或 touch mock/conversationMock.ts'
+              : ''),
+        );
+      }
 
       await model.runAsync(MOCK_CONVERSATION_ID);
       await refreshServerStatus();
@@ -126,11 +147,31 @@ const MockChat: React.FC = () => {
   useEffect(() => {
     if (didInitialPrepareRef.current) return;
     didInitialPrepareRef.current = true;
-    void prepareScenario();
+    // 失败已写入 lastError 并以 Alert 呈现，吞掉 rejection 避免错误覆盖层整页崩
+    prepareScenario().catch(() => {});
   }, [prepareScenario]);
 
   const play = useCallback(async () => {
-    await prepareScenario();
+    try {
+      await prepareScenario();
+    } catch {
+      return; // 初始化失败已展示在 Alert，不再继续发送
+    }
+
+    // 会话续接：不发送新消息——详情快照（EXECUTING 半途消息）装载后
+    // 直接 sub 续接剩余输出，模拟刷新/重进会话的恢复链路
+    if (scenario.entry === 'resume') {
+      subTimerRef.current = setTimeout(() => {
+        model.resumeConversationStream(
+          MOCK_CONVERSATION_ID,
+          model.messageList || [],
+          refreshServerStatus,
+          `mock:${scenario.id}`,
+        );
+      }, 400);
+      return;
+    }
+
     await model.onMessageSend({
       id: MOCK_CONVERSATION_ID,
       messageInfo: `执行 Mock 场景：${scenario.label}`,
@@ -259,12 +300,12 @@ const MockChat: React.FC = () => {
                 会话终态收敛 Mock 验收
               </Title>
               <Text type="secondary">
-                28 个故障注入场景，复用生产会话模型与 UI。
+                {MOCK_SCENARIOS.length} 个故障注入场景，复用生产会话模型与 UI。
               </Text>
             </div>
             <Select
               showSearch
-              style={{ width: 260 }}
+              style={{ width: 400 }}
               value={scenarioId}
               onChange={setScenarioId}
               options={MOCK_SCENARIOS.map((item) => ({
@@ -277,6 +318,14 @@ const MockChat: React.FC = () => {
               value={speed}
               onChange={(value) => setSpeed(Number(value))}
             />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Text type="secondary">应用内嵌模式</Text>
+              <Switch
+                size="small"
+                checked={appSidebarMode}
+                onChange={setAppSidebarMode}
+              />
+            </div>
             <Button
               type="primary"
               loading={preparing}
