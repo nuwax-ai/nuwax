@@ -7,7 +7,7 @@
 - 32 场景，数据源单点 `mock/conversationScenarios.ts`；页面 `src/examples/MockChat` 经 `GET /api/mock/conversation/scenarios` 拉元数据，`src` 零依赖 mock 数据
 - 合同测试 `tests/interventionDockScenarios.test.ts`（11 用例）锁定场景 ↔ `processInterventionSsePatch` 对齐——runtime 线经 `reconcileFinalMessageState.ts:55` 复用同一 applier，两轨同受益；两线投影差异由双轨 E2E 补（单测层已有 `conversationDualTrackParity.test.ts`）
 - 双路由 `/mock-chat` / `/app/mock-chat`；mock 12 个接口双轨全覆盖（传输层 URL 已含 mock 同源改写）
-- 分层现状：vitest 合同网（秒级，CI 守门）→ **mock 场景 E2E（缺）** → 真实页面 E2E（`conversation-acceptance.mjs`，登录态，本地跑）
+- 分层现状：vitest 合同网（秒级，CI 守门）→ **mock 场景 E2E（`e2e:mock-chat`，31 场景 × 双轨，无登录态，M2 已落地）** → 真实页面 E2E（`conversation-acceptance.mjs`，登录态，本地跑）
 
 ## M0：runtime 轨接入 mock 页（1~1.5 天，最高优先）
 
@@ -72,14 +72,33 @@
 - **已知差异（记录，runtime 线另行修复）**：SESSION_RESUME 续接后快照 assistant 的 EXECUTING processingList 不被清理（runtime 续接投影新建消息而非 upsert 快照 loading 消息； legacy 靠 finalizeConversationTerminal 全列表清理）——mock 页断言 4 在 runtime 轨此场景为红，属真实行为差异暴露，正是双轨验收的价值。
 - **重复 resume 说明**：UnifiedChatSession 的自动恢复 hook（EXECUTING 时）与 play 的手动 resume 可能并存，实测幂等（requestId 门禁丢弃第二轮）；E2E 化后可按「事件数 == 脚本数」断言防重复。
 
+## M2 实施记录（2026-08-21，已落地）
+
+- **页面侧（`src/examples/MockChat/index.tsx`）**：
+  - URL 驱动入口：`?scenario=<id>&speed=<n>&autoplay=1`——E2E 单标签串行整页重载，状态天然干净；autoplay 依赖场景元数据就绪（异步 fetch），首帧为空会导致 play 提前 return、SSE 永不开流，已修复为等 `scenarios` 非空再触发
+  - `window.__MOCK_CHAT_ASSERTIONS__` dev-only 快照（断言单源：页面算，E2E 只读）：`{ scenarioId, line, assertions, playing, streamActive, messageCount, emittedCount, hasFinalResult, serverTaskStatus, sawActive, sawExecutingTools, lastError, updatedAt }`
+  - **修复 M0 遗留假绿**：断言 3 非悬挂分支原读 `model.isConversationActive`（runtime 轨恒 false）→ 统一按轨选择器 `lineIsConversationActive`；「停止会话」按钮与运行状态 Tag 同步按轨取源
+  - 非空转证明：`sawActive`（本轨流式活跃 或 快照 taskStatus=EXECUTING——resume 链路 legacy 轨 model 标志不覆盖，靠 taskStatus 补充）、`sawExecutingTools`
+- **E2E 套件（`scripts/e2e/mock-chat-acceptance.mjs` + `scripts/e2e/ego-run.mjs`）**：
+  - `npm run e2e:mock-chat`：31 场景（32 减 M3 的 MESSAGE_QUEUE_HOLDING）× {legacy, runtime} 单标签串行；过滤变量 `E2E_SCENARIOS` / `E2E_LINE` / `E2E_TIMEOUT` / `E2E_SPEED`
+  - **env 桥接**：ego-browser 沙箱不透传父进程 env（既有 conversation-acceptance.mjs 的 `process.env.E2E_*` 覆盖实际从未生效），`ego-run.mjs` 落临时 JSON 传入
+  - 收尾门控：`playing && emittedCount>0 && messageCount>0` 后才判收（防 t=0 断言全真误收）；终态场景等 `hasFinalResult && 断言全绿`，无终态场景（悬挂/错误收尾）等 `断言全绿 && 状态快照稳定 3s`
+  - 轨归属探针每 case 校验（fiber `onSendMessage` 含 `session.send` 判 RUNTIME），选择器放宽 `[class*="mention-editor"]` + `waitForElement` 等延迟挂载
+  - KNOWN-FAIL 机制：`SESSION_RESUME × runtime`（断言 4，runtime 续接不清快照 EXECUTING）标已知差异不计入退出码
+- **mock server 状态机补全（`mock/conversationMock.ts`）**——E2E 暴露的后端行为缺失，非掩盖问题：
+  - network-error destroy 时 `taskStatus → FAILED`：否则详情轮询恒报 EXECUTING，runtime 轨 `isConversationActive` 的 `taskExecuting` 合成分支永不释放（NETWORK_ERROR / SUB_NETWORK_ERROR 双轨红）
+  - 事件回放完毕 `res.end()` 时若仍 EXECUTING 且非 `pollTerminalAfter` 场景 → `COMPLETE`：QUESTION_TYPE 等无 FINAL_RESULT 正常收尾场景的后端终态化；保留 pollTerminalAfter 场景由轮询切换（IDLE_POLL_TERMINAL 验证路径不受影响）
+- **验证**：全量矩阵 62 项 = 61 通过 + 1 KNOWN-FAIL，exit 0；`test:conversation` 325 用例全绿；tsc 改动文件零新增；`/app/mock-chat` 嵌入形态 autoplay 验证通过（M0 风险表待测项闭环）
+- **已知边界**：`src/models/conversationAgent.ts` 是 ConversationAgent 页的独立 fork（SSE 处理整份拷贝），不在本矩阵内；该页已有两个 runtime 接入点——R6 切换若需覆盖此 fork 线，另行立项
+
 ## 风险与待办
 
 | 项 | 风险 | 处理 |
 | --- | --- | --- |
-| runtime 续接不清快照 EXECUTING | SESSION_RESUME 断言 4 红 | runtime resume 投影修复（upsert 快照 loading 消息或 finalize 尾巴），另行立项 |
+| runtime 续接不清快照 EXECUTING | SESSION_RESUME 断言 4 红 | runtime resume 投影修复（upsert 快照 loading 消息或 finalize 尾巴），另行立项；M2 起以 E2E KNOWN-FAIL 显式跟踪 |
 | M0 编排分派 | runtime session API 与 legacy model 行为差异 | 对照 `useConversationAgentChatSession.ts` 现成用法；M0 验证覆盖 4 类代表场景 |
-| M0 断言空转 | 按轨取源不彻底 → 假绿 | 验收要求终态场景先出现 EXECUTING 再收敛（非空转证明） |
-| `/app/mock-chat` | `useOpenApp` 视口同步操作不存在 DOM | dev server 重启后实测 |
+| M0 断言空转 | 按轨取源不彻底 → 假绿 | 验收要求终态场景先出现 EXECUTING 再收敛（非空转证明）；M2 起由 E2E `sawActive` 硬门控自动把关 |
+| `/app/mock-chat` | `useOpenApp` 视口同步操作不存在 DOM | 已验证（2026-08-21）：autoplay + 断言全绿，风险关闭 |
 | 真实时长 E2E | 单场景 60~154s | 环境变量门控，仅发版前跑 |
 | conversationAgent fork | 独立 SSE 拷贝线不在矩阵 | 已记录为已知边界，R6 前另行评估 |
 | E2E 接 CI | dev server 成本 | M2 稳定后独立评估 |

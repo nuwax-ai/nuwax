@@ -73,8 +73,17 @@ const replay = (
         scenario.transport === 'network-error' ||
         (options.sub && scenario.id === 'SUB_NETWORK_ERROR')
       ) {
+        // 连接死亡时后端视角同步终态化：否则详情轮询恒报 EXECUTING，
+        // runtime 轨 isConversationActive 的 taskExecuting 合成分支永不释放
+        currentTaskStatus = 'FAILED';
         res.socket?.destroy(new Error('Mock SSE network failure'));
         return;
+      }
+      // 正常收尾但无 FINAL_RESULT 事件的场景（如 QUESTION_TYPE）：真实后端
+      // 仍会将任务终态化。pollTerminalAfter 场景除外——保留 EXECUTING 由
+      // 详情轮询按次数切换，验证 poll-snapshot 收敛路径
+      if (!scenario.pollTerminalAfter && currentTaskStatus === 'EXECUTING') {
+        currentTaskStatus = 'COMPLETE';
       }
       res.end();
       return;

@@ -38,6 +38,32 @@ import { useModel } from 'umi';
 const { Paragraph, Text, Title } = Typography;
 const MOCK_CONVERSATION_ID = 999999;
 
+/** E2E 只读的页面断言快照（scripts/e2e/mock-chat-acceptance.mjs 轮询消费） */
+type MockChatAssertionSnapshot = {
+  scenarioId: string;
+  line: 'legacy' | 'runtime';
+  assertions: Array<{ label: string; passed: boolean }>;
+  updatedAt: number;
+  /** 已触发播放（autoplay 或手动点击）——E2E 开流门控前置条件 */
+  playing: boolean;
+  /** 当前轨流式活跃（断言同源，避免 E2E 读旧 model 假绿） */
+  streamActive: boolean;
+  messageCount: number;
+  emittedCount: number;
+  hasFinalResult: boolean;
+  serverTaskStatus: string;
+  /** 全程出现过活跃态 / EXECUTING 工具——断言非空转证明 */
+  sawActive: boolean;
+  sawExecutingTools: boolean;
+  lastError: string;
+};
+
+declare global {
+  interface Window {
+    __MOCK_CHAT_ASSERTIONS__?: MockChatAssertionSnapshot;
+  }
+}
+
 type MockServerStatus = {
   scenario: string;
   taskStatus: TaskStatus;
@@ -67,16 +93,35 @@ const isTerminal = (status?: TaskStatus) =>
   status === TaskStatus.FAILED ||
   status === TaskStatus.CANCEL;
 
+// URL 参数驱动（E2E 单标签串行入口）：scenario 指定初始场景、speed 覆盖初始
+// 速度、autoplay=1 跳过人工点击直接播放。页面整重载天然清干净上一场景状态。
+const initialUrlParams = new URLSearchParams(window.location.search);
+const initialScenarioFromUrl = initialUrlParams.get('scenario') || '';
+const initialSpeedFromUrl = Number(initialUrlParams.get('speed'));
+const AUTOPLAY = initialUrlParams.get('autoplay') === '1';
+
 const MockChat: React.FC = () => {
   const model = useModel('conversationInfo');
-  const [scenarioId, setScenarioId] = useState('NORMAL_SINGLE');
-  const [speed, setSpeed] = useState(0.25);
+  const [scenarioId, setScenarioId] = useState(
+    initialScenarioFromUrl || 'NORMAL_SINGLE',
+  );
+  const [speed, setSpeed] = useState(
+    Number.isFinite(initialSpeedFromUrl) && initialSpeedFromUrl > 0
+      ? initialSpeedFromUrl
+      : 0.25,
+  );
   const [preparing, setPreparing] = useState(false);
   const [scenarios, setScenarios] = useState<ScenarioMeta[]>([]);
   const [serverStatus, setServerStatus] = useState<MockServerStatus>();
   const [lastError, setLastError] = useState('');
   const subTimerRef = useRef<ReturnType<typeof setTimeout>>();
   const didInitialPrepareRef = useRef(false);
+  // 「曾经出现」语义的观测标记：E2E 断言非空转（终态场景先活跃再收敛）
+  const playingRef = useRef(false);
+  const sawActiveRef = useRef(false);
+  const sawExecutingToolsRef = useRef(false);
+  // 桥接初始 effect 与下方声明的 play（避免 use-before-define）
+  const playRef = useRef<() => Promise<void>>(async () => {});
 
   // ── 双轨接入（M0）：flag 开启（?conversationRuntime=1）时挂 runtime 线，
   // conversationProps 于 JSX 尾部展开覆盖旧线字段；编排与断言按轨分派。──
@@ -286,12 +331,19 @@ const MockChat: React.FC = () => {
 
   useEffect(() => {
     if (didInitialPrepareRef.current) return;
+    // autoplay 依赖场景元数据（entry/transport 分派），scenarios 为异步
+    // fetch——首帧为空会导致 play 提前 return、SSE 永不开流
+    if (AUTOPLAY && !scenarios.length) return;
     didInitialPrepareRef.current = true;
+    // autoplay（E2E 入口）：直接走完整播放链（play 内部会先 prepare）；
     // 失败已写入 lastError 并以 Alert 呈现，吞掉 rejection 避免错误覆盖层整页崩
-    prepareScenario().catch(() => {});
-  }, [prepareScenario]);
+    (AUTOPLAY ? playRef.current : prepareScenario)().catch(() => {});
+    // 轨归属与 URL 参数在首帧定型；playRef 见下方声明
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prepareScenario, scenarios]);
 
   const play = useCallback(async () => {
+    playingRef.current = true;
     try {
       await prepareScenario();
     } catch {
@@ -332,6 +384,8 @@ const MockChat: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [prepareScenario, refreshServerStatus, scenario]);
 
+  playRef.current = play;
+
   const sendMessage = useCallback(
     (
       messageInfo: string,
@@ -371,6 +425,14 @@ const MockChat: React.FC = () => {
       ).length,
     0,
   );
+  // 「曾经」观测标记在渲染路径记录（幂等写，E2E 据此证明断言非空转）：
+  // 活跃信号 = 本轨流式活跃 或 会话快照处于 EXECUTING（resume 链路 legacy
+  // 轨的 model.isConversationActive 不含 sub 续接，靠 taskStatus 补充）
+  const lineTaskExecuting =
+    lineConversationInfo?.taskStatus === TaskStatus.EXECUTING;
+  if (lineIsConversationActive || lineTaskExecuting)
+    sawActiveRef.current = true;
+  if (executingProcessingCount > 0) sawExecutingToolsRef.current = true;
   const hasFinalResult = Boolean(
     serverStatus?.emittedEvents.some(
       (event) => event.eventType === 'FINAL_RESULT',
@@ -395,11 +457,12 @@ const MockChat: React.FC = () => {
       label: hangingExpected
         ? '悬挂场景保持活跃，等待用户处理'
         : '终态后本地流式状态已释放',
+      // 按轨取源：runtime 线不写旧 model，读 model.isConversationActive 恒假
       passed: hangingExpected
         ? lineIsConversationActive
         : terminalExpected
-        ? !hasFinalResult || !model.isConversationActive
-        : !model.isConversationActive,
+        ? !hasFinalResult || !lineIsConversationActive
+        : !lineIsConversationActive,
     },
     {
       label: terminalExpected
@@ -411,6 +474,25 @@ const MockChat: React.FC = () => {
           : true,
     },
   ];
+
+  // E2E 只读快照（断言单源：页面算，scripts/e2e/mock-chat-acceptance.mjs 只读）
+  useEffect(() => {
+    window.__MOCK_CHAT_ASSERTIONS__ = {
+      scenarioId: scenario?.id ?? scenarioId,
+      line: isRuntimeLine ? 'runtime' : 'legacy',
+      assertions,
+      updatedAt: Date.now(),
+      playing: playingRef.current,
+      streamActive: lineIsConversationActive,
+      messageCount: messageList.length,
+      emittedCount: serverStatus?.emittedEvents.length ?? 0,
+      hasFinalResult,
+      serverTaskStatus: serverStatus?.taskStatus ?? '',
+      sawActive: sawActiveRef.current,
+      sawExecutingTools: sawExecutingToolsRef.current,
+      lastError,
+    };
+  });
 
   if (!scenario) {
     return (
@@ -465,7 +547,7 @@ const MockChat: React.FC = () => {
             </Button>
             <Button
               danger
-              disabled={!model.isConversationActive}
+              disabled={!lineIsConversationActive}
               onClick={() => void stop()}
             >
               停止会话
@@ -591,9 +673,9 @@ const MockChat: React.FC = () => {
             <Card size="small" title="运行状态">
               <Space wrap>
                 <Tag
-                  color={model.isConversationActive ? 'processing' : 'default'}
+                  color={lineIsConversationActive ? 'processing' : 'default'}
                 >
-                  active={String(model.isConversationActive)}
+                  active={String(lineIsConversationActive)}
                 </Tag>
                 <Tag>awaiting={String(model.isAwaitingChatTerminal)}</Tag>
                 <Tag

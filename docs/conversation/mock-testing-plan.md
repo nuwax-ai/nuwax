@@ -347,6 +347,8 @@ npm run dev  # 打开 /mock-chat → 选场景 → 播放 → 看断言
 - `/mock-chat`：普通形态（dev-only 路由）
 - `/app/mock-chat`：应用内嵌形态（`/app` 前缀由 useOpenApp 自动识别）
 - `?conversationRuntime=1`：runtime 轨（M0 双轨接入，页面头部显示当前轨）
+- `?scenario=<id>&speed=<n>&autoplay=1`：E2E 驱动参数（场景/速度/自动播放，见 M2）
+- `npm run e2e:mock-chat`：断言型全场景回归（31 场景 × 双轨，无登录态；`E2E_SCENARIOS` / `E2E_LINE` 过滤，经 `scripts/e2e/ego-run.mjs` 桥接 env——ego-browser 沙箱不透传父进程环境变量）
 
 ### ⚠️ mock 层热重载坑
 
@@ -366,4 +368,4 @@ Umi mock 只 watch `mock/` 目录：**修改 `mock/conversationScenarios.ts` 后
 
 ### 后续优化
 
-见 [mock-optimization-plan.md](./mock-optimization-plan.md)（v3：M0 双轨已落地， M1 侵入单点化、M2/M3 E2E 自动化与真实时长场景进行中）。
+见 [mock-optimization-plan.md](./mock-optimization-plan.md)（v3：M0 双轨、M2 断言型 E2E 已落地，M1 侵入单点化完成，M3 交互型 E2E 进行中）。

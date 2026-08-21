@@ -22,6 +22,7 @@
     "predev": "node scripts/generate-version.js",
     "dev": "cross-env UMI_ENV=development max dev",
     "e2e:conversation": "ego-browser nodejs < scripts/e2e/conversation-acceptance.mjs",
+    "e2e:mock-chat": "node scripts/e2e/ego-run.mjs scripts/e2e/mock-chat-acceptance.mjs",
     "format": "prettier --cache --write .",
     "generate:version": "node scripts/generate-version.js",
     "postinstall": "max setup",
