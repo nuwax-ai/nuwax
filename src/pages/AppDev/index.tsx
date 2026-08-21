@@ -681,6 +681,7 @@ const AppDev: React.FC = () => {
         });
       // 如果数据源列表为空，则不进行选择
       setSelectedDataResources(_selectedDataResources);
+      // 更新 selectedDataResourcesRef 引用
       selectedDataResourcesRef.current = _selectedDataResources;
     }
   }, [dataResourceManagement.resources]);
