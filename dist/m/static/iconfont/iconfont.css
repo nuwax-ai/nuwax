@@ -11,6 +11,14 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+.icon-HelpAndFeedback:before {
+  content: "\e658";
+}
+
+.icon-api-key-thick:before {
+  content: "\e660";
+}
+
 .icon-AppShare:before {
   content: "\e65e";
 }
@@ -46,10 +54,6 @@
 
 .icon-ProfileOutlined:before {
   content: "\e659";
-}
-
-.icon-api-key:before {
-  content: "\e658";
 }
 
 .icon-key:before {

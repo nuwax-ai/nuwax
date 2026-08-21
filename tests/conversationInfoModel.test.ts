@@ -857,4 +857,110 @@ describe('conversationInfo model', () => {
     expect(result.current.isConversationActive).toBe(true);
     expect(mockMessageError).not.toHaveBeenCalled();
   });
+
+  /**
+   * roundTerminalAck 乐观终态：SSE FINAL_RESULT/ERROR 一到即封死派生信号把
+   * 活跃态顶回 true 的通路（rAF 重算只封上升沿）。会话框按钮/队列消费/详情轮询
+   * 共用 isConversationActive——顶回即三者齐卡（1678881 复现：终态日志全绿仍卡）。
+   */
+  describe('roundTerminalAck 乐观终态', () => {
+    /** 模拟「终态后派生信号复活」：rAF 重算喂入末条 Incomplete 的列表 */
+    const feedBusyRecompute = async (
+      result: ReturnType<
+        typeof renderHook<typeof useConversationInfo>
+      >['result'],
+    ) => {
+      await act(async () => {
+        result.current.checkConversationActive([
+          { id: 'late', status: MessageStatusEnum.Incomplete } as MessageInfo,
+        ]);
+      });
+    };
+
+    it('FINAL_RESULT 后派生信号不得复活活跃态', async () => {
+      const { result } = renderHook(() => useConversationInfo());
+      await sendAndGetAssistantId(result);
+      expect(result.current.isConversationActive).toBe(true);
+
+      await act(async () => {
+        sseHandlers.onMessage?.({
+          requestId: 'req-ack-1',
+          eventType: ConversationEventTypeEnum.FINAL_RESULT,
+          data: { success: true, outputText: 'done' },
+        } as ConversationChatResponse);
+      });
+      expect(result.current.isConversationActive).toBe(false);
+
+      // 终态后迟到分片/陈旧快照把末条顶回 Incomplete → rAF 重算不得复活活跃态
+      await feedBusyRecompute(result);
+      expect(result.current.isConversationActive).toBe(false);
+    });
+
+    it('ERROR 事件同样封死上升沿', async () => {
+      const { result } = renderHook(() => useConversationInfo());
+      await sendAndGetAssistantId(result);
+
+      await act(async () => {
+        sseHandlers.onMessage?.({
+          requestId: 'req-ack-2',
+          eventType: ConversationEventTypeEnum.ERROR,
+          data: {},
+        } as ConversationChatResponse);
+      });
+      expect(result.current.isConversationActive).toBe(false);
+
+      await feedBusyRecompute(result);
+      expect(result.current.isConversationActive).toBe(false);
+    });
+
+    it('连接级 onError（本轮终止）后派生信号不得复活活跃态', async () => {
+      const { result } = renderHook(() => useConversationInfo());
+      await sendAndGetAssistantId(result);
+
+      await act(async () => {
+        sseHandlers.onError?.();
+      });
+      expect(result.current.isConversationActive).toBe(false);
+
+      await feedBusyRecompute(result);
+      expect(result.current.isConversationActive).toBe(false);
+    });
+
+    it('handleClearSideEffect 复位 ack：新一轮派生信号恢复驱动资格', async () => {
+      const { result } = renderHook(() => useConversationInfo());
+      await sendAndGetAssistantId(result);
+
+      await act(async () => {
+        sseHandlers.onMessage?.({
+          requestId: 'req-ack-3',
+          eventType: ConversationEventTypeEnum.FINAL_RESULT,
+          data: { success: true, outputText: 'done' },
+        } as ConversationChatResponse);
+      });
+      await feedBusyRecompute(result);
+      expect(result.current.isConversationActive).toBe(false);
+
+      // 新一轮开始（onMessageSend 内部第一件事即 handleClearSideEffect）→ ack 复位
+      await act(async () => {
+        result.current.handleClearSideEffect();
+      });
+      await feedBusyRecompute(result);
+      expect(result.current.isConversationActive).toBe(true);
+    });
+
+    it('「解析不出终态」的 FINAL_RESULT 不 ack：旧任务仍在执行时不误封上升沿', async () => {
+      const { result } = renderHook(() => useConversationInfo());
+      await sendAndGetAssistantId(result);
+
+      await act(async () => {
+        sseHandlers.onMessage?.({
+          requestId: 'req-ack-4',
+          eventType: ConversationEventTypeEnum.FINAL_RESULT,
+          data: { success: false, outputText: 'task conflict' },
+        } as ConversationChatResponse);
+      });
+      // sweep 早退（解析不出终态枚举），活跃态不被误清
+      expect(result.current.isConversationActive).toBe(true);
+    });
+  });
 });

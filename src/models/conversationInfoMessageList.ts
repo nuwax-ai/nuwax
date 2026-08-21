@@ -1,7 +1,72 @@
 import { AssistantRoleEnum, MessageTypeEnum } from '@/types/enums/agent';
 import { MessageStatusEnum } from '@/types/enums/common';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
+import { conversationErrorTerminalLogger } from '@/utils/logger';
 import { isEqual } from 'lodash';
+
+/**
+ * 终态守卫：本轮终态已处理（FINAL_RESULT 分支会重置 messageIdRef 为空）且消息已收敛
+ * 为终态时，迟到的 MESSAGE 分片整条丢弃——投递链存在乱序/缓冲异常（实测整轮首分片
+ * 迟至终态之后、连接关闭时刻才送达，会话 1678724）。若继续处理会把已定稿消息拉回
+ * Incomplete（isSessionStreamBusy 复活、活跃态被重算顶回 true），会话框卡「会话中」
+ * 且再无终态事件可纠正；内容拼接也会把迟到分片错位追加到已定稿文本尾部。
+ *
+ * messageIdRefCurrent 非空 = 多步输出的中间步边界（本步 finished 已置 Complete、
+ * 下一步分片需继续走工作流插新消息逻辑），必须放行。
+ *
+ * 命中时打 always-on warn（生产取证标记）。调用方位于 setMessageList updater 内，
+ * 命中后须 `return list` 返回未变更列表（绝不能裸 return）。
+ */
+/**
+ * 找到当前轮次的起始索引：最后一条 USER 消息的**下一条**。
+ * 当前轮 = 最后一条 user 之后的所有 assistant 消息（多步输出可产生多条）。
+ * 没找到 USER（异常情况）时返回 0（全列表视为当前轮）。
+ *
+ * 用途：isSessionStreamBusy 的检查范围与 sweep 的清理范围共用此边界，
+ * 替代此前的固定窗口（PROCESSING_RECENT_WINDOW=5），精确覆盖任意深度的多步轮次。
+ */
+export function findCurrentRoundStart(
+  messageList: MessageInfo[] | undefined | null,
+): number {
+  if (!messageList?.length) {
+    return 0;
+  }
+  for (let i = messageList.length - 1; i >= 0; i -= 1) {
+    if (messageList[i].role === AssistantRoleEnum.USER) {
+      return i + 1;
+    }
+  }
+  return 0;
+}
+
+export function shouldDropLateMessageChunk(
+  currentMessage: MessageInfo | undefined,
+  currentMessageId: string,
+  messageIdRefCurrent: string,
+  chunk: { type?: string; text?: string },
+): boolean {
+  if (messageIdRefCurrent) {
+    return false;
+  }
+  const status = currentMessage?.status;
+  if (
+    status !== MessageStatusEnum.Complete &&
+    status !== MessageStatusEnum.Error &&
+    status !== MessageStatusEnum.Stopped
+  ) {
+    return false;
+  }
+  conversationErrorTerminalLogger.warn(
+    'drop late MESSAGE chunk: message already terminal',
+    {
+      messageId: currentMessage?.id ?? currentMessageId,
+      chunkType: chunk.type,
+      chunkText:
+        typeof chunk.text === 'string' ? chunk.text.slice(0, 20) : chunk.text,
+    },
+  );
+  return true;
+}
 
 export function appendOutgoingConversationMessages(
   messageList: MessageInfo[] | undefined,

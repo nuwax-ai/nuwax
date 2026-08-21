@@ -9,6 +9,7 @@ import {
   needsTerminalHistoryReload,
   preserveOptimisticMessageTail,
   reconcileConversationSnapshotMessages,
+  shouldDropLateMessageChunk,
 } from './conversationInfoMessageList';
 
 describe('appendOutgoingConversationMessages', () => {
@@ -746,5 +747,42 @@ describe('preserveOptimisticMessageTail', () => {
       status: MessageStatusEnum.Complete,
       thinkingFinished: true,
     });
+  });
+});
+
+describe('shouldDropLateMessageChunk 终态守卫', () => {
+  const terminalCases = [
+    MessageStatusEnum.Complete,
+    MessageStatusEnum.Error,
+    MessageStatusEnum.Stopped,
+  ];
+  const chunk = { type: 'CHAT', text: '我来' };
+
+  it('轮终态后迟到分片（消息终态 + messageIdRef 已被 FINAL_RESULT 清空）→ 丢弃', () => {
+    for (const status of terminalCases) {
+      const message = { id: 'm1', status } as MessageInfo;
+      expect(shouldDropLateMessageChunk(message, 'm1', '', chunk)).toBe(true);
+    }
+  });
+
+  it('多步输出中间步边界（messageIdRef 非空）→ 放行', () => {
+    const message = {
+      id: 'm1',
+      status: MessageStatusEnum.Complete,
+    } as MessageInfo;
+    expect(
+      shouldDropLateMessageChunk(message, 'm1', 'step-2-message-id', chunk),
+    ).toBe(false);
+  });
+
+  it('轮初/流式中（消息未终态）→ 放行（即使 messageIdRef 为空，如 THINK 首分片）', () => {
+    for (const status of [
+      MessageStatusEnum.Loading,
+      MessageStatusEnum.Incomplete,
+      undefined,
+    ]) {
+      const message = { id: 'm1', status } as MessageInfo;
+      expect(shouldDropLateMessageChunk(message, 'm1', '', chunk)).toBe(false);
+    }
   });
 });

@@ -79,19 +79,31 @@ export const createLogger = (prefix: string) => ({
  */
 export const createAlwaysLogger = (prefix: string) => ({
   get log() {
-    return console.log.bind(console, prefix);
+    return console.log.bind(console, `[${new Date().toISOString()}] ${prefix}`);
   },
   get warn() {
-    return console.warn.bind(console, prefix);
+    return console.warn.bind(
+      console,
+      `[${new Date().toISOString()}] ${prefix}`,
+    );
   },
   get error() {
-    return console.error.bind(console, prefix);
+    return console.error.bind(
+      console,
+      `[${new Date().toISOString()}] ${prefix}`,
+    );
   },
   get info() {
-    return console.info.bind(console, prefix);
+    return console.info.bind(
+      console,
+      `[${new Date().toISOString()}] ${prefix}`,
+    );
   },
   get debug() {
-    return console.debug.bind(console, prefix);
+    return console.debug.bind(
+      console,
+      `[${new Date().toISOString()}] ${prefix}`,
+    );
   },
 });
 
@@ -102,19 +114,14 @@ export const logger = createLogger(`[App:${APP_VERSION}]`);
 export const workflowLogger = createLogger(`[Workflow:V3:${APP_VERSION}]`);
 
 // 会话流式恢复（sub / 冷却 / 退避）—— 生产环境也输出，便于线上确认续接行为
-export const conversationResumeLogger = createAlwaysLogger(
-  '[ConversationStreamResume]',
-);
+export const conversationResumeLogger = createAlwaysLogger('[Conv:Resume]');
 
-// 会话流式恢复 taskStatus 轮询 —— 生产环境也输出，便于确认竞态丢弃是否生效
-export const conversationPollLogger = createAlwaysLogger(
-  '[ConversationStreamResume][Poll]',
-);
+// 会话流式恢复 taskStatus 轮询 —— 与 sub 恢复共用前缀 [ConvSR]
+export const conversationPollLogger = conversationResumeLogger;
 
 // 会话出错落终态验证 —— 生产环境也输出，便于确认 ERROR → FAILED 是否落地
-export const conversationErrorTerminalLogger = createAlwaysLogger(
-  '[ConversationErrorTerminal]',
-);
+export const conversationErrorTerminalLogger =
+  createAlwaysLogger('[Conv:Status]');
 
 // 开发环境下挂载到 window，方便调试
 if (isDev && typeof window !== 'undefined') {

@@ -15,7 +15,7 @@ import {
 } from '@/constants/common.constants';
 import { EVENT_TYPE } from '@/constants/event.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
-import { isSessionStreamBusy } from '@/hooks/useExecutingTaskStatusPoll';
+import { useConversationActiveState } from '@/hooks/useConversationActiveState';
 import { useResumeStreamHandlers } from '@/hooks/useResumeStreamHandlers';
 import { getCustomBlock } from '@/plugins/ds-markdown-process';
 import {
@@ -114,6 +114,7 @@ import {
   appendOutgoingConversationMessages,
   preserveOptimisticMessageTail,
   reconcileConversationSnapshotMessages,
+  shouldDropLateMessageChunk,
 } from './conversationInfoMessageList';
 
 /** 后端漏发结构化干预事件时，等待持久化完成的补偿读取间隔。 */
@@ -196,22 +197,24 @@ export default () => {
   const [isLoadingOtherInterface, setIsLoadingOtherInterface] =
     useState<boolean>(false);
 
-  // 会话是否正在进行中（有消息正在处理）
-  const [isConversationActive, setIsConversationActiveRaw] =
-    useState<boolean>(false);
-  // 本地 chat 已发起但协议终态尚未到达。不能用 isConversationActive 代替：
-  // 普通 MESSAGE finished=true 可能先让活跃态下降，FINAL_RESULT 仍会稍后到达。
-  const [isAwaitingChatTerminal, setIsAwaitingChatTerminal] =
-    useState<boolean>(false);
-  // 发送后会话活跃保活：发送后 3s 内拒绝置 false，避免停止 SSE 回流 / messageList
-  // 状态切换间隙的 false 覆盖乐观 true（消除"发出后长时间无状态"的空窗）
-  const lastSendAtRef = useRef(0);
-  const setIsConversationActive = useCallback((v: boolean) => {
-    if (!v && Date.now() - lastSendAtRef.current < 3000) {
-      return;
-    }
-    setIsConversationActiveRaw(v);
-  }, []);
+  // 会话活跃态状态机（与 conversationAgent model 共用实现，避免双份维护漂移）：
+  // 乐观终态 ack + 发送保活 + 变迁溯源日志 + rAF 派生重算调度。
+  // ack 的置位/复位点位在 model 侧：sweep 与 onError 置位、handleClearSideEffect 复位
+  const {
+    isConversationActive,
+    isAwaitingChatTerminal,
+    setIsAwaitingChatTerminal,
+    setIsConversationActive,
+    checkConversationActive,
+    disabledConversationActive,
+    syncMessageListRuntimeState,
+    roundTerminalAckRef,
+    lastSendAtRef,
+  } = useConversationActiveState({
+    messageListRef,
+    messageListRuntimeSyncFrameRef,
+    handleChatProcessingList,
+  });
   // 添加一个 ref 来控制是否允许自动滚动
   const allowAutoScrollRef = useRef<boolean>(true);
   // 是否显示点击下滚按钮
@@ -664,31 +667,6 @@ export default () => {
     setRequiredNameList(_requiredNameList || []);
   };
 
-  // 检查会话是否正在进行中（有消息正在处理）
-  const checkConversationActive = useCallback((messages: MessageInfo[]) => {
-    const recentMessages = messages?.slice(-5) || [];
-    setIsConversationActive(isSessionStreamBusy(recentMessages));
-  }, []);
-
-  const syncMessageListRuntimeState = useCallback(() => {
-    if (messageListRuntimeSyncFrameRef.current !== null) {
-      return;
-    }
-    messageListRuntimeSyncFrameRef.current = requestAnimationFrame(() => {
-      messageListRuntimeSyncFrameRef.current = null;
-      const latestMessageList = messageListRef.current;
-      const latestProcessingList = latestMessageList.flatMap((message) =>
-        Array.isArray(message.processingList) ? message.processingList : [],
-      );
-      handleChatProcessingList(latestProcessingList);
-      checkConversationActive(latestMessageList);
-    });
-  }, [checkConversationActive, handleChatProcessingList]);
-
-  const disabledConversationActive = () => {
-    setIsConversationActive(false);
-  };
-
   // ===== 统一终态清算 =====
   // 终态无论从哪条路径到达（chat SSE / sub 重放 / 轮询快照）一次性收敛状态机，
   // 打破「状态绑定在原发送连接回调」的卡死链（1677549 复现）。
@@ -701,6 +679,7 @@ export default () => {
     source: 'conversationInfo',
     conversationInfoRef,
     lastSendAtRef,
+    roundTerminalAckRef,
     setConversationInfo,
     setMessageList,
     messageListRef,
@@ -962,7 +941,7 @@ export default () => {
     },
     onError: () => {
       setIsLoadingConversation(true);
-      disabledConversationActive();
+      disabledConversationActive('query-on-error');
     },
   });
 
@@ -991,7 +970,7 @@ export default () => {
     async (conversationId: string | number) => {
       // 1. 立即清除副作用、中断前端连接
       handleClearSideEffect();
-      disabledConversationActive();
+      disabledConversationActive('user-stop');
 
       // 2. 立即将当前会话的 loading 状态的消息改为 Stopped 状态，并将所有正在执行的 processing 状态更新为 FAILED
       setMessageList((list) => {
@@ -1240,6 +1219,19 @@ export default () => {
       // MESSAGE事件
       if (eventType === ConversationEventTypeEnum.MESSAGE) {
         const { text, type, id, finished } = data;
+        // 终态守卫（判定与日志收敛于 shouldDropLateMessageChunk，详见其注释）：
+        // 丢弃轮终态后迟到的乱序分片。本分支位于 setMessageList updater 内，
+        // 命中后必须 return list（返回未变更列表，裸 return 会摧毁 messageList）。
+        if (
+          shouldDropLateMessageChunk(
+            currentMessage,
+            currentMessageId,
+            messageIdRef.current,
+            { type, text },
+          )
+        ) {
+          return list;
+        }
         // 思考think
         if (type === MessageModeEnum.THINK) {
           newMessage = {
@@ -1674,9 +1666,16 @@ export default () => {
         });
         syncMessageListRuntimeState();
 
+        conversationErrorTerminalLogger.warn('sse-on-close', {
+          conversationId: params.conversationId,
+          hasResolvedTerminalStatus,
+          isStale:
+            abortConnectionRef.current !== undefined &&
+            abortConnectionRef.current !== abortConnection,
+        });
         // SSE 已经关闭时先释放本地流式态，不能让后端终态查询阻塞输入框恢复。
         // 否则详情接口响应慢或挂起时，即使回复已经结束，页面仍会一直显示停止按钮。
-        disabledConversationActive();
+        disabledConversationActive('sse-on-close');
 
         // FINAL_RESULT 已解析出明确终态时，本地状态已经完成写回，无需重复查询详情。
         // 未收到 FINAL_RESULT 或终态不明确时，异步查询后端状态作为兜底；查询失败不影响本地收尾。
@@ -1784,7 +1783,10 @@ export default () => {
         }
         // 明确终止：打破「发送后 3s 保活」，确保活跃态能立即落 false
         lastSendAtRef.current = 0;
-        disabledConversationActive();
+        // 连接级错误 = 本轮终止（与 FINAL_RESULT/ERROR 同权的乐观终态）：
+        // ack 置位防止后续派生信号复活活跃态
+        roundTerminalAckRef.current = true;
+        disabledConversationActive('sse-on-error');
         syncMessageListRuntimeState();
         perfLifecycle.onStreamEnd('error');
       },
@@ -1817,6 +1819,13 @@ export default () => {
 
   // 清除副作用
   function handleClearSideEffect() {
+    // 复位乐观终态 ack：新发送（新一轮开始）/ 用户停止 / 会话切换（resetInit）
+    // 三类场景都经此处，清零后新一轮的派生信号恢复驱动活跃态的资格
+    roundTerminalAckRef.current = false;
+    // 同步打破发送保活：三个调用方语义都是「本轮结束，活跃态可自由落」——
+    // 否则发送后 3s 内切换会话/点停止时 disabledConversationActive 会被保活拦截，
+    // active=true 残留到新会话（onMessageSend 会在乐观置活后重设保活时间戳）
+    lastSendAtRef.current = 0;
     if (messageListRuntimeSyncFrameRef.current !== null) {
       cancelAnimationFrame(messageListRuntimeSyncFrameRef.current);
       messageListRuntimeSyncFrameRef.current = null;
@@ -1865,6 +1874,8 @@ export default () => {
     setCurrentConversationId(null);
     // 重置问题建议
     setIsSuggest(false);
+    // 重置会话活跃状态（与 conversationAgent model 对齐；防切换时残留）
+    disabledConversationActive('reset-init');
     // 重置请求ID
     setRequestId('');
     // 重置调试结果
@@ -1904,7 +1915,7 @@ export default () => {
 
     // 乐观标记会话活跃：发送瞬间即置为活跃，不依赖 messageList 出现 Loading 消息的延迟，
     // 消除"发送后会话开始状态"的空窗期（保证队列入队判定及时、停止按钮立即显示）。
-    setIsConversationActive(true);
+    setIsConversationActive(true, 'send-optimistic');
     lastSendAtRef.current = Date.now(); // 触发"发送后保活"，3s 内拒绝置 false
     if (isSync && !isAppSidebarMode && id) {
       eventBus.emit(EVENT_TYPE.UpdateConversationListTaskStatus, {

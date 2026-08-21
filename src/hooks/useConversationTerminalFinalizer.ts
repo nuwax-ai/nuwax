@@ -1,4 +1,5 @@
 import { isSessionStreamBusy } from '@/hooks/useExecutingTaskStatusPoll';
+import { findCurrentRoundStart } from '@/models/conversationInfoMessageList';
 import { ConversationEventTypeEnum, TaskStatus } from '@/types/enums/agent';
 import { MessageStatusEnum, ProcessingEnum } from '@/types/enums/common';
 import type {
@@ -11,13 +12,12 @@ import {
   emitConversationListTaskStatus,
   resolveTerminalTaskStatus,
 } from '@/utils/conversationTaskStatusSync';
-import { createLogger } from '@/utils/logger';
+import { createAlwaysLogger } from '@/utils/logger';
 import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
 import { useCallback, useMemo } from 'react';
 
-const conversationTerminalSweepLogger = createLogger(
-  '[ConversationTerminalSweep]',
-);
+// always-on：终态收敛/降级是会话卡死类问题的核心生产观测点（每轮会话仅 1-2 条，无噪音）
+const conversationTerminalSweepLogger = createAlwaysLogger('[Conv:Terminal]');
 
 export interface UseConversationTerminalFinalizerOptions {
   /** 日志来源：区分主会话 model 与预览 Tab model */
@@ -26,6 +26,13 @@ export interface UseConversationTerminalFinalizerOptions {
   conversationInfoRef: MutableRefObject<ConversationInfo | null>;
   /** 发送保活时间戳 ref：清算时置 0 打破「发送后 3s 拒绝置 false」的保活 */
   lastSendAtRef: MutableRefObject<number>;
+  /**
+   * 轮次终态 ack（乐观终态）：FINAL_RESULT/ERROR 到达即置 true，新一轮发送清零。
+   * 消费方为 model 的 rAF 活跃态重算——ack 置位后派生信号（末条 Loading/Incomplete
+   * 复活、processing 残留等）不得再把 isConversationActive 顶回 true（会话框按钮/
+   * 队列消费/详情轮询三者共用该信号，1678881 复现：终态日志全绿但三者齐卡）。
+   */
+  roundTerminalAckRef: MutableRefObject<boolean>;
   setConversationInfo: Dispatch<
     SetStateAction<ConversationInfo | null | undefined>
   >;
@@ -33,8 +40,8 @@ export interface UseConversationTerminalFinalizerOptions {
   /** model 的 messageListRef：随 updater 同步写，保持 rAF 同步等既有读取路径拿到终态列表 */
   messageListRef: MutableRefObject<MessageInfo[]>;
   setIsAwaitingChatTerminal: Dispatch<SetStateAction<boolean>>;
-  /** model 的活跃态 setter（经 3s 保活包装的那个） */
-  setIsConversationActive: (v: boolean) => void;
+  /** model 的活跃态 setter（经 3s 保活包装的那个；source 用于变迁日志溯源） */
+  setIsConversationActive: (v: boolean, source?: string) => void;
 }
 
 /**
@@ -65,6 +72,7 @@ export function useConversationTerminalFinalizer(
     source,
     conversationInfoRef,
     lastSendAtRef,
+    roundTerminalAckRef,
     setConversationInfo,
     setMessageList,
     messageListRef,
@@ -76,6 +84,7 @@ export function useConversationTerminalFinalizer(
     return (
       conversationId: number | string | undefined,
       taskStatus: TaskStatus | undefined,
+      origin?: string,
     ): void => {
       // 非终态不动状态机：undefined / EXECUTING 跳过
       if (
@@ -88,22 +97,24 @@ export function useConversationTerminalFinalizer(
 
       conversationTerminalSweepLogger.info('finalize terminal', {
         source,
+        origin,
         conversationId,
         taskStatus,
       });
 
-      // 1. taskStatus 终态写回（含幂等/防跨会话守卫，沿用既有入口）
+      // 1. 【兜底优先】终态事件一到，先把会话框状态落死：清「会话中」（打破发送后
+      //    3s 保活）+ 封死派生信号复活通路（ack）+ 恢复轮询资格（awaiting）。
+      //    放在最前的原因：即便后续 taskStatus 写回 / 消息收敛任一步异常，
+      //    按钮/队列消费/详情轮询已经恢复——用户可见状态以 SSE 终态事件为准
+      lastSendAtRef.current = 0;
+      setIsConversationActive(false, 'terminal-sweep');
+      setIsAwaitingChatTerminal(false);
+      roundTerminalAckRef.current = true;
+
+      // 2. taskStatus 终态写回（含幂等/防跨会话守卫，沿用既有入口）
       applyTerminalTaskStatus(setConversationInfo, conversationId, taskStatus);
 
-      // 2. 协议终态已确认：清 awaiting，恢复轮询资格（isPollingReady）
-      setIsAwaitingChatTerminal(false);
-
-      // 3. 强制清活跃态：打破「发送后 3s 保活」再落 false——终态已确认，
-      //    活跃态必须立即可清（否则 3s 内到达的终态被保活吞掉，1654471 二次卡死成因）
-      lastSendAtRef.current = 0;
-      setIsConversationActive(false);
-
-      // 4. 末条消息兜底落终态：流式占位（Loading/Incomplete）→ Complete/Error，
+      // 3. 末条消息兜底落终态：流式占位（Loading/Incomplete）→ Complete/Error，
       //    残留 EXECUTING 的 processing 块 → FINISHED/FAILED。
       //    正常路径 handleChangeMessageList 已处理时此处为幂等 noop。
       const messageTerminalStatus =
@@ -119,29 +130,45 @@ export function useConversationTerminalFinalizer(
         if (!prev?.length) {
           return prev;
         }
+        // 与 isSessionStreamBusy 的检查范围对齐（共享 findCurrentRoundStart）：
+        // 当前轮次（最后一条 USER 之后）的所有 assistant 消息的 EXECUTING
+        // processing 残留都要收敛，否则任一残留都会让 busy 持续为 true
+        // → 活跃态被 rAF 重算顶回 true → 按钮卡「会话中」。
         const lastIndex = prev.length - 1;
-        const tail = prev[lastIndex];
-        const tailIncomplete =
-          tail.status === MessageStatusEnum.Loading ||
-          tail.status === MessageStatusEnum.Incomplete;
-        const processingList = Array.isArray(tail.processingList)
-          ? tail.processingList.map((item) =>
-              item.status === ProcessingEnum.EXECUTING
-                ? { ...item, status: processingTerminalStatus }
-                : item,
-            )
-          : tail.processingList;
-        const processingChanged = processingList !== tail.processingList;
-        if (!tailIncomplete && !processingChanged) {
+        const firstRecent = findCurrentRoundStart(prev);
+        const next = prev.slice();
+        let changed = false;
+
+        for (let i = lastIndex; i >= firstRecent; i -= 1) {
+          const message = next[i];
+          const isTail = i === lastIndex;
+          const incomplete =
+            isTail &&
+            (message.status === MessageStatusEnum.Loading ||
+              message.status === MessageStatusEnum.Incomplete);
+          const processingList = Array.isArray(message.processingList)
+            ? message.processingList.map((item) =>
+                item.status === ProcessingEnum.EXECUTING
+                  ? { ...item, status: processingTerminalStatus }
+                  : item,
+              )
+            : message.processingList;
+          const processingChanged = processingList !== message.processingList;
+          if (!incomplete && !processingChanged) {
+            continue;
+          }
+          next[i] = {
+            ...message,
+            thinkingFinished: isTail ? true : message.thinkingFinished,
+            status: incomplete ? messageTerminalStatus : message.status,
+            processingList,
+          };
+          changed = true;
+        }
+
+        if (!changed) {
           return prev;
         }
-        const next = prev.slice();
-        next[lastIndex] = {
-          ...tail,
-          thinkingFinished: true,
-          status: tailIncomplete ? messageTerminalStatus : tail.status,
-          processingList,
-        };
         messageListRef.current = next;
         return next;
       });
@@ -155,6 +182,7 @@ export function useConversationTerminalFinalizer(
     (
       conversationId: number | string | undefined,
       taskStatus: TaskStatus | undefined,
+      origin?: string,
     ) => {
       // 旧会话的迟到终态不得误清当前会话的活跃态（conversationInfoRef 未就绪时放行）
       const currentId = conversationInfoRef.current?.id;
@@ -165,15 +193,23 @@ export function useConversationTerminalFinalizer(
       ) {
         return;
       }
-      sweepConversationTerminal(conversationId, taskStatus);
+      sweepConversationTerminal(conversationId, taskStatus, origin);
     },
     [sweepConversationTerminal, conversationInfoRef],
   );
 
   /**
-   * SSE 终态事件（FINAL_RESULT / ERROR）→ 统一终态清算。
-   * 本地 chat 与 sub 恢复流共用：ERROR 一律 FAILED；FINAL_RESULT 仅在解析出结构化
-   * 终态时清算（「任务冲突」型 FINAL_RESULT 解析不出终态，自动跳过，不误清活跃态）。
+   * SSE 终态事件入口（FINAL_RESULT / ERROR，二者同权）。
+   *
+   * 协议语义：ERROR 与 FINAL_RESULT 一样是轮次终止态——后端出错时
+   * sessionPromptEnd(error) → sink.error → ERROR 事件 + 流必然关闭。到达即完整
+   * 清算（ERROR → FAILED；FINAL_RESULT 解析结构化终态，「任务冲突」型解析不出
+   * 则自动跳过，不误清仍在执行的旧任务）。
+   *
+   * 1678724 复盘修正：此前的"ERROR 降级"版本建立在"ERROR 可能在流中到达且流
+   * 继续"的推测上——该场景从未被观测到（HAR body 无 ERROR 事件），本案实际
+   * 触发源是连接级 onerror（fetch-event-source 错误回调 → model onError 全量
+   * 收尾），与事件路径无关。降级反而损害真终止场景的收敛时效，故恢复同权。
    */
   const finalizeChatTerminalEvent = useCallback(
     (
@@ -183,11 +219,21 @@ export function useConversationTerminalFinalizer(
       if (!conversationId || !res) {
         return;
       }
+      // 只处理终态事件类型（FINAL_RESULT / ERROR）——其他事件（PROCESSING/
+      // MESSAGE/HEART_BEAT 等）一律不进清算。实测 PROCESSING 事件的载荷可能含
+      // resolveTerminalTaskStatus 可解析的字段，误触发完整清算后，守卫 B 会把
+      // 后续正常 CHAT 分片全部丢弃（1560859 实证：内容丢失）。
+      if (
+        res.eventType !== ConversationEventTypeEnum.FINAL_RESULT &&
+        res.eventType !== ConversationEventTypeEnum.ERROR
+      ) {
+        return;
+      }
       const status =
         res.eventType === ConversationEventTypeEnum.ERROR
           ? TaskStatus.FAILED
           : resolveTerminalTaskStatus(res.data?.success, res.data, res);
-      finalizeConversationTerminal(conversationId, status);
+      finalizeConversationTerminal(conversationId, status, res.eventType);
     },
     [finalizeConversationTerminal],
   );
@@ -268,7 +314,12 @@ export function useConversationTerminalFinalizer(
           { source, messageId, outcome, busy },
         );
         lastSendAtRef.current = 0;
-        setIsConversationActive(busy);
+        // 与 checkConversationActive 同款 ack 门控：终态已 ack 的轮次，占位收尾的
+        // 重算不得把活跃态顶回 true（两处重算口径必须一致）
+        setIsConversationActive(
+          busy && !roundTerminalAckRef.current,
+          'placeholder-recompute',
+        );
       });
     },
     // 稳定引用（与 sweep 相同）：useState setter / ref

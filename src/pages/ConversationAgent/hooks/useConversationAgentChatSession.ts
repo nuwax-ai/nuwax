@@ -272,7 +272,7 @@ export function useConversationAgentChatSession(
       if (!devConversationId) return;
       // 统一终态清算：轮询/sub 关闭路径拿到的终态同样要收敛状态机，
       // 不能只写 taskStatus（1677549 复现：taskStatus 落了 COMPLETE 页面仍卡「会话中」）
-      finalizeConversationTerminal(devConversationId, status);
+      finalizeConversationTerminal(devConversationId, status, 'poll-snapshot');
       // 终态兜底 reload messageList：dev-agent 经 flow-debugger 等外部写入会话的消息，
       // 若错过 EXECUTING 窗口（sub 流没接住），这里拉最新历史确保预览可见
       if (getCurrentConversationId() !== devConversationId) return;

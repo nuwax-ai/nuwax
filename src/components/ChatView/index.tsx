@@ -230,6 +230,8 @@ const ChatView: React.FC<ChatViewProps> = memo(
               condition={
                 messageInfo &&
                 (messageInfo?.status === MessageStatusEnum.Complete ||
+                  messageInfo?.status === MessageStatusEnum.Stopped ||
+                  messageInfo?.status === MessageStatusEnum.Error ||
                   !messageInfo?.status)
               }
             >
