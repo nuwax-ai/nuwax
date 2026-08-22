@@ -1272,7 +1272,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       if (!id) return;
       // 统一终态清算：轮询/sub 关闭路径拿到的终态同样要收敛状态机，
       // 不能只写 taskStatus（1677549 复现：taskStatus 落了 COMPLETE 页面仍卡「会话中」）
-      finalizeConversationTerminal(id, status);
+      finalizeConversationTerminal(id, status, 'poll-snapshot');
     },
     loadingSuggest,
     chatSuggestList,
