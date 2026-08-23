@@ -372,6 +372,25 @@ body {
     text-decoration: underline;
 }
 
+/* KaTeX：块级公式可横向滚动，避免移动端撑破布局 */
+.markdown-preview .markdown-body .katex-display {
+    overflow-x: auto;
+    overflow-y: hidden;
+    max-width: 100%;
+    padding: 8px 0;
+    -webkit-overflow-scrolling: touch;
+}
+
+.markdown-preview .markdown-body .katex {
+    font-size: 1.05em;
+}
+
+.markdown-preview .markdown-body .katex-error {
+    color: #cf222e;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
 /* ============================================
    工具类 / Utility Classes
    ============================================ */
