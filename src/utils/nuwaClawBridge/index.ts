@@ -26,11 +26,26 @@ export function isNuwaClaw(): boolean {
 /**
  * 是否为经 native.openWindow 新开的独立窗口（URL 带 _shell=1 标记，由宿主追加）。
  * 独立窗口带系统标题栏（无沉浸式工具栏浮层），沉浸式专属布局不适用。
+ *
+ * 标记在 sessionStorage 内粘滞：窗口首次带 _shell=1 打开后，SPA 内部路由/
+ * 登录重定向会重写 URL 丢掉 query，但「独立窗口」是窗口级事实，不应随路由翻转
+ * （否则跳一页就误回沉浸式避让布局）。sessionStorage 按窗口隔离、随窗口关闭失效，
+ * 恰好对应宿主窗口生命周期。
  */
+const SHELL_WINDOW_SESSION_KEY = 'nuwax:shell-window';
+
 export function isShellWindow(): boolean {
   try {
     if (typeof window === 'undefined') return false;
-    return new URLSearchParams(window.location.search).get('_shell') === '1';
+    if (new URLSearchParams(window.location.search).get('_shell') === '1') {
+      try {
+        window.sessionStorage.setItem(SHELL_WINDOW_SESSION_KEY, '1');
+      } catch {
+        /* sessionStorage 不可用（隐私模式等）时退化为仅看 URL */
+      }
+      return true;
+    }
+    return window.sessionStorage.getItem(SHELL_WINDOW_SESSION_KEY) === '1';
   } catch {
     return false;
   }

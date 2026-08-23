@@ -44,8 +44,13 @@ describe('nuwaClawHost（统一对外接入层）', () => {
 
   describe('isShellWindow / isImmersiveShell（独立窗口标记）', () => {
     const originalHref = window.location.href;
+    beforeEach(() => {
+      // 独立窗口标记有 sessionStorage 粘滞，逐例清空保证互不污染。
+      window.sessionStorage.clear();
+    });
     afterEach(() => {
       window.history.replaceState(null, '', originalHref);
+      window.sessionStorage.clear();
     });
     it('URL 带 _shell=1 → 独立窗口；桌面端下沉浸式判定为 false（恢复浏览器式布局）', () => {
       (window as any).NuwaClawBridge = { auth: {}, native: {} };
@@ -58,6 +63,15 @@ describe('nuwaClawHost（统一对外接入层）', () => {
       window.history.replaceState(null, '', '/home');
       expect(isShellWindow()).toBe(false);
       expect(isImmersiveShell()).toBe(true);
+    });
+    it('粘滞：曾带 _shell=1 的窗口 SPA 路由到无标记路径仍为独立窗口', () => {
+      (window as any).NuwaClawBridge = { auth: {}, native: {} };
+      window.history.replaceState(null, '', '/agent/123?_shell=1');
+      expect(isShellWindow()).toBe(true);
+      // 模拟 SPA 路由/登录重定向重写 URL 丢掉 query
+      window.history.replaceState(null, '', '/home');
+      expect(isShellWindow()).toBe(true);
+      expect(isImmersiveShell()).toBe(false);
     });
     it('浏览器端（无桥）即使误带 _shell → isImmersiveShell 仍 false', () => {
       delete (window as any).NuwaClawBridge;
