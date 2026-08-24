@@ -41,6 +41,11 @@ import type { ComponentInfo } from '@/types/interfaces/library';
 import { modalConfirm } from '@/utils/ant-custom';
 import { exportConfigFile } from '@/utils/exportImportFile';
 import {
+  isImmersiveShell,
+  needsTopRightAvoid,
+  shellAvoid,
+} from '@/utils/nuwaClawBridge';
+import {
   buildWorkflowRoute,
   jumpTo,
   jumpToPlugin,
@@ -674,6 +679,11 @@ const SpaceLibrary: React.FC = () => {
   return (
     <div className={cx(styles.container, 'flex', 'flex-col', 'h-full')}>
       <div className={cx(styles['header-area'])}>
+        style=
+        {{
+          paddingTop: isImmersiveShell() ? shellAvoid.TOOLBAR : undefined,
+          paddingRight: needsTopRightAvoid() ? shellAvoid.RIGHT : undefined,
+        }}
         <div className={cx(styles['header-left'])}>
           <h3 className={cx(styles.title)}>
             {dict('PC.Pages.SpaceLibrary.Index.pageTitle')}

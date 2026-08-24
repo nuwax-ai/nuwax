@@ -5,12 +5,7 @@ import {
 } from '@/constants/layout.constants';
 import useCategory from '@/hooks/useCategory';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
-import {
-  isImmersiveShell,
-  isMac,
-  isWinLinuxShell,
-  shellAvoid,
-} from '@/utils/nuwaClawBridge';
+import { isImmersiveShell, shellAvoid } from '@/utils/nuwaClawBridge';
 import { theme } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
@@ -303,11 +298,7 @@ const Layout: React.FC = () => {
           // - mac 展开态无需避让（二级菜单列顶着工具栏 icon 组），但收起二级菜单后
           //   内容区左移顶到工具栏 icon 组（x≈80-240）下方，需与 Win/Linux 同样下移；
           // - 独立窗口（系统标题栏）与浏览器不避让。
-          marginTop:
-            isWinLinuxShell() ||
-            (isImmersiveShell() && isMac() && isSecondMenuCollapsed)
-              ? shellAvoid.TOP + 8
-              : undefined,
+          marginTop: isImmersiveShell() ? shellAvoid.TOP + 8 : undefined,
         }}
       >
         <Outlet />

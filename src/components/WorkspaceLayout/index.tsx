@@ -1,3 +1,8 @@
+import {
+  isImmersiveShell,
+  needsTopRightAvoid,
+  shellAvoid,
+} from '@/utils/nuwaClawBridge';
 import { LeftOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import { Tooltip } from 'antd';
 import classNames from 'classnames';
@@ -56,7 +61,11 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
     <div className={cx(styles.container, 'flex', 'flex-col', 'h-full')}>
       <div
         className={cx(styles['header-area'])}
-        style={{ padding: headerPadding }}
+        style={{
+          padding: headerPadding,
+          paddingTop: isImmersiveShell() ? shellAvoid.TOOLBAR : headerPadding,
+          paddingRight: needsTopRightAvoid() ? shellAvoid.RIGHT : undefined,
+        }}
       >
         <div
           className={cx(styles['header-left'], 'flex', 'items-center', 'gap-2')}

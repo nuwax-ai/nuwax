@@ -48,6 +48,11 @@ import type {
   RoleInfo,
 } from '@/types/interfaces/conversationInfo';
 import { arraysContainSameItems, parsePageAppProjectId } from '@/utils/common';
+import {
+  isImmersiveShell,
+  needsTopRightAvoid,
+  shellAvoid,
+} from '@/utils/nuwaClawBridge';
 import { jumpToPageDevelop } from '@/utils/router';
 import { LoadingOutlined } from '@ant-design/icons';
 import { Form, message, Typography } from 'antd';
@@ -688,7 +693,13 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
         })}
       >
         {/* 页面顶部: 标题区域 */}
-        <header className={cx(styles['title-box'])}>
+        <header
+          className={cx(styles['title-box'])}
+          style={{
+            paddingTop: isImmersiveShell() ? shellAvoid.TOOLBAR : undefined,
+            paddingRight: needsTopRightAvoid() ? shellAvoid.RIGHT : undefined,
+          }}
+        >
           <div
             className={cx(
               styles['title-container'],
