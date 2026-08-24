@@ -1,8 +1,4 @@
-import {
-  isImmersiveShell,
-  needsTopRightAvoid,
-  shellAvoid,
-} from '@/utils/nuwaClawBridge';
+import { needsTopRightAvoid, shellAvoid } from '@/utils/nuwaClawBridge';
 import { LeftOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import { Tooltip } from 'antd';
 import classNames from 'classnames';
@@ -62,8 +58,9 @@ const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
       <div
         className={cx(styles['header-area'])}
         style={{
+          // 顶部退让由最外层 page-container 统一处理（沉浸态 marginTop），
+          // 页面级不叠加，避免双重下移；右让仅 Win/Linux 自绘三键需要。
           padding: headerPadding,
-          paddingTop: isImmersiveShell() ? shellAvoid.TOOLBAR : headerPadding,
           paddingRight: needsTopRightAvoid() ? shellAvoid.RIGHT : undefined,
         }}
       >

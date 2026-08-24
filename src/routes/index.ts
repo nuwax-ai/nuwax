@@ -555,31 +555,31 @@ const routes = [
   {
     path: '/space/:spaceId/workflow/:workflowId',
     component: '@/pages/Antv-X6',
-    wrappers: ['@/wrappers/authWithLoading'],
+    wrappers: ['@/wrappers/authWithLoading', '@/wrappers/immersiveShellAvoid'],
     layout: false,
   },
   {
     path: '/space/:spaceId/agent/:agentId',
     component: '@/pages/EditAgent',
-    wrappers: ['@/wrappers/authWithLoading'],
+    wrappers: ['@/wrappers/authWithLoading', '@/wrappers/immersiveShellAvoid'],
     layout: false,
   },
   {
     path: '/space/:spaceId/app-dev/:projectId',
     component: '@/pages/AppDev',
-    wrappers: ['@/wrappers/authWithLoading'],
+    wrappers: ['@/wrappers/authWithLoading', '@/wrappers/immersiveShellAvoid'],
     layout: false,
   },
   {
     path: '/space/:spaceId/app-dev-design/:projectId',
     component: '@/pages/AppDevDesign',
-    wrappers: ['@/wrappers/authWithLoading'],
+    wrappers: ['@/wrappers/authWithLoading', '@/wrappers/immersiveShellAvoid'],
     layout: false,
   },
   {
     path: '/space/:spaceId/agent-dev',
     component: '@/pages/ConversationAgent',
-    wrappers: ['@/wrappers/authWithLoading'],
+    wrappers: ['@/wrappers/authWithLoading', '@/wrappers/immersiveShellAvoid'],
     layout: false,
   },
   {
