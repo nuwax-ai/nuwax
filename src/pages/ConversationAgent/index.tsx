@@ -1778,6 +1778,7 @@ const ConversationAgent: React.FC = () => {
 
   // ==================== 主渲染 ====================
   return (
+    // 顶部退让由路由层 wrappers/immersiveShellAvoid 统一承担
     <div className={cx(styles.container, 'flex', 'flex-col')}>
       {/* 页面顶部 Header：返回、智能体信息、文件树/远程桌面入口 */}
       <ConversationAgentHeader

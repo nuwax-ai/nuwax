@@ -1553,11 +1553,12 @@ const AppDev: React.FC = () => {
           'flex',
           'flex-col',
         )}
-        /* 页面主区根据 isFileOperating 动态调整可交互性与视觉反馈（禁用操作+暗色） */
+        /* isFileOperating 动态调整可交互性（禁用+暗色）；顶部退让由路由层
+           wrappers/immersiveShellAvoid 统一承担 */
         style={
           isFileOperating || isDeploying
             ? { pointerEvents: 'none', userSelect: 'none', opacity: 0.7 }
-            : {}
+            : undefined
         }
       >
         {/* 顶部头部区域 */}

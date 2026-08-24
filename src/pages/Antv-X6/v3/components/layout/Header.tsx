@@ -224,6 +224,8 @@ const Header: React.FC<HeaderProp> = ({
   };
 
   return (
+    // 沉浸态 top 由 styles/nuwaclawShell.less 的
+    // .nuwaclaw-shell-page .fold-header-style 规则统一补偿（同 v1 header）。
     <div className="fold-header-style flex items-center gap-20">
       <div className="dis-left flex-1">
         <ConditionRender condition={!hideBack}>

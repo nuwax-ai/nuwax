@@ -100,6 +100,52 @@ export const shellAvoid = {
 };
 
 /**
+ * 沉浸态无菜单二级页返栏紧凑样式：垂直 padding 由主题变量值（≈12）收拢为 4，
+ * 页头 ~46 → ~30，控制「工具栏避让 TOOLBAR + 页头」总高在 ~78。
+ * 仅几何尺寸且 inline 优先级稳定覆盖主题变量，不触碰颜色/背景/边框——
+ * 亮、暗、女娲自定义主题均兼容；浏览器与独立窗口返回 undefined 零影响。
+ */
+export function immersiveHeaderCompact():
+  | { paddingTop: number; paddingBottom: number }
+  | undefined {
+  return isImmersiveShell() ? { paddingTop: 4, paddingBottom: 4 } : undefined;
+}
+
+/**
+ * 把沉浸式避让状态落到 documentElement（html 类 + CSS 变量）——避让样式集中化的
+ * 唯一状态源。数值唯一来源仍是上方 shellAvoid；消费端
+ * （styles/nuwaclawShell.less、wrappers/immersiveShellAvoid 挂的 .nuwaclaw-shell-page）
+ * 只读变量，不再逐页内联避让尺寸。
+ * 幂等：沉浸态补齐类与变量；非沉浸（浏览器/独立窗口）全部移除，下游规则天然失效。
+ * --nuwaclaw-shell-right 沉浸态恒写，是否生效由 nuwaclaw-shell-frameless 类门控。
+ */
+export function syncShellAvoidanceCss(): void {
+  if (typeof document === 'undefined') return;
+  const root = document.documentElement;
+  const immersive = isImmersiveShell();
+  root.classList.toggle('nuwaclaw-shell', immersive);
+  root.classList.toggle(
+    'nuwaclaw-shell-frameless',
+    immersive && isWinLinuxShell(),
+  );
+  const vars: Array<[string, string | null]> = immersive
+    ? [
+        ['--nuwaclaw-shell-top', `${shellAvoid.TOP}px`],
+        ['--nuwaclaw-shell-toolbar', `${shellAvoid.TOOLBAR}px`],
+        ['--nuwaclaw-shell-right', `${shellAvoid.RIGHT}px`],
+      ]
+    : [
+        ['--nuwaclaw-shell-top', null],
+        ['--nuwaclaw-shell-toolbar', null],
+        ['--nuwaclaw-shell-right', null],
+      ];
+  for (const [name, value] of vars) {
+    if (value === null) root.style.removeProperty(name);
+    else root.style.setProperty(name, value);
+  }
+}
+
+/**
  * 鉴权态同步：ACCESS_TOKEN 在 nuwax 与 nuwaclaw 宿主之间的双向同步（重启免登）。
  * 浏览器环境无桥，各方法均为 no-op / 返回空值，不影响 nuwax 自身流程。
  */
@@ -246,6 +292,8 @@ export const nuwaClawHost = {
   isWinLinuxShell,
   needsTopRightAvoid,
   shellAvoid,
+  syncShellAvoidanceCss,
+  immersiveHeaderCompact,
   auth,
   native,
   events,

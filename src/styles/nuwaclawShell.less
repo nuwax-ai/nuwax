@@ -1,0 +1,34 @@
+/**
+ * nuwaclaw 沉浸壳避让层——避让几何的唯一样式源（零魔法数）。
+ *
+ * 数值来源：nuwaClawBridge.shellAvoid，由 syncShellAvoidanceCss() 运行时写入
+ * html 的 CSS 变量（沉浸态才有值，浏览器/独立窗口回落 0px 或规则整体不命中）。
+ * 状态类：html.nuwaclaw-shell（沉浸主窗口）、.nuwaclaw-shell-frameless（Win/Linux
+ * 自绘三键，右上避让场景门控，当前未消费、为迁移预留）。
+ *
+ * 作用域约定：.nuwaclaw-shell-page 由 wrappers/immersiveShellAvoid 挂在
+ * layout:false 独立路由上（无菜单详情页：工作流详情/智能体编排/网页应用开发等）；
+ * 带左侧菜单页面的顶部退让由 layouts 的 page-container 统一承担，两层互斥不叠加。
+ */
+html.nuwaclaw-shell {
+  /* 独立页页根：单盒 padding（非 margin，避免 margin 折叠穿透到 body 产生
+   * 底部空白/滚动条），border-box 保证总高不变。 */
+  .nuwaclaw-shell-page {
+    height: 100%;
+    box-sizing: border-box;
+    padding-top: var(--nuwaclaw-shell-toolbar, 0);
+  }
+
+  /* 内层 relative：成为页内 absolute 元素（如 Antv-X6 编辑器根）的包含块，
+   * 使其锚定到 padding 之下而非视口顶。 */
+  .nuwaclaw-shell-page-inner {
+    position: relative;
+    height: 100%;
+  }
+
+  /* 工作流编辑器 v1/v3 的 fixed 返栏（.fold-header-style 锚定视口，页根
+   * padding 推不动它）——top 同步下移与内容对齐。v1/v3 共用此类，一处收口。 */
+  .nuwaclaw-shell-page .fold-header-style {
+    top: var(--nuwaclaw-shell-toolbar, 0);
+  }
+}

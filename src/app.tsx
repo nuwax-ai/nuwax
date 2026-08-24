@@ -25,7 +25,7 @@ import { unifiedThemeService } from './services/unifiedThemeService';
 import { UserService } from './services/userService';
 import type { MenuItemDto } from './types/interfaces/menu';
 import { getAntdLocale } from './utils/i18nAdapters';
-import { nuwaClawHost } from './utils/nuwaClawBridge';
+import { nuwaClawHost, syncShellAvoidanceCss } from './utils/nuwaClawBridge';
 /**
  * 全局初始状态类型
  */
@@ -295,8 +295,11 @@ const AppContainer: React.FC<{ children: React.ReactElement }> = ({
     };
   }, [setAntdConfig]);
 
-  // nuwaclaw 桌面专属主题适配（独立模块，不侵入核心 unifiedThemeService）
+  // nuwaclaw 桌面专属主题适配（独立模块，不侵入核心 unifiedThemeService）；
+  // 沉浸壳避让状态（html 类 + CSS 变量）同步就位——immersiveShellAvoid wrapper
+  // 首帧前还会再同步一次（幂等），这里覆盖未被该 wrapper 包裹的路由。
   useEffect(() => {
+    syncShellAvoidanceCss();
     return initNuwaClawTheme();
   }, []);
 

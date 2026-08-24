@@ -10,6 +10,7 @@ import {
   needsTopRightAvoid,
   nuwaClawHost,
   shellAvoid,
+  syncShellAvoidanceCss,
 } from './index';
 
 /**
@@ -141,6 +142,81 @@ describe('nuwaClawHost（统一对外接入层）', () => {
       expect(shellAvoid.TOP).toBeGreaterThan(0);
       expect(shellAvoid.RIGHT).toBeGreaterThan(0);
       expect(nuwaClawHost.shellAvoid).toBe(shellAvoid);
+    });
+  });
+
+  describe('syncShellAvoidanceCss（沉浸避让状态 → html 类 + CSS 变量）', () => {
+    const root = document.documentElement;
+    const vars = [
+      '--nuwaclaw-shell-top',
+      '--nuwaclaw-shell-toolbar',
+      '--nuwaclaw-shell-right',
+    ] as const;
+
+    beforeEach(() => {
+      // 独立窗口标记 sessionStorage 粘滞，逐例清空防止前面用例泄漏污染。
+      window.sessionStorage.clear();
+    });
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+      root.classList.remove('nuwaclaw-shell', 'nuwaclaw-shell-frameless');
+      vars.forEach((name) => root.style.removeProperty(name));
+      window.sessionStorage.clear();
+    });
+
+    it('沉浸态（mac 主窗口）→ 类与三变量就位，值来自 shellAvoid；mac 无 frameless', () => {
+      vi.stubGlobal('navigator', { platform: 'MacIntel' });
+      (window as any).NuwaClawBridge = { auth: {} };
+      syncShellAvoidanceCss();
+      expect(root.classList.contains('nuwaclaw-shell')).toBe(true);
+      expect(root.classList.contains('nuwaclaw-shell-frameless')).toBe(false);
+      expect(root.style.getPropertyValue('--nuwaclaw-shell-top')).toBe(
+        `${shellAvoid.TOP}px`,
+      );
+      expect(root.style.getPropertyValue('--nuwaclaw-shell-toolbar')).toBe(
+        `${shellAvoid.TOOLBAR}px`,
+      );
+      expect(root.style.getPropertyValue('--nuwaclaw-shell-right')).toBe(
+        `${shellAvoid.RIGHT}px`,
+      );
+    });
+
+    it('沉浸态（Windows 主窗口）→ 追加 nuwaclaw-shell-frameless', () => {
+      vi.stubGlobal('navigator', { platform: 'Win32' });
+      (window as any).NuwaClawBridge = { auth: {} };
+      syncShellAvoidanceCss();
+      expect(root.classList.contains('nuwaclaw-shell-frameless')).toBe(true);
+    });
+
+    it('非沉浸（无桥浏览器）→ 此前写入的类与变量全部清理（规则天然失效）', () => {
+      vi.stubGlobal('navigator', { platform: 'MacIntel' });
+      (window as any).NuwaClawBridge = { auth: {} };
+      syncShellAvoidanceCss();
+      delete (window as any).NuwaClawBridge;
+      syncShellAvoidanceCss();
+      expect(root.classList.contains('nuwaclaw-shell')).toBe(false);
+      expect(root.classList.contains('nuwaclaw-shell-frameless')).toBe(false);
+      vars.forEach((name) =>
+        expect(root.style.getPropertyValue(name)).toBe(''),
+      );
+    });
+
+    it('幂等：连续调用两次状态不叠加、值不变', () => {
+      vi.stubGlobal('navigator', { platform: 'MacIntel' });
+      (window as any).NuwaClawBridge = { auth: {} };
+      syncShellAvoidanceCss();
+      syncShellAvoidanceCss();
+      expect(root.className.includes('nuwaclaw-shell nuwaclaw-shell')).toBe(
+        false,
+      );
+      expect(root.style.getPropertyValue('--nuwaclaw-shell-toolbar')).toBe(
+        `${shellAvoid.TOOLBAR}px`,
+      );
+    });
+
+    it('聚合对象同源导出', () => {
+      expect(nuwaClawHost.syncShellAvoidanceCss).toBe(syncShellAvoidanceCss);
     });
   });
 

@@ -59,6 +59,9 @@ const Header: React.FC<HeaderProp> = ({
   }, [info]);
 
   return (
+    // 沉浸态 top 由 styles/nuwaclawShell.less 的
+    // .nuwaclaw-shell-page .fold-header-style 规则统一补偿（fixed 锚定不受页根
+    // padding 影响）；浏览器/独立窗口保持 top:0（less 默认）。
     <div className="fold-header-style flex items-center gap-20">
       <div className="dis-left flex-1">
         <ConditionRender condition={!hideBack}>

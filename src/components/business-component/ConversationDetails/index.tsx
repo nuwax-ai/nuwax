@@ -48,11 +48,7 @@ import type {
   RoleInfo,
 } from '@/types/interfaces/conversationInfo';
 import { arraysContainSameItems, parsePageAppProjectId } from '@/utils/common';
-import {
-  isImmersiveShell,
-  needsTopRightAvoid,
-  shellAvoid,
-} from '@/utils/nuwaClawBridge';
+import { needsTopRightAvoid, shellAvoid } from '@/utils/nuwaClawBridge';
 import { jumpToPageDevelop } from '@/utils/router';
 import { LoadingOutlined } from '@ant-design/icons';
 import { Form, message, Typography } from 'antd';
@@ -696,7 +692,7 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
         <header
           className={cx(styles['title-box'])}
           style={{
-            paddingTop: isImmersiveShell() ? shellAvoid.TOOLBAR : undefined,
+            // 顶部退让由最外层 page-container 统一处理，页面级不叠加（曾致 44+48=92px 双重退让）
             paddingRight: needsTopRightAvoid() ? shellAvoid.RIGHT : undefined,
           }}
         >

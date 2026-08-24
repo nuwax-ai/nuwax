@@ -1,39 +1,35 @@
-import { isImmersiveShell, shellAvoid } from '@/utils/nuwaClawBridge';
-import React from 'react';
+/**
+ * 沉浸式壳避让路由包装层：layout:false 独立路由（无菜单详情页——工作流详情/
+ * 智能体编排/网页应用开发/agent-dev 会话）的顶部退让统一在此承担。
+ *
+ * - 非沉浸（浏览器/桌面独立窗口）：直出 <Outlet/>，零包裹零影响。
+ * - 沉浸态：两层 div 挂 .nuwaclaw-shell-page / -inner，全部几何在
+ *   styles/nuwaclawShell.less（CSS 变量消费，本组件零内联样式、零尺寸数字）。
+ *   同规则收口工作流编辑器 v1/v3 的 fixed 返栏（.fold-header-style 的 top）。
+ *
+ * 嵌套复用安全性：v3 WorkflowLayout 既可作独立路由渲染、也被 EditAgent 内嵌，
+ * 两种宿主的路由各自经过本 wrapper，组件内部不再携带任何避让代码——不存在
+ * 「wrapper 不知道自己被嵌入」的双重退让问题。
+ */
 import { Outlet } from 'umi';
 
-/**
- * 无菜单独立路由（layout:false 二级页：工作流详情/智能体编排/网页应用开发等）
- * 的沉浸式顶部避让容器。
- *
- * 这些路由与 @/layouts 平级，page-container 的 marginTop 避让够不到它们；
- * 同窗承载（nuwaclaw 主 webview 内打开）时由本 wrapper 提供同款顶部退让：
- * - 仅沉浸式主窗口生效：独立窗口（_shell=1 带系统标题栏）与浏览器原样直出，
- *   不加任何包裹层，零回归风险；
- * - 单盒 100vh + paddingTop（border-box）：内容区即 100vh - avoid，全文档
- *   恒 100vh 无溢出。不用 marginTop——#root→body 祖先链无 border/padding
- *   拦截，margin 会穿透折叠到 body，文档多出 avoid 高度（底部空白+滚动条）；
- *   page-container 用 margin 无事是因为其父级是 flex 容器（flex 项不折叠）；
- * - 内层 position:relative 成为包含块：Antv-X6 #container 等 absolute; top:0
- *   的根容器锚定到 padding 之下的内容区（absolute 的 top:0 取 padding-box
- *   顶缘，直接垫在外层会被算进避让区）。
- */
-const ImmersiveShellAvoid: React.FC = () => {
-  // 非沉浸（浏览器/独立窗口）直出，不引入包裹层
+import {
+  isImmersiveShell,
+  syncShellAvoidanceCss,
+} from '@/utils/nuwaClawBridge';
+
+// 首帧渲染前把 html 类/CSS 变量就位（幂等；app.tsx 启动时也会调一次）。
+syncShellAvoidanceCss();
+
+export default function ImmersiveShellAvoid() {
   if (!isImmersiveShell()) {
     return <Outlet />;
   }
-
-  const avoid = shellAvoid.TOOLBAR;
   return (
-    <div
-      style={{ height: '100vh', boxSizing: 'border-box', paddingTop: avoid }}
-    >
-      <div style={{ position: 'relative', height: '100%' }}>
+    <div className="nuwaclaw-shell-page">
+      <div className="nuwaclaw-shell-page-inner">
         <Outlet />
       </div>
     </div>
   );
-};
-
-export default ImmersiveShellAvoid;
+}

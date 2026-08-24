@@ -6,6 +6,7 @@ import { PAGE_DEVELOP_PUBLISH_TYPE_LIST } from '@/constants/pageDev.constants';
 import { dict } from '@/services/i18nRuntime';
 import { PageDevelopPublishTypeEnum } from '@/types/enums/pageDev';
 import { ProjectDetailData } from '@/types/interfaces/appDev';
+import { immersiveHeaderCompact } from '@/utils/nuwaClawBridge';
 import { jumpBack } from '@/utils/router';
 import {
   CheckCircleFilled,
@@ -136,7 +137,10 @@ const AppDevHeader: React.FC<AppDevHeaderProps> = ({
   };
 
   return (
-    <header className={cx('flex', 'items-center', 'relative', styles.header)}>
+    <header
+      className={cx('flex', 'items-center', 'relative', styles.header)}
+      style={immersiveHeaderCompact()}
+    >
       <SvgIcon
         name="icons-nav-backward"
         className={cx(styles['icon-backward'])}
