@@ -306,6 +306,16 @@ const preserveFinalizedMessagePresentation = (
   // 流式中的消息（loading/incomplete）仍以快照为准；已终态
   // （Complete/Error/Stopped/null）才冻结本地呈现，避免结束后的轮询覆盖闪烁。
   if (!local.finalResult && isIncompleteStatus(local.status)) {
+    // 流式中收到轮询/resume 快照：内联思考只存在于流式管道（THINK 分片写入
+    // think 字段），快照正文不带——直接采纳快照会让已渲染的思考块凭空消失。
+    // 本地有思考而快照无思考时，保留本地思考展示（正文仍以快照为准）。
+    if ((local.think || '') && !(incoming.think || '')) {
+      return {
+        ...incoming,
+        think: local.think,
+        thinkingFinished: local.thinkingFinished,
+      };
+    }
     return incoming;
   }
 

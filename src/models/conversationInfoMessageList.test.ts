@@ -192,6 +192,57 @@ describe('terminal history reload helpers', () => {
     expect(merged[0]).toBe(current[0]);
   });
 
+  it('流式中的快照无思考时保留本地已渲染思考（正文仍以快照为准）', () => {
+    const current = [
+      {
+        id: '056c255fee9e4a1f8347e022a6c80e1d',
+        role: AssistantRoleEnum.ASSISTANT,
+        text: '流式正文',
+        think: '本地流式渲染的第一轮思考',
+        thinkingFinished: false,
+        status: MessageStatusEnum.Incomplete,
+        clientRenderKey: 'round-1',
+      },
+    ] as MessageInfo[];
+    // 轮询/resume 快照：正文已更新，但不带 think（思考只存在于流式管道）
+    const incoming = [
+      {
+        ...current[0],
+        text: '流式正文（快照版）',
+        think: '',
+      },
+    ] as MessageInfo[];
+
+    const merged = reconcileConversationSnapshotMessages(current, incoming);
+
+    expect(merged[0].text).toBe('流式正文（快照版）');
+    expect(merged[0].think).toBe('本地流式渲染的第一轮思考');
+    expect(merged[0].thinkingFinished).toBe(false);
+  });
+
+  it('流式中的快照携带思考时仍以快照为准', () => {
+    const current = [
+      {
+        id: '056c255fee9e4a1f8347e022a6c80e1d',
+        role: AssistantRoleEnum.ASSISTANT,
+        text: '流式正文',
+        think: '本地思考',
+        status: MessageStatusEnum.Incomplete,
+        clientRenderKey: 'round-1',
+      },
+    ] as MessageInfo[];
+    const incoming = [
+      {
+        ...current[0],
+        think: '快照思考',
+      },
+    ] as MessageInfo[];
+
+    const merged = reconcileConversationSnapshotMessages(current, incoming);
+
+    expect(merged[0].think).toBe('快照思考');
+  });
+
   it('requires terminal reload when incoming contains a missing persisted message', () => {
     const current = [{ id: 1, role: AssistantRoleEnum.USER, text: 'u1' }];
     const incoming = [

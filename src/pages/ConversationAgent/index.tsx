@@ -1819,6 +1819,9 @@ const ConversationAgent: React.FC = () => {
             className={cx('flex', 'flex-1', styles['content-container'], {
               [styles['content-container-fullscreen']]:
                 fileView.preview.isFullscreen,
+              // 全屏预览是 fixed 元件（module 类被哈希，避让层无法全局选择器命中），
+              // 挂稳定全局类供 styles/nuwaclawShell.less 做 top/height 补偿
+              'nuwaclaw-shell-fullscreen': fileView.preview.isFullscreen,
             })}
           >
             {/* 中间面板（文件树） + 右侧面板（编排/预览 + 终端） */}

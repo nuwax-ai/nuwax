@@ -31,4 +31,13 @@ html.nuwaclaw-shell {
   .nuwaclaw-shell-page .fold-header-style {
     top: var(--nuwaclaw-shell-toolbar, 0);
   }
+
+  /* agent-dev 全屏预览（fixed 覆盖视口；module 类被哈希，避让层无法用全局
+   * 选择器命中，故 JSX 在全屏态挂此稳定全局类）：top 下移工具栏高度，
+   * height 同步收缩避免底部溢出视口。带 !important 盖过页面自身的
+   * top:0/height:100vh !important（双方 important 下此处选择器特异性更高）。 */
+  .nuwaclaw-shell-page .nuwaclaw-shell-fullscreen {
+    top: var(--nuwaclaw-shell-toolbar, 0) !important;
+    height: calc(100vh - var(--nuwaclaw-shell-toolbar, 0)) !important;
+  }
 }
