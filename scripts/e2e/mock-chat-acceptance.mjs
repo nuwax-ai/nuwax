@@ -599,8 +599,9 @@ const driveThinkRenderProbe = async () => {
 
 /**
  * 渲染类型全景探针（RENDER_SHOWCASE，双轨）：
- * Plan 步骤、diff 标题、工具组、task-result、conversation 链接逐一断言；
- * OpenUI inline 断言仅 legacy 轨执行（runtime 轨投影未接 OpenUI applier，已知缺口）。
+ * Plan 步骤与进度、diff 标题、工具组、耗时徽标、终端输出、task-result、
+ * conversation 链接逐一断言；OpenUI inline 断言仅 legacy 轨执行
+ * （runtime 轨投影未接 OpenUI applier，已知缺口）。
  */
 const driveRenderShowcaseProbe = async () => {
   await waitForReplaySettled();
@@ -611,9 +612,13 @@ const driveRenderShowcaseProbe = async () => {
       return JSON.stringify({
         planStepText: bodyText.includes('部署发布上线'),
         planFirstStep: bodyText.includes('拉取订单数据'),
+        planProgress: bodyText.includes('3/3'),
         diffTitle: bodyText.includes('report/index.html'),
         groupCount: document.querySelectorAll('[class*="markdown-custom-process-group"]').length,
         groupLabel: bodyText.includes('工具调用'),
+        durationText: /(^|[^0-9])(1\.8s|2\.4s|3\.2s|6s)([^0-9]|$)/.test(bodyText),
+        terminalCmd: bodyText.includes('$ pnpm build'),
+        exitOkBadge: bodyText.includes('exit 0'),
         taskResultText: bodyText.includes('月度报表页面'),
         conversationLink: bodyText.includes('查看任务详情'),
         thinkCount: document.querySelectorAll('[class*="think-header"]').length,
@@ -626,10 +631,16 @@ const driveRenderShowcaseProbe = async () => {
     parsed.planStepText && parsed.planFirstStep,
     `Plan 步骤应渲染：${probe}`,
   );
+  expect(parsed.planProgress, `Plan 进度摘要（3/3）应渲染：${probe}`);
   expect(parsed.diffTitle, '文件 diff 标题（report/index.html）应渲染');
   expect(
     parsed.groupCount >= 1 && parsed.groupLabel,
     `工具调用组应渲染：${probe}`,
+  );
+  expect(parsed.durationText, `工具耗时徽标应渲染：${probe}`);
+  expect(
+    parsed.terminalCmd && parsed.exitOkBadge,
+    `终端输出卡片应渲染（命令行 + exit 徽标）：${probe}`,
   );
   expect(parsed.taskResultText, 'task-result 行应渲染');
   expect(parsed.conversationLink, 'conversation 链接应渲染');
@@ -639,6 +650,65 @@ const driveRenderShowcaseProbe = async () => {
   if (line === 'LEGACY') {
     await waitForText('订单总量：12,480', 15);
   }
+};
+
+/**
+ * 终端输出探针（TERMINAL_OUTPUT，双轨）：
+ * 命令行标题、退出码徽标（0 绿 / 1 红）、耗时徽标、点击展开全量输出。
+ */
+const driveTerminalOutputProbe = async () => {
+  await waitForReplaySettled();
+  await waitForRenderStable();
+  const probe = await pageJs(
+    String.raw`(() => {
+      const bodyText = document.body.textContent;
+      return JSON.stringify({
+        installCmd: bodyText.includes('$ npm install'),
+        exitOk: bodyText.includes('exit 0'),
+        exitErr: bodyText.includes('exit 1'),
+        testCmd: bodyText.includes('$ npm test'),
+        finalText: bodyText.includes('测试全部通过'),
+        collapsedOutputHidden: !bodyText.includes('found 0 vulnerabilities'),
+      });
+    })()`,
+    'terminal output probe',
+  );
+  const parsed = JSON.parse(probe);
+  expect(parsed.installCmd, '命令行标题应渲染（$ npm install）');
+  expect(parsed.testCmd, '命令行标题应渲染（$ npm test）');
+  expect(parsed.exitOk, 'exit 0 徽标应渲染');
+  expect(parsed.exitErr, 'exit 1 徽标应渲染');
+  expect(parsed.finalText, '终态正文应渲染');
+  expect(
+    parsed.collapsedOutputHidden,
+    `终态下未展开的终端输出不应露出全文：${probe}`,
+  );
+
+  // 点击第一个终端卡片标题 → 展开全量输出块
+  const terminalTitles = await pageJs(
+    String.raw`(() => {
+      const titles = [...document.querySelectorAll(
+        '[class*="process-title"][class*="is-terminal"]',
+      )];
+      if (!titles.length) return 0;
+      titles[0].click();
+      return titles.length;
+    })()`,
+    'click terminal title',
+  );
+  await pause(0.4);
+  const fullBlockCount = await pageJs(
+    String.raw`document.querySelectorAll('[class*="terminal-output"]').length`,
+    'terminal full blocks',
+  );
+  expect(
+    Number(terminalTitles) >= 3,
+    `应有 ≥3 个终端卡片（install/test/retest），实际 ${terminalTitles}`,
+  );
+  expect(
+    Number(fullBlockCount) >= 1,
+    `点击展开后应出现终端输出块，实际 ${fullBlockCount}`,
+  );
 };
 
 /**
@@ -664,6 +734,7 @@ const INTERACTIVE_CASES = [
   { id: 'OPENUI_RENDER', speed: 0.05, drive: driveOpenuiRender },
   { id: 'LONG_TASK_INTERLEAVED', speed: 0.05, drive: driveThinkRenderProbe },
   { id: 'RENDER_SHOWCASE', speed: 0.05, drive: driveRenderShowcaseProbe },
+  { id: 'TERMINAL_OUTPUT', speed: 0.05, drive: driveTerminalOutputProbe },
 ];
 
 // ---------- 过滤 ----------

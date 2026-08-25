@@ -15,6 +15,13 @@ import {
   resolveOpenUiDisplayState,
 } from '@/utils/openUiArtifact';
 import {
+  formatDuration,
+  getPlanProgress,
+  getProcessDurationMs,
+  mergeTerminalItems,
+  normalizeTerminalItems,
+} from '@/utils/terminalOutput';
+import {
   BorderOutlined,
   CheckOutlined,
   CheckSquareOutlined,
@@ -41,6 +48,7 @@ import {
 import { useModel } from 'umi';
 import styles from './index.less';
 import SeeDetailModal from './SeeDetailModal';
+import TerminalOutputView from './TerminalOutputView';
 import { usePlanAutoScroll } from './usePlanAutoScroll';
 
 const cx = classNames.bind(styles);
@@ -156,12 +164,48 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
   const [isPlanExpanded, setIsPlanExpanded] = useState(true);
   // Diff 展开/收起状态
   const [isDiffExpanded, setIsDiffExpanded] = useState(false);
+  // 终端输出展开/收起状态
+  const [isTerminalExpanded, setIsTerminalExpanded] = useState(false);
 
   const diffItems = useMemo(() => {
     return normalizeFileDiffItems(innerProcessing.result);
   }, [innerProcessing.result]);
 
   const hasDiff = diffItems.length > 0;
+
+  // 终端输出（P0-1）：实时读取 result.data 的 terminal 项（流式中经
+  // processingList 同步增长），与 diff 互斥——diff 优先保持既有形态
+  const terminalItem = useMemo(() => {
+    if (hasDiff) return null;
+    return mergeTerminalItems(normalizeTerminalItems(innerProcessing.result));
+  }, [innerProcessing.result, hasDiff]);
+  const isTerminal = !!terminalItem;
+  const terminalCommand =
+    terminalItem?.command ??
+    (innerProcessing.result as { input?: { command?: string } } | null)?.input
+      ?.command ??
+    innerProcessing.name ??
+    props.name;
+
+  // 单步耗时（P0-3）：终态后展示，流式中不占位
+  const durationText = useMemo(() => {
+    if (
+      innerProcessing.status !== ProcessingEnum.FINISHED &&
+      innerProcessing.status !== ProcessingEnum.FAILED
+    ) {
+      return null;
+    }
+    const durationMs = getProcessDurationMs(innerProcessing.result);
+    return durationMs == null ? null : formatDuration(durationMs);
+  }, [innerProcessing.status, innerProcessing.result]);
+
+  // Plan 进度摘要（P0-2）：读实时 result.data，流式推进中立即可见
+  const planProgress = useMemo(() => {
+    if (innerProcessing.type !== AgentComponentTypeEnum.Plan) return null;
+    return getPlanProgress(
+      (innerProcessing.result as { data?: unknown } | null)?.data,
+    );
+  }, [innerProcessing.type, innerProcessing.result]);
   const openUiDisplayState = useMemo(
     () => resolveOpenUiDisplayState(innerProcessing.result),
     [innerProcessing.result],
@@ -553,15 +597,16 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
     return null;
   }
 
-  // 工具栏标题：过长时 tooltip 限高 3 行，超出出现滚动条
+  // 工具栏标题：过长时 tooltip 限高 3 行，超出出现滚动条；终端类显示命令行
   const processName =
     innerProcessing?.name || dict('PC.Components.MarkdownCustomProcess.noName');
-  const titleText =
-    hasDiff && diffItems.length === 1
-      ? `${processName} ${diffItems[0].path}`
-      : hasDiff && diffItems.length > 1
-      ? `${processName} ${diffItems[0].path} +${diffItems.length - 1}`
-      : processName;
+  const titleText = isTerminal
+    ? `$ ${terminalCommand}`
+    : hasDiff && diffItems.length === 1
+    ? `${processName} ${diffItems[0].path}`
+    : hasDiff && diffItems.length > 1
+    ? `${processName} ${diffItems[0].path} +${diffItems.length - 1}`
+    : processName;
 
   return (
     <>
@@ -576,10 +621,13 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
               [styles['is-edit']]:
                 !hasDiff && (innerProcessing.result as any)?.kind === 'edit',
               [styles['is-diff']]: hasDiff,
+              [styles['is-terminal']]: isTerminal,
             })}
             onClick={
               hasDiff
                 ? () => setIsDiffExpanded(!isDiffExpanded)
+                : isTerminal && terminalItem?.content
+                ? () => setIsTerminalExpanded(!isTerminalExpanded)
                 : handleOpenFileTree
             }
           >
@@ -606,6 +654,27 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
               >
                 {titleText}
               </Typography.Text>
+              {isTerminal && terminalItem?.exitCode != null && (
+                <span
+                  className={cx(styles['exit-badge'], {
+                    [styles['exit-ok']]: terminalItem.exitCode === 0,
+                    [styles['exit-error']]: terminalItem.exitCode !== 0,
+                  })}
+                >
+                  exit {terminalItem.exitCode}
+                </span>
+              )}
+              {planProgress && (
+                <span
+                  className={cx(styles['plan-progress-chip'])}
+                  title={planProgress.currentStep}
+                >
+                  {planProgress.completed}/{planProgress.total}
+                  {planProgress.currentStep
+                    ? ` · ${planProgress.currentStep}`
+                    : ''}
+                </span>
+              )}
               {hasDiff && (
                 <span className={cx(styles['diff-badges'])}>
                   {totalAdditions > 0 && (
@@ -623,8 +692,31 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
             </div>
           </div>
           <div className={cx(styles['process-controls'])}>
+            {durationText && (
+              <span className={cx(styles['duration-chip'])}>
+                {durationText}
+              </span>
+            )}
             {genStatusDisplay()}
             <div className={cx(styles['process-controls-actions'])}>
+              {isTerminal && !!terminalItem?.content && (
+                <Tooltip
+                  title={
+                    isTerminalExpanded
+                      ? dict('PC.Components.MarkdownCustomProcess.collapse')
+                      : dict('PC.Components.MarkdownCustomProcess.expand')
+                  }
+                >
+                  <Button
+                    size="small"
+                    type="text"
+                    icon={
+                      isTerminalExpanded ? <MinusOutlined /> : <PlusOutlined />
+                    }
+                    onClick={() => setIsTerminalExpanded(!isTerminalExpanded)}
+                  />
+                </Tooltip>
+              )}
               <Tooltip
                 title={dict('PC.Components.MarkdownCustomProcess.viewDetail')}
               >
@@ -731,6 +823,26 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
       </div>
       {/* Plan 类型展开内容 */}
       {renderPlanDetails()}
+      {/* 终端输出（P0-1）：流式显示尾部预览；终态收起为摘要行，点击展开全量 */}
+      {isTerminal && !!terminalItem?.content && (
+        <>
+          {isTerminalExpanded ? (
+            <TerminalOutputView
+              key={`${innerProcessing.executeId}-full`}
+              content={terminalItem.content}
+              mode="full"
+            />
+          ) : (
+            innerProcessing.status === ProcessingEnum.EXECUTING && (
+              <TerminalOutputView
+                key={`${innerProcessing.executeId}-preview`}
+                content={terminalItem.content}
+                mode="preview"
+              />
+            )
+          )}
+        </>
+      )}
       {/* Diff 类型展开内容 */}
       {hasDiff && isDiffExpanded && (
         <div className={cx(styles['diff-container'])}>

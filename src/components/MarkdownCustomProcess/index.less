@@ -81,6 +81,10 @@
         cursor: pointer;
       }
 
+      &.is-terminal {
+        cursor: pointer;
+      }
+
       .title-left-wrapper {
         display: flex;
         align-items: center;
@@ -88,6 +92,40 @@
         min-width: 0;
         flex: 1;
         margin-right: @marginSm;
+      }
+
+      .exit-badge {
+        flex-shrink: 0;
+        font-family: Monaco, Menlo, 'Ubuntu Mono', monospace;
+        font-size: @fontSizeSm;
+        font-weight: @fontWeightStrong;
+        padding: 0 @paddingXxs;
+        border-radius: @borderRadiusXs;
+
+        &.exit-ok {
+          color: @colorSuccess;
+          background: @colorSuccessBg;
+        }
+
+        &.exit-error {
+          color: @colorError;
+          background: @colorErrorBg;
+        }
+      }
+
+      .plan-progress-chip {
+        flex-shrink: 0;
+        max-width: 45%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: @fontSizeSm;
+        color: @colorTextTertiary;
+        background-color: @colorFillSecondary;
+        padding: 1px @paddingXs;
+        border-radius: 10px;
+        line-height: @lineHeightSm;
+        font-variant-numeric: tabular-nums;
       }
 
       .diff-badges {
@@ -121,6 +159,13 @@
       gap: 8px;
       opacity: 0; // 默认隐藏，在 hover 整个容器时展现
       transition: opacity @motionDurationMid @motionEaseInOut;
+
+      .duration-chip {
+        font-size: @fontSizeSm;
+        color: @colorTextTertiary;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+      }
 
       .status-completed {
         display: flex;
@@ -292,6 +337,36 @@
       background: @colorBgContainer;
       overflow-x: auto;
     }
+  }
+}
+
+// 终端输出内容区（P0-1）：等宽、暗底，流式预览与展开全量共用
+.terminal-output {
+  border-top: 1px solid rgba(0, 0, 0, 6%);
+  background-color: @colorBgLayout; // 与亮暗主题的「控制台」底色观感对齐
+  margin-bottom: @marginXs;
+
+  .terminal-output-text {
+    margin: 0;
+    padding: @paddingXs @paddingSm;
+    font-family: Monaco, Menlo, 'Ubuntu Mono', monospace;
+    font-size: @fontSizeSm;
+    line-height: 1.6;
+    color: @colorText;
+    white-space: pre-wrap;
+    word-break: break-all;
+    overflow: auto;
+    scrollbar-width: thin;
+  }
+
+  &.is-preview {
+    .terminal-output-text {
+      max-height: calc(1.6 * @fontSizeSm * 6); // 尾部 6 行预览
+    }
+  }
+
+  .terminal-output-text {
+    max-height: 240px; // 展开全量时限高滚动
   }
 }
 

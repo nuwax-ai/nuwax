@@ -27,9 +27,9 @@
 | 功能项 | 演示场景 | drive 断言 | 状态 |
 | --- | --- | --- | --- |
 | （已完成三项见 §0 表） | — | — | ✅ |
-| P0-1 终端输出渲染 | `TERMINAL_OUTPUT`（待建） | `driveTerminalOutputProbe`（待建） | ⬜ |
-| P0-2 Plan 进度 | `PLAN_PROCESSING` / `RENDER_SHOWCASE`（已有，加断言） | `drivePlanProgressProbe`（待建） | ⬜ |
-| P0-3 工具耗时徽标 | `RENDER_SHOWCASE`（本轮已补 endTime 载荷） | `driveDurationBadgeProbe`（可并入 showcase 探针） | ⬜ |
+| P0-1 终端输出渲染 | `TERMINAL_OUTPUT`（2026-08-25 建）+ `RENDER_SHOWCASE` 并入 | `driveTerminalOutputProbe`（2026-08-25 注册）+ showcase 探针扩展 | ✅ |
+| P0-2 Plan 进度 | `PLAN_PROCESSING` / `RENDER_SHOWCASE`（终态 3/3 断言入 showcase 探针） | showcase 探针（`3/3` 文案断言） | ✅ |
+| P0-3 工具耗时徽标 | `RENDER_SHOWCASE`（endTime 载荷） | showcase 探针（`1.8s/2.4s/3.2s` 断言） | ✅ |
 | P1-4 子 agent 渲染 | `SUBAGENT_NESTED`（待建） | `driveSubagentProbe`（待建） | ⬜ |
 | P1-5 消息重试 | 手动矩阵 + 单测 | —（交互在输入框区，不适合回放断言） | ⬜ |
 | P1-6 会话密度设置 | `/mock-chat` 手动三档对照 + 映射单测 | —（偏好类，手动验收） | ⬜ |
@@ -41,7 +41,7 @@
 
 - **目标**：Bash / shell / terminal 类工具调用在会话流内渲染为等宽终端块，而非「通用一行卡 + JSON 弹窗」。
 - **验收标准**：① 流式 EXECUTING 时显示命令行 + 实时输出尾部 N 行（默认 6）预览；② FINISHED 后收为摘要行（命令 + 退出码徽标 + 耗时），点击展开全量输出（等宽、暗底、横向滚动、限高）；③ 退出码 0 绿、非 0 红；④ 历史消息同样渲染；⑤ 长输出（1000+ 行）展开不卡。
-- **协议方案**：`ExecuteResultInfo.data` 数组新增项 `{ type: 'terminal', content: string, exitCode?: number }`，与 diff 项（`{type:'diff', ...}`，`src/utils/fileChangeDiff.ts:120-150` 的 `normalizeFileDiffItems` 同层）同构；新增 `normalizeTerminalItems`。流式输出更新沿用 `getCustomBlock` 的同 executeId 原地重写（`plugins/ds-markdown-process/index.ts`），content 过长时截断保留尾部（如 200 行）防标签膨胀。匹配规则：result.data 含 terminal 项即渲染终端块（type 无关），兜底 name 正则 `/bash|shell|terminal|exec/i`。
+- **协议方案**：`ExecuteResultInfo.data` 数组新增项 `{ type: 'terminal', command?, content: string, exitCode?: number }`，与 diff 项（`{type:'diff', ...}`，`src/utils/fileChangeDiff.ts:120-150` 的 `normalizeFileDiffItems` 同层）同构；新增 `normalizeTerminalItems`（`src/utils/terminalOutput.ts`，兼容 content/output 别名）。**输出内容不走 text 标签属性**——text 标签只占位，内容经 processingList → chat model 的既有同步链路增长（流式无需标签重写）；渲染端 `TerminalOutputView` 尾部截断（预览 6 行 / 全量 500 行）防超长输出撑爆 DOM。命令行来源：item.command → result.input.command → 工具名。
 - **涉及文件**：`MarkdownCustomProcess/index.tsx`（新增终端分支 + 展开态）、`MarkdownCustomProcess/index.less`（等宽块样式）、`src/utils/fileChangeDiff.ts` 或新 `terminalOutput.ts`（normalize）、可选 `MarkdownRenderer` 无需改（标签协议不变）。
 - **演示场景**：helper `terminalOutput(toolCallId, { command, content, exitCode })`（覆盖 result.data）；场景 `TERMINAL_OUTPUT`：安装依赖（长输出成功）→ 跑测试（失败非 0 退出码）→ 修复重跑（成功）→ 正文总结。
 - **后端确认项**：真实 Bash 工具 `result.data` 的实际形状（若后端已下发某种 stdout 结构，normalize 做兼容映射即可，协议可吸收）。
@@ -107,7 +107,7 @@
 
 | 批次 | 内容 | 分支策略 |
 | --- | --- | --- |
-| M1 | P0-1 + P0-2 + P0-3 + P0 汇总演示 | 一个 worktree/分支（延续 `conv-auto-collapse` 的文本协议模式，基于最新 `feat/conversation-mock-testing`） |
+| M1 | P0-1 + P0-2 + P0-3 + P0 汇总演示 | ~~独立新分支~~ 已于 2026-08-25 在 `feat/conversation-auto-collapse` 续作完成（演示矩阵 / e2e 基建依赖该分支，避免重复搬运） |
 | M2 | P1-4（近似方案）/ P1-6；P1-5 视后端就绪 | 按项独立分支 |
 | M3 | P2 按需立项 | 按项独立分支 |
 

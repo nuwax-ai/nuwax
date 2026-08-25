@@ -24,6 +24,7 @@ export type MockScenarioId =
   | 'IDLE_POLL_TERMINAL'
   | 'MULTI_TOOL_ONE_MSG'
   | 'LONG_TASK_INTERLEAVED'
+  | 'TERMINAL_OUTPUT'
   | 'PERMISSION_REQUEST'
   | 'PERMISSION_DENY'
   | 'PERMISSION_TIMEOUT'
@@ -417,6 +418,49 @@ const fileDiff = (
   },
 });
 
+/**
+ * 终端输出工具调用（渲染计划 P0-1 协议）：result.data 携带 terminal 项，
+ * EXECUTING 时 content 为流式部分输出（不带 exitCode），终态带全量输出与退出码。
+ */
+const terminalOutput = (
+  toolCallId: string,
+  name: string,
+  options: {
+    command: string;
+    content: string;
+    exitCode?: number;
+    status?: 'EXECUTING' | 'FINISHED' | 'FAILED';
+  },
+): MockSseEvent => {
+  const status = options.status ?? 'FINISHED';
+  return {
+    eventType: 'PROCESSING',
+    requestId: req('1'),
+    data: {
+      targetId: -1,
+      name,
+      status,
+      toolCallId,
+      type: 'ToolCall',
+      result: {
+        executeId: toolCallId,
+        ...resultTiming(status, 4200),
+        input: { command: options.command },
+        data: [
+          {
+            type: 'terminal',
+            command: options.command,
+            content: options.content,
+            ...(options.exitCode !== undefined
+              ? { exitCode: options.exitCode }
+              : {}),
+          },
+        ],
+      },
+    },
+  };
+};
+
 const finalResult = (
   success: boolean,
   outputText: string,
@@ -751,6 +795,66 @@ export const MOCK_SCENARIOS: MockScenario[] = [
     ],
   },
   {
+    id: 'TERMINAL_OUTPUT',
+    label: '终端输出渲染',
+    description:
+      'Bash 工具的等宽输出块：流式尾部预览 → 长输出成功（exit 0）→ 失败退出码（exit 1）→ 修复重跑成功',
+    verifies: 'terminal 项协议渲染 + 退出码徽标 + 单步耗时 + 展开全量',
+    events: [
+      think('先安装依赖，再跑测试。', true),
+      terminalOutput('term-install', '终端执行 npm install', {
+        command: 'npm install',
+        content: 'added 120 packages in 9s',
+        status: 'EXECUTING',
+      }),
+      terminalOutput('term-install', '终端执行 npm install', {
+        command: 'npm install',
+        content: [
+          'npm warn deprecated querystring@0.2.0',
+          'npm warn deprecated uuid@3.4.0',
+          '',
+          'added 312 packages, and audited 313 packages in 18s',
+          '',
+          '42 packages are looking for funding',
+          '  run `npm fund` for details',
+          '',
+          'found 0 vulnerabilities',
+        ].join('\n'),
+        exitCode: 0,
+      }),
+      terminalOutput('term-test', '终端执行 npm test', {
+        command: 'npm test',
+        content: [
+          '> vitest run',
+          '',
+          ' RUN  v2.1.9',
+          '',
+          ' ❯ src/utils/terminalOutput.test.ts (2 tests | 1 failed)',
+          ' × formatDuration 分钟段格式',
+          ' ✓ normalizeTerminalItems 兼容 output 别名',
+          '',
+          ' Test Files  1 failed (1)',
+          '      Tests  1 failed | 1 passed (2)',
+        ].join('\n'),
+        exitCode: 1,
+      }),
+      terminalOutput('term-retest', '终端执行 npm test', {
+        command: 'npm test -- --run',
+        content: [
+          ' RUN  v2.1.9',
+          '',
+          ' ✓ src/utils/terminalOutput.test.ts (13 tests)',
+          '',
+          ' Test Files  1 passed (1)',
+          '      Tests  13 passed (13)',
+        ].join('\n'),
+        exitCode: 0,
+      }),
+      chat('依赖安装完成，首轮测试失败后已修复，测试全部通过。', true),
+      finalResult(true, '依赖安装完成，首轮测试失败后已修复，测试全部通过。'),
+    ],
+  },
+  {
     id: 'PERMISSION_REQUEST',
     label: '权限审批',
     description: '流式中 acpRequestPermission → 弹审批框 → 批准 → 流继续',
@@ -918,8 +1022,8 @@ export const MOCK_SCENARIOS: MockScenario[] = [
     id: 'RENDER_SHOWCASE',
     label: '渲染类型全景展示',
     description:
-      '长任务串联全部渲染类型：Plan 推进 + 11 种 process 类型 + 文件 diff + OpenUI inline + group 容器 + conversation 链接 + task-result',
-    verifies: '全部自定义渲染类型一次看完',
+      '长任务串联全部渲染类型：Plan 推进 + 11 种 process 类型 + 文件 diff + 终端输出 + OpenUI inline + group 容器 + conversation 链接 + task-result',
+    verifies: '全部自定义渲染类型一次看完（含 Plan 进度/耗时/退出码徽标）',
     events: [
       think('收到需求，我先梳理发布流程。'),
       think('需要先取数、再生成报表、最后部署上线。', true),
@@ -998,7 +1102,19 @@ export const MOCK_SCENARIOS: MockScenario[] = [
         ]),
         delayMs: 800,
       },
-      // ── 上线阶段：OpenUI + 收尾标签 ──
+      // ── 上线阶段：终端输出 + OpenUI + 收尾标签 ──
+      terminalOutput('rs-terminal', '终端执行 pnpm build', {
+        command: 'pnpm build',
+        content: [
+          'vite v5.4.21 building for production...',
+          'transforming...',
+          '✓ 42 modules transformed.',
+          'dist/index.html                 0.46 kB │ gzip:  0.30 kB',
+          'dist/assets/index-4f2a1b.js   182.35 kB │ gzip: 58.92 kB',
+          '✓ built in 2.4s',
+        ].join('\n'),
+        exitCode: 0,
+      }),
       renderOpenUi(
         'rs-openui',
         '订单月度看板',
