@@ -199,11 +199,11 @@ const AliyunCaptcha = forwardRef<AliyunCaptchaRef, AliyunCaptchaProps>(
     }, []);
 
     const cleanupCaptchaElements = useCallback(() => {
-      // 由 SDK 销毁自己创建的节点。若先手动移除弹窗/遮罩，SDK 的 destroy
+      // 由 SDK 销毁自己创建的节点。若先手动移除弹窗/遮罩，SDK 的销毁
       // 或成功回调收尾仍会访问这些节点，登录跳转时会出现 innerHTML 空引用。
       const instance = captchaInstanceRef.current;
       captchaInstanceRef.current = null;
-      instance?.destroy?.();
+      instance?.destroyCaptcha?.();
     }, []);
 
     // 确保卸载时 SDK destroy 发生在 React 移除验证码容器之前。
@@ -233,7 +233,21 @@ const AliyunCaptcha = forwardRef<AliyunCaptchaRef, AliyunCaptchaProps>(
       // 记录初始化时间戳，用于保障 init 与验证请求之间 ≥2s
       window.__captchaInitAt = Date.now();
 
-      return cleanupCaptchaElements;
+      // 初始化超时探测：getInstance 未回调说明 SDK 初始化失败
+      // （域名白名单、SceneId 配置或 captcha-open 接口异常），弹窗无从弹出
+      const initProbeTimer = window.setTimeout(() => {
+        if (!captchaInstanceRef.current) {
+          console.warn(
+            '[AliyunCaptcha] init timeout: 8s 内 getInstance 未回调，' +
+              '请检查阿里云验证码控制台的域名白名单与 SceneId 配置',
+          );
+        }
+      }, 8000);
+
+      return () => {
+        window.clearTimeout(initProbeTimer);
+        cleanupCaptchaElements();
+      };
     }, [
       captchaSceneId,
       captchaPrefix,

@@ -175,6 +175,7 @@ export default () => {
     messageListRef,
     messageListRuntimeSyncFrameRef,
     handleChatProcessingList,
+    modelSource: 'conversationAgent',
   });
 
   // 添加一个 ref 来控制是否允许自动滚动

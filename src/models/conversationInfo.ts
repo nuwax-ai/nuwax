@@ -214,6 +214,7 @@ export default () => {
     messageListRef,
     messageListRuntimeSyncFrameRef,
     handleChatProcessingList,
+    modelSource: 'conversationInfo',
   });
   // 添加一个 ref 来控制是否允许自动滚动
   const allowAutoScrollRef = useRef<boolean>(true);

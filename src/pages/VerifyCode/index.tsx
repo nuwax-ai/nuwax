@@ -1,4 +1,4 @@
-import AliyunCaptcha from '@/components/AliyunCaptcha';
+import AliyunCaptcha, { AliyunCaptchaRef } from '@/components/AliyunCaptcha';
 import { VERIFICATION_CODE_LEN } from '@/constants/common.constants';
 import { ACCESS_TOKEN, EXPIRE_DATE, PHONE } from '@/constants/home.constants';
 import useCountDown from '@/hooks/useCountDown';
@@ -41,6 +41,7 @@ const VerifyCode: React.FC = () => {
   const [codeString, setCodeString] = useState<string>('');
   const [errorString, setErrorString] = useState<string>('');
   const inputRef = useRef<InputRef | null>(null);
+  const captchaRef = useRef<AliyunCaptchaRef>(null);
   const { phoneOrEmail, areaCode, authType, captchaVerifyParam } =
     location.state;
 
@@ -212,9 +213,15 @@ const VerifyCode: React.FC = () => {
       captchaPrefix !== '' &&
       openCaptcha
     );
-    // 如果需要阿里云验证码，则点击按钮触发验证码
+    // 如果需要阿里云验证码，则触发隐藏按钮 click（官方姿势）唤起验证码，
+    // 按钮不在 DOM 时以 show() 兜底，与登录页 triggerCaptchaPopup 行为对齐
     if (needAliyunCaptcha) {
-      document.getElementById(elementId)?.click();
+      const captchaBtn = document.getElementById(elementId);
+      if (captchaBtn) {
+        captchaBtn.click();
+      } else {
+        captchaRef.current?.show?.();
+      }
     } else {
       //不需要阿里云验证码，直接执行登录/验证码逻辑
       handlerSuccess();
@@ -322,6 +329,7 @@ const VerifyCode: React.FC = () => {
           onVerify={handleCaptchaVerify}
           onReady={handleReady}
           elementId="aliyun-captcha-sms"
+          ref={captchaRef}
         />
       </div>
     </BasicLayout>
