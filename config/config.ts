@@ -44,6 +44,11 @@ export default defineConfig({
   // 添加阿里云验证码脚本和双向跳转脚本
   headScripts: [
     {
+      // 注意：阿里云官方不提供带版本号的 SDK 地址，此 URL 为无版本滚动更新，
+      // SDK 行为可能随阿里云发布随时变化（2026-08 曾因此发生登录验证码无法唤起故障，
+      // 详见 docs/captcha-login-no-popup-report.md）。
+      // 约束：唤起验证码必须用官方姿势——触发 button 参数指向元素的 click 事件，
+      // 不得依赖实例方法 show()（非官方承诺，会静默失效）。
       src: 'https://o.alicdn.com/captcha-frontend/aliyunCaptcha/AliyunCaptcha.js',
       type: 'text/javascript',
     },
