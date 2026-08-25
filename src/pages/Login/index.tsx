@@ -454,6 +454,21 @@ const Login: React.FC = () => {
     }
   };
 
+  /**
+   * 触发验证码弹窗。
+   * 官方推荐姿势是触发 initAliyunCaptcha 绑定的隐藏 button 的 click 事件
+   * 来激活验证会话；show() 仅显示已有元素，不能可靠地启动验证流程。
+   */
+  const triggerCaptchaPopup = () => {
+    const captchaBtn = document.getElementById('aliyun-captcha-login');
+    if (captchaBtn) {
+      captchaBtn.click();
+    } else {
+      captchaRef.current?.show?.();
+    }
+    startCaptchaPopupWatcher();
+  };
+
   const doLogin = () => {
     if (loading) return;
 
@@ -484,8 +499,7 @@ const Login: React.FC = () => {
         lastLoginTriggerAtRef.current = now;
         captchaDelayTimerRef.current = window.setTimeout(() => {
           captchaDelayTimerRef.current = null;
-          captchaRef.current?.show?.();
-          startCaptchaPopupWatcher();
+          triggerCaptchaPopup();
         }, delay);
         return;
       }
@@ -504,8 +518,7 @@ const Login: React.FC = () => {
     );
 
     if (needAliyunCaptcha) {
-      captchaRef.current?.show?.();
-      startCaptchaPopupWatcher();
+      triggerCaptchaPopup();
     } else {
       const handler =
         loginTypeRef.current === LoginTypeEnum.Password
