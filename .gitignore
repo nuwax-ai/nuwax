@@ -15,7 +15,6 @@
 /.idea
 /.yarn.lock
 package-lock.json
-pnpm-lock.yaml
 
 # Ignore DevSpace cache and log folder
 .devspace/
