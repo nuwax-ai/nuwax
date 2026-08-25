@@ -88,6 +88,12 @@ const KNOWN_ISSUES = [
     reason:
       'runtime 轨 OpenUI inline 组件未渲染（消息投影未接 OpenUI applier，legacy 正常）——另行立项',
   },
+  {
+    scenario: 'OPENUI_INTERACTIVE',
+    line: 'runtime',
+    interactive: true,
+    reason: 'runtime 轨 OpenUI inline 组件未渲染（同 OPENUI_RENDER 桥接缺口）',
+  },
   // 终态守卫在 154s 真实时长（心跳维活）场景未丢弃迟到分片（两轨一致，
   // 消息列表渲染了迟到文本）——压缩版 LATE_CHUNK 的断言只查 EXECUTING 残留
   // 从未验证守卫证据，M3 真实时长首次暴露。初步定位：shouldDropLateMessageChunk
@@ -496,14 +502,101 @@ const driveQueueHolding = async () => {
   await waitForTextGone('待发送', 10);
 };
 
-/** OpenUI 容器挂载：断言组件渲染证据（value 文本 + 容器节点；title 走样式层不在 textContent） */
+/** OpenUI 容器挂载：断言数据看板组件证据（KPI/图表/表格文本 + 容器节点 + 图表 svg） */
 const driveOpenuiRender = async () => {
-  await waitForText('结果数值：42', 15);
-  const nodes = await pageJs(
-    String.raw`document.querySelectorAll('[class*="openui"], [class*="open-ui"], iframe').length`,
-    'openui nodes',
+  await waitForText('订单总量', 15);
+  await waitForText('渠道明细', 15);
+  const probe = await pageJs(
+    String.raw`(() => {
+      const bodyText = document.body.textContent;
+      return JSON.stringify({
+        kpiValue: bodyText.includes('12,480'),
+        trendTitle: bodyText.includes('近 7 日订单趋势'),
+        tableRow: bodyText.includes('线上商城') && bodyText.includes('企业团购'),
+        chartSvg: document.querySelectorAll('svg[class*="recharts"], svg.recharts-surface').length,
+        openuiNodes: document.querySelectorAll('[class*="openui"], [class*="open-ui"], iframe').length,
+      });
+    })()`,
+    'openui dashboard probe',
   );
-  expect(nodes > 0, `未见 OpenUI 容器节点（openui/iframe 选择器 ×0）`);
+  const parsed = JSON.parse(probe);
+  expect(parsed.kpiValue, `KPI 数值应渲染：${probe}`);
+  expect(parsed.trendTitle, `图表卡片标题应渲染：${probe}`);
+  expect(parsed.tableRow, `数据表行应渲染：${probe}`);
+  expect(parsed.chartSvg >= 1, `折线图应渲染为 svg（recharts）：${probe}`);
+  expect(
+    parsed.openuiNodes > 0,
+    `未见 OpenUI 容器节点（openui/iframe 选择器 ×0）`,
+  );
+};
+
+/** OpenUI 表单交互：断言表单控件渲染，点击主按钮后回发动作消息（消息数增加） */
+const driveOpenUiInteractiveProbe = async () => {
+  await waitForReplaySettled();
+  await waitForRenderStable();
+  const probe = await pageJs(
+    String.raw`(() => {
+      const bodyText = document.body.textContent;
+      return JSON.stringify({
+        formTitle: bodyText.includes('发布确认'),
+        scopeField: bodyText.includes('发布范围'),
+        envField: bodyText.includes('目标环境'),
+        noteField: bodyText.includes('发布说明'),
+        submitBtn: [...document.querySelectorAll('button')].filter(
+          (b) => (b.textContent || '').trim() === '确认发布',
+        ).length,
+        messageCount: window.__MOCK_CHAT_ASSERTIONS__?.messageCount ?? 0,
+      });
+    })()`,
+    'openui form probe',
+  );
+  const parsed = JSON.parse(probe);
+  expect(parsed.formTitle, `表单标题应渲染：${probe}`);
+  expect(
+    parsed.scopeField && parsed.envField && parsed.noteField,
+    `三个表单字段应渲染：${probe}`,
+  );
+  expect(parsed.submitBtn >= 1, `提交按钮应渲染：${probe}`);
+
+  // 填写发布说明后点击提交 → 动作经 rawSend 回发并触发新一轮回放。
+  // mock 回放会快速重置消息数，高频轮询捕获任一瞬时发送证据
+  // （消息数增加 / 回放重启 playing）。
+  await pageJs(
+    String.raw`(() => {
+      const input = document.querySelector('input[placeholder*="一句话说明"]');
+      if (input) {
+        const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+        input.focus();
+        setter.call(input, 'E2E 演示提交');
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+      const btn = [...document.querySelectorAll('button')].find(
+        (b) => (b.textContent || '').trim() === '确认发布',
+      );
+      if (btn) btn.click();
+      return btn ? 'CLICKED' : 'NO_BTN';
+    })()`,
+    'fill and submit',
+  );
+  let sent = false;
+  let lastInfo = '';
+  for (let i = 0; i < 20 && !sent; i++) {
+    await pause(0.3);
+    const snap = await readSnapshot();
+    if (!snap) continue;
+    lastInfo = JSON.stringify({
+      count: snap.messageCount,
+      playing: snap.playing,
+      emitted: snap.emittedCount,
+    });
+    if (snap.messageCount > parsed.messageCount || snap.playing === true) {
+      sent = true;
+    }
+  }
+  expect(
+    sent,
+    `点击提交后应回发动作消息（轮询未见发送证据，基线 ${parsed.messageCount}，末态 ${lastInfo}）`,
+  );
 };
 
 /**
@@ -648,7 +741,18 @@ const driveRenderShowcaseProbe = async () => {
 
   const line = await probeLine();
   if (line === 'LEGACY') {
-    await waitForText('订单总量：12,480', 15);
+    await waitForText('订单月度看板', 15);
+    const pieProbe = await pageJs(
+      String.raw`(() => JSON.stringify({
+        kpi: document.body.textContent.includes('12,480'),
+        pieTitle: document.body.textContent.includes('渠道占比'),
+        chartSvg: document.querySelectorAll('svg[class*="recharts"], svg.recharts-surface').length,
+      }))()`,
+      'showcase openui probe',
+    );
+    const pie = JSON.parse(pieProbe);
+    expect(pie.kpi && pie.pieTitle, `看板 KPI/饼图标题应渲染：${pieProbe}`);
+    expect(pie.chartSvg >= 1, `饼图应渲染为 svg（recharts）：${pieProbe}`);
   }
 };
 
@@ -792,6 +896,7 @@ const INTERACTIVE_CASES = [
   },
   { id: 'MESSAGE_QUEUE_HOLDING', speed: 0.25, drive: driveQueueHolding },
   { id: 'OPENUI_RENDER', speed: 0.05, drive: driveOpenuiRender },
+  { id: 'OPENUI_INTERACTIVE', speed: 0.05, drive: driveOpenUiInteractiveProbe },
   { id: 'LONG_TASK_INTERLEAVED', speed: 0.05, drive: driveThinkRenderProbe },
   { id: 'RENDER_SHOWCASE', speed: 0.05, drive: driveRenderShowcaseProbe },
   { id: 'TERMINAL_OUTPUT', speed: 0.05, drive: driveTerminalOutputProbe },
