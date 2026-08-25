@@ -83,13 +83,13 @@
 
 ## 4. 日志体系（生产 console 直接可判）
 
-前缀统一 `[Conv:Status]`（`createAlwaysLogger` 自动带 ISO 时间戳）。**验收/排障：console 过滤 `active-`**。
+前缀统一 `[Conv:Status]`（`createAlwaysLogger` 自动带 ISO 时间戳），所有载荷带 `model` 字段区分主会话（`conversationInfo`）与预览 Tab（`conversationAgent`）——两 model 状态隔离、日志互不串扰。**验收/排障：console 过滤 `active-`**。
 
 | 日志 | 触发 | 字段 | 说明 |
 | --- | --- | --- | --- |
 | `active-change` | 活跃态真实翻转 | `source` + `prev → next` | 每次翻转都带来源，还原「哪个变化导致的」 |
 | `active-blocked` | 置 false 被 3s 保活拦截 | `source` + `reason` + `prev` | 历史静默路径留痕 |
-| `active-rising-blocked-by-ack` | 乐观终态 ack 封住上升沿 | `source: 'raf-recompute'` | **新机制生效的证据**（终态后派生信号试图复活被拦） |
+| `active-rising-blocked-by-ack` | 乐观终态 ack 封住上升沿 | `source` + `tailId` / `tailStatus` / `listLength`（末条现场自证） | **新机制生效的证据**（终态后派生信号试图复活被拦）；每秒至多 1 条（节流） |
 | `awaiting-change` | awaiting 翻转 | `prev → next` | 轮询门另一半状态位；与 active-change 合起来覆盖 `isPollingReady` 的全部两个状态位，来源归属靠相邻日志 |
 
 source 取值全集：`send-optimistic` / `raf-recompute` / `terminal-sweep` / `placeholder-recompute` / `sse-on-close` / `sse-on-error` / `user-stop` / `reset-init` / `query-on-error` / `disable`（默认兜底）/ `unknown`。
@@ -114,6 +114,7 @@ active-rising-blocked-by-ack {source: 'raf-recompute'}                 ← 终�
 | 终态后 `awaiting-change ... next: false` 已打但轮询仍不恢复 | 轮询门另三条件问题（isResumeSubscribed / resumeStream / conversationId） | 查 `[Conv:Resume]` 系列日志；active 正常但无 awaiting-change 落 false → awaiting 卡 true（onClose 兜底分支未走到） |
 | 终态全绿 + `terminal-sweep` 正常回落 + 「待发送」badge 仍不动 | **队列内部缺陷**（边沿丢失/锁泄漏/发送被吞，非活跃态问题） | 落队列安全网（见分析文档 §8.2 判别特征） |
 | 终态后消息回 Incomplete 且无 `drop late MESSAGE chunk` + 按钮误显可发送 | 陈旧终态击中活跃轮（已知窄缝） | 分析文档 §8.3 窄缝记录 |
+| `active-rising-blocked-by-ack` 以流式节奏（~150-250ms）连续出现 | 终态后仍有尾随事件把末条写回 busy：看 `tailStatus`——为 `Loading` 多为迟到 PROCESSING 回写（守卫 B 只拦 MESSAGE 分片）；按钮/队列的 busy 直查末条项在此期间仍可能显示「会话中」直到 onClose 纠正 | 确认后扩展迟到守卫到 PROCESSING 分支 |
 
 ## 6. 代码锚点
 
