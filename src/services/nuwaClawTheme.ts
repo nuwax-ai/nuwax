@@ -62,32 +62,82 @@ const NUWACLAW_CSS_VARS: Record<string, string> = {
 };
 
 /**
- * 是否存在用户/租户「主题相关」的显式配置（命中 default 层则两者皆无）。
+ * 读取租户主题默认值（色 + 背景），用于识别用户层是否只是租户默认的「回声」。
+ * 回声链：登录时 tenantConfigInfo 模型在无用户切换标记的情况下，会把租户模板
+ * templateConfig 直接 updateData 写入用户层（source:'user'）——用户层值 ≡ 租户
+ * 模板值不代表用户显式定制（用户 dump 实证：#5147ff/bg-variant-8 逐项全等）。
+ * 字段与 loadTenantSettings 同源：优先 templateConfig（用户层同款字段名），
+ * 缺省回落 themeConfig.defaultThemeColor/defaultBackgroundId。
+ */
+function readTenantThemeDefaults(): {
+  color: string | null;
+  background: string | null;
+} {
+  try {
+    const tenantStr = localStorage.getItem(STORAGE_KEYS.TENANT_CONFIG_INFO);
+    if (!tenantStr) return { color: null, background: null };
+    const tenant = JSON.parse(tenantStr);
+    if (tenant?.templateConfig) {
+      const template = JSON.parse(tenant.templateConfig);
+      return {
+        color:
+          template?.selectedThemeColor ??
+          tenant?.themeConfig?.defaultThemeColor ??
+          null,
+        background:
+          template?.selectedBackgroundId ??
+          tenant?.themeConfig?.defaultBackgroundId ??
+          null,
+      };
+    }
+    return {
+      color: tenant?.themeConfig?.defaultThemeColor ?? null,
+      background: tenant?.themeConfig?.defaultBackgroundId ?? null,
+    };
+  } catch {
+    return { color: null, background: null };
+  }
+}
+
+const colorEq = (a?: string | null, b?: string | null): boolean =>
+  !!a && !!b && a.toLowerCase() === b.toLowerCase();
+const backgroundEq = (a?: string | null, b?: string | null): boolean =>
+  !!a && !!b && a === b;
+
+/**
+ * 是否存在用户的显式主题定制。
  * 直接探测存储而非 currentData.source——app.tsx 初始化的 updateData 会把 source 置 'user'，
  * 致 source 不可靠；此处复刻 loadConfiguration 的 user>tenant>default 探测逻辑。
- * 只认主题相关字段（主色/背景图/租户模板）：GLOBAL_SETTINGS 仅存语言等非主题项时
- * 不算显式定制，桌面端默认（女娲主题）依旧生效。
+ * 只认主题相关字段（主色/背景图）；**值 ≡ 租户默认视为回声不算定制**（登录同步写入，
+ * 见 readTenantThemeDefaults）；租户模板存在本身也不再单独算显式——它正是回声的来源。
+ * 无租户默认可参照时退回旧行为：用户层任意主题字段有值即算显式。
  */
 function hasExplicitThemeConfig(): boolean {
   try {
+    const tenantDefaults = readTenantThemeDefaults();
     const userStr = localStorage.getItem(STORAGE_KEYS.USER_THEME_CONFIG);
     if (userStr) {
       const config = JSON.parse(userStr);
-      if (config?.selectedThemeColor || config?.selectedBackgroundId) {
+      if (
+        (config?.selectedThemeColor &&
+          !colorEq(config.selectedThemeColor, tenantDefaults.color)) ||
+        (config?.selectedBackgroundId &&
+          !backgroundEq(config.selectedBackgroundId, tenantDefaults.background))
+      ) {
         return true;
       }
     }
     const globalStr = localStorage.getItem(STORAGE_KEYS.GLOBAL_SETTINGS);
     if (globalStr) {
       const settings = JSON.parse(globalStr);
-      if (settings?.primaryColor || settings?.backgroundImageId) {
+      if (
+        (settings?.primaryColor &&
+          !colorEq(settings.primaryColor, tenantDefaults.color)) ||
+        (settings?.backgroundImageId &&
+          !backgroundEq(settings.backgroundImageId, tenantDefaults.background))
+      ) {
         return true;
       }
-    }
-    const tenantStr = localStorage.getItem(STORAGE_KEYS.TENANT_CONFIG_INFO);
-    if (tenantStr) {
-      const tenant = JSON.parse(tenantStr);
-      if (tenant?.templateConfig) return true;
     }
     return false;
   } catch {
@@ -97,9 +147,9 @@ function hasExplicitThemeConfig(): boolean {
 
 /**
  * 女娲主题是否生效：
- * - 桌面端 + 用户/租户均未显式定制主题 → 默认即女娲主题；
+ * - 桌面端 + 无显式定制（用户层为空或 ≡ 租户默认回声）→ 默认即女娲主题；
  * - 桌面端 + 用户显式选了「女娲蓝」（主色 = NUWACLAW_PRIMARY）且布局为浅色 → 生效；
- * - 切其他主色 / 深色布局 / 租户模板 → 让位（用户在主题切换里可随时切回）。
+ * - 切其他主色 / 深色布局 → 让位（用户在主题切换里可随时切回）。
  * 背景图不作为判定条件：女娲主题本身就禁用背景图，选中即覆盖展示。
  */
 export function isNuwaClawThemeActive(): boolean {

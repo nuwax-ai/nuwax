@@ -42,6 +42,13 @@ import {
   NUWACLAW_PRIMARY,
 } from './nuwaClawTheme';
 
+/** 当前 html 上 --xagi-color-primary 的值（'' 即未写入） */
+function rootPrimary(): string {
+  return document.documentElement.style.getPropertyValue(
+    '--xagi-color-primary',
+  );
+}
+
 describe('nuwaClawTheme · nuwaclaw 桌面专属主题适配', () => {
   const originalBridge = (window as any).NuwaClawBridge;
   const keys = Object.values(STORAGE_KEYS_MOCK);
@@ -198,14 +205,112 @@ describe('nuwaClawTheme · nuwaclaw 桌面专属主题适配', () => {
     expect(isNuwaClawThemeActive()).toBe(true);
   });
 
-  it('nuwaclaw + 仅租户配置 → 不生效（尊重企业品牌，让位 tenant 层）', () => {
+  it('nuwaclaw + 用户层为租户模板回声（值全等）→ 不算显式定制，女娲主题生效', () => {
+    // 网关形态不命中的根因场景（用户 dump 实证）：登录同步把 templateConfig
+    // 写入用户层（source:'user'），值逐项 ≡ 租户默认 —— 是回声不是用户定制
+    const syncTheme = vi.fn();
+    (window as any).NuwaClawBridge = {
+      auth: {},
+      native: {},
+      theme: { syncTheme },
+    };
+    const template = {
+      selectedThemeColor: '#5147ff',
+      selectedBackgroundId: 'bg-variant-8',
+    };
+    localStorage.setItem(
+      STORAGE_KEYS_MOCK.TENANT_CONFIG_INFO,
+      JSON.stringify({ templateConfig: JSON.stringify(template) }),
+    );
+    localStorage.setItem(
+      STORAGE_KEYS_MOCK.USER_THEME_CONFIG,
+      JSON.stringify(template),
+    );
+    expect(isNuwaClawThemeActive()).toBe(true);
+    dispose = initNuwaClawTheme();
+    expect(mockUpdateData).toHaveBeenCalledWith({
+      primaryColor: NUWACLAW_PRIMARY,
+      backgroundId: 'bg-solid',
+    });
+    expect(rootPrimary()).toBe(NUWACLAW_PRIMARY);
+    expect(syncTheme).toHaveBeenCalledWith(
+      expect.objectContaining({ active: true }),
+    );
+  });
+
+  it('nuwaclaw + 用户层偏离租户默认（真定制）→ 让位', () => {
     (window as any).NuwaClawBridge = { auth: {}, native: {} };
     localStorage.setItem(
       STORAGE_KEYS_MOCK.TENANT_CONFIG_INFO,
       JSON.stringify({
-        templateConfig: JSON.stringify({ selectedThemeColor: '#000000' }),
+        templateConfig: JSON.stringify({
+          selectedThemeColor: '#5147ff',
+          selectedBackgroundId: 'bg-variant-8',
+        }),
       }),
     );
+    localStorage.setItem(
+      STORAGE_KEYS_MOCK.USER_THEME_CONFIG,
+      JSON.stringify({
+        selectedThemeColor: '#ff4d4f',
+        selectedBackgroundId: 'bg-variant-8',
+      }),
+    );
+    mockCurrentData.primaryColor = '#ff4d4f';
+    expect(isNuwaClawThemeActive()).toBe(false);
+    dispose = initNuwaClawTheme();
+    expect(mockUpdateData).not.toHaveBeenCalled();
+    expect(rootPrimary()).toBe('');
+  });
+
+  it('nuwaclaw + 回声色大小写差异（#5147FF vs #5147ff）→ 仍视为全等回声，生效', () => {
+    (window as any).NuwaClawBridge = { auth: {}, native: {} };
+    localStorage.setItem(
+      STORAGE_KEYS_MOCK.TENANT_CONFIG_INFO,
+      JSON.stringify({
+        templateConfig: JSON.stringify({ selectedThemeColor: '#5147ff' }),
+      }),
+    );
+    localStorage.setItem(
+      STORAGE_KEYS_MOCK.USER_THEME_CONFIG,
+      JSON.stringify({ selectedThemeColor: '#5147FF' }),
+    );
+    expect(isNuwaClawThemeActive()).toBe(true);
+  });
+
+  it('nuwax + 租户配置损坏（templateConfig 非法 JSON）→ 无租户默认可参照，用户层有值即算显式', () => {
+    (window as any).NuwaClawBridge = { auth: {}, native: {} };
+    localStorage.setItem(
+      STORAGE_KEYS_MOCK.TENANT_CONFIG_INFO,
+      JSON.stringify({ templateConfig: '{broken json' }),
+    );
+    localStorage.setItem(
+      STORAGE_KEYS_MOCK.USER_THEME_CONFIG,
+      JSON.stringify({ selectedThemeColor: '#5147ff' }),
+    );
+    mockCurrentData.primaryColor = '#5147ff';
+    expect(isNuwaClawThemeActive()).toBe(false);
+  });
+
+  it('nuwaclaw + 仅租户 themeConfig.default*（无 templateConfig）→ 仍作为默认值参与回声比对', () => {
+    (window as any).NuwaClawBridge = { auth: {}, native: {} };
+    localStorage.setItem(
+      STORAGE_KEYS_MOCK.TENANT_CONFIG_INFO,
+      JSON.stringify({
+        themeConfig: {
+          defaultThemeColor: '#5147ff',
+          defaultBackgroundId: 'bg-variant-8',
+        },
+      }),
+    );
+    // 用户层 ≡ default* → 回声，生效
+    expect(isNuwaClawThemeActive()).toBe(true);
+    // 用户层偏离 default* → 显式，让位
+    localStorage.setItem(
+      STORAGE_KEYS_MOCK.USER_THEME_CONFIG,
+      JSON.stringify({ selectedThemeColor: '#ff4d4f' }),
+    );
+    mockCurrentData.primaryColor = '#ff4d4f';
     expect(isNuwaClawThemeActive()).toBe(false);
   });
 });
