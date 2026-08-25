@@ -34,7 +34,7 @@ function getBaseUrl(url) {
 // Document Title
 // ============================================
 /**
- * Markdown 预览：用文件名（去掉 .md 后缀）作为页面标题。
+ * Markdown 预览：用文件名（含 .md 后缀）作为页面标题。
  * 其它格式不做处理，保持 HTML 中的默认标题。
  * @param {string} purePath 不含查询参数的文件路径
  */
@@ -46,7 +46,7 @@ function applyMarkdownDocumentTitle(purePath) {
     } catch (e) {
         console.warn('Failed to decode filename:', e);
     }
-    name = name.replace(/\.md$/i, '').trim();
+    name = name.trim();
     if (name) document.title = name;
 }
 
