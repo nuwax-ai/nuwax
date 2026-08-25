@@ -25,6 +25,7 @@ export type MockScenarioId =
   | 'MULTI_TOOL_ONE_MSG'
   | 'LONG_TASK_INTERLEAVED'
   | 'TERMINAL_OUTPUT'
+  | 'COLLAPSE_SHOWCASE'
   | 'PERMISSION_REQUEST'
   | 'PERMISSION_DENY'
   | 'PERMISSION_TIMEOUT'
@@ -793,6 +794,53 @@ export const MOCK_SCENARIOS: MockScenario[] = [
         '任务已完成：共执行 3 次工具调用，两轮思考后输出最终结果。',
       ),
     ],
+  },
+  {
+    id: 'COLLAPSE_SHOWCASE',
+    label: '折叠效果全景演示',
+    description:
+      '复刻真实任务形态：多轮思考 × 工具组 × 终端执行 × 长正文——思考块与工具组被超越后逐一收起，终态只剩摘要行（建议 speed 2~5 观看流式过程）',
+    verifies:
+      '主动折叠完整效果：思考轮次折叠 + 工具组被超越收起 + 终端卡收起 + 手动展开保留',
+    events: [
+      think(
+        '用户需要执行终端命令并回传输出。我先确认当前会话的执行环境：沙箱是否就绪、终端工具是否可用；随后规划调用路径——先做环境检查，再执行命令，最后组织答复。',
+      ),
+      think('环境检查通过后即可执行。', true),
+      processing('检查执行环境', 'EXECUTING', 'cs-1'),
+      processing('检查执行环境', 'FINISHED', 'cs-1'),
+      processing('确认工具权限', 'EXECUTING', 'cs-2'),
+      processing('确认工具权限', 'FINISHED', 'cs-2'),
+      think(
+        '环境检查通过。接下来读取任务的默认配置，确认工作目录与命令白名单，避免执行越权指令。',
+        true,
+      ),
+      processing('读取默认配置', 'EXECUTING', 'cs-3'),
+      processing('读取默认配置', 'FINISHED', 'cs-3'),
+      processing('校验命令白名单', 'EXECUTING', 'cs-4'),
+      processing('校验命令白名单', 'FINISHED', 'cs-4'),
+      think('配置就绪，开始执行命令并捕获输出。', true),
+      terminalOutput('cs-echo', '终端执行 echo', {
+        command: 'echo demo-$((41+1))',
+        content: 'demo-4',
+        status: 'EXECUTING',
+      }),
+      terminalOutput('cs-echo', '终端执行 echo', {
+        command: 'echo demo-$((41+1))',
+        content: ['demo-42', '', 'real\t0m0.01s', 'user\t0m0.00s'].join('\n'),
+        exitCode: 0,
+      }),
+      think('命令输出与预期一致，组织最终答复。', true),
+      chat('命令执行完成：输出 demo-42、退出码 0。'),
+      chat(
+        '本次任务经历了 4 轮思考与 4 次工具调用（含 1 次终端执行），全部过程已按发生位置折叠为摘要行，点击任意「已思考」或「工具调用」行可回看细节。',
+        true,
+      ),
+      finalResult(
+        true,
+        '命令执行完成：输出 demo-42、退出码 0。本次任务经历了 4 轮思考与 4 次工具调用（含 1 次终端执行），全部过程已按发生位置折叠为摘要行。',
+      ),
+    ].map((event) => ({ ...event, delayMs: event.delayMs ?? 400 })),
   },
   {
     id: 'TERMINAL_OUTPUT',

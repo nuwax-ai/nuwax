@@ -712,6 +712,66 @@ const driveTerminalOutputProbe = async () => {
 };
 
 /**
+ * 折叠效果全景探针（COLLAPSE_SHOWCASE，双轨）：
+ * 复刻真实任务形态的汇总演示——4 轮思考 + 2 个工具组 + 1 张终端卡全部收起为
+ * 摘要行、终端收起不漏全文、点击展开可回看。
+ */
+const driveCollapseShowcaseProbe = async () => {
+  await waitForReplaySettled();
+  await waitForRenderStable();
+  const probe = await pageJs(
+    String.raw`(() => {
+      const bodyText = document.body.textContent;
+      const thinkHeaders = [...document.querySelectorAll('[class*="think-header"]')];
+      return JSON.stringify({
+        thinkCount: thinkHeaders.length,
+        thinkAllThought: thinkHeaders.every((h) => (h.textContent || '').includes('已思考')),
+        thinkExpanded: [...document.querySelectorAll('[class*="think-content"]')].filter(
+          (c) => c.className.includes('is-expanded'),
+        ).length,
+        groups: document.querySelectorAll('[class*="markdown-custom-process-group"]').length,
+        groupLabel: bodyText.includes('工具调用'),
+        terminalCmd: bodyText.includes('$ echo demo-$((41+1))'),
+        exitOk: bodyText.includes('exit 0'),
+        terminalLeak: bodyText.includes('real\t0m0.01s'),
+        bodyFinal: bodyText.includes('折叠为摘要行'),
+      });
+    })()`,
+    'collapse showcase probe',
+  );
+  const parsed = JSON.parse(probe);
+  expect(parsed.thinkCount >= 4, `应有 ≥4 个思考块（4 轮思考）：${probe}`);
+  expect(parsed.thinkAllThought, `思考块应全部为「已思考」摘要态：${probe}`);
+  expect(
+    parsed.thinkExpanded === 0,
+    `终态思考块应全部收起，实际展开 ${parsed.thinkExpanded} 个`,
+  );
+  expect(parsed.groups >= 2, `应有 ≥2 个工具组：${probe}`);
+  expect(parsed.groupLabel, '工具组摘要行（工具调用）应渲染');
+  expect(
+    parsed.terminalCmd && parsed.exitOk,
+    `终端卡应渲染（命令行 + exit 徽标）：${probe}`,
+  );
+  expect(
+    !parsed.terminalLeak,
+    `终端收起时不应露出全量输出（real 0m0.01s 标记行）：${probe}`,
+  );
+  expect(parsed.bodyFinal, '终态正文应渲染');
+
+  // 点击终端卡标题展开 → 标记行可见
+  await pageJs(
+    String.raw`[...document.querySelectorAll('[class*="process-title"][class*="is-terminal"]')][0].click()`,
+    'click terminal title',
+  );
+  await pause(0.4);
+  const expanded = await pageJs(
+    String.raw`document.body.textContent.includes('real\t0m0.01s')`,
+    'terminal expanded',
+  );
+  expect(expanded === true, '点击终端卡后应展开露出全量输出');
+};
+
+/**
  * 交互型用例：speed 放大留出点击窗口（delayMs × speed = 等待窗）；
  * 干预类走 ask 模式（审批 DockPanel 的业务门禁——会话框开启审批才出现）；
  * 渲染探针（×RenderProbe）speed 用瞬间档，收尾后只读断言终态 DOM。
@@ -735,6 +795,7 @@ const INTERACTIVE_CASES = [
   { id: 'LONG_TASK_INTERLEAVED', speed: 0.05, drive: driveThinkRenderProbe },
   { id: 'RENDER_SHOWCASE', speed: 0.05, drive: driveRenderShowcaseProbe },
   { id: 'TERMINAL_OUTPUT', speed: 0.05, drive: driveTerminalOutputProbe },
+  { id: 'COLLAPSE_SHOWCASE', speed: 0.05, drive: driveCollapseShowcaseProbe },
 ];
 
 // ---------- 过滤 ----------

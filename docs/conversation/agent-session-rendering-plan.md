@@ -18,15 +18,14 @@
 | 思考按流式位置内联渲染（含 runtime 轨 reducer 接线，本轮补齐） | `LONG_TASK_INTERLEAVED` | `driveThinkRenderProbe`（本轮注册）+ 独立探针 `scripts/e2e/think-render-probe.mjs` | ✅ |
 | Plan / diff / OpenUI / task-result 全类型渲染 | `RENDER_SHOWCASE`（11 类型 + Plan 三阶段 + diff ×2 + OpenUI + 链接标签；本轮 helpers 补 endTime 载荷） | `driveRenderShowcaseProbe`（本轮注册；OpenUI 断言仅 legacy 轨） | ✅ |
 
-> 本轮同时修复两个 runtime 轨桥接缺口（渲染探针首次暴露）：
-> ① runtime 轨（`features/conversation/domain` 三个 reducer）此前未接入思考内联标签协议——THINK 仍只写 `think` 字段，双轨切换后退化为消息开头单块合成。现已按「adapter 注入」架构补齐（`ThinkBlockAdapter` 可选注入，缺省保持旧投影行为），reducer 单测覆盖注入/不注入两种形态。
-> ② runtime 会话未把 message.processingList 同步进 chat model（`MarkdownCustomProcess` 的 Plan 步骤 / diff 内容 / 详情弹窗数据源），旧线由 `useConversationActiveState` 的 rAF 派生承担。已在 `useConversationRuntimeSession` 补对齐 effect（session 为空时不同步，避免清掉旧线数据）。
+> 本轮同时修复两个 runtime 轨桥接缺口（渲染探针首次暴露）： ① runtime 轨（`features/conversation/domain` 三个 reducer）此前未接入思考内联标签协议——THINK 仍只写 `think` 字段，双轨切换后退化为消息开头单块合成。现已按「adapter 注入」架构补齐（`ThinkBlockAdapter` 可选注入，缺省保持旧投影行为），reducer 单测覆盖注入/不注入两种形态。 ② runtime 会话未把 message.processingList 同步进 chat model（`MarkdownCustomProcess` 的 Plan 步骤 / diff 内容 / 详情弹窗数据源），旧线由 `useConversationActiveState` 的 rAF 派生承担。已在 `useConversationRuntimeSession` 补对齐 effect（session 为空时不同步，避免清掉旧线数据）。
 
 ## 1. 演示矩阵（随开发滚动更新）
 
 | 功能项 | 演示场景 | drive 断言 | 状态 |
 | --- | --- | --- | --- |
 | （已完成三项见 §0 表） | — | — | ✅ |
+| 折叠效果全景（汇总演示，复刻真实任务形态） | `COLLAPSE_SHOWCASE`（2026-08-25 建：4 轮思考 × 2 工具组 × 1 终端卡 × 长正文，事件 400ms 步进可观看流式） | `driveCollapseShowcaseProbe`（2026-08-25 注册） | ✅ |
 | P0-1 终端输出渲染 | `TERMINAL_OUTPUT`（2026-08-25 建）+ `RENDER_SHOWCASE` 并入 | `driveTerminalOutputProbe`（2026-08-25 注册）+ showcase 探针扩展 | ✅ |
 | P0-2 Plan 进度 | `PLAN_PROCESSING` / `RENDER_SHOWCASE`（终态 3/3 断言入 showcase 探针） | showcase 探针（`3/3` 文案断言） | ✅ |
 | P0-3 工具耗时徽标 | `RENDER_SHOWCASE`（endTime 载荷） | showcase 探针（`1.8s/2.4s/3.2s` 断言） | ✅ |
