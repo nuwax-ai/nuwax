@@ -380,12 +380,17 @@ const Login: React.FC = () => {
     const path = redirect
       ? `/verify-code?redirect=${encodeURIComponent(redirect)}`
       : '/verify-code';
-    history.push(path, {
-      phoneOrEmail,
-      areaCode,
-      authType: tenantConfigInfo.authType,
-      captchaVerifyParam: normalizedCaptchaParam,
-    });
+    // 与 redirectAfterCaptchaCallback 一致：先返回验证结果给 SDK，再延迟导航，
+    // 避免 SDK 成功收尾未完成时登录页已卸载触发 destroyCaptcha，
+    // 导致 SDK 访问已销毁节点（innerHTML 空引用）
+    window.setTimeout(() => {
+      history.push(path, {
+        phoneOrEmail,
+        areaCode,
+        authType: tenantConfigInfo.authType,
+        captchaVerifyParam: normalizedCaptchaParam,
+      });
+    }, 0);
     return { captchaResult: true, bizResult: true };
   };
 
