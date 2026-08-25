@@ -1,0 +1,138 @@
+@import '@/styles/token.less';
+
+@headerPaddingVertical: 2px;
+
+.markdown-custom-think {
+  position: relative;
+  margin: @marginXs 0;
+  border-radius: 5px;
+  background-color: @colorBgContainer;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background-color: @colorBorder;
+    z-index: 1;
+    transition: background-color @motionDurationMid @motionEaseInOut;
+  }
+
+  &:hover {
+    &::before {
+      background-color: @colorTextTertiary;
+    }
+
+    .think-header {
+      background-color: #f7f8fa;
+
+      .header-right {
+        .expand-icon {
+          opacity: 1;
+        }
+      }
+    }
+  }
+
+  .think-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: @headerPaddingVertical @paddingSm @headerPaddingVertical @padding;
+    cursor: pointer;
+    user-select: none;
+    background-color: @colorBgContainer;
+    transition: background-color @motionDurationFast;
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: @paddingXs;
+
+      .think-icon {
+        font-size: @fontSizeSm;
+        color: @colorTextQuaternary;
+
+        &.is-thinking {
+          color: @colorTextTertiary;
+          animation: think-pulse 1.2s @motionEaseInOut infinite;
+        }
+      }
+
+      .think-title {
+        font-size: @fontSize;
+        font-weight: @fontWeightStrong;
+        color: @colorTextTertiary;
+      }
+
+      .think-count {
+        font-size: 10px;
+        color: @colorTextDescription;
+        background-color: @colorFillSecondary;
+        padding: 1px @paddingXs;
+        border-radius: 10px;
+        line-height: @lineHeightSm;
+      }
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: @paddingXs;
+
+      .expand-icon {
+        font-size: @fontSizeSm;
+        color: @colorTextQuaternary;
+        opacity: 0;
+        transition: transform @motionDurationMid @motionEaseInOut,
+          opacity @motionDurationMid @motionEaseInOut;
+
+        &.is-expanded {
+          transform: rotate(180deg);
+        }
+      }
+    }
+  }
+}
+
+.think-content {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition: grid-template-rows @motionDurationMid @motionEaseInOut,
+    opacity @motionDurationFast @motionEaseInOut;
+
+  &.is-expanded {
+    grid-template-rows: 1fr;
+    opacity: 1;
+  }
+
+  .think-content-inner {
+    min-height: 0;
+    overflow: hidden;
+    padding: 0 @padding;
+    font-size: @fontSizeSm;
+    line-height: @lineHeight;
+    color: @colorTextDescription;
+    white-space: pre-wrap;
+    word-break: break-word;
+    scrollbar-width: thin;
+
+    // 思考块限高，超长内容滚动查看，避免流式思考把消息撑得过长
+    max-height: 240px;
+    overflow-y: auto;
+  }
+}
+
+@keyframes think-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}

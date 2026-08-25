@@ -611,6 +611,9 @@ function replaceMathBracket(text: string): string {
  * 1. 连续 2 个及以上的过程标签合并
  * 2. 中间包含“执行计划”的不合并（作为分隔符）
  * 3. 标签间只包含空白字符时不中断合并
+ * 4. markdown-custom-think 思考标签按流式位置穿插保留，并作为分隔内容：
+ *    其后到文本末尾仍有非空白内容（正文/后续标签）时标记 autoCollapse，
+ *    尾部的活动思考保持展开；任何被后续内容超越的工具组统一标记收起
  * @param text - 待处理的 Markdown 文本
  * @returns 处理后的文本
  */
@@ -619,7 +622,10 @@ function groupMarkdownProcesses(text: string): string {
 
   // 快速短路：base64 data URL 内部不可能包含 markdown-custom-process 标签，
   // 若文本不含任何过程标签，直接返回原文，避免对大文本（如带 base64 图片的消息）做空正则扫描。
-  if (text.indexOf('markdown-custom-process') === -1) {
+  if (
+    text.indexOf('markdown-custom-process') === -1 &&
+    text.indexOf('markdown-custom-think') === -1
+  ) {
     return text;
   }
 
@@ -627,6 +633,10 @@ function groupMarkdownProcesses(text: string): string {
   // 注意：[^>]*? 虽然简单，但在绝大多数情况下足够。如果以后有更复杂的属性需求（如带 > 的属性），再考虑更复杂的正则
   const blockRegex =
     /(?:\s*<(?:div|p)>\s*)?(<markdown-custom-process\b[^>]*?>(?:<\/markdown-custom-process>)?)(?:\s*<\/(?:div|p)>\s*)?/g;
+
+  // 匹配 markdown-custom-think 思考标签（纯属性、始终闭合）及同样的可选包装器
+  const thinkTagRegex =
+    /(?:\s*<(?:div|p)>\s*)?(<markdown-custom-think\b[^>]*><\/markdown-custom-think>)(?:\s*<\/(?:div|p)>\s*)?/g;
 
   // 1. 扫描所有匹配项，提取 executeId、类型并记录位置，以解决重复与连续冗余 Plan 问题
   const matches: {
@@ -734,9 +744,65 @@ function groupMarkdownProcesses(text: string): string {
     }
   };
 
+  // 3. 对去重后的 dedupedText 进行属性提取、自动安全 URL 编码、格式归一化及合并分组。
+  //    过程标签与思考标签按文本位置序统一扫描：思考标签不参与去重，
+  //    但作为真实流式位置上的分隔内容参与分组边界判定。
+  const scanMatches: {
+    index: number;
+    endIndex: number;
+    tagMatch: string;
+    isThink: boolean;
+  }[] = [];
   blockRegex.lastIndex = 0;
   while ((groupMatch = blockRegex.exec(dedupedText)) !== null) {
-    const tagMatch = groupMatch[1];
+    scanMatches.push({
+      index: groupMatch.index,
+      endIndex: blockRegex.lastIndex,
+      tagMatch: groupMatch[1],
+      isThink: false,
+    });
+  }
+  thinkTagRegex.lastIndex = 0;
+  let thinkScanMatch: RegExpExecArray | null;
+  while ((thinkScanMatch = thinkTagRegex.exec(dedupedText)) !== null) {
+    scanMatches.push({
+      index: thinkScanMatch.index,
+      endIndex: thinkTagRegex.lastIndex,
+      tagMatch: thinkScanMatch[1],
+      isThink: true,
+    });
+  }
+  scanMatches.sort((a, b) => a.index - b.index);
+
+  for (const scanItem of scanMatches) {
+    const tagMatch = scanItem.tagMatch;
+
+    // 处理匹配项之前的文本
+    const textBefore = dedupedText.slice(lastIndex, scanItem.index);
+    if (textBefore.trim() !== '') {
+      flushGroup(true);
+      result += textBefore;
+    }
+
+    // 思考标签：不参与工具分组，原位置保留；其出现即宣判前面的工具组被超越。
+    // 自身是否标记 autoCollapse 取决于其后是否还有内容（正文/后续标签）——
+    // 尾部的活动思考块保持展开，被超越的历史思考块自动收起。
+    if (scanItem.isThink) {
+      flushGroup(true);
+      const isThinkSuperseded =
+        dedupedText.slice(scanItem.endIndex).trim() !== '';
+      const cleanThinkTag = tagMatch.replace(
+        /\s*autocollapse=\\?["'][^"']*\\?["']/gi,
+        '',
+      );
+      const thinkTag = cleanThinkTag.replace(
+        /^<markdown-custom-think\b/i,
+        `<markdown-custom-think autoCollapse="${isThinkSuperseded}"`,
+      );
+      result += `\n\n<div>${thinkTag}</div>\n\n`;
+      lastIndex = scanItem.endIndex;
+      continue;
+    }
 
     // 自动安全提取并 URL 编码 name 属性以防止换行或引号破坏 markdown HTML 块树解析
     let processedTag = tagMatch;
@@ -817,28 +883,22 @@ function groupMarkdownProcesses(text: string): string {
     // Event 只用于传递内部状态，渲染层本来也不会展示；不能让它参与工具调用分组计数。
     const isEvent = /type=\\?["']Event\\?["']/i.test(tagMatch);
 
-    // 处理匹配项之前的文本
-    const textBefore = dedupedText.slice(lastIndex, groupMatch.index);
-    if (textBefore.trim() !== '') {
-      flushGroup(true);
-      result += textBefore;
-    }
-
     // Event 默认只用于传递内部状态、不展示；但 RENDER_UI 专用事件
     // （type=Event，name=Backend.Sandbox.Event.renderUI）需作为 OpenUI 产物渲染，不能丢弃。
     if (isEvent && !isOpenUi) {
-      lastIndex = blockRegex.lastIndex;
+      lastIndex = scanItem.endIndex;
       continue;
     }
 
     if (isPlan || isOpenUi) {
-      flushGroup();
+      // Plan/OpenUI 是分组边界内容，其出现即宣判前面的工具组被超越，统一收起
+      flushGroup(true);
       result += `\n\n<div>${normalizedTag}</div>\n\n`;
     } else {
       currentGroup.push(normalizedTag);
     }
 
-    lastIndex = blockRegex.lastIndex;
+    lastIndex = scanItem.endIndex;
   }
 
   // 最后一组工具调用后直接输出正文时，不会再进入下一次循环；

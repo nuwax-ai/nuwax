@@ -314,6 +314,7 @@ const preserveFinalizedMessagePresentation = (
     clientRenderKey: local.clientRenderKey,
     text: local.text,
     think: local.think,
+    thinkBlocks: local.thinkBlocks,
     attachments: local.attachments,
     requestId: local.requestId,
     status: local.status,

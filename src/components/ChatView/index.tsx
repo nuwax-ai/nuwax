@@ -10,6 +10,7 @@ import { groupMarkdownProcesses } from '@/components/MarkdownRenderer/utils';
 import { USER_INFO } from '@/constants/home.constants';
 import useMarkdownRender from '@/hooks/useMarkdownRender';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
+import { getLegacyThinkBlock } from '@/plugins/ds-markdown-think';
 import { dict } from '@/services/i18nRuntime';
 import { AssistantRoleEnum } from '@/types/enums/agent';
 import { MessageStatusEnum } from '@/types/enums/common';
@@ -47,8 +48,22 @@ const ChatView: React.FC<ChatViewProps> = memo(
     const isDarkMode = data.antdTheme === 'dark';
 
     const processedText = useMemo(() => {
-      return groupMarkdownProcesses(messageInfo?.text || '');
-    }, [messageInfo?.text]);
+      const rawText = messageInfo?.text || '';
+      const grouped = groupMarkdownProcesses(rawText);
+      // 思考按流式位置内联渲染：新消息 text 已含 markdown-custom-think 标签；
+      // 存量历史消息只有聚合 think 字段（无位置信息），合成为消息开头的内联块，
+      // 与新消息形态统一。
+      if (!rawText.includes('markdown-custom-think') && messageInfo?.think) {
+        return `${getLegacyThinkBlock(messageInfo.think)}${grouped}`;
+      }
+      return grouped;
+    }, [messageInfo?.text, messageInfo?.think]);
+
+    // text 含内联思考标签（含历史合成）时不再走旧顶部思考区，避免双份渲染
+    const hasInlineThink = useMemo(
+      () => processedText.includes('markdown-custom-think'),
+      [processedText],
+    );
 
     const userDisplayText = useMemo(() => {
       return stripOpenUiResumeDisplayArtifacts(
@@ -60,7 +75,7 @@ const ChatView: React.FC<ChatViewProps> = memo(
 
     const { markdownRef, messageIdRef } = useMarkdownRender({
       answer: processedText,
-      thinking: messageInfo?.think || '',
+      thinking: hasInlineThink ? '' : messageInfo?.think || '',
       id: messageInfo?.clientRenderKey || messageInfo?.id || '',
     });
     const _userInfo =
@@ -213,7 +228,7 @@ const ChatView: React.FC<ChatViewProps> = memo(
                     markdownRef={markdownRef}
                     conversationId={conversationId}
                     answer={processedText}
-                    thinking={messageInfo?.think}
+                    thinking={hasInlineThink ? '' : messageInfo?.think}
                     status={messageInfo?.status}
                     thinkingFinished={messageInfo?.thinkingFinished}
                     collapseProcessGroups={

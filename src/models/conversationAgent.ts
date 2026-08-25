@@ -25,6 +25,11 @@ import { useConversationTerminalFinalizer } from '@/hooks/useConversationTermina
 import { useResumeStreamHandlers } from '@/hooks/useResumeStreamHandlers';
 import { getCustomBlock } from '@/plugins/ds-markdown-process';
 import {
+  appendThinkChunk,
+  finalizeThinkBlock,
+  hasOpenThinkBlock,
+} from '@/plugins/ds-markdown-think';
+import {
   apiAgentConversation,
   apiAgentConversationChatStop,
   apiAgentConversationChatSuggest,
@@ -568,6 +573,15 @@ export default () => {
 
       let newMessage: any = null;
 
+      // 收口 text 中未闭合的思考标签块：思考被工具调用/正文/终态超越时调用。
+      // 终态兜底路径拿不到 thinkBlocks 时传空串，由插件保留标签内已写出的内容。
+      const closeOpenThinkBlock = () =>
+        finalizeThinkBlock(
+          currentMessage.text || '',
+          currentMessage.thinkBlocks?.[currentMessage.thinkBlocks.length - 1] ||
+            '',
+        );
+
       // 优先拦截 ACP 权限 / MCP Ask 干预类 SSE，挂载到当前流式消息（DockPanel 数据源）
       const interventionPatch = processInterventionSsePatch(
         res,
@@ -603,7 +617,8 @@ export default () => {
 
         newMessage = {
           ...currentMessage,
-          text: getCustomBlock(currentMessage.text || '', data),
+          // 工具调用出现即超越当前思考轮：先收口思考标签，再追加工具调用标签
+          text: getCustomBlock(closeOpenThinkBlock(), data),
           // 实际 SSE 不会为 THINK 单独下发 finished=true；PROCESSING 表示模型已从
           // 当前思考阶段进入工具调用阶段，因此必须在这里结束本轮思考态。
           thinkingFinished: true,
@@ -666,9 +681,22 @@ export default () => {
         }
         // 思考think
         if (type === MessageModeEnum.THINK) {
+          // 思考按流式位置写入 text 内联标签（plugins/ds-markdown-think），
+          // think 字段继续累积全量思考供持久化与旧消费方使用。
+          const thinkBlocks = [...(currentMessage.thinkBlocks || [])];
+          if (!hasOpenThinkBlock(currentMessage.text || '')) {
+            thinkBlocks.push('');
+          }
+          thinkBlocks[thinkBlocks.length - 1] += text;
           newMessage = {
             ...currentMessage,
+            text: appendThinkChunk(
+              currentMessage.text || '',
+              thinkBlocks[thinkBlocks.length - 1],
+              finished === true,
+            ),
             think: `${currentMessage.think}${text}`,
+            thinkBlocks,
             // 每一轮 THINK 都独立更新状态：新分片会将上一轮的“已思考”
             // 重新切回“正在思考”，本轮 finished=true 后再显示“已思考”。
             thinkingFinished: finished === true,
@@ -679,7 +707,7 @@ export default () => {
         else if (type === MessageModeEnum.QUESTION) {
           newMessage = {
             ...currentMessage,
-            text: `${currentMessage.text}${text}`,
+            text: `${closeOpenThinkBlock()}${text}`,
             // QUESTION/CHAT 是 THINK 阶段之后的输出边界。
             thinkingFinished: true,
             // 如果finished为true，则状态为null，此时不会显示运行状态组件，否则为Incomplete
@@ -691,7 +719,7 @@ export default () => {
             newMessage = {
               ...currentMessage,
               id,
-              text: `${currentMessage.text}${text}`, // 这里需要添加 展示MCP 或者其他工具调用
+              text: `${closeOpenThinkBlock()}${text}`, // 这里需要添加 展示MCP 或者其他工具调用
               thinkingFinished: true,
               status: null, // 隐藏运行状态
             };
@@ -701,7 +729,7 @@ export default () => {
             messageIdRef.current = id;
             newMessage = {
               ...currentMessage,
-              text: `${currentMessage.text}${text}`,
+              text: `${closeOpenThinkBlock()}${text}`,
               // 后端 THINK 分片始终可能为 finished=false；首个正文分片即代表本轮思考结束。
               thinkingFinished: true,
               // 如果finished为true，则状态为Complete，否则为Incomplete
@@ -740,6 +768,8 @@ export default () => {
 
         newMessage = {
           ...(reconcileFinalMessageState(currentMessage, data) || {}),
+          // 终态兜底收口：流若结束于思考中，text 里的思考标签保持 finished 形态
+          text: closeOpenThinkBlock(),
           thinkingFinished: true,
           status: MessageStatusEnum.Complete,
           finalResult: data,
@@ -780,6 +810,7 @@ export default () => {
       if (eventType === ConversationEventTypeEnum.ERROR) {
         newMessage = {
           ...currentMessage,
+          text: closeOpenThinkBlock(),
           thinkingFinished: true,
           status: MessageStatusEnum.Error,
         };

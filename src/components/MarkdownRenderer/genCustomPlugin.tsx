@@ -8,6 +8,7 @@ import rehypeRaw from 'rehype-raw';
 import { history, useModel } from 'umi';
 import MarkdownCustomProcess from '../MarkdownCustomProcess';
 import MarkdownCustomProcessGroup from '../MarkdownCustomProcessGroup';
+import MarkdownCustomThink from '../MarkdownCustomThink';
 import styles from './index.less';
 import OptimizedImage from './OptimizedImage';
 import remarkFixCjkAutolinks from './remarkFixCjkAutolinks';
@@ -137,6 +138,42 @@ export default (
           >
             {children}
           </MarkdownCustomProcessGroup>
+        );
+      },
+      // 思考块按流式位置内联渲染：content 为 URL 编码的思考文本，
+      // status/autoCollapse 属性语义与工具调用组一致
+      'markdown-custom-think': ({ ...props }: any) => {
+        const node = props.node;
+        const properties = node?.properties || {};
+        const autoCollapse =
+          props.autocollapse ??
+          props.autoCollapse ??
+          properties.autocollapse ??
+          properties.autoCollapse;
+        const status = props.status ?? properties.status;
+        const rawContent = props.content ?? properties.content ?? '';
+
+        let content = rawContent;
+        try {
+          content = decodeURIComponent(rawContent);
+        } catch {
+          // 容忍非法编码序列，原样展示
+        }
+
+        const {
+          end: { offset: endOffset },
+          start: { offset: startOffset },
+        } = node?.position || {};
+        const thinkKey = `${startOffset}-${endOffset}-think`;
+
+        return (
+          <MarkdownCustomThink
+            key={thinkKey}
+            content={content}
+            status={status}
+            autoCollapse={String(autoCollapse).toLowerCase() === 'true'}
+            defaultCollapsed={collapseProcessGroups}
+          />
         );
       },
       table: ({ children, node }: any) => {

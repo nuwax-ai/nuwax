@@ -23,6 +23,7 @@ export type MockScenarioId =
   | 'DEEP_HISTORY'
   | 'IDLE_POLL_TERMINAL'
   | 'MULTI_TOOL_ONE_MSG'
+  | 'LONG_TASK_INTERLEAVED'
   | 'PERMISSION_REQUEST'
   | 'PERMISSION_DENY'
   | 'PERMISSION_TIMEOUT'
@@ -702,6 +703,32 @@ export const MOCK_SCENARIOS: MockScenario[] = [
       // multi-2 FINISHED 丢失
       chat('全部完成', true),
       finalResult(true, '全部完成。'),
+    ],
+  },
+  {
+    id: 'LONG_TASK_INTERLEAVED',
+    label: '长任务多阶段交替',
+    description:
+      'THINK → 工具组 → THINK → 工具组 → 长正文（多轮思考与工具调用交替）',
+    verifies: '思考按流式位置内联渲染 + 消息内被超越内容主动折叠',
+    events: [
+      think('第一轮思考：分析用户需求，'),
+      think('需要先检索资料再动手。', true),
+      processing('搜索资料', 'EXECUTING', 'lt-1'),
+      processing('搜索资料', 'FINISHED', 'lt-1'),
+      processing('读取文件', 'EXECUTING', 'lt-2'),
+      processing('读取文件', 'FINISHED', 'lt-2'),
+      think('第二轮思考：资料已就绪，'),
+      think('开始整理并撰写正文。', true),
+      processing('写入文件', 'EXECUTING', 'lt-3'),
+      processing('写入文件', 'FINISHED', 'lt-3'),
+      chat('任务已完成：'),
+      chat('共执行 3 次工具调用，'),
+      chat('两轮思考后输出最终结果。', true),
+      finalResult(
+        true,
+        '任务已完成：共执行 3 次工具调用，两轮思考后输出最终结果。',
+      ),
     ],
   },
   {

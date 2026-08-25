@@ -294,6 +294,8 @@ export interface MessageInfo extends ChatMessageDto {
   status?: MessageStatusEnum;
   /** 思考流是否已收到结束分片；未设置时按历史消息状态兼容处理。 */
   thinkingFinished?: boolean;
+  /** 思考内容按轮次分块（前端流式态），与 text 内联思考标签的轮次一一对应。 */
+  thinkBlocks?: string[];
   // 自定义添加字段：chat 会话结果
   finalResult?: ConversationFinalResult;
   // 消息查询过程信息

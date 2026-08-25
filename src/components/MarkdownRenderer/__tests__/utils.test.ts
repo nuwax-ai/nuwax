@@ -154,7 +154,7 @@ describe('looksLikeLatex / unwrapLatexInlineCode', () => {
     expect(looksLikeLatex('x_axis')).toBe(false);
   });
 
-  it('不把 Windows 路径误判为公式（\mycomputer 等小写目录段形似 LaTeX 命令）', () => {
+  it('不把 Windows 路径误判为公式（mycomputer 等小写目录段形似 LaTeX 命令）', () => {
     expect(
       looksLikeLatex(
         'D:\\mycomputer\\computer-project-workspace\\1754545591\\1560129',
@@ -340,5 +340,98 @@ describe('groupMarkdownProcesses', () => {
     const result = groupMarkdownProcesses(`${dup1}\n${dup2}`);
     expect(result).toContain('name="v2"');
     expect(result).not.toContain('name="v1"');
+  });
+
+  // ── markdown-custom-think 内联思考标签 ──
+
+  const makeThinkTag = (status: string, content: string) =>
+    `<markdown-custom-think status="${status}" content="${encodeURIComponent(
+      content,
+    )}"></markdown-custom-think>`;
+
+  const groupAutoCollapseFlags = (result: string) =>
+    [
+      ...result.matchAll(
+        /<markdown-custom-process-group autoCollapse="(true|false)">/g,
+      ),
+    ].map((m) => m[1]);
+
+  it('思考标签夹在两组工具调用之间：前组与思考块被收起，尾部组保持展开', () => {
+    const t1 =
+      '<markdown-custom-process executeId="e1" name="a" type="ToolCall"></markdown-custom-process>';
+    const t2 =
+      '<markdown-custom-process executeId="e2" name="b" type="ToolCall"></markdown-custom-process>';
+    const t3 =
+      '<markdown-custom-process executeId="e3" name="c" type="ToolCall"></markdown-custom-process>';
+    const t4 =
+      '<markdown-custom-process executeId="e4" name="d" type="ToolCall"></markdown-custom-process>';
+    const thinkTag = makeThinkTag('finished', '中间一轮思考');
+    const result = groupMarkdownProcesses(
+      `${t1}\n${t2}\n${thinkTag}\n${t3}\n${t4}`,
+    );
+
+    // 前组被思考超越 → 收起；后组为尾部活动组 → 展开
+    expect(groupAutoCollapseFlags(result)).toEqual(['true', 'false']);
+    // 思考块被后续工具调用超越 → 收起
+    expect(result).toContain('<markdown-custom-think autoCollapse="true"');
+    expect(result).toContain(encodeURIComponent('中间一轮思考'));
+  });
+
+  it('尾部思考块保持展开，其前的工具组自动收起', () => {
+    const t1 =
+      '<markdown-custom-process executeId="e1" name="a" type="ToolCall"></markdown-custom-process>';
+    const t2 =
+      '<markdown-custom-process executeId="e2" name="b" type="ToolCall"></markdown-custom-process>';
+    const thinkTag = makeThinkTag('thinking', '正在进行的思考');
+    const result = groupMarkdownProcesses(`${t1}\n${t2}\n${thinkTag}`);
+
+    expect(result).toContain(
+      'markdown-custom-process-group autoCollapse="true"',
+    );
+    expect(result).toContain('<markdown-custom-think autoCollapse="false"');
+  });
+
+  it('思考标签保留在正文的流式位置并标记收起', () => {
+    const thinkTag = makeThinkTag('finished', '两段正文之间的思考');
+    const result = groupMarkdownProcesses(`正文A\n${thinkTag}\n正文B`);
+
+    expect(result.indexOf('正文A')).toBeLessThan(
+      result.indexOf('<markdown-custom-think'),
+    );
+    expect(result.indexOf('<markdown-custom-think')).toBeLessThan(
+      result.indexOf('正文B'),
+    );
+    expect(result).toContain('<markdown-custom-think autoCollapse="true"');
+  });
+
+  it('仅含思考标签（无过程标签）的文本不短路，正常输出思考块', () => {
+    const thinkTag = makeThinkTag('thinking', '唯一的思考');
+    const result = groupMarkdownProcesses(thinkTag);
+    expect(result).toContain('<markdown-custom-think autoCollapse="false"');
+  });
+
+  it('Plan 分组边界前的工具组被标记自动收起', () => {
+    const t1 =
+      '<markdown-custom-process executeId="e1" name="a" type="ToolCall"></markdown-custom-process>';
+    const t2 =
+      '<markdown-custom-process executeId="e2" name="b" type="ToolCall"></markdown-custom-process>';
+    const plan =
+      '<markdown-custom-process executeId="p1" type="Plan" name="plan"></markdown-custom-process>';
+    const t3 =
+      '<markdown-custom-process executeId="e3" name="c" type="ToolCall"></markdown-custom-process>';
+    const t4 =
+      '<markdown-custom-process executeId="e4" name="d" type="ToolCall"></markdown-custom-process>';
+    const result = groupMarkdownProcesses(
+      `${t1}\n${t2}\n${plan}\n${t3}\n${t4}`,
+    );
+
+    expect(groupAutoCollapseFlags(result)).toEqual(['true', 'false']);
+  });
+
+  it('已带 autoCollapse 的思考标签重处理时不产生重复属性', () => {
+    const tagged =
+      '<markdown-custom-think autoCollapse="true" status="finished" content="x"></markdown-custom-think>';
+    const result = groupMarkdownProcesses(tagged);
+    expect(result.match(/autoCollapse=/g)).toHaveLength(1);
   });
 });
