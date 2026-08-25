@@ -97,6 +97,21 @@ const heartbeat = (): MockSseEvent => ({
   requestId: req('1'),
 });
 
+/**
+ * 终态事件的耗时载荷：startTime + 固定间隔模拟真实单步耗时，
+ * 供 RunOver 单步耗时弹层与后续工具耗时徽标（渲染计划 P0-3）消费。
+ */
+const resultTiming = (
+  status: string,
+  deltaMs: number,
+): { startTime: number; endTime?: number } => {
+  const startTime = Date.now();
+  return {
+    startTime,
+    ...(status !== 'EXECUTING' ? { endTime: startTime + deltaMs } : {}),
+  };
+};
+
 const processing = (
   name: string,
   status: string,
@@ -111,7 +126,7 @@ const processing = (
     status,
     toolCallId,
     type: 'ToolCall',
-    result: { executeId: toolCallId, startTime: Date.now() },
+    result: { executeId: toolCallId, ...resultTiming(status, 2400) },
     ...extra,
   },
 });
@@ -349,7 +364,7 @@ const planSteps = (
     type: 'Plan',
     result: {
       executeId: toolCallId,
-      startTime: Date.now(),
+      ...resultTiming(status, 6000),
       input: {},
       data: steps,
     },
@@ -371,7 +386,11 @@ const typedProcess = (
     status: 'FINISHED',
     toolCallId,
     type,
-    result: { executeId: toolCallId, startTime: Date.now(), input },
+    result: {
+      executeId: toolCallId,
+      ...resultTiming('FINISHED', 1800),
+      input,
+    },
   },
 });
 
@@ -391,7 +410,7 @@ const fileDiff = (
     type: 'ToolCall',
     result: {
       executeId: toolCallId,
-      startTime: Date.now(),
+      ...resultTiming('FINISHED', 3200),
       input: {},
       data: diffs.map((item) => ({ type: 'diff', ...item })),
     },

@@ -102,7 +102,8 @@ const KNOWN_ISSUES = [
   {
     scenario: 'LATE_CHUNK_SLOW',
     line: 'runtime',
-    reason: '终态守卫未丢弃 154s 迟到分片（同 legacy，两轨一致）——终态收敛线专项修复',
+    reason:
+      '终态守卫未丢弃 154s 迟到分片（同 legacy，两轨一致）——终态收敛线专项修复',
   },
 ];
 
@@ -176,7 +177,8 @@ const withTimeout = (promise, ms, label) =>
 const pageJs = (code, label = 'js') => withTimeout(js(code), 10000, label);
 
 /** ego 的 wait() 也走串行通道——同受队列堵塞影响，包超时兜底 */
-const pause = (seconds) => withTimeout(wait(seconds), 15000, `wait ${seconds}s`);
+const pause = (seconds) =>
+  withTimeout(wait(seconds), 15000, `wait ${seconds}s`);
 
 /** 轨归属决定性探针（选择器放宽为属性包含，避免 CSS module 哈希脆弱） */
 const probeLine = async () => {
@@ -330,7 +332,10 @@ const doubleClickText = async (selector, text, label) => {
 };
 
 const textVisible = async (text) =>
-  pageJs(`document.body.textContent.includes(${JSON.stringify(text)})`, 'textVisible');
+  pageJs(
+    `document.body.textContent.includes(${JSON.stringify(text)})`,
+    'textVisible',
+  );
 
 const waitForText = async (text, timeoutSec = 6) => {
   const deadline = Date.now() + timeoutSec * 1000;
@@ -379,7 +384,10 @@ const waitForCardHandled = async (baselineSignature, timeoutSec = 6) => {
     await pause(0.5);
   }
   throw new Error(
-    `干预卡处理后未生效（dock 签名未变化，基线「${baselineSignature.slice(0, 120)}」）`,
+    `干预卡处理后未生效（dock 签名未变化，基线「${baselineSignature.slice(
+      0,
+      120,
+    )}」）`,
   );
 };
 
@@ -397,9 +405,11 @@ const submitPermissionViaKeyboard = async (label) => {
 
 /** 权限卡：快捷键「1 + Enter」允许一次 → 断言处理生效 */
 const drivePermissionAllow = async () => {
-  await withTimeout(waitForElement(DOCK, { timeout: 10000 }), 15000, 'waitForDock').catch(
-    () => {},
-  );
+  await withTimeout(
+    waitForElement(DOCK, { timeout: 10000 }),
+    15000,
+    'waitForDock',
+  ).catch(() => {});
   const baseline = await dockSignature();
   await submitPermissionViaKeyboard('权限卡');
   await waitForCardHandled(baseline);
@@ -428,7 +438,11 @@ const driveAskSubmit = async () => {
 const driveInterventionStack = async () => {
   // dock 必须真实出现过（runtime 桥接缺失时 dock 恒无，循环会把「无 dock」
   // 误判为 EMPTY 假绿——先验证存在再进入清空循环）
-  await withTimeout(waitForElement(DOCK, { timeout: 10000 }), 15000, 'waitForDock');
+  await withTimeout(
+    waitForElement(DOCK, { timeout: 10000 }),
+    15000,
+    'waitForDock',
+  );
   for (let round = 0; round < 8; round++) {
     const state = await pageJs(String.raw`(() => {
       const dock = document.querySelector('[data-agent-intervention-dock]');
@@ -485,13 +499,152 @@ const driveQueueHolding = async () => {
 /** OpenUI 容器挂载：断言组件渲染证据（value 文本 + 容器节点；title 走样式层不在 textContent） */
 const driveOpenuiRender = async () => {
   await waitForText('结果数值：42', 15);
-  const nodes = await pageJs(String.raw`document.querySelectorAll('[class*="openui"], [class*="open-ui"], iframe').length`, 'openui nodes');
+  const nodes = await pageJs(
+    String.raw`document.querySelectorAll('[class*="openui"], [class*="open-ui"], iframe').length`,
+    'openui nodes',
+  );
   expect(nodes > 0, `未见 OpenUI 容器节点（openui/iframe 选择器 ×0）`);
 };
 
 /**
+ * 渲染探针通用前置：等回放收尾（replaySettled + FINAL 已到）再断言 DOM 终态。
+ * 渲染探针与交互驱动不同——不操作页面，只读形态；speed 用瞬间档即可。
+ */
+const waitForReplaySettled = async (timeoutSec = 30) => {
+  const deadline = Date.now() + timeoutSec * 1000;
+  while (Date.now() < deadline) {
+    const snapshot = await readSnapshot();
+    if (snapshot && snapshot.replaySettled && snapshot.hasFinalResult) {
+      return snapshot;
+    }
+    await pause(0.3);
+  }
+  throw new Error(
+    '渲染探针等待回放收尾超时（replaySettled/hasFinalResult 未满足）',
+  );
+};
+
+/**
+ * 渲染稳定窗：replaySettled 只代表服务端事件发完，大消息（如 RENDER_SHOWCASE）
+ * 的 MarkdownCMD clear+全量重推需要时间消化；等思考/过程/分组三类节点计数在
+ * 稳定窗内不再变化后再断言。文本断言用 textContent（innerText 会排除折叠
+ * 容器内的内容，可见性由折叠行为的组件单测覆盖）。
+ */
+const waitForRenderStable = async (timeoutSec = 25) => {
+  const signature = () =>
+    pageJs(
+      String.raw`JSON.stringify([
+        document.querySelectorAll('[class*="think-header"]').length,
+        document.querySelectorAll('[class*="markdown-custom-process-group"]').length,
+        document.querySelectorAll('[class*="markdown-custom-process"]').length,
+      ])`,
+      'render signature',
+    ).catch(() => '');
+  const deadline = Date.now() + timeoutSec * 1000;
+  let last = '';
+  let stableSince = 0;
+  while (Date.now() < deadline) {
+    const current = await signature();
+    if (current === last) {
+      if (!stableSince) stableSince = Date.now();
+      if (Date.now() - stableSince >= 1500) return;
+    } else {
+      last = current;
+      stableSince = 0;
+    }
+    await pause(0.3);
+  }
+};
+
+/**
+ * 思考内联渲染探针（LONG_TASK_INTERLEAVED，双轨）：
+ * 终态断言思考块按轮次成块、旧顶部思考区退场、工具组存在、终态全收起。
+ * 活动思考块的实时展开态由组件单测覆盖（mock 事件连发快于 DOM 采样步长）。
+ */
+const driveThinkRenderProbe = async () => {
+  await waitForReplaySettled();
+  await waitForRenderStable();
+  const probe = await pageJs(
+    String.raw`(() => {
+      const headers = [...document.querySelectorAll('[class*="think-header"]')];
+      return JSON.stringify({
+        thinkCount: headers.length,
+        allThought: headers.every((h) => (h.textContent || '').includes('已思考')),
+        legacyHeader: !!document.querySelector('[class*="thinking-header"]'),
+        groupCount: document.querySelectorAll('[class*="markdown-custom-process-group"]').length,
+        expandedCount: [...document.querySelectorAll('[class*="think-content"]')].filter(
+          (c) => c.className.includes('is-expanded'),
+        ).length,
+        contentOk: [...document.querySelectorAll('[class*="think-content-inner"]')].some(
+          (c) => (c.textContent || '').includes('第一轮思考'),
+        ),
+      });
+    })()`,
+    'think render probe',
+  );
+  const parsed = JSON.parse(probe);
+  expect(
+    parsed.thinkCount === 2,
+    `期望 2 个思考块（两轮思考），实际 ${parsed.thinkCount}`,
+  );
+  expect(parsed.allThought, `思考块标题应全部为「已思考」：${probe}`);
+  expect(!parsed.legacyHeader, '旧顶部思考区（thinking-header）不应出现');
+  expect(parsed.groupCount >= 1, `应存在工具调用组，实际 ${parsed.groupCount}`);
+  expect(
+    parsed.expandedCount === 0,
+    `终态后思考块应全部收起，实际展开 ${parsed.expandedCount} 个`,
+  );
+  expect(parsed.contentOk, '思考内容解码异常（未见「第一轮思考」文本）');
+};
+
+/**
+ * 渲染类型全景探针（RENDER_SHOWCASE，双轨）：
+ * Plan 步骤、diff 标题、工具组、task-result、conversation 链接逐一断言；
+ * OpenUI inline 断言仅 legacy 轨执行（runtime 轨投影未接 OpenUI applier，已知缺口）。
+ */
+const driveRenderShowcaseProbe = async () => {
+  await waitForReplaySettled();
+  await waitForRenderStable();
+  const probe = await pageJs(
+    String.raw`(() => {
+      const bodyText = document.body.textContent;
+      return JSON.stringify({
+        planStepText: bodyText.includes('部署发布上线'),
+        planFirstStep: bodyText.includes('拉取订单数据'),
+        diffTitle: bodyText.includes('report/index.html'),
+        groupCount: document.querySelectorAll('[class*="markdown-custom-process-group"]').length,
+        groupLabel: bodyText.includes('工具调用'),
+        taskResultText: bodyText.includes('月度报表页面'),
+        conversationLink: bodyText.includes('查看任务详情'),
+        thinkCount: document.querySelectorAll('[class*="think-header"]').length,
+      });
+    })()`,
+    'render showcase probe',
+  );
+  const parsed = JSON.parse(probe);
+  expect(
+    parsed.planStepText && parsed.planFirstStep,
+    `Plan 步骤应渲染：${probe}`,
+  );
+  expect(parsed.diffTitle, '文件 diff 标题（report/index.html）应渲染');
+  expect(
+    parsed.groupCount >= 1 && parsed.groupLabel,
+    `工具调用组应渲染：${probe}`,
+  );
+  expect(parsed.taskResultText, 'task-result 行应渲染');
+  expect(parsed.conversationLink, 'conversation 链接应渲染');
+  expect(parsed.thinkCount >= 1, `思考块应渲染：${probe}`);
+
+  const line = await probeLine();
+  if (line === 'LEGACY') {
+    await waitForText('订单总量：12,480', 15);
+  }
+};
+
+/**
  * 交互型用例：speed 放大留出点击窗口（delayMs × speed = 等待窗）；
- * 干预类走 ask 模式（审批 DockPanel 的业务门禁——会话框开启审批才出现）
+ * 干预类走 ask 模式（审批 DockPanel 的业务门禁——会话框开启审批才出现）；
+ * 渲染探针（×RenderProbe）speed 用瞬间档，收尾后只读断言终态 DOM。
  */
 const INTERACTIVE_CASES = [
   {
@@ -509,6 +662,8 @@ const INTERACTIVE_CASES = [
   },
   { id: 'MESSAGE_QUEUE_HOLDING', speed: 0.25, drive: driveQueueHolding },
   { id: 'OPENUI_RENDER', speed: 0.05, drive: driveOpenuiRender },
+  { id: 'LONG_TASK_INTERLEAVED', speed: 0.05, drive: driveThinkRenderProbe },
+  { id: 'RENDER_SHOWCASE', speed: 0.05, drive: driveRenderShowcaseProbe },
 ];
 
 // ---------- 过滤 ----------
@@ -545,7 +700,9 @@ const runCase = async (
 ) => {
   const url =
     `${APP_BASE}${PAGE_PATH}?scenario=${encodeURIComponent(meta.id)}` +
-    `&speed=${speed}&autoplay=1&conversationRuntime=${line === 'runtime' ? 1 : 0}` +
+    `&speed=${speed}&autoplay=1&conversationRuntime=${
+      line === 'runtime' ? 1 : 0
+    }` +
     (agentMode ? `&agentMode=${agentMode}` : '');
   await withTimeout(gotoAndWait(url, { timeout: 40 }), 60000, 'gotoAndWait');
   await pause(1);
@@ -601,7 +758,9 @@ const runNamedCase = async (name, meta, line, options = {}) => {
 
 // ---------- 单标签串行矩阵 ----------
 cliLog(
-  `断言型 ${scenarios.length}/${allScenarios.length} 场景 × 轨 ${lines.join('/')}，` +
+  `断言型 ${scenarios.length}/${allScenarios.length} 场景 × 轨 ${lines.join(
+    '/',
+  )}，` +
     `交互型 ${INTERACTIVE_CASES.length} 用例，speed=${SPEED}，超时 ${TIMEOUT_SEC}s` +
     (E2E.E2E_REAL_TIMING === '1' ? '，含真实时长子集' : ''),
 );
@@ -618,11 +777,7 @@ const total =
 for (const meta of scenarios) {
   for (const line of lines) {
     index += 1;
-    await runNamedCase(
-      `[${index}/${total}] ${meta.id} · ${line}`,
-      meta,
-      line,
-    );
+    await runNamedCase(`[${index}/${total}] ${meta.id} · ${line}`, meta, line);
   }
 }
 
@@ -634,7 +789,11 @@ for (const line of lines) {
       `[${index}/${total}] ${testCase.id} · ${line} · 交互`,
       allScenarios.find((meta) => meta.id === testCase.id),
       line,
-      { speed: testCase.speed, drive: testCase.drive, agentMode: testCase.agentMode },
+      {
+        speed: testCase.speed,
+        drive: testCase.drive,
+        agentMode: testCase.agentMode,
+      },
     );
   }
 }
@@ -669,7 +828,9 @@ if (E2E.E2E_REAL_TIMING === '1') {
             !leaked,
             '迟到分片未被终态守卫丢弃（消息列表出现「迟到分片」文本）',
           );
-          cliLog(`✅ [${index}] LATE_CHUNK_SLOW 守卫证据 · ${line}（迟到分片已丢弃）`);
+          cliLog(
+            `✅ [${index}] LATE_CHUNK_SLOW 守卫证据 · ${line}（迟到分片已丢弃）`,
+          );
           results.push({
             name: `[${index}] LATE_CHUNK_SLOW 守卫证据 · ${line}`,
             ok: true,
@@ -679,14 +840,18 @@ if (E2E.E2E_REAL_TIMING === '1') {
             (k) => k.scenario === 'LATE_CHUNK_SLOW' && k.line === line,
           );
           if (known) {
-            cliLog(`⚠️  KNOWN-FAIL [${index}] LATE_CHUNK_SLOW 守卫证据 · ${line} — ${known.reason}`);
+            cliLog(
+              `⚠️  KNOWN-FAIL [${index}] LATE_CHUNK_SLOW 守卫证据 · ${line} — ${known.reason}`,
+            );
             knownFails.push({
               name: `[${index}] LATE_CHUNK_SLOW 守卫证据 · ${line}`,
               reason: known.reason,
               error: String(error),
             });
           } else {
-            cliLog(`❌ [${index}] LATE_CHUNK_SLOW 守卫证据 · ${line} — ${error}`);
+            cliLog(
+              `❌ [${index}] LATE_CHUNK_SLOW 守卫证据 · ${line} — ${error}`,
+            );
             fail(`[${index}] LATE_CHUNK_SLOW 守卫证据 · ${line}`, error);
           }
         }
@@ -711,7 +876,9 @@ for (const k of knownFails) {
   cliLog(`KNOWN-FAIL  ${k.name}  ← ${k.reason}`);
 }
 cliLog(
-  `共 ${results.length + knownFails.length} 项，通过 ${passed}，失败 ${failed.length}，已知差异 ${knownFails.length}`,
+  `共 ${results.length + knownFails.length} 项，通过 ${passed}，失败 ${
+    failed.length
+  }，已知差异 ${knownFails.length}`,
 );
 
 await completeTaskSpace(task.id, { keep: false });

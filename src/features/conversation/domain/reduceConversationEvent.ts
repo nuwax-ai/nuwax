@@ -4,7 +4,10 @@ import type {
   MessageInfo,
   ProcessingInfo,
 } from '@/types/interfaces/conversationInfo';
-import { reduceMessageEvent } from './reduceMessageEvent';
+import {
+  reduceMessageEvent,
+  type ThinkBlockAdapter,
+} from './reduceMessageEvent';
 import {
   reduceProcessingEvent,
   type ProcessingBlockRenderer,
@@ -22,6 +25,8 @@ export interface ConversationEventProjection {
 export interface ConversationEventReducerAdapters {
   renderProcessingBlock: ProcessingBlockRenderer;
   reconcileFinalMessage: FinalMessageReconciler;
+  /** 思考内联标签 Adapter（plugins/ds-markdown-think）；缺省不写标签（旧投影行为）。 */
+  thinkBlock?: ThinkBlockAdapter;
 }
 
 export interface ConversationEventReduction
@@ -49,6 +54,7 @@ export function reduceConversationEvent(
       currentMessageId,
       projection.activeOutputMessageId,
       event.data,
+      adapters.thinkBlock,
     );
     return {
       messages: reduction.messages,
@@ -68,6 +74,7 @@ export function reduceConversationEvent(
       projection.messages[currentIndex],
       event.data,
       adapters.renderProcessingBlock,
+      adapters.thinkBlock?.finalizeThinkBlock,
     );
     const messages = [...projection.messages];
     messages.splice(currentIndex, 1, reduction.message);
@@ -88,6 +95,7 @@ export function reduceConversationEvent(
       currentMessageId,
       event,
       adapters.reconcileFinalMessage,
+      adapters.thinkBlock?.finalizeThinkBlock,
     );
     return {
       messages: reduction.messages,

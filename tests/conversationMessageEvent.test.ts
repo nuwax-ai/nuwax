@@ -1,5 +1,10 @@
 import { reduceMessageEvent } from '@/features/conversation/domain/reduceMessageEvent';
 import {
+  appendThinkChunk,
+  finalizeThinkBlock,
+  hasOpenThinkBlock,
+} from '@/plugins/ds-markdown-think';
+import {
   AssistantRoleEnum,
   MessageModeEnum,
   MessageTypeEnum,
@@ -119,5 +124,84 @@ describe('reduceMessageEvent', () => {
     expect(result.applied).toBe(false);
     expect(result.messages).toBe(messages);
     expect(result.activeOutputMessageId).toBe('output-1');
+  });
+
+  // ── 思考内联标签 Adapter（runtime 轨与旧线共用 plugins/ds-markdown-think 协议）──
+
+  const thinkBlockAdapter = {
+    hasOpenThinkBlock,
+    appendThinkChunk,
+    finalizeThinkBlock,
+  };
+
+  it('注入思考标签 Adapter 时 THINK 分片按流式位置写入 text 内联块', () => {
+    const first = reduceMessageEvent(
+      [assistantMessage()],
+      'optimistic-assistant',
+      '',
+      chunk({ id: 'think-1', type: MessageModeEnum.THINK, text: '第一轮思考' }),
+      thinkBlockAdapter,
+    );
+
+    expect(first.messages[0].text).toContain('markdown-custom-think');
+    expect(first.messages[0].text).toContain(encodeURIComponent('第一轮思考'));
+    expect(first.messages[0].thinkBlocks).toEqual(['第一轮思考']);
+    expect(first.messages[0].think).toBe('第一轮思考');
+
+    const second = reduceMessageEvent(
+      first.messages,
+      'optimistic-assistant',
+      '',
+      chunk({ id: 'answer-1', text: '正文', finished: true }),
+      thinkBlockAdapter,
+    );
+
+    // 正文到达即超越思考轮：标签收口为 finished，正文保持在其后
+    expect(second.messages[0].text).toContain('status="finished"');
+    expect(
+      second.messages[0].text.indexOf('markdown-custom-think'),
+    ).toBeLessThan(second.messages[0].text.indexOf('正文'));
+  });
+
+  it('多轮思考各自成块：收口后再 THINK 开启第二轮', () => {
+    let state = reduceMessageEvent(
+      [assistantMessage()],
+      'optimistic-assistant',
+      '',
+      chunk({ id: 'think-1', type: MessageModeEnum.THINK, text: '第一轮' }),
+      thinkBlockAdapter,
+    );
+    state = reduceMessageEvent(
+      state.messages,
+      'optimistic-assistant',
+      '',
+      chunk({ id: 'answer-1', text: '中间正文', finished: true }),
+      thinkBlockAdapter,
+    );
+    state = reduceMessageEvent(
+      state.messages,
+      'optimistic-assistant',
+      '',
+      chunk({ id: 'think-2', type: MessageModeEnum.THINK, text: '第二轮' }),
+      thinkBlockAdapter,
+    );
+
+    expect(state.messages[0].thinkBlocks).toEqual(['第一轮', '第二轮']);
+    const tagCount = (
+      state.messages[0].text.match(/<markdown-custom-think/g) || []
+    ).length;
+    expect(tagCount).toBe(2);
+  });
+
+  it('不注入 Adapter 时保持旧投影行为（text 不写思考标签）', () => {
+    const result = reduceMessageEvent(
+      [assistantMessage()],
+      'optimistic-assistant',
+      '',
+      chunk({ id: 'think-1', type: MessageModeEnum.THINK, text: '思考' }),
+    );
+
+    expect(result.messages[0].text).toBe('');
+    expect(result.messages[0].think).toBe('思考');
   });
 });

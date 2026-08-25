@@ -21,6 +21,8 @@ docs/conversation/
 │   └── poll-send-race-stale-snapshot-fix.md           轮询竞态修复
 ├── adr/                                ← 架构决策记录
 ├── archive/                            ← 已过时文档
+├── agent-session-rendering-analysis.md 会话渲染市面调研与差距分析（2026-08-25）
+├── agent-session-rendering-plan.md     会话渲染升级开发计划（P0/P1/P2 + 演示矩阵）
 └── message-queue-design.md             消息队列设计（初版）
 ```
 
@@ -35,6 +37,8 @@ docs/conversation/
 | 日常维护 / 排查 | [dual-track/conversation-maintenance-guide.md](./dual-track/conversation-maintenance-guide.md) |
 | Mock 故障注入验收（/mock-chat） | [mock-testing-plan.md](./mock-testing-plan.md)（含实施现状与热重载坑） |
 | Mock 体系优化与 E2E 自动化 | [mock-optimization-plan.md](./mock-optimization-plan.md) |
+| 会话渲染能力调研 / 差距对照 | [agent-session-rendering-analysis.md](./agent-session-rendering-analysis.md) |
+| 会话渲染升级开发（P0 终端渲染 / Plan 进度 / 子 agent…） | [agent-session-rendering-plan.md](./agent-session-rendering-plan.md)（含演示矩阵与 Done 定义） |
 
 ### 排查按钮卡「会话中」
 
@@ -56,5 +60,6 @@ isSessionActive = isConversationActive（连接生命周期）
 
 ## 变更记录
 
+- 2026-08-25 新增会话渲染调研与升级开发计划（含已完成功能演示回归补齐：e2e 渲染探针）
 - 2026-08-20 终态收敛体系修复合入 + 文档按 dual-track / fixes 分组
 - 2026-08-17 基线 `cf5ab966c`（双轨重构初始文档）

@@ -9,6 +9,14 @@ export type ProcessingBlockRenderer = (
   processing: ProcessingInfo,
 ) => string;
 
+/** 收口 text 中未闭合思考标签（思考被工具调用超越时调用）；缺省不写入标签。 */
+export type ThinkBlockFinalizer = (
+  text: string,
+  roundContent: string,
+) => string;
+
+const silentThinkFinalizer: ThinkBlockFinalizer = (text) => text;
+
 export interface ProcessingEventReduction {
   message: MessageInfo;
   processing: ProcessingInfo;
@@ -24,6 +32,7 @@ export function reduceProcessingEvent(
   currentMessage: MessageInfo,
   incomingProcessing: ProcessingInfo,
   renderProcessingBlock: ProcessingBlockRenderer,
+  closeThinkBlock: ThinkBlockFinalizer = silentThinkFinalizer,
 ): ProcessingEventReduction {
   const nestedExecuteId = (
     incomingProcessing.result as { executeId?: string } | null
@@ -47,7 +56,15 @@ export function reduceProcessingEvent(
     processing,
     message: {
       ...currentMessage,
-      text: renderProcessingBlock(currentMessage.text || '', processing),
+      // 工具调用出现即超越当前思考轮：先收口思考标签，再追加工具调用标签
+      text: renderProcessingBlock(
+        closeThinkBlock(
+          currentMessage.text || '',
+          currentMessage.thinkBlocks?.[currentMessage.thinkBlocks.length - 1] ||
+            '',
+        ),
+        processing,
+      ),
       thinkingFinished: true,
       status: MessageStatusEnum.Loading,
       processingList,

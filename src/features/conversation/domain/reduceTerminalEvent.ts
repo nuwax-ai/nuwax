@@ -12,6 +12,14 @@ export type FinalMessageReconciler = (
   finalResult: ConversationFinalResult,
 ) => MessageInfo | null;
 
+/** 收口 text 中未闭合思考标签（终态兜底）；缺省不写入标签。 */
+export type ThinkBlockFinalizer = (
+  text: string,
+  roundContent: string,
+) => string;
+
+const silentThinkFinalizer: ThinkBlockFinalizer = (text) => text;
+
 export interface TerminalEventReduction {
   messages: MessageInfo[];
   message?: MessageInfo;
@@ -31,6 +39,7 @@ export function reduceTerminalEvent(
   currentMessageId: string,
   event: ConversationChatResponse,
   reconcileFinalMessage: FinalMessageReconciler,
+  closeThinkBlock: ThinkBlockFinalizer = silentThinkFinalizer,
 ): TerminalEventReduction {
   const currentIndex = messageList.findIndex(
     (message) => message.id === currentMessageId,
@@ -45,10 +54,17 @@ export function reduceTerminalEvent(
 
   const currentMessage = messageList[currentIndex];
   const messages = [...messageList];
+  // 终态兜底收口：流若结束于思考中，text 里的思考标签保持 finished 形态
+  const closeOpenThinkBlock = () =>
+    closeThinkBlock(
+      currentMessage.text || '',
+      currentMessage.thinkBlocks?.[currentMessage.thinkBlocks.length - 1] || '',
+    );
 
   if (event.eventType === ConversationEventTypeEnum.ERROR) {
     const message = {
       ...currentMessage,
+      text: closeOpenThinkBlock(),
       thinkingFinished: true,
       status: MessageStatusEnum.Error,
     };
@@ -73,6 +89,7 @@ export function reduceTerminalEvent(
   const finalResult = event.data as ConversationFinalResult;
   const message = {
     ...(reconcileFinalMessage(currentMessage, finalResult) || {}),
+    text: closeOpenThinkBlock(),
     thinkingFinished: true,
     status: MessageStatusEnum.Complete,
     finalResult,

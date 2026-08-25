@@ -20,6 +20,11 @@ import {
   type ConversationRuntimeSession,
 } from '@/features/conversation/runtime/createConversationRuntimeSession';
 import { getCustomBlock } from '@/plugins/ds-markdown-process';
+import {
+  appendThinkChunk,
+  finalizeThinkBlock,
+  hasOpenThinkBlock,
+} from '@/plugins/ds-markdown-think';
 import { dict } from '@/services/i18nRuntime';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type {
@@ -36,6 +41,7 @@ import {
   useState,
   useSyncExternalStore,
 } from 'react';
+import { useModel } from 'umi';
 
 /** store → React Dispatch 形状适配（AgentIntervention 件以 setMessageList 为 deps） */
 const storeAsDispatch = (
@@ -113,6 +119,11 @@ export function useConversationRuntimeSession(
       adapters: {
         renderProcessingBlock: getCustomBlock,
         reconcileFinalMessage: reconcileFinalMessageState,
+        thinkBlock: {
+          hasOpenThinkBlock,
+          appendThinkChunk,
+          finalizeThinkBlock,
+        },
       },
       effectsAdapter: createRuntimeLineEffectsAdapter({
         setConversationInfo,
@@ -222,6 +233,20 @@ export function useConversationRuntimeSession(
     (listener) => (session ? session.store.subscribe(listener) : () => {}),
     () => (session ? session.store.getSnapshot() : emptyList.current),
   );
+
+  // 桥接渲染数据源：MarkdownCustomProcess（Plan 步骤/diff 内容/详情弹窗）经
+  // chat model 的 getProcessingById 读实时数据；旧线由 useConversationActiveState
+  // 的 rAF 派生同步，runtime 轨在此对齐。session 为空（flag 关闭）时不同步，
+  // 避免清掉旧线写入的数据。
+  const { handleChatProcessingList } = useModel('chat');
+  useEffect(() => {
+    if (!session) return;
+    handleChatProcessingList(
+      messageList.flatMap((message) =>
+        Array.isArray(message.processingList) ? message.processingList : [],
+      ),
+    );
+  }, [session, messageList, handleChatProcessingList]);
 
   const onSendMessage = useCallback(
     (
