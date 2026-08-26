@@ -89,6 +89,23 @@
           }
         }
       }
+
+      // 已归档会话入口（本地标记过渡方案）
+      .archived-entry {
+        padding: @paddingXs @paddingSm;
+        text-align: center;
+        font-size: @fontSizeSm;
+        color: @navSecondMenuAdaptiveTextTertiary;
+        border-radius: @borderRadiusSm;
+        cursor: pointer;
+        user-select: none;
+        transition: all 0.2s ease;
+
+        &:hover {
+          background-color: @colorFillQuaternary;
+          color: @navSecondMenuAdaptiveTextSecondary;
+        }
+      }
     }
   }
 }

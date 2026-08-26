@@ -17,6 +17,10 @@ import RecentAgentItem from './components/RecentAgentItem';
 import SearchHeader from './components/SearchHeader';
 import { getAgentIdFromHomePathname } from './utils';
 
+import {
+  CONVERSATION_FLAGS_EVENT,
+  loadConversationFlags,
+} from '@/components/business-component/ConversationContextMenu/conversationLocalFlags';
 import { EVENT_TYPE } from '@/constants/event.constants';
 import { useChatFinishedWhenListExecuting } from '@/hooks/useChatFinishedWhenListExecuting';
 import { apiAgentConversationList } from '@/services/agentConfig';
@@ -87,6 +91,20 @@ const NewHomeSection: React.FC<{
     componentCache.list || [],
   );
   const [loading, setLoading] = useState(false);
+  // 会话本地标记（置顶/归档/收藏过渡方案）：菜单 toggle 后经全局事件重读，驱动排序/过滤
+  const [conversationFlags, setConversationFlags] = useState(() =>
+    loadConversationFlags(),
+  );
+  const [showArchived, setShowArchived] = useState(false);
+  useEffect(() => {
+    const refreshFlags = () => setConversationFlags(loadConversationFlags());
+    window.addEventListener(CONVERSATION_FLAGS_EVENT, refreshFlags);
+    window.addEventListener('conversation-deleted', refreshFlags);
+    return () => {
+      window.removeEventListener(CONVERSATION_FLAGS_EVENT, refreshFlags);
+      window.removeEventListener('conversation-deleted', refreshFlags);
+    };
+  }, []);
   const [hasMore, setHasMore] = useState(
     componentCache.list ? componentCache.hasMore : true,
   );
@@ -196,6 +214,31 @@ const NewHomeSection: React.FC<{
     conversationList: localList,
     onChatFinished: handleConversationChatFinished,
   });
+
+  // 会话记录 Tab 展示列表：默认隐藏归档项、置顶项排前（稳定排序保持原相对顺序）；
+  // 「已归档」视图只看归档项
+  const visibleConversationList = useMemo(() => {
+    if (activeTab !== 'conversation') return localList;
+    const archivedSet = new Set(conversationFlags.archived);
+    const filtered = showArchived
+      ? localList.filter((item) => archivedSet.has(Number(item.id)))
+      : localList.filter((item) => !archivedSet.has(Number(item.id)));
+    if (showArchived) return filtered;
+    const pinnedSet = new Set(conversationFlags.pinned);
+    return [...filtered].sort(
+      (a, b) =>
+        Number(pinnedSet.has(Number(b.id))) -
+        Number(pinnedSet.has(Number(a.id))),
+    );
+  }, [activeTab, localList, conversationFlags, showArchived]);
+
+  const archivedCount = useMemo(
+    () =>
+      localList.filter((item) =>
+        conversationFlags.archived.includes(Number(item.id)),
+      ).length,
+    [localList, conversationFlags],
+  );
 
   const scheduleRecentAutoLoad = useCallback((hasNextPage: boolean) => {
     if (!hasNextPage) return;
@@ -764,8 +807,8 @@ const NewHomeSection: React.FC<{
         className={cx(styles['conversation-list-wrapper'])}
       >
         {!loading &&
-          (activeTab === 'conversation' ? localList : recentList).length ===
-            0 && (
+          (activeTab === 'conversation' ? visibleConversationList : recentList)
+            .length === 0 && (
             <EmptyState
               keyword={activeTab === 'conversation' ? keyword : recentKeyword}
               type={activeTab}
@@ -774,12 +817,19 @@ const NewHomeSection: React.FC<{
 
         <div ref={listInnerRef} className={cx(styles['conversation-list'])}>
           {activeTab === 'conversation'
-            ? localList.map((item) => (
+            ? visibleConversationList.map((item) => (
                 <ConversationItem
                   key={item.id}
                   item={item}
                   isActive={chatId === item.id?.toString()}
                   onClick={() => handleConversationClick(item)}
+                  pinned={conversationFlags.pinned.includes(Number(item.id))}
+                  collected={conversationFlags.collected.includes(
+                    Number(item.id),
+                  )}
+                  archived={conversationFlags.archived.includes(
+                    Number(item.id),
+                  )}
                 />
               ))
             : recentList.map((item) => (
@@ -802,6 +852,24 @@ const NewHomeSection: React.FC<{
               <Spin size="small" />
             </div>
           )}
+
+          {/* 已归档入口：存在归档项或处于已归档视图时显示（本地标记过渡方案） */}
+          {activeTab === 'conversation' &&
+            !loading &&
+            (archivedCount > 0 || showArchived) && (
+              <div
+                className={cx(styles['archived-entry'])}
+                onClick={() => setShowArchived(!showArchived)}
+              >
+                {showArchived
+                  ? dict(
+                      'PC.Layouts.DynamicMenusLayout.NewHomeSection.backToConversations',
+                    )
+                  : `${dict(
+                      'PC.Layouts.DynamicMenusLayout.NewHomeSection.archivedConversations',
+                    )} (${archivedCount})`}
+              </div>
+            )}
           {/* {!loading && !hasMore && localList.length > 0 && (
             <div className={cx(styles['no-more'])}>
               <Typography.Text type="secondary">{noMoreText}</Typography.Text>

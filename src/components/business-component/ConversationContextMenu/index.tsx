@@ -9,11 +9,16 @@ import {
   InboxOutlined,
   MoreOutlined,
   PushpinOutlined,
+  StarFilled,
   StarOutlined,
 } from '@ant-design/icons';
-import { Dropdown, Input, Modal } from 'antd';
+import { Dropdown, Input, message, Modal } from 'antd';
 import classNames from 'classnames';
 import React, { useMemo, useState } from 'react';
+import {
+  clearConversationFlags,
+  toggleConversationFlag,
+} from './conversationLocalFlags';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -25,8 +30,12 @@ interface ConversationContextMenuProps {
     | ((moreButton: React.ReactNode) => React.ReactElement);
   conversationId: number;
   currentTopic?: string;
-  /** 置顶状态（M2 后端字段就绪后接线，当前菜单项置灰留桩） */
+  /** 置顶状态（过渡方案：本地 localStorage 标记，后端字段就绪后迁移） */
   pinned?: boolean;
+  /** 归档状态（同上） */
+  archived?: boolean;
+  /** 收藏状态（同上） */
+  collected?: boolean;
   /** 自定义重命名入口（缺省时组件内置 Modal + API + 全局事件） */
   onRename?: () => void;
   /** 自定义删除入口（缺省时组件内置确认框 + API + 全局事件） */
@@ -41,15 +50,19 @@ interface ConversationContextMenuProps {
 
 /**
  * 会话列表右键菜单（飞书式）：置顶 / 归档 / 收藏 / 重命名 / 删除。
- * 置顶、归档、收藏依赖后端会话级字段（M2 契约），当前置灰留桩；
- * 重命名与删除接现有接口（apiAgentConversationUpdate / Delete），
- * 成功后派发 conversation-updated / conversation-deleted 全局事件供侧栏列表同步。
+ * - 置顶/归档/收藏为过渡方案：本地 localStorage 标记（conversationLocalFlags），
+ *   变更后派发 conversation-flags-changed 供列表重排/过滤；后端会话级字段
+ *   （M2 契约）就绪后迁移到服务端。
+ * - 重命名与删除接现有接口（apiAgentConversationUpdate / Delete），成功后派发
+ *   conversation-updated / conversation-deleted 全局事件供侧栏列表同步。
  */
 const ConversationContextMenu: React.FC<ConversationContextMenuProps> = ({
   children,
   conversationId,
   currentTopic = '',
   pinned = false,
+  archived = false,
+  collected = false,
   onRename,
   onDelete,
   onDeleted,
@@ -71,6 +84,7 @@ const ConversationContextMenu: React.FC<ConversationContextMenuProps> = ({
       onOk: async () => {
         const res = await apiAgentConversationDelete(conversationId);
         if (res?.success) {
+          clearConversationFlags(conversationId);
           window.dispatchEvent(
             new CustomEvent('conversation-deleted', {
               detail: { id: conversationId },
@@ -82,13 +96,31 @@ const ConversationContextMenu: React.FC<ConversationContextMenuProps> = ({
     });
   };
 
+  // 本地标记 toggle：toast 反馈，列表经 conversation-flags-changed 事件重排/过滤
+  const handleToggleFlag = (
+    kind: 'pinned' | 'archived' | 'collected',
+  ): void => {
+    const next = toggleConversationFlag(conversationId, kind);
+    const toastKeyMap = {
+      pinned: next
+        ? 'PC.Components.ConversationContextMenu.pinnedToast'
+        : 'PC.Components.ConversationContextMenu.unpinnedToast',
+      archived: next
+        ? 'PC.Components.ConversationContextMenu.archivedToast'
+        : 'PC.Components.ConversationContextMenu.unarchivedToast',
+      collected: next
+        ? 'PC.Components.ConversationContextMenu.collectedToast'
+        : 'PC.Components.ConversationContextMenu.uncollectedToast',
+    } as const;
+    message.success(t(toastKeyMap[kind]));
+  };
+
   const menuProps = useMemo(
     () => ({
       items: [
         {
           key: 'pin',
           icon: <PushpinOutlined />,
-          disabled: true,
           label: pinned
             ? t('PC.Components.ConversationContextMenu.unpin')
             : t('PC.Components.ConversationContextMenu.pin'),
@@ -96,14 +128,16 @@ const ConversationContextMenu: React.FC<ConversationContextMenuProps> = ({
         {
           key: 'archive',
           icon: <InboxOutlined />,
-          disabled: true,
-          label: t('PC.Components.ConversationContextMenu.archive'),
+          label: archived
+            ? t('PC.Components.ConversationContextMenu.unarchive')
+            : t('PC.Components.ConversationContextMenu.archive'),
         },
         {
           key: 'favorite',
-          icon: <StarOutlined />,
-          disabled: true,
-          label: t('PC.Components.ConversationContextMenu.favorite'),
+          icon: collected ? <StarFilled /> : <StarOutlined />,
+          label: collected
+            ? t('PC.Components.ConversationContextMenu.unfavorite')
+            : t('PC.Components.ConversationContextMenu.favorite'),
         },
         { type: 'divider' as const },
         {
@@ -119,7 +153,13 @@ const ConversationContextMenu: React.FC<ConversationContextMenuProps> = ({
         },
       ],
       onClick: ({ key }: { key: string }) => {
-        if (key === 'rename') {
+        if (key === 'pin') {
+          handleToggleFlag('pinned');
+        } else if (key === 'archive') {
+          handleToggleFlag('archived');
+        } else if (key === 'favorite') {
+          handleToggleFlag('collected');
+        } else if (key === 'rename') {
           if (onRename) {
             onRename();
           } else {
@@ -136,7 +176,7 @@ const ConversationContextMenu: React.FC<ConversationContextMenuProps> = ({
       },
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [pinned, currentTopic, onRename, onDelete],
+    [pinned, archived, collected, currentTopic, onRename, onDelete],
   );
 
   const handleRenameSubmit = async () => {
