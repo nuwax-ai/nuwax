@@ -348,6 +348,67 @@ function restoreMarkdownMath(html, slots) {
     });
 }
 
+/**
+ * 代码块复制：事件委托 + clipboard API（降级 execCommand），
+ * 按钮文案「复制」→「已复制」约 3s 复位，期间防重复点击
+ */
+function setupMarkdownCodeCopy(scope) {
+    if (!scope || scope.dataset.copyBound === '1') {
+        return;
+    }
+    scope.dataset.copyBound = '1';
+
+    scope.addEventListener('click', async (event) => {
+        const btn = event.target && event.target.closest
+            ? event.target.closest('.md-copy-btn')
+            : null;
+        if (!btn || btn.dataset.copyLocked === '1') {
+            return;
+        }
+
+        const block = btn.closest('.md-code-block');
+        const codeEl = block ? block.querySelector('pre code') : null;
+        if (!codeEl) {
+            return;
+        }
+
+        const text = codeEl.textContent || '';
+        let copied = false;
+        try {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                await navigator.clipboard.writeText(text);
+                copied = true;
+            }
+        } catch (e) {
+            console.warn('[FilePreview] clipboard API failed, fallback to execCommand:', e);
+        }
+
+        if (!copied) {
+            try {
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                textArea.style.cssText = 'position: fixed; top: -9999px; left: -9999px;';
+                document.body.appendChild(textArea);
+                textArea.select();
+                textArea.setSelectionRange(0, 99999);
+                copied = document.execCommand('copy');
+                document.body.removeChild(textArea);
+            } catch (e) {
+                copied = false;
+            }
+        }
+
+        btn.dataset.copyLocked = '1';
+        btn.textContent = copied ? '已复制' : '复制失败';
+        btn.classList.toggle('md-copy-btn-copied', copied);
+        setTimeout(() => {
+            btn.textContent = '复制';
+            btn.classList.remove('md-copy-btn-copied');
+            delete btn.dataset.copyLocked;
+        }, 3000);
+    });
+}
+
 async function renderMarkdown(url, container) {
     // Load marked.js for markdown rendering (Local)
     await loadScript('/libs/js-preview/marked.min.js');
@@ -369,35 +430,57 @@ async function renderMarkdown(url, container) {
     const markdown = await response.text();
     const mathExtract = extractMarkdownMath(markdown);
 
-    // Configure marked to use highlight.js
-    if (typeof hljs !== 'undefined') {
-        const { marked: markedInstance } = window;
-        const targetMarked = typeof marked !== 'undefined' ? marked : markedInstance;
-        
-        targetMarked.setOptions({
-            highlight: function (code, lang) {
-                if (lang && hljs.getLanguage(lang)) {
+    // 代码块渲染为会话区同款 md-code-block（语言标签 + 复制按钮 + highlight.js 高亮）。
+    // 注意：marked v11 已移除 setOptions({ highlight }) 选项（静默无效），高亮必须在 renderer 内直调
+    const { marked: markedInstance } = window;
+    const targetMarked = typeof marked !== 'undefined' ? marked : markedInstance;
+
+    targetMarked.use({
+        breaks: true,
+        gfm: true,
+        renderer: {
+            code: function (code, infostring) {
+                const lang = String(infostring || '').trim().split(/\s+/)[0];
+                if (!lang) {
+                    // 无语言围栏保持 GitHub 风格裸 pre
+                    return '<pre><code>' + escapeHtmlText(code) + '</code></pre>';
+                }
+
+                let highlighted = '';
+                if (typeof hljs !== 'undefined') {
                     try {
-                        return hljs.highlight(code, { language: lang }).value;
+                        if (hljs.getLanguage(lang)) {
+                            highlighted = hljs.highlight(code, { language: lang }).value;
+                        } else {
+                            highlighted = hljs.highlightAuto(code).value;
+                        }
                     } catch (e) {
                         console.error('Highlight error:', e);
                     }
                 }
-                return hljs.highlightAuto(code).value;
+
+                return '<div class="md-code-block">'
+                    + '<div class="md-code-block-banner">'
+                    + '<span class="md-code-block-language">' + escapeHtmlText(lang) + '</span>'
+                    + '<span class="md-copy-btn" role="button" tabindex="0">复制</span>'
+                    + '</div>'
+                    + '<pre class="md-code-block-content"><code class="language-' + escapeHtmlText(lang) + '">'
+                    + (highlighted || escapeHtmlText(code))
+                    + '</code></pre>'
+                    + '</div>';
             },
-            breaks: true,
-            gfm: true
-        });
-    }
+        },
+    });
 
     // Render markdown to HTML, then restore KaTeX
-    const html = restoreMarkdownMath(marked.parse(mathExtract.markdown), mathExtract.slots);
+    const html = restoreMarkdownMath(targetMarked.parse(mathExtract.markdown), mathExtract.slots);
 
     container.className = 'preview-container markdown-preview';
     const markdownBody = document.createElement('div');
     markdownBody.className = 'markdown-body';
     markdownBody.innerHTML = html;
     container.appendChild(markdownBody);
+    setupMarkdownCodeCopy(markdownBody);
 }
 
 

@@ -388,6 +388,24 @@
     }
   }
 
+  // 会话区同款 md-code-block（语言标签+复制/下载+高亮）：内部样式由 ds-markdown.css 接管，
+  // 重置上面的行内 code / pre 规则，避免灰底、85% 字号等 GitHub 风格叠加到代码块内
+  :global(.md-code-block) {
+    margin: 0 0 16px;
+
+    code,
+    pre {
+      padding: 0;
+      margin: 0;
+      background: transparent;
+      border: none;
+      border-radius: 0;
+      font-size: inherit;
+      word-break: normal;
+      white-space: pre;
+    }
+  }
+
   blockquote {
     padding: 0 1em;
     color: #6a737d;

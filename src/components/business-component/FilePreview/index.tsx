@@ -38,9 +38,11 @@ import '@js-preview/excel/lib/index.css';
 // @ts-ignore
 import jsPreviewPdf from '@js-preview/pdf';
 // @ts-ignore
+import '@/components/MarkdownRenderer/ds-markdown.css';
 import { unwrapLatexInlineCode } from '@/components/MarkdownRenderer/utils';
 import { SANDBOX } from '@/constants/common.constants';
 import { t } from '@/services/i18nRuntime';
+import { CodeBlockActions, CodeBlockWrap, HighlightCode } from 'ds-markdown';
 import 'ds-markdown/katex.css';
 import { init as pptxInit } from 'pptx-preview';
 
@@ -49,6 +51,64 @@ const FILE_PREVIEW_REMARK_PLUGINS = [remarkGfm, remarkMath];
 const FILE_PREVIEW_REHYPE_PLUGINS = [
   [rehypeKatex, { throwOnError: false, strict: 'ignore' }],
 ] as const;
+
+/** 递归提取 ReactMarkdown pre>code 子树里的纯文本（code 的 children 可能是字符串数组） */
+const extractMarkdownCodeText = (node: React.ReactNode): string => {
+  if (node === null || node === undefined || typeof node === 'boolean') {
+    return '';
+  }
+  if (typeof node === 'string' || typeof node === 'number') return String(node);
+  if (Array.isArray(node)) return node.map(extractMarkdownCodeText).join('');
+  if (React.isValidElement(node)) {
+    return extractMarkdownCodeText(
+      (node.props as { children?: React.ReactNode }).children,
+    );
+  }
+  return '';
+};
+
+/**
+ * 会话区同款代码块：带语言标注的围栏代码渲染为 md-code-block（语言标签 + 复制/下载 + Prism 高亮），
+ * 无语言围栏保持原 GitHub 风格 pre；行内 code 不经过 pre 覆写不受影响
+ */
+const FilePreviewMarkdownPre: React.FC<{ children?: React.ReactNode }> = ({
+  children,
+}) => {
+  const codeEl = Array.isArray(children)
+    ? children.find(React.isValidElement)
+    : children;
+  const className =
+    (React.isValidElement(codeEl) &&
+      (codeEl.props as { className?: string }).className) ||
+    '';
+  const match = /language-(\S+)/.exec(className);
+  const codeContent = React.isValidElement(codeEl)
+    ? extractMarkdownCodeText(
+        (codeEl.props as { children?: React.ReactNode }).children,
+      ).replace(/\n$/, '')
+    : '';
+
+  if (!match || !codeContent) {
+    return <pre>{children}</pre>;
+  }
+
+  const language = match[1];
+  return (
+    <CodeBlockWrap
+      title={
+        <>
+          <div className="md-code-block-language">{language}</div>
+          <CodeBlockActions language={language} codeContent={codeContent} />
+        </>
+      }
+    >
+      <HighlightCode code={codeContent} language={language} />
+    </CodeBlockWrap>
+  );
+};
+
+/** 模块级常量保持引用稳定，避免 components 内联对象触发 ReactMarkdown 全量重渲染 */
+const FILE_PREVIEW_MARKDOWN_COMPONENTS = { pre: FilePreviewMarkdownPre };
 
 /** HTML 预览 iframe 沙盒：不含 allow-top-navigation，避免锚点误导航到主应用 */
 const HTML_PREVIEW_SANDBOX = SANDBOX.replace(
@@ -1059,6 +1119,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({
                       typeof ReactMarkdown
                     >[0]['rehypePlugins']
                   }
+                  components={FILE_PREVIEW_MARKDOWN_COMPONENTS}
                 >
                   {processedMarkdown}
                 </ReactMarkdown>
