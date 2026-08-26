@@ -55,6 +55,7 @@ const ConversationDetailLink: React.FC<ConversationDetailLinkProps> = ({
 export default (
   conversationId: string | number = '',
   collapseProcessGroups = false,
+  autoCollapseEnabled = true,
 ) => {
   return createBuildInPlugin({
     remarkPlugin: remarkFixCjkAutolinks,
@@ -134,7 +135,10 @@ export default (
 
         return (
           <MarkdownCustomProcessGroup
-            autoCollapse={String(autoCollapse).toLowerCase() === 'true'}
+            autoCollapse={
+              autoCollapseEnabled &&
+              String(autoCollapse).toLowerCase() === 'true'
+            }
             defaultCollapsed={collapseProcessGroups}
             terminal={String(terminal).toLowerCase() === 'true'}
           >

@@ -23,4 +23,6 @@ export interface MarkdownRendererProps {
   thinkingFinished?: boolean;
   /** 是否将工具调用分组默认收起 */
   collapseProcessGroups?: boolean;
+  /** 「被超越自动收起」开关（会话密度 detailed 档恒展开时关闭） */
+  autoCollapseEnabled?: boolean;
 }

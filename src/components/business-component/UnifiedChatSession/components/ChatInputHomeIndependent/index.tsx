@@ -23,6 +23,7 @@ import { UPLOAD_FILE_ACTION } from '@/constants/common.constants';
 import { ENABLE_CHAT_MESSAGE_QUEUE } from '@/constants/feature.constants';
 import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { selectSessionActive } from '@/features/conversation/domain/runtimeSelectors';
+import { useConversationDensity } from '@/hooks/useConversationDensity';
 import useSubscription from '@/hooks/useSubscription';
 import { t } from '@/services/i18nRuntime';
 import { DefaultSelectedEnum, TaskStatus } from '@/types/enums/agent';
@@ -33,6 +34,7 @@ import type {
   ConversationInfo,
   MessageInfo,
 } from '@/types/interfaces/conversationInfo';
+import type { ConversationDensity } from '@/utils/conversationDensity';
 import eventBus, { EVENT_NAMES } from '@/utils/eventBus';
 import { handleUploadFileList } from '@/utils/upload';
 import {
@@ -40,6 +42,7 @@ import {
   CheckOutlined,
   DesktopOutlined,
   LoadingOutlined,
+  MenuFoldOutlined,
 } from '@ant-design/icons';
 import { Dropdown, message, Tooltip, Upload, UploadProps } from 'antd';
 import classNames from 'classnames';
@@ -59,6 +62,31 @@ const cx = classNames.bind(styles);
 const VoiceFooter = ChatInputVoiceFooter;
 
 const AGENT_MODE_OPTIONS: AgentMode[] = ['yolo', 'ask'];
+
+// 会话密度三档（P1-6）：复用 agentMode 下拉的选项样式
+const DENSITY_OPTIONS: ConversationDensity[] = [
+  'compact',
+  'normal',
+  'detailed',
+];
+
+const DENSITY_I18N: Record<
+  ConversationDensity,
+  { label: string; desc: string }
+> = {
+  compact: {
+    label: 'PC.Components.ChatInputHome.densityCompact',
+    desc: 'PC.Components.ChatInputHome.densityCompactDesc',
+  },
+  normal: {
+    label: 'PC.Components.ChatInputHome.densityNormal',
+    desc: 'PC.Components.ChatInputHome.densityNormalDesc',
+  },
+  detailed: {
+    label: 'PC.Components.ChatInputHome.densityDetailed',
+    desc: 'PC.Components.ChatInputHome.densityDetailedDesc',
+  },
+};
 
 const AGENT_MODE_I18N: Record<AgentMode, { label: string; desc: string }> = {
   yolo: {
@@ -226,6 +254,9 @@ const ChatInputHomeIndependent: React.FC<ChatInputHomeIndependentProps> = ({
   // 获取租户配置信息
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
   const isEnableSubscription = tenantConfigInfo?.enableSubscription !== 0;
+
+  // 会话密度（P1-6）：输入框入口设置，会话渲染即时生效
+  const { density, setDensity } = useConversationDensity();
 
   const {
     createSubscriptionOrder,
@@ -970,6 +1001,59 @@ const ChatInputHomeIndependent: React.FC<ChatInputHomeIndependentProps> = ({
                       </Tooltip>
                     </Dropdown>
                   )}
+                </VoiceFooter.HideWhenActive>
+                {/* 会话密度（P1-6）：compact/normal/detailed 三档控制过程内容折叠密度 */}
+                <VoiceFooter.HideWhenActive>
+                  <Dropdown
+                    menu={{
+                      selectedKeys: [density],
+                      items: DENSITY_OPTIONS.map((option) => ({
+                        key: option,
+                        label: (
+                          <div
+                            className={cx(styles['agent-mode-dropdown-item'])}
+                          >
+                            <div className={cx(styles['item-content'])}>
+                              <span className={cx(styles['item-name'])}>
+                                {t(DENSITY_I18N[option].label)}
+                              </span>
+                              <span className={cx(styles['item-desc'])}>
+                                {t(DENSITY_I18N[option].desc)}
+                              </span>
+                            </div>
+                            {density === option && (
+                              <CheckOutlined
+                                className={cx(styles['agent-mode-check'])}
+                              />
+                            )}
+                          </div>
+                        ),
+                        onClick: () => setDensity(option),
+                      })),
+                    }}
+                    trigger={['click']}
+                    placement="topLeft"
+                    overlayClassName="agent-mode-dropdown-overlay"
+                  >
+                    <Tooltip
+                      title={t(
+                        'PC.Components.ChatInputHome.conversationDensity',
+                      )}
+                    >
+                      <span
+                        className={cx(
+                          'flex',
+                          'items-center',
+                          'content-center',
+                          'cursor-pointer',
+                          styles.box,
+                          styles['plus-box'],
+                        )}
+                      >
+                        <MenuFoldOutlined style={{ fontSize: '14px' }} />
+                      </span>
+                    </Tooltip>
+                  </Dropdown>
                 </VoiceFooter.HideWhenActive>
                 <VoiceFooter.HideWhenActive>
                   {showTaskAgentToggle && (
