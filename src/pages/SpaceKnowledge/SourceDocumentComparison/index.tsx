@@ -66,7 +66,7 @@ const SourceDocumentComparison: React.FC<SourceDocumentComparisonProps> = ({
       <DocumentPreview
         segments={segments}
         selectedSegmentId={
-          selectedSegment?.id != null
+          selectedSegment?.id !== null && selectedSegment?.id !== undefined
             ? String(selectedSegment.id)
             : null
         }

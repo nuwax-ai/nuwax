@@ -1,20 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import { Card, Table, Button, Tag, Input, Select, Spin } from 'antd';
-import { ArrowLeftOutlined, SearchOutlined, FilterOutlined } from '@ant-design/icons';
-import type { SearchStrategy } from '@/components/KnowledgeAccuracyTest/types';
 import {
   getAccuracyTestDocuments,
   getAccuracyTestHistory,
   performAccuracySearch,
 } from '@/components/KnowledgeAccuracyTest/service';
-import type { DocumentItem, TestHistoryItem, RecallResultItem } from '@/components/KnowledgeAccuracyTest/types';
-import styles from './index.less';
-import { useModel } from 'umi';
+import type {
+  DocumentItem,
+  RecallResultItem,
+  SearchStrategy,
+  TestHistoryItem,
+} from '@/components/KnowledgeAccuracyTest/types';
 import { dict } from '@/services/i18nRuntime';
+import { SearchOutlined } from '@ant-design/icons';
+import { Button, Card, Input, Select, Spin, Table, Tag } from 'antd';
+import React, { useEffect, useState } from 'react';
+import styles from './index.less';
 
 const { TextArea } = Input;
 const { Option } = Select;
-
 
 interface KnowledgeAccuracyTestProps {
   knowledgeBaseId?: string | number;
@@ -23,7 +25,6 @@ interface KnowledgeAccuracyTestProps {
 
 const KnowledgeAccuracyTest: React.FC<KnowledgeAccuracyTestProps> = ({
   knowledgeBaseId,
-  onBack,
 }) => {
   // 状态管理
   const [loading, setLoading] = useState(false);
@@ -39,21 +40,12 @@ const KnowledgeAccuracyTest: React.FC<KnowledgeAccuracyTestProps> = ({
   const [testHistory, setTestHistory] = useState<TestHistoryItem[]>([]);
   const [recallResults, setRecallResults] = useState<RecallResultItem[]>([]);
 
-  const { tenantConfigInfo } = useModel('tenantConfigInfo');
-  //let isShowGRAPH = tenantConfigInfo.commercialEdition;
-  let isShowGRAPH = true;
+  // 商用版判断暂时禁用（tenantConfigInfo 未使用已移除），入口固定放开
+  const isShowGRAPH = true;
 
-  // 搜索参数
-  const [topK, setTopK] = useState(10);
-  const [matchingDegree, setMatchingDegree] = useState(0.3);
-
-  // 初始化加载数据
-  useEffect(() => {
-    if (knowledgeBaseId) {
-      loadDocuments();
-      loadTestHistory();
-    }
-  }, [knowledgeBaseId]);
+  // 搜索参数（暂为固定默认值，未开放调节）
+  const topK = 10;
+  const matchingDegree = 0.3;
 
   // 加载文档列表
   const loadDocuments = async () => {
@@ -66,7 +58,10 @@ const KnowledgeAccuracyTest: React.FC<KnowledgeAccuracyTestProps> = ({
         setSelectedDocuments(response.data.map((doc: DocumentItem) => doc.id));
       }
     } catch (error) {
-      console.error(dict('PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.loadDocListFailed'), error);
+      console.error(
+        dict('PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.loadDocListFailed'),
+        error,
+      );
     } finally {
       setLoading(false);
     }
@@ -81,11 +76,24 @@ const KnowledgeAccuracyTest: React.FC<KnowledgeAccuracyTestProps> = ({
         setTestHistory(response.data);
       }
     } catch (error) {
-      console.error(dict('PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.loadTestHistoryFailed'), error);
+      console.error(
+        dict(
+          'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.loadTestHistoryFailed',
+        ),
+        error,
+      );
     } finally {
       setLoading(false);
     }
   };
+
+  // 初始化加载数据
+  useEffect(() => {
+    if (knowledgeBaseId) {
+      loadDocuments();
+      loadTestHistory();
+    }
+  }, [knowledgeBaseId]);
 
   // 执行命中测试
   const handleSearchTest = async () => {
@@ -105,32 +113,25 @@ const KnowledgeAccuracyTest: React.FC<KnowledgeAccuracyTestProps> = ({
       });
 
       if (response?.data) {
-        setRecallResults((response.data.results || []).map((result: RecallResultItem) => ({
-          ...result,
-          isExpanded: false,
-        })));
+        setRecallResults(
+          (response.data.results || []).map((result: RecallResultItem) => ({
+            ...result,
+            isExpanded: false,
+          })),
+        );
 
         // 重新加载测试历史
         await loadTestHistory();
       }
     } catch (error) {
-      console.error(dict('PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.executeHitTestFailed'), error);
+      console.error(
+        dict(
+          'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.executeHitTestFailed',
+        ),
+        error,
+      );
     } finally {
       setSearchLoading(false);
-    }
-  };
-
-  // 获取搜索策略显示名称
-  const getStrategyLabel = (strategy: SearchStrategy) => {
-    switch (strategy) {
-      case 'SEMANTIC':
-        return '语义搜索';
-      case 'FULL_TEXT':
-        return '全文搜索';
-      case 'MIXED':
-        return '混合搜索';
-      default:
-        return strategy;
     }
   };
 
@@ -146,22 +147,36 @@ const KnowledgeAccuracyTest: React.FC<KnowledgeAccuracyTestProps> = ({
 
   // 处理测试历史记录点击事件
   const handleHistoryClick = (record: TestHistoryItem) => {
-    console.log(dict('PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.clickedHistoryRecord'), record);
+    console.log(
+      dict(
+        'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.clickedHistoryRecord',
+      ),
+      record,
+    );
     console.log('record.results:', record.results);
-    console.log(dict('PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.recordResultsType'), typeof record.results);
+    console.log(
+      dict('PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.recordResultsType'),
+      typeof record.results,
+    );
 
     try {
       // 先清空当前显示的召回结果
       setRecallResults([]);
 
       // 检查results字段是否为空
-      if (!record.results ||
-          record.results === '' ||
-          record.results === null ||
-          record.results === undefined ||
-          record.results === '[]' ||
-          record.results === '{}') {
-        console.log(dict('PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.resultsFieldEmpty'));
+      if (
+        !record.results ||
+        record.results === '' ||
+        record.results === null ||
+        record.results === undefined ||
+        record.results === '[]' ||
+        record.results === '{}'
+      ) {
+        console.log(
+          dict(
+            'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.resultsFieldEmpty',
+          ),
+        );
         return;
       }
 
@@ -171,9 +186,17 @@ const KnowledgeAccuracyTest: React.FC<KnowledgeAccuracyTestProps> = ({
         // 尝试解析JSON字符串
         try {
           parsedResults = JSON.parse(record.results);
-          console.log(dict('PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.parsedResults'), parsedResults);
+          console.log(
+            dict('PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.parsedResults'),
+            parsedResults,
+          );
         } catch (e) {
-          console.error(dict('PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.jsonParseFailed'), e);
+          console.error(
+            dict(
+              'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.jsonParseFailed',
+            ),
+            e,
+          );
           return;
         }
       } else {
@@ -183,9 +206,14 @@ const KnowledgeAccuracyTest: React.FC<KnowledgeAccuracyTestProps> = ({
       // 检查解析后的结果是否为空对象或空数组
       if (
         (Array.isArray(parsedResults) && parsedResults.length === 0) ||
-        (typeof parsedResults === 'object' && Object.keys(parsedResults).length === 0)
+        (typeof parsedResults === 'object' &&
+          Object.keys(parsedResults).length === 0)
       ) {
-        console.log(dict('PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.parsedResultsEmpty'));
+        console.log(
+          dict(
+            'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.parsedResultsEmpty',
+          ),
+        );
         return;
       }
 
@@ -199,55 +227,89 @@ const KnowledgeAccuracyTest: React.FC<KnowledgeAccuracyTestProps> = ({
         // 如果是对象，尝试提取数组数据
         if (Array.isArray(parsedResults.results)) {
           resultsArray = parsedResults.results;
-          console.log(dict('PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.extractedFromResultsResults'), resultsArray.length);
+          console.log(
+            dict(
+              'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.extractedFromResultsResults',
+            ),
+            resultsArray.length,
+          );
         } else if (Array.isArray(parsedResults.data)) {
           resultsArray = parsedResults.data;
-          console.log(dict('PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.extractedFromResultsData'), resultsArray.length);
+          console.log(
+            dict(
+              'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.extractedFromResultsData',
+            ),
+            resultsArray.length,
+          );
         } else if (Array.isArray(parsedResults.list)) {
           resultsArray = parsedResults.list;
-          console.log(dict('PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.extractedFromResultsList'), resultsArray.length);
+          console.log(
+            dict(
+              'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.extractedFromResultsList',
+            ),
+            resultsArray.length,
+          );
         } else {
-          console.warn(dict('PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.cannotExtractArrayData'), parsedResults);
+          console.warn(
+            dict(
+              'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.cannotExtractArrayData',
+            ),
+            parsedResults,
+          );
           return;
         }
       }
 
       // 检查提取的数组是否为空
       if (!resultsArray || resultsArray.length === 0) {
-        console.log(dict('PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.extractedArrayEmpty'));
+        console.log(
+          dict(
+            'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.extractedArrayEmpty',
+          ),
+        );
         return;
       }
 
-      console.log(dict('PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.settingRecallResults'), resultsArray);
-      setRecallResults(resultsArray.map((result: RecallResultItem) => ({
-        ...result,
-        isExpanded: false,
-      })));
+      console.log(
+        dict(
+          'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.settingRecallResults',
+        ),
+        resultsArray,
+      );
+      setRecallResults(
+        resultsArray.map((result: RecallResultItem) => ({
+          ...result,
+          isExpanded: false,
+        })),
+      );
     } catch (error) {
-      console.error(dict('PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.parseHistoryResultsFailed'), error);
+      console.error(
+        dict(
+          'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.parseHistoryResultsFailed',
+        ),
+        error,
+      );
       // 解析失败时也清空召回结果（已经在开始时清空了）
     }
   };
 
   // 处理卡片展开/收缩
   const handleCardToggle = (index: number) => {
-    setRecallResults(prevResults =>
+    setRecallResults((prevResults) =>
       prevResults.map((result, i) =>
-        i === index
-          ? { ...result, isExpanded: !result.isExpanded }
-          : result
-      )
+        i === index ? { ...result, isExpanded: !result.isExpanded } : result,
+      ),
     );
   };
 
   // 自定义测试范围标签渲染（不显示删除图标）
   const renderTestScopeTag = (props: any) => {
-    const { label, value } = props;
+    const { label } = props;
     return (
       <Tag
         className={styles.customTag}
         closable={false}
-        title={label}  // 添加title属性以显示完整文件名
+        title={label} // 添加title属性以显示完整文件名
       >
         {label}
       </Tag>
@@ -266,7 +328,12 @@ const KnowledgeAccuracyTest: React.FC<KnowledgeAccuracyTestProps> = ({
         <a
           onClick={(e) => {
             e.preventDefault();
-            console.log(dict('PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.queryClickEventTriggered'), record);
+            console.log(
+              dict(
+                'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.queryClickEventTriggered',
+              ),
+              record,
+            );
             handleHistoryClick(record);
           }}
           className={styles.queryCell}
@@ -282,9 +349,7 @@ const KnowledgeAccuracyTest: React.FC<KnowledgeAccuracyTestProps> = ({
       dataIndex: 'createTime',
       key: 'createTime',
       width: '50%',
-      render: (text: string) => (
-        <div className={styles.timeCell}>{text}</div>
-      ),
+      render: (text: string) => <div className={styles.timeCell}>{text}</div>,
     },
   ];
 
@@ -295,17 +360,28 @@ const KnowledgeAccuracyTest: React.FC<KnowledgeAccuracyTestProps> = ({
         {/* 测试配置区 */}
         <Card className={styles.testConfig} bordered={false}>
           <div className={styles.configHeader}>
-            <span className={styles.headerTitle}>{dict('PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.hitTestConfig')}</span>
+            <span className={styles.headerTitle}>
+              {dict(
+                'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.hitTestConfig',
+              )}
+            </span>
           </div>
 
           <div className={styles.configContent}>
             {/* 测试范围 */}
             <div className={styles.configItem}>
-              <label className={styles.label}>{dict('PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.testScope')}：</label>
+              <label className={styles.label}>
+                {dict(
+                  'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.testScope',
+                )}
+                ：
+              </label>
               <Select
                 mode="multiple"
                 className={styles.select}
-                placeholder={dict('PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.selectTestDoc')}
+                placeholder={dict(
+                  'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.selectTestDoc',
+                )}
                 value={selectedDocuments}
                 onChange={(value) => {
                   // 不更新 selectedDocuments 状态
@@ -313,7 +389,9 @@ const KnowledgeAccuracyTest: React.FC<KnowledgeAccuracyTestProps> = ({
                 }}
                 allowClear={false}
                 maxTagCount="responsive"
-                maxTagPlaceholder={(omittedValues) => `+ ${omittedValues.length} ...`}
+                maxTagPlaceholder={(omittedValues) =>
+                  `+ ${omittedValues.length} ...`
+                }
                 tagRender={renderTestScopeTag}
               >
                 {documents.map((doc) => (
@@ -326,24 +404,48 @@ const KnowledgeAccuracyTest: React.FC<KnowledgeAccuracyTestProps> = ({
 
             {/* 搜索模式 */}
             <div className={styles.configItem}>
-              <label className={styles.label}>{dict('PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.searchMode')}：</label>
+              <label className={styles.label}>
+                {dict(
+                  'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.searchMode',
+                )}
+                ：
+              </label>
               <Select
                 className={styles.select}
                 value={searchStrategy}
                 onChange={setSearchStrategy}
               >
-                <Option value="SEMANTIC">{dict('PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.semanticSearch')}</Option>
-                <Option value="MIXED">{dict('PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.mixedSearch')}</Option>
-                <Option value="FULL_TEXT">{dict('PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.fullTextSearch')}</Option>
+                <Option value="SEMANTIC">
+                  {dict(
+                    'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.semanticSearch',
+                  )}
+                </Option>
+                <Option value="MIXED">
+                  {dict(
+                    'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.mixedSearch',
+                  )}
+                </Option>
+                <Option value="FULL_TEXT">
+                  {dict(
+                    'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.fullTextSearch',
+                  )}
+                </Option>
               </Select>
             </div>
 
             {/* 命中测试输入框 */}
             <div className={styles.configItem}>
-              <label className={styles.label}>{dict('PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.testQuery')}：</label>
+              <label className={styles.label}>
+                {dict(
+                  'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.testQuery',
+                )}
+                ：
+              </label>
               <TextArea
                 className={`${styles.textarea} dispose-textarea-count`}
-                placeholder={dict('PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.inputQueryText')}
+                placeholder={dict(
+                  'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.inputQueryText',
+                )}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 autoSize={{ minRows: 4, maxRows: 6 }}
@@ -360,7 +462,9 @@ const KnowledgeAccuracyTest: React.FC<KnowledgeAccuracyTestProps> = ({
               icon={<SearchOutlined />}
               disabled={!query.trim() || selectedDocuments.length === 0}
             >
-              {dict('PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.executeHitTest')}
+              {dict(
+                'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.executeHitTest',
+              )}
             </Button>
           </div>
         </Card>
@@ -368,7 +472,11 @@ const KnowledgeAccuracyTest: React.FC<KnowledgeAccuracyTestProps> = ({
         {/* 测试历史区 */}
         <Card className={styles.testHistory} bordered={false}>
           <div className={styles.testHistoryHeader}>
-            <span className={styles.headerTitle}>{dict('PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.testHistory')}</span>
+            <span className={styles.headerTitle}>
+              {dict(
+                'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.testHistory',
+              )}
+            </span>
           </div>
           <Table
             columns={historyColumns}
@@ -386,7 +494,10 @@ const KnowledgeAccuracyTest: React.FC<KnowledgeAccuracyTestProps> = ({
         <Card className={styles.resultsPanel} bordered={false}>
           <div className={styles.resultsHeader}>
             <div className={styles.resultsTitle}>
-              {dict('PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.recallResults')}（{recallResults.length}）
+              {dict(
+                'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.recallResults',
+              )}
+              （{recallResults.length}）
             </div>
           </div>
 
@@ -394,12 +505,15 @@ const KnowledgeAccuracyTest: React.FC<KnowledgeAccuracyTestProps> = ({
             <div className={styles.resultsList}>
               {recallResults.length === 0 && !searchLoading ? (
                 <div className={styles.emptyState}>
-                  {dict('PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.noRecallResults')}
+                  {dict(
+                    'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.noRecallResults',
+                  )}
                 </div>
               ) : (
                 recallResults.map((result, index) => {
                   const isExpanded = result.isExpanded;
-                  const showExpandButton = result.content && result.content.length > 200;
+                  const showExpandButton =
+                    result.content && result.content.length > 200;
 
                   return (
                     <Card
@@ -420,7 +534,9 @@ const KnowledgeAccuracyTest: React.FC<KnowledgeAccuracyTestProps> = ({
                       </div>
 
                       <div className={styles.documentInfo}>
-                        <div className={styles.documentName}>{result.docName}</div>
+                        <div className={styles.documentName}>
+                          {result.docName}
+                        </div>
                       </div>
 
                       {result.content && (
@@ -436,13 +552,23 @@ const KnowledgeAccuracyTest: React.FC<KnowledgeAccuracyTestProps> = ({
                             </>
                           )}
                           {showExpandButton && (
-                            <div className={styles.expandHint} onClick={(e) => {
-                              e.stopPropagation();
-                              handleCardToggle(index);
-                            }} style={{ cursor: 'pointer' }}>
-                                {isExpanded ? dict('PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.collapse') : dict('PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.expand')}
-                              </div>
-                            )}
+                            <div
+                              className={styles.expandHint}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleCardToggle(index);
+                              }}
+                              style={{ cursor: 'pointer' }}
+                            >
+                              {isExpanded
+                                ? dict(
+                                    'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.collapse',
+                                  )
+                                : dict(
+                                    'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.expand',
+                                  )}
+                            </div>
+                          )}
                         </div>
                       )}
                     </Card>

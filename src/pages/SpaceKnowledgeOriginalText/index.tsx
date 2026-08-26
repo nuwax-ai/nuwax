@@ -4,10 +4,10 @@
  * 功能：根据分段 ID 展示所属文档的全部分段，默认高亮选中分段并自动滚动定位
  */
 
-import { Empty, Spin } from 'antd';
 import { dict } from '@/services/i18nRuntime';
+import { Empty, Spin } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
-import { useParams, useLocation } from 'umi';
+import { useLocation, useParams } from 'umi';
 import { useOriginalTextSegments } from './hooks';
 import './index.less';
 
@@ -15,11 +15,13 @@ import './index.less';
  * 原文对照页面组件
  */
 const SpaceKnowledgeOriginalText: React.FC = () => {
-  const { segmentId: routeSegmentId, spaceId, agentId: routeAgentId } = useParams<{
+  // useParams 无类型定义（Untyped），不能带泛型参数，用 as 断言路由参数结构
+  const routeParams = useParams() as {
     segmentId?: string;
     spaceId?: string;
     agentId?: string;
-  }>();
+  };
+  const { segmentId: routeSegmentId, agentId: routeAgentId } = routeParams;
   const location = useLocation();
 
   // 支持路由参数和 query 参数两种方式
@@ -46,7 +48,10 @@ const SpaceKnowledgeOriginalText: React.FC = () => {
   }, [routeSegmentId, location.search]);
 
   const highlightRef = useRef<HTMLDivElement>(null);
-  const { segments, loading, error, usingMockData } = useOriginalTextSegments(segmentId, routeAgentId);
+  const { segments, loading, error, usingMockData } = useOriginalTextSegments(
+    segmentId,
+    routeAgentId,
+  );
 
   // 选中分段变化时自动滚动定位
   // 依赖含 segments：初始进入/切换时 segmentId 已定但分段异步加载，
@@ -59,7 +64,11 @@ const SpaceKnowledgeOriginalText: React.FC = () => {
     let raf2 = 0;
     const raf1 = requestAnimationFrame(() => {
       raf2 = requestAnimationFrame(() => {
-        el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+        el.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+          inline: 'nearest',
+        });
       });
     });
     return () => {
@@ -72,7 +81,11 @@ const SpaceKnowledgeOriginalText: React.FC = () => {
   if (loading) {
     return (
       <div className="original-text-page loading">
-        <Spin tip={dict('PC.Pages.SpaceKnowledge.SourceDocumentComparison.loadingDocument')} />
+        <Spin
+          tip={dict(
+            'PC.Pages.SpaceKnowledge.SourceDocumentComparison.loadingDocument',
+          )}
+        />
       </div>
     );
   }
@@ -90,7 +103,11 @@ const SpaceKnowledgeOriginalText: React.FC = () => {
   if (!segments || segments.length === 0) {
     return (
       <div className="original-text-page empty">
-        <Empty description={dict('PC.Pages.SpaceKnowledge.SourceDocumentComparison.noOriginalDocument')} />
+        <Empty
+          description={dict(
+            'PC.Pages.SpaceKnowledge.SourceDocumentComparison.noOriginalDocument',
+          )}
+        />
       </div>
     );
   }
@@ -98,10 +115,12 @@ const SpaceKnowledgeOriginalText: React.FC = () => {
   return (
     <div className="original-text-page">
       <div className="preview-header">
-        <h3 className="preview-title">{dict('PC.Pages.SpaceKnowledge.SourceDocumentComparison.originalComparison')}</h3>
-        {usingMockData && (
-          <span className="mock-data-badge">模拟数据</span>
-        )}
+        <h3 className="preview-title">
+          {dict(
+            'PC.Pages.SpaceKnowledge.SourceDocumentComparison.originalComparison',
+          )}
+        </h3>
+        {usingMockData && <span className="mock-data-badge">模拟数据</span>}
       </div>
       <div className="preview-content">
         <div className="original-text-container">

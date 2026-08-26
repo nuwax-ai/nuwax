@@ -2,9 +2,9 @@
  * 原文对照页面 - 自定义 Hooks
  */
 
+import { dict } from '@/services/i18nRuntime';
 import { apiKnowledgeSegOriginalText } from '@/services/knowledge';
 import type { KnowledgeRawSegmentInfo } from '@/types/interfaces/knowledge';
-import { dict } from '@/services/i18nRuntime';
 import { message } from 'antd';
 import { useEffect, useRef, useState } from 'react';
 
@@ -69,12 +69,14 @@ export const useOriginalTextSegments = (
       try {
         const all: KnowledgeRawSegmentInfo[] = [];
         let current = 1;
-        const pageSize = 100;
         let totalPages = 1;
 
         // 循环拉取直到 current >= pages
         while (current <= totalPages) {
-          const res = await apiKnowledgeSegOriginalText(Number(segmentId), agentId ? Number(agentId) : undefined);
+          const res = await apiKnowledgeSegOriginalText(
+            Number(segmentId),
+            agentId ? Number(agentId) : undefined,
+          );
 
           if (cancelled || reqIdRef.current !== currentReqId) {
             return;
@@ -87,7 +89,11 @@ export const useOriginalTextSegments = (
 
           // 权限拒绝：后端返回 permissionDenied=true（不抛异常），用 i18n 在页面持续提示，不兜 mock 假数据
           if (page.permissionDenied) {
-            setError(dict('PC.Components.AppDevEmptyState.permissionDeniedDescription'));
+            setError(
+              dict(
+                'PC.Components.AppDevEmptyState.permissionDeniedDescription',
+              ),
+            );
             setSegments([]);
             setUsingMockData(false);
             return;

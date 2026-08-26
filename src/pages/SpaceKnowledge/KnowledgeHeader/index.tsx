@@ -13,7 +13,7 @@ import { DownOutlined, FormOutlined, LeftOutlined } from '@ant-design/icons';
 import { Button, Radio, RadioChangeEvent } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
-import { useModel, useParams } from 'umi';
+import { useParams } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -33,9 +33,8 @@ const KnowledgeHeader: React.FC<KnowledgeHeaderProps> = ({
 }) => {
   const { spaceId } = useParams();
 
-  const { tenantConfigInfo } = useModel('tenantConfigInfo');
-  //let isShowGRAPH = tenantConfigInfo.commercialEdition;
-  let isShowGRAPH = true;
+  // 商用版判断暂时禁用（tenantConfigInfo 未使用已移除），图谱入口固定放开
+  const isShowGRAPH = true;
 
   const fileSize = knowledgeInfo?.fileSize
     ? formatBytes(knowledgeInfo.fileSize)
@@ -142,9 +141,7 @@ const KnowledgeHeader: React.FC<KnowledgeHeaderProps> = ({
           <Button type="primary" onClick={onViewAllGraphs}>
             {dict('PC.Pages.SpaceKnowledge.KnowledgeHeader.graph')}
           </Button>
-        ) : docType === KnowledgeDocTypeEnum.ACCURACYTEST ? (
-          null
-        ) : null}
+        ) : docType === KnowledgeDocTypeEnum.ACCURACYTEST ? null : null}
       </div>
     </header>
   );

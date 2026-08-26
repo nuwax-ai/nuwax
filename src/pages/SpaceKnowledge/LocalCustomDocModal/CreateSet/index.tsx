@@ -10,7 +10,6 @@ import { customizeRequiredMark } from '@/utils/form';
 import { Form, Input } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
-import { useModel } from 'umi';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -35,9 +34,8 @@ const CreateSet: React.FC<CreateSetProps> = ({
     setSegmentDelimiter(_value);
   };
 
-  const { tenantConfigInfo } = useModel('tenantConfigInfo');
-  // let isShowGRAPH = tenantConfigInfo.commercialEdition;
-  let isShowGRAPH = true;
+  // 商用版判断暂时禁用（tenantConfigInfo 未使用已移除），图谱入口固定放开
+  const isShowGRAPH = true;
   //console.log("2===autoSegmentConfigFlag:" + autoSegmentConfigFlag+",isAiSegment:" + isAiSegment);
 
   return (
