@@ -130,11 +130,13 @@ export default (
           props.autoCollapse ??
           properties.autocollapse ??
           properties.autoCollapse;
+        const terminal = props.terminal ?? properties.terminal;
 
         return (
           <MarkdownCustomProcessGroup
             autoCollapse={String(autoCollapse).toLowerCase() === 'true'}
             defaultCollapsed={collapseProcessGroups}
+            terminal={String(terminal).toLowerCase() === 'true'}
           >
             {children}
           </MarkdownCustomProcessGroup>

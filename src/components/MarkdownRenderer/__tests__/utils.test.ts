@@ -7,6 +7,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import {
+  collapseTerminalProcesses,
   groupMarkdownProcesses,
   looksLikeLatex,
   replaceMathBracket,
@@ -433,5 +434,115 @@ describe('groupMarkdownProcesses', () => {
       '<markdown-custom-think autoCollapse="true" status="finished" content="x"></markdown-custom-think>';
     const result = groupMarkdownProcesses(tagged);
     expect(result.match(/autoCollapse=/g)).toHaveLength(1);
+  });
+});
+
+/** 构造终态聚合输入用的工具调用标签（groupMarkdownProcesses 归一化后的形态） */
+const makeToolTag = (id: string, name: string) =>
+  `<markdown-custom-process executeId="${id}" name="${name}" type="ToolCall" status="FINISHED"></markdown-custom-process>`;
+
+/** 构造 groupMarkdownProcesses 输出形态的工具调用组块 */
+const makeGroupBlock = (autoCollapse: boolean, tags: string[]) =>
+  `\n\n<div><markdown-custom-process-group autoCollapse="${autoCollapse}">\n${tags.join(
+    '\n',
+  )}\n</markdown-custom-process-group></div>\n\n`;
+
+describe('collapseTerminalProcesses', () => {
+  it('空输入返回空串', () => {
+    expect(collapseTerminalProcesses('')).toBe('');
+  });
+
+  it('不含过程标签时原样返回（短路）', () => {
+    const text = '普通最终回答，没有任何过程标签';
+    expect(collapseTerminalProcesses(text)).toBe(text);
+  });
+
+  it('中间正文与多个工具组聚合成单个 terminal 执行过程组，尾部正文保留在外', () => {
+    const input =
+      makeGroupBlock(true, [makeToolTag('e1', 'a'), makeToolTag('e2', 'b')]) +
+      '中间分析正文第一段' +
+      makeGroupBlock(true, [makeToolTag('e3', 'c')]) +
+      '最终回答正文';
+
+    const result = collapseTerminalProcesses(input);
+
+    // 只剩一对 group 标签（开+闭各一次），无嵌套
+    expect(result.match(/markdown-custom-process-group/g)).toHaveLength(2);
+    // terminal 标记 + 直接收起（不靠 autoCollapse 动画）
+    expect(result).toContain(
+      '<markdown-custom-process-group autoCollapse="false" terminal="true">',
+    );
+    // 中间正文进折叠区（出现在 group 内部）
+    const groupStart = result.indexOf('<markdown-custom-process-group');
+    const groupEnd = result.indexOf('</markdown-custom-process-group>');
+    expect(result.indexOf('中间分析正文第一段')).toBeGreaterThan(groupStart);
+    expect(result.indexOf('中间分析正文第一段')).toBeLessThan(groupEnd);
+    // 尾部正文保留在折叠区之后
+    expect(result.indexOf('最终回答正文')).toBeGreaterThan(groupEnd);
+    // 三个工具标签都被摊平保留
+    expect(result).toContain('executeId="e1"');
+    expect(result).toContain('executeId="e2"');
+    expect(result).toContain('executeId="e3"');
+  });
+
+  it('尾部无正文（任务以过程块收尾）时保留最后一个过程块在外', () => {
+    const input =
+      makeGroupBlock(true, [makeToolTag('e1', 'a'), makeToolTag('e2', 'b')]) +
+      `\n\n<div>${makeToolTag('e3', 'c')}</div>\n\n`;
+
+    const result = collapseTerminalProcesses(input);
+
+    // 聚合组 + 外部保留的单块：共出现两对 group/process 顶层结构
+    expect(result).toContain(
+      '<markdown-custom-process-group autoCollapse="false" terminal="true">',
+    );
+    const groupEnd = result.indexOf('</markdown-custom-process-group>');
+    // e1/e2 进组，e3 保留在组外
+    expect(result.indexOf('executeId="e3"')).toBeGreaterThan(groupEnd);
+    expect(result).toContain('executeId="e1"');
+    expect(result).toContain('executeId="e2"');
+  });
+
+  it('思考块也参与聚合', () => {
+    const thinkBlock =
+      '\n\n<div><markdown-custom-think autoCollapse="true" status="finished" content="x"></markdown-custom-think></div>\n\n';
+    const input =
+      thinkBlock + makeGroupBlock(true, [makeToolTag('e1', 'a')]) + '最终回答';
+
+    const result = collapseTerminalProcesses(input);
+    expect(result.match(/markdown-custom-process-group/g)).toHaveLength(2);
+    expect(result).toContain('<markdown-custom-think');
+    const groupEnd = result.indexOf('</markdown-custom-process-group>');
+    expect(result.indexOf('<markdown-custom-think')).toBeLessThan(groupEnd);
+    expect(result.indexOf('最终回答')).toBeGreaterThan(groupEnd);
+  });
+
+  it('与 groupMarkdownProcesses 的典型输出 round-trip：多轮工具+正文+最终回答', () => {
+    const raw = [
+      makeToolTag('e1', 'a'),
+      makeToolTag('e2', 'b'),
+      '第一轮结论',
+      makeToolTag('e3', 'c'),
+      makeToolTag('e4', 'd'),
+      '最终结论与建议',
+    ].join('\n');
+
+    const grouped = groupMarkdownProcesses(raw);
+    const terminal = collapseTerminalProcesses(grouped);
+
+    expect(terminal.match(/markdown-custom-process-group/g)).toHaveLength(2);
+    expect(terminal).toContain('terminal="true"');
+    // 中间正文进组、最终正文在外
+    const groupEnd = terminal.indexOf('</markdown-custom-process-group>');
+    expect(terminal.indexOf('第一轮结论')).toBeLessThan(groupEnd);
+    expect(terminal.indexOf('最终结论与建议')).toBeGreaterThan(groupEnd);
+  });
+
+  it('单个过程块 + 尾部正文也会聚合（单块消息）', () => {
+    const input = `\n\n<div>${makeToolTag('e1', 'a')}</div>\n\n` + '最终回答';
+    const result = collapseTerminalProcesses(input);
+    expect(result).toContain('terminal="true"');
+    const groupEnd = result.indexOf('</markdown-custom-process-group>');
+    expect(result.indexOf('最终回答')).toBeGreaterThan(groupEnd);
   });
 });

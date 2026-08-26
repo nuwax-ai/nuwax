@@ -6,7 +6,10 @@ import { stripOpenUiResumeDisplayArtifacts } from '@/components/business-compone
 import AttachFile from '@/components/ChatView/AttachFile';
 import ConditionRender from '@/components/ConditionRender';
 import MarkdownRenderer from '@/components/MarkdownRenderer';
-import { groupMarkdownProcesses } from '@/components/MarkdownRenderer/utils';
+import {
+  collapseTerminalProcesses,
+  groupMarkdownProcesses,
+} from '@/components/MarkdownRenderer/utils';
 import { USER_INFO } from '@/constants/home.constants';
 import useMarkdownRender from '@/hooks/useMarkdownRender';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
@@ -47,17 +50,28 @@ const ChatView: React.FC<ChatViewProps> = memo(
     const { data } = useUnifiedTheme();
     const isDarkMode = data.antdTheme === 'dark';
 
+    // 任务终态（非流式中）：终态聚合只展示最后一段正文，其余统一进「执行过程」折叠区
+    const isTerminalStatus = useMemo(
+      () =>
+        messageInfo?.status !== MessageStatusEnum.Incomplete &&
+        messageInfo?.status !== MessageStatusEnum.Loading,
+      [messageInfo?.status],
+    );
+
     const processedText = useMemo(() => {
       const rawText = messageInfo?.text || '';
       const grouped = groupMarkdownProcesses(rawText);
       // 思考按流式位置内联渲染：新消息 text 已含 markdown-custom-think 标签；
       // 存量历史消息只有聚合 think 字段（无位置信息），合成为消息开头的内联块，
       // 与新消息形态统一。
-      if (!rawText.includes('markdown-custom-think') && messageInfo?.think) {
-        return `${getLegacyThinkBlock(messageInfo.think)}${grouped}`;
-      }
-      return grouped;
-    }, [messageInfo?.text, messageInfo?.think]);
+      const withLegacyThink =
+        !rawText.includes('markdown-custom-think') && messageInfo?.think
+          ? `${getLegacyThinkBlock(messageInfo.think)}${grouped}`
+          : grouped;
+      return isTerminalStatus
+        ? collapseTerminalProcesses(withLegacyThink)
+        : withLegacyThink;
+    }, [messageInfo?.text, messageInfo?.think, isTerminalStatus]);
 
     // text 含内联思考标签（含历史合成）时不再走旧顶部思考区，避免双份渲染
     const hasInlineThink = useMemo(
@@ -231,10 +245,7 @@ const ChatView: React.FC<ChatViewProps> = memo(
                     thinking={hasInlineThink ? '' : messageInfo?.think}
                     status={messageInfo?.status}
                     thinkingFinished={messageInfo?.thinkingFinished}
-                    collapseProcessGroups={
-                      messageInfo?.status !== MessageStatusEnum.Incomplete &&
-                      messageInfo?.status !== MessageStatusEnum.Loading
-                    }
+                    collapseProcessGroups={isTerminalStatus}
                   />
                 </div>
               </div>

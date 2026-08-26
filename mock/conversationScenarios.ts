@@ -26,6 +26,7 @@ export type MockScenarioId =
   | 'LONG_TASK_INTERLEAVED'
   | 'TERMINAL_OUTPUT'
   | 'COLLAPSE_SHOWCASE'
+  | 'TERMINAL_COLLAPSE'
   | 'PERMISSION_REQUEST'
   | 'PERMISSION_DENY'
   | 'PERMISSION_TIMEOUT'
@@ -900,6 +901,39 @@ export const MOCK_SCENARIOS: MockScenario[] = [
       }),
       chat('依赖安装完成，首轮测试失败后已修复，测试全部通过。', true),
       finalResult(true, '依赖安装完成，首轮测试失败后已修复，测试全部通过。'),
+    ],
+  },
+  {
+    id: 'TERMINAL_COLLAPSE',
+    label: '终态执行过程聚合',
+    description:
+      '多轮「正文-工具组」交错的长任务：流式中逐组折叠+正文平铺；终态聚合为单个「执行过程」折叠区，只展示最后一段正文（workbuddy 式终态）',
+    verifies:
+      '终态聚合：单个执行过程组（terminal 标记）+ 中间正文进折叠区 + 最终正文保留在外 + 展开可回看',
+    events: [
+      chat('先分析仓库结构，再制定改造方案。'),
+      processing('扫描目录结构', 'EXECUTING', 'tc-1'),
+      processing('扫描目录结构', 'FINISHED', 'tc-1'),
+      processing('解析依赖关系', 'EXECUTING', 'tc-2'),
+      processing('解析依赖关系', 'FINISHED', 'tc-2'),
+      chat(
+        '扫描完成：共 3 个模块、12 个文件。接下来对核心模块做逐文件分析，输出第一轮结论。',
+      ),
+      processing('分析核心模块', 'EXECUTING', 'tc-3'),
+      processing('分析核心模块', 'FINISHED', 'tc-3'),
+      chat(
+        '第一轮结论：入口模块与工具模块耦合度低，可直接改造；渲染模块需先补齐类型定义。',
+      ),
+      processing('生成改造方案', 'EXECUTING', 'tc-4'),
+      processing('生成改造方案', 'FINISHED', 'tc-4'),
+      chat(
+        '改造完成：入口与工具模块已完成迁移，渲染模块类型补齐，回归通过。最终建议保持现有分层并补充集成测试。',
+        true,
+      ),
+      finalResult(
+        true,
+        '改造完成：入口与工具模块已完成迁移，渲染模块类型补齐，回归通过。最终建议保持现有分层并补充集成测试。',
+      ),
     ],
   },
   {

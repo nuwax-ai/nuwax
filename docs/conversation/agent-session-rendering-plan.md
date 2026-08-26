@@ -25,7 +25,8 @@
 | 功能项 | 演示场景 | drive 断言 | 状态 |
 | --- | --- | --- | --- |
 | （已完成三项见 §0 表） | — | — | ✅ |
-| 折叠效果全景（汇总演示，复刻真实任务形态） | `COLLAPSE_SHOWCASE`（2026-08-25 建：4 轮思考 × 2 工具组 × 1 终端卡 × 长正文，事件 400ms 步进可观看流式） | `driveCollapseShowcaseProbe`（2026-08-25 注册） | ✅ |
+| 折叠效果全景（汇总演示，复刻真实任务形态） | `COLLAPSE_SHOWCASE`（2026-08-25 建：4 轮思考 × 2 工具组 × 1 终端卡 × 长正文，事件 400ms 步进可观看流式） | `driveCollapseShowcaseProbe`（2026-08-25 注册；2026-08-26 断言升级为终态聚合形态） | ✅ |
+| 终态执行过程聚合（任务结束只展示最后一段，workbuddy 式终态） | `TERMINAL_COLLAPSE`（2026-08-26 建：多轮「正文-工具组」交错，中间正文进折叠区） | `driveTerminalCollapseProbe`（2026-08-26 注册：单聚合组 + 默认收起 + 展开回看中间正文） | ✅ |
 | P0-1 终端输出渲染 | `TERMINAL_OUTPUT`（2026-08-25 建）+ `RENDER_SHOWCASE` 并入 | `driveTerminalOutputProbe`（2026-08-25 注册）+ showcase 探针扩展 | ✅ |
 | P0-2 Plan 进度 | `PLAN_PROCESSING` / `RENDER_SHOWCASE`（终态 3/3 断言入 showcase 探针） | showcase 探针（`3/3` 文案断言） | ✅ |
 | P0-3 工具耗时徽标 | `RENDER_SHOWCASE`（endTime 载荷） | showcase 探针（`1.8s/2.4s/3.2s` 断言） | ✅ |

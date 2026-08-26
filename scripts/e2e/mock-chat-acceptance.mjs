@@ -834,7 +834,7 @@ const driveCollapseShowcaseProbe = async () => {
           (c) => c.className.includes('is-expanded'),
         ).length,
         groups: document.querySelectorAll('[class*="markdown-custom-process-group"]').length,
-        groupLabel: bodyText.includes('工具调用'),
+        groupLabel: bodyText.includes('执行过程'),
         terminalCmd: bodyText.includes('$ echo demo-$((41+1))'),
         exitOk: bodyText.includes('exit 0'),
         terminalLeak: bodyText.includes('real\t0m0.01s'),
@@ -850,8 +850,12 @@ const driveCollapseShowcaseProbe = async () => {
     parsed.thinkExpanded === 0,
     `终态思考块应全部收起，实际展开 ${parsed.thinkExpanded} 个`,
   );
-  expect(parsed.groups >= 2, `应有 ≥2 个工具组：${probe}`);
-  expect(parsed.groupLabel, '工具组摘要行（工具调用）应渲染');
+  // 终态聚合（collapseTerminalProcesses）：全部组/思考/中间正文收拢为单个「执行过程」组
+  expect(
+    parsed.groups === 1,
+    `终态应聚合为单个执行过程组，实际 ${parsed.groups} 个：${probe}`,
+  );
+  expect(parsed.groupLabel, '聚合组摘要行（执行过程）应渲染');
   expect(
     parsed.terminalCmd && parsed.exitOk,
     `终端卡应渲染（命令行 + exit 徽标）：${probe}`,
@@ -873,6 +877,77 @@ const driveCollapseShowcaseProbe = async () => {
     'terminal expanded',
   );
   expect(expanded === true, '点击终端卡后应展开露出全量输出');
+};
+
+/**
+ * 终态执行过程聚合探针（TERMINAL_COLLAPSE，双轨）：
+ * 多轮「正文-工具组」交错长任务终态后，前面的中间正文/工具组聚合为
+ * 单个「执行过程」折叠区（收起），只展示最后一段正文；展开可回看中间正文。
+ */
+const driveTerminalCollapseProbe = async () => {
+  await waitForReplaySettled();
+  await waitForRenderStable();
+  const probe = await pageJs(
+    String.raw`(() => {
+      const bodyText = document.body.textContent;
+      const groups = [...document.querySelectorAll(
+        '[class*="markdown-custom-process-group"]',
+      )];
+      const expandedContents = [...document.querySelectorAll(
+        '[class*="group-content"]',
+      )].filter((c) => (c.className || '').includes('is-expanded'));
+      return JSON.stringify({
+        groupCount: groups.length,
+        hasExecutionLabel: bodyText.includes('执行过程'),
+        midTextInDom: bodyText.includes('第一轮结论'),
+        finalTextVisible: bodyText.includes('改造完成：入口与工具模块'),
+        expandedCount: expandedContents.length,
+      });
+    })()`,
+    'terminal collapse probe',
+  );
+  const parsed = JSON.parse(probe);
+  expect(
+    parsed.groupCount === 1,
+    `终态应聚合为单个执行过程组，实际 ${parsed.groupCount} 个：${probe}`,
+  );
+  expect(parsed.hasExecutionLabel, `聚合组标题（执行过程）应渲染：${probe}`);
+  expect(parsed.midTextInDom, `中间正文应保留在折叠区 DOM 内：${probe}`);
+  expect(parsed.finalTextVisible, `最终正文应保留在折叠区外可见：${probe}`);
+  expect(
+    parsed.expandedCount === 0,
+    `终态聚合组应默认收起，实际展开 ${parsed.expandedCount} 个：${probe}`,
+  );
+
+  // 点击聚合组 header 展开 → 中间正文可见
+  await pageJs(
+    String.raw`[...document.querySelectorAll('[class*="group-header"]')][0].click()`,
+    'click execution group header',
+  );
+  await pause(0.5);
+  const expanded = await pageJs(
+    String.raw`(() => {
+      const expandedContents = [...document.querySelectorAll(
+        '[class*="group-content"]',
+      )].filter((c) => (c.className || '').includes('is-expanded'));
+      return JSON.stringify({
+        expandedCount: expandedContents.length,
+        midTextVisible: expandedContents.some((c) =>
+          (c.textContent || '').includes('第一轮结论'),
+        ),
+      });
+    })()`,
+    'execution group expanded',
+  );
+  const expandedParsed = JSON.parse(expanded);
+  expect(
+    expandedParsed.expandedCount >= 1,
+    `点击聚合组后应展开：${expanded}`,
+  );
+  expect(
+    expandedParsed.midTextVisible,
+    `展开后中间正文应可见：${expanded}`,
+  );
 };
 
 /**
@@ -901,6 +976,7 @@ const INTERACTIVE_CASES = [
   { id: 'RENDER_SHOWCASE', speed: 0.05, drive: driveRenderShowcaseProbe },
   { id: 'TERMINAL_OUTPUT', speed: 0.05, drive: driveTerminalOutputProbe },
   { id: 'COLLAPSE_SHOWCASE', speed: 0.05, drive: driveCollapseShowcaseProbe },
+  { id: 'TERMINAL_COLLAPSE', speed: 0.05, drive: driveTerminalCollapseProbe },
 ];
 
 // ---------- 过滤 ----------
