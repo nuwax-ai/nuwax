@@ -110,7 +110,7 @@ PC:思考按流式位置内联(消息体内 `<markdown-custom-think>`);Mobile:�
 | J1 | **置顶/归档/收藏本地 localStorage 化**(conversationLocalFlags:pinned/archived/collected + conversation-flags-changed 事件;主侧栏与历史页置顶排序、归档过滤、「已归档会话」入口、图钉/星标;删除会话联动清理标记) | ActionSheet 加三项 + 首页会话 Tab 排序/过滤/入口 + 会话项图标;storage 用 uni storage(键名与 PC 约定同名 `conversation_local_flags`,虽不跨端同步但语义一致);**M2 服务端字段上线后双端一起迁移替换** | `pages/index/home-content/`、长按 ActionSheet(:1074-1094) |
 | J2 | **会话密度设置 P1-6**(compact/normal/detailed 三档,localStorage `conversation_density`;输入框工具条入口;ChatView 按策略分流终态聚合与折叠默认) | 输入框扩展面板加密度入口;mobile 折叠基建已参数化(auto-expand),映射三档:compact=工具组恒收起、normal=现行、detailed=恒展开不聚合 | `chat-input-phone.uvue` 扩展面板 + ai-msg/tool-call-group |
 | J3 | **ask-question 卡提级展示**(标题加大最多 2 行/新增 subTitle 层/描述 2 行截断+「展开全文」;协议 `subTitle` 字段已加至 InteractionUiSchema 等三类型) | **先核查 mobile 的 mcp-ask-question-card 是否有同样问题**(标题/描述单行截断、无 subTitle 层)——待办;对齐:标题提级+subTitle+描述展开(uni 端用可折叠 text/expand 动画) | `subpackages/pages/chat-conversation-component/components/agent-intervention/`(确切文件待核查) |
-| J4 | **md 预览表格卡**(React FilePreview 与分享静态页:表格外套 md-code-block 外壳,「表格」标签+一键复制/下载为 Markdown,提取逻辑对齐会话区 extractTableToMarkdown) | mobile 的 md 预览跳 PC 静态页 → **自动继承,仅验收**(多表格 md 文件过一遍);会话内 ai-msg 的表格渲染(mp-html/uni-cmark)如需同款复制另行评估 | file-preview.html(自动) + ai-msg 双链路(评估) |
+| J4 | **md 预览表格卡**(React FilePreview 与分享静态页:表格外套 md-code-block 外壳;React 侧经 CodeBlockActions 提供复制+下载为 Markdown(提取复用 extractTableToMarkdown),静态页与代码块一致仅提供复制) | mobile 的 md 预览跳 PC 静态页 → **自动继承,仅验收**(多表格 md 文件过一遍);会话内 ai-msg 的表格渲染(mp-html/uni-cmark)如需同款复制另行评估 | file-preview.html(自动) + ai-msg 双链路(评估) |
 | J5 | 历史会话页接本地 flags(排序/过滤与主侧栏一致) | mobile 无独立历史页(首页 Tab 即列表),J1 已覆盖 | — |
 
 ## 2. 建议实施批次(mobile 侧)

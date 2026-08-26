@@ -406,9 +406,15 @@
     }
 
     // 会话区同款表格卡：外壳与代码块一致，内部表格保持 GitHub 风格
+    // （重置卡内 table 的 margin，抵消下方 .markdownPreview table 的 16px 下边距，
+    //   与静态页 file-preview.css 的 .md-table-content table { margin: 0 } 同构）
     :global(.md-table-content) {
       padding: 8px 12px;
       overflow-x: auto;
+
+      table {
+        margin: 0;
+      }
     }
   }
 

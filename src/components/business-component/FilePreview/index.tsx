@@ -122,7 +122,9 @@ const FilePreviewMarkdownTable: React.FC<{
     <div className="md-code-block md-code-block-light">
       <div className="md-code-block-banner-wrap">
         <div className="md-code-block-banner md-code-block-banner-lite">
-          <div className="md-code-block-language">表格</div>
+          <div className="md-code-block-language">
+            {t('PC.Components.MarkdownRenderer.tableCodeBlock')}
+          </div>
           <CodeBlockActions language="markdown" codeContent={tableMarkdown} />
         </div>
       </div>
