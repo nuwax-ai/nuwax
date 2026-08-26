@@ -52,6 +52,7 @@ import React, {
 } from 'react';
 import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
+import { clearDraft, loadDraft, saveDraft } from './draftStorage';
 
 const cx = classNames.bind(styles);
 
@@ -303,6 +304,13 @@ const ChatInputHomeIndependent: React.FC<ChatInputHomeIndependentProps> = ({
     }
   }, [isSessionActive]);
 
+  // 本输入框所属会话 id（发送清草稿 / 队列编辑回填过滤 / 草稿缓存共用；
+  // 须先于 confirmSendMessage 定义，ref 供其读取当前值）
+  const ownConversationId =
+    getCurrentConversationId?.() ?? conversationInfo?.id ?? null;
+  const ownConversationIdRef = useRef(ownConversationId);
+  ownConversationIdRef.current = ownConversationId;
+
   const confirmSendMessage = (value: string) => {
     if (!!value.trim() || !!files?.length) {
       onEnter(value, files, skillIds, selectedModelId, agentMode);
@@ -311,6 +319,10 @@ const ChatInputHomeIndependent: React.FC<ChatInputHomeIndependentProps> = ({
         setMessageInfo('');
         setSkillIds([]);
         mentionEditorRef.current?.clear();
+        // 已发送内容不再是草稿
+        if (ownConversationIdRef.current) {
+          clearDraft(ownConversationIdRef.current);
+        }
       }
     }
   };
@@ -633,11 +645,57 @@ const ChatInputHomeIndependent: React.FC<ChatInputHomeIndependentProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 本输入框所属会话 id，用于过滤队列编辑回填（避免主聊天 / 预览 Tab 串扰）
-  const ownConversationId =
-    getCurrentConversationId?.() ?? conversationInfo?.id ?? null;
-  const ownConversationIdRef = useRef(ownConversationId);
-  ownConversationIdRef.current = ownConversationId;
+  // ===== 输入草稿缓存（按会话 id 持久化，切回/刷新后恢复） =====
+  // 最新输入镜像：卸载兜底落盘用（节流定时器可能尚未触发）
+  const draftStateRef = useRef({ text: messageInfo, skillIds });
+  draftStateRef.current = { text: messageInfo, skillIds };
+  const draftSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // 恢复：进入会话时输入为空才回填草稿，不覆盖已开始的输入（含队列编辑回填内容）
+  useEffect(() => {
+    if (!ownConversationId) return;
+    const draft = loadDraft(ownConversationId);
+    if (!draft) return;
+    setMessageInfo((prev) => (prev ? prev : draft.text));
+    if (draft.skillIds?.length) {
+      setSkillIds((prev) => (prev.length ? prev : draft.skillIds!));
+    }
+  }, [ownConversationId]);
+
+  // 节流写回：输入 / 技能选择变化 ~1s 后落盘
+  useEffect(() => {
+    if (!ownConversationId) return;
+    if (draftSaveTimerRef.current) {
+      clearTimeout(draftSaveTimerRef.current);
+    }
+    draftSaveTimerRef.current = setTimeout(() => {
+      draftSaveTimerRef.current = null;
+      saveDraft(ownConversationId, {
+        version: 1,
+        text: draftStateRef.current.text,
+        skillIds: draftStateRef.current.skillIds,
+      });
+    }, 1000);
+    return () => {
+      if (draftSaveTimerRef.current) {
+        clearTimeout(draftSaveTimerRef.current);
+        draftSaveTimerRef.current = null;
+      }
+    };
+  }, [messageInfo, skillIds, ownConversationId]);
+
+  // 卸载兜底：离开会话时把当前输入立即落盘（发送成功路径已在 confirmSendMessage 清除草稿）
+  useEffect(() => {
+    if (!ownConversationId) return;
+    const conversationId = ownConversationId;
+    return () => {
+      saveDraft(conversationId, {
+        version: 1,
+        text: draftStateRef.current.text,
+        skillIds: draftStateRef.current.skillIds,
+      });
+    };
+  }, [ownConversationId]);
 
   // 监听队列消息编辑回填（含 skillIds / modelId / agentMode 快照）
   useEffect(() => {
