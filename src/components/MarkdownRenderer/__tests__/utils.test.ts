@@ -7,6 +7,8 @@
  */
 import { describe, expect, it } from 'vitest';
 import {
+  EMPHASIS_FLANKING_ZWSP,
+  fixStrongEmphasisFlanking,
   groupMarkdownProcesses,
   looksLikeLatex,
   replaceMathBracket,
@@ -217,6 +219,74 @@ describe('looksLikeLatex / unwrapLatexInlineCode', () => {
     expect(out).toContain('**微积分**\n\n7. $');
     expect(out).toContain('$ 定积分\n\n8. $');
     expect(out).toContain('$ 导数\n\n**三角函数**\n\n13. $');
+  });
+});
+
+describe('fixStrongEmphasisFlanking', () => {
+  it('结束 ** 前是标点、后紧跟数字时插入零宽实体', () => {
+    const input = '1、**格式化代码（Shift+Option+F）**34';
+    expect(fixStrongEmphasisFlanking(input)).toBe(
+      `1、**格式化代码（Shift+Option+F）**${EMPHASIS_FLANKING_ZWSP}34`,
+    );
+  });
+
+  it('结束 ** 前是引号、后紧跟汉字时插入零宽实体', () => {
+    const input = '2、**格式化代码“Shift+Option+F）“**佛挡杀佛';
+    expect(fixStrongEmphasisFlanking(input)).toBe(
+      `2、**格式化代码“Shift+Option+F）“**${EMPHASIS_FLANKING_ZWSP}佛挡杀佛`,
+    );
+  });
+
+  it('结束 ** 前不是标点时不改写（本身即可加粗）', () => {
+    const input = '**加粗**后面的字';
+    expect(fixStrongEmphasisFlanking(input)).toBe(input);
+  });
+
+  it('结束 ** 后没有紧跟内容时不改写', () => {
+    const input = '**格式化代码（Shift+Option+F）**';
+    expect(fixStrongEmphasisFlanking(input)).toBe(input);
+  });
+
+  it('结束 ** 后是空白时不改写', () => {
+    const input = '**格式化代码（Shift+Option+F）** 34';
+    expect(fixStrongEmphasisFlanking(input)).toBe(input);
+  });
+
+  it('围栏代码块内的 ** 不改写', () => {
+    const input = '```\n**（F）**34\n```';
+    expect(fixStrongEmphasisFlanking(input)).toBe(input);
+  });
+
+  it('行内代码中的 ** 不改写', () => {
+    const input = '请输入 `**（F）**34`';
+    expect(fixStrongEmphasisFlanking(input)).toBe(input);
+  });
+
+  it('聊天正文预处理同样会修复该加粗', () => {
+    const input = '1、**格式化代码（Shift+Option+F）**34';
+    expect(unwrapLatexInlineCode(input)).toContain(EMPHASIS_FLANKING_ZWSP);
+    expect(replaceMathBracket(input)).toContain(EMPHASIS_FLANKING_ZWSP);
+  });
+
+  it('开始 ** 前是正文、后紧跟引号时两侧都插入零宽实体', () => {
+    const input = '你好，就锁定**"我的、发顺丰"**发撒大概';
+    expect(fixStrongEmphasisFlanking(input)).toBe(
+      `你好，就锁定${EMPHASIS_FLANKING_ZWSP}**"我的、发顺丰"**${EMPHASIS_FLANKING_ZWSP}发撒大概`,
+    );
+  });
+
+  it('开始 ** 前是正文、后紧跟引号且结束于行尾时只修开始符', () => {
+    const input = '锁定**"我的"**';
+    expect(fixStrongEmphasisFlanking(input)).toBe(
+      `锁定${EMPHASIS_FLANKING_ZWSP}**"我的"**`,
+    );
+  });
+
+  it('行首 **"引号加粗"** 后紧跟正文时只修结束符', () => {
+    const input = '**"我的"**发撒大概';
+    expect(fixStrongEmphasisFlanking(input)).toBe(
+      `**"我的"**${EMPHASIS_FLANKING_ZWSP}发撒大概`,
+    );
   });
 });
 

@@ -490,6 +490,93 @@ function ensureBlockFormulaListLayout(text: string): string {
 }
 
 /**
+ * CommonMark 标点：ASCII punctuation + Unicode Pc/Pd/Pe/Pf/Pi/Po/Ps。
+ * 用于判断 emphasis 结束符是否 right-flanking。
+ */
+const CM_PUNCTUATION_RE =
+  /[\u0021-\u002F\u003A-\u0040\u005B-\u0060\u007B-\u007E\p{P}]/u;
+
+/** 插在无法开闭的 ** 两侧，使 delimiter 变成 flanking；渲染为不可见零宽字符。 */
+const EMPHASIS_FLANKING_ZWSP = '&#x200b;';
+
+const isCmPunctuation = (ch: string | undefined): boolean =>
+  !!ch && CM_PUNCTUATION_RE.test(ch);
+
+const isCmWhitespace = (ch: string | undefined): boolean =>
+  !ch || /[\s\u00A0]/.test(ch);
+
+/**
+ * 判断 ** 与相邻字符是否无法组成 left/right-flanking。
+ * 字母/数字/汉字紧贴标点时，CommonMark 不会把 ** 当作加粗开关。
+ */
+const isFlankingBlockedByPunctuation = (
+  punctuationSide: string | undefined,
+  textSide: string | undefined,
+): boolean =>
+  isCmPunctuation(punctuationSide) &&
+  !!textSide &&
+  !isCmWhitespace(textSide) &&
+  !isCmPunctuation(textSide);
+
+/**
+ * 修复中文场景下 `**加粗**` 因标点 flanking 规则无法加粗的问题。
+ *
+ * CommonMark：
+ * - 开始 `**` 前面是正文、后面紧跟标点（如 `"` `（`）时，不能开启加粗
+ * - 结束 `**` 前面是标点、后面紧跟正文时，不能闭合加粗
+ *
+ * 例如：`锁定**"我的"**发撒`、`**（F）**34`
+ * 在失败的一侧插入零宽字符实体，让 ** 旁边变成标点 `&`，从而可以开闭。
+ * 代码块 / 行内代码不处理。
+ */
+function fixStrongEmphasisFlanking(text: string): string {
+  if (!text || !text.includes('**')) {
+    return text;
+  }
+
+  const slots: string[] = [];
+  const push = (match: string) => {
+    const idx = slots.length;
+    slots.push(match);
+    return `\u0000${idx}\u0000`;
+  };
+
+  let next = text.replace(/```[\s\S]*?```/g, push);
+  next = next.replace(/~~~[\s\S]*?~~~/g, push);
+  next = next.replace(/`[^`\n]+`/g, push);
+
+  next = next.replace(
+    /\*\*([^*\n]+)\*\*/g,
+    (full, inner: string, offset: number, source: string) => {
+      if (!inner) return full;
+      const before = source[offset - 1];
+      const after = source[offset + full.length];
+      // 跳过 ***foo***：当前匹配从中间的 ** 开始或结束于多余的 *
+      if (before === '*' || after === '*') {
+        return full;
+      }
+
+      const needOpenFix = isFlankingBlockedByPunctuation(inner.charAt(0), before);
+      const needCloseFix = isFlankingBlockedByPunctuation(
+        inner.charAt(inner.length - 1),
+        after,
+      );
+      if (!needOpenFix && !needCloseFix) {
+        return full;
+      }
+      return `${needOpenFix ? EMPHASIS_FLANKING_ZWSP : ''}${full}${
+        needCloseFix ? EMPHASIS_FLANKING_ZWSP : ''
+      }`;
+    },
+  );
+
+  return next.replace(/\u0000(\d+)\u0000/g, (_m, idxStr) => {
+    const idx = Number(idxStr);
+    return slots[idx] ?? '';
+  });
+}
+
+/**
  * 将「像 LaTeX 的行内代码」转为 $...$，以便 KaTeX 渲染。
  * 不处理围栏代码块，避免改写真实代码示例。
  * 同时整理「**分类** / 7. 8. …」换行，避免非 1. 列表挤在同一段。
@@ -524,7 +611,7 @@ function unwrapLatexInlineCode(text: string): string {
     });
   }
 
-  return ensureBlockFormulaListLayout(next);
+  return fixStrongEmphasisFlanking(ensureBlockFormulaListLayout(next));
 }
 
 /**
@@ -851,8 +938,10 @@ function groupMarkdownProcesses(text: string): string {
 }
 
 export {
+  EMPHASIS_FLANKING_ZWSP,
   ensureBlockFormulaListLayout,
   extractTableToMarkdown,
+  fixStrongEmphasisFlanking,
   groupMarkdownProcesses,
   looksLikeLatex,
   replaceMathBracket,
