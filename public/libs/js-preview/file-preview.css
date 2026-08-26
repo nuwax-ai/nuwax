@@ -542,3 +542,24 @@ body {
 .markdown-preview .markdown-body .md-code-block .md-table-content table {
     margin: 0;
 }
+
+
+/* 列表样式对齐会话区渲染(ds-markdown):12px 间距 / 24px 缩进 / 4px 行距 / 灰色 marker */
+.markdown-preview .markdown-body ul,
+.markdown-preview .markdown-body ol {
+    margin: 12px 0;
+    padding-left: 24px;
+}
+
+.markdown-preview .markdown-body li:not(:first-child) {
+    margin-top: 4px;
+}
+
+.markdown-preview .markdown-body li::marker {
+    color: #8b8b8b;
+}
+
+.markdown-preview .markdown-body li > ul,
+.markdown-preview .markdown-body li > ol {
+    margin-top: 4px;
+}

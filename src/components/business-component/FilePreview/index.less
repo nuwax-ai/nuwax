@@ -425,10 +425,25 @@
     margin: 0 0 16px;
   }
 
+  // 列表样式对齐会话区渲染(ds-markdown):12px 垂直间距 / 24px 缩进 /
+  // 行间距 4px / 灰色 marker(neutral-450),显式写死不依赖 CSS 加载顺序
   ul,
   ol {
-    padding-left: 2em;
-    margin-bottom: 16px;
+    margin: 12px 0;
+    padding-left: 24px;
+  }
+
+  li:not(:first-child) {
+    margin-top: 4px;
+  }
+
+  li::marker {
+    color: #8b8b8b;
+  }
+
+  li > ul,
+  li > ol {
+    margin-top: 4px;
   }
 
   table {
