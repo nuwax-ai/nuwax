@@ -24,6 +24,7 @@ docs/conversation/
 ├── archive/                            ← 已过时文档
 ├── agent-session-rendering-analysis.md 会话渲染市面调研与差距分析（2026-08-25）
 ├── agent-session-rendering-plan.md     会话渲染升级开发计划（P0/P1/P2 + 演示矩阵）
+├── mobile-parity-checklist.md          会话优化 PC↔Mobile（nuwax-mobile）拉齐清单（2026-08-26）
 └── message-queue-design.md             消息队列设计（初版）
 ```
 
@@ -40,6 +41,7 @@ docs/conversation/
 | Mock 体系优化与 E2E 自动化 | [mock-optimization-plan.md](./mock-optimization-plan.md) |
 | 会话渲染能力调研 / 差距对照 | [agent-session-rendering-analysis.md](./agent-session-rendering-analysis.md) |
 | 会话渲染升级开发（P0 终端渲染 / Plan 进度 / 子 agent…） | [agent-session-rendering-plan.md](./agent-session-rendering-plan.md)（含演示矩阵与 Done 定义） |
+| 会话优化需求移动端拉齐（nuwax-mobile） | [mobile-parity-checklist.md](./mobile-parity-checklist.md)（逐项差距/落点/批次） |
 
 ### 排查按钮卡「会话中」
 
