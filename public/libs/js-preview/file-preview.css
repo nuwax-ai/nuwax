@@ -532,3 +532,13 @@ body {
     height: 24px;
     fill: currentColor;
 }
+
+/* 会话区同款表格卡：外壳与代码块一致，内部表格保持 GitHub 风格 */
+.markdown-preview .markdown-body .md-code-block .md-table-content {
+    padding: 8px 12px;
+    overflow-x: auto;
+}
+
+.markdown-preview .markdown-body .md-code-block .md-table-content table {
+    margin: 0;
+}

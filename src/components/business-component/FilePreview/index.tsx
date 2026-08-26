@@ -39,7 +39,10 @@ import '@js-preview/excel/lib/index.css';
 import jsPreviewPdf from '@js-preview/pdf';
 // @ts-ignore
 import '@/components/MarkdownRenderer/ds-markdown.css';
-import { unwrapLatexInlineCode } from '@/components/MarkdownRenderer/utils';
+import {
+  extractTableToMarkdown,
+  unwrapLatexInlineCode,
+} from '@/components/MarkdownRenderer/utils';
 import { SANDBOX } from '@/constants/common.constants';
 import { t } from '@/services/i18nRuntime';
 import { CodeBlockActions, CodeBlockWrap, HighlightCode } from 'ds-markdown';
@@ -107,8 +110,34 @@ const FilePreviewMarkdownPre: React.FC<{ children?: React.ReactNode }> = ({
   );
 };
 
+/**
+ * 会话区同款表格卡：表格外套 md-code-block 外壳，支持一键复制/下载为 Markdown 文本
+ * （结构与 genCustomPlugin 的 table 覆写一致，内容经 extractTableToMarkdown 反向提取）
+ */
+const FilePreviewMarkdownTable: React.FC<{
+  children?: React.ReactNode;
+}> = ({ children }) => {
+  const tableMarkdown = extractTableToMarkdown(children);
+  return (
+    <div className="md-code-block md-code-block-light">
+      <div className="md-code-block-banner-wrap">
+        <div className="md-code-block-banner md-code-block-banner-lite">
+          <div className="md-code-block-language">表格</div>
+          <CodeBlockActions language="markdown" codeContent={tableMarkdown} />
+        </div>
+      </div>
+      <div className="md-code-block-content md-table-content">
+        <table>{children}</table>
+      </div>
+    </div>
+  );
+};
+
 /** 模块级常量保持引用稳定，避免 components 内联对象触发 ReactMarkdown 全量重渲染 */
-const FILE_PREVIEW_MARKDOWN_COMPONENTS = { pre: FilePreviewMarkdownPre };
+const FILE_PREVIEW_MARKDOWN_COMPONENTS = {
+  pre: FilePreviewMarkdownPre,
+  table: FilePreviewMarkdownTable,
+};
 
 /** HTML 预览 iframe 沙盒：不含 allow-top-navigation，避免锚点误导航到主应用 */
 const HTML_PREVIEW_SANDBOX = SANDBOX.replace(

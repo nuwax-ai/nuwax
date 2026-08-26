@@ -404,6 +404,12 @@
       word-break: normal;
       white-space: pre;
     }
+
+    // 会话区同款表格卡：外壳与代码块一致，内部表格保持 GitHub 风格
+    :global(.md-table-content) {
+      padding: 8px 12px;
+      overflow-x: auto;
+    }
   }
 
   blockquote {

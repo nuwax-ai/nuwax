@@ -349,7 +349,30 @@ function restoreMarkdownMath(html, slots) {
 }
 
 /**
- * 代码块复制：事件委托 + clipboard API（降级 execCommand），
+ * 表格 → Markdown 管道文本（表格卡「复制」用，对齐会话区 extractTableToMarkdown 语义）
+ */
+function tableToMarkdownText(table) {
+    if (!table) return '';
+    var rows = [];
+    var pushRow = function (tr) {
+        var cells = Array.prototype.slice.call(tr.querySelectorAll('th,td')).map(function (cell) {
+            return (cell.textContent || '').trim().replace(/\|/g, '\\|').replace(/\n/g, ' ');
+        });
+        if (cells.length) rows.push('| ' + cells.join(' | ') + ' |');
+    };
+    var headerRows = table.querySelectorAll('thead tr');
+    headerRows.forEach(pushRow);
+    var bodyRows = table.querySelectorAll('tbody tr');
+    if (headerRows.length && (bodyRows.length || !rows.length)) {
+        var colCount = headerRows[0].querySelectorAll('th,td').length || (bodyRows[0] ? bodyRows[0].querySelectorAll('th,td').length : 0);
+        if (colCount) rows.push('| ' + Array.from({ length: colCount }, function () { return '---'; }).join(' | ') + ' |');
+    }
+    bodyRows.forEach(pushRow);
+    return rows.join('\n');
+}
+
+/**
+ * 代码块/表格卡复制：事件委托 + clipboard API（降级 execCommand），
  * 按钮文案「复制」→「已复制」约 3s 复位，期间防重复点击
  */
 function setupMarkdownCodeCopy(scope) {
@@ -367,12 +390,14 @@ function setupMarkdownCodeCopy(scope) {
         }
 
         const block = btn.closest('.md-code-block');
+        // 代码块取高亮 code 的原始文本；表格卡从 table DOM 反提取 Markdown 管道文本
         const codeEl = block ? block.querySelector('pre code') : null;
-        if (!codeEl) {
+        const text = codeEl
+            ? (codeEl.textContent || '')
+            : tableToMarkdownText(block ? block.querySelector('table') : null);
+        if (!text) {
             return;
         }
-
-        const text = codeEl.textContent || '';
         let copied = false;
         try {
             if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -467,6 +492,17 @@ async function renderMarkdown(url, container) {
                     + '<pre class="md-code-block-content"><code class="language-' + escapeHtmlText(lang) + '">'
                     + (highlighted || escapeHtmlText(code))
                     + '</code></pre>'
+                    + '</div>';
+            },
+            // 表格渲染为会话区同款表格卡（「表格」标签 + 复制为 Markdown）；
+            // marked v11 旧签名为 table(header, body)，均为已渲染的 thead/tbody HTML
+            table: function (header, body) {
+                return '<div class="md-code-block md-table-block">'
+                    + '<div class="md-code-block-banner">'
+                    + '<span class="md-code-block-language">表格</span>'
+                    + '<span class="md-copy-btn" role="button" tabindex="0">复制</span>'
+                    + '</div>'
+                    + '<div class="md-table-content"><table><thead>' + header + '</thead><tbody>' + (body || '') + '</tbody></table></div>'
                     + '</div>';
             },
         },
