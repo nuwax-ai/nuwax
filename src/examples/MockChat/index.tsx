@@ -540,6 +540,15 @@ const MockChat: React.FC = () => {
     };
   });
 
+  /** 轨切换：改写 URL 的 conversationRuntime 参数后整页重载。
+   * 轨归属在首帧定型（flag 初始化读一次），reload 是唯一干净的切换方式；
+   * 显式 0/1 压过 localStorage 粘性，不污染真实页面的全局开关 */
+  const switchLine = useCallback((line: 'legacy' | 'runtime') => {
+    const params = new URLSearchParams(window.location.search);
+    params.set('conversationRuntime', line === 'runtime' ? '1' : '0');
+    window.location.search = params.toString();
+  }, []);
+
   if (!scenario) {
     return (
       <Card size="small" loading={scenarios.length === 0}>
@@ -565,10 +574,18 @@ const MockChat: React.FC = () => {
               </Title>
               <Text type="secondary">
                 {scenarios.length} 个故障注入场景，复用生产会话模型与
-                UI；应用内嵌 形态访问 /app/mock-chat，runtime 轨加
-                ?conversationRuntime=1。
+                UI；应用内嵌 形态访问 /app/mock-chat，下方切换器或
+                ?conversationRuntime=1 切到 runtime 轨（切换即整页重载）。
               </Text>
             </div>
+            <Segmented
+              value={isRuntimeLine ? 'runtime' : 'legacy'}
+              onChange={(value) => switchLine(value as 'legacy' | 'runtime')}
+              options={[
+                { label: 'legacy 轨（旧线 model）', value: 'legacy' },
+                { label: 'runtime 轨（重构新线）', value: 'runtime' },
+              ]}
+            />
             <Select
               showSearch
               style={{ width: 400 }}
