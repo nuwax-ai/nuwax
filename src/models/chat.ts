@@ -26,6 +26,39 @@ export interface AgentPageConfig {
  *
  * 使用 会在 chatTemp 中使用
  */
+/** 判断是否应该替换现有的 ProcessingInfo（纯函数，供 upsert 合并用） */
+const shouldReplaceProcessingItem = (
+  existing: ProcessingInfo,
+  newItem: ProcessingInfo,
+): boolean => {
+  // 如果现有项是 EXECUTING 状态，新项不是 EXECUTING，则替换
+  if (
+    existing.status === ProcessingEnum.EXECUTING &&
+    newItem.status !== ProcessingEnum.EXECUTING
+  ) {
+    return true;
+  }
+
+  // 如果现有项是 FAILED，新项是 FINISHED，则替换（优先保留成功）
+  if (
+    existing.status === ProcessingEnum.FAILED &&
+    newItem.status === ProcessingEnum.FINISHED
+  ) {
+    return true;
+  }
+
+  // 如果现有项是 FINISHED，新项是 FAILED，则不替换（保留成功）
+  if (
+    existing.status === ProcessingEnum.FINISHED &&
+    newItem.status === ProcessingEnum.FAILED
+  ) {
+    return false;
+  }
+
+  // 其他情况保持现有项
+  return false;
+};
+
 export default () => {
   const [processingList, setProcessingList] = useState<ProcessingInfo[]>([]);
 
@@ -42,69 +75,43 @@ export default () => {
     hideChatArea: HideChatAreaEnum.No,
   });
 
-  // 判断是否应该替换现有的 ProcessingInfo
-  const shouldReplaceProcessingItem = (
-    existing: ProcessingInfo,
-    newItem: ProcessingInfo,
-  ): boolean => {
-    // 如果现有项是 EXECUTING 状态，新项不是 EXECUTING，则替换
-    if (
-      existing.status === ProcessingEnum.EXECUTING &&
-      newItem.status !== ProcessingEnum.EXECUTING
-    ) {
-      return true;
-    }
+  // 必须 useCallback：该函数会被 useModel 消费方放进 effect deps
+  // （useConversationRuntimeSession 桥接 / useConversationActiveState）。
+  // 裸函数每次 model 重跑换身份，umi4 用 fast-deep-equal 比较返回对象时
+  // 函数属性引用不等即判不等 → 桥接 effect 自激死循环。
+  const handleChatProcessingList = useCallback(
+    (incomingList: ProcessingInfo[]) => {
+      // 采用「合并 upsert」而非「清空 + 整体替换」。
+      // 原因：chat model 是全局单例，conversationInfo（主会话）与 conversationAgent
+      // （开发预览/多智能体）等多个 model 都会写入同一个 processingList。
+      // 若每次加载都整体替换，后加载的会话会覆盖先加载会话的执行明细，
+      // 导致被覆盖会话里的 MarkdownCustomProcess 通过 getProcessingById 找不到条目，
+      // 详情数据为空、「查看详情」按钮被禁用、点击无反应。
+      // 改为按 executeId+type 合并后，跨会话/跨 model 的历史明细可共存且不丢失。
+      setProcessingList((prevList) => {
+        // 去重逻辑：同一 executeId+type 仅保留一条；EXECUTING 被最终态替换，
+        // 成功(FINISHED)优先于失败(FAILED)。
+        const processedMap = new Map<string, ProcessingInfo>();
 
-    // 如果现有项是 FAILED，新项是 FINISHED，则替换（优先保留成功）
-    if (
-      existing.status === ProcessingEnum.FAILED &&
-      newItem.status === ProcessingEnum.FINISHED
-    ) {
-      return true;
-    }
+        const upsert = (item: ProcessingInfo) => {
+          const key = `${item.executeId || ''}_${item.type || ''}`;
+          const existing = processedMap.get(key);
+          if (!existing) {
+            processedMap.set(key, item);
+          } else if (shouldReplaceProcessingItem(existing, item)) {
+            processedMap.set(key, item);
+          }
+        };
 
-    // 如果现有项是 FINISHED，新项是 FAILED，则不替换（保留成功）
-    if (
-      existing.status === ProcessingEnum.FINISHED &&
-      newItem.status === ProcessingEnum.FAILED
-    ) {
-      return false;
-    }
+        // 先放入已有条目（保留历史会话明细），再用本次传入的条目做 upsert 更新
+        prevList.forEach(upsert);
+        incomingList.forEach(upsert);
 
-    // 其他情况保持现有项
-    return false;
-  };
-
-  const handleChatProcessingList = (incomingList: ProcessingInfo[]) => {
-    // 采用「合并 upsert」而非「清空 + 整体替换」。
-    // 原因：chat model 是全局单例，conversationInfo（主会话）与 conversationAgent
-    // （开发预览/多智能体）等多个 model 都会写入同一个 processingList。
-    // 若每次加载都整体替换，后加载的会话会覆盖先加载会话的执行明细，
-    // 导致被覆盖会话里的 MarkdownCustomProcess 通过 getProcessingById 找不到条目，
-    // 详情数据为空、「查看详情」按钮被禁用、点击无反应。
-    // 改为按 executeId+type 合并后，跨会话/跨 model 的历史明细可共存且不丢失。
-    setProcessingList((prevList) => {
-      // 去重逻辑：同一 executeId+type 仅保留一条；EXECUTING 被最终态替换，
-      // 成功(FINISHED)优先于失败(FAILED)。
-      const processedMap = new Map<string, ProcessingInfo>();
-
-      const upsert = (item: ProcessingInfo) => {
-        const key = `${item.executeId || ''}_${item.type || ''}`;
-        const existing = processedMap.get(key);
-        if (!existing) {
-          processedMap.set(key, item);
-        } else if (shouldReplaceProcessingItem(existing, item)) {
-          processedMap.set(key, item);
-        }
-      };
-
-      // 先放入已有条目（保留历史会话明细），再用本次传入的条目做 upsert 更新
-      prevList.forEach(upsert);
-      incomingList.forEach(upsert);
-
-      return Array.from(processedMap.values());
-    });
-  };
+        return Array.from(processedMap.values());
+      });
+    },
+    [],
+  );
   const getProcessingById = useCallback(
     (executeId: string, type?: string) => {
       return processingList.find(
