@@ -1,4 +1,8 @@
 import ConversationContextMenu from '@/components/business-component/ConversationContextMenu';
+import {
+  CONVERSATION_FLAGS_EVENT,
+  loadConversationFlags,
+} from '@/components/business-component/ConversationContextMenu/conversationLocalFlags';
 import { apiAgentConversationList } from '@/services/agentConfig';
 import { t } from '@/services/i18nRuntime';
 import { ConversationInfo } from '@/types/interfaces/conversationInfo';
@@ -7,7 +11,7 @@ import { useSize } from 'ahooks';
 import { Space, Spin, Tooltip } from 'antd';
 import classNames from 'classnames';
 import dayjs from 'dayjs';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -35,6 +39,43 @@ const ConversationList = React.forwardRef<
   const [hasMore, setHasMore] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
   const size = useSize(containerRef);
+  // 会话本地标记（置顶/归档/收藏过渡方案）：菜单 toggle 后经全局事件重读，驱动排序/过滤
+  const [conversationFlags, setConversationFlags] = useState(() =>
+    loadConversationFlags(),
+  );
+  const [showArchived, setShowArchived] = useState(false);
+  useEffect(() => {
+    const refreshFlags = () => setConversationFlags(loadConversationFlags());
+    window.addEventListener(CONVERSATION_FLAGS_EVENT, refreshFlags);
+    window.addEventListener('conversation-deleted', refreshFlags);
+    return () => {
+      window.removeEventListener(CONVERSATION_FLAGS_EVENT, refreshFlags);
+      window.removeEventListener('conversation-deleted', refreshFlags);
+    };
+  }, []);
+
+  // 展示列表：默认隐藏归档项、置顶项排前（稳定排序）；「已归档」视图只看归档项
+  const visibleList = useMemo(() => {
+    const archivedSet = new Set(conversationFlags.archived);
+    const filtered = showArchived
+      ? list.filter((item) => archivedSet.has(Number(item.id)))
+      : list.filter((item) => !archivedSet.has(Number(item.id)));
+    if (showArchived) return filtered;
+    const pinnedSet = new Set(conversationFlags.pinned);
+    return [...filtered].sort(
+      (a, b) =>
+        Number(pinnedSet.has(Number(b.id))) -
+        Number(pinnedSet.has(Number(a.id))),
+    );
+  }, [list, conversationFlags, showArchived]);
+
+  const archivedCount = useMemo(
+    () =>
+      list.filter((item) =>
+        conversationFlags.archived.includes(Number(item.id)),
+      ).length,
+    [list, conversationFlags],
+  );
 
   // 计算每页条数
   const calculatePageSize = () => {
@@ -127,11 +168,14 @@ const ConversationList = React.forwardRef<
       className={cx(styles.container, 'scroll-container')}
     >
       <div className={styles['list-content']}>
-        {list.map((item) => (
+        {visibleList.map((item) => (
           <ConversationContextMenu
             key={item.id}
             conversationId={item.id}
             currentTopic={item.topic}
+            pinned={conversationFlags.pinned.includes(Number(item.id))}
+            archived={conversationFlags.archived.includes(Number(item.id))}
+            collected={conversationFlags.collected.includes(Number(item.id))}
             onRename={onEdit ? () => onEdit(item.id, item.topic) : undefined}
             onDelete={onDelete ? () => onDelete(item.id) : undefined}
           >
@@ -199,6 +243,21 @@ const ConversationList = React.forwardRef<
         {loading && (
           <div className={styles.loading}>
             <Spin size="small" />
+          </div>
+        )}
+        {/* 已归档入口：存在归档项或处于已归档视图时显示（本地标记过渡方案） */}
+        {!loading && (archivedCount > 0 || showArchived) && (
+          <div
+            className={styles['archived-entry']}
+            onClick={() => setShowArchived(!showArchived)}
+          >
+            {showArchived
+              ? t(
+                  'PC.Layouts.DynamicMenusLayout.NewHomeSection.backToConversations',
+                )
+              : `${t(
+                  'PC.Layouts.DynamicMenusLayout.NewHomeSection.archivedConversations',
+                )} (${archivedCount})`}
           </div>
         )}
         {!hasMore && list?.length > 8 && (
