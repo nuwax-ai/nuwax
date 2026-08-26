@@ -13,6 +13,7 @@ docs/conversation/
 │   ├── agent-session-runtime-regression.md     运行加载逻辑回归
 │   └── conversation-active-state-machine.md    会话活跃态状态机参考
 ├── fixes/                              ← 修复留存（按时间倒序）
+│   ├── runtime-bridge-loop-and-terminal-text-overwrite-fix.md  runtime 桥接死循环 + 终态 text 覆盖修复（2026-08-26）
 │   ├── terminal-convergence-fix-summary.md             终态收敛修复总结（2026-08-20）
 │   ├── conversation-complete-button-stuck-analysis.md  按钮卡死分析定案（2026-08-19）
 │   ├── conversation-terminal-finalizer-fix.md          终态统一收敛修复（2026-08-18）
@@ -60,6 +61,7 @@ isSessionActive = isConversationActive（连接生命周期）
 
 ## 变更记录
 
+- 2026-08-26 新增 runtime 桥接死循环 + 终态 text 覆盖修复留存（审查处置轮，配套 file-preview 缓存版本 bump 见 docs 根）
 - 2026-08-25 新增会话渲染调研与升级开发计划（含已完成功能演示回归补齐：e2e 渲染探针）
 - 2026-08-20 终态收敛体系修复合入 + 文档按 dual-track / fixes 分组
 - 2026-08-17 基线 `cf5ab966c`（双轨重构初始文档）
