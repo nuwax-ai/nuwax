@@ -588,6 +588,8 @@ export const ZH_HK: SystemLangMap = {
   "PC.Components.McpAskQuestionCard.file": "檔案",
   "PC.Components.McpAskQuestionCard.emptyFormContent": "（無表單內容）",
   "PC.Components.McpAskQuestionCard.eyebrow": "補充回覆",
+  "PC.Components.McpAskQuestionCard.expandDesc": "展開全文",
+  "PC.Components.McpAskQuestionCard.collapseDesc": "收起",
   "PC.Components.McpAskQuestionCard.fieldRequired": "請填寫此項",
   "PC.Components.McpAskQuestionCard.multiSelectMin": "請至少選擇一項",
   "PC.Components.McpAskQuestionCard.nextStep": "下一步",

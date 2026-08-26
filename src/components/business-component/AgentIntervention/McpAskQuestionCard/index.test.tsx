@@ -4,6 +4,8 @@ import type { McpAskInteraction } from '../types/mcpAskIntervention';
 import McpAskQuestionCard from './index';
 
 vi.mock('@/services/i18nRuntime', () => ({
+  // 依赖链（合并 pc-client-bridge 后）另有模块取 dict，兜底返回 key
+  dict: (key: string) => key,
   t: (key: string, ...args: string[]) => {
     const dict: Record<string, string> = {
       'PC.Common.Global.confirm': '确认',

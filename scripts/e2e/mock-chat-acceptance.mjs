@@ -428,6 +428,65 @@ const driveAskSubmit = async () => {
     15000,
     'waitForAskRegion',
   ).catch(() => {});
+
+  // 富文案分层断言：标题提级 / 副标题 / 长描述默认 2 行截断 + 可展开全文
+  // 注意：截断只是视觉层面（line-clamp），文本仍在 DOM——用高度溢出判定
+  const rich = await pageJs(
+    String.raw`(() => {
+      const region = document.querySelector('[data-agent-intervention-dock] [role="region"]');
+      if (!region) return JSON.stringify({ error: 'no region' });
+      const desc = region.querySelector('[class*="descWrap"] [class*="desc"]');
+      return JSON.stringify({
+        hasTitle: region.textContent.includes('清理第 1 页 3 个测试残留元素'),
+        hasSubTitle: region.textContent.includes('站点首页 · 残留元素清理'),
+        hasDescHead: region.textContent.includes('检测到第 1 页存在 3 个测试残留元素'),
+        hasExpandBtn: !!region.querySelector('button[class*="descToggle"]'),
+        clamped:
+          desc && getComputedStyle(desc).webkitLineClamp === '2',
+        // 2 行截断时完整内容在盒外溢出
+        overflowedByClamp: desc ? desc.scrollHeight > desc.clientHeight + 4 : false,
+      });
+    })()`,
+    'ask rich text probe',
+  );
+  const richParsed = JSON.parse(rich);
+  expect(
+    richParsed.hasTitle && richParsed.hasSubTitle && richParsed.hasDescHead,
+    `ask 卡应分层渲染标题/副标题/描述：${rich}`,
+  );
+  expect(
+    richParsed.hasExpandBtn && richParsed.clamped && richParsed.overflowedByClamp,
+    `长描述应默认 2 行截断（内容溢出盒外）且提供展开入口：${rich}`,
+  );
+
+  // 点击「展开全文」→ 描述完整展开（无溢出），按钮切换为「收起」
+  await pageJs(
+    String.raw`document.querySelector('[data-agent-intervention-dock] button[class*="descToggle"]').click()`,
+    'expand desc',
+  );
+  await pause(0.3);
+  const expanded = await pageJs(
+    String.raw`(() => {
+      const region = document.querySelector('[data-agent-intervention-dock] [role="region"]');
+      const desc = region.querySelector('[class*="descWrap"] [class*="desc"]');
+      return JSON.stringify({
+        expandedCls: String(desc.className).includes('desc-expanded'),
+        // 展开后完整内容应在盒内（不再溢出）
+        fullyVisible: Math.abs(desc.scrollHeight - desc.clientHeight) < 4,
+        descEndVisible: region.textContent.includes('其他页面不受影响'),
+        toggleLabel: (region.querySelector('button[class*="descToggle"]') || {}).textContent || '',
+      });
+    })()`,
+    'desc expanded',
+  );
+  const expandedParsed = JSON.parse(expanded);
+  expect(
+    expandedParsed.expandedCls &&
+      expandedParsed.fullyVisible &&
+      expandedParsed.descEndVisible,
+    `展开后应显示描述全文（无溢出）：${expanded}`,
+  );
+
   const baseline = await dockSignature();
   await clickText('.ant-radio-wrapper', '方案A', '选择方案A');
   await pause(0.2);

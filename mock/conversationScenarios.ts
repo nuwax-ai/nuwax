@@ -191,11 +191,13 @@ const requestPermission = (
   },
 });
 
-/** ask-question：PROCESSING + result.input 携带 nuwax.mcp_ask.v2 表单。 */
+/** ask-question：PROCESSING + result.input 携带 nuwax.mcp_ask.v2 表单。
+ *  extra 携带富文案载荷（subTitle/description），覆盖标题/副标题/描述分层展示。 */
 const askQuestion = (
   requestId: string,
   title: string,
   fields: Array<Record<string, unknown>>,
+  extra?: { subTitle?: string; description?: string },
 ): MockSseEvent => ({
   eventType: 'PROCESSING',
   requestId: req('1'),
@@ -210,11 +212,15 @@ const askQuestion = (
         revision: 1,
         sessionId: MOCK_SESSION_ID,
         title,
+        subTitle: extra?.subTitle,
+        description: extra?.description,
         toolName: 'nuwax_ask_question',
         ui: {
           version: 'nuwax.interaction.v2',
           presentation: 'inline',
           title,
+          subTitle: extra?.subTitle,
+          description: extra?.description,
           fields,
           submitLabel: '确认',
         },
@@ -980,28 +986,38 @@ export const MOCK_SCENARIOS: MockScenario[] = [
   {
     id: 'ASK_QUESTION',
     label: 'Ask Question',
-    description: 'nuwax_ask_question → 弹问答框 → 用户选择',
-    verifies: 'ask-question 交互',
+    description:
+      'nuwax_ask_question → 弹问答框（标题/副标题/长描述分层展示，描述可展开全文）→ 用户选择',
+    verifies: 'ask-question 交互 + 富文案分层（标题提级/副标题/描述展开全文）',
     events: [
       think('需要用户确认'),
-      askQuestion('ask-1', '选择哪个方案？', [
+      askQuestion(
+        'ask-1',
+        '清理第 1 页 3 个测试残留元素？',
+        [
+          {
+            name: 'choice',
+            title: '处理方式',
+            widget: 'radio',
+            required: true,
+            options: [
+              { value: '方案A', label: '方案A：全部清理' },
+              { value: '方案B', label: '方案B：仅清理失效项' },
+            ],
+          },
+          {
+            name: 'note',
+            title: '补充说明',
+            widget: 'textarea',
+            placeholder: '可选，填写执行注意事项',
+          },
+        ],
         {
-          name: 'choice',
-          title: '实施方案',
-          widget: 'radio',
-          required: true,
-          options: [
-            { value: '方案A', label: '方案A：全量迁移' },
-            { value: '方案B', label: '方案B：灰度发布' },
-          ],
+          subTitle: '站点首页 · 残留元素清理',
+          description:
+            '检测到第 1 页存在 3 个测试残留元素：两个占位按钮（test-btn-01/02）与一份调试用的示例卡片。原文件在 S3 可重新拉取，删除前已生成快照可随时回滚；其中示例卡片被首页楼层配置引用，清理后需要同步移除引用关系，避免首页出现空楼层占位。预计影响范围仅限首页首屏渲染，其他页面不受影响。',
         },
-        {
-          name: 'note',
-          title: '补充说明',
-          widget: 'textarea',
-          placeholder: '可选，填写执行注意事项',
-        },
-      ]),
+      ),
       {
         ...processing('nuwax_ask_question', 'FINISHED', 'ask-1'),
         delayMs: 2000,

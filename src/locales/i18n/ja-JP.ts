@@ -588,6 +588,8 @@ export const JA_JP: SystemLangMap = {
   "PC.Components.McpAskQuestionCard.file": "ファイル",
   "PC.Components.McpAskQuestionCard.emptyFormContent": "（フォーム内容なし）",
   "PC.Components.McpAskQuestionCard.eyebrow": "追加返答",
+  "PC.Components.McpAskQuestionCard.expandDesc": "すべて表示",
+  "PC.Components.McpAskQuestionCard.collapseDesc": "折りたたむ",
   "PC.Components.McpAskQuestionCard.fieldRequired": "この項目は必須です",
   "PC.Components.McpAskQuestionCard.multiSelectMin": "少なくとも1つ選択してください",
   "PC.Components.McpAskQuestionCard.nextStep": "次へ",

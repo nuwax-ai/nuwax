@@ -75,7 +75,10 @@ const McpAskQuestionCard: React.FC<McpAskQuestionCardProps> = ({
   const isLastStep = currentStep >= steps.length - 1;
 
   const title = input.title || ui.title;
+  const subTitle = input.subTitle || ui.subTitle;
   const description = input.description || ui.description;
+  // 长描述默认 2 行截断，展开后看全文
+  const [descExpanded, setDescExpanded] = useState(false);
 
   useEffect(() => {
     setCurrentStep(0);
@@ -279,10 +282,31 @@ const McpAskQuestionCard: React.FC<McpAskQuestionCardProps> = ({
           <Text strong className={styles.title}>
             {title}
           </Text>
-          {description ? (
-            <Text type="secondary" className={styles.desc}>
-              {description}
+          {subTitle ? (
+            <Text type="secondary" className={styles.subTitle}>
+              {subTitle}
             </Text>
+          ) : null}
+          {description ? (
+            <div className={styles.descWrap}>
+              <Text
+                type="secondary"
+                className={classNames(styles.desc, {
+                  [styles['desc-expanded']]: descExpanded,
+                })}
+              >
+                {description}
+              </Text>
+              <button
+                type="button"
+                className={styles.descToggle}
+                onClick={() => setDescExpanded((prev) => !prev)}
+              >
+                {descExpanded
+                  ? t('PC.Components.McpAskQuestionCard.collapseDesc')
+                  : t('PC.Components.McpAskQuestionCard.expandDesc')}
+              </button>
+            </div>
           ) : null}
         </div>
         {renderStatusTag()}

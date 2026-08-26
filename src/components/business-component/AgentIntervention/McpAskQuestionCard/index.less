@@ -44,29 +44,73 @@
       }
 
       .title {
+        min-width: 0;
+        max-width: 100%;
+        margin-top: @marginXxs;
+        color: @colorTextBase;
+        // 标题提级展示：字号加大、允许换行（最多 2 行，超长省略）
+        font-size: @fontSizeLg;
+        font-weight: 600;
+        line-height: 1.4;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        overflow: hidden;
+        word-break: break-word;
+      }
+
+      // 副标题：标题下方次级说明，单行省略
+      .subTitle {
         display: block;
         min-width: 0;
         max-width: 100%;
-        color: @colorTextBase;
+        margin-top: @marginXxs;
         font-size: @fontSize;
-        font-weight: 600;
+        color: @colorTextSecondary;
         line-height: @lineHeight;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
       }
 
+      .descWrap {
+        margin-top: @marginXxs;
+      }
+
       .desc {
-        display: block;
         min-width: 0;
         max-width: 100%;
-        margin-top: @marginXxs;
         font-size: @fontSizeSm;
         color: @colorTextSecondary;
-        line-height: 1.4;
+        line-height: 1.5;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        // 默认 2 行截断，展开后完整显示
+        -webkit-line-clamp: 2;
         overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+        word-break: break-word;
+        white-space: normal;
+
+        &.desc-expanded {
+          display: block;
+          -webkit-line-clamp: unset;
+        }
+      }
+
+      .descToggle {
+        margin-top: 2px;
+        padding: 0;
+        border: none;
+        background: transparent;
+        color: @colorPrimary;
+        font-size: @fontSizeSm;
+        line-height: 20px;
+        cursor: pointer;
+        user-select: none;
+
+        &:hover {
+          opacity: 0.8;
+        }
       }
     }
 
