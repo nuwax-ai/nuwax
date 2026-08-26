@@ -5,6 +5,7 @@ import {
 } from '@/constants/layout.constants';
 import useCategory from '@/hooks/useCategory';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
+import { isImmersiveShell, shellAvoid } from '@/utils/nuwaClawBridge';
 import { theme } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
@@ -291,6 +292,14 @@ const Layout: React.FC = () => {
           // { 'w-full': isMobile }, // 存在 BUG 需要注释掉
         ])}
         id="page-container-selector"
+        style={{
+          // 顶部避让（marginTop 而非 paddingTop：下移整个容器，不压缩内容可视高度）：
+          // - Win/Linux 桌面端恒避让（右上自绘三键 + 工具栏浮层）；
+          // - mac 展开态无需避让（二级菜单列顶着工具栏 icon 组），但收起二级菜单后
+          //   内容区左移顶到工具栏 icon 组（x≈80-240）下方，需与 Win/Linux 同样下移；
+          // - 独立窗口（系统标题栏）与浏览器不避让。
+          marginTop: isImmersiveShell() ? shellAvoid.TOP + 8 : undefined,
+        }}
       >
         <Outlet />
       </div>

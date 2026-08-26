@@ -115,6 +115,7 @@ const cx = classNames.bind(styles);
 const AppDev: React.FC = () => {
   // 获取路由参数
   const params = useParams();
+  // 获取空间ID
   const spaceId = Number(params.spaceId);
 
   // 数据源选择状态
@@ -126,6 +127,7 @@ const AppDev: React.FC = () => {
 
   // ⭐ 自动发送消息锁，防止重复调用
   const autoSendLockRef = useRef<boolean>(false);
+  // 自动发送消息定时器
   const autoSendTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // ⭐ 自动错误处理 Hook 引用
@@ -142,6 +144,7 @@ const AppDev: React.FC = () => {
 
   // 使用 AppDev 模型来管理状态
   const appDevModel = useModel('appDev');
+  // 获取统一主题
   const { navigationStyle } = useUnifiedTheme();
   const {
     workspace,
@@ -180,9 +183,12 @@ const AppDev: React.FC = () => {
   // 单文件上传状态
   const [isSingleFileUploadModalVisible, setIsSingleFileUploadModalVisible] =
     useState<boolean>(false);
+  // 单文件上传加载状态
   const [singleFileUploadLoading, setSingleFileUploadLoading] =
     useState<boolean>(false);
+  // 单文件上传路径
   const [singleFilePath, setSingleFilePath] = useState<string>('');
+  // 单文件上传文件
   const [uploadFile, setUploadFile] = useState<File | null>(null);
 
   // 项目导入状态
@@ -194,6 +200,7 @@ const AppDev: React.FC = () => {
 
   // 删除确认对话框状态
   const [deleteModalVisible, setDeleteModalVisible] = useState<boolean>(false);
+  // 删除节点
   const [nodeToDelete, setNodeToDelete] = useState<any>(null);
   // 文件操作状态，避免多步流程竞争和覆盖
   const [isFileOperating, setIsFileOperating] = useState<boolean>(false);
@@ -260,8 +267,10 @@ const AppDev: React.FC = () => {
 
   // 使用项目详情 Hook
   const projectInfo = useAppDevProjectInfo(projectId);
+  // 获取终端 WebSocket URL
   const terminalWsUrl = useTerminalWsUrl(projectId);
 
+  // 初始化项目元数据
   useInitProjectMetadata({
     targetType: AgentComponentTypeEnum.PageApp,
     targetId: Number(projectId),
@@ -308,6 +317,7 @@ const AppDev: React.FC = () => {
   });
 
   useEffect(() => {
+    // 每次 sourceControl.refreshGitList 变化时，更新 refreshGitListAfterSaveRef.current
     refreshGitListAfterSaveRef.current = sourceControl.refreshGitList;
   }, [sourceControl.refreshGitList]);
 
@@ -1543,11 +1553,12 @@ const AppDev: React.FC = () => {
           'flex',
           'flex-col',
         )}
-        /* 页面主区根据 isFileOperating 动态调整可交互性与视觉反馈（禁用操作+暗色） */
+        /* isFileOperating 动态调整可交互性（禁用+暗色）；顶部退让由路由层
+           wrappers/immersiveShellAvoid 统一承担 */
         style={
           isFileOperating || isDeploying
             ? { pointerEvents: 'none', userSelect: 'none', opacity: 0.7 }
-            : {}
+            : undefined
         }
       >
         {/* 顶部头部区域 */}

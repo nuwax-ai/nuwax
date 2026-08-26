@@ -415,14 +415,19 @@ class UnifiedThemeService {
           (bg) => bg.id === this.currentData.backgroundId,
         );
 
-        const backgroundUrl =
-          backgroundConfig?.url || `/bg/${this.currentData.backgroundId}.png`;
+        // 纯色背景（url 为空串）：显式置 none，覆盖此前已设置的背景图
+        if (backgroundConfig && !backgroundConfig.url) {
+          root.style.setProperty('--xagi-background-image', 'none');
+        } else {
+          const backgroundUrl =
+            backgroundConfig?.url || `/bg/${this.currentData.backgroundId}.png`;
 
-        // 设置CSS变量
-        root.style.setProperty(
-          '--xagi-background-image',
-          `url(${backgroundUrl})`,
-        );
+          // 设置CSS变量
+          root.style.setProperty(
+            '--xagi-background-image',
+            `url(${backgroundUrl})`,
+          );
+        }
       }
 
       // 根据布局风格和导航风格应用完整的CSS变量

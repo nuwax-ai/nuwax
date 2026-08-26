@@ -271,6 +271,8 @@ const WorkflowLayout: React.FC<WorkflowLayoutProps> = ({
     isAgentFlow && createdItem === AgentComponentTypeEnum.Agent;
 
   return (
+    // 顶部退让由路由层 wrappers/immersiveShellAvoid 统一承担（独立路由与
+    // EditAgent 内嵌两种宿主都经过各自的 wrapper），此处不再携带避让代码。
     <div id="container">
       {/* AgentFlow 作为智能体子类型嵌入 EditAgent 时，顶部栏由 EditAgent 的 AgentHeader 提供，
           不再渲染工作流编辑器自带的 Header（避免出现第二条顶部栏，与 TaskAgent 一致） */}

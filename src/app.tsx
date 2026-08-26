@@ -1,6 +1,6 @@
 import { RequestConfig } from '@@/plugin-request/request';
 import { OpenUIDevtools } from '@openuidev/devtools';
-import { Modal, theme as antdTheme } from 'antd';
+import { theme as antdTheme, Modal } from 'antd';
 import React, { useEffect, useRef } from 'react';
 import { history, useAntdConfigSetter } from 'umi';
 import { SUCCESS_CODE } from './constants/codes.constants';
@@ -16,11 +16,17 @@ import {
   syncLangFromUserInfo,
 } from './services/i18nRuntime';
 import { apiQueryMenus } from './services/menuService';
+import {
+  initNuwaClawTheme,
+  isNuwaClawThemeActive,
+  NUWACLAW_PRIMARY,
+} from './services/nuwaClawTheme';
 import { unifiedThemeService } from './services/unifiedThemeService';
 import { UserService } from './services/userService';
 import type { MenuItemDto } from './types/interfaces/menu';
 import { getAntdLocale } from './utils/i18nAdapters';
 import { isConversationMockPage } from './utils/isConversationMockPage';
+import { nuwaClawHost, syncShellAvoidanceCss } from './utils/nuwaClawBridge';
 /**
  * 全局初始状态类型
  */
@@ -36,6 +42,11 @@ export interface InitialStateType {
 export async function getInitialState(): Promise<InitialStateType> {
   try {
     await initI18n();
+
+    // nuwaclaw 客户端：启动时从宿主恢复 ACCESS_TOKEN（重启免登）。
+    // 浏览器环境无桥自动跳过；须在 UserService.getUserInfo 之前执行，确保首个鉴权请求带 token。
+    const token = await nuwaClawHost.auth.getToken();
+    if (token) localStorage.setItem(ACCESS_TOKEN, token);
 
     // 如果不是登录页面，执行获取用户信息和菜单数据
     const publicPaths = ['/login', '/examples/agent-intervention-demo'];
@@ -209,6 +220,10 @@ const AppContainer: React.FC<{ children: React.ReactElement }> = ({
       try {
         const data = unifiedThemeService.getCurrentData();
         const darkMode = data.antdTheme === 'dark';
+        // nuwaclaw 桌面专属默认主色：仅桌面端且用户未显式定制主题时强制品牌蓝（见 nuwaClawTheme）
+        const effectivePrimary = isNuwaClawThemeActive()
+          ? NUWACLAW_PRIMARY
+          : data.primaryColor;
 
         const algorithm = darkMode
           ? antdTheme.darkAlgorithm
@@ -216,7 +231,7 @@ const AppContainer: React.FC<{ children: React.ReactElement }> = ({
         const baseTokens = darkMode ? darkThemeTokens : themeTokens;
         const tokens = {
           ...baseTokens,
-          colorPrimary: data.primaryColor,
+          colorPrimary: effectivePrimary,
         };
 
         const signature = JSON.stringify({
@@ -232,7 +247,7 @@ const AppContainer: React.FC<{ children: React.ReactElement }> = ({
             token: tokens as any,
             components: {
               Segmented: {
-                itemSelectedColor: data.primaryColor,
+                itemSelectedColor: effectivePrimary,
               },
             },
             cssVar: { prefix: 'xagi' },
@@ -288,6 +303,14 @@ const AppContainer: React.FC<{ children: React.ReactElement }> = ({
       );
     };
   }, [setAntdConfig]);
+
+  // nuwaclaw 桌面专属主题适配（独立模块，不侵入核心 unifiedThemeService）；
+  // 沉浸壳避让状态（html 类 + CSS 变量）同步就位——immersiveShellAvoid wrapper
+  // 首帧前还会再同步一次（幂等），这里覆盖未被该 wrapper 包裹的路由。
+  useEffect(() => {
+    syncShellAvoidanceCss();
+    return initNuwaClawTheme();
+  }, []);
 
   return (
     <>

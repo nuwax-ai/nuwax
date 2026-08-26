@@ -1,3 +1,4 @@
+import { jumpTo } from '@/utils/router';
 import { useDebounceFn } from 'ahooks';
 import { Spin } from 'antd';
 import classNames from 'classnames';
@@ -695,7 +696,7 @@ const NewHomeSection: React.FC<{
         `/space/${devSpaceId}/agent-dev?agentId=${devTargetId}&conversationId=${id}`,
       );
     } else if (devTargetType === 'PageApp' && devSpaceId && devTargetId) {
-      history.push(`/space/${devSpaceId}/app-dev/${devTargetId}`);
+      jumpTo(`/space/${devSpaceId}/app-dev/${devTargetId}`);
     } else {
       history.push('/home/chat/' + id + '/' + agentId);
     }
@@ -707,7 +708,7 @@ const NewHomeSection: React.FC<{
       history.push(`/home/chat/${item.lastConversationId}/${item.agentId}`);
       return;
     }
-    history.push(`/agent/${item.agentId}`);
+    jumpTo(`/agent/${item.agentId}`);
   };
 
   const handleNewConversation = () => {

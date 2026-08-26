@@ -1778,6 +1778,7 @@ const ConversationAgent: React.FC = () => {
 
   // ==================== 主渲染 ====================
   return (
+    // 顶部退让由路由层 wrappers/immersiveShellAvoid 统一承担
     <div className={cx(styles.container, 'flex', 'flex-col')}>
       {/* 页面顶部 Header：返回、智能体信息、文件树/远程桌面入口 */}
       <ConversationAgentHeader
@@ -1818,6 +1819,9 @@ const ConversationAgent: React.FC = () => {
             className={cx('flex', 'flex-1', styles['content-container'], {
               [styles['content-container-fullscreen']]:
                 fileView.preview.isFullscreen,
+              // 全屏预览是 fixed 元件（module 类被哈希，避让层无法全局选择器命中），
+              // 挂稳定全局类供 styles/nuwaclawShell.less 做 top/height 补偿
+              'nuwaclaw-shell-fullscreen': fileView.preview.isFullscreen,
             })}
           >
             {/* 中间面板（文件树） + 右侧面板（编排/预览 + 终端） */}

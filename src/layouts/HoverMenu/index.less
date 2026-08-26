@@ -46,7 +46,11 @@
       cursor: pointer;
 
       &:hover {
-        background: var(--xagi-layout-bg-card, @navItemHoverBg);
+        // navItem 变量优先（主题可弱化高亮，如 nuwaclaw 桌面端）；未设时回落原通用变量
+        background: var(
+          --xagi-nav-item-hover-bg,
+          var(--xagi-layout-bg-card, #fff)
+        );
         color: var(
           --xagi-layout-second-menu-text-color,
           @navSecondMenuTextSecondary
@@ -54,7 +58,10 @@
       }
 
       &.active {
-        background: var(--xagi-layout-bg-primary, @navItemActiveBg);
+        background: var(
+          --xagi-nav-item-active-bg,
+          var(--xagi-layout-bg-primary, #fff)
+        );
         color: var(
           --xagi-layout-second-menu-text-color,
           @navSecondMenuTextSecondary

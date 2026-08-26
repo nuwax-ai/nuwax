@@ -48,6 +48,7 @@ import type {
   RoleInfo,
 } from '@/types/interfaces/conversationInfo';
 import { arraysContainSameItems, parsePageAppProjectId } from '@/utils/common';
+import { needsTopRightAvoid, shellAvoid } from '@/utils/nuwaClawBridge';
 import { jumpToPageDevelop } from '@/utils/router';
 import { LoadingOutlined } from '@ant-design/icons';
 import { Form, message, Typography } from 'antd';
@@ -688,7 +689,13 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
         })}
       >
         {/* 页面顶部: 标题区域 */}
-        <header className={cx(styles['title-box'])}>
+        <header
+          className={cx(styles['title-box'])}
+          style={{
+            // 顶部退让由最外层 page-container 统一处理，页面级不叠加（曾致 44+48=92px 双重退让）
+            paddingRight: needsTopRightAvoid() ? shellAvoid.RIGHT : undefined,
+          }}
+        >
           <div
             className={cx(
               styles['title-container'],

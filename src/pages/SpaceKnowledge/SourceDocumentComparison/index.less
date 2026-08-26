@@ -1,0 +1,169 @@
+/**
+ * 原文对照组件样式（arrangement10 v2）
+ *
+ * 关键背景：
+ *   umi4 的 AutoCSSModule SWC 插件只对带 specifier 的样式 import 追加 ?modules
+ *   查询参数以激活 CSS Modules（见 node_modules/@umijs/bundler-webpack/dist/
+ *   swcPlugins/autoCSSModules.js 的 visitImportDeclaration：判 specifiers.length）。
+ *   本文件在 index.tsx 中以 `import './index.less'`（side-effect，无 specifier）
+ *   引入，因此走「普通全局 CSS」链路，css-loader 的 modules 配置为 undefined。
+ *
+ *   后果：`:global(.foo)` 不会被剥离为 `.foo`，而是原样输出到 chunk.css，
+ *   浏览器把 :global 当作未知伪类丢弃，所有规则失效（实测 dev server 编译产物
+ *   p__SpaceKnowledge__index.chunk.css 中含 24 处字面 `:global(`，0 条匹配）。
+ *
+ *   方案：本文件直接使用「普通全局选择器」（.foo），不再使用 :global 包裹。
+ *   因为 side-effect 导入的文件本就是全局 CSS，普通选择器即为全局生效，
+ *   能精确匹配 JSX 中的字面量 className（如 className="source-document-comparison"）。
+ *
+ * 滚动设计：
+ *   - 单一滚动容器：.source-document-comparison 自身设 overflow-y: auto。
+ *   - .preview-header 使用 position: sticky 在滚动时悬浮置顶。
+ *   - scrollIntoView 会沿 DOM 树找到 .source-document-comparison 作为滚动祖先。
+ */
+
+// ========= 主容器（单一滚动容器） =========
+.source-document-comparison {
+  min-width: 360px;
+  flex: 1;
+  // 高度链：父层 <div class="flex flex-1"> 由更上层 flex column 约束高度
+  // （与左侧 RawSegmentInfo 共享同一高度链，已验证可滚动）。
+  height: 100%;
+  // 关键：覆盖 flex 子项默认 min-height: auto，避免内容撑破高度导致滚动失效。
+  min-height: 0;
+  background: #fff;
+  border-left: 1px solid #e8e8e8;
+  // 单一滚动容器：右侧整体在此滚动（header 通过 sticky 悬浮）。
+  overflow-y: auto;
+  overflow-x: hidden;
+  // 防止滚动链式冒泡到页面（Bug C 防御性处理）。
+  overscroll-behavior: contain;
+  // iOS 触摸惯性平滑滚动。
+  -webkit-overflow-scrolling: touch;
+}
+
+// 加载/错误状态：居中显示对应组件
+.source-document-comparison.loading,
+.source-document-comparison.error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+// 自定义滚动条样式（WebKit 内核浏览器）
+.source-document-comparison::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.source-document-comparison::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.source-document-comparison::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.source-document-comparison::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+// ========= 文档预览根容器 =========
+.document-preview {
+  width: 100%;
+  // 不限制高度：让内容自然撑开，由外层 .source-document-comparison 负责滚动。
+  min-height: 100%;
+}
+
+.document-preview.loading-state,
+.document-preview.empty-state,
+.document-preview.error-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+}
+
+// ========= 预览头部（sticky 悬浮） =========
+.document-preview .preview-header {
+  height: 72px;
+  min-height: 72px;
+  border-top: 1px solid #e8e8e8;
+  border-bottom: 1px solid #e8e8e8;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  //background: #fafafa;
+  background: #fff;
+  // 滚动时悬浮置顶（z-index 避免 segment-block 高亮色覆盖）。
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.document-preview .preview-header .preview-title {
+  font-size: 14px;
+  font-weight: 400;
+  color: rgba(15, 21, 40, 0.82);
+  margin: 0;
+}
+
+// ========= 预览内容容器（不设 overflow，滚动交给外层） =========
+.document-preview .preview-content {
+  padding: 0;
+  background: #fff;
+}
+
+// ========= 分段拼接容器（仅负责 padding） =========
+.document-preview-container {
+  padding: 16px;
+}
+
+// ========= 单个分段块 =========
+// 与中间分段（RawSegmentInfo .line）样式保持一致：字体 14px、文字色、浅蓝紫背景、
+// 蓝紫 1px 边框、圆角 6px、padding 10px、line-height 22px，保证两侧视觉统一。
+.segment-block {
+  line-height: 22px;
+  padding: 10px;
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: rgba(15, 21, 40, 0.82);
+  border: 1px solid rgba(82, 100, 154, 0.13);
+  background-color: rgba(90, 108, 167, 0.04);
+  border-radius: 6px;
+  word-break: break-word;
+  white-space: pre-wrap;
+  transition: all 0.3s ease;
+}
+
+// 选中分段的高亮样式（与中间分段 selected-segment 一致：蓝边 + 浅蓝底）
+.segment-block.highlight {
+  border-color: #1890ff;
+  background-color: #e6f7ff;
+}
+
+// ========= 加载动画 =========
+.loading-state .ant-spin-text {
+  margin-top: 12px;
+  color: #666;
+}
+
+// ========= 响应式 =========
+@media (max-width: 1200px) {
+  .source-document-comparison .preview-header {
+    height: 72px;
+    padding: 0 12px;
+  }
+
+  .source-document-comparison .preview-header .preview-title {
+    font-size: 14px;
+  }
+
+  .source-document-comparison .preview-content {
+    padding: 12px;
+  }
+}

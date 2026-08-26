@@ -12,7 +12,14 @@ import ConditionRender from '@/components/ConditionRender';
 import { NAVIGATION_LAYOUT_SIZES } from '@/constants/layout.constants';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { dict } from '@/services/i18nRuntime';
+import { initNuwaClawHostEvents } from '@/services/nuwaClawHostEvents';
 import type { MenuItemDto } from '@/types/interfaces/menu';
+import {
+  isImmersiveShell,
+  nuwaClawHost,
+  shellAvoid,
+} from '@/utils/nuwaClawBridge';
+import { jumpTo } from '@/utils/router';
 import { theme, Typography } from 'antd';
 import classNames from 'classnames';
 import React, {
@@ -56,7 +63,12 @@ import {
 } from './utils';
 
 const cx = classNames.bind(styles);
-
+/** 桌面端沉浸式：顶部下移避让 nuwaclaw 工具栏（macOS 红绿灯在其左；Win/Linux 左侧自绘按钮组）。
+ *  仅一级/二级菜单列使用。注意：走 @/layouts 的主内容区（page-container）不加避让——
+ *  列表页内容会被整体压低（曾误伤）；layout:false 全屏页不做内嵌避让，走新开窗口打开。
+ *  尺寸单一来源在 nuwaClawBridge 的 shellAvoid.TOP（与右上角三键避让同源管理），
+ *  NUWA_CLAW_PADDING_TOP 保留为兼容导出别名（外部导入点仍引用此名）。 */
+export const NUWA_CLAW_PADDING_TOP = shellAvoid.TOP;
 /** 使用自定义 Section 的一级菜单，始终展示二级菜单栏 */
 const SECOND_MENU_SECTION_TABS = new Set([
   'homepage',
@@ -83,8 +95,12 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
   const params = useParams();
   const { token } = theme.useToken();
   const { navigationStyle, layoutStyle } = useUnifiedTheme();
-  const { isSecondMenuCollapsed, setOpenMessage, handleCloseMobileMenu } =
-    useModel('layout');
+  const {
+    isSecondMenuCollapsed,
+    setIsSecondMenuCollapsed,
+    setOpenMessage,
+    handleCloseMobileMenu,
+  } = useModel('layout');
 
   // 判断指定一级菜单及其所有子菜单中，是否存在与传入路径匹配的菜单
   const { firstLevelMenus, otherMenus, hasPathUnderFirstLevelMenu } =
@@ -290,6 +306,13 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
     // 强制刷新获取用户信息
     refreshUserInfo();
   }, []);
+
+  // nuwaclaw 桌面端：注册宿主命令监听（工具栏「收起二级菜单」等经此通道下发）
+  useEffect(() => {
+    return initNuwaClawHostEvents({
+      setSecondMenuCollapsed: setIsSecondMenuCollapsed,
+    });
+  }, [setIsSecondMenuCollapsed]);
 
   // 新对话菜单特殊处理
   const handleNewConversation = useCallback(() => {
@@ -566,9 +589,9 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
         case MENU_CODE_MY_COMPUTER:
           {
             // setActiveTab(code || '');
-            history.push('/my-computer-manage', {
-              _t: Date.now(),
-              menuCode: menu.code,
+            jumpTo({
+              url: '/my-computer-manage',
+              state: { _t: Date.now(), menuCode: menu.code },
             });
           }
           break;
@@ -632,6 +655,21 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
 
     return !!currentMenu.children?.length;
   }, [activeTab, firstLevelMenus, otherMenus]);
+
+  // 桌面端：把「当前页是否有二级菜单」同步给 nuwaclaw 壳，工具栏据此显隐收起按钮
+  //（无二级菜单的页面按钮无意义）。布局卸载（如 /Login 等无布局页）时推 false。
+  // 浏览器端接入层 no-op。路由切换间 cleanup→mount 的瞬时 false 会被新值立即覆盖。
+  useEffect(() => {
+    nuwaClawHost.layout.setSecondMenuAvailable(shouldShowSecondMenu);
+    return () => nuwaClawHost.layout.setSecondMenuAvailable(false);
+  }, [shouldShowSecondMenu]);
+
+  // 桌面端：把二级菜单真实收起态同步给壳（壳工具栏 icon 以此为准）。
+  // webview reload 后壳本地态不重置、且 reload 瞬间的 toggle 命令可能丢失——
+  // 推送真实值可校正失同步（toggle 后本 effect 也会随状态变化即时回推）。
+  useEffect(() => {
+    nuwaClawHost.layout.setSecondMenuCollapsed(isSecondMenuCollapsed);
+  }, [isSecondMenuCollapsed]);
 
   /**
    * 是否显示标题
@@ -736,6 +774,8 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
         style={{
           width: firstMenuWidth,
           background: firstMenuBackground,
+          // 桌面端沉浸式：一级菜单顶部下移避让 macOS 红绿灯（trafficLightPosition {16,16}）
+          ...(isImmersiveShell() ? { paddingTop: shellAvoid.TOP } : {}),
         }}
       >
         <Header />
@@ -762,11 +802,29 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
             width: isSecondMenuCollapsed
               ? 0
               : NAVIGATION_LAYOUT_SIZES.SECOND_MENU_WIDTH,
+            // 桌面端沉浸式：顶部留白避让 nuwaclaw 红绿灯工具栏（与 first-menus 对齐）；
+            // 左边框不贯穿避让区（改为下方内部竖线，顶端对齐搜索/新建会话栏）；
+            // 浏览器端 undefined 走 less 默认 padding-top / border-left
+            paddingTop: isImmersiveShell() ? shellAvoid.TOP : undefined,
+            borderLeft: isImmersiveShell() ? 'none' : undefined,
             paddingLeft: isSecondMenuCollapsed ? 0 : token.padding,
             opacity: isSecondMenuCollapsed ? 0 : 1,
             backgroundColor: secondaryBackgroundColor,
           }}
         >
+          {/* 桌面端沉浸式：替代 border-left 的竖线，从避让区下沿（搜索/新建会话栏顶部）开始 */}
+          {isImmersiveShell() && (
+            <div
+              style={{
+                position: 'absolute',
+                top: shellAvoid.TOP + 8, // 与上方 paddingTop 避让高度一致
+                bottom: 0,
+                left: 0,
+                width: 'var(--xagi-line-width)', // 与 less @lineWidth 同源
+                background: 'var(--xagi-layout-border-primary)',
+              }}
+            />
+          )}
           <div className={cx(styles['nav-menus-scroll'])}>
             {activeTab === 'homepage' ? (
               renderSecondMenu

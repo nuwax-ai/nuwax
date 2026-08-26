@@ -505,6 +505,8 @@ async function startPreview() {
             fileName = purePath.split('/').pop();
             // 优先识别 .openui.json，避免被拆成普通 json
             fileType = resolvePreviewFileType(purePath);
+            // .md 分享：用文件名（含后缀）作为页面标题，其它格式保持默认标题
+            applyMarkdownDocumentTitle(purePath);
             // Set download URL
             downloadUrl = baseUrl + data.content + '?sk=' + sk;
             

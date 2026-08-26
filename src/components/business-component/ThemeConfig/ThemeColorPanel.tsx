@@ -1,6 +1,8 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import { THEME_COLOR_CONFIGS } from '@/constants/theme.constants';
 import { t } from '@/services/i18nRuntime';
+import { NUWACLAW_PRIMARY } from '@/services/nuwaClawTheme';
+import { isNuwaClaw } from '@/utils/nuwaClawBridge';
 import { ColorPicker } from 'antd';
 import { Color } from 'antd/es/color-picker';
 import classNames from 'classnames';
@@ -44,8 +46,13 @@ const ThemeColorPanel: React.FC<ThemeColorPanelProps> = ({
     );
   }, [extraColors]);
 
-  // 使用统一的主题色配置
-  const presetColors = THEME_COLOR_CONFIGS;
+  // 统一主题色配置；桌面端在首位追加「女娲蓝」选项（选中 = 女娲主题，见 nuwaClawTheme）
+  const presetColors = isNuwaClaw()
+    ? [
+        { color: NUWACLAW_PRIMARY, name: t('PC.Constants.Theme.colorNuwax') },
+        ...THEME_COLOR_CONFIGS,
+      ]
+    : THEME_COLOR_CONFIGS;
   // 合并预设颜色和额外颜色，去重并过滤掉已存在的颜色
   const allColors = [
     ...presetColors,

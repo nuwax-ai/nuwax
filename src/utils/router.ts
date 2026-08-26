@@ -1,5 +1,35 @@
 import { isWeakNumber } from '@/utils/common';
+import { isImmersiveShell, nuwaClawHost } from '@/utils/nuwaClawBridge';
 import { history } from 'umi';
+
+/**
+ * 桌面端（nuwaclaw 主窗口）走独立新窗口打开的路由清单。
+ * 这些全屏页（fixed 头部/画布类布局）无法内嵌避让沉浸式工具栏，改由
+ * native.openWindow 开独立窗口承载（带系统标题栏零遮挡）。浏览器端不受影响。
+ * 新增同类页面在此追加正则即可。
+ */
+const SHELL_NEW_WINDOW_ROUTES: RegExp[] = [
+  /^\/agent\/\d+/, // 智能体详情
+  /^\/space\/\d+\/workflow\//, // 工作流编辑器
+  /^\/space\/\d+\/app-dev(-design)?\//, // 网页应用开发/设计器
+  /^\/my-computer-manage/, // 我的电脑
+];
+
+/** 桌面主窗口下该路由是否应新开独立窗口（独立窗口内自身不再分流）。 */
+function shouldOpenInShellWindow(url: string): boolean {
+  if (!isImmersiveShell()) return false;
+  return SHELL_NEW_WINDOW_ROUTES.some((re) => re.test(url.split('?')[0]));
+}
+
+/**
+ * 请求宿主新开独立窗口；失败（旧壳无 handler / 被安全校验拒绝 / 桥异常）
+ * 时回落页内导航，保证点击永远有响应。
+ */
+function openShellWindowOrNavigate(url: string): void {
+  void nuwaClawHost.native.openWindow(url).then((res) => {
+    if (!res.success) history.push(url);
+  });
+}
 
 type JumpToProps =
   | {
@@ -19,11 +49,21 @@ export const jumpTo = (params: JumpToProps) => {
     history.go(Number(params));
     return;
   } else if (typeof params === 'string') {
+    if (shouldOpenInShellWindow(params)) {
+      openShellWindowOrNavigate(params);
+      return;
+    }
     history.push(params);
     return;
   }
   if (typeof params === 'object' && 'url' in params) {
     const { url, method = 'push', state } = params;
+    if (typeof url === 'string' && shouldOpenInShellWindow(url)) {
+      // 独立窗口是全新页面加载，SPA 路由 state 无法携带（各目标页均不依赖 state）；
+      // 开窗失败回落页内导航（不带 state，目标页均不依赖）
+      openShellWindowOrNavigate(url);
+      return;
+    }
     if (state) return history[method](url, state);
     return history[method](url);
   }

@@ -217,8 +217,11 @@ const AgentArrangeConfig: React.FC<AgentArrangeConfigProps> = ({
 
   // 各配置块 DOM 引用，用于滚动定位
   const planSectionRef = useRef<HTMLDivElement | null>(null);
+  // 工具配置块 DOM 引用
   const toolSectionRef = useRef<HTMLDivElement | null>(null);
+  // 技能配置块 DOM 引用
   const skillSectionRef = useRef<HTMLDivElement | null>(null);
+  // 组员配置块 DOM 引用
   const groupMemberSectionRef = useRef<HTMLDivElement | null>(null);
   const knowledgeSectionRef = useRef<HTMLDivElement | null>(null);
   const memorySectionRef = useRef<HTMLDivElement | null>(null);
