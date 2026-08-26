@@ -1242,6 +1242,9 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     handleOpenDesktopView: handleOpenDesktopViewClick,
     renderTitle,
     renderHeaderRight,
+    // 会话内搜索：当前会话 + 已有会话记录
+    searchConversationId: conversationInfo?.id ?? null,
+    searchHasMessages: hasUserSentMessage,
   };
 
   // 聊天会话相关 props

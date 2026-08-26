@@ -5,6 +5,7 @@ import FileTreePreviewPanel, {
 import UnifiedChatSession from '@/components/business-component/UnifiedChatSession';
 import ConditionRender from '@/components/ConditionRender';
 import TooltipIcon from '@/components/custom/TooltipIcon';
+import ConversationSearchPanel from '@/pages/Chat/components/ConversationSearchPanel';
 import DropdownChangeName from '@/pages/Chat/components/DropdownChangeName';
 import { t } from '@/services/i18nRuntime';
 import { AgentTypeEnum } from '@/types/enums/space';
@@ -206,6 +207,20 @@ const LeftContent: React.FC<LeftContentProps> = ({
                   />
                 </ConditionRender>
               </>
+            )}
+
+            {/* 会话内搜索：有会话记录时显示（详情里已有会话记录时展示搜索图标） */}
+            {!!headerProps.searchHasMessages && (
+              <TooltipIcon
+                title={t('PC.Pages.Chat.searchMessages')}
+                className={cx(styles['icon-box'])}
+                icon={
+                  <ConversationSearchPanel
+                    conversationId={headerProps.searchConversationId}
+                    hasMessages={headerProps.searchHasMessages}
+                  />
+                }
+              />
             )}
 
             {/* 自定义右侧控件插槽（例如发布组件） */}
