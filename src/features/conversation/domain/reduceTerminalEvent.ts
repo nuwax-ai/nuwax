@@ -87,9 +87,17 @@ export function reduceTerminalEvent(
   }
 
   const finalResult = event.data as ConversationFinalResult;
+  // 收口必须基于 reconcile 之后的 text：reconciler 会把只在
+  // finalResult.componentExecuteResults 里的补投结果以自定义块追加进 text，
+  // 若用 reconcile 前的 currentMessage.text 覆盖，补投块会被整体丢弃。
+  const reconciled = (reconcileFinalMessage(currentMessage, finalResult) ||
+    {}) as Partial<MessageInfo>;
   const message = {
-    ...(reconcileFinalMessage(currentMessage, finalResult) || {}),
-    text: closeOpenThinkBlock(),
+    ...reconciled,
+    text: closeThinkBlock(
+      reconciled.text || '',
+      reconciled.thinkBlocks?.[reconciled.thinkBlocks.length - 1] || '',
+    ),
     thinkingFinished: true,
     status: MessageStatusEnum.Complete,
     finalResult,
