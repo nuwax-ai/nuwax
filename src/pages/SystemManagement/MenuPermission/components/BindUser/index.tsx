@@ -194,6 +194,7 @@ const BindUser: React.FC<BindUserProps> = ({
         return;
       }
 
+      // 设置左侧当前可选成员
       setLeftMember(candidate);
       setLeftChecked(false);
     },
