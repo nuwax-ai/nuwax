@@ -1,3 +1,4 @@
+import ConversationContextMenu from '@/components/business-component/ConversationContextMenu';
 import { dict } from '@/services/i18nRuntime';
 import { TaskStatus } from '@/types/enums/agent';
 import { ConversationInfo } from '@/types/interfaces/conversationInfo';
@@ -26,44 +27,55 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
   const hasAgentName = Boolean(item.agent?.name && item.agent.name.trim());
 
   return (
-    <div
-      className={cx(styles['conversation-item'], {
-        [styles['active']]: isActive,
-      })}
-      onClick={onClick}
+    <ConversationContextMenu
+      conversationId={item.id}
+      currentTopic={item.topic}
+      showMoreButton
     >
-      <div className={cx(styles['conversation-item-content'])}>
-        <div className={cx(styles['conversation-topic-row'])}>
-          <Typography.Text
-            className={cx(styles['conversation-topic'])}
-            ellipsis={true}
-          >
-            {item.topic}
-          </Typography.Text>
-          {item.taskStatus === TaskStatus.EXECUTING && (
-            <span className={cx(styles['status-tag'])}>{executingText}</span>
-          )}
-          {!hasAgentName && (
-            <span className={cx(styles['conversation-date'])}>
-              {formatModifiedTime(item.modified)}
-            </span>
-          )}
-        </div>
-        {hasAgentName && (
-          <div className={cx(styles['conversation-meta'])}>
-            <Typography.Text
-              className={cx(styles['conversation-agent-name'])}
-              ellipsis={true}
-            >
-              {item.agent?.name}
-            </Typography.Text>
-            <span className={cx(styles['conversation-date'])}>
-              {formatModifiedTime(item.modified)}
-            </span>
+      {(moreButton) => (
+        <div
+          className={cx(styles['conversation-item'], {
+            [styles['active']]: isActive,
+          })}
+          onClick={onClick}
+        >
+          <div className={cx(styles['conversation-item-content'])}>
+            <div className={cx(styles['conversation-topic-row'])}>
+              <Typography.Text
+                className={cx(styles['conversation-topic'])}
+                ellipsis={true}
+              >
+                {item.topic}
+              </Typography.Text>
+              {item.taskStatus === TaskStatus.EXECUTING && (
+                <span className={cx(styles['status-tag'])}>
+                  {executingText}
+                </span>
+              )}
+              {moreButton}
+              {!hasAgentName && (
+                <span className={cx(styles['conversation-date'])}>
+                  {formatModifiedTime(item.modified)}
+                </span>
+              )}
+            </div>
+            {hasAgentName && (
+              <div className={cx(styles['conversation-meta'])}>
+                <Typography.Text
+                  className={cx(styles['conversation-agent-name'])}
+                  ellipsis={true}
+                >
+                  {item.agent?.name}
+                </Typography.Text>
+                <span className={cx(styles['conversation-date'])}>
+                  {formatModifiedTime(item.modified)}
+                </span>
+              </div>
+            )}
           </div>
-        )}
-      </div>
-    </div>
+        </div>
+      )}
+    </ConversationContextMenu>
   );
 };
 

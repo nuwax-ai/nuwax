@@ -77,6 +77,19 @@
         flex-shrink: 0;
       }
 
+      // 「⋯」菜单兜底按钮：hover 显示；触屏（hover: none）常显
+      :global(.more-btn) {
+        flex-shrink: 0;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+      }
+
+      @media (hover: none) {
+        :global(.more-btn) {
+          opacity: 1;
+        }
+      }
+
       .conversation-date {
         font-size: @fontSizeSm;
         color: @navSecondMenuAdaptiveTextTertiary;
@@ -117,6 +130,11 @@
   &:hover {
     background-color: @colorBgContainer;
     box-shadow: @boxShadowTertiary;
+
+    // hover 会话项时显示「⋯」菜单兜底按钮
+    .conversation-topic-row :global(.more-btn) {
+      opacity: 1;
+    }
 
     .conversation-item-content {
       .conversation-topic-row {

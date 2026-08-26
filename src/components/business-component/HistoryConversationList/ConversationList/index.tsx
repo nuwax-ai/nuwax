@@ -1,3 +1,4 @@
+import ConversationContextMenu from '@/components/business-component/ConversationContextMenu';
 import { apiAgentConversationList } from '@/services/agentConfig';
 import { t } from '@/services/i18nRuntime';
 import { ConversationInfo } from '@/types/interfaces/conversationInfo';
@@ -127,66 +128,73 @@ const ConversationList = React.forwardRef<
     >
       <div className={styles['list-content']}>
         {list.map((item) => (
-          <div
+          <ConversationContextMenu
             key={item.id}
-            className={styles['list-item']}
-            onClick={() => onItemClick?.(item.id, item.agentId)}
+            conversationId={item.id}
+            currentTopic={item.topic}
+            onRename={onEdit ? () => onEdit(item.id, item.topic) : undefined}
+            onDelete={onDelete ? () => onDelete(item.id) : undefined}
           >
-            <div className={styles['item-header']}>
-              <div className={styles['topic-wrapper']}>
-                <span className={styles.topic}>{item.topic}</span>
-                <Tooltip
-                  title={t(
-                    'PC.Components.HistoryConversationList.editTitleTooltip',
-                  )}
-                  mouseEnterDelay={0.5}
-                >
-                  <EditOutlined
-                    className={styles['edit-icon']}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onEdit?.(item.id, item.topic);
-                    }}
-                  />
-                </Tooltip>
-              </div>
-              <div className={styles['right-area']}>
-                <span className={styles.date}>
-                  {dayjs(item.modified).format(
-                    t('PC.Components.HistoryConversationList.dateTimeFormat'),
-                  )}
-                </span>
-                <Space className={styles.actions} size={12}>
+            <div
+              className={styles['list-item']}
+              onClick={() => onItemClick?.(item.id, item.agentId)}
+            >
+              <div className={styles['item-header']}>
+                <div className={styles['topic-wrapper']}>
+                  <span className={styles.topic}>{item.topic}</span>
                   <Tooltip
                     title={t(
-                      'PC.Components.HistoryConversationList.deleteTooltip',
+                      'PC.Components.HistoryConversationList.editTitleTooltip',
                     )}
                     mouseEnterDelay={0.5}
                   >
-                    <DeleteOutlined
-                      className={cx(styles['action-icon'], styles.delete)}
+                    <EditOutlined
+                      className={styles['edit-icon']}
                       onClick={(e) => {
                         e.stopPropagation();
-                        onDelete?.(item.id);
+                        onEdit?.(item.id, item.topic);
                       }}
                     />
                   </Tooltip>
-                </Space>
+                </div>
+                <div className={styles['right-area']}>
+                  <span className={styles.date}>
+                    {dayjs(item.modified).format(
+                      t('PC.Components.HistoryConversationList.dateTimeFormat'),
+                    )}
+                  </span>
+                  <Space className={styles.actions} size={12}>
+                    <Tooltip
+                      title={t(
+                        'PC.Components.HistoryConversationList.deleteTooltip',
+                      )}
+                      mouseEnterDelay={0.5}
+                    >
+                      <DeleteOutlined
+                        className={cx(styles['action-icon'], styles.delete)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDelete?.(item.id);
+                        }}
+                      />
+                    </Tooltip>
+                  </Space>
+                </div>
               </div>
-            </div>
-            <div className={styles['summary-wrapper']}>
-              <div className={styles.summary}>
-                {item.summary ||
-                  t('PC.Components.HistoryConversationList.summaryEmpty')}
-              </div>
-              <div className={styles['tag-wrapper']}>
-                <div className={styles['agent-tag-bottom']}>
-                  {item.agent?.name ||
-                    t('PC.Components.HistoryConversationList.agentFallback')}
+              <div className={styles['summary-wrapper']}>
+                <div className={styles.summary}>
+                  {item.summary ||
+                    t('PC.Components.HistoryConversationList.summaryEmpty')}
+                </div>
+                <div className={styles['tag-wrapper']}>
+                  <div className={styles['agent-tag-bottom']}>
+                    {item.agent?.name ||
+                      t('PC.Components.HistoryConversationList.agentFallback')}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          </ConversationContextMenu>
         ))}
         {loading && (
           <div className={styles.loading}>
