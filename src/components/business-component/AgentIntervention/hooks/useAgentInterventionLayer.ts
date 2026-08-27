@@ -167,6 +167,41 @@ export const writeAgentModeCache = (
   localStorage.setItem(AGENT_MODE_STORAGE_KEY, JSON.stringify(nextCache));
 };
 
+/**
+ * switch_mode（ExitPlanMode）批准选项（引擎权限模式）→ 业务 agent_mode 折算。
+ *
+ * 批准只写引擎侧（current_mode_update + 引擎配置），业务档位若仍停留 plan，
+ * 下一轮 chat 会把引擎重新 set_mode 回 plan（刚批准完又开始计划）；反之档位
+ * 为 yolo 时本地自动放行会覆盖用户选择的「手动审批」。批准时同步回写业务档位。
+ */
+export const SWITCH_MODE_OPTION_AGENT_MODE: Partial<Record<string, AgentMode>> =
+  {
+    bypassPermissions: 'yolo',
+    auto: 'yolo',
+    acceptEdits: 'yolo',
+    default: 'ask',
+    // 「否，继续完善计划」：引擎仍在 plan，业务档位保持 plan
+    plan: 'plan',
+  };
+
+/** switch_mode 审批响应 → 业务档位回写（非 switch_mode / 取消 / 未知选项时不动作） */
+export const syncAgentModeFromSwitchMode = (
+  interaction: AcpPermissionInteraction,
+  response: AcpRequestPermissionResponse,
+  apply: (mode: AgentMode) => void,
+): void => {
+  if (interaction.intervention.acp.request.toolCall.kind !== 'switch_mode') {
+    return;
+  }
+  if (response.outcome.outcome !== 'selected') {
+    return;
+  }
+  const mapped = SWITCH_MODE_OPTION_AGENT_MODE[response.outcome.optionId];
+  if (mapped) {
+    apply(mapped);
+  }
+};
+
 export function useAgentInterventionLayer(
   options: UseAgentInterventionLayerOptions,
 ): UseAgentInterventionLayerResult {
@@ -280,6 +315,19 @@ export function useAgentInterventionLayer(
   const respondMcpAsk =
     interventionHandlers?.respondMcpAsk ?? conversationInfoModel.respondMcpAsk;
 
+  // switch_mode（ExitPlanMode）批准后把所选引擎权限模式折算回业务 agent_mode
+  //（含持久化），再透传审批响应；普通权限审批不受影响
+  const handleRespondAcpPermission = useCallback(
+    (
+      interaction: AcpPermissionInteraction,
+      response: AcpRequestPermissionResponse,
+    ) => {
+      syncAgentModeFromSwitchMode(interaction, response, setAgentMode);
+      return respondAcpPermission(interaction, response);
+    },
+    [respondAcpPermission, setAgentMode],
+  );
+
   const handleRespondMcpAsk = useCallback(
     async (interaction: McpAskInteraction, payload: McpAskRespondPayload) => {
       const resume = await respondMcpAsk(interaction, payload);
@@ -294,7 +342,7 @@ export function useAgentInterventionLayer(
     agentMode,
     chatLayerProps: {
       messageList,
-      onRespondAcpPermission: respondAcpPermission,
+      onRespondAcpPermission: handleRespondAcpPermission,
       onRespondMcpAsk: handleRespondMcpAsk,
     },
     agentModeInputProps: {

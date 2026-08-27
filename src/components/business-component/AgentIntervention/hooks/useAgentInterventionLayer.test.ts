@@ -157,4 +157,134 @@ describe('useAgentInterventionLayer', () => {
     expect(first.result.current.agentMode).toBe('ask');
     expect(second.result.current.agentMode).toBe('yolo');
   });
+
+  const switchModeInteraction = (toolCallKind = 'switch_mode') =>
+    ({
+      intervention: {
+        id: 'itv-plan',
+        revision: 1,
+        kind: 'approval',
+        status: 'pending',
+        sessionId: 'sess-1',
+        source: 'acp_permission',
+        engine: 'claude-code',
+        protocol: 'acp',
+        callbackTarget: { kind: 'electron', targetId: 'tgt-1' },
+        schemaRef: 'acp/permission/v1',
+        acp: {
+          method: 'session/request_permission',
+          request: {
+            sessionId: 'sess-1',
+            toolCall: {
+              toolCallId: 'tc-1',
+              title: 'Ready to code?',
+              kind: toolCallKind,
+            },
+            options: [],
+          },
+        },
+        createdAt: Date.now(),
+      },
+      responseStatus: 'pending',
+    } as any);
+
+  const renderModeEnabledLayer = () =>
+    renderHook(() =>
+      useAgentInterventionLayer({
+        conversationId: 1,
+        agentId: 2001,
+        messageList: [],
+        allowChooseMode: DefaultSelectedEnum.Yes,
+        onSendMessage: vi.fn(),
+      }),
+    );
+
+  it('maps switch_mode approval (auto) back to business yolo and persists', () => {
+    const { result } = renderModeEnabledLayer();
+
+    // 计划阶段：档位停在 plan
+    act(() => {
+      result.current.agentModeInputProps.onAgentModeChange('plan');
+    });
+    expect(result.current.agentMode).toBe('plan');
+
+    act(() => {
+      result.current.chatLayerProps.onRespondAcpPermission?.(
+        switchModeInteraction(),
+        { outcome: { outcome: 'selected', optionId: 'auto' } },
+      );
+    });
+
+    // 批准 auto：业务档位回写 yolo（下一轮 chat 不再把引擎推回 plan）
+    expect(result.current.agentMode).toBe('yolo');
+    expect(conversationInfoHandlers.respondAcpPermission).toHaveBeenCalledWith(
+      expect.anything(),
+      { outcome: { outcome: 'selected', optionId: 'auto' } },
+    );
+    expect(
+      JSON.parse(localStorage.getItem('nuwax_agent_mode_cache') || '{}'),
+    ).toMatchObject({ agents: { '2001': 'yolo' } });
+  });
+
+  it('maps switch_mode approval (default) back to business ask', () => {
+    const { result } = renderModeEnabledLayer();
+
+    act(() => {
+      result.current.agentModeInputProps.onAgentModeChange('plan');
+    });
+
+    act(() => {
+      result.current.chatLayerProps.onRespondAcpPermission?.(
+        switchModeInteraction(),
+        { outcome: { outcome: 'selected', optionId: 'default' } },
+      );
+    });
+
+    // 批准 default（手动审批）：业务档位回写 ask，本地不自动放行
+    expect(result.current.agentMode).toBe('ask');
+    expect(
+      JSON.parse(localStorage.getItem('nuwax_agent_mode_cache') || '{}'),
+    ).toMatchObject({ agents: { '2001': 'ask' } });
+  });
+
+  it('keeps plan mode when switch_mode approval keeps planning', () => {
+    const { result } = renderModeEnabledLayer();
+
+    act(() => {
+      result.current.agentModeInputProps.onAgentModeChange('plan');
+    });
+
+    act(() => {
+      result.current.chatLayerProps.onRespondAcpPermission?.(
+        switchModeInteraction(),
+        { outcome: { outcome: 'selected', optionId: 'plan' } },
+      );
+    });
+
+    expect(result.current.agentMode).toBe('plan');
+  });
+
+  it('does not touch agentMode on cancelled or non-switch approvals', () => {
+    const { result } = renderModeEnabledLayer();
+
+    act(() => {
+      result.current.agentModeInputProps.onAgentModeChange('plan');
+    });
+
+    act(() => {
+      result.current.chatLayerProps.onRespondAcpPermission?.(
+        switchModeInteraction(),
+        { outcome: { outcome: 'cancelled' } },
+      );
+    });
+    expect(result.current.agentMode).toBe('plan');
+
+    act(() => {
+      result.current.chatLayerProps.onRespondAcpPermission?.(
+        switchModeInteraction('execute'),
+        { outcome: { outcome: 'selected', optionId: 'allow' } },
+      );
+    });
+    expect(result.current.agentMode).toBe('plan');
+  });
 });

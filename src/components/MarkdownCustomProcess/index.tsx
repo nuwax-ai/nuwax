@@ -1,6 +1,9 @@
 import ChangeFileGitDiffView, {
   DiffModeEnum,
 } from '@/components/business-component/ChangeFileGitDiffView';
+import MarkdownCustomPlanDoc, {
+  extractPlanDocument,
+} from '@/components/MarkdownCustomPlanDoc';
 import { dict } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { ProcessingEnum } from '@/types/enums/common';
@@ -196,7 +199,9 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
       return null;
     }
     const durationMs = getProcessDurationMs(innerProcessing.result);
-    return durationMs == null ? null : formatDuration(durationMs);
+    return durationMs === null || durationMs === undefined
+      ? null
+      : formatDuration(durationMs);
   }, [innerProcessing.status, innerProcessing.result]);
 
   // Plan 进度摘要（P0-2）：读实时 result.data，流式推进中立即可见
@@ -206,6 +211,13 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
       (innerProcessing.result as { data?: unknown } | null)?.data,
     );
   }, [innerProcessing.type, innerProcessing.result]);
+
+  // 计划文档（switch_mode / ExitPlanMode）：命中时走专用文档卡片，
+  // 不再落到通用工具调用小卡片；正文/kind 缺失时为 null，自然降级
+  const planDocument = useMemo(
+    () => extractPlanDocument(innerProcessing.result),
+    [innerProcessing.result],
+  );
   const openUiDisplayState = useMemo(
     () => resolveOpenUiDisplayState(innerProcessing.result),
     [innerProcessing.result],
@@ -597,6 +609,19 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
     return null;
   }
 
+  // 计划文档（switch_mode / ExitPlanMode）：以专用文档卡片渲染计划全文与文件路径
+  if (planDocument) {
+    return (
+      <MarkdownCustomPlanDoc
+        key={props.dataKey}
+        title={innerProcessing.name}
+        plan={planDocument.plan}
+        planFilePath={planDocument.planFilePath}
+        status={innerProcessing.status}
+      />
+    );
+  }
+
   // 工具栏标题：过长时 tooltip 限高 3 行，超出出现滚动条；终端类显示命令行
   const processName =
     innerProcessing?.name || dict('PC.Components.MarkdownCustomProcess.noName');
@@ -654,16 +679,18 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
               >
                 {titleText}
               </Typography.Text>
-              {isTerminal && terminalItem?.exitCode != null && (
-                <span
-                  className={cx(styles['exit-badge'], {
-                    [styles['exit-ok']]: terminalItem.exitCode === 0,
-                    [styles['exit-error']]: terminalItem.exitCode !== 0,
-                  })}
-                >
-                  exit {terminalItem.exitCode}
-                </span>
-              )}
+              {isTerminal &&
+                terminalItem?.exitCode !== null &&
+                terminalItem?.exitCode !== undefined && (
+                  <span
+                    className={cx(styles['exit-badge'], {
+                      [styles['exit-ok']]: terminalItem.exitCode === 0,
+                      [styles['exit-error']]: terminalItem.exitCode !== 0,
+                    })}
+                  >
+                    exit {terminalItem.exitCode}
+                  </span>
+                )}
               {planProgress && (
                 <span
                   className={cx(styles['plan-progress-chip'])}

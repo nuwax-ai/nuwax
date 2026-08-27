@@ -32,6 +32,25 @@ const { Text } = Typography;
 
 const HIDDEN_OPTION_KINDS = new Set(['reject_always']);
 
+/** kind（allow_once 等）→ kind 级 i18n key */
+function kindLabelKey(kind: string): string {
+  const camelCaseKind = kind.replace(/_([a-z])/g, (_, letter: string) =>
+    letter.toUpperCase(),
+  );
+  return `PC.Components.AcpPermissionCard.${camelCaseKind}`;
+}
+
+/** switch_mode 语义选项（如 ExitPlanMode 的模式切换）→ optionId 专属 i18n key */
+function optionLabelKey(optionId: string): string {
+  return `PC.Components.AcpPermissionCard.option.${optionId}`;
+}
+
+/** t() 对未命中 key 可能返回 key 本身（i18next 默认/测试 mock），统一视为无翻译 */
+function translate(key: string): string {
+  const text = t(key as any);
+  return text && text !== key ? text : '';
+}
+
 interface AcpPermissionCardProps {
   interaction: AcpPermissionInteraction;
   docked?: boolean;
@@ -136,6 +155,35 @@ const AcpPermissionCard: React.FC<AcpPermissionCardProps> = ({
     [request.options],
   );
 
+  /**
+   * 选项标签解析（避免同 kind 选项坍缩成同一文案，如 ExitPlanMode 的
+   * 3 个 allow_always 全部显示「始终允许」）：
+   * ① switch_mode 时 optionId 专属文案（模式切换选项语义互不相同）
+   * ② kind 级通用文案（允许一次/始终允许/拒绝）——仅当该文案在可见选项中唯一
+   * ③ 引擎提供的 option.name，④ optionId 兜底
+   */
+  const optionLabels = useMemo(() => {
+    const kindLabelCounts = new Map<string, number>();
+    for (const option of visibleOptions) {
+      const label = translate(kindLabelKey(option.kind));
+      kindLabelCounts.set(label, (kindLabelCounts.get(label) ?? 0) + 1);
+    }
+    const isSwitchMode = toolCall.kind === 'switch_mode';
+    return new Map(
+      visibleOptions.map((option) => {
+        const byOptionId = isSwitchMode
+          ? translate(optionLabelKey(option.optionId))
+          : '';
+        if (byOptionId) return [option.optionId, byOptionId] as const;
+        const byKind = translate(kindLabelKey(option.kind));
+        if (byKind && (kindLabelCounts.get(byKind) ?? 0) < 2) {
+          return [option.optionId, byKind] as const;
+        }
+        return [option.optionId, option.name || option.optionId] as const;
+      }),
+    );
+  }, [visibleOptions, toolCall.kind]);
+
   useEffect(() => {
     setActiveIndex(0);
   }, [visibleOptions]);
@@ -230,14 +278,7 @@ const AcpPermissionCard: React.FC<AcpPermissionCardProps> = ({
           {visibleOptions.map((option, index) => {
             const isAllow = option.kind.startsWith('allow');
             const isActive = index === activeIndex;
-            const camelCaseKind = option.kind.replace(
-              /_([a-z])/g,
-              (_, letter) => letter.toUpperCase(),
-            );
-            const label =
-              t(`PC.Components.AcpPermissionCard.${camelCaseKind}` as any) ||
-              option.name ||
-              option.optionId;
+            const label = optionLabels.get(option.optionId) || option.optionId;
             return (
               <Button
                 key={option.optionId}
