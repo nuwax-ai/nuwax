@@ -455,7 +455,9 @@ const driveAskSubmit = async () => {
     `ask 卡应分层渲染标题/副标题/描述：${rich}`,
   );
   expect(
-    richParsed.hasExpandBtn && richParsed.clamped && richParsed.overflowedByClamp,
+    richParsed.hasExpandBtn &&
+      richParsed.clamped &&
+      richParsed.overflowedByClamp,
     `长描述应默认 2 行截断（内容溢出盒外）且提供展开入口：${rich}`,
   );
 
@@ -999,14 +1001,8 @@ const driveTerminalCollapseProbe = async () => {
     'execution group expanded',
   );
   const expandedParsed = JSON.parse(expanded);
-  expect(
-    expandedParsed.expandedCount >= 1,
-    `点击聚合组后应展开：${expanded}`,
-  );
-  expect(
-    expandedParsed.midTextVisible,
-    `展开后中间正文应可见：${expanded}`,
-  );
+  expect(expandedParsed.expandedCount >= 1, `点击聚合组后应展开：${expanded}`);
+  expect(expandedParsed.midTextVisible, `展开后中间正文应可见：${expanded}`);
 };
 
 /**
@@ -1075,6 +1071,7 @@ const runCase = async (
     `&speed=${speed}&autoplay=1&conversationRuntime=${
       line === 'runtime' ? 1 : 0
     }` +
+    `&lang=zh-CN` +
     (agentMode ? `&agentMode=${agentMode}` : '');
   await withTimeout(gotoAndWait(url, { timeout: 40 }), 60000, 'gotoAndWait');
   await pause(1);
@@ -1140,6 +1137,10 @@ cliLog(
 // ego-browser 的 tab 按 task space 隔离：套件独占一个空间，跑完即焚
 const task = await useOrCreateTaskSpace('mock chat e2e acceptance');
 await openOrReuseTab(APP_BASE, { wait: true, timeout: 40 });
+
+// 文案语言由每个 case URL 的 &lang=zh-CN 钉死（查询模式请求按
+// Accept-Language 识别语种，Agent 浏览器为 en-US 会被下发英文词典）。
+// 注意：不清理登录残留——SESSION_RESUME 的 sub 续接流依赖本地会话态。
 
 let index = 0;
 const total =

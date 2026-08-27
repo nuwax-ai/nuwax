@@ -11,6 +11,7 @@
 import { UnifiedChatSession } from '@/components/business-component';
 import { useConversationRuntimeSession } from '@/features/conversation/react/useConversationRuntimeSession';
 import { apiAgentConversation } from '@/services/agentConfig';
+import { fetchAndApplyLangMap } from '@/services/i18nRuntime';
 import { DefaultSelectedEnum, TaskStatus } from '@/types/enums/agent';
 import { ProcessingEnum } from '@/types/enums/common';
 import type { UploadFileInfo } from '@/types/interfaces/common';
@@ -120,6 +121,19 @@ if (typeof window !== 'undefined' && INITIAL_AGENT_MODE === 'ask') {
     );
   } catch {
     // localStorage 不可用（隐私模式等）：回落默认 yolo
+  }
+}
+
+// 语言钉死（E2E 断言依赖中文文案）：initI18n 首屏的查询模式请求按
+// Accept-Language 识别语种，无头/Agent 浏览器（en-US）会被下发英文词典。
+// ?lang=zh-CN 在挂载后携参重拉词典并置就绪位；回放等语言就绪后再开播，
+// 避免与 initI18n 的查询模式请求竞态（后到的英文词典会覆盖）。
+const PINNED_LANG = initialUrlParams.get('lang');
+if (typeof window !== 'undefined' && PINNED_LANG) {
+  try {
+    localStorage.setItem('umi_locale', PINNED_LANG);
+  } catch {
+    // ignore
   }
 }
 
@@ -372,18 +386,28 @@ const MockChat: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scenarioId, speed, refreshServerStatus]);
 
+  // ?lang 钉语言：挂载后携参重拉词典，回放开播前等它就绪（E2E 文案断言依赖）
+  const [langReady, setLangReady] = useState(!PINNED_LANG);
+  useEffect(() => {
+    if (!PINNED_LANG) return;
+    void fetchAndApplyLangMap(PINNED_LANG, 'PC').finally(() => {
+      setLangReady(true);
+    });
+  }, []);
+
   useEffect(() => {
     if (didInitialPrepareRef.current) return;
     // autoplay 依赖场景元数据（entry/transport 分派），scenarios 为异步
     // fetch——首帧为空会导致 play 提前 return、SSE 永不开流
     if (AUTOPLAY && !scenarios.length) return;
+    if (AUTOPLAY && !langReady) return;
     didInitialPrepareRef.current = true;
     // autoplay（E2E 入口）：直接走完整播放链（play 内部会先 prepare）；
     // 失败已写入 lastError 并以 Alert 呈现，吞掉 rejection 避免错误覆盖层整页崩
     (AUTOPLAY ? playRef.current : prepareScenario)().catch(() => {});
     // 轨归属与 URL 参数在首帧定型；playRef 见下方声明
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [prepareScenario, scenarios]);
+  }, [prepareScenario, scenarios, langReady]);
 
   const play = useCallback(async () => {
     playingRef.current = true;
