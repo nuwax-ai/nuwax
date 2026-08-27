@@ -1,5 +1,5 @@
-import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { act, fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import MarkdownCustomThink from '../index';
 
 vi.mock('@/services/i18nRuntime', () => ({
@@ -19,7 +19,7 @@ const contentClassNameOf = () => {
 };
 
 describe('MarkdownCustomThink', () => {
-  it('流式活动思考块默认展开，显示正在思考与实时内容', () => {
+  it('思考中渲染单行滚动条带：正在思考 + 计时 + 流动内容，无多行展开区', () => {
     render(
       <MarkdownCustomThink
         content="正在进行的思考内容"
@@ -29,11 +29,70 @@ describe('MarkdownCustomThink', () => {
       />,
     );
 
+    // 单行 ticker：标签含「正在思考 · 0s」计时
     expect(
-      screen.getByText('PC.Components.MarkdownCustomThink.thinking'),
+      screen.getByText(/PC\.Components\.MarkdownCustomThink\.thinking/),
     ).toBeInTheDocument();
+    expect(screen.getByText(/·\s*0s/)).toBeInTheDocument();
+    // 内容在单行条带文本中
     expect(screen.getByText(/正在进行的思考内容/)).toBeInTheDocument();
-    expect(contentClassNameOf()).toContain('is-expanded');
+    expect(
+      document.querySelector('[class*="think-ticker-viewport"]'),
+    ).toBeInTheDocument();
+    // 思考中不做多行预览：不渲染 think-content 展开区
+    expect(document.querySelector('[class*="think-content-inner"]')).toBeNull();
+  });
+
+  it('思考计时每秒递增', () => {
+    vi.useFakeTimers();
+    try {
+      render(
+        <MarkdownCustomThink
+          content="思考"
+          status="thinking"
+          autoCollapse={false}
+          defaultCollapsed={false}
+        />,
+      );
+      expect(screen.getByText(/·\s*0s/)).toBeInTheDocument();
+      act(() => {
+        vi.advanceTimersByTime(3000);
+      });
+      expect(screen.getByText(/·\s*3s/)).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('思考收口后回到「已思考」折叠形态（ticker 消失）', () => {
+    const { rerender } = render(
+      <MarkdownCustomThink
+        content="思考完成"
+        status="thinking"
+        autoCollapse={false}
+        defaultCollapsed={false}
+      />,
+    );
+    expect(
+      document.querySelector('[class*="think-ticker"]'),
+    ).toBeInTheDocument();
+
+    rerender(
+      <MarkdownCustomThink
+        content="思考完成"
+        status="finished"
+        autoCollapse={false}
+        defaultCollapsed={false}
+      />,
+    );
+    expect(document.querySelector('[class*="think-ticker"]')).toBeNull();
+    expect(
+      screen.getByText('PC.Components.MarkdownCustomThink.thought'),
+    ).toBeInTheDocument();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('被超越（autoCollapse 翻转）后自动收起为已思考摘要', () => {

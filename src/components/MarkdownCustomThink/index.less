@@ -37,6 +37,49 @@
     }
   }
 
+  // 思考中：单行滚动条带（不做多行预览）——尾部跟随产生文字快速流动效果
+  .think-ticker {
+    display: flex;
+    align-items: center;
+    gap: @paddingXs;
+    padding: @headerPaddingVertical @paddingSm @headerPaddingVertical @padding;
+    background-color: @colorBgContainer;
+
+    .think-ticker-label {
+      display: flex;
+      align-items: center;
+      gap: @paddingXs;
+      flex-shrink: 0;
+      font-weight: @fontWeightStrong;
+      color: @colorTextTertiary;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .think-ticker-viewport {
+      flex: 1;
+      min-width: 0;
+      overflow-x: auto;
+      overflow-y: hidden;
+      white-space: nowrap;
+      scrollbar-width: none; // 滚动由尾部跟随驱动，滚动条隐藏保持「播放」观感
+      // 不设 scroll-behavior:smooth——会把程序赋值异步动画化，部分浏览器不生效
+      // 左缘淡出，强化内容从右侧持续流出的方向感
+      -webkit-mask-image: linear-gradient(to right, transparent, #000 @padding);
+      mask-image: linear-gradient(to right, transparent, #000 @padding);
+
+      &::-webkit-scrollbar {
+        display: none;
+      }
+
+      .think-ticker-text {
+        display: inline-block;
+        font-size: @fontSizeSm;
+        line-height: @lineHeight;
+        color: @colorTextDescription;
+      }
+    }
+  }
+
   .think-header {
     display: flex;
     align-items: center;

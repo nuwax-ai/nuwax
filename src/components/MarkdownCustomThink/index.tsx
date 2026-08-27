@@ -48,6 +48,59 @@ const MarkdownCustomThink: React.FC<MarkdownCustomThinkProps> = ({
   // 已完成的消息不存在流式思考；defaultCollapsed 为真即视为终态
   const isThinking = status === 'thinking' && !defaultCollapsed;
 
+  // 思考计时：活动态从挂载起每秒 +1（市面通行形态——「正在思考 · Ns」）
+  const [elapsedSec, setElapsedSec] = useState(0);
+  useEffect(() => {
+    if (!isThinking) return;
+    const timer = setInterval(() => setElapsedSec((s) => s + 1), 1000);
+    return () => clearInterval(timer);
+  }, [isThinking]);
+
+  // 思考中：单行滚动条带（不做多行预览）——内容持续追加，视口尾部跟随，
+  // 呈现文字快速流动播放的效果；被超越（收口）后回到「已思考」折叠形态。
+  // 用 ResizeObserver 监听内容宽度贴尾：rAF 首帧文本未布局（scrollWidth=0）
+  // 赋值会落空；且 scroll-behavior:smooth 会让程序赋值异步动画化被吞。
+  const tickerViewportRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!isThinking) return;
+    const viewport = tickerViewportRef.current;
+    const textEl = viewport?.firstElementChild;
+    if (!viewport || !textEl) return;
+    const followTail = () => {
+      viewport.scrollLeft = viewport.scrollWidth;
+    };
+    followTail();
+    // jsdom 等环境无 ResizeObserver：跳过观察，仅保留挂载时的即时贴尾
+    if (typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(followTail);
+    observer.observe(textEl);
+    return () => observer.disconnect();
+  }, [content, isThinking]);
+
+  if (isThinking) {
+    return (
+      <div className={cx(styles['markdown-custom-think'])}>
+        <div className={cx(styles['think-ticker'])}>
+          <span className={cx(styles['think-ticker-label'])}>
+            <BulbOutlined
+              className={cx(styles['think-icon'], styles['is-thinking'])}
+            />
+            <span className={cx(styles['think-title'])}>
+              {dict('PC.Components.MarkdownCustomThink.thinking')} ·{' '}
+              {elapsedSec}s
+            </span>
+          </span>
+          <div
+            ref={tickerViewportRef}
+            className={cx(styles['think-ticker-viewport'])}
+          >
+            <span className={cx(styles['think-ticker-text'])}>{content}</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       <div className={cx(styles['markdown-custom-think'])}>
