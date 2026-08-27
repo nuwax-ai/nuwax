@@ -1,6 +1,6 @@
 import type { McpAskRespondPayload } from './mcpAskIntervention';
 
-export type AgentMode = 'ask' | 'yolo';
+export type AgentMode = 'ask' | 'yolo' | 'plan';
 
 export type AcpPermissionOptionKind =
   | 'allow_once'

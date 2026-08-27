@@ -75,7 +75,7 @@ type AgentModeCacheObject = {
 };
 
 const isAgentMode = (mode: unknown): mode is AgentMode =>
-  mode === 'yolo' || mode === 'ask';
+  mode === 'yolo' || mode === 'ask' || mode === 'plan';
 
 const normalizeAgentModeCacheAgentId = (
   agentId?: number | string | null,

@@ -61,7 +61,7 @@ const cx = classNames.bind(styles);
 
 const VoiceFooter = ChatInputVoiceFooter;
 
-const AGENT_MODE_OPTIONS: AgentMode[] = ['yolo', 'ask'];
+const AGENT_MODE_OPTIONS: AgentMode[] = ['yolo', 'ask', 'plan'];
 
 // 会话密度三档（P1-6）：复用 agentMode 下拉的选项样式
 const DENSITY_OPTIONS: ConversationDensity[] = [
@@ -96,6 +96,10 @@ const AGENT_MODE_I18N: Record<AgentMode, { label: string; desc: string }> = {
   ask: {
     label: 'PC.Components.ChatInputHome.agentModeApproval',
     desc: 'PC.Components.ChatInputHome.agentModeApprovalDesc',
+  },
+  plan: {
+    label: 'PC.Components.ChatInputHome.agentModePlan',
+    desc: 'PC.Components.ChatInputHome.agentModePlanDesc',
   },
 };
 
