@@ -606,6 +606,8 @@ export const JA_JP: SystemLangMap = {
   "PC.Components.McpAskQuestionCard.skipped": "スキップ済み",
   "PC.Components.McpAskQuestionCard.stepOf": "ステップ {0} / {1}",
   "PC.Components.McpAskQuestionCard.submitted": "回答を送信しました",
+  "PC.Components.McpAskQuestionCard.titleCollapse": "折りたたむ",
+  "PC.Components.McpAskQuestionCard.titleExpand": "展開",
   "PC.Components.McpAskQuestionCard.resumeSubmitted": "「{0}」に回答しました。フォーム内容は以下のとおりです：",
   "PC.Components.McpCollapseComponentList.agentDesc": "エージェントは、ユーザーのタスク要求を受信し、インテリジェントな分析と意思決定を実行し、さまざまなモジュールの共同作業を調整し、最終的に応答結果を提供する責任を負います。",
   "PC.Components.McpCollapseComponentList.delete": "消去",

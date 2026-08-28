@@ -47,15 +47,12 @@
         min-width: 0;
         max-width: 100%;
         margin-top: @marginXxs;
+        margin-bottom: 0; // 清掉 Paragraph 默认外距，折叠/展开行高由组件自管
         color: @colorTextBase;
-        // 标题提级展示：字号加大、允许换行（最多 2 行，超长省略）
+        // 标题提级展示：字号加大、允许换行；超 2 行省略 + 展开/收起由 antd Paragraph ellipsis 托管
         font-size: @fontSizeLg;
         font-weight: 600;
         line-height: 1.4;
-        display: -webkit-box;
-        -webkit-box-orient: vertical;
-        -webkit-line-clamp: 2;
-        overflow: hidden;
         word-break: break-word;
       }
 

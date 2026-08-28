@@ -606,6 +606,8 @@ export const ZH_HK: SystemLangMap = {
   "PC.Components.McpAskQuestionCard.skipped": "已跳過",
   "PC.Components.McpAskQuestionCard.stepOf": "步驟 {0} / {1}",
   "PC.Components.McpAskQuestionCard.submitted": "已提交回答",
+  "PC.Components.McpAskQuestionCard.titleCollapse": "收起",
+  "PC.Components.McpAskQuestionCard.titleExpand": "展開",
   "PC.Components.McpAskQuestionCard.resumeSubmitted": "我已填寫「{0}」，表單內容如下：",
   "PC.Components.McpCollapseComponentList.agentDesc": "智能體負責接收用戶任務請求，進行智能分析和決策，協調各個模塊的協同工作，並最終給出響應結果。",
   "PC.Components.McpCollapseComponentList.delete": "刪除",

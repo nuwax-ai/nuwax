@@ -652,6 +652,8 @@ export const ZH_CN: SystemLangMap = {
   "PC.Components.McpAskQuestionCard.resumeCancelled": "我取消了「{0}」。",
   "PC.Components.McpAskQuestionCard.resumeSkipped": "我跳过了「{0}」。",
   "PC.Components.McpAskQuestionCard.resumeTimeout": "「{0}」已超时，没有收到表单答案。",
+  "PC.Components.McpAskQuestionCard.titleCollapse": "收起",
+  "PC.Components.McpAskQuestionCard.titleExpand": "展开",
   "PC.Components.McpAskQuestionCard.resumeSubmitted": "我已填写「{0}」，表单内容如下：",
   "PC.Components.McpCollapseComponentList.agentDesc": "智能体负责接收用户任务请求，进行智能分析和决策，协调各个模块的协同工作，并最终给出响应结果。",
   "PC.Components.McpCollapseComponentList.delete": "删除",

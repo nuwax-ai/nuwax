@@ -29,7 +29,7 @@ import {
 import styles from './index.less';
 import McpAskFormField from './McpAskFormField';
 
-const { Text } = Typography;
+const { Paragraph, Text } = Typography;
 
 interface McpAskQuestionCardProps {
   interaction: McpAskInteraction;
@@ -279,9 +279,21 @@ const McpAskQuestionCard: React.FC<McpAskQuestionCardProps> = ({
           <span className={styles.eyebrow}>
             {t('PC.Components.McpAskQuestionCard.eyebrow')}
           </span>
-          <Text strong className={styles.title}>
+          <Paragraph
+            strong
+            className={styles.title}
+            ellipsis={{
+              rows: 2,
+              expandable: true,
+              expand: 'expanded',
+              symbol: (expanded) =>
+                expanded
+                  ? t('PC.Components.McpAskQuestionCard.titleCollapse')
+                  : t('PC.Components.McpAskQuestionCard.titleExpand'),
+            }}
+          >
             {title}
-          </Text>
+          </Paragraph>
           {subTitle ? (
             <Text type="secondary" className={styles.subTitle}>
               {subTitle}

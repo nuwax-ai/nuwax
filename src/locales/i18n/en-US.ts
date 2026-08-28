@@ -645,6 +645,8 @@ export const EN_US: SystemLangMap = {
   "PC.Components.McpAskQuestionCard.resumeCancelled": "I cancelled \"{0}\".",
   "PC.Components.McpAskQuestionCard.resumeSkipped": "I skipped \"{0}\".",
   "PC.Components.McpAskQuestionCard.resumeTimeout": "\"{0}\" timed out. No form answer was received.",
+  "PC.Components.McpAskQuestionCard.titleCollapse": "Collapse",
+  "PC.Components.McpAskQuestionCard.titleExpand": "Expand",
   "PC.Components.McpAskQuestionCard.resumeSubmitted": "I answered \"{0}\". Form details:",
   "PC.Components.McpCollapseComponentList.agentDesc": "The agent is responsible for receiving user task requests, performing intelligent analysis and decision-making, coordinating the collaborative work of various modules, and ultimately providing response results.",
   "PC.Components.McpCollapseComponentList.delete": "Delete",
