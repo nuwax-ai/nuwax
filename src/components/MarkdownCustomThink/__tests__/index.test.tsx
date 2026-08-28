@@ -150,7 +150,7 @@ describe('MarkdownCustomThink', () => {
     expect(contentClassNameOf()).not.toContain('is-expanded');
   });
 
-  it('显示思考字数统计', () => {
+  it('收起态不显示字数统计（按反馈移除）', () => {
     render(
       <MarkdownCustomThink
         content="12345678"
@@ -159,7 +159,7 @@ describe('MarkdownCustomThink', () => {
       />,
     );
     expect(
-      screen.getByText(/8\s*PC\.Components\.MarkdownCustomThink\.chars/),
-    ).toBeInTheDocument();
+      screen.queryByText(/PC\.Components\.MarkdownCustomThink\.chars/),
+    ).not.toBeInTheDocument();
   });
 });

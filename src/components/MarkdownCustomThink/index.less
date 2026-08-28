@@ -75,7 +75,21 @@
         display: inline-block;
         font-size: @fontSizeSm;
         line-height: @lineHeight;
-        color: @colorTextDescription;
+        // 文字渐变扫光动效（仅思考态——该类只在 ticker 分支渲染）：
+        // 底色铺基色，高光带从左到右周期扫过
+        color: transparent;
+        background-image: linear-gradient(
+          90deg,
+          @colorTextDescription 0%,
+          @colorTextDescription 42%,
+          @colorText 50%,
+          @colorTextDescription 58%,
+          @colorTextDescription 100%
+        );
+        background-size: 200% 100%;
+        -webkit-background-clip: text;
+        background-clip: text;
+        animation: think-ticker-sheen 2.4s linear infinite;
       }
     }
   }
@@ -109,15 +123,6 @@
         font-size: @fontSize;
         font-weight: @fontWeightStrong;
         color: @colorTextTertiary;
-      }
-
-      .think-count {
-        font-size: 10px;
-        color: @colorTextDescription;
-        background-color: @colorFillSecondary;
-        padding: 1px @paddingXs;
-        border-radius: 10px;
-        line-height: @lineHeightSm;
       }
     }
 
@@ -177,5 +182,14 @@
   }
   50% {
     opacity: 0.35;
+  }
+}
+
+@keyframes think-ticker-sheen {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
   }
 }

@@ -56,26 +56,32 @@ const MarkdownCustomThink: React.FC<MarkdownCustomThinkProps> = ({
     return () => clearInterval(timer);
   }, [isThinking]);
 
-  // 思考中：单行滚动条带（不做多行预览）——内容持续追加，视口尾部跟随，
+  // 思考中：单行滚动条带（不做多行预览）——内容持续追加，视口连续缓动贴尾，
   // 呈现文字快速流动播放的效果；被超越（收口）后回到「已思考」折叠形态。
-  // 用 ResizeObserver 监听内容宽度贴尾：rAF 首帧文本未布局（scrollWidth=0）
-  // 赋值会落空；且 scroll-behavior:smooth 会让程序赋值异步动画化被吞。
+  // 缓动贴尾用 rAF 循环每帧向最大滚动位推进（指数缓出 + 最低速度）：
+  // 瞬时赋值会在文本布局完成前落空，scroll-behavior:smooth 会被吞，
+  // ResizeObserver 只在宽度变化时跳变——均无连续流动感。
   const tickerViewportRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!isThinking) return;
-    const viewport = tickerViewportRef.current;
-    const textEl = viewport?.firstElementChild;
-    if (!viewport || !textEl) return;
-    const followTail = () => {
-      viewport.scrollLeft = viewport.scrollWidth;
+    let frame = 0;
+    const glide = () => {
+      const viewport = tickerViewportRef.current;
+      if (viewport) {
+        const maxScroll = viewport.scrollWidth - viewport.clientWidth;
+        if (maxScroll > 0) {
+          const next =
+            viewport.scrollLeft +
+            (maxScroll - viewport.scrollLeft) * 0.08 +
+            0.5;
+          viewport.scrollLeft = Math.min(next, maxScroll);
+        }
+      }
+      frame = requestAnimationFrame(glide);
     };
-    followTail();
-    // jsdom 等环境无 ResizeObserver：跳过观察，仅保留挂载时的即时贴尾
-    if (typeof ResizeObserver === 'undefined') return;
-    const observer = new ResizeObserver(followTail);
-    observer.observe(textEl);
-    return () => observer.disconnect();
-  }, [content, isThinking]);
+    frame = requestAnimationFrame(glide);
+    return () => cancelAnimationFrame(frame);
+  }, [isThinking]);
 
   if (isThinking) {
     return (
@@ -119,12 +125,6 @@ const MarkdownCustomThink: React.FC<MarkdownCustomThinkProps> = ({
                 ? dict('PC.Components.MarkdownCustomThink.thinking')
                 : dict('PC.Components.MarkdownCustomThink.thought')}
             </span>
-            {!!content.length && (
-              <span className={cx(styles['think-count'])}>
-                {content.length}{' '}
-                {dict('PC.Components.MarkdownCustomThink.chars')}
-              </span>
-            )}
           </div>
           <div className={cx(styles['header-right'])}>
             <DownOutlined
