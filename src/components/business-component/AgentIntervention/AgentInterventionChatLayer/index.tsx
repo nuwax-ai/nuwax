@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useActiveInterventionQueue } from '../hooks/useActiveInterventionQueue';
 import type {
   AcpPermissionInteraction,
+  AcpPermissionRespondExtras,
   AcpRequestPermissionResponse,
 } from '../types/acpIntervention';
 import type {
@@ -19,6 +20,7 @@ export interface AgentInterventionChatLayerProps {
   onRespondAcpPermission: (
     interaction: AcpPermissionInteraction,
     response: AcpRequestPermissionResponse,
+    extras?: AcpPermissionRespondExtras,
   ) => void | Promise<void>;
   onRespondMcpAsk: (
     interaction: McpAskInteraction,

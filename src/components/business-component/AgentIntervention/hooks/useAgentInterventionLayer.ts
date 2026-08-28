@@ -7,6 +7,7 @@ import { useModel } from 'umi';
 import type { AgentInterventionChatLayerProps } from '../AgentInterventionChatLayer';
 import type {
   AcpPermissionInteraction,
+  AcpPermissionRespondExtras,
   AcpRequestPermissionResponse,
   AgentMode,
 } from '../types/acpIntervention';
@@ -72,6 +73,8 @@ type AgentModeCacheObject = {
   version?: number;
   defaultMode?: AgentMode;
   agents?: Record<string, AgentMode>;
+  /** 切到 plan 档前各 agent 的业务档位（批准退出 plan 后回写用），agentId → mode */
+  previousModes?: Record<string, AgentMode>;
 };
 
 const isAgentMode = (mode: unknown): mode is AgentMode =>
@@ -138,6 +141,7 @@ export const readAgentModeCache = (
 export const writeAgentModeCache = (
   mode: AgentMode,
   agentId?: number | string | null,
+  opts?: { previousMode?: AgentMode | null },
 ) => {
   const agentKey = normalizeAgentModeCacheAgentId(agentId);
   const parsed = parseAgentModeCache(
@@ -148,11 +152,13 @@ export const writeAgentModeCache = (
       ? {
           ...parsed,
           agents: { ...(parsed.agents || {}) },
+          previousModes: { ...(parsed.previousModes || {}) },
         }
       : {
           version: 1,
           defaultMode: isAgentMode(parsed) ? parsed : undefined,
           agents: {},
+          previousModes: {},
         };
 
   if (agentKey) {
@@ -160,6 +166,16 @@ export const writeAgentModeCache = (
       ...(nextCache.agents || {}),
       [agentKey]: mode,
     };
+    // previousMode 随档位写入维护：切到 plan 记录切换前档位；切离 plan 清除
+    if (opts && 'previousMode' in opts) {
+      const previousModes = { ...(nextCache.previousModes || {}) };
+      if (opts.previousMode && isAgentMode(opts.previousMode)) {
+        previousModes[agentKey] = opts.previousMode;
+      } else {
+        delete previousModes[agentKey];
+      }
+      nextCache.previousModes = previousModes;
+    }
   } else {
     nextCache.defaultMode = mode;
   }
@@ -167,12 +183,29 @@ export const writeAgentModeCache = (
   localStorage.setItem(AGENT_MODE_STORAGE_KEY, JSON.stringify(nextCache));
 };
 
+/** 读取切换到 plan 档前记录的业务档位（无则 null），批准退出 plan 后回写用 */
+export const readAgentModePreviousMode = (
+  agentId?: number | string | null,
+): AgentMode | null => {
+  const agentKey = normalizeAgentModeCacheAgentId(agentId);
+  const parsed = parseAgentModeCache(
+    localStorage.getItem(AGENT_MODE_STORAGE_KEY),
+  );
+  if (!parsed || isAgentMode(parsed)) {
+    return null;
+  }
+  const previousMode = agentKey ? parsed.previousModes?.[agentKey] : undefined;
+  return isAgentMode(previousMode) ? previousMode : null;
+};
+
 /**
  * switch_mode（ExitPlanMode）批准选项（引擎权限模式）→ 业务 agent_mode 折算。
  *
  * 批准只写引擎侧（current_mode_update + 引擎配置），业务档位若仍停留 plan，
  * 下一轮 chat 会把引擎重新 set_mode 回 plan（刚批准完又开始计划）；反之档位
- * 为 yolo 时本地自动放行会覆盖用户选择的「手动审批」。批准时同步回写业务档位。
+ * 为 yolo 时本地自动放行会覆盖用户选择的「手动审批」。批准时同步回写业务档位：
+ * 优先回写**切到 plan 前的档位**（previousMode），无记录时按选项语义折算
+ * （default→ask 等），再兜底 ask。
  */
 export const SWITCH_MODE_OPTION_AGENT_MODE: Partial<Record<string, AgentMode>> =
   {
@@ -184,11 +217,13 @@ export const SWITCH_MODE_OPTION_AGENT_MODE: Partial<Record<string, AgentMode>> =
     plan: 'plan',
   };
 
-/** switch_mode 审批响应 → 业务档位回写（非 switch_mode / 取消 / 未知选项时不动作） */
+/** switch_mode 审批响应 → 业务档位回写（非 switch_mode / 取消时 不动作）。
+ * @param previousMode 切到 plan 前的业务档位（无则按选项语义/ask 兜底） */
 export const syncAgentModeFromSwitchMode = (
   interaction: AcpPermissionInteraction,
   response: AcpRequestPermissionResponse,
   apply: (mode: AgentMode) => void,
+  previousMode?: AgentMode | null,
 ): void => {
   if (interaction.intervention.acp.request.toolCall.kind !== 'switch_mode') {
     return;
@@ -197,9 +232,15 @@ export const syncAgentModeFromSwitchMode = (
     return;
   }
   const mapped = SWITCH_MODE_OPTION_AGENT_MODE[response.outcome.optionId];
-  if (mapped) {
-    apply(mapped);
+  if (!mapped) {
+    return;
   }
+  if (mapped === 'plan') {
+    // 继续完善计划：保持 plan
+    apply('plan');
+    return;
+  }
+  apply(previousMode ?? mapped ?? 'ask');
 };
 
 export function useAgentInterventionLayer(
@@ -236,24 +277,33 @@ export function useAgentInterventionLayer(
     return 'yolo';
   });
 
+  // 用 ref 跟踪最新 agentMode，避免同步 effect 依赖它而频繁重建定时器
+  const agentModeRef = useRef(agentMode);
+  agentModeRef.current = agentMode;
+
   const setAgentMode = useCallback(
     (mode: AgentMode) => {
+      const previous = agentModeRef.current;
       setAgentModeState(mode);
       if (skipStorage) {
         return;
       }
       try {
-        writeAgentModeCache(mode, agentId);
+        if (mode === 'plan' && previous !== 'plan') {
+          // 切到 plan：记录切换前档位（批准退出 plan 后回写用）
+          writeAgentModeCache(mode, agentId, { previousMode: previous });
+        } else if (mode !== 'plan') {
+          // 切离 plan：清除记录（含批准后回写，避免残留影响下一次 plan 会话）
+          writeAgentModeCache(mode, agentId, { previousMode: null });
+        } else {
+          writeAgentModeCache(mode, agentId);
+        }
       } catch (e) {
         // ignore localStorage errors
       }
     },
     [agentId, skipStorage],
   );
-
-  // 用 ref 跟踪最新 agentMode，避免同步 effect 依赖它而频繁重建定时器
-  const agentModeRef = useRef(agentMode);
-  agentModeRef.current = agentMode;
 
   // 当智能体切换或其模式选择权限发生变化时，重置/更新 agentMode 状态，
   // 特别是在未开启模式切换时强制回归 'yolo'，避免上一个智能体遗留下来的 'ask' 被错误使用。
@@ -315,17 +365,35 @@ export function useAgentInterventionLayer(
   const respondMcpAsk =
     interventionHandlers?.respondMcpAsk ?? conversationInfoModel.respondMcpAsk;
 
-  // switch_mode（ExitPlanMode）批准后把所选引擎权限模式折算回业务 agent_mode
-  //（含持久化），再透传审批响应；普通权限审批不受影响
+  // switch_mode（ExitPlanMode）批准后把业务档位回写为切 plan 前的档位
+  //（无记录按选项语义/ask 兜底），再透传审批响应；普通权限审批不受影响
   const handleRespondAcpPermission = useCallback(
     (
       interaction: AcpPermissionInteraction,
       response: AcpRequestPermissionResponse,
+      extras?: AcpPermissionRespondExtras,
     ) => {
-      syncAgentModeFromSwitchMode(interaction, response, setAgentMode);
-      return respondAcpPermission(interaction, response);
+      const previousMode = skipStorage
+        ? null
+        : readAgentModePreviousMode(agentId);
+      syncAgentModeFromSwitchMode(
+        interaction,
+        response,
+        setAgentMode,
+        previousMode,
+      );
+      const result = respondAcpPermission(interaction, response);
+      // 修订计划：应答「否，继续完善计划」后把修订意见作为新消息发给 agent
+      //（业务档保持 plan，新消息带 plan 下发，引擎继续修订；仿 MCP-Ask resume 先例）
+      const revisionText = extras?.revisionText?.trim();
+      if (revisionText) {
+        void Promise.resolve(result).then(() => {
+          onSendMessage(revisionText);
+        });
+      }
+      return result;
     },
-    [respondAcpPermission, setAgentMode],
+    [respondAcpPermission, setAgentMode, skipStorage, agentId, onSendMessage],
   );
 
   const handleRespondMcpAsk = useCallback(

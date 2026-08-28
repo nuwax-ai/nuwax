@@ -199,10 +199,10 @@ describe('useAgentInterventionLayer', () => {
       }),
     );
 
-  it('maps switch_mode approval (auto) back to business yolo and persists', () => {
+  it('maps switch_mode approval (auto) back to previous business yolo and persists', () => {
     const { result } = renderModeEnabledLayer();
 
-    // 计划阶段：档位停在 plan
+    // 计划阶段：档位停在 plan（stash 切换前档位 yolo）
     act(() => {
       result.current.agentModeInputProps.onAgentModeChange('plan');
     });
@@ -215,7 +215,7 @@ describe('useAgentInterventionLayer', () => {
       );
     });
 
-    // 批准 auto：业务档位回写 yolo（下一轮 chat 不再把引擎推回 plan）
+    // 批准 auto：业务档位回写为切 plan 前的 yolo（下一轮 chat 不再把引擎推回 plan）
     expect(result.current.agentMode).toBe('yolo');
     expect(conversationInfoHandlers.respondAcpPermission).toHaveBeenCalledWith(
       expect.anything(),
@@ -226,7 +226,12 @@ describe('useAgentInterventionLayer', () => {
     ).toMatchObject({ agents: { '2001': 'yolo' } });
   });
 
-  it('maps switch_mode approval (default) back to business ask', () => {
+  it('maps switch_mode approval back to previous business ask', () => {
+    // 预置：切 plan 前档位为 ask
+    localStorage.setItem(
+      'nuwax_agent_mode_cache',
+      JSON.stringify({ version: 1, agents: { '2001': 'ask' } }),
+    );
     const { result } = renderModeEnabledLayer();
 
     act(() => {
@@ -240,11 +245,62 @@ describe('useAgentInterventionLayer', () => {
       );
     });
 
-    // 批准 default（手动审批）：业务档位回写 ask，本地不自动放行
+    // 批准：回写切 plan 前的 ask，本地不自动放行
     expect(result.current.agentMode).toBe('ask');
     expect(
       JSON.parse(localStorage.getItem('nuwax_agent_mode_cache') || '{}'),
     ).toMatchObject({ agents: { '2001': 'ask' } });
+  });
+
+  it('falls back to option semantics when no previous mode is recorded', () => {
+    // 无 previousModes 记录（如旧版本缓存）：按选项语义折算（default→ask）
+    localStorage.setItem(
+      'nuwax_agent_mode_cache',
+      JSON.stringify({ version: 1, agents: { '2001': 'plan' } }),
+    );
+    const { result } = renderModeEnabledLayer();
+
+    act(() => {
+      result.current.chatLayerProps.onRespondAcpPermission?.(
+        switchModeInteraction(),
+        { outcome: { outcome: 'selected', optionId: 'default' } },
+      );
+    });
+
+    expect(result.current.agentMode).toBe('ask');
+  });
+
+  it('switch_mode revision text responds reject and sends the text as a new message', async () => {
+    const onSendMessage = vi.fn();
+    const { result } = renderHook(() =>
+      useAgentInterventionLayer({
+        conversationId: 1,
+        agentId: 2001,
+        messageList: [],
+        allowChooseMode: DefaultSelectedEnum.Yes,
+        onSendMessage,
+      }),
+    );
+
+    act(() => {
+      result.current.agentModeInputProps.onAgentModeChange('plan');
+    });
+
+    await act(async () => {
+      await result.current.chatLayerProps.onRespondAcpPermission?.(
+        switchModeInteraction(),
+        { outcome: { outcome: 'selected', optionId: 'plan' } },
+        { revisionText: '把第 2 步拆细' },
+      );
+    });
+
+    // 应答「否，继续完善计划」+ 修订意见作为新消息发出（引擎留在 plan 修订）
+    expect(conversationInfoHandlers.respondAcpPermission).toHaveBeenCalledWith(
+      expect.anything(),
+      { outcome: { outcome: 'selected', optionId: 'plan' } },
+    );
+    expect(onSendMessage).toHaveBeenCalledWith('把第 2 步拆细');
+    expect(result.current.agentMode).toBe('plan');
   });
 
   it('keeps plan mode when switch_mode approval keeps planning', () => {

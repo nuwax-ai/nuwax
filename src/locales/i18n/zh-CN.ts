@@ -86,6 +86,8 @@ export const ZH_CN: SystemLangMap = {
   "PC.Components.AcpPermissionCard.option.bypassPermissions": "是，并绕过所有权限",
   "PC.Components.AcpPermissionCard.option.default": "是，手动逐项审批编辑",
   "PC.Components.AcpPermissionCard.option.plan": "否，继续完善计划",
+  "PC.Components.AcpPermissionCard.option.planApprove": "批准，退出计划模式并开始实施。",
+  "PC.Components.AcpPermissionCard.revisionPlaceholder": "如需修改计划，请输入修改意见后提交",
   "PC.Components.AcpPermissionCard.rejectOnce": "拒绝",
   "PC.Components.AcpPermissionCard.shortcutHint": "{0}（{1}）",
   "PC.Components.AcpPermissionCard.submitted": "已提交审批结果",

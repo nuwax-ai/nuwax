@@ -90,6 +90,15 @@ export interface AcpPermissionInteraction {
 
 export type AgentInterventionAction = 'submit' | 'cancel' | 'skip' | 'timeout';
 
+/**
+ * 权限卡附加响应信息（仅 switch_mode 使用）：修订文本随「否，继续完善计划」
+ * 应答一起提交，由响应层转为 resume 聊天消息发给 agent（权限协议线上只传
+ * option_id，文本不走该协议）。
+ */
+export interface AcpPermissionRespondExtras {
+  revisionText?: string;
+}
+
 export interface AgentInterventionRespondRequest {
   interventionId: string;
   permission_resolve_request?: {

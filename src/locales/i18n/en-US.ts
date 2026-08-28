@@ -86,6 +86,8 @@ export const EN_US: SystemLangMap = {
   "PC.Components.AcpPermissionCard.option.bypassPermissions": "Yes, and bypass permissions",
   "PC.Components.AcpPermissionCard.option.default": "Yes, and manually approve edits",
   "PC.Components.AcpPermissionCard.option.plan": "No, keep planning",
+  "PC.Components.AcpPermissionCard.option.planApprove": "Approve: exit plan mode and start implementing.",
+  "PC.Components.AcpPermissionCard.revisionPlaceholder": "To revise the plan, type your feedback and submit",
   "PC.Components.AcpPermissionCard.rejectOnce": "Reject",
   "PC.Components.AcpPermissionCard.shortcutHint": "{0} ({1})",
   "PC.Components.AcpPermissionCard.submitted": "Permission response submitted",

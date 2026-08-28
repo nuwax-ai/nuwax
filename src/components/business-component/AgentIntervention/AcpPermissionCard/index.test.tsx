@@ -19,6 +19,11 @@ vi.mock('@/services/i18nRuntime', () => ({
         '是，并自动接受编辑',
       'PC.Components.AcpPermissionCard.option.default': '是，手动逐项审批编辑',
       'PC.Components.AcpPermissionCard.option.plan': '否，继续完善计划',
+      'PC.Components.AcpPermissionCard.option.planApprove':
+        '批准，退出计划模式并开始实施。',
+      'PC.Components.AcpPermissionCard.revisionPlaceholder':
+        '如需修改计划，请输入修改意见后提交',
+      'PC.Common.Global.confirm': '确认',
     };
     const template = dict[key] ?? key;
     return args.reduce(
@@ -152,7 +157,8 @@ describe('AcpPermissionCard', () => {
     expect(submitBtn.className).toContain('loading');
   });
 
-  it('renders distinct mode labels for switch_mode (ExitPlanMode) options', () => {
+  it('renders simplified approve + revision input for switch_mode (ExitPlanMode)', () => {
+    const onRespond = vi.fn();
     render(
       <AcpPermissionCard
         interaction={createInteraction({
@@ -168,11 +174,6 @@ describe('AcpPermissionCard', () => {
                   kind: 'switch_mode',
                 },
                 options: [
-                  {
-                    optionId: 'bypassPermissions',
-                    kind: 'allow_always',
-                    name: 'Yes, and bypass permissions',
-                  },
                   {
                     optionId: 'auto',
                     kind: 'allow_always',
@@ -198,17 +199,115 @@ describe('AcpPermissionCard', () => {
             },
           },
         })}
-        onRespond={vi.fn()}
+        onRespond={onRespond}
         keyboardShortcutsEnabled={false}
       />,
     );
 
-    // 不再出现三个坍缩的「始终允许」：optionId 专属文案优先
-    expect(screen.getByText('是，并绕过所有权限')).toBeTruthy();
-    expect(screen.getByText('是，并使用 auto 模式')).toBeTruthy();
-    expect(screen.getByText('是，并自动接受编辑')).toBeTruthy();
-    expect(screen.getByText('是，手动逐项审批编辑')).toBeTruthy();
-    expect(screen.getByText('否，继续完善计划')).toBeTruthy();
+    // 简化视图：仅一个「批准」项 + 修订输入框，不再罗列引擎的多个模式选项
+    expect(screen.getByText('批准，退出计划模式并开始实施。')).toBeTruthy();
+    expect(
+      screen.getByPlaceholderText('如需修改计划，请输入修改意见后提交'),
+    ).toBeTruthy();
+    expect(screen.queryByText('是，并使用 auto 模式')).toBeNull();
+    expect(screen.queryByText('是，手动逐项审批编辑')).toBeNull();
+    expect(screen.queryByText('否，继续完善计划')).toBeNull();
+  });
+
+  it('switch_mode approve submits the canonical allow_once optionId', () => {
+    const onRespond = vi.fn();
+    render(
+      <AcpPermissionCard
+        interaction={createInteraction({
+          intervention: {
+            ...createInteraction().intervention,
+            acp: {
+              method: 'session/request_permission',
+              request: {
+                sessionId: 'sess-001',
+                toolCall: {
+                  toolCallId: 'tc-plan',
+                  title: 'Ready to code?',
+                  kind: 'switch_mode',
+                },
+                options: [
+                  {
+                    optionId: 'auto',
+                    kind: 'allow_always',
+                    name: 'Yes, and use "auto" mode',
+                  },
+                  {
+                    optionId: 'default',
+                    kind: 'allow_once',
+                    name: 'Yes, and manually approve edits',
+                  },
+                  {
+                    optionId: 'plan',
+                    kind: 'reject_once',
+                    name: 'No, keep planning',
+                  },
+                ],
+              },
+            },
+          },
+        })}
+        onRespond={onRespond}
+        keyboardShortcutsEnabled={false}
+      />,
+    );
+
+    fireEvent.click(screen.getByText('批准，退出计划模式并开始实施。'));
+    expect(onRespond).toHaveBeenCalledWith({
+      outcome: { outcome: 'selected', optionId: 'default' },
+    });
+  });
+
+  it('switch_mode revision text submits reject with the text as extras', () => {
+    const onRespond = vi.fn();
+    render(
+      <AcpPermissionCard
+        interaction={createInteraction({
+          intervention: {
+            ...createInteraction().intervention,
+            acp: {
+              method: 'session/request_permission',
+              request: {
+                sessionId: 'sess-001',
+                toolCall: {
+                  toolCallId: 'tc-plan',
+                  title: 'Ready to code?',
+                  kind: 'switch_mode',
+                },
+                options: [
+                  {
+                    optionId: 'default',
+                    kind: 'allow_once',
+                    name: 'Yes, and manually approve edits',
+                  },
+                  {
+                    optionId: 'plan',
+                    kind: 'reject_once',
+                    name: 'No, keep planning',
+                  },
+                ],
+              },
+            },
+          },
+        })}
+        onRespond={onRespond}
+        keyboardShortcutsEnabled={false}
+      />,
+    );
+
+    fireEvent.change(
+      screen.getByPlaceholderText('如需修改计划，请输入修改意见后提交'),
+      { target: { value: '把第 2 步拆细' } },
+    );
+    fireEvent.click(screen.getByText('确认'));
+    expect(onRespond).toHaveBeenCalledWith(
+      { outcome: { outcome: 'selected', optionId: 'plan' } },
+      { revisionText: '把第 2 步拆细' },
+    );
   });
 
   it('falls back to engine option names when same-kind labels would collide', () => {

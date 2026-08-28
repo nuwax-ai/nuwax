@@ -5,6 +5,7 @@ import type { InterventionQueueItem } from '../hooks/useActiveInterventionQueue'
 import McpAskQuestionCard from '../McpAskQuestionCard';
 import type {
   AcpPermissionInteraction,
+  AcpPermissionRespondExtras,
   AcpRequestPermissionResponse,
 } from '../types/acpIntervention';
 import type {
@@ -21,6 +22,7 @@ interface InterventionDockPanelProps {
   onRespondAcpPermission: (
     interaction: AcpPermissionInteraction,
     response: AcpRequestPermissionResponse,
+    extras?: AcpPermissionRespondExtras,
   ) => void | Promise<void>;
   onRespondMcpAsk: (
     interaction: McpAskInteraction,
@@ -50,8 +52,8 @@ const DockPanel: React.FC<InterventionDockPanelProps> = ({
             docked
             dockShellClassName={dockShellClassName}
             keyboardShortcutsEnabled={keyboardShortcutsEnabled}
-            onRespond={(response) =>
-              onRespondAcpPermission(item.interaction, response)
+            onRespond={(response, extras) =>
+              onRespondAcpPermission(item.interaction, response, extras)
             }
           />
         );
