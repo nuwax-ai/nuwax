@@ -19,7 +19,10 @@
   container-type: size;
 
   --chat-input-height: 0;
-  --intervention-max-height: calc(80cqh - var(--chat-input-height) - @marginXs);
+  // 遮罩下卡片可占满面板高度（减输入框高与上下留白）；AcpPermissionCard 内部滚动预算也消费此变量
+  --intervention-max-height: calc(
+    100cqh - var(--chat-input-height) - 2 * @marginXs
+  );
 
   &.only-input {
     // 隐藏核心展现内容区（针对 hash 化局部类选择器由子组件 index.less 内部 `:global` 实现）
@@ -30,17 +33,27 @@
   }
 }
 
-// 统一干预固定栏：与 ChatInputHome .chat-container 外框同宽
+// 统一干预遮罩：脱离文档流覆盖整个会话面板（消息列表+输入框），背景透明、拦截全部指针交互；
+// 卡片贴底悬于输入框上方，延续既有视觉位置；决策完成后遮罩卸载、会话布局无跳动
 .intervention-dock {
-  flex-shrink: 0;
-  position: relative; // 让 z-index 生效，确保 ask/question/审批卡片置于输入框(sticky,z-index:10)之上
-  z-index: 30;
-  width: 100%;
-  max-width: @chat-max-width;
-  margin: @zero-value auto;
-  padding: @zero-value @zero-value @paddingXs;
+  position: absolute;
+  inset: 0;
+  z-index: 30; // 盖过输入框(sticky,z-index:10)与消息区，不写 background 即为透明遮罩
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  padding-bottom: calc(var(--chat-input-height) + @marginXs);
   box-sizing: border-box;
-  max-height: var(--intervention-max-height);
+  animation: slide-in-up 0.3s ease-out;
+
+  // DockPanel 根节点（.cardSlot / .stackRoot 恒为单根）：限宽居中，与会话列对齐
+  > * {
+    width: 100%;
+    max-width: @chat-max-width;
+    box-sizing: border-box;
+    padding: @zero-value @paddingXs;
+  }
 }
 
 // 会话状态栏样式

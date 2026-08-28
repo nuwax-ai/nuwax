@@ -209,7 +209,8 @@ const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
   const chatInputContainerRef = useRef<HTMLDivElement>(null);
   const queuePanelMeasureRef = useRef<HTMLDivElement>(null);
 
-  // 审批卡片的可用高度需要扣除输入框，避免输入框变高后覆盖卡片底部。
+  // 干预遮罩内卡片的底部避让与高度预算需要输入框实时高度：写入 CSS 变量供
+  // .intervention-dock 的 padding-bottom 与 --intervention-max-height 消费。
   useLayoutEffect(() => {
     const sessionContainer = sessionContainerRef.current;
     const inputContainer = chatInputContainerRef.current;

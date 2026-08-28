@@ -87,8 +87,11 @@ describe('intervention DockPanel 交互', () => {
     expect(card.textContent).toBe('acp-itv-1');
     fireEvent.click(card);
     expect(onRespondAcp).toHaveBeenCalledWith(
-      expect.objectContaining({ intervention: { id: 'itv-1' } }),
+      expect.objectContaining({
+        intervention: expect.objectContaining({ id: 'itv-1' }),
+      }),
       { outcome: { outcome: 'selected', optionId: 'allow' } },
+      undefined,
     );
   });
 
@@ -140,8 +143,11 @@ describe('intervention DockPanel 交互', () => {
     // cards[0] 是 front（最早 a1）
     fireEvent.click(cards[0]);
     expect(onRespondAcp).toHaveBeenCalledWith(
-      expect.objectContaining({ intervention: { id: 'a1' } }),
+      expect.objectContaining({
+        intervention: expect.objectContaining({ id: 'a1' }),
+      }),
       expect.anything(),
+      undefined,
     );
   });
 
