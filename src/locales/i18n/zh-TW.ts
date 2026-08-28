@@ -72,6 +72,7 @@ export const ZH_TW: SystemLangMap = {
   "PC.Components.AgentType.table": "資料表",
   "PC.Components.AgentType.workflow": "工作流",
   "PC.Components.AppDevEmptyState.addDataDescription": "點選“+“新增資料資源",
+  "PC.Components.AgentInterventionChatLayer.dialogLabel": "待處理的智能體請求",
   "PC.Components.AcpPermissionCard.allowAlways": "始終允許",
   "PC.Components.AcpPermissionCard.allowOnce": "允許一次",
   "PC.Components.AcpPermissionCard.cancelShortcutHint": "取消（Esc）",

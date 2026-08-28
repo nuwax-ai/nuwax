@@ -76,6 +76,7 @@ export const EN_US: SystemLangMap = {
   "PC.Common.Subscription.Status.active": "Active",
   "PC.Common.Subscription.Status.cancelled": "Cancelled",
   "PC.Common.Subscription.Status.expired": "Expired",
+  "PC.Components.AgentInterventionChatLayer.dialogLabel": "Pending agent request",
   "PC.Components.AcpPermissionCard.allowAlways": "Always allow",
   "PC.Components.AcpPermissionCard.allowOnce": "Allow once",
   "PC.Components.AcpPermissionCard.cancelShortcutHint": "Cancel (Esc)",

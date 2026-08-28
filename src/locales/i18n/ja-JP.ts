@@ -5405,6 +5405,7 @@ export const JA_JP: SystemLangMap = {
 
   // ── 补齐运行时缺失文案 ────────────────────────────
   "PC.Common.Toast.operationFailed": "操作に失敗しました",
+  "PC.Components.AgentInterventionChatLayer.dialogLabel": "処理待ちのエージェントリクエスト",
   "PC.Components.AcpPermissionCard.allowAlways": "常に許可",
   "PC.Components.AcpPermissionCard.allowOnce": "一度だけ許可",
   "PC.Components.AcpPermissionCard.cancelShortcutHint": "キャンセル（Esc）",

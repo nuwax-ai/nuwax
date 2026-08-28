@@ -5393,6 +5393,7 @@ export const ZH_HK: SystemLangMap = {
 
   // ── 补齐运行时缺失文案 ────────────────────────────
   "PC.Common.Toast.operationFailed": "操作失敗",
+  "PC.Components.AgentInterventionChatLayer.dialogLabel": "待處理的智能體請求",
   "PC.Components.AcpPermissionCard.allowAlways": "始終允許",
   "PC.Components.AcpPermissionCard.allowOnce": "允許一次",
   "PC.Components.AcpPermissionCard.cancelShortcutHint": "取消（Esc）",

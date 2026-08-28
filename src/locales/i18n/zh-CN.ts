@@ -76,6 +76,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Common.Subscription.Status.active": "生效中",
   "PC.Common.Subscription.Status.cancelled": "已取消",
   "PC.Common.Subscription.Status.expired": "已过期",
+  "PC.Components.AgentInterventionChatLayer.dialogLabel": "待处理的智能体请求",
   "PC.Components.AcpPermissionCard.allowAlways": "始终允许",
   "PC.Components.AcpPermissionCard.allowOnce": "允许一次",
   "PC.Components.AcpPermissionCard.cancelShortcutHint": "取消（Esc）",
