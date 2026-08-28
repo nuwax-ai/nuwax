@@ -33,17 +33,18 @@
   }
 }
 
-// 统一干预遮罩：脱离文档流覆盖整个会话面板（消息列表+输入框），背景透明、拦截全部指针交互；
-// 卡片贴底悬于输入框上方，延续既有视觉位置；决策完成后遮罩卸载、会话布局无跳动
+// 统一干预底部 sheet：脱离文档流固定贴底，卡片直接沉到面板底、盖住输入框位置（完全遮挡）；
+// 无遮罩背景，其余区域交互被拦截；决策完成后卸载、会话布局无跳动
 .intervention-dock {
   position: absolute;
   inset: 0;
-  z-index: 30; // 盖过输入框(sticky,z-index:10)与消息区，不写 background 即为透明遮罩
+  z-index: 30; // 盖过输入框(sticky,z-index:10)与消息区
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
   align-items: center;
-  padding-bottom: calc(var(--chat-input-height) + @marginXs);
+  // 视觉底距目标 42px = 本层 26px + 链路固有 ~16px（实测：8px→16px、16px→32px）
+  padding-bottom: 30px;
   box-sizing: border-box;
   animation: slide-in-up 0.3s ease-out;
 

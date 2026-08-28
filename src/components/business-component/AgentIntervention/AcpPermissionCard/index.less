@@ -134,7 +134,8 @@
     }
 
     .diffPreview {
-      max-height: calc(var(--intervention-max-height, 80vh) - 260px);
+      // diff 预览固定矮窗：派生自面板总高的旧预算会随遮罩化放宽而过高
+      max-height: 90px;
       overflow: hidden;
 
       // DiffView 根节点原本使用 `height: 100%`，在自适应预览中会随内容继续撑开。
