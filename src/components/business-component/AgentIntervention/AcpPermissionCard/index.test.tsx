@@ -2,8 +2,8 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import type { AcpPermissionInteraction } from '../types/acpIntervention';
 import AcpPermissionCard from './index';
 
-vi.mock('@/services/i18nRuntime', () => ({
-  t: (key: string, ...args: string[]) => {
+vi.mock('@/services/i18nRuntime', () => {
+  const tImpl = (key: string, ...args: string[]): string => {
     const dict: Record<string, string> = {
       'PC.Components.AcpPermissionCard.defaultTitle': '权限审批',
       'PC.Components.AcpPermissionCard.eyebrow': '安全确认',
@@ -30,11 +30,18 @@ vi.mock('@/services/i18nRuntime', () => ({
       (text, item, index) => text.replace(`{${index}}`, item),
       template,
     );
-  },
-}));
+  };
+  // MarkdownCustomPlanDoc 走 dict；与 t 共用同一字典
+  return { t: tImpl, dict: tImpl };
+});
 
 vi.mock('./index.less', () => ({
   default: new Proxy({}, { get: (_: any, key: string) => String(key) }),
+}));
+
+// MarkdownCustomPlanDoc 的样式（vitest 不把 .less 当 CSS modules，代理之）
+vi.mock('@/components/MarkdownCustomPlanDoc/index.less', () => ({
+  default: new Proxy({}, { get: () => 'cls' }),
 }));
 
 vi.mock('./useAcpPermissionShortcuts', () => ({
@@ -391,5 +398,49 @@ describe('AcpPermissionCard', () => {
     );
 
     expect(screen.getByText('安全确认')).toBeTruthy();
+  });
+
+  it('switch_mode（ExitPlanMode）审批直接渲染计划文档全文（不依赖 PROCESSING 翻译链）', () => {
+    const base = createInteraction();
+    render(
+      <AcpPermissionCard
+        interaction={createInteraction({
+          intervention: {
+            ...base.intervention,
+            acp: {
+              method: 'session/request_permission',
+              request: {
+                sessionId: 'sess-001',
+                toolCall: {
+                  toolCallId: 'tc-plan',
+                  title: 'Ready to code?',
+                  kind: 'switch_mode',
+                  rawInput: {
+                    plan: '# 满江红三页 PPT 制作计划\n\n## Context\n宋代宣纸美学',
+                    planFilePath: '/tmp/plan.md',
+                  },
+                },
+                options: [
+                  {
+                    optionId: 'bypassPermissions',
+                    kind: 'allow_always',
+                    name: '是，并绕过所有权限',
+                  },
+                  {
+                    optionId: 'plan',
+                    kind: 'reject_once',
+                    name: '否，继续完善计划',
+                  },
+                ],
+              },
+            },
+          } as any,
+        })}
+        onRespond={vi.fn()}
+        keyboardShortcutsEnabled={false}
+      />,
+    );
+
+    expect(screen.getByText(/满江红三页 PPT 制作计划/)).toBeTruthy();
   });
 });

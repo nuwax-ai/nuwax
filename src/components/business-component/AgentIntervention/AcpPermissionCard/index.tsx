@@ -2,7 +2,11 @@ import ChangeFileGitDiffView, {
   DiffModeEnum,
 } from '@/components/business-component/ChangeFileGitDiffView';
 import { EllipsisTooltip } from '@/components/custom/EllipsisTooltip';
+import MarkdownCustomPlanDoc, {
+  extractPlanDocument,
+} from '@/components/MarkdownCustomPlanDoc';
 import { t } from '@/services/i18nRuntime';
+import { ProcessingEnum } from '@/types/enums/common';
 import { normalizeFileDiffItems } from '@/utils/fileChangeDiff';
 import {
   ArrowDownOutlined,
@@ -137,6 +141,35 @@ const AcpPermissionCard: React.FC<AcpPermissionCardProps> = ({
       }),
     [toolCall.rawInput, toolCall.locations],
   );
+
+  // switch_mode（ExitPlanMode）审批：把计划文档直接渲染进审批卡。
+  // PROCESSING 消息流的 PlanDoc 依赖服务端翻译透传 rawInput（实测会丢失，卡片降级），
+  // 而 request_permission 的 toolCall 数据完整（rawInput.plan 或 content 文本块），就地展示。
+  const planDocument = useMemo(() => {
+    if (toolCall.kind !== 'switch_mode') {
+      return null;
+    }
+    const extracted = extractPlanDocument(toolCall);
+    if (extracted) {
+      return extracted;
+    }
+    // request_permission 抓包形状：rawInput 可能为空，plan 全文在 content 文本块里
+    const blocks: any[] = Array.isArray(toolCall.content)
+      ? toolCall.content
+      : [];
+    const text = blocks.find(
+      (block) => typeof block?.content?.text === 'string',
+    )?.content?.text as string | undefined;
+    const plan = text?.trim().startsWith('#') ? text.trim() : '';
+    return plan
+      ? {
+          plan,
+          planFilePath: (toolCall.rawInput as any)?.planFilePath as
+            | string
+            | undefined,
+        }
+      : null;
+  }, [toolCall]);
 
   const visibleOptions = useMemo(
     () =>
@@ -325,6 +358,18 @@ const AcpPermissionCard: React.FC<AcpPermissionCardProps> = ({
       </header>
 
       <div className={styles.body}>
+        {planDocument ? (
+          <div className={styles.planDocWrap}>
+            <MarkdownCustomPlanDoc
+              title={title}
+              plan={planDocument.plan}
+              planFilePath={planDocument.planFilePath}
+              status={
+                isSubmitted ? ProcessingEnum.FINISHED : ProcessingEnum.EXECUTING
+              }
+            />
+          </div>
+        ) : null}
         {fileDiffItems.length ? (
           <div className={styles.filePreview}>
             {fileDiffItems.map((item) => (
