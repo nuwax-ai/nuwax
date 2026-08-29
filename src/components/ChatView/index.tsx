@@ -33,6 +33,7 @@ import ChatBottomMore from './ChatBottomMore';
 import ChatSampleBottom from './ChatSampleBottom';
 import styles from './index.less';
 import RunOver from './RunOver';
+import TurnProcessCollapse from './TurnProcessCollapse';
 
 const cx = classNames.bind(styles);
 
@@ -47,6 +48,7 @@ const ChatView: React.FC<ChatViewProps> = memo(
     conversationId = '',
     showStatusDesc = true,
     showDebug = true,
+    turnPresentation,
   }) => {
     const { userInfo } = useModel('userInfo');
     const { data } = useUnifiedTheme();
@@ -73,7 +75,8 @@ const ChatView: React.FC<ChatViewProps> = memo(
       (isTerminalStatus && densityPolicy.collapseTerminal);
 
     const processedText = useMemo(() => {
-      const rawText = messageInfo?.text || '';
+      const rawText =
+        turnPresentation?.summaryMarkdown ?? messageInfo?.text ?? '';
       const grouped = groupMarkdownProcesses(rawText);
       // 思考按流式位置内联渲染：新消息 text 已含 markdown-custom-think 标签；
       // 存量历史消息只有聚合 think 字段（无位置信息），合成为消息开头的内联块，
@@ -82,7 +85,9 @@ const ChatView: React.FC<ChatViewProps> = memo(
         !rawText.includes('markdown-custom-think') && messageInfo?.think
           ? `${getLegacyThinkBlock(messageInfo.think)}${grouped}`
           : grouped;
-      return isTerminalStatus && densityPolicy.terminalAggregate
+      return !turnPresentation &&
+        isTerminalStatus &&
+        densityPolicy.terminalAggregate
         ? collapseTerminalProcesses(withLegacyThink)
         : withLegacyThink;
     }, [
@@ -90,6 +95,7 @@ const ChatView: React.FC<ChatViewProps> = memo(
       messageInfo?.think,
       isTerminalStatus,
       densityPolicy.terminalAggregate,
+      turnPresentation,
     ]);
 
     // text 含内联思考标签（含历史合成）时不再走旧顶部思考区，避免双份渲染
@@ -244,6 +250,15 @@ const ChatView: React.FC<ChatViewProps> = memo(
           <ConditionRender
             condition={messageInfo?.role !== AssistantRoleEnum.USER}
           >
+            {!!turnPresentation?.processMarkdown && (
+              <TurnProcessCollapse
+                id={turnPresentation.key}
+                conversationId={conversationId}
+                markdown={turnPresentation.processMarkdown}
+                metrics={turnPresentation.metrics}
+                isTerminal={turnPresentation.isTerminal}
+              />
+            )}
             {/* 内容区域: 思考内容、会话内容 */}
             {(!!messageInfo?.think || !!messageInfo?.text) && (
               <div className={cx(styles['inner-container'], contentClassName)}>

@@ -1094,26 +1094,11 @@ function groupMarkdownProcesses(text: string): string {
 
     // 自动安全提取并 URL 编码 name 属性以防止换行或引号破坏 markdown HTML 块树解析
     let processedTag = tagMatch;
-    const nameStartIdx = tagMatch.search(/name=(?:\\"|"|\\')/);
-    if (nameStartIdx !== -1) {
-      const markerMatch = tagMatch
-        .slice(nameStartIdx)
-        .match(/name=(?:\\"|"|\\')/);
-      const marker = markerMatch ? markerMatch[0] : '';
-      const valueStart = nameStartIdx + marker.length;
-
-      const tagEndIdx = tagMatch.indexOf('></markdown-custom-process>');
-      const tagContentEnd =
-        tagEndIdx !== -1
-          ? tagEndIdx
-          : tagMatch.endsWith('/>')
-          ? tagMatch.length - 2
-          : tagMatch.length - 1;
-
-      const quoteLen = marker.includes('\\') ? 2 : 1;
-      const valueEnd = tagContentEnd - quoteLen;
-
-      const rawNameVal = tagMatch.slice(valueStart, valueEnd);
+    const nameAttributeMatch = tagMatch.match(
+      /name=(\\"|\\'|"|')([\s\S]*?)\1(?=\s|\/?>)/i,
+    );
+    if (nameAttributeMatch) {
+      const rawNameVal = nameAttributeMatch[2];
 
       // 解码 HTML 实体
       let decodedNameVal = rawNameVal
@@ -1130,24 +1115,18 @@ function groupMarkdownProcesses(text: string): string {
       // 安全 URL 编码成单行字符
       const encodedNameVal = encodeURIComponent(decodedNameVal);
 
-      // 重建标签名属性并统一归一化为 React / rehype-raw 容易挂载的未转义标准 HTML 属性
-      const beforeName = tagMatch.slice(0, nameStartIdx);
-      const closingTag =
-        tagEndIdx !== -1
-          ? '></markdown-custom-process>'
-          : tagMatch.endsWith('/>')
-          ? ' />'
-          : '>';
-
-      let normalizedBeforeName = beforeName
+      // 只替换 name 自身，保留其后的 type/status 等属性；旧实现把 name 后面的
+      // 所有属性一起编码进 name，导致渲染层丢失过程类型和状态。
+      processedTag = tagMatch
+        .replace(nameAttributeMatch[0], `name="${encodedNameVal}"`)
         .replace(/executeId=\\"/g, 'executeId="')
         .replace(/executeId=\\'/g, 'executeId="')
         .replace(/type=\\"/g, 'type="')
+        .replace(/type=\\'/g, 'type="')
         .replace(/status=\\"/g, 'status="')
+        .replace(/status=\\'/g, 'status="')
         .replace(/\\"/g, '"')
         .replace(/\\'/g, "'");
-
-      processedTag = `${normalizedBeforeName}name="${encodedNameVal}"${closingTag}`;
     }
 
     // 规范化标签（确保有闭合）
