@@ -720,20 +720,12 @@ const driveThinkRenderProbe = async () => {
   await waitForRenderStable();
   const probe = await pageJs(
     String.raw`(() => {
-      const turnContent = document.querySelector(
-        '[data-testid="turn-process-collapse"]',
-      );
-      const headers = [...(turnContent || document).querySelectorAll('[class*="think-header"]')];
+      const headers = [...document.querySelectorAll('[class*="think-header"]')];
       return JSON.stringify({
         thinkCount: headers.length,
         allThought: headers.every((h) => (h.textContent || '').includes('已思考')),
         legacyHeader: !!document.querySelector('[class*="thinking-header"]'),
-        turnCount: document.querySelectorAll(
-          '[data-testid="turn-process-collapse"]',
-        ).length,
-        toolCards: [...(turnContent || document).querySelectorAll(
-          '[class*="process-title"]',
-        )].length,
+        groupCount: document.querySelectorAll('[class*="markdown-custom-process-group"]').length,
         expandedCount: [...document.querySelectorAll('[class*="think-content"]')].filter(
           (c) => c.className.includes('is-expanded'),
         ).length,
@@ -751,10 +743,7 @@ const driveThinkRenderProbe = async () => {
   );
   expect(parsed.allThought, `思考块标题应全部为「已思考」：${probe}`);
   expect(!parsed.legacyHeader, '旧顶部思考区（thinking-header）不应出现');
-  expect(
-    parsed.turnCount === 1 && parsed.toolCards >= 1,
-    `思考与工具应收进轮次折叠区（工具卡 ≥1），实际轮次 ${parsed.turnCount}、工具卡 ${parsed.toolCards}：${probe}`,
-  );
+  expect(parsed.groupCount >= 1, `应存在工具调用组，实际 ${parsed.groupCount}`);
   expect(
     parsed.expandedCount === 0,
     `终态后思考块应全部收起，实际展开 ${parsed.expandedCount} 个`,
@@ -889,196 +878,131 @@ const driveTerminalOutputProbe = async () => {
 
 /**
  * 折叠效果全景探针（COLLAPSE_SHOWCASE，双轨）：
- * 轮次工作轨迹折叠——4 轮思考 + 4 次工具 + 1 次终端执行收进轮次折叠区，
- * header 展示「N 工具调用 · M 条消息 · 已工作 T」，终态默认收起、仅最终
- * summary 常显；展开后按原顺序回看，终端卡自身保持收起不漏全文。
+ * 复刻真实任务形态的汇总演示——4 轮思考 + 2 个工具组 + 1 张终端卡全部收起为
+ * 摘要行、终端收起不漏全文、点击展开可回看。
  */
-const turnCollapseProbe = async () => {
-  const header = await pageJs(
-    String.raw`(() => {
-      const header = document.querySelector('[data-testid="turn-process-header"]');
-      const content = header
-        ? document.getElementById(header.getAttribute('aria-controls'))
-        : null;
-      return JSON.stringify({
-        turnCount: document.querySelectorAll(
-          '[data-testid="turn-process-collapse"]',
-        ).length,
-        headerText: (header && header.textContent) || '',
-        ariaExpanded: header ? header.getAttribute('aria-expanded') : null,
-        contentHeight: content
-          ? Math.round(content.getBoundingClientRect().height)
-          : -1,
-        bodyText: document.body.textContent,
-      });
-    })()`,
-    'turn collapse probe',
-  );
-  return JSON.parse(header);
-};
-
 const driveCollapseShowcaseProbe = async () => {
   await waitForReplaySettled();
   await waitForRenderStable();
-  const parsed = await turnCollapseProbe();
-  const probe = JSON.stringify({
-    ...parsed,
-    bodyText: parsed.bodyText.slice(0, 200),
-  });
-  expect(parsed.turnCount === 1, `应恰好渲染 1 个轮次折叠区：${probe}`);
-  expect(
-    /5\s*工具调用/.test(parsed.headerText) &&
-      parsed.headerText.includes('条消息') &&
-      parsed.headerText.includes('已工作'),
-    `header 应展示「5 工具调用 · N 条消息 · 已工作 T」三项指标：${probe}`,
-  );
-  expect(
-    parsed.ariaExpanded === 'false',
-    `终态轮次折叠区应默认收起：${probe}`,
-  );
-  expect(
-    parsed.contentHeight === 0,
-    `收起时过程区不占空间（高度应为 0，仅 summary 常显）：${probe}`,
-  );
-  expect(
-    parsed.bodyText.includes('demo-42'),
-    `最终 summary 应常显（demo-42 结论）：${probe}`,
-  );
-
-  // 点击轮次 header 展开 → 思考轨迹可见、顺序完整、终端卡仍收起
-  await pageJs(
-    String.raw`document.querySelector('[data-testid="turn-process-header"]').click()`,
-    'click turn header',
-  );
-  await pause(0.5);
-  const expanded = await pageJs(
+  const probe = await pageJs(
     String.raw`(() => {
-      const header = document.querySelector('[data-testid="turn-process-header"]');
-      const content = document.getElementById(header.getAttribute('aria-controls'));
-      const text = content.textContent || '';
-      const thinkHeaders = [...content.querySelectorAll('[class*="think-header"]')];
-      // DOM 序（querySelectorAll 保证文档顺序）取思考头与工具卡的交错序列，
-      // 验证展开后过程按发生顺序完整保留
-      const marks = [...content.querySelectorAll(
-        '[class*="think-header"], [class*="process-title"]',
-      )].map((el) =>
-        (el.className || '').includes('think') ? 't' : 'T',
-      );
+      const bodyText = document.body.textContent;
+      const thinkHeaders = [...document.querySelectorAll('[class*="think-header"]')];
       return JSON.stringify({
-        ariaExpanded: header.getAttribute('aria-expanded'),
-        contentHeight: Math.round(content.getBoundingClientRect().height),
         thinkCount: thinkHeaders.length,
-        thinkAllThought: thinkHeaders.every((h) =>
-          (h.textContent || '').includes('已思考'),
-        ),
-        thinkToolInterleaved:
-          marks.indexOf('t') === 0 &&
-          marks.indexOf('T') > 0 &&
-          marks.lastIndexOf('t') > marks.indexOf('T'),
-        terminalCmd: text.includes('$ echo demo-$((41+1))'),
-        exitOk: text.includes('exit 0'),
-        terminalLeak: text.includes('real\t0m0.01s'),
-        summaryOutside: !text.includes('折叠进轮次折叠区'),
+        thinkAllThought: thinkHeaders.every((h) => (h.textContent || '').includes('已思考')),
+        thinkExpanded: [...document.querySelectorAll('[class*="think-content"]')].filter(
+          (c) => c.className.includes('is-expanded'),
+        ).length,
+        groups: document.querySelectorAll('[class*="markdown-custom-process-group"]').length,
+        groupLabel: bodyText.includes('执行过程'),
+        terminalCmd: bodyText.includes('$ echo demo-$((41+1))'),
+        exitOk: bodyText.includes('exit 0'),
+        terminalLeak: bodyText.includes('real\t0m0.01s'),
+        bodyFinal: bodyText.includes('折叠为摘要行'),
       });
     })()`,
-    'turn expanded',
+    'collapse showcase probe',
   );
-  const e = JSON.parse(expanded);
-  expect(e.ariaExpanded === 'true', `点击轮次 header 后应展开：${expanded}`);
-  expect(e.contentHeight > 0, `展开后过程区应有高度：${expanded}`);
-  expect(e.thinkCount >= 4, `展开后应有 ≥4 个思考块：${expanded}`);
-  expect(e.thinkAllThought, `思考块应全部为「已思考」摘要态：${expanded}`);
+  const parsed = JSON.parse(probe);
+  expect(parsed.thinkCount >= 4, `应有 ≥4 个思考块（4 轮思考）：${probe}`);
+  expect(parsed.thinkAllThought, `思考块应全部为「已思考」摘要态：${probe}`);
   expect(
-    e.thinkToolInterleaved,
-    `思考块与工具卡应按发生顺序交错排列：${expanded}`,
+    parsed.thinkExpanded === 0,
+    `终态思考块应全部收起，实际展开 ${parsed.thinkExpanded} 个`,
+  );
+  // 终态聚合（collapseTerminalProcesses）：全部组/思考/中间正文收拢为单个「执行过程」组
+  expect(
+    parsed.groups === 1,
+    `终态应聚合为单个执行过程组，实际 ${parsed.groups} 个：${probe}`,
+  );
+  expect(parsed.groupLabel, '聚合组摘要行（执行过程）应渲染');
+  expect(
+    parsed.terminalCmd && parsed.exitOk,
+    `终端卡应渲染（命令行 + exit 徽标）：${probe}`,
   );
   expect(
-    e.terminalCmd && e.exitOk,
-    `终端卡应渲染（命令行 + exit 徽标）：${expanded}`,
+    !parsed.terminalLeak,
+    `终端收起时不应露出全量输出（real 0m0.01s 标记行）：${probe}`,
   );
-  expect(
-    !e.terminalLeak,
-    `终端卡收起态不应露出全量输出（real 0m0.01s 标记行）：${expanded}`,
-  );
-  expect(e.summaryOutside, `最终 summary 不应重复出现在过程区内：${expanded}`);
+  expect(parsed.bodyFinal, '终态正文应渲染');
 
-  // 点击终端卡标题展开 → 全量输出可见
+  // 点击终端卡标题展开 → 标记行可见
   await pageJs(
     String.raw`[...document.querySelectorAll('[class*="process-title"][class*="is-terminal"]')][0].click()`,
     'click terminal title',
   );
   await pause(0.4);
-  const fullOutput = await pageJs(
+  const expanded = await pageJs(
     String.raw`document.body.textContent.includes('real\t0m0.01s')`,
     'terminal expanded',
   );
-  expect(fullOutput === true, '点击终端卡后应展开露出全量输出');
+  expect(expanded === true, '点击终端卡后应展开露出全量输出');
 };
 
 /**
  * 终态执行过程聚合探针（TERMINAL_COLLAPSE，双轨）：
- * 多轮「正文-工具组」交错长任务终态后，中间正文与工具全部收进轮次折叠区
- * （4 次工具调用计入 header），仅最终正文常显；展开后中间正文按原顺序完整可见。
+ * 多轮「正文-工具组」交错长任务终态后，前面的中间正文/工具组聚合为
+ * 单个「执行过程」折叠区（收起），只展示最后一段正文；展开可回看中间正文。
  */
 const driveTerminalCollapseProbe = async () => {
   await waitForReplaySettled();
   await waitForRenderStable();
-  const parsed = await turnCollapseProbe();
-  const probe = JSON.stringify({
-    ...parsed,
-    bodyText: parsed.bodyText.slice(0, 200),
-  });
-  expect(parsed.turnCount === 1, `应恰好渲染 1 个轮次折叠区：${probe}`);
-  expect(
-    /4\s*工具调用/.test(parsed.headerText) &&
-      parsed.headerText.includes('条消息') &&
-      parsed.headerText.includes('已工作'),
-    `header 应展示「4 工具调用 · N 条消息 · 已工作 T」三项指标：${probe}`,
+  const probe = await pageJs(
+    String.raw`(() => {
+      const bodyText = document.body.textContent;
+      const groups = [...document.querySelectorAll(
+        '[class*="markdown-custom-process-group"]',
+      )];
+      const expandedContents = [...document.querySelectorAll(
+        '[class*="group-content"]',
+      )].filter((c) => (c.className || '').includes('is-expanded'));
+      return JSON.stringify({
+        groupCount: groups.length,
+        hasExecutionLabel: bodyText.includes('执行过程'),
+        midTextInDom: bodyText.includes('第一轮结论'),
+        finalTextVisible: bodyText.includes('改造完成：入口与工具模块'),
+        expandedCount: expandedContents.length,
+      });
+    })()`,
+    'terminal collapse probe',
   );
+  const parsed = JSON.parse(probe);
   expect(
-    parsed.ariaExpanded === 'false',
-    `终态轮次折叠区应默认收起：${probe}`,
+    parsed.groupCount === 1,
+    `终态应聚合为单个执行过程组，实际 ${parsed.groupCount} 个：${probe}`,
   );
+  expect(parsed.hasExecutionLabel, `聚合组标题（执行过程）应渲染：${probe}`);
+  expect(parsed.midTextInDom, `中间正文应保留在折叠区 DOM 内：${probe}`);
+  expect(parsed.finalTextVisible, `最终正文应保留在折叠区外可见：${probe}`);
   expect(
-    parsed.contentHeight === 0,
-    `收起时过程区不占空间（高度应为 0）：${probe}`,
-  );
-  expect(
-    parsed.bodyText.includes('改造完成：入口与工具模块'),
-    `最终 summary 应常显在折叠区外：${probe}`,
+    parsed.expandedCount === 0,
+    `终态聚合组应默认收起，实际展开 ${parsed.expandedCount} 个：${probe}`,
   );
 
-  // 点击轮次 header 展开 → 中间正文按原顺序可见
+  // 点击聚合组 header 展开 → 中间正文可见
   await pageJs(
-    String.raw`document.querySelector('[data-testid="turn-process-header"]').click()`,
-    'click turn header',
+    String.raw`[...document.querySelectorAll('[class*="group-header"]')][0].click()`,
+    'click execution group header',
   );
   await pause(0.5);
   const expanded = await pageJs(
     String.raw`(() => {
-      const header = document.querySelector('[data-testid="turn-process-header"]');
-      const content = document.getElementById(header.getAttribute('aria-controls'));
-      const text = content.textContent || '';
-      const marks = ['先分析仓库结构', '扫描完成', '第一轮结论'];
-      const idx = marks.map((m) => text.indexOf(m));
+      const expandedContents = [...document.querySelectorAll(
+        '[class*="group-content"]',
+      )].filter((c) => (c.className || '').includes('is-expanded'));
       return JSON.stringify({
-        ariaExpanded: header.getAttribute('aria-expanded'),
-        contentHeight: Math.round(content.getBoundingClientRect().height),
-        midTextVisible: idx.every((i) => i >= 0),
-        midTextInOrder: idx.every((i, i2) => i2 === 0 || idx[i2 - 1] < i),
-        toolCards: ['扫描目录结构', '解析依赖关系', '分析核心模块', '生成改造方案'].every(
-          (name) => text.includes(name),
+        expandedCount: expandedContents.length,
+        midTextVisible: expandedContents.some((c) =>
+          (c.textContent || '').includes('第一轮结论'),
         ),
       });
     })()`,
-    'turn expanded',
+    'execution group expanded',
   );
-  const e = JSON.parse(expanded);
-  expect(e.ariaExpanded === 'true', `点击轮次 header 后应展开：${expanded}`);
-  expect(e.contentHeight > 0, `展开后过程区应有高度：${expanded}`);
-  expect(e.midTextVisible, `展开后中间正文应可见：${expanded}`);
-  expect(e.midTextInOrder, `中间正文应按发生顺序排列：${expanded}`);
-  expect(e.toolCards, `展开后 4 张工具卡应全部可见：${expanded}`);
+  const expandedParsed = JSON.parse(expanded);
+  expect(expandedParsed.expandedCount >= 1, `点击聚合组后应展开：${expanded}`);
+  expect(expandedParsed.midTextVisible, `展开后中间正文应可见：${expanded}`);
 };
 
 /**

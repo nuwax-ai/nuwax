@@ -348,92 +348,6 @@ function restoreMarkdownMath(html, slots) {
     });
 }
 
-/**
- * 表格 → Markdown 管道文本（表格卡「复制」用，对齐会话区 extractTableToMarkdown 语义）
- */
-function tableToMarkdownText(table) {
-    if (!table) return '';
-    var rows = [];
-    var pushRow = function (tr) {
-        var cells = Array.prototype.slice.call(tr.querySelectorAll('th,td')).map(function (cell) {
-            return (cell.textContent || '').trim().replace(/\|/g, '\\|').replace(/\n/g, ' ');
-        });
-        if (cells.length) rows.push('| ' + cells.join(' | ') + ' |');
-    };
-    var headerRows = table.querySelectorAll('thead tr');
-    headerRows.forEach(pushRow);
-    var bodyRows = table.querySelectorAll('tbody tr');
-    if (headerRows.length && (bodyRows.length || !rows.length)) {
-        var colCount = headerRows[0].querySelectorAll('th,td').length || (bodyRows[0] ? bodyRows[0].querySelectorAll('th,td').length : 0);
-        if (colCount) rows.push('| ' + Array.from({ length: colCount }, function () { return '---'; }).join(' | ') + ' |');
-    }
-    bodyRows.forEach(pushRow);
-    return rows.join('\n');
-}
-
-/**
- * 代码块/表格卡复制：事件委托 + clipboard API（降级 execCommand），
- * 按钮文案「复制」→「已复制」约 3s 复位，期间防重复点击
- */
-function setupMarkdownCodeCopy(scope) {
-    if (!scope || scope.dataset.copyBound === '1') {
-        return;
-    }
-    scope.dataset.copyBound = '1';
-
-    scope.addEventListener('click', async (event) => {
-        const btn = event.target && event.target.closest
-            ? event.target.closest('.md-copy-btn')
-            : null;
-        if (!btn || btn.dataset.copyLocked === '1') {
-            return;
-        }
-
-        const block = btn.closest('.md-code-block');
-        // 代码块取高亮 code 的原始文本；表格卡从 table DOM 反提取 Markdown 管道文本
-        const codeEl = block ? block.querySelector('pre code') : null;
-        const text = codeEl
-            ? (codeEl.textContent || '')
-            : tableToMarkdownText(block ? block.querySelector('table') : null);
-        if (!text) {
-            return;
-        }
-        let copied = false;
-        try {
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                await navigator.clipboard.writeText(text);
-                copied = true;
-            }
-        } catch (e) {
-            console.warn('[FilePreview] clipboard API failed, fallback to execCommand:', e);
-        }
-
-        if (!copied) {
-            try {
-                const textArea = document.createElement('textarea');
-                textArea.value = text;
-                textArea.style.cssText = 'position: fixed; top: -9999px; left: -9999px;';
-                document.body.appendChild(textArea);
-                textArea.select();
-                textArea.setSelectionRange(0, 99999);
-                copied = document.execCommand('copy');
-                document.body.removeChild(textArea);
-            } catch (e) {
-                copied = false;
-            }
-        }
-
-        btn.dataset.copyLocked = '1';
-        btn.textContent = copied ? '已复制' : '复制失败';
-        btn.classList.toggle('md-copy-btn-copied', copied);
-        setTimeout(() => {
-            btn.textContent = '复制';
-            btn.classList.remove('md-copy-btn-copied');
-            delete btn.dataset.copyLocked;
-        }, 3000);
-    });
-}
-
 async function renderMarkdown(url, container) {
     // Load marked.js for markdown rendering (Local)
     await loadScript('/libs/js-preview/marked.min.js');
@@ -455,68 +369,35 @@ async function renderMarkdown(url, container) {
     const markdown = await response.text();
     const mathExtract = extractMarkdownMath(markdown);
 
-    // 代码块渲染为会话区同款 md-code-block（语言标签 + 复制按钮 + highlight.js 高亮）。
-    // 注意：marked v11 已移除 setOptions({ highlight }) 选项（静默无效），高亮必须在 renderer 内直调
-    const { marked: markedInstance } = window;
-    const targetMarked = typeof marked !== 'undefined' ? marked : markedInstance;
-
-    targetMarked.use({
-        breaks: true,
-        gfm: true,
-        renderer: {
-            code: function (code, infostring) {
-                const lang = String(infostring || '').trim().split(/\s+/)[0];
-                if (!lang) {
-                    // 无语言围栏保持 GitHub 风格裸 pre
-                    return '<pre><code>' + escapeHtmlText(code) + '</code></pre>';
-                }
-
-                let highlighted = '';
-                if (typeof hljs !== 'undefined') {
+    // Configure marked to use highlight.js
+    if (typeof hljs !== 'undefined') {
+        const { marked: markedInstance } = window;
+        const targetMarked = typeof marked !== 'undefined' ? marked : markedInstance;
+        
+        targetMarked.setOptions({
+            highlight: function (code, lang) {
+                if (lang && hljs.getLanguage(lang)) {
                     try {
-                        if (hljs.getLanguage(lang)) {
-                            highlighted = hljs.highlight(code, { language: lang }).value;
-                        } else {
-                            highlighted = hljs.highlightAuto(code).value;
-                        }
+                        return hljs.highlight(code, { language: lang }).value;
                     } catch (e) {
                         console.error('Highlight error:', e);
                     }
                 }
-
-                return '<div class="md-code-block">'
-                    + '<div class="md-code-block-banner">'
-                    + '<span class="md-code-block-language">' + escapeHtmlText(lang) + '</span>'
-                    + '<span class="md-copy-btn" role="button" tabindex="0">复制</span>'
-                    + '</div>'
-                    + '<pre class="md-code-block-content"><code class="language-' + escapeHtmlText(lang) + '">'
-                    + (highlighted || escapeHtmlText(code))
-                    + '</code></pre>'
-                    + '</div>';
+                return hljs.highlightAuto(code).value;
             },
-            // 表格渲染为会话区同款表格卡（「表格」标签 + 复制为 Markdown）；
-            // marked v11 旧签名为 table(header, body)，均为已渲染的 thead/tbody HTML
-            table: function (header, body) {
-                return '<div class="md-code-block md-table-block">'
-                    + '<div class="md-code-block-banner">'
-                    + '<span class="md-code-block-language">表格</span>'
-                    + '<span class="md-copy-btn" role="button" tabindex="0">复制</span>'
-                    + '</div>'
-                    + '<div class="md-table-content"><table><thead>' + header + '</thead><tbody>' + (body || '') + '</tbody></table></div>'
-                    + '</div>';
-            },
-        },
-    });
+            breaks: true,
+            gfm: true
+        });
+    }
 
     // Render markdown to HTML, then restore KaTeX
-    const html = restoreMarkdownMath(targetMarked.parse(mathExtract.markdown), mathExtract.slots);
+    const html = restoreMarkdownMath(marked.parse(mathExtract.markdown), mathExtract.slots);
 
     container.className = 'preview-container markdown-preview';
     const markdownBody = document.createElement('div');
     markdownBody.className = 'markdown-body';
     markdownBody.innerHTML = html;
     container.appendChild(markdownBody);
-    setupMarkdownCodeCopy(markdownBody);
 }
 
 
@@ -541,8 +422,6 @@ async function startPreview() {
             fileName = purePath.split('/').pop();
             // 优先识别 .openui.json，避免被拆成普通 json
             fileType = resolvePreviewFileType(purePath);
-            // .md 分享：用文件名（含后缀）作为页面标题，其它格式保持默认标题
-            applyMarkdownDocumentTitle(purePath);
             // Set download URL
             downloadUrl = baseUrl + data.content + '?sk=' + sk;
             

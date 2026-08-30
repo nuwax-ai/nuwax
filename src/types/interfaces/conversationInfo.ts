@@ -479,8 +479,6 @@ export interface ChatViewProps {
   showStatusDesc?: boolean;
   // debug 图标显隐控制
   showDebug?: boolean;
-  /** 普通会话列表层生成的轮次展示；AppDev 等单消息入口不传。 */
-  turnPresentation?: import('@/features/conversation/presentation/conversationTurnPresentation').ConversationTurnPresentation;
 }
 
 // 卡片信息

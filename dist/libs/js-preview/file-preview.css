@@ -392,74 +392,6 @@ body {
 }
 
 /* ============================================
-   Markdown 代码块：会话区同款 md-code-block
-   （语言标签 + 复制按钮 + highlight.js 高亮，
-   token 配色由 github.min.css 的 .hljs-* 规则提供）
-   ============================================ */
-.markdown-preview .markdown-body .md-code-block {
-    margin: 0 0 16px;
-    border: 1px solid #e5e5e5;
-    border-radius: 8px;
-    background: #fafafa;
-    overflow: hidden;
-}
-
-.markdown-preview .markdown-body .md-code-block-banner {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 6px 8px 6px 14px;
-    background: #f5f5f5;
-    border-bottom: 1px solid #f0f0f0;
-}
-
-.markdown-preview .markdown-body .md-code-block-language {
-    font-size: 12px;
-    line-height: 18px;
-    color: #8c8c8c;
-    user-select: none;
-}
-
-.markdown-preview .markdown-body .md-copy-btn {
-    font-size: 12px;
-    line-height: 18px;
-    color: #595959;
-    cursor: pointer;
-    user-select: none;
-    padding: 2px 8px;
-    border-radius: 4px;
-    transition: all 0.2s ease;
-}
-
-.markdown-preview .markdown-body .md-copy-btn:hover {
-    background: rgba(0, 0, 0, 0.06);
-    color: #262626;
-}
-
-.markdown-preview .markdown-body .md-copy-btn-copied {
-    color: #52c41a;
-}
-
-/* 覆盖上面 .markdown-body pre/code 的 GitHub 风格，交由本结构自己排版 */
-.markdown-preview .markdown-body .md-code-block pre {
-    margin: 0;
-    padding: 12px;
-    background: transparent;
-    border-radius: 0;
-    font-size: 13px;
-}
-
-.markdown-preview .markdown-body .md-code-block pre code {
-    padding: 0;
-    margin: 0;
-    background: transparent;
-    border-radius: 0;
-    font-size: inherit;
-    word-break: normal;
-    white-space: pre;
-}
-
-/* ============================================
    工具类 / Utility Classes
    ============================================ */
 .hidden {
@@ -531,35 +463,4 @@ body {
     width: 24px;
     height: 24px;
     fill: currentColor;
-}
-
-/* 会话区同款表格卡：外壳与代码块一致，内部表格保持 GitHub 风格 */
-.markdown-preview .markdown-body .md-code-block .md-table-content {
-    padding: 8px 12px;
-    overflow-x: auto;
-}
-
-.markdown-preview .markdown-body .md-code-block .md-table-content table {
-    margin: 0;
-}
-
-
-/* 列表样式对齐会话区渲染(ds-markdown):12px 间距 / 24px 缩进 / 4px 行距 / 灰色 marker */
-.markdown-preview .markdown-body ul,
-.markdown-preview .markdown-body ol {
-    margin: 12px 0;
-    padding-left: 24px;
-}
-
-.markdown-preview .markdown-body li:not(:first-child) {
-    margin-top: 4px;
-}
-
-.markdown-preview .markdown-body li::marker {
-    color: #8b8b8b;
-}
-
-.markdown-preview .markdown-body li > ul,
-.markdown-preview .markdown-body li > ol {
-    margin-top: 4px;
 }

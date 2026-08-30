@@ -7,7 +7,6 @@ import classNames from 'classnames';
 import * as React from 'react';
 
 import { MESSAGE_PAGE_SIZE } from '@/constants/common.constants';
-import { projectConversationTurns } from '@/features/conversation/presentation/conversationTurnPresentation';
 import { dict } from '@/services/i18nRuntime';
 import { AgentTypeEnum } from '@/types/enums/space';
 import type {
@@ -110,14 +109,6 @@ export const ChatContentArea: React.FC<ChatContentAreaProps> = ({
     return messageList;
   }, [messageList]);
 
-  const messagePresentations = React.useMemo(
-    () =>
-      renderMessageItem
-        ? null
-        : projectConversationTurns(renderedMessageList || []),
-    [renderMessageItem, renderedMessageList],
-  );
-
   return (
     <div
       className={cx(styles['chat-wrapper-content'], 'scroll-container')}
@@ -163,40 +154,25 @@ export const ChatContentArea: React.FC<ChatContentAreaProps> = ({
                   )}
 
                 {/* 消息渲染列表 */}
-                {renderMessageItem &&
-                  renderedMessageList?.map((item: MessageInfo, idx: number) => {
-                    const isLastMessage =
-                      idx === renderedMessageList.length - 1;
+                {renderedMessageList?.map((item: MessageInfo, idx: number) => {
+                  const isLastMessage = idx === renderedMessageList.length - 1;
+                  if (renderMessageItem) {
                     return renderMessageItem(item, isLastMessage);
-                  })}
-
-                {!renderMessageItem &&
-                  messagePresentations?.map((presentation, idx) => {
-                    const item =
-                      presentation.kind === 'message'
-                        ? presentation.message
-                        : presentation.messageInfo;
-                    return (
-                      <ChatView
-                        key={
-                          presentation.key || getChatMessageRenderKey(item, idx)
-                        }
-                        conversationId={conversationId}
-                        messageInfo={item}
-                        turnPresentation={
-                          presentation.kind === 'turn'
-                            ? presentation
-                            : undefined
-                        }
-                        roleInfo={effectiveRoleInfo}
-                        mode={messageBottomMode}
-                        showDebug={showDebug}
-                        showStatusDesc={
-                          agentInfo?.type !== AgentTypeEnum.TaskAgent
-                        }
-                      />
-                    );
-                  })}
+                  }
+                  return (
+                    <ChatView
+                      key={getChatMessageRenderKey(item, idx)}
+                      conversationId={conversationId}
+                      messageInfo={item}
+                      roleInfo={effectiveRoleInfo}
+                      mode={messageBottomMode}
+                      showDebug={showDebug}
+                      showStatusDesc={
+                        agentInfo?.type !== AgentTypeEnum.TaskAgent
+                      }
+                    />
+                  );
+                })}
 
                 {/* 问题建议：仅会话空闲且队列已排空时展示，避免与队列中的下一轮消息割裂 */}
                 {shouldShowSessionSuggest && (

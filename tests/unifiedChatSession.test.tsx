@@ -6,7 +6,7 @@
  */
 import type { InterventionQueueItem } from '@/components/business-component/AgentIntervention/hooks/useActiveInterventionQueue';
 import UnifiedChatSession from '@/components/business-component/UnifiedChatSession';
-import { AssistantRoleEnum, TaskStatus } from '@/types/enums/agent';
+import { TaskStatus } from '@/types/enums/agent';
 import { MessageStatusEnum } from '@/types/enums/common';
 import { AgentTypeEnum } from '@/types/enums/space';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
@@ -160,16 +160,8 @@ describe('UnifiedChatSession：权限审批 / ask/question 出现时隐藏队列
         messageList={
           [
             { id: '', text: 'opening message' },
-            {
-              id: 'user-1',
-              role: AssistantRoleEnum.USER,
-              text: 'user question',
-            },
-            {
-              id: 'assistant-1',
-              role: AssistantRoleEnum.ASSISTANT,
-              text: 'assistant answer',
-            },
+            { id: 'user-1', text: 'user question' },
+            { id: 'assistant-1', text: 'assistant answer' },
           ] as MessageInfo[]
         }
       />,

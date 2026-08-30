@@ -25,7 +25,6 @@ docs/conversation/
 ├── agent-session-rendering-analysis.md 会话渲染市面调研与差距分析（2026-08-25）
 ├── agent-session-rendering-plan.md     会话渲染升级开发计划（P0/P1/P2 + 演示矩阵）
 ├── agent-session-rendering-acceptance.md 会话渲染+UX 升级手动验收清单（含分步操作，2026-08-27）
-├── turn-process-collapse.md            普通会话轮次工作轨迹折叠：行为/验收/已实现矩阵（2026-08-30）
 ├── mobile-parity-checklist.md          会话优化 PC↔Mobile（nuwax-mobile）拉齐清单（2026-08-26）
 └── message-queue-design.md             消息队列设计（初版）
 ```
@@ -44,7 +43,6 @@ docs/conversation/
 | 会话渲染能力调研 / 差距对照 | [agent-session-rendering-analysis.md](./agent-session-rendering-analysis.md) |
 | 会话渲染升级开发（P0 终端渲染 / Plan 进度 / 子 agent…） | [agent-session-rendering-plan.md](./agent-session-rendering-plan.md)（含演示矩阵与 Done 定义） |
 | 手动验收走查（分步操作 + 勾选表） | [agent-session-rendering-acceptance.md](./agent-session-rendering-acceptance.md)（渲染线 + ux-m1 全功能） |
-| 普通会话轮次工作轨迹折叠 | [turn-process-collapse.md](./turn-process-collapse.md)（轮次投影/折叠行为/验收与矩阵） |
 | 会话优化需求移动端拉齐（nuwax-mobile） | [mobile-parity-checklist.md](./mobile-parity-checklist.md)（逐项差距/落点/批次） |
 
 ### 排查按钮卡「会话中」
