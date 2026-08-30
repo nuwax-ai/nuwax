@@ -43,7 +43,8 @@ export type MockScenarioId =
   | 'HEARTBEAT_ONLY'
   | 'CANCELLED_BY_BACKEND'
   | 'HEARTBEAT_REAL'
-  | 'LATE_CHUNK_SLOW';
+  | 'LATE_CHUNK_SLOW'
+  | 'RENDERER_SHOWCASE';
 
 export interface MockSseEvent {
   eventType: string;
@@ -1545,6 +1546,39 @@ export const MOCK_SCENARIOS: MockScenario[] = [
       { ...heartbeat(), delayMs: 25_000 },
       chat('[迟到分片-应被守卫丢弃]', false),
     ],
+  },
+  {
+    id: 'RENDERER_SHOWCASE',
+    label: 'V2 渲染器结构全景',
+    description:
+      'V2 工作轨迹渲染演示：多轮思考 × 连续工具 × 子智能体 × 中间说明 → 两级折叠轨迹 + 最终回答常显（?conversationRenderer=v2 查看）',
+    verifies:
+      'V2 投影结构：reasoning/tool/subagent/narration 节点顺序 + finalResult.outputText 作为最终回答 + 指标计数',
+    events: [
+      think(
+        '用户要一份竞品分析。我先确定信息源，再用检索工具收集资料，关键结论交给子智能体复核。',
+      ),
+      processing('检索竞品资料', 'EXECUTING', 'rs-search'),
+      processing('检索竞品资料', 'FINISHED', 'rs-search'),
+      think('资料齐了，接下来抓取定价页并让子智能体复核数字。', true),
+      processing('抓取定价页', 'EXECUTING', 'rs-fetch'),
+      processing('抓取定价页', 'FINISHED', 'rs-fetch'),
+      processing('子智能体复核数据', 'EXECUTING', 'rs-subagent', {
+        type: 'SubAgent',
+      }),
+      processing('子智能体复核数据', 'FINISHED', 'rs-subagent', {
+        type: 'SubAgent',
+      }),
+      chat('定价数据已复核，正在汇总。'),
+      chat(
+        '竞品分析完成：三家定价与功能矩阵已核对，结论以最终回答为准。',
+        true,
+      ),
+      finalResult(
+        true,
+        '竞品分析完成：三家定价与功能矩阵已核对，结论以最终回答为准。',
+      ),
+    ].map((event) => ({ ...event, delayMs: event.delayMs ?? 150 })),
   },
 ];
 

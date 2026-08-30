@@ -91,6 +91,7 @@ const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
   setShowScrollBtn,
   renderMessageItem,
   renderEmptyState,
+  messageRenderer,
   enableMention = true,
   placeholder,
 
@@ -372,6 +373,7 @@ const UnifiedChatSessionInner: React.FC<UnifiedChatSessionProps> = ({
         loadMoreRef={loadMoreRef}
         loadingMore={loadingMore}
         renderMessageItem={renderMessageItem}
+        messageRenderer={messageRenderer}
         effectiveRoleInfo={effectiveRoleInfo}
         messageBottomMode={messageBottomMode}
         showDebug={showDebug}

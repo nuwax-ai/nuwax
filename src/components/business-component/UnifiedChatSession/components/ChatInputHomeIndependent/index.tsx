@@ -55,6 +55,7 @@ import React, {
 } from 'react';
 import { useModel } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
+import ConversationDisplaySettings from './ConversationDisplaySettings';
 import { clearDraft, loadDraft, saveDraft } from './draftStorage';
 
 const cx = classNames.bind(styles);
@@ -1058,6 +1059,12 @@ const ChatInputHomeIndependent: React.FC<ChatInputHomeIndependentProps> = ({
                       </span>
                     </Tooltip>
                   </Dropdown>
+                </VoiceFooter.HideWhenActive>
+                {/* 会话显示（V2 双线重构）：渲染版本 / V2 预设 / 逐类覆盖 / 会话覆盖 */}
+                <VoiceFooter.HideWhenActive>
+                  <ConversationDisplaySettings
+                    conversationId={ownConversationId}
+                  />
                 </VoiceFooter.HideWhenActive>
                 <VoiceFooter.HideWhenActive>
                   {showTaskAgentToggle && (

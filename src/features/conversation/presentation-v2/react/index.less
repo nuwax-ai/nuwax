@@ -1,0 +1,266 @@
+// V2 会话渲染器样式（克制工具型时间线）：
+// 布局走本文件；语义色优先由组件内 antd token 内联提供（自动跟随明暗主题），
+// 此处仅保留结构性样式与少量弱色（同时给 xagi-layout-dark 提供覆盖）。
+
+.turn-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  margin: 8px 0;
+}
+
+.agent-title-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+
+  .avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+
+  .author {
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .run-over {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+// ---- 外层工作轨迹 disclosure：轻量横向条，不做厚重卡片 ----
+.trace {
+  margin-top: 6px;
+  border-radius: 8px;
+  border: 1px solid rgba(5, 5, 5, 8%);
+}
+
+:global(.xagi-layout-dark) .trace {
+  border-color: rgba(255, 255, 255, 12%);
+}
+
+.trace-toggle {
+  // 原生 button：键盘 Enter/Space 天然支持
+  appearance: none;
+  border: none;
+  background: transparent;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+
+  &:hover {
+    background: rgba(5, 5, 5, 3%);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--ant-color-primary, #6a5af9);
+    outline-offset: 1px;
+  }
+}
+
+.trace-chevron {
+  font-size: 10px;
+  color: rgba(5, 5, 5, 45%);
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+:global(.xagi-layout-dark) .trace-chevron {
+  color: rgba(255, 255, 255, 45%);
+}
+
+.trace-chevron-open {
+  transform: rotate(90deg);
+}
+
+.trace-metrics {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  color: rgba(5, 5, 5, 55%);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+:global(.xagi-layout-dark) .trace-metrics {
+  color: rgba(255, 255, 255, 55%);
+}
+
+// 运行态低对比状态点（扫光降级为呼吸点）
+.running-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  animation: v2-trace-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes v2-trace-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+.trace-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 8px 8px;
+}
+
+// ---- 单行节点 ----
+.node-row {
+  appearance: none;
+  border: none;
+  background: transparent;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: left;
+  font-size: 13px;
+
+  &:hover {
+    background: rgba(5, 5, 5, 4%);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--ant-color-primary, #6a5af9);
+    outline-offset: -1px;
+  }
+}
+
+.node-kind-icon {
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.node-title {
+  font-weight: 500;
+  flex-shrink: 0;
+  max-width: 45%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.node-summary {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: rgba(5, 5, 5, 50%);
+  font-size: 12px;
+}
+
+:global(.xagi-layout-dark) .node-summary {
+  color: rgba(255, 255, 255, 50%);
+}
+
+.node-status-icon {
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+// 节点详情：受限高度 + 内部滚动（less 会把 min() 当内置函数，需转义）
+.node-detail {
+  max-height: ~'min(360px, 45vh)';
+  overflow-y: auto;
+  margin: 2px 6px 6px 22px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: rgba(5, 5, 5, 2%);
+}
+
+:global(.xagi-layout-dark) .node-detail {
+  background: rgba(255, 255, 255, 4%);
+}
+
+.node-detail-text {
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+// 隐藏项恢复入口
+.hidden-entry {
+  appearance: none;
+  border: none;
+  background: transparent;
+  padding: 4px 6px;
+  margin-left: 16px;
+  font-size: 12px;
+  color: rgba(5, 5, 5, 45%);
+  cursor: pointer;
+  text-align: left;
+  border-radius: 6px;
+
+  &:hover {
+    text-decoration: underline;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--ant-color-primary, #6a5af9);
+    outline-offset: 1px;
+  }
+}
+
+// ---- 最终回答：常显区 + 操作栏 ----
+.answer-block {
+  margin-top: 10px;
+  width: 100%;
+}
+
+.answer-status {
+  font-size: 12px;
+  padding: 4px 0;
+}
+
+.answer-actions {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0 0;
+}
+
+// 用户消息气泡沿用 ChatView，不再重写（视觉零差异）
+.user-message-wrapper {
+  width: 100%;
+}
+
+// 回退 V1 时的容器（与 ChatContentArea V1 分支同构）
+.fallback-list {
+  width: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .running-dot {
+    animation: none;
+  }
+
+  .trace-chevron {
+    transition: none;
+  }
+}

@@ -12,6 +12,7 @@ import ResizableSplit from '@/components/ResizableSplit';
 
 import { isAgentVersionControlEnabled } from '@/constants/agent.constants';
 import useAgentDetails from '@/hooks/useAgentDetails';
+import { useConversationRendererPreference } from '@/hooks/useConversationRendererPreference';
 import useExclusivePanels from '@/hooks/useExclusivePanels';
 import useMessageEventDelegate from '@/hooks/useMessageEventDelegate';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
@@ -1248,6 +1249,9 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   };
 
   // 聊天会话相关 props
+  // 渲染线（V2 双线重构）：URL > 会话覆盖 > 全局偏好 > 默认 V2，与数据线正交
+  const { renderer: conversationRendererVersion } =
+    useConversationRendererPreference(id);
   // 双线分派（docs/conversation/conversation-dual-track-plan.md）：flag 开启时新线 session 的
   // 会话面 props 覆盖旧线字段；flag 关闭（默认）时 conversationProps 为空对象，
   // 旧线路径原值原行为。页面资源（卡片/桌面/文件树等）单份共享注入新线 effects。
@@ -1276,6 +1280,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   const chatSessionProps = {
     conversationId: id,
     messageList,
+    messageRenderer: conversationRendererVersion,
     roleInfo,
     isLoading: loadingConversation,
     loadingMore,

@@ -10,6 +10,7 @@
  */
 import { UnifiedChatSession } from '@/components/business-component';
 import { useConversationRuntimeSession } from '@/features/conversation/react/useConversationRuntimeSession';
+import { useConversationRendererPreference } from '@/hooks/useConversationRendererPreference';
 import { apiAgentConversation } from '@/services/agentConfig';
 import { fetchAndApplyLangMap } from '@/services/i18nRuntime';
 import { DefaultSelectedEnum, TaskStatus } from '@/types/enums/agent';
@@ -182,6 +183,10 @@ const MockChat: React.FC = () => {
 
   // ── 双轨接入（M0）：flag 开启（?conversationRuntime=1）时挂 runtime 线，
   // conversationProps 于 JSX 尾部展开覆盖旧线字段；编排与断言按轨分派。──
+  // 渲染线（V2 双线重构）：?conversationRenderer=v1|v2 切换 V1/V2 渲染（URL
+  // 优先于全局偏好，e2e 四组合矩阵经此参数驱动）
+  const { renderer: mockRendererVersion } =
+    useConversationRendererPreference(MOCK_CONVERSATION_ID);
   const runtimeMessageViewRef = useRef<HTMLDivElement | null>(null);
   const runtimeAllowAutoScrollRef = useRef(true);
   const runtimeLine = useConversationRuntimeSession({
@@ -547,6 +552,7 @@ const MockChat: React.FC = () => {
     window.__MOCK_CHAT_ASSERTIONS__ = {
       scenarioId: scenario?.id ?? scenarioId,
       line: isRuntimeLine ? 'runtime' : 'legacy',
+      renderer: mockRendererVersion,
       assertions,
       updatedAt: Date.now(),
       playing: playingRef.current,
@@ -649,6 +655,7 @@ const MockChat: React.FC = () => {
               <UnifiedChatSession
                 conversationId={MOCK_CONVERSATION_ID}
                 messageList={messageList}
+                messageRenderer={mockRendererVersion}
                 isLoading={isRuntimeLine ? false : model.loadingConversation}
                 loadingMore={model.loadingMore}
                 isMoreMessage={model.isMoreMessage}

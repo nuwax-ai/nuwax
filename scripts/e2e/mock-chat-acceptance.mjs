@@ -10,6 +10,9 @@
  * 过滤/门控变量（经 scripts/e2e/ego-run.mjs 桥接——ego-browser 沙箱不透传 env）：
  *   E2E_SCENARIOS=NORMAL_SINGLE,SESSION_RESUME   只跑指定场景（逗号分隔）
  *   E2E_LINE=legacy|runtime|both                  只跑指定轨（默认 both）
+ *   E2E_RENDERER=v1|v2|both                       只跑指定渲染线（默认 both；
+ *                                                 断言型场景跑满 2 数据线 × 2 渲染线
+ *                                                 四组合；交互型按用例声明的渲染线）
  *   E2E_TIMEOUT=30                                单场景收尾超时秒数（默认 30）
  *   E2E_SPEED=0.05                                场景回放速度（默认 0.05 瞬间档）
  *   E2E_REAL_TIMING=1                             追加真实时长子集（60~154s/场景）
@@ -132,7 +135,10 @@ const KNOWN_ISSUES = [
   let reachable = false;
   for (let attempt = 0; attempt < 3 && !reachable; attempt++) {
     reachable = await probeOnce();
-    if (!reachable) await new Promise((r) => setTimeout(r, 5000));
+    if (!reachable)
+      await new Promise((r) => {
+        setTimeout(r, 5000);
+      });
   }
   if (!reachable) {
     cliLog(
@@ -172,12 +178,12 @@ const expect = (condition, message) => {
 const withTimeout = (promise, ms, label) =>
   Promise.race([
     promise,
-    new Promise((_, reject) =>
+    new Promise((_, reject) => {
       setTimeout(
         () => reject(new Error(`ego 调用超时（${label}，${ms}ms）`)),
         ms,
-      ),
-    ),
+      );
+    }),
   ]);
 
 const pageJs = (code, label = 'js') => withTimeout(js(code), 10000, label);
@@ -1010,21 +1016,136 @@ const driveTerminalCollapseProbe = async () => {
  * 干预类走 ask 模式（审批 DockPanel 的业务门禁——会话框开启审批才出现）；
  * 渲染探针（×RenderProbe）speed 用瞬间档，收尾后只读断言终态 DOM。
  */
+/**
+ * V2 渲染器轨迹探针（RENDERER_SHOWCASE · conversationRenderer=v2）：
+ * 两级折叠头存在且可展开 → 节点按类别渲染（含 SubAgent）→ 节点详情可开 →
+ * 最终回答常显于轨迹外。终态 balanced 默认收起，先手动展开再探。
+ */
+const driveRendererTraceV2Probe = async () => {
+  await waitForReplaySettled();
+  await waitForRenderStable();
+  const initial = await pageJs(
+    String.raw`(() => {
+      const toggle = document.querySelector('[data-testid="v2-trace-toggle"]');
+      return JSON.stringify({
+        hasToggle: !!toggle,
+        expanded: toggle ? toggle.getAttribute('aria-expanded') : '',
+        hasAnswer: !!document.querySelector('[data-testid="v2-final-answer"]'),
+        answerText: (document.querySelector('[data-testid="v2-final-answer"]') || {}).textContent || '',
+      });
+    })()`,
+    'v2 trace initial probe',
+  );
+  const initialParsed = JSON.parse(initial);
+  expect(initialParsed.hasToggle, `V2 轨迹折叠头应存在：${initial}`);
+  expect(
+    initialParsed.expanded === 'false',
+    `终态 balanced 默认收起，实际 ${initialParsed.expanded}：${initial}`,
+  );
+  expect(initialParsed.hasAnswer, '最终回答区应常显');
+
+  await pageJs(
+    String.raw`document.querySelector('[data-testid="v2-trace-toggle"]').click()`,
+    'v2 trace expand',
+  );
+  await pause(0.3);
+  const expanded = await pageJs(
+    String.raw`(() => {
+      const kinds = [...document.querySelectorAll('[data-node-kind]')].map(
+        (n) => n.getAttribute('data-node-kind'),
+      );
+      return JSON.stringify({
+        expanded: document.querySelector('[data-testid="v2-trace-toggle"]').getAttribute('aria-expanded'),
+        kinds,
+        hasSubagent: kinds.includes('subagent'),
+        hasReasoning: kinds.includes('reasoning'),
+        hasNarration: kinds.includes('narration'),
+        toolRows: kinds.filter((k) => k === 'tool').length,
+      });
+    })()`,
+    'v2 trace expanded probe',
+  );
+  const expandedParsed = JSON.parse(expanded);
+  expect(
+    expandedParsed.expanded === 'true',
+    `点击后轨迹应展开：${expanded}`,
+  );
+  expect(expandedParsed.hasSubagent, `应含 SubAgent 节点：${expanded}`);
+  expect(expandedParsed.hasReasoning, `应含思考节点：${expanded}`);
+  expect(expandedParsed.hasNarration, `应含中间说明节点：${expanded}`);
+  expect(
+    expandedParsed.toolRows >= 2,
+    `工具节点应 ≥2（检索/抓取）：${expanded}`,
+  );
+
+  // 节点行点击 → 受限高度详情（复用工具卡）
+  await pageJs(
+    String.raw`document.querySelector('[data-node-kind="tool"] button').click()`,
+    'v2 node expand',
+  );
+  await pause(0.3);
+  const detail = await pageJs(
+    String.raw`(() => {
+      // 类名经 CSS modules 哈希（node-detail___xxx），用属性包含匹配
+      const detail = document.querySelector(
+        '[data-node-kind="tool"] [class*="node-detail"]',
+      );
+      return JSON.stringify({
+        hasDetail: !!detail,
+        maxed: detail ? getComputedStyle(detail).maxHeight : '',
+      });
+    })()`,
+    'v2 node detail probe',
+  );
+  const detailParsed = JSON.parse(detail);
+  expect(detailParsed.hasDetail, `节点详情应展开：${detail}`);
+  expect(
+    detailParsed.maxed !== 'none' &&
+      (detailParsed.maxed === '360px' || /\d+(\.\d+)?(px|vh)$/.test(detailParsed.maxed)),
+    `详情应为受限高度 min(360px, 45vh)（浏览器解析为较小值），实际 ${detailParsed.maxed}`,
+  );
+
+  // 最终回答文本（finalResult.outputText）在折叠区外常显
+  const answer = await pageJs(
+    String.raw`document.querySelector('[data-testid="v2-final-answer"]').textContent`,
+    'v2 answer text',
+  );
+  expect(
+    String(answer).includes('竞品分析完成'),
+    `最终回答应含 outputText 内容：${answer}`,
+  );
+};
+
 const INTERACTIVE_CASES = [
+  // dock/输入区驱动：渲染无关，双渲染线都跑
   {
     id: 'PERMISSION_REQUEST',
     speed: 5,
     drive: drivePermissionAllow,
     agentMode: 'ask',
+    renderers: ['v1', 'v2'],
   },
-  { id: 'ASK_QUESTION', speed: 5, drive: driveAskSubmit, agentMode: 'ask' },
+  {
+    id: 'ASK_QUESTION',
+    speed: 5,
+    drive: driveAskSubmit,
+    agentMode: 'ask',
+    renderers: ['v1', 'v2'],
+  },
   {
     id: 'INTERVENTION_STACK',
     speed: 0.25,
     drive: driveInterventionStack,
     agentMode: 'ask',
+    renderers: ['v1', 'v2'],
   },
-  { id: 'MESSAGE_QUEUE_HOLDING', speed: 0.25, drive: driveQueueHolding },
+  {
+    id: 'MESSAGE_QUEUE_HOLDING',
+    speed: 0.25,
+    drive: driveQueueHolding,
+    renderers: ['v1', 'v2'],
+  },
+  // V1 DOM 探针（think-header/process-group 等）：仅 v1
   { id: 'OPENUI_RENDER', speed: 0.05, drive: driveOpenuiRender },
   { id: 'OPENUI_INTERACTIVE', speed: 0.05, drive: driveOpenUiInteractiveProbe },
   { id: 'LONG_TASK_INTERLEAVED', speed: 0.05, drive: driveThinkRenderProbe },
@@ -1032,6 +1153,13 @@ const INTERACTIVE_CASES = [
   { id: 'TERMINAL_OUTPUT', speed: 0.05, drive: driveTerminalOutputProbe },
   { id: 'COLLAPSE_SHOWCASE', speed: 0.05, drive: driveCollapseShowcaseProbe },
   { id: 'TERMINAL_COLLAPSE', speed: 0.05, drive: driveTerminalCollapseProbe },
+  // V2 轨迹探针（V2 DOM）：仅 v2
+  {
+    id: 'RENDERER_SHOWCASE',
+    speed: 0.05,
+    drive: driveRendererTraceV2Probe,
+    renderers: ['v2'],
+  },
 ];
 
 // ---------- 过滤 ----------
@@ -1044,6 +1172,16 @@ if (!['legacy', 'runtime', 'both'].includes(lineFilter)) {
   throw new Error(`E2E_LINE 仅支持 legacy|runtime|both，收到: ${lineFilter}`);
 }
 const lines = lineFilter === 'both' ? ['legacy', 'runtime'] : [lineFilter];
+// 渲染线（V2 双线重构）：断言型场景断言为状态化（非 DOM 化），V1/V2 通用；
+// 交互型用例按 renderers 声明（V1 DOM 探针类仅 v1，dock/输入区驱动类双渲染）。
+const rendererFilter = E2E.E2E_RENDERER || 'both';
+if (!['v1', 'v2', 'both'].includes(rendererFilter)) {
+  throw new Error(
+    `E2E_RENDERER 仅支持 v1|v2|both，收到: ${rendererFilter}`,
+  );
+}
+const renderers =
+  rendererFilter === 'both' ? ['v1', 'v2'] : [rendererFilter];
 // MESSAGE_QUEUE_HOLDING 无 autoplay 断言型意义（单发不排队），仅交互段覆盖
 const scenarios = allScenarios.filter(
   (meta) =>
@@ -1064,13 +1202,14 @@ if (scenarioFilter) {
 const runCase = async (
   meta,
   line,
-  { speed = SPEED, timeoutSec, drive, agentMode } = {},
+  { speed = SPEED, timeoutSec, drive, agentMode, renderer = 'v1' } = {},
 ) => {
   const url =
     `${APP_BASE}${PAGE_PATH}?scenario=${encodeURIComponent(meta.id)}` +
     `&speed=${speed}&autoplay=1&conversationRuntime=${
       line === 'runtime' ? 1 : 0
     }` +
+    `&conversationRenderer=${renderer}` +
     `&lang=zh-CN` +
     (agentMode ? `&agentMode=${agentMode}` : '');
   await withTimeout(gotoAndWait(url, { timeout: 40 }), 60000, 'gotoAndWait');
@@ -1093,6 +1232,10 @@ const runCase = async (
   expect(
     snapshot.line === line,
     `断言快照轨不符：期望 ${line}，实际 ${snapshot.line}`,
+  );
+  expect(
+    snapshot.renderer === renderer,
+    `断言快照渲染线不符：期望 ${renderer}，实际 ${snapshot.renderer}`,
   );
   expect(
     snapshot.sawActive,
@@ -1129,12 +1272,14 @@ const runNamedCase = async (name, meta, line, options = {}) => {
 cliLog(
   `断言型 ${scenarios.length}/${allScenarios.length} 场景 × 轨 ${lines.join(
     '/',
-  )}，` +
+  )} × 渲染线 ${renderers.join('/')}，` +
     `交互型 ${INTERACTIVE_CASES.length} 用例，speed=${SPEED}，超时 ${TIMEOUT_SEC}s` +
     (E2E.E2E_REAL_TIMING === '1' ? '，含真实时长子集' : ''),
 );
 
 // ego-browser 的 tab 按 task space 隔离：套件独占一个空间，跑完即焚
+// ego-browser 注入的全局命令（非 React hook）
+// eslint-disable-next-line react-hooks/rules-of-hooks
 const task = await useOrCreateTaskSpace('mock chat e2e acceptance');
 await openOrReuseTab(APP_BASE, { wait: true, timeout: 40 });
 
@@ -1143,31 +1288,48 @@ await openOrReuseTab(APP_BASE, { wait: true, timeout: 40 });
 // 注意：不清理登录残留——SESSION_RESUME 的 sub 续接流依赖本地会话态。
 
 let index = 0;
-const total =
-  scenarios.length * lines.length + INTERACTIVE_CASES.length * lines.length;
+const interactiveRuns = INTERACTIVE_CASES.reduce((sum, testCase) => {
+  const caseRenderers = (testCase.renderers ?? ['v1']).filter((r) =>
+    renderers.includes(r),
+  );
+  return sum + caseRenderers.length * lines.length;
+}, 0);
+const total = scenarios.length * lines.length * renderers.length + interactiveRuns;
 
-// 断言型矩阵
+// 断言型矩阵：数据线 × 渲染线四组合
 for (const meta of scenarios) {
   for (const line of lines) {
-    index += 1;
-    await runNamedCase(`[${index}/${total}] ${meta.id} · ${line}`, meta, line);
+    for (const renderer of renderers) {
+      index += 1;
+      await runNamedCase(
+        `[${index}/${total}] ${meta.id} · ${line} · ${renderer}`,
+        meta,
+        line,
+        { renderer },
+      );
+    }
   }
 }
 
-// 交互型用例（M3）：goto → 交互驱动 → 收尾判定
+// 交互型用例（M3）：goto → 交互驱动 → 收尾判定；渲染线按用例声明与过滤器交集
 for (const line of lines) {
   for (const testCase of INTERACTIVE_CASES) {
-    index += 1;
-    await runNamedCase(
-      `[${index}/${total}] ${testCase.id} · ${line} · 交互`,
-      allScenarios.find((meta) => meta.id === testCase.id),
-      line,
-      {
-        speed: testCase.speed,
-        drive: testCase.drive,
-        agentMode: testCase.agentMode,
-      },
-    );
+    for (const renderer of (testCase.renderers ?? ['v1']).filter((r) =>
+      renderers.includes(r),
+    )) {
+      index += 1;
+      await runNamedCase(
+        `[${index}/${total}] ${testCase.id} · ${line} · ${renderer} · 交互`,
+        allScenarios.find((meta) => meta.id === testCase.id),
+        line,
+        {
+          speed: testCase.speed,
+          drive: testCase.drive,
+          agentMode: testCase.agentMode,
+          renderer,
+        },
+      );
+    }
   }
 }
 

@@ -110,6 +110,11 @@ export interface UnifiedChatSessionProps {
     isLastMessage: boolean,
   ) => React.ReactNode;
   renderEmptyState?: () => React.ReactNode;
+  /**
+   * 会话渲染线（V2 双线重构）：v1 = 现有逐消息 ChatView（默认）；v2 = V2
+   * 轮次工作轨迹渲染器。renderMessageItem 恒优先走原逻辑。
+   */
+  messageRenderer?: 'v1' | 'v2';
 
   // 功能配置开关
   enableMention?: boolean; // 是否支持 @ 提及项目文件/技能

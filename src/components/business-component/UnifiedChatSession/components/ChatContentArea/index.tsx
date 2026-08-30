@@ -19,6 +19,14 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
+// V2 渲染器按需加载：v1 默认路径不进入 V2 import 链（工具卡→CodeEditor→
+// monaco-editor 等重依赖只在真正切到 v2 时拉取，测试与旧线不受影响）。
+const ConversationRendererV2 = React.lazy(() =>
+  import('@/features/conversation/presentation-v2/react').then((module) => ({
+    default: module.ConversationRendererV2,
+  })),
+);
+
 /**
  * 优先使用客户端稳定渲染 ID，历史消息则使用服务端 ID 作为 React key。
  * 会话终态快照可能为历史消息补齐或调整 index；把 index 拼进 key 会导致整条消息
@@ -47,7 +55,7 @@ export interface ChatContentAreaProps {
   userFillVariables?: any;
   isVariablesFilled?: boolean;
   isVariablesDisabled?: boolean;
-  variableParams?: Record<string, string | number> | null;
+  variableParams?: Record<string, string | number | null> | null;
   messageList?: MessageInfo[];
   isMoreMessage?: boolean;
   loadMoreRef: any;
@@ -65,6 +73,12 @@ export interface ChatContentAreaProps {
   handleMessageSend: (...args: any[]) => void;
   showTaskExecutingWait: boolean;
   renderEmptyState?: () => React.ReactNode;
+  /**
+   * 会话渲染线（V2 双线重构）：v1 = 现有逐消息 ChatView（默认，零行为变化）；
+   * v2 = ConversationRendererV2（轮次工作轨迹 + 最终回答）。
+   * renderMessageItem 自定义入口恒走原逻辑，不受本参数影响。
+   */
+  messageRenderer?: 'v1' | 'v2';
 }
 
 export const ChatContentArea: React.FC<ChatContentAreaProps> = ({
@@ -94,6 +108,7 @@ export const ChatContentArea: React.FC<ChatContentAreaProps> = ({
   handleMessageSend,
   showTaskExecutingWait,
   renderEmptyState,
+  messageRenderer = 'v1',
 }) => {
   const renderedMessageList = React.useMemo(() => {
     if (!messageList || messageList.length <= 1) {
@@ -153,26 +168,42 @@ export const ChatContentArea: React.FC<ChatContentAreaProps> = ({
                     </div>
                   )}
 
-                {/* 消息渲染列表 */}
-                {renderedMessageList?.map((item: MessageInfo, idx: number) => {
-                  const isLastMessage = idx === renderedMessageList.length - 1;
-                  if (renderMessageItem) {
-                    return renderMessageItem(item, isLastMessage);
-                  }
-                  return (
-                    <ChatView
-                      key={getChatMessageRenderKey(item, idx)}
+                {/* 消息渲染列表：渲染线选择（V2 双线重构）。自定义 renderMessageItem 恒走原逻辑 */}
+                {messageRenderer === 'v2' && !renderMessageItem ? (
+                  <React.Suspense fallback={null}>
+                    <ConversationRendererV2
                       conversationId={conversationId}
-                      messageInfo={item}
+                      messageList={renderedMessageList}
                       roleInfo={effectiveRoleInfo}
-                      mode={messageBottomMode}
+                      messageBottomMode={messageBottomMode}
                       showDebug={showDebug}
                       showStatusDesc={
                         agentInfo?.type !== AgentTypeEnum.TaskAgent
                       }
                     />
-                  );
-                })}
+                  </React.Suspense>
+                ) : (
+                  renderedMessageList?.map((item: MessageInfo, idx: number) => {
+                    const isLastMessage =
+                      idx === renderedMessageList.length - 1;
+                    if (renderMessageItem) {
+                      return renderMessageItem(item, isLastMessage);
+                    }
+                    return (
+                      <ChatView
+                        key={getChatMessageRenderKey(item, idx)}
+                        conversationId={conversationId}
+                        messageInfo={item}
+                        roleInfo={effectiveRoleInfo}
+                        mode={messageBottomMode}
+                        showDebug={showDebug}
+                        showStatusDesc={
+                          agentInfo?.type !== AgentTypeEnum.TaskAgent
+                        }
+                      />
+                    );
+                  })
+                )}
 
                 {/* 问题建议：仅会话空闲且队列已排空时展示，避免与队列中的下一轮消息割裂 */}
                 {shouldShowSessionSuggest && (
