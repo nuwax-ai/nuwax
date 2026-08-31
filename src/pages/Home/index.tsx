@@ -111,8 +111,10 @@ const Home: React.FC = () => {
   const [homeCategoryInfo, setHomeCategoryInfo] =
     useState<HomeAgentCategoryInfo>();
   const [submitting, setSubmitting] = useState<boolean>(false);
-  // 输入区上方内容分类(数据驱动,当前由推荐数据临时归类构造)
-  const [activeCategory, setActiveCategory] = useState<string>('chat');
+  // 输入区上方内容分类:用户手动选择(null=未选过,自动取第一个有内容的分类)
+  const [userPickedCategory, setUserPickedCategory] = useState<string | null>(
+    null,
+  );
 
   const defaultAgentId =
     isTaskAgentMode && tenantConfigInfo?.defaultTaskAgentId
@@ -327,28 +329,17 @@ const Home: React.FC = () => {
     ];
   }, [recommendNavList]);
 
-  // 默认分类无推荐内容时,回落到第一个有内容的分类
-  const categoryAutoAdjustedRef = useRef(false);
-  useEffect(() => {
-    if (categoryAutoAdjustedRef.current || recommendNavList.length === 0) {
-      return;
-    }
-    const activeItems =
-      categoryNavList.find((c) => c.key === activeCategory)?.items ?? [];
-    if (activeItems.length === 0) {
-      const firstWithItems = categoryNavList.find((c) => c.items.length > 0);
-      if (firstWithItems) {
-        setActiveCategory(firstWithItems.key);
-      }
-    }
-    categoryAutoAdjustedRef.current = true;
-  }, [categoryNavList, activeCategory, recommendNavList.length]);
+  // 默认分类 = 第一个有内容的分类(数据到达时 Segmented 才首挂,值直接就位,
+  // 避免挂载后回落引发滑块从起始分类滑过来的无意义动画);用户手动点过则优先
+  const autoCategoryKey =
+    categoryNavList.find((c) => c.items.length > 0)?.key ?? 'chat';
+  const activeCategory = userPickedCategory ?? autoCategoryKey;
 
   const activeCategoryItems =
     categoryNavList.find((c) => c.key === activeCategory)?.items ?? [];
 
   const handleCategoryChange = (key: string) => {
-    setActiveCategory(key);
+    setUserPickedCategory(key);
     // 切换分类后清掉已选 pill,避免跨分类残留选中态
     if (selectedRecommend) {
       setSelectedRecommend(undefined);
@@ -402,11 +393,15 @@ const Home: React.FC = () => {
             {dict('PC.Pages.Home.heroSubtitle')}
           </p>
         </div>
-        <HomeCategoryTabs
-          categories={categoryNavList}
-          activeKey={activeCategory}
-          onChange={handleCategoryChange}
-        />
+        {/* 推荐数据到达后再渲染分类区:Segmented 首挂时选中值即最终值,
+            避免挂载后调整引发滑块从起始分类滑过来的动画 */}
+        {recommendNavList.length > 0 && (
+          <HomeCategoryTabs
+            categories={categoryNavList}
+            activeKey={activeCategory}
+            onChange={handleCategoryChange}
+          />
+        )}
         <ChatBoxRecommendNav
           items={activeCategoryItems}
           onSelect={handleRecommendSelect}
