@@ -24,13 +24,42 @@ afterEach(() => {
 });
 
 describe('ConversationDisplaySettings', () => {
-  it('入口按钮具备可访问名称', () => {
+  it('入口与恢复继承均使用原生按钮', async () => {
+    localStorage.setItem(
+      'conversation_renderer_v2_session_overrides',
+      JSON.stringify({ 1: 'v2' }),
+    );
+    const user = userEvent.setup();
     render(<ConversationDisplaySettings conversationId={1} />);
     const entry = screen.getByTestId('conversation-display-entry');
+    expect(entry.tagName).toBe('BUTTON');
     expect(entry.getAttribute('aria-label')).toBe(
       'PC.Components.ChatInputHome.conversationDisplay',
     );
-    expect(entry.getAttribute('role')).toBe('button');
+    await user.click(entry);
+    expect(
+      screen.getByRole('button', {
+        name: 'PC.Components.ChatInputHome.conversationDisplayClearSessionOverride',
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it('全局默认控件显示全局值，而不是会话覆盖后的生效值', async () => {
+    localStorage.setItem('conversation_renderer_v2', 'v1');
+    localStorage.setItem(
+      'conversation_renderer_v2_session_overrides',
+      JSON.stringify({ 1: 'v2' }),
+    );
+    const user = userEvent.setup();
+    render(<ConversationDisplaySettings conversationId={1} />);
+    await user.click(screen.getByTestId('conversation-display-entry'));
+
+    const globalGroup = screen.getByRole('radiogroup', {
+      name: 'PC.Components.ChatInputHome.conversationDisplayGlobalRenderer',
+    });
+    const inputs = globalGroup.querySelectorAll('input[type="radio"]');
+    expect(inputs[0]).toBeChecked();
+    expect(inputs[1]).not.toBeChecked();
   });
 
   it('高级配置每个类型 Select 均有可访问名称（label 关联）', async () => {

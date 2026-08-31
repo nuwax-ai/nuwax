@@ -16,6 +16,10 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+const unifiedThemeState = vi.hoisted(() => ({
+  antdTheme: 'light' as 'light' | 'dark',
+}));
+
 // ---- mock 重依赖（照 tests/interventionDock.test.tsx 的模板） ----
 vi.mock('umi', () => ({
   useModel: () => ({}),
@@ -57,8 +61,16 @@ vi.mock('@/components/base/CopyButton', () => ({
   ),
 }));
 vi.mock('@/components/MarkdownRenderer', () => ({
-  default: ({ answer }: { answer: string }) => (
-    <div data-testid="markdown-renderer">{answer}</div>
+  default: ({
+    answer,
+    theme,
+  }: {
+    answer: string;
+    theme?: 'light' | 'dark';
+  }) => (
+    <div data-testid="markdown-renderer" data-theme={theme}>
+      {answer}
+    </div>
   ),
   PureMarkdownRenderer: ({ children }: { children: string }) => (
     <div data-testid="pure-markdown">{children}</div>
@@ -71,7 +83,9 @@ vi.mock('@/hooks/useMarkdownRender', () => ({
   }),
 }));
 vi.mock('@/hooks/useUnifiedTheme', () => ({
-  useUnifiedTheme: () => ({ data: { antdTheme: 'light' } }),
+  useUnifiedTheme: () => ({
+    data: { antdTheme: unifiedThemeState.antdTheme },
+  }),
 }));
 vi.mock('@/components/MarkdownCustomProcess', () => ({
   default: ({
@@ -186,6 +200,7 @@ const renderV2 = (
   );
 
 afterEach(() => {
+  unifiedThemeState.antdTheme = 'light';
   vi.restoreAllMocks();
 });
 
@@ -426,6 +441,15 @@ describe('ConversationRendererV2 · 回答与异常', () => {
     expect(copy.getAttribute('data-copy-text')).toBe('今天晴，25 度');
   });
 
+  it('最终回答 Markdown 跟随统一深色主题', () => {
+    unifiedThemeState.antdTheme = 'dark';
+    renderV2(buildTurn());
+    expect(screen.getByTestId('markdown-renderer')).toHaveAttribute(
+      'data-theme',
+      'dark',
+    );
+  });
+
   it('投影异常时整份回退 V1（data-v2-fallback 且 ChatView 列表可见）', () => {
     const explosive = {
       ...msg({ id: 'a1', role: AssistantRoleEnum.ASSISTANT }),
@@ -472,6 +496,51 @@ describe('ConversationRendererV2 · 回答与异常', () => {
     });
     expect(consoleError).toHaveBeenCalled();
   });
+
+  it('渲染异常回退只影响当前会话，切换会话后重新尝试 V2', async () => {
+    const consoleError = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
+    const broken = [
+      msg({ id: 'u1', role: AssistantRoleEnum.USER, text: '任务' }),
+      msg({
+        id: 'a1',
+        role: AssistantRoleEnum.ASSISTANT,
+        text: processTag({
+          executeId: 'boom',
+          type: 'Mcp',
+          status: 'FINISHED',
+          name: 'explode',
+        }),
+      }),
+    ];
+    const view = render(
+      <ConversationRendererV2
+        messageList={broken}
+        conversationId={1}
+        roleInfo={ROLE_INFO}
+        preferences={PREFS('balanced', { tool: 'expanded' })}
+      />,
+    );
+    fireEvent.click(screen.getByTestId('v2-trace-toggle'));
+    await waitFor(() => {
+      expect(document.querySelector('[data-v2-fallback="v1"]')).not.toBeNull();
+    });
+
+    view.rerender(
+      <ConversationRendererV2
+        messageList={buildTurn()}
+        conversationId={2}
+        roleInfo={ROLE_INFO}
+        preferences={PREFS('balanced')}
+      />,
+    );
+    await waitFor(() => {
+      expect(document.querySelector('[data-v2-fallback="v1"]')).toBeNull();
+      expect(screen.getByTestId('v2-trace-toggle')).toBeInTheDocument();
+    });
+    expect(consoleError).toHaveBeenCalled();
+  });
 });
 
 describe('ConversationRendererV2 · 无障碍（验收返工 P2）', () => {
@@ -490,5 +559,19 @@ describe('ConversationRendererV2 · 无障碍（验收返工 P2）', () => {
     const toggle = screen.getByTestId('v2-trace-toggle');
     expect(toggle.querySelector('[aria-hidden="true"]')).not.toBeNull();
     expect(toggle.textContent).toContain('traceMetricTools');
+    const trace = toggle.closest('[data-trace-key]') as HTMLElement;
+    expect(trace.style.getPropertyValue('--v2-color-text-secondary')).not.toBe(
+      '',
+    );
+  });
+
+  it('可展开节点有独立 disclosure 箭头并跟随状态旋转', () => {
+    renderV2(buildTurn(), PREFS('detailed'));
+    const toolRow = document.querySelector('[data-node-id="e1"] button')!;
+    const disclosure = toolRow.querySelector(
+      '[data-testid="v2-node-disclosure"]',
+    );
+    expect(disclosure).not.toBeNull();
+    expect(disclosure?.getAttribute('aria-hidden')).toBe('true');
   });
 });

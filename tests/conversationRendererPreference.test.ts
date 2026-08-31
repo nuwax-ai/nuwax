@@ -13,6 +13,7 @@ import {
   CONVERSATION_RENDERER_DEFAULT,
   loadConversationRendererPreferences,
   resolveConversationRenderer,
+  resolveConversationRendererDetails,
   saveRendererNodeOverride,
   saveRendererPreset,
   setGlobalRendererVersion,
@@ -168,6 +169,24 @@ describe('conversationRendererPreference 存取', () => {
 
     setSessionRendererOverride(123, null);
     expect(resolveConversationRenderer(123)).toBe('v1');
+  });
+
+  it('同时返回全局默认、当前生效值与来源，不把会话覆盖冒充全局值', () => {
+    setGlobalRendererVersion('v1');
+    setSessionRendererOverride(123, 'v2');
+
+    expect(resolveConversationRendererDetails(123)).toEqual({
+      renderer: 'v2',
+      globalVersion: 'v1',
+      source: 'session',
+    });
+
+    setSearch('?conversationRenderer=v1');
+    expect(resolveConversationRendererDetails(123)).toEqual({
+      renderer: 'v1',
+      globalVersion: 'v1',
+      source: 'url',
+    });
   });
 
   it('URL 调试参数压过一切：?conversationRenderer=v1', () => {

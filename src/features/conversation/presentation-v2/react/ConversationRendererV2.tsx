@@ -148,7 +148,7 @@ const TurnBlock: React.FC<{
 };
 
 class V2ErrorBoundary extends React.Component<
-  { children: React.ReactNode; fallback: React.ReactNode },
+  { children: React.ReactNode; fallback: React.ReactNode; resetKey: string },
   { hasError: boolean }
 > {
   state = { hasError: false };
@@ -164,6 +164,12 @@ class V2ErrorBoundary extends React.Component<
       error,
       info?.componentStack,
     );
+  }
+
+  componentDidUpdate(prevProps: Readonly<{ resetKey: string }>) {
+    if (this.state.hasError && prevProps.resetKey !== this.props.resetKey) {
+      this.setState({ hasError: false });
+    }
   }
 
   render() {
@@ -223,7 +229,7 @@ const ConversationRendererV2Inner: React.FC<ConversationRendererV2Props> = (
   return (
     <>
       {projection.data.turns.map((turn) => (
-        <React.Fragment key={turn.key}>
+        <React.Fragment key={`${conversationId ?? 'unknown'}:${turn.key}`}>
           {turn.userMessage && (
             <div className={cx(styles['user-message-wrapper'])}>
               <ChatView
@@ -259,6 +265,7 @@ const ConversationRendererV2: React.FC<ConversationRendererV2Props> = (
   props,
 ) => (
   <V2ErrorBoundary
+    resetKey={String(props.conversationId ?? 'unknown')}
     fallback={
       <V1FallbackList
         messageList={props.messageList}

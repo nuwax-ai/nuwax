@@ -12,6 +12,7 @@ import { ProcessingEnum } from '@/types/enums/common';
 import {
   AlignLeftOutlined,
   BulbOutlined,
+  CaretRightOutlined,
   CheckCircleOutlined,
   CloseCircleOutlined,
   CommentOutlined,
@@ -226,6 +227,13 @@ const ProcessNodeRow: React.FC<ProcessNodeRowProps> = ({
               aria-hidden="true"
             />
           )}
+        <CaretRightOutlined
+          data-testid="v2-node-disclosure"
+          className={cx(styles['node-disclosure'], {
+            [styles['node-disclosure-open']]: expanded,
+          })}
+          aria-hidden="true"
+        />
       </button>
       {expanded && (
         <div

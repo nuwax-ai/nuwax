@@ -65,6 +65,8 @@ const ConversationDisplaySettings: React.FC<
   const { token } = theme.useToken();
   const {
     renderer,
+    globalVersion,
+    source,
     preferences,
     sessionOverride,
     setGlobalVersion,
@@ -92,14 +94,17 @@ const ConversationDisplaySettings: React.FC<
               marginBottom: 4,
             }}
           >
-            {dict('PC.Components.ChatInputHome.conversationDisplayRenderer')}
+            {dict(
+              'PC.Components.ChatInputHome.conversationDisplayGlobalRenderer',
+            )}
           </div>
           <Segmented
-            value={renderer === 'v1' ? 'v1' : 'v2'}
+            value={globalVersion}
             block
             aria-label={dict(
-              'PC.Components.ChatInputHome.conversationDisplayRenderer',
+              'PC.Components.ChatInputHome.conversationDisplayGlobalRenderer',
             )}
+            disabled={source === 'url'}
             options={[
               {
                 value: 'v1',
@@ -118,6 +123,26 @@ const ConversationDisplaySettings: React.FC<
               setGlobalVersion(value as ConversationRendererVersion)
             }
           />
+          <div
+            data-testid="conversation-display-effective-source"
+            style={{
+              marginTop: 6,
+              fontSize: 12,
+              lineHeight: 1.5,
+              color:
+                source === 'url'
+                  ? token.colorWarningText
+                  : token.colorTextTertiary,
+            }}
+          >
+            {dict(
+              'PC.Components.ChatInputHome.conversationDisplayEffective',
+              renderer.toUpperCase(),
+              dict(
+                `PC.Components.ChatInputHome.conversationDisplaySource.${source}`,
+              ),
+            )}
+          </div>
         </div>
 
         {conversationId !== null && conversationId !== undefined && (
@@ -158,29 +183,27 @@ const ConversationDisplaySettings: React.FC<
                     : (value as ConversationRendererVersion),
                 )
               }
+              disabled={source === 'url'}
             />
             {sessionOverride && (
-              <a
-                role="button"
-                tabIndex={0}
+              <button
+                type="button"
                 style={{
                   fontSize: 12,
                   marginTop: 4,
                   display: 'inline-block',
                   cursor: 'pointer',
+                  padding: 0,
+                  border: 0,
+                  background: 'transparent',
+                  color: token.colorLink,
                 }}
                 onClick={() => setSessionVersion(null)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault();
-                    setSessionVersion(null);
-                  }
-                }}
               >
                 {dict(
                   'PC.Components.ChatInputHome.conversationDisplayClearSessionOverride',
                 )}
-              </a>
+              </button>
             )}
           </div>
         )}
@@ -282,6 +305,8 @@ const ConversationDisplaySettings: React.FC<
     ),
     [
       renderer,
+      globalVersion,
+      source,
       preferences,
       sessionOverride,
       conversationId,
@@ -305,7 +330,8 @@ const ConversationDisplaySettings: React.FC<
         title={dict('PC.Components.ChatInputHome.conversationDisplay')}
         open={open ? false : undefined}
       >
-        <span
+        <button
+          type="button"
           className={cx(
             'flex',
             'items-center',
@@ -315,18 +341,14 @@ const ConversationDisplaySettings: React.FC<
             styles['plus-box'],
           )}
           data-testid="conversation-display-entry"
-          role="button"
-          tabIndex={0}
           aria-label={dict('PC.Components.ChatInputHome.conversationDisplay')}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter' || event.key === ' ') {
-              event.preventDefault();
-              setOpen((prev) => !prev);
-            }
+          style={{
+            background: 'transparent',
+            cursor: 'pointer',
           }}
         >
           <EyeOutlined style={{ fontSize: '14px' }} />
-        </span>
+        </button>
       </Tooltip>
     </Popover>
   );

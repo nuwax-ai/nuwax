@@ -18,6 +18,20 @@ import {
 } from '@/features/conversation/presentation-v2';
 
 export type ConversationRendererVersion = 'v1' | 'v2';
+export type ConversationRendererSource =
+  | 'url'
+  | 'session'
+  | 'global'
+  | 'default';
+
+export interface ConversationRendererDetails {
+  /** 经 URL/会话/全局优先级解析后的当前生效值 */
+  renderer: ConversationRendererVersion;
+  /** 全局选择器应展示的值（未存储时为构建默认） */
+  globalVersion: ConversationRendererVersion;
+  /** 生效值来源，用于 UI 解释为什么当前不跟随全局 */
+  source: ConversationRendererSource;
+}
 
 /** 发布默认值：V2 默认开启（可随时按三级路径退回 V1） */
 export const CONVERSATION_RENDERER_DEFAULT: ConversationRendererVersion = 'v2';
@@ -98,9 +112,13 @@ const broadcast = (): void => {
 };
 
 /** 解析当前生效的渲染器版本（即时求值，供 hook 与调试） */
-export function resolveConversationRenderer(
+/**
+ * 一次返回全局值、生效值与来源。设置 UI 不得用 effective renderer
+ * 反向充当全局值，否则 URL/会话覆盖存在时会显示与写入语义冲突。
+ */
+export function resolveConversationRendererDetails(
   conversationId?: number | string | null,
-): ConversationRendererVersion {
+): ConversationRendererDetails {
   const sessionKey =
     conversationId === null || conversationId === undefined
       ? null
@@ -108,12 +126,29 @@ export function resolveConversationRenderer(
   const sessionOverride = sessionKey
     ? readSessionOverrides()[sessionKey]
     : undefined;
-  return (
-    readFromLocation() ??
-    sessionOverride ??
-    readGlobalVersion() ??
-    CONVERSATION_RENDERER_DEFAULT
-  );
+  const urlOverride = readFromLocation();
+  const storedGlobal = readGlobalVersion();
+  const globalVersion = storedGlobal ?? CONVERSATION_RENDERER_DEFAULT;
+  if (urlOverride) {
+    return { renderer: urlOverride, globalVersion, source: 'url' };
+  }
+  if (sessionOverride) {
+    return { renderer: sessionOverride, globalVersion, source: 'session' };
+  }
+  if (storedGlobal) {
+    return { renderer: storedGlobal, globalVersion, source: 'global' };
+  }
+  return {
+    renderer: CONVERSATION_RENDERER_DEFAULT,
+    globalVersion,
+    source: 'default',
+  };
+}
+
+export function resolveConversationRenderer(
+  conversationId?: number | string | null,
+): ConversationRendererVersion {
+  return resolveConversationRendererDetails(conversationId).renderer;
 }
 
 /** 会话覆盖来源说明（UI 展示「本会话已单独设置」时使用） */

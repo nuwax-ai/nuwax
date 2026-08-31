@@ -37,11 +37,12 @@
 .trace {
   margin-top: 6px;
   border-radius: 8px;
-  border: 1px solid rgba(5, 5, 5, 8%);
-}
+  border: 1px solid var(--v2-color-border, rgba(5, 5, 5, 8%));
+  background: var(--v2-color-fill, rgba(5, 5, 5, 2%));
 
-:global(.xagi-layout-dark) .trace {
-  border-color: rgba(255, 255, 255, 12%);
+  &[data-trace-running='true'] {
+    border-color: var(--v2-color-primary-border, rgba(106, 90, 249, 35%));
+  }
 }
 
 .trace-toggle {
@@ -59,24 +60,20 @@
   text-align: left;
 
   &:hover {
-    background: rgba(5, 5, 5, 3%);
+    background: var(--v2-color-fill-hover, rgba(5, 5, 5, 4%));
   }
 
   &:focus-visible {
-    outline: 2px solid var(--ant-color-primary, #6a5af9);
+    outline: 2px solid var(--v2-color-primary, #6a5af9);
     outline-offset: 1px;
   }
 }
 
 .trace-chevron {
   font-size: 10px;
-  color: rgba(5, 5, 5, 45%);
+  color: var(--v2-color-text-tertiary, rgba(5, 5, 5, 45%));
   transition: transform 0.2s ease;
   flex-shrink: 0;
-}
-
-:global(.xagi-layout-dark) .trace-chevron {
-  color: rgba(255, 255, 255, 45%);
 }
 
 .trace-chevron-open {
@@ -87,14 +84,10 @@
   flex: 1;
   min-width: 0;
   font-size: 12px;
-  color: rgba(5, 5, 5, 55%);
+  color: var(--v2-color-text-secondary, rgba(5, 5, 5, 65%));
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-:global(.xagi-layout-dark) .trace-metrics {
-  color: rgba(255, 255, 255, 55%);
 }
 
 // 运行态低对比状态点（扫光降级为呼吸点）
@@ -122,6 +115,7 @@
   flex-direction: column;
   gap: 2px;
   padding: 0 8px 8px;
+  border-top: 1px solid var(--v2-color-border, rgba(5, 5, 5, 6%));
 }
 
 // ---- 单行节点 ----
@@ -140,11 +134,11 @@
   font-size: 13px;
 
   &:hover {
-    background: rgba(5, 5, 5, 4%);
+    background: var(--v2-color-fill-hover, rgba(5, 5, 5, 4%));
   }
 
   &:focus-visible {
-    outline: 2px solid var(--ant-color-primary, #6a5af9);
+    outline: 2px solid var(--v2-color-primary, #6a5af9);
     outline-offset: -1px;
   }
 }
@@ -169,17 +163,29 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: rgba(5, 5, 5, 50%);
+  color: var(--v2-color-text-tertiary, rgba(5, 5, 5, 45%));
   font-size: 12px;
-}
-
-:global(.xagi-layout-dark) .node-summary {
-  color: rgba(255, 255, 255, 50%);
 }
 
 .node-status-icon {
   font-size: 12px;
   flex-shrink: 0;
+}
+
+.node-disclosure {
+  flex-shrink: 0;
+  font-size: 9px;
+  color: var(--v2-color-text-quaternary, rgba(5, 5, 5, 25%));
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.node-row:hover .node-disclosure,
+.node-row:focus-visible .node-disclosure {
+  color: var(--v2-color-text-secondary, rgba(5, 5, 5, 65%));
+}
+
+.node-disclosure-open {
+  transform: rotate(90deg);
 }
 
 // 节点详情：受限高度 + 内部滚动（less 会把 min() 当内置函数，需转义）
@@ -189,11 +195,9 @@
   margin: 2px 6px 6px 22px;
   padding: 8px 10px;
   border-radius: 6px;
-  background: rgba(5, 5, 5, 2%);
-}
-
-:global(.xagi-layout-dark) .node-detail {
-  background: rgba(255, 255, 255, 4%);
+  color: var(--v2-color-text, rgba(0, 0, 0, 88%));
+  background: var(--v2-color-fill, rgba(5, 5, 5, 2%));
+  border-left: 2px solid var(--v2-color-border, rgba(5, 5, 5, 8%));
 }
 
 .node-detail-text {
@@ -211,17 +215,18 @@
   padding: 4px 6px;
   margin-left: 16px;
   font-size: 12px;
-  color: rgba(5, 5, 5, 45%);
+  color: var(--v2-color-text-tertiary, rgba(5, 5, 5, 45%));
   cursor: pointer;
   text-align: left;
   border-radius: 6px;
 
   &:hover {
-    text-decoration: underline;
+    color: var(--v2-color-link, #1677ff);
+    background: var(--v2-color-fill-hover, rgba(5, 5, 5, 4%));
   }
 
   &:focus-visible {
-    outline: 2px solid var(--ant-color-primary, #6a5af9);
+    outline: 2px solid var(--v2-color-primary, #6a5af9);
     outline-offset: 1px;
   }
 }
@@ -261,6 +266,10 @@
   }
 
   .trace-chevron {
+    transition: none;
+  }
+
+  .node-disclosure {
     transition: none;
   }
 }

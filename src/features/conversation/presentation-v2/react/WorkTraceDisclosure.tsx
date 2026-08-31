@@ -123,10 +123,26 @@ const WorkTraceDisclosure: React.FC<WorkTraceDisclosureProps> = ({
     : dict('PC.Components.ConversationRendererV2.traceTitleProcessOnly');
 
   const traceBodyId = `v2-trace-body-${turn.key}`;
+  // CSS variables may belong to an outer/stale ConfigProvider while useToken()
+  // already reflects the active conversation surface. Bridge resolved tokens
+  // onto this subtree to prevent dark-on-dark text in embedded shells.
+  const traceThemeStyle = {
+    '--v2-color-text': token.colorText,
+    '--v2-color-text-secondary': token.colorTextSecondary,
+    '--v2-color-text-tertiary': token.colorTextTertiary,
+    '--v2-color-text-quaternary': token.colorTextQuaternary,
+    '--v2-color-border': token.colorBorderSecondary,
+    '--v2-color-fill': token.colorFillQuaternary,
+    '--v2-color-fill-hover': token.colorFillTertiary,
+    '--v2-color-link': token.colorLink,
+    '--v2-color-primary': token.colorPrimary,
+    '--v2-color-primary-border': token.colorPrimaryBorder,
+  } as React.CSSProperties;
 
   return (
     <div
       className={cx(styles['trace'])}
+      style={traceThemeStyle}
       data-trace-key={turn.key}
       data-trace-running={turn.running ? 'true' : 'false'}
     >

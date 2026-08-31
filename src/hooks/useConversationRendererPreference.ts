@@ -8,11 +8,12 @@ import {
   CONVERSATION_RENDERER_EVENT,
   getSessionRendererOverride,
   loadConversationRendererPreferences,
-  resolveConversationRenderer,
+  resolveConversationRendererDetails,
   saveRendererNodeOverride,
   saveRendererPreset,
   setGlobalRendererVersion,
   setSessionRendererOverride,
+  type ConversationRendererSource,
   type ConversationRendererVersion,
 } from '@/utils/conversationRendererPreference';
 import { useCallback, useEffect, useState } from 'react';
@@ -26,6 +27,8 @@ export const useConversationRendererPreference = (
   conversationId?: number | string | null,
 ): {
   renderer: ConversationRendererVersion;
+  globalVersion: ConversationRendererVersion;
+  source: ConversationRendererSource;
   preferences: ConversationRenderPreferencesV2;
   sessionOverride: ConversationRendererVersion | undefined;
   setGlobalVersion: (value: ConversationRendererVersion) => void;
@@ -36,8 +39,8 @@ export const useConversationRendererPreference = (
   ) => void;
   setSessionVersion: (value: ConversationRendererVersion | null) => void;
 } => {
-  const [renderer, setRendererState] = useState<ConversationRendererVersion>(
-    () => resolveConversationRenderer(conversationId),
+  const [rendererDetails, setRendererDetails] = useState(() =>
+    resolveConversationRendererDetails(conversationId),
   );
   const [sessionOverride, setSessionOverrideState] = useState<
     ConversationRendererVersion | undefined
@@ -49,13 +52,13 @@ export const useConversationRendererPreference = (
 
   useEffect(() => {
     // 会话切换后重读（URL/覆盖均按 conversationId 求值）
-    setRendererState(resolveConversationRenderer(conversationId));
+    setRendererDetails(resolveConversationRendererDetails(conversationId));
     setSessionOverrideState(getSessionRendererOverride(conversationId));
   }, [conversationId]);
 
   useEffect(() => {
     const sync = () => {
-      setRendererState(resolveConversationRenderer(conversationId));
+      setRendererDetails(resolveConversationRendererDetails(conversationId));
       setSessionOverrideState(getSessionRendererOverride(conversationId));
       setPreferencesState(loadConversationRendererPreferences());
     };
@@ -97,7 +100,9 @@ export const useConversationRendererPreference = (
   );
 
   return {
-    renderer,
+    renderer: rendererDetails.renderer,
+    globalVersion: rendererDetails.globalVersion,
+    source: rendererDetails.source,
     preferences,
     sessionOverride,
     setGlobalVersion,

@@ -6,6 +6,7 @@ import CopyButton from '@/components/base/CopyButton';
 import ChatBottomDebug from '@/components/ChatView/ChatBottomDebug';
 import MarkdownRenderer from '@/components/MarkdownRenderer';
 import useMarkdownRender from '@/hooks/useMarkdownRender';
+import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { dict } from '@/services/i18nRuntime';
 import { AssistantRoleEnum } from '@/types/enums/agent';
 import { message } from 'antd';
@@ -27,6 +28,7 @@ const FinalAnswerBlock: React.FC<FinalAnswerBlockProps> = ({
   messageBottomMode = 'chat',
   showDebug = true,
 }) => {
+  const { data: themeData } = useUnifiedTheme();
   const lastAssistant = [...turn.assistantMessages]
     .reverse()
     .find((message) => message.role === AssistantRoleEnum.ASSISTANT);
@@ -57,6 +59,7 @@ const FinalAnswerBlock: React.FC<FinalAnswerBlockProps> = ({
           id={messageIdRef.current}
           markdownRef={markdownRef}
           answer={answerText}
+          theme={themeData.antdTheme === 'dark' ? 'dark' : 'light'}
           thinking=""
           status={lastAssistant?.status}
           thinkingFinished={lastAssistant?.thinkingFinished}
