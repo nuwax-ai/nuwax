@@ -1,20 +1,20 @@
 /**
- * nuwaclaw 桌面客户端专属主题适配层（内聚所有 nuwaclaw 主题常量与逻辑）。
+ * nuwaclaw 灰白纯色主题适配层（内聚所有相关常量与逻辑）。
  *
  * 设计原则（减少侵入 + 减少分散）：
  * - 核心 unifiedThemeService 的配置链 / 优先级 / applyToDOM 完全不改；
- * - 通用主题常量 theme.constants.ts 不掺入任何 nuwaclaw 专属定义；
- * - nuwaclaw 的「品牌蓝主色 + 白底浅灰布局」常量与覆盖逻辑全部内聚在本模块。
+ * - 通用主题常量 theme.constants.ts 不掺入任何专属定义；
+ * - 灰白「纯色」调色板常量与覆盖逻辑全部内聚在本模块。
  *
  * 机制：「女娲主题」注册进主题切换维度（ThemeColorPanel 在桌面端追加「女娲蓝」
  * 选项）。本层作为独立覆盖挂到主题变化监听：
  * - 桌面端未显式定制主题 → init 时把「女娲蓝 + 纯色背景」写入正式主题配置
  *   （unifiedThemeService.updateData，面板自然高亮），灰白布局随覆盖层生效；
- * - 用户显式选了「纯色」背景且布局为浅色 → 灰白布局保持生效（任意主色：
- *   灰白外观跟随背景维度，主色只影响点缀色，不再互相绑架）；
- * - 用户切图片背景 / 深色布局 → 覆盖自动让位（随时可切回）。
+ * - 任意端（含浏览器）显式选了「纯色」背景且布局为浅色 → 灰白布局生效
+ *   （双端一致，不要求 Electron 桥；灰白外观跟随背景维度，主色只影响点缀色）；
+ * - 切图片背景 / 深色布局 → 覆盖自动让位（随时可切回）。
  * antd 运行时主色由 app.tsx applyThemeConfig 据 isNuwaClawDefaultThemeActive()
- * 条件传入（仅默认态强制品牌蓝，显式定制后跟随用户主色）；CSS 变量覆盖由
+ * 条件传入（仅桌面默认态强制品牌蓝，显式定制后跟随用户主色）；CSS 变量覆盖由
  * syncNuwaClawCssOverride 维护。
  */
 import { STORAGE_KEYS } from '@/constants/theme.constants';
@@ -147,16 +147,16 @@ function hasExplicitThemeConfig(): boolean {
 }
 
 /**
- * 女娲灰白纯色布局是否生效：
- * - 桌面端 + 无显式定制（用户层为空或 ≡ 租户默认回声）→ 默认即女娲主题；
- * - 桌面端 + 用户显式选了「纯色」背景且布局为浅色 → 生效（任意主色）；
+ * 灰白纯色布局是否生效（双端）：
+ * - 任意端（含浏览器）+ 用户显式选了「纯色」背景且布局为浅色 → 生效（任意主色）；
+ * - 桌面端 + 无显式定制（用户层为空或 ≡ 租户默认回声）→ 默认即女娲主题
+ *   （此捷径仅客户端：init 会写默认配置，浏览器默认态保持平台原有观感）；
  * - 切图片背景 / 深色布局 → 让位（用户在主题切换里可随时切回）。
  * 灰白布局跟随背景维度而非主色：否则「选纯色不换主色只得白底」「蓝主色下
  * 换背景图被强制吞回 none」两类切换失效（用户实测踩中，2026-08-31 修复）。
  */
 export function isNuwaClawThemeActive(): boolean {
-  if (!isNuwaClaw()) return false;
-  if (!hasExplicitThemeConfig()) return true;
+  if (isNuwaClaw() && !hasExplicitThemeConfig()) return true;
   const data = unifiedThemeService.getCurrentData();
   return (
     data.backgroundId === NUWACLAW_BACKGROUND_ID &&
@@ -236,20 +236,25 @@ function syncNuwaClawCssOverride(): void {
       root.style.removeProperty(BG_IMAGE_VAR);
     }
   }
-  // 同步主题状态给壳（fire-and-forget）：壳的原生 UI（设置弹窗等）跟随统一/回落
-  nuwaClawHost.theme.syncTheme(buildShellThemePayload(shouldApply));
+  // 同步主题状态给壳（fire-and-forget，仅桌面端——浏览器无宿主，通道虽可选链
+  // no-op，仍显式门控避免语义漂移）：壳的原生 UI（设置弹窗等）跟随统一/回落
+  if (isNuwaClaw()) {
+    nuwaClawHost.theme.syncTheme(buildShellThemePayload(shouldApply));
+  }
 }
 
 /**
- * 初始化 nuwaclaw 专属主题适配（仅桌面端生效，浏览器端 no-op）。
+ * 初始化灰白纯色主题适配（双端调用；宿主相关动作仍仅桌面端）。
  * 应用启动时调用一次：首次同步 + 订阅主题变化维持覆盖；返回 dispose 供 effect cleanup。
+ * - 监听注册不限端——浏览器选「纯色」+浅色同样得到灰白外观（双端一致）；
+ * - 默认写入（女娲蓝 + 纯色）仅桌面端：客户端开箱即女娲主题；浏览器默认态
+ *   保持平台原有观感，不写任何配置。
  */
 export function initNuwaClawTheme(): () => void {
-  if (!isNuwaClaw()) return () => {};
   // 桌面端默认切换到女娲主题：用户/租户均未显式定制主题时，把「女娲蓝 + 纯色背景」
   // 写入正式主题配置（走服务统一的存储/DOM 应用链路，主题切换面板因此自然高亮
   // 女娲蓝与纯色两项）。用户此后切任何主题都构成显式配置，此写入不再重复。
-  if (!hasExplicitThemeConfig()) {
+  if (isNuwaClaw() && !hasExplicitThemeConfig()) {
     unifiedThemeService.updateData({
       primaryColor: NUWACLAW_PRIMARY,
       backgroundId: NUWACLAW_BACKGROUND_ID,

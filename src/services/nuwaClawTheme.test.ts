@@ -81,13 +81,36 @@ describe('nuwaClawTheme · nuwaclaw 桌面专属主题适配', () => {
     });
   });
 
-  it('浏览器环境（无桥）→ 不生效；init 为 no-op，不写任何覆盖变量', () => {
+  it('浏览器（无桥）+ 无显式定制默认态 → 不生效、不写默认配置（网页默认观感不变）', () => {
     delete (window as any).NuwaClawBridge;
     expect(isNuwaClawThemeActive()).toBe(false);
     dispose = initNuwaClawTheme();
     const root = document.documentElement;
+    // 「女娲蓝+纯色」默认写入仅桌面端；浏览器默认态保持平台原有观感
+    expect(mockUpdateData).not.toHaveBeenCalled();
     expect(root.style.getPropertyValue('--xagi-color-primary')).toBe('');
     expect(root.style.getPropertyValue('--xagi-layout-bg-primary')).toBe('');
+  });
+
+  it('浏览器（无桥）+ 显式选「纯色」+ 浅色 → 灰白生效（双端一致），不写默认、主色跟随用户', () => {
+    delete (window as any).NuwaClawBridge;
+    localStorage.setItem(
+      STORAGE_KEYS_MOCK.USER_THEME_CONFIG,
+      JSON.stringify({ selectedBackgroundId: 'bg-solid' }),
+    );
+    mockCurrentData.backgroundId = 'bg-solid';
+    expect(isNuwaClawThemeActive()).toBe(true);
+    dispose = initNuwaClawTheme();
+    // 浏览器端不做默认写入（无壳可推送，宿主动作全部桌面专属）
+    expect(mockUpdateData).not.toHaveBeenCalled();
+    const root = document.documentElement;
+    expect(root.style.getPropertyValue('--xagi-layout-bg-primary')).toBe(
+      '#F3F4F6',
+    );
+    expect(root.style.getPropertyValue('--xagi-background-image')).toBe('none');
+    expect(root.style.backgroundColor).toBe('rgb(234, 235, 239)');
+    // 主色仅在桌面默认态兜底品牌蓝；浏览器显式定制后交由 applyToDOM 按用户主色维护
+    expect(rootPrimary()).toBe('');
   });
 
   it('nuwaclaw（有桥）+ 无用户/租户配置 → 生效：写入女娲主题为正式默认配置 + 叠加亮色布局变量', () => {
