@@ -2,6 +2,7 @@ import Loading from '@/components/custom/Loading';
 import { useScrollSync } from '@/hooks/useScrollSync';
 import { apiUpdateAgentSort } from '@/services/agentDev';
 import { dict } from '@/services/i18nRuntime';
+import type { AgentRecentConversationInfo } from '@/types/interfaces/agent';
 import type {
   CategoryInfo,
   CategoryItemInfo,
@@ -36,6 +37,21 @@ interface DraggableHomeContentProps {
   onToggleCollect: (type: string, info: CategoryItemInfo) => void;
   /** 数据更新回调 */
   onDataUpdate: () => void;
+  /** 智能体最近会话映射（agentId → 会话列表） */
+  recentConversationMap?: Map<number, AgentRecentConversationInfo[]>;
+  /** 最近会话区展开的智能体集合 */
+  expandedAgentIds?: Set<number>;
+  /** 当前选中的智能体 */
+  selectedAgentId?: number;
+  /** 最近会话区展开/收起 */
+  onToggleRecentExpand?: (agentId: number, expanded: boolean) => void;
+  /** 最近会话条目点击 */
+  onRecentConversationClick?: (
+    agentId: number,
+    conversationId: number | string,
+  ) => void;
+  /** 最近会话「查看全部」 */
+  onViewAllRecent?: (agentId: number) => void;
 }
 
 /**
@@ -49,6 +65,12 @@ const DraggableHomeContent: React.FC<DraggableHomeContentProps> = ({
   onAgentClick,
   onToggleCollect,
   onDataUpdate,
+  recentConversationMap,
+  expandedAgentIds,
+  selectedAgentId,
+  onToggleRecentExpand,
+  onRecentConversationClick,
+  onViewAllRecent,
 }) => {
   const { message } = App.useApp();
 
@@ -233,6 +255,12 @@ const DraggableHomeContent: React.FC<DraggableHomeContentProps> = ({
               onMouseLeave={handleMouseLeave}
               onAgentDragEnd={handleAgentDragEnd}
               sectionRef={(el) => (sectionRefs.current[item.type] = el)}
+              recentConversationMap={recentConversationMap}
+              expandedAgentIds={expandedAgentIds}
+              selectedAgentId={selectedAgentId}
+              onToggleRecentExpand={onToggleRecentExpand}
+              onRecentConversationClick={onRecentConversationClick}
+              onViewAllRecent={onViewAllRecent}
             />
           ))}
         </div>

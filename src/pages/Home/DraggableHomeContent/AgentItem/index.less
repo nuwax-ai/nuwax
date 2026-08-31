@@ -2,7 +2,6 @@
 @import '@/styles/token';
 
 .container {
-  height: 108px;
   padding: @padding;
   box-sizing: content-box;
   border: 1px solid @colorBorderSecondary;
@@ -12,6 +11,16 @@
   position: relative;
   overflow: hidden;
   //box-shadow: 0 2px 8px rgba(0, 0, 0, 6%), 0 1px 3px rgba(0, 0, 0, 10%);
+
+  // 收起态卡片几何由主区域保持，展开最近会话时卡片自适应增高
+  .main-section {
+    position: relative;
+    height: 108px;
+  }
+
+  &.selected {
+    border-color: @colorPrimary;
+  }
 
   &:hover {
     //box-shadow: 0 8px 25px rgba(0, 0, 0, 12%), 0 4px 10px rgba(0, 0, 0, 8%);
@@ -147,8 +156,11 @@
 
 @media (max-width: 768px) {
   .container {
-    height: 88px;
     padding: 12px;
+
+    .main-section {
+      height: 88px;
+    }
   }
 
   .img-wrapper {

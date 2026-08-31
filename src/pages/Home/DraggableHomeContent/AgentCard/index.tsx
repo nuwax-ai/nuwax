@@ -1,7 +1,8 @@
+import type { AgentRecentConversationInfo } from '@/types/interfaces/agent';
 import type { CategoryItemInfo } from '@/types/interfaces/agentConfig';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import React from 'react';
+import React, { useCallback } from 'react';
 import AgentItem from '../AgentItem';
 import { HOVER_TEXTS } from '../constants';
 
@@ -20,6 +21,21 @@ interface AgentCardProps {
   onMouseEnter: (text: string) => void;
   /** 鼠标离开事件 */
   onMouseLeave: () => void;
+  /** 该智能体的最近会话，为空时不渲染会话区 */
+  recentConversations?: AgentRecentConversationInfo[];
+  /** 最近会话区是否展开 */
+  recentExpanded?: boolean;
+  /** 卡片是否选中 */
+  recentSelected?: boolean;
+  /** 最近会话区展开/收起 */
+  onToggleRecentExpand?: (agentId: number, expanded: boolean) => void;
+  /** 最近会话条目点击 */
+  onRecentConversationClick?: (
+    agentId: number,
+    conversationId: number | string,
+  ) => void;
+  /** 最近会话「查看全部」 */
+  onViewAllRecent?: (agentId: number) => void;
 }
 
 /**
@@ -35,6 +51,12 @@ const AgentCard: React.FC<AgentCardProps> = React.memo(
     onToggleCollect,
     onMouseEnter,
     onMouseLeave,
+    recentConversations,
+    recentExpanded,
+    recentSelected,
+    onToggleRecentExpand,
+    onRecentConversationClick,
+    onViewAllRecent,
   }) => {
     const {
       attributes,
@@ -63,6 +85,25 @@ const AgentCard: React.FC<AgentCardProps> = React.memo(
       onMouseEnter(HOVER_TEXTS.AGENT);
     };
 
+    // 最近会话区回调（绑定当前智能体）
+    const handleToggleExpand = useCallback(
+      (expanded: boolean) => {
+        onToggleRecentExpand?.(agent.targetId, expanded);
+      },
+      [onToggleRecentExpand, agent.targetId],
+    );
+
+    const handleConversationClick = useCallback(
+      (conversationId: number | string) => {
+        onRecentConversationClick?.(agent.targetId, conversationId);
+      },
+      [onRecentConversationClick, agent.targetId],
+    );
+
+    const handleViewAll = useCallback(() => {
+      onViewAllRecent?.(agent.targetId);
+    }, [onViewAllRecent, agent.targetId]);
+
     return (
       <div
         ref={setNodeRef}
@@ -77,6 +118,12 @@ const AgentCard: React.FC<AgentCardProps> = React.memo(
           info={agent}
           onItemClick={onAgentClick}
           onToggleCollect={handleToggleCollect}
+          recentConversations={recentConversations}
+          recentExpanded={recentExpanded}
+          recentSelected={recentSelected}
+          onToggleRecentExpand={handleToggleExpand}
+          onRecentConversationClick={handleConversationClick}
+          onViewAllRecent={handleViewAll}
         />
       </div>
     );

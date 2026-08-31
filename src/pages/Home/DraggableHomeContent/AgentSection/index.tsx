@@ -1,3 +1,4 @@
+import type { AgentRecentConversationInfo } from '@/types/interfaces/agent';
 import type {
   CategoryInfo,
   CategoryItemInfo,
@@ -44,6 +45,21 @@ interface AgentSectionProps {
     categoryType: string,
     newAgents: CategoryItemInfo[],
   ) => void;
+  /** 智能体最近会话映射（agentId → 会话列表） */
+  recentConversationMap?: Map<number, AgentRecentConversationInfo[]>;
+  /** 最近会话区展开的智能体集合 */
+  expandedAgentIds?: Set<number>;
+  /** 当前选中的智能体 */
+  selectedAgentId?: number;
+  /** 最近会话区展开/收起 */
+  onToggleRecentExpand?: (agentId: number, expanded: boolean) => void;
+  /** 最近会话条目点击 */
+  onRecentConversationClick?: (
+    agentId: number,
+    conversationId: number | string,
+  ) => void;
+  /** 最近会话「查看全部」 */
+  onViewAllRecent?: (agentId: number) => void;
 }
 
 /**
@@ -60,6 +76,12 @@ const AgentSection: React.FC<AgentSectionProps> = ({
   onMouseLeave,
   sectionRef,
   onAgentDragEnd,
+  recentConversationMap,
+  expandedAgentIds,
+  selectedAgentId,
+  onToggleRecentExpand,
+  onRecentConversationClick,
+  onViewAllRecent,
 }) => {
   // 维护自身的 agents 状态
   const [localAgents, setLocalAgents] =
@@ -147,6 +169,12 @@ const AgentSection: React.FC<AgentSectionProps> = ({
                 onToggleCollect={onToggleCollect}
                 onMouseEnter={onMouseEnter}
                 onMouseLeave={onMouseLeave}
+                recentConversations={recentConversationMap?.get(agent.targetId)}
+                recentExpanded={expandedAgentIds?.has(agent.targetId) ?? false}
+                recentSelected={selectedAgentId === agent.targetId}
+                onToggleRecentExpand={onToggleRecentExpand}
+                onRecentConversationClick={onRecentConversationClick}
+                onViewAllRecent={onViewAllRecent}
               />
             ))}
           </div>

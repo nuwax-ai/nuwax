@@ -18,6 +18,7 @@ import type {
   AgentCardInfo,
   AgentComponentInfo,
   AgentConfigInfo,
+  AgentRecentConversationInfo,
   AgentStatisticsInfo,
   ComponentModelBindConfig,
   CreatorInfo,
@@ -507,6 +508,18 @@ export interface AgentItemProps {
   info: CategoryItemInfo;
   onItemClick: () => void;
   onToggleCollect: () => void;
+  /** 该智能体的最近会话，为空时不渲染会话区 */
+  recentConversations?: AgentRecentConversationInfo[];
+  /** 会话折叠区是否展开 */
+  recentExpanded?: boolean;
+  /** 卡片是否处于选中态 */
+  recentSelected?: boolean;
+  /** 折叠头展开/收起回调 */
+  onToggleRecentExpand?: (expanded: boolean) => void;
+  /** 最近会话条目点击回调 */
+  onRecentConversationClick?: (conversationId: number | string) => void;
+  /** 最近会话「查看全部」回调 */
+  onViewAllRecent?: () => void;
 }
 
 // 创建变量弹窗组件

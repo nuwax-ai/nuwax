@@ -5,6 +5,7 @@ import { StarFilled } from '@ant-design/icons';
 import { Typography } from 'antd';
 import classNames from 'classnames';
 import React, { useState } from 'react';
+import RecentSessions from './RecentSessions';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -14,6 +15,12 @@ const AgentItem: React.FC<AgentItemProps> = ({
   info,
   onItemClick,
   onToggleCollect,
+  recentConversations,
+  recentExpanded,
+  recentSelected,
+  onToggleRecentExpand,
+  onRecentConversationClick,
+  onViewAllRecent,
 }) => {
   // 状态管理
   const [isCollecting, setIsCollecting] = useState(false);
@@ -60,77 +67,99 @@ const AgentItem: React.FC<AgentItemProps> = ({
     return info.description;
   };
 
+  const hasRecentSessions = !!(
+    recentConversations && recentConversations.length > 0
+  );
+
   return (
     <div
-      className={cx(styles.container)}
+      className={cx(styles.container, {
+        [styles.selected]: recentSelected && hasRecentSessions,
+      })}
       onClick={onItemClick}
       title={`${
         info?.name || dict('PC.Pages.HomeDrag.agent')
       } - ${getDescription()}`}
     >
-      {/* 智能体头像 */}
-      <div className={styles['img-wrapper']}>
-        <img
-          className={cx(styles.img)}
-          src={imageError ? agentImage : info.icon || agentImage}
-          alt={info?.name || dict('PC.Pages.HomeDrag.agentAvatar')}
-          onError={handleImageError}
-          loading="lazy"
-        />
-      </div>
-
-      {/* 信息区域 - 包含标题和用户信息 */}
-      <div className={cx(styles['info-box'])}>
-        {/* 标题区域 */}
-        <Typography.Title
-          level={5}
-          ellipsis={{
-            rows: 1,
-            expandable: false,
-            symbol: '...',
-          }}
-          title={info?.name || dict('PC.Pages.HomeDrag.agentName')}
-          className={styles['title-section']}
-        >
-          {info?.name || dict('PC.Pages.HomeDrag.unnamedAgent')}
-        </Typography.Title>
-
-        {/* 用户信息区域 */}
-        <div className={styles['source-section']}>
-          <p className={cx(styles.source)}>
-            {/* <UserOutlined className={styles['user-icon']} /> */}
-            {dict('PC.Pages.HomeDrag.from')} {getUserDisplayName()}
-          </p>
+      {/* 主区域 - 保持收起态卡片几何 */}
+      <div className={styles['main-section']}>
+        {/* 智能体头像 */}
+        <div className={styles['img-wrapper']}>
+          <img
+            className={cx(styles.img)}
+            src={imageError ? agentImage : info.icon || agentImage}
+            alt={info?.name || dict('PC.Pages.HomeDrag.agentAvatar')}
+            onError={handleImageError}
+            loading="lazy"
+          />
         </div>
+
+        {/* 信息区域 - 包含标题和用户信息 */}
+        <div className={cx(styles['info-box'])}>
+          {/* 标题区域 */}
+          <Typography.Title
+            level={5}
+            ellipsis={{
+              rows: 1,
+              expandable: false,
+              symbol: '...',
+            }}
+            title={info?.name || dict('PC.Pages.HomeDrag.agentName')}
+            className={styles['title-section']}
+          >
+            {info?.name || dict('PC.Pages.HomeDrag.unnamedAgent')}
+          </Typography.Title>
+
+          {/* 用户信息区域 */}
+          <div className={styles['source-section']}>
+            <p className={cx(styles.source)}>
+              {/* <UserOutlined className={styles['user-icon']} /> */}
+              {dict('PC.Pages.HomeDrag.from')} {getUserDisplayName()}
+            </p>
+          </div>
+        </div>
+
+        {/* 收藏按钮 */}
+        <span
+          className={cx(styles['icon-box'], {
+            [styles.collected]: info.collect,
+            [styles.collecting]: isCollecting,
+          })}
+          onClick={handlerCollect}
+          title={
+            info.collect
+              ? dict('PC.Pages.HomeDrag.cancelCollect')
+              : dict('PC.Pages.HomeDrag.collect')
+          }
+        >
+          <StarFilled
+            className={cx(styles['star-icon'], {
+              [styles.spinning]: isCollecting,
+            })}
+          />
+        </span>
+
+        {/* 描述区域 - 独立放在最下面，支持两行显示 */}
+        <Typography.Paragraph
+          className={styles['desc-section']}
+          ellipsis={{ rows: 2, expandable: false, symbol: '...' }}
+        >
+          {getDescription()}
+        </Typography.Paragraph>
       </div>
 
-      {/* 收藏按钮 */}
-      <span
-        className={cx(styles['icon-box'], {
-          [styles.collected]: info.collect,
-          [styles.collecting]: isCollecting,
-        })}
-        onClick={handlerCollect}
-        title={
-          info.collect
-            ? dict('PC.Pages.HomeDrag.cancelCollect')
-            : dict('PC.Pages.HomeDrag.collect')
-        }
-      >
-        <StarFilled
-          className={cx(styles['star-icon'], {
-            [styles.spinning]: isCollecting,
-          })}
+      {/* 最近会话折叠区 */}
+      {hasRecentSessions && recentConversations && (
+        <RecentSessions
+          conversations={recentConversations}
+          expanded={!!recentExpanded}
+          onToggle={(expanded) => onToggleRecentExpand?.(expanded)}
+          onConversationClick={(conversationId) =>
+            onRecentConversationClick?.(conversationId)
+          }
+          onViewAll={() => onViewAllRecent?.()}
         />
-      </span>
-
-      {/* 描述区域 - 独立放在最下面，支持两行显示 */}
-      <Typography.Paragraph
-        className={styles['desc-section']}
-        ellipsis={{ rows: 2, expandable: false, symbol: '...' }}
-      >
-        {getDescription()}
-      </Typography.Paragraph>
+      )}
     </div>
   );
 };
