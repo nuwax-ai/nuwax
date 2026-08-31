@@ -52,7 +52,7 @@ import { history, useModel, useRequest } from 'umi';
 import { createProjectAndNavigate } from '../SpaceCreateProject/utils/projectCreateStrategy';
 import ChatBoxRecommendNav from './components/ChatBoxRecommendNav';
 import HomeCategoryTabs, {
-  type HomeCategoryKey,
+  type HomeCategoryDef,
 } from './components/HomeCategoryTabs';
 import DraggableHomeContent from './DraggableHomeContent';
 import styles from './index.less';
@@ -111,8 +111,8 @@ const Home: React.FC = () => {
   const [homeCategoryInfo, setHomeCategoryInfo] =
     useState<HomeAgentCategoryInfo>();
   const [submitting, setSubmitting] = useState<boolean>(false);
-  // 输入区上方内容分类(对话任务/项目开发/AI教育)
-  const [activeCategory, setActiveCategory] = useState<HomeCategoryKey>('chat');
+  // 输入区上方内容分类(数据驱动,当前由推荐数据临时归类构造)
+  const [activeCategory, setActiveCategory] = useState<string>('chat');
 
   const defaultAgentId =
     isTaskAgentMode && tenantConfigInfo?.defaultTaskAgentId
@@ -301,21 +301,29 @@ const Home: React.FC = () => {
     tenantConfigInfo.defaultTaskAgentId > 0
   );
 
-  // 内容分类 → 推荐 pill 映射:项目开发类按 functionType 过滤,
-  // 对话任务/AI教育 的推荐配置后端尚未提供,分类下暂为空
-  const categoryNavList = useMemo(() => {
+  // 内容分类列表(对话任务/项目开发/AI教育等)。
+  // TODO(后端):分类维度接口就绪后,改为直接消费接口返回的分类+pill;
+  // 当前接口只有 recChatBoxNav 一组 pill(无分类字段),先按 functionType
+  // 归类构造临时分类,文案走 i18n,接口 ready 后整体替换此适配层
+  const categoryNavList = useMemo<HomeCategoryDef[]>(() => {
     const isProjectDev = (item: DisplayRecommendInfo) =>
       SPACE_SELECTOR_FUNCTION_TYPES.has(String(item.functionType || ''));
     return [
       {
-        key: 'chat' as const,
+        key: 'chat',
+        label: dict('PC.Pages.Home.categoryChatTask'),
         items: recommendNavList.filter((item) => !isProjectDev(item)),
       },
       {
-        key: 'project' as const,
+        key: 'project',
+        label: dict('PC.Pages.Home.categoryProjectDev'),
         items: recommendNavList.filter(isProjectDev),
       },
-      { key: 'education' as const, items: [] as DisplayRecommendInfo[] },
+      {
+        key: 'education',
+        label: dict('PC.Pages.Home.categoryAiEducation'),
+        items: [] as DisplayRecommendInfo[],
+      },
     ];
   }, [recommendNavList]);
 
@@ -339,7 +347,7 @@ const Home: React.FC = () => {
   const activeCategoryItems =
     categoryNavList.find((c) => c.key === activeCategory)?.items ?? [];
 
-  const handleCategoryChange = (key: HomeCategoryKey) => {
+  const handleCategoryChange = (key: string) => {
     setActiveCategory(key);
     // 切换分类后清掉已选 pill,避免跨分类残留选中态
     if (selectedRecommend) {

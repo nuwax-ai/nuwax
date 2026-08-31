@@ -90,19 +90,11 @@ const RecentAgentItem: React.FC<RecentAgentItemProps> = ({
           )}
         </div>
         <div className={cx(styles.side)}>
-          {executingCount > 0 ? (
+          {executingCount > 0 && (
             <span className={cx(styles.badge)}>
               {dict('PC.Layouts.DynamicMenusLayout.ConversationItem.executing')}
               ({executingCount})
             </span>
-          ) : (
-            conversationList.length > 0 && (
-              <span className={cx(styles['recent-tag'])}>
-                {dict(
-                  'PC.Layouts.DynamicMenusLayout.HomeSection.recentSessionsTag',
-                )}
-              </span>
-            )
           )}
           <span className={cx(styles.time)}>{time}</span>
         </div>

@@ -1437,7 +1437,6 @@ export const EN_US: SystemLangMap = {
   "PC.Layouts.DynamicMenusLayout.HomeSection.exploreSquare": "Go to the square and start your exploration journey~",
   "PC.Layouts.DynamicMenusLayout.HomeSection.noAgentUsed": "You haven't used any agents yet",
   "PC.Layouts.DynamicMenusLayout.HomeSection.projectTab": "Projects",
-  "PC.Layouts.DynamicMenusLayout.HomeSection.recentSessionsTag": "Recent chats",
   "PC.Layouts.DynamicMenusLayout.HomeSection.recentTab": "Recent",
   "PC.Layouts.DynamicMenusLayout.HomeSection.recentlyUsed": "Recently Used",
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.archivedConversations": "Archived conversations",

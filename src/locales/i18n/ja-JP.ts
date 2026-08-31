@@ -1348,7 +1348,6 @@ export const JA_JP: SystemLangMap = {
   "PC.Layouts.DynamicMenusLayout.HomeSection.exploreSquare": "広場に行って探検の旅を始めましょう~",
   "PC.Layouts.DynamicMenusLayout.HomeSection.noAgentUsed": "まだエージェントを使用したことがありません",
   "PC.Layouts.DynamicMenusLayout.HomeSection.projectTab": "プロジェクト",
-  "PC.Layouts.DynamicMenusLayout.HomeSection.recentSessionsTag": "最近の会話",
   "PC.Layouts.DynamicMenusLayout.HomeSection.recentTab": "最近",
   "PC.Layouts.DynamicMenusLayout.HomeSection.recentlyUsed": "最近使用した",
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.archivedConversations": "アーカイブ済みの会話",

@@ -1369,7 +1369,6 @@ export const ZH_TW: SystemLangMap = {
   "PC.Layouts.DynamicMenusLayout.HomeSection.exploreSquare": "現在去廣場開啟你的探索之旅吧～",
   "PC.Layouts.DynamicMenusLayout.HomeSection.noAgentUsed": "你還沒有使用任何智慧體",
   "PC.Layouts.DynamicMenusLayout.HomeSection.projectTab": "專案",
-  "PC.Layouts.DynamicMenusLayout.HomeSection.recentSessionsTag": "最近會話",
   "PC.Layouts.DynamicMenusLayout.HomeSection.recentTab": "最近",
   "PC.Layouts.DynamicMenusLayout.HomeSection.recentlyUsed": "最近使用",
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.archivedConversations": "已歸檔會話",

@@ -1437,7 +1437,6 @@ export const ZH_CN: SystemLangMap = {
   "PC.Layouts.DynamicMenusLayout.HomeSection.exploreSquare": "现在去广场开启你的探索之旅吧～",
   "PC.Layouts.DynamicMenusLayout.HomeSection.noAgentUsed": "你还没有使用任何智能体",
   "PC.Layouts.DynamicMenusLayout.HomeSection.projectTab": "项目",
-  "PC.Layouts.DynamicMenusLayout.HomeSection.recentSessionsTag": "最近会话",
   "PC.Layouts.DynamicMenusLayout.HomeSection.recentTab": "最近",
   "PC.Layouts.DynamicMenusLayout.HomeSection.recentlyUsed": "最近使用",
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.archivedConversations": "已归档会话",

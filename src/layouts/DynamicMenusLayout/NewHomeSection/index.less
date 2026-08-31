@@ -16,37 +16,14 @@
   .tabs {
     display: flex;
     flex-shrink: 0;
-    border-bottom: 1px solid @colorBorderSecondary;
     margin: 0 @paddingXs @paddingXs;
 
-    .tab {
-      position: relative;
-      flex: 1;
-      height: @controlHeightLg;
-      padding: 0;
-      border: 0;
-      background: transparent;
-      color: @navSecondMenuAdaptiveTextSecondary;
-      font-size: @fontSize;
-      cursor: pointer;
-
-      &::after {
-        position: absolute;
-        right: 0;
-        bottom: -1px;
-        left: 0;
-        height: 1px;
-        border-radius: 2px;
-        background: transparent;
-        content: '';
-      }
-
-      &.active {
-        color: @navSecondMenuAdaptiveText;
-        font-weight: @fontWeightStrong;
-
-        &::after {
-          background: @colorPrimary;
+    :global {
+      .ant-segmented {
+        // Segmented 选中态沿用品牌色
+        .ant-segmented-item-selected .ant-segmented-item-label {
+          color: @colorPrimary;
+          font-weight: @fontWeightStrong;
         }
       }
     }
