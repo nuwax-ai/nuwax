@@ -1,6 +1,6 @@
 import { jumpTo } from '@/utils/router';
 import { useDebounceFn } from 'ahooks';
-import { Segmented, Spin } from 'antd';
+import { Spin } from 'antd';
 import classNames from 'classnames';
 import React, {
   useCallback,
@@ -790,31 +790,35 @@ const NewHomeSection: React.FC<{
       />
 
       <div className={cx(styles.tabs)}>
-        <Segmented
-          block
-          value={activeTab}
-          onChange={(value) => handleTabChange(value as HomeTab)}
-          options={[
-            {
-              value: 'recent',
-              label: dict(
-                'PC.Layouts.DynamicMenusLayout.HomeSection.recentTab',
-              ),
-            },
-            {
-              value: 'conversation',
-              label: dict(
-                'PC.Layouts.DynamicMenusLayout.HomeSection.conversationTab',
-              ),
-            },
-            {
-              value: 'project',
-              label: dict(
-                'PC.Layouts.DynamicMenusLayout.HomeSection.projectTab',
-              ),
-            },
-          ]}
-        />
+        <button
+          type="button"
+          className={cx(styles.tab, {
+            [styles.active]: activeTab === 'recent',
+          })}
+          onClick={() => handleTabChange('recent')}
+        >
+          {dict('PC.Layouts.DynamicMenusLayout.HomeSection.recentlyUsed')}
+        </button>
+        <button
+          type="button"
+          className={cx(styles.tab, {
+            [styles.active]: activeTab === 'conversation',
+          })}
+          onClick={() => handleTabChange('conversation')}
+        >
+          {dict(
+            'PC.Layouts.DynamicMenusLayout.HomeSection.conversationHistory',
+          )}
+        </button>
+        <button
+          type="button"
+          className={cx(styles.tab, {
+            [styles.active]: activeTab === 'project',
+          })}
+          onClick={() => handleTabChange('project')}
+        >
+          {dict('PC.Layouts.DynamicMenusLayout.HomeSection.projectTab')}
+        </button>
       </div>
 
       {/* 列表区:最近 / 会话 / 项目 */}
