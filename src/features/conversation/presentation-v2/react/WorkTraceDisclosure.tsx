@@ -142,11 +142,13 @@ const WorkTraceDisclosure: React.FC<WorkTraceDisclosureProps> = ({
           className={cx(styles['trace-chevron'], {
             [styles['trace-chevron-open']]: expanded,
           })}
+          aria-hidden="true"
         />
         {turn.running && (
           <span
             className={cx(styles['running-dot'])}
             style={{ background: token.colorPrimary }}
+            aria-hidden="true"
           />
         )}
         <span className={cx(styles['trace-metrics'])}>{headerText}</span>

@@ -97,6 +97,9 @@ const ConversationDisplaySettings: React.FC<
           <Segmented
             value={renderer === 'v1' ? 'v1' : 'v2'}
             block
+            aria-label={dict(
+              'PC.Components.ChatInputHome.conversationDisplayRenderer',
+            )}
             options={[
               {
                 value: 'v1',
@@ -135,6 +138,9 @@ const ConversationDisplaySettings: React.FC<
             <Segmented
               value={sessionOverride ?? 'inherit'}
               block
+              aria-label={dict(
+                'PC.Components.ChatInputHome.conversationDisplaySessionOverride',
+              )}
               options={[
                 {
                   value: 'inherit',
@@ -194,6 +200,9 @@ const ConversationDisplaySettings: React.FC<
               <Segmented
                 value={preferences.preset}
                 block
+                aria-label={dict(
+                  'PC.Components.ChatInputHome.conversationDisplayPreset',
+                )}
                 options={[
                   {
                     value: 'focused',
@@ -233,9 +242,14 @@ const ConversationDisplaySettings: React.FC<
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {PROCESS_NODE_KINDS.map((kind) => (
-                  <div
+                  <label
                     key={kind}
-                    style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      cursor: 'default',
+                    }}
                   >
                     <span style={{ flex: 1, fontSize: 12 }}>
                       {dict(NODE_KIND_LABEL_KEYS[kind])}
@@ -243,6 +257,7 @@ const ConversationDisplaySettings: React.FC<
                     <Select
                       size="small"
                       style={{ width: 110 }}
+                      aria-label={dict(NODE_KIND_LABEL_KEYS[kind])}
                       value={preferences.nodeOverrides[kind] ?? 'default'}
                       options={MODE_OPTIONS.map((option) => ({
                         value: option.value,
@@ -257,7 +272,7 @@ const ConversationDisplaySettings: React.FC<
                         )
                       }
                     />
-                  </div>
+                  </label>
                 ))}
               </div>
             </div>

@@ -170,7 +170,27 @@ export const ChatContentArea: React.FC<ChatContentAreaProps> = ({
 
                 {/* 消息渲染列表：渲染线选择（V2 双线重构）。自定义 renderMessageItem 恒走原逻辑 */}
                 {messageRenderer === 'v2' && !renderMessageItem ? (
-                  <React.Suspense fallback={null}>
+                  <React.Suspense
+                    fallback={
+                      <div
+                        role="status"
+                        data-testid="v2-renderer-loading"
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 8,
+                          padding: '24px 0',
+                          color: 'rgba(5, 5, 5, 0.45)',
+                        }}
+                      >
+                        <LoadingOutlined aria-hidden="true" />
+                        <span style={{ fontSize: 12 }}>
+                          {dict('PC.Pages.Chat.loadingHistoryConversation')}
+                        </span>
+                      </div>
+                    }
+                  >
                     <ConversationRendererV2
                       conversationId={conversationId}
                       messageList={renderedMessageList}

@@ -119,7 +119,7 @@ const legacyMessageList: MessageInfo[] = [
       startTime: 1000,
       endTime: 61000,
       componentExecuteResults: [],
-    } as MessageInfo['finalResult'],
+    } as unknown as MessageInfo['finalResult'],
   }),
 ];
 
@@ -148,7 +148,7 @@ const runtimeMessageList: MessageInfo[] = [
       startTime: 1000,
       endTime: 61000,
       componentExecuteResults: [],
-    } as MessageInfo['finalResult'],
+    } as unknown as MessageInfo['finalResult'],
   }),
 ];
 

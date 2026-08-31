@@ -53,7 +53,10 @@ const baseProps = {
   handleMouseEnter: () => {},
   handleMouseLeave: () => {},
   isLoading: false,
-  effectiveRoleInfo: { assistant: { name: 'A' }, system: { name: 'S' } },
+  effectiveRoleInfo: {
+    assistant: { name: 'A', avatar: '' },
+    system: { name: 'S', avatar: '' },
+  },
   shouldShowSessionSuggest: false,
   handleMessageSend: () => {},
   showTaskExecutingWait: false,

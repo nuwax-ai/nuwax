@@ -189,6 +189,7 @@ const ProcessNodeRow: React.FC<ProcessNodeRowProps> = ({
             className={cx(styles['node-kind-icon'])}
             style={{ color: token.colorPrimary }}
             spin
+            aria-hidden="true"
           />
         ) : (
           <KindIcon
@@ -196,6 +197,7 @@ const ProcessNodeRow: React.FC<ProcessNodeRowProps> = ({
             style={{
               color: node.failed ? token.colorError : token.colorTextTertiary,
             }}
+            aria-hidden="true"
           />
         )}
         <span className={cx(styles['node-title'])}>
@@ -210,6 +212,7 @@ const ProcessNodeRow: React.FC<ProcessNodeRowProps> = ({
           <CloseCircleOutlined
             className={cx(styles['node-status-icon'])}
             style={{ color: token.colorError }}
+            aria-hidden="true"
           />
         )}
         {!node.failed &&
@@ -220,6 +223,7 @@ const ProcessNodeRow: React.FC<ProcessNodeRowProps> = ({
             <CheckCircleOutlined
               className={cx(styles['node-status-icon'])}
               style={{ color: token.colorSuccess }}
+              aria-hidden="true"
             />
           )}
       </button>

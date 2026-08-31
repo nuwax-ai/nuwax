@@ -287,7 +287,7 @@ describe('ConversationRendererV2 · 两级折叠与手动状态保持', () => {
     // 终态补齐（FINAL_RESULT）同样不重置
     const terminal = streamed.map((m) =>
       m.role === AssistantRoleEnum.ASSISTANT
-        ? {
+        ? ({
             ...m,
             status: MessageStatusEnum.Complete,
             finalResult: {
@@ -295,7 +295,7 @@ describe('ConversationRendererV2 · 两级折叠与手动状态保持', () => {
               success: true,
               componentExecuteResults: [],
             },
-          }
+          } as unknown as MessageInfo)
         : m,
     );
     rerender(
@@ -471,5 +471,24 @@ describe('ConversationRendererV2 · 回答与异常', () => {
       expect(document.querySelector('[data-v2-fallback="v1"]')).not.toBeNull();
     });
     expect(consoleError).toHaveBeenCalled();
+  });
+});
+
+describe('ConversationRendererV2 · 无障碍（验收返工 P2）', () => {
+  it('节点行装饰图标对读屏隐藏（aria-hidden），按钮名称只含标题与摘要', () => {
+    renderV2(buildTurn(), PREFS('detailed'));
+    const toolRow = document.querySelector('[data-node-id="e1"] button')!;
+    const icons = toolRow.querySelectorAll('[aria-hidden="true"]');
+    expect(icons.length).toBeGreaterThanOrEqual(1);
+    const name =
+      toolRow.getAttribute('aria-label') ?? toolRow.textContent ?? '';
+    expect(name).not.toMatch(/caret-right|bulb|tool|check-circle/i);
+  });
+
+  it('轨迹折叠头图标隐藏，名称为指标文本', () => {
+    renderV2(buildTurn());
+    const toggle = screen.getByTestId('v2-trace-toggle');
+    expect(toggle.querySelector('[aria-hidden="true"]')).not.toBeNull();
+    expect(toggle.textContent).toContain('traceMetricTools');
   });
 });

@@ -12,10 +12,13 @@ import {
 import { AgentComponentTypeEnum, AssistantRoleEnum } from '@/types/enums/agent';
 import { MessageStatusEnum, ProcessingEnum } from '@/types/enums/common';
 import type {
+  ExecuteResultInfo,
   MessageInfo,
   ProcessingInfo,
 } from '@/types/interfaces/conversationInfo';
 import { describe, expect, it } from 'vitest';
+
+type ConversationFinalResultFixture = ExecuteResultInfo;
 
 const msg = (
   overrides: Partial<MessageInfo> & {
@@ -545,5 +548,244 @@ describe('projectConversation · 已完成交互', () => {
       'tool',
       'completed-interaction',
     ]);
+  });
+});
+
+describe('projectConversation · 最终回答去重（验收返工 P1）', () => {
+  it('outputText 与末段正文同源时，该段不再作为 narration 重复入轨迹', () => {
+    const answerText = '竞品分析完成：三家定价与功能矩阵已核对。';
+    const text = `第一段说明${processTag({
+      executeId: 'e1',
+      type: 'Mcp',
+      status: 'FINISHED',
+    })}${answerText}`;
+    const turn = projectConversation([
+      msg({ id: 'u1', role: AssistantRoleEnum.USER, text: '任务' }),
+      msg({
+        id: 'a1',
+        role: AssistantRoleEnum.ASSISTANT,
+        text,
+        finalResult: {
+          outputText: answerText,
+          success: true,
+          componentExecuteResults: [],
+        } as MessageInfo['finalResult'],
+      }),
+    ]).turns[0];
+    expect(turn.finalAnswer).toMatchObject({
+      source: 'finalResult',
+      text: answerText,
+    });
+    const narrations = turn.nodes.filter((n) => n.kind === 'narration');
+    expect(narrations.map((n) => n.summary)).toEqual(['第一段说明']);
+    expect(
+      narrations.some((n) => (n.text ?? '').includes('竞品分析完成')),
+    ).toBe(false);
+  });
+
+  it('outputText 与正文不同源时，正文段保留为 narration（不误删中间说明）', () => {
+    const turn = projectConversation([
+      msg({
+        id: 'a1',
+        role: AssistantRoleEnum.ASSISTANT,
+        text: '中间结论',
+        finalResult: {
+          outputText: '与正文完全不同的最终结论',
+          success: true,
+          componentExecuteResults: [],
+        } as MessageInfo['finalResult'],
+      }),
+    ]).turns[0];
+    expect(turn.finalAnswer.text).toBe('与正文完全不同的最终结论');
+    expect(turn.nodes.filter((n) => n.kind === 'narration')).toHaveLength(1);
+  });
+
+  it('SYSTEM 消息不得成为最终回答，也不重复产生 narration（验收返工 P1）', () => {
+    const turn = projectConversation([
+      msg({ id: 'u1', role: AssistantRoleEnum.USER, text: '任务' }),
+      msg({
+        id: 'a1',
+        role: AssistantRoleEnum.ASSISTANT,
+        text: '助手结论',
+        finalResult: {
+          outputText: '助手结论',
+          success: true,
+          componentExecuteResults: [],
+        } as MessageInfo['finalResult'],
+      }),
+      msg({
+        id: 's1',
+        role: AssistantRoleEnum.SYSTEM,
+        text: '系统上下文：敏感注入内容',
+        index: 2,
+      }),
+    ]).turns[0];
+    expect(turn.finalAnswer.source).toBe('finalResult');
+    expect(turn.finalAnswer.text).toBe('助手结论');
+    expect(turn.finalAnswer.text).not.toContain('系统上下文');
+    // SYSTEM 只产生一个 context 节点，不再重复解析出 narration
+    expect(turn.nodes.filter((n) => n.kind === 'context')).toHaveLength(1);
+    expect(turn.nodes.filter((n) => n.kind === 'narration')).toHaveLength(0);
+  });
+
+  it('SYSTEM-only 轮次无最终回答；QUESTION 类型消息正文不选为回答', () => {
+    const systemOnly = projectConversation([
+      msg({ id: 's1', role: AssistantRoleEnum.SYSTEM, text: '纯系统内容' }),
+    ]).turns[0];
+    expect(systemOnly.finalAnswer.source).toBe('none');
+
+    const questionTail = projectConversation([
+      msg({ id: 'u1', role: AssistantRoleEnum.USER, text: '任务' }),
+      msg({
+        id: 'a1',
+        role: AssistantRoleEnum.ASSISTANT,
+        text: '中途说明',
+        status: null as unknown as MessageStatusEnum,
+        finished: true,
+      }),
+      msg({
+        id: 'q1',
+        role: AssistantRoleEnum.ASSISTANT,
+        type: 'QUESTION' as MessageInfo['type'],
+        text: '请选择方案？',
+        index: 2,
+        status: null as unknown as MessageStatusEnum,
+        finished: true,
+      }),
+    ]).turns[0];
+    expect(questionTail.finalAnswer.source).toBe('messageText');
+    expect(questionTail.finalAnswer.text).toBe('中途说明');
+  });
+});
+
+describe('projectConversation · 工具终态合并（验收返工 P2）', () => {
+  it('finalResult.componentExecuteResults 覆盖流式 EXECUTING、补齐缺失、残余判失败', () => {
+    const text = [
+      processTag({
+        executeId: 'e1',
+        type: 'Mcp',
+        status: 'EXECUTING',
+        name: '工具一',
+      }),
+      processTag({
+        executeId: 'e2',
+        type: 'Mcp',
+        status: 'EXECUTING',
+        name: '工具二',
+      }),
+      processTag({
+        executeId: 'e3',
+        type: 'Plugin',
+        status: 'FINISHED',
+        name: '工具三',
+      }),
+    ].join('');
+    const turn = projectConversation([
+      msg({ id: 'u1', role: AssistantRoleEnum.USER, text: '任务' }),
+      msg({
+        id: 'a1',
+        role: AssistantRoleEnum.ASSISTANT,
+        text,
+        processingList: [
+          {
+            executeId: 'e1',
+            name: '工具一（流式）',
+            type: 'Mcp',
+            status: ProcessingEnum.EXECUTING,
+            result: {
+              executeId: 'e1',
+              success: true,
+              startTime: 1,
+              endTime: 2,
+            },
+          },
+          {
+            executeId: 'e3',
+            name: '工具三（流式）',
+            type: 'Plugin',
+            status: ProcessingEnum.EXECUTING,
+          },
+        ] as unknown as ProcessingInfo[],
+        finalResult: {
+          outputText: '结论',
+          success: true,
+          startTime: 1,
+          endTime: 100,
+          componentExecuteResults: [
+            // e1 终态：覆盖流式 EXECUTING
+            {
+              executeId: 'e1',
+              name: '工具一（终态）',
+              type: 'Mcp',
+              success: true,
+              startTime: 1,
+              endTime: 50,
+            },
+            // e2 只在终态出现：补齐
+            {
+              executeId: 'e2',
+              name: '工具二（终态）',
+              type: 'Mcp',
+              success: false,
+              startTime: 10,
+              endTime: 60,
+            },
+            // e3 终态缺位：流式 EXECUTING 残余 → FAILED
+          ] as unknown as ConversationFinalResultFixture[],
+        } as unknown as MessageInfo['finalResult'],
+      }),
+    ]).turns[0];
+    const byId = new Map(turn.nodes.map((n) => [n.id, n]));
+    expect(byId.get('e1')?.status).toBe('finished');
+    expect(byId.get('e1')?.title).toBe('工具一（终态）');
+    expect(byId.get('e1')?.processing?.result?.endTime).toBe(50);
+    expect(byId.get('e2')?.status).toBe('failed');
+    expect(byId.get('e2')?.title).toBe('工具二（终态）');
+    expect(byId.get('e3')?.status).toBe('failed');
+  });
+
+  it('历史消息：componentExecutedList 作为基底与 processingList 共存合并', () => {
+    const text = [
+      processTag({
+        executeId: 'h1',
+        type: 'Mcp',
+        status: 'FINISHED',
+        name: '历史一',
+      }),
+      processTag({
+        executeId: 'h2',
+        type: 'Mcp',
+        status: 'FINISHED',
+        name: '历史二',
+      }),
+    ].join('');
+    const turn = projectConversation([
+      msg({
+        id: 'a1',
+        role: AssistantRoleEnum.ASSISTANT,
+        text,
+        processingList: [
+          {
+            executeId: 'h2',
+            name: '历史二（流式覆盖）',
+            type: 'Mcp',
+            status: ProcessingEnum.FINISHED,
+          },
+        ] as unknown as ProcessingInfo[],
+        componentExecutedList: [
+          {
+            result: {
+              executeId: 'h1',
+              name: '历史一（历史基底）',
+              type: 'Mcp',
+              success: true,
+            },
+          },
+        ],
+      }),
+    ]).turns[0];
+    const byId = new Map(turn.nodes.map((n) => [n.id, n]));
+    expect(byId.get('h1')?.title).toBe('历史一（历史基底）');
+    expect(byId.get('h2')?.title).toBe('历史二（流式覆盖）');
   });
 });

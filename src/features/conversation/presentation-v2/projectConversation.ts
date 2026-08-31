@@ -10,7 +10,11 @@
  * - 工具按稳定 executeId 去重（保留最后一次出现的位置与属性，与 V1 分组算法一致）；
  * - 本函数不做异常吞噬：投影层自身 bug 抛出，由渲染层捕获并整份回退 V1。
  */
-import { AgentComponentTypeEnum, AssistantRoleEnum } from '@/types/enums/agent';
+import {
+  AgentComponentTypeEnum,
+  AssistantRoleEnum,
+  MessageModeEnum,
+} from '@/types/enums/agent';
 import { MessageStatusEnum, ProcessingEnum } from '@/types/enums/common';
 import type {
   ExecuteResultInfo,
@@ -71,11 +75,27 @@ const sortMessages = (list: MessageInfo[]): MessageInfo[] =>
     })
     .map((entry) => entry.message);
 
+/** 历史执行结果 → ProcessingInfo（success 推断终态，与 reconcileFinalMessageState.toProcessingData 同规则） */
+const toProcessingFromResult = (result: ExecuteResultInfo): ProcessingInfo =>
+  ({
+    executeId: result.executeId,
+    name: result.name,
+    type: result.type,
+    status:
+      result.success === false
+        ? ProcessingEnum.FAILED
+        : ProcessingEnum.FINISHED,
+    result,
+    targetId: -1,
+    cardBindConfig: null,
+  } as unknown as ProcessingInfo);
+
 /**
- * 消息内工具执行详情：优先消息自带 processingList（两条数据线终态都会用
- * finalResult.componentExecuteResults 走 reconcileFinalMessageState 补齐），
- * 历史消息缺失时从 componentExecutedList 提升（与 models/conversationInfo.ts
- * 的 hydrate 规则一致：过滤无 executeId 条目）。
+ * 消息内工具执行详情合并（spec「数据与状态」）：
+ * 1) 历史 componentExecutedList 作基底（历史消息 processingList 常缺失，过滤无 executeId 条目）；
+ * 2) 消息 processingList（流式）覆盖基底；
+ * 3) finalResult.componentExecuteResults（终态）覆盖一切——终态覆盖流式、缺失补齐；
+ * 4) finalResult 在场时残余 EXECUTING 判 FAILED（与 reconcileFinalMessageState 同规则）。
  */
 const collectProcessingByKey = (
   message: MessageInfo,
@@ -85,23 +105,24 @@ const collectProcessingByKey = (
     if (!item?.executeId) return;
     map.set(item.executeId, item);
   };
-  (message.processingList ?? []).forEach(upsert);
-  if (map.size === 0 && Array.isArray(message.componentExecutedList)) {
+  if (Array.isArray(message.componentExecutedList)) {
     message.componentExecutedList.forEach((raw) => {
       const result = (raw as { result?: ExecuteResultInfo })?.result;
       if (!result?.executeId) return;
-      upsert({
-        executeId: result.executeId,
-        name: result.name,
-        type: result.type,
-        status:
-          result.success === false
-            ? ProcessingEnum.FAILED
-            : ProcessingEnum.FINISHED,
-        result,
-        targetId: -1,
-        cardBindConfig: null,
-      } as unknown as ProcessingInfo);
+      upsert(toProcessingFromResult(result));
+    });
+  }
+  (message.processingList ?? []).forEach(upsert);
+  const terminalResults =
+    (message.finalResult?.componentExecuteResults ?? []).filter(
+      (result) => !!result?.executeId,
+    ) ?? [];
+  terminalResults.forEach((result) => upsert(toProcessingFromResult(result)));
+  if (message.finalResult) {
+    map.forEach((item, executeId) => {
+      if (item.status === ProcessingEnum.EXECUTING) {
+        map.set(executeId, { ...item, status: ProcessingEnum.FAILED });
+      }
     });
   }
   return map;
@@ -229,9 +250,18 @@ const projectTurn = (draft: TurnDraft): ConversationTurnPresentationV2 => {
       ? 'stopped'
       : 'complete';
 
+  // ---- 最终回答候选消息：仅 ASSISTANT 的 CHAT/ANSWER（缺省视为 CHAT）----
+  // SYSTEM/FUNCTION 是上下文、THINK 已单列、QUESTION/GUID 不是回答——都不得外显为最终回答
+  const isAnswerCandidateMessage = (message: MessageInfo): boolean =>
+    message.role === AssistantRoleEnum.ASSISTANT &&
+    (message.type === undefined ||
+      message.type === MessageModeEnum.CHAT ||
+      message.type === MessageModeEnum.ANSWER);
+
   // ---- 最终回答第一优先级：最后一条非空 finalResult.outputText（剥标签后仍非空）----
   let answerFromFinalResult: string | undefined;
   for (let i = assistantMessages.length - 1; i >= 0; i -= 1) {
+    if (!isAnswerCandidateMessage(assistantMessages[i])) continue;
     const outputText = assistantMessages[i].finalResult?.outputText;
     if (!outputText) continue;
     const stripped = stripCustomTags(outputText);
@@ -245,30 +275,69 @@ const projectTurn = (draft: TurnDraft): ConversationTurnPresentationV2 => {
   const parsedSegments = assistantMessages.map((message) =>
     parseMessageSegments(message.text),
   );
+  // 最后一条候选正文段（从后向前，只看 ASSISTANT 的 CHAT/ANSWER 消息）
+  const findLastAnswerCandidateSegment = (): {
+    messageIndex: number;
+    segmentIndex: number;
+  } | null => {
+    for (let mi = parsedSegments.length - 1; mi >= 0; mi -= 1) {
+      if (!isAnswerCandidateMessage(assistantMessages[mi])) continue;
+      const segs = parsedSegments[mi];
+      for (let si = segs.length - 1; si >= 0; si -= 1) {
+        const seg = segs[si];
+        if (seg.type === 'text' && seg.content.trim()) {
+          return { messageIndex: mi, segmentIndex: si };
+        }
+      }
+    }
+    return null;
+  };
+  const normalizeForCompare = (text: string): string =>
+    text.replace(/\s+/g, '');
+  /** outputText 与正文段同源判定：任一方向包含即视为同一内容（终态 outputText 常为正文段的聚合/截断） */
+  const isSameAnswerContent = (
+    outputText: string,
+    segmentText: string,
+  ): boolean => {
+    const a = normalizeForCompare(outputText);
+    const b = normalizeForCompare(segmentText);
+    if (!a || !b) return false;
+    return a.includes(b) || b.includes(a);
+  };
   const answerRef: { messageIndex: number; segmentIndex: number } | null =
     (() => {
-      if (answerFromFinalResult) return null;
+      if (answerFromFinalResult) {
+        // 去重：消息末尾与 outputText 同源的正文段即最终回答本身，不得再入轨迹
+        const tail = findLastAnswerCandidateSegment();
+        if (
+          tail &&
+          isSameAnswerContent(
+            answerFromFinalResult,
+            (
+              parsedSegments[tail.messageIndex][tail.segmentIndex] as Extract<
+                MessageSegment,
+                { type: 'text' }
+              >
+            ).content,
+          )
+        ) {
+          return tail;
+        }
+        return null;
+      }
       if (running) {
-        // 运行态：最后一条 assistant 消息的末尾若为正文段，即为实时回答区
+        // 运行态：最后一条候选消息的末尾若为正文段，即为实时回答区
         const last = parsedSegments.length - 1;
         if (last < 0) return null;
+        if (!isAnswerCandidateMessage(assistantMessages[last])) return null;
         const segs = parsedSegments[last];
         const tail = segs[segs.length - 1];
         return tail?.type === 'text' && tail.content.trim()
           ? { messageIndex: last, segmentIndex: segs.length - 1 }
           : null;
       }
-      // 终态回退：全轮最后一个非空正文段
-      for (let mi = parsedSegments.length - 1; mi >= 0; mi -= 1) {
-        const segs = parsedSegments[mi];
-        for (let si = segs.length - 1; si >= 0; si -= 1) {
-          const seg = segs[si];
-          if (seg.type === 'text' && seg.content.trim()) {
-            return { messageIndex: mi, segmentIndex: si };
-          }
-        }
-      }
-      return null;
+      // 终态回退：全轮最后一个非空候选正文段
+      return findLastAnswerCandidateSegment();
     })();
 
   const finalAnswer: ConversationFinalAnswer = answerFromFinalResult
@@ -296,7 +365,8 @@ const projectTurn = (draft: TurnDraft): ConversationTurnPresentationV2 => {
     const messageKey = messageStableKey(message, messageIndex);
     const processingByKey = collectProcessingByKey(message);
 
-    // SYSTEM/FUNCTION 消息整体作为 context 节点（上下文/系统提示）
+    // SYSTEM/FUNCTION 消息整体作为 context 节点（上下文/系统提示），不再做段解析：
+    // 其正文是上下文内容，既不产生 narration，也不得成为最终回答
     if (
       message.role === AssistantRoleEnum.SYSTEM ||
       message.role === AssistantRoleEnum.FUNCTION
@@ -310,6 +380,7 @@ const projectTurn = (draft: TurnDraft): ConversationTurnPresentationV2 => {
         failed: false,
         text: message.text ?? '',
       });
+      return;
     }
 
     // 历史消息兜底：text 无思考标签但有聚合 think/thinkBlocks 时补 reasoning 节点
