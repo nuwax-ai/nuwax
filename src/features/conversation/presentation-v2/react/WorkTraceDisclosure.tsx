@@ -155,9 +155,9 @@ const WorkTraceDisclosure: React.FC<WorkTraceDisclosureProps> = ({
       </button>
       {expanded && (
         <div id={traceBodyId} className={cx(styles['trace-body'])}>
-          {shownNodes.map((node) => (
+          {shownNodes.map((node, nodeIndex) => (
             <ProcessNodeRow
-              key={node.id}
+              key={`${node.id}#${nodeIndex}`}
               node={node}
               expanded={nodeIsExpanded(node)}
               onToggle={() => toggleNode(node.id)}

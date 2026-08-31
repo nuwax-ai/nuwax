@@ -789,3 +789,48 @@ describe('projectConversation · 工具终态合并（验收返工 P2）', () =>
     expect(byId.get('h2')?.title).toBe('历史二（流式覆盖）');
   });
 });
+
+describe('projectConversation · 终态参考消息（验收返工自查）', () => {
+  it('轮末跟随 SYSTEM 消息时不遮蔽 assistant 真实终态', () => {
+    const turn = projectConversation([
+      msg({ id: 'u1', role: AssistantRoleEnum.USER, text: '任务' }),
+      msg({
+        id: 'a1',
+        role: AssistantRoleEnum.ASSISTANT,
+        text: '出错了',
+        status: MessageStatusEnum.Error,
+      }),
+      msg({
+        id: 's1',
+        role: AssistantRoleEnum.SYSTEM,
+        text: '系统上下文',
+        index: 2,
+      }),
+    ]).turns[0];
+    expect(turn.terminalStatus).toBe('error');
+  });
+});
+
+describe('projectConversation · 运行态轮末非候选消息回退（评审边界）', () => {
+  it('运行中轮末瞬时跟随 SYSTEM：实时回答取最后候选正文段而非清空', () => {
+    const turn = projectConversation([
+      msg({ id: 'u1', role: AssistantRoleEnum.USER, text: '任务' }),
+      msg({
+        id: 'a1',
+        role: AssistantRoleEnum.ASSISTANT,
+        text: '流式回答中',
+        status: MessageStatusEnum.Loading,
+      }),
+      msg({
+        id: 's1',
+        role: AssistantRoleEnum.SYSTEM,
+        text: '瞬时系统注入',
+        index: 2,
+        status: MessageStatusEnum.Loading,
+      }),
+    ]).turns[0];
+    expect(turn.running).toBe(true);
+    expect(turn.finalAnswer.source).toBe('messageText');
+    expect(turn.finalAnswer.text).toBe('流式回答中');
+  });
+});

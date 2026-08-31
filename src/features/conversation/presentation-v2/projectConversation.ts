@@ -242,11 +242,15 @@ const projectTurn = (draft: TurnDraft): ConversationTurnPresentationV2 => {
   const running = assistantMessages.some((message) =>
     isRunningStatus(message.status),
   );
-  const lastAssistant = assistantMessages[assistantMessages.length - 1];
+  // 终态/状态参考消息取最后一条 ASSISTANT 角色消息：assistantMessages 含
+  // SYSTEM/FUNCTION（context），轮末跟随时其无 status，不得遮蔽真实终态
+  const lastAssistantRoleMessage = [...assistantMessages]
+    .reverse()
+    .find((message) => message.role === AssistantRoleEnum.ASSISTANT);
   const terminalStatus: ConversationTurnPresentationV2['terminalStatus'] =
-    lastAssistant?.status === MessageStatusEnum.Error
+    lastAssistantRoleMessage?.status === MessageStatusEnum.Error
       ? 'error'
-      : lastAssistant?.status === MessageStatusEnum.Stopped
+      : lastAssistantRoleMessage?.status === MessageStatusEnum.Stopped
       ? 'stopped'
       : 'complete';
 
@@ -326,10 +330,14 @@ const projectTurn = (draft: TurnDraft): ConversationTurnPresentationV2 => {
         return null;
       }
       if (running) {
-        // 运行态：最后一条候选消息的末尾若为正文段，即为实时回答区
+        // 运行态：最后一条候选消息的末尾若为正文段，即为实时回答区。
+        // 轮末瞬时跟随 SYSTEM/FUNCTION（非候选）时回退扫描最后的候选正文段，
+        // 避免实时回答区闪烁清空、已流出正文降级为轨迹摘要。
         const last = parsedSegments.length - 1;
         if (last < 0) return null;
-        if (!isAnswerCandidateMessage(assistantMessages[last])) return null;
+        if (!isAnswerCandidateMessage(assistantMessages[last])) {
+          return findLastAnswerCandidateSegment();
+        }
         const segs = parsedSegments[last];
         const tail = segs[segs.length - 1];
         return tail?.type === 'text' && tail.content.trim()
@@ -513,7 +521,7 @@ const projectTurn = (draft: TurnDraft): ConversationTurnPresentationV2 => {
   const toolExecuteIds = new Set(
     nodes
       .filter((node) => node.kind === 'tool' || node.kind === 'subagent')
-      .map((node) => node.id),
+      .map((node) => node.executeId ?? node.id),
   );
   const messageCount = nodes.filter(
     (node) =>

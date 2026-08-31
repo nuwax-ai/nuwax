@@ -12,6 +12,7 @@ import agentImage from '@/assets/images/agent_image.png';
 import ChatView from '@/components/ChatView';
 import RunOver from '@/components/ChatView/RunOver';
 import { useConversationRendererPreference } from '@/hooks/useConversationRendererPreference';
+import { AssistantRoleEnum } from '@/types/enums/agent';
 import type {
   MessageInfo,
   RoleInfo,
@@ -99,8 +100,10 @@ const TurnBlock: React.FC<{
   const [manualExpanded, setManualExpanded] = useState<boolean | undefined>(
     undefined,
   );
-  const lastAssistant =
-    turn.assistantMessages[turn.assistantMessages.length - 1];
+  // 状态栏参考最后一条 ASSISTANT 消息（assistantMessages 含 SYSTEM/FUNCTION）
+  const lastAssistant = [...turn.assistantMessages]
+    .reverse()
+    .find((message) => message.role === AssistantRoleEnum.ASSISTANT);
   const hasContent =
     turn.nodes.length > 0 || !!turn.finalAnswer.text || turn.running;
 

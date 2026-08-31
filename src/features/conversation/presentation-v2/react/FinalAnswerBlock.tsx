@@ -7,6 +7,7 @@ import ChatBottomDebug from '@/components/ChatView/ChatBottomDebug';
 import MarkdownRenderer from '@/components/MarkdownRenderer';
 import useMarkdownRender from '@/hooks/useMarkdownRender';
 import { dict } from '@/services/i18nRuntime';
+import { AssistantRoleEnum } from '@/types/enums/agent';
 import { message } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
@@ -26,8 +27,9 @@ const FinalAnswerBlock: React.FC<FinalAnswerBlockProps> = ({
   messageBottomMode = 'chat',
   showDebug = true,
 }) => {
-  const lastAssistant =
-    turn.assistantMessages[turn.assistantMessages.length - 1];
+  const lastAssistant = [...turn.assistantMessages]
+    .reverse()
+    .find((message) => message.role === AssistantRoleEnum.ASSISTANT);
   const answerText = turn.finalAnswer.text;
   const answerId = `v2-answer-${turn.key}`;
   const { markdownRef, messageIdRef } = useMarkdownRender({

@@ -28,6 +28,34 @@ const ConversationRendererV2 = React.lazy(() =>
 );
 
 /**
+ * V2 懒加载边界：chunk 拉取失败（发版后旧 tab 请求已删除 hash、弱网）时
+ * V2 内部的 ErrorBoundary 尚未加载，异常会冒泡到根卸载整棵树。
+ * 本地 boundary 捕获后回退 V1 列表，满足「回退 V1、禁止白屏」的规格。
+ */
+class V2RendererLoadBoundary extends React.Component<
+  { children: React.ReactNode; fallback: React.ReactNode },
+  { hasError: boolean }
+> {
+  state = { hasError: false };
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: unknown, info: React.ErrorInfo) {
+    console.error(
+      '[ConversationRendererV2] chunk load failed, falling back to V1',
+      error,
+      info?.componentStack,
+    );
+  }
+
+  render() {
+    return this.state.hasError ? this.props.fallback : this.props.children;
+  }
+}
+
+/**
  * 优先使用客户端稳定渲染 ID，历史消息则使用服务端 ID 作为 React key。
  * 会话终态快照可能为历史消息补齐或调整 index；把 index 拼进 key 会导致整条消息
  * 被卸载重挂，Markdown 内容在下一帧重新注入时产生可见闪烁。
@@ -124,6 +152,26 @@ export const ChatContentArea: React.FC<ChatContentAreaProps> = ({
     return messageList;
   }, [messageList]);
 
+  // V1 列表渲染（默认分支与 V2 chunk 失败回退共用）
+  const renderV1MessageList = () =>
+    renderedMessageList?.map((item: MessageInfo, idx: number) => {
+      const isLastMessage = idx === renderedMessageList.length - 1;
+      if (renderMessageItem) {
+        return renderMessageItem(item, isLastMessage);
+      }
+      return (
+        <ChatView
+          key={getChatMessageRenderKey(item, idx)}
+          conversationId={conversationId}
+          messageInfo={item}
+          roleInfo={effectiveRoleInfo}
+          mode={messageBottomMode}
+          showDebug={showDebug}
+          showStatusDesc={agentInfo?.type !== AgentTypeEnum.TaskAgent}
+        />
+      );
+    });
+
   return (
     <div
       className={cx(styles['chat-wrapper-content'], 'scroll-container')}
@@ -170,59 +218,44 @@ export const ChatContentArea: React.FC<ChatContentAreaProps> = ({
 
                 {/* 消息渲染列表：渲染线选择（V2 双线重构）。自定义 renderMessageItem 恒走原逻辑 */}
                 {messageRenderer === 'v2' && !renderMessageItem ? (
-                  <React.Suspense
-                    fallback={
-                      <div
-                        role="status"
-                        data-testid="v2-renderer-loading"
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: 8,
-                          padding: '24px 0',
-                          color: 'rgba(5, 5, 5, 0.45)',
-                        }}
-                      >
-                        <LoadingOutlined aria-hidden="true" />
-                        <span style={{ fontSize: 12 }}>
-                          {dict('PC.Pages.Chat.loadingHistoryConversation')}
-                        </span>
-                      </div>
-                    }
+                  <V2RendererLoadBoundary
+                    fallback={<>{renderV1MessageList()}</>}
                   >
-                    <ConversationRendererV2
-                      conversationId={conversationId}
-                      messageList={renderedMessageList}
-                      roleInfo={effectiveRoleInfo}
-                      messageBottomMode={messageBottomMode}
-                      showDebug={showDebug}
-                      showStatusDesc={
-                        agentInfo?.type !== AgentTypeEnum.TaskAgent
+                    <React.Suspense
+                      fallback={
+                        <div
+                          role="status"
+                          data-testid="v2-renderer-loading"
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: 8,
+                            padding: '24px 0',
+                            color: 'rgba(5, 5, 5, 0.45)',
+                          }}
+                        >
+                          <LoadingOutlined aria-hidden="true" />
+                          <span style={{ fontSize: 12 }}>
+                            {dict('PC.Pages.Chat.loadingHistoryConversation')}
+                          </span>
+                        </div>
                       }
-                    />
-                  </React.Suspense>
-                ) : (
-                  renderedMessageList?.map((item: MessageInfo, idx: number) => {
-                    const isLastMessage =
-                      idx === renderedMessageList.length - 1;
-                    if (renderMessageItem) {
-                      return renderMessageItem(item, isLastMessage);
-                    }
-                    return (
-                      <ChatView
-                        key={getChatMessageRenderKey(item, idx)}
+                    >
+                      <ConversationRendererV2
                         conversationId={conversationId}
-                        messageInfo={item}
+                        messageList={renderedMessageList}
                         roleInfo={effectiveRoleInfo}
-                        mode={messageBottomMode}
+                        messageBottomMode={messageBottomMode}
                         showDebug={showDebug}
                         showStatusDesc={
                           agentInfo?.type !== AgentTypeEnum.TaskAgent
                         }
                       />
-                    );
-                  })
+                    </React.Suspense>
+                  </V2RendererLoadBoundary>
+                ) : (
+                  renderV1MessageList()
                 )}
 
                 {/* 问题建议：仅会话空闲且队列已排空时展示，避免与队列中的下一轮消息割裂 */}
