@@ -57,3 +57,18 @@ export function setConversationRuntimeEnabled(value: boolean | null): void {
     // localStorage 不可用（隐私模式等）：忽略，回落 URL/默认值
   }
 }
+
+/**
+ * 写入 URL 级会话轨覆盖（调试入口用）：replaceState 改写 conversationRuntime
+ * 参数（保留其余 query）。不含重建——runtime hook 在初始化时读一次 flag
+ * （切换即组件树重建），调用方需自行重载/重挂载使新值生效。
+ */
+export function setConversationRuntimeUrlOverride(enabled: boolean): void {
+  try {
+    const url = new URL(window.location.href);
+    url.searchParams.set(URL_PARAM, enabled ? '1' : '0');
+    window.history.replaceState(window.history.state, '', url);
+  } catch {
+    // URL/history 不可用：忽略（可改用 setConversationRuntimeEnabled 粘性开关）
+  }
+}

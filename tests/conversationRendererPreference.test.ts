@@ -16,6 +16,7 @@ import {
   resolveConversationRendererDetails,
   saveRendererNodeOverride,
   saveRendererPreset,
+  setConversationRendererUrlOverride,
   setGlobalRendererVersion,
   setSessionRendererOverride,
 } from '@/utils/conversationRendererPreference';
@@ -203,6 +204,29 @@ describe('conversationRendererPreference 存取', () => {
     // URL 非法值忽略：本测试前面已设 123 的会话覆盖 v2，压过全局 v1
     expect(resolveConversationRenderer(123)).toBe('v2');
     expect(resolveConversationRenderer(456)).toBe('v1');
+  });
+
+  it('URL 写入器（调试开关）：改写参数保留其余 query，并广播事件供 hook 即时重解析', () => {
+    const listener = vi.fn();
+    window.addEventListener('conversation-renderer-v2-changed', listener);
+
+    // 无既有参数：新增
+    setSearch('?foo=1');
+    setConversationRendererUrlOverride('v1');
+    expect(location.search).toBe('?foo=1&conversationRenderer=v1');
+    expect(resolveConversationRendererDetails(123)).toMatchObject({
+      renderer: 'v1',
+      source: 'url',
+    });
+
+    // 已有参数：原位改写，其余参数不动
+    setConversationRendererUrlOverride('v2');
+    expect(location.search).toBe('?foo=1&conversationRenderer=v2');
+    expect(resolveConversationRenderer(123)).toBe('v2');
+
+    // 每次写入都广播（mock-chat 开关即时切线的依赖）
+    expect(listener).toHaveBeenCalledTimes(2);
+    window.removeEventListener('conversation-renderer-v2-changed', listener);
   });
 
   it('偏好持久化：预设与逐类覆盖读写一致，覆盖可清除', () => {

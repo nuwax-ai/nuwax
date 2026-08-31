@@ -189,6 +189,24 @@ export function setSessionRendererOverride(
   broadcast();
 }
 
+/**
+ * 写入 URL 级渲染线覆盖（调试入口用）：replaceState 改写 conversationRenderer
+ * 参数（保留其余 query），随后广播使已挂载 hook 即时重解析——URL 是最高优先级源，
+ * 无需重载即切线；刷新/分享链接保持该值（与 e2e URL 驱动矩阵同一语义）。
+ */
+export function setConversationRendererUrlOverride(
+  value: ConversationRendererVersion,
+): void {
+  try {
+    const url = new URL(window.location.href);
+    url.searchParams.set(URL_PARAM, value);
+    window.history.replaceState(window.history.state, '', url);
+  } catch {
+    // URL/history 不可用：跳过写入，仅广播（生效值回落会话/全局链）
+  }
+  broadcast();
+}
+
 /** 读取 V2 偏好（预设 + 逐类高级覆盖） */
 export function loadConversationRendererPreferences(): ConversationRenderPreferencesV2 {
   let preset: ConversationRendererPreset = DEFAULT_V2_PRESET;

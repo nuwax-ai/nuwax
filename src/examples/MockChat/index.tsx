@@ -17,6 +17,14 @@ import { DefaultSelectedEnum, TaskStatus } from '@/types/enums/agent';
 import { ProcessingEnum } from '@/types/enums/common';
 import type { UploadFileInfo } from '@/types/interfaces/common';
 import type { MessageInfo } from '@/types/interfaces/conversationInfo';
+import {
+  setConversationRendererUrlOverride,
+  type ConversationRendererVersion,
+} from '@/utils/conversationRendererPreference';
+import {
+  isConversationRuntimeEnabled,
+  setConversationRuntimeUrlOverride,
+} from '@/utils/conversationRuntimeFlag';
 import { CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import {
   Alert,
@@ -595,8 +603,9 @@ const MockChat: React.FC = () => {
               </Title>
               <Text type="secondary">
                 {scenarios.length} 个故障注入场景，复用生产会话模型与
-                UI；应用内嵌 形态访问 /app/mock-chat，runtime 轨加
-                ?conversationRuntime=1。
+                UI；应用内嵌 形态访问 /app/mock-chat。会话轨与渲染线均为双线，
+                可用下方开关或 URL 参数切换（?conversationRuntime=1、
+                ?conversationRenderer=v1|v2）。
               </Text>
             </div>
             <Select
@@ -613,6 +622,33 @@ const MockChat: React.FC = () => {
               options={speedOptions}
               value={speed}
               onChange={(value) => setSpeed(Number(value))}
+            />
+            <Segmented
+              data-testid="mock-track-toggle"
+              options={[
+                { value: false, label: '会话轨 legacy' },
+                { value: true, label: '会话轨 runtime' },
+              ]}
+              value={isConversationRuntimeEnabled()}
+              onChange={(value) => {
+                // runtime hook 在初始化时读一次 flag（切换即组件树重建）：
+                // 写入 URL 参数后整页重载生效，与 e2e URL 驱动同一语义
+                setConversationRuntimeUrlOverride(Boolean(value));
+                window.location.reload();
+              }}
+            />
+            <Segmented
+              data-testid="mock-renderer-toggle"
+              options={[
+                { value: 'v1', label: '渲染 V1 Markdown' },
+                { value: 'v2', label: '渲染 V2 工作轨迹' },
+              ]}
+              value={mockRendererVersion}
+              onChange={(value) =>
+                setConversationRendererUrlOverride(
+                  value as ConversationRendererVersion,
+                )
+              }
             />
             <Button
               type="primary"

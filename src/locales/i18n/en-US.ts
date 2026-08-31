@@ -299,6 +299,14 @@ export const EN_US: SystemLangMap = {
   "PC.Components.ConversationDetails.openPreviewPage": "Open preview page",
   "PC.Components.ConversationDetails.pagePreviewName": "Page Preview",
   "PC.Components.ConversationDetails.paidSubscribe": "Subscribe",
+  "PC.Components.ConversationDetails.rendererLineToggle":
+    "Conversation render line (debug)",
+  "PC.Components.ConversationDetails.rendererLineHint":
+    "This page renders with classic Markdown by default; switch this conversation to the V2 work track (two-level collapse) for debugging.",
+  "PC.Components.ConversationDetails.rendererLineV1": "Classic Markdown",
+  "PC.Components.ConversationDetails.rendererLineV2": "V2 Work Track",
+  "PC.Components.ConversationDetails.rendererLineReset":
+    "Reset to default (classic)",
   "PC.Components.ConversationDetails.requiredParamsWarning": "Please fill in required parameters",
   "PC.Components.ConversationDetails.startConversationWithAgent": "Start a conversation with {0}",
   "PC.Components.ConversationDetails.viewAgentDetails": "View agent details",

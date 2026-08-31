@@ -299,6 +299,12 @@ export const ZH_CN: SystemLangMap = {
   "PC.Components.ConversationDetails.openPreviewPage": "打开预览页面",
   "PC.Components.ConversationDetails.pagePreviewName": "页面预览",
   "PC.Components.ConversationDetails.paidSubscribe": "订阅",
+  "PC.Components.ConversationDetails.rendererLineToggle": "会话渲染线（调试）",
+  "PC.Components.ConversationDetails.rendererLineHint":
+    "本页默认经典 Markdown 渲染；可仅对本会话切换到 V2 工作轨迹（两级折叠梳理）。",
+  "PC.Components.ConversationDetails.rendererLineV1": "经典 Markdown",
+  "PC.Components.ConversationDetails.rendererLineV2": "V2 工作轨迹",
+  "PC.Components.ConversationDetails.rendererLineReset": "恢复默认（经典）",
   "PC.Components.ConversationDetails.requiredParamsWarning": "请填写必填参数",
   "PC.Components.ConversationDetails.startConversationWithAgent": "和{0}开始会话",
   "PC.Components.ConversationDetails.viewAgentDetails": "查看智能体详情",

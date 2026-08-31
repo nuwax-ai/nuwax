@@ -6,6 +6,7 @@ import {
   CONVERSATION_RUNTIME_DEFAULT,
   isConversationRuntimeEnabled,
   setConversationRuntimeEnabled,
+  setConversationRuntimeUrlOverride,
 } from '@/utils/conversationRuntimeFlag';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -48,6 +49,23 @@ describe('conversationRuntimeFlag', () => {
   it('清除 localStorage 回落默认 legacy', () => {
     setConversationRuntimeEnabled(true);
     setConversationRuntimeEnabled(null);
+    expect(isConversationRuntimeEnabled()).toBe(false);
+  });
+
+  it('URL 写入器（调试开关）：改写参数保留其余 query，改后即时求值生效', () => {
+    setSearch('?scenario=terminal-stream');
+    setConversationRuntimeUrlOverride(true);
+    expect(location.search).toBe(
+      '?scenario=terminal-stream&conversationRuntime=1',
+    );
+    expect(isConversationRuntimeEnabled()).toBe(true);
+
+    // 原位改写为显式关闭（0 压过 localStorage 粘性开启）
+    setConversationRuntimeEnabled(true);
+    setConversationRuntimeUrlOverride(false);
+    expect(location.search).toBe(
+      '?scenario=terminal-stream&conversationRuntime=0',
+    );
     expect(isConversationRuntimeEnabled()).toBe(false);
   });
 });

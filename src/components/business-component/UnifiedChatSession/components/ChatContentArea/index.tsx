@@ -2,6 +2,7 @@ import AgentChatEmpty from '@/components/AgentChatEmpty';
 import ChatView from '@/components/ChatView';
 import NewConversationSet from '@/components/NewConversationSet';
 import RecommendList from '@/components/RecommendList';
+import { ConversationRendererV2Lazy } from '@/features/conversation/LazyConversationRendererV2';
 import { LoadingOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import * as React from 'react';
@@ -18,42 +19,6 @@ import type { UnifiedAgentInfo } from '../../types';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
-
-// V2 渲染器按需加载：v1 默认路径不进入 V2 import 链（工具卡→CodeEditor→
-// monaco-editor 等重依赖只在真正切到 v2 时拉取，测试与旧线不受影响）。
-const ConversationRendererV2 = React.lazy(() =>
-  import('@/features/conversation/presentation-v2/react').then((module) => ({
-    default: module.ConversationRendererV2,
-  })),
-);
-
-/**
- * V2 懒加载边界：chunk 拉取失败（发版后旧 tab 请求已删除 hash、弱网）时
- * V2 内部的 ErrorBoundary 尚未加载，异常会冒泡到根卸载整棵树。
- * 本地 boundary 捕获后回退 V1 列表，满足「回退 V1、禁止白屏」的规格。
- */
-class V2RendererLoadBoundary extends React.Component<
-  { children: React.ReactNode; fallback: React.ReactNode },
-  { hasError: boolean }
-> {
-  state = { hasError: false };
-
-  static getDerivedStateFromError() {
-    return { hasError: true };
-  }
-
-  componentDidCatch(error: unknown, info: React.ErrorInfo) {
-    console.error(
-      '[ConversationRendererV2] chunk load failed, falling back to V1',
-      error,
-      info?.componentStack,
-    );
-  }
-
-  render() {
-    return this.state.hasError ? this.props.fallback : this.props.children;
-  }
-}
 
 /**
  * 优先使用客户端稳定渲染 ID，历史消息则使用服务端 ID 作为 React key。
@@ -218,42 +183,15 @@ export const ChatContentArea: React.FC<ChatContentAreaProps> = ({
 
                 {/* 消息渲染列表：渲染线选择（V2 双线重构）。自定义 renderMessageItem 恒走原逻辑 */}
                 {messageRenderer === 'v2' && !renderMessageItem ? (
-                  <V2RendererLoadBoundary
+                  <ConversationRendererV2Lazy
                     fallback={<>{renderV1MessageList()}</>}
-                  >
-                    <React.Suspense
-                      fallback={
-                        <div
-                          role="status"
-                          data-testid="v2-renderer-loading"
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: 8,
-                            padding: '24px 0',
-                            color: 'rgba(5, 5, 5, 0.45)',
-                          }}
-                        >
-                          <LoadingOutlined aria-hidden="true" />
-                          <span style={{ fontSize: 12 }}>
-                            {dict('PC.Pages.Chat.loadingHistoryConversation')}
-                          </span>
-                        </div>
-                      }
-                    >
-                      <ConversationRendererV2
-                        conversationId={conversationId}
-                        messageList={renderedMessageList}
-                        roleInfo={effectiveRoleInfo}
-                        messageBottomMode={messageBottomMode}
-                        showDebug={showDebug}
-                        showStatusDesc={
-                          agentInfo?.type !== AgentTypeEnum.TaskAgent
-                        }
-                      />
-                    </React.Suspense>
-                  </V2RendererLoadBoundary>
+                    conversationId={conversationId}
+                    messageList={renderedMessageList}
+                    roleInfo={effectiveRoleInfo}
+                    messageBottomMode={messageBottomMode}
+                    showDebug={showDebug}
+                    showStatusDesc={agentInfo?.type !== AgentTypeEnum.TaskAgent}
+                  />
                 ) : (
                   renderV1MessageList()
                 )}

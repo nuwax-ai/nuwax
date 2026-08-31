@@ -18,7 +18,9 @@ import TooltipIcon from '@/components/custom/TooltipIcon';
 import NewConversationSet from '@/components/NewConversationSet';
 import RecommendList from '@/components/RecommendList';
 import ResizableSplit from '@/components/ResizableSplit';
+import { ConversationRendererV2Lazy } from '@/features/conversation/LazyConversationRendererV2';
 import useAgentDetails from '@/hooks/useAgentDetails';
+import { useConversationRendererPreference } from '@/hooks/useConversationRendererPreference';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
 import useSubscription from '@/hooks/useSubscription';
 import { apiPublishedAgentInfo } from '@/services/agentDev';
@@ -66,6 +68,7 @@ import React, {
 import { history, useLocation, useModel, useRequest } from 'umi';
 import { v4 as uuidv4 } from 'uuid';
 import styles from './index.less';
+import RendererLineToggle from './RendererLineToggle';
 
 const cx = classNames.bind(styles);
 const SKIP_DETAIL_QUERY_ON_POP_BACK_KEY =
@@ -559,6 +562,28 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
     };
   }, [agentDetail]);
 
+  // ── 渲染线（V2 双线重构·调试接入）：本页基线恒 V1，仅会话覆盖可显式切 V2；
+  // 不接全局偏好链，全局默认值变化不改变本页存量观感 ──
+  const { sessionOverride: rendererSessionOverride } =
+    useConversationRendererPreference(conversationId);
+  const messageRenderer = rendererSessionOverride ?? 'v1';
+
+  /** V1 消息列表（渲染线 v2 加载失败/渲染异常时的回退同源） */
+  const renderV1MessageList = () => (
+    <>
+      {messageList?.map((item: MessageInfo, index: number) => (
+        <ChatView
+          key={index}
+          conversationId={conversationId || ''}
+          messageInfo={item}
+          roleInfo={roleInfo}
+          contentClassName={styles['chat-inner']}
+          mode={'none'}
+        />
+      ))}
+    </>
+  );
+
   // 消息发送
   const handleMessageSend = (
     messageInfo: string,
@@ -787,6 +812,9 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
                 />
               )}
 
+              {/*渲染线调试切换（V2 双线重构）：基线 V1，按会话显式切 V2*/}
+              <RendererLineToggle conversationId={conversationId} />
+
               {/*打开预览页面*/}
               {!!agentDetail?.expandPageArea &&
                 !!agentDetail?.pageHomeIndex && (
@@ -830,16 +858,22 @@ const ConversationDetails: React.FC<ConversationDetailsProps> = ({
                 />
                 {messageList?.length > 0 ? (
                   <>
-                    {messageList?.map((item: MessageInfo, index: number) => (
-                      <ChatView
-                        key={index}
+                    {/* 渲染线选择（V2 双线重构·调试）：基线 V1，会话覆盖可显式
+                        切 V2；V2 chunk 失败/渲染异常自动回退 V1 列表 */}
+                    {messageRenderer === 'v2' ? (
+                      <ConversationRendererV2Lazy
+                        fallback={renderV1MessageList()}
                         conversationId={conversationId || ''}
-                        messageInfo={item}
+                        messageList={messageList}
                         roleInfo={roleInfo}
-                        contentClassName={styles['chat-inner']}
-                        mode={'none'}
+                        messageBottomMode="none"
+                        showStatusDesc={
+                          agentDetail?.type !== AgentTypeEnum.TaskAgent
+                        }
                       />
-                    ))}
+                    ) : (
+                      renderV1MessageList()
+                    )}
                     {/*会话建议*/}
                     <RecommendList
                       itemClassName={styles['suggest-item']}
