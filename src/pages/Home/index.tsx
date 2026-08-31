@@ -51,6 +51,9 @@ import React, {
 import { history, useModel, useRequest } from 'umi';
 import { createProjectAndNavigate } from '../SpaceCreateProject/utils/projectCreateStrategy';
 import ChatBoxRecommendNav from './components/ChatBoxRecommendNav';
+import HomeCategoryTabs, {
+  type HomeCategoryKey,
+} from './components/HomeCategoryTabs';
 import DraggableHomeContent from './DraggableHomeContent';
 import styles from './index.less';
 
@@ -108,6 +111,8 @@ const Home: React.FC = () => {
   const [homeCategoryInfo, setHomeCategoryInfo] =
     useState<HomeAgentCategoryInfo>();
   const [submitting, setSubmitting] = useState<boolean>(false);
+  // 输入区上方内容分类(对话任务/项目开发/AI教育)
+  const [activeCategory, setActiveCategory] = useState<HomeCategoryKey>('chat');
 
   const defaultAgentId =
     isTaskAgentMode && tenantConfigInfo?.defaultTaskAgentId
@@ -296,6 +301,53 @@ const Home: React.FC = () => {
     tenantConfigInfo.defaultTaskAgentId > 0
   );
 
+  // 内容分类 → 推荐 pill 映射:项目开发类按 functionType 过滤,
+  // 对话任务/AI教育 的推荐配置后端尚未提供,分类下暂为空
+  const categoryNavList = useMemo(() => {
+    const isProjectDev = (item: DisplayRecommendInfo) =>
+      SPACE_SELECTOR_FUNCTION_TYPES.has(String(item.functionType || ''));
+    return [
+      {
+        key: 'chat' as const,
+        items: recommendNavList.filter((item) => !isProjectDev(item)),
+      },
+      {
+        key: 'project' as const,
+        items: recommendNavList.filter(isProjectDev),
+      },
+      { key: 'education' as const, items: [] as DisplayRecommendInfo[] },
+    ];
+  }, [recommendNavList]);
+
+  // 默认分类无推荐内容时,回落到第一个有内容的分类
+  const categoryAutoAdjustedRef = useRef(false);
+  useEffect(() => {
+    if (categoryAutoAdjustedRef.current || recommendNavList.length === 0) {
+      return;
+    }
+    const activeItems =
+      categoryNavList.find((c) => c.key === activeCategory)?.items ?? [];
+    if (activeItems.length === 0) {
+      const firstWithItems = categoryNavList.find((c) => c.items.length > 0);
+      if (firstWithItems) {
+        setActiveCategory(firstWithItems.key);
+      }
+    }
+    categoryAutoAdjustedRef.current = true;
+  }, [categoryNavList, activeCategory, recommendNavList.length]);
+
+  const activeCategoryItems =
+    categoryNavList.find((c) => c.key === activeCategory)?.items ?? [];
+
+  const handleCategoryChange = (key: HomeCategoryKey) => {
+    setActiveCategory(key);
+    // 切换分类后清掉已选 pill,避免跨分类残留选中态
+    if (selectedRecommend) {
+      setSelectedRecommend(undefined);
+      chatInputRef.current?.clear();
+    }
+  };
+
   const handleTabClick = (type: string) => {
     setActiveTab(type);
   };
@@ -338,9 +390,17 @@ const Home: React.FC = () => {
             className={cx(styles.title)}
             dangerouslySetInnerHTML={{ __html: tenantConfigInfo?.homeSlogan }}
           />
+          <p className={cx(styles['hero-subtitle'])}>
+            {dict('PC.Pages.Home.heroSubtitle')}
+          </p>
         </div>
+        <HomeCategoryTabs
+          categories={categoryNavList}
+          activeKey={activeCategory}
+          onChange={handleCategoryChange}
+        />
         <ChatBoxRecommendNav
-          items={recommendNavList}
+          items={activeCategoryItems}
           onSelect={handleRecommendSelect}
         />
         <ChatInputHome
@@ -411,6 +471,9 @@ const Home: React.FC = () => {
           )}
         </div>
       </section>
+      <footer className={cx(styles['foot-tip'])}>
+        {dict('PC.Pages.Home.aiGeneratedTip')}
+      </footer>
     </div>
   );
 };
