@@ -7,8 +7,6 @@ import ChatInputHome, {
   type ChatInputHomeRef,
 } from '@/components/ChatInputHome';
 import Loading from '@/components/custom/Loading';
-import { EVENT_TYPE } from '@/constants/event.constants';
-import { useChatFinishedWhenListExecuting } from '@/hooks/useChatFinishedWhenListExecuting';
 import useConversation from '@/hooks/useConversation';
 import useSelectedComponent from '@/hooks/useSelectedComponent';
 import {
@@ -26,9 +24,7 @@ import {
 import { AgentTypeEnum } from '@/types/enums/space';
 import type {
   AgentDetailDto,
-  AgentInfo,
   AgentManualComponentInfo,
-  AgentRecentConversationInfo,
 } from '@/types/interfaces/agent';
 import type {
   CategoryItemInfo,
@@ -42,8 +38,6 @@ import {
   DisplayRecommendFunctionTypeEnum,
   type DisplayRecommendInfo,
 } from '@/types/interfaces/displayRecommend';
-import { hasExecutingTaskInList } from '@/utils/conversationTaskStatusSync';
-import eventBus from '@/utils/eventBus';
 import { jumpTo } from '@/utils/router';
 import { App, message as antdMessage } from 'antd';
 import classNames from 'classnames';
@@ -91,8 +85,6 @@ const Home: React.FC = () => {
   const { getSpaceId } = useModel('spaceModel');
   const { setContext } = useModel('pageHandoffContext');
   const { handleCreateConversation } = useConversation();
-  // 最近使用智能体（含各自最近会话与执行状态），与左侧栏共享全局 model
-  const { usedAgentList, runUsed } = useModel('conversationHistory');
   const chatInputRef = useRef<ChatInputHomeRef>(null);
   const {
     selectedComponentList,
@@ -116,14 +108,6 @@ const Home: React.FC = () => {
   const [homeCategoryInfo, setHomeCategoryInfo] =
     useState<HomeAgentCategoryInfo>();
   const [submitting, setSubmitting] = useState<boolean>(false);
-  // 最近会话折叠区交互状态：选中展开 / 用户手动展开 / 用户手动收起（抑制执行中自动展开）
-  const [selectedAgentId, setSelectedAgentId] = useState<number>();
-  const [manualExpandedIds, setManualExpandedIds] = useState<Set<number>>(
-    () => new Set(),
-  );
-  const [manualCollapsedIds, setManualCollapsedIds] = useState<Set<number>>(
-    () => new Set(),
-  );
 
   const defaultAgentId =
     isTaskAgentMode && tenantConfigInfo?.defaultTaskAgentId
@@ -216,83 +200,7 @@ const Home: React.FC = () => {
     setLoading(true);
     runCategoryList();
     runRecommendNavList();
-    runUsed();
-  }, [runCategoryList, runRecommendNavList, runUsed]);
-
-  // agentId → 最近会话列表映射（仅保留有会话的智能体）
-  const recentConversationMap = useMemo(() => {
-    const map = new Map<number, AgentRecentConversationInfo[]>();
-    usedAgentList?.forEach((agent: AgentInfo) => {
-      if (agent.agentId && agent.conversationList?.length) {
-        map.set(agent.agentId, agent.conversationList);
-      }
-    });
-    return map;
-  }, [usedAgentList]);
-
-  // 最终展开集合：用户手动展开 ∪ 执行中(未被手动收起抑制) ∪ 当前选中
-  const expandedAgentIds = useMemo(() => {
-    const ids = new Set<number>(manualExpandedIds);
-    recentConversationMap.forEach((list, agentId) => {
-      if (hasExecutingTaskInList(list) && !manualCollapsedIds.has(agentId)) {
-        ids.add(agentId);
-      }
-    });
-    if (selectedAgentId !== undefined) {
-      ids.add(selectedAgentId);
-    }
-    return ids;
-  }, [
-    recentConversationMap,
-    manualExpandedIds,
-    manualCollapsedIds,
-    selectedAgentId,
-  ]);
-
-  const allRecentConversations = useMemo(
-    () => [...recentConversationMap.values()].flat(),
-    [recentConversationMap],
-  );
-
-  const handleChatFinishedRefresh = useCallback(() => {
-    runUsed();
-  }, [runUsed]);
-
-  // 存在执行中会话时订阅 ChatFinished，结束后静默刷新
-  useChatFinishedWhenListExecuting({
-    conversationList: allRecentConversations,
-    onChatFinished: handleChatFinishedRefresh,
-  });
-
-  // 会话执行态乐观更新 / 列表静默刷新事件 → 重拉最近使用列表
-  useEffect(() => {
-    const handleRefresh = () => {
-      runUsed();
-    };
-    eventBus.on(EVENT_TYPE.UpdateConversationListTaskStatus, handleRefresh);
-    eventBus.on(EVENT_TYPE.RefreshConversationList, handleRefresh);
-    return () => {
-      eventBus.off(EVENT_TYPE.UpdateConversationListTaskStatus, handleRefresh);
-      eventBus.off(EVENT_TYPE.RefreshConversationList, handleRefresh);
-    };
-  }, [runUsed]);
-
-  // 手动收起的抑制只在执行期间有效：该智能体全部会话进入终态后自动解除
-  useEffect(() => {
-    setManualCollapsedIds((prev) => {
-      if (prev.size === 0) {
-        return prev;
-      }
-      const next = new Set<number>();
-      prev.forEach((agentId) => {
-        const list = recentConversationMap.get(agentId);
-        if (list && hasExecutingTaskInList(list)) {
-          next.add(agentId);
-        }
-      });
-      return next.size === prev.size ? prev : next;
-    });
-  }, [recentConversationMap]);
+  }, [runCategoryList, runRecommendNavList]);
 
   useEffect(() => {
     setAgentDetail(undefined);
@@ -400,73 +308,16 @@ const Home: React.FC = () => {
     }
   };
 
-  // 卡片点击：有最近会话→切换选中（选中即展开）；无会话→保持原跳转
   const handleAgentClick = (agentInfo: CategoryItemInfo) => {
     const { targetId, lastConversationId } = agentInfo;
 
-    if (!recentConversationMap.has(targetId)) {
-      if (lastConversationId) {
-        history.push(`/home/chat/${lastConversationId}/${targetId}`);
-        return;
-      }
-      jumpTo(`/agent/${targetId}`);
+    if (lastConversationId) {
+      history.push(`/home/chat/${lastConversationId}/${targetId}`);
       return;
     }
 
-    const nextSelected = selectedAgentId === targetId ? undefined : targetId;
-    setSelectedAgentId(nextSelected);
-    if (nextSelected === targetId) {
-      // 选中展开优先于手动收起
-      setManualCollapsedIds((prev) => {
-        const next = new Set(prev);
-        next.delete(targetId);
-        return next;
-      });
-    } else {
-      // 取消选中时收起卡片：执行中的卡片需同步抑制自动展开，否则会立刻弹回
-      setManualCollapsedIds((prev) => {
-        const list = recentConversationMap.get(targetId);
-        if (list && hasExecutingTaskInList(list)) {
-          return new Set(prev).add(targetId);
-        }
-        return prev;
-      });
-    }
+    jumpTo(`/agent/${targetId}`);
   };
-
-  // 折叠头手动展开/收起；收起时抑制执行中自动展开并取消选中
-  const handleToggleRecentExpand = useCallback(
-    (agentId: number, expanded: boolean) => {
-      if (expanded) {
-        setManualExpandedIds((prev) => new Set(prev).add(agentId));
-        setManualCollapsedIds((prev) => {
-          const next = new Set(prev);
-          next.delete(agentId);
-          return next;
-        });
-        return;
-      }
-      setManualExpandedIds((prev) => {
-        const next = new Set(prev);
-        next.delete(agentId);
-        return next;
-      });
-      setManualCollapsedIds((prev) => new Set(prev).add(agentId));
-      setSelectedAgentId((prev) => (prev === agentId ? undefined : prev));
-    },
-    [],
-  );
-
-  const handleRecentConversationClick = useCallback(
-    (agentId: number, conversationId: number | string) => {
-      history.push(`/home/chat/${conversationId}/${agentId}`);
-    },
-    [],
-  );
-
-  const handleViewAllRecent = useCallback((agentId: number) => {
-    history.push(`/history-conversation?agentId=${agentId}`);
-  }, []);
 
   const handleRecommendSelect = (item: DisplayRecommendInfo) => {
     setSelectedRecommend((prev) => (prev?.id === item.id ? undefined : item));
@@ -555,12 +406,6 @@ const Home: React.FC = () => {
                 onAgentClick={handleAgentClick}
                 onToggleCollect={handleToggleCollect}
                 onDataUpdate={runCategoryList}
-                recentConversationMap={recentConversationMap}
-                expandedAgentIds={expandedAgentIds}
-                selectedAgentId={selectedAgentId}
-                onToggleRecentExpand={handleToggleRecentExpand}
-                onRecentConversationClick={handleRecentConversationClick}
-                onViewAllRecent={handleViewAllRecent}
               />
             )
           )}
