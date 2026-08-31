@@ -10,10 +10,12 @@
  * 选项）。本层作为独立覆盖挂到主题变化监听：
  * - 桌面端未显式定制主题 → init 时把「女娲蓝 + 纯色背景」写入正式主题配置
  *   （unifiedThemeService.updateData，面板自然高亮），灰白布局随覆盖层生效；
- * - 用户显式选了「女娲蓝」且布局为浅色 → 女娲主题保持生效；
- * - 用户切其他主色/背景图/深色布局 → 覆盖自动让位（随时可切回）。
- * antd 运行时主色由 app.tsx applyThemeConfig 据 isNuwaClawThemeActive() 条件传入；
- * CSS 变量覆盖由 syncNuwaClawCssOverride 维护。
+ * - 用户显式选了「纯色」背景且布局为浅色 → 灰白布局保持生效（任意主色：
+ *   灰白外观跟随背景维度，主色只影响点缀色，不再互相绑架）；
+ * - 用户切图片背景 / 深色布局 → 覆盖自动让位（随时可切回）。
+ * antd 运行时主色由 app.tsx applyThemeConfig 据 isNuwaClawDefaultThemeActive()
+ * 条件传入（仅默认态强制品牌蓝，显式定制后跟随用户主色）；CSS 变量覆盖由
+ * syncNuwaClawCssOverride 维护。
  */
 import { STORAGE_KEYS } from '@/constants/theme.constants';
 import { unifiedThemeService } from '@/services/unifiedThemeService';
@@ -55,9 +57,8 @@ export const NUWACLAW_LIGHT_STYLE_OVERRIDE: Record<string, string> = {
   '--xagi-nav-second-item-active-bg': '#EEF0F3',
 };
 
-/** nuwaclaw 专属覆盖的 CSS 变量集（主色 + 亮色布局实色） */
+/** nuwaclaw 专属覆盖的 CSS 变量集（亮色布局实色；主色单独处理，见 sync） */
 const NUWACLAW_CSS_VARS: Record<string, string> = {
-  '--xagi-color-primary': NUWACLAW_PRIMARY,
   ...NUWACLAW_LIGHT_STYLE_OVERRIDE,
 };
 
@@ -146,20 +147,30 @@ function hasExplicitThemeConfig(): boolean {
 }
 
 /**
- * 女娲主题是否生效：
+ * 女娲灰白纯色布局是否生效：
  * - 桌面端 + 无显式定制（用户层为空或 ≡ 租户默认回声）→ 默认即女娲主题；
- * - 桌面端 + 用户显式选了「女娲蓝」（主色 = NUWACLAW_PRIMARY）且布局为浅色 → 生效；
- * - 切其他主色 / 深色布局 → 让位（用户在主题切换里可随时切回）。
- * 背景图不作为判定条件：女娲主题本身就禁用背景图，选中即覆盖展示。
+ * - 桌面端 + 用户显式选了「纯色」背景且布局为浅色 → 生效（任意主色）；
+ * - 切图片背景 / 深色布局 → 让位（用户在主题切换里可随时切回）。
+ * 灰白布局跟随背景维度而非主色：否则「选纯色不换主色只得白底」「蓝主色下
+ * 换背景图被强制吞回 none」两类切换失效（用户实测踩中，2026-08-31 修复）。
  */
 export function isNuwaClawThemeActive(): boolean {
   if (!isNuwaClaw()) return false;
   if (!hasExplicitThemeConfig()) return true;
   const data = unifiedThemeService.getCurrentData();
   return (
-    data.primaryColor === NUWACLAW_PRIMARY &&
+    data.backgroundId === NUWACLAW_BACKGROUND_ID &&
     data.layoutStyle === ThemeLayoutColorStyle.LIGHT
   );
+}
+
+/**
+ * 桌面端「默认女娲主题」是否生效（用户未显式定制主题）：配置层主色可能仍是
+ * 平台默认/租户回声，生效主色需按品牌蓝展示——app.tsx 的 antd token 与
+ * ThemeSwitchPanel 色板高亮用。显式定制后主色完全跟随用户选择，不再强制。
+ */
+export function isNuwaClawDefaultThemeActive(): boolean {
+  return isNuwaClaw() && !hasExplicitThemeConfig();
 }
 
 /** 桌面端禁用背景图的变量名（单独处理，不并入 NUWACLAW_CSS_VARS 的移除集） */
@@ -172,13 +183,16 @@ const NUWACLAW_HTML_BG =
 /**
  * 组装推送给 nuwaclaw 壳的主题状态（guest→host 通道）。
  * 壳侧据此给自己的 antd tokens / CSS 变量叠加同套调色板，让设置弹窗等原生 UI
- * 与 nuwax 统一。色值全部引用 NUWACLAW_LIGHT_STYLE_OVERRIDE，单一来源不另立色板。
+ * 与 nuwax 统一。色值全部引用 NUWACLAW_LIGHT_STYLE_OVERRIDE，单一来源不另立色板；
+ * 主色与 webview 生效值同源（默认态品牌蓝，显式定制后跟随用户主色）。
  */
 function buildShellThemePayload(active: boolean): ShellThemePayload {
   if (!active) return { active: false };
   return {
     active: true,
-    primary: NUWACLAW_PRIMARY,
+    primary: isNuwaClawDefaultThemeActive()
+      ? NUWACLAW_PRIMARY
+      : unifiedThemeService.getCurrentData().primaryColor,
     bgContent: NUWACLAW_LIGHT_STYLE_OVERRIDE['--xagi-layout-bg-primary'],
     bgMenu: NUWACLAW_LIGHT_STYLE_OVERRIDE['--xagi-color-bg-container'],
     bgElevated: NUWACLAW_LIGHT_STYLE_OVERRIDE['--xagi-nav-item-active-bg'],
@@ -193,6 +207,8 @@ function buildShellThemePayload(active: boolean): ShellThemePayload {
  * 同步 nuwaclaw 亮色覆盖变量到 documentElement（生效则叠加，否则移除）。
  * 背景图单独处理：让位时不能无脑 removeProperty——那会连带删掉 unifiedThemeService
  * 刚按用户 backgroundId 设置的背景图；仅当当前值是自己设的 'none' 时才移除。
+ * 新语义下让位必因 backgroundId≠bg-solid（applyToDOM 随后已写 url(...)）或深色
+ * 布局，此时残留的 'none' 只可能来自本覆盖层，按值判定自洽。
  */
 function syncNuwaClawCssOverride(): void {
   if (typeof document === 'undefined') return;
@@ -203,6 +219,12 @@ function syncNuwaClawCssOverride(): void {
     if (shouldApply) root.style.setProperty(key, NUWACLAW_CSS_VARS[key]);
     else root.style.removeProperty(key);
   });
+  // 主色仅在「默认女娲主题」（未显式定制）时由本层兜底为品牌蓝——配置层主色
+  // 可能仍是平台默认/租户回声色；显式定制后 --xagi-color-primary 完全交给
+  // unifiedThemeService.applyToDOM 按用户主色维护（其恒写入该变量，本层不越权）。
+  if (shouldApply && isNuwaClawDefaultThemeActive()) {
+    root.style.setProperty('--xagi-color-primary', NUWACLAW_PRIMARY);
+  }
   // 桌面端不用背景图（灰白纯色）；html 铺灰底兜住面板缝隙/滚动区。
   // 让位时仅回收自己设的 'none' 与灰底，不动用户图（灰底清空回落 global.less 的 #fff）
   if (shouldApply) {

@@ -18,7 +18,7 @@ import {
 import { apiQueryMenus } from './services/menuService';
 import {
   initNuwaClawTheme,
-  isNuwaClawThemeActive,
+  isNuwaClawDefaultThemeActive,
   NUWACLAW_PRIMARY,
 } from './services/nuwaClawTheme';
 import { unifiedThemeService } from './services/unifiedThemeService';
@@ -220,8 +220,10 @@ const AppContainer: React.FC<{ children: React.ReactElement }> = ({
       try {
         const data = unifiedThemeService.getCurrentData();
         const darkMode = data.antdTheme === 'dark';
-        // nuwaclaw 桌面专属默认主色：仅桌面端且用户未显式定制主题时强制品牌蓝（见 nuwaClawTheme）
-        const effectivePrimary = isNuwaClawThemeActive()
+        // nuwaclaw 桌面专属默认主色：仅桌面端且用户未显式定制主题时强制品牌蓝
+        // （见 nuwaClawTheme）；显式定制后主色跟随用户选择——灰白 solid 布局已
+        // 改挂背景维度（isNuwaClawThemeActive），不再反向绑架 antd 主色
+        const effectivePrimary = isNuwaClawDefaultThemeActive()
           ? NUWACLAW_PRIMARY
           : data.primaryColor;
 
