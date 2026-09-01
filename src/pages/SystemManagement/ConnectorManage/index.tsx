@@ -76,15 +76,32 @@ const ConnectorManage: React.FC = () => {
   const [togglingServices, setTogglingServices] = useState<Set<string>>(
     () => new Set(),
   );
+  /**
+   * 当前是否处于筛选态（任一筛选条件非空）。
+   * 筛选态下禁用拖拽排序：排序值是全局的，对过滤后的子集重排会让全量顺序错乱。
+   */
+  const [filtered, setFiltered] = useState<boolean>(false);
+
+  /** 根据当前表单值更新筛选态（任一筛选条件非空即视为筛选态） */
+  const updateFilteredFromForm = useCallback(() => {
+    const values = formRef.current?.getFieldsValue() as
+      | { displayName?: string; status?: string; authType?: string }
+      | undefined;
+    setFiltered(
+      Boolean(values?.displayName || values?.status || values?.authType),
+    );
+  }, []);
 
   /** 重置：清空表单 + 重置分页 + 重载 */
   const handleReset = useCallback(() => {
     formRef.current?.resetFields();
+    // antd Form.resetFields() 不会触发 onValuesChange，需手动同步筛选态
+    updateFilteredFromForm();
     actionRef.current?.reset?.();
     actionRef.current?.setPageInfo?.({ current: 1, pageSize: 15 });
     actionRef.current?.reload();
     setSelectedRowKeys([]);
-  }, []);
+  }, [updateFilteredFromForm]);
 
   /** 监听菜单切换：清空查询参数 */
   useEffect(() => {
@@ -176,6 +193,11 @@ const ConnectorManage: React.FC = () => {
 
   /** 拖拽结束：乐观更新 + 持久化 + 失败回滚 */
   const onDragEnd = async ({ active, over }: DragEndEvent) => {
+    // 防御：筛选态下禁止排序（即使 DragHandle 漏过滤也能兜底）
+    if (filtered) {
+      isDraggingRef.current = false;
+      return;
+    }
     if (!over || active.id === over.id) {
       isDraggingRef.current = false;
       return;
@@ -440,8 +462,25 @@ const ConnectorManage: React.FC = () => {
                * 传 () => null 让整条 alert 区域不渲染，避免和工具栏操作混淆。
                */
               tableAlertRender={() => null}
+              /**
+               * 跟踪筛选状态：任一筛选条件（displayName/status/authType）非空即认为处于筛选态。
+               * 筛选态下拖拽排序会让全局顺序错乱，因此禁用。
+               */
+              form={{
+                onValuesChange: () => {
+                  // 实时同步筛选态（用户修改 LightFilter 字段时触发）
+                  updateFilteredFromForm();
+                },
+              }}
               components={{
-                body: { row: Row },
+                body: {
+                  // 筛选态下禁用整行的 useSortable，DragHandle 通过 Context 也会自动禁用
+                  row: (
+                    props: React.HTMLAttributes<HTMLTableRowElement> & {
+                      'data-row-key': string | number;
+                    },
+                  ) => <Row {...props} disabled={filtered} />,
+                },
               }}
               postData={(data: ConnectorProviderInfo[]) => {
                 // 拖拽过程中不要用 request 的响应覆盖乐观排序结果
