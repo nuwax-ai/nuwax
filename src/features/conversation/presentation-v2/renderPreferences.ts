@@ -3,12 +3,13 @@
  *
  * 三档预设（默认 balanced）：
  * | 节点类型                      | focused | balanced | detailed        |
- * | 思考、上下文、中间说明         | 隐藏    | 摘要     | 已完成节点展开   |
+ * | 思考、上下文                  | 隐藏    | 摘要     | 已完成节点展开   |
  * | 工具、子智能体                | 摘要    | 摘要     | 摘要             |
  * | 计划、已完成交互、未知节点     | 摘要    | 摘要     | 摘要             |
  *
  * 高级设置可把任一类型改为 hidden/summary/expanded；失败节点即使配置隐藏
  * 也至少恢复为错误摘要；隐藏节点不占轨迹行，由「另有 N 项已隐藏」入口恢复。
+ * （中间正文段 narration 不是节点——直出展示，不受本表控制。）
  */
 import type {
   ConversationProcessNode,
@@ -24,7 +25,6 @@ export const DEFAULT_V2_PRESET: ConversationRendererPreset = 'balanced';
 export const PROCESS_NODE_KINDS: ConversationProcessNodeKind[] = [
   'reasoning',
   'context',
-  'narration',
   'tool',
   'subagent',
   'plan',
@@ -39,7 +39,6 @@ export const PRESET_NODE_MODES: Record<
   focused: {
     reasoning: 'hidden',
     context: 'hidden',
-    narration: 'hidden',
     tool: 'summary',
     subagent: 'summary',
     plan: 'summary',
@@ -49,7 +48,6 @@ export const PRESET_NODE_MODES: Record<
   balanced: {
     reasoning: 'summary',
     context: 'summary',
-    narration: 'summary',
     tool: 'summary',
     subagent: 'summary',
     plan: 'summary',
@@ -59,7 +57,6 @@ export const PRESET_NODE_MODES: Record<
   detailed: {
     reasoning: 'expanded',
     context: 'expanded',
-    narration: 'expanded',
     tool: 'summary',
     subagent: 'summary',
     plan: 'summary',

@@ -355,13 +355,13 @@ describe('ConversationRendererV2 · 两级折叠与手动状态保持', () => {
 });
 
 describe('ConversationRendererV2 · 预设与高级覆盖', () => {
-  it('focused 隐藏思考/说明：隐藏入口「另有 N 项已隐藏」可恢复', async () => {
+  it('focused 隐藏思考：隐藏入口「另有 N 项已隐藏」可恢复；narration 不受预设影响', async () => {
     renderV2(buildTurn(), PREFS('focused'));
     fireEvent.click(screen.getByTestId('v2-trace-toggle'));
     const entry = screen.getByTestId('v2-hidden-entry');
-    // reasoning + narration 两项被隐藏
+    // 仅 reasoning 两项被隐藏（narration 已直出，不再是可隐藏节点）
     expect(entry).toHaveTextContent(
-      'PC.Components.ConversationRendererV2.hiddenEntry:3',
+      'PC.Components.ConversationRendererV2.hiddenEntry:2',
     );
     expect(screen.queryByText('先想要用哪个工具')).toBeNull();
     fireEvent.click(entry);
@@ -370,9 +370,42 @@ describe('ConversationRendererV2 · 预设与高级覆盖', () => {
     expect(
       document.querySelector('[data-node-kind="reasoning"]'),
     ).not.toBeNull();
+    // 过程说明直出：不是节点行，focused 预设下依然可见
+    expect(document.querySelector('[data-node-kind="narration"]')).toBeNull();
+    expect(screen.getByTestId('v2-narration').textContent).toContain(
+      '天气查询完成',
+    );
+  });
+
+  it('过程说明直出位于轨迹与最终回答之间；narration-only 终态轮无空轨迹条', () => {
+    renderV2(buildTurn());
+    const trace = document.querySelector('[data-trace-key]');
+    const narration = screen.getByTestId('v2-narration');
+    const answer = screen.getByTestId('v2-final-answer');
+    // DOM 顺序：轨迹条 → narration 直出 → 最终回答
     expect(
-      document.querySelector('[data-node-kind="narration"]'),
-    ).not.toBeNull();
+      Boolean(
+        trace &&
+          narration.compareDocumentPosition(trace) &
+            Node.DOCUMENT_POSITION_PRECEDING,
+      ),
+    ).toBe(true);
+    expect(
+      narration.compareDocumentPosition(answer) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+
+    // narration-only 终态轮：无轨迹条、无节点行，最终回答走空轮提示
+    renderV2([
+      msg({ id: 'u2', role: AssistantRoleEnum.USER, text: '只说话' }),
+      msg({
+        id: 'a2',
+        role: AssistantRoleEnum.ASSISTANT,
+        text: '只有中间说明',
+      }),
+    ]);
+    expect(document.querySelectorAll('[data-trace-key]').length).toBe(1); // 仅首轮有轨迹
+    expect(screen.getAllByTestId('v2-narration').length).toBeGreaterThan(0);
   });
 
   it('高级覆盖：tool=expanded 使已完成工具节点详情默认展开', () => {

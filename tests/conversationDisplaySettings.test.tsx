@@ -70,7 +70,6 @@ describe('ConversationDisplaySettings', () => {
     const labelFragments = [
       'nodeTitleReasoning',
       'nodeTitleContext',
-      'nodeTitleNarration',
       'nodeTitleTool',
       'nodeTitleSubagent',
       'nodeTitlePlan',

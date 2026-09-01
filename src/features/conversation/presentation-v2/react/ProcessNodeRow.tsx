@@ -10,7 +10,6 @@ import { dict } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { ProcessingEnum } from '@/types/enums/common';
 import {
-  AlignLeftOutlined,
   BulbOutlined,
   CaretRightOutlined,
   CheckCircleOutlined,
@@ -37,7 +36,6 @@ const KIND_ICONS: Record<
 > = {
   reasoning: BulbOutlined,
   context: FileTextOutlined,
-  narration: AlignLeftOutlined,
   tool: ToolOutlined,
   subagent: RobotOutlined,
   plan: OrderedListOutlined,
@@ -52,8 +50,6 @@ export const nodeDisplayTitle = (node: ConversationProcessNode): string => {
       return dict('PC.Components.ConversationRendererV2.nodeTitleReasoning');
     case 'context':
       return dict('PC.Components.ConversationRendererV2.nodeTitleContext');
-    case 'narration':
-      return dict('PC.Components.ConversationRendererV2.nodeTitleNarration');
     case 'tool':
       return dict('PC.Components.ConversationRendererV2.nodeTitleTool');
     case 'subagent':
@@ -145,7 +141,7 @@ const NodeDetail: React.FC<{
       </div>
     );
   }
-  // narration / context / unknown：正文按 Markdown 渲染
+  // context / unknown：正文按 Markdown 渲染（narration 已改为直出，不再是节点）
   return <NodeDetailMarkdown nodeId={node.id} text={node.text ?? ''} />;
 };
 
@@ -220,7 +216,6 @@ const ProcessNodeRow: React.FC<ProcessNodeRowProps> = ({
         {!node.failed &&
           node.status === 'finished' &&
           node.kind !== 'reasoning' &&
-          node.kind !== 'narration' &&
           node.kind !== 'context' && (
             <CheckCircleOutlined
               className={cx(styles['node-status-icon'])}

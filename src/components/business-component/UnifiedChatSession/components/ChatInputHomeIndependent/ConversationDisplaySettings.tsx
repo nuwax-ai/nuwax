@@ -23,7 +23,6 @@ const cx = classNames.bind(styles);
 const NODE_KIND_LABEL_KEYS: Record<ConversationProcessNodeKind, string> = {
   reasoning: 'PC.Components.ConversationRendererV2.nodeTitleReasoning',
   context: 'PC.Components.ConversationRendererV2.nodeTitleContext',
-  narration: 'PC.Components.ConversationRendererV2.nodeTitleNarration',
   tool: 'PC.Components.ConversationRendererV2.nodeTitleTool',
   subagent: 'PC.Components.ConversationRendererV2.nodeTitleSubagent',
   plan: 'PC.Components.ConversationRendererV2.nodeTitlePlan',

@@ -34,7 +34,7 @@ describe('renderPreferences', () => {
     expect(DEFAULT_V2_PRESET).toBe('balanced');
   });
 
-  it('focused 隐藏思考/上下文/中间说明，balanced 摘要，detailed 展开', () => {
+  it('focused 隐藏思考/上下文，balanced 摘要，detailed 展开（narration 已直出无节点档位）', () => {
     expect(
       resolveNodeMode(node('reasoning'), {
         preset: 'focused',
@@ -43,12 +43,6 @@ describe('renderPreferences', () => {
     ).toBe('hidden');
     expect(
       resolveNodeMode(node('context'), {
-        preset: 'focused',
-        nodeOverrides: {},
-      }),
-    ).toBe('hidden');
-    expect(
-      resolveNodeMode(node('narration'), {
         preset: 'focused',
         nodeOverrides: {},
       }),
@@ -125,7 +119,7 @@ describe('renderPreferences', () => {
     const nodes = [
       node('reasoning'),
       node('tool'),
-      node('narration'),
+      node('context'),
       node('tool'),
     ];
     const { visibleNodes, hiddenCount } = splitNodesByVisibility(nodes, {
