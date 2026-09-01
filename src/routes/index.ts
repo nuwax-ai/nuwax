@@ -643,6 +643,17 @@ const routes = [
           component: '@/examples/MockChat',
           layout: false,
         },
+        {
+          // 综合验收画廊：多场景并行一次验收（仅 runtime 轨，legacy 轨走单页）
+          path: '/mock-gallery',
+          component: '@/examples/MockChatGallery',
+          layout: false,
+        },
+        {
+          path: '/app/mock-gallery',
+          component: '@/examples/MockChatGallery',
+          layout: false,
+        },
       ]
     : []),
   {
