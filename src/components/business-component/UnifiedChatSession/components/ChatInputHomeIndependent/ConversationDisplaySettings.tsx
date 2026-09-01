@@ -4,8 +4,8 @@
  * 变更经全局事件广播，消息列表即时切换渲染器。
  */
 import type {
-  ConversationProcessNodeKind,
   NodePresentationMode,
+  RowNodeKind,
 } from '@/features/conversation/presentation-v2';
 import { PROCESS_NODE_KINDS } from '@/features/conversation/presentation-v2';
 import { useConversationRendererPreference } from '@/hooks/useConversationRendererPreference';
@@ -20,7 +20,8 @@ import styles from '@/components/ChatInputHome/index.less';
 
 const cx = classNames.bind(styles);
 
-const NODE_KIND_LABEL_KEYS: Record<ConversationProcessNodeKind, string> = {
+// 行标签仅覆盖节点行类型（narration 穿插直出，无行级档位）
+const NODE_KIND_LABEL_KEYS: Record<RowNodeKind, string> = {
   reasoning: 'PC.Components.ConversationRendererV2.nodeTitleReasoning',
   context: 'PC.Components.ConversationRendererV2.nodeTitleContext',
   tool: 'PC.Components.ConversationRendererV2.nodeTitleTool',

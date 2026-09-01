@@ -14,6 +14,7 @@ export {
   resolveNodeMode,
   splitNodesByVisibility,
 } from './renderPreferences';
+export type { RowNodeKind } from './renderPreferences';
 export type {
   CompletedInteractionPayload,
   ConversationFinalAnswer,

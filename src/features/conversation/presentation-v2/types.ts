@@ -12,10 +12,12 @@ import type {
 } from '@/types/interfaces/conversationInfo';
 
 /** 过程节点类型：思考 / 上下文(系统) / 工具 / 子智能体 / 计划 / 已完成交互 / 未知残留
- * （中间正文段 narration 不再是节点——直出展示，见 ConversationTurnPresentationV2.narrations） */
+ * （narration 仅作穿插占位：留在 nodes 序列保原位，但渲染为直出正文而非节点行，
+ *  见 WorkTraceDisclosure；不出现在预设/逐类覆盖 UI） */
 export type ConversationProcessNodeKind =
   | 'reasoning'
   | 'context'
+  | 'narration'
   | 'tool'
   | 'subagent'
   | 'plan'
@@ -67,7 +69,7 @@ export interface ConversationProcessNode {
   segmentStatus?: string;
   /** reasoning 节点的思考全文 */
   thinkText?: string;
-  /** unknown 节点的原始 Markdown */
+  /** unknown/narration 节点携带的原始 Markdown（narration 直出渲染） */
   text?: string;
   /** completed-interaction 节点的载荷 */
   interaction?: CompletedInteractionPayload;
@@ -93,10 +95,8 @@ export interface ConversationTurnPresentationV2 {
   userAttachments?: AttachmentFile[];
   /** 本轮全部 assistant/system 消息（按会话顺序） */
   assistantMessages: MessageInfo[];
-  /** 有序过程节点（真实发生顺序） */
+  /** 有序过程节点（真实发生顺序；narration 穿插其间渲染为直出正文） */
   nodes: ConversationProcessNode[];
-  /** 中间正文段（过程说明）：直接以正文展示，不进轨迹、不受预设/覆盖影响 */
-  narrations: Array<{ id: string; text: string }>;
   finalAnswer: ConversationFinalAnswer;
   running: boolean;
   terminalStatus: 'complete' | 'error' | 'stopped';

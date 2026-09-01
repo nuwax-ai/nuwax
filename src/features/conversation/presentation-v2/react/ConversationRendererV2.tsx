@@ -11,9 +11,7 @@
 import agentImage from '@/assets/images/agent_image.png';
 import ChatView from '@/components/ChatView';
 import RunOver from '@/components/ChatView/RunOver';
-import { PureMarkdownRenderer } from '@/components/MarkdownRenderer';
 import { useConversationRendererPreference } from '@/hooks/useConversationRendererPreference';
-import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { AssistantRoleEnum } from '@/types/enums/agent';
 import type {
   MessageInfo,
@@ -29,29 +27,10 @@ import type {
 } from '../types';
 import FinalAnswerBlock from './FinalAnswerBlock';
 import UserBubbleCollapse from './UserBubbleCollapse';
-import WorkTraceDisclosure from './WorkTraceDisclosure';
+import WorkTraceDisclosure, { NarrationText } from './WorkTraceDisclosure';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
-
-/** 中间正文段（过程说明）直出渲染：轻量 Markdown（与节点详情同款）+ 探针标记 */
-const NarrationText: React.FC<{
-  narrationId: string;
-  children: string;
-}> = ({ narrationId, children }) => {
-  const { data } = useUnifiedTheme();
-  return (
-    <div data-testid="v2-narration" data-narration-id={narrationId}>
-      <PureMarkdownRenderer
-        id={`v2-narration-${narrationId}`}
-        theme={data.antdTheme === 'dark' ? 'dark' : 'light'}
-        disableTyping
-      >
-        {children}
-      </PureMarkdownRenderer>
-    </div>
-  );
-};
 
 export interface ConversationRendererV2Props {
   messageList?: MessageInfo[];
@@ -126,8 +105,11 @@ const TurnBlock: React.FC<{
   const lastAssistant = [...turn.assistantMessages]
     .reverse()
     .find((message) => message.role === AssistantRoleEnum.ASSISTANT);
-  // 轨迹条只在确有节点或运行中时出现：narration-only 终态轮不再渲染空轨迹条
-  const showTrace = turn.nodes.length > 0 || turn.running;
+  // 轨迹条只在确有节点行（非 narration）或运行中时出现；
+  // 仅剩 narration（无工具无思考）的终态轮直接以正文展示，不套空轨迹条
+  const narrationOnly = turn.nodes.some((node) => node.kind === 'narration');
+  const showTrace =
+    turn.nodes.some((node) => node.kind !== 'narration') || turn.running;
 
   return (
     <div className={cx(styles['turn-container'])} data-turn-key={turn.key}>
@@ -160,14 +142,16 @@ const TurnBlock: React.FC<{
           onManualToggle={setManualExpanded}
         />
       )}
-      {/* 中间正文段（过程说明）直出：不进轨迹、不受预设/覆盖影响，正文连续阅读流 */}
-      {turn.narrations.length > 0 && (
+      {/* 无节点行的轮次（纯说明）：narration 直接以正文展示 */}
+      {!showTrace && narrationOnly && (
         <div className={cx(styles['narration-block'])}>
-          {turn.narrations.map((narration) => (
-            <NarrationText key={narration.id} narrationId={narration.id}>
-              {narration.text}
-            </NarrationText>
-          ))}
+          {turn.nodes
+            .filter((node) => node.kind === 'narration')
+            .map((node) => (
+              <NarrationText key={node.id} narrationId={node.id}>
+                {node.text ?? ''}
+              </NarrationText>
+            ))}
         </div>
       )}
       <FinalAnswerBlock

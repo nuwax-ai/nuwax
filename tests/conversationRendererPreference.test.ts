@@ -119,6 +119,7 @@ describe('renderPreferences', () => {
     const nodes = [
       node('reasoning'),
       node('tool'),
+      node('narration'),
       node('context'),
       node('tool'),
     ];
@@ -126,7 +127,12 @@ describe('renderPreferences', () => {
       preset: 'focused',
       nodeOverrides: {},
     });
-    expect(visibleNodes.map((n) => n.kind)).toEqual(['tool', 'tool']);
+    // narration 穿插直出恒可见（focused 也不隐藏、不计入隐藏数）
+    expect(visibleNodes.map((n) => n.kind)).toEqual([
+      'tool',
+      'narration',
+      'tool',
+    ]);
     expect(hiddenCount).toBe(2);
   });
 

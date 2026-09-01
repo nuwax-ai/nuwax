@@ -4,6 +4,8 @@
  * 缺失指标单独省略。运行态低对比状态点（尊重 prefers-reduced-motion）。
  * 展开态由父层管理：默认值随运行/终态与预设变化，用户手动操作后固定。
  */
+import { PureMarkdownRenderer } from '@/components/MarkdownRenderer';
+import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { dict } from '@/services/i18nRuntime';
 import { CaretRightOutlined } from '@ant-design/icons';
 import { theme } from 'antd';
@@ -24,6 +26,32 @@ import { formatElapsed } from './formatElapsed';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
+
+/**
+ * narration（过程说明）直出正文：在轨迹体内按原位穿插渲染为文字本身，
+ * 不折叠成「过程说明」节点行；轻量 Markdown（与节点详情同款）+ 统一主题。
+ */
+export const NarrationText: React.FC<{
+  narrationId: string;
+  children: string;
+}> = ({ narrationId, children }) => {
+  const { data } = useUnifiedTheme();
+  return (
+    <div
+      data-testid="v2-narration"
+      data-narration-id={narrationId}
+      className={cx(styles['narration-text'])}
+    >
+      <PureMarkdownRenderer
+        id={`v2-narration-${narrationId}`}
+        theme={data.antdTheme === 'dark' ? 'dark' : 'light'}
+        disableTyping
+      >
+        {children}
+      </PureMarkdownRenderer>
+    </div>
+  );
+};
 
 /** 运行态每秒跳动；终态冻结（elapsedMs） */
 const useElapsedMs = (
@@ -171,15 +199,25 @@ const WorkTraceDisclosure: React.FC<WorkTraceDisclosureProps> = ({
       </button>
       {expanded && (
         <div id={traceBodyId} className={cx(styles['trace-body'])}>
-          {shownNodes.map((node, nodeIndex) => (
-            <ProcessNodeRow
-              key={`${node.id}#${nodeIndex}`}
-              node={node}
-              expanded={nodeIsExpanded(node)}
-              onToggle={() => toggleNode(node.id)}
-              conversationId={conversationId}
-            />
-          ))}
+          {shownNodes.map((node, nodeIndex) =>
+            node.kind === 'narration' ? (
+              // 过程说明穿插直出：按原位显示文字本身（保序 key 沿用节点序列）
+              <NarrationText
+                key={`${node.id}#${nodeIndex}`}
+                narrationId={node.id}
+              >
+                {node.text ?? ''}
+              </NarrationText>
+            ) : (
+              <ProcessNodeRow
+                key={`${node.id}#${nodeIndex}`}
+                node={node}
+                expanded={nodeIsExpanded(node)}
+                onToggle={() => toggleNode(node.id)}
+                conversationId={conversationId}
+              />
+            ),
+          )}
           {!revealHidden && hiddenCount > 0 && (
             <button
               type="button"

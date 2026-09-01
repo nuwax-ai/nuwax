@@ -369,7 +369,6 @@ const projectTurn = (draft: TurnDraft): ConversationTurnPresentationV2 => {
         | undefined)
     : undefined;
   const nodes: ConversationProcessNode[] = [];
-  const narrations: ConversationTurnPresentationV2['narrations'] = [];
   assistantMessages.forEach((message, messageIndex) => {
     const messageKey = messageStableKey(message, messageIndex);
     const processingByKey = collectProcessingByKey(message);
@@ -471,12 +470,17 @@ const projectTurn = (draft: TurnDraft): ConversationTurnPresentationV2 => {
         return;
       }
       // text 段：被选为最终回答的段不进轨迹；其余为中间正文（narration）——
-      // 直接展示在轨迹与最终回答之间，不收成「过程说明」节点、不受预设/覆盖影响
+      // 留在节点序列原位穿插（工具之间），渲染层直出正文而非折叠行
       if (segment === answerSegment) {
         return;
       }
-      narrations.push({
+      nodes.push({
         id: `${messageKey}-narration-${segmentIndex}`,
+        kind: 'narration',
+        title: '',
+        summary: firstLine(segment.content),
+        status: running ? 'running' : 'finished',
+        failed: false,
         text: segment.content,
       });
     });
@@ -559,7 +563,6 @@ const projectTurn = (draft: TurnDraft): ConversationTurnPresentationV2 => {
     userAttachments: draft.userMessage?.attachments,
     assistantMessages,
     nodes,
-    narrations,
     finalAnswer,
     running,
     terminalStatus,

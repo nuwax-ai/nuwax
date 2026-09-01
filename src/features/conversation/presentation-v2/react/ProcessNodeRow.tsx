@@ -30,8 +30,9 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
+// 行图标仅覆盖节点行类型（narration 穿插直出、不渲染为行）
 const KIND_ICONS: Record<
-  ConversationProcessNode['kind'],
+  Exclude<ConversationProcessNode['kind'], 'narration'>,
   React.ComponentType<{ className?: string; style?: React.CSSProperties }>
 > = {
   reasoning: BulbOutlined,
@@ -159,7 +160,11 @@ const ProcessNodeRow: React.FC<ProcessNodeRowProps> = ({
   conversationId,
 }) => {
   const { token } = theme.useToken();
-  const KindIcon = KIND_ICONS[node.kind] ?? QuestionCircleOutlined;
+  // narration 不渲染为行（穿插直出），此处到达即异常路径——兜底问号图标
+  const KindIcon =
+    node.kind === 'narration'
+      ? QuestionCircleOutlined
+      : KIND_ICONS[node.kind] ?? QuestionCircleOutlined;
   const detailId = `v2-node-${node.id}`;
 
   const summaryText =

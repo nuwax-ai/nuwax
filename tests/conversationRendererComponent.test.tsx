@@ -377,12 +377,14 @@ describe('ConversationRendererV2 · 预设与高级覆盖', () => {
     );
   });
 
-  it('过程说明直出位于轨迹与最终回答之间；narration-only 终态轮无空轨迹条', () => {
+  it('过程说明穿插直出在轨迹体原位（工具之间），展开即见正文；narration-only 终态轮无空轨迹条', () => {
     renderV2(buildTurn());
+    // 终态 balanced 默认收起：先展开轨迹体
+    fireEvent.click(screen.getByTestId('v2-trace-toggle'));
     const trace = document.querySelector('[data-trace-key]');
     const narration = screen.getByTestId('v2-narration');
     const answer = screen.getByTestId('v2-final-answer');
-    // DOM 顺序：轨迹条 → narration 直出 → 最终回答
+    // DOM 顺序：轨迹条 → narration（体内穿插）→ 最终回答
     expect(
       Boolean(
         trace &&
@@ -394,8 +396,11 @@ describe('ConversationRendererV2 · 预设与高级覆盖', () => {
       narration.compareDocumentPosition(answer) &
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    // 穿插位置：narration 在轨迹体内（trace-body 的后代），且不再是节点行
+    expect(narration.closest('[data-trace-key]')).not.toBeNull();
+    expect(document.querySelector('[data-node-kind="narration"]')).toBeNull();
 
-    // narration-only 终态轮：无轨迹条、无节点行，最终回答走空轮提示
+    // narration-only 终态轮：无轨迹条、无节点行，正文直接展示
     renderV2([
       msg({ id: 'u2', role: AssistantRoleEnum.USER, text: '只说话' }),
       msg({
