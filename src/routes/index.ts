@@ -161,14 +161,6 @@ const routes = [
         component: '@/pages/SpaceKnowledge',
       },
       {
-        path: '/space/original-text/:segmentId/:agentId',
-        component: '@/pages/SpaceKnowledgeOriginalText',
-      },
-      {
-        path: '/space/original-text/:segmentId',
-        component: '@/pages/SpaceKnowledgeOriginalText',
-      },
-      {
         path: '/space/:spaceId/table/:tableId',
         component: '@/pages/SpaceTable',
       },
@@ -554,6 +546,13 @@ const routes = [
         ],
       },
     ],
+  },
+  {
+    // 原文对照独立页面：不挂 layouts（无左侧菜单），仅保留登录鉴权
+    path: '/space/original-text/:segmentId/:agentId',
+    component: '@/pages/SpaceKnowledgeOriginalText',
+    wrappers: ['@/wrappers/authWithLoading'],
+    layout: false,
   },
   {
     path: '/space/:spaceId/workflow/:workflowId',

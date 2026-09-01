@@ -448,11 +448,11 @@ const SpaceKnowledge: React.FC = () => {
           onSuccessUpdateName={handleSuccessUpdateName}
           onSegmentSelect={setSelectedSegment}
         />
-        {/*原文对照 - 新增板块*/}
+        {/*原文对照 - 新增板块（暂时隐藏，分段列表 flex-1 自动拉通整行；恢复时改回 visible={true} 即可）*/}
         <SourceDocumentComparison
           documentInfo={currentDocumentInfo}
           selectedSegment={selectedSegment}
-          visible={true}
+          visible={false}
         />
       </div>
     );

@@ -7,8 +7,9 @@ import useSkillInfo from './useSkillInfo';
  * 主页咨询聊天页面
  */
 const AgentDetails: React.FC = () => {
-  // 智能体ID
+  // 参数解析
   const params = useParams();
+  // 智能体ID
   const agentId = Number(params.agentId);
 
   // 技能信息

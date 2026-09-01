@@ -343,6 +343,7 @@ const AppDev: React.FC = () => {
 
   // Preview组件的ref，用于触发刷新
   const previewRef = useRef<PreviewRef>(null);
+  // designViewer 组件的 ref，用于触发刷新
   const designViewerRef = useRef<DesignViewerRef>(null);
 
   // 老项目首次进入 design 模式时 iframe 不响应 TOGGLE_DESIGN_MODE，restart 一次 dev server 即可恢复。
@@ -362,6 +363,7 @@ const AppDev: React.FC = () => {
 
   // Preview 状态跟踪
   const [previewIsLoading, setPreviewIsLoading] = useState<boolean>(false);
+  // Preview 最后刷新时间
   const [previewLastRefreshed, setPreviewLastRefreshed] = useState<Date | null>(
     null,
   );
@@ -414,6 +416,7 @@ const AppDev: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    // 如果没有权限，则不进行模型选择
     if (!projectInfo.hasPermission) {
       return;
     }
@@ -485,6 +488,7 @@ const AppDev: React.FC = () => {
     devLogsRefresh: () => devLogs.resetStartLine(),
   });
 
+  /** 聊天 */
   const chat = useAppDevChat({
     projectId: projectId || '',
     selectedModelId: modelSelector.selectedModelId, // 新增：传递选中的模型ID
@@ -503,6 +507,7 @@ const AppDev: React.FC = () => {
     },
   });
 
+  // 初始化自动发送
   useAppDevInitialAutoSend({
     projectId: projectId || '',
     hasValidProjectId,
@@ -656,6 +661,7 @@ const AppDev: React.FC = () => {
     }
   }, [projectInfo.projectInfoState?.projectInfo, projectInfo.hasPermission]);
 
+  /** 数据源管理 */
   useEffect(() => {
     if (dataResourceManagement.resources?.length > 0) {
       const _selectedDataResources: DataResource[] =
@@ -673,7 +679,9 @@ const AppDev: React.FC = () => {
             isSelected: false,
           };
         });
+      // 如果数据源列表为空，则不进行选择
       setSelectedDataResources(_selectedDataResources);
+      // 更新 selectedDataResourcesRef 引用
       selectedDataResourcesRef.current = _selectedDataResources;
     }
   }, [dataResourceManagement.resources]);

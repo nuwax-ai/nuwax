@@ -25,6 +25,7 @@ interface LeftContentProps {
   fileSidebarProps: FileTreePreviewPanelProps;
 }
 
+// 内容区域
 const LeftContent: React.FC<LeftContentProps> = ({
   isFileTreeVisible,
   effectiveAgent,

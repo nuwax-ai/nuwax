@@ -439,6 +439,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       return;
     }
 
+    // 更新会话 icon，如果更新失败，则重置 conversationIconUpdateRef
     conversationIconUpdateRef.current = conversationInfo.id;
     void runUpdateTopic({
       id: conversationInfo.id,
@@ -462,6 +463,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
         executeId: '',
       });
     } else {
+      // 关闭页面预览
       showPagePreview(null);
     }
   };
@@ -715,11 +717,13 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     onSelectedFileMissing: () => {
       setTaskAgentSelectedFileId('');
     },
+    /** 文件树选中文件时，关闭 Git 版本记录面板 */
     onFileSelectOpenPreview: () => {
       closeVersionPanelForFilePreviewRef.current();
     },
   });
 
+  // 刷新 Git 列表
   refreshGitListRef.current = fileView.refreshGitList;
 
   /** 折叠底部终端，避免遮挡文件预览（终端未展示时不发信号，避免首次打开被误折叠） */
@@ -1019,6 +1023,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     terminalConsoleVisible,
   ]);
 
+  // 切换会话时，重置 Git 版本记录面板和终端状态
   useEffect(() => {
     setGitVersionPanelOpen(false);
     setTerminalConsoleVisible(false);
@@ -1029,6 +1034,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     prevTaskAgentCollapseTriggerRef.current = undefined;
   }, [id]);
 
+  // 切换视图时，关闭 Git 版本记录面板
   useEffect(() => {
     if (viewMode === 'desktop') {
       setGitVersionPanelOpen(false);
