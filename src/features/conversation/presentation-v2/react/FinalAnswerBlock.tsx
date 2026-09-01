@@ -74,6 +74,11 @@ const FinalAnswerBlock: React.FC<FinalAnswerBlockProps> = ({
         <div className={cx(styles['answer-status'])}>
           {dict('PC.Components.ConversationRendererV2.answerError')}
         </div>
+      ) : terminal ? (
+        // 正常完成但未产出正文（如 0 节点空轮）：一行轻提示，避免回答区空白无解释
+        <div className={cx(styles['answer-status'])}>
+          {dict('PC.Components.ConversationRendererV2.answerEmpty')}
+        </div>
       ) : null}
       {terminal && answerText && messageBottomMode === 'chat' && (
         <div className={cx(styles['answer-actions'])}>

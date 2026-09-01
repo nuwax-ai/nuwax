@@ -185,22 +185,15 @@ const ProcessNodeRow: React.FC<ProcessNodeRowProps> = ({
         onClick={onToggle}
         style={{ color: token.colorText }}
       >
-        {node.status === 'running' ? (
-          <LoadingOutlined
-            className={cx(styles['node-kind-icon'])}
-            style={{ color: token.colorPrimary }}
-            spin
-            aria-hidden="true"
-          />
-        ) : (
-          <KindIcon
-            className={cx(styles['node-kind-icon'])}
-            style={{
-              color: node.failed ? token.colorError : token.colorTextTertiary,
-            }}
-            aria-hidden="true"
-          />
-        )}
+        {/* 类型图标恒在（运行中也不替换）：折叠条上一眼可辨节点类型；
+            活动指示由行尾 spinner 承担，与类型语义解耦 */}
+        <KindIcon
+          className={cx(styles['node-kind-icon'])}
+          style={{
+            color: node.failed ? token.colorError : token.colorTextTertiary,
+          }}
+          aria-hidden="true"
+        />
         <span className={cx(styles['node-title'])}>
           {nodeDisplayTitle(node)}
         </span>
@@ -213,6 +206,14 @@ const ProcessNodeRow: React.FC<ProcessNodeRowProps> = ({
           <CloseCircleOutlined
             className={cx(styles['node-status-icon'])}
             style={{ color: token.colorError }}
+            aria-hidden="true"
+          />
+        )}
+        {node.status === 'running' && (
+          <LoadingOutlined
+            className={cx(styles['node-status-icon'])}
+            style={{ color: token.colorPrimary }}
+            spin
             aria-hidden="true"
           />
         )}

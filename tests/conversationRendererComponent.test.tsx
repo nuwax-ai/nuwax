@@ -435,6 +435,54 @@ describe('ConversationRendererV2 · 回答与异常', () => {
     expect(screen.queryByTestId('copy-button')).toBeNull();
   });
 
+  it('正常完成但空回答（0/0/0 空轮）：显示空回答提示，不留无声空白', () => {
+    renderV2([
+      msg({ id: 'u1', role: AssistantRoleEnum.USER, text: '任务' }),
+      msg({ id: 'a1', role: AssistantRoleEnum.ASSISTANT, text: '' }),
+    ]);
+    expect(screen.getByTestId('v2-final-answer')).toHaveTextContent(
+      'PC.Components.ConversationRendererV2.answerEmpty',
+    );
+    // 无正文无操作栏
+    expect(screen.queryByTestId('copy-button')).toBeNull();
+  });
+
+  it('运行中空回答：不显示空回答提示（等待流式填充实时回答）', () => {
+    renderV2([
+      msg({ id: 'u1', role: AssistantRoleEnum.USER, text: '任务' }),
+      msg({
+        id: 'a1',
+        role: AssistantRoleEnum.ASSISTANT,
+        text: '',
+        status: MessageStatusEnum.Loading,
+      }),
+    ]);
+    expect(screen.getByTestId('v2-final-answer')).not.toHaveTextContent(
+      'PC.Components.ConversationRendererV2.answerEmpty',
+    );
+  });
+
+  it('运行中节点保留类型图标：行尾 spinner 指示活动，不吞类型语义', () => {
+    renderV2(
+      buildTurn({
+        status: MessageStatusEnum.Loading,
+        text: [
+          processTag({
+            executeId: 'r1',
+            type: 'Mcp',
+            status: 'EXECUTING',
+            name: '跑着的工具',
+          }),
+        ].join(''),
+      }),
+    );
+    const row = document.querySelector('[data-node-id="r1"]');
+    expect(row).not.toBeNull();
+    // 前导仍为类型图标（tool），活动指示由行尾 loading spinner 承担
+    expect(row!.querySelector('span[aria-label="tool"]')).not.toBeNull();
+    expect(row!.querySelector('span[aria-label="loading"]')).not.toBeNull();
+  });
+
   it('操作栏只归属最终回答：复制内容不含隐藏过程', () => {
     renderV2(buildTurn());
     const copy = screen.getByTestId('copy-button');

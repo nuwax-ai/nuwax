@@ -273,6 +273,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Components.ConversationRendererV2.hiddenEntry": "另有 {0} 项已隐藏",
   "PC.Components.ConversationRendererV2.answerStopped": "本轮已停止，未生成回答",
   "PC.Components.ConversationRendererV2.answerError": "本轮执行出错",
+  "PC.Components.ConversationRendererV2.answerEmpty": "本轮未生成回答内容",
 
   "PC.Components.ChatView.copy": "复制",
   "PC.Components.ChatView.guest": "游客",
