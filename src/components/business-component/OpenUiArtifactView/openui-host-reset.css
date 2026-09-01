@@ -162,3 +162,21 @@
   border-color: var(--openui-border-default);
   background-color: var(--openui-foreground);
 }
+
+/* -------------------------------------------------------------------------- */
+/* 10. 恢复被第 2 节 reset 误伤的列表排版（@layer openui 内 .openui-markdown-renderer
+   的 ul/ol/li 样式：padding-left 20px、li 行距等）。第 2 节本意是撤销 ds-markdown
+   对 OpenUI 子树的干扰，但 margin/padding: initial 的非 layered 规则同时压过了
+   库层内的列表样式，导致 bullet 贴边、缩进丢失、行距挤扁。这里以同 specificity、
+   靠后加载的 revert-layer 回退到 @layer openui 的库样式；不影响其他元素的 reset。 */
+/* -------------------------------------------------------------------------- */
+.ds-markdown [data-openui-render-mode='renderer'] :is(ul, ol) {
+  margin: revert-layer;
+  padding: revert-layer;
+  /* 宿主 unlayered reset（antd 等）的 ul/ol list-style:none 也一并撤销，恢复库层 disc/decimal */
+  list-style: revert-layer;
+}
+
+.ds-markdown [data-openui-render-mode='renderer'] li {
+  margin: revert-layer;
+}

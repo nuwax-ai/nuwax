@@ -13,6 +13,7 @@ import { history, useLocation, useModel, useParams } from 'umi';
 
 import ConversationItem from './components/ConversationItem';
 import EmptyState from './components/EmptyState';
+import ProjectPanel from './components/ProjectPanel';
 import RecentAgentItem from './components/RecentAgentItem';
 import SearchHeader from './components/SearchHeader';
 import { getAgentIdFromHomePathname } from './utils';
@@ -38,7 +39,7 @@ const ITEM_HEIGHT = 58; // 列表项重构后高度增加
 const RECENT_PAGE_SIZE = 30;
 const ACTIVE_TAB_STORAGE_KEY = 'PC_HOME_SECTION_ACTIVE_TAB';
 
-type HomeTab = 'conversation' | 'recent';
+type HomeTab = 'conversation' | 'recent' | 'project';
 type LoadRecentList = (
   isRefresh?: boolean,
   options?: { silent?: boolean; keyword?: string },
@@ -47,7 +48,9 @@ type LoadRecentList = (
 const getInitialActiveTab = (): HomeTab => {
   if (typeof window === 'undefined') return 'recent';
   const storedTab = window.localStorage.getItem(ACTIVE_TAB_STORAGE_KEY);
-  return storedTab === 'conversation' || storedTab === 'recent'
+  return storedTab === 'conversation' ||
+    storedTab === 'recent' ||
+    storedTab === 'project'
     ? storedTab
     : 'recent';
 };
@@ -124,6 +127,50 @@ const NewHomeSection: React.FC<{
   const [recentSearchKeyword, setRecentSearchKeyword] = useState(
     componentCache.recentSearchKeyword,
   );
+
+  // 右键菜单删除/重命名后,同步「最近」分组的会话数据(全局事件来自 ConversationContextMenu)
+  useEffect(() => {
+    const removeRecentConversation = (event: Event) => {
+      const id = (event as CustomEvent<{ id: number }>).detail?.id;
+      if (id === undefined || id === null) return;
+      setRecentList((prev) =>
+        prev.map((agent) => ({
+          ...agent,
+          conversationList: agent.conversationList?.filter(
+            (conversation) => Number(conversation.id) !== Number(id),
+          ),
+        })),
+      );
+    };
+    const renameRecentConversation = (event: Event) => {
+      const detail = (event as CustomEvent<{ id: number; topic: string }>)
+        .detail;
+      if (!detail?.id) return;
+      setRecentList((prev) =>
+        prev.map((agent) => ({
+          ...agent,
+          conversationList: agent.conversationList?.map((conversation) =>
+            Number(conversation.id) === Number(detail.id)
+              ? { ...conversation, topic: detail.topic }
+              : conversation,
+          ),
+        })),
+      );
+    };
+    window.addEventListener('conversation-deleted', removeRecentConversation);
+    window.addEventListener('conversation-updated', renameRecentConversation);
+    return () => {
+      window.removeEventListener(
+        'conversation-deleted',
+        removeRecentConversation,
+      );
+      window.removeEventListener(
+        'conversation-updated',
+        renameRecentConversation,
+      );
+    };
+  }, []);
+
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const listInnerRef = useRef<HTMLDivElement>(null);
   const initializedRef = useRef(false);
@@ -688,10 +735,12 @@ const NewHomeSection: React.FC<{
     const val = e.target.value;
     if (activeTab === 'conversation') {
       setKeyword(val);
-    } else {
+    } else if (activeTab === 'recent') {
       setRecentKeyword(val);
     }
-    debouncedSearch(val, activeTab);
+    if (activeTab !== 'project') {
+      debouncedSearch(val, activeTab);
+    }
   };
 
   const handleSearchSubmit = () => {
@@ -702,10 +751,12 @@ const NewHomeSection: React.FC<{
       } else {
         setSearchKeyword(keyword);
       }
-    } else if (recentKeyword === recentSearchKeyword) {
-      loadRecentListRef.current(true);
-    } else {
-      setRecentSearchKeyword(recentKeyword);
+    } else if (activeTab === 'recent') {
+      if (recentKeyword === recentSearchKeyword) {
+        loadRecentListRef.current(true);
+      } else {
+        setRecentSearchKeyword(recentKeyword);
+      }
     }
   };
 
@@ -715,6 +766,10 @@ const NewHomeSection: React.FC<{
     componentCache.activeTab = tab;
     window.localStorage.setItem(ACTIVE_TAB_STORAGE_KEY, tab);
     if (scrollContainerRef.current) scrollContainerRef.current.scrollTop = 0;
+    if (tab === 'project') {
+      // 项目数据接口后端尚未提供,暂无数据加载
+      return;
+    }
     if (tab === 'recent') {
       setRecentKeyword('');
       setRecentSearchKeyword('');
@@ -799,83 +854,100 @@ const NewHomeSection: React.FC<{
             'PC.Layouts.DynamicMenusLayout.HomeSection.conversationHistory',
           )}
         </button>
+        <button
+          type="button"
+          className={cx(styles.tab, {
+            [styles.active]: activeTab === 'project',
+          })}
+          onClick={() => handleTabChange('project')}
+        >
+          {dict('PC.Layouts.DynamicMenusLayout.HomeSection.projectTab')}
+        </button>
       </div>
 
-      {/* 会话记录列表 */}
+      {/* 列表区:最近 / 会话 / 项目 */}
       <div
         ref={scrollContainerRef}
         className={cx(styles['conversation-list-wrapper'])}
       >
-        {!loading &&
-          (activeTab === 'conversation' ? visibleConversationList : recentList)
-            .length === 0 && (
-            <EmptyState
-              keyword={activeTab === 'conversation' ? keyword : recentKeyword}
-              type={activeTab}
-            />
-          )}
-
-        <div ref={listInnerRef} className={cx(styles['conversation-list'])}>
-          {activeTab === 'conversation'
-            ? visibleConversationList.map((item) => (
-                <ConversationItem
-                  key={item.id}
-                  item={item}
-                  isActive={chatId === item.id?.toString()}
-                  onClick={() => handleConversationClick(item)}
-                  pinned={conversationFlags.pinned.includes(Number(item.id))}
-                  collected={conversationFlags.collected.includes(
-                    Number(item.id),
-                  )}
-                  archived={conversationFlags.archived.includes(
-                    Number(item.id),
-                  )}
+        {activeTab === 'project' ? (
+          <ProjectPanel />
+        ) : (
+          <>
+            {!loading &&
+              (activeTab === 'conversation'
+                ? visibleConversationList
+                : recentList
+              ).length === 0 && (
+                <EmptyState
+                  keyword={
+                    activeTab === 'conversation' ? keyword : recentKeyword
+                  }
+                  type={activeTab}
                 />
-              ))
-            : recentList.map((item) => (
-                <RecentAgentItem
-                  key={item.id}
-                  item={item}
-                  isActive={currentAgentId === item.agentId?.toString()}
-                  onClick={() => handleRecentAgentClick(item)}
-                  onConversationClick={(conversationId) => {
-                    handleCloseMobileMenu();
-                    history.push(
-                      `/home/chat/${conversationId}/${item.agentId}`,
-                    );
-                  }}
-                />
-              ))}
+              )}
 
-          {loading && (
-            <div className={cx(styles['load-more'])}>
-              <Spin size="small" />
-            </div>
-          )}
+            <div ref={listInnerRef} className={cx(styles['conversation-list'])}>
+              {activeTab === 'conversation'
+                ? visibleConversationList.map((item) => (
+                    <ConversationItem
+                      key={item.id}
+                      item={item}
+                      isActive={chatId === item.id?.toString()}
+                      onClick={() => handleConversationClick(item)}
+                      pinned={conversationFlags.pinned.includes(
+                        Number(item.id),
+                      )}
+                      collected={conversationFlags.collected.includes(
+                        Number(item.id),
+                      )}
+                      archived={conversationFlags.archived.includes(
+                        Number(item.id),
+                      )}
+                    />
+                  ))
+                : recentList.map((item) => (
+                    <RecentAgentItem
+                      key={item.id}
+                      item={item}
+                      isActive={currentAgentId === item.agentId?.toString()}
+                      onClick={() => handleRecentAgentClick(item)}
+                      onConversationClick={(conversationId) => {
+                        handleCloseMobileMenu();
+                        history.push(
+                          `/home/chat/${conversationId}/${item.agentId}`,
+                        );
+                      }}
+                      conversationFlags={conversationFlags}
+                    />
+                  ))}
 
-          {/* 已归档入口：存在归档项或处于已归档视图时显示（本地标记过渡方案） */}
-          {activeTab === 'conversation' &&
-            !loading &&
-            (archivedCount > 0 || showArchived) && (
-              <div
-                className={cx(styles['archived-entry'])}
-                onClick={() => setShowArchived(!showArchived)}
-              >
-                {showArchived
-                  ? dict(
-                      'PC.Layouts.DynamicMenusLayout.NewHomeSection.backToConversations',
-                    )
-                  : `${dict(
-                      'PC.Layouts.DynamicMenusLayout.NewHomeSection.archivedConversations',
-                    )} (${archivedCount})`}
-              </div>
-            )}
-          {/* {!loading && !hasMore && localList.length > 0 && (
-            <div className={cx(styles['no-more'])}>
-              <Typography.Text type="secondary">{noMoreText}</Typography.Text>
+              {loading && (
+                <div className={cx(styles['load-more'])}>
+                  <Spin size="small" />
+                </div>
+              )}
+
+              {/* 已归档入口:存在归档项或处于已归档视图时显示(本地标记过渡方案) */}
+              {activeTab === 'conversation' &&
+                !loading &&
+                (archivedCount > 0 || showArchived) && (
+                  <div
+                    className={cx(styles['archived-entry'])}
+                    onClick={() => setShowArchived(!showArchived)}
+                  >
+                    {showArchived
+                      ? dict(
+                          'PC.Layouts.DynamicMenusLayout.NewHomeSection.backToConversations',
+                        )
+                      : `${dict(
+                          'PC.Layouts.DynamicMenusLayout.NewHomeSection.archivedConversations',
+                        )} (${archivedCount})`}
+                  </div>
+                )}
             </div>
-          )} */}
-        </div>
+          </>
+        )}
       </div>
     </div>
   );

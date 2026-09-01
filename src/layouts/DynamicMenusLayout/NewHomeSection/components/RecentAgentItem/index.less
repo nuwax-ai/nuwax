@@ -1,0 +1,195 @@
+@import '@/styles/token.less';
+
+.group {
+  border-radius: @borderRadius;
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background-color: @colorFillQuaternary;
+  }
+
+  &.active .head .title {
+    color: @colorPrimary;
+  }
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: @marginXs;
+  padding: @paddingXs @paddingXxs;
+  cursor: pointer;
+  user-select: none;
+
+  .avatar {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+
+    .avatar-img {
+      width: 100%;
+      height: 100%;
+      border-radius: @borderRadius;
+      object-fit: cover;
+    }
+  }
+
+  .info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+
+    .title {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: @fontSize;
+      color: @navSecondMenuAdaptiveText;
+      line-height: 18px;
+    }
+
+    .subtitle {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: @fontSizeSm;
+      color: @navSecondMenuAdaptiveTextTertiary;
+      line-height: 16px;
+    }
+  }
+
+  .side {
+    display: flex;
+    align-items: center;
+    gap: @marginXxs;
+    flex-shrink: 0;
+
+    .badge {
+      font-size: @fontSizeSm;
+      color: @colorPrimary;
+      white-space: nowrap;
+    }
+
+    .time {
+      font-size: @fontSizeSm;
+      color: @navSecondMenuAdaptiveTextTertiary;
+      white-space: nowrap;
+    }
+  }
+}
+
+.sessions {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 @paddingXxs @paddingXxs;
+  // 会话条目相对组头缩进(头像宽度 + 间距)
+  padding-left: 46px;
+
+  .session {
+    display: flex;
+    align-items: center;
+    gap: @marginXxs;
+    padding: 3px @paddingXs;
+    border-radius: @borderRadiusSm;
+    cursor: pointer;
+
+    &:hover {
+      background-color: @colorFillQuaternary;
+
+      :global(.more-btn) {
+        opacity: 1;
+      }
+    }
+
+    // 执行中绿点(呼吸闪烁)
+    .status-dot {
+      flex-shrink: 0;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background-color: @colorSuccess;
+      animation: session-status-pulse 1.6s ease-in-out infinite;
+    }
+
+    // 失败红叹号
+    .status-failed {
+      flex-shrink: 0;
+      font-size: 11px;
+      color: @colorError;
+    }
+
+    // 本地标记图标(置顶/收藏)
+    .pin-icon,
+    .star-icon {
+      font-size: 11px;
+      flex-shrink: 0;
+    }
+
+    .pin-icon {
+      color: @colorPrimary;
+    }
+
+    .star-icon {
+      color: #faad14;
+    }
+
+    .session-topic {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: @fontSizeSm;
+      color: @navSecondMenuAdaptiveTextSecondary;
+      line-height: 18px;
+    }
+
+    // 「⋯」菜单兜底按钮:默认隐藏,hover 行时显示;触屏常显
+    :global(.more-btn) {
+      flex-shrink: 0;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    @media (hover: none) {
+      :global(.more-btn) {
+        opacity: 1;
+      }
+    }
+
+    .session-time {
+      flex-shrink: 0;
+      font-size: @fontSizeSm;
+      color: @navSecondMenuAdaptiveTextTertiary;
+      white-space: nowrap;
+    }
+  }
+
+  // 「查看更多 (N)」/「收起」
+  .view-more {
+    padding: 2px @paddingXs;
+    border-radius: @borderRadiusSm;
+    font-size: @fontSizeSm;
+    color: @navSecondMenuAdaptiveTextTertiary;
+    cursor: pointer;
+    user-select: none;
+
+    &:hover {
+      color: @colorPrimary;
+    }
+  }
+}
+
+@keyframes session-status-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.35;
+  }
+}
