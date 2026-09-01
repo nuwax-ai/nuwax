@@ -1,0 +1,355 @@
+import AppDevEmptyState from '@/components/business-component/AppDevEmptyState';
+import ChangeFileGitDiffView from '@/components/business-component/ChangeFileGitDiffView';
+import type { ChangeFileInfo } from '@/components/business-component/FileTreePreviewPanel/types/file-tree';
+import CodeViewer from '@/components/CodeViewer';
+import { t } from '@/services/i18nRuntime';
+import { FileNode, ProjectDetailData } from '@/types/interfaces/appDev';
+import {
+  isImageFile,
+  isPreviewableFile,
+  processImageContent,
+} from '@/utils/appDevUtils';
+// Button, Spin 已移除，使用 AppDevEmptyState 组件替代
+import React, { useMemo } from 'react';
+import { type DesignViewerRef } from '../DesignViewer';
+import FilePathHeader from '../FilePathHeader';
+import ImageViewer from '../ImageViewer';
+import Preview, { type PreviewRef } from '../Preview';
+import styles from './index.less';
+
+interface ContentViewerProps {
+  projectInfo?: ProjectDetailData | null;
+  /** 刷新项目详情 */
+  refreshProjectInfo?: () => void;
+  /** 文件树数据 */
+  files?: FileNode[];
+  /** 显示模式 */
+  mode: 'preview' | 'code';
+  /** 选中的文件ID */
+  selectedFileId: string | null;
+  /** 文件内容 */
+  fileContent: string;
+  /** 是否正在加载文件内容 */
+  isLoadingFileContent: boolean;
+  /** 文件内容错误信息 */
+  fileContentError: string | null;
+  /** 文件是否被修改 */
+  isFileModified: boolean;
+  /** 开发服务器URL */
+  devServerUrl: string | null;
+  /** 是否正在启动 */
+  isStarting: boolean;
+  /** 是否正在重启 */
+  isRestarting?: boolean; // 新增
+  /** 是否正在导入项目 */
+  isProjectUploading?: boolean; // 新增
+  /** 启动错误 */
+  startError?: string | null;
+  /** 服务器接口返回的消息 */
+  serverMessage?: string | null;
+  /** 服务器错误码 */
+  serverErrorCode?: string | null;
+  /** Preview组件ref */
+  previewRef: React.RefObject<PreviewRef>;
+  /** DesignViewer组件ref */
+  designViewerRef?: React.RefObject<DesignViewerRef>;
+  /** 内容变化回调 */
+  onContentChange: (fileId: string, content: string) => void;
+  /** 刷新文件回调 */
+  onRefreshFile: () => void;
+  /** 查找文件节点方法 */
+  findFileNode: (fileId: string) => any;
+  /** 是否正在AI聊天加载中 */
+  isChatLoading?: boolean;
+  /**
+   * Agent 聊天加载中时，是否在预览区显示「开发中」全屏空状态（盖住 iframe）。
+   * 默认 true（与历史行为一致，未传入本 prop 即为 true）。传 false 时仅不再替换预览 iframe；
+   * 不改变 isChatLoading 驱动的代码只读等逻辑。
+   * 宿主若需「URL ?developingOverlay= / 偏好」多级合并，
+   * 可先使用 `resolveShowDevelopingOverlayDuringAgent` 再传入本属性。
+   */
+  showDevelopingOverlayDuringAgent?: boolean;
+  /** 启动开发服务器回调 */
+  onStartDev?: () => void;
+  /** 重启开发服务器回调 */
+  onRestartDev?: () => void;
+  /** 白屏且 iframe 内错误时触发 AI Agent 自动处理回调
+   * @param errorMessage 错误消息，为空字符串表示只有白屏没有错误
+   * @param errorType 错误类型，用于区分不同的错误场景
+   */
+  onWhiteScreenOrIframeError?: (
+    errorMessage: string,
+    errorType?: 'whiteScreen' | 'iframe',
+  ) => void;
+  /** 刷新文件树回调 */
+  onRefreshFileTree?: (
+    preserveExpandedState?: boolean,
+    forceUpdate?: boolean,
+  ) => void;
+  /** Git 源代码管理选中的 diff 文件 */
+  gitDiffFile?: ChangeFileInfo | null;
+}
+
+/**
+ * 内容查看器组件
+ * 统一的内容查看器容器，根据不同模式和文件类型渲染对应的子组件
+ * 优化：使用条件渲染和组件缓存来避免 iframe 重新加载
+ */
+const ContentViewer: React.FC<ContentViewerProps> = ({
+  files,
+  projectInfo,
+  refreshProjectInfo,
+  mode,
+  selectedFileId,
+  fileContent,
+  isLoadingFileContent,
+  fileContentError,
+  isFileModified,
+  devServerUrl,
+  isStarting,
+  isRestarting, // 新增
+  isProjectUploading, // 新增
+  startError,
+  serverMessage,
+  serverErrorCode,
+  previewRef,
+  designViewerRef, // 新增
+  onContentChange,
+  onRefreshFile,
+  findFileNode,
+  isChatLoading = false,
+  showDevelopingOverlayDuringAgent = true,
+  onStartDev,
+  onRestartDev,
+  onWhiteScreenOrIframeError,
+  onRefreshFileTree,
+  gitDiffFile = null,
+}) => {
+  // 使用 useMemo 缓存 Preview 组件，避免重新创建
+  const previewComponent = useMemo(
+    () => (
+      <Preview
+        files={files}
+        ref={previewRef}
+        projectInfo={projectInfo}
+        refreshProjectInfo={refreshProjectInfo}
+        devServerUrl={
+          devServerUrl ? `${process.env.BASE_URL}${devServerUrl}` : undefined
+        }
+        isStarting={isStarting}
+        isDeveloping={Boolean(
+          isChatLoading && showDevelopingOverlayDuringAgent,
+        )}
+        isRestarting={isRestarting}
+        isProjectUploading={isProjectUploading}
+        startError={startError}
+        serverMessage={serverMessage}
+        serverErrorCode={serverErrorCode}
+        designViewerRef={designViewerRef}
+        onStartDev={onStartDev}
+        onRestartDev={onRestartDev}
+        onWhiteScreenOrIframeError={onWhiteScreenOrIframeError}
+        onRefreshFileTree={onRefreshFileTree}
+      />
+    ),
+    [
+      previewRef,
+      designViewerRef,
+      devServerUrl,
+      isStarting,
+      isChatLoading,
+      showDevelopingOverlayDuringAgent,
+      isRestarting,
+      isProjectUploading,
+      startError,
+      serverMessage,
+      serverErrorCode,
+      onStartDev,
+      onRestartDev,
+      onWhiteScreenOrIframeError,
+      onRefreshFileTree,
+    ],
+  );
+
+  // 使用 useMemo 缓存代码编辑器组件
+  const codeEditorComponent = useMemo(() => {
+    if (gitDiffFile) {
+      const fileName =
+        gitDiffFile.fileId.split('/').pop() || gitDiffFile.fileId;
+      return (
+        <div className={styles.codeEditorContainer}>
+          <FilePathHeader
+            filePath={gitDiffFile.fileId}
+            isModified
+            isLoading={false}
+            readOnly
+            onRefresh={onRefreshFile}
+          />
+          <div className={styles.fileContentPreview}>
+            {/* 文件修改diff */}
+            <ChangeFileGitDiffView
+              fileId={gitDiffFile.fileId}
+              fileName={fileName}
+              originalContent={gitDiffFile.originalFileContent}
+              modifiedContent={gitDiffFile.fileContent}
+            />
+          </div>
+        </div>
+      );
+    }
+
+    if (isLoadingFileContent) {
+      return (
+        <AppDevEmptyState
+          type="loading"
+          title={t('PC.Pages.AppDevContentViewer.loadingFileContentTitle')}
+          description={t('PC.Pages.AppDevContentViewer.loadingDescription')}
+        />
+      );
+    }
+
+    if (fileContentError) {
+      return (
+        <AppDevEmptyState
+          type="error"
+          title={t('PC.Pages.AppDevContentViewer.loadFileFailedTitle')}
+          description={fileContentError}
+          buttons={[
+            {
+              text: t('PC.Pages.AppDevContentViewer.retry'),
+              onClick: onRefreshFile,
+            },
+          ]}
+        />
+      );
+    }
+
+    if (!selectedFileId) {
+      return (
+        <AppDevEmptyState
+          type="no-file"
+          title={t('PC.Pages.AppDevContentViewer.noSelectedFileTitle')}
+          description={t(
+            'PC.Pages.AppDevContentViewer.noSelectedFileDescription',
+          )}
+        />
+      );
+    }
+
+    const currentFileNode = findFileNode(selectedFileId);
+    const hasContents =
+      currentFileNode &&
+      currentFileNode.content &&
+      currentFileNode.content.trim() !== '';
+    const isImage = isImageFile(selectedFileId);
+    const isPreviewable = isPreviewableFile(selectedFileId);
+
+    return (
+      <div className={styles.codeEditorContainer}>
+        {/* 文件路径显示 */}
+        <FilePathHeader
+          filePath={currentFileNode?.path || selectedFileId}
+          isModified={isFileModified}
+          isLoading={isLoadingFileContent}
+          readOnly={isChatLoading}
+          onRefresh={onRefreshFile}
+        />
+
+        {/* 文件内容预览 */}
+        <div className={styles.fileContentPreview}>
+          {!isPreviewable && !hasContents ? (
+            // 不支持预览的文件类型
+            <AppDevEmptyState
+              type="error"
+              title={t('PC.Pages.AppDevContentViewer.unsupportedFileTypeTitle')}
+              description={t(
+                'PC.Pages.AppDevContentViewer.unsupportedFileTypeDescription',
+                selectedFileId.split('.').pop() || selectedFileId,
+              )}
+            />
+          ) : isImage ? (
+            <ImageViewer
+              imageUrl={processImageContent(
+                hasContents ? currentFileNode.content : '',
+                devServerUrl
+                  ? `${devServerUrl}/${selectedFileId}`
+                  : `/${selectedFileId}`,
+              )}
+              alt={selectedFileId}
+              onRefresh={() => {
+                if (previewRef.current) {
+                  previewRef.current.refresh();
+                }
+              }}
+            />
+          ) : hasContents ? (
+            <CodeViewer
+              fileId={selectedFileId}
+              fileName={selectedFileId.split('/').pop() || selectedFileId}
+              filePath={`app/${selectedFileId}`}
+              content={currentFileNode.content}
+              readOnly={isChatLoading}
+              onContentChange={onContentChange}
+            />
+          ) : fileContent ? (
+            <CodeViewer
+              fileId={selectedFileId}
+              fileName={selectedFileId.split('/').pop() || selectedFileId}
+              filePath={`app/${selectedFileId}`}
+              content={fileContent}
+              readOnly={isChatLoading}
+              onContentChange={onContentChange}
+            />
+          ) : (
+            <AppDevEmptyState
+              type="error"
+              title={t('PC.Pages.AppDevContentViewer.unsupportedFileTypeTitle')}
+              description={t(
+                'PC.Pages.AppDevContentViewer.unsupportedFileTypeDescription',
+                selectedFileId.split('.').pop() || selectedFileId,
+              )}
+            />
+          )}
+        </div>
+      </div>
+    );
+  }, [
+    gitDiffFile,
+    isLoadingFileContent,
+    fileContentError,
+    selectedFileId,
+    findFileNode,
+    isFileModified,
+    isChatLoading,
+    devServerUrl,
+    fileContent,
+    onContentChange,
+    onRefreshFile,
+    previewRef,
+  ]);
+
+  // 同时渲染两个组件，通过 CSS 控制显示/隐藏
+  return (
+    <div className={styles.contentViewerContainer}>
+      {/* 预览组件 - 始终存在，通过 CSS 控制显示 */}
+      <div
+        className={`${styles.previewContainer} ${
+          mode === 'preview' ? styles.visible : styles.hidden
+        }`}
+      >
+        {previewComponent}
+      </div>
+
+      {/* 代码编辑器组件 - 始终存在，通过 CSS 控制显示 */}
+      <div
+        className={`${styles.codeContainer} ${
+          mode === 'code' ? styles.visible : styles.hidden
+        }`}
+      >
+        {codeEditorComponent}
+      </div>
+    </div>
+  );
+};
+
+export default ContentViewer;

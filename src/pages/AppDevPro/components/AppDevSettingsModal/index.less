@@ -1,0 +1,123 @@
+@import '@/styles/token.less';
+
+.settingsModal {
+  .authRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .authLabel {
+    font-size: 14px;
+    font-weight: 500;
+    color: @colorTextBase;
+    line-height: 22px;
+  }
+
+  .authDesc {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    margin-top: 8px;
+    color: @colorTextSecondary;
+    font-size: 12px;
+    line-height: 20px;
+  }
+
+  .authDescIcon {
+    margin-top: 3px;
+    color: @colorTextTertiary;
+    flex-shrink: 0;
+  }
+
+  .sectionDivider {
+    margin: 20px 0 16px;
+  }
+
+  .sectionTitle {
+    font-size: 14px;
+    font-weight: 500;
+    color: @colorTextBase;
+    margin-bottom: 12px;
+  }
+
+  .defaultDomain {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    background: @colorFillTertiary;
+    border-radius: 8px;
+    margin-bottom: 12px;
+  }
+
+  .defaultDomainInfo {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .defaultDomainLabel {
+    font-size: 12px;
+    color: @colorTextSecondary;
+    line-height: 18px;
+  }
+
+  .defaultDomainValue {
+    font-size: 13px;
+    color: @colorTextBase;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+      monospace;
+    word-break: break-all;
+    line-height: 20px;
+  }
+
+  .bindRow {
+    width: 100%;
+    margin-bottom: 12px;
+
+    :global(.ant-input) {
+      flex: 1;
+    }
+  }
+
+  .domainList {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 220px;
+    overflow-y: auto;
+  }
+
+  .domainItem {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border: 1px solid @colorBorderSecondary;
+    border-radius: 8px;
+    background: @colorBgContainer;
+
+    :global(.ant-tag) {
+      margin-inline-end: 0;
+      flex-shrink: 0;
+    }
+  }
+
+  .unbindBtn {
+    flex-shrink: 0;
+    color: @colorTextSecondary;
+  }
+
+  .domainName {
+    flex: 1;
+    min-width: 0;
+    font-size: 13px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+      monospace;
+    color: @colorTextBase;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
