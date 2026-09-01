@@ -1350,7 +1350,6 @@ export const ZH_HK: SystemLangMap = {
   "PC.Layouts.DynamicMenusLayout.HomeSection.recentlyUsed": "最近使用",
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.archivedConversations": "已歸檔會話",
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.backToConversations": "返回會話列表",
-  "PC.Layouts.DynamicMenusLayout.NewHomeSection.newProjectItem": "新建",
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.noProjects": "暫無項目",
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.searchPlaceholder": "搜索",
   "PC.Layouts.DynamicMenusLayout.HomeSection.startFirstConversation": "在會話框中輸入指令開始你的第一次會話吧～",

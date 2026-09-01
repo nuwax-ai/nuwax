@@ -94,13 +94,11 @@ const ProjectPanel: React.FC = () => {
               <span className={cx(styles.name)} title={project.name}>
                 {project.name}
               </span>
-              {/* 新建入口:mock 阶段不触发动作,仅阻断行展开 */}
+              {/* 新建会话入口:mock 阶段不触发动作,仅阻断行展开 */}
               <span
                 className={cx(styles.add)}
                 onClick={(event) => event.stopPropagation()}
-                title={dict(
-                  'PC.Layouts.DynamicMenusLayout.NewHomeSection.newProjectItem',
-                )}
+                title={dict('PC.Constants.Menus.newChat')}
               >
                 +
               </span>
