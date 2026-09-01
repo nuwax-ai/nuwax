@@ -1000,3 +1000,81 @@ export interface ResourceStatDTO {
   extra: string;
   created: string;
 }
+
+/* ──────────────────────────────────────────────
+ * 连接器提供方 (Connector Provider)
+ * 字段对齐 /api/system/connector/providers 真实 schema
+ * ────────────────────────────────────────────── */
+
+/** 鉴权方式枚举（''=全部 用于筛选项） */
+export type ConnectorAuthType =
+  | ''
+  | 'no_auth'
+  | 'api_key'
+  | 'bearer'
+  | 'oauth2'
+  | 'custom';
+
+/** 连接器提供方信息（响应数组元素） */
+export interface ConnectorProviderInfo {
+  /** 主键（也是拖拽排序主键） */
+  id: number;
+  /** 所属空间 ID */
+  spaceId?: number;
+  /** 服务标识（如图中 aliyun_oss、aws_s3） */
+  service: string;
+  /** 显示名（如 Alibaba Cloud OSS） */
+  displayName: string;
+  /** 描述 */
+  description?: string;
+  /** 图标 URL */
+  icon?: string;
+  /** 主分类 */
+  category?: string;
+  /** 标签（如 ["Storage", "Developer Tools"]） */
+  tags?: string[];
+  /** 鉴权方式 */
+  authType: ConnectorAuthType;
+  /** baseUrl */
+  baseUrl?: string;
+  /** 鉴权配置对象 */
+  authConfig?: Record<string, unknown>;
+  /** OAuth 应用模式 */
+  oauthAppMode?: string;
+  /** 来源 */
+  source?: string;
+  /** 提供方版本 */
+  providerVersion?: string;
+  /** 管理方 */
+  managedBy?: string;
+  /** 是否启用代理 */
+  proxyEnabled?: boolean;
+  /** 启用状态：小写英文 enabled/disabled */
+  status?: 'enabled' | 'disabled' | string;
+  /** 排序值（拖拽保存时按 index+1 计算） */
+  sortOrder?: number;
+  /** 是否已连接 */
+  connected?: boolean;
+  /** 工具/动作数量（对应"工具数"列） */
+  actionCount?: number;
+  /** 更新时间 */
+  modified?: string;
+  /** 创建时间 */
+  created?: string;
+}
+
+/** 获取提供方列表参数（前端筛选参数，暂未透传） */
+export interface ConnectorProviderListParams {
+  /** 按鉴权方式过滤；空串=全部 */
+  authType?: ConnectorAuthType;
+  /** 按状态过滤；空串=全部 */
+  status?: 'enabled' | 'disabled' | '';
+}
+
+/**
+ * saveOfficialOrder 入参：
+ * 直接传 service 数组，数组索引即排序（越小越靠前）
+ */
+export interface SaveConnectorOrderParams {
+  services: string[];
+}

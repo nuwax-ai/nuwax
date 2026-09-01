@@ -5235,6 +5235,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Routes.paymentOrders": "支付订单查询",
   "PC.Routes.permissionResources": "权限资源",
   "PC.Routes.publicModelManagement": "公共模型管理",
+  "PC.Routes.connectorManage": "连接器管理",
   "PC.Routes.publishAudit": "发布审核",
   "PC.Routes.recommendManage": "推荐管理",
   "PC.Routes.homeRecommend": "首页推荐",

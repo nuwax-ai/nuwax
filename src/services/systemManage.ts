@@ -11,6 +11,8 @@ import type {
 import type {
   AccessStatsResult,
   AddSystemUserParams,
+  ConnectorProviderInfo,
+  ConnectorProviderListParams,
   ConversationStatsResult,
   ModelConfigDto,
   NotifyMessageSendParams,
@@ -22,6 +24,7 @@ import type {
   ResourceStatSummaryDTO,
   SandboxConfigItem,
   SandboxGlobalConfig,
+  SaveConnectorOrderParams,
   SystemAgentListParams,
   SystemAgentPage,
   SystemDataTableListParams,
@@ -147,6 +150,33 @@ export async function apiSystemModelSortUpdate(
 ): Promise<RequestResponse<null>> {
   return request('/api/system/model/sort/update', {
     method: 'POST',
+    data,
+  });
+}
+
+/**
+ * 获取系统连接器提供方列表（非分页，返回数组）
+ * 对应接口：GET /api/system/connector/providers
+ */
+export async function apiSystemConnectorProviderList(
+  params?: ConnectorProviderListParams,
+): Promise<RequestResponse<ConnectorProviderInfo[]>> {
+  return request('/api/system/connector/providers', {
+    method: 'GET',
+    params,
+  });
+}
+
+/**
+ * 保存连接器提供方排序（拖拽持久化）
+ * 对应接口：PUT /api/system/connector/providers/order
+ * 入参：按拖拽后顺序排列的 service 数组，数组索引即排序
+ */
+export async function apiSystemConnectorProviderOrder(
+  data: SaveConnectorOrderParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/system/connector/providers/order', {
+    method: 'PUT',
     data,
   });
 }

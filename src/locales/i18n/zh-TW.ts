@@ -5068,6 +5068,7 @@ export const ZH_TW: SystemLangMap = {
   "PC.Pages.ModelPermissions.modelIdCopied": "模型標識已複製",
   "PC.Routes.permissionResources": "許可權資源",
   "PC.Routes.publicModelManagement": "公共模型管理",
+  "PC.Routes.connectorManage": "連接器管理",
   "PC.Routes.modelMonitor": "模型監控",
   "PC.Routes.publishAudit": "釋出稽核",
   "PC.Routes.recommendManage": "推薦管理",
