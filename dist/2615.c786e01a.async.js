@@ -1,1 +1,0 @@
-"use strict";(self.webpackChunknuwax_frontend=self.webpackChunknuwax_frontend||[]).push([[2615],{82615:function(e,n,_){_.d(n,{createWardleyServices:function(){return u.J}});var u=_(761072),c=_(529697)}}]);
