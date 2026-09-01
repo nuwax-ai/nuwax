@@ -152,9 +152,12 @@ const ConversationSearchPanel: React.FC<ConversationSearchPanelProps> = ({
   }, [debouncedKeyword, messages]);
 
   const locateMessage = useCallback((id: string | number) => {
+    // V1 单条消息有专属锚点；V2 assistant 消息聚合进 turn 常显区，
+    // 以空格分隔的 ids 词列表挂在块根节点上（~= 按词匹配）
     const el =
       document.querySelector(`[data-server-message-id="${id}"]`) ||
-      document.querySelector(`[data-message-id="${id}"]`);
+      document.querySelector(`[data-message-id="${id}"]`) ||
+      document.querySelector(`[data-server-message-ids~="${id}"]`);
     if (!el) return false;
     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
     el.classList.add(HIGHLIGHT_CLASS);

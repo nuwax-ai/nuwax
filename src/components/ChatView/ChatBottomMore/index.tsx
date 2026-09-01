@@ -1,4 +1,5 @@
 import CopyButton from '@/components/base/CopyButton';
+import ShareMessageButton from '@/components/business-component/ConversationShareModal/ShareMessageButton';
 import { stripThinkBlocks } from '@/plugins/ds-markdown-think';
 import { dict } from '@/services/i18nRuntime';
 import type { ChatBottomMoreProps } from '@/types/interfaces/common';
@@ -37,6 +38,7 @@ const ChatBottomMore: React.FC<ChatBottomMoreProps> = ({ messageInfo }) => {
         <CopyButton text={copyText} onCopy={handleCopy}>
           {dict('PC.Common.Global.copy')}
         </CopyButton>
+        <ShareMessageButton text={copyText} isUser={false} />
       </div>
     </div>
   );
