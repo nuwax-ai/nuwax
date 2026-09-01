@@ -606,10 +606,11 @@ const ConnectorManage: React.FC = () => {
               onReset={handleReset}
               showQueryButtons
               /**
-               * size="large" 把行高拉到 ~64px，容纳"显示名 + tags 副标题"两行布局不被裁剪。
+               * 两行内容需要更高的虚拟项高度；这里显式对齐到实际 row 高度，避免最后一行被裁切。
                * 列宽总和 ≈ 1014（不含勾选列 50），无横向滚动。
                */
               size="large"
+              listItemHeight={74}
               tableLayout="fixed"
               scroll={{ x: 1064 }}
               /**
