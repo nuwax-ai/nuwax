@@ -284,8 +284,8 @@ const McpAskQuestionCard: React.FC<McpAskQuestionCardProps> = ({
             className={styles.title}
             ellipsis={{
               rows: 2,
-              expandable: true,
-              expand: 'expanded',
+              // 'collapsible' 才支持展开后再收起；旧写法 expand:'expanded' 是无效 prop（antd 5 EllipsisConfig 无此字段）
+              expandable: 'collapsible',
               symbol: (expanded) =>
                 expanded
                   ? t('PC.Components.McpAskQuestionCard.titleCollapse')
@@ -295,9 +295,20 @@ const McpAskQuestionCard: React.FC<McpAskQuestionCardProps> = ({
             {title}
           </Paragraph>
           {subTitle ? (
-            <Text type="secondary" className={styles.subTitle}>
+            <Paragraph
+              type="secondary"
+              className={styles.subTitle}
+              ellipsis={{
+                rows: 1,
+                expandable: 'collapsible',
+                symbol: (expanded) =>
+                  expanded
+                    ? t('PC.Components.McpAskQuestionCard.titleCollapse')
+                    : t('PC.Components.McpAskQuestionCard.titleExpand'),
+              }}
+            >
               {subTitle}
-            </Text>
+            </Paragraph>
           ) : null}
           {description ? (
             <div className={styles.descWrap}>

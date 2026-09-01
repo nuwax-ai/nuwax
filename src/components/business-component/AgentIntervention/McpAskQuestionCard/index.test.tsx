@@ -171,4 +171,27 @@ describe('McpAskQuestionCard', () => {
       }),
     );
   });
+
+  it('renders a long subTitle in full inside the expandable Paragraph host', () => {
+    // subTitle 由 antd Paragraph ellipsis 托管（超 1 行展开/收起），
+    // jsdom 无法测 CSS 溢出，这里锁「全文进 DOM、不再被 nowrap 硬剪丢内容」
+    const longSubTitle =
+      '第 3 轮画布填充确认：矩形 143 户型封窗报价单会挡在填满后的画布左侧，原文件在 S3 可重新取回，需要先核对报价再继续生成。';
+    render(
+      <McpAskQuestionCard
+        interaction={{
+          ...interaction,
+          input: { ...interaction.input, subTitle: longSubTitle },
+        }}
+        keyboardShortcutsEnabled={false}
+      />,
+    );
+
+    const subTitleNode = document.querySelector('.subTitle');
+    expect(subTitleNode).toBeTruthy();
+    expect(subTitleNode?.textContent).toContain(
+      '矩形 143 户型封窗报价单会挡在填满后的画布左侧',
+    );
+    expect(subTitleNode?.textContent).toContain('需要先核对报价再继续生成。');
+  });
 });
