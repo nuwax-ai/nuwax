@@ -47,6 +47,15 @@ vi.mock('@/components/base/CopyButton', () => ({
     <button type="button" data-testid="copy-button" data-copy-text={text} />
   ),
 }));
+// 消息分享入口(useModel/services/SvgIcon 传递依赖较重,测试中以占位替换)
+vi.mock(
+  '@/components/business-component/ConversationShareModal/ShareMessageButton',
+  () => ({
+    default: ({ text }: { text: string }) => (
+      <span data-testid="share-message-btn" data-share-text={text} />
+    ),
+  }),
+);
 vi.mock('@/components/MarkdownRenderer', () => ({
   default: ({ answer }: { answer: string }) => (
     <div data-testid="markdown-renderer">{answer}</div>

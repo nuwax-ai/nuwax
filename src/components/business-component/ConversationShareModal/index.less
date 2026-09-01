@@ -1,0 +1,26 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+// 与 CopyButton 同款操作按钮形态(消息操作栏「分享」)
+.share-message-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: @colorTextDescription;
+  font-family: inherit;
+  font-size: @fontSizeSm;
+  transition: color 0.2s ease-in-out;
+  user-select: none;
+  outline: none;
+  cursor: pointer;
+
+  &:hover {
+    color: @colorText;
+  }
+
+  .share-image {
+    margin-right: @marginXxs;
+  }
+}

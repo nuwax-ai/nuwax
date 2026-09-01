@@ -3,6 +3,7 @@
  * 复制内容只含最终回答本身，不含隐藏过程；调试入口读取整轮 finalResult。
  */
 import CopyButton from '@/components/base/CopyButton';
+import ShareMessageButton from '@/components/business-component/ConversationShareModal/ShareMessageButton';
 import ChatBottomDebug from '@/components/ChatView/ChatBottomDebug';
 import MarkdownRenderer from '@/components/MarkdownRenderer';
 import useMarkdownRender from '@/hooks/useMarkdownRender';
@@ -51,8 +52,19 @@ const FinalAnswerBlock: React.FC<FinalAnswerBlockProps> = ({
       lastAssistant?.status === 'error' ||
       !lastAssistant?.status);
 
+  // V2 会话内搜索定位锚点：turn 聚合后无单条消息 DOM，把 turn 内全部
+  // server 消息 id 挂到常显区根节点，供 ConversationSearchPanel 按词匹配定位
+  const serverMessageIds = turn.assistantMessages
+    .map((msg) => msg.id)
+    .filter(Boolean)
+    .join(' ');
+
   return (
-    <div className={cx(styles['answer-block'])} data-testid="v2-final-answer">
+    <div
+      className={cx(styles['answer-block'])}
+      data-testid="v2-final-answer"
+      data-server-message-ids={serverMessageIds || undefined}
+    >
       {answerText ? (
         <MarkdownRenderer
           key={messageIdRef.current}
@@ -85,6 +97,7 @@ const FinalAnswerBlock: React.FC<FinalAnswerBlockProps> = ({
           <CopyButton text={answerText} onCopy={handleCopy}>
             {dict('PC.Components.ChatView.copy')}
           </CopyButton>
+          <ShareMessageButton text={answerText} isUser={false} />
           {showDebug !== false && lastAssistant && (
             <ChatBottomDebug messageInfo={lastAssistant} />
           )}

@@ -72,7 +72,7 @@
 
 拉齐:
 
-- 扩展 conversation-search 页加 Tab「消息」:同 PC 策略(apiAgentConversationMessageList 按 index 游标翻页拉全量,上限 50 页)+ 本地 keyword 过滤(text+think);
+- 扩展 conversation-search 页加 Tab「消息」:同 PC 策略(apiAgentConversationMessageList 按 index 游标翻页拉全量,上限 20 页 ≈1000 条)+ 本地 keyword 过滤(text+think);
 - 定位交互适配移动端:点击结果跳会话页并滚动到消息(需会话页支持按消息 id 定位加载——mobile 历史是 scrolltoupper 分页,定位前若未加载需先翻页加载到目标,成本高于 PC;**首版可只展示结果片段不做跳转定位**,或限制「仅当前已加载会话」可定位);
 - 结果片段命中词高亮、role 标签照 PC。
 
@@ -93,7 +93,7 @@
 | --- | --- | --- |
 | 置顶/归档/收藏字段 + list 排序过滤 | 等接线(菜单/UI 骨架已就绪) | 等接线(ActionSheet 加项成本低) |
 | 删除消息(deleteMessage + 快照不复活) | 等接线 | 等接线(长按消息 ActionSheet 加删除) |
-| 消息分享(type=MESSAGE)/会话分享落地页 | 等接线 | mobile 分享现拼 PC 路由,落地页就绪后双端共用 |
+| 消息分享(type=MESSAGE)/会话分享落地页 | ✅ 前端已交付 mock 版(`feat/conversation-share`:入口+弹窗+file-preview.html 落地页,产物=md;交付文档 `docs/conversation/share-search-5c.md`),真实接口待接线 | mobile 分享拼 PC 路由,落地页双端共用,PC 就绪即 mobile 可用 |
 | file-list 按 path/depth 懒加载 + 隐藏文件 | 等接线(整树内嵌 contents 是现状) | **mobile 同受整树返回影响且性能更敏感**(file-tree.uvue 递归渲染),懒加载就绪后 mobile 收益更大,优先接 |
 | 本地目录选择(我的电脑) | 产品语义待对齐 | 同步跟进 |
 

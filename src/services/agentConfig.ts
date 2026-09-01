@@ -459,6 +459,26 @@ export async function apiAgentConversationShare(
 }
 
 /**
+ * 会话/消息分享(markdown 产物,需求 5c)。
+ * TODO(后端):真实分享接口支持会话/消息 type 后,切回
+ * /api/agent/conversation/share(参数带 messageId/组装好的 markdown),
+ * 删除 mock 层 conversationShareMd 三个端点即可,弹窗与落地页链路不变。
+ */
+export async function apiConversationShareMd(data: {
+  conversationId: number | string;
+  kind: 'MESSAGE' | 'CONVERSATION';
+  title: string;
+  markdown: string;
+  expireSeconds?: number | null;
+  allowDownload?: boolean;
+}): Promise<RequestResponse<{ shareKey: string }>> {
+  return request('/api/agent/conversation/share-md', {
+    method: 'POST',
+    data,
+  });
+}
+
+/**
  * 智能体会话可选模型列表
  * @param agentId 智能体ID
  */
