@@ -154,15 +154,13 @@ const ConnectorManage: React.FC = () => {
   /** 列定义 */
   const columns: ProColumns<ConnectorProviderInfo>[] = [
     {
-      // 连接器：显示名 + 标签副标题（fixed left 保证横向滚动时字段名常驻）
+      // 连接器：显示名 + 标签副标题（2 行布局）
+      // XProTable 已通过 size="large" 把行高拉到 ~64px，可容纳副标题不被裁剪。
       title: '连接器',
       dataIndex: 'displayName',
-      fixed: 'left',
-      width: 240,
+      width: 120,
       fieldProps: {
-        placeholder: '搜索官方连接器（名称 / service）',
-        // chip 适度宽度，placeholder 可完整显示，且不挤占状态/认证筛选位置
-        style: { width: 240 },
+        placeholder: '搜索连接器（名称 / service）',
       },
       render: (_, record) => (
         <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -305,70 +303,84 @@ const ConnectorManage: React.FC = () => {
 
   return (
     <WorkspaceLayout title="连接器管理" hideScroll>
-      <style>{`
-        /* 勾选列表头与列表左对齐：覆盖 XProTable 默认 24px 内边距 */
-        .x-pro-table .ant-table-thead > tr > th.ant-table-selection-column,
-        .x-pro-table .ant-table-tbody > tr > td.ant-table-selection-column {
-          padding-left: 16px !important;
-          text-align: left !important;
-        }
-        /* 整个 ant-pro-table-alert 区域（含提示文本和操作按钮）都隐藏 */
-        .x-pro-table .ant-pro-table-alert {
-          display: none !important;
-        }
-      `}</style>
-      <DndContext
-        collisionDetection={closestCenter}
-        modifiers={[restrictToVerticalAxis]}
-        onDragEnd={onDragEnd}
-      >
-        <SortableContext
-          items={draggableData.map((item) => String(item.id))}
-          strategy={verticalListSortingStrategy}
+      <div className="connector-manage-page">
+        <style>{`
+          /* 勾选列表头与列表左对齐：覆盖 XProTable 默认 24px 内边距 */
+          .connector-manage-page .x-pro-table .ant-table-thead > tr > th.ant-table-selection-column,
+          .connector-manage-page .x-pro-table .ant-table-tbody > tr > td.ant-table-selection-column {
+            padding-left: 28px !important;
+            text-align: left !important;
+          }
+          /* 整个 ant-pro-table-alert 区域（含提示文本和操作按钮）都隐藏 */
+          .connector-manage-page .x-pro-table .ant-pro-table-alert {
+            display: none !important;
+          }
+          /* 仅对"连接器"筛选 popover 加宽：
+             antd popover 通过 Portal 渲染到 document.body 下，不在 .connector-manage-page 子树里，
+             因此无法用祖先选择器做作用域。改为靠 input[placeholder^="搜索连接器"] 作唯一锚点
+             —— 只有本页"连接器"筛选的 placeholder 以"搜索连接器"开头，其他页 LightFilter 不会命中。
+             兼容主流浏览器（Chrome 105+/Edge 105+/Safari 15.4+/Firefox 121+ 支持 :has()）。 */
+          .ant-popover .ant-popover-content:has(input[placeholder^="搜索连接器"]) {
+            min-width: 260px !important;
+          }
+        `}</style>
+        <DndContext
+          collisionDetection={closestCenter}
+          modifiers={[restrictToVerticalAxis]}
+          onDragEnd={onDragEnd}
         >
-          <XProTable<ConnectorProviderInfo>
-            actionRef={actionRef}
-            formRef={formRef}
-            rowKey="id"
-            columns={columns}
-            request={request}
-            dataSource={draggableData}
-            pagination={false}
-            showIndex={false}
-            onReset={handleReset}
-            showQueryButtons
-            tableLayout="fixed"
-            scroll={{ x: 1180 }}
-            /**
-             * 启用虚拟滚动：仅渲染可视区内的行，1256 条也无压力。
-             * drag-sort 仍可用：SortableContext 按 ID 追踪，虚拟 row mount/unmount 不影响。
-             * XProTable 的 virtual 只接受 boolean，行高通过 Table 的 size="small" 收敛。
-             */
-            virtual
-            rowSelection={{
-              selectedRowKeys,
-              onChange: (keys) => setSelectedRowKeys(keys),
-              preserveSelectedRowKeys: true,
-              columnWidth: 50,
-            }}
-            /**
-             * 隐藏 ProTable 默认的"已选择 X 项"提示条。
-             * 传 () => null 让整条 alert 区域不渲染，避免和工具栏操作混淆。
-             */
-            tableAlertRender={() => null}
-            components={{
-              body: { row: Row },
-            }}
-            postData={(data: ConnectorProviderInfo[]) => {
-              // 拖拽过程中不要用 request 的响应覆盖乐观排序结果
-              if (!isDraggingRef.current) {
-                setDraggableData(data || []);
-              }
-              return data;
-            }}
-          />
-        </SortableContext>
-      </DndContext>
+          <SortableContext
+            items={draggableData.map((item) => String(item.id))}
+            strategy={verticalListSortingStrategy}
+          >
+            <XProTable<ConnectorProviderInfo>
+              actionRef={actionRef}
+              formRef={formRef}
+              rowKey="id"
+              columns={columns}
+              request={request}
+              dataSource={draggableData}
+              pagination={false}
+              showIndex={false}
+              onReset={handleReset}
+              showQueryButtons
+              /**
+               * size="large" 把行高拉到 ~64px，容纳"显示名 + tags 副标题"两行布局不被裁剪。
+               * 列宽总和 ≈ 1014（不含勾选列 50），无横向滚动。
+               */
+              size="large"
+              tableLayout="fixed"
+              scroll={{ x: 1064 }}
+              /**
+               * 启用虚拟滚动：仅渲染可视区内的行，1256 条也无压力。
+               * drag-sort 仍可用：SortableContext 按 ID 追踪，虚拟 row mount/unmount 不影响。
+               */
+              virtual
+              rowSelection={{
+                selectedRowKeys,
+                onChange: (keys) => setSelectedRowKeys(keys),
+                preserveSelectedRowKeys: true,
+                columnWidth: 50,
+              }}
+              /**
+               * 隐藏 ProTable 默认的"已选择 X 项"提示条。
+               * 传 () => null 让整条 alert 区域不渲染，避免和工具栏操作混淆。
+               */
+              tableAlertRender={() => null}
+              components={{
+                body: { row: Row },
+              }}
+              postData={(data: ConnectorProviderInfo[]) => {
+                // 拖拽过程中不要用 request 的响应覆盖乐观排序结果
+                if (!isDraggingRef.current) {
+                  setDraggableData(data || []);
+                }
+                return data;
+              }}
+            />
+          </SortableContext>
+        </DndContext>
+      </div>
     </WorkspaceLayout>
   );
 };
