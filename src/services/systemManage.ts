@@ -14,6 +14,7 @@ import type {
   ConnectorProviderInfo,
   ConnectorProviderListParams,
   ConversationStatsResult,
+  ExportConnectorProvidersParams,
   ModelConfigDto,
   NotifyMessageSendParams,
   PayConfigResult,
@@ -194,6 +195,25 @@ export async function apiSystemConnectorProviderToggleStatus(
   return request(`/api/system/connector/providers/${service}`, {
     method: 'PUT',
     params: { enabled },
+  });
+}
+
+/**
+ * 导出连接器提供方（POST /api/system/connector/providers/export）
+ * - 不传 services：导出全部
+ * - 传 services：导出所选/单行
+ *
+ * 返回原始响应（含 blob data + headers），由调用方处理文件名解析与下载触发。
+ */
+export async function apiSystemConnectorProviderExport(
+  data?: ExportConnectorProvidersParams,
+): Promise<any> {
+  return request('/api/system/connector/providers/export', {
+    method: 'POST',
+    data,
+    responseType: 'blob',
+    getResponse: true,
+    skipErrorHandler: true,
   });
 }
 

@@ -1089,3 +1089,13 @@ export interface ToggleConnectorProviderStatusParams {
   /** true=启用，false=停用 */
   enabled: boolean;
 }
+
+/**
+ * 导出连接器提供方（POST /api/system/connector/providers/export）
+ * - 不传 services：导出全部
+ * - 传 services 数组：导出所选/单行
+ */
+export interface ExportConnectorProvidersParams {
+  /** 指定要导出的 service 列表；不传或空数组 = 导出全部 */
+  services?: string[];
+}

@@ -4,11 +4,13 @@ import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
 import { dict } from '@/services/i18nRuntime';
 import {
+  apiSystemConnectorProviderExport,
   apiSystemConnectorProviderList,
   apiSystemConnectorProviderOrder,
   apiSystemConnectorProviderToggleStatus,
 } from '@/services/systemManage';
 import { ConnectorProviderInfo } from '@/types/interfaces/systemManage';
+import { DownloadOutlined } from '@ant-design/icons';
 import type {
   ActionType,
   FormInstance,
@@ -22,7 +24,7 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { message, Space, Spin, Tag } from 'antd';
+import { Button, message, Space, Spin, Tag } from 'antd';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation } from 'umi';
 
@@ -81,6 +83,146 @@ const ConnectorManage: React.FC = () => {
    * 筛选态下禁用拖拽排序：排序值是全局的，对过滤后的子集重排会让全量顺序错乱。
    */
   const [filtered, setFiltered] = useState<boolean>(false);
+  /**
+   * 导出进行中标记：'all' / 'selected' / null
+   * 用来给对应 toolbar 按钮加 loading 态，并避免重复点击。
+   */
+  const [exporting, setExporting] = useState<'all' | 'selected' | null>(null);
+
+  /**
+   * 检查导出数据是否为空（数组看长度、对象看 key 数、字符串看 trim 后长度）。
+   */
+  const isExportDataEmpty = (data: unknown): boolean => {
+    if (data === null || data === undefined) return true;
+    if (Array.isArray(data)) return data.length === 0;
+    if (typeof data === 'object')
+      return Object.keys(data as object).length === 0;
+    if (typeof data === 'string') return data.trim() === '';
+    return false;
+  };
+
+  /**
+   * 触发浏览器下载：将服务端返回的 JSON 中 data 字段导出为 .json 文件。
+   * 约定：本导出接口始终返回 JSON 格式（RequestResponse 包装），data 字段即导出内容。
+   */
+  const triggerJsonDownload = async (
+    response: any,
+    filename: string,
+  ): Promise<boolean> => {
+    let json: any;
+    try {
+      const text = await (response?.data as Blob).text();
+      json = JSON.parse(text);
+    } catch {
+      message.error('导出失败：响应不是有效的 JSON');
+      return false;
+    }
+
+    // 业务错误码：RequestResponse 模式 code !== '0000' 即失败
+    if (json && typeof json === 'object' && 'code' in json) {
+      if (json.code !== '0000') {
+        message.error(json.message || '导出失败');
+        return false;
+      }
+    }
+
+    // 提取 data 字段；若无 data 字段则使用整个响应体
+    const exportData = json && 'data' in json ? json.data : json;
+    if (isExportDataEmpty(exportData)) {
+      message.warning('导出数据为空');
+      return false;
+    }
+
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+      type: 'application/json;charset=utf-8',
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    return true;
+  };
+
+  /** 核心导出逻辑：调 POST /api/system/connector/providers/export，处理下载 */
+  const handleExportCore = useCallback(
+    async (
+      services: string[] | undefined,
+      mode: 'all' | 'selected',
+      displayName?: string,
+    ): Promise<boolean> => {
+      if (exporting) return false;
+      setExporting(mode);
+      try {
+        const response = await apiSystemConnectorProviderExport(
+          services ? { services } : undefined,
+        );
+        // 文件名按场景生成：
+        // - 单条导出：用该连接器的 displayName
+        // - 多条选中：用条数
+        // - 全部导出：固定名称
+        let filename: string;
+        if (mode === 'all') {
+          filename = 'connector-export-all.json';
+        } else if (displayName) {
+          const safe = displayName.replace(/[\\/:*?"<>|]/g, '_');
+          filename = `${safe}.connector.json`;
+        } else {
+          filename = `connector-export-${services?.length ?? 0}.json`;
+        }
+        const ok = await triggerJsonDownload(response, filename);
+        if (ok) {
+          message.success(
+            mode === 'all' ? '已导出全部连接器' : '已导出所选连接器',
+          );
+        }
+        return ok;
+      } catch (err: any) {
+        message.error(err?.message || '导出失败');
+        return false;
+      } finally {
+        setExporting(null);
+      }
+    },
+    [exporting],
+  );
+
+  /** 导出全部：不传参 */
+  const handleExportAll = useCallback(() => {
+    return handleExportCore(undefined, 'all');
+  }, [handleExportCore]);
+
+  /** 导出所选：根据 selectedRowKeys 映射出 service 列表；勾选为空时给出提示 */
+  const handleExportSelected = useCallback(() => {
+    if (selectedRowKeys.length === 0) {
+      message.warning('请先勾选要导出的连接器');
+      return Promise.resolve(false);
+    }
+    const services = draggableData
+      .filter((item) => selectedRowKeys.includes(item.id))
+      .map((item) => item.service)
+      .filter(Boolean);
+    if (services.length === 0) {
+      message.warning('所选行缺少 service 字段，无法导出');
+      return Promise.resolve(false);
+    }
+    return handleExportCore(services, 'selected');
+  }, [selectedRowKeys, draggableData, handleExportCore]);
+
+  /** 单行导出：操作列的"导出"按钮调用 */
+  const handleExportSingle = useCallback(
+    (record: ConnectorProviderInfo) => {
+      if (!record.service) {
+        message.error('连接器 service 缺失，无法导出');
+        return;
+      }
+      handleExportCore([record.service], 'selected', record.displayName);
+    },
+    [handleExportCore],
+  );
 
   /** 根据当前表单值更新筛选态（任一筛选条件非空即视为筛选态） */
   const updateFilteredFromForm = useCallback(() => {
@@ -164,7 +306,7 @@ const ConnectorManage: React.FC = () => {
         <Space size={12} className="connector-row-actions">
           <a onClick={() => message.info('查看功能开发中')}>查看</a>
           <a onClick={() => message.info('编辑功能开发中')}>编辑</a>
-          <a onClick={() => message.info('导出功能开发中')}>导出</a>
+          <a onClick={() => handleExportSingle(record)}>导出</a>
           {toggling ? (
             <span
               style={{
@@ -188,7 +330,7 @@ const ConnectorManage: React.FC = () => {
         </Space>
       );
     },
-    [handleToggleStatus, togglingServices],
+    [handleToggleStatus, togglingServices, handleExportSingle],
   );
 
   /** 拖拽结束：乐观更新 + 持久化 + 失败回滚 */
@@ -397,7 +539,31 @@ const ConnectorManage: React.FC = () => {
   };
 
   return (
-    <WorkspaceLayout title="连接器管理" hideScroll>
+    <WorkspaceLayout
+      title="连接器管理"
+      hideScroll
+      rightSlot={
+        <Space size={12}>
+          <Button
+            icon={<DownloadOutlined />}
+            loading={exporting === 'selected'}
+            disabled={exporting === 'all'}
+            onClick={handleExportSelected}
+          >
+            导出所选
+          </Button>
+          <Button
+            type="primary"
+            icon={<DownloadOutlined />}
+            loading={exporting === 'all'}
+            disabled={exporting === 'selected'}
+            onClick={handleExportAll}
+          >
+            导出全部
+          </Button>
+        </Space>
+      }
+    >
       <div className="connector-manage-page">
         <style>{`
           /* 勾选列表头与列表左对齐：覆盖 XProTable 默认 24px 内边距 */
