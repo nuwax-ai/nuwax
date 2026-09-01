@@ -1351,6 +1351,8 @@ export const JA_JP: SystemLangMap = {
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.archivedConversations": "アーカイブ済みの会話",
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.backToConversations": "会話リストに戻る",
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.noProjects": "プロジェクトはまだありません",
+  "PC.Layouts.DynamicMenusLayout.NewHomeSection.collapseSessions": "折りたたみ",
+  "PC.Layouts.DynamicMenusLayout.NewHomeSection.failedTask": "失敗",
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.searchAgent": "エージェントを検索",
   "PC.Layouts.DynamicMenusLayout.HomeSection.startFirstConversation": "チャット ボックスに指示を入力して、最初の会話を開始してください~",
   "PC.Layouts.DynamicMenusLayout.HomeSection.viewAll": "すべて見る",

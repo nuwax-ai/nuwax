@@ -6,14 +6,15 @@
 
 | 需求条目 | 交付状态 | 说明 |
 | --- | --- | --- |
-| 每个智能体都有最近的几个会话 | ✅ | 侧栏「最近使用」tab 按智能体分组,组内展示该智能体最近会话(最多 3 条) |
+| 每个智能体都有最近的几个会话 | ✅ | 侧栏「最近使用」tab 按智能体分组,组内展示该智能体最近会话(默认 3 条,「查看更多」展开全部) |
 | 默认不展开 | ✅ | 分组默认收起,组头仅显示头像+名称+最新会话主题+时间 |
 | 展开条件 1)有执行中的展开 | ✅ | 分组内存在 `taskStatus=EXECUTING` 会话时自动展开,组头显示「执行中(N)」徽标;全部终态后自动收起 |
 | 展开条件 2)选中的展开 | ✅ | 当前路由对应智能体(从 `/home/chat/:id/:agentId` 推导)自动展开并高亮 |
 | 展开条件 3)用户主动展开 | ✅ | 点击组头切换展开/收起;手动收起优先于执行中自动展开 |
-| 新增「项目」tab | ✅ 骨架 | tab 与空态已就绪;**项目数据接口后端未 ready**,服务层留接缝 |
+| 新增「项目」tab | ✅ mock | tab/分组折叠/子项/「+」新建/子项操作菜单均已就绪(mock 数据验证交互);**项目数据接口后端未 ready**,接入时只换数据源 |
 | 内容分类(对话任务/项目开发/AI 教育) | ✅ 结构 | 分类切换用 antd Segmented(居中/size large);**分类与 pill 全部数据驱动**,接口 ready 后只换适配层 |
 | 首页主区域调整 | ✅ 部分 | hero 副标题、底部「内容由 AI 生成」提示;composer 快捷 chips/电脑与模型下拉重构未做(依赖后端契约) |
+| 会话子条目行级交互(对照参考图) | ✅ | 执行中绿点/失败红叹号、置顶/收藏图标、悬停「⋯」+右键菜单、查看更多/收起、归档过滤 |
 
 ## 二、Feature 明细
 
@@ -31,13 +32,16 @@
   2. 用户手动展开 → 保持展开
   3. 有执行中会话 → 自动展开
   4. 智能体选中(当前会话路由)→ 自动展开
-- **展开内容**:该智能体最近 3 条会话;点击条目跳 `/home/chat/:conversationId/:agentId`
+- **展开内容**:该智能体最近 3 条会话;超过 3 条显示「查看更多 (N)」展开全部,可再点「收起」;点击条目跳 `/home/chat/:conversationId/:agentId`
 - 组头点击:有会话=切换展开;无会话=进入智能体(原行为)
-- 行为已由合同测试锁死:`tests/recentAgentItemGroup.test.tsx`(5 用例)
+- 行为已由合同测试锁死:`tests/recentAgentItemGroup.test.tsx`(8 用例)
 
-### F3 「项目」tab 骨架
+### F3 「项目」tab mock(交互验证版)
 
-- `ProjectPanel` 组件 + 「暂无项目」空态
+- `ProjectPanel` 组件:项目分组折叠(默认展开第一个)+ 「暂无项目」空态
+- 项目行:名称 + 「+」新建会话(常驻显示,mock 阶段不触发动作)+ 展开箭头
+- 项目子项:标题 + 相对时间 + 状态徽标(执行中绿点/失败红叹号)+ 悬停「⋯」菜单
+- 子项操作菜单(置顶/重命名/删除)为**本地 mock 真改**(置顶组内排前、重命名 Modal、删除 confirm),用于交互验证;**后端接口 ready 后只换数据源**,菜单动作接真实接口
 - 数据接口后端未 ready;组件已隔离,接入时只需在 `NewHomeSection` 挂数据
 
 ### F4 首页内容分类 Segmented(数据驱动)
@@ -57,15 +61,27 @@
 - 组头「最近会话」标签文案:按要求移除(含五语言词条)
 - 侧栏 tab 曾改 Segmented,后按要求恢复原自定义组件
 
+### F7 「最近使用」会话子条目行级交互(对照参考图补齐)
+
+- **状态徽标**:条目左侧——执行中绿点(呼吸动画)/ 失败红叹号;终态不显示
+- **行内操作**:复用「会话记录」tab 同款 `ConversationContextMenu`——悬停「⋯」按钮 + 右键菜单(置顶/归档/收藏/重命名/删除,走真实接口);`id` 归一 `Number()` 后匹配本地标记
+- **置顶/收藏图标**:跟随本地标记(`conversationFlags`)在条目上显示图钉/星标
+- **归档过滤**:已归档会话不在分组条目中展示(与会话记录 tab 一致)
+- **数据联动**:`conversation-deleted` → 分组本地剔除该会话;`conversation-updated` → 同步改名后的 topic
+- **「查看更多 (N)」/「收起」**:默认 3 条,展开全部/收回(复用 `PC.Components.AgentConversation.viewMore` 词条)
+- **时间位**:条目右侧预留,`conversationList` 一补 `modified` 字段自动显示(类型已扩,`formatModifiedTime` 现成)
+
 ## 三、数据链路
 
 ```
 apiUserUsedAgentList (/api/user/agent/used/list/{size})
-  └─ AgentInfo.conversationList[{id, topic, taskStatus}]
+  └─ AgentInfo.conversationList[{id, topic, taskStatus, modified?}]
        ├─ 初始展开判定: getExecutingConversationCount
        ├─ 执行态实时: eventBus UpdateConversationListTaskStatus(EXECUTING 乐观追加到对应智能体)
        ├─ 结束刷新: ChatFinished / RefreshConversationList → 静默重拉
-       └─ 会话主题同步: conversation-updated window 事件
+       ├─ 会话主题同步: conversation-updated window 事件(改名后分组条目同步)
+       ├─ 删除同步: conversation-deleted window 事件(分组条目本地剔除)
+       └─ 子条目行内操作: ConversationContextMenu(置顶/归档/收藏走 conversationFlags 本地标记)
 ```
 
 - 首页分类 pill:`apiDisplayRecommendList` → `recChatBoxNav.Agent`(按 functionType 归类)
@@ -76,18 +92,18 @@ apiUserUsedAgentList (/api/user/agent/used/list/{size})
 | 文件 | 内容 |
 | --- | --- |
 | `src/layouts/DynamicMenusLayout/NewHomeSection/index.tsx` | 三 tab、分组渲染、事件订阅 |
-| `src/layouts/DynamicMenusLayout/NewHomeSection/components/RecentAgentItem/` | 分组项(组头+折叠会话列表) |
-| `src/layouts/DynamicMenusLayout/NewHomeSection/components/ProjectPanel/` | 项目 tab 空态骨架 |
+| `src/layouts/DynamicMenusLayout/NewHomeSection/components/RecentAgentItem/` | 分组项(组头+折叠会话列表+子条目行级交互) |
+| `src/layouts/DynamicMenusLayout/NewHomeSection/components/ProjectPanel/` | 项目 tab mock(分组折叠+子项状态点+操作菜单) |
 | `src/pages/Home/components/HomeCategoryTabs/` | 内容分类 Segmented(数据驱动) |
 | `src/pages/Home/index.tsx` | 分类数据适配层、hero 副标题、foot-tip |
-| `tests/recentAgentItemGroup.test.tsx` | 分组展开合同测试(5 用例) |
+| `tests/recentAgentItemGroup.test.tsx` | 分组展开合同测试(8 用例) |
 
 ## 五、质量与验收
 
-- `npm run test:conversation`:41 文件 / 399 用例全绿(含新增 5 用例)
+- `npm run test:conversation`:41 文件 / 399 用例全绿(含分组合同 8 用例)
 - tsc 改动路径零新增错误
 - ego-lite 实测通过:三 tab 渲染、组头点击展开/收起(不跳转)、会话条目跳转、选中自动展开+高亮、项目 tab 空态、分类 Segmented 选中/切换
-- 待产品走查:视觉细节与原型对齐度
+- 待产品走查:子条目行级交互(状态徽标/「⋯」菜单/查看更多)与项目 mock 交互的视觉与操作走查
 
 ## 六、提交记录
 
@@ -99,9 +115,14 @@ apiUserUsedAgentList (/api/user/agent/used/list/{size})
 | `1a411c317` | 侧栏恢复原 tab 组件;分类 Segmented 居中+加大 |
 | `1373ae657` | 分类选中值首挂前确定,消除滑块滑动 |
 | `2e7288d68` | 分组展开合同测试 |
+| `9fbaf6053` | 本交付文档 |
+| `871ec3172` | 项目 tab mock(分组折叠+「+」新建) |
+| `d68cab159` | 项目行「+」常驻显示 + 新建会话语义 |
+| (本提交) | 子条目行级交互补齐:状态徽标/行内操作/查看更多/归档过滤 + 项目 mock 子项状态点与操作菜单 |
 
 ## 七、待办(依赖后端)
 
-1. **项目 tab 数据接口**(项目列表+子项),接入 `ProjectPanel`
+1. **项目 tab 数据接口**(项目列表+子项),接入 `ProjectPanel`(替换 mock 数据源,菜单动作接真实接口)
 2. **分类维度接口**:对话任务/AI 教育 分类的推荐配置(替换 `pages/Home/index.tsx` 适配层)
-3. composer 快捷 chips(PPT 制作/文档处理等)与电脑/模型下拉重构(原型有、契约未定)
+3. **conversationList 补 `modified` 字段**:子条目时间自动显示(前端已留样式位与类型字段)
+4. composer 快捷 chips(PPT 制作/文档处理等)与电脑/模型下拉重构(原型有、契约未定)

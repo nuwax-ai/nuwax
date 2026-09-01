@@ -1440,6 +1440,8 @@ export const EN_US: SystemLangMap = {
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.archivedConversations": "Archived conversations",
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.backToConversations": "Back to conversations",
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.noProjects": "No projects yet",
+  "PC.Layouts.DynamicMenusLayout.NewHomeSection.collapseSessions": "Collapse",
+  "PC.Layouts.DynamicMenusLayout.NewHomeSection.failedTask": "Failed",
   "PC.Layouts.DynamicMenusLayout.NewHomeSection.searchPlaceholder": "Search",
   "PC.Layouts.DynamicMenusLayout.HomeSection.startFirstConversation": "Enter instructions in the chat box to start your first conversation~",
   "PC.Layouts.DynamicMenusLayout.HomeSection.viewAll": "View All",

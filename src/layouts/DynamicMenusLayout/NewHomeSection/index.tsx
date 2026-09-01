@@ -127,6 +127,50 @@ const NewHomeSection: React.FC<{
   const [recentSearchKeyword, setRecentSearchKeyword] = useState(
     componentCache.recentSearchKeyword,
   );
+
+  // 右键菜单删除/重命名后,同步「最近」分组的会话数据(全局事件来自 ConversationContextMenu)
+  useEffect(() => {
+    const removeRecentConversation = (event: Event) => {
+      const id = (event as CustomEvent<{ id: number }>).detail?.id;
+      if (id === undefined || id === null) return;
+      setRecentList((prev) =>
+        prev.map((agent) => ({
+          ...agent,
+          conversationList: agent.conversationList?.filter(
+            (conversation) => Number(conversation.id) !== Number(id),
+          ),
+        })),
+      );
+    };
+    const renameRecentConversation = (event: Event) => {
+      const detail = (event as CustomEvent<{ id: number; topic: string }>)
+        .detail;
+      if (!detail?.id) return;
+      setRecentList((prev) =>
+        prev.map((agent) => ({
+          ...agent,
+          conversationList: agent.conversationList?.map((conversation) =>
+            Number(conversation.id) === Number(detail.id)
+              ? { ...conversation, topic: detail.topic }
+              : conversation,
+          ),
+        })),
+      );
+    };
+    window.addEventListener('conversation-deleted', removeRecentConversation);
+    window.addEventListener('conversation-updated', renameRecentConversation);
+    return () => {
+      window.removeEventListener(
+        'conversation-deleted',
+        removeRecentConversation,
+      );
+      window.removeEventListener(
+        'conversation-updated',
+        renameRecentConversation,
+      );
+    };
+  }, []);
+
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const listInnerRef = useRef<HTMLDivElement>(null);
   const initializedRef = useRef(false);
@@ -874,6 +918,7 @@ const NewHomeSection: React.FC<{
                           `/home/chat/${conversationId}/${item.agentId}`,
                         );
                       }}
+                      conversationFlags={conversationFlags}
                     />
                   ))}
 

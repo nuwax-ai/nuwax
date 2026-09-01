@@ -73,7 +73,6 @@
   .child {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     gap: @marginXxs;
     margin-left: @paddingXs;
     padding: 3px @paddingXxs;
@@ -82,6 +81,34 @@
 
     &:hover {
       background-color: @colorFillQuaternary;
+
+      .child-more {
+        opacity: 1;
+      }
+    }
+
+    // 执行中绿点(呼吸闪烁,与「最近」分组子条目同款)
+    .status-dot {
+      flex-shrink: 0;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background-color: @colorSuccess;
+      animation: project-status-pulse 1.6s ease-in-out infinite;
+    }
+
+    // 失败红叹号
+    .status-failed {
+      flex-shrink: 0;
+      font-size: 11px;
+      color: @colorError;
+    }
+
+    // 置顶图钉
+    .pin-icon {
+      flex-shrink: 0;
+      font-size: 11px;
+      color: @colorPrimary;
     }
 
     .child-name {
@@ -100,5 +127,38 @@
       font-size: @fontSizeSm;
       color: @navSecondMenuAdaptiveTextTertiary;
     }
+
+    // 「⋯」操作菜单按钮:默认隐藏,hover 行时显示;触屏常显
+    .child-more {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: @fontSizeSm;
+      color: @navSecondMenuAdaptiveTextTertiary;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+
+      &:hover {
+        color: @navSecondMenuAdaptiveText;
+      }
+    }
+
+    @media (hover: none) {
+      .child-more {
+        opacity: 1;
+      }
+    }
+  }
+}
+
+@keyframes project-status-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.35;
   }
 }
