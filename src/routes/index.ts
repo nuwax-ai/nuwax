@@ -666,6 +666,11 @@ const routes = [
     layout: false,
   },
   {
+    path: '/examples/openui-showcase',
+    component: '@/examples/OpenUiShowcase',
+    layout: false,
+  },
+  {
     path: '/examples/tiptap-variable-input-test',
     component: '@/examples/TiptapVariableInputTest/index',
     layout: false,
