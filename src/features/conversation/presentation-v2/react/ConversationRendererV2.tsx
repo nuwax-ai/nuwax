@@ -26,6 +26,7 @@ import type {
   ConversationTurnPresentationV2,
 } from '../types';
 import FinalAnswerBlock from './FinalAnswerBlock';
+import UserBubbleCollapse from './UserBubbleCollapse';
 import WorkTraceDisclosure from './WorkTraceDisclosure';
 import styles from './index.less';
 
@@ -232,13 +233,16 @@ const ConversationRendererV2Inner: React.FC<ConversationRendererV2Props> = (
         <React.Fragment key={`${conversationId ?? 'unknown'}:${turn.key}`}>
           {turn.userMessage && (
             <div className={cx(styles['user-message-wrapper'])}>
-              <ChatView
-                conversationId={conversationId}
-                messageInfo={turn.userMessage}
-                roleInfo={roleInfo}
-                mode={messageBottomMode}
-                showDebug={showDebug}
-              />
+              {/* 用户气泡超限折叠（V2 专属）：内容高超 200px 默认收起可切换 */}
+              <UserBubbleCollapse>
+                <ChatView
+                  conversationId={conversationId}
+                  messageInfo={turn.userMessage}
+                  roleInfo={roleInfo}
+                  mode={messageBottomMode}
+                  showDebug={showDebug}
+                />
+              </UserBubbleCollapse>
             </div>
           )}
           {turn.assistantMessages.length > 0 && (

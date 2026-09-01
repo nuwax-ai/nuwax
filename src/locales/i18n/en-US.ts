@@ -274,6 +274,8 @@ export const EN_US: SystemLangMap = {
   "PC.Components.ConversationRendererV2.answerStopped": "This turn was stopped before an answer was produced",
   "PC.Components.ConversationRendererV2.answerError": "This turn ended with an error",
   "PC.Components.ConversationRendererV2.answerEmpty": "No answer content was generated this turn",
+  "PC.Components.ConversationRendererV2.userBubbleExpand": "Show more",
+  "PC.Components.ConversationRendererV2.userBubbleCollapse": "Show less",
 
   "PC.Components.ChatView.copy": "Copy",
   "PC.Components.ChatView.guest": "Guest",

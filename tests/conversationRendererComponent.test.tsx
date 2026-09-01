@@ -623,3 +623,69 @@ describe('ConversationRendererV2 · 无障碍（验收返工 P2）', () => {
     expect(disclosure?.getAttribute('aria-hidden')).toBe('true');
   });
 });
+
+describe('ConversationRendererV2 · 用户气泡超限折叠', () => {
+  const stubScrollHeight = (value: number) => {
+    Object.defineProperty(HTMLElement.prototype, 'scrollHeight', {
+      configurable: true,
+      get() {
+        return value;
+      },
+    });
+    return () =>
+      Object.defineProperty(HTMLElement.prototype, 'scrollHeight', {
+        configurable: true,
+        get() {
+          return 0;
+        },
+      });
+  };
+
+  it('内容高超 200px：默认收起（clamped），点击展开/收起切换', async () => {
+    const restore = stubScrollHeight(600);
+    const user = userEvent.setup();
+    renderV2([
+      msg({
+        id: 'u1',
+        role: AssistantRoleEnum.USER,
+        text: '很长很长的用户输入'.repeat(60),
+      }),
+      msg({ id: 'a1', role: AssistantRoleEnum.ASSISTANT, text: '回答' }),
+    ]);
+    const content = screen.getByTestId('v2-user-bubble-content');
+    const toggle = screen.getByTestId('v2-user-bubble-toggle');
+    expect(content.getAttribute('data-collapsed')).toBe('true');
+    expect(content.style.maxHeight).toBe('200px');
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(toggle).toHaveTextContent(
+      'PC.Components.ConversationRendererV2.userBubbleExpand',
+    );
+
+    await user.click(toggle);
+    expect(content.getAttribute('data-collapsed')).toBeNull();
+    expect(content.style.maxHeight).toBe('');
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    expect(toggle).toHaveTextContent(
+      'PC.Components.ConversationRendererV2.userBubbleCollapse',
+    );
+
+    await user.click(toggle);
+    expect(content.getAttribute('data-collapsed')).toBe('true');
+    restore();
+  });
+
+  it('内容未超限：不出现折叠与切换入口', () => {
+    const restore = stubScrollHeight(120);
+    renderV2([
+      msg({ id: 'u1', role: AssistantRoleEnum.USER, text: '短输入' }),
+      msg({ id: 'a1', role: AssistantRoleEnum.ASSISTANT, text: '回答' }),
+    ]);
+    expect(screen.queryByTestId('v2-user-bubble-toggle')).toBeNull();
+    expect(
+      screen
+        .getByTestId('v2-user-bubble-content')
+        .getAttribute('data-collapsed'),
+    ).toBeNull();
+    restore();
+  });
+});

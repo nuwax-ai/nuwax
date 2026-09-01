@@ -255,6 +255,29 @@
   width: 100%;
 }
 
+// ---- 用户输入气泡折叠：内容超限（默认 200px，阈值常量在 UserBubbleCollapse）默认收起 ----
+.user-bubble-collapse {
+  position: relative;
+  width: 100%;
+}
+
+.user-bubble-toggle {
+  appearance: none;
+  border: none;
+  background: transparent;
+  padding: 4px 6px;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--v2-color-text-tertiary, rgba(5, 5, 5, 45%));
+  cursor: pointer;
+  text-align: left;
+  border-radius: 6px;
+
+  &:hover {
+    color: var(--v2-color-text-secondary, rgba(5, 5, 5, 65%));
+  }
+}
+
 // 回退 V1 时的容器（与 ChatContentArea V1 分支同构）
 .fallback-list {
   width: 100%;
