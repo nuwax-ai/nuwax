@@ -6,6 +6,7 @@ import { dict } from '@/services/i18nRuntime';
 import {
   apiSystemConnectorProviderList,
   apiSystemConnectorProviderOrder,
+  apiSystemConnectorProviderToggleStatus,
 } from '@/services/systemManage';
 import { ConnectorProviderInfo } from '@/types/interfaces/systemManage';
 import type {
@@ -21,7 +22,7 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { message, Space, Tag } from 'antd';
+import { message, Space, Spin, Tag } from 'antd';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation } from 'umi';
 
@@ -55,7 +56,7 @@ const AUTH_TYPE_LABEL_MAP: Record<string, string> = {
 const STATUS_OPTIONS: Array<{ label: string; value: string }> = [
   { label: '全部', value: '' },
   { label: '启用', value: 'enabled' },
-  { label: '禁用', value: 'disabled' },
+  { label: '停用', value: 'disabled' },
 ];
 
 const ConnectorManage: React.FC = () => {
@@ -68,6 +69,13 @@ const ConnectorManage: React.FC = () => {
   const isDraggingRef = useRef<boolean>(false);
   const originalDataRef = useRef<ConnectorProviderInfo[] | null>(null);
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
+  /**
+   * 正在切换状态的 service 集合（用于给按钮加 loading 态，防止重复点击）
+   * 用 service 作为 key 而非 id —— 接口按 service 寻址。
+   */
+  const [togglingServices, setTogglingServices] = useState<Set<string>>(
+    () => new Set(),
+  );
 
   /** 重置：清空表单 + 重置分页 + 重载 */
   const handleReset = useCallback(() => {
@@ -86,19 +94,84 @@ const ConnectorManage: React.FC = () => {
     }
   }, [location.state, handleReset]);
 
-  /** 操作列：4 个占位按钮（按 record.status 动态展示启用/停用） */
+  /** 启用/停用连接器：调 PUT /api/system/connector/providers/{service}?enabled={boolean} */
+  const handleToggleStatus = useCallback(
+    async (record: ConnectorProviderInfo) => {
+      const service = record.service;
+      if (!service) {
+        message.error('连接器 service 缺失，无法切换状态');
+        return;
+      }
+      // 重复点击保护：同 service 已在请求中则直接忽略
+      if (togglingServices.has(service)) {
+        return;
+      }
+      const nextEnabled = record.status !== 'enabled';
+
+      setTogglingServices((prev) => {
+        const next = new Set(prev);
+        next.add(service);
+        return next;
+      });
+
+      try {
+        const response = await apiSystemConnectorProviderToggleStatus({
+          service,
+          enabled: nextEnabled,
+        });
+        if (response?.code !== SUCCESS_CODE) {
+          throw new Error(response?.message || 'toggle failed');
+        }
+        message.success(nextEnabled ? '已启用该连接器' : '已停用该连接器');
+        // 刷新列表，让 status 字段以服务端为准
+        actionRef.current?.reload();
+      } catch (err) {
+        message.error(nextEnabled ? '启用连接器失败' : '停用连接器失败');
+      } finally {
+        setTogglingServices((prev) => {
+          const next = new Set(prev);
+          next.delete(service);
+          return next;
+        });
+      }
+    },
+    [togglingServices],
+  );
+
+  /** 操作列：4 个按钮（按 record.status 动态展示启用/停用，启用/停用调用真实接口） */
   const renderActions = useCallback(
-    (record: ConnectorProviderInfo) => (
-      <Space size={12} className="connector-row-actions">
-        <a onClick={() => message.info('查看功能开发中')}>查看</a>
-        <a onClick={() => message.info('编辑功能开发中')}>编辑</a>
-        <a onClick={() => message.info('导出功能开发中')}>导出</a>
-        <a onClick={() => message.info('状态切换功能开发中')}>
-          {record.status === 'enabled' ? '停用' : '启用'}
-        </a>
-      </Space>
-    ),
-    [],
+    (record: ConnectorProviderInfo) => {
+      const isEnabled = record.status === 'enabled';
+      const toggling = togglingServices.has(record.service);
+      return (
+        <Space size={12} className="connector-row-actions">
+          <a onClick={() => message.info('查看功能开发中')}>查看</a>
+          <a onClick={() => message.info('编辑功能开发中')}>编辑</a>
+          <a onClick={() => message.info('导出功能开发中')}>导出</a>
+          {toggling ? (
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4,
+                color: isEnabled ? '#ff4d4f' : '#1890ff',
+              }}
+            >
+              <Spin size="small" />
+              <span>{isEnabled ? '停用中…' : '启用中…'}</span>
+            </span>
+          ) : (
+            <a
+              onClick={() => handleToggleStatus(record)}
+              style={{ color: isEnabled ? '#ff4d4f' : undefined }}
+            >
+              {isEnabled ? '停用' : '启用'}
+            </a>
+          )}
+        </Space>
+      );
+    },
+    [handleToggleStatus, togglingServices],
   );
 
   /** 拖拽结束：乐观更新 + 持久化 + 失败回滚 */
@@ -219,14 +292,14 @@ const ConnectorManage: React.FC = () => {
       valueType: 'select',
       valueEnum: {
         enabled: { text: '启用', status: 'Success' },
-        disabled: { text: '禁用', status: 'Default' },
+        disabled: { text: '停用', status: 'Default' },
       },
       fieldProps: {
         options: STATUS_OPTIONS.filter((v) => v.value !== ''),
       },
       render: (_, record) => (
         <Tag color={record.status === 'enabled' ? 'green' : 'default'}>
-          {record.status === 'enabled' ? '启用' : '禁用'}
+          {record.status === 'enabled' ? '启用' : '停用'}
         </Tag>
       ),
     },

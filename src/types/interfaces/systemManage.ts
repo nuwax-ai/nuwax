@@ -1078,3 +1078,14 @@ export interface ConnectorProviderListParams {
 export interface SaveConnectorOrderParams {
   services: string[];
 }
+
+/**
+ * 启用/停用某个连接器提供方（状态：PUT /api/system/connector/providers/{service}）
+ * service 拼到 URL path 上，enabled 作为 query 参数
+ */
+export interface ToggleConnectorProviderStatusParams {
+  /** 连接器 service 标识（如 aliyun_oss、aws_s3） */
+  service: string;
+  /** true=启用，false=停用 */
+  enabled: boolean;
+}

@@ -52,6 +52,7 @@ import type {
   SystemWorkflowPage,
   TenantConfigDto,
   TenantSubscriptionConfigInfo,
+  ToggleConnectorProviderStatusParams,
   TotalStatsResult,
   UpdateSystemUserParams,
   UploadResultDto,
@@ -178,6 +179,21 @@ export async function apiSystemConnectorProviderOrder(
   return request('/api/system/connector/providers/order', {
     method: 'PUT',
     data,
+  });
+}
+
+/**
+ * 启用/停用连接器提供方
+ * 对应接口：PUT /api/system/connector/providers/{service}?enabled={boolean}
+ * service 拼到 URL path 上；enabled 作为 query 参数
+ */
+export async function apiSystemConnectorProviderToggleStatus(
+  params: ToggleConnectorProviderStatusParams,
+): Promise<RequestResponse<null>> {
+  const { service, enabled } = params;
+  return request(`/api/system/connector/providers/${service}`, {
+    method: 'PUT',
+    params: { enabled },
   });
 }
 
