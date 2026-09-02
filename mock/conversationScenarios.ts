@@ -1585,29 +1585,49 @@ export const MOCK_SCENARIOS: MockScenario[] = [
   },
   {
     id: 'TRACE_HAIRLINE',
-    label: 'hairline 工作轨迹样式',
+    label: 'hairline 工作轨迹(真实会话回放)',
     description:
-      'hairline 折叠条演示：连续工具 + 子智能体 + 两段消息 → 运行态仅「工作中 T」、终态全量指标并自动收起（?conversationRenderer=v2 查看）',
+      '真实会话(1561455「东的测试云电脑」nuwa-browser 全链路测试)数据回放:7 次工具调用 · 1 条消息 · 已工作 1 分 0 秒 → hairline 折叠条 + 终态自动收起(?conversationRenderer=v2 查看)',
     verifies:
-      '70887be28 hairline 折叠条（无卡片边框/箭头在文字右侧/运行态仅工作时长）+ ce87ce9e2 终态自动收起',
+      '70887be28 hairline 折叠条(无卡片边框/箭头在文字右侧/运行态仅工作时长)+ ce87ce9e2 终态自动收起;数据取自真实会话页渲染内容',
     events: [
-      think('先梳理目录结构，再批量检索，最后让子智能体交叉核对。'),
-      processing('列出项目目录', 'EXECUTING', 'th-ls'),
-      processing('列出项目目录', 'FINISHED', 'th-ls'),
-      processing('检索相关文档', 'EXECUTING', 'th-search'),
-      processing('检索相关文档', 'FINISHED', 'th-search'),
-      processing('子智能体交叉核对', 'EXECUTING', 'th-verify', {
-        type: 'SubAgent',
-      }),
-      processing('子智能体交叉核对', 'FINISHED', 'th-verify', {
-        type: 'SubAgent',
-      }),
-      processing('汇总输出报告', 'EXECUTING', 'th-report'),
-      processing('汇总输出报告', 'FINISHED', 'th-report'),
-      chat('资料已核对完毕，正在整理结论。'),
-      chat('全部完成，结论以最终回答为准。', true),
-      finalResult(true, '全部完成，结论以最终回答为准。'),
-    ].map((event) => ({ ...event, delayMs: event.delayMs ?? 400 })),
+      think(
+        '测试 nuwa-browser skill 全链路:连接 → 任务空间 → 开页 → 快照 → 交互 → 截图。',
+      ),
+      processing('连接桌面应用(CLI 直连)', 'EXECUTING', 'nb-connect'),
+      processing('连接桌面应用(CLI 直连)', 'FINISHED', 'nb-connect'),
+      processing('任务空间 useOrCreate', 'EXECUTING', 'nb-space'),
+      processing('任务空间 useOrCreate', 'FINISHED', 'nb-space'),
+      processing('打开网页 nuwax.com', 'EXECUTING', 'nb-open'),
+      processing('打开网页 nuwax.com', 'FINISHED', 'nb-open'),
+      processing('文本快照 page.snapshot', 'EXECUTING', 'nb-snapshot'),
+      processing('文本快照 page.snapshot', 'FINISHED', 'nb-snapshot'),
+      processing('JS 执行 page.evaluate', 'EXECUTING', 'nb-eval'),
+      processing('JS 执行 page.evaluate', 'FINISHED', 'nb-eval'),
+      processing(
+        "点击交互 page.locator('@154').click",
+        'EXECUTING',
+        'nb-click',
+      ),
+      processing("点击交互 page.locator('@154').click", 'FINISHED', 'nb-click'),
+      processing('截图 page.screenshot', 'EXECUTING', 'nb-shot'),
+      processing('截图 page.screenshot', 'FINISHED', 'nb-shot'),
+      chat(
+        "✅ nuwa-browser 测试完成,全链路正常。测试报告如下:\n\n## 测试结果总览\n\n| 测试项 | 方法 | 结果 |\n| --- | --- | --- |\n| 应用连接(IPC) | CLI 直连桌面应用 | ✅ 正常 |\n| 任务空间 | taskSpaces.useOrCreate / 跨轮复用 / complete | ✅ 创建 → 复用 → 关闭全通 |\n| 打开网页 | browser.openOrReuseTab | ✅ 加载 nuwax.com 成功 |\n| 文本快照 | page.snapshot() | ✅ 27705 字符 AX 树,带 [ref=N] 标注 |\n| 页面信息 | page.info() | ✅ 正确返回 URL / 标题 / 视口 1274x666 |\n| JS 执行 | page.evaluate() | ✅ 提取到 62 链接 / 5 按钮 / lang=zh-CN |\n| 点击交互 | page.locator('@154').click() | ✅ 点击「免费开始」成功跳转到登录页 |\n| 导航 | page.goto() 返回首页 | ✅ 正常 |\n| 截图 | page.screenshot() | ✅ 生成 PNG(实测返回文件路径字符串,而非文档暗示的对象) |",
+      ),
+      chat(
+        '\n\n## 两个实测发现(与文档略有出入)\n\n1. `page.screenshot()` 返回值是**文件路径字符串**(如 `/tmp/ego-browser-shot-5638-1.png`),不是 `{path, bytes}` 对象 —— 用的时候直接拿返回值当路径读即可。\n2. **跨轮 ref 有效**:上一轮快照里的 `@154` 在下一轮 heredoc 中仍可点击成功,比文档说的「refs 仅在下次快照前有效」更宽松(同一页面未变化时)。\n\n任务空间已按规范用 `taskSpaces.complete(2, { keep: false })` 清理干净,无残留标签页。这个 skill 可以放心用了 —— 需要抓数据、自动化操作网页、或者批量采集(ego.collect)随时说。',
+        true,
+      ),
+      finalResult(
+        true,
+        "✅ nuwa-browser 测试完成,全链路正常。测试报告如下:\n\n## 测试结果总览\n\n| 测试项 | 方法 | 结果 |\n| --- | --- | --- |\n| 应用连接(IPC) | CLI 直连桌面应用 | ✅ 正常 |\n| 任务空间 | taskSpaces.useOrCreate / 跨轮复用 / complete | ✅ 创建 → 复用 → 关闭全通 |\n| 打开网页 | browser.openOrReuseTab | ✅ 加载 nuwax.com 成功 |\n| 文本快照 | page.snapshot() | ✅ 27705 字符 AX 树,带 [ref=N] 标注 |\n| 页面信息 | page.info() | ✅ 正确返回 URL / 标题 / 视口 1274x666 |\n| JS 执行 | page.evaluate() | ✅ 提取到 62 链接 / 5 按钮 / lang=zh-CN |\n| 点击交互 | page.locator('@154').click() | ✅ 点击「免费开始」成功跳转到登录页 |\n| 导航 | page.goto() 返回首页 | ✅ 正常 |\n| 截图 | page.screenshot() | ✅ 生成 PNG(实测返回文件路径字符串,而非文档暗示的对象) |\n\n## 两个实测发现(与文档略有出入)\n\n1. `page.screenshot()` 返回值是**文件路径字符串**(如 `/tmp/ego-browser-shot-5638-1.png`),不是 `{path, bytes}` 对象 —— 用的时候直接拿返回值当路径读即可。\n2. **跨轮 ref 有效**:上一轮快照里的 `@154` 在下一轮 heredoc 中仍可点击成功,比文档说的「refs 仅在下次快照前有效」更宽松(同一页面未变化时)。\n\n任务空间已按规范用 `taskSpaces.complete(2, { keep: false })` 清理干净,无残留标签页。这个 skill 可以放心用了 —— 需要抓数据、自动化操作网页、或者批量采集(ego.collect)随时说。",
+        {
+          startTime: Date.now() - 60_000,
+          endTime: Date.now(),
+        },
+      ),
+    ].map((event) => ({ ...event, delayMs: event.delayMs ?? 700 })),
   },
 ];
 
