@@ -270,11 +270,12 @@ describe('ConversationRendererV2 · 三层结构', () => {
     expect(text).toContain('traceMetricElapsed');
   });
 
-  it('detailed 终态默认展开且已完成 reasoning 节点详情自动展开', () => {
+  it('detailed 终态默认收起，展开后已完成 reasoning 节点详情自动展开', () => {
     renderV2(buildTurn(), PREFS('detailed'));
     expect(
       screen.getByTestId('v2-trace-toggle').getAttribute('aria-expanded'),
-    ).toBe('true');
+    ).toBe('false');
+    fireEvent.click(screen.getByTestId('v2-trace-toggle'));
     // think 内容作为已完成节点默认展开（行摘要 + 详情两处可见）
     expect(
       screen.getAllByText('先想想要用哪个工具').length,
@@ -331,7 +332,12 @@ describe('ConversationRendererV2 · 两级折叠与手动状态保持', () => {
     expect(
       screen.getByTestId('v2-trace-toggle').getAttribute('aria-expanded'),
     ).toBe('false');
-    // 终态补齐（FINAL_RESULT）同样不重置
+    // 运行中重新手动展开
+    fireEvent.click(screen.getByTestId('v2-trace-toggle'));
+    expect(
+      screen.getByTestId('v2-trace-toggle').getAttribute('aria-expanded'),
+    ).toBe('true');
+    // 终态补齐（FINAL_RESULT）强制回到收起态
     const terminal = streamed.map((m) =>
       m.role === AssistantRoleEnum.ASSISTANT
         ? ({
@@ -354,15 +360,23 @@ describe('ConversationRendererV2 · 两级折叠与手动状态保持', () => {
         preferences={PREFS('balanced')}
       />,
     );
+    await waitFor(() => {
+      expect(
+        screen.getByTestId('v2-trace-toggle').getAttribute('aria-expanded'),
+      ).toBe('false');
+    });
+    // 终态自动收起后仍可由用户再次展开
+    fireEvent.click(screen.getByTestId('v2-trace-toggle'));
     expect(
       screen.getByTestId('v2-trace-toggle').getAttribute('aria-expanded'),
-    ).toBe('false');
+    ).toBe('true');
   });
 
   it('节点行为原生 button（键盘 Enter/Space 由浏览器语义保证）且点击展开受限详情', async () => {
     const user = userEvent.setup();
     renderV2(buildTurn(), PREFS('detailed'));
-    // detailed 下外层已展开；工具节点三档恒为摘要行
+    // detailed 终态外层默认收起，先展开；工具节点三档恒为摘要行
+    fireEvent.click(screen.getByTestId('v2-trace-toggle'));
     const toolRow = document.querySelector('[data-node-id="e1"] button');
     expect(toolRow).not.toBeNull();
     // 原生 button：Enter/Space 激活由浏览器保证，无需自定义键盘处理
@@ -664,6 +678,7 @@ describe('ConversationRendererV2 · 回答与异常', () => {
 describe('ConversationRendererV2 · 无障碍（验收返工 P2）', () => {
   it('节点行装饰图标对读屏隐藏（aria-hidden），按钮名称只含标题与摘要', () => {
     renderV2(buildTurn(), PREFS('detailed'));
+    fireEvent.click(screen.getByTestId('v2-trace-toggle'));
     const toolRow = document.querySelector('[data-node-id="e1"] button')!;
     const icons = toolRow.querySelectorAll('[aria-hidden="true"]');
     expect(icons.length).toBeGreaterThanOrEqual(1);
@@ -685,6 +700,7 @@ describe('ConversationRendererV2 · 无障碍（验收返工 P2）', () => {
 
   it('可展开节点有独立 disclosure 箭头并跟随状态旋转', () => {
     renderV2(buildTurn(), PREFS('detailed'));
+    fireEvent.click(screen.getByTestId('v2-trace-toggle'));
     const toolRow = document.querySelector('[data-node-id="e1"] button')!;
     const disclosure = toolRow.querySelector(
       '[data-testid="v2-node-disclosure"]',

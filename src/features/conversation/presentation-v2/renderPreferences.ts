@@ -126,13 +126,13 @@ export function splitNodesByVisibility(
 }
 
 /**
- * 外层轨迹默认展开态：运行轮恒展开；终态 focused/balanced 收起、detailed 展开。
+ * 外层轨迹默认展开态：运行轮恒展开；终态统一收起。
  * 用户手动操作后由渲染层固定，本函数只提供「未手动干预时」的默认值。
  */
 export function defaultTraceExpanded(
   turn: Pick<ConversationTurnPresentationV2, 'running'>,
   preset: ConversationRendererPreset,
 ): boolean {
-  if (turn.running) return true;
-  return preset === 'detailed';
+  void preset;
+  return turn.running;
 }

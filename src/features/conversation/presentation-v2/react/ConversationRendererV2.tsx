@@ -101,6 +101,10 @@ const TurnBlock: React.FC<{
   const [manualExpanded, setManualExpanded] = useState<boolean | undefined>(
     undefined,
   );
+  // 流式结束时回到终态默认值（收起）；结束后用户仍可再次手动展开。
+  useEffect(() => {
+    if (!turn.running) setManualExpanded(undefined);
+  }, [turn.running]);
   // 状态栏参考最后一条 ASSISTANT 消息（assistantMessages 含 SYSTEM/FUNCTION）
   const lastAssistant = [...turn.assistantMessages]
     .reverse()

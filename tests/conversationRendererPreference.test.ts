@@ -136,11 +136,11 @@ describe('renderPreferences', () => {
     expect(hiddenCount).toBe(2);
   });
 
-  it('外层轨迹默认态：运行轮展开；终态 focused/balanced 收起、detailed 展开', () => {
+  it('外层轨迹默认态：运行轮展开；终态所有预设均收起', () => {
     expect(defaultTraceExpanded({ running: true }, 'focused')).toBe(true);
     expect(defaultTraceExpanded({ running: false }, 'focused')).toBe(false);
     expect(defaultTraceExpanded({ running: false }, 'balanced')).toBe(false);
-    expect(defaultTraceExpanded({ running: false }, 'detailed')).toBe(true);
+    expect(defaultTraceExpanded({ running: false }, 'detailed')).toBe(false);
   });
 });
 
