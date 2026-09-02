@@ -125,6 +125,21 @@ export function useConversationTerminalFinalizer(
         taskStatus === TaskStatus.FAILED
           ? ProcessingEnum.FAILED
           : ProcessingEnum.FINISHED;
+      const settleFailedResponseStatus = <
+        T extends { responseStatus?: string },
+      >(
+        interaction: T,
+      ): T => {
+        if (
+          taskStatus !== TaskStatus.FAILED ||
+          (interaction.responseStatus !== undefined &&
+            interaction.responseStatus !== 'pending' &&
+            interaction.responseStatus !== 'submitting')
+        ) {
+          return interaction;
+        }
+        return { ...interaction, responseStatus: 'failed' };
+      };
 
       setMessageList((prev) => {
         if (!prev?.length) {
@@ -154,7 +169,20 @@ export function useConversationTerminalFinalizer(
               )
             : message.processingList;
           const processingChanged = processingList !== message.processingList;
-          if (!incomplete && !processingChanged) {
+          const mcpAskInteractions = message.mcpAskInteractions?.map(
+            settleFailedResponseStatus,
+          );
+          const acpPermissionInteractions =
+            message.acpPermissionInteractions?.map(settleFailedResponseStatus);
+          const interventionChanged =
+            mcpAskInteractions?.some(
+              (item, index) => item !== message.mcpAskInteractions?.[index],
+            ) ||
+            acpPermissionInteractions?.some(
+              (item, index) =>
+                item !== message.acpPermissionInteractions?.[index],
+            );
+          if (!incomplete && !processingChanged && !interventionChanged) {
             continue;
           }
           next[i] = {
@@ -162,6 +190,8 @@ export function useConversationTerminalFinalizer(
             thinkingFinished: isTail ? true : message.thinkingFinished,
             status: incomplete ? messageTerminalStatus : message.status,
             processingList,
+            mcpAskInteractions,
+            acpPermissionInteractions,
           };
           changed = true;
         }

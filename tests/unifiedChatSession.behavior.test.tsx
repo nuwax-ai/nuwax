@@ -265,6 +265,19 @@ describe('UnifiedChatSession 行为', () => {
     expect(screen.queryByTestId('queue-panel')).toBeNull();
   });
 
+  it('FAILED 会话忽略历史残留 pending intervention，恢复输入框', () => {
+    mockUseActiveInterventionQueue.mockReturnValue([
+      { kind: 'mcp_ask', sortKey: 1 } as any,
+    ]);
+    render(
+      <UnifiedChatSession
+        messageList={[{ id: 'm1', text: 'failed' } as MessageInfo]}
+        conversationInfo={{ taskStatus: TaskStatus.FAILED } as any}
+      />,
+    );
+    expect(screen.getByTestId('whole-disabled')).toHaveTextContent('false');
+  });
+
   it('点击发送：resumeAutoConsume + trySend', async () => {
     render(
       <UnifiedChatSession

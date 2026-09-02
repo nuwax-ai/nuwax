@@ -2,6 +2,7 @@
  * 会话流式/执行态判定 helper 测试
  */
 import {
+  isSessionStreamBusy as isRuntimeSessionStreamBusy,
   isTaskExecuting,
   selectQueueGate,
   selectSessionActive,
@@ -90,6 +91,17 @@ describe('conversation runtime selectors', () => {
     expect(
       selectSessionActive(false, completeMessages, TaskStatus.EXECUTING),
     ).toBe(true);
+  });
+
+  it('历史 processing EXECUTING 不驱动输入框 busy', () => {
+    expect(
+      isRuntimeSessionStreamBusy([
+        {
+          status: MessageStatusEnum.Complete,
+          processingList: [{ status: ProcessingEnum.EXECUTING }],
+        } as any,
+      ]),
+    ).toBe(false);
   });
 
   it('队列门禁：任务/流阻塞入队，Intervention 只额外阻塞消费', () => {

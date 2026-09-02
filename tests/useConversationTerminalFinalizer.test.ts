@@ -194,6 +194,43 @@ describe('useConversationTerminalFinalizer', () => {
       expect(tail.status).toBe(MessageStatusEnum.Error);
       expect(tail.processingList?.[0].status).toBe(ProcessingEnum.FAILED);
     });
+
+    it('FAILED → 当前轮 pending Ask/ACP 干预置 failed，恢复输入框', () => {
+      const messages: MessageInfo[] = [
+        { role: 'USER', id: 'u1', text: '问' } as MessageInfo,
+        {
+          role: 'ASSISTANT',
+          id: 'a1',
+          status: MessageStatusEnum.Complete,
+          mcpAskInteractions: [{ responseStatus: 'pending' } as never],
+          acpPermissionInteractions: [
+            { responseStatus: 'submitting' } as never,
+          ],
+        } as MessageInfo,
+      ];
+      const opts = createMockOptions();
+      let updatedList: MessageInfo[] = [];
+      opts.setMessageList = vi.fn(
+        (updater: (prev: MessageInfo[]) => MessageInfo[]) => {
+          updatedList = updater(messages);
+        },
+      );
+
+      const { result } = renderHook(() =>
+        useConversationTerminalFinalizer(opts),
+      );
+
+      act(() => {
+        result.current.finalizeConversationTerminal(123, TaskStatus.FAILED);
+      });
+
+      expect(updatedList[1].mcpAskInteractions?.[0].responseStatus).toBe(
+        'failed',
+      );
+      expect(updatedList[1].acpPermissionInteractions?.[0].responseStatus).toBe(
+        'failed',
+      );
+    });
   });
 
   describe('finalizeChatTerminalEvent', () => {

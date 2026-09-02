@@ -548,27 +548,27 @@ describe('conversationInfo model', () => {
     expect(mockSyncTerminalConversationTaskStatus).not.toHaveBeenCalled();
   });
 
-  it('SSE FINAL_RESULT 未提供明确失败终态时，onClose 保留兜底查询', async () => {
+  it('SSE FINAL_RESULT success=false 立即落 FAILED，onClose 不再依赖兜底查询', async () => {
     const { result } = renderHook(() => useConversationInfo());
-    await sendAndGetAssistantId(result);
+    const assistantId = await sendAndGetAssistantId(result);
 
     await act(async () => {
       sseHandlers.onMessage?.({
-        requestId: 'req-final-unknown',
+        requestId: 'req-final-failed',
         eventType: ConversationEventTypeEnum.FINAL_RESULT,
         data: {
           success: false,
-          outputText: 'unknown failure',
+          outputText: 'failed',
         },
       } as ConversationChatResponse);
       await sseHandlers.onClose?.();
     });
 
-    expect(mockSyncTerminalConversationTaskStatus).toHaveBeenCalledTimes(1);
-    expect(mockSyncTerminalConversationTaskStatus).toHaveBeenCalledWith(
-      1001,
-      expect.any(Function),
-    );
+    expect(mockSyncTerminalConversationTaskStatus).not.toHaveBeenCalled();
+    expect(result.current.isConversationActive).toBe(false);
+    expect(
+      result.current.messageList.some((item) => item.id === assistantId),
+    ).toBe(true);
   });
 
   it('SSE onClose：终态查询未返回时也立即释放本地活跃态', async () => {
@@ -948,7 +948,7 @@ describe('conversationInfo model', () => {
       expect(result.current.isConversationActive).toBe(true);
     });
 
-    it('「解析不出终态」的 FINAL_RESULT 不 ack：旧任务仍在执行时不误封上升沿', async () => {
+    it('「正在执行任务」冲突型 FINAL_RESULT 不 ack：旧任务仍在执行时不误封上升沿', async () => {
       const { result } = renderHook(() => useConversationInfo());
       await sendAndGetAssistantId(result);
 
@@ -956,6 +956,7 @@ describe('conversationInfo model', () => {
         sseHandlers.onMessage?.({
           requestId: 'req-ack-4',
           eventType: ConversationEventTypeEnum.FINAL_RESULT,
+          error: 'Agent正在执行任务，请等待当前任务完成后再发送新请求',
           data: { success: false, outputText: 'task conflict' },
         } as ConversationChatResponse);
       });

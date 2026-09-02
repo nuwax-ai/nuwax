@@ -43,10 +43,11 @@ export function hasExecutingProcessingInRecentMessages(
 export function isSessionStreamBusy(
   messageList: MessageInfo[] | undefined | null,
 ): boolean {
-  return (
-    hasActiveStreamingInMessages(messageList) ||
-    hasExecutingProcessingInRecentMessages(messageList)
-  );
+  // processing 是工具展示状态，不是会话连接生命周期。终态包丢失时可能
+  // 长期残留 EXECUTING，若用它驱动输入框，FAILED 后仍会显示停止按钮。
+  // 与 useExecutingTaskStatusPoll 的既有架构决策保持一致：按钮只看连接、
+  // 末条 Loading/Incomplete 和会话 taskStatus。
+  return hasActiveStreamingInMessages(messageList);
 }
 
 /** model 信号与消息投影合并后的 live/sub 流式活跃态。 */
