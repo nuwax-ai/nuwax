@@ -11,9 +11,14 @@ import type {
 import type {
   AccessStatsResult,
   AddSystemUserParams,
+  ConnectorBindableItem,
+  ConnectorBindableParams,
+  ConnectorProviderDetail,
   ConnectorProviderInfo,
   ConnectorProviderListParams,
   ConversationStatsResult,
+  CreateConnectorActionParams,
+  DeleteConnectorActionParams,
   ExportConnectorProvidersParams,
   ModelConfigDto,
   NotifyMessageSendParams,
@@ -53,6 +58,7 @@ import type {
   SystemWorkflowPage,
   TenantConfigDto,
   TenantSubscriptionConfigInfo,
+  ToggleConnectorActionStatusParams,
   ToggleConnectorProviderStatusParams,
   TotalStatsResult,
   UpdateSystemUserParams,
@@ -199,6 +205,60 @@ export async function apiSystemConnectorProviderToggleStatus(
 }
 
 /**
+ * 启用/停用连接器下的工具/动作
+ * 对应接口：PUT /api/system/connector/actions/{id}/status?enabled={boolean}
+ * id 拼到 URL path 上；enabled 作为 query 参数（Boolean）
+ *
+ * 用于详情抽屉工具列表中的"停用/启用"按钮：
+ * - 当前 status === 'enabled' → 调 enabled=false 把它停用
+ * - 当前 status !== 'enabled' → 调 enabled=true 把它启用
+ */
+export async function apiSystemConnectorActionToggleStatus(
+  params: ToggleConnectorActionStatusParams,
+): Promise<RequestResponse<null>> {
+  const { id, enabled } = params;
+  return request(`/api/system/connector/actions/${id}/status`, {
+    method: 'PUT',
+    params: { enabled },
+  });
+}
+
+/**
+ * 删除连接器下的工具/动作
+ * 对应接口：DELETE /api/system/connector/actions/{id}
+ * id 拼到 URL path 上；无 body
+ *
+ * 用于详情抽屉工具列表中的"删除"按钮（删除前会在 UI 层弹二次确认）。
+ */
+export async function apiSystemConnectorActionDelete(
+  params: DeleteConnectorActionParams,
+): Promise<RequestResponse<null>> {
+  const { id } = params;
+  return request(`/api/system/connector/actions/${id}`, {
+    method: 'DELETE',
+  });
+}
+
+/**
+ * 新增连接器下的工具/动作
+ * 对应接口：POST /api/system/connector/providers/{service}/actions
+ * service 拼到 URL path 上；工具定义（actionKey / inputArgs / httpSpec 等）作为 body 提交
+ *
+ * 用于详情抽屉工具栏的「+ 添加工具」弹窗：
+ * 创建成功后由调用方刷新工具列表与连接器列表
+ * （GET /api/system/connector/providers）。
+ */
+export async function apiSystemConnectorActionCreate(
+  params: CreateConnectorActionParams & { service: string },
+): Promise<RequestResponse<null>> {
+  const { service, ...data } = params;
+  return request(`/api/system/connector/providers/${service}/actions`, {
+    method: 'POST',
+    data,
+  });
+}
+
+/**
  * 导出连接器提供方（POST /api/system/connector/providers/export）
  * - 不传 services：导出全部
  * - 传 services：导出所选/单行
@@ -214,6 +274,52 @@ export async function apiSystemConnectorProviderExport(
     responseType: 'blob',
     getResponse: true,
     skipErrorHandler: true,
+  });
+}
+
+/**
+ * 获取连接器提供方详情（GET /api/connector/providers/{service}?spaceId=xxx&includeDisabled=xxx）
+ *
+ * - service 拼到 URL path 上
+ * - spaceId 作为 query 参数；不传或无效值会被后端忽略
+ * - includeDisabled 控制是否同时返回已停用的工具；默认 true（详情抽屉需要展示全部工具）
+ *
+ * 用于"查看"按钮侧滑抽屉展示该提供方的基础信息及工具列表。
+ */
+export async function apiSystemConnectorProviderDetail(params: {
+  service: string;
+  spaceId?: number | string;
+  includeDisabled?: boolean;
+}): Promise<RequestResponse<ConnectorProviderDetail>> {
+  const { service, spaceId, includeDisabled } = params;
+  return request(`/api/connector/providers/${service}`, {
+    method: 'GET',
+    params: {
+      // 只在 spaceId 是有限数时透传，避免传 undefined / NaN
+      spaceId: Number.isFinite(Number(spaceId)) ? Number(spaceId) : undefined,
+      // 默认传 true —— 详情抽屉需要展示已停用的工具（"已停用" tag + "启用" 按钮）
+      includeDisabled: includeDisabled ?? true,
+    },
+  });
+}
+
+/**
+ * 获取可绑定的插件/工作流列表（GET /api/connector/bindable?type=plugin|workflow&spaceId=xxx）
+ *
+ * 用于「新增工具」弹窗执行类型 = 绑定插件 / 绑定工作流时：
+ * 按当前空间筛选可绑定项（仅已发布）；切换空间、切换执行类型或点「刷新列表」时重新调用。
+ */
+export async function apiConnectorBindable(
+  params: ConnectorBindableParams,
+): Promise<RequestResponse<ConnectorBindableItem[]>> {
+  const { type, spaceId } = params;
+  return request('/api/connector/bindable', {
+    method: 'GET',
+    params: {
+      type,
+      // 只在 spaceId 是有限数时透传，避免传 undefined / NaN
+      spaceId: Number.isFinite(Number(spaceId)) ? Number(spaceId) : undefined,
+    },
   });
 }
 

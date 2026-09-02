@@ -1091,6 +1091,26 @@ export interface ToggleConnectorProviderStatusParams {
 }
 
 /**
+ * 启用/停用某个连接器下的工具/动作（PUT /api/system/connector/actions/{id}/status）
+ * id 拼到 URL path 上，enabled 作为 query 参数（Boolean）
+ */
+export interface ToggleConnectorActionStatusParams {
+  /** 工具/动作主键 ID（对应 ConnectorProviderAction.id） */
+  id: string | number;
+  /** true=启用，false=停用 */
+  enabled: boolean;
+}
+
+/**
+ * 删除某个连接器下的工具/动作（DELETE /api/system/connector/actions/{id}）
+ * id 拼到 URL path 上，无 body
+ */
+export interface DeleteConnectorActionParams {
+  /** 工具/动作主键 ID（对应 ConnectorProviderAction.id） */
+  id: string | number;
+}
+
+/**
  * 导出连接器提供方（POST /api/system/connector/providers/export）
  * - 不传 services：导出全部
  * - 传 services 数组：导出所选/单行
@@ -1098,4 +1118,274 @@ export interface ToggleConnectorProviderStatusParams {
 export interface ExportConnectorProvidersParams {
   /** 指定要导出的 service 列表；不传或空数组 = 导出全部 */
   services?: string[];
+}
+
+/**
+ * 连接器下的工具/动作定义
+ * 对应 GET /api/connector/providers/{service} 响应里的 actions/tools 列表元素
+ */
+export interface ConnectorProviderAction {
+  /**
+   * 工具主键 ID
+   * 切换状态接口 PUT /api/system/connector/actions/{id}/status 要用
+   */
+  id?: string | number;
+  /** 工具唯一标识 */
+  name: string;
+  /** 显示名（与 name 重复时取 name） */
+  displayName?: string;
+  /** 标签 */
+  tags?: string[];
+  /** 工具描述 */
+  description?: string;
+  /** 调用协议（如 HTTP / FUNCTION） */
+  protocol?: string;
+  /**
+   * 工具状态（'enabled' / 'disabled'）
+   * - enabled：抽屉里不展示状态 tag，操作按钮显示"停用"
+   * - 其他（如 disabled）：展示"已停用"状态 tag，操作按钮显示"启用"
+   */
+  status?: 'enabled' | 'disabled' | string;
+  /**
+   * 工具在后端的唯一键（用于在头部右侧展示）
+   * 例如 batch_presence / create_channel 等
+   */
+  actionKey?: string;
+}
+
+/**
+ * 输入参数节点（递归嵌套），请求体 inputArgs 数组元素
+ *
+ * - dataType 取值：String / Integer / Number / Boolean / Object /
+ *   Array_File / Array_String / Array_Integer / Array_Number / Array_Boolean / Array_Object
+ * - require：勾选"必填"时才传（require: true），未勾选不传该字段
+ * - subArgs：dataType = Object / Array_Object 时的下级参数（每个又是完整节点，可任意层级嵌套；
+ *   Array_Object 的下级参数描述数组元素 object 的字段结构）
+ *
+ * 嵌套请求示例：
+ *   {
+ *     "name": "gdsf", "dataType": "Array_Object",
+ *     "subArgs": [
+ *       {
+ *         "name": "gdsf", "dataType": "Object",
+ *         "subArgs": [{ "name": "gsdf", "description": "...", "dataType": "String" }]
+ *       }
+ *     ]
+ *   }
+ */
+export interface ConnectorActionInputArg {
+  /** 参数名 */
+  name: string;
+  /** 参数说明：没填就不传该字段 */
+  description?: string;
+  /** 参数类型 */
+  dataType: string;
+  /** 必填：仅勾选时传 true，未勾选不传该字段 */
+  require?: true;
+  /** dataType = Object / Array_Object 时的下级参数（递归嵌套） */
+  subArgs?: ConnectorActionInputArg[];
+}
+
+/**
+ * BODY 字段节点（类型化，递归嵌套），httpSpec.bodyFields 数组元素
+ *
+ * 嵌套请求示例：
+ *   {
+ *     "name": "sdfdf", "type": "object",
+ *     "children": [
+ *       {
+ *         "name": "gf", "type": "array", "mapping": "dfgerg",
+ *         "item": {
+ *           "type": "object",
+ *           "children": [
+ *             { "name": "fwegef", "type": "string", "mapping": "sfdsf" },
+ *             { "name": "gsdf", "type": "array", "mapping": "gdfg", "item": { "type": "number" } }
+ *           ]
+ *         }
+ *       }
+ *     ]
+ *   }
+ */
+export interface ConnectorActionBodyField {
+  /** 字段名 */
+  name: string;
+  /** 字段类型：string / number / boolean / object / array */
+  type: string;
+  /** 映射值：输入参数名 / opt:参数名。object 的值由子字段组成，无该键；其余类型没填就不传 */
+  mapping?: string;
+  /** type = object 时的子字段（每个又是完整字段节点，可任意层级嵌套） */
+  children?: ConnectorActionBodyField[];
+  /** type = array 时的元素声明（仅声明结构，无 name / mapping） */
+  item?: ConnectorActionBodyItem;
+}
+
+/**
+ * array 字段的元素声明节点（bodyFields[].item，可递归嵌套）
+ * - 元素类型 = object：children 为元素的子字段（完整字段节点）
+ * - 元素类型 = array：item 指向下一层元素声明（多维数组逐层声明）
+ */
+export interface ConnectorActionBodyItem {
+  /** 元素类型：string / number / boolean / object / array */
+  type: string;
+  /** 元素类型 = object 时的元素子字段 */
+  children?: ConnectorActionBodyField[];
+  /** 元素类型 = array 时的下一层元素声明 */
+  item?: ConnectorActionBodyItem;
+}
+
+/** 可绑定插件/工作流查询参数：GET /api/connector/bindable?type=plugin|workflow&spaceId=xxx */
+export interface ConnectorBindableParams {
+  /** 绑定类型：plugin = 绑定插件，workflow = 绑定工作流 */
+  type: 'plugin' | 'workflow';
+  /** 空间 ID（筛选该空间下可绑定的插件/工作流） */
+  spaceId?: number | string;
+}
+
+/** bindable 返回的参数节点（inputArgs / outputArgs 数组元素，可递归嵌套） */
+export interface ConnectorBindableArg {
+  key?: string;
+  name?: string;
+  displayName?: string | null;
+  description?: string | null;
+  /** 参数类型：String / Integer / Number / Boolean / Object / Array_* */
+  dataType?: string;
+  /** 是否必填 */
+  require?: boolean;
+  /** 下级参数（嵌套结构；后端可能返回 null） */
+  subArgs?: ConnectorBindableArg[] | null;
+  children?: ConnectorBindableArg[] | null;
+}
+
+/**
+ * 可绑定插件/工作流项（GET /api/connector/bindable 返回）
+ * id + name 用作「新增工具」弹窗绑定下拉的选项（value = id，提交为 execRef）；
+ * 选中后 inputArgs 递归回填输入参数声明（只读展示），为空则展示「暂无」
+ */
+export interface ConnectorBindableItem {
+  id: number;
+  name: string;
+  description?: string;
+  icon?: string;
+  inputArgs?: ConnectorBindableArg[] | null;
+  outputArgs?: ConnectorBindableArg[] | null;
+}
+
+/**
+ * HTTP 请求声明（execType = DECLARATIVE 时填写）
+ * 请求示例：
+ *   {
+ *     "method": "POST",
+ *     "path": "/repos/{owner}/{repo}/issues",
+ *     "pathParams": { "owner": "input.owner" },
+ *     "query": {},
+ *     "bodyFields": [{ "name": "...", "type": "string", "mapping": "..." }],（嵌套时含 children / item，见 ConnectorActionBodyField）
+ *     "response": { "extract": "$" }
+ *   }
+ * 值来源写法：输入参数名（如 input.owner）· opt:参数名（可选，缺失则整个字段省略）· literal:固定值
+ */
+export interface ConnectorActionHttpSpec {
+  /** 请求方法（GET / POST / PUT / PATCH / DELETE） */
+  method: string;
+  /** 请求路径模板，支持 {名称} 占位符 */
+  path: string;
+  /** 路径占位符映射：{ 占位符名: 值来源 }，如 { owner: 'input.owner' } */
+  pathParams?: Record<string, string>;
+  /** QUERY 参数映射：{ 参数名: 值来源 } */
+  query?: Record<string, string>;
+  /** HEADER 映射：{ 头字段名: 值来源 } */
+  headers?: Record<string, string>;
+  /** BODY 字段（类型化·支持嵌套）数组：[{ name, type, mapping?, children?, item? }]；与 bodyRaw 二选一 */
+  bodyFields?: ConnectorActionBodyField[];
+  /** 原样请求体：填输入参数名，其值原样作为请求体发送 */
+  bodyRaw?: string;
+  /** 超时毫秒（缺省不传） */
+  timeoutMs?: number;
+  /** 响应提取：JSONPath；未填时不传该键（后端默认取响应整体） */
+  response?: { extract?: string };
+}
+
+/**
+ * 绑定声明（execType = PLUGIN / WORKFLOW 时 httpSpec 携带的绑定信息快照）
+ *
+ * 请求示例：
+ *   { "bindType": "PLUGIN", "bindId": "614", "name": "token价格查询_1",
+ *     "icon": null, "description": "token价格查询", "spaceId": 57 }
+ */
+export interface ConnectorActionBindSpec {
+  /** 绑定类型：PLUGIN（绑定插件）/ WORKFLOW（绑定工作流） */
+  bindType: 'PLUGIN' | 'WORKFLOW';
+  /** 绑定的插件/工作流 id（字符串化） */
+  bindId: string;
+  /** 插件/工作流名称 */
+  name: string;
+  /** 图标（接口可能返回 null / 空串，原样透传；缺省补 null） */
+  icon?: string | null;
+  /** 描述 */
+  description?: string;
+  /** 绑定时筛选的空间 ID */
+  spaceId: number | string;
+}
+
+/**
+ * 新增连接器工具/动作请求体
+ * 对应接口：POST /api/system/connector/providers/{service}/actions
+ * service 拼到 URL path 上
+ *
+ * 空值省略规则（后端契约）：
+ * - inputArgs / outputArgs：没有添加参数时不传该字段
+ * - execRef：仅 execType = PLUGIN / WORKFLOW（绑定插件/工作流）时才传
+ *   （值为选中插件/工作流的 id 字符串）
+ * - httpSpec：两种形态按 execType 二选一 ——
+ *   DECLARATIVE 传 HTTP 请求声明（其内部映射键 pathParams / query /
+ *   headers / bodyFields 没有内容时不传）；PLUGIN / WORKFLOW 传绑定
+ *   声明快照（bindType / bindId / name / icon / description / spaceId）
+ */
+export interface CreateConnectorActionParams {
+  /** 工具唯一标识（创建后不可改） */
+  actionKey: string;
+  /** 工具名称 */
+  name: string;
+  /** 工具说明（供 Agent 判断何时调用） */
+  description?: string;
+  /** 标签 */
+  tags?: string[];
+  /** 输入参数数组：[{ name, description, dataType, require? }]；没有添加参数时不传该字段 */
+  inputArgs?: ConnectorActionInputArg[];
+  /** 输出参数（当前表单不采集，不传该字段） */
+  outputArgs?: Record<string, unknown>;
+  /** 执行类型枚举：DECLARATIVE（HTTP 接口）/ PLUGIN（绑定插件）/ WORKFLOW（绑定工作流） */
+  execType: 'DECLARATIVE' | 'PLUGIN' | 'WORKFLOW';
+  /** 执行引用（仅绑定插件 / 绑定工作流时才传该字段） */
+  execRef?: string;
+  /** HTTP 请求声明（DECLARATIVE）或绑定声明快照（PLUGIN / WORKFLOW），按执行类型二选一 */
+  httpSpec?: ConnectorActionHttpSpec | ConnectorActionBindSpec;
+}
+
+/**
+ * 获取连接器提供方详情响应
+ * 对应接口：GET /api/connector/providers/{service}?spaceId=xxx
+ *
+ * 注：service 在 URL path 上；spaceId 是 query 参数
+ */
+export interface ConnectorProviderDetail {
+  /** 服务标识 */
+  service: string;
+  /** 显示名 */
+  displayName?: string;
+  /** 描述 */
+  description?: string;
+  /** 图标 URL */
+  icon?: string;
+  /** 鉴权方式（no_auth / api_key / bearer / oauth2 / custom） */
+  authType?: ConnectorAuthType;
+  /** baseUrl */
+  baseUrl?: string;
+  /** 是否开启通用代理 */
+  proxyEnabled?: boolean;
+  /** 归属（官方目录 / 管理员可编辑 等） */
+  managedBy?: string;
+  /** 标签 */
+  tags?: string[];
+  /** 该提供方下的工具列表 */
+  actions?: ConnectorProviderAction[];
 }

@@ -27,39 +27,21 @@ import {
 import { Button, message, Space, Spin, Tag } from 'antd';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation } from 'umi';
+import ConnectorProviderDetailDrawer from './ConnectorProviderDetailDrawer';
+import ConnectorProviderEditDrawer from './ConnectorProviderEditDrawer';
+import {
+  AUTH_TYPE_LABEL_MAP,
+  AUTH_TYPE_OPTIONS,
+  STATUS_OPTIONS,
+} from './constants';
 
 /**
  * 连接器管理列表页
  * 视觉与交互参考 GlobalModelManage（公共模型管理）
  * 数据源：GET /api/system/connector/providers（非分页）
  * 排序持久化：PUT /api/system/connector/providers/order
+ * 查看详情：GET /api/connector/providers/{service}?spaceId=xxx
  */
-
-/* 鉴权方式筛选选项（空串=全部） */
-const AUTH_TYPE_OPTIONS: Array<{ label: string; value: string }> = [
-  { label: '全部', value: '' },
-  { label: '免鉴权', value: 'no_auth' },
-  { label: 'Api Key', value: 'api_key' },
-  { label: 'Bearer', value: 'bearer' },
-  { label: 'Outh 2.0', value: 'oauth2' },
-  { label: '自定义', value: 'custom' },
-];
-
-/* 鉴权方式值到中文标签 */
-const AUTH_TYPE_LABEL_MAP: Record<string, string> = {
-  no_auth: '免鉴权',
-  api_key: 'Api Key',
-  bearer: 'Bearer',
-  oauth2: 'Outh 2.0',
-  custom: '自定义',
-};
-
-/* 状态筛选选项（空串=全部） */
-const STATUS_OPTIONS: Array<{ label: string; value: string }> = [
-  { label: '全部', value: '' },
-  { label: '启用', value: 'enabled' },
-  { label: '停用', value: 'disabled' },
-];
 
 const ConnectorManage: React.FC = () => {
   const actionRef = useRef<ActionType>();
@@ -88,6 +70,16 @@ const ConnectorManage: React.FC = () => {
    * 用来给对应 toolbar 按钮加 loading 态，并避免重复点击。
    */
   const [exporting, setExporting] = useState<'all' | 'selected' | null>(null);
+  /**
+   * "查看"抽屉状态：当前正在查看的连接器行（null=未打开）
+   * 抽屉内部会基于 record.service 调 GET /api/connector/providers/{service}?spaceId=xxx
+   * spaceId 直接取自 record.spaceId（即当前行所属空间），而非 URL 查询参数
+   */
+  const [detailRecord, setDetailRecord] =
+    useState<ConnectorProviderInfo | null>(null);
+  const [editRecord, setEditRecord] = useState<ConnectorProviderInfo | null>(
+    null,
+  );
 
   /**
    * 检查导出数据是否为空（数组看长度、对象看 key 数、字符串看 trim 后长度）。
@@ -304,8 +296,22 @@ const ConnectorManage: React.FC = () => {
       const toggling = togglingServices.has(record.service);
       return (
         <Space size={12} className="connector-row-actions">
-          <a onClick={() => message.info('查看功能开发中')}>查看</a>
-          <a onClick={() => message.info('编辑功能开发中')}>编辑</a>
+          <a
+            onClick={() => {
+              setEditRecord(null);
+              setDetailRecord(record);
+            }}
+          >
+            查看
+          </a>
+          <a
+            onClick={() => {
+              setDetailRecord(null);
+              setEditRecord(record);
+            }}
+          >
+            编辑
+          </a>
           <a onClick={() => handleExportSingle(record)}>导出</a>
           {toggling ? (
             <span
@@ -659,6 +665,29 @@ const ConnectorManage: React.FC = () => {
             />
           </SortableContext>
         </DndContext>
+
+        {/*
+          连接器详情抽屉（右侧滑出）
+          - open=true 时 drawer 内部按 record.service 拉详情
+          - 关闭时清空 detailRecord，避免下次打开瞬间闪现旧内容
+        */}
+        <ConnectorProviderDetailDrawer
+          open={detailRecord !== null}
+          record={detailRecord}
+          // TODO: 新接口 /api/connector/providers/{service} 不再需要 spaceId 参数，
+          // 临时写死 52 以便页面开发时有数据可联调；接口对接完成后删除该 prop。
+          spaceId={52}
+          onClose={() => setDetailRecord(null)}
+          // 抽屉里的"导出"按钮复用列表操作列里的单行导出 —— 同一份逻辑，行为完全一致
+          onExport={handleExportSingle}
+          // 新增工具成功后刷新连接器列表（GET /api/system/connector/providers）
+          onActionCreated={() => actionRef.current?.reload()}
+        />
+        <ConnectorProviderEditDrawer
+          open={editRecord !== null}
+          record={editRecord}
+          onClose={() => setEditRecord(null)}
+        />
       </div>
     </WorkspaceLayout>
   );

@@ -1,0 +1,209 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+/**
+ * 连接器提供方详情抽屉样式
+ *
+ * 视觉结构：
+ *   - 顶部：4 列 2 行网格（认证方式 / BASE URL / 通用代理 / 归属）
+ *   - 中部：工具栏（编辑连接器 / 导出 / 添加工具）
+ *   - 底部：工具列表（卡片堆叠）
+ *     - 卡片 Header：左侧 name + 状态 tag；右侧 actionKey
+ *     - 卡片 Body  ：描述
+ *     - 卡片 Footer：左侧 操作按钮；右下角 HTTP 接口 tag
+ */
+
+.drawer {
+  :global {
+    .ant-drawer-header {
+      border-bottom: 1px solid rgba(5, 5, 5, 6%);
+    }
+
+    // 防止 Drawer 打开时页面出现横向滚动条
+    .ant-drawer-mask {
+      overflow: hidden;
+    }
+
+    .ant-drawer-content-wrapper {
+      overflow: hidden;
+    }
+
+    // 关闭按钮固定在 header 右侧（antd Drawer 默认即如此，此处显式强化）
+    .ant-drawer-header .ant-drawer-close {
+      order: 2;
+      margin-inline-start: auto;
+    }
+  }
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow-y: auto;
+}
+
+/* 顶部 4 列 2 行信息网格 */
+.infoGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  row-gap: 14px;
+  column-gap: 24px;
+  padding: 20px 24px;
+  border-bottom: 1px solid @GRAY01;
+}
+
+.infoItem {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.infoLabel {
+  color: @BLANK03;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.infoValue {
+  color: @BLANK14;
+  font-size: 14px;
+  word-break: break-all;
+}
+
+/* 中部工具栏 */
+.toolbar {
+  display: flex;
+  justify-content: flex-start;
+  padding: 16px 24px;
+  border-bottom: 1px solid @GRAY01;
+}
+
+/* 底部工具列表 */
+.toolSection {
+  padding: 20px 24px 24px;
+}
+
+.toolSectionTitle {
+  margin-bottom: 12px;
+  color: @BLANK14;
+  font-size: 14px;
+  font-weight: @fontWeightStrong;
+}
+
+.toolList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* 单个工具卡片 */
+.toolCard {
+  padding: 14px 16px;
+  background-color: #fff;
+  border: 1px solid @GRAY01;
+  border-radius: 8px;
+  transition: border-color 0.2s;
+
+  &:hover {
+    border-color: @BLANK25;
+  }
+}
+
+/* Header：左侧 name + 状态 tag，右侧 actionKey */
+.toolCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.toolCardTitle {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+/* 工具名：等宽字体 + 加粗 */
+.toolName {
+  color: @BLANK14;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas,
+    monospace;
+}
+
+/* "已停用"状态 tag：低饱和度灰色，区别于普通 tags */
+.toolStatusTag {
+  margin: 0;
+  padding: 0 8px;
+  color: @BLANK03;
+  font-size: 12px;
+  line-height: 20px;
+  background-color: @GRAY01;
+  border: none;
+  border-radius: 10px;
+}
+
+/* 卡片 header 右侧 actionKey：灰色等宽字体 */
+.toolActionKey {
+  flex-shrink: 0;
+  color: @BLANK03;
+  font-size: 12px;
+  font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas,
+    monospace;
+  white-space: nowrap;
+}
+
+.toolDescription {
+  margin-top: 8px;
+  color: @BLANK03;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* 卡片 Footer：左 操作按钮，右 HTTP 接口 tag */
+.toolCardFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.toolCardActions {
+  a {
+    user-select: none;
+  }
+}
+
+/* 切换状态时的 loading 占位（与<a>按钮同高） */
+.toggleLoading {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+}
+
+/* HTTP 接口 tag：固定在卡片右下角 */
+.toolProtocol {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  color: @BLANK03;
+  font-size: 12px;
+  background-color: @GRAY01;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+/* 空态 */
+.emptyWrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
