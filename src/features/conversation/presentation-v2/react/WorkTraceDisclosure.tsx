@@ -1,7 +1,7 @@
 /**
  * 外层工作轨迹 disclosure：一条轻量横向折叠头（非厚重卡片）。
- * 头部显示「N 次工具调用 · M 条消息 · 已工作 T」；无工具以「执行过程」开头，
- * 缺失指标单独省略。运行态低对比状态点（尊重 prefers-reduced-motion）。
+ * 终态头部显示「N 次工具调用 · M 条消息 · 已工作 T」；运行态仅显示
+ * 「工作中 T」。缺失指标单独省略。
  * 展开态由父层管理：默认值随运行/终态与预设变化，用户手动操作后固定。
  */
 import { PureMarkdownRenderer } from '@/components/MarkdownRenderer';
@@ -121,7 +121,7 @@ const WorkTraceDisclosure: React.FC<WorkTraceDisclosureProps> = ({
 
   const elapsedMs = useElapsedMs(turn);
   const metricParts: string[] = [];
-  if (turn.metrics.toolCount > 0) {
+  if (!turn.running && turn.metrics.toolCount > 0) {
     metricParts.push(
       dict(
         'PC.Components.ConversationRendererV2.traceMetricTools',
@@ -129,7 +129,7 @@ const WorkTraceDisclosure: React.FC<WorkTraceDisclosureProps> = ({
       ),
     );
   }
-  if (turn.metrics.messageCount > 0) {
+  if (!turn.running && turn.metrics.messageCount > 0) {
     metricParts.push(
       dict(
         'PC.Components.ConversationRendererV2.traceMetricMessages',
@@ -137,11 +137,17 @@ const WorkTraceDisclosure: React.FC<WorkTraceDisclosureProps> = ({
       ),
     );
   }
-  const elapsedText = formatElapsed(elapsedMs);
+  // 流式刚启动、尚未收到后端时间锚点时也保持运行态文案稳定，
+  // 避免短暂闪回「执行过程」。
+  const elapsedText = formatElapsed(
+    elapsedMs ?? (turn.running ? 0 : undefined),
+  );
   if (elapsedText) {
     metricParts.push(
       dict(
-        'PC.Components.ConversationRendererV2.traceMetricElapsed',
+        turn.running
+          ? 'PC.Components.ConversationRendererV2.traceMetricRunning'
+          : 'PC.Components.ConversationRendererV2.traceMetricElapsed',
         elapsedText,
       ),
     );
@@ -182,20 +188,24 @@ const WorkTraceDisclosure: React.FC<WorkTraceDisclosureProps> = ({
         data-testid="v2-trace-toggle"
         onClick={() => onManualToggle(!expanded)}
       >
+        <span
+          className={cx(
+            styles['trace-metrics'],
+            styles['trace-metrics-leading'],
+          )}
+        >
+          {headerText}
+        </span>
         <CaretRightOutlined
-          className={cx(styles['trace-chevron'], {
-            [styles['trace-chevron-open']]: expanded,
-          })}
+          className={cx(
+            styles['trace-chevron'],
+            styles['trace-chevron-trailing'],
+            {
+              [styles['trace-chevron-open']]: expanded,
+            },
+          )}
           aria-hidden="true"
         />
-        {turn.running && (
-          <span
-            className={cx(styles['running-dot'])}
-            style={{ background: token.colorPrimary }}
-            aria-hidden="true"
-          />
-        )}
-        <span className={cx(styles['trace-metrics'])}>{headerText}</span>
       </button>
       {expanded && (
         <div id={traceBodyId} className={cx(styles['trace-body'])}>

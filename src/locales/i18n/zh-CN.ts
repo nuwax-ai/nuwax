@@ -257,6 +257,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Components.ConversationRendererV2.traceTitleProcessOnly": "执行过程",
   "PC.Components.ConversationRendererV2.traceMetricTools": "{0} 次工具调用",
   "PC.Components.ConversationRendererV2.traceMetricMessages": "{0} 条消息",
+  "PC.Components.ConversationRendererV2.traceMetricRunning": "工作中 {0}",
   "PC.Components.ConversationRendererV2.traceMetricElapsed": "已工作 {0}",
   "PC.Components.ConversationRendererV2.nodeTitleReasoning": "思考",
   "PC.Components.ConversationRendererV2.nodeTitleContext": "上下文",

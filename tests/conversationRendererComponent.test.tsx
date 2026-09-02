@@ -235,7 +235,7 @@ describe('ConversationRendererV2 · 三层结构', () => {
     expect(screen.getByTestId('v2-final-answer')).toBeVisible();
   });
 
-  it('运行轮外层默认展开并显示运行点', () => {
+  it('运行轮外层默认展开，仅显示工作时长且箭头位于文字之后', () => {
     renderV2(
       buildTurn({ status: MessageStatusEnum.Loading }),
       PREFS('focused'),
@@ -245,6 +245,29 @@ describe('ConversationRendererV2 · 三层结构', () => {
     expect(
       document.querySelector('[data-trace-running="true"]'),
     ).not.toBeNull();
+    expect(toggle.textContent).toContain('traceMetricRunning');
+    expect(toggle.textContent).not.toContain('traceMetricElapsed');
+    expect(toggle.textContent).not.toContain('traceMetricTools');
+    expect(toggle.textContent).not.toContain('traceMetricMessages');
+    expect(toggle.lastElementChild?.getAttribute('aria-hidden')).toBe('true');
+  });
+
+  it('终态保留工具、消息与工作时长全量指标', () => {
+    renderV2(
+      buildTurn({
+        finalResult: {
+          outputText: '今天晴，25 度',
+          success: true,
+          startTime: 1000,
+          endTime: 61_000,
+          componentExecuteResults: [],
+        } as unknown as MessageInfo['finalResult'],
+      }),
+    );
+    const text = screen.getByTestId('v2-trace-toggle').textContent ?? '';
+    expect(text).toContain('traceMetricTools');
+    expect(text).toContain('traceMetricMessages');
+    expect(text).toContain('traceMetricElapsed');
   });
 
   it('detailed 终态默认展开且已完成 reasoning 节点详情自动展开', () => {
