@@ -1,0 +1,27 @@
+{
+  "_说明": "把 deployGate 节合并进目标仓 .sdlc.json；re 为不区分大小写正则；mode: ask(人工批准)/block(硬禁)/allow(放行)。删掉 _开头的键即可直接使用。",
+  "deployGate": {
+    "patterns": [
+      {
+        "re": "\\bgit push\\b[^&|;]*(--force|-f)(\\s|$)",
+        "mode": "block",
+        "_说明": "改写历史，永不自动放行"
+      },
+      {
+        "re": "\\b(pnpm|npm|yarn|bun) run deploy\\b",
+        "mode": "ask",
+        "_说明": "标准发布入口"
+      },
+      { "re": "\\bkubectl (apply|delete|rollout)\\b", "mode": "ask" },
+      { "re": "\\baws s3 (cp|sync|rm)\\b", "mode": "ask" },
+      { "re": "\\bdocker push\\b", "mode": "ask" },
+      { "re": "\\bterraform (apply|destroy)\\b", "mode": "ask" },
+      { "re": "\\bnpm publish\\b", "mode": "ask" },
+      {
+        "re": "\\bpnpm (build|test)\\b",
+        "mode": "allow",
+        "_说明": "示例：在默认带中显式开洞"
+      }
+    ]
+  }
+}
