@@ -2,15 +2,18 @@ import { SUCCESS_CODE } from '@/constants/codes.constants';
 import {
   apiConnectorBindable,
   apiSystemConnectorActionCreate,
+  apiSystemConnectorActionUpdate,
 } from '@/services/systemManage';
 import { apiSpaceList } from '@/services/workspace';
 import type {
   ConnectorActionBindSpec,
   ConnectorActionBodyField,
   ConnectorActionBodyItem,
+  ConnectorActionHttpSpec,
   ConnectorActionInputArg,
   ConnectorBindableArg,
   ConnectorBindableItem,
+  ConnectorProviderAction,
   ConnectorProviderInfo,
   CreateConnectorActionParams,
 } from '@/types/interfaces/systemManage';
@@ -42,7 +45,10 @@ import styles from './index.less';
 /**
  * 新增工具弹窗
  *
- * 触发场景：连接器提供方详情抽屉 → 工具栏「+ 添加工具」
+ * 触发场景：连接器提供方详情抽屉
+ *   - 工具栏「+ 添加工具」（新增模式：表单空白，标题「新增工具」）
+ *   - 工具卡片「编辑」按钮（编辑模式：传 editAction 回填该工具定义，
+ *     标题「编辑工具」，ACTIONKEY 禁改）
  *
  * 表单结构（与设计稿一致）：
  *   1. 基础信息：ACTIONKEY / 工具名称 / 工具说明（选填）/ 标签 / 执行类型
@@ -61,7 +67,9 @@ import styles from './index.less';
  *
  * 保存流程（「保存工具」按钮）：
  *   1. form.validateFields() 校验必填项（actionKey / 工具名称 / 请求路径等）
- *   2. POST /api/system/connector/providers/{service}/actions 创建工具
+ *   2. 新增：POST /api/system/connector/providers/{service}/actions；
+ *      编辑：PUT /api/system/connector/providers/{service}/actions/{actionKey}
+ *      （两者 body 一致，编辑按 actionKey 寻址）
  *   3. 成功后关闭弹窗并触发 onCreated —— 父组件刷新抽屉内工具列表，
  *      并重新拉取连接器列表（GET /api/system/connector/providers）
  *
@@ -120,11 +128,18 @@ const ARG_TYPE_OPTIONS: Array<{ label: string; value: string }> = [
 export interface ConnectorActionCreateModalProps {
   /** 是否打开 */
   open: boolean;
-  /** 当前连接器行（提交时用 record.service 拼创建接口的 URL path） */
+  /** 当前连接器行（新增提交时用 record.service 拼创建接口的 URL path） */
   record: ConnectorProviderInfo | null;
+  /**
+   * 编辑模式：要回填的工具定义（详情接口 actions 列表项）
+   * 不传 / 传 null = 新增模式；传入时回填表单、标题变为「编辑工具」、
+   * ACTIONKEY 禁改（更新接口按 actionKey 寻址）、
+   * 保存走 PUT /api/system/connector/providers/{service}/actions/{actionKey}
+   */
+  editAction?: ConnectorProviderAction | null;
   /** 关闭回调 */
   onClose: () => void;
-  /** 创建成功回调（父组件用它刷新工具列表与连接器列表） */
+  /** 创建/编辑成功回调（父组件用它刷新工具列表与连接器列表） */
   onCreated?: () => void;
 }
 
@@ -226,6 +241,48 @@ const toBodyElementNode = (
 };
 
 /**
+ * 提交的 bodyFields 节点 → BODY 字段表单行（递归回填，编辑用）
+ * - mapping → value（object 无映射值，不回填）
+ * - children / item 仅在对应类型下回填（与序列化分支对称）
+ */
+const fromBodyFieldNode = (
+  node: ConnectorActionBodyField,
+): BodyFieldFormRow => {
+  const row: BodyFieldFormRow = {
+    name: node.name ?? '',
+    type: node.type ?? 'string',
+  };
+  if (node.type !== 'object') {
+    row.value = node.mapping ?? '';
+  }
+  if (node.type === 'object' && node.children?.length) {
+    row.children = node.children.map(fromBodyFieldNode);
+  }
+  if (node.type === 'array' && node.item) {
+    // 与 fromBodyItemNode 相互递归（元素的 object 子字段又是完整字段节点），
+    // 无法避免前置引用
+    // eslint-disable-next-line @typescript-eslint/no-use-before-define
+    row.element = fromBodyItemNode(node.item);
+  }
+  return row;
+};
+
+/** 提交的 item 元素声明节点 → 元素表单节点（递归回填，编辑用） */
+const fromBodyItemNode = (
+  item: ConnectorActionBodyItem,
+): BodyFieldElementFormNode => ({
+  type: item.type ?? 'string',
+  children:
+    item.type === 'object' && item.children?.length
+      ? item.children.map(fromBodyFieldNode)
+      : undefined,
+  element:
+    item.type === 'array' && item.item
+      ? fromBodyItemNode(item.item)
+      : undefined,
+});
+
+/**
  * 输入参数表单节点（递归结构，仅用于页面交互展示）
  * - type = Object / Array_Object：可通过「添加下级参数」加 children，
  *   子参数又是完整节点，可任意层级嵌套
@@ -291,6 +348,15 @@ const fromBindableArg = (arg: ConnectorBindableArg): InputArgFormRow => {
   };
 };
 
+/** 详情返回的输入参数节点 → 输入参数表单行（递归回填，编辑用） */
+const fromActionArg = (arg: ConnectorActionInputArg): InputArgFormRow => ({
+  name: arg.name ?? '',
+  description: arg.description ?? '',
+  type: arg.dataType ?? 'String',
+  required: arg.require === true,
+  children: arg.subArgs?.length ? arg.subArgs.map(fromActionArg) : undefined,
+});
+
 /** 新增工具表单值（form.validateFields 的返回结构） */
 interface ConnectorActionFormValues {
   actionKey: string;
@@ -314,6 +380,64 @@ interface ConnectorActionFormValues {
   /** 绑定插件/工作流：选中的插件/工作流标识（提交时作 execRef） */
   bindRef?: string;
 }
+
+/** 映射对象（{ 参数名: 值来源 }）→ 映射行数组（编辑回填用） */
+const recordToMappingRows = (
+  record?: Record<string, string>,
+): Array<{ name: string; value: string }> =>
+  Object.entries(record ?? {}).map(([name, value]) => ({
+    name,
+    value: value ?? '',
+  }));
+
+/**
+ * 详情接口返回的工具定义 → 编辑回填表单值
+ *
+ * - execType 映射回页面层语义：DECLARATIVE → HTTP，其余原样
+ * - httpSpec 按执行类型二选一解读：
+ *   DECLARATIVE → HTTP 请求声明（query / headers 对象拆成映射行、
+ *   bodyFields 递归回填、bodyRaw / timeoutMs / response.extract 原样回填）；
+ *   PLUGIN / WORKFLOW → 绑定声明快照（spaceId → 空间下拉、execRef → 绑定下拉）
+ * - inputArgs 递归回填输入参数声明（绑定类型且选中项在可绑定列表中时，
+ *   会再被回填 effect 按最新 inputArgs 覆盖为只读展示）
+ */
+const toEditFormValues = (
+  action: ConnectorProviderAction,
+): Partial<ConnectorActionFormValues> => {
+  const execType = action.execType;
+  const executionType: ConnectorActionFormValues['executionType'] =
+    execType === 'PLUGIN' || execType === 'WORKFLOW' ? execType : 'HTTP';
+  const httpSpec = (action.httpSpec ?? undefined) as
+    | ConnectorActionHttpSpec
+    | undefined;
+  const bindSpec = (action.httpSpec ?? undefined) as
+    | ConnectorActionBindSpec
+    | undefined;
+
+  const values: Partial<ConnectorActionFormValues> = {
+    actionKey: action.actionKey ?? '',
+    name: action.name ?? '',
+    description: action.description ?? '',
+    tags: (action.tags ?? []).join(', '),
+    executionType,
+    inputArgs: (action.inputArgs ?? []).map(fromActionArg),
+  };
+
+  if (executionType === 'HTTP') {
+    values.method = httpSpec?.method ?? 'GET';
+    values.path = httpSpec?.path ?? '';
+    values.timeoutMs = httpSpec?.timeoutMs;
+    values.responsePath = httpSpec?.response?.extract ?? '';
+    values.rawBodyParam = httpSpec?.bodyRaw ?? '';
+    values.queryMappings = recordToMappingRows(httpSpec?.query);
+    values.headerMappings = recordToMappingRows(httpSpec?.headers);
+    values.bodyFields = (httpSpec?.bodyFields ?? []).map(fromBodyFieldNode);
+  } else {
+    values.bindSpaceId = bindSpec?.spaceId;
+    values.bindRef = action.execRef ?? bindSpec?.bindId ?? undefined;
+  }
+  return values;
+};
 
 /**
  * 映射声明卡片
@@ -705,9 +829,12 @@ const ArgRow: React.FC<{
 const ConnectorActionCreateModal: React.FC<ConnectorActionCreateModalProps> = ({
   open,
   record,
+  editAction,
   onClose,
   onCreated,
 }) => {
+  /** 编辑模式：传入了 editAction（工具卡片「编辑」进入），否则为新增模式 */
+  const isEdit = Boolean(editAction);
   const [form] = Form.useForm();
   // 保存中：给「保存工具」按钮加 loading，防止重复提交
   const [submitting, setSubmitting] = useState<boolean>(false);
@@ -737,8 +864,12 @@ const ConnectorActionCreateModal: React.FC<ConnectorActionCreateModalProps> = ({
       form.resetFields();
       // 重置回填只读标记（上次会话选中过绑定项的情况）
       argsReadOnlyRef.current = false;
+      // 编辑模式：回填详情接口返回的工具定义（新增模式保持空白）
+      if (editAction) {
+        form.setFieldsValue(toEditFormValues(editAction));
+      }
     }
-  }, [open, form]);
+  }, [open, form, editAction]);
 
   // 空间列表（绑定插件/工作流筛选用；拉一次后复用）
   const [spaces, setSpaces] = useState<SpaceInfo[]>([]);
@@ -864,7 +995,7 @@ const ConnectorActionCreateModal: React.FC<ConnectorActionCreateModalProps> = ({
     }
 
     if (!record?.service) {
-      message.error('缺少连接器 service，无法创建工具');
+      message.error('缺少连接器 service，无法保存工具');
       return;
     }
 
@@ -909,17 +1040,33 @@ const ConnectorActionCreateModal: React.FC<ConnectorActionCreateModalProps> = ({
 
     // 绑定声明快照：把选中插件/工作流的信息写进 httpSpec
     // （icon 原样透传接口返回的 null / 空串，缺省补 null）
-    const bindSpec: ConnectorActionBindSpec | undefined =
-      isBoundExec && selectedBindable
-        ? {
+    let bindSpec: ConnectorActionBindSpec | undefined;
+    if (isBoundExec) {
+      if (selectedBindable) {
+        bindSpec = {
+          bindType: values.executionType as 'PLUGIN' | 'WORKFLOW',
+          bindId: String(selectedBindable.id),
+          name: selectedBindable.name,
+          icon: selectedBindable.icon ?? null,
+          description: selectedBindable.description,
+          spaceId: values.bindSpaceId ?? '',
+        };
+      } else if (isEdit && editAction) {
+        // 编辑时选中项已不在可绑定列表（如已下架）：沿用原快照兜底，
+        // 避免仅改基础信息就把 httpSpec 清空；bindId / spaceId 以表单为准
+        const stored = (editAction.httpSpec ?? undefined) as
+          | ConnectorActionBindSpec
+          | undefined;
+        if (stored?.bindType) {
+          bindSpec = {
+            ...stored,
             bindType: values.executionType as 'PLUGIN' | 'WORKFLOW',
-            bindId: String(selectedBindable.id),
-            name: selectedBindable.name,
-            icon: selectedBindable.icon ?? null,
-            description: selectedBindable.description,
-            spaceId: values.bindSpaceId ?? '',
-          }
-        : undefined;
+            bindId: values.bindRef ?? stored.bindId,
+            spaceId: values.bindSpaceId ?? stored.spaceId,
+          };
+        }
+      }
+    }
 
     const payload: CreateConnectorActionParams = {
       actionKey: values.actionKey?.trim(),
@@ -962,27 +1109,30 @@ const ConnectorActionCreateModal: React.FC<ConnectorActionCreateModalProps> = ({
 
     try {
       setSubmitting(true);
-      const response = await apiSystemConnectorActionCreate({
-        service: record.service,
-        ...payload,
-      });
+      // 新增：POST /api/system/connector/providers/{service}/actions
+      // 编辑：PUT /api/system/connector/providers/{service}/actions/{actionKey}
+      // （两者 body 一致；actionKey 表单必填校验已保证非空）
+      const requestParams = { service: record.service, ...payload };
+      const response = isEdit
+        ? await apiSystemConnectorActionUpdate(requestParams)
+        : await apiSystemConnectorActionCreate(requestParams);
       if (response?.code !== SUCCESS_CODE) {
-        throw new Error(response?.message || 'create action failed');
+        throw new Error(response?.message || 'save action failed');
       }
-      message.success('工具创建成功');
+      message.success(isEdit ? '工具更新成功' : '工具创建成功');
       onClose();
       onCreated?.();
     } catch {
-      message.error('创建工具失败');
+      message.error(isEdit ? '更新工具失败' : '创建工具失败');
     } finally {
       setSubmitting(false);
     }
-  }, [form, record?.service, onClose, onCreated, selectedBindable]);
+  }, [form, record?.service, onClose, onCreated, selectedBindable, editAction]);
 
   return (
     <Modal
       className={styles.modal}
-      title="新增工具"
+      title={isEdit ? '编辑工具' : '新增工具'}
       open={open}
       onCancel={onClose}
       footer={null}
@@ -1003,7 +1153,8 @@ const ConnectorActionCreateModal: React.FC<ConnectorActionCreateModalProps> = ({
               label="ACTIONKEY（创建后不可改）"
               rules={[{ required: true, message: '请输入 actionKey' }]}
             >
-              <Input placeholder="如 get_repo" allowClear />
+              {/* 编辑模式禁改（后端唯一键），值原样提交 */}
+              <Input placeholder="如 get_repo" allowClear disabled={isEdit} />
             </Form.Item>
           </Col>
           <Col span={12}>

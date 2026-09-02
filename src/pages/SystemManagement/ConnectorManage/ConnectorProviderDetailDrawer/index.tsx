@@ -35,10 +35,14 @@ import styles from './index.less';
  * 抽屉标题：当前 service 的 displayName（或 fallback 到 service）
  * 抽屉内容：
  *   1. 顶部信息（认证方式 / BASE URL / 通用代理 / 归属）
- *   2. 工具栏（编辑连接器 / 导出 / 添加工具 —— 前者占位，「添加工具」
- *      打开 ConnectorActionCreateModal 新增工具弹窗）
+ *   2. 工具栏（「+ 添加工具」打开 ConnectorActionCreateModal 新增/编辑工具弹窗）
  *   3. 工具列表（卡片形式：name + 状态 tag + actionKey + 描述 +
  *                底部 4 个操作按钮 + 右下角 HTTP 接口 tag）
+ *
+ * 工具的「编辑」按钮：复用 ConnectorActionCreateModal（编辑模式，传
+ * editAction 回填详情接口返回的该条 action 定义，ACTIONKEY 禁改），
+ * 保存调 PUT /api/system/connector/providers/{service}/actions/{actionKey}
+ * （body 与创建一致）
  *
  * 工具的 停用/启用 按钮调：
  *   PUT /api/system/connector/actions/{id}/status?enabled={boolean}
@@ -55,11 +59,6 @@ export interface ConnectorProviderDetailDrawerProps {
   spaceId?: number | string;
   /** 关闭回调 */
   onClose: () => void;
-  /**
-   * 导出当前连接器（与列表"操作列 → 单行导出"行为完全一致）
-   * 由父组件注入，避免抽屉自己重新实现一份导出逻辑
-   */
-  onExport?: (record: ConnectorProviderInfo) => void;
   /**
    * 新增工具成功回调
    * 由父组件注入：重新拉取连接器列表（GET /api/system/connector/providers）
@@ -86,7 +85,9 @@ const ConnectorProviderToolCard: React.FC<{
   deleting: boolean;
   onToggle: (action: ConnectorProviderAction) => void;
   onDelete: (action: ConnectorProviderAction) => void;
-}> = ({ action, toggling, deleting, onToggle, onDelete }) => {
+  /** 打开「编辑工具」弹窗（复用新增工具弹窗回填该工具定义） */
+  onEdit: (action: ConnectorProviderAction) => void;
+}> = ({ action, toggling, deleting, onToggle, onDelete, onEdit }) => {
   const isEnabled = action.status === 'enabled';
 
   return (
@@ -108,7 +109,8 @@ const ConnectorProviderToolCard: React.FC<{
       <div className={styles.toolCardFooter}>
         <Space size={12} className={styles.toolCardActions}>
           <a onClick={() => {}}>调试</a>
-          <a onClick={() => {}}>编辑</a>
+          {/* 编辑：复用「新增工具」弹窗回填当前工具定义（编辑模式） */}
+          <a onClick={() => onEdit(action)}>编辑</a>
           {toggling ? (
             <span
               className={styles.toggleLoading}
@@ -166,9 +168,10 @@ const ConnectorProviderDetailContent: React.FC<{
   deletingActionIds: Set<string | number>;
   onToggleAction: (action: ConnectorProviderAction) => void;
   onDeleteAction: (action: ConnectorProviderAction) => void;
-  onExport?: (record: ConnectorProviderInfo) => void;
-  /** 打开「新增工具」弹窗 */
+  /** 打开「新增工具」弹窗（新增模式） */
   onOpenActionCreate: () => void;
+  /** 打开「编辑工具」弹窗（复用新增工具弹窗回填该工具定义） */
+  onEditAction: (action: ConnectorProviderAction) => void;
 }> = ({
   detail,
   record,
@@ -176,8 +179,8 @@ const ConnectorProviderDetailContent: React.FC<{
   deletingActionIds,
   onToggleAction,
   onDeleteAction,
-  onExport,
   onOpenActionCreate,
+  onEditAction,
 }) => {
   // 鉴权方式：与列表"认证"列保持完全一致的展示 —— 找不到标签就 fallback 到原始值
   const authTypeValue = detail?.authType ?? record?.authType;
@@ -224,25 +227,10 @@ const ConnectorProviderDetailContent: React.FC<{
         </div>
       </div>
 
-      {/* 工具栏 */}
+      {/* 工具栏（仅「添加工具」；导出统一走列表"操作列 → 单行导出"） */}
       <div className={styles.toolbar}>
         <Space size={8}>
-          <Button onClick={() => {}}>编辑连接器</Button>
-          {/*
-            导出按钮：行为与列表"操作列 → 单行导出"完全一致。
-            - 必须有 record 才能调（父组件用 record.service 去重）
-            - 父组件未注入 onExport 时降级为 disabled，避免误触
-          */}
-          <Button
-            disabled={!record || !onExport}
-            onClick={() => record && onExport?.(record)}
-          >
-            导出
-          </Button>
-          {/*
-            添加工具：打开「新增工具」弹窗（ConnectorActionCreateModal）
-            弹窗内各按钮（添加映射行 / 保存工具等）目前为占位实现
-          */}
+          {/* 添加工具：打开「新增工具」弹窗（ConnectorActionCreateModal，新增模式） */}
           <Button type="primary" onClick={onOpenActionCreate}>
             + 添加工具
           </Button>
@@ -262,6 +250,7 @@ const ConnectorProviderDetailContent: React.FC<{
                 deleting={deletingActionIds.has(action.id as string | number)}
                 onToggle={onToggleAction}
                 onDelete={onDeleteAction}
+                onEdit={onEditAction}
               />
             ))}
           </div>
@@ -275,7 +264,7 @@ const ConnectorProviderDetailContent: React.FC<{
 
 const ConnectorProviderDetailDrawer: React.FC<
   ConnectorProviderDetailDrawerProps
-> = ({ open, record, spaceId, onClose, onExport, onActionCreated }) => {
+> = ({ open, record, spaceId, onClose, onActionCreated }) => {
   /**
    * 抽屉宽度：PC 端固定 720，移动端尽量占满
    * 与 LogQuery/OperationLog/LogDetailDrawer 保持一致
@@ -306,11 +295,15 @@ const ConnectorProviderDetailDrawer: React.FC<
     Set<string | number>
   >(() => new Set());
   /**
-   * 「新增工具」弹窗开关
-   * - 由工具栏「+ 添加工具」按钮打开
+   * 「新增/编辑工具」弹窗开关
+   * - 工具栏「+ 添加工具」打开（新增模式，editingAction 为 null）
+   * - 工具卡片「编辑」打开（编辑模式，editingAction 为对应工具定义）
    * - 抽屉关闭时同步收起，避免弹窗孤零零悬浮在页面上
    */
-  const [actionCreateOpen, setActionCreateOpen] = useState<boolean>(false);
+  const [actionModalOpen, setActionModalOpen] = useState<boolean>(false);
+  /** 编辑模式回填的工具定义（详情接口 actions 列表项；null = 新增模式） */
+  const [editingAction, setEditingAction] =
+    useState<ConnectorProviderAction | null>(null);
 
   /**
    * 抽屉标题：以接口返回的 displayName 优先；其次 record.displayName；最后回退到 service
@@ -350,8 +343,9 @@ const ConnectorProviderDetailDrawer: React.FC<
       setDetail(null);
       fetchDetail();
     } else {
-      // 抽屉关闭时同步收起「新增工具」弹窗
-      setActionCreateOpen(false);
+      // 抽屉关闭时同步收起工具弹窗并清空编辑态
+      setActionModalOpen(false);
+      setEditingAction(null);
     }
   }, [open, record?.service, spaceId, fetchDetail]);
 
@@ -448,14 +442,23 @@ const ConnectorProviderDetailDrawer: React.FC<
   );
 
   /**
-   * 新增工具成功：
-   * - 重新拉取详情刷新抽屉内工具列表（新工具立即可见）
+   * 新增/编辑工具成功：
+   * - 重新拉取详情刷新抽屉内工具列表（改动立即可见）
    * - 通知父组件刷新连接器列表（GET /api/system/connector/providers）
    */
   const handleActionCreated = useCallback(() => {
     fetchDetail();
     onActionCreated?.();
   }, [fetchDetail, onActionCreated]);
+
+  /** 打开编辑工具弹窗：复用新增工具弹窗，回填该工具定义 */
+  const handleOpenActionEdit = useCallback(
+    (action: ConnectorProviderAction) => {
+      setEditingAction(action);
+      setActionModalOpen(true);
+    },
+    [],
+  );
 
   /**
    * 删除单个工具
@@ -530,8 +533,12 @@ const ConnectorProviderDetailDrawer: React.FC<
             deletingActionIds={deletingActionIds}
             onToggleAction={handleToggleAction}
             onDeleteAction={handleDeleteAction}
-            onExport={onExport}
-            onOpenActionCreate={() => setActionCreateOpen(true)}
+            onOpenActionCreate={() => {
+              // 新增模式：清空编辑态再打开，确保表单空白
+              setEditingAction(null);
+              setActionModalOpen(true);
+            }}
+            onEditAction={handleOpenActionEdit}
           />
         ) : (
           <div className={styles.emptyWrap}>
@@ -540,11 +547,12 @@ const ConnectorProviderDetailDrawer: React.FC<
         )}
       </Drawer>
 
-      {/* 新增工具弹窗（Portal 渲染到 body，不占用抽屉布局） */}
+      {/* 新增/编辑工具弹窗（Portal 渲染到 body；编辑模式传 editingAction 回填） */}
       <ConnectorActionCreateModal
-        open={actionCreateOpen}
+        open={actionModalOpen}
         record={record}
-        onClose={() => setActionCreateOpen(false)}
+        editAction={editingAction}
+        onClose={() => setActionModalOpen(false)}
         onCreated={handleActionCreated}
       />
     </>

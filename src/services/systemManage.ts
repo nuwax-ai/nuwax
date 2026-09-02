@@ -259,6 +259,26 @@ export async function apiSystemConnectorActionCreate(
 }
 
 /**
+ * 更新连接器下的工具/动作
+ * 对应接口：PUT /api/system/connector/providers/{service}/actions/{actionKey}
+ * service / actionKey 拼到 URL path 上；body 与创建接口一致（actionKey / inputArgs / httpSpec 等）
+ *
+ * 用于详情抽屉工具列表的「编辑」按钮（复用「新增/编辑工具」弹窗回填后提交）。
+ */
+export async function apiSystemConnectorActionUpdate(
+  params: CreateConnectorActionParams & { service: string },
+): Promise<RequestResponse<null>> {
+  const { service, ...data } = params;
+  return request(
+    `/api/system/connector/providers/${service}/actions/${data.actionKey}`,
+    {
+      method: 'PUT',
+      data,
+    },
+  );
+}
+
+/**
  * 导出连接器提供方（POST /api/system/connector/providers/export）
  * - 不传 services：导出全部
  * - 传 services：导出所选/单行

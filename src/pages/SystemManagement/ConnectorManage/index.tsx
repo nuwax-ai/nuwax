@@ -678,8 +678,6 @@ const ConnectorManage: React.FC = () => {
           // 临时写死 52 以便页面开发时有数据可联调；接口对接完成后删除该 prop。
           spaceId={52}
           onClose={() => setDetailRecord(null)}
-          // 抽屉里的"导出"按钮复用列表操作列里的单行导出 —— 同一份逻辑，行为完全一致
-          onExport={handleExportSingle}
           // 新增工具成功后刷新连接器列表（GET /api/system/connector/providers）
           onActionCreated={() => actionRef.current?.reload()}
         />

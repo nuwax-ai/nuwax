@@ -1151,6 +1151,17 @@ export interface ConnectorProviderAction {
    * 例如 batch_presence / create_channel 等
    */
   actionKey?: string;
+  /** 输入参数（递归嵌套；后端可能返回 null）——「编辑工具」弹窗回填用 */
+  inputArgs?: ConnectorActionInputArg[] | null;
+  /** 执行类型枚举：DECLARATIVE（HTTP 接口）/ PLUGIN（绑定插件）/ WORKFLOW（绑定工作流） */
+  execType?: 'DECLARATIVE' | 'PLUGIN' | 'WORKFLOW' | string;
+  /** 执行引用：绑定的插件/工作流 id（字符串；DECLARATIVE 时为 null） */
+  execRef?: string | null;
+  /**
+   * 执行声明：DECLARATIVE 为 HTTP 请求声明（ConnectorActionHttpSpec），
+   * PLUGIN / WORKFLOW 为绑定声明快照（ConnectorActionBindSpec）；可能为 null
+   */
+  httpSpec?: ConnectorActionHttpSpec | ConnectorActionBindSpec | null;
 }
 
 /**
@@ -1180,8 +1191,8 @@ export interface ConnectorActionInputArg {
   description?: string;
   /** 参数类型 */
   dataType: string;
-  /** 必填：仅勾选时传 true，未勾选不传该字段 */
-  require?: true;
+  /** 必填：创建提交仅勾选时传 true（未勾选不传该字段）；读取时后端可能返回 false */
+  require?: boolean;
   /** dataType = Object / Array_Object 时的下级参数（递归嵌套） */
   subArgs?: ConnectorActionInputArg[];
 }
