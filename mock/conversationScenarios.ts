@@ -36,6 +36,7 @@ export type MockScenarioId =
   | 'OPENUI_INTERACTIVE'
   | 'INTERVENTION_MIXED'
   | 'RENDER_SHOWCASE'
+  | 'TRACE_HAIRLINE'
   | 'SESSION_RESUME'
   | 'ASK_DUPLICATE'
   | 'INTERVENTION_STACK'
@@ -1581,6 +1582,32 @@ export const MOCK_SCENARIOS: MockScenario[] = [
         '竞品分析完成：三家定价与功能矩阵已核对，结论以最终回答为准。',
       ),
     ].map((event) => ({ ...event, delayMs: event.delayMs ?? 150 })),
+  },
+  {
+    id: 'TRACE_HAIRLINE',
+    label: 'hairline 工作轨迹样式',
+    description:
+      'hairline 折叠条演示：连续工具 + 子智能体 + 两段消息 → 运行态仅「工作中 T」、终态全量指标并自动收起（?conversationRenderer=v2 查看）',
+    verifies:
+      '70887be28 hairline 折叠条（无卡片边框/箭头在文字右侧/运行态仅工作时长）+ ce87ce9e2 终态自动收起',
+    events: [
+      think('先梳理目录结构，再批量检索，最后让子智能体交叉核对。'),
+      processing('列出项目目录', 'EXECUTING', 'th-ls'),
+      processing('列出项目目录', 'FINISHED', 'th-ls'),
+      processing('检索相关文档', 'EXECUTING', 'th-search'),
+      processing('检索相关文档', 'FINISHED', 'th-search'),
+      processing('子智能体交叉核对', 'EXECUTING', 'th-verify', {
+        type: 'SubAgent',
+      }),
+      processing('子智能体交叉核对', 'FINISHED', 'th-verify', {
+        type: 'SubAgent',
+      }),
+      processing('汇总输出报告', 'EXECUTING', 'th-report'),
+      processing('汇总输出报告', 'FINISHED', 'th-report'),
+      chat('资料已核对完毕，正在整理结论。'),
+      chat('全部完成，结论以最终回答为准。', true),
+      finalResult(true, '全部完成，结论以最终回答为准。'),
+    ].map((event) => ({ ...event, delayMs: event.delayMs ?? 400 })),
   },
 ];
 
