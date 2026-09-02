@@ -70,7 +70,17 @@ export function ConversationSessionProvider({
   queueContext,
 }: ConversationSessionProviderProps) {
   const agentModeRef = useRef<AgentMode>('yolo');
-  const activeInterventions = useActiveInterventionQueue(messageList);
+  const collectedInterventions = useActiveInterventionQueue(messageList);
+  // FAILED/CANCEL 后任务已不可能继续回应 Ask/ACP。历史 hydrate 可能因
+  // 缺少 resume 回执把旧干预恢复为 pending，不应因此永久禁用输入框。
+  // COMPLETE 仍保留 pending，兼容正常等待用户回答的 Ask 场景。
+  const activeInterventions = useMemo(
+    () =>
+      taskStatus === TaskStatus.FAILED || taskStatus === TaskStatus.CANCEL
+        ? []
+        : collectedInterventions,
+    [collectedInterventions, taskStatus],
+  );
   const hasPendingIntervention = activeInterventions.length > 0;
 
   const messageQueue = useUnifiedChatQueue({

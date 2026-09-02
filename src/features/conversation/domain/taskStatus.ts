@@ -98,11 +98,34 @@ function resolveStructuredTerminalStatus(
   );
 }
 
+function isTaskConflictSignal(signal: unknown): boolean {
+  if (typeof signal === 'string') {
+    return signal.includes('正在执行任务');
+  }
+  if (!signal || typeof signal !== 'object') {
+    return false;
+  }
+  const payload = signal as Record<string, unknown>;
+  return [payload.error, payload.message].some(isTaskConflictSignal);
+}
+
+function isUserCancellationSignal(signal: unknown): boolean {
+  if (typeof signal === 'string') {
+    return signal.includes('用户主动取消任务');
+  }
+  if (!signal || typeof signal !== 'object') {
+    return false;
+  }
+  const payload = signal as Record<string, unknown>;
+  return [payload.error, payload.message].some(isUserCancellationSignal);
+}
+
 /**
  * 从 FINAL_RESULT 解析协议终态。
  *
- * success=true 是确定的 COMPLETE。失败只接受结构化终态字段，不根据后端文案猜测；
- * 无法确认时返回 undefined，由 Runtime 的一致性流程查询持久化任务状态兜底。
+ * success=true 是确定的 COMPLETE；success=false 是确定的 FAILED。
+ * 唯一例外是“正在执行任务”冲突：该 FINAL_RESULT 拒绝的是新请求，
+ * 旧任务仍在执行，不得把会话误落为 FAILED。
  */
 export function resolveTerminalTaskStatus(
   success: boolean | undefined,
@@ -117,6 +140,16 @@ export function resolveTerminalTaskStatus(
     if (status) {
       return status;
     }
+  }
+
+  if (success === false) {
+    if (terminalSignals.some(isTaskConflictSignal)) {
+      return undefined;
+    }
+    if (terminalSignals.some(isUserCancellationSignal)) {
+      return TaskStatus.CANCEL;
+    }
+    return TaskStatus.FAILED;
   }
 
   return undefined;
