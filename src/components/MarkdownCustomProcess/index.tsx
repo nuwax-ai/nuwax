@@ -50,6 +50,7 @@ import {
 } from 'react';
 import { useModel } from 'umi';
 import styles from './index.less';
+import ParamsResponseView from './ParamsResponseView';
 import SeeDetailModal from './SeeDetailModal';
 import TerminalOutputView from './TerminalOutputView';
 import { usePlanAutoScroll } from './usePlanAutoScroll';
@@ -169,6 +170,8 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
   const [isDiffExpanded, setIsDiffExpanded] = useState(false);
   // 终端输出展开/收起状态
   const [isTerminalExpanded, setIsTerminalExpanded] = useState(false);
+  // 通用工具「参数/结果」内联展开状态（与终端/Plan 同交互范式）
+  const [isDetailExpanded, setIsDetailExpanded] = useState(false);
 
   const diffItems = useMemo(() => {
     return normalizeFileDiffItems(innerProcessing.result);
@@ -376,6 +379,21 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
       ) || false
     );
   }, [innerProcessing.status, detailData]);
+
+  // 通用工具是否有可内联展示的参数/响应（非专属卡时在工具栏给 +/− 按钮）
+  const hasInlineDetail = useMemo(() => {
+    if (!detailData) return false;
+    const { params, response } = detailData;
+    const hasParams =
+      !!params && !(typeof params === 'object' && !Object.keys(params).length);
+    const hasResponse =
+      response !== null &&
+      response !== undefined &&
+      !(
+        typeof response === 'object' && !Object.keys(response as object).length
+      );
+    return hasParams || hasResponse;
+  }, [detailData]);
 
   const handleOpenFileTree = useCallback(async () => {
     const result = innerProcessing.result as any;
@@ -744,6 +762,29 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
                   />
                 </Tooltip>
               )}
+              {/* 通用工具「参数/结果」内联展开（与终端/Plan 同款 +/−） */}
+              {hasInlineDetail &&
+                !isTerminal &&
+                !hasDiff &&
+                !isPlanType &&
+                innerProcessing.type !== AgentComponentTypeEnum.Page && (
+                  <Tooltip
+                    title={
+                      isDetailExpanded
+                        ? dict('PC.Components.MarkdownCustomProcess.collapse')
+                        : dict('PC.Components.MarkdownCustomProcess.expand')
+                    }
+                  >
+                    <Button
+                      size="small"
+                      type="text"
+                      icon={
+                        isDetailExpanded ? <MinusOutlined /> : <PlusOutlined />
+                      }
+                      onClick={() => setIsDetailExpanded(!isDetailExpanded)}
+                    />
+                  </Tooltip>
+                )}
               <Tooltip
                 title={dict('PC.Components.MarkdownCustomProcess.viewDetail')}
               >
@@ -877,6 +918,13 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
             <ProcessDiffViewer key={index} item={item} />
           ))}
         </div>
+      )}
+      {/* 通用工具「参数/结果」内联展开区（非专属卡时的兜底展示） */}
+      {isDetailExpanded && hasInlineDetail && (
+        <ParamsResponseView
+          params={detailData?.params}
+          response={detailData?.response}
+        />
       )}
     </>
   );

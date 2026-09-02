@@ -17,7 +17,7 @@ interface SeeDetailModalProps {
   title: string; // 弹窗标题
   data: {
     params: Record<string, any>; // 输入参数
-    response: Record<string, any>; // 输出结果
+    response: Record<string, any> | string | null; // 输出结果(后端可能返回字符串)
   } | null;
 }
 

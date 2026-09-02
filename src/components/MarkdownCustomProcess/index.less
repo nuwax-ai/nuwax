@@ -357,16 +357,13 @@
     word-break: break-all;
     overflow: auto;
     scrollbar-width: thin;
+    max-height: 240px; // 展开全量时限高滚动
   }
 
   &.is-preview {
     .terminal-output-text {
       max-height: calc(1.6 * @fontSizeSm * 6); // 尾部 6 行预览
     }
-  }
-
-  .terminal-output-text {
-    max-height: 240px; // 展开全量时限高滚动
   }
 }
 
@@ -377,5 +374,65 @@
 
   100% {
     transform: rotate(360deg);
+  }
+}
+
+// ---- 通用工具「参数 / 结果」内联展开区 ----
+.params-response-view {
+  margin-bottom: @marginXs;
+
+  .detail-block {
+    .detail-block-toggle {
+      appearance: none;
+      border: none;
+      background: transparent;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 0;
+      cursor: pointer;
+      font-size: @fontSizeSm;
+      color: @colorTextSecondary;
+
+      &:hover {
+        color: @colorText;
+      }
+    }
+  }
+
+  .detail-section {
+    border-top: 1px solid rgba(0, 0, 0, 6%);
+    background-color: @colorBgLayout;
+    margin-top: 2px;
+
+    .detail-section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 2px @paddingSm 0;
+
+      .detail-section-title {
+        font-size: @fontSizeSm;
+        color: @colorTextTertiary;
+      }
+
+      .detail-section-copy {
+        color: @colorTextTertiary;
+      }
+    }
+
+    .detail-section-body {
+      margin: 0;
+      padding: @paddingXs @paddingSm;
+      font-family: Monaco, Menlo, 'Ubuntu Mono', monospace;
+      font-size: @fontSizeSm;
+      line-height: 1.6;
+      color: @colorText;
+      white-space: pre-wrap;
+      word-break: break-all;
+      overflow: auto;
+      scrollbar-width: thin;
+      max-height: 240px; // 限高滚动,与终端输出一致
+    }
   }
 }

@@ -580,6 +580,8 @@ export const ZH_TW: SystemLangMap = {
   "PC.Components.MarkdownCustomPlanDoc.title": "計劃文檔",
   "PC.Components.MarkdownCustomProcess.closePreview": "關閉預覽",
   "PC.Components.MarkdownCustomProcess.collapse": "收起",
+  "PC.Components.MarkdownCustomProcess.paramsTitle": "參數",
+  "PC.Components.MarkdownCustomProcess.responseTitle": "結果",
   "PC.Components.MarkdownCustomProcess.copyDetailData": "複製詳情資料",
   "PC.Components.MarkdownCustomProcess.copyFailedRetry": "詳情資料複製失敗，請重試",
   "PC.Components.MarkdownCustomProcess.expand": "展開",

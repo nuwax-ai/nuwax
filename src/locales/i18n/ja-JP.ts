@@ -564,6 +564,8 @@ export const JA_JP: SystemLangMap = {
   "PC.Components.MarkdownCustomPlanDoc.title": "計画ドキュメント",
   "PC.Components.MarkdownCustomProcess.closePreview": "プレビューを閉じる",
   "PC.Components.MarkdownCustomProcess.collapse": "崩壊",
+  "PC.Components.MarkdownCustomProcess.paramsTitle": "パラメータ",
+  "PC.Components.MarkdownCustomProcess.responseTitle": "結果",
   "PC.Components.MarkdownCustomProcess.copyDetailData": "詳細データをコピーする",
   "PC.Components.MarkdownCustomProcess.copyFailedRetry": "詳細データのコピーに失敗しました。再試行してください",
   "PC.Components.MarkdownCustomProcess.expand": "拡大する",

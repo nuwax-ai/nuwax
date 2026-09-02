@@ -655,6 +655,8 @@ export const EN_US: SystemLangMap = {
   "PC.Components.MarkdownCustomPlanDoc.title": "Plan document",
   "PC.Components.MarkdownCustomProcess.closePreview": "Close preview",
   "PC.Components.MarkdownCustomProcess.collapse": "Collapse",
+  "PC.Components.MarkdownCustomProcess.paramsTitle": "Params",
+  "PC.Components.MarkdownCustomProcess.responseTitle": "Result",
   "PC.Components.MarkdownCustomProcess.copyDetailData": "Copy detail data",
   "PC.Components.MarkdownCustomProcess.copyFailedRetry": "Detail data copy failed. Please retry",
   "PC.Components.MarkdownCustomProcess.expand": "Expand",

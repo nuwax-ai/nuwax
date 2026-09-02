@@ -122,6 +122,11 @@ const processing = (
   status: string,
   toolCallId: string,
   extra?: Record<string, unknown>,
+  /**
+   * 工具真实数据(ExecuteResultInfo 最小集):展开详情经
+   * MarkdownCustomProcess 渲染 result.input(参数)/result.data(响应)。
+   */
+  detail?: { input?: unknown; data?: unknown },
 ): MockSseEvent => ({
   eventType: 'PROCESSING',
   requestId: req('1'),
@@ -131,7 +136,20 @@ const processing = (
     status,
     toolCallId,
     type: 'ToolCall',
-    result: { executeId: toolCallId, ...resultTiming(status, 2400) },
+    result: {
+      executeId: toolCallId,
+      ...resultTiming(status, 2400),
+      ...(detail
+        ? {
+            name: toolCallId,
+            success: status !== 'EXECUTING',
+            error: '',
+            id: 1,
+            ...(detail.input !== undefined ? { input: detail.input } : {}),
+            ...(detail.data !== undefined ? { data: detail.data } : {}),
+          }
+        : {}),
+    },
     ...extra,
   },
 });
@@ -1595,23 +1613,68 @@ export const MOCK_SCENARIOS: MockScenario[] = [
         '测试 nuwa-browser skill 全链路:连接 → 任务空间 → 开页 → 快照 → 交互 → 截图。',
       ),
       processing('连接桌面应用(CLI 直连)', 'EXECUTING', 'nb-connect'),
-      processing('连接桌面应用(CLI 直连)', 'FINISHED', 'nb-connect'),
+      processing(
+        '连接桌面应用(CLI 直连)',
+        'FINISHED',
+        'nb-connect',
+        undefined,
+        {
+          input: { transport: 'cli', timeoutMs: 8000 },
+          data: 'IPC 连接成功(桌面应用 pid 4821,版本 0.12.3)',
+        },
+      ),
       processing('任务空间 useOrCreate', 'EXECUTING', 'nb-space'),
-      processing('任务空间 useOrCreate', 'FINISHED', 'nb-space'),
+      processing('任务空间 useOrCreate', 'FINISHED', 'nb-space', undefined, {
+        input: { action: 'useOrCreate', label: 'nuwa-browser 测试' },
+        data: '创建任务空间 #2(支持跨轮复用,结束时 complete 清理)',
+      }),
       processing('打开网页 nuwax.com', 'EXECUTING', 'nb-open'),
-      processing('打开网页 nuwax.com', 'FINISHED', 'nb-open'),
+      processing('打开网页 nuwax.com', 'FINISHED', 'nb-open', undefined, {
+        input: { url: 'https://nuwax.com', reuse: true },
+        data: {
+          title: 'A女娲Nuwax - 新一代AI应用设计、开发、实践平台',
+          loadMs: 1830,
+          reused: false,
+        },
+      }),
       processing('文本快照 page.snapshot', 'EXECUTING', 'nb-snapshot'),
-      processing('文本快照 page.snapshot', 'FINISHED', 'nb-snapshot'),
+      processing(
+        '文本快照 page.snapshot',
+        'FINISHED',
+        'nb-snapshot',
+        undefined,
+        {
+          input: { mode: 'ax', maxChars: 30000 },
+          data: '27705 字符 AX 树,带 [ref=N] 标注。片段:banner "A女娲Nuwax…" [ref=@1] navigation [ref=@12] link "免费开始" [ref=@154] …(共 62 链接 / 5 按钮)',
+        },
+      ),
       processing('JS 执行 page.evaluate', 'EXECUTING', 'nb-eval'),
-      processing('JS 执行 page.evaluate', 'FINISHED', 'nb-eval'),
+      processing('JS 执行 page.evaluate', 'FINISHED', 'nb-eval', undefined, {
+        input: {
+          expr: '({links: document.querySelectorAll("a").length, buttons: document.querySelectorAll("button").length, lang: document.documentElement.lang})',
+        },
+        data: { links: 62, buttons: 5, lang: 'zh-CN' },
+      }),
       processing(
         "点击交互 page.locator('@154').click",
         'EXECUTING',
         'nb-click',
       ),
-      processing("点击交互 page.locator('@154').click", 'FINISHED', 'nb-click'),
+      processing(
+        "点击交互 page.locator('@154').click",
+        'FINISHED',
+        'nb-click',
+        undefined,
+        {
+          input: { ref: '@154', expectation: '免费开始' },
+          data: '点击成功,跳转到登录页 /Login(跨轮 ref 复用验证通过)',
+        },
+      ),
       processing('截图 page.screenshot', 'EXECUTING', 'nb-shot'),
-      processing('截图 page.screenshot', 'FINISHED', 'nb-shot'),
+      processing('截图 page.screenshot', 'FINISHED', 'nb-shot', undefined, {
+        input: { fullPage: false, viewport: '1274x666' },
+        data: '/tmp/ego-browser-shot-5638-1.png(实测返回文件路径字符串,而非 {path, bytes} 对象)',
+      }),
       chat(
         "✅ nuwa-browser 测试完成,全链路正常。测试报告如下:\n\n## 测试结果总览\n\n| 测试项 | 方法 | 结果 |\n| --- | --- | --- |\n| 应用连接(IPC) | CLI 直连桌面应用 | ✅ 正常 |\n| 任务空间 | taskSpaces.useOrCreate / 跨轮复用 / complete | ✅ 创建 → 复用 → 关闭全通 |\n| 打开网页 | browser.openOrReuseTab | ✅ 加载 nuwax.com 成功 |\n| 文本快照 | page.snapshot() | ✅ 27705 字符 AX 树,带 [ref=N] 标注 |\n| 页面信息 | page.info() | ✅ 正确返回 URL / 标题 / 视口 1274x666 |\n| JS 执行 | page.evaluate() | ✅ 提取到 62 链接 / 5 按钮 / lang=zh-CN |\n| 点击交互 | page.locator('@154').click() | ✅ 点击「免费开始」成功跳转到登录页 |\n| 导航 | page.goto() 返回首页 | ✅ 正常 |\n| 截图 | page.screenshot() | ✅ 生成 PNG(实测返回文件路径字符串,而非文档暗示的对象) |",
       ),
