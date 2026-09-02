@@ -96,6 +96,7 @@ const TeamSetting: React.FC = () => {
       label: dict('PC.Pages.TeamSetting.memberManagement'),
       children: (
         <MemberManageTab
+          key={spaceId}
           spaceId={spaceId}
           role={spaceDetailInfo?.currentUserRole}
         />
