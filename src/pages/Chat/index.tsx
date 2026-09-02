@@ -73,6 +73,8 @@ import { useChatFiles } from './hooks/useChatFiles';
 import { useChatSandbox } from './hooks/useChatSandbox';
 import { useChatVariables } from './hooks/useChatVariables';
 import { useChatViewMode } from './hooks/useChatViewMode';
+import { useLocalDirectoryFiles } from './hooks/useLocalDirectoryFiles';
+import { useWorkspaceDirectoryFiles } from './hooks/useWorkspaceDirectoryFiles';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -142,6 +144,11 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   const [loadingAsync, setLoadingAsync] = useState<boolean>(true);
 
   // 开放应用智能体会话聊天页面相关状态
+  const localDirectoryFiles = useLocalDirectoryFiles(id);
+  const workspaceDirectoryFiles = useWorkspaceDirectoryFiles(
+    id,
+    !localDirectoryFiles.active,
+  );
   const {
     handleSetAppAgentDetail,
     isAppSidebarMode,
@@ -239,7 +246,6 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     clearFilePanelInfo,
     // 文件树数据
     fileTreeData,
-    fileTreeDataLoading,
     // 文件树视图模式
     viewMode,
     // 处理文件列表刷新事件
@@ -653,8 +659,8 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     handleExportProject,
   } = useChatFiles({
     id,
-    fileTreeData,
-    handleRefreshFileList,
+    fileTreeData: workspaceDirectoryFiles.files,
+    handleRefreshFileList: async () => workspaceDirectoryFiles.refresh(),
     onFileMutationSuccessRef: refreshGitListRef,
   });
 
@@ -682,22 +688,53 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     taskAgentSelectTrigger,
     // 会话结束文件树刷新后兜底重拉当前打开文件正文
     fileTreeRefreshTrigger,
-    originalFiles: fileTreeData,
-    fileTreeDataLoading,
+    originalFiles: localDirectoryFiles.active
+      ? localDirectoryFiles.files
+      : workspaceDirectoryFiles.files,
+    fileTreeDataLoading: localDirectoryFiles.active
+      ? localDirectoryFiles.loading
+      : workspaceDirectoryFiles.loading,
     targetId: id?.toString() || '',
     readOnly: false,
-    onUploadFiles: handleUploadMultipleFiles,
-    onExportProject: handleExportProject,
-    onRenameFile: handleConfirmRenameFile,
-    onCreateFileNode: handleCreateFileNode,
-    onDeleteFile: handleDeleteFile,
-    onSaveFiles: handleSaveFiles,
+    onUploadFiles: localDirectoryFiles.active
+      ? localDirectoryFiles.upload
+      : (files, filePaths) =>
+          handleUploadMultipleFiles(
+            files,
+            filePaths.map((filePath) =>
+              [workspaceDirectoryFiles.currentPath, filePath]
+                .filter(Boolean)
+                .join('/'),
+            ),
+          ),
+    onExportProject: localDirectoryFiles.active
+      ? localDirectoryFiles.exportZip
+      : handleExportProject,
+    onRenameFile: localDirectoryFiles.active
+      ? localDirectoryFiles.rename
+      : handleConfirmRenameFile,
+    onCreateFileNode: localDirectoryFiles.active
+      ? localDirectoryFiles.create
+      : (node, newName) =>
+          handleCreateFileNode(
+            { ...node, parentPath: workspaceDirectoryFiles.currentPath },
+            newName,
+          ),
+    onDeleteFile: localDirectoryFiles.active
+      ? localDirectoryFiles.remove
+      : (node) =>
+          handleDeleteFile(
+            node.type === 'folder' && node.relativePath
+              ? { ...node, id: node.relativePath }
+              : node,
+          ),
+    onSaveFiles: localDirectoryFiles.active
+      ? localDirectoryFiles.saveMany
+      : handleSaveFiles,
     onSaveFileContent: async (fileId, content, originalFileContent) => {
-      const result = await handleSaveFileContent(
-        fileId,
-        content,
-        originalFileContent,
-      );
+      const result = localDirectoryFiles.active
+        ? await localDirectoryFiles.saveOne(fileId, content)
+        : await handleSaveFileContent(fileId, content, originalFileContent);
       return result ?? false;
     },
     agentSandboxId: finalSelectedId,
@@ -705,11 +742,21 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     isFileTreePinned,
     onFileTreePinnedChange: setIsFileTreePinned,
     isCanDeleteSkillFile: true,
-    onRefreshFileTree: () => refreshFileListImmediately(id),
+    onRefreshFileTree: localDirectoryFiles.active
+      ? localDirectoryFiles.refresh
+      : workspaceDirectoryFiles.refresh,
+    onOpenDirectory: localDirectoryFiles.active
+      ? localDirectoryFiles.openDirectory
+      : (node) => {
+          if (node.relativePath) {
+            workspaceDirectoryFiles.navigate(node.relativePath);
+          }
+        },
     hideDesktop: effectiveAgent?.hideDesktop,
     staticFileBasePath: `/api/computer/static/${id}`,
     isDynamicTheme: true,
     enableGitStatus:
+      !localDirectoryFiles.active &&
       effectiveAgent?.type === AgentTypeEnum.TaskAgent &&
       hasValidMessageList &&
       isAgentVersionControlEnabled(effectiveAgent?.enableVersionControl),
@@ -1045,6 +1092,23 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   const chatFileTree: FileTreeContainerProps = useMemo(
     () => ({
       ...fileView.tree,
+      dataSourceNavigation: localDirectoryFiles.navigation
+        ? {
+            ...localDirectoryFiles.navigation,
+            currentPath: localDirectoryFiles.active
+              ? localDirectoryFiles.navigation.currentPath
+              : workspaceDirectoryFiles.currentPath,
+            onNavigate: localDirectoryFiles.active
+              ? localDirectoryFiles.navigation.onNavigate
+              : workspaceDirectoryFiles.navigate,
+          }
+        : undefined,
+      searchFiles: localDirectoryFiles.active
+        ? localDirectoryFiles.search
+        : undefined,
+      onSearchResultSelect: localDirectoryFiles.active
+        ? localDirectoryFiles.selectSearchResult
+        : undefined,
       handleFileSelect: async (
         fileId: string,
         options?: { selectFolder?: boolean },
@@ -1060,6 +1124,12 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
     }),
     [
       fileView.tree,
+      localDirectoryFiles.navigation,
+      localDirectoryFiles.active,
+      localDirectoryFiles.search,
+      localDirectoryFiles.selectSearchResult,
+      workspaceDirectoryFiles.currentPath,
+      workspaceDirectoryFiles.navigate,
       setTaskAgentSelectedFileId,
       gitSourceControl.setSelectedChangeFile,
       collapseTerminalConsole,
@@ -1101,7 +1171,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       gitVersionPanelOpen,
       onToggleGitVersionPanel: handleToggleGitVersionPanel,
       bottomContent: terminalConsole,
-      showSourceControl: isVersionControlEnabled,
+      showSourceControl: isVersionControlEnabled && !localDirectoryFiles.active,
       enableVersionControl: effectiveAgent?.enableVersionControl,
       gitVersionControl:
         effectiveAgent?.type === AgentTypeEnum.TaskAgent &&

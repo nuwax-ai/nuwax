@@ -687,6 +687,10 @@ export interface FileNode {
   fileProxyUrl?: string;
   /** 是否为链接文件 */
   isLink?: boolean;
+  /** 本地目录数据源中的根记录 ID */
+  dataSourceId?: string;
+  /** 本地目录数据源中的根内相对路径 */
+  relativePath?: string;
 }
 
 /**
