@@ -188,7 +188,7 @@ describe('projectConversation · 轮次分组', () => {
 });
 
 describe('projectConversation · 节点与指标', () => {
-  it('节点按真实顺序：reasoning → narration → tool，工具去重保留最后一次', () => {
+  it('节点按真实顺序：narration 穿插原位携带正文；工具去重保留最后一次', () => {
     const text = [
       '开场说明',
       thinkTag('finished', '思考内容'),
@@ -225,7 +225,11 @@ describe('projectConversation · 节点与指标', () => {
     const tool = turn.nodes.find((n) => n.id === 'e1');
     expect(tool?.status).toBe('finished');
     expect(turn.metrics.toolCount).toBe(2);
-    expect(turn.metrics.messageCount).toBe(2); // narration + reasoning
+    expect(turn.metrics.messageCount).toBe(1); // reasoning（narration 直出不计）
+    // narration 节点携带原始 Markdown（渲染层穿插直出为正文）
+    expect(
+      turn.nodes.filter((n) => n.kind === 'narration').map((n) => n.text),
+    ).toEqual(['开场说明']);
     expect(turn.finalAnswer.source).toBe('messageText');
     expect(turn.finalAnswer.text).toBe('收尾正文');
   });
@@ -430,7 +434,7 @@ describe('projectConversation · 最终回答', () => {
     ]).turns[0];
     expect(turn.finalAnswer.source).toBe('finalResult');
     expect(turn.finalAnswer.text).toBe('最终\n\n结论');
-    // outputText 作为回答后，消息内正文段全部进入轨迹
+    // outputText 作为回答后，其余正文段为 narration 节点（穿插直出）
     expect(turn.nodes.filter((n) => n.kind === 'narration')).toHaveLength(2);
   });
 
@@ -446,7 +450,7 @@ describe('projectConversation · 最终回答', () => {
     expect(turn.finalAnswer.source).toBe('messageText');
     expect(turn.finalAnswer.text).toBe('最后一段');
     expect(
-      turn.nodes.filter((n) => n.kind === 'narration').map((n) => n.summary),
+      turn.nodes.filter((n) => n.kind === 'narration').map((n) => n.text),
     ).toEqual(['第一段', '第二段']);
   });
 
@@ -486,7 +490,9 @@ describe('projectConversation · 最终回答', () => {
     expect(turn.running).toBe(true);
     expect(turn.finalAnswer.source).toBe('messageText');
     expect(turn.finalAnswer.text).toBe('正在输出…');
-    expect(turn.nodes.filter((n) => n.kind === 'narration')).toHaveLength(1);
+    expect(
+      turn.nodes.filter((n) => n.kind === 'narration').map((n) => n.text),
+    ).toEqual(['中间说明']);
   });
 });
 
@@ -552,7 +558,7 @@ describe('projectConversation · 已完成交互', () => {
 });
 
 describe('projectConversation · 最终回答去重（验收返工 P1）', () => {
-  it('outputText 与末段正文同源时，该段不再作为 narration 重复入轨迹', () => {
+  it('outputText 与末段正文同源时，该段不再重复直出（去重入 answerRef）', () => {
     const answerText = '竞品分析完成：三家定价与功能矩阵已核对。';
     const text = `第一段说明${processTag({
       executeId: 'e1',
@@ -577,13 +583,13 @@ describe('projectConversation · 最终回答去重（验收返工 P1）', () =>
       text: answerText,
     });
     const narrations = turn.nodes.filter((n) => n.kind === 'narration');
-    expect(narrations.map((n) => n.summary)).toEqual(['第一段说明']);
+    expect(narrations.map((n) => n.text)).toEqual(['第一段说明']);
     expect(
       narrations.some((n) => (n.text ?? '').includes('竞品分析完成')),
     ).toBe(false);
   });
 
-  it('outputText 与正文不同源时，正文段保留为 narration（不误删中间说明）', () => {
+  it('outputText 与正文不同源时，正文段保留直出（不误删中间说明）', () => {
     const turn = projectConversation([
       msg({
         id: 'a1',
@@ -597,7 +603,9 @@ describe('projectConversation · 最终回答去重（验收返工 P1）', () =>
       }),
     ]).turns[0];
     expect(turn.finalAnswer.text).toBe('与正文完全不同的最终结论');
-    expect(turn.nodes.filter((n) => n.kind === 'narration')).toHaveLength(1);
+    expect(
+      turn.nodes.filter((n) => n.kind === 'narration').map((n) => n.text),
+    ).toEqual(['中间结论']);
   });
 
   it('SYSTEM 消息不得成为最终回答，也不重复产生 narration（验收返工 P1）', () => {

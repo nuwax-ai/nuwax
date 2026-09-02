@@ -10,7 +10,6 @@ import { dict } from '@/services/i18nRuntime';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { ProcessingEnum } from '@/types/enums/common';
 import {
-  AlignLeftOutlined,
   BulbOutlined,
   CaretRightOutlined,
   CheckCircleOutlined,
@@ -31,13 +30,13 @@ import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
+// 行图标仅覆盖节点行类型（narration 穿插直出、不渲染为行）
 const KIND_ICONS: Record<
-  ConversationProcessNode['kind'],
+  Exclude<ConversationProcessNode['kind'], 'narration'>,
   React.ComponentType<{ className?: string; style?: React.CSSProperties }>
 > = {
   reasoning: BulbOutlined,
   context: FileTextOutlined,
-  narration: AlignLeftOutlined,
   tool: ToolOutlined,
   subagent: RobotOutlined,
   plan: OrderedListOutlined,
@@ -52,8 +51,6 @@ export const nodeDisplayTitle = (node: ConversationProcessNode): string => {
       return dict('PC.Components.ConversationRendererV2.nodeTitleReasoning');
     case 'context':
       return dict('PC.Components.ConversationRendererV2.nodeTitleContext');
-    case 'narration':
-      return dict('PC.Components.ConversationRendererV2.nodeTitleNarration');
     case 'tool':
       return dict('PC.Components.ConversationRendererV2.nodeTitleTool');
     case 'subagent':
@@ -145,7 +142,7 @@ const NodeDetail: React.FC<{
       </div>
     );
   }
-  // narration / context / unknown：正文按 Markdown 渲染
+  // context / unknown：正文按 Markdown 渲染（narration 已改为直出，不再是节点）
   return <NodeDetailMarkdown nodeId={node.id} text={node.text ?? ''} />;
 };
 
@@ -163,7 +160,11 @@ const ProcessNodeRow: React.FC<ProcessNodeRowProps> = ({
   conversationId,
 }) => {
   const { token } = theme.useToken();
-  const KindIcon = KIND_ICONS[node.kind] ?? QuestionCircleOutlined;
+  // narration 不渲染为行（穿插直出），此处到达即异常路径——兜底问号图标
+  const KindIcon =
+    node.kind === 'narration'
+      ? QuestionCircleOutlined
+      : KIND_ICONS[node.kind] ?? QuestionCircleOutlined;
   const detailId = `v2-node-${node.id}`;
 
   const summaryText =
@@ -220,7 +221,6 @@ const ProcessNodeRow: React.FC<ProcessNodeRowProps> = ({
         {!node.failed &&
           node.status === 'finished' &&
           node.kind !== 'reasoning' &&
-          node.kind !== 'narration' &&
           node.kind !== 'context' && (
             <CheckCircleOutlined
               className={cx(styles['node-status-icon'])}

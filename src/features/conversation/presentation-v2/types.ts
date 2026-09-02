@@ -11,7 +11,9 @@ import type {
   ProcessingInfo,
 } from '@/types/interfaces/conversationInfo';
 
-/** 过程节点类型：思考 / 上下文(系统) / 中间说明 / 工具 / 子智能体 / 计划 / 已完成交互 / 未知残留 */
+/** 过程节点类型：思考 / 上下文(系统) / 工具 / 子智能体 / 计划 / 已完成交互 / 未知残留
+ * （narration 仅作穿插占位：留在 nodes 序列保原位，但渲染为直出正文而非节点行，
+ *  见 WorkTraceDisclosure；不出现在预设/逐类覆盖 UI） */
 export type ConversationProcessNodeKind =
   | 'reasoning'
   | 'context'
@@ -67,7 +69,7 @@ export interface ConversationProcessNode {
   segmentStatus?: string;
   /** reasoning 节点的思考全文 */
   thinkText?: string;
-  /** narration/unknown 的原始 Markdown */
+  /** unknown/narration 节点携带的原始 Markdown（narration 直出渲染） */
   text?: string;
   /** completed-interaction 节点的载荷 */
   interaction?: CompletedInteractionPayload;
@@ -93,7 +95,7 @@ export interface ConversationTurnPresentationV2 {
   userAttachments?: AttachmentFile[];
   /** 本轮全部 assistant/system 消息（按会话顺序） */
   assistantMessages: MessageInfo[];
-  /** 有序过程节点（真实发生顺序） */
+  /** 有序过程节点（真实发生顺序；narration 穿插其间渲染为直出正文） */
   nodes: ConversationProcessNode[];
   finalAnswer: ConversationFinalAnswer;
   running: boolean;
@@ -101,7 +103,7 @@ export interface ConversationTurnPresentationV2 {
   metrics: {
     /** 非空且去重后的工具执行数（Plan/Event 不计） */
     toolCount: number;
-    /** reasoning+context+narration+completed-interaction 计数 */
+    /** reasoning+context+completed-interaction 计数（narration 直出不计） */
     messageCount: number;
     /** 终态耗时（ms）；运行态为 undefined，用 elapsedAnchor 每秒推进 */
     elapsedMs?: number;

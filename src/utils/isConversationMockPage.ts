@@ -10,7 +10,12 @@
  * agentConfig.ts / common.ts ×2）即可整体移除 mock 验收体系的服务层侵入。
  * 详见 docs/conversation/mock-optimization-plan.md。
  */
-const MOCK_CHAT_ROUTES = ['/mock-chat', '/app/mock-chat'];
+const MOCK_CHAT_ROUTES = [
+  '/mock-chat',
+  '/app/mock-chat',
+  '/mock-gallery',
+  '/app/mock-gallery',
+];
 
 export const isConversationMockPage = (): boolean =>
   process.env.NODE_ENV === 'development' &&

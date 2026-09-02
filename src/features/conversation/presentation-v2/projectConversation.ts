@@ -469,7 +469,8 @@ const projectTurn = (draft: TurnDraft): ConversationTurnPresentationV2 => {
         });
         return;
       }
-      // text 段：被选为最终回答的段不进轨迹，其余为 narration 节点
+      // text 段：被选为最终回答的段不进轨迹；其余为中间正文（narration）——
+      // 留在节点序列原位穿插（工具之间），渲染层直出正文而非折叠行
       if (segment === answerSegment) {
         return;
       }
@@ -527,7 +528,6 @@ const projectTurn = (draft: TurnDraft): ConversationTurnPresentationV2 => {
     (node) =>
       node.kind === 'reasoning' ||
       node.kind === 'context' ||
-      node.kind === 'narration' ||
       node.kind === 'completed-interaction',
   ).length;
 

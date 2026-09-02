@@ -3,12 +3,13 @@
  *
  * 三档预设（默认 balanced）：
  * | 节点类型                      | focused | balanced | detailed        |
- * | 思考、上下文、中间说明         | 隐藏    | 摘要     | 已完成节点展开   |
+ * | 思考、上下文                  | 隐藏    | 摘要     | 已完成节点展开   |
  * | 工具、子智能体                | 摘要    | 摘要     | 摘要             |
  * | 计划、已完成交互、未知节点     | 摘要    | 摘要     | 摘要             |
  *
  * 高级设置可把任一类型改为 hidden/summary/expanded；失败节点即使配置隐藏
  * 也至少恢复为错误摘要；隐藏节点不占轨迹行，由「另有 N 项已隐藏」入口恢复。
+ * （narration 是穿插直出正文：留在节点序列原位但渲染为文字，不受本表控制、恒可见。）
  */
 import type {
   ConversationProcessNode,
@@ -21,10 +22,12 @@ import type {
 
 export const DEFAULT_V2_PRESET: ConversationRendererPreset = 'balanced';
 
-export const PROCESS_NODE_KINDS: ConversationProcessNodeKind[] = [
+/** 节点行类型（narration 排除：穿插直出正文，无行级档位） */
+export type RowNodeKind = Exclude<ConversationProcessNodeKind, 'narration'>;
+
+export const PROCESS_NODE_KINDS: RowNodeKind[] = [
   'reasoning',
   'context',
-  'narration',
   'tool',
   'subagent',
   'plan',
@@ -34,12 +37,11 @@ export const PROCESS_NODE_KINDS: ConversationProcessNodeKind[] = [
 
 export const PRESET_NODE_MODES: Record<
   ConversationRendererPreset,
-  Record<ConversationProcessNodeKind, NodePresentationMode>
+  Record<RowNodeKind, NodePresentationMode>
 > = {
   focused: {
     reasoning: 'hidden',
     context: 'hidden',
-    narration: 'hidden',
     tool: 'summary',
     subagent: 'summary',
     plan: 'summary',
@@ -49,7 +51,6 @@ export const PRESET_NODE_MODES: Record<
   balanced: {
     reasoning: 'summary',
     context: 'summary',
-    narration: 'summary',
     tool: 'summary',
     subagent: 'summary',
     plan: 'summary',
@@ -59,7 +60,6 @@ export const PRESET_NODE_MODES: Record<
   detailed: {
     reasoning: 'expanded',
     context: 'expanded',
-    narration: 'expanded',
     tool: 'summary',
     subagent: 'summary',
     plan: 'summary',
@@ -86,6 +86,8 @@ export function resolveNodeMode(
   node: Pick<ConversationProcessNode, 'kind' | 'failed'>,
   preferences: ConversationRenderPreferencesV2,
 ): NodePresentationMode {
+  // narration 穿插直出正文，不走档位表（防御性兜底；正常链路在拆分前已分流）
+  if (node.kind === 'narration') return 'summary';
   const presetModes =
     PRESET_NODE_MODES[preferences.preset] ?? PRESET_NODE_MODES.balanced;
   const overridden = preferences.nodeOverrides?.[node.kind];
@@ -97,9 +99,9 @@ export function resolveNodeMode(
 }
 
 export interface TurnNodeVisibility {
-  /** 按原序保留的可见节点（mode !== hidden） */
+  /** 按原序保留的可见节点（mode !== hidden；narration 恒可见） */
   visibleNodes: ConversationProcessNode[];
-  /** 被隐藏的节点数（供「另有 N 项已隐藏」入口） */
+  /** 被隐藏的节点数（供「另有 N 项已隐藏」入口；narration 不计） */
   hiddenCount: number;
 }
 
@@ -110,7 +112,11 @@ export function splitNodesByVisibility(
   const visibleNodes: ConversationProcessNode[] = [];
   let hiddenCount = 0;
   nodes.forEach((node) => {
-    if (resolveNodeMode(node, preferences) === 'hidden') {
+    // narration 是穿插直出正文：恒可见、不参与隐藏计数
+    if (
+      node.kind !== 'narration' &&
+      resolveNodeMode(node, preferences) === 'hidden'
+    ) {
       hiddenCount += 1;
       return;
     }

@@ -27,7 +27,7 @@ import type {
 } from '../types';
 import FinalAnswerBlock from './FinalAnswerBlock';
 import UserBubbleCollapse from './UserBubbleCollapse';
-import WorkTraceDisclosure from './WorkTraceDisclosure';
+import WorkTraceDisclosure, { NarrationText } from './WorkTraceDisclosure';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -105,8 +105,11 @@ const TurnBlock: React.FC<{
   const lastAssistant = [...turn.assistantMessages]
     .reverse()
     .find((message) => message.role === AssistantRoleEnum.ASSISTANT);
-  const hasContent =
-    turn.nodes.length > 0 || !!turn.finalAnswer.text || turn.running;
+  // 轨迹条只在确有节点行（非 narration）或运行中时出现；
+  // 仅剩 narration（无工具无思考）的终态轮直接以正文展示，不套空轨迹条
+  const narrationOnly = turn.nodes.some((node) => node.kind === 'narration');
+  const showTrace =
+    turn.nodes.some((node) => node.kind !== 'narration') || turn.running;
 
   return (
     <div className={cx(styles['turn-container'])} data-turn-key={turn.key}>
@@ -130,7 +133,7 @@ const TurnBlock: React.FC<{
           </div>
         )}
       </div>
-      {hasContent && (
+      {showTrace && (
         <WorkTraceDisclosure
           turn={turn}
           preferences={preferences}
@@ -138,6 +141,18 @@ const TurnBlock: React.FC<{
           manualExpanded={manualExpanded}
           onManualToggle={setManualExpanded}
         />
+      )}
+      {/* 无节点行的轮次（纯说明）：narration 直接以正文展示 */}
+      {!showTrace && narrationOnly && (
+        <div className={cx(styles['narration-block'])}>
+          {turn.nodes
+            .filter((node) => node.kind === 'narration')
+            .map((node) => (
+              <NarrationText key={node.id} narrationId={node.id}>
+                {node.text ?? ''}
+              </NarrationText>
+            ))}
+        </div>
       )}
       <FinalAnswerBlock
         turn={turn}

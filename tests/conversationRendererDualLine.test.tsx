@@ -210,7 +210,7 @@ describe('数据线 × 渲染线四组合', () => {
 
     const kinds = (turns: typeof legacyTurns) =>
       turns[0].nodes.map((node) => node.kind);
-    // 两线均：reasoning + tool；正文段因 outputText 已作回答而进入轨迹为 narration
+    // 两线均：reasoning + tool；正文段因 outputText 已作回答，穿插原位为 narration
     expect(kinds(legacyTurns)).toEqual(['reasoning', 'tool', 'narration']);
     expect(kinds(runtimeTurns)).toEqual(['reasoning', 'tool', 'narration']);
 
@@ -227,7 +227,7 @@ describe('数据线 × 渲染线四组合', () => {
       source: 'finalResult',
       text: '最终结论（runtime）',
     });
-    // 正文段全部进入轨迹（outputText 已作为回答）
+    // 正文段为 narration 节点（outputText 已作为回答，不重复）
     expect(
       legacyTurns[0].nodes.filter((n) => n.kind === 'narration'),
     ).toHaveLength(1);
