@@ -37,9 +37,24 @@ export const getToolPresentationKind = ({
   name = '',
   result,
 }: ToolPresentationInput): ToolPresentationKind => {
+  const resultRecord =
+    result && typeof result === 'object'
+      ? (result as Record<string, unknown>)
+      : undefined;
+  const resultKind = resultRecord?.kind;
+  const input =
+    resultRecord?.input && typeof resultRecord.input === 'object'
+      ? (resultRecord.input as Record<string, unknown>)
+      : undefined;
   const items = resultItems(result);
   if (items.some((item) => item.type === 'terminal')) return 'terminal';
   if (items.some((item) => item.type === 'diff')) return 'file-edit';
+  // 真实 ToolCall 历史协议使用 kind + content.text，而不是 terminal/diff data 项。
+  if (resultKind === 'execute' || typeof input?.command === 'string') {
+    return 'terminal';
+  }
+  if (resultKind === 'read') return 'file-read';
+  if (resultKind === 'edit' || resultKind === 'write') return 'file-edit';
 
   if (componentType === AgentComponentTypeEnum.Plan) return 'todo';
   if (componentType === AgentComponentTypeEnum.Skill) return 'skill';

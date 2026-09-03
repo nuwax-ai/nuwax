@@ -96,24 +96,16 @@ vi.mock('@/hooks/useUnifiedTheme', () => ({
     data: { antdTheme: unifiedThemeState.antdTheme },
   }),
 }));
-vi.mock('@/components/MarkdownCustomProcess', () => ({
-  default: ({
-    executeId,
-    name,
-  }: {
-    executeId: string;
-    name: string;
-    status?: string;
-    type?: string;
-  }) => {
-    if (name === 'explode') {
+vi.mock('@/features/conversation/presentation-v2/react/ToolNodeDetail', () => ({
+  default: ({ node }: { node: { id: string; title: string } }) => {
+    if (node.title === 'explode') {
       throw new Error('tool detail render explosion');
     }
     return (
       <div
         data-testid="tool-detail"
-        data-execute-id={executeId}
-        data-name={name}
+        data-execute-id={node.id}
+        data-name={node.title}
       />
     );
   },

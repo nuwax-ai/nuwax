@@ -1,9 +1,8 @@
 /**
  * V2 轨迹单行节点：状态图标 + 标题 + 省略摘要常显；点击展开受限高度详情。
- * 工具/子智能体/计划详情复用现有 MarkdownCustomProcess（保留 Diff/终端/Plan/
- * OpenUI/文件操作专属卡能力，不重做工具卡）。
+ * 工具详情使用 V2 紧凑渲染器：外层行唯一负责标题、状态与 disclosure，
+ * 详情只呈现归一化后的输入/输出，避免嵌套旧卡和原始协议 JSON。
  */
-import MarkdownCustomProcess from '@/components/MarkdownCustomProcess';
 import {
   getToolPresentationKind,
   type ToolPresentationKind,
@@ -11,8 +10,6 @@ import {
 import { PureMarkdownRenderer } from '@/components/MarkdownRenderer';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { dict } from '@/services/i18nRuntime';
-import { AgentComponentTypeEnum } from '@/types/enums/agent';
-import { ProcessingEnum } from '@/types/enums/common';
 import {
   BulbOutlined,
   CaretRightOutlined,
@@ -36,6 +33,7 @@ import classNames from 'classnames';
 import React from 'react';
 import type { ConversationProcessNode } from '../types';
 import styles from './index.less';
+import ToolNodeDetail from './ToolNodeDetail';
 
 const cx = classNames.bind(styles);
 
@@ -91,16 +89,6 @@ export const nodeDisplayTitle = (node: ConversationProcessNode): string => {
   }
 };
 
-const NODE_STATUS_TO_PROCESSING: Record<
-  ConversationProcessNode['status'],
-  ProcessingEnum
-> = {
-  running: ProcessingEnum.EXECUTING,
-  finished: ProcessingEnum.FINISHED,
-  failed: ProcessingEnum.FAILED,
-  unknown: ProcessingEnum.FINISHED,
-};
-
 const NodeDetailMarkdown: React.FC<{ nodeId: string; text: string }> = ({
   nodeId,
   text,
@@ -117,34 +105,13 @@ const NodeDetailMarkdown: React.FC<{ nodeId: string; text: string }> = ({
   );
 };
 
-const NodeDetail: React.FC<{
-  node: ConversationProcessNode;
-  conversationId?: number | string;
-}> = ({ node, conversationId }) => {
+const NodeDetail: React.FC<{ node: ConversationProcessNode }> = ({ node }) => {
   if (
     node.kind === 'tool' ||
     node.kind === 'subagent' ||
     node.kind === 'plan'
   ) {
-    const status =
-      node.processing?.status ??
-      NODE_STATUS_TO_PROCESSING[node.status] ??
-      ProcessingEnum.FINISHED;
-    return (
-      <MarkdownCustomProcess
-        embedded
-        executeId={node.executeId ?? node.id}
-        dataKey={`v2-detail-${node.id}`}
-        conversationId={conversationId ?? ''}
-        type={
-          (node.processing?.type ??
-            (node.componentType as AgentComponentTypeEnum) ??
-            AgentComponentTypeEnum.Plugin) as AgentComponentTypeEnum
-        }
-        status={status}
-        name={node.title}
-      />
-    );
+    return <ToolNodeDetail node={node} />;
   }
   if (node.kind === 'reasoning') {
     return (
@@ -181,7 +148,6 @@ const ProcessNodeRow: React.FC<ProcessNodeRowProps> = ({
   node,
   expanded,
   onToggle,
-  conversationId,
 }) => {
   const { token } = theme.useToken();
   // narration 不渲染为行（穿插直出），此处到达即异常路径——兜底问号图标
@@ -275,7 +241,7 @@ const ProcessNodeRow: React.FC<ProcessNodeRowProps> = ({
           className={cx(styles['node-detail'])}
           aria-label={nodeDisplayTitle(node)}
         >
-          <NodeDetail node={node} conversationId={conversationId} />
+          <NodeDetail node={node} />
         </div>
       )}
     </div>

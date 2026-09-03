@@ -17,6 +17,22 @@ describe('工具调用类型化展开渲染', () => {
     expect(
       getToolPresentationKind({
         componentType: AgentComponentTypeEnum.ToolCall,
+        name: "终端执行 nuwa-browser <<'EOF'",
+        result: {
+          kind: 'execute',
+          input: { command: "nuwa-browser <<'EOF'\nEOF" },
+          data: [
+            {
+              type: 'content',
+              content: { type: 'text', text: '```\nExit code 1\n```' },
+            },
+          ],
+        },
+      }),
+    ).toBe('terminal');
+    expect(
+      getToolPresentationKind({
+        componentType: AgentComponentTypeEnum.ToolCall,
         name: '编辑文件',
         result: { data: [{ type: 'diff', path: 'a.ts' }] },
       }),
