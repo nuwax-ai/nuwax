@@ -175,7 +175,7 @@ const ProcessNodeRow: React.FC<ProcessNodeRowProps> = ({
       ? node.interaction?.answerSummary || node.summary
       : node.summary;
 
-  // 行尾操作区（展开态）：耗时 chip（V1 同款口径）+ 复制 + 分享。
+  // 行尾操作区（恒显示，对齐 V1 单行卡）：耗时 chip（V1 同款口径）+ 复制 + 分享。
   // 运行中 endTime 缺失时 getProcessDurationMs 返回 null，不占位。
   const durationMs = getProcessDurationMs(node.processing?.result);
   const durationText = durationMs === null ? '' : formatDuration(durationMs);
@@ -254,8 +254,9 @@ const ProcessNodeRow: React.FC<ProcessNodeRowProps> = ({
             aria-hidden="true"
           />
         </button>
-        {/* 操作区在主 button 外侧：避免交互元素嵌套破坏原生语义 */}
-        {expanded && (durationText || shareText) && (
+        {/* 操作区在主 button 外侧：避免交互元素嵌套破坏原生语义。
+            恒显示（对齐 V1 单行卡：收起态即可见耗时/复制/分享） */}
+        {(durationText || shareText) && (
           <div className={cx(styles['node-row-actions'])}>
             {durationText && (
               <span

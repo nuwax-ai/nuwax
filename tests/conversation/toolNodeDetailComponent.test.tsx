@@ -158,7 +158,7 @@ describe('V2 真实工具节点详情', () => {
     expect(document.querySelector('[data-tool-detail-kind]')).toBeNull();
   });
 
-  it('展开态行尾显示耗时与复制/分享（收起态不显示）', () => {
+  it('行尾恒显示耗时与复制/分享（收起态即可见，对齐 V1 单行卡）', () => {
     const node = {
       id: 'call-dur',
       kind: 'tool',
@@ -183,17 +183,16 @@ describe('V2 真实工具节点详情', () => {
     } as any;
     const props = { onToggle: () => {}, node };
     const { rerender } = render(<ProcessNodeRow expanded={false} {...props} />);
-    // 收起态：无操作区
-    expect(
-      document.querySelector('[data-testid="v2-node-duration"]'),
-    ).toBeNull();
-    expect(screen.queryByTestId('copy-button')).toBeNull();
+    // 收起态：操作区已在（不用点开）
+    expect(screen.getByTestId('v2-node-duration')).toHaveTextContent('7.4s');
+    expect(screen.getByTestId('copy-button')).toBeInTheDocument();
+    expect(screen.getByTestId('share-message-btn')).toBeInTheDocument();
 
+    // 展开态：操作区仍在，复制内容含命令与输出
     rerender(<ProcessNodeRow expanded {...props} />);
     expect(screen.getByTestId('v2-node-duration')).toHaveTextContent('7.4s');
     const copy = screen.getByTestId('copy-button');
     expect(copy.getAttribute('data-copy-text')).toContain('$ echo hi');
     expect(copy.getAttribute('data-copy-text')).toContain('hi');
-    expect(screen.getByTestId('share-message-btn')).toBeInTheDocument();
   });
 });
