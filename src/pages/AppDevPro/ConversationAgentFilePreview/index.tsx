@@ -23,8 +23,8 @@ export interface ConversationAgentFilePreviewProps {
   diffFile?: ChangeFileInfo;
   /** 当前激活的标签（由外层 PreviewTabBar 控制） */
   activeTab: PreviewTab | null;
-  /** 「预览」页签：调试对话面板 */
-  debugPanel?: React.ReactNode;
+  /** 「应用预览」页签内容；未传入时显示空白占位 */
+  previewPanel?: React.ReactNode;
   /** 「版本控制」页签：Git 提交记录 */
   versionPanel?: React.ReactNode;
   /** 外层容器类名（来自 useFileTreePreviewView） */
@@ -42,7 +42,7 @@ const ConversationAgentFilePreview: React.FC<
   preview,
   diffFile,
   activeTab,
-  debugPanel,
+  previewPanel,
   versionPanel,
   providerClassName,
   className,
@@ -81,10 +81,12 @@ const ConversationAgentFilePreview: React.FC<
   /** 工作区工具页签 → 面板内容映射 */
   const workspacePanelMap = useMemo(
     (): Partial<Record<PreviewToolId, React.ReactNode>> => ({
-      preview: debugPanel,
+      preview: previewPanel ?? (
+        <div className={cx(styles['app-preview-placeholder'])} />
+      ),
       'version-control': versionPanel,
     }),
-    [debugPanel, versionPanel],
+    [previewPanel, versionPanel],
   );
 
   /** 按优先级渲染预览区主体（diff > 文件 > 工作区页签 > 其他） */

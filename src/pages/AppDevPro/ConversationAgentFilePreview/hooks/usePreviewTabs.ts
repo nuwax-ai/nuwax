@@ -53,7 +53,7 @@ export const WORKSPACE_PREVIEW_TOOL_IDS: PreviewToolId[] = [
 ];
 
 const TOOL_I18N_MAP: Record<PreviewToolId, string> = {
-  preview: 'PC.Pages.ConversationAgentTabPicker.preview',
+  preview: 'PC.Pages.AppDevPro.appPreview',
   arrange: 'PC.Pages.ConversationAgentTabPicker.arrange',
   terminal: 'PC.Pages.ConversationAgentTabPicker.terminal',
   'version-control': 'PC.Pages.ConversationAgentTabPicker.versionControl',

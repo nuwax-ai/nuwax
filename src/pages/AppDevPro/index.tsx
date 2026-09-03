@@ -12,50 +12,35 @@ import FileTreeGitSourcePanel, {
 } from '@/components/business-component/FileTreeGitSourcePanel';
 import { useFileTreePreviewView } from '@/components/business-component/FileTreePreviewPanel/hooks/useFileTreePreviewView';
 import type { FileTreePreviewViewProps } from '@/components/business-component/FileTreePreviewPanel/types';
-import VncPreview from '@/components/business-component/VncPreview';
-import CreateAgent from '@/components/CreateAgent';
 import Loading from '@/components/custom/Loading';
-import PublishComponentModal from '@/components/PublishComponentModal';
-import VersionHistory from '@/components/VersionHistory';
 import { isAgentVersionControlEnabled } from '@/constants/agent.constants';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
-import { GLOBAL_POLLING_INTERVAL } from '@/constants/home.constants';
 import { useInitProjectMetadata } from '@/hooks/useInitProjectMetadata';
 import { useTerminalWsUrl } from '@/hooks/useTerminalWsUrl';
 import useUnifiedTheme from '@/hooks/useUnifiedTheme';
-import DebugDetails from '@/pages/EditAgent/DebugDetails';
 import {
   apiAgentComponentModelUpdate,
   apiAgentConfigInfo,
 } from '@/services/agentConfig';
 import { dict } from '@/services/i18nRuntime';
 import { apiModelList } from '@/services/modelConfig';
+import { apiPageGetProjectInfoByAgent } from '@/services/pageDev';
 import {
   apiDownloadAllFiles,
   apiImportProject,
   apiUpdateStaticFile,
   apiUploadFiles,
 } from '@/services/vncDesktop';
-import {
-  AgentComponentTypeEnum,
-  HideDesktopEnum,
-  MessageTypeEnum,
-  TaskStatus,
-} from '@/types/enums/agent';
-import { CreateUpdateModeEnum, PublishStatusEnum } from '@/types/enums/common';
+import { AgentComponentTypeEnum, MessageTypeEnum } from '@/types/enums/agent';
 import { ModelTypeEnum } from '@/types/enums/modelConfig';
-import { AgentTypeEnum, EditAgentShowType } from '@/types/enums/space';
-import {
-  AgentBaseInfo,
-  AgentConfigInfo,
-  type ComponentModelBindConfig,
-} from '@/types/interfaces/agent';
+import { AgentConfigInfo } from '@/types/interfaces/agent';
 import { FileNode } from '@/types/interfaces/appDev';
 import { UpdateFileInfo } from '@/types/interfaces/fileTree';
 import type {
   ModelConfigInfo,
   ModelListParams,
 } from '@/types/interfaces/model';
+import type { CustomPageDto } from '@/types/interfaces/pageDev';
 import { RequestResponse } from '@/types/interfaces/request';
 import { StaticFileInfo } from '@/types/interfaces/vncDesktop';
 import { checkFileSizeExceedLimit } from '@/utils';
@@ -70,7 +55,6 @@ import {
 import { useRequest } from 'ahooks';
 import { message } from 'antd';
 import classNames from 'classnames';
-import dayjs from 'dayjs';
 import debounce from 'lodash/debounce';
 import React, {
   useCallback,
@@ -81,7 +65,7 @@ import React, {
 } from 'react';
 import { history, useLocation, useModel, useParams } from 'umi';
 import AgentConversationChatPanel from './AgentConversationChatPanel';
-import ConversationAgentChatSession from './ConversationAgentChatSession';
+import AppDevSettingsModal from './components/AppDevSettingsModal';
 import ConversationAgentFilePreview from './ConversationAgentFilePreview';
 import {
   getFileTabId,
@@ -102,7 +86,7 @@ const cx = classNames.bind(styles);
 // );
 
 /**
- * ConversationAgent — 智能体对话开发页面（核心页面组件）
+ * AppDevPro — 应用开发页面（从 ConversationAgent 布局演化，预览区不展示智能体）
  *
  * ## 布局结构
  * 采用三栏式布局 + 底部终端控制台：
@@ -110,26 +94,13 @@ const cx = classNames.bind(styles);
  * │                    Header (导航栏)                       │
  * ├──────────────┬────────────────┬─────────────────────────┤
  * │  左侧面板     │   中间面板      │      右侧面板            │
- * │  (聊天区域)   │   (文件树)      │  (编排配置 / 文件预览)    │
+ * │  (聊天区域)   │   (文件树)      │  (文件预览 / 版本控制)    │
  * │  始终显示     │   可收起/展开    │  + 底部终端 (始终显示)    │
  * ├──────────────┴────────────────┴─────────────────────────┤
- * │                 模态弹窗层 (发布/编辑/模型设置)             │
+ * │                 模态弹窗层 (导入项目等)                    │
  * └─────────────────────────────────────────────────────────┘
- *
- * ## 核心职责
- * 1. 智能体配置加载与更新（agentConfigInfo）
- * 2. 聊天对话管理（通过 conversationInfo model）
- * 3. 文件树管理（CRUD、上传、重命名等）
- * 4. 编排面板与文件预览的切换显示
- * 5. 终端 WebSocket 连接管理
- * 6. 模型配置、发布、导入导出等操作
- *
- * ## 数据流
- * - URL 参数 (agentId) → 加载智能体配置 → 驱动 UI 渲染
- * - 用户操作 → handleChangeAgent → 调用 API 更新 → 同步本地状态
- * - conversationInfo model 管理聊天消息、文件树、预览等页面状态
  */
-const ConversationAgent: React.FC = () => {
+const AppDevPro: React.FC = () => {
   // ==================== 路由参数 ====================
   const params = useParams();
   const location = useLocation();
@@ -156,10 +127,6 @@ const ConversationAgent: React.FC = () => {
   // ==================== 本地状态 ====================
   /** 当前智能体 ID */
   const [agentId, setAgentId] = useState<number>(agentIdFromQuery);
-  /** 发布弹窗是否打开 */
-  const [open, setOpen] = useState<boolean>(false);
-  /** 编辑智能体基础信息弹窗是否打开 */
-  const [openEditAgent, setOpenEditAgent] = useState<boolean>(false);
   /** 底部开发者控制台（终端）是否显示 */
   const [showDevConsole] = useState<boolean>(true);
   /** 切换预览标签/文件时递增，用于终端从 expanded 恢复 default */
@@ -215,8 +182,12 @@ const ConversationAgent: React.FC = () => {
   >([]);
   /** 文件树区域是否显示（header 图标控制，默认折叠） */
   const [canShowFileView, setCanShowFileView] = useState<boolean>(false);
-  /** 右侧预览区是否展示智能体电脑（VNC） */
-  const [isAgentDesktopOpen, setIsAgentDesktopOpen] = useState<boolean>(false);
+  /** 项目设置弹窗 */
+  const [settingsOpen, setSettingsOpen] = useState<boolean>(false);
+  /** 页面项目详情（设置弹窗：认证 / 域名绑定） */
+  const [pageProjectInfo, setPageProjectInfo] = useState<CustomPageDto | null>(
+    null,
+  );
 
   // ==================== 全局状态模型 ====================
   /**
@@ -227,16 +198,11 @@ const ConversationAgent: React.FC = () => {
    * - TaskAgent 文件选中状态
    */
   const {
-    showType,
-    setShowType,
-    messageList,
     runQueryConversation,
     conversationInfo,
     isFileTreePinned,
     setIsFileTreePinned,
     closePreviewView,
-    openDesktopView,
-    ensureDesktopConnection,
     fileTreeData,
     fileTreeDataLoading,
     handleRefreshFileList,
@@ -250,31 +216,13 @@ const ConversationAgent: React.FC = () => {
     runAsync,
     resetInit,
     restartVncPod,
-    restartAgent,
-    isConversationActive,
     refreshGitListRef,
   } = useModel('conversationInfo');
-
-  /** 关闭远程智能体桌面（切换标签/文件等预览操作时调用） */
-  const closeAgentDesktop = useCallback(() => {
-    setIsAgentDesktopOpen(false);
-    closePreviewView();
-  }, [closePreviewView]);
 
   /** 文件树数据 ref，供防抖保存读取最新列表 */
   const fileTreeDataRef = useRef(fileTreeData);
   /** 文件树数据 ref，供防抖保存读取最新列表 */
   fileTreeDataRef.current = fileTreeData;
-
-  /** conversationAgent model：页面独立聊天会话（与 conversationInfo 隔离） */
-  const {
-    runQueryConversation: runQueryAgentConversation,
-    resetInit: resetAgentConversation,
-    setMessageList: setAgentMessageList,
-    setIsMoreMessage: setAgentIsMoreMessage,
-    setIsLoadingConversation: setAgentIsLoadingConversation,
-    handleClearSideEffect: handleClearAgentConversationSideEffect,
-  } = useModel('conversationAgent');
 
   /** 是否开启版本管控（会话信息加载完成且 enableVersionControl 为 1） */
   const enableVersionControl = conversationInfo?.agent?.enableVersionControl;
@@ -306,52 +254,7 @@ const ConversationAgent: React.FC = () => {
     void refreshGitListRef.current?.();
   }, []);
 
-  /** 新窗口打开智能体高级设置（EditAgent 页面） */
-  const handleOpenAdvancedSettings = useCallback(() => {
-    if (!spaceId || !agentId) {
-      return;
-    }
-    window.open(
-      `/space/${spaceId}/agent/${agentId}`,
-      '_blank',
-      'noopener,noreferrer',
-    );
-  }, [spaceId, agentId]);
-
-  /** 预览 Tab 栏切换模型（与 EditAgent ArrangeTitle 一致） */
-  const handlePreviewTabModelChange = useCallback(
-    async (modelId: number, name: string) => {
-      const componentId = agentConfigInfo?.modelComponentConfig?.id;
-      if (!componentId || !agentConfigInfo) {
-        return;
-      }
-      // 更新模型组件配置
-      const bindConfig = agentConfigInfo.modelComponentConfig
-        ?.bindConfig as ComponentModelBindConfig;
-      await apiAgentComponentModelUpdate({
-        id: componentId,
-        targetId: modelId,
-        bindConfig,
-      });
-      setAgentConfigInfo({
-        ...agentConfigInfo,
-        modelComponentConfig: {
-          ...agentConfigInfo.modelComponentConfig,
-          targetId: modelId,
-          name,
-        },
-      });
-    },
-    [agentConfigInfo],
-  );
-
   // ==================== 计算属性 ====================
-  /** 开发会话 ID，用于聊天历史查询 */
-  const devConversationId = agentConfigInfo?.devConversationId;
-  /** 开发会话 ID 的 ref，用于存储当前的开发会话 ID */
-  const devConversationIdRef = useRef(devConversationId);
-  /** 开发会话 ID 的 ref，用于存储当前的开发会话 ID */
-  devConversationIdRef.current = devConversationId;
 
   /**
    * 获取有效的沙箱 ID
@@ -421,54 +324,6 @@ const ConversationAgent: React.FC = () => {
   };
 
   // ==================== 副作用 (Effects) ====================
-
-  /**
-   * devConversationId 就绪后查询开发会话历史，写入 conversationAgent.messageList
-   * 注意：不要把 runQueryConversation / resetInit 放入依赖，否则 cleanup 会清空 messageList 并导致循环请求
-   */
-  useEffect(() => {
-    handleClearAgentConversationSideEffect();
-    setAgentMessageList([]);
-    setAgentIsMoreMessage(false);
-    if (!devConversationId) {
-      setAgentIsLoadingConversation(false);
-      return;
-    }
-    setAgentIsLoadingConversation(true);
-    runQueryAgentConversation(devConversationId);
-    // 仅由 devConversationId 驱动右侧 preview 调试会话切换；model action 引用会随 render 变化，
-    // 放入依赖会重复清空并循环拉历史。
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [devConversationId]);
-
-  // 轮询 agent 配置，感知后端 devConversationId 变化（flow-debugger `session.sh new` 代建新会话后回写）。
-  // 仅合并 devConversationId 单字段 + 变化守卫，绝不整体覆盖 agentConfigInfo（以免冲掉未保存的编排/模型/提示词编辑）。
-  // 值变化即触发上面的 useEffect → runQueryAgentConversation 自动切到新会话。
-  useRequest(() => apiAgentConfigInfo(agentId), {
-    ready: !!agentId,
-    pollingInterval: GLOBAL_POLLING_INTERVAL,
-    pollingWhenHidden: false,
-    pollingErrorRetryCount: -1,
-    onSuccess: (result: Awaited<ReturnType<typeof apiAgentConfigInfo>>) => {
-      const next = result?.data?.devConversationId;
-      // devConversationPollLogger.info('agent config poll result', {
-      //   agentId,
-      //   previousDevConversationId: devConversationIdRef.current,
-      //   nextDevConversationId: next,
-      //   changed:
-      //     next !== null &&
-      //     next !== undefined &&
-      //     next !== devConversationIdRef.current,
-      // });
-      if (next !== null && next !== undefined) {
-        setAgentConfigInfo((prev) =>
-          prev && next !== prev.devConversationId
-            ? { ...prev, devConversationId: next }
-            : prev,
-        );
-      }
-    },
-  });
 
   /**
    * 当页面加载结束且携带了初始消息状态时，自动触发消息发送
@@ -580,7 +435,6 @@ const ConversationAgent: React.FC = () => {
           message.success(dict('PC.Pages.AppDevIndex.importProjectSuccess'));
           setOpenImportProject(false);
           // 导入后重置顶部标签栏：仅保留预览、版本管控，关闭已打开的文件/diff 等页签
-          closeAgentDesktop();
           setSelectedChangeFile(null);
           previewTabsRef.current?.closeAllTabs();
           clearFileTreeSelectionRef.current?.();
@@ -602,7 +456,6 @@ const ConversationAgent: React.FC = () => {
       queryConversationId,
       refreshFileListImmediately,
       refreshGitListIfEnabled,
-      closeAgentDesktop,
       setTaskAgentSelectedFileId,
     ],
   );
@@ -628,9 +481,6 @@ const ConversationAgent: React.FC = () => {
     // 在 queryConversationId 变更前或组件卸载时清理会话数据
     return () => {
       resetInit();
-
-      /** 离开 ConversationAgent 页面时清理 conversationAgent 会话状态 */
-      resetAgentConversation();
     };
   }, [queryConversationId]);
 
@@ -691,6 +541,19 @@ const ConversationAgent: React.FC = () => {
     },
   });
 
+  /** 根据智能体查询页面项目详情，供设置弹窗使用 */
+  const { run: runGetPageProjectInfo } = useRequest(
+    apiPageGetProjectInfoByAgent,
+    {
+      manual: true,
+      onSuccess: (result: RequestResponse<CustomPageDto>) => {
+        if (result?.code === SUCCESS_CODE && result.data) {
+          setPageProjectInfo(result.data);
+        }
+      },
+    },
+  );
+
   /** 初始化项目元数据 */
   useInitProjectMetadata({
     targetType: AgentComponentTypeEnum.Agent,
@@ -721,27 +584,19 @@ const ConversationAgent: React.FC = () => {
     runAgentConfigInfo(agentId);
   }, [agentId, runAgentConfigInfo]);
 
+  /** agentId 变化时拉取页面项目详情（设置弹窗） */
+  useEffect(() => {
+    if (!agentId) {
+      setPageProjectInfo(null);
+      return;
+    }
+    runGetPageProjectInfo(agentId);
+  }, [agentId, runGetPageProjectInfo]);
+
   /** 初始化页面基础配置：为页面中所有链接添加 target 属性 */
   useEffect(() => {
     addBaseTarget();
   }, [location]);
-
-  // 任务结果文件点击自定义拦截处理器：跳转至 EditAgent 并携带 file 参数
-  const handleTaskResultClick = useCallback(
-    (fileId: string) => {
-      if (spaceId && agentId) {
-        window.open(
-          `/space/${spaceId}/agent/${agentId}?file=${encodeURIComponent(
-            fileId,
-          )}`,
-          '_blank',
-        );
-        return true; // 拦截默认定位逻辑
-      }
-      return false;
-    },
-    [spaceId, agentId],
-  );
 
   // ==================== 事件处理函数 ====================
 
@@ -777,35 +632,6 @@ const ConversationAgent: React.FC = () => {
     runAgentConfigInfo,
     refreshGitListIfEnabled,
   ]);
-
-  /**
-   * 确认编辑智能体基础信息（名称、图标、描述等）
-   * 将编辑后的信息合并到本地配置并关闭弹窗
-   */
-  const handlerConfirmEditAgent = (info: AgentBaseInfo) => {
-    const _agentConfigInfo = {
-      ...agentConfigInfo,
-      ...info,
-    } as AgentConfigInfo;
-    setAgentConfigInfo(_agentConfigInfo);
-    setOpenEditAgent(false);
-  };
-
-  /**
-   * 确认发布智能体
-   * 更新发布状态为"已发布"，记录发布时间
-   */
-  const handleConfirmPublish = () => {
-    setOpen(false);
-    const time = dayjs().toString();
-    const _agentConfigInfo = {
-      ...agentConfigInfo,
-      publishDate: time,
-      modified: time,
-      publishStatus: PublishStatusEnum.Published,
-    } as AgentConfigInfo;
-    setAgentConfigInfo(_agentConfigInfo);
-  };
 
   // ==================================== 文件操作处理函数 ====================================
   // 以下函数封装了文件树 CRUD 操作，统一通过 apiUpdateStaticFile 接口提交变更
@@ -1041,27 +867,11 @@ const ConversationAgent: React.FC = () => {
   };
 
   /**
-   * 切换中间文件树栏显隐（与终端全屏、智能体电脑互斥，仅一个图标 active）
+   * 切换中间文件树栏显隐（与终端全屏互斥）
    */
   const handleToggleFileTreeSidebar = useCallback(() => {
     const isTerminalExpanded =
       devConsoleLayoutMode === 'expanded' && devConsoleActiveTab === 'terminal';
-    // 如果智能体电脑打开，则关闭智能体电脑，并打开文件树
-    if (isAgentDesktopOpen) {
-      setIsAgentDesktopOpen(false);
-      setDevConsoleExpandSignal(0);
-      setCanShowFileView(true);
-      // 刷新文件树
-      if (queryConversationId) {
-        handleRefreshFileList(queryConversationId);
-        void openPreviewView(queryConversationId);
-      }
-      // 如果终端全屏，则折叠终端
-      if (isTerminalExpanded) {
-        setDevConsoleCollapseSignal((n) => n + 1);
-      }
-      return;
-    }
 
     // 如果终端全屏，则折叠终端，并打开文件树
     if (isTerminalExpanded) {
@@ -1085,73 +895,19 @@ const ConversationAgent: React.FC = () => {
     devConsoleActiveTab,
     devConsoleLayoutMode,
     handleRefreshFileList,
-    isAgentDesktopOpen,
-    openPreviewView,
     queryConversationId,
   ]);
-
-  /**
-   * 打开 / 切换智能体电脑（与文件树、终端全屏互斥）
-   */
-  const handleOpenDesktopPanel = useCallback(async () => {
-    const convId = queryConversationId;
-    if (!convId) {
-      message.warning(dict('PC.Pages.PreviewAndDebug.convIdNotFoundDesktop'));
-      return;
-    }
-
-    if (isAgentDesktopOpen) {
-      closePreviewView();
-      setIsAgentDesktopOpen(false);
-      setDevConsoleExpandSignal(0);
-      return;
-    }
-
-    // 桌面会卸载底部控制台：重置父级 layout 与信号，避免 remount 后陈旧 collapse 覆盖 expand
-    setDevConsoleLayoutMode('collapsed');
-    setDevConsoleCollapseSignal(0);
-
-    await openDesktopView(convId);
-    setCanShowFileView(false);
-    setDevConsoleExpandSignal(0);
-    setIsAgentDesktopOpen(true);
-  }, [
-    queryConversationId,
-    isAgentDesktopOpen,
-    openDesktopView,
-    closePreviewView,
-  ]);
-
-  /** 是否显示文件面板相关入口（通用型智能体 + 有效消息） */
-  const isShowFilePanel = useMemo(() => {
-    if (agentConfigInfo?.type !== AgentTypeEnum.TaskAgent) {
-      return false;
-    }
-    if (!messageList?.length) {
-      return false;
-    }
-    if (messageList.length === 1) {
-      return !!messageList[0]?.id;
-    }
-    return true;
-  }, [agentConfigInfo?.type, messageList]);
-
-  /** 是否显示智能体电脑入口（云端电脑 + 未隐藏远程桌面） */
-  const isShowDesktop =
-    isShowFilePanel &&
-    agentConfigInfo?.hideDesktop === HideDesktopEnum.No &&
-    finalSelectedComputerId === '-1';
 
   /**
    * 关闭预览面板
    * 同时关闭文件预览视图和取消文件树固定状态
    */
   const handleClosePreviewPanel = useCallback(() => {
-    closeAgentDesktop();
+    closePreviewView();
     setIsFileTreePinned(false);
     setSelectedChangeFile(null);
     previewTabsRef.current?.clearTabs();
-  }, [closeAgentDesktop, setIsFileTreePinned]);
+  }, [closePreviewView, setIsFileTreePinned]);
 
   /** 切换预览标签/文件时，底部终端若处于 expanded 则恢复 default */
   const resetDevConsoleExpandedLayout = useCallback(() => {
@@ -1168,7 +924,6 @@ const ConversationAgent: React.FC = () => {
       return;
     }
 
-    setIsAgentDesktopOpen(false);
     setSelectedChangeFile(null);
     if (queryConversationId) {
       void openPreviewView(queryConversationId);
@@ -1187,11 +942,9 @@ const ConversationAgent: React.FC = () => {
   const isTerminalPanelOpen =
     devConsoleLayoutMode === 'expanded' && devConsoleActiveTab === 'terminal';
 
-  /** 顶部三入口互斥 active：同一时刻仅高亮一个 */
-  const isFileTreeIconActive =
-    canShowFileView && !isTerminalPanelOpen && !isAgentDesktopOpen;
-  const isTerminalIconActive = isTerminalPanelOpen && !isAgentDesktopOpen;
-  const isDesktopIconActive = isAgentDesktopOpen;
+  /** 顶部入口互斥 active：同一时刻仅高亮一个 */
+  const isFileTreeIconActive = canShowFileView && !isTerminalPanelOpen;
+  const isTerminalIconActive = isTerminalPanelOpen;
 
   // ==================================== 文件视图 & 编排面板 ====================================
   /**
@@ -1223,12 +976,6 @@ const ConversationAgent: React.FC = () => {
       onRestartServer: () => {
         if (queryConversationId) {
           restartVncPod(queryConversationId, finalSelectedComputerId);
-        }
-      },
-      /** 重启智能体 */
-      onRestartAgent: () => {
-        if (queryConversationId) {
-          restartAgent(queryConversationId);
         }
       },
       /** 重命名文件 */
@@ -1269,7 +1016,6 @@ const ConversationAgent: React.FC = () => {
       enableVersionControl,
       /** 文件树选中文件时，切换右侧面板为文件预览并打开标签 */
       onFileSelectOpenPreview: (fileId?: string) => {
-        closeAgentDesktop();
         setSelectedChangeFile(null);
         if (fileId) {
           resetDevConsoleExpandedLayout();
@@ -1340,11 +1086,9 @@ const ConversationAgent: React.FC = () => {
     isVersionControlEnabled,
     openPreviewView,
     resetDevConsoleExpandedLayout,
-    closeAgentDesktop,
-    restartVncPod,
-    restartAgent,
     handleImportProject,
     isImportingProject,
+    restartVncPod,
   ]);
 
   /** 初始化文件视图 Hook，获取文件树和预览的渲染组件 */
@@ -1370,7 +1114,6 @@ const ConversationAgent: React.FC = () => {
     workspaceToolIds,
     // 打开文件标签
     onFileTabActivate: async (fileId, isDiff) => {
-      closeAgentDesktop();
       // 重置终端布局
       resetDevConsoleExpandedLayout();
       // 选中差异文件
@@ -1393,7 +1136,6 @@ const ConversationAgent: React.FC = () => {
     },
     // 打开工具标签
     onToolTabActivate: (toolId: PreviewToolId) => {
-      closeAgentDesktop();
       // 从开发工具打开终端时跳过 onToolTabActivate 中的布局重置
       if (skipDevConsoleResetRef.current) {
         skipDevConsoleResetRef.current = false;
@@ -1516,14 +1258,12 @@ const ConversationAgent: React.FC = () => {
     callbacks: {
       // 打开更改文件（选中文件并预览，非 diff）
       openChangeFile: (fileId: string) => {
-        closeAgentDesktop();
         previewTabs.openFileTab(fileId, false);
       },
       // 将文件路径添加到 .gitignore
       addFileToGitignore: handleAddToGitignore,
       // 选中修改文件，在右侧预览区展示 diff
       onDiffFileSelect: (fileId: string) => {
-        closeAgentDesktop();
         previewTabs.openFileTab(fileId, true);
       },
       // 放弃更改后关闭预览 Tab
@@ -1571,7 +1311,6 @@ const ConversationAgent: React.FC = () => {
    */
   const handlePreviewTabSelect = useCallback(
     (tabId: string) => {
-      closeAgentDesktop();
       if (tabId.startsWith('diff:')) {
         const fileId = tabId.slice('diff:'.length);
         if (isGitUntrackedFile(fileId)) {
@@ -1594,45 +1333,10 @@ const ConversationAgent: React.FC = () => {
       }
       previewTabs.selectTab(tabId);
     },
-    [
-      closeAgentDesktop,
-      fileView.changeFiles,
-      gitSourceControl,
-      isGitUntrackedFile,
-      previewTabs,
-    ],
+    [fileView.changeFiles, gitSourceControl, isGitUntrackedFile, previewTabs],
   );
 
   // ==================================== 渲染组件元素 ====================================
-
-  /** 「预览」页签：调试对话 */
-  const shouldDisablePreviewChatInput = useMemo(
-    () =>
-      isConversationActive ||
-      conversationInfo?.taskStatus === TaskStatus.EXECUTING,
-    [isConversationActive, conversationInfo?.taskStatus],
-  );
-
-  const previewDebugChatPanel = useMemo(
-    () => (
-      <ConversationAgentChatSession
-        agentId={agentId}
-        agentConfigInfo={agentConfigInfo}
-        onAgentConfigInfo={setAgentConfigInfo}
-        selectedComputerId={finalSelectedComputerId}
-        onChangeSelectedComputerId={setSelectedComputerId}
-        chatInputDisabled={shouldDisablePreviewChatInput}
-        onTaskResultClick={handleTaskResultClick}
-      />
-    ),
-    [
-      agentId,
-      agentConfigInfo,
-      finalSelectedComputerId,
-      shouldDisablePreviewChatInput,
-      handleTaskResultClick,
-    ],
-  );
 
   /** 「版本控制」页签：Git 提交记录 */
   const versionControlPanel = useMemo(() => {
@@ -1661,30 +1365,6 @@ const ConversationAgent: React.FC = () => {
     fileView.gitBranch,
     handleRefreshFileList,
   ]);
-
-  /**
-   * 渲染智能体电脑（VNC），占满文件树 + 右侧面板工作区
-   */
-  const renderAgentDesktopPanel = () => (
-    <div className={cx(styles['agent-desktop-workspace'])}>
-      <VncPreview
-        serviceUrl={process.env.BASE_URL || ''}
-        cId={String(queryConversationId)}
-        autoConnect
-        className={styles['agent-desktop-vnc']}
-        idleDetection={{
-          enabled: agentConfigInfo?.type === AgentTypeEnum.TaskAgent,
-          onIdleTimeout: closeAgentDesktop,
-        }}
-        // 重试前先 ensurePod + 恢复 keepalive，避免容器被回收后仅检测状态永远失败
-        onReconnect={
-          queryConversationId
-            ? () => ensureDesktopConnection(queryConversationId)
-            : undefined
-        }
-      />
-    </div>
-  );
 
   /**
    * 渲染右侧面板
@@ -1718,21 +1398,12 @@ const ConversationAgent: React.FC = () => {
               restartVncPod(queryConversationId, finalSelectedComputerId);
             }
           }}
-          /** 重启智能体 */
-          onRestartAgent={() => {
-            if (queryConversationId) {
-              restartAgent(queryConversationId);
-            }
-          }}
           /** 导出项目 */
           onExportProject={() => {
             void fileView.tree.handleExportProject?.();
           }}
           /** 是否为云电脑 */
           isCloudComputer={finalSelectedComputerId === '-1'}
-          originalModelConfigList={originalModelConfigList}
-          agentConfigInfo={agentConfigInfo}
-          onModelChange={handlePreviewTabModelChange}
         />
         {/* Tab 栏下方：预览内容 + 底部终端（终端放大时仅覆盖此区域） */}
         <div className={cx(styles['right-panel-main'])}>
@@ -1744,8 +1415,6 @@ const ConversationAgent: React.FC = () => {
               diffFile={gitSourceControl.selectedDiffFile ?? undefined}
               // 选中标签
               activeTab={previewTabs.activeTab}
-              // 调试对话面板
-              debugPanel={previewDebugChatPanel}
               // 版本控制面板（Git 提交记录）
               versionPanel={versionControlPanel}
               providerClassName={fileView.className}
@@ -1809,20 +1478,15 @@ const ConversationAgent: React.FC = () => {
   // ==================== 主渲染 ====================
   return (
     <div className={cx(styles.container, 'flex', 'flex-col')}>
-      {/* 页面顶部 Header：返回、智能体信息、文件树/远程桌面入口 */}
+      {/* 页面顶部 Header：返回、项目信息、文件树/终端入口 */}
       <ConversationAgentHeader
         className={styles['page-header']}
         agentConfigInfo={agentConfigInfo}
-        onEditAgent={() => setOpenEditAgent(true)}
-        onPublish={() => setOpen(true)}
-        onOpenAdvancedSettings={handleOpenAdvancedSettings}
         isFileTreeSidebarVisible={isFileTreeIconActive}
         onToggleFileTreeSidebar={handleToggleFileTreeSidebar}
         isTerminalPanelOpen={isTerminalIconActive}
         onOpenTerminalPanel={handleOpenTerminalPanel}
-        isShowDesktop={isShowDesktop}
-        isAgentDesktopOpen={isDesktopIconActive}
-        onOpenDesktopPanel={handleOpenDesktopPanel}
+        onOpenSettings={() => setSettingsOpen(true)}
       />
 
       {/* 主内容区域：左聊天 | 中文件树 | 右预览/终端 */}
@@ -1850,93 +1514,56 @@ const ConversationAgent: React.FC = () => {
                 fileView.preview.isFullscreen,
             })}
           >
-            {/* 中间面板（文件树） + 右侧面板（编排/预览 + 终端） */}
-            {isAgentDesktopOpen && queryConversationId ? (
-              renderAgentDesktopPanel()
-            ) : (
-              <>
-                {/* 中间面板：文件树侧边栏（仅由 canShowFileView 控制显隐） */}
-                <div
-                  className={cx(styles['middle-panel'], {
-                    [styles['middle-panel-visible']]: canShowFileView,
-                    [styles['middle-panel-hidden']]: !canShowFileView,
-                  })}
-                >
-                  {/* ConversationAgent 中间面板（公共 FileTreeGitSourcePanel，内部渲染文件树） */}
-                  <FileTreeGitSourcePanel
-                    className={cx(styles['file-tree-sidebar'], 'w-full')}
-                    showSourceControl={isVersionControlEnabled}
-                    enableVersionControl={enableVersionControl}
-                    tree={fileView.tree}
-                    treeClassName="w-full h-full"
-                    onImportProject={handleImportProject}
-                    importProjectLabel={dict(
-                      'PC.Pages.AppDevFileTreeContextMenu.importProject',
-                    )}
-                    isImportingProject={isImportingProject}
-                    sourceControl={{
-                      changeFiles: fileView.changeFiles,
-                      selectedChangeFile: gitSourceControl.selectedChangeFile,
-                      isCommitting:
-                        gitSourceControl.isCommitting ||
-                        fileView.preview.isSavingFiles,
-                      isRefreshingGitList: fileView.isRefreshingGitList,
-                      onRefreshGitList: fileView.refreshGitList,
-                      onDiffFileSelect: handleGitDiffFileSelect,
-                      onOpenChangeFile: gitSourceControl.handleOpenChangeFile,
-                      onDiscardChanges: gitSourceControl.handleDiscardChange,
-                      onStageChanges: gitSourceControl.handleStageChanges,
-                      onUnstageChanges: gitSourceControl.handleUnstageChanges,
-                      onAddToGitignore: (fileId) => {
-                        void gitSourceControl.handleAddToGitignore(fileId);
-                      },
-                      onCommit: gitSourceControl.handleCommit,
-                    }}
-                  />
-                </div>
-                {/* 右侧面板：编排配置 / 文件预览 + 终端 */}
-                {renderRightPanel()}
-              </>
-            )}
+            {/* 中间面板（文件树） + 右侧面板（文件预览 + 终端） */}
+            <>
+              {/* 中间面板：文件树侧边栏（仅由 canShowFileView 控制显隐） */}
+              <div
+                className={cx(styles['middle-panel'], {
+                  [styles['middle-panel-visible']]: canShowFileView,
+                  [styles['middle-panel-hidden']]: !canShowFileView,
+                })}
+              >
+                {/* ConversationAgent 中间面板（公共 FileTreeGitSourcePanel，内部渲染文件树） */}
+                <FileTreeGitSourcePanel
+                  className={cx(styles['file-tree-sidebar'], 'w-full')}
+                  showSourceControl={isVersionControlEnabled}
+                  enableVersionControl={enableVersionControl}
+                  tree={fileView.tree}
+                  treeClassName="w-full h-full"
+                  onImportProject={handleImportProject}
+                  importProjectLabel={dict(
+                    'PC.Pages.AppDevFileTreeContextMenu.importProject',
+                  )}
+                  isImportingProject={isImportingProject}
+                  sourceControl={{
+                    changeFiles: fileView.changeFiles,
+                    selectedChangeFile: gitSourceControl.selectedChangeFile,
+                    isCommitting:
+                      gitSourceControl.isCommitting ||
+                      fileView.preview.isSavingFiles,
+                    isRefreshingGitList: fileView.isRefreshingGitList,
+                    onRefreshGitList: fileView.refreshGitList,
+                    onDiffFileSelect: handleGitDiffFileSelect,
+                    onOpenChangeFile: gitSourceControl.handleOpenChangeFile,
+                    onDiscardChanges: gitSourceControl.handleDiscardChange,
+                    onStageChanges: gitSourceControl.handleStageChanges,
+                    onUnstageChanges: gitSourceControl.handleUnstageChanges,
+                    onAddToGitignore: (fileId) => {
+                      void gitSourceControl.handleAddToGitignore(fileId);
+                    },
+                    onCommit: gitSourceControl.handleCommit,
+                  }}
+                />
+              </div>
+              {/* 右侧面板：文件预览 + 终端 */}
+              {renderRightPanel()}
+            </>
           </div>
         </div>
-
-        {/* 调试详情抽屉（按需显示） */}
-        <DebugDetails
-          visible={showType === EditAgentShowType.Debug_Details}
-          onClose={() => setShowType(EditAgentShowType.Hide)}
-        />
-        <VersionHistory
-          targetId={agentId}
-          targetName={agentConfigInfo?.name}
-          targetType={AgentComponentTypeEnum.Agent}
-          permissions={agentConfigInfo?.permissions || []}
-          visible={showType === EditAgentShowType.Version_History}
-          onClose={() => setShowType(EditAgentShowType.Hide)}
-        />
       </section>
 
       {/* ==================== 模态弹窗层 ==================== */}
 
-      {/* 发布智能体弹窗 */}
-      <PublishComponentModal
-        targetId={agentId}
-        open={open}
-        spaceId={spaceId}
-        category={agentConfigInfo?.category}
-        onCancel={() => setOpen(false)}
-        onConfirm={handleConfirmPublish}
-      />
-      {/* 编辑智能体基础信息弹窗（名称、图标、描述） */}
-      <CreateAgent
-        type={agentConfigInfo?.type as AgentTypeEnum}
-        spaceId={spaceId}
-        mode={CreateUpdateModeEnum.Update}
-        agentConfigInfo={agentConfigInfo}
-        open={openEditAgent}
-        onCancel={() => setOpenEditAgent(false)}
-        onConfirmUpdate={handlerConfirmEditAgent}
-      />
       {/* 导入项目弹窗 */}
       <ImportProjectModal
         open={openImportProject}
@@ -1944,8 +1571,20 @@ const ConversationAgent: React.FC = () => {
         onCancel={() => setOpenImportProject(false)}
         onConfirm={handleImportProjectConfirm}
       />
+
+      {/* 项目设置：复用平台认证 + 域名绑定 */}
+      <AppDevSettingsModal
+        open={settingsOpen}
+        projectInfo={pageProjectInfo}
+        onCancel={() => setSettingsOpen(false)}
+        onSuccess={() => {
+          if (agentId) {
+            runGetPageProjectInfo(agentId);
+          }
+        }}
+      />
     </div>
   );
 };
 
-export default ConversationAgent;
+export default AppDevPro;

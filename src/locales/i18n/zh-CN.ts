@@ -2555,6 +2555,7 @@ export const ZH_CN: SystemLangMap = {
   "PC.Pages.AppDevPreview.startingEnvironment": "正在启动开发环境，请稍候...",
   "PC.Pages.AppDevPreview.unsavedChanges": "未保存的更改",
   "PC.Pages.AppDevPreview.viewFullErrorInfo": "查看完整错误信息",
+  "PC.Pages.AppDevPro.appPreview": "应用预览",
   "PC.Pages.AppDevToolCallProcess.createFile": "创建文件 {0}",
   "PC.Pages.AppDevToolCallProcess.editFile": "编辑文件 {0}",
   "PC.Pages.AppDevToolCallProcess.executeCommand": "执行命令 {0}",

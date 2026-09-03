@@ -2555,6 +2555,7 @@ export const EN_US: SystemLangMap = {
   "PC.Pages.AppDevPreview.startingEnvironment": "Starting development environment. Please wait...",
   "PC.Pages.AppDevPreview.unsavedChanges": "Unsaved changes",
   "PC.Pages.AppDevPreview.viewFullErrorInfo": "View full error details",
+  "PC.Pages.AppDevPro.appPreview": "App preview",
   "PC.Pages.AppDevToolCallProcess.createFile": "Create file {0}",
   "PC.Pages.AppDevToolCallProcess.editFile": "Edit file {0}",
   "PC.Pages.AppDevToolCallProcess.executeCommand": "Execute command {0}",

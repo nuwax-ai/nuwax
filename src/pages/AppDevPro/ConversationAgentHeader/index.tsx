@@ -34,8 +34,6 @@ export interface ConversationAgentHeaderProps {
   onEditAgent?: () => void;
   /** 点击发布 */
   onPublish?: () => void;
-  /** 打开高级设置（新窗口打开智能体编辑页） */
-  onOpenAdvancedSettings?: () => void;
   /** 文件树侧边栏是否可见 */
   isFileTreeSidebarVisible?: boolean;
   /** 切换文件树侧边栏显隐 */
@@ -44,12 +42,8 @@ export interface ConversationAgentHeaderProps {
   isTerminalPanelOpen?: boolean;
   /** 打开终端面板（底部控制台终端 Tab 全屏） */
   onOpenTerminalPanel?: () => void;
-  /** 是否显示智能体电脑入口 */
-  isShowDesktop?: boolean;
-  /** 智能体电脑是否已打开 */
-  isAgentDesktopOpen?: boolean;
-  /** 打开 / 关闭智能体电脑 */
-  onOpenDesktopPanel?: () => void;
+  /** 打开项目设置弹窗 */
+  onOpenSettings?: () => void;
 }
 
 /**
@@ -61,14 +55,11 @@ const ConversationAgentHeader: React.FC<ConversationAgentHeaderProps> = ({
   agentConfigInfo,
   onEditAgent,
   onPublish,
-  onOpenAdvancedSettings,
   isFileTreeSidebarVisible = false,
   onToggleFileTreeSidebar,
   isTerminalPanelOpen = false,
   onOpenTerminalPanel,
-  isShowDesktop = false,
-  isAgentDesktopOpen = false,
-  onOpenDesktopPanel,
+  onOpenSettings,
 }) => {
   const displayName =
     agentConfigInfo?.name || dict('PC.Pages.ConversationAgent.prototypeTitle');
@@ -117,7 +108,7 @@ const ConversationAgentHeader: React.FC<ConversationAgentHeaderProps> = ({
         </h3>
 
         {/* 编辑按钮 */}
-        <ConditionRender condition={!!agentConfigInfo}>
+        <ConditionRender condition={!!agentConfigInfo && !!onEditAgent}>
           <Button
             type="text"
             icon={<FormOutlined />}
@@ -129,7 +120,8 @@ const ConversationAgentHeader: React.FC<ConversationAgentHeaderProps> = ({
 
       <div className={cx(styles['right-box'], 'flex', 'items-center')}>
         {/* 未发布变更提示 */}
-        {agentConfigInfo?.publishDate !== null &&
+        {onPublish &&
+          agentConfigInfo?.publishDate !== null &&
           dayjs(agentConfigInfo?.publishDate).isBefore(
             agentConfigInfo?.modified,
           ) && (
@@ -142,15 +134,13 @@ const ConversationAgentHeader: React.FC<ConversationAgentHeaderProps> = ({
             </Tag>
           )}
 
-        {/* 高级设置 */}
-        {onOpenAdvancedSettings && (
-          <TooltipIcon
-            title={dict('PC.Components.ModelSetting.advancedSettings')}
-            className={cx(styles['panel-btn'])}
-            icon={<SettingOutlined style={{ fontSize: 16 }} />}
-            onClick={onOpenAdvancedSettings}
-          />
-        )}
+        {/* 项目设置：始终显示 */}
+        <TooltipIcon
+          title={dict('PC.Pages.AppDevEditorHeaderRight.settings')}
+          className={cx(styles['panel-btn'])}
+          icon={<SettingOutlined style={{ fontSize: 16 }} />}
+          onClick={onOpenSettings}
+        />
 
         {/* 文件树侧边栏按钮 */}
         <TooltipIcon
@@ -182,35 +172,12 @@ const ConversationAgentHeader: React.FC<ConversationAgentHeaderProps> = ({
           onClick={onOpenTerminalPanel}
         />
 
-        {/* 智能体电脑按钮 */}
-        <ConditionRender condition={isShowDesktop}>
-          <TooltipIcon
-            title={
-              isAgentDesktopOpen
-                ? dict(
-                    'PC.Pages.EditAgent.PreviewAndDebug.PreviewAndDebugHeader.closeAgentDesktop',
-                  )
-                : dict(
-                    'PC.Pages.EditAgent.PreviewAndDebug.PreviewAndDebugHeader.openAgentDesktop',
-                  )
-            }
-            className={cx(styles['panel-btn'], {
-              [styles.active]: isAgentDesktopOpen,
-            })}
-            icon={
-              <SvgIcon
-                name="icons-nav-computer-star"
-                style={{ fontSize: 16 }}
-              />
-            }
-            onClick={onOpenDesktopPanel}
-          />
-        </ConditionRender>
-
         {/* 发布按钮 */}
-        <Button type="primary" onClick={onPublish} disabled={publishDisabled}>
-          {dict('PC.Pages.AgentEdit.publish')}
-        </Button>
+        {onPublish && (
+          <Button type="primary" onClick={onPublish} disabled={publishDisabled}>
+            {dict('PC.Pages.AgentEdit.publish')}
+          </Button>
+        )}
       </div>
     </header>
   );

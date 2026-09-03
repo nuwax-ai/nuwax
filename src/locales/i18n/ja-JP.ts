@@ -2583,6 +2583,7 @@ export const JA_JP: SystemLangMap = {
   "PC.Pages.AppDevPreview.startingEnvironment": "開発環境を起動します。お待ちください...",
   "PC.Pages.AppDevPreview.unsavedChanges": "未保存の変更",
   "PC.Pages.AppDevPreview.viewFullErrorInfo": "エラーの完全な詳細を表示する",
+  "PC.Pages.AppDevPro.appPreview": "アプリプレビュー",
   "PC.Pages.AppDevToolCallProcess.createFile": "ファイル {0} を作成します",
   "PC.Pages.AppDevToolCallProcess.editFile": "ファイル {0} を編集します",
   "PC.Pages.AppDevToolCallProcess.executeCommand": "コマンド {0} を実行します",
