@@ -266,6 +266,43 @@ describe('ConversationRendererV2 · 三层结构', () => {
     expect(text).toContain('traceMetricElapsed');
   });
 
+  it('终态回答操作栏显示轮级耗时 MM:SS（对齐 V1 状态栏 timer 形态）', () => {
+    renderV2(
+      buildTurn({
+        finalResult: {
+          outputText: '今天晴，25 度',
+          success: true,
+          startTime: 1000,
+          endTime: 61_000,
+          componentExecuteResults: [],
+        } as unknown as MessageInfo['finalResult'],
+      }),
+    );
+    expect(screen.getByTestId('v2-answer-duration')).toHaveTextContent('01:00');
+  });
+
+  it('home 模式（默认入口）终态操作栏也显示：V1 由 ChatSampleBottom 提供复制+时间，V2 对齐', () => {
+    // 不传 messageBottomMode，模拟 /home/chat 入口的默认渲染
+    render(
+      <ConversationRendererV2
+        messageList={buildTurn({
+          finalResult: {
+            outputText: '今天晴，25 度',
+            success: true,
+            startTime: 1000,
+            endTime: 61_000,
+            componentExecuteResults: [],
+          } as unknown as MessageInfo['finalResult'],
+        })}
+        conversationId={1}
+        roleInfo={ROLE_INFO}
+        preferences={PREFS('balanced')}
+      />,
+    );
+    expect(screen.getByTestId('copy-button')).toBeInTheDocument();
+    expect(screen.getByTestId('v2-answer-duration')).toHaveTextContent('01:00');
+  });
+
   it('detailed 历史轮默认展开，已完成 reasoning 节点详情自动展开', () => {
     renderV2(buildTurn(), PREFS('detailed'));
     // 单帧终态 = 历史轮：外层默认展开，无需手动点开

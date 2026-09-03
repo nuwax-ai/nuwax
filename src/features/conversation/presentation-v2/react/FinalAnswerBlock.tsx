@@ -14,6 +14,7 @@ import { message } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import type { ConversationTurnPresentationV2 } from '../types';
+import { formatElapsedClock } from './formatElapsed';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -92,11 +93,22 @@ const FinalAnswerBlock: React.FC<FinalAnswerBlockProps> = ({
           {dict('PC.Components.ConversationRendererV2.answerEmpty')}
         </div>
       ) : null}
-      {terminal && answerText && messageBottomMode === 'chat' && (
+      {/* V1 在 home 模式（默认入口）也由 ChatSampleBottom 展示复制+时间，
+          V2 操作栏对齐：仅 none 模式隐藏（messageBottomMode 默认值即 home） */}
+      {terminal && answerText && messageBottomMode !== 'none' && (
         <div className={cx(styles['answer-actions'])}>
           <CopyButton text={answerText} onCopy={handleCopy}>
             {dict('PC.Components.ChatView.copy')}
           </CopyButton>
+          {/* 轮级耗时（终态冻结，与轨迹指标同源）：MM:SS 对齐 V1 状态栏 timer */}
+          {typeof turn.metrics.elapsedMs === 'number' && (
+            <span
+              className={cx(styles['answer-duration'])}
+              data-testid="v2-answer-duration"
+            >
+              {formatElapsedClock(turn.metrics.elapsedMs)}
+            </span>
+          )}
           <ShareMessageButton text={answerText} isUser={false} />
           {showDebug !== false && lastAssistant && (
             <ChatBottomDebug messageInfo={lastAssistant} />
