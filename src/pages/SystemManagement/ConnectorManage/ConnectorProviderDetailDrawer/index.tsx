@@ -183,18 +183,19 @@ const ConnectorProviderDetailContent: React.FC<{
   onEditAction,
 }) => {
   // 鉴权方式：与列表"认证"列保持完全一致的展示 —— 找不到标签就 fallback 到原始值
-  const authTypeValue = detail?.authType ?? record?.authType;
+  const authTypeValue = detail?.provider?.authType ?? record?.authType;
   const authLabel =
     (authTypeValue && AUTH_TYPE_LABEL_MAP[authTypeValue]) ??
     authTypeValue ??
     '-';
 
   // BASE URL：取接口 provider 的 baseUrl；详情未返回时回退到列表行
-  const baseUrl = detail?.baseUrl ?? record?.baseUrl ?? '-';
+  const baseUrl = detail?.provider?.baseUrl ?? record?.baseUrl ?? '-';
 
   // 通用代理 / 归属 / 描述：详情接口未返回时回退到列表行
-  const proxyEnabled = detail?.proxyEnabled ?? record?.proxyEnabled ?? false;
-  const managedBy = detail?.managedBy ?? record?.managedBy;
+  const proxyEnabled =
+    detail?.provider?.proxyEnabled ?? record?.proxyEnabled ?? false;
+  const managedBy = detail?.provider?.managedBy ?? record?.managedBy;
   const proxyLabel = proxyEnabled ? '已开启' : '未开启';
 
   return (
@@ -310,7 +311,12 @@ const ConnectorProviderDetailDrawer: React.FC<
    * 每次切换查看的连接器时，标题立刻切换（不等接口返回），避免标题滞后于加载态
    */
   const title = useMemo(() => {
-    return detail?.displayName || record?.displayName || record?.service || '';
+    return (
+      detail?.provider?.displayName ||
+      record?.displayName ||
+      record?.service ||
+      ''
+    );
   }, [detail, record]);
 
   /** 获取详情 */

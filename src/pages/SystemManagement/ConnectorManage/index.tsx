@@ -10,7 +10,7 @@ import {
   apiSystemConnectorProviderToggleStatus,
 } from '@/services/systemManage';
 import { ConnectorProviderInfo } from '@/types/interfaces/systemManage';
-import { DownloadOutlined } from '@ant-design/icons';
+import { DownloadOutlined, PlusOutlined } from '@ant-design/icons';
 import type {
   ActionType,
   FormInstance,
@@ -27,6 +27,7 @@ import {
 import { Button, message, Space, Spin, Tag } from 'antd';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation } from 'umi';
+import ConnectorProviderCreateDrawer from './ConnectorProviderCreateDrawer';
 import ConnectorProviderDetailDrawer from './ConnectorProviderDetailDrawer';
 import ConnectorProviderEditDrawer from './ConnectorProviderEditDrawer';
 import {
@@ -80,6 +81,11 @@ const ConnectorManage: React.FC = () => {
   const [editRecord, setEditRecord] = useState<ConnectorProviderInfo | null>(
     null,
   );
+  /**
+   * "新增官方连接器"抽屉开关
+   * 抽屉内「创建连接器」按钮暂为占位（功能待实现），这里只负责开关
+   */
+  const [createDrawerOpen, setCreateDrawerOpen] = useState<boolean>(false);
 
   /**
    * 检查导出数据是否为空（数组看长度、对象看 key 数、字符串看 trim 后长度）。
@@ -567,6 +573,14 @@ const ConnectorManage: React.FC = () => {
           >
             导出全部
           </Button>
+          {/* 新增官方连接器：右侧滑出 ConnectorProviderCreateDrawer（创建逻辑待实现） */}
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => setCreateDrawerOpen(true)}
+          >
+            新增官方连接器
+          </Button>
         </Space>
       }
     >
@@ -685,6 +699,26 @@ const ConnectorManage: React.FC = () => {
           open={editRecord !== null}
           record={editRecord}
           onClose={() => setEditRecord(null)}
+          // 保存成功：刷新连接器列表（GET /api/system/connector/providers），
+          // 并用最新提交值合成详情行打开「查看」抽屉（抽屉内部会再拉
+          // GET /api/connector/providers/{service} 详情覆盖展示）
+          onSaved={(payload) => {
+            actionRef.current?.reload();
+            setDetailRecord({
+              ...(editRecord ?? ({} as ConnectorProviderInfo)),
+              ...payload,
+            } as ConnectorProviderInfo);
+            setEditRecord(null);
+          }}
+        />
+        {/*
+          新增官方连接器抽屉（右侧滑出）
+          创建成功后刷新连接器列表（GET /api/system/connector/providers）
+        */}
+        <ConnectorProviderCreateDrawer
+          open={createDrawerOpen}
+          onClose={() => setCreateDrawerOpen(false)}
+          onCreated={() => actionRef.current?.reload()}
         />
       </div>
     </WorkspaceLayout>

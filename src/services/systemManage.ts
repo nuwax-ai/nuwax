@@ -18,6 +18,7 @@ import type {
   ConnectorProviderListParams,
   ConversationStatsResult,
   CreateConnectorActionParams,
+  CreateConnectorProviderParams,
   DeleteConnectorActionParams,
   ExportConnectorProvidersParams,
   ModelConfigDto,
@@ -30,6 +31,7 @@ import type {
   ResourceStatSummaryDTO,
   SandboxConfigItem,
   SandboxGlobalConfig,
+  SaveConnectorOauthConfigParams,
   SaveConnectorOrderParams,
   SystemAgentListParams,
   SystemAgentPage,
@@ -172,6 +174,60 @@ export async function apiSystemConnectorProviderList(
   return request('/api/system/connector/providers', {
     method: 'GET',
     params,
+  });
+}
+
+/**
+ * 新增连接器提供方
+ * 对应接口：POST /api/system/connector/providers
+ * 入参：service 唯一标识 + 基本信息（displayName / baseUrl / category / tags 等）
+ * + 认证方式 authType 及其配置 authConfig（免鉴权传空对象）
+ *
+ * 用于连接器列表「新增官方连接器」抽屉的「创建连接器」按钮：
+ * 创建成功后由调用方刷新连接器列表（GET /api/system/connector/providers）。
+ */
+export async function apiSystemConnectorProviderCreate(
+  data: CreateConnectorProviderParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/system/connector/providers', {
+    method: 'POST',
+    data,
+  });
+}
+
+/**
+ * 保存连接器 OAuth App 配置
+ * 对应接口：POST /api/system/connector/oauth-config
+ * 入参：service + 平台公共 App 配置（clientId / clientSecret / authUrl /
+ * tokenUrl / scopes）
+ *
+ * 创建 oauth2 + platform 模式的连接器（POST /api/system/connector/providers）
+ * 成功后追加调用；clientSecret 不进创建接口，由此接口加密落库。
+ */
+export async function apiSystemConnectorOauthConfigSave(
+  data: SaveConnectorOauthConfigParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/system/connector/oauth-config', {
+    method: 'POST',
+    data,
+  });
+}
+
+/**
+ * 更新连接器提供方元信息
+ * 对应接口：PUT /api/system/connector/providers/{service}/meta
+ * service 拼到 URL path 上；body 与创建接口一致（service / displayName /
+ * authType / baseUrl / category / tags / authConfig，oauth2 时为顶层 oauthAppMode）
+ *
+ * 用于连接器列表「编辑」抽屉的「保存修改」按钮：保存成功后由调用方
+ * 刷新连接器列表并打开详情抽屉。
+ */
+export async function apiSystemConnectorProviderUpdateMeta(
+  data: CreateConnectorProviderParams,
+): Promise<RequestResponse<null>> {
+  return request(`/api/system/connector/providers/${data.service}/meta`, {
+    method: 'PUT',
+    data,
   });
 }
 

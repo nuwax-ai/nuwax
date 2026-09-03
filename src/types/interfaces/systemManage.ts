@@ -1121,6 +1121,52 @@ export interface ExportConnectorProvidersParams {
 }
 
 /**
+ * 新增连接器提供方入参（POST /api/system/connector/providers）
+ * - 免鉴权参考：{ ..., authType: "no_auth", authConfig: {} }
+ * - OAuth 2.0 参考不传 authConfig，改为顶层 oauthAppMode（byo / platform）；
+ *   platform 的 App 配置在创建成功后另调 POST /api/system/connector/oauth-config
+ */
+export interface CreateConnectorProviderParams {
+  /** 服务唯一标识（小写字母开头的小写字母/数字/下划线，创建后不可改） */
+  service: string;
+  /** 显示名称 */
+  displayName: string;
+  /** 描述 */
+  description?: string;
+  /** 鉴权方式（'' 仅用于筛选，不入参） */
+  authType: Exclude<ConnectorAuthType, ''>;
+  /** 请求基础地址 */
+  baseUrl?: string;
+  /** 主分类 */
+  category?: string;
+  /** 标签 */
+  tags?: string[];
+  /** 鉴权配置（no_auth / bearer 传空对象，api_key / custom 按表单组装；oauth2 不传） */
+  authConfig?: Record<string, unknown>;
+  /** OAuth App 模式（仅 authType = oauth2 时传）：byo / platform */
+  oauthAppMode?: 'byo' | 'platform';
+}
+
+/**
+ * 保存 OAuth App 配置入参（POST /api/system/connector/oauth-config）
+ * 创建 oauth2 + platform 模式的连接器成功后追加调用，配置平台公共 App
+ */
+export interface SaveConnectorOauthConfigParams {
+  /** 连接器 service 标识（须已创建） */
+  service: string;
+  /** 在 IdP 注册的 Client ID */
+  clientId: string;
+  /** Client Secret（加密落库） */
+  clientSecret: string;
+  /** 授权端点 */
+  authUrl: string;
+  /** 令牌端点 */
+  tokenUrl: string;
+  /** 授权 scopes */
+  scopes?: string[];
+}
+
+/**
  * 连接器下的工具/动作定义
  * 对应 GET /api/connector/providers/{service} 响应里的 actions/tools 列表元素
  */
@@ -1376,27 +1422,12 @@ export interface CreateConnectorActionParams {
  * 获取连接器提供方详情响应
  * 对应接口：GET /api/connector/providers/{service}?spaceId=xxx
  *
- * 注：service 在 URL path 上；spaceId 是 query 参数
+ * 注：service 在 URL path 上；spaceId 是 query 参数。
+ * 真实响应为嵌套结构：提供方信息在 data.provider 下，工具列表在 data.actions。
  */
 export interface ConnectorProviderDetail {
-  /** 服务标识 */
-  service: string;
-  /** 显示名 */
-  displayName?: string;
-  /** 描述 */
-  description?: string;
-  /** 图标 URL */
-  icon?: string;
-  /** 鉴权方式（no_auth / api_key / bearer / oauth2 / custom） */
-  authType?: ConnectorAuthType;
-  /** baseUrl */
-  baseUrl?: string;
-  /** 是否开启通用代理 */
-  proxyEnabled?: boolean;
-  /** 归属（官方目录 / 管理员可编辑 等） */
-  managedBy?: string;
-  /** 标签 */
-  tags?: string[];
-  /** 该提供方下的工具列表 */
+  /** 提供方基础信息（嵌套在 provider 下，字段同列表行 ConnectorProviderInfo） */
+  provider?: ConnectorProviderInfo;
+  /** 该提供方下的工具列表（与 provider 平级，位于 data 顶层） */
   actions?: ConnectorProviderAction[];
 }
