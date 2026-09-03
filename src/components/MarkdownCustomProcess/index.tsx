@@ -758,11 +758,16 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
                     icon={
                       isTerminalExpanded ? <MinusOutlined /> : <PlusOutlined />
                     }
-                    onClick={() => setIsTerminalExpanded(!isTerminalExpanded)}
+                    onClick={() => {
+                      const next = !isTerminalExpanded;
+                      setIsTerminalExpanded(next);
+                      // 参考稿形态:终端展开时参数/结果区与终端输出一起出现
+                      if (next && hasInlineDetail) setIsDetailExpanded(true);
+                    }}
                   />
                 </Tooltip>
               )}
-              {/* 通用工具「参数/结果」内联展开（与终端/Plan 同款 +/−） */}
+              {/* 通用工具(非终端卡)「参数/结果」内联展开 */}
               {hasInlineDetail &&
                 !isTerminal &&
                 !hasDiff &&
@@ -891,9 +896,16 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
       </div>
       {/* Plan 类型展开内容 */}
       {renderPlanDetails()}
-      {/* 终端输出（P0-1）：流式显示尾部预览；终态收起为摘要行，点击展开全量 */}
+      {/* 终端输出（P0-1）：流式显示尾部预览；终态收起为摘要行，点击展开全量。
+          参考稿形态：终端展开时先「参数/结果」两区块（各自独立滚动），再终端输出 */}
       {isTerminal && !!terminalItem?.content && (
         <>
+          {isTerminalExpanded && hasInlineDetail && (
+            <ParamsResponseView
+              params={detailData?.params}
+              response={detailData?.response}
+            />
+          )}
           {isTerminalExpanded ? (
             <TerminalOutputView
               key={`${innerProcessing.executeId}-full`}

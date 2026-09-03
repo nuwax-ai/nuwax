@@ -1619,8 +1619,20 @@ export const MOCK_SCENARIOS: MockScenario[] = [
         'nb-connect',
         undefined,
         {
-          input: { transport: 'cli', timeoutMs: 8000 },
-          data: 'IPC 连接成功(桌面应用 pid 4821,版本 0.12.3)',
+          input: {
+            command:
+              "nuwa-browser <<'EOF'\nconst task = await taskSpaces.useOrCreate('nuwa-browser 测试')\nawait browser.openOrReuseTab('https://nuwax.com', { wait: true, timeout: 20000 })\nawait page.waitForLoadState('networkidle')\nconst info = await page.info()\nconsole.log('url: ' + info.url)\nconsole.log('title: ' + info.title)\n\nawait taskSpaces.complete(task.id, { keep: false })\nEOF",
+            description: '用 nuwa-browser 打开 nuwax.com 并读取标题',
+          },
+          data: [
+            {
+              type: 'terminal',
+              command: "nuwa-browser <<'EOF' …",
+              content:
+                'IPC 连接成功(桌面应用 pid 4821,版本 0.12.3)\n任务空间 #2 已创建\n页面加载完成: nuwax.com',
+              exitCode: 0,
+            },
+          ],
         },
       ),
       processing('任务空间 useOrCreate', 'EXECUTING', 'nb-space'),

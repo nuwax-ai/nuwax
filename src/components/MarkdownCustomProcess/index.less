@@ -381,6 +381,8 @@
 .params-response-view {
   margin-bottom: @marginXs;
 
+  // 「参数」「结果」两个 section 相互独立:标题行(▼+复制)各自吸顶,
+  // body 各自限高滚动——长 JSON 参数滚动不影响结果区(参考稿形态)
   .detail-block {
     .detail-block-toggle {
       appearance: none;
@@ -398,18 +400,31 @@
         color: @colorText;
       }
     }
+
+    & + .detail-block {
+      margin-top: @marginXs;
+      border-top: 1px solid rgba(0, 0, 0, 6%);
+      padding-top: 4px;
+    }
   }
 
   .detail-section {
     border-top: 1px solid rgba(0, 0, 0, 6%);
     background-color: @colorBgLayout;
     margin-top: 2px;
+    border-radius: @borderRadius;
 
     .detail-section-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 2px @paddingSm 0;
+      padding: 4px @paddingSm;
+      // header 不随 body 滚动(section 内视觉锚点)
+      position: sticky;
+      top: 0;
+      background-color: @colorBgLayout;
+      z-index: 1;
+      border-bottom: 1px solid rgba(0, 0, 0, 4%);
 
       .detail-section-title {
         font-size: @fontSizeSm;
@@ -432,7 +447,7 @@
       word-break: break-all;
       overflow: auto;
       scrollbar-width: thin;
-      max-height: 240px; // 限高滚动,与终端输出一致
+      max-height: 240px; // 每个 section 独立限高滚动
     }
   }
 }
