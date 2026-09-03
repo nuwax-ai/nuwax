@@ -106,19 +106,11 @@
 }
 
 // ---- 单行节点 ----
-// 行线：主 button 占满剩余宽度，展开态操作区（耗时/复制/分享）挂行尾外侧
-.node-row-line {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
 .node-row {
   appearance: none;
   border: none;
   background: transparent;
-  flex: 1;
-  min-width: 0;
+  width: 100%;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -136,29 +128,6 @@
     outline: 2px solid var(--v2-color-primary, #6a5af9);
     outline-offset: -1px;
   }
-}
-
-// 展开态行尾操作区：不嵌进主 button（交互元素不嵌套），视觉与行齐平
-.node-row-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-shrink: 0;
-  padding-right: 4px;
-  font-size: 12px;
-
-  // CopyButton（css modules hash 类名）/ ShareMessageButton（全局类）弱化为行内文字操作
-  [class*='copy-btn'],
-  :global(.share-message-btn) {
-    font-size: 12px;
-  }
-}
-
-.node-duration-chip {
-  font-size: 11px;
-  color: var(--v2-color-text-tertiary, rgba(5, 5, 5, 45%));
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
 }
 
 .node-kind-icon {

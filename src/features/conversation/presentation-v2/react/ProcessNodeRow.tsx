@@ -3,8 +3,6 @@
  * 工具详情使用 V2 紧凑渲染器：外层行唯一负责标题、状态与 disclosure，
  * 详情只呈现归一化后的输入/输出，避免嵌套旧卡和原始协议 JSON。
  */
-import CopyButton from '@/components/base/CopyButton';
-import ShareMessageButton from '@/components/business-component/ConversationShareModal/ShareMessageButton';
 import {
   getToolPresentationKind,
   type ToolPresentationKind,
@@ -12,7 +10,6 @@ import {
 import { PureMarkdownRenderer } from '@/components/MarkdownRenderer';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { dict } from '@/services/i18nRuntime';
-import { formatDuration, getProcessDurationMs } from '@/utils/terminalOutput';
 import {
   BulbOutlined,
   CaretRightOutlined,
@@ -34,7 +31,6 @@ import {
 import { theme } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
-import { buildToolNodeShareText } from '../toolDetail';
 import type { ConversationProcessNode } from '../types';
 import styles from './index.less';
 import ToolNodeDetail from './ToolNodeDetail';
@@ -175,110 +171,70 @@ const ProcessNodeRow: React.FC<ProcessNodeRowProps> = ({
       ? node.interaction?.answerSummary || node.summary
       : node.summary;
 
-  // 行尾操作区（展开态）：耗时 chip（V1 同款口径）+ 复制 + 分享。
-  // 运行中 endTime 缺失时 getProcessDurationMs 返回 null，不占位。
-  const durationMs = getProcessDurationMs(node.processing?.result);
-  const durationText = durationMs === null ? '' : formatDuration(durationMs);
-  const isToolish =
-    node.kind === 'tool' || node.kind === 'subagent' || node.kind === 'plan';
-  const shareText = isToolish
-    ? buildToolNodeShareText({
-        componentType: node.processing?.type ?? node.componentType,
-        name: node.processing?.name ?? node.title,
-        result: node.processing?.result,
-      })
-    : '';
-
   return (
     <div
       className={cx(styles['node-row-wrapper'])}
       data-node-id={node.id}
       data-node-kind={node.kind}
     >
-      <div className={cx(styles['node-row-line'])}>
-        <button
-          type="button"
-          className={cx(styles['node-row'])}
-          aria-expanded={expanded}
-          aria-controls={detailId}
-          onClick={onToggle}
-          style={{ color: token.colorText }}
-        >
-          {/* 类型图标恒在（运行中也不替换）：折叠条上一眼可辨节点类型；
-              活动指示由行尾 spinner 承担，与类型语义解耦 */}
-          <KindIcon
-            className={cx(styles['node-kind-icon'])}
-            style={{
-              color: node.failed ? token.colorError : token.colorTextTertiary,
-            }}
-            aria-hidden="true"
-          />
-          <span className={cx(styles['node-title'])}>
-            {nodeDisplayTitle(node)}
-          </span>
-          {summaryText ? (
-            <span className={cx(styles['node-summary'])}>{summaryText}</span>
-          ) : (
-            <span className={cx(styles['node-summary'])} />
-          )}
-          {node.failed && (
-            <CloseCircleOutlined
-              className={cx(styles['node-status-icon'])}
-              style={{ color: token.colorError }}
-              aria-hidden="true"
-            />
-          )}
-          {node.status === 'running' && (
-            <LoadingOutlined
-              className={cx(styles['node-status-icon'])}
-              style={{ color: token.colorPrimary }}
-              spin
-              aria-hidden="true"
-            />
-          )}
-          {!node.failed &&
-            node.status === 'finished' &&
-            node.kind !== 'reasoning' &&
-            node.kind !== 'context' && (
-              <CheckCircleOutlined
-                className={cx(styles['node-status-icon'])}
-                style={{ color: token.colorSuccess }}
-                aria-hidden="true"
-              />
-            )}
-          <CaretRightOutlined
-            data-testid="v2-node-disclosure"
-            className={cx(styles['node-disclosure'], {
-              [styles['node-disclosure-open']]: expanded,
-            })}
-            aria-hidden="true"
-          />
-        </button>
-        {/* 操作区在主 button 外侧：避免交互元素嵌套破坏原生语义。
-            仅展开态显示：收起摘要行保持极简 */}
-        {expanded && (durationText || shareText) && (
-          <div className={cx(styles['node-row-actions'])}>
-            {durationText && (
-              <span
-                className={cx(styles['node-duration-chip'])}
-                data-testid="v2-node-duration"
-              >
-                {durationText}
-              </span>
-            )}
-            {shareText && (
-              <>
-                <CopyButton
-                  text={shareText}
-                  showSuccessMsg={false}
-                  tooltipText={dict('PC.Common.Global.copy')}
-                />
-                <ShareMessageButton text={shareText} isUser={false} />
-              </>
-            )}
-          </div>
+      <button
+        type="button"
+        className={cx(styles['node-row'])}
+        aria-expanded={expanded}
+        aria-controls={detailId}
+        onClick={onToggle}
+        style={{ color: token.colorText }}
+      >
+        {/* 类型图标恒在（运行中也不替换）：折叠条上一眼可辨节点类型；
+            活动指示由行尾 spinner 承担，与类型语义解耦 */}
+        <KindIcon
+          className={cx(styles['node-kind-icon'])}
+          style={{
+            color: node.failed ? token.colorError : token.colorTextTertiary,
+          }}
+          aria-hidden="true"
+        />
+        <span className={cx(styles['node-title'])}>
+          {nodeDisplayTitle(node)}
+        </span>
+        {summaryText ? (
+          <span className={cx(styles['node-summary'])}>{summaryText}</span>
+        ) : (
+          <span className={cx(styles['node-summary'])} />
         )}
-      </div>
+        {node.failed && (
+          <CloseCircleOutlined
+            className={cx(styles['node-status-icon'])}
+            style={{ color: token.colorError }}
+            aria-hidden="true"
+          />
+        )}
+        {node.status === 'running' && (
+          <LoadingOutlined
+            className={cx(styles['node-status-icon'])}
+            style={{ color: token.colorPrimary }}
+            spin
+            aria-hidden="true"
+          />
+        )}
+        {!node.failed &&
+          node.status === 'finished' &&
+          node.kind !== 'reasoning' &&
+          node.kind !== 'context' && (
+            <CheckCircleOutlined
+              className={cx(styles['node-status-icon'])}
+              style={{ color: token.colorSuccess }}
+              aria-hidden="true"
+            />
+          )}
+        <CaretRightOutlined
+          data-testid="v2-node-disclosure"
+          className={cx(styles['node-disclosure'], {
+            [styles['node-disclosure-open']]: expanded,
+          })}
+          aria-hidden="true"
+        />
+      </button>
       {expanded && (
         <div
           id={detailId}
