@@ -1,0 +1,24 @@
+# nuwa-sdlc-kit · 规则文件 evals 门禁（播种一次，本地所有；后续修改归本仓）
+# 触发面 = 规则层文件：AGENTS/CLAUDE 指针、.claude/、templates/、REVIEW.md、plans/specs 工件
+name: sdlc-evals
+on:
+  pull_request:
+    paths: ['AGENTS.md', 'CLAUDE.md', '.claude/**', 'templates/**', 'REVIEW.md', 'plans/**', 'specs/**']
+  push:
+    branches: [main]
+    paths: ['AGENTS.md', 'CLAUDE.md', '.claude/**', 'templates/**', 'REVIEW.md']
+jobs:
+  evals:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [20, 22]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node }}
+      - name: 规则层 evals（引擎 hooks 行为断言）
+        run: node scripts/sdlc-evals.mjs --dir .
+      # 本仓业务测试自行追加 job（测试命令见 .sdlc.json：pnpm test）
