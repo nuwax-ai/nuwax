@@ -1,4 +1,7 @@
-import { normalizeV2ToolDetail } from '@/features/conversation/presentation-v2/toolDetail';
+import {
+  buildToolNodeShareText,
+  normalizeV2ToolDetail,
+} from '@/features/conversation/presentation-v2/toolDetail';
 import { AgentComponentTypeEnum } from '@/types/enums/agent';
 import { describe, expect, it } from 'vitest';
 
@@ -56,5 +59,28 @@ describe('V2 真实工具详情归一化', () => {
     expect(detail.kind).toBe('file-read');
     expect(detail.filePath).toBe('/workspace/troubleshooting.md');
     expect(detail.output).toBe('1 # Troubleshooting');
+  });
+
+  it('buildToolNodeShareText：描述/$ 命令/输出按序拼接，空段跳过', () => {
+    const text = buildToolNodeShareText({
+      componentType: AgentComponentTypeEnum.ToolCall,
+      name: '终端执行 demo',
+      result: {
+        kind: 'execute',
+        input: { command: 'echo hi', description: '打招呼' },
+        data: [{ type: 'content', content: { type: 'text', text: 'hi' } }],
+      },
+    });
+    expect(text).toBe('打招呼\n$ echo hi\nhi');
+  });
+
+  it('buildToolNodeShareText：无内容节点返回空串', () => {
+    expect(
+      buildToolNodeShareText({
+        componentType: AgentComponentTypeEnum.ToolCall,
+        name: '空工具',
+        result: undefined,
+      }),
+    ).toBe('');
   });
 });

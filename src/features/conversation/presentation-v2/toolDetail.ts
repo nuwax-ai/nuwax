@@ -137,3 +137,19 @@ export const normalizeV2ToolDetail = ({
     diffs: normalizeFileDiffItems(result),
   };
 };
+
+/**
+ * 节点行操作区文本（复制/分享共用）：描述 + 命令 + 输入 + 输出，
+ * 空段跳过；无任何内容的节点返回空串（操作区不出现）。
+ */
+export const buildToolNodeShareText = (input: V2ToolDetailInput): string => {
+  const detail = normalizeV2ToolDetail(input);
+  return [
+    detail.description,
+    detail.command ? `$ ${detail.command}` : '',
+    detail.inputText,
+    detail.output,
+  ]
+    .filter(Boolean)
+    .join('\n');
+};

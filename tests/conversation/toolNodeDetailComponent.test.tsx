@@ -21,6 +21,20 @@ vi.mock('@/components/MarkdownRenderer', () => ({
   ),
 }));
 
+vi.mock('@/components/base/CopyButton', () => ({
+  default: ({ text }: { text?: string }) => (
+    <button type="button" data-testid="copy-button" data-copy-text={text} />
+  ),
+}));
+vi.mock(
+  '@/components/business-component/ConversationShareModal/ShareMessageButton',
+  () => ({
+    default: ({ text }: { text: string }) => (
+      <span data-testid="share-message-btn" data-share-text={text} />
+    ),
+  }),
+);
+
 vi.mock('@/features/conversation/presentation-v2/react/index.less', () => ({
   default: new Proxy({}, { get: (_target, key: string) => key }),
 }));
@@ -142,5 +156,44 @@ describe('V2 真实工具节点详情', () => {
     );
     rerender(<ProcessNodeRow expanded onToggle={() => {}} node={node} />);
     expect(document.querySelector('[data-tool-detail-kind]')).toBeNull();
+  });
+
+  it('展开态行尾显示耗时与复制/分享（收起态不显示）', () => {
+    const node = {
+      id: 'call-dur',
+      kind: 'tool',
+      title: '终端执行 demo',
+      summary: '',
+      status: 'finished',
+      componentType: AgentComponentTypeEnum.ToolCall,
+      processing: {
+        executeId: 'call-dur',
+        name: '终端执行 demo',
+        status: ProcessingEnum.FINISHED,
+        type: AgentComponentTypeEnum.ToolCall,
+        result: {
+          kind: 'execute',
+          success: true,
+          startTime: 1000,
+          endTime: 8400,
+          input: { command: 'echo hi' },
+          data: [{ type: 'content', content: { type: 'text', text: 'hi' } }],
+        },
+      },
+    } as any;
+    const props = { onToggle: () => {}, node };
+    const { rerender } = render(<ProcessNodeRow expanded={false} {...props} />);
+    // 收起态：无操作区
+    expect(
+      document.querySelector('[data-testid="v2-node-duration"]'),
+    ).toBeNull();
+    expect(screen.queryByTestId('copy-button')).toBeNull();
+
+    rerender(<ProcessNodeRow expanded {...props} />);
+    expect(screen.getByTestId('v2-node-duration')).toHaveTextContent('7.4s');
+    const copy = screen.getByTestId('copy-button');
+    expect(copy.getAttribute('data-copy-text')).toContain('$ echo hi');
+    expect(copy.getAttribute('data-copy-text')).toContain('hi');
+    expect(screen.getByTestId('share-message-btn')).toBeInTheDocument();
   });
 });
