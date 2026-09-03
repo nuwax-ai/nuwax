@@ -1,0 +1,52 @@
+@import '@/styles/token';
+
+.container {
+  min-width: 0;
+  min-height: 0;
+}
+
+.preview-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/** 文件预览：头部 + 内容区纵向布局 */
+.file-preview-layout {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.file-preview-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.diff-view {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+}
+
+.empty-preview {
+  flex: 1;
+  min-height: 0;
+}
+
+/** 预览 / 编排 / 版本控制等工作区工具页签内容 */
+.workspace-panel {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background-color: @colorBgContainer;
+}
