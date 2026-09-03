@@ -1143,6 +1143,17 @@ const ConversationAgent: React.FC = () => {
     finalSelectedComputerId === '-1';
 
   /**
+   * 切到非云端电脑时，若智能体电脑面板开着则关闭并恢复文件预览，
+   * 避免入口隐藏后面板残留（与 Chat 页兜底同口径，见 3f8a2426a）。
+   */
+  useEffect(() => {
+    if (finalSelectedComputerId !== '-1' && isAgentDesktopOpen) {
+      closeAgentDesktop();
+      setCanShowFileView(true);
+    }
+  }, [finalSelectedComputerId, isAgentDesktopOpen, closeAgentDesktop]);
+
+  /**
    * 关闭预览面板
    * 同时关闭文件预览视图和取消文件树固定状态
    */

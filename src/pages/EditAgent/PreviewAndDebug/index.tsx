@@ -463,6 +463,16 @@ const PreviewAndDebug: React.FC<PreviewAndDebugProps> = ({
     ],
   );
 
+  /**
+   * 切到非云端电脑时，若停留在智能体电脑视图则关闭，
+   * 避免入口隐藏后残留桌面预览（与 Chat 页兜底同口径，见 3f8a2426a）。
+   */
+  useEffect(() => {
+    if (effectiveSandboxId !== '-1' && viewMode === 'desktop') {
+      closePreviewView();
+    }
+  }, [effectiveSandboxId, viewMode, closePreviewView]);
+
   // 消息发送
   const handleMessageSend = (
     messageInfo: string,
