@@ -1,5 +1,6 @@
 import { jumpTo } from '@/utils/router';
 import { useDebounceFn } from 'ahooks';
+import type { InputRef } from 'antd';
 import { Spin } from 'antd';
 import classNames from 'classnames';
 import React, {
@@ -16,6 +17,7 @@ import EmptyState from './components/EmptyState';
 import ProjectPanel from './components/ProjectPanel';
 import RecentAgentItem from './components/RecentAgentItem';
 import SearchHeader from './components/SearchHeader';
+import { registerSidebarSearchFocus } from './searchFocus';
 import { getAgentIdFromHomePathname } from './utils';
 
 import {
@@ -81,7 +83,16 @@ const NewHomeSection: React.FC<{
   currentAgentIdRef.current = currentAgentId;
 
   const { handleCloseMobileMenu } = useModel('layout');
-  const { firstLevelMenus } = useModel('menuModel');
+
+  // 侧栏顶部「搜索」入口/⌘K 跨组件聚焦搜索框
+  const searchInputRef = useRef<InputRef>(null);
+  useEffect(
+    () =>
+      registerSidebarSearchFocus(() =>
+        searchInputRef.current?.focus({ cursor: 'all' }),
+      ),
+    [],
+  );
 
   const [activeTab, setActiveTab] = useState<HomeTab>(() => {
     const initialTab = getInitialActiveTab();
@@ -814,9 +825,8 @@ const NewHomeSection: React.FC<{
     history.push('/home');
   };
 
-  const showNewChatButton = firstLevelMenus?.some(
-    (menu: any) => menu?.code === 'new_conversation',
-  );
+  // 新建会话入口已上移至侧栏顶部操作区（SidebarNavHeader），此处仅保留搜索框
+  const showNewChatButton = false;
 
   // const noMoreText = dict('PC.Components.HistoryConversationList.noMore');
 
@@ -831,6 +841,7 @@ const NewHomeSection: React.FC<{
         onSearchSubmit={handleSearchSubmit}
         onNewChat={handleNewConversation}
         showNewChatButton={showNewChatButton}
+        inputRef={searchInputRef}
       />
 
       <div className={cx(styles.tabs)}>

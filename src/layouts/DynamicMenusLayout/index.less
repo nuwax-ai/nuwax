@@ -38,7 +38,8 @@
     overflow: hidden;
     position: relative;
     background: @navSecondMenuBg;
-    border-radius: @borderRadiusLg 0 0 @borderRadiusLg;
+    // 单栏模式（主导航改造）：一级 icon 竖栏已移除，侧栏即最左列，取消左侧圆角
+    border-radius: 0;
 
     .nav-menus-scroll {
       flex: 1;
@@ -46,8 +47,43 @@
     }
 
     .integral-footer {
+      // 单栏模式：积分块（width:100%）在上，用户行贴底
+      display: flex;
+      flex-direction: column;
+      gap: @marginXs;
       padding: @marginSm 0 0;
       margin-right: @margin;
+    }
+
+    // 底部用户行（原一级栏用户头像迁移至此，横向布局）
+    .sidebar-user-row {
+      display: flex;
+      align-items: center;
+      gap: @marginXs;
+      padding: @paddingXs;
+      border-radius: @borderRadius;
+      cursor: pointer;
+      min-width: 0;
+      transition: background-color 0.2s ease;
+
+      // UserAvatar 自带 5px 上下 margin（老一级竖栏的垂直留白），行内抵消
+      > div:first-child {
+        margin-top: 0;
+        margin-bottom: 0;
+      }
+
+      &:hover {
+        background-color: @colorFillSecondary;
+      }
+
+      .sidebar-user-name {
+        font-size: @fontSize;
+        color: @navSecondMenuAdaptiveText;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
     }
 
     .menu-title {

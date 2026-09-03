@@ -1,6 +1,7 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import { dict } from '@/services/i18nRuntime';
 import { SearchOutlined } from '@ant-design/icons';
+import type { InputRef } from 'antd';
 import { Input, Tooltip } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
@@ -15,6 +16,8 @@ interface SearchHeaderProps {
   onSearchSubmit: () => void;
   onNewChat: () => void;
   showNewChatButton?: boolean;
+  /** 外部聚焦搜索框用（侧栏顶部「搜索」入口/⌘K） */
+  inputRef?: React.Ref<InputRef>;
 }
 
 const SearchHeader: React.FC<SearchHeaderProps> = ({
@@ -24,11 +27,13 @@ const SearchHeader: React.FC<SearchHeaderProps> = ({
   onSearchSubmit,
   onNewChat,
   showNewChatButton = true,
+  inputRef,
 }) => {
   return (
     <div className={cx(styles['header-search-row'])}>
       <div className={cx(styles['search-input-wrapper'])}>
         <Input
+          ref={inputRef}
           prefix={
             <SearchOutlined className={cx(styles['search-icon-inner'])} />
           }

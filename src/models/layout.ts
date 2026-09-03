@@ -107,10 +107,11 @@ const useLayout = () => {
   };
 
   // 动态计算菜单宽度
+  // 单栏模式（主导航改造）：一级 icon 竖栏已移除，菜单宽度=侧栏宽度
   const getCurrentMenuWidth = () => {
     return isSecondMenuCollapsed
-      ? NAVIGATION_LAYOUT_SIZES.FIRST_MENU_WIDTH.STYLE1
-      : NAVIGATION_LAYOUT_SIZES.getTotalMenuWidth('style1');
+      ? 0
+      : NAVIGATION_LAYOUT_SIZES.SECOND_MENU_WIDTH;
   };
 
   // 查询用户未读消息数量

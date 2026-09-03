@@ -1,8 +1,6 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import { NAVIGATION_LAYOUT_SIZES } from '@/constants/layout.constants';
-import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { dict } from '@/services/i18nRuntime';
-import { ThemeNavigationStyleType } from '@/types/enums/theme';
 import { isImmersiveShell } from '@/utils/nuwaClawBridge';
 import { Tooltip } from 'antd';
 import classNames from 'classnames';
@@ -19,7 +17,6 @@ const cx = classNames.bind(styles);
 const CollapseButton: React.FC = () => {
   const { isSecondMenuCollapsed, setIsSecondMenuCollapsed } =
     useModel('layout');
-  const { navigationStyle } = useUnifiedTheme();
   const [searchParams] = useSearchParams();
   const location = useLocation();
 
@@ -80,13 +77,9 @@ const CollapseButton: React.FC = () => {
     setIsSecondMenuCollapsed(false);
   }, [searchParams, setIsSecondMenuCollapsed, location.pathname]);
 
-  // 计算动态导航宽度
-  const firstMenuWidth =
-    navigationStyle === ThemeNavigationStyleType.STYLE2
-      ? NAVIGATION_LAYOUT_SIZES.FIRST_MENU_WIDTH.STYLE2
-      : NAVIGATION_LAYOUT_SIZES.FIRST_MENU_WIDTH.STYLE1;
-  const menuTotalWidth =
-    NAVIGATION_LAYOUT_SIZES.getTotalMenuWidth(navigationStyle);
+  // 计算按钮贴边位置：单栏模式（主导航改造）下无一级竖栏，
+  // 展开时贴侧栏右缘，收起时贴窗口左缘
+  const menuTotalWidth = NAVIGATION_LAYOUT_SIZES.SECOND_MENU_WIDTH;
 
   // 处理点击事件（保存用户操作到localStorage）
   const handleToggleCollapse = () => {
@@ -121,7 +114,7 @@ const CollapseButton: React.FC = () => {
         })}
         onClick={handleToggleCollapse}
         style={{
-          left: isSecondMenuCollapsed ? firstMenuWidth : menuTotalWidth,
+          left: isSecondMenuCollapsed ? 0 : menuTotalWidth,
         }}
       >
         <SvgIcon

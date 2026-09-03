@@ -31,13 +31,12 @@ import React, {
 } from 'react';
 import { history, useLocation, useModel, useParams } from 'umi';
 import DynamicSecondMenu from './DynamicSecondMenu';
-import DynamicTabs from './DynamicTabs';
 // 复用原有组件
 import CreditsBalance from '@/components/business-component/CreditsBalance';
 import CollapseButton from './CollapseButton';
-import Header from './Header';
+import SidebarNavHeader from './SidebarNavHeader';
 import User from './User';
-import UserOperateArea from './UserOperateArea';
+import UserAvatar from './User/UserAvatar';
 // 复用原有样式
 import { PATH_URL } from '@/constants/home.constants';
 import {
@@ -48,7 +47,6 @@ import {
   OTHER_MENU_CODES,
 } from '@/constants/menus.constants';
 import useConversation from '@/hooks/useConversation';
-import { ThemeNavigationStyleType } from '@/types/enums/theme';
 import styles from './index.less';
 import NewHomeSection from './NewHomeSection';
 import SpaceSection from './SpaceSection';
@@ -69,13 +67,6 @@ const cx = classNames.bind(styles);
  *  尺寸单一来源在 nuwaClawBridge 的 shellAvoid.TOP（与右上角三键避让同源管理），
  *  NUWA_CLAW_PADDING_TOP 保留为兼容导出别名（外部导入点仍引用此名）。 */
 export const NUWA_CLAW_PADDING_TOP = shellAvoid.TOP;
-/** 使用自定义 Section 的一级菜单，始终展示二级菜单栏 */
-const SECOND_MENU_SECTION_TABS = new Set([
-  'homepage',
-  'space',
-  'workspace',
-  'system_square',
-]);
 
 export interface DynamicMenusLayoutProps {
   /** 覆盖容器样式 */
@@ -99,6 +90,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
     isSecondMenuCollapsed,
     setIsSecondMenuCollapsed,
     setOpenMessage,
+    setOpenAdmin,
     handleCloseMobileMenu,
   } = useModel('layout');
 
@@ -106,7 +98,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
   const { firstLevelMenus, otherMenus, hasPathUnderFirstLevelMenu } =
     useModel('menuModel');
 
-  const { refreshUserInfo } = useModel('userInfo');
+  const { refreshUserInfo, userInfo } = useModel('userInfo');
 
   // 工作空间下的最近编辑和开发收藏
   const { runEdit } = useModel('devCollectAgent');
@@ -129,6 +121,15 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
     if (tenantConfigInfo) {
       // 创建智能体会话
       await handleCreateConversation(tenantConfigInfo.defaultAgentId);
+    }
+  };
+
+  // 新建任务入口（侧栏顶部操作区）：租户配置未就绪时兜底回首页
+  const handleNewTask = () => {
+    if (tenantConfigInfo) {
+      handlerClick();
+    } else {
+      history.push('/home');
     }
   };
 
@@ -635,34 +636,18 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
   }, [activeTab, firstLevelMenus, isClickNewConversation]);
 
   /**
-   * 当前一级菜单是否需要展示二级菜单栏
-   * 无子菜单（children 为 null 或空数组）且非 Section 类菜单时隐藏
+   * 是否展示侧栏
+   * 单栏模式（主导航改造）：侧栏承载全局导航入口，常驻展示
    */
-  const shouldShowSecondMenu = useMemo(() => {
-    if (!activeTab) return false;
+  const shouldShowSecondMenu = true;
 
-    if (SECOND_MENU_SECTION_TABS.has(activeTab)) {
-      return true;
-    }
-
-    const currentMenu =
-      firstLevelMenus.find((m: MenuItemDto) => m.code === activeTab) ||
-      otherMenus.find((m: MenuItemDto) => m.code === activeTab);
-
-    if (!currentMenu) {
-      return false;
-    }
-
-    return !!currentMenu.children?.length;
-  }, [activeTab, firstLevelMenus, otherMenus]);
-
-  // 桌面端：把「当前页是否有二级菜单」同步给 nuwaclaw 壳，工具栏据此显隐收起按钮
-  //（无二级菜单的页面按钮无意义）。布局卸载（如 /Login 等无布局页）时推 false。
+  // 桌面端：把「当前页是否有二级菜单」同步给 nuwaclaw 壳，工具栏据此显隐收起按钮。
+  // 单栏模式下侧栏常驻，恒为 true。布局卸载（如 /Login 等无布局页）时推 false。
   // 浏览器端接入层 no-op。路由切换间 cleanup→mount 的瞬时 false 会被新值立即覆盖。
   useEffect(() => {
     nuwaClawHost.layout.setSecondMenuAvailable(shouldShowSecondMenu);
     return () => nuwaClawHost.layout.setSecondMenuAvailable(false);
-  }, [shouldShowSecondMenu]);
+  }, []);
 
   // 桌面端：把二级菜单真实收起态同步给壳（壳工具栏 icon 以此为准）。
   // webview reload 后壳本地态不重置、且 reload 瞬间的 toggle 命令可能丢失——
@@ -679,28 +664,6 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
     // 支持静态菜单的 'space' 和 动态菜单的 'workspace'
     return activeTab !== 'space' && activeTab !== 'workspace';
   }, [activeTab]);
-
-  /**
-   * 计算一级导航宽度
-   */
-  const firstMenuWidth = useMemo(() => {
-    if (isMobile) {
-      return NAVIGATION_LAYOUT_SIZES.FIRST_MENU_WIDTH.STYLE1;
-    }
-    return navigationStyle === 'style2'
-      ? NAVIGATION_LAYOUT_SIZES.FIRST_MENU_WIDTH.STYLE2
-      : NAVIGATION_LAYOUT_SIZES.FIRST_MENU_WIDTH.STYLE1;
-  }, [navigationStyle, isMobile]);
-
-  /**
-   * 一级导航背景
-   */
-  const firstMenuBackground = useMemo(() => {
-    if (isMobile) {
-      return `var(--xagi-background-image) ${token.colorBgContainer}`;
-    }
-    return 'transparent';
-  }, [isMobile, token.colorBgContainer]);
 
   /**
    * 二级导航背景
@@ -728,20 +691,16 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
   }, [layoutStyle, navigationStyle, isMobile]);
 
   /**
-   * 渲染二级菜单
+   * 渲染侧栏主体
+   * 单栏模式（主导航改造）：默认渲染会话侧栏（NewHomeSection），
+   * 工作空间/系统广场/系统管理等域保留原 Section 作为侧栏主体（管理后台子导航不失联）
    */
   const renderSecondMenu = useMemo(() => {
-    /**
-     * 渲染特殊内容区域
-     */
-    // 主页、系统广场、生态市场特殊处理：直接渲染对应的 Section 组件
-    // 主页 homepage: 最近使用 + 会话记录
-    // 主页: 使用新版侧栏（会话历史 + 搜索 + 新建会话）
+    // 主页: 使用新版侧栏（会话历史 + 搜索 + 新建会话）；未匹配域时兜底渲染会话侧栏
     if (
+      !activeTab ||
       activeTab === 'homepage' ||
       activeTab === 'new_conversation'
-      // activeTab === 'my_computer' ||
-      // activeTab === 'documents'
     ) {
       return <NewHomeSection style={overrideContainerStyle} />;
     }
@@ -763,116 +722,106 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
 
   return (
     <div className={navigationClassName}>
-      {/* 一级导航菜单栏 */}
+      {/* 侧栏（单栏模式）：主导航改造后移除一级 icon 竖栏，
+          侧栏 = 顶部导航操作区（新建任务/搜索/自动化/插件市场/探索）+ 按域切换主体 + 底部用户区 */}
       <div
-        className={cx(
-          styles['first-menus'],
-          'flex',
-          'flex-col',
-          'items-center',
-        )}
+        className={cx(styles['nav-menus'], 'noselect')}
         style={{
-          width: firstMenuWidth,
-          background: firstMenuBackground,
-          // 桌面端沉浸式：一级菜单顶部下移避让 macOS 红绿灯（trafficLightPosition {16,16}）
-          ...(isImmersiveShell() ? { paddingTop: shellAvoid.TOP } : {}),
+          width: isSecondMenuCollapsed
+            ? 0
+            : NAVIGATION_LAYOUT_SIZES.SECOND_MENU_WIDTH,
+          // 桌面端沉浸式：顶部留白避让 nuwaclaw 红绿灯工具栏；
+          // 一级栏已移除，浏览器端也不再需要 border-left（侧栏即最左列）
+          paddingTop: isImmersiveShell() ? shellAvoid.TOP : undefined,
+          borderLeft: 'none',
+          paddingLeft: isSecondMenuCollapsed ? 0 : token.padding,
+          opacity: isSecondMenuCollapsed ? 0 : 1,
+          backgroundColor: secondaryBackgroundColor,
         }}
       >
-        <Header />
-        {/* 动态一级菜单 */}
-        <DynamicTabs
-          isStyleOne={
-            navigationStyle === ThemeNavigationStyleType.STYLE1 || isMobile
-          }
+        {/* 桌面端沉浸式：左缘竖线，从避让区下沿开始（保持原视觉分隔） */}
+        {isImmersiveShell() && (
+          <div
+            style={{
+              position: 'absolute',
+              top: shellAvoid.TOP + 8,
+              bottom: 0,
+              left: 0,
+              width: 'var(--xagi-line-width)', // 与 less @lineWidth 同源
+              background: 'var(--xagi-layout-border-primary)',
+            }}
+          />
+        )}
+        <SidebarNavHeader
           menus={firstLevelMenus}
-          activeTab={activeTab}
-          onClick={handleTabClick}
+          otherMenus={otherMenus}
+          onMenuClick={handleTabClick}
+          onOtherMenuClick={handleUserClick}
+          onNewTask={handleNewTask}
         />
-        {/* 用户操作区域 */}
-        <UserOperateArea onClick={handleUserClick} menus={otherMenus} />
-        {/* 用户头像 */}
-        <User />
-      </div>
-
-      {/* 二级导航菜单栏：无子菜单的一级菜单不展示 */}
-      {shouldShowSecondMenu && (
-        <div
-          className={cx(styles['nav-menus'], 'noselect')}
-          style={{
-            width: isSecondMenuCollapsed
-              ? 0
-              : NAVIGATION_LAYOUT_SIZES.SECOND_MENU_WIDTH,
-            // 桌面端沉浸式：顶部留白避让 nuwaclaw 红绿灯工具栏（与 first-menus 对齐）；
-            // 左边框不贯穿避让区（改为下方内部竖线，顶端对齐搜索/新建会话栏）；
-            // 浏览器端 undefined 走 less 默认 padding-top / border-left
-            paddingTop: isImmersiveShell() ? shellAvoid.TOP : undefined,
-            borderLeft: isImmersiveShell() ? 'none' : undefined,
-            paddingLeft: isSecondMenuCollapsed ? 0 : token.padding,
-            opacity: isSecondMenuCollapsed ? 0 : 1,
-            backgroundColor: secondaryBackgroundColor,
-          }}
-        >
-          {/* 桌面端沉浸式：替代 border-left 的竖线，从避让区下沿（搜索/新建会话栏顶部）开始 */}
-          {isImmersiveShell() && (
-            <div
+        <div className={cx(styles['nav-menus-scroll'])}>
+          {activeTab === 'homepage' ? (
+            renderSecondMenu
+          ) : (
+            <HoverScrollbar
+              className={cx('w-full', 'h-full')}
+              bodyWidth={
+                NAVIGATION_LAYOUT_SIZES.SECOND_MENU_WIDTH - token.padding * 2
+              }
               style={{
-                position: 'absolute',
-                top: shellAvoid.TOP + 8, // 与上方 paddingTop 避让高度一致
-                bottom: 0,
-                left: 0,
-                width: 'var(--xagi-line-width)', // 与 less @lineWidth 同源
-                background: 'var(--xagi-layout-border-primary)',
+                padding: `${token.paddingSM}px 0`,
               }}
-            />
-          )}
-          <div className={cx(styles['nav-menus-scroll'])}>
-            {activeTab === 'homepage' ? (
-              renderSecondMenu
-            ) : (
-              <HoverScrollbar
-                className={cx('w-full', 'h-full')}
-                bodyWidth={
-                  NAVIGATION_LAYOUT_SIZES.SECOND_MENU_WIDTH - token.padding * 2
-                }
+            >
+              <div
+                className={cx('flex', 'flex-col', 'h-full')}
                 style={{
-                  padding: `${token.paddingSM}px 0`,
+                  minHeight: 0,
                 }}
               >
-                <div
-                  className={cx('flex', 'flex-col', 'h-full')}
-                  style={{
-                    minHeight: 0,
-                  }}
-                >
-                  {/* 标题 */}
-                  <ConditionRender condition={isShowTitle && currentTitle}>
-                    <div style={{ padding: '0 12px 12px' }}>
-                      <Typography.Title
-                        level={5}
-                        style={{ marginBottom: 0 }}
-                        className={cx(styles['menu-title'])}
-                      >
-                        {currentTitle}
-                      </Typography.Title>
-                    </div>
-                  </ConditionRender>
+                {/* 标题 */}
+                <ConditionRender condition={isShowTitle && currentTitle}>
+                  <div style={{ padding: '0 12px 12px' }}>
+                    <Typography.Title
+                      level={5}
+                      style={{ marginBottom: 0 }}
+                      className={cx(styles['menu-title'])}
+                    >
+                      {currentTitle}
+                    </Typography.Title>
+                  </div>
+                </ConditionRender>
 
-                  {/* 二级/三级菜单 */}
-                  {renderSecondMenu}
-                </div>
-              </HoverScrollbar>
-            )}
-          </div>
-
-          {/* 积分相关入口：放到二级导航栏底部固定展示 */}
-          <div className={cx(styles['integral-footer'])}>
-            <CreditsBalance />
-          </div>
+                {/* 二级/三级菜单 */}
+                {renderSecondMenu}
+              </div>
+            </HoverScrollbar>
+          )}
         </div>
-      )}
+
+        {/* 底部固定区：积分入口 + 用户区（原一级栏底部用户头像迁移至此） */}
+        <div className={cx(styles['integral-footer'])}>
+          <CreditsBalance />
+          <User placement="rightTop">
+            <div
+              className={cx(styles['sidebar-user-row'])}
+              onClick={() => setOpenAdmin(true)}
+            >
+              <UserAvatar
+                avatar={userInfo?.avatar}
+                onClick={() => setOpenAdmin(true)}
+              />
+              <span className={cx(styles['sidebar-user-name'])}>
+                {userInfo?.nickName ||
+                  userInfo?.userName ||
+                  dict('PC.Components.UserMenu.defaultUserName')}
+              </span>
+            </div>
+          </User>
+        </div>
+      </div>
 
       {/* 收起/展开按钮 */}
-      {shouldShowSecondMenu && <CollapseButton />}
+      <CollapseButton />
     </div>
   );
 };
