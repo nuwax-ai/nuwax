@@ -450,18 +450,8 @@ export default () => {
         openDesktopView(cId);
       }
 
-      // 客户端电脑时，只重启容器，是否打开远程桌面视图由hideDesktop决定
-      if (sandboxId !== '-1') {
-        // 如果智能体配置的远程桌面不隐藏，则打开远程桌面视图
-        if (
-          conversationInfoRef.current?.agent?.hideDesktop !==
-          HideDesktopEnum.Yes
-        ) {
-          // 打开预览视图或远程桌面视图时修改状态值
-          openPreviewChangeState('desktop');
-        }
-      }
-
+      // 客户端/个人电脑时只重启容器：桌面视图仅云电脑可达（入口按钮已按 '-1' 收敛），
+      // 不再随 hideDesktop 顺带打开，避免非云电脑会话弹出连不上的桌面面板
       const result = await apiRestartPod(cId);
       if (result.code === SUCCESS_CODE) {
         message.success(
@@ -1194,12 +1184,21 @@ export default () => {
         }
 
         // 通用型任务处理(打开远程桌面)
+        // 仅云电脑（'-1'）会话响应 OPEN_DESKTOP 自动打开：个人/共享电脑会话入口按钮已隐藏，
+        // 桌面路由也不可达（ttyd gateway route not found），且 openDesktopView 会 ensurePod
+        // 拉起云端容器——gate 必须挡在 ensurePod 之前。
         if (
           data.type === AgentComponentTypeEnum.Event &&
           data.subEventType === 'OPEN_DESKTOP' &&
           // 优先使用本次会话请求携带的 conversationId，避免闭包中拿到的旧会话信息
           params.conversationId &&
-          conversationInfo?.agent?.hideDesktop !== HideDesktopEnum.Yes
+          conversationInfo?.agent?.hideDesktop !== HideDesktopEnum.Yes &&
+          // 生效电脑判定：发送参数（live 路径页面传入的生效 id）> 共享电脑 > 兜底云电脑；
+          // resume 路径 params 仅含 conversationId，落到兜底 '-1'，绑个人电脑的会话
+          // 由页面层兜底 effect（Chat/ConversationAgent/PreviewAndDebug）收口
+          String(
+            params.sandboxId || conversationInfo?.sandboxServerId || '-1',
+          ) === '-1'
         ) {
           // 打开远程桌面
           openDesktopView(params.conversationId);
