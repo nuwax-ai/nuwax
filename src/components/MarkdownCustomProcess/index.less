@@ -380,6 +380,10 @@
 // ---- 通用工具「参数 / 结果」内联展开区 ----
 .params-response-view {
   margin-bottom: @marginXs;
+  border: 1px solid @colorBorderSecondary;
+  border-radius: @borderRadius;
+  overflow: hidden;
+  background: @colorBgContainer;
 
   // 「参数」「结果」两个 section 相互独立:标题行(▼+复制)各自吸顶,
   // body 各自限高滚动——长 JSON 参数滚动不影响结果区(参考稿形态)
@@ -391,9 +395,12 @@
       display: flex;
       align-items: center;
       gap: 4px;
-      padding: 2px 0;
+      width: 100%;
+      min-height: 30px;
+      padding: 4px @paddingXs;
       cursor: pointer;
       font-size: @fontSizeSm;
+      font-weight: @fontWeightStrong;
       color: @colorTextSecondary;
 
       &:hover {
@@ -402,17 +409,13 @@
     }
 
     & + .detail-block {
-      margin-top: @marginXs;
-      border-top: 1px solid rgba(0, 0, 0, 6%);
-      padding-top: 4px;
+      border-top: 1px solid @colorBorderSecondary;
     }
   }
 
   .detail-section {
-    border-top: 1px solid rgba(0, 0, 0, 6%);
+    border-top: 1px solid @colorBorderSecondary;
     background-color: @colorBgLayout;
-    margin-top: 2px;
-    border-radius: @borderRadius;
 
     .detail-section-header {
       display: flex;
@@ -424,7 +427,7 @@
       top: 0;
       background-color: @colorBgLayout;
       z-index: 1;
-      border-bottom: 1px solid rgba(0, 0, 0, 4%);
+      border-bottom: 1px solid @colorBorderSecondary;
 
       .detail-section-title {
         font-size: @fontSizeSm;
@@ -449,5 +452,72 @@
       scrollbar-width: thin;
       max-height: 240px; // 每个 section 独立限高滚动
     }
+  }
+
+  &.is-terminal-detail {
+    .detail-section-body {
+      max-height: 220px;
+    }
+  }
+
+  &.is-search-detail,
+  &.is-browser-detail,
+  &.is-file-read-detail {
+    .detail-section-body {
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+  }
+}
+
+// 技能不是参数 JSON：对齐参考稿，名称作为小型代码标签，正文独立滚动。
+.skill-detail-card {
+  background: @colorBgContainer;
+
+  .skill-detail-header {
+    min-height: 38px;
+    display: flex;
+    align-items: center;
+    gap: @marginXs;
+    padding: @paddingXs @paddingSm;
+    border-bottom: 1px solid @colorBorderSecondary;
+  }
+
+  .skill-detail-label {
+    color: @colorTextSecondary;
+    font-size: @fontSizeSm;
+    flex-shrink: 0;
+  }
+
+  .skill-detail-name {
+    min-width: 0;
+    max-width: 72%;
+    padding: 2px @paddingXs;
+    border-radius: @borderRadiusSm;
+    background: @colorFillSecondary;
+    color: @colorText;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .detail-section-copy {
+    margin-left: auto;
+    color: @colorTextTertiary;
+  }
+
+  .skill-detail-body {
+    margin: 0;
+    max-height: 280px;
+    overflow: auto;
+    scrollbar-width: thin;
+    padding: @paddingSm;
+    background: @colorBgLayout;
+    color: @colorText;
+    font-family: Monaco, Menlo, 'Ubuntu Mono', monospace;
+    font-size: @fontSizeSm;
+    line-height: 1.65;
+    white-space: pre-wrap;
+    word-break: break-word;
   }
 }

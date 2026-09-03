@@ -36,6 +36,7 @@ export type MockScenarioId =
   | 'OPENUI_INTERACTIVE'
   | 'INTERVENTION_MIXED'
   | 'RENDER_SHOWCASE'
+  | 'TOOL_RENDERING_TYPED'
   | 'TRACE_HAIRLINE'
   | 'SESSION_RESUME'
   | 'ASK_DUPLICATE'
@@ -406,6 +407,7 @@ const typedProcess = (
   name: string,
   toolCallId: string,
   input: Record<string, unknown> = {},
+  data?: unknown,
 ): MockSseEvent => ({
   eventType: 'PROCESSING',
   requestId: req('1'),
@@ -419,6 +421,7 @@ const typedProcess = (
       executeId: toolCallId,
       ...resultTiming('FINISHED', 1800),
       input,
+      ...(data !== undefined ? { data } : {}),
     },
   },
 });
@@ -1600,6 +1603,96 @@ export const MOCK_SCENARIOS: MockScenario[] = [
         '竞品分析完成：三家定价与功能矩阵已核对，结论以最终回答为准。',
       ),
     ].map((event) => ({ ...event, delayMs: event.delayMs ?? 150 })),
+  },
+  {
+    id: 'TOOL_RENDERING_TYPED',
+    label: '工具调用类型化展开',
+    description:
+      '对齐参考稿逐类验收：技能、浏览器结果、终端命令/输出、文件读取、文件 Diff、搜索结果、待办计划与通用兜底',
+    verifies:
+      '不同工具使用各自图标和内容形态；终端严格只有参数(command)+结果(stdout)两个独立滚动区且不重复',
+    events: [
+      think('我先读取技能与环境，再执行命令、检查文件并更新任务清单。'),
+      typedProcess('Skill', 'browser:control-in-app-browser', 'typed-skill', {
+        skill_content: [
+          '# Skill: control-in-app-browser',
+          '',
+          'Use this skill for browser and web-UI tasks: opening pages, inspecting visible state, clicking controls and taking screenshots.',
+        ].join('\n'),
+      }),
+      typedProcess(
+        'Page',
+        '打开浏览器连接',
+        'typed-browser',
+        { browser: 'Nuwax In-app Browser', reuse: true },
+        [
+          '# Selected Browser',
+          '— Name: Nuwax In-app Browser',
+          '— Type: in-app',
+          '— State: ready',
+          '',
+          'Reuse this browser wrapper in every fresh browser call.',
+        ].join('\n'),
+      ),
+      terminalOutput('typed-terminal', '终端', {
+        command:
+          'cd /Users/apple/workspace/nuwax && rg -n "TRACE_HAIRLINE" mock/conversationScenarios.ts | head -3',
+        content: [
+          "39:  | 'TRACE_HAIRLINE'",
+          "1605:    id: 'TRACE_HAIRLINE',",
+          '场景数据读取完成。',
+        ].join('\n'),
+        exitCode: 0,
+      }),
+      typedProcess(
+        'ToolCall',
+        '读取 conversationScenarios.ts',
+        'typed-read',
+        { path: 'mock/conversationScenarios.ts', line_start: 1, line_end: 40 },
+        [
+          'export type MockScenarioId =',
+          "  | 'NORMAL_SINGLE'",
+          "  | 'TOOL_RENDERING_TYPED';",
+        ].join('\n'),
+      ),
+      fileDiff('typed-edit', '编辑 conversationScenarios.ts', [
+        {
+          path: 'mock/conversationScenarios.ts',
+          oldText: "| 'TRACE_HAIRLINE'",
+          newText: "| 'TOOL_RENDERING_TYPED'\n| 'TRACE_HAIRLINE'",
+        },
+      ]),
+      typedProcess(
+        'Knowledge',
+        '查询工具渲染规范',
+        'typed-search',
+        { query: '工具调用展开态 参数 结果 独立滚动' },
+        {
+          matches: 3,
+          summary:
+            '终端、Diff、Plan 使用专属形态；技能展示正文；未知工具降级为参数/结果。',
+        },
+      ),
+      planSteps(
+        'typed-todo',
+        [
+          { status: 'completed', content: '恢复参考图和原始要求' },
+          { status: 'completed', content: '修复终端重复渲染' },
+          { status: 'in_progress', content: '逐类完成浏览器验收' },
+          { status: 'pending', content: '提交变更' },
+        ],
+        'FINISHED',
+      ),
+      typedProcess(
+        'Plugin',
+        '同步验收摘要',
+        'typed-generic',
+        { target: 'mock-chat', mode: 'typed-rendering' },
+        { success: true, scenario: 'TOOL_RENDERING_TYPED' },
+      ),
+      chat('工具类型化展开示例已准备完成。', true),
+      finalResult(true, '工具类型化展开示例已准备完成。'),
+    ].map((event) => ({ ...event, delayMs: event.delayMs ?? 500 })),
   },
   {
     id: 'TRACE_HAIRLINE',

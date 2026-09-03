@@ -4,6 +4,10 @@
  * OpenUI/文件操作专属卡能力，不重做工具卡）。
  */
 import MarkdownCustomProcess from '@/components/MarkdownCustomProcess';
+import {
+  getToolPresentationKind,
+  type ToolPresentationKind,
+} from '@/components/MarkdownCustomProcess/toolPresentation';
 import { PureMarkdownRenderer } from '@/components/MarkdownRenderer';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { dict } from '@/services/i18nRuntime';
@@ -14,12 +18,17 @@ import {
   CaretRightOutlined,
   CheckCircleOutlined,
   CloseCircleOutlined,
+  CodeOutlined,
   CommentOutlined,
+  EditOutlined,
   FileTextOutlined,
+  GlobalOutlined,
   LoadingOutlined,
   OrderedListOutlined,
   QuestionCircleOutlined,
   RobotOutlined,
+  SearchOutlined,
+  ThunderboltOutlined,
   ToolOutlined,
 } from '@ant-design/icons';
 import { theme } from 'antd';
@@ -42,6 +51,20 @@ const KIND_ICONS: Record<
   plan: OrderedListOutlined,
   'completed-interaction': CommentOutlined,
   unknown: QuestionCircleOutlined,
+};
+
+const TOOL_PRESENTATION_ICONS: Record<
+  ToolPresentationKind,
+  React.ComponentType<{ className?: string; style?: React.CSSProperties }>
+> = {
+  terminal: CodeOutlined,
+  'file-edit': EditOutlined,
+  todo: OrderedListOutlined,
+  skill: ThunderboltOutlined,
+  'file-read': FileTextOutlined,
+  search: SearchOutlined,
+  browser: GlobalOutlined,
+  generic: ToolOutlined,
 };
 
 export const nodeDisplayTitle = (node: ConversationProcessNode): string => {
@@ -109,6 +132,7 @@ const NodeDetail: React.FC<{
       ProcessingEnum.FINISHED;
     return (
       <MarkdownCustomProcess
+        embedded
         executeId={node.executeId ?? node.id}
         dataKey={`v2-detail-${node.id}`}
         conversationId={conversationId ?? ''}
@@ -161,10 +185,19 @@ const ProcessNodeRow: React.FC<ProcessNodeRowProps> = ({
 }) => {
   const { token } = theme.useToken();
   // narration 不渲染为行（穿插直出），此处到达即异常路径——兜底问号图标
-  const KindIcon =
-    node.kind === 'narration'
-      ? QuestionCircleOutlined
-      : KIND_ICONS[node.kind] ?? QuestionCircleOutlined;
+  const toolPresentationKind =
+    node.kind === 'tool'
+      ? getToolPresentationKind({
+          componentType: node.processing?.type ?? node.componentType,
+          name: node.processing?.name ?? node.title,
+          result: node.processing?.result,
+        })
+      : null;
+  const KindIcon = toolPresentationKind
+    ? TOOL_PRESENTATION_ICONS[toolPresentationKind]
+    : node.kind === 'narration'
+    ? QuestionCircleOutlined
+    : KIND_ICONS[node.kind] ?? QuestionCircleOutlined;
   const detailId = `v2-node-${node.id}`;
 
   const summaryText =

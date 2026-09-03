@@ -12,6 +12,7 @@ import { CaretDownOutlined, CaretRightOutlined } from '@ant-design/icons';
 import classNames from 'classnames';
 import React, { useState } from 'react';
 import styles from './index.less';
+import type { ToolPresentationKind } from './toolPresentation';
 
 const cx = classNames.bind(styles);
 
@@ -54,11 +55,30 @@ const DetailSection: React.FC<DetailSectionProps> = ({ title, value }) => {
 export interface ParamsResponseViewProps {
   params: Record<string, any> | null | undefined;
   response: unknown;
+  kind?: ToolPresentationKind;
+  name?: string;
 }
+
+const getSkillContent = (
+  params: Record<string, any> | null | undefined,
+  response: unknown,
+): unknown => {
+  if (response !== null && response !== undefined) return response;
+  if (!params) return null;
+  return (
+    params.skill_content ??
+    params.skillContent ??
+    params.content ??
+    params.instructions ??
+    params
+  );
+};
 
 const ParamsResponseView: React.FC<ParamsResponseViewProps> = ({
   params,
   response,
+  kind = 'generic',
+  name,
 }) => {
   const [paramsOpen, setParamsOpen] = useState(true);
   const [responseOpen, setResponseOpen] = useState(true);
@@ -70,6 +90,36 @@ const ParamsResponseView: React.FC<ParamsResponseViewProps> = ({
     response !== undefined &&
     !(typeof response === 'object' && !Object.keys(response as object).length);
   if (!hasParams && !hasResponse) return null;
+
+  if (kind === 'skill') {
+    const skillContent = toDisplayText(getSkillContent(params, response));
+    return (
+      <div
+        className={cx(
+          styles['params-response-view'],
+          styles['is-skill-detail'],
+        )}
+        data-detail-kind={kind}
+      >
+        <div className={cx(styles['skill-detail-card'])}>
+          <div className={cx(styles['skill-detail-header'])}>
+            <span className={cx(styles['skill-detail-label'])}>
+              {dict('PC.Common.Global.skill')}
+            </span>
+            {name && (
+              <code className={cx(styles['skill-detail-name'])}>{name}</code>
+            )}
+            <CopyIconButton
+              text={skillContent}
+              buttonType="text"
+              className={cx(styles['detail-section-copy'])}
+            />
+          </div>
+          <pre className={cx(styles['skill-detail-body'])}>{skillContent}</pre>
+        </div>
+      </div>
+    );
+  }
 
   const renderSection = (
     key: string,
@@ -85,7 +135,11 @@ const ParamsResponseView: React.FC<ParamsResponseViewProps> = ({
         onClick={onToggle}
         aria-expanded={open}
       >
-        {open ? <CaretDownOutlined /> : <CaretRightOutlined />}
+        {open ? (
+          <CaretDownOutlined aria-hidden="true" />
+        ) : (
+          <CaretRightOutlined aria-hidden="true" />
+        )}
         <span>{title}</span>
       </button>
       {open && <DetailSection title={title} value={value} />}
@@ -93,7 +147,13 @@ const ParamsResponseView: React.FC<ParamsResponseViewProps> = ({
   );
 
   return (
-    <div className={cx(styles['params-response-view'])}>
+    <div
+      className={cx(
+        styles['params-response-view'],
+        styles[`is-${kind}-detail`],
+      )}
+      data-detail-kind={kind}
+    >
       {hasParams &&
         renderSection(
           'params',

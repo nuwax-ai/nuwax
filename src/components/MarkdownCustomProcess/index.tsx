@@ -53,6 +53,10 @@ import styles from './index.less';
 import ParamsResponseView from './ParamsResponseView';
 import SeeDetailModal from './SeeDetailModal';
 import TerminalOutputView from './TerminalOutputView';
+import {
+  getToolPresentationKind,
+  shouldRenderGenericDetails,
+} from './toolPresentation';
 import { usePlanAutoScroll } from './usePlanAutoScroll';
 
 const cx = classNames.bind(styles);
@@ -127,6 +131,8 @@ interface MarkdownCustomProcessProps {
   type: AgentComponentTypeEnum;
   dataKey: string;
   conversationId: number | string;
+  /** V2 节点已提供外层折叠，嵌入态直接展示内容，避免双层展开。 */
+  embedded?: boolean;
 }
 interface InputProps {
   method: 'browser_open_page' | 'browser_navigate_page';
@@ -138,6 +144,7 @@ interface InputProps {
 }
 
 function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
+  const isEmbedded = props.embedded === true;
   const {
     getProcessingById,
     processingList,
@@ -445,11 +452,29 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
     return innerProcessing.type === AgentComponentTypeEnum.Plan;
   }, [innerProcessing.type]);
 
+  const toolPresentationKind = useMemo(
+    () =>
+      getToolPresentationKind({
+        componentType: innerProcessing.type,
+        name: innerProcessing.name || props.name,
+        result: innerProcessing.result,
+      }),
+    [
+      innerProcessing.type,
+      innerProcessing.name,
+      innerProcessing.result,
+      props.name,
+    ],
+  );
+
   const {
     containerRef: planTaskListRef,
     handleScroll: handlePlanScroll,
     handleWheel: handlePlanWheel,
-  } = usePlanAutoScroll(detailData?.response, isPlanType && isPlanExpanded);
+  } = usePlanAutoScroll(
+    detailData?.response,
+    isPlanType && (isEmbedded || isPlanExpanded),
+  );
 
   // 获取 Plan 任务状态图标
   const getPlanStatusIcon = useCallback((status: string) => {
@@ -472,7 +497,7 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
   const renderPlanDetails = useCallback(() => {
     if (
       !isPlanType ||
-      !isPlanExpanded ||
+      (!isEmbedded && !isPlanExpanded) ||
       !detailData?.response ||
       !Array.isArray(detailData.response)
     ) {
@@ -498,7 +523,13 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
         </div>
       </div>
     );
-  }, [isPlanType, isPlanExpanded, detailData?.response, getPlanStatusIcon]);
+  }, [
+    isPlanType,
+    isEmbedded,
+    isPlanExpanded,
+    detailData?.response,
+    getPlanStatusIcon,
+  ]);
 
   const [open, setOpen] = useState(false);
 
@@ -667,7 +698,9 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
               [styles['is-terminal']]: isTerminal,
             })}
             onClick={
-              hasDiff
+              isEmbedded
+                ? undefined
+                : hasDiff
                 ? () => setIsDiffExpanded(!isDiffExpanded)
                 : isTerminal && terminalItem?.content
                 ? () => setIsTerminalExpanded(!isTerminalExpanded)
@@ -744,7 +777,7 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
             )}
             {genStatusDisplay()}
             <div className={cx(styles['process-controls-actions'])}>
-              {isTerminal && !!terminalItem?.content && (
+              {!isEmbedded && isTerminal && !!terminalItem?.content && (
                 <Tooltip
                   title={
                     isTerminalExpanded
@@ -758,21 +791,14 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
                     icon={
                       isTerminalExpanded ? <MinusOutlined /> : <PlusOutlined />
                     }
-                    onClick={() => {
-                      const next = !isTerminalExpanded;
-                      setIsTerminalExpanded(next);
-                      // 参考稿形态:终端展开时参数/结果区与终端输出一起出现
-                      if (next && hasInlineDetail) setIsDetailExpanded(true);
-                    }}
+                    onClick={() => setIsTerminalExpanded(!isTerminalExpanded)}
                   />
                 </Tooltip>
               )}
               {/* 通用工具(非终端卡)「参数/结果」内联展开 */}
-              {hasInlineDetail &&
-                !isTerminal &&
-                !hasDiff &&
-                !isPlanType &&
-                innerProcessing.type !== AgentComponentTypeEnum.Page && (
+              {!isEmbedded &&
+                hasInlineDetail &&
+                shouldRenderGenericDetails(toolPresentationKind) && (
                   <Tooltip
                     title={
                       isDetailExpanded
@@ -790,18 +816,20 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
                     />
                   </Tooltip>
                 )}
-              <Tooltip
-                title={dict('PC.Components.MarkdownCustomProcess.viewDetail')}
-              >
-                <Button
-                  size="small"
-                  type="text"
-                  disabled={disabled}
-                  icon={<ProfileOutlined />}
-                  onClick={handleShowDetailModal}
-                />
-              </Tooltip>
-              {isPageType ? (
+              {!isEmbedded && (
+                <Tooltip
+                  title={dict('PC.Components.MarkdownCustomProcess.viewDetail')}
+                >
+                  <Button
+                    size="small"
+                    type="text"
+                    disabled={disabled}
+                    icon={<ProfileOutlined />}
+                    onClick={handleShowDetailModal}
+                  />
+                </Tooltip>
+              )}
+              {!isEmbedded && isPageType ? (
                 <Tooltip
                   title={
                     pagePreviewData
@@ -829,7 +857,7 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
                 </Tooltip>
               ) : null}
               {/* 展开/收起 */}
-              {isPlanType && (
+              {!isEmbedded && isPlanType && (
                 <Tooltip
                   title={
                     isPlanExpanded
@@ -896,35 +924,28 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
       </div>
       {/* Plan 类型展开内容 */}
       {renderPlanDetails()}
-      {/* 终端输出（P0-1）：流式显示尾部预览；终态收起为摘要行，点击展开全量。
-          参考稿形态：终端展开时先「参数/结果」两区块（各自独立滚动），再终端输出 */}
-      {isTerminal && !!terminalItem?.content && (
-        <>
-          {isTerminalExpanded && hasInlineDetail && (
-            <ParamsResponseView
-              params={detailData?.params}
-              response={detailData?.response}
-            />
-          )}
-          {isTerminalExpanded ? (
+      {/* 终端工具展开严格只有两区：参数(command) + 结果(stdout)，分别滚动。
+          收起且流式执行中仍保留既有尾部预览。 */}
+      {isTerminal &&
+        !!terminalItem?.content &&
+        (isEmbedded || isTerminalExpanded ? (
+          <ParamsResponseView
+            params={detailData?.params}
+            response={terminalItem.content}
+            kind="terminal"
+            name={innerProcessing.name}
+          />
+        ) : (
+          innerProcessing.status === ProcessingEnum.EXECUTING && (
             <TerminalOutputView
-              key={`${innerProcessing.executeId}-full`}
+              key={`${innerProcessing.executeId}-preview`}
               content={terminalItem.content}
-              mode="full"
+              mode="preview"
             />
-          ) : (
-            innerProcessing.status === ProcessingEnum.EXECUTING && (
-              <TerminalOutputView
-                key={`${innerProcessing.executeId}-preview`}
-                content={terminalItem.content}
-                mode="preview"
-              />
-            )
-          )}
-        </>
-      )}
+          )
+        ))}
       {/* Diff 类型展开内容 */}
-      {hasDiff && isDiffExpanded && (
+      {hasDiff && (isEmbedded || isDiffExpanded) && (
         <div className={cx(styles['diff-container'])}>
           {diffItems.map((item, index) => (
             <ProcessDiffViewer key={index} item={item} />
@@ -932,12 +953,16 @@ function MarkdownCustomProcess(props: MarkdownCustomProcessProps) {
         </div>
       )}
       {/* 通用工具「参数/结果」内联展开区（非专属卡时的兜底展示） */}
-      {isDetailExpanded && hasInlineDetail && (
-        <ParamsResponseView
-          params={detailData?.params}
-          response={detailData?.response}
-        />
-      )}
+      {(isEmbedded || isDetailExpanded) &&
+        hasInlineDetail &&
+        shouldRenderGenericDetails(toolPresentationKind) && (
+          <ParamsResponseView
+            params={detailData?.params}
+            response={detailData?.response}
+            kind={toolPresentationKind}
+            name={innerProcessing.name}
+          />
+        )}
     </>
   );
 }
@@ -946,6 +971,7 @@ export default memo(MarkdownCustomProcess, (prevProps, nextProps) => {
   return (
     prevProps.executeId === nextProps.executeId &&
     prevProps.status === nextProps.status &&
-    prevProps.conversationId === nextProps.conversationId
+    prevProps.conversationId === nextProps.conversationId &&
+    prevProps.embedded === nextProps.embedded
   );
 });
