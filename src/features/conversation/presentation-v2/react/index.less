@@ -330,11 +330,15 @@
   padding: 8px 0 0;
 }
 
-// 轮级耗时（MM:SS，终态冻结）：与 V1 会话状态栏 timer 同形态
+// 轮级耗时（MM:SS，终态冻结）：样式对齐 V1 会话状态栏 timer
+// （pages/Chat/components/ConversationStatus：等宽字体 + 定宽右对齐防跳动）
 .answer-duration {
   font-size: 12px;
   color: var(--v2-color-text-tertiary, rgba(5, 5, 5, 45%));
-  font-variant-numeric: tabular-nums;
+  font-family: Menlo, Consolas, monospace;
+  flex-shrink: 0;
+  min-width: 50px;
+  text-align: right;
 }
 
 // 用户消息气泡沿用 ChatView，不再重写（视觉零差异）
