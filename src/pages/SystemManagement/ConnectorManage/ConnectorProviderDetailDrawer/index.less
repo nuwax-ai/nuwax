@@ -189,6 +189,14 @@
   font-size: 14px;
 }
 
+/* 已停用工具的「调试」按钮：置灰不可点（停用的工具不允许调试） */
+.debugDisabled {
+  color: rgba(0, 0, 0, 25%);
+  cursor: not-allowed;
+  font-size: 14px;
+  user-select: none;
+}
+
 /* HTTP 接口 tag：固定在卡片右下角 */
 .toolProtocol {
   flex-shrink: 0;

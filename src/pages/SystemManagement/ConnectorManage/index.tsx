@@ -10,7 +10,11 @@ import {
   apiSystemConnectorProviderToggleStatus,
 } from '@/services/systemManage';
 import { ConnectorProviderInfo } from '@/types/interfaces/systemManage';
-import { DownloadOutlined, PlusOutlined } from '@ant-design/icons';
+import {
+  DownloadOutlined,
+  PlusOutlined,
+  UploadOutlined,
+} from '@ant-design/icons';
 import type {
   ActionType,
   FormInstance,
@@ -27,6 +31,7 @@ import {
 import { Button, message, Space, Spin, Tag } from 'antd';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation } from 'umi';
+import ConnectorImportDrawer from './ConnectorImportDrawer';
 import ConnectorProviderCreateDrawer from './ConnectorProviderCreateDrawer';
 import ConnectorProviderDetailDrawer from './ConnectorProviderDetailDrawer';
 import ConnectorProviderEditDrawer from './ConnectorProviderEditDrawer';
@@ -86,6 +91,8 @@ const ConnectorManage: React.FC = () => {
    * 抽屉内「创建连接器」按钮暂为占位（功能待实现），这里只负责开关
    */
   const [createDrawerOpen, setCreateDrawerOpen] = useState<boolean>(false);
+  /** "导入官方包"抽屉开关 */
+  const [importDrawerOpen, setImportDrawerOpen] = useState<boolean>(false);
 
   /**
    * 检查导出数据是否为空（数组看长度、对象看 key 数、字符串看 trim 后长度）。
@@ -581,6 +588,13 @@ const ConnectorManage: React.FC = () => {
           >
             新增官方连接器
           </Button>
+          {/* 导入官方包：右侧滑出 ConnectorImportDrawer（粘贴/选文件导入 JSON） */}
+          <Button
+            icon={<UploadOutlined />}
+            onClick={() => setImportDrawerOpen(true)}
+          >
+            导入官方包
+          </Button>
         </Space>
       }
     >
@@ -719,6 +733,15 @@ const ConnectorManage: React.FC = () => {
           open={createDrawerOpen}
           onClose={() => setCreateDrawerOpen(false)}
           onCreated={() => actionRef.current?.reload()}
+        />
+        {/*
+          导入官方包抽屉（右侧滑出）
+          导入成功后刷新连接器列表（GET /api/system/connector/providers）
+        */}
+        <ConnectorImportDrawer
+          open={importDrawerOpen}
+          onClose={() => setImportDrawerOpen(false)}
+          onImported={() => actionRef.current?.reload()}
         />
       </div>
     </WorkspaceLayout>

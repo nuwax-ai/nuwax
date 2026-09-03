@@ -1121,6 +1121,104 @@ export interface ExportConnectorProvidersParams {
 }
 
 /**
+ * 连接器导入 diff 条目（POST /api/connector/import 响应 data.items 元素）
+ * - type：provider = 连接器 / action = 工具
+ * - op：add = 新增 / update = 更新 / unchanged = 不变 / skip = 跳过（受保护）等
+ * - reason：skip 时的跳过原因，其余为 null
+ */
+export interface ConnectorImportDiffItem {
+  type?: string;
+  service?: string;
+  actionKey?: string | null;
+  op?: string;
+  reason?: string | null;
+}
+
+/**
+ * 连接器导入 diff 预览结果（POST /api/connector/import 响应 data）
+ * - importId：本次导入会话标识，确认导入时引用（内容变更后需重新预览）
+ * - addCount / updateCount / unchangedCount / skipProtectedCount：四类变更计数
+ */
+export interface ConnectorImportDiff {
+  importId: string;
+  source?: string;
+  providerVersion?: string;
+  addCount?: number;
+  updateCount?: number;
+  unchangedCount?: number;
+  skipProtectedCount?: number;
+  items?: ConnectorImportDiffItem[] | null;
+}
+
+/**
+ * 确认连接器导入入参（POST /api/connector/import/apply）
+ * - importId 即预览导入 diff（POST /api/connector/import）响应中的导入会话标识
+ */
+export interface ApplyConnectorImportParams {
+  importId: string;
+}
+
+/**
+ * 连接器调试：分页获取提供方列表入参（GET /api/connector/providers）
+ * 与系统连接器列表（GET /api/system/connector/providers，非分页返回数组）是两个接口
+ */
+export interface ConnectorProviderPageParams {
+  /** 空间 ID（默认 52） */
+  spaceId?: number | string;
+  /** 页码（调试弹窗一次拉全量，固定传 1） */
+  pageNum?: number;
+  /** 页大小（调试弹窗一次拉全量，固定传 2000） */
+  pageSize?: number;
+}
+
+/**
+ * 连接器调试：分页获取提供方列表响应 data
+ * 真实响应为分页结构，列表数据在 data.records 下
+ */
+export interface ConnectorProviderPageResult {
+  /** 当前页数据 */
+  records?: ConnectorProviderInfo[] | null;
+  /** 总条数 */
+  total?: number;
+  /** 当前页码 */
+  pageNum?: number;
+  /** 页大小 */
+  pageSize?: number;
+}
+
+/**
+ * 连接器工具调试执行入参（POST /api/connector/runtime/execute）
+ * - providerService：连接器 service（连接器下拉选中值）
+ * - actionKey：工具 actionKey（动作下拉选中值）
+ * - args：输入参数对象（输入参数 JSON 文本域解析结果，空值占位原样提交）
+ */
+export interface ConnectorRuntimeExecuteParams {
+  /** 连接器 service（如 ably） */
+  providerService: string;
+  /** 工具唯一标识（如 delete_channel_subscription） */
+  actionKey: string;
+  /** 输入参数对象 */
+  args?: Record<string, unknown>;
+}
+
+/**
+ * 连接器工具调试执行结果（POST /api/connector/runtime/execute 响应 data）
+ * 调试弹窗将整个 data 原样 pretty JSON 展示在「执行结果」区
+ */
+export interface ConnectorRuntimeExecuteResult {
+  /** 是否执行成功 */
+  success?: boolean;
+  /** 人类可读提示（失败原因，如「请先建立连接: ably」） */
+  message?: string;
+  /** 业务数据（成功时的返回值；失败时可能为 null） */
+  data?: unknown;
+  /** 机器可读错误码（如 connection_required） */
+  errorCode?: string;
+  /** 元信息：executionId 用于日志追溯；authorizeHint 为修复指引 */
+  meta?: Record<string, unknown>;
+}
+
+/**
  * 新增连接器提供方入参（POST /api/system/connector/providers）
  * - 免鉴权参考：{ ..., authType: "no_auth", authConfig: {} }
  * - OAuth 2.0 参考不传 authConfig，改为顶层 oauthAppMode（byo / platform）；

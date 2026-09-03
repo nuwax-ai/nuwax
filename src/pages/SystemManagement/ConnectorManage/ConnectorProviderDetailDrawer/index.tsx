@@ -23,6 +23,7 @@ import {
 } from 'antd';
 import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import ConnectorActionCreateModal from './components/ConnectorActionCreateModal';
+import ConnectorActionDebugModal from './components/ConnectorActionDebugModal';
 import styles from './index.less';
 
 /**
@@ -87,7 +88,9 @@ const ConnectorProviderToolCard: React.FC<{
   onDelete: (action: ConnectorProviderAction) => void;
   /** 打开「编辑工具」弹窗（复用新增工具弹窗回填该工具定义） */
   onEdit: (action: ConnectorProviderAction) => void;
-}> = ({ action, toggling, deleting, onToggle, onDelete, onEdit }) => {
+  /** 打开「工具调试」弹窗（已停用的工具不可调试，按钮置灰禁用） */
+  onDebug: (action: ConnectorProviderAction) => void;
+}> = ({ action, toggling, deleting, onToggle, onDelete, onEdit, onDebug }) => {
   const isEnabled = action.status === 'enabled';
 
   return (
@@ -108,7 +111,12 @@ const ConnectorProviderToolCard: React.FC<{
       ) : null}
       <div className={styles.toolCardFooter}>
         <Space size={12} className={styles.toolCardActions}>
-          <a onClick={() => {}}>调试</a>
+          {/* 调试：已停用的工具不可调试，按钮置灰禁用 */}
+          {isEnabled ? (
+            <a onClick={() => onDebug(action)}>调试</a>
+          ) : (
+            <span className={styles.debugDisabled}>调试</span>
+          )}
           {/* 编辑：复用「新增工具」弹窗回填当前工具定义（编辑模式） */}
           <a onClick={() => onEdit(action)}>编辑</a>
           {toggling ? (
@@ -172,6 +180,8 @@ const ConnectorProviderDetailContent: React.FC<{
   onOpenActionCreate: () => void;
   /** 打开「编辑工具」弹窗（复用新增工具弹窗回填该工具定义） */
   onEditAction: (action: ConnectorProviderAction) => void;
+  /** 打开「工具调试」弹窗 */
+  onDebugAction: (action: ConnectorProviderAction) => void;
 }> = ({
   detail,
   record,
@@ -181,6 +191,7 @@ const ConnectorProviderDetailContent: React.FC<{
   onDeleteAction,
   onOpenActionCreate,
   onEditAction,
+  onDebugAction,
 }) => {
   // 鉴权方式：与列表"认证"列保持完全一致的展示 —— 找不到标签就 fallback 到原始值
   const authTypeValue = detail?.provider?.authType ?? record?.authType;
@@ -252,6 +263,7 @@ const ConnectorProviderDetailContent: React.FC<{
                 onToggle={onToggleAction}
                 onDelete={onDeleteAction}
                 onEdit={onEditAction}
+                onDebug={onDebugAction}
               />
             ))}
           </div>
@@ -305,6 +317,13 @@ const ConnectorProviderDetailDrawer: React.FC<
   /** 编辑模式回填的工具定义（详情接口 actions 列表项；null = 新增模式） */
   const [editingAction, setEditingAction] =
     useState<ConnectorProviderAction | null>(null);
+  /**
+   * 「工具调试」弹窗开关
+   * - 工具卡片「调试」按钮打开（已停用的工具按钮置灰不可点）
+   * - 弹窗自身按设计稿固定初始化：连接器默认选列表第一条 + 动作默认选第一条
+   * - 抽屉关闭时同步收起
+   */
+  const [debugModalOpen, setDebugModalOpen] = useState<boolean>(false);
 
   /**
    * 抽屉标题：以接口返回的 displayName 优先；其次 record.displayName；最后回退到 service
@@ -352,6 +371,7 @@ const ConnectorProviderDetailDrawer: React.FC<
       // 抽屉关闭时同步收起工具弹窗并清空编辑态
       setActionModalOpen(false);
       setEditingAction(null);
+      setDebugModalOpen(false);
     }
   }, [open, record?.service, spaceId, fetchDetail]);
 
@@ -545,6 +565,7 @@ const ConnectorProviderDetailDrawer: React.FC<
               setActionModalOpen(true);
             }}
             onEditAction={handleOpenActionEdit}
+            onDebugAction={() => setDebugModalOpen(true)}
           />
         ) : (
           <div className={styles.emptyWrap}>
@@ -560,6 +581,13 @@ const ConnectorProviderDetailDrawer: React.FC<
         editAction={editingAction}
         onClose={() => setActionModalOpen(false)}
         onCreated={handleActionCreated}
+      />
+
+      {/* 工具调试弹窗（打开时自动拉连接器列表 + 第一条连接器详情） */}
+      <ConnectorActionDebugModal
+        open={debugModalOpen}
+        spaceId={spaceId}
+        onClose={() => setDebugModalOpen(false)}
       />
     </>
   );

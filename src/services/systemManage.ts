@@ -11,11 +11,17 @@ import type {
 import type {
   AccessStatsResult,
   AddSystemUserParams,
+  ApplyConnectorImportParams,
   ConnectorBindableItem,
   ConnectorBindableParams,
+  ConnectorImportDiff,
   ConnectorProviderDetail,
   ConnectorProviderInfo,
   ConnectorProviderListParams,
+  ConnectorProviderPageParams,
+  ConnectorProviderPageResult,
+  ConnectorRuntimeExecuteParams,
+  ConnectorRuntimeExecuteResult,
   ConversationStatsResult,
   CreateConnectorActionParams,
   CreateConnectorProviderParams,
@@ -350,6 +356,80 @@ export async function apiSystemConnectorProviderExport(
     responseType: 'blob',
     getResponse: true,
     skipErrorHandler: true,
+  });
+}
+
+/**
+ * 预览连接器导入 diff（POST /api/connector/import）
+ *
+ * - 入参即导入包 JSON 内容（「导出」生成的 JSON，粘贴或选择文件带入），
+ *   传解析后的对象，由 request 序列化
+ * - 返回 diff 预览：importId + 四类变更计数 + items 明细，不执行导入；
+ *   确认导入由后续接口引用 importId 完成
+ *
+ * 用于「导入官方包」抽屉的「预览导入 diff」按钮。
+ */
+export async function apiConnectorImport(
+  data: unknown,
+): Promise<RequestResponse<ConnectorImportDiff>> {
+  return request('/api/connector/import', {
+    method: 'POST',
+    data,
+  });
+}
+
+/**
+ * 确认连接器导入（POST /api/connector/import/apply）
+ *
+ * - 入参仅 importId：引用「预览导入 diff」返回的导入会话标识，
+ *   后端按预览阶段解析好的导入包执行导入
+ *
+ * 用于「导入官方包」抽屉的「确认导入」按钮；成功后由调用方刷新连接器列表。
+ */
+export async function apiConnectorImportApply(
+  data: ApplyConnectorImportParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/connector/import/apply', {
+    method: 'POST',
+    data,
+  });
+}
+
+/**
+ * 分页获取连接器提供方列表（GET /api/connector/providers?spaceId=&pageNum=&pageSize=）
+ *
+ * - 与系统连接器列表接口（GET /api/system/connector/providers，非分页返回数组）不同，
+ *   该接口返回分页结构，列表数据在 data.records 下
+ * - 调试弹窗一次拉全量（pageNum=1 & pageSize=2000），取第一条的 service
+ *   再调 GET /api/connector/providers/{service} 拉详情
+ *
+ * 用于「工具调试」弹窗的连接器下拉数据源。
+ */
+export async function apiConnectorProviderPageList(
+  params: ConnectorProviderPageParams,
+): Promise<RequestResponse<ConnectorProviderPageResult>> {
+  return request('/api/connector/providers', {
+    method: 'GET',
+    params,
+  });
+}
+
+/**
+ * 执行连接器工具调试（POST /api/connector/runtime/execute）
+ *
+ * - 入参：providerService（连接器下拉选中值）+ actionKey（动作下拉选中值）+
+ *   args（输入参数 JSON 文本域解析出的对象）
+ * - 响应 data 为执行结果体（success / message / data / errorCode / meta），
+ *   无论业务成功与否均原样返回，由调试弹窗 pretty JSON 展示在「执行结果」区
+ *
+ * 用于「工具调试」弹窗的「执行」按钮。
+ */
+export async function apiConnectorRuntimeExecute(
+  data: ConnectorRuntimeExecuteParams,
+): Promise<RequestResponse<ConnectorRuntimeExecuteResult>> {
+  return request('/api/connector/runtime/execute', {
+    method: 'POST',
+    data,
   });
 }
 

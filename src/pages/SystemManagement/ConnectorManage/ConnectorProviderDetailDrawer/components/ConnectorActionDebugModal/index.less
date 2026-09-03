@@ -1,0 +1,116 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+// 弹窗内容区去掉默认底部内边距（无 footer，双栏撑满高度）
+.modal {
+  :global {
+    .ant-modal-body {
+      padding-bottom: 24px;
+    }
+  }
+}
+
+// 双栏布局：左「执行参数」/ 右「执行结果」
+.layout {
+  display: flex;
+  gap: 16px;
+  align-items: stretch;
+  min-height: 420px;
+}
+
+// ===== 左栏：执行参数卡片 =====
+.paramsCard {
+  display: flex;
+  flex: 1 1 45%;
+  flex-direction: column;
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid rgba(5, 5, 5, 8%);
+  border-radius: 8px;
+  background: #fff;
+}
+
+// 卡片标题（标题下带分隔线，与设计稿一致）
+.paramsTitle {
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(5, 5, 5, 6%);
+  color: rgba(0, 0, 0, 88%);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+// 表单字段：label 在上、控件独占一行
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.fieldLabel {
+  color: rgba(0, 0, 0, 45%);
+  font-size: 13px;
+}
+
+// JSON 输入框：等宽字体，强化代码输入语义
+.jsonInput {
+  font-family: SFMono-Regular, Consolas, 'Liberation Mono', Menlo, Courier,
+    monospace;
+}
+
+// 执行按钮：深黑色实心、左对齐（POST /api/connector/runtime/execute）
+.executeButton {
+  align-self: flex-start;
+  min-width: 96px;
+  margin-top: 20px;
+}
+
+// ===== 右栏：执行结果面板 =====
+.resultPanel {
+  display: flex;
+  flex: 1 1 55%;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid rgba(5, 5, 5, 12%);
+  border-radius: 8px;
+}
+
+// 深色标题栏：左侧标题文案 + 右侧折叠按钮
+.resultHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: #1f1f1f;
+  color: #fff;
+  font-size: 14px;
+}
+
+.resultCollapseBtn {
+  padding: 0 4px;
+  color: #fff;
+  cursor: pointer;
+}
+
+// 米色结果区：折叠时隐藏；未执行展示占位文案，执行后展示响应 data
+.resultBody {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+  background: #f7f3ea;
+  color: rgba(0, 0, 0, 45%);
+  font-size: 13px;
+}
+
+// 执行结果 JSON：pretty JSON 等宽展示（无语法高亮，与设计稿一致）
+.resultJson {
+  margin: 0;
+  font-family: SFMono-Regular, Consolas, 'Liberation Mono', Menlo, Courier,
+    monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: rgba(0, 0, 0, 75%);
+}
