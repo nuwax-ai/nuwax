@@ -635,10 +635,48 @@ async function startPreview() {
 // ============================================
 // Download Function
 // ============================================
+/**
+ * App web-view 通过 evalJS 写入的平台标识：'ios' / 'android' / 'harmony'
+ */
+function getNuwaxAppPlatform() {
+    const platform = window.__nuwaxAppPlatform;
+    if (platform === 'ios' || platform === 'android' || platform === 'harmony') {
+        return platform;
+    }
+    return '';
+}
+
+/**
+ * 通知 App 用原生 downloadFileInApp 下载当前预览文件。
+ */
+function requestNuwaxAppFileDownload() {
+    const payload = { type: 'download', action: 'downloadCurrentFile' };
+    try {
+        window.postMessage(payload, '*');
+        if (window.parent && window.parent !== window) {
+            window.parent.postMessage(payload, '*');
+        }
+        const post =
+            window.uni && window.uni.webView && window.uni.webView.postMessage;
+        if (post) {
+            post({ data: payload });
+        }
+    } catch (e) {
+        console.warn('[FilePreview] Failed to request App file download:', e);
+    }
+}
+
 async function downloadFile() {
     if (fileType === 'openui') {
         return;
     }
+
+    // App web-view：自行 postMessage，由原生 downloadFileInApp 下载
+    if (getNuwaxAppPlatform()) {
+        requestNuwaxAppFileDownload();
+        return;
+    }
+
     if (!downloadUrl) {
         showError('Download URL does not exist');
         return;
