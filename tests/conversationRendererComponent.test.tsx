@@ -219,12 +219,16 @@ describe('ConversationRendererV2 · 三层结构', () => {
     );
   });
 
-  it('终态 balanced 默认收起：轨迹体不可见，回答仍常显', () => {
+  it('历史轮（首挂载即终态）balanced 默认展开：轨迹体可见，回答仍常显', () => {
     renderV2(buildTurn());
     const toggle = screen.getByTestId('v2-trace-toggle');
-    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    // 单帧终态 render = 打开历史会话语义：轨迹默认展开（打开即见）
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
     expect(screen.queryByTestId('v2-hidden-entry')).toBeNull();
     expect(screen.getByTestId('v2-final-answer')).toBeVisible();
+    // 手动收起仍生效
+    fireEvent.click(toggle);
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
   });
 
   it('运行轮外层默认展开，仅显示工作时长且箭头位于文字之后', () => {
@@ -262,12 +266,12 @@ describe('ConversationRendererV2 · 三层结构', () => {
     expect(text).toContain('traceMetricElapsed');
   });
 
-  it('detailed 终态默认收起，展开后已完成 reasoning 节点详情自动展开', () => {
+  it('detailed 历史轮默认展开，已完成 reasoning 节点详情自动展开', () => {
     renderV2(buildTurn(), PREFS('detailed'));
+    // 单帧终态 = 历史轮：外层默认展开，无需手动点开
     expect(
       screen.getByTestId('v2-trace-toggle').getAttribute('aria-expanded'),
-    ).toBe('false');
-    fireEvent.click(screen.getByTestId('v2-trace-toggle'));
+    ).toBe('true');
     // think 内容作为已完成节点默认展开（行摘要 + 详情两处可见）
     expect(
       screen.getAllByText('先想想要用哪个工具').length,
@@ -367,8 +371,7 @@ describe('ConversationRendererV2 · 两级折叠与手动状态保持', () => {
   it('节点行为原生 button（键盘 Enter/Space 由浏览器语义保证）且点击展开受限详情', async () => {
     const user = userEvent.setup();
     renderV2(buildTurn(), PREFS('detailed'));
-    // detailed 终态外层默认收起，先展开；工具节点三档恒为摘要行
-    fireEvent.click(screen.getByTestId('v2-trace-toggle'));
+    // detailed 历史轮外层默认展开；工具节点三档恒为摘要行
     const toolRow = document.querySelector('[data-node-id="e1"] button');
     expect(toolRow).not.toBeNull();
     // 原生 button：Enter/Space 激活由浏览器保证，无需自定义键盘处理
@@ -395,7 +398,6 @@ describe('ConversationRendererV2 · 两级折叠与手动状态保持', () => {
 describe('ConversationRendererV2 · 预设与高级覆盖', () => {
   it('focused 隐藏思考：隐藏入口「另有 N 项已隐藏」可恢复；narration 不受预设影响', async () => {
     renderV2(buildTurn(), PREFS('focused'));
-    fireEvent.click(screen.getByTestId('v2-trace-toggle'));
     const entry = screen.getByTestId('v2-hidden-entry');
     // 仅 reasoning 两项被隐藏（narration 已直出，不再是可隐藏节点）
     expect(entry).toHaveTextContent(
@@ -417,8 +419,7 @@ describe('ConversationRendererV2 · 预设与高级覆盖', () => {
 
   it('过程说明穿插直出在轨迹体原位（工具之间），展开即见正文；narration-only 终态轮无空轨迹条', () => {
     renderV2(buildTurn());
-    // 终态 balanced 默认收起：先展开轨迹体
-    fireEvent.click(screen.getByTestId('v2-trace-toggle'));
+    // 历史轮 balanced 默认展开：轨迹体直接可见
     const trace = document.querySelector('[data-trace-key]');
     const narration = screen.getByTestId('v2-narration');
     const answer = screen.getByTestId('v2-final-answer');
@@ -453,8 +454,7 @@ describe('ConversationRendererV2 · 预设与高级覆盖', () => {
 
   it('高级覆盖：tool=expanded 使已完成工具节点详情默认展开', () => {
     renderV2(buildTurn(), PREFS('balanced', { tool: 'expanded' }));
-    // 终态 balanced 外层默认收起，先展开轨迹
-    fireEvent.click(screen.getByTestId('v2-trace-toggle'));
+    // 历史轮外层默认展开，无需手动点开
     const toolRow = document.querySelector('[data-node-id="e1"] button');
     expect(toolRow?.getAttribute('aria-expanded')).toBe('true');
     expect(screen.getByTestId('tool-detail')).toBeInTheDocument();
@@ -484,7 +484,6 @@ describe('ConversationRendererV2 · 预设与高级覆盖', () => {
       }),
     ];
     renderV2(failed, PREFS('focused', { tool: 'hidden' }));
-    fireEvent.click(screen.getByTestId('v2-trace-toggle'));
     const row = document.querySelector('[data-node-id="bad"]');
     expect(row).not.toBeNull();
   });
@@ -613,8 +612,7 @@ describe('ConversationRendererV2 · 回答与异常', () => {
       ],
       PREFS('balanced', { tool: 'expanded' }),
     );
-    // 终态外层默认收起：展开轨迹触发节点详情渲染抛错 → ErrorBoundary 整份回退 V1
-    fireEvent.click(screen.getByTestId('v2-trace-toggle'));
+    // 历史轮默认展开：详情立即渲染即抛错 → ErrorBoundary 整份回退 V1
     await waitFor(() => {
       expect(document.querySelector('[data-v2-fallback="v1"]')).not.toBeNull();
     });
@@ -646,7 +644,6 @@ describe('ConversationRendererV2 · 回答与异常', () => {
         preferences={PREFS('balanced', { tool: 'expanded' })}
       />,
     );
-    fireEvent.click(screen.getByTestId('v2-trace-toggle'));
     await waitFor(() => {
       expect(document.querySelector('[data-v2-fallback="v1"]')).not.toBeNull();
     });
@@ -670,7 +667,6 @@ describe('ConversationRendererV2 · 回答与异常', () => {
 describe('ConversationRendererV2 · 无障碍（验收返工 P2）', () => {
   it('节点行装饰图标对读屏隐藏（aria-hidden），按钮名称只含标题与摘要', () => {
     renderV2(buildTurn(), PREFS('detailed'));
-    fireEvent.click(screen.getByTestId('v2-trace-toggle'));
     const toolRow = document.querySelector('[data-node-id="e1"] button')!;
     const icons = toolRow.querySelectorAll('[aria-hidden="true"]');
     expect(icons.length).toBeGreaterThanOrEqual(1);
@@ -692,7 +688,6 @@ describe('ConversationRendererV2 · 无障碍（验收返工 P2）', () => {
 
   it('可展开节点有独立 disclosure 箭头并跟随状态旋转', () => {
     renderV2(buildTurn(), PREFS('detailed'));
-    fireEvent.click(screen.getByTestId('v2-trace-toggle'));
     const toolRow = document.querySelector('[data-node-id="e1"] button')!;
     const disclosure = toolRow.querySelector(
       '[data-testid="v2-node-disclosure"]',

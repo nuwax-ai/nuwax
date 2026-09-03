@@ -79,6 +79,8 @@ export interface WorkTraceDisclosureProps {
   /** 用户手动展开态；undefined = 未手动干预（跟随默认） */
   manualExpanded?: boolean;
   onManualToggle: (expanded: boolean) => void;
+  /** 历史轮（首挂载即终态，如打开历史会话）：默认展开轨迹 */
+  historicalTurn?: boolean;
 }
 
 const WorkTraceDisclosure: React.FC<WorkTraceDisclosureProps> = ({
@@ -87,12 +89,14 @@ const WorkTraceDisclosure: React.FC<WorkTraceDisclosureProps> = ({
   conversationId,
   manualExpanded,
   onManualToggle,
+  historicalTurn,
 }) => {
   const { token } = theme.useToken();
   const [revealHidden, setRevealHidden] = useState(false);
 
   const expanded =
-    manualExpanded ?? defaultTraceExpanded(turn, preferences.preset);
+    manualExpanded ??
+    defaultTraceExpanded(turn, preferences.preset, historicalTurn);
   const { visibleNodes, hiddenCount } = useMemo(
     () => splitNodesByVisibility(turn.nodes, preferences),
     [turn.nodes, preferences],

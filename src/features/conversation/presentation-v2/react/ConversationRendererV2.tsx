@@ -101,6 +101,9 @@ const TurnBlock: React.FC<{
   const [manualExpanded, setManualExpanded] = useState<boolean | undefined>(
     undefined,
   );
+  // 历史轮标记：首挂载即终态（打开历史会话 / 分页加载的旧消息）→ 轨迹默认
+  // 展开；本会话流式经历 running→终态的轮保持「运行展开→结束收起」不回归。
+  const [historicalTurn] = useState(() => !turn.running);
   // 流式结束时回到终态默认值（收起）；结束后用户仍可再次手动展开。
   useEffect(() => {
     if (!turn.running) setManualExpanded(undefined);
@@ -144,6 +147,7 @@ const TurnBlock: React.FC<{
           conversationId={conversationId}
           manualExpanded={manualExpanded}
           onManualToggle={setManualExpanded}
+          historicalTurn={historicalTurn}
         />
       )}
       {/* 无节点行的轮次（纯说明）：narration 直接以正文展示 */}

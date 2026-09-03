@@ -126,13 +126,16 @@ export function splitNodesByVisibility(
 }
 
 /**
- * 外层轨迹默认展开态：运行轮恒展开；终态统一收起。
+ * 外层轨迹默认展开态：运行轮恒展开；本会话流式结束的终态轮统一收起；
+ * 打开页面即终态的历史轮（打开历史会话 / 分页加载的旧消息）默认展开，
+ * 避免「打开即收起」让人误以为过程渲染丢失。
  * 用户手动操作后由渲染层固定，本函数只提供「未手动干预时」的默认值。
  */
 export function defaultTraceExpanded(
   turn: Pick<ConversationTurnPresentationV2, 'running'>,
   preset: ConversationRendererPreset,
+  historicalTurn = false,
 ): boolean {
   void preset;
-  return turn.running;
+  return turn.running || historicalTurn;
 }

@@ -120,4 +120,27 @@ describe('V2 真实工具节点详情', () => {
     expect(detail?.querySelector('[class*="params-response-view"]')).toBeNull();
     expect(detail).not.toHaveTextContent('"type"');
   });
+
+  it('无输入输出且无摘要的节点不渲染空详情容器', () => {
+    const node = {
+      id: 'call-empty',
+      kind: 'tool',
+      title: '空工具',
+      summary: '',
+      status: 'finished',
+      componentType: AgentComponentTypeEnum.ToolCall,
+      processing: {
+        executeId: 'call-empty',
+        name: '空工具',
+        status: ProcessingEnum.FINISHED,
+        type: AgentComponentTypeEnum.ToolCall,
+        result: undefined,
+      },
+    } as any;
+    const { rerender } = render(
+      <ProcessNodeRow expanded={false} onToggle={() => {}} node={node} />,
+    );
+    rerender(<ProcessNodeRow expanded onToggle={() => {}} node={node} />);
+    expect(document.querySelector('[data-tool-detail-kind]')).toBeNull();
+  });
 });

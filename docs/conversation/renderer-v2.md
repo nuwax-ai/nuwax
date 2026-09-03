@@ -34,7 +34,7 @@ UnifiedChatSession/components/ChatInputHomeIndependent/ConversationDisplaySettin
 - **节点类型**：`reasoning | context | tool | subagent | plan | completed-interaction | unknown`（中间正文段 narration **不是节点**——投影到 `turn.narrations` 直出展示，不受预设/逐类覆盖影响）。`type=Event` 丢弃（OpenUI render 例外按 tool）；无 executeId 的 process 段丢弃（与 V1 null 分支一致）；畸形标签碎片 → unknown。
 - **最终回答**（三级选择，禁止读 `ConversationInfo.summary`）： ① 最后一条非空 `finalResult.outputText`（剥内嵌标签）② 终态最后一条非空正文段 ③ 无正文只显示停止/错误状态。运行态以末尾正文段为实时回答区。
 - **指标**：工具数 = 非 Plan/Event 的 executeId 去重；消息数 = reasoning+context+completed-interaction（narration 直出不计）；耗时优先 `finalResult.start/endTime`，其次 processing 最早开始/最晚结束，运行态每秒跳动、终态冻结；零工具时头部以「执行过程」开头，缺失指标单独省略。
-- **交互**：外层运行轮默认展开，会话结束后所有预设均自动收起；流式增量保持用户手动状态，终态自动收起后仍可再次手动展开。节点行/折叠头均为原生 button（Enter/Space 浏览器语义）+ `aria-expanded`/`aria-controls`；详情 `min(360px, 45vh)` 内部滚动；`prefers-reduced-motion` 下停用动效。
+- **交互**：外层运行轮默认展开，本会话流式结束后所有预设均自动收起；打开页面即终态的历史轮（历史会话/分页旧消息）默认展开，避免「打开即收起」被误认为过程渲染丢失。流式增量保持用户手动状态，终态自动收起后仍可再次手动展开。节点行/折叠头均为原生 button（Enter/Space 浏览器语义）+ `aria-expanded`/`aria-controls`；详情 `min(360px, 45vh)` 内部滚动；`prefers-reduced-motion` 下停用动效。
 - **干预卡**：待回答审批/提问仍由 AgentIntervention dock 独立置顶（不在轨迹内）； responseStatus 到达终态（submitted/cancelled/skipped/failed）后才投影为 completed-interaction 节点，按 toolCallId 锚定在对应工具节点之后。
 
 ## 配置

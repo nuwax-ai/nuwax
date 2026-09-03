@@ -73,6 +73,9 @@ const ToolNodeDetail: React.FC<{ node: ConversationProcessNode }> = ({
     detail.inputText ||
     detail.output;
 
+  // 无任何可展示内容且无摘要兜底时不渲染空容器（如无输入输出的 unknown 节点）
+  if (!hasContent && !node.summary) return null;
+
   return (
     <div
       className={cx(styles['tool-detail'], {

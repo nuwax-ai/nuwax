@@ -136,11 +136,15 @@ describe('renderPreferences', () => {
     expect(hiddenCount).toBe(2);
   });
 
-  it('外层轨迹默认态：运行轮展开；终态所有预设均收起', () => {
+  it('外层轨迹默认态：运行轮展开；本会话流式结束的终态轮收起；历史轮默认展开', () => {
     expect(defaultTraceExpanded({ running: true }, 'focused')).toBe(true);
     expect(defaultTraceExpanded({ running: false }, 'focused')).toBe(false);
     expect(defaultTraceExpanded({ running: false }, 'balanced')).toBe(false);
     expect(defaultTraceExpanded({ running: false }, 'detailed')).toBe(false);
+    // 历史轮（打开页面即终态）：默认展开，恢复「打开即见」体验
+    expect(defaultTraceExpanded({ running: false }, 'balanced', true)).toBe(
+      true,
+    );
   });
 });
 
