@@ -4,13 +4,21 @@
   flex-shrink: 0;
   padding: 0 @paddingXs;
 
-  // 顶栏：Logo + 搜索 + 折叠
+  // 顶栏：Logo + 搜索 + 折叠（原型单行 ~41px，logo 限高防变形）
   .header-bar {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 4px @paddingXs 0;
-    min-height: 32px;
+    min-height: 40px;
+    padding: 6px 4px 0;
+  }
+
+  .header-logo {
+    height: 28px;
+    width: auto;
+    border-radius: 8px;
+    display: block;
+    cursor: pointer;
   }
 
   .header-actions {
@@ -24,8 +32,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 26px;
-    height: 26px;
+    width: 28px;
+    height: 28px;
     border-radius: @borderRadius;
     cursor: pointer;
     color: @navSecondMenuAdaptiveTextSecondary;
@@ -38,23 +46,19 @@
     }
   }
 
-  .action-list {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    margin-top: @marginSm;
-  }
-
-  .action-row {
+  // 行通用（新建任务 + 导航行）：对齐原型 33px 行高 / 12px 水平内边距 / 11px 圆角
+  .action-row,
+  .nav-item {
     display: flex;
     align-items: center;
     gap: @marginXs;
-    height: 32px;
-    padding: 0 calc(@paddingSm - 4px);
-    border-radius: @borderRadius;
+    height: 33px;
+    padding: 0 12px;
+    border-radius: 11px;
     cursor: pointer;
     color: @navSecondMenuAdaptiveText;
     font-size: @fontSize;
+    font-weight: 500;
     transition: background-color 0.2s ease;
     user-select: none;
 
@@ -67,17 +71,19 @@
     margin-top: @marginSm;
   }
 
-  .action-icon {
+  .action-icon,
+  .nav-item-icon {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 18px;
+    width: 16px;
     flex-shrink: 0;
     color: @navSecondMenuAdaptiveTextSecondary;
     font-size: 15px;
   }
 
-  .action-label {
+  .action-label,
+  .nav-item-label {
     flex: 1;
     min-width: 0;
     overflow: hidden;
@@ -99,44 +105,8 @@
     margin-top: @marginSm;
   }
 
-  .nav-item {
-    display: flex;
-    align-items: center;
-    gap: @marginXs;
-    height: 32px;
-    padding: 0 calc(@paddingSm - 4px);
-    border-radius: @borderRadius;
-    cursor: pointer;
-    color: @navSecondMenuAdaptiveText;
-    font-size: @fontSize;
-    transition: background-color 0.2s ease;
-    user-select: none;
-
-    &:hover {
-      background-color: @colorFillSecondary;
-    }
-  }
-
   .nav-item-active {
     background-color: @colorFillSecondary;
     font-weight: @fontWeightStrong;
-  }
-
-  .nav-item-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 18px;
-    flex-shrink: 0;
-    color: @navSecondMenuAdaptiveTextSecondary;
-    font-size: 15px;
-  }
-
-  .nav-item-label {
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
 }

@@ -12,8 +12,7 @@ import { SearchOutlined } from '@ant-design/icons';
 import { Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo } from 'react';
-import { useModel } from 'umi';
-import Header from '../Header';
+import { history, useModel } from 'umi';
 import { useSidebarCollapse } from '../useSidebarCollapse';
 import styles from './index.less';
 
@@ -41,6 +40,7 @@ const SidebarNavHeader: React.FC<SidebarNavHeaderProps> = ({
 }) => {
   const { isSecondMenuCollapsed, toggleCollapse } = useSidebarCollapse();
   const { setOpenSearchModal } = useModel('layout');
+  const { tenantConfigInfo } = useModel('tenantConfigInfo');
 
   /** 搜索：打开搜索弹窗（命令面板） */
   const handleSearchClick = useCallback(() => {
@@ -72,7 +72,15 @@ const SidebarNavHeader: React.FC<SidebarNavHeaderProps> = ({
     <div className={cx(styles['sidebar-nav-header'])}>
       {/* 顶栏：Logo + 搜索 + 折叠（固定）；桌面端沉浸式由 nuwaclaw 工具栏承载折叠与品牌 */}
       <div className={cx(styles['header-bar'])}>
-        {!isImmersiveShell() && <Header />}
+        {/* 直接渲染站点 Logo（原 Header 组件的 logo-container 带老竖栏固定高度，单栏顶栏不适用） */}
+        {!isImmersiveShell() && tenantConfigInfo?.siteLogo && (
+          <img
+            className={cx(styles['header-logo'])}
+            src={tenantConfigInfo.siteLogo}
+            alt=""
+            onClick={() => history.push('/home')}
+          />
+        )}
         <div className={cx(styles['header-actions'])}>
           <Tooltip
             title={dict(
