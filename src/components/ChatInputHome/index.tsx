@@ -1,5 +1,6 @@
 import SvgIcon from '@/components/base/SvgIcon';
 import type { AgentMode } from '@/components/business-component/AgentIntervention';
+import { PLAN_MODE_ENABLED } from '@/components/business-component/AgentIntervention';
 import PaymentSubscriptionModal from '@/components/business-component/PaymentSubscriptionModal';
 import {
   ChatInputVoiceFooter,
@@ -57,7 +58,9 @@ const cx = classNames.bind(styles);
 
 const VoiceFooter = ChatInputVoiceFooter;
 
-const AGENT_MODE_OPTIONS: AgentMode[] = ['yolo', 'ask', 'plan'];
+const AGENT_MODE_OPTIONS: AgentMode[] = PLAN_MODE_ENABLED
+  ? ['yolo', 'ask', 'plan']
+  : ['yolo', 'ask'];
 
 const AGENT_MODE_I18N: Record<AgentMode, { label: string; desc: string }> = {
   yolo: {

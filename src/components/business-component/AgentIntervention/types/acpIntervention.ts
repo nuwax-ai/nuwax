@@ -1,5 +1,12 @@
 import type { McpAskRespondPayload } from './mcpAskIntervention';
 
+/**
+ * plan 模式功能开关：9 月版本暂不放开，后续翻 true 即启用。
+ * false 时：模式选择器只显示 ask/yolo；isAgentMode('plan') 为 false（缓存回落 yolo）；
+ * 后端代码全量保留休眠（无 plan 入口自然不触发）。
+ */
+export const PLAN_MODE_ENABLED = false;
+
 export type AgentMode = 'ask' | 'yolo' | 'plan';
 
 export type AcpPermissionOptionKind =

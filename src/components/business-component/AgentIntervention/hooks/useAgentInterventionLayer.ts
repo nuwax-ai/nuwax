@@ -5,11 +5,12 @@ import type { MessageInfo } from '@/types/interfaces/conversationInfo';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useModel } from 'umi';
 import type { AgentInterventionChatLayerProps } from '../AgentInterventionChatLayer';
-import type {
-  AcpPermissionInteraction,
-  AcpPermissionRespondExtras,
-  AcpRequestPermissionResponse,
-  AgentMode,
+import {
+  PLAN_MODE_ENABLED,
+  type AcpPermissionInteraction,
+  type AcpPermissionRespondExtras,
+  type AcpRequestPermissionResponse,
+  type AgentMode,
 } from '../types/acpIntervention';
 import type {
   McpAskInteraction,
@@ -78,7 +79,7 @@ type AgentModeCacheObject = {
 };
 
 const isAgentMode = (mode: unknown): mode is AgentMode =>
-  mode === 'yolo' || mode === 'ask' || mode === 'plan';
+  mode === 'yolo' || mode === 'ask' || (PLAN_MODE_ENABLED && mode === 'plan');
 
 const normalizeAgentModeCacheAgentId = (
   agentId?: number | string | null,
