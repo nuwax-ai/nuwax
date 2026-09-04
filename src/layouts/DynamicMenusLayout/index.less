@@ -150,6 +150,12 @@
     border-radius: 0;
     transition: width 0.3s ease-in-out, background-color 0.3s ease;
 
+    // 与 .nav-menus-scroll 同名复用：本列不在 .nav-menus 内，需自带尺寸链
+    .nav-menus-scroll {
+      flex: 1;
+      min-height: 0;
+    }
+
     // 风格2下的二级列背景适配
     .xagi-nav-style2 & {
       background: var(--xagi-color-bg-container);
