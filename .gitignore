@@ -49,3 +49,6 @@ package-lock.json
 public/MP_verify_*.txt
 public/Nd28jPGzj4.txt
 .claude/cache/
+
+# 资料库子应用（nuwax-repo-web）构建产物：由 `npm run sync:repo-web` 生成，不进 git
+public/repo/

@@ -1,0 +1,3 @@
+[submodule "submodules/nuwax-repo-web"]
+	path = submodules/nuwax-repo-web
+	url = https://git.yichamao.com/agent-platform/nuwax-repo-web.git
