@@ -575,6 +575,12 @@ const routes = [
     layout: false,
   },
   {
+    path: '/space/:spaceId/app-pro',
+    component: '@/pages/AppDevPro',
+    wrappers: ['@/wrappers/authWithLoading'],
+    layout: false,
+  },
+  {
     path: '/space/:spaceId/app-dev-design/:projectId',
     component: '@/pages/AppDevDesign',
     wrappers: ['@/wrappers/authWithLoading'],

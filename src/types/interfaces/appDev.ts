@@ -898,6 +898,8 @@ export interface ProjectDetailData {
   lastMultiModelId: number;
   // 是否需要登录,true:需要,false:不需要
   needLogin: boolean;
+  /** 页面地址（用于展示平台默认分配的二级域名） */
+  pageUrl?: string;
   /** 项目类型 */
   projectType: 'REVERSE_PROXY' | 'ONLINE_DEPLOY';
   /** 代理配置 */

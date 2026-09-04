@@ -1,0 +1,74 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+.header {
+  padding: @paddingSm @padding @paddingSm 0;
+  overflow-x: auto;
+  flex-shrink: 0;
+
+  .icon-backward {
+    padding: @paddingXxs @paddingXs;
+    margin-right: @marginXxs;
+    color: @navFirstMenuTextSecondary;
+    cursor: pointer;
+  }
+
+  .avatar {
+    width: 27px;
+    height: 27px;
+    border-radius: @borderRadius;
+
+    &.hide-back {
+      margin-left: @marginSm;
+    }
+  }
+
+  .header-info {
+    padding-left: @paddingSm;
+    gap: @marginSm;
+
+    .h-title {
+      max-width: 360px;
+      margin-right: @marginSm;
+      font-size: 16px;
+      font-weight: @fontWeightStrong;
+      line-height: 24px;
+      color: @navFirstMenuTextSecondary;
+      white-space: nowrap;
+    }
+
+    .edit-ico {
+      color: @navFirstMenuTextSecondary;
+      font-size: 16px;
+    }
+  }
+
+  .right-box {
+    margin-left: auto;
+    gap: 8px;
+  }
+
+  .publish-status-tag {
+    color: @colorWarningText;
+    background: @colorWarningBg;
+    padding: 4px 8px;
+    margin-inline-end: 0;
+  }
+
+  .panel-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    color: @navFirstMenuTextSecondary;
+    cursor: pointer;
+    border-radius: @borderRadius;
+
+    &:hover,
+    &.active {
+      color: @colorPrimary;
+      background-color: rgba(91, 69, 255, 8%);
+    }
+  }
+}
