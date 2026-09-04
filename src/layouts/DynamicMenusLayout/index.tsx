@@ -20,6 +20,7 @@ import {
   shellAvoid,
 } from '@/utils/nuwaClawBridge';
 import { jumpTo } from '@/utils/router';
+import { EllipsisOutlined } from '@ant-design/icons';
 import { theme, Tooltip, Typography } from 'antd';
 import classNames from 'classnames';
 import React, {
@@ -806,7 +807,12 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
                   className={cx(styles['footer-action-btn'])}
                   onClick={() => handleUserClick(menu)}
                 >
-                  {menu.icon ? <SvgIcon name={menu.icon} /> : null}
+                  {menu.icon ? (
+                    <SvgIcon name={menu.icon} />
+                  ) : menu.code === MENU_CODE_MORE_PAGE ? (
+                    /* 更多：后端未配图标，按原型以 "..." 呈现 */
+                    <EllipsisOutlined />
+                  ) : null}
                 </div>
               </Tooltip>
             ))}
