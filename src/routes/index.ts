@@ -43,6 +43,9 @@ const routes = [
         path: '/open-iframe-page/:menuCode',
         component: '@/pages/OpenIframePage',
       },
+      // 资料库（nuwax-repo-web）稳定入口：整页重定向到同域子应用 /repo/，
+      // path 永不变更（集成契约见 docs/repo-web-integration.md）
+      { path: '/repo-entry', component: '@/pages/RepoWebEntry' },
       { path: '/home/chat/:id/:agentId', component: '@/pages/Chat' },
       { path: '/my-computer-manage', component: '@/pages/MyComputerManage' },
       { path: '/agent/:agentId', component: '@/pages/AgentDetails' },

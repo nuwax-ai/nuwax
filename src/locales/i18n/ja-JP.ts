@@ -5968,4 +5968,5 @@ export const JA_JP: SystemLangMap = {
   'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.settingRecallResults': '召回結果を設定',
   'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.parseHistoryResultsFailed': '履歴レコード結果の解析に失敗',
   'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.queryClickEventTriggered': 'クエリクリックイベントが発生',
+  'PC.Pages.RepoWeb.entering': '資料庫に入っています…',
 };

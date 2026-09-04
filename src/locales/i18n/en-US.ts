@@ -6097,4 +6097,5 @@ export const EN_US: SystemLangMap = {
   'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.settingRecallResults': 'Setting recall results',
   'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.parseHistoryResultsFailed': 'Failed to parse history record results',
   'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.queryClickEventTriggered': 'Query click event triggered',
+  'PC.Pages.RepoWeb.entering': 'Entering the Repository…',
 };

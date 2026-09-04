@@ -5971,4 +5971,5 @@ export const ZH_TW: SystemLangMap = {
   'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.settingRecallResults': '設置召回結果',
   'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.parseHistoryResultsFailed': '解析歷史記錄結果失敗',
   'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.queryClickEventTriggered': 'Query點擊事件觸發',
+  'PC.Pages.RepoWeb.entering': '正在進入資料庫…',
 };

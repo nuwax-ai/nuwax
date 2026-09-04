@@ -6091,4 +6091,5 @@ export const ZH_CN: SystemLangMap = {
   'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.settingRecallResults': '设置召回结果',
   'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.parseHistoryResultsFailed': '解析历史记录结果失败',
   'PC.Pages.SpaceKnowledge.KnowledgeAccuracyTest.queryClickEventTriggered': 'Query点击事件触发',
+  'PC.Pages.RepoWeb.entering': '正在进入资料库…',
 };
