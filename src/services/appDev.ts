@@ -658,6 +658,8 @@ export const apiProjectCreate = async (data: {
   name?: string;
   programmingLanguage?: string;
   subType?: string;
+  /** 沙箱ID */
+  sandboxId?: number;
 }): Promise<any> => {
   return request('/api/project/create', {
     method: 'POST',
