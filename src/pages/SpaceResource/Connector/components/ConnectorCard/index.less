@@ -1,0 +1,210 @@
+/* 空间连接器卡片：白底 + 细边框的极简风格 */
+.card {
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid #ddd8d0;
+  border-radius: 8px;
+  overflow: hidden;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+
+  &:hover {
+    border-color: #c9c2b6;
+    box-shadow: 0 2px 10px rgba(26, 26, 26, 6%);
+  }
+}
+
+.cardBody {
+  flex: 1;
+  padding: 16px 16px 14px;
+}
+
+/* 头部：名称/service 两行 + 右上角状态徽章（顶部与标题行对齐，
+   而非相对整个两行块垂直居中） */
+.cardHeader {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+
+  .badge {
+    flex-shrink: 0;
+
+    /* 标题行高 24px、徽章高 22px，下移 2px 让两者文字光学对齐 */
+    margin-top: 2px;
+  }
+}
+
+.cardTitleWrap {
+  flex: 1;
+  min-width: 0;
+}
+
+.cardTitle {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 24px;
+  color: #1a1a1a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cardService {
+  margin-top: 2px;
+  font-family: Consolas, Menlo, monospace;
+  font-size: 12px;
+  color: #8a857c;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cardDesc {
+  margin-top: 10px;
+  font-size: 13px;
+  line-height: 20px;
+  color: #8a857c;
+
+  /* 两行截断；-webkit- 前缀是 -webkit-line-clamp 生效的必要条件，
+     禁止 stylelint --fix 把前缀剥掉（剥成 display: box 后截断失效） */
+  /* stylelint-disable-next-line value-no-vendor-prefix */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* 元数据徽章行：分类 + 本空间自定义 */
+.cardBadges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+/* 徽章：白底细边框小方块 */
+.badge {
+  font-size: 12px;
+  line-height: 20px;
+  padding: 0 8px;
+  max-width: 100%;
+  background: #fff;
+  border: 1px solid #ddd8d0;
+  border-radius: 4px;
+  color: #4a463e;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 分类徽章：米色底无边框，作为元数据行的视觉锚点 */
+.badgeCategory {
+  background: #f2eee5;
+  border-color: transparent;
+  color: #6b665d;
+}
+
+/* 本空间自定义徽章：浅绿底，仅自建连接器展示 */
+.badgeManaged {
+  background: rgba(82, 196, 26, 8%);
+  border-color: transparent;
+  color: #52c41a;
+}
+
+/* 弱化元数据行：认证方式 · 标签 · 工具数（小灰字，超长省略） */
+.cardMeta {
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 18px;
+  color: #8a857c;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cardFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  background: #ede9e3;
+}
+
+.cardUrl {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 12px;
+  color: #8a857c;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cardBtns {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.cardBtnRow {
+  display: flex;
+  gap: 6px;
+}
+
+/* 小操作按钮：白底细边框 */
+.miniBtn {
+  font-size: 12px;
+  line-height: 22px;
+  padding: 0 10px;
+  background: #fff;
+  border: 1px solid #ddd8d0;
+  border-radius: 4px;
+  color: #4a463e;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease;
+
+  &:hover {
+    border-color: #b8b2a6;
+    color: #1a1a1a;
+  }
+}
+
+/* 删除：红色警示 */
+.dangerBtn {
+  color: #ff4d4f;
+  border-color: rgba(255, 77, 79, 45%);
+
+  &:hover {
+    color: #ff7875;
+    border-color: #ff4d4f;
+  }
+}
+
+/* ===== 状态着色：状态徽章绿红着色，停用卡片整体置灰 ===== */
+
+/* 已停用：整卡偏灰（背景/标题/徽章/图标），卡片边框保持默认 */
+.cardDisabled {
+  background: #f6f5f2;
+
+  .cardTitle {
+    color: #8a857c;
+  }
+
+  .badge {
+    background: #fbfaf8;
+  }
+}
+
+/* 状态徽章：已启用绿 / 已停用红（文字 + 边框） */
+.badgeEnabled {
+  color: #52c41a;
+  border-color: rgba(82, 196, 26, 55%);
+}
+
+.badgeDisabled {
+  color: #ff4d4f;
+  border-color: rgba(255, 77, 79, 55%);
+}
