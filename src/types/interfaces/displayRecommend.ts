@@ -4,6 +4,8 @@ export enum DisplayRecommendFunctionTypeEnum {
   SkillDev = 'SkillDev',
   PluginDev = 'PluginDev',
   Chat = 'Chat',
+  /** 全栈应用开发 */
+  UserApp = 'UserApp',
 }
 
 export enum DisplayRecommendTargetTypeEnum {

@@ -108,12 +108,12 @@ const AppDevPro: React.FC = () => {
   const spaceId = Number(params.spaceId);
 
   /**
-   * 从 URL query 参数中提取 agentId
-   * 支持通过 URL 直接指定要加载的智能体（如 ?agentId=123）
+   * 从 URL query 参数中提取 appId
+   * 支持通过 URL 直接指定要加载的应用（如 ?appId=123）
    */
-  const agentIdFromQuery = useMemo(() => {
-    const queryAgentId = new URLSearchParams(location.search).get('agentId');
-    return queryAgentId ? Number(queryAgentId) : 0;
+  const appIdFromQuery = useMemo(() => {
+    const queryAppId = new URLSearchParams(location.search).get('appId');
+    return queryAppId ? Number(queryAppId) : 0;
   }, [location.search]);
 
   /**
@@ -125,8 +125,8 @@ const AppDevPro: React.FC = () => {
   }, [location.search]);
 
   // ==================== 本地状态 ====================
-  /** 当前智能体 ID */
-  const [agentId, setAgentId] = useState<number>(agentIdFromQuery);
+  /** 当前应用 ID */
+  const [appId, setAppId] = useState<number>(appIdFromQuery);
   /** 底部开发者控制台（终端）是否显示 */
   const [showDevConsole] = useState<boolean>(true);
   /** 切换预览标签/文件时递增，用于终端从 expanded 恢复 default */
@@ -174,7 +174,7 @@ const AppDevPro: React.FC = () => {
 
   /** 智能体配置加载中状态 */
   const [loadingAgentConfigInfo, setLoadingAgentConfigInfo] = useState<boolean>(
-    !!agentId,
+    !!appId,
   );
   /** 空间下可用的模型列表（用于模型选择器） */
   const [originalModelConfigList, setOriginalModelConfigList] = useState<
@@ -395,10 +395,10 @@ const AppDevPro: React.FC = () => {
     });
   }, [spaceId]);
 
-  /** URL 中的 agentId 变化时同步到本地状态 */
+  /** URL 中的 appId 变化时同步到本地状态 */
   useEffect(() => {
-    setAgentId(agentIdFromQuery);
-  }, [agentIdFromQuery]);
+    setAppId(appIdFromQuery);
+  }, [appIdFromQuery]);
 
   /** 安装项目依赖 */
   const { runAsync: runInstallProject } = useRequest(
@@ -493,7 +493,7 @@ const AppDevPro: React.FC = () => {
 
   /**
    * 智能体配置加载请求（带防抖）
-   * 用于首次加载或 agentId 切换时获取完整配置
+   * 用于首次加载或 appId 切换时获取完整配置
    */
   const { run: runAgentConfigInfo } = useRequest(apiAgentConfigInfo, {
     manual: true,
@@ -557,9 +557,9 @@ const AppDevPro: React.FC = () => {
   /** 初始化项目元数据 */
   useInitProjectMetadata({
     targetType: AgentComponentTypeEnum.Agent,
-    targetId: agentId,
+    targetId: appId,
     onSuccess: () => {
-      if (agentId) runAgentConfigInfo(agentId);
+      if (appId) runAgentConfigInfo(appId);
     },
   });
 
@@ -569,29 +569,29 @@ const AppDevPro: React.FC = () => {
   }, [loadingAgentConfigInfo]);
 
   /**
-   * agentId 变化时触发配置加载
-   * - agentId 为 0 时（新建场景）跳过请求
+   * appId 变化时触发配置加载
+   * - appId 为 0 时（新建场景）跳过请求
    * - 同时重置页面标题
    */
   useEffect(() => {
-    if (!agentId) {
+    if (!appId) {
       setLoadingAgentConfigInfo(false);
       setAgentConfigInfo(undefined);
       return;
     }
     setAgentConfigInfo(undefined);
     setLoadingAgentConfigInfo(true);
-    runAgentConfigInfo(agentId);
-  }, [agentId, runAgentConfigInfo]);
+    runAgentConfigInfo(appId);
+  }, [appId, runAgentConfigInfo]);
 
-  /** agentId 变化时拉取页面项目详情（设置弹窗） */
+  /** appId 变化时拉取页面项目详情（设置弹窗） */
   useEffect(() => {
-    if (!agentId) {
+    if (!appId) {
       setPageProjectInfo(null);
       return;
     }
-    runGetPageProjectInfo(agentId);
-  }, [agentId, runGetPageProjectInfo]);
+    runGetPageProjectInfo(appId);
+  }, [appId, runGetPageProjectInfo]);
 
   /** 初始化页面基础配置：为页面中所有链接添加 target 属性 */
   useEffect(() => {
@@ -622,13 +622,13 @@ const AppDevPro: React.FC = () => {
     void refreshGitListIfEnabled();
 
     // 刷新智能体编排等信息（重新拉取完整配置）
-    if (agentId) {
-      runAgentConfigInfo(agentId);
+    if (appId) {
+      runAgentConfigInfo(appId);
     }
   }, [
     queryConversationId,
     refreshFileListImmediately,
-    agentId,
+    appId,
     runAgentConfigInfo,
     refreshGitListIfEnabled,
   ]);
@@ -1459,7 +1459,7 @@ const AppDevPro: React.FC = () => {
 
   // ==================== 加载状态 ====================
   // 配置加载中时显示全屏 Loading，避免渲染不完整的页面
-  if (loadingAgentConfigInfo && agentId) {
+  if (loadingAgentConfigInfo && appId) {
     return (
       <div
         className={cx(
@@ -1578,8 +1578,8 @@ const AppDevPro: React.FC = () => {
         projectInfo={pageProjectInfo}
         onCancel={() => setSettingsOpen(false)}
         onSuccess={() => {
-          if (agentId) {
-            runGetPageProjectInfo(agentId);
+          if (appId) {
+            runGetPageProjectInfo(appId);
           }
         }}
       />
