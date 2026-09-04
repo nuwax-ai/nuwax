@@ -8,13 +8,16 @@
  * - handleChangeMessageList：PROCESSING / MESSAGE / FINAL_RESULT / ERROR
  * - SSE onError / onClose 收尾状态
  */
+import { apiEnsurePod } from '@/services/vncDesktop';
 import {
+  AgentComponentTypeEnum,
   ConversationEventTypeEnum,
   MessageModeEnum,
 } from '@/types/enums/agent';
 import { MessageStatusEnum, ProcessingEnum } from '@/types/enums/common';
 import type {
   ConversationChatResponse,
+  ConversationInfo,
   MessageInfo,
 } from '@/types/interfaces/conversationInfo';
 import { act, renderHook, waitFor } from '@testing-library/react';
@@ -720,6 +723,86 @@ describe('conversationInfo model', () => {
     expect(result.current.messageList.some((item) => item.id === 'wf-2')).toBe(
       true,
     );
+  });
+
+  describe('OPEN_DESKTOP 云电脑 gate', () => {
+    /**
+     * 经 SSE 包装层喂一条 OPEN_DESKTOP 组件事件（生产链路同款入口）。
+     * sendParams 不带 sandboxId 时，handleChangeMessageList 收到的 params 仅含
+     * conversationId——与 resumeController.ts 的 resume 形态一致，生效电脑
+     * 只能靠 conversationInfo 推导，gate 缺层时此处会误放行并 ensurePod。
+     * 注意：SSE onMessage 闭包捕获建连那一轮渲染的 conversationInfo，
+     * 因此必须先 setConversationInfo 再 onMessageSend。
+     */
+    const setupAndFeedOpenDesktop = async (
+      result: { current: ReturnType<typeof useConversationInfo> },
+      conversationInfo: ConversationInfo,
+      sendParams: Record<string, unknown> = {},
+    ) => {
+      await act(async () => {
+        result.current.setConversationInfo(conversationInfo);
+      });
+      await act(async () => {
+        await result.current.onMessageSend({
+          id: 1001,
+          messageInfo: 'hello',
+          ...sendParams,
+        });
+      });
+      await act(async () => {
+        sseHandlers.onMessage?.({
+          requestId: 'req-desktop',
+          eventType: ConversationEventTypeEnum.PROCESSING,
+          data: {
+            type: AgentComponentTypeEnum.Event,
+            subEventType: 'OPEN_DESKTOP',
+          },
+        } as ConversationChatResponse);
+      });
+    };
+
+    it('resume 形态下绑个人电脑（agent.sandboxId）的会话不拉起云端 pod', async () => {
+      const { result } = renderHook(() => useConversationInfo());
+
+      await setupAndFeedOpenDesktop(result, {
+        agent: { sandboxId: 'sb-personal' },
+      } as ConversationInfo);
+
+      expect(vi.mocked(apiEnsurePod)).not.toHaveBeenCalled();
+    });
+
+    it('resume 形态下绑共享电脑（sandboxServerId）的会话不拉起云端 pod', async () => {
+      const { result } = renderHook(() => useConversationInfo());
+
+      await setupAndFeedOpenDesktop(result, {
+        agent: {},
+        sandboxServerId: 'srv-shared',
+      } as ConversationInfo);
+
+      expect(vi.mocked(apiEnsurePod)).not.toHaveBeenCalled();
+    });
+
+    it('纯云电脑会话（无个人/共享绑定，兜底 -1）放行并 ensurePod', async () => {
+      vi.mocked(apiEnsurePod).mockResolvedValue({
+        code: '0000',
+        data: {},
+      } as never);
+      const { result } = renderHook(() => useConversationInfo());
+
+      await setupAndFeedOpenDesktop(result, { agent: {} } as ConversationInfo);
+
+      expect(vi.mocked(apiEnsurePod)).toHaveBeenCalledWith(1001);
+    });
+
+    it('live 路径 params.sandboxId 为非云电脑时同样拦截', async () => {
+      const { result } = renderHook(() => useConversationInfo());
+
+      await setupAndFeedOpenDesktop(result, { agent: {} } as ConversationInfo, {
+        sandboxId: 'sb-live',
+      });
+
+      expect(vi.mocked(apiEnsurePod)).not.toHaveBeenCalled();
+    });
   });
 
   it('handleClearSideEffect：中止 SSE 并清空建议列表', async () => {

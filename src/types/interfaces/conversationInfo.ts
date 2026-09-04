@@ -402,6 +402,8 @@ export interface ConversationInfo {
     hasPermission?: boolean;
     /** 会话关联的智能体电脑是否不可用 */
     isSandboxUnavailable?: boolean;
+    /** 智能体绑定的个人电脑 ID，与 AgentDetailDto.sandboxId 同源 */
+    sandboxId?: string | number;
     /** 是否允许用户在对话框中选择 Agent 模式，1 允许，其他不允许 */
     allowChooseMode?: number;
     /** 是否开启版本管理，1 开启，其他不开启 */

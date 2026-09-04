@@ -48,3 +48,5 @@
 ## 偏离记录
 
 （实现中偏离原计划的逐条补记：原因 + 同步的 commit）
+
+- 首版实现（5706604ef）漏掉取值链第 2 层 `agent.sandboxId`，仅实现三级（发送参数 > 共享电脑 > 兜底），并把「绑个人电脑的会话」推给页面层兜底 effect 收口——与本文「resume 由 conversationInfo 推导拦截」的口径不符，resume 路径仍会误拉起云端 pod + keepalive。2026-09-04 评审发现，已补齐四级链并新增模型层 gate 用例防回归（tests/conversationInfoModel.test.ts `OPEN_DESKTOP 云电脑 gate`）。
