@@ -1,6 +1,5 @@
 import { jumpTo } from '@/utils/router';
 import { useDebounceFn } from 'ahooks';
-import type { InputRef } from 'antd';
 import { Spin } from 'antd';
 import classNames from 'classnames';
 import React, {
@@ -16,8 +15,6 @@ import ConversationItem from './components/ConversationItem';
 import EmptyState from './components/EmptyState';
 import ProjectPanel from './components/ProjectPanel';
 import RecentAgentItem from './components/RecentAgentItem';
-import SearchHeader from './components/SearchHeader';
-import { registerSidebarSearch } from './searchFocus';
 import { getAgentIdFromHomePathname } from './utils';
 
 import {
@@ -83,22 +80,6 @@ const NewHomeSection: React.FC<{
   currentAgentIdRef.current = currentAgentId;
 
   const { handleCloseMobileMenu } = useModel('layout');
-
-  // 搜索框默认隐藏（原型形态），由侧栏顶栏「搜索」icon/⌘K 经单例展开并聚焦
-  const [showSearch, setShowSearch] = useState(false);
-  const searchInputRef = useRef<InputRef>(null);
-  useEffect(
-    () =>
-      registerSidebarSearch(() => {
-        setShowSearch((prev) => !prev);
-      }),
-    [],
-  );
-  useEffect(() => {
-    if (showSearch) {
-      searchInputRef.current?.focus({ cursor: 'all' });
-    }
-  }, [showSearch]);
 
   const [activeTab, setActiveTab] = useState<HomeTab>(() => {
     const initialTab = getInitialActiveTab();
@@ -838,21 +819,6 @@ const NewHomeSection: React.FC<{
 
   return (
     <div style={style} className={cx(styles['new-home-section'])}>
-      {/* 搜索框默认隐藏（原型形态），由侧栏顶栏「搜索」icon/⌘K 展开并聚焦 */}
-      {showSearch && (
-        <SearchHeader
-          keyword={activeTab === 'conversation' ? keyword : recentKeyword}
-          placeholder={dict(
-            'PC.Layouts.DynamicMenusLayout.NewHomeSection.searchPlaceholder',
-          )}
-          onSearchChange={handleSearchChange}
-          onSearchSubmit={handleSearchSubmit}
-          onNewChat={handleNewConversation}
-          showNewChatButton={showNewChatButton}
-          inputRef={searchInputRef}
-        />
-      )}
-
       <div className={cx(styles.tabs)}>
         <button
           type="button"

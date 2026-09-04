@@ -12,9 +12,8 @@ import { SearchOutlined } from '@ant-design/icons';
 import { Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo } from 'react';
-import { history } from 'umi';
+import { useModel } from 'umi';
 import Header from '../Header';
-import { toggleSidebarSearch } from '../NewHomeSection/searchFocus';
 import { useSidebarCollapse } from '../useSidebarCollapse';
 import styles from './index.less';
 
@@ -41,32 +40,27 @@ const SidebarNavHeader: React.FC<SidebarNavHeaderProps> = ({
   onNewTask,
 }) => {
   const { isSecondMenuCollapsed, toggleCollapse } = useSidebarCollapse();
+  const { setOpenSearchModal } = useModel('layout');
 
-  /** 搜索：展开/收起并聚焦会话区搜索框；非会话域（搜索框未挂载）则先回首页 */
+  /** 搜索：打开搜索弹窗（命令面板） */
   const handleSearchClick = useCallback(() => {
-    if (!toggleSidebarSearch()) {
-      history.push('/home');
-    }
-  }, []);
+    setOpenSearchModal(true);
+  }, [setOpenSearchModal]);
 
-  /** ⌘K 搜索 / ⌘N 新建任务（浏览器可能占用 ⌘N，尽力拦截） */
+  /** ⌘N 新建任务（⌘K 由 SidebarSearchModal 全局接管；浏览器可能占用 ⌘N，尽力拦截） */
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!(e.metaKey || e.ctrlKey)) {
         return;
       }
-      const key = e.key?.toLowerCase();
-      if (key === 'k') {
-        e.preventDefault();
-        handleSearchClick();
-      } else if (key === 'n') {
+      if (e.key?.toLowerCase() === 'n') {
         e.preventDefault();
         onNewTask();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleSearchClick, onNewTask]);
+  }, [onNewTask]);
 
   /** 导航行：接口下发的一级菜单全量渲染，仅排除新对话（新建任务为固定项） */
   const navMenus = useMemo(

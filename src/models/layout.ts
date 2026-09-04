@@ -13,6 +13,8 @@ const useLayout = () => {
   const [openMessage, setOpenMessage] = useState<boolean>(false);
   const [openAdmin, setOpenAdmin] = useState<boolean>(false);
   const [openSetting, setOpenSetting] = useState<boolean>(false);
+  // 搜索弹窗（命令面板）：顶栏搜索 icon / ⌘K 触发
+  const [openSearchModal, setOpenSearchModal] = useState<boolean>(false);
   // 二级菜单收起/展开状态
   const [isSecondMenuCollapsed, setIsSecondMenuCollapsed] =
     useState<boolean>(false);
@@ -140,6 +142,8 @@ const useLayout = () => {
     runNotifyMessageUnreadCount,
     openMessage,
     setOpenMessage,
+    openSearchModal,
+    setOpenSearchModal,
     openAdmin,
     setOpenAdmin,
     openSetting,

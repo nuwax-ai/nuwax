@@ -34,6 +34,7 @@ import DynamicSecondMenu from './DynamicSecondMenu';
 // 复用原有组件
 import SvgIcon from '@/components/base/SvgIcon';
 import SidebarNavHeader from './SidebarNavHeader';
+import SidebarSearchModal from './SidebarSearchModal';
 import User from './User';
 import UserAvatar from './User/UserAvatar';
 // 复用原有样式
@@ -879,6 +880,9 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
           </div>
         </Tooltip>
       )}
+
+      {/* 搜索弹窗（命令面板）：顶栏搜索 icon / ⌘K 触发 */}
+      <SidebarSearchModal />
     </div>
   );
 };
