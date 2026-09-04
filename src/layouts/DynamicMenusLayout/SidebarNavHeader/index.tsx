@@ -8,7 +8,6 @@ import SvgIcon from '@/components/base/SvgIcon';
 import { dict } from '@/services/i18nRuntime';
 import type { MenuItemDto } from '@/types/interfaces/menu';
 import { isImmersiveShell, isMac } from '@/utils/nuwaClawBridge';
-import { SearchOutlined } from '@ant-design/icons';
 import { Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo } from 'react';
@@ -20,6 +19,46 @@ const cx = classNames.bind(styles);
 
 /** 快捷键徽标前缀：mac 用 ⌘，其余平台用 Ctrl */
 const MOD_KEY = isMac() ? '⌘' : 'Ctrl';
+
+/** 原型同款描边搜索图标（SVG 自需求原型移植） */
+const SearchSvg: React.FC = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={2}
+    strokeLinecap="round"
+    width="1em"
+    height="1em"
+    aria-hidden
+  >
+    <circle cx="11" cy="11" r="7" />
+    <path d="m20 20-3.5-3.5" />
+  </svg>
+);
+
+/**
+ * 原型同款折叠面板图标（SVG 自需求原型移植）。
+ * flip=true 时镜像（分隔线/箭头朝右），用于侧栏折叠后的展开态。
+ */
+const PanelToggleSvg: React.FC<{ flip?: boolean }> = ({ flip }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.7}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    width="1em"
+    height="1em"
+    style={flip ? { transform: 'rotate(180deg)' } : undefined}
+    aria-hidden
+  >
+    <rect x="5.4" y="4.6" width="13.2" height="14.8" rx="2.6" />
+    <path d="M10.2 4.6v14.8" />
+    <path d="m15.2 9.6-2.6 2.4 2.6 2.4" />
+  </svg>
+);
 
 interface SidebarNavHeaderProps {
   /** 后端菜单接口下发的一级菜单（导航行走接口，全量渲染） */
@@ -93,7 +132,7 @@ const SidebarNavHeader: React.FC<SidebarNavHeaderProps> = ({
               className={cx(styles['header-action-btn'])}
               onClick={handleSearchClick}
             >
-              <SearchOutlined />
+              <SearchSvg />
             </div>
           </Tooltip>
           {!isImmersiveShell() && (
@@ -110,10 +149,7 @@ const SidebarNavHeader: React.FC<SidebarNavHeaderProps> = ({
                 className={cx(styles['header-action-btn'])}
                 onClick={toggleCollapse}
               >
-                <SvgIcon
-                  name="icons-common-caret_left"
-                  rotate={isSecondMenuCollapsed ? 180 : 0}
-                />
+                <PanelToggleSvg flip={isSecondMenuCollapsed} />
               </div>
             </Tooltip>
           )}
