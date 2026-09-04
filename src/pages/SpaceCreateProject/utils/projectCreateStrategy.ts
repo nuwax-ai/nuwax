@@ -80,6 +80,7 @@ export const createProjectAndNavigate = async ({
     spaceId,
     targetType: flowTargetType,
     subType: payload.subType,
+    sandboxId: payload.computerId ? Number(payload.computerId) : undefined,
   });
   const { targetId, conversationId } = res.data;
 
