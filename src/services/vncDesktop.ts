@@ -117,6 +117,7 @@ export const isEnsurePodThrottledError = (error: unknown): boolean => {
 // 启动容器
 export async function apiEnsurePod(
   cId: number,
+  appStage?: 'dev' | 'prod',
 ): Promise<RequestResponse<EnsurePodResponse>> {
   const now = Date.now();
   const inFlightRequest = ensurePodInFlightMap.get(cId);
@@ -138,6 +139,7 @@ export async function apiEnsurePod(
     method: 'POST',
     params: {
       cId,
+      appStage,
     },
   })
     .then((result: RequestResponse<EnsurePodResponse>) => {
