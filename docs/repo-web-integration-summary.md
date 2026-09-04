@@ -100,4 +100,4 @@ npm run sync:repo-web                # 构建子应用产物到 public/repo/
 npm run dev                          # 起主站，访问 /repo-entry（dev 桥自动种 cookie）
 ```
 
-线上排障：先查 `/repo/version.json` 的 commit 对照主仓 submodule pin；升级子应用 = bump pin + 重跑 sync（流程见契约 §3）。
+线上排障：先查 `/repo/version.json` 的 commit 对照主仓 submodule pin；升级子应用 = `npm run upgrade:repo-web`（安全检查 + 变更预览 + 自动重建产物，详见契约 §3）。

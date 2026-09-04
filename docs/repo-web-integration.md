@@ -74,10 +74,12 @@ npm run sync:repo-web
 # 重复同步提速（复用子仓 node_modules）
 npm run sync:repo-web -- --skip-install
 
-# 升级子应用版本（有意识 bump pin，主仓单独提交 gitlink）
-git -C submodules/nuwax-repo-web fetch origin
-git -C submodules/nuwax-repo-web checkout origin/main   # 或指定 commit
-cd <主仓根> && git add submodules/nuwax-repo-web && git commit -m "chore(repo-web): bump submodule pin"
+# 升级子应用版本（脚本化：安全检查 + 变更预览 + 重建产物 + 打印提交命令）
+npm run upgrade:repo-web                    # 跟踪 origin/main 升到最新
+npm run upgrade:repo-web -- --ref <name>    # 指定分支/tag
+npm run upgrade:repo-web -- --commit <sha>  # 精确 pin；--skip-build 可跳过重建
+# 完成后按提示单独提交 gitlink：
+#   git add submodules/nuwax-repo-web && git commit -m "chore(repo-web): bump submodule pin <旧>..<新>"
 
 # 新同事/CI 首次拉取
 git submodule update --init
