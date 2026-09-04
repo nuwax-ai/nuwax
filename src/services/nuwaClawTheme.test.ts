@@ -26,6 +26,8 @@ const { STORAGE_KEYS_MOCK, mockCurrentData, mockUpdateData } = vi.hoisted(
 
 vi.mock('@/constants/theme.constants', () => ({
   STORAGE_KEYS: STORAGE_KEYS_MOCK,
+  // readTenantThemeDefaults 的回声基准回落平台出厂默认时需要
+  DEFAULT_THEME_CONFIG: { PRIMARY_COLOR: '#5147ff' },
 }));
 vi.mock('@/services/unifiedThemeService', () => ({
   unifiedThemeService: {
@@ -40,6 +42,7 @@ import {
   initNuwaClawTheme,
   isNuwaClawDefaultThemeActive,
   isNuwaClawThemeActive,
+  NUWACLAW_BACKGROUND_ID,
   NUWACLAW_PRIMARY,
 } from './nuwaClawTheme';
 
@@ -81,15 +84,23 @@ describe('nuwaClawTheme · nuwaclaw 桌面专属主题适配', () => {
     });
   });
 
-  it('浏览器（无桥）+ 无显式定制默认态 → 不生效、不写默认配置（网页默认观感不变）', () => {
+  it('浏览器（无桥）+ 无显式定制默认态 → 女娲主题生效并写入默认配置（2026-09-04 起浏览器同步客户端默认）', () => {
     delete (window as any).NuwaClawBridge;
-    expect(isNuwaClawThemeActive()).toBe(false);
+    expect(isNuwaClawDefaultThemeActive()).toBe(true);
     dispose = initNuwaClawTheme();
     const root = document.documentElement;
-    // 「女娲蓝+纯色」默认写入仅桌面端；浏览器默认态保持平台原有观感
-    expect(mockUpdateData).not.toHaveBeenCalled();
-    expect(root.style.getPropertyValue('--xagi-color-primary')).toBe('');
-    expect(root.style.getPropertyValue('--xagi-layout-bg-primary')).toBe('');
+    // 全端默认「女娲蓝+纯色」：浏览器与客户端观感一致（背景颜色不再缺失）
+    expect(mockUpdateData).toHaveBeenCalledWith({
+      primaryColor: NUWACLAW_PRIMARY,
+      backgroundId: NUWACLAW_BACKGROUND_ID,
+    });
+    expect(root.style.getPropertyValue('--xagi-color-primary')).toBe(
+      NUWACLAW_PRIMARY,
+    );
+    expect(root.style.getPropertyValue('--xagi-layout-bg-primary')).toBe(
+      '#F3F4F6',
+    );
+    expect(root.style.backgroundColor).toBe('rgb(242, 242, 242)');
   });
 
   it('浏览器（无桥）+ 显式选「纯色」+ 浅色 → 灰白生效（双端一致），不写默认、主色跟随用户', () => {
@@ -108,7 +119,7 @@ describe('nuwaClawTheme · nuwaclaw 桌面专属主题适配', () => {
       '#F3F4F6',
     );
     expect(root.style.getPropertyValue('--xagi-background-image')).toBe('none');
-    expect(root.style.backgroundColor).toBe('rgb(234, 235, 239)');
+    expect(root.style.backgroundColor).toBe('rgb(242, 242, 242)');
     // 主色仅在桌面默认态兜底品牌蓝；浏览器显式定制后交由 applyToDOM 按用户主色维护
     expect(rootPrimary()).toBe('');
   });
@@ -136,14 +147,14 @@ describe('nuwaClawTheme · nuwaclaw 桌面专属主题适配', () => {
       '#F3F4F6',
     );
     expect(root.style.getPropertyValue('--xagi-layout-bg-secondary')).toBe(
-      '#EAEBEF',
+      '#F2F2F2',
     );
     // 主内容区面板（token @pageContainerBg 消费；漏配曾致内容区始终白）
     expect(root.style.getPropertyValue('--xagi-layout-bg-container')).toBe(
       '#F3F4F6',
     );
     // html 灰底兜住 style1 浮动面板的缝隙（jsdom 会把颜色规范化成 rgb() 形式）
-    expect(root.style.backgroundColor).toBe('rgb(234, 235, 239)');
+    expect(root.style.backgroundColor).toBe('rgb(242, 242, 242)');
     // 桌面端不用背景图（米白纯色）
     expect(root.style.getPropertyValue('--xagi-background-image')).toBe('none');
     // 菜单背景实色（@navFirstMenuBg/@navSecondMenuBg 消费的变量）
@@ -335,7 +346,7 @@ describe('nuwaClawTheme · nuwaclaw 桌面专属主题适配', () => {
     expect(isNuwaClawThemeActive()).toBe(true);
   });
 
-  it('nuwax + 租户配置损坏（templateConfig 非法 JSON）→ 无租户默认可参照，用户层有值即算显式', () => {
+  it('nuwax + 租户配置损坏（templateConfig 非法 JSON）→ 回声基准回落平台出厂默认，出厂值不算显式', () => {
     (window as any).NuwaClawBridge = { auth: {}, native: {} };
     localStorage.setItem(
       STORAGE_KEYS_MOCK.TENANT_CONFIG_INFO,
@@ -346,7 +357,8 @@ describe('nuwaClawTheme · nuwaclaw 桌面专属主题适配', () => {
       JSON.stringify({ selectedThemeColor: '#5147ff' }),
     );
     mockCurrentData.primaryColor = '#5147ff';
-    expect(isNuwaClawThemeActive()).toBe(false);
+    // 2026-09-04 起女娲主题全端默认：出厂回声（#5147ff，出厂背景）不再算显式定制
+    expect(isNuwaClawThemeActive()).toBe(true);
   });
 
   it('nuwaclaw + 仅租户 themeConfig.default*（无 templateConfig）→ 仍作为默认值参与回声比对', () => {

@@ -1,0 +1,112 @@
+@import '@/styles/token.less';
+
+.sidebar-nav-header {
+  flex-shrink: 0;
+  padding: 0 @paddingXs;
+
+  // 顶栏：Logo + 搜索 + 折叠（原型单行 ~41px，logo 限高防变形）
+  .header-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 40px;
+    padding: 6px 4px 0;
+  }
+
+  .header-logo {
+    height: 28px;
+    width: auto;
+    border-radius: 8px;
+    display: block;
+    cursor: pointer;
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: @marginXs;
+    margin-left: auto;
+  }
+
+  .header-action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: @borderRadius;
+    cursor: pointer;
+    color: @navSecondMenuAdaptiveTextSecondary;
+    font-size: 14px;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background-color: @colorFillSecondary;
+      color: @navSecondMenuAdaptiveText;
+    }
+  }
+
+  // 行通用（新建任务 + 导航行）：对齐原型 33px 行高 / 12px 水平内边距 / 11px 圆角
+  .action-row,
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: @marginXs;
+    height: 33px;
+    padding: 0 12px;
+    border-radius: 11px;
+    cursor: pointer;
+    color: @navSecondMenuAdaptiveText;
+    font-size: @fontSize;
+    font-weight: 500;
+    transition: background-color 0.2s ease;
+    user-select: none;
+
+    &:hover {
+      background-color: @colorFillSecondary;
+    }
+  }
+
+  .new-task-row {
+    margin-top: @marginSm;
+  }
+
+  .action-icon,
+  .nav-item-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    flex-shrink: 0;
+    color: @navSecondMenuAdaptiveTextSecondary;
+    font-size: 15px;
+  }
+
+  .action-label,
+  .nav-item-label {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .action-shortcut {
+    flex-shrink: 0;
+    font-size: @fontSizeSm;
+    color: @navSecondMenuAdaptiveTextTertiary;
+  }
+
+  // 导航行（菜单接口下发）
+  .nav-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: @marginSm;
+  }
+
+  .nav-item-active {
+    background-color: @colorFillSecondary;
+    font-weight: @fontWeightStrong;
+  }
+}

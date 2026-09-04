@@ -1,3 +1,4 @@
+import CreditsBalance from '@/components/business-component/CreditsBalance';
 import { USER_AVATAR_LIST } from '@/constants/menus.constants';
 import { apiLogout } from '@/services/account';
 import { dict } from '@/services/i18nRuntime';
@@ -145,6 +146,10 @@ const User: React.FC<PropsWithChildren<UserProps>> = ({
       }}
       content={
         <div className={cx(styles.container)}>
+          {/* 积分入口（主导航改造：自侧栏底部收进用户弹层；订阅关闭时组件自隐藏） */}
+          <div style={{ padding: '8px 8px 4px' }}>
+            <CreditsBalance showFooter={false} />
+          </div>
           {menuList.map((item) => {
             const style =
               item.type === UserAvatarEnum.Log_Out ? styles['log-out'] : '';

@@ -38,7 +38,8 @@
     overflow: hidden;
     position: relative;
     background: @navSecondMenuBg;
-    border-radius: @borderRadiusLg 0 0 @borderRadiusLg;
+    // 单栏模式（主导航改造）：一级 icon 竖栏已移除，侧栏即最左列，取消左侧圆角
+    border-radius: 0;
 
     .nav-menus-scroll {
       flex: 1;
@@ -46,8 +47,84 @@
     }
 
     .integral-footer {
+      // 单栏模式：积分块（width:100%）在上，用户行贴底
+      display: flex;
+      flex-direction: column;
+      gap: @marginXs;
       padding: @marginSm 0 0;
       margin-right: @margin;
+    }
+
+    // 底部栏：用户行（左，弹层内含积分）+ 分离菜单 icon（右）
+    .sidebar-footer {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: @marginXs;
+      padding: @marginSm 0 0;
+      margin-right: @margin;
+
+      .sidebar-user-row {
+        flex: 1;
+        min-width: 0;
+      }
+    }
+
+    .footer-actions {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      flex-shrink: 0;
+    }
+
+    .footer-action-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 26px;
+      height: 26px;
+      border-radius: @borderRadius;
+      cursor: pointer;
+      color: @navSecondMenuAdaptiveTextSecondary;
+      font-size: 14px;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background-color: @colorFillSecondary;
+        color: @navSecondMenuAdaptiveText;
+      }
+    }
+
+    // 底部用户行（原一级栏用户头像迁移至此，横向布局）
+    .sidebar-user-row {
+      display: flex;
+      align-items: center;
+      gap: @marginXs;
+      padding: @paddingXs;
+      border-radius: @borderRadius;
+      cursor: pointer;
+      min-width: 0;
+      transition: background-color 0.2s ease;
+
+      // UserAvatar 自带 5px 上下 margin（老一级竖栏的垂直留白），行内抵消
+      > div:first-child {
+        margin-top: 0;
+        margin-bottom: 0;
+      }
+
+      &:hover {
+        background-color: @colorFillSecondary;
+      }
+
+      .sidebar-user-name {
+        font-size: @fontSize;
+        color: @navSecondMenuAdaptiveText;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
     }
 
     .menu-title {
@@ -57,6 +134,58 @@
     // 风格2下的二级导航背景适配
     .xagi-nav-style2 & {
       background: var(--xagi-color-bg-container);
+    }
+  }
+
+  // 二级菜单列：选中「有子菜单/Section」的导航项时在会话列右侧并列展开（原二级菜单保留）
+  .second-column {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding-top: @padding;
+    box-sizing: border-box;
+    overflow: hidden;
+    position: relative;
+    background: @navSecondMenuBg;
+    border-radius: 0;
+    transition: width 0.3s ease-in-out, background-color 0.3s ease;
+
+    // 与 .nav-menus-scroll 同名复用：本列不在 .nav-menus 内，需自带尺寸链
+    .nav-menus-scroll {
+      flex: 1;
+      min-height: 0;
+    }
+
+    // 风格2下的二级列背景适配
+    .xagi-nav-style2 & {
+      background: var(--xagi-color-bg-container);
+    }
+  }
+
+  // 折叠态左缘悬浮展开按钮（顶栏随侧栏收起而不可点，从边缘展开）
+  .sidebar-expand-btn {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 40;
+    width: 16px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--xagi-layout-bg-container, rgba(255, 255, 255, 90%));
+    border: @lineWidth solid var(--xagi-layout-border-primary);
+    border-left: none;
+    border-radius: 0 @borderRadiusSm @borderRadiusSm 0;
+    cursor: pointer;
+    color: @navSecondMenuAdaptiveTextSecondary;
+    opacity: 0.55;
+    transition: all 0.2s ease;
+
+    &:hover {
+      opacity: 1;
+      color: @navSecondMenuAdaptiveText;
     }
   }
 }

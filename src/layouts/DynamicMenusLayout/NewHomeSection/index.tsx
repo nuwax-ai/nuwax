@@ -15,7 +15,6 @@ import ConversationItem from './components/ConversationItem';
 import EmptyState from './components/EmptyState';
 import ProjectPanel from './components/ProjectPanel';
 import RecentAgentItem from './components/RecentAgentItem';
-import SearchHeader from './components/SearchHeader';
 import { getAgentIdFromHomePathname } from './utils';
 
 import {
@@ -81,7 +80,6 @@ const NewHomeSection: React.FC<{
   currentAgentIdRef.current = currentAgentId;
 
   const { handleCloseMobileMenu } = useModel('layout');
-  const { firstLevelMenus } = useModel('menuModel');
 
   const [activeTab, setActiveTab] = useState<HomeTab>(() => {
     const initialTab = getInitialActiveTab();
@@ -814,25 +812,13 @@ const NewHomeSection: React.FC<{
     history.push('/home');
   };
 
-  const showNewChatButton = firstLevelMenus?.some(
-    (menu: any) => menu?.code === 'new_conversation',
-  );
+  // 新建会话入口已上移至侧栏顶部操作区（SidebarNavHeader），此处仅保留搜索框
+  const showNewChatButton = false;
 
   // const noMoreText = dict('PC.Components.HistoryConversationList.noMore');
 
   return (
     <div style={style} className={cx(styles['new-home-section'])}>
-      <SearchHeader
-        keyword={activeTab === 'conversation' ? keyword : recentKeyword}
-        placeholder={dict(
-          'PC.Layouts.DynamicMenusLayout.NewHomeSection.searchPlaceholder',
-        )}
-        onSearchChange={handleSearchChange}
-        onSearchSubmit={handleSearchSubmit}
-        onNewChat={handleNewConversation}
-        showNewChatButton={showNewChatButton}
-      />
-
       <div className={cx(styles.tabs)}>
         <button
           type="button"
@@ -841,7 +827,7 @@ const NewHomeSection: React.FC<{
           })}
           onClick={() => handleTabChange('recent')}
         >
-          {dict('PC.Layouts.DynamicMenusLayout.HomeSection.recentlyUsed')}
+          {dict('PC.Layouts.DynamicMenusLayout.NewHomeSection.tabSession')}
         </button>
         <button
           type="button"
@@ -850,9 +836,7 @@ const NewHomeSection: React.FC<{
           })}
           onClick={() => handleTabChange('conversation')}
         >
-          {dict(
-            'PC.Layouts.DynamicMenusLayout.HomeSection.conversationHistory',
-          )}
+          {dict('PC.Layouts.DynamicMenusLayout.NewHomeSection.tabTask')}
         </button>
         <button
           type="button"
