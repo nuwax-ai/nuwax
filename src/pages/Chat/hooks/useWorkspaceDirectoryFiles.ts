@@ -4,6 +4,10 @@ import { apiGetStaticFileList } from '@/services/vncDesktop';
 import type { StaticFileInfo } from '@/types/interfaces/vncDesktop';
 import { message } from 'antd';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  WORKSPACE_SOURCE_ID,
+  workspaceNodeId,
+} from '../utils/fileDataSource';
 
 export interface WorkspaceStaticFile extends StaticFileInfo {
   dataSourceId: string;
@@ -55,8 +59,8 @@ export function useWorkspaceDirectoryFiles(
       setFiles(
         (result.data?.files || []).map((file) => ({
           ...file,
-          fileId: `workspace:${file.name}`,
-          dataSourceId: 'workspace',
+          fileId: workspaceNodeId(file.name),
+          dataSourceId: WORKSPACE_SOURCE_ID,
           relativePath: file.name,
         })),
       );

@@ -102,6 +102,7 @@ export function useLocalDirectoryFiles(conversationId?: number) {
   const [currentPath, setCurrentPath] = useState(restored.path);
   const [files, setFiles] = useState<LocalEntry[]>([]);
   const [loading, setLoading] = useState(false);
+  const [pendingSelectionId, setPendingSelectionId] = useState('');
   const requestToken = useRef(0);
 
   const activeRoot = roots.find((root) => root.id === sourceId);
@@ -116,6 +117,7 @@ export function useLocalDirectoryFiles(conversationId?: number) {
     setRoots(nextRoots);
     setAvailability({});
     setFiles([]);
+    setPendingSelectionId('');
     const next = restoreState(stateKey, enabled);
     if (
       next.sourceId !== WORKSPACE_SOURCE_ID &&
@@ -297,6 +299,7 @@ export function useLocalDirectoryFiles(conversationId?: number) {
     (id: string) => {
       requestToken.current += 1;
       setFiles([]);
+      setPendingSelectionId('');
       setCurrentPath('');
       setSourceId(id);
       try {
@@ -319,6 +322,7 @@ export function useLocalDirectoryFiles(conversationId?: number) {
         setSourceId(WORKSPACE_SOURCE_ID);
         setCurrentPath('');
         setFiles([]);
+        setPendingSelectionId('');
       }
     },
     [sourceId, updateRoots],
@@ -538,7 +542,12 @@ export function useLocalDirectoryFiles(conversationId?: number) {
       node.type === 'folder'
         ? node.relativePath || ''
         : (node.relativePath || '').split('/').slice(0, -1).join('/');
+    setPendingSelectionId(node.type === 'file' ? node.id : '');
     setCurrentPath(target);
+  }, []);
+
+  const clearPendingSelection = useCallback(() => {
+    setPendingSelectionId('');
   }, []);
 
   return {
@@ -557,6 +566,8 @@ export function useLocalDirectoryFiles(conversationId?: number) {
     exportZip,
     search,
     selectSearchResult,
+    pendingSelectionId,
+    clearPendingSelection,
     navigation: enabled
       ? {
           currentSourceId: sourceId,

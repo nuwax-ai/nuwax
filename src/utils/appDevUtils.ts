@@ -74,8 +74,8 @@ export const transformFlatListToTree = (
   filteredFiles.forEach((file) => {
     const pathParts = file.name.split('/').filter(Boolean);
     const fileName = pathParts[pathParts.length - 1];
-    // 如果文件是目录，则认为是文件（后端给了isDir字段，表示是否为目录），兼容之前逻辑
-    const isFile = !file.isDir || fileName.includes('.');
+    // 后端已经提供明确的 isDir；目录名可以合法包含点号（如 foo.bar）。
+    const isFile = file.isDir !== true;
 
     const isExternalDataSource = Boolean(
       file.dataSourceId && file.relativePath,

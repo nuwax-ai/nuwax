@@ -75,6 +75,12 @@ import { useChatVariables } from './hooks/useChatVariables';
 import { useChatViewMode } from './hooks/useChatViewMode';
 import { useLocalDirectoryFiles } from './hooks/useLocalDirectoryFiles';
 import { useWorkspaceDirectoryFiles } from './hooks/useWorkspaceDirectoryFiles';
+import {
+  parentDirectory,
+  workspaceNodeId,
+  workspaceRelativePath,
+  WORKSPACE_SOURCE_ID,
+} from './utils/fileDataSource';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -679,12 +685,31 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
   /** 无有效消息列表时不允许刷新 Git status，逻辑与进入页面自动拉取 api/git/status 保持一致 */
   const isGitStatusRefreshDisabled = !hasValidMessageList;
 
+  const workspaceTaskSelectedFileId = taskAgentSelectedFileId
+    ? workspaceNodeId(workspaceRelativePath(taskAgentSelectedFileId))
+    : '';
+
+  /**
+   * TaskResult/Markdown 仍传历史相对路径。逐层文件树必须先进入父目录，
+   * 再由 useFileTreePreviewView 在当前层数据到达后完成自动选中。
+   */
+  useEffect(() => {
+    if (!taskAgentSelectedFileId || taskAgentSelectTrigger === undefined) {
+      return;
+    }
+    const relativePath = workspaceRelativePath(taskAgentSelectedFileId);
+    if (localDirectoryFiles.active) {
+      void localDirectoryFiles.navigation?.onSelectSource(WORKSPACE_SOURCE_ID);
+    }
+    workspaceDirectoryFiles.navigate(parentDirectory(relativePath));
+  }, [taskAgentSelectTrigger]);
+
   /** TaskResult / 文件树选中等打开预览前，关闭版本记录面板（gitSourceControl 初始化后赋值） */
   const closeVersionPanelForFilePreviewRef = useRef<() => void>(() => {});
 
   // 文件视图 props
   const fileView = useFileTreePreviewView({
-    taskAgentSelectedFileId,
+    taskAgentSelectedFileId: workspaceTaskSelectedFileId,
     taskAgentSelectTrigger,
     // 会话结束文件树刷新后兜底重拉当前打开文件正文
     fileTreeRefreshTrigger,
@@ -769,6 +794,67 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       closeVersionPanelForFilePreviewRef.current();
     },
   });
+
+  const [pendingWorkspaceSelectionId, setPendingWorkspaceSelectionId] =
+    useState('');
+
+  const openWorkspaceFile = useCallback(
+    (fileId: string) => {
+      const relativePath = workspaceRelativePath(fileId);
+      const selectionId = workspaceNodeId(relativePath);
+      setPendingWorkspaceSelectionId(selectionId);
+      if (localDirectoryFiles.active) {
+        void localDirectoryFiles.navigation?.onSelectSource(
+          WORKSPACE_SOURCE_ID,
+        );
+      }
+      workspaceDirectoryFiles.navigate(parentDirectory(relativePath));
+    },
+    [
+      localDirectoryFiles.active,
+      localDirectoryFiles.navigation,
+      workspaceDirectoryFiles.navigate,
+    ],
+  );
+
+  useEffect(() => {
+    if (
+      !pendingWorkspaceSelectionId ||
+      localDirectoryFiles.active ||
+      !workspaceDirectoryFiles.files.some(
+        (file) => file.fileId === pendingWorkspaceSelectionId,
+      )
+    ) {
+      return;
+    }
+    const selectionId = pendingWorkspaceSelectionId;
+    setPendingWorkspaceSelectionId('');
+    void fileView.tree.handleFileSelect(selectionId);
+  }, [
+    pendingWorkspaceSelectionId,
+    localDirectoryFiles.active,
+    workspaceDirectoryFiles.files,
+    fileView.tree.handleFileSelect,
+  ]);
+
+  useEffect(() => {
+    const selectionId = localDirectoryFiles.pendingSelectionId;
+    if (
+      !selectionId ||
+      !localDirectoryFiles.active ||
+      !localDirectoryFiles.files.some((file) => file.fileId === selectionId)
+    ) {
+      return;
+    }
+    localDirectoryFiles.clearPendingSelection();
+    void fileView.tree.handleFileSelect(selectionId);
+  }, [
+    localDirectoryFiles.active,
+    localDirectoryFiles.pendingSelectionId,
+    localDirectoryFiles.files,
+    localDirectoryFiles.clearPendingSelection,
+    fileView.tree.handleFileSelect,
+  ]);
 
   // 刷新 Git 列表
   refreshGitListRef.current = fileView.refreshGitList;
@@ -1004,7 +1090,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       openChangeFile: (fileId: string) => {
         setSelectedChangeFile(null);
         setTaskAgentSelectedFileId('');
-        void fileView.tree.handleFileSelect(fileId);
+        openWorkspaceFile(fileId);
       },
       addFileToGitignore: handleAddToGitignore,
       onDiffFileSelect: () => {
