@@ -82,10 +82,12 @@ dist/repo/ ── 同一 nginx dist，单一部署物；dev 下 umi dev server �
 
 ## 8. 遗留与协作项
 
+> 跨阶段状态跟踪单一事实源：[repo-web-integration-roadmap.md](./repo-web-integration-roadmap.md)（完成即更新状态，本文仅保留交付时点快照）。
+
 | 项 | 归属 | 说明 |
 | --- | --- | --- |
 | `/repo/ws` 协作 WS 网关路由 | 后端 | 文档**列表/浏览/打开**已通；多人**协作编辑**依赖此项（dev 代理已就位，路由落地即生效） |
-| 主站登出联动清 `ticket` | 后端/主站 | 假登出风险：换账号后子应用仍持旧会话；B 阶段登出回调统一 |
+| 登出联动清 `ticket` | 后端 | **2026-09-04 定调：后端行为**（登出接口 Set-Cookie 失效，前端不处理）；状态跟踪见 roadmap.md B3 |
 | 生产 nginx `location /repo/` try_files 回退 | 运维 | history 路由深链刷新必需（契约 §6-5） |
 | 生产构建管线前置 `sync:repo-web` + CI 适配（pnpm/submodule） | 工程 | 产物 gitignore，checkout 不带（契约 §6-6） |
 | 菜单管理配置 | 环境 | code=`repo`、path=`/repo-entry`（配完即现菜单入口） |

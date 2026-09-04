@@ -37,7 +37,7 @@ submodules/nuwax-repo-web  --vite build-->  public/repo/  --umi build-->  dist/r
 | token 载体 | 子应用读平台 cookie `ticket`（fetch `credentials:'include'`）。**已实证（2026-09-04）**：后端 `passwordLogin` 响应 `set-cookie: ticket=<JWT>` 且值与响应体 token **完全等值**、CORS `allow-credentials: true`。生产同源部署下登录即原生种植，子应用天然可用；dev 下主应用登录走跨域绝对地址、cookie 落不到本地域，由 `RepoWebEntry` 做 **dev 桥**（`process.env.BASE_URL` 非空时把 token 镜像为同源 `ticket` cookie，生产不介入） | 宿主经 `window.__NUWA_HOST__` 注入 token；子应用适配器优先读注入、读不到回退 cookie 现状（dev 桥随之退役） |
 | 未登录语义 | 错误码 `4010` → `window.location.href='/login'`；`4011` → 跳服务端下发地址（缺省 `/login`）。语义全局统一，两侧不得私改 | 同左，跳转动作改经适配器（可被宿主回调接管） |
 | 登录回跳 | **平台已有 returnUrl 协议**（实证：4011 的 message 即 `/login?redirect=<当前页>`，主站登录页消费该参数回跳） | 保持并纳入契约固化 |
-| 登出/账号切换 | 主仓登出须同时清理 localStorage **与** cookie `ticket`（假登出风险，待后端确认清除接口）；子应用侧 401 即踢回 `/login` | 经宿主统一登出回调 |
+| 登出/账号切换 | **登出清 `ticket` 为后端行为**（2026-09-04 定调：登出接口 Set-Cookie 失效 ticket，dev 经代理/生产同源均覆盖，前端不处理）；子应用侧 401 即踢回 `/login` | 经宿主统一登出回调 |
 
 ### 2.3 上下文注入协议
 
@@ -112,7 +112,7 @@ dev 验证：启动主站 dev server → 访问 `/repo-entry`（重定向 `/repo
 
 | # | 事项 | 状态/影响 |
 | --- | --- | --- |
-| 1 | cookie `ticket` 种植：~~待确认~~ **已实证**——`passwordLogin` 响应 `set-cookie: ticket=<JWT>`（HttpOnly、Path=/、CORS allow-credentials），值与登录 token 等值；生产同源部署天然生效。剩余：主站登出如何联动清 cookie（假登出风险仍在） | 登录态打通 |
+| 1 | cookie `ticket` 种植：~~待确认~~ **已实证**——`passwordLogin` 响应 `set-cookie: ticket=<JWT>`（HttpOnly、Path=/、CORS allow-credentials），值与登录 token 等值；生产同源部署天然生效。剩余：登出接口 Set-Cookie 失效 ticket（**后端行为，前端不管**，2026-09-04 定调；状态见 roadmap B3） | 登录态打通 |
 | 2 | ~~网关双认鉴权（cookie + Bearer）~~ v0 已不需要（cookie 链路经 dev 桥/生产原生种植打通）；保留为 B 阶段可选项 | v0 可用性已解决 |
 | 3 | `/api/repo` 路由：~~待确认~~ **testagent 已部署并带鉴权拦截（已实证）**；剩余 `/repo/ws`、`/repo/internal` 的网关路由与生产 ingress | dev 联调与生产可用性 |
 | 4 | returnUrl 协议：~~待确认~~ **已实证存在**（4011 message 即 `/login?redirect=<当前页>`，主站登录页消费回跳） | 登录体验闭环 |
@@ -124,7 +124,7 @@ dev 验证：启动主站 dev server → 访问 `/repo-entry`（重定向 `/repo
 | 风险 | 现状 | 缓解 |
 | --- | --- | --- |
 | ~~cookie ticket 透传不确定~~ | **已解决（2026-09-04 实测全链路）**：ticket==token 等值 + dev 桥镜像 + 生产同源原生种植；测试环境真实文档列表已加载 | v1 `__NUWA_HOST__` 注入落地后 dev 桥退役 |
-| 主站登出不联动清 cookie `ticket`（假登出：换账号后子应用仍持旧会话） | 待后端/主站登出链路确认清理点 | B 阶段登出回调统一处理 |
+| 主站登出不联动清 cookie `ticket`（假登出：换账号后子应用仍持旧会话） | **后端职责**（2026-09-04 定调：登出接口 Set-Cookie 失效 ticket，前端不管）；状态跟踪见 roadmap B3 | 后端落地后关闭 |
 | 子应用产物较重（SheetEditor ~5.9MB / CollabEditor ~3MB minified） | 独立 `/repo/` 路径，不进主包 chunks | sync 为显式命令不进 predev；子仓侧分包优化属其自身演进 |
 | 子仓仅 main 无 tag | pin f07ce55 | 纪律性 bump pin + version.json 排障 |
 | 构建依赖 pnpm 在本地/CI 在位 | 本机 pnpm 10.27.0 已验证 | CI 适配属后续专项 |
