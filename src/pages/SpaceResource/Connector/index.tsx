@@ -501,16 +501,8 @@ const SpaceConnector: React.FC = () => {
       }
     >
       <div className={styles.page}>
-        {/* 筛选栏：关键字 + 状态 + 连接（样式参考管理端连接器列表）；右侧为空间选择器 */}
+        {/* 筛选栏：状态 + 连接 + 关键字（样式参考管理端连接器列表）；右侧为空间选择器 */}
         <div className={styles.filterBar}>
-          <Input
-            className={styles.searchInput}
-            allowClear
-            prefix={<SearchOutlined className={styles.searchIcon} />}
-            placeholder="搜索空间连接器（名称 / service / 分类 / 标签）"
-            value={keyword}
-            onChange={(e) => setKeyword(e.target.value)}
-          />
           <div className={styles.filterItem}>
             <span className={styles.filterItemLabel}>状态:</span>
             <Select
@@ -533,6 +525,14 @@ const SpaceConnector: React.FC = () => {
               popupMatchSelectWidth={false}
             />
           </div>
+          <Input
+            className={styles.searchInput}
+            allowClear
+            prefix={<SearchOutlined className={styles.searchIcon} />}
+            placeholder="搜索空间连接器（名称 / service / 分类 / 标签）"
+            value={keyword}
+            onChange={(e) => setKeyword(e.target.value)}
+          />
           <div className={styles.flexSpace} />
           {/* 空间选择器：个人空间 / 团队空间分组展示，切换后按新 spaceId 重新拉取列表 */}
           <div className={styles.filterItem}>

@@ -1,8 +1,8 @@
-/* 空间连接器页面：米白底极简风格（见设计稿） */
+/* 空间连接器页面：白底（与项目其他页面背景一致） */
 .page {
   min-height: 100%;
   padding: 16px 20px 24px;
-  background: #f7f5f0;
+  background: #fff;
   border-radius: 8px;
 }
 
@@ -14,9 +14,17 @@
   gap: 12px;
 }
 
-/* 关键字输入框（带搜索图标时 className 落在 affix 包装层上） */
-.searchInput.ant-input-affix-wrapper {
-  width: 360px;
+/* 关键字输入框（带搜索图标时 className 落在 affix 包装层上）；
+   位于状态/连接筛选之后，行内定宽展示（inline-flex，行内效果同 inline-block，
+   但保留 antd 内部前缀图标/清除按钮的垂直居中），高度与筛选项容器一致。
+   antd 类名必须 :global 包裹，否则被 CSS Modules 哈希后选择器不生效 */
+.searchInput:global(.ant-input-affix-wrapper) {
+  display: inline-flex;
+  align-items: center;
+
+  /* 加长到能完整放下 placeholder（前缀图标 + 「搜索空间连接器（名称 / service / 分类 / 标签）」） */
+  width: 370px;
+  height: 32px;
   max-width: 100%;
   background: #fff;
   border-color: #ddd8d0;
@@ -24,7 +32,7 @@
 
   &:hover,
   &:focus,
-  &-focused {
+  &:global(.ant-input-affix-wrapper-focused) {
     border-color: #b8b2a6;
   }
 }
