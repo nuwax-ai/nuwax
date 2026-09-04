@@ -1,3 +1,4 @@
+import { ACCESS_TOKEN } from '@/constants/home.constants';
 import { t } from '@/services/i18nRuntime';
 import { Spin } from 'antd';
 import classNames from 'classnames';
@@ -11,6 +12,15 @@ import React, { useEffect } from 'react';
  */
 const RepoWebEntry: React.FC = () => {
   useEffect(() => {
+    // dev 桥：dev 下主应用登录走跨域绝对地址（BASE_URL），后端 set-cookie 的 ticket
+    // 落不到本地域，而 ticket 与登录 token 等值（见契约 §2.2）——把 token 镜像成同源
+    // cookie 供子应用携带。生产 BASE_URL 为空（登录同源、cookie 由后端原生种植），不介入。
+    if (process.env.BASE_URL) {
+      const token = localStorage.getItem(ACCESS_TOKEN);
+      if (token) {
+        document.cookie = `ticket=${token}; path=/`;
+      }
+    }
     window.location.replace('/repo/');
   }, []);
 

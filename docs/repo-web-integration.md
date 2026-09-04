@@ -34,9 +34,9 @@ submodules/nuwax-repo-web  --vite build-->  public/repo/  --umi build-->  dist/r
 
 | 项 | v0（现状） | v1（B 阶段，向后兼容） |
 | --- | --- | --- |
-| token 载体 | 子应用读平台 cookie `ticket`（fetch `credentials:'include'`）；主仓登录态是 localStorage `ACCESS_TOKEN`（Bearer），两者机制不同源，cookie 是否在位以**后端种植为准** | 宿主经 `window.__NUWA_HOST__` 注入 token；子应用适配器优先读注入、读不到回退 cookie 现状 |
+| token 载体 | 子应用读平台 cookie `ticket`（fetch `credentials:'include'`）。**已实证（2026-09-04）**：后端 `passwordLogin` 响应 `set-cookie: ticket=<JWT>` 且值与响应体 token **完全等值**、CORS `allow-credentials: true`。生产同源部署下登录即原生种植，子应用天然可用；dev 下主应用登录走跨域绝对地址、cookie 落不到本地域，由 `RepoWebEntry` 做 **dev 桥**（`process.env.BASE_URL` 非空时把 token 镜像为同源 `ticket` cookie，生产不介入） | 宿主经 `window.__NUWA_HOST__` 注入 token；子应用适配器优先读注入、读不到回退 cookie 现状（dev 桥随之退役） |
 | 未登录语义 | 错误码 `4010` → `window.location.href='/login'`；`4011` → 跳服务端下发地址（缺省 `/login`）。语义全局统一，两侧不得私改 | 同左，跳转动作改经适配器（可被宿主回调接管） |
-| 登录回跳 | 暂无 returnUrl 协议（B 阶段补：`/login?returnUrl=...`） | returnUrl 协议生效 |
+| 登录回跳 | **平台已有 returnUrl 协议**（实证：4011 的 message 即 `/login?redirect=<当前页>`，主站登录页消费该参数回跳） | 保持并纳入契约固化 |
 | 登出/账号切换 | 主仓登出须同时清理 localStorage **与** cookie `ticket`（假登出风险，待后端确认清除接口）；子应用侧 401 即踢回 `/login` | 经宿主统一登出回调 |
 
 ### 2.3 上下文注入协议
@@ -56,7 +56,8 @@ interface NuwaHostBridge {
 ### 2.4 API 网关与错误契约
 
 - 子应用业务前缀 `/api/repo`，协作 WS `/repo/ws`，Sidecar 内部 HTTP `/repo/internal/*`；`API_BASE` 默认同源（可用 `VITE_API_BASE` 覆盖）。
-- **后端协作项（未尽，见 §6）**：网关需同时认 cookie `ticket` 与 `Authorization: Bearer`（双认）；`/api/repo`、`/repo/ws` 在 dev 直连域（testagent）与生产 ingress 的路由。
+- **dev 代理（已落地，`config/config.development.ts`）**：子应用调用的平台命名空间（`/api/repo`、`/api/space`、`/api/user`、`/api/tenant`、`/api/file`、`/api/f`）与 `/repo/ws` 统一代理到 testagent。主应用自身请求经拦截器拼 BASE_URL 绝对地址直连、不落 dev server；`mock/*` 无 `/api` 字面路由（会话 mock 走页面级 fetch 拦截），均不受影响。**testagent 网关已确认路由 `/api/repo`**（2026-09-04 实证，含鉴权拦截）。
+- **后端协作项（未尽，见 §6）**：`/repo/ws` 网关路由；网关对子应用命名空间的鉴权口径（当前 `/api/repo` 走 cookie `AuthInterceptor`，已验证 ticket 可通过）。
 - 错误响应结构 `{ code, message }` 全局统一；`4010/4011` 语义见 §2.2。
 
 ### 2.5 版本可见性
@@ -105,14 +106,14 @@ dev 验证：启动主站 dev server → 访问 `/repo-entry`（重定向 `/repo
 2. 适配器优先读 `window.__NUWA_HOST__`（§2.3），读不到回退现状，**向后兼容**。
 3. 后续在适配器内逐步实现主题/locale/登出回调消费。
 
-## 6. 后端协作清单（已发出，待对齐）
+## 6. 后端协作清单（随实证滚动更新，2026-09-04）
 
-| # | 事项 | 影响 |
+| # | 事项 | 状态/影响 |
 | --- | --- | --- |
-| 1 | cookie `ticket` 的种植/清除时机与 Domain/Path/SameSite 作用域；主站登出如何联动清 cookie | 登录态打通、假登出风险 |
-| 2 | 网关双认鉴权：同一后端同时接受 cookie `ticket` 与 Bearer header | v0 可用性 |
-| 3 | `/api/repo`、`/repo/ws`、`/repo/internal` 的 dev（testagent 域）与生产 ingress 路由 | dev 联调与生产可用性 |
-| 4 | 登录回跳 returnUrl 协议（`/login?returnUrl=`）支持 | 登录体验闭环 |
+| 1 | cookie `ticket` 种植：~~待确认~~ **已实证**——`passwordLogin` 响应 `set-cookie: ticket=<JWT>`（HttpOnly、Path=/、CORS allow-credentials），值与登录 token 等值；生产同源部署天然生效。剩余：主站登出如何联动清 cookie（假登出风险仍在） | 登录态打通 |
+| 2 | ~~网关双认鉴权（cookie + Bearer）~~ v0 已不需要（cookie 链路经 dev 桥/生产原生种植打通）；保留为 B 阶段可选项 | v0 可用性已解决 |
+| 3 | `/api/repo` 路由：~~待确认~~ **testagent 已部署并带鉴权拦截（已实证）**；剩余 `/repo/ws`、`/repo/internal` 的网关路由与生产 ingress | dev 联调与生产可用性 |
+| 4 | returnUrl 协议：~~待确认~~ **已实证存在**（4011 message 即 `/login?redirect=<当前页>`，主站登录页消费回跳） | 登录体验闭环 |
 | 5 | 生产 nginx 静态回退：`location /repo/ { try_files $uri $uri/ /repo/index.html; }`——子应用是 history 路由，`/repo/space/:id` 等深链刷新/直达必须回退到子应用 index.html，否则落到主站 SPA 的 404 兜底 | 深链可用性 |
 | 6 | 生产构建管线前置 `npm run sync:repo-web`：产物 `public/repo/` 已 gitignore，CI/构建机 checkout 不带产物，必须先 sync 再 umi build | 单一部署物完整性 |
 
@@ -120,7 +121,8 @@ dev 验证：启动主站 dev server → 访问 `/repo-entry`（重定向 `/repo
 
 | 风险 | 现状 | 缓解 |
 | --- | --- | --- |
-| cookie ticket 透传不确定（主仓 localStorage Bearer 与子应用 cookie 机制不一致） | 待后端 §6-1/6-2 对齐 | 401 回跳 `/login` 复现则记 B 阶段输入；入口可独立回退 |
+| ~~cookie ticket 透传不确定~~ | **已解决（2026-09-04 实测全链路）**：ticket==token 等值 + dev 桥镜像 + 生产同源原生种植；测试环境真实文档列表已加载 | v1 `__NUWA_HOST__` 注入落地后 dev 桥退役 |
+| 主站登出不联动清 cookie `ticket`（假登出：换账号后子应用仍持旧会话） | 待后端/主站登出链路确认清理点 | B 阶段登出回调统一处理 |
 | 子应用产物较重（SheetEditor ~5.9MB / CollabEditor ~3MB minified） | 独立 `/repo/` 路径，不进主包 chunks | sync 为显式命令不进 predev；子仓侧分包优化属其自身演进 |
 | 子仓仅 main 无 tag | pin f07ce55 | 纪律性 bump pin + version.json 排障 |
 | 构建依赖 pnpm 在本地/CI 在位 | 本机 pnpm 10.27.0 已验证 | CI 适配属后续专项 |

@@ -60,3 +60,4 @@
 
 1. sync 脚本构建命令由 `pnpm build` 改为 `pnpm exec vite build`：子仓 f07ce55 的 `tsc -b` 存在预存类型错误（TS6133/TS2322 等十余处，类型门属子仓自身 CI 职责），主仓跨仓链路只消费 vite 产物，不在链路上卡子仓类型问题。已在 `scripts/sync-repo-web.mjs` 注释与 `docs/repo-web-integration.md` §3 记录。
 2. 评审勘误（code-reviewer）：本文件 §「打通设计全景」所写深链 `/repo/space/:spaceId/doc/:slugId` 有误，子应用实际是两条独立路由 `/repo/space/:spaceId`、`/repo/doc/:slugId`，以契约文档 `docs/repo-web-integration.md` §2.1 为准。
+3. dev 域名路由 + 鉴权桥（用户验收期追加）：`config/config.development.ts` 增加子应用平台命名空间的 dev 代理（统一到 testagent）；实证后端 `passwordLogin` 的 `set-cookie: ticket` 与登录 token 等值后，`RepoWebEntry` 增加 dev 桥（BASE_URL 非空时镜像 token 为同源 ticket cookie，生产不介入）。测试环境真实数据链路已实测打通。事实修正与状态滚动见契约文档 §2.2/§2.4/§6/§7。
