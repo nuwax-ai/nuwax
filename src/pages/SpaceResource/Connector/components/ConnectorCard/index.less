@@ -1,0 +1,127 @@
+/* 空间连接器卡片：米白底 + 细边框的极简风格（见设计稿） */
+.card {
+  display: flex;
+  flex-direction: column;
+  background: #fffefa;
+  border: 1px solid #ddd8d0;
+  border-radius: 8px;
+  overflow: hidden;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+
+  &:hover {
+    border-color: #c9c2b6;
+    box-shadow: 0 2px 10px rgba(26, 26, 26, 6%);
+  }
+}
+
+.cardBody {
+  flex: 1;
+  padding: 16px 16px 14px;
+}
+
+.cardTitle {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 24px;
+  color: #1a1a1a;
+  word-break: break-word;
+}
+
+.cardService {
+  margin-top: 2px;
+  font-family: Consolas, Menlo, monospace;
+  font-size: 12px;
+  color: #8a857c;
+  word-break: break-all;
+}
+
+.cardDesc {
+  margin-top: 8px;
+  font-size: 13px;
+  line-height: 20px;
+  color: #8a857c;
+  display: box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.cardBadges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+/* 徽章：白底细边框小方块（设计稿无彩色区分，仅文字区分状态） */
+.badge {
+  font-size: 12px;
+  line-height: 20px;
+  padding: 0 8px;
+  background: #fff;
+  border: 1px solid #ddd8d0;
+  border-radius: 4px;
+  color: #4a463e;
+  white-space: nowrap;
+}
+
+.cardFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  background: #ede9e3;
+}
+
+.cardUrl {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 12px;
+  color: #8a857c;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cardBtns {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.cardBtnRow {
+  display: flex;
+  gap: 6px;
+}
+
+/* 小操作按钮：白底细边框（功能待实现，暂为视觉占位） */
+.miniBtn {
+  font-size: 12px;
+  line-height: 22px;
+  padding: 0 10px;
+  background: #fff;
+  border: 1px solid #ddd8d0;
+  border-radius: 4px;
+  color: #4a463e;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease;
+
+  &:hover {
+    border-color: #b8b2a6;
+    color: #1a1a1a;
+  }
+}
+
+/* 删除：红色警示 */
+.dangerBtn {
+  color: #ff4d4f;
+  border-color: rgba(255, 77, 79, 45%);
+
+  &:hover {
+    color: #ff7875;
+    border-color: #ff4d4f;
+  }
+}

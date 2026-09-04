@@ -396,6 +396,47 @@ export async function apiConnectorImportApply(
 }
 
 /**
+ * 预览空间连接器导入 diff（POST /api/connector/import/space?spaceId=）
+ *
+ * - 与管理端预览接口（POST /api/connector/import）同构：入参为导入包 JSON
+ *   （「导出」生成的 JSON，粘贴或选择文件带入），传解析后的对象；
+ *   差异是导入目标是具体空间，spaceId 挂在 query 上
+ * - 返回 diff 预览：importId + 四类变更计数 + items 明细，不执行导入；
+ *   确认导入由后续接口引用 importId 完成
+ *
+ * 用于工作空间连接器页「导入」抽屉的「预览导入 diff」按钮。
+ */
+export async function apiConnectorSpaceImport(
+  spaceId: number,
+  data: unknown,
+): Promise<RequestResponse<ConnectorImportDiff>> {
+  return request('/api/connector/import/space', {
+    method: 'POST',
+    params: { spaceId },
+    data,
+  });
+}
+
+/**
+ * 确认空间连接器导入（POST /api/connector/import/space/apply?spaceId=）
+ *
+ * - query 传 spaceId，body 仅 importId：引用「预览导入 diff」返回的导入会话标识，
+ *   后端按预览阶段解析好的导入包在对应空间内执行导入
+ *
+ * 用于工作空间连接器页「导入」抽屉的「确认导入」按钮；成功后由调用方刷新列表。
+ */
+export async function apiConnectorSpaceImportApply(
+  spaceId: number,
+  data: ApplyConnectorImportParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/connector/import/space/apply', {
+    method: 'POST',
+    params: { spaceId },
+    data,
+  });
+}
+
+/**
  * 分页获取连接器提供方列表（GET /api/connector/providers?spaceId=&pageNum=&pageSize=）
  *
  * - 与系统连接器列表接口（GET /api/system/connector/providers，非分页返回数组）不同，

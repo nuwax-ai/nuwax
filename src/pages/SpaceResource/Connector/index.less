@@ -1,0 +1,110 @@
+/* 空间连接器页面：米白底极简风格（见设计稿） */
+.page {
+  min-height: 100%;
+  padding: 16px 20px 24px;
+  background: #f7f5f0;
+  border-radius: 8px;
+}
+
+/* ---------- 筛选栏 ---------- */
+.filterBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+/* 关键字输入框（带搜索图标时 className 落在 affix 包装层上） */
+.searchInput.ant-input-affix-wrapper {
+  width: 360px;
+  max-width: 100%;
+  background: #fff;
+  border-color: #ddd8d0;
+  border-radius: 6px;
+
+  &:hover,
+  &:focus,
+  &-focused {
+    border-color: #b8b2a6;
+  }
+}
+
+.searchIcon {
+  color: #8a857c;
+}
+
+/* 筛选项：一个白底细边框容器内含「标签: + 下拉」（与管理端 LightFilter 视觉对齐） */
+.filterItem {
+  display: flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 4px 0 10px;
+  background: #fff;
+  border: 1px solid #ddd8d0;
+  border-radius: 6px;
+
+  &:hover {
+    border-color: #b8b2a6;
+  }
+
+  &:has(.ant-select-open) {
+    border-color: #1a1a1a;
+  }
+}
+
+.filterItemLabel {
+  margin-right: 2px;
+  font-size: 13px;
+  color: #6b665d;
+  white-space: nowrap;
+}
+
+.filterItemSelect {
+  min-width: 56px;
+}
+
+/* 空间选择器：选项为空间名，稍宽 */
+.spaceSelect {
+  min-width: 160px;
+  max-width: 240px;
+}
+
+.flexSpace {
+  flex: 1 1 auto;
+}
+
+/* ---------- 卡片网格 ---------- */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.loadingWrap {
+  display: flex;
+  justify-content: center;
+  padding: 96px 0;
+}
+
+.emptyWrap {
+  display: flex;
+  justify-content: center;
+  padding: 96px 0;
+}
+
+/* ---------- 工具栏按钮 ---------- */
+
+/* 新增连接器：设计稿为深黑底主按钮 */
+.darkBtn.ant-btn {
+  background: #1a1a1a;
+  border-color: #1a1a1a;
+  color: #fff;
+
+  &:hover,
+  &:focus {
+    background: #333;
+    border-color: #333;
+    color: #fff;
+  }
+}

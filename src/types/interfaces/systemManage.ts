@@ -1169,6 +1169,14 @@ export interface ConnectorProviderPageParams {
   pageNum?: number;
   /** 页大小（调试弹窗一次拉全量，固定传 2000） */
   pageSize?: number;
+  /** 数据范围：space = 空间维度（空间连接器页） */
+  scope?: string;
+  /** 启用状态筛选：all / enabled / disabled */
+  status?: string;
+  /** 连接状态筛选：all / true / false */
+  connected?: string;
+  /** 关键字（名称 / service / 分类 / 标签） */
+  keyword?: string;
 }
 
 /**

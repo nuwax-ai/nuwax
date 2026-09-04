@@ -111,6 +111,11 @@ const routes = [
         path: '/space/:spaceId/model-manage',
         component: '@/pages/SpaceResource/ModelManage',
       },
+      // 连接器
+      {
+        path: '/space/:spaceId/connector',
+        component: '@/pages/SpaceResource/Connector',
+      },
       // 资源定价
       {
         path: '/space/:spaceId/resource-pricing',
