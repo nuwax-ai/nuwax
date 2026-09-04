@@ -316,6 +316,7 @@ const renderV2 = (
 
 afterEach(() => {
   unifiedThemeState.antdTheme = 'light';
+  vi.useRealTimers();
   vi.restoreAllMocks();
 });
 
@@ -379,9 +380,12 @@ describe('ConversationRendererV2 · 三层结构', () => {
     expect(text).toContain('traceMetricElapsed');
   });
 
-  it('终态回答操作栏显示轮级耗时 MM:SS（对齐 V1 状态栏 timer 形态）', () => {
+  it('终态回答操作栏复用 V1 消息相对时间规则并固定在最右侧', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-04T12:00:00+08:00'));
     renderV2(
       buildTurn({
+        time: '2026-09-03T08:00:00+08:00',
         finalResult: {
           outputText: '今天晴，25 度',
           success: true,
@@ -391,7 +395,9 @@ describe('ConversationRendererV2 · 三层结构', () => {
         } as unknown as MessageInfo['finalResult'],
       }),
     );
-    expect(screen.getByTestId('v2-answer-duration')).toHaveTextContent('01:00');
+    const answerTime = screen.getByTestId('v2-answer-time');
+    expect(answerTime).toHaveTextContent('PC.Utils.Common.yesterday');
+    expect(answerTime.parentElement?.lastElementChild).toBe(answerTime);
   });
 
   it('home 模式（默认入口）终态操作栏也显示：V1 由 ChatSampleBottom 提供复制+时间，V2 对齐', () => {
@@ -413,7 +419,7 @@ describe('ConversationRendererV2 · 三层结构', () => {
       />,
     );
     expect(screen.getByTestId('copy-button')).toBeInTheDocument();
-    expect(screen.getByTestId('v2-answer-duration')).toHaveTextContent('01:00');
+    expect(screen.getByTestId('v2-answer-time')).toBeInTheDocument();
   });
 
   it('detailed 不改变历史轮收起规则，手动展开后已完成 reasoning 详情自动展开', () => {

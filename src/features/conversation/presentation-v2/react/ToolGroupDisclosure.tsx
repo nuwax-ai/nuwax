@@ -1,8 +1,8 @@
 /** 连续工具组：组头负责压缩动作类型，组内保留每次真实执行及其详情。 */
 import { getToolGroupStatus } from '@/features/conversation/presentation-v2/traceItems';
 import {
-  CaretRightOutlined,
   CloseCircleOutlined,
+  DownOutlined,
   LoadingOutlined,
 } from '@ant-design/icons';
 import { theme } from 'antd';
@@ -103,7 +103,7 @@ const ToolGroupDisclosure: React.FC<ToolGroupDisclosureProps> = ({
             aria-hidden="true"
           />
         )}
-        <CaretRightOutlined
+        <DownOutlined
           className={cx(styles['tool-group-chevron'], {
             [styles['tool-group-chevron-open']]: expanded,
           })}

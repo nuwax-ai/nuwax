@@ -5,7 +5,7 @@
 import { PureMarkdownRenderer } from '@/components/MarkdownRenderer';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { dict } from '@/services/i18nRuntime';
-import { CaretRightOutlined } from '@ant-design/icons';
+import { DownOutlined } from '@ant-design/icons';
 import { theme } from 'antd';
 import classNames from 'classnames';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -256,7 +256,7 @@ const WorkTraceDisclosure: React.FC<WorkTraceDisclosureProps> = ({
         >
           {headerText}
         </span>
-        <CaretRightOutlined
+        <DownOutlined
           className={cx(
             styles['trace-chevron'],
             styles['trace-chevron-trailing'],

@@ -41,7 +41,11 @@ const ShareMessageButton: React.FC<ShareMessageButtonProps> = ({
         className={cx('share-message-btn', className)}
         onClick={() => setModalOpen(true)}
       >
-        <SvgIcon name="icons-chat-share" className={cx('share-image')} />
+        <SvgIcon
+          name="icons-chat-share"
+          className={cx('share-image')}
+          style={{ fontSize: 12 }}
+        />
         {dict('PC.Components.ConversationShareModal.share')}
       </span>
       <ConversationShareModal

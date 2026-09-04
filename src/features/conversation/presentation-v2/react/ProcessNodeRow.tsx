@@ -12,10 +12,10 @@ import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { dict } from '@/services/i18nRuntime';
 import {
   BulbOutlined,
-  CaretRightOutlined,
   CloseCircleOutlined,
   CodeOutlined,
   CommentOutlined,
+  DownOutlined,
   EditOutlined,
   FileTextOutlined,
   GlobalOutlined,
@@ -354,7 +354,7 @@ const ProcessNodeRow: React.FC<ProcessNodeRowProps> = ({
         />
       )}
       {hasDetail && (
-        <CaretRightOutlined
+        <DownOutlined
           data-testid="v2-node-disclosure"
           className={cx(styles['node-disclosure'], {
             [styles['node-disclosure-open']]: expanded,

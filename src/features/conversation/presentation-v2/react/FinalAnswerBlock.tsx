@@ -10,11 +10,11 @@ import useMarkdownRender from '@/hooks/useMarkdownRender';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
 import { dict } from '@/services/i18nRuntime';
 import { AssistantRoleEnum } from '@/types/enums/agent';
+import { formatTimeAgo } from '@/utils/common';
 import { message } from 'antd';
 import classNames from 'classnames';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import type { ConversationTurnPresentationV2 } from '../types';
-import { formatElapsedClock } from './formatElapsed';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -34,6 +34,22 @@ const FinalAnswerBlock: React.FC<FinalAnswerBlockProps> = ({
   const lastAssistant = [...turn.assistantMessages]
     .reverse()
     .find((message) => message.role === AssistantRoleEnum.ASSISTANT);
+  const messageTime = lastAssistant?.time;
+  const [messageTimeLabel, setMessageTimeLabel] = useState(() =>
+    messageTime ? formatTimeAgo(messageTime) : '',
+  );
+
+  // 与 V1 ChatSampleBottom 完全一致：按消息 time 计算相对时间，并每分钟刷新。
+  useEffect(() => {
+    if (!messageTime) {
+      setMessageTimeLabel('');
+      return undefined;
+    }
+    const updateTime = () => setMessageTimeLabel(formatTimeAgo(messageTime));
+    updateTime();
+    const timerId = window.setInterval(updateTime, 60_000);
+    return () => window.clearInterval(timerId);
+  }, [messageTime]);
   const answerText = turn.finalAnswer.text;
   const answerId = `v2-answer-${turn.key}`;
   const { markdownRef, messageIdRef } = useMarkdownRender({
@@ -100,18 +116,18 @@ const FinalAnswerBlock: React.FC<FinalAnswerBlockProps> = ({
           <CopyButton text={answerText} onCopy={handleCopy}>
             {dict('PC.Components.ChatView.copy')}
           </CopyButton>
-          {/* 轮级耗时（终态冻结，与轨迹指标同源）：MM:SS 对齐 V1 状态栏 timer */}
-          {typeof turn.metrics.elapsedMs === 'number' && (
-            <span
-              className={cx(styles['answer-duration'])}
-              data-testid="v2-answer-duration"
-            >
-              {formatElapsedClock(turn.metrics.elapsedMs)}
-            </span>
-          )}
           <ShareMessageButton text={answerText} isUser={false} />
           {showDebug !== false && lastAssistant && (
             <ChatBottomDebug messageInfo={lastAssistant} />
+          )}
+          {/* 沿用 V1 消息时间规则，并固定在当前操作栏最右侧。 */}
+          {messageTimeLabel && (
+            <span
+              className={cx(styles['answer-time'])}
+              data-testid="v2-answer-time"
+            >
+              {messageTimeLabel}
+            </span>
           )}
         </div>
       )}

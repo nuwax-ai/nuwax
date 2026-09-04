@@ -71,15 +71,16 @@
 .tool-group-chevron,
 .node-disclosure {
   flex-shrink: 0;
-  font-size: 9px;
+  font-size: 10px;
   color: var(--v2-color-text-quaternary, rgba(5, 5, 5, 25%));
+  transform: rotate(-90deg);
   transition: transform 0.18s ease, color 0.18s ease;
 }
 
 .trace-chevron-open,
 .tool-group-chevron-open,
 .node-disclosure-open {
-  transform: rotate(90deg);
+  transform: rotate(0deg);
 }
 
 .trace-chevron-trailing {
@@ -162,9 +163,19 @@
 
 .tool-group-status,
 .node-status-icon {
-  margin-left: auto;
   font-size: 12px;
   flex-shrink: 0;
+}
+
+.tool-group-chevron,
+.node-disclosure {
+  opacity: 0;
+  transition: transform 0.18s ease, color 0.18s ease, opacity 0.18s ease;
+}
+
+.tool-group-chevron-open,
+.node-disclosure-open {
+  opacity: 1;
 }
 
 .tool-group-body {
@@ -202,7 +213,7 @@
 }
 
 .node-summary {
-  flex: 1;
+  flex: 0 1 auto;
   min-width: 0;
   overflow: hidden;
   color: var(--v2-color-text-tertiary, rgba(5, 5, 5, 45%));
@@ -222,15 +233,16 @@
 .tool-group-toggle:hover .tool-group-chevron,
 .tool-group-toggle:focus-visible .tool-group-chevron {
   color: var(--v2-color-text-secondary, rgba(5, 5, 5, 65%));
+  opacity: 1;
 }
 
 .node-detail {
   max-height: ~'min(420px, 52vh)';
   overflow-y: auto;
   margin: 2px 6px 8px 27px;
-  padding-left: 10px;
+  padding-left: 0;
   color: var(--v2-color-text, rgba(0, 0, 0, 88%));
-  border-left: 1px solid var(--v2-color-border, rgba(5, 5, 5, 8%));
+  border-left: 0;
 }
 
 .node-detail-text {
@@ -488,14 +500,12 @@ a.tool-detail-resource {
   padding: 8px 0 0;
 }
 
-// 轮级耗时（MM:SS，终态冻结）：样式对齐 V1 会话状态栏 timer
-// （pages/Chat/components/ConversationStatus：等宽字体 + 定宽右对齐防跳动）
-.answer-duration {
+// 消息相对时间：规则与 V1 ChatSampleBottom 一致，固定在操作栏最右侧。
+.answer-time {
   font-size: 12px;
   color: var(--v2-color-text-tertiary, rgba(5, 5, 5, 45%));
-  font-family: Menlo, Consolas, monospace;
   flex-shrink: 0;
-  min-width: 50px;
+  margin-left: auto;
   text-align: right;
 }
 

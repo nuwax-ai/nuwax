@@ -2,7 +2,6 @@ import agentImage from '@/assets/images/agent_image.png';
 import avatar from '@/assets/images/avatar.png';
 import CopyButton from '@/components/base/CopyButton';
 import { stripMcpAskResumeDisplayArtifacts } from '@/components/business-component/AgentIntervention/utils/mcpAskResumeMessage';
-import ShareMessageButton from '@/components/business-component/ConversationShareModal/ShareMessageButton';
 import { stripOpenUiResumeDisplayArtifacts } from '@/components/business-component/OpenUiArtifactView/openUiResumeMessage';
 import AttachFile from '@/components/ChatView/AttachFile';
 import ConditionRender from '@/components/ConditionRender';
@@ -237,7 +236,6 @@ const ChatView: React.FC<ChatViewProps> = memo(
                 <CopyButton text={userCopyText} onCopy={handleTextCopy}>
                   {dict('PC.Components.ChatView.copy')}
                 </CopyButton>
-                <ShareMessageButton text={userCopyText} isUser />
               </div>
             </div>
           )}
