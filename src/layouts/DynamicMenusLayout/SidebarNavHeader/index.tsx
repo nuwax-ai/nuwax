@@ -1,82 +1,98 @@
 /**
- * 侧栏顶部导航操作区
- * @description 主导航改造（单栏模式）：原一级 icon 竖栏移除后，
- * 新建任务/搜索/自动化/插件市场常驻侧栏顶部（参考 Claude/Codex 桌面端），
- * 其余后端下发的一级菜单与分离菜单收进「探索」下拉，保留后端权限过滤。
+ * 侧栏顶部导航区
+ * @description 主导航改造（单栏模式）：顶栏 = Logo + 搜索 + 折叠（固定），
+ * 下方为「新建任务」固定项 + 后端菜单接口下发的一级导航项（全量渲染，仅排除新对话）。
+ * 点导航项时右侧并列展开原二级菜单列；分离菜单（文档/通知/我的电脑/更多）在侧栏底部栏展示。
  */
 import SvgIcon from '@/components/base/SvgIcon';
 import { dict } from '@/services/i18nRuntime';
 import type { MenuItemDto } from '@/types/interfaces/menu';
 import { isImmersiveShell, isMac } from '@/utils/nuwaClawBridge';
-import { EllipsisOutlined, SearchOutlined } from '@ant-design/icons';
-import type { MenuProps } from 'antd';
-import { Dropdown } from 'antd';
+import { SearchOutlined } from '@ant-design/icons';
+import { Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo } from 'react';
-import { history, useModel } from 'umi';
+import { history, useModel, useSearchParams } from 'umi';
 import Header from '../Header';
-import { focusSidebarSearch } from '../NewHomeSection/searchFocus';
+import { toggleSidebarSearch } from '../NewHomeSection/searchFocus';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
-
-/** 探索下拉排除项：新对话是动作入口（顶部行已覆盖）、主页即侧栏本体 */
-const EXPLORE_EXCLUDED_CODES = new Set(['new_conversation', 'homepage']);
 
 /** 快捷键徽标前缀：mac 用 ⌘，其余平台用 Ctrl */
 const MOD_KEY = isMac() ? '⌘' : 'Ctrl';
 
 interface SidebarNavHeaderProps {
-  /** 后端下发的一级菜单（驱动探索下拉） */
+  /** 后端菜单接口下发的一级菜单（导航行走接口，全量渲染） */
   menus: MenuItemDto[];
-  /** 分离菜单（文档/通知/我的电脑/更多） */
-  otherMenus: MenuItemDto[];
-  /** 一级菜单点击（复用原一级栏 handleTabClick 行为） */
+  /** 当前激活的一级菜单 code（导航行选中高亮） */
+  activeTab: string;
+  /** 一级菜单点击（复用原一级栏 handleTabClick 行为，展开原二级菜单列） */
   onMenuClick: (menu: MenuItemDto) => void;
-  /** 分离菜单点击（复用原用户操作区 handleUserClick 行为） */
-  onOtherMenuClick: (menu: MenuItemDto) => void;
   /** 新建任务（新建会话） */
   onNewTask: () => void;
 }
 
-interface ActionRow {
-  key: string;
-  icon: React.ReactNode;
-  label: string;
-  /** 右侧快捷键徽标（可选） */
-  shortcut?: string;
-  onClick: () => void;
-}
-
 const SidebarNavHeader: React.FC<SidebarNavHeaderProps> = ({
   menus,
-  otherMenus,
+  activeTab,
   onMenuClick,
-  onOtherMenuClick,
   onNewTask,
 }) => {
-  const { spaceList, getSpaceId } = useModel('spaceModel');
+  const { isSecondMenuCollapsed, setIsSecondMenuCollapsed } =
+    useModel('layout');
+  const [searchParams] = useSearchParams();
 
-  /** 自动化：跳当前/默认空间的任务中心 */
-  const handleAutomationClick = useCallback(() => {
-    const spaceId = getSpaceId() || spaceList?.[0]?.id;
-    if (spaceId) {
-      history.push(`/space/${spaceId}/task-center`);
+  // 折叠偏好初始化（自原 CollapseButton 迁移）：用户操作 > URL hideMenu > 默认展开；
+  // 桌面端沉浸式收起能力在 nuwaclaw 原生工具栏，跳过初始化
+  useEffect(() => {
+    if (isImmersiveShell()) return;
+    try {
+      const raw = sessionStorage.getItem('menu-collapsed-user-preference');
+      if (raw) {
+        const saved = JSON.parse(raw);
+        if (saved && typeof saved.collapsed === 'boolean') {
+          setIsSecondMenuCollapsed(saved.collapsed);
+          return;
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to read menu preference:', error);
     }
-  }, [getSpaceId, spaceList]);
+    if (searchParams.get('hideMenu') === 'true') {
+      setIsSecondMenuCollapsed(true);
+      return;
+    }
+    setIsSecondMenuCollapsed(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, location.pathname]);
 
-  /** 搜索：聚焦侧栏搜索框；非会话域（搜索框未挂载）则先回首页 */
+  /** 折叠/展开：保存用户偏好到 sessionStorage */
+  const handleToggleCollapse = useCallback(() => {
+    const next = !isSecondMenuCollapsed;
+    try {
+      if (next) {
+        sessionStorage.setItem(
+          'menu-collapsed-user-preference',
+          JSON.stringify({ collapsed: true, timestamp: Date.now() }),
+        );
+      } else {
+        sessionStorage.removeItem('menu-collapsed-user-preference');
+      }
+    } catch (error) {
+      console.warn('Failed to save menu preference:', error);
+    }
+    setIsSecondMenuCollapsed(next);
+  }, [isSecondMenuCollapsed, setIsSecondMenuCollapsed]);
+
+  /** 搜索：展开/收起并聚焦会话区搜索框；非会话域（搜索框未挂载）则先回首页 */
   const handleSearchClick = useCallback(() => {
-    if (!focusSidebarSearch()) {
+    if (!toggleSidebarSearch()) {
       history.push('/home');
     }
   }, []);
 
-  const handleGoHome = useCallback(() => {
-    history.push('/home');
-  }, []);
-
-  /** ⌘K 聚焦搜索 / ⌘N 新建任务（浏览器可能占用 ⌘N，尽力拦截） */
+  /** ⌘K 搜索 / ⌘N 新建任务（浏览器可能占用 ⌘N，尽力拦截） */
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!(e.metaKey || e.ctrlKey)) {
@@ -95,110 +111,86 @@ const SidebarNavHeader: React.FC<SidebarNavHeaderProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleSearchClick, onNewTask]);
 
-  const actionRows: ActionRow[] = useMemo(
-    () => [
-      {
-        key: 'new_task',
-        icon: <SvgIcon name="icons-nav-new_chat" />,
-        label: dict('PC.Layouts.DynamicMenusLayout.SidebarNavHeader.newTask'),
-        shortcut: `${MOD_KEY}N`,
-        onClick: onNewTask,
-      },
-      {
-        key: 'search',
-        icon: <SearchOutlined />,
-        label: dict('PC.Layouts.DynamicMenusLayout.SidebarNavHeader.search'),
-        shortcut: `${MOD_KEY}K`,
-        onClick: handleSearchClick,
-      },
-      {
-        key: 'automation',
-        icon: <SvgIcon name="icons-nav-task-time" />,
-        label: dict(
-          'PC.Layouts.DynamicMenusLayout.SidebarNavHeader.automation',
-        ),
-        onClick: handleAutomationClick,
-      },
-      {
-        key: 'plugin_market',
-        icon: <SvgIcon name="icons-nav-plugins" />,
-        label: dict(
-          'PC.Layouts.DynamicMenusLayout.SidebarNavHeader.pluginMarket',
-        ),
-        onClick: () => history.push('/square?cate_type=Plugin'),
-      },
-    ],
-    [handleAutomationClick, handleSearchClick, onNewTask],
-  );
-
-  /** 探索下拉：其余一级菜单 + 分离菜单，沿用后端菜单下发与权限过滤 */
-  const exploreItems = useMemo<MenuProps['items']>(() => {
-    const firstLevelItems = (menus || [])
-      .filter((menu) => !EXPLORE_EXCLUDED_CODES.has(menu.code || ''))
-      .map((menu) => ({
-        key: menu.code || menu.path || menu.name,
-        icon: menu.icon ? <SvgIcon name={menu.icon} /> : undefined,
-        label: menu.name,
-        onClick: () => onMenuClick(menu),
-      }));
-    const otherItems = (otherMenus || []).map((menu) => ({
-      key: menu.code || menu.path || menu.name,
-      icon: menu.icon ? <SvgIcon name={menu.icon} /> : undefined,
-      label: menu.name,
-      onClick: () => onOtherMenuClick(menu),
-    }));
-    if (!firstLevelItems.length && !otherItems.length) {
-      return [];
-    }
-    return [
-      ...firstLevelItems,
-      ...(firstLevelItems.length && otherItems.length
-        ? [{ type: 'divider' as const }]
-        : []),
-      ...otherItems,
-    ];
-  }, [menus, otherMenus, onMenuClick, onOtherMenuClick]);
-
-  const renderRow = (row: ActionRow) => (
-    <div
-      key={row.key}
-      className={cx(styles['action-row'])}
-      onClick={row.onClick}
-    >
-      <span className={cx(styles['action-icon'])}>{row.icon}</span>
-      <span className={cx(styles['action-label'])}>{row.label}</span>
-      {row.shortcut && (
-        <span className={cx(styles['action-shortcut'])}>{row.shortcut}</span>
-      )}
-    </div>
+  /** 导航行：接口下发的一级菜单全量渲染，仅排除新对话（新建任务为固定项） */
+  const navMenus = useMemo(
+    () => (menus || []).filter((menu) => menu.code !== 'new_conversation'),
+    [menus],
   );
 
   return (
     <div className={cx(styles['sidebar-nav-header'])}>
-      {/* 桌面端沉浸式：logo 由 nuwaclaw 工具栏承载，与原一级栏行为一致 */}
-      {!isImmersiveShell() && (
-        <div className={cx(styles['logo-row'])} onClick={handleGoHome}>
-          <Header />
-        </div>
-      )}
-      <div className={cx(styles['action-list'])}>
-        {actionRows.map(renderRow)}
-        {exploreItems?.length ? (
-          <Dropdown
-            menu={{ items: exploreItems }}
-            trigger={['click']}
-            placement="bottomLeft"
+      {/* 顶栏：Logo + 搜索 + 折叠（固定）；桌面端沉浸式由 nuwaclaw 工具栏承载折叠与品牌 */}
+      <div className={cx(styles['header-bar'])}>
+        {!isImmersiveShell() && <Header />}
+        <div className={cx(styles['header-actions'])}>
+          <Tooltip
+            title={dict(
+              'PC.Layouts.DynamicMenusLayout.SidebarNavHeader.search',
+            )}
+            placement="bottom"
+            arrow={false}
           >
-            <div className={cx(styles['action-row'])}>
-              <span className={cx(styles['action-icon'])}>
-                <EllipsisOutlined />
-              </span>
-              <span className={cx(styles['action-label'])}>
-                {dict('PC.Layouts.DynamicMenusLayout.SidebarNavHeader.explore')}
-              </span>
+            <div
+              className={cx(styles['header-action-btn'])}
+              onClick={handleSearchClick}
+            >
+              <SearchOutlined />
             </div>
-          </Dropdown>
-        ) : null}
+          </Tooltip>
+          {!isImmersiveShell() && (
+            <Tooltip
+              title={dict(
+                isSecondMenuCollapsed
+                  ? 'PC.Layouts.DynamicMenusLayout.CollapseButton.expandMenu'
+                  : 'PC.Layouts.DynamicMenusLayout.CollapseButton.collapseMenu',
+              )}
+              placement="bottom"
+              arrow={false}
+            >
+              <div
+                className={cx(styles['header-action-btn'])}
+                onClick={handleToggleCollapse}
+              >
+                <SvgIcon
+                  name="icons-common-caret_left"
+                  rotate={isSecondMenuCollapsed ? 180 : 0}
+                />
+              </div>
+            </Tooltip>
+          )}
+        </div>
+      </div>
+
+      {/* 新建任务（固定项） */}
+      <div
+        className={cx(styles['action-row'], styles['new-task-row'])}
+        onClick={onNewTask}
+      >
+        <span className={cx(styles['action-icon'])}>
+          <SvgIcon name="icons-nav-new_chat" />
+        </span>
+        <span className={cx(styles['action-label'])}>
+          {dict('PC.Layouts.DynamicMenusLayout.SidebarNavHeader.newTask')}
+        </span>
+        <span className={cx(styles['action-shortcut'])}>{`${MOD_KEY}N`}</span>
+      </div>
+
+      {/* 导航行：走菜单接口，选中时右侧展开原二级菜单列 */}
+      <div className={cx(styles['nav-list'])}>
+        {navMenus.map((menu: MenuItemDto) => (
+          <div
+            key={menu.code || menu.path || menu.name}
+            className={cx(styles['nav-item'], {
+              [styles['nav-item-active']]: activeTab === menu.code,
+            })}
+            onClick={() => onMenuClick(menu)}
+          >
+            <span className={cx(styles['nav-item-icon'])}>
+              {menu.icon ? <SvgIcon name={menu.icon} /> : null}
+            </span>
+            <span className={cx(styles['nav-item-label'])}>{menu.name}</span>
+          </div>
+        ))}
       </div>
     </div>
   );

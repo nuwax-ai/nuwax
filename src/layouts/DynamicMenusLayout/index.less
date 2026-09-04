@@ -55,6 +55,47 @@
       margin-right: @margin;
     }
 
+    // 底部栏：用户行（左，弹层内含积分）+ 分离菜单 icon（右）
+    .sidebar-footer {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: @marginXs;
+      padding: @marginSm 0 0;
+      margin-right: @margin;
+
+      .sidebar-user-row {
+        flex: 1;
+        min-width: 0;
+      }
+    }
+
+    .footer-actions {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      flex-shrink: 0;
+    }
+
+    .footer-action-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 26px;
+      height: 26px;
+      border-radius: @borderRadius;
+      cursor: pointer;
+      color: @navSecondMenuAdaptiveTextSecondary;
+      font-size: 14px;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background-color: @colorFillSecondary;
+        color: @navSecondMenuAdaptiveText;
+      }
+    }
+
     // 底部用户行（原一级栏用户头像迁移至此，横向布局）
     .sidebar-user-row {
       display: flex;
@@ -91,6 +132,25 @@
     }
 
     // 风格2下的二级导航背景适配
+    .xagi-nav-style2 & {
+      background: var(--xagi-color-bg-container);
+    }
+  }
+
+  // 二级菜单列：选中「有子菜单/Section」的导航项时在会话列右侧并列展开（原二级菜单保留）
+  .second-column {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding-top: @padding;
+    box-sizing: border-box;
+    overflow: hidden;
+    position: relative;
+    background: @navSecondMenuBg;
+    border-radius: 0;
+    transition: width 0.3s ease-in-out, background-color 0.3s ease;
+
+    // 风格2下的二级列背景适配
     .xagi-nav-style2 & {
       background: var(--xagi-color-bg-container);
     }

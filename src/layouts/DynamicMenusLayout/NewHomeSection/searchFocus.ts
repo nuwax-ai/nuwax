@@ -1,33 +1,35 @@
 /**
- * 侧栏搜索框聚焦单例
- * @description 主导航改造（单栏模式）后，侧栏顶部「搜索」入口与 ⌘K 快捷键
- * 需要跨组件聚焦 NewHomeSection 内的搜索框；搜索框只在会话域挂载，
- * 因此用模块级单例注册（沿用 NewHomeSection componentCache 的模式）。
+ * 侧栏搜索框控制单例
+ * @description 主导航改造（单栏模式）后，搜索入口收进侧栏顶栏 icon（⌘K 同效）。
+ * 搜索框在 NewHomeSection 内默认隐藏，通过本单例跨组件「展开并聚焦」；
+ * 搜索框只在会话域挂载，因此用模块级单例注册（沿用 componentCache 模式）。
  */
 
-let focusFn: (() => void) | null = null;
+type SidebarSearchController = () => void;
+
+let controller: SidebarSearchController | null = null;
 
 /**
- * 注册聚焦函数（NewHomeSection 挂载时调用）
+ * 注册搜索框控制器（NewHomeSection 挂载时调用）：展开搜索框并聚焦
  * @returns 取消注册函数
  */
-export const registerSidebarSearchFocus = (fn: () => void) => {
-  focusFn = fn;
+export const registerSidebarSearch = (fn: SidebarSearchController) => {
+  controller = fn;
   return () => {
-    if (focusFn === fn) {
-      focusFn = null;
+    if (controller === fn) {
+      controller = null;
     }
   };
 };
 
 /**
- * 聚焦侧栏搜索框
+ * 展开（或收起）并聚焦侧栏搜索框
  * @returns 是否成功（未注册说明当前不在会话域，搜索框不存在）
  */
-export const focusSidebarSearch = (): boolean => {
-  if (!focusFn) {
+export const toggleSidebarSearch = (): boolean => {
+  if (!controller) {
     return false;
   }
-  focusFn();
+  controller();
   return true;
 };

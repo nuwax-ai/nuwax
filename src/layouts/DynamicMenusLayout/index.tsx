@@ -20,7 +20,7 @@ import {
   shellAvoid,
 } from '@/utils/nuwaClawBridge';
 import { jumpTo } from '@/utils/router';
-import { theme, Typography } from 'antd';
+import { theme, Tooltip, Typography } from 'antd';
 import classNames from 'classnames';
 import React, {
   useCallback,
@@ -32,8 +32,7 @@ import React, {
 import { history, useLocation, useModel, useParams } from 'umi';
 import DynamicSecondMenu from './DynamicSecondMenu';
 // 复用原有组件
-import CreditsBalance from '@/components/business-component/CreditsBalance';
-import CollapseButton from './CollapseButton';
+import SvgIcon from '@/components/base/SvgIcon';
 import SidebarNavHeader from './SidebarNavHeader';
 import User from './User';
 import UserAvatar from './User/UserAvatar';
@@ -67,6 +66,14 @@ const cx = classNames.bind(styles);
  *  尺寸单一来源在 nuwaClawBridge 的 shellAvoid.TOP（与右上角三键避让同源管理），
  *  NUWA_CLAW_PADDING_TOP 保留为兼容导出别名（外部导入点仍引用此名）。 */
 export const NUWA_CLAW_PADDING_TOP = shellAvoid.TOP;
+/** 展示二级菜单列的 Section 域（主页=会话域，无二级列；工作空间/系统广场固定有） */
+const SECOND_MENU_SECTION_TABS = new Set([
+  'space',
+  'workspace',
+  'system_square',
+]);
+/** 二级菜单列宽度（原型窄列形态，非原二级导航的 240） */
+const SECOND_COLUMN_WIDTH = 200;
 
 export interface DynamicMenusLayoutProps {
   /** 覆盖容器样式 */
@@ -636,18 +643,35 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
   }, [activeTab, firstLevelMenus, isClickNewConversation]);
 
   /**
-   * 是否展示侧栏
-   * 单栏模式（主导航改造）：侧栏承载全局导航入口，常驻展示
+   * 是否展示二级菜单列
+   * 双列模式（主导航改造二轮）：会话列表常驻主列，选中「有子菜单/Section」的域时
+   * 右侧并列展开原二级菜单列；主页=会话域无二级列
    */
-  const shouldShowSecondMenu = true;
+  const shouldShowSecondMenu = useMemo(() => {
+    if (!activeTab) return false;
+
+    if (SECOND_MENU_SECTION_TABS.has(activeTab)) {
+      return true;
+    }
+
+    const currentMenu =
+      firstLevelMenus.find((m: MenuItemDto) => m.code === activeTab) ||
+      otherMenus.find((m: MenuItemDto) => m.code === activeTab);
+
+    if (!currentMenu) {
+      return false;
+    }
+
+    return !!currentMenu.children?.length;
+  }, [activeTab, firstLevelMenus, otherMenus]);
 
   // 桌面端：把「当前页是否有二级菜单」同步给 nuwaclaw 壳，工具栏据此显隐收起按钮。
-  // 单栏模式下侧栏常驻，恒为 true。布局卸载（如 /Login 等无布局页）时推 false。
+  // 布局卸载（如 /Login 等无布局页）时推 false。
   // 浏览器端接入层 no-op。路由切换间 cleanup→mount 的瞬时 false 会被新值立即覆盖。
   useEffect(() => {
     nuwaClawHost.layout.setSecondMenuAvailable(shouldShowSecondMenu);
     return () => nuwaClawHost.layout.setSecondMenuAvailable(false);
-  }, []);
+  }, [shouldShowSecondMenu]);
 
   // 桌面端：把二级菜单真实收起态同步给壳（壳工具栏 icon 以此为准）。
   // webview reload 后壳本地态不重置、且 reload 瞬间的 toggle 命令可能丢失——
@@ -691,20 +715,10 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
   }, [layoutStyle, navigationStyle, isMobile]);
 
   /**
-   * 渲染侧栏主体
-   * 单栏模式（主导航改造）：默认渲染会话侧栏（NewHomeSection），
-   * 工作空间/系统广场/系统管理等域保留原 Section 作为侧栏主体（管理后台子导航不失联）
+   * 渲染二级菜单列内容
+   * 双列模式：会话列表常驻主列，此处仅渲染选中域的原二级菜单（原二级菜单保留）
    */
   const renderSecondMenu = useMemo(() => {
-    // 主页: 使用新版侧栏（会话历史 + 搜索 + 新建会话）；未匹配域时兜底渲染会话侧栏
-    if (
-      !activeTab ||
-      activeTab === 'homepage' ||
-      activeTab === 'new_conversation'
-    ) {
-      return <NewHomeSection style={overrideContainerStyle} />;
-    }
-
     // 工作空间
     if (activeTab === 'space' || activeTab === 'workspace') {
       return (
@@ -722,8 +736,8 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
 
   return (
     <div className={navigationClassName}>
-      {/* 侧栏（单栏模式）：主导航改造后移除一级 icon 竖栏，
-          侧栏 = 顶部导航操作区（新建任务/搜索/自动化/插件市场/探索）+ 按域切换主体 + 底部用户区 */}
+      {/* 会话侧栏列（常驻）：顶栏(Logo+搜索+折叠) + 新建任务 + 导航行(接口) +
+          会话列表(三tab) + 底部栏(用户+消息/设备/更多) */}
       <div
         className={cx(styles['nav-menus'], 'noselect')}
         style={{
@@ -754,53 +768,16 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
         )}
         <SidebarNavHeader
           menus={firstLevelMenus}
-          otherMenus={otherMenus}
+          activeTab={activeTab}
           onMenuClick={handleTabClick}
-          onOtherMenuClick={handleUserClick}
           onNewTask={handleNewTask}
         />
         <div className={cx(styles['nav-menus-scroll'])}>
-          {activeTab === 'homepage' ? (
-            renderSecondMenu
-          ) : (
-            <HoverScrollbar
-              className={cx('w-full', 'h-full')}
-              bodyWidth={
-                NAVIGATION_LAYOUT_SIZES.SECOND_MENU_WIDTH - token.padding * 2
-              }
-              style={{
-                padding: `${token.paddingSM}px 0`,
-              }}
-            >
-              <div
-                className={cx('flex', 'flex-col', 'h-full')}
-                style={{
-                  minHeight: 0,
-                }}
-              >
-                {/* 标题 */}
-                <ConditionRender condition={isShowTitle && currentTitle}>
-                  <div style={{ padding: '0 12px 12px' }}>
-                    <Typography.Title
-                      level={5}
-                      style={{ marginBottom: 0 }}
-                      className={cx(styles['menu-title'])}
-                    >
-                      {currentTitle}
-                    </Typography.Title>
-                  </div>
-                </ConditionRender>
-
-                {/* 二级/三级菜单 */}
-                {renderSecondMenu}
-              </div>
-            </HoverScrollbar>
-          )}
+          <NewHomeSection style={overrideContainerStyle} />
         </div>
 
-        {/* 底部固定区：积分入口 + 用户区（原一级栏底部用户头像迁移至此） */}
-        <div className={cx(styles['integral-footer'])}>
-          <CreditsBalance />
+        {/* 底部栏：用户行（左，弹层内含积分）+ 分离菜单 icon（右：消息/设备/更多/文档，走接口） */}
+        <div className={cx(styles['sidebar-footer'])}>
           <User placement="rightTop">
             <div
               className={cx(styles['sidebar-user-row'])}
@@ -817,11 +794,69 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
               </span>
             </div>
           </User>
+          <div className={cx(styles['footer-actions'])}>
+            {(otherMenus || []).map((menu: MenuItemDto) => (
+              <Tooltip key={menu.code} title={menu.name} arrow={false}>
+                <div
+                  className={cx(styles['footer-action-btn'])}
+                  onClick={() => handleUserClick(menu)}
+                >
+                  {menu.icon ? <SvgIcon name={menu.icon} /> : null}
+                </div>
+              </Tooltip>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* 收起/展开按钮 */}
-      <CollapseButton />
+      {/* 二级菜单列：选中「有子菜单/Section」的域时在会话列右侧并列展开（原二级菜单保留） */}
+      {shouldShowSecondMenu && !isSecondMenuCollapsed && (
+        <div
+          className={cx(styles['second-column'], 'noselect')}
+          style={{
+            width: SECOND_COLUMN_WIDTH,
+            paddingTop: isImmersiveShell() ? shellAvoid.TOP : undefined,
+            backgroundColor: secondaryBackgroundColor,
+          }}
+        >
+          <div className={cx(styles['nav-menus-scroll'])}>
+            {activeTab === 'space' || activeTab === 'workspace' ? (
+              renderSecondMenu
+            ) : (
+              <HoverScrollbar
+                className={cx('w-full', 'h-full')}
+                bodyWidth={SECOND_COLUMN_WIDTH - token.padding * 2}
+                style={{
+                  padding: `${token.paddingSM}px 0`,
+                }}
+              >
+                <div
+                  className={cx('flex', 'flex-col', 'h-full')}
+                  style={{
+                    minHeight: 0,
+                  }}
+                >
+                  {/* 标题（选中导航项名称） */}
+                  <ConditionRender condition={isShowTitle && currentTitle}>
+                    <div style={{ padding: '0 12px 12px' }}>
+                      <Typography.Title
+                        level={5}
+                        style={{ marginBottom: 0 }}
+                        className={cx(styles['menu-title'])}
+                      >
+                        {currentTitle}
+                      </Typography.Title>
+                    </div>
+                  </ConditionRender>
+
+                  {/* 二级/三级菜单 */}
+                  {renderSecondMenu}
+                </div>
+              </HoverScrollbar>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

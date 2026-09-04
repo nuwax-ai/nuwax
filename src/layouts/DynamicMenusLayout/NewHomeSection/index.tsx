@@ -17,7 +17,7 @@ import EmptyState from './components/EmptyState';
 import ProjectPanel from './components/ProjectPanel';
 import RecentAgentItem from './components/RecentAgentItem';
 import SearchHeader from './components/SearchHeader';
-import { registerSidebarSearchFocus } from './searchFocus';
+import { registerSidebarSearch } from './searchFocus';
 import { getAgentIdFromHomePathname } from './utils';
 
 import {
@@ -84,15 +84,21 @@ const NewHomeSection: React.FC<{
 
   const { handleCloseMobileMenu } = useModel('layout');
 
-  // 侧栏顶部「搜索」入口/⌘K 跨组件聚焦搜索框
+  // 搜索框默认隐藏（原型形态），由侧栏顶栏「搜索」icon/⌘K 经单例展开并聚焦
+  const [showSearch, setShowSearch] = useState(false);
   const searchInputRef = useRef<InputRef>(null);
   useEffect(
     () =>
-      registerSidebarSearchFocus(() =>
-        searchInputRef.current?.focus({ cursor: 'all' }),
-      ),
+      registerSidebarSearch(() => {
+        setShowSearch((prev) => !prev);
+      }),
     [],
   );
+  useEffect(() => {
+    if (showSearch) {
+      searchInputRef.current?.focus({ cursor: 'all' });
+    }
+  }, [showSearch]);
 
   const [activeTab, setActiveTab] = useState<HomeTab>(() => {
     const initialTab = getInitialActiveTab();
@@ -832,17 +838,20 @@ const NewHomeSection: React.FC<{
 
   return (
     <div style={style} className={cx(styles['new-home-section'])}>
-      <SearchHeader
-        keyword={activeTab === 'conversation' ? keyword : recentKeyword}
-        placeholder={dict(
-          'PC.Layouts.DynamicMenusLayout.NewHomeSection.searchPlaceholder',
-        )}
-        onSearchChange={handleSearchChange}
-        onSearchSubmit={handleSearchSubmit}
-        onNewChat={handleNewConversation}
-        showNewChatButton={showNewChatButton}
-        inputRef={searchInputRef}
-      />
+      {/* 搜索框默认隐藏（原型形态），由侧栏顶栏「搜索」icon/⌘K 展开并聚焦 */}
+      {showSearch && (
+        <SearchHeader
+          keyword={activeTab === 'conversation' ? keyword : recentKeyword}
+          placeholder={dict(
+            'PC.Layouts.DynamicMenusLayout.NewHomeSection.searchPlaceholder',
+          )}
+          onSearchChange={handleSearchChange}
+          onSearchSubmit={handleSearchSubmit}
+          onNewChat={handleNewConversation}
+          showNewChatButton={showNewChatButton}
+          inputRef={searchInputRef}
+        />
+      )}
 
       <div className={cx(styles.tabs)}>
         <button
@@ -852,7 +861,7 @@ const NewHomeSection: React.FC<{
           })}
           onClick={() => handleTabChange('recent')}
         >
-          {dict('PC.Layouts.DynamicMenusLayout.HomeSection.recentlyUsed')}
+          {dict('PC.Layouts.DynamicMenusLayout.NewHomeSection.tabSession')}
         </button>
         <button
           type="button"
@@ -861,9 +870,7 @@ const NewHomeSection: React.FC<{
           })}
           onClick={() => handleTabChange('conversation')}
         >
-          {dict(
-            'PC.Layouts.DynamicMenusLayout.HomeSection.conversationHistory',
-          )}
+          {dict('PC.Layouts.DynamicMenusLayout.NewHomeSection.tabTask')}
         </button>
         <button
           type="button"

@@ -4,9 +4,38 @@
   flex-shrink: 0;
   padding: 0 @paddingXs;
 
-  .logo-row {
-    cursor: pointer;
+  // 顶栏：Logo + 搜索 + 折叠
+  .header-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     padding: 4px @paddingXs 0;
+    min-height: 32px;
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: @marginXs;
+    margin-left: auto;
+  }
+
+  .header-action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: @borderRadius;
+    cursor: pointer;
+    color: @navSecondMenuAdaptiveTextSecondary;
+    font-size: 14px;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background-color: @colorFillSecondary;
+      color: @navSecondMenuAdaptiveText;
+    }
   }
 
   .action-list {
@@ -34,6 +63,10 @@
     }
   }
 
+  .new-task-row {
+    margin-top: @marginSm;
+  }
+
   .action-icon {
     display: flex;
     align-items: center;
@@ -56,5 +89,54 @@
     flex-shrink: 0;
     font-size: @fontSizeSm;
     color: @navSecondMenuAdaptiveTextTertiary;
+  }
+
+  // 导航行（菜单接口下发）
+  .nav-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: @marginSm;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: @marginXs;
+    height: 32px;
+    padding: 0 calc(@paddingSm - 4px);
+    border-radius: @borderRadius;
+    cursor: pointer;
+    color: @navSecondMenuAdaptiveText;
+    font-size: @fontSize;
+    transition: background-color 0.2s ease;
+    user-select: none;
+
+    &:hover {
+      background-color: @colorFillSecondary;
+    }
+  }
+
+  .nav-item-active {
+    background-color: @colorFillSecondary;
+    font-weight: @fontWeightStrong;
+  }
+
+  .nav-item-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    flex-shrink: 0;
+    color: @navSecondMenuAdaptiveTextSecondary;
+    font-size: 15px;
+  }
+
+  .nav-item-label {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }
