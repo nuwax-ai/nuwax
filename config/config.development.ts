@@ -1,8 +1,10 @@
 import { defineConfig } from 'umi';
 
 // 本地调试统一走测试环境后端。主应用请求经请求拦截器拼 BASE_URL 绝对地址直连（不落 dev server）；
-// 资料库子应用（/repo/）为同源相对路径请求，需 dev 代理转发。mock/* 无 /api 字面路由、
-// 会话 mock 走页面级 fetch 拦截，均不受以下代理影响。
+// 资料库子应用（/repo/）为同源相对路径请求，需 dev 代理转发。
+// 与 mock 的共存机制：umi dev server 中 mock 中间件经 addBeforeMiddlewares 注册、先于 proxy，
+// mock 命中的请求不会落到代理——注意 /api/user、/api/space、/api/file 前缀下存在 mock 路由
+// （subscriptionAPI.ts、conversationMock.ts），依赖该顺序才不冲突；umi 升级或以 MOCK=none 起 dev 时需复查。
 const testAgent = 'https://testagent.xspaceagi.com';
 
 export default defineConfig({

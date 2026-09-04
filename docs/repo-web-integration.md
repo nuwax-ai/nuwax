@@ -56,7 +56,7 @@ interface NuwaHostBridge {
 ### 2.4 API 网关与错误契约
 
 - 子应用业务前缀 `/api/repo`，协作 WS `/repo/ws`，Sidecar 内部 HTTP `/repo/internal/*`；`API_BASE` 默认同源（可用 `VITE_API_BASE` 覆盖）。
-- **dev 代理（已落地，`config/config.development.ts`）**：子应用调用的平台命名空间（`/api/repo`、`/api/space`、`/api/user`、`/api/tenant`、`/api/file`、`/api/f`）与 `/repo/ws` 统一代理到 testagent。主应用自身请求经拦截器拼 BASE_URL 绝对地址直连、不落 dev server；`mock/*` 无 `/api` 字面路由（会话 mock 走页面级 fetch 拦截），均不受影响。**testagent 网关已确认路由 `/api/repo`**（2026-09-04 实证，含鉴权拦截）。
+- **dev 代理（已落地，`config/config.development.ts`）**：子应用调用的平台命名空间（`/api/repo`、`/api/space`、`/api/user`、`/api/tenant`、`/api/file`、`/api/f`）与 `/repo/ws` 统一代理到 testagent。主应用自身请求经拦截器拼 BASE_URL 绝对地址直连、不落 dev server。**与 mock 的共存机制**：umi dev server 中 mock 中间件先于 proxy 注册（`addBeforeMiddlewares`），mock 命中优先、未命中才落代理——注意 `/api/user`、`/api/space`、`/api/file` 前缀下存在 mock 路由（subscriptionAPI/conversationMock），依赖该顺序不冲突；umi 升级改变中间件顺序或以 `MOCK=none` 起 dev 时需复查此依赖。**testagent 网关已确认路由 `/api/repo`**（2026-09-04 实证，含鉴权拦截）。
 - **后端协作项（未尽，见 §6）**：`/repo/ws` 网关路由；网关对子应用命名空间的鉴权口径（当前 `/api/repo` 走 cookie `AuthInterceptor`，已验证 ticket 可通过）。
 - 错误响应结构 `{ code, message }` 全局统一；`4010/4011` 语义见 §2.2。
 

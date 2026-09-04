@@ -43,7 +43,8 @@ dist/repo/ ── 同一 nginx dist，单一部署物；dev 下 umi dev server �
 | --- | --- | --- |
 | `.gitmodules` + `submodules/nuwax-repo-web` | 新增 | submodule 引入（URL 必须带 `.git`，否则 301 降 http 凭据失效） |
 | `scripts/sync-repo-web.mjs` | 新增 | 构建同步脚本（`pnpm exec vite build`，绕开子仓 tsc 预存类型错——类型门属子仓 CI） |
-| `package.json` | +1 行 | `sync:repo-web` 命令 |
+| `scripts/upgrade-repo-web.mjs` | 新增 | submodule 升级脚本（安全检查 + 变更预览 + 联动重建） |
+| `package.json` | +2 行 | `sync:repo-web` / `upgrade:repo-web` 命令 |
 | `src/routes/index.ts` | +4 行 | `/repo-entry` 路由（挂 `/` children，自带布局壳 + 登录守卫） |
 | `src/pages/RepoWebEntry/index.tsx` | 新增 | 入口薄壳：dev 桥（见 §5）+ 整页跳转 |
 | `src/locales/i18n/*.ts` ×5 | +5 行 | `PC.Pages.RepoWeb.entering` 五语言 |
@@ -74,7 +75,8 @@ dist/repo/ ── 同一 nginx dist，单一部署物；dev 下 umi dev server �
 | `npm run test:conversation`（会话域硬门） | ✅ 49 文件 / 458 用例全绿（每轮改动后复跑） |
 | code-reviewer 评审（对照 AGENTS.md/REVIEW.md） | ✅ 无 P0/P1；4 条 P2 已全部修复（契约登记缺口、脚本错误输出、version.json 字段） |
 | `npm run sync:repo-web` 实跑 | ✅ 产物落 `public/repo/` + version.json |
-| curl 链路 | ✅ `/repo-entry`、`/repo/`、`/repo/version.json`、`/repo/space/:id` 深链（dev 回退）全 200 |
+| curl 链路 | ✅ `/repo-entry`、`/repo/`、`/repo/version.json` 全 200；注：`/repo/space/:id` 直链 dev 下回退到主站 index（子应用深链刷新依赖生产 nginx try_files，契约 §6-5） |
+| code-reviewer 二轮整体评审 | ✅ 无 P0/P1；4 条 P2 已修（mock/proxy 共存机制修正为中间件顺序、升级脚本 fail-closed、总结文档两处） |
 | 浏览器实测（测试账号） | ✅ 登录 → `/repo-entry` → 资料库门户渲染 → **测试环境真实文档列表加载**（「我的资料」「与账号共享」分组）→ 点开文档进入编辑器（`/repo/doc/:slugId`）；无 401 弹回、无报错红字 |
 | 主站回归 | ✅ `/`、`/home`、登录流正常 |
 

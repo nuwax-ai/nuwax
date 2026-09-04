@@ -44,7 +44,14 @@ function output(cmd, args) {
 
 function argValue(name) {
   const i = process.argv.indexOf(name);
-  return i >= 0 ? process.argv[i + 1] : undefined;
+  if (i < 0) return undefined;
+  const v = process.argv[i + 1];
+  // fail-closed：显式选项缺值时中止，不静默回退 origin/main（否则"精确 pin"意图被替换）
+  if (!v || v.startsWith('--')) {
+    console.error(`[upgrade-repo-web] 选项 ${name} 缺少取值（当前值：${v ?? '无'}）。`);
+    process.exit(1);
+  }
+  return v;
 }
 
 const skipBuild = process.argv.includes('--skip-build');
@@ -67,10 +74,21 @@ console.log(`[upgrade-repo-web] 拉取远端（git fetch origin --tags）...`);
 run('git', ['fetch', 'origin', '--tags'], { cwd: subDir });
 
 const current = output('git', ['rev-parse', 'HEAD']);
-const target = explicitCommit ?? output('git', ['rev-parse', ref]);
-if (!target || !/^[0-9a-f]{40}$/.test(target)) {
-  console.error(`[upgrade-repo-web] 无法解析目标（--commit=${explicitCommit ?? ''} ref=${ref}）：${target || '空'}`);
-  process.exit(1);
+let target;
+if (explicitCommit) {
+  // 支持完整/短 sha：经 rev-parse --verify 解析（fetch 已完成，新对象可解析）
+  const resolved = output('git', ['rev-parse', '--verify', `${explicitCommit}^{commit}`]);
+  if (!/^[0-9a-f]{40}$/.test(resolved)) {
+    console.error(`[upgrade-repo-web] --commit ${explicitCommit} 无法解析为子仓 commit。`);
+    process.exit(1);
+  }
+  target = resolved;
+} else {
+  target = output('git', ['rev-parse', ref]);
+  if (!/^[0-9a-f]{40}$/.test(target)) {
+    console.error(`[upgrade-repo-web] 无法解析目标（ref=${ref}）：${target || '空'}`);
+    process.exit(1);
+  }
 }
 
 if (target === current) {
