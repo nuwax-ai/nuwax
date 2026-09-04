@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// nuwa-sdlc-kit v1.1.0 · engine file — 托管件（安装位置 scripts/sdlc-evals.mjs）
+// nuwa-sdlc-kit v1.2.0 · engine file — 托管件（安装位置 scripts/sdlc-evals.mjs）
 // 规则层 evals 门禁：对已安装的引擎 hooks 灌样本 PreToolUse 事件，断言 exit code。
 // 用法：node scripts/sdlc-evals.mjs [--dir <repo>]；exit 1 = 有失败。CI 于规则文件变更时触发。
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';

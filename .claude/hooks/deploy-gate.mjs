@@ -1,4 +1,4 @@
-// nuwa-sdlc-kit v1.1.0 · engine file — 托管件，upgrade 会覆盖手工修改
+// nuwa-sdlc-kit v1.2.0 · engine file — 托管件，upgrade 会覆盖手工修改
 // Deploy 闸门（SDLC Stage 4）：发布/破坏性 Bash 命令按 .sdlc.json deployGate 分带拦截。
 //   { "deployGate": { "patterns": [{ "re": "...", "mode": "ask|block|allow" }, ...] } }
 // mode 语义：ask（默认）= 需 <ENVPREFIX>_APPROVE_DEPLOY=1 人工批准后放行；

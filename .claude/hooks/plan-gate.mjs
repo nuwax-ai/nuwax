@@ -1,4 +1,4 @@
-// nuwa-sdlc-kit v1.1.0 · engine file — 托管件，upgrade 会覆盖手工修改
+// nuwa-sdlc-kit v1.2.0 · engine file — 托管件，upgrade 会覆盖手工修改
 // SDLC Stage-3 计划门禁：源码区（.sdlc.json srcPaths 正则）会话首改追问一次；
 // plans/specs 类工件目录有在途改动即放行；marker 记账同会话只问一次；
 // <ENVPREFIX>_SKIP_PLAN_GATE=1 停用（envPrefix 读 .sdlc.json，默认 SDLC）。

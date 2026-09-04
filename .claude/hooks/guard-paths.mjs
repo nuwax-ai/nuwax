@@ -1,4 +1,4 @@
-// nuwa-sdlc-kit v1.1.0 · engine file — 托管件，upgrade 会覆盖手工修改
+// nuwa-sdlc-kit v1.2.0 · engine file — 托管件，upgrade 会覆盖手工修改
 // PreToolUse 秘钥守护。策略读目标仓根 .sdlc.json（可缺省）：
 //   { "protectedWrite": ["docs/x.md"], "secrets": { "extraPatterns": [] }, "buildNoiseExempt": ["dist"] }
 // 协议：stdin 事件 JSON；exit 0 放行 / exit 2 阻断（stderr 给 Claude）。
