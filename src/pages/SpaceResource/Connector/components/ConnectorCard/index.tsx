@@ -21,15 +21,27 @@ const AUTH_BADGE_MAP: Record<string, string> = {
  * 结构（自上而下）：
  *   1. 标题 displayName + service（等宽小字）
  *   2. 描述（空值兜底「暂无介绍」）
- *   3. 徽章行：已连接（仅已连接时展示）/ 已启用(已禁用) / 认证方式 / 分类 / N 个工具
+ *   3. 徽章行：已连接（仅已连接时展示，绿色同已启用）/ 已启用(已停用) /
+ *      认证方式 / 分类 / N 个工具
  *   4. 底部条（米灰底）：左侧 baseUrl 截断展示，右侧两行操作按钮
  *      （查看工具 / 编辑 / 停用(启用) + 导出 / 删除）
  *
- * 注意：操作按钮暂为视觉占位，功能后续实现。
+ * 注意：全部操作按钮均为受控回调，由页面实现（删除的二次确认、接口调用、
+ * 导出下载、启停刷新列表、编辑/查看工具打开复用抽屉）。
  */
-const ConnectorCard: React.FC<{ record: ConnectorProviderInfo }> = ({
-  record,
-}) => {
+const ConnectorCard: React.FC<{
+  record: ConnectorProviderInfo;
+  /** 删除回调：页面负责 Modal.confirm 二次确认与接口调用 */
+  onDelete?: (record: ConnectorProviderInfo) => void;
+  /** 导出回调：页面负责调接口并触发下载（{service}.connector.json） */
+  onExport?: (record: ConnectorProviderInfo) => void;
+  /** 停用/启用回调：页面负责调接口并刷新列表 */
+  onToggleStatus?: (record: ConnectorProviderInfo) => void;
+  /** 编辑回调：页面负责打开编辑抽屉（复用管理端 ConnectorProviderEditDrawer） */
+  onEdit?: (record: ConnectorProviderInfo) => void;
+  /** 查看工具回调：页面负责打开详情抽屉（复用管理端 ConnectorProviderDetailDrawer） */
+  onView?: (record: ConnectorProviderInfo) => void;
+}> = ({ record, onDelete, onExport, onToggleStatus, onEdit, onView }) => {
   const isConnected = record.connected === true;
   const isEnabled = record.status === 'enabled';
   const authBadge =
@@ -38,7 +50,11 @@ const ConnectorCard: React.FC<{ record: ConnectorProviderInfo }> = ({
     '';
 
   return (
-    <div className={styles.card}>
+    <div
+      className={
+        isEnabled ? styles.card : `${styles.card} ${styles.cardDisabled}`
+      }
+    >
       <div className={styles.cardBody}>
         <div className={styles.cardTitle}>{record.displayName || '-'}</div>
         {record.service ? (
@@ -48,9 +64,17 @@ const ConnectorCard: React.FC<{ record: ConnectorProviderInfo }> = ({
           {record.description || '暂无介绍'}
         </div>
         <div className={styles.cardBadges}>
-          {isConnected ? <span className={styles.badge}>已连接</span> : null}
-          <span className={styles.badge}>
-            {isEnabled ? '已启用' : '已禁用'}
+          {isConnected ? (
+            <span className={`${styles.badge} ${styles.badgeConnected}`}>
+              已连接
+            </span>
+          ) : null}
+          <span
+            className={`${styles.badge} ${
+              isEnabled ? styles.badgeEnabled : styles.badgeDisabled
+            }`}
+          >
+            {isEnabled ? '已启用' : '已停用'}
           </span>
           {authBadge ? <span className={styles.badge}>{authBadge}</span> : null}
           {record.category ? (
@@ -67,25 +91,45 @@ const ConnectorCard: React.FC<{ record: ConnectorProviderInfo }> = ({
         </span>
         <div className={styles.cardBtns}>
           <div className={styles.cardBtnRow}>
-            {/* TODO: 查看工具 / 编辑 / 停用(启用) 功能待实现 */}
-            <button type="button" className={styles.miniBtn}>
+            {/* 查看工具：交给页面层打开详情抽屉（复用管理端抽屉，spaceId 用选中空间） */}
+            <button
+              type="button"
+              className={styles.miniBtn}
+              onClick={() => onView?.(record)}
+            >
               查看工具
             </button>
-            <button type="button" className={styles.miniBtn}>
+            {/* 编辑：交给页面层打开编辑抽屉（复用管理端抽屉，接口走 space 维度） */}
+            <button
+              type="button"
+              className={styles.miniBtn}
+              onClick={() => onEdit?.(record)}
+            >
               编辑
             </button>
-            <button type="button" className={styles.miniBtn}>
+            {/* 停用/启用：交给页面层调接口并刷新列表（按钮样式与其他按钮一致） */}
+            <button
+              type="button"
+              className={styles.miniBtn}
+              onClick={() => onToggleStatus?.(record)}
+            >
               {isEnabled ? '停用' : '启用'}
             </button>
           </div>
           <div className={styles.cardBtnRow}>
-            {/* TODO: 导出 / 删除 功能待实现 */}
-            <button type="button" className={styles.miniBtn}>
+            {/* 导出：交给页面层调接口并触发下载 */}
+            <button
+              type="button"
+              className={styles.miniBtn}
+              onClick={() => onExport?.(record)}
+            >
               导出
             </button>
+            {/* 删除：交给页面层做二次确认与接口调用 */}
             <button
               type="button"
               className={`${styles.miniBtn} ${styles.dangerBtn}`}
+              onClick={() => onDelete?.(record)}
             >
               删除
             </button>

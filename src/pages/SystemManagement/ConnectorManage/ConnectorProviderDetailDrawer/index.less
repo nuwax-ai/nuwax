@@ -63,6 +63,7 @@
 .infoLabel {
   color: @BLANK03;
   font-size: 12px;
+  font-weight: @fontWeightStrong;
   white-space: nowrap;
 }
 
@@ -96,6 +97,13 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+/* 工具列表底部连接按钮（「去连接」/「发起OAuth授权」，按认证方式动态切换）：
+   连接器未连接即展示，不受工具列表是否有数据影响
+   （工作空间连接器页专用；与管理端无关） */
+.goConnectBtn {
+  margin-top: 16px;
 }
 
 /* 单个工具卡片 */

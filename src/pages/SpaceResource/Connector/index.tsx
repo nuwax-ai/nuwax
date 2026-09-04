@@ -1,18 +1,48 @@
 import WorkspaceLayout from '@/components/WorkspaceLayout';
 import { SUCCESS_CODE } from '@/constants/codes.constants';
-import { apiConnectorProviderPageList } from '@/services/systemManage';
+import ConnectorProviderCreateDrawer from '@/pages/SystemManagement/ConnectorManage/ConnectorProviderCreateDrawer';
+import ConnectorProviderDetailDrawer, {
+  type ConnectorGoConnectContext,
+} from '@/pages/SystemManagement/ConnectorManage/ConnectorProviderDetailDrawer';
+import ConnectorProviderEditDrawer from '@/pages/SystemManagement/ConnectorManage/ConnectorProviderEditDrawer';
+import {
+  apiConnectorActionCreate,
+  apiConnectorActionDelete,
+  apiConnectorActionToggleStatus,
+  apiConnectorActionUpdate,
+  apiConnectorOauthSharedConfigSave,
+  apiConnectorProviderCreate,
+  apiConnectorProviderDelete,
+  apiConnectorProviderExport,
+  apiConnectorProviderPageList,
+  apiConnectorProviderToggleStatus,
+  apiConnectorProviderUpdateMeta,
+} from '@/services/systemManage';
 import { apiSpaceList } from '@/services/workspace';
 import { SpaceTypeEnum } from '@/types/enums/space';
-import type { ConnectorProviderInfo } from '@/types/interfaces/systemManage';
+import type {
+  ConnectorAuthConfigField,
+  ConnectorProviderInfo,
+} from '@/types/interfaces/systemManage';
 import type { SpaceInfo } from '@/types/interfaces/workspace';
 import {
   PlusOutlined,
   SearchOutlined,
   UploadOutlined,
 } from '@ant-design/icons';
-import { Button, Empty, Input, message, Select, Space, Spin } from 'antd';
+import {
+  Button,
+  Empty,
+  Input,
+  message,
+  Modal,
+  Select,
+  Space,
+  Spin,
+} from 'antd';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import ConnectorCard from './components/ConnectorCard';
+import ConnectorConnectDrawer from './components/ConnectorConnectDrawer';
 import ConnectorImportDrawer from './components/ConnectorImportDrawer';
 import styles from './index.less';
 
@@ -29,7 +59,18 @@ import styles from './index.less';
  * 视觉：卡片网格（与管理端 /system/connector-manage 的表格列表不同）；
  * 顶部筛选栏样式参考管理端连接器列表（关键字 + 状态 + 连接）。
  * 「导入」走 ConnectorImportDrawer（预览 diff + 确认导入，接口 space 维度）；
- * 「新增连接器」与卡片上的操作按钮暂为视觉占位，功能后续实现。
+ * 卡片「删除」二次确认后调 DELETE /api/connector/providers/{service}；
+ * 卡片「导出」调 POST /api/connector/export?service=&spaceId=，
+ * 下载文件名 {service}.connector.json；
+ * 卡片「停用/启用」调 POST /api/connector/providers/{service}/status?enabled=；
+ * 「新增连接器」复用管理端 ConnectorProviderCreateDrawer（展示/交互一致），
+ * 提交走 POST /api/connector/providers（body 带当前空间 spaceId，必填），
+ * service 失焦自动补 s_ 前缀；
+ * 卡片「编辑」复用管理端 ConnectorProviderEditDrawer，
+ * meta 更新走 PUT /api/connector/providers/{service}，
+ * oauth2+platform 的 App 配置保存走 POST /api/connector/oauth/shared-config；
+ * 卡片「查看工具」复用管理端 ConnectorProviderDetailDrawer
+ * （GET /api/connector/providers/{service}?spaceId=，工具栏仅「+ 添加工具」）。
  */
 
 /** 状态筛选选项（value 直接透传接口 status 参数） */
@@ -45,6 +86,62 @@ const CONNECTED_FILTER_OPTIONS: Array<{ label: string; value: string }> = [
   { label: '已连接', value: 'true' },
   { label: '未连接', value: 'false' },
 ];
+
+/** 检查导出数据是否为空（数组看长度、对象看 key 数、字符串看 trim 后长度） */
+const isExportDataEmpty = (data: unknown): boolean => {
+  if (data === null || data === undefined) return true;
+  if (Array.isArray(data)) return data.length === 0;
+  if (typeof data === 'object') return Object.keys(data as object).length === 0;
+  if (typeof data === 'string') return data.trim() === '';
+  return false;
+};
+
+/**
+ * 触发浏览器下载：将服务端返回的 JSON 中 data 字段导出为 .json 文件。
+ * 约定（与管理端导出一致）：导出接口以 blob 接收，始终返回 JSON 格式
+ * （RequestResponse 包装），data 字段即导出内容。
+ */
+const triggerJsonDownload = async (
+  response: any,
+  filename: string,
+): Promise<boolean> => {
+  let json: any;
+  try {
+    const text = await (response?.data as Blob).text();
+    json = JSON.parse(text);
+  } catch {
+    message.error('导出失败：响应不是有效的 JSON');
+    return false;
+  }
+
+  // 业务错误码：RequestResponse 模式 code !== '0000' 即失败
+  if (json && typeof json === 'object' && 'code' in json) {
+    if (json.code !== SUCCESS_CODE) {
+      message.error(json.message || '导出失败');
+      return false;
+    }
+  }
+
+  // 提取 data 字段；若无 data 字段则使用整个响应体
+  const exportData = json && 'data' in json ? json.data : json;
+  if (isExportDataEmpty(exportData)) {
+    message.warning('导出数据为空');
+    return false;
+  }
+
+  const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+    type: 'application/json;charset=utf-8',
+  });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+  return true;
+};
 
 const SpaceConnector: React.FC = () => {
   // 空间列表（下拉框数据源）
@@ -66,6 +163,25 @@ const SpaceConnector: React.FC = () => {
   const [listLoading, setListLoading] = useState<boolean>(false);
   /** 「导入」抽屉开关 */
   const [importOpen, setImportOpen] = useState<boolean>(false);
+  /** 「新增连接器」抽屉开关（复用管理端创建抽屉） */
+  const [createDrawerOpen, setCreateDrawerOpen] = useState<boolean>(false);
+  /** 「编辑」抽屉开关 + 正在编辑的连接器（复用管理端编辑抽屉） */
+  const [editDrawerOpen, setEditDrawerOpen] = useState<boolean>(false);
+  const [editingRecord, setEditingRecord] =
+    useState<ConnectorProviderInfo | null>(null);
+  /** 「查看工具」详情抽屉正在查看的连接器（null = 关闭，复用管理端详情抽屉） */
+  const [detailRecord, setDetailRecord] =
+    useState<ConnectorProviderInfo | null>(null);
+  /**
+   * 「去连接」凭据抽屉的上下文（详情抽屉「去连接」按钮写入；null = 关闭）：
+   * detail 里的 authConfig.fields 驱动凭证表单，refresh 用于连接成功后刷新详情
+   */
+  const [connectCtx, setConnectCtx] =
+    useState<ConnectorGoConnectContext | null>(null);
+  /** 正在导出的连接器 service（防重复触发，同一时间仅一条导出在飞） */
+  const [exportingService, setExportingService] = useState<string | null>(null);
+  /** 正在启停切换的连接器 service（防重复触发） */
+  const [togglingService, setTogglingService] = useState<string | null>(null);
 
   /** 页面打开：拉空间列表并默认选中第一个空间 */
   useEffect(() => {
@@ -154,6 +270,181 @@ const SpaceConnector: React.FC = () => {
   }, [fetchList]);
 
   /**
+   * 删除连接器：卡片「删除」按钮触发，先弹二次确认；
+   * 确认后调 DELETE /api/connector/providers/{service}，成功刷新列表。
+   * 失败（如仍有用户连接被后端拒绝）时提示后端 message 并保持弹窗打开便于重试
+   */
+  const handleDelete = useCallback(
+    (record: ConnectorProviderInfo) => {
+      Modal.confirm({
+        title: `删除连接器 ${record.displayName || record.service}？`,
+        content:
+          '其全部工具将一并删除。若仍有用户连接，删除会被拒绝（需先断开）。',
+        okText: '删除',
+        okButtonProps: { danger: true },
+        cancelText: '取消',
+        onOk: async () => {
+          let errorMessage = '';
+          try {
+            const response = await apiConnectorProviderDelete(record.service);
+            if (response?.code !== SUCCESS_CODE) {
+              errorMessage = response?.message || '删除连接器失败';
+            }
+          } catch {
+            errorMessage = '删除连接器失败';
+          }
+          if (errorMessage) {
+            message.error(errorMessage);
+            // 抛出让 Modal 保持打开，用户可取消去断开连接后重试
+            throw new Error(errorMessage);
+          }
+          message.success('删除成功');
+          void fetchList();
+        },
+      });
+    },
+    [fetchList],
+  );
+
+  /**
+   * 导出连接器：卡片「导出」按钮触发，
+   * 调 POST /api/connector/export?service=&spaceId=（blob 同管理端导出），
+   * 下载文件名 {service}.connector.json
+   */
+  const handleExport = useCallback(
+    async (record: ConnectorProviderInfo) => {
+      if (!record.service || selectedSpaceId === null) {
+        message.error('连接器 service 缺失，无法导出');
+        return;
+      }
+      if (exportingService) return;
+      setExportingService(record.service);
+      try {
+        const response = await apiConnectorProviderExport({
+          service: record.service,
+          spaceId: selectedSpaceId,
+        });
+        const ok = await triggerJsonDownload(
+          response,
+          `${record.service}.connector.json`,
+        );
+        if (ok) {
+          message.success('已导出连接器');
+        }
+      } catch (err: any) {
+        message.error(err?.message || '导出失败');
+      } finally {
+        setExportingService(null);
+      }
+    },
+    [selectedSpaceId, exportingService],
+  );
+
+  /**
+   * 启用/停用连接器：卡片「停用/启用」按钮触发，
+   * 调 POST /api/connector/providers/{service}/status?enabled={boolean}
+   * （当前已启用 → enabled=false 停用；已停用 → enabled=true 启用），
+   * 成功后刷新列表，按钮文案与状态徽章随之切换
+   */
+  const handleToggleStatus = useCallback(
+    async (record: ConnectorProviderInfo) => {
+      if (!record.service) {
+        message.error('连接器 service 缺失，无法操作');
+        return;
+      }
+      if (togglingService) return;
+      const nextEnabled = record.status !== 'enabled';
+      try {
+        setTogglingService(record.service);
+        const response = await apiConnectorProviderToggleStatus(
+          record.service,
+          nextEnabled,
+        );
+        if (response?.code !== SUCCESS_CODE) {
+          message.error(
+            response?.message || (nextEnabled ? '启用失败' : '停用失败'),
+          );
+          return;
+        }
+        message.success(nextEnabled ? '已启用' : '已停用');
+        void fetchList();
+      } catch {
+        message.error(nextEnabled ? '启用失败' : '停用失败');
+      } finally {
+        setTogglingService(null);
+      }
+    },
+    [fetchList, togglingService],
+  );
+
+  /**
+   * 打开详情抽屉：卡片「查看工具」按钮触发。
+   * 抽屉复用管理端 ConnectorProviderDetailDrawer（工具栏仅「+ 添加工具」，
+   * 无编辑/删除/导出连接器按钮），详情/工具操作接口由抽屉内部调用，
+   * spaceId 传当前选中空间（管理端是写死的 52）
+   */
+  const handleView = useCallback((record: ConnectorProviderInfo) => {
+    setDetailRecord(record);
+  }, []);
+
+  /**
+   * 打开编辑抽屉：卡片「编辑」按钮触发。
+   * 抽屉复用管理端 ConnectorProviderEditDrawer，差异点通过注入实现：
+   * meta 更新走 PUT /api/connector/providers/{service}、
+   * oauth2+platform 的 App 配置保存走 POST /api/connector/oauth/shared-config、
+   * 详情拉取用当前选中空间的 spaceId
+   */
+  const handleEdit = useCallback((record: ConnectorProviderInfo) => {
+    setEditingRecord(record);
+    setEditDrawerOpen(true);
+  }, []);
+
+  /**
+   * 「去连接」抽屉的凭证字段定义（优先详情接口，回退列表行）：
+   * - 自定义认证：authConfig.fields 数组直接驱动（如 clientId / apiKey）
+   * - API Key 认证：authConfig 无 fields（形如 { base64, prefix, keyName,
+   *   injectTo, headerName }），按 keyName 生成单个凭证字段——
+   *   如 keyName: "apiKey" →「凭证字段 · APIKEY」，提交键即 keyName
+   * - Bearer 认证：fields 缺失时兜底生成 token 字段（提交键 token，
+   *   与建立连接接口的 bearer 示例 fields: { token } 一致）
+   */
+  const connectFields = useMemo(() => {
+    const source = connectCtx?.detail?.provider ?? connectCtx?.record ?? null;
+    const authType = source?.authType;
+    const authConfig = source?.authConfig as
+      | Record<string, unknown>
+      | undefined;
+    if (Array.isArray(authConfig?.fields)) {
+      return authConfig.fields as ConnectorAuthConfigField[];
+    }
+    if (authType === 'api_key') {
+      const keyName =
+        typeof authConfig?.keyName === 'string' && authConfig.keyName
+          ? authConfig.keyName
+          : 'apiKey';
+      return [
+        {
+          name: keyName,
+          label: keyName,
+          placeholder: '粘贴 API Key',
+          secret: true,
+        },
+      ];
+    }
+    if (authType === 'bearer') {
+      return [
+        {
+          name: 'token',
+          label: 'token',
+          placeholder: '粘贴 Token',
+          secret: true,
+        },
+      ];
+    }
+    return [];
+  }, [connectCtx]);
+
+  /**
    * 空间下拉框分组选项：按 SpaceInfo.type 分为「个人空间 / 团队空间」两组
    * （接口返回平铺列表，分组在前端完成；Class 等其余类型归入团队空间，
    * 与设计稿一致，空分组不渲染）
@@ -188,8 +479,14 @@ const SpaceConnector: React.FC = () => {
       title="连接器"
       rightSlot={
         <Space size={12}>
-          {/* TODO: 新增连接器 功能待实现 */}
-          <Button className={styles.darkBtn} icon={<PlusOutlined />}>
+          {/* 新增连接器：与管理端同款 primary 按钮，右侧滑出创建抽屉；
+              未选中空间时禁用（创建接口 body 必传 spaceId，与「导入」一致） */}
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => setCreateDrawerOpen(true)}
+            disabled={selectedSpaceId === null}
+          >
             新增连接器
           </Button>
           {/* 导入：右侧滑出导入抽屉（预览 diff + 确认导入） */}
@@ -269,7 +566,15 @@ const SpaceConnector: React.FC = () => {
         ) : records.length ? (
           <div className={styles.grid}>
             {records.map((record) => (
-              <ConnectorCard key={record.id} record={record} />
+              <ConnectorCard
+                key={record.id}
+                record={record}
+                onDelete={handleDelete}
+                onExport={handleExport}
+                onToggleStatus={handleToggleStatus}
+                onEdit={handleEdit}
+                onView={handleView}
+              />
             ))}
           </div>
         ) : (
@@ -288,6 +593,96 @@ const SpaceConnector: React.FC = () => {
           onImported={() => void fetchList()}
         />
       ) : null}
+
+      {/* 新增连接器抽屉：展示/交互与管理端一致，差异点：创建接口走 space 维度
+          （body 追加当前选中空间 spaceId，后端必填校验）、
+          oauth2+platform 追加保存走 shared-config 接口、service 输入失焦自动补
+          s_ 前缀（label 同步提示）、成功提示文案 */}
+      <ConnectorProviderCreateDrawer
+        open={createDrawerOpen}
+        onClose={() => setCreateDrawerOpen(false)}
+        onCreated={() => void fetchList()}
+        createProvider={(payload) =>
+          apiConnectorProviderCreate({
+            ...payload,
+            spaceId: selectedSpaceId ?? undefined,
+          })
+        }
+        saveOauthConfig={apiConnectorOauthSharedConfigSave}
+        successMessage="创建成功，请到查看工具里面添加工具"
+        servicePrefix="s_"
+      />
+
+      {/* 编辑连接器抽屉：展示/交互与管理端一致，差异点：meta 更新与 oauth 配置
+          保存走 space 维度接口、详情拉取用当前选中空间 spaceId；保存成功刷新列表 */}
+      <ConnectorProviderEditDrawer
+        open={editDrawerOpen}
+        record={editingRecord}
+        onClose={() => {
+          setEditDrawerOpen(false);
+          setEditingRecord(null);
+        }}
+        // 保存成功：刷新卡片列表，并用最新提交值合成详情行打开「查看工具」
+        // 抽屉（与管理端一致；详情抽屉内部会再拉
+        // GET /api/connector/providers/{service} 详情覆盖展示）
+        onSaved={(payload) => {
+          void fetchList();
+          setDetailRecord({
+            ...(editingRecord ?? ({} as ConnectorProviderInfo)),
+            ...payload,
+          } as ConnectorProviderInfo);
+          setEditDrawerOpen(false);
+          setEditingRecord(null);
+        }}
+        updateProviderMeta={apiConnectorProviderUpdateMeta}
+        saveOauthConfig={apiConnectorOauthSharedConfigSave}
+        spaceId={selectedSpaceId ?? undefined}
+      />
+
+      {/* 查看工具详情抽屉：展示/交互与管理端一致（工具栏仅「+ 添加工具」），
+          详情拉取 spaceId 用当前选中空间；工具启停走
+          POST /api/connector/actions/{id}/status；工具编辑走
+          POST /api/connector/actions/{id}；添加工具走
+          POST /api/connector/providers/{service}/actions；
+          删除工具走 DELETE /api/connector/actions/{id}（Popconfirm 二次确认）；
+          添加工具成功后刷新卡片列表的工具数徽章；
+          未连接时工具列表底部按认证方式动态展示连接按钮（不受工具
+          列表是否有数据影响）：oauth2 → 发起OAuth授权（抽屉内调
+          GET /api/connector/oauth/authorize 后新窗口打开授权页，
+          授权窗口关闭后自动刷新详情）；api_key/bearer/custom → 去连接
+          （打开 ConnectorConnectDrawer 凭据抽屉，凭证字段按
+          authConfig.fields 动态渲染，提交走
+          POST /api/connector/connections/api-key）；免鉴权无按钮 */}
+      <ConnectorProviderDetailDrawer
+        open={detailRecord !== null}
+        record={detailRecord}
+        spaceId={selectedSpaceId ?? undefined}
+        onClose={() => setDetailRecord(null)}
+        onActionCreated={() => void fetchList()}
+        showGoConnect
+        onGoConnect={(ctx) => setConnectCtx(ctx)}
+        toggleActionStatus={apiConnectorActionToggleStatus}
+        updateAction={apiConnectorActionUpdate}
+        createAction={apiConnectorActionCreate}
+        deleteAction={apiConnectorActionDelete}
+      />
+
+      {/* 去连接凭据抽屉（认证方式 custom/api_key/bearer）：详情抽屉
+          「去连接」按钮打开，凭证字段按 authConfig.fields 动态渲染，
+          提交 POST /api/connector/connections/api-key；
+          连接成功后刷新详情抽屉（按钮消失）与卡片列表（已连接徽章） */}
+      <ConnectorConnectDrawer
+        open={connectCtx !== null}
+        record={connectCtx?.record ?? null}
+        fields={connectFields}
+        spaceId={selectedSpaceId ?? undefined}
+        onClose={() => setConnectCtx(null)}
+        onConnected={() => {
+          // 连接成功：刷新详情抽屉（connected 变 true、按钮消失）+ 卡片列表徽章
+          connectCtx?.refresh();
+          void fetchList();
+        }}
+      />
     </WorkspaceLayout>
   );
 };

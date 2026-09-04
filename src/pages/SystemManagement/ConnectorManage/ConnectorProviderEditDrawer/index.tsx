@@ -11,9 +11,11 @@ import {
   apiSystemConnectorProviderDetail,
   apiSystemConnectorProviderUpdateMeta,
 } from '@/services/systemManage';
+import type { RequestResponse } from '@/types/interfaces/request';
 import type {
   ConnectorProviderInfo,
   CreateConnectorProviderParams,
+  SaveConnectorOauthConfigParams,
 } from '@/types/interfaces/systemManage';
 import { Button, Col, Drawer, Form, Input, Row, Select, message } from 'antd';
 import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
@@ -25,6 +27,30 @@ export interface ConnectorProviderEditDrawerProps {
   onClose: () => void;
   /** 保存成功回调（父组件刷新连接器列表并打开详情抽屉） */
   onSaved?: (payload: CreateConnectorProviderParams) => void;
+  /**
+   * 自定义元信息更新接口：body/返回与管理端
+   * PUT /api/system/connector/providers/{service}/meta 一致。
+   * 工作空间连接器页传 space 维度接口
+   * （PUT /api/connector/providers/{service}），不传走管理端默认。
+   */
+  updateProviderMeta?: (
+    payload: CreateConnectorProviderParams,
+  ) => Promise<RequestResponse<null>>;
+  /**
+   * 自定义 OAuth 平台 App 配置保存接口：入参/返回与管理端
+   * POST /api/system/connector/oauth-config 一致。
+   * 工作空间连接器页传 space 维度接口
+   * （POST /api/connector/oauth/shared-config），不传走管理端默认。
+   * 仅 oauth2 + platform 模式且用户重填了 CLIENT SECRET 时调用。
+   */
+  saveOauthConfig?: (
+    params: SaveConnectorOauthConfigParams,
+  ) => Promise<RequestResponse<null>>;
+  /**
+   * 详情拉取用的空间 ID：工作空间连接器页传当前选中空间。
+   * 不传时与管理端一致：record.spaceId → 52 兜底。
+   */
+  spaceId?: number;
 }
 
 const pickString = (
@@ -143,7 +169,15 @@ const toFormValues = (
 
 const ConnectorProviderEditDrawer: React.FC<
   ConnectorProviderEditDrawerProps
-> = ({ open, record, onClose, onSaved }) => {
+> = ({
+  open,
+  record,
+  onClose,
+  onSaved,
+  updateProviderMeta,
+  saveOauthConfig,
+  spaceId,
+}) => {
   const [form] = Form.useForm<ConnectorProviderSubmitValues>();
   // 保存中：给「保存修改」按钮加 loading，防止重复提交
   const [submitting, setSubmitting] = useState<boolean>(false);
@@ -188,7 +222,11 @@ const ConnectorProviderEditDrawer: React.FC<
 
     try {
       setSubmitting(true);
-      const response = await apiSystemConnectorProviderUpdateMeta(payload);
+      // meta 更新接口可注入：管理端默认 PUT /api/system/connector/providers/{service}/meta，
+      // 工作空间连接器页传 PUT /api/connector/providers/{service}
+      const doUpdate =
+        updateProviderMeta ?? apiSystemConnectorProviderUpdateMeta;
+      const response = await doUpdate(payload);
       if (response?.code !== SUCCESS_CODE) {
         throw new Error(response?.message || 'update provider failed');
       }
@@ -196,7 +234,11 @@ const ConnectorProviderEditDrawer: React.FC<
       let oauthConfigFailed = false;
       if (isOauth2Platform && secretReentered) {
         try {
-          const oauthResponse = await apiSystemConnectorOauthConfigSave(
+          // oauth 接口可注入：管理端默认 POST /api/system/connector/oauth-config，
+          // 工作空间连接器页传 POST /api/connector/oauth/shared-config
+          const doSaveOauthConfig =
+            saveOauthConfig ?? apiSystemConnectorOauthConfigSave;
+          const oauthResponse = await doSaveOauthConfig(
             toConnectorOauthConfigParams(values, service),
           );
           if (oauthResponse?.code !== SUCCESS_CODE) {
@@ -219,7 +261,7 @@ const ConnectorProviderEditDrawer: React.FC<
     } finally {
       setSubmitting(false);
     }
-  }, [form, record, onClose, onSaved]);
+  }, [form, record, onClose, onSaved, updateProviderMeta, saveOauthConfig]);
 
   useEffect(() => {
     let cancelled = false;
@@ -241,10 +283,18 @@ const ConnectorProviderEditDrawer: React.FC<
 
     (async () => {
       try {
-        const spaceId = Number(record.spaceId);
+        // 详情接口为 space 维度（GET /api/connector/providers/{service}）：
+        // 优先用注入的 spaceId（空间页当前选中空间），
+        // 其次 record.spaceId，均无效时兜底 52（管理端历史行为）
+        const recordSpaceId = Number(record.spaceId);
+        const detailSpaceId =
+          spaceId ??
+          (Number.isFinite(recordSpaceId) && recordSpaceId > 0
+            ? recordSpaceId
+            : 52);
         const response = await apiSystemConnectorProviderDetail({
           service: record.service,
-          spaceId: Number.isFinite(spaceId) && spaceId > 0 ? spaceId : 52,
+          spaceId: detailSpaceId,
           includeDisabled: true,
         });
         if (cancelled) return;
@@ -263,7 +313,7 @@ const ConnectorProviderEditDrawer: React.FC<
     return () => {
       cancelled = true;
     };
-  }, [open, record, form]);
+  }, [open, record, form, spaceId]);
 
   return (
     <Drawer

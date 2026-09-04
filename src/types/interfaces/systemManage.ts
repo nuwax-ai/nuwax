@@ -1015,6 +1015,23 @@ export type ConnectorAuthType =
   | 'oauth2'
   | 'custom';
 
+/**
+ * 自定义认证的凭证字段定义（authConfig.fields 数组元素）
+ * 详情接口 GET /api/connector/providers/{service} 返回；管理端创建/编辑
+ * 抽屉维护 name / label / secret，placeholder 由后端（导入包等）补充，
+ * 「去连接」凭据抽屉按它动态渲染输入项
+ */
+export interface ConnectorAuthConfigField {
+  /** 凭据字段名（提交键） */
+  name?: string;
+  /** 显示名（如 Client ID / API Key） */
+  label?: string;
+  /** 输入框 placeholder（指引去哪里获取凭证） */
+  placeholder?: string;
+  /** 是否密文输入（缺省按密文处理） */
+  secret?: boolean;
+}
+
 /** 连接器提供方信息（响应数组元素） */
 export interface ConnectorProviderInfo {
   /** 主键（也是拖拽排序主键） */
@@ -1270,6 +1287,30 @@ export interface SaveConnectorOauthConfigParams {
   tokenUrl: string;
   /** 授权 scopes */
   scopes?: string[];
+}
+
+/**
+ * OAuth 授权发起结果（GET /api/connector/oauth/authorize）
+ * 返回带 state / PKCE 的授权页地址，由前端新窗口打开让用户登录并同意
+ */
+export interface ConnectorOauthAuthorizeResult {
+  /** 授权页完整地址（含 response_type / client_id / redirect_uri / scope / state / PKCE） */
+  authorizeUrl: string;
+}
+
+/**
+ * 建立连接入参（POST /api/connector/connections/api-key）
+ * 自定义 / API Key / Bearer 认证统一走该接口，凭证键值对放 fields
+ */
+export interface CreateConnectorConnectionParams {
+  /** 空间 ID */
+  spaceId: number;
+  /** 连接器 service 标识 */
+  providerService: string;
+  /** 连接名称（可选，未填由后端默认使用连接器名称） */
+  name?: string;
+  /** 凭证键值对（键为 authConfig.fields[].name，如 clientId / apiKey / token） */
+  fields: Record<string, string>;
 }
 
 /**

@@ -125,3 +125,35 @@
     border-color: #ff4d4f;
   }
 }
+
+/* ===== 状态着色：状态徽章绿红着色，停用卡片整体置灰 ===== */
+
+/* 已停用：整卡偏灰（背景/标题/徽章），卡片边框保持默认 */
+.cardDisabled {
+  background: #f6f5f2;
+
+  .cardTitle {
+    color: #8a857c;
+  }
+
+  .badge {
+    background: #fbfaf8;
+  }
+}
+
+/* 状态徽章：已启用绿 / 已停用红（文字 + 边框） */
+.badgeEnabled {
+  color: #52c41a;
+  border-color: rgba(82, 196, 26, 55%);
+}
+
+/* 已连接徽章：与已启用徽章同款绿色（文字 + 边框） */
+.badgeConnected {
+  color: #52c41a;
+  border-color: rgba(82, 196, 26, 55%);
+}
+
+.badgeDisabled {
+  color: #ff4d4f;
+  border-color: rgba(255, 77, 79, 55%);
+}
