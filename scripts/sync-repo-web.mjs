@@ -23,16 +23,14 @@ const skipInstall = process.argv.includes('--skip-install');
 
 function run(cmd, args, options = {}) {
   const label = `[cmd] ${cmd} ${args.join(' ')}`;
-  if (options.quiet) console.log(label);
   const res = spawnSync(cmd, args, {
     cwd: options.cwd ?? root,
-    stdio: options.quiet ? 'pipe' : 'inherit',
-    encoding: 'utf8',
+    stdio: 'inherit',
   });
   if (res.status !== 0) {
-    if (options.quiet) {
-      console.error(res.stdout ?? '');
-      console.error(res.stderr ?? '');
+    if (res.error) {
+      // spawn 本身失败（如环境无 pnpm，ENOENT）：status 为 null 且没有子进程输出
+      console.error(res.error.message);
     }
     console.error(`[sync-repo-web] 命令失败（exit ${res.status}）：${label}`);
     process.exit(res.status ?? 1);
@@ -75,11 +73,11 @@ rmSync(outDir, { recursive: true, force: true });
 mkdirSync(outDir, { recursive: true });
 cpSync(subDist, outDir, { recursive: true });
 
+// submodule 常规状态是 detached HEAD，branch 名无稳定意义，版本定位以 commit 为准
 const commit = output('git', ['rev-parse', 'HEAD']);
-const branch = output('git', ['rev-parse', '--abbrev-ref', 'HEAD']) || 'main';
 writeFileSync(
   resolve(outDir, 'version.json'),
-  `${JSON.stringify({ name: 'nuwax-repo-web', branch, commit, builtAt: new Date().toISOString() }, null, 2)}\n`,
+  `${JSON.stringify({ name: 'nuwax-repo-web', commit, builtAt: new Date().toISOString() }, null, 2)}\n`,
 );
 
 console.log(`[sync-repo-web] 完成：产物已同步到 public/repo/（commit ${commit.slice(0, 9)}）`);

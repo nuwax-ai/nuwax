@@ -7,7 +7,7 @@
 资料库前端是独立 Vite + React SPA，以 **git submodule** 引入本仓，构建产物随主站构建为**单一部署物**：
 
 ```
-submodules/nuwax-repo-web  --pnpm build-->  public/repo/  --umi build-->  dist/repo/（同一 nginx dist）
+submodules/nuwax-repo-web  --vite build-->  public/repo/  --umi build-->  dist/repo/（同一 nginx dist）
 ```
 
 - 浏览器整页导航进入（`/repo-entry` → `/repo/`），**不走 iframe**；子应用使用其自带的业务侧栏布局。
@@ -28,6 +28,7 @@ submodules/nuwax-repo-web  --pnpm build-->  public/repo/  --umi build-->  dist/r
 | 子应用基路径 | `/repo/`，主仓侧由 sync 脚本保证产物落位；子应用侧不得变更 base |
 | 深链格式 | 主仓 → 资料库：`/repo/space/:spaceId`、`/repo/doc/:slugId`、`/repo/share/:token`（子应用既有路由）；资料库 → 主站：根路径 `/login`（未登录）等，按需在 B 阶段补充回跳协议 |
 | 菜单配置 | 后端「菜单管理」配一条：code=`repo`、name=资料库、path=`/repo-entry`、openType=当前窗口。注意 path 不能配 `/repo/` 原始路径——后端菜单 path 为 http/站外语义时会落 open-iframe-page（iframe，被排除方案），必须经由 `/repo-entry` |
+| 移动端语义 | `/repo-entry` 受主站全局 UA 跳转脚本影响（`config/config.ts` headScripts，仅生产生效）：移动 UA 打开会被跳到 `/m/` 移动端首页，与既有 PC 页行为一致；`/repo/` 直达不受影响（子应用 HTML 不含该脚本）。如需移动端可用，后续单独立项（UA 脚本豁免或子应用移动适配） |
 
 ### 2.2 身份与登录协议
 
@@ -60,7 +61,7 @@ interface NuwaHostBridge {
 
 ### 2.5 版本可见性
 
-- sync 脚本生成 `public/repo/version.json`：`{ name, branch, commit, builtAt }`。线上排障先查此文件定位子应用版本。
+- sync 脚本生成 `public/repo/version.json`：`{ name, commit, builtAt }`（submodule 常规为 detached HEAD，branch 名无稳定意义，不落字段）。线上排障先查此文件定位子应用版本。
 - 子应用版本 = 主仓 pin 的 submodule commit；**仅 main 分支、无 tag**，升级须有意识地 bump pin。
 
 ## 3. 常用操作
@@ -112,6 +113,8 @@ dev 验证：启动主站 dev server → 访问 `/repo-entry`（重定向 `/repo
 | 2 | 网关双认鉴权：同一后端同时接受 cookie `ticket` 与 Bearer header | v0 可用性 |
 | 3 | `/api/repo`、`/repo/ws`、`/repo/internal` 的 dev（testagent 域）与生产 ingress 路由 | dev 联调与生产可用性 |
 | 4 | 登录回跳 returnUrl 协议（`/login?returnUrl=`）支持 | 登录体验闭环 |
+| 5 | 生产 nginx 静态回退：`location /repo/ { try_files $uri $uri/ /repo/index.html; }`——子应用是 history 路由，`/repo/space/:id` 等深链刷新/直达必须回退到子应用 index.html，否则落到主站 SPA 的 404 兜底 | 深链可用性 |
+| 6 | 生产构建管线前置 `npm run sync:repo-web`：产物 `public/repo/` 已 gitignore，CI/构建机 checkout 不带产物，必须先 sync 再 umi build | 单一部署物完整性 |
 
 ## 7. 风险登记
 

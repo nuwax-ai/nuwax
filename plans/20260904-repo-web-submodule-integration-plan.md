@@ -59,3 +59,4 @@
 ## 偏离记录
 
 1. sync 脚本构建命令由 `pnpm build` 改为 `pnpm exec vite build`：子仓 f07ce55 的 `tsc -b` 存在预存类型错误（TS6133/TS2322 等十余处，类型门属子仓自身 CI 职责），主仓跨仓链路只消费 vite 产物，不在链路上卡子仓类型问题。已在 `scripts/sync-repo-web.mjs` 注释与 `docs/repo-web-integration.md` §3 记录。
+2. 评审勘误（code-reviewer）：本文件 §「打通设计全景」所写深链 `/repo/space/:spaceId/doc/:slugId` 有误，子应用实际是两条独立路由 `/repo/space/:spaceId`、`/repo/doc/:slugId`，以契约文档 `docs/repo-web-integration.md` §2.1 为准。
