@@ -45,6 +45,7 @@ export const CHATBOX_RECOMMEND_CONFIG: RecommendPageConfig = {
     DisplayRecommendFunctionTypeEnum.PageAppDev,
     DisplayRecommendFunctionTypeEnum.SkillDev,
     DisplayRecommendFunctionTypeEnum.PluginDev,
+    DisplayRecommendFunctionTypeEnum.UserApp,
     DisplayRecommendFunctionTypeEnum.Chat,
   ],
   defaultFunctionType: DisplayRecommendFunctionTypeEnum.AgentDev,
@@ -57,6 +58,7 @@ export const CHATBOX_SINGLE_INSTANCE_FUNCTION_TYPES: DisplayRecommendFunctionTyp
     DisplayRecommendFunctionTypeEnum.PageAppDev,
     DisplayRecommendFunctionTypeEnum.SkillDev,
     DisplayRecommendFunctionTypeEnum.PluginDev,
+    DisplayRecommendFunctionTypeEnum.UserApp,
   ];
 
 /** recType → 页面配置 */

@@ -36,6 +36,7 @@ import type {
 } from '@/types/interfaces/common';
 import {
   DisplayRecommendFunctionTypeEnum,
+  DisplayRecommendTargetTypeEnum,
   type DisplayRecommendInfo,
 } from '@/types/interfaces/displayRecommend';
 import { App, message as antdMessage } from 'antd';
@@ -63,12 +64,14 @@ const PROJECT_FUNCTION_TYPE_MAP: Partial<
   [DisplayRecommendFunctionTypeEnum.PageAppDev]: AgentComponentTypeEnum.PageApp,
   [DisplayRecommendFunctionTypeEnum.SkillDev]: AgentComponentTypeEnum.Skill,
   [DisplayRecommendFunctionTypeEnum.PluginDev]: AgentComponentTypeEnum.Plugin,
+  [DisplayRecommendFunctionTypeEnum.UserApp]: AgentComponentTypeEnum.UserApp,
 };
 
 const TASK_AGENT_FUNCTION_TYPES = new Set<string>([
   DisplayRecommendFunctionTypeEnum.AgentDev,
   DisplayRecommendFunctionTypeEnum.SkillDev,
   DisplayRecommendFunctionTypeEnum.PluginDev,
+  DisplayRecommendFunctionTypeEnum.UserApp,
 ]);
 
 const SPACE_SELECTOR_FUNCTION_TYPES = new Set<string>([
@@ -76,7 +79,11 @@ const SPACE_SELECTOR_FUNCTION_TYPES = new Set<string>([
   DisplayRecommendFunctionTypeEnum.PageAppDev,
   DisplayRecommendFunctionTypeEnum.SkillDev,
   DisplayRecommendFunctionTypeEnum.PluginDev,
+  DisplayRecommendFunctionTypeEnum.UserApp,
 ]);
+
+/** 首页本地补充的「全栈应用」导航项 ID，避免与后台推荐 ID 冲突 */
+const LOCAL_USER_APP_NAV_ID = -90001;
 
 const Home: React.FC = () => {
   const { message } = App.useApp();
@@ -326,6 +333,41 @@ const Home: React.FC = () => {
     }, 0);
   };
 
+  /** 推荐导航：后台列表 + 本地「全栈应用」（若后台尚未配置） */
+  const recommendNavItems = useMemo(() => {
+    const list = [...recommendNavList];
+    const hasUserApp = list.some(
+      (item) =>
+        item.functionType === DisplayRecommendFunctionTypeEnum.UserApp,
+    );
+    if (hasUserApp) {
+      return list;
+    }
+
+    const agentDevItem = list.find(
+      (item) => item.functionType === DisplayRecommendFunctionTypeEnum.AgentDev,
+    );
+    const targetId =
+      agentDevItem?.targetId ||
+      tenantConfigInfo?.agentDevAgentId ||
+      tenantConfigInfo?.defaultTaskAgentId ||
+      tenantConfigInfo?.defaultAgentId ||
+      0;
+
+    list.push({
+      id: LOCAL_USER_APP_NAV_ID,
+      tenantId: 0,
+      targetType: DisplayRecommendTargetTypeEnum.Agent,
+      targetId,
+      recType: 'ChatBoxNav',
+      functionType: DisplayRecommendFunctionTypeEnum.UserApp,
+      label: dict('PC.Pages.Home.userApp'),
+      icon: agentDevItem?.icon,
+      placeholder: dict('PC.Pages.Home.placeholderUserApp'),
+    });
+    return list;
+  }, [recommendNavList, tenantConfigInfo]);
+
   return (
     <div
       id="home-container"
@@ -339,7 +381,8 @@ const Home: React.FC = () => {
           />
         </div>
         <ChatBoxRecommendNav
-          items={recommendNavList}
+          items={recommendNavItems}
+          selectedId={selectedRecommend?.id}
           onSelect={handleRecommendSelect}
         />
         <ChatInputHome

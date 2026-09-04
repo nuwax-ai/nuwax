@@ -35,6 +35,8 @@ export enum DisplayRecommendFunctionTypeEnum {
   PluginDev = 'PluginDev',
   // 智能体
   Chat = 'Chat',
+  // 全栈应用开发
+  UserApp = 'UserApp',
 }
 
 /**
