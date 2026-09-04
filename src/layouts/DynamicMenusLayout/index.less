@@ -155,6 +155,33 @@
       background: var(--xagi-color-bg-container);
     }
   }
+
+  // 折叠态左缘悬浮展开按钮（顶栏随侧栏收起而不可点，从边缘展开）
+  .sidebar-expand-btn {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 40;
+    width: 16px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--xagi-layout-bg-container, rgba(255, 255, 255, 90%));
+    border: @lineWidth solid var(--xagi-layout-border-primary);
+    border-left: none;
+    border-radius: 0 @borderRadiusSm @borderRadiusSm 0;
+    cursor: pointer;
+    color: @navSecondMenuAdaptiveTextSecondary;
+    opacity: 0.55;
+    transition: all 0.2s ease;
+
+    &:hover {
+      opacity: 1;
+      color: @navSecondMenuAdaptiveText;
+    }
+  }
 }
 // 风格1下的二级导航样式适配
 :global(.xagi-nav-style1) {

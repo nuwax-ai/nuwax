@@ -50,6 +50,7 @@ import styles from './index.less';
 import NewHomeSection from './NewHomeSection';
 import SpaceSection from './SpaceSection';
 import SquareSection from './SquareSection';
+import { useSidebarCollapse } from './useSidebarCollapse';
 import {
   handleOpenUrl,
   isHttpMenuPath,
@@ -120,6 +121,9 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
   // 创建智能体会话
   const { handleCreateConversation } = useConversation();
   const { tenantConfigInfo } = useModel('tenantConfigInfo');
+
+  // 折叠态左缘悬浮展开按钮（侧栏收起后顶栏不可点）
+  const { toggleCollapse } = useSidebarCollapse();
 
   // 是否点击菜单
   const isClickMenu = useRef<boolean>(false);
@@ -856,6 +860,24 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
             )}
           </div>
         </div>
+      )}
+
+      {/* 折叠态：屏幕左缘悬浮展开按钮（侧栏收起后顶栏随列隐藏，从边缘展开） */}
+      {isSecondMenuCollapsed && !isImmersiveShell() && (
+        <Tooltip
+          title={dict(
+            'PC.Layouts.DynamicMenusLayout.CollapseButton.expandMenu',
+          )}
+          placement="right"
+          arrow={false}
+        >
+          <div
+            className={cx(styles['sidebar-expand-btn'])}
+            onClick={toggleCollapse}
+          >
+            <SvgIcon name="icons-common-caret_left" rotate={180} />
+          </div>
+        </Tooltip>
       )}
     </div>
   );

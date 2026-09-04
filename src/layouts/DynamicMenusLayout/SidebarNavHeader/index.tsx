@@ -12,9 +12,10 @@ import { SearchOutlined } from '@ant-design/icons';
 import { Tooltip } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useEffect, useMemo } from 'react';
-import { history, useModel, useSearchParams } from 'umi';
+import { history } from 'umi';
 import Header from '../Header';
 import { toggleSidebarSearch } from '../NewHomeSection/searchFocus';
+import { useSidebarCollapse } from '../useSidebarCollapse';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
@@ -39,51 +40,7 @@ const SidebarNavHeader: React.FC<SidebarNavHeaderProps> = ({
   onMenuClick,
   onNewTask,
 }) => {
-  const { isSecondMenuCollapsed, setIsSecondMenuCollapsed } =
-    useModel('layout');
-  const [searchParams] = useSearchParams();
-
-  // 折叠偏好初始化（自原 CollapseButton 迁移）：用户操作 > URL hideMenu > 默认展开；
-  // 桌面端沉浸式收起能力在 nuwaclaw 原生工具栏，跳过初始化
-  useEffect(() => {
-    if (isImmersiveShell()) return;
-    try {
-      const raw = sessionStorage.getItem('menu-collapsed-user-preference');
-      if (raw) {
-        const saved = JSON.parse(raw);
-        if (saved && typeof saved.collapsed === 'boolean') {
-          setIsSecondMenuCollapsed(saved.collapsed);
-          return;
-        }
-      }
-    } catch (error) {
-      console.warn('Failed to read menu preference:', error);
-    }
-    if (searchParams.get('hideMenu') === 'true') {
-      setIsSecondMenuCollapsed(true);
-      return;
-    }
-    setIsSecondMenuCollapsed(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams, location.pathname]);
-
-  /** 折叠/展开：保存用户偏好到 sessionStorage */
-  const handleToggleCollapse = useCallback(() => {
-    const next = !isSecondMenuCollapsed;
-    try {
-      if (next) {
-        sessionStorage.setItem(
-          'menu-collapsed-user-preference',
-          JSON.stringify({ collapsed: true, timestamp: Date.now() }),
-        );
-      } else {
-        sessionStorage.removeItem('menu-collapsed-user-preference');
-      }
-    } catch (error) {
-      console.warn('Failed to save menu preference:', error);
-    }
-    setIsSecondMenuCollapsed(next);
-  }, [isSecondMenuCollapsed, setIsSecondMenuCollapsed]);
+  const { isSecondMenuCollapsed, toggleCollapse } = useSidebarCollapse();
 
   /** 搜索：展开/收起并聚焦会话区搜索框；非会话域（搜索框未挂载）则先回首页 */
   const handleSearchClick = useCallback(() => {
@@ -149,7 +106,7 @@ const SidebarNavHeader: React.FC<SidebarNavHeaderProps> = ({
             >
               <div
                 className={cx(styles['header-action-btn'])}
-                onClick={handleToggleCollapse}
+                onClick={toggleCollapse}
               >
                 <SvgIcon
                   name="icons-common-caret_left"
