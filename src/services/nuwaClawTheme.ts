@@ -43,7 +43,7 @@ export const NUWACLAW_BACKGROUND_ID = 'bg-solid';
  */
 export const NUWACLAW_LIGHT_STYLE_OVERRIDE: Record<string, string> = {
   '--xagi-layout-bg-primary': '#F3F4F6', // 主内容区（用户指定基色 rgb(243,244,246)，中性冷灰）
-  '--xagi-layout-bg-secondary': '#EAEBEF', // 侧栏/次面板（深一档）
+  '--xagi-layout-bg-secondary': '#F2F2F2', // 侧栏/次面板（原型同款中性浅灰，2026-09-04 对齐）
   '--xagi-layout-bg-container': '#F3F4F6', // 主内容区面板（token @pageContainerBg 消费；漏配曾致内容区始终白）
   '--xagi-layout-bg-card': '#FFFFFF', // 卡片（白卡浮于灰底，保层次）
   '--xagi-layout-bg-input': '#FFFFFF', // 输入框
@@ -54,7 +54,7 @@ export const NUWACLAW_LIGHT_STYLE_OVERRIDE: Record<string, string> = {
   '--xagi-layout-shadow': 'rgba(15, 23, 42, 0.06)', // 淡阴影（冷黑，灰底上托层次）
   // 菜单背景（token.less 的 @navFirstMenuBg/@navSecondMenuBg 消费）：实色替代半透明
   '--xagi-color-bg-container': '#EEEFF2', // 一级菜单（style2 二级菜单同源）
-  '--xagi-color-bg-layout': '#EAEBEF', // 二级菜单（style1）
+  '--xagi-color-bg-layout': '#F2F2F2', // 二级菜单/侧栏（style1；原型同款 #F2F2F2）
   // 菜单项 hover/选中高亮（token @navItem*Bg/@navSecondItemActiveBg 消费）：
   // 贴近菜单底的极浅浮起（选中项另有品牌蓝文字/图标标识，背景弱化不突兀）。
   // 一级菜单底 #EEEFF2 → hover +2 / 选中 +4；二级菜单底 #EAEBEF → 选中 +4

@@ -100,7 +100,7 @@ describe('nuwaClawTheme · nuwaclaw 桌面专属主题适配', () => {
     expect(root.style.getPropertyValue('--xagi-layout-bg-primary')).toBe(
       '#F3F4F6',
     );
-    expect(root.style.backgroundColor).toBe('rgb(234, 235, 239)');
+    expect(root.style.backgroundColor).toBe('rgb(242, 242, 242)');
   });
 
   it('浏览器（无桥）+ 显式选「纯色」+ 浅色 → 灰白生效（双端一致），不写默认、主色跟随用户', () => {
@@ -119,7 +119,7 @@ describe('nuwaClawTheme · nuwaclaw 桌面专属主题适配', () => {
       '#F3F4F6',
     );
     expect(root.style.getPropertyValue('--xagi-background-image')).toBe('none');
-    expect(root.style.backgroundColor).toBe('rgb(234, 235, 239)');
+    expect(root.style.backgroundColor).toBe('rgb(242, 242, 242)');
     // 主色仅在桌面默认态兜底品牌蓝；浏览器显式定制后交由 applyToDOM 按用户主色维护
     expect(rootPrimary()).toBe('');
   });
@@ -147,14 +147,14 @@ describe('nuwaClawTheme · nuwaclaw 桌面专属主题适配', () => {
       '#F3F4F6',
     );
     expect(root.style.getPropertyValue('--xagi-layout-bg-secondary')).toBe(
-      '#EAEBEF',
+      '#F2F2F2',
     );
     // 主内容区面板（token @pageContainerBg 消费；漏配曾致内容区始终白）
     expect(root.style.getPropertyValue('--xagi-layout-bg-container')).toBe(
       '#F3F4F6',
     );
     // html 灰底兜住 style1 浮动面板的缝隙（jsdom 会把颜色规范化成 rgb() 形式）
-    expect(root.style.backgroundColor).toBe('rgb(234, 235, 239)');
+    expect(root.style.backgroundColor).toBe('rgb(242, 242, 242)');
     // 桌面端不用背景图（米白纯色）
     expect(root.style.getPropertyValue('--xagi-background-image')).toBe('none');
     // 菜单背景实色（@navFirstMenuBg/@navSecondMenuBg 消费的变量）
