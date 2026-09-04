@@ -64,8 +64,8 @@ const PROJECT_FUNCTION_TYPE_MAP: Partial<
   [DisplayRecommendFunctionTypeEnum.PageAppDev]: AgentComponentTypeEnum.PageApp,
   [DisplayRecommendFunctionTypeEnum.SkillDev]: AgentComponentTypeEnum.Skill,
   [DisplayRecommendFunctionTypeEnum.PluginDev]: AgentComponentTypeEnum.Plugin,
-  [DisplayRecommendFunctionTypeEnum.UserApp]: AgentComponentTypeEnum.UserApp,
-  [DisplayRecommendFunctionTypeEnum.NormalProject]:
+  [DisplayRecommendFunctionTypeEnum.UserAppDev]: AgentComponentTypeEnum.UserApp,
+  [DisplayRecommendFunctionTypeEnum.NormalProjectDev]:
     AgentComponentTypeEnum.NormalProject,
 };
 
@@ -73,8 +73,8 @@ const TASK_AGENT_FUNCTION_TYPES = new Set<string>([
   DisplayRecommendFunctionTypeEnum.AgentDev,
   DisplayRecommendFunctionTypeEnum.SkillDev,
   DisplayRecommendFunctionTypeEnum.PluginDev,
-  DisplayRecommendFunctionTypeEnum.UserApp,
-  DisplayRecommendFunctionTypeEnum.NormalProject,
+  DisplayRecommendFunctionTypeEnum.UserAppDev,
+  DisplayRecommendFunctionTypeEnum.NormalProjectDev,
 ]);
 
 const SPACE_SELECTOR_FUNCTION_TYPES = new Set<string>([
@@ -82,8 +82,8 @@ const SPACE_SELECTOR_FUNCTION_TYPES = new Set<string>([
   DisplayRecommendFunctionTypeEnum.PageAppDev,
   DisplayRecommendFunctionTypeEnum.SkillDev,
   DisplayRecommendFunctionTypeEnum.PluginDev,
-  DisplayRecommendFunctionTypeEnum.UserApp,
-  DisplayRecommendFunctionTypeEnum.NormalProject,
+  DisplayRecommendFunctionTypeEnum.UserAppDev,
+  DisplayRecommendFunctionTypeEnum.NormalProjectDev,
 ]);
 
 /** 首页本地补充导航项 ID，避免与后台推荐 ID 冲突 */
@@ -359,7 +359,7 @@ const Home: React.FC = () => {
         targetType: DisplayRecommendTargetTypeEnum.Agent,
         targetId,
         recType: 'ChatBoxNav',
-        functionType: DisplayRecommendFunctionTypeEnum.UserApp,
+        functionType: DisplayRecommendFunctionTypeEnum.UserAppDev,
         label: dict('PC.Pages.Home.userApp'),
         icon: agentDevItem?.icon,
         placeholder: dict('PC.Pages.Home.placeholderUserApp'),
@@ -370,7 +370,7 @@ const Home: React.FC = () => {
         targetType: DisplayRecommendTargetTypeEnum.Agent,
         targetId,
         recType: 'ChatBoxNav',
-        functionType: DisplayRecommendFunctionTypeEnum.NormalProject,
+        functionType: DisplayRecommendFunctionTypeEnum.NormalProjectDev,
         label: dict('PC.Pages.Home.normalProject'),
         icon: agentDevItem?.icon,
         placeholder: dict('PC.Pages.Home.placeholderNormalProject'),
