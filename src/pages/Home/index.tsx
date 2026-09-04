@@ -36,6 +36,7 @@ import type {
 } from '@/types/interfaces/common';
 import {
   DisplayRecommendFunctionTypeEnum,
+  DisplayRecommendTargetTypeEnum,
   type DisplayRecommendInfo,
 } from '@/types/interfaces/displayRecommend';
 import { App, message as antdMessage } from 'antd';
@@ -63,12 +64,17 @@ const PROJECT_FUNCTION_TYPE_MAP: Partial<
   [DisplayRecommendFunctionTypeEnum.PageAppDev]: AgentComponentTypeEnum.PageApp,
   [DisplayRecommendFunctionTypeEnum.SkillDev]: AgentComponentTypeEnum.Skill,
   [DisplayRecommendFunctionTypeEnum.PluginDev]: AgentComponentTypeEnum.Plugin,
+  [DisplayRecommendFunctionTypeEnum.UserApp]: AgentComponentTypeEnum.UserApp,
+  [DisplayRecommendFunctionTypeEnum.NormalProject]:
+    AgentComponentTypeEnum.NormalProject,
 };
 
 const TASK_AGENT_FUNCTION_TYPES = new Set<string>([
   DisplayRecommendFunctionTypeEnum.AgentDev,
   DisplayRecommendFunctionTypeEnum.SkillDev,
   DisplayRecommendFunctionTypeEnum.PluginDev,
+  DisplayRecommendFunctionTypeEnum.UserApp,
+  DisplayRecommendFunctionTypeEnum.NormalProject,
 ]);
 
 const SPACE_SELECTOR_FUNCTION_TYPES = new Set<string>([
@@ -76,7 +82,13 @@ const SPACE_SELECTOR_FUNCTION_TYPES = new Set<string>([
   DisplayRecommendFunctionTypeEnum.PageAppDev,
   DisplayRecommendFunctionTypeEnum.SkillDev,
   DisplayRecommendFunctionTypeEnum.PluginDev,
+  DisplayRecommendFunctionTypeEnum.UserApp,
+  DisplayRecommendFunctionTypeEnum.NormalProject,
 ]);
+
+/** 首页本地补充导航项 ID，避免与后台推荐 ID 冲突 */
+const LOCAL_USER_APP_NAV_ID = -90001;
+const LOCAL_NORMAL_PROJECT_NAV_ID = -90002;
 
 const Home: React.FC = () => {
   const { message } = App.useApp();
@@ -326,6 +338,57 @@ const Home: React.FC = () => {
     }, 0);
   };
 
+  /** 推荐导航：后台列表 + 本地「全栈应用 / 常规项目」（若后台尚未配置） */
+  const recommendNavItems = useMemo(() => {
+    const list = [...recommendNavList];
+    const agentDevItem = list.find(
+      (item) => item.functionType === DisplayRecommendFunctionTypeEnum.AgentDev,
+    );
+    const targetId =
+      agentDevItem?.targetId ||
+      tenantConfigInfo?.agentDevAgentId ||
+      tenantConfigInfo?.defaultTaskAgentId ||
+      tenantConfigInfo?.defaultAgentId ||
+      0;
+
+    // todo： 根据实际需求，修改本地导航项
+    const localItems: DisplayRecommendInfo[] = [
+      {
+        id: LOCAL_USER_APP_NAV_ID,
+        tenantId: 0,
+        targetType: DisplayRecommendTargetTypeEnum.Agent,
+        targetId,
+        recType: 'ChatBoxNav',
+        functionType: DisplayRecommendFunctionTypeEnum.UserApp,
+        label: dict('PC.Pages.Home.userApp'),
+        icon: agentDevItem?.icon,
+        placeholder: dict('PC.Pages.Home.placeholderUserApp'),
+      },
+      {
+        id: LOCAL_NORMAL_PROJECT_NAV_ID,
+        tenantId: 0,
+        targetType: DisplayRecommendTargetTypeEnum.Agent,
+        targetId,
+        recType: 'ChatBoxNav',
+        functionType: DisplayRecommendFunctionTypeEnum.NormalProject,
+        label: dict('PC.Pages.Home.normalProject'),
+        icon: agentDevItem?.icon,
+        placeholder: dict('PC.Pages.Home.placeholderNormalProject'),
+      },
+    ];
+
+    localItems.forEach((item) => {
+      const exists = list.some(
+        (nav) => nav.functionType === item.functionType,
+      );
+      if (!exists) {
+        list.push(item);
+      }
+    });
+
+    return list;
+  }, [recommendNavList, tenantConfigInfo]);
+
   return (
     <div
       id="home-container"
@@ -339,7 +402,8 @@ const Home: React.FC = () => {
           />
         </div>
         <ChatBoxRecommendNav
-          items={recommendNavList}
+          items={recommendNavItems}
+          selectedId={selectedRecommend?.id}
           onSelect={handleRecommendSelect}
         />
         <ChatInputHome
