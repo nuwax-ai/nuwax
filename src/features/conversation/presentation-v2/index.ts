@@ -15,6 +15,15 @@ export {
   splitNodesByVisibility,
 } from './renderPreferences';
 export type { RowNodeKind } from './renderPreferences';
+export {
+  composeConversationTraceItems,
+  getNodeToolActionKind,
+  getToolGroupActionKinds,
+  getToolGroupStatus,
+  hasProcessNodeDetail,
+  isGroupableToolNode,
+  isOpenUiToolNode,
+} from './traceItems';
 export type {
   CompletedInteractionPayload,
   ConversationFinalAnswer,
@@ -23,6 +32,10 @@ export type {
   ConversationProcessNodeKind,
   ConversationRenderPreferencesV2,
   ConversationRendererPreset,
+  ConversationToolActionKind,
+  ConversationToolGroupTraceItem,
+  ConversationToolResource,
+  ConversationTraceItem,
   ConversationTurnPresentationV2,
   NodePresentationMode,
 } from './types';

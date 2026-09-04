@@ -1,12 +1,12 @@
 /**
  * V2 渲染器组件合同测试（specs/nuwax-conversation-renderer-v2.md「组件」栏）：
- * 两级折叠与默认态、三档预设、高级覆盖、隐藏恢复入口、运行摘要、终态默认、
+ * 三层折叠与默认态、三档预设、高级覆盖、隐藏恢复入口、运行摘要、终态默认、
  * 手动状态跨流式保持、键盘/ARIA、待回答卡独立（不进轨迹）、回答操作栏与
  * 复制范围、投影/渲染异常回退 V1。
  */
 import type { ConversationRenderPreferencesV2 } from '@/features/conversation/presentation-v2';
 import ConversationRendererV2 from '@/features/conversation/presentation-v2/react/ConversationRendererV2';
-import { AssistantRoleEnum } from '@/types/enums/agent';
+import { AgentComponentTypeEnum, AssistantRoleEnum } from '@/types/enums/agent';
 import { MessageStatusEnum } from '@/types/enums/common';
 import type {
   MessageInfo,
@@ -182,7 +182,121 @@ const buildTurn = (overrides: Partial<MessageInfo> = {}): MessageInfo[] => [
       thinkTag('finished', '整理最终结论'),
       '今天晴，25 度',
     ].join(''),
+    processingList: [
+      {
+        executeId: 'e1',
+        name: '查天气',
+        type: AgentComponentTypeEnum.ToolCall,
+        status: 'FINISHED',
+        result: {
+          executeId: 'e1',
+          success: true,
+          input: { city: '杭州' },
+          data: '晴，25 度',
+        },
+      },
+    ] as MessageInfo['processingList'],
     ...overrides,
+  }),
+];
+
+const groupedToolText = (withSecondGroup = false) =>
+  [
+    processTag({
+      executeId: 'read-1',
+      type: 'ToolCall',
+      status: 'FINISHED',
+      name: '读取 package.json',
+    }),
+    processTag({
+      executeId: 'run-1',
+      type: 'ToolCall',
+      status: 'FINISHED',
+      name: '运行 npm test',
+    }),
+    ...(withSecondGroup
+      ? [
+          '第一阶段完成',
+          processTag({
+            executeId: 'edit-1',
+            type: 'ToolCall',
+            status: 'FINISHED',
+            name: '编辑 index.tsx',
+          }),
+          processTag({
+            executeId: 'run-2',
+            type: 'ToolCall',
+            status: 'EXECUTING',
+            name: '运行 npm run test:conversation',
+          }),
+        ]
+      : []),
+  ].join('');
+
+const groupedProcessingList = [
+  {
+    executeId: 'read-1',
+    name: '读取 package.json',
+    type: AgentComponentTypeEnum.ToolCall,
+    status: 'FINISHED',
+    result: {
+      executeId: 'read-1',
+      kind: 'read',
+      success: true,
+      input: { file_path: 'package.json', line_start: 1, line_end: 20 },
+      data: '{ "scripts": {} }',
+    },
+  },
+  {
+    executeId: 'run-1',
+    name: '运行 npm test',
+    type: AgentComponentTypeEnum.ToolCall,
+    status: 'FINISHED',
+    result: {
+      executeId: 'run-1',
+      kind: 'execute',
+      success: true,
+      input: { command: 'npm test' },
+      data: 'all tests passed',
+    },
+  },
+  {
+    executeId: 'edit-1',
+    name: '编辑 index.tsx',
+    type: AgentComponentTypeEnum.ToolCall,
+    status: 'FINISHED',
+    result: {
+      executeId: 'edit-1',
+      kind: 'edit',
+      success: true,
+      input: { file_path: 'src/index.tsx' },
+      data: 'updated',
+    },
+  },
+  {
+    executeId: 'run-2',
+    name: '运行 npm run test:conversation',
+    type: AgentComponentTypeEnum.ToolCall,
+    status: 'EXECUTING',
+    result: {
+      executeId: 'run-2',
+      kind: 'execute',
+      input: { command: 'npm run test:conversation' },
+    },
+  },
+] as MessageInfo['processingList'];
+
+const buildGroupedTurn = (
+  withSecondGroup: boolean,
+  status = MessageStatusEnum.Loading,
+): MessageInfo[] => [
+  msg({ id: 'u-group', role: AssistantRoleEnum.USER, text: '分组执行任务' }),
+  msg({
+    id: 'a-group',
+    role: AssistantRoleEnum.ASSISTANT,
+    status,
+    text: groupedToolText(withSecondGroup),
+    processingList: groupedProcessingList,
   }),
 ];
 
@@ -219,16 +333,15 @@ describe('ConversationRendererV2 · 三层结构', () => {
     );
   });
 
-  it('历史轮（首挂载即终态）balanced 默认展开：轨迹体可见，回答仍常显', () => {
+  it('历史轮（首挂载即终态）默认收起，回答仍常显且可手动展开', () => {
     renderV2(buildTurn());
     const toggle = screen.getByTestId('v2-trace-toggle');
-    // 单帧终态 render = 打开历史会话语义：轨迹默认展开（打开即见）
-    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
     expect(screen.queryByTestId('v2-hidden-entry')).toBeNull();
     expect(screen.getByTestId('v2-final-answer')).toBeVisible();
-    // 手动收起仍生效
+    // 终态仍允许用户手动展开查看过程。
     fireEvent.click(toggle);
-    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
   });
 
   it('运行轮外层默认展开，仅显示工作时长且箭头位于文字之后', () => {
@@ -303,12 +416,11 @@ describe('ConversationRendererV2 · 三层结构', () => {
     expect(screen.getByTestId('v2-answer-duration')).toHaveTextContent('01:00');
   });
 
-  it('detailed 历史轮默认展开，已完成 reasoning 节点详情自动展开', () => {
+  it('detailed 不改变历史轮收起规则，手动展开后已完成 reasoning 详情自动展开', () => {
     renderV2(buildTurn(), PREFS('detailed'));
-    // 单帧终态 = 历史轮：外层默认展开，无需手动点开
-    expect(
-      screen.getByTestId('v2-trace-toggle').getAttribute('aria-expanded'),
-    ).toBe('true');
+    const traceToggle = screen.getByTestId('v2-trace-toggle');
+    expect(traceToggle.getAttribute('aria-expanded')).toBe('false');
+    fireEvent.click(traceToggle);
     // think 内容作为已完成节点默认展开（行摘要 + 详情两处可见）
     expect(
       screen.getAllByText('先想想要用哪个工具').length,
@@ -316,7 +428,7 @@ describe('ConversationRendererV2 · 三层结构', () => {
   });
 });
 
-describe('ConversationRendererV2 · 两级折叠与手动状态保持', () => {
+describe('ConversationRendererV2 · 三层折叠与手动状态保持', () => {
   it('点击轨迹头切换；流式增量不重置手动收起状态', async () => {
     const { rerender } = renderV2(
       buildTurn({ status: MessageStatusEnum.Loading }),
@@ -408,19 +520,27 @@ describe('ConversationRendererV2 · 两级折叠与手动状态保持', () => {
   it('节点行为原生 button（键盘 Enter/Space 由浏览器语义保证）且点击展开受限详情', async () => {
     const user = userEvent.setup();
     renderV2(buildTurn(), PREFS('detailed'));
-    // detailed 历史轮外层默认展开；工具节点三档恒为摘要行
+    await user.click(screen.getByTestId('v2-trace-toggle'));
     const toolRow = document.querySelector('[data-node-id="e1"] button');
     expect(toolRow).not.toBeNull();
     // 原生 button：Enter/Space 激活由浏览器保证，无需自定义键盘处理
     expect(toolRow!.nodeName).toBe('BUTTON');
-    expect(toolRow?.getAttribute('aria-expanded')).toBe('false');
-    await user.click(toolRow!);
     expect(toolRow?.getAttribute('aria-expanded')).toBe('true');
+    await user.click(toolRow!);
+    expect(
+      document
+        .querySelector('[data-node-id="e1"] button')
+        ?.getAttribute('aria-expanded'),
+    ).toBe('false');
+    await user.click(document.querySelector('[data-node-id="e1"] button')!);
+    expect(
+      document
+        .querySelector('[data-node-id="e1"] button')
+        ?.getAttribute('aria-expanded'),
+    ).toBe('true');
     expect(
       screen.getByTestId('tool-detail').getAttribute('data-execute-id'),
     ).toBe('e1');
-    await user.click(toolRow!);
-    expect(toolRow?.getAttribute('aria-expanded')).toBe('false');
     // 轨迹头同样为原生 button 且带 aria-controls 联动
     const traceToggle = screen.getByTestId('v2-trace-toggle');
     expect(traceToggle.nodeName).toBe('BUTTON');
@@ -430,11 +550,102 @@ describe('ConversationRendererV2 · 两级折叠与手动状态保持', () => {
         ?.getAttribute('data-trace-key')}`,
     );
   });
+
+  it('连续工具压缩为动作摘要组，活动尾组默认展开并逐条保序', () => {
+    renderV2(buildGroupedTurn(false));
+    const group = document.querySelector(
+      '[data-tool-group-id="tool-group:read-1"]',
+    );
+    expect(group).not.toBeNull();
+    expect(group?.getAttribute('data-tool-group-active')).toBe('true');
+    const toggle = group?.querySelector('button');
+    expect(toggle?.getAttribute('aria-expanded')).toBe('true');
+    expect(toggle?.textContent).toContain('toolActionFileReadFinished');
+    expect(toggle?.textContent).toContain('toolActionTerminalFinished');
+    expect(
+      Array.from(group?.querySelectorAll('[data-node-id]') ?? []).map((item) =>
+        item.getAttribute('data-node-id'),
+      ),
+    ).toEqual(['read-1', 'run-1']);
+  });
+
+  it('正文开启新工具组时旧活动组自动收起一次，用户重开后保持手动状态', async () => {
+    const view = renderV2(buildGroupedTurn(false));
+    view.rerender(
+      <ConversationRendererV2
+        messageList={buildGroupedTurn(true)}
+        conversationId={1}
+        roleInfo={ROLE_INFO}
+        messageBottomMode="chat"
+        preferences={PREFS('balanced')}
+      />,
+    );
+
+    const oldGroupSelector =
+      '[data-tool-group-id="tool-group:read-1"] > button';
+    const activeGroupSelector =
+      '[data-tool-group-id="tool-group:edit-1"] > button';
+    await waitFor(() => {
+      expect(
+        document.querySelector(oldGroupSelector)?.getAttribute('aria-expanded'),
+      ).toBe('false');
+      expect(
+        document
+          .querySelector(activeGroupSelector)
+          ?.getAttribute('aria-expanded'),
+      ).toBe('true');
+    });
+
+    fireEvent.click(document.querySelector(oldGroupSelector)!);
+    expect(
+      document.querySelector(oldGroupSelector)?.getAttribute('aria-expanded'),
+    ).toBe('true');
+
+    // 外层收起再打开不会卸掉组级手动状态。
+    fireEvent.click(screen.getByTestId('v2-trace-toggle'));
+    fireEvent.click(screen.getByTestId('v2-trace-toggle'));
+    expect(
+      document.querySelector(oldGroupSelector)?.getAttribute('aria-expanded'),
+    ).toBe('true');
+  });
+
+  it('终态历史组默认收起，打开整轮后组内详情仍由第三层独立控制', () => {
+    renderV2(buildGroupedTurn(false, MessageStatusEnum.Complete));
+    const traceToggle = screen.getByTestId('v2-trace-toggle');
+    expect(traceToggle.getAttribute('aria-expanded')).toBe('false');
+    fireEvent.click(traceToggle);
+    const groupToggle = document.querySelector(
+      '[data-tool-group-id="tool-group:read-1"] > button',
+    );
+    expect(groupToggle?.getAttribute('aria-expanded')).toBe('false');
+    fireEvent.click(groupToggle!);
+    const itemToggle = document.querySelector('[data-node-id="read-1"] button');
+    expect(itemToggle?.getAttribute('aria-expanded')).toBe('false');
+    fireEvent.click(itemToggle!);
+    expect(
+      document
+        .querySelector('[data-node-id="read-1"] button')
+        ?.getAttribute('aria-expanded'),
+    ).toBe('true');
+    fireEvent.click(traceToggle);
+    fireEvent.click(traceToggle);
+    expect(
+      document
+        .querySelector('[data-tool-group-id="tool-group:read-1"] > button')
+        ?.getAttribute('aria-expanded'),
+    ).toBe('true');
+    expect(
+      document
+        .querySelector('[data-node-id="read-1"] button')
+        ?.getAttribute('aria-expanded'),
+    ).toBe('true');
+  });
 });
 
 describe('ConversationRendererV2 · 预设与高级覆盖', () => {
   it('focused 隐藏思考：隐藏入口「另有 N 项已隐藏」可恢复；narration 不受预设影响', async () => {
     renderV2(buildTurn(), PREFS('focused'));
+    fireEvent.click(screen.getByTestId('v2-trace-toggle'));
     const entry = screen.getByTestId('v2-hidden-entry');
     // 仅 reasoning 两项被隐藏（narration 已直出，不再是可隐藏节点）
     expect(entry).toHaveTextContent(
@@ -456,7 +667,7 @@ describe('ConversationRendererV2 · 预设与高级覆盖', () => {
 
   it('过程说明穿插直出在轨迹体原位（工具之间），展开即见正文；narration-only 终态轮无空轨迹条', () => {
     renderV2(buildTurn());
-    // 历史轮 balanced 默认展开：轨迹体直接可见
+    fireEvent.click(screen.getByTestId('v2-trace-toggle'));
     const trace = document.querySelector('[data-trace-key]');
     const narration = screen.getByTestId('v2-narration');
     const answer = screen.getByTestId('v2-final-answer');
@@ -491,7 +702,7 @@ describe('ConversationRendererV2 · 预设与高级覆盖', () => {
 
   it('高级覆盖：tool=expanded 使已完成工具节点详情默认展开', () => {
     renderV2(buildTurn(), PREFS('balanced', { tool: 'expanded' }));
-    // 历史轮外层默认展开，无需手动点开
+    fireEvent.click(screen.getByTestId('v2-trace-toggle'));
     const toolRow = document.querySelector('[data-node-id="e1"] button');
     expect(toolRow?.getAttribute('aria-expanded')).toBe('true');
     expect(screen.getByTestId('tool-detail')).toBeInTheDocument();
@@ -521,6 +732,7 @@ describe('ConversationRendererV2 · 预设与高级覆盖', () => {
       }),
     ];
     renderV2(failed, PREFS('focused', { tool: 'hidden' }));
+    fireEvent.click(screen.getByTestId('v2-trace-toggle'));
     const row = document.querySelector('[data-node-id="bad"]');
     expect(row).not.toBeNull();
   });
@@ -645,11 +857,25 @@ describe('ConversationRendererV2 · 回答与异常', () => {
             status: 'FINISHED',
             name: 'explode',
           }),
+          processingList: [
+            {
+              executeId: 'boom',
+              name: 'explode',
+              type: AgentComponentTypeEnum.ToolCall,
+              status: 'FINISHED',
+              result: {
+                executeId: 'boom',
+                success: true,
+                input: { description: '触发详情渲染' },
+                data: 'boom',
+              },
+            },
+          ] as MessageInfo['processingList'],
         }),
       ],
       PREFS('balanced', { tool: 'expanded' }),
     );
-    // 历史轮默认展开：详情立即渲染即抛错 → ErrorBoundary 整份回退 V1
+    fireEvent.click(screen.getByTestId('v2-trace-toggle'));
     await waitFor(() => {
       expect(document.querySelector('[data-v2-fallback="v1"]')).not.toBeNull();
     });
@@ -671,6 +897,20 @@ describe('ConversationRendererV2 · 回答与异常', () => {
           status: 'FINISHED',
           name: 'explode',
         }),
+        processingList: [
+          {
+            executeId: 'boom',
+            name: 'explode',
+            type: AgentComponentTypeEnum.ToolCall,
+            status: 'FINISHED',
+            result: {
+              executeId: 'boom',
+              success: true,
+              input: { description: '触发详情渲染' },
+              data: 'boom',
+            },
+          },
+        ] as MessageInfo['processingList'],
       }),
     ];
     const view = render(
@@ -681,6 +921,7 @@ describe('ConversationRendererV2 · 回答与异常', () => {
         preferences={PREFS('balanced', { tool: 'expanded' })}
       />,
     );
+    fireEvent.click(screen.getByTestId('v2-trace-toggle'));
     await waitFor(() => {
       expect(document.querySelector('[data-v2-fallback="v1"]')).not.toBeNull();
     });
@@ -704,12 +945,13 @@ describe('ConversationRendererV2 · 回答与异常', () => {
 describe('ConversationRendererV2 · 无障碍（验收返工 P2）', () => {
   it('节点行装饰图标对读屏隐藏（aria-hidden），按钮名称只含标题与摘要', () => {
     renderV2(buildTurn(), PREFS('detailed'));
+    fireEvent.click(screen.getByTestId('v2-trace-toggle'));
     const toolRow = document.querySelector('[data-node-id="e1"] button')!;
     const icons = toolRow.querySelectorAll('[aria-hidden="true"]');
     expect(icons.length).toBeGreaterThanOrEqual(1);
     const name =
       toolRow.getAttribute('aria-label') ?? toolRow.textContent ?? '';
-    expect(name).not.toMatch(/caret-right|bulb|tool|check-circle/i);
+    expect(name).not.toMatch(/caret-right|bulb|check-circle/i);
   });
 
   it('轨迹折叠头图标隐藏，名称为指标文本', () => {
@@ -725,6 +967,7 @@ describe('ConversationRendererV2 · 无障碍（验收返工 P2）', () => {
 
   it('可展开节点有独立 disclosure 箭头并跟随状态旋转', () => {
     renderV2(buildTurn(), PREFS('detailed'));
+    fireEvent.click(screen.getByTestId('v2-trace-toggle'));
     const toolRow = document.querySelector('[data-node-id="e1"] button')!;
     const disclosure = toolRow.querySelector(
       '[data-testid="v2-node-disclosure"]',

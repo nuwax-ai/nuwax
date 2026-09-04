@@ -2,7 +2,7 @@
  * ConversationRendererV2 · V2 会话消息列表渲染器（specs/nuwax-conversation-renderer-v2.md）。
  *
  * 结构：USER 原始输入（复用 ChatView 气泡，视觉零差异）→ 整轮工作轨迹
- * （两级折叠）→ 最终回答常显。待回答审批/提问卡仍由
+ * （整轮 / 工具组 / 单项详情三层折叠）→ 最终回答常显。待回答审批/提问卡仍由
  * AgentInterventionChatLayer dock 独立置顶，不在本渲染器内。
  *
  * 安全边界：投影或渲染出现未捕获异常时，整份会话回退 V1（逐消息 ChatView）
@@ -23,6 +23,7 @@ import { projectConversation } from '../projectConversation';
 import type {
   ConversationPresentationV2,
   ConversationRenderPreferencesV2,
+  ConversationToolResource,
   ConversationTurnPresentationV2,
 } from '../types';
 import FinalAnswerBlock from './FinalAnswerBlock';
@@ -43,6 +44,8 @@ export interface ConversationRendererV2Props {
   preferences?: ConversationRenderPreferencesV2;
   /** 投影结果观察口（e2e 断言与单测使用） */
   onPresentation?: (presentation: ConversationPresentationV2 | null) => void;
+  /** 可选宿主资源联动；未提供时文件与 URL 仍在详情内可读。 */
+  onOpenToolResource?: (resource: ConversationToolResource) => void;
 }
 
 /** 与 ChatContentArea.getChatMessageRenderKey 同规则（复制实现避免循环依赖） */
@@ -84,26 +87,23 @@ const V1FallbackList: React.FC<
 const TurnBlock: React.FC<{
   turn: ConversationTurnPresentationV2;
   roleInfo: RoleInfo;
-  conversationId?: number | string;
   messageBottomMode?: 'none' | 'home' | 'chat';
   showDebug?: boolean;
   showStatusDesc?: boolean;
   preferences: ConversationRenderPreferencesV2;
+  onOpenToolResource?: (resource: ConversationToolResource) => void;
 }> = ({
   turn,
   roleInfo,
-  conversationId,
   messageBottomMode,
   showDebug,
   showStatusDesc,
   preferences,
+  onOpenToolResource,
 }) => {
   const [manualExpanded, setManualExpanded] = useState<boolean | undefined>(
     undefined,
   );
-  // 历史轮标记：首挂载即终态（打开历史会话 / 分页加载的旧消息）→ 轨迹默认
-  // 展开；本会话流式经历 running→终态的轮保持「运行展开→结束收起」不回归。
-  const [historicalTurn] = useState(() => !turn.running);
   // 流式结束时回到终态默认值（收起）；结束后用户仍可再次手动展开。
   useEffect(() => {
     if (!turn.running) setManualExpanded(undefined);
@@ -144,10 +144,9 @@ const TurnBlock: React.FC<{
         <WorkTraceDisclosure
           turn={turn}
           preferences={preferences}
-          conversationId={conversationId}
           manualExpanded={manualExpanded}
           onManualToggle={setManualExpanded}
-          historicalTurn={historicalTurn}
+          onOpenResource={onOpenToolResource}
         />
       )}
       {/* 无节点行的轮次（纯说明）：narration 直接以正文展示 */}
@@ -213,6 +212,7 @@ const ConversationRendererV2Inner: React.FC<ConversationRendererV2Props> = (
     showStatusDesc,
     preferences: preferencesProp,
     onPresentation,
+    onOpenToolResource,
   } = props;
   const { preferences: hookPreferences } =
     useConversationRendererPreference(conversationId);
@@ -272,11 +272,11 @@ const ConversationRendererV2Inner: React.FC<ConversationRendererV2Props> = (
             <TurnBlock
               turn={turn}
               roleInfo={roleInfo}
-              conversationId={conversationId}
               messageBottomMode={messageBottomMode}
               showDebug={showDebug}
               showStatusDesc={showStatusDesc}
               preferences={preferences}
+              onOpenToolResource={onOpenToolResource}
             />
           )}
         </React.Fragment>

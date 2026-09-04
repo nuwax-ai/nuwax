@@ -36,6 +36,7 @@ export type MockScenarioId =
   | 'OPENUI_INTERACTIVE'
   | 'INTERVENTION_MIXED'
   | 'RENDER_SHOWCASE'
+  | 'V2_GROUPED_TOOL_TRACE'
   | 'TOOL_RENDERING_TYPED'
   | 'TRACE_HAIRLINE'
   | 'SESSION_RESUME'
@@ -420,6 +421,34 @@ const typedProcess = (
     result: {
       executeId: toolCallId,
       ...resultTiming('FINISHED', 1800),
+      input,
+      ...(data !== undefined ? { data } : {}),
+    },
+  },
+});
+
+/** V2 分组验收使用的真实 ToolCall 载荷：kind 位于 result 顶层。 */
+const protocolTool = (
+  toolCallId: string,
+  name: string,
+  kind: 'execute' | 'read' | 'edit' | 'write' | 'browser',
+  status: 'EXECUTING' | 'FINISHED' | 'FAILED',
+  input: Record<string, unknown>,
+  data?: unknown,
+): MockSseEvent => ({
+  eventType: 'PROCESSING',
+  requestId: req('1'),
+  data: {
+    targetId: -1,
+    name,
+    status,
+    toolCallId,
+    type: kind === 'browser' ? 'Page' : 'ToolCall',
+    result: {
+      executeId: toolCallId,
+      kind,
+      ...(status === 'EXECUTING' ? {} : { success: status === 'FINISHED' }),
+      ...resultTiming(status, 2200),
       input,
       ...(data !== undefined ? { data } : {}),
     },
@@ -1603,6 +1632,138 @@ export const MOCK_SCENARIOS: MockScenario[] = [
         '竞品分析完成：三家定价与功能矩阵已核对，结论以最终回答为准。',
       ),
     ].map((event) => ({ ...event, delayMs: event.delayMs ?? 150 })),
+  },
+  {
+    id: 'V2_GROUPED_TOOL_TRACE',
+    label: 'V2 三层工具分组轨迹',
+    description:
+      '两段被过程正文切开的连续工具组，覆盖重复读取/编辑/命令、运行转终态、失败组与单工具',
+    verifies:
+      '整轮轨迹 → 工具组 → 单项详情三层 disclosure；真实 kind=execute/read/edit 协议载荷；终态自动收起',
+    events: [
+      think('先读取相关文件和脚本，再实施修改。', true),
+      protocolTool('group-read-1', '读取 renderer-v2.md', 'read', 'EXECUTING', {
+        file_path: 'docs/conversation/renderer-v2.md',
+        line_start: 1,
+      }),
+      protocolTool(
+        'group-read-1',
+        '读取 renderer-v2.md',
+        'read',
+        'FINISHED',
+        { file_path: 'docs/conversation/renderer-v2.md', line_start: 1 },
+        '# V2 会话渲染器\n\n当前为两层轨迹。',
+      ),
+      protocolTool(
+        'group-read-2',
+        '读取 WorkTraceDisclosure.tsx',
+        'read',
+        'FINISHED',
+        {
+          file_path:
+            'src/features/conversation/presentation-v2/react/WorkTraceDisclosure.tsx',
+          line_start: 1,
+          line_end: 80,
+        },
+        'const WorkTraceDisclosure = () => { /* ... */ };',
+      ),
+      protocolTool(
+        'group-run-1',
+        '运行分组纯函数测试',
+        'execute',
+        'FINISHED',
+        { command: 'npx vitest run tests/conversation/traceItems.test.ts' },
+        [
+          {
+            type: 'terminal',
+            command: 'npx vitest run tests/conversation/traceItems.test.ts',
+            content: '✓ 11 tests passed',
+            exitCode: 0,
+          },
+        ],
+      ),
+      chat('边界与分组规则已确认，开始修改组件和样式。'),
+      protocolTool(
+        'group-edit-1',
+        '编辑 WorkTraceDisclosure.tsx',
+        'edit',
+        'FINISHED',
+        {
+          file_path:
+            'src/features/conversation/presentation-v2/react/WorkTraceDisclosure.tsx',
+        },
+        [
+          {
+            type: 'diff',
+            path: 'src/features/conversation/presentation-v2/react/WorkTraceDisclosure.tsx',
+            oldText: 'return nodes.map(renderNode);',
+            newText: 'return traceItems.map(renderTraceItem);',
+          },
+        ],
+      ),
+      protocolTool(
+        'group-edit-2',
+        '编辑 index.less',
+        'edit',
+        'FINISHED',
+        {
+          file_path:
+            'src/features/conversation/presentation-v2/react/index.less',
+        },
+        [
+          {
+            type: 'diff',
+            path: 'src/features/conversation/presentation-v2/react/index.less',
+            oldText: 'border: 1px solid #f0f0f0;',
+            newText: 'border-bottom: 1px solid var(--v2-color-border);',
+          },
+        ],
+      ),
+      protocolTool(
+        'group-run-2',
+        '运行会话合同测试',
+        'execute',
+        'EXECUTING',
+        { command: 'npm run test:conversation' },
+        [
+          {
+            type: 'terminal',
+            command: 'npm run test:conversation',
+            content: 'RUN v2.1.9 /Users/apple/workspace/nuwax',
+          },
+        ],
+      ),
+      protocolTool(
+        'group-run-2',
+        '运行会话合同测试',
+        'execute',
+        'FAILED',
+        { command: 'npm run test:conversation' },
+        [
+          {
+            type: 'terminal',
+            command: 'npm run test:conversation',
+            content: '1 test failed: historical trace expected expanded',
+            exitCode: 1,
+          },
+        ],
+      ),
+      chat('分组渲染已完成；最后单独检查浏览器结果。'),
+      protocolTool(
+        'group-browser-1',
+        '打开 Mock Chat 验收页',
+        'browser',
+        'FINISHED',
+        { url: 'http://localhost:3000/mock-chat', reuse: true },
+        {
+          title: '会话状态机故障注入验收',
+          url: 'http://localhost:3000/mock-chat',
+          summary: 'V2_GROUPED_TOOL_TRACE 场景已显示。',
+        },
+      ),
+      chat('V2 三层工具分组示例已准备完成。', true),
+      finalResult(true, 'V2 三层工具分组示例已准备完成。'),
+    ].map((event) => ({ ...event, delayMs: event.delayMs ?? 650 })),
   },
   {
     id: 'TOOL_RENDERING_TYPED',

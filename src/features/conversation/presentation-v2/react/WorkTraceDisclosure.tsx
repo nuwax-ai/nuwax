@@ -1,8 +1,6 @@
 /**
- * 外层工作轨迹 disclosure：一条轻量横向折叠头（非厚重卡片）。
- * 终态头部显示「N 次工具调用 · M 条消息 · 已工作 T」；运行态仅显示
- * 「工作中 T」。缺失指标单独省略。
- * 展开态由父层管理：默认值随运行/终态与预设变化，用户手动操作后固定。
+ * V2 整轮工作轨迹：外层指标 disclosure → 连续工具组 → 原子工具详情。
+ * 展开状态全部保存在本层，外层收起导致子树卸载时不会丢失用户选择。
  */
 import { PureMarkdownRenderer } from '@/components/MarkdownRenderer';
 import { useUnifiedTheme } from '@/hooks/useUnifiedTheme';
@@ -10,27 +8,31 @@ import { dict } from '@/services/i18nRuntime';
 import { CaretRightOutlined } from '@ant-design/icons';
 import { theme } from 'antd';
 import classNames from 'classnames';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   defaultTraceExpanded,
   resolveNodeMode,
   splitNodesByVisibility,
 } from '../renderPreferences';
+import {
+  composeConversationTraceItems,
+  getToolGroupActionKinds,
+  getToolGroupStatus,
+} from '../traceItems';
 import type {
   ConversationProcessNode,
   ConversationRenderPreferencesV2,
+  ConversationToolResource,
+  ConversationTraceItem,
   ConversationTurnPresentationV2,
 } from '../types';
 import ProcessNodeRow from './ProcessNodeRow';
+import ToolGroupDisclosure from './ToolGroupDisclosure';
 import { formatElapsed } from './formatElapsed';
 import styles from './index.less';
 
 const cx = classNames.bind(styles);
 
-/**
- * narration（过程说明）直出正文：在轨迹体内按原位穿插渲染为文字本身，
- * 不折叠成「过程说明」节点行；轻量 Markdown（与节点详情同款）+ 统一主题。
- */
 export const NarrationText: React.FC<{
   narrationId: string;
   children: string;
@@ -53,7 +55,6 @@ export const NarrationText: React.FC<{
   );
 };
 
-/** 运行态每秒跳动；终态冻结（elapsedMs） */
 const useElapsedMs = (
   turn: ConversationTurnPresentationV2,
 ): number | undefined => {
@@ -75,52 +76,109 @@ const useElapsedMs = (
 export interface WorkTraceDisclosureProps {
   turn: ConversationTurnPresentationV2;
   preferences: ConversationRenderPreferencesV2;
-  conversationId?: number | string;
-  /** 用户手动展开态；undefined = 未手动干预（跟随默认） */
   manualExpanded?: boolean;
   onManualToggle: (expanded: boolean) => void;
-  /** 历史轮（首挂载即终态，如打开历史会话）：默认展开轨迹 */
-  historicalTurn?: boolean;
+  onOpenResource?: (resource: ConversationToolResource) => void;
 }
 
 const WorkTraceDisclosure: React.FC<WorkTraceDisclosureProps> = ({
   turn,
   preferences,
-  conversationId,
   manualExpanded,
   onManualToggle,
-  historicalTurn,
+  onOpenResource,
 }) => {
   const { token } = theme.useToken();
   const [revealHidden, setRevealHidden] = useState(false);
-
   const expanded =
-    manualExpanded ??
-    defaultTraceExpanded(turn, preferences.preset, historicalTurn);
+    manualExpanded ?? defaultTraceExpanded(turn, preferences.preset);
   const { visibleNodes, hiddenCount } = useMemo(
     () => splitNodesByVisibility(turn.nodes, preferences),
     [turn.nodes, preferences],
   );
-  const shownNodes: ConversationProcessNode[] = revealHidden
-    ? turn.nodes
-    : visibleNodes;
+  const traceItems = useMemo(
+    () => composeConversationTraceItems(turn.nodes, turn.running),
+    [turn.nodes, turn.running],
+  );
+  const shownItems = useMemo(() => {
+    if (revealHidden) return traceItems;
+    const visibleIds = new Set(visibleNodes.map((node) => node.id));
+    return traceItems.flatMap<ConversationTraceItem>((item) => {
+      if (item.kind !== 'tool-group') {
+        return visibleIds.has(item.node.id) ? [item] : [];
+      }
+      const nodes = item.nodes.filter((node) => visibleIds.has(node.id));
+      if (!nodes.length) return [];
+      return [
+        {
+          ...item,
+          nodes,
+          actionKinds: getToolGroupActionKinds(nodes),
+          status: getToolGroupStatus(nodes),
+        },
+      ];
+    });
+  }, [revealHidden, traceItems, visibleNodes]);
 
   const [nodeExpanded, setNodeExpanded] = useState<Record<string, boolean>>({});
+  const [groupExpanded, setGroupExpanded] = useState<Record<string, boolean>>(
+    {},
+  );
+  const previousActiveGroups = useRef<Set<string>>(new Set());
+  const autoCollapsedGroups = useRef<Set<string>>(new Set());
+  const activeGroupKey = traceItems
+    .filter((item) => item.kind === 'tool-group' && item.active)
+    .map((item) => item.id)
+    .join('|');
+
+  useEffect(() => {
+    const current = new Set(activeGroupKey ? activeGroupKey.split('|') : []);
+    const collapsed: string[] = [];
+    previousActiveGroups.current.forEach((groupId) => {
+      if (!current.has(groupId) && !autoCollapsedGroups.current.has(groupId)) {
+        collapsed.push(groupId);
+        autoCollapsedGroups.current.add(groupId);
+      }
+    });
+    if (collapsed.length) {
+      setGroupExpanded((previous) => {
+        const next = { ...previous };
+        collapsed.forEach((groupId) => {
+          next[groupId] = false;
+        });
+        return next;
+      });
+    }
+    previousActiveGroups.current = current;
+  }, [activeGroupKey]);
+
   const toggleNode = (nodeId: string) => {
-    setNodeExpanded((prev) => ({ ...prev, [nodeId]: !prev[nodeId] }));
+    const node = turn.nodes.find((item) => item.id === nodeId);
+    setNodeExpanded((previous) => {
+      const current =
+        typeof previous[nodeId] === 'boolean'
+          ? previous[nodeId]
+          : Boolean(
+              node &&
+                resolveNodeMode(node, preferences) === 'expanded' &&
+                node.status !== 'running',
+            );
+      return { ...previous, [nodeId]: !current };
+    });
   };
   const nodeIsExpanded = (node: ConversationProcessNode): boolean => {
     const manual = nodeExpanded[node.id];
     if (typeof manual === 'boolean') return manual;
-    // 有效档位（预设表 + 高级覆盖）为 expanded 的「已完成」节点默认展开；
-    // 运行中节点只显示动态摘要，不自动展开完整输入输出（spec 预设表）
-    if (
+    return (
       resolveNodeMode(node, preferences) === 'expanded' &&
       node.status !== 'running'
-    ) {
-      return true;
-    }
-    return false;
+    );
+  };
+  const groupIsExpanded = (
+    item: Extract<ConversationTraceItem, { kind: 'tool-group' }>,
+  ): boolean => {
+    const manual = groupExpanded[item.id];
+    return typeof manual === 'boolean' ? manual : item.active;
   };
 
   const elapsedMs = useElapsedMs(turn);
@@ -141,8 +199,6 @@ const WorkTraceDisclosure: React.FC<WorkTraceDisclosureProps> = ({
       ),
     );
   }
-  // 流式刚启动、尚未收到后端时间锚点时也保持运行态文案稳定，
-  // 避免短暂闪回「执行过程」。
   const elapsedText = formatElapsed(
     elapsedMs ?? (turn.running ? 0 : undefined),
   );
@@ -161,9 +217,6 @@ const WorkTraceDisclosure: React.FC<WorkTraceDisclosureProps> = ({
     : dict('PC.Components.ConversationRendererV2.traceTitleProcessOnly');
 
   const traceBodyId = `v2-trace-body-${turn.key}`;
-  // CSS variables may belong to an outer/stale ConfigProvider while useToken()
-  // already reflects the active conversation surface. Bridge resolved tokens
-  // onto this subtree to prevent dark-on-dark text in embedded shells.
   const traceThemeStyle = {
     '--v2-color-text': token.colorText,
     '--v2-color-text-secondary': token.colorTextSecondary,
@@ -175,6 +228,8 @@ const WorkTraceDisclosure: React.FC<WorkTraceDisclosureProps> = ({
     '--v2-color-link': token.colorLink,
     '--v2-color-primary': token.colorPrimary,
     '--v2-color-primary-border': token.colorPrimaryBorder,
+    '--v2-color-success': token.colorSuccess,
+    '--v2-color-error': token.colorError,
   } as React.CSSProperties;
 
   return (
@@ -183,6 +238,7 @@ const WorkTraceDisclosure: React.FC<WorkTraceDisclosureProps> = ({
       style={traceThemeStyle}
       data-trace-key={turn.key}
       data-trace-running={turn.running ? 'true' : 'false'}
+      data-trace-expanded={expanded ? 'true' : 'false'}
     >
       <button
         type="button"
@@ -204,34 +260,53 @@ const WorkTraceDisclosure: React.FC<WorkTraceDisclosureProps> = ({
           className={cx(
             styles['trace-chevron'],
             styles['trace-chevron-trailing'],
-            {
-              [styles['trace-chevron-open']]: expanded,
-            },
+            { [styles['trace-chevron-open']]: expanded },
           )}
           aria-hidden="true"
         />
       </button>
       {expanded && (
         <div id={traceBodyId} className={cx(styles['trace-body'])}>
-          {shownNodes.map((node, nodeIndex) =>
-            node.kind === 'narration' ? (
-              // 过程说明穿插直出：按原位显示文字本身（保序 key 沿用节点序列）
-              <NarrationText
-                key={`${node.id}#${nodeIndex}`}
-                narrationId={node.id}
-              >
-                {node.text ?? ''}
-              </NarrationText>
-            ) : (
+          {shownItems.map((item) => {
+            if (item.kind === 'narration') {
+              return (
+                <NarrationText key={item.id} narrationId={item.id}>
+                  {item.node.text ?? ''}
+                </NarrationText>
+              );
+            }
+            if (item.kind === 'tool-group') {
+              return (
+                <ToolGroupDisclosure
+                  key={item.id}
+                  group={item}
+                  nodes={item.nodes}
+                  expanded={groupIsExpanded(item)}
+                  onToggle={() =>
+                    setGroupExpanded((previous) => {
+                      const current =
+                        typeof previous[item.id] === 'boolean'
+                          ? previous[item.id]
+                          : item.active;
+                      return { ...previous, [item.id]: !current };
+                    })
+                  }
+                  nodeIsExpanded={nodeIsExpanded}
+                  onToggleNode={toggleNode}
+                  onOpenResource={onOpenResource}
+                />
+              );
+            }
+            return (
               <ProcessNodeRow
-                key={`${node.id}#${nodeIndex}`}
-                node={node}
-                expanded={nodeIsExpanded(node)}
-                onToggle={() => toggleNode(node.id)}
-                conversationId={conversationId}
+                key={item.id}
+                node={item.node}
+                expanded={nodeIsExpanded(item.node)}
+                onToggle={() => toggleNode(item.node.id)}
+                onOpenResource={onOpenResource}
               />
-            ),
-          )}
+            );
+          })}
           {!revealHidden && hiddenCount > 0 && (
             <button
               type="button"

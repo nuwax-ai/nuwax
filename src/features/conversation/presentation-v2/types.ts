@@ -78,6 +78,49 @@ export interface ConversationProcessNode {
   endTime?: number;
 }
 
+/** 工具在 V2 时间线中的视觉语义；只影响展示，不改变后端组件协议。 */
+export type ConversationToolActionKind =
+  | 'terminal'
+  | 'file-edit'
+  | 'file-read'
+  | 'search'
+  | 'browser'
+  | 'skill'
+  | 'todo'
+  | 'generic';
+
+export interface ConversationToolGroupTraceItem {
+  kind: 'tool-group';
+  /** 由首个工具节点生成；流式向组尾追加时保持稳定。 */
+  id: string;
+  nodes: ConversationProcessNode[];
+  actionKinds: ConversationToolActionKind[];
+  status: ConversationProcessNode['status'];
+  /** 仅运行轮最末尾、且未被其他内容超越的工具组为活动组。 */
+  active: boolean;
+}
+
+/** V2 三层轨迹的中间展示模型：正文 / 独立节点 / 连续工具组。 */
+export type ConversationTraceItem =
+  | {
+      kind: 'narration';
+      id: string;
+      node: ConversationProcessNode;
+    }
+  | {
+      kind: 'standalone';
+      id: string;
+      node: ConversationProcessNode;
+    }
+  | ConversationToolGroupTraceItem;
+
+/** 可选宿主资源联动；缺失回调时详情仍完整行内展示。 */
+export interface ConversationToolResource {
+  kind: 'file' | 'url';
+  target: string;
+  line?: number;
+}
+
 /** 最终回答（始终常显在轨迹下方） */
 export interface ConversationFinalAnswer {
   /** 剥离全部自定义标签后的 Markdown 正文；source=none 时为空串 */

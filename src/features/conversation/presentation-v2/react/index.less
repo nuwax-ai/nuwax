@@ -33,31 +33,25 @@
   }
 }
 
-// ---- 外层工作轨迹 disclosure：轻量横向条，不做厚重卡片 ----
+// ---- 外层工作轨迹：单 hairline + 三层渐进 disclosure ----
 .trace {
-  margin-top: 6px;
-  border-bottom: 1px solid var(--v2-color-border, rgba(5, 5, 5, 8%));
-
-  &[data-trace-running='true'] {
-    border-bottom-color: var(
-      --v2-color-primary-border,
-      rgba(106, 90, 249, 35%)
-    );
-  }
+  margin-top: 8px;
 }
 
 .trace-toggle {
-  // 原生 button：键盘 Enter/Space 天然支持
   appearance: none;
   border: none;
+  border-bottom: 1px solid var(--v2-color-border, rgba(5, 5, 5, 8%));
   background: transparent;
   width: 100%;
+  min-height: 32px;
   display: flex;
   align-items: center;
   gap: 4px;
   padding: 4px 0;
   cursor: pointer;
   text-align: left;
+  transition: background 0.16s ease, border-color 0.16s ease;
 
   &:hover {
     background: var(--v2-color-fill, rgba(5, 5, 5, 2%));
@@ -69,14 +63,22 @@
   }
 }
 
-.trace-chevron {
-  font-size: 10px;
-  color: var(--v2-color-text-tertiary, rgba(5, 5, 5, 45%));
-  transition: transform 0.2s ease;
-  flex-shrink: 0;
+.trace[data-trace-running='true'] .trace-toggle {
+  border-bottom-color: var(--v2-color-primary-border, rgba(106, 90, 249, 35%));
 }
 
-.trace-chevron-open {
+.trace-chevron,
+.tool-group-chevron,
+.node-disclosure {
+  flex-shrink: 0;
+  font-size: 9px;
+  color: var(--v2-color-text-quaternary, rgba(5, 5, 5, 25%));
+  transition: transform 0.18s ease, color 0.18s ease;
+}
+
+.trace-chevron-open,
+.tool-group-chevron-open,
+.node-disclosure-open {
   transform: rotate(90deg);
 }
 
@@ -86,9 +88,10 @@
 
 .trace-metrics {
   min-width: 0;
-  font-size: 12px;
-  color: var(--v2-color-text-tertiary, rgba(5, 5, 5, 45%));
   overflow: hidden;
+  color: var(--v2-color-text-tertiary, rgba(5, 5, 5, 45%));
+  font-size: 13px;
+  line-height: 22px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -100,25 +103,36 @@
 .trace-body {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 0 8px 8px;
-  border-top: 1px solid var(--v2-color-border, rgba(5, 5, 5, 6%));
+  gap: 3px;
+  padding: 10px 0 8px;
 }
 
-// ---- 单行节点 ----
+// ---- 连续工具组 ----
+.tool-group {
+  min-width: 0;
+}
+
+.tool-group-toggle,
 .node-row {
   appearance: none;
   border: none;
   background: transparent;
   width: 100%;
+  min-height: 30px;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
   padding: 4px 6px;
   border-radius: 6px;
-  cursor: pointer;
-  text-align: left;
+  color: var(--v2-color-text, rgba(0, 0, 0, 88%));
   font-size: 13px;
+  line-height: 20px;
+  text-align: left;
+}
+
+.tool-group-toggle,
+.node-row:not(.is-static) {
+  cursor: pointer;
 
   &:hover {
     background: var(--v2-color-fill-hover, rgba(5, 5, 5, 4%));
@@ -130,16 +144,59 @@
   }
 }
 
+.tool-group-icon,
 .node-kind-icon {
-  font-size: 13px;
+  width: 14px;
+  font-size: 14px;
   flex-shrink: 0;
 }
 
+.tool-group-title {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--v2-color-text-secondary, rgba(5, 5, 5, 65%));
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tool-group-status,
+.node-status-icon {
+  margin-left: auto;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.tool-group-body {
+  position: relative;
+  margin: 1px 0 5px 12px;
+  padding-left: 8px;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 3px;
+    bottom: 3px;
+    left: 0;
+    width: 1px;
+    background: var(--v2-color-border, rgba(5, 5, 5, 8%));
+  }
+}
+
+// ---- 单行过程节点 / 工具事件 ----
+.node-row-wrapper {
+  min-width: 0;
+
+  &.is-failed .node-title {
+    color: var(--v2-color-error, #ff4d4f);
+  }
+}
+
 .node-title {
+  max-width: 42%;
+  overflow: hidden;
   font-weight: 500;
   flex-shrink: 0;
-  max-width: 45%;
-  overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -148,73 +205,120 @@
   flex: 1;
   min-width: 0;
   overflow: hidden;
+  color: var(--v2-color-text-tertiary, rgba(5, 5, 5, 45%));
+  font-size: 13px;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.node-meta {
+  flex-shrink: 0;
   color: var(--v2-color-text-tertiary, rgba(5, 5, 5, 45%));
-  font-size: 12px;
-}
-
-.node-status-icon {
-  font-size: 12px;
-  flex-shrink: 0;
-}
-
-.node-disclosure {
-  flex-shrink: 0;
-  font-size: 9px;
-  color: var(--v2-color-text-quaternary, rgba(5, 5, 5, 25%));
-  transition: transform 0.2s ease, color 0.2s ease;
+  font: 12px/20px Menlo, Monaco, Consolas, monospace;
 }
 
 .node-row:hover .node-disclosure,
-.node-row:focus-visible .node-disclosure {
+.node-row:focus-visible .node-disclosure,
+.tool-group-toggle:hover .tool-group-chevron,
+.tool-group-toggle:focus-visible .tool-group-chevron {
   color: var(--v2-color-text-secondary, rgba(5, 5, 5, 65%));
 }
 
-.node-disclosure-open {
-  transform: rotate(90deg);
-}
-
-// 节点详情：受限高度 + 内部滚动（less 会把 min() 当内置函数，需转义）
 .node-detail {
-  max-height: ~'min(360px, 45vh)';
+  max-height: ~'min(420px, 52vh)';
   overflow-y: auto;
-  margin: 2px 6px 6px 22px;
-  padding: 8px 10px;
-  border-radius: 6px;
+  margin: 2px 6px 8px 27px;
+  padding-left: 10px;
   color: var(--v2-color-text, rgba(0, 0, 0, 88%));
-  background: var(--v2-color-fill, rgba(5, 5, 5, 2%));
-  border-left: 2px solid var(--v2-color-border, rgba(5, 5, 5, 8%));
+  border-left: 1px solid var(--v2-color-border, rgba(5, 5, 5, 8%));
 }
 
 .node-detail-text {
+  padding: 4px 0;
   white-space: pre-wrap;
   word-break: break-word;
   font-size: 13px;
-  line-height: 1.6;
+  line-height: 1.65;
 }
 
-// V2 工具详情：正文型呈现，不在节点内再套一张完整工具卡。
+// ---- 类型化工具详情：只有富内容使用承载面板，不再嵌旧工具卡 ----
 .tool-detail {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 7px;
   min-width: 0;
   font-size: 12px;
   line-height: 1.55;
 }
 
-.tool-detail-description {
+.tool-terminal,
+.tool-file-preview,
+.tool-diff-view {
+  overflow: hidden;
+  padding: 10px 12px;
+  border: 1px solid var(--v2-color-border, rgba(5, 5, 5, 8%));
+  border-radius: 8px;
+  background: var(--v2-color-fill, rgba(5, 5, 5, 2%));
+}
+
+.tool-terminal-header,
+.tool-file-header,
+.tool-diff-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
   color: var(--v2-color-text-secondary, rgba(5, 5, 5, 65%));
 }
 
-.tool-detail-path {
+.tool-terminal-header {
+  justify-content: space-between;
+  padding-bottom: 6px;
+  font: 12px/18px Menlo, Monaco, Consolas, monospace;
+}
+
+.tool-terminal-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.tool-detail-description,
+.tool-detail-section-label,
+.tool-file-header > span,
+.tool-diff-summary {
+  color: var(--v2-color-text-tertiary, rgba(5, 5, 5, 45%));
+}
+
+.tool-detail-path,
+.tool-detail-resource {
   width: fit-content;
   max-width: 100%;
   overflow: hidden;
+  color: var(--v2-color-link, #1677ff);
+  font: 12px/18px Menlo, Monaco, Consolas, monospace;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: var(--v2-color-text-secondary, rgba(5, 5, 5, 65%));
+}
+
+button.tool-detail-resource {
+  appearance: none;
+  border: none;
+  border-bottom: 1px dotted currentcolor;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--v2-color-primary, #6a5af9);
+    outline-offset: 2px;
+  }
+}
+
+a.tool-detail-resource {
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 2px;
 }
 
 .tool-detail-command {
@@ -222,21 +326,24 @@
   grid-template-columns: 12px minmax(0, 1fr);
   gap: 6px;
   align-items: start;
+  padding: 7px 0;
   color: var(--v2-color-text-tertiary, rgba(5, 5, 5, 45%));
+  border-top: 1px solid var(--v2-color-border, rgba(5, 5, 5, 8%));
+  border-bottom: 1px solid var(--v2-color-border, rgba(5, 5, 5, 8%));
 }
 
 .tool-detail-text {
   min-width: 0;
-  max-height: 220px;
+  max-height: 240px;
   margin: 0;
   padding: 7px 9px;
   overflow: auto;
-  border-radius: 4px;
+  border-radius: 5px;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  font: 12px/1.55 Monaco, Menlo, 'Ubuntu Mono', monospace;
   color: var(--v2-color-text, rgba(0, 0, 0, 88%));
   background: var(--v2-color-fill-hover, rgba(5, 5, 5, 4%));
+  font: 12px/1.55 Menlo, Monaco, Consolas, monospace;
 
   &.is-command {
     padding: 0;
@@ -248,9 +355,21 @@
   }
 }
 
+.tool-detail-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tool-detail-section-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 .tool-detail.is-failed .tool-detail-text.is-output {
-  color: var(--v2-color-text, rgba(0, 0, 0, 88%));
-  border-left: 2px solid var(--v2-color-border, rgba(5, 5, 5, 8%));
+  border-left: 2px solid var(--v2-color-error, #ff4d4f);
 }
 
 .tool-detail-steps {
@@ -265,17 +384,31 @@
   }
 }
 
+.tool-diff-summary {
+  padding-bottom: 6px;
+}
+
+.is-added-text {
+  color: var(--v2-color-success, #52c41a);
+}
+
+.is-removed-text {
+  color: var(--v2-color-error, #ff4d4f);
+}
+
 .tool-detail-diff {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  padding-top: 7px;
+  border-top: 1px solid var(--v2-color-border, rgba(5, 5, 5, 8%));
 
   pre {
     margin: 0;
     padding: 5px 8px;
     overflow: auto;
     white-space: pre-wrap;
-    font: 12px/1.5 Monaco, Menlo, 'Ubuntu Mono', monospace;
+    font: 12px/1.5 Menlo, Monaco, Consolas, monospace;
   }
 
   .is-removed {
@@ -285,6 +418,31 @@
   .is-added {
     background: rgba(82, 196, 26, 8%);
   }
+}
+
+.tool-result-view {
+  padding: 5px 0;
+
+  p {
+    margin: 0;
+    color: var(--v2-color-text-secondary, rgba(5, 5, 5, 65%));
+  }
+}
+
+.tool-detail-query {
+  width: fit-content;
+  max-width: 100%;
+  padding: 3px 7px;
+  overflow: hidden;
+  border-radius: 5px;
+  color: var(--v2-color-text-secondary, rgba(5, 5, 5, 65%));
+  background: var(--v2-color-fill-hover, rgba(5, 5, 5, 4%));
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tool-result-title {
+  font-size: 13px;
 }
 
 // 隐藏项恢复入口
@@ -390,15 +548,33 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .running-dot {
-    animation: none;
-  }
-
-  .trace-chevron {
-    transition: none;
-  }
-
+  .trace-toggle,
+  .trace-chevron,
+  .tool-group-chevron,
   .node-disclosure {
     transition: none;
+  }
+}
+
+@media (max-width: 560px) {
+  .node-title {
+    max-width: 38%;
+  }
+
+  .tool-group-toggle,
+  .node-row {
+    gap: 5px;
+    padding-inline: 3px;
+  }
+
+  .node-detail {
+    margin-left: 18px;
+    padding-left: 8px;
+  }
+
+  .tool-terminal,
+  .tool-file-preview,
+  .tool-diff-view {
+    padding: 8px;
   }
 }

@@ -21,6 +21,17 @@ export interface NormalizedV2ToolDetail {
   command?: string;
   description?: string;
   filePath?: string;
+  lineStart?: number;
+  lineEnd?: number;
+  query?: string;
+  url?: string;
+  resultTitle?: string;
+  resultSummary?: string;
+  skillContent?: string;
+  exitCode?: number;
+  additions: number;
+  deletions: number;
+  isCreate: boolean;
   output?: string;
   inputText?: string;
   success?: boolean;
@@ -80,16 +91,48 @@ const readString = (
   return undefined;
 };
 
+const readNumber = (
+  source: Record<string, unknown> | undefined,
+  keys: string[],
+): number | undefined => {
+  for (const key of keys) {
+    if (typeof source?.[key] === 'number') return source[key] as number;
+  }
+  return undefined;
+};
+
+const countChangedLines = (value?: string): number =>
+  value ? value.split(/\r?\n/).length : 0;
+
 export const normalizeV2ToolDetail = ({
   componentType,
   name,
   result,
 }: V2ToolDetailInput): NormalizedV2ToolDetail => {
   const resultRecord = asRecord(result);
-  const input = asRecord(
+  const inputEnvelope = asRecord(
     resultRecord?.input ?? resultRecord?.rawInput ?? resultRecord?.raw_input,
   );
+  const nestedRawInput = asRecord(
+    inputEnvelope?.rawInput ?? inputEnvelope?.raw_input,
+  );
+  const input = nestedRawInput
+    ? { ...inputEnvelope, ...nestedRawInput }
+    : inputEnvelope;
   const data = resultRecord?.data;
+  const dataRecords = Array.isArray(data)
+    ? data
+        .map((entry) => asRecord(entry))
+        .filter((entry): entry is Record<string, unknown> => !!entry)
+    : [];
+  const structuredResult = Array.isArray(data)
+    ? dataRecords.find(
+        (entry) =>
+          typeof entry.title === 'string' ||
+          typeof entry.summary === 'string' ||
+          typeof entry.url === 'string',
+      )
+    : asRecord(data);
   const steps = Array.isArray(data)
     ? data
         .map((entry) => asRecord(entry))
@@ -104,6 +147,12 @@ export const normalizeV2ToolDetail = ({
     : [];
 
   const kind = getToolPresentationKind({ componentType, name, result });
+  const diffs = normalizeFileDiffItems(
+    resultRecord && input ? { ...resultRecord, input } : result,
+  );
+  const terminalRecord = dataRecords.find(
+    (entry) => entry.type === 'terminal' || typeof entry.exitCode === 'number',
+  );
   const inputForDisplay = input
     ? Object.fromEntries(
         Object.entries(input).filter(
@@ -114,6 +163,11 @@ export const normalizeV2ToolDetail = ({
               'file_path',
               'filePath',
               'filepath',
+              'skill_content',
+              'skillContent',
+              'kind',
+              'rawInput',
+              'raw_input',
             ].includes(key),
         ),
       )
@@ -124,6 +178,33 @@ export const normalizeV2ToolDetail = ({
     command: readString(input, ['command']),
     description: readString(input, ['description']),
     filePath: readString(input, ['file_path', 'filePath', 'filepath', 'path']),
+    lineStart: readNumber(input, ['line_start', 'lineStart', 'start_line']),
+    lineEnd: readNumber(input, ['line_end', 'lineEnd', 'end_line']),
+    query: readString(input, ['query', 'q', 'keyword', 'keywords']),
+    url:
+      readString(input, ['url', 'uri', 'href']) ??
+      readString(structuredResult, ['url', 'uri', 'href']),
+    resultTitle: readString(structuredResult, ['title', 'name']),
+    resultSummary: readString(structuredResult, [
+      'summary',
+      'description',
+      'snippet',
+    ]),
+    skillContent: readString(input, ['skill_content', 'skillContent']),
+    exitCode:
+      readNumber(terminalRecord, ['exitCode', 'exit_code', 'code']) ??
+      readNumber(resultRecord, ['exitCode', 'exit_code', 'code']),
+    additions: diffs.reduce(
+      (total, diff) => total + countChangedLines(diff.newText),
+      0,
+    ),
+    deletions: diffs.reduce(
+      (total, diff) => total + countChangedLines(diff.oldText),
+      0,
+    ),
+    isCreate:
+      diffs.length > 0 &&
+      diffs.every((diff) => !diff.oldText && Boolean(diff.newText)),
     output: readOutput(resultRecord) || undefined,
     inputText:
       inputForDisplay && Object.keys(inputForDisplay).length
@@ -134,6 +215,6 @@ export const normalizeV2ToolDetail = ({
         ? resultRecord.success
         : undefined,
     steps,
-    diffs: normalizeFileDiffItems(result),
+    diffs,
   };
 };

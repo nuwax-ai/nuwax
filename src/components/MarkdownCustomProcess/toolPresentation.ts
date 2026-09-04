@@ -46,15 +46,26 @@ export const getToolPresentationKind = ({
     resultRecord?.input && typeof resultRecord.input === 'object'
       ? (resultRecord.input as Record<string, unknown>)
       : undefined;
+  const rawInput =
+    input?.rawInput && typeof input.rawInput === 'object'
+      ? (input.rawInput as Record<string, unknown>)
+      : input?.raw_input && typeof input.raw_input === 'object'
+      ? (input.raw_input as Record<string, unknown>)
+      : undefined;
+  const semanticKind = resultKind ?? input?.kind;
   const items = resultItems(result);
   if (items.some((item) => item.type === 'terminal')) return 'terminal';
   if (items.some((item) => item.type === 'diff')) return 'file-edit';
   // 真实 ToolCall 历史协议使用 kind + content.text，而不是 terminal/diff data 项。
-  if (resultKind === 'execute' || typeof input?.command === 'string') {
+  if (
+    semanticKind === 'execute' ||
+    typeof input?.command === 'string' ||
+    typeof rawInput?.command === 'string'
+  ) {
     return 'terminal';
   }
-  if (resultKind === 'read') return 'file-read';
-  if (resultKind === 'edit' || resultKind === 'write') return 'file-edit';
+  if (semanticKind === 'read') return 'file-read';
+  if (semanticKind === 'edit' || semanticKind === 'write') return 'file-edit';
 
   if (componentType === AgentComponentTypeEnum.Plan) return 'todo';
   if (componentType === AgentComponentTypeEnum.Skill) return 'skill';

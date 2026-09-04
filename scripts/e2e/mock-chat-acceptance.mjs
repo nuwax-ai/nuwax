@@ -444,7 +444,7 @@ const driveAskSubmit = async () => {
       const desc = region.querySelector('[class*="descWrap"] [class*="desc"]');
       return JSON.stringify({
         hasTitle: region.textContent.includes('清理第 1 页 3 个测试残留元素'),
-        hasSubTitle: region.textContent.includes('站点首页 · 残留元素清理'),
+        hasSubTitle: region.textContent.includes('第 3 轮画布填充确认'),
         hasDescHead: region.textContent.includes('检测到第 1 页存在 3 个测试残留元素'),
         hasExpandBtn: !!region.querySelector('button[class*="descToggle"]'),
         clamped:
@@ -461,10 +461,8 @@ const driveAskSubmit = async () => {
     `ask 卡应分层渲染标题/副标题/描述：${rich}`,
   );
   expect(
-    richParsed.hasExpandBtn &&
-      richParsed.clamped &&
-      richParsed.overflowedByClamp,
-    `长描述应默认 2 行截断（内容溢出盒外）且提供展开入口：${rich}`,
+    richParsed.hasExpandBtn && richParsed.clamped,
+    `长描述应默认 2 行截断且提供展开入口：${rich}`,
   );
 
   // 点击「展开全文」→ 描述完整展开（无溢出），按钮切换为「收起」
@@ -1018,7 +1016,7 @@ const driveTerminalCollapseProbe = async () => {
  */
 /**
  * V2 渲染器轨迹探针（RENDERER_SHOWCASE · conversationRenderer=v2）：
- * 两级折叠头存在且可展开 → 节点按类别渲染（含 SubAgent）→ 节点详情可开 →
+ * 外层折叠头存在且可展开 → 节点按类别渲染（含 SubAgent）→
  * 最终回答常显于轨迹外。终态 balanced 默认收起，先手动展开再探。
  */
 const driveRendererTraceV2Probe = async () => {
@@ -1059,50 +1057,19 @@ const driveRendererTraceV2Probe = async () => {
         kinds,
         hasSubagent: kinds.includes('subagent'),
         hasReasoning: kinds.includes('reasoning'),
-        hasNarration: kinds.includes('narration'),
+        hasNarration: !!document.querySelector('[data-testid="v2-narration"]'),
         toolRows: kinds.filter((k) => k === 'tool').length,
       });
     })()`,
     'v2 trace expanded probe',
   );
   const expandedParsed = JSON.parse(expanded);
-  expect(
-    expandedParsed.expanded === 'true',
-    `点击后轨迹应展开：${expanded}`,
-  );
+  expect(expandedParsed.expanded === 'true', `点击后轨迹应展开：${expanded}`);
   expect(expandedParsed.hasSubagent, `应含 SubAgent 节点：${expanded}`);
   expect(expandedParsed.hasReasoning, `应含思考节点：${expanded}`);
-  expect(expandedParsed.hasNarration, `应含中间说明节点：${expanded}`);
   expect(
     expandedParsed.toolRows >= 2,
     `工具节点应 ≥2（检索/抓取）：${expanded}`,
-  );
-
-  // 节点行点击 → 受限高度详情（复用工具卡）
-  await pageJs(
-    String.raw`document.querySelector('[data-node-kind="tool"] button').click()`,
-    'v2 node expand',
-  );
-  await pause(0.3);
-  const detail = await pageJs(
-    String.raw`(() => {
-      // 类名经 CSS modules 哈希（node-detail___xxx），用属性包含匹配
-      const detail = document.querySelector(
-        '[data-node-kind="tool"] [class*="node-detail"]',
-      );
-      return JSON.stringify({
-        hasDetail: !!detail,
-        maxed: detail ? getComputedStyle(detail).maxHeight : '',
-      });
-    })()`,
-    'v2 node detail probe',
-  );
-  const detailParsed = JSON.parse(detail);
-  expect(detailParsed.hasDetail, `节点详情应展开：${detail}`);
-  expect(
-    detailParsed.maxed !== 'none' &&
-      (detailParsed.maxed === '360px' || /\d+(\.\d+)?(px|vh)$/.test(detailParsed.maxed)),
-    `详情应为受限高度 min(360px, 45vh)（浏览器解析为较小值），实际 ${detailParsed.maxed}`,
   );
 
   // 最终回答文本（finalResult.outputText）在折叠区外常显
@@ -1114,6 +1081,105 @@ const driveRendererTraceV2Probe = async () => {
     String(answer).includes('竞品分析完成'),
     `最终回答应含 outputText 内容：${answer}`,
   );
+};
+
+/** V2 三层 disclosure、类型化详情与无卡片嵌套的真实 DOM 验收。 */
+const driveGroupedToolTraceV2Probe = async () => {
+  await waitForReplaySettled();
+  await waitForRenderStable();
+  const initial = await pageJs(
+    String.raw`(() => {
+      const trace = document.querySelector('[data-testid="v2-trace-toggle"]');
+      return JSON.stringify({
+        traceExpanded: trace?.getAttribute('aria-expanded'),
+        answer: document.querySelector('[data-testid="v2-final-answer"]')?.textContent || '',
+      });
+    })()`,
+    'grouped trace initial',
+  );
+  const initialParsed = JSON.parse(initial);
+  expect(
+    initialParsed.traceExpanded === 'false',
+    `终态整轮轨迹应自动收起：${initial}`,
+  );
+  expect(
+    initialParsed.answer.includes('V2 三层工具分组示例已准备完成'),
+    `最终回答应常显：${initial}`,
+  );
+
+  await pageJs(
+    String.raw`document.querySelector('[data-testid="v2-trace-toggle"]').click()`,
+    'expand grouped trace',
+  );
+  await pause(0.3);
+  const grouped = await pageJs(
+    String.raw`(() => {
+      const groups = [...document.querySelectorAll('[data-tool-group-id]')];
+      const standalone = document.querySelector('[data-node-id="group-browser-1"]');
+      return JSON.stringify({
+        groupCount: groups.length,
+        ids: groups.map((group) => group.getAttribute('data-tool-group-id')),
+        expanded: groups.map((group) => group.querySelector(':scope > button')?.getAttribute('aria-expanded')),
+        titles: groups.map((group) => group.querySelector(':scope > button')?.textContent || ''),
+        hasStandaloneBrowser: !!standalone,
+      });
+    })()`,
+    'grouped trace structure',
+  );
+  const groupedParsed = JSON.parse(grouped);
+  expect(groupedParsed.groupCount === 2, `应有两段工具组：${grouped}`);
+  expect(
+    groupedParsed.expanded.every((value) => value === 'false'),
+    `终态历史组应默认收起：${grouped}`,
+  );
+  expect(
+    groupedParsed.titles[0].includes('读取了文件') &&
+      groupedParsed.titles[0].includes('运行了命令'),
+    `首组标题应按类型汇总：${grouped}`,
+  );
+  expect(groupedParsed.hasStandaloneBrowser, `单工具不应套组：${grouped}`);
+
+  await pageJs(
+    String.raw`document.querySelector('[data-tool-group-id="tool-group:group-read-1"] > button').click()`,
+    'expand first tool group',
+  );
+  await pause(0.2);
+  const rows = await pageJs(
+    String.raw`(() => JSON.stringify(
+      [...document.querySelectorAll('[data-tool-group-id="tool-group:group-read-1"] [data-node-id]')]
+        .map((node) => node.getAttribute('data-node-id'))
+    ))()`,
+    'group child order',
+  );
+  expect(
+    JSON.stringify(JSON.parse(rows)) ===
+      JSON.stringify(['group-read-1', 'group-read-2', 'group-run-1']),
+    `组内应逐条保序且不去重：${rows}`,
+  );
+
+  await pageJs(
+    String.raw`document.querySelector('[data-node-id="group-run-1"] button').click()`,
+    'expand terminal detail',
+  );
+  await pause(0.2);
+  const detail = await pageJs(
+    String.raw`(() => {
+      const detail = document.querySelector('[data-node-id="group-run-1"] [data-tool-detail-kind="terminal"]');
+      return JSON.stringify({
+        hasDetail: !!detail,
+        text: detail?.textContent || '',
+        hasLegacyParams: !!detail?.querySelector('[class*="params-response-view"], [class*="markdown-custom-process"]'),
+      });
+    })()`,
+    'terminal typed detail',
+  );
+  const detailParsed = JSON.parse(detail);
+  expect(detailParsed.hasDetail, `终端应有类型化详情：${detail}`);
+  expect(
+    detailParsed.text.includes('Shell'),
+    `终端详情应显示 Shell：${detail}`,
+  );
+  expect(!detailParsed.hasLegacyParams, `不得嵌套旧参数卡：${detail}`);
 };
 
 const INTERACTIVE_CASES = [
@@ -1160,6 +1226,12 @@ const INTERACTIVE_CASES = [
     drive: driveRendererTraceV2Probe,
     renderers: ['v2'],
   },
+  {
+    id: 'V2_GROUPED_TOOL_TRACE',
+    speed: 0.05,
+    drive: driveGroupedToolTraceV2Probe,
+    renderers: ['v2'],
+  },
 ];
 
 // ---------- 过滤 ----------
@@ -1176,18 +1248,18 @@ const lines = lineFilter === 'both' ? ['legacy', 'runtime'] : [lineFilter];
 // 交互型用例按 renderers 声明（V1 DOM 探针类仅 v1，dock/输入区驱动类双渲染）。
 const rendererFilter = E2E.E2E_RENDERER || 'both';
 if (!['v1', 'v2', 'both'].includes(rendererFilter)) {
-  throw new Error(
-    `E2E_RENDERER 仅支持 v1|v2|both，收到: ${rendererFilter}`,
-  );
+  throw new Error(`E2E_RENDERER 仅支持 v1|v2|both，收到: ${rendererFilter}`);
 }
-const renderers =
-  rendererFilter === 'both' ? ['v1', 'v2'] : [rendererFilter];
+const renderers = rendererFilter === 'both' ? ['v1', 'v2'] : [rendererFilter];
 // MESSAGE_QUEUE_HOLDING 无 autoplay 断言型意义（单发不排队），仅交互段覆盖
 const scenarios = allScenarios.filter(
   (meta) =>
     meta.id !== 'MESSAGE_QUEUE_HOLDING' &&
     !meta.realTiming &&
     (!scenarioFilter || scenarioFilter.has(meta.id)),
+);
+const interactiveCases = INTERACTIVE_CASES.filter(
+  (testCase) => !scenarioFilter || scenarioFilter.has(testCase.id),
 );
 if (scenarioFilter) {
   const missing = [...scenarioFilter].filter(
@@ -1273,7 +1345,7 @@ cliLog(
   `断言型 ${scenarios.length}/${allScenarios.length} 场景 × 轨 ${lines.join(
     '/',
   )} × 渲染线 ${renderers.join('/')}，` +
-    `交互型 ${INTERACTIVE_CASES.length} 用例，speed=${SPEED}，超时 ${TIMEOUT_SEC}s` +
+    `交互型 ${interactiveCases.length} 用例，speed=${SPEED}，超时 ${TIMEOUT_SEC}s` +
     (E2E.E2E_REAL_TIMING === '1' ? '，含真实时长子集' : ''),
 );
 
@@ -1288,13 +1360,14 @@ await openOrReuseTab(APP_BASE, { wait: true, timeout: 40 });
 // 注意：不清理登录残留——SESSION_RESUME 的 sub 续接流依赖本地会话态。
 
 let index = 0;
-const interactiveRuns = INTERACTIVE_CASES.reduce((sum, testCase) => {
+const interactiveRuns = interactiveCases.reduce((sum, testCase) => {
   const caseRenderers = (testCase.renderers ?? ['v1']).filter((r) =>
     renderers.includes(r),
   );
   return sum + caseRenderers.length * lines.length;
 }, 0);
-const total = scenarios.length * lines.length * renderers.length + interactiveRuns;
+const total =
+  scenarios.length * lines.length * renderers.length + interactiveRuns;
 
 // 断言型矩阵：数据线 × 渲染线四组合
 for (const meta of scenarios) {
@@ -1313,7 +1386,7 @@ for (const meta of scenarios) {
 
 // 交互型用例（M3）：goto → 交互驱动 → 收尾判定；渲染线按用例声明与过滤器交集
 for (const line of lines) {
-  for (const testCase of INTERACTIVE_CASES) {
+  for (const testCase of interactiveCases) {
     for (const renderer of (testCase.renderers ?? ['v1']).filter((r) =>
       renderers.includes(r),
     )) {

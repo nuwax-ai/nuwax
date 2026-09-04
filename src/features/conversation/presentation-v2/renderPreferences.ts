@@ -4,8 +4,9 @@
  * 三档预设（默认 balanced）：
  * | 节点类型                      | focused | balanced | detailed        |
  * | 思考、上下文                  | 隐藏    | 摘要     | 已完成节点展开   |
- * | 工具、子智能体                | 摘要    | 摘要     | 摘要             |
- * | 计划、已完成交互、未知节点     | 摘要    | 摘要     | 摘要             |
+ * | 工具、子智能体                | 摘要    | 摘要     | 已完成节点展开   |
+ * | 计划                          | 摘要    | 摘要     | 已完成节点展开   |
+ * | 已完成交互、未知节点           | 摘要    | 摘要     | 摘要             |
  *
  * 高级设置可把任一类型改为 hidden/summary/expanded；失败节点即使配置隐藏
  * 也至少恢复为错误摘要；隐藏节点不占轨迹行，由「另有 N 项已隐藏」入口恢复。
@@ -60,9 +61,9 @@ export const PRESET_NODE_MODES: Record<
   detailed: {
     reasoning: 'expanded',
     context: 'expanded',
-    tool: 'summary',
-    subagent: 'summary',
-    plan: 'summary',
+    tool: 'expanded',
+    subagent: 'expanded',
+    plan: 'expanded',
     'completed-interaction': 'summary',
     unknown: 'summary',
   },
@@ -126,9 +127,7 @@ export function splitNodesByVisibility(
 }
 
 /**
- * 外层轨迹默认展开态：运行轮恒展开；本会话流式结束的终态轮统一收起；
- * 打开页面即终态的历史轮（打开历史会话 / 分页加载的旧消息）默认展开，
- * 避免「打开即收起」让人误以为过程渲染丢失。
+ * 外层轨迹默认展开态：运行轮恒展开；实时流结束与历史终态轮统一收起。
  * 用户手动操作后由渲染层固定，本函数只提供「未手动干预时」的默认值。
  */
 export function defaultTraceExpanded(
@@ -137,5 +136,6 @@ export function defaultTraceExpanded(
   historicalTurn = false,
 ): boolean {
   void preset;
-  return turn.running || historicalTurn;
+  void historicalTurn;
+  return turn.running;
 }
