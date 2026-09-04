@@ -1,0 +1,309 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+/**
+ * 新增工具弹窗样式
+ *
+ * 视觉结构：
+ *   - 基础信息：双列栅格（ACTIONKEY / 工具名称、标签 / 执行类型）
+ *   - 区块（HTTP 请求声明 / 输入参数声明）：浅灰底标题条 + 左侧黑色竖线
+ *   - 映射卡片：Header（标题 + 添加按钮）+ 空态占位
+ *   - 底部：通栏「保存工具」主按钮
+ */
+
+.modal {
+  :global {
+    // 表单项较多：限制 body 高度内部滚动，避免小屏溢出
+    .ant-modal-body {
+      max-height: calc(100vh - 220px);
+      padding: 20px 24px;
+      overflow-y: auto;
+    }
+  }
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+}
+
+/* 区块容器：标题条 + 内容统一间距 */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 4px;
+}
+
+/* 区块标题条：浅灰底 + 左侧黑色竖线 */
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background-color: @WHITE08;
+  border-radius: 6px;
+
+  &::before {
+    content: '';
+    flex-shrink: 0;
+    width: 3px;
+    height: 14px;
+    background-color: @BLANK14;
+    border-radius: 2px;
+  }
+}
+
+.sectionTitle {
+  color: @BLANK14;
+  font-size: 14px;
+  font-weight: @fontWeightStrong;
+}
+
+/* 区块内容 */
+.sectionBody {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* 映射卡片 */
+.mappingCard {
+  border: 1px solid @GRAY01;
+  border-radius: 8px;
+  transition: border-color 0.2s;
+
+  &:hover {
+    border-color: @BLANK25;
+  }
+}
+
+.mappingCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 8px 6px 12px;
+  border-bottom: 1px solid @GRAY01;
+}
+
+.mappingCardTitle {
+  color: @BLANK14;
+  font-size: 13px;
+  font-weight: @fontWeightStrong;
+}
+
+/* 卡片列表区：空态占位 */
+.mappingCardEmpty {
+  padding: 18px 12px;
+  color: @GRAY11;
+  font-size: 12px;
+  text-align: center;
+}
+
+/* 卡片列表区：映射行堆叠 */
+.mappingRows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+}
+
+/* 单条映射行：名称（— 类型）— 值 — 删除 */
+.mappingRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mappingRowName {
+  flex: 0 0 28%;
+  min-width: 0;
+}
+
+/* BODY 字段行的类型下拉：宽度需完整展示 boolean / string 等选项 */
+.mappingRowType {
+  flex-shrink: 0;
+  width: 150px;
+}
+
+/* 行内视觉分隔短横线 */
+.mappingRowDash {
+  flex-shrink: 0;
+  color: @GRAY11;
+}
+
+.mappingRowValue {
+  flex: 1;
+  min-width: 0;
+}
+
+/* 行删除按钮：红色 ×（与项目 Form.List 删除按钮一致：text + CloseOutlined） */
+.mappingRowDelete {
+  flex-shrink: 0;
+  color: @RED01;
+}
+
+/* ===== BODY 字段嵌套结构 ===== */
+
+/* 单个字段行容器：行本体 + 下方嵌套声明区（object 子字段 / array 元素） */
+.bodyFieldItem {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* object 的子字段区：左侧竖线示意嵌套层级，底部「+ 添加子字段」 */
+.bodyFieldChildren {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 4px 0 4px 16px;
+  margin-left: 8px;
+  border-left: 1px solid @GRAY01;
+}
+
+.bodyFieldAddChild {
+  align-self: flex-start;
+}
+
+/* array 的元素结构声明区：整块随嵌套层级缩进 + 左侧竖线（每层递归各加一条） */
+.bodyFieldElementWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 4px 0 4px 16px;
+  margin-left: 8px;
+  border-left: 1px solid @GRAY01;
+}
+
+/* 元素结构说明条：浅灰底通栏（与设计稿一致，仅声明不逐项取值） */
+.bodyFieldElementBanner {
+  padding: 6px 10px;
+  color: @GRAY11;
+  font-size: 12px;
+  background-color: @WHITE08;
+  border-radius: 4px;
+}
+
+/* 元素类型行：「元素」标签 + 类型下拉（缩进由外层 wrap 提供） */
+.bodyFieldElementRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 「元素」标签：浅灰底小 tag */
+.bodyFieldElementTag {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  color: @BLANK14;
+  font-size: 12px;
+  background-color: @GRAY01;
+  border-radius: 4px;
+}
+
+/* 元素类型下拉：与字段类型下拉同宽，完整展示选项 */
+.bodyFieldElementType {
+  flex-shrink: 0;
+  width: 150px;
+}
+
+/* 输入参数行列表：左侧浅灰竖线暗示可嵌套的 Arg 树 */
+.argRows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 12px 12px 20px;
+  margin-left: 12px;
+  border-left: 1px solid @GRAY01;
+}
+
+/* 单条输入参数行容器：行本体 + Object/Array_Object 的下级参数嵌套区 */
+.argItem {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* 单条输入参数行：参数名 / 参数说明 / 类型 / 必填 / 删除 */
+.argRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.argRowName {
+  flex: 0 0 24%;
+  min-width: 0;
+}
+
+.argRowDescription {
+  flex: 1;
+  min-width: 0;
+}
+
+/* 类型下拉：需要完整展示 Array_Integer / Array_Boolean 等较长选项 */
+.argRowType {
+  flex-shrink: 0;
+  width: 180px;
+}
+
+.argRowRequired {
+  flex-shrink: 0;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.argRowDelete {
+  flex-shrink: 0;
+  color: @RED01;
+}
+
+/* ===== 输入参数下级参数嵌套结构 ===== */
+
+/* Object / Array_Object 的下级参数区：左侧竖线示意嵌套层级，底部「+ 添加下级参数」 */
+.argChildren {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 4px 0 4px 16px;
+  margin-left: 8px;
+  border-left: 1px solid @GRAY01;
+}
+
+.argAddChild {
+  align-self: flex-start;
+}
+
+/* 超时毫秒：正整数步进选择器撑满列宽 */
+.timeoutInput {
+  width: 100%;
+}
+
+/* ===== 绑定插件 / 绑定工作流声明区 ===== */
+
+/* 空间 + 绑定下拉通栏排列，刷新按钮左对齐（与设计稿一致，按钮上方无说明文案） */
+.bindSection {
+  display: flex;
+  flex-direction: column;
+}
+
+.bindRefreshButton {
+  align-self: flex-start;
+}
+
+/* 映射说明小字 */
+.mappingTips {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: @GRAY11;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+/* 底部保存按钮 */
+.submitButton {
+  margin-top: 8px;
+}

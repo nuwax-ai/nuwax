@@ -1,0 +1,106 @@
+@import '@/styles/color';
+@import '@/styles/token';
+
+/* 连接器认证配置区（新增/编辑连接器抽屉共用） */
+
+.authSection {
+  padding: 16px;
+  border: 1px solid @GRAY01;
+  border-radius: 8px;
+  background: @WHITE;
+}
+
+.authSectionTitle {
+  margin-bottom: 12px;
+  color: @BLANK14;
+  font-size: 14px;
+  font-weight: @fontWeightStrong;
+}
+
+.authHint {
+  margin-top: 4px;
+  color: @GRAY11;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+/* ===== OAuth 2.0：回调地址只读提示条 ===== */
+.callbackBar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 8px;
+  padding: 8px 12px;
+  border: 1px solid @GRAY01;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 2%);
+  color: @GRAY11;
+  font-size: 12px;
+}
+
+.callbackUrl {
+  color: @BLANK14;
+  font-size: 12px;
+}
+
+/* ===== 自定义认证：动态行分组 ===== */
+.customGroupHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+/* 第二组（注入规则）与上一组行之间留出间距 */
+.customGroupHeaderGap {
+  margin-top: 12px;
+}
+
+.customGroupTitle {
+  color: @BLANK14;
+  font-size: 13px;
+  font-weight: @fontWeightStrong;
+}
+
+/* 动态行：输入框横向排列，行尾删除按钮 */
+.customRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.customField {
+  flex: 1 1 0;
+  min-width: 0;
+  margin-bottom: 0;
+}
+
+.customFixed {
+  flex: none;
+  margin-bottom: 0;
+}
+
+.customLocation {
+  flex: 0 0 108px;
+  margin-bottom: 0;
+}
+
+.customArrow {
+  flex: none;
+  color: @GRAY11;
+}
+
+.customRowRemove {
+  flex: none;
+  padding: 2px 4px;
+  color: @GRAY11;
+  font-size: 12px;
+  cursor: pointer;
+  transition: color 0.2s;
+
+  &:hover {
+    color: @RED01;
+  }
+}

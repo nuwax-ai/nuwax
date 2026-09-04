@@ -11,7 +11,22 @@ import type {
 import type {
   AccessStatsResult,
   AddSystemUserParams,
+  ApplyConnectorImportParams,
+  ConnectorBindableItem,
+  ConnectorBindableParams,
+  ConnectorImportDiff,
+  ConnectorProviderDetail,
+  ConnectorProviderInfo,
+  ConnectorProviderListParams,
+  ConnectorProviderPageParams,
+  ConnectorProviderPageResult,
+  ConnectorRuntimeExecuteParams,
+  ConnectorRuntimeExecuteResult,
   ConversationStatsResult,
+  CreateConnectorActionParams,
+  CreateConnectorProviderParams,
+  DeleteConnectorActionParams,
+  ExportConnectorProvidersParams,
   ModelConfigDto,
   NotifyMessageSendParams,
   PayConfigResult,
@@ -22,6 +37,8 @@ import type {
   ResourceStatSummaryDTO,
   SandboxConfigItem,
   SandboxGlobalConfig,
+  SaveConnectorOauthConfigParams,
+  SaveConnectorOrderParams,
   SystemAgentListParams,
   SystemAgentPage,
   SystemDataTableListParams,
@@ -49,6 +66,8 @@ import type {
   SystemWorkflowPage,
   TenantConfigDto,
   TenantSubscriptionConfigInfo,
+  ToggleConnectorActionStatusParams,
+  ToggleConnectorProviderStatusParams,
   TotalStatsResult,
   UpdateSystemUserParams,
   UploadResultDto,
@@ -148,6 +167,315 @@ export async function apiSystemModelSortUpdate(
   return request('/api/system/model/sort/update', {
     method: 'POST',
     data,
+  });
+}
+
+/**
+ * 获取系统连接器提供方列表（非分页，返回数组）
+ * 对应接口：GET /api/system/connector/providers
+ */
+export async function apiSystemConnectorProviderList(
+  params?: ConnectorProviderListParams,
+): Promise<RequestResponse<ConnectorProviderInfo[]>> {
+  return request('/api/system/connector/providers', {
+    method: 'GET',
+    params,
+  });
+}
+
+/**
+ * 新增连接器提供方
+ * 对应接口：POST /api/system/connector/providers
+ * 入参：service 唯一标识 + 基本信息（displayName / baseUrl / category / tags 等）
+ * + 认证方式 authType 及其配置 authConfig（免鉴权传空对象）
+ *
+ * 用于连接器列表「新增官方连接器」抽屉的「创建连接器」按钮：
+ * 创建成功后由调用方刷新连接器列表（GET /api/system/connector/providers）。
+ */
+export async function apiSystemConnectorProviderCreate(
+  data: CreateConnectorProviderParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/system/connector/providers', {
+    method: 'POST',
+    data,
+  });
+}
+
+/**
+ * 保存连接器 OAuth App 配置
+ * 对应接口：POST /api/system/connector/oauth-config
+ * 入参：service + 平台公共 App 配置（clientId / clientSecret / authUrl /
+ * tokenUrl / scopes）
+ *
+ * 创建 oauth2 + platform 模式的连接器（POST /api/system/connector/providers）
+ * 成功后追加调用；clientSecret 不进创建接口，由此接口加密落库。
+ */
+export async function apiSystemConnectorOauthConfigSave(
+  data: SaveConnectorOauthConfigParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/system/connector/oauth-config', {
+    method: 'POST',
+    data,
+  });
+}
+
+/**
+ * 更新连接器提供方元信息
+ * 对应接口：PUT /api/system/connector/providers/{service}/meta
+ * service 拼到 URL path 上；body 与创建接口一致（service / displayName /
+ * authType / baseUrl / category / tags / authConfig，oauth2 时为顶层 oauthAppMode）
+ *
+ * 用于连接器列表「编辑」抽屉的「保存修改」按钮：保存成功后由调用方
+ * 刷新连接器列表并打开详情抽屉。
+ */
+export async function apiSystemConnectorProviderUpdateMeta(
+  data: CreateConnectorProviderParams,
+): Promise<RequestResponse<null>> {
+  return request(`/api/system/connector/providers/${data.service}/meta`, {
+    method: 'PUT',
+    data,
+  });
+}
+
+/**
+ * 保存连接器提供方排序（拖拽持久化）
+ * 对应接口：PUT /api/system/connector/providers/order
+ * 入参：按拖拽后顺序排列的 service 数组，数组索引即排序
+ */
+export async function apiSystemConnectorProviderOrder(
+  data: SaveConnectorOrderParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/system/connector/providers/order', {
+    method: 'PUT',
+    data,
+  });
+}
+
+/**
+ * 启用/停用连接器提供方
+ * 对应接口：PUT /api/system/connector/providers/{service}?enabled={boolean}
+ * service 拼到 URL path 上；enabled 作为 query 参数
+ */
+export async function apiSystemConnectorProviderToggleStatus(
+  params: ToggleConnectorProviderStatusParams,
+): Promise<RequestResponse<null>> {
+  const { service, enabled } = params;
+  return request(`/api/system/connector/providers/${service}`, {
+    method: 'PUT',
+    params: { enabled },
+  });
+}
+
+/**
+ * 启用/停用连接器下的工具/动作
+ * 对应接口：PUT /api/system/connector/actions/{id}/status?enabled={boolean}
+ * id 拼到 URL path 上；enabled 作为 query 参数（Boolean）
+ *
+ * 用于详情抽屉工具列表中的"停用/启用"按钮：
+ * - 当前 status === 'enabled' → 调 enabled=false 把它停用
+ * - 当前 status !== 'enabled' → 调 enabled=true 把它启用
+ */
+export async function apiSystemConnectorActionToggleStatus(
+  params: ToggleConnectorActionStatusParams,
+): Promise<RequestResponse<null>> {
+  const { id, enabled } = params;
+  return request(`/api/system/connector/actions/${id}/status`, {
+    method: 'PUT',
+    params: { enabled },
+  });
+}
+
+/**
+ * 删除连接器下的工具/动作
+ * 对应接口：DELETE /api/system/connector/actions/{id}
+ * id 拼到 URL path 上；无 body
+ *
+ * 用于详情抽屉工具列表中的"删除"按钮（删除前会在 UI 层弹二次确认）。
+ */
+export async function apiSystemConnectorActionDelete(
+  params: DeleteConnectorActionParams,
+): Promise<RequestResponse<null>> {
+  const { id } = params;
+  return request(`/api/system/connector/actions/${id}`, {
+    method: 'DELETE',
+  });
+}
+
+/**
+ * 新增连接器下的工具/动作
+ * 对应接口：POST /api/system/connector/providers/{service}/actions
+ * service 拼到 URL path 上；工具定义（actionKey / inputArgs / httpSpec 等）作为 body 提交
+ *
+ * 用于详情抽屉工具栏的「+ 添加工具」弹窗：
+ * 创建成功后由调用方刷新工具列表与连接器列表
+ * （GET /api/system/connector/providers）。
+ */
+export async function apiSystemConnectorActionCreate(
+  params: CreateConnectorActionParams & { service: string },
+): Promise<RequestResponse<null>> {
+  const { service, ...data } = params;
+  return request(`/api/system/connector/providers/${service}/actions`, {
+    method: 'POST',
+    data,
+  });
+}
+
+/**
+ * 更新连接器下的工具/动作
+ * 对应接口：PUT /api/system/connector/providers/{service}/actions/{actionKey}
+ * service / actionKey 拼到 URL path 上；body 与创建接口一致（actionKey / inputArgs / httpSpec 等）
+ *
+ * 用于详情抽屉工具列表的「编辑」按钮（复用「新增/编辑工具」弹窗回填后提交）。
+ */
+export async function apiSystemConnectorActionUpdate(
+  params: CreateConnectorActionParams & { service: string },
+): Promise<RequestResponse<null>> {
+  const { service, ...data } = params;
+  return request(
+    `/api/system/connector/providers/${service}/actions/${data.actionKey}`,
+    {
+      method: 'PUT',
+      data,
+    },
+  );
+}
+
+/**
+ * 导出连接器提供方（POST /api/system/connector/providers/export）
+ * - 不传 services：导出全部
+ * - 传 services：导出所选/单行
+ *
+ * 返回原始响应（含 blob data + headers），由调用方处理文件名解析与下载触发。
+ */
+export async function apiSystemConnectorProviderExport(
+  data?: ExportConnectorProvidersParams,
+): Promise<any> {
+  return request('/api/system/connector/providers/export', {
+    method: 'POST',
+    data,
+    responseType: 'blob',
+    getResponse: true,
+    skipErrorHandler: true,
+  });
+}
+
+/**
+ * 预览连接器导入 diff（POST /api/connector/import）
+ *
+ * - 入参即导入包 JSON 内容（「导出」生成的 JSON，粘贴或选择文件带入），
+ *   传解析后的对象，由 request 序列化
+ * - 返回 diff 预览：importId + 四类变更计数 + items 明细，不执行导入；
+ *   确认导入由后续接口引用 importId 完成
+ *
+ * 用于「导入官方包」抽屉的「预览导入 diff」按钮。
+ */
+export async function apiConnectorImport(
+  data: unknown,
+): Promise<RequestResponse<ConnectorImportDiff>> {
+  return request('/api/connector/import', {
+    method: 'POST',
+    data,
+  });
+}
+
+/**
+ * 确认连接器导入（POST /api/connector/import/apply）
+ *
+ * - 入参仅 importId：引用「预览导入 diff」返回的导入会话标识，
+ *   后端按预览阶段解析好的导入包执行导入
+ *
+ * 用于「导入官方包」抽屉的「确认导入」按钮；成功后由调用方刷新连接器列表。
+ */
+export async function apiConnectorImportApply(
+  data: ApplyConnectorImportParams,
+): Promise<RequestResponse<null>> {
+  return request('/api/connector/import/apply', {
+    method: 'POST',
+    data,
+  });
+}
+
+/**
+ * 分页获取连接器提供方列表（GET /api/connector/providers?spaceId=&pageNum=&pageSize=）
+ *
+ * - 与系统连接器列表接口（GET /api/system/connector/providers，非分页返回数组）不同，
+ *   该接口返回分页结构，列表数据在 data.records 下
+ * - 调试弹窗一次拉全量（pageNum=1 & pageSize=2000），取第一条的 service
+ *   再调 GET /api/connector/providers/{service} 拉详情
+ *
+ * 用于「工具调试」弹窗的连接器下拉数据源。
+ */
+export async function apiConnectorProviderPageList(
+  params: ConnectorProviderPageParams,
+): Promise<RequestResponse<ConnectorProviderPageResult>> {
+  return request('/api/connector/providers', {
+    method: 'GET',
+    params,
+  });
+}
+
+/**
+ * 执行连接器工具调试（POST /api/connector/runtime/execute）
+ *
+ * - 入参：providerService（连接器下拉选中值）+ actionKey（动作下拉选中值）+
+ *   args（输入参数 JSON 文本域解析出的对象）
+ * - 响应 data 为执行结果体（success / message / data / errorCode / meta），
+ *   无论业务成功与否均原样返回，由调试弹窗 pretty JSON 展示在「执行结果」区
+ *
+ * 用于「工具调试」弹窗的「执行」按钮。
+ */
+export async function apiConnectorRuntimeExecute(
+  data: ConnectorRuntimeExecuteParams,
+): Promise<RequestResponse<ConnectorRuntimeExecuteResult>> {
+  return request('/api/connector/runtime/execute', {
+    method: 'POST',
+    data,
+  });
+}
+
+/**
+ * 获取连接器提供方详情（GET /api/connector/providers/{service}?spaceId=xxx&includeDisabled=xxx）
+ *
+ * - service 拼到 URL path 上
+ * - spaceId 作为 query 参数；不传或无效值会被后端忽略
+ * - includeDisabled 控制是否同时返回已停用的工具；默认 true（详情抽屉需要展示全部工具）
+ *
+ * 用于"查看"按钮侧滑抽屉展示该提供方的基础信息及工具列表。
+ */
+export async function apiSystemConnectorProviderDetail(params: {
+  service: string;
+  spaceId?: number | string;
+  includeDisabled?: boolean;
+}): Promise<RequestResponse<ConnectorProviderDetail>> {
+  const { service, spaceId, includeDisabled } = params;
+  return request(`/api/connector/providers/${service}`, {
+    method: 'GET',
+    params: {
+      // 只在 spaceId 是有限数时透传，避免传 undefined / NaN
+      spaceId: Number.isFinite(Number(spaceId)) ? Number(spaceId) : undefined,
+      // 默认传 true —— 详情抽屉需要展示已停用的工具（"已停用" tag + "启用" 按钮）
+      includeDisabled: includeDisabled ?? true,
+    },
+  });
+}
+
+/**
+ * 获取可绑定的插件/工作流列表（GET /api/connector/bindable?type=plugin|workflow&spaceId=xxx）
+ *
+ * 用于「新增工具」弹窗执行类型 = 绑定插件 / 绑定工作流时：
+ * 按当前空间筛选可绑定项（仅已发布）；切换空间、切换执行类型或点「刷新列表」时重新调用。
+ */
+export async function apiConnectorBindable(
+  params: ConnectorBindableParams,
+): Promise<RequestResponse<ConnectorBindableItem[]>> {
+  const { type, spaceId } = params;
+  return request('/api/connector/bindable', {
+    method: 'GET',
+    params: {
+      type,
+      // 只在 spaceId 是有限数时透传，避免传 undefined / NaN
+      spaceId: Number.isFinite(Number(spaceId)) ? Number(spaceId) : undefined,
+    },
   });
 }
 

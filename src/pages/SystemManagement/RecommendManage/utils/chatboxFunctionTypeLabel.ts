@@ -18,6 +18,8 @@ const CHATBOX_FUNCTION_TYPE_I18N_KEY: Record<
     'PC.Pages.SystemRecommendManage.functionType.pluginDev',
   [DisplayRecommendFunctionTypeEnum.UserApp]:
     'PC.Pages.SystemRecommendManage.functionType.userApp',
+  [DisplayRecommendFunctionTypeEnum.NormalProject]:
+    'PC.Pages.SystemRecommendManage.functionType.normalProject',
   [DisplayRecommendFunctionTypeEnum.Chat]:
     'PC.Pages.SystemRecommendManage.functionType.chat',
 };
