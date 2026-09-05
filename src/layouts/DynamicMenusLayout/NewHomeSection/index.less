@@ -15,15 +15,19 @@
 
   .tabs {
     display: flex;
+    align-items: center;
+    gap: 24px;
     flex-shrink: 0;
     border-bottom: 1px solid @colorBorderSecondary;
     margin: 0 @paddingXs @paddingXs;
+    padding: 0 4px;
 
     .tab {
       position: relative;
-      flex: 1;
-      height: @controlHeightLg;
-      padding: 0;
+      flex: none;
+      min-width: 40px;
+      height: 36px;
+      padding: 0 4px;
       border: 0;
       background: transparent;
       color: @navSecondMenuAdaptiveTextSecondary;
@@ -32,10 +36,10 @@
 
       &::after {
         position: absolute;
-        right: 0;
+        right: 4px;
         bottom: -1px;
-        left: 0;
-        height: 1px;
+        left: 4px;
+        height: 2px;
         border-radius: 2px;
         background: transparent;
         content: '';

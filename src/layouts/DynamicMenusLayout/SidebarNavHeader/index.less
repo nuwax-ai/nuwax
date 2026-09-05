@@ -24,7 +24,7 @@
   .header-actions {
     display: flex;
     align-items: center;
-    gap: @marginXs;
+    gap: 4px;
     margin-left: auto;
   }
 
@@ -32,12 +32,12 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 28px;
-    height: 28px;
+    width: 30px;
+    height: 30px;
     border-radius: @borderRadius;
     cursor: pointer;
     color: @navSecondMenuAdaptiveTextSecondary;
-    font-size: 14px;
+    font-size: 18px;
     transition: all 0.2s ease;
 
     &:hover {
@@ -46,14 +46,14 @@
     }
   }
 
-  // 行通用（新建任务 + 导航行）：对齐原型 33px 行高 / 12px 水平内边距 / 11px 圆角
+  // 行通用（新建任务 + 导航行）：图标与顶栏 Logo 共用左侧基线
   .action-row,
   .nav-item {
     display: flex;
     align-items: center;
     gap: @marginXs;
     height: 33px;
-    padding: 0 12px;
+    padding: 0 4px;
     border-radius: 11px;
     cursor: pointer;
     color: @navSecondMenuAdaptiveText;
