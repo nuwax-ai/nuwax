@@ -14,6 +14,8 @@ import { localFiles } from '@/utils/nuwaClawBridge';
 import { Input, message, Modal } from 'antd';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { resolveDirectoryLevelFiles } from '../utils/fileDataSource';
+
 /**
  * 本地目录数据源：不走 Electron 桥，统一经 file-server（customTargetDir）HTTP 通道，
  * 浏览器与客户端行为一致（客户端仅在「选目录」时用宿主原生选择器）。
@@ -239,7 +241,11 @@ export function useLocalDirectoryFiles(conversationId?: number) {
         }
         setAvailability((prev) => ({ ...prev, [root.id]: true }));
         setFiles(
-          (result.data?.files || []).map((file) => ({
+          resolveDirectoryLevelFiles(
+            result.data?.files || [],
+            result.data?.recursive,
+            pathValue,
+          ).map((file) => ({
             ...file,
             fileId: localNodeId(root.id, file.name),
             binary: file.binary || false,

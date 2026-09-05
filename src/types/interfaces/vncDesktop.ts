@@ -26,6 +26,9 @@ export interface StaticFileInfo {
 export interface StaticFileListResponse {
   // 文件列表
   files: StaticFileInfo[];
+  // 本次实际执行的模式回显（file-server）：单层查询生效时为 false；
+  // 缺省/为 true 表示返回的是全量递归列表（网关未透传或旧后端）
+  recursive?: boolean;
 }
 
 // 静态文件修改参数

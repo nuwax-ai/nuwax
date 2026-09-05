@@ -270,6 +270,22 @@ export default () => {
   // 文件树数据加载状态
   const [fileTreeDataLoading, setFileTreeDataLoading] =
     useState<boolean>(false);
+  /**
+   * 页面自管文件树标志（#5a 文件树懒加载收尾）：Chat 页可见树已切单层懒加载 hook，
+   * 模型层全量递归拉取对其无消费价值。置 true 后 refreshFileListImmediately 不再
+   * 发起全量拉取，改发 fileTreeRefreshTrigger 由页面层自行刷新当前层。
+   * 依赖模型全量树的页面（ConversationAgent / EditAgent 预览调试 /
+   * SkillDetailsConversation）保持默认 false，行为不变。
+   */
+  const [fileTreeSelfManaged, setFileTreeSelfManagedState] =
+    useState<boolean>(false);
+  // ref 镜像：refreshFileListImmediately 读取标志时不引入依赖重建，
+  // 避免 SSE 闭包持有旧的节流函数
+  const fileTreeSelfManagedRef = useRef<boolean>(false);
+  const setFileTreeSelfManaged = useCallback((value: boolean) => {
+    fileTreeSelfManagedRef.current = value;
+    setFileTreeSelfManagedState(value);
+  }, []);
   // 文件树视图模式
   const [viewMode, setViewMode] = useState<'preview' | 'desktop'>('preview');
   // 使用 ref 跟踪当前视图模式和文件树可见状态，用于避免不必要的刷新
@@ -335,6 +351,12 @@ export default () => {
   const refreshFileListImmediately = useCallback(
     async (cId?: number) => {
       if (!cId) {
+        return;
+      }
+      // 页面自管文件树：跳过全量递归拉取，改发时间戳由页面层（Chat 单层
+      // hook 订阅 fileTreeRefreshTrigger）自行刷新当前层
+      if (fileTreeSelfManagedRef.current) {
+        setFileTreeRefreshTrigger(Date.now());
         return;
       }
       setFileTreeDataLoading(true);
@@ -2142,6 +2164,9 @@ export default () => {
     fileTreeData,
     fileTreeDataLoading,
     setFileTreeData,
+    // 页面自管文件树（#5a 懒加载收尾）：Chat 页置 true 后模型层跳过全量拉取
+    fileTreeSelfManaged,
+    setFileTreeSelfManaged,
     // 文件树视图模式
     viewMode,
     setViewMode,

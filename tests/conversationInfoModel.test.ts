@@ -8,7 +8,7 @@
  * - handleChangeMessageList：PROCESSING / MESSAGE / FINAL_RESULT / ERROR
  * - SSE onError / onClose 收尾状态
  */
-import { apiEnsurePod } from '@/services/vncDesktop';
+import { apiEnsurePod, apiGetStaticFileList } from '@/services/vncDesktop';
 import {
   AgentComponentTypeEnum,
   ConversationEventTypeEnum,
@@ -1045,6 +1045,58 @@ describe('conversationInfo model', () => {
       });
       // sweep 早退（解析不出终态枚举），活跃态不被误清
       expect(result.current.isConversationActive).toBe(true);
+    });
+
+    it('fileTreeSelfManaged 门控：refreshFileListImmediately 跳过全量拉取并改发刷新信号（#5a 懒加载收尾）', async () => {
+      const runStaticFileList = vi
+        .fn()
+        .mockResolvedValue({ code: '0000', data: { files: [] } });
+      mockUseRequest.mockImplementation((service: unknown) => {
+        if (service === apiGetStaticFileList) {
+          return {
+            run: vi.fn(),
+            runAsync: runStaticFileList,
+            loading: false,
+            cancel: vi.fn(),
+          };
+        }
+        return {
+          run: vi.fn(),
+          runAsync: vi.fn().mockResolvedValue({ code: '0000', data: [] }),
+          loading: false,
+          cancel: vi.fn(),
+        };
+      });
+
+      const { result } = renderHook(() => useConversationInfo());
+
+      // 默认（未门控）：走全量拉取，行为与原路径一致
+      await act(async () => {
+        await result.current.refreshFileListImmediately(1001);
+      });
+      expect(runStaticFileList).toHaveBeenCalledWith(1001);
+
+      // 门控：跳过全量拉取，改发 fileTreeRefreshTrigger 时间戳
+      act(() => {
+        result.current.setFileTreeSelfManaged(true);
+      });
+      const triggerBefore = result.current.fileTreeRefreshTrigger;
+      await act(async () => {
+        await result.current.refreshFileListImmediately(1001);
+      });
+      expect(runStaticFileList).toHaveBeenCalledTimes(1);
+      expect(result.current.fileTreeRefreshTrigger).toBeGreaterThan(
+        triggerBefore,
+      );
+
+      // 复位后恢复全量拉取
+      act(() => {
+        result.current.setFileTreeSelfManaged(false);
+      });
+      await act(async () => {
+        await result.current.refreshFileListImmediately(1001);
+      });
+      expect(runStaticFileList).toHaveBeenCalledTimes(2);
     });
   });
 });

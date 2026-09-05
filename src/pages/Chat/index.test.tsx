@@ -59,6 +59,11 @@ vi.mock('@/services/i18nRuntime', () => ({
   dict: (k: string) => k,
 }));
 
+vi.mock('@/services/skill', () => ({
+  // handleAddToGitignore 按需拉 .gitignore 内容（#5a 懒加载收尾）
+  fetchContentFromUrl: vi.fn().mockRejectedValue(new Error('not found')),
+}));
+
 vi.mock('./index.less', () => ({
   default: new Proxy({}, { get: () => 'cls' }),
 }));
@@ -324,6 +329,10 @@ const buildConversationInfoModel = (
     fileTreeData: [],
     setFileTreeData: vi.fn(),
     fileTreeDataLoading: false,
+    fileTreeRefreshTrigger: 0,
+    setFileTreeRefreshTrigger: vi.fn(),
+    fileTreeSelfManaged: false,
+    setFileTreeSelfManaged: vi.fn(),
     handleRefreshFileList: vi.fn(),
     refreshFileListImmediately: vi.fn(),
     taskAgentSelectedFileId: '',

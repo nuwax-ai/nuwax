@@ -83,6 +83,11 @@ export async function apiSearchFiles(
 }
 
 // 静态文件访问
+/**
+ * @deprecated 占位实现，路径中的 `**` 为字面量、不可用（历史遗留）。
+ * 单文件存在性检查请用 `apiGetStaticFileList(cId, { relativePath: 父目录,
+ * recursive: false })`；文件内容请用 `fetchContentFromUrl(静态预览 URL)`。
+ */
 export async function apiGetStaticFileDetail(
   cId: number,
 ): Promise<RequestResponse<any>> {

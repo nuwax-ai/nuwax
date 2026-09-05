@@ -6,6 +6,7 @@ import { message } from 'antd';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   WORKSPACE_SOURCE_ID,
+  resolveDirectoryLevelFiles,
   workspaceNodeId,
 } from '../utils/fileDataSource';
 
@@ -57,7 +58,11 @@ export function useWorkspaceDirectoryFiles(
         return;
       }
       setFiles(
-        (result.data?.files || []).map((file) => ({
+        resolveDirectoryLevelFiles(
+          result.data?.files || [],
+          result.data?.recursive,
+          currentPath,
+        ).map((file) => ({
           ...file,
           fileId: workspaceNodeId(file.name),
           dataSourceId: WORKSPACE_SOURCE_ID,
