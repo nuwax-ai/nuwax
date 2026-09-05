@@ -109,10 +109,10 @@ const SidebarNavHeader: React.FC<SidebarNavHeaderProps> = ({
 
   return (
     <div className={cx(styles['sidebar-nav-header'])}>
-      {/* 顶栏：Logo + 搜索 + 折叠（固定）；桌面端沉浸式由 nuwaclaw 工具栏承载折叠与品牌 */}
+      {/* 顶栏：Logo + 搜索固定；桌面端沉浸式仅把折叠入口交给 nuwaclaw 工具栏。 */}
       <div className={cx(styles['header-bar'])}>
         {/* 直接渲染站点 Logo（原 Header 组件的 logo-container 带老竖栏固定高度，单栏顶栏不适用） */}
-        {!isImmersiveShell() && tenantConfigInfo?.siteLogo && (
+        {tenantConfigInfo?.siteLogo && (
           <img
             className={cx(styles['header-logo'])}
             src={tenantConfigInfo.siteLogo}

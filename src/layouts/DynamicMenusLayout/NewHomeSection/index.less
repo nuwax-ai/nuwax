@@ -1,4 +1,5 @@
 @import '@/styles/token.less';
+@import '@/styles/scrollbar.less';
 
 @sectionMarginLeft: 0;
 @sectionMarginTop: 0;
@@ -66,20 +67,18 @@
     flex: 1;
     min-height: 0;
     overflow-x: hidden;
-    overflow-y: hidden; // 默认隐藏原生滚动条
+    overflow-y: auto;
     padding: 0;
-    scrollbar-gutter: auto;
-
-    &:hover {
-      overflow-y: auto; // 鼠标移入时开启滚动，展现与全局一致的原生滚动条样式
-    }
+    // 始终预留 8px 轨道，默认透明、hover 显示滑块，避免 hover 时列表宽度被挤占。
+    .scrollbar-auto-hide();
 
     // 会话列表
     .conversation-list {
       display: flex;
       flex-direction: column;
       gap: @listItemGap;
-      padding: 7px 15px 16px;
+      // 右侧 8px 由稳定滚动轨道占用，补偿后列表正文仍保持原来的 230px 宽度。
+      padding: 7px 7px 16px 15px;
       margin-right: @listMarginRight;
 
       // 加载更多提示与无更多提示

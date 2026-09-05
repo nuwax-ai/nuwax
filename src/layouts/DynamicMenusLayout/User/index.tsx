@@ -148,7 +148,7 @@ const User: React.FC<PropsWithChildren<UserProps>> = ({
         <div className={cx(styles.container)}>
           {/* 积分入口（主导航改造：自侧栏底部收进用户弹层；订阅关闭时组件自隐藏） */}
           <div style={{ padding: '8px 8px 4px' }}>
-            <CreditsBalance showFooter={false} />
+            <CreditsBalance showFooter={false} stacked />
           </div>
           {menuList.map((item) => {
             const style =
