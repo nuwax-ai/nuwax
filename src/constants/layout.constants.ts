@@ -13,7 +13,7 @@ export const NAVIGATION_LAYOUT_SIZES = {
   },
 
   // 二级菜单宽度配置
-  SECOND_MENU_WIDTH: 240,
+  SECOND_MENU_WIDTH: 260,
 
   // 菜单总宽度计算
   getTotalMenuWidth: (navigationStyle: string) => {

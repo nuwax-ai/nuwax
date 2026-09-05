@@ -1,7 +1,7 @@
 @import '@/styles/token.less';
 
 .group {
-  border-radius: @borderRadius;
+  border-radius: 10px;
   transition: background-color 0.2s ease;
 
   &:hover {
@@ -16,20 +16,20 @@
 .head {
   display: flex;
   align-items: center;
-  gap: @marginXs;
-  padding: @paddingXs @paddingXxs;
+  gap: 10px;
+  padding: 11px 10px;
   cursor: pointer;
   user-select: none;
 
   .avatar {
     flex-shrink: 0;
-    width: 32px;
-    height: 32px;
+    width: 38px;
+    height: 38px;
 
     .avatar-img {
       width: 100%;
       height: 100%;
-      border-radius: @borderRadius;
+      border-radius: 50%;
       object-fit: cover;
     }
   }
@@ -37,7 +37,7 @@
   .info {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 3px;
     flex: 1;
     min-width: 0;
 
@@ -46,15 +46,16 @@
       text-overflow: ellipsis;
       white-space: nowrap;
       font-size: @fontSize;
+      font-weight: @fontWeightStrong;
       color: @navSecondMenuAdaptiveText;
-      line-height: 18px;
+      line-height: 20px;
     }
 
     .subtitle {
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      font-size: @fontSizeSm;
+      font-size: 12.5px;
       color: @navSecondMenuAdaptiveTextTertiary;
       line-height: 16px;
     }
@@ -62,8 +63,9 @@
 
   .side {
     display: flex;
-    align-items: center;
-    gap: @marginXxs;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
     flex-shrink: 0;
 
     .badge {
@@ -83,17 +85,17 @@
 .sessions {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 0 @paddingXxs @paddingXxs;
-  // 会话条目相对组头缩进(头像宽度 + 间距)
-  padding-left: 46px;
+  gap: 0;
+  padding: 0 0 0 10px;
+  margin: 2px 0 2px 10px;
+  border-left: 1px solid @colorBorderSecondary;
 
   .session {
     display: flex;
     align-items: center;
-    gap: @marginXxs;
-    padding: 3px @paddingXs;
-    border-radius: @borderRadiusSm;
+    gap: 10px;
+    padding: 8px 4px;
+    border-radius: 10px;
     cursor: pointer;
 
     &:hover {
@@ -142,7 +144,8 @@
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      font-size: @fontSizeSm;
+      font-size: 13.5px;
+      font-weight: 500;
       color: @navSecondMenuAdaptiveTextSecondary;
       line-height: 18px;
     }

@@ -2,21 +2,22 @@
 
 .sidebar-nav-header {
   flex-shrink: 0;
-  padding: 0 @paddingXs;
+  padding: 0 15px;
 
-  // 顶栏：Logo + 搜索 + 折叠（原型单行 ~41px，logo 限高防变形）
+  // 顶栏：原型 15px 栅格内再缩进 10px，操作区贴右侧 15px 基线
   .header-bar {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    min-height: 40px;
-    padding: 6px 4px 0;
+    height: 41px;
+    padding: 5px 0 0 10px;
+    box-sizing: border-box;
   }
 
   .header-logo {
-    height: 28px;
+    height: 26px;
     width: auto;
-    border-radius: 8px;
+    border-radius: 7px;
     display: block;
     cursor: pointer;
   }
@@ -32,33 +33,43 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 30px;
-    height: 30px;
-    border-radius: @borderRadius;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
     cursor: pointer;
     color: @navSecondMenuAdaptiveTextSecondary;
-    font-size: 18px;
+    font-size: 20px;
     transition: all 0.2s ease;
 
     &:hover {
       background-color: @colorFillSecondary;
       color: @navSecondMenuAdaptiveText;
     }
+
+    > svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    &:last-child > svg {
+      height: 22px;
+    }
   }
 
-  // 行通用（新建任务 + 导航行）：图标与顶栏 Logo 共用左侧基线
+  // 行通用：15px 外边距 + 12px 内容缩进，对齐原型 27px 图标基线
   .action-row,
   .nav-item {
     display: flex;
     align-items: center;
-    gap: @marginXs;
+    gap: 10px;
     height: 33px;
-    padding: 0 4px;
+    padding: 7px 12px;
     border-radius: 11px;
     cursor: pointer;
     color: @navSecondMenuAdaptiveText;
-    font-size: @fontSize;
+    font-size: 13.5px;
     font-weight: 500;
+    line-height: normal;
     transition: background-color 0.2s ease;
     user-select: none;
 
@@ -68,7 +79,7 @@
   }
 
   .new-task-row {
-    margin-top: @marginSm;
+    margin-top: 13px;
   }
 
   .action-icon,
@@ -102,11 +113,14 @@
     display: flex;
     flex-direction: column;
     gap: 2px;
-    margin-top: @marginSm;
+    margin-top: 2px;
   }
 
   .nav-item-active {
     background-color: @colorFillSecondary;
     font-weight: @fontWeightStrong;
+    margin: 0 -5px;
+    padding-right: 17px;
+    padding-left: 17px;
   }
 }

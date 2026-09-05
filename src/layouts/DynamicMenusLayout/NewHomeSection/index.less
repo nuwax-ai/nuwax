@@ -1,9 +1,9 @@
 @import '@/styles/token.less';
 
-@sectionMarginLeft: -16px;
-@sectionMarginTop: -9px;
-@listItemGap: 4px;
-@listMarginRight: -8px;
+@sectionMarginLeft: 0;
+@sectionMarginTop: 0;
+@listItemGap: 0;
+@listMarginRight: 0;
 
 .new-home-section {
   display: flex;
@@ -16,32 +16,35 @@
   .tabs {
     display: flex;
     align-items: center;
-    gap: 24px;
+    gap: 0;
     flex-shrink: 0;
     border-bottom: 1px solid @colorBorderSecondary;
-    margin: 0 @paddingXs @paddingXs;
-    padding: 0 4px;
+    margin: 15px 15px 0;
+    padding: 0;
 
     .tab {
       position: relative;
-      flex: none;
-      min-width: 40px;
-      height: 36px;
-      padding: 0 4px;
+      flex: 1;
+      min-width: 0;
+      height: 44px;
+      padding: 0;
       border: 0;
       background: transparent;
       color: @navSecondMenuAdaptiveTextSecondary;
-      font-size: @fontSize;
+      font-size: 14.5px;
+      font-weight: 500;
       cursor: pointer;
 
       &::after {
         position: absolute;
-        right: 4px;
+        right: auto;
         bottom: -1px;
-        left: 4px;
-        height: 2px;
-        border-radius: 2px;
+        left: 50%;
+        width: 44px;
+        height: 2.5px;
+        border-radius: 2.5px;
         background: transparent;
+        transform: translateX(-50%);
         content: '';
       }
 
@@ -65,7 +68,7 @@
     overflow-x: hidden;
     overflow-y: hidden; // 默认隐藏原生滚动条
     padding: 0;
-    scrollbar-gutter: stable; // 始终保留滚动条通道，防止 layout shift
+    scrollbar-gutter: auto;
 
     &:hover {
       overflow-y: auto; // 鼠标移入时开启滚动，展现与全局一致的原生滚动条样式
@@ -76,7 +79,7 @@
       display: flex;
       flex-direction: column;
       gap: @listItemGap;
-      padding: 0 @paddingXs;
+      padding: 7px 15px 16px;
       margin-right: @listMarginRight;
 
       // 加载更多提示与无更多提示

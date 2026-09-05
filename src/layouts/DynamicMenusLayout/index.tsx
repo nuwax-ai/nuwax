@@ -754,7 +754,7 @@ const DynamicMenusLayout: React.FC<DynamicMenusLayoutProps> = ({
           // 一级栏已移除，浏览器端也不再需要 border-left（侧栏即最左列）
           paddingTop: isImmersiveShell() ? shellAvoid.TOP : undefined,
           borderLeft: 'none',
-          paddingLeft: isSecondMenuCollapsed ? 0 : token.padding,
+          paddingLeft: 0,
           opacity: isSecondMenuCollapsed ? 0 : 1,
           backgroundColor: secondaryBackgroundColor,
         }}
