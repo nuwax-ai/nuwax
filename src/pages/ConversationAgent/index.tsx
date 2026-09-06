@@ -10,6 +10,7 @@ import FileTreeGitSourcePanel, {
   type ChangeListSection,
   type SelectedChangeFile,
 } from '@/components/business-component/FileTreeGitSourcePanel';
+import { resolveGitignoreWritePlan } from '@/components/business-component/FileTreeGitSourcePanel/utils/gitignoreWritePlan';
 import { useFileTreePreviewView } from '@/components/business-component/FileTreePreviewPanel/hooks/useFileTreePreviewView';
 import type { FileTreePreviewViewProps } from '@/components/business-component/FileTreePreviewPanel/types';
 import VncPreview from '@/components/business-component/VncPreview';
@@ -30,6 +31,7 @@ import {
 } from '@/services/agentConfig';
 import { dict } from '@/services/i18nRuntime';
 import { apiModelList } from '@/services/modelConfig';
+import { fetchContentOutcome } from '@/services/skill';
 import {
   apiDownloadAllFiles,
   apiImportProject,
@@ -1444,62 +1446,45 @@ const ConversationAgent: React.FC = () => {
       }
 
       const gitignoreId = '.gitignore';
-      const existing = fileTreeData?.find(
-        (item: StaticFileInfo) => item.fileId === gitignoreId,
+      // file-server 对「create 已存在文件」「modify 不存在文件」都是静默 no-op
+      // 且返回成功，因此按三态严格路由：404→create、存在（含空文件）→modify、
+      // 拉取失败→中止。不再从模型树取 contents——树条目运行时不填充该字段，
+      // 旧实现追加恒基于空串，会用单条目覆写整个 .gitignore
+      const plan = resolveGitignoreWritePlan(
+        await fetchContentOutcome(
+          `/api/computer/static/${queryConversationId}/${gitignoreId}`,
+        ),
+        fileId,
       );
-      const currentContent = existing?.contents ?? '';
-      const entry = fileId.startsWith('/') ? fileId.slice(1) : fileId;
 
-      if (
-        currentContent
-          .split('\n')
-          .some(
-            (line: string) => line.trim() === entry || line.trim() === fileId,
-          )
-      ) {
+      if (plan.action === 'abort-fetch-error') {
+        message.error(
+          dict('PC.Pages.ConversationAgentSourceControl.gitignoreFailed'),
+        );
+        return;
+      }
+      if (plan.action === 'skip-duplicate') {
         message.info(
           dict('PC.Pages.ConversationAgentSourceControl.alreadyInGitignore'),
         );
         return;
       }
 
-      const newContent = currentContent
-        ? `${currentContent.replace(/\n$/, '')}\n${entry}`
-        : entry;
-
       try {
-        if (existing) {
-          const updatedFilesList = updateFilesListContent(
-            fileTreeData || [],
-            [
-              {
-                fileId: gitignoreId,
-                fileContent: newContent,
-                originalFileContent: currentContent,
-              },
-            ],
-            'modify',
-          );
-          await apiUpdateStaticFile({
-            cId: queryConversationId,
-            files: updatedFilesList as UpdateFileInfo[],
-          });
-        } else {
-          await apiUpdateStaticFile({
-            cId: queryConversationId,
-            files: [
-              {
-                name: gitignoreId,
-                contents: `${newContent}\n`,
-                operation: 'create',
-                binary: false,
-                sizeExceeded: false,
-                renameFrom: '',
-                isDir: false,
-              },
-            ],
-          });
-        }
+        await apiUpdateStaticFile({
+          cId: queryConversationId,
+          files: [
+            {
+              name: gitignoreId,
+              contents: plan.contents,
+              operation: plan.operation,
+              binary: false,
+              sizeExceeded: false,
+              renameFrom: '',
+              isDir: false,
+            },
+          ],
+        });
 
         message.success(
           dict('PC.Pages.ConversationAgentSourceControl.gitignoreSuccess'),
@@ -1509,7 +1494,7 @@ const ConversationAgent: React.FC = () => {
         console.error('Add to gitignore failed:', error);
       }
     },
-    [fileTreeData, handleRefreshFileList],
+    [queryConversationId, handleRefreshFileList],
   );
 
   /**

@@ -42,9 +42,10 @@ import {
   type SelectedChangeFile,
 } from '@/components/business-component/FileTreeGitSourcePanel';
 import type { FileTreeContainerProps } from '@/components/business-component/FileTreeGitSourcePanel/types/file-tree-git-source';
+import { resolveGitignoreWritePlan } from '@/components/business-component/FileTreeGitSourcePanel/utils/gitignoreWritePlan';
 import { useFileTreePreviewView } from '@/components/business-component/FileTreePreviewPanel/hooks/useFileTreePreviewView';
 import { apiAgentConversation } from '@/services/agentConfig';
-import { fetchContentFromUrl } from '@/services/skill';
+import { fetchContentOutcome } from '@/services/skill';
 import { apiUpdateStaticFile } from '@/services/vncDesktop';
 
 import { jumpToPageDevelop } from '@/utils/router';
@@ -53,7 +54,7 @@ import {
   TTYD_TERMINAL_WS_SUBPROTOCOLS,
 } from '@/utils/terminalWsUrl';
 import { LoadingOutlined } from '@ant-design/icons';
-import { Form } from 'antd';
+import { message as antdMessage, Form } from 'antd';
 import classNames from 'classnames';
 import { throttle } from 'lodash';
 import React, {
@@ -1057,34 +1058,27 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
       }
 
       const gitignoreId = '.gitignore';
-      // #5a 懒加载收尾：模型层不再全量拉树，.gitignore 现内容操作时按需拉取
-      // （静态预览路由不过滤 dotfile；文件不存在时 404 → 走创建分支）
-      let currentContent = '';
-      try {
-        currentContent = await fetchContentFromUrl(
-          `/api/computer/static/${id}/${gitignoreId}`,
-        );
-      } catch {
-        currentContent = '';
-      }
-      const entry = fileId.startsWith('/') ? fileId.slice(1) : fileId;
+      // #5a 懒加载收尾：模型层不再全量拉树，.gitignore 现内容操作时按需拉取。
+      // file-server 对「create 已存在文件」「modify 不存在文件」都是静默 no-op
+      // 且返回成功，因此必须按三态严格路由：404→create、存在（含空文件）→modify、
+      // 拉取失败→中止，否则会出现提示成功、条目未写入的假成功
+      const plan = resolveGitignoreWritePlan(
+        await fetchContentOutcome(`/api/computer/static/${id}/${gitignoreId}`),
+        fileId,
+      );
 
-      if (
-        currentContent
-          .split('\n')
-          .some(
-            (line: string) => line.trim() === entry || line.trim() === fileId,
-          )
-      ) {
-        message.info(
+      if (plan.action === 'abort-fetch-error') {
+        antdMessage.error(
+          t('PC.Pages.ConversationAgentSourceControl.gitignoreFailed'),
+        );
+        return;
+      }
+      if (plan.action === 'skip-duplicate') {
+        antdMessage.info(
           t('PC.Pages.ConversationAgentSourceControl.alreadyInGitignore'),
         );
         return;
       }
-
-      const newContent = currentContent
-        ? `${currentContent.replace(/\n$/, '')}\n${entry}`
-        : entry;
 
       try {
         await apiUpdateStaticFile({
@@ -1092,9 +1086,8 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
           files: [
             {
               name: gitignoreId,
-              // 与原 updateFilesListContent 单条变更负载等价：modify 原样、create 补尾换行
-              contents: currentContent ? newContent : `${newContent}\n`,
-              operation: currentContent ? 'modify' : 'create',
+              contents: plan.contents,
+              operation: plan.operation,
               binary: false,
               sizeExceeded: false,
               renameFrom: '',
@@ -1103,7 +1096,7 @@ export const ChatCore: React.FC<ChatCoreProps> = ({
           ],
         });
 
-        message.success(
+        antdMessage.success(
           t('PC.Pages.ConversationAgentSourceControl.gitignoreSuccess'),
         );
         await handleRefreshFileList(id);

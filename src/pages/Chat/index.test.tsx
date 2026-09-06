@@ -60,8 +60,10 @@ vi.mock('@/services/i18nRuntime', () => ({
 }));
 
 vi.mock('@/services/skill', () => ({
-  // handleAddToGitignore 按需拉 .gitignore 内容（#5a 懒加载收尾）
+  // handleAddToGitignore 按需拉 .gitignore 内容（#5a 懒加载收尾）；
+  // 三态版用例未触发该流程，给个不抛错的 error 态即可
   fetchContentFromUrl: vi.fn().mockRejectedValue(new Error('not found')),
+  fetchContentOutcome: vi.fn().mockResolvedValue({ status: 'error' }),
 }));
 
 vi.mock('./index.less', () => ({
