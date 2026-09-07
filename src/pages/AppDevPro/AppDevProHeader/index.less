@@ -2,6 +2,7 @@
 @import '@/styles/token';
 
 .header {
+  position: relative;
   padding: @paddingSm @padding @paddingSm 0;
   overflow-x: auto;
   flex-shrink: 0;
@@ -46,6 +47,35 @@
   .right-box {
     margin-left: auto;
     gap: 8px;
+  }
+
+  .env-switch {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .env-item {
+    padding: 4px 12px;
+    font-size: 14px;
+    line-height: 22px;
+    color: @navFirstMenuTextSecondary;
+    cursor: pointer;
+    border-radius: 6px;
+    user-select: none;
+    white-space: nowrap;
+
+    &:hover:not(.active) {
+      background: @colorFillTertiary;
+    }
+
+    &.active {
+      color: @colorText;
+      background: #e8e8e8;
+    }
   }
 
   .publish-status-tag {

@@ -52,6 +52,7 @@ import React, {
 import { history, useLocation, useModel, useParams } from 'umi';
 import AgentConversationChatPanel from './AgentConversationChatPanel';
 import AppDevProHeader from './AppDevProHeader';
+import AppDevDatabasePanel from './components/AppDevDatabasePanel';
 import AppDevSettingsModal from './components/AppDevSettingsModal';
 import ConversationAgentFilePreview from './ConversationAgentFilePreview';
 import {
@@ -68,6 +69,7 @@ import {
   apiUserAppDomainList,
   type UserAppDomainInfo,
 } from './services/appDomain';
+import { UserAppDbEnvEnum } from './services/appDb';
 import { apiUserAppGetById } from './services/appDevPro';
 import type { UserAppInfo } from './type';
 
@@ -174,6 +176,8 @@ const AppDevPro: React.FC = () => {
   const [userAppDomainList, setUserAppDomainList] = useState<
     UserAppDomainInfo[]
   >([]);
+  /** 当前环境：开发 / 线上，Header 中间切换 */
+  const [dbEnv, setDbEnv] = useState<UserAppDbEnvEnum>(UserAppDbEnvEnum.Dev);
 
   // ==================== 全局状态模型 ====================
   /**
@@ -1033,8 +1037,8 @@ const AppDevPro: React.FC = () => {
       resetDevConsoleExpandedLayout();
       // 选中差异文件
       setSelectedChangeFile(null);
-      // 预览 / 编排 / 版本控制：工作区页签，收起文件预览侧栏
-      if (WORKSPACE_PREVIEW_TOOL_IDS.includes(toolId)) {
+      // 预览 / 编排 / 版本控制 / 数据库：工作区页签，收起文件预览侧栏
+      if (WORKSPACE_PREVIEW_TOOL_IDS.includes(toolId) || toolId === 'database') {
         closePreviewView();
         return;
       }
@@ -1219,6 +1223,20 @@ const AppDevPro: React.FC = () => {
     [fileView.changeFiles, gitSourceControl, isGitUntrackedFile, previewTabs],
   );
 
+  /** 打开数据库页签（已存在则激活） */
+  const handleOpenDatabasePanel = useCallback(() => {
+    previewTabs.openToolTab('database');
+  }, [previewTabs]);
+
+  /** 数据库页签是否激活（Header 图标高亮） */
+  const isDatabasePanelOpen = previewTabs.activeTab?.toolId === 'database';
+
+  /** 「数据库」页签：按 Header 所选环境加载 iframe */
+  const databasePanel = useMemo(
+    () => <AppDevDatabasePanel appId={appId} env={dbEnv} />,
+    [appId, dbEnv],
+  );
+
   // ==================================== 渲染组件元素 ====================================
 
   /** 「版本控制」页签：Git 提交记录 */
@@ -1298,6 +1316,8 @@ const AppDevPro: React.FC = () => {
               diffFile={gitSourceControl.selectedDiffFile ?? undefined}
               // 选中标签
               activeTab={previewTabs.activeTab}
+              // 数据库页签
+              databasePanel={databasePanel}
               // 版本控制面板（Git 提交记录）
               versionPanel={versionControlPanel}
               providerClassName={fileView.className}
@@ -1372,6 +1392,10 @@ const AppDevPro: React.FC = () => {
         isTerminalPanelOpen={isTerminalIconActive}
         onOpenTerminalPanel={handleOpenTerminalPanel}
         onOpenSettings={() => setSettingsOpen(true)}
+        isDatabasePanelOpen={isDatabasePanelOpen}
+        onOpenDatabase={handleOpenDatabasePanel}
+        env={dbEnv}
+        onEnvChange={setDbEnv}
       />
 
       {/* 主内容区域：左聊天 | 中文件树 | 右预览/终端 */}

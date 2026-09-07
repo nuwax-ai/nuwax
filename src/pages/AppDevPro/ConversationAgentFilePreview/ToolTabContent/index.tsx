@@ -16,6 +16,7 @@ const TOOL_DESC_MAP: Record<PreviewToolId, string> = {
     'PC.Pages.ConversationAgentTabPicker.subscriptionSettingDesc',
   'subscription-stats':
     'PC.Pages.ConversationAgentTabPicker.subscriptionStatsDesc',
+  database: 'PC.Pages.AppDevPro.databaseDesc',
 };
 
 export interface ToolTabContentProps {

@@ -8,6 +8,7 @@ import {
   BranchesOutlined,
   CloseOutlined,
   CodeOutlined,
+  DatabaseOutlined,
   FormOutlined,
   PushpinFilled,
   SettingOutlined,
@@ -280,6 +281,7 @@ const TOOL_ICON_MAP: Partial<Record<PreviewToolId, React.ReactNode>> = {
   'version-control': <BranchesOutlined style={{ fontSize: 14 }} />,
   'subscription-setting': <SettingOutlined style={{ fontSize: 14 }} />,
   'subscription-stats': <BarChartOutlined style={{ fontSize: 14 }} />,
+  database: <DatabaseOutlined style={{ fontSize: 14 }} />,
 };
 
 /**

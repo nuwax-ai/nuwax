@@ -27,6 +27,8 @@ export interface ConversationAgentFilePreviewProps {
   previewPanel?: React.ReactNode;
   /** 「版本控制」页签：Git 提交记录 */
   versionPanel?: React.ReactNode;
+  /** 「数据库」页签内容 */
+  databasePanel?: React.ReactNode;
   /** 外层容器类名（来自 useFileTreePreviewView） */
   providerClassName?: string;
   className?: string;
@@ -44,6 +46,7 @@ const ConversationAgentFilePreview: React.FC<
   activeTab,
   previewPanel,
   versionPanel,
+  databasePanel,
   providerClassName,
   className,
 }) => {
@@ -123,6 +126,15 @@ const ConversationAgentFilePreview: React.FC<
       }
     }
 
+    /** 显示数据库页签内容 */
+    if (activeTab?.type === 'tool' && activeTab.toolId === 'database') {
+      return (
+        <div className={cx(styles['workspace-panel'])}>
+          {databasePanel ?? <ToolTabContent toolId="database" />}
+        </div>
+      );
+    }
+
     /** 显示其他工具内容 */
     if (showOtherToolContent && activeTab?.toolId) {
       return <ToolTabContent toolId={activeTab.toolId} />;
@@ -139,7 +151,9 @@ const ConversationAgentFilePreview: React.FC<
     activeWorkspaceToolId,
     workspacePanelMap,
     showOtherToolContent,
+    activeTab?.type,
     activeTab?.toolId,
+    databasePanel,
   ]);
 
   return (

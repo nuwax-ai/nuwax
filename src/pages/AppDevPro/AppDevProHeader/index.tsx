@@ -4,12 +4,18 @@ import ConditionRender from '@/components/ConditionRender';
 import TooltipIcon from '@/components/custom/TooltipIcon';
 import { dict } from '@/services/i18nRuntime';
 import { CreateUpdateModeEnum, PublishStatusEnum } from '@/types/enums/common';
-import { CodeOutlined, FormOutlined, SettingOutlined } from '@ant-design/icons';
+import {
+  CodeOutlined,
+  DatabaseOutlined,
+  FormOutlined,
+  SettingOutlined,
+} from '@ant-design/icons';
 import { Button, Tag } from 'antd';
 import classNames from 'classnames';
 import React, { useCallback, useMemo, useState } from 'react';
 import { history } from 'umi';
 import CreateUserApp from '../components/CreateUserApp';
+import { UserAppDbEnvEnum } from '../services/appDb';
 import type { UserAppInfo } from '../type';
 import styles from './index.less';
 
@@ -46,6 +52,14 @@ export interface AppDevProHeaderProps {
   onOpenTerminalPanel?: () => void;
   /** 打开项目设置弹窗 */
   onOpenSettings?: () => void;
+  /** 数据库页签是否处于激活状态 */
+  isDatabasePanelOpen?: boolean;
+  /** 打开数据库页签 */
+  onOpenDatabase?: () => void;
+  /** 当前环境 */
+  env?: UserAppDbEnvEnum;
+  /** 切换开发 / 线上环境 */
+  onEnvChange?: (env: UserAppDbEnvEnum) => void;
 }
 
 /**
@@ -63,6 +77,10 @@ const AppDevProHeader: React.FC<AppDevProHeaderProps> = ({
   isTerminalPanelOpen = false,
   onOpenTerminalPanel,
   onOpenSettings,
+  isDatabasePanelOpen = false,
+  onOpenDatabase,
+  env = UserAppDbEnvEnum.Dev,
+  onEnvChange,
 }) => {
   const [editOpen, setEditOpen] = useState(false);
 
@@ -98,6 +116,14 @@ const AppDevProHeader: React.FC<AppDevProHeaderProps> = ({
     !!userAppInfo &&
     userAppInfo.publishStatus !== PublishStatusEnum.Published &&
     userAppInfo.publishStatus !== PublishStatusEnum.Applying;
+
+  const handleSelectDevEnv = useCallback(() => {
+    onEnvChange?.(UserAppDbEnvEnum.Dev);
+  }, [onEnvChange]);
+
+  const handleSelectProdEnv = useCallback(() => {
+    onEnvChange?.(UserAppDbEnvEnum.Prod);
+  }, [onEnvChange]);
 
   return (
     <>
@@ -146,6 +172,26 @@ const AppDevProHeader: React.FC<AppDevProHeaderProps> = ({
         </ConditionRender>
       </div>
 
+      {/* 环境切换：水平居中 */}
+      <div className={cx(styles['env-switch'])}>
+        <span
+          className={cx(styles['env-item'], {
+            [styles.active]: env === UserAppDbEnvEnum.Dev,
+          })}
+          onClick={handleSelectDevEnv}
+        >
+          {dict('PC.Pages.AppDevPro.devEnv')}
+        </span>
+        <span
+          className={cx(styles['env-item'], {
+            [styles.active]: env === UserAppDbEnvEnum.Prod,
+          })}
+          onClick={handleSelectProdEnv}
+        >
+          {dict('PC.Pages.AppDevPro.onlineEnv')}
+        </span>
+      </div>
+
       <div className={cx(styles['right-box'], 'flex', 'items-center')}>
         {/* 未发布变更提示 */}
         {showUnpublishedTag && (
@@ -164,6 +210,17 @@ const AppDevProHeader: React.FC<AppDevProHeaderProps> = ({
           className={cx(styles['panel-btn'])}
           icon={<SettingOutlined style={{ fontSize: 16 }} />}
           onClick={onOpenSettings}
+        />
+
+        {/* 数据库页签 */}
+        <TooltipIcon
+          title={dict('PC.Pages.AppDevPro.database')}
+          ariaLabel={dict('PC.Pages.AppDevPro.database')}
+          className={cx(styles['panel-btn'], {
+            [styles.active]: isDatabasePanelOpen,
+          })}
+          icon={<DatabaseOutlined style={{ fontSize: 16 }} />}
+          onClick={onOpenDatabase}
         />
 
         {/* 文件树侧边栏按钮 */}

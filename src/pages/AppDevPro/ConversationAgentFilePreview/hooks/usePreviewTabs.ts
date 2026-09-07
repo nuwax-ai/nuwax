@@ -9,7 +9,8 @@ export type PreviewToolId =
   | 'terminal'
   | 'version-control'
   | 'subscription-setting'
-  | 'subscription-stats';
+  | 'subscription-stats'
+  | 'database';
 
 /** 预览标签类型 */
 export type PreviewTabType = 'file' | 'tool';
@@ -60,6 +61,7 @@ const TOOL_I18N_MAP: Record<PreviewToolId, string> = {
   'subscription-setting':
     'PC.Pages.ConversationAgentTabPicker.subscriptionSetting',
   'subscription-stats': 'PC.Pages.ConversationAgentTabPicker.subscriptionStats',
+  database: 'PC.Pages.AppDevPro.database',
 };
 
 /** 从文件路径提取文件名 */
