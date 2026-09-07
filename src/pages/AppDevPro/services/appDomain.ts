@@ -4,7 +4,11 @@ import { request } from 'umi';
 
 /** 应用域名类型 */
 export enum UserAppDomainTypeEnum {
-  Default = 'Default',
+  /** 开发环境默认域名 */
+  Dev = 'Dev',
+  /** 生产环境默认域名 */
+  Prod = 'Prod',
+  /** 用户自定义域名 */
   Custom = 'Custom',
 }
 

@@ -8,14 +8,21 @@
     margin-bottom: 12px;
   }
 
+  .platformDomainList {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
   .defaultDomain {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 10px 12px;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 12px 16px;
     background: @colorFillTertiary;
-    border-radius: 8px;
-    margin-bottom: 12px;
+    border-radius: @borderRadius;
   }
 
   .defaultDomainInfo {
@@ -24,18 +31,38 @@
   }
 
   .defaultDomainLabel {
+    margin-bottom: 4px;
     font-size: 12px;
-    color: @colorTextSecondary;
     line-height: 18px;
+    color: @colorTextTertiary;
   }
 
   .defaultDomainValue {
-    font-size: 13px;
-    color: @colorTextBase;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-      monospace;
+    font-size: 14px;
+    line-height: 22px;
+    color: @colorText;
     word-break: break-all;
-    line-height: 20px;
+  }
+
+  .copyBtn {
+    flex-shrink: 0;
+
+    &:global(.ant-btn) {
+      height: 28px;
+      padding-inline: 12px;
+      font-size: 13px;
+      color: @colorTextSecondary;
+      background: @colorFillSecondary;
+      border: none;
+      border-radius: @borderRadiusSm;
+      box-shadow: none;
+
+      &:hover,
+      &:focus {
+        color: @colorText;
+        background: @colorFill;
+      }
+    }
   }
 
   .bindRow {
